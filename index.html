@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Pokemon Web Demo</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #1a1a1a;
+      color: #eee;
+      font-family: monospace;
+      height: 100vh;
+      overflow: hidden;
+    }
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    #game canvas {
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+    .topbar {
+      padding: 8px;
+      font-size: 12px;
+      color: #888;
+    }
+    .topbar a { color: #88f; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    Z/Q/S/D ou flèches : se déplacer &nbsp;|&nbsp; W : parler &nbsp;|&nbsp; B : menu &nbsp;|&nbsp; <a href="/editor.html">éditeur de map</a>
+  </div>
+  <div id="game"></div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

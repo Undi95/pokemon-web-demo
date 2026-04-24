@@ -1,0 +1,1 @@
+{"id":"LAYOUT_BATTLE_ELEVATOR","name":"BattleElevator","width":80,"height":112,"tileWidth":5,"tileHeight":7,"primaryTileset":"gTileset_Building","secondaryTileset":"gTileset_BattleFrontier","collisions":[[0,1,1,1,1],[0,1,1,1,1],[0,1,1,1,1],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0]]}

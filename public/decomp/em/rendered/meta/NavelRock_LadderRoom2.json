@@ -1,0 +1,1 @@
+{"id":"LAYOUT_NAVEL_ROCK_LADDER_ROOM2","name":"NavelRock_LadderRoom2","width":144,"height":128,"tileWidth":9,"tileHeight":8,"primaryTileset":"gTileset_General","secondaryTileset":"gTileset_NavelRock","collisions":[[0,0,0,0,0,0,0,0,0],[0,1,1,1,1,1,1,1,0],[0,1,1,1,1,1,1,1,0],[0,1,1,0,0,1,1,1,0],[0,1,1,0,0,1,1,1,0],[0,1,1,0,0,0,1,1,0],[0,1,1,1,1,1,1,1,0],[0,1,1,1,1,1,1,1,0]]}

@@ -1,0 +1,1 @@
+{"id":"LAYOUT_HOUSE3","name":"House3","width":160,"height":128,"tileWidth":10,"tileHeight":8,"primaryTileset":"gTileset_Building","secondaryTileset":"gTileset_GenericBuilding","collisions":[[1,1,1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1,1,1],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,1,1,0,0,0,0],[0,0,0,0,1,1,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0]]}

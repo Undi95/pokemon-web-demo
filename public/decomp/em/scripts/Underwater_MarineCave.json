@@ -1,0 +1,1 @@
+{"scripts":{"Underwater_MarineCave_MapScripts":["map_script MAP_SCRIPT_ON_RESUME, Underwater_MarineCave_OnResume","map_script MAP_SCRIPT_ON_TRANSITION, Underwater_MarineCave_OnTransition",".byte 0"]},"texts":{"Underwater_MarineCave_OnTransition":"","Underwater_MarineCave_OnResume":""}}

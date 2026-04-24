@@ -1,0 +1,1 @@
+{"id":"LAYOUT_ABANDONED_SHIP_ROOM_B1F","name":"AbandonedShip_Room_B1F","width":144,"height":128,"tileWidth":9,"tileHeight":8,"primaryTileset":"gTileset_General","secondaryTileset":"gTileset_InsideShip","collisions":[[1,1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1,1],[1,0,0,0,0,0,0,0,1],[1,0,0,0,0,0,0,0,1],[1,0,0,0,0,0,0,0,1],[1,0,0,0,0,0,0,0,1],[1,0,0,0,0,0,0,0,1],[1,0,0,0,0,0,0,1,1]]}

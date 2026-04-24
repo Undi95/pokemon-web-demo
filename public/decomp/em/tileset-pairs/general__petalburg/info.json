@@ -1,0 +1,13 @@
+{
+  "primaryTileset": "gTileset_General",
+  "secondaryTileset": "gTileset_Petalburg",
+  "atlasCols": 32,
+  "atlasRows": 21,
+  "atlasWidth": 512,
+  "atlasHeight": 336,
+  "totalMetatiles": 656,
+  "numPrimaryMetatiles": 512,
+  "numSecondaryMetatiles": 144,
+  "primaryMetatileIdStart": 0,
+  "secondaryMetatileIdStart": 512
+}
