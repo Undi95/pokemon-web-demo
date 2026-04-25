@@ -58,7 +58,8 @@ const picTableToPic = new Map();
   //     overworld_frame(gObjectEventPic_Boy2, 2, 4, 0),
   //     ...
   // };
-  const re = /(?:static\s+)?const\s+struct\s+SpriteFrameImage\s+(\w+)\s*\[\]\s*=\s*\{[^}]*?overworld_frame\s*\(\s*(\w+)\s*,/g;
+  // Deux macros utilisées : overworld_frame(pic, w, h, idx) et obj_frame_tiles(pic).
+  const re = /(?:static\s+)?const\s+struct\s+SpriteFrameImage\s+(\w+)\s*\[\]\s*=\s*\{[^}]*?(?:overworld_frame|obj_frame_tiles)\s*\(\s*(\w+)\s*[,)]/g;
   let m;
   while ((m = re.exec(text)) !== null) {
     const [, tableName, picName] = m;

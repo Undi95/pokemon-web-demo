@@ -1,0 +1,364 @@
+# Route128
+
+## Métadonnées
+- **id** : `MAP_ROUTE128`
+- **layout** : `LAYOUT_ROUTE128`
+- **music** : `MUS_ROUTE120`
+- **region_map_section** : `MAPSEC_ROUTE_128`
+- **weather** : `WEATHER_SUNNY`
+- **map_type** : `MAP_TYPE_OCEAN_ROUTE`
+- **battle_scene** : `MAP_BATTLE_SCENE_NORMAL`
+- **show_map_name** : `True`
+- **allow_cycling** : `True`
+- **allow_running** : `True`
+
+## Connexions
+- up (offset 0) → `MAP_ROUTE127`
+- down (offset 0) → `MAP_ROUTE129`
+- right (offset -40) → `MAP_EVER_GRANDE_CITY`
+- dive (offset 0) → `MAP_UNDERWATER_ROUTE128`
+
+## Object events (10 NPCs)
+| local_id | gfx | x,y | mvmt | script | flag |
+|---|---|---|---|---|---|
+| `` | `OBJ_EVENT_GFX_SWIMMER_M` | 35,33 | `MOVEMENT_TYPE_WALK_SEQUENCE_RIGHT_UP_LEFT_DOWN` | `Route128_EventScript_Isaiah` | `0` |
+| `` | `OBJ_EVENT_GFX_SWIMMER_F` | 78,24 | `MOVEMENT_TYPE_WALK_RIGHT_AND_LEFT` | `Route128_EventScript_Katelyn` | `0` |
+| `LOCALID_ROUTE128_STEVEN` | `OBJ_EVENT_GFX_STEVEN` | 40,22 | `MOVEMENT_TYPE_FACE_DOWN` | `0x0` | `FLAG_HIDE_ROUTE_128_STEVEN` |
+| `LOCALID_ROUTE128_ARCHIE` | `OBJ_EVENT_GFX_ARCHIE` | 37,22 | `MOVEMENT_TYPE_FACE_LEFT` | `0x0` | `FLAG_HIDE_ROUTE_128_ARCHIE` |
+| `LOCALID_ROUTE128_MAXIE` | `OBJ_EVENT_GFX_MAXIE` | 38,21 | `MOVEMENT_TYPE_FACE_UP` | `0x0` | `FLAG_HIDE_ROUTE_128_MAXIE` |
+| `` | `OBJ_EVENT_GFX_FISHERMAN` | 63,28 | `MOVEMENT_TYPE_FACE_UP` | `Route128_EventScript_Wayne` | `0` |
+| `` | `OBJ_EVENT_GFX_MAN_3` | 47,9 | `MOVEMENT_TYPE_FACE_RIGHT` | `Route128_EventScript_Ruben` | `0` |
+| `` | `OBJ_EVENT_GFX_WOMAN_5` | 24,8 | `MOVEMENT_TYPE_FACE_DOWN_AND_LEFT` | `Route128_EventScript_Alexa` | `0` |
+| `` | `OBJ_EVENT_GFX_SWIMMER_F` | 101,29 | `MOVEMENT_TYPE_WALK_UP_AND_DOWN` | `Route128_EventScript_Carlee` | `0` |
+| `` | `OBJ_EVENT_GFX_SWIMMER_M` | 101,22 | `MOVEMENT_TYPE_WALK_DOWN_AND_UP` | `Route128_EventScript_Harrison` | `0` |
+
+## BG events / signs (3)
+- (49,9) [hidden_item] → ``
+- (57,21) [hidden_item] → ``
+- (31,33) [hidden_item] → ``
+
+## Flags référencés (2)
+- `FLAG_HIDE_MAP_NAME_POPUP`
+- `FLAG_SYS_WEATHER_CTRL`
+
+## Variables référencées (2)
+- `VAR_RESULT`
+- `VAR_ROUTE128_STATE`
+
+## Labels externes appelés (résolus via _common.json ou orphelins)
+### UNRESOLVED
+- `Route128_Text_AlexaPostBattle`
+- `Route128_Text_CarleePostBattle`
+- `Route128_Text_HarrisonPostBattle`
+- `Route128_Text_IsaiahPostBattle`
+- `Route128_Text_IsaiahPostRematch`
+- `Route128_Text_IsaiahRegister`
+- `Route128_Text_KatelynPostBattle`
+- `Route128_Text_KatelynPostRematch`
+- `Route128_Text_KatelynRegister`
+- `Route128_Text_RubenPostBattle`
+- `Route128_Text_WaynePostBattle`
+
+## Scripts (27)
+### Route128_MapScripts
+```
+map_script MAP_SCRIPT_ON_TRANSITION, Route128_OnTransition
+map_script MAP_SCRIPT_ON_FRAME_TABLE, Route128_OnFrame
+```
+### Route128_OnTransition
+```
+call_if_set FLAG_SYS_WEATHER_CTRL, Common_EventScript_SetAbnormalWeather
+end
+```
+### Route128_OnFrame
+```
+map_script_2 VAR_ROUTE128_STATE, 1, Route128_EventScript_KyogreAwakenedScene
+```
+### Route128_EventScript_KyogreAwakenedScene
+```
+lockall
+delay 20
+applymovement LOCALID_ROUTE128_ARCHIE, Route128_Movement_ArchieLookAround
+waitmovement 0
+msgbox Route128_Text_ArchieWhatHappened, MSGBOX_DEFAULT
+closemessage
+applymovement LOCALID_ROUTE128_ARCHIE, Route128_Movement_ArchieBackUp
+waitmovement 0
+msgbox Route128_Text_ArchieIOnlyWanted, MSGBOX_DEFAULT
+closemessage
+applymovement LOCALID_ROUTE128_MAXIE, Route128_Movement_MaxieApproachArchie
+waitmovement 0
+applymovement LOCALID_ROUTE128_ARCHIE, Common_Movement_WalkInPlaceFasterUp
+waitmovement 0
+msgbox Route128_Text_MaxieDoYouUnderstandNow, MSGBOX_DEFAULT
+closemessage
+applymovement LOCALID_ROUTE128_MAXIE, Route128_Movement_MaxieApproachPlayer
+waitmovement 0
+applymovement LOCALID_PLAYER, Common_Movement_WalkInPlaceFasterUp
+waitmovement 0
+msgbox Route128_Text_MaxieResposibilityFallsToArchieAndMe, MSGBOX_DEFAULT
+closemessage
+applymovement LOCALID_ROUTE128_ARCHIE, Route128_Movement_ArchieRunLeft
+applymovement LOCALID_PLAYER, Common_Movement_WalkInPlaceFasterLeft
+applymovement LOCALID_ROUTE128_MAXIE, Route128_Movement_MaxieWalkLeft
+waitmovement 0
+msgbox Route128_Text_MaxieThisDefiesBelief, MSGBOX_DEFAULT
+closemessage
+delay 40
+applymovement LOCALID_ROUTE128_MAXIE, Route128_Movement_MaxieExit
+applymovement LOCALID_ROUTE128_ARCHIE, Route128_Movement_ArchieExit
+waitmovement 0
+removeobject LOCALID_ROUTE128_MAXIE
+removeobject LOCALID_ROUTE128_ARCHIE
+delay 100
+setfieldeffectargument 0, 1
+dofieldeffect FLDEFF_NPCFLY_OUT
+waitfieldeffect FLDEFF_NPCFLY_OUT
+addobject LOCALID_ROUTE128_STEVEN
+applymovement LOCALID_ROUTE128_STEVEN, Route128_Movement_StevenApproachPlayer
+waitmovement 0
+applymovement LOCALID_PLAYER, Common_Movement_WalkInPlaceFasterRight
+waitmovement 0
+msgbox Route128_Text_StevenWhatIsHappening, MSGBOX_DEFAULT
+closemessage
+applymovement LOCALID_ROUTE128_STEVEN, Route128_Movement_StevenWalkUp
+applymovement LOCALID_PLAYER, Common_Movement_WalkInPlaceFasterUp
+waitmovement 0
+msgbox Route128_Text_StevenWholeWorldWillDrown, MSGBOX_DEFAULT
+applymovement LOCALID_ROUTE128_STEVEN, Common_Movement_WalkInPlaceFasterDown
+waitmovement 0
+msgbox Route128_Text_StevenImGoingToSootopolis, MSGBOX_DEFAULT
+closemessage
+applymovement LOCALID_ROUTE128_STEVEN, Common_Movement_WalkInPlaceFasterDown
+waitmovement 0
+delay 50
+setfieldeffectargument 0, 1
+dofieldeffect FLDEFF_NPCFLY_OUT
+delay 15
+removeobject LOCALID_ROUTE128_STEVEN
+waitfieldeffect FLDEFF_NPCFLY_OUT
+clearflag FLAG_HIDE_MAP_NAME_POPUP
+setvar VAR_ROUTE128_STATE, 2
+releaseall
+end
+```
+### Route128_Movement_Unused1
+```
+walk_fast_left
+step_end
+```
+### Route128_Movement_Unused2
+```
+walk_left
+walk_left
+walk_left
+walk_left
+walk_left
+walk_left
+walk_up
+walk_up
+walk_up
+walk_up
+walk_up
+walk_up
+step_end
+```
+### Route128_Movement_StevenWalkUp
+```
+walk_up
+step_end
+```
+### Route128_Movement_StevenApproachPlayer
+```
+walk_fast_left
+step_end
+```
+### Route128_Movement_ArchieLookAround
+```
+walk_fast_down
+walk_in_place_faster_left
+delay_16
+walk_in_place_faster_right
+delay_16
+delay_16
+walk_in_place_faster_down
+step_end
+```
+### Route128_Movement_ArchieBackUp
+```
+lock_facing_direction
+walk_slow_up
+delay_16
+unlock_facing_direction
+step_end
+```
+### Route128_Movement_ArchieRunLeft
+```
+walk_fast_left
+walk_fast_left
+walk_fast_left
+walk_in_place_faster_right
+step_end
+```
+### Route128_Movement_ArchieExit
+```
+delay_16
+delay_16
+walk_fast_up
+walk_fast_left
+walk_fast_up
+walk_fast_up
+walk_fast_up
+walk_fast_up
+walk_fast_up
+walk_fast_up
+walk_fast_up
+walk_fast_up
+step_end
+```
+### Route128_Movement_MaxieWalkLeft
+```
+walk_left
+walk_left
+delay_8
+delay_4
+step_end
+```
+### Route128_Movement_MaxieApproachArchie
+```
+walk_left
+walk_in_place_faster_down
+step_end
+```
+### Route128_Movement_MaxieExit
+```
+walk_fast_left
+walk_fast_left
+walk_fast_left
+walk_fast_up
+walk_fast_up
+walk_fast_up
+walk_fast_up
+walk_fast_up
+walk_fast_up
+walk_fast_up
+step_end
+```
+### Route128_Movement_MaxieApproachPlayer
+```
+walk_right
+walk_in_place_faster_down
+step_end
+```
+### Route128_EventScript_Isaiah
+```
+trainerbattle_single TRAINER_ISAIAH_1, Route128_Text_IsaiahIntro, Route128_Text_IsaiahDefeat, Route128_EventScript_RegisterIsaiah
+specialvar VAR_RESULT, ShouldTryRematchBattle
+goto_if_eq VAR_RESULT, TRUE, Route128_EventScript_RematchIsaiah
+msgbox Route128_Text_IsaiahPostBattle, MSGBOX_DEFAULT
+release
+end
+```
+### Route128_EventScript_RegisterIsaiah
+```
+special PlayerFaceTrainerAfterBattle
+waitmovement 0
+msgbox Route128_Text_IsaiahRegister, MSGBOX_DEFAULT
+register_matchcall TRAINER_ISAIAH_1
+release
+end
+```
+### Route128_EventScript_RematchIsaiah
+```
+trainerbattle_rematch TRAINER_ISAIAH_1, Route128_Text_IsaiahRematchIntro, Route128_Text_IsaiahRematchDefeat
+msgbox Route128_Text_IsaiahPostRematch, MSGBOX_AUTOCLOSE
+end
+```
+### Route128_EventScript_Katelyn
+```
+trainerbattle_single TRAINER_KATELYN_1, Route128_Text_KatelynIntro, Route128_Text_KatelynDefeat, Route128_EventScript_RegisterKatelyn
+specialvar VAR_RESULT, ShouldTryRematchBattle
+goto_if_eq VAR_RESULT, TRUE, Route128_EventScript_RematchKatelyn
+msgbox Route128_Text_KatelynPostBattle, MSGBOX_DEFAULT
+release
+end
+```
+### Route128_EventScript_RegisterKatelyn
+```
+special PlayerFaceTrainerAfterBattle
+waitmovement 0
+msgbox Route128_Text_KatelynRegister, MSGBOX_DEFAULT
+register_matchcall TRAINER_KATELYN_1
+release
+end
+```
+### Route128_EventScript_RematchKatelyn
+```
+trainerbattle_rematch TRAINER_KATELYN_1, Route128_Text_KatelynRematchIntro, Route128_Text_KatelynRematchDefeat
+msgbox Route128_Text_KatelynPostRematch, MSGBOX_AUTOCLOSE
+end
+```
+### Route128_EventScript_Alexa
+```
+trainerbattle_single TRAINER_ALEXA, Route128_Text_AlexaIntro, Route128_Text_AlexaDefeat
+msgbox Route128_Text_AlexaPostBattle, MSGBOX_AUTOCLOSE
+end
+```
+### Route128_EventScript_Ruben
+```
+trainerbattle_single TRAINER_RUBEN, Route128_Text_RubenIntro, Route128_Text_RubenDefeat
+msgbox Route128_Text_RubenPostBattle, MSGBOX_AUTOCLOSE
+end
+```
+### Route128_EventScript_Wayne
+```
+trainerbattle_single TRAINER_WAYNE, Route128_Text_WayneIntro, Route128_Text_WayneDefeat
+msgbox Route128_Text_WaynePostBattle, MSGBOX_AUTOCLOSE
+end
+```
+### Route128_EventScript_Harrison
+```
+trainerbattle_single TRAINER_HARRISON, Route128_Text_HarrisonIntro, Route128_Text_HarrisonDefeat
+msgbox Route128_Text_HarrisonPostBattle, MSGBOX_AUTOCLOSE
+end
+```
+### Route128_EventScript_Carlee
+```
+trainerbattle_single TRAINER_CARLEE, Route128_Text_CarleeIntro, Route128_Text_CarleeDefeat
+msgbox Route128_Text_CarleePostBattle, MSGBOX_AUTOCLOSE
+end
+```
+
+## Textes (8)
+### Route128_Text_ArchieWhatHappened
+```
+ARTHUR: Que s'est-il passé?\nQuel spectacle de désolation…\pAurais-je… commis une terrible erreur?$
+```
+### Route128_Text_ArchieIOnlyWanted
+```
+Je…\nJe voulais juste…$
+```
+### Route128_Text_MaxieDoYouUnderstandNow
+```
+MAX: Tu comprends maintenant,\nARTHUR?\pTu vois finalement comme ton rêve a\ntourné au cauchemar? Un vrai désastre!\pOn doit faire vite! On doit agir\navant que la situation ne devienne\lincontrôlable!$
+```
+### Route128_Text_MaxieResposibilityFallsToArchieAndMe
+```
+MAX: {PLAYER}, ne dis rien.\pJe sais que je n'ai pas le droit de\ncritiquer ARTHUR…\pMais vu la tournure des évènements,\nje doute que nous puissions faire\lquelque chose.\pMais nous ne pouvons pas rester\nici les bras croisés.\pARTHUR et moi devons tout tenter\npour mettre un terme à tout ceci…$
+```
+### Route128_Text_MaxieThisDefiesBelief
+```
+MAX: Ça dépasse l'entendement…\pCes POKéMON ancestraux…\pLeur pouvoir est incroyable.\nIls ont perturbé l'équilibre même\lde la nature…$
+```
+### Route128_Text_StevenWhatIsHappening
+```
+PIERRE: {PLAYER}{KUN}!\nQue se passe-t-il?$
+```
+### Route128_Text_StevenWholeWorldWillDrown
+```
+C'est terrible…\pAprès la vague de chaleur, c'est\nmaintenant un déluge que nous devons\laffronter.\pSi ça continue, tout HOENN…\nNon, le monde entier va sombrer.\pCet énorme nuage s'étend depuis\nATALANOPOLIS…\pQue peut-il bien se passer là-bas?\pInutile d'épiloguer là-dessus ici…\nLes réponses sont à ATALANOPOLIS…$
+```
+### Route128_Text_StevenImGoingToSootopolis
+```
+{PLAYER}{KUN}…\nJe ne sais pas ce que tu comptes faire,\lmais ne fais rien d'imprudent.\pOK.\nJe vais à ATALANOPOLIS.$
+```

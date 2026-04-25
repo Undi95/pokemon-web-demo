@@ -1,0 +1,125 @@
+# AquaHideout_1F
+
+## Métadonnées
+- **id** : `MAP_AQUA_HIDEOUT_1F`
+- **layout** : `LAYOUT_AQUA_HIDEOUT_1F`
+- **music** : `MUS_AQUA_MAGMA_HIDEOUT`
+- **region_map_section** : `MAPSEC_AQUA_HIDEOUT`
+- **weather** : `WEATHER_NONE`
+- **map_type** : `MAP_TYPE_INDOOR`
+- **battle_scene** : `MAP_BATTLE_SCENE_AQUA`
+- **show_map_name** : `True`
+- **allow_cycling** : `False`
+- **allow_running** : `False`
+
+## Object events (3 NPCs)
+| local_id | gfx | x,y | mvmt | script | flag |
+|---|---|---|---|---|---|
+| `` | `OBJ_EVENT_GFX_AQUA_MEMBER_M` | 13,11 | `MOVEMENT_TYPE_FACE_DOWN` | `AquaHideout_1F_EventScript_HideoutEntranceGrunt1` | `FLAG_HIDE_AQUA_HIDEOUT_1F_GRUNT_1_BLOCKING_ENTRANCE` |
+| `` | `OBJ_EVENT_GFX_AQUA_MEMBER_M` | 14,11 | `MOVEMENT_TYPE_FACE_DOWN` | `AquaHideout_1F_EventScript_HideoutEntranceGrunt2` | `FLAG_HIDE_AQUA_HIDEOUT_1F_GRUNT_2_BLOCKING_ENTRANCE` |
+| `` | `OBJ_EVENT_GFX_AQUA_MEMBER_M` | 20,4 | `MOVEMENT_TYPE_WALK_SEQUENCE_DOWN_LEFT_UP_RIGHT` | `AquaHideout_1F_EventScript_Grunt1` | `FLAG_HIDE_AQUA_HIDEOUT_GRUNTS` |
+
+## Warps (3)
+- #0 (13,27) → `MAP_LILYCOVE_CITY` warp #6
+- #1 (14,27) → `MAP_LILYCOVE_CITY` warp #6
+- #2 (22,1) → `MAP_AQUA_HIDEOUT_B1F` warp #0
+
+## Flags référencés (2)
+- `FLAG_GROUDON_AWAKENED_MAGMA_HIDEOUT`
+- `FLAG_RECEIVED_RED_OR_BLUE_ORB`
+
+## Scripts (8)
+### AquaHideout_1F_EventScript_HideoutEntranceGrunt1
+```
+lock
+faceplayer
+goto_if_set FLAG_GROUDON_AWAKENED_MAGMA_HIDEOUT, AquaHideout_1F_EventScript_SlateportHint1
+goto_if_set FLAG_RECEIVED_RED_OR_BLUE_ORB, AquaHideout_1F_EventScript_MagmaHideoutHint1
+msgbox AquaHideout_1F_Text_OurBossIsSnatchingSomething, MSGBOX_DEFAULT
+release
+end
+```
+### AquaHideout_1F_EventScript_MagmaHideoutHint1
+```
+msgbox AquaHideout_1F_Text_WhereMightMagmaHideoutBe, MSGBOX_DEFAULT
+release
+end
+```
+### AquaHideout_1F_EventScript_SlateportHint1
+```
+msgbox AquaHideout_1F_Text_BossWentToJackASubmarine, MSGBOX_DEFAULT
+release
+end
+```
+### AquaHideout_1F_EventScript_HideoutEntranceGrunt2
+```
+lock
+faceplayer
+goto_if_set FLAG_GROUDON_AWAKENED_MAGMA_HIDEOUT, AquaHideout_1F_EventScript_SlateportHint2
+goto_if_set FLAG_RECEIVED_RED_OR_BLUE_ORB, AquaHideout_1F_EventScript_MagmaHideoutHint2
+msgbox AquaHideout_1F_Text_BossIsOnRoute122, MSGBOX_DEFAULT
+release
+end
+```
+### AquaHideout_1F_EventScript_MagmaHideoutHint2
+```
+msgbox AquaHideout_1F_Text_TeamMagmaAtMtChimney, MSGBOX_DEFAULT
+release
+end
+```
+### AquaHideout_1F_EventScript_SlateportHint2
+```
+msgbox AquaHideout_1F_Text_BossIsInSlateportCity, MSGBOX_DEFAULT
+release
+end
+```
+### AquaHideout_1F_EventScript_Grunt1
+```
+trainerbattle_single TRAINER_GRUNT_AQUA_HIDEOUT_1, AquaHideout_1F_Text_Grunt1Intro, AquaHideout_1F_Text_Grunt1Defeat, AquaHideout_1F_EventScript_Grunt1Defeated
+msgbox AquaHideout_1F_Text_Grunt1PostBattle, MSGBOX_AUTOCLOSE
+end
+```
+### AquaHideout_1F_EventScript_Grunt1Defeated
+```
+msgbox AquaHideout_1F_Text_Grunt1PostBattle, MSGBOX_DEFAULT
+release
+end
+```
+
+## Textes (9)
+### AquaHideout_1F_Text_OurBossIsSnatchingSomething
+```
+Quoi? Quoi? Qu'est-ce que tu veux\nà la TEAM AQUA?\pNotre CHEF n'est pas là! Il est parti\nchercher quelque chose d'important!\p… …\nOù est-il allé?\pAaaaah! Tu crois vraiment que je vais\nte dire quelque chose d'aussi vital?$
+```
+### AquaHideout_1F_Text_WhereMightMagmaHideoutBe
+```
+Qu… Quoi?\nTu appartiens à la TEAM MAGMA?\pIl paraît que la TEAM MAGMA essaye\nde réveiller un POKéMON formidable\ldans leur PLANQUE.\pMais où est-ce que cette PLANQUE\npeut bien se trouver?$
+```
+### AquaHideout_1F_Text_BossWentToJackASubmarine
+```
+Quoi? Quoi? Qu'est-ce que tu veux\nà la TEAM AQUA?\pNotre CHEF n'est pas là! Il est parti\npiquer un sous-marin!\p… …\nOù est-il allé?\pAaaaah! Tu crois vraiment que je vais\nte dire quelque chose d'aussi vital?$
+```
+### AquaHideout_1F_Text_BossIsOnRoute122
+```
+Quoi? Quoi? Qu'est-ce que tu veux\nà la TEAM AQUA?\pNotre CHEF n'est pas là!\nIl est sur le CHENAL 122, en direction\ldu MONT MEMORIA!\p… …\nOù est-il allé au juste?\pAaaaah! Tu crois vraiment que je vais\nte dire quelque chose d'aussi vital?$
+```
+### AquaHideout_1F_Text_TeamMagmaAtMtChimney
+```
+Qu… Quoi?\nTu appartiens à la TEAM MAGMA?\pIl paraît que la TEAM MAGMA veut\nattraper un POKéMON formidable\lau MONT CHIMNEE.\pMais à quoi peut bien ressembler\nce POKéMON?$
+```
+### AquaHideout_1F_Text_BossIsInSlateportCity
+```
+Quoi? Quoi? Qu'est-ce que tu veux\nà la TEAM AQUA?\pNotre CHEF n'est pas là! Il est parti\nen direction de POIVRESSEL!\p… …\nOù est-il allé au juste?\pAaaaah! Tu crois vraiment que je vais\nte dire quelque chose d'aussi vital?$
+```
+### AquaHideout_1F_Text_Grunt1Intro
+```
+Ayaya!\nPersonnage louche repéré!$
+```
+### AquaHideout_1F_Text_Grunt1Defeat
+```
+Arrrrg…\nJ'ai perdu!$
+```
+### AquaHideout_1F_Text_Grunt1PostBattle
+```
+J'ai perdu en essayant de défendre la\nTEAM, mais j'ai fait de mon mieux…$
+```

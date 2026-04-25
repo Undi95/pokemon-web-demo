@@ -1,0 +1,13 @@
+{
+  "primaryTileset": "gTileset_General",
+  "secondaryTileset": "gTileset_BikeShop",
+  "atlasCols": 32,
+  "atlasRows": 24,
+  "atlasWidth": 512,
+  "atlasHeight": 384,
+  "totalMetatiles": 760,
+  "numPrimaryMetatiles": 512,
+  "numSecondaryMetatiles": 248,
+  "primaryMetatileIdStart": 0,
+  "secondaryMetatileIdStart": 512
+}

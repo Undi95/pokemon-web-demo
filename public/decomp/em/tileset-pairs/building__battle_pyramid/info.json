@@ -1,0 +1,13 @@
+{
+  "primaryTileset": "gTileset_Building",
+  "secondaryTileset": "gTileset_BattlePyramid",
+  "atlasCols": 32,
+  "atlasRows": 8,
+  "atlasWidth": 512,
+  "atlasHeight": 128,
+  "totalMetatiles": 229,
+  "numPrimaryMetatiles": 8,
+  "numSecondaryMetatiles": 221,
+  "primaryMetatileIdStart": 0,
+  "secondaryMetatileIdStart": 512
+}

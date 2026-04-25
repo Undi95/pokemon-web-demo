@@ -13,7 +13,9 @@
   "dependencies": {
     "@pkmn/dex": "^0.9.32",
     "@pkmn/sim": "^0.9.32",
-    "phaser": "^3.80.1"
+    "@tonejs/midi": "^2.0.28",
+    "phaser": "^3.80.1",
+    "tone": "^15.1.22"
   },
   "devDependencies": {
     "@types/node": "^25.6.0",

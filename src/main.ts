@@ -1,4 +1,8 @@
 import Phaser from 'phaser';
+import { TitleScene } from './scenes/TitleScene';
+import { MainMenuScene } from './scenes/MainMenuScene';
+import { BirchSpeechScene } from './scenes/BirchSpeechScene';
+import { NamingScene } from './scenes/NamingScene';
 import { OverworldScene } from './scenes/OverworldScene';
 import { BattleScene } from './scenes/BattleScene';
 import { MenuOverlayScene } from './scenes/MenuOverlayScene';
@@ -17,7 +21,8 @@ const config: Phaser.Types.Core.GameConfig = {
   zoom: 3,
   pixelArt: true,
   backgroundColor: '#000000',
-  scene: [OverworldScene, BattleScene, MenuOverlayScene],
+  // TitleScene en premier = point d'entrée du jeu
+  scene: [TitleScene, MainMenuScene, BirchSpeechScene, NamingScene, OverworldScene, BattleScene, MenuOverlayScene],
   physics: {
     default: 'arcade',
     arcade: { debug: false }

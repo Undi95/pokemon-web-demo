@@ -1,0 +1,13 @@
+{
+  "primaryTileset": "gTileset_General",
+  "secondaryTileset": "gTileset_IslandHarbor",
+  "atlasCols": 32,
+  "atlasRows": 31,
+  "atlasWidth": 512,
+  "atlasHeight": 496,
+  "totalMetatiles": 982,
+  "numPrimaryMetatiles": 512,
+  "numSecondaryMetatiles": 470,
+  "primaryMetatileIdStart": 0,
+  "secondaryMetatileIdStart": 512
+}

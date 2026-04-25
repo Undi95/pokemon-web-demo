@@ -1,1 +1,1 @@
-{"scripts":{"Route117_PokemonDayCare_MapScripts":["map_script MAP_SCRIPT_ON_TRANSITION, Route117_PokemonDayCare_OnTransition",".byte 0"]},"texts":{"Route117_PokemonDayCare_OnTransition":""}}
+{"scripts":{"Route117_PokemonDayCare_MapScripts":["map_script MAP_SCRIPT_ON_TRANSITION, Route117_PokemonDayCare_OnTransition"],"Route117_PokemonDayCare_OnTransition":["setflag FLAG_LANDMARK_POKEMON_DAYCARE","end"]},"texts":{}}

@@ -286,6 +286,13 @@
     "displayWidth": 16,
     "displayHeight": 32
   },
+  "OBJ_EVENT_GFX_RAYQUAZA_STILL": {
+    "png": "object_events/pokemon/rayquaza_still.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 64,
+    "displayHeight": 64
+  },
   "OBJ_EVENT_GFX_SWIMMER_M": {
     "png": "object_events/people/swimmer_m.png",
     "frameWidth": 16,
@@ -405,6 +412,13 @@
     "displayWidth": 16,
     "displayHeight": 32
   },
+  "OBJ_EVENT_GFX_ITEM_BALL": {
+    "png": "object_events/misc/item_ball.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 16,
+    "displayHeight": 16
+  },
   "OBJ_EVENT_GFX_BRENDAN_ACRO_BIKE": {
     "png": "object_events/people/brendan/acro_bike.png",
     "frameWidth": 32,
@@ -496,6 +510,48 @@
     "displayWidth": 16,
     "displayHeight": 32
   },
+  "OBJ_EVENT_GFX_UNUSED_NATU_DOLL": {
+    "png": "object_events/dolls/unused_natu_doll.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 16,
+    "displayHeight": 16
+  },
+  "OBJ_EVENT_GFX_UNUSED_MAGNEMITE_DOLL": {
+    "png": "object_events/dolls/unused_magnemite_doll.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 16,
+    "displayHeight": 16
+  },
+  "OBJ_EVENT_GFX_UNUSED_SQUIRTLE_DOLL": {
+    "png": "object_events/dolls/unused_squirtle_doll.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 16,
+    "displayHeight": 16
+  },
+  "OBJ_EVENT_GFX_UNUSED_WOOPER_DOLL": {
+    "png": "object_events/dolls/unused_wooper_doll.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 16,
+    "displayHeight": 16
+  },
+  "OBJ_EVENT_GFX_UNUSED_PIKACHU_DOLL": {
+    "png": "object_events/dolls/unused_pikachu_doll.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 16,
+    "displayHeight": 16
+  },
+  "OBJ_EVENT_GFX_UNUSED_PORYGON2_DOLL": {
+    "png": "object_events/dolls/unused_porygon2_doll.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 16,
+    "displayHeight": 16
+  },
   "OBJ_EVENT_GFX_CUTTABLE_TREE": {
     "png": "object_events/misc/cuttable_tree.png",
     "frameWidth": 16,
@@ -528,6 +584,13 @@
     "png": "object_events/misc/breakable_rock.png",
     "frameWidth": 16,
     "frameHeight": 16,
+    "displayWidth": 16,
+    "displayHeight": 16
+  },
+  "OBJ_EVENT_GFX_PUSHABLE_BOULDER": {
+    "png": "object_events/misc/pushable_boulder.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
     "displayWidth": 16,
     "displayHeight": 16
   },
@@ -573,6 +636,13 @@
     "displayWidth": 32,
     "displayHeight": 32
   },
+  "OBJ_EVENT_GFX_TRUCK": {
+    "png": "object_events/misc/truck.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 48,
+    "displayHeight": 48
+  },
   "OBJ_EVENT_GFX_VIGOROTH_CARRYING_BOX": {
     "png": "object_events/pokemon/vigoroth.png",
     "frameWidth": 32,
@@ -586,6 +656,13 @@
     "frameHeight": 32,
     "displayWidth": 32,
     "displayHeight": 32
+  },
+  "OBJ_EVENT_GFX_BIRCHS_BAG": {
+    "png": "object_events/misc/birchs_bag.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 16,
+    "displayHeight": 16
   },
   "OBJ_EVENT_GFX_ZIGZAGOON_1": {
     "png": "object_events/pokemon/enemy_zigzagoon.png",
@@ -691,6 +768,20 @@
     "frameHeight": 32,
     "displayWidth": 32,
     "displayHeight": 32
+  },
+  "OBJ_EVENT_GFX_MOVING_BOX": {
+    "png": "object_events/misc/moving_box.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 16,
+    "displayHeight": 16
+  },
+  "OBJ_EVENT_GFX_CABLE_CAR": {
+    "png": "object_events/misc/cable_car.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 64,
+    "displayHeight": 64
   },
   "OBJ_EVENT_GFX_SCIENTIST_2": {
     "png": "object_events/people/scientist_2.png",
@@ -867,6 +958,335 @@
     "displayWidth": 16,
     "displayHeight": 32
   },
+  "OBJ_EVENT_GFX_SS_TIDAL": {
+    "png": "object_events/misc/ss_tidal.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 96,
+    "displayHeight": 40
+  },
+  "OBJ_EVENT_GFX_SUBMARINE_SHADOW": {
+    "png": "object_events/misc/submarine_shadow.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 88,
+    "displayHeight": 32
+  },
+  "OBJ_EVENT_GFX_PICHU_DOLL": {
+    "png": "object_events/dolls/pichu_doll.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 16,
+    "displayHeight": 16
+  },
+  "OBJ_EVENT_GFX_PIKACHU_DOLL": {
+    "png": "object_events/dolls/pikachu_doll.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 16,
+    "displayHeight": 16
+  },
+  "OBJ_EVENT_GFX_MARILL_DOLL": {
+    "png": "object_events/dolls/marill_doll.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 16,
+    "displayHeight": 16
+  },
+  "OBJ_EVENT_GFX_TOGEPI_DOLL": {
+    "png": "object_events/dolls/togepi_doll.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 16,
+    "displayHeight": 16
+  },
+  "OBJ_EVENT_GFX_CYNDAQUIL_DOLL": {
+    "png": "object_events/dolls/cyndaquil_doll.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 16,
+    "displayHeight": 16
+  },
+  "OBJ_EVENT_GFX_CHIKORITA_DOLL": {
+    "png": "object_events/dolls/chikorita_doll.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 16,
+    "displayHeight": 16
+  },
+  "OBJ_EVENT_GFX_TOTODILE_DOLL": {
+    "png": "object_events/dolls/totodile_doll.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 16,
+    "displayHeight": 16
+  },
+  "OBJ_EVENT_GFX_JIGGLYPUFF_DOLL": {
+    "png": "object_events/dolls/jigglypuff_doll.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 16,
+    "displayHeight": 16
+  },
+  "OBJ_EVENT_GFX_MEOWTH_DOLL": {
+    "png": "object_events/dolls/meowth_doll.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 16,
+    "displayHeight": 16
+  },
+  "OBJ_EVENT_GFX_CLEFAIRY_DOLL": {
+    "png": "object_events/dolls/clefairy_doll.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 16,
+    "displayHeight": 16
+  },
+  "OBJ_EVENT_GFX_DITTO_DOLL": {
+    "png": "object_events/dolls/ditto_doll.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 16,
+    "displayHeight": 16
+  },
+  "OBJ_EVENT_GFX_SMOOCHUM_DOLL": {
+    "png": "object_events/dolls/smoochum_doll.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 16,
+    "displayHeight": 16
+  },
+  "OBJ_EVENT_GFX_TREECKO_DOLL": {
+    "png": "object_events/dolls/treecko_doll.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 16,
+    "displayHeight": 16
+  },
+  "OBJ_EVENT_GFX_TORCHIC_DOLL": {
+    "png": "object_events/dolls/torchic_doll.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 16,
+    "displayHeight": 16
+  },
+  "OBJ_EVENT_GFX_MUDKIP_DOLL": {
+    "png": "object_events/dolls/mudkip_doll.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 16,
+    "displayHeight": 16
+  },
+  "OBJ_EVENT_GFX_DUSKULL_DOLL": {
+    "png": "object_events/dolls/duskull_doll.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 16,
+    "displayHeight": 16
+  },
+  "OBJ_EVENT_GFX_WYNAUT_DOLL": {
+    "png": "object_events/dolls/wynaut_doll.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 16,
+    "displayHeight": 16
+  },
+  "OBJ_EVENT_GFX_BALTOY_DOLL": {
+    "png": "object_events/dolls/baltoy_doll.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 16,
+    "displayHeight": 16
+  },
+  "OBJ_EVENT_GFX_KECLEON_DOLL": {
+    "png": "object_events/dolls/kecleon_doll.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 16,
+    "displayHeight": 16
+  },
+  "OBJ_EVENT_GFX_AZURILL_DOLL": {
+    "png": "object_events/dolls/azurill_doll.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 16,
+    "displayHeight": 16
+  },
+  "OBJ_EVENT_GFX_SKITTY_DOLL": {
+    "png": "object_events/dolls/skitty_doll.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 16,
+    "displayHeight": 16
+  },
+  "OBJ_EVENT_GFX_SWABLU_DOLL": {
+    "png": "object_events/dolls/swablu_doll.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 16,
+    "displayHeight": 16
+  },
+  "OBJ_EVENT_GFX_GULPIN_DOLL": {
+    "png": "object_events/dolls/gulpin_doll.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 16,
+    "displayHeight": 16
+  },
+  "OBJ_EVENT_GFX_LOTAD_DOLL": {
+    "png": "object_events/dolls/lotad_doll.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 16,
+    "displayHeight": 16
+  },
+  "OBJ_EVENT_GFX_SEEDOT_DOLL": {
+    "png": "object_events/dolls/seedot_doll.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 16,
+    "displayHeight": 16
+  },
+  "OBJ_EVENT_GFX_PIKA_CUSHION": {
+    "png": "object_events/cushions/pika_cushion.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 16,
+    "displayHeight": 16
+  },
+  "OBJ_EVENT_GFX_ROUND_CUSHION": {
+    "png": "object_events/cushions/round_cushion.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 16,
+    "displayHeight": 16
+  },
+  "OBJ_EVENT_GFX_KISS_CUSHION": {
+    "png": "object_events/cushions/kiss_cushion.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 16,
+    "displayHeight": 16
+  },
+  "OBJ_EVENT_GFX_ZIGZAG_CUSHION": {
+    "png": "object_events/cushions/zigzag_cushion.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 16,
+    "displayHeight": 16
+  },
+  "OBJ_EVENT_GFX_SPIN_CUSHION": {
+    "png": "object_events/cushions/spin_cushion.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 16,
+    "displayHeight": 16
+  },
+  "OBJ_EVENT_GFX_DIAMOND_CUSHION": {
+    "png": "object_events/cushions/diamond_cushion.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 16,
+    "displayHeight": 16
+  },
+  "OBJ_EVENT_GFX_BALL_CUSHION": {
+    "png": "object_events/cushions/ball_cushion.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 16,
+    "displayHeight": 16
+  },
+  "OBJ_EVENT_GFX_GRASS_CUSHION": {
+    "png": "object_events/cushions/grass_cushion.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 16,
+    "displayHeight": 16
+  },
+  "OBJ_EVENT_GFX_FIRE_CUSHION": {
+    "png": "object_events/cushions/fire_cushion.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 16,
+    "displayHeight": 16
+  },
+  "OBJ_EVENT_GFX_WATER_CUSHION": {
+    "png": "object_events/cushions/water_cushion.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 16,
+    "displayHeight": 16
+  },
+  "OBJ_EVENT_GFX_BIG_SNORLAX_DOLL": {
+    "png": "object_events/dolls/big_snorlax_doll.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 32,
+    "displayHeight": 32
+  },
+  "OBJ_EVENT_GFX_BIG_RHYDON_DOLL": {
+    "png": "object_events/dolls/big_rhydon_doll.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 32,
+    "displayHeight": 32
+  },
+  "OBJ_EVENT_GFX_BIG_LAPRAS_DOLL": {
+    "png": "object_events/dolls/big_lapras_doll.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 32,
+    "displayHeight": 32
+  },
+  "OBJ_EVENT_GFX_BIG_VENUSAUR_DOLL": {
+    "png": "object_events/dolls/big_venusaur_doll.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 32,
+    "displayHeight": 32
+  },
+  "OBJ_EVENT_GFX_BIG_CHARIZARD_DOLL": {
+    "png": "object_events/dolls/big_charizard_doll.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 32,
+    "displayHeight": 32
+  },
+  "OBJ_EVENT_GFX_BIG_BLASTOISE_DOLL": {
+    "png": "object_events/dolls/big_blastoise_doll.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 32,
+    "displayHeight": 32
+  },
+  "OBJ_EVENT_GFX_BIG_WAILMER_DOLL": {
+    "png": "object_events/dolls/big_wailmer_doll.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 32,
+    "displayHeight": 32
+  },
+  "OBJ_EVENT_GFX_BIG_REGIROCK_DOLL": {
+    "png": "object_events/dolls/big_regirock_doll.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 32,
+    "displayHeight": 32
+  },
+  "OBJ_EVENT_GFX_BIG_REGICE_DOLL": {
+    "png": "object_events/dolls/big_regice_doll.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 32,
+    "displayHeight": 32
+  },
+  "OBJ_EVENT_GFX_BIG_REGISTEEL_DOLL": {
+    "png": "object_events/dolls/big_registeel_doll.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 32,
+    "displayHeight": 32
+  },
   "OBJ_EVENT_GFX_LATIAS": {
     "png": "object_events/pokemon/latias_latios.png",
     "frameWidth": 32,
@@ -909,6 +1329,20 @@
     "displayWidth": 32,
     "displayHeight": 32
   },
+  "OBJ_EVENT_GFX_BRENDAN_DECORATING": {
+    "png": "object_events/people/brendan/decorating.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 16,
+    "displayHeight": 32
+  },
+  "OBJ_EVENT_GFX_MAY_DECORATING": {
+    "png": "object_events/people/may/decorating.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 16,
+    "displayHeight": 32
+  },
   "OBJ_EVENT_GFX_ARCHIE": {
     "png": "object_events/people/team_aqua/archie.png",
     "frameWidth": 16,
@@ -933,6 +1367,34 @@
   "OBJ_EVENT_GFX_GROUDON_FRONT": {
     "png": "object_events/pokemon/groudon.png",
     "frameWidth": 32,
+    "frameHeight": 32,
+    "displayWidth": 32,
+    "displayHeight": 32
+  },
+  "OBJ_EVENT_GFX_FOSSIL": {
+    "png": "object_events/misc/fossil.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 16,
+    "displayHeight": 16
+  },
+  "OBJ_EVENT_GFX_REGIROCK": {
+    "png": "object_events/pokemon/regi.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 32,
+    "displayHeight": 32
+  },
+  "OBJ_EVENT_GFX_REGICE": {
+    "png": "object_events/pokemon/regi.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 32,
+    "displayHeight": 32
+  },
+  "OBJ_EVENT_GFX_REGISTEEL": {
+    "png": "object_events/pokemon/regi.png",
+    "frameWidth": 16,
     "frameHeight": 32,
     "displayWidth": 32,
     "displayHeight": 32
@@ -1084,6 +1546,13 @@
     "displayWidth": 16,
     "displayHeight": 32
   },
+  "OBJ_EVENT_GFX_TRICK_HOUSE_STATUE": {
+    "png": "object_events/misc/statue.png",
+    "frameWidth": 16,
+    "frameHeight": 32,
+    "displayWidth": 16,
+    "displayHeight": 32
+  },
   "OBJ_EVENT_GFX_KIRLIA": {
     "png": "object_events/pokemon/kirlia.png",
     "frameWidth": 16,
@@ -1136,6 +1605,13 @@
   "OBJ_EVENT_GFX_DEOXYS": {
     "png": "object_events/pokemon/deoxys.png",
     "frameWidth": 32,
+    "frameHeight": 32,
+    "displayWidth": 32,
+    "displayHeight": 32
+  },
+  "OBJ_EVENT_GFX_DEOXYS_TRIANGLE": {
+    "png": "object_events/misc/birth_island_stone.png",
+    "frameWidth": 16,
     "frameHeight": 32,
     "displayWidth": 32,
     "displayHeight": 32

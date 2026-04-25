@@ -1,0 +1,88 @@
+# VerdanturfTown_BattleTentCorridor
+
+## Métadonnées
+- **id** : `MAP_VERDANTURF_TOWN_BATTLE_TENT_CORRIDOR`
+- **layout** : `LAYOUT_BATTLE_TENT_CORRIDOR`
+- **music** : `MUS_B_TOWER_RS`
+- **region_map_section** : `MAPSEC_VERDANTURF_TOWN`
+- **weather** : `WEATHER_NONE`
+- **map_type** : `MAP_TYPE_INDOOR`
+- **battle_scene** : `MAP_BATTLE_SCENE_NORMAL`
+- **show_map_name** : `False`
+- **allow_cycling** : `False`
+- **allow_running** : `False`
+
+## Object events (1 NPCs)
+| local_id | gfx | x,y | mvmt | script | flag |
+|---|---|---|---|---|---|
+| `LOCALID_VERDANTURF_TENT_CORRIDOR_ATTENDANT` | `OBJ_EVENT_GFX_EXPERT_M` | 2,6 | `MOVEMENT_TYPE_FACE_UP` | `0x0` | `0` |
+
+## Variables référencées (2)
+- `VAR_0x8006`
+- `VAR_TEMP_0`
+
+## Scripts (6)
+### VerdanturfTown_BattleTentCorridor_MapScripts
+```
+map_script MAP_SCRIPT_ON_FRAME_TABLE, VerdanturfTown_BattleTentCorridor_OnFrame
+```
+### VerdanturfTown_BattleTentCorridor_OnFrame
+```
+map_script_2 VAR_TEMP_0, 0, VerdanturfTown_BattleTentCorridor_EventScript_EnterCorridor
+```
+### VerdanturfTown_BattleTentCorridor_EventScript_EnterCorridor
+```
+lockall
+setvar VAR_TEMP_0, 1
+applymovement LOCALID_VERDANTURF_TENT_CORRIDOR_ATTENDANT, VerdanturfTown_BattleTentCorridor_Movement_WalkToDoor
+applymovement LOCALID_PLAYER, VerdanturfTown_BattleTentCorridor_Movement_WalkToDoor
+waitmovement 0
+opendoor 2, 1
+waitdooranim
+applymovement LOCALID_VERDANTURF_TENT_CORRIDOR_ATTENDANT, VerdanturfTown_BattleTentCorridor_Movement_AttendantEnterDoor
+applymovement LOCALID_PLAYER, VerdanturfTown_BattleTentCorridor_Movement_PlayerEnterDoor
+waitmovement 0
+closedoor 2, 1
+waitdooranim
+setvar VAR_0x8006, 0
+warp MAP_VERDANTURF_TOWN_BATTLE_TENT_BATTLE_ROOM, 6, 5
+waitstate
+releaseall
+end
+```
+### VerdanturfTown_BattleTentCorridor_Movement_WalkToDoor
+```
+walk_up
+walk_up
+walk_up
+walk_up
+step_end
+```
+### VerdanturfTown_BattleTentCorridor_Movement_PlayerEnterDoor
+```
+walk_up
+```
+### VerdanturfTown_BattleTentCorridor_Movement_AttendantEnterDoor
+```
+walk_up
+set_invisible
+step_end
+```
+
+## Textes (4)
+### VerdanturfTown_ContestHall_Text_WhichContestYouEntering
+```
+Which CONTEST are you entering?\nWant a piece of advice?\pIn any CONTEST, for example, a CUTE\nCONTEST, I don't think they judge you\lonly on cuteness in the first round.\pYou need to work out ways for raising\nPOKéMON better.$
+```
+### VerdanturfTown_ContestHall_Text_RaisedMonToBeCute
+```
+I raised my POKéMON to be cute.\pI found out you can put POKéMON in\na CONTEST for cuteness!\pI'm so glad I raised my POKéMON with\nloving care…$
+```
+### VerdanturfTown_ContestHall_Text_MyMonRules
+```
+My POKéMON rules!\pIt's cool, tough yet beautiful, cute,\nand smart. It's complete!\pI may as well go for wins in every\nsingle CONTEST.$
+```
+### VerdanturfTown_ContestHall_Text_NormalRankStage
+```
+POKéMON CONTESTS\nNORMAL RANK STAGE!$
+```

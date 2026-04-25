@@ -1,0 +1,13 @@
+{
+  "primaryTileset": "gTileset_Building",
+  "secondaryTileset": "gTileset_FortreeGym",
+  "atlasCols": 32,
+  "atlasRows": 3,
+  "atlasWidth": 512,
+  "atlasHeight": 48,
+  "totalMetatiles": 88,
+  "numPrimaryMetatiles": 8,
+  "numSecondaryMetatiles": 80,
+  "primaryMetatileIdStart": 0,
+  "secondaryMetatileIdStart": 512
+}

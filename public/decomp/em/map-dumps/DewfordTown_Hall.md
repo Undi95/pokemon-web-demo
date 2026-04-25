@@ -1,0 +1,443 @@
+# DewfordTown_Hall
+
+## Métadonnées
+- **id** : `MAP_DEWFORD_TOWN_HALL`
+- **layout** : `LAYOUT_DEWFORD_TOWN_HALL`
+- **music** : `MUS_DEWFORD`
+- **region_map_section** : `MAPSEC_DEWFORD_TOWN`
+- **weather** : `WEATHER_NONE`
+- **map_type** : `MAP_TYPE_INDOOR`
+- **battle_scene** : `MAP_BATTLE_SCENE_NORMAL`
+- **show_map_name** : `False`
+- **allow_cycling** : `False`
+- **allow_running** : `False`
+
+## Object events (9 NPCs)
+| local_id | gfx | x,y | mvmt | script | flag |
+|---|---|---|---|---|---|
+| `` | `OBJ_EVENT_GFX_GIRL_2` | 4,6 | `MOVEMENT_TYPE_FACE_UP` | `DewfordTown_Hall_EventScript_Girl` | `0` |
+| `` | `OBJ_EVENT_GFX_WOMAN_2` | 1,5 | `MOVEMENT_TYPE_FACE_RIGHT` | `DewfordTown_Hall_EventScript_Woman` | `0` |
+| `` | `OBJ_EVENT_GFX_MAN_1` | 5,4 | `MOVEMENT_TYPE_FACE_LEFT` | `DewfordTown_Hall_EventScript_Man` | `0` |
+| `LOCALID_DEWFORD_HALL_EXPERT_M` | `OBJ_EVENT_GFX_EXPERT_M` | 9,3 | `MOVEMENT_TYPE_FACE_UP` | `DewfordTown_Hall_EventScript_ExpertM` | `0` |
+| `LOCALID_DEWFORD_HALL_TWIN` | `OBJ_EVENT_GFX_TWIN` | 5,2 | `MOVEMENT_TYPE_FACE_UP` | `DewfordTown_Hall_EventScript_Twin` | `0` |
+| `` | `OBJ_EVENT_GFX_LITTLE_BOY` | 14,7 | `MOVEMENT_TYPE_WANDER_LEFT_AND_RIGHT` | `DewfordTown_Hall_EventScript_LittleBoy` | `0` |
+| `LOCALID_DEWFORD_HALL_SCHOOL_KID_M` | `OBJ_EVENT_GFX_SCHOOL_KID_M` | 12,3 | `MOVEMENT_TYPE_FACE_RIGHT` | `DewfordTown_Hall_EventScript_SchoolKidM` | `0` |
+| `LOCALID_DEWFORD_HALL_PSYCHIC_M` | `OBJ_EVENT_GFX_PSYCHIC_M` | 15,3 | `MOVEMENT_TYPE_FACE_LEFT` | `DewfordTown_Hall_EventScript_PsychicM` | `0` |
+| `` | `OBJ_EVENT_GFX_MANIAC` | 8,6 | `MOVEMENT_TYPE_WANDER_LEFT_AND_RIGHT` | `DewfordTown_Hall_EventScript_SludgeBombMan` | `FLAG_HIDE_DEWFORD_HALL_SLUDGE_BOMB_MAN` |
+
+## Warps (2)
+- #0 (5,8) → `MAP_DEWFORD_TOWN` warp #0
+- #1 (6,8) → `MAP_DEWFORD_TOWN` warp #0
+
+## BG events / signs (2)
+- (0,1) [sign] → `DewfordTown_Hall_EventScript_Bookshelf`
+- (7,1) [sign] → `DewfordTown_Hall_EventScript_Painting`
+
+## Flags référencés (1)
+- `FLAG_RECEIVED_TM_SLUDGE_BOMB`
+
+## Variables référencées (3)
+- `VAR_0x8008`
+- `VAR_FACING`
+- `VAR_RESULT`
+
+## Labels externes appelés (résolus via _common.json ou orphelins)
+### UNRESOLVED
+- `Common_EventScript_BufferTrendyPhrase`
+
+## Scripts (36)
+### DewfordTown_Hall_EventScript_Girl
+```
+lock
+faceplayer
+call Common_EventScript_BufferTrendyPhrase
+special IsTrendyPhraseBoring
+goto_if_eq VAR_RESULT, TRUE, DewfordTown_Hall_EventScript_GirlBoredOfTrend
+msgbox DewfordTown_Hall_Text_CantImagineLifeWithoutTrend, MSGBOX_DEFAULT
+release
+end
+```
+### DewfordTown_Hall_EventScript_GirlBoredOfTrend
+```
+msgbox DewfordTown_Hall_Text_GettingBoredOfTrend, MSGBOX_DEFAULT
+release
+end
+```
+### DewfordTown_Hall_EventScript_Woman
+```
+lock
+faceplayer
+call Common_EventScript_BufferTrendyPhrase
+msgbox DewfordTown_Hall_Text_TeachingMonAboutTrend, MSGBOX_DEFAULT
+release
+end
+```
+### DewfordTown_Hall_EventScript_Man
+```
+lock
+faceplayer
+call Common_EventScript_BufferTrendyPhrase
+special BufferDeepLinkPhrase
+msgbox DewfordTown_Hall_Text_DeepLinkBetweenXAndY, MSGBOX_YESNO
+goto_if_eq VAR_RESULT, YES, DewfordTown_Hall_EventScript_ConfirmTrendLink
+goto_if_eq VAR_RESULT, NO, DewfordTown_Hall_EventScript_RejectTrendLink
+end
+```
+### DewfordTown_Hall_EventScript_ConfirmTrendLink
+```
+msgbox DewfordTown_Hall_Text_MyHunchWasRight, MSGBOX_DEFAULT
+release
+end
+```
+### DewfordTown_Hall_EventScript_RejectTrendLink
+```
+msgbox DewfordTown_Hall_Text_NotEasyToKeepUp, MSGBOX_DEFAULT
+release
+end
+```
+### DewfordTown_Hall_EventScript_ExpertM
+```
+lock
+faceplayer
+call Common_EventScript_BufferTrendyPhrase
+msgbox DewfordTown_Hall_Text_TVShowAboutTrend, MSGBOX_DEFAULT
+closemessage
+applymovement LOCALID_DEWFORD_HALL_EXPERT_M, Common_Movement_WalkInPlaceFasterUp
+waitmovement 0
+release
+end
+```
+### DewfordTown_Hall_EventScript_Twin
+```
+lock
+faceplayer
+call Common_EventScript_BufferTrendyPhrase
+msgbox DewfordTown_Hall_Text_IsTrendMorePopularAcrossSea, MSGBOX_DEFAULT
+closemessage
+applymovement LOCALID_DEWFORD_HALL_TWIN, Common_Movement_WalkInPlaceFasterUp
+waitmovement 0
+release
+end
+```
+### DewfordTown_Hall_EventScript_LittleBoy
+```
+lock
+faceplayer
+call Common_EventScript_BufferTrendyPhrase
+msgbox DewfordTown_Hall_Text_CollectTrendMerchandise, MSGBOX_DEFAULT
+release
+end
+```
+### DewfordTown_Hall_EventScript_Bookshelf
+```
+lockall
+call Common_EventScript_BufferTrendyPhrase
+msgbox DewfordTown_Hall_Text_BooksAboutTrend, MSGBOX_DEFAULT
+releaseall
+end
+```
+### DewfordTown_Hall_EventScript_Painting
+```
+lockall
+call Common_EventScript_BufferTrendyPhrase
+special GetDewfordHallPaintingNameIndex
+switch VAR_RESULT
+case 0, DewfordTown_Hall_EventScript_ScreamTitle
+case 4, DewfordTown_Hall_EventScript_ScreamTitle
+case 1, DewfordTown_Hall_EventScript_SmileTitle
+case 5, DewfordTown_Hall_EventScript_ScreamTitle
+case 2, DewfordTown_Hall_EventScript_LastTitle
+case 6, DewfordTown_Hall_EventScript_LastTitle
+case 3, DewfordTown_Hall_EventScript_BirthTitle
+case 7, DewfordTown_Hall_EventScript_LastTitle
+end
+```
+### DewfordTown_Hall_EventScript_ScreamTitle
+```
+msgbox DewfordTown_Hall_Text_TrendsScream, MSGBOX_DEFAULT
+releaseall
+end
+```
+### DewfordTown_Hall_EventScript_SmileTitle
+```
+msgbox DewfordTown_Hall_Text_TrendsSmile, MSGBOX_DEFAULT
+releaseall
+end
+```
+### DewfordTown_Hall_EventScript_LastTitle
+```
+msgbox DewfordTown_Hall_Text_LastTrend, MSGBOX_DEFAULT
+releaseall
+end
+```
+### DewfordTown_Hall_EventScript_BirthTitle
+```
+msgbox DewfordTown_Hall_Text_BirthOfTrend, MSGBOX_DEFAULT
+releaseall
+end
+```
+### DewfordTown_Hall_EventScript_SchoolKidM
+```
+lockall
+setvar VAR_0x8008, 0
+goto DewfordTown_Hall_EventScript_DoTrendDebate
+end
+```
+### DewfordTown_Hall_EventScript_PsychicM
+```
+lockall
+setvar VAR_0x8008, 1
+goto DewfordTown_Hall_EventScript_DoTrendDebate
+end
+```
+### DewfordTown_Hall_EventScript_DoTrendDebate
+```
+call Common_EventScript_BufferTrendyPhrase
+special GetDewfordHallPaintingNameIndex
+switch VAR_RESULT
+case 0, DewfordTown_Hall_EventScript_TrendDebate1
+case 1, DewfordTown_Hall_EventScript_TrendDebate1
+case 2, DewfordTown_Hall_EventScript_TrendDebate2
+case 3, DewfordTown_Hall_EventScript_TrendDebate2
+case 4, DewfordTown_Hall_EventScript_TrendDebate3
+case 5, DewfordTown_Hall_EventScript_TrendDebate3
+case 6, DewfordTown_Hall_EventScript_TrendDebate4
+case 7, DewfordTown_Hall_EventScript_TrendDebate5
+end
+```
+### DewfordTown_Hall_EventScript_TrendDebate1
+```
+call DewfordTown_Hall_EventScript_DebateReact1
+msgbox DewfordTown_Hall_Text_SawTrendCoolestThing, MSGBOX_DEFAULT
+call DewfordTown_Hall_EventScript_DebateReact2
+msgbox DewfordTown_Hall_Text_AllegedTrendNotAuthentic, MSGBOX_DEFAULT
+releaseall
+end
+```
+### DewfordTown_Hall_EventScript_TrendDebate2
+```
+call DewfordTown_Hall_EventScript_DebateReact1
+msgbox DewfordTown_Hall_Text_ComposedTrendThemeSong, MSGBOX_DEFAULT
+call DewfordTown_Hall_EventScript_DebateReact2
+msgbox DewfordTown_Hall_Text_WorkOnYourSinging, MSGBOX_DEFAULT
+releaseall
+end
+```
+### DewfordTown_Hall_EventScript_TrendDebate3
+```
+call DewfordTown_Hall_EventScript_DebateReact1
+msgbox DewfordTown_Hall_Text_OrganizeTrendParty, MSGBOX_DEFAULT
+call DewfordTown_Hall_EventScript_DebateReact2
+msgbox DewfordTown_Hall_Text_BrilliantIndeed, MSGBOX_DEFAULT
+releaseall
+end
+```
+### DewfordTown_Hall_EventScript_TrendDebate4
+```
+call DewfordTown_Hall_EventScript_DebateReact1
+msgbox DewfordTown_Hall_Text_TrendHasBecomePartOfLife, MSGBOX_DEFAULT
+call DewfordTown_Hall_EventScript_DebateReact2
+msgbox DewfordTown_Hall_Text_TrendWeighsHeavilyOnMind, MSGBOX_DEFAULT
+releaseall
+end
+```
+### DewfordTown_Hall_EventScript_TrendDebate5
+```
+call DewfordTown_Hall_EventScript_DebateReact1
+msgbox DewfordTown_Hall_Text_IfWeTeamUpWellBeInvincible, MSGBOX_DEFAULT
+call DewfordTown_Hall_EventScript_DebateReact2
+msgbox DewfordTown_Hall_Text_WellBeTrendDuo, MSGBOX_DEFAULT
+releaseall
+end
+```
+### DewfordTown_Hall_EventScript_DontMovePlayer1
+```
+return
+```
+### DewfordTown_Hall_EventScript_DebateReact1
+```
+applymovement LOCALID_DEWFORD_HALL_PSYCHIC_M, DewfordTown_Hall_Movement_PsychicWalkInPlaceLeft
+waitmovement 0
+goto_if_eq VAR_0x8008, 0, DewfordTown_Hall_EventScript_PlayerReactWest
+goto_if_eq VAR_0x8008, 1, DewfordTown_Hall_EventScript_DontMovePlayer2
+end
+```
+### DewfordTown_Hall_EventScript_PlayerReactWest
+```
+goto_if_eq VAR_FACING, DIR_EAST, DewfordTown_Hall_EventScript_DontMovePlayer1
+applymovement LOCALID_PLAYER, Common_Movement_WalkInPlaceFasterRight
+waitmovement 0
+return
+```
+### DewfordTown_Hall_EventScript_DontMovePlayer2
+```
+return
+```
+### DewfordTown_Hall_EventScript_DebateReact2
+```
+applymovement LOCALID_DEWFORD_HALL_SCHOOL_KID_M, DewfordTown_Hall_Movement_SchoolKidWalkInPlaceRight
+waitmovement 0
+goto_if_eq VAR_0x8008, 0, DewfordTown_Hall_EventScript_PlayerReactNorthSouth
+goto_if_eq VAR_0x8008, 1, DewfordTown_Hall_EventScript_PlayerReactEast
+end
+```
+### DewfordTown_Hall_EventScript_PlayerReactNorthSouth
+```
+call_if_eq VAR_FACING, DIR_NORTH, DewfordTown_Hall_EventScript_PlayerWalkInPlaceUp
+call_if_eq VAR_FACING, DIR_SOUTH, DewfordTown_Hall_EventScript_PlayerWalkInPlaceDown
+return
+```
+### DewfordTown_Hall_EventScript_PlayerWalkInPlaceUp
+```
+applymovement LOCALID_PLAYER, Common_Movement_WalkInPlaceFasterUp
+waitmovement 0
+return
+```
+### DewfordTown_Hall_EventScript_PlayerWalkInPlaceDown
+```
+applymovement LOCALID_PLAYER, Common_Movement_WalkInPlaceFasterDown
+waitmovement 0
+return
+```
+### DewfordTown_Hall_EventScript_PlayerReactEast
+```
+goto_if_eq VAR_FACING, DIR_WEST, DewfordTown_Hall_EventScript_DontMovePlayer1
+applymovement LOCALID_PLAYER, Common_Movement_WalkInPlaceFasterLeft
+waitmovement 0
+return
+```
+### DewfordTown_Hall_Movement_PsychicWalkInPlaceLeft
+```
+walk_in_place_left
+step_end
+```
+### DewfordTown_Hall_Movement_SchoolKidWalkInPlaceRight
+```
+walk_in_place_right
+step_end
+```
+### DewfordTown_Hall_EventScript_SludgeBombMan
+```
+lock
+faceplayer
+call Common_EventScript_BufferTrendyPhrase
+goto_if_set FLAG_RECEIVED_TM_SLUDGE_BOMB, DewfordTown_Hall_EventScript_ReceivedSludgeBomb
+msgbox DewfordTown_Hall_Text_GiveYouSludgeBomb, MSGBOX_DEFAULT
+giveitem ITEM_TM_SLUDGE_BOMB
+goto_if_eq VAR_RESULT, FALSE, Common_EventScript_ShowBagIsFull
+setflag FLAG_RECEIVED_TM_SLUDGE_BOMB
+release
+end
+```
+### DewfordTown_Hall_EventScript_ReceivedSludgeBomb
+```
+msgbox DewfordTown_Hall_Text_LoveSludgeBombButTrendInToo, MSGBOX_DEFAULT
+release
+end
+```
+
+## Textes (26)
+### DewfordTown_Hall_Text_CantImagineLifeWithoutTrend
+```
+Qu'est-ce qui est à la mode? Heu, sans\ndoute “{STR_VAR_1}”!\pJe n'imagine pas la vie sans\n“{STR_VAR_1}”!$
+```
+### DewfordTown_Hall_Text_GettingBoredOfTrend
+```
+Qu'est-ce qui est à la mode? Heu, sans\ndoute “{STR_VAR_1}”!\pMais ça commence à me lasser.\pJe vais trouver un nouveau truc\nà la mode.$
+```
+### DewfordTown_Hall_Text_TeachingMonAboutTrend
+```
+J'essaie d'apprendre\n“{STR_VAR_1}” à mon\lPOKéMON, mais ça ne marche pas bien.\pÇa doit être un peu trop compliqué.$
+```
+### DewfordTown_Hall_Text_DeepLinkBetweenXAndY
+```
+En ce moment, j'étudie cette mode du\n“{STR_VAR_1}”.\pC'est vrai qu'il y a un lien solide entre\n“{STR_VAR_1}”\let “{STR_VAR_2}”?$
+```
+### DewfordTown_Hall_Text_MyHunchWasRight
+```
+Oh!\nJ'ai eu une bonne intuition, alors!\pJe dois être encore branché,\nyéhé!$
+```
+### DewfordTown_Hall_Text_NotEasyToKeepUp
+```
+Quoi?!?\nVraiment?!?\pOh, ce n'est pas facile de suivre les\nmodes sans se tromper!$
+```
+### DewfordTown_Hall_Text_TVShowAboutTrend
+```
+Tout le monde parle de\n“{STR_VAR_1}”…\lN'y aurait-il pas une émission de télé\llà-dessus?$
+```
+### DewfordTown_Hall_Text_IsTrendMorePopularAcrossSea
+```
+De l'autre côté de l'océan?\pTu crois que\n“{STR_VAR_1}”\lest encore plus célèbre de l'autre\lcôté de l'océan?$
+```
+### DewfordTown_Hall_Text_CollectTrendMerchandise
+```
+Je collectionne les objets dérivés de\n“{STR_VAR_1}”.\pJ'ai les poupées officielles de\n“{STR_VAR_1}”…\pLa marque de vêtements officielle de\n“{STR_VAR_1}”…\pEt les albums photos officiels de\n“{STR_VAR_1}”.\pHé hé, tout ça, c'est à moi!\nEt je ne partagerai rien avec toi!$
+```
+### DewfordTown_Hall_Text_BooksAboutTrend
+```
+RECONNAITRE LES BONS\n“{STR_VAR_1}”\lET LES MAUVAIS\l“{STR_VAR_1}”…\pLE LIEN ENTRE \n“{STR_VAR_1}” ET LES\lPOKéMON…\pL'UTILITE DE\n“{STR_VAR_1}”…\pC'est vraiment plein de livres sur\n“{STR_VAR_1}”.$
+```
+### DewfordTown_Hall_Text_TrendsScream
+```
+Le titre est: “LE CRI DE\n{STR_VAR_1}”.$
+```
+### DewfordTown_Hall_Text_TrendsSmile
+```
+Le titre est: “LE SOURIRE DE\n{STR_VAR_1}”.$
+```
+### DewfordTown_Hall_Text_LastTrend
+```
+Le titre est: “LE DERNIER\n{STR_VAR_1}”.$
+```
+### DewfordTown_Hall_Text_BirthOfTrend
+```
+Le titre est: “LA NAISSANCE DE\n{STR_VAR_1}”.$
+```
+### DewfordTown_Hall_Text_SawTrendCoolestThing
+```
+J'ai vu “{STR_VAR_1}”!\nCool, hein?\pC'est le truc le plus génial de la\njournée!\pC'était d'enfer!\nCarrément ahurissant!$
+```
+### DewfordTown_Hall_Text_AllegedTrendNotAuthentic
+```
+Oh, non, non, non.\pCe “{STR_VAR_1}”\nque tu prétends avoir vu.\lÇa ne peut pas être ça.\pLe véritable article est beaucoup plus…\nComment dire?\lPrécis et plus mélodieux!\pAh, pas de doute. C'est étonnant!$
+```
+### DewfordTown_Hall_Text_ComposedTrendThemeSong
+```
+Hé, écoute, j'ai composé une chanson\nsur “{STR_VAR_1}”.\p“{STR_VAR_1}”\nest très célèbre, maintenant.\pBon, écoute!\n… …\pOh!\n{STR_VAR_1}!\pSuper\n{STR_VAR_1}!$
+```
+### DewfordTown_Hall_Text_WorkOnYourSinging
+```
+… …\pSi je peux me permettre, mon cher ami,\ntu devrais apprendre à chanter\lavant d'essayer de nous divertir avec\l“{STR_VAR_1}”.$
+```
+### DewfordTown_Hall_Text_OrganizeTrendParty
+```
+De toute façon, je crois que nous\ndevrions organiser une grande fête\lsur l'île en l'honneur de\l“{STR_VAR_1}”.$
+```
+### DewfordTown_Hall_Text_BrilliantIndeed
+```
+Oh, quelle excellente idée!\pOn pourra enfin déterminer qui en\nconnaît le plus sur\l“{STR_VAR_1}”.\lC'est une idée de génie, vraiment!\pDès maintenant, nos vies seront axées\nsur “{STR_VAR_1}”!$
+```
+### DewfordTown_Hall_Text_TrendHasBecomePartOfLife
+```
+Mais je me disais…\pVous ne croyez pas que\n“{STR_VAR_1}”, qui\ln'était qu'une mode, est maintenant\lquelque chose de tout à fait courant?$
+```
+### DewfordTown_Hall_Text_TrendWeighsHeavilyOnMind
+```
+Ah, pardon?\nAutant que ça?\pCependant, il est vrai que\n“{STR_VAR_1}”\lest très présent dans nos esprits,\lmême lorsqu'on dort.\pAbsolument, tu es le PROF de\n“{STR_VAR_1}”,\lmon vieux!$
+```
+### DewfordTown_Hall_Text_IfWeTeamUpWellBeInvincible
+```
+Si nous formons une équipe, nous\nserons invincibles, dès qu'il s'agira de\l“{STR_VAR_1}”!$
+```
+### DewfordTown_Hall_Text_WellBeTrendDuo
+```
+Bien vu, camarade!\pNous serons le DUO \n“{STR_VAR_1}”!\pQuelle image respectable, n'est-ce pas?\nHahahah!$
+```
+### DewfordTown_Hall_Text_GiveYouSludgeBomb
+```
+Pour moi, la BOMB-BEURK, c'est le nec\nplus ultra. Pas de doute possible.\pHein? Tu ne sais pas ce que c'est\nqu'une BOMB-BEURK?\pC'est carrément dommage.\nJe t'en donnerai une.$
+```
+### DewfordTown_Hall_Text_LoveSludgeBombButTrendInToo
+```
+J'adore la BOMB-BEURK.\pMais c'est vrai que l'expression\n“{STR_VAR_1}”\lest pas mal non plus.$
+```

@@ -1,0 +1,13 @@
+{
+  "primaryTileset": "gTileset_General",
+  "secondaryTileset": "gTileset_Mauville",
+  "atlasCols": 32,
+  "atlasRows": 32,
+  "atlasWidth": 512,
+  "atlasHeight": 512,
+  "totalMetatiles": 1022,
+  "numPrimaryMetatiles": 512,
+  "numSecondaryMetatiles": 510,
+  "primaryMetatileIdStart": 0,
+  "secondaryMetatileIdStart": 512
+}

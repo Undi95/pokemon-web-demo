@@ -1,0 +1,137 @@
+# SlateportCity_NameRatersHouse
+
+## Métadonnées
+- **id** : `MAP_SLATEPORT_CITY_NAME_RATERS_HOUSE`
+- **layout** : `LAYOUT_HOUSE_WITH_BED`
+- **music** : `MUS_SLATEPORT`
+- **region_map_section** : `MAPSEC_SLATEPORT_CITY`
+- **weather** : `WEATHER_NONE`
+- **map_type** : `MAP_TYPE_INDOOR`
+- **battle_scene** : `MAP_BATTLE_SCENE_NORMAL`
+- **show_map_name** : `False`
+- **allow_cycling** : `False`
+- **allow_running** : `False`
+
+## Object events (1 NPCs)
+| local_id | gfx | x,y | mvmt | script | flag |
+|---|---|---|---|---|---|
+| `` | `OBJ_EVENT_GFX_EXPERT_M` | 7,5 | `MOVEMENT_TYPE_FACE_DOWN` | `SlateportCity_NameRatersHouse_EventScript_NameRater` | `0` |
+
+## Warps (2)
+- #0 (3,7) → `MAP_SLATEPORT_CITY` warp #6
+- #1 (4,7) → `MAP_SLATEPORT_CITY` warp #6
+
+## Variables référencées (2)
+- `VAR_0x8004`
+- `VAR_RESULT`
+
+## Labels externes appelés (résolus via _common.json ou orphelins)
+### UNRESOLVED
+- `Common_EventScript_NameReceivedPartyMon`
+
+## Scripts (8)
+### SlateportCity_NameRatersHouse_EventScript_NameRater
+```
+lock
+faceplayer
+msgbox SlateportCity_NameRatersHouse_Text_PleasedToRateMonNickname, MSGBOX_YESNO
+goto_if_eq VAR_RESULT, YES, SlateportCity_NameRatersHouse_EventScript_ChooseMonToRate
+goto_if_eq VAR_RESULT, NO, SlateportCity_NameRatersHouse_EventScript_DeclineNameRate
+end
+```
+### SlateportCity_NameRatersHouse_EventScript_ChooseMonToRate
+```
+msgbox SlateportCity_NameRatersHouse_Text_CritiqueWhichMonNickname, MSGBOX_DEFAULT
+special ChoosePartyMon
+goto_if_ne VAR_0x8004, PARTY_NOTHING_CHOSEN, SlateportCity_NameRatersHouse_EventScript_RateMonNickname
+goto_if_eq VAR_0x8004, PARTY_NOTHING_CHOSEN, SlateportCity_NameRatersHouse_EventScript_DeclineNameRate
+end
+```
+### SlateportCity_NameRatersHouse_EventScript_DeclineNameRate
+```
+msgbox SlateportCity_NameRatersHouse_Text_DoVisitAgain, MSGBOX_DEFAULT
+release
+end
+```
+### SlateportCity_NameRatersHouse_EventScript_RateMonNickname
+```
+specialvar VAR_RESULT, ScriptGetPartyMonSpecies
+goto_if_eq VAR_RESULT, SPECIES_EGG, SlateportCity_NameRatersHouse_EventScript_CantRateEgg
+special BufferMonNickname
+special IsMonOTIDNotPlayers
+goto_if_eq VAR_RESULT, TRUE, SlateportCity_NameRatersHouse_EventScript_PlayerNotMonsOT
+specialvar VAR_RESULT, MonOTNameNotPlayer
+special BufferMonNickname
+goto_if_eq VAR_RESULT, TRUE, SlateportCity_NameRatersHouse_EventScript_PlayerNotMonsOT
+msgbox SlateportCity_NameRatersHouse_Text_FineNameSuggestBetterOne, MSGBOX_YESNO
+goto_if_eq VAR_RESULT, YES, SlateportCity_NameRatersHouse_EventScript_ChangeNickname
+goto_if_eq VAR_RESULT, NO, SlateportCity_NameRatersHouse_EventScript_DeclineNameRate
+end
+```
+### SlateportCity_NameRatersHouse_EventScript_CantRateEgg
+```
+msgbox SlateportCity_NameRatersHouse_Text_ThatIsMerelyAnEgg, MSGBOX_DEFAULT
+release
+end
+```
+### SlateportCity_NameRatersHouse_EventScript_PlayerNotMonsOT
+```
+msgbox SlateportCity_NameRatersHouse_Text_MagnificentName, MSGBOX_DEFAULT
+release
+end
+```
+### SlateportCity_NameRatersHouse_EventScript_ChangeNickname
+```
+msgbox SlateportCity_NameRatersHouse_Text_WhatShallNewNameBe, MSGBOX_DEFAULT
+call Common_EventScript_NameReceivedPartyMon
+specialvar VAR_RESULT, TryPutNameRaterShowOnTheAir
+special BufferMonNickname
+goto_if_eq VAR_RESULT, TRUE, SlateportCity_NameRatersHouse_EventScript_NewNameDifferent
+msgbox SlateportCity_NameRatersHouse_Text_NameNoDifferentYetSuperior, MSGBOX_DEFAULT
+release
+end
+```
+### SlateportCity_NameRatersHouse_EventScript_NewNameDifferent
+```
+msgbox SlateportCity_NameRatersHouse_Text_MonShallBeKnownAsName, MSGBOX_DEFAULT
+release
+end
+```
+
+## Textes (9)
+### SlateportCity_NameRatersHouse_Text_PleasedToRateMonNickname
+```
+Je suis le SPECIALISTE DES NOMS!\nJe donne des conseils sur les surnoms\là choisir.\pEt si j'examinais le surnom que tu as\ndonné à l'un de tes POKéMON?$
+```
+### SlateportCity_NameRatersHouse_Text_CritiqueWhichMonNickname
+```
+Le surnom de quel POKéMON veux-tu\nque je juge?$
+```
+### SlateportCity_NameRatersHouse_Text_FineNameSuggestBetterOne
+```
+Hum… {STR_VAR_1}, c'est ça? C'est pas\nmal, ce surnom que tu lui as donné.\pMais que dirais-tu de lui en\ndonner un meilleur?$
+```
+### SlateportCity_NameRatersHouse_Text_WhatShallNewNameBe
+```
+Bon, alors quel va être le\nnouveau surnom?$
+```
+### SlateportCity_NameRatersHouse_Text_MonShallBeKnownAsName
+```
+Très bien! A partir de maintenant, ce\nPOKéMON sera surnommé {STR_VAR_1}!\pC'est mieux qu'avant!\nTu en as de la chance!$
+```
+### SlateportCity_NameRatersHouse_Text_DoVisitAgain
+```
+Je vois.\nReviens me voir.$
+```
+### SlateportCity_NameRatersHouse_Text_NameNoDifferentYetSuperior
+```
+Ça y est! A partir de maintenant, ce\nPOKéMON sera surnommé {STR_VAR_1}!\pCe surnom ne semble pas très différent\nde l'autre et pourtant, il sonne mieux!\pTu en as de la chance!$
+```
+### SlateportCity_NameRatersHouse_Text_MagnificentName
+```
+Hum… C'est {STR_VAR_1}!\pC'est un magnifique surnom!\nRien à redire!\pTu ferais bien de chouchouter ton\n{STR_VAR_1} à partir de maintenant.$
+```
+### SlateportCity_NameRatersHouse_Text_ThatIsMerelyAnEgg
+```
+Voyons, voyons…\nCe n'est qu'un OEUF!$
+```

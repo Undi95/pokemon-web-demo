@@ -1,0 +1,13 @@
+{
+  "primaryTileset": "gTileset_Building",
+  "secondaryTileset": "gTileset_TrainerHill",
+  "atlasCols": 32,
+  "atlasRows": 16,
+  "atlasWidth": 512,
+  "atlasHeight": 256,
+  "totalMetatiles": 494,
+  "numPrimaryMetatiles": 8,
+  "numSecondaryMetatiles": 486,
+  "primaryMetatileIdStart": 0,
+  "secondaryMetatileIdStart": 512
+}

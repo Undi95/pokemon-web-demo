@@ -1,0 +1,13 @@
+{
+  "primaryTileset": "gTileset_Building",
+  "secondaryTileset": "gTileset_TrickHousePuzzle",
+  "atlasCols": 32,
+  "atlasRows": 7,
+  "atlasWidth": 512,
+  "atlasHeight": 112,
+  "totalMetatiles": 197,
+  "numPrimaryMetatiles": 8,
+  "numSecondaryMetatiles": 189,
+  "primaryMetatileIdStart": 0,
+  "secondaryMetatileIdStart": 512
+}

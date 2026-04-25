@@ -1,0 +1,13 @@
+{
+  "primaryTileset": "gTileset_General",
+  "secondaryTileset": "gTileset_Lavaridge",
+  "atlasCols": 32,
+  "atlasRows": 30,
+  "atlasWidth": 512,
+  "atlasHeight": 480,
+  "totalMetatiles": 953,
+  "numPrimaryMetatiles": 512,
+  "numSecondaryMetatiles": 441,
+  "primaryMetatileIdStart": 0,
+  "secondaryMetatileIdStart": 512
+}

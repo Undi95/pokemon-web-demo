@@ -27,6 +27,7 @@ export interface MapJson {
   region_map_section?: string;
   weather?: string;
   map_type?: string;
+  show_map_name?: boolean;
   connections?: Array<{ map: string; offset: number; direction: string }>;
   object_events: ObjectEventRaw[];
   warp_events?: Array<{ x: number; y: number; elevation: number; dest_map: string; dest_warp_id: string }>;
@@ -50,27 +51,34 @@ export interface ResolvedNpc {
   textureKey: string;     // clé à utiliser dans Phaser (après transparence)
   sourceTextureKey: string; // clé brute du spritesheet chargé
   spriteUrl: string;      // URL absolue pour le loader Phaser
+  /** true si le NPC doit être hidden au spawn (flag de masquage set).
+   *  On le spawn quand même pour que `addobject` puisse le show plus tard. */
+  hiddenAtSpawn: boolean;
 }
 
 /**
  * Résout les object_events d'une map en NPCs prêts à être chargés/affichés.
- * Ne fait AUCUN chargement réseau — renvoie juste les URLs à passer au loader
- * de la scène.
+ * Filtre les NPCs dont le flag de masquage (FLAG_HIDE_*) est set dans le
+ * gameState (correspond au comportement décomp).
  *
- * @param map  Le contenu JSON de la map (data/maps/<Name>/map.json du décomp).
- * @param table Le mapping gfxId → GraphicsInfo (object-event-graphics.json).
- * @param baseUrl URL de base des assets (typ. "/decomp/em").
+ * @param map  Le contenu JSON de la map.
+ * @param table Le mapping gfxId → GraphicsInfo.
+ * @param hasFlag Callback pour checker si un flag est set (typiquement gameState.hasFlag).
+ * @param baseUrl URL de base des assets.
  */
 export function resolveNpcs(
   map: MapJson,
   table: GraphicsTable,
+  hasFlag: (flagName: string) => boolean = () => false,
+  getObjectOverride: (localId: string) => { x: number; y: number } | undefined = () => undefined,
   baseUrl = '/decomp/em'
 ): ResolvedNpc[] {
   const out: ResolvedNpc[] = [];
   for (const ev of map.object_events ?? []) {
-    // Les FLAG_HIDE_* sont UNSET au début du jeu = NPC visible par défaut.
-    // Plus tard, quand on aura un système de flags, on checkera si le flag
-    // est set pour masquer. Pour l'instant : tout montrer.
+    const hidden = !!(ev.flag && ev.flag !== '0' && hasFlag(ev.flag));
+    // Override de position via setobjectxyperm (state persistent)
+    const ovr = ev.local_id ? getObjectOverride(ev.local_id) : undefined;
+    if (ovr) { ev.x = ovr.x; ev.y = ovr.y; }
     const gfx = table[ev.graphics_id];
     if (!gfx) continue; // gfx non résolu (item ball, berry tree, etc.) — ignoré
 
@@ -81,7 +89,8 @@ export function resolveNpcs(
       gfx,
       sourceTextureKey: sourceKey,
       textureKey,
-      spriteUrl: `${baseUrl}/${gfx.png}`
+      spriteUrl: `${baseUrl}/${gfx.png}`,
+      hiddenAtSpawn: hidden
     });
   }
   return out;

@@ -1,0 +1,1743 @@
+# BattleFrontier_BattleTowerMultiPartnerRoom
+
+## Métadonnées
+- **id** : `MAP_BATTLE_FRONTIER_BATTLE_TOWER_MULTI_PARTNER_ROOM`
+- **layout** : `LAYOUT_BATTLE_FRONTIER_BATTLE_TOWER_MULTI_PARTNER_ROOM`
+- **music** : `MUS_B_TOWER`
+- **region_map_section** : `MAPSEC_BATTLE_FRONTIER`
+- **weather** : `WEATHER_NONE`
+- **map_type** : `MAP_TYPE_INDOOR`
+- **battle_scene** : `MAP_BATTLE_SCENE_NORMAL`
+- **show_map_name** : `False`
+- **allow_cycling** : `False`
+- **allow_running** : `True`
+
+## Object events (9 NPCs)
+| local_id | gfx | x,y | mvmt | script | flag |
+|---|---|---|---|---|---|
+| `LOCALID_TOWER_PARTNER_ROOM_ATTENDANT` | `OBJ_EVENT_GFX_TEALA` | 11,2 | `MOVEMENT_TYPE_FACE_DOWN` | `BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_Attendant` | `0` |
+| `` | `OBJ_EVENT_GFX_VAR_0` | 2,10 | `MOVEMENT_TYPE_LOOK_AROUND` | `BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_Partner1` | `FLAG_HIDE_BATTLE_TOWER_MULTI_BATTLE_PARTNER_1` |
+| `` | `OBJ_EVENT_GFX_VAR_1` | 17,11 | `MOVEMENT_TYPE_FACE_LEFT_AND_RIGHT` | `BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_Partner2` | `FLAG_HIDE_BATTLE_TOWER_MULTI_BATTLE_PARTNER_2` |
+| `` | `OBJ_EVENT_GFX_VAR_2` | 6,9 | `MOVEMENT_TYPE_LOOK_AROUND` | `BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_Partner3` | `FLAG_HIDE_BATTLE_TOWER_MULTI_BATTLE_PARTNER_3` |
+| `` | `OBJ_EVENT_GFX_VAR_3` | 8,13 | `MOVEMENT_TYPE_LOOK_AROUND` | `BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_Partner4` | `FLAG_HIDE_BATTLE_TOWER_MULTI_BATTLE_PARTNER_4` |
+| `` | `OBJ_EVENT_GFX_VAR_4` | 10,11 | `MOVEMENT_TYPE_FACE_UP` | `BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_Partner5` | `FLAG_HIDE_BATTLE_TOWER_MULTI_BATTLE_PARTNER_5` |
+| `` | `OBJ_EVENT_GFX_VAR_5` | 13,10 | `MOVEMENT_TYPE_FACE_RIGHT` | `BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_Partner6` | `FLAG_HIDE_BATTLE_TOWER_MULTI_BATTLE_PARTNER_6` |
+| `` | `OBJ_EVENT_GFX_VAR_6` | 15,13 | `MOVEMENT_TYPE_FACE_UP_AND_LEFT` | `BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_Partner7` | `FLAG_HIDE_BATTLE_TOWER_MULTI_BATTLE_PARTNER_ALT_1` |
+| `` | `OBJ_EVENT_GFX_VAR_7` | 4,12 | `MOVEMENT_TYPE_FACE_RIGHT` | `BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_Partner8` | `FLAG_HIDE_BATTLE_TOWER_MULTI_BATTLE_PARTNER_ALT_2` |
+
+## Flags référencés (9)
+- `FLAG_CHOSEN_MULTI_BATTLE_NPC_PARTNER`
+- `FLAG_HIDE_BATTLE_TOWER_MULTI_BATTLE_PARTNER_1`
+- `FLAG_HIDE_BATTLE_TOWER_MULTI_BATTLE_PARTNER_2`
+- `FLAG_HIDE_BATTLE_TOWER_MULTI_BATTLE_PARTNER_3`
+- `FLAG_HIDE_BATTLE_TOWER_MULTI_BATTLE_PARTNER_4`
+- `FLAG_HIDE_BATTLE_TOWER_MULTI_BATTLE_PARTNER_5`
+- `FLAG_HIDE_BATTLE_TOWER_MULTI_BATTLE_PARTNER_6`
+- `FLAG_HIDE_BATTLE_TOWER_MULTI_BATTLE_PARTNER_ALT_1`
+- `FLAG_HIDE_BATTLE_TOWER_MULTI_BATTLE_PARTNER_ALT_2`
+
+## Variables référencées (14)
+- `VAR_FACING`
+- `VAR_LAST_TALKED`
+- `VAR_OBJ_GFX_ID_0`
+- `VAR_OBJ_GFX_ID_1`
+- `VAR_OBJ_GFX_ID_2`
+- `VAR_OBJ_GFX_ID_3`
+- `VAR_OBJ_GFX_ID_4`
+- `VAR_OBJ_GFX_ID_5`
+- `VAR_OBJ_GFX_ID_6`
+- `VAR_OBJ_GFX_ID_7`
+- `VAR_RESULT`
+- `VAR_TEMP_1`
+- `VAR_TEMP_2`
+- `VAR_TEMP_3`
+
+## Labels externes appelés (résolus via _common.json ou orphelins)
+### UNRESOLVED
+- `BattleFrontier_BattleTower_EventScript_WarpToLobbyLost`
+
+## Scripts (35)
+### BattleFrontier_BattleTowerMultiPartnerRoom_MapScripts
+```
+map_script MAP_SCRIPT_ON_RESUME, BattleFrontier_BattleTowerMultiPartnerRoom_OnResume
+map_script MAP_SCRIPT_ON_TRANSITION, BattleFrontier_BattleTowerMultiPartnerRoom_OnTransition
+map_script MAP_SCRIPT_ON_WARP_INTO_MAP_TABLE, BattleFrontier_BattleTowerMultiPartnerRoom_OnWarp
+map_script MAP_SCRIPT_ON_FRAME_TABLE, BattleFrontier_BattleTowerMultiPartnerRoom_OnFrame
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_OnResume
+```
+pyramid_resetparty
+end
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_OnTransition
+```
+goto_if_set FLAG_CHOSEN_MULTI_BATTLE_NPC_PARTNER, BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_ChosePartner
+clearflag FLAG_HIDE_BATTLE_TOWER_MULTI_BATTLE_PARTNER_1
+clearflag FLAG_HIDE_BATTLE_TOWER_MULTI_BATTLE_PARTNER_2
+clearflag FLAG_HIDE_BATTLE_TOWER_MULTI_BATTLE_PARTNER_3
+clearflag FLAG_HIDE_BATTLE_TOWER_MULTI_BATTLE_PARTNER_4
+clearflag FLAG_HIDE_BATTLE_TOWER_MULTI_BATTLE_PARTNER_5
+clearflag FLAG_HIDE_BATTLE_TOWER_MULTI_BATTLE_PARTNER_6
+setflag FLAG_HIDE_BATTLE_TOWER_MULTI_BATTLE_PARTNER_ALT_1
+setflag FLAG_HIDE_BATTLE_TOWER_MULTI_BATTLE_PARTNER_ALT_2
+tower_loadpartners
+end
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_ChosePartner
+```
+setvar VAR_OBJ_GFX_ID_0, OBJ_EVENT_GFX_BOY_1
+setvar VAR_OBJ_GFX_ID_1, OBJ_EVENT_GFX_BOY_1
+setvar VAR_OBJ_GFX_ID_2, OBJ_EVENT_GFX_BOY_1
+setvar VAR_OBJ_GFX_ID_3, OBJ_EVENT_GFX_BOY_1
+setvar VAR_OBJ_GFX_ID_4, OBJ_EVENT_GFX_BOY_1
+setvar VAR_OBJ_GFX_ID_5, OBJ_EVENT_GFX_BOY_1
+setvar VAR_OBJ_GFX_ID_6, OBJ_EVENT_GFX_BOY_1
+setvar VAR_OBJ_GFX_ID_7, OBJ_EVENT_GFX_BOY_1
+setvar VAR_TEMP_1, 1
+setvar VAR_TEMP_3, 1
+setobjectxyperm LOCALID_TOWER_PARTNER_ROOM_ATTENDANT, 10, 2
+end
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_OnWarp
+```
+map_script_2 VAR_TEMP_3, 1, BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_TurnPlayerNorth
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_TurnPlayerNorth
+```
+turnobject LOCALID_PLAYER, DIR_NORTH
+end
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_OnFrame
+```
+map_script_2 VAR_TEMP_1, 0, BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_EnterRoom
+map_script_2 VAR_TEMP_3, 1, BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_ExitRoom
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_ExitRoom
+```
+lockall
+setvar VAR_TEMP_3, 0
+goto BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_EnterElevator
+end
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_EnterRoom
+```
+lockall
+applymovement LOCALID_PLAYER, BattleFrontier_BattleTowerMultiPartnerRoom_Movement_PlayerEnterRoom
+waitmovement 0
+applymovement LOCALID_TOWER_PARTNER_ROOM_ATTENDANT, BattleFrontier_BattleTowerMultiPartnerRoom_Movement_AttendantBlockExit
+waitmovement 0
+copyobjectxytoperm LOCALID_TOWER_PARTNER_ROOM_ATTENDANT
+applymovement LOCALID_PLAYER, Common_Movement_WalkInPlaceFasterUp
+waitmovement 0
+msgbox BattleFrontier_BattleTowerMultiPartnerRoom_Text_PleaseFindPartner, MSGBOX_DEFAULT
+special HealPlayerParty
+setvar VAR_TEMP_1, 1
+releaseall
+end
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Movement_PlayerEnterRoom
+```
+walk_down
+step_end
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Movement_AttendantBlockExit
+```
+walk_left
+walk_in_place_faster_down
+step_end
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_Attendant
+```
+lock
+faceplayer
+message BattleFrontier_BattleTowerMultiPartnerRoom_Text_QuitLookingForPartner
+waitmessage
+multichoicedefault 20, 8, MULTI_YESNO, 1, FALSE
+goto_if_eq VAR_RESULT, 0, BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_QuitChallenge
+msgbox BattleFrontier_BattleTowerMultiPartnerRoom_Text_PleaseFindPartner2, MSGBOX_DEFAULT
+release
+end
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_QuitChallenge
+```
+frontier_set FRONTIER_DATA_RECORD_DISABLED, TRUE
+goto BattleFrontier_BattleTower_EventScript_WarpToLobbyLost
+end
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_EnterElevator
+```
+msgbox BattleFrontier_BattleTowerMultiPartnerRoom_Text_ThankYouForChoosingPartner, MSGBOX_DEFAULT
+closemessage
+applymovement LOCALID_TOWER_PARTNER_ROOM_ATTENDANT, Common_Movement_WalkInPlaceFasterUp
+waitmovement 0
+opendoor 10, 1
+waitdooranim
+call BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_MoveToElevator
+closedoor 10, 1
+waitdooranim
+warp MAP_BATTLE_FRONTIER_BATTLE_TOWER_ELEVATOR, 1, 6
+waitstate
+releaseall
+end
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_MoveToElevator
+```
+applymovement LOCALID_TOWER_PARTNER_ROOM_ATTENDANT, BattleFrontier_BattleTowerMultiPartnerRoom_Movement_AttendantEnterElevator
+applymovement LOCALID_PLAYER, BattleFrontier_BattleTowerMultiPartnerRoom_Movement_PlayerEnterElevator
+waitmovement 0
+return
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_MoveToElevatorEast
+```
+applymovement LOCALID_TOWER_PARTNER_ROOM_ATTENDANT, BattleFrontier_BattleTowerMultiPartnerRoom_Movement_AttendantEnterElevator
+applymovement LOCALID_PLAYER, BattleFrontier_BattleTowerMultiPartnerRoom_Movement_PlayerEnterElevatorEast
+waitmovement 0
+return
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_MoveToElevatorWest
+```
+applymovement LOCALID_TOWER_PARTNER_ROOM_ATTENDANT, BattleFrontier_BattleTowerMultiPartnerRoom_Movement_AttendantEnterElevator
+applymovement LOCALID_PLAYER, BattleFrontier_BattleTowerMultiPartnerRoom_Movement_PlayerEneterElevatorWest
+waitmovement 0
+return
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Movement_PlayerEnterElevator
+```
+walk_up
+walk_up
+set_invisible
+step_end
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Movement_PlayerEnterElevatorEast
+```
+walk_right
+walk_up
+set_invisible
+step_end
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Movement_PlayerEneterElevatorWest
+```
+walk_left
+walk_up
+set_invisible
+step_end
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Movement_AttendantEnterElevator
+```
+walk_up
+set_invisible
+step_end
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_Partner1
+```
+lock
+faceplayer
+setvar VAR_TEMP_2, 0
+goto BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_TalkToPotentialPartner
+end
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_TalkToPotentialPartner
+```
+goto_if_set FLAG_CHOSEN_MULTI_BATTLE_NPC_PARTNER, BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_RejectPartner
+tower_dopartnermsg PARTNER_MSGID_INTRO
+waitmessage
+waitbuttonpress
+tower_dopartnermsg PARTNER_MSGID_MON1
+waitmessage
+waitbuttonpress
+tower_dopartnermsg PARTNER_MSGID_MON2_ASK
+waitmessage
+multichoicedefault 20, 8, MULTI_YESNO, 1, FALSE
+switch VAR_RESULT
+case 1, BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_RejectPartner
+case MULTI_B_PRESSED, BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_RejectPartner
+tower_dopartnermsg PARTNER_MSGID_ACCEPT
+waitmessage
+waitbuttonpress
+closemessage
+call_if_ne VAR_FACING, DIR_SOUTH, BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_PartnerExit
+call_if_eq VAR_FACING, DIR_SOUTH, BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_PartnerExitSouth
+removeobject VAR_LAST_TALKED
+setflag FLAG_CHOSEN_MULTI_BATTLE_NPC_PARTNER
+warpsilent MAP_BATTLE_FRONTIER_BATTLE_TOWER_MULTI_PARTNER_ROOM, 10, 3
+waitstate
+release
+end
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_RejectPartner
+```
+tower_dopartnermsg PARTNER_MSGID_REJECT
+waitmessage
+waitbuttonpress
+release
+end
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_PartnerExit
+```
+applymovement VAR_LAST_TALKED, BattleFrontier_BattleTowerMultiPartnerRoom_Movement_PartnerExit
+waitmovement 0
+return
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_PartnerExitSouth
+```
+applymovement VAR_LAST_TALKED, BattleFrontier_BattleTowerMultiPartnerRoom_Movement_PartnerExitSouth
+waitmovement 0
+return
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Movement_PartnerExit
+```
+walk_fast_up
+walk_fast_up
+walk_fast_up
+walk_fast_up
+walk_fast_up
+walk_fast_up
+walk_fast_up
+step_end
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Movement_PartnerExitSouth
+```
+walk_fast_left
+walk_fast_up
+walk_fast_up
+walk_fast_up
+walk_fast_up
+walk_fast_up
+walk_fast_up
+walk_fast_up
+step_end
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_Partner2
+```
+lock
+faceplayer
+setvar VAR_TEMP_2, 1
+goto BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_TalkToPotentialPartner
+end
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_Partner3
+```
+lock
+faceplayer
+setvar VAR_TEMP_2, 2
+goto BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_TalkToPotentialPartner
+end
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_Partner4
+```
+lock
+faceplayer
+setvar VAR_TEMP_2, 3
+goto BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_TalkToPotentialPartner
+end
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_Partner5
+```
+lock
+faceplayer
+setvar VAR_TEMP_2, 4
+goto BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_TalkToPotentialPartner
+end
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_Partner6
+```
+lock
+faceplayer
+setvar VAR_TEMP_2, 5
+goto BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_TalkToPotentialPartner
+end
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_Partner7
+```
+lock
+faceplayer
+setvar VAR_TEMP_2, 6
+goto BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_TalkToPotentialPartner
+end
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_Partner8
+```
+lock
+faceplayer
+setvar VAR_TEMP_2, 7
+goto BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_TalkToPotentialPartner
+end
+```
+
+## Textes (344)
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_PleaseFindPartner
+```
+Veuillez choisir le DRESSEUR qui sera\nvotre partenaire.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_QuitLookingForPartner
+```
+{PLAYER}, vous n'avez pas trouvé\nde partenaire.\pVoulez-vous arrêter de chercher et\nretourner au guichet d'inscription?$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_PleaseFindPartner2
+```
+Alors je vous prie de choisir l'un de ces\nDRESSEURS comme partenaire.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_ThankYouForChoosingPartner
+```
+Merci d'avoir choisi un partenaire.\pJe vais maintenant vous mener à votre\nSALLE DE COMBAT MULTI.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_UnusedApprentice1Intro
+```
+I'm {STR_VAR_1}'s no. {STR_VAR_2} apprentice.\nYou can call me {STR_VAR_3}!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_UnusedApprentice1Mon1
+```
+On {STR_VAR_1}'s advice, I brought\none {STR_VAR_3} with {STR_VAR_2} and$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_UnusedApprentice1Mon2Ask
+```
+one {STR_VAR_2} with {STR_VAR_1}.\pPlease, let me join you as a tag team.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_UnusedApprentice1Accept
+```
+Thank you!\nI'll go register right now.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_UnusedApprentice1Reject
+```
+I really wanted to form a tag team\nwith you, {PLAYER}…$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_UnusedApprentice2Intro
+```
+I am {STR_VAR_1}'s no. {STR_VAR_2} apprentice.\nMy name is {STR_VAR_3}.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_UnusedApprentice2Mon1
+```
+I got advice from {STR_VAR_1} and chose\none {STR_VAR_3} with {STR_VAR_2} and$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_UnusedApprentice2Mon2Ask
+```
+one {STR_VAR_2} with {STR_VAR_1}.\pPlease, let's form a tag team!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_UnusedApprentice2Accept
+```
+Thank you very much!\nI'll be done with registration quickly!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_UnusedApprentice2Reject
+```
+{PLAYER}, I was hoping that I could\npartner up with you…$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice1Intro
+```
+Hum, je m'appelle {STR_VAR_3}. Je suis\nl'apprenti nº {STR_VAR_2} de {STR_VAR_1}.\pSniff…\pJe suis désolé!\nJe ne supporte pas cette pression…$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice1Mon1
+```
+{STR_VAR_3} m'a conseillé. J'ai un\n{STR_VAR_2} avec {STR_VAR_1} et$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice1Mon2Ask
+```
+un {STR_VAR_2} avec {STR_VAR_1}.\pSniff…\nS'il te plaît, fais équipe avec moi!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice1Accept
+```
+Vraiment? Tu veux bien?\nSuper! Extra!\pOh… Je suis désolé…\nCe sont des larmes de joie…\pJe vais nous inscrire tout de suite.\nSurtout, reste ici!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice1Reject
+```
+Oh, mais…\nSniff… Ouin!!!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice2Intro
+```
+Bonjour! Je suis {STR_VAR_3}!\nJe suis l'apprenti nº {STR_VAR_2} de {STR_VAR_1}!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice2Mon1
+```
+{STR_VAR_3} a choisi mon équipe!\nJ'ai un {STR_VAR_2} avec {STR_VAR_1}$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice2Mon2Ask
+```
+et un {STR_VAR_2} avec {STR_VAR_1}!\nPlutôt pas mal, hein?\pAllez, vas-y!\nFais équipe avec moi!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice2Accept
+```
+Ouais, super!\nJe vais m'inscrire, alors!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice2Reject
+```
+Mais pourquoi, d'abord?\nJe veux faire équipe avec toi, {PLAYER}!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice3Intro
+```
+Je suis {STR_VAR_3}, l'apprenti nº {STR_VAR_2}\nde {STR_VAR_1}!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice3Mon1
+```
+J'ai demandé conseil à {STR_VAR_3}.\nUn {STR_VAR_2} qui utilise {STR_VAR_1}$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice3Mon2Ask
+```
+et un {STR_VAR_2} qui utilise\n{STR_VAR_1}, voilà ce que j'ai.\pS'il te plaît, tu veux bien faire\néquipe avec moi?$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice3Accept
+```
+Merci!\nJe vais nous inscrire tout de suite!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice3Reject
+```
+{PLAYER}, j'avais tellement envie de\nfaire équipe avec toi…$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice4Intro
+```
+Oh… Ça me fait plaisir\nque tu viennes me parler.\pJe m'appelle {STR_VAR_3}.\nJe suis l'apprentie nº {STR_VAR_2} de {STR_VAR_1}…$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice4Mon1
+```
+{STR_VAR_3} a bien voulu me conseiller.\nJe lui dois tant de choses!\pDans mon équipe, j'ai un {STR_VAR_2}\nqui utilise {STR_VAR_1} et un$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice4Mon2Ask
+```
+{STR_VAR_2} qui utilise {STR_VAR_1}.\nJe sais que j'en demande trop…\pTu vas sûrement refuser, mais tu veux\nbien qu'on fasse équipe?$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice4Accept
+```
+Vraiment? Je n'arrive pas à le croire!\nOn va faire équipe!\lJe… Je serai à la hauteur!\pBon… Je vais vite nous inscrire\navant que tu ne changes d'avis!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice4Reject
+```
+Je comprends…\nJe ne suis pas à la hauteur…$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice5Intro
+```
+Salut, je m'appelle {STR_VAR_3}.\nJe suis l'apprentie nº {STR_VAR_2} de {STR_VAR_1}!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice5Mon1
+```
+C'est {STR_VAR_3} qui a fait mon équipe!\nJ'ai un {STR_VAR_2} avec {STR_VAR_1}$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice5Mon2Ask
+```
+et un {STR_VAR_2} qui connaît\n{STR_VAR_1}.\pPas mal, non?\nAlors, on fait équipe?$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice5Accept
+```
+D'accord!\nJ'espère qu'on va bien s'entendre!\lJe vais nous inscrire.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice5Reject
+```
+Quoi? Tu refuses?\nTu ne sais pas ce que tu perds!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice6Intro
+```
+Je m'appelle {STR_VAR_3}. Je suis\nTRIATHLETE. Je n'arrête pas!\lFooting, entraînement, danse…\pEt je suis aussi l'apprenti nº {STR_VAR_2}\nde {STR_VAR_1}.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice6Mon1
+```
+Voilà ce que {STR_VAR_3} m'a conseillé.\nUn {STR_VAR_2} qui utilise {STR_VAR_1}$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice6Mon2Ask
+```
+et un {STR_VAR_2} qui utilise\n{STR_VAR_1}.\pMalgré tout ce que j'ai à faire, j'ai\ntrouvé le temps de les dresser!\pOn fait équipe et on voit ce que\nça donne?$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice6Accept
+```
+Merci! Tu as l'esprit sportif!\nNe bouge pas, je vais nous inscrire?$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice6Reject
+```
+Je vois. Pour ta gouverne, je déteste\nqu'on me fasse perdre mon temps!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice7Intro
+```
+Bonjour!\nComment ça va?\pJe suis {STR_VAR_3}, l'apprentie nº {STR_VAR_2}\nde {STR_VAR_1}. Enchantée!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice7Mon1
+```
+Ecoute, écoute! C'est {STR_VAR_3} qui\na composé mon équipe POKéMON.\lJ'ai un {STR_VAR_2} avec {STR_VAR_1}$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice7Mon2Ask
+```
+et un {STR_VAR_2} avec {STR_VAR_1}.\nJe les ai bien dressés!\pTu veux qu'on fasse équipe?\nJe suis sûre qu'on ira bien ensemble!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice7Accept
+```
+Super, on va bien s'amuser!\nJe vais nous inscrire!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice7Reject
+```
+Quelle méchanceté!\nJe suis sûre que tu vas le regretter.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice8Intro
+```
+Je me présente, je m'appelle\n{STR_VAR_3}.\pJe suis l'apprentie nº {STR_VAR_2}\nde {STR_VAR_1}.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice8Mon1
+```
+J'ai suivi les conseils de {STR_VAR_3}\net dans mon équipe j'ai un\l{STR_VAR_2} avec {STR_VAR_1}$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice8Mon2Ask
+```
+et un {STR_VAR_2} avec {STR_VAR_1}.\pOn fait équipe ensemble?\nS'il te plaît!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice8Accept
+```
+Oh… J'en suis ravie!\nJe vais donner tout ce que j'ai!\pAllez, je vais nous inscrire!\nAttends-moi ici!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice8Reject
+```
+J'espérais vraiment être ta partenaire,\n{PLAYER}…$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice9Intro
+```
+Hé, tu m'as parlée!\nÇa me fait tellement plaisir!\pJe m'appelle {STR_VAR_3}! Je suis\nl'apprentie nº {STR_VAR_2} de {STR_VAR_1}!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice9Mon1
+```
+J'ai écouté {STR_VAR_3} et j'ai dressé\nun {STR_VAR_2} qui utilise {STR_VAR_1}$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice9Mon2Ask
+```
+et un {STR_VAR_2} qui utilise\n{STR_VAR_1}.\pTu veux bien exaucer mon souhait?\nJ'aimerais faire équipe avec toi!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice9Accept
+```
+Oh… C'est un jour merveilleux!\nMerci infiniment!\lJe vais nous inscrire sur le champ!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice9Reject
+```
+Oh! Tu n'as donc aucun cœur?\nMais je t'admire, tu sais…$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice10Intro
+```
+Bonjour! Je suis l'apprenti nº {STR_VAR_2}\nde {STR_VAR_1}!\pJe m'appelle {STR_VAR_3}!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice10Mon1
+```
+Mon mentor {STR_VAR_3} m'a conseillé\nun {STR_VAR_2} avec {STR_VAR_1} et$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice10Mon2Ask
+```
+un {STR_VAR_2} avec {STR_VAR_1}.\pPas mal, non?\nOn fait équipe, alors?$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice10Accept
+```
+Excellent!\nJe vais nous inscrire vite fait!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice10Reject
+```
+Je me méfierai de toi à l'avenir,\n{PLAYER}!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice11Intro
+```
+Tu sais quoi? C'est le dernier jour\nde la TOUR DE COMBAT!\p… … … … … …\nMais non, je rigole!\pOn m'appelle {STR_VAR_3}. Normal, c'est\nmon nom! Je suis l'apprenti nº 1 000 de\l{STR_VAR_1}. Non, je suis le nº {STR_VAR_2}!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice11Mon1
+```
+{STR_VAR_3} m'a recommandé\nles {STR_VAR_2} utilisant {STR_VAR_1}$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice11Mon2Ask
+```
+et les {STR_VAR_2} utilisant\n{STR_VAR_1}. J'en ai dix de chaque.\lJe rigole, j'en ai qu'un de chaque!\pAlors, on fait équipe, toi et moi?\nQu'en dis-tu?$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice11Accept
+```
+Youpi!\nAllez, je te donne un POKéMON!\pTu m'as pas cru, j'espère! Je passe au\nguichet d'inscription et je reviens!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice11Reject
+```
+Tu me le paieras! Je vais faire de\nta vie un enfer!\pMais non, je rigole! Ha, ha, ha!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice12Intro
+```
+Salut, DRESSEUR!\nJ'attends ici depuis des heures!\pNon, je ne suis pas un requin blanc…\nJe suis {STR_VAR_3}, le MARIN chantant!\pJe suis l'apprenti nº {STR_VAR_2} de {STR_VAR_1}.\nAvec moi, ça va swinguer!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice12Mon1
+```
+Les conseils de {STR_VAR_3}, je les ai\nsuivis, et mon équipe a bien grandi!\lJ'ai un {STR_VAR_2} avec {STR_VAR_1}$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice12Mon2Ask
+```
+et un {STR_VAR_2} avec\n{STR_VAR_1}!\pFaisons équipe,\nnom d'une pipe!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice12Accept
+```
+Hé, hé, j'aime ton style!\nJe vais nous inscrire, je file!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice12Reject
+```
+Hé, {PLAYER}! Tu me surprends!\nMoi, j'étais partant!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice13Intro
+```
+Yahou, yippie!\nOh, je t'en prie, reste!\pJe m'appelle {STR_VAR_3}!\nJe suis l'apprenti nº {STR_VAR_2} de {STR_VAR_1}!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice13Mon1
+```
+{STR_VAR_3} m'a dit quoi faire.\nJ'ai un {STR_VAR_2} avec {STR_VAR_1}$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice13Mon2Ask
+```
+et un {STR_VAR_2} avec\n{STR_VAR_1}.\pQu'en dis-tu?\nMe choisiras-tu?\pLaisse-moi être ton partenaire!\nAllez… Accepte, partenaire!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice13Accept
+```
+Oh, ça me fait tellement plaisir!\nJe ne sais pas quoi dire!\pJe vais nous inscrire!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice13Reject
+```
+Tu me rejettes?\n{PLAYER}, ton comportement est abject!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice14Intro
+```
+Oh, je tousse!\pDésolé, j'ai pris froid.\nMes POKéMON vont bien, eux.\pJe m'appelle {STR_VAR_3}. Je suis\nl'apprenti nº {STR_VAR_2} de {STR_VAR_1}!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice14Mon1
+```
+{STR_VAR_3} a formé mon équipe.\nJ'ai un {STR_VAR_2} qui utilise\l{STR_VAR_1} et aussi un$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice14Mon2Ask
+```
+{STR_VAR_2} qui utilise {STR_VAR_1}.\pJe les entraîne tous les jours, qu'il\npleuve, qu'il neige, qu'il vente!\pC'est d'ailleurs pour ça que j'ai pris\nfroid, je pense.\pMaintenant que tu me connais un peu,\ntu veux qu'on fasse équipe?$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice14Accept
+```
+Merci! Ça me fait plaisir!\nJe n'arrête pas de tousser… \lAllez, je vais nous inscrire.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice14Reject
+```
+Tu ne veux pas?\nQuel dommage, {PLAYER}.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice15Intro
+```
+Bonjour!\nIl y a trop de monde, ici… \pJe m'appelle {STR_VAR_3}.\nJe suis l'apprenti nº {STR_VAR_2} de {STR_VAR_1}.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice15Mon1
+```
+{STR_VAR_3} m'a conseillé cette équipe… \nUn {STR_VAR_2} avec {STR_VAR_1} et$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice15Mon2Ask
+```
+un {STR_VAR_2} avec {STR_VAR_1}.\pÇa me met mal à l'aise de te parler… \nMais veux-tu qu'on fasse équipe?$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice15Accept
+```
+Oh, merci!\nJ'ai peur mais je ferai de mon mieux!\pJe vais nous inscrire.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice15Reject
+```
+Tu ne peux pas refuser!\nJe crois que je vais faire un malaise…$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice16Intro
+```
+Je m'appelle {STR_VAR_3}, je suis\nl'apprenti nº {STR_VAR_2} de {STR_VAR_1}.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice16Mon1
+```
+Je dois mon équipe à {STR_VAR_3}.\pJ'ai suivi ses conseils. J'ai un\n{STR_VAR_2} avec {STR_VAR_1} et un$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice16Mon2Ask
+```
+{STR_VAR_2} avec {STR_VAR_1}.\pSi tu es d'accord, j'aimerais être ton\npartenaire.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice16Accept
+```
+Tu acceptes?\nTu ne le regretteras pas!\pJe vais nous inscrire et nous pourrons\ncommencer!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_Apprentice16Reject
+```
+Tu refuses?\nTon humour est totalement déplacé.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_LassIntro
+```
+Je m'appelle {STR_VAR_1}.\nJe suis une FILLETTE!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_LassMon1
+```
+J'ai un {STR_VAR_2} qui utilise\n{STR_VAR_1} et puis un$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_LassMon2Ask
+```
+{STR_VAR_2} qui utilise {STR_VAR_1}.\nC'est tout ce que j'ai avec moi.\pOn fait équipe?$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_LassAccept
+```
+Merci!\nJe vais nous inscrire!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_LassReject
+```
+Tu ne veux pas de moi comme partenaire?\nTu vas t'en mordre les doigts!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_YoungsterIntro
+```
+Salut!\pJe suis GAMIN {STR_VAR_1}!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_YoungsterMon1
+```
+Tu veux savoir ce que j'ai?\nUn {STR_VAR_2} avec {STR_VAR_1} et$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_YoungsterMon2Ask
+```
+un {STR_VAR_2} avec {STR_VAR_1}!\pOn va faire équipe, toi et moi,\nnon?$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_YoungsterAccept
+```
+Chouette!\nJe vais nous inscrire, alors!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_YoungsterReject
+```
+Tu as tort! Avec tes POKéMON et les\nmiens, on serait invincibles!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_HikerIntro
+```
+Bien le bonjour!\nJe suis MONTAGNARD {STR_VAR_1}!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_HikerMon1
+```
+Tu veux savoir ce que j'ai avec moi?\nUn {STR_VAR_2} qui utilise {STR_VAR_1}$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_HikerMon2Ask
+```
+et un {STR_VAR_2} qui utilise\n{STR_VAR_1}!\pPas trop mal, non?\nTu veux qu'on fasse équipe?$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_HikerAccept
+```
+D'accord!\nJe vais au guichet et je reviens.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_HikerReject
+```
+Dommage, j'aurais aimé me battre à tes\ncôtés.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_BeautyIntro
+```
+Bonjour! Je m'appelle {STR_VAR_1}\net je suis un CANON!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_BeautyMon1
+```
+Tu sais ce que j'ai dressé?\nUn {STR_VAR_2} avec {STR_VAR_1} et$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_BeautyMon2Ask
+```
+un {STR_VAR_2} avec {STR_VAR_1}!\pQu'en penses-tu?\nTu veux qu'on fasse équipe?$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_BeautyAccept
+```
+Merveilleux!\nJe vais au guichet!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_BeautyReject
+```
+Quel dommage!\pToi et moi, nous aurions fait une belle\néquipe!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_FishermanIntro
+```
+Bonjour, toi!\pTu sais qui je suis?\nJe suis {STR_VAR_1} le PECHEUR!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_FishermanMon1
+```
+Mon équipe se compose d'un\n{STR_VAR_2} avec {STR_VAR_1} et$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_FishermanMon2Ask
+```
+d'un {STR_VAR_2} avec {STR_VAR_1}.\pQu'en dis-tu?\nOn fait équipe?$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_FishermanAccept
+```
+Bien, bien!\nJe me charge de tout!\pJe vais nous inscrire tout de suite.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_FishermanReject
+```
+Oh, c'est bien dommage…$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_LadyIntro
+```
+Ravie de te rencontrer.\nJe suis MADEMOISELLE {STR_VAR_1}.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_LadyMon1
+```
+Je suis accompagnée d'un\n{STR_VAR_2} maîtrisant {STR_VAR_1}$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_LadyMon2Ask
+```
+et d'un {STR_VAR_2} maîtrisant\n{STR_VAR_1}.\pM'acceptes-tu comme partenaire?\nCela me ferait tant plaisir!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_LadyAccept
+```
+Je te remercie du fond du cœur.\nJe m'occupe de l'inscription.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_LadyReject
+```
+Je suis sûre que tu vas le regretter.\nCependant, je respecte ta décision.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_CyclingTriathleteFIntro
+```
+Je m'appelle {STR_VAR_1}. Je suis\nTRIATHLETE!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_CyclingTriathleteFMon1
+```
+Voyons ce que j'ai…\nUn {STR_VAR_2} avec {STR_VAR_1} et$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_CyclingTriathleteFMon2Ask
+```
+un {STR_VAR_2} avec {STR_VAR_1}!\nC'est mon équipe!\pDis, tu veux bien qu'on soit\npartenaires?$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_CyclingTriathleteFAccept
+```
+Merci!\nJe vais nous inscrire.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_CyclingTriathleteFReject
+```
+C'est dommage, je sais qu'on aurait été\ntrès forts ensemble!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_BugCatcherIntro
+```
+Bonjour!\nJe suis le SCOUT {STR_VAR_1}!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_BugCatcherMon1
+```
+Regarde ce que j'ai!\nUn {STR_VAR_2} avec {STR_VAR_1} et$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_BugCatcherMon2Ask
+```
+un {STR_VAR_2} avec {STR_VAR_1}!\pJe te propose que nous fassions\néquipe, tous les deux! Tu es d'accord?$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_BugCatcherAccept
+```
+Bien!\pJe m'occupe de l'inscription,\npartenaire.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_BugCatcherReject
+```
+Tu sais, mes POKéMON valent le détour.\nJ'espère que tu ne le regretteras pas!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_SchoolKidMIntro
+```
+Bonjour!\nJe suis l'ELEVE {STR_VAR_1}!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_SchoolKidMMon1
+```
+J'ai dressé un {STR_VAR_2}\nqui utilise {STR_VAR_1} et un$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_SchoolKidMMon2Ask
+```
+{STR_VAR_2} qui utilise\n{STR_VAR_1}.\pC'est plutôt bien, non?\nTu veux qu'on fasse équipe?$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_SchoolKidMAccept
+```
+Merci!\nJe m'occupe de l'inscription.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_SchoolKidMReject
+```
+Je suis déçu…\pEn me battant avec toi, j'aurais pu\napprendre un tas de choses…$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_RichBoyIntro
+```
+Bonjour.\nJe suis RICHARD {STR_VAR_1}.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_RichBoyMon1
+```
+Tu ne devineras jamais ce que j'ai!\nUn {STR_VAR_2} utilisant {STR_VAR_1}$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_RichBoyMon2Ask
+```
+et un {STR_VAR_2} utilisant\n{STR_VAR_1}!\pSi tu le souhaites, tu peux faire équipe\navec moi.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_RichBoyAccept
+```
+C'est intelligent de ta part! Avec moi,\nimpossible de perdre!\pJe m'occupe de l'inscription!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_RichBoyReject
+```
+Tu vas le regretter!\nJe suis le meilleur dans cette pièce!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_BlackBeltIntro
+```
+Hiyah!\nJe suis KARATEKA {STR_VAR_1}.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_BlackBeltMon1
+```
+J'ai un {STR_VAR_2} qui utilise\n{STR_VAR_1} et$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_BlackBeltMon2Ask
+```
+un {STR_VAR_2} qui utilise\n{STR_VAR_1}.\pSois sympa, choisis-moi comme\npartenaire!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_BlackBeltAccept
+```
+Hiyah!\nJe vais nous inscrire illico presto!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_BlackBeltReject
+```
+Je comprends…\nCe n'est que partie remise…$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_TuberFIntro
+```
+Bonjour!\nJe suis FLOTTEUR {STR_VAR_1}!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_TuberFMon1
+```
+Voilà ce que j'ai…\nUn {STR_VAR_2} avec {STR_VAR_1} et$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_TuberFMon2Ask
+```
+un {STR_VAR_2} avec {STR_VAR_1}!\nTu veux bien qu'on fasse équipe?$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_TuberFAccept
+```
+Merci!\nJe vais nous inscrire immédiatement!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_TuberFReject
+```
+Ensemble, on aurait pu battre\nn'importe qui, j'en suis sûre!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_HexManiacIntro
+```
+Bien le bonjour…\nJe suis MYSTIMANIAC {STR_VAR_1}…$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_HexManiacMon1
+```
+J'ai sur moi un {STR_VAR_2} qui\nutilise {STR_VAR_1} et un$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_HexManiacMon2Ask
+```
+{STR_VAR_2} qui utilise {STR_VAR_1}…\pJe t'en supplie…\nChoisis-moi comme partenaire…$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_HexManiacAccept
+```
+Je te remercie…\nJe vais nous inscrire…$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_HexManiacReject
+```
+J'espérais tant qu'on fasse équipe…$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_PkmnBreederMIntro
+```
+Comment ça va? Je m'appelle\n{STR_VAR_1}. Je suis un ELEVEUR!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_PkmnBreederMMon1
+```
+J'ai deux POKéMON pas mal du tout!\nUn {STR_VAR_2} avec {STR_VAR_1} et$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_PkmnBreederMMon2Ask
+```
+un {STR_VAR_2} avec {STR_VAR_1}!\pQu'en penses-tu?\nTu penses qu'on devrait faire équipe?$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_PkmnBreederMAccept
+```
+Je te remercie!\pNe bouge pas, je vais au guichet\nd'inscription!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_PkmnBreederMReject
+```
+J'aurais préféré que tu dises oui,\nbien sûr… Mais tant pis!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_RunningTriathleteFIntro
+```
+Bonjour! Je m'appelle {STR_VAR_1}.\nJe suis TRIATHLETE!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_RunningTriathleteFMon1
+```
+Tu veux savoir ce que j'ai?\nUn {STR_VAR_2} avec {STR_VAR_1} et$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_RunningTriathleteFMon2Ask
+```
+un {STR_VAR_2} avec {STR_VAR_1}!\pAlors?\nOn fait équipe?$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_RunningTriathleteFAccept
+```
+C'est parti!\nJe vais nous inscrire sur le champ!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_RunningTriathleteFReject
+```
+Toi et moi, on aurait fait un carton!\nTu ne sais pas ce que tu rates…$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_RunningTriathleteMIntro
+```
+Bonjour! Je m'appelle {STR_VAR_1}!\nJe suis TRIATHLETE!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_RunningTriathleteMMon1
+```
+J'ai bien entraîné mes POKéMON! J'ai\nun {STR_VAR_2} qui utilise {STR_VAR_1}$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_RunningTriathleteMMon2Ask
+```
+et un {STR_VAR_2} qui utilise\n{STR_VAR_1}!\pIl y a pire, non?\nTu veux de moi comme partenaire?$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_RunningTriathleteMAccept
+```
+Très bien!\nJe cours nous inscrire!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_RunningTriathleteMReject
+```
+J'aurais bien aimé combattre\nà tes côtés…$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_BattleGirlIntro
+```
+Je suis COMBATTANTE {STR_VAR_1}!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_BattleGirlMon1
+```
+J'ai dressé un {STR_VAR_2} qui utilise\n{STR_VAR_1} et un$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_BattleGirlMon2Ask
+```
+{STR_VAR_2} qui utilise {STR_VAR_1}!\pAlors, ça te plaît?\nSi on faisait équipe?$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_BattleGirlAccept
+```
+Oh, merci!\pJe m'occupe de l'inscription,\nne bouge pas!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_BattleGirlReject
+```
+Je suis sûre qu'ensemble, on aurait\nété imbattables…$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_CyclingTriathleteMIntro
+```
+Je m'appelle {STR_VAR_1}.\nJe suis TRIATHLETE!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_CyclingTriathleteMMon1
+```
+J'ai un {STR_VAR_2} à qui j'ai appris\n{STR_VAR_1} et un$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_CyclingTriathleteMMon2Ask
+```
+{STR_VAR_2} qui connaît {STR_VAR_1}!\pOn ferait une équipe du tonnerre,\ntous les deux! Non?$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_CyclingTriathleteMAccept
+```
+Merci!\pIl ne reste plus qu'à nous inscrire.\nJ'y cours!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_CyclingTriathleteMReject
+```
+C'est dommage. Je me faisais une telle\njoie à l'idée de combattre à tes côtés!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_TuberMIntro
+```
+Moi?\nJe suis FLOTTEUR {STR_VAR_1}!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_TuberMMon1
+```
+Ce que j'ai? Un {STR_VAR_2} qui\nconnaît {STR_VAR_1} et$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_TuberMMon2Ask
+```
+un {STR_VAR_2} qui connaît\n{STR_VAR_1}!\pAlors, on fait équipe?$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_TuberMAccept
+```
+D'accord!\pJe vais nous inscrire!\nÇa va déménager!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_TuberMReject
+```
+Mes POKéMON sont forts…\nC'est bête que tu ne veuilles pas de moi.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_GuitaristIntro
+```
+Bonjour!\nJe suis GUITARISTE {STR_VAR_1}!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_GuitaristMon1
+```
+Regarde qui est là…\nUn {STR_VAR_2} avec {STR_VAR_1} et$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_GuitaristMon2Ask
+```
+un {STR_VAR_2} avec {STR_VAR_1}!\pOn pourrait pas rêver mieux, non?\nAlors, on fait équipe?$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_GuitaristAccept
+```
+Super! Je vais m'occuper des formalités\nau guichet. Je reviens!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_GuitaristReject
+```
+Mes POKéMON sont les meilleurs!\nTu risques de le regretter!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_GentlemanIntro
+```
+Ravi de faire ta connaissance.\nJe suis {STR_VAR_1}, un vrai GENTLEMAN.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_GentlemanMon1
+```
+Mon cher {STR_VAR_2} avec\n{STR_VAR_1} et$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_GentlemanMon2Ask
+```
+mon cher {STR_VAR_2} avec\n{STR_VAR_1} sont ici.\pPuis-je te demander de me choisir\ncomme partenaire?$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_GentlemanAccept
+```
+Je te remercie de ta confiance.\nReste ici, je m'occupe de l'inscription.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_GentlemanReject
+```
+Cela m'aurait fait tant plaisir…\pJ'espère que nous aurons l'occasion de\nfaire équipe une autre fois…$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_PokefanMIntro
+```
+Bonjour, je m'appelle {STR_VAR_1}.\nJe suis POKéFAN!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_PokefanMMon1
+```
+Avec moi, j'ai un {STR_VAR_2}\nqui utilise {STR_VAR_1} et$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_PokefanMMon2Ask
+```
+un {STR_VAR_2} qui utilise\n{STR_VAR_1}.\pEst-ce que ça te plaît?\nOn fait équipe?$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_PokefanMAccept
+```
+Merci!\nJe m'occupe de l'inscription!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_PokefanMReject
+```
+Tu ne sais pas reconnaître de bons\nPOKéMON quand tu en vois…$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_ExpertMIntro
+```
+Je suis {STR_VAR_1}. Je suis un EXPERT!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_ExpertMMon1
+```
+J'ai élevé un {STR_VAR_2} qui connaît\n{STR_VAR_1} et un$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_ExpertMMon2Ask
+```
+{STR_VAR_2} qui connaît {STR_VAR_1}!\pQue dirais-tu de faire équipe avec moi?$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_ExpertMAccept
+```
+Parfait!\nJe vais de ce pas nous inscrire!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_ExpertMReject
+```
+Je doute que tu aies fait le bon choix…$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_ExpertFIntro
+```
+Bonjour, bonjour!\nJe suis EXPERT {STR_VAR_1}.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_ExpertFMon1
+```
+J'ai élevé mes POKéMON avec soin.\nJ'ai un {STR_VAR_2} avec {STR_VAR_1}$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_ExpertFMon2Ask
+```
+et un {STR_VAR_2} avec {STR_VAR_1}.\nVoilà!\pVoudrais-tu faire équipe avec moi?$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_ExpertFAccept
+```
+Bien, bien.\nJe vais de suite nous inscrire.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_ExpertFReject
+```
+D'accord. On remet ça à une prochaine\nfois, alors.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_DragonTamerIntro
+```
+Je suis DRACOLOGUE {STR_VAR_1}!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_DragonTamerMon1
+```
+Mon équipe se compose d'un\n{STR_VAR_2} utilisant {STR_VAR_1}$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_DragonTamerMon2Ask
+```
+et d'un {STR_VAR_2} utilisant\n{STR_VAR_1}!\pQu'est-ce que tu en dis?\nTu me prends comme partenaire?$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_DragonTamerAccept
+```
+Je te promets de faire de mon mieux!\nJe m'occupe de l'inscription, d'accord?$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_DragonTamerReject
+```
+Tu sais, tu ne trouveras pas mieux que\nmoi, ici!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_BirdKeeperIntro
+```
+Je suis l'ORNITHOLOGUE {STR_VAR_1}!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_BirdKeeperMon1
+```
+Quels POKéMON j'ai? Un\n{STR_VAR_2} avec {STR_VAR_1}$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_BirdKeeperMon2Ask
+```
+et un {STR_VAR_2} avec {STR_VAR_1}.\pTu ne penses pas qu'on ferait une bonne\néquipe, toi et moi?$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_BirdKeeperAccept
+```
+Super, merci!\nJe vais m'occuper de l'inscription!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_BirdKeeperReject
+```
+Mes POKéMON et moi sommes très\nforts. Quel dommage pour toi!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_NinjaBoyIntro
+```
+Je suis NINJA FAN {STR_VAR_1}!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_NinjaBoyMon1
+```
+Mon équipe de POKéMON comporte\nun {STR_VAR_2} avec {STR_VAR_1} et$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_NinjaBoyMon2Ask
+```
+un {STR_VAR_2} avec {STR_VAR_1}!\pFaisons équipe, tous les deux!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_NinjaBoyAccept
+```
+Ouais!\nJe me charge de l'inscription!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_NinjaBoyReject
+```
+Tu vas regretter de ne pas avoir mes\nPOKéMON à tes côtés!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_ParasolLadyIntro
+```
+Bonjour!\nJe suis SŒUR PARASOL {STR_VAR_1}!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_ParasolLadyMon1
+```
+Je ne suis pas seule. J'ai avec moi un\n{STR_VAR_2} utilisant {STR_VAR_1} et$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_ParasolLadyMon2Ask
+```
+un {STR_VAR_2} utilisant\n{STR_VAR_1}.\pN'est-ce pas merveilleux?\nTu veux faire équipe avec nous?$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_ParasolLadyAccept
+```
+Merci beaucoup!\pJe vais nous inscrire au guichet.\nNous ferons de notre mieux!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_ParasolLadyReject
+```
+Mes POKéMON sont incroyablement forts.\nQuelle déception…$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_BugManiacIntro
+```
+Bonjour!\nJe suis {STR_VAR_1} l'ENTOMOMANIAC!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_BugManiacMon1
+```
+Oui, j'ai trouvé mes POKéMON.\nJ'ai un {STR_VAR_2} avec {STR_VAR_1}$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_BugManiacMon2Ask
+```
+et {STR_VAR_2} avec {STR_VAR_1}.\nC'est tout ce que j'ai trouvé.\pÇa t'intéresse de faire équipe avec\nmoi?$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_BugManiacAccept
+```
+Compris!\nSuper!\pJe m'occupe de l'inscription.\nÇa ne prendra pas longtemps!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_BugManiacReject
+```
+Avec mes POKéMON, on aurait gagné à\ncoup sûr, tu sais?…$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_SailorIntro
+```
+Bonjour!\nJe suis MARIN {STR_VAR_1}!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_SailorMon1
+```
+Mes POKéMON sont ma fierté! J'ai un\n{STR_VAR_2} utilisant {STR_VAR_1}$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_SailorMon2Ask
+```
+et un {STR_VAR_2} utilisant\n{STR_VAR_1}!\pTu veux faire équipe avec moi,\nn'est-ce pas?$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_SailorAccept
+```
+J'en étais sûr!\nJe m'occupe de l'inscription.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_SailorReject
+```
+Avec mes POKéMON et moi, c'était\npourtant la victoire assurée!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_CollectorIntro
+```
+Bonjour, je suis COLLEC {STR_VAR_1}.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_CollectorMon1
+```
+J'ai ici deux beaux spécimens: un\n{STR_VAR_2} avec {STR_VAR_1} et$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_CollectorMon2Ask
+```
+un {STR_VAR_2} avec {STR_VAR_1}!\pC'est le nec plus ultra en matière de\nPOKéMON, non? On fait équipe?$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_CollectorAccept
+```
+Oh, super!\pNe perdons pas de temps.\nJe vais nous inscrire!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_CollectorReject
+```
+Ça me chiffonne un peu…\nTu n'aimes pas mes POKéMON…$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_PkmnRangerMIntro
+```
+Bonjour, je m'appelle {STR_VAR_1}.\nJe suis un POKéMON RANGER.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_PkmnRangerMMon1
+```
+Je suis escorté par un\n{STR_VAR_2} qui utilise {STR_VAR_1} et$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_PkmnRangerMMon2Ask
+```
+un {STR_VAR_2} qui\nutilise {STR_VAR_1}!\pTu ne penses pas qu'on ferait une\néquipe du tonnerre, toi et moi?$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_PkmnRangerMAccept
+```
+C'est super!\nJe vais m'occuper de l'inscription.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_PkmnRangerMReject
+```
+La prochaine fois, choisis mes POKéMON\noù je risque de me vexer…$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_PkmnRangerFIntro
+```
+Je suis {STR_VAR_1}, une\nPOKéMON RANGER!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_PkmnRangerFMon1
+```
+Voici mon équipe: j'ai un\n{STR_VAR_2} avec {STR_VAR_1} et$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_PkmnRangerFMon2Ask
+```
+un {STR_VAR_2} avec {STR_VAR_1}!\pTu veux faire équipe avec mes petits\nprotégés et moi?$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_PkmnRangerFAccept
+```
+Nous ferons de notre mieux, c'est\npromis! Je vais nous inscrire!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_PkmnRangerFReject
+```
+J'espère que tu nous choisiras, la\nprochaine fois…$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_AromaLadyIntro
+```
+Ravie de faire ta connaissance. Je suis\nAROMA {STR_VAR_1}.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_AromaLadyMon1
+```
+Je sillonne les chemins avec un\n{STR_VAR_2} utilisant {STR_VAR_1}$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_AromaLadyMon2Ask
+```
+et un {STR_VAR_2} utilisant\n{STR_VAR_1}.\pJ'espère qu'ils te conviennent.\nTu veux bien qu'on soit partenaires?$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_AromaLadyAccept
+```
+Ton choix m'honore.\nJe vais au guichet d'inscription.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_AromaLadyReject
+```
+Cela me ferait plaisir de faire équipe\navec toi une prochaine fois.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_RuinManiacIntro
+```
+Tu veux savoir qui je suis?\nJe suis RUINEMANIAC {STR_VAR_1}!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_RuinManiacMon1
+```
+Les POKéMON qui m'accompagnent sont\nun {STR_VAR_2} utilisant {STR_VAR_1}$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_RuinManiacMon2Ask
+```
+et un {STR_VAR_2} utilisant\n{STR_VAR_1}!\pIntrigant, n'est-ce pas?\nSi nous faisions équipe?$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_RuinManiacAccept
+```
+C'est une sage décision! Je me charge\ndes formalités d'inscription.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_RuinManiacReject
+```
+Hum…\nMes POKéMON sont très forts pourtant…$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_CoolTrainerMIntro
+```
+Je suis TOPDRESSEUR {STR_VAR_1}!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_CoolTrainerMMon1
+```
+J'ai amené un {STR_VAR_2}\nqui sait utiliser {STR_VAR_1} et$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_CoolTrainerMMon2Ask
+```
+un {STR_VAR_2} qui sait utiliser\n{STR_VAR_1}. Impressionnant, je sais!\pDis, tu ne crois pas qu'on devrait faire\néquipe, toi et moi?$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_CoolTrainerMAccept
+```
+Cool! Je vais vite au guichet\nd'inscription!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_CoolTrainerMReject
+```
+On aurait pourtant bien combattu\nensemble.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_CoolTrainerFIntro
+```
+Je suis TOPDRESSEUR {STR_VAR_1}!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_CoolTrainerFMon1
+```
+L'équipe que j'ai formée comporte un\n{STR_VAR_2} utilisant {STR_VAR_1} et$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_CoolTrainerFMon2Ask
+```
+un {STR_VAR_2} utilisant {STR_VAR_1}.\pÇa correspond à ce que tu cherches?\nOn fait équipe?$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_CoolTrainerFAccept
+```
+J'espérais que tu dirais ça!\nJe vais nous inscrire, alors.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_CoolTrainerFReject
+```
+Je pensais qu'on aurait fait une\nbelle équipe…$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_PokemaniacIntro
+```
+Bonjour!\nJe suis POKéMANIAC {STR_VAR_1}!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_PokemaniacMon1
+```
+Tu te demandes ce que j'ai?\nUn {STR_VAR_2} qui utilise {STR_VAR_1}$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_PokemaniacMon2Ask
+```
+et un {STR_VAR_2} qui utilise\n{STR_VAR_1}. Oui, rien que ça!\pJe sais que ça t'impressionne.\nAllez, faisons équipe!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_PokemaniacAccept
+```
+Excellente décision!\nJe vais nous inscrire!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_PokemaniacReject
+```
+Rien ne peut arrêter mes POKéMON!\nTu vas regretter ta décision!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_KindlerIntro
+```
+Salut, toi! Je m'appelle {STR_VAR_1}!\nJe suis un SALTIMBANQUE.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_KindlerMon1
+```
+Voici le fruit de mon entraînement:\nun {STR_VAR_2} qui utilise {STR_VAR_1}$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_KindlerMon2Ask
+```
+et un {STR_VAR_2} qui utilise\n{STR_VAR_1}!\pAlors, qu'en dis-tu?\nOn fait équipe?$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_KindlerAccept
+```
+Bien!\nJe m'occupe de l'inscription.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_KindlerReject
+```
+Quel dommage. Promets-moi qu'on\nfera équipe la prochaine fois.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_CamperIntro
+```
+Je suis CAMPEUR {STR_VAR_1}!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_CamperMon1
+```
+J'ai dressé un {STR_VAR_2} qui sait\nutiliser {STR_VAR_1} et un$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_CamperMon2Ask
+```
+{STR_VAR_2} qui sait utiliser\n{STR_VAR_1}.\pOn s'amuserait bien si on était dans la\nmême équipe! Alors, on essaie?$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_CamperAccept
+```
+Super!\nSur ce, je vais nous inscrire!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_CamperReject
+```
+Bon, une prochaine fois, alors!\nJ'aimerais bien combattre à tes côtés!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_PicnickerIntro
+```
+Bonjour!\nJe suis PIQUE-NIQUE {STR_VAR_1}!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_PicnickerMon1
+```
+J'ai avec moi un {STR_VAR_2}\nqui utilise {STR_VAR_1} et$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_PicnickerMon2Ask
+```
+un {STR_VAR_2} qui utilise\n{STR_VAR_1}.\pÇa te dirait de faire équipe avec moi?$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_PicnickerAccept
+```
+Eh bien, merci!\nJe me charge de l'inscription.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_PicnickerReject
+```
+D'accord. J'espère qu'on fera équipe\nune prochaine fois.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_PsychicMIntro
+```
+Je suis KINESISTE {STR_VAR_1}!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_PsychicMMon1
+```
+Les deux POKéMON que j'ai dressés sont\nun {STR_VAR_2} utilisant {STR_VAR_1}$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_PsychicMMon2Ask
+```
+et un {STR_VAR_2} utilisant\n{STR_VAR_1}.\pQu'en dis-tu?\nOn est partenaires?$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_PsychicMAccept
+```
+Très bien!\nJe vais nous inscrire!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_PsychicMReject
+```
+D'accord. Mais tu dois me promettre\nqu'on fera équipe bientôt.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_PsychicFIntro
+```
+Je suis KINESISTE {STR_VAR_1}.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_PsychicFMon1
+```
+J'ai avec moi…\nun {STR_VAR_2} avec {STR_VAR_1} et$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_PsychicFMon2Ask
+```
+un {STR_VAR_2} avec {STR_VAR_1}.\nCe sont mes disciples.\pJe suis sûre que tout cela t'intrigue…\nSi tu veux, nous pouvons faire équipe.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_PsychicFAccept
+```
+Merci.\nJe vais nous inscrire.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_PsychicFReject
+```
+J'espère qu'il y aura une autre\noccasion. Tu m'intrigues…$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_SchoolKidFIntro
+```
+Je suis ELEVE {STR_VAR_1}!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_SchoolKidFMon1
+```
+Mes POKéMON? J'ai un\n{STR_VAR_2} qui utilise {STR_VAR_1} et$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_SchoolKidFMon2Ask
+```
+un {STR_VAR_2} qui utilise\n{STR_VAR_1}.\pÇa me plairait bien d'être ta\npartenaire. Tu es d'accord?$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_SchoolKidFAccept
+```
+Oh, merci! Je vais aller au guichet\npour nous inscrire!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_SchoolKidFReject
+```
+Hein?\nLa prochaine fois alors, non?$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_PkmnBreederFIntro
+```
+Coucou! Je suis {STR_VAR_1}, un\nELEVEUR!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_PkmnBreederFMon1
+```
+Voici les POKéMON que j'ai dressés: un\n {STR_VAR_2} qui utilise {STR_VAR_1}$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_PkmnBreederFMon2Ask
+```
+et un {STR_VAR_2} qui utilise\n{STR_VAR_1}.\pC'est plutôt tentant, je sais.\nOn fait équipe, d'accord?$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_PkmnBreederFAccept
+```
+Parfait!\nLaisse-moi m'occuper de l'inscription!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_PkmnBreederFReject
+```
+Je comprends, mais la prochaine fois,\ntu ne pourras pas refuser!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_PokefanFIntro
+```
+Je suis {STR_VAR_1}. Je suis une\nPOKéFAN.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_PokefanFMon1
+```
+Mes POKéMON chéris sont un\n{STR_VAR_2} qui utilise {STR_VAR_1}$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_PokefanFMon2Ask
+```
+et un {STR_VAR_2} qui utilise\n{STR_VAR_1}.\pNe sont-ils pas mignons?\nIl faut absolument qu'on fasse équipe!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_PokefanFAccept
+```
+Je te remercie!\nJe m'occupe de l'inscription!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_PokefanFReject
+```
+Mes POKéMON chéris sont les meilleurs,\ncrois-moi. Mais c'est toi qui décides!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_SwimmerFIntro
+```
+Bonjour! Je suis {STR_VAR_1},\nune NAGEUSE.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_SwimmerFMon1
+```
+J'ai entraîné un {STR_VAR_2} qui\nsait utiliser {STR_VAR_1} et$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_SwimmerFMon2Ask
+```
+un {STR_VAR_2} qui sait utiliser\n{STR_VAR_1}.\pSi on faisait équipe, toi et moi?$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_SwimmerFAccept
+```
+Super!\nJe vais nous inscrire.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_SwimmerFReject
+```
+Si jamais on se rencontre de nouveau,\ntu ne pourras pas refuser!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_SwimmingTriathleteMIntro
+```
+Oui? Je m'appelle {STR_VAR_1}\net je suis TRIATHLETE.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_SwimmingTriathleteMMon1
+```
+J'ai quelques POKéMON qui se défendent:\nun {STR_VAR_2} avec {STR_VAR_1} et$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_SwimmingTriathleteMMon2Ask
+```
+un {STR_VAR_2} qui utilise\n{STR_VAR_1}!\pCe serait sympa si on faisait équipe,\ntous les deux.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_SwimmingTriathleteMAccept
+```
+Merveilleux!\nJe vais nous inscrire.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_SwimmingTriathleteMReject
+```
+Tu me laisseras être ton partenaire\nla prochaine fois, j'espère.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_SwimmingTriathleteFIntro
+```
+Je suis {STR_VAR_1}, une TRIATHLETE!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_SwimmingTriathleteFMon1
+```
+Un {STR_VAR_2} qui utilise {STR_VAR_1}$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_SwimmingTriathleteFMon2Ask
+```
+et un {STR_VAR_2} qui utilise\n{STR_VAR_1}, voilà ce que j'ai.\pQu'en penses-tu?\nJe pense qu'on ferait une bonne équipe.$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_SwimmingTriathleteFAccept
+```
+J'aime cette réponse!\nJe m'occupe de l'inscription!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_SwimmingTriathleteFReject
+```
+Promets-moi que tu me donneras\nbientôt ma chance…$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_SwimmerMIntro
+```
+Bonjour, bonjour!\nJe suis {STR_VAR_1}, un NAGEUR!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_SwimmerMMon1
+```
+Regarde quels POKéMON j'ai dressés!\nUn {STR_VAR_2} qui utilise {STR_VAR_1}$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_SwimmerMMon2Ask
+```
+et un {STR_VAR_2} qui utilise\n{STR_VAR_1}!\pPas mal, non?\nAlors, on fait équipe?$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_SwimmerMAccept
+```
+Quel honneur!\nJe me charge de l'inscription!$
+```
+### BattleFrontier_BattleTowerMultiPartnerRoom_Text_SwimmerMReject
+```
+On remet ça à une prochaine fois,\nd'accord?$
+```

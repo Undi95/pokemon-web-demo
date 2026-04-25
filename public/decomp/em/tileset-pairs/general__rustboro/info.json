@@ -1,0 +1,13 @@
+{
+  "primaryTileset": "gTileset_General",
+  "secondaryTileset": "gTileset_Rustboro",
+  "atlasCols": 32,
+  "atlasRows": 27,
+  "atlasWidth": 512,
+  "atlasHeight": 432,
+  "totalMetatiles": 862,
+  "numPrimaryMetatiles": 512,
+  "numSecondaryMetatiles": 350,
+  "primaryMetatileIdStart": 0,
+  "secondaryMetatileIdStart": 512
+}

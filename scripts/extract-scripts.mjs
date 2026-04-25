@@ -36,49 +36,46 @@ function parseScriptsFile(content) {
   const texts = {};
   const lines = content.split(/\r?\n/);
 
-  let currentScript = null;
-  let currentText = null;
-  let textParts = [];
+  // Pokemerald : label `::` (global) ou `:` (local). Les DEUX peuvent être
+  // soit script soit texte. On classe selon le contenu : si on voit .string,
+  // c'est un texte, sinon c'est un script.
+  let currentName = null;
+  let buf = [];        // commands (script) ou string parts (text)
+  let isText = false;
+
+  const flush = () => {
+    if (!currentName) return;
+    if (isText) texts[currentName] = buf.join('');
+    else if (buf.length > 0) scripts[currentName] = [...buf];
+  };
 
   for (const rawLine of lines) {
     const line = rawLine.trim();
     if (!line || line.startsWith('@') || line.startsWith(';')) continue;
 
-    // Script label : "LabelName::"
-    let m = line.match(/^(\w+)::\s*$/);
-    if (m) {
-      if (currentText) { texts[currentText] = textParts.join(''); currentText = null; textParts = []; }
-      currentScript = m[1];
-      scripts[currentScript] = [];
+    // Label (simple ou double colon)
+    const labelMatch = line.match(/^(\w+)::?\s*$/);
+    if (labelMatch) {
+      flush();
+      currentName = labelMatch[1];
+      buf = [];
+      isText = false;
       continue;
     }
-    // Text label : "LabelName:"
-    m = line.match(/^(\w+):\s*$/);
-    if (m) {
-      if (currentText) { texts[currentText] = textParts.join(''); }
-      currentScript = null;
-      currentText = m[1];
-      textParts = [];
-      continue;
-    }
+    if (!currentName) continue;
 
-    if (currentText) {
-      // .string "..."
-      const sm = line.match(/^\.string\s+"(.*)"\s*$/);
-      if (sm) {
-        textParts.push(sm[1]);
-      }
-      // Note : d'autres directives .byte / .2byte / .4byte etc. sont ignorées ici
+    const sm = line.match(/^\.string\s+"(.*)"\s*$/);
+    if (sm) {
+      isText = true;
+      buf.push(sm[1]);
       continue;
     }
-
-    if (currentScript) {
-      // commande brute (un par ligne)
-      scripts[currentScript].push(line);
-    }
+    // Autres directives .byte/.2byte/.4byte/.align etc. : ignorées
+    if (line.startsWith('.')) continue;
+    // Commande de script
+    buf.push(line);
   }
-  // flush trailing text
-  if (currentText) texts[currentText] = textParts.join('');
+  flush();
 
   return { scripts, texts };
 }
@@ -89,6 +86,12 @@ if (!existsSync(mapsDir)) { console.error('maps dir not found'); process.exit(1)
 
 mkdirSync(outRoot, { recursive: true });
 
+// Pool global : le decomp utilise un namespace partagé entre fichiers
+// (ex. MaysHouse_1F goto PlayersHouse_1F_EventScript_X défini dans BrendansHouse).
+// On dédoublonne ici tous les labels de toutes les maps pour servir de fallback runtime.
+const allScripts = {};
+const allTexts = {};
+
 let ok = 0, totalScripts = 0, totalTexts = 0;
 for (const mapName of readdirSync(mapsDir)) {
   const scriptsPath = join(mapsDir, mapName, 'scripts.inc');
@@ -98,6 +101,37 @@ for (const mapName of readdirSync(mapsDir)) {
   writeFileSync(join(outRoot, `${mapName}.json`), JSON.stringify(parsed));
   totalScripts += Object.keys(parsed.scripts).length;
   totalTexts += Object.keys(parsed.texts).length;
+  Object.assign(allScripts, parsed.scripts);
+  Object.assign(allTexts, parsed.texts);
   ok++;
 }
-console.log(`[extract-scripts] ${ok} maps, ${totalScripts} scripts, ${totalTexts} texts written.`);
+
+// Common scripts : data/scripts/*.inc — partagés entre toutes les maps
+const commonScripts = {};
+const commonTexts = {};
+const commonDir = join(decompPath, 'data', 'scripts');
+if (existsSync(commonDir)) {
+  function walkCommon(dir) {
+    for (const entry of readdirSync(dir)) {
+      const p = join(dir, entry);
+      const st = statSync(p);
+      if (st.isDirectory()) walkCommon(p);
+      else if (entry.endsWith('.inc')) {
+        const content = readFileSync(p, 'utf8');
+        const parsed = parseScriptsFile(content);
+        Object.assign(commonScripts, parsed.scripts);
+        Object.assign(commonTexts, parsed.texts);
+      }
+    }
+  }
+  walkCommon(commonDir);
+}
+writeFileSync(join(outRoot, '_common.json'), JSON.stringify({ scripts: commonScripts, texts: commonTexts }));
+
+// Pool global = commun + tous les scripts/textes de toutes les maps.
+// Common a la priorité haute pour les conflits (data/scripts est canonical).
+Object.assign(allScripts, commonScripts);
+Object.assign(allTexts, commonTexts);
+writeFileSync(join(outRoot, '_all.json'), JSON.stringify({ scripts: allScripts, texts: allTexts }));
+
+console.log(`[extract-scripts] ${ok} maps, ${totalScripts} scripts, ${totalTexts} texts, ${Object.keys(commonScripts).length} common scripts, ${Object.keys(allScripts).length} pooled.`);

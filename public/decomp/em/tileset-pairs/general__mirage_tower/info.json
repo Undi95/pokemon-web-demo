@@ -1,0 +1,13 @@
+{
+  "primaryTileset": "gTileset_General",
+  "secondaryTileset": "gTileset_MirageTower",
+  "atlasCols": 32,
+  "atlasRows": 29,
+  "atlasWidth": 512,
+  "atlasHeight": 464,
+  "totalMetatiles": 926,
+  "numPrimaryMetatiles": 512,
+  "numSecondaryMetatiles": 414,
+  "primaryMetatileIdStart": 0,
+  "secondaryMetatileIdStart": 512
+}

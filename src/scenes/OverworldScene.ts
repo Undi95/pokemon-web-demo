@@ -2,37 +2,57 @@ import Phaser from 'phaser';
 import { TILE_SIZE, GAME_W, GAME_H } from '../main';
 import { registerTransparentSpriteSheet } from '../util/sprite-transparency';
 import { setIdleFrame, playSingleStep, type Facing } from '../engine/character-anims';
-import { buildTilemap, buildBorderTileSprite, type LoadedTilemap } from '../engine/tilemap-loader';
+import { buildTilemap, buildBorderTileSprite, isDoorWarp, type LoadedTilemap } from '../engine/tilemap-loader';
 import { getMapNameFr } from '../data/map-names-fr';
 import { resolveNpcs, type ResolvedNpc, type MapJson, type GraphicsTable } from '../engine/npc-loader';
-import { runScript, type ParsedScripts } from '../engine/script-runner';
+import { runScript, type ParsedScripts, type ScriptContext } from '../engine/script-runner';
+import { runMapScript, runOnFrameTable } from '../engine/map-scripts';
+import { runMovement, type MovementSprite } from '../engine/movement';
 import { DialogueBox, preloadDialogueAssets } from '../engine/dialogue-box';
+import { primeAudio, playMidiLoop } from '../engine/music';
+import { preloadDoorAnim, setupDoorAnim, playDoorOpen } from '../engine/door-anim';
+import { gameState } from '../engine/game-state';
 
-// Démo : Bourg-en-Vol (Littleroot Town).
-const MAP_NAME = 'LittlerootTown';
-const MAPSEC_ID = 'MAPSEC_LITTLEROOT_TOWN';
-const TILESET_PAIR = 'general__petalburg';
-const MAP_META_URL = `/decomp/em/rendered/meta/${MAP_NAME}.json`;
-const MAP_JSON_URL = `/decomp/em/maps/${MAP_NAME}.json`;
-const MAP_BIN_URL = `/decomp/em/layouts/${MAP_NAME}/map.bin`;
-const BORDER_BIN_URL = `/decomp/em/layouts/${MAP_NAME}/border.bin`;
-const PAIR_BASE = `/decomp/em/tileset-pairs/${TILESET_PAIR}`;
-const GFX_TABLE_URL = '/decomp/em/object-event-graphics.json';
-const SCRIPTS_URL = `/decomp/em/scripts/${MAP_NAME}.json`;
-
-const PLAYER_SHEET = '/decomp/em/object_events/people/brendan/walking.png';
+const BASE = '/decomp/em';
 const PLAYER_TEX = 'player-walk-a';
-
-interface MapMeta {
-  id: string;
-  name: string;
-  tileWidth: number;
-  tileHeight: number;
+const PLAYER_RUN_TEX = 'player-run-a';
+function playerSheetUrl(gender: 'MALE' | 'FEMALE', kind: 'walking' | 'running') {
+  const name = gender === 'FEMALE' ? 'may' : 'brendan';
+  return `${BASE}/object_events/people/${name}/${kind}.png`;
 }
 
+const CACHE_KEYS_GLOBAL = ['layouts-index', 'layout-to-pair', 'map-ids', 'gfx-table'];
+const CACHE_KEYS_MAP_JSON = ['map-json', 'scripts', 'pair-info'];
+const CACHE_KEYS_MAP_BIN = ['map-bin', 'border-bin', 'attrs-primary', 'attrs-secondary'];
+const TEX_KEYS_MAP = ['metatiles-lower', 'metatiles-upper', 'border-tile'];
+
+// gTileset_BrendansMaysHouse → brendans_mays_house (chemin sur disque)
+function tilesetDir(gname: string): string {
+  return gname.replace(/^gTileset_/, '').replace(/([a-z0-9])([A-Z])/g, '$1_$2').toLowerCase();
+}
+
+const WALK_COOLDOWN = 220;
+const RUN_COOLDOWN = 120;
+const TAP_TURN_THRESHOLD_MS = 80; // < 80ms d'appui = juste tourne, >= = marche
+
+interface LayoutDef {
+  id: string; name: string;
+  width: number; height: number;
+  primary_tileset: string; secondary_tileset?: string;
+  blockdata_filepath: string; border_filepath: string;
+}
+
+const DELTA: Record<Facing, [number, number]> = {
+  up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0]
+};
+
 export class OverworldScene extends Phaser.Scene {
-  private meta!: MapMeta;
+  private mapName!: string;
+  private warpIdTarget: string | null = null;
+  private arrivedFromIndoor = false;
   private tilemap!: LoadedTilemap;
+  private layoutDef!: LayoutDef;
+  private mapJson!: MapJson;
   private playerTile = { x: 0, y: 0 };
   private playerSprite!: Phaser.GameObjects.Sprite;
   private playerFacing: Facing = 'down';
@@ -42,107 +62,306 @@ export class OverworldScene extends Phaser.Scene {
   private parsedScripts!: ParsedScripts;
   private dialogueOpen = false;
   private inputLockUntil = 0;
-  private moveCooldown = 220;
+  private musicStarted = false;
+  private mapReady = false;
 
-  constructor() {
-    super({ key: 'OverworldScene' });
+  // Input state
+  private heldDir: Facing | null = null;
+  private heldSince = 0;
+  private keyX!: Phaser.Input.Keyboard.Key;
+
+  // Movements lancés par les scripts (pour synchroniser waitmovement)
+  private pendingMovements: Map<string, Promise<void>> = new Map();
+
+  constructor() { super({ key: 'OverworldScene' }); }
+
+  private spawnOverride: { x: number; y: number } | null = null;
+
+  init(data: { mapName?: string; warpId?: string; fromIndoor?: boolean; spawnX?: number; spawnY?: number } = {}) {
+    this.mapName = data.mapName ?? 'LittlerootTown';
+    this.warpIdTarget = data.warpId ?? null;
+    this.arrivedFromIndoor = data.fromIndoor ?? false;
+    this.spawnOverride = (data.spawnX != null && data.spawnY != null) ? { x: data.spawnX, y: data.spawnY } : null;
+    this.npcs = []; this.signs = [];
+    this.dialogueOpen = false; this.mapReady = false;
+    this.heldDir = null; this.inputLockUntil = 0;
   }
 
   preload() {
-    this.load.json('map-meta', MAP_META_URL);
-    this.load.json('map-json', MAP_JSON_URL);
-    this.load.json('gfx-table', GFX_TABLE_URL);
-    this.load.binary('map-bin', MAP_BIN_URL);
-    this.load.binary('border-bin', BORDER_BIN_URL);
-    this.load.image('metatiles-lower', `${PAIR_BASE}/metatiles-lower.png`);
-    this.load.image('metatiles-upper', `${PAIR_BASE}/metatiles-upper.png`);
-    this.load.json('pair-info', `${PAIR_BASE}/info.json`);
-    this.load.spritesheet('player-walk', PLAYER_SHEET, { frameWidth: 16, frameHeight: 32 });
-    this.load.json('scripts', SCRIPTS_URL);
+    for (const k of CACHE_KEYS_GLOBAL) this.cache.json.remove(k);
+    this.load.json('layouts-index', `${BASE}/layouts-index.json`);
+    this.load.json('layout-to-pair', `${BASE}/tileset-pairs/layout-to-pair.json`);
+    this.load.json('map-ids', `${BASE}/map-ids.json`);
+    this.load.json('gfx-table', `${BASE}/object-event-graphics.json`);
+    for (const k of CACHE_KEYS_MAP_JSON) this.cache.json.remove(k);
+    this.load.json('map-json', `${BASE}/maps/${this.mapName}.json`);
+    this.load.json('scripts', `${BASE}/scripts/${this.mapName}.json`);
+    // _all.json = pool global de tous les labels (decomp utilise un namespace
+    // partagé entre fichiers, ex. MaysHouse goto PlayersHouse défini ailleurs).
+    if (!this.cache.json.has('scripts-all')) this.load.json('scripts-all', `${BASE}/scripts/_all.json`);
     preloadDialogueAssets(this);
+    preloadDoorAnim(this);
+    this.load.spritesheet('player-walk', playerSheetUrl(gameState.gender, 'walking'), { frameWidth: 16, frameHeight: 32 });
+    this.load.spritesheet('player-run', playerSheetUrl(gameState.gender, 'running'), { frameWidth: 16, frameHeight: 32 });
   }
 
   create() {
-    this.meta = this.cache.json.get('map-meta') as MapMeta;
-    this.parsedScripts = this.cache.json.get('scripts') as ParsedScripts;
+    this.mapJson = this.cache.json.get('map-json') as MapJson;
+    const layoutsIndex = this.cache.json.get('layouts-index') as { layouts: LayoutDef[] };
+    const layoutToPair = this.cache.json.get('layout-to-pair') as Record<string, string>;
+    this.layoutDef = layoutsIndex.layouts.find(l => l.id === this.mapJson.layout)!;
+    const pair = layoutToPair[this.mapJson.layout];
+    if (!this.layoutDef || !pair) { console.error('[overworld] layout/pair manquants', this.mapName); return; }
+    const layoutDir = this.layoutDef.blockdata_filepath.replace(/^data\/layouts\//, '').replace(/\/map\.bin$/, '');
+
+    for (const k of CACHE_KEYS_MAP_BIN) this.cache.binary.remove(k);
+    for (const k of TEX_KEYS_MAP) this.textures.remove(k);
+    this.load.image('metatiles-lower', `${BASE}/tileset-pairs/${pair}/metatiles-lower.png`);
+    this.load.image('metatiles-upper', `${BASE}/tileset-pairs/${pair}/metatiles-upper.png`);
+    this.load.json('pair-info', `${BASE}/tileset-pairs/${pair}/info.json`);
+    this.load.binary('map-bin', `${BASE}/layouts/${layoutDir}/map.bin`);
+    this.load.binary('border-bin', `${BASE}/layouts/${layoutDir}/border.bin`);
+    // Metatile attributes (behaviors) pour distinguer porte / escalier / herbe
+    const primDir = tilesetDir(this.layoutDef.primary_tileset);
+    this.load.binary('attrs-primary', `${BASE}/tilesets/primary/${primDir}/metatile_attributes.bin`);
+    if (this.layoutDef.secondary_tileset) {
+      const secDir = tilesetDir(this.layoutDef.secondary_tileset);
+      this.load.binary('attrs-secondary', `${BASE}/tilesets/secondary/${secDir}/metatile_attributes.bin`);
+    }
+    this.load.once('complete', () => this.afterMapLoad());
+    this.load.start();
+  }
+
+  private afterMapLoad() {
+    const mapScripts = this.cache.json.get('scripts') as ParsedScripts;
+    const all = this.cache.json.get('scripts-all') as ParsedScripts;
+    // Pool global en fallback, scripts de la map en priorité haute (au cas où
+    // un même label serait redéfini localement dans une map précise).
+    this.parsedScripts = {
+      scripts: { ...all.scripts, ...mapScripts.scripts },
+      texts: { ...all.texts, ...mapScripts.texts }
+    };
     this.dialogue = new DialogueBox(this);
-    this.tilemap = buildTilemap(this, this.meta.tileWidth, this.meta.tileHeight);
+    this.tilemap = buildTilemap(this, this.layoutDef.width, this.layoutDef.height);
     buildBorderTileSprite(this, this.tilemap.widthPx, this.tilemap.heightPx);
 
     registerTransparentSpriteSheet(this, 'player-walk', PLAYER_TEX, 16, 32);
+    registerTransparentSpriteSheet(this, 'player-run', PLAYER_RUN_TEX, 16, 32);
+    setupDoorAnim(this);
 
-    // Résolution des NPCs depuis map.json
-    const mapJson = this.cache.json.get('map-json') as MapJson;
     const gfxTable = this.cache.json.get('gfx-table') as GraphicsTable;
-    const resolved = resolveNpcs(mapJson, gfxTable);
+    const resolved = resolveNpcs(this.mapJson, gfxTable,
+      (f) => gameState.hasFlag(f),
+      (id) => gameState.getObjectXY(this.mapName, id));
 
-    // Signs : bg_events avec type "sign" sont interactifs (pas de sprite,
-    // le tile lui-même est dans la map).
-    for (const bg of mapJson.bg_events ?? []) {
-      if (bg.type === 'sign' && bg.script) {
-        this.signs.push({ x: bg.x, y: bg.y, script: bg.script });
-      }
+    for (const bg of this.mapJson.bg_events ?? []) {
+      if (bg.type === 'sign' && bg.script) this.signs.push({ x: bg.x, y: bg.y, script: bg.script });
     }
 
-    // Spawn joueur à la playerStart de la map (warp_events[0] est typiquement le point d'entrée)
-    const startX = mapJson.warp_events?.[0]?.x ?? Math.floor(this.meta.tileWidth / 2);
-    const startY = (mapJson.warp_events?.[0]?.y ?? Math.floor(this.meta.tileHeight / 2)) + 1;
+    // Priorité spawn : override scène > warpId > centre map
+    let startX: number, startY: number;
+    if (this.spawnOverride) {
+      startX = this.spawnOverride.x; startY = this.spawnOverride.y;
+    } else {
+      const warps = this.mapJson.warp_events ?? [];
+      const entry = (this.warpIdTarget != null) ? warps[Number(this.warpIdTarget)] ?? warps[0] : warps[0];
+      startX = entry?.x ?? Math.floor(this.layoutDef.width / 2);
+      startY = entry?.y ?? Math.floor(this.layoutDef.height / 2);
+    }
     this.spawnPlayer(startX, startY);
 
-    // Caméra + HUD
-    this.cameras.main.startFollow(this.playerSprite, true, 1, 1);
-    const mapLabel = this.add.text(4, 4, getMapNameFr(MAPSEC_ID), {
-      fontFamily: 'monospace', fontSize: '8px', color: '#ffffff',
-      backgroundColor: '#000000aa', padding: { x: 3, y: 1 }
-    });
-    mapLabel.setScrollFactor(0).setDepth(500);
+    // Orientation à l'arrivée
+    if (this.isIndoor()) {
+      this.playerFacing = 'up';
+      setIdleFrame(this.playerSprite, PLAYER_TEX, 'up');
+    } else if (this.arrivedFromIndoor) {
+      this.playerFacing = 'down';
+      setIdleFrame(this.playerSprite, PLAYER_TEX, 'down');
+    }
 
-    // Deuxième phase de chargement : sprites NPC (uniques)
+    this.cameras.main.startFollow(this.playerSprite, true, 1, 1);
+
+    // Le decomp affiche le nom de zone seulement quand show_map_name=true
+    // (vrai pour outdoor villes/routes, faux pour intérieurs).
+    if (this.mapJson.show_map_name !== false) {
+      const mapLabel = this.add.text(4, 4, getMapNameFr(this.mapJson.region_map_section) || this.mapName, {
+        fontFamily: 'monospace', fontSize: '8px', color: '#ffffff',
+        backgroundColor: '#000000aa', padding: { x: 3, y: 1 }
+      });
+      mapLabel.setScrollFactor(0).setDepth(200000);
+    }
+
+    // NPCs : second loading phase
     const seen = new Set<string>();
     for (const npc of resolved) {
       if (seen.has(npc.raw.graphics_id)) continue;
       seen.add(npc.raw.graphics_id);
       this.load.spritesheet(npc.sourceTextureKey, npc.spriteUrl, {
-        frameWidth: npc.gfx.frameWidth,
-        frameHeight: npc.gfx.frameHeight
+        frameWidth: npc.gfx.frameWidth, frameHeight: npc.gfx.frameHeight
       });
     }
-    this.load.once('complete', () => this.onNpcsLoaded(resolved));
+    this.load.once('complete', () => this.afterNpcsLoad(resolved));
     this.load.start();
 
-    this.bindInput();
+    this.setupInput();
+    this.mapReady = true;
+
+    // Auto-step down après warp UNIQUEMENT si la tile d'arrivée est une porte
+    // (MB_ANIMATED_DOOR / MB_NON_ANIMATED_DOOR / MB_WATER_DOOR). Pour escaliers,
+    // arrows et autres warps on reste sur la tile (le décomp ne push pas non plus).
+    if (this.warpIdTarget != null || this.arrivedFromIndoor) {
+      const beh = this.tilemap.behaviors[startY]?.[startX] ?? 0;
+      if (isDoorWarp(beh)) {
+        this.time.delayedCall(120, () => {
+          this.inputLockUntil = 0;
+          this.tryMove(0, 1, 'down', false);
+        });
+      }
+    }
+
+    if (this.mapJson.music) {
+      const musName = this.mapJson.music.toLowerCase() + '.mid';
+      this.time.delayedCall(300, () => {
+        if (this.musicStarted) void playMidiLoop(`${BASE}/music/${musName}`);
+      });
+    }
   }
 
-  private onNpcsLoaded(resolved: ResolvedNpc[]) {
+  private afterNpcsLoad(resolved: ResolvedNpc[]) {
     for (const npc of resolved) {
-      // Certaines frames de sprites ne sont pas 16x32 (ex: petits enfants 16x16,
-      // Pr. Seko 16x32 lui aussi). On retire la transparence pour chaque.
       if (!this.textures.exists(npc.textureKey)) {
-        registerTransparentSpriteSheet(
-          this, npc.sourceTextureKey, npc.textureKey,
-          npc.gfx.frameWidth, npc.gfx.frameHeight
-        );
+        registerTransparentSpriteSheet(this, npc.sourceTextureKey, npc.textureKey, npc.gfx.frameWidth, npc.gfx.frameHeight);
       }
       const sprite = this.add.sprite(
         npc.raw.x * TILE_SIZE + TILE_SIZE / 2,
         npc.raw.y * TILE_SIZE + TILE_SIZE,
-        npc.textureKey,
-        0
+        npc.textureKey, 0
       );
-      sprite.setOrigin(0.5, 1).setDepth(10);
+      sprite.setOrigin(0.5, 1).setDepth(sprite.y);
       setIdleFrame(sprite, npc.textureKey, 'down');
+      // NPCs avec flag de masquage set sont spawn invisibles —
+      // addobject les revealera plus tard depuis un script.
+      if (npc.hiddenAtSpawn) sprite.setVisible(false);
       this.npcs.push({ ...npc, sprite });
     }
+    // Exécute MAP_SCRIPT_ON_TRANSITION puis OnFrame (intro auto-trigger)
+    const ctx = this.buildScriptContext();
+    void (async () => {
+      await runMapScript(this.parsedScripts, this.mapName, 'MAP_SCRIPT_ON_TRANSITION', ctx);
+      await runOnFrameTable(this.parsedScripts, this.mapName, ctx);
+    })();
+  }
+
+  // Construit le ScriptContext partagé entre OnTransition/OnFrame/tryInteract.
+  // focusedNpc : NPC ciblé par interaction (pour faceplayer).
+  private buildScriptContext(focusedNpc?: ResolvedNpc & { sprite: Phaser.GameObjects.Sprite }): ScriptContext {
+    const opposite: Record<Facing, Facing> = { up: 'down', down: 'up', left: 'right', right: 'left' };
+    const targetFor = (localId: string): MovementSprite | null => {
+      if (localId === 'LOCALID_PLAYER' || localId === '255') {
+        return {
+          sprite: this.playerSprite,
+          textureKey: PLAYER_TEX,
+          tile: this.playerTile,
+          facing: this.playerFacing
+        };
+      }
+      const npc = this.npcs.find(n => n.raw.local_id === localId);
+      if (!npc) return null;
+      return {
+        sprite: npc.sprite,
+        textureKey: npc.textureKey,
+        tile: { x: npc.raw.x, y: npc.raw.y },
+        facing: 'down'
+      };
+    };
+    return {
+      showText: (t) => this.dialogue.show(t),
+      faceNpcToPlayer: () => {
+        if (focusedNpc) setIdleFrame(focusedNpc.sprite, focusedNpc.textureKey, opposite[this.playerFacing]);
+      },
+      lockPlayer: () => { this.dialogueOpen = true; },
+      releasePlayer: () => { this.dialogueOpen = false; },
+      warp: (destMapId, x, y) => {
+        const mapIds = this.cache.json.get('map-ids') as Record<string, string>;
+        const destDir = mapIds[destMapId];
+        if (!destDir) return;
+        this.input.keyboard?.removeAllListeners();
+        this.cameras.main.fadeOut(200, 0, 0, 0);
+        this.time.delayedCall(220, () => {
+          this.scene.restart({ mapName: destDir, spawnX: x, spawnY: y });
+        });
+      },
+      setObjectXY: (localId, x, y) => {
+        gameState.setObjectXY(this.mapName, localId, x, y);
+        const npc = this.npcs.find(n => n.raw.local_id === localId);
+        if (npc) {
+          npc.raw.x = x; npc.raw.y = y;
+          npc.sprite.x = x * TILE_SIZE + TILE_SIZE / 2;
+          npc.sprite.y = y * TILE_SIZE + TILE_SIZE;
+          npc.sprite.setDepth(npc.sprite.y);
+        }
+      },
+      applyMovement: (localId, actions) => {
+        const t = targetFor(localId);
+        if (!t) return Promise.resolve();
+        const p = runMovement(this, t, actions).then(() => {
+          // Sync l'état logique après l'animation
+          if (localId === 'LOCALID_PLAYER' || localId === '255') {
+            this.playerTile = t.tile; this.playerFacing = t.facing;
+          } else {
+            const npc = this.npcs.find(n => n.raw.local_id === localId);
+            if (npc) { npc.raw.x = t.tile.x; npc.raw.y = t.tile.y; }
+          }
+          this.pendingMovements.delete(localId);
+        });
+        this.pendingMovements.set(localId, p);
+        return p;
+      },
+      waitMovement: async (localId) => {
+        if (localId === '0') {
+          await Promise.all([...this.pendingMovements.values()]);
+          this.pendingMovements.clear();
+        } else {
+          const p = this.pendingMovements.get(localId);
+          if (p) await p;
+        }
+      },
+      setObjectVisible: (localId, visible) => {
+        const npc = this.npcs.find(n => n.raw.local_id === localId);
+        if (npc) npc.sprite.setVisible(visible);
+      },
+      delay: (frames) => new Promise(r => this.time.delayedCall(frames * 16, r)),
+      setPlayerVisible: (visible) => this.playerSprite.setVisible(visible),
+      setObjectMovementType: (localId, mvmtType) => {
+        const npc = this.npcs.find(n => n.raw.local_id === localId);
+        if (!npc) return;
+        const facing: Facing | null =
+          mvmtType.includes('FACE_UP') ? 'up'
+          : mvmtType.includes('FACE_DOWN') ? 'down'
+          : mvmtType.includes('FACE_LEFT') ? 'left'
+          : mvmtType.includes('FACE_RIGHT') ? 'right'
+          : null;
+        if (facing) setIdleFrame(npc.sprite, npc.textureKey, facing);
+      },
+      fadeScreen: (mode) => new Promise(r => {
+        const isOut = mode.includes('TO_BLACK');
+        if (isOut) {
+          this.cameras.main.fadeOut(200, 0, 0, 0);
+          // Auto-fadeIn 600ms plus tard : on n'a pas implémenté les `special`
+          // visuels (StartWallClock, ViewWallClock, etc.) qui devraient le faire,
+          // donc sans ça l'écran reste noir indéfiniment.
+          this.time.delayedCall(800, () => this.cameras.main.fadeIn(200, 0, 0, 0));
+        } else this.cameras.main.fadeIn(200, 0, 0, 0);
+        this.time.delayedCall(220, () => r());
+      }),
+    };
   }
 
   private spawnPlayer(startX: number, startY: number) {
-    // Ajuste si blocage
     let sx = startX, sy = startY;
-    if (this.isBlocked(sx, sy)) {
-      for (let r = 1; r < 10; r++) {
-        for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
-          if (!this.isBlocked(startX + dx, startY + dy)) { sx = startX + dx; sy = startY + dy; r = 99; break; }
-        }
+    if (this.isBlockedForSpawn(sx, sy)) {
+      for (let r = 1; r < 10; r++) for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
+        if (!this.isBlockedForSpawn(startX + dx, startY + dy)) { sx = startX + dx; sy = startY + dy; r = 99; break; }
       }
     }
     this.playerTile = { x: sx, y: sy };
@@ -151,49 +370,195 @@ export class OverworldScene extends Phaser.Scene {
       sy * TILE_SIZE + TILE_SIZE,
       PLAYER_TEX, 0
     );
-    this.playerSprite.setOrigin(0.5, 1).setDepth(10);
+    this.playerSprite.setOrigin(0.5, 1).setDepth(this.playerSprite.y);
     setIdleFrame(this.playerSprite, PLAYER_TEX, 'down');
   }
 
-  private bindInput() {
-    this.input.keyboard?.on('keydown', (e: KeyboardEvent) => {
-      // Dialogue ouvert : DialogueBox intercepte déjà espace/enter/w en interne
-      if (this.dialogueOpen) return;
-      const k = e.key.toLowerCase();
-      if (k === 'w') this.tryInteract();
-      else if (k === 'b') { this.scene.launch('MenuOverlayScene'); this.scene.pause(); }
-      else if (k === 'arrowup' || k === 'z') this.tryMove(0, -1, 'up');
-      else if (k === 'arrowdown' || k === 's') this.tryMove(0, 1, 'down');
-      else if (k === 'arrowleft' || k === 'q' || k === 'a') this.tryMove(-1, 0, 'left');
-      else if (k === 'arrowright' || k === 'd') this.tryMove(1, 0, 'right');
+  private isIndoor(): boolean {
+    return this.mapJson.map_type === 'MAP_TYPE_INDOOR' || this.mapJson.map_type === 'MAP_TYPE_SECRET_BASE';
+  }
+
+  private setupInput() {
+    const kb = this.input.keyboard!;
+    // Directions : on track l'état held pour le tap/hold
+    const bind = (code: string, dir: Facing) => {
+      // emitOnRepeat=false : on ne reçoit qu'UN down event par appui physique
+      // (sinon l'auto-repeat OS reset heldSince en boucle et bloque le walk).
+      const k = kb.addKey(code, true, false);
+      k.on('down', () => this.onDirDown(dir));
+      k.on('up', () => this.onDirUp(dir));
+    };
+    bind('UP', 'up'); bind('Z', 'up');
+    bind('DOWN', 'down'); bind('S', 'down');
+    bind('LEFT', 'left'); bind('Q', 'left'); bind('A', 'left');
+    bind('RIGHT', 'right'); bind('D', 'right');
+    this.keyX = kb.addKey('X');
+
+    // Actions non-répétitives
+    kb.on('keydown-W', () => { if (!this.dialogueOpen) this.tryInteract(); });
+    kb.on('keydown-B', () => { if (!this.dialogueOpen) { this.scene.launch('MenuOverlayScene'); this.scene.pause(); } });
+    // Priming audio au premier input
+    kb.on('keydown', () => {
+      void (async () => {
+        await primeAudio();
+        if (!this.musicStarted && this.mapJson.music) {
+          this.musicStarted = true;
+          const musName = this.mapJson.music.toLowerCase() + '.mid';
+          void playMidiLoop(`${BASE}/music/${musName}`);
+        }
+      })();
     });
   }
 
-  private tryMove(dx: number, dy: number, facing: Facing) {
+  private onDirDown(dir: Facing) {
+    if (this.dialogueOpen || !this.mapReady) return;
+    // Turn immédiat (visuel)
+    if (this.playerFacing !== dir) {
+      this.playerFacing = dir;
+      setIdleFrame(this.playerSprite, this.currentTex(), dir);
+    }
+    this.heldDir = dir;
+    this.heldSince = this.time.now;
+  }
+
+  private onDirUp(dir: Facing) {
+    if (this.heldDir === dir) this.heldDir = null;
+  }
+
+  private currentTex(): string {
+    return this.keyX?.isDown ? PLAYER_RUN_TEX : PLAYER_TEX;
+  }
+
+  /** Force le sprite joueur à utiliser la texture correspondant à l'état courant
+   * (X pressé/relâché) en pose idle. À appeler après la fin d'un tween de
+   * déplacement pour éviter que le sprite reste figé sur une frame running. */
+  private syncPlayerIdleTexture() {
+    if (this.time.now < this.inputLockUntil) return;
+    setIdleFrame(this.playerSprite, this.currentTex(), this.playerFacing);
+  }
+
+  update() {
+    if (!this.mapReady || this.dialogueOpen) return;
+    if (this.time.now < this.inputLockUntil) return;
+    if (!this.heldDir) return;
+    if (this.time.now - this.heldSince < TAP_TURN_THRESHOLD_MS) return;
+    const [dx, dy] = DELTA[this.heldDir];
+    this.tryMove(dx, dy, this.heldDir, true);
+  }
+
+  /**
+   * @param canExitIndoor true = on autorise le trigger du warp intérieur
+   *   (stand-on + DOWN). False pour l'auto-step de sortie qui ne doit pas
+   *   re-trigger le warp.
+   */
+  private tryMove(dx: number, dy: number, facing: Facing, canExitIndoor = true) {
     if (this.time.now < this.inputLockUntil) return;
     this.playerFacing = facing;
+
+    // Règle PORTE INTÉRIEURE : on est SUR la porte et on push DOWN pour sortir.
+    // Seulement si la tile courante a un behavior de porte (pas escalier/ladder).
+    if (canExitIndoor && this.isIndoor() && dy > 0) {
+      const beh = this.tilemap.behaviors[this.playerTile.y]?.[this.playerTile.x] ?? 0;
+      if (isDoorWarp(beh)) {
+        const warp = this.mapJson.warp_events?.find(
+          w => w.x === this.playerTile.x && w.y === this.playerTile.y
+        );
+        if (warp) { this.triggerWarp(warp); return; }
+      }
+    }
+
     const nx = this.playerTile.x + dx, ny = this.playerTile.y + dy;
     if (this.isBlocked(nx, ny)) {
-      setIdleFrame(this.playerSprite, PLAYER_TEX, facing);
-      this.inputLockUntil = this.time.now + 100;
+      setIdleFrame(this.playerSprite, this.currentTex(), facing);
+      this.inputLockUntil = this.time.now + 60;
       return;
     }
-    playSingleStep(this.playerSprite, PLAYER_TEX, facing, this.moveCooldown);
+
+    const tex = this.currentTex();
+    const cooldown = this.keyX?.isDown ? RUN_COOLDOWN : WALK_COOLDOWN;
+    playSingleStep(this.playerSprite, tex, facing, cooldown);
     this.playerTile.x = nx; this.playerTile.y = ny;
+    // Track position in game state pour la sauvegarde
+    gameState.map = { name: this.mapName, x: nx, y: ny };
     this.tweens.add({
       targets: this.playerSprite,
       x: nx * TILE_SIZE + TILE_SIZE / 2,
       y: ny * TILE_SIZE + TILE_SIZE,
-      duration: this.moveCooldown,
-      ease: 'Linear'
+      duration: cooldown,
+      ease: 'Linear',
+      onUpdate: () => this.playerSprite.setDepth(this.playerSprite.y),
+      onComplete: () => {
+        if (!this.isIndoor()) this.checkOutdoorWarp();
+        // Escaliers / ladders / arrows : warp dès qu'on marche dessus, même indoor
+        else this.postMoveCheckStairsOrArrow(facing);
+        // Si plus de touche directionnelle ni X → repasse en idle avec la
+        // bonne texture (walking, pas running frozen).
+        this.time.delayedCall(30, () => {
+          if (!this.heldDir) this.syncPlayerIdleTexture();
+        });
+      }
     });
-    this.inputLockUntil = this.time.now + this.moveCooldown;
+    this.inputLockUntil = this.time.now + cooldown;
+  }
+
+  private checkOutdoorWarp() {
+    // Warp dès qu'on arrive sur la tile : portes outdoor (entrée maison) ET
+    // escaliers / ladders / arrows en intérieur (changement d'étage).
+    const warp = (this.mapJson.warp_events ?? []).find(
+      w => w.x === this.playerTile.x && w.y === this.playerTile.y
+    );
+    if (warp) this.triggerWarp(warp);
+  }
+
+  /** Warp instantané au step pour escaliers/ladders/arrows.
+   *  Gen3 : un MB_NON_ANIMATED_DOOR atteint en montant (UP) = escalier (auto-warp).
+   *  Atteint en descendant (DOWN) ou autre = porte intérieure (attend push DOWN). */
+  private postMoveCheckStairsOrArrow(arrivedFacing: Facing) {
+    const beh = this.tilemap.behaviors[this.playerTile.y]?.[this.playerTile.x] ?? 0;
+    // MB_LADDER, MB_*_ARROW_WARP, MB_UP/DOWN_ESCALATOR : toujours auto-warp
+    const isAlwaysInstant = beh === 0x61 || (beh >= 0x62 && beh <= 0x65)
+                       || beh === 0x6A || beh === 0x6B || beh === 0x67 || beh === 0x68
+                       || beh === 0x6E;
+    // Porte intérieure atteinte en marchant vers le HAUT = escalier
+    const isStairsViaDoor = (beh === 0x60 || beh === 0x69 || beh === 0x6C) && arrivedFacing === 'up';
+    if (!isAlwaysInstant && !isStairsViaDoor) return;
+    const warp = this.mapJson.warp_events?.find(
+      w => w.x === this.playerTile.x && w.y === this.playerTile.y
+    );
+    if (warp) this.triggerWarp(warp);
+  }
+
+  private triggerWarp(warp: NonNullable<MapJson['warp_events']>[number]) {
+    const mapIds = this.cache.json.get('map-ids') as Record<string, string>;
+    const destDir = mapIds[warp.dest_map];
+    if (!destDir) { console.warn('[warp] dest inconnue', warp.dest_map); return; }
+    this.input.keyboard?.removeAllListeners();
+    this.heldDir = null;
+    this.mapReady = false;
+
+    const indoor = this.isIndoor();
+    const playDoor = !indoor; // on est dehors, on entre dans un intérieur
+    const finish = () => {
+      this.cameras.main.fadeOut(200, 0, 0, 0);
+      this.time.delayedCall(220, () => {
+        this.scene.restart({ mapName: destDir, warpId: warp.dest_warp_id, fromIndoor: indoor });
+      });
+    };
+    if (playDoor) playDoorOpen(this, warp.x, warp.y, finish);
+    else finish();
   }
 
   private isBlocked(x: number, y: number): boolean {
-    if (x < 0 || y < 0 || x >= this.tilemap.widthTiles || y >= this.tilemap.heightTiles) return true;
+    if (x < 0 || y < 0 || x >= this.layoutDef.width || y >= this.layoutDef.height) return true;
+    if (this.mapJson.warp_events?.some(w => w.x === x && w.y === y)) return false;
     if (this.tilemap.collisions[y]?.[x] === 1) return true;
     if (this.npcs.some(n => n.raw.x === x && n.raw.y === y)) return true;
+    return false;
+  }
+
+  private isBlockedForSpawn(x: number, y: number): boolean {
+    if (x < 0 || y < 0 || x >= this.layoutDef.width || y >= this.layoutDef.height) return true;
+    if (this.tilemap.collisions[y]?.[x] === 1 && !this.mapJson.warp_events?.some(w => w.x === x && w.y === y)) return true;
     return false;
   }
 
@@ -213,12 +578,7 @@ export class OverworldScene extends Phaser.Scene {
       return;
     }
     this.dialogueOpen = true;
-    await runScript(scriptName, this.parsedScripts, {
-      showText: (t) => this.dialogue.show(t),
-      faceNpcToPlayer: () => { /* TODO : tourner le NPC */ },
-      lockPlayer: () => { /* verrou géré par dialogueOpen */ },
-      releasePlayer: () => { /* idem */ }
-    });
+    await runScript(scriptName, this.parsedScripts, this.buildScriptContext(npc || undefined));
     this.dialogueOpen = false;
   }
 }

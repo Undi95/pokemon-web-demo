@@ -1,0 +1,13 @@
+{
+  "primaryTileset": "gTileset_Building",
+  "secondaryTileset": "gTileset_SeashoreHouse",
+  "atlasCols": 32,
+  "atlasRows": 2,
+  "atlasWidth": 512,
+  "atlasHeight": 32,
+  "totalMetatiles": 64,
+  "numPrimaryMetatiles": 8,
+  "numSecondaryMetatiles": 56,
+  "primaryMetatileIdStart": 0,
+  "secondaryMetatileIdStart": 512
+}

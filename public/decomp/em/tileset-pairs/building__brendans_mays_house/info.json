@@ -1,0 +1,13 @@
+{
+  "primaryTileset": "gTileset_Building",
+  "secondaryTileset": "gTileset_BrendansMaysHouse",
+  "atlasCols": 32,
+  "atlasRows": 7,
+  "atlasWidth": 512,
+  "atlasHeight": 112,
+  "totalMetatiles": 204,
+  "numPrimaryMetatiles": 8,
+  "numSecondaryMetatiles": 196,
+  "primaryMetatileIdStart": 0,
+  "secondaryMetatileIdStart": 512
+}

@@ -1,0 +1,13 @@
+{
+  "primaryTileset": "gTileset_General",
+  "secondaryTileset": "gTileset_InsideOfTruck",
+  "atlasCols": 32,
+  "atlasRows": 18,
+  "atlasWidth": 512,
+  "atlasHeight": 288,
+  "totalMetatiles": 550,
+  "numPrimaryMetatiles": 512,
+  "numSecondaryMetatiles": 38,
+  "primaryMetatileIdStart": 0,
+  "secondaryMetatileIdStart": 512
+}

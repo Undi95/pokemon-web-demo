@@ -263,6 +263,116 @@ Concrètement :
   du joueur, peut nécessiter de gérer un flag spécifique.
 - Système de flags/vars runtime (pour progression au-delà du début de jeu).
 
+## Session 12 — Save + nouvelle partie
+
+- `src/engine/game-state.ts` : flags/vars/save/load/initNewGame, persisté en
+  localStorage. Reproduit `InsideOfTruck_EventScript_SetIntroFlagsMale/Female`
+  pour le spawn correct (3,10 male / 12,10 female).
+- NamingScene → `gameState.initNewGame()` puis spawn aux coords authentiques.
+- MainMenu : CONTINUER lit `gameState.map` pour reprendre la dernière position.
+- MenuOverlay : SAUVER déclenche `gameState.save()` avec confirmation dialogue.
+- OverworldScene track `gameState.map` à chaque déplacement.
+
+### TODO : intro camion authentique
+
+L'intro dans le vrai jeu :
+1. Player apparaît dans `MAP_INSIDE_OF_TRUCK` (carte 8×8)
+2. Map active `setstepcallback STEP_CB_TRUCK` (oscillation visuelle "le camion roule")
+3. Player marche vers la porte (sortie est)
+4. Warp vers Littleroot avec `EventScript_TruckArrive` qui place le camion dehors,
+   puis Mom marche à la rencontre via `LittlerootTown_OnTransition`
+
+Notre version actuelle skip la map InsideOfTruck et spawn direct dans
+Littleroot. Pour l'authenticité :
+- [ ] Ajouter `InsideOfTruckScene` avec `STEP_CB_TRUCK` (oscillation y du player)
+- [ ] Implémenter le warp de sortie qui charge LittlerootTown + script
+- [ ] Parser et exécuter `LittlerootTown_OnTransition` au spawn (Mom moves,
+  truck visual, etc.)
+
+## Règle dure (session 11) : AUCUN PRÉ-RENDU
+
+Tous les rendus graphiques (metatiles, title screen, textboxes, etc.) doivent
+se faire au **runtime** à partir des fichiers bruts du décomp (PNG + .bin +
+.pal). **Pas de script `render-XXX.mjs` qui produit un PNG composé**.
+
+Scripts à refactorer dans cette direction :
+- [ ] `render-metatile-atlas.mjs` → compo live dans `tilemap-loader.ts`
+- [x] `render-layouts.mjs` → déjà abandonné, à supprimer
+- [ ] `render-title.mjs` → à remplacer par compo runtime dans TitleScene
+- [ ] `render-textbox.mjs` → à remplacer par compo runtime dans DialogueBox
+
+Les scripts d'extraction PURE (copie + parsing text/strings/flags) restent OK.
+
+## Session 11 — TitleScene + MainMenu authentiques
+
+- `extract-strings.mjs` → `strings.json` : **5658 textes FR** parsés depuis
+  `src/strings.c` et consorts. `gText_MainMenuNewGame` = "NOUVELLE PARTIE" etc.
+- `extract-flags-vars.mjs` → `flags-vars.json` : 775 flags, 185 vars.
+- `render-title.mjs` : compose `rayquaza.png + .bin + .pal` (4bpp, palette 16) →
+  `rayquaza-rendered.png` + `clouds-rendered.png`. Nickel.
+- `TitleScene` + `MainMenuScene` (entry = TitleScene).
+- Cri Rayquaza (`cries/rayquaza.wav`) joué sur le press start.
+
+### Dette technique : logo Pokémon 8bpp
+
+Le `pokemon_logo.png` est un tileset **8bpp** avec tilemap dont les IDs vont
+jusqu'à 798 alors que l'atlas n'a que 256 tiles. Mes tentatives (modulo,
+division par 2, etc.) n'ont pas décodé proprement. Le système GBA 8bpp avec
+split char block n'est pas encore implémenté dans `render-title.mjs`.
+
+**Solution à explorer** : lire `src/title_screen.c` pour comprendre comment
+le bg 8bpp est chargé (`BG_CHAR_ADDR(0)` et wrap de tile IDs au-delà du char
+block de 16 KB). Possiblement le fichier `.8bpp.lz` original contient plus de
+256 tiles une fois décompressé, et la conversion PNG perd de l'info. Ou le
+bg 8bpp déborde sur le char block voisin (non chargé ici, donc le jeu
+original affichait peut-être des tuiles "vides" aussi).
+
+Workaround actuel : display du PNG atlas tel quel en placeholder.
+
+### Idle / intro Game Freak
+
+Assets présents (`graphics/intro/scene_1,2,3/`) — Flygon, Latios, bicycle,
+brendan, clouds, sparkle, drops_logo. `src/intro.c` à parser pour la
+cinématique complète. Pas fait ce session.
+
+## Session 10 — PIVOT archi : tout depuis le décomp
+
+**Décision** : arrêter d'écrire du code "maison" qui duplique ce qui existe
+dans le décomp. Le but devient : recréer Pokémon Émeraude sur navigateur,
+avec @pkmn/sim comme seule exception (moteur de combat). Tout le reste doit
+venir des fichiers du décomp.
+
+Voir [`DECOMP_MAP.md`](./DECOMP_MAP.md) pour la carte complète des sources.
+
+### Plan de boot à porter (ordre)
+
+1. Intro Rayquaza → Title screen → Main menu
+2. Birch speech + choix sexe
+3. Naming screen (clavier virtuel)
+4. New game init (flags/vars à 0)
+5. Truck intro + spawn Littleroot via scripts
+
+### Travaux de cette session
+
+- Écriture de `DECOMP_MAP.md` (audit complet)
+- Ajout `scripts/extract-flags-vars.mjs` → `flags-vars.json`
+  (**775 flags + 185 vars** indexés)
+- `extract-decomp.mjs` étendu : copie `graphics/interface/` +
+  tous les assets de boot dans `public/decomp/em/boot/`
+  (intro 126 KB, title_screen 32 KB, birch_speech 12 KB, naming_screen 27 KB)
+
+### Dette immédiate avant la prochaine session
+
+- Parser `src/title_screen.c` pour comprendre la logique (fade intro → press
+  start clignotant → main menu)
+- Parser `src/main_menu.c` pour CONTINUER / NOUVELLE PARTIE / OPTIONS
+- Parser `src/birch_speech.c` + `src/naming_screen.c`
+- Écrire `scripts/extract-boot-text.mjs` pour récupérer les chaînes FR de
+  ces écrans depuis `src/data/text/`
+- Créer les scènes Phaser `IntroScene`, `TitleScene`, `MainMenuScene`,
+  `BirchSpeechScene`, `NamingScene` qui chargent ces assets extraits
+- Tout nouveau code dans ces scènes : UNIQUEMENT de la traduction depuis C
+
 ## Session 4 — Fixes retours utilisateur
 
 Retour direct sur la session 3 :
@@ -331,11 +441,21 @@ Le rendu pré-compilé des maps en PNG (session 2) était un shortcut qui casse
 plusieurs features. On pivote vers du rendu live par metatile, MAIS certains
 systèmes restent à faire plus tard :
 
-- [ ] **Animations de map** : eau qui bouge, fleurs qui respirent, cascades,
-  champs de contest, machines. Les données sont dans
-  `data/tilesets/<kind>/<name>/anim/` (PNGs de frames). Chaque tileset a son
-  propre cycle d'animation. À wirer avec Phaser's tile animations ou un
-  custom ticker.
+- [ ] **Animations de tiles (fleurs, eau, cascades)** — assets extraits dans
+  `public/decomp/em/tilesets/<kind>/<name>/anim/<group>/<frame>.png`. Logique
+  pokemerald : `src/tileset_anims.c` callback `TilesetAnim_General` rotate les
+  tiles VRAM 508-511 avec les frames de `anim/flower/`. Approche runtime :
+  1. Parser `metatiles.bin` pour détecter les metatile IDs qui référencent
+     tiles 508-511 (par tileset).
+  2. Pour chaque map position avec un tel metatile, détecter les sub-tiles
+     animés (0-3 dans lower, 0-3 dans upper).
+  3. Spawner une `Phaser.Image` 8×8 à la position exacte de chaque sub-tile
+     animé, cycler le `setTexture` à 250ms.
+  4. Depth : au-dessus de la lower layer (1) ou au-dessus de l'upper (100001)
+     selon le layer du sub-tile.
+  Gros chantier ~150 LoC. Même logique réutilisable pour water, waterfall,
+  et les anims spécifiques (Rustboro fountain, Dewford flag, etc.) —
+  `src/tileset_anims.c` a tous les callbacks par tileset.
 - [ ] **Portes animées** : 4 frames d'ouverture quand le joueur entre. Les
   sprites sont dans `graphics/maps/doors/` ou dans les tilesets selon le cas.
 - [ ] **Transition de warp** : fade noir + téléport + fade, plutôt que snap

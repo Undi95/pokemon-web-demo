@@ -1,0 +1,682 @@
+# Route109
+
+## Métadonnées
+- **id** : `MAP_ROUTE109`
+- **layout** : `LAYOUT_ROUTE109`
+- **music** : `MUS_ROUTE104`
+- **region_map_section** : `MAPSEC_ROUTE_109`
+- **weather** : `WEATHER_SUNNY`
+- **map_type** : `MAP_TYPE_ROUTE`
+- **battle_scene** : `MAP_BATTLE_SCENE_NORMAL`
+- **show_map_name** : `True`
+- **allow_cycling** : `True`
+- **allow_running** : `True`
+
+## Connexions
+- up (offset 0) → `MAP_SLATEPORT_CITY`
+- left (offset 40) → `MAP_ROUTE108`
+
+## Object events (24 NPCs)
+| local_id | gfx | x,y | mvmt | script | flag |
+|---|---|---|---|---|---|
+| `LOCALID_ROUTE109_BOAT` | `OBJ_EVENT_GFX_MR_BRINEYS_BOAT` | 21,26 | `MOVEMENT_TYPE_FACE_UP` | `0x0` | `FLAG_HIDE_ROUTE_109_MR_BRINEY_BOAT` |
+| `LOCALID_ROUTE109_BRINEY` | `OBJ_EVENT_GFX_EXPERT_M` | 21,24 | `MOVEMENT_TYPE_FACE_UP` | `Route109_EventScript_MrBriney` | `FLAG_HIDE_ROUTE_109_MR_BRINEY` |
+| `` | `OBJ_EVENT_GFX_SWIMMER_M` | 12,36 | `MOVEMENT_TYPE_FACE_RIGHT` | `Route109_EventScript_David` | `0` |
+| `` | `OBJ_EVENT_GFX_SWIMMER_F` | 25,39 | `MOVEMENT_TYPE_FACE_UP_AND_LEFT` | `Route109_EventScript_Alice` | `0` |
+| `` | `OBJ_EVENT_GFX_SAILOR` | 15,17 | `MOVEMENT_TYPE_FACE_DOWN` | `Route109_EventScript_Huey` | `0` |
+| `` | `OBJ_EVENT_GFX_SAILOR` | 24,13 | `MOVEMENT_TYPE_FACE_LEFT` | `Route109_EventScript_Edmond` | `0` |
+| `` | `OBJ_EVENT_GFX_TUBER_M` | 19,10 | `MOVEMENT_TYPE_FACE_DOWN` | `Route109_EventScript_Ricky` | `0` |
+| `` | `OBJ_EVENT_GFX_TUBER_F` | 22,7 | `MOVEMENT_TYPE_WALK_SLOWLY_IN_PLACE_RIGHT` | `Route109_EventScript_Lola` | `0` |
+| `` | `OBJ_EVENT_GFX_LITTLE_GIRL` | 11,6 | `MOVEMENT_TYPE_FACE_DOWN` | `Route109_EventScript_SeashoreHouseGirl` | `0` |
+| `` | `OBJ_EVENT_GFX_ITEM_BALL` | 27,46 | `MOVEMENT_TYPE_LOOK_AROUND` | `Route109_EventScript_ItemPPUp` | `FLAG_ITEM_ROUTE_109_PP_UP` |
+| `` | `OBJ_EVENT_GFX_TUBER_F` | 29,32 | `MOVEMENT_TYPE_FACE_DOWN_AND_UP` | `Route109_EventScript_Gwen` | `0` |
+| `` | `OBJ_EVENT_GFX_TUBER_F` | 28,31 | `MOVEMENT_TYPE_FACE_DOWN_AND_LEFT` | `Route109_EventScript_Austina` | `0` |
+| `` | `OBJ_EVENT_GFX_FISHERMAN` | 21,56 | `MOVEMENT_TYPE_FACE_LEFT` | `Route109_EventScript_Carter` | `0` |
+| `` | `OBJ_EVENT_GFX_TUBER_M` | 24,18 | `MOVEMENT_TYPE_FACE_RIGHT` | `Route109_EventScript_SandCastleBoy` | `0` |
+| `` | `OBJ_EVENT_GFX_TUBER_F` | 25,18 | `MOVEMENT_TYPE_FACE_LEFT` | `Route109_EventScript_SoftSandGirl` | `0` |
+| `` | `OBJ_EVENT_GFX_POKEFAN_F` | 30,32 | `MOVEMENT_TYPE_FACE_DOWN` | `Route109_EventScript_Woman` | `0` |
+| `` | `OBJ_EVENT_GFX_WOMAN_4` | 8,41 | `MOVEMENT_TYPE_FACE_DOWN` | `Route109_EventScript_Mel` | `0` |
+| `` | `OBJ_EVENT_GFX_MAN_4` | 9,41 | `MOVEMENT_TYPE_FACE_DOWN` | `Route109_EventScript_Paul` | `0` |
+| `` | `OBJ_EVENT_GFX_OLD_MAN` | 33,6 | `MOVEMENT_TYPE_LOOK_AROUND` | `Route109_EventScript_OldMan` | `0` |
+| `` | `OBJ_EVENT_GFX_ZIGZAGOON_2` | 32,6 | `MOVEMENT_TYPE_LOOK_AROUND` | `Route109_EventScript_Zigzagoon` | `0` |
+| `` | `OBJ_EVENT_GFX_TUBER_F` | 17,13 | `MOVEMENT_TYPE_WALK_SLOWLY_IN_PLACE_RIGHT` | `Route109_EventScript_Hailey` | `0` |
+| `` | `OBJ_EVENT_GFX_TUBER_M` | 27,7 | `MOVEMENT_TYPE_WALK_SLOWLY_IN_PLACE_LEFT` | `Route109_EventScript_Chandler` | `0` |
+| `` | `OBJ_EVENT_GFX_ITEM_BALL` | 25,6 | `MOVEMENT_TYPE_LOOK_AROUND` | `Route109_EventScript_ItemPotion` | `FLAG_ITEM_ROUTE_109_POTION` |
+| `` | `OBJ_EVENT_GFX_MAN_5` | 17,56 | `MOVEMENT_TYPE_WALK_SLOWLY_IN_PLACE_RIGHT` | `Route109_EventScript_Elijah` | `0` |
+
+## Warps (1)
+- #0 (12,5) → `MAP_ROUTE109_SEASHORE_HOUSE` warp #0
+
+## BG events / signs (8)
+- (15,5) [sign] → `Route109_EventScript_SeashoreHouseSign`
+- (29,10) [sign] → `Route109_EventScript_TrainerTipsSign`
+- (16,23) [hidden_item] → ``
+- (33,5) [hidden_item] → ``
+- (9,10) [hidden_item] → ``
+- (28,20) [hidden_item] → ``
+- (13,16) [hidden_item] → ``
+- (8,42) [hidden_item] → ``
+
+## Flags référencés (5)
+- `FLAG_DELIVERED_DEVON_GOODS`
+- `FLAG_HIDE_MR_BRINEY_BOAT_DEWFORD_TOWN`
+- `FLAG_HIDE_MR_BRINEY_DEWFORD_TOWN`
+- `FLAG_HIDE_ROUTE_109_MR_BRINEY_BOAT`
+- `FLAG_RECEIVED_SOFT_SAND`
+
+## Variables référencées (5)
+- `VAR_0x8008`
+- `VAR_BRINEY_LOCATION`
+- `VAR_FACING`
+- `VAR_LAST_TALKED`
+- `VAR_RESULT`
+
+## Labels externes appelés (résolus via _common.json ou orphelins)
+### UNRESOLVED
+- `Common_EventScript_PlayBrineysBoatMusic`
+- `Common_EventScript_StopBrineysBoatMusic`
+- `DewfordTown_Text_BrineyLandedInDewford`
+- `EventScript_BackupMrBrineyLocation`
+- `Route109_Text_AlicePostBattle`
+- `Route109_Text_AustinaPostBattle`
+- `Route109_Text_CarterPostBattle`
+- `Route109_Text_ChandlerPostBattle`
+- `Route109_Text_DavidPostBattle`
+- `Route109_Text_EdmondPostBattle`
+- `Route109_Text_ElijahPostBattle`
+- `Route109_Text_GwenPostBattle`
+- `Route109_Text_HaileyPostBattle`
+- `Route109_Text_HueyPostBattle`
+- `Route109_Text_LolaPostBattle`
+- `Route109_Text_LolaRegister`
+- `Route109_Text_LolaRematchPostBattle`
+- `Route109_Text_MelPostBattle`
+- `Route109_Text_PaulPostBattle`
+- `Route109_Text_RickyPostBattle`
+- `Route109_Text_RickyRegister`
+- `Route109_Text_RickyRematchPostBattle`
+
+## Scripts (45)
+### Route109_EventScript_StartDepartForDewford
+```
+call EventScript_BackupMrBrineyLocation
+setobjectsubpriority LOCALID_ROUTE109_BRINEY, MAP_ROUTE109, 0
+setobjectsubpriority LOCALID_PLAYER, MAP_ROUTE109, 0
+applymovement LOCALID_ROUTE109_BRINEY, Route109_Movement_BrineyEnterBoat
+waitmovement 0
+removeobject LOCALID_ROUTE109_BRINEY
+switch VAR_FACING
+case DIR_SOUTH, Route109_EventScript_EnterBoatSouth
+case DIR_WEST, Route109_EventScript_EnterBoatWest
+case DIR_EAST, Route109_EventScript_EnterBoatEast
+end
+```
+### Route109_EventScript_EnterBoatSouth
+```
+applymovement LOCALID_PLAYER, Route109_Movement_PlayerEnterBoatSouth
+waitmovement 0
+goto Route109_EventScript_DoSailToDewford
+end
+```
+### Route109_EventScript_EnterBoatEast
+```
+applymovement LOCALID_PLAYER, Route109_Movement_PlayerEnterBoatEast
+waitmovement 0
+goto Route109_EventScript_DoSailToDewford
+end
+```
+### Route109_EventScript_EnterBoatWest
+```
+applymovement LOCALID_PLAYER, Route109_Movement_PlayerEnterBoatWest
+waitmovement 0
+goto Route109_EventScript_DoSailToDewford
+end
+```
+### Route109_EventScript_DoSailToDewford
+```
+hideobjectat LOCALID_PLAYER, MAP_ROUTE109
+call Common_EventScript_PlayBrineysBoatMusic
+applymovement LOCALID_ROUTE109_BOAT, Route109_Movement_SailToDewford
+applymovement LOCALID_PLAYER, Route109_Movement_SailToDewford
+waitmovement 0
+delay 50
+call Common_EventScript_StopBrineysBoatMusic
+showobjectat LOCALID_PLAYER, MAP_DEWFORD_TOWN
+applymovement LOCALID_PLAYER, Route109_Movement_PlayerExitBoat
+waitmovement 0
+addobject LOCALID_DEWFORD_BOAT
+clearflag FLAG_HIDE_MR_BRINEY_BOAT_DEWFORD_TOWN
+setobjectxyperm LOCALID_DEWFORD_BRINEY, 12, 8
+addobject LOCALID_DEWFORD_BRINEY
+setobjectsubpriority LOCALID_DEWFORD_BRINEY, MAP_DEWFORD_TOWN, 0
+applymovement LOCALID_DEWFORD_BRINEY, Route109_Movement_BrineyExitBoat
+waitmovement 0
+clearflag FLAG_HIDE_MR_BRINEY_DEWFORD_TOWN
+setflag FLAG_HIDE_ROUTE_109_MR_BRINEY_BOAT
+hideobjectat LOCALID_ROUTE109_BOAT, MAP_ROUTE109
+msgbox DewfordTown_Text_BrineyLandedInDewford, MSGBOX_DEFAULT
+closemessage
+copyvar VAR_BRINEY_LOCATION, VAR_0x8008
+resetobjectsubpriority LOCALID_PLAYER, MAP_ROUTE109
+resetobjectsubpriority LOCALID_DEWFORD_BRINEY, MAP_DEWFORD_TOWN
+copyobjectxytoperm LOCALID_DEWFORD_BRINEY
+release
+end
+```
+### Route109_Movement_SailToDewford
+```
+walk_in_place_faster_down
+walk_down
+walk_down
+walk_fast_down
+walk_fast_down
+walk_faster_down
+walk_faster_down
+walk_faster_down
+walk_faster_down
+walk_faster_down
+walk_faster_down
+walk_faster_down
+walk_faster_down
+walk_faster_down
+walk_faster_down
+walk_faster_down
+walk_faster_down
+walk_faster_down
+walk_faster_down
+walk_faster_down
+walk_faster_down
+walk_fast_down
+walk_fast_down
+walk_fast_left
+walk_fast_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_fast_left
+walk_fast_left
+walk_fast_left
+walk_fast_left
+walk_fast_left
+walk_fast_left
+walk_fast_left
+walk_fast_left
+walk_fast_left
+walk_left
+walk_left
+walk_in_place_faster_down
+step_end
+```
+### Route109_Movement_PlayerEnterBoatSouth
+```
+walk_down
+walk_down
+step_end
+```
+### Route109_Movement_PlayerExitBoat
+```
+walk_down
+walk_down
+walk_left
+walk_in_place_faster_right
+step_end
+```
+### Route109_Movement_PlayerEnterBoatEast
+```
+walk_right
+walk_down
+step_end
+```
+### Route109_Movement_PlayerEnterBoatWest
+```
+walk_left
+walk_down
+step_end
+```
+### Route109_Movement_BrineyEnterBoat
+```
+walk_down
+step_end
+```
+### Route109_Movement_BrineyExitBoat
+```
+walk_down
+walk_in_place_faster_left
+step_end
+```
+### Route109_EventScript_MrBriney
+```
+lock
+faceplayer
+goto_if_unset FLAG_DELIVERED_DEVON_GOODS, Route109_EventScript_HaveNotDeliveredDevonGood
+goto Route109_EventScript_DeliveredDevonGoods
+end
+```
+### Route109_EventScript_HaveNotDeliveredDevonGood
+```
+message Route109_Text_BrineySailToDewfordQuestion
+msgbox Route109_Text_BrineySailToDewfordQuestion, MSGBOX_YESNO
+goto_if_eq VAR_RESULT, NO, Route109_EventScript_StayHere
+goto Route109_EventScript_SailToDewford
+end
+```
+### Route109_EventScript_DeliveredDevonGoods
+```
+message Route109_Text_BrineyWhereAreWeBound
+waitmessage
+multichoicedefault 21, 8, MULTI_BRINEY_OFF_DEWFORD, 1, FALSE
+switch VAR_RESULT
+case 0, Route109_EventScript_SailToDewford
+case 1, Route109_EventScript_ChoseNotToSail
+case MULTI_B_PRESSED, Route109_EventScript_ChoseNotToSail
+end
+```
+### Route109_EventScript_SailToDewford
+```
+msgbox Route109_Text_BrineyDewfordItIs, MSGBOX_DEFAULT
+closemessage
+goto Route109_EventScript_StartDepartForDewford
+end
+```
+### Route109_EventScript_StayHere
+```
+msgbox Route109_Text_BrineyDeliverDevonGoods, MSGBOX_DEFAULT
+release
+end
+```
+### Route109_EventScript_ChoseNotToSail
+```
+msgbox Route109_Text_BrineyTellMeWhenYouNeedToSail, MSGBOX_DEFAULT
+release
+end
+```
+### Route109_EventScript_SeashoreHouseGirl
+```
+msgbox Route109_Text_ChillAtMyPapasSpot, MSGBOX_NPC
+end
+```
+### Route109_EventScript_SandCastleBoy
+```
+lock
+faceplayer
+msgbox Route109_Text_SandCastleTakingLongTime, MSGBOX_DEFAULT
+closemessage
+applymovement VAR_LAST_TALKED, Common_Movement_FaceOriginalDirection
+waitmovement 0
+release
+end
+```
+### Route109_EventScript_SoftSandGirl
+```
+lock
+faceplayer
+special GetPlayerBigGuyGirlString
+goto_if_set FLAG_RECEIVED_SOFT_SAND, Route109_EventScript_AlreadyReceivedSoftSand
+msgbox Route109_Text_YouCanHaveThis, MSGBOX_DEFAULT
+giveitem ITEM_SOFT_SAND
+goto_if_eq VAR_RESULT, 0, Common_EventScript_ShowBagIsFull
+closemessage
+applymovement VAR_LAST_TALKED, Common_Movement_FaceOriginalDirection
+waitmovement 0
+setflag FLAG_RECEIVED_SOFT_SAND
+release
+end
+```
+### Route109_EventScript_AlreadyReceivedSoftSand
+```
+msgbox Route109_Text_WereGoingToMakeBigCastle, MSGBOX_DEFAULT
+applymovement VAR_LAST_TALKED, Common_Movement_FaceOriginalDirection
+waitmovement 0
+release
+end
+```
+### Route109_EventScript_Woman
+```
+msgbox Route109_Text_LittleKidsDartAround, MSGBOX_NPC
+end
+```
+### Route109_EventScript_OldMan
+```
+msgbox Route109_Text_ZigzagoonPicksUpLitter, MSGBOX_NPC
+end
+```
+### Route109_EventScript_Zigzagoon
+```
+lock
+faceplayer
+waitse
+playmoncry SPECIES_ZIGZAGOON, CRY_MODE_NORMAL
+msgbox Route109_Text_ZigzagoonCry, MSGBOX_DEFAULT
+waitmoncry
+release
+end
+```
+### Route109_EventScript_SeashoreHouseSign
+```
+msgbox Route109_Text_SeashoreHouseSign, MSGBOX_SIGN
+end
+```
+### Route109_EventScript_TrainerTipsSign
+```
+msgbox Route109_Text_TrainerTipsSign, MSGBOX_SIGN
+end
+```
+### Route109_EventScript_David
+```
+trainerbattle_single TRAINER_DAVID, Route109_Text_DavidIntro, Route109_Text_DavidDefeated
+msgbox Route109_Text_DavidPostBattle, MSGBOX_AUTOCLOSE
+end
+```
+### Route109_EventScript_Alice
+```
+trainerbattle_single TRAINER_ALICE, Route109_Text_AliceIntro, Route109_Text_AliceDefeated
+msgbox Route109_Text_AlicePostBattle, MSGBOX_AUTOCLOSE
+end
+```
+### Route109_EventScript_Huey
+```
+trainerbattle_single TRAINER_HUEY, Route109_Text_HueyIntro, Route109_Text_HueyDefeated
+msgbox Route109_Text_HueyPostBattle, MSGBOX_AUTOCLOSE
+end
+```
+### Route109_EventScript_Edmond
+```
+trainerbattle_single TRAINER_EDMOND, Route109_Text_EdmondIntro, Route109_Text_EdmondDefeated
+msgbox Route109_Text_EdmondPostBattle, MSGBOX_AUTOCLOSE
+end
+```
+### Route109_EventScript_Ricky
+```
+trainerbattle_single TRAINER_RICKY_1, Route109_Text_RickyIntro, Route109_Text_RickyDefeated, Route109_EventScript_RickyRegisterMatchCallAfterBattle
+specialvar VAR_RESULT, ShouldTryRematchBattle
+goto_if_eq VAR_RESULT, TRUE, Route109_EventScript_RickyRematch
+msgbox Route109_Text_RickyPostBattle, MSGBOX_DEFAULT
+release
+end
+```
+### Route109_EventScript_RickyRegisterMatchCallAfterBattle
+```
+special PlayerFaceTrainerAfterBattle
+waitmovement 0
+msgbox Route109_Text_RickyRegister, MSGBOX_DEFAULT
+register_matchcall TRAINER_RICKY_1
+release
+end
+```
+### Route109_EventScript_RickyRematch
+```
+trainerbattle_rematch TRAINER_RICKY_1, Route109_Text_RickyRematchIntro, Route109_Text_RickyRematchDefeated
+msgbox Route109_Text_RickyRematchPostBattle, MSGBOX_AUTOCLOSE
+end
+```
+### Route109_EventScript_Lola
+```
+trainerbattle_single TRAINER_LOLA_1, Route109_Text_LolaIntro, Route109_Text_LolaDefeated, Route109_EventScript_LolaRegisterMatchCallAfterBattle
+specialvar VAR_RESULT, ShouldTryRematchBattle
+goto_if_eq VAR_RESULT, TRUE, Route109_EventScript_LolaRematch
+msgbox Route109_Text_LolaPostBattle, MSGBOX_DEFAULT
+release
+end
+```
+### Route109_EventScript_LolaRegisterMatchCallAfterBattle
+```
+special PlayerFaceTrainerAfterBattle
+waitmovement 0
+msgbox Route109_Text_LolaRegister, MSGBOX_DEFAULT
+register_matchcall TRAINER_LOLA_1
+release
+end
+```
+### Route109_EventScript_LolaRematch
+```
+trainerbattle_rematch TRAINER_LOLA_1, Route109_Text_LolaRematchIntro, Route109_Text_LolaRematchDefeated
+msgbox Route109_Text_LolaRematchPostBattle, MSGBOX_AUTOCLOSE
+end
+```
+### Route109_EventScript_Austina
+```
+trainerbattle_single TRAINER_AUSTINA, Route109_Text_AustinaIntro, Route109_Text_AustinaDefeated
+msgbox Route109_Text_AustinaPostBattle, MSGBOX_AUTOCLOSE
+end
+```
+### Route109_EventScript_Gwen
+```
+trainerbattle_single TRAINER_GWEN, Route109_Text_GwenIntro, Route109_Text_GwenDefeated
+msgbox Route109_Text_GwenPostBattle, MSGBOX_AUTOCLOSE
+end
+```
+### Route109_EventScript_Carter
+```
+trainerbattle_single TRAINER_CARTER, Route109_Text_CarterIntro, Route109_Text_CarterDefeated
+msgbox Route109_Text_CarterPostBattle, MSGBOX_AUTOCLOSE
+end
+```
+### Route109_EventScript_Paul
+```
+trainerbattle_double TRAINER_MEL_AND_PAUL, Route109_Text_PaulIntro, Route109_Text_PaulDefeated, Route109_Text_PaulNotEnoughPokemon
+msgbox Route109_Text_PaulPostBattle, MSGBOX_AUTOCLOSE
+end
+```
+### Route109_EventScript_Mel
+```
+trainerbattle_double TRAINER_MEL_AND_PAUL, Route109_Text_MelIntro, Route109_Text_MelDefeated, Route109_Text_MelNotEnoughPokemon
+msgbox Route109_Text_MelPostBattle, MSGBOX_AUTOCLOSE
+end
+```
+### Route109_EventScript_Chandler
+```
+trainerbattle_single TRAINER_CHANDLER, Route109_Text_ChandlerIntro, Route109_Text_ChandlerDefeated
+msgbox Route109_Text_ChandlerPostBattle, MSGBOX_AUTOCLOSE
+end
+```
+### Route109_EventScript_Hailey
+```
+trainerbattle_single TRAINER_HAILEY, Route109_Text_HaileyIntro, Route109_Text_HaileyDefeated
+msgbox Route109_Text_HaileyPostBattle, MSGBOX_AUTOCLOSE
+end
+```
+### Route109_EventScript_Elijah
+```
+trainerbattle_single TRAINER_ELIJAH, Route109_Text_ElijahIntro, Route109_Text_ElijahDefeated
+msgbox Route109_Text_ElijahPostBattle, MSGBOX_AUTOCLOSE
+end
+```
+
+## Textes (16)
+### DewfordTown_Text_BrineyLandedInSlateportDeliverGoods
+```
+M. MARCO: Ohé!\nNous sommes arrivés à POIVRESSEL!\pVas-tu aller voir le CAPT. POUPE\net lui remettre le PACK DEVON?$
+```
+### Route109_Text_BrineySailToDewfordQuestion
+```
+M. MARCO: Vas-tu aller livrer le\nPACK DEVON?\pOu comptes-tu retourner au\nVILLAGE MYOKARA?$
+```
+### Route109_Text_BrineyDewfordItIs
+```
+M. MARCO: Allons-y pour MYOKARA!\pOn lève l'ancre!\nPIKO, on embarque, chouchou!$
+```
+### Route109_Text_BrineyDeliverDevonGoods
+```
+M. MARCO: Alors tu y vas et tu livres le\nPACK DEVON. Je t'attendrai.$
+```
+### DewfordTown_Text_BrineyLandedInSlateport
+```
+M. MARCO: Ohé!\nNous sommes arrivés à POIVRESSEL!\pTu n'as qu'à y aller et tu me préviendras\nquand tu voudras repartir en mer!$
+```
+### Route109_Text_BrineyWhereAreWeBound
+```
+M. MARCO: Ohé!\nPour toi, je sors en mer quand tu veux!\pAlors, où partons-nous?$
+```
+### Route109_Text_BrineyTellMeWhenYouNeedToSail
+```
+M. MARCO: Tu n'auras qu'à me prévenir\nquand tu auras besoin d'embarquer!$
+```
+### Route109_Text_ChillAtMyPapasSpot
+```
+Yo, DRESSEUR!\nPlus fort que mon papa?\lTu trouveras pas,\lça n'existe pas!$
+```
+### Route109_Text_LittleKidsDartAround
+```
+Les petits courent dans tous les sens…\pIl est donc impossible de détourner\nles yeux une seconde. C'est épuisant.\pLe mien est avec mon POKéMON. Il ne\ndevrait pas y avoir de problème, mais…$
+```
+### Route109_Text_SandCastleTakingLongTime
+```
+Il faut du temps pour construire notre\nchâteau de sable.$
+```
+### Route109_Text_YouCanHaveThis
+```
+Tu peux prendre ça!$
+```
+### Route109_Text_WereGoingToMakeBigCastle
+```
+On va prendre tout le sable de la plage\net construire un gros château!\pEt après, on sera le roi et la reine.\pOn te laissera être notre domestique.$
+```
+### Route109_Text_ZigzagoonPicksUpLitter
+```
+Par ici, l'eau est propre.\pMais j'ai déjà vu mon ZIGZATON\nrevenir du rivage avec des détritus.\pL'eau polluée se transforme en pluie et\nrejoint nos rivières, dont on boit l'eau.\pSi on pollue la mer, ça finira par nous\nretomber dessus.$
+```
+### Route109_Text_ZigzagoonCry
+```
+ZIGZATON: Ziiiig?$
+```
+### Route109_Text_SeashoreHouseSign
+```
+MAISON DU BORD DE MER\p“Combats ardents sur sable ardent. Ici\nse trouve le repaire des DRESSEURS\lardents!”$
+```
+### Route109_Text_TrainerTipsSign
+```
+CONSEILS AUX DRESSEURS\pDes POKéMON ayant le même niveau n'ont\npas forcément les mêmes statistiques.\pLes POKéMON élevés par des DRESSEURS\ndeviennent plus forts que les\lPOKéMON sauvages.$
+```

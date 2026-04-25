@@ -1,0 +1,121 @@
+# Route114_LanettesHouse
+
+## Métadonnées
+- **id** : `MAP_ROUTE114_LANETTES_HOUSE`
+- **layout** : `LAYOUT_ROUTE114_LANETTES_HOUSE`
+- **music** : `MUS_FALLARBOR`
+- **region_map_section** : `MAPSEC_ROUTE_114`
+- **weather** : `WEATHER_NONE`
+- **map_type** : `MAP_TYPE_INDOOR`
+- **battle_scene** : `MAP_BATTLE_SCENE_NORMAL`
+- **show_map_name** : `False`
+- **allow_cycling** : `False`
+- **allow_running** : `False`
+
+## Object events (1 NPCs)
+| local_id | gfx | x,y | mvmt | script | flag |
+|---|---|---|---|---|---|
+| `` | `OBJ_EVENT_GFX_WOMAN_2` | 5,4 | `MOVEMENT_TYPE_LOOK_AROUND` | `Route114_LanettesHouse_EventScript_Lanette` | `FLAG_HIDE_LANETTES_HOUSE_LANETTE` |
+
+## Warps (2)
+- #0 (5,7) → `MAP_ROUTE114` warp #2
+- #1 (6,7) → `MAP_ROUTE114` warp #2
+
+## BG events / signs (3)
+- (5,1) [sign] → `Route114_LanettesHouse_EventScript_Notebook`
+- (8,1) [sign] → `Route114_LanettesHouse_EventScript_PC`
+- (7,1) [sign] → `Route114_LanettesHouse_EventScript_PC`
+
+## Flags référencés (3)
+- `FLAG_LANDMARK_LANETTES_HOUSE`
+- `FLAG_RECEIVED_DOLL_LANETTE`
+- `FLAG_SYS_PC_LANETTE`
+
+## Variables référencées (1)
+- `VAR_RESULT`
+
+## Scripts (8)
+### Route114_LanettesHouse_MapScripts
+```
+map_script MAP_SCRIPT_ON_TRANSITION, Route114_LanettesHouse_OnTransition
+```
+### Route114_LanettesHouse_OnTransition
+```
+setflag FLAG_LANDMARK_LANETTES_HOUSE
+end
+```
+### Route114_LanettesHouse_EventScript_Lanette
+```
+lock
+faceplayer
+goto_if_set FLAG_RECEIVED_DOLL_LANETTE, Route114_LanettesHouse_EventScript_OfferAdvice
+setflag FLAG_SYS_PC_LANETTE
+msgbox Route114_LanettesHouse_Text_EverythingClutteredKeepThis, MSGBOX_DEFAULT
+givedecoration DECOR_LOTAD_DOLL
+goto_if_eq VAR_RESULT, FALSE, Common_EventScript_ShowNoRoomForDecor
+setflag FLAG_RECEIVED_DOLL_LANETTE
+release
+end
+```
+### Route114_LanettesHouse_EventScript_OfferAdvice
+```
+msgbox Route114_LanettesHouse_Text_OrganizeYourBoxes, MSGBOX_DEFAULT
+release
+end
+```
+### Route114_LanettesHouse_EventScript_Notebook
+```
+lockall
+msgbox Route114_LanettesHouse_Text_ResearchNotesPage1, MSGBOX_YESNO
+goto_if_eq VAR_RESULT, YES, Route114_LanettesHouse_EventScript_NotebookPage2
+msgbox Route114_LanettesHouse_Text_ClosedTheNotebook, MSGBOX_DEFAULT
+releaseall
+end
+```
+### Route114_LanettesHouse_EventScript_NotebookPage2
+```
+msgbox Route114_LanettesHouse_Text_ResearchNotesPage2, MSGBOX_YESNO
+call_if_eq VAR_RESULT, YES, Route114_LanettesHouse_EventScript_NotebookPage3
+releaseall
+end
+```
+### Route114_LanettesHouse_EventScript_NotebookPage3
+```
+msgbox Route114_LanettesHouse_Text_ResearchNotesPage3, MSGBOX_DEFAULT
+return
+```
+### Route114_LanettesHouse_EventScript_PC
+```
+msgbox Route114_LanettesHouse_Text_EmailFromBill, MSGBOX_SIGN
+end
+```
+
+## Textes (7)
+### Route114_LanettesHouse_Text_EverythingClutteredKeepThis
+```
+ANNETTE: Oh! {PLAYER}{KUN}!\pJe suis désolée. C'est la pagaille. Quand\nje suis plongée dans mes recherches,\lje n'ai pas le temps de ranger…\pC'est très embarrassant… Si tu n'en\nparles à personne, je te donne ça.$
+```
+### Route114_LanettesHouse_Text_OrganizeYourBoxes
+```
+Je peux te donner un conseil sur mon\nprogramme de Gestion de Stocks de\lPOKéMON?\pTu peux organiser tes BOITES pour\nsavoir quels POKéMON elles contiennent.$
+```
+### Route114_LanettesHouse_Text_ResearchNotesPage1
+```
+Ce sont les notes d'ANNETTE.\nIl y a des informations sur les BOITES.\pConcevoir des BOITES pouvant contenir\n30 POKéMON chacune.\pChaque DRESSEUR doit pouvoir stocker\n420 POKéMON sur son PC.\pContinuer à lire?$
+```
+### Route114_LanettesHouse_Text_ResearchNotesPage2
+```
+Ajouter un système de marquage pour\nfaciliter l'organisation des POKéMON.\pLe nom et le fond de chaque BOITE\npourront être modifiés pour satisfaire\lles POKéMON stockés.\pContinuer à lire?$
+```
+### Route114_LanettesHouse_Text_ResearchNotesPage3
+```
+Quand un POKéMON est stocké, il est\nenvoyé dans la dernière BOITE ouverte.\pSi cette BOITE est pleine, le POKéMON\nreçu sera stocké dans la suivante.\pEn bref, la dernière BOITE ouverte\ndevient la BOITE dans laquelle les\lPOKéMON seront envoyés.$
+```
+### Route114_LanettesHouse_Text_ClosedTheNotebook
+```
+{PLAYER} ferme le cahier.$
+```
+### Route114_LanettesHouse_Text_EmailFromBill
+```
+Il y a un e-mail sur le PC.\p… … … … … … …\pVotre programme de Gestion de Stocks\nest plus performant que le mien.\pLa simplicité d'utilisation en fait\nun outil à la fois amusant et utile.\pJe suis très content d'avoir\nparticipé à son développement.\pJ'espère que vous continuerez vos\nrecherches sur la Gestion de Stocks.\pDe la part de LEO.\n… … … … … … … …$
+```

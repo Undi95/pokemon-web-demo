@@ -1,0 +1,13 @@
+{
+  "primaryTileset": "gTileset_General",
+  "secondaryTileset": "gTileset_Fallarbor",
+  "atlasCols": 32,
+  "atlasRows": 28,
+  "atlasWidth": 512,
+  "atlasHeight": 448,
+  "totalMetatiles": 879,
+  "numPrimaryMetatiles": 512,
+  "numSecondaryMetatiles": 367,
+  "primaryMetatileIdStart": 0,
+  "secondaryMetatileIdStart": 512
+}

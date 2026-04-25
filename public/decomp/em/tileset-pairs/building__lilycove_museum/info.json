@@ -1,0 +1,13 @@
+{
+  "primaryTileset": "gTileset_Building",
+  "secondaryTileset": "gTileset_LilycoveMuseum",
+  "atlasCols": 32,
+  "atlasRows": 5,
+  "atlasWidth": 512,
+  "atlasHeight": 80,
+  "totalMetatiles": 151,
+  "numPrimaryMetatiles": 8,
+  "numSecondaryMetatiles": 143,
+  "primaryMetatileIdStart": 0,
+  "secondaryMetatileIdStart": 512
+}

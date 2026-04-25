@@ -1,0 +1,13 @@
+{
+  "primaryTileset": "gTileset_General",
+  "secondaryTileset": "gTileset_Mossdeep",
+  "atlasCols": 32,
+  "atlasRows": 31,
+  "atlasWidth": 512,
+  "atlasHeight": 496,
+  "totalMetatiles": 966,
+  "numPrimaryMetatiles": 512,
+  "numSecondaryMetatiles": 454,
+  "primaryMetatileIdStart": 0,
+  "secondaryMetatileIdStart": 512
+}

@@ -1,0 +1,839 @@
+# DewfordTown
+
+## Métadonnées
+- **id** : `MAP_DEWFORD_TOWN`
+- **layout** : `LAYOUT_DEWFORD_TOWN`
+- **music** : `MUS_DEWFORD`
+- **region_map_section** : `MAPSEC_DEWFORD_TOWN`
+- **weather** : `WEATHER_SUNNY`
+- **map_type** : `MAP_TYPE_TOWN`
+- **battle_scene** : `MAP_BATTLE_SCENE_NORMAL`
+- **show_map_name** : `True`
+- **allow_cycling** : `True`
+- **allow_running** : `True`
+
+## Connexions
+- up (offset -60) → `MAP_ROUTE106`
+- right (offset 0) → `MAP_ROUTE107`
+
+## Object events (5 NPCs)
+| local_id | gfx | x,y | mvmt | script | flag |
+|---|---|---|---|---|---|
+| `` | `OBJ_EVENT_GFX_WOMAN_2` | 7,12 | `MOVEMENT_TYPE_WANDER_LEFT_AND_RIGHT` | `DewfordTown_EventScript_Woman` | `0` |
+| `LOCALID_DEWFORD_BRINEY` | `OBJ_EVENT_GFX_EXPERT_M` | 12,9 | `MOVEMENT_TYPE_FACE_LEFT` | `DewfordTown_EventScript_Briney` | `FLAG_HIDE_MR_BRINEY_DEWFORD_TOWN` |
+| `` | `OBJ_EVENT_GFX_FISHERMAN` | 12,14 | `MOVEMENT_TYPE_WANDER_LEFT_AND_RIGHT` | `DewfordTown_EventScript_OldRodFisherman` | `0` |
+| `LOCALID_DEWFORD_BOAT` | `OBJ_EVENT_GFX_MR_BRINEYS_BOAT` | 12,8 | `MOVEMENT_TYPE_FACE_DOWN` | `0x0` | `FLAG_HIDE_MR_BRINEY_BOAT_DEWFORD_TOWN` |
+| `` | `OBJ_EVENT_GFX_BOY_1` | 1,6 | `MOVEMENT_TYPE_LOOK_AROUND` | `DewfordTown_EventScript_TrendyPhraseBoy` | `0` |
+
+## Warps (5)
+- #0 (3,3) → `MAP_DEWFORD_TOWN_HALL` warp #0
+- #1 (2,10) → `MAP_DEWFORD_TOWN_POKEMON_CENTER_1F` warp #0
+- #2 (8,17) → `MAP_DEWFORD_TOWN_GYM` warp #0
+- #3 (17,14) → `MAP_DEWFORD_TOWN_HOUSE1` warp #0
+- #4 (8,8) → `MAP_DEWFORD_TOWN_HOUSE2` warp #0
+
+## BG events / signs (5)
+- (10,10) [sign] → `DewfordTown_EventScript_TownSign`
+- (11,16) [sign] → `DewfordTown_EventScript_GymSign`
+- (4,10) [sign] → `Common_EventScript_ShowPokemonCenterSign`
+- (3,10) [sign] → `Common_EventScript_ShowPokemonCenterSign`
+- (2,4) [sign] → `DewfordTown_EventScript_HallSign`
+
+## Flags référencés (10)
+- `FLAG_DELIVERED_DEVON_GOODS`
+- `FLAG_DELIVERED_STEVEN_LETTER`
+- `FLAG_HIDE_BRINEYS_HOUSE_MR_BRINEY`
+- `FLAG_HIDE_BRINEYS_HOUSE_PEEKO`
+- `FLAG_HIDE_MR_BRINEY_BOAT_DEWFORD_TOWN`
+- `FLAG_HIDE_ROUTE_104_MR_BRINEY_BOAT`
+- `FLAG_HIDE_ROUTE_109_MR_BRINEY`
+- `FLAG_HIDE_ROUTE_109_MR_BRINEY_BOAT`
+- `FLAG_RECEIVED_OLD_ROD`
+- `FLAG_VISITED_DEWFORD_TOWN`
+
+## Variables référencées (5)
+- `VAR_0x8004`
+- `VAR_0x8008`
+- `VAR_BOARD_BRINEY_BOAT_STATE`
+- `VAR_BRINEY_LOCATION`
+- `VAR_RESULT`
+
+## Labels externes appelés (résolus via _common.json ou orphelins)
+### UNRESOLVED
+- `Common_EventScript_BufferTrendyPhrase`
+- `Common_EventScript_PlayBrineysBoatMusic`
+- `Common_EventScript_StopBrineysBoatMusic`
+- `Common_ShowEasyChatScreen`
+- `DewfordTown_Text_BrineyLandedInSlateport`
+- `DewfordTown_Text_BrineyLandedInSlateportDeliverGoods`
+- `EventScript_BackupMrBrineyLocation`
+
+## Scripts (35)
+### DewfordTown_MapScripts
+```
+map_script MAP_SCRIPT_ON_TRANSITION, DewfordTown_OnTransition
+```
+### DewfordTown_OnTransition
+```
+setflag FLAG_VISITED_DEWFORD_TOWN
+end
+```
+### DewfordTown_EventScript_Briney
+```
+lock
+faceplayer
+goto_if_unset FLAG_DELIVERED_STEVEN_LETTER, DewfordTown_EventScript_ReturnToPetalburgPrompt
+message DewfordTown_Text_WhereAreWeBound
+waitmessage
+multichoicedefault 21, 6, MULTI_BRINEY_ON_DEWFORD, 2, FALSE
+switch VAR_RESULT
+case 0, DewfordTown_EventScript_ChoosePetalburg
+case 1, DewfordTown_EventScript_ChooseSlateport
+case 2, DewfordTown_EventScript_CancelSailSelect
+case MULTI_B_PRESSED, DewfordTown_EventScript_CancelSailSelect
+end
+```
+### DewfordTown_EventScript_ChoosePetalburg
+```
+msgbox DewfordTown_Text_PetalburgWereSettingSail, MSGBOX_DEFAULT
+closemessage
+goto DewfordTown_EventScript_SailToPetalburg
+release
+end
+```
+### DewfordTown_EventScript_ChooseSlateport
+```
+msgbox DewfordTown_Text_SlateportWereSettingSail, MSGBOX_DEFAULT
+closemessage
+goto DewfordTown_EventScript_SailToSlateport
+release
+end
+```
+### DewfordTown_EventScript_CancelSailSelect
+```
+msgbox DewfordTown_Text_JustTellMeWhenYouNeedToSetSail, MSGBOX_DEFAULT
+closemessage
+release
+end
+```
+### DewfordTown_EventScript_ReturnToPetalburgPrompt
+```
+msgbox DewfordTown_Text_SetSailBackToPetalburg, MSGBOX_YESNO
+goto_if_eq VAR_RESULT, YES, DewfordTown_EventScript_SailBackToPetalburg
+msgbox DewfordTown_Text_GoDeliverIllBeWaiting, MSGBOX_DEFAULT
+release
+end
+```
+### DewfordTown_EventScript_SailBackToPetalburg
+```
+msgbox DewfordTown_Text_PetalburgWereSettingSail2, MSGBOX_DEFAULT
+closemessage
+goto DewfordTown_EventScript_SailToPetalburg
+end
+```
+### DewfordTown_EventScript_Woman
+```
+msgbox DewfordTown_Text_TinyIslandCommunity, MSGBOX_NPC
+end
+```
+### DewfordTown_EventScript_TownSign
+```
+msgbox DewfordTown_Text_TownSign, MSGBOX_SIGN
+end
+```
+### DewfordTown_EventScript_GymSign
+```
+msgbox DewfordTown_Text_GymSign, MSGBOX_SIGN
+end
+```
+### DewfordTown_EventScript_HallSign
+```
+msgbox DewfordTown_Text_HallSign, MSGBOX_SIGN
+end
+```
+### DewfordTown_EventScript_OldRodFisherman
+```
+lock
+faceplayer
+goto_if_set FLAG_RECEIVED_OLD_ROD, DewfordTown_EventScript_HowsFishing
+msgbox DewfordTown_Text_GettingItchToFish, MSGBOX_YESNO
+goto_if_eq VAR_RESULT, YES, DewfordTown_EventScript_GiveOldRod
+goto_if_eq VAR_RESULT, NO, DewfordTown_EventScript_NotGettingItchToFish
+end
+```
+### DewfordTown_EventScript_GiveOldRod
+```
+msgbox DewfordTown_Text_GiveYouOneOfMyRods, MSGBOX_DEFAULT
+giveitem ITEM_OLD_ROD
+setflag FLAG_RECEIVED_OLD_ROD
+msgbox DewfordTown_Text_ThrowInFishingAdvice, MSGBOX_DEFAULT
+release
+end
+```
+### DewfordTown_EventScript_NotGettingItchToFish
+```
+msgbox DewfordTown_Text_ThatsTooBadThen, MSGBOX_DEFAULT
+release
+end
+```
+### DewfordTown_EventScript_HowsFishing
+```
+message DewfordTown_Text_HowsYourFishing
+waitmessage
+multichoice 20, 8, MULTI_HOWS_FISHING, TRUE
+goto_if_eq VAR_RESULT, 0, DewfordTown_EventScript_FishingExcellent
+goto_if_eq VAR_RESULT, 1, DewfordTown_EventScript_FishingNotSoGood
+end
+```
+### DewfordTown_EventScript_FishingExcellent
+```
+msgbox DewfordTown_Text_GreatHaulInSomeBigOnes, MSGBOX_DEFAULT
+release
+end
+```
+### DewfordTown_EventScript_FishingNotSoGood
+```
+msgbox DewfordTown_Text_FishingAdvice, MSGBOX_DEFAULT
+release
+end
+```
+### DewfordTown_EventScript_SailToPetalburg
+```
+call EventScript_BackupMrBrineyLocation
+setobjectsubpriority LOCALID_DEWFORD_BRINEY, MAP_DEWFORD_TOWN, 0
+setobjectsubpriority LOCALID_PLAYER, MAP_DEWFORD_TOWN, 0
+applymovement LOCALID_DEWFORD_BRINEY, DewfordTown_Movement_BrineyBoardBoat
+waitmovement 0
+removeobject LOCALID_DEWFORD_BRINEY
+applymovement LOCALID_PLAYER, DewfordTown_Movement_PlayerBoardBoat
+waitmovement 0
+hideobjectat LOCALID_PLAYER, MAP_DEWFORD_TOWN
+call Common_EventScript_PlayBrineysBoatMusic
+applymovement LOCALID_DEWFORD_BOAT, DewfordTown_Movement_SailToPetalburg
+applymovement LOCALID_PLAYER, DewfordTown_Movement_SailToPetalburg
+waitmovement 0
+showobjectat LOCALID_PLAYER, MAP_ROUTE104
+call Common_EventScript_StopBrineysBoatMusic
+applymovement LOCALID_PLAYER, DewfordTown_Movement_ExitBoatPetalburg
+waitmovement 0
+showobjectat LOCALID_PLAYER, MAP_ROUTE104
+clearflag FLAG_HIDE_BRINEYS_HOUSE_MR_BRINEY
+clearflag FLAG_HIDE_BRINEYS_HOUSE_PEEKO
+clearflag FLAG_HIDE_ROUTE_104_MR_BRINEY_BOAT
+setflag FLAG_HIDE_MR_BRINEY_BOAT_DEWFORD_TOWN
+hideobjectat LOCALID_DEWFORD_BOAT, MAP_DEWFORD_TOWN
+setvar VAR_BOARD_BRINEY_BOAT_STATE, 2
+resetobjectsubpriority LOCALID_PLAYER, MAP_DEWFORD_TOWN
+warp MAP_ROUTE104_MR_BRINEYS_HOUSE, 5, 4
+copyvar VAR_BRINEY_LOCATION, VAR_0x8008
+waitstate
+release
+end
+```
+### DewfordTown_EventScript_SailToSlateport
+```
+call EventScript_BackupMrBrineyLocation
+setobjectsubpriority LOCALID_DEWFORD_BRINEY, MAP_DEWFORD_TOWN, 0
+setobjectsubpriority LOCALID_PLAYER, MAP_DEWFORD_TOWN, 1
+applymovement LOCALID_DEWFORD_BRINEY, DewfordTown_Movement_BrineyBoardBoat
+waitmovement 0
+removeobject LOCALID_DEWFORD_BRINEY
+applymovement LOCALID_PLAYER, DewfordTown_Movement_PlayerBoardBoat
+waitmovement 0
+hideobjectat LOCALID_PLAYER, MAP_DEWFORD_TOWN
+call Common_EventScript_PlayBrineysBoatMusic
+applymovement LOCALID_DEWFORD_BOAT, DewfordTown_Movement_SailToSlateport
+applymovement LOCALID_PLAYER, DewfordTown_Movement_SailToSlateport
+waitmovement 0
+call Common_EventScript_StopBrineysBoatMusic
+showobjectat LOCALID_PLAYER, MAP_ROUTE109
+applymovement LOCALID_PLAYER, DewfordTown_Movement_ExitBoatSlateport
+waitmovement 0
+setobjectxyperm LOCALID_ROUTE109_BRINEY, 21, 26
+addobject LOCALID_ROUTE109_BRINEY
+setobjectsubpriority LOCALID_ROUTE109_BRINEY, MAP_ROUTE109, 0
+applymovement LOCALID_ROUTE109_BRINEY, DewfordTown_Movement_BrineyExitBoat
+waitmovement 0
+clearflag FLAG_HIDE_ROUTE_109_MR_BRINEY
+addobject LOCALID_ROUTE109_BOAT
+clearflag FLAG_HIDE_ROUTE_109_MR_BRINEY_BOAT
+setflag FLAG_HIDE_MR_BRINEY_BOAT_DEWFORD_TOWN
+hideobjectat LOCALID_DEWFORD_BOAT, MAP_DEWFORD_TOWN
+call_if_unset FLAG_DELIVERED_DEVON_GOODS, DewfordTown_EventScript_LandedSlateportDeliverGoods
+call_if_set FLAG_DELIVERED_DEVON_GOODS, DewfordTown_EventScript_LandedSlateport
+closemessage
+copyvar VAR_BRINEY_LOCATION, VAR_0x8008
+resetobjectsubpriority LOCALID_PLAYER, MAP_DEWFORD_TOWN
+resetobjectsubpriority LOCALID_ROUTE109_BRINEY, MAP_ROUTE109
+copyobjectxytoperm LOCALID_ROUTE109_BRINEY
+release
+end
+```
+### DewfordTown_EventScript_LandedSlateportDeliverGoods
+```
+msgbox DewfordTown_Text_BrineyLandedInSlateportDeliverGoods, MSGBOX_DEFAULT
+return
+```
+### DewfordTown_EventScript_LandedSlateport
+```
+msgbox DewfordTown_Text_BrineyLandedInSlateport, MSGBOX_DEFAULT
+return
+```
+### DewfordTown_Movement_SailToPetalburg
+```
+walk_up
+walk_up
+walk_fast_up
+walk_fast_up
+walk_fast_up
+walk_fast_up
+walk_fast_up
+walk_fast_up
+walk_fast_up
+walk_fast_up
+walk_fast_up
+walk_fast_up
+walk_fast_up
+walk_fast_up
+walk_fast_up
+walk_fast_up
+walk_fast_up
+walk_up
+walk_up
+walk_left
+walk_left
+walk_fast_left
+walk_fast_left
+walk_fast_left
+walk_fast_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_fast_left
+walk_fast_left
+walk_fast_left
+walk_fast_left
+walk_fast_up
+walk_fast_up
+walk_fast_up
+walk_fast_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_fast_up
+walk_fast_up
+walk_fast_up
+walk_fast_up
+walk_fast_left
+walk_fast_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_faster_left
+walk_fast_left
+walk_fast_left
+walk_fast_up
+walk_fast_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_fast_up
+walk_fast_up
+walk_fast_up
+walk_fast_up
+walk_up
+walk_up
+walk_up
+walk_up
+step_end
+```
+### DewfordTown_Movement_SailToSlateport
+```
+walk_right
+walk_fast_right
+walk_fast_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_faster_right
+walk_fast_right
+walk_fast_right
+walk_fast_up
+walk_fast_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_faster_up
+walk_fast_up
+walk_fast_up
+walk_fast_up
+walk_fast_up
+walk_fast_up
+walk_fast_up
+walk_fast_up
+walk_fast_up
+walk_fast_up
+walk_fast_up
+step_end
+```
+### DewfordTown_Movement_PlayerBoardBoat
+```
+walk_right
+walk_up
+step_end
+```
+### DewfordTown_Movement_ExitBoatPetalburg
+```
+walk_up
+walk_up
+walk_up
+step_end
+```
+### DewfordTown_Movement_ExitBoatSlateport
+```
+walk_up
+walk_up
+walk_up
+walk_in_place_faster_down
+step_end
+```
+### DewfordTown_Movement_BrineyBoardBoat
+```
+walk_up
+step_end
+```
+### DewfordTown_Movement_BrineyExitBoat
+```
+walk_up
+walk_up
+step_end
+```
+### DewfordTown_EventScript_TrendyPhraseBoy
+```
+lock
+faceplayer
+call Common_EventScript_BufferTrendyPhrase
+msgbox DewfordTown_Text_XIsTheBiggestHappeningThingRight, MSGBOX_YESNO
+goto_if_eq VAR_RESULT, YES, DewfordTown_EventScript_ConfirmTrendyPhrase
+goto_if_eq VAR_RESULT, NO, DewfordTown_EventScript_RejectTrendyPhrase
+end
+```
+### DewfordTown_EventScript_ConfirmTrendyPhrase
+```
+msgbox DewfordTown_Text_YeahDefinitionOfInRightNow, MSGBOX_DEFAULT
+release
+end
+```
+### DewfordTown_EventScript_RejectTrendyPhrase
+```
+msgbox DewfordTown_Text_TellMeWhatsNewAndIn, MSGBOX_DEFAULT
+setvar VAR_0x8004, EASY_CHAT_TYPE_TRENDY_PHRASE
+call Common_ShowEasyChatScreen
+lock
+faceplayer
+goto_if_eq VAR_RESULT, TRUE, DewfordTown_EventScript_GiveNewTrendyPhrase
+goto_if_eq VAR_RESULT, FALSE, DewfordTown_EventScript_CancelNewTrendyPhrase
+end
+```
+### DewfordTown_EventScript_GiveNewTrendyPhrase
+```
+incrementgamestat GAME_STAT_STARTED_TRENDS
+goto_if_eq VAR_0x8004, FALSE, DewfordTown_EventScript_PhraseNotTrendyEnough
+msgbox DewfordTown_Text_OfCourseIKnowAboutThat, MSGBOX_DEFAULT
+release
+end
+```
+### DewfordTown_EventScript_CancelNewTrendyPhrase
+```
+msgbox DewfordTown_Text_HearOfAnyTrendsComeShareWithMe, MSGBOX_DEFAULT
+release
+end
+```
+### DewfordTown_EventScript_PhraseNotTrendyEnough
+```
+msgbox DewfordTown_Text_XHuhIThinkYIsCool, MSGBOX_DEFAULT
+release
+end
+```
+
+## Textes (26)
+### DewfordTown_Text_TinyIslandCommunity
+```
+Le VILLAGE MYOKARA est une petite\ncommunauté insulaire.\pIci, quand un truc est à la mode,\ntout le monde se l'arrache.$
+```
+### DewfordTown_Text_TownSign
+```
+VILLAGE MYOKARA\n“Une petite île au cœur de la mer.”$
+```
+### DewfordTown_Text_GymSign
+```
+ARENE POKéMON du VILLAGE MYOKARA\nCHAMPION: BASTIEN\l“Une vraie déferlante au combat.”$
+```
+### DewfordTown_Text_HallSign
+```
+CENTRE CULTUREL DE MYOKARA\n“Echange de tous types\ld'informations!”$
+```
+### Route104_Text_LandedInDewfordDeliverLetter
+```
+M. MARCO: Oyé!\nNous sommes arrivés à MYOKARA.\pJe suppose que tu vas aller remettre\ncette LETTRE à ce… comment… PIERRE!$
+```
+### DewfordTown_Text_SetSailBackToPetalburg
+```
+M. MARCO: As-tu donné ta LETTRE?\pOu comptes-tu retourner à CLEMENTI?$
+```
+### DewfordTown_Text_PetalburgWereSettingSail2
+```
+M. MARCO: Allons-y pour\nCLEMENTI-VILLE!\pOn lève l'ancre!\nPIKO, on embarque, mon chou!$
+```
+### DewfordTown_Text_GoDeliverIllBeWaiting
+```
+M. MARCO: Alors tu y vas et tu donnes la\nLETTRE. Je t'attendrai.$
+```
+### DewfordTown_Text_BrineyLandedInDewford
+```
+M. MARCO: Oyé!\nNous sommes arrivés à MYOKARA!\pTu y vas et tu n'auras qu'à me prévenir\nquand tu voudras repartir en mer!$
+```
+### DewfordTown_Text_WhereAreWeBound
+```
+M. MARCO: Ohé!\nPour toi, je sors en mer quand tu veux!\pAlors, mon camarade, où partons-nous?$
+```
+### DewfordTown_Text_PetalburgWereSettingSail
+```
+M. MARCO: CLEMENTI-VILLE, c'est ça?\pOn lève l'ancre!\nPIKO, on embarque, mon chou!$
+```
+### DewfordTown_Text_SlateportWereSettingSail
+```
+M. MARCO: POIVRESSEL, c'est bien ça?\pOn lève l'ancre!\nPIKO, on embarque, mon chou!$
+```
+### DewfordTown_Text_JustTellMeWhenYouNeedToSetSail
+```
+M. MARCO: Tu n'auras qu'à me prévenir\nquand tu auras besoin d'embarquer!$
+```
+### DewfordTown_Text_GettingItchToFish
+```
+C'est un endroit renommé pour la pêche.\nT'as attrapé le virus de la pêche?$
+```
+### DewfordTown_Text_GiveYouOneOfMyRods
+```
+J'ai entendu ce que tu as dit\net j'ai apprécié tes paroles!\pJe te donne une de mes CANNES à pêche.$
+```
+### DewfordTown_Text_ThrowInFishingAdvice
+```
+Et en plus, je vais même te donner un\npetit conseil pour la pêche!\pTu dois d'abord te placer face à la mer\net ensuite utiliser la CANNE.\pConcentre-toi…\nSi ça mord, tire sur la CANNE.\pParfois, tu peux attraper quelque\nchose tout de suite, mais pour les plus\lgrosses prises, il faut prendre le temps\lde tirer sur la CANNE pour les ramener.$
+```
+### DewfordTown_Text_ThatsTooBadThen
+```
+Ah, c'est comme ça?\nC'est vraiment dommage.$
+```
+### DewfordTown_Text_HowsYourFishing
+```
+Yo!\nAlors, ça va la pêche?$
+```
+### DewfordTown_Text_GreatHaulInSomeBigOnes
+```
+C'est bien! Super!\nRamène de grosses prises!$
+```
+### DewfordTown_Text_FishingAdvice
+```
+Oh, hé, ne t'en va pas! Je vais te donner\nun petit conseil pour la pêche.\pTu dois d'abord te placer face à la mer\net ensuite utiliser la CANNE.\pConcentre-toi…\nSi ça mord, tire sur la CANNE.\pParfois, tu peux attraper quelque\nchose tout de suite, mais pour les plus\lgrosses prises, il faut prendre le temps\lde tirer sur la CANNE pour les ramener.$
+```
+### DewfordTown_Text_XIsTheBiggestHappeningThingRight
+```
+J'aime ce qui est en vogue, branché et à\nla mode. Je me tiens toujours informé.\pHé, t'as déjà entendu parler de\n“{STR_VAR_1}”?\pC'est ça!\nBien sûr que tu connais!\pForcément, ouais,\n“{STR_VAR_1}”…\lY a pas plus cool!\pPeu importe d'où tu viens,\n“{STR_VAR_1}”,\lc'est ce qu'il y a de plus branché, hein?$
+```
+### DewfordTown_Text_TellMeWhatsNewAndIn
+```
+Hum?\nC'est pas ce qui est à la mode?\pBon, alors dis-moi ce qui est nouveau\net “in”?$
+```
+### DewfordTown_Text_OfCourseIKnowAboutThat
+```
+Hum?\n“{STR_VAR_2}”?\p… …\p… Hum… Ouais, c'est ça!\nOuais, je l'savais! Je l'savais déjà!\pBien sûr que j'étais au courant!\n“{STR_VAR_2}”, hein?\pOuais, bien sûr, tout juste!\nAttends, y a pas plus cool que\l“{STR_VAR_2}”.\pY a pas plus branché en vocabulaire\nbranché. Tu croyais que j'savais pas?\p“{STR_VAR_1}”…\nC'était cool il y a cinq minutes.\pMais “{STR_VAR_2}”,\nc'est ce qui est à la mode maintenant!$
+```
+### DewfordTown_Text_XHuhIThinkYIsCool
+```
+Hum…\n“{STR_VAR_2}”, hein?\pMais personnellement, je trouve que\n“{STR_VAR_1}”\lest définitivement plus cool.$
+```
+### DewfordTown_Text_HearOfAnyTrendsComeShareWithMe
+```
+Si tu entends parler de nouvelles\nmodes, viens m'en parler, d'accord?$
+```
+### DewfordTown_Text_YeahDefinitionOfInRightNow
+```
+Ouais, tout à fait!\p“{STR_VAR_1}”\nreflète bien la tendance actuelle.$
+```

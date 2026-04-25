@@ -1,0 +1,13 @@
+{
+  "primaryTileset": "gTileset_SecretBase",
+  "secondaryTileset": "gTileset_SecretBaseRedCave",
+  "atlasCols": 32,
+  "atlasRows": 1,
+  "atlasWidth": 512,
+  "atlasHeight": 16,
+  "totalMetatiles": 2,
+  "numPrimaryMetatiles": 2,
+  "numSecondaryMetatiles": 0,
+  "primaryMetatileIdStart": 0,
+  "secondaryMetatileIdStart": 512
+}

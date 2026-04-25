@@ -1,0 +1,378 @@
+# Route119_WeatherInstitute_2F
+
+## Métadonnées
+- **id** : `MAP_ROUTE119_WEATHER_INSTITUTE_2F`
+- **layout** : `LAYOUT_ROUTE119_WEATHER_INSTITUTE_2F`
+- **music** : `MUS_RUSTBORO`
+- **region_map_section** : `MAPSEC_ROUTE_119`
+- **weather** : `WEATHER_NONE`
+- **map_type** : `MAP_TYPE_INDOOR`
+- **battle_scene** : `MAP_BATTLE_SCENE_NORMAL`
+- **show_map_name** : `False`
+- **allow_cycling** : `False`
+- **allow_running** : `False`
+
+## Object events (8 NPCs)
+| local_id | gfx | x,y | mvmt | script | flag |
+|---|---|---|---|---|---|
+| `LOCALID_WEATHER_INSTITUTE_2F_GRUNT_1` | `OBJ_EVENT_GFX_AQUA_MEMBER_M` | 15,6 | `MOVEMENT_TYPE_FACE_RIGHT` | `Route119_WeatherInstitute_2F_EventScript_Grunt2` | `FLAG_HIDE_ROUTE_119_TEAM_AQUA` |
+| `LOCALID_WEATHER_INSTITUTE_2F_GRUNT_2` | `OBJ_EVENT_GFX_AQUA_MEMBER_M` | 10,8 | `MOVEMENT_TYPE_FACE_DOWN_AND_UP` | `Route119_WeatherInstitute_2F_EventScript_Grunt3` | `FLAG_HIDE_ROUTE_119_TEAM_AQUA` |
+| `LOCALID_WEATHER_INSTITUTE_2F_SHELLY` | `OBJ_EVENT_GFX_AQUA_MEMBER_F` | 4,6 | `MOVEMENT_TYPE_FACE_RIGHT` | `Route119_WeatherInstitute_2F_EventScript_Shelly` | `FLAG_HIDE_ROUTE_119_TEAM_AQUA` |
+| `` | `OBJ_EVENT_GFX_MAN_4` | 0,6 | `MOVEMENT_TYPE_FACE_RIGHT` | `0x0` | `FLAG_HIDE_WEATHER_INSTITUTE_2F_WORKERS` |
+| `LOCALID_WEATHER_INSTITUTE_2F_SCIENTIST` | `OBJ_EVENT_GFX_SCIENTIST_1` | 18,6 | `MOVEMENT_TYPE_LOOK_AROUND` | `Route119_WeatherInstitute_2F_EventScript_WeatherScientist` | `0` |
+| `` | `OBJ_EVENT_GFX_MAN_4` | 1,7 | `MOVEMENT_TYPE_FACE_RIGHT` | `0x0` | `FLAG_HIDE_WEATHER_INSTITUTE_2F_WORKERS` |
+| `LOCALID_WEATHER_INSTITUTE_2F_GRUNT_3` | `OBJ_EVENT_GFX_AQUA_MEMBER_M` | 16,6 | `MOVEMENT_TYPE_FACE_LEFT` | `0x0` | `FLAG_HIDE_WEATHER_INSTITUTE_2F_AQUA_GRUNT_M` |
+| `LOCALID_WEATHER_INSTITUTE_2F_GRUNT_4` | `OBJ_EVENT_GFX_AQUA_MEMBER_F` | 19,6 | `MOVEMENT_TYPE_FACE_LEFT` | `Route119_WeatherInstitute_2F_EventScript_Grunt5` | `FLAG_HIDE_ROUTE_119_TEAM_AQUA` |
+
+## Warps (1)
+- #0 (17,1) → `MAP_ROUTE119_WEATHER_INSTITUTE_1F` warp #2
+
+## Flags référencés (8)
+- `FLAG_DEFEATED_GROUDON`
+- `FLAG_DEFEATED_KYOGRE`
+- `FLAG_HIDE_ROUTE_119_TEAM_AQUA`
+- `FLAG_HIDE_WEATHER_INSTITUTE_2F_AQUA_GRUNT_M`
+- `FLAG_HIDE_WEATHER_INSTITUTE_2F_WORKERS`
+- `FLAG_RECEIVED_CASTFORM`
+- `FLAG_SYS_GAME_CLEAR`
+- `FLAG_TEMP_2`
+
+## Variables référencées (5)
+- `VAR_0x8004`
+- `VAR_1`
+- `VAR_RESULT`
+- `VAR_TEMP_TRANSFERRED_SPECIES`
+- `VAR_WEATHER_INSTITUTE_STATE`
+
+## Labels externes appelés (résolus via _common.json ou orphelins)
+### UNRESOLVED
+- `Common_EventScript_NameReceivedPartyMon`
+- `gText_NicknameThisPokemon`
+### data/scripts/pc_transfer.inc
+- `Common_EventScript_GetGiftMonPartySlot`
+- `Common_EventScript_NameReceivedBoxMon`
+- `Common_EventScript_NoMoreRoomForPokemon`
+- `Common_EventScript_TransferredToPC`
+
+## Scripts (27)
+### Route119_WeatherInstitute_2F_MapScripts
+```
+map_script MAP_SCRIPT_ON_TRANSITION, Route119_WeatherInstitute_2F_OnTransition
+```
+### Route119_WeatherInstitute_2F_OnTransition
+```
+call_if_eq VAR_WEATHER_INSTITUTE_STATE, 0, Route119_WeatherInstitute_2F_EventScript_SetScientistPosAquaHere
+call_if_eq VAR_WEATHER_INSTITUTE_STATE, 1, Route119_WeatherInstitute_2F_EventScript_SetScientistPosAquaGone
+call_if_set FLAG_SYS_GAME_CLEAR, Route119_WeatherInstitute_2F_EventScript_SetScientistPosGameClear
+end
+```
+### Route119_WeatherInstitute_2F_EventScript_SetScientistPosAquaHere
+```
+setobjectxyperm LOCALID_WEATHER_INSTITUTE_2F_SCIENTIST, 1, 6
+setobjectmovementtype LOCALID_WEATHER_INSTITUTE_2F_SCIENTIST, MOVEMENT_TYPE_FACE_RIGHT
+return
+```
+### Route119_WeatherInstitute_2F_EventScript_SetScientistPosAquaGone
+```
+setobjectxyperm LOCALID_WEATHER_INSTITUTE_2F_SCIENTIST, 4, 6
+setobjectmovementtype LOCALID_WEATHER_INSTITUTE_2F_SCIENTIST, MOVEMENT_TYPE_FACE_RIGHT
+return
+```
+### Route119_WeatherInstitute_2F_EventScript_SetScientistPosGameClear
+```
+setobjectxyperm LOCALID_WEATHER_INSTITUTE_2F_SCIENTIST, 2, 2
+setobjectmovementtype LOCALID_WEATHER_INSTITUTE_2F_SCIENTIST, MOVEMENT_TYPE_FACE_UP
+return
+```
+### Route119_WeatherInstitute_2F_EventScript_Grunt5
+```
+trainerbattle_single TRAINER_GRUNT_WEATHER_INST_5, Route119_WeatherInstitute_2F_Text_Grunt5Intro, Route119_WeatherInstitute_2F_Text_Grunt5Defeat
+msgbox Route119_WeatherInstitute_2F_Text_Grunt5PostBattle, MSGBOX_AUTOCLOSE
+end
+```
+### Route119_WeatherInstitute_2F_EventScript_Grunt2
+```
+trainerbattle_single TRAINER_GRUNT_WEATHER_INST_2, Route119_WeatherInstitute_2F_Text_Grunt2Intro, Route119_WeatherInstitute_2F_Text_Grunt2Defeat
+msgbox Route119_WeatherInstitute_2F_Text_Grunt2PostBattle, MSGBOX_AUTOCLOSE
+end
+```
+### Route119_WeatherInstitute_2F_EventScript_Grunt3
+```
+trainerbattle_single TRAINER_GRUNT_WEATHER_INST_3, Route119_WeatherInstitute_2F_Text_Grunt3Intro, Route119_WeatherInstitute_2F_Text_Grunt3Defeat
+msgbox Route119_WeatherInstitute_2F_Text_Grunt3PostBattle, MSGBOX_AUTOCLOSE
+end
+```
+### Route119_WeatherInstitute_2F_EventScript_Shelly
+```
+trainerbattle_single TRAINER_SHELLY_WEATHER_INSTITUTE, Route119_WeatherInstitute_2F_Text_ShellyIntro, Route119_WeatherInstitute_2F_Text_ShellyDefeat, Route119_WeatherInstitute_2F_EventScript_ShellyDefeated
+msgbox Route119_WeatherInstitute_2F_Text_ShellyPostBattle, MSGBOX_AUTOCLOSE
+end
+```
+### Route119_WeatherInstitute_2F_EventScript_ShellyDefeated
+```
+msgbox Route119_WeatherInstitute_2F_Text_ShellyPostBattle, MSGBOX_DEFAULT
+closemessage
+addobject LOCALID_WEATHER_INSTITUTE_2F_GRUNT_3
+applymovement LOCALID_WEATHER_INSTITUTE_2F_GRUNT_3, Route119_WeatherInstitute_2F_Movement_GruntApproachShelly
+applymovement LOCALID_PLAYER, Route119_WeatherInstitute_2F_Movement_ShovePlayerOutOfWay
+waitmovement 0
+msgbox Route119_WeatherInstitute_2F_Text_TeamMagmaJustPassedBy, MSGBOX_DEFAULT
+closemessage
+playse SE_PIN
+applymovement LOCALID_WEATHER_INSTITUTE_2F_SHELLY, Common_Movement_ExclamationMark
+waitmovement 0
+applymovement LOCALID_WEATHER_INSTITUTE_2F_SHELLY, Common_Movement_Delay48
+waitmovement 0
+msgbox Route119_WeatherInstitute_2F_Text_WeHaveToHurryToMtPyre, MSGBOX_DEFAULT
+closemessage
+setvar VAR_WEATHER_INSTITUTE_STATE, 1
+clearflag FLAG_HIDE_WEATHER_INSTITUTE_2F_WORKERS
+fadedefaultbgm
+fadescreen FADE_TO_BLACK
+setflag FLAG_HIDE_ROUTE_119_TEAM_AQUA
+setflag FLAG_HIDE_WEATHER_INSTITUTE_2F_AQUA_GRUNT_M
+removeobject LOCALID_WEATHER_INSTITUTE_2F_GRUNT_1
+removeobject LOCALID_WEATHER_INSTITUTE_2F_GRUNT_2
+removeobject LOCALID_WEATHER_INSTITUTE_2F_SHELLY
+removeobject LOCALID_WEATHER_INSTITUTE_2F_GRUNT_4
+removeobject LOCALID_WEATHER_INSTITUTE_2F_GRUNT_3
+applymovement LOCALID_PLAYER, Route119_WeatherInstitute_2F_Movement_PlayerReturnToPosition
+waitmovement 0
+fadescreen FADE_FROM_BLACK
+applymovement LOCALID_WEATHER_INSTITUTE_2F_SCIENTIST, Route119_WeatherInstitute_2F_Movement_ScientistApproachPlayer
+waitmovement 0
+copyobjectxytoperm LOCALID_WEATHER_INSTITUTE_2F_SCIENTIST
+goto Route119_WeatherInstitute_2F_EventScript_ReceiveCastform
+end
+```
+### Route119_WeatherInstitute_2F_EventScript_ReceiveCastform
+```
+msgbox Route119_WeatherInstitute_2F_Text_ThanksPleaseTakePokemon, MSGBOX_DEFAULT
+setvar VAR_TEMP_TRANSFERRED_SPECIES, SPECIES_CASTFORM
+givemon SPECIES_CASTFORM, 25, ITEM_MYSTIC_WATER
+goto_if_eq VAR_RESULT, MON_GIVEN_TO_PARTY, Route119_WeatherInstitute_2F_EventScript_ReceiveCastformParty
+goto_if_eq VAR_RESULT, MON_GIVEN_TO_PC, Route119_WeatherInstitute_2F_EventScript_ReceiveCastformPC
+goto Common_EventScript_NoMoreRoomForPokemon
+end
+```
+### Route119_WeatherInstitute_2F_EventScript_ReceiveCastformParty
+```
+call Route119_WeatherInstitute_2F_EventScript_ReceivedCastformFanfare
+msgbox gText_NicknameThisPokemon, MSGBOX_YESNO
+goto_if_eq VAR_RESULT, NO, Route119_WeatherInstitute_2F_EventScript_ExplainCastform
+call Common_EventScript_GetGiftMonPartySlot
+call Common_EventScript_NameReceivedPartyMon
+goto Route119_WeatherInstitute_2F_EventScript_ExplainCastform
+end
+```
+### Route119_WeatherInstitute_2F_EventScript_ReceiveCastformPC
+```
+call Route119_WeatherInstitute_2F_EventScript_ReceivedCastformFanfare
+msgbox gText_NicknameThisPokemon, MSGBOX_YESNO
+goto_if_eq VAR_RESULT, NO, Route119_WeatherInstitute_2F_EventScript_SendCastformToPC
+call Common_EventScript_NameReceivedBoxMon
+goto Route119_WeatherInstitute_2F_EventScript_SendCastformToPC
+end
+```
+### Route119_WeatherInstitute_2F_EventScript_SendCastformToPC
+```
+call Common_EventScript_TransferredToPC
+goto Route119_WeatherInstitute_2F_EventScript_ExplainCastform
+end
+```
+### Route119_WeatherInstitute_2F_EventScript_ReceivedCastformFanfare
+```
+playfanfare MUS_OBTAIN_ITEM
+message Route119_WeatherInstitute_2F_Text_PlayerReceivedCastform
+waitmessage
+waitfanfare
+bufferspeciesname STR_VAR_1, SPECIES_CASTFORM
+return
+```
+### Route119_WeatherInstitute_2F_EventScript_ExplainCastform
+```
+msgbox Route119_WeatherInstitute_2F_Text_PokemonChangesWithWeather, MSGBOX_DEFAULT
+setflag FLAG_RECEIVED_CASTFORM
+release
+end
+```
+### Route119_WeatherInstitute_2F_EventScript_ScientistMentionWeather
+```
+goto_if_set FLAG_SYS_GAME_CLEAR, Route119_WeatherInstitute_2F_EventScript_TryStartAbnormalWeather
+msgbox Route119_WeatherInstitute_2F_Text_ChangingWeatherRidiculous, MSGBOX_DEFAULT
+release
+end
+```
+### Route119_WeatherInstitute_2F_EventScript_TryStartAbnormalWeather
+```
+setvar VAR_0x8004, 0
+call_if_set FLAG_DEFEATED_KYOGRE, Route119_WeatherInstitute_2F_EventScript_LegendaryDefeated
+call_if_set FLAG_DEFEATED_GROUDON, Route119_WeatherInstitute_2F_EventScript_LegendaryDefeated
+goto_if_eq VAR_0x8004, 2, Route119_WeatherInstitute_2F_EventScript_NoAbnormalWeather  @ Both defeated
+call_if_unset FLAG_TEMP_2, Route119_WeatherInstitute_2F_EventScript_CreateAbnormalWeather
+specialvar VAR_RESULT, GetAbnormalWeatherMapNameAndType
+goto_if_eq VAR_RESULT, 1, Route119_WeatherInstitute_2F_EventScript_KyogreWeather
+msgbox Route119_WeatherInstitute_2F_Text_GroudonWeather, MSGBOX_DEFAULT
+release
+end
+```
+### Route119_WeatherInstitute_2F_EventScript_KyogreWeather
+```
+msgbox Route119_WeatherInstitute_2F_Text_KyogreWeather, MSGBOX_DEFAULT
+release
+end
+```
+### Route119_WeatherInstitute_2F_EventScript_CreateAbnormalWeather
+```
+special CreateAbnormalWeatherEvent
+setflag FLAG_TEMP_2
+return
+```
+### Route119_WeatherInstitute_2F_EventScript_LegendaryDefeated
+```
+addvar VAR_0x8004, 1
+return
+```
+### Route119_WeatherInstitute_2F_EventScript_NoAbnormalWeather
+```
+msgbox Route119_WeatherInstitute_2F_Text_NoAbnormalWeather, MSGBOX_DEFAULT
+release
+end
+```
+### Route119_WeatherInstitute_2F_Movement_GruntApproachShelly
+```
+walk_fast_left
+walk_fast_left
+walk_fast_left
+walk_fast_left
+walk_fast_left
+walk_fast_left
+walk_fast_left
+walk_fast_left
+walk_fast_left
+walk_fast_left
+walk_fast_left
+step_end
+```
+### Route119_WeatherInstitute_2F_Movement_ShovePlayerOutOfWay
+```
+delay_16
+delay_16
+delay_16
+delay_16
+delay_16
+ride_water_current_up
+walk_in_place_faster_down
+step_end
+```
+### Route119_WeatherInstitute_2F_Movement_PlayerReturnToPosition
+```
+slide_down
+walk_in_place_faster_left
+step_end
+```
+### Route119_WeatherInstitute_2F_Movement_ScientistApproachPlayer
+```
+walk_right
+walk_right
+walk_right
+step_end
+```
+### Route119_WeatherInstitute_2F_EventScript_WeatherScientist
+```
+lock
+faceplayer
+goto_if_set FLAG_RECEIVED_CASTFORM, Route119_WeatherInstitute_2F_EventScript_ScientistMentionWeather
+goto Route119_WeatherInstitute_2F_EventScript_ReceiveCastform
+end
+```
+
+## Textes (22)
+### Route119_WeatherInstitute_2F_Text_Grunt2Intro
+```
+Le CENTRE METEO a créé un type\nde POKéMON basé sur le climat.\pNous sommes là pour le voler!$
+```
+### Route119_WeatherInstitute_2F_Text_Grunt2Defeat
+```
+Notre plan échoue à cause d'un mioche?$
+```
+### Route119_WeatherInstitute_2F_Text_Grunt2PostBattle
+```
+Si le POKéMON qu'ils ont créé peut\ncontrôler le climat, la TEAM AQUA doit\labsolument l'avoir!$
+```
+### Route119_WeatherInstitute_2F_Text_Grunt3Intro
+```
+Nous sommes la TEAM AQUA!\nNous surgissons dès que quelque chose\lde rare se produit!$
+```
+### Route119_WeatherInstitute_2F_Text_Grunt3Defeat
+```
+Tu m'as eu!$
+```
+### Route119_WeatherInstitute_2F_Text_Grunt3PostBattle
+```
+Tu n'as aucune idée de ce que nous,\nla TEAM AQUA, avons l'intention de\lfaire! Ne reste pas dans nos pattes!$
+```
+### Route119_WeatherInstitute_2F_Text_Grunt5Intro
+```
+Ne me dis pas que tu cherches le\nPOKéMON météo, toi aussi?\pAlors là, non!!!\nNous étions là avant!$
+```
+### Route119_WeatherInstitute_2F_Text_Grunt5Defeat
+```
+Tu jettes un œil à mes POKéMON?$
+```
+### Route119_WeatherInstitute_2F_Text_Grunt5PostBattle
+```
+Alors?\nCe que nous voulons…\pCe que nous voulons vraiment n'est\npas ici…$
+```
+### Route119_WeatherInstitute_2F_Text_ShellyIntro
+```
+Ha, ha, ha, ha, ha!\pTu veux te mêler des affaires de la\nTEAM AQUA?\pSoit tu es intrépide, soit tu es\ncomplètement stupide, ou les deux!\pTu es tellement chou, c'est dégoûtant!\nJe vais t'apprendre la vie, sale mioche!$
+```
+### Route119_WeatherInstitute_2F_Text_ShellyDefeat
+```
+Ha, ha, ha, ha, ha! Tu es tellement\nbalèze, c'est dégoûtant!$
+```
+### Route119_WeatherInstitute_2F_Text_ShellyPostBattle
+```
+On en avait déjà marre de la TEAM MAGMA,\net maintenant te voilà!\pMais qu'est-ce que tu viens fouiner ici?$
+```
+### Route119_WeatherInstitute_2F_Text_TeamMagmaJustPassedBy
+```
+On a un problème!\pUn groupe de la TEAM MAGMA vient de\npasser devant le CENTRE METEO.\pIls se dirigeaient vers le MONT MEMORIA!$
+```
+### Route119_WeatherInstitute_2F_Text_WeHaveToHurryToMtPyre
+```
+Quoi?!?\pNe perdons pas de temps!\nVite, au MONT MEMORIA!\pAhhh!\nOn va lui apprendre à vivre, à cette\lTEAM MAGMA!$
+```
+### Route119_WeatherInstitute_2F_Text_ThanksPleaseTakePokemon
+```
+Merci mille fois!\nGrâce à toi, nous sommes sauvés!\pC'est peut-être une drôle de façon de\nte remercier, mais prends ce POKéMON.$
+```
+### Route119_WeatherInstitute_2F_Text_NoRoomForPokemon
+```
+Hm? You don't seem to have any room\nfor this POKéMON.$
+```
+### Route119_WeatherInstitute_2F_Text_PlayerReceivedCastform
+```
+{PLAYER} reçoit MORPHEO!$
+```
+### Route119_WeatherInstitute_2F_Text_PokemonChangesWithWeather
+```
+Ce POKéMON change de forme en\nfonction des conditions météo.\pOn en a plusieurs au CENTRE METEO.\nVas-y, prends-le.$
+```
+### Route119_WeatherInstitute_2F_Text_ChangingWeatherRidiculous
+```
+Je fais des études sur la pluie depuis\ndes années, mais c'est ridicule de\lcroire qu'il est possible de contrôler\lle temps.$
+```
+### Route119_WeatherInstitute_2F_Text_GroudonWeather
+```
+J'étudie les conditions météo dans\nla région de HOENN.\pNous observons actuellement une\nsécheresse sur la {STR_VAR_1}.\pEnfin, quelque part dans cette\nzone…$
+```
+### Route119_WeatherInstitute_2F_Text_KyogreWeather
+```
+J'étudie les conditions météo dans\nla région de HOENN.\pNous enregistrons actuellement de\nfortes pluies sur le {STR_VAR_1}.\pEnfin, quelque part dans cette\nzone…$
+```
+### Route119_WeatherInstitute_2F_Text_NoAbnormalWeather
+```
+Pas de conditions météo anormales\nenregistrées actuellement.\pLes chutes de pluie occasionnelles\nsont une vraie bénédiction.$
+```

@@ -1,0 +1,432 @@
+# BattleFrontier_Lounge3
+
+## Métadonnées
+- **id** : `MAP_BATTLE_FRONTIER_LOUNGE3`
+- **layout** : `LAYOUT_BATTLE_FRONTIER_LOUNGE2`
+- **music** : `MUS_B_TOWER_RS`
+- **region_map_section** : `MAPSEC_BATTLE_FRONTIER`
+- **weather** : `WEATHER_NONE`
+- **map_type** : `MAP_TYPE_INDOOR`
+- **battle_scene** : `MAP_BATTLE_SCENE_NORMAL`
+- **show_map_name** : `False`
+- **allow_cycling** : `False`
+- **allow_running** : `False`
+
+## Object events (5 NPCs)
+| local_id | gfx | x,y | mvmt | script | flag |
+|---|---|---|---|---|---|
+| `` | `OBJ_EVENT_GFX_HIKER` | 4,6 | `MOVEMENT_TYPE_FACE_UP` | `BattleFrontier_Lounge3_EventScript_Gambler` | `0` |
+| `` | `OBJ_EVENT_GFX_FAT_MAN` | 4,4 | `MOVEMENT_TYPE_FACE_DOWN` | `BattleFrontier_Lounge3_EventScript_FatMan` | `0` |
+| `` | `OBJ_EVENT_GFX_WOMAN_2` | 3,5 | `MOVEMENT_TYPE_FACE_RIGHT` | `BattleFrontier_Lounge3_EventScript_Woman` | `0` |
+| `` | `OBJ_EVENT_GFX_POKEFAN_F` | 5,5 | `MOVEMENT_TYPE_FACE_LEFT` | `BattleFrontier_Lounge3_EventScript_PokefanF` | `0` |
+| `` | `OBJ_EVENT_GFX_MAN_3` | 0,6 | `MOVEMENT_TYPE_WANDER_AROUND` | `BattleFrontier_Lounge3_EventScript_Man` | `0` |
+
+## Warps (1)
+- #0 (4,9) → `MAP_BATTLE_FRONTIER_OUTSIDE_EAST` warp #9
+
+## Flags référencés (8)
+- `FLAG_MET_BATTLE_FRONTIER_GAMBLER`
+- `FLAG_SYS_ARENA_SILVER`
+- `FLAG_SYS_DOME_SILVER`
+- `FLAG_SYS_FACTORY_SILVER`
+- `FLAG_SYS_PALACE_SILVER`
+- `FLAG_SYS_PIKE_SILVER`
+- `FLAG_SYS_PYRAMID_SILVER`
+- `FLAG_SYS_TOWER_SILVER`
+
+## Variables référencées (8)
+- `VAR_0x8004`
+- `VAR_0x8008`
+- `VAR_1`
+- `VAR_FRONTIER_GAMBLER_AMOUNT_BET`
+- `VAR_FRONTIER_GAMBLER_STATE`
+- `VAR_LAST_TALKED`
+- `VAR_RESULT`
+- `VAR_TEMP_1`
+
+## Scripts (27)
+### BattleFrontier_Lounge3_EventScript_Gambler
+```
+lock
+faceplayer
+goto_if_set FLAG_MET_BATTLE_FRONTIER_GAMBLER, BattleFrontier_Lounge3_EventScript_AlreadyMetGambler
+call BattleFrontier_Lounge3_EventScript_CountSilverSymbols
+goto_if_le VAR_0x8004, 2, BattleFrontier_Lounge3_EventScript_NotEnoughSilverSymbols
+setflag FLAG_MET_BATTLE_FRONTIER_GAMBLER
+msgbox BattleFrontier_Lounge3_Text_YouLookToughExplainGambling, MSGBOX_DEFAULT
+goto BattleFrontier_Lounge3_EventScript_AskToEnterChallenge
+end
+```
+### BattleFrontier_Lounge3_EventScript_AskToEnterChallenge
+```
+special ShowFrontierGamblerLookingMessage
+waitmessage
+waitbuttonpress
+msgbox BattleFrontier_Lounge3_Text_HowAboutEnteringEventForMe, MSGBOX_YESNO
+goto_if_eq VAR_RESULT, NO, BattleFrontier_Lounge3_EventScript_DeclineChallenge
+msgbox BattleFrontier_Lounge3_Text_SpotMeSomeBattlePoints, MSGBOX_YESNO
+goto_if_eq VAR_RESULT, NO, BattleFrontier_Lounge3_EventScript_DeclineChallenge
+message BattleFrontier_Lounge3_Text_HowMuchCanYouSpot
+waitmessage
+special ShowBattlePointsWindow
+goto BattleFrontier_Lounge3_EventScript_ChooseBetAmount
+end
+```
+### BattleFrontier_Lounge3_EventScript_ChooseBetAmount
+```
+multichoice 20, 4, MULTI_FRONTIER_GAMBLER_BET, FALSE
+copyvar VAR_FRONTIER_GAMBLER_AMOUNT_BET, VAR_RESULT
+switch VAR_RESULT
+case FRONTIER_GAMBLER_BET_5, BattleFrontier_Lounge3_EventScript_Bet5
+case FRONTIER_GAMBLER_BET_10, BattleFrontier_Lounge3_EventScript_Bet10
+case FRONTIER_GAMBLER_BET_15, BattleFrontier_Lounge3_EventScript_Bet15
+case FRONTIER_GAMBLER_BET_CANCEL, BattleFrontier_Lounge3_EventScript_CancelBet
+case MULTI_B_PRESSED, BattleFrontier_Lounge3_EventScript_CancelBet
+end
+```
+### BattleFrontier_Lounge3_EventScript_Bet5
+```
+setvar VAR_0x8008, BET_AMOUNT_5
+goto BattleFrontier_Lounge3_EventScript_TryPlaceBet
+end
+```
+### BattleFrontier_Lounge3_EventScript_Bet10
+```
+setvar VAR_0x8008, BET_AMOUNT_10
+goto BattleFrontier_Lounge3_EventScript_TryPlaceBet
+end
+```
+### BattleFrontier_Lounge3_EventScript_Bet15
+```
+setvar VAR_0x8008, BET_AMOUNT_15
+goto BattleFrontier_Lounge3_EventScript_TryPlaceBet
+end
+```
+### BattleFrontier_Lounge3_EventScript_TryPlaceBet
+```
+specialvar VAR_TEMP_1, GetFrontierBattlePoints
+goto_if_ge VAR_TEMP_1, VAR_0x8008, BattleFrontier_Lounge3_EventScript_PlaceBet
+msgbox BattleFrontier_Lounge3_Text_YouDontHaveEnoughPoints, MSGBOX_DEFAULT
+message BattleFrontier_Lounge3_Text_HowMuchCanYouSpot
+waitmessage
+goto BattleFrontier_Lounge3_EventScript_ChooseBetAmount
+end
+```
+### BattleFrontier_Lounge3_EventScript_PlaceBet
+```
+copyvar VAR_0x8004, VAR_0x8008
+special TakeFrontierBattlePoints
+setvar VAR_FRONTIER_GAMBLER_STATE, FRONTIER_GAMBLER_PLACED_BET
+special UpdateBattlePointsWindow
+playse SE_SHOP
+msgbox BattleFrontier_Lounge3_Text_ThanksOffYouGo, MSGBOX_DEFAULT
+goto BattleFrontier_Lounge3_EventScript_FinishBet
+end
+```
+### BattleFrontier_Lounge3_EventScript_FinishBet
+```
+special ShowFrontierGamblerGoMessage
+waitmessage
+waitbuttonpress
+special CloseBattlePointsWindow
+release
+end
+```
+### BattleFrontier_Lounge3_EventScript_CountSilverSymbols
+```
+setvar VAR_0x8004, 0
+call_if_set FLAG_SYS_TOWER_SILVER, BattleFrontier_Lounge3_EventScript_AddSilverSymbolCount
+call_if_set FLAG_SYS_DOME_SILVER, BattleFrontier_Lounge3_EventScript_AddSilverSymbolCount
+call_if_set FLAG_SYS_PALACE_SILVER, BattleFrontier_Lounge3_EventScript_AddSilverSymbolCount
+call_if_set FLAG_SYS_ARENA_SILVER, BattleFrontier_Lounge3_EventScript_AddSilverSymbolCount
+call_if_set FLAG_SYS_FACTORY_SILVER, BattleFrontier_Lounge3_EventScript_AddSilverSymbolCount
+call_if_set FLAG_SYS_PIKE_SILVER, BattleFrontier_Lounge3_EventScript_AddSilverSymbolCount
+call_if_set FLAG_SYS_PYRAMID_SILVER, BattleFrontier_Lounge3_EventScript_AddSilverSymbolCount
+return
+```
+### BattleFrontier_Lounge3_EventScript_AddSilverSymbolCount
+```
+addvar VAR_0x8004, 1
+return
+```
+### BattleFrontier_Lounge3_EventScript_NotEnoughSilverSymbols
+```
+msgbox BattleFrontier_Lounge3_Text_CantYouSeeWereBusyHere, MSGBOX_DEFAULT
+goto BattleFrontier_Lounge3_EventScript_FaceOriginalDirection
+end
+```
+### BattleFrontier_Lounge3_EventScript_AlreadyMetGambler
+```
+msgbox BattleFrontier_Lounge3_Text_Oh, MSGBOX_DEFAULT
+goto_if_ge VAR_FRONTIER_GAMBLER_STATE, FRONTIER_GAMBLER_PLACED_BET, BattleFrontier_Lounge3_EventScript_CheckBetResults
+goto BattleFrontier_Lounge3_EventScript_AskToEnterChallenge
+end
+```
+### BattleFrontier_Lounge3_EventScript_CheckBetResults
+```
+goto_if_eq VAR_FRONTIER_GAMBLER_STATE, FRONTIER_GAMBLER_PLACED_BET, BattleFrontier_Lounge3_EventScript_ChallengeNotAttempted
+goto_if_eq VAR_FRONTIER_GAMBLER_STATE, FRONTIER_GAMBLER_WON, BattleFrontier_Lounge3_EventScript_WonChallenge
+goto BattleFrontier_Lounge3_EventScript_LostChallenge
+end
+```
+### BattleFrontier_Lounge3_EventScript_WonChallenge
+```
+msgbox BattleFrontier_Lounge3_Text_HelloChampHeresYourPoints, MSGBOX_DEFAULT
+call_if_eq VAR_FRONTIER_GAMBLER_AMOUNT_BET, FRONTIER_GAMBLER_BET_5, BattleFrontier_Lounge3_EventScript_RewardBet5
+call_if_eq VAR_FRONTIER_GAMBLER_AMOUNT_BET, FRONTIER_GAMBLER_BET_10, BattleFrontier_Lounge3_EventScript_RewardBet10
+call_if_eq VAR_FRONTIER_GAMBLER_AMOUNT_BET, FRONTIER_GAMBLER_BET_15, BattleFrontier_Lounge3_EventScript_RewardBet15
+msgbox BattleFrontier_Lounge3_Text_ObtainedBattlePoints, MSGBOX_GETPOINTS
+special GiveFrontierBattlePoints
+msgbox BattleFrontier_Lounge3_Text_ThinkOfMeForAnotherChallenge, MSGBOX_DEFAULT
+setvar VAR_FRONTIER_GAMBLER_STATE, FRONTIER_GAMBLER_WAITING
+release
+end
+```
+### BattleFrontier_Lounge3_EventScript_LostChallenge
+```
+msgbox BattleFrontier_Lounge3_Text_NiceTryCantReturnPoints, MSGBOX_DEFAULT
+setvar VAR_FRONTIER_GAMBLER_STATE, FRONTIER_GAMBLER_WAITING
+release
+end
+```
+### BattleFrontier_Lounge3_EventScript_RewardBet5
+```
+buffernumberstring STR_VAR_1, (BET_AMOUNT_5 * 2)
+setvar VAR_0x8004, (BET_AMOUNT_5 * 2)
+return
+```
+### BattleFrontier_Lounge3_EventScript_RewardBet10
+```
+buffernumberstring STR_VAR_1, (BET_AMOUNT_10 * 2)
+setvar VAR_0x8004, (BET_AMOUNT_10 * 2)
+return
+```
+### BattleFrontier_Lounge3_EventScript_RewardBet15
+```
+buffernumberstring STR_VAR_1, (BET_AMOUNT_15 * 2)
+setvar VAR_0x8004, (BET_AMOUNT_15 * 2)
+return
+```
+### BattleFrontier_Lounge3_EventScript_ChallengeNotAttempted
+```
+special ShowFrontierGamblerGoMessage
+waitmessage
+waitbuttonpress
+release
+end
+```
+### BattleFrontier_Lounge3_EventScript_DeclineChallenge
+```
+msgbox BattleFrontier_Lounge3_Text_NotInterested, MSGBOX_DEFAULT
+release
+end
+```
+### BattleFrontier_Lounge3_EventScript_CancelBet
+```
+special CloseBattlePointsWindow
+goto BattleFrontier_Lounge3_EventScript_DeclineChallenge
+end
+```
+### BattleFrontier_Lounge3_EventScript_Man
+```
+msgbox BattleFrontier_Lounge3_Text_ShouldBeTakingChallenges, MSGBOX_NPC
+end
+```
+### BattleFrontier_Lounge3_EventScript_Woman
+```
+lock
+faceplayer
+msgbox BattleFrontier_Lounge3_Text_BackedWrongTrainer, MSGBOX_DEFAULT
+goto BattleFrontier_Lounge3_EventScript_FaceOriginalDirection
+end
+```
+### BattleFrontier_Lounge3_EventScript_PokefanF
+```
+lock
+faceplayer
+msgbox BattleFrontier_Lounge3_Text_KnowWinnerWhenISeeOne, MSGBOX_DEFAULT
+goto BattleFrontier_Lounge3_EventScript_FaceOriginalDirection
+end
+```
+### BattleFrontier_Lounge3_EventScript_FatMan
+```
+lock
+faceplayer
+msgbox BattleFrontier_Lounge3_Text_TrainerGoodButRattled, MSGBOX_DEFAULT
+goto BattleFrontier_Lounge3_EventScript_FaceOriginalDirection
+end
+```
+### BattleFrontier_Lounge3_EventScript_FaceOriginalDirection
+```
+closemessage
+applymovement VAR_LAST_TALKED, Common_Movement_FaceOriginalDirection
+waitmovement 0
+release
+end
+```
+
+## Textes (41)
+### BattleFrontier_Lounge3_Text_CantYouSeeWereBusyHere
+```
+…\nQu'est-ce que tu veux?\pNous sommes occupés.\nTu ne peux pas revenir plus tard?$
+```
+### BattleFrontier_Lounge3_Text_YouLookToughExplainGambling
+```
+…\nTu as l'air d'être un bon DRESSEUR.\pHé, hé…\nJ'ai quelque chose à te proposer.\pOn est un petit groupe et on joue\nà un petit jeu ici. On mise sur ce qui\lse passe à la ZONE DE COMBAT.\pLes règles sont simples.\pD'abord, on choisit un des bâtiments\nde la ZONE DE COMBAT.\pEnsuite, on choisit chacun un DRESSEUR\nqui relève le défi de ce bâtiment et on\lmise des POINTS DE COMBAT dessus.\pCelui qui a misé sur le DRESSEUR qui\nfait le meilleur score récolte tous les\lPOINTS DE COMBAT mis en jeu.\pPlutôt simple, non?\nDe toute façon…$
+```
+### BattleFrontier_Lounge3_Text_ChallengeBattleTowerSingle
+```
+Je cherche un DRESSEUR qui va relever\nle défi des SALLES DE COMBAT SOLO\lde la TOUR DE COMBAT.\pMais je n'ai pas vu un seul DRESSEUR\nà la hauteur.$
+```
+### BattleFrontier_Lounge3_Text_ChallengeBattleTowerDouble
+```
+Je cherche un DRESSEUR qui va relever\nle défi des SALLES DE COMBAT DUO\lde la TOUR DE COMBAT.\pMais je n'ai pas vu un seul DRESSEUR\nà la hauteur.$
+```
+### BattleFrontier_Lounge3_Text_ChallengeBattleTowerMulti
+```
+Je cherche un DRESSEUR qui va relever\nle défi des SALLES DE COMBAT MULTI\lde la TOUR DE COMBAT.\pMais je n'ai pas vu un seul DRESSEUR\nà la hauteur.$
+```
+### BattleFrontier_Lounge3_Text_ChallengeBattleDomeSingle
+```
+Je cherche un DRESSEUR qui va\nparticiper au TOURNOI DE COMBAT\lSOLO du DOME DE COMBAT.\pMais je n'ai pas vu un seul DRESSEUR\nà la hauteur.$
+```
+### BattleFrontier_Lounge3_Text_ChallengeBattleDomeDouble
+```
+Je cherche un DRESSEUR qui va\nparticiper au TOURNOI DE COMBAT\lDUO du DOME DE COMBAT.\pMais je n'ai pas vu un seul DRESSEUR\nà la hauteur.$
+```
+### BattleFrontier_Lounge3_Text_ChallengeBattleFactorySingle
+```
+Je cherche un DRESSEUR qui va\nparticiper au TOURNOI COMBAT\lECHANGE SOLO de l'USINE DE COMBAT.\pMais je n'ai pas vu un seul DRESSEUR\nà la hauteur.$
+```
+### BattleFrontier_Lounge3_Text_ChallengeBattleFactoryDouble
+```
+Je cherche un DRESSEUR qui va\nparticiper au TOURNOI COMBAT\lECHANGE DUO de l'USINE DE COMBAT.\pMais je n'ai pas vu un seul DRESSEUR\nà la hauteur.$
+```
+### BattleFrontier_Lounge3_Text_ChallengeBattlePalaceSingle
+```
+Je cherche un DRESSEUR qui va relever\nle défi des HALLS DE COMBAT SOLO\ldu PALACE DE COMBAT.\pMais je n'ai pas vu un seul DRESSEUR\nà la hauteur.$
+```
+### BattleFrontier_Lounge3_Text_ChallengeBattlePalaceDouble
+```
+Je cherche un DRESSEUR qui va relever\nle défi des HALLS DE COMBAT DUO\ldu PALACE DE COMBAT.\pMais je n'ai pas vu un seul DRESSEUR\nà la hauteur.$
+```
+### BattleFrontier_Lounge3_Text_ChallengeBattleArena
+```
+Je cherche un DRESSEUR qui va\nparticiper au TOURNOI K.O. du\lDOJO DE COMBAT.\pMais je n'ai pas vu un seul DRESSEUR\nà la hauteur.$
+```
+### BattleFrontier_Lounge3_Text_ChallengeBattlePike
+```
+Je cherche un DRESSEUR qui va\nrelever le défi du COMBAT HASARD\lau REPTILE DE COMBAT.\pMais je n'ai pas vu un seul DRESSEUR\nà la hauteur.$
+```
+### BattleFrontier_Lounge3_Text_ChallengeBattlePyramid
+```
+Je cherche un DRESSEUR qui va\nrelever le défi du COMBAT QUETE\ldans la PYRAMIDE DE COMBAT.\pMais je n'ai pas vu un seul DRESSEUR\nà la hauteur.$
+```
+### BattleFrontier_Lounge3_Text_HowAboutEnteringEventForMe
+```
+Bien sûr, tu ne feras pas ça pour rien.\nQu'est-ce que tu en dis?\lTu veux bien être ce DRESSEUR?$
+```
+### BattleFrontier_Lounge3_Text_SpotMeSomeBattlePoints
+```
+Très bien. Parfait.\nHeu… Tu veux bien me prêter\lquelques POINTS DE COMBAT?\pFais-moi confiance, je te remercierai\ncomme il se doit.$
+```
+### BattleFrontier_Lounge3_Text_HowMuchCanYouSpot
+```
+Super!\nCombien tu peux me prêter?$
+```
+### BattleFrontier_Lounge3_Text_YouDontHaveEnoughPoints
+```
+Non mais!\nTu n'as pas assez de POINTS DE COMBAT!\pÇa t'amuse de faire perdre leur temps\naux honnêtes gens?$
+```
+### BattleFrontier_Lounge3_Text_ThanksOffYouGo
+```
+Hé, hé! Merci bien!\nC'est parti!$
+```
+### BattleFrontier_Lounge3_Text_GetToBattleTowerSingle
+```
+Vite, les SALLES DE COMBAT SOLO\nde la TOUR DE COMBAT t'attendent!\pTu dois gagner!\nJe compte sur toi!\lNotre avenir à tous les deux en dépend!$
+```
+### BattleFrontier_Lounge3_Text_GetToBattleTowerDouble
+```
+Vite, les SALLES DE COMBAT DUO\nde la TOUR DE COMBAT t'attendent!\pTu dois gagner!\nJe compte sur toi!\lNotre avenir à tous les deux en dépend!$
+```
+### BattleFrontier_Lounge3_Text_GetToBattleTowerMulti
+```
+Vite, les SALLES DE COMBAT MULTI\nde la TOUR DE COMBAT t'attendent!\pTu dois gagner!\nJe compte sur toi!\lNotre avenir à tous les deux en dépend!$
+```
+### BattleFrontier_Lounge3_Text_GetToBattleDomeSingle
+```
+Vite, le TOURNOI DE COMBAT SOLO\ndu DOME DE COMBAT t'attend!\pTu dois gagner!\nJe compte sur toi!\lNotre avenir à tous les deux en dépend!$
+```
+### BattleFrontier_Lounge3_Text_GetToBattleDomeDouble
+```
+Vite, le TOURNOI DE COMBAT DUO\ndu DOME DE COMBAT t'attend!\pTu dois gagner!\nJe compte sur toi!\lNotre avenir à tous les deux en dépend!$
+```
+### BattleFrontier_Lounge3_Text_GetToBattleFactorySingle
+```
+Vite, le TOURNOI COMBAT ECHANGE\nSOLO de l'USINE DE COMBAT t'attend!\pTu dois gagner!\nJe compte sur toi!\lNotre avenir à tous les deux en dépend!$
+```
+### BattleFrontier_Lounge3_Text_GetToBattleFactoryDouble
+```
+Vite, le TOURNOI COMBAT ECHANGE\nDUO de l'USINE DE COMBAT t'attend!\pTu dois gagner!\nJe compte sur toi!\lNotre avenir à tous les deux en dépend!$
+```
+### BattleFrontier_Lounge3_Text_GetToBattlePalaceSingle
+```
+Vite, les HALLS DE COMBAT SOLO\ndu PALACE DE COMBAT t'attendent!\pTu dois gagner!\nJe compte sur toi!\lNotre avenir à tous les deux en dépend!$
+```
+### BattleFrontier_Lounge3_Text_GetToBattlePalaceDouble
+```
+Vite, les HALLS DE COMBAT DUO\ndu PALACE DE COMBAT t'attendent!\pTu dois gagner!\nJe compte sur toi!\lNotre avenir à tous les deux en dépend!$
+```
+### BattleFrontier_Lounge3_Text_GetToBattleArena
+```
+Vite, le TOURNOI K.O. du DOJO DE\nCOMBAT t'attend!\pTu dois gagner!\nJe compte sur toi!\lNotre avenir à tous les deux en dépend!$
+```
+### BattleFrontier_Lounge3_Text_GetToBattlePike
+```
+Vite, le défi du COMBAT HASARD\nt'attend au REPTILE DE COMBAT!\pTu dois gagner!\nJe compte sur toi!\lNotre avenir à tous les deux en dépend!$
+```
+### BattleFrontier_Lounge3_Text_GetToBattlePyramid
+```
+Vite, le défi du COMBAT QUETE\nt'attend dans la PYRAMIDE DE COMBAT!\pTu dois gagner!\nJe compte sur toi!\lNotre avenir à tous les deux en dépend!$
+```
+### BattleFrontier_Lounge3_Text_NiceTryCantReturnPoints
+```
+Oh, c'est toi…\nC'était bien tenté…\pMalheureusement, je ne peux pas te\nrendre ce que tu m'as prêté…\pÇa nous apprendra à faire plus\nattention la prochaine fois!$
+```
+### BattleFrontier_Lounge3_Text_HelloChampHeresYourPoints
+```
+Bravo!\nTu as été formidable!\pJe le savais!\nJe te faisais confiance!\lOn est les meilleurs!\pJe te rends ce que tu m'as prêté avec\nun petit extra!$
+```
+### BattleFrontier_Lounge3_Text_ObtainedBattlePoints
+```
+{PLAYER} reçoit\n{STR_VAR_1} POINTS DE COMBAT.$
+```
+### BattleFrontier_Lounge3_Text_ThinkOfMeForAnotherChallenge
+```
+Si tu as envie de relever un autre\ndéfi, pense à moi!$
+```
+### BattleFrontier_Lounge3_Text_NotInterested
+```
+Ça ne t'intéresse pas?\nPenses-y, au moins!$
+```
+### BattleFrontier_Lounge3_Text_Oh
+```
+Oh…$
+```
+### BattleFrontier_Lounge3_Text_BackedWrongTrainer
+```
+J'ai encore misé sur le mauvais\nDRESSEUR!\pJe crois que je devrais arrêter ces\nbêtises…$
+```
+### BattleFrontier_Lounge3_Text_TrainerGoodButRattled
+```
+Ce DRESSEUR…\pIl est bon, mais il n'a pas les nerfs\nassez solides pour le DOME DE COMBAT…$
+```
+### BattleFrontier_Lounge3_Text_KnowWinnerWhenISeeOne
+```
+Hi, hi, hi!\nJe sais reconnaître un gagnant!$
+```
+### BattleFrontier_Lounge3_Text_ShouldBeTakingChallenges
+```
+Ces DRESSEURS…\nMais que font-ils?\lIls devraient aller se battre.$
+```

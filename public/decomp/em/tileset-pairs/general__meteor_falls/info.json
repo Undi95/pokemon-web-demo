@@ -1,0 +1,13 @@
+{
+  "primaryTileset": "gTileset_General",
+  "secondaryTileset": "gTileset_MeteorFalls",
+  "atlasCols": 32,
+  "atlasRows": 21,
+  "atlasWidth": 512,
+  "atlasHeight": 336,
+  "totalMetatiles": 671,
+  "numPrimaryMetatiles": 512,
+  "numSecondaryMetatiles": 159,
+  "primaryMetatileIdStart": 0,
+  "secondaryMetatileIdStart": 512
+}

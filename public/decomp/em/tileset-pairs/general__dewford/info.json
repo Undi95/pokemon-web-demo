@@ -1,0 +1,13 @@
+{
+  "primaryTileset": "gTileset_General",
+  "secondaryTileset": "gTileset_Dewford",
+  "atlasCols": 32,
+  "atlasRows": 28,
+  "atlasWidth": 512,
+  "atlasHeight": 448,
+  "totalMetatiles": 891,
+  "numPrimaryMetatiles": 512,
+  "numSecondaryMetatiles": 379,
+  "primaryMetatileIdStart": 0,
+  "secondaryMetatileIdStart": 512
+}

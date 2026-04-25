@@ -1,0 +1,13 @@
+{
+  "primaryTileset": "gTileset_Building",
+  "secondaryTileset": "gTileset_MossdeepGym",
+  "atlasCols": 32,
+  "atlasRows": 4,
+  "atlasWidth": 512,
+  "atlasHeight": 64,
+  "totalMetatiles": 125,
+  "numPrimaryMetatiles": 8,
+  "numSecondaryMetatiles": 117,
+  "primaryMetatileIdStart": 0,
+  "secondaryMetatileIdStart": 512
+}

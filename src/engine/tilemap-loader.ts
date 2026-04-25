@@ -19,10 +19,35 @@ export interface LoadedTilemap {
   lowerLayer: Phaser.Tilemaps.TilemapLayer;
   upperLayer: Phaser.Tilemaps.TilemapLayer;
   collisions: number[][];
+  /** Behavior metatile par tile (cf. include/constants/metatile_behaviors.h).
+   *  0 = MB_NORMAL. Permet de différencier portes/escaliers/herbe/eau. */
+  behaviors: number[][];
   widthTiles: number;
   heightTiles: number;
   widthPx: number;
   heightPx: number;
+}
+
+/** Metatile behavior IDs utilisés pour la logique de warp/spawn (cf. décomp). */
+export const MB_NORMAL = 0x00;
+export const MB_NON_ANIMATED_DOOR = 0x60;
+export const MB_LADDER = 0x61;
+export const MB_EAST_ARROW_WARP = 0x62;
+export const MB_WEST_ARROW_WARP = 0x63;
+export const MB_NORTH_ARROW_WARP = 0x64;
+export const MB_SOUTH_ARROW_WARP = 0x65;
+export const MB_AQUA_HIDEOUT_WARP = 0x67;
+export const MB_LAVARIDGE_GYM_1F_WARP = 0x68;
+export const MB_ANIMATED_DOOR = 0x69;
+export const MB_UP_ESCALATOR = 0x6A;
+export const MB_DOWN_ESCALATOR = 0x6B;
+export const MB_WATER_DOOR = 0x6C;
+
+/** True si le metatile est une porte qui doit déclencher un step-down auto au spawn. */
+export function isDoorWarp(behavior: number): boolean {
+  return behavior === MB_NON_ANIMATED_DOOR
+      || behavior === MB_ANIMATED_DOOR
+      || behavior === MB_WATER_DOOR;
 }
 
 /**
@@ -57,17 +82,35 @@ export function buildTilemap(
   const mapBinRaw = scene.cache.binary.get('map-bin') as ArrayBuffer;
   const mapBinView = new DataView(mapBinRaw);
 
-  // Build data grid (atlas positions) + collisions
+  // Behaviors par metatile id global (0..1023). Lus depuis les .bin attributes
+  // des deux tilesets de la pair courante (preloaded as 'attrs-primary'/'attrs-secondary').
+  const behaviorByMetatileId = new Uint8Array(1024);
+  const readAttrs = (key: string, idStart: number, count: number) => {
+    const buf = scene.cache.binary.get(key) as ArrayBuffer | undefined;
+    if (!buf) return;
+    const v = new DataView(buf);
+    for (let i = 0; i < count && i * 2 + 1 < buf.byteLength; i++) {
+      // bits 0-7 = behavior (Gen 3 metatile attribute layout)
+      behaviorByMetatileId[idStart + i] = v.getUint16(i * 2, true) & 0xFF;
+    }
+  };
+  readAttrs('attrs-primary', info.primaryMetatileIdStart, info.numPrimaryMetatiles);
+  readAttrs('attrs-secondary', info.secondaryMetatileIdStart, info.numSecondaryMetatiles);
+
+  // Build data grid (atlas positions) + collisions + behaviors
   const dataGrid: number[][] = [];
   const collisions: number[][] = [];
+  const behaviors: number[][] = [];
   for (let y = 0; y < heightTiles; y++) {
     const dataRow: number[] = [];
     const collRow: number[] = [];
+    const behRow: number[] = [];
     for (let x = 0; x < widthTiles; x++) {
       const byteIdx = (y * widthTiles + x) * 2;
       if (byteIdx + 1 >= mapBinRaw.byteLength) {
         dataRow.push(-1);
         collRow.push(1);
+        behRow.push(0);
         continue;
       }
       const entry = mapBinView.getUint16(byteIdx, true); // little-endian
@@ -75,9 +118,11 @@ export function buildTilemap(
       const collision = (entry >> 10) & 0x03;
       dataRow.push(metatileIdToAtlasPos(metatileId, info));
       collRow.push(collision > 0 ? 1 : 0);
+      behRow.push(behaviorByMetatileId[metatileId] ?? 0);
     }
     dataGrid.push(dataRow);
     collisions.push(collRow);
+    behaviors.push(behRow);
   }
 
   // Phaser tilemap from data
@@ -102,12 +147,16 @@ export function buildTilemap(
   });
   const upperTS = upperMap.addTilesetImage('metatiles-upper', 'metatiles-upper', 16, 16, 0, 0)!;
   const upperLayer = upperMap.createLayer(0, upperTS, 0, 0)!;
-  upperLayer.setDepth(20);
+  // Depth élevé : sprites utilisent depth = sprite.y (peut dépasser 1000),
+  // donc l'upper layer doit être au-dessus pour préserver l'occlusion
+  // toits/cimes d'arbres.
+  upperLayer.setDepth(100000);
 
   return {
     lowerLayer,
     upperLayer,
     collisions,
+    behaviors,
     widthTiles,
     heightTiles,
     widthPx: widthTiles * 16,

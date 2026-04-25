@@ -81,14 +81,22 @@ if (existsSync(layoutsDir)) {
 }
 
 // 3. Map events (map.json) — copied as-is, contains NPCs/warps/signs
+// Aussi : construit un index MAP_ID → dir name pour que le runtime puisse
+// résoudre les warps (dest_map est un MAP_ID constant).
 const mapsDir = join(decompPath, 'data', 'maps');
+const mapIdToDir = {};
 if (existsSync(mapsDir)) {
   for (const name of readdirSync(mapsDir)) {
-    const mapJson = join(mapsDir, name, 'map.json');
-    if (!existsSync(mapJson)) continue;
-    copy(mapJson, join(outRoot, 'maps', `${name}.json`));
+    const mapJsonPath = join(mapsDir, name, 'map.json');
+    if (!existsSync(mapJsonPath)) continue;
+    copy(mapJsonPath, join(outRoot, 'maps', `${name}.json`));
     stats.maps++;
+    try {
+      const parsed = JSON.parse(readFileSync(mapJsonPath, 'utf8'));
+      if (parsed.id) mapIdToDir[parsed.id] = name;
+    } catch { /* ignore malformed */ }
   }
+  writeJson(join(outRoot, 'map-ids.json'), mapIdToDir);
 }
 
 // 4. Tilesets (primary + secondary)
@@ -141,23 +149,28 @@ if (existsSync(monDir)) {
   }
 }
 
-// 6. Object-event (overworld NPC) sprites — people/
-// people/ has both top-level PNGs (simple NPCs) and subdirs (multi-frame sprites).
-const peopleDir = join(decompPath, 'graphics', 'object_events', 'pics', 'people');
-if (existsSync(peopleDir)) {
-  for (const name of readdirSync(peopleDir)) {
-    const src = join(peopleDir, name);
-    const st = statSync(src);
-    if (st.isFile() && name.endsWith('.png')) {
-      copy(src, join(outRoot, 'object_events', 'people', name));
-      stats.npcSpriteSets++;
-    } else if (st.isDirectory()) {
-      const dst = join(outRoot, 'object_events', 'people', name);
-      let any = false;
-      for (const f of readdirSync(src)) {
-        if (f.endsWith('.png')) { copy(join(src, f), join(dst, f)); any = true; }
+// 6. Object-event (overworld NPC) sprites — toutes les catégories
+// pics/ contient : people/ + pokemon/ + berry_trees/ + dolls/ + cushions/ + misc/
+// Le mapping object-event-graphics.json référence n'importe laquelle de ces catégories.
+const picsRoot = join(decompPath, 'graphics', 'object_events', 'pics');
+if (existsSync(picsRoot)) {
+  for (const category of readdirSync(picsRoot)) {
+    const catDir = join(picsRoot, category);
+    if (!statSync(catDir).isDirectory()) continue;
+    for (const name of readdirSync(catDir)) {
+      const src = join(catDir, name);
+      const st = statSync(src);
+      if (st.isFile() && name.endsWith('.png')) {
+        copy(src, join(outRoot, 'object_events', category, name));
+        stats.npcSpriteSets++;
+      } else if (st.isDirectory()) {
+        const dst = join(outRoot, 'object_events', category, name);
+        let any = false;
+        for (const f of readdirSync(src)) {
+          if (f.endsWith('.png')) { copy(join(src, f), join(dst, f)); any = true; }
+        }
+        if (any) stats.npcSpriteSets++;
       }
-      if (any) stats.npcSpriteSets++;
     }
   }
 }
@@ -210,15 +223,72 @@ if (existsSync(fontsDir)) {
     if (statSync(s).isFile() && f.endsWith('.png')) copy(s, join(outRoot, 'ui', 'fonts', f));
   }
 }
+// UI interface complète (curseur, menus, etc.)
+const uiDir = join(decompPath, 'graphics', 'interface');
+if (existsSync(uiDir)) {
+  for (const f of readdirSync(uiDir)) {
+    const src = join(uiDir, f);
+    if (statSync(src).isFile() && (f.endsWith('.png') || f.endsWith('.pal'))) {
+      copy(src, join(outRoot, 'ui', 'interface', f));
+    }
+  }
+}
+// Assets de la séquence de boot (intro → title → main menu → birch → naming)
+for (const section of ['intro', 'title_screen', 'birch_speech', 'naming_screen']) {
+  const dir = join(decompPath, 'graphics', section);
+  if (!existsSync(dir)) continue;
+  function walkCopy(d, rel = '') {
+    for (const f of readdirSync(d)) {
+      const src = join(d, f);
+      const st = statSync(src);
+      if (st.isDirectory()) walkCopy(src, join(rel, f));
+      else if (f.endsWith('.png') || f.endsWith('.pal')) {
+        copy(src, join(outRoot, 'boot', section, rel, f));
+      }
+    }
+  }
+  walkCopy(dir);
+}
+// Door animation sprites (16×96 chacune = 6 frames de 16×16)
+const doorsDir = join(decompPath, 'graphics', 'door_anims');
+if (existsSync(doorsDir)) {
+  for (const f of readdirSync(doorsDir)) {
+    const s = join(doorsDir, f);
+    if (statSync(s).isFile() && f.endsWith('.png')) copy(s, join(outRoot, 'ui', 'doors', f));
+  }
+}
+// Animations de tiles (flower, water, waterfall) — pour plus tard
+for (const kind of ['primary', 'secondary']) {
+  const kdir = join(decompPath, 'data', 'tilesets', kind);
+  if (!existsSync(kdir)) continue;
+  for (const tsName of readdirSync(kdir)) {
+    const animDir = join(kdir, tsName, 'anim');
+    if (!existsSync(animDir)) continue;
+    for (const group of readdirSync(animDir)) {
+      const gDir = join(animDir, group);
+      if (!statSync(gDir).isDirectory()) continue;
+      for (const f of readdirSync(gDir)) {
+        if (f.endsWith('.png')) copy(join(gDir, f), join(outRoot, 'tilesets', kind, tsName, 'anim', group, f));
+      }
+    }
+  }
+}
 const charmapPath = join(decompPath, 'charmap.txt');
 if (existsSync(charmapPath)) {
   const text = readFileSync(charmapPath, 'utf8');
   const map = {};
-  const re = /'([^']+)'\s*=\s*([0-9A-Fa-f]{1,4})/g;
+  // Gère les caractères échappés comme '\'' (apostrophe) et '\\' (backslash).
+  const re = /'(\\.|[^'])+'\s*=\s*([0-9A-Fa-f]{1,4})/g;
   let m;
   while ((m = re.exec(text)) !== null) {
-    map[m[1]] = parseInt(m[2], 16);
+    let key = m[0].match(/'(\\.|[^']+)'/)?.[1] ?? '';
+    if (key === "\\'") key = "'";
+    else if (key === '\\\\') key = '\\';
+    map[key] = parseInt(m[2], 16);
   }
+  // Fallback : si l'apostrophe ASCII n'a pas été captée, la mapper vers la
+  // version typographique "droite" (U+2019 = B4 dans Emeraude).
+  if (map["'"] === undefined && map['\u2019'] !== undefined) map["'"] = map['\u2019'];
   writeJson(join(outRoot, 'ui', 'charmap.json'), map);
 }
 

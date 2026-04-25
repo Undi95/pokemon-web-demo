@@ -1,0 +1,13 @@
+{
+  "primaryTileset": "gTileset_General",
+  "secondaryTileset": "gTileset_Pacifidlog",
+  "atlasCols": 32,
+  "atlasRows": 23,
+  "atlasWidth": 512,
+  "atlasHeight": 368,
+  "totalMetatiles": 715,
+  "numPrimaryMetatiles": 512,
+  "numSecondaryMetatiles": 203,
+  "primaryMetatileIdStart": 0,
+  "secondaryMetatileIdStart": 512
+}

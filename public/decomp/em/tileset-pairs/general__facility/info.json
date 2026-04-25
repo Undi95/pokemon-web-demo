@@ -1,0 +1,13 @@
+{
+  "primaryTileset": "gTileset_General",
+  "secondaryTileset": "gTileset_Facility",
+  "atlasCols": 32,
+  "atlasRows": 32,
+  "atlasWidth": 512,
+  "atlasHeight": 512,
+  "totalMetatiles": 1023,
+  "numPrimaryMetatiles": 512,
+  "numSecondaryMetatiles": 511,
+  "primaryMetatileIdStart": 0,
+  "secondaryMetatileIdStart": 512
+}

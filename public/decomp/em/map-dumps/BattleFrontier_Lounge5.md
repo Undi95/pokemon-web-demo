@@ -1,0 +1,190 @@
+# BattleFrontier_Lounge5
+
+## Métadonnées
+- **id** : `MAP_BATTLE_FRONTIER_LOUNGE5`
+- **layout** : `LAYOUT_BATTLE_FRONTIER_LOUNGE1`
+- **music** : `MUS_B_TOWER_RS`
+- **region_map_section** : `MAPSEC_BATTLE_FRONTIER`
+- **weather** : `WEATHER_NONE`
+- **map_type** : `MAP_TYPE_INDOOR`
+- **battle_scene** : `MAP_BATTLE_SCENE_NORMAL`
+- **show_map_name** : `False`
+- **allow_cycling** : `False`
+- **allow_running** : `False`
+
+## Object events (4 NPCs)
+| local_id | gfx | x,y | mvmt | script | flag |
+|---|---|---|---|---|---|
+| `` | `OBJ_EVENT_GFX_LITTLE_GIRL` | 12,4 | `MOVEMENT_TYPE_FACE_LEFT` | `BattleFrontier_Lounge5_EventScript_NatureGirl` | `0` |
+| `` | `OBJ_EVENT_GFX_GENTLEMAN` | 0,4 | `MOVEMENT_TYPE_FACE_RIGHT` | `BattleFrontier_Lounge5_EventScript_Gentleman` | `0` |
+| `` | `OBJ_EVENT_GFX_BLACK_BELT` | 6,5 | `MOVEMENT_TYPE_WANDER_AROUND` | `BattleFrontier_Lounge5_EventScript_BlackBelt` | `0` |
+| `` | `OBJ_EVENT_GFX_LITTLE_BOY` | 11,7 | `MOVEMENT_TYPE_LOOK_AROUND` | `BattleFrontier_Lounge5_EventScript_LittleBoy` | `0` |
+
+## Warps (2)
+- #0 (1,7) → `MAP_BATTLE_FRONTIER_OUTSIDE_EAST` warp #7
+- #1 (2,7) → `MAP_BATTLE_FRONTIER_OUTSIDE_EAST` warp #7
+
+## Variables référencées (2)
+- `VAR_0x8004`
+- `VAR_RESULT`
+
+## Scripts (6)
+### BattleFrontier_Lounge5_EventScript_NatureGirl
+```
+lock
+faceplayer
+msgbox BattleFrontier_Lounge5_Text_NatureGirlGreeting, MSGBOX_YESNO
+goto_if_eq VAR_RESULT, NO, BattleFrontier_Lounge5_EventScript_NatureGirlNoneShown
+special ChoosePartyMon
+lock
+faceplayer
+goto_if_eq VAR_0x8004, PARTY_NOTHING_CHOSEN, BattleFrontier_Lounge5_EventScript_NatureGirlNoneShown
+specialvar VAR_RESULT, ScriptGetPartyMonSpecies
+goto_if_eq VAR_RESULT, SPECIES_EGG, BattleFrontier_Lounge5_EventScript_NatureGirlEgg
+special ShowNatureGirlMessage
+waitmessage
+waitbuttonpress
+release
+end
+```
+### BattleFrontier_Lounge5_EventScript_NatureGirlEgg
+```
+msgbox BattleFrontier_Lounge5_Text_NatureGirlEgg, MSGBOX_DEFAULT
+release
+end
+```
+### BattleFrontier_Lounge5_EventScript_NatureGirlNoneShown
+```
+msgbox BattleFrontier_Lounge5_Text_NatureGirlNoneShown, MSGBOX_DEFAULT
+release
+end
+```
+### BattleFrontier_Lounge5_EventScript_Gentleman
+```
+msgbox BattleFrontier_Lounge5_Text_LadyClaimsSheUnderstandsPokemon, MSGBOX_NPC
+end
+```
+### BattleFrontier_Lounge5_EventScript_BlackBelt
+```
+msgbox BattleFrontier_Lounge5_Text_GirlSayingSomethingProfound, MSGBOX_NPC
+end
+```
+### BattleFrontier_Lounge5_EventScript_LittleBoy
+```
+msgbox BattleFrontier_Lounge5_Text_GirlPlaysAtRedHouseALot, MSGBOX_NPC
+end
+```
+
+## Textes (28)
+### BattleFrontier_Lounge5_Text_NatureGirlGreeting
+```
+Hé, hé, hé!\nJe sais ce que les POKéMON pensent!\pS'il te plaît!\nJe peux voir tes POKéMON?$
+```
+### BattleFrontier_Lounge5_Text_NatureGirlNoneShown
+```
+Bouh!\nC'est pas sympa!$
+```
+### BattleFrontier_Lounge5_Text_NatureGirlHardy
+```
+Hum…\pCelui-là dit qu'il aime se battre!\nMême couvert de bobos, il se battra!$
+```
+### BattleFrontier_Lounge5_Text_NatureGirlLonely
+```
+Hum…\pCelui-là dit qu'il aime être sournois!\nMais s'il est couvert de bobos, il\lripostera!$
+```
+### BattleFrontier_Lounge5_Text_NatureGirlBrave
+```
+Hum…\pCelui-là dit qu'il aime se battre!\nMais s'il se retrouve couvert de bobos,\lil se met à pleurnicher!$
+```
+### BattleFrontier_Lounge5_Text_NatureGirlAdamant
+```
+Hum…\pCelui-là dit qu'il aime se battre!\nMême couvert de bobos, il se battra!$
+```
+### BattleFrontier_Lounge5_Text_NatureGirlNaughty
+```
+Hum…\pCelui-là dit qu'il prend soin de lui!\nMais s'il accumule les bobos, il\lripostera!$
+```
+### BattleFrontier_Lounge5_Text_NatureGirlBold
+```
+Hum…\pCelui-là dit qu'il aime être sournois!\nMais s'il se retrouve couvert de bobos,\lil se met à pleurnicher!$
+```
+### BattleFrontier_Lounge5_Text_NatureGirlDocileNaiveQuietQuirky
+```
+Hum…\pCelui-là dit qu'il aime se battre!\nMême couvert de bobos, il se battra!$
+```
+### BattleFrontier_Lounge5_Text_NatureGirlRelaxed
+```
+Hum…\pCelui-là dit qu'il aime être sournois!\nMais s'il est couvert de bobos, il\lripostera!$
+```
+### BattleFrontier_Lounge5_Text_NatureGirlImpish
+```
+Hum…\pCelui-là dit qu'il aime se battre!\nMais s'il se retrouve couvert de bobos,\lil se met à pleurnicher!$
+```
+### BattleFrontier_Lounge5_Text_NatureGirlLax
+```
+Hum…\pCelui-là dit qu'il aime être sournois!\nIl aime être sournois même quand il\lest couvert de bobos!$
+```
+### BattleFrontier_Lounge5_Text_NatureGirlTimid
+```
+Hum…\pCelui-là dit qu'il aime se battre!\nMais s'il se retrouve couvert de bobos,\lil deviendra sournois!$
+```
+### BattleFrontier_Lounge5_Text_NatureGirlHasty
+```
+Hum…\pCelui-là dit qu'il aime se battre!\nMême couvert de bobos, il se battra!$
+```
+### BattleFrontier_Lounge5_Text_NatureGirlSerious
+```
+Hum…\pCelui-là dit qu'il aime être sournois!\nIl aime être sournois même quand il\lest couvert de bobos!$
+```
+### BattleFrontier_Lounge5_Text_NatureGirlJolly
+```
+Hum…\pCelui-là dit qu'il aime être sournois!\nMais s'il se retrouve couvert de bobos,\lil se met à pleurnicher!$
+```
+### BattleFrontier_Lounge5_Text_NatureGirlModest
+```
+Hum…\pCelui-là dit qu'il prend soin de lui!\nIl ne pense qu'à lui, qu'il soit ou\lnon couvert de bobos!$
+```
+### BattleFrontier_Lounge5_Text_NatureGirlMild
+```
+Hum…\pCelui-là dit qu'il prend soin de lui!\nMais s'il se retrouve couvert de bobos,\lil deviendra sournois!$
+```
+### BattleFrontier_Lounge5_Text_NatureGirlBashful
+```
+Hum…\pCelui-là dit qu'il prend soin de lui!\nIl ne pense qu'à lui même quand il\lest couvert de bobos!$
+```
+### BattleFrontier_Lounge5_Text_NatureGirlRash
+```
+Hum…\pCelui-là dit qu'il aime être sournois!\nIl aime être sournois même quand il\lest couvert de bobos!$
+```
+### BattleFrontier_Lounge5_Text_NatureGirlCalm
+```
+Hum…\pCelui-là dit qu'il prend soin de lui!\nIl ne pense qu'à lui même quand il\lest couvert de bobos!$
+```
+### BattleFrontier_Lounge5_Text_NatureGirlGentle
+```
+Hum…\pCelui-là dit qu'il prend soin de lui!\nMais s'il est couvert de bobos, il\lripostera!$
+```
+### BattleFrontier_Lounge5_Text_NatureGirlSassy
+```
+Hum…\pCelui-là dit qu'il aime se battre!\nMais s'il se retrouve couvert de bobos,\lil deviendra sournois!$
+```
+### BattleFrontier_Lounge5_Text_NatureGirlCareful
+```
+Hum…\pCelui-là dit qu'il prend soin de lui!\nMais s'il se retrouve couvert de bobos,\lil deviendra sournois!$
+```
+### BattleFrontier_Lounge5_Text_NatureGirlEgg
+```
+C'est n'importe quoi! Comment tu veux\nque je parle avec un OEUF!?!$
+```
+### BattleFrontier_Lounge5_Text_LadyClaimsSheUnderstandsPokemon
+```
+Comme c'est mignon!\nCette jeune fille prétend qu'elle peut\lcomprendre les POKéMON!$
+```
+### BattleFrontier_Lounge5_Text_GirlSayingSomethingProfound
+```
+J'ai l'impression que cette fille dit\nquelque chose de profond.$
+```
+### BattleFrontier_Lounge5_Text_GirlPlaysAtRedHouseALot
+```
+J'ai une info!\pCette fille joue souvent dans le\nbâtiment rouge!$
+```

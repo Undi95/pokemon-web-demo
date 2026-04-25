@@ -1,0 +1,13 @@
+{
+  "primaryTileset": "gTileset_Building",
+  "secondaryTileset": "gTileset_LavaridgeGym",
+  "atlasCols": 32,
+  "atlasRows": 3,
+  "atlasWidth": 512,
+  "atlasHeight": 48,
+  "totalMetatiles": 69,
+  "numPrimaryMetatiles": 8,
+  "numSecondaryMetatiles": 61,
+  "primaryMetatileIdStart": 0,
+  "secondaryMetatileIdStart": 512
+}

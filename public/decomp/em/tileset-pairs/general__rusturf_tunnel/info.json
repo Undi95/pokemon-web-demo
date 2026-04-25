@@ -1,0 +1,13 @@
+{
+  "primaryTileset": "gTileset_General",
+  "secondaryTileset": "gTileset_RusturfTunnel",
+  "atlasCols": 32,
+  "atlasRows": 19,
+  "atlasWidth": 512,
+  "atlasHeight": 304,
+  "totalMetatiles": 595,
+  "numPrimaryMetatiles": 512,
+  "numSecondaryMetatiles": 83,
+  "primaryMetatileIdStart": 0,
+  "secondaryMetatileIdStart": 512
+}
