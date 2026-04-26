@@ -6,7 +6,7 @@
 
 // ─── .macro definitions (asm macro → opcode mapping bodies) ─────────────────
 export const MACROS = [
-  { name: "create_movement_action", args: ["name:req", "value:req"], body: [{op:".byte",args:["\\value"]}] },
+  { name: "create_movement_action", args: ["name:req", "value:req"], body: [{op:".macro",args:["\\name"]}, {op:".byte",args:["\\value"]}, {op:".endm",args:[]}] },
 ] as const;
 
 // ─── Tokenized instruction stream (macro invocations + opcodes) ───────────

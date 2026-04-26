@@ -14,6 +14,7 @@ export const MACROS = [
   { name: "nop", args: [], body: [{op:".byte",args:["SCR_OP_NOP"]}] },
   { name: "nop1", args: [], body: [{op:".byte",args:["SCR_OP_NOP1"]}] },
   { name: "end", args: [], body: [{op:".byte",args:["SCR_OP_END"]}] },
+  { name: "return", args: [], body: [{op:".byte",args:["SCR_OP_RETURN"]}] },
   { name: "call", args: ["destination:req"], body: [{op:".byte",args:["SCR_OP_CALL"]}, {op:".4byte",args:["\\destination"]}] },
   { name: "goto", args: ["destination:req"], body: [{op:".byte",args:["SCR_OP_GOTO"]}, {op:".4byte",args:["\\destination"]}] },
   { name: "goto_if", args: ["condition:req", "destination:req"], body: [{op:".byte",args:["SCR_OP_GOTO_IF"]}, {op:".byte",args:["\\condition"]}, {op:".4byte",args:["\\destination"]}] },
@@ -269,6 +270,8 @@ export const MACROS = [
   { name: "goto_if_not_defeated", args: ["trainer:req", "dest:req"], body: [{op:"checktrainerflag",args:["\\trainer"]}, {op:"goto_if",args:["FALSE","\\dest"]}] },
   { name: "call_if_defeated", args: ["trainer:req", "dest:req"], body: [{op:"checktrainerflag",args:["\\trainer"]}, {op:"call_if",args:["TRUE","\\dest"]}] },
   { name: "call_if_not_defeated", args: ["trainer:req", "dest:req"], body: [{op:"checktrainerflag",args:["\\trainer"]}, {op:"call_if",args:["FALSE","\\dest"]}] },
+  { name: "switch", args: ["var:req"], body: [{op:"copyvar",args:["VAR_0x8000","\\var"]}] },
+  { name: "case", args: ["condition:req", "dest:req"], body: [{op:"compare",args:["VAR_0x8000","\\condition"]}, {op:"goto_if_eq",args:["\\dest"]}] },
   { name: "msgbox", args: ["text:req", "type=MSGBOX_DEFAULT"], body: [{op:"loadword",args:["0","\\text"]}, {op:"callstd",args:["\\type"]}] },
   { name: "giveitem", args: ["item:req", "amount=1"], body: [{op:"setorcopyvar",args:["VAR_0x8000","\\item"]}, {op:"setorcopyvar",args:["VAR_0x8001","\\amount"]}, {op:"callstd",args:["STD_OBTAIN_ITEM"]}] },
   { name: "finditem", args: ["item:req", "amount=1"], body: [{op:"setorcopyvar",args:["VAR_0x8000","\\item"]}, {op:"setorcopyvar",args:["VAR_0x8001","\\amount"]}, {op:"callstd",args:["STD_FIND_ITEM"]}] },
@@ -286,23 +289,19 @@ export const INCLUDES = [
 ] as const;
 
 // ─── Data directives (.byte/.2byte/.4byte/.string raw bytes) ───────────────
-// Counts: .byte=2
+// Counts: .byte=1
 export const DATA_DIRECTIVES = [
-  { kind: '.byte', vals: ["SCR_OP_RETURN"] },
   { kind: '.byte', vals: ["SCR_OP_WAITSTATE"] },
 ] as const;
 
 // ─── Tokenized instruction stream (macro invocations + opcodes) ───────────
-// 17 instructions. Each has { op, args[] } — args are unresolved strings/numbers.
+// 14 instructions. Each has { op, args[] } — args are unresolved strings/numbers.
 export const OPS = [
   {op:"STD_OBTAIN_ITEM",args:["= 0"]},
   {op:"STD_FIND_ITEM",args:["= 1"]},
   {op:"STD_OBTAIN_DECORATION",args:["= 7"]},
   {op:"STD_REGISTER_MATCH_CALL",args:["= 8"]},
   {op:"NO_MUSIC",args:["= FALSE"]},
-  {op:"copyvar",args:["VAR_0x8000","\\var"]},
-  {op:"compare",args:["VAR_0x8000","\\condition"]},
-  {op:"goto_if_eq",args:["\\dest"]},
   {op:"MSGBOX_NPC",args:["= 2"]},
   {op:"MSGBOX_SIGN",args:["= 3"]},
   {op:"MSGBOX_DEFAULT",args:["= 4"]},

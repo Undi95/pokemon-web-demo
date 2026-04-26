@@ -8,10 +8,10 @@
     "constants": 526,
     "labels": 19439,
     "globalLabels": 10701,
-    "macros": 1200,
+    "macros": 1206,
     "includes": 756,
-    "dataDirectives": 31401,
-    "ops": 65028
+    "dataDirectives": 31398,
+    "ops": 65024
   },
-  "durationMs": 653
+  "durationMs": 374
 }

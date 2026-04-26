@@ -52,6 +52,14 @@ function isValidExportName(name) {
   return /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(name);
 }
 
+/** Less strict than isValidExportName: any C/asm identifier, even TS reserved.
+ *  Used for macro names + label names (stored as string fields in TS objects,
+ *  not as top-level `export const` identifiers). */
+function isValidIdentifier(name) {
+  if (!name) return false;
+  return /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(name);
+}
+
 /** Strip asm comments: @ to EOL, /* ... *\/ block comments. */
 function stripAsmComments(src) {
   return src
@@ -115,6 +123,7 @@ function processFile(absPath, relInput) {
   const ops = [];                // tokenized lines: { op, args[], lineNum }
 
   let inMacroDef = null;         // { name, args, body[] }
+  let macroDepth = 0;            // tracks nested .macro/.endm depth
   let instrCounter = 0;
 
   for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
@@ -152,27 +161,41 @@ function processFile(absPath, relInput) {
       continue;
     }
 
-    // .macro / .endm
+    // .macro / .endm  (NOTE: macro names use isValidIdentifier, not isValidExportName.
+    // We track macroDepth to support nested .macro inside meta-macros, e.g.
+    // movement.inc's `create_movement_action` defines `.macro \name` inside.)
     if (line.startsWith('.macro ')) {
-      const m = line.match(/^\.macro\s+(\w+)(?:\s+(.+))?$/);
-      if (m && isValidExportName(m[1])) {
-        inMacroDef = {
-          name: m[1],
-          args: (m[2] || '').split(',').map(s => s.trim()).filter(Boolean),
-          body: [],
-        };
+      if (macroDepth === 0) {
+        // Start outer macro definition
+        const m = line.match(/^\.macro\s+(\w+)(?:\s+(.+))?$/);
+        if (m && isValidIdentifier(m[1])) {
+          inMacroDef = {
+            name: m[1],
+            args: (m[2] || '').split(',').map(s => s.trim()).filter(Boolean),
+            body: [],
+          };
+        }
+      } else if (inMacroDef) {
+        // Nested .macro — just append to outer body verbatim (incl. \arg refs)
+        const tok = tokenizeLine(line);
+        if (tok) inMacroDef.body.push(tok);
       }
+      macroDepth++;
       continue;
     }
     if (line === '.endm' || line.startsWith('.endm ')) {
-      if (inMacroDef) {
+      if (macroDepth > 0) macroDepth--;
+      if (macroDepth === 0 && inMacroDef) {
         macroDefs.push(inMacroDef);
         inMacroDef = null;
+      } else if (macroDepth > 0 && inMacroDef) {
+        // Nested .endm: include in body so meta-macro detection can find it
+        inMacroDef.body.push({ op: '.endm', args: [] });
       }
       continue;
     }
     if (inMacroDef) {
-      // Body line of macro
+      // Body line of macro (any depth)
       const tok = tokenizeLine(line);
       if (tok) inMacroDef.body.push(tok);
       continue;
@@ -188,13 +211,13 @@ function processFile(absPath, relInput) {
       continue;
     }
 
-    // Labels: NAME: or NAME::
-    // Handle "LABEL: instruction args" on same line
+    // Labels: NAME: or NAME::  (use isValidIdentifier — labels are stored as
+    // string fields in LABELS array, TS reserved words are valid asm labels.)
     const labelMatch = line.match(/^(\w+):(:?)\s*(.*)$/);
     if (labelMatch) {
       const name = labelMatch[1];
       const isGlobal = labelMatch[2] === ':';
-      if (isValidExportName(name)) {
+      if (isValidIdentifier(name)) {
         labels.push({ name, isGlobal, instrIndex: instrCounter });
       }
       const restOfLine = labelMatch[3].trim();

@@ -12,10 +12,5 @@ export const __enum___EXPR = "\\x";
 export const MACROS = [
   { name: "inc", args: ["x:req"], body: [{op:".set",args:["\\x","\\x + 1"]}] },
   { name: "enum_start", args: ["x=0"], body: [] },
-] as const;
-
-// ─── Tokenized instruction stream (macro invocations + opcodes) ───────────
-// 1 instructions. Each has { op, args[] } — args are unresolved strings/numbers.
-export const OPS = [
-  {op:"inc",args:["__enum__"]},
+  { name: "enum", args: ["constant:req"], body: [{op:".equiv",args:["\\constant","__enum__"]}, {op:"inc",args:["__enum__"]}] },
 ] as const;

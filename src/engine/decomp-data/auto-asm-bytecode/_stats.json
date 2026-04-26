@@ -1,14 +1,32 @@
 {
   "generatedAt": "2026-04-26",
   "inputCount": 607,
-  "okCount": 482,
-  "skipCount": 125,
+  "okCount": 484,
+  "skipCount": 123,
   "totalStats": {
-    "ops": 59801,
-    "bytes": 487505,
-    "unknownOps": 2117,
-    "unresolvedSymbols": 12451,
-    "labels": 11312
+    "ops": 60595,
+    "bytes": 532346,
+    "unknownOps": 600,
+    "unresolvedSymbols": 13067,
+    "labels": 11336
   },
-  "durationMs": 1012
+  "topUnknownOps": {
+    "FOREACH_TM(EQUIV_TM)": 1,
+    "FOREACH_HM(EQUIV_HM)": 1,
+    "STD_OBTAIN_ITEM": 1,
+    "STD_FIND_ITEM": 1,
+    "STD_OBTAIN_DECORATION": 1,
+    "STD_REGISTER_MATCH_CALL": 1,
+    "NO_MUSIC": 1,
+    "MSGBOX_NPC": 1,
+    "MSGBOX_SIGN": 1,
+    "MSGBOX_DEFAULT": 1,
+    "MSGBOX_YESNO": 1,
+    "MSGBOX_AUTOCLOSE": 1,
+    "MSGBOX_GETPOINTS": 1,
+    "MSGBOX_POKENAV": 1,
+    "YES": 1,
+    "NO": 1
+  },
+  "durationMs": 695
 }

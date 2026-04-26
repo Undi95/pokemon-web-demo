@@ -21,6 +21,7 @@ export const MACROS = [
   { name: "setalpha", args: ["eva:req", "evb:req"], body: [{op:".byte",args:["0x0C"]}, {op:".2byte",args:["((\\evb) << 8) | (\\eva)"]}] },
   { name: "blendoff", args: [], body: [{op:".byte",args:["0xd"]}] },
   { name: "call", args: ["ptr:req"], body: [{op:".byte",args:["0xe"]}, {op:".4byte",args:["\\ptr"]}] },
+  { name: "return", args: [], body: [{op:".byte",args:["0xf"]}] },
   { name: "setarg", args: ["argId:req", "value:req"], body: [{op:".byte",args:["0x10"]}, {op:".byte",args:["\\argId"]}, {op:".2byte",args:["\\value"]}] },
   { name: "choosetwoturnanim", args: ["ptr1:req", "ptr2:req"], body: [{op:".byte",args:["0x11"]}, {op:".4byte",args:["\\ptr1"]}, {op:".4byte",args:["\\ptr2"]}] },
   { name: "jumpifmoveturn", args: ["value:req", "ptr:req"], body: [{op:".byte",args:["0x12"]}, {op:".byte",args:["\\value"]}, {op:".4byte",args:["\\ptr"]}] },
@@ -124,10 +125,4 @@ export const MACROS = [
   { name: "tint_palettes", args: ["priority=2", "scenery:req", "attacker:req", "target:req", "duration:req", "color:req"], body: [{op:"createvisualtask",args:["AnimTask_TintPalettes","\\priority","\\scenery << 8","\\attacker << 8","\\target << 8","\\duration","\\color & 0x1F","(\\color >> 5) & 0x1F","(\\color >> 10) & 0x1F"]}] },
   { name: "shake_battle_platforms", args: ["priority=2", "x_offset:req", "y_offset:req", "shakes:req", "delay:req"], body: [{op:"createvisualtask",args:["AnimTask_ShakeBattlePlatforms","\\priority","\\x_offset","\\y_offset","\\shakes","\\delay"]}] },
   { name: "create_surf_wave", args: ["priority=2", "palette:req"], body: [{op:"createvisualtask",args:["AnimTask_CreateSurfWave","\\priority","\\palette"]}] },
-] as const;
-
-// ─── Data directives (.byte/.2byte/.4byte/.string raw bytes) ───────────────
-// Counts: .byte=1
-export const DATA_DIRECTIVES = [
-  { kind: '.byte', vals: [15] },
 ] as const;

@@ -67,6 +67,7 @@ export const MACROS = [
   { name: "pause", args: ["time:req"], body: [{op:".byte",args:["B_SCR_OP_PAUSE"]}, {op:".2byte",args:["\\time"]}] },
   { name: "waitstate", args: [], body: [{op:".byte",args:["B_SCR_OP_WAITSTATE"]}] },
   { name: "healthbar_update", args: ["battler:req"], body: [{op:".byte",args:["B_SCR_OP_HEALTHBAR_UPDATE"]}, {op:".byte",args:["\\battler"]}] },
+  { name: "return", args: [], body: [{op:".byte",args:["B_SCR_OP_RETURN"]}] },
   { name: "end", args: [], body: [{op:".byte",args:["B_SCR_OP_END"]}] },
   { name: "end2", args: [], body: [{op:".byte",args:["B_SCR_OP_END2"]}] },
   { name: "end3", args: [], body: [{op:".byte",args:["B_SCR_OP_END3"]}] },
@@ -305,10 +306,4 @@ export const MACROS = [
   { name: "jumpifmovehadnoeffect", args: ["jumpptr:req"], body: [{op:"jumpifbyte",args:["CMP_COMMON_BITS","gMoveResultFlags","MOVE_RESULT_NO_EFFECT","\\jumpptr"]}] },
   { name: "jumpifbattletype", args: ["flags:req", "jumpptr:req"], body: [{op:"jumpifword",args:["CMP_COMMON_BITS","gBattleTypeFlags","\\flags","\\jumpptr"]}] },
   { name: "jumpifnotbattletype", args: ["flags:req", "jumpptr:req"], body: [{op:"jumpifword",args:["CMP_NO_COMMON_BITS","gBattleTypeFlags","\\flags","\\jumpptr"]}] },
-] as const;
-
-// ─── Data directives (.byte/.2byte/.4byte/.string raw bytes) ───────────────
-// Counts: .byte=1
-export const DATA_DIRECTIVES = [
-  { kind: '.byte', vals: ["B_SCR_OP_RETURN"] },
 ] as const;

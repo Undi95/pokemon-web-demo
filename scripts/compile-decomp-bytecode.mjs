@@ -131,9 +131,16 @@ console.log('[bytecode] Phase B: building master macro map...');
 const macroMap = new Map();
 
 /** Read auto-asm files and extract MACROS arrays via JS eval (the TS output
- *  is valid JS literal, which makes balanced-bracket parsing trivial). */
+ *  is valid JS literal, which makes balanced-bracket parsing trivial).
+ *  Scans BOTH asm/macros/ AND data/ AND constants/ — macros can be defined
+ *  anywhere, e.g. data/specials.inc has `def_special`, constants/m4a_constants.inc
+ *  has `struct_begin`/`struct_field`. */
 function loadMacros() {
-  const macroFiles = globSync('asm/macros/**/*-data.ts', { cwd: asmRoot });
+  const macroFiles = [
+    ...globSync('asm/macros/**/*-data.ts', { cwd: asmRoot }),
+    ...globSync('data/**/*-data.ts', { cwd: asmRoot }),
+    ...globSync('constants/**/*-data.ts', { cwd: asmRoot }),
+  ];
   let count = 0;
   for (const rel of macroFiles) {
     const abs = join(asmRoot, rel);
@@ -164,6 +171,135 @@ function loadMacros() {
 }
 
 loadMacros();
+
+// ─── Phase B.2: meta-macro expansion ─────────────────────────────────────────
+//
+// Some asm files use a "meta-macro" pattern: a macro whose body contains a
+// nested `.macro` definition. The outer macro is invoked at top-level with
+// args that produce a NEW macro at runtime.
+//
+// Example (asm/macros/movement.inc):
+//   .macro create_movement_action name:req, value:req
+//     .macro \name
+//       .byte \value
+//     .endm
+//   .endm
+//
+//   create_movement_action face_down, MOVEMENT_ACTION_FACE_DOWN
+//   create_movement_action walk_up,   MOVEMENT_ACTION_WALK_UP
+//   ... (76 movement actions defined this way)
+//
+// Without this pre-pass, all walk_*/face_*/delay_* opcodes appear as "unknown"
+// because we never registered them. Here we walk the asm files for top-level
+// invocations of meta-macros and synthesize the resulting macros.
+//
+// Heuristic: a macro M is a "meta-macro" if its body contains `.macro \X` for
+// some arg name X. We then synthesize macroMap[<name-arg>] from the inner body.
+
+console.log('[bytecode] Phase B.2: meta-macro expansion...');
+
+/** Detect if a macro is a meta-macro and return the inner body template. */
+function getMetaMacroInfo(macro) {
+  // Look for .macro \X ... .endm in body
+  let nameArgIdx = -1;
+  for (let i = 0; i < macro.body.length; i++) {
+    const op = macro.body[i];
+    if (op.op === '.macro' && op.args.length >= 1) {
+      // Inner .macro name should be \arg (a backslash-prefixed arg ref)
+      const argRef = op.args[0];
+      if (typeof argRef === 'string' && argRef.startsWith('\\')) {
+        nameArgIdx = i;
+        break;
+      }
+    }
+  }
+  if (nameArgIdx === -1) return null;
+  // Find matching .endm
+  let endIdx = -1, depth = 1;
+  for (let i = nameArgIdx + 1; i < macro.body.length; i++) {
+    if (macro.body[i].op === '.macro') depth++;
+    else if (macro.body[i].op === '.endm') {
+      depth--;
+      if (depth === 0) { endIdx = i; break; }
+    }
+  }
+  if (endIdx === -1) return null;
+  // The synthesized macro takes the name from nameRef arg, and has the inner body
+  const nameRef = macro.body[nameArgIdx].args[0].slice(1); // strip leading \
+  const innerArgs = macro.body[nameArgIdx].args.slice(1); // any additional args
+  const innerBody = macro.body.slice(nameArgIdx + 1, endIdx);
+  return { nameArg: nameRef, innerArgs, innerBody };
+}
+
+const metaMacros = new Map(); // metaName → { nameArg, innerArgs, innerBody }
+for (const [name, m] of macroMap) {
+  const info = getMetaMacroInfo(m);
+  if (info) metaMacros.set(name, { outerArgs: m.args, ...info });
+}
+console.log(`  Detected ${metaMacros.size} meta-macros: ${[...metaMacros.keys()].join(', ')}`);
+
+/** Scan asm files for top-level invocations of meta-macros & synthesize. */
+function synthesizeFromMetaInvocations() {
+  let synthCount = 0;
+  // Walk all data/.s and asm/macros/.inc files looking for top-level meta-macro calls
+  const targets = [
+    ...globSync('asm/macros/**/*.inc', { cwd: decompRoot }),
+    ...globSync('data/**/*.s', { cwd: decompRoot }),
+    ...globSync('data/**/*.inc', { cwd: decompRoot }),
+  ];
+  for (const rel of targets) {
+    const abs = join(decompRoot, rel);
+    const src = readFileSync(abs, 'utf8');
+    // Strip @ comments & block comments
+    const lines = src.replace(/\/\*[\s\S]*?\*\//g, '').split('\n');
+    let inMacroDepth = 0;
+    for (let line of lines) {
+      line = line.replace(/@.*$/, '').trim();
+      if (!line) continue;
+      // Track .macro / .endm depth — only top-level invocations matter
+      if (line.startsWith('.macro ')) { inMacroDepth++; continue; }
+      if (line === '.endm' || line.startsWith('.endm ')) { inMacroDepth--; continue; }
+      if (inMacroDepth > 0) continue;
+      // Match: METAMACRO_NAME arg1, arg2, ...
+      const m = line.match(/^([\w]+)(?:\s+(.+))?$/);
+      if (!m) continue;
+      const metaName = m[1];
+      const meta = metaMacros.get(metaName);
+      if (!meta) continue;
+      // Parse args
+      const argsStr = (m[2] || '').trim();
+      const args = [];
+      if (argsStr) {
+        let cur = '', depth = 0, inStr = false;
+        for (let i = 0; i < argsStr.length; i++) {
+          const c = argsStr[i];
+          if (c === '"' && argsStr[i - 1] !== '\\') inStr = !inStr;
+          if (!inStr) {
+            if (c === '(' || c === '[') depth++;
+            else if (c === ')' || c === ']') depth--;
+            else if (c === ',' && depth === 0) { args.push(cur.trim()); cur = ''; continue; }
+          }
+          cur += c;
+        }
+        if (cur.trim()) args.push(cur.trim());
+      }
+      // Bind outer args
+      const bindings = bindArgs(meta.outerArgs, args);
+      // The synthesized macro name is bindings[meta.nameArg]
+      const synthName = bindings[meta.nameArg];
+      if (!synthName || macroMap.has(synthName)) continue;
+      // The body is inner body with bindings substituted
+      const synthBody = meta.innerBody.map(op => substituteArgs(op, bindings));
+      macroMap.set(synthName, {
+        args: meta.innerArgs.map(a => typeof a === 'string' && a.startsWith('\\') ? a.slice(1) : a),
+        body: synthBody,
+      });
+      synthCount++;
+    }
+  }
+  console.log(`  Synthesized ${synthCount} macros from meta-macro invocations`);
+}
+synthesizeFromMetaInvocations();
 
 // ─── Phase C: per-script bytecode compilation ────────────────────────────────
 
@@ -373,8 +509,18 @@ function processScript(absPath, relInput) {
   // Pass 2: actual emit
   const bytes = [];
   const warnings = new Set();
+  const localUnknownCounts = new Map();
   for (let i = 0; i < ops.length; i++) {
     bytes.push(...emitOp(ops[i], labelOffsetsP1, warnings));
+    // Top-level unknown ops accumulate (recurse warnings)
+    const opName = ops[i].op;
+    if (!opName.startsWith('.') && !macroMap.has(opName) &&
+        !['.byte','.2byte','.4byte','.string','.asciz','.ascii','.hword','.short','.word','.long','.space','.skip'].includes(opName)) {
+      localUnknownCounts.set(opName, (localUnknownCounts.get(opName) || 0) + 1);
+    }
+  }
+  for (const [k, v] of localUnknownCounts) {
+    unknownOpCounts.set(k, (unknownOpCounts.get(k) || 0) + v);
   }
 
   // Build label map (sorted by offset)
@@ -398,6 +544,7 @@ console.log(`  Compiling ${inputs.length} candidate files...`);
 
 let okCount = 0, skipCount = 0;
 const totalStats = { ops: 0, bytes: 0, unknownOps: 0, unresolvedSymbols: 0, labels: 0 };
+const unknownOpCounts = new Map(); // global tally
 const indexEntries = [];
 const startTime = Date.now();
 
@@ -474,11 +621,17 @@ for (const e of indexEntries) {
 indexLines.push('');
 writeFileSync(join(outRoot, '_all-bytecode-index.ts'), indexLines.join('\n'));
 
+// Top unknown ops (sorted desc)
+const topUnknown = [...unknownOpCounts.entries()]
+  .sort((a, b) => b[1] - a[1])
+  .slice(0, 30);
+
 writeFileSync(join(outRoot, '_stats.json'), JSON.stringify({
   generatedAt: NOW,
   inputCount: inputs.length,
   okCount, skipCount,
   totalStats,
+  topUnknownOps: Object.fromEntries(topUnknown),
   durationMs: Date.now() - startTime,
 }, null, 2));
 
