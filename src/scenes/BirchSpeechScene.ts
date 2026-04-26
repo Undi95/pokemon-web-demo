@@ -28,6 +28,7 @@ export class BirchSpeechScene extends Phaser.Scene {
   private s!: Record<string, string>;
   private platformLayerRef: Phaser.GameObjects.Image | null = null;
   private lotadSprite: Phaser.GameObjects.Image | null = null;
+  private birchSprite: Phaser.GameObjects.Image | null = null;
 
   constructor() { super({ key: 'BirchSpeechScene' }); }
 
@@ -81,6 +82,7 @@ export class BirchSpeechScene extends Phaser.Scene {
     applyAlphaFromTopLeft(this, 'birch-src', 'birch-a');
     const birchSprite = this.add.image(136, 60, 'birch-a').setOrigin(0.5, 0.5).setDepth(5);
     birchSprite.setAlpha(0);
+    this.birchSprite = birchSprite;
 
     // Lotad sprite 64×64 invisible — révélé sur EXT_CTRL_CODE_PAUSE du dialog
     // Position 1:1 décomp main_menu.c:1373-1374
@@ -159,9 +161,74 @@ export class BirchSpeechScene extends Phaser.Scene {
     });
     await this.dialogue.show(this.s.gText_Birch_MainSpeech);
     await this.dialogue.show(this.s.gText_Birch_AndYouAre);
+
+    // 1:1 décomp suite : Task_NewGameBirchSpeech_StartBirchLotadPlatformFade →
+    //                    Task_NewGameBirchSpeech_SlidePlatformAway
+    // Sub-step 2A : Birch+Lotad fade out + platform overlay re-noir + slide -60px
+    // (Sub-step 2B/2C TODO : Player fade in (Brendan/May 16x32 sprite) + gender
+    //  select menu 1:1 avec switch sprites + WhatsYourName. Pour l'instant on
+    //  garde askGender HTML + transition fade-to-white directe vers NamingScene.)
+    await this.slidePlatformAway();
+
     const gender = await this.askGender();
     localStorage.setItem('em_gender', gender);
+
+    // Fade-to-white avant transition (à remplacer par CB2_NewGameBirchSpeech_*
+    // → DoNamingScreen 1:1 quand Sub-steps 2B/2C livrés).
+    await new Promise<void>((resolve) => {
+      this.cameras.main.fadeOut(500, 255, 255, 255);
+      this.cameras.main.once('camerafadeoutcomplete', () => resolve());
+    });
+
     this.scene.start('NamingScene');
+  }
+
+  /**
+   * Sub-step 2A — Birch + Lotad fade out + platform glisse hors écran.
+   * 1:1 décomp main_menu.c :
+   *   - Task_NewGameBirchSpeech_StartBirchLotadPlatformFade : set OAM blend
+   *     mode, fade-out Birch/Lotad (target 1 in target 2), fade-IN platform
+   *     overlay (re-noir), set timer = 64 frames.
+   *   - Task_NewGameBirchSpeech_SlidePlatformAway : décrémente BG1 X offset
+   *     de 2px/frame jusqu'à -60 (= 30 frames de slide, ~500ms).
+   *
+   * Notre adaptation Phaser : tween alpha en parallèle (64 frames ≈ 1066ms),
+   * puis tween X du platformLayerRef de -60px (30 frames ≈ 500ms).
+   * Le BG sky+grass ne glisse PAS (le décomp ne touche que BG1 = platform layer ;
+   * notre composeBgTilemap fait UN seul layer mais le platformLayerRef noir
+   * suffit à donner l'illusion du slide quand on le translate).
+   */
+  private async slidePlatformAway(): Promise<void> {
+    const fadeMs = 64 * 1000 / 60;          // 64 frames @ 60fps
+    const slideMs = 30 * 1000 / 60;         // 30 frames @ 60fps
+
+    // Phase 1 : fade-out Birch + Lotad + fade-IN platform overlay (re-noir)
+    const fadePromises: Promise<void>[] = [];
+    if (this.birchSprite) {
+      fadePromises.push(new Promise((r) => this.tweens.add({
+        targets: this.birchSprite, alpha: 0, duration: fadeMs, onComplete: () => r(),
+      })));
+    }
+    if (this.lotadSprite) {
+      fadePromises.push(new Promise((r) => this.tweens.add({
+        targets: this.lotadSprite, alpha: 0, duration: fadeMs, onComplete: () => r(),
+      })));
+    }
+    if (this.platformLayerRef) {
+      // platformMask était à alpha 0 (révélé). On le re-noir (alpha 0→1).
+      fadePromises.push(new Promise((r) => this.tweens.add({
+        targets: this.platformLayerRef, alpha: 1, duration: fadeMs, onComplete: () => r(),
+      })));
+    }
+    await Promise.all(fadePromises);
+
+    // Phase 2 : platform overlay glisse de -60px vers la gauche
+    // 1:1 BG1HOFS = -60 du décomp (Task_NewGameBirchSpeech_SlidePlatformAway)
+    if (this.platformLayerRef) {
+      await new Promise<void>((r) => this.tweens.add({
+        targets: this.platformLayerRef, x: -60, duration: slideMs, onComplete: () => r(),
+      }));
+    }
   }
 
   /**
