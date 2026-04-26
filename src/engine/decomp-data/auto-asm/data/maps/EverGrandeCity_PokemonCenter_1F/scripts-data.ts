@@ -1,0 +1,105 @@
+// AUTO-GENERATED from data/maps/EverGrandeCity_PokemonCenter_1F/scripts.inc by extract-decomp-asm.mjs
+// Do not edit manually — re-run `npm run extract:decomp-asm` to refresh.
+//
+// Source: D:/Projet 1/decomps/pokeemeraude/data/maps/EverGrandeCity_PokemonCenter_1F/scripts.inc
+// Generated: 2026-04-26
+
+// ─── Labels (script entry points + local jumps) ─────────────────────────────
+// instrIndex = 0-based index into OPS array (Nth tokenized instruction line).
+export const LABELS = [
+  { name: 'EverGrandeCity_PokemonCenter_1F_MapScripts', isGlobal: true, instrIndex: 0 },
+  { name: 'EverGrandeCity_PokemonCenter_1F_OnTransition', isGlobal: false, instrIndex: 2 },
+  { name: 'EverGrandeCity_PokemonCenter_1F_EventScript_TryShowScott', isGlobal: true, instrIndex: 5 },
+  { name: 'EverGrandeCity_PokemonCenter_1F_EventScript_Nurse', isGlobal: true, instrIndex: 8 },
+  { name: 'EverGrandeCity_PokemonCenter_1F_EventScript_Woman', isGlobal: true, instrIndex: 14 },
+  { name: 'EverGrandeCity_PokemonCenter_1F_EventScript_ExpertM', isGlobal: true, instrIndex: 16 },
+  { name: 'EverGrandeCity_PokemonCenter_1F_EventScript_Scott', isGlobal: true, instrIndex: 18 },
+  { name: 'EverGrandeCity_PokemonCenter_1F_EventScript_ScottExitNorth', isGlobal: true, instrIndex: 32 },
+  { name: 'EverGrandeCity_PokemonCenter_1F_EventScript_ScottExit', isGlobal: true, instrIndex: 35 },
+  { name: 'EverGrandeCity_PokemonCenter_1F_Movement_ScottExitNorth', isGlobal: false, instrIndex: 38 },
+  { name: 'EverGrandeCity_PokemonCenter_1F_Movement_ScottExit', isGlobal: false, instrIndex: 45 },
+  { name: 'EverGrandeCity_PokemonCenter_1F_Text_LeagueAfterVictoryRoad', isGlobal: false, instrIndex: 52 },
+  { name: 'EverGrandeCity_PokemonCenter_1F_Text_BelieveInYourPokemon', isGlobal: false, instrIndex: 52 },
+  { name: 'EverGrandeCity_PokemonCenter_1F_Text_ScottHappyForYou', isGlobal: false, instrIndex: 52 },
+] as const;
+
+// ─── Data directives (.byte/.2byte/.4byte/.string raw bytes) ───────────────
+// Counts: .byte=1, .string=18
+export const DATA_DIRECTIVES = [
+  { kind: '.byte', vals: [0] },
+  { kind: '.string', vals: ["\"La LIGUE POKéMON se trouve juste\\n\""] },
+  { kind: '.string', vals: ["\"un peu après la ROUTE VICTOIRE.\\p\""] },
+  { kind: '.string', vals: ["\"Si tu as fait la route jusqu'ici,\\n\""] },
+  { kind: '.string', vals: ["\"autant continuer!$\""] },
+  { kind: '.string', vals: ["\"Longue et impitoyable ROUTE VICTOIRE…\\p\""] },
+  { kind: '.string', vals: ["\"C'est comme refaire un trajet\\n\""] },
+  { kind: '.string', vals: ["\"déjà parcouru…\\p\""] },
+  { kind: '.string', vals: ["\"Crois en tes POKéMON et donne-leur\\n\""] },
+  { kind: '.string', vals: ["\"tout ce que tu as!$\""] },
+  { kind: '.string', vals: ["\"SCOTT: {PLAYER}{KUN}, tu as franchi les\\n\""] },
+  { kind: '.string', vals: ["\"étapes qui mènent à la LIGUE POKéMON!\\p\""] },
+  { kind: '.string', vals: ["\"Je suis heureux pour toi! Ça a valu le\\n\""] },
+  { kind: '.string', vals: ["\"coup que je te soutienne!\\p\""] },
+  { kind: '.string', vals: ["\"{PLAYER}{KUN}, si tu arrives à devenir le\\n\""] },
+  { kind: '.string', vals: ["\"MAITRE de la LIGUE POKéMON…\\p\""] },
+  { kind: '.string', vals: ["\"Je prendrai contact avec toi.\\p\""] },
+  { kind: '.string', vals: ["\"OK, le chemin de la gloire est\\n\""] },
+  { kind: '.string', vals: ["\"devant toi!$\""] },
+] as const;
+
+// ─── Tokenized instruction stream (macro invocations + opcodes) ───────────
+// 52 instructions. Each has { op, args[] } — args are unresolved strings/numbers.
+export const OPS = [
+  {op:"map_script",args:["MAP_SCRIPT_ON_TRANSITION","EverGrandeCity_PokemonCenter_1F_OnTransition"]},
+  {op:"map_script",args:["MAP_SCRIPT_ON_RESUME","CableClub_OnResume"]},
+  {op:"setrespawn",args:["HEAL_LOCATION_EVER_GRANDE_CITY"]},
+  {op:"call_if_unset",args:["FLAG_MET_SCOTT_IN_EVERGRANDE","EverGrandeCity_PokemonCenter_1F_EventScript_TryShowScott"]},
+  {op:"end",args:[]},
+  {op:"goto_if_unset",args:["FLAG_BADGE06_GET","Common_EventScript_NopReturn"]},
+  {op:"clearflag",args:["FLAG_HIDE_EVER_GRANDE_POKEMON_CENTER_1F_SCOTT"]},
+  {op:"return",args:[]},
+  {op:"setvar",args:["VAR_0x800B","LOCALID_EVER_GRANDE_NURSE"]},
+  {op:"call",args:["Common_EventScript_PkmnCenterNurse"]},
+  {op:"waitmessage",args:[]},
+  {op:"waitbuttonpress",args:[]},
+  {op:"release",args:[]},
+  {op:"end",args:[]},
+  {op:"msgbox",args:["EverGrandeCity_PokemonCenter_1F_Text_LeagueAfterVictoryRoad","MSGBOX_NPC"]},
+  {op:"end",args:[]},
+  {op:"msgbox",args:["EverGrandeCity_PokemonCenter_1F_Text_BelieveInYourPokemon","MSGBOX_NPC"]},
+  {op:"end",args:[]},
+  {op:"lock",args:[]},
+  {op:"faceplayer",args:[]},
+  {op:"msgbox",args:["EverGrandeCity_PokemonCenter_1F_Text_ScottHappyForYou","MSGBOX_DEFAULT"]},
+  {op:"closemessage",args:[]},
+  {op:"call_if_eq",args:["VAR_FACING","DIR_NORTH","EverGrandeCity_PokemonCenter_1F_EventScript_ScottExitNorth"]},
+  {op:"call_if_eq",args:["VAR_FACING","DIR_EAST","EverGrandeCity_PokemonCenter_1F_EventScript_ScottExit"]},
+  {op:"call_if_eq",args:["VAR_FACING","DIR_WEST","EverGrandeCity_PokemonCenter_1F_EventScript_ScottExit"]},
+  {op:"addvar",args:["VAR_SCOTT_STATE",1]},
+  {op:"setflag",args:["FLAG_MET_SCOTT_IN_EVERGRANDE"]},
+  {op:"playse",args:["SE_EXIT"]},
+  {op:"waitse",args:[]},
+  {op:"removeobject",args:["LOCALID_EVER_GRANDE_SCOTT"]},
+  {op:"release",args:[]},
+  {op:"end",args:[]},
+  {op:"applymovement",args:["LOCALID_EVER_GRANDE_SCOTT","EverGrandeCity_PokemonCenter_1F_Movement_ScottExitNorth"]},
+  {op:"waitmovement",args:[0]},
+  {op:"return",args:[]},
+  {op:"applymovement",args:["LOCALID_EVER_GRANDE_SCOTT","EverGrandeCity_PokemonCenter_1F_Movement_ScottExit"]},
+  {op:"waitmovement",args:[0]},
+  {op:"return",args:[]},
+  {op:"walk_left",args:[]},
+  {op:"walk_down",args:[]},
+  {op:"walk_down",args:[]},
+  {op:"walk_left",args:[]},
+  {op:"walk_down",args:[]},
+  {op:"walk_down",args:[]},
+  {op:"step_end",args:[]},
+  {op:"walk_down",args:[]},
+  {op:"walk_down",args:[]},
+  {op:"walk_left",args:[]},
+  {op:"walk_left",args:[]},
+  {op:"walk_down",args:[]},
+  {op:"walk_down",args:[]},
+  {op:"step_end",args:[]},
+] as const;

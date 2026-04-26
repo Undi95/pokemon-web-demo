@@ -1,0 +1,17 @@
+{
+  "generatedAt": "2026-04-26",
+  "inputCount": 607,
+  "okCount": 607,
+  "skipCount": 0,
+  "errCount": 0,
+  "totalStats": {
+    "constants": 526,
+    "labels": 19439,
+    "globalLabels": 10701,
+    "macros": 1200,
+    "includes": 756,
+    "dataDirectives": 31401,
+    "ops": 65028
+  },
+  "durationMs": 653
+}

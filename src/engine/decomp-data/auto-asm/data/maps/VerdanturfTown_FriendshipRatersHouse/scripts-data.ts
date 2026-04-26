@@ -1,0 +1,106 @@
+// AUTO-GENERATED from data/maps/VerdanturfTown_FriendshipRatersHouse/scripts.inc by extract-decomp-asm.mjs
+// Do not edit manually — re-run `npm run extract:decomp-asm` to refresh.
+//
+// Source: D:/Projet 1/decomps/pokeemeraude/data/maps/VerdanturfTown_FriendshipRatersHouse/scripts.inc
+// Generated: 2026-04-26
+
+// ─── Labels (script entry points + local jumps) ─────────────────────────────
+// instrIndex = 0-based index into OPS array (Nth tokenized instruction line).
+export const LABELS = [
+  { name: 'VerdanturfTown_FriendshipRatersHouse_MapScripts', isGlobal: true, instrIndex: 0 },
+  { name: 'VerdanturfTown_FriendshipRatersHouse_EventScript_FriendshipRater', isGlobal: true, instrIndex: 0 },
+  { name: 'VerdanturfTown_FriendshipRatersHouse_EventScript_DetestsYou', isGlobal: true, instrIndex: 14 },
+  { name: 'VerdanturfTown_FriendshipRatersHouse_EventScript_VeryWary', isGlobal: true, instrIndex: 17 },
+  { name: 'VerdanturfTown_FriendshipRatersHouse_EventScript_NotUsedToYou', isGlobal: true, instrIndex: 20 },
+  { name: 'VerdanturfTown_FriendshipRatersHouse_EventScript_GettingUsedToYou', isGlobal: true, instrIndex: 23 },
+  { name: 'VerdanturfTown_FriendshipRatersHouse_EventScript_LikesYouQuiteALot', isGlobal: true, instrIndex: 26 },
+  { name: 'VerdanturfTown_FriendshipRatersHouse_EventScript_VeryHappy', isGlobal: true, instrIndex: 29 },
+  { name: 'VerdanturfTown_FriendshipRatersHouse_EventScript_AdoresYou', isGlobal: true, instrIndex: 32 },
+  { name: 'VerdanturfTown_FriendshipRatersHouse_EventScript_Pikachu', isGlobal: true, instrIndex: 35 },
+  { name: 'VerdanturfTown_FriendshipRatersHouse_Text_SeeHowMuchPokemonLikesYou', isGlobal: false, instrIndex: 43 },
+  { name: 'VerdanturfTown_FriendshipRatersHouse_Text_AdoresYou', isGlobal: false, instrIndex: 43 },
+  { name: 'VerdanturfTown_FriendshipRatersHouse_Text_VeryHappy', isGlobal: false, instrIndex: 43 },
+  { name: 'VerdanturfTown_FriendshipRatersHouse_Text_LikesYouQuiteALot', isGlobal: false, instrIndex: 43 },
+  { name: 'VerdanturfTown_FriendshipRatersHouse_Text_GettingUsedToYou', isGlobal: false, instrIndex: 43 },
+  { name: 'VerdanturfTown_FriendshipRatersHouse_Text_NotUsedToYou', isGlobal: false, instrIndex: 43 },
+  { name: 'VerdanturfTown_FriendshipRatersHouse_Text_VeryWary', isGlobal: false, instrIndex: 43 },
+  { name: 'VerdanturfTown_FriendshipRatersHouse_Text_DetestsYou', isGlobal: false, instrIndex: 43 },
+  { name: 'VerdanturfTown_FriendshipRatersHouse_Text_Pikachu', isGlobal: false, instrIndex: 43 },
+] as const;
+
+// ─── Data directives (.byte/.2byte/.4byte/.string raw bytes) ───────────────
+// Counts: .byte=1, .string=23
+export const DATA_DIRECTIVES = [
+  { kind: '.byte', vals: [0] },
+  { kind: '.string', vals: ["\"Laisse-moi voir ton POKéMON.\\n\""] },
+  { kind: '.string', vals: ["\"Je vais regarder s'il t'aime bien.\\p\""] },
+  { kind: '.string', vals: ["\"Oh.\\n\""] },
+  { kind: '.string', vals: ["\"Ton POKéMON…$\""] },
+  { kind: '.string', vals: ["\"Il t'adore.\\n\""] },
+  { kind: '.string', vals: ["\"Il ne pourrait pas t'aimer plus.\\l\""] },
+  { kind: '.string', vals: ["\"Ça fait plaisir à voir.$\""] },
+  { kind: '.string', vals: ["\"Il semble très heureux.\\n\""] },
+  { kind: '.string', vals: ["\"A l'évidence, il t'aime de tout son cœur.$\""] },
+  { kind: '.string', vals: ["\"Il t'aime beaucoup.\\n\""] },
+  { kind: '.string', vals: ["\"Il semble vouloir être dorloté.$\""] },
+  { kind: '.string', vals: ["\"Il commence à s'habituer à toi.\\n\""] },
+  { kind: '.string', vals: ["\"Il a l'air de croire en toi.$\""] },
+  { kind: '.string', vals: ["\"Il n'est pas encore très habitué à toi.\\n\""] },
+  { kind: '.string', vals: ["\"Il ne t'aime pas, mais ne te déteste pas\\l\""] },
+  { kind: '.string', vals: ["\"non plus.$\""] },
+  { kind: '.string', vals: ["\"Il est sur ses gardes.\\n\""] },
+  { kind: '.string', vals: ["\"Il pourrait être agressif.\\p\""] },
+  { kind: '.string', vals: ["\"Il ne t'aime pas du tout.$\""] },
+  { kind: '.string', vals: ["\"C'est un peu difficile à annoncer…\\p\""] },
+  { kind: '.string', vals: ["\"Ton POKéMON te déteste franchement.\\n\""] },
+  { kind: '.string', vals: ["\"Ça ne te met pas un peu mal à l'aise?$\""] },
+  { kind: '.string', vals: ["\"PIKACHU: Pika pika!$\""] },
+] as const;
+
+// ─── Tokenized instruction stream (macro invocations + opcodes) ───────────
+// 43 instructions. Each has { op, args[] } — args are unresolved strings/numbers.
+export const OPS = [
+  {op:"lock",args:[]},
+  {op:"faceplayer",args:[]},
+  {op:"msgbox",args:["VerdanturfTown_FriendshipRatersHouse_Text_SeeHowMuchPokemonLikesYou","MSGBOX_DEFAULT"]},
+  {op:"specialvar",args:["VAR_RESULT","GetLeadMonFriendshipScore"]},
+  {op:"switch",args:["VAR_RESULT"]},
+  {op:"case",args:["FRIENDSHIP_NONE","VerdanturfTown_FriendshipRatersHouse_EventScript_DetestsYou"]},
+  {op:"case",args:["FRIENDSHIP_1_TO_49","VerdanturfTown_FriendshipRatersHouse_EventScript_VeryWary"]},
+  {op:"case",args:["FRIENDSHIP_50_TO_99","VerdanturfTown_FriendshipRatersHouse_EventScript_NotUsedToYou"]},
+  {op:"case",args:["FRIENDSHIP_100_TO_149","VerdanturfTown_FriendshipRatersHouse_EventScript_GettingUsedToYou"]},
+  {op:"case",args:["FRIENDSHIP_150_TO_199","VerdanturfTown_FriendshipRatersHouse_EventScript_LikesYouQuiteALot"]},
+  {op:"case",args:["FRIENDSHIP_200_TO_254","VerdanturfTown_FriendshipRatersHouse_EventScript_VeryHappy"]},
+  {op:"case",args:["FRIENDSHIP_MAX","VerdanturfTown_FriendshipRatersHouse_EventScript_AdoresYou"]},
+  {op:"release",args:[]},
+  {op:"end",args:[]},
+  {op:"msgbox",args:["VerdanturfTown_FriendshipRatersHouse_Text_DetestsYou","MSGBOX_DEFAULT"]},
+  {op:"release",args:[]},
+  {op:"end",args:[]},
+  {op:"msgbox",args:["VerdanturfTown_FriendshipRatersHouse_Text_VeryWary","MSGBOX_DEFAULT"]},
+  {op:"release",args:[]},
+  {op:"end",args:[]},
+  {op:"msgbox",args:["VerdanturfTown_FriendshipRatersHouse_Text_NotUsedToYou","MSGBOX_DEFAULT"]},
+  {op:"release",args:[]},
+  {op:"end",args:[]},
+  {op:"msgbox",args:["VerdanturfTown_FriendshipRatersHouse_Text_GettingUsedToYou","MSGBOX_DEFAULT"]},
+  {op:"release",args:[]},
+  {op:"end",args:[]},
+  {op:"msgbox",args:["VerdanturfTown_FriendshipRatersHouse_Text_LikesYouQuiteALot","MSGBOX_DEFAULT"]},
+  {op:"release",args:[]},
+  {op:"end",args:[]},
+  {op:"msgbox",args:["VerdanturfTown_FriendshipRatersHouse_Text_VeryHappy","MSGBOX_DEFAULT"]},
+  {op:"release",args:[]},
+  {op:"end",args:[]},
+  {op:"msgbox",args:["VerdanturfTown_FriendshipRatersHouse_Text_AdoresYou","MSGBOX_DEFAULT"]},
+  {op:"release",args:[]},
+  {op:"end",args:[]},
+  {op:"lock",args:[]},
+  {op:"faceplayer",args:[]},
+  {op:"waitse",args:[]},
+  {op:"playmoncry",args:["SPECIES_PIKACHU","CRY_MODE_NORMAL"]},
+  {op:"msgbox",args:["VerdanturfTown_FriendshipRatersHouse_Text_Pikachu","MSGBOX_DEFAULT"]},
+  {op:"waitmoncry",args:[]},
+  {op:"release",args:[]},
+  {op:"end",args:[]},
+] as const;

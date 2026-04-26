@@ -1,0 +1,108 @@
+// AUTO-GENERATED from data/maps/SealedChamber_OuterRoom/scripts.inc by extract-decomp-asm.mjs
+// Do not edit manually — re-run `npm run extract:decomp-asm` to refresh.
+//
+// Source: D:/Projet 1/decomps/pokeemeraude/data/maps/SealedChamber_OuterRoom/scripts.inc
+// Generated: 2026-04-26
+
+// ─── Labels (script entry points + local jumps) ─────────────────────────────
+// instrIndex = 0-based index into OPS array (Nth tokenized instruction line).
+export const LABELS = [
+  { name: 'SealedChamber_OuterRoom_MapScripts', isGlobal: true, instrIndex: 0 },
+  { name: 'SealedChamber_OuterRoom_OnResume', isGlobal: false, instrIndex: 3 },
+  { name: 'SealedChamber_OuterRoom_OnTransition', isGlobal: false, instrIndex: 6 },
+  { name: 'SealedChamber_OuterRoom_OnLoad', isGlobal: false, instrIndex: 8 },
+  { name: 'SealedChamber_OuterRoom_EventScript_CloseInnerRoomEntrance', isGlobal: true, instrIndex: 10 },
+  { name: 'SealedChamber_OuterRoom_EventScript_BrailleABC', isGlobal: true, instrIndex: 17 },
+  { name: 'SealedChamber_OuterRoom_EventScript_BrailleGHI', isGlobal: true, instrIndex: 21 },
+  { name: 'SealedChamber_OuterRoom_EventScript_BrailleMNO', isGlobal: true, instrIndex: 25 },
+  { name: 'SealedChamber_OuterRoom_EventScript_BrailleTUV', isGlobal: true, instrIndex: 29 },
+  { name: 'SealedChamber_OuterRoom_EventScript_BrailleDEF', isGlobal: true, instrIndex: 33 },
+  { name: 'SealedChamber_OuterRoom_EventScript_BrailleJKL', isGlobal: true, instrIndex: 37 },
+  { name: 'SealedChamber_OuterRoom_EventScript_BraillePQRS', isGlobal: true, instrIndex: 41 },
+  { name: 'SealedChamber_OuterRoom_EventScript_BraillePeriod', isGlobal: true, instrIndex: 45 },
+  { name: 'SealedChamber_OuterRoom_EventScript_BrailleWXYZ', isGlobal: true, instrIndex: 49 },
+  { name: 'SealedChamber_OuterRoom_EventScript_BrailleComma', isGlobal: true, instrIndex: 53 },
+  { name: 'SealedChamber_OuterRoom_EventScript_InnerRoomEntranceWall', isGlobal: true, instrIndex: 57 },
+  { name: 'SealedChamber_OuterRoom_EventScript_HoleInWall', isGlobal: true, instrIndex: 62 },
+  { name: 'SealedChamber_OuterRoom_EventScript_BrailleDigHere', isGlobal: true, instrIndex: 65 },
+] as const;
+
+// ─── Data directives (.byte/.2byte/.4byte/.string raw bytes) ───────────────
+// Counts: .byte=1
+export const DATA_DIRECTIVES = [
+  { kind: '.byte', vals: [0] },
+] as const;
+
+// ─── Tokenized instruction stream (macro invocations + opcodes) ───────────
+// 69 instructions. Each has { op, args[] } — args are unresolved strings/numbers.
+export const OPS = [
+  {op:"map_script",args:["MAP_SCRIPT_ON_RESUME","SealedChamber_OuterRoom_OnResume"]},
+  {op:"map_script",args:["MAP_SCRIPT_ON_TRANSITION","SealedChamber_OuterRoom_OnTransition"]},
+  {op:"map_script",args:["MAP_SCRIPT_ON_LOAD","SealedChamber_OuterRoom_OnLoad"]},
+  {op:"setdivewarp",args:["MAP_UNDERWATER_SEALED_CHAMBER",12,44]},
+  {op:"setescapewarp",args:["MAP_UNDERWATER_SEALED_CHAMBER",12,44]},
+  {op:"end",args:[]},
+  {op:"setflag",args:["FLAG_LANDMARK_SEALED_CHAMBER"]},
+  {op:"end",args:[]},
+  {op:"call_if_unset",args:["FLAG_SYS_BRAILLE_DIG","SealedChamber_OuterRoom_EventScript_CloseInnerRoomEntrance"]},
+  {op:"end",args:[]},
+  {op:"setmetatile",args:[9,1,"METATILE_Cave_EntranceCover",1]},
+  {op:"setmetatile",args:[10,1,"METATILE_Cave_EntranceCover",1]},
+  {op:"setmetatile",args:[11,1,"METATILE_Cave_EntranceCover",1]},
+  {op:"setmetatile",args:[9,2,"METATILE_Cave_SealedChamberBraille_Mid",1]},
+  {op:"setmetatile",args:[10,2,"METATILE_Cave_SealedChamberBraille_Mid",1]},
+  {op:"setmetatile",args:[11,2,"METATILE_Cave_SealedChamberBraille_Mid",1]},
+  {op:"return",args:[]},
+  {op:"lockall",args:[]},
+  {op:"braillemsgbox",args:["SealedChamber_OuterRoom_Braille_ABC"]},
+  {op:"releaseall",args:[]},
+  {op:"end",args:[]},
+  {op:"lockall",args:[]},
+  {op:"braillemsgbox",args:["SealedChamber_OuterRoom_Braille_GHI"]},
+  {op:"releaseall",args:[]},
+  {op:"end",args:[]},
+  {op:"lockall",args:[]},
+  {op:"braillemsgbox",args:["SealedChamber_OuterRoom_Braille_MNO"]},
+  {op:"releaseall",args:[]},
+  {op:"end",args:[]},
+  {op:"lockall",args:[]},
+  {op:"braillemsgbox",args:["SealedChamber_OuterRoom_Braille_TUV"]},
+  {op:"releaseall",args:[]},
+  {op:"end",args:[]},
+  {op:"lockall",args:[]},
+  {op:"braillemsgbox",args:["SealedChamber_OuterRoom_Braille_DEF"]},
+  {op:"releaseall",args:[]},
+  {op:"end",args:[]},
+  {op:"lockall",args:[]},
+  {op:"braillemsgbox",args:["SealedChamber_OuterRoom_Braille_JKL"]},
+  {op:"releaseall",args:[]},
+  {op:"end",args:[]},
+  {op:"lockall",args:[]},
+  {op:"braillemsgbox",args:["SealedChamber_OuterRoom_Braille_PQRS"]},
+  {op:"releaseall",args:[]},
+  {op:"end",args:[]},
+  {op:"lockall",args:[]},
+  {op:"braillemsgbox",args:["SealedChamber_OuterRoom_Braille_Period"]},
+  {op:"releaseall",args:[]},
+  {op:"end",args:[]},
+  {op:"lockall",args:[]},
+  {op:"braillemsgbox",args:["SealedChamber_OuterRoom_Braille_WXYZ"]},
+  {op:"releaseall",args:[]},
+  {op:"end",args:[]},
+  {op:"lockall",args:[]},
+  {op:"braillemsgbox",args:["SealedChamber_OuterRoom_Braille_Comma"]},
+  {op:"releaseall",args:[]},
+  {op:"end",args:[]},
+  {op:"lockall",args:[]},
+  {op:"goto_if_set",args:["FLAG_SYS_BRAILLE_DIG","SealedChamber_OuterRoom_EventScript_HoleInWall"]},
+  {op:"braillemsgbox",args:["SealedChamber_OuterRoom_Braille_DigHere"]},
+  {op:"releaseall",args:[]},
+  {op:"end",args:[]},
+  {op:"msgbox",args:["gText_BigHoleInTheWall","MSGBOX_DEFAULT"]},
+  {op:"releaseall",args:[]},
+  {op:"end",args:[]},
+  {op:"lockall",args:[]},
+  {op:"braillemsgbox",args:["SealedChamber_OuterRoom_Braille_DigHere"]},
+  {op:"releaseall",args:[]},
+  {op:"end",args:[]},
+] as const;
