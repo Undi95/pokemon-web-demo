@@ -14,6 +14,8 @@
  *   gameState.save() / load() / reset()
  */
 
+import type { PokemonInstance } from './pokemon';
+
 const STORAGE_KEY = 'em_save_v1';
 
 interface SaveData {
@@ -28,7 +30,9 @@ interface SaveData {
   dynamicWarp?: { mapId: string; x: number; y: number };
   /** Heal location définie par `setrespawn` (où on revient après un blackout) */
   respawn?: string;
-  party: unknown[]; // TODO : structure Pokémon
+  party: PokemonInstance[];
+  /** Item balls déjà ramassées (script labels). Persisté pour ne pas réapparaître. */
+  takenItemBalls?: string[];
   created: number;
 }
 
@@ -63,6 +67,16 @@ class GameState {
   setFlag(name: string) { this.data.flags[name] = true; }
   clearFlag(name: string) { delete this.data.flags[name]; }
   hasFlag(name: string): boolean { return !!this.data.flags[name]; }
+
+  // Item balls : tracking persistant des pokeballs au sol déjà ramassées
+  get takenItemBalls(): { has: (label: string) => boolean; add: (label: string) => void } {
+    if (!this.data.takenItemBalls) this.data.takenItemBalls = [];
+    const arr = this.data.takenItemBalls;
+    return {
+      has: (label) => arr.includes(label),
+      add: (label) => { if (!arr.includes(label)) { arr.push(label); this.save(); } },
+    };
+  }
 
   setVar(name: string, value: number) { this.data.vars[name] = value; }
   getVar(name: string): number { return this.data.vars[name] ?? 0; }
@@ -100,6 +114,71 @@ class GameState {
   get dynamicWarp() { return this.data.dynamicWarp; }
   setRespawn(loc: string) { this.data.respawn = loc; }
   get respawn() { return this.data.respawn; }
+
+  // ===== Party management =====
+  get party(): PokemonInstance[] { return this.data.party; }
+  get partySize(): number { return this.data.party.length; }
+  get lead(): PokemonInstance | undefined { return this.data.party[0]; }
+  addToParty(mon: PokemonInstance): boolean {
+    if (this.data.party.length >= 6) return false;
+    this.data.party.push(mon);
+    return true;
+  }
+  /** Heal HP + PP de tous les Pokémon (Centre Pokémon, special HealPlayerParty). */
+  healAllParty() {
+    for (const m of this.data.party) {
+      m.currentHp = m.maxHp;
+      m.status = null;
+      for (const mv of m.moves) mv.pp = mv.ppMax;
+    }
+  }
 }
 
 export const gameState = new GameState();
+
+// ===== Debug helpers exposés en window pour console =====
+// Usage : ouvrir la console F12, taper `gameState.party` ou `cheat.skipIntro()`
+// pour débloquer la sortie de Littleroot sans avoir à passer par Birch's Lab.
+import { createPokemonInstance } from './pokemon';
+if (typeof window !== 'undefined') {
+  (window as unknown as { gameState: GameState }).gameState = gameState;
+  (window as unknown as { cheat: Record<string, unknown> }).cheat = {
+    /** Avance l'intro pour permettre de sortir de Bourg-en-Vol vers Route 101.
+     *  Set les vars et flags clés que les scripts décomp checkent pour autoriser
+     *  la sortie. */
+    skipIntro: () => {
+      gameState.setVar('VAR_LITTLEROOT_INTRO_STATE', 6);
+      gameState.setVar('VAR_LITTLEROOT_TOWN_STATE', 4);
+      gameState.setVar('VAR_BIRCH_LAB_STATE', 4);
+      gameState.setFlag('FLAG_RECEIVED_POKEDEX_FROM_BIRCH');
+      gameState.setFlag('FLAG_RECEIVED_POKEMON_FROM_BIRCH');
+      gameState.setFlag('FLAG_ADVENTURE_STARTED');
+      gameState.setFlag('FLAG_RESCUED_BIRCH');
+      gameState.setFlag('FLAG_SET_WALL_CLOCK');
+      gameState.save();
+      console.log('[cheat] Intro skipped — sortie de Littleroot débloquée. Recharge la map (sortir/rentrer de la maison).');
+    },
+    /** Donne un Pokémon arbitraire (via SPECIES_X enum). */
+    giveMon: (speciesEnum: string, level = 5) => {
+      const m = createPokemonInstance(speciesEnum, level);
+      const ok = gameState.addToParty(m);
+      console.log(ok ? `[cheat] ${m.speciesNameFr} lv${level} ajouté` : '[cheat] Party pleine');
+      return m;
+    },
+    /** Heal complet de la party. */
+    heal: () => { gameState.healAllParty(); console.log('[cheat] Party healed'); },
+    /** Reset complet de la save (debug : repartir de zéro). */
+    resetSave: () => { gameState.reset(); gameState.save(); console.log('[cheat] Save reset — recharge la page'); },
+    /** Inspection du WorldRenderer (current map + adjacents loaded). */
+    world: () => {
+      const w = (window as unknown as { __overworldWorld?: { currentMapName: string; loaded: Map<string, { mapName: string; worldOffsetX: number; worldOffsetY: number }> } }).__overworldWorld;
+      if (!w) return '[cheat] WorldRenderer pas init (overworld pas encore loaded)';
+      return {
+        current: w.currentMapName,
+        loaded: Array.from(w.loaded.values()).map(i => ({
+          name: i.mapName, offX: i.worldOffsetX, offY: i.worldOffsetY,
+        })),
+      };
+    },
+  };
+}

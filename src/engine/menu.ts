@@ -42,7 +42,8 @@ export function createMenu(opts: MenuOpts): MenuHandle {
   const items: Phaser.GameObjects.Image[] = [];
   const dynKeys: string[] = [];
   for (let i = 0; i < labels.length; i++) {
-    const canvas = renderTextToCanvas(scene, labels[i], width - 20);
+    // Remap fidèle GBA via TextPrinter encoding.
+    const canvas = renderTextToCanvas(scene, labels[i], width - 20, { authenticColors: true });
     const key = `menu-${Date.now()}-${i}-${Math.random().toString(36).slice(2, 8)}`;
     scene.textures.addCanvas(key, canvas);
     dynKeys.push(key);
@@ -51,17 +52,33 @@ export function createMenu(opts: MenuOpts): MenuHandle {
     items.push(img);
   }
 
-  // Curseur : glyphe "▶" rendu via bitmap font
+  // Curseur : glyph "▶" du bitmap font, cf. décomp strings.c:1469
+  // `gText_SelectorArrow3[] = _("▶")` rendu via `AddTextPrinterParameterized`
+  // menu.c:945. Le glyph est blanc dans latin_normal.png ; on le colore en
+  // noir via `setTint` (multiplie : white × black = black) pour qu'il soit
+  // visible sur le fond clair de la textbox. Pas de setTintFill (qui
+  // remplaçait tous les pixels visibles → effet "bloc plein" au lieu de la
+  // forme triangle).
   const cursorKey = `menu-cursor-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-  const cursorCanvas = renderTextToCanvas(scene, '▶', 16);
+  // transparentizeWhite=true : le glyph ▶ a un "bg fill" blanc sur la moitié
+  // gauche de la cellule. Sans ça, setTint(noir) le rend en carré noir 8x16.
+  // Avec, seul le triangle (idx 1+2) est visible → vrai triangle.
+  // Cf. décomp text.c : font idx 3 est remappé à bg color du printer (souvent transparent).
+  const cursorCanvas = renderTextToCanvas(scene, '▶', 16, { transparentizeWhite: true });
   scene.textures.addCanvas(cursorKey, cursorCanvas);
-  const cursorSprite = scene.add.sprite(x + 10, 0, cursorKey)
-    .setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(depth + 1).setTintFill(0x202020);
+  const cursorSprite = scene.add.sprite(x + 6, 0, cursorKey)
+    .setOrigin(0, 0).setScrollFactor(0).setDepth(depth + 1)
+    .setTint(0x202020);
   let cursor = 0;
-  const updateCursor = () => cursorSprite.setY(items[cursor].y + 6);
+  const updateCursor = () => cursorSprite.setY(items[cursor].y + 1);
   updateCursor();
 
+  // Gate temporel : ignore les inputs pendant 200ms après l'ouverture, pour
+  // éviter qu'un W pressé pour clore un msgbox (ou similaire) déclenche
+  // immédiatement le 1er choix du menu (problème observé yesnobox session 24).
+  const openedAt = performance.now();
   const handler = (e: KeyboardEvent) => {
+    if (performance.now() - openedAt < 200) return;
     const k = e.key.toLowerCase();
     if (k === 'arrowup' || k === 'z') { cursor = (cursor - 1 + labels.length) % labels.length; updateCursor(); }
     else if (k === 'arrowdown' || k === 's') { cursor = (cursor + 1) % labels.length; updateCursor(); }

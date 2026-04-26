@@ -31,7 +31,13 @@ export interface MapJson {
   connections?: Array<{ map: string; offset: number; direction: string }>;
   object_events: ObjectEventRaw[];
   warp_events?: Array<{ x: number; y: number; elevation: number; dest_map: string; dest_warp_id: string }>;
-  coord_events?: unknown[];
+  coord_events?: Array<{
+    type: string;       // "trigger" | "weather"
+    x: number; y: number; elevation: number;
+    var?: string;       // ex "VAR_LITTLEROOT_INTRO_STATE"
+    var_value?: string; // valeur attendue (string décimal)
+    script?: string;    // label à exécuter si match
+  }>;
   bg_events?: Array<{ type: string; x: number; y: number; script?: string }>;
 }
 
@@ -54,6 +60,11 @@ export interface ResolvedNpc {
   /** true si le NPC doit être hidden au spawn (flag de masquage set).
    *  On le spawn quand même pour que `addobject` puisse le show plus tard. */
   hiddenAtSpawn: boolean;
+  /** true pour les objets statiques (sac de Birch, item ball, pierres, dolls).
+   *  Source : `.inanimate = TRUE` du décomp `object_event_graphics_info.h`.
+   *  Le décomp skip les actions de movement (LOOK_AROUND, ROTATE_*, WANDER_*)
+   *  pour ces objets — ils ne "regardent" jamais autour d'eux. */
+  inanimate: boolean;
 }
 
 /**
@@ -66,12 +77,26 @@ export interface ResolvedNpc {
  * @param hasFlag Callback pour checker si un flag est set (typiquement gameState.hasFlag).
  * @param baseUrl URL de base des assets.
  */
+/** GraphicsInfo synthétique pour les graphics_id non mappés mais avec PNG connu.
+ * Couvre les item balls + extensible pour berry trees / cuttable trees / etc. */
+function makeFallbackGfx(graphicsId: string): GraphicsInfo | null {
+  if (graphicsId === 'OBJ_EVENT_GFX_ITEM_BALL') {
+    return {
+      png: 'object_events/misc/item_ball.png',
+      frameWidth: 16, frameHeight: 16,
+      displayWidth: 16, displayHeight: 16,
+    };
+  }
+  return null;
+}
+
 export function resolveNpcs(
   map: MapJson,
   table: GraphicsTable,
   hasFlag: (flagName: string) => boolean = () => false,
   getObjectOverride: (localId: string) => { x: number; y: number } | undefined = () => undefined,
-  baseUrl = '/decomp/em'
+  baseUrl = '/decomp/em',
+  inanimateMap: Record<string, boolean> = {}
 ): ResolvedNpc[] {
   const out: ResolvedNpc[] = [];
   for (const ev of map.object_events ?? []) {
@@ -79,18 +104,30 @@ export function resolveNpcs(
     // Override de position via setobjectxyperm (state persistent)
     const ovr = ev.local_id ? getObjectOverride(ev.local_id) : undefined;
     if (ovr) { ev.x = ovr.x; ev.y = ovr.y; }
-    const gfx = table[ev.graphics_id];
-    if (!gfx) continue; // gfx non résolu (item ball, berry tree, etc.) — ignoré
+    let gfx: GraphicsInfo | undefined = table[ev.graphics_id];
+    if (!gfx) {
+      // Cas spéciaux : gfx non listés dans object-event-graphics.json mais qu'on
+      // veut quand même afficher (item balls, berry trees…). Synthétise une
+      // GraphicsInfo pointant vers le sprite générique.
+      const fallback = makeFallbackGfx(ev.graphics_id);
+      if (!fallback) continue; // toujours pas géré → skip
+      gfx = fallback;
+    }
 
     const sourceKey = `npc-src-${ev.graphics_id}`;
     const textureKey = `npc-${ev.graphics_id}`;
+    // Item balls : le mapping décomp les marque inanimate (ITEM_BALL=true), mais
+    // si le JSON est absent on force inanimate sur ce gfx connu.
+    const inanimate = inanimateMap[ev.graphics_id]
+      ?? (ev.graphics_id === 'OBJ_EVENT_GFX_ITEM_BALL');
     out.push({
       raw: ev,
       gfx,
       sourceTextureKey: sourceKey,
       textureKey,
       spriteUrl: `${baseUrl}/${gfx.png}`,
-      hiddenAtSpawn: hidden
+      hiddenAtSpawn: hidden,
+      inanimate,
     });
   }
   return out;

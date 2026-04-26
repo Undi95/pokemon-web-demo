@@ -42,12 +42,26 @@ const STEP_FRAMES: Record<Facing, [number, number]> = {
 const stepCounterBySprite = new WeakMap<Phaser.GameObjects.Sprite, number>();
 const stepToggleBySprite = new WeakMap<Phaser.GameObjects.Sprite, boolean>();
 
+/** Clamp un index de frame à [0, frameTotal-1]. Évite les warnings Phaser
+ *  "Texture X has no frame N" pour les objets statiques 1-frame (ITEM_BALL,
+ *  BIRCHS_BAG, PICHU_DOLL, etc.) qui ne sont pas des NPCs animés.
+ */
+function safeFrame(sprite: Phaser.GameObjects.Sprite, textureKey: string, idx: number): number {
+  const tex = sprite.scene?.textures?.get(textureKey);
+  if (!tex) return idx;
+  const total = tex.frameTotal - 1; // -1 car __BASE est inclus
+  return idx < total ? idx : 0;
+}
+
 export function setIdleFrame(
   sprite: Phaser.GameObjects.Sprite,
   textureKey: string,
   facing: Facing
 ): void {
-  sprite.setTexture(textureKey, IDLE_FRAME[facing]);
+  // Guard : sprite peut être destroyed (scene.restart) avant qu'un callback async
+  // (Promise.then de npc-behavior, delayedCall demi-pas) tente de modifier sa texture.
+  if (!sprite || !sprite.scene || !sprite.active) return;
+  sprite.setTexture(textureKey, safeFrame(sprite, textureKey, IDLE_FRAME[facing]));
   sprite.setFlipX(facing === 'right');
 }
 
@@ -57,6 +71,7 @@ export function playSingleStep(
   facing: Facing,
   stepDurationMs: number
 ): void {
+  if (!sprite || !sprite.scene || !sprite.active) return;
   // Incrémente le compteur : le callback en attente d'un pas précédent verra
   // un mismatch et ne réinitialisera pas à idle à tort.
   const myStep = (stepCounterBySprite.get(sprite) ?? 0) + 1;
@@ -66,7 +81,7 @@ export function playSingleStep(
   const stepFrame = STEP_FRAMES[facing][toggle ? 1 : 0];
   stepToggleBySprite.set(sprite, !toggle);
 
-  sprite.setTexture(textureKey, stepFrame);
+  sprite.setTexture(textureKey, safeFrame(sprite, textureKey, stepFrame));
   sprite.setFlipX(facing === 'right');
 
   // Retour à idle à mi-chemin : la deuxième moitié du déplacement est en pose

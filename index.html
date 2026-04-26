@@ -27,13 +27,27 @@
       padding: 8px;
       font-size: 12px;
       color: #888;
+      display: flex;
+      gap: 12px;
+      align-items: center;
     }
     .topbar a { color: #88f; }
+    .topbar button {
+      background: #333; color: #eee; border: 1px solid #555;
+      font-family: monospace; font-size: 12px; padding: 2px 8px; cursor: pointer;
+    }
+    .topbar button:hover { background: #444; }
   </style>
 </head>
 <body>
   <div class="topbar">
-    Z/Q/S/D ou flèches : se déplacer &nbsp;|&nbsp; W : parler &nbsp;|&nbsp; B : menu &nbsp;|&nbsp; <a href="/editor.html">éditeur de map</a>
+    <span>Z/Q/S/D ou flèches : déplacer &nbsp;|&nbsp; W : parler &nbsp;|&nbsp; B : menu</span>
+    <span>Zoom :</span>
+    <button onclick="setGameZoom(2)">×2</button>
+    <button onclick="setGameZoom(3)">×3</button>
+    <button onclick="setGameZoom(4)">×4</button>
+    <button onclick="setGameZoom(5)">×5</button>
+    <button onclick="setGameZoom(6)">×6</button>
   </div>
   <div id="game"></div>
   <script type="module" src="/src/main.ts"></script>

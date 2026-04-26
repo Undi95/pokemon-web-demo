@@ -1,0 +1,1433 @@
+{
+  "face_down": {
+    "actionId": 0,
+    "actionConst": "MOVEMENT_ACTION_FACE_DOWN",
+    "dx": 0,
+    "dy": 0,
+    "facing": "down",
+    "kind": "face",
+    "speedMs": 33
+  },
+  "face_up": {
+    "actionId": 1,
+    "actionConst": "MOVEMENT_ACTION_FACE_UP",
+    "dx": 0,
+    "dy": 0,
+    "facing": "up",
+    "kind": "face",
+    "speedMs": 33
+  },
+  "face_left": {
+    "actionId": 2,
+    "actionConst": "MOVEMENT_ACTION_FACE_LEFT",
+    "dx": 0,
+    "dy": 0,
+    "facing": "left",
+    "kind": "face",
+    "speedMs": 33
+  },
+  "face_right": {
+    "actionId": 3,
+    "actionConst": "MOVEMENT_ACTION_FACE_RIGHT",
+    "dx": 0,
+    "dy": 0,
+    "facing": "right",
+    "kind": "face",
+    "speedMs": 33
+  },
+  "walk_slow_down": {
+    "actionId": 4,
+    "actionConst": "MOVEMENT_ACTION_WALK_SLOW_DOWN",
+    "dx": 0,
+    "dy": 1,
+    "facing": "down",
+    "kind": "walk",
+    "speedMs": 533
+  },
+  "walk_slow_up": {
+    "actionId": 5,
+    "actionConst": "MOVEMENT_ACTION_WALK_SLOW_UP",
+    "dx": 0,
+    "dy": -1,
+    "facing": "up",
+    "kind": "walk",
+    "speedMs": 533
+  },
+  "walk_slow_left": {
+    "actionId": 6,
+    "actionConst": "MOVEMENT_ACTION_WALK_SLOW_LEFT",
+    "dx": -1,
+    "dy": 0,
+    "facing": "left",
+    "kind": "walk",
+    "speedMs": 533
+  },
+  "walk_slow_right": {
+    "actionId": 7,
+    "actionConst": "MOVEMENT_ACTION_WALK_SLOW_RIGHT",
+    "dx": 1,
+    "dy": 0,
+    "facing": "right",
+    "kind": "walk",
+    "speedMs": 533
+  },
+  "walk_down": {
+    "actionId": 8,
+    "actionConst": "MOVEMENT_ACTION_WALK_NORMAL_DOWN",
+    "dx": 0,
+    "dy": 1,
+    "facing": "down",
+    "kind": "walk",
+    "speedMs": 267
+  },
+  "walk_up": {
+    "actionId": 9,
+    "actionConst": "MOVEMENT_ACTION_WALK_NORMAL_UP",
+    "dx": 0,
+    "dy": -1,
+    "facing": "up",
+    "kind": "walk",
+    "speedMs": 267
+  },
+  "walk_left": {
+    "actionId": 10,
+    "actionConst": "MOVEMENT_ACTION_WALK_NORMAL_LEFT",
+    "dx": -1,
+    "dy": 0,
+    "facing": "left",
+    "kind": "walk",
+    "speedMs": 267
+  },
+  "walk_right": {
+    "actionId": 11,
+    "actionConst": "MOVEMENT_ACTION_WALK_NORMAL_RIGHT",
+    "dx": 1,
+    "dy": 0,
+    "facing": "right",
+    "kind": "walk",
+    "speedMs": 267
+  },
+  "jump_2_down": {
+    "actionId": 12,
+    "actionConst": "MOVEMENT_ACTION_JUMP_2_DOWN",
+    "dx": 0,
+    "dy": 2,
+    "facing": "down",
+    "kind": "jump_2",
+    "speedMs": 333
+  },
+  "jump_2_up": {
+    "actionId": 13,
+    "actionConst": "MOVEMENT_ACTION_JUMP_2_UP",
+    "dx": 0,
+    "dy": -2,
+    "facing": "up",
+    "kind": "jump_2",
+    "speedMs": 333
+  },
+  "jump_2_left": {
+    "actionId": 14,
+    "actionConst": "MOVEMENT_ACTION_JUMP_2_LEFT",
+    "dx": -2,
+    "dy": 0,
+    "facing": "left",
+    "kind": "jump_2",
+    "speedMs": 333
+  },
+  "jump_2_right": {
+    "actionId": 15,
+    "actionConst": "MOVEMENT_ACTION_JUMP_2_RIGHT",
+    "dx": 2,
+    "dy": 0,
+    "facing": "right",
+    "kind": "jump_2",
+    "speedMs": 333
+  },
+  "delay_1": {
+    "actionId": 16,
+    "actionConst": "MOVEMENT_ACTION_DELAY_1",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "delay",
+    "speedMs": 17
+  },
+  "delay_2": {
+    "actionId": 17,
+    "actionConst": "MOVEMENT_ACTION_DELAY_2",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "delay",
+    "speedMs": 33
+  },
+  "delay_4": {
+    "actionId": 18,
+    "actionConst": "MOVEMENT_ACTION_DELAY_4",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "delay",
+    "speedMs": 67
+  },
+  "delay_8": {
+    "actionId": 19,
+    "actionConst": "MOVEMENT_ACTION_DELAY_8",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "delay",
+    "speedMs": 133
+  },
+  "delay_16": {
+    "actionId": 20,
+    "actionConst": "MOVEMENT_ACTION_DELAY_16",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "delay",
+    "speedMs": 267
+  },
+  "walk_fast_down": {
+    "actionId": 21,
+    "actionConst": "MOVEMENT_ACTION_WALK_FAST_DOWN",
+    "dx": 0,
+    "dy": 1,
+    "facing": "down",
+    "kind": "walk",
+    "speedMs": 133
+  },
+  "walk_fast_up": {
+    "actionId": 22,
+    "actionConst": "MOVEMENT_ACTION_WALK_FAST_UP",
+    "dx": 0,
+    "dy": -1,
+    "facing": "up",
+    "kind": "walk",
+    "speedMs": 133
+  },
+  "walk_fast_left": {
+    "actionId": 23,
+    "actionConst": "MOVEMENT_ACTION_WALK_FAST_LEFT",
+    "dx": -1,
+    "dy": 0,
+    "facing": "left",
+    "kind": "walk",
+    "speedMs": 133
+  },
+  "walk_fast_right": {
+    "actionId": 24,
+    "actionConst": "MOVEMENT_ACTION_WALK_FAST_RIGHT",
+    "dx": 1,
+    "dy": 0,
+    "facing": "right",
+    "kind": "walk",
+    "speedMs": 133
+  },
+  "walk_in_place_slow_down": {
+    "actionId": 25,
+    "actionConst": "MOVEMENT_ACTION_WALK_IN_PLACE_SLOW_DOWN",
+    "dx": 0,
+    "dy": 0,
+    "facing": "down",
+    "kind": "walk_in_place",
+    "speedMs": 533
+  },
+  "walk_in_place_slow_up": {
+    "actionId": 26,
+    "actionConst": "MOVEMENT_ACTION_WALK_IN_PLACE_SLOW_UP",
+    "dx": 0,
+    "dy": 0,
+    "facing": "up",
+    "kind": "walk_in_place",
+    "speedMs": 533
+  },
+  "walk_in_place_slow_left": {
+    "actionId": 27,
+    "actionConst": "MOVEMENT_ACTION_WALK_IN_PLACE_SLOW_LEFT",
+    "dx": 0,
+    "dy": 0,
+    "facing": "left",
+    "kind": "walk_in_place",
+    "speedMs": 533
+  },
+  "walk_in_place_slow_right": {
+    "actionId": 28,
+    "actionConst": "MOVEMENT_ACTION_WALK_IN_PLACE_SLOW_RIGHT",
+    "dx": 0,
+    "dy": 0,
+    "facing": "right",
+    "kind": "walk_in_place",
+    "speedMs": 533
+  },
+  "walk_in_place_down": {
+    "actionId": 29,
+    "actionConst": "MOVEMENT_ACTION_WALK_IN_PLACE_NORMAL_DOWN",
+    "dx": 0,
+    "dy": 0,
+    "facing": "down",
+    "kind": "walk_in_place",
+    "speedMs": 267
+  },
+  "walk_in_place_up": {
+    "actionId": 30,
+    "actionConst": "MOVEMENT_ACTION_WALK_IN_PLACE_NORMAL_UP",
+    "dx": 0,
+    "dy": 0,
+    "facing": "up",
+    "kind": "walk_in_place",
+    "speedMs": 267
+  },
+  "walk_in_place_left": {
+    "actionId": 31,
+    "actionConst": "MOVEMENT_ACTION_WALK_IN_PLACE_NORMAL_LEFT",
+    "dx": 0,
+    "dy": 0,
+    "facing": "left",
+    "kind": "walk_in_place",
+    "speedMs": 267
+  },
+  "walk_in_place_right": {
+    "actionId": 32,
+    "actionConst": "MOVEMENT_ACTION_WALK_IN_PLACE_NORMAL_RIGHT",
+    "dx": 0,
+    "dy": 0,
+    "facing": "right",
+    "kind": "walk_in_place",
+    "speedMs": 267
+  },
+  "walk_in_place_fast_down": {
+    "actionId": 33,
+    "actionConst": "MOVEMENT_ACTION_WALK_IN_PLACE_FAST_DOWN",
+    "dx": 0,
+    "dy": 0,
+    "facing": "down",
+    "kind": "walk_in_place",
+    "speedMs": 133
+  },
+  "walk_in_place_fast_up": {
+    "actionId": 34,
+    "actionConst": "MOVEMENT_ACTION_WALK_IN_PLACE_FAST_UP",
+    "dx": 0,
+    "dy": 0,
+    "facing": "up",
+    "kind": "walk_in_place",
+    "speedMs": 133
+  },
+  "walk_in_place_fast_left": {
+    "actionId": 35,
+    "actionConst": "MOVEMENT_ACTION_WALK_IN_PLACE_FAST_LEFT",
+    "dx": 0,
+    "dy": 0,
+    "facing": "left",
+    "kind": "walk_in_place",
+    "speedMs": 133
+  },
+  "walk_in_place_fast_right": {
+    "actionId": 36,
+    "actionConst": "MOVEMENT_ACTION_WALK_IN_PLACE_FAST_RIGHT",
+    "dx": 0,
+    "dy": 0,
+    "facing": "right",
+    "kind": "walk_in_place",
+    "speedMs": 133
+  },
+  "walk_in_place_faster_down": {
+    "actionId": 37,
+    "actionConst": "MOVEMENT_ACTION_WALK_IN_PLACE_FASTER_DOWN",
+    "dx": 0,
+    "dy": 0,
+    "facing": "down",
+    "kind": "walk_in_place",
+    "speedMs": 67
+  },
+  "walk_in_place_faster_up": {
+    "actionId": 38,
+    "actionConst": "MOVEMENT_ACTION_WALK_IN_PLACE_FASTER_UP",
+    "dx": 0,
+    "dy": 0,
+    "facing": "up",
+    "kind": "walk_in_place",
+    "speedMs": 67
+  },
+  "walk_in_place_faster_left": {
+    "actionId": 39,
+    "actionConst": "MOVEMENT_ACTION_WALK_IN_PLACE_FASTER_LEFT",
+    "dx": 0,
+    "dy": 0,
+    "facing": "left",
+    "kind": "walk_in_place",
+    "speedMs": 67
+  },
+  "walk_in_place_faster_right": {
+    "actionId": 40,
+    "actionConst": "MOVEMENT_ACTION_WALK_IN_PLACE_FASTER_RIGHT",
+    "dx": 0,
+    "dy": 0,
+    "facing": "right",
+    "kind": "walk_in_place",
+    "speedMs": 67
+  },
+  "ride_water_current_down": {
+    "actionId": 41,
+    "actionConst": "MOVEMENT_ACTION_RIDE_WATER_CURRENT_DOWN",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "ride_water_current_up": {
+    "actionId": 42,
+    "actionConst": "MOVEMENT_ACTION_RIDE_WATER_CURRENT_UP",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "ride_water_current_left": {
+    "actionId": 43,
+    "actionConst": "MOVEMENT_ACTION_RIDE_WATER_CURRENT_LEFT",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "ride_water_current_right": {
+    "actionId": 44,
+    "actionConst": "MOVEMENT_ACTION_RIDE_WATER_CURRENT_RIGHT",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "walk_faster_down": {
+    "actionId": 45,
+    "actionConst": "MOVEMENT_ACTION_WALK_FASTER_DOWN",
+    "dx": 0,
+    "dy": 1,
+    "facing": "down",
+    "kind": "walk",
+    "speedMs": 67
+  },
+  "walk_faster_up": {
+    "actionId": 46,
+    "actionConst": "MOVEMENT_ACTION_WALK_FASTER_UP",
+    "dx": 0,
+    "dy": -1,
+    "facing": "up",
+    "kind": "walk",
+    "speedMs": 67
+  },
+  "walk_faster_left": {
+    "actionId": 47,
+    "actionConst": "MOVEMENT_ACTION_WALK_FASTER_LEFT",
+    "dx": -1,
+    "dy": 0,
+    "facing": "left",
+    "kind": "walk",
+    "speedMs": 67
+  },
+  "walk_faster_right": {
+    "actionId": 48,
+    "actionConst": "MOVEMENT_ACTION_WALK_FASTER_RIGHT",
+    "dx": 1,
+    "dy": 0,
+    "facing": "right",
+    "kind": "walk",
+    "speedMs": 67
+  },
+  "slide_down": {
+    "actionId": 49,
+    "actionConst": "MOVEMENT_ACTION_SLIDE_DOWN",
+    "dx": 0,
+    "dy": 1,
+    "facing": "down",
+    "kind": "slide",
+    "speedMs": 133
+  },
+  "slide_up": {
+    "actionId": 50,
+    "actionConst": "MOVEMENT_ACTION_SLIDE_UP",
+    "dx": 0,
+    "dy": -1,
+    "facing": "up",
+    "kind": "slide",
+    "speedMs": 133
+  },
+  "slide_left": {
+    "actionId": 51,
+    "actionConst": "MOVEMENT_ACTION_SLIDE_LEFT",
+    "dx": -1,
+    "dy": 0,
+    "facing": "left",
+    "kind": "slide",
+    "speedMs": 133
+  },
+  "slide_right": {
+    "actionId": 52,
+    "actionConst": "MOVEMENT_ACTION_SLIDE_RIGHT",
+    "dx": 1,
+    "dy": 0,
+    "facing": "right",
+    "kind": "slide",
+    "speedMs": 133
+  },
+  "player_run_down": {
+    "actionId": 53,
+    "actionConst": "MOVEMENT_ACTION_PLAYER_RUN_DOWN",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "player_run_up": {
+    "actionId": 54,
+    "actionConst": "MOVEMENT_ACTION_PLAYER_RUN_UP",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "player_run_left": {
+    "actionId": 55,
+    "actionConst": "MOVEMENT_ACTION_PLAYER_RUN_LEFT",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "player_run_right": {
+    "actionId": 56,
+    "actionConst": "MOVEMENT_ACTION_PLAYER_RUN_RIGHT",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "start_anim_in_direction": {
+    "actionId": 57,
+    "actionConst": "MOVEMENT_ACTION_START_ANIM_IN_DIRECTION",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "jump_special_down": {
+    "actionId": 58,
+    "actionConst": "MOVEMENT_ACTION_JUMP_SPECIAL_DOWN",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "jump_special_up": {
+    "actionId": 59,
+    "actionConst": "MOVEMENT_ACTION_JUMP_SPECIAL_UP",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "jump_special_left": {
+    "actionId": 60,
+    "actionConst": "MOVEMENT_ACTION_JUMP_SPECIAL_LEFT",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "jump_special_right": {
+    "actionId": 61,
+    "actionConst": "MOVEMENT_ACTION_JUMP_SPECIAL_RIGHT",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "face_player": {
+    "actionId": 62,
+    "actionConst": "MOVEMENT_ACTION_FACE_PLAYER",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "face_special",
+    "speedMs": 33
+  },
+  "face_away_player": {
+    "actionId": 63,
+    "actionConst": "MOVEMENT_ACTION_FACE_AWAY_PLAYER",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "face_special",
+    "speedMs": 33
+  },
+  "lock_facing_direction": {
+    "actionId": 64,
+    "actionConst": "MOVEMENT_ACTION_LOCK_FACING_DIRECTION",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "flag",
+    "speedMs": 1
+  },
+  "unlock_facing_direction": {
+    "actionId": 65,
+    "actionConst": "MOVEMENT_ACTION_UNLOCK_FACING_DIRECTION",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "flag",
+    "speedMs": 1
+  },
+  "jump_down": {
+    "actionId": 66,
+    "actionConst": "MOVEMENT_ACTION_JUMP_DOWN",
+    "dx": 0,
+    "dy": 1,
+    "facing": "down",
+    "kind": "jump",
+    "speedMs": 267
+  },
+  "jump_up": {
+    "actionId": 67,
+    "actionConst": "MOVEMENT_ACTION_JUMP_UP",
+    "dx": 0,
+    "dy": -1,
+    "facing": "up",
+    "kind": "jump",
+    "speedMs": 267
+  },
+  "jump_left": {
+    "actionId": 68,
+    "actionConst": "MOVEMENT_ACTION_JUMP_LEFT",
+    "dx": -1,
+    "dy": 0,
+    "facing": "left",
+    "kind": "jump",
+    "speedMs": 267
+  },
+  "jump_right": {
+    "actionId": 69,
+    "actionConst": "MOVEMENT_ACTION_JUMP_RIGHT",
+    "dx": 1,
+    "dy": 0,
+    "facing": "right",
+    "kind": "jump",
+    "speedMs": 267
+  },
+  "jump_in_place_down": {
+    "actionId": 70,
+    "actionConst": "MOVEMENT_ACTION_JUMP_IN_PLACE_DOWN",
+    "dx": 0,
+    "dy": 0,
+    "facing": "down",
+    "kind": "jump_in_place",
+    "speedMs": 267
+  },
+  "jump_in_place_up": {
+    "actionId": 71,
+    "actionConst": "MOVEMENT_ACTION_JUMP_IN_PLACE_UP",
+    "dx": 0,
+    "dy": 0,
+    "facing": "up",
+    "kind": "jump_in_place",
+    "speedMs": 267
+  },
+  "jump_in_place_left": {
+    "actionId": 72,
+    "actionConst": "MOVEMENT_ACTION_JUMP_IN_PLACE_LEFT",
+    "dx": 0,
+    "dy": 0,
+    "facing": "left",
+    "kind": "jump_in_place",
+    "speedMs": 267
+  },
+  "jump_in_place_right": {
+    "actionId": 73,
+    "actionConst": "MOVEMENT_ACTION_JUMP_IN_PLACE_RIGHT",
+    "dx": 0,
+    "dy": 0,
+    "facing": "right",
+    "kind": "jump_in_place",
+    "speedMs": 267
+  },
+  "jump_in_place_down_up": {
+    "actionId": 74,
+    "actionConst": "MOVEMENT_ACTION_JUMP_IN_PLACE_DOWN_UP",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "jump_in_place_up_down": {
+    "actionId": 75,
+    "actionConst": "MOVEMENT_ACTION_JUMP_IN_PLACE_UP_DOWN",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "jump_in_place_left_right": {
+    "actionId": 76,
+    "actionConst": "MOVEMENT_ACTION_JUMP_IN_PLACE_LEFT_RIGHT",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "jump_in_place_right_left": {
+    "actionId": 77,
+    "actionConst": "MOVEMENT_ACTION_JUMP_IN_PLACE_RIGHT_LEFT",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "face_original_direction": {
+    "actionId": 78,
+    "actionConst": "MOVEMENT_ACTION_FACE_ORIGINAL_DIRECTION",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "face_special",
+    "speedMs": 33
+  },
+  "nurse_joy_bow": {
+    "actionId": 79,
+    "actionConst": "MOVEMENT_ACTION_NURSE_JOY_BOW_DOWN",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "enable_jump_landing_ground_effect": {
+    "actionId": 80,
+    "actionConst": "MOVEMENT_ACTION_ENABLE_JUMP_LANDING_GROUND_EFFECT",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "disable_jump_landing_ground_effect": {
+    "actionId": 81,
+    "actionConst": "MOVEMENT_ACTION_DISABLE_JUMP_LANDING_GROUND_EFFECT",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "disable_anim": {
+    "actionId": 82,
+    "actionConst": "MOVEMENT_ACTION_DISABLE_ANIMATION",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "restore_anim": {
+    "actionId": 83,
+    "actionConst": "MOVEMENT_ACTION_RESTORE_ANIMATION",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "set_invisible": {
+    "actionId": 84,
+    "actionConst": "MOVEMENT_ACTION_SET_INVISIBLE",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "flag",
+    "speedMs": 1
+  },
+  "set_visible": {
+    "actionId": 85,
+    "actionConst": "MOVEMENT_ACTION_SET_VISIBLE",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "flag",
+    "speedMs": 1
+  },
+  "emote_exclamation_mark": {
+    "actionId": 86,
+    "actionConst": "MOVEMENT_ACTION_EMOTE_EXCLAMATION_MARK",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "emote",
+    "speedMs": 200
+  },
+  "emote_question_mark": {
+    "actionId": 87,
+    "actionConst": "MOVEMENT_ACTION_EMOTE_QUESTION_MARK",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "emote",
+    "speedMs": 200
+  },
+  "emote_heart": {
+    "actionId": 88,
+    "actionConst": "MOVEMENT_ACTION_EMOTE_HEART",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "emote",
+    "speedMs": 200
+  },
+  "reveal_trainer": {
+    "actionId": 89,
+    "actionConst": "MOVEMENT_ACTION_REVEAL_TRAINER",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "rock_smash_break": {
+    "actionId": 90,
+    "actionConst": "MOVEMENT_ACTION_ROCK_SMASH_BREAK",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "cut_tree": {
+    "actionId": 91,
+    "actionConst": "MOVEMENT_ACTION_CUT_TREE",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "set_fixed_priority": {
+    "actionId": 92,
+    "actionConst": "MOVEMENT_ACTION_SET_FIXED_PRIORITY",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "clear_fixed_priority": {
+    "actionId": 93,
+    "actionConst": "MOVEMENT_ACTION_CLEAR_FIXED_PRIORITY",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "init_affine_anim": {
+    "actionId": 94,
+    "actionConst": "MOVEMENT_ACTION_INIT_AFFINE_ANIM",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "clear_affine_anim": {
+    "actionId": 95,
+    "actionConst": "MOVEMENT_ACTION_CLEAR_AFFINE_ANIM",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "hide_reflection": {
+    "actionId": 96,
+    "actionConst": "MOVEMENT_ACTION_HIDE_REFLECTION",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "show_reflection": {
+    "actionId": 97,
+    "actionConst": "MOVEMENT_ACTION_SHOW_REFLECTION",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "walk_down_start_affine": {
+    "actionId": 98,
+    "actionConst": "MOVEMENT_ACTION_WALK_DOWN_START_AFFINE",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "walk_down_affine": {
+    "actionId": 99,
+    "actionConst": "MOVEMENT_ACTION_WALK_DOWN_AFFINE",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "acro_wheelie_face_down": {
+    "actionId": 100,
+    "actionConst": "MOVEMENT_ACTION_ACRO_WHEELIE_FACE_DOWN",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "acro_wheelie_face_up": {
+    "actionId": 101,
+    "actionConst": "MOVEMENT_ACTION_ACRO_WHEELIE_FACE_UP",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "acro_wheelie_face_left": {
+    "actionId": 102,
+    "actionConst": "MOVEMENT_ACTION_ACRO_WHEELIE_FACE_LEFT",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "acro_wheelie_face_right": {
+    "actionId": 103,
+    "actionConst": "MOVEMENT_ACTION_ACRO_WHEELIE_FACE_RIGHT",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "acro_pop_wheelie_down": {
+    "actionId": 104,
+    "actionConst": "MOVEMENT_ACTION_ACRO_POP_WHEELIE_DOWN",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "acro_pop_wheelie_up": {
+    "actionId": 105,
+    "actionConst": "MOVEMENT_ACTION_ACRO_POP_WHEELIE_UP",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "acro_pop_wheelie_left": {
+    "actionId": 106,
+    "actionConst": "MOVEMENT_ACTION_ACRO_POP_WHEELIE_LEFT",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "acro_pop_wheelie_right": {
+    "actionId": 107,
+    "actionConst": "MOVEMENT_ACTION_ACRO_POP_WHEELIE_RIGHT",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "acro_end_wheelie_face_down": {
+    "actionId": 108,
+    "actionConst": "MOVEMENT_ACTION_ACRO_END_WHEELIE_FACE_DOWN",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "acro_end_wheelie_face_up": {
+    "actionId": 109,
+    "actionConst": "MOVEMENT_ACTION_ACRO_END_WHEELIE_FACE_UP",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "acro_end_wheelie_face_left": {
+    "actionId": 110,
+    "actionConst": "MOVEMENT_ACTION_ACRO_END_WHEELIE_FACE_LEFT",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "acro_end_wheelie_face_right": {
+    "actionId": 111,
+    "actionConst": "MOVEMENT_ACTION_ACRO_END_WHEELIE_FACE_RIGHT",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "acro_wheelie_hop_face_down": {
+    "actionId": 112,
+    "actionConst": "MOVEMENT_ACTION_ACRO_WHEELIE_HOP_FACE_DOWN",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "acro_wheelie_hop_face_up": {
+    "actionId": 113,
+    "actionConst": "MOVEMENT_ACTION_ACRO_WHEELIE_HOP_FACE_UP",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "acro_wheelie_hop_face_left": {
+    "actionId": 114,
+    "actionConst": "MOVEMENT_ACTION_ACRO_WHEELIE_HOP_FACE_LEFT",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "acro_wheelie_hop_face_right": {
+    "actionId": 115,
+    "actionConst": "MOVEMENT_ACTION_ACRO_WHEELIE_HOP_FACE_RIGHT",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "acro_wheelie_hop_down": {
+    "actionId": 116,
+    "actionConst": "MOVEMENT_ACTION_ACRO_WHEELIE_HOP_DOWN",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "acro_wheelie_hop_up": {
+    "actionId": 117,
+    "actionConst": "MOVEMENT_ACTION_ACRO_WHEELIE_HOP_UP",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "acro_wheelie_hop_left": {
+    "actionId": 118,
+    "actionConst": "MOVEMENT_ACTION_ACRO_WHEELIE_HOP_LEFT",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "acro_wheelie_hop_right": {
+    "actionId": 119,
+    "actionConst": "MOVEMENT_ACTION_ACRO_WHEELIE_HOP_RIGHT",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "acro_wheelie_jump_down": {
+    "actionId": 120,
+    "actionConst": "MOVEMENT_ACTION_ACRO_WHEELIE_JUMP_DOWN",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "acro_wheelie_jump_up": {
+    "actionId": 121,
+    "actionConst": "MOVEMENT_ACTION_ACRO_WHEELIE_JUMP_UP",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "acro_wheelie_jump_left": {
+    "actionId": 122,
+    "actionConst": "MOVEMENT_ACTION_ACRO_WHEELIE_JUMP_LEFT",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "acro_wheelie_jump_right": {
+    "actionId": 123,
+    "actionConst": "MOVEMENT_ACTION_ACRO_WHEELIE_JUMP_RIGHT",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "acro_wheelie_in_place_down": {
+    "actionId": 124,
+    "actionConst": "MOVEMENT_ACTION_ACRO_WHEELIE_IN_PLACE_DOWN",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "acro_wheelie_in_place_up": {
+    "actionId": 125,
+    "actionConst": "MOVEMENT_ACTION_ACRO_WHEELIE_IN_PLACE_UP",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "acro_wheelie_in_place_left": {
+    "actionId": 126,
+    "actionConst": "MOVEMENT_ACTION_ACRO_WHEELIE_IN_PLACE_LEFT",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "acro_wheelie_in_place_right": {
+    "actionId": 127,
+    "actionConst": "MOVEMENT_ACTION_ACRO_WHEELIE_IN_PLACE_RIGHT",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "acro_pop_wheelie_move_down": {
+    "actionId": 128,
+    "actionConst": "MOVEMENT_ACTION_ACRO_POP_WHEELIE_MOVE_DOWN",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "acro_pop_wheelie_move_up": {
+    "actionId": 129,
+    "actionConst": "MOVEMENT_ACTION_ACRO_POP_WHEELIE_MOVE_UP",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "acro_pop_wheelie_move_left": {
+    "actionId": 130,
+    "actionConst": "MOVEMENT_ACTION_ACRO_POP_WHEELIE_MOVE_LEFT",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "acro_pop_wheelie_move_right": {
+    "actionId": 131,
+    "actionConst": "MOVEMENT_ACTION_ACRO_POP_WHEELIE_MOVE_RIGHT",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "acro_wheelie_move_down": {
+    "actionId": 132,
+    "actionConst": "MOVEMENT_ACTION_ACRO_WHEELIE_MOVE_DOWN",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "acro_wheelie_move_up": {
+    "actionId": 133,
+    "actionConst": "MOVEMENT_ACTION_ACRO_WHEELIE_MOVE_UP",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "acro_wheelie_move_left": {
+    "actionId": 134,
+    "actionConst": "MOVEMENT_ACTION_ACRO_WHEELIE_MOVE_LEFT",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "acro_wheelie_move_right": {
+    "actionId": 135,
+    "actionConst": "MOVEMENT_ACTION_ACRO_WHEELIE_MOVE_RIGHT",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "acro_end_wheelie_move_down": {
+    "actionId": 136,
+    "actionConst": "MOVEMENT_ACTION_ACRO_END_WHEELIE_MOVE_DOWN",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "acro_end_wheelie_move_up": {
+    "actionId": 137,
+    "actionConst": "MOVEMENT_ACTION_ACRO_END_WHEELIE_MOVE_UP",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "acro_end_wheelie_move_left": {
+    "actionId": 138,
+    "actionConst": "MOVEMENT_ACTION_ACRO_END_WHEELIE_MOVE_LEFT",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "acro_end_wheelie_move_right": {
+    "actionId": 139,
+    "actionConst": "MOVEMENT_ACTION_ACRO_END_WHEELIE_MOVE_RIGHT",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "walk_diag_northwest": {
+    "actionId": 140,
+    "actionConst": "MOVEMENT_ACTION_WALK_NORMAL_DIAGONAL_UP_LEFT",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "walk_diag_northeast": {
+    "actionId": 141,
+    "actionConst": "MOVEMENT_ACTION_WALK_NORMAL_DIAGONAL_UP_RIGHT",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "walk_diag_southwest": {
+    "actionId": 142,
+    "actionConst": "MOVEMENT_ACTION_WALK_NORMAL_DIAGONAL_DOWN_LEFT",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "walk_diag_southeast": {
+    "actionId": 143,
+    "actionConst": "MOVEMENT_ACTION_WALK_NORMAL_DIAGONAL_DOWN_RIGHT",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "walk_slow_diag_northwest": {
+    "actionId": 144,
+    "actionConst": "MOVEMENT_ACTION_WALK_SLOW_DIAGONAL_UP_LEFT",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "walk_slow_diag_northeast": {
+    "actionId": 145,
+    "actionConst": "MOVEMENT_ACTION_WALK_SLOW_DIAGONAL_UP_RIGHT",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "walk_slow_diag_southwest": {
+    "actionId": 146,
+    "actionConst": "MOVEMENT_ACTION_WALK_SLOW_DIAGONAL_DOWN_LEFT",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "walk_slow_diag_southeast": {
+    "actionId": 147,
+    "actionConst": "MOVEMENT_ACTION_WALK_SLOW_DIAGONAL_DOWN_RIGHT",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "lock_anim": {
+    "actionId": 148,
+    "actionConst": "MOVEMENT_ACTION_LOCK_ANIM",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "unlock_anim": {
+    "actionId": 149,
+    "actionConst": "MOVEMENT_ACTION_UNLOCK_ANIM",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "walk_left_affine": {
+    "actionId": 150,
+    "actionConst": "MOVEMENT_ACTION_WALK_LEFT_AFFINE",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "walk_right_affine": {
+    "actionId": 151,
+    "actionConst": "MOVEMENT_ACTION_WALK_RIGHT_AFFINE",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "levitate": {
+    "actionId": 152,
+    "actionConst": "MOVEMENT_ACTION_LEVITATE",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "stop_levitate": {
+    "actionId": 153,
+    "actionConst": "MOVEMENT_ACTION_STOP_LEVITATE",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "destroy_extra_task": {
+    "actionId": 154,
+    "actionConst": "MOVEMENT_ACTION_STOP_LEVITATE_AT_TOP",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "figure_8": {
+    "actionId": 155,
+    "actionConst": "MOVEMENT_ACTION_FIGURE_8",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "fly_up": {
+    "actionId": 156,
+    "actionConst": "MOVEMENT_ACTION_FLY_UP",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "fly_down": {
+    "actionId": 157,
+    "actionConst": "MOVEMENT_ACTION_FLY_DOWN",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  },
+  "step_end": {
+    "actionId": 254,
+    "actionConst": "MOVEMENT_ACTION_STEP_END",
+    "dx": 0,
+    "dy": 0,
+    "facing": null,
+    "kind": "unknown",
+    "speedMs": 133
+  }
+}

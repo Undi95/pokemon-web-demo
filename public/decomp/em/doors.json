@@ -1,0 +1,886 @@
+{
+  "METATILE_General_Door": {
+    "png": "general.png",
+    "paletteSet": "General",
+    "paletteSlots": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "sound": "DOOR_SOUND_NORMAL",
+    "size": 1,
+    "tilesName": "General"
+  },
+  "METATILE_General_Door_PokeCenter": {
+    "png": "poke_center.png",
+    "paletteSet": "PokeCenter",
+    "paletteSlots": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "sound": "DOOR_SOUND_SLIDING",
+    "size": 1,
+    "tilesName": "PokeCenter"
+  },
+  "METATILE_General_Door_Gym": {
+    "png": "gym.png",
+    "paletteSet": "Gym",
+    "paletteSlots": [
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5
+    ],
+    "sound": "DOOR_SOUND_SLIDING",
+    "size": 1,
+    "tilesName": "Gym"
+  },
+  "METATILE_General_Door_PokeMart": {
+    "png": "poke_mart.png",
+    "paletteSet": "PokeMart",
+    "paletteSlots": [
+      0,
+      0,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "sound": "DOOR_SOUND_SLIDING",
+    "size": 1,
+    "tilesName": "PokeMart"
+  },
+  "METATILE_Petalburg_Door_Littleroot": {
+    "png": "littleroot.png",
+    "paletteSet": "Littleroot",
+    "paletteSlots": [
+      10,
+      10,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6
+    ],
+    "sound": "DOOR_SOUND_NORMAL",
+    "size": 1,
+    "tilesName": "Littleroot"
+  },
+  "METATILE_Petalburg_Door_BirchsLab": {
+    "png": "birchs_lab.png",
+    "paletteSet": "BirchsLab",
+    "paletteSlots": [
+      8,
+      8,
+      8,
+      8,
+      8,
+      8,
+      8,
+      8
+    ],
+    "sound": "DOOR_SOUND_NORMAL",
+    "size": 1,
+    "tilesName": "BirchsLab"
+  },
+  "METATILE_Rustboro_Door_Tan": {
+    "png": "rustboro_tan.png",
+    "paletteSet": "RustboroTan",
+    "paletteSlots": [
+      11,
+      11,
+      11,
+      11,
+      11,
+      11,
+      11,
+      11
+    ],
+    "sound": "DOOR_SOUND_NORMAL",
+    "size": 1,
+    "tilesName": "RustboroTan"
+  },
+  "METATILE_Rustboro_Door_Gray": {
+    "png": "rustboro_gray.png",
+    "paletteSet": "RustboroGray",
+    "paletteSlots": [
+      10,
+      10,
+      10,
+      10,
+      10,
+      10,
+      10,
+      10
+    ],
+    "sound": "DOOR_SOUND_NORMAL",
+    "size": 1,
+    "tilesName": "RustboroGray"
+  },
+  "METATILE_Fallarbor_Door_LightRoof": {
+    "png": "fallarbor_light_roof.png",
+    "paletteSet": "FallarborLightRoof",
+    "paletteSlots": [
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7
+    ],
+    "sound": "DOOR_SOUND_NORMAL",
+    "size": 1,
+    "tilesName": "FallarborLightRoof"
+  },
+  "METATILE_Petalburg_Door_Oldale": {
+    "png": "oldale.png",
+    "paletteSet": "Oldale",
+    "paletteSlots": [
+      10,
+      10,
+      9,
+      9,
+      9,
+      9,
+      9,
+      9
+    ],
+    "sound": "DOOR_SOUND_NORMAL",
+    "size": 1,
+    "tilesName": "Oldale"
+  },
+  "METATILE_Mauville_Door": {
+    "png": "mauville.png",
+    "paletteSet": "Mauville",
+    "paletteSlots": [
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7
+    ],
+    "sound": "DOOR_SOUND_NORMAL",
+    "size": 1,
+    "tilesName": "Mauville"
+  },
+  "METATILE_Mauville_Door_Verdanturf": {
+    "png": "verdanturf.png",
+    "paletteSet": "Verdanturf",
+    "paletteSlots": [
+      6,
+      6,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5
+    ],
+    "sound": "DOOR_SOUND_NORMAL",
+    "size": 1,
+    "tilesName": "Verdanturf"
+  },
+  "METATILE_Slateport_Door": {
+    "png": "slateport.png",
+    "paletteSet": "Slateport",
+    "paletteSlots": [
+      6,
+      6,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "sound": "DOOR_SOUND_NORMAL",
+    "size": 1,
+    "tilesName": "Slateport"
+  },
+  "METATILE_Dewford_Door": {
+    "png": "dewford.png",
+    "paletteSet": "Dewford",
+    "paletteSlots": [
+      0,
+      0,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5
+    ],
+    "sound": "DOOR_SOUND_NORMAL",
+    "size": 1,
+    "tilesName": "Dewford"
+  },
+  "METATILE_General_Door_Contest": {
+    "png": "contest.png",
+    "paletteSet": "Contest",
+    "paletteSlots": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "sound": "DOOR_SOUND_SLIDING",
+    "size": 1,
+    "tilesName": "Contest"
+  },
+  "METATILE_Lilycove_Door": {
+    "png": "lilycove.png",
+    "paletteSet": "Lilycove",
+    "paletteSlots": [
+      8,
+      8,
+      8,
+      8,
+      8,
+      8,
+      8,
+      8
+    ],
+    "sound": "DOOR_SOUND_NORMAL",
+    "size": 1,
+    "tilesName": "Lilycove"
+  },
+  "METATILE_Lilycove_Door_Wooden": {
+    "png": "lilycove_wooden.png",
+    "paletteSet": "LilycoveWooden",
+    "paletteSlots": [
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5
+    ],
+    "sound": "DOOR_SOUND_NORMAL",
+    "size": 1,
+    "tilesName": "LilycoveWooden"
+  },
+  "METATILE_Mossdeep_Door": {
+    "png": "mossdeep.png",
+    "paletteSet": "Mossdeep",
+    "paletteSlots": [
+      9,
+      9,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "sound": "DOOR_SOUND_NORMAL",
+    "size": 1,
+    "tilesName": "Mossdeep"
+  },
+  "METATILE_Sootopolis_Door_PeakedRoof": {
+    "png": "sootopolis_peaked_roof.png",
+    "paletteSet": "SootopolisPeakedRoof",
+    "paletteSlots": [
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6
+    ],
+    "sound": "DOOR_SOUND_NORMAL",
+    "size": 1,
+    "tilesName": "SootopolisPeakedRoof"
+  },
+  "METATILE_Sootopolis_Door": {
+    "png": "sootopolis.png",
+    "paletteSet": "Sootopolis",
+    "paletteSlots": [
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6
+    ],
+    "sound": "DOOR_SOUND_NORMAL",
+    "size": 1,
+    "tilesName": "Sootopolis"
+  },
+  "METATILE_EverGrande_Door_PokemonLeague": {
+    "png": "pokemon_league.png",
+    "paletteSet": "PokemonLeague",
+    "paletteSlots": [
+      8,
+      8,
+      8,
+      8,
+      8,
+      8,
+      8,
+      8
+    ],
+    "sound": "DOOR_SOUND_SLIDING",
+    "size": 1,
+    "tilesName": "PokemonLeague"
+  },
+  "METATILE_Pacifidlog_Door": {
+    "png": "pacifidlog.png",
+    "paletteSet": "Pacifidlog",
+    "paletteSlots": [
+      9,
+      9,
+      9,
+      9,
+      9,
+      9,
+      9,
+      9
+    ],
+    "sound": "DOOR_SOUND_NORMAL",
+    "size": 1,
+    "tilesName": "Pacifidlog"
+  },
+  "METATILE_PetalburgGym_Door": {
+    "png": "petalburg_gym.png",
+    "paletteSet": "PetalburgGym",
+    "paletteSlots": [
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6
+    ],
+    "sound": "DOOR_SOUND_NORMAL",
+    "size": 1,
+    "tilesName": "PetalburgGym"
+  },
+  "METATILE_Mauville_Door_CyclingRoad": {
+    "png": "cycling_road.png",
+    "paletteSet": "CyclingRoad",
+    "paletteSlots": [
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7
+    ],
+    "sound": "DOOR_SOUND_NORMAL",
+    "size": 1,
+    "tilesName": "CyclingRoad"
+  },
+  "METATILE_Lilycove_Door_DeptStore": {
+    "png": "lilycove_dept_store.png",
+    "paletteSet": "LilycoveDeptStore",
+    "paletteSlots": [
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5
+    ],
+    "sound": "DOOR_SOUND_SLIDING",
+    "size": 1,
+    "tilesName": "LilycoveDeptStore"
+  },
+  "METATILE_Lilycove_Door_SafariZone": {
+    "png": "safari_zone.png",
+    "paletteSet": "SafariZone",
+    "paletteSlots": [
+      9,
+      9,
+      9,
+      9,
+      9,
+      9,
+      9,
+      9
+    ],
+    "sound": "DOOR_SOUND_SLIDING",
+    "size": 1,
+    "tilesName": "SafariZone"
+  },
+  "METATILE_Mossdeep_Door_SpaceCenter": {
+    "png": "mossdeep_space_center.png",
+    "paletteSet": "MossdeepSpaceCenter",
+    "paletteSlots": [
+      8,
+      8,
+      8,
+      8,
+      8,
+      8,
+      8,
+      8
+    ],
+    "sound": "DOOR_SOUND_SLIDING",
+    "size": 1,
+    "tilesName": "MossdeepSpaceCenter"
+  },
+  "METATILE_PokemonCenter_Door_CableClub": {
+    "png": "cable_club.png",
+    "paletteSet": "CableClub",
+    "paletteSlots": [
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6
+    ],
+    "sound": "DOOR_SOUND_SLIDING",
+    "size": 1,
+    "tilesName": "CableClub"
+  },
+  "METATILE_InsideShip_IntactDoor_Bottom_Unlocked": {
+    "png": "abandoned_ship.png",
+    "paletteSet": "AbandonedShip",
+    "paletteSlots": [
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7
+    ],
+    "sound": "DOOR_SOUND_NORMAL",
+    "size": 1,
+    "tilesName": "AbandonedShip"
+  },
+  "METATILE_Fallarbor_Door_DarkRoof": {
+    "png": "fallarbor_dark_roof.png",
+    "paletteSet": "FallarborDarkRoof",
+    "paletteSlots": [
+      11,
+      11,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7
+    ],
+    "sound": "DOOR_SOUND_NORMAL",
+    "size": 1,
+    "tilesName": "FallarborDarkRoof"
+  },
+  "METATILE_InsideShip_IntactDoor_Bottom_Interior": {
+    "png": "abandoned_ship_room.png",
+    "paletteSet": "AbandonedShipRoom",
+    "paletteSlots": [
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7
+    ],
+    "sound": "DOOR_SOUND_NORMAL",
+    "size": 1,
+    "tilesName": "AbandonedShipRoom"
+  },
+  "METATILE_Shop_Door_Elevator": {
+    "png": "lilycove_dept_store_elevator.png",
+    "paletteSet": "LilycoveDeptStoreElevator",
+    "paletteSlots": [
+      6,
+      6,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7
+    ],
+    "sound": "DOOR_SOUND_SLIDING",
+    "size": 1,
+    "tilesName": "LilycoveDeptStoreElevator"
+  },
+  "METATILE_Dewford_Door_BattleTower": {
+    "png": "battle_tower_old.png",
+    "paletteSet": "BattleTowerOld",
+    "paletteSlots": [
+      9,
+      9,
+      9,
+      9,
+      9,
+      9,
+      9,
+      9
+    ],
+    "sound": "DOOR_SOUND_SLIDING",
+    "size": 1,
+    "tilesName": "BattleTowerOld"
+  },
+  "METATILE_BattleFrontier_Door_Elevator": {
+    "png": "battle_tower_elevator.png",
+    "paletteSet": "BattleTowerElevator",
+    "paletteSlots": [
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7
+    ],
+    "sound": "DOOR_SOUND_SLIDING",
+    "size": 1,
+    "tilesName": "BattleTowerElevator"
+  },
+  "METATILE_BattleFrontierOutsideWest_Door_BattleDome": {
+    "png": "battle_dome.png",
+    "paletteSet": "BattleDome",
+    "paletteSlots": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "sound": "DOOR_SOUND_SLIDING",
+    "size": 1,
+    "tilesName": "BattleDome"
+  },
+  "METATILE_BattleFrontierOutsideWest_Door_BattleFactory": {
+    "png": "battle_factory.png",
+    "paletteSet": "BattleFactory",
+    "paletteSlots": [
+      9,
+      9,
+      9,
+      9,
+      9,
+      9,
+      9,
+      9
+    ],
+    "sound": "DOOR_SOUND_SLIDING",
+    "size": 1,
+    "tilesName": "BattleFactory"
+  },
+  "METATILE_BattleFrontierOutsideEast_Door_BattleTower": {
+    "png": "battle_tower.png",
+    "paletteSet": "BattleTower",
+    "paletteSlots": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "sound": "DOOR_SOUND_SLIDING",
+    "size": 1,
+    "tilesName": "BattleTower"
+  },
+  "METATILE_BattleFrontierOutsideEast_Door_BattleArena": {
+    "png": "battle_arena.png",
+    "paletteSet": "BattleArena",
+    "paletteSlots": [
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5
+    ],
+    "sound": "DOOR_SOUND_NORMAL",
+    "size": 1,
+    "tilesName": "BattleArena"
+  },
+  "METATILE_BattleArena_Door": {
+    "png": "battle_arena_lobby.png",
+    "paletteSet": "BattleArenaLobby",
+    "paletteSlots": [
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7
+    ],
+    "sound": "DOOR_SOUND_ARENA",
+    "size": 1,
+    "tilesName": "BattleArenaLobby"
+  },
+  "METATILE_BattleDome_Door_Lobby": {
+    "png": "battle_dome_lobby.png",
+    "paletteSet": "BattleDomeLobby",
+    "paletteSlots": [
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7
+    ],
+    "sound": "DOOR_SOUND_SLIDING",
+    "size": 1,
+    "tilesName": "BattleDomeLobby"
+  },
+  "METATILE_BattlePalace_Door": {
+    "png": "battle_palace_lobby.png",
+    "paletteSet": "BattlePalaceLobby",
+    "paletteSlots": [
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7
+    ],
+    "sound": "DOOR_SOUND_NORMAL",
+    "size": 1,
+    "tilesName": "BattlePalaceLobby"
+  },
+  "METATILE_Slateport_Door_BattleTent": {
+    "png": "battle_tent.png",
+    "paletteSet": "BattleTent",
+    "paletteSlots": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "sound": "DOOR_SOUND_SLIDING",
+    "size": 1,
+    "tilesName": "BattleTent"
+  },
+  "METATILE_Mauville_Door_BattleTent": {
+    "png": "battle_tent.png",
+    "paletteSet": "BattleTent",
+    "paletteSlots": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "sound": "DOOR_SOUND_SLIDING",
+    "size": 1,
+    "tilesName": "BattleTent"
+  },
+  "METATILE_Fallarbor_Door_BattleTent": {
+    "png": "battle_tent.png",
+    "paletteSet": "BattleTent",
+    "paletteSlots": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "sound": "DOOR_SOUND_SLIDING",
+    "size": 1,
+    "tilesName": "BattleTent"
+  },
+  "METATILE_BattleDome_Door_Corridor": {
+    "png": "battle_dome_corridor.png",
+    "paletteSet": "BattleDomeCorridor",
+    "paletteSlots": [
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7
+    ],
+    "sound": "DOOR_SOUND_SLIDING",
+    "size": 1,
+    "tilesName": "BattleDomeCorridor"
+  },
+  "METATILE_BattleFrontier_Door_MultiCorridor": {
+    "png": "battle_tower_multi_corridor.png",
+    "paletteSet": "BattleTowerMultiCorridor",
+    "paletteSlots": [
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7
+    ],
+    "sound": "DOOR_SOUND_SLIDING",
+    "size": 2,
+    "tilesName": "BattleTowerMultiCorridor"
+  },
+  "METATILE_BattleFrontierOutsideWest_Door": {
+    "png": "battle_frontier.png",
+    "paletteSet": "BattleFrontier",
+    "paletteSlots": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "sound": "DOOR_SOUND_NORMAL",
+    "size": 1,
+    "tilesName": "BattleFrontier"
+  },
+  "METATILE_BattleFrontierOutsideWest_Door_Sliding": {
+    "png": "battle_frontier_sliding.png",
+    "paletteSet": "BattleFrontier",
+    "paletteSlots": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "sound": "DOOR_SOUND_SLIDING",
+    "size": 1,
+    "tilesName": "BattleFrontierSliding"
+  },
+  "METATILE_BattleDome_Door_PreBattleRoom": {
+    "png": "battle_dome_pre_battle_room.png",
+    "paletteSet": "BattleDomePreBattleRoom",
+    "paletteSlots": [
+      9,
+      9,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7
+    ],
+    "sound": "DOOR_SOUND_SLIDING",
+    "size": 1,
+    "tilesName": "BattleDomePreBattleRoom"
+  },
+  "METATILE_BattleTent_Door": {
+    "png": "battle_tent_interior.png",
+    "paletteSet": "BattleTentInterior",
+    "paletteSlots": [
+      9,
+      9,
+      9,
+      9,
+      9,
+      9,
+      9,
+      9
+    ],
+    "sound": "DOOR_SOUND_SLIDING",
+    "size": 1,
+    "tilesName": "BattleTentInterior"
+  },
+  "METATILE_TrainerHill_Door_Elevator_Lobby": {
+    "png": "trainer_hill_lobby_elevator.png",
+    "paletteSet": "TrainerHillLobbyElevator",
+    "paletteSlots": [
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7
+    ],
+    "sound": "DOOR_SOUND_SLIDING",
+    "size": 1,
+    "tilesName": "TrainerHillLobbyElevator"
+  },
+  "METATILE_TrainerHill_Door_Elevator_Roof": {
+    "png": "trainer_hill_roof_elevator.png",
+    "paletteSet": "TrainerHillRoofElevator",
+    "paletteSlots": [
+      9,
+      9,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7
+    ],
+    "sound": "DOOR_SOUND_SLIDING",
+    "size": 1,
+    "tilesName": "TrainerHillRoofElevator"
+  }
+}

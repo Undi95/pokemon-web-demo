@@ -1,0 +1,2953 @@
+{
+  "sStandardBattleWindowTemplates": [
+    {
+      "bg": 0,
+      "tilemapLeft": 2,
+      "tilemapTop": 15,
+      "width": 27,
+      "height": 4,
+      "paletteNum": 0,
+      "baseBlock": 144
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 1,
+      "tilemapTop": 35,
+      "width": 14,
+      "height": 4,
+      "paletteNum": 0,
+      "baseBlock": 448
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 17,
+      "tilemapTop": 35,
+      "width": 12,
+      "height": 4,
+      "paletteNum": 5,
+      "baseBlock": 400
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 2,
+      "tilemapTop": 55,
+      "width": 8,
+      "height": 2,
+      "paletteNum": 5,
+      "baseBlock": 768
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 11,
+      "tilemapTop": 55,
+      "width": 8,
+      "height": 2,
+      "paletteNum": 5,
+      "baseBlock": 784
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 2,
+      "tilemapTop": 57,
+      "width": 8,
+      "height": 2,
+      "paletteNum": 5,
+      "baseBlock": 800
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 11,
+      "tilemapTop": 57,
+      "width": 8,
+      "height": 2,
+      "paletteNum": 5,
+      "baseBlock": 816
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 21,
+      "tilemapTop": 55,
+      "width": 4,
+      "height": 2,
+      "paletteNum": 5,
+      "baseBlock": 656
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 21,
+      "tilemapTop": 57,
+      "width": 0,
+      "height": 0,
+      "paletteNum": 5,
+      "baseBlock": 664
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 25,
+      "tilemapTop": 55,
+      "width": 4,
+      "height": 2,
+      "paletteNum": 5,
+      "baseBlock": 664
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 21,
+      "tilemapTop": 57,
+      "width": 8,
+      "height": 2,
+      "paletteNum": 5,
+      "baseBlock": 672
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 21,
+      "tilemapTop": 55,
+      "width": 8,
+      "height": 4,
+      "paletteNum": 5,
+      "baseBlock": 688
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 25,
+      "tilemapTop": 9,
+      "width": 4,
+      "height": 4,
+      "paletteNum": 5,
+      "baseBlock": 256
+    },
+    {
+      "bg": 1,
+      "tilemapLeft": 19,
+      "tilemapTop": 8,
+      "width": 10,
+      "height": 11,
+      "paletteNum": 5,
+      "baseBlock": 256
+    },
+    {
+      "bg": 2,
+      "tilemapLeft": 18,
+      "tilemapTop": 0,
+      "width": 12,
+      "height": 3,
+      "paletteNum": 6,
+      "baseBlock": 366
+    },
+    {
+      "bg": 1,
+      "tilemapLeft": 2,
+      "tilemapTop": 3,
+      "width": 6,
+      "height": 2,
+      "paletteNum": 5,
+      "baseBlock": 32
+    },
+    {
+      "bg": 2,
+      "tilemapLeft": 2,
+      "tilemapTop": 3,
+      "width": 6,
+      "height": 2,
+      "paletteNum": 5,
+      "baseBlock": 64
+    },
+    {
+      "bg": 1,
+      "tilemapLeft": 2,
+      "tilemapTop": 2,
+      "width": 6,
+      "height": 2,
+      "paletteNum": 5,
+      "baseBlock": 32
+    },
+    {
+      "bg": 2,
+      "tilemapLeft": 2,
+      "tilemapTop": 2,
+      "width": 6,
+      "height": 2,
+      "paletteNum": 5,
+      "baseBlock": 64
+    },
+    {
+      "bg": 1,
+      "tilemapLeft": 2,
+      "tilemapTop": 6,
+      "width": 6,
+      "height": 2,
+      "paletteNum": 5,
+      "baseBlock": 96
+    },
+    {
+      "bg": 2,
+      "tilemapLeft": 2,
+      "tilemapTop": 6,
+      "width": 6,
+      "height": 2,
+      "paletteNum": 5,
+      "baseBlock": 128
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 12,
+      "tilemapTop": 2,
+      "width": 6,
+      "height": 2,
+      "paletteNum": 0,
+      "baseBlock": 160
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 4,
+      "tilemapTop": 2,
+      "width": 7,
+      "height": 2,
+      "paletteNum": 0,
+      "baseBlock": 160
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 19,
+      "tilemapTop": 2,
+      "width": 7,
+      "height": 2,
+      "paletteNum": 0,
+      "baseBlock": 176
+    }
+  ],
+  "sBattleArenaWindowTemplates": [
+    {
+      "bg": 0,
+      "tilemapLeft": 2,
+      "tilemapTop": 15,
+      "width": 27,
+      "height": 4,
+      "paletteNum": 0,
+      "baseBlock": 144
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 1,
+      "tilemapTop": 35,
+      "width": 14,
+      "height": 4,
+      "paletteNum": 0,
+      "baseBlock": 448
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 17,
+      "tilemapTop": 35,
+      "width": 12,
+      "height": 4,
+      "paletteNum": 5,
+      "baseBlock": 400
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 2,
+      "tilemapTop": 55,
+      "width": 8,
+      "height": 2,
+      "paletteNum": 5,
+      "baseBlock": 768
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 11,
+      "tilemapTop": 55,
+      "width": 8,
+      "height": 2,
+      "paletteNum": 5,
+      "baseBlock": 784
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 2,
+      "tilemapTop": 57,
+      "width": 8,
+      "height": 2,
+      "paletteNum": 5,
+      "baseBlock": 800
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 11,
+      "tilemapTop": 57,
+      "width": 8,
+      "height": 2,
+      "paletteNum": 5,
+      "baseBlock": 816
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 21,
+      "tilemapTop": 55,
+      "width": 4,
+      "height": 2,
+      "paletteNum": 5,
+      "baseBlock": 656
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 21,
+      "tilemapTop": 57,
+      "width": 0,
+      "height": 0,
+      "paletteNum": 5,
+      "baseBlock": 664
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 25,
+      "tilemapTop": 55,
+      "width": 4,
+      "height": 2,
+      "paletteNum": 5,
+      "baseBlock": 664
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 21,
+      "tilemapTop": 57,
+      "width": 8,
+      "height": 2,
+      "paletteNum": 5,
+      "baseBlock": 672
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 21,
+      "tilemapTop": 55,
+      "width": 8,
+      "height": 4,
+      "paletteNum": 5,
+      "baseBlock": 688
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 25,
+      "tilemapTop": 9,
+      "width": 4,
+      "height": 4,
+      "paletteNum": 5,
+      "baseBlock": 256
+    },
+    {
+      "bg": 1,
+      "tilemapLeft": 19,
+      "tilemapTop": 8,
+      "width": 10,
+      "height": 11,
+      "paletteNum": 5,
+      "baseBlock": 256
+    },
+    {
+      "bg": 2,
+      "tilemapLeft": 18,
+      "tilemapTop": 0,
+      "width": 12,
+      "height": 3,
+      "paletteNum": 6,
+      "baseBlock": 366
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 6,
+      "tilemapTop": 1,
+      "width": 8,
+      "height": 2,
+      "paletteNum": 5,
+      "baseBlock": 256
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 14,
+      "tilemapTop": 1,
+      "width": 2,
+      "height": 2,
+      "paletteNum": 5,
+      "baseBlock": 272
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 16,
+      "tilemapTop": 1,
+      "width": 8,
+      "height": 2,
+      "paletteNum": 5,
+      "baseBlock": 276
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 12,
+      "tilemapTop": 4,
+      "width": 6,
+      "height": 2,
+      "paletteNum": 5,
+      "baseBlock": 292
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 11,
+      "tilemapTop": 6,
+      "width": 8,
+      "height": 2,
+      "paletteNum": 5,
+      "baseBlock": 304
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 12,
+      "tilemapTop": 8,
+      "width": 6,
+      "height": 2,
+      "paletteNum": 5,
+      "baseBlock": 320
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 8,
+      "tilemapTop": 11,
+      "width": 14,
+      "height": 2,
+      "paletteNum": 5,
+      "baseBlock": 332
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 2,
+      "tilemapTop": 15,
+      "width": 27,
+      "height": 4,
+      "paletteNum": 7,
+      "baseBlock": 144
+    }
+  ],
+  "sTourneyTreeWindowTemplates": [
+    {
+      "bg": 0,
+      "tilemapLeft": 0,
+      "tilemapTop": 3,
+      "width": 8,
+      "height": 16,
+      "paletteNum": 15,
+      "baseBlock": 16
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 22,
+      "tilemapTop": 3,
+      "width": 8,
+      "height": 16,
+      "paletteNum": 15,
+      "baseBlock": 144
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 8,
+      "tilemapTop": 1,
+      "width": 14,
+      "height": 2,
+      "paletteNum": 15,
+      "baseBlock": 272
+    }
+  ],
+  "sInfoCardWindowTemplates": [
+    {
+      "bg": 0,
+      "tilemapLeft": 2,
+      "tilemapTop": 2,
+      "width": 26,
+      "height": 2,
+      "paletteNum": 15,
+      "baseBlock": 1
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 16,
+      "tilemapTop": 5,
+      "width": 8,
+      "height": 2,
+      "paletteNum": 15,
+      "baseBlock": 53
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 19,
+      "tilemapTop": 7,
+      "width": 9,
+      "height": 3,
+      "paletteNum": 15,
+      "baseBlock": 69
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 16,
+      "tilemapTop": 10,
+      "width": 8,
+      "height": 2,
+      "paletteNum": 15,
+      "baseBlock": 96
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 2,
+      "tilemapTop": 12,
+      "width": 26,
+      "height": 7,
+      "paletteNum": 15,
+      "baseBlock": 112
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 5,
+      "tilemapTop": 2,
+      "width": 23,
+      "height": 2,
+      "paletteNum": 15,
+      "baseBlock": 294
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 2,
+      "tilemapTop": 5,
+      "width": 8,
+      "height": 2,
+      "paletteNum": 15,
+      "baseBlock": 340
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 20,
+      "tilemapTop": 5,
+      "width": 8,
+      "height": 2,
+      "paletteNum": 15,
+      "baseBlock": 356
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 2,
+      "tilemapTop": 16,
+      "width": 26,
+      "height": 2,
+      "paletteNum": 15,
+      "baseBlock": 372
+    },
+    {
+      "bg": 1,
+      "tilemapLeft": 2,
+      "tilemapTop": 2,
+      "width": 26,
+      "height": 2,
+      "paletteNum": 15,
+      "baseBlock": 1
+    },
+    {
+      "bg": 1,
+      "tilemapLeft": 16,
+      "tilemapTop": 5,
+      "width": 8,
+      "height": 2,
+      "paletteNum": 15,
+      "baseBlock": 53
+    },
+    {
+      "bg": 1,
+      "tilemapLeft": 19,
+      "tilemapTop": 7,
+      "width": 9,
+      "height": 3,
+      "paletteNum": 15,
+      "baseBlock": 69
+    },
+    {
+      "bg": 1,
+      "tilemapLeft": 16,
+      "tilemapTop": 10,
+      "width": 8,
+      "height": 2,
+      "paletteNum": 15,
+      "baseBlock": 96
+    },
+    {
+      "bg": 1,
+      "tilemapLeft": 2,
+      "tilemapTop": 12,
+      "width": 26,
+      "height": 7,
+      "paletteNum": 15,
+      "baseBlock": 112
+    },
+    {
+      "bg": 1,
+      "tilemapLeft": 5,
+      "tilemapTop": 2,
+      "width": 23,
+      "height": 2,
+      "paletteNum": 15,
+      "baseBlock": 294
+    },
+    {
+      "bg": 1,
+      "tilemapLeft": 2,
+      "tilemapTop": 5,
+      "width": 8,
+      "height": 2,
+      "paletteNum": 15,
+      "baseBlock": 340
+    },
+    {
+      "bg": 1,
+      "tilemapLeft": 20,
+      "tilemapTop": 5,
+      "width": 8,
+      "height": 2,
+      "paletteNum": 15,
+      "baseBlock": 356
+    },
+    {
+      "bg": 1,
+      "tilemapLeft": 2,
+      "tilemapTop": 16,
+      "width": 26,
+      "height": 2,
+      "paletteNum": 15,
+      "baseBlock": 372
+    }
+  ],
+  "sSelect_WindowTemplates": [
+    {
+      "bg": 0,
+      "tilemapLeft": 0,
+      "tilemapTop": 2,
+      "width": 12,
+      "height": 2,
+      "paletteNum": "PALNUM_TEXT",
+      "baseBlock": 1
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 19,
+      "tilemapTop": 2,
+      "width": 11,
+      "height": 2,
+      "paletteNum": "PALNUM_FADE_TEXT",
+      "baseBlock": 25
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 0,
+      "tilemapTop": 15,
+      "width": 20,
+      "height": 3,
+      "paletteNum": "PALNUM_TEXT",
+      "baseBlock": 47
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 22,
+      "tilemapTop": 14,
+      "width": 8,
+      "height": 6,
+      "paletteNum": "PALNUM_TEXT",
+      "baseBlock": 107
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 22,
+      "tilemapTop": 14,
+      "width": 8,
+      "height": 4,
+      "paletteNum": "PALNUM_TEXT",
+      "baseBlock": 155
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 15,
+      "tilemapTop": 0,
+      "width": 15,
+      "height": 2,
+      "paletteNum": "PALNUM_TEXT",
+      "baseBlock": 187
+    }
+  ],
+  "sSwap_WindowTemplates": [
+    {
+      "bg": 0,
+      "tilemapLeft": 0,
+      "tilemapTop": 2,
+      "width": 12,
+      "height": 2,
+      "paletteNum": "PALNUM_TEXT",
+      "baseBlock": 1
+    },
+    {
+      "bg": 2,
+      "tilemapLeft": 19,
+      "tilemapTop": 2,
+      "width": 11,
+      "height": 2,
+      "paletteNum": "PALNUM_FADE_TEXT",
+      "baseBlock": 25
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 0,
+      "tilemapTop": 15,
+      "width": 20,
+      "height": 3,
+      "paletteNum": "PALNUM_TEXT",
+      "baseBlock": 47
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 21,
+      "tilemapTop": 14,
+      "width": 9,
+      "height": 6,
+      "paletteNum": "PALNUM_TEXT",
+      "baseBlock": 107
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 22,
+      "tilemapTop": 14,
+      "width": 8,
+      "height": 4,
+      "paletteNum": "PALNUM_TEXT",
+      "baseBlock": 161
+    },
+    {
+      "bg": 2,
+      "tilemapLeft": 21,
+      "tilemapTop": 15,
+      "width": 9,
+      "height": 5,
+      "paletteNum": "PALNUM_FADE_TEXT",
+      "baseBlock": 107
+    },
+    {
+      "bg": 2,
+      "tilemapLeft": 10,
+      "tilemapTop": 2,
+      "width": 4,
+      "height": 2,
+      "paletteNum": "PALNUM_FADE_TEXT",
+      "baseBlock": 193
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 19,
+      "tilemapTop": 2,
+      "width": 11,
+      "height": 2,
+      "paletteNum": "PALNUM_TEXT",
+      "baseBlock": 201
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 15,
+      "tilemapTop": 0,
+      "width": 15,
+      "height": 2,
+      "paletteNum": "PALNUM_TEXT",
+      "baseBlock": 223
+    }
+  ],
+  "sHealthboxWindowTemplate": {
+    "bg": 0,
+    "tilemapLeft": 0,
+    "tilemapTop": 0,
+    "width": 8,
+    "height": 2,
+    "paletteNum": 0,
+    "baseBlock": 0
+  },
+  "sWindowTemplates": [
+    {
+      "bg": 0,
+      "tilemapLeft": 3,
+      "tilemapTop": 0,
+      "width": 24,
+      "height": 3,
+      "paletteNum": 15,
+      "baseBlock": 1
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 3,
+      "tilemapTop": 4,
+      "width": 21,
+      "height": 15,
+      "paletteNum": 15,
+      "baseBlock": 73
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 24,
+      "tilemapTop": 4,
+      "width": 3,
+      "height": 15,
+      "paletteNum": 15,
+      "baseBlock": 388
+    }
+  ],
+  "sWindowTemplates_MenuActions": [
+    {
+      "bg": 1,
+      "tilemapLeft": 22,
+      "tilemapTop": 17,
+      "width": 7,
+      "height": 2,
+      "paletteNum": 15,
+      "baseBlock": 472
+    },
+    {
+      "bg": 1,
+      "tilemapLeft": 22,
+      "tilemapTop": 15,
+      "width": 7,
+      "height": 4,
+      "paletteNum": 15,
+      "baseBlock": 472
+    },
+    {
+      "bg": 1,
+      "tilemapLeft": 15,
+      "tilemapTop": 15,
+      "width": 14,
+      "height": 4,
+      "paletteNum": 15,
+      "baseBlock": 472
+    },
+    {
+      "bg": 1,
+      "tilemapLeft": 15,
+      "tilemapTop": 13,
+      "width": 14,
+      "height": 6,
+      "paletteNum": 15,
+      "baseBlock": 472
+    },
+    {
+      "bg": 1,
+      "tilemapLeft": 24,
+      "tilemapTop": 15,
+      "width": 5,
+      "height": 4,
+      "paletteNum": 15,
+      "baseBlock": 472
+    }
+  ],
+  "sTrainerHillRecordsWindowTemplates": {
+    "bg": 0,
+    "tilemapLeft": 2,
+    "tilemapTop": 1,
+    "width": 26,
+    "height": 18,
+    "paletteNum": 15,
+    "baseBlock": 20
+  },
+  "sLinkBattleRecordsWindow": {
+    "bg": 0,
+    "tilemapLeft": 2,
+    "tilemapTop": 1,
+    "width": 26,
+    "height": 17,
+    "paletteNum": 15,
+    "baseBlock": 1
+  },
+  "sUnusedWinTemplate": {
+    "bg": 0,
+    "tilemapLeft": 1,
+    "tilemapTop": 3,
+    "width": 7,
+    "height": 15,
+    "paletteNum": 31,
+    "baseBlock": 63
+  },
+  "sYesNoWindowTemplate_ContinuePlaying": {
+    "bg": 0,
+    "tilemapLeft": 21,
+    "tilemapTop": 9,
+    "width": 5,
+    "height": 4,
+    "paletteNum": 14,
+    "baseBlock": 204
+  },
+  "sWindowTemplate_Rankings": {
+    "bg": 0,
+    "tilemapLeft": 3,
+    "tilemapTop": 4,
+    "width": 24,
+    "height": 13,
+    "paletteNum": 15,
+    "baseBlock": 1
+  },
+  "sWindowTemplates_PlayerNames": [
+    {
+      "bg": 0,
+      "tilemapLeft": 0,
+      "tilemapTop": 0,
+      "width": 9,
+      "height": 2,
+      "paletteNum": 8,
+      "baseBlock": 1005
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 0,
+      "tilemapTop": 3,
+      "width": 9,
+      "height": 2,
+      "paletteNum": 8,
+      "baseBlock": 987
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 0,
+      "tilemapTop": 6,
+      "width": 9,
+      "height": 2,
+      "paletteNum": 8,
+      "baseBlock": 969
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 21,
+      "tilemapTop": 3,
+      "width": 9,
+      "height": 2,
+      "paletteNum": 8,
+      "baseBlock": 951
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 21,
+      "tilemapTop": 6,
+      "width": 9,
+      "height": 2,
+      "paletteNum": 8,
+      "baseBlock": 933
+    }
+  ],
+  "sWindowTemplates_Results": [
+    {
+      "bg": "BG_INTERFACE",
+      "tilemapLeft": 1,
+      "tilemapTop": 1,
+      "width": 28,
+      "height": 2,
+      "paletteNum": 13,
+      "baseBlock": 19
+    },
+    {
+      "bg": "BG_INTERFACE",
+      "tilemapLeft": 1,
+      "tilemapTop": 5,
+      "width": 28,
+      "height": 14,
+      "paletteNum": 13,
+      "baseBlock": 75
+    }
+  ],
+  "sBerryFixWindowTemplates": [
+    {
+      "bg": 0,
+      "tilemapLeft": 2,
+      "tilemapTop": 4,
+      "width": 26,
+      "height": 2,
+      "paletteNum": 15,
+      "baseBlock": 1
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 1,
+      "tilemapTop": 11,
+      "width": 28,
+      "height": 8,
+      "paletteNum": 15,
+      "baseBlock": 53
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 0,
+      "tilemapTop": 8,
+      "width": 30,
+      "height": 2,
+      "paletteNum": 15,
+      "baseBlock": 277
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 8,
+      "tilemapTop": 0,
+      "width": 14,
+      "height": 2,
+      "paletteNum": 15,
+      "baseBlock": 337
+    }
+  ],
+  "sWindowTemplate_LinkPlayerCount": {
+    "bg": 0,
+    "tilemapLeft": 16,
+    "tilemapTop": 11,
+    "width": 11,
+    "height": 2,
+    "paletteNum": 15,
+    "baseBlock": 293
+  },
+  "sClearSaveTextWindow": {
+    "bg": 0,
+    "tilemapLeft": 3,
+    "tilemapTop": 15,
+    "width": 26,
+    "height": 4,
+    "paletteNum": 15,
+    "baseBlock": 11
+  },
+  "sClearSaveYesNo": {
+    "bg": 0,
+    "tilemapLeft": 3,
+    "tilemapTop": 2,
+    "width": 5,
+    "height": 4,
+    "paletteNum": 15,
+    "baseBlock": 115
+  },
+  "sContestWindowTemplates": [
+    {
+      "bg": 0,
+      "tilemapLeft": 18,
+      "tilemapTop": 0,
+      "width": 12,
+      "height": 2,
+      "paletteNum": 15,
+      "baseBlock": 512
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 18,
+      "tilemapTop": 5,
+      "width": 12,
+      "height": 2,
+      "paletteNum": 15,
+      "baseBlock": 536
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 18,
+      "tilemapTop": 10,
+      "width": 12,
+      "height": 2,
+      "paletteNum": 15,
+      "baseBlock": 560
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 18,
+      "tilemapTop": 15,
+      "width": 12,
+      "height": 2,
+      "paletteNum": 15,
+      "baseBlock": 584
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 1,
+      "tilemapTop": 15,
+      "width": 17,
+      "height": 4,
+      "paletteNum": 15,
+      "baseBlock": 608
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 1,
+      "tilemapTop": 31,
+      "width": 9,
+      "height": 2,
+      "paletteNum": 15,
+      "baseBlock": 676
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 1,
+      "tilemapTop": 33,
+      "width": 9,
+      "height": 2,
+      "paletteNum": 15,
+      "baseBlock": 694
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 1,
+      "tilemapTop": 35,
+      "width": 9,
+      "height": 2,
+      "paletteNum": 15,
+      "baseBlock": 712
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 1,
+      "tilemapTop": 37,
+      "width": 9,
+      "height": 2,
+      "paletteNum": 15,
+      "baseBlock": 730
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 16,
+      "tilemapTop": 31,
+      "width": 1,
+      "height": 2,
+      "paletteNum": 15,
+      "baseBlock": 748
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 11,
+      "tilemapTop": 35,
+      "width": 18,
+      "height": 4,
+      "paletteNum": 15,
+      "baseBlock": 750
+    }
+  ],
+  "sWindowTemplate": {
+    "bg": 1,
+    "tilemapLeft": 2,
+    "tilemapTop": 14,
+    "width": 26,
+    "height": 4,
+    "paletteNum": 15,
+    "baseBlock": 1
+  },
+  "sDaycareLevelMenuWindowTemplate": {
+    "bg": 0,
+    "tilemapLeft": 15,
+    "tilemapTop": 1,
+    "width": 14,
+    "height": 6,
+    "paletteNum": 15,
+    "baseBlock": 8
+  },
+  "sDecorationWindowTemplates": [
+    {
+      "bg": 0,
+      "tilemapLeft": 1,
+      "tilemapTop": 1,
+      "width": 18,
+      "height": "2 * ARRAY_COUNT(sDecorationMainMenuActions)",
+      "paletteNum": 15,
+      "baseBlock": 1
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 1,
+      "tilemapTop": 1,
+      "width": 13,
+      "height": 18,
+      "paletteNum": 13,
+      "baseBlock": 145
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 17,
+      "tilemapTop": 1,
+      "width": 12,
+      "height": 2,
+      "paletteNum": 15,
+      "baseBlock": 379
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 16,
+      "tilemapTop": 13,
+      "width": 13,
+      "height": 6,
+      "paletteNum": 15,
+      "baseBlock": 403
+    }
+  ],
+  "sDiplomaWinTemplates": {
+    "bg": 0,
+    "tilemapLeft": 5,
+    "tilemapTop": 2,
+    "width": 20,
+    "height": 16,
+    "paletteNum": 15,
+    "baseBlock": 1
+  },
+  "sWindowTemplates_Records": {
+    "bg": 0,
+    "tilemapLeft": 5,
+    "tilemapTop": 1,
+    "width": 20,
+    "height": 11,
+    "paletteNum": 15,
+    "baseBlock": 1
+  },
+  "sWindowTemplate_Prize": {
+    "bg": "BG_INTERFACE",
+    "tilemapLeft": 1,
+    "tilemapTop": 5,
+    "width": 28,
+    "height": 7,
+    "paletteNum": 13,
+    "baseBlock": 75
+  },
+  "sWindowTemplates_PlayAgain": [
+    {
+      "bg": "BG_INTERFACE",
+      "tilemapLeft": 1,
+      "tilemapTop": 8,
+      "width": 19,
+      "height": 3,
+      "paletteNum": 13,
+      "baseBlock": 19
+    },
+    {
+      "bg": "BG_INTERFACE",
+      "tilemapLeft": 22,
+      "tilemapTop": 7,
+      "width": 6,
+      "height": 4,
+      "paletteNum": 13,
+      "baseBlock": 76
+    }
+  ],
+  "sWindowTemplate_DroppedOut": {
+    "bg": "BG_INTERFACE",
+    "tilemapLeft": 4,
+    "tilemapTop": 6,
+    "width": 22,
+    "height": 5,
+    "paletteNum": 13,
+    "baseBlock": 19
+  },
+  "sWindowTemplate_CommStandby": {
+    "bg": "BG_INTERFACE",
+    "tilemapLeft": 5,
+    "tilemapTop": 8,
+    "width": 19,
+    "height": 3,
+    "paletteNum": 13,
+    "baseBlock": 19
+  },
+  "sEasyChatWindowTemplates": [
+    {
+      "bg": 1,
+      "tilemapLeft": 0,
+      "tilemapTop": 0,
+      "width": 30,
+      "height": 2,
+      "paletteNum": 10,
+      "baseBlock": 16
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 3,
+      "tilemapTop": 15,
+      "width": 24,
+      "height": 4,
+      "paletteNum": 15,
+      "baseBlock": 10
+    },
+    {
+      "bg": 2,
+      "tilemapLeft": 1,
+      "tilemapTop": 0,
+      "width": 28,
+      "height": 32,
+      "paletteNum": 3,
+      "baseBlock": 0
+    }
+  ],
+  "sEasyChatYesNoWindowTemplate": {
+    "bg": 0,
+    "tilemapLeft": 22,
+    "tilemapTop": 9,
+    "width": 5,
+    "height": 4,
+    "paletteNum": 15,
+    "baseBlock": 106
+  },
+  "sWinTemplates_EggHatch": {
+    "bg": 0,
+    "tilemapLeft": 2,
+    "tilemapTop": 15,
+    "width": 26,
+    "height": 4,
+    "paletteNum": 0,
+    "baseBlock": 64
+  },
+  "sYesNoWinTemplate": {
+    "bg": 0,
+    "tilemapLeft": 21,
+    "tilemapTop": 9,
+    "width": 5,
+    "height": 4,
+    "paletteNum": 15,
+    "baseBlock": 424
+  },
+  "sFieldRegionMapWindowTemplates": [
+    {
+      "bg": 0,
+      "tilemapLeft": 17,
+      "tilemapTop": 17,
+      "width": 12,
+      "height": 2,
+      "paletteNum": 15,
+      "baseBlock": 1
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 22,
+      "tilemapTop": 1,
+      "width": 7,
+      "height": 2,
+      "paletteNum": 15,
+      "baseBlock": 25
+    }
+  ],
+  "sWindowTemplate_ElevatorFloor": {
+    "bg": 0,
+    "tilemapLeft": 21,
+    "tilemapTop": 1,
+    "width": 8,
+    "height": 4,
+    "paletteNum": 15,
+    "baseBlock": 8
+  },
+  "sBattlePoints_WindowTemplate": [
+    {
+      "battlePoints": "0;\n    else\n        gSaveBlock2Ptr->frontier.battlePoints -= gSpecialVar_0x8004;"
+    },
+    {
+      "battlePoints": "MAX_BATTLE_FRONTIER_POINTS;\n    else\n        gSaveBlock2Ptr->frontier.battlePoints = gSaveBlock2Ptr->frontier.battlePoints + gSpecialVar_0x8004;"
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 2,
+      "tilemapTop": 9,
+      "width": 4,
+      "height": 4,
+      "paletteNum": 15,
+      "baseBlock": 20
+    },
+    {
+      "priority": "0;\n        gSprites[sScrollableMultichoice_ItemSpriteId].x = 36;\n        gSprites[sScrollableMultichoice_ItemSpriteId].y = 92;"
+    }
+  ],
+  "sBattleFrontierTutor_WindowTemplate": {
+    "bg": 0,
+    "tilemapLeft": 1,
+    "tilemapTop": 7,
+    "width": 12,
+    "height": 6,
+    "paletteNum": 15,
+    "baseBlock": 28
+  },
+  "sPassWindowTemplates": [
+    {
+      "bg": 0,
+      "tilemapLeft": 2,
+      "tilemapTop": 3,
+      "width": 12,
+      "height": 3,
+      "paletteNum": 15,
+      "baseBlock": 1
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 2,
+      "tilemapTop": 10,
+      "width": 12,
+      "height": 3,
+      "paletteNum": 15,
+      "baseBlock": 38
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 2,
+      "tilemapTop": 13,
+      "width": 12,
+      "height": 4,
+      "paletteNum": 15,
+      "baseBlock": 75
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 0,
+      "tilemapTop": 18,
+      "width": 30,
+      "height": 3,
+      "paletteNum": 15,
+      "baseBlock": 124
+    }
+  ],
+  "sMapWindowTemplates": [
+    {
+      "bg": 0,
+      "tilemapLeft": 0,
+      "tilemapTop": 1,
+      "width": 15,
+      "height": 5,
+      "paletteNum": 15,
+      "baseBlock": 1
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 20,
+      "tilemapTop": 1,
+      "width": 10,
+      "height": 14,
+      "paletteNum": 15,
+      "baseBlock": 77
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 2,
+      "tilemapTop": 16,
+      "width": 26,
+      "height": 4,
+      "paletteNum": 15,
+      "baseBlock": 218
+    }
+  ],
+  "sFrontierResultsWindowTemplate": {
+    "bg": 0,
+    "tilemapLeft": 1,
+    "tilemapTop": 1,
+    "width": 28,
+    "height": 18,
+    "paletteNum": 15,
+    "baseBlock": 1
+  },
+  "sLinkContestResultsWindowTemplate": {
+    "bg": 0,
+    "tilemapLeft": 2,
+    "tilemapTop": 2,
+    "width": 26,
+    "height": 15,
+    "paletteNum": 15,
+    "baseBlock": 1
+  },
+  "sRankingHallRecordsWindowTemplate": {
+    "bg": 0,
+    "tilemapLeft": 2,
+    "tilemapTop": 1,
+    "width": 26,
+    "height": 17,
+    "paletteNum": 15,
+    "baseBlock": 1
+  },
+  "sHof_WindowTemplate": {
+    "bg": 0,
+    "tilemapLeft": 2,
+    "tilemapTop": 2,
+    "width": 14,
+    "height": 6,
+    "paletteNum": 14,
+    "baseBlock": 1
+  },
+  "sDefaultBagWindows": [
+    {
+      "bg": 0,
+      "tilemapLeft": 14,
+      "tilemapTop": 2,
+      "width": 15,
+      "height": 16,
+      "paletteNum": 1,
+      "baseBlock": 39
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 0,
+      "tilemapTop": 13,
+      "width": 14,
+      "height": 6,
+      "paletteNum": 1,
+      "baseBlock": 279
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 4,
+      "tilemapTop": 1,
+      "width": 8,
+      "height": 2,
+      "paletteNum": 1,
+      "baseBlock": 417
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 1,
+      "tilemapTop": 13,
+      "width": 5,
+      "height": 6,
+      "paletteNum": 12,
+      "baseBlock": 363
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 7,
+      "tilemapTop": 13,
+      "width": 4,
+      "height": 6,
+      "paletteNum": 12,
+      "baseBlock": 393
+    },
+    {
+      "bg": 1,
+      "tilemapLeft": 2,
+      "tilemapTop": 15,
+      "width": 27,
+      "height": 4,
+      "paletteNum": 15,
+      "baseBlock": 433
+    }
+  ],
+  "sContextMenuWindowTemplates": [
+    {
+      "bg": 1,
+      "tilemapLeft": 22,
+      "tilemapTop": 17,
+      "width": 7,
+      "height": 2,
+      "paletteNum": 15,
+      "baseBlock": 541
+    },
+    {
+      "bg": 1,
+      "tilemapLeft": 22,
+      "tilemapTop": 15,
+      "width": 7,
+      "height": 4,
+      "paletteNum": 15,
+      "baseBlock": 541
+    },
+    {
+      "bg": 1,
+      "tilemapLeft": 15,
+      "tilemapTop": 15,
+      "width": 14,
+      "height": 4,
+      "paletteNum": 15,
+      "baseBlock": 541
+    },
+    {
+      "bg": 1,
+      "tilemapLeft": 15,
+      "tilemapTop": 13,
+      "width": 14,
+      "height": 6,
+      "paletteNum": 15,
+      "baseBlock": 541
+    },
+    {
+      "bg": 1,
+      "tilemapLeft": 2,
+      "tilemapTop": 15,
+      "width": 27,
+      "height": 4,
+      "paletteNum": 15,
+      "baseBlock": 433
+    },
+    {
+      "bg": 1,
+      "tilemapLeft": 24,
+      "tilemapTop": 15,
+      "width": 5,
+      "height": 4,
+      "paletteNum": 15,
+      "baseBlock": 541
+    },
+    {
+      "bg": 1,
+      "tilemapLeft": 21,
+      "tilemapTop": 9,
+      "width": 5,
+      "height": 4,
+      "paletteNum": 15,
+      "baseBlock": 541
+    },
+    {
+      "bg": 1,
+      "tilemapLeft": 24,
+      "tilemapTop": 17,
+      "width": 5,
+      "height": 2,
+      "paletteNum": 15,
+      "baseBlock": 541
+    },
+    {
+      "bg": 1,
+      "tilemapLeft": 18,
+      "tilemapTop": 11,
+      "width": 10,
+      "height": 2,
+      "paletteNum": 15,
+      "baseBlock": 581
+    },
+    {
+      "bg": 1,
+      "tilemapLeft": 1,
+      "tilemapTop": 1,
+      "width": 10,
+      "height": 2,
+      "paletteNum": 15,
+      "baseBlock": 561
+    }
+  ],
+  "sLinkErrorWindowTemplates": [
+    {
+      "bg": 0,
+      "tilemapLeft": 0,
+      "tilemapTop": 0,
+      "width": "DISPLAY_TILE_WIDTH",
+      "height": 5,
+      "paletteNum": 15,
+      "baseBlock": 2
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 0,
+      "tilemapTop": 6,
+      "width": "DISPLAY_TILE_WIDTH",
+      "height": 7,
+      "paletteNum": 15,
+      "baseBlock": 152
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 0,
+      "tilemapTop": 13,
+      "width": "DISPLAY_TILE_WIDTH",
+      "height": 7,
+      "paletteNum": 15,
+      "baseBlock": 362
+    }
+  ],
+  "sWindowTemplates_MainMenu": [
+    {
+      "bg": 0,
+      "tilemapLeft": "MENU_LEFT",
+      "tilemapTop": "MENU_TOP_WIN0",
+      "width": "MENU_WIDTH",
+      "height": "MENU_HEIGHT_WIN0",
+      "paletteNum": 15,
+      "baseBlock": 1
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": "MENU_LEFT",
+      "tilemapTop": "MENU_TOP_WIN1",
+      "width": "MENU_WIDTH",
+      "height": "MENU_HEIGHT_WIN1",
+      "paletteNum": 15,
+      "baseBlock": 53
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": "MENU_LEFT",
+      "tilemapTop": "MENU_TOP_WIN2",
+      "width": "MENU_WIDTH",
+      "height": "MENU_HEIGHT_WIN2",
+      "paletteNum": 15,
+      "baseBlock": 1
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": "MENU_LEFT",
+      "tilemapTop": "MENU_TOP_WIN3",
+      "width": "MENU_WIDTH",
+      "height": "MENU_HEIGHT_WIN3",
+      "paletteNum": 15,
+      "baseBlock": 157
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": "MENU_LEFT",
+      "tilemapTop": "MENU_TOP_WIN4",
+      "width": "MENU_WIDTH",
+      "height": "MENU_HEIGHT_WIN4",
+      "paletteNum": 15,
+      "baseBlock": 209
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": "MENU_LEFT",
+      "tilemapTop": "MENU_TOP_WIN5",
+      "width": "MENU_WIDTH",
+      "height": "MENU_HEIGHT_WIN5",
+      "paletteNum": 15,
+      "baseBlock": 261
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": "MENU_LEFT",
+      "tilemapTop": "MENU_TOP_WIN6",
+      "width": "MENU_WIDTH",
+      "height": "MENU_HEIGHT_WIN6",
+      "paletteNum": 15,
+      "baseBlock": 313
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": "MENU_LEFT_ERROR",
+      "tilemapTop": "MENU_TOP_ERROR",
+      "width": "MENU_WIDTH_ERROR",
+      "height": "MENU_HEIGHT_ERROR",
+      "paletteNum": 15,
+      "baseBlock": 365
+    }
+  ],
+  "sNewGameBirchSpeechTextWindows": [
+    {
+      "bg": 0,
+      "tilemapLeft": 2,
+      "tilemapTop": 15,
+      "width": 27,
+      "height": 4,
+      "paletteNum": 15,
+      "baseBlock": 1
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 3,
+      "tilemapTop": 5,
+      "width": 6,
+      "height": 4,
+      "paletteNum": 15,
+      "baseBlock": 109
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 3,
+      "tilemapTop": 2,
+      "width": 9,
+      "height": 10,
+      "paletteNum": 15,
+      "baseBlock": 133
+    }
+  ],
+  "sMatchCallTextWindow": {
+    "bg": 0,
+    "tilemapLeft": 1,
+    "tilemapTop": 15,
+    "width": 28,
+    "height": 4,
+    "paletteNum": 15,
+    "baseBlock": 512
+  },
+  "sStandardTextBox_WindowTemplates": {
+    "bg": 0,
+    "tilemapLeft": 2,
+    "tilemapTop": 15,
+    "width": 27,
+    "height": 4,
+    "paletteNum": 15,
+    "baseBlock": 404
+  },
+  "sYesNo_WindowTemplates": {
+    "bg": 0,
+    "tilemapLeft": 21,
+    "tilemapTop": 9,
+    "width": 5,
+    "height": 4,
+    "paletteNum": 15,
+    "baseBlock": 293
+  },
+  "sWindowTemplates_MailboxMenu": [
+    {
+      "bg": 0,
+      "tilemapLeft": 1,
+      "tilemapTop": 1,
+      "width": 24,
+      "height": 2,
+      "paletteNum": 15,
+      "baseBlock": 8
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 21,
+      "tilemapTop": 1,
+      "width": 8,
+      "height": 18,
+      "paletteNum": 15,
+      "baseBlock": "0x38 //!< French Difference"
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 1,
+      "tilemapTop": 1,
+      "width": 11,
+      "height": 8,
+      "paletteNum": 15,
+      "baseBlock": "0x38 //!< French Difference"
+    }
+  ],
+  "sMoveRelearnerWindowTemplates": [
+    {
+      "bg": 1,
+      "tilemapLeft": 1,
+      "tilemapTop": 1,
+      "width": 16,
+      "height": 12,
+      "paletteNum": 15,
+      "baseBlock": 10
+    },
+    {
+      "bg": 1,
+      "tilemapLeft": 1,
+      "tilemapTop": 1,
+      "width": 16,
+      "height": 12,
+      "paletteNum": 15,
+      "baseBlock": 202
+    },
+    {
+      "bg": 1,
+      "tilemapLeft": 19,
+      "tilemapTop": 1,
+      "width": 10,
+      "height": 12,
+      "paletteNum": 15,
+      "baseBlock": 394
+    },
+    {
+      "bg": 1,
+      "tilemapLeft": 4,
+      "tilemapTop": 15,
+      "width": 22,
+      "height": 4,
+      "paletteNum": 15,
+      "baseBlock": 514
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 22,
+      "tilemapTop": 8,
+      "width": 5,
+      "height": 4,
+      "paletteNum": 15,
+      "baseBlock": 602
+    }
+  ],
+  "sMoveRelearnerYesNoMenuTemplate": {
+    "bg": 0,
+    "tilemapLeft": 22,
+    "tilemapTop": 8,
+    "width": 5,
+    "height": 4,
+    "paletteNum": 15,
+    "baseBlock": 602
+  },
+  "sMainWindows": [
+    {
+      "bg": 0,
+      "tilemapLeft": 0,
+      "tilemapTop": 0,
+      "width": "DISPLAY_TILE_WIDTH",
+      "height": 2,
+      "paletteNum": 12,
+      "baseBlock": 19
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 1,
+      "tilemapTop": 15,
+      "width": 28,
+      "height": 4,
+      "paletteNum": 12,
+      "baseBlock": 79
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 0,
+      "tilemapTop": 15,
+      "width": "DISPLAY_TILE_WIDTH",
+      "height": 5,
+      "paletteNum": 13,
+      "baseBlock": 79
+    }
+  ],
+  "sWindowTemplate_YesNoMsg_Wide": {
+    "bg": 0,
+    "tilemapLeft": 1,
+    "tilemapTop": 15,
+    "width": 28,
+    "height": 4,
+    "paletteNum": 12,
+    "baseBlock": 229
+  },
+  "sWindowTemplate_YesNoMsg": {
+    "bg": 0,
+    "tilemapLeft": 1,
+    "tilemapTop": 15,
+    "width": 20,
+    "height": 4,
+    "paletteNum": 12,
+    "baseBlock": 229
+  },
+  "sWindowTemplate_GiftSelect": {
+    "bg": 0,
+    "tilemapLeft": 1,
+    "tilemapTop": 15,
+    "width": 19,
+    "height": 4,
+    "paletteNum": 12,
+    "baseBlock": 229
+  },
+  "sWindowTemplate_ThreeOptions": {
+    "bg": 0,
+    "tilemapLeft": 8,
+    "tilemapTop": 6,
+    "width": 14,
+    "height": 6,
+    "paletteNum": 12,
+    "baseBlock": 341
+  },
+  "sWindowTemplate_YesNoBox": {
+    "bg": 0,
+    "tilemapLeft": 23,
+    "tilemapTop": 15,
+    "width": 6,
+    "height": 4,
+    "paletteNum": 12,
+    "baseBlock": 341
+  },
+  "sWindowTemplate_GiftSelect_3Options": {
+    "bg": 0,
+    "tilemapLeft": 22,
+    "tilemapTop": 11,
+    "width": 7,
+    "height": 8,
+    "paletteNum": 12,
+    "baseBlock": 341
+  },
+  "sWindowTemplate_GiftSelect_2Options": {
+    "bg": 0,
+    "tilemapLeft": 22,
+    "tilemapTop": 13,
+    "width": 7,
+    "height": 6,
+    "paletteNum": 12,
+    "baseBlock": 341
+  },
+  "sWindowTemplate_GiftSelect_1Option": {
+    "bg": 0,
+    "tilemapLeft": 22,
+    "tilemapTop": 15,
+    "width": 7,
+    "height": 4,
+    "paletteNum": 12,
+    "baseBlock": 341
+  },
+  "sCard_WindowTemplates": [
+    {
+      "bg": 1,
+      "tilemapLeft": 1,
+      "tilemapTop": 1,
+      "width": 25,
+      "height": 4,
+      "paletteNum": 2,
+      "baseBlock": 668
+    },
+    {
+      "bg": 1,
+      "tilemapLeft": 1,
+      "tilemapTop": 6,
+      "width": 28,
+      "height": 8,
+      "paletteNum": 2,
+      "baseBlock": 444
+    },
+    {
+      "bg": 1,
+      "tilemapLeft": 1,
+      "tilemapTop": 14,
+      "width": 28,
+      "height": 5,
+      "paletteNum": 2,
+      "baseBlock": 304
+    }
+  ],
+  "sNews_WindowTemplates": [
+    {
+      "bg": 0,
+      "tilemapLeft": 1,
+      "tilemapTop": 0,
+      "width": 28,
+      "height": 3,
+      "paletteNum": 2,
+      "baseBlock": 684
+    },
+    {
+      "bg": 2,
+      "tilemapLeft": 1,
+      "tilemapTop": 3,
+      "width": 28,
+      "height": "DISPLAY_TILE_HEIGHT",
+      "paletteNum": 2,
+      "baseBlock": 124
+    }
+  ],
+  "sOptionMenuWinTemplates": [
+    {
+      "bg": 1,
+      "tilemapLeft": 2,
+      "tilemapTop": 1,
+      "width": 26,
+      "height": 2,
+      "paletteNum": 1,
+      "baseBlock": 2
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 2,
+      "tilemapTop": 5,
+      "width": 26,
+      "height": 14,
+      "paletteNum": 1,
+      "baseBlock": 54
+    }
+  ],
+  "sWindowTemplates_MainMenus": [
+    {
+      "bg": 0,
+      "tilemapLeft": 1,
+      "tilemapTop": 1,
+      "width": 9,
+      "height": 6,
+      "paletteNum": 15,
+      "baseBlock": 1
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 1,
+      "tilemapTop": 1,
+      "width": 9,
+      "height": 8,
+      "paletteNum": 15,
+      "baseBlock": 1
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 1,
+      "tilemapTop": 1,
+      "width": 10,
+      "height": 8,
+      "paletteNum": 15,
+      "baseBlock": 1
+    }
+  ],
+  "sWindowTemplates_ItemStorage": [
+    {
+      "bg": 0,
+      "tilemapLeft": 16,
+      "tilemapTop": 1,
+      "width": 13,
+      "height": 18,
+      "paletteNum": 15,
+      "baseBlock": 1
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 1,
+      "tilemapTop": 13,
+      "width": 13,
+      "height": 6,
+      "paletteNum": 15,
+      "baseBlock": 235
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 1,
+      "tilemapTop": 8,
+      "width": 3,
+      "height": 3,
+      "paletteNum": 15,
+      "baseBlock": 339
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 1,
+      "tilemapTop": 1,
+      "width": 13,
+      "height": 2,
+      "paletteNum": 15,
+      "baseBlock": 313
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 8,
+      "tilemapTop": 9,
+      "width": 6,
+      "height": 2,
+      "paletteNum": 15,
+      "baseBlock": 348
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 9,
+      "tilemapTop": 7,
+      "width": 5,
+      "height": 4,
+      "paletteNum": 15,
+      "baseBlock": 360
+    }
+  ],
+  "sTossPkblockWindowTemplate": {
+    "bg": 1,
+    "tilemapLeft": 21,
+    "tilemapTop": 9,
+    "width": 5,
+    "height": 4,
+    "paletteNum": 15,
+    "baseBlock": "0x20C //!< French Difference"
+  },
+  "sPokemonList_WindowTemplate": {
+    "bg": 2,
+    "tilemapLeft": 0,
+    "tilemapTop": 0,
+    "width": 32,
+    "height": 32,
+    "paletteNum": 0,
+    "baseBlock": 1
+  },
+  "sInfoScreen_WindowTemplates": [
+    {
+      "bg": 2,
+      "tilemapLeft": 0,
+      "tilemapTop": 0,
+      "width": 32,
+      "height": 20,
+      "paletteNum": 0,
+      "baseBlock": 1
+    },
+    {
+      "bg": 2,
+      "tilemapLeft": 25,
+      "tilemapTop": 8,
+      "width": 2,
+      "height": 2,
+      "paletteNum": 15,
+      "baseBlock": 641
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 0,
+      "tilemapTop": 12,
+      "width": 32,
+      "height": 7,
+      "paletteNum": 8,
+      "baseBlock": 645
+    },
+    {
+      "bg": 2,
+      "tilemapLeft": 18,
+      "tilemapTop": 3,
+      "width": 10,
+      "height": 8,
+      "paletteNum": 9,
+      "baseBlock": 869
+    }
+  ],
+  "sNewEntryInfoScreen_WindowTemplates": [
+    {
+      "bg": 2,
+      "tilemapLeft": 0,
+      "tilemapTop": 0,
+      "width": 32,
+      "height": 20,
+      "paletteNum": 0,
+      "baseBlock": 1
+    },
+    {
+      "bg": 2,
+      "tilemapLeft": 25,
+      "tilemapTop": 8,
+      "width": 2,
+      "height": 2,
+      "paletteNum": 15,
+      "baseBlock": 641
+    }
+  ],
+  "sSearchMenu_WindowTemplate": {
+    "bg": 2,
+    "tilemapLeft": 0,
+    "tilemapTop": 0,
+    "width": 32,
+    "height": 20,
+    "paletteNum": 0,
+    "baseBlock": 1
+  },
+  "sWindowTemplate_Records": {
+    "bg": 0,
+    "tilemapLeft": 1,
+    "tilemapTop": 1,
+    "width": 28,
+    "height": 9,
+    "paletteNum": 15,
+    "baseBlock": 1
+  },
+  "sWindowTemplate_MainMenu": {
+    "bg": 0,
+    "tilemapLeft": 1,
+    "tilemapTop": 1,
+    "width": 17,
+    "height": 10,
+    "paletteNum": 15,
+    "baseBlock": 1
+  },
+  "sYesNoWindowTemplate": {
+    "bg": 0,
+    "tilemapLeft": 24,
+    "tilemapTop": 11,
+    "width": 5,
+    "height": 4,
+    "paletteNum": 15,
+    "baseBlock": 92
+  },
+  "winTemplate": {
+    "width": "StringLength_Multibyte(string);\n    winTemplate.height = 2;\n    tilesSize = winTemplate.width * TILE_SIZE_4BPP;\n    windowId = AddWindow(&winTemplate);\n    FillWindowPixelBuffer(windowId"
+  },
+  "sWindowTemplate_MultiMove": {
+    "bg": 0,
+    "tilemapLeft": 10,
+    "tilemapTop": 3,
+    "width": 20,
+    "height": 18,
+    "paletteNum": 9,
+    "baseBlock": 10
+  },
+  "sSummaryTemplate": [
+    {
+      "bg": 0,
+      "tilemapLeft": 0,
+      "tilemapTop": 0,
+      "width": 11,
+      "height": 2,
+      "paletteNum": 6,
+      "baseBlock": 1
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 0,
+      "tilemapTop": 0,
+      "width": 11,
+      "height": 2,
+      "paletteNum": 6,
+      "baseBlock": 23
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 0,
+      "tilemapTop": 0,
+      "width": 11,
+      "height": 2,
+      "paletteNum": 6,
+      "baseBlock": 45
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 0,
+      "tilemapTop": 0,
+      "width": 11,
+      "height": 2,
+      "paletteNum": 6,
+      "baseBlock": 67
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 22,
+      "tilemapTop": 0,
+      "width": 8,
+      "height": 2,
+      "paletteNum": 7,
+      "baseBlock": 89
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 22,
+      "tilemapTop": 0,
+      "width": 8,
+      "height": 2,
+      "paletteNum": 7,
+      "baseBlock": 105
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 22,
+      "tilemapTop": 0,
+      "width": 8,
+      "height": 2,
+      "paletteNum": 7,
+      "baseBlock": 121
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 11,
+      "tilemapTop": 4,
+      "width": 0,
+      "height": 2,
+      "paletteNum": 6,
+      "baseBlock": 137
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 11,
+      "tilemapTop": 4,
+      "width": 18,
+      "height": 2,
+      "paletteNum": 6,
+      "baseBlock": 137
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 11,
+      "tilemapTop": 6,
+      "width": 18,
+      "height": 2,
+      "paletteNum": 6,
+      "baseBlock": 173
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 10,
+      "tilemapTop": 7,
+      "width": 6,
+      "height": 6,
+      "paletteNum": 6,
+      "baseBlock": 209
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 22,
+      "tilemapTop": 7,
+      "width": 5,
+      "height": 6,
+      "paletteNum": 6,
+      "baseBlock": 245
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 10,
+      "tilemapTop": 14,
+      "width": 11,
+      "height": 4,
+      "paletteNum": 6,
+      "baseBlock": 275
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 0,
+      "tilemapTop": 18,
+      "width": 6,
+      "height": 2,
+      "paletteNum": 6,
+      "baseBlock": 319
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 1,
+      "tilemapTop": 15,
+      "width": 9,
+      "height": 4,
+      "paletteNum": 6,
+      "baseBlock": 331
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 1,
+      "tilemapTop": 15,
+      "width": 5,
+      "height": 4,
+      "paletteNum": 6,
+      "baseBlock": 367
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 22,
+      "tilemapTop": 4,
+      "width": 0,
+      "height": 2,
+      "paletteNum": 6,
+      "baseBlock": 387
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 1,
+      "tilemapTop": 2,
+      "width": 4,
+      "height": 2,
+      "paletteNum": 7,
+      "baseBlock": 387
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 1,
+      "tilemapTop": 12,
+      "width": 9,
+      "height": 2,
+      "paletteNum": 6,
+      "baseBlock": 395
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 1,
+      "tilemapTop": 14,
+      "width": 9,
+      "height": 4,
+      "paletteNum": 6,
+      "baseBlock": 413
+    }
+  ],
+  "sPageInfoTemplate": [
+    {
+      "bg": 0,
+      "tilemapLeft": 11,
+      "tilemapTop": 4,
+      "width": 11,
+      "height": 2,
+      "paletteNum": 6,
+      "baseBlock": 449
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 22,
+      "tilemapTop": 4,
+      "width": 7,
+      "height": 2,
+      "paletteNum": 6,
+      "baseBlock": 471
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 11,
+      "tilemapTop": 9,
+      "width": 19,
+      "height": 4,
+      "paletteNum": 6,
+      "baseBlock": 485
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 11,
+      "tilemapTop": 14,
+      "width": 18,
+      "height": 6,
+      "paletteNum": 6,
+      "baseBlock": 561
+    }
+  ],
+  "sPageSkillsTemplate": [
+    {
+      "bg": 0,
+      "tilemapLeft": 10,
+      "tilemapTop": 4,
+      "width": 10,
+      "height": 2,
+      "paletteNum": 6,
+      "baseBlock": 449
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 20,
+      "tilemapTop": 4,
+      "width": 10,
+      "height": 2,
+      "paletteNum": 6,
+      "baseBlock": 469
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 16,
+      "tilemapTop": 7,
+      "width": 6,
+      "height": 6,
+      "paletteNum": 6,
+      "baseBlock": 489
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 27,
+      "tilemapTop": 7,
+      "width": 3,
+      "height": 6,
+      "paletteNum": 6,
+      "baseBlock": 525
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 24,
+      "tilemapTop": 14,
+      "width": 6,
+      "height": 4,
+      "paletteNum": 6,
+      "baseBlock": 543
+    }
+  ],
+  "sMonNameGenderWindowTemplate": {
+    "bg": 1,
+    "tilemapLeft": 13,
+    "tilemapTop": 1,
+    "width": 13,
+    "height": 4,
+    "paletteNum": 15,
+    "baseBlock": 2
+  },
+  "sListIndexWindowTemplate": {
+    "bg": 1,
+    "tilemapLeft": 1,
+    "tilemapTop": 6,
+    "width": 7,
+    "height": 2,
+    "paletteNum": 15,
+    "baseBlock": 54
+  },
+  "sUnusedWindowTemplate1": {
+    "bg": 1,
+    "tilemapLeft": 1,
+    "tilemapTop": 28,
+    "width": 5,
+    "height": 2,
+    "paletteNum": 15,
+    "baseBlock": 68
+  },
+  "sUnusedWindowTemplate2": {
+    "bg": 1,
+    "tilemapLeft": 13,
+    "tilemapTop": 28,
+    "width": 3,
+    "height": 2,
+    "paletteNum": 15,
+    "baseBlock": 68
+  },
+  "sSearchResultListMenuWindowTemplate": {
+    "bg": 1,
+    "tilemapLeft": 1,
+    "tilemapTop": 6,
+    "width": 7,
+    "height": 2,
+    "paletteNum": 1,
+    "baseBlock": 20
+  },
+  "sHelpBarWindowTemplate": {
+    "bg": 0,
+    "tilemapLeft": 1,
+    "tilemapTop": 22,
+    "width": 16,
+    "height": 2,
+    "paletteNum": 0,
+    "baseBlock": 54
+  },
+  "sMatchCallLocationWindowTemplate": {
+    "bg": 2,
+    "tilemapLeft": 0,
+    "tilemapTop": 5,
+    "width": 11,
+    "height": 2,
+    "paletteNum": 2,
+    "baseBlock": 16
+  },
+  "sMatchCallInfoBoxWindowTemplate": {
+    "bg": 2,
+    "tilemapLeft": 0,
+    "tilemapTop": 9,
+    "width": 11,
+    "height": 8,
+    "paletteNum": 2,
+    "baseBlock": 38
+  },
+  "sCallMsgBoxWindowTemplate": {
+    "bg": 1,
+    "tilemapLeft": 1,
+    "tilemapTop": 12,
+    "width": 28,
+    "height": 4,
+    "paletteNum": 1,
+    "baseBlock": 10
+  },
+  "sOptionDescWindowTemplate": {
+    "bg": 1,
+    "tilemapLeft": 3,
+    "tilemapTop": 17,
+    "width": 24,
+    "height": 2,
+    "paletteNum": 1,
+    "baseBlock": 8
+  },
+  "sMapSecInfoWindowTemplate": {
+    "bg": 1,
+    "tilemapLeft": 17,
+    "tilemapTop": 4,
+    "width": 13,
+    "height": 13,
+    "paletteNum": 1,
+    "baseBlock": 76
+  },
+  "sRibbonsMonListWindowTemplate": {
+    "bg": 1,
+    "tilemapLeft": 1,
+    "tilemapTop": 6,
+    "width": 7,
+    "height": 2,
+    "paletteNum": 1,
+    "baseBlock": 20
+  },
+  "sRibbonCountWindowTemplate": {
+    "bg": 2,
+    "tilemapLeft": 12,
+    "tilemapTop": 13,
+    "width": 16,
+    "height": 4,
+    "paletteNum": 1,
+    "baseBlock": 20
+  },
+  "sRibbonSummaryMonNameWindowTemplate": {
+    "bg": 2,
+    "tilemapLeft": 14,
+    "tilemapTop": 1,
+    "width": 13,
+    "height": 2,
+    "paletteNum": 10,
+    "baseBlock": 84
+  },
+  "sRibbonMonListIndexWindowTemplate": {
+    "bg": 2,
+    "tilemapLeft": 1,
+    "tilemapTop": 5,
+    "width": 7,
+    "height": 2,
+    "paletteNum": 1,
+    "baseBlock": 110
+  },
+  "sFlyMapWindowTemplates": [
+    {
+      "bg": 0,
+      "tilemapLeft": 17,
+      "tilemapTop": 17,
+      "width": 12,
+      "height": 2,
+      "paletteNum": 15,
+      "baseBlock": 1
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 17,
+      "tilemapTop": 15,
+      "width": 12,
+      "height": 4,
+      "paletteNum": 15,
+      "baseBlock": 25
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 1,
+      "tilemapTop": 18,
+      "width": 14,
+      "height": 2,
+      "paletteNum": 15,
+      "baseBlock": 73
+    }
+  ],
+  "sInputTimeWindow": {
+    "bg": 0,
+    "tilemapLeft": 4,
+    "tilemapTop": 9,
+    "width": 21,
+    "height": 2,
+    "paletteNum": 15,
+    "baseBlock": 191
+  },
+  "sDummyWindowTemplate": {
+    "bg": 0,
+    "tilemapLeft": 1,
+    "tilemapTop": 13,
+    "width": 28,
+    "height": 6,
+    "paletteNum": 15,
+    "baseBlock": 1
+  },
+  "sWindowTemplate_Clock": {
+    "bg": 0,
+    "tilemapLeft": 14,
+    "tilemapTop": 9,
+    "width": 2,
+    "height": 2,
+    "paletteNum": 15,
+    "baseBlock": 169
+  },
+  "sRegistryWindowTemplates": [
+    {
+      "bg": 0,
+      "tilemapLeft": 17,
+      "tilemapTop": 1,
+      "width": 12,
+      "height": 18,
+      "paletteNum": 15,
+      "baseBlock": 1
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 2,
+      "tilemapTop": 1,
+      "width": 28,
+      "height": 4,
+      "paletteNum": 15,
+      "baseBlock": 217
+    }
+  ],
+  "sShopMenuWindowTemplates": [
+    {
+      "bg": 0,
+      "tilemapLeft": 2,
+      "tilemapTop": 1,
+      "width": 9,
+      "height": 6,
+      "paletteNum": 15,
+      "baseBlock": 8
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 2,
+      "tilemapTop": 1,
+      "width": 9,
+      "height": 4,
+      "paletteNum": 15,
+      "baseBlock": 8
+    }
+  ],
+  "sShopBuyMenuWindowTemplates": [
+    {
+      "bg": 0,
+      "tilemapLeft": 1,
+      "tilemapTop": 1,
+      "width": 10,
+      "height": 2,
+      "paletteNum": 15,
+      "baseBlock": 30
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 14,
+      "tilemapTop": 2,
+      "width": 15,
+      "height": 16,
+      "paletteNum": 15,
+      "baseBlock": 50
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 0,
+      "tilemapTop": 13,
+      "width": 14,
+      "height": 6,
+      "paletteNum": 15,
+      "baseBlock": 290
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 1,
+      "tilemapTop": 11,
+      "width": 12,
+      "height": 2,
+      "paletteNum": 15,
+      "baseBlock": 374
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 18,
+      "tilemapTop": 11,
+      "width": 10,
+      "height": 2,
+      "paletteNum": 15,
+      "baseBlock": 398
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 2,
+      "tilemapTop": 15,
+      "width": 27,
+      "height": 4,
+      "paletteNum": 15,
+      "baseBlock": 418
+    }
+  ],
+  "sShopBuyMenuYesNoWindowTemplates": {
+    "bg": 0,
+    "tilemapLeft": 21,
+    "tilemapTop": 9,
+    "width": 5,
+    "height": 4,
+    "paletteNum": 15,
+    "baseBlock": 526
+  },
+  "sWindowTemplate_InfoBox": {
+    "bg": 0,
+    "tilemapLeft": 1,
+    "tilemapTop": 3,
+    "width": 20,
+    "height": 13,
+    "paletteNum": 13,
+    "baseBlock": 1
+  },
+  "sWindowTemplate_ConfirmStarter": {
+    "bg": 0,
+    "tilemapLeft": 24,
+    "tilemapTop": 9,
+    "width": 5,
+    "height": 4,
+    "paletteNum": 14,
+    "baseBlock": 608
+  },
+  "sWindowTemplate_StarterLabel": {
+    "bg": 0,
+    "tilemapLeft": 0,
+    "tilemapTop": 0,
+    "width": 13,
+    "height": 4,
+    "paletteNum": 14,
+    "baseBlock": 628
+  },
+  "sWindowTemplate_SafariBalls": {
+    "bg": 0,
+    "tilemapLeft": 1,
+    "tilemapTop": 1,
+    "width": 9,
+    "height": 4,
+    "paletteNum": 15,
+    "baseBlock": 8
+  },
+  "sWindowTemplate_PyramidFloor": {
+    "bg": 0,
+    "tilemapLeft": 1,
+    "tilemapTop": 1,
+    "width": 10,
+    "height": 4,
+    "paletteNum": 15,
+    "baseBlock": 8
+  },
+  "sWindowTemplate_PyramidPeak": {
+    "bg": 0,
+    "tilemapLeft": 1,
+    "tilemapTop": 1,
+    "width": 12,
+    "height": 4,
+    "paletteNum": 15,
+    "baseBlock": 8
+  },
+  "sWindowTemplates_LinkBattleSave": {
+    "bg": 0,
+    "tilemapLeft": 2,
+    "tilemapTop": 15,
+    "width": 26,
+    "height": 4,
+    "paletteNum": 15,
+    "baseBlock": 404
+  },
+  "sSaveInfoWindowTemplate": {
+    "bg": 0,
+    "tilemapLeft": 1,
+    "tilemapTop": 1,
+    "width": 14,
+    "height": 10,
+    "paletteNum": 15,
+    "baseBlock": 8
+  },
+  "sTrainerCardWindowTemplates": [
+    {
+      "bg": 1,
+      "tilemapLeft": 2,
+      "tilemapTop": 15,
+      "width": 27,
+      "height": 4,
+      "paletteNum": 15,
+      "baseBlock": 595
+    },
+    {
+      "bg": 1,
+      "tilemapLeft": 1,
+      "tilemapTop": 1,
+      "width": 28,
+      "height": 18,
+      "paletteNum": 15,
+      "baseBlock": 1
+    },
+    {
+      "bg": 3,
+      "tilemapLeft": 19,
+      "tilemapTop": 5,
+      "width": 9,
+      "height": 10,
+      "paletteNum": 8,
+      "baseBlock": 336
+    }
+  ],
+  "sWinTemplates": [
+    {
+      "bg": 3,
+      "tilemapLeft": 8,
+      "tilemapTop": 1,
+      "width": 21,
+      "height": 19,
+      "paletteNum": 15,
+      "baseBlock": 1
+    },
+    {
+      "bg": 1,
+      "tilemapLeft": 9,
+      "tilemapTop": 18,
+      "width": 15,
+      "height": 2,
+      "paletteNum": 12,
+      "baseBlock": 122
+    },
+    {
+      "bg": 1,
+      "tilemapLeft": 0,
+      "tilemapTop": 2,
+      "width": 6,
+      "height": 15,
+      "paletteNum": 7,
+      "baseBlock": 32
+    },
+    {
+      "bg": 0,
+      "tilemapLeft": 1,
+      "tilemapTop": 2,
+      "width": 7,
+      "height": 9,
+      "paletteNum": 14,
+      "baseBlock": 19
+    }
+  ],
+  "sUsePokeblockYesNoWinTemplate": {
+    "bg": 0,
+    "tilemapLeft": 24,
+    "tilemapTop": 11,
+    "width": 5,
+    "height": 4,
+    "paletteNum": 15,
+    "baseBlock": 131
+  },
+  "sWindowTemplate_ConfirmYesNo": {
+    "bg": 0,
+    "tilemapLeft": 24,
+    "tilemapTop": 9,
+    "width": 5,
+    "height": 4,
+    "paletteNum": 14,
+    "baseBlock": 572
+  }
+}

@@ -1,0 +1,3778 @@
+{
+  "tilesets": {
+    "general": {
+      "water": {
+        "vramStart": 432,
+        "numTiles": 30,
+        "frames": 8,
+        "framesPath": "tilesets/primary/general/anim/water",
+        "periodMs": 267
+      },
+      "flower": {
+        "vramStart": 508,
+        "numTiles": 4,
+        "frames": 3,
+        "frameSeq": [
+          0,
+          1,
+          0,
+          2
+        ],
+        "framesPath": "tilesets/primary/general/anim/flower",
+        "periodMs": 267
+      }
+    }
+  },
+  "general_animated_metatiles": {
+    "4": [
+      {
+        "animName": "flower",
+        "layer": "upper",
+        "subTileIdx": 0,
+        "vramTile": 508,
+        "tileOffsetInAnim": 0
+      },
+      {
+        "animName": "flower",
+        "layer": "upper",
+        "subTileIdx": 1,
+        "vramTile": 509,
+        "tileOffsetInAnim": 1
+      },
+      {
+        "animName": "flower",
+        "layer": "upper",
+        "subTileIdx": 2,
+        "vramTile": 510,
+        "tileOffsetInAnim": 2
+      },
+      {
+        "animName": "flower",
+        "layer": "upper",
+        "subTileIdx": 3,
+        "vramTile": 511,
+        "tileOffsetInAnim": 3
+      }
+    ],
+    "44": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 456,
+        "tileOffsetInAnim": 24
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 457,
+        "tileOffsetInAnim": 25
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 457,
+        "tileOffsetInAnim": 25
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      }
+    ],
+    "52": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 456,
+        "tileOffsetInAnim": 24
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 457,
+        "tileOffsetInAnim": 25
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      }
+    ],
+    "53": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      }
+    ],
+    "60": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 456,
+        "tileOffsetInAnim": 24
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 457,
+        "tileOffsetInAnim": 25
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 456,
+        "tileOffsetInAnim": 24
+      }
+    ],
+    "84": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      }
+    ],
+    "237": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 457,
+        "tileOffsetInAnim": 25
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 456,
+        "tileOffsetInAnim": 24
+      }
+    ],
+    "240": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      }
+    ],
+    "241": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      }
+    ],
+    "242": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      }
+    ],
+    "243": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      }
+    ],
+    "244": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 457,
+        "tileOffsetInAnim": 25
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 456,
+        "tileOffsetInAnim": 24
+      }
+    ],
+    "245": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 457,
+        "tileOffsetInAnim": 25
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 456,
+        "tileOffsetInAnim": 24
+      }
+    ],
+    "247": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      }
+    ],
+    "249": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 457,
+        "tileOffsetInAnim": 25
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 456,
+        "tileOffsetInAnim": 24
+      }
+    ],
+    "251": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 457,
+        "tileOffsetInAnim": 25
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 456,
+        "tileOffsetInAnim": 24
+      }
+    ],
+    "252": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 457,
+        "tileOffsetInAnim": 25
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 456,
+        "tileOffsetInAnim": 24
+      }
+    ],
+    "253": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      }
+    ],
+    "283": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      }
+    ],
+    "284": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      }
+    ],
+    "285": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      }
+    ],
+    "291": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      }
+    ],
+    "293": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      }
+    ],
+    "299": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      }
+    ],
+    "300": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      }
+    ],
+    "301": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      }
+    ],
+    "315": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      }
+    ],
+    "316": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      }
+    ],
+    "317": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      }
+    ],
+    "318": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      }
+    ],
+    "323": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      }
+    ],
+    "324": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      }
+    ],
+    "325": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      }
+    ],
+    "326": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      }
+    ],
+    "327": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 460,
+        "tileOffsetInAnim": 28
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 461,
+        "tileOffsetInAnim": 29
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 461,
+        "tileOffsetInAnim": 29
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 460,
+        "tileOffsetInAnim": 28
+      }
+    ],
+    "334": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 458,
+        "tileOffsetInAnim": 26
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 459,
+        "tileOffsetInAnim": 27
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 459,
+        "tileOffsetInAnim": 27
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 458,
+        "tileOffsetInAnim": 26
+      }
+    ],
+    "335": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 460,
+        "tileOffsetInAnim": 28
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 461,
+        "tileOffsetInAnim": 29
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 461,
+        "tileOffsetInAnim": 29
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 460,
+        "tileOffsetInAnim": 28
+      }
+    ],
+    "336": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 432,
+        "tileOffsetInAnim": 0
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 433,
+        "tileOffsetInAnim": 1
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 436,
+        "tileOffsetInAnim": 4
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 437,
+        "tileOffsetInAnim": 5
+      }
+    ],
+    "337": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 434,
+        "tileOffsetInAnim": 2
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 435,
+        "tileOffsetInAnim": 3
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 438,
+        "tileOffsetInAnim": 6
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 439,
+        "tileOffsetInAnim": 7
+      }
+    ],
+    "338": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 436,
+        "tileOffsetInAnim": 4
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 437,
+        "tileOffsetInAnim": 5
+      }
+    ],
+    "339": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 438,
+        "tileOffsetInAnim": 6
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 439,
+        "tileOffsetInAnim": 7
+      }
+    ],
+    "340": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 432,
+        "tileOffsetInAnim": 0
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 433,
+        "tileOffsetInAnim": 1
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 436,
+        "tileOffsetInAnim": 4
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 437,
+        "tileOffsetInAnim": 5
+      }
+    ],
+    "341": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 434,
+        "tileOffsetInAnim": 2
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 435,
+        "tileOffsetInAnim": 3
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 438,
+        "tileOffsetInAnim": 6
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 439,
+        "tileOffsetInAnim": 7
+      }
+    ],
+    "342": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 458,
+        "tileOffsetInAnim": 26
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 459,
+        "tileOffsetInAnim": 27
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 459,
+        "tileOffsetInAnim": 27
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 458,
+        "tileOffsetInAnim": 26
+      }
+    ],
+    "343": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      }
+    ],
+    "344": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 440,
+        "tileOffsetInAnim": 8
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 441,
+        "tileOffsetInAnim": 9
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 444,
+        "tileOffsetInAnim": 12
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 445,
+        "tileOffsetInAnim": 13
+      }
+    ],
+    "345": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 442,
+        "tileOffsetInAnim": 10
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 443,
+        "tileOffsetInAnim": 11
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 446,
+        "tileOffsetInAnim": 14
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 447,
+        "tileOffsetInAnim": 15
+      }
+    ],
+    "346": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 456,
+        "tileOffsetInAnim": 24
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 457,
+        "tileOffsetInAnim": 25
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 436,
+        "tileOffsetInAnim": 4
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 437,
+        "tileOffsetInAnim": 5
+      }
+    ],
+    "347": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 456,
+        "tileOffsetInAnim": 24
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 456,
+        "tileOffsetInAnim": 24
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 438,
+        "tileOffsetInAnim": 6
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 439,
+        "tileOffsetInAnim": 7
+      }
+    ],
+    "348": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 440,
+        "tileOffsetInAnim": 8
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 441,
+        "tileOffsetInAnim": 9
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 444,
+        "tileOffsetInAnim": 12
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 445,
+        "tileOffsetInAnim": 13
+      }
+    ],
+    "349": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 442,
+        "tileOffsetInAnim": 10
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 443,
+        "tileOffsetInAnim": 11
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 446,
+        "tileOffsetInAnim": 14
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 447,
+        "tileOffsetInAnim": 15
+      }
+    ],
+    "350": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      }
+    ],
+    "351": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      }
+    ],
+    "352": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 440,
+        "tileOffsetInAnim": 8
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 441,
+        "tileOffsetInAnim": 9
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      }
+    ],
+    "353": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 442,
+        "tileOffsetInAnim": 10
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 443,
+        "tileOffsetInAnim": 11
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      }
+    ],
+    "354": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 433,
+        "tileOffsetInAnim": 1
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 437,
+        "tileOffsetInAnim": 5
+      }
+    ],
+    "355": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 434,
+        "tileOffsetInAnim": 2
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 438,
+        "tileOffsetInAnim": 6
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      }
+    ],
+    "356": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 456,
+        "tileOffsetInAnim": 24
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 433,
+        "tileOffsetInAnim": 1
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 457,
+        "tileOffsetInAnim": 25
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 456,
+        "tileOffsetInAnim": 24
+      }
+    ],
+    "357": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 434,
+        "tileOffsetInAnim": 2
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 457,
+        "tileOffsetInAnim": 25
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 457,
+        "tileOffsetInAnim": 25
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 456,
+        "tileOffsetInAnim": 24
+      }
+    ],
+    "358": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      }
+    ],
+    "359": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      }
+    ],
+    "360": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 436,
+        "tileOffsetInAnim": 4
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 437,
+        "tileOffsetInAnim": 5
+      }
+    ],
+    "361": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 438,
+        "tileOffsetInAnim": 6
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 439,
+        "tileOffsetInAnim": 7
+      }
+    ],
+    "362": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 441,
+        "tileOffsetInAnim": 9
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 445,
+        "tileOffsetInAnim": 13
+      }
+    ],
+    "363": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 442,
+        "tileOffsetInAnim": 10
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 446,
+        "tileOffsetInAnim": 14
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      }
+    ],
+    "364": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 456,
+        "tileOffsetInAnim": 24
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 457,
+        "tileOffsetInAnim": 25
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 457,
+        "tileOffsetInAnim": 25
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 445,
+        "tileOffsetInAnim": 13
+      }
+    ],
+    "365": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 456,
+        "tileOffsetInAnim": 24
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 457,
+        "tileOffsetInAnim": 25
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 446,
+        "tileOffsetInAnim": 14
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 456,
+        "tileOffsetInAnim": 24
+      }
+    ],
+    "366": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      }
+    ],
+    "367": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      }
+    ],
+    "368": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      }
+    ],
+    "369": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 456,
+        "tileOffsetInAnim": 24
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 457,
+        "tileOffsetInAnim": 25
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 457,
+        "tileOffsetInAnim": 25
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 456,
+        "tileOffsetInAnim": 24
+      }
+    ],
+    "370": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      }
+    ],
+    "371": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      }
+    ],
+    "372": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      }
+    ],
+    "373": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      }
+    ],
+    "374": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      }
+    ],
+    "375": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      }
+    ],
+    "376": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 457,
+        "tileOffsetInAnim": 25
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 456,
+        "tileOffsetInAnim": 24
+      }
+    ],
+    "377": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 456,
+        "tileOffsetInAnim": 24
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 457,
+        "tileOffsetInAnim": 25
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      }
+    ],
+    "378": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      }
+    ],
+    "379": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      }
+    ],
+    "380": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      }
+    ],
+    "381": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      }
+    ],
+    "382": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      }
+    ],
+    "383": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      }
+    ],
+    "384": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 456,
+        "tileOffsetInAnim": 24
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 457,
+        "tileOffsetInAnim": 25
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 457,
+        "tileOffsetInAnim": 25
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      }
+    ],
+    "385": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 456,
+        "tileOffsetInAnim": 24
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 457,
+        "tileOffsetInAnim": 25
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 456,
+        "tileOffsetInAnim": 24
+      }
+    ],
+    "386": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      }
+    ],
+    "388": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      }
+    ],
+    "389": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      }
+    ],
+    "390": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      }
+    ],
+    "391": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      }
+    ],
+    "392": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 456,
+        "tileOffsetInAnim": 24
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 457,
+        "tileOffsetInAnim": 25
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 457,
+        "tileOffsetInAnim": 25
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      }
+    ],
+    "393": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 456,
+        "tileOffsetInAnim": 24
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 457,
+        "tileOffsetInAnim": 25
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      }
+    ],
+    "394": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 456,
+        "tileOffsetInAnim": 24
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 457,
+        "tileOffsetInAnim": 25
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 456,
+        "tileOffsetInAnim": 24
+      }
+    ],
+    "396": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 456,
+        "tileOffsetInAnim": 24
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 457,
+        "tileOffsetInAnim": 25
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 457,
+        "tileOffsetInAnim": 25
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 456,
+        "tileOffsetInAnim": 24
+      }
+    ],
+    "397": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      }
+    ],
+    "398": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      }
+    ],
+    "399": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      }
+    ],
+    "400": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 456,
+        "tileOffsetInAnim": 24
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 457,
+        "tileOffsetInAnim": 25
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      }
+    ],
+    "401": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      }
+    ],
+    "402": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 457,
+        "tileOffsetInAnim": 25
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 456,
+        "tileOffsetInAnim": 24
+      }
+    ],
+    "403": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      }
+    ],
+    "404": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      }
+    ],
+    "405": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      }
+    ],
+    "406": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      }
+    ],
+    "407": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      }
+    ],
+    "408": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 456,
+        "tileOffsetInAnim": 24
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      }
+    ],
+    "409": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 457,
+        "tileOffsetInAnim": 25
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 456,
+        "tileOffsetInAnim": 24
+      }
+    ],
+    "410": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 457,
+        "tileOffsetInAnim": 25
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      }
+    ],
+    "411": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      }
+    ],
+    "412": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      }
+    ],
+    "413": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      }
+    ],
+    "414": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      }
+    ],
+    "415": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      }
+    ],
+    "419": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      }
+    ],
+    "420": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      }
+    ],
+    "421": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      }
+    ],
+    "422": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      }
+    ],
+    "423": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      }
+    ],
+    "429": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 450,
+        "tileOffsetInAnim": 18
+      }
+    ],
+    "430": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      }
+    ],
+    "431": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 451,
+        "tileOffsetInAnim": 19
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      }
+    ],
+    "437": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      }
+    ],
+    "439": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      }
+    ],
+    "445": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 452,
+        "tileOffsetInAnim": 20
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      }
+    ],
+    "446": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      }
+    ],
+    "447": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 453,
+        "tileOffsetInAnim": 21
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      }
+    ],
+    "502": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      }
+    ],
+    "503": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      }
+    ],
+    "506": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      }
+    ],
+    "507": [
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 0,
+        "vramTile": 454,
+        "tileOffsetInAnim": 22
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 1,
+        "vramTile": 455,
+        "tileOffsetInAnim": 23
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 2,
+        "vramTile": 449,
+        "tileOffsetInAnim": 17
+      },
+      {
+        "animName": "water",
+        "layer": "lower",
+        "subTileIdx": 3,
+        "vramTile": 448,
+        "tileOffsetInAnim": 16
+      }
+    ]
+  }
+}

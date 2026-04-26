@@ -1,0 +1,2678 @@
+{
+  "macros": {
+    "nop": {
+      "args": [],
+      "opcode": "SCR_OP_NOP"
+    },
+    "nop1": {
+      "args": [],
+      "opcode": "SCR_OP_NOP1"
+    },
+    "end": {
+      "args": [],
+      "opcode": "SCR_OP_END"
+    },
+    "return": {
+      "args": [],
+      "opcode": "SCR_OP_RETURN"
+    },
+    "call": {
+      "args": [
+        "destination"
+      ],
+      "opcode": "SCR_OP_CALL"
+    },
+    "goto": {
+      "args": [
+        "destination"
+      ],
+      "opcode": "SCR_OP_GOTO"
+    },
+    "goto_if": {
+      "args": [
+        "condition",
+        "destination"
+      ],
+      "opcode": "SCR_OP_GOTO_IF"
+    },
+    "call_if": {
+      "args": [
+        "condition",
+        "destination"
+      ],
+      "opcode": "SCR_OP_CALL_IF"
+    },
+    "gotostd": {
+      "args": [
+        "function"
+      ],
+      "opcode": "SCR_OP_GOTO_STD"
+    },
+    "callstd": {
+      "args": [
+        "function"
+      ],
+      "opcode": "SCR_OP_CALL_STD"
+    },
+    "gotostd_if": {
+      "args": [
+        "condition",
+        "function"
+      ],
+      "opcode": "SCR_OP_GOTO_STD_IF"
+    },
+    "callstd_if": {
+      "args": [
+        "condition",
+        "function"
+      ],
+      "opcode": "SCR_OP_CALL_STD_IF"
+    },
+    "returnram": {
+      "args": [],
+      "opcode": "SCR_OP_RETURNRAM"
+    },
+    "endram": {
+      "args": [],
+      "opcode": "SCR_OP_ENDRAM"
+    },
+    "setmysteryeventstatus": {
+      "args": [
+        "value"
+      ],
+      "opcode": "SCR_OP_SETMYSTERYEVENTSTATUS"
+    },
+    "loadword": {
+      "args": [
+        "destIndex",
+        "value"
+      ],
+      "opcode": "SCR_OP_LOAD_WORD"
+    },
+    "loadbyte": {
+      "args": [
+        "destIndex",
+        "value"
+      ],
+      "opcode": "SCR_OP_LOAD_BYTE"
+    },
+    "setptr": {
+      "args": [
+        "value",
+        "ptr"
+      ],
+      "opcode": "SCR_OP_SETPTR"
+    },
+    "loadbytefromptr": {
+      "args": [
+        "destIndex",
+        "source"
+      ],
+      "opcode": "SCR_OP_LOADBYTEFROMPTR"
+    },
+    "setptrbyte": {
+      "args": [
+        "srcIndex",
+        "destination"
+      ],
+      "opcode": "SCR_OP_SETPTRBYTE"
+    },
+    "copylocal": {
+      "args": [
+        "destIndex",
+        "srcIndex"
+      ],
+      "opcode": "SCR_OP_COPYLOCAL"
+    },
+    "copybyte": {
+      "args": [
+        "destination",
+        "source"
+      ],
+      "opcode": "SCR_OP_COPYBYTE"
+    },
+    "setvar": {
+      "args": [
+        "destination",
+        "value",
+        "warn"
+      ],
+      "opcode": "SCR_OP_SETVAR"
+    },
+    "addvar": {
+      "args": [
+        "destination",
+        "value"
+      ],
+      "opcode": "SCR_OP_ADDVAR"
+    },
+    "subvar": {
+      "args": [
+        "destination",
+        "value"
+      ],
+      "opcode": "SCR_OP_SUBVAR"
+    },
+    "copyvar": {
+      "args": [
+        "destination",
+        "source",
+        "warn"
+      ],
+      "opcode": "SCR_OP_COPYVAR"
+    },
+    "setorcopyvar": {
+      "args": [
+        "destination",
+        "source"
+      ],
+      "opcode": "SCR_OP_SETORCOPYVAR"
+    },
+    "compare_local_to_local": {
+      "args": [
+        "local1",
+        "local2"
+      ],
+      "opcode": "SCR_OP_COMPARE_LOCAL_TO_LOCAL"
+    },
+    "compare_local_to_value": {
+      "args": [
+        "local",
+        "value"
+      ],
+      "opcode": "SCR_OP_COMPARE_LOCAL_TO_VALUE"
+    },
+    "compare_local_to_ptr": {
+      "args": [
+        "local",
+        "ptr"
+      ],
+      "opcode": "SCR_OP_COMPARE_LOCAL_TO_PTR"
+    },
+    "compare_ptr_to_local": {
+      "args": [
+        "ptr",
+        "local"
+      ],
+      "opcode": "SCR_OP_COMPARE_PTR_TO_LOCAL"
+    },
+    "compare_ptr_to_value": {
+      "args": [
+        "ptr",
+        "value"
+      ],
+      "opcode": "SCR_OP_COMPARE_PTR_TO_VALUE"
+    },
+    "compare_ptr_to_ptr": {
+      "args": [
+        "ptr1",
+        "ptr2"
+      ],
+      "opcode": "SCR_OP_COMPARE_PTR_TO_PTR"
+    },
+    "compare_var_to_value": {
+      "args": [
+        "var",
+        "value"
+      ],
+      "opcode": "SCR_OP_COMPARE_VAR_TO_VALUE"
+    },
+    "compare_var_to_var": {
+      "args": [
+        "var1",
+        "var2"
+      ],
+      "opcode": "SCR_OP_COMPARE_VAR_TO_VAR"
+    },
+    "compare": {
+      "args": [
+        "var",
+        "arg"
+      ],
+      "opcode": null
+    },
+    "callnative": {
+      "args": [
+        "func"
+      ],
+      "opcode": "SCR_OP_CALLNATIVE"
+    },
+    "gotonative": {
+      "args": [
+        "func"
+      ],
+      "opcode": "SCR_OP_GOTONATIVE"
+    },
+    "special": {
+      "args": [
+        "function"
+      ],
+      "opcode": "SCR_OP_SPECIAL"
+    },
+    "specialvar": {
+      "args": [
+        "output",
+        "function"
+      ],
+      "opcode": "SCR_OP_SPECIALVAR"
+    },
+    "waitstate,": {
+      "args": [
+        "implicit"
+      ],
+      "opcode": "SCR_OP_WAITSTATE"
+    },
+    "delay": {
+      "args": [
+        "frames"
+      ],
+      "opcode": "SCR_OP_DELAY"
+    },
+    "setflag": {
+      "args": [
+        "flag"
+      ],
+      "opcode": "SCR_OP_SETFLAG"
+    },
+    "clearflag": {
+      "args": [
+        "flag"
+      ],
+      "opcode": "SCR_OP_CLEARFLAG"
+    },
+    "checkflag": {
+      "args": [
+        "flag"
+      ],
+      "opcode": "SCR_OP_CHECKFLAG"
+    },
+    "initclock": {
+      "args": [
+        "hour",
+        "minute"
+      ],
+      "opcode": "SCR_OP_INITCLOCK"
+    },
+    "dotimebasedevents": {
+      "args": [],
+      "opcode": "SCR_OP_DOTIMEBASEDEVENTS"
+    },
+    "gettime": {
+      "args": [],
+      "opcode": "SCR_OP_GETTIME"
+    },
+    "playse": {
+      "args": [
+        "song"
+      ],
+      "opcode": "SCR_OP_PLAYSE"
+    },
+    "waitse": {
+      "args": [],
+      "opcode": "SCR_OP_WAITSE"
+    },
+    "playfanfare": {
+      "args": [
+        "song"
+      ],
+      "opcode": "SCR_OP_PLAYFANFARE"
+    },
+    "waitfanfare": {
+      "args": [],
+      "opcode": "SCR_OP_WAITFANFARE"
+    },
+    "playbgm": {
+      "args": [
+        "song",
+        "save_song"
+      ],
+      "opcode": "SCR_OP_PLAYBGM"
+    },
+    "savebgm": {
+      "args": [
+        "song"
+      ],
+      "opcode": "SCR_OP_SAVEBGM"
+    },
+    "fadedefaultbgm": {
+      "args": [],
+      "opcode": "SCR_OP_FADEDEFAULTBGM"
+    },
+    "fadenewbgm": {
+      "args": [
+        "song"
+      ],
+      "opcode": "SCR_OP_FADENEWBGM"
+    },
+    "fadeoutbgm": {
+      "args": [
+        "speed"
+      ],
+      "opcode": "SCR_OP_FADEOUTBGM"
+    },
+    "fadeinbgm": {
+      "args": [
+        "speed"
+      ],
+      "opcode": "SCR_OP_FADEINBGM"
+    },
+    "formatwarp": {
+      "args": [
+        "map",
+        "a",
+        "b",
+        "c"
+      ],
+      "opcode": null
+    },
+    "warp": {
+      "args": [
+        "map",
+        "a",
+        "b",
+        "c"
+      ],
+      "opcode": "SCR_OP_WARP"
+    },
+    "warpsilent": {
+      "args": [
+        "map",
+        "a",
+        "b",
+        "c"
+      ],
+      "opcode": "SCR_OP_WARPSILENT"
+    },
+    "warpdoor": {
+      "args": [
+        "map",
+        "a",
+        "b",
+        "c"
+      ],
+      "opcode": "SCR_OP_WARPDOOR"
+    },
+    "warphole": {
+      "args": [
+        "map"
+      ],
+      "opcode": "SCR_OP_WARPHOLE"
+    },
+    "warpteleport": {
+      "args": [
+        "map",
+        "a",
+        "b",
+        "c"
+      ],
+      "opcode": "SCR_OP_WARPTELEPORT"
+    },
+    "setwarp": {
+      "args": [
+        "map",
+        "a",
+        "b",
+        "c"
+      ],
+      "opcode": "SCR_OP_SETWARP"
+    },
+    "setdynamicwarp": {
+      "args": [
+        "map",
+        "a",
+        "b",
+        "c"
+      ],
+      "opcode": "SCR_OP_SETDYNAMICWARP"
+    },
+    "setdivewarp": {
+      "args": [
+        "map",
+        "a",
+        "b",
+        "c"
+      ],
+      "opcode": "SCR_OP_SETDIVEWARP"
+    },
+    "setholewarp": {
+      "args": [
+        "map",
+        "a",
+        "b",
+        "c"
+      ],
+      "opcode": "SCR_OP_SETHOLEWARP"
+    },
+    "getplayerxy": {
+      "args": [
+        "x",
+        "y"
+      ],
+      "opcode": "SCR_OP_GETPLAYERXY"
+    },
+    "getpartysize": {
+      "args": [],
+      "opcode": "SCR_OP_GETPARTYSIZE"
+    },
+    "additem": {
+      "args": [
+        "itemId",
+        "quantity"
+      ],
+      "opcode": "SCR_OP_ADDITEM"
+    },
+    "removeitem": {
+      "args": [
+        "itemId",
+        "quantity"
+      ],
+      "opcode": "SCR_OP_REMOVEITEM"
+    },
+    "checkitemspace": {
+      "args": [
+        "itemId",
+        "quantity"
+      ],
+      "opcode": "SCR_OP_CHECKITEMSPACE"
+    },
+    "checkitem": {
+      "args": [
+        "itemId",
+        "quantity"
+      ],
+      "opcode": "SCR_OP_CHECKITEM"
+    },
+    "checkitemtype": {
+      "args": [
+        "itemId"
+      ],
+      "opcode": "SCR_OP_CHECKITEMTYPE"
+    },
+    "addpcitem": {
+      "args": [
+        "itemId",
+        "quantity"
+      ],
+      "opcode": "SCR_OP_ADDPCITEM"
+    },
+    "checkpcitem": {
+      "args": [
+        "itemId",
+        "quantity"
+      ],
+      "opcode": "SCR_OP_CHECKPCITEM"
+    },
+    "adddecoration": {
+      "args": [
+        "decoration"
+      ],
+      "opcode": "SCR_OP_ADDDECORATION"
+    },
+    "removedecoration": {
+      "args": [
+        "decoration"
+      ],
+      "opcode": "SCR_OP_REMOVEDECORATION"
+    },
+    "checkdecor": {
+      "args": [
+        "decoration"
+      ],
+      "opcode": "SCR_OP_CHECKDECOR"
+    },
+    "checkdecorspace": {
+      "args": [
+        "decoration"
+      ],
+      "opcode": "SCR_OP_CHECKDECORSPACE"
+    },
+    "applymovement": {
+      "args": [
+        "localId",
+        "movements",
+        "map"
+      ],
+      "opcode": "SCR_OP_APPLYMOVEMENT"
+    },
+    "waitmovement": {
+      "args": [
+        "localId",
+        "map"
+      ],
+      "opcode": "SCR_OP_WAITMOVEMENT"
+    },
+    "removeobject": {
+      "args": [
+        "localId",
+        "map"
+      ],
+      "opcode": "SCR_OP_REMOVEOBJECT"
+    },
+    "addobject": {
+      "args": [
+        "localId",
+        "map"
+      ],
+      "opcode": "SCR_OP_ADDOBJECT"
+    },
+    "setobjectxy": {
+      "args": [
+        "localId",
+        "x",
+        "y"
+      ],
+      "opcode": "SCR_OP_SETOBJECTXY"
+    },
+    "showobjectat": {
+      "args": [
+        "localId",
+        "map"
+      ],
+      "opcode": "SCR_OP_SHOWOBJECTAT"
+    },
+    "showplayer": {
+      "args": [],
+      "opcode": "SCR_OP_SHOWOBJECTAT"
+    },
+    "hideobjectat": {
+      "args": [
+        "localId",
+        "map"
+      ],
+      "opcode": "SCR_OP_HIDEOBJECTAT"
+    },
+    "hideplayer": {
+      "args": [],
+      "opcode": "SCR_OP_HIDEOBJECTAT"
+    },
+    "faceplayer": {
+      "args": [],
+      "opcode": "SCR_OP_FACEPLAYER"
+    },
+    "turnobject": {
+      "args": [
+        "localId",
+        "direction"
+      ],
+      "opcode": "SCR_OP_TURNOBJECT"
+    },
+    "trainerbattle": {
+      "args": [
+        "type",
+        "trainer",
+        "local_id",
+        "pointer1",
+        "pointer2",
+        "pointer3",
+        "pointer4"
+      ],
+      "opcode": "SCR_OP_TRAINERBATTLE"
+    },
+    "trainerbattle_single": {
+      "args": [
+        "trainer",
+        "intro_text",
+        "lose_text",
+        "event_script",
+        "music"
+      ],
+      "opcode": null
+    },
+    "trainerbattle_double": {
+      "args": [
+        "trainer",
+        "intro_text",
+        "lose_text",
+        "not_enough_pkmn_text",
+        "event_script",
+        "music"
+      ],
+      "opcode": null
+    },
+    "trainerbattle_rematch": {
+      "args": [
+        "trainer",
+        "intro_text",
+        "lose_text"
+      ],
+      "opcode": null
+    },
+    "trainerbattle_rematch_double": {
+      "args": [
+        "trainer",
+        "intro_text",
+        "lose_text",
+        "not_enough_pkmn_text"
+      ],
+      "opcode": null
+    },
+    "trainerbattle_no_intro": {
+      "args": [
+        "trainer",
+        "lose_text"
+      ],
+      "opcode": null
+    },
+    "dotrainerbattle": {
+      "args": [],
+      "opcode": "SCR_OP_DOTRAINERBATTLE"
+    },
+    "gotopostbattlescript": {
+      "args": [],
+      "opcode": "SCR_OP_GOTOPOSTBATTLESCRIPT"
+    },
+    "gotobeatenscript": {
+      "args": [],
+      "opcode": "SCR_OP_GOTOBEATENSCRIPT"
+    },
+    "checktrainerflag": {
+      "args": [
+        "trainer"
+      ],
+      "opcode": "SCR_OP_CHECKTRAINERFLAG"
+    },
+    "settrainerflag": {
+      "args": [
+        "trainer"
+      ],
+      "opcode": "SCR_OP_SETTRAINERFLAG"
+    },
+    "cleartrainerflag": {
+      "args": [
+        "trainer"
+      ],
+      "opcode": "SCR_OP_CLEARTRAINERFLAG"
+    },
+    "setobjectxyperm": {
+      "args": [
+        "localId",
+        "x",
+        "y"
+      ],
+      "opcode": "SCR_OP_SETOBJECTXYPERM"
+    },
+    "copyobjectxytoperm": {
+      "args": [
+        "localId"
+      ],
+      "opcode": "SCR_OP_COPYOBJECTXYTOPERM"
+    },
+    "setobjectmovementtype": {
+      "args": [
+        "localId",
+        "movementType"
+      ],
+      "opcode": "SCR_OP_SETOBJECTMOVEMENTTYPE"
+    },
+    "waitmessage": {
+      "args": [],
+      "opcode": "SCR_OP_WAITMESSAGE"
+    },
+    "message": {
+      "args": [
+        "text"
+      ],
+      "opcode": "SCR_OP_MESSAGE"
+    },
+    "closemessage": {
+      "args": [],
+      "opcode": "SCR_OP_CLOSEMESSAGE"
+    },
+    "lockall": {
+      "args": [],
+      "opcode": "SCR_OP_LOCKALL"
+    },
+    "lock": {
+      "args": [],
+      "opcode": "SCR_OP_LOCK"
+    },
+    "releaseall": {
+      "args": [],
+      "opcode": "SCR_OP_RELEASEALL"
+    },
+    "release": {
+      "args": [],
+      "opcode": "SCR_OP_RELEASE"
+    },
+    "waitbuttonpress": {
+      "args": [],
+      "opcode": "SCR_OP_WAITBUTTONPRESS"
+    },
+    "yesnobox": {
+      "args": [
+        "x",
+        "y"
+      ],
+      "opcode": "SCR_OP_YESNOBOX"
+    },
+    "multichoice": {
+      "args": [
+        "x",
+        "y",
+        "multichoiceId",
+        "ignoreBPress"
+      ],
+      "opcode": "SCR_OP_MULTICHOICE"
+    },
+    "multichoicedefault": {
+      "args": [
+        "x",
+        "y",
+        "multichoiceId",
+        "default",
+        "ignoreBPress"
+      ],
+      "opcode": "SCR_OP_MULTICHOICEDEFAULT"
+    },
+    "multichoicegrid": {
+      "args": [
+        "x",
+        "y",
+        "multichoiceId",
+        "per_row",
+        "ignoreBPress"
+      ],
+      "opcode": "SCR_OP_MULTICHOICEGRID"
+    },
+    "drawbox": {
+      "args": [],
+      "opcode": "SCR_OP_DRAWBOX"
+    },
+    "erasebox": {
+      "args": [
+        "left",
+        "top",
+        "right",
+        "bottom"
+      ],
+      "opcode": "SCR_OP_ERASEBOX"
+    },
+    "drawboxtext": {
+      "args": [
+        "left",
+        "top",
+        "multichoiceId",
+        "ignoreBPress"
+      ],
+      "opcode": "SCR_OP_DRAWBOXTEXT"
+    },
+    "showmonpic": {
+      "args": [
+        "species",
+        "x",
+        "y"
+      ],
+      "opcode": "SCR_OP_SHOWMONPIC"
+    },
+    "hidemonpic": {
+      "args": [],
+      "opcode": "SCR_OP_HIDEMONPIC"
+    },
+    "showcontestpainting": {
+      "args": [
+        "winnerId"
+      ],
+      "opcode": "SCR_OP_SHOWCONTESTPAINTING"
+    },
+    "braillemessage": {
+      "args": [
+        "text"
+      ],
+      "opcode": "SCR_OP_BRAILLEMESSAGE"
+    },
+    "brailleformat": {
+      "args": [
+        "winLeft",
+        "winTop",
+        "winRight",
+        "winBottom",
+        "textLeft",
+        "textTop"
+      ],
+      "opcode": null
+    },
+    "givemon": {
+      "args": [
+        "species",
+        "level",
+        "item"
+      ],
+      "opcode": "SCR_OP_GIVEMON"
+    },
+    "giveegg": {
+      "args": [
+        "species"
+      ],
+      "opcode": "SCR_OP_GIVEEGG"
+    },
+    "setmonmove": {
+      "args": [
+        "partyIndex",
+        "slot",
+        "move"
+      ],
+      "opcode": "SCR_OP_SETMONMOVE"
+    },
+    "checkpartymove": {
+      "args": [
+        "move"
+      ],
+      "opcode": "SCR_OP_CHECKPARTYMOVE"
+    },
+    "stringvar": {
+      "args": [
+        "id"
+      ],
+      "opcode": null
+    },
+    "bufferspeciesname": {
+      "args": [
+        "stringVarId",
+        "species"
+      ],
+      "opcode": "SCR_OP_BUFFERSPECIESNAME"
+    },
+    "bufferleadmonspeciesname": {
+      "args": [
+        "stringVarId"
+      ],
+      "opcode": "SCR_OP_BUFFERLEADMONSPECIESNAME"
+    },
+    "bufferpartymonnick": {
+      "args": [
+        "stringVarId",
+        "slot"
+      ],
+      "opcode": "SCR_OP_BUFFERPARTYMONNICK"
+    },
+    "bufferitemname": {
+      "args": [
+        "stringVarId",
+        "item"
+      ],
+      "opcode": "SCR_OP_BUFFERITEMNAME"
+    },
+    "bufferdecorationname": {
+      "args": [
+        "stringVarId",
+        "decoration"
+      ],
+      "opcode": "SCR_OP_BUFFERDECORATIONNAME"
+    },
+    "buffermovename": {
+      "args": [
+        "stringVarId",
+        "move"
+      ],
+      "opcode": "SCR_OP_BUFFERMOVENAME"
+    },
+    "buffernumberstring": {
+      "args": [
+        "stringVarId",
+        "input"
+      ],
+      "opcode": "SCR_OP_BUFFERNUMBERSTRING"
+    },
+    "bufferstdstring": {
+      "args": [
+        "stringVarId",
+        "index"
+      ],
+      "opcode": "SCR_OP_BUFFERSTDSTRING"
+    },
+    "bufferstring": {
+      "args": [
+        "stringVarId",
+        "text"
+      ],
+      "opcode": "SCR_OP_BUFFERSTRING"
+    },
+    "pokemart": {
+      "args": [
+        "products"
+      ],
+      "opcode": "SCR_OP_POKEMART"
+    },
+    "pokemartlistend": {
+      "args": [],
+      "opcode": null
+    },
+    "pokemartdecoration": {
+      "args": [
+        "products"
+      ],
+      "opcode": "SCR_OP_POKEMARTDECORATION"
+    },
+    "pokemartdecoration2": {
+      "args": [
+        "products"
+      ],
+      "opcode": "SCR_OP_POKEMARTDECORATION2"
+    },
+    "playslotmachine": {
+      "args": [
+        "id"
+      ],
+      "opcode": "SCR_OP_PLAYSLOTMACHINE"
+    },
+    "setberrytree": {
+      "args": [
+        "treeId",
+        "berry",
+        "growthStage"
+      ],
+      "opcode": "SCR_OP_SETBERRYTREE"
+    },
+    "choosecontestmon": {
+      "args": [],
+      "opcode": "SCR_OP_CHOOSECONTESTMON"
+    },
+    "startcontest": {
+      "args": [],
+      "opcode": "SCR_OP_STARTCONTEST"
+    },
+    "showcontestresults": {
+      "args": [],
+      "opcode": "SCR_OP_SHOWCONTESTRESULTS"
+    },
+    "contestlinktransfer": {
+      "args": [],
+      "opcode": "SCR_OP_CONTESTLINKTRANSFER"
+    },
+    "random": {
+      "args": [
+        "limit"
+      ],
+      "opcode": "SCR_OP_RANDOM"
+    },
+    "addmoney": {
+      "args": [
+        "value",
+        "disable"
+      ],
+      "opcode": "SCR_OP_ADDMONEY"
+    },
+    "removemoney": {
+      "args": [
+        "value",
+        "disable"
+      ],
+      "opcode": "SCR_OP_REMOVEMONEY"
+    },
+    "checkmoney": {
+      "args": [
+        "value",
+        "disable"
+      ],
+      "opcode": "SCR_OP_CHECKMONEY"
+    },
+    "showmoneybox": {
+      "args": [
+        "x",
+        "y",
+        "disable"
+      ],
+      "opcode": "SCR_OP_SHOWMONEYBOX"
+    },
+    "hidemoneybox": {
+      "args": [],
+      "opcode": "SCR_OP_HIDEMONEYBOX"
+    },
+    "updatemoneybox": {
+      "args": [
+        "disable"
+      ],
+      "opcode": "SCR_OP_UPDATEMONEYBOX"
+    },
+    "getpokenewsactive": {
+      "args": [
+        "newsKind"
+      ],
+      "opcode": "SCR_OP_GETPOKENEWSACTIVE"
+    },
+    "fadescreen": {
+      "args": [
+        "mode"
+      ],
+      "opcode": "SCR_OP_FADESCREEN"
+    },
+    "fadescreenspeed": {
+      "args": [
+        "mode",
+        "speed"
+      ],
+      "opcode": "SCR_OP_FADESCREENSPEED"
+    },
+    "setflashlevel": {
+      "args": [
+        "level"
+      ],
+      "opcode": "SCR_OP_SETFLASHLEVEL"
+    },
+    "animateflash": {
+      "args": [
+        "level"
+      ],
+      "opcode": "SCR_OP_ANIMATEFLASH"
+    },
+    "messageautoscroll": {
+      "args": [
+        "text"
+      ],
+      "opcode": "SCR_OP_MESSAGEAUTOSCROLL"
+    },
+    "dofieldeffect": {
+      "args": [
+        "animation"
+      ],
+      "opcode": "SCR_OP_DOFIELDEFFECT"
+    },
+    "setfieldeffectargument": {
+      "args": [
+        "argNum",
+        "value"
+      ],
+      "opcode": "SCR_OP_SETFIELDEFFECTARGUMENT"
+    },
+    "waitfieldeffect": {
+      "args": [
+        "animation"
+      ],
+      "opcode": "SCR_OP_WAITFIELDEFFECT"
+    },
+    "setrespawn": {
+      "args": [
+        "heallocation"
+      ],
+      "opcode": "SCR_OP_SETRESPAWN"
+    },
+    "checkplayergender": {
+      "args": [],
+      "opcode": "SCR_OP_CHECKPLAYERGENDER"
+    },
+    "playmoncry": {
+      "args": [
+        "species",
+        "mode"
+      ],
+      "opcode": "SCR_OP_PLAYMONCRY"
+    },
+    "setmetatile": {
+      "args": [
+        "x",
+        "y",
+        "metatileId",
+        "impassable"
+      ],
+      "opcode": "SCR_OP_SETMETATILE"
+    },
+    "resetweather": {
+      "args": [],
+      "opcode": "SCR_OP_RESETWEATHER"
+    },
+    "setweather": {
+      "args": [
+        "type"
+      ],
+      "opcode": "SCR_OP_SETWEATHER"
+    },
+    "doweather": {
+      "args": [],
+      "opcode": "SCR_OP_DOWEATHER"
+    },
+    "setstepcallback": {
+      "args": [
+        "stepCbId"
+      ],
+      "opcode": "SCR_OP_SETSTEPCALLBACK"
+    },
+    "setmaplayoutindex": {
+      "args": [
+        "index"
+      ],
+      "opcode": "SCR_OP_SETMAPLAYOUTINDEX"
+    },
+    "setobjectsubpriority": {
+      "args": [
+        "localId",
+        "map",
+        "subpriority"
+      ],
+      "opcode": "SCR_OP_SETOBJECTSUBPRIORITY"
+    },
+    "resetobjectsubpriority": {
+      "args": [
+        "localId",
+        "map"
+      ],
+      "opcode": "SCR_OP_RESETOBJECTSUBPRIORITY"
+    },
+    "createvobject": {
+      "args": [
+        "graphicsId",
+        "id",
+        "x",
+        "y",
+        "elevation",
+        "direction"
+      ],
+      "opcode": "SCR_OP_CREATEVOBJECT"
+    },
+    "turnvobject": {
+      "args": [
+        "id",
+        "direction"
+      ],
+      "opcode": "SCR_OP_TURNVOBJECT"
+    },
+    "opendoor": {
+      "args": [
+        "x",
+        "y"
+      ],
+      "opcode": "SCR_OP_OPENDOOR"
+    },
+    "closedoor": {
+      "args": [
+        "x",
+        "y"
+      ],
+      "opcode": "SCR_OP_CLOSEDOOR"
+    },
+    "waitdooranim": {
+      "args": [],
+      "opcode": "SCR_OP_WAITDOORANIM"
+    },
+    "setdooropen": {
+      "args": [
+        "x",
+        "y"
+      ],
+      "opcode": "SCR_OP_SETDOOROPEN"
+    },
+    "setdoorclosed": {
+      "args": [
+        "x",
+        "y"
+      ],
+      "opcode": "SCR_OP_SETDOORCLOSED"
+    },
+    "addelevmenuitem": {
+      "args": [
+        "a",
+        "b",
+        "c",
+        "d"
+      ],
+      "opcode": "SCR_OP_ADDELEVMENUITEM"
+    },
+    "showelevmenu": {
+      "args": [],
+      "opcode": "SCR_OP_SHOWELEVMENU"
+    },
+    "checkcoins": {
+      "args": [
+        "out"
+      ],
+      "opcode": "SCR_OP_CHECKCOINS"
+    },
+    "addcoins": {
+      "args": [
+        "count"
+      ],
+      "opcode": "SCR_OP_ADDCOINS"
+    },
+    "removecoins": {
+      "args": [
+        "count"
+      ],
+      "opcode": "SCR_OP_REMOVECOINS"
+    },
+    "setwildbattle": {
+      "args": [
+        "species",
+        "level",
+        "item"
+      ],
+      "opcode": "SCR_OP_SETWILDBATTLE"
+    },
+    "dowildbattle": {
+      "args": [],
+      "opcode": "SCR_OP_DOWILDBATTLE"
+    },
+    "setvaddress": {
+      "args": [
+        "pointer"
+      ],
+      "opcode": "SCR_OP_SETVADDRESS"
+    },
+    "vgoto": {
+      "args": [
+        "destination"
+      ],
+      "opcode": "SCR_OP_VGOTO"
+    },
+    "vcall": {
+      "args": [
+        "destination"
+      ],
+      "opcode": "SCR_OP_VCALL"
+    },
+    "vgoto_if": {
+      "args": [
+        "condition",
+        "destination"
+      ],
+      "opcode": "SCR_OP_VGOTO_IF"
+    },
+    "vcall_if": {
+      "args": [
+        "condition",
+        "destination"
+      ],
+      "opcode": "SCR_OP_VCALL_IF"
+    },
+    "vmessage": {
+      "args": [
+        "text"
+      ],
+      "opcode": "SCR_OP_VMESSAGE"
+    },
+    "vbuffermessage": {
+      "args": [
+        "text"
+      ],
+      "opcode": "SCR_OP_VBUFFERMESSAGE"
+    },
+    "vbufferstring": {
+      "args": [
+        "stringVarIndex",
+        "text"
+      ],
+      "opcode": "SCR_OP_VBUFFERSTRING"
+    },
+    "showcoinsbox": {
+      "args": [
+        "x",
+        "y"
+      ],
+      "opcode": "SCR_OP_SHOWCOINSBOX"
+    },
+    "hidecoinsbox": {
+      "args": [
+        "x",
+        "y"
+      ],
+      "opcode": "SCR_OP_HIDECOINSBOX"
+    },
+    "updatecoinsbox": {
+      "args": [
+        "x",
+        "y"
+      ],
+      "opcode": "SCR_OP_UPDATECOINSBOX"
+    },
+    "incrementgamestat": {
+      "args": [
+        "stat"
+      ],
+      "opcode": "SCR_OP_INCREMENTGAMESTAT"
+    },
+    "setescapewarp": {
+      "args": [
+        "map",
+        "a",
+        "b",
+        "c"
+      ],
+      "opcode": "SCR_OP_SETESCAPEWARP"
+    },
+    "waitmoncry": {
+      "args": [],
+      "opcode": "SCR_OP_WAITMONCRY"
+    },
+    "bufferboxname": {
+      "args": [
+        "stringVarId",
+        "box"
+      ],
+      "opcode": "SCR_OP_BUFFERBOXNAME"
+    },
+    "textcolor": {
+      "args": [
+        "color"
+      ],
+      "opcode": "SCR_OP_TEXTCOLOR"
+    },
+    "loadhelp": {
+      "args": [
+        "text"
+      ],
+      "opcode": "SCR_OP_LOADHELP"
+    },
+    "unloadhelp": {
+      "args": [],
+      "opcode": "SCR_OP_UNLOADHELP"
+    },
+    "signmsg": {
+      "args": [],
+      "opcode": "SCR_OP_SIGNMSG"
+    },
+    "normalmsg": {
+      "args": [],
+      "opcode": "SCR_OP_NORMALMSG"
+    },
+    "comparehiddenvar": {
+      "args": [
+        "a",
+        "value"
+      ],
+      "opcode": "SCR_OP_COMPAREHIDDENVAR"
+    },
+    "setmodernfatefulencounter": {
+      "args": [
+        "slot"
+      ],
+      "opcode": "SCR_OP_SETMODERNFATEFULENCOUNTER"
+    },
+    "checkmodernfatefulencounter": {
+      "args": [
+        "slot"
+      ],
+      "opcode": "SCR_OP_CHECKMODERNFATEFULENCOUNTER"
+    },
+    "trywondercardscript": {
+      "args": [],
+      "opcode": "SCR_OP_TRYWONDERCARDSCRIPT"
+    },
+    "setworldmapflag": {
+      "args": [
+        "worldmapflag"
+      ],
+      "opcode": "SCR_OP_SETWORLDMAPFLAG"
+    },
+    "warpspinenter": {
+      "args": [
+        "map",
+        "a",
+        "b",
+        "c"
+      ],
+      "opcode": "SCR_OP_WARPSPINENTER"
+    },
+    "setmonmetlocation": {
+      "args": [
+        "slot",
+        "location"
+      ],
+      "opcode": "SCR_OP_SETMONMETLOCATION"
+    },
+    "moverotatingtileobjects": {
+      "args": [
+        "puzzleNumber"
+      ],
+      "opcode": "SCR_OP_MOVEROTATINGTILEOBJECTS"
+    },
+    "turnrotatingtileobjects": {
+      "args": [],
+      "opcode": "SCR_OP_TURNROTATINGTILEOBJECTS"
+    },
+    "initrotatingtilepuzzle": {
+      "args": [
+        "isTrickHouse"
+      ],
+      "opcode": "SCR_OP_INITROTATINGTILEPUZZLE"
+    },
+    "freerotatingtilepuzzle": {
+      "args": [],
+      "opcode": "SCR_OP_FREEROTATINGTILEPUZZLE"
+    },
+    "warpmossdeepgym": {
+      "args": [
+        "map",
+        "a",
+        "b",
+        "c"
+      ],
+      "opcode": "SCR_OP_WARPMOSSDEEPGYM"
+    },
+    "selectapproachingtrainer": {
+      "args": [],
+      "opcode": "SCR_OP_SELECTAPPROACHINGTRAINER"
+    },
+    "lockfortrainer": {
+      "args": [],
+      "opcode": "SCR_OP_LOCKFORTRAINER"
+    },
+    "closebraillemessage": {
+      "args": [],
+      "opcode": "SCR_OP_CLOSEBRAILLEMESSAGE"
+    },
+    "messageinstant": {
+      "args": [
+        "text"
+      ],
+      "opcode": "SCR_OP_MESSAGEINSTANT"
+    },
+    "fadescreenswapbuffers": {
+      "args": [
+        "mode"
+      ],
+      "opcode": "SCR_OP_FADESCREENSWAPBUFFERS"
+    },
+    "buffertrainerclassname": {
+      "args": [
+        "stringVarId",
+        "trainerId"
+      ],
+      "opcode": "SCR_OP_BUFFERTRAINERCLASSNAME"
+    },
+    "buffertrainername": {
+      "args": [
+        "stringVarId",
+        "trainerId"
+      ],
+      "opcode": "SCR_OP_BUFFERTRAINERNAME"
+    },
+    "pokenavcall": {
+      "args": [
+        "text"
+      ],
+      "opcode": "SCR_OP_POKENAVCALL"
+    },
+    "warpwhitefade": {
+      "args": [
+        "map",
+        "a",
+        "b",
+        "c"
+      ],
+      "opcode": "SCR_OP_WARPWHITEFADE"
+    },
+    "buffercontestname": {
+      "args": [
+        "stringVarId",
+        "category"
+      ],
+      "opcode": "SCR_OP_BUFFERCONTESTNAME"
+    },
+    "bufferitemnameplural": {
+      "args": [
+        "stringVarId",
+        "item",
+        "quantity"
+      ],
+      "opcode": "SCR_OP_BUFFERITEMNAMEPLURAL"
+    },
+    "goto_if_unset": {
+      "args": [
+        "flag",
+        "dest"
+      ],
+      "opcode": null
+    },
+    "goto_if_set": {
+      "args": [
+        "flag",
+        "dest"
+      ],
+      "opcode": null
+    },
+    "trycompare": {
+      "args": [
+        "jump",
+        "condition",
+        "a",
+        "b",
+        "c"
+      ],
+      "opcode": null
+    },
+    "goto_if_lt": {
+      "args": [
+        "a",
+        "b",
+        "c @ LESS THAN"
+      ],
+      "opcode": null
+    },
+    "goto_if_eq": {
+      "args": [
+        "a",
+        "b",
+        "c @ EQUAL"
+      ],
+      "opcode": null
+    },
+    "goto_if_gt": {
+      "args": [
+        "a",
+        "b",
+        "c @ GREATER THAN"
+      ],
+      "opcode": null
+    },
+    "goto_if_le": {
+      "args": [
+        "a",
+        "b",
+        "c @ LESS THAN OR EQUAL"
+      ],
+      "opcode": null
+    },
+    "goto_if_ge": {
+      "args": [
+        "a",
+        "b",
+        "c @ GREATER THAN OR EQUAL"
+      ],
+      "opcode": null
+    },
+    "goto_if_ne": {
+      "args": [
+        "a",
+        "b",
+        "c @ NOT EQUAL"
+      ],
+      "opcode": null
+    },
+    "call_if_unset": {
+      "args": [
+        "flag",
+        "dest"
+      ],
+      "opcode": null
+    },
+    "call_if_set": {
+      "args": [
+        "flag",
+        "dest"
+      ],
+      "opcode": null
+    },
+    "call_if_lt": {
+      "args": [
+        "a",
+        "b",
+        "c @ LESS THAN"
+      ],
+      "opcode": null
+    },
+    "call_if_eq": {
+      "args": [
+        "a",
+        "b",
+        "c @ EQUAL"
+      ],
+      "opcode": null
+    },
+    "call_if_gt": {
+      "args": [
+        "a",
+        "b",
+        "c @ GREATER THAN"
+      ],
+      "opcode": null
+    },
+    "call_if_le": {
+      "args": [
+        "a",
+        "b",
+        "c @ LESS THAN OR EQUAL"
+      ],
+      "opcode": null
+    },
+    "call_if_ge": {
+      "args": [
+        "a",
+        "b",
+        "c @ GREATER THAN OR EQUAL"
+      ],
+      "opcode": null
+    },
+    "call_if_ne": {
+      "args": [
+        "a",
+        "b",
+        "c @ NOT EQUAL"
+      ],
+      "opcode": null
+    },
+    "vgoto_if_eq": {
+      "args": [
+        "a",
+        "b",
+        "c"
+      ],
+      "opcode": null
+    },
+    "vgoto_if_ne": {
+      "args": [
+        "a",
+        "b",
+        "c"
+      ],
+      "opcode": null
+    },
+    "vgoto_if_unset": {
+      "args": [
+        "flag",
+        "dest"
+      ],
+      "opcode": null
+    },
+    "vgoto_if_set": {
+      "args": [
+        "flag",
+        "dest"
+      ],
+      "opcode": null
+    },
+    "goto_if_defeated": {
+      "args": [
+        "trainer",
+        "dest"
+      ],
+      "opcode": null
+    },
+    "goto_if_not_defeated": {
+      "args": [
+        "trainer",
+        "dest"
+      ],
+      "opcode": null
+    },
+    "call_if_defeated": {
+      "args": [
+        "trainer",
+        "dest"
+      ],
+      "opcode": null
+    },
+    "call_if_not_defeated": {
+      "args": [
+        "trainer",
+        "dest"
+      ],
+      "opcode": null
+    },
+    "switch": {
+      "args": [
+        "var"
+      ],
+      "opcode": null
+    },
+    "case": {
+      "args": [
+        "condition",
+        "dest"
+      ],
+      "opcode": null
+    },
+    "msgbox": {
+      "args": [
+        "text",
+        "type"
+      ],
+      "opcode": null
+    },
+    "giveitem": {
+      "args": [
+        "item",
+        "amount"
+      ],
+      "opcode": null
+    },
+    "finditem": {
+      "args": [
+        "item",
+        "amount"
+      ],
+      "opcode": null
+    },
+    "givedecoration": {
+      "args": [
+        "decoration"
+      ],
+      "opcode": null
+    },
+    "register_matchcall": {
+      "args": [
+        "trainer"
+      ],
+      "opcode": null
+    },
+    "dofieldeffectsparkle": {
+      "args": [
+        "x",
+        "y",
+        "priority"
+      ],
+      "opcode": null
+    },
+    "braillemsgbox": {
+      "args": [
+        "text"
+      ],
+      "opcode": null
+    },
+    "seteventmon": {
+      "args": [
+        "species",
+        "level",
+        "item"
+      ],
+      "opcode": null
+    }
+  },
+  "opcodes": {
+    "SCR_OP_NOP": {
+      "value": 0,
+      "handler": "ScrCmd_nop"
+    },
+    "SCR_OP_NOP1": {
+      "value": 1,
+      "handler": "ScrCmd_nop1"
+    },
+    "SCR_OP_END": {
+      "value": 2,
+      "handler": "ScrCmd_end"
+    },
+    "SCR_OP_RETURN": {
+      "value": 3,
+      "handler": "ScrCmd_return"
+    },
+    "SCR_OP_CALL": {
+      "value": 4,
+      "handler": "ScrCmd_call"
+    },
+    "SCR_OP_GOTO": {
+      "value": 5,
+      "handler": "ScrCmd_goto"
+    },
+    "SCR_OP_GOTO_IF": {
+      "value": 6,
+      "handler": "ScrCmd_goto_if"
+    },
+    "SCR_OP_CALL_IF": {
+      "value": 7,
+      "handler": "ScrCmd_call_if"
+    },
+    "SCR_OP_GOTO_STD": {
+      "value": 8,
+      "handler": "ScrCmd_gotostd"
+    },
+    "SCR_OP_CALL_STD": {
+      "value": 9,
+      "handler": "ScrCmd_callstd"
+    },
+    "SCR_OP_GOTO_STD_IF": {
+      "value": 10,
+      "handler": "ScrCmd_gotostd_if"
+    },
+    "SCR_OP_CALL_STD_IF": {
+      "value": 11,
+      "handler": "ScrCmd_callstd_if"
+    },
+    "SCR_OP_RETURNRAM": {
+      "value": 12,
+      "handler": "ScrCmd_returnram"
+    },
+    "SCR_OP_ENDRAM": {
+      "value": 13,
+      "handler": "ScrCmd_endram"
+    },
+    "SCR_OP_SETMYSTERYEVENTSTATUS": {
+      "value": 14,
+      "handler": "ScrCmd_setmysteryeventstatus"
+    },
+    "SCR_OP_LOAD_WORD": {
+      "value": 15,
+      "handler": "ScrCmd_loadword"
+    },
+    "SCR_OP_LOAD_BYTE": {
+      "value": 16,
+      "handler": "ScrCmd_loadbyte"
+    },
+    "SCR_OP_SETPTR": {
+      "value": 17,
+      "handler": "ScrCmd_setptr"
+    },
+    "SCR_OP_LOADBYTEFROMPTR": {
+      "value": 18,
+      "handler": "ScrCmd_loadbytefromptr"
+    },
+    "SCR_OP_SETPTRBYTE": {
+      "value": 19,
+      "handler": "ScrCmd_setptrbyte"
+    },
+    "SCR_OP_COPYLOCAL": {
+      "value": 20,
+      "handler": "ScrCmd_copylocal"
+    },
+    "SCR_OP_COPYBYTE": {
+      "value": 21,
+      "handler": "ScrCmd_copybyte"
+    },
+    "SCR_OP_SETVAR": {
+      "value": 22,
+      "handler": "ScrCmd_setvar"
+    },
+    "SCR_OP_ADDVAR": {
+      "value": 23,
+      "handler": "ScrCmd_addvar"
+    },
+    "SCR_OP_SUBVAR": {
+      "value": 24,
+      "handler": "ScrCmd_subvar"
+    },
+    "SCR_OP_COPYVAR": {
+      "value": 25,
+      "handler": "ScrCmd_copyvar"
+    },
+    "SCR_OP_SETORCOPYVAR": {
+      "value": 26,
+      "handler": "ScrCmd_setorcopyvar"
+    },
+    "SCR_OP_COMPARE_LOCAL_TO_LOCAL": {
+      "value": 27,
+      "handler": "ScrCmd_compare_local_to_local"
+    },
+    "SCR_OP_COMPARE_LOCAL_TO_VALUE": {
+      "value": 28,
+      "handler": "ScrCmd_compare_local_to_value"
+    },
+    "SCR_OP_COMPARE_LOCAL_TO_PTR": {
+      "value": 29,
+      "handler": "ScrCmd_compare_local_to_ptr"
+    },
+    "SCR_OP_COMPARE_PTR_TO_LOCAL": {
+      "value": 30,
+      "handler": "ScrCmd_compare_ptr_to_local"
+    },
+    "SCR_OP_COMPARE_PTR_TO_VALUE": {
+      "value": 31,
+      "handler": "ScrCmd_compare_ptr_to_value"
+    },
+    "SCR_OP_COMPARE_PTR_TO_PTR": {
+      "value": 32,
+      "handler": "ScrCmd_compare_ptr_to_ptr"
+    },
+    "SCR_OP_COMPARE_VAR_TO_VALUE": {
+      "value": 33,
+      "handler": "ScrCmd_compare_var_to_value"
+    },
+    "SCR_OP_COMPARE_VAR_TO_VAR": {
+      "value": 34,
+      "handler": "ScrCmd_compare_var_to_var"
+    },
+    "SCR_OP_CALLNATIVE": {
+      "value": 35,
+      "handler": "ScrCmd_callnative"
+    },
+    "SCR_OP_GOTONATIVE": {
+      "value": 36,
+      "handler": "ScrCmd_gotonative"
+    },
+    "SCR_OP_SPECIAL": {
+      "value": 37,
+      "handler": "ScrCmd_special"
+    },
+    "SCR_OP_SPECIALVAR": {
+      "value": 38,
+      "handler": "ScrCmd_specialvar"
+    },
+    "SCR_OP_WAITSTATE": {
+      "value": 39,
+      "handler": "ScrCmd_waitstate"
+    },
+    "SCR_OP_DELAY": {
+      "value": 40,
+      "handler": "ScrCmd_delay"
+    },
+    "SCR_OP_SETFLAG": {
+      "value": 41,
+      "handler": "ScrCmd_setflag"
+    },
+    "SCR_OP_CLEARFLAG": {
+      "value": 42,
+      "handler": "ScrCmd_clearflag"
+    },
+    "SCR_OP_CHECKFLAG": {
+      "value": 43,
+      "handler": "ScrCmd_checkflag"
+    },
+    "SCR_OP_INITCLOCK": {
+      "value": 44,
+      "handler": "ScrCmd_initclock"
+    },
+    "SCR_OP_DOTIMEBASEDEVENTS": {
+      "value": 45,
+      "handler": "ScrCmd_dotimebasedevents"
+    },
+    "SCR_OP_GETTIME": {
+      "value": 46,
+      "handler": "ScrCmd_gettime"
+    },
+    "SCR_OP_PLAYSE": {
+      "value": 47,
+      "handler": "ScrCmd_playse"
+    },
+    "SCR_OP_WAITSE": {
+      "value": 48,
+      "handler": "ScrCmd_waitse"
+    },
+    "SCR_OP_PLAYFANFARE": {
+      "value": 49,
+      "handler": "ScrCmd_playfanfare"
+    },
+    "SCR_OP_WAITFANFARE": {
+      "value": 50,
+      "handler": "ScrCmd_waitfanfare"
+    },
+    "SCR_OP_PLAYBGM": {
+      "value": 51,
+      "handler": "ScrCmd_playbgm"
+    },
+    "SCR_OP_SAVEBGM": {
+      "value": 52,
+      "handler": "ScrCmd_savebgm"
+    },
+    "SCR_OP_FADEDEFAULTBGM": {
+      "value": 53,
+      "handler": "ScrCmd_fadedefaultbgm"
+    },
+    "SCR_OP_FADENEWBGM": {
+      "value": 54,
+      "handler": "ScrCmd_fadenewbgm"
+    },
+    "SCR_OP_FADEOUTBGM": {
+      "value": 55,
+      "handler": "ScrCmd_fadeoutbgm"
+    },
+    "SCR_OP_FADEINBGM": {
+      "value": 56,
+      "handler": "ScrCmd_fadeinbgm"
+    },
+    "SCR_OP_WARP": {
+      "value": 57,
+      "handler": "ScrCmd_warp"
+    },
+    "SCR_OP_WARPSILENT": {
+      "value": 58,
+      "handler": "ScrCmd_warpsilent"
+    },
+    "SCR_OP_WARPDOOR": {
+      "value": 59,
+      "handler": "ScrCmd_warpdoor"
+    },
+    "SCR_OP_WARPHOLE": {
+      "value": 60,
+      "handler": "ScrCmd_warphole"
+    },
+    "SCR_OP_WARPTELEPORT": {
+      "value": 61,
+      "handler": "ScrCmd_warpteleport"
+    },
+    "SCR_OP_SETWARP": {
+      "value": 62,
+      "handler": "ScrCmd_setwarp"
+    },
+    "SCR_OP_SETDYNAMICWARP": {
+      "value": 63,
+      "handler": "ScrCmd_setdynamicwarp"
+    },
+    "SCR_OP_SETDIVEWARP": {
+      "value": 64,
+      "handler": "ScrCmd_setdivewarp"
+    },
+    "SCR_OP_SETHOLEWARP": {
+      "value": 65,
+      "handler": "ScrCmd_setholewarp"
+    },
+    "SCR_OP_GETPLAYERXY": {
+      "value": 66,
+      "handler": "ScrCmd_getplayerxy"
+    },
+    "SCR_OP_GETPARTYSIZE": {
+      "value": 67,
+      "handler": "ScrCmd_getpartysize"
+    },
+    "SCR_OP_ADDITEM": {
+      "value": 68,
+      "handler": "ScrCmd_additem"
+    },
+    "SCR_OP_REMOVEITEM": {
+      "value": 69,
+      "handler": "ScrCmd_removeitem"
+    },
+    "SCR_OP_CHECKITEMSPACE": {
+      "value": 70,
+      "handler": "ScrCmd_checkitemspace"
+    },
+    "SCR_OP_CHECKITEM": {
+      "value": 71,
+      "handler": "ScrCmd_checkitem"
+    },
+    "SCR_OP_CHECKITEMTYPE": {
+      "value": 72,
+      "handler": "ScrCmd_checkitemtype"
+    },
+    "SCR_OP_ADDPCITEM": {
+      "value": 73,
+      "handler": "ScrCmd_addpcitem"
+    },
+    "SCR_OP_CHECKPCITEM": {
+      "value": 74,
+      "handler": "ScrCmd_checkpcitem"
+    },
+    "SCR_OP_ADDDECORATION": {
+      "value": 75,
+      "handler": "ScrCmd_adddecoration"
+    },
+    "SCR_OP_REMOVEDECORATION": {
+      "value": 76,
+      "handler": "ScrCmd_removedecoration"
+    },
+    "SCR_OP_CHECKDECOR": {
+      "value": 77,
+      "handler": "ScrCmd_checkdecor"
+    },
+    "SCR_OP_CHECKDECORSPACE": {
+      "value": 78,
+      "handler": "ScrCmd_checkdecorspace"
+    },
+    "SCR_OP_APPLYMOVEMENT": {
+      "value": 79,
+      "handler": "ScrCmd_applymovement"
+    },
+    "SCR_OP_APPLYMOVEMENTAT": {
+      "value": 80,
+      "handler": "ScrCmd_applymovementat"
+    },
+    "SCR_OP_WAITMOVEMENT": {
+      "value": 81,
+      "handler": "ScrCmd_waitmovement"
+    },
+    "SCR_OP_WAITMOVEMENTAT": {
+      "value": 82,
+      "handler": "ScrCmd_waitmovementat"
+    },
+    "SCR_OP_REMOVEOBJECT": {
+      "value": 83,
+      "handler": "ScrCmd_removeobject"
+    },
+    "SCR_OP_REMOVEOBJECTAT": {
+      "value": 84,
+      "handler": "ScrCmd_removeobjectat"
+    },
+    "SCR_OP_ADDOBJECT": {
+      "value": 85,
+      "handler": "ScrCmd_addobject"
+    },
+    "SCR_OP_ADDOBJECTAT": {
+      "value": 86,
+      "handler": "ScrCmd_addobjectat"
+    },
+    "SCR_OP_SETOBJECTXY": {
+      "value": 87,
+      "handler": "ScrCmd_setobjectxy"
+    },
+    "SCR_OP_SHOWOBJECTAT": {
+      "value": 88,
+      "handler": "ScrCmd_showobjectat"
+    },
+    "SCR_OP_HIDEOBJECTAT": {
+      "value": 89,
+      "handler": "ScrCmd_hideobjectat"
+    },
+    "SCR_OP_FACEPLAYER": {
+      "value": 90,
+      "handler": "ScrCmd_faceplayer"
+    },
+    "SCR_OP_TURNOBJECT": {
+      "value": 91,
+      "handler": "ScrCmd_turnobject"
+    },
+    "SCR_OP_TRAINERBATTLE": {
+      "value": 92,
+      "handler": "ScrCmd_trainerbattle"
+    },
+    "SCR_OP_DOTRAINERBATTLE": {
+      "value": 93,
+      "handler": "ScrCmd_dotrainerbattle"
+    },
+    "SCR_OP_GOTOPOSTBATTLESCRIPT": {
+      "value": 94,
+      "handler": "ScrCmd_gotopostbattlescript"
+    },
+    "SCR_OP_GOTOBEATENSCRIPT": {
+      "value": 95,
+      "handler": "ScrCmd_gotobeatenscript"
+    },
+    "SCR_OP_CHECKTRAINERFLAG": {
+      "value": 96,
+      "handler": "ScrCmd_checktrainerflag"
+    },
+    "SCR_OP_SETTRAINERFLAG": {
+      "value": 97,
+      "handler": "ScrCmd_settrainerflag"
+    },
+    "SCR_OP_CLEARTRAINERFLAG": {
+      "value": 98,
+      "handler": "ScrCmd_cleartrainerflag"
+    },
+    "SCR_OP_SETOBJECTXYPERM": {
+      "value": 99,
+      "handler": "ScrCmd_setobjectxyperm"
+    },
+    "SCR_OP_COPYOBJECTXYTOPERM": {
+      "value": 100,
+      "handler": "ScrCmd_copyobjectxytoperm"
+    },
+    "SCR_OP_SETOBJECTMOVEMENTTYPE": {
+      "value": 101,
+      "handler": "ScrCmd_setobjectmovementtype"
+    },
+    "SCR_OP_WAITMESSAGE": {
+      "value": 102,
+      "handler": "ScrCmd_waitmessage"
+    },
+    "SCR_OP_MESSAGE": {
+      "value": 103,
+      "handler": "ScrCmd_message"
+    },
+    "SCR_OP_CLOSEMESSAGE": {
+      "value": 104,
+      "handler": "ScrCmd_closemessage"
+    },
+    "SCR_OP_LOCKALL": {
+      "value": 105,
+      "handler": "ScrCmd_lockall"
+    },
+    "SCR_OP_LOCK": {
+      "value": 106,
+      "handler": "ScrCmd_lock"
+    },
+    "SCR_OP_RELEASEALL": {
+      "value": 107,
+      "handler": "ScrCmd_releaseall"
+    },
+    "SCR_OP_RELEASE": {
+      "value": 108,
+      "handler": "ScrCmd_release"
+    },
+    "SCR_OP_WAITBUTTONPRESS": {
+      "value": 109,
+      "handler": "ScrCmd_waitbuttonpress"
+    },
+    "SCR_OP_YESNOBOX": {
+      "value": 110,
+      "handler": "ScrCmd_yesnobox"
+    },
+    "SCR_OP_MULTICHOICE": {
+      "value": 111,
+      "handler": "ScrCmd_multichoice"
+    },
+    "SCR_OP_MULTICHOICEDEFAULT": {
+      "value": 112,
+      "handler": "ScrCmd_multichoicedefault"
+    },
+    "SCR_OP_MULTICHOICEGRID": {
+      "value": 113,
+      "handler": "ScrCmd_multichoicegrid"
+    },
+    "SCR_OP_DRAWBOX": {
+      "value": 114,
+      "handler": "ScrCmd_drawbox"
+    },
+    "SCR_OP_ERASEBOX": {
+      "value": 115,
+      "handler": "ScrCmd_erasebox"
+    },
+    "SCR_OP_DRAWBOXTEXT": {
+      "value": 116,
+      "handler": "ScrCmd_drawboxtext"
+    },
+    "SCR_OP_SHOWMONPIC": {
+      "value": 117,
+      "handler": "ScrCmd_showmonpic"
+    },
+    "SCR_OP_HIDEMONPIC": {
+      "value": 118,
+      "handler": "ScrCmd_hidemonpic"
+    },
+    "SCR_OP_SHOWCONTESTPAINTING": {
+      "value": 119,
+      "handler": "ScrCmd_showcontestpainting"
+    },
+    "SCR_OP_BRAILLEMESSAGE": {
+      "value": 120,
+      "handler": "ScrCmd_braillemessage"
+    },
+    "SCR_OP_GIVEMON": {
+      "value": 121,
+      "handler": "ScrCmd_givemon"
+    },
+    "SCR_OP_GIVEEGG": {
+      "value": 122,
+      "handler": "ScrCmd_giveegg"
+    },
+    "SCR_OP_SETMONMOVE": {
+      "value": 123,
+      "handler": "ScrCmd_setmonmove"
+    },
+    "SCR_OP_CHECKPARTYMOVE": {
+      "value": 124,
+      "handler": "ScrCmd_checkpartymove"
+    },
+    "SCR_OP_BUFFERSPECIESNAME": {
+      "value": 125,
+      "handler": "ScrCmd_bufferspeciesname"
+    },
+    "SCR_OP_BUFFERLEADMONSPECIESNAME": {
+      "value": 126,
+      "handler": "ScrCmd_bufferleadmonspeciesname"
+    },
+    "SCR_OP_BUFFERPARTYMONNICK": {
+      "value": 127,
+      "handler": "ScrCmd_bufferpartymonnick"
+    },
+    "SCR_OP_BUFFERITEMNAME": {
+      "value": 128,
+      "handler": "ScrCmd_bufferitemname"
+    },
+    "SCR_OP_BUFFERDECORATIONNAME": {
+      "value": 129,
+      "handler": "ScrCmd_bufferdecorationname"
+    },
+    "SCR_OP_BUFFERMOVENAME": {
+      "value": 130,
+      "handler": "ScrCmd_buffermovename"
+    },
+    "SCR_OP_BUFFERNUMBERSTRING": {
+      "value": 131,
+      "handler": "ScrCmd_buffernumberstring"
+    },
+    "SCR_OP_BUFFERSTDSTRING": {
+      "value": 132,
+      "handler": "ScrCmd_bufferstdstring"
+    },
+    "SCR_OP_BUFFERSTRING": {
+      "value": 133,
+      "handler": "ScrCmd_bufferstring"
+    },
+    "SCR_OP_POKEMART": {
+      "value": 134,
+      "handler": "ScrCmd_pokemart"
+    },
+    "SCR_OP_POKEMARTDECORATION": {
+      "value": 135,
+      "handler": "ScrCmd_pokemartdecoration"
+    },
+    "SCR_OP_POKEMARTDECORATION2": {
+      "value": 136,
+      "handler": "ScrCmd_pokemartdecoration2"
+    },
+    "SCR_OP_PLAYSLOTMACHINE": {
+      "value": 137,
+      "handler": "ScrCmd_playslotmachine"
+    },
+    "SCR_OP_SETBERRYTREE": {
+      "value": 138,
+      "handler": "ScrCmd_setberrytree"
+    },
+    "SCR_OP_CHOOSECONTESTMON": {
+      "value": 139,
+      "handler": "ScrCmd_choosecontestmon"
+    },
+    "SCR_OP_STARTCONTEST": {
+      "value": 140,
+      "handler": "ScrCmd_startcontest"
+    },
+    "SCR_OP_SHOWCONTESTRESULTS": {
+      "value": 141,
+      "handler": "ScrCmd_showcontestresults"
+    },
+    "SCR_OP_CONTESTLINKTRANSFER": {
+      "value": 142,
+      "handler": "ScrCmd_contestlinktransfer"
+    },
+    "SCR_OP_RANDOM": {
+      "value": 143,
+      "handler": "ScrCmd_random"
+    },
+    "SCR_OP_ADDMONEY": {
+      "value": 144,
+      "handler": "ScrCmd_addmoney"
+    },
+    "SCR_OP_REMOVEMONEY": {
+      "value": 145,
+      "handler": "ScrCmd_removemoney"
+    },
+    "SCR_OP_CHECKMONEY": {
+      "value": 146,
+      "handler": "ScrCmd_checkmoney"
+    },
+    "SCR_OP_SHOWMONEYBOX": {
+      "value": 147,
+      "handler": "ScrCmd_showmoneybox"
+    },
+    "SCR_OP_HIDEMONEYBOX": {
+      "value": 148,
+      "handler": "ScrCmd_hidemoneybox"
+    },
+    "SCR_OP_UPDATEMONEYBOX": {
+      "value": 149,
+      "handler": "ScrCmd_updatemoneybox"
+    },
+    "SCR_OP_GETPOKENEWSACTIVE": {
+      "value": 150,
+      "handler": "ScrCmd_getpokenewsactive"
+    },
+    "SCR_OP_FADESCREEN": {
+      "value": 151,
+      "handler": "ScrCmd_fadescreen"
+    },
+    "SCR_OP_FADESCREENSPEED": {
+      "value": 152,
+      "handler": "ScrCmd_fadescreenspeed"
+    },
+    "SCR_OP_SETFLASHLEVEL": {
+      "value": 153,
+      "handler": "ScrCmd_setflashlevel"
+    },
+    "SCR_OP_ANIMATEFLASH": {
+      "value": 154,
+      "handler": "ScrCmd_animateflash"
+    },
+    "SCR_OP_MESSAGEAUTOSCROLL": {
+      "value": 155,
+      "handler": "ScrCmd_messageautoscroll"
+    },
+    "SCR_OP_DOFIELDEFFECT": {
+      "value": 156,
+      "handler": "ScrCmd_dofieldeffect"
+    },
+    "SCR_OP_SETFIELDEFFECTARGUMENT": {
+      "value": 157,
+      "handler": "ScrCmd_setfieldeffectargument"
+    },
+    "SCR_OP_WAITFIELDEFFECT": {
+      "value": 158,
+      "handler": "ScrCmd_waitfieldeffect"
+    },
+    "SCR_OP_SETRESPAWN": {
+      "value": 159,
+      "handler": "ScrCmd_setrespawn"
+    },
+    "SCR_OP_CHECKPLAYERGENDER": {
+      "value": 160,
+      "handler": "ScrCmd_checkplayergender"
+    },
+    "SCR_OP_PLAYMONCRY": {
+      "value": 161,
+      "handler": "ScrCmd_playmoncry"
+    },
+    "SCR_OP_SETMETATILE": {
+      "value": 162,
+      "handler": "ScrCmd_setmetatile"
+    },
+    "SCR_OP_RESETWEATHER": {
+      "value": 163,
+      "handler": "ScrCmd_resetweather"
+    },
+    "SCR_OP_SETWEATHER": {
+      "value": 164,
+      "handler": "ScrCmd_setweather"
+    },
+    "SCR_OP_DOWEATHER": {
+      "value": 165,
+      "handler": "ScrCmd_doweather"
+    },
+    "SCR_OP_SETSTEPCALLBACK": {
+      "value": 166,
+      "handler": "ScrCmd_setstepcallback"
+    },
+    "SCR_OP_SETMAPLAYOUTINDEX": {
+      "value": 167,
+      "handler": "ScrCmd_setmaplayoutindex"
+    },
+    "SCR_OP_SETOBJECTSUBPRIORITY": {
+      "value": 168,
+      "handler": "ScrCmd_setobjectsubpriority"
+    },
+    "SCR_OP_RESETOBJECTSUBPRIORITY": {
+      "value": 169,
+      "handler": "ScrCmd_resetobjectsubpriority"
+    },
+    "SCR_OP_CREATEVOBJECT": {
+      "value": 170,
+      "handler": "ScrCmd_createvobject"
+    },
+    "SCR_OP_TURNVOBJECT": {
+      "value": 171,
+      "handler": "ScrCmd_turnvobject"
+    },
+    "SCR_OP_OPENDOOR": {
+      "value": 172,
+      "handler": "ScrCmd_opendoor"
+    },
+    "SCR_OP_CLOSEDOOR": {
+      "value": 173,
+      "handler": "ScrCmd_closedoor"
+    },
+    "SCR_OP_WAITDOORANIM": {
+      "value": 174,
+      "handler": "ScrCmd_waitdooranim"
+    },
+    "SCR_OP_SETDOOROPEN": {
+      "value": 175,
+      "handler": "ScrCmd_setdooropen"
+    },
+    "SCR_OP_SETDOORCLOSED": {
+      "value": 176,
+      "handler": "ScrCmd_setdoorclosed"
+    },
+    "SCR_OP_ADDELEVMENUITEM": {
+      "value": 177,
+      "handler": "ScrCmd_addelevmenuitem"
+    },
+    "SCR_OP_SHOWELEVMENU": {
+      "value": 178,
+      "handler": "ScrCmd_showelevmenu"
+    },
+    "SCR_OP_CHECKCOINS": {
+      "value": 179,
+      "handler": "ScrCmd_checkcoins"
+    },
+    "SCR_OP_ADDCOINS": {
+      "value": 180,
+      "handler": "ScrCmd_addcoins"
+    },
+    "SCR_OP_REMOVECOINS": {
+      "value": 181,
+      "handler": "ScrCmd_removecoins"
+    },
+    "SCR_OP_SETWILDBATTLE": {
+      "value": 182,
+      "handler": "ScrCmd_setwildbattle"
+    },
+    "SCR_OP_DOWILDBATTLE": {
+      "value": 183,
+      "handler": "ScrCmd_dowildbattle"
+    },
+    "SCR_OP_SETVADDRESS": {
+      "value": 184,
+      "handler": "ScrCmd_setvaddress"
+    },
+    "SCR_OP_VGOTO": {
+      "value": 185,
+      "handler": "ScrCmd_vgoto"
+    },
+    "SCR_OP_VCALL": {
+      "value": 186,
+      "handler": "ScrCmd_vcall"
+    },
+    "SCR_OP_VGOTO_IF": {
+      "value": 187,
+      "handler": "ScrCmd_vgoto_if"
+    },
+    "SCR_OP_VCALL_IF": {
+      "value": 188,
+      "handler": "ScrCmd_vcall_if"
+    },
+    "SCR_OP_VMESSAGE": {
+      "value": 189,
+      "handler": "ScrCmd_vmessage"
+    },
+    "SCR_OP_VBUFFERMESSAGE": {
+      "value": 190,
+      "handler": "ScrCmd_vbuffermessage"
+    },
+    "SCR_OP_VBUFFERSTRING": {
+      "value": 191,
+      "handler": "ScrCmd_vbufferstring"
+    },
+    "SCR_OP_SHOWCOINSBOX": {
+      "value": 192,
+      "handler": "ScrCmd_showcoinsbox"
+    },
+    "SCR_OP_HIDECOINSBOX": {
+      "value": 193,
+      "handler": "ScrCmd_hidecoinsbox"
+    },
+    "SCR_OP_UPDATECOINSBOX": {
+      "value": 194,
+      "handler": "ScrCmd_updatecoinsbox"
+    },
+    "SCR_OP_INCREMENTGAMESTAT": {
+      "value": 195,
+      "handler": "ScrCmd_incrementgamestat"
+    },
+    "SCR_OP_SETESCAPEWARP": {
+      "value": 196,
+      "handler": "ScrCmd_setescapewarp"
+    },
+    "SCR_OP_WAITMONCRY": {
+      "value": 197,
+      "handler": "ScrCmd_waitmoncry"
+    },
+    "SCR_OP_BUFFERBOXNAME": {
+      "value": 198,
+      "handler": "ScrCmd_bufferboxname"
+    },
+    "SCR_OP_TEXTCOLOR": {
+      "value": 199,
+      "handler": "ScrCmd_nop1"
+    },
+    "SCR_OP_LOADHELP": {
+      "value": 200,
+      "handler": "ScrCmd_nop1"
+    },
+    "SCR_OP_UNLOADHELP": {
+      "value": 201,
+      "handler": "ScrCmd_nop1"
+    },
+    "SCR_OP_SIGNMSG": {
+      "value": 202,
+      "handler": "ScrCmd_nop1"
+    },
+    "SCR_OP_NORMALMSG": {
+      "value": 203,
+      "handler": "ScrCmd_nop1"
+    },
+    "SCR_OP_COMPAREHIDDENVAR": {
+      "value": 204,
+      "handler": "ScrCmd_nop1"
+    },
+    "SCR_OP_SETMODERNFATEFULENCOUNTER": {
+      "value": 205,
+      "handler": "ScrCmd_setmodernfatefulencounter"
+    },
+    "SCR_OP_CHECKMODERNFATEFULENCOUNTER": {
+      "value": 206,
+      "handler": "ScrCmd_checkmodernfatefulencounter"
+    },
+    "SCR_OP_TRYWONDERCARDSCRIPT": {
+      "value": 207,
+      "handler": "ScrCmd_trywondercardscript"
+    },
+    "SCR_OP_SETWORLDMAPFLAG": {
+      "value": 208,
+      "handler": "ScrCmd_nop1"
+    },
+    "SCR_OP_WARPSPINENTER": {
+      "value": 209,
+      "handler": "ScrCmd_warpspinenter"
+    },
+    "SCR_OP_SETMONMETLOCATION": {
+      "value": 210,
+      "handler": "ScrCmd_setmonmetlocation"
+    },
+    "SCR_OP_MOVEROTATINGTILEOBJECTS": {
+      "value": 211,
+      "handler": "ScrCmd_moverotatingtileobjects"
+    },
+    "SCR_OP_TURNROTATINGTILEOBJECTS": {
+      "value": 212,
+      "handler": "ScrCmd_turnrotatingtileobjects"
+    },
+    "SCR_OP_INITROTATINGTILEPUZZLE": {
+      "value": 213,
+      "handler": "ScrCmd_initrotatingtilepuzzle"
+    },
+    "SCR_OP_FREEROTATINGTILEPUZZLE": {
+      "value": 214,
+      "handler": "ScrCmd_freerotatingtilepuzzle"
+    },
+    "SCR_OP_WARPMOSSDEEPGYM": {
+      "value": 215,
+      "handler": "ScrCmd_warpmossdeepgym"
+    },
+    "SCR_OP_SELECTAPPROACHINGTRAINER": {
+      "value": 216,
+      "handler": "ScrCmd_selectapproachingtrainer"
+    },
+    "SCR_OP_LOCKFORTRAINER": {
+      "value": 217,
+      "handler": "ScrCmd_lockfortrainer"
+    },
+    "SCR_OP_CLOSEBRAILLEMESSAGE": {
+      "value": 218,
+      "handler": "ScrCmd_closebraillemessage"
+    },
+    "SCR_OP_MESSAGEINSTANT": {
+      "value": 219,
+      "handler": "ScrCmd_messageinstant"
+    },
+    "SCR_OP_FADESCREENSWAPBUFFERS": {
+      "value": 220,
+      "handler": "ScrCmd_fadescreenswapbuffers"
+    },
+    "SCR_OP_BUFFERTRAINERCLASSNAME": {
+      "value": 221,
+      "handler": "ScrCmd_buffertrainerclassname"
+    },
+    "SCR_OP_BUFFERTRAINERNAME": {
+      "value": 222,
+      "handler": "ScrCmd_buffertrainername"
+    },
+    "SCR_OP_POKENAVCALL": {
+      "value": 223,
+      "handler": "ScrCmd_pokenavcall"
+    },
+    "SCR_OP_WARPWHITEFADE": {
+      "value": 224,
+      "handler": "ScrCmd_warpwhitefade"
+    },
+    "SCR_OP_BUFFERCONTESTNAME": {
+      "value": 225,
+      "handler": "ScrCmd_buffercontestname"
+    },
+    "SCR_OP_BUFFERITEMNAMEPLURAL": {
+      "value": 226,
+      "handler": "ScrCmd_bufferitemnameplural"
+    }
+  }
+}

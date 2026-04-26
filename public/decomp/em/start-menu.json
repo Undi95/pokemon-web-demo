@@ -1,0 +1,244 @@
+{
+  "items": {
+    "MENU_ACTION_POKEDEX": {
+      "textKey": "gText_MenuPokedex",
+      "callbackName": "StartMenuPokedexCallback"
+    },
+    "MENU_ACTION_POKEMON": {
+      "textKey": "gText_MenuPokemon",
+      "callbackName": "StartMenuPokemonCallback"
+    },
+    "MENU_ACTION_BAG": {
+      "textKey": "gText_MenuBag",
+      "callbackName": "StartMenuBagCallback"
+    },
+    "MENU_ACTION_POKENAV": {
+      "textKey": "gText_MenuPokenav",
+      "callbackName": "StartMenuPokeNavCallback"
+    },
+    "MENU_ACTION_PLAYER": {
+      "textKey": "gText_MenuPlayer",
+      "callbackName": "StartMenuPlayerNameCallback"
+    },
+    "MENU_ACTION_SAVE": {
+      "textKey": "gText_MenuSave",
+      "callbackName": "StartMenuSaveCallback"
+    },
+    "MENU_ACTION_OPTION": {
+      "textKey": "gText_MenuOption",
+      "callbackName": "StartMenuOptionCallback"
+    },
+    "MENU_ACTION_EXIT": {
+      "textKey": "gText_MenuExit",
+      "callbackName": "StartMenuExitCallback"
+    },
+    "MENU_ACTION_RETIRE_SAFARI": {
+      "textKey": "gText_MenuRetire",
+      "callbackName": "StartMenuSafariZoneRetireCallback"
+    },
+    "MENU_ACTION_PLAYER_LINK": {
+      "textKey": "gText_MenuPlayer",
+      "callbackName": "StartMenuLinkModePlayerNameCallback"
+    },
+    "MENU_ACTION_REST_FRONTIER": {
+      "textKey": "gText_MenuRest",
+      "callbackName": "StartMenuSaveCallback"
+    },
+    "MENU_ACTION_RETIRE_FRONTIER": {
+      "textKey": "gText_MenuRetire",
+      "callbackName": "StartMenuBattlePyramidRetireCallback"
+    },
+    "MENU_ACTION_PYRAMID_BAG": {
+      "textKey": "gText_MenuBag",
+      "callbackName": "StartMenuBattlePyramidBagCallback"
+    }
+  },
+  "builders": {
+    "normal": [
+      {
+        "action": "MENU_ACTION_POKEDEX",
+        "flag": "FLAG_SYS_POKEDEX_GET"
+      },
+      {
+        "action": "MENU_ACTION_POKEMON",
+        "flag": "FLAG_SYS_POKEMON_GET"
+      },
+      {
+        "action": "MENU_ACTION_BAG",
+        "flag": null
+      },
+      {
+        "action": "MENU_ACTION_POKENAV",
+        "flag": "FLAG_SYS_POKENAV_GET"
+      },
+      {
+        "action": "MENU_ACTION_PLAYER",
+        "flag": null
+      },
+      {
+        "action": "MENU_ACTION_SAVE",
+        "flag": null
+      },
+      {
+        "action": "MENU_ACTION_OPTION",
+        "flag": null
+      },
+      {
+        "action": "MENU_ACTION_EXIT",
+        "flag": null
+      }
+    ],
+    "safari": [
+      {
+        "action": "MENU_ACTION_RETIRE_SAFARI",
+        "flag": null
+      },
+      {
+        "action": "MENU_ACTION_POKEDEX",
+        "flag": null
+      },
+      {
+        "action": "MENU_ACTION_POKEMON",
+        "flag": null
+      },
+      {
+        "action": "MENU_ACTION_BAG",
+        "flag": null
+      },
+      {
+        "action": "MENU_ACTION_PLAYER",
+        "flag": null
+      },
+      {
+        "action": "MENU_ACTION_OPTION",
+        "flag": null
+      },
+      {
+        "action": "MENU_ACTION_EXIT",
+        "flag": null
+      }
+    ],
+    "linkMode": [
+      {
+        "action": "MENU_ACTION_POKEMON",
+        "flag": null
+      },
+      {
+        "action": "MENU_ACTION_BAG",
+        "flag": null
+      },
+      {
+        "action": "MENU_ACTION_POKENAV",
+        "flag": "FLAG_SYS_POKENAV_GET"
+      },
+      {
+        "action": "MENU_ACTION_PLAYER_LINK",
+        "flag": null
+      },
+      {
+        "action": "MENU_ACTION_OPTION",
+        "flag": null
+      },
+      {
+        "action": "MENU_ACTION_EXIT",
+        "flag": null
+      }
+    ],
+    "unionRoom": [
+      {
+        "action": "MENU_ACTION_POKEMON",
+        "flag": null
+      },
+      {
+        "action": "MENU_ACTION_BAG",
+        "flag": null
+      },
+      {
+        "action": "MENU_ACTION_POKENAV",
+        "flag": "FLAG_SYS_POKENAV_GET"
+      },
+      {
+        "action": "MENU_ACTION_PLAYER",
+        "flag": null
+      },
+      {
+        "action": "MENU_ACTION_OPTION",
+        "flag": null
+      },
+      {
+        "action": "MENU_ACTION_EXIT",
+        "flag": null
+      }
+    ],
+    "multiPartner": [
+      {
+        "action": "MENU_ACTION_POKEMON",
+        "flag": null
+      },
+      {
+        "action": "MENU_ACTION_PLAYER",
+        "flag": null
+      },
+      {
+        "action": "MENU_ACTION_OPTION",
+        "flag": null
+      },
+      {
+        "action": "MENU_ACTION_EXIT",
+        "flag": null
+      }
+    ],
+    "battlePike": [
+      {
+        "action": "MENU_ACTION_POKEDEX",
+        "flag": null
+      },
+      {
+        "action": "MENU_ACTION_POKEMON",
+        "flag": null
+      },
+      {
+        "action": "MENU_ACTION_PLAYER",
+        "flag": null
+      },
+      {
+        "action": "MENU_ACTION_OPTION",
+        "flag": null
+      },
+      {
+        "action": "MENU_ACTION_EXIT",
+        "flag": null
+      }
+    ],
+    "battlePyramid": [
+      {
+        "action": "MENU_ACTION_POKEMON",
+        "flag": null
+      },
+      {
+        "action": "MENU_ACTION_PYRAMID_BAG",
+        "flag": null
+      },
+      {
+        "action": "MENU_ACTION_PLAYER",
+        "flag": null
+      },
+      {
+        "action": "MENU_ACTION_REST_FRONTIER",
+        "flag": null
+      },
+      {
+        "action": "MENU_ACTION_RETIRE_FRONTIER",
+        "flag": null
+      },
+      {
+        "action": "MENU_ACTION_OPTION",
+        "flag": null
+      },
+      {
+        "action": "MENU_ACTION_EXIT",
+        "flag": null
+      }
+    ]
+  }
+}

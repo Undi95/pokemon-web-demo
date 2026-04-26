@@ -41,7 +41,12 @@ export function setupBitmapFont(scene: Phaser.Scene): void {
   ctx.drawImage(img, 0, 0);
   const d = ctx.getImageData(0, 0, c.width, c.height);
   const p = d.data;
-  const tr = p[0], tg = p[1], tb = p[2];
+  // Détecte la BG color en samplant le centre de la cell 0 (espace = BG pure).
+  // Pixel(0,0) ne marche PAS si le PNG a un TRNS chunk : alpha = 0 mais RGB =
+  // (0,0,0) → on transparentiserait les noirs au lieu de la BG bleu, et tous
+  // les glyphes resteraient en blocs 16×16 opaques (bug session 28 cursor).
+  const sampleOffset = (Math.floor(CELL_H / 2) * c.width + Math.floor(CELL_W / 2)) * 4;
+  const tr = p[sampleOffset], tg = p[sampleOffset + 1], tb = p[sampleOffset + 2];
   for (let i = 0; i < p.length; i += 4) {
     if (p[i] === tr && p[i + 1] === tg && p[i + 2] === tb) p[i + 3] = 0;
   }
@@ -81,13 +86,44 @@ function stringWidth(s: string, charmap: Record<string, number>, widths: Uint8Ar
 }
 
 /**
+ * Options de rendu d'un texte (palette remap minimal côté web).
+ */
+export interface RenderTextOpts {
+  /**
+   * Si true, transparentise les pixels BLANCS (palette font idx 3).
+   *
+   * Pourquoi : dans le décomp, font_idx 3 = "BG fill du glyphe" qui est
+   * remappé au render time via TextPrinter à la couleur bg de la fenêtre
+   * (souvent TEXT_COLOR_TRANSPARENT pour cursor/menu).
+   *
+   * Notre PNG charge avec idx 3 = (255,255,255) opaque. Sans flag, on garde
+   * le blanc → nickel sur dialog blanc, mais le cursor ▶ devient un carré
+   * blanc qui devient noir avec setTint. Avec flag : carré blanc → transparent
+   * → cursor = vrai triangle.
+   */
+  transparentizeWhite?: boolean;
+  /**
+   * Si true (DEFAULT), remappe les couleurs du PNG font vers les couleurs
+   * "dialog text" du décomp via TextPrinter :
+   *   - font idx 1 (PNG dark gray 56,56,56)  → output WHITE (255,255,255) = invisible sur bg blanc
+   *   - font idx 2 (PNG light gray 216,216,216) → output DARK GRAY (96,96,96) = visible OUTLINE
+   *
+   * Ce remap reproduit `sTextColors[] = { TEXT_DYNAMIC_COLOR_6, TEXT_COLOR_WHITE,
+   * TEXT_COLOR_DARK_GRAY }` du décomp (menu.c:110) où le BODY est blanc invisible
+   * et le SHADOW est dark gray visible. Sinon le texte a un halo light gray.
+   */
+  authenticColors?: boolean;
+}
+
+/**
  * Rend un texte multi-ligne variable-width en canvas, prêt à être utilisé
  * comme texture Phaser.
  */
 export function renderTextToCanvas(
   scene: Phaser.Scene,
   text: string,
-  maxWidth: number
+  maxWidth: number,
+  opts: RenderTextOpts = {},
 ): HTMLCanvasElement {
   const charmap = scene.cache.json.get(CHARMAP_KEY) as Record<string, number>;
   const widths = scene.registry.get(WIDTHS_KEY) as Uint8Array;
@@ -134,5 +170,53 @@ export function renderTextToCanvas(
       x += charWidth(ch, charmap, widths);
     }
   }
+
+  // Post-process : reproduit le pipeline TextPrinter du décomp.
+  //
+  // Encoding font tile (cf. src/text.c GenerateFontHalfRowLookupTable l.363) :
+  //   - tile value 0 → bg slot   (palette[bgColor])
+  //   - tile value 1 → fg slot   (palette[fgColor])
+  //   - tile value 2 → shadow slot (palette[shadowColor])
+  // PNG indexé idx 0/1/2/3 mappe à : transparent / fg slot / shadow slot / bg slot.
+  //
+  // sFontInfos[FONT_NORMAL] (src/text.c:131) : { fgColor=2, bgColor=1, shadowColor=3 }
+  // gMessageBox_Pal : palette[1]=(248,248,248) blanc, palette[2]=(96,96,96) dark gray,
+  //                   palette[3]=(208,208,200) cream
+  //
+  // Donc :
+  //   - PNG idx 1 (56,56,56) → palette[fg=2] (96,96,96) DARK GRAY = visible body
+  //   - PNG idx 2 (216,216,216) → palette[shadow=3] (208,208,200) CREAM = subtle shadow
+  //   - PNG idx 3 (255,255,255) → palette[bg=1] (248,248,248) WHITE = matches dialog interior
+  //
+  // transparentizeWhite (cursor) : idx 3 → alpha=0 au lieu de white (pour éviter
+  // le carré blanc visible qui devient noir avec setTint).
+  const needsPostProcess = opts.transparentizeWhite || opts.authenticColors;
+  if (needsPostProcess) {
+    const data = octx.getImageData(0, 0, out.width, out.height);
+    const p = data.data;
+    for (let i = 0; i < p.length; i += 4) {
+      if (p[i + 3] === 0) continue;
+      const r = p[i], g = p[i + 1], b = p[i + 2];
+      // Cursor : idx 3 (white) → alpha=0 AVANT le remap.
+      if (opts.transparentizeWhite && r === 255 && g === 255 && b === 255) {
+        p[i + 3] = 0;
+        continue;
+      }
+      if (opts.authenticColors) {
+        if (r === 56 && g === 56 && b === 56) {
+          // body dark → palette[fg=2]
+          p[i] = 96; p[i + 1] = 96; p[i + 2] = 96;
+        } else if (r === 216 && g === 216 && b === 216) {
+          // shadow light gray → palette[shadow=3] cream (subtle, presque invisible)
+          p[i] = 208; p[i + 1] = 208; p[i + 2] = 200;
+        } else if (r === 255 && g === 255 && b === 255) {
+          // bg fill white → palette[bg=1] (matches dialog interior 248,248,248)
+          p[i] = 248; p[i + 1] = 248; p[i + 2] = 248;
+        }
+      }
+    }
+    octx.putImageData(data, 0, 0);
+  }
+
   return out;
 }

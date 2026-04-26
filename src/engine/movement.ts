@@ -1,23 +1,42 @@
 import Phaser from 'phaser';
 import { TILE_SIZE } from '../main';
-import { setIdleFrame, type Facing } from './character-anims';
+import { setIdleFrame, playSingleStep, type Facing } from './character-anims';
 
 /**
- * Table des opcodes de movement du décomp (cf. data/movement_action_func.h
- * et include/constants/event_object_movement.h).
+ * Movement actions du décomp.
  *
- * Chaque entrée :
- *   [dx, dy, facing|null, durationMs]
+ * Source de vérité : `public/decomp/em/movement-actions.json` extrait par
+ * `scripts/extract-movement-actions.mjs` depuis :
+ *   - `asm/macros/movement.inc` (mapping script_name → MOVEMENT_ACTION_*)
+ *   - `include/constants/event_object_movement.h` (160 valeurs MOVEMENT_ACTION_*)
  *
- * - dx/dy : déplacement en cases (peut être 0 pour les face_/walk_in_place)
- * - facing : orientation finale du sprite (null = inchangé)
- * - durationMs : durée du mouvement (impacte la vitesse de l'animation)
+ * Couverture : 159/160 actions (vs 70 hardcoded avant). Cf. DECOMP_ORIGIN_FILES.md A.
  *
- * Pour l'instant on couvre les variantes principales utilisées dans les
- * intros. Les cas exotiques (jump, slide, etc.) tombent en no-op dans
- * `executeAction` et avancent juste la step.
+ * Format JSON par entrée :
+ *   { actionId, actionConst, dx, dy, facing, kind, speedMs }
+ *
+ * Loaded via `loadMovementActions(json)` au boot. Fallback hardcoded ACTIONS
+ * si le JSON n'est pas chargé (boot edge case).
  */
-const ACTIONS: Record<string, [number, number, Facing | null, number]> = {
+interface MovementActionDef {
+  actionId: number;
+  actionConst: string;
+  dx: number;
+  dy: number;
+  facing: Facing | null;
+  kind: string;       // walk, jump, jump_2, face, delay, emote, walk_in_place, etc.
+  speedMs: number;
+}
+
+let actionsFromJson: Record<string, MovementActionDef> = {};
+
+/** Wire le JSON `movement-actions.json` dans l'état global. */
+export function loadMovementActions(json: Record<string, MovementActionDef>) {
+  actionsFromJson = json || {};
+}
+
+/** Fallback hardcoded pour boot edge case (avant chargement JSON). */
+const ACTIONS_FALLBACK: Record<string, [number, number, Facing | null, number]> = {
   // walk normal (vitesse joueur)
   walk_up: [0, -1, 'up', 220],
   walk_down: [0, 1, 'down', 220],
@@ -114,6 +133,20 @@ const STEP_END = 'step_end';
  * @param target descripteur du sprite (NPC ou player)
  * @param actions liste de tokens du label Movement_X (ex. ['walk_up', 'walk_up', 'face_left', 'step_end'])
  */
+/**
+ * Lookup une action : JSON décomp en priorité, fallback hardcoded.
+ * Retourne null si action inconnue (caller doit skip).
+ */
+function lookupAction(name: string): { dx: number; dy: number; facing: Facing | null; dur: number } | null {
+  const fromJson = actionsFromJson[name];
+  if (fromJson) {
+    return { dx: fromJson.dx, dy: fromJson.dy, facing: fromJson.facing, dur: fromJson.speedMs };
+  }
+  const fb = ACTIONS_FALLBACK[name];
+  if (fb) return { dx: fb[0], dy: fb[1], facing: fb[2], dur: fb[3] };
+  return null;
+}
+
 export function runMovement(
   scene: Phaser.Scene,
   target: MovementSprite,
@@ -128,9 +161,13 @@ export function runMovement(
       // set_visible / set_invisible togglent visibility et avancent immédiatement
       if (a === 'set_invisible') { target.sprite.setVisible(false); next(); return; }
       if (a === 'set_visible') { target.sprite.setVisible(true); next(); return; }
-      const def = ACTIONS[a];
-      if (!def) { next(); return; } // opcode inconnu → skip
-      const [dx, dy, facing, dur] = def;
+      const def = lookupAction(a);
+      if (!def) {
+        if (typeof console !== 'undefined') console.warn('[movement] action inconnue:', a);
+        next();
+        return;
+      }
+      const { dx, dy, facing, dur } = def;
       if (facing) {
         target.facing = facing;
         setIdleFrame(target.sprite, target.textureKey, facing);
@@ -143,6 +180,10 @@ export function runMovement(
       target.tile.y += dy;
       const tx = target.tile.x * TILE_SIZE + TILE_SIZE / 2;
       const ty = target.tile.y * TILE_SIZE + TILE_SIZE;
+      // Anim de marche : play step1/idle séquence synchro avec la durée du tween.
+      // Sans ça le sprite "glissait" sur sa frame idle (effet visuel bizarre,
+      // ressemble à un loop selon le user).
+      if (facing) playSingleStep(target.sprite, target.textureKey, facing, dur);
       scene.tweens.add({
         targets: target.sprite,
         x: tx, y: ty,

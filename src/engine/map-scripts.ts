@@ -65,18 +65,30 @@ export async function runOnFrameTable(
   mapName: string,
   ctx: ScriptContext
 ): Promise<void> {
+  const scriptName = findOnFrameMatch(parsed, mapName);
+  if (!scriptName) return;
+  await runScript(scriptName, parsed, ctx);
+}
+
+/**
+ * Version SYNC qui retourne juste le scriptName du 1er match, ou null.
+ * Utile pour décider sync s'il faut pré-lock le player avant d'exécuter
+ * (cf. OverworldScene.tickOnFrameTable). Le décomp fait pareil dans
+ * `MapHeaderCheckScriptTable` (script.c:299) — boucle sync jusqu'au 1er match.
+ */
+export function findOnFrameMatch(parsed: ParsedScripts, mapName: string): string | null {
   const tableName = findMapScriptName(parsed, mapName, 'MAP_SCRIPT_ON_FRAME_TABLE');
-  if (!tableName) return;
+  if (!tableName) return null;
   const table = parsed.scripts[tableName];
-  if (!table) return;
+  if (!table) return null;
   for (const line of table) {
     const m = line.match(/^map_script_2\s+(\w+)\s*,\s*(\w+)\s*,\s*(\w+)/);
     if (!m) continue;
     const [, varName, valueTok, scriptName] = m;
     const expected = /^\d+$/.test(valueTok) ? Number(valueTok) : 0;
     if (gameState.getVar(varName) === expected) {
-      await runScript(scriptName, parsed, ctx);
-      return; // une seule entrée matche typiquement
+      return scriptName;
     }
   }
+  return null;
 }
