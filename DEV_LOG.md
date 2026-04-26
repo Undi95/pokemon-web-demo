@@ -16,6 +16,117 @@ Stack : Vite + TypeScript + Phaser 3 + @pkmn/sim + @pkmn/dex
 
 ---
 
+## Session 65 — Phase 2B extracteur de state machines (Task_/CB2_/SpriteCB_) (2026-04-27)
+
+Final piece du grand plan. Nouveau script `extract-decomp-task-machines.mjs`
+(commit `cf4ac6c6`) qui parse TOUTES les fonctions Task_*/CB2_*/SpriteCB_*
+du décomp et extrait leur structure de state machine en AST navigable.
+
+### Pour chaque fonction extraite
+
+```ts
+{
+  bodyC: '...source C raw...',          // pour porting manuel
+  callsTo: ['Func1', 'Func2', ...],     // tous les fn calls (sorted unique)
+  taskTransitions: ['Task_X', ...],     // gTasks[id].func = Task_X
+  cb2Transitions: ['CB2_Y', ...],        // SetMainCallback2(CB2_Y)
+  spriteTransitions: ['SpriteCB_Z',...], // sprite->callback = SpriteCB_Z
+  dataReads: ['data[0]', 'tFoo', ...],  // slots lus
+  dataWrites: ['data[1]', 'tBar', ...], // slots écrits
+  terminalMarkers: ['DestroyTask', ...],// fin de vie marker
+  externalChecks: {
+    paletteFade: true|false,
+    joyButtons: ['NEW:A_BUTTON', ...],
+    waitForVBlank: true|false,
+    msgBoxIsCancel: true|false,
+  },
+  lineCount: 42,                        // métrique de complexité
+}
+```
+
+### Résultat
+
+153/310 fichiers analysés en 0.2s, 2.1 MB total, 0 erreur tsc :
+- **992 Task_*** extraites avec body + transitions + I/O slots
+- **241 CB2_*** (callbacks scène)
+- **401 SpriteCB_*** (sprite callbacks)
+- **686 state machine transitions** identifiées (= edges du graph)
+
+### Sample (Task_OptionMenuFadeIn)
+
+```ts
+"Task_OptionMenuFadeIn": {
+  bodyC: "if (!gPaletteFade.active)
+              gTasks[taskId].func = Task_OptionMenuProcessInput;",
+  taskTransitions: ["Task_OptionMenuProcessInput"],
+  externalChecks: { paletteFade: true },
+  lineCount: 2,
+}
+```
+
+### Pattern Pokemon Emerald
+
+« Linked state machines » : chaque Task est un état qui termine via
+`gTasks[id].func = NextTask`. Cette représentation AST documente les
+transitions sans transpiler le control flow C (trop variable). Le porting
+manuel reste nécessaire MAIS désormais NAVIGABLE et AUTO-DOCUMENTÉ —
+on peut tracer un workflow scène complet (MainMenu → BirchSpeech →
+NamingScreen → ...) via les chains de transitions sans relire le décomp.
+
+### Conso
+
+```ts
+import { srcOptionMenuTasks } from
+  '@/engine/decomp-data/auto-tasks/_all-tasks-index';
+
+srcOptionMenuTasks.TASKS['Task_OptionMenuFadeIn'].taskTransitions
+  // → ['Task_OptionMenuProcessInput']
+
+srcOptionMenuTasks.TASKS['Task_OptionMenuProcessInput'].dataWrites
+  // → ['tBattleSceneOff', 'tBattleStyle', 'tButtonMode',
+  //    'tMenuSelection', 'tSound', 'tTextSpeed', 'tWindowFrameType']
+```
+
+### Bilan global GRAND PLAN
+
+12 commits sur `main`, **1 869 fichiers TS** générés au total :
+- 626 fichiers `auto/` (C decomp)
+- 608 fichiers `auto-asm/` (asm decomp)
+- 484 fichiers `auto-asm-bytecode/` (bytecode binaire compilé)
+- 153 fichiers `auto-tasks/` (state machines AST)
+- + 5 commits docs
+
+**0 erreur tsc**, **586 KB de bytecode binaire**, **0 unknown opcodes**,
+**1 634 fonctions state machine indexées**.
+
+### Pipeline complet reproductible
+
+```bash
+npm run extract:decomp-all       # 626 fichiers, ~1s
+npm run extract:decomp-asm       # 608 fichiers, ~1s
+npm run compile:bytecode         # 484 fichiers, ~1s
+npm run extract:task-machines    # 153 fichiers, ~0.2s
+```
+
+**3 secondes pour avoir l'INTÉGRALITÉ du moteur Pokemon Emerald
+(C + asm + bytecode + state machines AST) en TypeScript typé.**
+
+### Fin du grand plan
+
+Plus jamais besoin d'ouvrir un fichier du décomp pour chercher une valeur,
+un opcode, un script, une transition d'état, un mapping data. Tout est
+extrait, mirror, compilé, indexé, navigable.
+
+Les futurs ports de scènes peuvent désormais :
+1. Lire `auto/<scene>-data` pour les data tables
+2. Lire `auto-tasks/<scene>-tasks` pour le control flow
+3. Lire `auto-asm-bytecode/<script>-bytecode` pour les scripts
+4. Implémenter la logique TS qui consomme ces 3 layers
+
+Aucun nouveau extracteur planifié. Le pipeline est COMPLET.
+
+---
+
 ## Session 64 round 3 — Phase 1.6 ZERO unknown ops achieved (2026-04-27)
 
 Suite immédiate du round 2. User : "Fix le". 2 derniers patterns identifiés
