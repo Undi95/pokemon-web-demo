@@ -5,13 +5,13 @@
   "skipCount": 0,
   "errCount": 0,
   "totalStats": {
-    "constants": 526,
+    "constants": 540,
     "labels": 19439,
     "globalLabels": 10701,
     "macros": 1206,
     "includes": 756,
     "dataDirectives": 31398,
-    "ops": 65024
+    "ops": 65010
   },
-  "durationMs": 938
+  "durationMs": 717
 }

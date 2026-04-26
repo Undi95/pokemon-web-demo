@@ -462,6 +462,11 @@ function emitOp(op, labelOffsets, warnings, depth = 0, fileUnknownCounts = null)
     return out;
   }
 
+  // C function-like macro invocation `FOO(BAR)` — these come from .inc files
+  // that include C .h headers (e.g. constants/tms_hms.inc) and rely on the C
+  // preprocessor to expand them. We don't do C preprocessing here; skip silently.
+  if (/^[A-Z_]\w*\([^)]*\)$/.test(opName)) return [];
+
   // Unknown: skip + warn + count
   if (warnings && !opName.startsWith('.')) warnings.add(`unknown_op:${opName}`);
   if (fileUnknownCounts && !opName.startsWith('.')) {

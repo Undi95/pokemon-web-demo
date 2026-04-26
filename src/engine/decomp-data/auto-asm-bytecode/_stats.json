@@ -7,26 +7,9 @@
     "ops": 60595,
     "bytes": 586598,
     "unknownOps": 0,
-    "unresolvedSymbols": 13188,
+    "unresolvedSymbols": 12142,
     "labels": 11336
   },
-  "topUnknownOps": {
-    "FOREACH_TM(EQUIV_TM)": 1,
-    "FOREACH_HM(EQUIV_HM)": 1,
-    "STD_OBTAIN_ITEM": 1,
-    "STD_FIND_ITEM": 1,
-    "STD_OBTAIN_DECORATION": 1,
-    "STD_REGISTER_MATCH_CALL": 1,
-    "NO_MUSIC": 1,
-    "MSGBOX_NPC": 1,
-    "MSGBOX_SIGN": 1,
-    "MSGBOX_DEFAULT": 1,
-    "MSGBOX_YESNO": 1,
-    "MSGBOX_AUTOCLOSE": 1,
-    "MSGBOX_GETPOINTS": 1,
-    "MSGBOX_POKENAV": 1,
-    "YES": 1,
-    "NO": 1
-  },
-  "durationMs": 821
+  "topUnknownOps": {},
+  "durationMs": 825
 }

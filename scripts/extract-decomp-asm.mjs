@@ -162,6 +162,19 @@ function processFile(absPath, relInput) {
       }
       continue;
     }
+    // GAS implicit equ syntax: `NAME = VALUE` (no .equ prefix).
+    // Used in event.inc for STD_OBTAIN_ITEM = 0, NO_MUSIC = FALSE, etc.
+    // Skip if inside a .macro body (would be a body line, not top-level).
+    if (!inMacroDef) {
+      const implicitEqu = line.match(/^(\w+)\s*=\s*([^=].*)$/);
+      if (implicitEqu && !line.startsWith('.')) {
+        const name = implicitEqu[1];
+        if (isValidExportName(name)) {
+          constants.push({ name, val: parseVal(implicitEqu[2]) });
+        }
+        continue;
+      }
+    }
 
     // .macro / .endm  (NOTE: macro names use isValidIdentifier, not isValidExportName.
     // We track macroDepth to support nested .macro inside meta-macros, e.g.

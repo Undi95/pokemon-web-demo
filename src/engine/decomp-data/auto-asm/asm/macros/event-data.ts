@@ -8,6 +8,20 @@
 export const ALLOCATE_SCRIPT_CMD_TABLE = 0;
 export const ALLOCATE_SPECIAL_TABLE = 0;
 export const _last_implicit_waitstate = -1;
+export const STD_OBTAIN_ITEM = 0;
+export const STD_FIND_ITEM = 1;
+export const STD_OBTAIN_DECORATION = 7;
+export const STD_REGISTER_MATCH_CALL = 8;
+export const NO_MUSIC = 0;
+export const MSGBOX_NPC = 2;
+export const MSGBOX_SIGN = 3;
+export const MSGBOX_DEFAULT = 4;
+export const MSGBOX_YESNO = 5;
+export const MSGBOX_AUTOCLOSE = 6;
+export const MSGBOX_GETPOINTS = 9;
+export const MSGBOX_POKENAV = 10;
+export const YES = 1;
+export const NO = 0;
 
 // ─── .macro definitions (asm macro → opcode mapping bodies) ─────────────────
 export const MACROS = [
@@ -292,23 +306,4 @@ export const INCLUDES = [
 // Counts: .byte=1
 export const DATA_DIRECTIVES = [
   { kind: '.byte', vals: ["SCR_OP_WAITSTATE"] },
-] as const;
-
-// ─── Tokenized instruction stream (macro invocations + opcodes) ───────────
-// 14 instructions. Each has { op, args[] } — args are unresolved strings/numbers.
-export const OPS = [
-  {op:"STD_OBTAIN_ITEM",args:["= 0"]},
-  {op:"STD_FIND_ITEM",args:["= 1"]},
-  {op:"STD_OBTAIN_DECORATION",args:["= 7"]},
-  {op:"STD_REGISTER_MATCH_CALL",args:["= 8"]},
-  {op:"NO_MUSIC",args:["= FALSE"]},
-  {op:"MSGBOX_NPC",args:["= 2"]},
-  {op:"MSGBOX_SIGN",args:["= 3"]},
-  {op:"MSGBOX_DEFAULT",args:["= 4"]},
-  {op:"MSGBOX_YESNO",args:["= 5"]},
-  {op:"MSGBOX_AUTOCLOSE",args:["= 6"]},
-  {op:"MSGBOX_GETPOINTS",args:["= 9"]},
-  {op:"MSGBOX_POKENAV",args:["= 10"]},
-  {op:"YES",args:["= 1"]},
-  {op:"NO",args:["= 0"]},
 ] as const;
