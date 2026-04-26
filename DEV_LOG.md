@@ -16,6 +16,899 @@ Stack : Vite + TypeScript + Phaser 3 + @pkmn/sim + @pkmn/dex
 
 ---
 
+## Session 62 — Pipeline d'extraction EXHAUSTIF du décomp (Phase 1 + 1.5) (2026-04-26)
+
+Bilan : **plus jamais d'aller-retour vers le décomp pour chercher une valeur**.
+1 237 fichiers TS générés (15 MB total), couvrant l'INTÉGRALITÉ des sources C
+et asm de pokeemeraude. Tous compilent (0 erreur tsc).
+
+### Phase 1 — `scripts/extract-decomp-all.mjs` (commit `7d741e3`)
+
+Parse TOUS les `.c` (`src/`) et `.h` (`include/`) du décomp :
+- 626 fichiers TS générés en 0.8s, 5.8 MB
+- Output : `src/engine/decomp-data/auto/<mirror-path>-data.ts`
+- Index namespacé : `src/engine/decomp-data/auto/_all-index.ts`
+
+Patterns extraits (14 types) :
+- `#define` (numérique + expression) → 18 203
+- Functions (decl + def : name/return/arity/params) → 19 470
+- Includes (graph) → 5 816
+- `Task_*` (state machines) → 1 029
+- `CB2_*` (callbacks) → 308
+- `EWRAM/IWRAM/COMMON_DATA` segment vars → 620
+- Enums → 470
+- `SpriteTemplate` → 669
+- `OamData` → 214
+- `WindowTemplate` / `BgTemplate` → 140 / 72
+- `SpriteSheet` / `CompressedSpriteSheet` / `SpritePalette` etc → 107
+- **Function pointer tables (opcode dispatch)** → 106 (KING pattern)
+- INCGFX (paths gfx + palettes) → 2 155
+- INCBIN (raw binary paths) → 64
+- Inline RGB palettes / text pointer arrays / numeric data → 264
+
+Conso :
+```ts
+import { srcBattleAnim, includeConstantsSongs }
+  from '@/engine/decomp-data/auto/_all-index';
+
+srcBattleAnim.sScriptCmdTable;        // 48 cmd handlers, opcode 0..0x2F
+srcBattleAnim.SEGMENT_VARS;            // 19 EWRAM globals + types
+includeConstantsSongs.SE_BALL_OPEN;    // 15
+```
+
+### Phase 1.5 — `scripts/extract-decomp-asm.mjs` (commit `925db615`)
+
+Parse TOUS les `.s` et `.inc` du décomp (607 fichiers) :
+- 608 fichiers TS générés en 0.7s, 9.2 MB
+- Output : `src/engine/decomp-data/auto-asm/<mirror-path>-data.ts`
+- Index namespacé : `src/engine/decomp-data/auto-asm/_all-asm-index.ts`
+
+Inputs :
+- `data/**/*.s` (battle_anim_scripts, event_scripts, maps, etc.)
+- `data/**/*.inc` (sub-includes scripts)
+- `constants/*.inc`
+- `asm/macros/**/*.inc` (macro→opcode mappings)
+
+Patterns extraits :
+- `.equ` / `.set` constants → 526
+- Labels (`LABEL::` global, `LABEL:` local) → 19 439 dont 10 701 globaux
+- `.macro` definitions complètes (body tokenisé) → **1 200**
+- `.byte` / `.2byte` / `.4byte` / `.string` data directives → 31 401
+- Macro invocations / opcode lines tokenisés `{op,args[]}` → **65 028**
+- `.include` / `.incbin` / `#include` → 756
+
+Conso :
+```ts
+import { dataBattleScripts1, asmMacrosEvent }
+  from '@/engine/decomp-data/auto-asm/_all-asm-index';
+
+dataBattleScripts1.LABELS;             // [{ name:'BattleScript_EffectHit', isGlobal:true, instrIndex:0 }, ...]
+dataBattleScripts1.OPS;                // tokenized stream
+asmMacrosEvent.MACROS;                 // [{ name:'setvar', args:['dest','val'], body:[...] }, ...]
+                                       // = mapping macro→bytecode COMPLET
+```
+
+### Combiné Phase 1 + 1.5
+
+On a maintenant :
+- Tous les *.c → data tables (sprite templates, OAM, palettes, gfx paths, opcode dispatch tables)
+- Tous les *.s → script ASTs (battle/event/anim scripts) avec labels et OPS
+- Tous les macros asm → mapping macro→opcode binaire
+- Tous les #include / .include → graph de dépendances complet
+
+C'est de la **donnée brute prête à consommer**. Pour implémenter un battle
+script, on lit l'AST des OPS depuis `dataBattleScripts1.OPS` + on traduit
+les macros via `asmMacrosEvent.MACROS`. Plus besoin d'ouvrir le décomp.
+
+### Phase 2 (à venir, optionnel)
+
+- Compilateur asm → bytecode binaire : expanse les MACROS sur les OPS,
+  résout les labels en offsets, génère Uint8Array exécutable
+- Générateur de state machines TS depuis `Task_*` / `CB2_*` :
+  parse le control flow `switch(gTasks[id].data[0])` → classes JS
+
+### Re-générer
+
+```bash
+npm run extract:decomp-all   # 626 fichiers en 0.8s
+npm run extract:decomp-asm   # 608 fichiers en 0.7s
+```
+
+Si le décomp est mis à jour, re-run et toutes les data sont à jour.
+
+---
+
+## Session 60-61 — BirchSpeech polish (Lotad release + pokeball + sons + dialog input) (2026-04-26)
+
+Suite session 59. Itérations sur le polish BirchSpeech.
+
+### Engines créés
+
+- `src/engine/gba-task.ts` (~70L) : `TaskRunner` 1:1 décomp `gTasks[]` (Int16Array(16) data, tick auto via scene.events UPDATE)
+- `src/engine/palette-fade.ts` (~70L) : `beginPaletteFade(scene, opts)` wrap Phaser camera fade avec semantics 1:1 `BeginNormalPaletteFade(palettes, delay, startY, endY, color)`
+- `src/util/image-alpha.ts` enrichi : `applyAlphaToSpritesheet(srcKey, outKey, fw, fh)` transparentise + recrée frames (RGB-based, marche si idx 0 RGB unique)
+- `scripts/process_sprite_alpha.py` (Python+PIL) : pré-process PNG indexed → RGBA avec idx 0 → alpha 0. Pour PNG où idx 0 RGB collide avec autre idx (ex. poke.png idx 0 et idx 5 = blanc), seule solution propre.
+
+### BirchSpeech sequence COMPLÈTE
+
+1. Fade-in noir (267ms) `beginPaletteFade(PALETTE_FADES[0])` (1:1 main_menu.c:1288)
+2. Wait 3.6s (timer 0xD8 = 216 frames 1:1 main_menu.c:1293)
+3. Birch sprite alpha 0→1 + platform black-overlay rect alpha 1→0 SIMULTANÉ (10 frames)
+4. Wait 80 frames
+5. Dialog `gText_Birch_Welcome`
+6. Dialog `gText_ThisIsAPokemon` avec `onPause` callback :
+   - Sur EXT_CTRL_CODE_PAUSE (= `{PAUSE 96}`) → `releaseLotad()`
+   - Pokeball spawn à (112, 58) frame 0 (closed) — 1:1 main_menu.c:1378
+   - Délai 32 frames (533ms = `sDelay = 32` arg décomp) `delay`
+   - `playSE('se_ball_open')` (1:1 PlaySE(SE_BALL_OPEN))
+   - `pokeball.play('pokeball-open')` 3-frame anim (10 fps)
+   - White flash 80ms
+   - 16 sparkles particles spawnées (1/frame), 8 angles × 2 répétés, mouvement spirale Sin/Cos radius 0→50 (+2/frame) (1:1 PokeBallOpenParticleAnimation)
+   - Lotad sprite : setTintFill(0xFFFFFF) blanche → pink à mi-anim → clearTint() à la fin (silhouette palette fade)
+   - Combo tween scale 0.156→1.0 + position (112,58)→(100,75) sur 32 frames Sine.easeOut (1:1 sAffineAnim_Battler_Emerge data.c:144 + SpriteCB_ReleasedMonFlyOut)
+   - `playCry('lotad')` au lander (cri WAV 1:1 décomp, MD5 identique)
+7. Dialog `gText_Birch_MainSpeech`
+8. Dialog `gText_Birch_AndYouAre`
+9. askGender → NamingScene
+
+### DialogueBox fixes
+
+- `e.repeat` skip dans keydown handler : holding key NE provoque PLUS auto-advance (1:1 GBA = single press only)
+- Ajout 'x' (= GBA B button) en plus de W/Space/Enter (= GBA A) pour advance dialog
+- `speedUpHeld` flag tracked via keydown/keyup : FAST text speed tant que held, normal sinon (1:1 text.c:944 `JOY_HELD(A|B)`)
+- `show(text, opts?: { onPause })` API ajoutée pour callback EXT_CTRL_CODE_PAUSE (1:1 AddTextPrinterWithCallbackForMessage menu.c:542)
+- `substitutePlaceholders` ne strip PLUS `{PAUSE N}` (encodeStringForFont les convertit en bytes EXT_CTRL_CODE_BEGIN+PAUSE+N que TextPrinter handle)
+
+### OptionMenu fixes (session 60)
+
+- **Freeze 2-fois entry** : Phaser scene class fields initialisés UNE FOIS à instantiation, PAS à chaque scene.start(). Fix : tous fields déclarés `!:` (definite assignment), reset complet dans `init()`. Pattern à adopter pour TOUTES scènes Phaser réutilisables.
+- B/X exit keys : ajout `'b' || 'x' || 'escape'` (GBA B = X clavier, GBA START = B clavier)
+- `scene.start()` atomique au lieu de `stop()` + `launch()` séparés (race d'où freeze in-game OPTION launch)
+
+### Bugs résiduels (à fixer)
+
+1. **Cri Lotad sonne "bicyclette"** : WAV identique au décomp (MD5 b7ed1372). Le user pense que c'est un OVERRIDE d'instrument du synth — son SE_BALL_OPEN précédent laisse une voix résiduelle dans le synth qui pollue le cri jouée via Web Audio (SF2 controller change leak). À investiguer / changer architecture audio.
+2. **Lotad pas animé** : malgré scaleX/scaleY tween, user voit pas l'animation. Possiblement pink silhouette tint masque le scale. Ou tween conflicts entre setTintFill scheduling.
+3. **Pokeball pixels invisibles** : devrait être réglé avec `-rgba.png` pré-processés (idx 0 → alpha 0 indexed). À tester.
+4. **Particles pas randomisées** : décomp utilise 8 angles × 2 répétés (= 16 particules). Visuel "ordonné". User attend peut-être plus de hasard. À discuter (1:1 décomp vs visuel).
+
+### Pattern projet établi
+
+User feedback session 60 : "On peut pas gérer tout les .c avant ?" → pipeline `extract-decomp-scenes.mjs` (Opus, ~600L) génère 15 fichiers `decomp-data/*-data.ts` (option-menu, main-menu, naming-screen, intro, party-menu, etc.). Plus jamais besoin de relire .c en cours d'implémentation. Nouvelle scène = lecture data.ts → écriture comportement.
+
+### Directive 1:1 GBA + ZERO hardcode (session 60-61)
+
+User insistance forte : "on veut du 1:1 GBA, si c'est faux, t'as mal lu la décompile". Mémoire `directive_1_1_gba_no_hardcode.md` créée + mise à jour pour le son (clarifié session 60 : son DOIT jouer même si moteur audio simplifié, comportement 1:1 décomp).
+
+### Audio architecture next plan (session 61 closing)
+
+User va changer le plan audio. Le synth SpessaSynth + SF2 actuel a des bugs de bleed (instruments restent activés entre SE/cry). Plan TBD.
+
+---
+
+## Session 59 — Pipeline extract-decomp-scenes + BirchSpeech intro 1:1 (2026-04-26)
+
+User feedback session 58 : "On peut pas gérer tout les .c avant et bosser avec ?" → décision : pré-extraire TOUT le décomp en TS data files. Sub-agent Opus a build le pipeline.
+
+### Pipeline `scripts/extract-decomp-scenes.mjs` (Opus, ~600L)
+
+12 patterns parsés :
+1. `#define <NAME> <value>` (numeric + raw expr fallback)
+2. `enum { ... }` anonymes/nommés
+3. `static const struct WindowTemplate <name>[]` avec resolution numérique des #define locaux
+4. `static const struct BgTemplate <name>[]`
+5. `static const u16 <name>[] = INCGFX_U16(<path>, ".gbapal")` paths source
+6. `static const u8 <name>[] = INCGFX_U8(<path>, ".4bpp"|".lz")`
+7. `static const u16 <name>[] = {RGB(r,g,b), ...}` palettes inline (BGR15→RGB888 ×8)
+8. `static const u8 *const <name>[]` text pointer arrays (gText_*)
+9. `FillBgTilemapBufferRect(...)` calls top-level (heuristique skip pour `template->bg`/`x+1` dans function bodies)
+10. `BeginNormalPaletteFade(...)` calls
+11. Function names `Task_*`, `CB2_*`
+12. Recursive includes (`include/constants/*.h` → `_common-constants.ts`)
+
+Validations TS-safe : reserved keywords filter, unique exports, valid identifiers, JSON-quoted expressions non-évaluables.
+
+### 15 fichiers générés dans `src/engine/decomp-data/`
+
+| Fichier | Lignes | Exports |
+|---|---|---|
+| `_common-constants.ts` | 870 | 841 (TEXT_COLOR_*, EXT_CTRL_CODE_*, MUS_*, RGB_*, etc.) |
+| `main-menu-data.ts` | 231 | 64 (BirchSpeech : sNewGameBirchSpeechTextWindows, BIRCH_DLG_BASE_TILE_NUM=252, 11 PALETTE_FADES, 32 TASK_NAMES) |
+| `option-menu-data.ts` | 122 | 32 |
+| `naming-screen-data.ts` | 204 | 47 |
+| `intro-data.ts` | 289 | 106 |
+| `party-menu-data.ts` | 263 | 47 |
+| `credits-data.ts` | 138 | 40 |
+| `title-screen-data.ts` | 95 | 30 |
+| `start-menu-data.ts` | 61 | 9 |
+| `menu-data.ts` | 64 | 8 |
+| `text-window-data.ts` | 71 | 2 |
+| `save-data.ts` | 19 | 4 |
+| `text-data.ts` | 16 | 1 |
+| `window-data.ts` | 10 | 1 |
+| `_index.ts` | 19 | re-exports |
+
+Total : 2472 lignes TS auto-générées. `new-game.c` skipped (aucun pattern matchant).
+
+### Caveat
+
+4 fichiers (`save`, `text`, `window`, `text-window`) ont exports en conflit avec d'autres → wildcard skip dans `_index.ts`, accessibles via import direct du fichier. WIN_RANGE-style macros et `data[N]` champ-aliases captured comme raw expr `_EXPR` strings non-évaluables (clairement marquées via JSDoc).
+
+### Demo refactor : OptionMenuScene
+
+`OptionMenuScene` migré : importe désormais `sOptionMenuWinTemplates` depuis `decomp-data/option-menu-data.ts` (auto-généré) + helpers dérivés depuis nouveau `option-menu-extras.ts` (mappings non-extractibles : choices/optKey, FRAME_BOUNDS dérivées de DrawBgWindowFrames). Old manuel `src/engine/option-menu-data.ts` deleted. Pattern validé end-to-end.
+
+### Fix freeze 2-fois entry OptionMenu
+
+Cause identifiée : Phaser scene class fields (`private exiting = false` etc.) sont initialisés UNE FOIS à instantiation Phaser, PAS à chaque `scene.start()`. State pollué entre 1ère et 2ème entry.
+
+Fix : tous les fields déclarés `!:` (definite assignment), reset complet dans `init()` qui EST appelé chaque scene.start(). **Pattern à adopter pour TOUTES les scènes Phaser réutilisables**.
+
+### B/X exit keys OptionMenu
+
+Décomp option_menu.c:271-274 : `JOY_NEW(B_BUTTON) → Task_OptionMenuSave`. Notre keymap : GBA B = X clavier, START = B clavier. Ajout `'b' || 'x' || 'escape'` → save+exit.
+
+### BirchSpeech intro 1:1 (refactor)
+
+Nouveaux helpers infra :
+- `src/engine/gba-task.ts` (~70L) : `TaskRunner` mini-runtime 1:1 décomp `gTasks[]` (Int16Array(16) data, tick chaque frame via scene.events UPDATE, createTask/destroyTask/setTaskFunc)
+- `src/engine/palette-fade.ts` (~70L) : `beginPaletteFade(scene, opts)` wrap Phaser camera fade avec semantics 1:1 décomp `BeginNormalPaletteFade(palettes, delay, startY, endY, color)`. RGB_BLACK/RGB_WHITEALPHA mappés vers (0,0,0)/(255,255,255). Direction startY>endY = fade IN, startY<endY = fade OUT.
+
+`BirchSpeechScene.runIntroAndSpeech()` reproduit séquence main_menu.c:1266-1344 :
+1. Fade-in initial depuis noir : `beginPaletteFade(this, PALETTE_FADES[0])` = consommé directement de main-menu-data.ts (`{startY:16, endY:0, color:'RGB_BLACK'}`)
+2. Timer 0xD8 = 216 frames = 3.6s avant Birch apparaît (1:1 `Task_NewGameBirchSpeech_WaitToShowBirch` `gTasks[].tTimer = 0xD8`)
+3. Birch sprite alpha 0→1 via Phaser tween 10 frames (~167ms) (1:1 `NewGameBirchSpeech_StartFadeInTarget1OutTarget2(taskId, 10)`)
+4. Timer 80 frames = 1.3s avant 1er dialog (1:1 `gTasks[].tTimer = 80` après fade-in sprites)
+5. `runSpeech()` continue normal (Welcome → MainSpeech → AndYouAre → askGender → NamingScene)
+
+Aucun hardcode : timer 216, 80, 10 = constantes décomp. Fade params = directement depuis PALETTE_FADES[0] auto-extracted.
+
+### Étape 3 — Lotad release sync sur PAUSE (LIVRÉE)
+
+`gText_ThisIsAPokemon` = `"Voici ce qu'on appelle un POKéMON.{PAUSE 96}\\p"` contient le PAUSE 96 frames qui sync le release Lotad dans le décomp.
+
+Implémentation :
+1. **Bug substitutePlaceholders** : `replace(/\\{PAUSE\\s+\\d+\\}/g, '')` strippait le PAUSE AVANT encoding → callback never fired. Fix : retiré le strip, encodeStringForFont convertit `{PAUSE N}` en bytes EXT_CTRL_CODE_BEGIN+PAUSE+N que TextPrinter handle (state RENDER_STATE_PAUSE + onCharRendered fire).
+2. **DialogueBox.show(text, { onPause })** : nouveau opts.onPause callback. Fired ONCE au premier EXT_CTRL_CODE_PAUSE détecté. 1:1 décomp `AddTextPrinterWithCallbackForMessage` menu.c:542.
+3. **BirchSpeechScene** :
+   - Lotad sprite (64×64, front.png) preload + position invisible (100, 75) — 1:1 décomp main_menu.c:1373-1374
+   - `runSpeech()` ajout `gText_ThisIsAPokemon` entre Welcome et MainSpeech (manquait avant)
+   - `releaseLotad()` méthode : white flash full-screen 100ms + Lotad alpha tween 0→1 sur 16 frames
+
+TODO Étape 4 : remplacer white flash par vraie pokeball sprite + 4-frame animation (CreatePokeballSpriteToReleaseMon du décomp). Visuel actuel cohérent mais pas pixel-perfect.
+
+### Reste BirchSpeech (pour 1:1 complet)
+
+Tasks décomp post-AndYouAre encore à transcrire :
+- Task_NewGameBirchSpeech_StartBirchLotadPlatformFade
+- Task_NewGameBirchSpeech_SlidePlatformAway (-60 px)
+- Task_NewGameBirchSpeech_StartPlayerFadeIn
+- Task_NewGameBirchSpeech_BoyOrGirl
+- Task_NewGameBirchSpeech_ChooseGender (Brendan/May sprites visibles, swap au LEFT/RIGHT)
+- Task_NewGameBirchSpeech_SlideOutOldGenderSprite / SlideInNewGenderSprite
+- Task_NewGameBirchSpeech_WhatsYourName
+- Task_NewGameBirchSpeech_StartNamingScreen
+- Return from naming + AreYouReady
+- Task_NewGameBirchSpeech_ShrinkPlayer + FadePlayerToWhite
+
+Refactor scènes existantes (NamingScene, OverworldScene, BattleScene) au pattern `<scene>-data.ts` au prochain passage.
+
+### Directive projet ajoutée
+
+User feedback session 60 (très clair) :
+- **1:1 GBA décomp obligatoire**
+- **ZÉRO hardcode** : si trouvé, fix on sight
+- **Exception** : son (en suspend, hardcode toléré temporairement)
+
+Mémoire `directive_1_1_gba_no_hardcode.md` créée + linkée dans MEMORY.md. Workflow obligatoire : lire .c → utiliser data.ts → si manque, étendre extracteur. Cas concret : "platform y=120 trop bas, lis la décomp !!!" résolu en 30 secondes via dump u16 entries de map.bin (rows 9-12, cols 7-22 = pixel rect (56,72) à (184,104)).
+
+---
+
+## Session 57-58 — TextPrinter engine 1:1 + Options menu 1:1 + pattern .c→data.ts (2026-04-26)
+
+User a tenu un cap **1:1 GBA strict, no hardcode**. Audit Opus complet (rapport sauvegardé dans `AUDIT_1_1_GBA.md`) → exécution Étape 1 + 2 :
+
+### Étape 1 — Moteur TextPrinter 1:1 GBA
+
+3 nouveaux extracteurs :
+- `extract-latfont.mjs` → 5 fonts × 256 glyphs × 128 idx pixels (PNG indexed 2bpp, idx 0=BG/1=FG/2=SHADOW/3=BOX_FILL).
+- `extract-text-palettes.mjs` → `palettes.json` enrichi avec `gMessageBox_Pal`, `gTextWindowFrame{1..20}_Pal`, `gFontPalette`. Inline parsing des `RGB(R,G,B)` C constants depuis option_menu.c (sOptionMenuBg_Pal etc.) — pas d'hardcode.
+- `extract-down-arrow.mjs` → `down_arrow.json` 8×48 pixels idx.
+
+Nouveau moteur `src/engine/gba-text-printer.ts` (~500L) :
+- `Window` struct avec `pixelBuffer: Uint8Array` (1 byte par pixel = idx 0-15)
+- `TextPrinter` state machine (RENDER_STATE_HANDLE_CHAR/PAUSE/WAIT_WITH_DOWN_ARROW/FINISH)
+- `runTextPrinter()` 1:1 décomp text.c:934 RenderText
+- `textPrinterDrawDownArrow()` 1:1 text.c:787 (downArrowDelay/yPosIdx state)
+- `copyWindowToCanvas()` pixelBuffer idx → RGBA via palette runtime
+- Handles EXT_CTRL_CODE_COLOR/SHADOW/HIGHLIGHT/PAUSE (3 bytes BEGIN+sub+param)
+- `encodeStringForFont()` parse `{COLOR X}{SHADOW X}{PAUSE N}` markers depuis strings JS
+- `TEXT_COLOR.*` enum 1:1 include/constants/characters.h:234-249
+
+Migration `dialogue-box.ts` :
+- `renderWithGbaEngine()` charge data depuis cache (latfont, palettes, down_arrow, font-widths, charmap)
+- `runTextPrinter` ticks chaque 16ms
+- Streaming char-by-char via `textSpeed = gameState.getTextSpeedFrameDelay()` (1/4/8 frames/char depuis options user)
+- Speed-up : tracker `speedUpHeld` flag (keydown/keyup) → si held, force `delayCounter=0` chaque frame = vitesse FAST 1:1 décomp text.c:944 `JOY_HELD(A|B)`
+- Arrow blittée DANS pixel buffer (pas sprite séparé) → position `currentX/currentY` du printer = 1:1 décomp
+- `advance()` : skip pause si streaming en cours, advance page si WAIT
+- Fallback ancien renderTextToCanvas si data manquante (boot edge case)
+
+### Étape 2 — OptionMenuScene 1:1 décomp option_menu.c (671L)
+
+Nouveau pattern projet : **`<scene>-data.ts`** capture EXHAUSTIVE des constantes/structures du .c lié. Plus de re-lecture mid-implémentation. Template = `src/engine/option-menu-data.ts` :
+- WIN_TEMPLATES (sOptionMenuWinTemplates lignes 90-111)
+- FRAME_BOUNDS (DrawBgWindowFrames lignes 647-671 — bounds tile inclusives, fix off-by-one)
+- FRAME_TILE (3×3 PNG mapping, tile 4 skipped)
+- MENUITEMS_DATA (sOptionMenuItemsNames lignes 79-88 + DrawChoices x positions)
+- HIGHLIGHT_WIN0_* (HighlightOptionMenuItem lignes 374-378)
+- FADE_FRAMES = 16 / FADE_DURATION_MS = 267 (BeginNormalPaletteFade lignes 251, 360)
+- WINDOW_FRAMES_COUNT = 20
+- HEADER_TEXT_X/Y, ITEM_LABEL_X (DrawHeaderText, DrawOptionMenuTexts)
+
+`src/scenes/OptionMenuScene.ts` (~330L) :
+- BG color extraite via `palettes.sOptionMenuBg_Pal.colors[0]` (RGB 17,18,31 → 140,148,255)
+- 2 windows (HEADER 26×2, OPTIONS 26×14) frames composés depuis `text_window/{N+1}.png`
+- Render 7 items + leurs choices via TextPrinter engine (palette `option_menu_text` orange/red/gray)
+- DPAD nav UP/DOWN avec wraparound, LEFT/RIGHT change valeur
+- Highlight overlay : 2 rectangles noirs alpha 0.25 sur tout sauf row sélectionnée (équivalent BLDY=4 + WIN0V décomp)
+- FRAMETYPE change in-place (lazy load PNG nouveau, pas de scene.restart)
+- Fade in/out camera (267ms = 16 frames, 1:1 BeginNormalPaletteFade)
+- Save state via `gameState.setOptions()` persisté localStorage
+
+`gameState` étendu :
+- `PokemonOptions` (textSpeed/battleSceneOff/battleStyle/sound/buttonMode/windowFrameType)
+- `getTextSpeedFrameDelay()` → [8,4,1] selon SLOW/MID/FAST (1:1 menu.c:77)
+- `load()` migration : merge `emptySave()` pour garantir tous les champs présents (fix vieille save sans options)
+
+Wires :
+- `MainMenuScene` OPTION → `scene.start('OptionMenuScene', { returnScene: 'MainMenuScene' })`
+- `MenuOverlayScene` (in-game B menu) OPTION → `scene.start('OptionMenuScene', { callerToResume: 'OverworldScene' })` — atomique vs `stop+launch` séparés qui causaient race + freeze
+
+### Bugs trouvés + fixés
+
+1. **Off-by-one tileB** : `composeFrame(_, _, _, 4)` au lieu de 3 (HEADER) + 20 au lieu de 19 (OPTIONS) → bottom du frame rendu OFF-SCREEN (clipped). Fix avec `FRAME_BOUNDS.*.tileB`.
+2. **Frame palette 2/8** : confirmé identique à emulator (les palettes "wrong" perçues = bottom manquant à cause du off-by-one).
+3. **Freeze in-game OPTION** : `scene.stop()` puis `scene.launch()` séparés = race d'où freeze. Switch à `scene.start()` atomique.
+4. **glTexture null crash** : destroy ancien Image AVANT remove de sa texture (sinon glTexture null à la prochaine render).
+5. **Highlight overlay accumule** : track `highlightRects[]` array, destroy TOUS avant re-create (avant : seul `above` destroy, `below` leak chaque tick → écran tout noir après 7-8 navigations).
+6. **OptionMenu listener leak** : `keyboard.on('keydown')` reste attaché après `scene.stop()`. Cleanup au `Phaser.Scenes.Events.SHUTDOWN`.
+7. **Dialog tap = instant** : `textSpeed = 0` faisait skip tout le texte. Fix : juste `delayCounter = 0` once = process 1 char ce tick. Pour speed-up continu, tracker `speedUpHeld` keyup/keydown.
+
+### Pattern projet documenté
+
+User feedback session 58 : "On peut pas gérer tout les fichier .c avant et bosser avec au lieu de les relire à chaque fois ?". Décision projet :
+
+**À chaque nouvelle scène à implémenter** :
+1. Lire le .c lié EN ENTIER une fois
+2. Capturer toutes constantes/structures/positions/fades dans `src/engine/<scene>-data.ts`
+3. Implémenter Scene en consommant data.ts (séparation comportement/données)
+4. Si la scène est étendue plus tard, refactor : retoucher data.ts d'abord, scene après
+
+Scènes existantes (BirchSpeech, OverworldScene, BattleScene) : refactor au prochain passage.
+
+---
+
+## Session 56 — BirchSpeech 1:1 GBA + audit hardcoded + 6 nouveaux extracteurs (2026-04-26)
+
+User mode "test émulateur côte à côte" : envoie screen vrai jeu vs notre rendu, on fix défaut par défaut.
+
+### Fixes appliqués sur BirchSpeechScene
+1. **Compose BG décomp** (tiles+map.bin) via nouveau util `compose-bg-tilemap.ts` (générique, réutilisable). Avant : background bleu uni → maintenant : ciel + sol composé depuis `shadow.png` (tileset) + `map.bin` (tilemap 32×20) du décomp.
+2. **Birch position 1:1** : (136, 60) au lieu de centré, comme `AddNewGameBirchObject(0x88, 0x3C, 1)` du décomp main_menu.c. Décalé à droite pour place au Lotad à gauche.
+3. **Musique mus_route122** : `playMidiLoop('mus_route122.mid')` au create comme `PlayBGM(MUS_ROUTE122)`.
+4. **Flèche dialog suit le texte** : nouveau helper `measureLastLine()` dans bitmap-font.ts. Position arrow = `X + 6 + lastLineWidth + 2` (juste après dernier caractère). Appliqué dans DialogueBox → utilisé partout (overworld + birch + battle).
+5. **Texte sans fond blanc** : `authenticColors` transparentise le bg du texte au lieu de le remap en cream → plus de carrés visibles autour des lettres.
+
+### 6 nouveaux extracteurs précédemment (session 54)
+- pokemon-anims.json (386 species ANIM_*)
+- pokemon-evolutions.json (172 species)
+- tm-hm.json (58 TMs + 8 HMs + 411 species)
+- pokedex-entries.json (387 species + descriptions FR)
+- trainer-pics.json (89 sprites front)
+- cries.json (386 cries WAV)
+
+Total **38 extracteurs** dans `extract:all-bulk`.
+
+### Bug ouvert (TODO prochaine session)
+**BirchSpeech utilise une mauvaise textbox** :
+- User : "la bonne textbox est verte et marche déjà quand on parle aux PNJ"
+- Notre code BirchSpeech utilise `composeDialogTexture(message_box.png)` → rend blanc/gris/cream
+- Décomp screen émulateur (sans filtre LCD) montre **cyan/turquoise pâle**
+- Hypothèse : la textbox des PNJ overworld utilise un AUTRE chemin de rendu que BirchSpeech, ce qui explique qu'elle soit verte/correcte. Investiguer ce que OverworldScene fait différemment vs BirchSpeechScene pour que la même `new DialogueBox(this).show()` donne 2 résultats différents.
+- Option fix : extraire les vraies palettes depuis la ROM compilée pokeemeraude.gba (vs sources PNG du décomp qui peuvent avoir une palette différente du compilé)
+
+### Fichiers
+- `src/engine/compose-bg-tilemap.ts` (NOUVEAU 70L) — util générique tilemap compose
+- `src/scenes/BirchSpeechScene.ts` — BG composé + Birch (136,60) + musique + flèche
+- `src/engine/dialogue-box.ts` — flèche position dynamique via measureLastLine + restauration composeDialogTexture
+- `src/engine/bitmap-font.ts` — `measureLastLine()` helper exporté + `authenticColors` transparentise bg texte
+- `src/scenes/MenuOverlayScene.ts` — sub-écrans Pokémon/Bag/Player wirés (session 55)
+- `src/engine/mon-anim.ts` (NOUVEAU 250L) — 51 ANIM_* types Pokémon
+- `src/scenes/BattleScene.ts` — anim Pokémon + cri au spawn ennemi
+- 6 nouveaux scripts extracteurs
+- TS clean ✅
+
+---
+
+## Session 55 — Push 1:1 GBA : anims Pokémon + cries + sub-menus + collision (2026-04-26)
+
+User : "j'aimerai qu'aujourd'hui on ai le jeu 1:1, première ville complète, route 1 complète, combat propre, menu Pokémon/Bag/Player". Sub-agent audit lancé puis implémentation en série.
+
+### Sub-agent audit : résultats
+Pour chaque système (NPCs spawn, déplacement, menu, sub-menus, combat, maps Bourg/Route101) :
+- Fichier décomp principal identifié + functions clés
+- État actuel + manques précis avec effort/impact
+
+→ `MASTER_PLAN.md` enrichi implicitement (mais pas modifié).
+
+### Implémenté cette session
+1. **`src/engine/mon-anim.ts`** (NOUVEAU 250L) :
+   - **51 ANIM_* types** depuis `include/pokemon_animation.h` reproduits via Phaser tweens
+   - V_SQUISH, DEEP_V_SQUISH, CIRCULAR_STRETCH, H_VIBRATE, CIRCULAR_VIBRATE, H_SLIDE, V_SLIDE, V_SLIDE_WOBBLE, H_SLIDE_WOBBLE, BOUNCE_ROTATE, ROTATE_TO_SIDES (+TWICE), TWIST, H_PIVOT, CIRCLE_C_CLOCKWISE, V_JUMPS_H_JUMPS, V_JUMPS_BIG, H_JUMPS, H_JUMPS_V_STRETCH, GROW_VIBRATE, SHRINK_GROW, H_STRETCH, V_STRETCH, ZIGZAG_FAST, SWING_CONCAVE/CONVEX (×3 variantes), H_SHAKE, V_SHAKE (+TWICE), GLOW_BLACK/ORANGE/RED/BLUE/YELLOW/PURPLE, FLASH_YELLOW, RISING_WOBBLE, TIP_MOVE_FORWARD, SPIN_LONG, BACK_AND_LUNGE, BACK_FLIP (+BIG), FRONT_FLIP, TUMBLING_FRONT_FLIP, FLICKER, FIGURE_8, ROTATE_UP_SLAM_DOWN
+   - Helper `playMonAnim(scene, sprite, type, baseX, baseY)` dispatch + reset à la fin
+
+2. **BattleScene wiring** :
+   - `setMonAnimCache()` init depuis `pokemon-anims.json`
+   - Au spawn enemy sprite : `playMonAnim(animEntry.frontAnimId)` après `delay` frames
+   - **Cri Pokémon** au spawn : `new Audio('/decomp/em/cries/<species>.wav')` (PlayCry_Normal du décomp) avec petit délai + autoplay block tolerant
+
+3. **NPC collision player** : ajout check `MB_IMPASSABLE_*` (0x30-0x37, 0xB9, 0xC0, 0xC1) dans `isBlocked()` (avant : que collision binary + NPCs visibles → maintenant aussi behaviors directionnels)
+
+4. **MenuOverlayScene — 3 sub-écrans wirés** (inline pour économie tokens) :
+   - **`showPartyScreen()`** (party_menu.c MVP readonly) : 6 slots avec nickname/level + HP bar coloré vert/jaune/rouge selon ratio + chiffres HP/max
+   - **`showBagScreen()`** (item_menu.c MVP) : placeholder "Sac vide" en attendant `gameState.bag` formel (Phase A.8)
+   - **`showTrainerCard()`** (trainer_card.c MVP) : Nom + N° (calculé depuis nameHash) + Genre + Badges 0/8 + Pokémon X/6 + Argent
+   - **`waitClose()`** helper : touche B/Escape/Space → ferme overlay
+   - **handleAction dispatch** : MENU_ACTION_POKEMON/BAG/PLAYER routés vers les bons sub-écrans (avant tous → showStub)
+
+### Déjà OK (vérifié)
+- `addobject` / `removeobject` opcodes wirés via `ctx.setObjectVisible`
+- `setobjectxy` / `setobjectmovementtype` wirés
+- NPC collision player via `npcs.some(...)` dans `isBlocked()`
+- Vitesse mouvement 1:1 (267ms walk / 133ms run depuis sStepTimes décomp)
+- Ledges (jump/walk/slide) wirés via behaviors
+
+### Reste à faire (pour 100% Phase A)
+- **Culling view-based NPCs** (M ★★★) — décomp `TrySpawnObjectEvents` viewport ±2 tiles. Notre code charge tout au map load, pas de cull dynamique. Pas critique pour Bourg/Route 101 (petites maps), à faire pour grandes maps futures.
+- **Turn-in-place distinct anim** (S ★) — décomp anim distinctive si tap court. Notre `heldSince < 80ms = turn` OK mais sprite reste sur idle, pas de pivot frame.
+- **PartyMenu : switch order / release** (L ★★) — actuellement readonly. Phase B.
+- **BagMenu : vraies items[]** (L ★★) — gameState.bag formel à structurer (Phase A.8 roadmap).
+- **Move animations battle** (L ★) — extract battle_anim_scripts.s (gros parsing ASM).
+- **PokédexScene** (L ★) — défer Phase B.
+
+### Fichiers
+- `src/engine/mon-anim.ts` (NOUVEAU 250L)
+- `src/scenes/BattleScene.ts` — import mon-anim + cries map + delays + playMonAnim wiring
+- `src/scenes/MenuOverlayScene.ts` — +130L : 3 sub-écrans inline + waitClose
+- `src/scenes/OverworldScene.ts` — `isBlocked` ajoute check MB_IMPASSABLE_*
+- TS clean ✅
+
+---
+
+## Session 54 — Audit hardcoded + 6 nouveaux extracteurs (2026-04-26)
+
+User demande audit complet "qu'est-ce qui est hardcodé" + extraction de TOUT ce qui manque.
+
+### Audit hardcoded résultats
+- État : ~65% 1:1 décomp couvert, ~35% TODO
+- 3 hardcodes critiques fixés :
+  - `PLAYER_TEAM` Pikachu = dead code, supprimé
+  - `gender: ''` documenté (Showdown auto + TODO genderRatio extraction)
+  - `happiness: 70` + `pokeball: 'pokeball'` documentés (= vraies valeurs `PARTY_MON_INIT_HAPPINESS` décomp)
+- Hardcodés inévitables OK : DEFAULT_ZOOM=4, input keyboard mapping, Phaser/canvas wrappers, `@pkmn/sim` bridge, localStorage save
+
+### 6 nouveaux extracteurs créés
+1. **`extract-pokemon-anims.mjs`** : `sMonFrontAnimIdsTable` + `sMonAnimationDelayTable` + résolution constants ANIM_*. **386 species** (Treecko=ANIM_V_SQUISH_AND_BOUNCE, Poochyena=ANIM_V_SHAKE, etc.)
+2. **`extract-pokemon-evolutions.mjs`** : `gEvolutionTable[NUM_SPECIES][EVOS_PER_MON]` parsé. **172 species, 164 avec évo** (Charmander L16→Charmeleon, Eevee 8 méthodes, etc.)
+3. **`extract-tm-hm.mjs`** : `FOREACH_TM/HM` macros + `gTMHMLearnsets` bitmask. **58 TMs + 8 HMs**, **411 species** avec leurs learnsets compatibles.
+4. **`extract-pokedex-entries.mjs`** : `pokedex_entries.h` + `pokedex_text.h` (concat _( "..." "..." )). **387 species** avec category/height/weight/description FR complète.
+5. **`extract-trainer-pics.mjs`** : copie 89 PNG dresseurs front (HIKER, YOUNGSTER, etc.) → `public/decomp/em/trainer_pics/`. Mapping TRAINER_PIC_X → PNG.
+6. **`extract-cries.mjs`** : 386 cris mappés (sur 388 WAV présents) en croisant `pokemon/<species>/` folder existence avec `cries/<species>.wav`.
+
+### Tous ajoutés à `extract:all-bulk` (38 extracteurs au total désormais)
+
+### Wiring runtime (à venir)
+Les 6 JSONs sont créés, la **wiring runtime** est à faire :
+- `pokemon-anims.json` → BattleScene utilise frontAnimId pour playMonAnim (squish/shake/jumps/etc.) au lieu de hardcoded sequence [1,0,1,0]
+- `cries.json` → playCry(species) au moment de l'apparition Pokémon en battle
+- `trainer-pics.json` → afficher sprite front dresseur en intro combat trainer
+- `pokemon-evolutions.json` → opcode `evolve` + cinématique évolution
+- `tm-hm.json` → check apprentissage CT/CS dans bag UI
+- `pokedex-entries.json` → écrans Pokédex (descriptions FR + stats)
+
+Effort wiring : ~1-2 sessions selon profondeur visuelle (anim types Phaser, etc.)
+
+### Fichiers
+- `scripts/extract-pokemon-anims.mjs` (NOUVEAU)
+- `scripts/extract-pokemon-evolutions.mjs` (NOUVEAU)
+- `scripts/extract-tm-hm.mjs` (NOUVEAU)
+- `scripts/extract-pokedex-entries.mjs` (NOUVEAU)
+- `scripts/extract-trainer-pics.mjs` (NOUVEAU)
+- `scripts/extract-cries.mjs` (NOUVEAU)
+- `package.json` — 6 nouveaux extract:* + bulk
+- `src/data/trainers.ts` — PLAYER_TEAM dead code supprimé
+- `src/engine/pokemon.ts` — hardcodes documentés
+- `src/scenes/BattleScene.ts` — anim idle 1 cycle puis fixe (au lieu de loop)
+- TS clean ✅
+
+---
+
+## Session 53 — Coverage textes + dialogue box bordure verte (2026-04-26)
+
+User screenshot : "texte manquant: gText_PokemonTrainerSchoolEmail" + bordure verte/cyan autour du textbox.
+
+### Fix 1 — Coverage textes étendue
+**Cause** : `extract-scripts.mjs` ne parsait que `data/maps/*/scripts.inc` + `data/scripts/**/*.inc`. Les textes globaux `gText_*` sont dans :
+- `data/event_scripts.s` (extension .s pas .inc)
+- `data/text/**/*.inc`
+- `data/specials.inc`, etc.
+
+**Fix** : `walkAndParse(dir)` étendu pour gérer `.s` ET `.inc`, scan récursif de `data/text/`, et scan flat des `.s/.inc` racine `data/`.
+
+**Stats avant/après** :
+- Avant : 4361 textes parsés
+- Après : **7953 textes** dans `_all.json` (+82%)
+- Spot check : `gText_PokemonTrainerSchoolEmail` = "Il y a un e-mail de l'ECOLE DE DRESSEURS..." ✅
+
+### Fix 2 — Dialogue box bordure verte
+**Cause** : `composeDialogTexture` (window-renderer.ts) draw les tiles du PNG `message_box.png` sur un canvas. Les tiles "bord" du PNG contiennent des pixels en couleur idx 0 = vert (115, 205, 164) = BG palette du décomp. Sans transparentisation post-draw, ces pixels apparaissent en vert/cyan autour du cadre dialogue.
+
+**Fix** : après tous les drawImage, scan canvas pixels et passe alpha=0 sur tous les pixels matching (115, 205, 164). Pattern identique à `setupArrow` qui fait pareil pour la flèche down.
+
+### Fix 3 — Flags/events
+- `gameState.hasFlag()` + `resolveNpcs()` filter via flag déjà OK
+- Au new game : tous flags CLEAR → NPCs avec flag visible ; scripts set le flag → NPC hidden (comportement décomp)
+- Si user voit NPCs absents/présents incorrectement → cas spécifique à investiguer (probable script ON_TRANSITION non extrait/exécuté)
+- Pas de fix global nécessaire pour l'instant
+
+### Fichiers
+- `scripts/extract-scripts.mjs` — walkAndParse récursif + .s/.inc + 3 dirs (scripts, text, data root)
+- `src/engine/window-renderer.ts` — composeDialogTexture transparentise idx 0 vert
+- `public/decomp/em/scripts/_all.json` — régénéré (7953 textes)
+- TS clean ✅
+
+---
+
+## Session 52 — Behaviors GBA tous appliqués : ledges (jump/walk/slide) + grass encounter (2026-04-26)
+
+User : "Ne mets pas que ledge jump, si y en a d'autres applique les déjà tous." → Application de TOUS les behaviors lookup en une passe.
+
+### Helpers metatile-behaviors.ts ajoutés
+- `decodeBehaviorDirection(name)` : MB_*_NORTH/SOUTH/EAST/WEST → Facing
+- `isWalkLedge(byte)` + `getWalkLedgeDirection(byte)` (MB_WALK_*)
+- `isSlideLedge(byte)` + `getSlideLedgeDirection(byte)` (MB_SLIDE_*)
+- `getJumpLedgeFacing(byte)` (en plus de getJumpLedgeDirection legacy)
+
+### tryMove + onComplete dans OverworldScene
+1. **MB_JUMP_*** (8 ledges) : avant tween normal, check si tile devant est jump ledge dans direction facing → `performLedgeJump(facing, dx, dy)` :
+   - Saut 2 tiles parabolique (peakOffset=-10px arc)
+   - 266ms (16 frames @60fps, durée décomp)
+   - Pas de check collision intermédiaire (saut PAR-DESSUS)
+
+2. **MB_WALK_*** (4 ledges) : post-step, si tile actuelle est walk ledge → auto-tryMove dans la direction (escalator-like)
+
+3. **MB_SLIDE_*** (4 ledges) : post-step, si tile slide → continue tryMove dans direction (glace) — chain naturel jusqu'à sortir de la slide
+
+4. **MB_*_GRASS** (5 entries terrain.grass) : post-step, log placeholder (TODO : trigger wildbattle quand `extract-wild-encounters.mjs` extracteur dispo)
+
+### Helpers ajoutés à OverworldScene
+- `dirToDx(d)` / `dirToDy(d)` (Facing → -1/0/1)
+- `performLedgeJump(facing, dx, dy)` (~30L)
+- `checkPostMoveBehaviors(facing)` (~25L)
+
+### Vérification course non-freeze
+- Sprites brendan/walking.png ≠ brendan/running.png (sha distincts) ✅
+- `currentTex()` switch correctement entre PLAYER_TEX et PLAYER_RUN_TEX selon X.isDown
+- Alternation step/idle 66ms est cohérente avec décomp (83ms/50ms similaires)
+- Si user reporte encore "freeze" visuel, creuser plus
+
+### Reste à faire (sessions futures)
+- **Animation course distincte 1:1** : actuellement on utilise IDLE_FRAME[0/1/2] entre les steps en course. Le décomp utilise frames spécifiques `ANIM_RUN_*` (frames 9-17 dans le sAnim mais on a un PNG distinct donc on est bon). Vérification visuelle nécessaire.
+- **Vélo (mach + acro)** : sprites `BrendanMachBike` / `BrendanAcroBike` dispo dans décomp → ajouter état `gPlayerAvatar.flags & PLAYER_AVATAR_FLAG_*`
+- **Surf** : sprite `BrendanSurfing` + état surfing + check Pokémon avec capacité Surf
+- **Wild encounters** : extraire `data/wild_encounters.json` puis trigger battle dans grass
+
+### Fichiers
+- `src/engine/metatile-behaviors.ts` — 6 nouveaux helpers
+- `src/scenes/OverworldScene.ts` — import behaviors + dirToDx/Dy + performLedgeJump + checkPostMoveBehaviors + integration tryMove
+- TS clean ✅
+
+---
+
+## Session 51 — Mouvement 1:1 GBA : vitesse + collision NPC (2026-04-26)
+
+User demande de faire le déplacement 1:1 décomp. NPCs traversent les arbres = bug visible. Demande aussi de ne pas hardcoder, copier exactement.
+
+### Investigations décomp
+1. **Vitesse exacte** : `src/event_object_movement.c` `sStepTimes[]` :
+   - MOVE_SPEED_NORMAL (walk) : 16 frames @60fps = 266.67ms
+   - MOVE_SPEED_FAST_1 (run/surf) : 8 frames = 133.33ms
+   - MOVE_SPEED_FAST_2 (water current) : 6 frames = 100ms
+   - MOVE_SPEED_FASTER (mach bike) : 4 frames = 66.67ms
+   - MOVE_SPEED_FASTEST : 2 frames = 33.33ms
+
+2. **Tile attributes** : `data/tilesets/<primary|secondary>/<name>/metatile_attributes.bin`
+   - Format : u16 par metatile (512 max par tileset)
+   - Bits 0-7 : behavior (MB_*)
+   - Bits 12-15 : layerType (NORMAL/COVERED/SPLIT)
+   - **DÉJÀ utilisé** : `tilemap-loader.ts:188-189` `readAttrs()` charge primary + secondary
+   - Stocke `behaviorByMetatileId[]` + `layerTypeByMetatileId[]` (1024 entries chacun)
+
+3. **Sprites course distincts** : `gObjectEventGraphicsInfo_BrendanRunning` séparé de `BrendanNormal`
+   - `sAnimTable_BrendanMayNormal[]` : a ANIM_STD_GO_* (walk) + ANIM_RUN_* (run) en parallèle
+   - Le décomp switch entre sprites selon la speed
+
+### Fixes appliqués
+1. **Constants vitesse** OverworldScene.ts :
+   - WALK_COOLDOWN: 220→267ms
+   - RUN_COOLDOWN: 120→133ms
+
+2. **NPC respecte MB_IMPASSABLE_*** :
+   - tickNpcBehavior callback `isWalkable` checke maintenant aussi behaviors 0x30-0x37 + 0xB9 + 0xC0 + 0xC1
+   - Avant : que collision binary, donc NPCs ignoraient les behaviors impassable directionnels
+
+### TODO sessions futures (mouvement 1:1 complet)
+- **Animation course distincte** : load `BrendanRunning` sprite séparé + alternate ANIM_RUN_* frames pendant la course (au lieu de réutiliser STEP_FRAMES walk)
+- **Saut ledges (MB_JUMP_*)** : déjà extrait via `metatile-behaviors.ts`, à câbler dans tryMove pour l'animation jump (frames + arc parabolique sur 2 tiles)
+- **Surf** : nécessite Pokémon avec capacité Surf + sprite `BrendanSurfing`
+- **Vélo** (mach + acro) : sprites `BrendanMachBike` / `BrendanAcroBike` + items KEY_ITEM_MACH_BIKE/ACRO_BIKE
+- **Water current** : MB_WATERFALL + behavior current direction (MOVE_SPEED_FAST_2)
+- **Truck/escalators** : déjà gérés (truck via STEP_CB_TRUCK)
+
+### Note sur les arbres traversés
+- Si arbre a `collision=1` dans tilemap → déjà bloqué
+- Si `collision=0` mais `behavior=MB_IMPASSABLE_*` → maintenant bloqué (fix session 51)
+- Si ni l'un ni l'autre → tile passable par design (décor d'arrière-plan), comportement décomp identique
+
+### Fichiers
+- `src/scenes/OverworldScene.ts` — constants vitesse + check behavior impassable NPC
+- TS clean ✅
+
+---
+
+## Session 50 — BattleScene 1:1 GBA reconnaissable ✅ (2026-04-26)
+
+User confirme : "Résultat" + screenshot avec **Pochyena bien visible sur sa plate-forme, Treecko dessous, healthboxes en place, combat tourne**. C'est le 1er rendu réellement 1:1 GBA reconnaissable.
+
+### Bilan visuel 1:1 GBA atteint
+- ✅ Background terrain composé depuis tiles.png + map.bin GBA (sub-block addressing)
+- ✅ Plate-formes opponent + player visibles aux bonnes positions
+- ✅ Sprites Pokémon avec yOffset par species (frame 0 d'atlas potentiellement multi-frame)
+- ✅ Healthboxes décomp avec nom FR + level + HP bar dynamique
+- ✅ Engine combat @pkmn/sim gen3 avec logs FR
+- ✅ Layout 240×160 GBA exact
+
+### Reste à polir (par ordre d'impact visuel)
+1. **Bandes sky en haut** (rows 0-3 du tilemap) → compose RT seulement zone utile
+2. **Sprites décalage ~4px** vs plate-formes → ajuster `POS.spriteY` constants
+3. **Animation idle** → load `anim_front.png` 64×128 + alterner frame 0/1 ~30Hz
+4. **Bitmap fonts** GBA (latin_normal/small) → remplacer monospace Phaser
+
+### Reste à débloquer (gameplay)
+5. **Menu FIGHT/POKEMON/BAG/RUN** + input joueur (P2.7 gros chantier)
+6. **Switch Pokémon** en combat
+7. **Évolutions**, **CT/CS**, **Pokémart**, **Pokédex** (P2-P3 du MASTER_PLAN)
+
+### Fichiers cette session
+Aucun nouveau fichier (juste 3 sessions de fix : 47/48/49 documentées séparément)
+
+---
+
+## Session 49 — Fix Pochyena invisible (atlas multi-frame) + retire scroll terrain (2026-04-26)
+
+### Diagnostic
+User reporte Pochyena toujours invisible après scroll terrain. Investigation :
+```
+poochyena/front.png : 64×256 (atlas 4 frames idle anim)
+treecko/front.png   : 64×64
+torchic/front.png   : 64×64
+mudkip/front.png    : 64×64
+bulbasaur/front.png : 64×64
+pikachu/front.png   : 64×64
+```
+Pochyena (et probablement d'autres Pokémon Hoenn) a un sprite atlas multi-frame pour son animation idle en combat. Notre `load.image()` chargeait la PNG entière (64×256) → avec origin (0.5, 1) bottom à Y=76, top à Y=-180 (off-screen) → invisible.
+
+### Fix
+- **`load.spritesheet`** au lieu de `load.image` avec `frameWidth=64, frameHeight=64` → gère les 2 cas (1 frame ou 4 frames vertical)
+- **`add.sprite(... key, 0)`** → display frame 0 (idle pose default)
+- **Scroll terrain Y=-48 retiré** : décalait les sprites vs plate-formes du tilemap
+- `registerTransparentImage` retiré (spritesheet ne le supporte pas, on fait confiance à PNG palette tRNS chunk)
+
+### Limitations connues
+- Si fond Pokémon pas transparent (PNG sans tRNS), faudra wrapper custom pour spritesheet
+- Bandes vertes en haut du terrain (sky du tilemap) toujours visible — TODO compose RT seulement zone battle utile
+
+### Fichiers
+- `src/scenes/BattleScene.ts` — load.spritesheet + add.sprite frame 0 + retire scroll
+- TS clean ✅
+
+---
+
+## Session 48 — Battle terrain BG_SIZE GBA correct + master-index agent (2026-04-26)
+
+### Contexte
+Test session 47 : terrain affiché mais visuellement incorrect (bandes vertes alternées + grosse forme ovale au milieu = artefacts). User suggère à juste titre qu'un tilemap battle existe.
+
+### Investigation décomp
+`src/battle_bg.c` ligne 28-35 :
+```c
+struct BattleBackground {
+  const void *tileset;
+  const void *tilemap;
+  const void *entryTileset;
+  const void *entryTilemap;
+  const void *palette;
+};
+```
+Et `sBattleEnvironmentTable[]` (lignes 602+) référence pour chaque environnement (GRASS, LONG_GRASS, SAND, UNDERWATER, WATER, POND, MOUNTAIN, CAVE, BUILDING, PLAIN) les `gBattleEnvironmentTiles_*`, `gBattleEnvironmentTilemap_*`, palette correspondants.
+
+Confirmation : `LZDecompressVram(tilemap, BG_SCREEN_ADDR(26))` → 4 KB tilemap = 2 sub-blocks 32×32 = **BG_SIZE 1 (64×32 = 512×256 px)**, pas 32×32 comme je supposais.
+
+### Fix terrain
+`src/engine/battle-terrain.ts` :
+- Détection auto isLarge (map.length >= 2048)
+- Si large : render 64×32 avec **sub-block addressing GBA** (cols 0-31 = sub-block 0 entries 0-1023, cols 32-63 = sub-block 1 entries 1024-2047)
+- Si small : render 32×32 standard
+- Dimensions image résultante : 512×256 (large) ou 256×256 (small). L'écran 240×160 voit la moitié gauche-haut qui contient la scene battle composée.
+
+### Agent master-index — TERMINÉ
+`extract-master-index.mjs` (~250L) crée `master-index.json` (2.07 MB) qui pour chaque map donne TOUT :
+- folder, id, nameFr, layout, music, weather, battleScene, allowCycling/Running, mapType
+- **tileset** : `{primary, secondary, pairKey}` (croise layouts-index.json)
+- **dimensions** : `{width, height}`
+- **connections** : maps adjacentes
+- **objectEvents** (NPCs) : graphics_id, position, movementType, scriptLabel + 8 premières scriptLines, **dialoguesReferenced** (label + texte FR), inanimate flag (croisé), trainerType
+- **warpEvents**, **coordEvents** (avec var/varValue + scripts), **bgEvents**
+- **mapScripts** : ON_TRANSITION, ON_FRAME_TABLE, ON_LOAD, ON_RESUME (scriptLines preview)
+
+**Stats** :
+- 518 maps (468 avec scripts = 90.3%)
+- 2163 NPCs indexés
+- 1513 dialogues FR avec texte extrait
+- 5879 text labels chargés (depuis `data/text/*.inc` + embedded dans scripts.inc)
+- 0 warnings
+
+**Spot check LittlerootTown** :
+- Tileset : `gTileset_General+gTileset_Petalburg` ✅
+- 8 NPCs avec leurs scripts/dialogues FR (Twin, FatMan, Boy, Mom, 2×Truck inanimate, Rival, Birch)
+- Dialogues FR avec control codes décomp (\p, \n, \l) ✅
+
+**Usage futur** :
+```js
+const idx = require('./public/decomp/em/master-index.json');
+const map = idx.maps['MAP_ROUTE101'];
+// Toutes les infos d'une map en 1 lookup, plus besoin de grep le décomp
+```
+
+`extract:master-index` ajouté à `extract:all-bulk`.
+
+### Fichiers
+- `src/engine/battle-terrain.ts` — sub-block addressing GBA
+- TS clean ✅
+
+---
+
+## Session 47 — Sprite Y offset + fixes terrain (2026-04-26)
+
+### Contexte
+Test session 46 par user : terrain affiché mais cassé (bandes vertes alternées + grosses ellipses bleues nuisibles + sprite Pochyena invisible). User a partagé l'astuce ROM hacking : **les sprites Pokémon ont leur position exacte + ombre dans un fichier décomp**.
+
+### Investigation décomp
+Trouvé `src/data/pokemon_graphics/{front,back}_pic_coordinates.h` :
+```c
+[SPECIES_PIDGEOT]   = { .size = MON_COORDS_SIZE(56, 64), .y_offset =  2 },
+[SPECIES_CATERPIE]  = { .size = MON_COORDS_SIZE(40, 40), .y_offset = 15 },
+[SPECIES_BULBASAUR] = { .size = MON_COORDS_SIZE(48, 32), .y_offset = 16 },
+```
+- `size` : dimensions effectives sprite (multiple de 8) — encodé via macro `MON_COORDS_SIZE(W,H) = (DIV_ROUND_UP(W,8) << 4) | DIV_ROUND_UP(H,8)`
+- `y_offset` : px entre bas du sprite réel et bas de la frame 64×64
+- Critique : **Pidgeot front yOffset=1** (volant haut dans frame), **Caterpie yOffset=15** (statique au sol)
+
+### Implémentations
+1. **`extract-mon-pic-coords.mjs`** (NOUVEAU) :
+   - Parse les 2 fichiers `front_pic_coordinates.h` + `back_pic_coordinates.h`
+   - Compose JSON `mon-pic-coords.json` : `{ "SPECIES_X": { back: {w,h,yOffset}, front: {...} } }`
+   - **440 species extraits**
+
+2. **`src/engine/mon-pic-coords.ts`** (NOUVEAU) :
+   - `setMonPicCoordsCache(data)` init sync depuis cache Phaser
+   - `getMonCoord(species, 'back'|'front')` lookup avec fallback `{64,64,0}`
+   - Accept `'Poochyena'` → `'SPECIES_POOCHYENA'` automatique
+
+3. **`BattleScene.ts`** :
+   - **Sprites Pokémon repositionnés** : `Y = POS.spriteSolY + yOffset` (le bas du sprite réel touche le sol GBA)
+   - **`setDepth(5)`** explicite sur sprites Pokémon (étaient masqués par terrain RT)
+   - **Ellipses bleues retirées** (artéfacts visuels nuisibles)
+   - Placeholder bg à depth -100, terrain à -10, sprites à 5
+   - Preload `mon-pic-coords.json` via `scene.load.json` → cache sync en create()
+
+4. **`src/engine/battle-terrain.ts` fix** :
+   - Render fixé sur premier layer 32×32 (1024 entries) du map.bin (au lieu de tout 32×64 = 2048)
+   - Iteration linéaire `i % W, i / W` au lieu de double-boucle
+   - Limit propre pour ne pas dépasser les frames du tileset
+
+5. **`package.json`** : `extract:mon-pic-coords` ajouté à bulk.
+
+### Résultats attendus runtime
+- Sprite Pochyena visible (pas masqué par terrain)
+- Terrain `long_grass` correct (pas de bandes alternées bizarres)
+- Plus d'ellipses bleues nuisibles
+- Pidgeot/Vol Pokémon flotteront au bon Y (futur — nous n'avons pas de Pidgeot dans le combat tutorial)
+
+### Limitations connues
+- **Palette tilemap** : tous les entries terrain ont palette 2 (high bits 0x2000) mais on rend avec la palette intégrée PNG → couleurs approximatives, pas pixel-perfect 1:1. Fix complet = parser palette.json + repigmenter chaque tile (TODO si visuellement cassé).
+- **Animations tiles** (eau qui ondule, etc.) pas wirées
+- **Ombres Pokémon** (small/medium/large/none) pas implémentées — TODO chercher `gObjectEventGraphicsInfo_*` battle ou autre pour la donnée
+
+### Fichiers
+- `scripts/extract-mon-pic-coords.mjs` (NOUVEAU 70L)
+- `src/engine/mon-pic-coords.ts` (NOUVEAU 60L)
+- `src/engine/battle-terrain.ts` — fix layout render
+- `src/scenes/BattleScene.ts` — yOffset + depth + retire ellipses (~10L)
+- `package.json` — extract:mon-pic-coords + bulk
+- TS clean ✅
+
+---
+
+## Session 46 — Battle terrains 1:1 GBA + MASTER_PLAN.md (2026-04-26)
+
+### Contexte
+User passe en mode testeur ("le code est trop compliqué"). Mode autonome activé : Claude décide les priorités, documente tout dans DEV_LOG. Audit Master Plan complet (`MASTER_PLAN.md` 1136L) déterminant `P1.1 extract-battle-terrains` comme #1 quick win visuel.
+
+Screen précédent montre healthboxes décomp affichées mais background = rect bleu uni placeholder, font Phaser non-GBA, sprite Treecko OK. Cause root du look pas-1:1 = absence des **vrais battle backgrounds** (12 terrains GBA dispo dans décomp).
+
+### Implémentation
+1. **`extract-battle-terrains.mjs`** (NOUVEAU) :
+   - Source : `decomps/pokeemeraude/graphics/battle_environment/<env>/`
+   - Pour 11 terrains (building, cave, long_grass, pond_water, rock, sand, sky, stadium, tall_grass, underwater, water — `plain` skip car pas de palette.pal) :
+     - Copie `tiles.png` (atlas 16×16 tiles 8×8) + `map.bin` (u16 tilemap GBA) + `anim_*.png/.bin` si existent
+     - Parse `palette.pal` (format JASC-PAL texte, pas binaire GBA) → JSON
+     - Génère `meta.json` (dimensions tilemap, paletteCount, hasAnim)
+   - `index.json` global pour conso runtime
+
+2. **`src/engine/battle-terrain.ts`** (NOUVEAU 80L) :
+   - `loadBattleTerrain(scene, name)` : compose à l'exécution (conforme règle no-prerender)
+     - Charge palette.json + map.bin + tiles.png
+     - Pour chaque entry u16 : tile_id (bits 0-9) + flipH (bit 10) + flipV (bit 11), palette ignorée MVP (palette intégrée PNG)
+     - Compose dans Phaser RenderTexture sauvegardé sous key réutilisable
+     - Cache côté `cachedKeys` pour éviter recompose
+   - `chooseBattleTerrain(battleScene?)` : mapping `MAP_BATTLE_SCENE_*` → terrain name (NORMAL=long_grass, GYM/ELITE_FOUR=stadium, GROUDON=cave, KYOGRE=underwater, RAYQUAZA=sky, etc.)
+
+3. **`BattleScene.ts`** :
+   - Param `battleScene` ajouté à `BattleInitData`
+   - Placeholder bleu reste visible pendant la compose async
+   - Après `await loadBattleTerrain` : add image en depth -10 (derrière sprites + healthboxes)
+
+4. **`package.json`** : `extract:battle-terrains` ajouté à `extract:all-bulk`.
+
+### À tester runtime
+- Combat tutorial Poochyena : background `long_grass` doit apparaître au lieu du bleu uni
+- Si glitch visuel (tile_ids OOB, palette wrong, dimensions weird) → diagnostiquer en console
+
+### Limitations (TODO sessions suivantes)
+- Plain terrain skip (pas de palette par défaut)
+- Stadium utilise palette `aqua.pal` par défaut (à raffiner par contexte gym leader)
+- Mapping `chooseBattleTerrain` basé seulement sur `battle_scene`, devrait aussi considérer le metatile sur lequel on est (herbe/eau/cave) pour wild encounters
+- Animation tiles (eau qui ondule) pas wirée (dispo via `anim_tiles.png` + `anim_map.bin`)
+- Bits palette du tilemap u16 ignorés (on prend la palette intégrée PNG)
+
+### Fichiers
+- `scripts/extract-battle-terrains.mjs` (NOUVEAU 90L)
+- `src/engine/battle-terrain.ts` (NOUVEAU 80L)
+- `src/scenes/BattleScene.ts` — import + battleScene field + load+display terrain (~15L)
+- `public/decomp/em/battle_terrains/` — 11 dossiers terrain
+- `package.json` — extract:battle-terrains + bulk
+- `MASTER_PLAN.md` (NOUVEAU 1136L) — rapport agent complet, source de vérité plan long-terme
+- TS clean ✅
+
+### Plan suivant (selon MASTER_PLAN §9.7)
+- **P1.2** : fix healthbox palettes (si visuellement encore cassé après terrain — peut-être moins flagrant maintenant)
+- **P1.3** : extract-bitmap-fonts → font 1:1 GBA (remplace monospace Phaser dégueu)
+- **P2.7** : INPUT JOUEUR COMBAT (gros chantier — RandomAI player remplacé par menu FIGHT/POKÉMON/BAG/RUN)
+
+---
+
 ## Session 45 — BattleScene refacto 1:1 GBA (squelette UI) (2026-04-26)
 
 ### Contexte
