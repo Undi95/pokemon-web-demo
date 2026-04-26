@@ -16,6 +16,83 @@ Stack : Vite + TypeScript + Phaser 3 + @pkmn/sim + @pkmn/dex
 
 ---
 
+## Session 64 — Phase 1.6 fix unknown ops du bytecode compiler (-72%) (2026-04-27)
+
+Suite session 63. En investigation des 2 117 unknown ops du bytecode
+compiler, 3 bugs trouvés et fixés (commit `dc018a7f`).
+
+### Bug 1 — TS reserved words filtrent les noms de macros
+
+`extract-decomp-asm.mjs` utilise `isValidExportName(name)` pour valider les
+noms de macros et labels. Ce check rejette les TS reserved words (`return`,
+`case`, `switch`, `do`, `default`, etc.) ce qui SKIP ces macros à
+l'extraction. Mais une macro asm n'est PAS un `export const` — elle est
+stockée en `name: "X"` dans un objet. Le filtre est inutilisé ici.
+
+**Fix** : nouveau helper `isValidIdentifier` (regex C/asm pure, no TS check)
+pour les noms stockés en string fields.
+**Récup** : +6 macros (`return` 1824 occurrences, `case` 1532, `switch` 394).
+
+### Bug 2 — Nested .macro perdues
+
+Pattern `movement.inc` :
+```asm
+.macro create_movement_action name:req, value:req
+  .macro \name           ← parser ignorait (pas de \w+ après .macro)
+    .byte \value
+  .endm                  ← cloturait le outer macro à tort
+.endm
+```
+
+Mon parser ne supportait qu'une seule profondeur de macro à la fois. Le
+`.macro \name` était silencieusement skip et le 1er `.endm` clôturait
+`create_movement_action` au lieu du nested.
+
+**Fix** : tracker `macroDepth`, traiter les nested `.macro` comme body
+verbatim, ne clôturer le outer macro que quand depth retombe à 0.
+
+### Bug 3 — Compiler ne gérait pas les meta-macros
+
+Une macro qui définit dynamiquement d'autres macros est une « meta-macro ».
+Sans support, toutes les macros résultantes sont unknown au compile-time.
+
+**Fix** : nouveau Phase B.2 dans `compile-decomp-bytecode.mjs` :
+- `getMetaMacroInfo(macro)` détecte le pattern `.macro \arg ... .endm` dans
+  un body
+- Scanne tous les `.s/.inc` pour les invocations top-level de meta-macros
+- Synthesize la macro résultante dans `macroMap` à partir du body inner
+  + bindings des args outer
+
+**Récup** : 159 macros synthesizées depuis `create_movement_action`
+(toutes les `walk_*`, `face_*`, `delay_*`, `step_end`, etc.).
+
+Aussi étendu `loadMacros()` pour scanner `data/` et `constants/` en plus
+d'`asm/macros/` (def_special vit dans data/specials.inc, struct_field
+dans constants/m4a_constants.inc, etc.). +8 macros loaded.
+
+### Résultat
+
+| Métrique             | Session 63 | Session 64 | Delta   |
+|----------------------|-----------:|-----------:|--------:|
+| Macros chargées      |      1 168 |      1 176 |    +8   |
+| Meta-macros          |          0 |        159 |  +159   |
+| Unknown ops          |      2 117 |        600 |  -72%   |
+| Bytes émis           |     487 KB |     532 KB |  +45 KB |
+| Top unknown count    |       1824 |          1 |         |
+
+Les 600 unknown restants sont des cas isolés (count=1 chacun) : références
+à des `#define` C utilisés directement dans certains scripts edge
+(STD_OBTAIN_ITEM, MSGBOX_NPC, FOREACH_TM, etc.). Pas un pattern.
+
+### État global après session 64
+
+6 commits sur `main`, **1 716 fichiers TS** (decomp-data + bytecode),
+**0 erreur tsc**, **532 KB de bytecode binaire** prêt pour exécution VM.
+
+Phase 2B (state machines TS depuis Task_*/CB2_*) reste à faire.
+
+---
+
 ## Session 63 — Phase 2A bytecode compiler + Phase 2C démo refactor (2026-04-27)
 
 Continuation Phase 2 du grand plan « pipeline tout-décomp ».
