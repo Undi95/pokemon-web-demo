@@ -106,25 +106,43 @@ for (const mapName of readdirSync(mapsDir)) {
   ok++;
 }
 
-// Common scripts : data/scripts/*.inc — partagés entre toutes les maps
+// Common scripts/textes : parse récursivement tous les .inc + .s de :
+//   - data/scripts/*.inc (scripts partagés)
+//   - data/text/**/*.inc (textes par catégorie)
+//   - data/event_scripts.s + data/specials.inc + autres .s racine
+// (sans ça : msgbox gText_X manquants car X est dans event_scripts.s).
 const commonScripts = {};
 const commonTexts = {};
-const commonDir = join(decompPath, 'data', 'scripts');
-if (existsSync(commonDir)) {
-  function walkCommon(dir) {
-    for (const entry of readdirSync(dir)) {
-      const p = join(dir, entry);
-      const st = statSync(p);
-      if (st.isDirectory()) walkCommon(p);
-      else if (entry.endsWith('.inc')) {
-        const content = readFileSync(p, 'utf8');
-        const parsed = parseScriptsFile(content);
-        Object.assign(commonScripts, parsed.scripts);
-        Object.assign(commonTexts, parsed.texts);
-      }
+function walkAndParse(dir) {
+  for (const entry of readdirSync(dir)) {
+    const p = join(dir, entry);
+    const st = statSync(p);
+    if (st.isDirectory()) walkAndParse(p);
+    else if (entry.endsWith('.inc') || entry.endsWith('.s')) {
+      const content = readFileSync(p, 'utf8');
+      const parsed = parseScriptsFile(content);
+      Object.assign(commonScripts, parsed.scripts);
+      Object.assign(commonTexts, parsed.texts);
     }
   }
-  walkCommon(commonDir);
+}
+const commonDir = join(decompPath, 'data', 'scripts');
+if (existsSync(commonDir)) walkAndParse(commonDir);
+const textDir = join(decompPath, 'data', 'text');
+if (existsSync(textDir)) walkAndParse(textDir);
+// Racine data/ : event_scripts.s, specials.inc, etc. (1 niveau, pas récursif)
+const dataRoot = join(decompPath, 'data');
+if (existsSync(dataRoot)) {
+  for (const entry of readdirSync(dataRoot)) {
+    const p = join(dataRoot, entry);
+    const st = statSync(p);
+    if (!st.isFile()) continue;
+    if (!entry.endsWith('.inc') && !entry.endsWith('.s')) continue;
+    const content = readFileSync(p, 'utf8');
+    const parsed = parseScriptsFile(content);
+    Object.assign(commonScripts, parsed.scripts);
+    Object.assign(commonTexts, parsed.texts);
+  }
 }
 writeFileSync(join(outRoot, '_common.json'), JSON.stringify({ scripts: commonScripts, texts: commonTexts }));
 

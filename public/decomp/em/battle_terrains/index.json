@@ -1,0 +1,46 @@
+[
+  {
+    "name": "building",
+    "path": "battle_terrains/building"
+  },
+  {
+    "name": "cave",
+    "path": "battle_terrains/cave"
+  },
+  {
+    "name": "long_grass",
+    "path": "battle_terrains/long_grass"
+  },
+  {
+    "name": "pond_water",
+    "path": "battle_terrains/pond_water"
+  },
+  {
+    "name": "rock",
+    "path": "battle_terrains/rock"
+  },
+  {
+    "name": "sand",
+    "path": "battle_terrains/sand"
+  },
+  {
+    "name": "sky",
+    "path": "battle_terrains/sky"
+  },
+  {
+    "name": "stadium",
+    "path": "battle_terrains/stadium"
+  },
+  {
+    "name": "tall_grass",
+    "path": "battle_terrains/tall_grass"
+  },
+  {
+    "name": "underwater",
+    "path": "battle_terrains/underwater"
+  },
+  {
+    "name": "water",
+    "path": "battle_terrains/water"
+  }
+]
