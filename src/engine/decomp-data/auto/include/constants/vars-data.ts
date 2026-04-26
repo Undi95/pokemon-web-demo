@@ -1,0 +1,327 @@
+// AUTO-GENERATED from include/constants/vars.h by extract-decomp-all.mjs
+// Do not edit manually — re-run `npm run extract:decomp-all` to refresh.
+//
+// Source: D:/Projet 1/decomps/pokeemeraude/include/constants/vars.h
+// Generated: 2026-04-26
+
+// ─── #define constants ──────────────────────────────────────────────────────
+export const VARS_START = 16384;
+export const TEMP_VARS_START = 16384;
+/** Raw expr: `(TEMP_VARS_START + 0x0)` */
+export const VAR_TEMP_0_EXPR = "(TEMP_VARS_START + 0x0)";
+/** Raw expr: `(TEMP_VARS_START + 0x1)` */
+export const VAR_TEMP_1_EXPR = "(TEMP_VARS_START + 0x1)";
+/** Raw expr: `(TEMP_VARS_START + 0x2)` */
+export const VAR_TEMP_2_EXPR = "(TEMP_VARS_START + 0x2)";
+/** Raw expr: `(TEMP_VARS_START + 0x3)` */
+export const VAR_TEMP_3_EXPR = "(TEMP_VARS_START + 0x3)";
+/** Raw expr: `(TEMP_VARS_START + 0x4)` */
+export const VAR_TEMP_4_EXPR = "(TEMP_VARS_START + 0x4)";
+/** Raw expr: `(TEMP_VARS_START + 0x5)` */
+export const VAR_TEMP_5_EXPR = "(TEMP_VARS_START + 0x5)";
+/** Raw expr: `(TEMP_VARS_START + 0x6)` */
+export const VAR_TEMP_6_EXPR = "(TEMP_VARS_START + 0x6)";
+/** Raw expr: `(TEMP_VARS_START + 0x7)` */
+export const VAR_TEMP_7_EXPR = "(TEMP_VARS_START + 0x7)";
+/** Raw expr: `(TEMP_VARS_START + 0x8)` */
+export const VAR_TEMP_8_EXPR = "(TEMP_VARS_START + 0x8)";
+/** Raw expr: `(TEMP_VARS_START + 0x9)` */
+export const VAR_TEMP_9_EXPR = "(TEMP_VARS_START + 0x9)";
+/** Raw expr: `(TEMP_VARS_START + 0xA)` */
+export const VAR_TEMP_A_EXPR = "(TEMP_VARS_START + 0xA)";
+/** Raw expr: `(TEMP_VARS_START + 0xB)` */
+export const VAR_TEMP_B_EXPR = "(TEMP_VARS_START + 0xB)";
+/** Raw expr: `(TEMP_VARS_START + 0xC)` */
+export const VAR_TEMP_C_EXPR = "(TEMP_VARS_START + 0xC)";
+/** Raw expr: `(TEMP_VARS_START + 0xD)` */
+export const VAR_TEMP_D_EXPR = "(TEMP_VARS_START + 0xD)";
+/** Raw expr: `(TEMP_VARS_START + 0xE)` */
+export const VAR_TEMP_E_EXPR = "(TEMP_VARS_START + 0xE)";
+/** Raw expr: `(TEMP_VARS_START + 0xF)` */
+export const VAR_TEMP_F_EXPR = "(TEMP_VARS_START + 0xF)";
+/** Raw expr: `VAR_TEMP_F` */
+export const TEMP_VARS_END_EXPR = "VAR_TEMP_F";
+/** Raw expr: `(TEMP_VARS_END - TEMP_VARS_START + 1)` */
+export const NUM_TEMP_VARS_EXPR = "(TEMP_VARS_END - TEMP_VARS_START + 1)";
+export const VAR_OBJ_GFX_ID_0 = 16400;
+export const VAR_OBJ_GFX_ID_1 = 16401;
+export const VAR_OBJ_GFX_ID_2 = 16402;
+export const VAR_OBJ_GFX_ID_3 = 16403;
+export const VAR_OBJ_GFX_ID_4 = 16404;
+export const VAR_OBJ_GFX_ID_5 = 16405;
+export const VAR_OBJ_GFX_ID_6 = 16406;
+export const VAR_OBJ_GFX_ID_7 = 16407;
+export const VAR_OBJ_GFX_ID_8 = 16408;
+export const VAR_OBJ_GFX_ID_9 = 16409;
+export const VAR_OBJ_GFX_ID_A = 16410;
+export const VAR_OBJ_GFX_ID_B = 16411;
+export const VAR_OBJ_GFX_ID_C = 16412;
+export const VAR_OBJ_GFX_ID_D = 16413;
+export const VAR_OBJ_GFX_ID_E = 16414;
+export const VAR_OBJ_GFX_ID_F = 16415;
+export const VAR_RECYCLE_GOODS = 16416;
+export const VAR_REPEL_STEP_COUNT = 16417;
+export const VAR_ICE_STEP_COUNT = 16418;
+export const VAR_STARTER_MON = 16419;
+export const VAR_MIRAGE_RND_H = 16420;
+export const VAR_MIRAGE_RND_L = 16421;
+export const VAR_SECRET_BASE_MAP = 16422;
+export const VAR_CYCLING_ROAD_RECORD_COLLISIONS = 16423;
+export const VAR_CYCLING_ROAD_RECORD_TIME_L = 16424;
+export const VAR_CYCLING_ROAD_RECORD_TIME_H = 16425;
+export const VAR_FRIENDSHIP_STEP_COUNTER = 16426;
+export const VAR_POISON_STEP_COUNTER = 16427;
+export const VAR_RESET_RTC_ENABLE = 16428;
+export const VAR_ENIGMA_BERRY_AVAILABLE = 16429;
+export const VAR_WONDER_NEWS_STEP_COUNTER = 16430;
+export const VAR_FRONTIER_MANIAC_FACILITY = 16431;
+export const VAR_FRONTIER_GAMBLER_CHALLENGE = 16432;
+export const VAR_FRONTIER_GAMBLER_SET_CHALLENGE = 16433;
+export const VAR_FRONTIER_GAMBLER_AMOUNT_BET = 16434;
+export const VAR_FRONTIER_GAMBLER_STATE = 16435;
+export const VAR_DEOXYS_ROCK_STEP_COUNT = 16436;
+export const VAR_DEOXYS_ROCK_LEVEL = 16437;
+export const VAR_PC_BOX_TO_SEND_MON = 16438;
+export const VAR_ABNORMAL_WEATHER_LOCATION = 16439;
+export const VAR_ABNORMAL_WEATHER_STEP_COUNTER = 16440;
+export const VAR_SHOULD_END_ABNORMAL_WEATHER = 16441;
+export const VAR_FARAWAY_ISLAND_STEP_COUNTER = 16442;
+export const VAR_REGICE_STEPS_1 = 16443;
+export const VAR_REGICE_STEPS_2 = 16444;
+export const VAR_REGICE_STEPS_3 = 16445;
+export const VAR_ALTERING_CAVE_WILD_SET = 16446;
+export const VAR_DISTRIBUTE_EON_TICKET = 16447;
+export const VAR_DAYS = 16448;
+export const VAR_FANCLUB_FAN_COUNTER = 16449;
+export const VAR_FANCLUB_LOSE_FAN_TIMER = 16450;
+export const VAR_DEPT_STORE_FLOOR = 16451;
+export const VAR_TRICK_HOUSE_LEVEL = 16452;
+export const VAR_POKELOT_PRIZE_ITEM = 16453;
+export const VAR_NATIONAL_DEX = 16454;
+export const VAR_SEEDOT_SIZE_RECORD = 16455;
+export const VAR_ASH_GATHER_COUNT = 16456;
+export const VAR_BIRCH_STATE = 16457;
+export const VAR_CRUISE_STEP_COUNT = 16458;
+export const VAR_POKELOT_RND1 = 16459;
+export const VAR_POKELOT_RND2 = 16460;
+export const VAR_POKELOT_PRIZE_PLACE = 16461;
+export const VAR_UNUSED_0x404E = 16462;
+export const VAR_LOTAD_SIZE_RECORD = 16463;
+export const VAR_LITTLEROOT_TOWN_STATE = 16464;
+export const VAR_OLDALE_TOWN_STATE = 16465;
+export const VAR_DEWFORD_TOWN_STATE = 16466;
+export const VAR_LAVARIDGE_TOWN_STATE = 16467;
+export const VAR_CURRENT_SECRET_BASE = 16468;
+export const VAR_VERDANTURF_TOWN_STATE = 16469;
+export const VAR_PACIFIDLOG_TOWN_STATE = 16470;
+export const VAR_PETALBURG_CITY_STATE = 16471;
+export const VAR_SLATEPORT_CITY_STATE = 16472;
+export const VAR_MAUVILLE_CITY_STATE = 16473;
+export const VAR_RUSTBORO_CITY_STATE = 16474;
+export const VAR_FORTREE_CITY_STATE = 16475;
+export const VAR_LILYCOVE_CITY_STATE = 16476;
+export const VAR_MOSSDEEP_CITY_STATE = 16477;
+export const VAR_SOOTOPOLIS_CITY_STATE = 16478;
+export const VAR_EVER_GRANDE_CITY_STATE = 16479;
+export const VAR_ROUTE101_STATE = 16480;
+export const VAR_ROUTE102_STATE = 16481;
+export const VAR_ROUTE103_STATE = 16482;
+export const VAR_ROUTE104_STATE = 16483;
+export const VAR_ROUTE105_STATE = 16484;
+export const VAR_ROUTE106_STATE = 16485;
+export const VAR_ROUTE107_STATE = 16486;
+export const VAR_ROUTE108_STATE = 16487;
+export const VAR_ROUTE109_STATE = 16488;
+export const VAR_ROUTE110_STATE = 16489;
+export const VAR_ROUTE111_STATE = 16490;
+export const VAR_ROUTE112_STATE = 16491;
+export const VAR_ROUTE113_STATE = 16492;
+export const VAR_ROUTE114_STATE = 16493;
+export const VAR_ROUTE115_STATE = 16494;
+export const VAR_ROUTE116_STATE = 16495;
+export const VAR_ROUTE117_STATE = 16496;
+export const VAR_ROUTE118_STATE = 16497;
+export const VAR_ROUTE119_STATE = 16498;
+export const VAR_ROUTE120_STATE = 16499;
+export const VAR_ROUTE121_STATE = 16500;
+export const VAR_ROUTE122_STATE = 16501;
+export const VAR_ROUTE123_STATE = 16502;
+export const VAR_ROUTE124_STATE = 16503;
+export const VAR_ROUTE125_STATE = 16504;
+export const VAR_ROUTE126_STATE = 16505;
+export const VAR_ROUTE127_STATE = 16506;
+export const VAR_ROUTE128_STATE = 16507;
+export const VAR_ROUTE129_STATE = 16508;
+export const VAR_ROUTE130_STATE = 16509;
+export const VAR_ROUTE131_STATE = 16510;
+export const VAR_ROUTE132_STATE = 16511;
+export const VAR_ROUTE133_STATE = 16512;
+export const VAR_ROUTE134_STATE = 16513;
+export const VAR_LITTLEROOT_HOUSES_STATE_MAY = 16514;
+export const VAR_UNUSED_0x4083 = 16515;
+export const VAR_BIRCH_LAB_STATE = 16516;
+export const VAR_PETALBURG_GYM_STATE = 16517;
+export const VAR_CONTEST_HALL_STATE = 16518;
+export const VAR_CABLE_CLUB_STATE = 16519;
+export const VAR_CONTEST_TYPE = 16520;
+export const VAR_SECRET_BASE_INITIALIZED = 16521;
+export const VAR_CONTEST_PRIZE_PICKUP = 16522;
+export const VAR_UNUSED_0x408B = 16523;
+export const VAR_LITTLEROOT_HOUSES_STATE_BRENDAN = 16524;
+export const VAR_LITTLEROOT_RIVAL_STATE = 16525;
+export const VAR_BOARD_BRINEY_BOAT_STATE = 16526;
+export const VAR_DEVON_CORP_3F_STATE = 16527;
+export const VAR_BRINEY_HOUSE_STATE = 16528;
+export const VAR_UNUSED_0x4091 = 16529;
+export const VAR_LITTLEROOT_INTRO_STATE = 16530;
+export const VAR_MAUVILLE_GYM_STATE = 16531;
+export const VAR_LILYCOVE_MUSEUM_2F_STATE = 16532;
+export const VAR_LILYCOVE_FAN_CLUB_STATE = 16533;
+export const VAR_BRINEY_LOCATION = 16534;
+export const VAR_INIT_SECRET_BASE = 16535;
+export const VAR_PETALBURG_WOODS_STATE = 16536;
+export const VAR_LILYCOVE_CONTEST_LOBBY_STATE = 16537;
+export const VAR_RUSTURF_TUNNEL_STATE = 16538;
+export const VAR_UNUSED_0x409B = 16539;
+export const VAR_ELITE_4_STATE = 16540;
+export const VAR_UNUSED_0x409D = 16541;
+export const VAR_MOSSDEEP_SPACE_CENTER_STAIR_GUARD_STATE = 16542;
+export const VAR_MOSSDEEP_SPACE_CENTER_STATE = 16543;
+export const VAR_SLATEPORT_HARBOR_STATE = 16544;
+export const VAR_UNUSED_0x40A1 = 16545;
+export const VAR_SEAFLOOR_CAVERN_STATE = 16546;
+export const VAR_CABLE_CAR_STATION_STATE = 16547;
+export const VAR_SAFARI_ZONE_STATE = 16548;
+export const VAR_TRICK_HOUSE_BEING_WATCHED_STATE = 16549;
+export const VAR_TRICK_HOUSE_FOUND_TRICK_MASTER = 16550;
+export const VAR_TRICK_HOUSE_ENTRANCE_STATE = 16551;
+export const VAR_UNUSED_0x40A8 = 16552;
+export const VAR_CYCLING_CHALLENGE_STATE = 16553;
+export const VAR_SLATEPORT_MUSEUM_1F_STATE = 16554;
+export const VAR_TRICK_HOUSE_PUZZLE_1_STATE = 16555;
+export const VAR_TRICK_HOUSE_PUZZLE_2_STATE = 16556;
+export const VAR_TRICK_HOUSE_PUZZLE_3_STATE = 16557;
+export const VAR_TRICK_HOUSE_PUZZLE_4_STATE = 16558;
+export const VAR_TRICK_HOUSE_PUZZLE_5_STATE = 16559;
+export const VAR_TRICK_HOUSE_PUZZLE_6_STATE = 16560;
+export const VAR_TRICK_HOUSE_PUZZLE_7_STATE = 16561;
+export const VAR_TRICK_HOUSE_PUZZLE_8_STATE = 16562;
+export const VAR_WEATHER_INSTITUTE_STATE = 16563;
+export const VAR_SS_TIDAL_STATE = 16564;
+export const VAR_TRICK_HOUSE_ENTER_FROM_CORRIDOR = 16565;
+export const VAR_TRICK_HOUSE_PUZZLE_7_STATE_2 = 16566;
+export const VAR_SLATEPORT_FAN_CLUB_STATE = 16567;
+export const VAR_UNUSED_0x40B8 = 16568;
+export const VAR_MT_PYRE_STATE = 16569;
+export const VAR_NEW_MAUVILLE_STATE = 16570;
+export const VAR_UNUSED_0x40BB = 16571;
+export const VAR_BRAVO_TRAINER_BATTLE_TOWER_ON = 16572;
+export const VAR_JAGGED_PASS_ASH_WEATHER = 16573;
+export const VAR_GLASS_WORKSHOP_STATE = 16574;
+export const VAR_METEOR_FALLS_STATE = 16575;
+export const VAR_SOOTOPOLIS_MYSTERY_EVENTS_STATE = 16576;
+export const VAR_TRICK_HOUSE_PRIZE_PICKUP = 16577;
+export const VAR_PACIFIDLOG_TM_RECEIVED_DAY = 16578;
+export const VAR_VICTORY_ROAD_1F_STATE = 16579;
+export const VAR_FOSSIL_RESURRECTION_STATE = 16580;
+export const VAR_WHICH_FOSSIL_REVIVED = 16581;
+export const VAR_STEVENS_HOUSE_STATE = 16582;
+export const VAR_OLDALE_RIVAL_STATE = 16583;
+export const VAR_JAGGED_PASS_STATE = 16584;
+export const VAR_SCOTT_PETALBURG_ENCOUNTER = 16585;
+export const VAR_SKY_PILLAR_STATE = 16586;
+export const VAR_MIRAGE_TOWER_STATE = 16587;
+export const VAR_FOSSIL_MANIAC_STATE = 16588;
+export const VAR_CABLE_CLUB_TUTORIAL_STATE = 16589;
+export const VAR_FRONTIER_BATTLE_MODE = 16590;
+export const VAR_FRONTIER_FACILITY = 16591;
+export const VAR_HAS_ENTERED_BATTLE_FRONTIER = 16592;
+export const VAR_SCOTT_STATE = 16593;
+export const VAR_SLATEPORT_OUTSIDE_MUSEUM_STATE = 16594;
+export const VAR_DEX_UPGRADE_JOHTO_STARTER_STATE = 16595;
+export const VAR_SS_TIDAL_SCOTT_STATE = 16596;
+export const VAR_ROAMER_POKEMON = 16597;
+export const VAR_TRAINER_HILL_IS_ACTIVE = 16598;
+export const VAR_SKY_PILLAR_RAYQUAZA_CRY_DONE = 16599;
+export const VAR_SOOTOPOLIS_WALLACE_STATE = 16600;
+export const VAR_HAS_TALKED_TO_SEAFLOOR_CAVERN_ENTRANCE_GRUNT = 16601;
+export const VAR_REGISTER_BIRCH_STATE = 16602;
+export const VAR_UNUSED_0x40DB = 16603;
+export const VAR_UNUSED_0x40DC = 16604;
+export const VAR_GIFT_PICHU_SLOT = 16605;
+export const VAR_GIFT_UNUSED_1 = 16606;
+export const VAR_GIFT_UNUSED_2 = 16607;
+export const VAR_GIFT_UNUSED_3 = 16608;
+export const VAR_GIFT_UNUSED_4 = 16609;
+export const VAR_GIFT_UNUSED_5 = 16610;
+export const VAR_GIFT_UNUSED_6 = 16611;
+export const VAR_GIFT_UNUSED_7 = 16612;
+export const VAR_UNUSED_0x40E5 = 16613;
+export const VAR_DAILY_SLOTS = 16614;
+export const VAR_DAILY_WILDS = 16615;
+export const VAR_DAILY_BLENDER = 16616;
+export const VAR_DAILY_PLANTED_BERRIES = 16617;
+export const VAR_DAILY_PICKED_BERRIES = 16618;
+export const VAR_DAILY_ROULETTE = 16619;
+export const VAR_SECRET_BASE_STEP_COUNTER = 16620;
+export const VAR_SECRET_BASE_LAST_ITEM_USED = 16621;
+export const VAR_SECRET_BASE_LOW_TV_FLAGS = 16622;
+export const VAR_SECRET_BASE_HIGH_TV_FLAGS = 16623;
+export const VAR_SECRET_BASE_IS_NOT_LOCAL = 16624;
+export const VAR_DAILY_BP = 16625;
+export const VAR_WALLY_CALL_STEP_COUNTER = 16626;
+export const VAR_SCOTT_FORTREE_CALL_STEP_COUNTER = 16627;
+export const VAR_ROXANNE_CALL_STEP_COUNTER = 16628;
+export const VAR_SCOTT_BF_CALL_STEP_COUNTER = 16629;
+export const VAR_RIVAL_RAYQUAZA_CALL_STEP_COUNTER = 16630;
+export const VAR_UNUSED_0x40F7 = 16631;
+export const VAR_UNUSED_0x40F8 = 16632;
+export const VAR_UNUSED_0x40F9 = 16633;
+export const VAR_UNUSED_0x40FA = 16634;
+export const VAR_UNUSED_0x40FB = 16635;
+export const VAR_UNUSED_0x40FC = 16636;
+export const VAR_UNUSED_0x40FD = 16637;
+export const VAR_UNUSED_0x40FE = 16638;
+export const VAR_UNUSED_0x40FF = 16639;
+export const VARS_END = 16639;
+/** Raw expr: `(VARS_END - VARS_START + 1)` */
+export const VARS_COUNT_EXPR = "(VARS_END - VARS_START + 1)";
+export const SPECIAL_VARS_START = 32768;
+export const VAR_0x8000 = 32768;
+export const VAR_0x8001 = 32769;
+export const VAR_0x8002 = 32770;
+export const VAR_0x8003 = 32771;
+export const VAR_0x8004 = 32772;
+export const VAR_0x8005 = 32773;
+export const VAR_0x8006 = 32774;
+export const VAR_0x8007 = 32775;
+export const VAR_0x8008 = 32776;
+export const VAR_0x8009 = 32777;
+export const VAR_0x800A = 32778;
+export const VAR_0x800B = 32779;
+export const VAR_FACING = 32780;
+export const VAR_RESULT = 32781;
+export const VAR_ITEM_ID = 32782;
+export const VAR_LAST_TALKED = 32783;
+export const VAR_CONTEST_RANK = 32784;
+export const VAR_CONTEST_CATEGORY = 32785;
+export const VAR_MON_BOX_ID = 32786;
+export const VAR_MON_BOX_POS = 32787;
+export const VAR_UNUSED_0x8014 = 32788;
+export const VAR_TRAINER_BATTLE_OPPONENT_A = 32789;
+export const SPECIAL_VARS_END = 32789;
+export const TRIGGER_RUN_IMMEDIATELY = 0;
+/** Raw expr: `VAR_TEMP_0` */
+export const VAR_TEMP_CHALLENGE_STATUS_EXPR = "VAR_TEMP_0";
+/** Raw expr: `VAR_TEMP_0` */
+export const VAR_TEMP_MIXED_RECORDS_EXPR = "VAR_TEMP_0";
+/** Raw expr: `VAR_TEMP_1` */
+export const VAR_TEMP_RECORD_MIX_GIFT_ITEM_EXPR = "VAR_TEMP_1";
+/** Raw expr: `VAR_TEMP_E` */
+export const VAR_TEMP_PLAYING_PYRAMID_MUSIC_EXPR = "VAR_TEMP_E";
+/** Raw expr: `VAR_TEMP_D` */
+export const VAR_TEMP_FRONTIER_TUTOR_SELECTION_EXPR = "VAR_TEMP_D";
+/** Raw expr: `VAR_TEMP_E` */
+export const VAR_TEMP_FRONTIER_TUTOR_ID_EXPR = "VAR_TEMP_E";
+/** Raw expr: `VAR_TEMP_1` */
+export const VAR_TEMP_TRANSFERRED_SPECIES_EXPR = "VAR_TEMP_1";

@@ -1,0 +1,173 @@
+// AUTO-GENERATED from include/constants/battle_frontier.h by extract-decomp-all.mjs
+// Do not edit manually — re-run `npm run extract:decomp-all` to refresh.
+//
+// Source: D:/Projet 1/decomps/pokeemeraude/include/constants/battle_frontier.h
+// Generated: 2026-04-26
+
+// ─── #define constants ──────────────────────────────────────────────────────
+export const FRONTIER_FACILITY_TOWER = 0;
+export const FRONTIER_FACILITY_DOME = 1;
+export const FRONTIER_FACILITY_PALACE = 2;
+export const FRONTIER_FACILITY_ARENA = 3;
+export const FRONTIER_FACILITY_FACTORY = 4;
+export const FRONTIER_FACILITY_PIKE = 5;
+export const FRONTIER_FACILITY_PYRAMID = 6;
+export const NUM_FRONTIER_FACILITIES = 7;
+export const FACILITY_LINK_CONTEST = 7;
+export const FACILITY_UNION_ROOM = 8;
+export const FACILITY_MULTI_OR_EREADER = 9;
+export const FRONTIER_MODE_SINGLES = 0;
+export const FRONTIER_MODE_DOUBLES = 1;
+export const FRONTIER_MODE_MULTIS = 2;
+export const FRONTIER_MODE_LINK_MULTIS = 3;
+export const FRONTIER_MODE_COUNT = 4;
+export const CHALLENGE_STATUS_SAVING = 1;
+export const CHALLENGE_STATUS_PAUSED = 2;
+export const CHALLENGE_STATUS_WON = 3;
+export const CHALLENGE_STATUS_LOST = 4;
+export const SPECIAL_BATTLE_TOWER = 0;
+export const SPECIAL_BATTLE_SECRET_BASE = 1;
+export const SPECIAL_BATTLE_EREADER = 2;
+export const SPECIAL_BATTLE_DOME = 3;
+export const SPECIAL_BATTLE_PALACE = 4;
+export const SPECIAL_BATTLE_ARENA = 5;
+export const SPECIAL_BATTLE_FACTORY = 6;
+export const SPECIAL_BATTLE_PIKE_SINGLE = 7;
+export const SPECIAL_BATTLE_STEVEN = 8;
+export const SPECIAL_BATTLE_PIKE_DOUBLE = 9;
+export const SPECIAL_BATTLE_PYRAMID = 10;
+export const MAX_BATTLE_FRONTIER_POINTS = 9999;
+export const MAX_STREAK = 9999;
+export const FRONTIER_MAX_LEVEL_50 = 50;
+export const FRONTIER_MIN_LEVEL_OPEN = 60;
+/** Raw expr: `MAX_LEVEL` */
+export const FRONTIER_MAX_LEVEL_OPEN_EXPR = "MAX_LEVEL";
+export const FRONTIER_STAGES_PER_CHALLENGE = 7;
+export const RANKING_HALL_TOWER_SINGLES = 0;
+export const RANKING_HALL_TOWER_DOUBLES = 1;
+export const RANKING_HALL_TOWER_MULTIS = 2;
+export const RANKING_HALL_DOME = 3;
+export const RANKING_HALL_PALACE = 4;
+export const RANKING_HALL_ARENA = 5;
+export const RANKING_HALL_FACTORY = 6;
+export const RANKING_HALL_PIKE = 7;
+export const RANKING_HALL_PYRAMID = 8;
+export const RANKING_HALL_TOWER_LINK = 9;
+export const FRONTIER_MANIAC_TOWER_SINGLES = 0;
+export const FRONTIER_MANIAC_TOWER_DOUBLES = 1;
+export const FRONTIER_MANIAC_TOWER_MULTIS = 2;
+export const FRONTIER_MANIAC_TOWER_LINK = 3;
+export const FRONTIER_MANIAC_DOME = 4;
+export const FRONTIER_MANIAC_FACTORY = 5;
+export const FRONTIER_MANIAC_PALACE = 6;
+export const FRONTIER_MANIAC_ARENA = 7;
+export const FRONTIER_MANIAC_PIKE = 8;
+export const FRONTIER_MANIAC_PYRAMID = 9;
+export const FRONTIER_MANIAC_FACILITY_COUNT = 10;
+export const FRONTIER_MANIAC_MESSAGE_COUNT = 3;
+export const FRONTIER_SHOW_TOWER_SINGLES = 1;
+export const FRONTIER_SHOW_TOWER_DOUBLES = 2;
+export const FRONTIER_SHOW_TOWER_MULTIS = 3;
+export const FRONTIER_SHOW_TOWER_LINK_MULTIS = 4;
+export const FRONTIER_SHOW_DOME_SINGLES = 5;
+export const FRONTIER_SHOW_DOME_DOUBLES = 6;
+export const FRONTIER_SHOW_FACTORY_SINGLES = 7;
+export const FRONTIER_SHOW_FACTORY_DOUBLES = 8;
+export const FRONTIER_SHOW_PIKE = 9;
+export const FRONTIER_SHOW_ARENA = 10;
+export const FRONTIER_SHOW_PALACE_SINGLES = 11;
+export const FRONTIER_SHOW_PALACE_DOUBLES = 12;
+export const FRONTIER_SHOW_PYRAMID = 13;
+export const FRONTIER_GAMBLER_WAITING = 0;
+export const FRONTIER_GAMBLER_PLACED_BET = 1;
+export const FRONTIER_GAMBLER_WON = 2;
+export const FRONTIER_GAMBLER_LOST = 3;
+export const FRONTIER_GAMBLER_BET_5 = 0;
+export const FRONTIER_GAMBLER_BET_10 = 1;
+export const FRONTIER_GAMBLER_BET_15 = 2;
+export const FRONTIER_GAMBLER_BET_CANCEL = 3;
+export const FRONTIER_GAMBLER_CHALLENGE_COUNT = 12;
+export const EXCHANGE_CORNER_DECOR1_CLERK = 0;
+export const EXCHANGE_CORNER_DECOR2_CLERK = 1;
+export const EXCHANGE_CORNER_VITAMIN_CLERK = 2;
+export const EXCHANGE_CORNER_HOLD_ITEM_CLERK = 3;
+/** Raw expr: `(1 << 0)` */
+export const F_EV_SPREAD_HP_EXPR = "(1 << 0)";
+/** Raw expr: `(1 << 1)` */
+export const F_EV_SPREAD_ATTACK_EXPR = "(1 << 1)";
+/** Raw expr: `(1 << 2)` */
+export const F_EV_SPREAD_DEFENSE_EXPR = "(1 << 2)";
+/** Raw expr: `(1 << 3)` */
+export const F_EV_SPREAD_SPEED_EXPR = "(1 << 3)";
+/** Raw expr: `(1 << 4)` */
+export const F_EV_SPREAD_SP_ATTACK_EXPR = "(1 << 4)";
+/** Raw expr: `(1 << 5)` */
+export const F_EV_SPREAD_SP_DEFENSE_EXPR = "(1 << 5)";
+export const BATTLE_FRONTIER_ITEM_NONE = 0;
+export const BATTLE_FRONTIER_ITEM_KINGS_ROCK = 1;
+export const BATTLE_FRONTIER_ITEM_SITRUS_BERRY = 2;
+export const BATTLE_FRONTIER_ITEM_ORAN_BERRY = 3;
+export const BATTLE_FRONTIER_ITEM_CHESTO_BERRY = 4;
+export const BATTLE_FRONTIER_ITEM_HARD_STONE = 5;
+export const BATTLE_FRONTIER_ITEM_FOCUS_BAND = 6;
+export const BATTLE_FRONTIER_ITEM_PERSIM_BERRY = 7;
+export const BATTLE_FRONTIER_ITEM_MIRACLE_SEED = 8;
+export const BATTLE_FRONTIER_ITEM_BERRY_JUICE = 9;
+export const BATTLE_FRONTIER_ITEM_MACHO_BRACE = 10;
+export const BATTLE_FRONTIER_ITEM_SILVER_POWDER = 11;
+export const BATTLE_FRONTIER_ITEM_CHERI_BERRY = 12;
+export const BATTLE_FRONTIER_ITEM_BLACK_GLASSES = 13;
+export const BATTLE_FRONTIER_ITEM_BLACK_BELT = 14;
+export const BATTLE_FRONTIER_ITEM_SOUL_DEW = 15;
+export const BATTLE_FRONTIER_ITEM_CHOICE_BAND = 16;
+export const BATTLE_FRONTIER_ITEM_MAGNET = 17;
+export const BATTLE_FRONTIER_ITEM_SILK_SCARF = 18;
+export const BATTLE_FRONTIER_ITEM_WHITE_HERB = 19;
+export const BATTLE_FRONTIER_ITEM_DEEP_SEA_SCALE = 20;
+export const BATTLE_FRONTIER_ITEM_DEEP_SEA_TOOTH = 21;
+export const BATTLE_FRONTIER_ITEM_MYSTIC_WATER = 22;
+export const BATTLE_FRONTIER_ITEM_SHARP_BEAK = 23;
+export const BATTLE_FRONTIER_ITEM_QUICK_CLAW = 24;
+export const BATTLE_FRONTIER_ITEM_LEFTOVERS = 25;
+export const BATTLE_FRONTIER_ITEM_RAWST_BERRY = 26;
+export const BATTLE_FRONTIER_ITEM_LIGHT_BALL = 27;
+export const BATTLE_FRONTIER_ITEM_POISON_BARB = 28;
+export const BATTLE_FRONTIER_ITEM_NEVER_MELT_ICE = 29;
+export const BATTLE_FRONTIER_ITEM_ASPEAR_BERRY = 30;
+export const BATTLE_FRONTIER_ITEM_SPELL_TAG = 31;
+export const BATTLE_FRONTIER_ITEM_BRIGHT_POWDER = 32;
+export const BATTLE_FRONTIER_ITEM_LEPPA_BERRY = 33;
+export const BATTLE_FRONTIER_ITEM_SCOPE_LENS = 34;
+export const BATTLE_FRONTIER_ITEM_TWISTED_SPOON = 35;
+export const BATTLE_FRONTIER_ITEM_METAL_COAT = 36;
+export const BATTLE_FRONTIER_ITEM_MENTAL_HERB = 37;
+export const BATTLE_FRONTIER_ITEM_CHARCOAL = 38;
+export const BATTLE_FRONTIER_ITEM_PECHA_BERRY = 39;
+export const BATTLE_FRONTIER_ITEM_SOFT_SAND = 40;
+export const BATTLE_FRONTIER_ITEM_LUM_BERRY = 41;
+export const BATTLE_FRONTIER_ITEM_DRAGON_SCALE = 42;
+export const BATTLE_FRONTIER_ITEM_DRAGON_FANG = 43;
+export const BATTLE_FRONTIER_ITEM_IAPAPA_BERRY = 44;
+export const BATTLE_FRONTIER_ITEM_WIKI_BERRY = 45;
+export const BATTLE_FRONTIER_ITEM_SEA_INCENSE = 46;
+export const BATTLE_FRONTIER_ITEM_SHELL_BELL = 47;
+export const BATTLE_FRONTIER_ITEM_SALAC_BERRY = 48;
+export const BATTLE_FRONTIER_ITEM_LANSAT_BERRY = 49;
+export const BATTLE_FRONTIER_ITEM_APICOT_BERRY = 50;
+export const BATTLE_FRONTIER_ITEM_STARF_BERRY = 51;
+export const BATTLE_FRONTIER_ITEM_LIECHI_BERRY = 52;
+export const BATTLE_FRONTIER_ITEM_STICK = 53;
+export const BATTLE_FRONTIER_ITEM_LAX_INCENSE = 54;
+export const BATTLE_FRONTIER_ITEM_AGUAV_BERRY = 55;
+export const BATTLE_FRONTIER_ITEM_FIGY_BERRY = 56;
+export const BATTLE_FRONTIER_ITEM_THICK_CLUB = 57;
+export const BATTLE_FRONTIER_ITEM_MAGO_BERRY = 58;
+export const BATTLE_FRONTIER_ITEM_METAL_POWDER = 59;
+export const BATTLE_FRONTIER_ITEM_PETAYA_BERRY = 60;
+export const BATTLE_FRONTIER_ITEM_LUCKY_PUNCH = 61;
+export const BATTLE_FRONTIER_ITEM_GANLON_BERRY = 62;
+
+// ─── #include directives (dependency graph) ─────────────────────────────────
+export const INCLUDES = [
+  'constants/pokemon.h',
+] as const;

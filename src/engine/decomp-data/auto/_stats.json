@@ -1,0 +1,33 @@
+{
+  "generatedAt": "2026-04-26",
+  "inputCount": 639,
+  "okCount": 625,
+  "skipCount": 14,
+  "errCount": 0,
+  "totalStats": {
+    "defines": 18203,
+    "segmentVars": 620,
+    "functions": 19470,
+    "includes": 5816,
+    "gfx": 2155,
+    "tasks": 1029,
+    "enums": 470,
+    "funcPtrTables": 106,
+    "SpriteTemplate": 669,
+    "palettes": 15,
+    "numericArrays": 195,
+    "OamData": 214,
+    "CompressedSpriteSheet": 52,
+    "CompressedSpritePalette": 8,
+    "incbin": 64,
+    "WindowTemplate": 140,
+    "BgTemplate": 72,
+    "cb2": 308,
+    "textArrays": 54,
+    "SpritePalette": 29,
+    "SpriteSheet": 17,
+    "SubspriteTable": 1,
+    "MenuAction": 5
+  },
+  "durationMs": 778
+}

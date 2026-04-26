@@ -1,0 +1,75 @@
+// AUTO-GENERATED from include/constants/field_specials.h by extract-decomp-all.mjs
+// Do not edit manually — re-run `npm run extract:decomp-all` to refresh.
+//
+// Source: D:/Projet 1/decomps/pokeemeraude/include/constants/field_specials.h
+// Generated: 2026-04-26
+
+// ─── #define constants ──────────────────────────────────────────────────────
+export const PC_LOCATION_OTHER = 0;
+export const PC_LOCATION_BRENDANS_HOUSE = 1;
+export const PC_LOCATION_MAYS_HOUSE = 2;
+export const SS_TIDAL_LOCATION_CURRENTS = 0;
+export const SS_TIDAL_LOCATION_SLATEPORT = 1;
+export const SS_TIDAL_LOCATION_LILYCOVE = 2;
+export const SS_TIDAL_LOCATION_ROUTE124 = 3;
+export const SS_TIDAL_LOCATION_ROUTE131 = 4;
+export const SS_TIDAL_BOARD_SLATEPORT = 1;
+export const SS_TIDAL_DEPART_SLATEPORT = 2;
+export const SS_TIDAL_HALFWAY_LILYCOVE = 3;
+export const SS_TIDAL_LAND_LILYCOVE = 4;
+export const SS_TIDAL_BOARD_LILYCOVE = 5;
+export const SS_TIDAL_DEPART_LILYCOVE = 6;
+export const SS_TIDAL_HALFWAY_SLATEPORT = 7;
+export const SS_TIDAL_LAND_SLATEPORT = 8;
+export const SS_TIDAL_EXIT_CURRENTS_RIGHT = 9;
+export const SS_TIDAL_EXIT_CURRENTS_LEFT = 10;
+export const SS_TIDAL_MAX_STEPS = 205;
+export const SCROLL_MULTI_NONE = 0;
+export const SCROLL_MULTI_GLASS_WORKSHOP_VENDOR = 1;
+export const SCROLL_MULTI_POKEMON_FAN_CLUB_RATER = 2;
+export const SCROLL_MULTI_BF_EXCHANGE_CORNER_DECOR_VENDOR_1 = 3;
+export const SCROLL_MULTI_BF_EXCHANGE_CORNER_DECOR_VENDOR_2 = 4;
+export const SCROLL_MULTI_BF_EXCHANGE_CORNER_VITAMIN_VENDOR = 5;
+export const SCROLL_MULTI_BF_EXCHANGE_CORNER_HOLD_ITEM_VENDOR = 6;
+export const SCROLL_MULTI_BERRY_POWDER_VENDOR = 7;
+export const SCROLL_MULTI_BF_RECEPTIONIST = 8;
+export const SCROLL_MULTI_BF_MOVE_TUTOR_1 = 9;
+export const SCROLL_MULTI_BF_MOVE_TUTOR_2 = 10;
+export const SCROLL_MULTI_SS_TIDAL_DESTINATION = 11;
+export const SCROLL_MULTI_BATTLE_TENT_RULES = 12;
+export const MAX_SCROLL_MULTI_ON_SCREEN = 6;
+export const MAX_SCROLL_MULTI_LENGTH = 16;
+export const DEPT_STORE_FLOORNUM_B4F = 0;
+export const DEPT_STORE_FLOORNUM_B3F = 1;
+export const DEPT_STORE_FLOORNUM_B2F = 2;
+export const DEPT_STORE_FLOORNUM_B1F = 3;
+export const DEPT_STORE_FLOORNUM_1F = 4;
+export const DEPT_STORE_FLOORNUM_2F = 5;
+export const DEPT_STORE_FLOORNUM_3F = 6;
+export const DEPT_STORE_FLOORNUM_4F = 7;
+export const DEPT_STORE_FLOORNUM_5F = 8;
+export const DEPT_STORE_FLOORNUM_6F = 9;
+export const DEPT_STORE_FLOORNUM_7F = 10;
+export const DEPT_STORE_FLOORNUM_8F = 11;
+export const DEPT_STORE_FLOORNUM_9F = 12;
+export const DEPT_STORE_FLOORNUM_10F = 13;
+export const DEPT_STORE_FLOORNUM_11F = 14;
+export const DEPT_STORE_FLOORNUM_ROOFTOP = 15;
+export const NUM_TRAINER_FAN_CLUB_MEMBERS = 8;
+export const FANCLUB_GOT_FIRST_FANS = 7;
+export const FANCLUB_MEMBER1 = 8;
+export const FANCLUB_MEMBER2 = 9;
+export const FANCLUB_MEMBER3 = 10;
+export const FANCLUB_MEMBER4 = 11;
+export const FANCLUB_MEMBER5 = 12;
+export const FANCLUB_MEMBER6 = 13;
+export const FANCLUB_MEMBER7 = 14;
+export const FANCLUB_MEMBER8 = 15;
+export const FANCOUNTER_DEFEATED_DRAKE = 0;
+export const FANCOUNTER_BATTLED_AT_BASE = 1;
+export const FANCOUNTER_FINISHED_CONTEST = 2;
+export const FANCOUNTER_USED_BATTLE_TOWER = 3;
+export const DEOXYS_ROCK_FAILED = 0;
+export const DEOXYS_ROCK_PROGRESSED = 1;
+export const DEOXYS_ROCK_SOLVED = 2;
+export const DEOXYS_ROCK_COMPLETE = 3;

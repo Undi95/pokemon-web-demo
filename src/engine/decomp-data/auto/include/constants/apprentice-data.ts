@@ -1,0 +1,86 @@
+// AUTO-GENERATED from include/constants/apprentice.h by extract-decomp-all.mjs
+// Do not edit manually — re-run `npm run extract:decomp-all` to refresh.
+//
+// Source: D:/Projet 1/decomps/pokeemeraude/include/constants/apprentice.h
+// Generated: 2026-04-26
+
+// ─── #define constants ──────────────────────────────────────────────────────
+export const NUM_APPRENTICES = 16;
+export const APPRENTICE_SPECIES_COUNT = 10;
+/** Raw expr: `MULTI_PARTY_SIZE` */
+export const NUM_WHICH_MON_QUESTIONS_EXPR = "MULTI_PARTY_SIZE";
+export const NUM_WHICH_MOVE_QUESTIONS = 5;
+/** Raw expr: `NUM_WHICH_MON_QUESTIONS + NUM_WHICH_MOVE_QUESTIONS + 2` */
+export const MAX_APPRENTICE_QUESTIONS_EXPR = "NUM_WHICH_MON_QUESTIONS + NUM_WHICH_MOVE_QUESTIONS + 2";
+/** Raw expr: `(FRONTIER_LVL_50 + 1)` */
+export const APPRENTICE_LVL_MODE_50_EXPR = "(FRONTIER_LVL_50 + 1)";
+/** Raw expr: `(FRONTIER_LVL_OPEN + 1)` */
+export const APPRENTICE_LVL_MODE_OPEN_EXPR = "(FRONTIER_LVL_OPEN + 1)";
+export const APPRENTICE_FUNC_GAVE_LVLMODE = 0;
+export const APPRENTICE_FUNC_SET_LVLMODE = 1;
+export const APPRENTICE_FUNC_SET_ID = 2;
+export const APPRENTICE_FUNC_SHUFFLE_SPECIES = 3;
+export const APPRENTICE_FUNC_RANDOMIZE_QUESTIONS = 4;
+export const APPRENTICE_FUNC_ANSWERED_QUESTION = 5;
+export const APPRENTICE_FUNC_IS_FINAL_QUESTION = 6;
+export const APPRENTICE_FUNC_MENU = 7;
+export const APPRENTICE_FUNC_PRINT_MSG = 8;
+export const APPRENTICE_FUNC_RESET = 9;
+export const APPRENTICE_FUNC_CHECK_GONE = 10;
+export const APPRENTICE_FUNC_GET_QUESTION = 11;
+export const APPRENTICE_FUNC_GET_NUM_PARTY_MONS = 12;
+export const APPRENTICE_FUNC_SET_PARTY_MON = 13;
+export const APPRENTICE_FUNC_INIT_QUESTION_DATA = 14;
+export const APPRENTICE_FUNC_FREE_QUESTION_DATA = 15;
+export const APPRENTICE_FUNC_BUFFER_STRING = 16;
+export const APPRENTICE_FUNC_SET_MOVE = 17;
+export const APPRENTICE_FUNC_SET_LEAD_MON = 18;
+export const APPRENTICE_FUNC_OPEN_BAG = 19;
+export const APPRENTICE_FUNC_TRY_SET_HELD_ITEM = 20;
+export const APPRENTICE_FUNC_SAVE = 21;
+export const APPRENTICE_FUNC_SET_GFX_SAVED = 22;
+export const APPRENTICE_FUNC_SET_GFX = 23;
+export const APPRENTICE_FUNC_SHOULD_LEAVE = 24;
+export const APPRENTICE_FUNC_SHIFT_SAVED = 25;
+export const APPRENTICE_MSG_PLEASE_TEACH = 0;
+export const APPRENTICE_MSG_REJECT = 1;
+export const APPRENTICE_MSG_WHICH_LVL_MODE = 2;
+export const APPRENTICE_MSG_THANKS_LVL_MODE = 3;
+export const APPRENTICE_MSG_WHICH_MON_FIRST = 4;
+export const APPRENTICE_MSG_THANKS_MON_FIRST = 5;
+export const APPRENTICE_MSG_WHICH_MON = 6;
+export const APPRENTICE_MSG_THANKS_MON = 7;
+export const APPRENTICE_MSG_WHICH_MOVE = 8;
+export const APPRENTICE_MSG_THANKS_MOVE = 9;
+export const APPRENTICE_MSG_WHAT_HELD_ITEM = 10;
+export const APPRENTICE_MSG_PICK_WIN_SPEECH = 11;
+export const APPRENTICE_MSG_THANKS_HELD_ITEM = 12;
+export const APPRENTICE_MSG_HOLD_NOTHING = 13;
+export const APPRENTICE_MSG_THANKS_NO_HELD_ITEM = 14;
+export const APPRENTICE_MSG_THANKS_WIN_SPEECH = 15;
+export const APPRENTICE_MSG_ITEM_ALREADY_SUGGESTED = 16;
+export const APPRENTICE_QUESTION_WHICH_FIRST = 1;
+export const APPRENTICE_QUESTION_WHICH_MON = 2;
+export const APPRENTICE_QUESTION_WHICH_MOVE = 3;
+export const APPRENTICE_QUESTION_WHAT_ITEM = 4;
+export const APPRENTICE_QUESTION_WIN_SPEECH = 5;
+export const QUESTION_ID_WIN_SPEECH = 0;
+export const QUESTION_ID_WHAT_ITEM = 1;
+export const QUESTION_ID_WHICH_MOVE = 2;
+export const QUESTION_ID_WHICH_FIRST = 3;
+export const APPRENTICE_ASK_WHICH_LEVEL = 0;
+export const APPRENTICE_ASK_3SPECIES = 1;
+export const APPRENTICE_ASK_2SPECIES = 2;
+export const APPRENTICE_ASK_MOVES = 3;
+export const APPRENTICE_ASK_GIVE = 4;
+export const APPRENTICE_ASK_YES_NO = 6;
+export const APPRENTICE_BUFF_SPECIES1 = 0;
+export const APPRENTICE_BUFF_SPECIES2 = 1;
+export const APPRENTICE_BUFF_SPECIES3 = 2;
+export const APPRENTICE_BUFF_MOVE1 = 3;
+export const APPRENTICE_BUFF_MOVE2 = 4;
+export const APPRENTICE_BUFF_ITEM = 5;
+export const APPRENTICE_BUFF_NAME = 6;
+export const APPRENTICE_BUFF_WIN_SPEECH = 7;
+export const APPRENTICE_BUFF_LEVEL = 8;
+export const APPRENTICE_BUFF_LEAD_MON_SPECIES = 9;

@@ -1,0 +1,14 @@
+// AUTO-GENERATED from include/egg_hatch.h by extract-decomp-all.mjs
+// Do not edit manually — re-run `npm run extract:decomp-all` to refresh.
+//
+// Source: D:/Projet 1/decomps/pokeemeraude/include/egg_hatch.h
+// Generated: 2026-04-26
+
+// ─── Functions (declarations + definitions) ─────────────────────────────────
+export const FUNCTIONS = [
+  { name: 'ScriptHatchMon', ret: "void", arity: 0, params: "void" },
+  { name: 'CheckDaycareMonReceivedMail', ret: "bool8", arity: 0, params: "void" },
+  { name: 'EggHatch', ret: "void", arity: 0, params: "void" },
+  { name: 'GetEggCyclesToSubtract', ret: "u8", arity: 0, params: "void" },
+  { name: 'CountPartyAliveNonEggMons', ret: "u16", arity: 0, params: "void" },
+] as const;
