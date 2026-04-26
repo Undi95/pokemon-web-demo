@@ -9,6 +9,7 @@ import { OverworldScene } from './scenes/OverworldScene';
 import { BattleScene } from './scenes/BattleScene';
 import { MenuOverlayScene } from './scenes/MenuOverlayScene';
 import { OptionMenuScene } from './scenes/OptionMenuScene';
+import { TestGbaScene } from './scenes/TestGbaScene';
 
 export const TILE_SIZE = 16;
 // Résolution NATIVE Pokemon Émeraude GBA = 240×160 px = 15×10 tiles de 16 px.
@@ -30,7 +31,9 @@ const config: Phaser.Types.Core.GameConfig = {
   zoom: DEFAULT_ZOOM,
   pixelArt: true,
   backgroundColor: '#000000',
-  scene: [BootScene, IntroScene, TitleScene, MainMenuScene, BirchSpeechScene, NamingScene, OverworldScene, BattleScene, MenuOverlayScene, OptionMenuScene],
+  // ⚠️ TestGbaScene en première position TEMPORAIREMENT pour PoC engine GBA-compat.
+  // Pour revenir au boot normal : remettre BootScene en première position.
+  scene: [TestGbaScene, BootScene, IntroScene, TitleScene, MainMenuScene, BirchSpeechScene, NamingScene, OverworldScene, BattleScene, MenuOverlayScene, OptionMenuScene],
   physics: {
     default: 'arcade',
     arcade: { debug: false }
