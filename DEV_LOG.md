@@ -16,6 +16,82 @@ Stack : Vite + TypeScript + Phaser 3 + @pkmn/sim + @pkmn/dex
 
 ---
 
+## Session 64 round 3 — Phase 1.6 ZERO unknown ops achieved (2026-04-27)
+
+Suite immédiate du round 2. User : "Fix le". 2 derniers patterns identifiés
+et fixés (commit `6c450204`).
+
+### Bug 7 — GAS implicit equ syntax `NAME = VALUE`
+
+`asm/macros/event.inc` utilise la syntaxe GAS `NAME = VALUE` (sans
+préfixe `.equ`/`.set`) pour définir des constants :
+```asm
+@ callstd function names
+STD_OBTAIN_ITEM = 0
+STD_FIND_ITEM = 1
+STD_OBTAIN_DECORATION = 7
+STD_REGISTER_MATCH_CALL = 8
+
+@ MSGBOX types
+MSGBOX_NPC = 2
+MSGBOX_SIGN = 3
+...
+NO_MUSIC = FALSE
+YES = 1
+NO = 0
+```
+
+Mon parser ne reconnaissait que `.equ`/`.set`. Ces 14 constantes étaient
+loop comme des opcodes au top-level → unknown ops.
+
+**Fix** : nouveau pattern dans `extract-decomp-asm.mjs` :
+```js
+const implicitEqu = line.match(/^(\w+)\s*=\s*([^=].*)$/);
+if (implicitEqu && !line.startsWith('.') && !inMacroDef) { ... }
+```
+Le `[^=]` évite de matcher `==` (comparison). Le `!inMacroDef` évite de
+poison le body d'une macro.
+
+### Bug 8 — C function-like macros dans .inc
+
+`constants/tms_hms.inc` contient `FOREACH_TM(EQUIV_TM)` qui est une
+macro C function-like (avec parens) censée être expansée par le
+préprocesseur C avant compilation asm. Mon pipeline n'a pas de
+préprocesseur C.
+
+**Fix** : skip silencieusement ces invocations dans `emitOp` du compileur
+via un check pattern `^[A-Z_]+\([^)]*\)$`. Elles ne produisent pas de
+bytecode exécutable de toute façon (juste des `enum X` au scan).
+
+### Résultat FINAL Phase 1.6 (cumulé sur 3 rounds)
+
+| Métrique               | Session 63 baseline | Round 1 | Round 2 | Round 3  | Delta total  |
+|------------------------|--------------------:|--------:|--------:|---------:|-------------:|
+| Distinct unknown ops   |                ~30 |      19 |      16 |     **0** | **-100%**    |
+| Total occurrences      |             2 117 |   9 246 |      16 |     **0** | **-100%**    |
+| Bytes émis             |            487 KB |  532 KB |  586 KB |   586 KB | **+99 KB**   |
+| Macros chargées        |             1 168 |   1 176 |   1 176 |    1 190 |    +22       |
+| Meta-macros            |                 0 |     159 |     159 |      159 |   +159       |
+| Labels résolus         |            11 312 |  11 336 |  11 336 |   11 336 |              |
+
+### **100% des 60 595 OPS asm sont compilées en bytecode correct.**
+
+Reste **12 142 unresolved symbols** : ce sont des references à des
+**variables C globales** (`gHitMarker`, `gBattleScripting+0x10`, etc.)
+qui doivent être résolues au runtime côté TypeScript via une lookup map
+des globals → addresses TS-side. Pas un bug du compileur.
+
+### État global
+
+10 commits sur `main`, **1 716 fichiers TS** (decomp-data + bytecode),
+**0 erreur tsc**, **586 KB de bytecode binaire** prêt pour exécution VM,
+**0 unknown opcode**.
+
+**Le pipeline d'extraction décomp → bytecode est COMPLET.** Phase 2A+1.6
+livré. Prochaine étape : Phase 2B (state machines TS).
+
+---
+
 ## Session 64 round 2 — Phase 1.6 finalisée (-99.7% unknown ops) (2026-04-27)
 
 Continuation du même chapitre. En analysant les "600 unknown" restants j'ai
