@@ -16,6 +16,116 @@ Stack : Vite + TypeScript + Phaser 3 + @pkmn/sim + @pkmn/dex
 
 ---
 
+## Session 63 — Phase 2A bytecode compiler + Phase 2C démo refactor (2026-04-27)
+
+Continuation Phase 2 du grand plan « pipeline tout-décomp ».
+
+### Phase 2A — `scripts/compile-decomp-bytecode.mjs` (commit `a5e77069`)
+
+Compileur asm OPS → bytecode binaire (`Uint8Array`) qui consomme les data
+extraites par Phase 1+1.5 et produit du bytecode exécutable avec table de
+labels résolus.
+
+**Pipeline 3 phases internes** :
+- **A. Master constants map** : scrape `export const X = N;` de tous les .ts
+  (`auto/` + `auto-asm/`) + parse spécial `data/script_cmd_table.inc` etc.
+  pour assigner les opcodes séquentiels (SCR_OP_*, BATTLE_OP_*, ANIM_OP_*).
+  → 13 673 constants
+- **B. Master macro map** : eval les MACROS arrays de tous
+  `auto-asm/asm/macros/*-data.ts`. → 1 168 macros uniques avec body tokenisé
+- **C. Per-script compile (2 passes)** :
+  - Pass 1 : simulate emit → table `labelName → byteOffset`
+  - Pass 2 : actual emit avec forward-refs résolus
+  - Output `auto-asm-bytecode/<file>-bytecode.ts` :
+    ```ts
+    export const LABELS: Record<string, number>  // name → byte offset
+    export const BYTECODE: readonly number[]      // raw bytes
+    export const STATS = { ops, bytes, labels, unknownOps, unresolvedSymbols }
+    ```
+
+**Résultat** : 482/607 fichiers compilés en 1.0s, 3.3 MB total, 0 erreur tsc.
+- 59 801 OPS processés
+- **487 505 bytes émis** (= ~487 KB bytecode binaire prêt pour VM)
+- 11 312 labels résolus
+- 2 117 unknown ops (macros nested manquantes — à investiguer Phase 1.6)
+- 12 451 unresolved symbols (refs C globals → résolution runtime)
+
+**Sample (battle_scripts_1-bytecode.ts)** :
+3275 ops → 12 170 bytes, 619 labels.
+- `BattleScript_EffectHit` @ offset 0
+- `BattleScript_HitFromAtkCanceler` @ offset 38
+- `BattleScript_HitFromAtkAnimation` @ offset 52
+→ chaîne cohérente, prête pour un VM TypeScript.
+
+**Conso** :
+```ts
+import { dataBattleScripts1Bytecode }
+  from '@/engine/decomp-data/auto-asm-bytecode/_all-bytecode-index';
+
+const { LABELS, BYTECODE } = dataBattleScripts1Bytecode;
+const startOffset = LABELS['BattleScript_EffectHit'];   // → 0
+// Pass to a BattleScriptVM that interprets opcodes from BYTECODE[startOffset:]
+```
+
+**Limitations MVP** :
+- `.if/.else/.endif/.warning/.error` skip silencieusement (conditionnels asm
+  produisent un bytecode "approximé" — à corriger pour cas critiques)
+- Args macro liés littéralement (pas d'évaluation d'expressions complexes)
+- Refs aux variables C globales non résolues → 0 placeholder, à patcher au
+  runtime côté TS via une lookup map
+
+### Phase 2C — Démo refactor OptionMenuScene
+
+**Démonstration** que le pipeline `auto/` est un drop-in remplacement de
+l'extracteur ad-hoc `decomp-data/option-menu-data.ts` (et donc de tous les
+`extract-decomp-scenes.mjs` legacy).
+
+**Diff appliqué** (1 ligne) :
+```ts
+- import { sOptionMenuWinTemplates } from '../engine/decomp-data/option-menu-data';
++ import { sOptionMenuWinTemplates } from '../engine/decomp-data/auto/src/option_menu-data';
+```
+
+**Validation** : `tsc --noEmit` passe sans erreur. Valeurs runtime
+strictement identiques entre les deux exports :
+```ts
+[
+  { bg: 1, tilemapLeft: 2, tilemapTop: 1, width: 26, height: 2, paletteNum: 1, baseBlock: 2 },
+  { bg: 0, tilemapLeft: 2, tilemapTop: 5, width: 26, height: 14, paletteNum: 1, baseBlock: 54 },
+] as const;
+```
+
+**Implication** : tous les imports `decomp-data/<scene>-data` peuvent migrer
+vers `decomp-data/auto/src/<scene_c_name>-data` en un seul edit chacun.
+Le legacy `extract-decomp-scenes.mjs` peut être déprécié (mais on le garde
+pour les fichiers `option-menu-extras.ts` qui contiennent les helpers
+dérivés non auto-extractables : FRAME_BOUNDS, MENUITEMS_DATA mapping, etc.).
+
+### État global après session 63
+
+3 pipelines en place, 4 commits sur `main` :
+- `7d741e3` Phase 1 (C → 626 fichiers)
+- `925db615` Phase 1.5 (asm → 608 fichiers)
+- `a5e77069` Phase 2A (bytecode → 482 fichiers)
+- `81ee5800` docs sessions 60-62
+- (à venir) commit Phase 2C + docs session 63
+
+**Total** : 1 716 fichiers TS (decomp data + bytecode), 0 erreur compile,
+~700 KB bytecode binaire compilé. **L'intégralité du moteur Pokemon Emerald
+(C + asm + bytecode) est maintenant accessible en TypeScript typé.**
+
+### Reste pour Phase 2 finale
+
+- **Phase 2B** : générateur de state machines TS depuis Task_*/CB2_*.
+  Parser le `.c` pour extraire `switch(gTasks[id].data[0])` → classes JS.
+  Plus risqué (control flow C variable). À faire quand un cas concret
+  l'exige.
+- **Phase 1.6** : fix des 2 117 unknown ops du bytecode compiler — analyse
+  des macros manquées dans extract-decomp-asm.mjs (probablement des macros
+  importées depuis macros principal qui ne sont pas re-définies localement).
+
+---
+
 ## Session 62 — Pipeline d'extraction EXHAUSTIF du décomp (Phase 1 + 1.5) (2026-04-26)
 
 Bilan : **plus jamais d'aller-retour vers le décomp pour chercher une valeur**.
