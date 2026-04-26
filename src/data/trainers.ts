@@ -9,14 +9,8 @@ export interface MonSpec {
   ivs?: { hp: number; atk: number; def: number; spa: number; spd: number; spe: number };
 }
 
-export const PLAYER_TEAM: MonSpec[] = [
-  {
-    species: 'Pikachu',
-    level: 12,
-    moves: ['Thunder Shock', 'Quick Attack', 'Tail Whip', 'Growl'],
-    ability: 'Static'
-  }
-];
+// (PLAYER_TEAM hardcoded supprimé : dead code. La party joueur vient de
+// `gameState.party[]` populée par givemon/ChooseStarter.)
 
 export interface NpcDef {
   id: string;

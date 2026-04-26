@@ -1,9 +1,23 @@
 import Phaser from 'phaser';
 import { GAME_W, GAME_H } from '../main';
-import { preloadBitmapFont, setupBitmapFont, renderTextToCanvas } from './bitmap-font';
+import { preloadBitmapFont, setupBitmapFont, renderTextToCanvas, measureLastLine } from './bitmap-font';
 import { gameState } from './game-state';
+import { runTextPrinter as gpRunTextPrinter } from './gba-text-printer';
 import { getStringVar } from './string-buffers';
 import { createDialogWindow, getTemplatePixelRect } from './window-renderer';
+import {
+  createWindow as gpCreateWindow,
+  fillWindowPixelBuffer,
+  copyWindowToCanvas,
+  encodeStringForFont,
+  addTextPrinter,
+  runTextPrinter,
+  textPrinterDrawDownArrow,
+  RENDER_STATE_WAIT_WITH_DOWN_ARROW,
+  EXT_CTRL_CODE_PAUSE,
+  type TextPrinter,
+  type Window as GpWindow,
+} from './gba-text-printer';
 
 // Table des placeholders : extraite de `src/strings.c` du décomp via
 // scripts/extract-placeholders.mjs. Chargée par DialogueBox au boot.
@@ -37,8 +51,11 @@ export function substitutePlaceholders(text: string): string {
       return T[cap] ?? k;
     })
     .replace(/\{POKéMON\}|\{POKEMON\}/g, 'POKéMON')
-    // Codes de contrôle non-textuels : strippés
-    .replace(/\{PAUSE\s+\d+\}/g, '')
+    // Codes de contrôle non-textuels :
+    //   - PAUSE/COLOR/SHADOW/HIGHLIGHT : NE PAS STRIP, encodeStringForFont les
+    //     convertit en EXT_CTRL_CODE_BEGIN+sub+param que TextPrinter handle (state
+    //     PAUSE + onCharRendered fire pour sync events comme Lotad release).
+    //   - Autres : strippés (non handled encore)
     .replace(/\{PAUSE_UNTIL_PRESS\}/g, '')
     .replace(/\{PLAY_BGM\s+\w+\}/g, '')
     .replace(/\{STR_VAR_(\d)\}/g, (_, n) => getStringVar(Number(n)))
@@ -79,23 +96,34 @@ export function pagesFromScriptText(raw: string): string[] {
 
 const TEXTBOX_KEY = 'ui-textbox-src';
 const TEXTBOX_A_KEY = 'ui-textbox-a';
-const TEXTBOX_URL = '/decomp/em/ui/text_window/1.png';
+const TEXTBOX_URL = '/decomp/em/ui/text_window/6.png'; // Fallback nineslice si templates pas chargés
 const ARROW_KEY = 'ui-down-arrow';
 const ARROW_URL = '/decomp/em/ui/fonts/down_arrow.png';
 const ARROW_A_KEY = 'ui-down-arrow-a';
 const DYNAMIC_TEXT_KEY = 'dlg-text-canvas';
 
+// JSON keys du nouveau moteur GBA (cf. gba-text-printer.ts)
+const LATFONT_KEY = 'gba-latfont';
+const LATFONT_URL = '/decomp/em/ui/fonts/latin.latfont.json';
+const PALETTES_KEY = 'gba-palettes';
+const PALETTES_URL = '/decomp/em/ui/text_window/palettes.json';
+const ARROW_JSON_KEY = 'gba-down-arrow';
+const ARROW_JSON_URL = '/decomp/em/ui/fonts/down_arrow.json';
+const FONT_WIDTHS_KEY = 'font-widths-table';
+const FONT_WIDTHS_URL = '/decomp/em/ui/font-widths.json';
+const CHARMAP_KEY_DLG = 'ui-charmap';
+
 export function preloadDialogueAssets(scene: Phaser.Scene) {
   scene.load.image(TEXTBOX_KEY, TEXTBOX_URL);
-  // down_arrow.png = 8×48 = **3 frames de 8×16** (PAS 6×8). Chaque frame est
-  // l'arrow COMPLÈTE à un offset y différent (0, 1, 2 px). L'animation cycle
-  // {0,1,2,1} cf. sDownArrowYCoords text.c:71.
-  // Couleurs natives : outline gris foncé (idx 2) + fill ROUGE (idx 4) = la
-  // vraie flèche "next page" du jeu. Pas de tint à appliquer.
   scene.load.spritesheet(ARROW_KEY, ARROW_URL, { frameWidth: 8, frameHeight: 16 });
   if (!scene.cache.json.has('placeholders')) {
     scene.load.json('placeholders', '/decomp/em/placeholders.json');
   }
+  // Nouveau moteur 1:1 GBA — JSON datasets
+  if (!scene.cache.json.has(LATFONT_KEY)) scene.load.json(LATFONT_KEY, LATFONT_URL);
+  if (!scene.cache.json.has(PALETTES_KEY)) scene.load.json(PALETTES_KEY, PALETTES_URL);
+  if (!scene.cache.json.has(ARROW_JSON_KEY)) scene.load.json(ARROW_JSON_KEY, ARROW_JSON_URL);
+  if (!scene.cache.json.has(FONT_WIDTHS_KEY)) scene.load.json(FONT_WIDTHS_KEY, FONT_WIDTHS_URL);
   preloadBitmapFont(scene);
 }
 
@@ -104,8 +132,9 @@ export function setupDialogueAssets(scene: Phaser.Scene) {
   if (t) setPlaceholderTable(t);
 }
 
-// Process le PNG textbox sans alpha (le centre est le fond opaque, les
-// bordures aussi). Pas de transparence à appliquer sur le textbox.
+// Process le PNG textbox : transparentise la couleur BG (idx 0 PNG = vert
+// décomp ~112/200/160). Sans ça : bordure verte/cyan autour du textbox car
+// les pixels "extérieurs" du PNG sont en idx 0 (palette GBA convention).
 function setupTextbox(scene: Phaser.Scene) {
   if (scene.textures.exists(TEXTBOX_A_KEY)) return;
   const img = scene.textures.get(TEXTBOX_KEY).getSourceImage() as HTMLImageElement;
@@ -113,6 +142,15 @@ function setupTextbox(scene: Phaser.Scene) {
   c.width = img.width; c.height = img.height;
   const ctx = c.getContext('2d')!;
   ctx.drawImage(img, 0, 0);
+  // Sample pixel (0,0) = BG idx 0 et transparentise tous ses occurrences.
+  const probe = ctx.getImageData(0, 0, 1, 1).data;
+  const bgR = probe[0], bgG = probe[1], bgB = probe[2];
+  const d = ctx.getImageData(0, 0, c.width, c.height);
+  const p = d.data;
+  for (let i = 0; i < p.length; i += 4) {
+    if (p[i] === bgR && p[i + 1] === bgG && p[i + 2] === bgB) p[i + 3] = 0;
+  }
+  ctx.putImageData(d, 0, 0);
   scene.textures.addCanvas(TEXTBOX_A_KEY, c);
 }
 
@@ -155,39 +193,63 @@ export class DialogueBox {
 
   private arrowSprite?: Phaser.GameObjects.Sprite;
 
+  // ─── Nouveau moteur 1:1 GBA ─────────────────────────────────────────────────
+  // Window pixel buffer + TextPrinter state machine remplacent renderTextToCanvas
+  // + sprite arrow séparé. Cf. AUDIT_1_1_GBA.md.
+  private gpWindow?: GpWindow;
+  private gpPrinter?: TextPrinter;
+  private gpPalette?: ReadonlyArray<readonly [number, number, number]>;
+  private gpTextKey?: string;
+  private gpArrowTimer?: Phaser.Time.TimerEvent;
+  /** True tant qu'une touche speedup est held (W/Space/Enter). 1:1 décomp `JOY_HELD(A|B)`. */
+  private speedUpHeld = false;
+
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
     setupBitmapFont(scene);
     setupTextbox(scene);
     setupArrow(scene);
     setupDialogueAssets(scene);
+    // 1:1 décomp text.c : A button (W/Space/Enter) ET B button (X chez nous)
+    // peuvent advance le dialog. Holding ne doit PAS auto-advance (= bug courant
+    // browser keydown qui repeat). Speed-up: held flag tracked via keyup.
+    const isSpeedKey = (e: KeyboardEvent) => {
+      const k = e.key.toLowerCase();
+      return e.key === ' ' || e.key === 'Enter' || k === 'w' || k === 'x';
+    };
     scene.input.keyboard?.on('keydown', (e: KeyboardEvent) => {
       if (!this.container) return;
-      // Évite que la même touche W qui a ouvert le dialogue avance
-      // immédiatement à la page suivante (même keydown fire les deux listeners).
       if (performance.now() - this.openedAt < 180) return;
-      if (e.key === ' ' || e.key === 'Enter' || e.key.toLowerCase() === 'w') {
-        this.advance();
-      }
+      if (!isSpeedKey(e)) return;
+      this.speedUpHeld = true;
+      // e.repeat = true si keydown fire pendant que touche held → SKIP
+      // (sinon holding A = auto-advance = comportement non-1:1 GBA).
+      if (e.repeat) return;
+      this.advance();
+    });
+    scene.input.keyboard?.on('keyup', (e: KeyboardEvent) => {
+      if (isSpeedKey(e)) this.speedUpHeld = false;
     });
   }
 
-  show(text: string): Promise<void> {
+  /** Callback fired when EXT_CTRL_CODE_PAUSE is hit during streaming. Fires once.
+   *  Reproduit `AddTextPrinterWithCallbackForMessage` du décomp menu.c:542. */
+  private onPauseCallback?: () => void;
+
+  show(text: string, opts?: { onPause?: () => void }): Promise<void> {
     return new Promise((resolve) => {
       this.pages = pagesFromScriptText(substitutePlaceholders(text));
       this.pageIndex = 0;
       this.resolver = resolve;
       this.openedAt = performance.now();
+      this.onPauseCallback = opts?.onPause;
       this.render();
     });
   }
 
   private render() {
     this.hide();
-    // Cadre AUTHENTIQUE du dialog (pas un menu textbox). Composition tile-par-tile
-    // de message_box.png selon WindowFunc_DrawDialogueFrame (src/menu.c:319-412).
-    // Position/taille viennent de window-templates.json (sStandardTextBox_WindowTemplates).
-    // Cf. WINDOWS_BOXES_REFERENCE.md.
+    // ─── Frame (border + interior fill) — composeDialogTexture inchangé ─────
     const w = createDialogWindow(this.scene, 'sStandardTextBox_WindowTemplates', { depth: 200000 });
     let frame: Phaser.GameObjects.GameObject;
     let X: number, Y: number, W: number, H: number;
@@ -195,7 +257,6 @@ export class DialogueBox {
       frame = w.frame;
       X = w.pixelX; Y = w.pixelY; W = w.pixelW; H = w.pixelH;
     } else {
-      // Fallback boot edge case (templates pas chargés) : nineslice 1.png stylé menu.
       const r = getTemplatePixelRect('sStandardTextBox_WindowTemplates') ?? { x: 16, y: 120, w: 216, h: 32 };
       X = r.x; Y = r.y; W = r.w; H = r.h;
       const ns = this.scene.add.nineslice(X + W / 2, Y + H / 2, TEXTBOX_A_KEY, 0, W, H, 8, 8, 8, 8);
@@ -203,50 +264,170 @@ export class DialogueBox {
       frame = ns;
     }
 
-    // Texte : padding interne (1, 1) + ajustement vertical pour centrer dans la
-    // hauteur de 32 px (avec font 16 px et 2 lignes max → padding 0 top/bottom).
     const pageText = this.pages[this.pageIndex] ?? '';
-    // authenticColors: remap font tile encoding (cf. GenerateFontHalfRowLookupTable).
-    // Body→DARK visible, shadow→cream subtle, bg→white matches interior. = look GBA 1:1.
-    const canvas = renderTextToCanvas(this.scene, pageText, W - 12, { authenticColors: true });
-    const key = `${DYNAMIC_TEXT_KEY}-${Date.now()}-${Math.random()}`;
-    this.scene.textures.addCanvas(key, canvas);
-    this.textImage = this.scene.add.image(X + 6, Y + 2, key);
-    this.textImage.setOrigin(0, 0).setScrollFactor(0).setDepth(200001);
+    // Décomp affiche TOUJOURS la flèche après chaque \p, même sur la dernière
+    // page (le printer entre en WAIT_WITH_DOWN_ARROW jusqu'au keypress qui
+    // dismiss le dialog). Pas de cas "isLast → no arrow".
+    const showArrow = true;
 
-    const isLast = this.pageIndex >= this.pages.length - 1;
-    // Down arrow officielle décomp : 3 frames de 8x16 chacun = arrow complète à
-    // un offset bobbing différent (0, 1, 2 px). L'animation cycle l'INDEX DE FRAME
-    // {0, 1, 2, 1} cf. sDownArrowYCoords text.c:71 (intervalle 8 frames GBA = 133 ms).
-    // Couleurs natives : outline gris foncé + fill rouge — pas de tint.
-    if (!isLast) {
-      const ARROW_X = X + W - 10;
-      const ARROW_Y = Y + H - 8;
-      this.arrowSprite = this.scene.add.sprite(ARROW_X, ARROW_Y, ARROW_A_KEY, 0);
-      this.arrowSprite.setScrollFactor(0).setDepth(200001);
-      const sprite = this.arrowSprite;
-      const frameSeq = [0, 1, 2, 1];
-      let i = 0;
-      const timer = this.scene.time.addEvent({
-        delay: 133, loop: true,
-        callback: () => {
-          if (!sprite.active) { timer.remove(); return; }
-          sprite.setFrame(frameSeq[i % 4]);
-          i++;
-        }
-      });
+    // ─── Tente le nouveau moteur 1:1 GBA ────────────────────────────────────
+    const usedNewEngine = this.renderWithGbaEngine(pageText, X, Y, W, H, showArrow);
+
+    // ─── Fallback : ancien rendu si data nouveau moteur pas dispo ──────────
+    if (!usedNewEngine) {
+      const canvas = renderTextToCanvas(this.scene, pageText, W - 4, { authenticColors: true });
+      const key = `${DYNAMIC_TEXT_KEY}-${Date.now()}-${Math.random()}`;
+      this.scene.textures.addCanvas(key, canvas);
+      this.textImage = this.scene.add.image(X, Y + 1, key);
+      this.textImage.setOrigin(0, 0).setScrollFactor(0).setDepth(200001);
+
+      if (showArrow) {
+        const last = measureLastLine(this.scene, pageText, W - 4);
+        const LINE_H_PX = 16;
+        const ARROW_X = X + last.width;
+        const ARROW_Y = Y + 1 + (last.lineIndex + 1) * LINE_H_PX - 8;
+        this.arrowSprite = this.scene.add.sprite(ARROW_X, ARROW_Y, ARROW_A_KEY, 0);
+        this.arrowSprite.setScrollFactor(0).setDepth(200001);
+        const sprite = this.arrowSprite;
+        const frameSeq = [0, 1, 2, 1];
+        let i = 1;
+        const timer = this.scene.time.addEvent({
+          delay: 133, loop: true,
+          callback: () => {
+            if (!sprite.active) { timer.remove(); return; }
+            sprite.setFrame(frameSeq[i % 4]);
+            i++;
+          }
+        });
+      }
     }
 
-    const items: Phaser.GameObjects.GameObject[] = [frame, this.textImage];
+    const items: Phaser.GameObjects.GameObject[] = [frame];
+    if (this.textImage) items.push(this.textImage);
     if (this.arrowSprite) items.push(this.arrowSprite);
     this.container = this.scene.add.container(0, 0, items);
     this.container.setDepth(200000).setScrollFactor(0);
   }
 
+  /**
+   * Rendu via le nouveau moteur GBA : Window pixel buffer + TextPrinter +
+   * downArrow blittée DANS le buffer. Le tout copié sur canvas → texture
+   * Phaser positionnée au-dessus du frame.
+   *
+   * Returns true si rendu OK, false si data manquante (fallback ancien rendu).
+   */
+  private renderWithGbaEngine(pageText: string, X: number, Y: number, W: number, H: number, showArrow: boolean): boolean {
+    const cache = this.scene.cache.json;
+    const latfont = cache.get(LATFONT_KEY) as { normal?: number[][] } | undefined;
+    const palettes = cache.get(PALETTES_KEY) as Record<string, { colors: [number, number, number][] }> | undefined;
+    const arrowJson = cache.get(ARROW_JSON_KEY) as { pixels?: number[][] } | undefined;
+    const widthsJson = cache.get(FONT_WIDTHS_KEY) as { normal?: number[] } | undefined;
+    const charmap = cache.get(CHARMAP_KEY_DLG) as Record<string, number> | undefined;
+    if (!latfont?.normal || !palettes?.gMessageBox_Pal || !arrowJson?.pixels || !widthsJson?.normal || !charmap) {
+      return false;
+    }
+    const widths = new Uint8Array(widthsJson.normal);
+    const palette = palettes.gMessageBox_Pal.colors;
+    this.gpPalette = palette;
+
+    // Window dimensions = template `sStandardTextBox_WindowTemplates` = 27×4 tiles
+    const widthTiles = Math.floor(W / 8);
+    const heightTiles = Math.floor(H / 8);
+    const win = gpCreateWindow(widthTiles, heightTiles, 15);
+    this.gpWindow = win;
+    // Fill BG = idx 0 → alpha 0 au copy → laisse voir l'intérieur blanc du frame.
+    fillWindowPixelBuffer(win, 0);
+
+    const encoded = encodeStringForFont(pageText, charmap);
+    // textSpeed depuis options user (1=FAST, 4=MID, 8=SLOW frames/char). 1:1 menu.c:77.
+    const textSpeed = gameState.getTextSpeedFrameDelay();
+    // onPause : 1:1 décomp NewGameBirchSpeech_WaitForThisIsPokemonText (main_menu.c:2254)
+    // qui détecte EXT_CTRL_CODE_PAUSE pour spawn Lotad release. Fire once par show().
+    let pauseCallbackFired = false;
+    const onPauseCallback = this.onPauseCallback;
+    const printer = addTextPrinter({
+      window: win,
+      encodedString: encoded,
+      glyphData: latfont.normal,
+      glyphWidths: widths,
+      x: 0, y: 1,                  // 1:1 menu.c:177 printer.y=1
+      fgColor: 2,                  // gMessageBox_Pal[2] dark gray = body texte
+      bgColor: 0,                  // transparent → laisse voir interior frame
+      shadowColor: 3,              // gMessageBox_Pal[3] cream = drop shadow
+      textSpeed,
+      downArrowPixels: arrowJson.pixels,
+      onCharRendered: (_p, lastByte) => {
+        if (lastByte === EXT_CTRL_CODE_PAUSE && !pauseCallbackFired && onPauseCallback) {
+          pauseCallbackFired = true;
+          onPauseCallback();
+        }
+      },
+    });
+    this.gpPrinter = printer;
+
+    // Premier tick + canvas init (montre window vide)
+    gpRunTextPrinter(printer);
+    this.refreshGbaCanvas(X, Y);
+
+    // Stream tick : 1 frame = 16ms, state machine gère textSpeed/PAUSE/EOS
+    this.gpArrowTimer = this.scene.time.addEvent({
+      delay: 16, loop: true,
+      callback: () => {
+        const p = this.gpPrinter;
+        const w = this.gpWindow;
+        if (!p || !w) { this.gpArrowTimer?.remove(); return; }
+        // Phase streaming : process chars jusqu'à WAIT_WITH_DOWN_ARROW
+        if (p.state !== RENDER_STATE_WAIT_WITH_DOWN_ARROW) {
+          // 1:1 décomp text.c:944 — si touche speed-up HELD, force delayCounter=0
+          // CHAQUE FRAME → 1 char/frame = FAST speed (= textSpeed FAST behavior).
+          if (this.speedUpHeld) p.delayCounter = 0;
+          gpRunTextPrinter(p);
+          if (w.needsFlush) this.refreshGbaCanvas(X, Y);
+          if (p.state === RENDER_STATE_WAIT_WITH_DOWN_ARROW && showArrow) {
+            p.downArrowDelay = 0;
+            textPrinterDrawDownArrow(p);
+            if (w.needsFlush) this.refreshGbaCanvas(X, Y);
+          }
+        } else if (showArrow) {
+          textPrinterDrawDownArrow(p);
+          if (w.needsFlush) this.refreshGbaCanvas(X, Y);
+        }
+      }
+    });
+
+    return true;
+  }
+
+  /** Re-copy le pixelBuffer vers une nouvelle canvas + texture Phaser. */
+  private refreshGbaCanvas(X: number, Y: number): void {
+    if (!this.gpWindow || !this.gpPalette) return;
+    const canvas = copyWindowToCanvas(this.gpWindow, this.gpPalette);
+    if (this.gpTextKey && this.scene.textures.exists(this.gpTextKey)) {
+      this.scene.textures.remove(this.gpTextKey);
+    }
+    this.gpTextKey = `${DYNAMIC_TEXT_KEY}-gba-${Date.now()}-${Math.random()}`;
+    this.scene.textures.addCanvas(this.gpTextKey, canvas);
+    if (this.textImage) {
+      this.textImage.setTexture(this.gpTextKey);
+    } else {
+      this.textImage = this.scene.add.image(X, Y, this.gpTextKey);
+      this.textImage.setOrigin(0, 0).setScrollFactor(0).setDepth(200001);
+      this.container?.add(this.textImage);
+    }
+  }
+
   private advance() {
+    // Si streaming pas fini : NE PAS avance la page. Le HOLD géré dans stream tick
+    // (cf. speedUpHeld). Cette fonction = "click confirmé" = page advance ou skip pause.
+    const p = this.gpPrinter;
+    if (p && p.state !== RENDER_STATE_WAIT_WITH_DOWN_ARROW && p.state !== 2 /* FINISH */) {
+      p.pauseCounter = 0; // skip PAUSE en cours (équivalent press to skip pause)
+      return;
+    }
+    // Streaming fini : avance la page (ou close si dernière)
     if (this.pageIndex < this.pages.length - 1) {
       this.pageIndex++;
-      this.openedAt = performance.now(); // reset gate pour la prochaine avance
+      this.openedAt = performance.now();
       this.render();
     } else {
       this.hide();
@@ -265,5 +446,15 @@ export class DialogueBox {
     this.textImage = undefined;
     this.pageHint = undefined;
     this.arrowSprite = undefined;
+    // Cleanup nouveau moteur
+    this.gpArrowTimer?.remove();
+    this.gpArrowTimer = undefined;
+    if (this.gpTextKey && this.scene.textures.exists(this.gpTextKey)) {
+      this.scene.textures.remove(this.gpTextKey);
+    }
+    this.gpTextKey = undefined;
+    this.gpWindow = undefined;
+    this.gpPrinter = undefined;
+    this.gpPalette = undefined;
   }
 }

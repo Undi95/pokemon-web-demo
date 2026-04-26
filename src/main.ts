@@ -8,6 +8,7 @@ import { NamingScene } from './scenes/NamingScene';
 import { OverworldScene } from './scenes/OverworldScene';
 import { BattleScene } from './scenes/BattleScene';
 import { MenuOverlayScene } from './scenes/MenuOverlayScene';
+import { OptionMenuScene } from './scenes/OptionMenuScene';
 
 export const TILE_SIZE = 16;
 // Résolution NATIVE Pokemon Émeraude GBA = 240×160 px = 15×10 tiles de 16 px.
@@ -29,7 +30,7 @@ const config: Phaser.Types.Core.GameConfig = {
   zoom: DEFAULT_ZOOM,
   pixelArt: true,
   backgroundColor: '#000000',
-  scene: [BootScene, IntroScene, TitleScene, MainMenuScene, BirchSpeechScene, NamingScene, OverworldScene, BattleScene, MenuOverlayScene],
+  scene: [BootScene, IntroScene, TitleScene, MainMenuScene, BirchSpeechScene, NamingScene, OverworldScene, BattleScene, MenuOverlayScene, OptionMenuScene],
   physics: {
     default: 'arcade',
     arcade: { debug: false }

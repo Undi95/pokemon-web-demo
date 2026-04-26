@@ -3,6 +3,12 @@ import { TILE_SIZE, GAME_W, GAME_H } from '../main';
 import { registerTransparentSpriteSheet } from '../util/sprite-transparency';
 import { setIdleFrame, playSingleStep, type Facing } from '../engine/character-anims';
 import { buildTilemap, buildBorderTileSprite, isDoorWarp, isInstantStepWarp, isArrowWarp, getArrowWarpDirection, MB_NORMAL, type LoadedTilemap } from '../engine/tilemap-loader';
+import {
+  isJumpLedge, getJumpLedgeFacing,
+  isWalkLedge, getWalkLedgeDirection,
+  isSlideLedge, getSlideLedgeDirection,
+  isEncounterTile,
+} from '../engine/metatile-behaviors';
 import { getMapNameFr, loadMapNamesFr } from '../data/map-names-fr';
 import {
   loadTextTables, loadItemsTable, loadTrainersTable,
@@ -42,9 +48,18 @@ function tilesetDir(gname: string): string {
   return gname.replace(/^gTileset_/, '').replace(/([a-z0-9])([A-Z])/g, '$1_$2').toLowerCase();
 }
 
-const WALK_COOLDOWN = 220;
-const RUN_COOLDOWN = 120;
+// Vitesses 1:1 décomp Émeraude (cf. `event_object_movement.c` sStepTimes).
+// Une tile = 16 px. À 60 FPS GBA, chaque step prend N frames :
+//   MOVE_SPEED_NORMAL  (walk)        : 16 frames = 16/60 = 266.67ms
+//   MOVE_SPEED_FAST_1  (run / surf)  :  8 frames = 133.33ms
+//   MOVE_SPEED_FAST_2  (water curr.) :  6 frames = 100ms
+//   MOVE_SPEED_FASTER  (mach bike)   :  4 frames = 66.67ms
+//   MOVE_SPEED_FASTEST                :  2 frames = 33.33ms
+const WALK_COOLDOWN = 267; // MOVE_SPEED_NORMAL
+const RUN_COOLDOWN = 133;  // MOVE_SPEED_FAST_1
 const TAP_TURN_THRESHOLD_MS = 80; // < 80ms d'appui = juste tourne, >= = marche
+function dirToDx(d: Facing): number { return d === 'left' ? -1 : d === 'right' ? 1 : 0; }
+function dirToDy(d: Facing): number { return d === 'up' ? -1 : d === 'down' ? 1 : 0; }
 
 interface LayoutDef {
   id: string; name: string;
@@ -953,8 +968,13 @@ export class OverworldScene extends Phaser.Scene {
         (npc as any).facing = getInitialFacing(npc.raw.movement_type);
       }
       tickNpcBehavior(this, npc as any, state, now, (tx, ty) => {
-        // Walkable check : pas de collision tile + pas de NPC/player dessus.
+        // Walkable check : collision binary + behavior impassable + NPC/player.
         if (this.tilemap?.collisions?.[ty]?.[tx]) return false;
+        // Behaviors directionnels (MB_IMPASSABLE_*, MB_SECRET_BASE_IMPASSABLE,
+        // ledges) ne sont pas dans le collision binary mais bloquent quand
+        // même. 0x30-0x37 = IMPASSABLE_{8 directions}, 0xB9, 0xC0, 0xC1.
+        const beh = this.tilemap?.behaviors?.[ty]?.[tx] ?? 0;
+        if ((beh >= 0x30 && beh <= 0x37) || beh === 0xB9 || beh === 0xC0 || beh === 0xC1) return false;
         if (this.npcs.some(n => n !== npc && n.sprite.visible &&
                                  (n as any).tile?.x === tx && (n as any).tile?.y === ty)) return false;
         if (this.playerTile.x === tx && this.playerTile.y === ty) return false;
@@ -1025,6 +1045,19 @@ export class OverworldScene extends Phaser.Scene {
     }
 
     const nx = this.playerTile.x + dx, ny = this.playerTile.y + dy;
+
+    // === JUMP LEDGE (MB_JUMP_*) — saut auto par-dessus la tile ledge ===
+    // Décomp `field_player_avatar.c` IsRunningOnPokeRiderInDirection : si la
+    // tile DEVANT a behavior MB_JUMP_<facing>, le joueur saute 2 tiles dans
+    // la direction (par-dessus la ledge). Pas de check collision intermédiaire.
+    if (ny >= 0 && nx >= 0 && ny < this.layoutDef.height && nx < this.layoutDef.width) {
+      const ledgeBeh = this.tilemap.behaviors[ny]?.[nx] ?? 0;
+      if (isJumpLedge(ledgeBeh) && getJumpLedgeFacing(ledgeBeh) === facing) {
+        this.performLedgeJump(facing, dx, dy);
+        return;
+      }
+    }
+
     // SEAMLESS : si la cible est out-of-bounds de current map, check si une
     // adjacent loaded la contient. Si oui : tween normal vers la new pixel,
     // softSwitch au onComplete (le sprite traverse en glissant continûment
@@ -1100,6 +1133,9 @@ export class OverworldScene extends Phaser.Scene {
           if (!this.isIndoor()) this.checkOutdoorWarp();
           else this.postMoveCheckStairsOrArrow(facing);
           void this.checkCoordEvent();
+          // Behaviors post-step : grass encounter (placeholder log), walk
+          // ledge (auto-step direction), slide ledge (continue glisser).
+          this.checkPostMoveBehaviors(facing);
         }
         this.time.delayedCall(30, () => {
           if (!this.heldDir) this.syncPlayerIdleTexture();
@@ -1372,10 +1408,92 @@ export class OverworldScene extends Phaser.Scene {
     else { traceMark('indoor → skip door anim'); finish(); }
   }
 
+  /** Saut ledge MB_JUMP_<DIR> : 2 tiles parabolique dans la direction.
+   *  Décomp `JumpInPlace` / `JumpInDirection` : 16 frames @60fps = ~266ms. */
+  private performLedgeJump(facing: Facing, dx: number, dy: number): void {
+    const tex = this.currentTex();
+    playSingleStep(this.playerSprite, tex, facing, WALK_COOLDOWN);
+    const fx = this.playerTile.x + dx * 2;
+    const fy = this.playerTile.y + dy * 2;
+    this.playerTile.x = fx; this.playerTile.y = fy;
+    gameState.map = { name: this.mapName, x: fx, y: fy };
+    const tx = fx * TILE_SIZE + TILE_SIZE / 2;
+    const ty = fy * TILE_SIZE + TILE_SIZE;
+    const startY = this.playerSprite.y;
+    const peakOffset = -10; // arc parabolique : remonte de 10 px au sommet
+    const duration = 266; // 1:1 décomp (16 frames @60fps)
+    this.tweens.add({
+      targets: this.playerSprite,
+      x: tx, y: ty,
+      duration,
+      ease: 'Linear',
+      onUpdate: (tween) => {
+        // Arc parabolique : y = base + 4*peak*t*(1-t)
+        const t = tween.progress;
+        const linearY = startY + (ty - startY) * t;
+        this.playerSprite.y = linearY + 4 * peakOffset * t * (1 - t);
+        this.playerSprite.setDepth(this.playerSprite.y);
+      },
+      onComplete: () => {
+        this.playerSprite.y = ty;
+        this.playerSprite.setDepth(ty);
+        if (!this.isIndoor()) this.checkOutdoorWarp();
+        void this.checkCoordEvent();
+        this.checkPostMoveBehaviors(facing);
+        this.time.delayedCall(30, () => {
+          if (!this.heldDir) this.syncPlayerIdleTexture();
+        });
+      },
+    });
+    this.inputLockUntil = this.time.now + duration;
+  }
+
+  /** Behaviors qui s'appliquent APRÈS un mouvement réussi (post-step) :
+   *  - MB_*_GRASS : trigger encounter sauvage (placeholder pour wild battles)
+   *  - MB_WALK_<DIR> : auto-marche 1 tile dans la direction
+   *  - MB_SLIDE_<DIR> : marche en continu tant que sur tile slide */
+  private checkPostMoveBehaviors(_facing: Facing): void {
+    const beh = this.tilemap.behaviors[this.playerTile.y]?.[this.playerTile.x] ?? 0;
+
+    // Walk ledge : auto-marche dans la direction (escalator-like)
+    if (isWalkLedge(beh)) {
+      const dir = getWalkLedgeDirection(beh);
+      if (dir) {
+        this.time.delayedCall(50, () => {
+          this.inputLockUntil = 0;
+          this.tryMove(dirToDx(dir), dirToDy(dir), dir, false);
+        });
+        return;
+      }
+    }
+    // Slide ledge : continue dans la direction tant qu'on est sur slide
+    if (isSlideLedge(beh)) {
+      const dir = getSlideLedgeDirection(beh);
+      if (dir) {
+        this.time.delayedCall(30, () => {
+          this.inputLockUntil = 0;
+          this.tryMove(dirToDx(dir), dirToDy(dir), dir, false);
+        });
+        return;
+      }
+    }
+    // Grass encounter : herbe haute → log (placeholder pour wild battle).
+    // TODO : quand `extract-wild-encounters.mjs` extrait les tables, lancer
+    // un setwildbattle + dowildbattle ici avec RNG.
+    if (isEncounterTile(beh)) {
+      // Pour l'instant juste log silencieux (debug si jamais on veut tracer).
+      // console.log('[encounter] tile', this.playerTile.x, this.playerTile.y, 'beh=0x'+beh.toString(16));
+    }
+  }
+
   private isBlocked(x: number, y: number): boolean {
     if (x < 0 || y < 0 || x >= this.layoutDef.width || y >= this.layoutDef.height) return true;
     if (this.mapJson.warp_events?.some(w => w.x === x && w.y === y)) return false;
     if (this.tilemap.collisions[y]?.[x] === 1) return true;
+    // Behaviors directionnels impassable (MB_IMPASSABLE_*, secret base, hybrides)
+    // — pas dans le collision binary mais bloquent quand même (cf. session 51).
+    const beh = this.tilemap.behaviors[y]?.[x] ?? 0;
+    if ((beh >= 0x30 && beh <= 0x37) || beh === 0xB9 || beh === 0xC0 || beh === 0xC1) return true;
     // Les NPCs cachés (FLAG_HIDE_* set) ne bloquent pas — sinon impossible de
     // marcher où "Mom" devrait être avant qu'elle apparaisse, etc.
     // Position courante du NPC = tile mutable (mise à jour par runMovement)

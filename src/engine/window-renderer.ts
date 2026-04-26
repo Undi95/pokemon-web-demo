@@ -189,6 +189,8 @@ function ensureComposedTexture(scene: Phaser.Scene, frameId: number | 'message_b
       if (nextIdx >= 16) break;
     }
   }
+  // Sample idx 0 BG (pixel 0,0) AVANT remap pour pouvoir transparentiser après.
+  const bgR0 = p[0], bgG0 = p[1], bgB0 = p[2];
   // Remappe chaque pixel.
   for (let i = 0; i < p.length; i += 4) {
     const key = (p[i] << 16) | (p[i + 1] << 8) | p[i + 2];
@@ -197,6 +199,15 @@ function ensureComposedTexture(scene: Phaser.Scene, frameId: number | 'message_b
       const c = pal.colors[idx];
       if (c) { p[i] = c[0]; p[i + 1] = c[1]; p[i + 2] = c[2]; }
     }
+  }
+  // Transparentise la couleur BG (devenue pal[0] après remap, ou bgR0/G0/B0
+  // si pas dans la palette). Évite la bordure verte/cyan parasite autour.
+  const palBg = pal.colors[0];
+  const tR = palBg ? palBg[0] : bgR0;
+  const tG = palBg ? palBg[1] : bgG0;
+  const tB = palBg ? palBg[2] : bgB0;
+  for (let i = 0; i < p.length; i += 4) {
+    if (p[i] === tR && p[i + 1] === tG && p[i + 2] === tB) p[i + 3] = 0;
   }
   ctx.putImageData(data, 0, 0);
   scene.textures.addCanvas(targetKey, canvas);
@@ -287,6 +298,25 @@ function composeDialogTexture(scene: Phaser.Scene, widthTiles: number, heightTil
   for (let i = 0; i < widthTiles - 1; i++) drawTile(4, 2 + i, br, true);
   drawTile(5, widthTiles + 1, br, true);
   drawTile(6, widthTiles + 2, br, true);
+
+  // Transparentise la couleur BG (idx 0 PNG = vert décomp ~112/200/160). Sans
+  // ça : bordure verte/cyan autour du cadre car les tiles "bord" du PNG ont
+  // des pixels extérieurs en idx 0. Cf. décomp `gMessageBox_Pal` palette[0] =
+  // green, ne s'affiche jamais sur GBA car BG layer dessous (palette ≠).
+  // On sample le PNG source à pixel (0,0) qui est garanti BG idx 0.
+  const srcImg = src as HTMLImageElement;
+  const probeCanvas = document.createElement('canvas');
+  probeCanvas.width = srcImg.width; probeCanvas.height = srcImg.height;
+  const probeCtx = probeCanvas.getContext('2d')!;
+  probeCtx.drawImage(srcImg as CanvasImageSource, 0, 0);
+  const probe = probeCtx.getImageData(0, 0, 1, 1).data;
+  const bgR = probe[0], bgG = probe[1], bgB = probe[2];
+  const d = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const p = d.data;
+  for (let i = 0; i < p.length; i += 4) {
+    if (p[i] === bgR && p[i + 1] === bgG && p[i + 2] === bgB) p[i + 3] = 0;
+  }
+  ctx.putImageData(d, 0, 0);
 
   scene.textures.addCanvas(cacheKey, canvas);
   return cacheKey;

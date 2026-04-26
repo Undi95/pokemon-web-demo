@@ -6,6 +6,9 @@ import { registerTransparentImage } from '../util/sprite-transparency';
 import { gameState } from '../engine/game-state';
 import { getTrainer, getSpeciesNameFr, getMoveNameFr } from '../engine/data-tables';
 import { pokemonToShowdownSet, createPokemonInstance, speciesEnumToDexId, moveEnumToDexId, itemEnumToDexId } from '../engine/pokemon';
+import { loadBattleTerrain, chooseBattleTerrain } from '../engine/battle-terrain';
+import { loadMonPicCoords, getMonCoord, setMonPicCoordsCache } from '../engine/mon-pic-coords';
+import { setMonAnimCache, getMonAnim, playMonAnim } from '../engine/mon-anim';
 import type { MonSpec } from '../data/trainers';
 
 const SPRITE_BASE = '/decomp/em/pokemon';
@@ -28,7 +31,7 @@ function spriteKeyFor(species: string) {
   return `mon_${species.toLowerCase().replace(/[^a-z0-9]/g, '')}`;
 }
 
-function spriteUrlFor(species: string, kind: 'front' | 'back' = 'front') {
+function spriteUrlFor(species: string, kind: 'front' | 'back' | 'anim_front' = 'front') {
   // Le décomp utilise le nom EN canonique en lowercase pour les dossiers
   return `${SPRITE_BASE}/${species.toLowerCase()}/${kind}.png`;
 }
@@ -38,6 +41,7 @@ interface BattleInitData {
   wildSpecies?: string;        // SPECIES_X enum
   wildLevel?: number;
   wildItem?: string;           // ITEM_X enum (optional)
+  battleScene?: string;        // ex: MAP_BATTLE_SCENE_NORMAL → terrain
   onResult?: (r: 'win' | 'lose' | 'caught' | 'flee') => void;
 }
 
@@ -133,14 +137,22 @@ export class BattleScene extends Phaser.Scene {
   }
 
   preload() {
-    // Sprites des Pokémon engagés (back pour player, front pour enemy)
+    // Sprites Pokémon : SPRITESHEET 64×64 par frame (pas image simple).
+    // Cas Pochyena : front.png = 64×256 (atlas 4 frames anim idle). Autres :
+    // 64×64 (1 frame). Phaser gère les 2 cas via spritesheet, on affiche frame 0.
     if (this.playerTeam[0]) {
       const s = this.playerTeam[0].species;
-      this.load.image(spriteKeyFor(s) + '_back', spriteUrlFor(s, 'back'));
+      this.load.spritesheet(spriteKeyFor(s) + '_back', spriteUrlFor(s, 'back'),
+        { frameWidth: 64, frameHeight: 64 });
     }
     if (this.enemyTeam[0]) {
       const s = this.enemyTeam[0].species;
-      this.load.image(spriteKeyFor(s) + '_front', spriteUrlFor(s, 'front'));
+      this.load.spritesheet(spriteKeyFor(s) + '_front', spriteUrlFor(s, 'front'),
+        { frameWidth: 64, frameHeight: 64 });
+      // anim_front.png : 64×128 = 2 frames idle anim. Présent pour tous les
+      // Pokémon Hoenn (cf. décomp pokeemerald/graphics/pokemon/<species>/anim_front.png).
+      this.load.spritesheet(spriteKeyFor(s) + '_anim_front', spriteUrlFor(s, 'anim_front'),
+        { frameWidth: 64, frameHeight: 64 });
     }
     // UI battle décomp (asset 1:1 GBA, copiés via extract-battle-ui.mjs).
     // Spritesheets : healthbox_singles_player est un atlas vertical 4×(64x32).
@@ -155,35 +167,104 @@ export class BattleScene extends Phaser.Scene {
     if (!this.textures.exists('battle-textbox')) {
       this.load.image('battle-textbox', `${UI_BASE}/textbox.png`);
     }
+    // Mon coords (yOffset par species pour positionner les sprites volants
+    // ou statiques correctement). Loadé via Phaser cache → dispo sync en create.
+    if (!this.cache.json.has('mon-coords')) {
+      this.load.json('mon-coords', '/decomp/em/mon-pic-coords.json');
+    }
+    if (!this.cache.json.has('mon-anims')) {
+      this.load.json('mon-anims', '/decomp/em/pokemon-anims.json');
+    }
+    if (!this.cache.json.has('cries-map')) {
+      this.load.json('cries-map', '/decomp/em/cries.json');
+    }
+    void loadMonPicCoords; // tease ts-unused
   }
 
   create() {
-    // Background : dégradé bleu→vert style GBA Hoenn (placeholder propre en
-    // attendant d'extraire les vrais battle terrains). 2 rectangles overlay.
-    this.add.rectangle(GAME_W / 2, GAME_H / 2, GAME_W, GAME_H, 0x60a0c8);
-    // "Sol" sous chaque sprite (cercle ellipse style GBA)
-    this.add.ellipse(POS.opponentSpriteX, POS.opponentSpriteY + 4, 64, 12, 0x305878, 0.5);
-    this.add.ellipse(POS.playerSpriteX,   POS.playerSpriteY + 4,   80, 14, 0x305878, 0.5);
+    // Init mon coords + mon anims cache (loaded via Phaser preload, dispo sync).
+    setMonPicCoordsCache(this.cache.json.get('mon-coords'));
+    setMonAnimCache(this.cache.json.get('mon-anims'));
+
+    // Placeholder visible pendant que le terrain async se compose (~50-100ms).
+    // Depth -100 = tout en arrière. Les ellipses "sol" ont été retirées car
+    // elles dépassaient du terrain composé et créaient des artéfacts visuels.
+    const placeholderBg = this.add.rectangle(GAME_W / 2, GAME_H / 2, GAME_W, GAME_H, 0x60a0c8)
+      .setDepth(-100);
+
+    // Battle terrain 1:1 GBA composé depuis tiles.png + map.bin + palette.
+    // Affiché en background à depth -10 (derrière sprites + healthboxes).
+    // Le tilemap fait 512×256 (BG_SIZE 1 GBA). Display à (0,0) → on voit la
+    // moitié haut-gauche 240×160 = scene battle composée. Les positions
+    // sprites POS.opponentSpriteY/playerSpriteY sont calées sur les
+    // plate-formes du tilemap (à ajuster si désync visible).
+    const terrainName = chooseBattleTerrain(this.cfg.battleScene);
+    void loadBattleTerrain(this, terrainName).then((key) => {
+      if (!key) return;
+      placeholderBg.setVisible(false);
+      this.add.image(0, 0, key).setOrigin(0, 0).setDepth(-10);
+    });
 
     // === Sprites Pokémon ===
+    // Position basée sur sol GBA + yOffset par species (Pidgeot vole haut,
+    // Caterpie au sol, etc.). Cf. `mon-pic-coords.ts` qui charge le mapping
+    // depuis `gMonFrontPicCoords[]` / `gMonBackPicCoords[]` du décomp.
     if (this.enemyTeam[0]) {
       const s = this.enemyTeam[0].species;
-      const k = spriteKeyFor(s) + '_front';
-      const ka = k + '-a';
+      // Préfère anim_front.png (2 frames idle) si chargé, sinon front.png statique.
+      // anim_front frameTotal = 3 (2 frames + __BASE) confirme atlas valide.
+      const animKey = spriteKeyFor(s) + '_anim_front';
+      const staticKey = spriteKeyFor(s) + '_front';
+      const useAnim = this.textures.exists(animKey) && this.textures.get(animKey).frameTotal >= 3;
+      const k = useAnim ? animKey : staticKey;
       if (this.textures.exists(k)) {
-        registerTransparentImage(this, k, ka);
-        const img = this.add.image(POS.opponentSpriteX, POS.opponentSpriteY, ka);
-        img.setOrigin(0.5, 1);
+        const c = getMonCoord(s, 'front');
+        const baseX = POS.opponentSpriteX;
+        const baseY = POS.opponentSpriteY + c.yOffset;
+        const img = this.add.sprite(baseX, baseY, k, 0);
+        img.setOrigin(0.5, 1).setDepth(5);
+        // 1:1 décomp : `Anim_VerticalShake` etc. dure 60 frames @60fps = ~1s.
+        // Pas de bobbing continu — sprite reste fixe sur frame 0 après l'entry.
+        // Pendant l'anim, on alterne juste 1 fois la frame (pose alt) → return 0.
+        if (useAnim) {
+          this.time.delayedCall(500, () => { if (img.active) img.setFrame(1); });
+          this.time.delayedCall(1000, () => { if (img.active) img.setFrame(0); });
+        }
+        const animEntry = getMonAnim(s);
+        if (animEntry) {
+          const delayMs = (animEntry.delay || 0) * (1000 / 60);
+          this.time.delayedCall(delayMs, () => {
+            if (img.active) playMonAnim(this, img, animEntry.frontAnimId, baseX, baseY);
+          });
+        }
+        // Cri Pokémon (1:1 décomp : joué quand la pokeball s'ouvre = APRÈS
+        // l'anim entry mon ~1s. On n'a pas d'anim ball, on délaie ~1.2s pour
+        // que ça matche le timing post-entry).
+        const criesMap = this.cache.json.get('cries-map') as Record<string, string> | undefined;
+        const enumKey = 'SPECIES_' + s.toUpperCase().replace(/[\s-]/g, '_');
+        const cryUrl = criesMap?.[enumKey];
+        if (cryUrl) {
+          this.time.delayedCall(1200, () => {
+            try {
+              const audio = new Audio('/decomp/em/' + cryUrl);
+              audio.volume = 0.7;
+              void audio.play().catch(() => {/* autoplay block, ignore */});
+            } catch {/* ignore */}
+          });
+        }
+      } else {
+        console.warn(`[BattleScene] enemy sprite key "${k}" not in textures cache (load failed?)`);
       }
     }
     if (this.playerTeam[0]) {
       const s = this.playerTeam[0].species;
       const k = spriteKeyFor(s) + '_back';
-      const ka = k + '-a';
       if (this.textures.exists(k)) {
-        registerTransparentImage(this, k, ka);
-        const img = this.add.image(POS.playerSpriteX, POS.playerSpriteY, ka);
-        img.setOrigin(0.5, 1);
+        const c = getMonCoord(s, 'back');
+        const img = this.add.sprite(POS.playerSpriteX, POS.playerSpriteY + c.yOffset, k, 0);
+        img.setOrigin(0.5, 1).setDepth(5);
+      } else {
+        console.warn(`[BattleScene] player sprite key "${k}" not in textures cache (load failed?)`);
       }
     }
 

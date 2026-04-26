@@ -18,6 +18,27 @@ import type { PokemonInstance } from './pokemon';
 
 const STORAGE_KEY = 'em_save_v1';
 
+/**
+ * Options menu state — 1:1 décomp `gSaveBlock2Ptr->options*` (cf. include/global.h
+ * SaveBlock2 + src/option_menu.c). Valeurs par défaut depuis new_game.c.
+ */
+export interface PokemonOptions {
+  textSpeed: number;       // 0=SLOW, 1=MID, 2=FAST (OPTIONS_TEXT_SPEED_*). Default MID.
+  battleSceneOff: number;  // 0=ON (anims), 1=OFF (skip). Default 0.
+  battleStyle: number;     // 0=SHIFT, 1=SET. Default 0.
+  sound: number;           // 0=MONO, 1=STEREO. Default 0.
+  buttonMode: number;      // 0=NORMAL, 1=LR, 2=L_EQUALS_A. Default 0.
+  windowFrameType: number; // 0-19 → frame text_window/{N+1}.png. Default 0.
+}
+
+export const DEFAULT_OPTIONS: PokemonOptions = {
+  textSpeed: 1, battleSceneOff: 0, battleStyle: 0,
+  sound: 0, buttonMode: 0, windowFrameType: 0,
+};
+
+/** Frames per char selon textSpeed (cf. menu.c:77 sTextSpeedFrameDelays). */
+export const TEXT_SPEED_FRAME_DELAYS = [8, 4, 1] as const;
+
 interface SaveData {
   flags: Record<string, true>;
   vars: Record<string, number>;
@@ -33,6 +54,8 @@ interface SaveData {
   party: PokemonInstance[];
   /** Item balls déjà ramassées (script labels). Persisté pour ne pas réapparaître. */
   takenItemBalls?: string[];
+  /** Options menu (text speed, sound, frame, etc). */
+  options?: PokemonOptions;
   created: number;
 }
 
@@ -41,6 +64,7 @@ function emptySave(): SaveData {
     flags: {}, vars: {}, objectPositions: {},
     playerName: 'UNDI', gender: 'MALE',
     party: [],
+    options: { ...DEFAULT_OPTIONS },
     created: Date.now()
   };
 }
@@ -52,7 +76,19 @@ class GameState {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return false;
-      this.data = JSON.parse(raw);
+      const parsed = JSON.parse(raw) as Partial<SaveData>;
+      // Migration : merge avec emptySave pour garantir tous les champs présents
+      // (saves antérieures peuvent manquer `options`, `takenItemBalls`, etc.)
+      const empty = emptySave();
+      this.data = {
+        ...empty,
+        ...parsed,
+        flags: parsed.flags ?? {},
+        vars: parsed.vars ?? {},
+        objectPositions: parsed.objectPositions ?? {},
+        party: parsed.party ?? [],
+        options: { ...empty.options!, ...(parsed.options ?? {}) },
+      };
       return true;
     } catch { return false; }
   }
@@ -124,6 +160,22 @@ class GameState {
     this.data.party.push(mon);
     return true;
   }
+  // ===== Options =====
+  // Persistées dans la save mais aussi readables sans save loaded (default).
+  get options(): PokemonOptions {
+    if (!this.data.options) this.data.options = { ...DEFAULT_OPTIONS };
+    return this.data.options;
+  }
+  setOptions(opts: Partial<PokemonOptions>) {
+    this.data.options = { ...this.options, ...opts };
+    this.save();
+  }
+  /** Frames de delay entre chars selon textSpeed (1:1 menu.c:77). */
+  getTextSpeedFrameDelay(): number {
+    const idx = Math.max(0, Math.min(2, this.options.textSpeed));
+    return TEXT_SPEED_FRAME_DELAYS[idx];
+  }
+
   /** Heal HP + PP de tous les Pokémon (Centre Pokémon, special HealPlayerParty). */
   healAllParty() {
     for (const m of this.data.party) {

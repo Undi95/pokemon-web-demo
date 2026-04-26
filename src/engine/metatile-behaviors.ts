@@ -60,6 +60,47 @@ export function getJumpLedgeDirection(byte: number): string | null {
   return m ? m[1].toLowerCase() : null;
 }
 
+/** Direction décodée d'un nom MB_*_<DIR> standardisée vers Facing.
+ *  Retourne null si le nom n'a pas de direction cardinale extractible. */
+export function decodeBehaviorDirection(name: string): 'down' | 'up' | 'left' | 'right' | null {
+  const m = name.match(/_(NORTH|SOUTH|EAST|WEST)(?:_AND_\w+)?$/);
+  if (!m) return null;
+  switch (m[1]) {
+    case 'NORTH': return 'up';
+    case 'SOUTH': return 'down';
+    case 'EAST':  return 'right';
+    case 'WEST':  return 'left';
+  }
+  return null;
+}
+
+/** True si la tile est une "walk ledge" (escalator-like : marche auto vers une direction). */
+export function isWalkLedge(byte: number): boolean {
+  return getBehaviorInfo(byte)?.subtype === 'walk';
+}
+export function getWalkLedgeDirection(byte: number): 'down' | 'up' | 'left' | 'right' | null {
+  const info = getBehaviorInfo(byte);
+  if (info?.subtype !== 'walk') return null;
+  return decodeBehaviorDirection(info.name);
+}
+
+/** True si la tile est une "slide" (glace) : continue dans la direction. */
+export function isSlideLedge(byte: number): boolean {
+  return getBehaviorInfo(byte)?.subtype === 'slide';
+}
+export function getSlideLedgeDirection(byte: number): 'down' | 'up' | 'left' | 'right' | null {
+  const info = getBehaviorInfo(byte);
+  if (info?.subtype !== 'slide') return null;
+  return decodeBehaviorDirection(info.name);
+}
+
+/** Direction du jump ledge en Facing. Décomp `MB_JUMP_SOUTH` = saut vers le bas. */
+export function getJumpLedgeFacing(byte: number): 'down' | 'up' | 'left' | 'right' | null {
+  const info = getBehaviorInfo(byte);
+  if (info?.subtype !== 'jump') return null;
+  return decodeBehaviorDirection(info.name);
+}
+
 /** True si tile interactive (PC, TV, bookshelf...). */
 export function isInteractiveTile(byte: number): boolean {
   return getBehaviorInfo(byte)?.category === 'interactive';

@@ -43,7 +43,9 @@ export class MainMenuScene extends Phaser.Scene {
           const m = gameState.map ?? { name: 'LittlerootTown', x: 10, y: 10 };
           this.scene.start('OverworldScene', { mapName: m.name, spawnX: m.x, spawnY: m.y });
         }
-        // OPTION : TODO
+        else if (a === 'OPTION') {
+          this.scene.start('OptionMenuScene', { returnScene: 'MainMenuScene' });
+        }
       }
     });
   }

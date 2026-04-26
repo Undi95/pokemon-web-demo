@@ -12,8 +12,11 @@ import Phaser from 'phaser';
 const CELL_W = 16;
 const CELL_H = 16;
 const COLS = 16;
-const LINE_H = 15;
-const CHAR_GAP = 0; // pas d'espacement additionnel entre glyphes (1 px est inclus dans les cellules)
+// LINE_H = maxLetterHeight FONT_NORMAL décomp (text.c:134). Ancien code = 15 (1 px
+// trop serré entre lignes). 16 matche `gFonts[FONT_NORMAL].maxLetterHeight = 16`
+// + `lineSpacing = 0` du décomp.
+const LINE_H = 16;
+const CHAR_GAP = 0; // letterSpacing décomp = 0 pour FONT_NORMAL (text.c:135)
 
 const FONT_KEY = 'ui-font-latin-normal';
 const FONT_URL = '/decomp/em/ui/fonts/latin_normal.png';
@@ -22,9 +25,24 @@ const CHARMAP_KEY = 'ui-charmap';
 const CHARMAP_URL = '/decomp/em/ui/charmap.json';
 const WIDTHS_KEY = 'font-widths';
 
+// Module-level widths cache. `scene.registry` est PER-SCENE dans Phaser, donc
+// si BirchSpeech setup ses widths puis NamingScene re-setup, chaque registry est
+// isolé. Garder en module-level garantit qu'une seule source de vérité.
+let MODULE_WIDTHS: Uint8Array | null = null;
+let MODULE_WIDTHS_SOURCE: 'decomp-table' | 'pixel-scan' | null = null;
+// Table décomp `gFontNormalLatinGlyphWidths` extraite par scripts/extract-font-widths.mjs.
+// Source de vérité ABSOLUE pour l'avancement de cursor (currentX += width). Le scan
+// pixel ne donne que la largeur VISIBLE, mais le décomp avance de la largeur de la
+// CELLULE allouée au glyph (visible + padding intégré). Ex. "!" visible = 2 px,
+// table = 4 → 2 px de gap naturel après. Sans cette table, la flèche next-page
+// se colle au texte au lieu d'avoir le gap natif GBA.
+const FONT_WIDTHS_TABLE_KEY = 'font-widths-table';
+const FONT_WIDTHS_TABLE_URL = '/decomp/em/ui/font-widths.json';
+
 export function preloadBitmapFont(scene: Phaser.Scene) {
   scene.load.image(FONT_KEY, FONT_URL);
   scene.load.json(CHARMAP_KEY, CHARMAP_URL);
+  scene.load.json(FONT_WIDTHS_TABLE_KEY, FONT_WIDTHS_TABLE_URL);
 }
 
 /**
@@ -32,7 +50,24 @@ export function preloadBitmapFont(scene: Phaser.Scene) {
  * Largeur = colonne du dernier pixel non-transparent + 1 (ou 3 pour espace).
  */
 export function setupBitmapFont(scene: Phaser.Scene): void {
-  if (scene.textures.exists(FONT_A_KEY) && scene.registry.has(WIDTHS_KEY)) return;
+  // ─── Widths : 1:1 décomp via table extraite ─────────────────────────────────
+  // `gFontNormalLatinGlyphWidths[256]` (fonts.c:148) = SEULE source de vérité
+  // pour cursor advance. Le scan pixel donnait la largeur visible (≠ avancement)
+  // ce qui fait que la flèche next-page se collait au texte.
+  if (!MODULE_WIDTHS || MODULE_WIDTHS_SOURCE !== 'decomp-table') {
+    const tableJson = scene.cache.json.get(FONT_WIDTHS_TABLE_KEY) as
+      | { normal?: number[] } | undefined;
+    const decompTable = tableJson?.normal;
+    if (decompTable && decompTable.length >= 256) {
+      const widths = new Uint8Array(256);
+      for (let byte = 0; byte < 256; byte++) widths[byte] = decompTable[byte] || 3;
+      MODULE_WIDTHS = widths;
+      MODULE_WIDTHS_SOURCE = 'decomp-table';
+    }
+  }
+
+  // ─── Texture : process le PNG une fois (alpha-fix BG) ───────────────────────
+  if (scene.textures.exists(FONT_A_KEY)) return;
 
   const img = scene.textures.get(FONT_KEY).getSourceImage() as HTMLImageElement;
   const c = document.createElement('canvas');
@@ -41,38 +76,41 @@ export function setupBitmapFont(scene: Phaser.Scene): void {
   ctx.drawImage(img, 0, 0);
   const d = ctx.getImageData(0, 0, c.width, c.height);
   const p = d.data;
-  // Détecte la BG color en samplant le centre de la cell 0 (espace = BG pure).
-  // Pixel(0,0) ne marche PAS si le PNG a un TRNS chunk : alpha = 0 mais RGB =
-  // (0,0,0) → on transparentiserait les noirs au lieu de la BG bleu, et tous
-  // les glyphes resteraient en blocs 16×16 opaques (bug session 28 cursor).
+  // BG color sample au CENTRE de cell 0 (= byte 0 = espace = BG pure). Pixel(0,0)
+  // ne marche PAS si TRNS chunk : alpha=0 mais RGB peut être (0,0,0) bidon.
   const sampleOffset = (Math.floor(CELL_H / 2) * c.width + Math.floor(CELL_W / 2)) * 4;
   const tr = p[sampleOffset], tg = p[sampleOffset + 1], tb = p[sampleOffset + 2];
   for (let i = 0; i < p.length; i += 4) {
     if (p[i] === tr && p[i + 1] === tg && p[i + 2] === tb) p[i + 3] = 0;
   }
   ctx.putImageData(d, 0, 0);
-  if (!scene.textures.exists(FONT_A_KEY)) scene.textures.addCanvas(FONT_A_KEY, c);
+  scene.textures.addCanvas(FONT_A_KEY, c);
 
-  // Scan largeur par glyphe (bytes 0x00-0xFF, top half du PNG)
-  const widths = new Uint8Array(256);
-  const W = c.width;
-  for (let byte = 0; byte < 256; byte++) {
-    const col = byte % COLS;
-    const row = Math.floor(byte / COLS);
-    const x0 = col * CELL_W;
-    const y0 = row * CELL_H;
-    let maxX = -1;
-    for (let y = 0; y < CELL_H; y++) {
-      for (let x = 0; x < CELL_W; x++) {
-        const alpha = p[((y0 + y) * W + (x0 + x)) * 4 + 3];
-        if (alpha > 0 && x > maxX) maxX = x;
+  // Fallback widths via scan pixel SI table décomp absente (édge case boot).
+  if (!MODULE_WIDTHS) {
+    const widths = new Uint8Array(256);
+    const W = c.width;
+    for (let byte = 0; byte < 256; byte++) {
+      const col = byte % COLS;
+      const row = Math.floor(byte / COLS);
+      const x0 = col * CELL_W;
+      const y0 = row * CELL_H;
+      let maxX = -1;
+      for (let y = 0; y < CELL_H; y++) {
+        for (let x = 0; x < CELL_W; x++) {
+          const alpha = p[((y0 + y) * W + (x0 + x)) * 4 + 3];
+          if (alpha > 0 && x > maxX) maxX = x;
+        }
       }
+      widths[byte] = maxX >= 0 ? (maxX + 1) : 3;
     }
-    // Espace (byte 0) et glyphes vides : largeur par défaut 3px
-    widths[byte] = maxX >= 0 ? (maxX + 1) : 3;
+    MODULE_WIDTHS = widths;
+    MODULE_WIDTHS_SOURCE = 'pixel-scan';
   }
-  scene.registry.set(WIDTHS_KEY, widths);
 }
+
+/** Accès widths module-level (source de vérité unique, pas per-scene). */
+function getWidths(): Uint8Array | null { return MODULE_WIDTHS; }
 
 function charWidth(ch: string, charmap: Record<string, number>, widths: Uint8Array): number {
   const byte = charmap[ch] ?? charmap[' '] ?? 0;
@@ -83,6 +121,33 @@ function stringWidth(s: string, charmap: Record<string, number>, widths: Uint8Ar
   let w = 0;
   for (const ch of s) w += charWidth(ch, charmap, widths);
   return w;
+}
+
+/** Public helper : mesure la largeur en pixels du dernier wrapping line de
+ *  `text` au render avec maxWidth. Utilisé par DialogueBox pour positionner
+ *  la flèche "next" juste après le dernier caractère affiché (1:1 décomp). */
+export function measureLastLine(scene: Phaser.Scene, text: string, maxWidth: number): { width: number; lineIndex: number } {
+  const charmap = scene.cache.json.get(CHARMAP_KEY) as Record<string, number>;
+  const widths = getWidths();
+  if (!charmap || !widths) return { width: 0, lineIndex: 0 };
+  const paragraphs = text.split('\n');
+  const lines: string[] = [];
+  const spaceW = charWidth(' ', charmap, widths);
+  for (const para of paragraphs) {
+    if (!para) { lines.push(''); continue; }
+    const words = para.split(' ');
+    let cur = '';
+    let curW = 0;
+    for (const w of words) {
+      const ww = stringWidth(w, charmap, widths);
+      const needed = cur ? curW + spaceW + ww : ww;
+      if (needed > maxWidth && cur) { lines.push(cur); cur = w; curW = ww; }
+      else { cur = cur ? cur + ' ' + w : w; curW = needed; }
+    }
+    if (cur) lines.push(cur);
+  }
+  if (lines.length === 0) return { width: 0, lineIndex: 0 };
+  return { width: stringWidth(lines[lines.length - 1], charmap, widths), lineIndex: lines.length - 1 };
 }
 
 /**
@@ -126,7 +191,8 @@ export function renderTextToCanvas(
   opts: RenderTextOpts = {},
 ): HTMLCanvasElement {
   const charmap = scene.cache.json.get(CHARMAP_KEY) as Record<string, number>;
-  const widths = scene.registry.get(WIDTHS_KEY) as Uint8Array;
+  const widths = getWidths();
+  if (!widths) throw new Error('[bitmap-font] widths not initialized — appeler setupBitmapFont(scene) avant render');
   const fontCanvas = scene.textures.get(FONT_A_KEY).getSourceImage() as HTMLCanvasElement;
 
   const paragraphs = text.split('\n');
@@ -210,8 +276,12 @@ export function renderTextToCanvas(
           // shadow light gray → palette[shadow=3] cream (subtle, presque invisible)
           p[i] = 208; p[i + 1] = 208; p[i + 2] = 200;
         } else if (r === 255 && g === 255 && b === 255) {
-          // bg fill white → palette[bg=1] (matches dialog interior 248,248,248)
-          p[i] = 248; p[i + 1] = 248; p[i + 2] = 248;
+          // bg fill white → TRANSPARENT (au lieu de remap cream).
+          // Le décomp GBA peint le bg layer en idx 1 = blanc (248,248,248) qui
+          // matche l'interior du textbox. Sur web, le navigateur peut afficher
+          // une légère différence de teinte → on transparentise pour révéler
+          // directement le textbox interior dessous.
+          p[i + 3] = 0;
         }
       }
     }

@@ -139,6 +139,9 @@ export function pokemonToShowdownSet(p: PokemonInstance): {
     name: p.nickname,
     species: p.speciesName,
     level: p.level,
+    // gender '' : @pkmn/sim auto-detect via species genderRatio. Le décomp
+    // calcule via `personality & 0xFF` vs `gBaseStats[species].genderRatio`.
+    // TODO : extraire genderRatio par species si on veut shiny/personality 1:1.
     gender: '',
     moves: p.moves.map(m => m.id),
     ability: p.ability,
@@ -147,6 +150,9 @@ export function pokemonToShowdownSet(p: PokemonInstance): {
     ivs: p.ivs,
     evs: p.evs,
     shiny: false,
+    // Valeurs décomp-aligned (PAS du hardcode arbitraire) :
+    //   `PARTY_MON_INIT_HAPPINESS = 70` (cf. include/constants/pokemon.h)
+    //   `pokeball: 'pokeball'` = ITEM_POKE_BALL (ball par défaut au catch initial)
     happiness: 70,
     pokeball: 'pokeball',
   };
