@@ -2,7 +2,7 @@
 // Do not edit manually — re-run `npm run extract:bytecode` to refresh.
 //
 // Generated: 2026-04-26
-// Stats: ops=65, bytes=202, labels=18, unknownOps=2, unresolvedSymbols=16
+// Stats: ops=65, bytes=214, labels=18, unknownOps=0, unresolvedSymbols=16
 
 /** Label name → byte offset within BYTECODE. */
 export const LABELS: Record<string, number> = {
@@ -22,11 +22,11 @@ export const LABELS: Record<string, number> = {
   "BattleFrontier_RankingHall_EventScript_DomePikeFactoryRecordsSign": 135,
   "BattleFrontier_RankingHall_EventScript_PalaceArenaPyramidRecordsSIgn": 144,
   "BattleFrontier_RankingHall_EventScript_NinjaBoy": 153,
-  "BattleFrontier_RankingHall_EventScript_NinjaBoyNameOnList": 183,
-  "BattleFrontier_RankingHall_EventScript_Boy": 193,
+  "BattleFrontier_RankingHall_EventScript_NinjaBoyNameOnList": 195,
+  "BattleFrontier_RankingHall_EventScript_Boy": 205,
 };
 
 /** Compiled bytecode — pass to a VM along with LABELS for jump resolution. */
-export const BYTECODE: readonly number[] = [106,113,5,0,0,89,110,0,0,0,90,106,113,5,1,0,89,110,0,0,0,90,106,113,5,2,0,89,110,0,0,0,90,106,113,5,9,0,89,110,0,0,0,90,106,113,5,5,0,89,110,0,0,0,90,106,113,5,4,0,89,110,0,0,0,90,106,113,5,6,0,89,110,0,0,0,90,106,113,5,3,0,89,110,0,0,0,90,106,113,5,7,0,89,110,0,0,0,90,106,113,5,8,0,89,110,0,0,0,90,38,0,0,0,110,38,0,0,0,110,38,0,0,0,108,90,16,0,0,0,0,0,10,0,90,16,0,0,0,0,0,10,0,90,16,0,0,0,0,0,10,0,90,107,91,16,0,0,0,0,0,10,0,35,13,128,0,0,34,13,128,0,0,16,0,0,0,0,0,10,0,109,90,16,0,0,0,0,0,10,0,109,90,16,0,0,0,0,0,10,0,90] as const;
+export const BYTECODE: readonly number[] = [106,113,5,0,0,89,110,0,0,0,90,106,113,5,1,0,89,110,0,0,0,90,106,113,5,2,0,89,110,0,0,0,90,106,113,5,9,0,89,110,0,0,0,90,106,113,5,5,0,89,110,0,0,0,90,106,113,5,4,0,89,110,0,0,0,90,106,113,5,6,0,89,110,0,0,0,90,106,113,5,3,0,89,110,0,0,0,90,106,113,5,7,0,89,110,0,0,0,90,106,113,5,8,0,89,110,0,0,0,90,38,0,0,0,110,38,0,0,0,110,38,0,0,0,108,90,16,0,0,0,0,0,10,0,90,16,0,0,0,0,0,10,0,90,16,0,0,0,0,0,10,0,90,107,91,16,0,0,0,0,0,10,0,35,13,128,0,0,34,13,128,0,0,7,1,195,0,0,0,7,1,13,128,0,0,16,0,0,0,0,0,10,0,109,90,16,0,0,0,0,0,10,0,109,90,16,0,0,0,0,0,10,0,90] as const;
 
-export const STATS = { ops: 65, bytes: 202, labels: 18, unknownOps: 2, unresolvedSymbols: 16 } as const;
+export const STATS = { ops: 65, bytes: 214, labels: 18, unknownOps: 0, unresolvedSymbols: 16 } as const;

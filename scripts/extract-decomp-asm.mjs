@@ -78,12 +78,14 @@ function parseVal(s) {
 }
 
 /** Tokenize one asm line: split off the leading mnemonic, then split args by comma.
- *  Handles strings ("...") preserving commas inside. */
+ *  Handles strings ("...") preserving commas inside.
+ *  Recognizes `\argname` as identifier (macro arg ref) — important for nested
+ *  meta-macros where op name itself is a backslash-prefixed arg. */
 function tokenizeLine(line) {
   line = line.trim();
   if (!line) return null;
-  // Find first whitespace separator
-  const m = line.match(/^([.\w]+)(?:\s+(.*))?$/);
+  // Find first whitespace separator. Accept .word, word, \\argref as identifier.
+  const m = line.match(/^(\\?[.\w]+)(?:\s+(.*))?$/);
   if (!m) return { op: line, args: [] };
   const op = m[1];
   const rest = (m[2] || '').trim();

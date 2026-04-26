@@ -343,15 +343,25 @@ function resolveValue(v, labelOffsets, warnings) {
   return 0;
 }
 
-/** Substitute macro args (\name) in an op. */
+/** Substitute macro args (\name) in an op — covers BOTH op.op AND op.args.
+ *  Pattern asm meta-macros: `\jump \condition, \c` where \jump is itself
+ *  bound to a macro name like `jumpifeq` chosen at invocation time. */
 function substituteArgs(op, bindings) {
+  const subStr = (s) => {
+    if (typeof s !== 'string') return s;
+    return s.replace(/\\(\w+)/g, (_, name) => bindings[name] !== undefined ? bindings[name] : `\\${name}`);
+  };
+  // op.op may itself be `\arg` or `\arg:` (label) — substitute too
+  let newOp = subStr(op.op);
+  // Strip trailing colon — it's a label declaration, but at runtime we just need
+  // the label name in the form expected by labels[] tracking. For now, strip and
+  // skip emit (labels are set by Pass 1 anyway, this is just an in-body label).
+  let stripLabelColon = false;
+  if (newOp.endsWith(':')) { newOp = newOp.slice(0, -1); stripLabelColon = true; }
   return {
-    op: op.op,
-    args: op.args.map(a => {
-      if (typeof a !== 'string') return a;
-      // \name → bindings[name]; preserves rest of string for compound expressions
-      return a.replace(/\\(\w+)/g, (_, name) => bindings[name] !== undefined ? bindings[name] : `\\${name}`);
-    }),
+    op: newOp,
+    args: op.args.map(subStr),
+    _isLabel: stripLabelColon,
   };
 }
 
@@ -378,9 +388,12 @@ function bindArgs(macroArgs, callArgs) {
 }
 
 /** Compute bytes emitted by a single op (recursive on macros).
- *  Returns array of bytes. */
-function emitOp(op, labelOffsets, warnings, depth = 0) {
+ *  Returns array of bytes. fileUnknownCounts (optional Map opName→count)
+ *  tracks unknown invocations across recursion depth. */
+function emitOp(op, labelOffsets, warnings, depth = 0, fileUnknownCounts = null) {
   if (depth > 12) return []; // recursion guard
+  // In-body label declaration (e.g. `\name:` inside meta-macro body) emits 0 bytes
+  if (op._isLabel) return [];
   const opName = op.op;
 
   // Skip non-emitting directives
@@ -444,13 +457,16 @@ function emitOp(op, labelOffsets, warnings, depth = 0) {
     const out = [];
     for (const inner of macro.body) {
       const subbed = substituteArgs(inner, bindings);
-      out.push(...emitOp(subbed, labelOffsets, warnings, depth + 1));
+      out.push(...emitOp(subbed, labelOffsets, warnings, depth + 1, fileUnknownCounts));
     }
     return out;
   }
 
-  // Unknown: skip + warn
+  // Unknown: skip + warn + count
   if (warnings && !opName.startsWith('.')) warnings.add(`unknown_op:${opName}`);
+  if (fileUnknownCounts && !opName.startsWith('.')) {
+    fileUnknownCounts.set(opName, (fileUnknownCounts.get(opName) || 0) + 1);
+  }
   return [];
 }
 
@@ -506,20 +522,14 @@ function processScript(absPath, relInput) {
     byteOffset += bytes.length;
   }
 
-  // Pass 2: actual emit
+  // Pass 2: actual emit (warnings = Map opName → count occurrences this file)
   const bytes = [];
   const warnings = new Set();
-  const localUnknownCounts = new Map();
+  const fileUnknownCounts = new Map();
   for (let i = 0; i < ops.length; i++) {
-    bytes.push(...emitOp(ops[i], labelOffsetsP1, warnings));
-    // Top-level unknown ops accumulate (recurse warnings)
-    const opName = ops[i].op;
-    if (!opName.startsWith('.') && !macroMap.has(opName) &&
-        !['.byte','.2byte','.4byte','.string','.asciz','.ascii','.hword','.short','.word','.long','.space','.skip'].includes(opName)) {
-      localUnknownCounts.set(opName, (localUnknownCounts.get(opName) || 0) + 1);
-    }
+    bytes.push(...emitOp(ops[i], labelOffsetsP1, warnings, 0, fileUnknownCounts));
   }
-  for (const [k, v] of localUnknownCounts) {
+  for (const [k, v] of fileUnknownCounts) {
     unknownOpCounts.set(k, (unknownOpCounts.get(k) || 0) + v);
   }
 
@@ -621,10 +631,9 @@ for (const e of indexEntries) {
 indexLines.push('');
 writeFileSync(join(outRoot, '_all-bytecode-index.ts'), indexLines.join('\n'));
 
-// Top unknown ops (sorted desc)
+// All unknown ops (sorted desc)
 const topUnknown = [...unknownOpCounts.entries()]
-  .sort((a, b) => b[1] - a[1])
-  .slice(0, 30);
+  .sort((a, b) => b[1] - a[1]);
 
 writeFileSync(join(outRoot, '_stats.json'), JSON.stringify({
   generatedAt: NOW,

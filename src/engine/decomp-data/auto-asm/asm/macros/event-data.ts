@@ -247,7 +247,7 @@ export const MACROS = [
   { name: "bufferitemnameplural", args: ["stringVarId:req", "item:req", "quantity:req"], body: [{op:".byte",args:["SCR_OP_BUFFERITEMNAMEPLURAL"]}, {op:"stringvar",args:["\\stringVarId"]}, {op:".2byte",args:["\\item"]}, {op:".2byte",args:["\\quantity"]}] },
   { name: "goto_if_unset", args: ["flag:req", "dest:req"], body: [{op:"checkflag",args:["\\flag"]}, {op:"goto_if",args:["FALSE","\\dest"]}] },
   { name: "goto_if_set", args: ["flag:req", "dest:req"], body: [{op:"checkflag",args:["\\flag"]}, {op:"goto_if",args:["TRUE","\\dest"]}] },
-  { name: "trycompare", args: ["jump:req", "condition:req", "a:req", "b", "c"], body: [{op:".ifnb",args:["\\c"]}, {op:"compare",args:["\\a","\\b"]}, {op:"\\jump \\condition, \\c",args:[]}, {op:".else",args:[]}, {op:"\\jump \\condition, \\a",args:[]}, {op:".endif",args:[]}] },
+  { name: "trycompare", args: ["jump:req", "condition:req", "a:req", "b", "c"], body: [{op:".ifnb",args:["\\c"]}, {op:"compare",args:["\\a","\\b"]}, {op:"\\jump",args:["\\condition","\\c"]}, {op:".else",args:[]}, {op:"\\jump",args:["\\condition","\\a"]}, {op:".endif",args:[]}] },
   { name: "goto_if_lt", args: ["a:req", "b", "c"], body: [{op:"trycompare",args:["goto_if","0","\\a","\\b","\\c"]}] },
   { name: "goto_if_eq", args: ["a:req", "b", "c"], body: [{op:"trycompare",args:["goto_if","1","\\a","\\b","\\c"]}] },
   { name: "goto_if_gt", args: ["a:req", "b", "c"], body: [{op:"trycompare",args:["goto_if","2","\\a","\\b","\\c"]}] },

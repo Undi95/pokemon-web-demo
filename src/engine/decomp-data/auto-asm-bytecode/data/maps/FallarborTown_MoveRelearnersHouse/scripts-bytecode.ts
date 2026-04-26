@@ -2,21 +2,21 @@
 // Do not edit manually — re-run `npm run extract:bytecode` to refresh.
 //
 // Generated: 2026-04-26
-// Stats: ops=39, bytes=233, labels=8, unknownOps=2, unresolvedSymbols=22
+// Stats: ops=39, bytes=305, labels=8, unknownOps=0, unresolvedSymbols=22
 
 /** Label name → byte offset within BYTECODE. */
 export const LABELS: Record<string, number> = {
   "FallarborTown_MoveRelearnersHouse_MapScripts": 0,
   "FallarborTown_MoveRelearnersHouse_EventScript_MoveRelearner": 0,
   "FallarborTown_MoveRelearnersHouse_EventScript_AskTeachMove": 51,
-  "FallarborTown_MoveRelearnersHouse_EventScript_ChooseMon": 105,
-  "FallarborTown_MoveRelearnersHouse_EventScript_ChooseMove": 157,
-  "FallarborTown_MoveRelearnersHouse_EventScript_NoMoveToTeachMon": 195,
-  "FallarborTown_MoveRelearnersHouse_EventScript_CantTeachEgg": 209,
-  "FallarborTown_MoveRelearnersHouse_EventScript_ComeBackWithHeartScale": 223,
+  "FallarborTown_MoveRelearnersHouse_EventScript_ChooseMon": 129,
+  "FallarborTown_MoveRelearnersHouse_EventScript_ChooseMove": 217,
+  "FallarborTown_MoveRelearnersHouse_EventScript_NoMoveToTeachMon": 267,
+  "FallarborTown_MoveRelearnersHouse_EventScript_CantTeachEgg": 281,
+  "FallarborTown_MoveRelearnersHouse_EventScript_ComeBackWithHeartScale": 295,
 };
 
 /** Compiled bytecode — pass to a VM along with LABELS for jump resolution. */
-export const BYTECODE: readonly number[] = [106,80,0,0,0,0,0,0,81,0,0,0,0,0,0,0,0,82,0,0,83,0,0,0,0,44,0,0,7,1,51,0,0,0,16,0,0,0,0,0,10,0,42,0,0,89,51,0,0,0,90,72,111,0,1,0,35,13,128,0,0,34,13,128,0,0,16,0,0,0,0,0,10,0,26,0,128,13,128,35,0,128,0,0,34,0,128,0,0,35,223,0,0,0,34,223,0,0,0,89,105,0,0,0,90,16,0,0,0,0,0,10,0,38,0,0,0,35,4,128,255,0,34,4,128,255,0,38,0,0,0,35,13,128,1,0,34,13,128,1,0,35,5,128,0,0,34,5,128,0,0,89,157,0,0,0,90,16,0,0,0,0,0,10,0,38,0,0,0,35,4,128,0,0,34,4,128,0,0,16,0,0,0,0,0,10,0,0,111,89,223,0,0,0,90,16,0,0,0,0,0,10,0,89,105,0,0,0,90,16,0,0,0,0,0,10,0,89,105,0,0,0,90,16,0,0,0,0,0,10,0,108,90] as const;
+export const BYTECODE: readonly number[] = [106,80,0,0,0,0,0,0,81,0,0,0,0,0,0,0,0,82,0,0,83,0,0,0,0,44,0,0,7,1,51,0,0,0,16,0,0,0,0,0,10,0,42,0,0,89,51,0,0,0,90,72,111,0,1,0,35,13,128,0,0,34,13,128,0,0,7,1,39,1,0,0,7,1,13,128,0,0,16,0,0,0,0,0,10,0,26,0,128,13,128,35,0,128,0,0,34,0,128,0,0,35,39,1,0,0,34,39,1,0,0,7,1,0,0,0,0,7,1,39,1,0,0,89,129,0,0,0,90,16,0,0,0,0,0,10,0,38,0,0,0,35,4,128,255,0,34,4,128,255,0,7,1,39,1,0,0,7,1,4,128,0,0,38,0,0,0,35,13,128,1,0,34,13,128,1,0,7,1,25,1,0,0,7,1,13,128,0,0,35,5,128,0,0,34,5,128,0,0,7,1,11,1,0,0,7,1,5,128,0,0,89,217,0,0,0,90,16,0,0,0,0,0,10,0,38,0,0,0,35,4,128,0,0,34,4,128,0,0,7,1,129,0,0,0,7,1,4,128,0,0,16,0,0,0,0,0,10,0,0,111,89,39,1,0,0,90,16,0,0,0,0,0,10,0,89,129,0,0,0,90,16,0,0,0,0,0,10,0,89,129,0,0,0,90,16,0,0,0,0,0,10,0,108,90] as const;
 
-export const STATS = { ops: 39, bytes: 233, labels: 8, unknownOps: 2, unresolvedSymbols: 22 } as const;
+export const STATS = { ops: 39, bytes: 305, labels: 8, unknownOps: 0, unresolvedSymbols: 22 } as const;

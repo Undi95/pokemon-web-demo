@@ -5,9 +5,9 @@
   "skipCount": 123,
   "totalStats": {
     "ops": 60595,
-    "bytes": 532346,
-    "unknownOps": 600,
-    "unresolvedSymbols": 13067,
+    "bytes": 586598,
+    "unknownOps": 0,
+    "unresolvedSymbols": 13188,
     "labels": 11336
   },
   "topUnknownOps": {
@@ -28,5 +28,5 @@
     "YES": 1,
     "NO": 1
   },
-  "durationMs": 695
+  "durationMs": 821
 }
