@@ -1,0 +1,23 @@
+// AUTO-GENERATED from data/maps/Route114_FossilManiacsTunnel/scripts-data.ts by compile-decomp-bytecode.mjs
+// Do not edit manually — re-run `npm run extract:bytecode` to refresh.
+//
+// Generated: 2026-04-26
+// Stats: ops=36, bytes=185, labels=9, unknownOps=3, unresolvedSymbols=11
+
+/** Label name → byte offset within BYTECODE. */
+export const LABELS: Record<string, number> = {
+  "Route114_FossilManiacsTunnel_MapScripts": 0,
+  "Route114_FossilManiacsTunnel_OnTransition": 10,
+  "Route114_FossilManiacsTunnel_EventScript_MoveFossilManiac": 20,
+  "Route114_FossilManiacsTunnel_OnLoad": 31,
+  "Route114_FossilManiacsTunnel_EventScript_CloseDesertUnderpass": 41,
+  "Route114_FossilManiacsTunnel_EventScript_ManiacMentionCaveIn": 59,
+  "Route114_FossilManiacsTunnel_EventScript_FossilManiac": 114,
+  "Route114_FossilManiacsTunnel_EventScript_PlayerHasFossil": 165,
+  "Route114_FossilManiacsTunnel_EventScript_PlayerRevivedFossil": 175,
+};
+
+/** Compiled bytecode — pass to a VM along with LABELS for jump resolution. */
+export const BYTECODE: readonly number[] = [3,10,0,0,0,1,31,0,0,0,44,0,0,8,1,20,0,0,0,90,100,0,0,6,0,5,0,102,0,0,8,44,0,0,8,0,41,0,0,0,90,163,6,0,1,0,105,2,1,0,163,6,0,2,0,105,2,1,0,106,80,0,0,0,0,0,0,81,0,0,0,0,0,0,0,0,80,255,0,0,0,0,0,81,255,0,0,0,0,0,0,0,82,0,0,83,0,0,0,0,16,0,0,0,0,0,10,0,113,204,2,0,108,90,107,91,44,11,1,7,1,175,0,0,0,72,30,1,1,0,35,13,128,1,0,34,13,128,1,0,72,31,1,1,0,35,13,128,1,0,34,13,128,1,0,16,0,0,0,0,0,10,0,109,90,16,0,0,0,0,0,10,0,109,90,16,0,0,0,0,0,10,0,109,90] as const;
+
+export const STATS = { ops: 36, bytes: 185, labels: 9, unknownOps: 3, unresolvedSymbols: 11 } as const;

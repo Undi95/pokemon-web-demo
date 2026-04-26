@@ -47,6 +47,7 @@
     "extract:decomp-scenes": "node scripts/extract-decomp-scenes.mjs",
     "extract:decomp-all": "node scripts/extract-decomp-all.mjs",
     "extract:decomp-asm": "node scripts/extract-decomp-asm.mjs",
+    "compile:bytecode": "node scripts/compile-decomp-bytecode.mjs",
     "extract:all-bulk": "npm run extract:trainer-parties && npm run extract:wild-encounters && npm run extract:items && npm run extract:map-names-fr && npm run extract:metatile-labels && npm run extract:text-tables && npm run extract:constants && npm run extract:window-templates && npm run extract:palettes && npm run extract:movement-actions && npm run extract:start-menu && npm run extract:script-opcodes && npm run extract:tileset-anims && npm run extract:doors && npm run extract:voicegroups && npm run extract:intro && npm run extract:intro-rendered && npm run extract:oam-sprites && npm run extract:metatile-behaviors && npm run extract:item-balls && npm run extract:inanimate && npm run extract:battle-ui && npm run extract:battle-terrains && npm run extract:mon-pic-coords && npm run extract:master-index && npm run extract:pokemon-anims && npm run extract:pokemon-evolutions && npm run extract:tm-hm && npm run extract:pokedex-entries && npm run extract:trainer-pics && npm run extract:cries && npm run extract:font-widths && npm run extract:latfont && npm run extract:text-palettes && npm run extract:down-arrow && npm run extract:decomp-scenes"
   },
   "dependencies": {

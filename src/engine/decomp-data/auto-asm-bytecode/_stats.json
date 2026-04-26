@@ -1,0 +1,14 @@
+{
+  "generatedAt": "2026-04-26",
+  "inputCount": 607,
+  "okCount": 482,
+  "skipCount": 125,
+  "totalStats": {
+    "ops": 59801,
+    "bytes": 487505,
+    "unknownOps": 2117,
+    "unresolvedSymbols": 12451,
+    "labels": 11312
+  },
+  "durationMs": 1012
+}
