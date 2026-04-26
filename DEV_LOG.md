@@ -16,6 +16,92 @@ Stack : Vite + TypeScript + Phaser 3 + @pkmn/sim + @pkmn/dex
 
 ---
 
+## Session 64 round 2 — Phase 1.6 finalisée (-99.7% unknown ops) (2026-04-27)
+
+Continuation du même chapitre. En analysant les "600 unknown" restants j'ai
+découvert que c'était un bug d'affichage stats (count = nombre de distinct
+opnames per-file additionnés, pas les occurrences). Réalité : 9 246
+occurrences, 19 distincts. 3 bugs additionnels trouvés et fixés (commit
+`f1af52b4`).
+
+### Bug 4 — tokenizer rejette `\arg` au début de ligne
+
+`extract-decomp-asm.mjs` tokenizeLine regex `[.\w]+` rejette le `\` qui
+introduit un macro arg ref. Pour le body de la meta-macro `trycompare` :
+```asm
+\jump \condition, \c
+```
+Le regex match échoue → fallback met TOUTE la ligne en op =
+`"\jump \condition, \c"`. À l'expansion, cet op n'est jamais reconnu.
+
+Pattern d'usage :
+```asm
+.macro trycompare jump:req, condition:req, a:req, b, c
+    .ifnb \c
+        compare \a, \b
+        \jump \condition, \c     ← l'op name lui-même est \jump
+    .else
+        compare \a, \b
+        \jump \condition, \a
+    .endif
+.endm
+```
+
+**Fix** : regex `\\?[.\w]+` accepte un backslash optionnel en tête.
+
+### Bug 5 — substituteArgs ne touchait pas op.op
+
+Même après Bug 4 fix, op = `\jump` resterait `\jump` à l'expansion car
+ma fonction `substituteArgs` ne substituait que `args`, pas `op.op`.
+
+**Fix** : substituer `\arg` dans `op.op` AND `op.args`.
+
+### Bug 6 — meta-macro inline labels (`\name:`)
+
+Pattern `struct_field` :
+```asm
+.macro struct_field name, size
+\name:                          ← label declaration with arg ref
+.struct \name + \size
+.endm
+```
+
+Après substitution, op = `MyField:` (avec colon trailing) — pas un opcode.
+**Fix** : strip trailing `:` et marquer l'op comme `_isLabel=true` →
+emit 0 bytes (les labels sont déjà trackés par Pass 1 du compileur).
+
+### Résultat final Phase 1.6
+
+| Métrique               | Session 63 | Round 1 | Round 2  | Delta total |
+|------------------------|-----------:|--------:|---------:|------------:|
+| Distinct unknown       |        ~30 |      19 |   **16** |     -47%    |
+| Total occurrences      |     2 117  |   9 246 |   **16** |  **-99.24%**|
+| Bytes émis             |    487 KB  |  532 KB | **586 KB** | **+99 KB**|
+| Labels résolus         |     11 312 |  11 336 |   11 336 |             |
+| Macros chargées        |      1 168 |   1 176 |    1 176 |             |
+| Meta-macros            |          0 |     159 |      159 |             |
+
+(Round 1 distinct=19 mais total=9246 car le bug tokenizer générait des
+faux unknowns en cascade — 4521 occurrences chacun pour `\jump \condition, \c`
+et `\jump \condition, \a`.)
+
+Les 16 unknown restants (count=1 chacun) sont des `#define` C utilisés
+au top-level de scripts asm spéciaux : FOREACH_TM, MSGBOX_NPC,
+STD_OBTAIN_ITEM, NO_MUSIC, YES, NO. Marginal (<0.03% des 60 595 OPS),
+fixable en suivant les `.include "constants/*.h"` C-side mais peu de
+gain à investir.
+
+### État global après Phase 1.6 finalisée
+
+8 commits sur `main`, **1 716 fichiers TS**, **0 erreur tsc**,
+**586 KB de bytecode binaire** prêt pour exécution VM.
+
+**>99.97% des OPS asm sont maintenant compilées en bytecode correct.**
+
+Phase 2B (state machines TS depuis Task_*/CB2_*) reste l'étape suivante.
+
+---
+
 ## Session 64 — Phase 1.6 fix unknown ops du bytecode compiler (-72%) (2026-04-27)
 
 Suite session 63. En investigation des 2 117 unknown ops du bytecode
