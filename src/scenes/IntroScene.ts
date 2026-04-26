@@ -4,6 +4,26 @@ import { primeAudio, playMidiLoop, playCry, playSE } from '../engine/music';
 import { composeGbaTilemap } from '../util/compose-tilemap';
 import { loadOamSprite } from '../util/oam-sprite';
 import { registerTransparentImage } from '../util/sprite-transparency';
+// 1:1 décomp src/intro.c — timers extraits par pipeline Phase 1 (auto/src/intro-data.ts)
+// Tous les TIMER_X sont des frame counts à 60fps depuis le décomp.
+import {
+  // Scene 1 timers
+  TIMER_BIG_DROP_START, TIMER_LOGO_APPEAR, TIMER_LOGO_LETTERS_COLOR,
+  TIMER_BIG_DROP_FALLS, TIMER_LOGO_BLEND_OUT, TIMER_LOGO_DISAPPEAR,
+  TIMER_SMALL_DROP_1, TIMER_SMALL_DROP_2,
+  TIMER_SPARKLES, TIMER_FLYGON_SILHOUETTE_APPEAR,
+  TIMER_END_PAN_UP, TIMER_END_SCENE_1, TIMER_START_SCENE_2,
+  // Scene 2 timers (frames absolus depuis début intro ; conv. relative via - TIMER_START_SCENE_2)
+  TIMER_MANECTRIC_ENTER, TIMER_PLAYER_DRIFT_BACK, TIMER_MANECTRIC_RUN_CIRCULAR,
+  TIMER_PLAYER_MOVE_FORWARD, TIMER_TORCHIC_ENTER,
+  TIMER_FLYGON_ENTER, TIMER_PLAYER_MOVE_BACKWARD,
+  TIMER_PLAYER_HOLD_POSITION, TIMER_PLAYER_EXIT,
+  TIMER_TORCHIC_SPEED_UP, TIMER_TORCHIC_EXIT,
+  TIMER_END_SCENE_2, TIMER_START_SCENE_3,
+} from '../engine/decomp-data/auto/src/intro-data';
+
+/** Frames @ 60fps → ms. 1 frame = 16.67ms. */
+const FRAMES_TO_MS = 1000 / 60;
 
 /**
  * Cinématique d'intro Pokémon Émeraude — port du décomp `src/intro.c` (3435 L).
@@ -114,6 +134,24 @@ export class IntroScene extends Phaser.Scene {
     this.startPhase(this.phase);
   }
 
+  /** Programme un callback à frame N depuis le début de la phase courante.
+   *  1:1 décomp src/intro.c où chaque task incrémente un frame counter et
+   *  vérifie `if (counter == TIMER_X)`. Notre adaptation : `time.delayedCall`
+   *  à `tFrame × 16.67ms` depuis le démarrage de la phase, avec skip-guard.
+   *  Source de vérité : auto/src/intro-data.ts (TIMER_X constants extraits). */
+  private scheduleAt(tFrame: number, fn: () => void): Phaser.Time.TimerEvent {
+    return this.time.delayedCall(tFrame * FRAMES_TO_MS, () => {
+      if (this.skipped) return;
+      fn();
+    });
+  }
+
+  /** Variante Scene 2 : convertit un TIMER_X global (frame depuis début intro)
+   *  en frame relatif depuis Scene 2 (= - TIMER_START_SCENE_2). */
+  private scheduleAtScene2(globalTimerFrame: number, fn: () => void): Phaser.Time.TimerEvent {
+    return this.scheduleAt(globalTimerFrame - TIMER_START_SCENE_2, fn);
+  }
+
   /** Skip toute la cinématique → TitleScene immédiate. */
   private skip(): void {
     if (this.skipped) return;
@@ -212,10 +250,32 @@ export class IntroScene extends Phaser.Scene {
   //  832     : Flygon silhouette monte depuis le bas
   //  904-1007: pan up se termine
   // 1007-1026: fade out white → Scene 2
+  /**
+   * Scene 1 — GF Logo + drops + Flygon silhouette + pan-up.
+   * Refait 1:1 décomp via timer scheduler consommant TIMER_X depuis pipeline
+   * (auto/src/intro-data.ts). Chaque event = appel scheduleAt(TIMER_X, fn).
+   *
+   * Timeline complète (TIMER_X frames @ 60fps, source décomp src/intro.c) :
+   *   t=0    : init BG layers + démarrage musique MUS_INTRO + pan-up tween
+   *   t=76   (TIMER_BIG_DROP_START)             : grosse goutte démarre tomber
+   *   t=128  (TIMER_LOGO_APPEAR)                : logo GF fade in
+   *   t=144  (TIMER_LOGO_LETTERS_COLOR)         : letters change couleur
+   *   t=251  (TIMER_BIG_DROP_FALLS)             : grosse goutte se brise
+   *   t=256  (TIMER_LOGO_BLEND_OUT)             : logo blend mode out
+   *   t=272  (TIMER_LOGO_DISAPPEAR)             : logo fade out complet
+   *   t=368  (TIMER_SMALL_DROP_1)               : petite goutte 1
+   *   t=384  (TIMER_SMALL_DROP_2)               : petite goutte 2
+   *   t=560  (TIMER_SPARKLES)                   : 11 sparkles flash sequence
+   *   t=832  (TIMER_FLYGON_SILHOUETTE_APPEAR)   : Flygon silhouette monte
+   *   t=904  (TIMER_END_PAN_UP)                 : fin du pan-up
+   *   t=1007 (TIMER_END_SCENE_1)                : fade out blanc
+   *   t=1026 (TIMER_START_SCENE_2)              : Scene 2 démarre
+   */
   private runGfLogo(): void {
     void playMidiLoop('/decomp/em/music/mus_intro.mid');
 
-    // 1. 4 BG layers parallax (PNGs déjà composés via extract-intro-rendered.py)
+    // 1. 4 BG layers parallax (PNGs composés via extract-intro-rendered.py).
+    // Speeds = u16 fractions du décomp (intro.c BG_REG_*HOFS_PER_FRAME).
     const bgLayers: Phaser.GameObjects.Image[] = [];
     const PAN_SPEEDS = [
       0x8000 / 0x10000, // bg0 = 0.5 px/frame
@@ -230,70 +290,74 @@ export class IntroScene extends Phaser.Scene {
       bgLayers.push(img);
     }
 
-    // 2. Pan up : tween Y de chaque layer pendant la phase entière
-    // Phase visible ~1000 frames = ~16.7 sec. Distance = speed × frames
-    const PHASE_DURATION_MS = 16700;
+    // 2. Pan up : tween Y de chaque layer pendant TIMER_END_SCENE_1 frames
+    const phaseDurationMs = TIMER_END_SCENE_1 * FRAMES_TO_MS;
     for (let i = 0; i < 4; i++) {
-      const distancePx = PAN_SPEEDS[i] * (PHASE_DURATION_MS / 16.67); // frames @ 60fps
+      const distancePx = PAN_SPEEDS[i] * TIMER_END_SCENE_1;
       this.tweens.add({
         targets: bgLayers[i],
         y: bgLayers[i].y - distancePx,
-        duration: PHASE_DURATION_MS,
+        duration: phaseDurationMs,
         ease: 'Linear',
       });
     }
 
-    // 3. GF logo : apparition à frame 128 (~2133ms) → fade out frame 272 (~4533ms)
-    // Auto-résolu via oam-sprites.json (extracteur scan tout le décomp).
+    // 3. GF logo : sprite résolu via oam-sprites.json (auto-extract du décomp)
     const logoFrame = loadOamSprite(this, 'GameFreakLogo', 'intro1-drops-logo');
     const logo = this.add.image(GAME_W / 2, GAME_H / 2 - 6, 'intro1-drops-logo', logoFrame);
     logo.setAlpha(0).setDepth(10);
-    this.time.delayedCall(2133, () => {
-      if (this.skipped) return;
-      this.tweens.add({ targets: logo, alpha: 1, duration: 533, ease: 'Linear' });
-    });
-    this.time.delayedCall(4533, () => {
-      if (this.skipped) return;
-      this.tweens.add({ targets: logo, alpha: 0, duration: 533, ease: 'Linear' });
+
+    // Logo fade in à TIMER_LOGO_APPEAR (frame 128)
+    this.scheduleAt(TIMER_LOGO_APPEAR, () => {
+      this.tweens.add({
+        targets: logo, alpha: 1,
+        duration: (TIMER_LOGO_LETTERS_COLOR - TIMER_LOGO_APPEAR) * FRAMES_TO_MS,  // 16 frames
+        ease: 'Linear',
+      });
     });
 
-    // 4. Sparkles : 11 positions fixes (sSparkleCoords du décomp), apparitions
-    // échelonnées entre frame 560 et ~700, animation flash courte
-    const SPARKLE_POS: [number, number][] = [
+    // Logo blend out à TIMER_LOGO_BLEND_OUT (frame 256) → disappear TIMER_LOGO_DISAPPEAR (272)
+    this.scheduleAt(TIMER_LOGO_BLEND_OUT, () => {
+      this.tweens.add({
+        targets: logo, alpha: 0,
+        duration: (TIMER_LOGO_DISAPPEAR - TIMER_LOGO_BLEND_OUT) * FRAMES_TO_MS,  // 16 frames
+        ease: 'Linear',
+      });
+    });
+
+    // 4. Sparkles : 11 positions fixes (sSparkleCoords du décomp), démarrent à
+    // TIMER_SPARKLES, échelonnées de ~12 frames chacune.
+    const SPARKLE_POS: ReadonlyArray<[number, number]> = [
       [124, 40], [102, 30], [77, 30], [54, 15], [148, 9],
       [63, 28], [93, 40], [148, 32], [173, 41], [94, 20], [208, 38],
     ];
-    const SPARKLES_START_MS = 9333; // frame 560 / 60 * 1000
-    // Sparkle anim : 5 frames @ 2t per frame (cycle court avant destroy)
     if (!this.anims.exists('sparkle-flash')) {
       this.anims.create({
         key: 'sparkle-flash',
         frames: this.anims.generateFrameNumbers('intro1-sparkle', { frames: [0, 1, 2, 3, 4] }),
-        frameRate: 30,
-        repeat: -1,
+        frameRate: 30, repeat: -1,
       });
     }
     SPARKLE_POS.forEach(([x, y], idx) => {
-      this.time.delayedCall(SPARKLES_START_MS + idx * 200, () => {
-        if (this.skipped) return;
+      this.scheduleAt(TIMER_SPARKLES + idx * 12, () => {
         const s = this.add.sprite(x, y, 'intro1-sparkle', 0).play('sparkle-flash');
         s.setDepth(15);
         this.time.delayedCall(200, () => s.destroy());
       });
     });
 
-    // 5. Flygon silhouette : apparait frame 832 (~13867ms), monte du bas avec Sin oscill
-    const FLYGON_START_MS = 13867;
-    this.time.delayedCall(FLYGON_START_MS, () => {
-      if (this.skipped) return;
+    // 5. Flygon silhouette à TIMER_FLYGON_SILHOUETTE_APPEAR (frame 832)
+    // Monte du bas + oscillation horizontale Sin.
+    this.scheduleAt(TIMER_FLYGON_SILHOUETTE_APPEAR, () => {
       const flygonFrame = loadOamSprite(this, 'FlygonSilhouette', 'intro1-flygon');
       const flygon = this.add.image(GAME_W / 2, GAME_H + 16, 'intro1-flygon', flygonFrame);
       flygon.setDepth(8);
-      // Monte de bas vers haut + oscillation horizontale (Sin)
+      // Distance & duration depuis TIMER_FLYGON_SILHOUETTE_APPEAR à TIMER_END_PAN_UP
+      const flygonDurationMs = (TIMER_END_PAN_UP - TIMER_FLYGON_SILHOUETTE_APPEAR) * FRAMES_TO_MS;
       this.tweens.add({
-        targets: flygon, y: -32, duration: 3500, ease: 'Sine.InOut',
+        targets: flygon, y: -32, duration: flygonDurationMs, ease: 'Sine.InOut',
       });
-      // Oscillation X via update inline
+      // Oscillation X (1:1 décomp Sin lookup)
       const startTime = this.time.now;
       flygon.setData('updater', () => {
         const t = (this.time.now - startTime) / 1000;
@@ -305,10 +369,11 @@ export class IntroScene extends Phaser.Scene {
       });
     });
 
-    // 6. Fade out blanc final → Scene 2 à frame 1026 (~17100ms)
-    this.time.delayedCall(PHASE_DURATION_MS, () => {
-      if (this.skipped) return;
-      this.cameras.main.fadeOut(400, 255, 255, 255);
+    // 6. Fade out blanc à TIMER_END_SCENE_1 → Scene 2 à TIMER_START_SCENE_2.
+    // Durée fade = TIMER_START_SCENE_2 - TIMER_END_SCENE_1 = 19 frames (~317ms).
+    this.scheduleAt(TIMER_END_SCENE_1, () => {
+      const fadeDurationMs = (TIMER_START_SCENE_2 - TIMER_END_SCENE_1) * FRAMES_TO_MS;
+      this.cameras.main.fadeOut(fadeDurationMs, 255, 255, 255);
       this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
         this.cameras.main.resetFX();
         this.nextPhase();
@@ -397,67 +462,98 @@ export class IntroScene extends Phaser.Scene {
     player.setDepth(7);
     bike.setDepth(7);
 
-    // 4. Scroll BG parallax pendant toute la durée Scene 2 (~15.3 sec)
-    const PHASE_DURATION_MS = 15300;
+    // 4. Scroll BG parallax pendant toute la durée Scene 2.
+    // 1:1 décomp : Scene 2 dure TIMER_END_SCENE_2 - TIMER_START_SCENE_2 = 920 frames.
+    const sceneDurationFrames = TIMER_END_SCENE_2 - TIMER_START_SCENE_2;
+    const sceneDurationMs = sceneDurationFrames * FRAMES_TO_MS;
     for (const { img, speed } of bgLayers) {
-      const distance = (PHASE_DURATION_MS / 1000) * speed;
+      const distance = (sceneDurationMs / 1000) * speed;
       this.tweens.add({
         targets: img, x: img.x - distance,
-        duration: PHASE_DURATION_MS, ease: 'Linear',
+        duration: sceneDurationMs, ease: 'Linear',
       });
     }
 
-    // 5. Timeline animations sprites (toutes les delays calculés depuis t=0 = entrée Scene 2)
-    // Manectric apparaît t=62 frames (~1033ms) — entre par la droite, vient au centre
-    this.time.delayedCall(1033, () => {
-      if (this.skipped) return;
+    // 5. Timeline 1:1 décomp via TIMER_X (auto/src/intro-data.ts).
+    // Tous les delays viennent du pipeline — plus aucun ms hardcodé.
+
+    // Manectric à TIMER_MANECTRIC_ENTER (frame 1088 = relative 62) — entre par la droite
+    this.scheduleAtScene2(TIMER_MANECTRIC_ENTER, () => {
       manectric.setVisible(true);
-      this.tweens.add({ targets: manectric, x: 100, duration: 2000, ease: 'Linear' });
+      this.tweens.add({
+        targets: manectric, x: 100,
+        duration: (TIMER_MANECTRIC_RUN_CIRCULAR - TIMER_MANECTRIC_ENTER) * FRAMES_TO_MS,
+        ease: 'Linear',
+      });
     });
 
-    // Player drift back t=83 (~1383ms) puis forward t=188 (~3133ms) puis back t=372 (~6200ms) puis static
-    // Player commence à entrer en glissant depuis la droite
+    // Player entrée initiale jusqu'à TIMER_PLAYER_DRIFT_BACK
     this.tweens.add({
-      targets: [player, bike], x: 120, duration: 1383, delay: 0, ease: 'Linear',
-    });
-    // Drift back (slow x++)
-    this.time.delayedCall(1383, () => {
-      if (this.skipped) return;
-      this.tweens.add({ targets: [player, bike], x: '+=20', duration: 1750, ease: 'Linear' });
-    });
-    // Forward
-    this.time.delayedCall(3133, () => {
-      if (this.skipped) return;
-      this.tweens.add({ targets: [player, bike], x: '-=30', duration: 3067, ease: 'Linear' });
-    });
-    // Back
-    this.time.delayedCall(6200, () => {
-      if (this.skipped) return;
-      this.tweens.add({ targets: [player, bike], x: '+=15', duration: 2967, ease: 'Linear' });
-    });
-    // Static (sState=3) puis exit
-    this.time.delayedCall(11683, () => {
-      if (this.skipped) return;
-      this.tweens.add({ targets: [player, bike], x: -100, duration: 3500, ease: 'Linear' });
+      targets: [player, bike], x: 120,
+      duration: (TIMER_PLAYER_DRIFT_BACK - TIMER_START_SCENE_2) * FRAMES_TO_MS,
+      delay: 0, ease: 'Linear',
     });
 
-    // Torchic apparaît t=198 (~3300ms), court jusqu'au centre
-    this.time.delayedCall(3300, () => {
-      if (this.skipped) return;
+    // Player drift back (sState=1, x++) à TIMER_PLAYER_DRIFT_BACK
+    this.scheduleAtScene2(TIMER_PLAYER_DRIFT_BACK, () => {
+      this.tweens.add({
+        targets: [player, bike], x: '+=20',
+        duration: (TIMER_PLAYER_MOVE_FORWARD - TIMER_PLAYER_DRIFT_BACK) * FRAMES_TO_MS,
+        ease: 'Linear',
+      });
+    });
+
+    // Player move forward (sState=0, x--) à TIMER_PLAYER_MOVE_FORWARD
+    this.scheduleAtScene2(TIMER_PLAYER_MOVE_FORWARD, () => {
+      this.tweens.add({
+        targets: [player, bike], x: '-=30',
+        duration: (TIMER_PLAYER_MOVE_BACKWARD - TIMER_PLAYER_MOVE_FORWARD) * FRAMES_TO_MS,
+        ease: 'Linear',
+      });
+    });
+
+    // Player move backward (sState=2, x++) à TIMER_PLAYER_MOVE_BACKWARD
+    this.scheduleAtScene2(TIMER_PLAYER_MOVE_BACKWARD, () => {
+      this.tweens.add({
+        targets: [player, bike], x: '+=15',
+        duration: (TIMER_PLAYER_HOLD_POSITION - TIMER_PLAYER_MOVE_BACKWARD) * FRAMES_TO_MS,
+        ease: 'Linear',
+      });
+    });
+
+    // Player exit (sState=4, x-=2) à TIMER_PLAYER_EXIT
+    this.scheduleAtScene2(TIMER_PLAYER_EXIT, () => {
+      this.tweens.add({
+        targets: [player, bike], x: -100,
+        duration: (TIMER_END_SCENE_2 - TIMER_PLAYER_EXIT) * FRAMES_TO_MS,
+        ease: 'Linear',
+      });
+    });
+
+    // Torchic enter à TIMER_TORCHIC_ENTER, court jusqu'au speed_up
+    this.scheduleAtScene2(TIMER_TORCHIC_ENTER, () => {
       torchic.setVisible(true);
-      this.tweens.add({ targets: torchic, x: 80, duration: 5000, ease: 'Linear' });
-    });
-    // Torchic speedup t=709 (~11817ms) puis exit t=830 (~13833ms)
-    this.time.delayedCall(11817, () => {
-      if (this.skipped) return;
-      this.tweens.add({ targets: torchic, x: -50, duration: 2017, ease: 'Linear' });
+      this.tweens.add({
+        targets: torchic, x: 80,
+        duration: (TIMER_TORCHIC_SPEED_UP - TIMER_TORCHIC_ENTER) * FRAMES_TO_MS,
+        ease: 'Linear',
+      });
     });
 
-    // Volbeat : entre tôt, fait des oscillations (trajectoire figure-8)
-    this.time.delayedCall(500, () => {
-      if (this.skipped) return;
+    // Torchic speedup → exit à TIMER_TORCHIC_SPEED_UP
+    this.scheduleAtScene2(TIMER_TORCHIC_SPEED_UP, () => {
+      torchic.play('torchic-run');
+      this.tweens.add({
+        targets: torchic, x: -50,
+        duration: (TIMER_TORCHIC_EXIT - TIMER_TORCHIC_SPEED_UP) * FRAMES_TO_MS,
+        ease: 'Linear',
+      });
+    });
+
+    // Volbeat : entre tôt (pas de TIMER_X explicit, hardcoded ~30 frames),
+    // fait des oscillations (trajectoire figure-8 simplifiée)
+    this.scheduleAt(30, () => {
       volbeat.setVisible(true);
-      // Path figure-8 simplifié : aller/retour avec Sin oscillation
       const startTime = this.time.now;
       const updater = () => {
         if (!volbeat.active) return;
@@ -469,9 +565,8 @@ export class IntroScene extends Phaser.Scene {
       this.events.on('update', updater);
     });
 
-    // Flygon enters t=368 (~6133ms), traverse en Sin
-    this.time.delayedCall(6133, () => {
-      if (this.skipped) return;
+    // Flygon (Latias) enters à TIMER_FLYGON_ENTER (frame 1394 = relative 368)
+    this.scheduleAtScene2(TIMER_FLYGON_ENTER, () => {
       flygon.setVisible(true);
       const startTime = this.time.now;
       const updater = () => {
@@ -483,10 +578,10 @@ export class IntroScene extends Phaser.Scene {
       this.events.on('update', updater);
     });
 
-    // 6. Fade out blanc final → Scene 3
-    this.time.delayedCall(PHASE_DURATION_MS, () => {
-      if (this.skipped) return;
-      this.cameras.main.fadeOut(400, 255, 255, 255);
+    // 6. Fade out blanc final à TIMER_END_SCENE_2 → Scene 3 à TIMER_START_SCENE_3
+    this.scheduleAtScene2(TIMER_END_SCENE_2, () => {
+      const fadeDurationMs = (TIMER_START_SCENE_3 - TIMER_END_SCENE_2) * FRAMES_TO_MS;
+      this.cameras.main.fadeOut(fadeDurationMs, 255, 255, 255);
       this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
         this.cameras.main.resetFX();
         this.nextPhase();
