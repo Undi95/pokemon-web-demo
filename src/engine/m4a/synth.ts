@@ -124,20 +124,16 @@ function getOrBuildSquareWave(ctx: AudioContext, duty: number): PeriodicWave {
 
 /** Convertit un attack/decay/release rate GBA M4A (0-255) en durée seconds.
  *
- *  M4A semantics : ces valeurs sont des RATES (ne pas confondre avec durées).
- *  Plus la valeur est HAUTE, plus la transition est RAPIDE :
- *    rate = 255 → atteint le target en ~1 frame (~16ms)
- *    rate = 1   → très lent
- *
- *  Formule M4A réelle : la conversion exact dépend du sample rate du sound
- *  engine (typique 13379 Hz). Empiriquement, la durée naturelle est plus
- *  longue que ma formule initiale. Multiplicateur ×4 pour matcher l'oreille
- *  (vs durée perçue dans l'émulateur GBA). */
+ *  M4A semantics 1:1 décomp src/m4a.c (vérifié) :
+ *  - Sample rate = 13 379 Hz (SOUND_MODE_FREQ_13379)
+ *  - Sémantique SIGNED s8 : valeurs >= 128 (= négatif en s8) = SKIP cette phase = INSTANT
+ *  - Sinon : rate normal, time ≈ value × 255 / 13379 seconds */
 function gbaEnvTimeToSec(value: number): number {
-  if (value >= 255) return 0.005;          // ~1 frame instant
-  if (value <= 0) return 4;                // clamp 4s (compromis : assez long sans drone)
-  // Multiplicateur × 2 (compromis entre ×1 trop court et ×4 trop long → drone)
-  return Math.min(4, (256 / (value * 60)) * 2);
+  // Signed s8 négatif (bit 7 set) → skip phase = instant
+  if (value >= 128) return 0.005;
+  if (value <= 0) return 4;        // clamp 4s pour valeurs très basses
+  // Rate normal : ~value × 19ms (= value × 255/13379)
+  return (value * 255) / 13379;
 }
 
 /** Convertit un sustain value GBA M4A (0-255) en gain 0.0 - 1.0. */
@@ -216,22 +212,21 @@ export async function playNote(
     }
     case 'directsound':
     case 'directsound_no_resample': {
-      // PCM sample WAV
+      // PCM sample WAV. 1:1 décomp src/m4a.c :
+      //   Pour DirectSound, le sample joue à pleine vélocité IMMÉDIATEMENT
+      //   (pas d'attack ramp). L'ADSR attack/decay sont des fades hardware
+      //   PSG-only — DirectSound utilise une volume envelope simplifiée.
+      //   PAS de loop : le sample joue une seule fois jusqu'à sa fin OU
+      //   jusqu'au noteOff avec release rapide.
       const buf = await loadSample(voice.sampleSymbol);
       if (!buf) return null;
       const bs = ctx.createBufferSource();
       bs.buffer = buf;
-      // Pitch shifting : on assume que le sample est enregistré à voice.baseKey
-      // (`directsound_no_resample` = no pitch shift, joue toujours à 1.0)
       if (voice.type === 'directsound') {
         const baseFreq = midiNoteToFreq(voice.baseKey);
         bs.playbackRate.value = noteFreq / baseFreq;
       }
-      // Loop : pour les sustained instruments (piano, strings), le sample
-      // doit boucler sur sa fin pour soutenir la note. Pour drumsets one-shot,
-      // pas de loop (le sample joue une fois et finit naturellement).
-      // Heuristique : sample > 0.5s → probablement sustained (loop). Sinon one-shot.
-      bs.loop = buf.duration > 0.5;
+      bs.loop = false; // 1:1 décomp : DirectSound joue le sample once, pas de loop
       source = bs;
       envelope = voice.envelope;
       break;
@@ -260,17 +255,26 @@ export async function playNote(
       return null;
   }
 
-  // Envelope ADSR
+  // Envelope ADSR. 1:1 décomp src/m4a.c :
+  //   PSG channels (square/noise/wave) : full ADSR (attack/decay/sustain/release)
+  //   DirectSound : skip attack ramp, gain = velocity direct, release léger au noteOff
+  // L'auto-loop a été désactivé pour les DirectSound (pas de drone).
   const env = ctx.createGain();
   const velNorm = velocity / 127;
-  const attackTime = gbaEnvTimeToSec(envelope.attack);
-  const decayTime = gbaEnvTimeToSec(envelope.decay);
-  const sustainGain = gbaSustainToGain(envelope.sustain) * velNorm;
-  // releaseTime is used in stop()
+  const isDirectSound = voice.type === 'directsound' || voice.type === 'directsound_no_resample';
 
-  env.gain.setValueAtTime(0, startTime);
-  env.gain.linearRampToValueAtTime(velNorm, startTime + Math.max(0.001, attackTime));
-  env.gain.linearRampToValueAtTime(sustainGain, startTime + attackTime + Math.max(0.001, decayTime));
+  if (isDirectSound) {
+    // DirectSound : pleine vélocité immédiate (le sample WAV gère son propre fade naturel)
+    env.gain.setValueAtTime(velNorm, startTime);
+  } else {
+    // PSG : ADSR complet
+    const attackTime = gbaEnvTimeToSec(envelope.attack);
+    const decayTime = gbaEnvTimeToSec(envelope.decay);
+    const sustainGain = gbaSustainToGain(envelope.sustain) * velNorm;
+    env.gain.setValueAtTime(0, startTime);
+    env.gain.linearRampToValueAtTime(velNorm, startTime + Math.max(0.001, attackTime));
+    env.gain.linearRampToValueAtTime(sustainGain, startTime + attackTime + Math.max(0.001, decayTime));
+  }
 
   // Pan
   const panner = ctx.createStereoPanner();
@@ -296,14 +300,15 @@ export async function playNote(
     startedAt: startTime,
     stop(time?: number) {
       const t = time ?? ctx.currentTime;
-      const releaseTime = gbaEnvTimeToSec(envelope.release);
+      // Pour DirectSound : release court fixe (50ms fade out, le sample finit naturellement).
+      // Pour PSG : release selon ADSR (rate signed s8 → instant si >= 128).
+      const releaseTime = isDirectSound ? 0.05 : gbaEnvTimeToSec(envelope.release);
       env.gain.cancelScheduledValues(t);
       env.gain.setValueAtTime(env.gain.value, t);
       env.gain.linearRampToValueAtTime(0, t + Math.max(0.005, releaseTime));
       try {
         if ('stop' in source) (source as AudioBufferSourceNode | OscillatorNode).stop(t + releaseTime + 0.01);
       } catch { /* already stopped */ }
-      // Auto-unregister après release pour libérer le slot polyphonie
       window.setTimeout(() => unregisterActiveNote(note), Math.max(50, (releaseTime + 0.05) * 1000));
     },
   };
