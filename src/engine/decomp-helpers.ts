@@ -52,38 +52,53 @@ export function SetOamMatrix(gba: Gba, matrixNum: number, a: number, b: number, 
 }
 
 // ─── CalcCenterToCornerVec (affine sprite bbox helper) ───────────────────────
-/** 1:1 décomp src/sprite.c:CalcCenterToCornerVec — ajuste sprite.centerToCornerVec
- *  selon shape/size + affine mode. En pratique simplifié : décale x/y du sprite
- *  pour compenser le bbox doublé en mode AFFINE_DOUBLE.
- *
- *  shape/size codes : SPRITE_SHAPE(WxH) = (W,H) tuple ; on prend leur w,h en pixels.
- *  Mode :
- *    ST_OAM_AFFINE_OFF (0) : pas d'ajustement
- *    ST_OAM_AFFINE_NORMAL (1) : pas d'ajustement
- *    ST_OAM_AFFINE_DOUBLE (3) : bbox 2× → décale -w/2, -h/2
- *    ST_OAM_AFFINE_ERASE (= setoam mode 2 sur certains ports) : reset (=1× bbox)
- */
+/** 1:1 décomp constants src/include/gba/types.h. */
 export const ST_OAM_AFFINE_OFF = 0;
 export const ST_OAM_AFFINE_NORMAL = 1;
 export const ST_OAM_AFFINE_ERASE = 2;
 export const ST_OAM_AFFINE_DOUBLE = 3;
+export const ST_OAM_AFFINE_ON_MASK = 1;        // bit 0 = affine on
+export const ST_OAM_AFFINE_DOUBLE_MASK = 2;    // bit 1 = affine double
 export const ST_OAM_OBJ_NORMAL = 0;
 export const ST_OAM_OBJ_BLEND = 1;
 export const ST_OAM_OBJ_WINDOW = 2;
 export const ST_OAM_4BPP = 0;
 export const ST_OAM_8BPP = 1;
 
+/** 1:1 décomp src/sprite.c:137 sCenterToCornerVecTable[3][4][2] :
+ *  [shape][size] → [centerToCornerVecX, centerToCornerVecY]. En u8 mais valeurs
+ *  négatives volontaires (= -w/2, -h/2 du sprite, en pixels).
+ *  On utilise les valeurs raw (signées 8-bit interprétées via Int8Array trick). */
+export const sCenterToCornerVecTable: ReadonlyArray<ReadonlyArray<readonly [number, number]>> = [
+  // shape 0 = square (8x8 / 16x16 / 32x32 / 64x64)
+  [[-4, -4], [-8, -8], [-16, -16], [-32, -32]],
+  // shape 1 = horizontal rectangle (16x8 / 32x8 / 32x16 / 64x32)
+  [[-8, -4], [-16, -4], [-16, -8], [-32, -16]],
+  // shape 2 = vertical rectangle (8x16 / 8x32 / 16x32 / 32x64)
+  [[-4, -8], [-4, -16], [-8, -16], [-16, -32]],
+];
+
+/** 1:1 décomp src/sprite.c:687 CalcCenterToCornerVec :
+ *    u8 x = sCenterToCornerVecTable[shape][size][0];
+ *    u8 y = sCenterToCornerVecTable[shape][size][1];
+ *    if (affineMode & ST_OAM_AFFINE_DOUBLE_MASK) { x *= 2; y *= 2; }
+ *    sprite->centerToCornerVecX = x;
+ *    sprite->centerToCornerVecY = y;
+ *
+ *  Stocke le décalage à appliquer au sprite pour positionnement correct selon
+ *  shape/size/affineMode. Le décomp utilise centerToCornerVecX/Y dans BuildOamBuffer
+ *  pour calculer la position OAM finale. Notre runtime applique ce décalage dans
+ *  syncSpritesToOam (= oam.x = sprite.x + sprite.x2 + sprite.centerToCornerVecX).
+ */
 export function CalcCenterToCornerVec(
-  gba: Gba, oamIndex: number, w: number, h: number, mode: number,
-): void {
-  const oam = gba.oam[oamIndex];
-  if (mode === ST_OAM_AFFINE_DOUBLE) {
-    // Bbox doublé : sprite affiché avec offset -w/2,-h/2 pour que le centre reste fixe
-    // Note : sprite.x est l'ancre top-left ; on ne touche PAS x/y mais on note l'offset
-    // (notre engine compositor gère ça via OamEntry.affineMode==3 = render bbox 2×).
-    void oam; void w; void h;  // gba.oam.affineMode=3 suffit, l'offset est implicite
+  shape: number, size: number, affineMode: number,
+): { centerToCornerVecX: number, centerToCornerVecY: number } {
+  let [x, y] = sCenterToCornerVecTable[shape & 3]?.[size & 3] ?? [0, 0];
+  if (affineMode & ST_OAM_AFFINE_DOUBLE_MASK) {
+    x *= 2;
+    y *= 2;
   }
-  // Pour les autres modes : no-op (notre compositor gère normal/erase pareil)
+  return { centerToCornerVecX: x, centerToCornerVecY: y };
 }
 
 // ─── Affine animations (sAffineAnims_X tables) ───────────────────────────────

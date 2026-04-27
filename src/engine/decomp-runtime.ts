@@ -29,6 +29,7 @@ import {
   SPRITE_TEMPLATES, OAM_DATAS, SPRITE_ANIM_TABLES, SPRITE_ANIMS,
   SPRITE_PALETTES, SPRITE_SHEETS,
 } from './decomp-data/auto/src/sprite-system';
+import { CalcCenterToCornerVec, ST_OAM_AFFINE_DOUBLE } from './decomp-helpers';
 
 /** OAM shape+size encoding 1:1 GBA hardware (cf. types.ts OAM_SIZES).
  *  Retourne [shape, size] depuis (width, height) en pixels. */
@@ -194,6 +195,11 @@ export interface DecompSprite {
   vFlip: boolean;
   /** Affine matrix slot (1:1 décomp sprite->oam.matrixNum). */
   matrixNum: number;
+  /** centerToCornerVec : décalage OAM x/y pour positionnement correct selon
+   *  shape/size/affineMode (1:1 décomp src/sprite.c CalcCenterToCornerVec).
+   *  Utilisé par syncSpritesToOam : oam.x = sprite.x + sprite.x2 + centerToCornerVecX. */
+  centerToCornerVecX: number;
+  centerToCornerVecY: number;
   /** Anim ended flag — set par tickSpriteAnims quand l'anim atteint END. */
   animEnded: boolean;
   /** Affine anim ended flag — set quand l'affine anim atteint END. */
@@ -537,6 +543,7 @@ export class DecompRuntime {
       x: cfg.x, y: cfg.y, x2: 0, y2: 0,
       hFlip: false, vFlip: false,
       matrixNum: cfg.affineParamIndex ?? 0,
+      centerToCornerVecX: 0, centerToCornerVecY: 0,
       animEnded: false, affineAnimEnded: false,
       callback: null,
       spriteId, tileBase: 0,
@@ -751,13 +758,21 @@ export class DecompRuntime {
         tileBase,
       });
     }
-    // Store tileBase + objMode dans le sprite (utilisé par tickSpriteAnims/callbacks)
+    // Store tileBase + objMode + centerToCornerVec dans le sprite
     const sprite = this.gSprites.get(result.spriteId);
     if (sprite) {
       sprite.tileBase = tileBase;
       sprite.objMode = oam.objMode === 'ST_OAM_OBJ_BLEND' ? 1
                      : oam.objMode === 'ST_OAM_OBJ_WINDOW' ? 2
                      : 0;
+      // 1:1 décomp src/sprite.c:CreateSpriteAt — appel à CalcCenterToCornerVec
+      // après init du sprite, pour positionnement correct selon shape/size/affineMode.
+      const affineModeNum = oam.affineMode === 'ST_OAM_AFFINE_DOUBLE' ? 3
+                          : oam.affineMode === 'ST_OAM_AFFINE_NORMAL' ? 1
+                          : 0;
+      const ctcv = CalcCenterToCornerVec(shape, size, affineModeNum);
+      sprite.centerToCornerVecX = ctcv.centerToCornerVecX;
+      sprite.centerToCornerVecY = ctcv.centerToCornerVecY;
     }
 
     console.log(`[runtime] CreateSprite ${templateName} → spriteId ${result.spriteId} (tile ${tileBase + initialTileOffset}, bank ${palSlot}, ${w}×${h})`);
@@ -854,13 +869,17 @@ export class DecompRuntime {
     }
   }
 
-  /** Sync les fields sprite (x/y/x2/y2/invisible/hFlip/vFlip) → gba.oam.
-   *  Le décomp utilise sprite->x/y/x2/y2 séparés ; OAM final.x = x + x2. */
+  /** Sync les fields sprite → gba.oam. 1:1 décomp src/sprite.c:BuildOamBuffer :
+   *    oam.x = sprite.x + sprite.x2 + sprite.centerToCornerVecX
+   *    oam.y = sprite.y + sprite.y2 + sprite.centerToCornerVecY
+   *  centerToCornerVec = -w/2, -h/2 (×2 si AFFINE_DOUBLE) → décale top-left
+   *  pour que (sprite.x, sprite.y) soit le centre du sprite affiché.
+   *  Sans ce décalage, les sprites apparaissent décalés à droite + bas. */
   private syncSpritesToOam(): void {
     for (const sprite of this.gSprites.values()) {
       const oam = this.gba.oam[sprite.oamIndex];
-      oam.x = (sprite.x + sprite.x2) & 0x1FF;        // 9-bit signed wrap
-      oam.y = (sprite.y + sprite.y2) & 0xFF;          // 8-bit signed wrap
+      oam.x = (sprite.x + sprite.x2 + sprite.centerToCornerVecX) & 0x1FF;
+      oam.y = (sprite.y + sprite.y2 + sprite.centerToCornerVecY) & 0xFF;
       oam.visible = !sprite.invisible;
       oam.flipH = sprite.hFlip;
       oam.flipV = sprite.vFlip;

@@ -266,7 +266,11 @@ export function SpriteCB_FlygonSilhouette(sprite: DecompSprite, rt: DecompRuntim
       // CalcCenterToCornerVec(sprite, SPRITE_SHAPE(64x32), SPRITE_SIZE(64x32), ST_OAM_AFFINE_DOUBLE);
       sprite.matrixNum = 1;
       rt.gba.oam[sprite.oamIndex].affineMode = 3;  // DOUBLE
-      CalcCenterToCornerVec(rt.gba, sprite.oamIndex, 64, 32, ST_OAM_AFFINE_DOUBLE);
+      // 1:1 décomp CalcCenterToCornerVec(sprite, SPRITE_SHAPE(64x32), SPRITE_SIZE(64x32), ST_OAM_AFFINE_DOUBLE)
+      // shape 1 (horizontal rect) + size 3 (= 64x32)
+      const ctcv = CalcCenterToCornerVec(1, 3, ST_OAM_AFFINE_DOUBLE);
+      sprite.centerToCornerVecX = ctcv.centerToCornerVecX;
+      sprite.centerToCornerVecY = ctcv.centerToCornerVecY;
       sprite.invisible = false;
       sprite.data[0] = 1;     // sState = 1
       sprite.data[1] = 128;   // sScale
