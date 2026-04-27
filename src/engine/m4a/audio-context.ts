@@ -20,7 +20,7 @@ export function getAudioContext(): AudioContext {
   if (!Ctor) throw new Error('Web Audio API not supported in this browser');
   _ctx = new Ctor();
   _masterGain = _ctx.createGain();
-  _masterGain.gain.value = 0.7;  // -3dB par défaut pour éviter clipping
+  _masterGain.gain.value = 1.0;  // 0 dB plein volume (clipping évité par velocity scaling)
   _masterGain.connect(_ctx.destination);
   return _ctx;
 }

@@ -123,17 +123,20 @@ function getOrBuildSquareWave(ctx: AudioContext, duty: number): PeriodicWave {
 
 /** Convertit un attack/decay/release rate GBA M4A (0-255) en durée seconds.
  *
- *  M4A semantics (1:1 décomp) : ces valeurs sont des RATES, pas des durées.
+ *  M4A semantics : ces valeurs sont des RATES (ne pas confondre avec durées).
  *  Plus la valeur est HAUTE, plus la transition est RAPIDE :
- *    attack/decay/release = 255 → atteint le target en ~1 frame (~16ms)
- *    attack/decay/release = 1   → très lent (~4 sec)
- *    attack/decay/release = 0   → infini (jamais atteint, donc on clamp)
+ *    rate = 255 → atteint le target en ~1 frame (~16ms)
+ *    rate = 1   → très lent
  *
- *  Formule empirique : time = 256 / (value × 60fps) seconds. */
+ *  Formule M4A réelle : la conversion exact dépend du sample rate du sound
+ *  engine (typique 13379 Hz). Empiriquement, la durée naturelle est plus
+ *  longue que ma formule initiale. Multiplicateur ×4 pour matcher l'oreille
+ *  (vs durée perçue dans l'émulateur GBA). */
 function gbaEnvTimeToSec(value: number): number {
-  if (value >= 255) return 0.016;         // ~1 frame
-  if (value <= 0) return 4;               // clamp infini → 4 sec
-  return Math.min(4, 256 / (value * 60));  // taux × 60fps → cap 4s
+  if (value >= 255) return 0.005;          // ~1 frame instant
+  if (value <= 0) return 8;                // clamp 8s (notes très longues)
+  // Multiplicateur × 4 vs ma formule initiale → matches mieux le rendu m4a réel
+  return Math.min(8, (256 / (value * 60)) * 4);
 }
 
 /** Convertit un sustain value GBA M4A (0-255) en gain 0.0 - 1.0. */
@@ -212,16 +215,22 @@ export async function playNote(
     }
     case 'directsound':
     case 'directsound_no_resample': {
-      // PCM sample
+      // PCM sample WAV
       const buf = await loadSample(voice.sampleSymbol);
       if (!buf) return null;
       const bs = ctx.createBufferSource();
       bs.buffer = buf;
       // Pitch shifting : on assume que le sample est enregistré à voice.baseKey
-      // On adjuste playbackRate selon (noteFreq / baseFreq)
-      const baseFreq = midiNoteToFreq(voice.baseKey);
-      bs.playbackRate.value = noteFreq / baseFreq;
-      bs.loop = false; // TODO : detect loop region dans le WAV (smpl chunk)
+      // (`directsound_no_resample` = no pitch shift, joue toujours à 1.0)
+      if (voice.type === 'directsound') {
+        const baseFreq = midiNoteToFreq(voice.baseKey);
+        bs.playbackRate.value = noteFreq / baseFreq;
+      }
+      // Loop : pour les sustained instruments (piano, strings), le sample
+      // doit boucler sur sa fin pour soutenir la note. Pour drumsets one-shot,
+      // pas de loop (le sample joue une fois et finit naturellement).
+      // Heuristique : sample > 0.5s → probablement sustained (loop). Sinon one-shot.
+      bs.loop = buf.duration > 0.5;
       source = bs;
       envelope = voice.envelope;
       break;
