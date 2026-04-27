@@ -32,6 +32,12 @@ import {
   // Helpers globaux (équivalent extern décomp)
   LZ77UnCompVram, LoadPalette, DmaClear16, CpuFill16, CpuFill32,
   LoadCompressedSpriteSheet, LoadSpritePalettes,
+  LoadIntroPart2Graphics, FreeAllSpritePalettes,
+  // Scene 2 stubs (Phase 0b minimum viable)
+  sSpriteSheet_RunningPokemon, sAnims_PlayerBicycle,
+  CreateIntroBrendanSprite, CreateIntroMaySprite, CreateIntroFlygonSprite,
+  CreateBicycleBgAnimationTask, SetIntroPart2BgCnt,
+  MALE,
   // Symbol-name strings (= keys vers assetCache)
   sIntro1Bg_Gfx, sIntro1Bg_Pal,
   sIntro1Bg0_Tilemap, sIntro1Bg1_Tilemap, sIntro1Bg2_Tilemap, sIntro1Bg3_Tilemap,
@@ -44,16 +50,52 @@ import {
   sIntroStreaks_Pal, sIntroStreaks_Gfx, sIntroStreaks_Tilemap,
   sIntroRayquzaOrb_Pal, sIntroMisc_Pal, sIntroMisc_Gfx, sIntroLati_Gfx,
   gIntroLightning_Gfx, gIntroLightning_Pal, gIntroBubbles_Gfx, gIntroBubbles_Pal,
+  // Runtime singleton accessor (pour helpers locaux qui n'ont plus rt en param)
+  getRuntime as _getRuntime,
+  // Global tables extern (cross-module) utilisées par les Tasks intro
+  gTitleScreenAlphaBlend,
   // Constants
   BG_SCREEN_SIZE, PALETTES_ALL,
+  // Display + addressing
+  DISPLAY_WIDTH, DISPLAY_HEIGHT,
+  BG_PLTT_ID, OBJ_PLTT_ID, BG_CHAR_ADDR, BG_SCREEN_ADDR,
+  // REG_OFFSET_*
+  REG_OFFSET_DISPCNT,
+  REG_OFFSET_BG0CNT, REG_OFFSET_BG1CNT, REG_OFFSET_BG2CNT, REG_OFFSET_BG3CNT,
+  REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS,
+  REG_OFFSET_BG1HOFS, REG_OFFSET_BG1VOFS,
+  REG_OFFSET_BG2HOFS, REG_OFFSET_BG2VOFS,
+  REG_OFFSET_BG3HOFS, REG_OFFSET_BG3VOFS,
+  REG_OFFSET_WIN0H, REG_OFFSET_WIN1H, REG_OFFSET_WIN0V, REG_OFFSET_WIN1V,
+  REG_OFFSET_WININ, REG_OFFSET_WINOUT,
+  REG_OFFSET_BLDCNT, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDY,
+  // BGCNT_*
+  BGCNT_PRIORITY, BGCNT_CHARBASE, BGCNT_SCREENBASE,
+  BGCNT_16COLOR, BGCNT_256COLOR,
+  BGCNT_TXT256x256, BGCNT_TXT512x256, BGCNT_TXT256x512, BGCNT_TXT512x512,
+  BGCNT_AFF128x128, BGCNT_AFF256x256, BGCNT_AFF512x512, BGCNT_AFF1024x1024,
+  // DISPCNT_*
+  DISPCNT_MODE_0, DISPCNT_MODE_1, DISPCNT_MODE_2, DISPCNT_OBJ_1D_MAP,
+  DISPCNT_BG0_ON, DISPCNT_BG1_ON, DISPCNT_BG2_ON, DISPCNT_BG3_ON,
+  DISPCNT_OBJ_ON, DISPCNT_WIN0_ON, DISPCNT_BG_ALL_ON,
+  // BLDCNT_*
+  BLDCNT_TGT1_BG0, BLDCNT_TGT1_BG1, BLDCNT_TGT1_BG2, BLDCNT_TGT1_BG3,
+  BLDCNT_TGT1_OBJ, BLDCNT_TGT1_BD,
+  BLDCNT_EFFECT_NONE, BLDCNT_EFFECT_BLEND, BLDCNT_EFFECT_LIGHTEN, BLDCNT_EFFECT_DARKEN,
+  BLDCNT_TGT2_BG0, BLDCNT_TGT2_BG1, BLDCNT_TGT2_BG2, BLDCNT_TGT2_BG3,
+  BLDCNT_TGT2_OBJ, BLDCNT_TGT2_BD,
 } from '../../../decomp-globals';
 
-// EWRAM_DATA vars locales au scope module (1:1 décomp src/intro.c).
-// Local pour permettre l'assignment direct (= ES modules ne permet pas write
-// sur un import binding). Lecture cross-module possible via getter functions
-// si besoin futur (e.g. depuis title-screen-callbacks-auto si lit gender).
+// EWRAM_DATA vars locales au scope module (1:1 décomp src/intro.c +
+// src/intro_credits_graphics.c). Local pour permettre l'assignment direct
+// (= ES modules ne permet pas write sur un import binding). Lecture
+// cross-module possible via getter functions si besoin futur.
 let sIntroCharacterGender = 0;
 let sFlygonYOffset = 0;
+// 1:1 décomp src/intro_credits_graphics.c:720+ — EWRAM globals
+let gIntroCredits_MovingSceneryVBase = 0;
+let gIntroCredits_MovingSceneryVOffset = 0;
+let gIntroCredits_MovingSceneryState = 0;
 import {
   COLOR_CHANGES,
   NARROW_HEIGHT,
@@ -497,7 +539,7 @@ export const SpriteCB_WaterDropHalf: SpriteCallback = (sprite, rt) => {
           sprite.y += sprite.y2;
           rt.StartSpriteAnim(sprite.spriteId, DROP_ANIM_RIPPLE);
           sprite.data[2] = 1024;
-          sprite.data[3] = 8 (sprite.data[1] & 3);
+          sprite.data[3] = 8 * (sprite.data[1] & 3);
           sprite.callback = SpriteCB_WaterDrop_Ripple;
           rt.gba.oam[sprite.oamIndex].shape = 1;
           rt.gba.oam[sprite.oamIndex].size = 3;
@@ -618,7 +660,7 @@ export const SpriteCB_WaterDrop_Fall: SpriteCallback = (sprite, rt) => {
           sprite.y += sprite.y2;
           rt.StartSpriteAnim(sprite.spriteId, DROP_ANIM_RIPPLE);
           sprite.data[2] = 1024;
-          sprite.data[3] = 8 (sprite.data[1] & 3);
+          sprite.data[3] = 8 * (sprite.data[1] & 3);
           sprite.callback = SpriteCB_WaterDrop_Ripple;
           rt.gba.oam[sprite.oamIndex].shape = 1;
           rt.gba.oam[sprite.oamIndex].size = 3;
@@ -640,7 +682,7 @@ export const SpriteCB_WaterDropShort: SpriteCallback = (sprite, rt) => {
           sprite.y += sprite.y2;
           rt.StartSpriteAnim(sprite.spriteId, DROP_ANIM_RIPPLE);
           sprite.data[2] = 1024;
-          sprite.data[3] = 8 (sprite.data[1] & 3);
+          sprite.data[3] = 8 * (sprite.data[1] & 3);
           sprite.callback = SpriteCB_WaterDrop_Ripple;
           rt.gba.oam[sprite.oamIndex].shape = 1;
           rt.gba.oam[sprite.oamIndex].size = 3;
@@ -961,7 +1003,9 @@ export const Task_Scene1_Load: TaskCallback = (task, rt) => {
       rt.SetGpuReg(REG_OFFSET_BG2VOFS, 80);
       rt.SetGpuReg(REG_OFFSET_BG1VOFS, 24);
       rt.SetGpuReg(REG_OFFSET_BG0VOFS, 40);
-      /* TODO LZ77UnCompVram — load via rt.LZ77UnCompVram_* at scene init */;
+      // MANUAL FIX session 68 phase 0b : LZ77UnCompVram(sIntro1Bg_Gfx, VRAM)
+      // = char data BG à offset 0. Sans ça les BG affichent du noir car aucun tile data.
+      LZ77UnCompVram(sIntro1Bg_Gfx, 0);
       LZ77UnCompVram(sIntro1Bg0_Tilemap, (BG_CHAR_ADDR(2)));
       DmaClear16(3, BG_SCREEN_ADDR(17), BG_SCREEN_SIZE);
       LZ77UnCompVram(sIntro1Bg1_Tilemap, (BG_SCREEN_ADDR(18)));
@@ -975,11 +1019,22 @@ export const Task_Scene1_Load: TaskCallback = (task, rt) => {
       rt.SetGpuReg(REG_OFFSET_BG2CNT, BGCNT_PRIORITY(2) | BGCNT_CHARBASE(0) | BGCNT_SCREENBASE(20) | BGCNT_16COLOR | BGCNT_TXT256x512);
       rt.SetGpuReg(REG_OFFSET_BG1CNT, BGCNT_PRIORITY(1) | BGCNT_CHARBASE(0) | BGCNT_SCREENBASE(18) | BGCNT_16COLOR | BGCNT_TXT256x512);
       rt.SetGpuReg(REG_OFFSET_BG0CNT, BGCNT_PRIORITY(0) | BGCNT_CHARBASE(0) | BGCNT_SCREENBASE(16) | BGCNT_16COLOR | BGCNT_TXT256x512);
-      /* TODO LoadCompressedSpriteSheet — load via rt.LoadCompressedSpriteSheetsFromTable */;
-      /* TODO LoadCompressedSpriteSheet — load via rt.LoadCompressedSpriteSheetsFromTable */;
-      /* TODO LoadSpritePalettes — load via rt.LoadSpritePalettesFromTable */;
-      /* TODO LoadCompressedSpriteSheet — load via rt.LoadCompressedSpriteSheetsFromTable */;
-      /* TODO LoadSpritePalettes — load via rt.LoadSpritePalettesFromTable */;
+      // MANUAL FIX session 68 phase 0b : 1:1 décomp src/intro.c:1192-1196
+      // LoadCompressedSpriteSheet(sSpriteSheet_WaterDropsAndLogo) → drops_logo.png + tag GFXTAG_DROPS_LOGO
+      // LoadCompressedSpriteSheet(sSpriteSheet_FlygonSilhouette) → flygon.png + tag TAG_FLYGON_SILHOUETTE
+      // LoadSpritePalettes(sSpritePalettes_Intro1) → drops.pal + logo.pal vers OBJ slots
+      // LoadCompressedSpriteSheet(sSpriteSheet_Sparkle) → sparkle.png + tag GFXTAG_SPARKLE
+      // LoadSpritePalettes(sSpritePalette_Sparkle) → sparkle.pal vers OBJ slot
+      LoadCompressedSpriteSheet({ data: sIntroDropsLogo_Gfx, size: 0, tag: 'GFXTAG_DROPS_LOGO' });
+      LoadCompressedSpriteSheet({ data: gIntroFlygonSilhouette_Gfx, size: 0, tag: 'TAG_FLYGON_SILHOUETTE' });
+      LoadSpritePalettes([
+        { data: sIntroDrops_Pal, tag: 'PALTAG_DROPS' },
+        { data: sIntroLogo_Pal, tag: 'PALTAG_LOGO' },
+      ]);
+      LoadCompressedSpriteSheet({ data: gIntroSparkle_Gfx, size: 0, tag: 'GFXTAG_SPARKLE' });
+      LoadSpritePalettes([
+        { data: 'gIntroSparkle_Pal', tag: 'PALTAG_SPARKLE' },
+      ]);
       rt.CpuCopy16(_palView(rt.gPlttBufferUnfaded, (256 + (0) * 16)), 0, (256 + (15) * 16) + 0, Math.floor((PLTT_SIZEOF(16 - 0) / 2)));
       rt.CpuCopy16(_palView(rt.gPlttBufferUnfaded, (256 + (0) * 16)), 0, (256 + (14) * 16) + 1, Math.floor((PLTT_SIZEOF(16 - 1) / 2)) + 1);  
       rt.CpuCopy16(_palView(rt.gPlttBufferUnfaded, (256 + (0) * 16)), 0, (256 + (13) * 16) + 2, Math.floor((PLTT_SIZEOF(16 - 2) / 2)));
@@ -2084,7 +2139,8 @@ export const CB2_InitCopyrightScreenAfterTitleScreen: CB2Callback = (rt) => {
 };
 
 /** Source: intro.c → CreateGroudonRockSprites (helper) */
-export function CreateGroudonRockSprites(rt: DecompRuntime, taskId: number): number {
+export function CreateGroudonRockSprites(taskId: number): number {
+  const rt = _getRuntime();
   let sprite: any = _emptySprite;
   let task: any = _emptyTask;
   let i = 0;
@@ -2103,7 +2159,8 @@ export function CreateGroudonRockSprites(rt: DecompRuntime, taskId: number): num
 }
 
 /** Source: intro.c → CreateKyogreBubbleSprites_Body (helper) */
-export function CreateKyogreBubbleSprites_Body(rt: DecompRuntime, taskId: number): number {
+export function CreateKyogreBubbleSprites_Body(taskId: number): number {
+  const rt = _getRuntime();
   let sprite: any = _emptySprite;
   let task: any = _emptyTask;
   let i = 0;
@@ -2124,7 +2181,8 @@ export function CreateKyogreBubbleSprites_Body(rt: DecompRuntime, taskId: number
 }
 
 /** Source: intro.c → CreateKyogreBubbleSprites_Fins (helper) */
-export function CreateKyogreBubbleSprites_Fins(rt: DecompRuntime): number {
+export function CreateKyogreBubbleSprites_Fins(): number {
+  const rt = _getRuntime();
   let sprite: any = _emptySprite;
   let task: any = _emptyTask;
   let i = 0;
@@ -2145,7 +2203,8 @@ export function CreateKyogreBubbleSprites_Fins(rt: DecompRuntime): number {
 }
 
 /** Source: intro.c → CreateWaterDrop (helper) */
-export function CreateWaterDrop(rt: DecompRuntime, x: number, y: number, c: number, d: number, e: number, fallImmediately: number): number {
+export function CreateWaterDrop(x: number, y: number, c: number, d: number, e: number, fallImmediately: number): number {
+  const rt = _getRuntime();
   let sprite: any = _emptySprite;
   let task: any = _emptyTask;
   let spriteId = 0;
@@ -2192,14 +2251,15 @@ export function CreateWaterDrop(rt: DecompRuntime, x: number, y: number, c: numb
 
       SetOamMatrix(rt.gba, d, c + 32, 0, 0, c + 32);
       SetOamMatrix(rt.gba, d + 1, c + 32, 0, 0, c + 32);
-      SetOamMatrix(rt.gba, d + 2, c + 32, 0, 0, 2 (c + 32));
+      SetOamMatrix(rt.gba, d + 2, c + 32, 0, 0, 2 * (c + 32));
 
       return oldSpriteId;
   return -1;
 }
 
 /** Source: intro.c → CreateGameFreakLogoSprites (helper) */
-export function CreateGameFreakLogoSprites(rt: DecompRuntime, x: number, y: number, unused: number): number {
+export function CreateGameFreakLogoSprites(x: number, y: number, unused: number): number {
+  const rt = _getRuntime();
   let sprite: any = _emptySprite;
   let task: any = _emptyTask;
   let i = 0;

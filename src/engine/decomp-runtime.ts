@@ -19,6 +19,10 @@
  *   - decomp engine/palette_fade.c pour BeginNormalPaletteFade
  */
 import { Gba } from './gba/gba';
+
+/** Debug flag — true uniquement si `localStorage.rtDebug = '1'`. Sans ça, tous
+ *  les console.log spam (CreateSprite, palette, sheet) sont silenced. */
+const RT_DEBUG = typeof window !== 'undefined' && window.localStorage?.getItem('rtDebug') === '1';
 import { LAYER_BG0, LAYER_BG1, LAYER_BG2, LAYER_BG3, LAYER_OBJ, LAYER_BD } from './gba/types';
 import {
   loadIndexedPng, loadIndexedPngWithPal, loadIndexedPng8bppWithPal,
@@ -298,6 +302,8 @@ export class DecompRuntime {
   private nextTaskId = 0;
   /** Auto-incrementing sprite ID */
   private nextSpriteId = 0;
+  /** Flag pour ne logger OAM slots exhausted qu'une seule fois (évite spam 999×). */
+  private _oamExhaustedWarned = false;
 
   /** paletteTag (e.g. 'PALTAG_LOGO') → OBJ palette slot (0-15).
    *  Rempli par LoadSpritePalettesFromTable(). Permet de résoudre paletteTag → bank
@@ -572,7 +578,12 @@ export class DecompRuntime {
     paletteMode?: 0 | 1, affineMode?: 0 | 1 | 2 | 3, affineParamIndex?: number,
   }): { spriteId: number, oamIndex: number } {
     if (this.nextOamSlot >= 128) {
-      console.warn('[DecompRuntime] OAM slots exhausted');
+      // Silenced après le premier warn (sinon spam) — bug à investiger
+      // (probablement une Task qui crée sprites en boucle sans Destroy)
+      if (!this._oamExhaustedWarned) {
+        console.warn('[DecompRuntime] OAM slots exhausted (further warnings suppressed)');
+        this._oamExhaustedWarned = true;
+      }
       return { spriteId: -1, oamIndex: -1 };
     }
     const oamIndex = this.nextOamSlot++;
@@ -673,7 +684,7 @@ export class DecompRuntime {
   async LoadExtraPalette(symbolName: string, palUrl: string): Promise<void> {
     const pal = await loadGbaPal(palUrl);
     this.extraPalettes.set(symbolName, pal);
-    console.log(`[runtime] extraPalette ${symbolName} loaded (${pal.length} colors)`);
+    if (RT_DEBUG) console.log(`[runtime] extraPalette ${symbolName} loaded (${pal.length} colors)`);
   }
 
   /** Récupère une palette additionnelle (1:1 décomp `gXxx_Pal[N]` access). */
@@ -785,7 +796,7 @@ export class DecompRuntime {
           await this.LoadPaletteObjFromFile(url, OBJ_PLTT_ID(slot));
         }
         this.paletteTagToSlot.set(entry.tag, slot);
-        console.log(`[runtime] palette ${entry.tag} → OBJ slot ${slot}`);
+        if (RT_DEBUG) console.log(`[runtime] palette ${entry.tag} → OBJ slot ${slot}`);
       } catch (e) {
         console.error(`[runtime] LoadSpritePalettesFromTable ${tableName}: load failed for ${entry.paletteName}:`, e);
       }
@@ -815,7 +826,7 @@ export class DecompRuntime {
         const result = await this.LoadCompressedSpriteSheetStrict(url, this.nextSpriteSheetByteOffset);
         this.spriteSheetTagToTileStart.set(entry.tag, tileStart);
         this.nextSpriteSheetByteOffset += result.byteSize;
-        console.log(`[runtime] sheet ${entry.tag} → tileStart ${tileStart} (size ${result.byteSize}B)`);
+        if (RT_DEBUG) console.log(`[runtime] sheet ${entry.tag} → tileStart ${tileStart} (size ${result.byteSize}B)`);
       } catch (e) {
         console.error(`[runtime] LoadCompressedSpriteSheetsFromTable ${tableName}: load failed for ${entry.gfxName}:`, e);
       }
@@ -896,7 +907,7 @@ export class DecompRuntime {
       }
     }
 
-    console.log(`[runtime] CreateSprite ${templateName} → spriteId ${result.spriteId} (tile ${tileBase + initialTileOffset}, bank ${palSlot}, ${w}×${h})`);
+    if (RT_DEBUG) console.log(`[runtime] CreateSprite ${templateName} → spriteId ${result.spriteId} (tile ${tileBase + initialTileOffset}, bank ${palSlot}, ${w}×${h})`);
     return result.spriteId;
   }
 

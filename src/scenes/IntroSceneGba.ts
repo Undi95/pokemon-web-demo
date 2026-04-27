@@ -371,7 +371,9 @@ export class IntroSceneGba extends Phaser.Scene {
       // delay avant apparition. Tous les sprites ont leurs callbacks SpriteCB_LogoLetter
       // / SpriteCB_GameFreakLogo attachés (transcription bodyC dans intro-callbacks.ts).
       // 1:1 décomp : CreateGameFreakLogoSprites(120, 80, 0) — le 3ème arg "unused" doit être passé
-      this.sLogoSpriteId = CreateGameFreakLogoSprites(this.rt, DISPLAY_WIDTH / 2, DISPLAY_HEIGHT / 2, 0);
+      // Phase 0b : helper signature changée → plus de rt en premier arg (uses globalRuntime).
+      // IntroSceneGba est legacy (remplacé par GameScene) mais on garde compile-clean.
+      this.sLogoSpriteId = CreateGameFreakLogoSprites(DISPLAY_WIDTH / 2, DISPLAY_HEIGHT / 2, 0);
 
       // Flygon silhouette pré-créé caché (visible à TIMER_FLYGON_SILHOUETTE_APPEAR
       // via Task_Scene1_PanUp qui set invisible = false ; le callback SpriteCB_FlygonSilhouette

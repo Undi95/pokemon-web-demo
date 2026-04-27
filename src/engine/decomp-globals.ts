@@ -40,10 +40,20 @@ function rt(): DecompRuntime {
   return _rt;
 }
 
+/** Public getter pour le runtime (utilisé par les helpers transcrits dans
+ *  intro-callbacks-auto.ts qui n'ont plus `rt` en premier arg). */
+export function getRuntime(): DecompRuntime {
+  return rt();
+}
+
 /** Cache asset preloaded : symbol décomp (e.g. 'sIntro1Bg_Gfx') → data buffer typed.
  *  Populé par intro-asset-loader avant de lancer les Tasks. Les helpers
  *  LZ77UnCompVram/LoadPalette font lookup ici. */
 export const assetCache = new Map<string, Uint8Array | Uint16Array>();
+
+/** Compteur LZ77UnCompVram pour debug : combien de fois chaque symbol a été appelé,
+ *  combien d'entries ont été copiées, vers quel bgIdx. Inspectable via window.debug. */
+export const lz77Trace: Array<{ symbol: string; dest: number; dataLen: number; bgIdx?: number; copied?: number; reason?: string }> = [];
 
 /** Récupère un asset depuis le cache, throw si manquant (= preload incomplet). */
 function getAsset(symbol: string): Uint8Array | Uint16Array {
@@ -65,8 +75,39 @@ export const VRAM_SIZE = 0x18000;
 //  cohérence + accès direct par decomp-globals.ts)
 export const PALETTES_ALL = 0xFFFFFFFF;
 
-// ─── Re-export pour que intro-callbacks-auto puisse importer en bloc ──────────
-export { BG_PLTT_ID, OBJ_PLTT_ID, BG_CHAR_ADDR, BG_SCREEN_ADDR };
+// ─── Re-export complet decomp-runtime pour import en bloc côté bodyC ─────────
+// Tous les REG_OFFSET_*, BGCNT_*, DISPCNT_*, BLDCNT_*, BG_PLTT_ID, etc.
+// utilisés par les Tasks transcrites depuis le décomp.
+export {
+  BG_PLTT_ID, OBJ_PLTT_ID, BG_CHAR_ADDR, BG_SCREEN_ADDR,
+  DISPLAY_WIDTH, DISPLAY_HEIGHT,
+  // REG_OFFSET_* (1:1 décomp include/gba/io_reg.h)
+  REG_OFFSET_DISPCNT,
+  REG_OFFSET_BG0CNT, REG_OFFSET_BG1CNT, REG_OFFSET_BG2CNT, REG_OFFSET_BG3CNT,
+  REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS,
+  REG_OFFSET_BG1HOFS, REG_OFFSET_BG1VOFS,
+  REG_OFFSET_BG2HOFS, REG_OFFSET_BG2VOFS,
+  REG_OFFSET_BG3HOFS, REG_OFFSET_BG3VOFS,
+  REG_OFFSET_WIN0H, REG_OFFSET_WIN1H, REG_OFFSET_WIN0V, REG_OFFSET_WIN1V,
+  REG_OFFSET_WININ, REG_OFFSET_WINOUT,
+  REG_OFFSET_BLDCNT, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDY,
+  // BGCNT_*
+  BGCNT_PRIORITY, BGCNT_CHARBASE, BGCNT_SCREENBASE,
+  BGCNT_16COLOR, BGCNT_256COLOR,
+  BGCNT_TXT256x256, BGCNT_TXT512x256, BGCNT_TXT256x512, BGCNT_TXT512x512,
+  BGCNT_AFF128x128, BGCNT_AFF256x256, BGCNT_AFF512x512, BGCNT_AFF1024x1024,
+  // DISPCNT_*
+  DISPCNT_MODE_0, DISPCNT_MODE_1, DISPCNT_MODE_2,
+  DISPCNT_OBJ_1D_MAP,
+  DISPCNT_BG0_ON, DISPCNT_BG1_ON, DISPCNT_BG2_ON, DISPCNT_BG3_ON,
+  DISPCNT_OBJ_ON, DISPCNT_WIN0_ON, DISPCNT_BG_ALL_ON,
+  // BLDCNT_*
+  BLDCNT_TGT1_BG0, BLDCNT_TGT1_BG1, BLDCNT_TGT1_BG2, BLDCNT_TGT1_BG3,
+  BLDCNT_TGT1_OBJ, BLDCNT_TGT1_BD,
+  BLDCNT_EFFECT_NONE, BLDCNT_EFFECT_BLEND, BLDCNT_EFFECT_LIGHTEN, BLDCNT_EFFECT_DARKEN,
+  BLDCNT_TGT2_BG0, BLDCNT_TGT2_BG1, BLDCNT_TGT2_BG2, BLDCNT_TGT2_BG3,
+  BLDCNT_TGT2_OBJ, BLDCNT_TGT2_BD,
+} from './decomp-runtime';
 
 // ─── State machine intro globals (1:1 décomp EWRAM_DATA src/intro.c) ──────────
 /** EWRAM_DATA u16 sIntroCharacterGender — set par Task_Scene1_Load via Random()%GENDER_COUNT. */
@@ -97,6 +138,10 @@ export function setFlygonYOffset(v: number): void { sFlygonYOffset = v; }
 export function LZ77UnCompVram(srcSymbol: string, destAddr: number): void {
   const data = getAsset(srcSymbol);
   const r = rt();
+  const traceEntry: { symbol: string; dest: number; dataLen: number; bgIdx?: number; copied?: number; reason?: string } = {
+    symbol: srcSymbol, dest: destAddr, dataLen: data.byteLength,
+  };
+  lz77Trace.push(traceEntry);
   // Détecte si c'est char data (addr < 0x10000) ou tilemap (addr >= 0x10000)
   // BG_CHAR_ADDR(n) = n*0x4000 (n=0..3) → addr 0x0000/0x4000/0x8000/0xC000
   // BG_SCREEN_ADDR(n) = n*0x800 (n=0..31) → addr 0x0000/0x0800/.../0xF800
@@ -108,13 +153,19 @@ export function LZ77UnCompVram(srcSymbol: string, destAddr: number): void {
   //   - etc.
   // On regarde le symbol pour décider :
   if (srcSymbol.endsWith('_Gfx') || srcSymbol.includes('_Tileset') || srcSymbol.includes('_Tiles')) {
-    // Char data → écrire dans bg(0).vram (toutes les BG charBase pointent au même offset 0)
-    // Notre engine : chaque bg(n) a son propre vram ; pour mode shared, on
-    // écrit dans bg(0).vram et les autres BG l'utilisent via charBase.
+    // Char data → écrire dans LES 4 bg(n).vram (notre engine a des vram séparés
+    // par BG, mais GBA réel partage VRAM via charBase. Quand le décomp fait
+    // `LZ77UnCompVram(sBg_Gfx, VRAM)` avec VRAM=charBase 0 partagé, tous les
+    // BGs avec BGCNT charBase=0 doivent voir ce char data. On copie dans les 4
+    // pour simuler ce shared addressing). */
     const bytes = data instanceof Uint16Array ? new Uint8Array(data.buffer, data.byteOffset, data.byteLength) : data;
-    const vram = r.gba.bg(0).vram;
-    const copySize = Math.min(bytes.length, vram.length);
-    vram.set(bytes.subarray(0, copySize));
+    for (let bgIdx = 0; bgIdx < 4; bgIdx++) {
+      const vram = r.gba.bg(bgIdx as 0 | 1 | 2 | 3).vram;
+      const copySize = Math.min(bytes.length, vram.length);
+      vram.set(bytes.subarray(0, copySize));
+    }
+    traceEntry.reason = 'char data → 4 BGs';
+    traceEntry.copied = bytes.length;
   } else if (srcSymbol.endsWith('_Tilemap') || srcSymbol.endsWith('_Map')) {
     // Tilemap → dispatch vers le BG correspondant via destAddr.
     // BG_SCREEN_ADDR(n) = n*0x800. screenBase 16/18/20/22 = BG0/1/2/3 default.
@@ -125,32 +176,47 @@ export function LZ77UnCompVram(srcSymbol: string, destAddr: number): void {
     else if (screenBase === 20) bgIdx = 2;  // BG2
     else if (screenBase === 22) bgIdx = 3;  // BG3
     else {
-      // Fallback : on log et on no-op
+      traceEntry.reason = `unknown screenBase ${screenBase} → no-op`;
       console.warn(`[LZ77UnCompVram] unknown screenBase ${screenBase} for ${srcSymbol}, dest=0x${destAddr.toString(16)}`);
       return;
     }
     // Tilemap raw bytes → pour bg.tilemap (Uint16Array), on copy aligné u16
     const tilemap = r.gba.bg(bgIdx).tilemap;
+    let copied = 0;
     if (data instanceof Uint16Array) {
-      tilemap.set(data.subarray(0, tilemap.length));
+      const src = data.subarray(0, tilemap.length);
+      tilemap.set(src);
+      copied = src.length;
     } else {
       // data Uint8Array → reinterpret as u16
       const u16 = new Uint16Array(data.buffer, data.byteOffset, Math.floor(data.byteLength / 2));
-      tilemap.set(u16.subarray(0, tilemap.length));
+      const src = u16.subarray(0, tilemap.length);
+      tilemap.set(src);
+      copied = src.length;
     }
+    traceEntry.bgIdx = bgIdx;
+    traceEntry.copied = copied;
+    traceEntry.reason = `tilemap → bg${bgIdx} (${copied} entries)`;
   } else {
+    traceEntry.reason = `unrecognized symbol pattern → no-op`;
     console.warn(`[LZ77UnCompVram] symbol ${srcSymbol}: cannot infer char/tilemap routing, no-op`);
   }
 }
 
 /** 1:1 décomp `LoadPalette(src, offset, size)` — copy palette dans gPlttBufferFaded.
- *  src = SYMBOL décomp (e.g. sIntro1Bg_Pal) → lookup cache.
+ *  src = SYMBOL décomp string (e.g. sIntro1Bg_Pal) → lookup cache.
  *  offset = flat palette index (BG_PLTT_ID(n) = n*16 ou OBJ_PLTT_ID(n) = n*16 + 256).
- *  size = bytes (= entries × 2). */
+ *  sizeBytes : IGNORÉ quand srcSymbol est une string (le bodyC transcrit a un bug
+ *  `(symbol)?.length` qui retourne la longueur de la STRING name au lieu du
+ *  sizeof(buffer) attendu). On utilise toujours la vraie taille du buffer cache. */
 export function LoadPalette(srcSymbol: string | Uint16Array, offset: number, sizeBytes: number): void {
   const data = typeof srcSymbol === 'string' ? getAsset(srcSymbol) : srcSymbol;
   const u16 = data instanceof Uint16Array ? data : new Uint16Array(data.buffer, data.byteOffset, Math.floor(data.byteLength / 2));
-  const numEntries = Math.floor(sizeBytes / 2);
+  // Si srcSymbol est une string : on ignore sizeBytes (artefact du transpileur)
+  // et on utilise la vraie taille du buffer cache.
+  const numEntries = typeof srcSymbol === 'string'
+    ? u16.length
+    : Math.floor(sizeBytes / 2);
   const r = rt();
   // offset < 256 = BG palette, ≥ 256 = OBJ palette
   if (offset < 256) {
@@ -161,23 +227,20 @@ export function LoadPalette(srcSymbol: string | Uint16Array, offset: number, siz
 }
 
 /** 1:1 décomp `DmaClear16(channel, dest, size)` — clear memory via DMA.
- *  Notre version : ignore le channel, clear sync. dest = address VRAM/PLTT.
- *  size = bytes. */
-export function DmaClear16(_channel: number, destAddr: number, sizeBytes: number): void {
-  const r = rt();
-  // Si dest ∈ tilemap range (BG_SCREEN_ADDR), clear le bg.tilemap correspondant
-  const screenBase = Math.floor(destAddr / 0x800);
-  if (screenBase >= 16 && screenBase <= 31) {
-    let bgIdx: 0 | 1 | 2 | 3 = 0;
-    if (screenBase === 17 || screenBase === 16) bgIdx = 0;
-    else if (screenBase === 19 || screenBase === 18) bgIdx = 1;
-    else if (screenBase === 21 || screenBase === 20) bgIdx = 2;
-    else if (screenBase === 23 || screenBase === 22) bgIdx = 3;
-    const tilemap = r.gba.bg(bgIdx).tilemap;
-    const numEntries = Math.min(Math.floor(sizeBytes / 2), tilemap.length);
-    tilemap.fill(0, 0, numEntries);
-  }
-  // Sinon (PLTT clear etc.) : no-op pour l'instant, on étendra au besoin
+ *
+ *  BUG fixé session 68 phase 0b : le décomp utilise DmaClear16 pour clear le
+ *  block "B" d'un tilemap multi-block sur GBA hardware (où VRAM est UN tableau
+ *  partagé). Exemple sequence Task_Scene1_Load :
+ *    LZ77UnCompVram(sIntro1Bg0_Tilemap, screenBase 16);  // remplit TL block
+ *    DmaClear16(3, screenBase 17, BG_SCREEN_SIZE);       // clear TR block
+ *  Sur GBA, les 2 screens font partie du même bg(0).tilemap (32×64 = 2 blocks).
+ *  Chez nous : bg(n).tilemap est SÉPARÉ par BG, et déjà à 0 par défaut.
+ *  Si on map screenBase 17 → bg(0).tilemap pour clear, on EFFACE le contenu
+ *  qu'on vient de mettre. Solution : DmaClear16 no-op pour screenBases (le
+ *  bg.tilemap est init à 0 ; pas besoin de re-clear). */
+export function DmaClear16(_channel: number, _destAddr: number, _sizeBytes: number): void {
+  // No-op : bg.tilemap déjà à 0 par défaut (Uint16Array init zero).
+  // Le clear décomp était nécessaire car VRAM GBA n'est pas init.
 }
 
 /** 1:1 décomp `CpuFill16(value, dest, size)` — fill 16-bit. */
@@ -189,6 +252,39 @@ export function CpuFill16(_value: number, _destAddr: number, _sizeBytes: number)
 export function CpuFill32(_value: number, _destAddr: number, _sizeBytes: number): void {
   // Idem CpuFill16
 }
+
+/** 1:1 décomp `LoadIntroPart2Graphics(scenery)` — Phase 0b stub no-op.
+ *  Le décomp charge BG2 + tilemap pour Scene 2. Pour l'instant on no-op,
+ *  Scene 2 BG sera juste vide (sprites only). */
+export function LoadIntroPart2Graphics(_scenery: number): void {
+  // TODO Phase 0c : implementer chargement Scene 2 assets (BG bike road parallax)
+}
+
+/** 1:1 décomp `FreeAllSpritePalettes` — Phase 0b stub no-op. */
+export function FreeAllSpritePalettes(): void {
+  // TODO Phase 0c : reset paletteTagToSlot mapping
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SCENE 2 STUBS (Phase 0b minimum viable — no-op pour ne pas crasher)
+// TODO Phase 0c : implementer 1:1 décomp src/intro.c
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/** Stub : data sheets avec .length=N pour les boucles. Le bodyC fait
+ *  `for (i=0; i < (sSpriteSheet_RunningPokemon)?.length - 1; i++) LoadCompressedSpriteSheet(...)` */
+export const sSpriteSheet_RunningPokemon: ReadonlyArray<unknown> = [];
+export const sAnims_PlayerBicycle: ReadonlyArray<unknown> = [];
+
+/** Stub helpers Scene 2 (Brendan/May/Flygon/Bicycle bg anim/SetIntroPart2BgCnt). */
+export function CreateIntroBrendanSprite(_x: number, _y: number): number { return -1; }
+export function CreateIntroMaySprite(_x: number, _y: number): number { return -1; }
+export function CreateIntroFlygonSprite(_x: number, _y: number): number { return -1; }
+export function CreateBicycleBgAnimationTask(_a: number, _b: number, _c: number, _d: number): number { return -1; }
+export function SetIntroPart2BgCnt(_arg: number): void { /* no-op */ }
+
+/** Constants décomp commonly référencées sans être résolues par le transpileur. */
+export const MALE = 0;
+export const FEMALE = 1;
 
 /** 1:1 décomp `LoadCompressedSpriteSheet(sheet)` — charge un sprite sheet
  *  individuel dans objVram. `sheet` = struct {data, size, tag}.
@@ -273,6 +369,25 @@ export const gIntroManectric_Gfx = 'gIntroManectric_Gfx';
 export const gIntroVolbeat_Pal = 'gIntroVolbeat_Pal';
 export const gIntroTorchic_Pal = 'gIntroTorchic_Pal';
 export const gIntroManectric_Pal = 'gIntroManectric_Pal';
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// GLOBAL TABLES (data extern décomp utilisée cross-module)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/** 1:1 décomp `const u16 gTitleScreenAlphaBlend[64]` (src/title_screen.c:74).
+ *  Utilisé par Task_BlendLogoIn/Out + title_screen pour BLDALPHA fade smooth.
+ *  - 0-15  : eva=16 fixe, evb=0→15  (logo lighten gradient)
+ *  - 16-31 : eva=15→0, evb=16 fixe  (logo darken gradient)
+ *  - 32-63 : eva=0, evb=16 fixe     (held final state)
+ *  BLDALPHA_BLEND(eva, evb) = (eva | (evb << 8)). */
+function _bldAlpha(eva: number, evb: number): number { return (eva & 0x1F) | ((evb & 0x1F) << 8); }
+export const gTitleScreenAlphaBlend: ReadonlyArray<number> = (() => {
+  const arr: number[] = new Array(64);
+  for (let i = 0; i <= 15; i++) arr[i] = _bldAlpha(16, i);
+  for (let i = 16; i <= 31; i++) arr[i] = _bldAlpha(31 - i, 16);
+  for (let i = 32; i <= 63; i++) arr[i] = _bldAlpha(0, 16);
+  return arr;
+})();
 
 // Scene 3 (Phase 0d+)
 export const sIntroPokeball_Pal = 'sIntroPokeball_Pal';

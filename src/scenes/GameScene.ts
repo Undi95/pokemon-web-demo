@@ -30,7 +30,7 @@ import { GAME_W, GAME_H } from '../main';
 import { Gba } from '../engine/gba/gba';
 import { GbaPhaserBridge } from '../engine/gba/phaser-bridge';
 import { DecompRuntime } from '../engine/decomp-runtime';
-import { setGlobalRuntime, resetObjAllocations } from '../engine/decomp-globals';
+import { setGlobalRuntime, resetObjAllocations, lz77Trace, assetCache } from '../engine/decomp-globals';
 import { preloadScene1Assets } from '../engine/intro-asset-loader';
 import { Task_Scene1_Load } from '../engine/decomp-data/auto/src/intro-callbacks-auto';
 import { primeAudio } from '../engine/music';
@@ -56,6 +56,22 @@ export class GameScene extends Phaser.Scene {
     // Wire le runtime singleton (utilisé par decomp-globals helpers depuis les Tasks)
     setGlobalRuntime(this.rt);
     resetObjAllocations();
+
+    // Expose debug pour inspecter dans la console : window.debug.rt, debug.gba etc.
+    (window as unknown as { debug: unknown }).debug = {
+      rt: this.rt, gba: this.gba,
+      lz77Trace,                                       // tableau de tous les LZ77 calls
+      assetCache,                                      // Map des assets préchargés
+      cacheKeys: () => Array.from(assetCache.keys()),
+      assetLen: (sym: string) => assetCache.get(sym)?.length ?? -1,
+      bg0vram: () => Array.from(this.gba.bg(0).vram.subarray(0, 32)),
+      bg0tilemap: () => Array.from(this.gba.bg(0).tilemap.subarray(0, 16)),
+      bg0visible: () => this.gba.bg(0).config.visible,
+      bg0cnt: () => this.gba.bg(0).config,
+      bgPal0: () => Array.from({ length: 16 }, (_, i) => this.gba.palette.getBgRgba(0, i, 0)),
+      brightness: () => this.gba.blend.brightness,
+      blendMode: () => this.gba.blend.mode,
+    };
 
     const frameImg = this.add.image(0, 0, 'game-frame').setOrigin(0, 0);
     if (GAME_W !== 240 || GAME_H !== 160) {
