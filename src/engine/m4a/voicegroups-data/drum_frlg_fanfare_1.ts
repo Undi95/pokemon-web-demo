@@ -4,6 +4,7 @@ import type { VoiceGroup } from '../voice-types';
 
 export const VOICEGROUP: VoiceGroup = {
   name: "frlg_fanfare_drumset_1",
+  offset: 36,
   voices: [
     {"type":"directsound_no_resample","baseKey":64,"pan":64,"sampleSymbol":"DirectSoundWaveData_drum_and_percussion_kick","envelope":{"attack":255,"decay":0,"sustain":255,"release":0}},
     {"type":"directsound_no_resample","baseKey":67,"pan":71,"sampleSymbol":"DirectSoundWaveData_sd90_solo_snare","envelope":{"attack":255,"decay":180,"sustain":175,"release":228}},

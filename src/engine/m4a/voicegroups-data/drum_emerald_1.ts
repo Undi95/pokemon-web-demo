@@ -4,6 +4,7 @@ import type { VoiceGroup } from '../voice-types';
 
 export const VOICEGROUP: VoiceGroup = {
   name: "emerald_drumset_1",
+  offset: 36,
   voices: [
     {"type":"directsound_no_resample","baseKey":60,"pan":64,"sampleSymbol":"DirectSoundWaveData_sc88pro_taiko","envelope":{"attack":255,"decay":0,"sustain":255,"release":0}},
     {"type":"directsound_no_resample","baseKey":64,"pan":64,"sampleSymbol":"DirectSoundWaveData_sd90_solo_snare","envelope":{"attack":255,"decay":180,"sustain":175,"release":228}},

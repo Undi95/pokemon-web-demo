@@ -35,7 +35,16 @@ export function resolveVoice(
   depth = 0,
 ): Voice | null {
   if (depth > 5) return null;  // recursion guard
-  const voice = vg.voices[midiProgram & 0x7F];
+  // Drumsets : index = midiNote - offset (offset défini par voice_group X, offset).
+  // Pour les voicegroups normaux, offset = 0 → midiProgram direct.
+  // Quand on est arrivé là via keysplit_all (drumset), midiProgram = midiNote.
+  // Le offset s'applique seulement si défini sur le sub-voicegroup résolu.
+  const effectiveOffset = vg.offset ?? 0;
+  const idx = effectiveOffset > 0
+    ? (midiNote - effectiveOffset)         // drumset : index relatif à offset
+    : (midiProgram & 0x7F);                // voicegroup normal : program direct
+  if (idx < 0 || idx >= vg.voices.length) return null;
+  const voice = vg.voices[idx];
   if (!voice) return null;
 
   // KeysplitAll : sub-voicegroup pour toutes les notes.

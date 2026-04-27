@@ -116,6 +116,7 @@ function parseVoicegroupFile(path) {
   const src = readFileSync(path, 'utf8');
   const lines = src.split('\n');
   let name = null;
+  let currentOffset = 0;  // tracked dans la closure pour le voice_group X, offset
   const voices = [];
 
   for (const rawLine of lines) {
@@ -123,12 +124,19 @@ function parseVoicegroupFile(path) {
     if (!line) continue;
 
     if (line.startsWith('voice_group ')) {
-      // Format possible : `voice_group X` ou `voice_group X, offset` (drumsets)
-      // On garde uniquement le nom (avant la virgule).
+      // Format : `voice_group X` ou `voice_group X, offset` (drumsets)
+      // L'offset (si présent) est l'index MIDI de la première voice (= note où
+      // commence le drumkit). Les voices suivantes correspondent à offset+1, +2...
       let raw = line.slice('voice_group '.length).trim();
       const commaIdx = raw.indexOf(',');
-      if (commaIdx >= 0) raw = raw.slice(0, commaIdx).trim();
-      name = raw;
+      if (commaIdx >= 0) {
+        name = raw.slice(0, commaIdx).trim();
+        const offsetStr = raw.slice(commaIdx + 1).trim();
+        const offsetVal = parseInt(offsetStr, 10);
+        if (!isNaN(offsetVal)) currentOffset = offsetVal;
+      } else {
+        name = raw;
+      }
       continue;
     }
 
@@ -143,7 +151,7 @@ function parseVoicegroupFile(path) {
     }
   }
 
-  return { name, voices };
+  return { name, voices, offset: currentOffset };
 }
 
 /** Render VoiceGroup → TS file content. */
@@ -155,8 +163,11 @@ function renderVoiceGroupTs(vg, sourceRel) {
     '',
     `export const VOICEGROUP: VoiceGroup = {`,
     `  name: ${JSON.stringify(vg.name)},`,
-    `  voices: [`,
   ];
+  if (vg.offset && vg.offset > 0) {
+    lines.push(`  offset: ${vg.offset},`);
+  }
+  lines.push(`  voices: [`);
   for (const v of vg.voices) {
     lines.push(`    ${JSON.stringify(v)},`);
   }

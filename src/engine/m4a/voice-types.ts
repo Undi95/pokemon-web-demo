@@ -126,10 +126,14 @@ export type Voice =
   | VoiceKeysplit
   | VoiceKeysplitAll;
 
-/** Voicegroup complet : 128 entries (MIDI program 0-127). */
+/** Voicegroup complet : 128 entries (MIDI program 0-127) ou drumset offsetted. */
 export interface VoiceGroup {
   /** Nom du voicegroup (depuis `voice_group X`). */
   name: string;
-  /** 128 voices indexées par MIDI program. */
+  /** 128 voices indexées par MIDI program (pour voicegroups normaux),
+   *  OU N voices indexées par (note - offset) pour drumsets. */
   voices: Voice[];
+  /** Offset MIDI note pour drumsets. `voice_group X, 36` → offset = 36.
+   *  Pour utiliser : `voices[midiNote - offset]`. Default 0 (voicegroup normal). */
+  offset?: number;
 }

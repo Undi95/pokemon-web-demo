@@ -4,6 +4,7 @@ import type { VoiceGroup } from '../voice-types';
 
 export const VOICEGROUP: VoiceGroup = {
   name: "route110_drumset",
+  offset: 40,
   voices: [
     {"type":"directsound_no_resample","baseKey":60,"pan":64,"sampleSymbol":"DirectSoundWaveData_sc88pro_orchestra_snare","envelope":{"attack":255,"decay":0,"sustain":255,"release":242}},
     {"type":"square_1","baseKey":60,"panSweep":0,"sweep":0,"squarePattern":2,"length":0,"envelope":{"attack":0,"decay":15,"sustain":0,"release":0}},

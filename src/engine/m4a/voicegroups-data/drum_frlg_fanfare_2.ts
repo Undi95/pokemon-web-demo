@@ -4,6 +4,7 @@ import type { VoiceGroup } from '../voice-types';
 
 export const VOICEGROUP: VoiceGroup = {
   name: "frlg_fanfare_drumset_2",
+  offset: 36,
   voices: [
     {"type":"square_1","baseKey":60,"panSweep":0,"sweep":0,"squarePattern":2,"length":0,"envelope":{"attack":0,"decay":15,"sustain":0,"release":0}},
     {"type":"square_1","baseKey":60,"panSweep":0,"sweep":0,"squarePattern":2,"length":0,"envelope":{"attack":0,"decay":15,"sustain":0,"release":0}},
