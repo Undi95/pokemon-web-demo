@@ -111,23 +111,25 @@ export function CreateGameFreakLogoSprites(rt: DecompRuntime, x: number, y: numb
  *   }
  */
 export function SpriteCB_GameFreakLogo(sprite: DecompSprite, rt: DecompRuntime): void {
+  // ⚠️ Décomp utilise `==` strict sur gIntroFrameCounter, mais notre fixed 60Hz peut
+  // sauter de 1+ frames si Phaser delta varie ; on utilise `>=` + state machine pour
+  // garantir le trigger.
   switch (sprite.data[0]) {  // sState
     case 0:
-      if (rt.gIntroFrameCounter === TIMER_LOGO_APPEAR) {
+      if (rt.gIntroFrameCounter >= TIMER_LOGO_APPEAR) {
         sprite.invisible = false;
-        sprite.data[0]++;  // sState++
+        sprite.data[0]++;
       }
       break;
     case 1:
-      if (rt.gIntroFrameCounter === TIMER_LOGO_DISAPPEAR) {
-        // StartSpriteAffineAnim(sprite, 3) → simplification : pas d'affine cycle
-        sprite.data[0]++;  // sState++
+      if (rt.gIntroFrameCounter >= TIMER_LOGO_DISAPPEAR) {
+        // StartSpriteAffineAnim(sprite, 3) — affine grow/shrink avant disparition
+        sprite.data[0]++;
       }
       break;
     case 2:
-      // affineAnimEnded simulé : on attend ~30 frames après TIMER_LOGO_DISAPPEAR
-      // (vraie affine anim sAffineAnim_GameFreak_GrowMedium dure 48 frames)
-      if (rt.gIntroFrameCounter > TIMER_LOGO_DISAPPEAR + 48) {
+      // Affine anim sAffineAnim_GameFreak_GrowMedium dure 48 frames → destroy après
+      if (rt.gIntroFrameCounter >= TIMER_LOGO_DISAPPEAR + 48) {
         rt.DestroySprite(sprite.spriteId);
       }
       break;

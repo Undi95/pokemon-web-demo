@@ -62,10 +62,12 @@ export class GbaPhaserBridge {
     }
   }
 
-  /** Cleanup quand la scène se ferme. */
+  /** Cleanup quand la scène se ferme.
+   *  ⚠️ NE PAS remove la texture ici : si frameImg Phaser réfère encore cette texture
+   *  au prochain render, on a "Cannot read properties of null (reading 'glTexture')".
+   *  Phaser cleanup auto la texture quand la scène est shutdown.
+   *  Cette méthode reste pour API compatibility — no-op par sécurité. */
   destroy(): void {
-    if (this.scene.textures.exists(this.textureKey)) {
-      this.scene.textures.remove(this.textureKey);
-    }
+    // No-op intentionnel. La texture sera cleanup par Phaser au scene shutdown.
   }
 }

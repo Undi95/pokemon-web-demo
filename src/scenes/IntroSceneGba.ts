@@ -522,6 +522,10 @@ export class IntroSceneGba extends Phaser.Scene {
     if (this.exiting) return;
     this.exiting = true;
     console.log('[IntroGba] exit → IntroScene2Gba');
+    // ResetSpriteData avant transition (1:1 décomp Task_Scene2_Load) — garantit
+    // qu'aucun sprite leftover (letters GAME FREAK, Flygon, etc.) ne reste visible
+    // dans Scene 2.
+    this.rt.ResetSpriteData();
     this.time.delayedCall(0, () => {
       const mgr = this.scene.manager;
       mgr.start('IntroScene2Gba');
