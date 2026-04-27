@@ -29,7 +29,7 @@ import {
   SPRITE_TEMPLATES, OAM_DATAS, SPRITE_ANIM_TABLES, SPRITE_ANIMS,
   SPRITE_PALETTES, SPRITE_SHEETS,
 } from './decomp-data/auto/src/sprite-system';
-import { CalcCenterToCornerVec, ST_OAM_AFFINE_DOUBLE } from './decomp-helpers';
+import { CalcCenterToCornerVec, ST_OAM_AFFINE_DOUBLE, PaletteBuffer } from './decomp-helpers';
 import { tickAllAffineAnims, StartSpriteAffineAnim as _StartSpriteAffineAnim } from './decomp-impls/sprite-engine-impl';
 
 /** OAM shape+size encoding 1:1 GBA hardware (cf. types.ts OAM_SIZES).
@@ -297,8 +297,21 @@ export class DecompRuntime {
   private accumulatorMs = 0;
   /** Frame target = 60Hz GBA. */
   private readonly FRAME_TIME_MS = 1000 / 60;
+  /** 1:1 décomp gPlttBufferFaded[256+256] : palette buffer accessible aux callbacks
+   *  pour CpuCopy16 et autres palette swap dynamiques. Wrapper sur gba.palette. */
+  public readonly gPlttBufferFaded: PaletteBuffer;
+  /** 1:1 décomp gPlttBufferUnfaded — version "before fade" de la palette.
+   *  Notre version simplifiée : même chose que gPlttBufferFaded (= notre palette
+   *  fade système est moins sophistiqué que le décomp). */
+  public readonly gPlttBufferUnfaded: PaletteBuffer;
+  /** Palettes additionnelles chargées au runtime (e.g. text.pal pour color cycle).
+   *  Lookup par symbol décomp (e.g. 'gIntroGameFreakTextFade_Pal'). */
+  public readonly extraPalettes = new Map<string, Uint16Array>();
 
-  constructor(public readonly gba: Gba) {}
+  constructor(public readonly gba: Gba) {
+    this.gPlttBufferFaded = new PaletteBuffer(gba);
+    this.gPlttBufferUnfaded = new PaletteBuffer(gba);
+  }
 
   // ============================================================================
   // SetGpuReg — wrapper qui dispatch sur le bon gba.* selon REG_OFFSET
@@ -605,6 +618,29 @@ export class DecompRuntime {
     const sprite = this.gSprites.get(spriteId);
     if (!sprite) return;
     _StartSpriteAffineAnim(sprite, animNum);
+  }
+
+  /** 1:1 décomp CpuCopy16(src, dst, sizeBytes) : memcpy 16-bit aligné.
+   *  Source : Uint16Array (e.g. extraPalettes.get('gIntroGameFreakTextFade_Pal')).
+   *  Dst : flatIdx dans gPlttBufferFaded (256 BG + 256 OBJ).
+   *  Count : nombre d'entries u16 à copier (= sizeBytes / 2).
+   *
+   *  Usage callback : rt.CpuCopy16(textPal, srcOffset, dstFlat, count) */
+  CpuCopy16(src: ArrayLike<number>, srcOffset: number, dstFlat: number, count: number): void {
+    this.gPlttBufferFaded.cpuCopy16(src, srcOffset, dstFlat, count);
+  }
+
+  /** Charge un .pal file et le stocke dans extraPalettes pour usage par CpuCopy16
+   *  dans les callbacks (e.g. SpriteCB_LogoLetter qui copy depuis text.pal). */
+  async LoadExtraPalette(symbolName: string, palUrl: string): Promise<void> {
+    const pal = await loadGbaPal(palUrl);
+    this.extraPalettes.set(symbolName, pal);
+    console.log(`[runtime] extraPalette ${symbolName} loaded (${pal.length} colors)`);
+  }
+
+  /** Récupère une palette additionnelle (1:1 décomp `gXxx_Pal[N]` access). */
+  getExtraPalette(symbolName: string): Uint16Array | null {
+    return this.extraPalettes.get(symbolName) ?? null;
   }
 
   // ============================================================================
