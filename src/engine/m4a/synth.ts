@@ -41,9 +41,10 @@ export interface ActiveNote {
 // jusqu'à ~16 "virtual channels" via le mixer software. Mais sur web audio,
 // on n'a aucune limite hardware → on peut être beaucoup plus généreux.
 //
-// MAX_POLYPHONY=64 = ample pour MIDI denses (27 tracks × ~3 notes simultanées).
-// Si voice stealing déclenché : on log pour diag (= probably MIDI mal mixé).
-const MAX_POLYPHONY = 64;
+// MAX_POLYPHONY=128 = très ample. Avec 131 stealing events à 64 et ADSR ×4,
+// on monte la limite. Si encore stealing avec ADSR ×2 et 128 voices, c'est
+// que les notes longues s'accumulent en cas de note très soutenue (rare).
+const MAX_POLYPHONY = 128;
 const _activeNotes: ActiveNote[] = [];
 let _stealingCount = 0;
 
@@ -134,9 +135,9 @@ function getOrBuildSquareWave(ctx: AudioContext, duty: number): PeriodicWave {
  *  (vs durée perçue dans l'émulateur GBA). */
 function gbaEnvTimeToSec(value: number): number {
   if (value >= 255) return 0.005;          // ~1 frame instant
-  if (value <= 0) return 8;                // clamp 8s (notes très longues)
-  // Multiplicateur × 4 vs ma formule initiale → matches mieux le rendu m4a réel
-  return Math.min(8, (256 / (value * 60)) * 4);
+  if (value <= 0) return 4;                // clamp 4s (compromis : assez long sans drone)
+  // Multiplicateur × 2 (compromis entre ×1 trop court et ×4 trop long → drone)
+  return Math.min(4, (256 / (value * 60)) * 2);
 }
 
 /** Convertit un sustain value GBA M4A (0-255) en gain 0.0 - 1.0. */
