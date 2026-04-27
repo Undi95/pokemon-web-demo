@@ -95,6 +95,56 @@ export async function preloadScene1Assets(): Promise<void> {
   console.log(`[intro-asset-loader] Scene 1 preload done (${assetCache.size} symbols cached)`);
 }
 
+/** Pré-charge tous les assets nécessaires aux Tasks Scene 2.
+ *  1:1 décomp src/intro_credits_graphics.c — BG bike road (grass + trees) +
+ *  sprite sheets player (Brendan/May/Bicycle) + Pokémon (Volbeat/Torchic/
+ *  Manectric/Flygon).
+ *
+ *  Note : les paths Scene 2 ne sont PAS dans GFX_SOURCES (= intro-data.ts
+ *  qui ne couvre que src/intro.c). On les hardcode ici pour l'instant.
+ *  TODO Phase 2 : étendre l'extracteur intro-data.ts à intro_credits_graphics.c. */
+export async function preloadScene2Assets(): Promise<void> {
+  const scene2Assets: Array<{ symbol: string; url: string; type: 'png' | 'palfile' | 'tilemap' }> = [
+    // BG ground
+    { symbol: 'sGrass_Gfx', url: '/decomp/em/intro/scene_2/grass.png', type: 'png' },
+    { symbol: 'sGrass_Tilemap', url: '/decomp/em/intro/scene_2/grass_map.bin', type: 'tilemap' },
+    // BG trees (scenery=1)
+    { symbol: 'sTrees_Gfx', url: '/decomp/em/intro/scene_2/trees.png', type: 'png' },
+    { symbol: 'sTrees_Tilemap', url: '/decomp/em/intro/scene_2/trees_map.bin', type: 'tilemap' },
+    // Sprite sheets (Brendan/May/Bicycle/Pokémon — pour Action 4 Phase 2)
+    { symbol: 'gIntroBrendan_Gfx', url: '/decomp/em/intro/scene_2/brendan.png', type: 'png' },
+    { symbol: 'gIntroMay_Gfx', url: '/decomp/em/intro/scene_2/may.png', type: 'png' },
+    { symbol: 'gIntroBicycle_Gfx', url: '/decomp/em/intro/scene_2/bicycle.png', type: 'png' },
+    { symbol: 'gIntroFlygon_Gfx', url: '/decomp/em/intro/scene_2/flygon.png', type: 'png' },
+    { symbol: 'gIntroVolbeat_Gfx', url: '/decomp/em/intro/scene_2/volbeat.png', type: 'png' },
+    { symbol: 'gIntroTorchic_Gfx', url: '/decomp/em/intro/scene_2/torchic.png', type: 'png' },
+    { symbol: 'gIntroManectric_Gfx', url: '/decomp/em/intro/scene_2/manectric.png', type: 'png' },
+  ];
+
+  await Promise.all(scene2Assets.map(async ({ symbol, url, type }) => {
+    try {
+      if (type === 'png') {
+        const png = await loadIndexedPng(url);
+        assetCache.set(symbol, png.charData);
+        // Palette embedded PNG → populate _Pal symbol correspondant si pas dans cache
+        const palSymbol = symbol.replace(/_Gfx$/, '_Pal');
+        if (palSymbol !== symbol && !assetCache.has(palSymbol)) {
+          assetCache.set(palSymbol, png.palette);
+        }
+      } else if (type === 'tilemap') {
+        const tilemap = await loadTilemapBin(url);
+        assetCache.set(symbol, tilemap);
+      } else if (type === 'palfile') {
+        const pal = await loadGbaPal(url);
+        assetCache.set(symbol, pal);
+      }
+    } catch (e) {
+      console.warn(`[intro-asset-loader] Scene 2 load failed for ${symbol}:`, e);
+    }
+  }));
+  console.log(`[intro-asset-loader] Scene 2 preload done (${assetCache.size} symbols total cached)`);
+}
+
 /** Charge les g-prefixed assets (= externs graphics.c décomp, hors GFX_SOURCES). */
 async function loadGPrefixedExtras(): Promise<void> {
   const externs: Array<{ symbol: string; url: string; type: 'png' | 'pal' }> = [

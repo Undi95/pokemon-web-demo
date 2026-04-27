@@ -31,7 +31,7 @@ import { Gba } from '../engine/gba/gba';
 import { GbaPhaserBridge } from '../engine/gba/phaser-bridge';
 import { DecompRuntime } from '../engine/decomp-runtime';
 import { setGlobalRuntime, resetObjAllocations, lz77Trace, assetCache } from '../engine/decomp-globals';
-import { preloadScene1Assets } from '../engine/intro-asset-loader';
+import { preloadScene1Assets, preloadScene2Assets } from '../engine/intro-asset-loader';
 import { Task_Scene1_Load } from '../engine/decomp-data/auto/src/intro-callbacks-auto';
 
 export class GameScene extends Phaser.Scene {
@@ -105,8 +105,9 @@ export class GameScene extends Phaser.Scene {
 
   private async bootIntro(): Promise<void> {
     try {
-      this.statusText?.setText('Preloading Scene 1 assets...');
+      this.statusText?.setText('Preloading Scene 1+2 assets...');
       await preloadScene1Assets();
+      await preloadScene2Assets();
       this.statusText?.setText('Assets ready, posting Task_Scene1_Load').setColor('#88FFCC');
 
       // MainCB2_Intro stub : 1:1 décomp src/intro.c MainCB2_Intro qui fait juste

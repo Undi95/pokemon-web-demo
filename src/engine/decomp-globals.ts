@@ -217,11 +217,33 @@ export function CpuFill32(_value: number, _destAddr: number, _sizeBytes: number)
   // Idem CpuFill16
 }
 
-/** 1:1 décomp `LoadIntroPart2Graphics(scenery)` — Phase 0b stub no-op.
- *  Le décomp charge BG2 + tilemap pour Scene 2. Pour l'instant on no-op,
- *  Scene 2 BG sera juste vide (sprites only). */
-export function LoadIntroPart2Graphics(_scenery: number): void {
-  // TODO Phase 0c : implementer chargement Scene 2 assets (BG bike road parallax)
+/** 1:1 décomp src/intro_credits_graphics.c:729 — charge BG2/BG3 Scene 2.
+ *  scenery=1 (toujours appelé avec 1) : trees scenery (= bike ride forest).
+ *  scenery=0 : clouds (= jamais utilisé dans intro Pokemon Emerald).
+ *
+ *  Layout VRAM Scene 2 :
+ *    - sGrass_Gfx → BG_CHAR_ADDR(1) = 0x4000 (BG3 ground char data)
+ *    - sGrass_Tilemap → BG_SCREEN_ADDR(15) = 0x7800 (BG3 tilemap)
+ *    - sGrass_Pal → BG palette bank 15
+ *    - sTrees_Gfx → VRAM = 0 (BG2 trees char data, partagé avec BG0/1 charBase 0)
+ *    - sTrees_Tilemap → BG_SCREEN_ADDR(6) = 0x3000 (BG2 tilemap)
+ *    - sTrees_Pal → BG palette bank 0 */
+export function LoadIntroPart2Graphics(scenery: number): void {
+  // Ground (BG3) — toujours chargé, peu importe scenery
+  LZ77UnCompVram(sGrass_Gfx, 0x4000);
+  LZ77UnCompVram(sGrass_Tilemap, 0x7800);
+  LoadPalette(sGrass_Pal, 15 * 16, 32);  // BG palette bank 15 = flat idx 240
+  if (scenery === 1) {
+    // Trees + small trees sprites (= bike ride forest scenery)
+    LZ77UnCompVram(sTrees_Gfx, 0);
+    LZ77UnCompVram(sTrees_Tilemap, 0x3000);
+    LoadPalette(sTrees_Pal, 0, 32);  // BG palette bank 0 = flat idx 0
+    // TODO LoadCompressedSpriteSheet(sSpriteSheet_TreesSmall) + LoadPalette(sTreesSmall_Pal, OBJ)
+    // TODO CreateTreeSprites() — Phase 2 (= sprite OAM trees animés)
+  }
+  // gIntroCredits_MovingSceneryState = INTROCRED_SCENERY_NORMAL est set par
+  // le bodyC Task_Scene2_Load directement (var locale module).
+  // gReservedSpritePaletteCount = 8 → no-op chez nous (= alloc OBJ palette).
 }
 
 /** 1:1 décomp `FreeAllSpritePalettes` — Phase 0b stub no-op. */
@@ -452,6 +474,23 @@ export const sIntroFlygonSilhouette_Pal = 'sIntroFlygonSilhouette_Pal';
 export const gIntroSparkle_Gfx = 'gIntroSparkle_Gfx';
 export const gIntroFlygonSilhouette_Gfx = 'gIntroFlygonSilhouette_Gfx';
 export const gIntroGameFreakTextFade_Pal = 'gIntroGameFreakTextFade_Pal';
+
+// Scene 2 BG layers (1:1 décomp src/intro_credits_graphics.c data symbols)
+export const sGrass_Gfx = 'sGrass_Gfx';
+export const sGrass_Tilemap = 'sGrass_Tilemap';
+export const sGrass_Pal = 'sGrass_Pal';
+export const sTrees_Gfx = 'sTrees_Gfx';
+export const sTrees_Tilemap = 'sTrees_Tilemap';
+export const sTrees_Pal = 'sTrees_Pal';
+export const sTreesSmall_Gfx = 'sTreesSmall_Gfx';
+export const sTreesSmall_Pal = 'sTreesSmall_Pal';
+export const sCloudsBg_Gfx = 'sCloudsBg_Gfx';
+export const sCloudsBg_Tilemap = 'sCloudsBg_Tilemap';
+export const sCloudsBg_Pal = 'sCloudsBg_Pal';
+export const sClouds_Pal = 'sClouds_Pal';
+export const sHouses_Gfx = 'sHouses_Gfx';
+export const sHouses_Tilemap = 'sHouses_Tilemap';
+export const sHouses_Pal = 'sHouses_Pal';
 
 // Scene 2 sprites (à preload pour Phase 0c+)
 export const gIntroBrendan_Gfx = 'gIntroBrendan_Gfx';
