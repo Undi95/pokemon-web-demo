@@ -177,7 +177,7 @@ export const SpriteCB_FlyBirdLeaveBall: SpriteCallback = (sprite, rt) => {
           {
               sprite.data[7]++;
               rt.gba.oam[sprite.oamIndex].affineMode = ST_OAM_AFFINE_OFF;
-              FreeOamMatrix(rt.gba.oam[sprite.oamIndex].matrixNum);
+              FreeOamMatrix(rt.gba.oam[sprite.oamIndex].affineParamIndex);
               (() => { const _ctcv = CalcCenterToCornerVec(0, 0, 0); sprite.centerToCornerVecX = _ctcv.centerToCornerVecX; sprite.centerToCornerVecY = _ctcv.centerToCornerVecY; })();
           }
       }
@@ -241,7 +241,7 @@ export const SpriteCB_FlyBirdReturnToBall: SpriteCallback = (sprite, rt) => {
           {
               sprite.data[7]++;
               rt.gba.oam[sprite.oamIndex].affineMode = ST_OAM_AFFINE_OFF;
-              FreeOamMatrix(rt.gba.oam[sprite.oamIndex].matrixNum);
+              FreeOamMatrix(rt.gba.oam[sprite.oamIndex].affineParamIndex);
               sprite.invisible = true;
           }
       }

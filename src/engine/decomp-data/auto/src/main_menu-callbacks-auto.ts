@@ -722,7 +722,7 @@ export const Task_NewGameBirchSpeechSub_InitPokeBall: TaskCallback = (task, rt) 
       _gs(rt, spriteId).invisible = false;
       _gs(rt, spriteId).data[0] = 0;
 
-      CreatePokeballSpriteToReleaseMon(spriteId, rt.gba.oam[_gs(rt, spriteId).oamIndex].paletteNum, 112, 58, 0, 0, 32, PALETTES_BG, SPECIES_LOTAD);
+      CreatePokeballSpriteToReleaseMon(spriteId, rt.gba.oam[_gs(rt, spriteId).oamIndex].paletteBank, 112, 58, 0, 0, 32, PALETTES_BG, SPECIES_LOTAD);
       task.func = (t) => Task_NewGameBirchSpeechSub_WaitForLotad(t, rt);
       _gt(rt, sBirchSpeechMainTaskId).data[7] = 0;
 };

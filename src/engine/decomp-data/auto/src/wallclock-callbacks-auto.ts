@@ -278,12 +278,12 @@ export const CB2_StartWallClock: CB2Callback = (rt) => {
       spriteId = rt.CreateSpriteFromTemplate('sSpriteTemplate_MinuteHand',  120, 80, 1);
       _gs(rt, spriteId).data[0] = taskId;
       rt.gba.oam[_gs(rt, spriteId).oamIndex].affineMode = ST_OAM_AFFINE_NORMAL;
-      rt.gba.oam[_gs(rt, spriteId).oamIndex].matrixNum = 0;
+      rt.gba.oam[_gs(rt, spriteId).oamIndex].affineParamIndex = 0;
 
       spriteId = rt.CreateSpriteFromTemplate('sSpriteTemplate_HourHand',  120, 80, 0);
       _gs(rt, spriteId).data[0] = taskId;
       rt.gba.oam[_gs(rt, spriteId).oamIndex].affineMode = ST_OAM_AFFINE_NORMAL;
-      rt.gba.oam[_gs(rt, spriteId).oamIndex].matrixNum = 1;
+      rt.gba.oam[_gs(rt, spriteId).oamIndex].affineParamIndex = 1;
 
       spriteId = rt.CreateSpriteFromTemplate('sSpriteTemplate_PM',  120, 80, 2);
       _gs(rt, spriteId).data[0] = taskId;
@@ -326,12 +326,12 @@ export const CB2_ViewWallClock: CB2Callback = (rt) => {
       spriteId = rt.CreateSpriteFromTemplate('sSpriteTemplate_MinuteHand',  120, 80, 1);
       _gs(rt, spriteId).data[0] = taskId;
       rt.gba.oam[_gs(rt, spriteId).oamIndex].affineMode = ST_OAM_AFFINE_NORMAL;
-      rt.gba.oam[_gs(rt, spriteId).oamIndex].matrixNum = 0;
+      rt.gba.oam[_gs(rt, spriteId).oamIndex].affineParamIndex = 0;
 
       spriteId = rt.CreateSpriteFromTemplate('sSpriteTemplate_HourHand',  120, 80, 0);
       _gs(rt, spriteId).data[0] = taskId;
       rt.gba.oam[_gs(rt, spriteId).oamIndex].affineMode = ST_OAM_AFFINE_NORMAL;
-      rt.gba.oam[_gs(rt, spriteId).oamIndex].matrixNum = 1;
+      rt.gba.oam[_gs(rt, spriteId).oamIndex].affineParamIndex = 1;
 
       spriteId = rt.CreateSpriteFromTemplate('sSpriteTemplate_PM',  120, 80, 2);
       _gs(rt, spriteId).data[0] = taskId;

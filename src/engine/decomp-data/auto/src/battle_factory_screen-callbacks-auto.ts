@@ -70,7 +70,7 @@ function _palView(buf: PaletteBuffer, base: number): ArrayLike<number> {
 
 /** Source: battle_factory_screen.c → SpriteCB_Pokeball */
 export const SpriteCB_Pokeball: SpriteCallback = (sprite, rt) => {
-  if (rt.gba.oam[sprite.oamIndex].paletteNum == IndexOfSpritePaletteTag(PALTAG_BALL_SELECTED))
+  if (rt.gba.oam[sprite.oamIndex].paletteBank == IndexOfSpritePaletteTag(PALTAG_BALL_SELECTED))
       {
            
           if (sprite.animEnded)
@@ -127,7 +127,7 @@ export const SpriteCB_CloseChosenMonPics: SpriteCallback = (sprite, rt) => {
           && _gs(rt, sFactorySelectScreen.monPics[0].bgSpriteId).affineAnimEnded
           && _gs(rt, sFactorySelectScreen.monPics[2].bgSpriteId).affineAnimEnded)
       {
-          FreeOamMatrix(rt.gba.oam[sprite.oamIndex].matrixNum);
+          FreeOamMatrix(rt.gba.oam[sprite.oamIndex].affineParamIndex);
           FreeOamMatrix(rt.gba.oam[_gs(rt, sFactorySelectScreen.monPics[0].bgSpriteId).oamIndex].matrixNum);
           FreeOamMatrix(rt.gba.oam[_gs(rt, sFactorySelectScreen.monPics[2].bgSpriteId).oamIndex].matrixNum);
 
@@ -157,7 +157,7 @@ export const SpriteCB_OpenMonPic: SpriteCallback = (sprite, rt) => {
 export const SpriteCB_CloseMonPic: SpriteCallback = (sprite, rt) => {
   if (sprite.affineAnimEnded)
       {
-          FreeOamMatrix(rt.gba.oam[sprite.oamIndex].matrixNum);
+          FreeOamMatrix(rt.gba.oam[sprite.oamIndex].affineParamIndex);
           if (sprite.data[7] == true)
               sFactorySwapScreen.monPicAnimating = false;
           else

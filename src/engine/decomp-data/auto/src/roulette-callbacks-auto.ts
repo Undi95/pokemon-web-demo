@@ -95,7 +95,7 @@ export const SpriteCB_WheelIcon: SpriteCallback = (sprite, rt) => {
       cos = Cos2(angle);
       sprite.x2 =  sin * sprite.data[1] >> 12;
       sprite.y2 = -cos * sprite.data[1] >> 12;
-      matrixNum = rt.gba.oam[sprite.oamIndex].matrixNum;
+      matrixNum = rt.gba.oam[sprite.oamIndex].affineParamIndex;
       sin /= 16;
       rt.gba.affineParams[matrixNum].d = cos /= 16;
       rt.gba.affineParams[matrixNum].a = cos;
@@ -110,7 +110,7 @@ export const SpriteCB_GridSquare: SpriteCallback = (sprite, rt) => {
 
 /** Source: roulette.c → SpriteCB_WheelCenter */
 export const SpriteCB_WheelCenter: SpriteCallback = (sprite, rt) => {
-  let matrixNum = rt.gba.oam[sprite.oamIndex].matrixNum;
+  let matrixNum = rt.gba.oam[sprite.oamIndex].affineParamIndex;
       let matrix: any = rt.gba.affineParams[0];
       matrix[matrixNum].d = sRoulette.wheelRotation.a;
       matrix[matrixNum].a = sRoulette.wheelRotation.a;

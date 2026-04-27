@@ -62,7 +62,7 @@ export const SpriteCB_Sparkle_SpiralUpward: SpriteCallback = (sprite, rt) => {
           matrixNum = sprite.data[5] / 4 + 20;
           if (matrixNum > 31)
               matrixNum = 31;
-          rt.gba.oam[sprite.oamIndex].matrixNum = matrixNum;
+          rt.gba.oam[sprite.oamIndex].affineParamIndex = matrixNum;
       }
       else
       {
@@ -126,7 +126,7 @@ export const SpriteCB_Sparkle_Spray: SpriteCallback = (sprite, rt) => {
           }
           if (matrixNum < 20)
               matrixNum = 20;
-          rt.gba.oam[sprite.oamIndex].matrixNum = matrixNum;
+          rt.gba.oam[sprite.oamIndex].affineParamIndex = matrixNum;
           sprite.data[7]++;
       }
       else

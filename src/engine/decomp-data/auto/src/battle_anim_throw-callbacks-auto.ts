@@ -456,12 +456,12 @@ export const SpriteCB_Ball_Capture_Step: SpriteCallback = (sprite, rt) => {
       if (sprite.data[1] == 40)
       {
           /* TODO sound PlaySE */;
-          BlendPalettes(0x10000 << rt.gba.oam[sprite.oamIndex].paletteNum, 6, RGB_BLACK);
+          BlendPalettes(0x10000 << rt.gba.oam[sprite.oamIndex].paletteBank, 6, RGB_BLACK);
           MakeCaptureStars(sprite);
       }
       else if (sprite.data[1] == 60)
       {
-          rt.BeginNormalPaletteFade("0x10000 << rt.gba.oam[sprite.oamIndex].paletteNum", 2, 6, 0, "RGB_BLACK");
+          rt.BeginNormalPaletteFade("0x10000 << rt.gba.oam[sprite.oamIndex].paletteBank", 2, 6, 0, "RGB_BLACK");
       }
       else if (sprite.data[1] == 95)
       {
@@ -782,12 +782,12 @@ export const Task_ShinyStars: TaskCallback = (task, rt) => {
       else if (starIdx >= 0 && task.data[11] < 4)  
       {
           spriteId = rt.CreateSpriteFromTemplate('gMiniTwinklingStarSpriteTemplate',  x, y, 5);
-          rt.gba.oam[_gs(rt, spriteId).oamIndex].tileNum += 4;
+          rt.gba.oam[_gs(rt, spriteId).oamIndex].tileId += 4;
       }
       else  
       {
           spriteId = rt.CreateSpriteFromTemplate('gMiniTwinklingStarSpriteTemplate',  x, y, 5);
-          rt.gba.oam[_gs(rt, spriteId).oamIndex].tileNum += 5;
+          rt.gba.oam[_gs(rt, spriteId).oamIndex].tileId += 5;
       }
 
       if (task.data[1] == SHINY_STAR_ENCIRCLE)

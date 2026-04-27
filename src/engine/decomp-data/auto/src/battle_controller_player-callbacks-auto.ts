@@ -55,7 +55,7 @@ export const SpriteCB_FreePlayerSpriteLoadMonSprite: SpriteCallback = (sprite, r
 
        
       FreeSpriteOamMatrix(sprite);
-      FreeSpritePaletteByTag(GetSpritePaletteTagByPaletteNum(rt.gba.oam[sprite.oamIndex].paletteNum));
+      FreeSpritePaletteByTag(GetSpritePaletteTagByPaletteNum(rt.gba.oam[sprite.oamIndex].paletteBank));
       rt.DestroySprite(sprite.spriteId);
 
        

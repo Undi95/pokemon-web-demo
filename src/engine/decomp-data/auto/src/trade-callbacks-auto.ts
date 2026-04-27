@@ -109,7 +109,7 @@ export const SpriteCB_LinkMonShadow: SpriteCallback = (sprite, rt) => {
           if (++sprite.data[0] == 12)
               sprite.data[0] = 0;
 
-          LoadPalette(sLinkMonShadow_Pal[sprite.data[0]], OBJ_PLTT_ID2(rt.gba.oam[sprite.oamIndex].paletteNum) + 4, PLTT_SIZEOF(1));
+          LoadPalette(sLinkMonShadow_Pal[sprite.data[0]], OBJ_PLTT_ID2(rt.gba.oam[sprite.oamIndex].paletteBank) + 4, PLTT_SIZEOF(1));
       }
 };
 
@@ -171,7 +171,7 @@ export const SpriteCB_BouncingPokeballDepart: SpriteCallback = (sprite, rt) => {
           /* TODO sound PlaySE */;
           sprite.callback = SpriteCB_BouncingPokeballDepartEnd;
           sprite.data[0] = 0;
-          rt.BeginNormalPaletteFade("1 << (16 + rt.gba.oam[sprite.oamIndex].paletteNum)", -1, 0, 16, "RGB_WHITEALPHA");
+          rt.BeginNormalPaletteFade("1 << (16 + rt.gba.oam[sprite.oamIndex].paletteBank)", -1, 0, 16, "RGB_WHITEALPHA");
       }
 };
 

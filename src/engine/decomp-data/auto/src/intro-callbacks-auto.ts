@@ -22,81 +22,6 @@ import {
   gSineTable, PaletteBuffer,
 } from '../../../decomp-helpers';
 import {
-  sGameFreakLetterData, sGameFreakLetterStartDelays, sGameFreakLettersMoveSpeed,
-  sPresentsLetterData, sSparkleCoords, sGroudonRockData, sKyogreBubbleData,
-} from './_data-tables-flat';
-// MANUAL FIX session 68 phase 0b — TODO Phase 0c : intégrer ces imports dans transpile-callbacks.mjs
-// pour qu'ils soient générés auto. Pour l'instant : helpers globaux décomp + symbol-name strings
-// + EWRAM vars depuis decomp-globals.ts.
-import {
-  // Helpers globaux (équivalent extern décomp)
-  LZ77UnCompVram, LoadPalette, DmaClear16, CpuFill16, CpuFill32,
-  LoadCompressedSpriteSheet, LoadSpritePalettes,
-  LoadIntroPart2Graphics, FreeAllSpritePalettes,
-  // Scene 2 stubs (Phase 0b minimum viable)
-  sSpriteSheet_RunningPokemon, sAnims_PlayerBicycle,
-  CreateIntroBrendanSprite, CreateIntroMaySprite, CreateIntroFlygonSprite,
-  CreateBicycleBgAnimationTask, SetIntroPart2BgCnt,
-  MALE,
-  // Symbol-name strings (= keys vers assetCache)
-  sIntro1Bg_Gfx, sIntro1Bg_Pal,
-  sIntro1Bg0_Tilemap, sIntro1Bg1_Tilemap, sIntro1Bg2_Tilemap, sIntro1Bg3_Tilemap,
-  sIntroDropsLogo_Gfx, sIntroDrops_Pal, sIntroLogo_Pal, sIntroFlygonSilhouette_Pal,
-  gIntroSparkle_Gfx, gIntroFlygonSilhouette_Gfx, gIntroGameFreakTextFade_Pal,
-  gIntroBrendan_Gfx, gIntroMay_Gfx, gIntroBicycle_Gfx, gIntroFlygon_Gfx,
-  gIntroVolbeat_Gfx, gIntroTorchic_Gfx, gIntroManectric_Gfx,
-  gIntroVolbeat_Pal, gIntroTorchic_Pal, gIntroManectric_Pal,
-  sIntroPokeball_Pal, sIntroPokeball_Tilemap, sIntroPokeball_Gfx,
-  sIntroStreaks_Pal, sIntroStreaks_Gfx, sIntroStreaks_Tilemap,
-  sIntroRayquzaOrb_Pal, sIntroMisc_Pal, sIntroMisc_Gfx, sIntroLati_Gfx,
-  gIntroLightning_Gfx, gIntroLightning_Pal, gIntroBubbles_Gfx, gIntroBubbles_Pal,
-  // Runtime singleton accessor (pour helpers locaux qui n'ont plus rt en param)
-  getRuntime as _getRuntime,
-  // Global tables extern (cross-module) utilisées par les Tasks intro
-  gTitleScreenAlphaBlend,
-  // Constants
-  BG_SCREEN_SIZE, PALETTES_ALL,
-  // Display + addressing
-  DISPLAY_WIDTH, DISPLAY_HEIGHT,
-  BG_PLTT_ID, OBJ_PLTT_ID, BG_CHAR_ADDR, BG_SCREEN_ADDR,
-  // REG_OFFSET_*
-  REG_OFFSET_DISPCNT,
-  REG_OFFSET_BG0CNT, REG_OFFSET_BG1CNT, REG_OFFSET_BG2CNT, REG_OFFSET_BG3CNT,
-  REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS,
-  REG_OFFSET_BG1HOFS, REG_OFFSET_BG1VOFS,
-  REG_OFFSET_BG2HOFS, REG_OFFSET_BG2VOFS,
-  REG_OFFSET_BG3HOFS, REG_OFFSET_BG3VOFS,
-  REG_OFFSET_WIN0H, REG_OFFSET_WIN1H, REG_OFFSET_WIN0V, REG_OFFSET_WIN1V,
-  REG_OFFSET_WININ, REG_OFFSET_WINOUT,
-  REG_OFFSET_BLDCNT, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDY,
-  // BGCNT_*
-  BGCNT_PRIORITY, BGCNT_CHARBASE, BGCNT_SCREENBASE,
-  BGCNT_16COLOR, BGCNT_256COLOR,
-  BGCNT_TXT256x256, BGCNT_TXT512x256, BGCNT_TXT256x512, BGCNT_TXT512x512,
-  BGCNT_AFF128x128, BGCNT_AFF256x256, BGCNT_AFF512x512, BGCNT_AFF1024x1024,
-  // DISPCNT_*
-  DISPCNT_MODE_0, DISPCNT_MODE_1, DISPCNT_MODE_2, DISPCNT_OBJ_1D_MAP,
-  DISPCNT_BG0_ON, DISPCNT_BG1_ON, DISPCNT_BG2_ON, DISPCNT_BG3_ON,
-  DISPCNT_OBJ_ON, DISPCNT_WIN0_ON, DISPCNT_BG_ALL_ON,
-  // BLDCNT_*
-  BLDCNT_TGT1_BG0, BLDCNT_TGT1_BG1, BLDCNT_TGT1_BG2, BLDCNT_TGT1_BG3,
-  BLDCNT_TGT1_OBJ, BLDCNT_TGT1_BD,
-  BLDCNT_EFFECT_NONE, BLDCNT_EFFECT_BLEND, BLDCNT_EFFECT_LIGHTEN, BLDCNT_EFFECT_DARKEN,
-  BLDCNT_TGT2_BG0, BLDCNT_TGT2_BG1, BLDCNT_TGT2_BG2, BLDCNT_TGT2_BG3,
-  BLDCNT_TGT2_OBJ, BLDCNT_TGT2_BD,
-} from '../../../decomp-globals';
-
-// EWRAM_DATA vars locales au scope module (1:1 décomp src/intro.c +
-// src/intro_credits_graphics.c). Local pour permettre l'assignment direct
-// (= ES modules ne permet pas write sur un import binding). Lecture
-// cross-module possible via getter functions si besoin futur.
-let sIntroCharacterGender = 0;
-let sFlygonYOffset = 0;
-// 1:1 décomp src/intro_credits_graphics.c:720+ — EWRAM globals
-let gIntroCredits_MovingSceneryVBase = 0;
-let gIntroCredits_MovingSceneryVOffset = 0;
-let gIntroCredits_MovingSceneryState = 0;
-import {
   COLOR_CHANGES,
   NARROW_HEIGHT,
   NUM_BUBBLES_IN_SET,
@@ -130,6 +55,74 @@ import {
   TIMER_TORCHIC_EXIT,
   TIMER_TORCHIC_SPEED_UP,
 } from '../../intro-data';
+// MANUAL FIX session 68 phase 0b — auto-injected by post-transpile-patches.mjs
+// Helpers globaux décomp + symbols + constants depuis decomp-globals.ts.
+import {
+  // Helpers globaux (équivalent extern décomp)
+  LZ77UnCompVram, LoadPalette, DmaClear16, CpuFill16, CpuFill32,
+  LoadCompressedSpriteSheet, LoadSpritePalettes,
+  LoadIntroPart2Graphics, FreeAllSpritePalettes,
+  // Runtime singleton accessor (pour helpers qui prenaient rt en param)
+  getRuntime as _getRuntime,
+  // Global tables extern (cross-module)
+  gTitleScreenAlphaBlend,
+  // Symbol-name strings (= keys vers assetCache)
+  sIntro1Bg_Gfx, sIntro1Bg_Pal,
+  sIntro1Bg0_Tilemap, sIntro1Bg1_Tilemap, sIntro1Bg2_Tilemap, sIntro1Bg3_Tilemap,
+  sIntroDropsLogo_Gfx, sIntroDrops_Pal, sIntroLogo_Pal, sIntroFlygonSilhouette_Pal,
+  gIntroSparkle_Gfx, gIntroFlygonSilhouette_Gfx, gIntroGameFreakTextFade_Pal,
+  gIntroBrendan_Gfx, gIntroMay_Gfx, gIntroBicycle_Gfx, gIntroFlygon_Gfx,
+  gIntroVolbeat_Gfx, gIntroTorchic_Gfx, gIntroManectric_Gfx,
+  gIntroVolbeat_Pal, gIntroTorchic_Pal, gIntroManectric_Pal,
+  sIntroPokeball_Pal, sIntroPokeball_Tilemap, sIntroPokeball_Gfx,
+  sIntroStreaks_Pal, sIntroStreaks_Gfx, sIntroStreaks_Tilemap,
+  sIntroRayquzaOrb_Pal, sIntroMisc_Pal, sIntroMisc_Gfx, sIntroLati_Gfx,
+  gIntroLightning_Gfx, gIntroLightning_Pal, gIntroBubbles_Gfx, gIntroBubbles_Pal,
+  // Scene 2 stubs (Phase 0b minimum viable)
+  sSpriteSheet_RunningPokemon, sAnims_PlayerBicycle,
+  CreateIntroBrendanSprite, CreateIntroMaySprite, CreateIntroFlygonSprite,
+  CreateBicycleBgAnimationTask, SetIntroPart2BgCnt,
+  // Constants
+  BG_SCREEN_SIZE, PALETTES_ALL,
+  // Display + addressing
+  BG_PLTT_ID, OBJ_PLTT_ID, BG_CHAR_ADDR, BG_SCREEN_ADDR,
+  DISPLAY_WIDTH, DISPLAY_HEIGHT,
+  // REG_OFFSET_*
+  REG_OFFSET_DISPCNT,
+  REG_OFFSET_BG0CNT, REG_OFFSET_BG1CNT, REG_OFFSET_BG2CNT, REG_OFFSET_BG3CNT,
+  REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS,
+  REG_OFFSET_BG1HOFS, REG_OFFSET_BG1VOFS,
+  REG_OFFSET_BG2HOFS, REG_OFFSET_BG2VOFS,
+  REG_OFFSET_BG3HOFS, REG_OFFSET_BG3VOFS,
+  REG_OFFSET_WIN0H, REG_OFFSET_WIN1H, REG_OFFSET_WIN0V, REG_OFFSET_WIN1V,
+  REG_OFFSET_WININ, REG_OFFSET_WINOUT,
+  REG_OFFSET_BLDCNT, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDY,
+  // BGCNT_*
+  BGCNT_PRIORITY, BGCNT_CHARBASE, BGCNT_SCREENBASE,
+  BGCNT_16COLOR, BGCNT_256COLOR,
+  BGCNT_TXT256x256, BGCNT_TXT512x256, BGCNT_TXT256x512, BGCNT_TXT512x512,
+  BGCNT_AFF128x128, BGCNT_AFF256x256, BGCNT_AFF512x512, BGCNT_AFF1024x1024,
+  // DISPCNT_*
+  DISPCNT_MODE_0, DISPCNT_MODE_1, DISPCNT_MODE_2, DISPCNT_OBJ_1D_MAP,
+  DISPCNT_BG0_ON, DISPCNT_BG1_ON, DISPCNT_BG2_ON, DISPCNT_BG3_ON,
+  DISPCNT_OBJ_ON, DISPCNT_WIN0_ON, DISPCNT_BG_ALL_ON,
+  // BLDCNT_*
+  BLDCNT_TGT1_BG0, BLDCNT_TGT1_BG1, BLDCNT_TGT1_BG2, BLDCNT_TGT1_BG3,
+  BLDCNT_TGT1_OBJ, BLDCNT_TGT1_BD,
+  BLDCNT_EFFECT_NONE, BLDCNT_EFFECT_BLEND, BLDCNT_EFFECT_LIGHTEN, BLDCNT_EFFECT_DARKEN,
+  BLDCNT_TGT2_BG0, BLDCNT_TGT2_BG1, BLDCNT_TGT2_BG2, BLDCNT_TGT2_BG3,
+  BLDCNT_TGT2_OBJ, BLDCNT_TGT2_BD,
+} from '../../../decomp-globals';
+
+// EWRAM_DATA vars locales au scope module (1:1 décomp src/intro.c +
+// src/intro_credits_graphics.c). Local pour permettre l'assignment direct
+// (ES modules ne permet pas write sur import binding).
+let sIntroCharacterGender = 0;
+let sFlygonYOffset = 0;
+let gIntroCredits_MovingSceneryVBase = 0;
+let gIntroCredits_MovingSceneryVOffset = 0;
+let gIntroCredits_MovingSceneryState = 0;
+
 // Constants resolved from decomp #defines / enums / TS data modules :
 const ANIM_TAG_ROCKS = 10058;
 const BGCNT_WRAP = 8192;
@@ -521,7 +514,7 @@ export const SpriteCB_WaterDrop_Ripple: SpriteCallback = (sprite, rt) => {
               palNum = (sprite.data[2] - 192) / 128 + 9;
               if (palNum > 15)
                   palNum = 15;
-              rt.gba.oam[sprite.oamIndex].paletteNum = palNum;
+              rt.gba.oam[sprite.oamIndex].paletteBank = palNum;
           }
       }
       else
@@ -927,7 +920,7 @@ export const SpriteCB_FlygonSilhouette: SpriteCallback = (sprite, rt) => {
       case 0:
       default:
           rt.gba.oam[sprite.oamIndex].affineMode = ST_OAM_AFFINE_DOUBLE;
-          rt.gba.oam[sprite.oamIndex].matrixNum = 1;
+          rt.gba.oam[sprite.oamIndex].affineParamIndex = 1;
           (() => { const _ctcv = CalcCenterToCornerVec(1, 3, 3); sprite.centerToCornerVecX = _ctcv.centerToCornerVecX; sprite.centerToCornerVecY = _ctcv.centerToCornerVecY; })();
           sprite.invisible = false;
           sprite.data[0] = 1;
@@ -970,7 +963,7 @@ export const SpriteCB_RayquazaOrb: SpriteCallback = (sprite, rt) => {
       default:
           sprite.invisible = false;
           rt.gba.oam[sprite.oamIndex].affineMode = ST_OAM_AFFINE_DOUBLE;
-          rt.gba.oam[sprite.oamIndex].matrixNum = 18;
+          rt.gba.oam[sprite.oamIndex].affineParamIndex = 18;
           (() => { const _ctcv = CalcCenterToCornerVec(0, 3, 3); sprite.centerToCornerVecX = _ctcv.centerToCornerVecX; sprite.centerToCornerVecY = _ctcv.centerToCornerVecY; })();
           sprite.data[1] = 0;
           sprite.data[0] = 1;
@@ -1003,8 +996,6 @@ export const Task_Scene1_Load: TaskCallback = (task, rt) => {
       rt.SetGpuReg(REG_OFFSET_BG2VOFS, 80);
       rt.SetGpuReg(REG_OFFSET_BG1VOFS, 24);
       rt.SetGpuReg(REG_OFFSET_BG0VOFS, 40);
-      // MANUAL FIX session 68 phase 0b : LZ77UnCompVram(sIntro1Bg_Gfx, VRAM)
-      // = char data BG à offset 0. Sans ça les BG affichent du noir car aucun tile data.
       LZ77UnCompVram(sIntro1Bg_Gfx, 0);
       LZ77UnCompVram(sIntro1Bg0_Tilemap, (BG_CHAR_ADDR(2)));
       DmaClear16(3, BG_SCREEN_ADDR(17), BG_SCREEN_SIZE);
@@ -1019,12 +1010,6 @@ export const Task_Scene1_Load: TaskCallback = (task, rt) => {
       rt.SetGpuReg(REG_OFFSET_BG2CNT, BGCNT_PRIORITY(2) | BGCNT_CHARBASE(0) | BGCNT_SCREENBASE(20) | BGCNT_16COLOR | BGCNT_TXT256x512);
       rt.SetGpuReg(REG_OFFSET_BG1CNT, BGCNT_PRIORITY(1) | BGCNT_CHARBASE(0) | BGCNT_SCREENBASE(18) | BGCNT_16COLOR | BGCNT_TXT256x512);
       rt.SetGpuReg(REG_OFFSET_BG0CNT, BGCNT_PRIORITY(0) | BGCNT_CHARBASE(0) | BGCNT_SCREENBASE(16) | BGCNT_16COLOR | BGCNT_TXT256x512);
-      // MANUAL FIX session 68 phase 0b : 1:1 décomp src/intro.c:1192-1196
-      // LoadCompressedSpriteSheet(sSpriteSheet_WaterDropsAndLogo) → drops_logo.png + tag GFXTAG_DROPS_LOGO
-      // LoadCompressedSpriteSheet(sSpriteSheet_FlygonSilhouette) → flygon.png + tag TAG_FLYGON_SILHOUETTE
-      // LoadSpritePalettes(sSpritePalettes_Intro1) → drops.pal + logo.pal vers OBJ slots
-      // LoadCompressedSpriteSheet(sSpriteSheet_Sparkle) → sparkle.png + tag GFXTAG_SPARKLE
-      // LoadSpritePalettes(sSpritePalette_Sparkle) → sparkle.pal vers OBJ slot
       LoadCompressedSpriteSheet({ data: sIntroDropsLogo_Gfx, size: 0, tag: 'GFXTAG_DROPS_LOGO' });
       LoadCompressedSpriteSheet({ data: gIntroFlygonSilhouette_Gfx, size: 0, tag: 'TAG_FLYGON_SILHOUETTE' });
       LoadSpritePalettes([
@@ -2220,7 +2205,7 @@ export function CreateWaterDrop(x: number, y: number, c: number, d: number, e: n
       _gs(rt, spriteId).data[5] = e;
       _gs(rt, spriteId).data[6] = c;
       rt.gba.oam[_gs(rt, spriteId).oamIndex].affineMode = ST_OAM_AFFINE_DOUBLE;
-      rt.gba.oam[_gs(rt, spriteId).oamIndex].matrixNum = d;
+      rt.gba.oam[_gs(rt, spriteId).oamIndex].affineParamIndex = d;
       CalcCenterToCornerVec(_gs(rt, spriteId), 0, 2, ST_OAM_AFFINE_ERASE);
       rt.StartSpriteAnim(spriteId, DROP_ANIM_REFLECTION);
       if (!fallImmediately)
@@ -2235,7 +2220,7 @@ export function CreateWaterDrop(x: number, y: number, c: number, d: number, e: n
       _gs(rt, spriteId).data[7] = oldSpriteId;
       _gs(rt, spriteId).data[1] = d + 1;
       rt.gba.oam[_gs(rt, spriteId).oamIndex].affineMode = ST_OAM_AFFINE_DOUBLE;
-      rt.gba.oam[_gs(rt, spriteId).oamIndex].matrixNum = d + 1;
+      rt.gba.oam[_gs(rt, spriteId).oamIndex].affineParamIndex = d + 1;
       CalcCenterToCornerVec(_gs(rt, spriteId), 0, 2, ST_OAM_AFFINE_ERASE);
       rt.setSpriteCallback(spriteId, SpriteCB_WaterDropHalf);
 
@@ -2245,7 +2230,7 @@ export function CreateWaterDrop(x: number, y: number, c: number, d: number, e: n
       _gs(rt, spriteId).data[1] = d + 2;
       rt.StartSpriteAnim(spriteId, DROP_ANIM_LOWER_HALF);
       rt.gba.oam[_gs(rt, spriteId).oamIndex].affineMode = ST_OAM_AFFINE_DOUBLE;
-      rt.gba.oam[_gs(rt, spriteId).oamIndex].matrixNum = d + 2;
+      rt.gba.oam[_gs(rt, spriteId).oamIndex].affineParamIndex = d + 2;
       CalcCenterToCornerVec(_gs(rt, spriteId), 0, 2, ST_OAM_AFFINE_ERASE);
       rt.setSpriteCallback(spriteId, SpriteCB_WaterDropHalf);
 
@@ -2273,7 +2258,7 @@ export function CreateGameFreakLogoSprites(x: number, y: number, unused: number)
           _gs(rt, spriteId).data[7] = sGameFreakLetterStartDelays[i];
           _gs(rt, spriteId).data[2] = i;
           _gs(rt, spriteId).invisible = true;
-          rt.gba.oam[_gs(rt, spriteId).oamIndex].matrixNum = i + 12;
+          rt.gba.oam[_gs(rt, spriteId).oamIndex].affineParamIndex = i + 12;
           rt.StartSpriteAnim(spriteId, sGameFreakLetterData[i][0]);
           rt.StartSpriteAffineAnim(spriteId, 0);
       }
@@ -2282,7 +2267,7 @@ export function CreateGameFreakLogoSprites(x: number, y: number, unused: number)
       spriteId = rt.CreateSpriteFromTemplate('sSpriteTemplate_GameFreakLogo',  120, y - 6, 0);
       _gs(rt, spriteId).data[0] = 0;
       _gs(rt, spriteId).invisible = true;
-      rt.gba.oam[_gs(rt, spriteId).oamIndex].matrixNum = i + 12;
+      rt.gba.oam[_gs(rt, spriteId).oamIndex].affineParamIndex = i + 12;
       rt.StartSpriteAffineAnim(spriteId, 1);
 
       return spriteId;

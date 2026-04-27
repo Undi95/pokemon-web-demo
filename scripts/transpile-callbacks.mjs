@@ -417,6 +417,22 @@ function transpileBody(bodyC, ctx) {
   // Bare _gs_(X) (no field access) — rare
   s = s.replace(/_gs_\(([^()]*(?:\([^()]*\)[^()]*)*)\)/g, '_gs(rt, $1)');
 
+  // 5b. OAM C field names → JS engine field names (1:1 décomp struct OamData →
+  //     notre engine src/engine/gba/types.ts OamEntry).
+  //     Le décomp utilise les noms hardware GBA (paletteNum, tileNum, matrixNum)
+  //     mais notre engine pixel-perfect a renommé en (paletteBank, tileId,
+  //     affineParamIndex). On substitue uniquement sur les accès rt.gba.oam[X].FIELD
+  //     (post-règles 2/5) — les data tables OAM_DATAS conservent leurs noms originaux.
+  const OAM_FIELD_MAP = {
+    paletteNum: 'paletteBank',
+    tileNum: 'tileId',
+    matrixNum: 'affineParamIndex',
+  };
+  for (const [from, to] of Object.entries(OAM_FIELD_MAP)) {
+    const re = new RegExp(`(rt\\.gba\\.oam\\[[^\\]]+\\])\\.${from}\\b`, 'g');
+    s = s.replace(re, `$1.${to}`);
+  }
+
   // 6. _gt_(taskId).func = X → task.func, else _gt(rt, X).func
   s = s.replace(/_gt_\(\s*taskId\s*\)\s*\.\s*func\s*=\s*([A-Za-z_][A-Za-z0-9_]*)/g,
     'task.func = (t) => $1(t, rt)');

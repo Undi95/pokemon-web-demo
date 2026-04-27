@@ -175,11 +175,11 @@ export const Task_HandleConfirmStarterInput: TaskCallback = (task, rt) => {
       case MENU_B_PRESSED:
           /* TODO sound PlaySE */;
           spriteId = task.data[1];
-          FreeOamMatrix(rt.gba.oam[_gs(rt, spriteId).oamIndex].matrixNum);
+          FreeOamMatrix(rt.gba.oam[_gs(rt, spriteId).oamIndex].affineParamIndex);
           FreeAndDestroyMonPicSprite(spriteId);
 
           spriteId = task.data[2];
-          FreeOamMatrix(rt.gba.oam[_gs(rt, spriteId).oamIndex].matrixNum);
+          FreeOamMatrix(rt.gba.oam[_gs(rt, spriteId).oamIndex].affineParamIndex);
           rt.DestroySprite(spriteId);
           task.func = (t) => Task_DeclineStarter(t, rt);
           break;

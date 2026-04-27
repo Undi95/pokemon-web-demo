@@ -70,9 +70,9 @@ export const SpriteCB_SelectionIconPokeball: SpriteCallback = (sprite, rt) => {
 /** Source: use_pokeblock.c → SpriteCB_SelectionIconCancel */
 export const SpriteCB_SelectionIconCancel: SpriteCallback = (sprite, rt) => {
   if (sMenu.info.curSelection == sMenu.info.numSelections - 1)
-          rt.gba.oam[sprite.oamIndex].paletteNum = IndexOfSpritePaletteTag(TAG_CONDITION_BALL);
+          rt.gba.oam[sprite.oamIndex].paletteBank = IndexOfSpritePaletteTag(TAG_CONDITION_BALL);
       else
-          rt.gba.oam[sprite.oamIndex].paletteNum = IndexOfSpritePaletteTag(TAG_CONDITION_CANCEL);
+          rt.gba.oam[sprite.oamIndex].paletteBank = IndexOfSpritePaletteTag(TAG_CONDITION_CANCEL);
 };
 
 /** Source: use_pokeblock.c → SpriteCB_Condition */

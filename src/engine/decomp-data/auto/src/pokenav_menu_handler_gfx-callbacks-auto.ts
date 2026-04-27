@@ -94,7 +94,7 @@ export const SpriteCB_OptionZoom: SpriteCallback = (sprite, rt) => {
               if (sprite.affineAnimEnded)
               {
                   sprite.invisible = true;
-                  FreeOamMatrix(rt.gba.oam[sprite.oamIndex].matrixNum);
+                  FreeOamMatrix(rt.gba.oam[sprite.oamIndex].affineParamIndex);
                   (() => { const _ctcv = CalcCenterToCornerVec(0, 0, 0); sprite.centerToCornerVecX = _ctcv.centerToCornerVecX; sprite.centerToCornerVecY = _ctcv.centerToCornerVecY; })();
                   rt.gba.oam[sprite.oamIndex].affineMode = ST_OAM_AFFINE_OFF;
                   rt.gba.oam[sprite.oamIndex].objMode = ST_OAM_OBJ_NORMAL;

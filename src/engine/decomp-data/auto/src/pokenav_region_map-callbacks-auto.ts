@@ -52,7 +52,7 @@ export const SpriteCB_CityZoomText: SpriteCallback = (sprite, rt) => {
       if (++sprite.data[1] > 60)
           sprite.data[1] = 0;
 
-      rt.gba.oam[sprite.oamIndex].tileNum = sprite.data[2] + sprite.data[1];
+      rt.gba.oam[sprite.oamIndex].tileId = sprite.data[2] + sprite.data[1];
       if (sprite.data[5] < 4)
       {
           if (sprite.data[0] == 0)

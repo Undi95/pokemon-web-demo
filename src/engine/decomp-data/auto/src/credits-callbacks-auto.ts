@@ -155,7 +155,7 @@ export const SpriteCB_CreditsMon: SpriteCallback = (sprite, rt) => {
       case 0:
       default:
           rt.gba.oam[sprite.oamIndex].affineMode = ST_OAM_AFFINE_NORMAL;
-          rt.gba.oam[sprite.oamIndex].matrixNum = sprite.data[1];
+          rt.gba.oam[sprite.oamIndex].affineParamIndex = sprite.data[1];
           sprite.data[2] = 16;
           SetOamMatrix(rt.gba, sprite.data[1], 0x10000 / sprite.data[2], 0, 0, 0x10000 / sprite.data[2]);
           sprite.invisible = false;
@@ -241,7 +241,7 @@ export const SpriteCB_CreditsMonBg: SpriteCallback = (sprite, rt) => {
       sprite.invisible = _gs(rt, sprite.data[0]).invisible;
       rt.gba.oam[sprite.oamIndex].objMode = rt.gba.oam[_gs(rt, sprite.data[0]).oamIndex].objMode;
       rt.gba.oam[sprite.oamIndex].affineMode = rt.gba.oam[_gs(rt, sprite.data[0]).oamIndex].affineMode;
-      rt.gba.oam[sprite.oamIndex].matrixNum = rt.gba.oam[_gs(rt, sprite.data[0]).oamIndex].matrixNum;
+      rt.gba.oam[sprite.oamIndex].affineParamIndex = rt.gba.oam[_gs(rt, sprite.data[0]).oamIndex].matrixNum;
       sprite.x = _gs(rt, sprite.data[0]).x;
       sprite.y = _gs(rt, sprite.data[0]).y;
 };

@@ -70,7 +70,7 @@ export const SpriteCB_ShakePokeblockCase: SpriteCallback = (sprite, rt) => {
               rt.gba.oam[sprite.oamIndex].affineMode = ST_OAM_AFFINE_OFF;
               sprite.data[0] = 0;
               sprite.data[1] = 0;
-              FreeOamMatrix(rt.gba.oam[sprite.oamIndex].matrixNum);
+              FreeOamMatrix(rt.gba.oam[sprite.oamIndex].affineParamIndex);
               sprite.callback = SpriteCallbackDummy;
           }
           break;

@@ -634,7 +634,7 @@ export const Task_TradeEvolutionScene: TaskCallback = (task, rt) => {
           if (!rt.gPaletteFade.active)
           {
               StartBgAnimation(true);
-              _var = rt.gba.oam[_gs(rt, sEvoStructPtr.preEvoSpriteId).oamIndex].paletteNum + 16;
+              _var = rt.gba.oam[_gs(rt, sEvoStructPtr.preEvoSpriteId).oamIndex].paletteBank + 16;
               sEvoGraphicsTaskId = EvolutionSparkles_SpiralUpward(_var);
               task.data[0]++;
               rt.SetGpuReg(REG_OFFSET_BG3CNT, BGCNT_PRIORITY(3) | BGCNT_SCREENBASE(6));
@@ -747,7 +747,7 @@ export const Task_TradeEvolutionScene: TaskCallback = (task, rt) => {
           if (!_gt(rt, sEvoGraphicsTaskId).isActive)
           {
               m4aMPlayAllStop();
-              rt.BeginNormalPaletteFade("(1 << (rt.gba.oam[_gs(rt, sEvoStructPtr.preEvoSpriteId).oamIndex].paletteNum + 16)) | (0x4001C)", 0, 0x10, 0, "RGB_WHITE");
+              rt.BeginNormalPaletteFade("(1 << (rt.gba.oam[_gs(rt, sEvoStructPtr.preEvoSpriteId).oamIndex].paletteBank + 16)) | (0x4001C)", 0, 0x10, 0, "RGB_WHITE");
               task.data[0]++;
           }
           break;
@@ -1070,7 +1070,7 @@ export const CB2_EvolutionSceneLoadGraphics: CB2Callback = (rt) => {
       sEvoStructPtr.postEvoSpriteId = id = rt.CreateSpriteFromTemplate('gMultiuseSpriteTemplate',  120, 64, 30);
 
       rt.setSpriteCallback(id, SpriteCallbackDummy_2);
-      rt.gba.oam[_gs(rt, id).oamIndex].paletteNum = 2;
+      rt.gba.oam[_gs(rt, id).oamIndex].paletteBank = 2;
 
       rt.SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_OBJ_ON | DISPCNT_BG_ALL_ON | DISPCNT_OBJ_1D_MAP);
 
@@ -1147,7 +1147,7 @@ export const CB2_TradeEvolutionSceneLoadGraphics: CB2Callback = (rt) => {
               sEvoStructPtr.postEvoSpriteId = id = rt.CreateSpriteFromTemplate('gMultiuseSpriteTemplate',  120, 64, 30);
 
               rt.setSpriteCallback(id, SpriteCallbackDummy_2);
-              rt.gba.oam[_gs(rt, id).oamIndex].paletteNum = 2;
+              rt.gba.oam[_gs(rt, id).oamIndex].paletteBank = 2;
               gMain.state++;
               LinkTradeDrawWindow();
           }

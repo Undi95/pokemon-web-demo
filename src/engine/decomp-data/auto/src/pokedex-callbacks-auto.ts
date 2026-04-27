@@ -146,7 +146,7 @@ export const SpriteCB_PokedexListMonSprite: SpriteCallback = (sprite, rt) => {
           if (_var > 0xFFFF)
               _var = 0xFFFF;
           SetOamMatrix(rt.gba, sprite.data[1] + 1, 0x100, 0, 0, _var);
-          rt.gba.oam[sprite.oamIndex].matrixNum = monId + 1;
+          rt.gba.oam[sprite.oamIndex].affineParamIndex = monId + 1;
 
           if (sprite.data[5] > -64 && sprite.data[5] < 64)
           {
@@ -329,7 +329,7 @@ export const Task_HandlePokedexInput: TaskCallback = (task, rt) => {
           if (JOY_NEW(A_BUTTON) && sPokedexView.pokedexList[sPokedexView.selectedPokemon].seen)
           {
               UpdateSelectedMonSpriteId();
-              rt.BeginNormalPaletteFade("~(1 << (rt.gba.oam[_gs(rt, sPokedexView.selectedMonSpriteId).oamIndex].paletteNum + 16))", 0, 0, 0x10, "RGB_BLACK");
+              rt.BeginNormalPaletteFade("~(1 << (rt.gba.oam[_gs(rt, sPokedexView.selectedMonSpriteId).oamIndex].paletteBank + 16))", 0, 0, 0x10, "RGB_BLACK");
               rt.setSpriteCallback(sPokedexView.selectedMonSpriteId, SpriteCB_MoveMonForInfoScreen);
               task.func = (t) => Task_OpenInfoScreenAfterMonMovement(t, rt);
               /* TODO sound PlaySE */;
@@ -541,7 +541,7 @@ export const Task_HandleSearchResultsInput: TaskCallback = (task, rt) => {
               let a = 0;
 
               UpdateSelectedMonSpriteId();
-              a = (1 << (rt.gba.oam[_gs(rt, sPokedexView.selectedMonSpriteId).oamIndex].paletteNum + 16));
+              a = (1 << (rt.gba.oam[_gs(rt, sPokedexView.selectedMonSpriteId).oamIndex].paletteBank + 16));
               rt.setSpriteCallback(sPokedexView.selectedMonSpriteId, SpriteCB_MoveMonForInfoScreen);
               rt.BeginNormalPaletteFade("~a", 0, 0, 0x10, "RGB_BLACK");
               task.func = (t) => Task_OpenSearchResultsInfoScreenAfterMonMovement(t, rt);
@@ -1239,22 +1239,22 @@ export const Task_LoadSizeScreen: TaskCallback = (task, rt) => {
       case 5:
           spriteId = CreateSizeScreenTrainerPic(PlayerGenderToFrontTrainerPicId(gSaveBlock2Ptr.playerGender), 152, 56, 0);
           rt.gba.oam[_gs(rt, spriteId).oamIndex].affineMode = ST_OAM_AFFINE_NORMAL;
-          rt.gba.oam[_gs(rt, spriteId).oamIndex].matrixNum = 1;
+          rt.gba.oam[_gs(rt, spriteId).oamIndex].affineParamIndex = 1;
           rt.gba.oam[_gs(rt, spriteId).oamIndex].priority = 0;
           _gs(rt, spriteId).y2 = gPokedexEntries[sPokedexListItem.dexNum].trainerOffset;
           SetOamMatrix(rt.gba, 1, gPokedexEntries[sPokedexListItem.dexNum].trainerScale, 0, 0, gPokedexEntries[sPokedexListItem.dexNum].trainerScale);
-          LoadPalette(sSizeScreenSilhouette_Pal, OBJ_PLTT_ID2(rt.gba.oam[_gs(rt, spriteId).oamIndex].paletteNum), PLTT_SIZE_4BPP);
+          LoadPalette(sSizeScreenSilhouette_Pal, OBJ_PLTT_ID2(rt.gba.oam[_gs(rt, spriteId).oamIndex].paletteBank), PLTT_SIZE_4BPP);
           task.data[5] = spriteId;
           gMain.state++;
           break;
       case 6:
           spriteId = CreateMonSpriteFromNationalDexNumber(sPokedexListItem.dexNum, 88, 56, 1);
           rt.gba.oam[_gs(rt, spriteId).oamIndex].affineMode = ST_OAM_AFFINE_NORMAL;
-          rt.gba.oam[_gs(rt, spriteId).oamIndex].matrixNum = 2;
+          rt.gba.oam[_gs(rt, spriteId).oamIndex].affineParamIndex = 2;
           rt.gba.oam[_gs(rt, spriteId).oamIndex].priority = 0;
           _gs(rt, spriteId).y2 = gPokedexEntries[sPokedexListItem.dexNum].pokemonOffset;
           SetOamMatrix(rt.gba, 2, gPokedexEntries[sPokedexListItem.dexNum].pokemonScale, 0, 0, gPokedexEntries[sPokedexListItem.dexNum].pokemonScale);
-          LoadPalette(sSizeScreenSilhouette_Pal, OBJ_PLTT_ID2(rt.gba.oam[_gs(rt, spriteId).oamIndex].paletteNum), PLTT_SIZE_4BPP);
+          LoadPalette(sSizeScreenSilhouette_Pal, OBJ_PLTT_ID2(rt.gba.oam[_gs(rt, spriteId).oamIndex].paletteBank), PLTT_SIZE_4BPP);
           task.data[3] = spriteId;
           CopyWindowToVram(WIN_INFO, COPYWIN_FULL);
           CopyBgTilemapBufferToVram(1);

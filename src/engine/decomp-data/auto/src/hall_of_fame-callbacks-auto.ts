@@ -316,7 +316,7 @@ export const Task_Hof_TryDisplayAnotherMon: TaskCallback = (task, rt) => {
       }
       else
       {
-          sHofFadePalettes |= (0x10000 << rt.gba.oam[_gs(rt, task.tMonSpriteId(currPokeID)).oamIndex].paletteNum);
+          sHofFadePalettes |= (0x10000 << rt.gba.oam[_gs(rt, task.tMonSpriteId(currPokeID)).oamIndex].paletteBank);
           if (task.data[1] < PARTY_SIZE - 1 && currMon[1].species != SPECIES_NONE)  
           {
               task.data[1]++;
@@ -458,7 +458,7 @@ export const Task_Hof_HandleExit: TaskCallback = (task, rt) => {
               let spriteId = task.tMonSpriteId(i);
               if (spriteId != SPRITE_NONE)
               {
-                  FreeOamMatrix(rt.gba.oam[_gs(rt, spriteId).oamIndex].matrixNum);
+                  FreeOamMatrix(rt.gba.oam[_gs(rt, spriteId).oamIndex].affineParamIndex);
                   FreeAndDestroyMonPicSprite(spriteId);
               }
           }
@@ -599,7 +599,7 @@ export const Task_HofPC_PrintMonInfo: TaskCallback = (task, rt) => {
 
       currMonID = task.tMonSpriteId(task.data[2]);
       rt.gba.oam[_gs(rt, currMonID).oamIndex].priority = 0;
-      sHofFadePalettes = (0x10000 << rt.gba.oam[_gs(rt, currMonID).oamIndex].paletteNum) ^ PALETTES_OBJECTS;
+      sHofFadePalettes = (0x10000 << rt.gba.oam[_gs(rt, currMonID).oamIndex].paletteBank) ^ PALETTES_OBJECTS;
       BlendPalettesUnfaded(sHofFadePalettes, 0xC, RGB(16, 29, 24));
 
       currMon = savedTeams.mon[task.data[2]];

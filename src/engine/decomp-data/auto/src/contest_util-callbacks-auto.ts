@@ -769,7 +769,7 @@ export const Task_CreateConfetti: TaskCallback = (task, rt) => {
               _gs(rt, spriteId).data[0] = Math.floor(Math.random() * 0x10000) % 512;
               _gs(rt, spriteId).data[1] = (Math.floor(Math.random() * 0x10000) % 24) + 16;
               _gs(rt, spriteId).data[2] = (Math.floor(Math.random() * 0x10000) % 256) + 48;
-              rt.gba.oam[_gs(rt, spriteId).oamIndex].tileNum += Math.floor(Math.random() * 0x10000) % 17;
+              rt.gba.oam[_gs(rt, spriteId).oamIndex].tileId += Math.floor(Math.random() * 0x10000) % 17;
               sContestResults.data.confettiCount++;
           }
       }
@@ -1010,10 +1010,10 @@ export const Task_ShowContestEntryMonPic: TaskCallback = (task, rt) => {
           break;
       case 3:
           sprite = _gs(rt, task.data[2]);
-          FreeSpritePaletteByTag(GetSpritePaletteTagByPaletteNum(rt.gba.oam[sprite.oamIndex].paletteNum));
+          FreeSpritePaletteByTag(GetSpritePaletteTagByPaletteNum(rt.gba.oam[sprite.oamIndex].paletteBank));
 
           if(rt.gba.oam[sprite.oamIndex].affineMode)
-              FreeOamMatrix(rt.gba.oam[sprite.oamIndex].matrixNum);
+              FreeOamMatrix(rt.gba.oam[sprite.oamIndex].affineParamIndex);
 
           rt.DestroySprite(sprite.spriteId);
           task.data[0]++;
