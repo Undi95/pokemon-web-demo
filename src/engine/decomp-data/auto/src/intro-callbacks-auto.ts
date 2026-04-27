@@ -25,6 +25,35 @@ import {
   sGameFreakLetterData, sGameFreakLetterStartDelays, sGameFreakLettersMoveSpeed,
   sPresentsLetterData, sSparkleCoords, sGroudonRockData, sKyogreBubbleData,
 } from './_data-tables-flat';
+// MANUAL FIX session 68 phase 0b — TODO Phase 0c : intégrer ces imports dans transpile-callbacks.mjs
+// pour qu'ils soient générés auto. Pour l'instant : helpers globaux décomp + symbol-name strings
+// + EWRAM vars depuis decomp-globals.ts.
+import {
+  // Helpers globaux (équivalent extern décomp)
+  LZ77UnCompVram, LoadPalette, DmaClear16, CpuFill16, CpuFill32,
+  LoadCompressedSpriteSheet, LoadSpritePalettes,
+  // Symbol-name strings (= keys vers assetCache)
+  sIntro1Bg_Gfx, sIntro1Bg_Pal,
+  sIntro1Bg0_Tilemap, sIntro1Bg1_Tilemap, sIntro1Bg2_Tilemap, sIntro1Bg3_Tilemap,
+  sIntroDropsLogo_Gfx, sIntroDrops_Pal, sIntroLogo_Pal, sIntroFlygonSilhouette_Pal,
+  gIntroSparkle_Gfx, gIntroFlygonSilhouette_Gfx, gIntroGameFreakTextFade_Pal,
+  gIntroBrendan_Gfx, gIntroMay_Gfx, gIntroBicycle_Gfx, gIntroFlygon_Gfx,
+  gIntroVolbeat_Gfx, gIntroTorchic_Gfx, gIntroManectric_Gfx,
+  gIntroVolbeat_Pal, gIntroTorchic_Pal, gIntroManectric_Pal,
+  sIntroPokeball_Pal, sIntroPokeball_Tilemap, sIntroPokeball_Gfx,
+  sIntroStreaks_Pal, sIntroStreaks_Gfx, sIntroStreaks_Tilemap,
+  sIntroRayquzaOrb_Pal, sIntroMisc_Pal, sIntroMisc_Gfx, sIntroLati_Gfx,
+  gIntroLightning_Gfx, gIntroLightning_Pal, gIntroBubbles_Gfx, gIntroBubbles_Pal,
+  // Constants
+  BG_SCREEN_SIZE, PALETTES_ALL,
+} from '../../../decomp-globals';
+
+// EWRAM_DATA vars locales au scope module (1:1 décomp src/intro.c).
+// Local pour permettre l'assignment direct (= ES modules ne permet pas write
+// sur un import binding). Lecture cross-module possible via getter functions
+// si besoin futur (e.g. depuis title-screen-callbacks-auto si lit gender).
+let sIntroCharacterGender = 0;
+let sFlygonYOffset = 0;
 import {
   COLOR_CHANGES,
   NARROW_HEIGHT,
