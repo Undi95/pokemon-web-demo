@@ -36,7 +36,9 @@ export class BootScene extends Phaser.Scene {
       title.setText('Chargement audio...');
       prompt.setVisible(false);
       await primeAudio();
-      this.scene.start('IntroScene');
+      // IntroSceneGba = nouveau intro 1:1 GBA pixel-perfect (engine GBA + M4A audio).
+      // Pour repasser sur l'ancien (Phaser direct + PNGs pré-rendus) : 'IntroScene'.
+      this.scene.start('IntroSceneGba');
     };
 
     this.input.once('pointerdown', startBoot);

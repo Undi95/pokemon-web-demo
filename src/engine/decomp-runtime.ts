@@ -1,0 +1,795 @@
+/**
+ * Mini runtime décomp Pokemon Emerald qui mime les helpers C globaux
+ * (SetGpuReg, LoadPalette, LZ77UnCompVram, CreateSprite, BeginNormalPaletteFade,
+ * gIntroFrameCounter, gTasks, gSprites, gPaletteFade) sur l'engine GBA TypeScript.
+ *
+ * BUT : permettre de transcrire les `bodyC` de auto-tasks/src/*-tasks.ts en TS
+ * quasi-littéralement, sans réinventer la sémantique.
+ *
+ * Exemple usage :
+ *   const rt = new DecompRuntime(gba);
+ *   rt.SetGpuReg(REG_OFFSET_BG0VOFS, 40);
+ *   await rt.LZ77UnCompVram_Tileset('intro/scene_1/bg.png', BG_CHAR_ADDR(0));
+ *   rt.LoadPalette(palData, BG_PLTT_ID(0));
+ *   rt.BeginNormalPaletteFade('PALETTES_ALL', 0, 16, 0, 'RGB_BLACK');
+ *
+ * Sources de vérité :
+ *   - GBATEK pour les regs hardware
+ *   - decomp pokeemerald include/gba/io_reg.h pour REG_OFFSET_*
+ *   - decomp engine/palette_fade.c pour BeginNormalPaletteFade
+ */
+import { Gba } from './gba/gba';
+import { LAYER_BG0, LAYER_BG1, LAYER_BG2, LAYER_BG3, LAYER_OBJ, LAYER_BD } from './gba/types';
+import {
+  loadIndexedPng, loadIndexedPngWithPal, loadIndexedPng8bppWithPal,
+  loadIndexedPngStrict,
+  loadGbaPal, loadTilemapBin, loadAffineTilemapBin,
+} from './gba/png-loader';
+import {
+  SPRITE_TEMPLATES, OAM_DATAS, SPRITE_ANIM_TABLES, SPRITE_ANIMS,
+  SPRITE_PALETTES, SPRITE_SHEETS,
+} from './decomp-data/auto/src/sprite-system';
+
+/** OAM shape+size encoding 1:1 GBA hardware (cf. types.ts OAM_SIZES).
+ *  Retourne [shape, size] depuis (width, height) en pixels. */
+function oamShapeSizeFromWH(w: number, h: number): { shape: 0 | 1 | 2, size: 0 | 1 | 2 | 3 } {
+  // shape 0 = square, 1 = wide (w>h), 2 = tall (h>w)
+  // sizes (square): 8x8/16x16/32x32/64x64 = size 0/1/2/3
+  // sizes (wide):   16x8/32x8/32x16/64x32 = size 0/1/2/3
+  // sizes (tall):   8x16/8x32/16x32/32x64 = size 0/1/2/3
+  if (w === h) {
+    const map: Record<number, 0 | 1 | 2 | 3> = { 8: 0, 16: 1, 32: 2, 64: 3 };
+    return { shape: 0, size: map[w] ?? 0 };
+  } else if (w > h) {
+    const key = `${w}x${h}`;
+    const map: Record<string, 0 | 1 | 2 | 3> = { '16x8': 0, '32x8': 1, '32x16': 2, '64x32': 3 };
+    return { shape: 1, size: map[key] ?? 0 };
+  } else {
+    const key = `${w}x${h}`;
+    const map: Record<string, 0 | 1 | 2 | 3> = { '8x16': 0, '8x32': 1, '16x32': 2, '32x64': 3 };
+    return { shape: 2, size: map[key] ?? 0 };
+  }
+}
+
+/** Sprite anim state attaché à chaque sprite avec une anim active. */
+interface SpriteAnimState {
+  /** Nom du sprite anim TABLE (e.g. 'sAnims_FlygonSilhouette') */
+  animTableName: string;
+  /** Index de l'anim active dans le table (sAnims[N]) */
+  animIdx: number;
+  /** Index de la frame courante dans l'anim */
+  frameIdx: number;
+  /** Frames restantes avant de passer à la frame suivante */
+  framesRemaining: number;
+  /** Tile base = tileNum start de cette sprite dans objVram (= spriteSheetTagToTileStart[tileTag]) */
+  tileBase: number;
+}
+
+// ─── REG_OFFSET_* (1:1 décomp include/gba/io_reg.h) ──────────────────────────
+export const REG_OFFSET_DISPCNT  = 0x000;
+export const REG_OFFSET_BG0CNT   = 0x008;
+export const REG_OFFSET_BG1CNT   = 0x00A;
+export const REG_OFFSET_BG2CNT   = 0x00C;
+export const REG_OFFSET_BG3CNT   = 0x00E;
+export const REG_OFFSET_BG0HOFS  = 0x010;
+export const REG_OFFSET_BG0VOFS  = 0x012;
+export const REG_OFFSET_BG1HOFS  = 0x014;
+export const REG_OFFSET_BG1VOFS  = 0x016;
+export const REG_OFFSET_BG2HOFS  = 0x018;
+export const REG_OFFSET_BG2VOFS  = 0x01A;
+export const REG_OFFSET_BG3HOFS  = 0x01C;
+export const REG_OFFSET_BG3VOFS  = 0x01E;
+export const REG_OFFSET_WIN0H    = 0x040;
+export const REG_OFFSET_WIN1H    = 0x042;
+export const REG_OFFSET_WIN0V    = 0x044;
+export const REG_OFFSET_WIN1V    = 0x046;
+export const REG_OFFSET_WININ    = 0x048;
+export const REG_OFFSET_WINOUT   = 0x04A;
+export const REG_OFFSET_BLDCNT   = 0x050;
+export const REG_OFFSET_BLDALPHA = 0x052;
+export const REG_OFFSET_BLDY     = 0x054;
+
+// ─── BGCNT/DISPCNT bit masks (1:1 décomp) ────────────────────────────────────
+export const BGCNT_PRIORITY = (n: number) => n & 3;
+export const BGCNT_CHARBASE = (n: number) => (n & 3) << 2;
+export const BGCNT_SCREENBASE = (n: number) => (n & 31) << 8;
+export const BGCNT_16COLOR = 0;
+export const BGCNT_256COLOR = 0x80;
+export const BGCNT_TXT256x256 = 0x0000;
+export const BGCNT_TXT512x256 = 0x4000;
+export const BGCNT_TXT256x512 = 0x8000;
+export const BGCNT_TXT512x512 = 0xC000;
+export const BGCNT_AFF128x128 = 0x0000;
+export const BGCNT_AFF256x256 = 0x4000;
+export const BGCNT_AFF512x512 = 0x8000;
+export const BGCNT_AFF1024x1024 = 0xC000;
+export const BGCNT_WRAP = 0x2000;
+
+export const DISPCNT_MODE_0 = 0;
+export const DISPCNT_MODE_1 = 1;
+export const DISPCNT_MODE_2 = 2;
+export const DISPCNT_OBJ_1D_MAP = 0x40;
+export const DISPCNT_BG0_ON = 0x100;
+export const DISPCNT_BG1_ON = 0x200;
+export const DISPCNT_BG2_ON = 0x400;
+export const DISPCNT_BG3_ON = 0x800;
+export const DISPCNT_OBJ_ON = 0x1000;
+export const DISPCNT_WIN0_ON = 0x2000;
+export const DISPCNT_BG_ALL_ON = 0xF00;
+
+export const BLDCNT_TGT1_BG0 = 0x01;
+export const BLDCNT_TGT1_BG1 = 0x02;
+export const BLDCNT_TGT1_BG2 = 0x04;
+export const BLDCNT_TGT1_BG3 = 0x08;
+export const BLDCNT_TGT1_OBJ = 0x10;
+export const BLDCNT_TGT1_BD  = 0x20;
+export const BLDCNT_EFFECT_NONE     = 0x00;
+export const BLDCNT_EFFECT_BLEND    = 0x40;
+export const BLDCNT_EFFECT_LIGHTEN  = 0x80;
+export const BLDCNT_EFFECT_DARKEN   = 0xC0;
+export const BLDCNT_TGT2_BG0 = 0x100;
+export const BLDCNT_TGT2_BG1 = 0x200;
+export const BLDCNT_TGT2_BG2 = 0x400;
+export const BLDCNT_TGT2_BG3 = 0x800;
+export const BLDCNT_TGT2_OBJ = 0x1000;
+export const BLDCNT_TGT2_BD  = 0x2000;
+
+// ─── Palette base IDs ────────────────────────────────────────────────────────
+/** 1:1 décomp BG_PLTT_ID(n) = n × 16. Palette flat index (0-255). */
+export const BG_PLTT_ID = (n: number) => n * 16;
+/** 1:1 décomp OBJ_PLTT_ID(n) = n × 16. */
+export const OBJ_PLTT_ID = (n: number) => n * 16;
+/** 1:1 décomp BG_CHAR_ADDR(n) = n × 0x4000 (= charBase index). */
+export const BG_CHAR_ADDR = (n: number) => n * 0x4000;
+/** 1:1 décomp BG_SCREEN_ADDR(n) = n × 0x800 (= screen base index). */
+export const BG_SCREEN_ADDR = (n: number) => n * 0x800;
+/** 1:1 décomp DISPLAY_WIDTH/HEIGHT. */
+export const DISPLAY_WIDTH = 240;
+export const DISPLAY_HEIGHT = 160;
+
+// ─── Palette fade state (1:1 décomp engine/palette_fade.c) ──────────────────
+/** gPaletteFade global. `.active = true` pendant un fade. */
+export class PaletteFade {
+  active = false;
+  /** Target1 brightness 0-16 */
+  brightness = 0;
+  /** Mode du fade (0=fade in, 1=fade out, etc) */
+  mode = 0;
+  /** Frame en cours du fade */
+  currentFrame = 0;
+  /** Total frames du fade */
+  totalFrames = 1;
+  /** Couleur cible (RGB15 ou special) */
+  targetRgb15 = 0;
+  /** Delay restant avant qu'une frame de fade soit appliquée */
+  delayRemaining = 0;
+  /** Delay entre 2 steps */
+  delayPerStep = 0;
+  /** startY (brightness initial) */
+  startY = 0;
+  /** endY (brightness final) */
+  endY = 0;
+}
+
+// ─── Sprite mock minimal pour CreateSprite ───────────────────────────────────
+/** Minimal sprite. Mappe à un slot OAM du gba. */
+export interface DecompSprite {
+  /** Index dans gba.oam (0-127) */
+  oamIndex: number;
+  /** State arbitraire (utilisé par sprite callbacks pour state machines) */
+  data: number[];
+  /** True si sprite caché (= gba.oam[i].visible = false aussi) */
+  invisible: boolean;
+}
+
+// ─── Task mock minimal ───────────────────────────────────────────────────────
+export interface DecompTask {
+  taskId: number;
+  /** Pointer vers la function task (1:1 gTasks[taskId].func) */
+  func: ((task: DecompTask) => void) | null;
+  /** data[0..15] arbitraire (1:1 gTasks[taskId].data) */
+  data: number[];
+}
+
+/**
+ * Runtime décomp principal. Wrap l'engine GBA + helpers C.
+ *
+ * Usage typique dans une scène :
+ *   private rt!: DecompRuntime;
+ *
+ *   create() {
+ *     this.gba = new Gba();
+ *     this.rt = new DecompRuntime(this.gba);
+ *     this.rt.gIntroFrameCounter = 0;
+ *     // ... exécute Task_Scene1_Load via this.rt
+ *   }
+ *
+ *   update() {
+ *     this.bridge.tick();
+ *     this.rt.tick();  // run current task + UpdatePaletteFade
+ *   }
+ */
+export class DecompRuntime {
+  /** 1:1 décomp `gIntroFrameCounter` (incrémenté chaque frame par MainCB2_Intro). */
+  gIntroFrameCounter = 0;
+  /** 1:1 décomp `gPaletteFade` global. */
+  gPaletteFade = new PaletteFade();
+  /** 1:1 décomp `gTasks[]` array. Notre version : Map keyed by taskId. */
+  gTasks = new Map<number, DecompTask>();
+  /** 1:1 décomp `gSprites[]` array. */
+  gSprites = new Map<number, DecompSprite>();
+  /** Auto-incrementing OAM slot (next free) */
+  private nextOamSlot = 0;
+  /** Auto-incrementing task ID */
+  private nextTaskId = 0;
+  /** Auto-incrementing sprite ID */
+  private nextSpriteId = 0;
+
+  /** paletteTag (e.g. 'PALTAG_LOGO') → OBJ palette slot (0-15).
+   *  Rempli par LoadSpritePalettesFromTable(). Permet de résoudre paletteTag → bank
+   *  pour CreateSpriteFromTemplate au lieu de hardcoder. */
+  paletteTagToSlot = new Map<string, number>();
+  /** tileTag (e.g. 'GFXTAG_DROPS_LOGO') → tileNum start dans objVram.
+   *  Rempli par LoadCompressedSpriteSheetsFromTable(). */
+  spriteSheetTagToTileStart = new Map<string, number>();
+  /** Prochain slot OBJ palette libre (auto-assigné par LoadSpritePalettes). */
+  private nextObjPalSlot = 0;
+  /** Prochain offset libre dans objVram pour sprite sheets (auto-assigné). */
+  private nextSpriteSheetByteOffset = 0;
+  /** State des sprite anims actives : spriteId → state. */
+  private spriteAnimStates = new Map<number, SpriteAnimState>();
+  /** Accumulator pour timing 60Hz fixed (Phaser update peut être > 60Hz). */
+  private accumulatorMs = 0;
+  /** Frame target = 60Hz GBA. */
+  private readonly FRAME_TIME_MS = 1000 / 60;
+
+  constructor(public readonly gba: Gba) {}
+
+  // ============================================================================
+  // SetGpuReg — wrapper qui dispatch sur le bon gba.* selon REG_OFFSET
+  // ============================================================================
+
+  SetGpuReg(reg: number, value: number): void {
+    switch (reg) {
+      case REG_OFFSET_DISPCNT:
+        this.applyDispCnt(value);
+        break;
+      case REG_OFFSET_BG0CNT: this.applyBgCnt(0, value); break;
+      case REG_OFFSET_BG1CNT: this.applyBgCnt(1, value); break;
+      case REG_OFFSET_BG2CNT: this.applyBgCnt(2, value); break;
+      case REG_OFFSET_BG3CNT: this.applyBgCnt(3, value); break;
+      case REG_OFFSET_BG0HOFS: this.gba.bg(0).config.hofs = value & 0x1FF; break;
+      case REG_OFFSET_BG0VOFS: this.gba.bg(0).config.vofs = value & 0x1FF; break;
+      case REG_OFFSET_BG1HOFS: this.gba.bg(1).config.hofs = value & 0x1FF; break;
+      case REG_OFFSET_BG1VOFS: this.gba.bg(1).config.vofs = value & 0x1FF; break;
+      case REG_OFFSET_BG2HOFS: this.gba.bg(2).config.hofs = value & 0x1FF; break;
+      case REG_OFFSET_BG2VOFS: this.gba.bg(2).config.vofs = value & 0x1FF; break;
+      case REG_OFFSET_BG3HOFS: this.gba.bg(3).config.hofs = value & 0x1FF; break;
+      case REG_OFFSET_BG3VOFS: this.gba.bg(3).config.vofs = value & 0x1FF; break;
+      case REG_OFFSET_BLDCNT: this.applyBldCnt(value); break;
+      case REG_OFFSET_BLDALPHA: this.applyBldAlpha(value); break;
+      case REG_OFFSET_BLDY: this.gba.blend.brightness = value & 0x1F; break;
+      case REG_OFFSET_WIN0H: this.applyWin0H(value); break;
+      case REG_OFFSET_WIN0V: this.applyWin0V(value); break;
+      case REG_OFFSET_WININ: this.applyWinIn(value); break;
+      case REG_OFFSET_WINOUT: this.gba.windows.outsideEnable = value & 0x3F; break;
+      // Autres regs (BG2/3 affine matrix etc) à ajouter au besoin
+    }
+  }
+
+  private applyDispCnt(value: number): void {
+    // Mode lower 3 bits — pour info, notre engine décide via isAffine flag
+    // Bits 8-11 : BG0-3 enable
+    this.gba.bg(0).config.visible = !!(value & DISPCNT_BG0_ON);
+    this.gba.bg(1).config.visible = !!(value & DISPCNT_BG1_ON);
+    this.gba.bg(2).config.visible = !!(value & DISPCNT_BG2_ON);
+    this.gba.bg(3).config.visible = !!(value & DISPCNT_BG3_ON);
+    // Bit 12 : OBJ_ON — notre engine traite ça en dehors (les OAM sont visible
+    // selon leur propre flag). Bit ignoré ici.
+    // Bits 13-15 : Win0/Win1/WinObj enable
+    this.gba.windows.win0.enabled = !!(value & DISPCNT_WIN0_ON);
+  }
+
+  private applyBgCnt(bgIdx: 0 | 1 | 2 | 3, value: number): void {
+    const cfg = this.gba.bg(bgIdx).config;
+    cfg.priority = value & 3;
+    cfg.charBaseIndex = (value >> 2) & 3;
+    // Bit 6 : mosaic, bit 7 : 256 color
+    cfg.paletteMode = (value & 0x80) ? 1 : 0;
+    cfg.mapBaseIndex = (value >> 8) & 31;
+    // Bit 13 : wrap (BG2/3 affine only)
+    cfg.wraparound = !!(value & 0x2000);
+    // Bits 14-15 : screen size
+    cfg.screenSize = ((value >> 14) & 3) as 0 | 1 | 2 | 3;
+    // Affine = inferred par mode DISPCNT (Mode 1 = BG2 affine, Mode 2 = BG2/3 affine).
+    // Pour simplification : si BGn et 256COLOR set, on met affine (matche pratique
+    // décomp où 256COLOR + AFF256x256 etc va ensemble pour BG affine).
+    if ((bgIdx === 2 || bgIdx === 3) && cfg.paletteMode === 1) {
+      cfg.isAffine = true;
+      cfg.affineMatrixIndex = (bgIdx === 2 ? 0 : 1) as 0 | 1;
+    } else {
+      cfg.isAffine = false;
+    }
+  }
+
+  private applyBldCnt(value: number): void {
+    // Bit 6-7 : effect (00=off, 01=blend, 10=lighten, 11=darken)
+    const effect = (value >> 6) & 3;
+    this.gba.blend.mode = effect as 0 | 1 | 2 | 3;
+    this.gba.blend.target1 = value & 0x3F;
+    this.gba.blend.target2 = (value >> 8) & 0x3F;
+  }
+
+  private applyBldAlpha(value: number): void {
+    this.gba.blend.alpha1 = value & 0x1F;
+    this.gba.blend.alpha2 = (value >> 8) & 0x1F;
+  }
+
+  private applyWin0H(value: number): void {
+    // High byte = x1 (left), low byte = x2 (right)
+    this.gba.windows.win0.x2 = value & 0xFF;
+    this.gba.windows.win0.x1 = (value >> 8) & 0xFF;
+  }
+
+  private applyWin0V(value: number): void {
+    this.gba.windows.win0.y2 = value & 0xFF;
+    this.gba.windows.win0.y1 = (value >> 8) & 0xFF;
+  }
+
+  private applyWinIn(value: number): void {
+    this.gba.windows.win0Inside = value & 0x3F;
+    this.gba.windows.win1Inside = (value >> 8) & 0x3F;
+  }
+
+  // ============================================================================
+  // LZ77UnCompVram + LoadPalette wrappers (notre version : load PNG/bin async)
+  // ============================================================================
+
+  /** Charge un PNG 4bpp en utilisant une palette canonique (16 colors = 1 bank).
+   *  Setup tile data dans bg(bgIdx).vram. */
+  async LZ77UnCompVram_Tileset4bpp(pngUrl: string, palette: Uint16Array, bgIdx: 0 | 1 | 2 | 3): Promise<void> {
+    const png = await loadIndexedPngWithPal(pngUrl, palette.subarray(0, 16));
+    const vram = this.gba.bg(bgIdx).vram;
+    vram.set(png.charData.subarray(0, vram.length));
+  }
+
+  /** Charge un PNG 8bpp (BG affine) en utilisant une palette canonique de 256 colors. */
+  async LZ77UnCompVram_Tileset8bpp(pngUrl: string, palette: Uint16Array, bgIdx: 0 | 1 | 2 | 3): Promise<void> {
+    const png = await loadIndexedPng8bppWithPal(pngUrl, palette);
+    const vram = this.gba.bg(bgIdx).vram;
+    vram.set(png.charData.subarray(0, vram.length));
+  }
+
+  /** Charge un tilemap .bin (u16 ou u8 selon affineFlag) dans bg(bgIdx).tilemap. */
+  async LZ77UnCompVram_Tilemap(binUrl: string, bgIdx: 0 | 1 | 2 | 3, affine = false): Promise<void> {
+    const tilemap = affine
+      ? await loadAffineTilemapBin(binUrl)
+      : await loadTilemapBin(binUrl);
+    const dst = this.gba.bg(bgIdx).tilemap;
+    dst.set(tilemap.subarray(0, dst.length));
+  }
+
+  /** Charge un sprite sheet 4bpp dans objVram à un offset (en bytes). Auto-detect palette
+   *  via les couleurs uniques (= ordre d'apparition pixels, peut diverger de PLTE). */
+  async LoadCompressedSpriteSheet(pngUrl: string, byteOffset: number): Promise<{ palette: Uint16Array, byteSize: number }> {
+    const png = await loadIndexedPng(pngUrl);
+    const remainingSpace = this.gba.objVram.length - byteOffset;
+    const copySize = Math.min(png.charData.length, remainingSpace);
+    if (copySize > 0) this.gba.objVram.set(png.charData.subarray(0, copySize), byteOffset);
+    return { palette: png.palette, byteSize: png.charData.length };
+  }
+
+  /** Variante "strict" : extrait le PLTE PNG embedded → indices résultants matchent
+   *  l'ordre canonique du décomp. À utiliser pour les sprites multi-palette
+   *  (drops_logo.png où drops + logo partagent l'atlas avec différentes runtime palettes). */
+  async LoadCompressedSpriteSheetStrict(pngUrl: string, byteOffset: number): Promise<{ palette: Uint16Array, byteSize: number }> {
+    const png = await loadIndexedPngStrict(pngUrl, 4);
+    const remainingSpace = this.gba.objVram.length - byteOffset;
+    const copySize = Math.min(png.charData.length, remainingSpace);
+    if (copySize > 0) this.gba.objVram.set(png.charData.subarray(0, copySize), byteOffset);
+    return { palette: png.palette, byteSize: png.charData.length };
+  }
+
+  /** Variante avec palette canonique fournie. */
+  async LoadCompressedSpriteSheetWithPal(pngUrl: string, byteOffset: number, palette: Uint16Array): Promise<{ byteSize: number }> {
+    const png = await loadIndexedPngWithPal(pngUrl, palette.subarray(0, 16));
+    const remainingSpace = this.gba.objVram.length - byteOffset;
+    const copySize = Math.min(png.charData.length, remainingSpace);
+    if (copySize > 0) this.gba.objVram.set(png.charData.subarray(0, copySize), byteOffset);
+    return { byteSize: png.charData.length };
+  }
+
+  /** 1:1 décomp LoadPalette(src, paletteFlatIdx, sizeBytes). */
+  LoadPaletteBg(palette: Uint16Array, flatIdx: number): void {
+    this.gba.palette.loadBgRange(flatIdx, palette);
+  }
+
+  LoadPaletteObj(palette: Uint16Array, flatIdx: number): void {
+    this.gba.palette.loadObjRange(flatIdx, palette);
+  }
+
+  /** Charge .pal file depuis URL puis charge dans BG palette. */
+  async LoadPaletteBgFromFile(palUrl: string, flatIdx: number): Promise<Uint16Array> {
+    const pal = await loadGbaPal(palUrl);
+    this.LoadPaletteBg(pal, flatIdx);
+    return pal;
+  }
+
+  /** Charge .pal file puis charge dans OBJ palette. */
+  async LoadPaletteObjFromFile(palUrl: string, flatIdx: number): Promise<Uint16Array> {
+    const pal = await loadGbaPal(palUrl);
+    this.LoadPaletteObj(pal, flatIdx);
+    return pal;
+  }
+
+  // ============================================================================
+  // BeginNormalPaletteFade + UpdatePaletteFade (1:1 décomp palette_fade.c)
+  // ============================================================================
+
+  /** 1:1 décomp BeginNormalPaletteFade(palettes, delay, startY, endY, color).
+   *  Démarre un fade de brightness startY → endY sur N frames (N = abs(endY-startY)).
+   *  Notre engine simplifié : utilise blend.brightness selon la couleur target.
+   *  - RGB_BLACK = mode 3 (BLDY brightness dec)
+   *  - RGB_WHITEALPHA / RGB_WHITE = mode 2 (BLDY brightness inc)
+   */
+  BeginNormalPaletteFade(_palettes: string, delay: number, startY: number, endY: number, color: string): void {
+    this.gPaletteFade.active = true;
+    this.gPaletteFade.startY = startY;
+    this.gPaletteFade.endY = endY;
+    this.gPaletteFade.currentFrame = 0;
+    this.gPaletteFade.totalFrames = Math.max(1, Math.abs(endY - startY));
+    this.gPaletteFade.delayPerStep = delay;
+    this.gPaletteFade.delayRemaining = delay;
+    // Mode blend GBA selon couleur target
+    if (color === 'RGB_BLACK') {
+      this.gba.blend.mode = 3;  // brightness dec
+    } else {
+      this.gba.blend.mode = 2;  // brightness inc (white/whitealpha)
+    }
+    this.gba.blend.target1 = LAYER_BG0 | LAYER_BG1 | LAYER_BG2 | LAYER_BG3 | LAYER_OBJ | LAYER_BD;
+    this.gba.blend.brightness = startY;
+  }
+
+  /** Tick du palette fade. À call chaque frame. */
+  UpdatePaletteFade(): void {
+    if (!this.gPaletteFade.active) return;
+
+    if (this.gPaletteFade.delayRemaining > 0) {
+      this.gPaletteFade.delayRemaining--;
+      return;
+    }
+
+    const f = this.gPaletteFade;
+    f.currentFrame++;
+    if (f.currentFrame >= f.totalFrames) {
+      this.gba.blend.brightness = f.endY;
+      f.active = false;
+      return;
+    }
+
+    const t = f.currentFrame / f.totalFrames;
+    this.gba.blend.brightness = Math.round(f.startY + (f.endY - f.startY) * t);
+    f.delayRemaining = f.delayPerStep;
+  }
+
+  // ============================================================================
+  // CreateSprite + setupOam — wrapper sur gba.oam
+  // ============================================================================
+
+  /** 1:1 décomp CreateSprite(template, x, y, subpriority).
+   *  Notre version simplifiée : assigne le prochain OAM slot, configure-le, retourne spriteId.
+   *  Le template doit contenir : tileId, paletteBank, shape, size, priority, paletteMode, affineMode. */
+  CreateSpriteAtOam(cfg: {
+    tileId: number, paletteBank: number, x: number, y: number,
+    shape: 0 | 1 | 2, size: 0 | 1 | 2 | 3, priority: number,
+    paletteMode?: 0 | 1, affineMode?: 0 | 1 | 2 | 3, affineParamIndex?: number,
+  }): { spriteId: number, oamIndex: number } {
+    if (this.nextOamSlot >= 128) {
+      console.warn('[DecompRuntime] OAM slots exhausted');
+      return { spriteId: -1, oamIndex: -1 };
+    }
+    const oamIndex = this.nextOamSlot++;
+    const oam = this.gba.oam[oamIndex];
+    oam.visible = true;
+    oam.tileId = cfg.tileId;
+    oam.paletteBank = cfg.paletteBank;
+    oam.x = cfg.x;
+    oam.y = cfg.y;
+    oam.shape = cfg.shape;
+    oam.size = cfg.size;
+    oam.priority = cfg.priority;
+    oam.paletteMode = cfg.paletteMode ?? 0;
+    oam.affineMode = (cfg.affineMode ?? 0) as 0 | 1 | 2 | 3;
+    oam.affineParamIndex = cfg.affineParamIndex ?? 0;
+    oam.flipH = false;
+    oam.flipV = false;
+
+    const spriteId = this.nextSpriteId++;
+    const sprite: DecompSprite = { oamIndex, data: new Array(16).fill(0), invisible: false };
+    this.gSprites.set(spriteId, sprite);
+    return { spriteId, oamIndex };
+  }
+
+  /** Récupère un sprite par son ID. */
+  getSprite(spriteId: number): DecompSprite | undefined {
+    return this.gSprites.get(spriteId);
+  }
+
+  /** Set sprite visibility (mappe à gba.oam[i].visible). */
+  setSpriteInvisible(spriteId: number, invisible: boolean): void {
+    const s = this.gSprites.get(spriteId);
+    if (!s) return;
+    s.invisible = invisible;
+    this.gba.oam[s.oamIndex].visible = !invisible;
+  }
+
+  // ============================================================================
+  // CreateTask + DestroyTask (1:1 décomp task system)
+  // ============================================================================
+
+  CreateTask(func: (task: DecompTask) => void, _priority: number): number {
+    const taskId = this.nextTaskId++;
+    const task: DecompTask = { taskId, func, data: new Array(16).fill(0) };
+    this.gTasks.set(taskId, task);
+    return taskId;
+  }
+
+  DestroyTask(taskId: number): void {
+    this.gTasks.delete(taskId);
+  }
+
+  /** Run all tasks once (= 1 frame). À call chaque frame depuis update(). */
+  runTasks(): void {
+    // Snapshot pour permettre Tasks de mod gTasks
+    const snapshot = Array.from(this.gTasks.values());
+    for (const task of snapshot) {
+      if (this.gTasks.has(task.taskId) && task.func) {
+        task.func(task);
+      }
+    }
+  }
+
+  /** Tick complet : UpdatePaletteFade + runTasks + increment frameCounter.
+   *  À call après bridge.tick() chaque update(). */
+  tick(): void {
+    this.UpdatePaletteFade();
+    this.runTasks();
+    this.gIntroFrameCounter++;
+  }
+
+  // ============================================================================
+  // Helpers reset (pour skip / re-enter une scène)
+  // ============================================================================
+
+  reset(): void {
+    this.gIntroFrameCounter = 0;
+    this.gPaletteFade = new PaletteFade();
+    this.gTasks.clear();
+    this.gSprites.clear();
+    this.nextOamSlot = 0;
+    this.nextTaskId = 0;
+    this.nextSpriteId = 0;
+  }
+
+  /** ResetSpriteData : remet tous les OAM à invisible (mimique décomp). */
+  ResetSpriteData(): void {
+    for (let i = 0; i < 128; i++) this.gba.oam[i].visible = false;
+    this.gSprites.clear();
+    this.nextOamSlot = 0;
+    this.nextSpriteId = 0;
+  }
+
+  /** IntroResetGpuRegs : reset DISPCNT et BG/blend regs (mimique décomp intro.c). */
+  IntroResetGpuRegs(): void {
+    this.SetGpuReg(REG_OFFSET_DISPCNT, 0);
+    for (let i = 0; i < 4; i++) {
+      this.SetGpuReg(REG_OFFSET_BG0CNT + i * 2, 0);
+      this.gba.bg(i as 0 | 1 | 2 | 3).config.hofs = 0;
+      this.gba.bg(i as 0 | 1 | 2 | 3).config.vofs = 0;
+    }
+    this.SetGpuReg(REG_OFFSET_BLDCNT, 0);
+    this.SetGpuReg(REG_OFFSET_BLDALPHA, 0);
+    this.SetGpuReg(REG_OFFSET_BLDY, 0);
+  }
+
+  // ============================================================================
+  // SPRITE-SYSTEM helpers : utilise les data extraites depuis le décomp
+  // (sprite-system.ts) pour automatiser palette slots, sprite sheets, templates,
+  // anims. Plus aucun hardcode tileId/paletteBank côté scène.
+  // ============================================================================
+
+  /** 1:1 décomp `LoadSpritePalettes(sSpritePalettes_X)` :
+   *  parcourt la table, charge chaque palette à un slot OBJ libre auto-incrémenté,
+   *  enregistre paletteTag → slot pour résolution future via paletteTagToSlot. */
+  async LoadSpritePalettesFromTable(
+    tableName: string,
+    resolveUrl: (paletteName: string) => string | null,
+  ): Promise<void> {
+    const table = (SPRITE_PALETTES as Record<string, { entries: ReadonlyArray<{ paletteName: string, tag: string }> }>)[tableName];
+    if (!table) {
+      console.warn(`[runtime] LoadSpritePalettesFromTable: table ${tableName} not found in SPRITE_PALETTES`);
+      return;
+    }
+    for (const entry of table.entries) {
+      const url = resolveUrl(entry.paletteName);
+      if (!url) {
+        console.warn(`[runtime] LoadSpritePalettesFromTable ${tableName}: cannot resolve URL for ${entry.paletteName}`);
+        continue;
+      }
+      const slot = this.nextObjPalSlot++;
+      try {
+        if (url.endsWith('.png')) {
+          // Load PNG-embedded PLTE (used quand pal name pointe vers un .png)
+          const png = await loadIndexedPng(url);
+          this.LoadPaletteObj(png.palette, OBJ_PLTT_ID(slot));
+        } else {
+          await this.LoadPaletteObjFromFile(url, OBJ_PLTT_ID(slot));
+        }
+        this.paletteTagToSlot.set(entry.tag, slot);
+        console.log(`[runtime] palette ${entry.tag} → OBJ slot ${slot}`);
+      } catch (e) {
+        console.error(`[runtime] LoadSpritePalettesFromTable ${tableName}: load failed for ${entry.paletteName}:`, e);
+      }
+    }
+  }
+
+  /** 1:1 décomp `LoadCompressedSpriteSheet(sSpriteSheet_X)` :
+   *  charge chaque sheet à un offset auto-incrémenté dans objVram, enregistre
+   *  tileTag → tileNum start pour résolution future. */
+  async LoadCompressedSpriteSheetsFromTable(
+    tableName: string,
+    resolveUrl: (gfxName: string) => string | null,
+  ): Promise<void> {
+    const table = (SPRITE_SHEETS as Record<string, { entries: ReadonlyArray<{ gfxName: string, sizeBytes: number | string, tag: string }> }>)[tableName];
+    if (!table) {
+      console.warn(`[runtime] LoadCompressedSpriteSheetsFromTable: table ${tableName} not found`);
+      return;
+    }
+    for (const entry of table.entries) {
+      const url = resolveUrl(entry.gfxName);
+      if (!url) {
+        console.warn(`[runtime] LoadCompressedSpriteSheetsFromTable ${tableName}: cannot resolve URL for ${entry.gfxName}`);
+        continue;
+      }
+      const tileStart = this.nextSpriteSheetByteOffset / 32;
+      try {
+        const result = await this.LoadCompressedSpriteSheetStrict(url, this.nextSpriteSheetByteOffset);
+        this.spriteSheetTagToTileStart.set(entry.tag, tileStart);
+        this.nextSpriteSheetByteOffset += result.byteSize;
+        console.log(`[runtime] sheet ${entry.tag} → tileStart ${tileStart} (size ${result.byteSize}B)`);
+      } catch (e) {
+        console.error(`[runtime] LoadCompressedSpriteSheetsFromTable ${tableName}: load failed for ${entry.gfxName}:`, e);
+      }
+    }
+  }
+
+  /** 1:1 décomp `CreateSprite(&sSpriteTemplate_X, x, y, subpriority)` :
+   *  résout template → OAM data + anim table + paletteTag/tileTag depuis sprite-system.ts,
+   *  alloue un OAM slot, configure-le, enregistre l'anim state, retourne spriteId. */
+  CreateSpriteFromTemplate(templateName: string, x: number, y: number): number {
+    const tpl = (SPRITE_TEMPLATES as Record<string, { tileTag: string, paletteTag: string, oam: string, anims: string, affineAnims: string, callback: string }>)[templateName];
+    if (!tpl) {
+      console.warn(`[runtime] CreateSpriteFromTemplate: ${templateName} not found`);
+      return -1;
+    }
+    const oam = (OAM_DATAS as Record<string, { affineMode: string, objMode: string, bpp: string, priority: string, paletteNum: string, _sizeWH: readonly [number, number] }>)[tpl.oam];
+    if (!oam) {
+      console.warn(`[runtime] CreateSpriteFromTemplate ${templateName}: OamData ${tpl.oam} not found`);
+      return -1;
+    }
+    const animTable = (SPRITE_ANIM_TABLES as Record<string, { anims: ReadonlyArray<string> }>)[tpl.anims];
+    const firstAnimName = animTable?.anims[0];
+    const firstAnim = firstAnimName ? (SPRITE_ANIMS as Record<string, { frames: ReadonlyArray<{ tileNum: number | string, duration: number }>, terminator: string, jumpTo?: number }>)[firstAnimName] : null;
+    const initialTileOffset = (typeof firstAnim?.frames[0]?.tileNum === 'number') ? firstAnim.frames[0].tileNum : 0;
+
+    const tileBase = this.spriteSheetTagToTileStart.get(tpl.tileTag) ?? 0;
+    const palSlot = this.paletteTagToSlot.get(tpl.paletteTag) ?? 0;
+
+    const [w, h] = oam._sizeWH;
+    const { shape, size } = oamShapeSizeFromWH(w, h);
+
+    const result = this.CreateSpriteAtOam({
+      tileId: tileBase + initialTileOffset,
+      paletteBank: palSlot,
+      x, y,
+      shape, size,
+      priority: parseInt(oam.priority, 10) || 0,
+      paletteMode: oam.bpp === 'ST_OAM_8BPP' ? 1 : 0,
+      affineMode: oam.affineMode === 'ST_OAM_AFFINE_DOUBLE' ? 3
+                : oam.affineMode === 'ST_OAM_AFFINE_NORMAL' ? 1
+                : 0,
+    });
+
+    if (animTable && firstAnim && firstAnim.frames.length > 0) {
+      this.spriteAnimStates.set(result.spriteId, {
+        animTableName: tpl.anims,
+        animIdx: 0,
+        frameIdx: 0,
+        framesRemaining: firstAnim.frames[0].duration,
+        tileBase,
+      });
+    }
+
+    console.log(`[runtime] CreateSprite ${templateName} → spriteId ${result.spriteId} (tile ${tileBase + initialTileOffset}, bank ${palSlot}, ${w}×${h})`);
+    return result.spriteId;
+  }
+
+  /** Change manuellement l'anim active d'un sprite (1:1 décomp StartSpriteAnim). */
+  StartSpriteAnim(spriteId: number, animIdx: number): void {
+    const state = this.spriteAnimStates.get(spriteId);
+    if (!state) return;
+    const animTable = (SPRITE_ANIM_TABLES as Record<string, { anims: ReadonlyArray<string> }>)[state.animTableName];
+    if (!animTable || animIdx >= animTable.anims.length) return;
+    const animName = animTable.anims[animIdx];
+    const anim = (SPRITE_ANIMS as Record<string, { frames: ReadonlyArray<{ tileNum: number | string, duration: number }>, terminator: string, jumpTo?: number }>)[animName];
+    if (!anim || anim.frames.length === 0) return;
+    state.animIdx = animIdx;
+    state.frameIdx = 0;
+    state.framesRemaining = anim.frames[0].duration;
+    const sprite = this.gSprites.get(spriteId);
+    const tileNum = (typeof anim.frames[0].tileNum === 'number') ? anim.frames[0].tileNum : 0;
+    if (sprite) this.gba.oam[sprite.oamIndex].tileId = state.tileBase + tileNum;
+  }
+
+  /** Tick toutes les sprite anims actives — 1:1 décomp anim system frame counter. */
+  private tickSpriteAnims(): void {
+    for (const [spriteId, state] of this.spriteAnimStates) {
+      if (state.framesRemaining > 1) {
+        state.framesRemaining--;
+        continue;
+      }
+      const animTable = (SPRITE_ANIM_TABLES as Record<string, { anims: ReadonlyArray<string> }>)[state.animTableName];
+      if (!animTable) { this.spriteAnimStates.delete(spriteId); continue; }
+      const animName = animTable.anims[state.animIdx];
+      const anim = (SPRITE_ANIMS as Record<string, { frames: ReadonlyArray<{ tileNum: number | string, duration: number }>, terminator: string, jumpTo?: number }>)[animName];
+      if (!anim) { this.spriteAnimStates.delete(spriteId); continue; }
+
+      state.frameIdx++;
+      if (state.frameIdx >= anim.frames.length) {
+        if (anim.terminator === 'JUMP') {
+          state.frameIdx = anim.jumpTo ?? 0;
+        } else {
+          this.spriteAnimStates.delete(spriteId);
+          continue;
+        }
+      }
+      const frame = anim.frames[state.frameIdx];
+      state.framesRemaining = frame.duration;
+      const tileNum = (typeof frame.tileNum === 'number') ? frame.tileNum : 0;
+      const sprite = this.gSprites.get(spriteId);
+      if (sprite) this.gba.oam[sprite.oamIndex].tileId = state.tileBase + tileNum;
+    }
+  }
+
+  // ============================================================================
+  // FIXED 60Hz TIMER : throttle update à 16.67ms exact (= GBA framerate)
+  // ============================================================================
+
+  /** Tick 60Hz fixed-step. Phaser update peut tourner à >60Hz selon refresh rate écran ;
+   *  on accumule deltaMs et on ne process que des frames de 16.67ms. */
+  tickFixed(deltaMs: number): number {
+    this.accumulatorMs += deltaMs;
+    let framesProcessed = 0;
+    let safety = 5;
+    while (this.accumulatorMs >= this.FRAME_TIME_MS && safety-- > 0) {
+      this.accumulatorMs -= this.FRAME_TIME_MS;
+      this.UpdatePaletteFade();
+      this.tickSpriteAnims();
+      this.runTasks();
+      this.gIntroFrameCounter++;
+      framesProcessed++;
+    }
+    if (this.accumulatorMs > 10 * this.FRAME_TIME_MS) this.accumulatorMs = 0;
+    return framesProcessed;
+  }
+
+  /** Reset additionnel pour les nouveaux maps (sprite-system). */
+  resetSpriteSystem(): void {
+    this.paletteTagToSlot.clear();
+    this.spriteSheetTagToTileStart.clear();
+    this.nextObjPalSlot = 0;
+    this.nextSpriteSheetByteOffset = 0;
+    this.spriteAnimStates.clear();
+    this.accumulatorMs = 0;
+  }
+}

@@ -242,7 +242,9 @@ for (const section of ['intro', 'title_screen', 'birch_speech', 'naming_screen']
       const src = join(d, f);
       const st = statSync(src);
       if (st.isDirectory()) walkCopy(src, join(rel, f));
-      else if (f.endsWith('.png') || f.endsWith('.pal')) {
+      else if (f.endsWith('.png') || f.endsWith('.pal') || f.endsWith('.bin')) {
+        // .bin = tilemap raw (rayquaza.bin/clouds.bin/pokemon_logo.bin etc.)
+        // Nécessaire pour rendu BG via engine GBA (pas juste PNG composés).
         copy(src, join(outRoot, 'boot', section, rel, f));
       }
     }
