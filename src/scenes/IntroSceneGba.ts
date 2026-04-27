@@ -43,6 +43,9 @@ import {
   TIMER_END_SCENE_1, TIMER_START_SCENE_2,
   GFX_SOURCES,
 } from '../engine/decomp-data/intro-data';
+import {
+  CreateGameFreakLogoSprites, SpriteCB_FlygonSilhouette,
+} from '../engine/decomp-impls/intro-callbacks';
 import { primeAudio, playMidiLoop } from '../engine/music';
 
 // Convertit un GFX_SOURCES path "graphics/intro/scene_1/bg.pal" → URL public
@@ -317,19 +320,25 @@ export class IntroSceneGba extends Phaser.Scene {
       await this.rt.LoadCompressedSpriteSheetsFromTable('sSpriteSheet_Sparkle', resolveDecompUrl);
       await this.rt.LoadSpritePalettesFromTable('sSpritePalette_Sparkle', resolveDecompUrl);
 
-      // ─── CreateSprite via sSpriteTemplate_X (paletteTag/tileTag auto-résolus) ─
-      // 1:1 ligne 1204 : CreateGameFreakLogoSprites(DISPLAY_WIDTH/2, DISPLAY_HEIGHT/2, 0)
-      // Simplification : 1 seul sprite logo (32×64) au lieu des 9 letters + logo.
-      this.sLogoSpriteId = this.rt.CreateSpriteFromTemplate(
-        'sSpriteTemplate_GameFreakLogo', DISPLAY_WIDTH / 2, DISPLAY_HEIGHT / 2);
-      this.rt.setSpriteInvisible(this.sLogoSpriteId, true);
+      // ─── 1:1 ligne 1204 : CreateGameFreakLogoSprites(120, 80, 0) ─────────
+      // Crée 9 sprites letters "GAME FREAK" (sSpriteTemplate_GameFreakLetter) +
+      // 1 sprite logo central (sSpriteTemplate_GameFreakLogo). Letters utilisent
+      // sGameFreakLetterData[i] pour position + sGameFreakLetterStartDelays[i] pour
+      // delay avant apparition. Tous les sprites ont leurs callbacks SpriteCB_LogoLetter
+      // / SpriteCB_GameFreakLogo attachés (transcription bodyC dans intro-callbacks.ts).
+      this.sLogoSpriteId = CreateGameFreakLogoSprites(this.rt, DISPLAY_WIDTH / 2, DISPLAY_HEIGHT / 2);
 
-      // Flygon silhouette pré-créé caché (visible à TIMER_FLYGON_SILHOUETTE_APPEAR)
+      // Flygon silhouette pré-créé caché (visible à TIMER_FLYGON_SILHOUETTE_APPEAR
+      // via Task_Scene1_PanUp qui set invisible = false ; le callback SpriteCB_FlygonSilhouette
+      // gère ensuite la trajectoire trigonometric).
       this.sFlygonSpriteId = this.rt.CreateSpriteFromTemplate(
         'sSpriteTemplate_FlygonSilhouette', DISPLAY_WIDTH / 2, DISPLAY_HEIGHT);
       this.rt.setSpriteInvisible(this.sFlygonSpriteId, true);
+      this.rt.setSpriteCallback(this.sFlygonSpriteId, SpriteCB_FlygonSilhouette);
 
       // 1:1 ligne 1205 : sBigDropSpriteId = CreateWaterDrop(236, -14, ...)
+      // Pour cette session : sprite simple sans callback (vraie CreateWaterDrop crée
+      // 3 sprites coordonnés avec affine matrices, transcription suit).
       this.sBigDropSpriteId = this.rt.CreateSpriteFromTemplate(
         'sSpriteTemplate_WaterDrop', 236, -14);
       this.rt.setSpriteInvisible(this.sBigDropSpriteId, true);

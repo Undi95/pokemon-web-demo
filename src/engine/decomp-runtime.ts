@@ -171,15 +171,42 @@ export class PaletteFade {
   endY = 0;
 }
 
-// ─── Sprite mock minimal pour CreateSprite ───────────────────────────────────
-/** Minimal sprite. Mappe à un slot OAM du gba. */
+// ─── Sprite (1:1 décomp struct Sprite, simplifié) ────────────────────────────
+/** Sprite décomp. Mappe à un slot OAM gba + state machine via data[].
+ *  Les fields x/y/x2/y2/invisible/hFlip/vFlip sont synchronisés vers gba.oam
+ *  chaque frame par syncSpritesToOam (cf. tickFixed). */
 export interface DecompSprite {
-  /** Index dans gba.oam (0-127) */
+  /** Slot dans gba.oam (0-127) */
   oamIndex: number;
-  /** State arbitraire (utilisé par sprite callbacks pour state machines) */
+  /** State arbitraire (utilisé par sprite callbacks ; data[N] = sState/sTimer/etc
+   *  selon les EXPR macros décomp dans intro-data.ts) */
   data: number[];
-  /** True si sprite caché (= gba.oam[i].visible = false aussi) */
+  /** Position absolue (1:1 décomp sprite->x / sprite->y) */
+  x: number;
+  y: number;
+  /** Delta offsets (1:1 décomp sprite->x2 / sprite->y2). Final OAM.x = x + x2. */
+  x2: number;
+  y2: number;
+  /** Visibility (= !gba.oam[i].visible). 1:1 décomp sprite->invisible. */
   invisible: boolean;
+  /** Flips (1:1 décomp sprite->hFlip / vFlip). */
+  hFlip: boolean;
+  vFlip: boolean;
+  /** Affine matrix slot (1:1 décomp sprite->oam.matrixNum). */
+  matrixNum: number;
+  /** Anim ended flag — set par tickSpriteAnims quand l'anim atteint END. */
+  animEnded: boolean;
+  /** Affine anim ended flag — set quand l'affine anim atteint END. */
+  affineAnimEnded: boolean;
+  /** Callback exécuté chaque frame (1:1 décomp sprite->callback). */
+  callback: ((sprite: DecompSprite, rt: DecompRuntime) => void) | null;
+  /** sprite ID (notre extension pour DestroySprite par ID). */
+  spriteId: number;
+  /** Tile base dans objVram (= tileSheetTagToTileStart pour le tileTag du template).
+   *  Utilisé par tickSpriteAnims pour calculer tileId final = tileBase + frame.tileNum. */
+  tileBase: number;
+  /** OAM mode (1:1 décomp sprite->oam.objMode : NORMAL/BLEND/OBJ_WINDOW). */
+  objMode: 0 | 1 | 2;
 }
 
 // ─── Task mock minimal ───────────────────────────────────────────────────────
@@ -505,7 +532,16 @@ export class DecompRuntime {
     oam.flipV = false;
 
     const spriteId = this.nextSpriteId++;
-    const sprite: DecompSprite = { oamIndex, data: new Array(16).fill(0), invisible: false };
+    const sprite: DecompSprite = {
+      oamIndex, data: new Array(16).fill(0), invisible: false,
+      x: cfg.x, y: cfg.y, x2: 0, y2: 0,
+      hFlip: false, vFlip: false,
+      matrixNum: cfg.affineParamIndex ?? 0,
+      animEnded: false, affineAnimEnded: false,
+      callback: null,
+      spriteId, tileBase: 0,
+      objMode: 0,
+    };
     this.gSprites.set(spriteId, sprite);
     return { spriteId, oamIndex };
   }
@@ -515,12 +551,18 @@ export class DecompRuntime {
     return this.gSprites.get(spriteId);
   }
 
-  /** Set sprite visibility (mappe à gba.oam[i].visible). */
+  /** Set sprite visibility — set sprite.invisible, syncSpritesToOam propage à oam. */
   setSpriteInvisible(spriteId: number, invisible: boolean): void {
     const s = this.gSprites.get(spriteId);
     if (!s) return;
     s.invisible = invisible;
-    this.gba.oam[s.oamIndex].visible = !invisible;
+    this.gba.oam[s.oamIndex].visible = !invisible;  // immédiat aussi (avant prochain sync)
+  }
+
+  /** Attache une callback à un sprite (1:1 décomp `sprite->callback = SpriteCB_X`). */
+  setSpriteCallback(spriteId: number, cb: ((sprite: DecompSprite, rt: DecompRuntime) => void) | null): void {
+    const s = this.gSprites.get(spriteId);
+    if (s) s.callback = cb;
   }
 
   // ============================================================================
@@ -709,6 +751,14 @@ export class DecompRuntime {
         tileBase,
       });
     }
+    // Store tileBase + objMode dans le sprite (utilisé par tickSpriteAnims/callbacks)
+    const sprite = this.gSprites.get(result.spriteId);
+    if (sprite) {
+      sprite.tileBase = tileBase;
+      sprite.objMode = oam.objMode === 'ST_OAM_OBJ_BLEND' ? 1
+                     : oam.objMode === 'ST_OAM_OBJ_WINDOW' ? 2
+                     : 0;
+    }
 
     console.log(`[runtime] CreateSprite ${templateName} → spriteId ${result.spriteId} (tile ${tileBase + initialTileOffset}, bank ${palSlot}, ${w}×${h})`);
     return result.spriteId;
@@ -766,7 +816,16 @@ export class DecompRuntime {
   // ============================================================================
 
   /** Tick 60Hz fixed-step. Phaser update peut tourner à >60Hz selon refresh rate écran ;
-   *  on accumule deltaMs et on ne process que des frames de 16.67ms. */
+   *  on accumule deltaMs et on ne process que des frames de 16.67ms.
+   *
+   *  Ordre d'exécution chaque frame (1:1 décomp main loop) :
+   *    1. UpdatePaletteFade
+   *    2. tickSpriteAnims (cycle tileNum + set animEnded)
+   *    3. runSpriteCallbacks (= chaque sprite.callback exécuté, mute state)
+   *    4. runTasks (= les Task_X scene-level)
+   *    5. syncSpritesToOam (propage sprite.x+x2 → oam.x etc.)
+   *    6. gIntroFrameCounter++
+   */
   tickFixed(deltaMs: number): number {
     this.accumulatorMs += deltaMs;
     let framesProcessed = 0;
@@ -775,12 +834,48 @@ export class DecompRuntime {
       this.accumulatorMs -= this.FRAME_TIME_MS;
       this.UpdatePaletteFade();
       this.tickSpriteAnims();
+      this.runSpriteCallbacks();
       this.runTasks();
+      this.syncSpritesToOam();
       this.gIntroFrameCounter++;
       framesProcessed++;
     }
     if (this.accumulatorMs > 10 * this.FRAME_TIME_MS) this.accumulatorMs = 0;
     return framesProcessed;
+  }
+
+  /** Run tous les sprite callbacks (1:1 décomp main loop sprite update). */
+  private runSpriteCallbacks(): void {
+    const snapshot = Array.from(this.gSprites.values());
+    for (const sprite of snapshot) {
+      if (this.gSprites.has(sprite.spriteId) && sprite.callback) {
+        sprite.callback(sprite, this);
+      }
+    }
+  }
+
+  /** Sync les fields sprite (x/y/x2/y2/invisible/hFlip/vFlip) → gba.oam.
+   *  Le décomp utilise sprite->x/y/x2/y2 séparés ; OAM final.x = x + x2. */
+  private syncSpritesToOam(): void {
+    for (const sprite of this.gSprites.values()) {
+      const oam = this.gba.oam[sprite.oamIndex];
+      oam.x = (sprite.x + sprite.x2) & 0x1FF;        // 9-bit signed wrap
+      oam.y = (sprite.y + sprite.y2) & 0xFF;          // 8-bit signed wrap
+      oam.visible = !sprite.invisible;
+      oam.flipH = sprite.hFlip;
+      oam.flipV = sprite.vFlip;
+      oam.affineParamIndex = sprite.matrixNum;
+      oam.objMode = sprite.objMode as 0 | 1 | 2;
+    }
+  }
+
+  /** 1:1 décomp DestroySprite(sprite) — invisible OAM + retire des maps. */
+  DestroySprite(spriteId: number): void {
+    const sprite = this.gSprites.get(spriteId);
+    if (!sprite) return;
+    this.gba.oam[sprite.oamIndex].visible = false;
+    this.gSprites.delete(spriteId);
+    this.spriteAnimStates.delete(spriteId);
   }
 
   /** Reset additionnel pour les nouveaux maps (sprite-system). */
