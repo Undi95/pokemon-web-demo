@@ -88,6 +88,8 @@ import {
   CreateBicycleBgAnimationTask, SetIntroPart2BgCnt, CycleSceneryPalette,
   // Audio (Phase 1 Action 4 #1)
   m4aSongNumStart, MUS_INTRO, MUS_INTRO_BATTLE, PlaySE,
+  // Scene 3 palette dyn (Phase 1 Action 4 #5)
+  INTRO3_RAW_PTR,
   // Constants
   BG_SCREEN_SIZE, PALETTES_ALL,
   // Display + addressing
@@ -482,7 +484,7 @@ export const SpriteCB_Lightning: SpriteCallback = (sprite, rt) => {
           sprite.data[1] = 0x1C2;
           sprite.data[0]++;
       case 1:
-          rt.CpuCopy16(/* TODO: INTRO3_RAW_PTR(sprite.data[1]) */ new Uint16Array(0), 0, ((5) * 16) + 13, Math.floor((PLTT_SIZEOF(1) / 2)));
+          rt.CpuCopy16(INTRO3_RAW_PTR(sprite.data[1]), 0, ((5) * 16) + 13, Math.floor((PLTT_SIZEOF(1) / 2)));
           sprite.data[1] += 2;
           if (sprite.data[1] != 0x1CE)
               break;
@@ -493,7 +495,7 @@ export const SpriteCB_Lightning: SpriteCallback = (sprite, rt) => {
           if (--sprite.data[2] == 0)
           {
               sprite.data[2] = 4;
-              rt.CpuCopy16(/* TODO: INTRO3_RAW_PTR(sprite.data[1]) */ new Uint16Array(0), 0, ((5) * 16) + 13, Math.floor((PLTT_SIZEOF(1) / 2)));
+              rt.CpuCopy16(INTRO3_RAW_PTR(sprite.data[1]), 0, ((5) * 16) + 13, Math.floor((PLTT_SIZEOF(1) / 2)));
               sprite.data[1] -= 2;
               if (sprite.data[1] == 0x1C0)
                   rt.DestroySprite(sprite.spriteId);
@@ -1433,7 +1435,7 @@ export const Task_Scene3_Groudon: TaskCallback = (task, rt) => {
           if (--data[6] == 0)
           {
               data[6] = 2;
-              rt.CpuCopy16(/* TODO: INTRO3_RAW_PTR(data[7]) */ new Uint16Array(0), 0, ((1) * 16) + 15, Math.floor((PLTT_SIZEOF(1) / 2)));
+              rt.CpuCopy16(INTRO3_RAW_PTR(data[7]), 0, ((1) * 16) + 15, Math.floor((PLTT_SIZEOF(1) / 2)));
               data[7] += 2;
               if (data[7] == 0x1EC)
                   data[0]++;
@@ -1450,7 +1452,7 @@ export const Task_Scene3_Groudon: TaskCallback = (task, rt) => {
           if (--data[6] == 0)
           {
               data[6] = 2;
-              rt.CpuCopy16(/* TODO: INTRO3_RAW_PTR(data[7]) */ new Uint16Array(0), 0, ((1) * 16) + 15, Math.floor((PLTT_SIZEOF(1) / 2)));
+              rt.CpuCopy16(INTRO3_RAW_PTR(data[7]), 0, ((1) * 16) + 15, Math.floor((PLTT_SIZEOF(1) / 2)));
               data[7] -= 2;
               if (data[7] == 0x1E0)
               {
@@ -1618,7 +1620,7 @@ export const Task_Scene3_Kyogre: TaskCallback = (task, rt) => {
           if (--data[6] == 0)
           {
               data[6] = 4;
-              rt.CpuCopy16(/* TODO: INTRO3_RAW_PTR(data[7]) */ new Uint16Array(0), 0, ((2) * 16) + 15, Math.floor((PLTT_SIZEOF(1) / 2)));
+              rt.CpuCopy16(INTRO3_RAW_PTR(data[7]), 0, ((2) * 16) + 15, Math.floor((PLTT_SIZEOF(1) / 2)));
               data[7] -= 2;
               if (data[7] == 0x1E0)
                   data[0]++;
@@ -1636,7 +1638,7 @@ export const Task_Scene3_Kyogre: TaskCallback = (task, rt) => {
           if (--data[6] == 0)
           {
               data[6] = 4;
-              rt.CpuCopy16(/* TODO: INTRO3_RAW_PTR(data[7]) */ new Uint16Array(0), 0, ((2) * 16) + 15, Math.floor((PLTT_SIZEOF(1) / 2)));
+              rt.CpuCopy16(INTRO3_RAW_PTR(data[7]), 0, ((2) * 16) + 15, Math.floor((PLTT_SIZEOF(1) / 2)));
               data[7] += 2;
               if (data[7] == 0x1EE)
               {
@@ -1931,7 +1933,7 @@ export const Task_RayquazaAttack: TaskCallback = (task, rt) => {
       case 0:
           if ((data[2] & 1) != 0)
           {
-              rt.CpuCopy16(/* TODO: INTRO3_RAW_PTR(0x1A2 + data[1] * 2) */ new Uint16Array(0), 0, ((5) * 16) + 14, Math.floor((PLTT_SIZEOF(1) / 2)));
+              rt.CpuCopy16(INTRO3_RAW_PTR(0x1A2 + data[1] * 2), 0, ((5) * 16) + 14, Math.floor((PLTT_SIZEOF(1) / 2)));
               data[1]++;
           }
           if (data[1] == 6)
@@ -1946,7 +1948,7 @@ export const Task_RayquazaAttack: TaskCallback = (task, rt) => {
           {
               if ((data[2] & 1) != 0)
               {
-                  rt.CpuCopy16(/* TODO: INTRO3_RAW_PTR(0x1A2 + data[1] * 2) */ new Uint16Array(0), 0, ((5) * 16) + 8, Math.floor((PLTT_SIZEOF(1) / 2)));
+                  rt.CpuCopy16(INTRO3_RAW_PTR(0x1A2 + data[1] * 2), 0, ((5) * 16) + 8, Math.floor((PLTT_SIZEOF(1) / 2)));
                   data[1]++;
               }
               if (data[1] == 6)
@@ -1965,7 +1967,7 @@ export const Task_RayquazaAttack: TaskCallback = (task, rt) => {
           {
               if ((data[2] & 1) != 0)
               {
-                  rt.CpuCopy16(/* TODO: INTRO3_RAW_PTR(0x182 + data[1] * 2) */ new Uint16Array(0), 0, ((5) * 16) + 12, Math.floor((PLTT_SIZEOF(1) / 2)));
+                  rt.CpuCopy16(INTRO3_RAW_PTR(0x182 + data[1] * 2), 0, ((5) * 16) + 12, Math.floor((PLTT_SIZEOF(1) / 2)));
                   data[1]++;
               }
               if (data[1] == 6)
@@ -1989,9 +1991,9 @@ export const Task_RayquazaAttack: TaskCallback = (task, rt) => {
               if (--data[3] != 0)
               {
                   BlendPalette(BG_PLTT_ID(5), 16, data[3], RGB(9, 10, 10));
-                  rt.CpuCopy16(/* TODO: INTRO3_RAW_PTR(428) */ new Uint16Array(0), 0, ((5) * 16) + 14, Math.floor((PLTT_SIZEOF(1) / 2)));
-                  rt.CpuCopy16(/* TODO: INTRO3_RAW_PTR(428) */ new Uint16Array(0), 0, ((5) * 16) + 8, Math.floor((PLTT_SIZEOF(1) / 2)));
-                  rt.CpuCopy16(/* TODO: INTRO3_RAW_PTR(396) */ new Uint16Array(0), 0, ((5) * 16) + 12, Math.floor((PLTT_SIZEOF(1) / 2)));
+                  rt.CpuCopy16(INTRO3_RAW_PTR(428), 0, ((5) * 16) + 14, Math.floor((PLTT_SIZEOF(1) / 2)));
+                  rt.CpuCopy16(INTRO3_RAW_PTR(428), 0, ((5) * 16) + 8, Math.floor((PLTT_SIZEOF(1) / 2)));
+                  rt.CpuCopy16(INTRO3_RAW_PTR(396), 0, ((5) * 16) + 12, Math.floor((PLTT_SIZEOF(1) / 2)));
               }
               else
               {

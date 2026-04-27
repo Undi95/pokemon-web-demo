@@ -68,6 +68,8 @@ import {
   CreateBicycleBgAnimationTask, SetIntroPart2BgCnt, CycleSceneryPalette,
   // Audio (Phase 1 Action 4 #1)
   m4aSongNumStart, MUS_INTRO, MUS_INTRO_BATTLE, PlaySE,
+  // Scene 3 palette dyn (Phase 1 Action 4 #5)
+  INTRO3_RAW_PTR,
   // Constants
   BG_SCREEN_SIZE, PALETTES_ALL,
   // Display + addressing
@@ -170,6 +172,13 @@ let gIntroCredits_MovingSceneryState = 0;
     if (soundReplaceCount === 2) return 'm4aSongNumStart(MUS_INTRO_BATTLE);';
     return `/* TODO sound: m4aSongNumStart (call #${soundReplaceCount}) */;`;
   });
+
+  // PATCH 4c : Replace `/* TODO: INTRO3_RAW_PTR(X) */ new Uint16Array(0)` par
+  // `INTRO3_RAW_PTR(X)` (= 1:1 décomp src/intro.c:1870 macro).
+  s = s.replace(
+    /\/\* TODO: INTRO3_RAW_PTR\(([^)]+)\) \*\/ new Uint16Array\(0\)/g,
+    'INTRO3_RAW_PTR($1)',
+  );
 
   // PATCH 5 : Bug transpileur "N (...)" → "N * (...)" multiplications
   // 3 occurrences SpriteCB_WaterDrop_Ripple + ligne CreateWaterDrop SetOamMatrix

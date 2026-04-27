@@ -312,9 +312,46 @@ export function CreateBicycleBgAnimationTask(_mode: number, _bg1Speed: number, _
  *  (= la Task_Scene2_Load setup déjà BGCNT directement). À remplacer si
  *  LoadIntroPart2Graphics démontre que c'est nécessaire. */
 export function SetIntroPart2BgCnt(_scenery: number): void { /* TODO Phase 1 #3 */ }
-/** 1:1 décomp src/intro_credits_graphics.c:989 — cycle palette scenery couleurs.
- *  Phase 0c stub no-op (= la palette reste statique, pas d'animation cycling). */
-export function CycleSceneryPalette(_mode: number): void { /* no-op */ }
+/** 1:1 décomp src/intro_credits_graphics.c:989 — cycle palette scenery couleurs
+ *  toutes les 4 frames pour effet shimmer (sun reflection on grass).
+ *
+ *  mode=0 (default) : swap palette colors 9↔10 du BG bank 0.
+ *  mode=2 : swap RGB(7,9,15)↔RGB(21,20,0) puis RGB(28,24,0)↔RGB(7,9,15) sur
+ *           palette colors 12+13.
+ *  mode=1 : no-op (= pause cycling).
+ *
+ *  Le décomp utilise `gMain.vblankCounter1` qu'on simule via gIntroFrameCounter. */
+export function CycleSceneryPalette(mode: number): void {
+  const r = rt();
+  const fc = r.gIntroFrameCounter;
+  if (mode === 1) return;
+  if ((fc & 3) !== 0 || r.gPaletteFade.active) return;
+
+  if (mode === 2) {
+    let x: number, y: number;
+    if (fc & 4) {
+      x = (7) | ((9) << 5) | ((15) << 10);   // RGB(7,9,15)
+      y = (21) | ((20) << 5) | ((0) << 10);  // RGB(21,20,0)
+    } else {
+      x = (28) | ((24) << 5) | ((0) << 10);  // RGB(28,24,0)
+      y = (7) | ((9) << 5) | ((15) << 10);   // RGB(7,9,15)
+    }
+    r.gba.palette.loadBgRange(0 + 12, new Uint16Array([x]));
+    r.gba.palette.loadBgRange(0 + 13, new Uint16Array([y]));
+  } else {
+    // mode=0 default : swap palette colors 9 et 10
+    let x: number, y: number;
+    if (fc & 4) {
+      x = r.gPlttBufferUnfaded.get(0 + 9);
+      y = r.gPlttBufferUnfaded.get(0 + 10);
+    } else {
+      x = r.gPlttBufferUnfaded.get(0 + 10);
+      y = r.gPlttBufferUnfaded.get(0 + 9);
+    }
+    r.gba.palette.loadBgRange(0 + 9, new Uint16Array([x]));
+    r.gba.palette.loadBgRange(0 + 10, new Uint16Array([y]));
+  }
+}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // AUDIO M4A WIRING (Phase 1 Action 4 #1)
@@ -398,6 +435,25 @@ export function m4aSongNumStart(songId: number): void {
 
 /** 1:1 décomp `PlaySE(seId)` — joue un sound effect one-shot. Phase 0c stub. */
 export function PlaySE(_seId: number): void { /* TODO Phase 1 Action 4 */ }
+
+/** 1:1 décomp `INTRO3_RAW_PTR(palId)` macro src/intro.c:1870 :
+ *    #define INTRO3_RAW_PTR(palId) (((void *) &gIntro3Bg_Pal) + palId)
+ *
+ *  Retourne un pointer dans gIntro3Bg_Pal à offset `palId` bytes. Utilisé
+ *  pour CpuCopy16(INTRO3_RAW_PTR(N), &gPlttBufferFaded[idx], 2) → copy 1
+ *  entry u16 à différents offsets dans le palette buffer (palette swap dyn).
+ *
+ *  Notre version : retourne Uint16Array view dans gIntro3Bg_Pal cache à
+ *  l'offset `palId/2` entries (= palId bytes / 2 bytes par u16). */
+export function INTRO3_RAW_PTR(palIdBytes: number): ArrayLike<number> {
+  const data = assetCache.get('gIntro3Bg_Pal');
+  if (!data || !(data instanceof Uint16Array)) {
+    console.warn('[INTRO3_RAW_PTR] gIntro3Bg_Pal not in cache, return empty');
+    return new Uint16Array(0);
+  }
+  const startEntry = (palIdBytes >> 1) & ~0;  // u16 entry index
+  return data.subarray(startEntry);
+}
 
 /** Constants décomp commonly référencées sans être résolues par le transpileur. */
 export const MALE = 0;
