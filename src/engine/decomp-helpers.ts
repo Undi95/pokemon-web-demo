@@ -192,6 +192,20 @@ export function PLTT_SIZEOF(n: number): number { return n * 2; }
 export function OBJ_PLTT_ID_FADED(n: number): number { return 256 + n * 16; }
 export function BG_PLTT_ID_FADED(n: number): number { return n * 16; }
 
+// ─── Function-like #define macros from include/gba/io_reg.h ──────────────────
+/** 1:1 décomp `#define BLDALPHA_BLEND(t1, t2) (((t2) << 8) | (t1))`. */
+export function BLDALPHA_BLEND(t1: number, t2: number): number {
+  return ((t2 & 0xFF) << 8) | (t1 & 0xFF);
+}
+/** 1:1 décomp `#define WIN_RANGE(a, b) (((a) << 8) | (b))`. */
+export function WIN_RANGE(a: number, b: number): number {
+  return ((a & 0xFF) << 8) | (b & 0xFF);
+}
+/** 1:1 décomp `#define GET_TRUE_SPRITE_INDEX(i) ((i - ANIM_SPRITES_START))`.
+ *  ANIM_SPRITES_START = 10000 (battle anim sprite tag base). */
+export const ANIM_SPRITES_START = 10000;
+export function GET_TRUE_SPRITE_INDEX(i: number): number { return i - ANIM_SPRITES_START; }
+
 // ─── SPRITE_SHAPE / SPRITE_SIZE constants (extracted from include/gba/types.h) ─
 /** Décode `SPRITE_SHAPE(WxH)` macro string ("16x32") en (shape, size) tuple.
  *  Notre OAM_DATAS contient `_sizeWH` numérique → on n'a pas besoin de décoder. */

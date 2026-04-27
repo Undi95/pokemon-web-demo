@@ -43,9 +43,14 @@ import {
   TIMER_END_SCENE_1, TIMER_START_SCENE_2,
   GFX_SOURCES,
 } from '../engine/decomp-data/intro-data';
+// Tous transcrits 1:1 décomp via scripts/transpile-callbacks.mjs.
+// Convention unifiée : helpers Create* prennent (rt, ...args), callbacks SpriteCB_*
+// prennent (sprite, rt). Tous appels rt.X(spriteId, ...) (méthodes runtime).
+// Plus aucun manuel nécessaire — re-runnable via npm run transpile:callbacks.
 import {
-  CreateGameFreakLogoSprites, SpriteCB_FlygonSilhouette,
-} from '../engine/decomp-impls/intro-callbacks';
+  CreateGameFreakLogoSprites,
+  SpriteCB_FlygonSilhouette,
+} from '../engine/decomp-data/auto/src/intro-callbacks-auto';
 import { primeAudio, playMidiLoop } from '../engine/music';
 
 // Convertit un GFX_SOURCES path "graphics/intro/scene_1/bg.pal" → URL public
@@ -61,21 +66,52 @@ function urlFor(decompPath: string): string {
  * 2) Try `s`-prefix variant si le symbole est `g`-prefixed (et inverse)
  * 3) Try variants de suffix : `_Gfx`, `_Pal` (le PNG contient les deux)
  */
+/** Mapping additionnel pour symboles `g`-prefixed extern (= dans graphics.c décomp).
+ *  GFX_SOURCES n'a que les `s`-prefixed file-static. Pour les externs (Sparkle,
+ *  Lightning, Bubbles, etc.), on map vers les fichiers correspondants. */
+const GFX_EXTERN_MAP: Record<string, string> = {
+  // Scene 1 OBJ extras
+  'gIntroSparkle_Gfx': 'intro/scene_1/sparkle.png',
+  'gIntroLightning_Gfx': 'intro/scene_3/lightning.png',
+  'gIntroLightning_Pal': 'intro/scene_3/lightning.png',  // PNG embedded pal
+  'gIntroFlygonSilhouette_Gfx': 'intro/scene_1/flygon.png',
+  // Scene 2 sprites externs
+  'gIntroBrendan_Gfx': 'intro/scene_2/brendan.png',
+  'gIntroMay_Gfx': 'intro/scene_2/may.png',
+  'gIntroBicycle_Gfx': 'intro/scene_2/bicycle.png',
+  'gIntroFlygon_Gfx': 'intro/scene_2/flygon.png',
+  'gIntroVolbeat_Gfx': 'intro/scene_2/volbeat.png',
+  'gIntroTorchic_Gfx': 'intro/scene_2/torchic.png',
+  'gIntroManectric_Gfx': 'intro/scene_2/manectric.png',
+  'gIntroVolbeat_Pal': 'intro/scene_2/volbeat.png',
+  'gIntroTorchic_Pal': 'intro/scene_2/torchic.png',
+  'gIntroManectric_Pal': 'intro/scene_2/manectric.png',
+  // Scene 3
+  'gIntroBubbles_Gfx': 'intro/scene_3/bubbles.png',
+  'gIntroBubbles_Pal': 'intro/scene_3/bubbles.png',
+};
+
 function resolveDecompUrl(symbol: string): string | null {
   // 1) Direct check
   const direct = (GFX_SOURCES as Record<string, { path: string }>)[symbol];
   if (direct) return urlFor(direct.path);
 
-  // 2) Toggle `g`/`s` prefix
+  // 2) Extern map (Sparkle/Lightning/Brendan/etc. depuis graphics.c décomp)
+  const externPath = GFX_EXTERN_MAP[symbol];
+  if (externPath) return '/decomp/em/' + externPath;
+
+  // 3) Toggle `g`/`s` prefix
   const toggled = symbol.startsWith('g') ? 's' + symbol.slice(1)
                 : symbol.startsWith('s') ? 'g' + symbol.slice(1)
                 : null;
   if (toggled) {
     const t = (GFX_SOURCES as Record<string, { path: string }>)[toggled];
     if (t) return urlFor(t.path);
+    const e = GFX_EXTERN_MAP[toggled];
+    if (e) return '/decomp/em/' + e;
   }
 
-  // 3) Toggle `_Gfx` ↔ `_Pal` (PNG contient embedded PLTE = pal)
+  // 4) Toggle `_Gfx` ↔ `_Pal` (PNG contient embedded PLTE = pal)
   const sufVariants = symbol.endsWith('_Gfx') ? [symbol.replace(/_Gfx$/, '_Pal'), (toggled ?? '').replace(/_Gfx$/, '_Pal')]
                     : symbol.endsWith('_Pal') ? [symbol.replace(/_Pal$/, '_Gfx'), (toggled ?? '').replace(/_Pal$/, '_Gfx')]
                     : [];
@@ -83,6 +119,8 @@ function resolveDecompUrl(symbol: string): string | null {
     if (!v) continue;
     const e = (GFX_SOURCES as Record<string, { path: string }>)[v];
     if (e) return urlFor(e.path);
+    const e2 = GFX_EXTERN_MAP[v];
+    if (e2) return '/decomp/em/' + e2;
   }
 
   console.warn('[IntroGba] resolveDecompUrl: cannot resolve symbol', symbol);
@@ -303,6 +341,12 @@ export class IntroSceneGba extends Phaser.Scene {
       this.gba.bg(2).config.vofs = 80;
       this.gba.bg(3).config.vofs = 0;
 
+      // ─── EXTRA PALETTE : gIntroGameFreakTextFade_Pal pour color cycle letters ─
+      // 1:1 décomp : SpriteCB_LogoLetter case 2/3 fait CpuCopy16(textPal, OBJ_PLTT_ID(1)+15, ...)
+      // pour cycle les couleurs des lettres GAME FREAK (= effet rouge/jaune fade).
+      // text.pal contient 9 colors × 3 banks = 48 entries (selon COLOR_CHANGES=9).
+      await this.rt.LoadExtraPalette('gIntroGameFreakTextFade_Pal', '/decomp/em/intro/scene_1/text.pal');
+
       // ─── SPRITE SHEETS + PALETTES via sprite-system (1:1 décomp, ZÉRO hardcode) ─
       // 1:1 décomp lignes 1192-1196 :
       //   LoadCompressedSpriteSheet(sSpriteSheet_WaterDropsAndLogo);
@@ -326,7 +370,8 @@ export class IntroSceneGba extends Phaser.Scene {
       // sGameFreakLetterData[i] pour position + sGameFreakLetterStartDelays[i] pour
       // delay avant apparition. Tous les sprites ont leurs callbacks SpriteCB_LogoLetter
       // / SpriteCB_GameFreakLogo attachés (transcription bodyC dans intro-callbacks.ts).
-      this.sLogoSpriteId = CreateGameFreakLogoSprites(this.rt, DISPLAY_WIDTH / 2, DISPLAY_HEIGHT / 2);
+      // 1:1 décomp : CreateGameFreakLogoSprites(120, 80, 0) — le 3ème arg "unused" doit être passé
+      this.sLogoSpriteId = CreateGameFreakLogoSprites(this.rt, DISPLAY_WIDTH / 2, DISPLAY_HEIGHT / 2, 0);
 
       // Flygon silhouette pré-créé caché (visible à TIMER_FLYGON_SILHOUETTE_APPEAR
       // via Task_Scene1_PanUp qui set invisible = false ; le callback SpriteCB_FlygonSilhouette

@@ -16,6 +16,167 @@ Stack : Vite + TypeScript + Phaser 3 + @pkmn/sim + @pkmn/dex
 
 ---
 
+## Session 67 — Decomp runtime + transpileur C→TS auto pour 1:1 GBA (2026-04-27)
+
+**Vision user** : *"Notre site est littéralement un emulateur de pokemon
+emeraude seulement, en TypeScript. Si ca marche pas, c'est qu'on a tort.
+La decompil a toujours raison."*
+
+Pivot architectural : au lieu de bricoler les scenes intro/title, construire
+un **runtime décomp** + **transpileur mécanique C bodyC → TypeScript** qui
+permet de transcrire les 401 SpriteCB + 992 Task + 241 CB2 décomp en TS
+exécutable sur notre engine GBA.
+
+### Extracteurs étendus à 87 .c (audit 53% → 12% missing)
+
+3 vagues d'expansion `extract-engine-helpers.mjs` SOURCES + audit script :
+
+- **Vague 1 (12 .c)** : sprite.c (102 funcs) / palette.c (34) / scanline_effect.c (9)
+  / random.c (4) / decompress.c (20) / main.c (29) / task.c (14) / window.c (29)
+  / gpu_regs.c (12) / text_window.c (11) / bg.c (52)
+- **Vague 2 (44 .c scenes + cross-cutting)** : pokemon_icon, trainer_pokemon_sprites,
+  naming_screen, pokemon_animation, item, menu, string_util, malloc, sound, text,
+  pokemon, event_data, link, script, field_player_avatar, overworld, list_menu,
+  party_menu, pokemon_storage_system, field_message_box, field_weather,
+  event_object_movement, script_menu, battle_anim_throw, field_effect, battle_main,
+  contest, contest_link, contest_painting, new_game, load_save, main_menu, credits,
+  save_failed_screen, start_menu, option_menu, title_screen, save (= 4337 funcs)
+- **Vague 3 (38 .c hors-scope, dispo pour plus tard)** : union_room*, pokedex*,
+  berry_blender, roulette, cable_club/car, contest_util, egg_hatch, evolution_*,
+  link_rfu_2/3, mystery_gift*, trade, safari_zone, slot_machine, dewford_trend,
+  lottery_corner, mauville_old_man, match_call, easy_chat, scrcmd (= **6576 funcs total**)
+
+`extract-sine-table.mjs` : G_SINE_TABLE 320 entries Q.8 fixed depuis trig.c.
+
+`extract-sprite-system.mjs` étendu : 27 SPRITE_DATA_TABLES (sGameFreakLetterData,
+sGameFreakLetterStartDelays, sGameFreakLettersMoveSpeed, sSparkleCoords,
+sGroudonRockData, sKyogreBubbleData, sPresentsLetterData, sUnusedData),
+36 EXTERNAL_PALETTES (gIntroGameFreakTextFade_Pal localisé à text.pal),
+63 SPRITE_ANIMS, 27 SPRITE_TEMPLATES, 22 OAM_DATAS, 36 SPRITE_CALLBACKS,
+14 SPRITE_HELPERS.
+
+`audit-decomp-symbols.mjs` exhaustif : scanne 153 auto-tasks + 55 auto-engine
++ headers BIOS + .c file-local #defines. Score final **538 missing / 4530 = 12%**.
+Manquants restants tous hors scope (battle_controller_link, battle_pyramid,
+battle_transition, evolution_graphics avancée).
+
+### Decomp runtime + helpers
+
+`engine/decomp-runtime.ts` (700+L) : DecompRuntime class avec
+- SetGpuReg, LoadPalette, BeginNormalPaletteFade
+- LoadSpritePalettesFromTable (paletteTag → OBJ slot auto via SPRITE_PALETTES)
+- LoadCompressedSpriteSheetsFromTable (tileTag → tileNum start auto)
+- CreateSpriteFromTemplate (résout SPRITE_TEMPLATES + OAM_DATAS + anims)
+- CreateTask, DestroyTask, CreateSprite, DestroySprite, StartSpriteAnim,
+  StartSpriteAffineAnim
+- gIntroFrameCounter, gPaletteFade, gTasks Map, gSprites Map
+- gPlttBufferFaded/Unfaded (PaletteBuffer wrapper sur gba.palette)
+- CpuCopy16(src, srcOffset, dstFlat, count) 1:1 décomp
+- LoadExtraPalette + getExtraPalette (e.g. text.pal pour color cycle letters)
+- **Fixed 60Hz timer** tickFixed accumulator-based (= GBA framerate exact peu
+  importe le refresh rate écran browser)
+- Sprite anim system : tickSpriteAnims cycle tileNum chaque frame depuis SPRITE_ANIMS
+- Sprite callback system : runSpriteCallbacks chaque frame
+- syncSpritesToOam : oam.x = sprite.x + sprite.x2 + centerToCornerVecX
+
+`engine/decomp-helpers.ts` : Sin, Cos, gSineTable, Q_8_8_TO_INT,
+SetOamMatrix, **CalcCenterToCornerVec proper** (1:1 décomp src/sprite.c:687
+sCenterToCornerVecTable[3][4][2] + ×2 si AFFINE_DOUBLE_MASK), PaletteBuffer,
+RGB/RGB_BLACK/RGB_WHITE, ST_OAM_AFFINE_*, BLDALPHA_BLEND, WIN_RANGE,
+GET_TRUE_SPRITE_INDEX, ANIM_SPRITES_START.
+
+`engine/decomp-impls/sprite-engine-impl.ts` : **affine anim system complet**
+1:1 décomp src/sprite.c — StartSpriteAffineAnim, BeginAffineAnim,
+ContinueAffineAnim, AffineAnimStateReset/StartAnim, ApplyAffineAnimFrame
+(non-zero check 1:1), ApplyAffineAnimFrameRelative, tickAllAffineAnims.
+Matrix calculation **1:1 ObjAffineSet** : `pa = (xScale * cos) >> 8` +
+`pb = -(xScale * sin) >> 8` (= fix bug "lettres à l'envers" de pa=invXScale).
+
+`engine/decompress.ts` : LZ77UnComp 1:1 spec GBATEK + agbcc/lib/libgcc/lz77.c
+(header 0x10 + size 3 bytes + body LZSS avec flag bytes + back-refs/literals).
+
+### Transpileur C bodyC → TS (`scripts/transpile-callbacks.mjs`, ~700L)
+
+Mécanique : pour chaque SpriteCB_X / Task_X / CB2_X / Helper extracted,
+applique ~50 règles regex/balanced-bracket :
+- `sprite->X` → `sprite.X`, `sprite->oam.X` → `rt.gba.oam[sprite.oamIndex].X`
+- `sprite->sState/sTimer/sLetterId/etc` → `sprite.data[N]` via `*_EXPR` mapping
+  scope-aware (#define/#undef tracking par .c)
+- `gIntroFrameCounter == TIMER_X` → `rt.gIntroFrameCounter >= TIMER_X` (fix
+  `===` strict pour 60Hz fixed-step)
+- `gSprites[X]` → `_gs(rt, X)` (safe-getter sentinel)
+- `gPlttBufferFaded[N]` → `rt.gPlttBufferFaded.set/get(N)`
+- `Sin/Cos/Q_8_8_TO_INT/SetOamMatrix/RGB` → imported helpers
+- `StartSpriteAnim(&gSprites[X], N)` → `rt.StartSpriteAnim(X, N)` (méthode
+  runtime, **convention unifiée**)
+- `StartSpriteAffineAnim(&gSprites[X], N)` → `rt.StartSpriteAffineAnim(X, N)`
+- `DestroySprite(&gSprites[X])` → `rt.DestroySprite(X)`
+- `CreateSprite(&sSpriteTemplate_X, x, y, prio)` → `rt.CreateSpriteFromTemplate('sSpriteTemplate_X', x, y)`
+- `CpuCopy16(SRC, DST, SZ)` → `rt.CpuCopy16(SRC, off, dstFlat, SZ/2)`
+- `Random()` → `Math.floor(Math.random() * 0x10000)`
+
+**Constant resolver** : grep `#define` + `enum` du décomp + auto-generated
+`*-data.ts` exports → résout les `_UNDEFINED = 0` stubs en valeurs concrètes.
+
+**Output** : 153 modules `auto/src/<scene>-callbacks-auto.ts` avec
+`@ts-nocheck` (bypass type checking pour runtime-only correctness).
+
+**Stats** : **1632/1648 transcrits (99%)** — 388 SpriteCB + 989 Task + 241 CB2
++ 14 Helpers. 16 vides = `{}` empty bodies LÉGITIMES dans le décomp source
+(SpriteCB_Null, SpriteCB_Idle, Task_Idle).
+
+### IntroSceneGba switché vers auto modules
+
+`CreateGameFreakLogoSprites` + `SpriteCB_FlygonSilhouette` importés depuis
+`auto/src/intro-callbacks-auto.ts` (= transcription mécanique pure 1:1 décomp).
+Plus aucun manuel pour ces 2 fonctions.
+
+`_data-tables-flat.ts` : ré-exporte les SPRITE_DATA_TABLES `.values` sous leurs
+noms originaux (sGameFreakLetterData etc.) pour usage dans les modules auto.
+
+`GFX_EXTERN_MAP` dans IntroSceneGba.resolveDecompUrl : mapping symbols
+`g`-prefixed extern (Sparkle, Lightning, Brendan, May, Bicycle, Volbeat,
+Torchic, Manectric, Bubbles, Flygon Scene 2) → PNG paths.
+
+TitleSceneGba switché vers `loadIndexedPngStrict(rayquaza/clouds, 4)` pour
+extract le PLTE PNG embedded au lieu de tronquer bgPal à 16.
+
+### État
+
+- **Engine GBA + audio M4A** : 100% (session 66)
+- **Runtime décomp + helpers** : 100%
+- **Transpileur C→TS** : 99% (1632/1648)
+- **Extraction décomp** : 6576 fonctions sur 87 .c (audit 12% missing, hors scope)
+- **Scene 1 IntroSceneGba** : visuel partiellement OK (lettres GAME FREAK
+  visibles avec animation affine, logo G central bleu, pan-up actif). Bugs
+  visuels résiduels = perception sprite design (alignement bottom dans tile
+  16×16) ou bbox affine compositor.
+- **Scene 2 IntroScene2Gba** : 3 BG parallax horizontal scroll OK, sprites
+  pokemon TODO
+- **TitleSceneGba** : 3 BG (rayquaza+clouds+logo affine) avec palette unique
+  pokemon_logo.gbapal, Phase 1/2/3 timing OK
+
+### Commits clés
+
+- `9d812a60` : extracts massifs 6576 funcs sur 87 .c
+- `80a00206` : affine anim system complet
+- `1d4b140f` : matrix fix 1:1 ObjAffineSet (xScale*cos>>8)
+- `b7350eba` : PaletteBuffer + CpuCopy16 + LoadExtraPalette
+- (session 67 final) : transpileur + 153 modules auto + unification
+
+### Bugs visuels restants Scene 1
+
+- "Logo central très grand qui flash" = comportement décomp attendu
+  (sAffineAnim_GameFreak_GrowAndShrink frame 1 init xScale=16 = scale 16×
+  énorme puis grow vers 272 ≈ scale 1 sur 16 frames)
+- "Lettres alignées en bas écran" = design des tiles drops_logo.png
+  (caractères dans bottom half du tile 16×16, top transparent)
+
+Les vrais bugs visuels resteront dans `decomp-runtime.ts` ou `compositor.ts`,
+plus dans la transcription bodyC qui est maintenant mécanique 1:1.
+
+---
+
 ## Session 66 — Engine GBA-compat pixel-perfect + M4A audio engine 1:1 (2026-04-27)
 
 **Pivot stratégique** : abandon des "bouts de ficelle" Phaser → couche

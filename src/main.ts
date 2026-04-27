@@ -34,14 +34,15 @@ const config: Phaser.Types.Core.GameConfig = {
   zoom: DEFAULT_ZOOM,
   pixelArt: true,
   backgroundColor: '#000000',
-  // BootScene → IntroSceneGba (sprite-system + decomp-runtime + 60Hz fixed timer) → IntroScene2Gba → TitleSceneGba.
-  // TestGbaScene reste registré pour debug à la demande (pas auto-start).
+  // ⚠️ TestGbaScene en 1ère position en permanence (= sanity check engine GBA + audio).
+  // Permet de skip vers le boot normal via input (TestGbaScene.exit() call BootScene).
+  // Click/key dans TestGbaScene → BootScene → IntroSceneGba → IntroScene2Gba → TitleSceneGba.
   scene: [
+    TestGbaScene,
     BootScene,
     IntroSceneGba, IntroScene2Gba, TitleSceneGba,
     IntroScene, TitleScene, MainMenuScene, BirchSpeechScene, NamingScene,
     OverworldScene, BattleScene, MenuOverlayScene, OptionMenuScene,
-    TestGbaScene,
   ],
   physics: {
     default: 'arcade',

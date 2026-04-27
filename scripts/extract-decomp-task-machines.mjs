@@ -59,9 +59,19 @@ function findMatchingBrace(src, openBraceIdx) {
   return -1;
 }
 
-/** Extract a function body given its definition signature regex. */
-function extractFunctions(src, namePattern, paramPattern = 'u8\\s+\\w+') {
-  const results = [];
+/** Extract a function body given its definition signature regex.
+ *
+ *  The signature MUST end with `{` (open brace) to be considered a
+ *  definition. Forward declarations that end with `;` are intentionally
+ *  ignored.
+ *
+ *  paramPattern : default `u8\s+\w+?` (with optional name).
+ *  If multiple definitions of the same name are found (e.g. from a `#if` /
+ *  `#else` branch), prefer the LONGEST body — this guards against extracting
+ *  a stub body when a real implementation also exists later.
+ */
+function extractFunctions(src, namePattern, paramPattern = 'u8(?:\\s+\\w+)?') {
+  const byName = new Map(); // name → best result (longest body)
   // Match: (static)? void NAME(u8 someName) {
   const re = new RegExp(
     `(?:static\\s+|inline\\s+)*void\\s+(${namePattern})\\s*\\(\\s*${paramPattern}\\s*\\)\\s*\\{`,
@@ -74,14 +84,18 @@ function extractFunctions(src, namePattern, paramPattern = 'u8\\s+\\w+') {
     const closeBraceIdx = findMatchingBrace(src, openBraceIdx);
     if (closeBraceIdx === -1) continue;
     const body = src.slice(openBraceIdx + 1, closeBraceIdx);
-    results.push({ name, body, startIdx: m.index, endIdx: closeBraceIdx + 1 });
+    const prev = byName.get(name);
+    if (!prev || body.trim().length > prev.body.trim().length) {
+      byName.set(name, { name, body, startIdx: m.index, endIdx: closeBraceIdx + 1 });
+    }
   }
-  return results;
+  return [...byName.values()];
 }
 
-/** Extract function-name-no-params void X(void) — for CB2. */
+/** Extract function-name-no-params void X(void) — for CB2.
+ *  Same de-dup rule as extractFunctions : prefer longest body if multiple defs. */
 function extractVoidFunctions(src, namePattern) {
-  const results = [];
+  const byName = new Map();
   const re = new RegExp(
     `(?:static\\s+|inline\\s+)*void\\s+(${namePattern})\\s*\\(\\s*void\\s*\\)\\s*\\{`,
     'g'
@@ -93,9 +107,12 @@ function extractVoidFunctions(src, namePattern) {
     const closeBraceIdx = findMatchingBrace(src, openBraceIdx);
     if (closeBraceIdx === -1) continue;
     const body = src.slice(openBraceIdx + 1, closeBraceIdx);
-    results.push({ name, body, startIdx: m.index, endIdx: closeBraceIdx + 1 });
+    const prev = byName.get(name);
+    if (!prev || body.trim().length > prev.body.trim().length) {
+      byName.set(name, { name, body, startIdx: m.index, endIdx: closeBraceIdx + 1 });
+    }
   }
-  return results;
+  return [...byName.values()];
 }
 
 // ─── Per-function analyzers ──────────────────────────────────────────────────
@@ -209,12 +226,13 @@ function processFile(absPath, relInput) {
   if (!raw.trim()) return null;
   const src = stripComments(raw);
 
-  // Extract Task_* (one u8 taskId param)
+  // Extract Task_* (one u8 taskId param — name may be omitted in old decomp)
   const tasks = extractFunctions(src, 'Task_\\w+');
   // Extract CB2_* (void param)
   const cb2s = extractVoidFunctions(src, 'CB2_\\w+');
-  // Extract SpriteCB_* (sprite* param)
-  const spriteCBs = extractFunctions(src, 'SpriteCB_\\w+', 'struct\\s+Sprite\\s*\\*\\s*\\w+');
+  // Extract SpriteCB_* (sprite* param ; name OPTIONAL because some decls
+  // use `struct Sprite *` without an arg name).
+  const spriteCBs = extractFunctions(src, 'SpriteCB_\\w+', 'struct\\s+Sprite\\s*\\*(?:\\s*\\w+)?');
 
   const taskInfos = {};
   const seenTasks = new Set();
@@ -343,6 +361,8 @@ console.log(`[task-machines] Scanning ${cFiles.length} .c files...`);
 let okCount = 0, skipCount = 0;
 let totalTasks = 0, totalCb2 = 0, totalSpriteCb = 0;
 let totalTransitions = 0;
+let totalEmptyBodies = 0;
+const emptyBodyEntries = [];
 const indexEntries = [];
 const usedNs = new Map();
 const startTime = Date.now();
@@ -381,6 +401,17 @@ for (const relInput of cFiles) {
   const outAbs = join(outRoot, outRel);
   mkdirSync(dirname(outAbs), { recursive: true });
   writeFileSync(outAbs, header + '\n' + sections.join('\n\n') + '\n');
+
+  // Count empty bodies (= legitimately empty `{}` in source — `SpriteCB_Null`-style stubs)
+  for (const [name, t] of Object.entries(result.taskInfos)) {
+    if (!t.bodyC) { totalEmptyBodies++; emptyBodyEntries.push(`${relInput}::${name}`); }
+  }
+  for (const [name, t] of Object.entries(result.cb2Infos)) {
+    if (!t.bodyC) { totalEmptyBodies++; emptyBodyEntries.push(`${relInput}::${name}`); }
+  }
+  for (const [name, t] of Object.entries(result.spriteCbInfos)) {
+    if (!t.bodyC) { totalEmptyBodies++; emptyBodyEntries.push(`${relInput}::${name}`); }
+  }
 
   // Count transitions (for stats)
   for (const t of Object.values(result.taskInfos)) {
@@ -422,6 +453,8 @@ writeFileSync(join(outRoot, '_stats.json'), JSON.stringify({
   filesScanned: cFiles.length,
   okCount, skipCount,
   totalTasks, totalCb2, totalSpriteCb, totalTransitions,
+  totalEmptyBodies,
+  emptyBodyEntries,
   durationMs: Date.now() - startTime,
 }, null, 2));
 
@@ -433,4 +466,5 @@ console.log(`    Task_*       ${totalTasks.toLocaleString().padStart(6)}`);
 console.log(`    CB2_*        ${totalCb2.toLocaleString().padStart(6)}`);
 console.log(`    SpriteCB_*   ${totalSpriteCb.toLocaleString().padStart(6)}`);
 console.log(`    transitions  ${totalTransitions.toLocaleString().padStart(6)} (state machine edges)`);
+console.log(`    empty bodies ${totalEmptyBodies.toString().padStart(6)} (intentional {} stubs in source — see _stats.json)`);
 console.log(`  Output: ${outRoot.replace(/\\/g, '/')}`);

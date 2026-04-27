@@ -26,7 +26,7 @@ import Phaser from 'phaser';
 import { GAME_W, GAME_H } from '../main';
 import { Gba } from '../engine/gba/gba';
 import { GbaPhaserBridge } from '../engine/gba/phaser-bridge';
-import { loadIndexedPngWithPal, loadIndexedPng8bppWithPal, loadGbaPal, loadTilemapBin, loadAffineTilemapBin } from '../engine/gba/png-loader';
+import { loadIndexedPngWithPal, loadIndexedPng8bppWithPal, loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadAffineTilemapBin } from '../engine/gba/png-loader';
 import { LAYER_BG0, LAYER_BG1, LAYER_BG2, LAYER_BG3, LAYER_OBJ, LAYER_BD } from '../engine/gba/types';
 import { playMidiLoop, playCry } from '../engine/music';
 
@@ -165,9 +165,10 @@ export class TitleSceneGba extends Phaser.Scene {
 
       // ─── BG0 : Rayquaza (priority 3, charBase 2, mapBase 26, 256×256 4bpp) ────
       // 1:1 décomp title_screen.c:605-606. STATIQUE (pas d'anim, vofs=0).
-      // ⚠️ 4bpp : on match les pixels uniquement contre les 16 premières colors de bgPal
-      // (= bank 0 attendu pour rayquaza), sinon (px & 0xF) tronque les indices > 15.
-      const rayquazaTileset = await loadIndexedPngWithPal(`${BASE}/rayquaza.png`, bgPal.subarray(0, 16));
+      // ⚠️ 4bpp : utilise loadIndexedPngStrict qui extract le PLTE PNG embedded
+      // (= les 16 premières colors du PNG indexed) → garantit que les indices résultants
+      // matchent exactement les pixels rendered par le browser.
+      const rayquazaTileset = await loadIndexedPngStrict(`${BASE}/rayquaza.png`, 4);
       const rayquazaTilemap = await loadTilemapBin(`${BASE}/rayquaza.bin`);
       this.gba.bg(0).vram.set(rayquazaTileset.charData.subarray(0, 32768));
       this.gba.bg(0).tilemap.set(rayquazaTilemap.subarray(0, 4096));
@@ -183,8 +184,8 @@ export class TitleSceneGba extends Phaser.Scene {
 
       // ─── BG1 : Clouds (priority 2, charBase 3, mapBase 27, 256×256 4bpp) ──────
       // 1:1 décomp title_screen.c:608-609. Wave scanline effect via HBLANK.
-      // ⚠️ Idem rayquaza : match pixels uniquement contre bank 0 (16 colors).
-      const cloudsTileset = await loadIndexedPngWithPal(`${BASE}/clouds.png`, bgPal.subarray(0, 16));
+      // ⚠️ Idem rayquaza : loadIndexedPngStrict extract le PLTE PNG embedded.
+      const cloudsTileset = await loadIndexedPngStrict(`${BASE}/clouds.png`, 4);
       const cloudsTilemap = await loadTilemapBin(`${BASE}/clouds.bin`);
       this.gba.bg(1).vram.set(cloudsTileset.charData.subarray(0, 32768));
       this.gba.bg(1).tilemap.set(cloudsTilemap.subarray(0, 4096));
