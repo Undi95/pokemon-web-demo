@@ -34,23 +34,41 @@ export interface ActiveNote {
   startedAt: number;
 }
 
-// ─── Polyphonie : voice stealing FIFO (1:1 GBA M4A max 16 channels actifs) ──
-// Si une nouvelle note arrive et qu'on a déjà 16 voices actives, on stop la plus
-// ancienne (voice stealing) avant de jouer la nouvelle. Évite la cacophonie sur
-// les passages denses + reproduit le comportement GBA où certaines notes sont
-// "volées" quand le buffer est plein.
-const MAX_POLYPHONY = 16;
+// ─── Polyphonie : voice stealing FIFO ───────────────────────────────────────
+//
+// GBA hardware M4A est limité à 6 canaux audio (2 PSG square + wave + noise +
+// 2 DirectSound). Le décomp utilise une couche M4A qui peut multiplexer
+// jusqu'à ~16 "virtual channels" via le mixer software. Mais sur web audio,
+// on n'a aucune limite hardware → on peut être beaucoup plus généreux.
+//
+// MAX_POLYPHONY=64 = ample pour MIDI denses (27 tracks × ~3 notes simultanées).
+// Si voice stealing déclenché : on log pour diag (= probably MIDI mal mixé).
+const MAX_POLYPHONY = 64;
 const _activeNotes: ActiveNote[] = [];
+let _stealingCount = 0;
 
 function registerActiveNote(note: ActiveNote): void {
   _activeNotes.push(note);
-  // Voice stealing : si on dépasse, kill la plus ancienne
   while (_activeNotes.length > MAX_POLYPHONY) {
     const oldest = _activeNotes.shift();
     if (oldest) {
+      _stealingCount++;
+      if (_stealingCount === 1 || _stealingCount % 10 === 0) {
+        console.warn(`[m4a] Voice stealing #${_stealingCount} (active ${_activeNotes.length}/${MAX_POLYPHONY})`);
+      }
       try { oldest.stop(); } catch { /* already stopped */ }
     }
   }
+}
+
+/** Reset stealing counter (à appeler au début de chaque song). */
+export function resetVoiceStealingCounter(): void {
+  _stealingCount = 0;
+}
+
+/** Get total voice stealing events depuis le dernier reset. */
+export function getVoiceStealingCount(): number {
+  return _stealingCount;
 }
 
 function unregisterActiveNote(note: ActiveNote): void {

@@ -14,7 +14,7 @@
 import { Midi } from '@tonejs/midi';
 import type { VoiceGroup } from './voice-types';
 import { resolveVoice, type VoiceGroupLookup } from './voice-resolver';
-import { playNote, stopAllActiveNotes, type ActiveNote } from './synth';
+import { playNote, stopAllActiveNotes, resetVoiceStealingCounter, getVoiceStealingCount, type ActiveNote } from './synth';
 import { getAudioContext } from './audio-context';
 import { loadSampleManifest } from './sample-loader';
 
@@ -90,6 +90,7 @@ export async function playSong(
     },
   };
   _currentPlayback = playback;
+  resetVoiceStealingCounter();
 
   // Schedule chaque note de chaque track
   for (let tIdx = 0; tIdx < song.tracks.length; tIdx++) {
@@ -169,10 +170,11 @@ function incReason(stats: PlaybackStats, reason: string): void {
 
 function logPlaybackStats(stats: PlaybackStats): void {
   const skippedTotal = stats.skippedNoVoice + stats.skippedNoSample + stats.skippedUnknownType;
+  const stealing = getVoiceStealingCount();
   console.log(`[m4a] Playback stats : ${stats.played}/${stats.totalNotes} notes played` +
-              ` (${skippedTotal} skipped : noVoice=${stats.skippedNoVoice}, noSample=${stats.skippedNoSample}, unknownType=${stats.skippedUnknownType})`);
+              ` (${skippedTotal} skipped : noVoice=${stats.skippedNoVoice}, noSample=${stats.skippedNoSample}, unknownType=${stats.skippedUnknownType})` +
+              ` | Voice stealing: ${stealing} events`);
   if (stats.skippedReasons.size > 0) {
-    // Top 10 raisons
     const top = [...stats.skippedReasons.entries()]
       .sort((a, b) => b[1] - a[1])
       .slice(0, 10);
