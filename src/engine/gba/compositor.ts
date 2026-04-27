@@ -11,9 +11,14 @@
  * Pour MVP minimal : juste BG layers, sans OAM/blend/window.
  * Ces étapes seront ajoutées dans des sessions suivantes.
  */
-import { type BgConfig, type HBlankCallback, SCREEN_W, SCREEN_H } from './types';
+import {
+  type AffineMatrix, type BgConfig, type BlendConfig, type HBlankCallback,
+  type OamEntry, type Windows,
+  LayerId, OAM_SIZES, SCREEN_W, SCREEN_H, windowsAreOff,
+} from './types';
 import { PaletteBanks } from './palette';
 import { renderBgScanline, createTileCache } from './bg-layer';
+import { decodeTile4bpp, decodeTile8bpp } from './tile';
 
 interface BgLayerData {
   config: BgConfig;
@@ -41,11 +46,30 @@ export function composeFrame(
   frameBuffer: Uint8ClampedArray,
   bgs: ReadonlyArray<BgLayerData>,
   palette: PaletteBanks,
+  oam?: ReadonlyArray<OamEntry>,
+  objVram?: Uint8Array,
+  blend?: BlendConfig,
+  windows?: Windows,
+  affineParams?: ReadonlyArray<AffineMatrix>,
   hblankCallback?: HBlankCallback,
 ): void {
   const scanlineBufs: Uint8ClampedArray[] = bgs.map(() => new Uint8ClampedArray(SCREEN_W * 4));
   const tileCaches = bgs.map(() => createTileCache());
   const backdrop = palette.getBackdropRgba();
+
+  // Pré-trier les BGs par priority (priority haute en arrière)
+  const sortedBgs = [...bgs.keys()].sort((a, b) => {
+    const pa = bgs[a].config.priority;
+    const pb = bgs[b].config.priority;
+    if (pa !== pb) return pb - pa;  // priority haute (3) en arrière
+    return b - a;                    // BG index haut (3) en arrière
+  });
+
+  // OAM scanline buffer (par priority 0-3)
+  // 4 buffers = 1 par priority OBJ. Chacun stocke RGBA pour cette scanline.
+  const oamPriorityBufs: Uint8ClampedArray[] = oam
+    ? [0, 1, 2, 3].map(() => new Uint8ClampedArray(SCREEN_W * 4))
+    : [];
 
   for (let y = 0; y < SCREEN_H; y++) {
     if (hblankCallback) hblankCallback(y);
@@ -55,37 +79,280 @@ export function composeFrame(
       renderBgScanline(y, bgs[i].config, bgs[i].vram, bgs[i].tilemap, palette, scanlineBufs[i], tileCaches[i]);
     }
 
-    // Compose : pour chaque pixel, prend le premier non-transparent en suivant
-    // l'ordre priority croissant (0 = devant) puis BG index croissant (BG0 > BG1).
-    // Algorithme simple : on parcourt par BG index trié par priority (décroissant
-    // puis croissant), et on garde le dernier pixel opaque.
-    const sortedBgs = [...bgs.keys()].sort((a, b) => {
-      // Priority croissante (3 dessous, 0 dessus). Égalité = BG index croissant inverse
-      // (BG3 dessous, BG0 dessus en cas d'égalité).
-      const pa = bgs[a].config.priority;
-      const pb = bgs[b].config.priority;
-      if (pa !== pb) return pb - pa;  // priority haute (3) avant
-      return b - a;                    // BG index haut (3) avant
-    });
+    // Render OAM sprites pour cette scanline (par priority)
+    if (oam && objVram) {
+      for (const buf of oamPriorityBufs) buf.fill(0);
+      renderOamScanline(y, oam, objVram, palette, oamPriorityBufs, affineParams);
+    }
 
+    // Compute pixel layer mask + blend gate via windows pour chaque scanline.
+    // Si aucune window active → tous layers visibles, blend partout (default GBA).
+    const windowsActive = windows && !windowsAreOff(windows);
+    const yInWin0 = windowsActive && windows.win0.enabled
+      && y >= windows.win0.y1 && y < windows.win0.y2;
+    const yInWin1 = windowsActive && windows.win1.enabled
+      && y >= windows.win1.y1 && y < windows.win1.y2;
+
+    // Compose pixel par pixel + tracking des top 2 layers par pixel pour blend.
     for (let x = 0; x < SCREEN_W; x++) {
-      // Init avec backdrop
-      let r = backdrop[0], g = backdrop[1], b = backdrop[2];
       const off = x * 4;
-      for (const bgIdx of sortedBgs) {
-        const sl = scanlineBufs[bgIdx];
-        const a = sl[off + 3];
-        if (a > 0) {
-          r = sl[off];
-          g = sl[off + 1];
-          b = sl[off + 2];
+      // Init avec backdrop
+      let r1 = backdrop[0], g1 = backdrop[1], b1 = backdrop[2];
+      let layer1 = LayerId.BD as number;
+      let r2 = backdrop[0], g2 = backdrop[1], b2 = backdrop[2];
+      let layer2 = LayerId.BD as number;
+
+      // Détermine layer mask + blend gate pour ce pixel selon windows
+      let layerMask = 0x3F;       // 0x3F = tous layers visibles
+      let blendAllowed = true;    // peut appliquer le blend
+      if (windowsActive) {
+        const xInWin0 = yInWin0
+          && x >= windows.win0.x1 && x < windows.win0.x2;
+        const xInWin1 = yInWin1
+          && x >= windows.win1.x1 && x < windows.win1.x2;
+        if (xInWin0) {
+          layerMask = windows.win0Inside;
+          blendAllowed = windows.win0BlendEnable;
+        } else if (xInWin1) {
+          layerMask = windows.win1Inside;
+          blendAllowed = windows.win1BlendEnable;
+        } else {
+          layerMask = windows.outsideEnable;
+          blendAllowed = windows.outsideBlendEnable;
         }
       }
+
+      // Pour chaque priority de 3 → 0 (3 = arrière)
+      for (let pri = 3; pri >= 0; pri--) {
+        for (const bgIdx of sortedBgs) {
+          if (bgs[bgIdx].config.priority !== pri) continue;
+          // Skip si layer pas enabled par window
+          if ((layerMask & (1 << bgIdx)) === 0) continue;
+          const sl = scanlineBufs[bgIdx];
+          const a = sl[off + 3];
+          if (a > 0) {
+            r2 = r1; g2 = g1; b2 = b1; layer2 = layer1;
+            r1 = sl[off]; g1 = sl[off + 1]; b1 = sl[off + 2];
+            layer1 = bgIdx; // 0..3 = LayerId.BG0..BG3
+          }
+        }
+        if (oam && objVram && (layerMask & (1 << LayerId.OBJ))) {
+          const obSl = oamPriorityBufs[pri];
+          const a = obSl[off + 3];
+          if (a > 0) {
+            r2 = r1; g2 = g1; b2 = b1; layer2 = layer1;
+            r1 = obSl[off]; g1 = obSl[off + 1]; b1 = obSl[off + 2];
+            layer1 = LayerId.OBJ;
+          }
+        }
+      }
+
+      // Apply blend selon mode (gated par windows.blendAllowed)
+      let r = r1, g = g1, b = b1;
+      if (blendAllowed && blend && blend.mode > 0) {
+        const top1Mask = 1 << layer1;
+        if (blend.target1 & top1Mask) {
+          if (blend.mode === 2) {
+            // Brightness inc : pixel + (white - pixel) × (BLDY/16)
+            const w = blend.brightness / 16;
+            r = r1 + (255 - r1) * w;
+            g = g1 + (255 - g1) * w;
+            b = b1 + (255 - b1) * w;
+          } else if (blend.mode === 3) {
+            // Brightness dec : pixel × (1 - BLDY/16)
+            const w = 1 - blend.brightness / 16;
+            r = r1 * w;
+            g = g1 * w;
+            b = b1 * w;
+          } else if (blend.mode === 1) {
+            // Alpha blend : nécessite que top2 soit dans target2
+            const top2Mask = 1 << layer2;
+            if (blend.target2 & top2Mask) {
+              const a1w = Math.min(blend.alpha1, 16) / 16;
+              const a2w = Math.min(blend.alpha2, 16) / 16;
+              r = r1 * a1w + r2 * a2w;
+              g = g1 * a1w + g2 * a2w;
+              b = b1 * a1w + b2 * a2w;
+            }
+          }
+        }
+      }
+
       const fbOff = (y * SCREEN_W + x) * 4;
       frameBuffer[fbOff] = r;
       frameBuffer[fbOff + 1] = g;
       frameBuffer[fbOff + 2] = b;
       frameBuffer[fbOff + 3] = 255;
     }
+  }
+}
+
+/**
+ * Render OAM sprites pour une scanline donnée dans les 4 priority buffers.
+ * Pour chaque sprite visible qui touche cette scanline, décode les tiles
+ * pertinentes et écrit les pixels non-transparents au priority buf approprié.
+ *
+ * Layout OBJ char data : 1D mapping (DISPCNT bit 6 = 1, le plus commun).
+ * En 1D mapping, les tiles d'un sprite multi-tile sont consécutives en mémoire.
+ *
+ * Si plusieurs sprites se chevauchent à la même priority, le sprite avec
+ * l'index OAM le plus PETIT gagne (1:1 GBA).
+ */
+function renderOamScanline(
+  scanline: number,
+  oam: ReadonlyArray<OamEntry>,
+  objVram: Uint8Array,
+  palette: PaletteBanks,
+  priorityBufs: Uint8ClampedArray[],
+  affineParams?: ReadonlyArray<AffineMatrix>,
+): void {
+  // Process sprites en ordre INVERSE pour que sprite index 0 soit le dernier
+  // écrit (= au-dessus en cas de pixel collision à même priority).
+  for (let i = oam.length - 1; i >= 0; i--) {
+    const sprite = oam[i];
+    if (!sprite.visible) continue;
+    if (sprite.affineMode === 2) continue; // HIDE
+
+    const [wTiles, hTiles] = OAM_SIZES[sprite.shape][sprite.size];
+    const wPx = wTiles * 8;
+    const hPx = hTiles * 8;
+
+    // Affine modes 1 (NORMAL_AFFINE) ou 3 (DOUBLE_AFFINE)
+    if (sprite.affineMode === 1 || sprite.affineMode === 3) {
+      if (!affineParams) continue;
+      renderOamSpriteAffine(scanline, sprite, wPx, hPx, objVram, palette, priorityBufs, affineParams);
+      continue;
+    }
+
+    // Mode 0 (NORMAL — non-affine)
+    renderOamSpriteNormal(scanline, sprite, wPx, hPx, objVram, palette, priorityBufs);
+  }
+}
+
+/** Render OAM sprite NORMAL (sans affine) sur une scanline. */
+function renderOamSpriteNormal(
+  scanline: number,
+  sprite: OamEntry,
+  wPx: number,
+  hPx: number,
+  objVram: Uint8Array,
+  palette: PaletteBanks,
+  priorityBufs: Uint8ClampedArray[],
+): void {
+  const localY = scanline - sprite.y;
+  if (localY < 0 || localY >= hPx) return;
+
+  const wTiles = wPx / 8;
+
+  for (let dx = 0; dx < wPx; dx++) {
+    const screenX = sprite.x + dx;
+    if (screenX < 0 || screenX >= SCREEN_W) continue;
+
+    const localX = sprite.flipH ? (wPx - 1 - dx) : dx;
+    const adjLocalY = sprite.flipV ? (hPx - 1 - localY) : localY;
+
+    const tileX = (localX / 8) | 0;
+    const tileY = (adjLocalY / 8) | 0;
+    const subX = localX % 8;
+    const subY = adjLocalY % 8;
+
+    let tileIdOffset: number;
+    if (sprite.paletteMode === 0) {
+      tileIdOffset = tileY * wTiles + tileX;
+    } else {
+      tileIdOffset = (tileY * wTiles + tileX) * 2;
+    }
+    const finalTileId = sprite.tileId + tileIdOffset;
+
+    const pixels = sprite.paletteMode === 0
+      ? decodeTile4bpp(objVram, finalTileId, false, false)
+      : decodeTile8bpp(objVram, finalTileId, false, false);
+    const colorIdx = pixels[subY * 8 + subX];
+    const [r, g, b, a] = palette.getObjRgba(sprite.paletteBank, colorIdx, sprite.paletteMode);
+    if (a === 0) continue;
+
+    const off = screenX * 4;
+    const buf = priorityBufs[sprite.priority];
+    buf[off] = r; buf[off + 1] = g; buf[off + 2] = b; buf[off + 3] = 255;
+  }
+}
+
+/** Render OAM sprite AFFINE (mode 1 ou 3) sur une scanline.
+ *  Mode 1 (NORMAL_AFFINE) : bounding box = wPx × hPx normale
+ *  Mode 3 (DOUBLE_AFFINE) : bounding box = 2× wPx × 2× hPx (rotation préservée)
+ *
+ *  Pour chaque pixel screen dans la bounding box, on applique la matrice affine
+ *  (transformation inverse) pour trouver le pixel source dans la texture du sprite.
+ *  Si la coord source est dans [0, wPx) × [0, hPx), on lookup le pixel ; sinon
+ *  pixel transparent (la rotation peut faire dépasser).
+ */
+function renderOamSpriteAffine(
+  scanline: number,
+  sprite: OamEntry,
+  wPx: number,
+  hPx: number,
+  objVram: Uint8Array,
+  palette: PaletteBanks,
+  priorityBufs: Uint8ClampedArray[],
+  affineParams: ReadonlyArray<AffineMatrix>,
+): void {
+  const isDouble = sprite.affineMode === 3;
+  const bboxW = isDouble ? wPx * 2 : wPx;
+  const bboxH = isDouble ? hPx * 2 : hPx;
+
+  // Y position : top du bbox (le sprite est centré dans bbox en mode DOUBLE)
+  const bboxYTop = sprite.y;
+  const localBboxY = scanline - bboxYTop;
+  if (localBboxY < 0 || localBboxY >= bboxH) return;
+
+  const matrix = affineParams[sprite.affineParamIndex] ?? { pa: 256, pb: 0, pc: 0, pd: 256 };
+  const wTiles = wPx / 8;
+
+  // Centre de la bounding box (= centre du sprite dans le bbox)
+  const cxBbox = bboxW / 2;
+  const cyBbox = bboxH / 2;
+  // Centre source : moitié de la texture
+  const cxTex = wPx / 2;
+  const cyTex = hPx / 2;
+
+  // relY screen → relY texture via matrix (constant pour cette scanline)
+  const relY = localBboxY - cyBbox;
+
+  for (let dx = 0; dx < bboxW; dx++) {
+    const screenX = sprite.x + dx;
+    if (screenX < 0 || screenX >= SCREEN_W) continue;
+
+    const relX = dx - cxBbox;
+
+    // Apply affine matrix : (texX, texY) = matrix × (relX, relY) + (cxTex, cyTex)
+    // matrix is 8.8 fixed → divide by 256
+    const texX = ((matrix.pa * relX + matrix.pb * relY) >> 8) + cxTex;
+    const texY = ((matrix.pc * relX + matrix.pd * relY) >> 8) + cyTex;
+
+    if (texX < 0 || texX >= wPx || texY < 0 || texY >= hPx) continue;
+
+    const tileX = (texX / 8) | 0;
+    const tileY = (texY / 8) | 0;
+    const subX = texX % 8;
+    const subY = texY % 8;
+
+    let tileIdOffset: number;
+    if (sprite.paletteMode === 0) {
+      tileIdOffset = tileY * wTiles + tileX;
+    } else {
+      tileIdOffset = (tileY * wTiles + tileX) * 2;
+    }
+    const finalTileId = sprite.tileId + tileIdOffset;
+
+    const pixels = sprite.paletteMode === 0
+      ? decodeTile4bpp(objVram, finalTileId, false, false)
+      : decodeTile8bpp(objVram, finalTileId, false, false);
+    const colorIdx = pixels[subY * 8 + subX];
+    const [r, g, b, a] = palette.getObjRgba(sprite.paletteBank, colorIdx, sprite.paletteMode);
+    if (a === 0) continue;
+
+    const off = screenX * 4;
+    const buf = priorityBufs[sprite.priority];
+    buf[off] = r; buf[off + 1] = g; buf[off + 2] = b; buf[off + 3] = 255;
   }
 }

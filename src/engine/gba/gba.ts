@@ -19,7 +19,12 @@
  *
  * Pour l'intégration Phaser : voir GbaPhaserBridge dans phaser-bridge.ts.
  */
-import { type BgConfig, type HBlankCallback, type VBlankCallback, SCREEN_W, SCREEN_H } from './types';
+import {
+  type AffineMatrix, type BgConfig, type BlendConfig, type HBlankCallback,
+  type OamEntry, type VBlankCallback, type Windows,
+  defaultBlendConfig, defaultOamEntry, defaultWindows, identityAffineMatrix,
+  SCREEN_W, SCREEN_H,
+} from './types';
 import { PaletteBanks } from './palette';
 import { composeFrame } from './compositor';
 
@@ -55,6 +60,17 @@ export class Gba {
     { config: defaultBgConfig(), vram: new Uint8Array(32768), tilemap: new Uint16Array(4096) },
     { config: defaultBgConfig(), vram: new Uint8Array(32768), tilemap: new Uint16Array(4096) },
   ];
+  /** OAM : 128 sprites, par défaut tous invisibles. */
+  readonly oam: OamEntry[] = Array.from({ length: 128 }, () => defaultOamEntry());
+  /** OBJ char data (sprite tile pixels). 32 KB max sur GBA réel. */
+  readonly objVram = new Uint8Array(32768);
+  /** Blend (BLDCNT/BLDALPHA/BLDY) : mode 0 par défaut = off. */
+  readonly blend: BlendConfig = defaultBlendConfig();
+  /** Windows (WIN0/WIN1 + WININ/WINOUT) : disabled par défaut = bypass complet. */
+  readonly windows: Windows = defaultWindows();
+  /** 32 affine matrix slots pour OAM rotscale (mode 1/3) et BG2/BG3 affine.
+   *  Toutes initialisées à identité (pa=256, pb=0, pc=0, pd=256 = 1.0 scale, 0 rotation). */
+  readonly affineParams: AffineMatrix[] = Array.from({ length: 32 }, () => identityAffineMatrix());
   /** Frame buffer 240×160 RGBA. */
   private frameBuffer = new Uint8ClampedArray(SCREEN_W * SCREEN_H * 4);
   private hblankCb: HBlankCallback | null = null;
@@ -84,8 +100,13 @@ export class Gba {
   /** Render une frame complète + run VBLANK callbacks.
    *  À appeler à 60fps. */
   tick(): void {
-    // 1. Compose la frame
-    composeFrame(this.frameBuffer, this.bgs, this.palette, this.hblankCb ?? undefined);
+    // 1. Compose la frame (BG layers + OAM sprites + blend + windows + affine)
+    composeFrame(
+      this.frameBuffer, this.bgs, this.palette,
+      this.oam, this.objVram,
+      this.blend, this.windows, this.affineParams,
+      this.hblankCb ?? undefined,
+    );
 
     // 2. Run VBLANK callbacks
     for (const cb of this.vblankCbs) {
@@ -105,7 +126,7 @@ export class Gba {
     return this.frameCounter;
   }
 
-  /** Reset complet (palette, BG, frame buffer, callbacks). */
+  /** Reset complet (palette, BG, OAM, frame buffer, callbacks). */
   reset(): void {
     this.palette.reset();
     for (const bg of this.bgs) {
@@ -113,6 +134,13 @@ export class Gba {
       bg.vram.fill(0);
       bg.tilemap.fill(0);
     }
+    for (let i = 0; i < this.oam.length; i++) {
+      Object.assign(this.oam[i], defaultOamEntry());
+    }
+    this.objVram.fill(0);
+    Object.assign(this.blend, defaultBlendConfig());
+    Object.assign(this.windows, defaultWindows());
+    for (const m of this.affineParams) Object.assign(m, identityAffineMatrix());
     this.frameBuffer.fill(0);
     this.hblankCb = null;
     this.vblankCbs.clear();

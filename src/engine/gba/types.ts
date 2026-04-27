@@ -138,14 +138,59 @@ export const OAM_SIZES: ReadonlyArray<ReadonlyArray<readonly [number, number]>> 
   [[1, 2], [1, 4], [2, 4], [4, 8]],
 ];
 
-/** Affine matrix BG2/BG3 ou OAM (8.8 fixed point).
- *  Transform pixel : [pa pb] [x]   [dx]
- *                    [pc pd] [y] + [dy] */
+/** Default OAM entry (hidden, all zero). */
+export function defaultOamEntry(): OamEntry {
+  return {
+    visible: false,
+    x: 0, y: 0,
+    tileId: 0,
+    paletteBank: 0,
+    priority: 0,
+    shape: 0, size: 0,
+    flipH: false, flipV: false,
+    paletteMode: 0,
+    mosaic: false,
+    objMode: 0,
+    affineMode: 0,
+    affineParamIndex: 0,
+  };
+}
+
+/** Affine matrix BG2/BG3 ou OAM (8.8 fixed point — valeur 256 = 1.0).
+ *  Transform appliquée pour OAM rotscale :
+ *    Pour chaque pixel screen (sx, sy) dans la bounding box centrée sur le
+ *    sprite, on calcule la coord source dans la texture :
+ *      texX = (pa × (sx - cx) + pb × (sy - cy)) / 256 + w/2
+ *      texY = (pc × (sx - cx) + pd × (sy - cy)) / 256 + h/2
+ *
+ *  Identité (sprite non transformé) :  pa=256, pb=0, pc=0, pd=256
+ *  Rotation θ :  pa=cos(θ)×256, pb=-sin(θ)×256, pc=sin(θ)×256, pd=cos(θ)×256
+ *  Scale s : pa = pd = (1/s) × 256  (1/s car matrice inverse appliquée au screen) */
 export interface AffineMatrix {
   pa: number;  // 8.8 fixed
   pb: number;
   pc: number;
   pd: number;
+}
+
+/** Identity affine matrix : sprite non transformé (1.0 scale, 0° rotation). */
+export function identityAffineMatrix(): AffineMatrix {
+  return { pa: 256, pb: 0, pc: 0, pd: 256 };
+}
+
+/** Construit une matrice affine pour rotation (radians) + scale uniforme.
+ *  scale = 1.0 → pas de zoom. scale > 1 = zoom out (sprite plus petit à l'écran).
+ *  scale < 1 = zoom in (sprite plus grand). */
+export function rotScaleAffineMatrix(rotationRadians: number, scale: number): AffineMatrix {
+  const inv = 1 / scale;
+  const cos = Math.cos(rotationRadians) * inv;
+  const sin = Math.sin(rotationRadians) * inv;
+  return {
+    pa: Math.round(cos * 256),
+    pb: Math.round(-sin * 256),
+    pc: Math.round(sin * 256),
+    pd: Math.round(cos * 256),
+  };
 }
 
 /** Window config (WIN0/WIN1) — rect inclusion. */
@@ -155,6 +200,47 @@ export interface WindowRect {
   x2: number;  // right (exclusive)
   y1: number;  // top (inclusive)
   y2: number;  // bottom (exclusive)
+}
+
+/** GBA hardware windows : WIN0/WIN1 (rect inclusion) + WINOUT (everywhere else).
+ *  Si win0/win1.enabled = false ET aucune autre window active, alors `noneEnabled`
+ *  → bypass complet (tous les layers visibles partout, comportement default GBA).
+ *  Sinon les bitmasks insideX/outside contrôlent quels layers sont visibles.
+ *
+ *  Bitmasks utilisent LAYER_BG0/BG1/BG2/BG3/OBJ/BD constants. */
+export interface Windows {
+  win0: WindowRect;
+  win1: WindowRect;
+  /** Layers visibles à l'INTÉRIEUR de WIN0 (WININ_WIN0). */
+  win0Inside: number;
+  /** Layers visibles à l'INTÉRIEUR de WIN1 (WININ_WIN1). */
+  win1Inside: number;
+  /** Layers visibles à l'EXTÉRIEUR de toutes windows (WINOUT). */
+  outsideEnable: number;
+  /** Si true, applique l'effet de blend uniquement à l'intérieur de WIN0. */
+  win0BlendEnable: boolean;
+  /** Si true, applique l'effet de blend uniquement à l'intérieur de WIN1. */
+  win1BlendEnable: boolean;
+  /** Si true, applique l'effet de blend à l'extérieur de toutes windows. */
+  outsideBlendEnable: boolean;
+}
+
+export function defaultWindows(): Windows {
+  return {
+    win0: { enabled: false, x1: 0, x2: 0, y1: 0, y2: 0 },
+    win1: { enabled: false, x1: 0, x2: 0, y1: 0, y2: 0 },
+    win0Inside: 0x3F,    // tout visible
+    win1Inside: 0x3F,
+    outsideEnable: 0x3F,
+    win0BlendEnable: true,
+    win1BlendEnable: true,
+    outsideBlendEnable: true,
+  };
+}
+
+/** True si aucune window n'est enabled (= bypass tout). */
+export function windowsAreOff(w: Windows): boolean {
+  return !w.win0.enabled && !w.win1.enabled;
 }
 
 /** Blend control (REG_BLDCNT / BLDALPHA / BLDY). */
@@ -171,6 +257,36 @@ export interface BlendConfig {
   alpha2: number;
   /** BLDY 0-16 (brightness inc/dec weight). */
   brightness: number;
+}
+
+/** Layer mask bits — pour BlendConfig.target1/target2 + WININ/WINOUT enables. */
+export const LAYER_BG0 = 0x01;
+export const LAYER_BG1 = 0x02;
+export const LAYER_BG2 = 0x04;
+export const LAYER_BG3 = 0x08;
+export const LAYER_OBJ = 0x10;
+export const LAYER_BD  = 0x20;  // backdrop
+
+/** Layer ID enum pour tracking du top layer par pixel.
+ *  Mappé sur les bitmask LAYER_X via `(1 << id)`. */
+export const enum LayerId {
+  BG0 = 0,
+  BG1 = 1,
+  BG2 = 2,
+  BG3 = 3,
+  OBJ = 4,
+  BD = 5,
+}
+
+export function defaultBlendConfig(): BlendConfig {
+  return {
+    mode: 0,
+    target1: 0,
+    target2: 0,
+    alpha1: 0,
+    alpha2: 0,
+    brightness: 0,
+  };
 }
 
 /** HBLANK callback — appelé pour chaque scanline 0-159 avant rendu de cette scanline. */
