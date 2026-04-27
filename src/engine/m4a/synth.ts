@@ -167,6 +167,22 @@ function gbaSustainToGain(value: number): number {
   return Math.max(0, Math.min(1, value / 255));
 }
 
+/** Options LFO 1:1 décomp m4a_1.s LFO update :
+ *  - Triangle wave avec phase accumulator (lfoSpeedC += lfoSpeed) chaque tick 60Hz
+ *  - Period = 256 / lfoSpeed ticks → frequency = 60 / (256 / lfoSpeed) = lfoSpeed × 60 / 256 Hz
+ *  - depth (mod) 0-127 → amplitude
+ *  - modT : 0=vibrato (pitch), 1=tremolo (volume), 2=pan_lfo */
+export interface LfoConfig {
+  /** lfoSpeed 0-255 (default M4A = 22 → 5.16 Hz). 0 = no LFO. */
+  speed: number;
+  /** mod depth 0-127. 0 = no modulation. */
+  depth: number;
+  /** modT : 0=vibrato, 1=tremolo, 2=pan_lfo. */
+  type: 0 | 1 | 2;
+  /** Delay before LFO starts (ticks @ 60Hz). Default 0. */
+  delayTicks?: number;
+}
+
 /** Joue une note depuis une Voice résolue.
  *  @param voice voice concrète (PSG ou PCM)
  *  @param midiNote 0-127
@@ -175,6 +191,7 @@ function gbaSustainToGain(value: number): number {
  *  @param when timestamp AudioContext quand jouer (= ctx.currentTime pour now)
  *  @param trackVolume 0-1 (= MIDI CC7 × CC11 expression normalisés). Default 1.0.
  *  @param pitchBendSemis pitch bend en demi-tons (négatif = down, positif = up). Default 0.
+ *  @param lfo LFO config (vibrato/tremolo/pan_lfo). Default null.
  *  @returns ActiveNote pour pouvoir stop/release plus tard, ou null si voice non gérée
  */
 export async function playNote(
@@ -185,6 +202,7 @@ export async function playNote(
   when?: number,
   trackVolume = 1.0,
   pitchBendSemis = 0,
+  lfo: LfoConfig | null = null,
 ): Promise<ActiveNote | null> {
   const ctx = getAudioContext();
   const startTime = when ?? ctx.currentTime;
@@ -315,13 +333,76 @@ export async function playNote(
   // Connect graph (avec filter intermédiaire pour noise voices)
   const noiseFilter = (source as { _noiseFilter?: BiquadFilterNode })._noiseFilter;
   if (noiseFilter) {
-    // source → filter (déjà connecté plus haut) → env → panner → master
     noiseFilter.connect(env);
   } else {
     source.connect(env);
   }
   env.connect(panner);
   panner.connect(getMasterGain());
+
+  // LFO 1:1 décomp m4a_1.s : OscillatorNode triangle qui module pitch/volume/pan.
+  // Setup APRES la création des nodes (besoin de source/env/panner pour modulation).
+  let lfoOsc: OscillatorNode | null = null;
+  let lfoGain: GainNode | null = null;
+  if (lfo && lfo.speed > 0 && lfo.depth > 0) {
+    lfoOsc = ctx.createOscillator();
+    lfoOsc.type = 'triangle';
+    // Frequency : lfoSpeed × 60 / 256 Hz (1:1 décomp accumulator triangle 256 phase steps)
+    lfoOsc.frequency.value = (lfo.speed * 60) / 256;
+    // Delay avant LFO start (tonejs : audioParam.setValueAtTime à valeur 0 puis ramp à depth)
+    const lfoDelaySec = (lfo.delayTicks ?? 0) / 60;
+    lfoGain = ctx.createGain();
+
+    if (lfo.type === 0) {
+      // VIBRATO : module la pitch (cents).
+      // 1:1 décomp : pitch += 16 × modM, modM range -127..127 → ±2032 cents max.
+      // Pour notre frequency : freq × 2^(cents/1200).
+      // Approximation : applique au playbackRate (DirectSound) ou frequency (PSG).
+      // Simplification : module la frequency directement ±semitones.
+      const maxSemis = (lfo.depth / 127) * 1.0;  // depth 127 = ±1 semitone (subtle vibrato)
+      const freqDelta = noteFreq * (Math.pow(2, maxSemis / 12) - 1);
+      lfoGain.gain.value = 0;
+      lfoGain.gain.setValueAtTime(0, startTime);
+      lfoGain.gain.linearRampToValueAtTime(freqDelta, startTime + lfoDelaySec + 0.05);
+      lfoOsc.connect(lfoGain);
+      // Connect LFO to source frequency
+      if ('frequency' in source) {
+        // OscillatorNode (PSG)
+        lfoGain.connect((source as OscillatorNode).frequency);
+      } else if ('playbackRate' in source) {
+        // AudioBufferSource (PCM) : module playbackRate via ratio (lfo Hz → ratio delta)
+        // Convertir freqDelta → ratioDelta : ratio = freq / baseFreq
+        // ratioDelta = freqDelta / baseFreq. Pour DirectSound, baseFreq = midiNoteToFreq(voice.baseKey)
+        const isDirectsound = voice.type === 'directsound' || voice.type === 'directsound_no_resample';
+        const baseFreq = isDirectsound ? midiNoteToFreq(voice.baseKey) : noteFreq;
+        const ratioDelta = freqDelta / baseFreq;
+        lfoGain.gain.value = 0;
+        lfoGain.gain.setValueAtTime(0, startTime);
+        lfoGain.gain.linearRampToValueAtTime(ratioDelta, startTime + lfoDelaySec + 0.05);
+        lfoGain.connect((source as AudioBufferSourceNode).playbackRate);
+      }
+    } else if (lfo.type === 1) {
+      // TREMOLO : module le volume.
+      // 1:1 décomp : x = (vol × volX) >> 5 ; if modT==1 : x = (x × (modM + 128)) >> 7
+      // → volume oscille entre 0% et ~200% selon modM. Notre approximation : ±depth/2.
+      const tremoloDepth = (lfo.depth / 127) * 0.3 * velNorm;  // ±30% du volume max
+      lfoGain.gain.value = 0;
+      lfoGain.gain.setValueAtTime(0, startTime);
+      lfoGain.gain.linearRampToValueAtTime(tremoloDepth, startTime + lfoDelaySec + 0.05);
+      lfoOsc.connect(lfoGain);
+      lfoGain.connect(env.gain);  // module l'envelope gain
+    } else if (lfo.type === 2) {
+      // PAN_LFO : module le pan.
+      // 1:1 décomp : y += modM, range -1..+1 webAudio.
+      const panDepth = lfo.depth / 127;
+      lfoGain.gain.value = 0;
+      lfoGain.gain.setValueAtTime(0, startTime);
+      lfoGain.gain.linearRampToValueAtTime(panDepth, startTime + lfoDelaySec + 0.05);
+      lfoOsc.connect(lfoGain);
+      lfoGain.connect(panner.pan);
+    }
+    lfoOsc.start(startTime);
+  }
 
   source.start(startTime);
 
@@ -332,8 +413,6 @@ export async function playNote(
     startedAt: startTime,
     stop(time?: number) {
       const t = time ?? ctx.currentTime;
-      // Release : exponential fade vers 0 via setTargetAtTime (1:1 GBA mult per tick).
-      // Stop le source après ~5 × tau (= envelope quasi-zéro 99%).
       const releaseTau = envTimeConstant(envelope.release);
       const releaseTotalSec = Math.max(0.05, releaseTau * 5);
       env.gain.cancelScheduledValues(t);
@@ -342,6 +421,10 @@ export async function playNote(
       try {
         if ('stop' in source) (source as AudioBufferSourceNode | OscillatorNode).stop(t + releaseTotalSec + 0.01);
       } catch { /* already stopped */ }
+      // Stop also LFO oscillator
+      if (lfoOsc) {
+        try { lfoOsc.stop(t + releaseTotalSec + 0.02); } catch { /* ignore */ }
+      }
       window.setTimeout(() => unregisterActiveNote(note), Math.max(50, (releaseTotalSec + 0.05) * 1000));
     },
   };

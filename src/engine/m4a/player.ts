@@ -112,12 +112,15 @@ export async function playSong(
         // @tonejs/midi : ccArr est groupé par CC number (key string)
       }
     }
+    const modEvents: CcEvent[] = [];  // CC1 modulation depth → vibrato
     if (ccs[7])  for (const cc of ccs[7])  volEvents.push({ time: cc.time, value: cc.value });
     if (ccs[11]) for (const cc of ccs[11]) expEvents.push({ time: cc.time, value: cc.value });
     if (ccs[10]) for (const cc of ccs[10]) panEvents.push({ time: cc.time, value: cc.value });
+    if (ccs[1])  for (const cc of ccs[1])  modEvents.push({ time: cc.time, value: cc.value });
     volEvents.sort((a, b) => a.time - b.time);
     expEvents.sort((a, b) => a.time - b.time);
     panEvents.sort((a, b) => a.time - b.time);
+    modEvents.sort((a, b) => a.time - b.time);
     const pitchBends = track.pitchBends ?? [];
     const sortedBends = [...pitchBends].sort((a, b) => a.time - b.time);
 
@@ -138,16 +141,18 @@ export async function playSong(
 
       playback.stats.totalNotes++;
 
-      // Lookup CC actifs au moment de cette note (1:1 TrkVolPitSet :
-      // x = vol × volX / 32 ; trackVolume = note.velocity × x normalisé).
-      // @tonejs/midi : value est 0-1 (déjà normalisé par CC max 127).
-      const volCc = valueAtTime(volEvents, note.time, 1.0);  // CC7 default 100/127 ≈ 0.79 GBA mais tonejs normalise
-      const expCc = valueAtTime(expEvents, note.time, 1.0);  // CC11 default max
-      const panCc = valueAtTime(panEvents, note.time, 0.5);  // CC10 default center (0.5 = 64/127)
+      const volCc = valueAtTime(volEvents, note.time, 1.0);
+      const expCc = valueAtTime(expEvents, note.time, 1.0);
+      const panCc = valueAtTime(panEvents, note.time, 0.5);
       const trackVolume = volCc * expCc;
       const panMidi = Math.round(panCc * 127);
-      // Pitch bend (semitones) : @tonejs/midi value est -2 à +2 par défaut (bendRange GM)
       const bend = valueAtTime(sortedBends as CcEvent[], note.time, 0);
+      // Modulation depth via CC1 (mod wheel). M4A traduit en track->mod 0-127.
+      // Default lfoSpeed=22 (cf. m4a.c:247 default), modT=0 (vibrato).
+      const modCc = valueAtTime(modEvents, note.time, 0);  // CC1 normalized 0-1
+      const lfoConfig = modCc > 0
+        ? { speed: 22, depth: Math.round(modCc * 127), type: 0 as 0 | 1 | 2, delayTicks: 0 }
+        : null;
 
       const timeoutMs = Math.max(0, (noteOnTime - ctx.currentTime) * 1000);
       const onTimer = window.setTimeout(async () => {
@@ -160,7 +165,7 @@ export async function playSong(
         }
         const active = await playNote(
           voice, note.midi, Math.round(note.velocity * 127),
-          panMidi, noteOnTime, trackVolume, bend,
+          panMidi, noteOnTime, trackVolume, bend, lfoConfig,
         );
         if (active) {
           playback.activeNotes.set(key, active);
