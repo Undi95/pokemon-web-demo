@@ -197,6 +197,50 @@ export async function preloadScene3Assets(): Promise<void> {
   console.log(`[intro-asset-loader] Scene 3 preload done (${assetCache.size} symbols total cached)`);
 }
 
+/** Pré-charge les assets Title screen (Rayquaza + Clouds + Pokemon Logo + Version). */
+export async function preloadTitleAssets(): Promise<void> {
+  const titleAssets: Array<{ symbol: string; url: string; type: 'png' | 'png8bpp' | 'tilemap' | 'pal' }> = [
+    { symbol: 'sTitleScreenRayquazaGfx', url: '/decomp/em/boot/title_screen/rayquaza.png', type: 'png' },
+    { symbol: 'sTitleScreenRayquazaTilemap', url: '/decomp/em/boot/title_screen/rayquaza.bin', type: 'tilemap' },
+    { symbol: 'sTitleScreenCloudsGfx', url: '/decomp/em/boot/title_screen/clouds.png', type: 'png' },
+    { symbol: 'gTitleScreenCloudsTilemap', url: '/decomp/em/boot/title_screen/clouds.bin', type: 'tilemap' },
+    // pokemon_logo est 8bpp affine BG (256 colors) — pas 4bpp
+    { symbol: 'gTitleScreenPokemonLogoGfx', url: '/decomp/em/boot/title_screen/pokemon_logo.png', type: 'png8bpp' },
+    { symbol: 'gTitleScreenPokemonLogoTilemap', url: '/decomp/em/boot/title_screen/pokemon_logo.bin', type: 'tilemap' },
+    { symbol: 'gTitleScreenBgPalettes', url: '/decomp/em/boot/title_screen/pokemon_logo.pal', type: 'pal' },
+    // emerald_version : palette embedded dans le PNG → load PNG palette
+    { symbol: 'gTitleScreenEmeraldVersionPal', url: '/decomp/em/boot/title_screen/emerald_version.png', type: 'png' },
+  ];
+  await Promise.all(titleAssets.map(async ({ symbol, url, type }) => {
+    try {
+      if (type === 'png' || type === 'png8bpp') {
+        // png8bpp : utilise loadIndexedPngStrict (= extract PLTE PNG embedded au
+        // lieu de detect 4bpp uniques). Pour 256 colors palette type assets.
+        const { loadIndexedPngStrict } = await import('./gba/png-loader');
+        const png = type === 'png8bpp'
+          ? await loadIndexedPngStrict(url, 8)
+          : await loadIndexedPng(url);
+        if (symbol.endsWith('Pal')) {
+          assetCache.set(symbol, png.palette);
+        } else {
+          assetCache.set(symbol, png.charData);
+          const palSymbol = symbol.replace(/Gfx$/, 'Pal');
+          if (palSymbol !== symbol && !assetCache.has(palSymbol)) assetCache.set(palSymbol, png.palette);
+        }
+      } else if (type === 'tilemap') {
+        const tilemap = await loadTilemapBin(url);
+        assetCache.set(symbol, tilemap);
+      } else if (type === 'pal') {
+        const pal = await loadGbaPal(url);
+        assetCache.set(symbol, pal);
+      }
+    } catch (e) {
+      console.warn(`[intro-asset-loader] Title load failed for ${symbol}:`, e);
+    }
+  }));
+  console.log(`[intro-asset-loader] Title preload done (${assetCache.size} symbols total cached)`);
+}
+
 /** Charge les g-prefixed assets (= externs graphics.c décomp, hors GFX_SOURCES). */
 async function loadGPrefixedExtras(): Promise<void> {
   const externs: Array<{ symbol: string; url: string; type: 'png' | 'pal' }> = [

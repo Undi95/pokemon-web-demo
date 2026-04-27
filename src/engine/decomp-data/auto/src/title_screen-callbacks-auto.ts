@@ -31,6 +31,49 @@ import {
   VERSION_BANNER_Y,
   VERSION_BANNER_Y_GOAL,
 } from '../../title-screen-data';
+// MANUAL FIX session 68 phase 3 — Title screen helpers + symbols depuis decomp-globals
+import {
+  // Helpers globaux décomp
+  LZ77UnCompVram, LoadPalette, LoadCompressedSpriteSheet, LoadSpritePalettes,
+  LoadSpritePalette, DmaFill16, DmaFill32, ResetPaletteFade, ResetTasks,
+  ScanlineEffect_Stop, EnableInterrupts, PanFadeAndZoomScreen,
+  // Runtime singleton + global state proxies
+  getRuntime as _getRuntime, gMain, gPlttBufferUnfaded,
+  // Display + addressing
+  DISPLAY_WIDTH, DISPLAY_HEIGHT,
+  // Constants
+  BG_CHAR_ADDR, BG_SCREEN_ADDR, BG_PLTT_ID, OBJ_PLTT_ID,
+  // DISPCNT bits
+  DISPCNT_MODE_0, DISPCNT_MODE_1, DISPCNT_MODE_2, DISPCNT_OBJ_1D_MAP,
+  DISPCNT_BG0_ON, DISPCNT_BG1_ON, DISPCNT_BG2_ON, DISPCNT_BG3_ON,
+  DISPCNT_OBJ_ON, DISPCNT_WIN0_ON, DISPCNT_BG_ALL_ON,
+  // BLDCNT
+  BLDCNT_TGT1_BG0, BLDCNT_TGT1_BG1, BLDCNT_TGT1_BG3, BLDCNT_TGT1_OBJ,
+  BLDCNT_EFFECT_BLEND, BLDCNT_EFFECT_LIGHTEN, BLDCNT_EFFECT_DARKEN,
+  // BG_SCREEN_SIZE etc
+  BG_SCREEN_SIZE, PALETTES_ALL,
+  // BGCNT extras
+  BGCNT_TXT512x256, BGCNT_TXT256x512, BGCNT_TXT512x512, BGCNT_AFF128x128,
+  BGCNT_AFF512x512, BGCNT_AFF1024x1024,
+  BGCNT_PRIORITY, BGCNT_CHARBASE, BGCNT_SCREENBASE,
+  BGCNT_16COLOR, BGCNT_256COLOR, BGCNT_TXT256x256, BGCNT_AFF256x256,
+  BLDCNT_TGT1_BG2,
+  REG_OFFSET_DISPCNT, REG_OFFSET_BG0CNT, REG_OFFSET_BG1CNT, REG_OFFSET_BG2CNT,
+  REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS,
+  REG_OFFSET_BG1HOFS, REG_OFFSET_BG1VOFS,
+  REG_OFFSET_BG2HOFS, REG_OFFSET_BG2VOFS,
+  REG_OFFSET_WIN0H, REG_OFFSET_WIN1H, REG_OFFSET_WIN0V, REG_OFFSET_WIN1V,
+  REG_OFFSET_WININ, REG_OFFSET_WINOUT,
+  REG_OFFSET_BLDCNT, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDY,
+  // Title screen symbol-name strings
+  gTitleScreenPokemonLogoGfx, gTitleScreenPokemonLogoTilemap, gTitleScreenBgPalettes,
+  sTitleScreenRayquazaGfx, sTitleScreenRayquazaTilemap,
+  sTitleScreenCloudsGfx, gTitleScreenCloudsTilemap,
+  gTitleScreenEmeraldVersionPal, sSpritePalette_PressStart,
+} from '../../../decomp-globals';
+
+// EWRAM vars locales (= ES modules ne permet pas write sur import binding)
+let gReservedSpritePaletteCount = 0;
 // Constants resolved from decomp #defines / enums / TS data modules :
 const A_B_START_SELECT = 15;
 const A_BUTTON = 1;
@@ -374,12 +417,14 @@ export const CB2_InitTitleScreen: CB2Callback = (rt) => {
           break;
       case 2:
       {
+          // MANUAL FIX session 68 phase 3 : transpileur a généré `task.data[N]`
+          // dans CB2 scope où `task` n'existe pas. Décomp src : `gTasks[taskId].data[N]`.
           let taskId = rt.CreateTask((t) => Task_TitleScreenPhase1(t, rt), 0);
-
-          task.data[0] = 256;
-          task.data[1] = false;
-          task.data[2] = -16;
-          task.data[3] = -32;
+          const _t = _gt(rt, taskId);
+          _t.data[0] = 256;
+          _t.data[1] = 0;  // false → 0 (Int16Array)
+          _t.data[2] = -16;
+          _t.data[3] = -32;
           gMain.state = 3;
           break;
       }

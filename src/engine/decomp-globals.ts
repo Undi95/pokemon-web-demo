@@ -498,6 +498,78 @@ export const gIntroClouds_Gfx = 'gIntroClouds_Gfx';
 export const gIntroCloudsSun_Tilemap = 'gIntroCloudsSun_Tilemap';
 export const gIntro3Bg_Pal = 'gIntro3Bg_Pal';
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// TITLE SCREEN STUBS (Phase 3 minimum viable)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/** Stubs helpers missing du décomp utilisés par CB2_InitTitleScreen. */
+export function DmaFill16(_channel: number, value: number, destAddr: number, sizeBytes: number): void {
+  const r = rt();
+  const offset = destAddr % r.gba.vram.byteLength;
+  const cnt = Math.min(sizeBytes, r.gba.vram.byteLength - offset);
+  if (cnt > 0) r.gba.vram.fill(value & 0xFF, offset, offset + cnt);
+}
+export function DmaFill32(_channel: number, value: number, destAddr: number, sizeBytes: number): void {
+  DmaFill16(_channel, value & 0xFFFF, destAddr, sizeBytes);
+}
+export function ResetPaletteFade(): void {
+  const r = rt();
+  r.gPaletteFade.active = false;
+  r.gba.blend.brightness = 0;
+}
+export function ResetTasks(): void {
+  rt().gTasks.clear();
+}
+export function ScanlineEffect_Stop(): void { /* TODO Phase 3+ */ }
+export function EnableInterrupts(_flag: number): void { /* no-op */ }
+export function LoadSpritePalette(_pal: { data: string, tag: string | number } | unknown): void {
+  /* Phase 3+ : implémenter via paletteTagToSlot register */
+}
+
+/** Memory addresses GBA hardware constants. */
+export const VRAM = 0x06000000;
+export const OAM = 0x07000000;
+export const PLTT = 0x05000000;
+export const OAM_SIZE = 0x400;
+// VRAM_SIZE déjà déclaré plus haut
+
+/** Window control bits (1:1 GBA). */
+export const WININ_WIN0_BG_ALL = 0xF;
+export const WININ_WIN0_OBJ = 0x10;
+export const WININ_WIN1_BG_ALL = 0xF00;
+export const WININ_WIN1_OBJ = 0x1000;
+export const WINOUT_WIN01_BG_ALL = 0xF;
+export const WINOUT_WIN01_OBJ = 0x10;
+export const WINOUT_WINOBJ_ALL = 0x1F00;
+
+/** Interrupt flags. */
+export const INTR_FLAG_VBLANK = 1;
+
+/** Title screen affine BG regs. */
+export const REG_OFFSET_BG2X_L = 0x028;
+export const REG_OFFSET_BG2X_H = 0x02A;
+export const REG_OFFSET_BG2Y_L = 0x02C;
+export const REG_OFFSET_BG2Y_H = 0x02E;
+
+/** Title screen symbol-name strings (title_screen.c). */
+export const gTitleScreenPokemonLogoGfx = 'gTitleScreenPokemonLogoGfx';
+export const gTitleScreenPokemonLogoTilemap = 'gTitleScreenPokemonLogoTilemap';
+export const gTitleScreenBgPalettes = 'gTitleScreenBgPalettes';
+export const sTitleScreenRayquazaGfx = 'sTitleScreenRayquazaGfx';
+export const sTitleScreenRayquazaTilemap = 'sTitleScreenRayquazaTilemap';
+export const sTitleScreenCloudsGfx = 'sTitleScreenCloudsGfx';
+export const gTitleScreenCloudsTilemap = 'gTitleScreenCloudsTilemap';
+export const gTitleScreenEmeraldVersionPal = 'gTitleScreenEmeraldVersionPal';
+export const sSpritePalette_PressStart: ReadonlyArray<{ data: string; tag: number }> = [
+  { data: 'sPressStart_Pal', tag: 1000 },
+];
+
+/** gMain re-export (pour bodyC CB2_InitTitleScreen qui fait `gMain.state = N`). */
+export const gMain = new Proxy({} as { state: number; callback2: unknown; vblankCallback: unknown }, {
+  get(_, k) { return (rt().gMain as unknown as Record<string, unknown>)[k as string]; },
+  set(_, k, v) { (rt().gMain as unknown as Record<string, unknown>)[k as string] = v; return true; },
+});
+
 /** Accessor `gPlttBufferUnfaded` proxy — pointer vers rt().gPlttBufferUnfaded.
  *  Le bodyC fait des `gPlttBufferUnfaded[idx]` = read u16 à index dans le buf.
  *  Notre PaletteBuffer expose `.get(idx)` ; pour rester compatible avec
