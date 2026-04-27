@@ -20,7 +20,7 @@
  *     32767 (END). Notre extracteur a normalisé : terminator string 'END'/'LOOP'/'JUMP'.
  */
 import { DecompRuntime, type DecompSprite } from '../decomp-runtime';
-import { SetOamMatrix, ST_OAM_AFFINE_ON_MASK } from '../decomp-helpers';
+import { SetOamMatrix, ST_OAM_AFFINE_ON_MASK, gSineTable } from '../decomp-helpers';
 import {
   SPRITE_AFFINE_ANIM_TABLES, SPRITE_AFFINE_ANIMS,
 } from '../decomp-data/auto/src/sprite-system';
@@ -75,35 +75,41 @@ export function StartSpriteAffineAnim(sprite: DecompSprite, animNum: number): vo
   sprite.affineAnimEnded = false;
 }
 
-/** Convertit Q.8.8 fixed scale (256 = 1.0) → multiplicateur affine matrix.
- *  Sur GBA réel, sin/cos sont en s8.8 et la matrix est un.s8.7 fixed.
- *  Pour notre engine simplifié on utilise scale direct + sin/cos table pour rotation. */
+/** 1:1 décomp src/sprite.c:ObjAffineSet — calcule la matrix OAM depuis xScale, yScale, rotation.
+ *  Formule (cf. ObjAffineSet équivalent inline) :
+ *    sin = gSineTable[rot & 0xFF]              // s16 in [-256, 256]
+ *    cos = gSineTable[(rot + 64) & 0xFF]       // s16
+ *    pa =  (xScale * cos) >> 8
+ *    pb = -(xScale * sin) >> 8
+ *    pc =  (yScale * sin) >> 8
+ *    pd =  (yScale * cos) >> 8
+ *
+ *  Identity (xScale=yScale=256, rotation=0) → pa=256, pb=0, pc=0, pd=256.
+ *  xScale=128 (= half) → pa=128 → sprite affiché 2× plus grand visuellement
+ *  (= sample 0.5 px par pixel screen).
+ */
 function applyMatrixFromAffineState(sprite: DecompSprite, rt: DecompRuntime): void {
-  // sprite.xScale/yScale en Q.8.8 (256 = 1.0). Inverse pour la matrix (= 0x10000 / scale).
-  // Pour rotation, on utilise gSineTable[(u8)rotation] / 256 = sin(angle).
-  if (sprite.xScale === 0 || sprite.yScale === 0) return;
-  const invXScale = (0x10000 / sprite.xScale) | 0;
-  const invYScale = (0x10000 / sprite.yScale) | 0;
-  // Identity rotation (rotation == 0) = pa = invX, pb = 0, pc = 0, pd = invY
-  if (sprite.rotation === 0) {
-    SetOamMatrix(rt.gba, sprite.matrixNum, invXScale, 0, 0, invYScale);
-    return;
-  }
-  // Rotation en Q.8 : angle / 256 cycles. Use gSineTable from helpers.
-  // Pour l'instant on simplifie sans rotation dynamique (= juste scale)
-  SetOamMatrix(rt.gba, sprite.matrixNum, invXScale, 0, 0, invYScale);
+  const sin = gSineTable(sprite.rotation & 0xFF);
+  const cos = gSineTable((sprite.rotation + 64) & 0xFF);
+  const pa =  (sprite.xScale * cos) >> 8;
+  const pb = -(sprite.xScale * sin) >> 8;
+  const pc =  (sprite.yScale * sin) >> 8;
+  const pd =  (sprite.yScale * cos) >> 8;
+  SetOamMatrix(rt.gba, sprite.matrixNum, pa, pb, pc, pd);
 }
 
-/** 1:1 décomp ApplyAffineAnimFrame(matrixNum, frameCmd) :
- *  sAffineAnimStates[matrixNum].xScale = frameCmd->xScale;
- *  sAffineAnimStates[matrixNum].yScale = frameCmd->yScale;
- *  sAffineAnimStates[matrixNum].rotation = frameCmd->rotation;
- *  Puis update matrix via SetOamMatrix.
+/** 1:1 décomp src/sprite.c:ApplyAffineAnimFrame :
+ *    if (frameCmd->xScale != 0) sAffineAnimStates[matrixNum].xScale = frameCmd->xScale;
+ *    if (frameCmd->yScale != 0) sAffineAnimStates[matrixNum].yScale = frameCmd->yScale;
+ *    sAffineAnimStates[matrixNum].rotation += frameCmd->rotation;  // ACCUMULATE
+ *    update matrix.
+ *  ⚠️ xScale/yScale = SET only if non-zero (= preserve previous if frame.xScale==0).
+ *    rotation = ACCUMULATE.
  */
 export function ApplyAffineAnimFrame(sprite: DecompSprite, frame: AffineAnimFrameCmd, rt: DecompRuntime): void {
-  sprite.xScale = frame.xScale;
-  sprite.yScale = frame.yScale;
-  sprite.rotation = frame.rotation;
+  if (frame.xScale !== 0) sprite.xScale = frame.xScale;
+  if (frame.yScale !== 0) sprite.yScale = frame.yScale;
+  sprite.rotation += frame.rotation;
   applyMatrixFromAffineState(sprite, rt);
 }
 
