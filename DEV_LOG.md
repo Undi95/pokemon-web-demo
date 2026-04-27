@@ -16,6 +16,118 @@ Stack : Vite + TypeScript + Phaser 3 + @pkmn/sim + @pkmn/dex
 
 ---
 
+## Session 66 — Engine GBA-compat pixel-perfect + M4A audio engine 1:1 (2026-04-27)
+
+**Pivot stratégique** : abandon des "bouts de ficelle" Phaser → couche
+d'émulation GBA propre sur Canvas 2D + moteur audio M4A complet 1:1 décomp.
+
+User request : *"Option A (couche GBA-compat) + audio M4A propre, comme ça
+on a déjà une partie faite à 100%"*.
+
+### Engine GBA-compat (`src/engine/gba/`, ~1000L)
+
+7 fichiers en place :
+- `types.ts` : Rgb15↔Rgba8, BgConfig (text + affine), OamEntry, Windows,
+  BlendConfig, MosaicConfig, AffineMatrix + helpers
+- `palette.ts` : 16 BG banks × 16 + 16 OBJ banks × 16 colors avec cache RGB888
+- `tile.ts` : décodage 4bpp/8bpp + flipH/V
+- `bg-layer.ts` : renderBgScanline (text avec scroll/screenSize) +
+  renderBgAffineScanline (BG2/BG3 modes 1/2 GBA)
+- `compositor.ts` : compose 4 BG par priority + tracking top 2 layers (pour
+  blend) + OAM normal/affine + Windows masking + Mosaic horizontal
+- `gba.ts` : API publique Gba class avec tick() + frame counter
+- `phaser-bridge.ts` : CanvasTexture dynamique pour intégration Phaser
+
+Features 1:1 hardware GBA :
+- BG layers (text + affine, scroll, screenSize 32-128 tiles)
+- OAM 128 sprites + affine matrix (mode 1 NORMAL + mode 3 DOUBLE)
+- Palette banks BG + OBJ (RGB15 → RGB888 ×8)
+- Compositing par priority avec tracking top 2 layers
+- Blend (BLDCNT/BLDALPHA/BLDY modes 1 alpha + 2/3 brightness)
+- Windows (WIN0/WIN1 + WININ/WINOUT + blend gating + WINOBJ)
+- Mosaic horizontal (BG + OBJ via REG_MOSAIC)
+- HBLANK callback per scanline
+
+PoC validé runtime sur copyright Pokemon Emerald (BG tilemap + 5 colors palette)
++ Lotad sprite 64×64 (OAM 4bpp) + DOUBLE_AFFINE rotation 360° + Blend BLDY
+pulse + WIN0 spotlight 80×80 (commits `9c950313`, `c796caec`, `fc877d6d`,
+`64414478`).
+
+### M4A audio engine (`src/engine/m4a/`, ~700L)
+
+8 fichiers + 195 voicegroups parsés + 5 keysplit tables + 544 WAV samples :
+- `voice-types.ts` : VoiceType enum + Voice union + VoiceGroup (avec offset
+  pour drumsets)
+- `voicegroups-data/_all-voicegroups-index.ts` : lookup map 195 voicegroups
+- `voicegroups-data/_keysplit-tables.ts` : resolveKeysplitNote helper
+- `audio-context.ts` : singleton AudioContext + master gain + reverb chain
+  (delay 1 frame + feedback) + DAC lowpass 8 kHz (grain GBA)
+- `sample-loader.ts` : fetch WAV + parse smpl chunk (loop points exacts)
+- `voice-resolver.ts` : résout voicegroup + program → voice (gère
+  keysplit_all + keysplit drumset avec lookup table)
+- `synth.ts` : playNote avec PSG square (duty 12.5/25/50/75% PeriodicWave)
+  + PSG noise color (BiquadFilter par period) + DirectSound (PCM avec pitch
+  shift) + ProgrammableWave fallback triangle + ADSR exact (linear attack +
+  exponential decay/release via setTargetAtTime) + StereoPanner + LFO
+  (vibrato/tremolo/pan_lfo via OscillatorNode triangle) + pseudo-echo +
+  polyphonie 128 voice stealing FIFO
+- `player.ts` : MIDI loader + playSong avec dispatch par track + lookup CC
+  (volume CC7, expression CC11, pan CC10, modulation CC1, sustain CC64,
+  lfoSpeed CC21, modT CC22, lfoDelay CC26) + pitch bends + sustain pedal
+  delay noteOff + stop avec stats logging
+
+Tous les détails 1:1 décomp (vérifiés via investigation profonde
+src/m4a.c + src/m4a_1.s + include/gba/m4a_internal.h) :
+- Sample rate exact `SOUND_MODE_FREQ_13379`
+- ADSR : `envelopeVolume += attack` (additif) puis `vol = (vol × decay) >> 8`
+  (multiplicatif exponentiel) — sémantique signed s8 pour skip/instant
+- Tick rate 60 Hz (m4aSoundMain VBlank)
+- Reverb : delay 1 frame + feedback selon `SoundMainRAM_Reverb` (m4a_1.s:88)
+- TrkVolPitSet (m4a.c:765) : volume × expression, pan + panX, pitch bend ×
+  bendRange, modM = (mod × triangle) >> 6
+- LFO triangle wave : phase accumulator (m4a_1.s:1265) avec sign s8 wrap
+- Voicegroup offset pour drumsets (`voice_group X, 36`)
+- Keysplit tables (`sound/keysplit_tables.inc`) avec resolveKeysplitNote
+- WAV smpl chunk loop points exacts (= WaveData.loopStart décomp)
+- DAC lowpass simulant Nyquist GBA (~6.7 kHz)
+
+Validé runtime user via TestGbaScene (P = play mus_intro.mid, 27 tracks,
+987 notes, 0 voice stealing, drumsets résolus, instruments PCM corrects,
+vibrato perceptible). Commits `21ef7f95`, `28abbae0`, `17c571e4`,
+`f19b42bc`, `2fee4bb5`, `f87c4bf5`.
+
+### Reproduction
+
+```ts
+import { Gba } from '@/engine/gba/gba';
+import { GbaPhaserBridge } from '@/engine/gba/phaser-bridge';
+const gba = new Gba();
+gba.palette.loadBgRange(0, [...]);
+gba.bg(0).vram.set(charData);
+gba.bg(0).tilemap.set(tilemap);
+gba.bg(0).config.visible = true;
+const bridge = new GbaPhaserBridge(scene, gba, 'gba-frame');
+scene.add.image(0, 0, 'gba-frame').setOrigin(0, 0);
+// In update: bridge.tick();
+
+import { loadMidi, playSong } from '@/engine/m4a/player';
+import { lookupVoicegroup } from '@/engine/m4a/voicegroups-data/_all-voicegroups-index';
+const midi = await loadMidi('/decomp/em/music/mus_intro.mid');
+const vg = lookupVoicegroup('intro');
+await playSong(midi, vg, lookupVoicegroup, false);
+```
+
+### Reste pour l'engine
+
+- `Affine BG2/BG3` rendering : code en place mais cas d'usage rares (pokeball
+  spin Scene 3 intro, logo Pokemon affine BG2 Title)
+- Re-implémentation intro/title/main_menu sur le nouvel engine (objet de
+  la prochaine session)
+- Refactor scènes existantes (BattleScene, OverworldScene) pour utiliser
+  Gba au lieu de Phaser direct
+
+---
+
 ## Session 65 — Phase 2B extracteur de state machines (Task_/CB2_/SpriteCB_) (2026-04-27)
 
 Final piece du grand plan. Nouveau script `extract-decomp-task-machines.mjs`
