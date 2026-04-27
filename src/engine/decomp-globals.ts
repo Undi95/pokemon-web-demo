@@ -138,68 +138,30 @@ export function setFlygonYOffset(v: number): void { sFlygonYOffset = v; }
 export function LZ77UnCompVram(srcSymbol: string, destAddr: number): void {
   const data = getAsset(srcSymbol);
   const r = rt();
-  const traceEntry: { symbol: string; dest: number; dataLen: number; bgIdx?: number; copied?: number; reason?: string } = {
+  const traceEntry: { symbol: string; dest: number; dataLen: number; copied?: number; reason?: string } = {
     symbol: srcSymbol, dest: destAddr, dataLen: data.byteLength,
   };
   lz77Trace.push(traceEntry);
-  // Détecte si c'est char data (addr < 0x10000) ou tilemap (addr >= 0x10000)
-  // BG_CHAR_ADDR(n) = n*0x4000 (n=0..3) → addr 0x0000/0x4000/0x8000/0xC000
-  // BG_SCREEN_ADDR(n) = n*0x800 (n=0..31) → addr 0x0000/0x0800/.../0xF800
-  // Ambiguïté : addr 0x0000 peut être char OR screen 0. Convention décomp :
-  // tilemaps écrits dans screenBase ≥ 16 (= addr ≥ 0x8000). En pratique :
-  //   - sIntro1Bg_Gfx → BG_CHAR_ADDR(0) = 0x0000 (char data)
-  //   - sIntro1Bg0_Tilemap → BG_CHAR_ADDR(2) = 0x8000 (tilemap, screenBase 16)
-  //   - sIntro1Bg1_Tilemap → BG_SCREEN_ADDR(18) = 0x9000 (tilemap, screenBase 18)
-  //   - etc.
-  // On regarde le symbol pour décider :
-  if (srcSymbol.endsWith('_Gfx') || srcSymbol.includes('_Tileset') || srcSymbol.includes('_Tiles')) {
-    // Char data → écrire dans LES 4 bg(n).vram (notre engine a des vram séparés
-    // par BG, mais GBA réel partage VRAM via charBase. Quand le décomp fait
-    // `LZ77UnCompVram(sBg_Gfx, VRAM)` avec VRAM=charBase 0 partagé, tous les
-    // BGs avec BGCNT charBase=0 doivent voir ce char data. On copie dans les 4
-    // pour simuler ce shared addressing). */
-    const bytes = data instanceof Uint16Array ? new Uint8Array(data.buffer, data.byteOffset, data.byteLength) : data;
-    for (let bgIdx = 0; bgIdx < 4; bgIdx++) {
-      const vram = r.gba.bg(bgIdx as 0 | 1 | 2 | 3).vram;
-      const copySize = Math.min(bytes.length, vram.length);
-      vram.set(bytes.subarray(0, copySize));
-    }
-    traceEntry.reason = 'char data → 4 BGs';
-    traceEntry.copied = bytes.length;
-  } else if (srcSymbol.endsWith('_Tilemap') || srcSymbol.endsWith('_Map')) {
-    // Tilemap → dispatch vers le BG correspondant via destAddr.
-    // BG_SCREEN_ADDR(n) = n*0x800. screenBase 16/18/20/22 = BG0/1/2/3 default.
-    const screenBase = Math.floor(destAddr / 0x800);
-    let bgIdx: 0 | 1 | 2 | 3 = 0;
-    if (screenBase === 16) bgIdx = 0;       // BG0 default
-    else if (screenBase === 18) bgIdx = 1;  // BG1
-    else if (screenBase === 20) bgIdx = 2;  // BG2
-    else if (screenBase === 22) bgIdx = 3;  // BG3
-    else {
-      traceEntry.reason = `unknown screenBase ${screenBase} → no-op`;
-      console.warn(`[LZ77UnCompVram] unknown screenBase ${screenBase} for ${srcSymbol}, dest=0x${destAddr.toString(16)}`);
-      return;
-    }
-    // Tilemap raw bytes → pour bg.tilemap (Uint16Array), on copy aligné u16
-    const tilemap = r.gba.bg(bgIdx).tilemap;
-    let copied = 0;
-    if (data instanceof Uint16Array) {
-      const src = data.subarray(0, tilemap.length);
-      tilemap.set(src);
-      copied = src.length;
-    } else {
-      // data Uint8Array → reinterpret as u16
-      const u16 = new Uint16Array(data.buffer, data.byteOffset, Math.floor(data.byteLength / 2));
-      const src = u16.subarray(0, tilemap.length);
-      tilemap.set(src);
-      copied = src.length;
-    }
-    traceEntry.bgIdx = bgIdx;
-    traceEntry.copied = copied;
-    traceEntry.reason = `tilemap → bg${bgIdx} (${copied} entries)`;
+  // 1:1 GBA hardware : VRAM est UN tableau partagé 96KB (0x06000000-0x06017FFF).
+  // BG_CHAR_ADDR(n) = n*0x4000, BG_SCREEN_ADDR(n) = n*0x800 sont des offsets
+  // dans cette VRAM unifiée. Chez nous (Phase 1 Action 2), `r.gba.vram` EST cette
+  // VRAM unifiée. On écrit directement à `destAddr` modulo VRAM_SIZE.
+  //
+  // BG charBase et mapBase pointent dans cette même VRAM ; les BGs avec mêmes
+  // charBase/mapBase voient les mêmes data automatiquement (= 1:1 hardware
+  // shared addressing). Plus aucun routage par suffix de symbol.
+  const bytes = data instanceof Uint16Array
+    ? new Uint8Array(data.buffer, data.byteOffset, data.byteLength)
+    : data;
+  const vram = r.gba.vram;
+  const offset = destAddr & (vram.byteLength - 1);  // wrap modulo 96KB (au cas où)
+  const copySize = Math.min(bytes.length, vram.byteLength - offset);
+  if (copySize > 0) {
+    vram.set(bytes.subarray(0, copySize), offset);
+    traceEntry.copied = copySize;
+    traceEntry.reason = `vram[0x${offset.toString(16)}..0x${(offset + copySize).toString(16)}]`;
   } else {
-    traceEntry.reason = `unrecognized symbol pattern → no-op`;
-    console.warn(`[LZ77UnCompVram] symbol ${srcSymbol}: cannot infer char/tilemap routing, no-op`);
+    traceEntry.reason = `dest 0x${offset.toString(16)} out of VRAM range, no-op`;
   }
 }
 
@@ -228,19 +190,19 @@ export function LoadPalette(srcSymbol: string | Uint16Array, offset: number, siz
 
 /** 1:1 décomp `DmaClear16(channel, dest, size)` — clear memory via DMA.
  *
- *  BUG fixé session 68 phase 0b : le décomp utilise DmaClear16 pour clear le
- *  block "B" d'un tilemap multi-block sur GBA hardware (où VRAM est UN tableau
- *  partagé). Exemple sequence Task_Scene1_Load :
- *    LZ77UnCompVram(sIntro1Bg0_Tilemap, screenBase 16);  // remplit TL block
- *    DmaClear16(3, screenBase 17, BG_SCREEN_SIZE);       // clear TR block
- *  Sur GBA, les 2 screens font partie du même bg(0).tilemap (32×64 = 2 blocks).
- *  Chez nous : bg(n).tilemap est SÉPARÉ par BG, et déjà à 0 par défaut.
- *  Si on map screenBase 17 → bg(0).tilemap pour clear, on EFFACE le contenu
- *  qu'on vient de mettre. Solution : DmaClear16 no-op pour screenBases (le
- *  bg.tilemap est init à 0 ; pas besoin de re-clear). */
-export function DmaClear16(_channel: number, _destAddr: number, _sizeBytes: number): void {
-  // No-op : bg.tilemap déjà à 0 par défaut (Uint16Array init zero).
-  // Le clear décomp était nécessaire car VRAM GBA n'est pas init.
+ *  Phase 1 Action 2 : maintenant que VRAM est unifié (rt.gba.vram 96KB), on
+ *  peut clear directement à `destAddr`. Plus de risque d'écraser le tilemap
+ *  qu'on vient de remplir (ancien bug 0b avec vram séparés par BG).
+ *
+ *  Sémantique : DMA clear = écrire 0 dans `[destAddr..destAddr+sizeBytes]`. */
+export function DmaClear16(_channel: number, destAddr: number, sizeBytes: number): void {
+  const r = rt();
+  const vram = r.gba.vram;
+  const offset = destAddr & (vram.byteLength - 1);
+  const clearSize = Math.min(sizeBytes, vram.byteLength - offset);
+  if (clearSize > 0) {
+    vram.fill(0, offset, offset + clearSize);
+  }
 }
 
 /** 1:1 décomp `CpuFill16(value, dest, size)` — fill 16-bit. */

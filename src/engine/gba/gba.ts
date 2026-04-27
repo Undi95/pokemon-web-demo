@@ -4,8 +4,8 @@
  * Usage typique :
  *   const gba = new Gba();
  *   gba.palette.loadBgRange(0, [...]);          // palette init
- *   gba.bg(1).vram.set(charData);               // tileset
- *   gba.bg(1).tilemap.set(mapData);             // tilemap
+ *   gba.bg(1).vram.set(charData);               // tileset (= write dans vram unifié)
+ *   gba.bg(1).tilemap.set(mapData);             // tilemap (= write dans vram unifié)
  *   gba.bg(1).config.visible = true;
  *   gba.bg(1).config.priority = 0;
  *   gba.bg(1).config.charBaseIndex = 0;
@@ -18,6 +18,16 @@
  *   const buffer = gba.getFrameBuffer();         // Uint8ClampedArray RGBA 240×160×4
  *
  * Pour l'intégration Phaser : voir GbaPhaserBridge dans phaser-bridge.ts.
+ *
+ * VRAM 1:1 GBA hardware (refactor session 68 Phase 1 Action 2) :
+ *   - VRAM unifié 96KB (0x06000000-0x06017FFF, mémoire-mappée GBA)
+ *   - BG charBase 0-3 = bytes 0/0x4000/0x8000/0xC000 (16KB par charBase)
+ *   - BG screenBase 0-31 = bytes 0/0x800/.../0xF800 (2KB par screenBase)
+ *   - bg(n).vram retourne une VIEW Uint8Array du charBase de ce BG
+ *   - bg(n).tilemap retourne une VIEW Uint16Array du mapBase de ce BG
+ *   - Les writes via .set() vont dans le buffer unifié → BG avec mêmes
+ *     charBase/mapBase voient les mêmes data automatiquement (1:1 hardware
+ *     shared VRAM). Plus de hack "copier dans 4 vram séparés".
  */
 import {
   type AffineMatrix, type BgConfig, type BlendConfig, type HBlankCallback, type MosaicConfig,
@@ -28,22 +38,33 @@ import {
 import { PaletteBanks } from './palette';
 import { composeFrame } from './compositor';
 
+/** Taille tilemap en entries u16 selon screenSize (1:1 GBA hardware). */
+const TILEMAP_SIZES_BY_SCREEN_SIZE: Readonly<Record<0 | 1 | 2 | 3, number>> = {
+  0: 1024,  // 32×32 tiles = 1 screen base = 0x800 bytes
+  1: 2048,  // 64×32 tiles = 2 screen bases (TL, TR)
+  2: 2048,  // 32×64 tiles = 2 screen bases (TL, BL)
+  3: 4096,  // 64×64 tiles = 4 screen bases (TL, TR, BL, BR)
+};
+
 export interface GbaBg {
   config: BgConfig;
-  /** Char data (tile pixels). 4bpp = 32B/tile, 8bpp = 64B/tile. Max 32 KB / char base. */
-  vram: Uint8Array;
-  /** Tilemap entries u16. Taille selon screenSize : 32×32=1024, 64×32/32×64=2048, 64×64=4096. */
-  tilemap: Uint16Array;
+  /** Char data view dans VRAM unifié au offset `charBaseIndex × 0x4000`. 16KB.
+   *  4bpp = 32B/tile = 512 tiles max. 8bpp = 64B/tile = 256 tiles max. */
+  readonly vram: Uint8Array;
+  /** Tilemap view u16 dans VRAM unifié au offset `mapBaseIndex × 0x800`.
+   *  Taille selon screenSize (1024/2048/4096 entries). */
+  readonly tilemap: Uint16Array;
 }
 
 export class Gba {
   readonly palette = new PaletteBanks();
-  /** 4 BG layers (BG0-3). 1:1 GBA. */
-  private readonly bgs: GbaBg[] = [
-    { config: defaultBgConfig(), vram: new Uint8Array(32768), tilemap: new Uint16Array(4096) },
-    { config: defaultBgConfig(), vram: new Uint8Array(32768), tilemap: new Uint16Array(4096) },
-    { config: defaultBgConfig(), vram: new Uint8Array(32768), tilemap: new Uint16Array(4096) },
-    { config: defaultBgConfig(), vram: new Uint8Array(32768), tilemap: new Uint16Array(4096) },
+  /** VRAM unifié 96KB (1:1 GBA hardware 0x06000000-0x06017FFF). Toutes les
+   *  reads/writes BG passent par cette mémoire — bg(n).vram et bg(n).tilemap
+   *  sont des views Uint8Array/Uint16Array sur ce buffer. */
+  readonly vram = new Uint8Array(0x18000);
+  /** BgConfig par BG (0-3). 1:1 GBA. */
+  private readonly bgConfigs: BgConfig[] = [
+    defaultBgConfig(), defaultBgConfig(), defaultBgConfig(), defaultBgConfig(),
   ];
   /** OAM : 128 sprites, par défaut tous invisibles. */
   readonly oam: OamEntry[] = Array.from({ length: 128 }, () => defaultOamEntry());
@@ -67,9 +88,46 @@ export class Gba {
   /** Compteur global de frames depuis la création. Utile pour les state machines décomp. */
   private frameCounter = 0;
 
-  /** Accès à un BG layer (0-3). */
+  /** Cache des objets GbaBg pour ne pas recréer un nouveau wrapper à chaque
+   *  bg(n) call (= eviter alloc). Les getters internes vram/tilemap recréent
+   *  leurs views à chaque accès (pour reflect le charBase/mapBase actuel). */
+  private readonly bgWrappers: GbaBg[] = (() => {
+    const arr: GbaBg[] = [];
+    return arr;
+  })();
+
+  constructor() {
+    // Init bgWrappers : les getters lisent bgConfigs[i] et vram dynamiquement.
+    for (let i = 0; i < 4; i++) {
+      const cfg = this.bgConfigs[i];
+      const vramBuf = this.vram;
+      this.bgWrappers.push({
+        config: cfg,
+        get vram(): Uint8Array {
+          // View 16KB dans VRAM unifié au charBaseIndex actuel.
+          // 1:1 GBA : charBase 0-3 = byte offset 0/0x4000/0x8000/0xC000.
+          const off = (cfg.charBaseIndex & 3) * 0x4000;
+          return new Uint8Array(vramBuf.buffer, vramBuf.byteOffset + off, 0x4000);
+        },
+        get tilemap(): Uint16Array {
+          // View u16 dans VRAM unifié au mapBaseIndex actuel.
+          // 1:1 GBA : screenBase 0-31 = byte offset 0/0x800/.../0xF800.
+          // Taille = entries u16 selon screenSize.
+          const off = (cfg.mapBaseIndex & 31) * 0x800;
+          const numEntries = TILEMAP_SIZES_BY_SCREEN_SIZE[cfg.screenSize] ?? 1024;
+          // Cap par taille VRAM restante (évite out-of-bounds si mapBase haut + screenSize 3)
+          const remainingBytes = vramBuf.byteLength - off;
+          const cappedEntries = Math.min(numEntries, Math.floor(remainingBytes / 2));
+          return new Uint16Array(vramBuf.buffer, vramBuf.byteOffset + off, cappedEntries);
+        },
+      });
+    }
+  }
+
+  /** Accès à un BG layer (0-3). Retourne le wrapper qui expose `config`,
+   *  `vram` (view Uint8Array), `tilemap` (view Uint16Array). */
   bg(index: 0 | 1 | 2 | 3): GbaBg {
-    return this.bgs[index];
+    return this.bgWrappers[index];
   }
 
   /** Set HBLANK callback (un seul à la fois, replace le précédent).
@@ -91,7 +149,7 @@ export class Gba {
   tick(): void {
     // 1. Compose la frame (BG layers + OAM sprites + blend + windows + affine + mosaic)
     composeFrame(
-      this.frameBuffer, this.bgs, this.palette,
+      this.frameBuffer, this.bgWrappers, this.palette,
       this.oam, this.objVram,
       this.blend, this.windows, this.affineParams,
       this.bgAffineMatrices, this.mosaic,
@@ -119,10 +177,9 @@ export class Gba {
   /** Reset complet (palette, BG, OAM, frame buffer, callbacks). */
   reset(): void {
     this.palette.reset();
-    for (const bg of this.bgs) {
-      Object.assign(bg.config, defaultBgConfig());
-      bg.vram.fill(0);
-      bg.tilemap.fill(0);
+    this.vram.fill(0);
+    for (const cfg of this.bgConfigs) {
+      Object.assign(cfg, defaultBgConfig());
     }
     for (let i = 0; i < this.oam.length; i++) {
       Object.assign(this.oam[i], defaultOamEntry());
