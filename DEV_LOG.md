@@ -10,9 +10,179 @@ pour construire un jeu Pokémon web natif (pas une émulation GBA).
 
 Stack : Vite + TypeScript + Phaser 3 + @pkmn/sim + @pkmn/dex
 
-> **📍 Pour démarrer une session : lire d'abord [`DECOMP_ORIGIN_FILES.md`](./DECOMP_ORIGIN_FILES.md) ⭐ (master catalog des fichiers origine décomp par domaine), puis [`BULK_AUTOMATION.md`](./BULK_AUTOMATION.md) pour le plan en vagues, puis [`ARCHITECTURE.md`](./ARCHITECTURE.md), [`OPCODES_REFERENCE.md`](./OPCODES_REFERENCE.md), [`TICK_LOOP_REFERENCE.md`](./TICK_LOOP_REFERENCE.md), [`SEAMLESS_RENDERING_REFERENCE.md`](./SEAMLESS_RENDERING_REFERENCE.md), [`DIALOGUE_FONT_MENU_REFERENCE.md`](./DIALOGUE_FONT_MENU_REFERENCE.md), [`WINDOWS_BOXES_REFERENCE.md`](./WINDOWS_BOXES_REFERENCE.md), [`SAPPY_MUSIC_REFERENCE.md`](./SAPPY_MUSIC_REFERENCE.md), [`ROADMAP.md`](./ROADMAP.md), [`AUTOMATION_BACKLOG.md`](./AUTOMATION_BACKLOG.md) (audits profonds du 2026-04-25).**
-> Ces docs remplacent l'exploration à l'aveugle de la codebase et du décomp.
-> **AJOUT session 38** : `MAP_MECHANICS_REFERENCE.md` — source de vérité warps/NPCs/item balls/tiles, à lire avant de toucher OverworldScene/script-runner/npc-loader/tilemap-loader.
+> **📍 Pour démarrer une session : lire [`ROADMAP.md`](./ROADMAP.md) qui contient
+> l'état actuel + l'audit Opus session 68 + Top 5 actions concrètes.** Tous les
+> autres MD références (ARCHITECTURE/AUTOMATION_BACKLOG/BULK_AUTOMATION/
+> DECOMP_MAP/DECOMP_ORIGIN_FILES/DIALOGUE_FONT_MENU/MAP_MECHANICS/MASTER_PLAN/
+> OPCODES/SAPPY_MUSIC/SEAMLESS_RENDERING/TICK_LOOP/WINDOWS_BOXES/AUDIT_1_1_GBA)
+> ont été **supprimés en session 68** car ils référençaient le pipeline Phaser
+> custom obsolète. Source de vérité maintenant = la décompilation
+> `D:\Projet 1\decomps\pokeemeraude` directement + ROADMAP.md.
+
+---
+
+## Session 68 — Boot loop unique + audit complet + cleanup massif (2026-04-27)
+
+**Vision user clarifiée (re-affirmée)** : *"Notre site est littéralement un
+emulateur de pokemon emeraude seulement, en TypeScript. Si ca marche pas, c'est
+qu'on a tort. La decompil a toujours raison."* + *"Je veux du 1:1 seulement.
+Propre. Précis."*
+
+### Phase 0 — Boot loop unique (= 1:1 AgbMain)
+
+Architecture pivotée : 1 seule scene Phaser host (`GameScene`) + `TestGbaScene`
+(sanity engine). Plus de scenes Phaser intermédiaires. Tout passe par
+`DecompRuntime.tickFixed` qui dispatch :
+1. `gMain.callback2(rt)` — state machine scène courante (CB2_*)
+2. `UpdatePaletteFade`
+3. `tickSpriteAnims`
+4. `tickAllAffineAnims`
+5. `runSpriteCallbacks` — chaque `sprite.callback` (SpriteCB_*)
+6. `runTasks` — les `Task_*` scene-level
+7. `syncSpritesToOam` — propage `sprite.x+x2` → `oam.x` etc.
+8. `vblankCallback?.()`
+9. `gIntroFrameCounter++`
+
+= 1:1 ordre exact `AgbMain` main loop décomp.
+
+`DecompRuntime` étendu : `gMain` (state + callback2 + vblankCallback) +
+`SetMainCallback2(cb)` (swap scène + reset gMain.state) + `SetVBlankCallback(cb)`.
+
+### Phase 0b — Wire Task_Scene1_Load + helpers globaux
+
+**`src/engine/decomp-globals.ts`** (~400L) :
+- `setGlobalRuntime(rt)` singleton + `assetCache` Map
+- `LZ77UnCompVram(symbol, dest)` : lookup cache + write sync vers bg(n).vram/tilemap
+- `LoadPalette(symbol|data, offset, sizeBytes)` : copy vers gPlttBufferFaded
+- `DmaClear16/CpuFill16/CpuFill32` : helpers décomp
+- `LoadCompressedSpriteSheet/LoadSpritePalettes` : auto-allocate OBJ slots
+- `LoadIntroPart2Graphics/FreeAllSpritePalettes` : stubs no-op Phase 0c
+- Symbol-name strings (`sIntro1Bg_Gfx = "sIntro1Bg_Gfx"`) pour permettre au
+  bodyC transcrit d'écrire `LZ77UnCompVram(sIntro1Bg_Gfx, ...)` sans crash
+- `gTitleScreenAlphaBlend[64]` table calculée 1:1 `src/title_screen.c:74-109`
+- Re-export complet decomp-runtime constants (REG_OFFSET_*, BGCNT_*, DISPCNT_*)
+- Stubs Scene 2 minimum viable (Brendan/May/Flygon/Bicycle helpers no-op)
+- `MALE = 0`, `FEMALE = 1` constants
+
+**`src/engine/intro-asset-loader.ts`** : `preloadScene1Assets()` async via
+`GFX_SOURCES` (intro-data.ts auto-extracted) — fetch tous les PNGs/.bin/.pal +
+populate assetCache. Charge aussi g-prefixed externs (Sparkle, Flygon
+silhouette, text.pal).
+
+**Bugs transpileur fixés manuellement** :
+- TODO `LZ77UnCompVram(sIntro1Bg_Gfx, VRAM)` ligne 1000 → câblé sur asset cache
+- LoadPalette `(symbol)?.length` artefact → ignore sizeBytes si string, utilise
+  vraie taille du buffer cache
+- TODOs LoadCompressedSpriteSheet/LoadSpritePalettes Scene 1 → câblés (drops_logo +
+  flygon + sparkle sheets/palettes)
+- LZ77UnCompVram char data partagé entre 4 BG vrams (1:1 GBA shared VRAM via
+  charBase)
+- DmaClear16 = no-op : était en train de CLEAR le tilemap qu'on venait de
+  remplir (le décomp clear le block "B" multi-block ; chez nous bg.tilemap
+  séparés et init à 0)
+- Bug transpileur "N (...)" → "N * (...)" (3 occurrences SpriteCB_WaterDrop_Ripple
+  + ligne 2229 CreateWaterDrop)
+- Helpers signature : retiré `rt: DecompRuntime` de
+  CreateGameFreakLogoSprites/CreateWaterDrop/CreateGroudonRockSprites/
+  CreateKyogreBubbleSprites_Body/Fins (utilisent maintenant `getRuntime()`)
+- Vars EWRAM (sIntroCharacterGender/sFlygonYOffset/gIntroCredits_*) déclarées
+  LOCAL (let) car ES modules ne permet pas write sur import binding
+- OAM exhausted : log warn une seule fois (au lieu de 999×)
+- Logs runtime CreateSprite/palette/sheet : silenced (gated par
+  `localStorage.rtDebug`)
+
+**État visuel observé fin Phase 0b** :
+- Boot loop tick OK, transitions Scene 1 → Scene 2 → ... s'enchaînent
+- Scene 1 affiche partiellement : 1 BG layer leaves visible (pas 4 layers
+  parallax) + OAM sprites en blocs noirs (au lieu de letters GAME FREAK
+  colorées)
+- Comparaison avec vraie GBA : très loin du pixel-perfect
+
+### Audit Opus complet (= verdict honnête)
+
+User a demandé un audit après constat visuel cassé. Audit Opus thorough sur
+tout le projet + décomp. Verdict : **archi FIXABLE pas pourrie**. 3 bugs
+critiques nommés :
+
+1. **VRAM séparée par BG** (`gba/gba.ts:42-47`) au lieu de partagée 96KB GBA
+   → BG2/3 reçoivent jamais le char data quand `BGCNT_CHARBASE(0)` partagé
+2. **Champ `paletteNum` inexistant** (transpileur génère `oam.paletteNum = N`
+   mais struct = `paletteBank`) → palette swaps OAM échouent silencieusement
+3. **Tilemap 32×64 multi-block** : on remplit que TL block, BL noir
+
+Plus 34 `/* TODO */`, 4 fichiers décomp critiques jamais lus
+(`ld_script.ld`, `include/gba/macro.h`, `Makefile`, `tools/preproc/`), code
+dupliqué (REG_OFFSET_* triple definition, palette fade 2 modèles parallèles).
+
+**Top 5 actions concrètes** documentées dans `ROADMAP.md`. Total estimé
+**3-4 jours** pour Scene 1 1:1 propre.
+
+### Cleanup massif (-9000L)
+
+Suppression de tout le code legacy pré-décomp (pipeline Phaser custom session
+1-65) :
+
+**Code supprimé** :
+- 13 scenes Phaser legacy (~5650L) : IntroScene, IntroSceneGba, IntroScene2Gba,
+  TitleScene, TitleSceneGba, MainMenuScene, BirchSpeechScene, NamingScene,
+  OverworldScene, BattleScene, OptionMenuScene, MenuOverlayScene, BootScene
+- 31 fichiers `engine/` pré-décomp (~3500L) : world-renderer, tilemap-loader,
+  map-scripts, script-runner, npc-loader, npc-behavior, door-anim,
+  tileset-animator, dialogue-box, bitmap-font, window-renderer,
+  gba-text-printer, gba-task, palette-fade, mon-anim, mon-pic-coords, pokemon,
+  metatile-behaviors, movement, string-buffers, data-tables, battle-terrain,
+  character-anims, compose-bg-tilemap, decompress, menu, new-game-init,
+  warp-trace, game-state, sappy-player, option-menu-extras
+- `src/util/` (4 fichiers) : compose-tilemap, image-alpha, oam-sprite,
+  sprite-transparency
+- `src/battle/`, `src/data/`, `src/editor/`, `src/decomp/` (dossiers entiers)
+- 4 scripts Python obsolètes : dump_all_maps.py, dump_map_info.py,
+  extract-intro-rendered.py, process_sprite_alpha.py
+- `public/decomp/em/intro-rendered/` + `public/decomp/em/rendered/` (PNGs
+  pré-rendus interdits par directive 1:1)
+
+**MD supprimés** (14 docs obsolètes du pipeline Phaser) : ARCHITECTURE.md,
+AUDIT_1_1_GBA.md, AUTOMATION_BACKLOG.md, BULK_AUTOMATION.md, DECOMP_MAP.md,
+DECOMP_ORIGIN_FILES.md, DIALOGUE_FONT_MENU_REFERENCE.md,
+MAP_MECHANICS_REFERENCE.md, MASTER_PLAN.md, OPCODES_REFERENCE.md,
+SAPPY_MUSIC_REFERENCE.md, SEAMLESS_RENDERING_REFERENCE.md,
+TICK_LOOP_REFERENCE.md, WINDOWS_BOXES_REFERENCE.md.
+
+**MD restants** : README.md (réécrit), DEV_LOG.md, ROADMAP.md (réécrit avec
+audit + Top 5 actions).
+
+**État final src/** :
+```
+src/main.ts
+src/scenes/   GameScene.ts + TestGbaScene.ts
+src/engine/
+  gba/                   pixel-perfect engine
+  m4a/                   audio engine 1:1
+  decomp-data/auto/      TS auto-généré décomp
+  decomp-impls/          sprite-engine-impl
+  decomp-runtime.ts
+  decomp-globals.ts
+  decomp-helpers.ts
+  intro-asset-loader.ts
+  music.ts
+```
+
+### Commits clés session 68
+
+- `565d0e47` Phase 0a : boot loop unique 1:1 (gMain.callback2 + GameScene host)
+- `50ff6ec2` Phase 0b : Task_Scene1_Load 1:1 sur boot loop décomp
+- `646908c2` Phase 0b suite : Scene 1 BG visuel partiel + transitions Tasks
+- (final session 68) cleanup massif -9000L + audit + ROADMAP réécrit
+
+### Prochaine session — Phase 1
+
+Voir `ROADMAP.md` Top 5 actions, dans l'ordre :
+1. Fix `paletteNum` → `paletteBank` dans transpileur [2-4h]
+2. Refactor VRAM partagée 96KB [1 jour]
+3. Tilemap 64×32 multi-block [4h]
+4. Compléter 34 TODOs [1 jour]
+
+Total estimé Phase 1 : ~3-4 jours pour Scene 1 1:1 pixel-perfect.
 
 ---
 

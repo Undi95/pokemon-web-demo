@@ -1,1 +1,0 @@
-{"id":"LAYOUT_BATTLE_PYRAMID_SQUARE15","name":"BattlePyramidSquare15","width":128,"height":128,"tileWidth":8,"tileHeight":8,"primaryTileset":"gTileset_Building","secondaryTileset":"gTileset_BattlePyramid","collisions":[[0,0,0,1,0,0,0,1],[0,1,0,0,0,1,0,0],[0,0,0,1,0,0,0,1],[0,1,0,0,0,1,0,0],[0,0,0,1,0,0,0,1],[0,1,0,0,0,1,0,0],[0,0,0,1,0,0,0,1],[0,1,0,0,0,1,0,0]]}

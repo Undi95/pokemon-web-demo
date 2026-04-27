@@ -1,1 +1,0 @@
-{"id":"LAYOUT_ABANDONED_SHIP_CAPTAINS_OFFICE","name":"AbandonedShip_CaptainsOffice","width":144,"height":112,"tileWidth":9,"tileHeight":7,"primaryTileset":"gTileset_General","secondaryTileset":"gTileset_Facility","collisions":[[1,1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1,1],[0,0,0,0,0,0,0,1,1],[1,0,0,0,0,0,0,0,0],[1,0,0,0,0,0,0,0,0],[0,0,0,1,1,0,0,0,0],[0,0,0,1,1,0,0,0,0]]}

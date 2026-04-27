@@ -1,1 +1,0 @@
-{"id":"LAYOUT_HOUSE_WITH_BED","name":"HouseWithBed","width":160,"height":128,"tileWidth":10,"tileHeight":8,"primaryTileset":"gTileset_Building","secondaryTileset":"gTileset_GenericBuilding","collisions":[[1,1,1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1,1,1],[0,0,0,0,0,0,0,0,0,0],[1,1,0,0,0,0,0,0,0,0],[1,1,0,0,0,0,0,0,1,1],[0,0,0,0,0,0,0,0,1,1],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0]]}

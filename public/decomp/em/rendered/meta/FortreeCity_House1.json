@@ -1,1 +1,0 @@
-{"id":"LAYOUT_FORTREE_CITY_HOUSE1","name":"FortreeCity_House1","width":128,"height":96,"tileWidth":8,"tileHeight":6,"primaryTileset":"gTileset_Building","secondaryTileset":"gTileset_GenericBuilding","collisions":[[1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1],[0,0,0,1,1,0,0,0],[0,0,0,1,1,0,0,0],[0,0,0,0,0,0,0,0],[1,0,0,0,0,0,0,1]]}

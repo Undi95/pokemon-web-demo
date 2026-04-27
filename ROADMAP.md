@@ -1,167 +1,127 @@
-# ROADMAP — pokemon-web-demo
+# Roadmap — Pokémon Émeraude Web 1:1 GBA
 
-> Plan d'attaque chronologique. Source : audit profond 2026-04-25.
-> **Réviser à chaque clôture de phase**. Garder court et actionnable.
-
----
-
-## Statut actuel (post-session 12)
-
-✅ **Boot complet jouable** : Title → MainMenu → Birch → Naming → spawn Littleroot
-✅ **Overworld fonctionnel** : tilemap, NPCs, scripts (58 opcodes), warps de base, dialogues, music MIDI
-✅ **Save/Load** : flags + vars + position map (localStorage)
-✅ **Combat démo** : @pkmn/sim avec 2 RandomAI (input joueur manquant)
-
-❌ **Bloqueurs jouabilité 1ère heure** :
-1. Pas de save équipe Pokémon
-2. Pas de combat dresseur fonctionnel (`trainerbattle_single` non implémenté)
-3. Pas de Pokémon sauvage (no `wild-encounters.json`)
-4. Pas de Centre Pokémon (`special HealPlayerParty` manquant)
+> **Source de vérité** : la décompilation `D:\Projet 1\decomps\pokeemeraude`.
+> **Directive** : 1:1 GBA. ZÉRO hardcode. AUCUN pré-rendu PNG.
+> **Tout passe par le boot loop** `gMain.callback2 + RunTasks + AnimateSprites + BuildOamBuffer` (1:1 `AgbMain` décomp).
 
 ---
 
-## Phase A — MVP "1ère heure jouable" (priorité absolue)
+## État actuel — fin session 68
 
-**Objectif** : Démarrer une nouvelle partie, sortir du camion, parler à Mom, prendre Treecko/Torchic/Mudkip chez Birch, gagner 1er combat dresseur Route 101, atteindre Oldale, sauvegarder. **Boucle de jeu fermée.**
+### Architecture en place
 
-> **Ordre décidé** : A.2 → A.3 (struct `PokemonInstance` minimale créée JIT au givemon) → A.4 → A.5 → A.1 (étendre la struct au fur et à mesure). Évite le code spéculatif.
+- **Engine GBA pixel-perfect** (`src/engine/gba/`, ~2000L) : BG/OAM/palette/blend/windows/affine/mosaic. Validé en isolation via `TestGbaScene` (Lotad rotation 360° + BLDY pulse + WIN0 + copyright BG).
+- **Engine M4A audio 1:1** (`src/engine/m4a/`, ~1700L) : ADSR, LFO, reverb, sample loop, voicegroups complets, 195 voicegroups + 544 WAV. Validé via `TestGbaScene` (P=play mus_intro.mid).
+- **DecompRuntime** (`src/engine/decomp-runtime.ts`) : `gMain.callback2` + `gTasks` + `gSprites` + `tickFixed 60Hz` qui dispatch dans l'ordre exact `AgbMain`.
+- **decomp-globals** (`src/engine/decomp-globals.ts`) : helpers globaux décomp (`LZ77UnCompVram`, `LoadPalette`, `DmaClear16`, `LoadCompressedSpriteSheet`, etc.) + `assetCache` + `gTitleScreenAlphaBlend[64]`.
+- **Transpileur C→TS** (`scripts/transpile-callbacks.mjs`) : 1632/1648 callbacks transcrits 99% (388 SpriteCB + 989 Task + 241 CB2 + 14 helpers).
+- **Décomp extracted** : 6576 fonctions sur 87 .c, 27 SPRITE_DATA_TABLES, 36 EXTERNAL_PALETTES, 63 SPRITE_ANIMS, 27 SPRITE_TEMPLATES, 22 OAM_DATAS.
+- **Boot loop unique** : `GameScene` (host Phaser canvas) + `TestGbaScene` (sanity engine). Plus de scenes Phaser intermédiaires.
 
-### A.1 — Save équipe Pokémon (étendu progressivement, pas en bloc)
-- Démarre avec un struct minimal au moment de A.3 (`givemon` du starter)
-- S'étend à chaque nouveau besoin :
-  - A.3 : species, level, ivs, nature, moves[], pp[]
-  - A.4 : stats calculées, currentHp, ability
-  - A.5 : item, status, friendship
-- [ ] `special HealPlayerParty`, `LoadPlayerParty`, `SavePlayerParty` ajoutés au moment où le script du Centre Pokémon arrive
-- **Décomp ref** : `include/pokemon.h` (struct Pokemon) + `src/save.c`
+### Ce qui marche visuellement
 
-### A.2 — Intro camion authentique (S, héritée session 12) — **✅ Implémenté session 14, à tester runtime**
+- Boot loop tick à 60Hz, transitions Tasks Scene 1 → Scene 2 → ... s'enchaînent
+- Scene 1 affiche partiellement (1 BG layer leaves visible + OAM sprites en blocs noirs au lieu de letters GAME FREAK)
+- Audio engine init OK (juste `m4aSongNumStart` pas câblé)
 
-- [x] Spawn dans `MAP_INSIDE_OF_TRUCK` (1, 2) au new game
-- [x] `MAP_SCRIPT_ON_LOAD` + `ON_RESUME` maintenant câblés (étend 2/7 → 4/7)
-- [x] `coord_events` du map.json gérés (var/var_value/script match)
-- [x] `MAP_DYNAMIC` warp résolu via `gameState.dynamicWarp` (truck → Littleroot 3|12, 10)
-- [x] `STEP_CB_TRUCK` = oscillation caméra ±1px période ~2s (tween setFollowOffset)
-- [x] Plain step-warps indoor (sans behavior porte) déclenchent triggerWarp
-- [x] `MAP_SCRIPT_ON_FRAME_TABLE` à Littleroot fait tourner `StepOffTruck{Male|Female}` cinematic (déjà existant via `runOnFrameTable`)
-- [ ] **À TESTER E2E** : new game → spawn truck → marche est → trigger → warp Littleroot → Mom cinematic
-- [ ] [later] `setmetatile` réel : nécessite `extract-metatile-labels.mjs` pour résoudre `METATILE_InsideOfTruck_ExitLight_*` en numérique
-- [ ] [later] Cartons qui oscillent aussi (cosmétique, le décomp fait box1/3 ±4px box2 ±2px)
-- [ ] `InsideOfTruckScene` (8×8 map, oscillation y player via STEP_CB_TRUCK)
-- [ ] Warp sortie → Littleroot avec `LittlerootTown_OnTransition` (Mom marche, camion visuel)
-- [ ] Implémenter callback `MAP_SCRIPT_ON_WARP_INTO_MAP_TABLE`
+### Ce qui est CASSÉ (= verdict audit Opus session 68)
 
-### A.3 — Birch's Lab + 1er Pokémon (M)
-- [ ] Triggerer `Route101_EventScript_BirchInTrouble` automatiquement
-- [ ] Implémenter `givemon` opcode (utilise A.1 PokemonInstance)
-- [ ] Cinematic combat tutorial vs Zigzagoon (utilise wild encounter A.5 OU script bébé)
-
-### A.4 — Combat dresseur fonctionnel (M)
-- [ ] Implémenter `trainerbattle_single` opcode
-- [ ] Écrire `extract-trainer-parties.mjs` (cf. AUTOMATION_BACKLOG §2)
-- [ ] Adapter `BattleScene` : prendre `trainer_id` + party réelle au lieu du mock `PLAYER_TEAM`
-- [ ] Brancher `gameState.party` côté joueur (pas RandomAI, mais menu de choix simple)
-- **Décomp ref** : `src/battle_setup.c` BattleSetup_ConfigureTrainerBattle
-
-### A.5 — Wild encounters (M)
-- [ ] Écrire `extract-wild-encounters.mjs`
-- [ ] Implémenter détection metatile herbe haute (déjà : `MB_*` constants dans `tilemap-loader.ts`)
-- [ ] RNG de spawn + level range
-- [ ] Écran de combat sauvage (réutilise BattleScene avec wild flag)
-- **Décomp ref** : `src/wild_encounter.c` + `data/wild_encounters.h`
-
-### A.6 — Refactor script-runner en dispatch table (M)
-- Avant d'ajouter trop d'opcodes, refactor switch 160L en table
-- Cf. `AUTOMATION_BACKLOG.md §4`
-- Ajouts ultérieurs deviennent additifs sans risque
-
-### A.7 — Implémentations opcodes Phase 2 (S each)
-- [ ] `case` / `switch` (déjà 3064+788 occurrences = beaucoup de scripts débloqués)
-- [ ] `special DrawWholeMapView` (refresh après setmetatile)
-- [ ] `multichoice` (menus de dialogue à choix)
-- [ ] `bufferitemname`, `bufferspeciesname`, `bufferpartymonnick` (string interpolation)
-- [ ] `giveitem` + `finditem` (dépend A.8 inventory)
-
-### A.8 — Inventory minimal (M)
-- [ ] Écrire `extract-items.mjs`
-- [ ] Étendre `game-state.ts` : `bag: { items, balls, keyItems, tms, berries }`
-- [ ] UI Bag dans MenuOverlayScene (5 poches, scrollable)
-- [ ] `additem` / `removeitem` / `checkitem` opcodes
-- **Décomp ref** : `src/item_menu.c` + `src/item_use.c`
-
-**Estimation Phase A** : 2-3 semaines à plein temps. **Livrable : démo jouable end-to-end de Littleroot à Oldale.**
+> **L'archi est FIXABLE. Pas pourrie. Mais il y a des bugs structurels critiques qui expliquent l'écart visuel.**
 
 ---
 
-## Phase B — Boucle complète (post-MVP)
+## Audit session 68 — diagnostic complet
 
-**Objectif** : Atteindre Rustboro, gagner premier badge, navigable jusqu'à Slateport.
+### Top 10 corrections critiques (par sévérité)
 
-### B.1 — Party menu (L)
-- Écran POKéMON dans MenuOverlay : voir équipe, stats, moves, items
-- Switch order, oublier moves, donner item
-- Réutilisé en combat pour switch
-- **Décomp ref** : `src/party_menu.c` + `src/pokemon_summary_screen.c`
+| # | Fichier | Problème | Sévérité |
+|---|---------|----------|----------|
+| 1 | `gba/gba.ts:42-47` + `decomp-globals.ts:138-204` | VRAM séparé par BG vs partagé GBA (96KB) | **CRITIQUE** |
+| 2 | `intro-callbacks-auto.ts` (transpileur) | `paletteNum` field inexistant (devrait être `paletteBank`) | **CRITIQUE** |
+| 3 | `bg-layer.ts:81-94` + `decomp-globals.ts:172-180` | Tilemap 64×32 multi-block partiellement écrit | **CRITIQUE** |
+| 4 | `compositor.ts:159-182` | Top2 layer tracking faux après loop priority | IMPORTANT |
+| 5 | `transpile-callbacks.mjs` | 34 `/* TODO */` cassent Scene 2/3 + audio start | IMPORTANT |
+| 6 | `intro-callbacks-auto.ts` | `Math.random()` au lieu de Random() séquentiel décomp | IMPORTANT |
+| 7 | `decomp-runtime.ts:528-544` | `BeginNormalPaletteFade` simpliste vs `palette_fade.c` | IMPORTANT |
+| 8 | `intro-asset-loader.ts:62-76` | Liste hardcodée — manque g-prefixed Scene 2/3 | IMPORTANT |
+| 9 | `decomp-runtime.ts:386-406` | `isAffine` deviné via paletteMode (Scene 3 cassé) | MINEUR |
+| 10 | `intro-callbacks-auto.ts:7` | `@ts-nocheck` masque tous les bugs typage | MINEUR |
 
-### B.2 — Pokédex (M)
-- UI 7 pages (liste, infos, zone, cri, taille, évolution)
-- Recherche par couleur/type/ordre
-- Remplir au fur et à mesure des rencontres
-- **Décomp ref** : `src/pokedex.c` + sous-écrans
+### Top 5 actions concrètes (ROI/temps)
 
-### B.3 — Polish field (M)
-- Tileset animations runtime (eau/fleurs/cascades) — assets déjà OK
-- Transitions warp avec fade fluide (pas snap)
-- Animations portes (door-anim.ts existe, à câbler systématiquement)
-- HUD persistant (option : nom + PS Pokémon lead)
+#### Action 1 — Fix `paletteNum` → `paletteBank` [2-4h]
+Modifier `scripts/transpile-callbacks.mjs` pour ajouter règle de substitution `paletteNum → paletteBank`, regen `intro-callbacks-auto.ts`. **Débloque immédiatement** les color swaps WaterDrop_Ripple et toutes les anim palette OAM.
 
-### B.4 — Refactor "no pre-render" complet (S)
-- Supprimer `render-layouts.mjs` + `public/decomp/em/rendered/` (gain 65 MB)
-- Refactor `render-textbox` → runtime
-- Refactor `render-title` → runtime
+#### Action 2 — Refactor VRAM partagée [1 jour]
+Remplacer dans `gba/gba.ts:42-47` les 4 `vram = new Uint8Array(32768)` SÉPARÉS par UN seul `vram = new Uint8Array(0x18000)` (96KB) + getters `getBgCharData(charBaseIndex)` et `getBgTilemap(mapBaseIndex)` qui découpent depuis l'addressing GBA. Élimine les hacks `decomp-globals.ts:138-204` qui routent par suffix de symbol. Résout :
+- "1 layer visible au lieu de 4" (charBase 0 partagé)
+- Scene 3 clouds (BG2 charBase 1)
+- DmaClear16 sémantique correcte
 
-### B.5 — Combat input joueur (M)
-- Remplacer p1 RandomAI par menu Phaser (FIGHT/POKEMON/BAG/RUN)
-- Sélection move via UI
-- Switch via party menu (B.1)
+#### Action 3 — Tilemap 64×32 multi-block [4h]
+`bg-layer.ts:81-94` (lecture) ou `decomp-globals.ts:172-180` (écriture) : quand le décomp utilise `BGCNT_TXT256x512` (32×64), il faut écrire les 2 blocks (TL+BL) dans le tilemap. Actuellement on écrit que TL → moitié basse vide.
 
-**Estimation Phase B** : 3-4 semaines.
+#### Action 4 — Compléter les 34 TODOs [1 jour]
+Extracteur supplémentaire qui génère auto les stubs runtime (`SetVBlankCallback`, `m4aSongNumStart`, `INTRO3_RAW_PTR`, `FreeAllSpritePalettes`, `LoadIntroPart2Graphics`). Le wiring `m4aSongNumStart('MUS_INTRO')` → `playMidiLoop('/decomp/em/music/mus_intro.mid')` débloque l'audio Scene 1.
 
----
-
-## Phase C — Contenu (long terme)
-
-- B.1-B.5 stabilisés → continuer Hoenn (Rustboro Gym + suivants)
-- Extraction Kanto via `pokerougefeu` (extract:fr déjà préparé)
-- Pokénav, contests, Battle Frontier, secret base, daycare, day/night
-- HM utilisations (Couper, Surf, Fly, etc.)
-
-Cf. `AUDIT_DECOMP_SOURCE` dans archive — la liste des systèmes nice-to-have est exhaustive.
+#### Action 5 — Cleanup code mort [2-3h] ✅ FAIT session 68
+- 13 scenes Phaser legacy supprimées (~5650L)
+- 30+ fichiers `engine/` pré-décomp supprimés (~3500L)
+- `src/util/` supprimé (4 fichiers)
+- `src/battle/`, `src/data/`, `src/editor/`, `src/decomp/` supprimés
+- 4 scripts Python obsolètes supprimés
+- 14 MD obsolètes supprimés
+- `public/decomp/em/intro-rendered/` + `rendered/` supprimés (PNGs pré-rendus interdits par directive 1:1)
 
 ---
 
-## Anti-roadmap (à NE PAS faire)
+## Code dupliqué identifié (à dédupliquer)
 
-- ❌ Réimplémenter battle engine (utiliser @pkmn/sim, exception déclarée)
-- ❌ Porter graphics low-level (bg.c, sprite.c, palette.c — Canvas/WebGL remplace)
-- ❌ Link cable / mystery gift / union room (hors scope mono-joueur web)
-- ❌ Slot machine / berry blender / roulette (minigames optionnels, faible ROI)
-- ❌ Battle TV / recorded battles (récréation GBA spécifique)
-- ❌ Pré-rendre quoi que ce soit (règle dure session 11)
+- **REG_OFFSET_*/BGCNT_*/DISPCNT_*** : déclarés dans `decomp-runtime.ts` ET re-exportés `decomp-globals.ts` ET re-importés `intro-callbacks-auto.ts`. Triple definition.
+- **`sCenterToCornerVecTable`** : dupliqué `decomp-helpers.ts:72-79` ET implicite dans `gba/types.ts:159-166` via `OAM_SIZES`. Source unique = `sprite.c:137`.
+- **`PALTAG_DROPS`** : `intro-data.ts:15` (number) + `intro-callbacks-auto.ts:1031` (string) — double truth.
+- **Palette fade** : `decomp-runtime.ts:528-544` + `gba/types.ts:317` (BlendConfig) → 2 modèles parallèles.
 
 ---
 
-## Règles de session (rappel)
+## Décomp non encore lus (à inspecter)
 
-1. **Toujours lire le décomp** comme source — pas inventer en TS (cf. `feedback_decomp_driven`)
-2. **Aucun pré-rendu** — tout en runtime depuis assets bruts (cf. `feedback_no_prerendering`)
-3. **Économie tokens** — chaque action justifie son coût ; automation > one-off ; Write > multi-Edit (cf. `feedback_token_economy`)
-4. **Ne pas toucher aux fichiers décomp** sources (lecture seule)
+- **`include/gba/macro.h`** : DMA macros, BGCNT_*, OAM_DATA helpers. Notre runtime les réplique manuellement.
+- **`Makefile`** + **`audio_rules.mk`** + **`spritesheet_rules.mk`** : pipeline build .png → .4bpp.lz, .mid → .s.
+- **`ld_script.ld`** : layout VRAM/EWRAM/IWRAM = source de vérité memory mapping. **CRITIQUE** pour Action 2.
+- **`include/global.h`** + **`charmap.txt`** : macros texte FR + INCBIN_U32 sémantique.
+- **`tools/preproc/`** : préprocesseur dialogues `_("text")` → bytes selon charmap.
 
 ---
 
-## Prochaine action immédiate
+## Pipeline complet visé (après Top 5 fixes)
 
-→ **A.2 — Intro camion** en cours. Décision : A.1 sera fait JIT à partir de A.3 (givemon du starter), pas en bloc en avance.
+```
+GameScene.create() → setGlobalRuntime + audio prime + preloadAssets
+  → SetMainCallback2(CB2_InitCopyrightScreenAfterBootup)
+    → SetUpCopyrightScreen state machine
+      → CreateTask(Task_Scene1_Load) + SetMainCallback2(MainCB2_Intro)
+        → Task_Scene1_Load → FadeIn → WaterDrops → CreateSparkles → PanUp → End
+          → Task_Scene2_Load → CreateSprites → BikeRide → End
+            → Task_Scene3_Load → ... → SetMainCallback2(CB2_InitTitleScreen)
+              → Task_TitleScreenPhase1/2/3 → Press Start
+                → SetMainCallback2(CB2_InitMainMenu)
+                  → CB2_NewGameBirchSpeech → CB2_LoadNamingScreen
+                    → CB2_LoadMap (overworld) + script-runner via opcodes
+                      → CB2_InitBattle (bridge @pkmn/sim)
+```
 
-Séquence : A.2 (camion) → A.3 (Birch + starter, struct PokemonInstance minimale) → A.4 (trainerbattle) → A.5 (wild) → A.6 (refactor script-runner après accumulation d'opcodes) → A.7 (opcodes restants) → A.8 (inventory).
+Toutes les Tasks/CB2/SpriteCB déjà transpilées dans `decomp-data/auto/`. Reste juste à fixer le runtime (Top 5) pour que ça déroule 1:1.
+
+---
+
+## Phases planifiées
+
+- **Phase 0 [DONE session 68]** : Boot loop unique + GameScene + Task_Scene1_Load tourne mécaniquement
+- **Phase 1** : Top 5 fixes audit → Scene 1 1:1 visuel pixel-perfect (3-4 jours)
+- **Phase 2** : Scene 2/3 + Title via TODOs comblés (~1 semaine)
+- **Phase 3** : MainMenu + NewGame + BirchSpeech + Naming via Tasks transcrites (~1 semaine)
+- **Phase 4** : Overworld via opcodes décomp + script-runner (~2 semaines)
+- **Phase 5** : Battle via bridge `@pkmn/sim` + UI Tasks transcrites (~2 semaines)
+
+**Pixel oracle** : utiliser `public/decomp/em/rom.gba` (déjà présent) comme référence avec mGBA WASM ou frame dumps automatiques pour validation pixel par scanline.

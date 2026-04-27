@@ -1,1 +1,0 @@
-{"id":"LAYOUT_BATTLE_FRONTIER_SCOTTS_HOUSE","name":"BattleFrontier_ScottsHouse","width":96,"height":128,"tileWidth":6,"tileHeight":8,"primaryTileset":"gTileset_Building","secondaryTileset":"gTileset_BattleFrontier","collisions":[[1,1,1,1,1,1],[1,1,1,1,1,1],[0,0,0,0,0,0],[0,0,0,0,0,0],[0,0,0,0,0,0],[0,0,0,0,0,1],[0,0,0,0,0,0],[1,0,0,0,0,1]]}

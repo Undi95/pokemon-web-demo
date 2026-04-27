@@ -1,1 +1,0 @@
-{"id":"LAYOUT_SOOTOPOLIS_CITY_LOTAD_AND_SEEDOT_HOUSE","name":"SootopolisCity_LotadAndSeedotHouse","width":128,"height":112,"tileWidth":8,"tileHeight":7,"primaryTileset":"gTileset_Building","secondaryTileset":"gTileset_GenericBuilding","collisions":[[1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1],[0,0,0,0,0,0,1,1],[0,0,0,1,1,0,0,0],[0,0,0,1,1,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0]]}

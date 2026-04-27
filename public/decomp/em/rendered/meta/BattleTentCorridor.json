@@ -1,1 +1,0 @@
-{"id":"LAYOUT_BATTLE_TENT_CORRIDOR","name":"BattleTentCorridor","width":80,"height":128,"tileWidth":5,"tileHeight":8,"primaryTileset":"gTileset_Building","secondaryTileset":"gTileset_BattleTent","collisions":[[1,1,1,1,1],[1,1,0,1,1],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0]]}
