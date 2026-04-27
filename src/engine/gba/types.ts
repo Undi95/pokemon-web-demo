@@ -72,23 +72,50 @@ export interface BgConfig {
   charBaseIndex: number;
   /** Map base (où est stocké le tilemap en VRAM). 0-31 (×2KB). */
   mapBaseIndex: number;
-  /** Screen size 0-3 :
-   *    0 = 32×32 tiles  (256×256 px, 1 screen-block)
-   *    1 = 64×32 tiles  (512×256 px, 2 horizontal)
-   *    2 = 32×64 tiles  (256×512 px, 2 vertical)
-   *    3 = 64×64 tiles  (512×512 px, 4 quadrants)
+  /** Screen size 0-3 (signification dépend de isAffine) :
+   *  Text BG : 32×32 / 64×32 / 32×64 / 64×64 tiles
+   *  Affine BG : 16×16 / 32×32 / 64×64 / 128×128 tiles
    */
   screenSize: 0 | 1 | 2 | 3;
-  /** 0 = 4bpp (16 colors per palette bank), 1 = 8bpp (256 colors). */
+  /** 0 = 4bpp (16 colors per palette bank), 1 = 8bpp (256 colors).
+   *  En affine mode, toujours 8bpp (paletteMode ignoré). */
   paletteMode: 0 | 1;
-  /** Mosaic effect (rarement utilisé, skip MVP). */
+  /** Mosaic effect : si true, le BG est mosaicé selon les facteurs de mosaicH/mosaicV. */
   mosaic: boolean;
-  /** Wraparound (BG2/BG3 affine only). */
+  /** Wraparound (BG2/BG3 affine only) — si true, le BG répète indéfiniment. */
   wraparound: boolean;
-  /** Scroll horizontal (REG_BGnHOFS). */
+  /** Scroll horizontal (REG_BGnHOFS, text BG only). */
   hofs: number;
-  /** Scroll vertical (REG_BGnVOFS). */
+  /** Scroll vertical (REG_BGnVOFS, text BG only). */
   vofs: number;
+  /** Si true, ce BG est rendu en mode AFFINE (BG2/BG3 dans Mode 1/2 GBA).
+   *  Les champs hofs/vofs sont ignorés ; on utilise affineRefX/Y + affineMatrixIndex.
+   *  Le tilemap est en u8 (1 byte par tile = tileId 0-255), les flips/palette ignorés.
+   *  Toujours 8bpp. */
+  isAffine: boolean;
+  /** Reference point X (28.8 fixed). Position de la matrice affine. */
+  affineRefX: number;
+  /** Reference point Y (28.8 fixed). */
+  affineRefY: number;
+  /** Index dans Gba.bgAffineMatrices[2] (BG2 = 0, BG3 = 1 typiquement). */
+  affineMatrixIndex: 0 | 1;
+}
+
+/** Mosaic configuration globale (REG_MOSAIC).
+ *  Active per-layer via BgConfig.mosaic ou OamEntry.mosaic. */
+export interface MosaicConfig {
+  /** Facteur horizontal BG : 0 = pas d'effet, 1-15 = repeat le pixel sur N+1 colonnes. */
+  bgH: number;
+  /** Facteur vertical BG : 0 = pas, 1-15 = repeat sur N+1 lignes. */
+  bgV: number;
+  /** Facteur horizontal OBJ. */
+  objH: number;
+  /** Facteur vertical OBJ. */
+  objV: number;
+}
+
+export function defaultMosaicConfig(): MosaicConfig {
+  return { bgH: 0, bgV: 0, objH: 0, objV: 0 };
 }
 
 /** OAM entry — 128 sprites disponibles. 1:1 décomp struct OamData u16 attr0/1/2.
@@ -156,6 +183,26 @@ export function defaultOamEntry(): OamEntry {
   };
 }
 
+/** Default BgConfig (text BG, hidden, all-zero). */
+export function defaultBgConfig(): BgConfig {
+  return {
+    visible: false,
+    priority: 0,
+    charBaseIndex: 0,
+    mapBaseIndex: 0,
+    screenSize: 0,
+    paletteMode: 0,
+    mosaic: false,
+    wraparound: false,
+    hofs: 0,
+    vofs: 0,
+    isAffine: false,
+    affineRefX: 0,
+    affineRefY: 0,
+    affineMatrixIndex: 0,
+  };
+}
+
 /** Affine matrix BG2/BG3 ou OAM (8.8 fixed point — valeur 256 = 1.0).
  *  Transform appliquée pour OAM rotscale :
  *    Pour chaque pixel screen (sx, sy) dans la bounding box centrée sur le
@@ -202,12 +249,13 @@ export interface WindowRect {
   y2: number;  // bottom (exclusive)
 }
 
-/** GBA hardware windows : WIN0/WIN1 (rect inclusion) + WINOUT (everywhere else).
- *  Si win0/win1.enabled = false ET aucune autre window active, alors `noneEnabled`
- *  → bypass complet (tous les layers visibles partout, comportement default GBA).
+/** GBA hardware windows : WIN0/WIN1 (rect inclusion) + WINOBJ (zones définies par
+ *  les sprites objMode=OBJ_WINDOW) + WINOUT (everywhere else).
+ *  Si toutes windows = enabled false, alors bypass complet (tous layers visibles partout).
  *  Sinon les bitmasks insideX/outside contrôlent quels layers sont visibles.
  *
- *  Bitmasks utilisent LAYER_BG0/BG1/BG2/BG3/OBJ/BD constants. */
+ *  Bitmasks utilisent LAYER_BG0/BG1/BG2/BG3/OBJ/BD constants.
+ *  Priority : WIN0 > WIN1 > WINOBJ > WINOUT */
 export interface Windows {
   win0: WindowRect;
   win1: WindowRect;
@@ -223,6 +271,12 @@ export interface Windows {
   win1BlendEnable: boolean;
   /** Si true, applique l'effet de blend à l'extérieur de toutes windows. */
   outsideBlendEnable: boolean;
+  /** WINOBJ enable (= certains sprites ont objMode === 2 et définissent la zone). */
+  winObjEnabled: boolean;
+  /** Layers visibles dans la zone WINOBJ (WIN_OBJ + WININ_OBJ). */
+  winObjInside: number;
+  /** Si true, applique l'effet de blend dans la zone WINOBJ. */
+  winObjBlendEnable: boolean;
 }
 
 export function defaultWindows(): Windows {
@@ -235,12 +289,15 @@ export function defaultWindows(): Windows {
     win0BlendEnable: true,
     win1BlendEnable: true,
     outsideBlendEnable: true,
+    winObjEnabled: false,
+    winObjInside: 0x3F,
+    winObjBlendEnable: true,
   };
 }
 
 /** True si aucune window n'est enabled (= bypass tout). */
 export function windowsAreOff(w: Windows): boolean {
-  return !w.win0.enabled && !w.win1.enabled;
+  return !w.win0.enabled && !w.win1.enabled && !w.winObjEnabled;
 }
 
 /** Blend control (REG_BLDCNT / BLDALPHA / BLDY). */

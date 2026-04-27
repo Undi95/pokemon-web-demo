@@ -20,10 +20,10 @@
  * Pour l'intégration Phaser : voir GbaPhaserBridge dans phaser-bridge.ts.
  */
 import {
-  type AffineMatrix, type BgConfig, type BlendConfig, type HBlankCallback,
+  type AffineMatrix, type BgConfig, type BlendConfig, type HBlankCallback, type MosaicConfig,
   type OamEntry, type VBlankCallback, type Windows,
-  defaultBlendConfig, defaultOamEntry, defaultWindows, identityAffineMatrix,
-  SCREEN_W, SCREEN_H,
+  defaultBgConfig, defaultBlendConfig, defaultMosaicConfig, defaultOamEntry, defaultWindows,
+  identityAffineMatrix, SCREEN_W, SCREEN_H,
 } from './types';
 import { PaletteBanks } from './palette';
 import { composeFrame } from './compositor';
@@ -34,21 +34,6 @@ export interface GbaBg {
   vram: Uint8Array;
   /** Tilemap entries u16. Taille selon screenSize : 32×32=1024, 64×32/32×64=2048, 64×64=4096. */
   tilemap: Uint16Array;
-}
-
-function defaultBgConfig(): BgConfig {
-  return {
-    visible: false,
-    priority: 0,
-    charBaseIndex: 0,
-    mapBaseIndex: 0,
-    screenSize: 0,
-    paletteMode: 0,
-    mosaic: false,
-    wraparound: false,
-    hofs: 0,
-    vofs: 0,
-  };
 }
 
 export class Gba {
@@ -71,6 +56,10 @@ export class Gba {
   /** 32 affine matrix slots pour OAM rotscale (mode 1/3) et BG2/BG3 affine.
    *  Toutes initialisées à identité (pa=256, pb=0, pc=0, pd=256 = 1.0 scale, 0 rotation). */
   readonly affineParams: AffineMatrix[] = Array.from({ length: 32 }, () => identityAffineMatrix());
+  /** 2 affine matrix slots dédiés aux BG2/BG3 affine (séparés des OAM). */
+  readonly bgAffineMatrices: [AffineMatrix, AffineMatrix] = [identityAffineMatrix(), identityAffineMatrix()];
+  /** Mosaic config global (REG_MOSAIC). */
+  readonly mosaic: MosaicConfig = defaultMosaicConfig();
   /** Frame buffer 240×160 RGBA. */
   private frameBuffer = new Uint8ClampedArray(SCREEN_W * SCREEN_H * 4);
   private hblankCb: HBlankCallback | null = null;
@@ -100,11 +89,12 @@ export class Gba {
   /** Render une frame complète + run VBLANK callbacks.
    *  À appeler à 60fps. */
   tick(): void {
-    // 1. Compose la frame (BG layers + OAM sprites + blend + windows + affine)
+    // 1. Compose la frame (BG layers + OAM sprites + blend + windows + affine + mosaic)
     composeFrame(
       this.frameBuffer, this.bgs, this.palette,
       this.oam, this.objVram,
       this.blend, this.windows, this.affineParams,
+      this.bgAffineMatrices, this.mosaic,
       this.hblankCb ?? undefined,
     );
 
@@ -141,6 +131,8 @@ export class Gba {
     Object.assign(this.blend, defaultBlendConfig());
     Object.assign(this.windows, defaultWindows());
     for (const m of this.affineParams) Object.assign(m, identityAffineMatrix());
+    for (const m of this.bgAffineMatrices) Object.assign(m, identityAffineMatrix());
+    Object.assign(this.mosaic, defaultMosaicConfig());
     this.frameBuffer.fill(0);
     this.hblankCb = null;
     this.vblankCbs.clear();

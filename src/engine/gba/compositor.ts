@@ -12,12 +12,12 @@
  * Ces étapes seront ajoutées dans des sessions suivantes.
  */
 import {
-  type AffineMatrix, type BgConfig, type BlendConfig, type HBlankCallback,
+  type AffineMatrix, type BgConfig, type BlendConfig, type HBlankCallback, type MosaicConfig,
   type OamEntry, type Windows,
   LayerId, OAM_SIZES, SCREEN_W, SCREEN_H, windowsAreOff,
 } from './types';
 import { PaletteBanks } from './palette';
-import { renderBgScanline, createTileCache } from './bg-layer';
+import { renderBgScanline, renderBgAffineScanline, createTileCache } from './bg-layer';
 import { decodeTile4bpp, decodeTile8bpp } from './tile';
 
 interface BgLayerData {
@@ -51,6 +51,8 @@ export function composeFrame(
   blend?: BlendConfig,
   windows?: Windows,
   affineParams?: ReadonlyArray<AffineMatrix>,
+  bgAffineMatrices?: ReadonlyArray<AffineMatrix>,
+  mosaic?: MosaicConfig,
   hblankCallback?: HBlankCallback,
 ): void {
   const scanlineBufs: Uint8ClampedArray[] = bgs.map(() => new Uint8ClampedArray(SCREEN_W * 4));
@@ -76,13 +78,40 @@ export function composeFrame(
 
     // Render chaque BG layer dans son scanline buf
     for (let i = 0; i < bgs.length; i++) {
-      renderBgScanline(y, bgs[i].config, bgs[i].vram, bgs[i].tilemap, palette, scanlineBufs[i], tileCaches[i]);
+      const bg = bgs[i];
+      if (bg.config.isAffine && bgAffineMatrices) {
+        // Affine BG : utilise bgAffineMatrices[affineMatrixIndex]
+        const matIdx = Math.min(1, Math.max(0, bg.config.affineMatrixIndex));
+        const matrix = bgAffineMatrices[matIdx];
+        renderBgAffineScanline(y, bg.config, matrix, bg.vram, bg.tilemap, palette, scanlineBufs[i], tileCaches[i]);
+      } else {
+        renderBgScanline(y, bg.config, bg.vram, bg.tilemap, palette, scanlineBufs[i], tileCaches[i]);
+      }
+      // Apply mosaic horizontal sur la scanline si bg.config.mosaic && mosaic.bgH > 0
+      if (bg.config.mosaic && mosaic && mosaic.bgH > 0) {
+        applyMosaicHorizontal(scanlineBufs[i], mosaic.bgH);
+      }
     }
+
+    // Mosaic vertical BG : si bgV > 0, repeat la scanline précédente sur N+1 lignes
+    // Pour MVP simple : skip mosaic vertical (rare effet, demande tracking entre scanlines)
 
     // Render OAM sprites pour cette scanline (par priority)
     if (oam && objVram) {
       for (const buf of oamPriorityBufs) buf.fill(0);
       renderOamScanline(y, oam, objVram, palette, oamPriorityBufs, affineParams);
+      // Apply mosaic horizontal OAM
+      if (mosaic && mosaic.objH > 0) {
+        for (const buf of oamPriorityBufs) applyMosaicHorizontal(buf, mosaic.objH);
+      }
+    }
+
+    // Compute WINOBJ mask scanline (bool[] de 240 entries) — pixels où un sprite
+    // OBJ_WINDOW (objMode === 2) a un pixel opaque. Ces pixels suivent le layerMask
+    // winObjInside au lieu de outsideEnable.
+    let winObjMask: Uint8Array | null = null;
+    if (windows && windows.winObjEnabled && oam && objVram) {
+      winObjMask = computeWinObjScanline(y, oam, objVram);
     }
 
     // Compute pixel layer mask + blend gate via windows pour chaque scanline.
@@ -110,12 +139,17 @@ export function composeFrame(
           && x >= windows.win0.x1 && x < windows.win0.x2;
         const xInWin1 = yInWin1
           && x >= windows.win1.x1 && x < windows.win1.x2;
+        const xInWinObj = winObjMask && winObjMask[x] !== 0;
+        // Priority : WIN0 > WIN1 > WINOBJ > WINOUT
         if (xInWin0) {
           layerMask = windows.win0Inside;
           blendAllowed = windows.win0BlendEnable;
         } else if (xInWin1) {
           layerMask = windows.win1Inside;
           blendAllowed = windows.win1BlendEnable;
+        } else if (xInWinObj) {
+          layerMask = windows.winObjInside;
+          blendAllowed = windows.winObjBlendEnable;
         } else {
           layerMask = windows.outsideEnable;
           blendAllowed = windows.outsideBlendEnable;
@@ -355,4 +389,71 @@ function renderOamSpriteAffine(
     const buf = priorityBufs[sprite.priority];
     buf[off] = r; buf[off + 1] = g; buf[off + 2] = b; buf[off + 3] = 255;
   }
+}
+
+// ─── Helpers : mosaic + WINOBJ ──────────────────────────────────────────────
+
+/** Apply mosaic horizontal sur une scanline RGBA : repeat le pixel à x = i × (factor+1)
+ *  sur les `factor` pixels suivants. Effet pixelisation horizontale. */
+function applyMosaicHorizontal(scanline: Uint8ClampedArray, factor: number): void {
+  if (factor <= 0) return;
+  const blockSize = factor + 1;
+  for (let xBlock = 0; xBlock < SCREEN_W; xBlock += blockSize) {
+    const srcOff = xBlock * 4;
+    for (let dx = 1; dx < blockSize && xBlock + dx < SCREEN_W; dx++) {
+      const dstOff = (xBlock + dx) * 4;
+      scanline[dstOff]     = scanline[srcOff];
+      scanline[dstOff + 1] = scanline[srcOff + 1];
+      scanline[dstOff + 2] = scanline[srcOff + 2];
+      scanline[dstOff + 3] = scanline[srcOff + 3];
+    }
+  }
+}
+
+/** Compute WINOBJ scanline mask : pour chaque pixel x sur la scanline `scanline`,
+ *  retourne 1 si un sprite OBJ_WINDOW (objMode === 2) a un pixel OPAQUE à cette
+ *  position, 0 sinon. Ces sprites NE sont PAS rendus visuellement, juste une
+ *  zone de window pour les autres layers. */
+function computeWinObjScanline(
+  scanline: number,
+  oam: ReadonlyArray<OamEntry>,
+  objVram: Uint8Array,
+): Uint8Array {
+  const mask = new Uint8Array(SCREEN_W);
+  for (const sprite of oam) {
+    if (!sprite.visible) continue;
+    if (sprite.affineMode === 2) continue;
+    if (sprite.objMode !== 2) continue;
+
+    const [wTiles, hTiles] = OAM_SIZES[sprite.shape][sprite.size];
+    const wPx = wTiles * 8;
+    const hPx = hTiles * 8;
+
+    const localY = scanline - sprite.y;
+    if (localY < 0 || localY >= hPx) continue;
+
+    for (let dx = 0; dx < wPx; dx++) {
+      const screenX = sprite.x + dx;
+      if (screenX < 0 || screenX >= SCREEN_W) continue;
+      if (mask[screenX]) continue;
+
+      const localX = sprite.flipH ? (wPx - 1 - dx) : dx;
+      const adjLocalY = sprite.flipV ? (hPx - 1 - localY) : localY;
+      const tileX = (localX / 8) | 0;
+      const tileY = (adjLocalY / 8) | 0;
+      const subX = localX % 8;
+      const subY = adjLocalY % 8;
+      const tileIdOffset = sprite.paletteMode === 0
+        ? tileY * wTiles + tileX
+        : (tileY * wTiles + tileX) * 2;
+      const finalTileId = sprite.tileId + tileIdOffset;
+      const pixels = sprite.paletteMode === 0
+        ? decodeTile4bpp(objVram, finalTileId, false, false)
+        : decodeTile8bpp(objVram, finalTileId, false, false);
+      const colorIdx = pixels[subY * 8 + subX];
+      if (colorIdx === 0) continue;
+      mask[screenX] = 1;
+    }
+  }
+  return mask;
 }

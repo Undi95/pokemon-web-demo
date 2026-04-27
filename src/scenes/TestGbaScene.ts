@@ -23,6 +23,11 @@ import { Gba } from '../engine/gba/gba';
 import { GbaPhaserBridge } from '../engine/gba/phaser-bridge';
 import { loadIndexedPng, loadTilemapBin } from '../engine/gba/png-loader';
 import { rotScaleAffineMatrix } from '../engine/gba/types';
+// M4A audio test
+import { loadMidi, playSong, stopSong, isPlaying } from '../engine/m4a/player';
+import { loadSampleManifest } from '../engine/m4a/sample-loader';
+import { getAudioContext } from '../engine/m4a/audio-context';
+import type { VoiceGroup } from '../engine/m4a/voice-types';
 
 export class TestGbaScene extends Phaser.Scene {
   private gba!: Gba;
@@ -53,8 +58,13 @@ export class TestGbaScene extends Phaser.Scene {
     // Load assets async puis configure BG
     void this.loadAssetsAndStart();
 
-    // Inputs
-    this.input.keyboard?.once('keydown', () => this.exit());
+    // Inputs : 'P' = play song, 'S' = stop, autre key/click = exit
+    this.input.keyboard?.on('keydown', (e: KeyboardEvent) => {
+      const k = e.key.toLowerCase();
+      if (k === 'p') { void this.playTestSong(); return; }
+      if (k === 's') { stopSong(); return; }
+      this.exit();
+    });
     this.input.once('pointerdown', () => this.exit());
   }
 
@@ -140,7 +150,7 @@ export class TestGbaScene extends Phaser.Scene {
       this.gba.windows.win0BlendEnable = true;
       this.gba.windows.outsideBlendEnable = true;
 
-      this.statusText?.setText('GBA: BG + OAM + Blend pulse + WIN0 spotlight. Click to exit.');
+      this.statusText?.setText('GBA: BG+OAM+Blend+WIN+Affine. Press P=play song, S=stop, click=exit.');
       this.statusText?.setColor('#00FF88');
       this.ready = true;
     } catch (e) {
@@ -155,7 +165,44 @@ export class TestGbaScene extends Phaser.Scene {
     this.bridge.tick();
   }
 
+  /** Test M4A : charge mus_intro.mid + voicegroup intro, play song. */
+  private async playTestSong(): Promise<void> {
+    if (isPlaying()) {
+      console.log('[TestGba] Song déjà en cours, stop d\'abord (S)');
+      return;
+    }
+    try {
+      // Init audio (peut throw si pas de user gesture, mais on a déjà une key press)
+      getAudioContext();
+      await loadSampleManifest();
+
+      this.statusText?.setText('Loading MIDI...').setColor('#FFCC00');
+
+      // Load voicegroup intro (utilisé par mus_intro.mid)
+      const vgModule = await import('../engine/m4a/voicegroups-data/intro');
+      const introVg = vgModule.VOICEGROUP as VoiceGroup;
+
+      // Load song MIDI (intro music)
+      const midi = await loadMidi('/decomp/em/music/mus_intro.mid');
+      console.log(`[TestGba] MIDI loaded: ${midi.tracks.length} tracks, duration ${midi.duration.toFixed(2)}s`);
+
+      // Voicegroup lookup : utilise le master VOICEGROUPS_BY_NAME map généré
+      // par extract-voicegroups-m4a.mjs (195 voicegroups + 5 keysplit tables).
+      // Résout les keysplit_all (drumsets entiers) + keysplit (piano keysplit etc.).
+      const { lookupVoicegroup } = await import('../engine/m4a/voicegroups-data/_all-voicegroups-index');
+      const vgLookup = (name: string): VoiceGroup | null => lookupVoicegroup(name);
+
+      this.statusText?.setText('Playing mus_intro.mid (P=replay, S=stop)').setColor('#00FF88');
+      await playSong(midi, introVg, vgLookup, false);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error('[TestGba] M4A play failed:', e);
+      this.statusText?.setText(`Audio ERR: ${msg}`).setColor('#FF4040');
+    }
+  }
+
   private exit(): void {
+    stopSong();
     this.bridge?.destroy();
     this.scene.start('BootScene');
   }

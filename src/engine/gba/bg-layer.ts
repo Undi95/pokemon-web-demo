@@ -13,7 +13,7 @@
  * dans un buffer scanline réutilisable. Le compositor combine ensuite les
  * 4 BG layers + OAM + blend par scanline.
  */
-import { type BgConfig, type TilePixels, decodeBgMapEntry, SCREEN_W } from './types';
+import { type AffineMatrix, type BgConfig, type TilePixels, decodeBgMapEntry, SCREEN_W } from './types';
 import { PaletteBanks } from './palette';
 import { decodeTile4bpp, decodeTile8bpp } from './tile';
 
@@ -127,4 +127,101 @@ export function renderBgScanline(
 /** Crée un cache de tiles vide. À reset si vram ou palette change drastiquement. */
 export function createTileCache(): TileCache {
   return new Map();
+}
+
+// ─── Affine BG renderer (BG2/BG3 en mode 1/2 GBA) ───────────────────────────
+
+/** Tailles affine BG en TILES (différent de text BG). */
+const AFFINE_SCREEN_TILES: Record<0 | 1 | 2 | 3, number> = {
+  0: 16,    // 16×16 tiles  (128×128 px)
+  1: 32,    // 32×32 tiles  (256×256 px)
+  2: 64,    // 64×64 tiles  (512×512 px)
+  3: 128,   // 128×128 tiles (1024×1024 px)
+};
+
+/**
+ * Render une scanline d'un BG affine (BG2/BG3).
+ *
+ * Affine BG specs (1:1 GBA hardware) :
+ *   - Tilemap = 1 byte par tile (juste tileId 0-255, pas de flip ni palette)
+ *   - Toujours 8bpp (256 colors palette globale BG)
+ *   - Sizes : 16/32/64/128 tiles carré
+ *   - Wraparound : si activé, le BG répète indéfiniment ; sinon clipping
+ *
+ * Pour chaque pixel screen (sx, sy) sur la scanline :
+ *   texX = (refX + pa × sx + pb × sy) >> 8       // 28.8 → integer
+ *   texY = (refY + pc × sx + pd × sy) >> 8
+ *
+ * (refX, refY sont en 28.8 fixed dans BgConfig.)
+ */
+export function renderBgAffineScanline(
+  scanline: number,
+  config: BgConfig,
+  matrix: AffineMatrix,
+  vram256: Uint8Array,
+  tilemap: Uint16Array,    // utilisé en u8 implicite (lit tilemap[i] & 0xFF)
+  palette: PaletteBanks,
+  out: Uint8ClampedArray,
+  tileCache: TileCache,
+): void {
+  if (!config.visible) {
+    out.fill(0);
+    return;
+  }
+
+  const screenTiles = AFFINE_SCREEN_TILES[config.screenSize];
+  const screenSizePx = screenTiles * 8;
+
+  // refX/refY sont en 28.8 fixed = ×256
+  const refX = config.affineRefX;
+  const refY = config.affineRefY;
+  const sy = scanline;
+
+  for (let sx = 0; sx < SCREEN_W; sx++) {
+    // Apply matrix : (texX, texY) en 28.8 fixed → integer pixel via >> 8
+    let texX = (refX + matrix.pa * sx + matrix.pb * sy) >> 8;
+    let texY = (refY + matrix.pc * sx + matrix.pd * sy) >> 8;
+
+    // Wrap or clip
+    if (config.wraparound) {
+      texX = ((texX % screenSizePx) + screenSizePx) % screenSizePx;
+      texY = ((texY % screenSizePx) + screenSizePx) % screenSizePx;
+    } else {
+      if (texX < 0 || texX >= screenSizePx || texY < 0 || texY >= screenSizePx) {
+        out[sx * 4 + 3] = 0;  // transparent (BG transparent comme tile vide)
+        continue;
+      }
+    }
+
+    const tileX = (texX / 8) | 0;
+    const tileY = (texY / 8) | 0;
+    const subX = texX % 8;
+    const subY = texY % 8;
+    const mapIdx = tileY * screenTiles + tileX;
+
+    if (mapIdx >= tilemap.length) {
+      out[sx * 4 + 3] = 0;
+      continue;
+    }
+
+    // Affine tilemap = u8 par entry (on lit le low byte du u16)
+    const tileId = tilemap[mapIdx] & 0xFF;
+
+    // Décode tile 8bpp (cache)
+    const cacheKey = `aff_${tileId}`;
+    let tilePixels = tileCache.get(cacheKey);
+    if (!tilePixels) {
+      tilePixels = decodeTile8bpp(vram256, tileId, false, false);
+      tileCache.set(cacheKey, tilePixels);
+    }
+
+    const colorIdx = tilePixels[subY * 8 + subX];
+    // Palette BG bank ignorée en 8bpp (paletteMode=1 implicit)
+    const [r, g, b, a] = palette.getBgRgba(0, colorIdx, 1);
+    const off = sx * 4;
+    out[off] = r;
+    out[off + 1] = g;
+    out[off + 2] = b;
+    out[off + 3] = a;
+  }
 }

@@ -123,7 +123,12 @@ function parseVoicegroupFile(path) {
     if (!line) continue;
 
     if (line.startsWith('voice_group ')) {
-      name = line.slice('voice_group '.length).trim();
+      // Format possible : `voice_group X` ou `voice_group X, offset` (drumsets)
+      // On garde uniquement le nom (avant la virgule).
+      let raw = line.slice('voice_group '.length).trim();
+      const commaIdx = raw.indexOf(',');
+      if (commaIdx >= 0) raw = raw.slice(0, commaIdx).trim();
+      name = raw;
       continue;
     }
 
@@ -161,10 +166,84 @@ function renderVoiceGroupTs(vg, sourceRel) {
   return lines.join('\n');
 }
 
+// ─── Parse keysplit_tables.inc ───────────────────────────────────────────────
+//
+// Format :
+//   keysplit <name>, <offsetBytes>
+//       split <subVoiceIdx>, <maxNote>
+//       split <subVoiceIdx>, <maxNote>
+//       ...
+//
+// Logique : pour une note N, trouve le 1er split dont `maxNote >= N`. Le
+// `subVoiceIdx` est l'index dans le sub-voicegroup à utiliser.
+
+function parseKeysplitTables() {
+  const path = join(decompRoot, 'sound', 'keysplit_tables.inc');
+  if (!existsSync(path)) {
+    console.warn('[keysplit-tables] file not found, skip');
+    return [];
+  }
+  const src = readFileSync(path, 'utf8');
+  const tables = [];
+  let current = null;
+  for (const rawLine of src.split('\n')) {
+    const line = stripComment(rawLine);
+    if (!line) continue;
+    if (line.startsWith('keysplit ')) {
+      // keysplit name, offsetBytes
+      if (current) tables.push(current);
+      const m = line.match(/^keysplit\s+(\w+)\s*,\s*(\d+)$/);
+      if (m) current = { name: m[1], offset: parseInt(m[2]), splits: [] };
+    } else if (line.startsWith('split ')) {
+      // split subVoiceIdx, maxNote
+      const m = line.match(/^split\s+(\d+)\s*,\s*(\d+)$/);
+      if (m && current) current.splits.push({ idx: parseInt(m[1]), maxNote: parseInt(m[2]) });
+    }
+  }
+  if (current) tables.push(current);
+  return tables;
+}
+
+const keysplitTables = parseKeysplitTables();
+console.log(`[keysplit-tables] Parsed ${keysplitTables.length} key split tables`);
+
+// Render keysplit tables in single TS file
+{
+  const lines = [
+    `// AUTO-GENERATED from sound/keysplit_tables.inc by extract-voicegroups-m4a.mjs`,
+    `// Generated: ${NOW}`,
+    `// Format : pour une note MIDI N, trouver le 1er split dont \`maxNote >= N\`,`,
+    `// puis utiliser \`subVoiceIdx\` comme index dans le sub-voicegroup.`,
+    '',
+    `export interface KeysplitEntry { idx: number; maxNote: number; }`,
+    `export interface KeysplitTable { name: string; offset: number; splits: KeysplitEntry[]; }`,
+    '',
+    `export const KEYSPLIT_TABLES: Record<string, KeysplitTable> = {`,
+  ];
+  for (const t of keysplitTables) {
+    lines.push(`  ${JSON.stringify('keysplit_' + t.name)}: ${JSON.stringify(t)},`);
+  }
+  lines.push(`};`);
+  lines.push('');
+
+  // Helper résolution
+  lines.push(`/** Résout une note MIDI → sub-voice index dans un keysplit table. */`);
+  lines.push(`export function resolveKeysplitNote(tableName: string, note: number): number | null {`);
+  lines.push(`  const t = KEYSPLIT_TABLES[tableName];`);
+  lines.push(`  if (!t) return null;`);
+  lines.push(`  for (const s of t.splits) if (note <= s.maxNote) return s.idx;`);
+  lines.push(`  return null;`);
+  lines.push(`}`);
+  lines.push('');
+
+  writeFileSync(join(outDir, '_keysplit-tables.ts'), lines.join('\n'));
+}
+
 // ─── Run ─────────────────────────────────────────────────────────────────────
 
-const sourceFiles = globSync('sound/voicegroups/*.inc', { cwd: decompRoot });
-console.log(`[m4a-voicegroups] Found ${sourceFiles.length} voicegroup files`);
+// Glob inclut les sub-dirs keysplits/ et drumsets/ pour avoir TOUS les voicegroups
+const sourceFiles = globSync('sound/voicegroups/**/*.inc', { cwd: decompRoot });
+console.log(`[m4a-voicegroups] Found ${sourceFiles.length} voicegroup files (incl keysplits + drumsets)`);
 
 let okCount = 0, errCount = 0;
 const indexEntries = [];
@@ -179,30 +258,60 @@ for (const rel of sourceFiles) {
     }
 
     const tsContent = renderVoiceGroupTs(vg, rel);
-    // Output filename : nom du voicegroup (slug-safe)
+    // Output : flatten les sub-dirs (keysplits/X.inc → ks_X.ts, drumsets/Y.inc → drum_Y.ts).
+    // Sur Windows, rel utilise backslash → normalize avant include().
     const stem = basename(rel, '.inc');
-    const outAbs = join(outDir, `${stem}.ts`);
+    const relPosix = rel.replace(/\\/g, '/');
+    let prefixedStem = stem;
+    if (relPosix.includes('keysplits/')) prefixedStem = `ks_${stem}`;
+    else if (relPosix.includes('drumsets/')) prefixedStem = `drum_${stem}`;
+    const outAbs = join(outDir, `${prefixedStem}.ts`);
     writeFileSync(outAbs, tsContent);
     okCount++;
-    indexEntries.push({ stem, name: vg.name, voiceCount: vg.voices.length });
+    indexEntries.push({ stem: prefixedStem, name: vg.name, voiceCount: vg.voices.length });
   } catch (e) {
     errCount++;
     console.error(`[err] ${rel}: ${e.message}`);
   }
 }
 
-// Build index
+// Build index : 2 export styles
+//   - namespace exports (export { VOICEGROUP as bArena } from './b_arena')
+//   - lookup map by canonical name (mappe `voicegroup_X` → import resolved)
 const idxLines = [
   `// AUTO-GENERATED by extract-voicegroups-m4a.mjs — Generated: ${NOW}`,
-  `// Re-export tous les voicegroups parsés depuis sound/voicegroups/`,
+  `// Re-export tous les voicegroups parsés depuis sound/voicegroups/ (incl. keysplits/ + drumsets/)`,
+  `import type { VoiceGroup } from '../voice-types';`,
   '',
 ];
+const allImports = [];
 indexEntries.sort((a, b) => a.stem.localeCompare(b.stem));
 for (const e of indexEntries) {
-  // Camel-case namespace
   const ns = e.stem.replace(/[\-_]+(.)/g, (_, c) => c.toUpperCase()).replace(/[^A-Za-z0-9]/g, '');
   idxLines.push(`export { VOICEGROUP as ${ns} } from './${e.stem}';`);
+  allImports.push({ ns, name: e.name });
 }
+
+// Lookup map by canonical name (voicegroup_X → imported VOICEGROUP)
+idxLines.push('');
+idxLines.push(`// ─── Imports for lookup map (raw imports) ──────────────────────────────────`);
+for (const imp of allImports) {
+  idxLines.push(`import { VOICEGROUP as _${imp.ns} } from './${indexEntries.find(e => e.stem.replace(/[\-_]+(.)/g, (_, c) => c.toUpperCase()).replace(/[^A-Za-z0-9]/g, '') === imp.ns)?.stem}';`);
+}
+idxLines.push('');
+idxLines.push(`/** Lookup map : voicegroup canonical name → VoiceGroup. */`);
+idxLines.push(`export const VOICEGROUPS_BY_NAME: Record<string, VoiceGroup> = {`);
+for (const imp of allImports) {
+  // Normaliser le nom : enlever préfixe `voicegroup_` si présent
+  idxLines.push(`  ${JSON.stringify(imp.name)}: _${imp.ns},`);
+  idxLines.push(`  ${JSON.stringify('voicegroup_' + imp.name)}: _${imp.ns},`);
+}
+idxLines.push(`};`);
+idxLines.push('');
+idxLines.push(`/** Helper : résout un voicegroup par nom (avec ou sans préfixe \`voicegroup_\`). */`);
+idxLines.push(`export function lookupVoicegroup(name: string): VoiceGroup | null {`);
+idxLines.push(`  return VOICEGROUPS_BY_NAME[name] ?? VOICEGROUPS_BY_NAME[name.replace(/^voicegroup_/, '')] ?? null;`);
+idxLines.push(`}`);
 idxLines.push('');
 writeFileSync(join(outDir, '_all-voicegroups-index.ts'), idxLines.join('\n'));
 

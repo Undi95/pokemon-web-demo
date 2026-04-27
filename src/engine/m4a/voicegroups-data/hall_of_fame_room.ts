@@ -1,5 +1,5 @@
 // AUTO-GENERATED from sound\voicegroups\hall_of_fame_room.inc by extract-voicegroups-m4a.mjs
-// Generated: 2026-04-26
+// Generated: 2026-04-27
 import type { VoiceGroup } from '../voice-types';
 
 export const VOICEGROUP: VoiceGroup = {
