@@ -122,22 +122,44 @@ function getOrBuildSquareWave(ctx: AudioContext, duty: number): PeriodicWave {
   return wave;
 }
 
-/** Convertit un attack/decay/release rate GBA M4A (0-255) en durée seconds.
+/** Tick rate de l'envelope M4A : m4aSoundMain est appelé chaque V-blank GBA = 60Hz. */
+const M4A_TICK_PERIOD_SEC = 1 / 60;
+
+/** Calcule la durée d'attack en seconds pour un rate ADSR (0-255).
+ *  1:1 décomp src/m4a_1.s : `envelopeVolume += attack` chaque tick (60Hz),
+ *  jusqu'à atteindre 255. Donc time = ceil(255 / attack) × tickPeriod.
  *
- *  M4A semantics 1:1 décomp src/m4a.c :
- *  - Sample rate = 13 379 Hz (SOUND_MODE_FREQ_13379)
- *  - Sémantique SIGNED s8 : valeurs >= 128 (= négatif en s8) = SKIP cette phase = INSTANT
- *  - Sinon : rate normal
+ *  attack=255 → 1 tick (16ms instant)
+ *  attack=128 → 2 ticks (33ms)
+ *  attack=64  → 4 ticks (67ms)
+ *  attack=4   → 64 ticks (1.06s)
+ *  attack=1   → 255 ticks (4.25s)
+ *  attack=0   → skip attack phase (envelopeVolume = peak directly) */
+function attackTimeSec(attack: number): number {
+  if (attack <= 0) return 0;        // skip phase
+  if (attack >= 255) return M4A_TICK_PERIOD_SEC;
+  return Math.ceil(255 / attack) * M4A_TICK_PERIOD_SEC;
+}
+
+/** Calcule la time constant pour un decay/release multiplicatif M4A → Web Audio
+ *  setTargetAtTime. M4A : `vol = (vol × rate) / 256` chaque tick (60Hz).
+ *  Web Audio setTargetAtTime simule `vol(t) = target + (initial - target) × exp(-t / τ)`.
  *
- *  Mais Web Audio linearRampToValueAtTime perçue diffère du décrément discret M4A
- *  (qui se fait sur l'amplitude target value 0-255, pas sur la durée).
- *  Empiriquement, multiplicateur ×2 sur la formule de base sonne plus proche du
- *  rendu GBA réel. Ajustement à raffiner par voicegroup si besoin. */
-function gbaEnvTimeToSec(value: number): number {
-  if (value >= 128) return 0.005;          // signed s8 négatif → skip = instant
-  if (value <= 0) return 4;                // clamp pour valeurs très basses
-  // ×2 multiplier (perception plus proche de l'émulateur que la formule pure 13379Hz)
-  return Math.min(4, ((value * 255) / 13379) * 2);
+ *  Conversion : après 1 tick (16.67ms), le ratio préservé est rate/256.
+ *  Donc `exp(-tickPeriod / τ) = rate/256` → `τ = tickPeriod / -ln(rate/256)`.
+ *
+ *  rate=255 → τ ≈ 4.27 sec (decay très lent, preserves 99.6% par tick)
+ *  rate=235 → τ ≈ 195 ms (decay lent, preserves 92% par tick)
+ *  rate=200 → τ ≈ 67 ms (preserves 78%)
+ *  rate=128 → τ ≈ 24 ms (decay rapide, halve chaque tick)
+ *  rate=0   → τ ≈ 0 (instant)
+ *  rate=1-255 valid range. */
+function envTimeConstant(rate: number): number {
+  if (rate <= 0) return 0.001;                 // instant
+  if (rate >= 256) return 60;                  // virtually never (cap)
+  const ratio = rate / 256;
+  if (ratio >= 0.9999) return 60;              // would div by zero
+  return M4A_TICK_PERIOD_SEC / -Math.log(ratio);
 }
 
 /** Convertit un sustain value GBA M4A (0-255) en gain 0.0 - 1.0. */
@@ -260,26 +282,29 @@ export async function playNote(
       return null;
   }
 
-  // Envelope ADSR. 1:1 décomp src/m4a.c :
-  //   PSG channels (square/noise/wave) : full ADSR (attack/decay/sustain/release)
-  //   DirectSound : skip attack ramp, gain = velocity direct, release léger au noteOff
-  // L'auto-loop a été désactivé pour les DirectSound (pas de drone).
+  // Envelope ADSR 1:1 décomp src/m4a_1.s :
+  //   ATTACK  : envelopeVolume += attack chaque tick → linear ramp 0→peak
+  //   DECAY   : envelopeVolume = (envelopeVolume × decay) >> 8 → exponential fade
+  //             vers sustainGoal (= setTargetAtTime avec timeConstant)
+  //   SUSTAIN : tenu à sustainGoal jusqu'à noteOff
+  //   RELEASE : envelopeVolume = (envelopeVolume × release) >> 8 → exponential fade vers 0
+  // Identique pour PSG et DirectSound (sauf que DirectSound a sample audio en plus).
   const env = ctx.createGain();
   const velNorm = velocity / 127;
-  const isDirectSound = voice.type === 'directsound' || voice.type === 'directsound_no_resample';
+  const sustainGain = gbaSustainToGain(envelope.sustain) * velNorm;
+  const aTime = attackTimeSec(envelope.attack);
+  const decayTau = envTimeConstant(envelope.decay);
 
-  if (isDirectSound) {
-    // DirectSound : pleine vélocité immédiate (le sample WAV gère son propre fade naturel)
+  if (envelope.attack <= 0) {
+    // Skip attack : envelope démarre à peak direct
     env.gain.setValueAtTime(velNorm, startTime);
   } else {
-    // PSG : ADSR complet
-    const attackTime = gbaEnvTimeToSec(envelope.attack);
-    const decayTime = gbaEnvTimeToSec(envelope.decay);
-    const sustainGain = gbaSustainToGain(envelope.sustain) * velNorm;
+    // Linear ramp attack 0 → peak
     env.gain.setValueAtTime(0, startTime);
-    env.gain.linearRampToValueAtTime(velNorm, startTime + Math.max(0.001, attackTime));
-    env.gain.linearRampToValueAtTime(sustainGain, startTime + attackTime + Math.max(0.001, decayTime));
+    env.gain.linearRampToValueAtTime(velNorm, startTime + aTime);
   }
+  // Decay exponentiel vers sustainGain via setTargetAtTime (= GBA mult per tick)
+  env.gain.setTargetAtTime(sustainGain, startTime + aTime, Math.max(0.001, decayTau));
 
   // Pan
   const panner = ctx.createStereoPanner();
@@ -305,17 +330,17 @@ export async function playNote(
     startedAt: startTime,
     stop(time?: number) {
       const t = time ?? ctx.currentTime;
-      // Release selon ADSR pour TOUS (PSG + DirectSound).
-      // 1:1 décomp : release est utilisé même pour DirectSound (volume envelope).
-      // Pour DirectSound non-loop, le sample peut finir naturellement avant le release.
-      const releaseTime = gbaEnvTimeToSec(envelope.release);
+      // Release : exponential fade vers 0 via setTargetAtTime (1:1 GBA mult per tick).
+      // Stop le source après ~5 × tau (= envelope quasi-zéro 99%).
+      const releaseTau = envTimeConstant(envelope.release);
+      const releaseTotalSec = Math.max(0.05, releaseTau * 5);
       env.gain.cancelScheduledValues(t);
       env.gain.setValueAtTime(env.gain.value, t);
-      env.gain.linearRampToValueAtTime(0, t + Math.max(0.005, releaseTime));
+      env.gain.setTargetAtTime(0, t, Math.max(0.001, releaseTau));
       try {
-        if ('stop' in source) (source as AudioBufferSourceNode | OscillatorNode).stop(t + releaseTime + 0.01);
+        if ('stop' in source) (source as AudioBufferSourceNode | OscillatorNode).stop(t + releaseTotalSec + 0.01);
       } catch { /* already stopped */ }
-      window.setTimeout(() => unregisterActiveNote(note), Math.max(50, (releaseTime + 0.05) * 1000));
+      window.setTimeout(() => unregisterActiveNote(note), Math.max(50, (releaseTotalSec + 0.05) * 1000));
     },
   };
   registerActiveNote(note);
