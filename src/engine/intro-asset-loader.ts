@@ -30,8 +30,14 @@ function urlFor(decompPath: string): string {
 async function loadSymbol(symbol: string, source: { path: string; ext: string; type: string }): Promise<void> {
   const url = urlFor(source.path);
   if (source.ext === '.gbapal') {
-    const pal = await loadGbaPal(url);
-    assetCache.set(symbol, pal);
+    // Si path est .png : extraire le PLTE du PNG (= palette embedded)
+    if (source.path.endsWith('.png')) {
+      const png = await loadIndexedPng(url);
+      assetCache.set(symbol, png.palette);
+    } else {
+      const pal = await loadGbaPal(url);
+      assetCache.set(symbol, pal);
+    }
   } else if (source.path.endsWith('.bin')) {
     // Tilemap raw u16 (déjà décompressé par notre extracteur)
     const tilemap = await loadTilemapBin(url);
@@ -143,6 +149,52 @@ export async function preloadScene2Assets(): Promise<void> {
     }
   }));
   console.log(`[intro-asset-loader] Scene 2 preload done (${assetCache.size} symbols total cached)`);
+}
+
+/** Pré-charge tous les assets Scene 3 (Pokeball spin + Groudon/Kyogre/Rayquaza).
+ *  Charge depuis GFX_SOURCES (qui contient les Scene 3 paths). */
+export async function preloadScene3Assets(): Promise<void> {
+  const scene3Symbols = [
+    'sIntroPokeball_Pal', 'sIntroPokeball_Tilemap', 'sIntroPokeball_Gfx',
+    'sIntroStreaks_Pal', 'sIntroStreaks_Gfx', 'sIntroStreaks_Tilemap',
+    'sIntroRayquzaOrb_Pal', 'sIntroMisc_Pal', 'sIntroMisc_Gfx',
+    'sIntroLati_Gfx',
+  ];
+  await Promise.all(scene3Symbols.map(async (sym) => {
+    const src = (GFX_SOURCES as Record<string, { path: string; ext: string; type: string }>)[sym];
+    if (!src) {
+      console.warn(`[intro-asset-loader] Scene 3 symbol ${sym} not in GFX_SOURCES`);
+      return;
+    }
+    try {
+      await loadSymbol(sym, src);
+    } catch (e) {
+      console.error(`[intro-asset-loader] Scene 3 load failed for ${sym}:`, e);
+    }
+  }));
+  // gIntro3Bg_Pal pour INTRO3_RAW_PTR (= palette raw scene 3)
+  try {
+    const pal = await loadGbaPal('/decomp/em/intro/scene_3/misc.pal');
+    assetCache.set('gIntro3Bg_Pal', pal);
+  } catch (e) {
+    console.warn('[intro-asset-loader] gIntro3Bg_Pal not loaded:', e);
+  }
+  // g-prefixed externs Scene 3
+  const externs: Array<{ symbol: string; url: string }> = [
+    { symbol: 'gIntroLightning_Gfx', url: '/decomp/em/intro/scene_3/lightning.png' },
+    { symbol: 'gIntroBubbles_Gfx', url: '/decomp/em/intro/scene_3/bubbles.png' },
+  ];
+  await Promise.all(externs.map(async ({ symbol, url }) => {
+    try {
+      const png = await loadIndexedPng(url);
+      assetCache.set(symbol, png.charData);
+      const palSymbol = symbol.replace(/_Gfx$/, '_Pal');
+      if (!assetCache.has(palSymbol)) assetCache.set(palSymbol, png.palette);
+    } catch (e) {
+      console.warn(`[intro-asset-loader] Scene 3 extern ${symbol} failed:`, e);
+    }
+  }));
+  console.log(`[intro-asset-loader] Scene 3 preload done (${assetCache.size} symbols total cached)`);
 }
 
 /** Charge les g-prefixed assets (= externs graphics.c décomp, hors GFX_SOURCES). */

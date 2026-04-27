@@ -436,6 +436,81 @@ export function m4aSongNumStart(songId: number): void {
 /** 1:1 décomp `PlaySE(seId)` — joue un sound effect one-shot. Phase 0c stub. */
 export function PlaySE(_seId: number): void { /* TODO Phase 1 Action 4 */ }
 
+/** 1:1 décomp src/intro.c PanFadeAndZoomScreen(screenX, screenY, zoom, alpha) :
+ *  setup BG2 affine matrix pour Scene 3 Pokeball spin + zoom.
+ *  Phase 2 stub no-op (= la Pokeball reste statique, pas de zoom).
+ *  TODO Phase 2 audit : implémenter via gba.bgAffineMatrices[0] + bg(2) affine. */
+export function PanFadeAndZoomScreen(_screenX: number, _screenY: number, _zoom: number, _alpha: number): void {
+  /* no-op stub Phase 2 */
+}
+
+/** 1:1 décomp `SAFE_DIV(x, y)` macro = (y == 0) ? 0 : (x / y). */
+export function SAFE_DIV(x: number, y: number): number {
+  return y === 0 ? 0 : Math.floor(x / y);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SCENE 3 STUBS (Phase 2 minimum viable — ne pas crasher, atteindre Title screen)
+// Scene 3 sera visuellement cassée (Groudon/Kyogre/Rayquaza pas affichés) mais
+// la chaîne Tasks continue jusqu'à Task_EndIntroMovie → CB2_InitTitleScreen.
+// TODO Phase 3 : implémenter pleinement Scene 3 avec preload + LZ77 + sprites.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/** Alias LZDecompressVram = LZ77UnCompVram. Wrap try/catch pour que asset
+ *  manquant ne crash pas la Task entière (= juste warning). */
+export function LZDecompressVram(srcSymbol: string, destAddr: number): void {
+  try {
+    LZ77UnCompVram(srcSymbol, destAddr);
+  } catch (e) {
+    console.warn(`[LZDecompressVram] ${srcSymbol} failed (asset not preloaded), continuing:`, (e as Error).message);
+  }
+}
+
+/** Stubs Scene 3 sprite/palette loading (= utilise heap dans le décomp). */
+export function LoadCompressedSpriteSheetUsingHeap(_sheet: unknown): void { /* TODO Phase 3 */ }
+export function LoadCompressedSpritePaletteUsingHeap(_pal: unknown): void { /* TODO Phase 3 */ }
+export function FreeMonSpritesGfx(): void { /* TODO */ }
+
+/** 1:1 décomp `GET_TRUE_SPRITE_INDEX(animTag)` — retourne l'index du sprite
+ *  dans gBattleAnimPicTable correspondant à l'anim tag. Phase 2 stub. */
+export function GET_TRUE_SPRITE_INDEX(animTag: number): number {
+  return animTag;  // pass-through
+}
+
+/** Stubs tables battle anim (Scene 3 ANIM_TAG_ROCKS pour Groudon). */
+export const gBattleAnimPicTable: ReadonlyArray<{ data: string; size: number; tag: number }> = [];
+export const gBattleAnimPaletteTable: ReadonlyArray<{ data: string; tag: number }> = [];
+
+/** 1:1 décomp `gReservedSpritePaletteCount` — nombre de palettes OBJ
+ *  réservées par le système. Le décomp le set à 8 pendant l'intro. */
+export let gReservedSpritePaletteCount = 0;
+export function setReservedSpritePaletteCount(v: number): void { gReservedSpritePaletteCount = v; }
+
+// Scene 3 symbol-name strings (asset cache keys)
+export const gIntroGroudon_Gfx = 'gIntroGroudon_Gfx';
+export const gIntroGroudon_Tilemap = 'gIntroGroudon_Tilemap';
+export const gIntroKyogre_Gfx = 'gIntroKyogre_Gfx';
+export const gIntroKyogre_Tilemap = 'gIntroKyogre_Tilemap';
+export const gIntroLegendBg_Gfx = 'gIntroLegendBg_Gfx';
+export const gIntroGroudonBg_Tilemap = 'gIntroGroudonBg_Tilemap';
+export const gIntroKyogreBg_Tilemap = 'gIntroKyogreBg_Tilemap';
+export const gIntroClouds_Gfx = 'gIntroClouds_Gfx';
+export const gIntroCloudsSun_Tilemap = 'gIntroCloudsSun_Tilemap';
+export const gIntro3Bg_Pal = 'gIntro3Bg_Pal';
+
+/** Accessor `gPlttBufferUnfaded` proxy — pointer vers rt().gPlttBufferUnfaded.
+ *  Le bodyC fait des `gPlttBufferUnfaded[idx]` = read u16 à index dans le buf.
+ *  Notre PaletteBuffer expose `.get(idx)` ; pour rester compatible avec
+ *  l'array-access décomp, on retourne un proxy. */
+export const gPlttBufferUnfaded = new Proxy({}, {
+  get(_, k) {
+    if (k === 'length') return 512;
+    const i = Number(k);
+    if (!Number.isFinite(i)) return undefined;
+    try { return rt().gPlttBufferUnfaded.get(i); } catch { return 0; }
+  },
+}) as unknown as ArrayLike<number>;
+
 /** 1:1 décomp `INTRO3_RAW_PTR(palId)` macro src/intro.c:1870 :
  *    #define INTRO3_RAW_PTR(palId) (((void *) &gIntro3Bg_Pal) + palId)
  *

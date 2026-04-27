@@ -90,6 +90,18 @@ import {
   m4aSongNumStart, MUS_INTRO, MUS_INTRO_BATTLE, PlaySE,
   // Scene 3 palette dyn (Phase 1 Action 4 #5)
   INTRO3_RAW_PTR,
+  // Phase 2 stubs (Scene 3 Pokeball)
+  PanFadeAndZoomScreen, SAFE_DIV,
+  // Scene 3 stubs minimum viable (= ne pas crasher)
+  LZDecompressVram, LoadCompressedSpriteSheetUsingHeap, LoadCompressedSpritePaletteUsingHeap,
+  FreeMonSpritesGfx, GET_TRUE_SPRITE_INDEX,
+  gBattleAnimPicTable, gBattleAnimPaletteTable,
+  gIntroGroudon_Gfx, gIntroGroudon_Tilemap,
+  gIntroKyogre_Gfx, gIntroKyogre_Tilemap,
+  gIntroLegendBg_Gfx, gIntroGroudonBg_Tilemap, gIntroKyogreBg_Tilemap,
+  gIntroClouds_Gfx, gIntroCloudsSun_Tilemap,
+  gIntro3Bg_Pal,
+  gPlttBufferUnfaded,
   // Constants
   BG_SCREEN_SIZE, PALETTES_ALL,
   // Display + addressing
@@ -130,6 +142,7 @@ let sFlygonYOffset = 0;
 let gIntroCredits_MovingSceneryVBase = 0;
 let gIntroCredits_MovingSceneryVOffset = 0;
 let gIntroCredits_MovingSceneryState = 0;
+let gReservedSpritePaletteCount = 0;
 
 // Constants resolved from decomp #defines / enums / TS data modules :
 const ANIM_TAG_ROCKS = 10058;
@@ -1282,7 +1295,8 @@ export const Task_Scene2_End: TaskCallback = (task, rt) => {
 export const Task_Scene3_Load: TaskCallback = (task, rt) => {
   const taskId = task.taskId;
   rt.IntroResetGpuRegs();
-      /* TODO LZ77UnCompVram — load via rt.LZ77UnCompVram_* at scene init */;
+      // MANUAL FIX session 68 phase 2 : LZ77 sIntroPokeball_Gfx → 0 (= VRAM char data)
+      LZ77UnCompVram(sIntroPokeball_Gfx, 0);
       LZ77UnCompVram(sIntroPokeball_Tilemap, (BG_CHAR_ADDR(1)));
       LoadPalette(sIntroPokeball_Pal, BG_PLTT_ID(0), ((sIntroPokeball_Pal)?.length ?? 32));
       task.data[0] = 0;
@@ -1297,7 +1311,7 @@ export const Task_Scene3_Load: TaskCallback = (task, rt) => {
       rt.SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_MODE_1 | DISPCNT_OBJ_1D_MAP | DISPCNT_BG2_ON | DISPCNT_OBJ_ON);
       task.func = (t) => Task_Scene3_SpinPokeball(t, rt);
       rt.gIntroFrameCounter = 0;
-      m4aSongNumStart(MUS_INTRO_BATTLE);
+      /* TODO sound: m4aSongNumStart #2 (Phase 3 - song swap corrompt l'audio) */;
 };
 
 /** Source: intro.c → Task_Scene3_SpinPokeball */

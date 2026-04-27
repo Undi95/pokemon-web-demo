@@ -159,18 +159,18 @@ let gIntroCredits_MovingSceneryState = 0;
     });
   }
 
-  // PATCH 4b : Replace TODOs sound (m4aSongNumStart) par les vrais appels.
-  // Le décomp src/intro.c contient :
-  //   line 1216 (Task_Scene1_FadeIn) : m4aSongNumStart(MUS_INTRO);
-  //   line 1739 (Task_Scene3_LoadGroudon) : m4aSongNumStart(MUS_INTRO_BATTLE);
-  // On replace dans l'ordre les 2 premiers TODO sound (ils correspondent à ces 2 calls).
-  // PATCH idempotent : on cherche encore les 2 premiers TODOs et on les replace.
+  // PATCH 4b : Replace SEUL le PREMIER TODO sound par m4aSongNumStart(MUS_INTRO).
+  // Le décomp `Task_Scene1_FadeIn` line 1216 = `m4aSongNumStart(MUS_INTRO)` →
+  //   débloque la musique d'intro ✓
+  // Le décomp `Task_Scene3_Load` line 1739 = `m4aSongNumStart(MUS_INTRO_BATTLE)` →
+  //   Phase 2 : commenté pour l'instant car le swap song corrompt l'audio
+  //   (TODO Phase 3 audit : implementer stopSong + cleanup voices proprement
+  //   avant que le 2e song démarre).
   let soundReplaceCount = 0;
   s = s.replace(/\/\* TODO sound: m4aSongNumStart \*\/;/g, () => {
     soundReplaceCount++;
     if (soundReplaceCount === 1) return 'm4aSongNumStart(MUS_INTRO);';
-    if (soundReplaceCount === 2) return 'm4aSongNumStart(MUS_INTRO_BATTLE);';
-    return `/* TODO sound: m4aSongNumStart (call #${soundReplaceCount}) */;`;
+    return `/* TODO sound: m4aSongNumStart #${soundReplaceCount} (Phase 3) */;`;
   });
 
   // PATCH 4c : Replace `/* TODO: INTRO3_RAW_PTR(X) */ new Uint16Array(0)` par
@@ -178,6 +178,13 @@ let gIntroCredits_MovingSceneryState = 0;
   s = s.replace(
     /\/\* TODO: INTRO3_RAW_PTR\(([^)]+)\) \*\/ new Uint16Array\(0\)/g,
     'INTRO3_RAW_PTR($1)',
+  );
+
+  // PATCH 4d : Replace TODO LZ77 dans Task_Scene3_Load par sIntroPokeball_Gfx → 0
+  // (1:1 décomp src/intro.c:1724 `LZ77UnCompVram(sIntroPokeball_Gfx, (void *)VRAM)`).
+  s = s.replace(
+    /\/\* TODO LZ77UnCompVram — load via rt\.LZ77UnCompVram_\* at scene init \*\/;\s*\n(\s*LZ77UnCompVram\(sIntroPokeball_Tilemap)/g,
+    'LZ77UnCompVram(sIntroPokeball_Gfx, 0);\n$1',
   );
 
   // PATCH 5 : Bug transpileur "N (...)" → "N * (...)" multiplications
