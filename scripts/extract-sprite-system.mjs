@@ -34,6 +34,7 @@ const outFile = join(outDir, 'sprite-system.ts');
 
 const SOURCES = [
   'src/intro.c',
+  'src/intro_credits_graphics.c',  // Phase 1 Action 4 #2 : Brendan/May/Bicycle/Flygon Scene 2
   'src/title_screen.c',
   'src/main_menu.c',
   // Note: birch_speech.c does not exist in pokeemerald; use new_game.c per task spec

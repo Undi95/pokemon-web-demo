@@ -239,12 +239,57 @@ export function FreeAllSpritePalettes(): void {
 export const sSpriteSheet_RunningPokemon: ReadonlyArray<unknown> = [];
 export const sAnims_PlayerBicycle: ReadonlyArray<unknown> = [];
 
-/** Stub helpers Scene 2 (Brendan/May/Flygon/Bicycle bg anim/SetIntroPart2BgCnt). */
-export function CreateIntroBrendanSprite(_x: number, _y: number): number { return -1; }
-export function CreateIntroMaySprite(_x: number, _y: number): number { return -1; }
-export function CreateIntroFlygonSprite(_x: number, _y: number): number { return -1; }
-export function CreateBicycleBgAnimationTask(_a: number, _b: number, _c: number, _d: number): number { return -1; }
-export function SetIntroPart2BgCnt(_arg: number): void { /* no-op */ }
+/** 1:1 décomp src/intro_credits_graphics.c:1118 — crée Brendan + bicycle sprites,
+ *  link les via sPlayerSpriteId pour que SpriteCB_Bicycle synchronise position. */
+export function CreateIntroBrendanSprite(x: number, y: number): number {
+  const r = rt();
+  const playerSpriteId = r.CreateSpriteFromTemplate('sSpriteTemplate_Brendan', x, y);
+  const bicycleSpriteId = r.CreateSpriteFromTemplate('sSpriteTemplate_BrendanBicycle', x, y + 8);
+  // 1:1 décomp : `gSprites[bicycleSpriteId].sPlayerSpriteId = playerSpriteId;`
+  // `sPlayerSpriteId = data[0]` (alias bicycle data field)
+  const bicycle = r.getSprite(bicycleSpriteId);
+  if (bicycle) bicycle.data[0] = playerSpriteId;
+  return playerSpriteId;
+}
+
+/** 1:1 décomp src/intro_credits_graphics.c:1126 — crée May + bicycle sprites. */
+export function CreateIntroMaySprite(x: number, y: number): number {
+  const r = rt();
+  const playerSpriteId = r.CreateSpriteFromTemplate('sSpriteTemplate_May', x, y);
+  const bicycleSpriteId = r.CreateSpriteFromTemplate('sSpriteTemplate_MayBicycle', x, y + 8);
+  const bicycle = r.getSprite(bicycleSpriteId);
+  if (bicycle) bicycle.data[0] = playerSpriteId;
+  return playerSpriteId;
+}
+
+/** 1:1 décomp src/intro_credits_graphics.c:1162 — crée Flygon en 2 halves
+ *  (left/right) car sprite trop grand pour 1 OAM (= 64x64 max). Right half
+ *  utilise StartSpriteAnim 1 + SpriteCB_FlygonRightHalf pour sync avec left. */
+export function CreateIntroFlygonSprite(x: number, y: number): number {
+  const r = rt();
+  const leftSpriteId = r.CreateSpriteFromTemplate('sSpriteTemplate_FlygonLatias', x - 32, y);
+  const rightSpriteId = r.CreateSpriteFromTemplate('sSpriteTemplate_FlygonLatias', x + 32, y);
+  const right = r.getSprite(rightSpriteId);
+  if (right) right.data[0] = leftSpriteId;  // sLeftSpriteId = data[0]
+  r.StartSpriteAnim(rightSpriteId, 1);
+  // SpriteCB_FlygonRightHalf : transcrit dans intro_credits-callbacks-auto si dispo.
+  // Pour l'instant on attache pas de callback (= TODO Phase 2 audit runtime).
+  return leftSpriteId;
+}
+
+/** 1:1 décomp src/intro_credits_graphics.c:924 — crée le Task qui anime les BG
+ *  parallax pendant Scene 2 bike ride. Phase 0c stub : retourne un Task ID
+ *  no-op (pas d'animation BG scroll). À remplacer par implementation 1:1. */
+export function CreateBicycleBgAnimationTask(_mode: number, _bg1Speed: number, _bg2Speed: number, _bg3Speed: number): number {
+  // TODO Phase 1 Action 4 #3 (couplé avec LoadIntroPart2Graphics)
+  return rt().CreateTask(() => { /* no-op stub */ }, 0);
+}
+
+/** 1:1 décomp src/intro_credits_graphics.c:761 — setup BGCNT pour Scene 2
+ *  (priority + char/screen base + screen size). Phase 0c stub : no-op
+ *  (= la Task_Scene2_Load setup déjà BGCNT directement). À remplacer si
+ *  LoadIntroPart2Graphics démontre que c'est nécessaire. */
+export function SetIntroPart2BgCnt(_scenery: number): void { /* TODO Phase 1 #3 */ }
 /** 1:1 décomp src/intro_credits_graphics.c:989 — cycle palette scenery couleurs.
  *  Phase 0c stub no-op (= la palette reste statique, pas d'animation cycling). */
 export function CycleSceneryPalette(_mode: number): void { /* no-op */ }

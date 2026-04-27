@@ -842,7 +842,10 @@ export class DecompRuntime {
       console.warn(`[runtime] CreateSpriteFromTemplate: ${templateName} not found`);
       return -1;
     }
-    const oam = (OAM_DATAS as Record<string, { affineMode: string, objMode: string, bpp: string, priority: string, paletteNum: string, _sizeWH: readonly [number, number] }>)[tpl.oam];
+    // Cast via unknown : les OAM_DATAS extraits depuis le décomp ont des fields
+    // partiels (= certains structs n'ont pas tous les fields, defaults omitted).
+    // On lit les fields utilisés avec fallbacks au runtime.
+    const oam = (OAM_DATAS as unknown as Record<string, { affineMode?: string, objMode?: string, bpp?: string, priority?: string, paletteNum?: string, _sizeWH?: readonly [number, number] }>)[tpl.oam];
     if (!oam) {
       console.warn(`[runtime] CreateSpriteFromTemplate ${templateName}: OamData ${tpl.oam} not found`);
       return -1;
@@ -855,7 +858,7 @@ export class DecompRuntime {
     const tileBase = this.spriteSheetTagToTileStart.get(tpl.tileTag) ?? 0;
     const palSlot = this.paletteTagToSlot.get(tpl.paletteTag) ?? 0;
 
-    const [w, h] = oam._sizeWH;
+    const [w, h] = oam._sizeWH ?? [8, 8];  // default 8x8 si extracteur incomplet
     const { shape, size } = oamShapeSizeFromWH(w, h);
 
     const result = this.CreateSpriteAtOam({
@@ -863,7 +866,7 @@ export class DecompRuntime {
       paletteBank: palSlot,
       x, y,
       shape, size,
-      priority: parseInt(oam.priority, 10) || 0,
+      priority: parseInt(oam.priority ?? '0', 10) || 0,
       paletteMode: oam.bpp === 'ST_OAM_8BPP' ? 1 : 0,
       affineMode: oam.affineMode === 'ST_OAM_AFFINE_DOUBLE' ? 3
                 : oam.affineMode === 'ST_OAM_AFFINE_NORMAL' ? 1
