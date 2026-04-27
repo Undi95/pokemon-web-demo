@@ -1,7 +1,7 @@
 // AUTO-GENERATED from src/pokemon_storage_system.c by extract-decomp-task-machines.mjs
 // Do not edit manually — re-run `npm run extract:task-machines` to refresh.
 //
-// Generated: 2026-04-26
+// Generated: 2026-04-27
 // Stats: 33 Task_, 3 CB2_, 17 SpriteCB_
 
 export const TASKS = {

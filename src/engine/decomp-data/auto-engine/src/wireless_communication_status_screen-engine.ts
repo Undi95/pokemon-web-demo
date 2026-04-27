@@ -1,0 +1,91 @@
+// AUTO-GENERATED from src/wireless_communication_status_screen.c by extract-engine-helpers.mjs
+// Do not edit — re-run `node scripts/extract-engine-helpers.mjs` to refresh.
+//
+// Generated: 2026-04-27
+// Functions: 12
+
+export const ENGINE_FUNCTIONS = {
+  "CB2_ExitWirelessCommunicationStatusScreen": {
+    returnType: "static void",
+    params: "void",
+    callsTo: ["ARRAY_COUNT","Free","FreeAllWindowBuffers","GetBgTilemapBuffer","SetMainCallback2"],
+    lineCount: 8,
+    bodyC: "s32 i;\n    FreeAllWindowBuffers();\n    for (i = 0; i < (int)ARRAY_COUNT(sBgTemplates); i++)\n    {\n        Free(GetBgTilemapBuffer(i));\n    }\n    Free(sStatusScreen);\n    SetMainCallback2(CB2_ReturnToFieldContinueScriptPlayMapMusic);",
+  },
+  "CB2_InitWirelessCommunicationScreen": {
+    returnType: "static void",
+    params: "void",
+    callsTo: ["ARRAY_COUNT","Alloc","AllocZeroed","AnimateSprites","BG_PLTT_ID","BuildOamBuffer","ChangeBgX","ChangeBgY","CopyBgTilemapBufferToVram","CopyToBgTilemapBuffer","CreateTask","CreateTask_ListenToWireless","DeactivateAllTextPrinters","DecompressAndLoadBgGfxUsingHeap","DynamicPlaceholderTextUtil_Reset","FillBgTilemapBufferRect","InitBgsFromTemplates","InitWindows","LoadPalette","Menu_LoadStdPalAt","ResetBgsAndClearDma3BusyFlags","ResetPaletteFade","ResetSpriteData","ResetTasks","RunTasks","RunTextPrinters","ScanlineEffect_Stop","SetBgTilemapBuffer","SetGpuReg","SetMainCallback2","SetVBlankCallback","UpdatePaletteFade","m4aSoundVSyncOn"],
+    lineCount: 35,
+    bodyC: "SetGpuReg(REG_OFFSET_DISPCNT, 0);\n    sStatusScreen = AllocZeroed(sizeof(struct WirelessCommunicationStatusScreen));\n    SetVBlankCallback(NULL);\n    ResetBgsAndClearDma3BusyFlags(0);\n    InitBgsFromTemplates(0, sBgTemplates, ARRAY_COUNT(sBgTemplates));\n    SetBgTilemapBuffer(1, Alloc(BG_SCREEN_SIZE));\n    SetBgTilemapBuffer(0, Alloc(BG_SCREEN_SIZE));\n    DecompressAndLoadBgGfxUsingHeap(1, sBgTiles_Gfx, 0, 0, 0);\n    CopyToBgTilemapBuffer(1, sBgTiles_Tilemap, 0, 0);\n    InitWindows(sWindowTemplates);\n    DeactivateAllTextPrinters();\n    ResetPaletteFade();\n    ResetSpriteData();\n    ResetTasks();\n    ScanlineEffect_Stop();\n    m4aSoundVSyncOn();\n    SetVBlankCallback(VBlankCB_WirelessCommunicationScreen);\n    sStatusScreen->taskId = CreateTask(Task_WirelessCommunicationScreen, 0);\n    sStatusScreen->rfuTaskId = CreateTask_ListenToWireless();\n    sStatusScreen->prevGroupCounts[GROUPTYPE_TOTAL] = 1;\n    ChangeBgX(0, 0, BG_COORD_SET);\n    ChangeBgY(0, 0, BG_COORD_SET);\n    ChangeBgX(1, 0, BG_COORD_SET);\n    ChangeBgY(1, 0, BG_COORD_SET);\n    LoadPalette(sPalettes, BG_PLTT_ID(0), PLTT_SIZE_4BPP);\n    Menu_LoadStdPalAt(BG_PLTT_ID(15));\n    DynamicPlaceholderTextUtil_Reset();\n    FillBgTilemapBufferRect(0, 0, 0, 0, 32, 32, 15);\n    CopyBgTilemapBufferToVram(1);\n    SetMainCallback2(CB2_RunWirelessCommunicationScreen);\n    RunTasks();\n    RunTextPrinters();\n    AnimateSprites();\n    BuildOamBuffer();\n    UpdatePaletteFade();",
+  },
+  "CB2_RunWirelessCommunicationScreen": {
+    returnType: "static void",
+    params: "void",
+    callsTo: ["AnimateSprites","BuildOamBuffer","IsDma3ManagerBusyWithBgCopy","RunTasks","RunTextPrinters","UpdatePaletteFade"],
+    lineCount: 8,
+    bodyC: "if (!IsDma3ManagerBusyWithBgCopy())\n    {\n        RunTasks();\n        RunTextPrinters();\n        AnimateSprites();\n        BuildOamBuffer();\n        UpdatePaletteFade();\n    }",
+  },
+  "CountPlayersInGroupAndGetActivity": {
+    returnType: "static u32",
+    params: "struct RfuPlayer *player, u32 *groupCounts",
+    callsTo: ["ARRAY_COUNT","group_activity","group_players","group_type"],
+    lineCount: 31,
+    bodyC: "int i, j, k;\n    u32 activity = player->rfu.data.activity;\n\n    #define group_activity(i) (sActivityGroupInfo[(i)][0])\n    #define group_type(i)     (sActivityGroupInfo[(i)][1])\n    #define group_players(i)  (sActivityGroupInfo[(i)][2])\n\n    for (i = 0; i < ARRAY_COUNT(sActivityGroupInfo); i++)\n    {\n#ifdef UBFIX\n         \n         \n         \n        if (group_type(i) == GROUPTYPE_NONE)\n            continue;\n#endif\n        if (activity == group_activity(i) && player->groupScheduledAnim == UNION_ROOM_SPAWN_IN)\n        {\n            if (group_players(i) == 0)\n            {\n                k = 0;\n                for (j = 0; j < RFU_CHILD_MAX; j++)\n                    if (player->rfu.data.partnerInfo[j] != 0) k++;\n                k++;\n                groupCounts[group_type(i)] += k;\n            }\n            else\n            {\n                groupCounts[group_type(i)] += group_players(i);\n            }\n        }\n    }\n    return activity;\n\n    #undef group_activity\n    #undef group_type\n    #undef group_players",
+  },
+  "CyclePalette": {
+    returnType: "static void",
+    params: "s16 *counter, s16 *palIdx",
+    callsTo: ["ARRAY_COUNT","BG_PLTT_ID","LoadPalette","PLTT_SIZEOF"],
+    lineCount: 9,
+    bodyC: "s32 idx;\n    if (++(*counter) > 5)\n    {\n        if (++(*palIdx) == (int)ARRAY_COUNT(sPalettes) - 2)\n            *palIdx = 0;\n\n        *counter = 0;\n    }\n    idx = *palIdx + 2;  \n    LoadPalette(sPalettes[idx], BG_PLTT_ID(0), PLTT_SIZEOF(8));",
+  },
+  "HaveCountsChanged": {
+    returnType: "static bool32",
+    params: "u32 *currCounts, u32 *prevCounts",
+    lineCount: 7,
+    bodyC: "s32 i;\n    for (i = 0; i < NUM_GROUPTYPES; i++)\n    {\n        if (currCounts[i] != prevCounts[i])\n            return TRUE;\n    }\n    return FALSE;",
+  },
+  "PrintHeaderTexts": {
+    returnType: "static void",
+    params: "void",
+    callsTo: ["CopyWindowToVram","FillWindowPixelBuffer","GetStringCenterAlignXOffset","PIXEL_FILL","PutWindowTilemap","WCSS_AddTextPrinterParameterized"],
+    lineCount: 12,
+    bodyC: "s32 i;\n    FillWindowPixelBuffer(WIN_TITLE, PIXEL_FILL(0));\n    FillWindowPixelBuffer(WIN_GROUP_NAMES, PIXEL_FILL(0));\n    FillWindowPixelBuffer(WIN_GROUP_COUNTS, PIXEL_FILL(0));\n\n     \n    WCSS_AddTextPrinterParameterized(WIN_TITLE, FONT_NORMAL, sHeaderTexts[0], GetStringCenterAlignXOffset(FONT_NORMAL, sHeaderTexts[0], 0xC0), 6, COLORMODE_GREEN);\n\n     \n    for (i = 0; i < NUM_GROUPTYPES - 1; i++)\n        WCSS_AddTextPrinterParameterized(WIN_GROUP_NAMES, FONT_NORMAL, sHeaderTexts[i + 1], 0, 30 * i + 8, COLORMODE_WHITE_LGRAY);\n\n     \n    WCSS_AddTextPrinterParameterized(WIN_GROUP_NAMES, FONT_NORMAL, sHeaderTexts[i + 1], 0, 30 * i + 8, COLORMODE_RED);\n\n    PutWindowTilemap(WIN_TITLE);\n    CopyWindowToVram(WIN_TITLE, COPYWIN_GFX);\n    PutWindowTilemap(WIN_GROUP_NAMES);\n    CopyWindowToVram(WIN_GROUP_NAMES, COPYWIN_GFX);",
+  },
+  "ShowWirelessCommunicationScreen": {
+    returnType: "void",
+    params: "void",
+    callsTo: ["SetMainCallback2"],
+    lineCount: 1,
+    bodyC: "SetMainCallback2(CB2_InitWirelessCommunicationScreen);",
+  },
+  "Task_WirelessCommunicationScreen": {
+    returnType: "static void",
+    params: "u8 taskId",
+    callsTo: ["BeginNormalPaletteFade","ConvertIntToDecimalStringN","CopyBgTilemapBufferToVram","CopyWindowToVram","CyclePalette","DestroyTask","FillWindowPixelBuffer","JOY_NEW","PIXEL_FILL","PlaySE","PrintHeaderTexts","PutWindowTilemap","SetMainCallback2","ShowBg","UpdateCommunicationCounts","WCSS_AddTextPrinterParameterized"],
+    lineCount: 53,
+    bodyC: "s32 i;\n    switch (gTasks[taskId].tState)\n    {\n    case 0:\n        PrintHeaderTexts();\n        gTasks[taskId].tState++;\n        break;\n    case 1:\n        BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);\n        ShowBg(1);\n        CopyBgTilemapBufferToVram(0);\n        ShowBg(0);\n        gTasks[taskId].tState++;\n        break;\n    case 2:\n        if (!gPaletteFade.active)\n            gTasks[taskId].tState++;\n        break;\n    case 3:\n        if (UpdateCommunicationCounts(sStatusScreen->groupCounts, sStatusScreen->prevGroupCounts, sStatusScreen->activities, sStatusScreen->rfuTaskId))\n        {\n            FillWindowPixelBuffer(WIN_GROUP_COUNTS, PIXEL_FILL(0));\n            for (i = 0; i < NUM_GROUPTYPES; i++)\n            {\n                ConvertIntToDecimalStringN(gStringVar4, sStatusScreen->groupCounts[i], STR_CONV_MODE_RIGHT_ALIGN, 2);\n                if (i != GROUPTYPE_TOTAL)\n                    WCSS_AddTextPrinterParameterized(WIN_GROUP_COUNTS, FONT_NORMAL, gStringVar4, 12, 30 * i + 8, COLORMODE_WHITE_LGRAY);\n                else\n                    WCSS_AddTextPrinterParameterized(WIN_GROUP_COUNTS, FONT_NORMAL, gStringVar4, 12, 98, COLORMODE_RED);\n            }\n            PutWindowTilemap(WIN_GROUP_COUNTS);\n            CopyWindowToVram(WIN_GROUP_COUNTS, COPYWIN_FULL);\n        }\n        if (JOY_NEW(A_BUTTON) || JOY_NEW(B_BUTTON))\n        {\n            PlaySE(SE_SELECT);\n            gTasks[sStatusScreen->rfuTaskId].data[15] = 0xFF;\n            gTasks[taskId].tState++;\n        }\n        CyclePalette(&gTasks[taskId].data[7], &gTasks[taskId].data[8]);\n        break;\n    case 4:\n        BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);\n        gTasks[taskId].tState++;\n        break;\n    case 5:\n        if (!gPaletteFade.active)\n        {\n            SetMainCallback2(CB2_ExitWirelessCommunicationStatusScreen);\n            DestroyTask(taskId);\n        }\n        break;\n    }",
+  },
+  "UpdateCommunicationCounts": {
+    returnType: "static bool32",
+    params: "u32 *groupCounts, u32 *prevGroupCounts, u32 *activities, u8 taskId",
+    callsTo: ["CountPlayersInGroupAndGetActivity","HaveCountsChanged","memcpy"],
+    lineCount: 30,
+    bodyC: "bool32 activitiesChanged = FALSE;\n    u32 groupCountBuffer[NUM_GROUPTYPES] = {0, 0, 0, 0};\n    struct RfuPlayer **players = (void *)gTasks[taskId].data;\n    s32 i;\n\n    for (i = 0; i < NUM_TASK_DATA; i++)\n    {\n        u32 activity = CountPlayersInGroupAndGetActivity(&(*players)[i], groupCountBuffer);\n        if (activity != activities[i])\n        {\n            activities[i] = activity;\n            activitiesChanged = TRUE;\n        }\n    }\n\n    if (!HaveCountsChanged(groupCountBuffer, prevGroupCounts))\n    {\n        if (activitiesChanged == TRUE)\n            return TRUE;\n        else\n            return FALSE;\n    }\n    else\n    {\n        memcpy(groupCounts,     groupCountBuffer, sizeof(groupCountBuffer));\n        memcpy(prevGroupCounts, groupCountBuffer, sizeof(groupCountBuffer));\n\n        groupCounts[GROUPTYPE_TOTAL] = groupCounts[GROUPTYPE_TRADE]\n                                     + groupCounts[GROUPTYPE_BATTLE]\n                                     + groupCounts[GROUPTYPE_UNION]\n                                     + groupCounts[GROUPTYPE_TOTAL];\n        return TRUE;\n    }",
+  },
+  "VBlankCB_WirelessCommunicationScreen": {
+    returnType: "static void",
+    params: "void",
+    callsTo: ["LoadOam","ProcessSpriteCopyRequests","TransferPlttBuffer"],
+    lineCount: 3,
+    bodyC: "LoadOam();\n    ProcessSpriteCopyRequests();\n    TransferPlttBuffer();",
+  },
+  "WCSS_AddTextPrinterParameterized": {
+    returnType: "static void",
+    params: "u8 windowId, u8 fontId, const u8 *str, u8 x, u8 y, u8 mode",
+    callsTo: ["AddTextPrinterParameterized4"],
+    lineCount: 30,
+    bodyC: "u8 color[3];\n\n    switch (mode)\n    {\n    case COLORMODE_NORMAL:\n        color[0] = TEXT_COLOR_TRANSPARENT;\n        color[1] = TEXT_COLOR_DARK_GRAY;\n        color[2] = TEXT_COLOR_LIGHT_GRAY;\n        break;\n    case COLORMODE_WHITE_LGRAY:\n        color[0] = TEXT_COLOR_TRANSPARENT;\n        color[1] = TEXT_COLOR_WHITE;\n        color[2] = TEXT_COLOR_LIGHT_GRAY;\n        break;\n    case COLORMODE_RED:\n        color[0] = TEXT_COLOR_TRANSPARENT;\n        color[1] = TEXT_COLOR_RED;\n        color[2] = TEXT_COLOR_LIGHT_RED;\n        break;\n    case COLORMODE_GREEN:\n        color[0] = TEXT_COLOR_TRANSPARENT;\n        color[1] = TEXT_COLOR_LIGHT_GREEN;\n        color[2] = TEXT_COLOR_GREEN;\n        break;\n    case COLORMODE_WHITE_DGRAY:\n        color[0] = TEXT_COLOR_TRANSPARENT;\n        color[1] = TEXT_COLOR_WHITE;\n        color[2] = TEXT_COLOR_DARK_GRAY;\n        break;\n    }\n\n    AddTextPrinterParameterized4(windowId, fontId, x, y, 0, 0, color, TEXT_SKIP_DRAW, str);",
+  },
+} as const;

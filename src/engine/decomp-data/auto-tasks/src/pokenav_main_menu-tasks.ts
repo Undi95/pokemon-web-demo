@@ -1,7 +1,7 @@
 // AUTO-GENERATED from src/pokenav_main_menu.c by extract-decomp-task-machines.mjs
 // Do not edit manually — re-run `npm run extract:task-machines` to refresh.
 //
-// Generated: 2026-04-26
+// Generated: 2026-04-27
 // Stats: 0 Task_, 0 CB2_, 2 SpriteCB_
 
 export const SPRITE_CBS = {

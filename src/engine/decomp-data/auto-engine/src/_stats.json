@@ -1,0 +1,357 @@
+{
+  "generatedAt": "2026-04-27",
+  "filesProcessed": 87,
+  "filesWarned": 2,
+  "totalFunctions": 6576,
+  "perFile": [
+    {
+      "rel": "src/sprite.c",
+      "count": 102
+    },
+    {
+      "rel": "src/palette.c",
+      "count": 34
+    },
+    {
+      "rel": "src/scanline_effect.c",
+      "count": 9
+    },
+    {
+      "rel": "src/random.c",
+      "count": 4
+    },
+    {
+      "rel": "src/decompress.c",
+      "count": 20
+    },
+    {
+      "rel": "src/main.c",
+      "count": 29
+    },
+    {
+      "rel": "src/task.c",
+      "count": 14
+    },
+    {
+      "rel": "src/window.c",
+      "count": 29
+    },
+    {
+      "rel": "src/text_window.c",
+      "count": 11
+    },
+    {
+      "rel": "src/gpu_regs.c",
+      "count": 12
+    },
+    {
+      "rel": "src/bg.c",
+      "count": 52
+    },
+    {
+      "rel": "src/pokemon_icon.c",
+      "count": 23
+    },
+    {
+      "rel": "src/trainer_pokemon_sprites.c",
+      "count": 21
+    },
+    {
+      "rel": "src/pokemon_animation.c",
+      "count": 240
+    },
+    {
+      "rel": "src/naming_screen.c",
+      "count": 106
+    },
+    {
+      "rel": "src/item.c",
+      "count": 52
+    },
+    {
+      "rel": "src/item_icon.c",
+      "count": 6
+    },
+    {
+      "rel": "src/item_menu_icons.c",
+      "count": 21
+    },
+    {
+      "rel": "src/menu.c",
+      "count": 101
+    },
+    {
+      "rel": "src/menu_helpers.c",
+      "count": 25
+    },
+    {
+      "rel": "src/string_util.c",
+      "count": 44
+    },
+    {
+      "rel": "src/malloc.c",
+      "count": 12
+    },
+    {
+      "rel": "src/sound.c",
+      "count": 46
+    },
+    {
+      "rel": "src/text.c",
+      "count": 50
+    },
+    {
+      "rel": "src/pokemon.c",
+      "count": 158
+    },
+    {
+      "rel": "src/event_data.c",
+      "count": 25
+    },
+    {
+      "rel": "src/link.c",
+      "count": 117
+    },
+    {
+      "rel": "src/script.c",
+      "count": 39
+    },
+    {
+      "rel": "src/field_player_avatar.c",
+      "count": 166
+    },
+    {
+      "rel": "src/overworld.c",
+      "count": 217
+    },
+    {
+      "rel": "src/list_menu.c",
+      "count": 48
+    },
+    {
+      "rel": "src/dynamic_placeholder_text_util.c",
+      "count": 4
+    },
+    {
+      "rel": "src/blit.c",
+      "count": 5
+    },
+    {
+      "rel": "src/util.c",
+      "count": 11
+    },
+    {
+      "rel": "src/party_menu.c",
+      "count": 351
+    },
+    {
+      "rel": "src/pokemon_storage_system.c",
+      "count": 369
+    },
+    {
+      "rel": "src/field_message_box.c",
+      "count": 15
+    },
+    {
+      "rel": "src/field_weather.c",
+      "count": 46
+    },
+    {
+      "rel": "src/event_object_movement.c",
+      "count": 711
+    },
+    {
+      "rel": "src/script_menu.c",
+      "count": 29
+    },
+    {
+      "rel": "src/battle_anim_throw.c",
+      "count": 78
+    },
+    {
+      "rel": "src/field_effect.c",
+      "count": 224
+    },
+    {
+      "rel": "src/battle_main.c",
+      "count": 100
+    },
+    {
+      "rel": "src/contest.c",
+      "count": 201
+    },
+    {
+      "rel": "src/contest_link.c",
+      "count": 17
+    },
+    {
+      "rel": "src/contest_painting.c",
+      "count": 20
+    },
+    {
+      "rel": "src/new_game.c",
+      "count": 13
+    },
+    {
+      "rel": "src/load_save.c",
+      "count": 21
+    },
+    {
+      "rel": "src/main_menu.c",
+      "count": 82
+    },
+    {
+      "rel": "src/credits.c",
+      "count": 36
+    },
+    {
+      "rel": "src/save_failed_screen.c",
+      "count": 12
+    },
+    {
+      "rel": "src/start_menu.c",
+      "count": 80
+    },
+    {
+      "rel": "src/option_menu.c",
+      "count": 24
+    },
+    {
+      "rel": "src/title_screen.c",
+      "count": 20
+    },
+    {
+      "rel": "src/save.c",
+      "count": 35
+    },
+    {
+      "rel": "src/union_room.c",
+      "count": 111
+    },
+    {
+      "rel": "src/union_room_chat.c",
+      "count": 122
+    },
+    {
+      "rel": "src/union_room_player_avatar.c",
+      "count": 38
+    },
+    {
+      "rel": "src/cable_club.c",
+      "count": 57
+    },
+    {
+      "rel": "src/cable_car.c",
+      "count": 22
+    },
+    {
+      "rel": "src/link_rfu_2.c",
+      "count": 145
+    },
+    {
+      "rel": "src/link_rfu_3.c",
+      "count": 24
+    },
+    {
+      "rel": "src/wireless_communication_status_screen.c",
+      "count": 12
+    },
+    {
+      "rel": "src/mystery_event_menu.c",
+      "count": 6
+    },
+    {
+      "rel": "src/mystery_event_script.c",
+      "count": 30
+    },
+    {
+      "rel": "src/mystery_gift.c",
+      "count": 45
+    },
+    {
+      "rel": "src/mystery_gift_menu.c",
+      "count": 34
+    },
+    {
+      "rel": "src/mystery_gift_view.c",
+      "count": 18
+    },
+    {
+      "rel": "src/pokedex.c",
+      "count": 137
+    },
+    {
+      "rel": "src/pokedex_area_screen.c",
+      "count": 19
+    },
+    {
+      "rel": "src/pokedex_cry_screen.c",
+      "count": 14
+    },
+    {
+      "rel": "src/berry_blender.c",
+      "count": 78
+    },
+    {
+      "rel": "src/roulette.c",
+      "count": 103
+    },
+    {
+      "rel": "src/slot_machine.c",
+      "count": 254
+    },
+    {
+      "rel": "src/safari_zone.c",
+      "count": 17
+    },
+    {
+      "rel": "src/lottery_corner.c",
+      "count": 8
+    },
+    {
+      "rel": "src/dewford_trend.c",
+      "count": 13
+    },
+    {
+      "rel": "src/mauville_old_man.c",
+      "count": 58
+    },
+    {
+      "rel": "src/contest_util.c",
+      "count": 111
+    },
+    {
+      "rel": "src/egg_hatch.c",
+      "count": 25
+    },
+    {
+      "rel": "src/evolution_graphics.c",
+      "count": 37
+    },
+    {
+      "rel": "src/evolution_scene.c",
+      "count": 24
+    },
+    {
+      "rel": "src/trade.c",
+      "count": 134
+    },
+    {
+      "rel": "src/match_call.c",
+      "count": 54
+    },
+    {
+      "rel": "src/easy_chat.c",
+      "count": 245
+    },
+    {
+      "rel": "src/scrcmd.c",
+      "count": 231
+    },
+    {
+      "rel": "src/script_pokemon_util.c",
+      "count": 13
+    }
+  ],
+  "durationMs": 116
+}

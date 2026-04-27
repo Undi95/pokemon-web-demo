@@ -1,7 +1,7 @@
 // AUTO-GENERATED from src/slot_machine.c by extract-decomp-task-machines.mjs
 // Do not edit manually — re-run `npm run extract:task-machines` to refresh.
 //
-// Generated: 2026-04-26
+// Generated: 2026-04-27
 // Stats: 10 Task_, 2 CB2_, 26 SpriteCB_
 
 export const TASKS = {

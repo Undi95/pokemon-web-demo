@@ -22,7 +22,7 @@
  *
  * Usage :  node scripts/extract-sprite-system.mjs
  */
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -35,6 +35,17 @@ const outFile = join(outDir, 'sprite-system.ts');
 const SOURCES = [
   'src/intro.c',
   'src/title_screen.c',
+  'src/main_menu.c',
+  // Note: birch_speech.c does not exist in pokeemerald; use new_game.c per task spec
+  'src/new_game.c',
+  'src/naming_screen.c',
+  'src/option_menu.c',
+  'src/save_failed_screen.c',
+  'src/credits.c',
+  'src/start_menu.c',
+  'src/save.c',
+  'src/menu_helpers.c',
+  'src/text_window.c',
 ];
 
 mkdirSync(outDir, { recursive: true });
@@ -680,9 +691,24 @@ function processFile(absPath, relPath) {
 const allResults = {};
 for (const rel of SOURCES) {
   const abs = join(decompRoot, rel);
+  if (!existsSync(abs)) {
+    console.warn(`[sprite-system] SKIP ${rel} — file not found in decomp`);
+    continue;
+  }
   console.log(`[sprite-system] Processing ${rel}...`);
   try {
-    allResults[rel] = processFile(abs, rel);
+    const res = processFile(abs, rel);
+    allResults[rel] = res;
+    // Warn if file produced nothing
+    const total = Object.keys(res.anims).length + Object.keys(res.animTables).length +
+      Object.keys(res.affineAnims).length + Object.keys(res.affineAnimTables).length +
+      Object.keys(res.spriteTemplates).length + Object.keys(res.oamDatas).length +
+      Object.keys(res.spritePalettes).length + Object.keys(res.spriteSheets).length +
+      Object.keys(res.spriteCallbacks).length + Object.keys(res.helpers).length +
+      Object.keys(res.dataTables).length;
+    if (total === 0) {
+      console.warn(`[sprite-system] WARN ${rel} produced 0 extractions`);
+    }
   } catch (e) {
     console.error(`[sprite-system] FAIL ${rel}: ${e.message}`);
   }

@@ -1,7 +1,7 @@
 // AUTO-GENERATED from src/battle_dome.c by extract-decomp-task-machines.mjs
 // Do not edit manually — re-run `npm run extract:task-machines` to refresh.
 //
-// Generated: 2026-04-26
+// Generated: 2026-04-27
 // Stats: 5 Task_, 1 CB2_, 11 SpriteCB_
 
 export const TASKS = {

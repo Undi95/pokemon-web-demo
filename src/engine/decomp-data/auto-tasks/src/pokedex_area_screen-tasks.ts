@@ -1,7 +1,7 @@
 // AUTO-GENERATED from src/pokedex_area_screen.c by extract-decomp-task-machines.mjs
 // Do not edit manually — re-run `npm run extract:task-machines` to refresh.
 //
-// Generated: 2026-04-26
+// Generated: 2026-04-27
 // Stats: 2 Task_, 0 CB2_, 0 SpriteCB_
 
 export const TASKS = {

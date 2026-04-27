@@ -1,7 +1,7 @@
 // AUTO-GENERATED from src/battle_factory_screen.c by extract-decomp-task-machines.mjs
 // Do not edit manually — re-run `npm run extract:task-machines` to refresh.
 //
-// Generated: 2026-04-26
+// Generated: 2026-04-27
 // Stats: 2 Task_, 3 CB2_, 5 SpriteCB_
 
 export const TASKS = {
