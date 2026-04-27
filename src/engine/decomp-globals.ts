@@ -249,6 +249,50 @@ export function SetIntroPart2BgCnt(_arg: number): void { /* no-op */ }
  *  Phase 0c stub no-op (= la palette reste statique, pas d'animation cycling). */
 export function CycleSceneryPalette(_mode: number): void { /* no-op */ }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// AUDIO M4A WIRING (Phase 1 Action 4 #1)
+// 1:1 décomp `m4aSongNumStart(MUS_X)` → playMidiLoop('/decomp/em/music/mus_x.mid')
+// Mapping song ID → URL via include/constants/songs.h.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/** Constants 1:1 décomp `include/constants/songs.h`. Note : on n'a besoin que des
+ *  songs utilisés par les Tasks transcrites (intro, title, credits, battle, etc.).
+ *  À étendre au fur et à mesure. */
+export const MUS_INTRO = 414;          // = MUS_DEMO1 (mus_intro.mid)
+export const MUS_INTRO_BATTLE = 442;   // = MUS_T_BATTLE (mus_intro_battle.mid)
+
+/** Mapping song ID → URL .mid. */
+const SONG_ID_TO_URL: Record<number, string> = {
+  [MUS_INTRO]: '/decomp/em/music/mus_intro.mid',
+  [MUS_INTRO_BATTLE]: '/decomp/em/music/mus_intro_battle.mid',
+};
+
+/** 1:1 décomp `m4aSongNumStart(songId)` — démarre une song en boucle.
+ *  Notre version : lookup URL via SONG_ID_TO_URL + appel async playMidiLoop.
+ *  Async fire-and-forget : attend `primeAudio()` (= load SF2 ~3s) puis play.
+ *  Si l'audio init est encore en cours quand m4aSongNumStart est appelé
+ *  (= scenario typique : Task_Scene1_FadeIn frame ~60 mais SF2 pas encore
+ *  chargé), `await primeAudio()` attend que ce soit ready avant de play. */
+export function m4aSongNumStart(songId: number): void {
+  const url = SONG_ID_TO_URL[songId];
+  if (!url) {
+    console.warn(`[m4aSongNumStart] song ID ${songId} not mapped, skip`);
+    return;
+  }
+  void (async () => {
+    try {
+      const { primeAudio, playMidiLoop } = await import('./music');
+      await primeAudio();   // attend ready (no-op si déjà started)
+      await playMidiLoop(url);
+    } catch (e) {
+      console.error(`[m4aSongNumStart] play failed for ${url}:`, e);
+    }
+  })();
+}
+
+/** 1:1 décomp `PlaySE(seId)` — joue un sound effect one-shot. Phase 0c stub. */
+export function PlaySE(_seId: number): void { /* TODO Phase 1 Action 4 */ }
+
 /** Constants décomp commonly référencées sans être résolues par le transpileur. */
 export const MALE = 0;
 export const FEMALE = 1;

@@ -86,6 +86,8 @@ import {
   sSpriteSheet_RunningPokemon, sAnims_PlayerBicycle,
   CreateIntroBrendanSprite, CreateIntroMaySprite, CreateIntroFlygonSprite,
   CreateBicycleBgAnimationTask, SetIntroPart2BgCnt, CycleSceneryPalette,
+  // Audio (Phase 1 Action 4 #1)
+  m4aSongNumStart, MUS_INTRO, MUS_INTRO_BATTLE, PlaySE,
   // Constants
   BG_SCREEN_SIZE, PALETTES_ALL,
   // Display + addressing
@@ -1044,7 +1046,7 @@ export const Task_Scene1_FadeIn: TaskCallback = (task, rt) => {
       rt.SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_MODE_0 | DISPCNT_OBJ_1D_MAP | DISPCNT_BG_ALL_ON | DISPCNT_OBJ_ON);
       task.func = (t) => Task_Scene1_WaterDrops(t, rt);
       rt.gIntroFrameCounter = 0;
-      /* TODO sound: m4aSongNumStart */;
+      m4aSongNumStart(MUS_INTRO);
       /* noop ResetSerial */;
 };
 
@@ -1293,7 +1295,7 @@ export const Task_Scene3_Load: TaskCallback = (task, rt) => {
       rt.SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_MODE_1 | DISPCNT_OBJ_1D_MAP | DISPCNT_BG2_ON | DISPCNT_OBJ_ON);
       task.func = (t) => Task_Scene3_SpinPokeball(t, rt);
       rt.gIntroFrameCounter = 0;
-      /* TODO sound: m4aSongNumStart */;
+      m4aSongNumStart(MUS_INTRO_BATTLE);
 };
 
 /** Source: intro.c → Task_Scene3_SpinPokeball */

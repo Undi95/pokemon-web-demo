@@ -66,6 +66,8 @@ import {
   sSpriteSheet_RunningPokemon, sAnims_PlayerBicycle,
   CreateIntroBrendanSprite, CreateIntroMaySprite, CreateIntroFlygonSprite,
   CreateBicycleBgAnimationTask, SetIntroPart2BgCnt, CycleSceneryPalette,
+  // Audio (Phase 1 Action 4 #1)
+  m4aSongNumStart, MUS_INTRO, MUS_INTRO_BATTLE, PlaySE,
   // Constants
   BG_SCREEN_SIZE, PALETTES_ALL,
   // Display + addressing
@@ -154,6 +156,20 @@ let gIntroCredits_MovingSceneryState = 0;
       return `${prefix}${cleanArgs})${retType}{\n  const rt = _getRuntime();`;
     });
   }
+
+  // PATCH 4b : Replace TODOs sound (m4aSongNumStart) par les vrais appels.
+  // Le décomp src/intro.c contient :
+  //   line 1216 (Task_Scene1_FadeIn) : m4aSongNumStart(MUS_INTRO);
+  //   line 1739 (Task_Scene3_LoadGroudon) : m4aSongNumStart(MUS_INTRO_BATTLE);
+  // On replace dans l'ordre les 2 premiers TODO sound (ils correspondent à ces 2 calls).
+  // PATCH idempotent : on cherche encore les 2 premiers TODOs et on les replace.
+  let soundReplaceCount = 0;
+  s = s.replace(/\/\* TODO sound: m4aSongNumStart \*\/;/g, () => {
+    soundReplaceCount++;
+    if (soundReplaceCount === 1) return 'm4aSongNumStart(MUS_INTRO);';
+    if (soundReplaceCount === 2) return 'm4aSongNumStart(MUS_INTRO_BATTLE);';
+    return `/* TODO sound: m4aSongNumStart (call #${soundReplaceCount}) */;`;
+  });
 
   // PATCH 5 : Bug transpileur "N (...)" → "N * (...)" multiplications
   // 3 occurrences SpriteCB_WaterDrop_Ripple + ligne CreateWaterDrop SetOamMatrix
