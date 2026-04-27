@@ -173,6 +173,23 @@ export class PaletteFade {
   endY = 0;
 }
 
+// ─── gMain (1:1 décomp struct Main) ──────────────────────────────────────────
+/** 1:1 décomp `struct Main { void (*callback2)(void); u8 state; ... } gMain;`
+ *  Le main loop AgbMain appelle `gMain.callback2()` chaque frame, qui déroule
+ *  la state machine de la "scène" courante (intro/title/main_menu/...) et peut
+ *  swap vers une autre scène via SetMainCallback2.
+ *
+ *  state : compteur de step interne au callback2 courant (case 0 → init, etc).
+ *          Reset à 0 par SetMainCallback2.
+ *  callback2 : la fonction appelée chaque frame. null = no-op.
+ *  vblankCallback : appelée en VBlank (notre engine = stub no-op pour l'instant). */
+export type CB2Callback = (rt: DecompRuntime) => void;
+export class MainStruct {
+  state = 0;
+  callback2: CB2Callback | null = null;
+  vblankCallback: (() => void) | null = null;
+}
+
 // ─── Sprite (1:1 décomp struct Sprite, simplifié) ────────────────────────────
 /** Sprite décomp. Mappe à un slot OAM gba + state machine via data[].
  *  Les fields x/y/x2/y2/invisible/hFlip/vFlip sont synchronisés vers gba.oam
@@ -267,6 +284,8 @@ export interface DecompTask {
 export class DecompRuntime {
   /** 1:1 décomp `gIntroFrameCounter` (incrémenté chaque frame par MainCB2_Intro). */
   gIntroFrameCounter = 0;
+  /** 1:1 décomp `gMain` struct global. callback2 = scène courante, ticked chaque frame. */
+  gMain = new MainStruct();
   /** 1:1 décomp `gPaletteFade` global. */
   gPaletteFade = new PaletteFade();
   /** 1:1 décomp `gTasks[]` array. Notre version : Map keyed by taskId. */
@@ -613,6 +632,25 @@ export class DecompRuntime {
     if (s) s.callback = cb;
   }
 
+  /** 1:1 décomp `SetMainCallback2(cb)` — swap la scène courante.
+   *  Reset gMain.state à 0 (= la nouvelle scène redémarre depuis case 0 de sa
+   *  state machine). Conservation : gIntroFrameCounter, gTasks, gSprites
+   *  (= les Tasks créées par la scène précédente continuent jusqu'à DestroyTask).
+   *
+   *  Usage typique : à la fin d'une Task (e.g. Task_Scene2_End), appeler
+   *  `rt.SetMainCallback2(CB2_InitTitleScreen)` pour passer au titre. */
+  SetMainCallback2(cb: CB2Callback | null): void {
+    this.gMain.callback2 = cb;
+    this.gMain.state = 0;
+  }
+
+  /** 1:1 décomp `SetVBlankCallback(cb)` — installe une callback VBlank.
+   *  Notre engine : no-op pour l'instant (les VBlank effects passent par tickFixed
+   *  ou gba.addVBlankCallback). Garder pour compat code transcrit. */
+  SetVBlankCallback(_cb: (() => void) | null): void {
+    this.gMain.vblankCallback = _cb;
+  }
+
   /** 1:1 décomp StartSpriteAffineAnim(sprite, animNum) — délégué à sprite-engine-impl. */
   StartSpriteAffineAnim(spriteId: number, animNum: number): void {
     const sprite = this.gSprites.get(spriteId);
@@ -683,6 +721,7 @@ export class DecompRuntime {
 
   reset(): void {
     this.gIntroFrameCounter = 0;
+    this.gMain = new MainStruct();
     this.gPaletteFade = new PaletteFade();
     this.gTasks.clear();
     this.gSprites.clear();
@@ -915,13 +954,16 @@ export class DecompRuntime {
   /** Tick 60Hz fixed-step. Phaser update peut tourner à >60Hz selon refresh rate écran ;
    *  on accumule deltaMs et on ne process que des frames de 16.67ms.
    *
-   *  Ordre d'exécution chaque frame (1:1 décomp main loop) :
-   *    1. UpdatePaletteFade
-   *    2. tickSpriteAnims (cycle tileNum + set animEnded)
-   *    3. runSpriteCallbacks (= chaque sprite.callback exécuté, mute state)
-   *    4. runTasks (= les Task_X scene-level)
-   *    5. syncSpritesToOam (propage sprite.x+x2 → oam.x etc.)
-   *    6. gIntroFrameCounter++
+   *  Ordre d'exécution chaque frame (1:1 décomp `AgbMain` main loop) :
+   *    1. gMain.callback2(rt)         — state machine scène courante (CB2_*)
+   *    2. UpdatePaletteFade           — fade en cours
+   *    3. tickSpriteAnims             — cycle tileNum + set animEnded
+   *    4. tickAllAffineAnims          — ContinueAffineAnim chaque sprite
+   *    5. runSpriteCallbacks          — chaque sprite.callback (SpriteCB_X)
+   *    6. runTasks                    — les Task_X scene-level
+   *    7. syncSpritesToOam            — propage sprite.x+x2 → oam.x etc.
+   *    8. gMain.vblankCallback?.()    — stub VBlank effects (scanline, etc.)
+   *    9. gIntroFrameCounter++
    */
   tickFixed(deltaMs: number): number {
     this.accumulatorMs += deltaMs;
@@ -929,12 +971,15 @@ export class DecompRuntime {
     let safety = 5;
     while (this.accumulatorMs >= this.FRAME_TIME_MS && safety-- > 0) {
       this.accumulatorMs -= this.FRAME_TIME_MS;
+      // 1. Main callback2 : dispatch scène courante (peut SetMainCallback2/CreateTask).
+      if (this.gMain.callback2) this.gMain.callback2(this);
       this.UpdatePaletteFade();
       this.tickSpriteAnims();
-      tickAllAffineAnims(this);  // 1:1 décomp ContinueAffineAnim pour chaque sprite
+      tickAllAffineAnims(this);
       this.runSpriteCallbacks();
       this.runTasks();
       this.syncSpritesToOam();
+      if (this.gMain.vblankCallback) this.gMain.vblankCallback();
       this.gIntroFrameCounter++;
       framesProcessed++;
     }

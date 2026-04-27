@@ -1,18 +1,6 @@
 import Phaser from 'phaser';
-import { BootScene } from './scenes/BootScene';
-import { IntroScene } from './scenes/IntroScene';
-import { TitleScene } from './scenes/TitleScene';
-import { MainMenuScene } from './scenes/MainMenuScene';
-import { BirchSpeechScene } from './scenes/BirchSpeechScene';
-import { NamingScene } from './scenes/NamingScene';
-import { OverworldScene } from './scenes/OverworldScene';
-import { BattleScene } from './scenes/BattleScene';
-import { MenuOverlayScene } from './scenes/MenuOverlayScene';
-import { OptionMenuScene } from './scenes/OptionMenuScene';
 import { TestGbaScene } from './scenes/TestGbaScene';
-import { IntroSceneGba } from './scenes/IntroSceneGba';
-import { IntroScene2Gba } from './scenes/IntroScene2Gba';
-import { TitleSceneGba } from './scenes/TitleSceneGba';
+import { GameScene } from './scenes/GameScene';
 
 export const TILE_SIZE = 16;
 // Résolution NATIVE Pokemon Émeraude GBA = 240×160 px = 15×10 tiles de 16 px.
@@ -26,6 +14,20 @@ export const GAME_H = MAP_H * TILE_SIZE; // 160
 
 const DEFAULT_ZOOM = 4;
 
+// ⚠️ Phase 0+ : la "ROM" Pokemon Émeraude tourne intégralement dans GameScene
+// (= 1:1 décomp `AgbMain` boot loop). TestGbaScene reste en 1ère position pour
+// tester l'engine GBA + audio M4A sans déclencher la chaîne de scènes.
+//
+// Toutes les anciennes scenes Phaser custom (IntroScene, TitleScene, MainMenuScene,
+// BirchSpeechScene, NamingScene, OverworldScene, BattleScene, IntroSceneGba,
+// IntroScene2Gba, TitleSceneGba, BootScene, OptionMenuScene, MenuOverlayScene)
+// sont conservées sur disque mais sorties du scene array — elles seront soit
+// portées vers le boot loop décomp (= Tasks transcrites), soit supprimées.
+//
+// Boot flow Phase 0+ :
+//   TestGbaScene (1er) → click/key → GameScene
+//   GameScene → init Gba + DecompRuntime + audio → SetMainCallback2(CB2_Init...)
+//             → tickFixed 60Hz → toute la chaîne CB2/Task décomp se déroule.
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
   parent: 'game',
@@ -34,16 +36,7 @@ const config: Phaser.Types.Core.GameConfig = {
   zoom: DEFAULT_ZOOM,
   pixelArt: true,
   backgroundColor: '#000000',
-  // ⚠️ TestGbaScene en 1ère position en permanence (= sanity check engine GBA + audio).
-  // Permet de skip vers le boot normal via input (TestGbaScene.exit() call BootScene).
-  // Click/key dans TestGbaScene → BootScene → IntroSceneGba → IntroScene2Gba → TitleSceneGba.
-  scene: [
-    TestGbaScene,
-    BootScene,
-    IntroSceneGba, IntroScene2Gba, TitleSceneGba,
-    IntroScene, TitleScene, MainMenuScene, BirchSpeechScene, NamingScene,
-    OverworldScene, BattleScene, MenuOverlayScene, OptionMenuScene,
-  ],
+  scene: [TestGbaScene, GameScene],
   physics: {
     default: 'arcade',
     arcade: { debug: false }

@@ -204,6 +204,7 @@ export class TestGbaScene extends Phaser.Scene {
   private exit(): void {
     stopSong();
     this.bridge?.destroy();
-    this.scene.start('BootScene');
+    // Phase 0+ : GameScene = host unique de la "ROM" décomp (= AgbMain boot loop).
+    this.scene.start('GameScene');
   }
 }
