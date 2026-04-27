@@ -18,6 +18,15 @@ import { playNote, stopAllActiveNotes, type ActiveNote } from './synth';
 import { getAudioContext } from './audio-context';
 import { loadSampleManifest } from './sample-loader';
 
+interface PlaybackStats {
+  totalNotes: number;
+  played: number;
+  skippedNoVoice: number;          // resolveVoice retourne null (keysplit non géré, etc.)
+  skippedNoSample: number;         // DirectSound sample non trouvé dans manifest
+  skippedUnknownType: number;      // ProgrammableWave ou type non implémenté
+  skippedReasons: Map<string, number>; // détail par voice type / sample symbol manquant
+}
+
 interface PlaybackState {
   song: Midi;
   voicegroup: VoiceGroup;
@@ -27,6 +36,7 @@ interface PlaybackState {
   startCtxTime: number;
   loop: boolean;
   stopped: boolean;
+  stats: PlaybackStats;
 }
 
 let _currentPlayback: PlaybackState | null = null;
@@ -70,6 +80,14 @@ export async function playSong(
     startCtxTime: startTime,
     loop,
     stopped: false,
+    stats: {
+      totalNotes: 0,
+      played: 0,
+      skippedNoVoice: 0,
+      skippedNoSample: 0,
+      skippedUnknownType: 0,
+      skippedReasons: new Map(),
+    },
   };
   _currentPlayback = playback;
 
@@ -85,14 +103,32 @@ export async function playSong(
       const noteOffTime = noteOnTime + note.duration;
       const key = `${tIdx}_${note.midi}_${note.time.toFixed(3)}`;
 
+      playback.stats.totalNotes++;
+
       // Schedule noteOn via setTimeout (suffit pour MVP, scheduling ~16ms ahead)
       const timeoutMs = Math.max(0, (noteOnTime - ctx.currentTime) * 1000);
       const onTimer = window.setTimeout(async () => {
         if (playback.stopped) return;
         const voice = resolveVoice(voicegroup, programNumber, note.midi, vgLookup);
-        if (!voice) return;
+        if (!voice) {
+          playback.stats.skippedNoVoice++;
+          incReason(playback.stats, `noVoice:program=${programNumber}`);
+          return;
+        }
         const active = await playNote(voice, note.midi, Math.round(note.velocity * 127), 64, noteOnTime);
-        if (active) playback.activeNotes.set(key, active);
+        if (active) {
+          playback.activeNotes.set(key, active);
+          playback.stats.played++;
+        } else {
+          // playNote retourne null pour : sample DirectSound non trouvé OU type unknown (programmable_wave)
+          if (voice.type === 'directsound' || voice.type === 'directsound_no_resample') {
+            playback.stats.skippedNoSample++;
+            incReason(playback.stats, `noSample:${voice.sampleSymbol}`);
+          } else {
+            playback.stats.skippedUnknownType++;
+            incReason(playback.stats, `unknownType:${voice.type}`);
+          }
+        }
       }, timeoutMs);
       playback.scheduledTimers.push(onTimer);
 
@@ -111,12 +147,11 @@ export async function playSong(
   }
 
   // Schedule end : si loop, replay (1:1 décomp `BTRACK_LOOP` / GOTO marker).
-  // Si meta-event "loopStart" présent, on ne replay que depuis ce point (TODO :
-  // @tonejs/midi expose les markers via track.controlChanges si présents).
-  // Pour MVP : replay full song depuis le début.
   const endMs = Math.max(0, (startTime + song.duration - ctx.currentTime) * 1000);
   const endTimer = window.setTimeout(() => {
     if (playback.stopped) return;
+    // Print stats when song ends (avant replay si loop)
+    logPlaybackStats(playback.stats);
     if (loop) {
       void playSong(song, voicegroup, vgLookup, loop);
     } else {
@@ -126,6 +161,24 @@ export async function playSong(
   playback.scheduledTimers.push(endTimer);
 
   return Promise.resolve();
+}
+
+function incReason(stats: PlaybackStats, reason: string): void {
+  stats.skippedReasons.set(reason, (stats.skippedReasons.get(reason) || 0) + 1);
+}
+
+function logPlaybackStats(stats: PlaybackStats): void {
+  const skippedTotal = stats.skippedNoVoice + stats.skippedNoSample + stats.skippedUnknownType;
+  console.log(`[m4a] Playback stats : ${stats.played}/${stats.totalNotes} notes played` +
+              ` (${skippedTotal} skipped : noVoice=${stats.skippedNoVoice}, noSample=${stats.skippedNoSample}, unknownType=${stats.skippedUnknownType})`);
+  if (stats.skippedReasons.size > 0) {
+    // Top 10 raisons
+    const top = [...stats.skippedReasons.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10);
+    console.log('[m4a] Top skip reasons:');
+    for (const [reason, count] of top) console.log(`  ${count}× ${reason}`);
+  }
 }
 
 /** Stop immédiat de la song courante (release toutes les notes + voice stealing). */

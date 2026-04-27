@@ -103,11 +103,19 @@ function getOrBuildSquareWave(ctx: AudioContext, duty: number): PeriodicWave {
   return wave;
 }
 
-/** Convertit un decay value GBA M4A (0-255 typique) en seconds.
- *  La table exacte vient de m4a, valeur approximative ici. */
+/** Convertit un attack/decay/release rate GBA M4A (0-255) en durée seconds.
+ *
+ *  M4A semantics (1:1 décomp) : ces valeurs sont des RATES, pas des durées.
+ *  Plus la valeur est HAUTE, plus la transition est RAPIDE :
+ *    attack/decay/release = 255 → atteint le target en ~1 frame (~16ms)
+ *    attack/decay/release = 1   → très lent (~4 sec)
+ *    attack/decay/release = 0   → infini (jamais atteint, donc on clamp)
+ *
+ *  Formule empirique : time = 256 / (value × 60fps) seconds. */
 function gbaEnvTimeToSec(value: number): number {
-  // Heuristique : 0 = instant, 255 = ~3 sec
-  return (value / 255) * 3;
+  if (value >= 255) return 0.016;         // ~1 frame
+  if (value <= 0) return 4;               // clamp infini → 4 sec
+  return Math.min(4, 256 / (value * 60));  // taux × 60fps → cap 4s
 }
 
 /** Convertit un sustain value GBA M4A (0-255) en gain 0.0 - 1.0. */
@@ -200,8 +208,27 @@ export async function playNote(
       envelope = voice.envelope;
       break;
     }
+    case 'programmable_wave': {
+      // PSG programmable wave : 32 samples 4-bit sur 1 cycle. Sur GBA c'est joué
+      // sur un canal dédié (sound channel 3). Format : 16 bytes total = 32 nibbles
+      // 4-bit (0-15) qui définissent la wave shape.
+      //
+      // Pour Web Audio : on génère une PeriodicWave en analysant les harmoniques
+      // de la wave shape. Pour MVP simple : OscillatorNode 'triangle' qui
+      // approxime un wave sample doux. Si voice.waveSymbol pointe vers un .bin
+      // chargeable, on pourrait reconstruire la wave exacte (TODO).
+      //
+      // Le décomp pokeemeraude n'expose PAS les programmable_wave_samples en .bin
+      // dans le repo (juste le voicegroup binding). Donc fallback triangle wave.
+      const osc = ctx.createOscillator();
+      osc.type = 'triangle';  // approximation acceptable pour la plupart des wave samples
+      osc.frequency.value = noteFreq;
+      source = osc;
+      envelope = voice.envelope;
+      break;
+    }
     default:
-      // ProgrammableWave : pas implémenté MVP (rare)
+      console.warn(`[m4a] Unknown voice type: ${(voice as { type: string }).type}`);
       return null;
   }
 
