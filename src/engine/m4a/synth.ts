@@ -124,16 +124,20 @@ function getOrBuildSquareWave(ctx: AudioContext, duty: number): PeriodicWave {
 
 /** Convertit un attack/decay/release rate GBA M4A (0-255) en durée seconds.
  *
- *  M4A semantics 1:1 décomp src/m4a.c (vérifié) :
+ *  M4A semantics 1:1 décomp src/m4a.c :
  *  - Sample rate = 13 379 Hz (SOUND_MODE_FREQ_13379)
  *  - Sémantique SIGNED s8 : valeurs >= 128 (= négatif en s8) = SKIP cette phase = INSTANT
- *  - Sinon : rate normal, time ≈ value × 255 / 13379 seconds */
+ *  - Sinon : rate normal
+ *
+ *  Mais Web Audio linearRampToValueAtTime perçue diffère du décrément discret M4A
+ *  (qui se fait sur l'amplitude target value 0-255, pas sur la durée).
+ *  Empiriquement, multiplicateur ×2 sur la formule de base sonne plus proche du
+ *  rendu GBA réel. Ajustement à raffiner par voicegroup si besoin. */
 function gbaEnvTimeToSec(value: number): number {
-  // Signed s8 négatif (bit 7 set) → skip phase = instant
-  if (value >= 128) return 0.005;
-  if (value <= 0) return 4;        // clamp 4s pour valeurs très basses
-  // Rate normal : ~value × 19ms (= value × 255/13379)
-  return (value * 255) / 13379;
+  if (value >= 128) return 0.005;          // signed s8 négatif → skip = instant
+  if (value <= 0) return 4;                // clamp pour valeurs très basses
+  // ×2 multiplier (perception plus proche de l'émulateur que la formule pure 13379Hz)
+  return Math.min(4, ((value * 255) / 13379) * 2);
 }
 
 /** Convertit un sustain value GBA M4A (0-255) en gain 0.0 - 1.0. */
@@ -212,12 +216,13 @@ export async function playNote(
     }
     case 'directsound':
     case 'directsound_no_resample': {
-      // PCM sample WAV. 1:1 décomp src/m4a.c :
-      //   Pour DirectSound, le sample joue à pleine vélocité IMMÉDIATEMENT
-      //   (pas d'attack ramp). L'ADSR attack/decay sont des fades hardware
-      //   PSG-only — DirectSound utilise une volume envelope simplifiée.
-      //   PAS de loop : le sample joue une seule fois jusqu'à sa fin OU
-      //   jusqu'au noteOff avec release rapide.
+      // PCM sample WAV.
+      // 1:1 décomp src/m4a.c : DirectSound joue à pleine vélocité immédiate
+      // (pas d'attack ramp) — c'est géré dans la section ADSR plus bas.
+      // Loop heuristique : samples > 1s = sustained (strings, pads) → loop
+      //                    samples ≤ 1s = one-shot (drums, percussion) → no loop
+      // Cap à 1s plus strict que mon précédent 0.5s pour éviter vibration sur
+      // samples piano/xylophone courts.
       const buf = await loadSample(voice.sampleSymbol);
       if (!buf) return null;
       const bs = ctx.createBufferSource();
@@ -226,7 +231,7 @@ export async function playNote(
         const baseFreq = midiNoteToFreq(voice.baseKey);
         bs.playbackRate.value = noteFreq / baseFreq;
       }
-      bs.loop = false; // 1:1 décomp : DirectSound joue le sample once, pas de loop
+      bs.loop = buf.duration > 1.0;
       source = bs;
       envelope = voice.envelope;
       break;
@@ -300,9 +305,10 @@ export async function playNote(
     startedAt: startTime,
     stop(time?: number) {
       const t = time ?? ctx.currentTime;
-      // Pour DirectSound : release court fixe (50ms fade out, le sample finit naturellement).
-      // Pour PSG : release selon ADSR (rate signed s8 → instant si >= 128).
-      const releaseTime = isDirectSound ? 0.05 : gbaEnvTimeToSec(envelope.release);
+      // Release selon ADSR pour TOUS (PSG + DirectSound).
+      // 1:1 décomp : release est utilisé même pour DirectSound (volume envelope).
+      // Pour DirectSound non-loop, le sample peut finir naturellement avant le release.
+      const releaseTime = gbaEnvTimeToSec(envelope.release);
       env.gain.cancelScheduledValues(t);
       env.gain.setValueAtTime(env.gain.value, t);
       env.gain.linearRampToValueAtTime(0, t + Math.max(0.005, releaseTime));
