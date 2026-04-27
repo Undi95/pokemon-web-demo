@@ -25,8 +25,16 @@ function patchIntroCallbacks() {
   let s = fs.readFileSync(FILE, 'utf8');
   const before = s;
 
-  // PATCH 1 : Inject decomp-globals import block après l'import depuis intro-data.
-  // Skip si déjà appliqué (= "from '../../../decomp-globals'" présent).
+  // PATCH 1a : Inject _data-tables-flat import (sGameFreakLetterData etc.)
+  // si pas déjà présent. Idempotent par check distinct (le PATCH 1b decomp-globals
+  // peut être appliqué sans ce data-tables-flat dans certains cas legacy).
+  if (!s.includes(`from './_data-tables-flat'`)) {
+    const dataFlatImport = `\nimport {\n  sGameFreakLetterData, sGameFreakLetterStartDelays, sGameFreakLettersMoveSpeed,\n  sPresentsLetterData, sSparkleCoords, sGroudonRockData, sKyogreBubbleData,\n} from './_data-tables-flat';`;
+    s = s.replace(`} from '../../intro-data';`, `} from '../../intro-data';${dataFlatImport}`);
+  }
+
+  // PATCH 1b : Inject decomp-globals import block après l'import depuis intro-data.
+  // Skip si déjà appliqué.
   if (!s.includes(`from '../../../decomp-globals'`)) {
     const importMarker = `} from '../../intro-data';`;
     if (s.includes(importMarker)) {

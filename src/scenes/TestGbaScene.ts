@@ -78,12 +78,17 @@ export class TestGbaScene extends Phaser.Scene {
                   bgPng.palette.length, 'palette |', tilemap.length, 'tilemap entries');
 
       this.gba.palette.loadBgRange(0, bgPng.palette);
+      // VRAM unifié 96KB (refactor session 68 Phase 1) : il FAUT configurer
+      // mapBaseIndex ≥ 16 explicitement, sinon le tilemap (à offset 0) écrase
+      // le char data (à offset 0). On utilise 16 comme le décomp.
+      this.gba.bg(0).config.charBaseIndex = 0;  // char data à offset 0
+      this.gba.bg(0).config.mapBaseIndex = 16;  // tilemap à offset 0x8000
+      this.gba.bg(0).config.screenSize = 0;
+      this.gba.bg(0).config.paletteMode = 0;
       this.gba.bg(0).vram.set(bgPng.charData.subarray(0, this.gba.bg(0).vram.length));
       this.gba.bg(0).tilemap.set(tilemap.subarray(0, this.gba.bg(0).tilemap.length));
       this.gba.bg(0).config.visible = true;
       this.gba.bg(0).config.priority = 1;       // BG derrière les sprites
-      this.gba.bg(0).config.screenSize = 0;
-      this.gba.bg(0).config.paletteMode = 0;
 
       // ─── OAM sprite test : Lotad au centre ──────────────────────────────
       // Lotad sprite 64×64 = 8×8 tiles 4bpp = 64 tiles × 32B = 2048 bytes

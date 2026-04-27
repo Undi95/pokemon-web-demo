@@ -55,6 +55,10 @@ import {
   TIMER_TORCHIC_EXIT,
   TIMER_TORCHIC_SPEED_UP,
 } from '../../intro-data';
+import {
+  sGameFreakLetterData, sGameFreakLetterStartDelays, sGameFreakLettersMoveSpeed,
+  sPresentsLetterData, sSparkleCoords, sGroudonRockData, sKyogreBubbleData,
+} from './_data-tables-flat';
 // MANUAL FIX session 68 phase 0b — auto-injected by post-transpile-patches.mjs
 // Helpers globaux décomp + symbols + constants depuis decomp-globals.ts.
 import {
