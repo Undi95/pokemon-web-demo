@@ -1288,7 +1288,10 @@ export const Task_Scene2_BikeRide: TaskCallback = (task, rt) => {
 export const Task_Scene2_End: TaskCallback = (task, rt) => {
   const taskId = task.taskId;
   if (rt.gIntroFrameCounter > TIMER_START_SCENE_3)
-          task.func = (t) => Task_Scene3_Load(t, rt);
+          // PHASE 2 SHORTCUT : skip Scene 3 (= Groudon/Kyogre/Rayquaza ont des
+          // bugs aliases transpileur). Va direct à Task_EndIntroMovie → Title screen.
+          // Phase 3 : refactor transpileur scope tracker + restore Task_Scene3_Load.
+          task.func = (t) => Task_EndIntroMovie(t, rt);
 };
 
 /** Source: intro.c → Task_Scene3_Load */
@@ -1936,7 +1939,16 @@ export const Task_Scene3_Rayquaza: TaskCallback = (task, rt) => {
 export const Task_EndIntroMovie: TaskCallback = (task, rt) => {
   const taskId = task.taskId;
   rt.DestroyTask(taskId);
-      /* TODO scene transition: SetMainCallback2(MainCB2_EndIntro) */;
+      // 1:1 décomp src/intro.c:1054 MainCB2_EndIntro :
+      //   if (!UpdatePaletteFade()) SetMainCallback2(CB2_InitTitleScreen);
+      // Notre version : direct → CB2_InitTitleScreen (= skip MainCB2_EndIntro
+      // intermediate qui tournait juste pour finish le palette fade).
+      void import('./title_screen-callbacks-auto').then(({ CB2_InitTitleScreen }) => {
+        rt.SetMainCallback2(CB2_InitTitleScreen);
+        console.log('[Task_EndIntroMovie] → SetMainCallback2(CB2_InitTitleScreen)');
+      }).catch((e) => {
+        console.error('[Task_EndIntroMovie] failed to load title_screen-callbacks-auto:', e);
+      });
 };
 
 /** Source: intro.c → Task_RayquazaAttack */
