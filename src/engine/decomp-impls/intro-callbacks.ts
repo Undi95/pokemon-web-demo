@@ -86,7 +86,7 @@ export function CreateGameFreakLogoSprites(rt: DecompRuntime, x: number, y: numb
     s.invisible = true;
     s.matrixNum = i + 12;                           // oam.matrixNum = i + 12
     rt.StartSpriteAnim(letterSpriteId, animIdx);    // StartSpriteAnim(letter, sGameFreakLetterData[i][0])
-    // StartSpriteAffineAnim(sprite, 0) → simplification : pas implémenté
+    rt.StartSpriteAffineAnim(letterSpriteId, 0);    // 1:1 décomp StartSpriteAffineAnim(sprite, 0)
     rt.setSpriteCallback(letterSpriteId, SpriteCB_LogoLetter);
   }
 
@@ -97,7 +97,7 @@ export function CreateGameFreakLogoSprites(rt: DecompRuntime, x: number, y: numb
   logo.data[0] = 0;                  // sState = 0
   logo.invisible = true;
   logo.matrixNum = i + 12;           // matrixNum = 21 (NUM_GF_LETTERS + 12)
-  // StartSpriteAffineAnim(sprite, 1) → simplification
+  rt.StartSpriteAffineAnim(logoSpriteId, 1);  // 1:1 décomp StartSpriteAffineAnim(sprite, 1)
   rt.setSpriteCallback(logoSpriteId, SpriteCB_GameFreakLogo);
   return logoSpriteId;
 }
@@ -123,13 +123,14 @@ export function SpriteCB_GameFreakLogo(sprite: DecompSprite, rt: DecompRuntime):
       break;
     case 1:
       if (rt.gIntroFrameCounter >= TIMER_LOGO_DISAPPEAR) {
-        // StartSpriteAffineAnim(sprite, 3) — affine grow/shrink avant disparition
+        // 1:1 décomp StartSpriteAffineAnim(sprite, 3) = sAffineAnim_GameFreak_GrowMedium
+        rt.StartSpriteAffineAnim(sprite.spriteId, 3);
         sprite.data[0]++;
       }
       break;
     case 2:
-      // Affine anim sAffineAnim_GameFreak_GrowMedium dure 48 frames → destroy après
-      if (rt.gIntroFrameCounter >= TIMER_LOGO_DISAPPEAR + 48) {
+      // 1:1 décomp : if (sprite->affineAnimEnded) DestroySprite(sprite)
+      if (sprite.affineAnimEnded) {
         rt.DestroySprite(sprite.spriteId);
       }
       break;
@@ -158,13 +159,14 @@ export function SpriteCB_LogoLetter(sprite: DecompSprite, rt: DecompRuntime): vo
 
   switch (sprite.data[0]) {  // sState
     case 0:
-      // if (sprite->sTimer != 0) { sprite->sTimer--; }
-      // else { sprite->invisible = FALSE; StartSpriteAffineAnim(sprite, 1); sprite->sState++; }
+      // 1:1 décomp : if (sprite->sTimer != 0) { sprite->sTimer--; }
+      //              else { sprite->invisible = FALSE; StartSpriteAffineAnim(sprite, 1); sprite->sState++; }
       if (sprite.data[2] !== 0) {  // sTimer
         sprite.data[2]--;
       } else {
         sprite.invisible = false;
-        sprite.data[0]++;  // sState++
+        rt.StartSpriteAffineAnim(sprite.spriteId, 1);  // sAffineAnim_GameFreak_GrowAndShrink
+        sprite.data[0]++;
       }
       break;
     case 1:
@@ -205,25 +207,26 @@ export function SpriteCB_LogoLetter(sprite: DecompSprite, rt: DecompRuntime): vo
       }
       break;
     case 4:
-      if (rt.gIntroFrameCounter === TIMER_LOGO_DISAPPEAR) {
-        // StartSpriteAffineAnim(sprite, 2) → simplification
-        sprite.objMode = ST_OAM_OBJ_BLEND;  // 1
+      if (rt.gIntroFrameCounter >= TIMER_LOGO_DISAPPEAR) {
+        // 1:1 décomp StartSpriteAffineAnim(sprite, 2) = sAffineAnim_GameFreak_GrowBig
+        rt.StartSpriteAffineAnim(sprite.spriteId, 2);
+        sprite.objMode = ST_OAM_OBJ_BLEND;
         sprite.data[0]++;
       }
       break;
     case 5: {
-      // sLetterX += sGameFreakLettersMoveSpeed[sLetterId];
-      // sprite->x2 = (sLetterX & 0xFF00) >> 8;
-      // if (sLetterId < 4) x2 = -x2;
-      // if (affineAnimEnded) DestroySprite();
-      const letterId = sprite.data[5];  // letterId stored à data[5] par CreateGameFreakLogoSprites
+      // 1:1 décomp :
+      //   sprite->sLetterX += sGameFreakLettersMoveSpeed[sprite->sLetterId];
+      //   sprite->x2 = (sprite->sLetterX & 0xFF00) >> 8;
+      //   if (sprite->sLetterId < 4) x2 = -x2;
+      //   if (sprite->affineAnimEnded) DestroySprite(sprite);
+      const letterId = sprite.data[5];
       const speed = moveSpeed.values[letterId] ?? 0;
-      sprite.data[3] += speed;  // sLetterX (= data[3] aussi)
+      sprite.data[3] += speed;
       let x2 = (sprite.data[3] & 0xFF00) >> 8;
       if (letterId < 4) x2 = -x2;
       sprite.x2 = x2;
-      // Destroy quand letter sort de l'écran
-      if (Math.abs(sprite.x + sprite.x2) > 280) {
+      if (sprite.affineAnimEnded) {
         rt.DestroySprite(sprite.spriteId);
       }
       break;

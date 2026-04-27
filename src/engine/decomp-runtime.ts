@@ -30,6 +30,7 @@ import {
   SPRITE_PALETTES, SPRITE_SHEETS,
 } from './decomp-data/auto/src/sprite-system';
 import { CalcCenterToCornerVec, ST_OAM_AFFINE_DOUBLE } from './decomp-helpers';
+import { tickAllAffineAnims, StartSpriteAffineAnim as _StartSpriteAffineAnim } from './decomp-impls/sprite-engine-impl';
 
 /** OAM shape+size encoding 1:1 GBA hardware (cf. types.ts OAM_SIZES).
  *  Retourne [shape, size] depuis (width, height) en pixels. */
@@ -200,6 +201,27 @@ export interface DecompSprite {
    *  Utilisé par syncSpritesToOam : oam.x = sprite.x + sprite.x2 + centerToCornerVecX. */
   centerToCornerVecX: number;
   centerToCornerVecY: number;
+  /** Affine anim table name (= SPRITE_AFFINE_ANIM_TABLES key, e.g. 'sAffineAnims_GameFreak').
+   *  null si pas d'affine anim. */
+  affineAnimsTableName: string | null;
+  /** Affine anim active : index dans table.affineAnims[]. */
+  affineAnimNum: number;
+  /** Affine anim cmd index (frame courante dans l'animCmd table). */
+  affineAnimCmdIndex: number;
+  /** Affine anim delay counter (frames restantes avant prochain cmd). */
+  affineAnimDelayCounter: number;
+  /** Affine anim accumulators (xScale, yScale, rotation) — set par ApplyAffineAnimFrame. */
+  xScale: number;
+  yScale: number;
+  rotation: number;
+  /** Affine anim flags. */
+  affineAnimBeginning: boolean;
+  affineAnimPaused: boolean;
+  /** Sprite shape/size pour CalcCenterToCornerVec (= valeurs OAM_DATAS shape/size). */
+  shape: 0 | 1 | 2;
+  size: 0 | 1 | 2 | 3;
+  /** affineMode actuel (peut changer via callbacks). */
+  affineMode: 0 | 1 | 2 | 3;
   /** Anim ended flag — set par tickSpriteAnims quand l'anim atteint END. */
   animEnded: boolean;
   /** Affine anim ended flag — set quand l'affine anim atteint END. */
@@ -548,6 +570,12 @@ export class DecompRuntime {
       callback: null,
       spriteId, tileBase: 0,
       objMode: 0,
+      affineAnimsTableName: null,
+      affineAnimNum: 0, affineAnimCmdIndex: 0, affineAnimDelayCounter: 0,
+      xScale: 0x100, yScale: 0x100, rotation: 0,
+      affineAnimBeginning: false, affineAnimPaused: false,
+      shape: cfg.shape, size: cfg.size,
+      affineMode: (cfg.affineMode ?? 0) as 0 | 1 | 2 | 3,
     };
     this.gSprites.set(spriteId, sprite);
     return { spriteId, oamIndex };
@@ -570,6 +598,13 @@ export class DecompRuntime {
   setSpriteCallback(spriteId: number, cb: ((sprite: DecompSprite, rt: DecompRuntime) => void) | null): void {
     const s = this.gSprites.get(spriteId);
     if (s) s.callback = cb;
+  }
+
+  /** 1:1 décomp StartSpriteAffineAnim(sprite, animNum) — délégué à sprite-engine-impl. */
+  StartSpriteAffineAnim(spriteId: number, animNum: number): void {
+    const sprite = this.gSprites.get(spriteId);
+    if (!sprite) return;
+    _StartSpriteAffineAnim(sprite, animNum);
   }
 
   // ============================================================================
@@ -758,7 +793,7 @@ export class DecompRuntime {
         tileBase,
       });
     }
-    // Store tileBase + objMode + centerToCornerVec dans le sprite
+    // Store tileBase + objMode + centerToCornerVec + affineMode + affineAnims dans le sprite
     const sprite = this.gSprites.get(result.spriteId);
     if (sprite) {
       sprite.tileBase = tileBase;
@@ -773,6 +808,17 @@ export class DecompRuntime {
       const ctcv = CalcCenterToCornerVec(shape, size, affineModeNum);
       sprite.centerToCornerVecX = ctcv.centerToCornerVecX;
       sprite.centerToCornerVecY = ctcv.centerToCornerVecY;
+      sprite.affineMode = affineModeNum as 0 | 1 | 3;
+      // 1:1 décomp src/sprite.c:CreateSpriteAt — sprite->affineAnims = template->affineAnims
+      // Si non-dummy (= sAffineAnims_X au lieu de gDummySpriteAffineAnimTable),
+      // on enregistre le table name pour StartSpriteAffineAnim plus tard.
+      if (tpl.affineAnims && tpl.affineAnims !== 'gDummySpriteAffineAnimTable') {
+        sprite.affineAnimsTableName = tpl.affineAnims;
+        // 1:1 décomp InitSpriteAffineAnim — si AFFINE_ON, allocate matrix + reset state
+        if (affineModeNum & 1) {  // ST_OAM_AFFINE_ON_MASK
+          sprite.affineAnimBeginning = true;  // sera processed au prochain tickFixed
+        }
+      }
     }
 
     console.log(`[runtime] CreateSprite ${templateName} → spriteId ${result.spriteId} (tile ${tileBase + initialTileOffset}, bank ${palSlot}, ${w}×${h})`);
@@ -849,6 +895,7 @@ export class DecompRuntime {
       this.accumulatorMs -= this.FRAME_TIME_MS;
       this.UpdatePaletteFade();
       this.tickSpriteAnims();
+      tickAllAffineAnims(this);  // 1:1 décomp ContinueAffineAnim pour chaque sprite
       this.runSpriteCallbacks();
       this.runTasks();
       this.syncSpritesToOam();
