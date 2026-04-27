@@ -23,6 +23,17 @@ export function getAudioContext(): AudioContext {
   _masterGain = _ctx.createGain();
   _masterGain.gain.value = 1.0;
 
+  // GBA DAC simulation : lowpass à ~13 kHz pour matcher le sample rate GBA
+  // (SOUND_MODE_FREQ_13379 = 13 379 Hz). Le DAC GBA filtre tout au-dessus de
+  // ~6.7 kHz (Nyquist), donnant le grain "vintage" caractéristique.
+  // Notre Web Audio sample rate est typique 48000 Hz (= cleaner que GBA).
+  // BiquadFilter lowpass 8 kHz simule cet effet.
+  const dacFilter = _ctx.createBiquadFilter();
+  dacFilter.type = 'lowpass';
+  dacFilter.frequency.value = 8000;  // un peu en-dessous de Nyquist GBA pour le grain
+  dacFilter.Q.value = 0.7;             // pas de résonance (=Butterworth flat)
+  _masterGain.connect(dacFilter);
+
   // Reverb chain 1:1 décomp m4a_1.s SoundMainRAM_Reverb :
   //   simple delay 1 frame (16.67ms) + feedback gain (reverb/256)
   //   formule asm : output = (sample_now + sample_prev) × reverb >> 9
@@ -37,10 +48,10 @@ export function getAudioContext(): AudioContext {
   feedback.gain.value = 50 / 256;       // ~20% feedback
   wet.gain.value = 0.4;                  // wet/dry mix
   dry.gain.value = 1.0;
-  // Connect
-  _masterGain.connect(dry);
+  // Connect : masterGain → dacFilter → [dry + wet] → destination
+  dacFilter.connect(dry);
   dry.connect(_ctx.destination);
-  _masterGain.connect(delay);
+  dacFilter.connect(delay);
   delay.connect(feedback);
   feedback.connect(delay);    // feedback loop
   delay.connect(wet);

@@ -261,22 +261,26 @@ export async function playNote(
     }
     case 'directsound':
     case 'directsound_no_resample': {
-      // PCM sample WAV.
-      // 1:1 décomp src/m4a.c : DirectSound joue à pleine vélocité immédiate
-      // (pas d'attack ramp) — c'est géré dans la section ADSR plus bas.
-      // Loop heuristique : samples > 1s = sustained (strings, pads) → loop
-      //                    samples ≤ 1s = one-shot (drums, percussion) → no loop
-      // Cap à 1s plus strict que mon précédent 0.5s pour éviter vibration sur
-      // samples piano/xylophone courts.
-      const buf = await loadSample(voice.sampleSymbol);
-      if (!buf) return null;
+      // PCM sample WAV avec loop points exacts depuis smpl chunk (1:1 GBA).
+      // WaveData GBA struct : flags + loopStart + size + data → on lit le smpl chunk
+      // du WAV pour avoir les vrais loop points (= sustained instruments naturels).
+      const sample = await loadSample(voice.sampleSymbol);
+      if (!sample) return null;
       const bs = ctx.createBufferSource();
-      bs.buffer = buf;
+      bs.buffer = sample.buffer;
       if (voice.type === 'directsound') {
         const baseFreq = midiNoteToFreq(voice.baseKey);
         bs.playbackRate.value = noteFreq / baseFreq;
       }
-      bs.loop = buf.duration > 1.0;
+      // Loop : utilise les loop points smpl du WAV si présents (= 1:1 décomp WaveData.loopStart).
+      // Sinon : pas de loop (sample one-shot finit naturellement).
+      if (sample.hasLoop && sample.loopEnd > sample.loopStart) {
+        bs.loop = true;
+        bs.loopStart = sample.loopStart;
+        bs.loopEnd = sample.loopEnd;
+      } else {
+        bs.loop = false;
+      }
       source = bs;
       envelope = voice.envelope;
       break;
