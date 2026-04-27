@@ -604,7 +604,7 @@ export class DecompRuntime {
 
     const spriteId = this.nextSpriteId++;
     const sprite: DecompSprite = {
-      oamIndex, data: new Array(16).fill(0), invisible: false,
+      oamIndex, data: new Int16Array(16) as unknown as number[], invisible: false,
       x: cfg.x, y: cfg.y, x2: 0, y2: 0,
       hFlip: false, vFlip: false,
       matrixNum: cfg.affineParamIndex ?? 0,
@@ -698,7 +698,10 @@ export class DecompRuntime {
 
   CreateTask(func: (task: DecompTask) => void, _priority: number): number {
     const taskId = this.nextTaskId++;
-    const task: DecompTask = { taskId, func, data: new Array(16).fill(0) };
+    // data = Int16Array (= s16 décomp `s16 *data`). Wrap natif overflow à
+    // -32768/32767. Critical pour Tasks comme Task_Scene3_Groudon qui font
+    // `data[N] += K; if (data[N] == constant)` qui suppose s16 wrap.
+    const task: DecompTask = { taskId, func, data: new Int16Array(16) as unknown as number[] };
     this.gTasks.set(taskId, task);
     return taskId;
   }

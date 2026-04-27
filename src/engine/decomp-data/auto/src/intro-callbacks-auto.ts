@@ -1429,9 +1429,13 @@ export const Task_Scene3_Groudon: TaskCallback = (task, rt) => {
   const taskId = task.taskId;
   const data = task.data;
 
-      data[7]++;
-      if ((data[0] >= 1 && data[0] <= 7) && data[7] % 2 == 0)
-          data[4] ^= 3;
+      // MANUAL FIX session 68 phase 2 : transpileur a mal scope-tracké tTimer
+      // alias. Décomp src/intro.c:1864 `#define tTimer data[5]` (= local au scope
+      // Task_Scene3_Groudon, lignes 1864-1982). Le transpileur a utilisé data[7]
+      // (= dernière définition tTimer rencontrée dans intro.c). Fix manuel.
+      data[5]++;  // tTimer
+      if ((data[0] >= 1 && data[0] <= 7) && data[5] % 2 == 0)  // tState/tTimer
+          data[4] ^= 3;  // tYShake
       PanFadeAndZoomScreen(data[1], data[2] + data[4], data[3], 0);
       switch (data[0])
       {

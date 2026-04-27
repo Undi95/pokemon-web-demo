@@ -132,10 +132,20 @@ export class GameScene extends Phaser.Scene {
 
   update(_: number, deltaMs: number) {
     if (!this.rt) return;
-    // Tick le runtime décomp (1:1 AgbMain main loop)
-    this.rt.tickFixed(deltaMs);
-    // Compose la frame GBA + push au canvas Phaser
-    if (this.bridge) this.bridge.tick();
+    // Tick le runtime décomp (1:1 AgbMain main loop). Try/catch pour révéler
+    // les erreurs silencieuses que Phaser swallow (= ne s'arrête pas mais
+    // skip update suivants). Phase 3 debug Task_Scene3_Groudon GameScene halt.
+    try {
+      this.rt.tickFixed(deltaMs);
+    } catch (e) {
+      console.error('[GameScene.update] tickFixed THREW:', e);
+      console.error('[GameScene.update] stack:', (e as Error).stack);
+    }
+    try {
+      if (this.bridge) this.bridge.tick();
+    } catch (e) {
+      console.error('[GameScene.update] bridge.tick THREW:', e);
+    }
     // Status update : montre l'état du runtime en live
     if (this.booted && this.statusText && (this.rt.gIntroFrameCounter % 30 === 0)) {
       this.statusText.setText(
