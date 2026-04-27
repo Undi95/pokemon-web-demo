@@ -154,7 +154,9 @@ export function LZ77UnCompVram(srcSymbol: string, destAddr: number): void {
     ? new Uint8Array(data.buffer, data.byteOffset, data.byteLength)
     : data;
   const vram = r.gba.vram;
-  const offset = destAddr & (vram.byteLength - 1);  // wrap modulo 96KB (au cas où)
+  // VRAM = 96KB = 0x18000. C'est PAS une power-of-2 → utiliser modulo, PAS un
+  // AND mask (le AND mask suppose power-of-2, sinon `0x8000 & 0x17FFF = 0`).
+  const offset = destAddr % vram.byteLength;
   const copySize = Math.min(bytes.length, vram.byteLength - offset);
   if (copySize > 0) {
     vram.set(bytes.subarray(0, copySize), offset);
@@ -243,6 +245,9 @@ export function CreateIntroMaySprite(_x: number, _y: number): number { return -1
 export function CreateIntroFlygonSprite(_x: number, _y: number): number { return -1; }
 export function CreateBicycleBgAnimationTask(_a: number, _b: number, _c: number, _d: number): number { return -1; }
 export function SetIntroPart2BgCnt(_arg: number): void { /* no-op */ }
+/** 1:1 décomp src/intro_credits_graphics.c:989 — cycle palette scenery couleurs.
+ *  Phase 0c stub no-op (= la palette reste statique, pas d'animation cycling). */
+export function CycleSceneryPalette(_mode: number): void { /* no-op */ }
 
 /** Constants décomp commonly référencées sans être résolues par le transpileur. */
 export const MALE = 0;

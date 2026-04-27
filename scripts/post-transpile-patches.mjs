@@ -65,7 +65,7 @@ import {
   // Scene 2 stubs (Phase 0b minimum viable)
   sSpriteSheet_RunningPokemon, sAnims_PlayerBicycle,
   CreateIntroBrendanSprite, CreateIntroMaySprite, CreateIntroFlygonSprite,
-  CreateBicycleBgAnimationTask, SetIntroPart2BgCnt,
+  CreateBicycleBgAnimationTask, SetIntroPart2BgCnt, CycleSceneryPalette,
   // Constants
   BG_SCREEN_SIZE, PALETTES_ALL,
   // Display + addressing
