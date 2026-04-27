@@ -261,31 +261,70 @@ export function CycleSceneryPalette(_mode: number): void { /* no-op */ }
 export const MUS_INTRO = 414;          // = MUS_DEMO1 (mus_intro.mid)
 export const MUS_INTRO_BATTLE = 442;   // = MUS_T_BATTLE (mus_intro_battle.mid)
 
-/** Mapping song ID → URL .mid. */
-const SONG_ID_TO_URL: Record<number, string> = {
-  [MUS_INTRO]: '/decomp/em/music/mus_intro.mid',
-  [MUS_INTRO_BATTLE]: '/decomp/em/music/mus_intro_battle.mid',
+/** Mapping song ID → song NAME (= filename sans .mid). */
+const SONG_ID_TO_NAME: Record<number, string> = {
+  [MUS_INTRO]: 'mus_intro',
+  [MUS_INTRO_BATTLE]: 'mus_intro_battle',
 };
 
-/** 1:1 décomp `m4aSongNumStart(songId)` — démarre une song en boucle.
- *  Notre version : lookup URL via SONG_ID_TO_URL + appel async playMidiLoop.
- *  Async fire-and-forget : attend `primeAudio()` (= load SF2 ~3s) puis play.
- *  Si l'audio init est encore en cours quand m4aSongNumStart est appelé
- *  (= scenario typique : Task_Scene1_FadeIn frame ~60 mais SF2 pas encore
- *  chargé), `await primeAudio()` attend que ce soit ready avant de play. */
+// State du M4A engine maison (notre `src/engine/m4a/`). Init lazy via m4aPrime().
+let _m4aPrimed = false;
+type VgLookupFn = (name: string) => unknown;
+let _vgLookup: VgLookupFn | null = null;
+let _songVoicegroups: Record<string, string> | null = null;
+
+/** Init notre M4A engine maison (= NOTRE moteur 1:1 décomp, PAS SpessaSynth).
+ *  Lazy-init au premier m4aSongNumStart. Idempotent. */
+async function m4aPrime(): Promise<void> {
+  if (_m4aPrimed) return;
+  const { getAudioContext } = await import('./m4a/audio-context');
+  const { loadSampleManifest } = await import('./m4a/sample-loader');
+  const { lookupVoicegroup } = await import('./m4a/voicegroups-data/_all-voicegroups-index');
+  // Init AudioContext (requires user gesture — déjà eu via click TestGba→GameScene)
+  getAudioContext();
+  await loadSampleManifest();
+  // Load song → voicegroup mapping (extracted du décomp)
+  const resp = await fetch('/decomp/em/music/song-voicegroups.json');
+  _songVoicegroups = await resp.json() as Record<string, string>;
+  _vgLookup = lookupVoicegroup as VgLookupFn;
+  _m4aPrimed = true;
+  console.log('[decomp-globals] M4A engine maison ready (1:1 décomp, pas SpessaSynth)');
+}
+
+/** 1:1 décomp `m4aSongNumStart(songId)` — démarre une song en boucle via NOTRE
+ *  M4A engine maison (`src/engine/m4a/`). Pas SpessaSynth ni emerald.sf2.
+ *  Async fire-and-forget : await m4aPrime() puis playSong().
+ *  Le voicegroup est résolu via `song-voicegroups.json` (extracted décomp). */
 export function m4aSongNumStart(songId: number): void {
-  const url = SONG_ID_TO_URL[songId];
-  if (!url) {
+  const songName = SONG_ID_TO_NAME[songId];
+  if (!songName) {
     console.warn(`[m4aSongNumStart] song ID ${songId} not mapped, skip`);
     return;
   }
   void (async () => {
     try {
-      const { primeAudio, playMidiLoop } = await import('./music');
-      await primeAudio();   // attend ready (no-op si déjà started)
-      await playMidiLoop(url);
+      await m4aPrime();
+      const url = `/decomp/em/music/${songName}.mid`;
+      const vgName = _songVoicegroups![songName];
+      if (!vgName) {
+        console.warn(`[m4aSongNumStart] no voicegroup mapping for ${songName}`);
+        return;
+      }
+      const voicegroup = _vgLookup!(vgName);
+      if (!voicegroup) {
+        console.warn(`[m4aSongNumStart] voicegroup '${vgName}' not found in lookup`);
+        return;
+      }
+      const { loadMidi, playSong, stopSong } = await import('./m4a/player');
+      stopSong();  // arrête song précédente si playing
+      const midi = await loadMidi(url);
+      // playSong(midi, voicegroup, vgLookup, loop). loop=true pour BGM.
+      await (playSong as (m: unknown, vg: unknown, lookup: VgLookupFn, loop: boolean) => Promise<void>)(
+        midi, voicegroup, _vgLookup!, true,
+      );
+      console.log(`[m4aSongNumStart] playing ${url} via M4A maison (vg=${vgName})`);
     } catch (e) {
-      console.error(`[m4aSongNumStart] play failed for ${url}:`, e);
+      console.error('[m4aSongNumStart] failed:', e);
     }
   })();
 }

@@ -33,7 +33,6 @@ import { DecompRuntime } from '../engine/decomp-runtime';
 import { setGlobalRuntime, resetObjAllocations, lz77Trace, assetCache } from '../engine/decomp-globals';
 import { preloadScene1Assets } from '../engine/intro-asset-loader';
 import { Task_Scene1_Load } from '../engine/decomp-data/auto/src/intro-callbacks-auto';
-import { primeAudio } from '../engine/music';
 
 export class GameScene extends Phaser.Scene {
   private gba!: Gba;
@@ -83,11 +82,9 @@ export class GameScene extends Phaser.Scene {
       backgroundColor: '#000000',
     }).setDepth(100);
 
-    // Audio prime en best-effort (non-bloquant)
-    primeAudio().then(
-      () => { console.log('[GameScene] audio primed'); },
-      (e) => { console.warn('[GameScene] audio prime failed (non-blocking):', e); },
-    );
+    // Audio : pas de prime ici. Notre M4A engine maison (`src/engine/m4a/`)
+    // est lazy-init via m4aSongNumStart() au moment où une song est demandée
+    // par les Tasks décomp (= 1:1 ROM behavior). Plus de SpessaSynth.
 
     // Pré-charge async les assets Scene 1, puis pose Task_Scene1_Load
     void this.bootIntro();
