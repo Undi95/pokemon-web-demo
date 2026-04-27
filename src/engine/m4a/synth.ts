@@ -171,8 +171,10 @@ function gbaSustainToGain(value: number): number {
  *  @param voice voice concrète (PSG ou PCM)
  *  @param midiNote 0-127
  *  @param velocity 0-127 (volume)
- *  @param panMidi 0-127 (64 = center)
+ *  @param panMidi 0-127 (64 = center). Lecture priorité : voice.pan > track CC10 > 64.
  *  @param when timestamp AudioContext quand jouer (= ctx.currentTime pour now)
+ *  @param trackVolume 0-1 (= MIDI CC7 × CC11 expression normalisés). Default 1.0.
+ *  @param pitchBendSemis pitch bend en demi-tons (négatif = down, positif = up). Default 0.
  *  @returns ActiveNote pour pouvoir stop/release plus tard, ou null si voice non gérée
  */
 export async function playNote(
@@ -181,10 +183,13 @@ export async function playNote(
   velocity: number,
   panMidi: number,
   when?: number,
+  trackVolume = 1.0,
+  pitchBendSemis = 0,
 ): Promise<ActiveNote | null> {
   const ctx = getAudioContext();
   const startTime = when ?? ctx.currentTime;
-  const noteFreq = midiNoteToFreq(midiNote);
+  // Apply pitch bend en frequency (= 2^(semis/12))
+  const noteFreq = midiNoteToFreq(midiNote) * Math.pow(2, pitchBendSemis / 12);
 
   let source: AudioBufferSourceNode | OscillatorNode;
   let envelope: AdsrEnvelope;
@@ -288,22 +293,19 @@ export async function playNote(
   //             vers sustainGoal (= setTargetAtTime avec timeConstant)
   //   SUSTAIN : tenu à sustainGoal jusqu'à noteOff
   //   RELEASE : envelopeVolume = (envelopeVolume × release) >> 8 → exponential fade vers 0
-  // Identique pour PSG et DirectSound (sauf que DirectSound a sample audio en plus).
   const env = ctx.createGain();
-  const velNorm = velocity / 127;
+  // Velocity scaled par trackVolume (= MIDI CC7 × CC11 / 127² normalisé) — 1:1 décomp TrkVolPitSet
+  const velNorm = (velocity / 127) * trackVolume;
   const sustainGain = gbaSustainToGain(envelope.sustain) * velNorm;
   const aTime = attackTimeSec(envelope.attack);
   const decayTau = envTimeConstant(envelope.decay);
 
   if (envelope.attack <= 0) {
-    // Skip attack : envelope démarre à peak direct
     env.gain.setValueAtTime(velNorm, startTime);
   } else {
-    // Linear ramp attack 0 → peak
     env.gain.setValueAtTime(0, startTime);
     env.gain.linearRampToValueAtTime(velNorm, startTime + aTime);
   }
-  // Decay exponentiel vers sustainGain via setTargetAtTime (= GBA mult per tick)
   env.gain.setTargetAtTime(sustainGain, startTime + aTime, Math.max(0.001, decayTau));
 
   // Pan

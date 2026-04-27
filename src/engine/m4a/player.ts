@@ -92,12 +92,44 @@ export async function playSong(
   _currentPlayback = playback;
   resetVoiceStealingCounter();
 
-  // Schedule chaque note de chaque track
+  // Schedule chaque note de chaque track. 1:1 décomp m4a TrkVolPitSet :
+  // chaque note utilise les CC actifs (volume CC7, expression CC11, pan CC10, pitch bend)
+  // au moment de noteOn. @tonejs/midi expose track.controlChanges + track.pitchBends.
   for (let tIdx = 0; tIdx < song.tracks.length; tIdx++) {
     const track = song.tracks[tIdx];
-    // MIDI program change → influence le voicegroup voice index
-    // @tonejs/midi expose track.instrument.number (0-127)
     const programNumber = track.instrument.number ?? 0;
+
+    // Build sorted lists of CC events per type pour lookup binaire au noteOn time
+    // (volume CC=7, expression CC=11, pan CC=10) :
+    type CcEvent = { time: number; value: number };
+    const volEvents: CcEvent[] = [];
+    const expEvents: CcEvent[] = [];
+    const panEvents: CcEvent[] = [];
+    const ccs = track.controlChanges as Record<string, Array<{ time: number; value: number }> | undefined>;
+    for (const ccArr of Object.values(ccs)) {
+      if (!Array.isArray(ccArr)) continue;
+      for (const cc of ccArr) {
+        // @tonejs/midi : ccArr est groupé par CC number (key string)
+      }
+    }
+    if (ccs[7])  for (const cc of ccs[7])  volEvents.push({ time: cc.time, value: cc.value });
+    if (ccs[11]) for (const cc of ccs[11]) expEvents.push({ time: cc.time, value: cc.value });
+    if (ccs[10]) for (const cc of ccs[10]) panEvents.push({ time: cc.time, value: cc.value });
+    volEvents.sort((a, b) => a.time - b.time);
+    expEvents.sort((a, b) => a.time - b.time);
+    panEvents.sort((a, b) => a.time - b.time);
+    const pitchBends = track.pitchBends ?? [];
+    const sortedBends = [...pitchBends].sort((a, b) => a.time - b.time);
+
+    /** Trouve la dernière valeur d'une liste CC à un time donné, ou default. */
+    const valueAtTime = (events: CcEvent[], t: number, defaultVal: number): number => {
+      let val = defaultVal;
+      for (const e of events) {
+        if (e.time > t) break;
+        val = e.value;
+      }
+      return val;
+    };
 
     for (const note of track.notes) {
       const noteOnTime = startTime + note.time;
@@ -106,7 +138,17 @@ export async function playSong(
 
       playback.stats.totalNotes++;
 
-      // Schedule noteOn via setTimeout (suffit pour MVP, scheduling ~16ms ahead)
+      // Lookup CC actifs au moment de cette note (1:1 TrkVolPitSet :
+      // x = vol × volX / 32 ; trackVolume = note.velocity × x normalisé).
+      // @tonejs/midi : value est 0-1 (déjà normalisé par CC max 127).
+      const volCc = valueAtTime(volEvents, note.time, 1.0);  // CC7 default 100/127 ≈ 0.79 GBA mais tonejs normalise
+      const expCc = valueAtTime(expEvents, note.time, 1.0);  // CC11 default max
+      const panCc = valueAtTime(panEvents, note.time, 0.5);  // CC10 default center (0.5 = 64/127)
+      const trackVolume = volCc * expCc;
+      const panMidi = Math.round(panCc * 127);
+      // Pitch bend (semitones) : @tonejs/midi value est -2 à +2 par défaut (bendRange GM)
+      const bend = valueAtTime(sortedBends as CcEvent[], note.time, 0);
+
       const timeoutMs = Math.max(0, (noteOnTime - ctx.currentTime) * 1000);
       const onTimer = window.setTimeout(async () => {
         if (playback.stopped) return;
@@ -116,12 +158,14 @@ export async function playSong(
           incReason(playback.stats, `noVoice:program=${programNumber}`);
           return;
         }
-        const active = await playNote(voice, note.midi, Math.round(note.velocity * 127), 64, noteOnTime);
+        const active = await playNote(
+          voice, note.midi, Math.round(note.velocity * 127),
+          panMidi, noteOnTime, trackVolume, bend,
+        );
         if (active) {
           playback.activeNotes.set(key, active);
           playback.stats.played++;
         } else {
-          // playNote retourne null pour : sample DirectSound non trouvé OU type unknown (programmable_wave)
           if (voice.type === 'directsound' || voice.type === 'directsound_no_resample') {
             playback.stats.skippedNoSample++;
             incReason(playback.stats, `noSample:${voice.sampleSymbol}`);
