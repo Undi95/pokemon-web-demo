@@ -422,14 +422,31 @@ export async function playNote(
       env.gain.cancelScheduledValues(t);
       env.gain.setValueAtTime(env.gain.value, t);
       env.gain.setTargetAtTime(0, t, Math.max(0.001, releaseTau));
-      try {
-        if ('stop' in source) (source as AudioBufferSourceNode | OscillatorNode).stop(t + releaseTotalSec + 0.01);
-      } catch { /* already stopped */ }
-      // Stop also LFO oscillator
-      if (lfoOsc) {
-        try { lfoOsc.stop(t + releaseTotalSec + 0.02); } catch { /* ignore */ }
+
+      // Pseudo-echo 1:1 décomp m4a_1.s _081DCFC8 :
+      // Après release, si pseudoEchoVolume > 0 :
+      //   envVol = envelopeGoal × pseudoEchoVolume / 256 (= queue niveau)
+      //   tient pendant pseudoEchoLength ticks (60Hz) puis stop
+      // = "tail" subtle après le release.
+      // Ces fields ne sont pas dans nos voicegroups M4A standard (rare),
+      // mais on supporte l'API si user veut les utiliser.
+      let totalDuration = releaseTotalSec;
+      const pe = (voice as { pseudoEchoVolume?: number; pseudoEchoLength?: number });
+      if (pe.pseudoEchoVolume && pe.pseudoEchoLength) {
+        const echoVol = velNorm * (pe.pseudoEchoVolume / 256);
+        const echoSec = pe.pseudoEchoLength / 60;
+        env.gain.setTargetAtTime(echoVol, t + releaseTotalSec, Math.max(0.001, releaseTau));
+        env.gain.setTargetAtTime(0, t + releaseTotalSec + echoSec, Math.max(0.001, releaseTau));
+        totalDuration += echoSec + releaseTotalSec;
       }
-      window.setTimeout(() => unregisterActiveNote(note), Math.max(50, (releaseTotalSec + 0.05) * 1000));
+
+      try {
+        if ('stop' in source) (source as AudioBufferSourceNode | OscillatorNode).stop(t + totalDuration + 0.01);
+      } catch { /* already stopped */ }
+      if (lfoOsc) {
+        try { lfoOsc.stop(t + totalDuration + 0.02); } catch { /* ignore */ }
+      }
+      window.setTimeout(() => unregisterActiveNote(note), Math.max(50, (totalDuration + 0.05) * 1000));
     },
   };
   registerActiveNote(note);

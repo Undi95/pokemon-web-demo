@@ -112,15 +112,18 @@ export async function playSong(
         // @tonejs/midi : ccArr est groupé par CC number (key string)
       }
     }
-    const modEvents: CcEvent[] = [];  // CC1 modulation depth → vibrato
+    const modEvents: CcEvent[] = [];     // CC1 modulation depth → vibrato
+    const sustainEvents: CcEvent[] = []; // CC64 sustain pedal (>= 0.5 = on)
     if (ccs[7])  for (const cc of ccs[7])  volEvents.push({ time: cc.time, value: cc.value });
     if (ccs[11]) for (const cc of ccs[11]) expEvents.push({ time: cc.time, value: cc.value });
     if (ccs[10]) for (const cc of ccs[10]) panEvents.push({ time: cc.time, value: cc.value });
     if (ccs[1])  for (const cc of ccs[1])  modEvents.push({ time: cc.time, value: cc.value });
+    if (ccs[64]) for (const cc of ccs[64]) sustainEvents.push({ time: cc.time, value: cc.value });
     volEvents.sort((a, b) => a.time - b.time);
     expEvents.sort((a, b) => a.time - b.time);
     panEvents.sort((a, b) => a.time - b.time);
     modEvents.sort((a, b) => a.time - b.time);
+    sustainEvents.sort((a, b) => a.time - b.time);
     const pitchBends = track.pitchBends ?? [];
     const sortedBends = [...pitchBends].sort((a, b) => a.time - b.time);
 
@@ -149,10 +152,29 @@ export async function playSong(
       const bend = valueAtTime(sortedBends as CcEvent[], note.time, 0);
       // Modulation depth via CC1 (mod wheel). M4A traduit en track->mod 0-127.
       // Default lfoSpeed=22 (cf. m4a.c:247 default), modT=0 (vibrato).
-      const modCc = valueAtTime(modEvents, note.time, 0);  // CC1 normalized 0-1
-      const lfoConfig = modCc > 0
-        ? { speed: 22, depth: Math.round(modCc * 127), type: 0 as 0 | 1 | 2, delayTicks: 0 }
-        : null;
+      // Si MIDI a des CC propriétaires pour lfoSpeed/modT (mid2agb peut utiliser
+      // CC alternatifs), on les supporte ici :
+      //   CC 21 (général-purpose 1) → lfoSpeed
+      //   CC 22 (général-purpose 2) → modT (0=vibrato, 1=tremolo, 2=pan_lfo)
+      //   CC 26 (général-purpose 3) → lfoDelay ticks
+      // Note : MIDI standard ne mappe pas ces CC à ces fonctions ; c'est une
+      // convention si mid2agb les utilise. Sans mapping confirmé, on lit mais
+      // les valeurs default GBA sont conservées si CC absent.
+      const modCc = valueAtTime(modEvents, note.time, 0);
+      let lfoConfig = null as null | { speed: number; depth: number; type: 0 | 1 | 2; delayTicks: number };
+      if (modCc > 0) {
+        const speedCc = ccs[21] ? valueAtTime(ccs[21] as CcEvent[], note.time, 22 / 127) : 22 / 127;
+        const typeCc = ccs[22] ? valueAtTime(ccs[22] as CcEvent[], note.time, 0) : 0;
+        const delayCc = ccs[26] ? valueAtTime(ccs[26] as CcEvent[], note.time, 0) : 0;
+        const lfoSpeed = Math.max(1, Math.round(speedCc * 127)) || 22;
+        const modT = (Math.round(typeCc * 2) % 3) as 0 | 1 | 2;
+        lfoConfig = {
+          speed: lfoSpeed,
+          depth: Math.round(modCc * 127),
+          type: modT,
+          delayTicks: Math.round(delayCc * 30),
+        };
+      }
 
       const timeoutMs = Math.max(0, (noteOnTime - ctx.currentTime) * 1000);
       const onTimer = window.setTimeout(async () => {
@@ -182,13 +204,28 @@ export async function playSong(
       }, timeoutMs);
       playback.scheduledTimers.push(onTimer);
 
-      // Schedule noteOff
-      const offTimeoutMs = Math.max(0, (noteOffTime - ctx.currentTime) * 1000);
+      // Sustain pedal CC64 : si pédale active au noteOff, retarder le release
+      // jusqu'au moment où la pédale relâche (CC64 < 0.5).
+      // 1:1 décomp : sustain pedal tient toutes les notes du track.
+      const sustainAtOff = valueAtTime(sustainEvents, note.time + note.duration, 0);
+      let actualOffTime = noteOffTime;
+      if (sustainAtOff >= 0.5) {
+        // Trouver le prochain event où sustain retombe < 0.5
+        for (const ev of sustainEvents) {
+          if (ev.time > note.time + note.duration && ev.value < 0.5) {
+            actualOffTime = startTime + ev.time;
+            break;
+          }
+        }
+      }
+
+      // Schedule noteOff (potentially delayed par sustain pedal)
+      const offTimeoutMs = Math.max(0, (actualOffTime - ctx.currentTime) * 1000);
       const offTimer = window.setTimeout(() => {
         if (playback.stopped) return;
         const active = playback.activeNotes.get(key);
         if (active) {
-          active.stop(noteOffTime);
+          active.stop(actualOffTime);
           playback.activeNotes.delete(key);
         }
       }, offTimeoutMs);
