@@ -92,6 +92,7 @@ export function composeFrame(
         applyMosaicHorizontal(scanlineBufs[i], mosaic.bgH);
       }
     }
+    
 
     // Mosaic vertical BG : si bgV > 0, repeat la scanline précédente sur N+1 lignes
     // Pour MVP simple : skip mosaic vertical (rare effet, demande tracking entre scanlines)

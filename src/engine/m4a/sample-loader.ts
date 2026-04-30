@@ -30,6 +30,7 @@ export interface LoadedSample {
 let _manifest: SampleManifest | null = null;
 const _sampleCache = new Map<string, LoadedSample>();
 const _loadingPromises = new Map<string, Promise<LoadedSample | null>>();
+const _reportedFailures = new Set<string>();
 
 /** Fetch + cache le manifest. À appeler une fois au démarrage. */
 export async function loadSampleManifest(): Promise<void> {
@@ -116,7 +117,10 @@ export async function loadSample(symbol: string): Promise<LoadedSample | null> {
       _sampleCache.set(url, loaded);
       return loaded;
     } catch (e) {
-      console.error(`[m4a] Sample load failed for ${symbol} (${url}):`, e);
+      if (!_reportedFailures.has(symbol)) {
+        _reportedFailures.add(symbol);
+        console.warn(`[m4a] Sample load failed for ${symbol} (${url}):`, e);
+      }
       return null;
     } finally {
       _loadingPromises.delete(url);

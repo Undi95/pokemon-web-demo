@@ -8,8 +8,7 @@ export default defineConfig({
   build: {
     rollupOptions: {
       input: {
-        main: resolve(here, 'index.html'),
-        editor: resolve(here, 'editor.html')
+        main: resolve(here, 'index.html')
       }
     }
   },

@@ -17,6 +17,7 @@
 import { Gba } from './gba/gba';
 import { rgba8ToRgb15 } from './gba/types';
 import { G_SINE_TABLE } from './decomp-data/auto/src/sine-table';
+import { getRuntime } from './decomp-globals';
 
 // ─── Sine/Cosine via gSineTable (Q.8 fixed) ──────────────────────────────────
 /** 1:1 décomp Sin(idx, amplitude) = (gSineTable[idx & 0xFF] * amplitude) >> 8.
@@ -213,4 +214,34 @@ export function spriteShapeFromString(s: string): { w: number, h: number } {
   const m = s.match(/SPRITE_SHAPE\((\d+)x(\d+)\)/);
   if (!m) return { w: 8, h: 8 };
   return { w: parseInt(m[1], 10), h: parseInt(m[2], 10) };
+}
+
+// Re-export audio stub from decomp-globals so auto-generated callbacks can import it.
+export { FreeAllSpritePalettes } from './decomp-globals';
+
+/** 1:1 décomp `GetGpuReg(regOffset)` — lit la valeur courante d'un registre GPU. */
+export function GetGpuReg(regOffset: number): number {
+  return getRuntime().GetGpuReg(regOffset);
+}
+
+/** 1:1 décomp `SetGpuRegBits(regOffset, mask)` — set bits dans un registre GPU. */
+export function SetGpuRegBits(regOffset: number, mask: number): void {
+  const rt = getRuntime();
+  rt.SetGpuReg(regOffset, rt.GetGpuReg(regOffset) | mask);
+}
+
+/** 1:1 décomp `ClearGpuRegBits(regOffset, mask)` — clear bits dans un registre GPU. */
+export function ClearGpuRegBits(regOffset: number, mask: number): void {
+  const rt = getRuntime();
+  rt.SetGpuReg(regOffset, rt.GetGpuReg(regOffset) & ~mask);
+}
+
+/** 1:1 décomp `EnableInterrupts(mask)` — stub (pas d'émulation IRQ). */
+export function EnableInterrupts(_mask: number): void {
+  // no-op stub
+}
+
+/** 1:1 décomp `DisableInterrupts(mask)` — stub. */
+export function DisableInterrupts(_mask: number): void {
+  // no-op stub
 }

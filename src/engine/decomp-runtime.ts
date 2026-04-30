@@ -85,12 +85,29 @@ export const REG_OFFSET_BG2HOFS  = 0x018;
 export const REG_OFFSET_BG2VOFS  = 0x01A;
 export const REG_OFFSET_BG3HOFS  = 0x01C;
 export const REG_OFFSET_BG3VOFS  = 0x01E;
+export const REG_OFFSET_BG2PA    = 0x020;
+export const REG_OFFSET_BG2PB    = 0x022;
+export const REG_OFFSET_BG2PC    = 0x024;
+export const REG_OFFSET_BG2PD    = 0x026;
+export const REG_OFFSET_BG2X_L   = 0x028;
+export const REG_OFFSET_BG2X_H   = 0x02A;
+export const REG_OFFSET_BG2Y_L   = 0x02C;
+export const REG_OFFSET_BG2Y_H   = 0x02E;
+export const REG_OFFSET_BG3PA    = 0x030;
+export const REG_OFFSET_BG3PB    = 0x032;
+export const REG_OFFSET_BG3PC    = 0x034;
+export const REG_OFFSET_BG3PD    = 0x036;
+export const REG_OFFSET_BG3X_L   = 0x038;
+export const REG_OFFSET_BG3X_H   = 0x03A;
+export const REG_OFFSET_BG3Y_L   = 0x03C;
+export const REG_OFFSET_BG3Y_H   = 0x03E;
 export const REG_OFFSET_WIN0H    = 0x040;
 export const REG_OFFSET_WIN1H    = 0x042;
 export const REG_OFFSET_WIN0V    = 0x044;
 export const REG_OFFSET_WIN1V    = 0x046;
 export const REG_OFFSET_WININ    = 0x048;
 export const REG_OFFSET_WINOUT   = 0x04A;
+export const REG_OFFSET_MOSAIC   = 0x04C;
 export const REG_OFFSET_BLDCNT   = 0x050;
 export const REG_OFFSET_BLDALPHA = 0x052;
 export const REG_OFFSET_BLDY     = 0x054;
@@ -120,8 +137,12 @@ export const DISPCNT_BG1_ON = 0x200;
 export const DISPCNT_BG2_ON = 0x400;
 export const DISPCNT_BG3_ON = 0x800;
 export const DISPCNT_OBJ_ON = 0x1000;
+export const DISPCNT_WIN1_ON = 0x4000;
+export const DISPCNT_WINOBJ_ON = 0x8000;
 export const DISPCNT_WIN0_ON = 0x2000;
 export const DISPCNT_BG_ALL_ON = 0xF00;
+export const DISPCNT_FORCED_BLANK = 0x80;
+export const DISPCNT_HBLANK_INTERVAL_FREE = 0x20;
 
 export const BLDCNT_TGT1_BG0 = 0x01;
 export const BLDCNT_TGT1_BG1 = 0x02;
@@ -192,6 +213,9 @@ export class MainStruct {
   state = 0;
   callback2: CB2Callback | null = null;
   vblankCallback: (() => void) | null = null;
+  /** 1:1 décomp gMain.newKeys / gMain.heldKeys — input keys this frame / held keys. */
+  newKeys = 0;
+  heldKeys = 0;
 }
 
 // ─── Sprite (1:1 décomp struct Sprite, simplifié) ────────────────────────────
@@ -204,6 +228,8 @@ export interface DecompSprite {
   /** State arbitraire (utilisé par sprite callbacks ; data[N] = sState/sTimer/etc
    *  selon les EXPR macros décomp dans intro-data.ts) */
   data: number[];
+  /** inUse = true quand actif, false après DestroySprite (comme le vrai gSprites[i].inUse). */
+  inUse: boolean;
   /** Position absolue (1:1 décomp sprite->x / sprite->y) */
   x: number;
   y: number;
@@ -299,11 +325,54 @@ export class DecompRuntime {
   /** Auto-incrementing OAM slot (next free) */
   private nextOamSlot = 0;
   /** Auto-incrementing task ID */
-  private nextTaskId = 0;
+  nextTaskId = 0;
   /** Auto-incrementing sprite ID */
   private nextSpriteId = 0;
+  /** État précédent des touches pour calculer newKeys (front montant) chaque frame. */
+  private prevHeldKeys = 0;
   /** Flag pour ne logger OAM slots exhausted qu'une seule fois (évite spam 999×). */
   private _oamExhaustedWarned = false;
+
+  /** Mode vidéo courant (bits 0-2 de DISPCNT). Utilisé pour déterminer isAffine. */
+  private _dispCntMode = 0;
+
+  // ─── Affine ref point temp storage (BG2 = 0, BG3 = 1) ─────────────────────
+  private _bg2RefXL = 0;
+  private _bg2RefXH = 0;
+  private _bg2RefYL = 0;
+  private _bg2RefYH = 0;
+  private _bg3RefXL = 0;
+  private _bg3RefXH = 0;
+  private _bg3RefYL = 0;
+  private _bg3RefYH = 0;
+
+  private _updateBg2Ref(): void {
+    const lowX = this._bg2RefXL;
+    const highX = this._bg2RefXH;
+    let x = (highX << 16) | lowX;
+    if (x >= 0x80000000) x -= 0x100000000;
+    this.gba.bg(2).config.affineRefX = x;
+
+    const lowY = this._bg2RefYL;
+    const highY = this._bg2RefYH;
+    let y = (highY << 16) | lowY;
+    if (y >= 0x80000000) y -= 0x100000000;
+    this.gba.bg(2).config.affineRefY = y;
+  }
+
+  private _updateBg3Ref(): void {
+    const lowX = this._bg3RefXL;
+    const highX = this._bg3RefXH;
+    let x = (highX << 16) | lowX;
+    if (x >= 0x80000000) x -= 0x100000000;
+    this.gba.bg(3).config.affineRefX = x;
+
+    const lowY = this._bg3RefYL;
+    const highY = this._bg3RefYH;
+    let y = (highY << 16) | lowY;
+    if (y >= 0x80000000) y -= 0x100000000;
+    this.gba.bg(3).config.affineRefY = y;
+  }
 
   /** paletteTag (e.g. 'PALTAG_LOGO') → OBJ palette slot (0-15).
    *  Rempli par LoadSpritePalettesFromTable(). Permet de résoudre paletteTag → bank
@@ -313,9 +382,9 @@ export class DecompRuntime {
    *  Rempli par LoadCompressedSpriteSheetsFromTable(). */
   spriteSheetTagToTileStart = new Map<string, number>();
   /** Prochain slot OBJ palette libre (auto-assigné par LoadSpritePalettes). */
-  private nextObjPalSlot = 0;
+  nextObjPalSlot = 0;
   /** Prochain offset libre dans objVram pour sprite sheets (auto-assigné). */
-  private nextSpriteSheetByteOffset = 0;
+  nextSpriteSheetByteOffset = 0;
   /** State des sprite anims actives : spriteId → state. */
   private spriteAnimStates = new Map<number, SpriteAnimState>();
   /** Accumulator pour timing 60Hz fixed (Phaser update peut être > 60Hz). */
@@ -332,6 +401,9 @@ export class DecompRuntime {
   /** Palettes additionnelles chargées au runtime (e.g. text.pal pour color cycle).
    *  Lookup par symbol décomp (e.g. 'gIntroGameFreakTextFade_Pal'). */
   public readonly extraPalettes = new Map<string, Uint16Array>();
+  /** Registry des sprite callbacks par nom (résout les templates qui référencent
+   *  SpriteCB_X par string, car les modules ESM n'exposent pas les fonctions sur globalThis). */
+  public readonly spriteCallbacks = new Map<string, (sprite: DecompSprite, rt: DecompRuntime) => void>();
 
   constructor(public readonly gba: Gba) {
     this.gPlttBufferFaded = new PaletteBuffer(gba);
@@ -339,8 +411,79 @@ export class DecompRuntime {
   }
 
   // ============================================================================
-  // SetGpuReg — wrapper qui dispatch sur le bon gba.* selon REG_OFFSET
+  // GetGpuReg / SetGpuReg — wrapper qui dispatch sur le bon gba.* selon REG_OFFSET
   // ============================================================================
+
+  GetGpuReg(reg: number): number {
+    switch (reg) {
+      case REG_OFFSET_DISPCNT: {
+        let v = this._dispCntMode;
+        if (this.gba.bg(0).config.visible) v |= DISPCNT_BG0_ON;
+        if (this.gba.bg(1).config.visible) v |= DISPCNT_BG1_ON;
+        if (this.gba.bg(2).config.visible) v |= DISPCNT_BG2_ON;
+        if (this.gba.bg(3).config.visible) v |= DISPCNT_BG3_ON;
+        if (this.gba.windows.win0.enabled) v |= DISPCNT_WIN0_ON;
+        if (this.gba.windows.win1.enabled) v |= DISPCNT_WIN1_ON;
+        if (this.gba.windows.winObjEnabled) v |= DISPCNT_WINOBJ_ON;
+        return v;
+      }
+      case REG_OFFSET_BG0CNT: return this.buildBgCnt(0);
+      case REG_OFFSET_BG1CNT: return this.buildBgCnt(1);
+      case REG_OFFSET_BG2CNT: return this.buildBgCnt(2);
+      case REG_OFFSET_BG3CNT: return this.buildBgCnt(3);
+      case REG_OFFSET_BG0HOFS: return this.gba.bg(0).config.hofs;
+      case REG_OFFSET_BG0VOFS: return this.gba.bg(0).config.vofs;
+      case REG_OFFSET_BG1HOFS: return this.gba.bg(1).config.hofs;
+      case REG_OFFSET_BG1VOFS: return this.gba.bg(1).config.vofs;
+      case REG_OFFSET_BG2HOFS: return this.gba.bg(2).config.hofs;
+      case REG_OFFSET_BG2VOFS: return this.gba.bg(2).config.vofs;
+      case REG_OFFSET_BG3HOFS: return this.gba.bg(3).config.hofs;
+      case REG_OFFSET_BG3VOFS: return this.gba.bg(3).config.vofs;
+      case REG_OFFSET_BLDCNT:
+        return (this.gba.blend.target1 & 0x3F)
+             | ((this.gba.blend.mode & 3) << 6)
+             | ((this.gba.blend.target2 & 0x3F) << 8);
+      case REG_OFFSET_BLDALPHA:
+        return (this.gba.blend.alpha1 & 0x1F)
+             | ((this.gba.blend.alpha2 & 0x1F) << 8);
+      case REG_OFFSET_BLDY:
+        return this.gba.blend.brightness & 0x1F;
+      case REG_OFFSET_WIN0H:
+        return (this.gba.windows.win0.x1 << 8) | this.gba.windows.win0.x2;
+      case REG_OFFSET_WIN1H:
+        return (this.gba.windows.win1.x1 << 8) | this.gba.windows.win1.x2;
+      case REG_OFFSET_WIN0V:
+        return (this.gba.windows.win0.y1 << 8) | this.gba.windows.win0.y2;
+      case REG_OFFSET_WIN1V:
+        return (this.gba.windows.win1.y1 << 8) | this.gba.windows.win1.y2;
+      case REG_OFFSET_WININ:
+        return (this.gba.windows.win0Inside & 0x3F)
+             | (this.gba.windows.win0BlendEnable ? 0x20 : 0)
+             | ((this.gba.windows.win1Inside & 0x3F) << 8)
+             | (this.gba.windows.win1BlendEnable ? 0x2000 : 0);
+      case REG_OFFSET_WINOUT:
+        return (this.gba.windows.outsideEnable & 0x3F)
+             | (this.gba.windows.outsideBlendEnable ? 0x20 : 0);
+      case REG_OFFSET_MOSAIC:
+        return (this.gba.mosaic.bgH & 0xF)
+             | ((this.gba.mosaic.bgV & 0xF) << 4)
+             | ((this.gba.mosaic.objH & 0xF) << 8)
+             | ((this.gba.mosaic.objV & 0xF) << 12);
+      default:
+        return 0;
+    }
+  }
+
+  private buildBgCnt(bgIdx: 0 | 1 | 2 | 3): number {
+    const cfg = this.gba.bg(bgIdx).config;
+    let v = (cfg.priority & 3)
+          | ((cfg.charBaseIndex & 3) << 2)
+          | (cfg.paletteMode ? 0x80 : 0)
+          | ((cfg.mapBaseIndex & 31) << 8)
+          | (cfg.wraparound ? 0x2000 : 0)
+          | ((cfg.screenSize & 3) << 14);
+    return v;
+  }
 
   SetGpuReg(reg: number, value: number): void {
     switch (reg) {
@@ -363,24 +506,58 @@ export class DecompRuntime {
       case REG_OFFSET_BLDALPHA: this.applyBldAlpha(value); break;
       case REG_OFFSET_BLDY: this.gba.blend.brightness = value & 0x1F; break;
       case REG_OFFSET_WIN0H: this.applyWin0H(value); break;
+      case REG_OFFSET_WIN1H: this.applyWin1H(value); break;
       case REG_OFFSET_WIN0V: this.applyWin0V(value); break;
+      case REG_OFFSET_WIN1V: this.applyWin1V(value); break;
       case REG_OFFSET_WININ: this.applyWinIn(value); break;
-      case REG_OFFSET_WINOUT: this.gba.windows.outsideEnable = value & 0x3F; break;
-      // Autres regs (BG2/3 affine matrix etc) à ajouter au besoin
+      case REG_OFFSET_MOSAIC: this.applyMosaic(value); break;
+      case REG_OFFSET_WINOUT:
+        this.gba.windows.outsideEnable = value & 0x3F;
+        this.gba.windows.outsideBlendEnable = !!(value & 0x20);
+        break;
+      // Affine matrix BG2 (8.8 fixed, sign-extended 16-bit)
+      case REG_OFFSET_BG2PA: this.gba.bgAffineMatrices[0].pa = (value << 16) >> 16; break;
+      case REG_OFFSET_BG2PB: this.gba.bgAffineMatrices[0].pb = (value << 16) >> 16; break;
+      case REG_OFFSET_BG2PC: this.gba.bgAffineMatrices[0].pc = (value << 16) >> 16; break;
+      case REG_OFFSET_BG2PD: this.gba.bgAffineMatrices[0].pd = (value << 16) >> 16; break;
+      // Affine ref point BG2 (28.8 fixed, reconstructed from L/H halves)
+      case REG_OFFSET_BG2X_L: this._bg2RefXL = value & 0xFFFF; this._updateBg2Ref(); break;
+      case REG_OFFSET_BG2X_H: this._bg2RefXH = value & 0xFFFF; this._updateBg2Ref(); break;
+      case REG_OFFSET_BG2Y_L: this._bg2RefYL = value & 0xFFFF; this._updateBg2Ref(); break;
+      case REG_OFFSET_BG2Y_H: this._bg2RefYH = value & 0xFFFF; this._updateBg2Ref(); break;
+      // Affine matrix BG3
+      case REG_OFFSET_BG3PA: this.gba.bgAffineMatrices[1].pa = (value << 16) >> 16; break;
+      case REG_OFFSET_BG3PB: this.gba.bgAffineMatrices[1].pb = (value << 16) >> 16; break;
+      case REG_OFFSET_BG3PC: this.gba.bgAffineMatrices[1].pc = (value << 16) >> 16; break;
+      case REG_OFFSET_BG3PD: this.gba.bgAffineMatrices[1].pd = (value << 16) >> 16; break;
+      // Affine ref point BG3
+      case REG_OFFSET_BG3X_L: this._bg3RefXL = value & 0xFFFF; this._updateBg3Ref(); break;
+      case REG_OFFSET_BG3X_H: this._bg3RefXH = value & 0xFFFF; this._updateBg3Ref(); break;
+      case REG_OFFSET_BG3Y_L: this._bg3RefYL = value & 0xFFFF; this._updateBg3Ref(); break;
+      case REG_OFFSET_BG3Y_H: this._bg3RefYH = value & 0xFFFF; this._updateBg3Ref(); break;
     }
   }
 
   private applyDispCnt(value: number): void {
-    // Mode lower 3 bits — pour info, notre engine décide via isAffine flag
+    const mode = value & 7;
+    this._dispCntMode = mode;
+
     // Bits 8-11 : BG0-3 enable
     this.gba.bg(0).config.visible = !!(value & DISPCNT_BG0_ON);
     this.gba.bg(1).config.visible = !!(value & DISPCNT_BG1_ON);
     this.gba.bg(2).config.visible = !!(value & DISPCNT_BG2_ON);
     this.gba.bg(3).config.visible = !!(value & DISPCNT_BG3_ON);
-    // Bit 12 : OBJ_ON — notre engine traite ça en dehors (les OAM sont visible
-    // selon leur propre flag). Bit ignoré ici.
+
     // Bits 13-15 : Win0/Win1/WinObj enable
     this.gba.windows.win0.enabled = !!(value & DISPCNT_WIN0_ON);
+    this.gba.windows.win1.enabled = !!(value & DISPCNT_WIN1_ON);
+    this.gba.windows.winObjEnabled = !!(value & DISPCNT_WINOBJ_ON);
+
+    // Mode affine : Mode 1 = BG2 affine, Mode 2 = BG2+BG3 affine
+    this.gba.bg(2).config.isAffine = (mode === 1 || mode === 2);
+    this.gba.bg(2).config.affineMatrixIndex = 0;
+    this.gba.bg(3).config.isAffine = (mode === 2);
+    this.gba.bg(3).config.affineMatrixIndex = 1;
   }
 
   private applyBgCnt(bgIdx: 0 | 1 | 2 | 3, value: number): void {
@@ -394,12 +571,15 @@ export class DecompRuntime {
     cfg.wraparound = !!(value & 0x2000);
     // Bits 14-15 : screen size
     cfg.screenSize = ((value >> 14) & 3) as 0 | 1 | 2 | 3;
-    // Affine = inferred par mode DISPCNT (Mode 1 = BG2 affine, Mode 2 = BG2/3 affine).
-    // Pour simplification : si BGn et 256COLOR set, on met affine (matche pratique
-    // décomp où 256COLOR + AFF256x256 etc va ensemble pour BG affine).
-    if ((bgIdx === 2 || bgIdx === 3) && cfg.paletteMode === 1) {
-      cfg.isAffine = true;
-      cfg.affineMatrixIndex = (bgIdx === 2 ? 0 : 1) as 0 | 1;
+    // isAffine est contrôlé exclusivement par applyDispCnt (mode vidéo).
+    // On met à jour ici aussi au cas où applyBgCnt serait appelé avant applyDispCnt
+    // dans un batch de SetGpuReg, mais la source de vérité reste DISPCNT.
+    if (bgIdx === 2) {
+      cfg.isAffine = (this._dispCntMode === 1 || this._dispCntMode === 2);
+      cfg.affineMatrixIndex = 0;
+    } else if (bgIdx === 3) {
+      cfg.isAffine = (this._dispCntMode === 2);
+      cfg.affineMatrixIndex = 1;
     } else {
       cfg.isAffine = false;
     }
@@ -432,6 +612,27 @@ export class DecompRuntime {
   private applyWinIn(value: number): void {
     this.gba.windows.win0Inside = value & 0x3F;
     this.gba.windows.win1Inside = (value >> 8) & 0x3F;
+    this.gba.windows.win0BlendEnable = !!(value & 0x20);
+    this.gba.windows.win1BlendEnable = !!((value >> 8) & 0x20);
+  }
+
+  private applyWin1H(value: number): void {
+    this.gba.windows.win1.x2 = value & 0xFF;
+    this.gba.windows.win1.x1 = (value >> 8) & 0xFF;
+  }
+
+  private applyWin1V(value: number): void {
+    this.gba.windows.win1.y2 = value & 0xFF;
+    this.gba.windows.win1.y1 = (value >> 8) & 0xFF;
+  }
+
+  private applyMosaic(value: number): void {
+    // REG_MOSAIC : bits 0-3 = BG mosaic H, 4-7 = BG mosaic V
+    // bits 8-11 = OBJ mosaic H, 12-15 = OBJ mosaic V
+    this.gba.mosaic.bgH = value & 0xF;
+    this.gba.mosaic.bgV = (value >> 4) & 0xF;
+    this.gba.mosaic.objH = (value >> 8) & 0xF;
+    this.gba.mosaic.objV = (value >> 12) & 0xF;
   }
 
   // ============================================================================
@@ -543,13 +744,14 @@ export class DecompRuntime {
     this.gba.blend.brightness = startY;
   }
 
-  /** Tick du palette fade. À call chaque frame. */
-  UpdatePaletteFade(): void {
-    if (!this.gPaletteFade.active) return;
+  /** Tick du palette fade. À call chaque frame.
+   *  Retourne TRUE tant que le fade est actif (1:1 décomp bool8). */
+  UpdatePaletteFade(): boolean {
+    if (!this.gPaletteFade.active) return false;
 
     if (this.gPaletteFade.delayRemaining > 0) {
       this.gPaletteFade.delayRemaining--;
-      return;
+      return true;
     }
 
     const f = this.gPaletteFade;
@@ -557,12 +759,13 @@ export class DecompRuntime {
     if (f.currentFrame >= f.totalFrames) {
       this.gba.blend.brightness = f.endY;
       f.active = false;
-      return;
+      return false;
     }
 
     const t = f.currentFrame / f.totalFrames;
     this.gba.blend.brightness = Math.round(f.startY + (f.endY - f.startY) * t);
     f.delayRemaining = f.delayPerStep;
+    return true;
   }
 
   // ============================================================================
@@ -577,16 +780,21 @@ export class DecompRuntime {
     shape: 0 | 1 | 2, size: 0 | 1 | 2 | 3, priority: number,
     paletteMode?: 0 | 1, affineMode?: 0 | 1 | 2 | 3, affineParamIndex?: number,
   }): { spriteId: number, oamIndex: number } {
-    if (this.nextOamSlot >= 128) {
-      // Silenced après le premier warn (sinon spam) — bug à investiger
-      // (probablement une Task qui crée sprites en boucle sans Destroy)
+    // Recherche un slot OAM libre (visible = false = libéré par DestroySprite)
+    let oamIndex = -1;
+    for (let i = 0; i < 128; i++) {
+      if (!this.gba.oam[i].visible) {
+        oamIndex = i;
+        break;
+      }
+    }
+    if (oamIndex === -1) {
       if (!this._oamExhaustedWarned) {
         console.warn('[DecompRuntime] OAM slots exhausted (further warnings suppressed)');
         this._oamExhaustedWarned = true;
       }
       return { spriteId: -1, oamIndex: -1 };
     }
-    const oamIndex = this.nextOamSlot++;
     const oam = this.gba.oam[oamIndex];
     oam.visible = true;
     oam.tileId = cfg.tileId;
@@ -605,6 +813,7 @@ export class DecompRuntime {
     const spriteId = this.nextSpriteId++;
     const sprite: DecompSprite = {
       oamIndex, data: new Int16Array(16) as unknown as number[], invisible: false,
+      inUse: true,
       x: cfg.x, y: cfg.y, x2: 0, y2: 0,
       hFlip: false, vFlip: false,
       matrixNum: cfg.affineParamIndex ?? 0,
@@ -687,6 +896,11 @@ export class DecompRuntime {
     if (RT_DEBUG) console.log(`[runtime] extraPalette ${symbolName} loaded (${pal.length} colors)`);
   }
 
+  /** Enregistre une palette préchargée (sync, pour data déjà dans assetCache). */
+  setExtraPalette(symbolName: string, pal: Uint16Array): void {
+    this.extraPalettes.set(symbolName, pal);
+  }
+
   /** Récupère une palette additionnelle (1:1 décomp `gXxx_Pal[N]` access). */
   getExtraPalette(symbolName: string): Uint16Array | null {
     return this.extraPalettes.get(symbolName) ?? null;
@@ -703,6 +917,7 @@ export class DecompRuntime {
     // `data[N] += K; if (data[N] == constant)` qui suppose s16 wrap.
     const task: DecompTask = { taskId, func, data: new Int16Array(16) as unknown as number[] };
     this.gTasks.set(taskId, task);
+    console.log('[CreateTask] taskId=', taskId, 'gTasks.size=', this.gTasks.size);
     return taskId;
   }
 
@@ -714,6 +929,7 @@ export class DecompRuntime {
   runTasks(): void {
     // Snapshot pour permettre Tasks de mod gTasks
     const snapshot = Array.from(this.gTasks.values());
+    console.log('[runTasks] snapshot.length=', snapshot.length);
     for (const task of snapshot) {
       if (this.gTasks.has(task.taskId) && task.func) {
         task.func(task);
@@ -913,6 +1129,15 @@ export class DecompRuntime {
       }
     }
 
+    // 1:1 décomp src/sprite.c:CreateSpriteAt — sprite->callback = template->callback
+    const cbName = tpl.callback;
+    if (cbName && cbName !== 'SpriteCallbackDummy' && cbName !== 'SpriteCallbackDummy2') {
+      const cb = this.spriteCallbacks.get(cbName) ?? (globalThis as any)[cbName] as ((sprite: DecompSprite, rt: DecompRuntime) => void) | undefined;
+      if (cb && sprite) {
+        sprite.callback = (spr: DecompSprite) => cb(spr, this);
+      }
+    }
+
     if (RT_DEBUG) console.log(`[runtime] CreateSprite ${templateName} → spriteId ${result.spriteId} (tile ${tileBase + initialTileOffset}, bank ${palSlot}, ${w}×${h})`);
     return result.spriteId;
   }
@@ -988,6 +1213,9 @@ export class DecompRuntime {
     let safety = 5;
     while (this.accumulatorMs >= this.FRAME_TIME_MS && safety-- > 0) {
       this.accumulatorMs -= this.FRAME_TIME_MS;
+      // 0. Input : calcul du front montant (newKeys) pour cette frame
+      this.gMain.newKeys = this.gMain.heldKeys & ~this.prevHeldKeys;
+      this.prevHeldKeys = this.gMain.heldKeys;
       // 1. Main callback2 : dispatch scène courante (peut SetMainCallback2/CreateTask).
       if (this.gMain.callback2) this.gMain.callback2(this);
       this.UpdatePaletteFade();
@@ -995,6 +1223,13 @@ export class DecompRuntime {
       tickAllAffineAnims(this);
       this.runSpriteCallbacks();
       this.runTasks();
+      // RunTextPrinters render text into window pixel buffers,
+      // then flushDirtyWindows copies modified buffers to VRAM.
+      // This mirrors the real GBA main loop order (RunTasks → RunTextPrinters → VBlank DMA).
+      const globalRunTextPrinters = (globalThis as any).RunTextPrinters;
+      if (typeof globalRunTextPrinters === 'function') globalRunTextPrinters();
+      const globalFlushDirty = (globalThis as any).flushDirtyWindows;
+      if (typeof globalFlushDirty === 'function') globalFlushDirty();
       this.syncSpritesToOam();
       if (this.gMain.vblankCallback) this.gMain.vblankCallback();
       this.gIntroFrameCounter++;
@@ -1008,7 +1243,7 @@ export class DecompRuntime {
   private runSpriteCallbacks(): void {
     const snapshot = Array.from(this.gSprites.values());
     for (const sprite of snapshot) {
-      if (this.gSprites.has(sprite.spriteId) && sprite.callback) {
+      if (this.gSprites.has(sprite.spriteId) && sprite.inUse && sprite.callback) {
         sprite.callback(sprite, this);
       }
     }
@@ -1022,9 +1257,14 @@ export class DecompRuntime {
    *  Sans ce décalage, les sprites apparaissent décalés à droite + bas. */
   private syncSpritesToOam(): void {
     for (const sprite of this.gSprites.values()) {
+      if (!sprite.inUse) continue;
       const oam = this.gba.oam[sprite.oamIndex];
-      oam.x = (sprite.x + sprite.x2 + sprite.centerToCornerVecX) & 0x1FF;
-      oam.y = (sprite.y + sprite.y2 + sprite.centerToCornerVecY) & 0xFF;
+      // Keep signed coordinates (no & mask) so sprites with negative oam.y / oam.x
+      // are correctly handled by the renderer (e.g. water drops starting at y=-14
+      // with centerToCornerVecY=-32 => oam.y=-46, which the GBA renders partially
+      // on scanlines 0-17). The real GBA stores oam.x/y as signed 9-bit / 8-bit.
+      oam.x = sprite.x + sprite.x2 + sprite.centerToCornerVecX;
+      oam.y = sprite.y + sprite.y2 + sprite.centerToCornerVecY;
       oam.visible = !sprite.invisible;
       oam.flipH = sprite.hFlip;
       oam.flipV = sprite.vFlip;
@@ -1038,7 +1278,12 @@ export class DecompRuntime {
     const sprite = this.gSprites.get(spriteId);
     if (!sprite) return;
     this.gba.oam[sprite.oamIndex].visible = false;
-    this.gSprites.delete(spriteId);
+    sprite.invisible = true;
+    sprite.inUse = false;
+    sprite.callback = null;
+    // NOTE: ne PAS this.gSprites.delete(spriteId) — les sprites enfants
+    // (e.g. water drop halves) lisent encore gSprites[parentId].data[7].
+    // Le vrai décomp garde le slot jusqu'à réallocation.
     this.spriteAnimStates.delete(spriteId);
   }
 

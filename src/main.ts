@@ -1,6 +1,14 @@
 import Phaser from 'phaser';
 import { TestGbaScene } from './scenes/TestGbaScene';
 import { GameScene } from './scenes/GameScene';
+import { DebugOverlayScene } from './scenes/DebugOverlayScene';
+import { MainMenuScene } from './scenes/MainMenuScene';
+import { BirchSpeechScene } from './scenes/BirchSpeechScene';
+import { NamingScene } from './scenes/NamingScene';
+import { OverworldScene } from './scenes/OverworldScene';
+import { BattleScene } from './scenes/BattleScene';
+import { MenuOverlayScene } from './scenes/MenuOverlayScene';
+import { OptionMenuScene } from './scenes/OptionMenuScene';
 
 export const TILE_SIZE = 16;
 // Résolution NATIVE Pokemon Émeraude GBA = 240×160 px = 15×10 tiles de 16 px.
@@ -24,10 +32,11 @@ const DEFAULT_ZOOM = 4;
 // sont conservées sur disque mais sorties du scene array — elles seront soit
 // portées vers le boot loop décomp (= Tasks transcrites), soit supprimées.
 //
-// Boot flow Phase 0+ :
-//   TestGbaScene (1er) → click/key → GameScene
-//   GameScene → init Gba + DecompRuntime + audio → SetMainCallback2(CB2_Init...)
+// Boot flow Phase 0c+ :
+//   TestGbaScene (1er) → click/key → GameScene → copyright → intro → title → MainMenuScene
+//   GameScene → init Gba + DecompRuntime + audio → SetMainCallback2(CB2_InitCopyrightScreenAfterBootup)
 //             → tickFixed 60Hz → toute la chaîne CB2/Task décomp se déroule.
+//   DebugOverlayScene : overlay global (fps / frame / tasks / sprites) sur toutes les scènes.
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
   parent: 'game',
@@ -36,7 +45,7 @@ const config: Phaser.Types.Core.GameConfig = {
   zoom: DEFAULT_ZOOM,
   pixelArt: true,
   backgroundColor: '#000000',
-  scene: [TestGbaScene, GameScene],
+  scene: [TestGbaScene, GameScene, MainMenuScene, BirchSpeechScene, NamingScene, OverworldScene, BattleScene, MenuOverlayScene, OptionMenuScene],
   physics: {
     default: 'arcade',
     arcade: { debug: false }
@@ -44,6 +53,9 @@ const config: Phaser.Types.Core.GameConfig = {
 };
 
 const game = new Phaser.Game(config);
+
+// Lance l'overlay debug en parallèle sur toutes les scènes
+void game.scene.add('DebugOverlayScene', DebugOverlayScene, true);
 
 // Expose contrôle zoom à window pour les boutons HTML.
 (window as unknown as { setGameZoom: (z: number) => void }).setGameZoom = (z: number) => {

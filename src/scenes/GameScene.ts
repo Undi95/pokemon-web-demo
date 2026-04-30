@@ -29,10 +29,23 @@ import Phaser from 'phaser';
 import { GAME_W, GAME_H } from '../main';
 import { Gba } from '../engine/gba/gba';
 import { GbaPhaserBridge } from '../engine/gba/phaser-bridge';
-import { DecompRuntime } from '../engine/decomp-runtime';
+import { DecompRuntime, type CB2Callback } from '../engine/decomp-runtime';
 import { setGlobalRuntime, resetObjAllocations, lz77Trace, assetCache } from '../engine/decomp-globals';
+import { preloadFontData } from '../engine/gba-text-system';
+import { exposeGbaGlobals } from '../engine/gba-global-scope';
 import { preloadScene1Assets, preloadScene2Assets, preloadScene3Assets, preloadTitleAssets } from '../engine/intro-asset-loader';
-import { Task_Scene1_Load } from '../engine/decomp-data/auto/src/intro-callbacks-auto';
+import {
+  Task_Scene1_Load, MainCB2_EndIntro,
+  SpriteCB_Sparkle, SpriteCB_Volbeat, SpriteCB_Torchic, SpriteCB_Manectric,
+  SpriteCB_GroudonRocks, SpriteCB_KyogreBubbles, SpriteCB_Lightning,
+  SpriteCB_WaterDrop_Ripple, SpriteCB_WaterDropHalf, SpriteCB_WaterDrop,
+  SpriteCB_WaterDrop_Slide, SpriteCB_WaterDrop_ReachLeafEnd,
+  SpriteCB_WaterDrop_DangleFromLeaf, SpriteCB_WaterDrop_Fall, SpriteCB_WaterDropShort,
+  SpriteCB_PlayerOnBicycle, SpriteCB_Flygon, SpriteCB_LogoLetter,
+  SpriteCB_GameFreakLogo, SpriteCB_FlygonSilhouette, SpriteCB_RayquazaOrb,
+} from '../engine/decomp-data/auto/src/intro-callbacks-auto';
+import { CB2_InitTitleScreen } from '../engine/decomp-data/auto/src/title_screen-callbacks-auto';
+import { CB2_InitCopyrightScreenAfterBootup, MainCB2_Intro } from '../engine/copyright-boot';
 
 export class GameScene extends Phaser.Scene {
   private gba!: Gba;
@@ -40,6 +53,8 @@ export class GameScene extends Phaser.Scene {
   private bridge!: GbaPhaserBridge;
   private statusText?: Phaser.GameObjects.Text;
   private booted = false;
+  private mainCb2Intro: CB2Callback | null = null;
+  private keys!: Record<string, Phaser.Input.Keyboard.Key>;
 
   constructor() { super({ key: 'GameScene' }); }
 
@@ -55,6 +70,31 @@ export class GameScene extends Phaser.Scene {
     // Wire le runtime singleton (utilisé par decomp-globals helpers depuis les Tasks)
     setGlobalRuntime(this.rt);
     resetObjAllocations();
+    exposeGbaGlobals();
+
+    // Enregistre les sprite callbacks de l'intro pour que CreateSpriteFromTemplate
+    // puisse les résoudre depuis les templates (les fonctions ESM ne sont pas sur globalThis).
+    this.rt.spriteCallbacks.set('SpriteCB_Sparkle', SpriteCB_Sparkle);
+    this.rt.spriteCallbacks.set('SpriteCB_Volbeat', SpriteCB_Volbeat);
+    this.rt.spriteCallbacks.set('SpriteCB_Torchic', SpriteCB_Torchic);
+    this.rt.spriteCallbacks.set('SpriteCB_Manectric', SpriteCB_Manectric);
+    this.rt.spriteCallbacks.set('SpriteCB_GroudonRocks', SpriteCB_GroudonRocks);
+    this.rt.spriteCallbacks.set('SpriteCB_KyogreBubbles', SpriteCB_KyogreBubbles);
+    this.rt.spriteCallbacks.set('SpriteCB_Lightning', SpriteCB_Lightning);
+    this.rt.spriteCallbacks.set('SpriteCB_WaterDrop_Ripple', SpriteCB_WaterDrop_Ripple);
+    this.rt.spriteCallbacks.set('SpriteCB_WaterDropHalf', SpriteCB_WaterDropHalf);
+    this.rt.spriteCallbacks.set('SpriteCB_WaterDrop', SpriteCB_WaterDrop);
+    this.rt.spriteCallbacks.set('SpriteCB_WaterDrop_Slide', SpriteCB_WaterDrop_Slide);
+    this.rt.spriteCallbacks.set('SpriteCB_WaterDrop_ReachLeafEnd', SpriteCB_WaterDrop_ReachLeafEnd);
+    this.rt.spriteCallbacks.set('SpriteCB_WaterDrop_DangleFromLeaf', SpriteCB_WaterDrop_DangleFromLeaf);
+    this.rt.spriteCallbacks.set('SpriteCB_WaterDrop_Fall', SpriteCB_WaterDrop_Fall);
+    this.rt.spriteCallbacks.set('SpriteCB_WaterDropShort', SpriteCB_WaterDropShort);
+    this.rt.spriteCallbacks.set('SpriteCB_PlayerOnBicycle', SpriteCB_PlayerOnBicycle);
+    this.rt.spriteCallbacks.set('SpriteCB_Flygon', SpriteCB_Flygon);
+    this.rt.spriteCallbacks.set('SpriteCB_LogoLetter', SpriteCB_LogoLetter);
+    this.rt.spriteCallbacks.set('SpriteCB_GameFreakLogo', SpriteCB_GameFreakLogo);
+    this.rt.spriteCallbacks.set('SpriteCB_FlygonSilhouette', SpriteCB_FlygonSilhouette);
+    this.rt.spriteCallbacks.set('SpriteCB_RayquazaOrb', SpriteCB_RayquazaOrb);
 
     // Expose debug pour inspecter dans la console : window.debug.rt, debug.gba etc.
     (window as unknown as { debug: unknown }).debug = {
@@ -77,17 +117,25 @@ export class GameScene extends Phaser.Scene {
       frameImg.setPosition((GAME_W - 240) / 2, (GAME_H - 160) / 2);
     }
 
-    this.statusText = this.add.text(2, 2, 'GameScene boot...', {
-      fontFamily: 'monospace', fontSize: '7px', color: '#FFFFFF',
-      backgroundColor: '#000000',
-    }).setDepth(100);
-
     // Audio : pas de prime ici. Notre M4A engine maison (`src/engine/m4a/`)
     // est lazy-init via m4aSongNumStart() au moment où une song est demandée
     // par les Tasks décomp (= 1:1 ROM behavior). Plus de SpessaSynth.
 
-    // Pré-charge async les assets Scene 1, puis pose Task_Scene1_Load
+    // Pré-charge async les assets (intro + fonts), puis pose Task_Scene1_Load
     void this.bootIntro();
+
+    // Skip intro : A/B/START/SELECT à tout moment avant le title screen
+    // NOTE: désactivé car il interfère avec le Title Screen (réinitialise CB2_InitTitleScreen)
+    // L'intro tourne correctement jusqu'au Title Screen naturellement.
+    // this.input.keyboard?.on('keydown', (e: KeyboardEvent) => {
+    //   const k = e.key.toLowerCase();
+    //   if (k === 'w' || k === 'x' || k === 'b' || k === 'n' || k === 'enter' || k === ' ') {
+    //     if (this.rt.gMain.callback2 === this.mainCb2Intro) {
+    //       console.log('[GameScene] Skip intro → CB2_InitTitleScreen');
+    //       this.rt.SetMainCallback2(CB2_InitTitleScreen);
+    //     }
+    //   }
+    // });
 
     // Skip via input
     this.input.keyboard?.on('keydown-ESC', () => {
@@ -100,39 +148,41 @@ export class GameScene extends Phaser.Scene {
                   '| frame:', this.rt.gIntroFrameCounter);
     });
 
+    this.createKeys();
     console.log('[GameScene] create() done — preloading assets...');
   }
 
   private async bootIntro(): Promise<void> {
     try {
-      this.statusText?.setText('Preloading Scene 1+2+3 + Title assets...');
       await preloadScene1Assets();
       await preloadScene2Assets();
       await preloadScene3Assets();
       await preloadTitleAssets();
-      this.statusText?.setText('Assets ready, posting Task_Scene1_Load').setColor('#88FFCC');
+      await preloadFontData();
 
-      // MainCB2_Intro stub : 1:1 décomp src/intro.c MainCB2_Intro qui fait juste
-      // "AnimateSprites + RunTasks + BuildOamBuffer + UpdatePaletteFade + tick frame
-      // counter". Ces opérations sont déjà dans tickFixed → notre stub = no-op pur.
-      this.rt.SetMainCallback2(() => { /* MainCB2_Intro = no-op (tickFixed handles all) */ });
+      // Transfère les palettes additionnelles préchargées dans le runtime
+      // pour que CpuCopy16 puisse les utiliser (e.g. text.pal pour color cycle).
+      const textPal = assetCache.get('gIntroGameFreakTextFade_Pal') as Uint16Array | undefined;
+      if (textPal) this.rt.setExtraPalette('gIntroGameFreakTextFade_Pal', textPal);
 
-      // Pose Task_Scene1_Load. La signature transcrite = (task, rt). Notre runTasks
-      // appelle `func(task)` (1 arg) → on wrap pour passer rt en closure.
-      const taskId = this.rt.CreateTask((task) => Task_Scene1_Load(task, this.rt), 0);
-      console.log('[GameScene] Task_Scene1_Load posted, taskId =', taskId);
+      // MainCB2_Intro = skip intro on any key press (décomp 1:1)
+      this.mainCb2Intro = MainCB2_Intro;
+
+      // Boot 1:1 décomp : CB2_InitCopyrightScreenAfterBootup → SetUpCopyrightScreen
+      // state machine → fade in → hold → fade out → MainCB2_Intro + Task_Scene1_Load
+      this.rt.SetMainCallback2(CB2_InitCopyrightScreenAfterBootup);
+      console.log('[GameScene] CB2_InitCopyrightScreenAfterBootup set');
 
       this.booted = true;
-      this.statusText?.setText('Boot loop ON. Scene 1 ticking...').setColor('#00FF88');
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       console.error('[GameScene] bootIntro failed:', e);
-      this.statusText?.setText(`BOOT ERR: ${msg}`).setColor('#FF4040');
     }
   }
 
   update(_: number, deltaMs: number) {
     if (!this.rt) return;
+    this.pollInput();
     // Tick le runtime décomp (1:1 AgbMain main loop). Try/catch pour révéler
     // les erreurs silencieuses que Phaser swallow (= ne s'arrête pas mais
     // skip update suivants). Phase 3 debug Task_Scene3_Groudon GameScene halt.
@@ -142,16 +192,57 @@ export class GameScene extends Phaser.Scene {
       console.error('[GameScene.update] tickFixed THREW:', e);
       console.error('[GameScene.update] stack:', (e as Error).stack);
     }
+    // Main Menu now runs purely on GBA engine (no Phaser scene fallback)
+    // CB2_InitMainMenu / CB2_MainMenu are handled by the decomp runtime directly
     try {
       if (this.bridge) this.bridge.tick();
     } catch (e) {
       console.error('[GameScene.update] bridge.tick THREW:', e);
     }
     // Status update : montre l'état du runtime en live
-    if (this.booted && this.statusText && (this.rt.gIntroFrameCounter % 30 === 0)) {
-      this.statusText.setText(
-        `frame: ${this.rt.gIntroFrameCounter} | tasks: ${this.rt.gTasks.size} | sprites: ${this.rt.gSprites.size}`,
-      );
+
+  }
+
+  private heldKeys = 0;
+
+  private createKeys(): void {
+    // Utilise les événements natifs keydown/keyup au lieu de Phaser Key objects
+    // car Puppeteer + Phaser addKey ne détectent pas toujours les touches.
+    window.addEventListener('keydown', (e) => {
+      const mask = this.keyToMask(e.key);
+      if (mask) {
+        this.heldKeys |= mask;
+      }
+    });
+    window.addEventListener('keyup', (e) => {
+      const mask = this.keyToMask(e.key);
+      if (mask) {
+        this.heldKeys &= ~mask;
+      }
+    });
+  }
+
+  private keyToMask(key: string): number {
+    switch (key.toLowerCase()) {
+      case 'w': return 0x01;        // A
+      case 'x': return 0x02;        // B
+      case 'n': return 0x04;        // SELECT
+      case 'b': return 0x08;        // START
+      case 'enter': return 0x08;    // START (alternative)
+      case 'arrowright': return 0x10;
+      case 'arrowleft': return 0x20;
+      case 'arrowup': return 0x40;
+      case 'arrowdown': return 0x80;
+      case 'z': return 0x100;       // R
+      case 'a': return 0x200;       // L
+      case ' ': return 0x08;        // START (alternative)
+      default: return 0;
     }
+  }
+
+  private pollInput(): void {
+    // Copie les touches détenues dans le runtime pour que tickFixed puisse
+    // calculer newKeys (= front montant) chaque frame.
+    this.rt.gMain.heldKeys = this.heldKeys;
   }
 }

@@ -99,47 +99,47 @@ function applyMatrixFromAffineState(sprite: DecompSprite, rt: DecompRuntime): vo
 }
 
 /** 1:1 décomp src/sprite.c:ApplyAffineAnimFrame :
- *    if (frameCmd->xScale != 0) sAffineAnimStates[matrixNum].xScale = frameCmd->xScale;
- *    if (frameCmd->yScale != 0) sAffineAnimStates[matrixNum].yScale = frameCmd->yScale;
- *    sAffineAnimStates[matrixNum].rotation += frameCmd->rotation;  // ACCUMULATE
- *    update matrix.
- *  ⚠️ xScale/yScale = SET only if non-zero (= preserve previous if frame.xScale==0).
- *    rotation = ACCUMULATE.
+ *    if (frameCmd->duration)
+ *        frameCmd->duration--, ApplyAffineAnimFrameRelativeAndUpdateMatrix(frameCmd);
+ *    else
+ *        ApplyAffineAnimFrameAbsolute(frameCmd), ApplyAffineAnimFrameRelativeAndUpdateMatrix(dummy);
+ *  Quand duration != 0 : on applique le delta immédiatement (1er tick) et le
+ *  compteur de délai est décrémenté. Quand duration == 0 : set absolu + dummy.
  */
 export function ApplyAffineAnimFrame(sprite: DecompSprite, frame: AffineAnimFrameCmd, rt: DecompRuntime): void {
-  if (frame.xScale !== 0) sprite.xScale = frame.xScale;
-  if (frame.yScale !== 0) sprite.yScale = frame.yScale;
-  sprite.rotation += frame.rotation;
-  applyMatrixFromAffineState(sprite, rt);
+  if (frame.duration !== 0) {
+    ApplyAffineAnimFrameRelative(sprite, frame, rt);
+  } else {
+    sprite.xScale = frame.xScale;
+    sprite.yScale = frame.yScale;
+    sprite.rotation = (frame.rotation << 8) & ~0xFF;
+    applyMatrixFromAffineState(sprite, rt);
+  }
 }
 
 /** 1:1 décomp ApplyAffineAnimFrameRelativeAndUpdateMatrix : accumule (= +=)
  *  les deltas xScale/yScale/rotation, puis update matrix.
- *  Note : les frames non-initiales ont des deltas (incréments) au lieu de valeurs
- *  absolues. Ex: sAffineAnim_GameFreak_GrowAndShrink frames = [(128,128,0,0), (16,16,0,16), (-16,-16,0,8)]
- *  → frame 0 = init scale 128, frames 1+ = delta +16 par frame pendant 16 frames. */
+ *  Les valeurs frame.xScale/yScale/rotation sont des DELTAS ajoutés chaque tick. */
 export function ApplyAffineAnimFrameRelative(sprite: DecompSprite, frame: AffineAnimFrameCmd, rt: DecompRuntime): void {
   sprite.xScale += frame.xScale;
   sprite.yScale += frame.yScale;
-  sprite.rotation += frame.rotation;
+  sprite.rotation = (sprite.rotation + (frame.rotation << 8)) & ~0xFF;
   applyMatrixFromAffineState(sprite, rt);
 }
 
 /** 1:1 décomp BeginAffineAnim(sprite) : appelé quand affineAnimBeginning=TRUE.
- *  Reset state + applique frame 0 (= init absolu) + start delay counter. */
+ *  Reset state + applique frame 0 + start delay counter. */
 export function BeginAffineAnim(sprite: DecompSprite, rt: DecompRuntime): void {
   if (!(sprite.affineMode & ST_OAM_AFFINE_ON_MASK)) return;
   const anim = getAffineAnim(sprite);
   if (!anim || anim.frames.length === 0) return;
-  // AffineAnimStateRestartAnim : reset cmdIndex/delayCounter/loopCounter
   sprite.affineAnimCmdIndex = 0;
   sprite.affineAnimDelayCounter = 0;
   sprite.affineAnimBeginning = false;
   sprite.affineAnimEnded = false;
-  // Apply frame 0 absolute
   const frame0 = anim.frames[0];
   ApplyAffineAnimFrame(sprite, frame0, rt);
-  sprite.affineAnimDelayCounter = frame0.duration;
+  sprite.affineAnimDelayCounter = frame0.duration > 0 ? frame0.duration - 1 : 0;
 }
 
 /** 1:1 décomp ContinueAffineAnim(sprite). Tick chaque frame. */
@@ -147,12 +147,10 @@ export function ContinueAffineAnim(sprite: DecompSprite, rt: DecompRuntime): voi
   if (!(sprite.affineMode & ST_OAM_AFFINE_ON_MASK)) return;
 
   if (sprite.affineAnimDelayCounter > 0) {
-    // AffineAnimDelay : délai en cours, applique le frame relative en attendant
     sprite.affineAnimDelayCounter--;
     const anim = getAffineAnim(sprite);
     if (anim && sprite.affineAnimCmdIndex < anim.frames.length) {
       const frame = anim.frames[sprite.affineAnimCmdIndex];
-      // Apply relative delta chaque frame
       ApplyAffineAnimFrameRelative(sprite, frame, rt);
     }
     return;
@@ -160,13 +158,11 @@ export function ContinueAffineAnim(sprite: DecompSprite, rt: DecompRuntime): voi
 
   if (sprite.affineAnimPaused) return;
 
-  // Advance to next cmd
   sprite.affineAnimCmdIndex++;
   const anim = getAffineAnim(sprite);
   if (!anim) return;
 
   if (sprite.affineAnimCmdIndex >= anim.frames.length) {
-    // Hit end of frames — process terminator
     if (anim.terminator === 'END') {
       sprite.affineAnimEnded = true;
       return;
@@ -176,11 +172,10 @@ export function ContinueAffineAnim(sprite: DecompSprite, rt: DecompRuntime): voi
     }
   }
 
-  // Start the new frame
   const frame = anim.frames[sprite.affineAnimCmdIndex];
   if (frame) {
     ApplyAffineAnimFrame(sprite, frame, rt);
-    sprite.affineAnimDelayCounter = frame.duration;
+    sprite.affineAnimDelayCounter = frame.duration > 0 ? frame.duration - 1 : 0;
   }
 }
 

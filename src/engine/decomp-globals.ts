@@ -24,6 +24,7 @@
  */
 import type { DecompRuntime } from './decomp-runtime';
 import { BG_PLTT_ID, OBJ_PLTT_ID, BG_CHAR_ADDR, BG_SCREEN_ADDR } from './decomp-runtime';
+import { G_SINE_TABLE } from './decomp-data/auto/src/sine-table';
 
 // ─── Singleton runtime + asset cache ──────────────────────────────────────────
 
@@ -55,10 +56,13 @@ export const assetCache = new Map<string, Uint8Array | Uint16Array>();
  *  combien d'entries ont été copiées, vers quel bgIdx. Inspectable via window.debug. */
 export const lz77Trace: Array<{ symbol: string; dest: number; dataLen: number; bgIdx?: number; copied?: number; reason?: string }> = [];
 
-/** Récupère un asset depuis le cache, throw si manquant (= preload incomplet). */
-function getAsset(symbol: string): Uint8Array | Uint16Array {
+/** Récupère un asset depuis le cache, log warning si manquant (= preload incomplet). */
+export function getAsset(symbol: string): Uint8Array | Uint16Array | null {
   const data = assetCache.get(symbol);
-  if (!data) throw new Error(`decomp-globals: asset '${symbol}' not in cache (forgot to preload?)`);
+  if (!data) {
+    console.warn(`decomp-globals: asset '${symbol}' not in cache (forgot to preload?)`);
+    return null;
+  }
   return data;
 }
 
@@ -67,6 +71,10 @@ function getAsset(symbol: string): Uint8Array | Uint16Array {
 export const BG_SCREEN_SIZE = 0x800;
 /** 1:1 décomp PLTT_SIZE = 0x400 bytes (= 256 colors × 2). */
 export const PLTT_SIZE = 0x400;
+/** 1:1 décomp PLTT_SIZE_4BPP = 0x20 bytes (= 16 colors × 2). */
+export const PLTT_SIZE_4BPP = 0x20;
+/** 1:1 décomp PLTT_SIZE_8BPP = 0x200 bytes (= 256 colors × 2). */
+export const PLTT_SIZE_8BPP = 0x200;
 /** 1:1 décomp VRAM_SIZE = 0x18000 bytes. */
 export const VRAM_SIZE = 0x18000;
 
@@ -118,6 +126,13 @@ export function setIntroCharacterGender(v: number): void { sIntroCharacterGender
 export let sFlygonYOffset = 0;
 export function setFlygonYOffset(v: number): void { sFlygonYOffset = v; }
 
+/** EWRAM_DATA u16 gIntroCredits_MovingSceneryVBase — utilisé par intro/credits scrolling. */
+export let gIntroCredits_MovingSceneryVBase = 0;
+/** EWRAM_DATA s16 gIntroCredits_MovingSceneryVOffset — utilisé par intro/credits parallax. */
+export let gIntroCredits_MovingSceneryVOffset = 0;
+/** EWRAM_DATA s16 gIntroCredits_MovingSceneryState — INTROCRED_SCENERY_NORMAL/FROZEN. */
+export let gIntroCredits_MovingSceneryState = 0;
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // HELPERS GLOBAUX (= équivalents fonctions extern décomp)
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -137,25 +152,16 @@ export function setFlygonYOffset(v: number): void { sFlygonYOffset = v; }
  *  BG_SCREEN_ADDR(n) = n*0x800 → screen n. */
 export function LZ77UnCompVram(srcSymbol: string, destAddr: number): void {
   const data = getAsset(srcSymbol);
+  if (!data) return; // asset manquant, déjà loggué
   const r = rt();
   const traceEntry: { symbol: string; dest: number; dataLen: number; copied?: number; reason?: string } = {
     symbol: srcSymbol, dest: destAddr, dataLen: data.byteLength,
   };
   lz77Trace.push(traceEntry);
-  // 1:1 GBA hardware : VRAM est UN tableau partagé 96KB (0x06000000-0x06017FFF).
-  // BG_CHAR_ADDR(n) = n*0x4000, BG_SCREEN_ADDR(n) = n*0x800 sont des offsets
-  // dans cette VRAM unifiée. Chez nous (Phase 1 Action 2), `r.gba.vram` EST cette
-  // VRAM unifiée. On écrit directement à `destAddr` modulo VRAM_SIZE.
-  //
-  // BG charBase et mapBase pointent dans cette même VRAM ; les BGs avec mêmes
-  // charBase/mapBase voient les mêmes data automatiquement (= 1:1 hardware
-  // shared addressing). Plus aucun routage par suffix de symbol.
   const bytes = data instanceof Uint16Array
     ? new Uint8Array(data.buffer, data.byteOffset, data.byteLength)
     : data;
   const vram = r.gba.vram;
-  // VRAM = 96KB = 0x18000. C'est PAS une power-of-2 → utiliser modulo, PAS un
-  // AND mask (le AND mask suppose power-of-2, sinon `0x8000 & 0x17FFF = 0`).
   const offset = destAddr % vram.byteLength;
   const copySize = Math.min(bytes.length, vram.byteLength - offset);
   if (copySize > 0) {
@@ -173,9 +179,21 @@ export function LZ77UnCompVram(srcSymbol: string, destAddr: number): void {
  *  sizeBytes : IGNORÉ quand srcSymbol est une string (le bodyC transcrit a un bug
  *  `(symbol)?.length` qui retourne la longueur de la STRING name au lieu du
  *  sizeof(buffer) attendu). On utilise toujours la vraie taille du buffer cache. */
-export function LoadPalette(srcSymbol: string | Uint16Array, offset: number, sizeBytes: number): void {
-  const data = typeof srcSymbol === 'string' ? getAsset(srcSymbol) : srcSymbol;
-  const u16 = data instanceof Uint16Array ? data : new Uint16Array(data.buffer, data.byteOffset, Math.floor(data.byteLength / 2));
+export function LoadPalette(srcSymbol: string | Uint16Array | number, offset: number, sizeBytes: number): void {
+  let u16: Uint16Array | undefined;
+  if (typeof srcSymbol === 'string') {
+    const asset = getAsset(srcSymbol);
+    if (asset) {
+      u16 = asset instanceof Uint16Array
+        ? asset
+        : new Uint16Array(asset.buffer, asset.byteOffset, Math.floor(asset.byteLength / 2));
+    }
+  } else if (typeof srcSymbol === 'number') {
+    u16 = new Uint16Array([srcSymbol & 0xFFFF]);
+  } else {
+    u16 = srcSymbol;
+  }
+  if (!u16 || u16.length === 0) return;
   // Si srcSymbol est une string : on ignore sizeBytes (artefact du transpileur)
   // et on utilise la vraie taille du buffer cache.
   const numEntries = typeof srcSymbol === 'string'
@@ -188,6 +206,17 @@ export function LoadPalette(srcSymbol: string | Uint16Array, offset: number, siz
   } else {
     r.gba.palette.loadObjRange(offset - 256, u16.subarray(0, numEntries));
   }
+  
+}
+
+/** 1:1 décomp `LoadBgTiles` — copy tile data into BG VRAM.
+ *  Simplified: ignores baseTile (assumed 0) and paletteMode. */
+export function LoadBgTiles(bg: number, src: Uint8Array, sizeBytes: number, destOffset: number): void {
+  const r = rt();
+  const vram = r.gba.bg(bg as 0 | 1 | 2 | 3).vram;
+  const offset = destOffset * 32; // each tile = 32 bytes in 4bpp
+  const end = Math.min(offset + sizeBytes, vram.length);
+  vram.set(src.subarray(0, end - offset), offset);
 }
 
 /** 1:1 décomp `DmaClear16(channel, dest, size)` — clear memory via DMA.
@@ -200,21 +229,60 @@ export function LoadPalette(srcSymbol: string | Uint16Array, offset: number, siz
 export function DmaClear16(_channel: number, destAddr: number, sizeBytes: number): void {
   const r = rt();
   const vram = r.gba.vram;
-  const offset = destAddr & (vram.byteLength - 1);
+  const offset = destAddr % vram.byteLength;
   const clearSize = Math.min(sizeBytes, vram.byteLength - offset);
   if (clearSize > 0) {
     vram.fill(0, offset, offset + clearSize);
   }
 }
 
-/** 1:1 décomp `CpuFill16(value, dest, size)` — fill 16-bit. */
-export function CpuFill16(_value: number, _destAddr: number, _sizeBytes: number): void {
-  // Notre engine : pas d'address-based memory model, on no-op pour l'instant
+/** 1:1 décomp `CpuFill16(value, dest, size)` — fill 16-bit.
+ *  Supporte VRAM et PLTT (address-based). */
+export function CpuFill16(value: number, destAddr: number, sizeBytes: number): void {
+  const r = rt();
+  if (destAddr >= VRAM && destAddr < VRAM + VRAM_SIZE) {
+    const offset = destAddr - VRAM;
+    const end = Math.min(offset + sizeBytes, VRAM_SIZE);
+    const view = new Uint16Array(r.gba.vram.buffer, offset, (end - offset) >> 1);
+    view.fill(value & 0xFFFF);
+  } else if (destAddr >= PLTT && destAddr < PLTT + PLTT_SIZE) {
+    const start = (destAddr - PLTT) >> 1;
+    const count = sizeBytes >> 1;
+    for (let i = 0; i < count; i++) {
+      r.gPlttBufferFaded.set(start + i, value & 0xFFFF);
+    }
+  }
 }
 
-/** 1:1 décomp `CpuFill32(value, dest, size)` — fill 32-bit. */
-export function CpuFill32(_value: number, _destAddr: number, _sizeBytes: number): void {
-  // Idem CpuFill16
+/** 1:1 décomp `CpuFill32(value, dest, size)` — fill 32-bit.
+ *  Supporte VRAM, OAM (hide sprites) et PLTT. */
+export function CpuFill32(value: number, destAddr: number, sizeBytes: number): void {
+  const r = rt();
+  if (destAddr >= VRAM && destAddr < VRAM + VRAM_SIZE) {
+    const offset = destAddr - VRAM;
+    const end = Math.min(offset + sizeBytes, VRAM_SIZE);
+    const view = new Uint32Array(r.gba.vram.buffer, offset, (end - offset) >> 2);
+    view.fill(value >>> 0);
+  } else if (destAddr >= OAM && destAddr < OAM + OAM_SIZE) {
+    for (const entry of r.gba.oam) {
+      entry.visible = false;
+    }
+  } else if (destAddr >= PLTT && destAddr < PLTT + PLTT_SIZE) {
+    CpuFill16(value & 0xFFFF, destAddr, sizeBytes);
+    CpuFill16((value >>> 16) & 0xFFFF, destAddr + 2, sizeBytes > 2 ? sizeBytes - 2 : 0);
+  }
+}
+
+/** 1:1 décomp `CpuSet(src, dest, control)` — copy/fill words.
+ *  Stub : notre engine ne supporte pas l'adressage mémoire brut C. */
+export function CpuSet(_src: any, _dest: any, _control: number): void {
+  // no-op stub
+}
+
+/** 1:1 décomp `CpuFastSet(src, dest, control)` — fast copy/fill.
+ *  Stub : idem CpuSet. */
+export function CpuFastSet(_src: any, _dest: any, _control: number): void {
+  // no-op stub
 }
 
 /** 1:1 décomp src/intro_credits_graphics.c:729 — charge BG2/BG3 Scene 2.
@@ -433,6 +501,11 @@ export function m4aSongNumStart(songId: number): void {
   })();
 }
 
+/** 1:1 décomp `m4aMPlayAllStop()` — stoppe tout playback M4A. */
+export function m4aMPlayAllStop(): void {
+  void import('./m4a/player').then(({ stopSong }) => stopSong());
+}
+
 /** 1:1 décomp `PlaySE(seId)` — joue un sound effect one-shot. Phase 0c stub. */
 export function PlaySE(_seId: number): void { /* TODO Phase 1 Action 4 */ }
 
@@ -496,7 +569,36 @@ export const gIntroGroudonBg_Tilemap = 'gIntroGroudonBg_Tilemap';
 export const gIntroKyogreBg_Tilemap = 'gIntroKyogreBg_Tilemap';
 export const gIntroClouds_Gfx = 'gIntroClouds_Gfx';
 export const gIntroCloudsSun_Tilemap = 'gIntroCloudsSun_Tilemap';
+export const gIntroCloudsLeft_Tilemap = 'gIntroCloudsLeft_Tilemap';
+export const gIntroCloudsRight_Tilemap = 'gIntroCloudsRight_Tilemap';
+export const gIntroRayquaza_Tilemap = 'gIntroRayquaza_Tilemap';
+export const gIntroRayquazaClouds_Tilemap = 'gIntroRayquazaClouds_Tilemap';
+export const gIntroRayquaza_Gfx = 'gIntroRayquaza_Gfx';
+export const gIntroRayquazaClouds_Gfx = 'gIntroRayquazaClouds_Gfx';
 export const gIntro3Bg_Pal = 'gIntro3Bg_Pal';
+
+/** Scanline effect register buffers (2 buffers × 640 entries).
+ *  Matches decomp gScanlineEffectRegBuffers[2][0x320]. */
+export const gScanlineEffectRegBuffers: [Uint16Array, Uint16Array] = [
+  new Uint16Array(640),
+  new Uint16Array(640),
+];
+
+/** Stop flag for wave task. */
+export let sShouldStopWaveTask = false;
+
+/** Global scanline effect state (mutable). */
+export let gScanlineEffect = {
+  state: 0,
+  dmaSrcBuffers: [null, null] as (null | number)[],
+  dmaDest: null as number | null,
+  dmaControl: 0,
+  srcBuffer: 0,
+  unused16: 0,
+  unused17: 0,
+  waveTaskId: 0xFF,
+  setFirstScanlineReg: () => {},
+};
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TITLE SCREEN STUBS (Phase 3 minimum viable)
@@ -518,12 +620,152 @@ export function ResetPaletteFade(): void {
   r.gba.blend.brightness = 0;
 }
 export function ResetTasks(): void {
-  rt().gTasks.clear();
+  const r = rt();
+  r.gTasks.clear();
+  r.nextTaskId = 0;
+  console.log('[ResetTasks] gTasks cleared, nextTaskId reset, size=', r.gTasks.size);
 }
-export function ScanlineEffect_Stop(): void { /* TODO Phase 3+ */ }
+export function TransferPlttBuffer(): void {
+  // Dans notre engine, gPlttBufferFaded écrit déjà directement dans gba.palette
+  // via PaletteBuffer.set() → loadBgRange/loadObjRange → refreshCache.
+  // Cette fonction est un no-op fonctionnel, conservée pour compatibilité C.
+}
+export function ScanlineEffect_Clear(): void {
+  gScanlineEffectRegBuffers[0].fill(0);
+  gScanlineEffectRegBuffers[1].fill(0);
+  gScanlineEffect.dmaSrcBuffers[0] = null;
+  gScanlineEffect.dmaSrcBuffers[1] = null;
+  gScanlineEffect.dmaDest = null;
+  gScanlineEffect.dmaControl = 0;
+  gScanlineEffect.srcBuffer = 0;
+  gScanlineEffect.state = 0;
+  gScanlineEffect.waveTaskId = 0xFF;
+  sShouldStopWaveTask = false;
+}
+
+export function ScanlineEffect_SetParams(_params: unknown): void {
+  // Phase 3+ : faithful DMA emulation via gScanlineEffectRegBuffers.
+  // For now, mark active so H-blank callback knows to run.
+  gScanlineEffect.state = 1;
+}
+
+export function ScanlineEffect_InitHBlankDmaTransfer(): void {
+  // No-op : our compositor calls hblankCallback directly per scanline.
+  // Real GBA uses DMA from gScanlineEffectRegBuffers to hardware regs.
+}
+
+export function ScanlineEffect_Stop(): void {
+  waveParams = null;
+  wavePhase = 0;
+  waveDelayCounter = 0;
+  try {
+    rt().gba.setHBlankCallback(null);
+  } catch { /* runtime may not be set */ }
+  gScanlineEffect.state = 0;
+}
 export function EnableInterrupts(_flag: number): void { /* no-op */ }
 export function LoadSpritePalette(_pal: { data: string, tag: string | number } | unknown): void {
   /* Phase 3+ : implémenter via paletteTagToSlot register */
+}
+
+/** 1:1 décomp `UpdatePaletteFade()` — tick palette fade + return active state.
+ *  Returns `true` if fade is still active, `false` when done. */
+export function UpdatePaletteFade(): boolean {
+  const r = rt();
+  r.UpdatePaletteFade();
+  return r.gPaletteFade.active;
+}
+
+/** 1:1 décomp `JOY_NEW(buttonMask)` — retourne gMain.newKeys & buttonMask. */
+export function JOY_NEW(buttonMask: number): number {
+  return (rt().gMain as unknown as { newKeys: number }).newKeys & buttonMask;
+}
+
+/** 1:1 décomp `JOY_HELD(buttonMask)` — retourne gMain.heldKeys & buttonMask. */
+export function JOY_HELD(buttonMask: number): number {
+  return (rt().gMain as unknown as { heldKeys: number }).heldKeys & buttonMask;
+}
+
+// ─── ScanlineEffect_InitWave implementation ─────────────────────────────────
+
+let wavePhase = 0;
+let waveDelayCounter = 0;
+let waveParams: {
+  startLine: number;
+  endLine: number;
+  frequency: number;
+  amplitude: number;
+  regOffset: number;
+  delayInterval: number;
+  applyBattleBgOffsets: boolean;
+} | null = null;
+
+function getBgForRegOffset(regOffset: number): { bgIndex: number; prop: 'hofs' | 'vofs' } {
+  const bgIndex = Math.floor(regOffset / 4);
+  const isVofs = (regOffset % 4) === 2;
+  return { bgIndex: Math.min(3, Math.max(0, bgIndex)), prop: isVofs ? 'vofs' : 'hofs' };
+}
+
+/** 1:1 décomp `ScanlineEffect_InitWave(...)` — implémentation directe via H-blank callback.
+ *  Pas de DMA fidle : le compositor appelle le H-blank callback à chaque scanline.
+ *  Amplitude/frequency/wavePhase modélisés avec G_SINE_TABLE (Q.8). */
+export function ScanlineEffect_InitWave(
+  startLine: number, endLine: number, frequency: number,
+  amplitude: number, delayInterval: number, regOffset: number,
+  applyBattleBgOffsets: boolean,
+): number {
+  const r = rt();
+  const { bgIndex, prop } = getBgForRegOffset(regOffset);
+
+  wavePhase = 0;
+  waveDelayCounter = delayInterval;
+  waveParams = { startLine, endLine, frequency, amplitude, regOffset, delayInterval, applyBattleBgOffsets };
+
+  // Base offset captured at scanline 0 each frame (matches battle BG offset behavior)
+  let frameBase = 0;
+
+  r.gba.setHBlankCallback((scanline) => {
+    if (!waveParams) return;
+
+    const bg = r.gba.bg(bgIndex as 0 | 1 | 2 | 3);
+
+    if (scanline === 0) {
+      frameBase = prop === 'hofs' ? bg.config.hofs : bg.config.vofs;
+      // Advance phase according to delayInterval (decomp tFramesUntilMove logic)
+      if (waveDelayCounter === 0) {
+        waveDelayCounter = waveParams.delayInterval;
+        wavePhase = (wavePhase + 1) & 0xFF;
+      } else {
+        waveDelayCounter--;
+      }
+    }
+
+    if (scanline < waveParams.startLine || scanline >= waveParams.endLine) {
+      if (prop === 'hofs') bg.config.hofs = frameBase;
+      else bg.config.vofs = frameBase;
+      return;
+    }
+
+    // Decomp wave formula: Sin((scanline + phase) * frequency, amplitude)
+    // G_SINE_TABLE is Q.8 (range -256..256). Sin(idx, amp) = (table[idx] * amp) >> 8.
+    const idx = ((scanline + wavePhase) * waveParams.frequency) & 0xFF;
+    const offset = (G_SINE_TABLE[idx] * waveParams.amplitude) >> 8;
+
+    if (prop === 'hofs') {
+      bg.config.hofs = frameBase + offset;
+    } else {
+      bg.config.vofs = frameBase + offset;
+    }
+  });
+
+  gScanlineEffect.state = 1;
+  return 0; // taskId (not used by caller in our engine)
+}
+
+/** 1:1 décomp `StartPokemonLogoShine(mode)` — stub Phase 0.
+ *  Logo shine sparkle effect not yet implemented. */
+export function StartPokemonLogoShine(_mode: number): void {
+  // TODO Phase 3: implement shine sprite creation
 }
 
 /** Memory addresses GBA hardware constants. */
@@ -540,6 +782,7 @@ export const WININ_WIN1_BG_ALL = 0xF00;
 export const WININ_WIN1_OBJ = 0x1000;
 export const WINOUT_WIN01_BG_ALL = 0xF;
 export const WINOUT_WIN01_OBJ = 0x10;
+export const WINOUT_WIN01_CLR = 0x20;
 export const WINOUT_WINOBJ_ALL = 0x1F00;
 
 /** Interrupt flags. */
@@ -614,22 +857,18 @@ export function LoadCompressedSpriteSheet(sheet: { data: string, size: number, t
   const r = rt();
   // data = symbol décomp (e.g. 'sIntroDropsLogo_Gfx')
   const charData = getAsset(sheet.data);
+  if (!charData) return; // asset manquant
   const bytes = charData instanceof Uint16Array
     ? new Uint8Array(charData.buffer, charData.byteOffset, charData.byteLength)
     : charData;
-  // Auto-allocate dans objVram via le runtime
-  // On utilise une convention simplifiée : on append à objVram + record tag → tileStart
   const tagStr = String(sheet.tag);
-  // Vérifier si déjà chargé
   if (r.spriteSheetTagToTileStart.has(tagStr)) return;
-  // Find next free byte offset (track manually)
-  const tileStart = (_nextSpriteSheetByteOffset >> 5);
-  const copySize = Math.min(bytes.length, r.gba.objVram.length - _nextSpriteSheetByteOffset);
-  if (copySize > 0) r.gba.objVram.set(bytes.subarray(0, copySize), _nextSpriteSheetByteOffset);
+  const tileStart = (r.nextSpriteSheetByteOffset >> 5);
+  const copySize = Math.min(bytes.length, r.gba.objVram.length - r.nextSpriteSheetByteOffset);
+  if (copySize > 0) r.gba.objVram.set(bytes.subarray(0, copySize), r.nextSpriteSheetByteOffset);
   r.spriteSheetTagToTileStart.set(tagStr, tileStart);
-  _nextSpriteSheetByteOffset += copySize;
+  r.nextSpriteSheetByteOffset += copySize;
 }
-let _nextSpriteSheetByteOffset = 0;
 
 /** 1:1 décomp `LoadSpritePalettes(palettes[])` — charge une table de palettes OBJ. */
 export function LoadSpritePalettes(palettes: Array<{ data: string, tag: string | number }>): void {
@@ -638,20 +877,20 @@ export function LoadSpritePalettes(palettes: Array<{ data: string, tag: string |
     const tagStr = String(p.tag);
     if (r.paletteTagToSlot.has(tagStr)) continue;
     const palData = getAsset(p.data);
+    if (!palData) continue; // asset manquant
     const u16 = palData instanceof Uint16Array
       ? palData
       : new Uint16Array(palData.buffer, palData.byteOffset, Math.floor(palData.byteLength / 2));
-    const slot = _nextObjPalSlot++;
+    const slot = r.nextObjPalSlot++;
     r.gba.palette.loadObjRange(slot * 16, u16.subarray(0, 16));
     r.paletteTagToSlot.set(tagStr, slot);
   }
 }
-let _nextObjPalSlot = 0;
-
 /** Reset des allocations OBJ slots (à call entre 2 scènes). */
 export function resetObjAllocations(): void {
-  _nextSpriteSheetByteOffset = 0;
-  _nextObjPalSlot = 0;
+  const r = rt();
+  r.nextSpriteSheetByteOffset = 0;
+  r.nextObjPalSlot = 0;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -707,25 +946,6 @@ export const gIntroVolbeat_Pal = 'gIntroVolbeat_Pal';
 export const gIntroTorchic_Pal = 'gIntroTorchic_Pal';
 export const gIntroManectric_Pal = 'gIntroManectric_Pal';
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// GLOBAL TABLES (data extern décomp utilisée cross-module)
-// ═══════════════════════════════════════════════════════════════════════════════
-
-/** 1:1 décomp `const u16 gTitleScreenAlphaBlend[64]` (src/title_screen.c:74).
- *  Utilisé par Task_BlendLogoIn/Out + title_screen pour BLDALPHA fade smooth.
- *  - 0-15  : eva=16 fixe, evb=0→15  (logo lighten gradient)
- *  - 16-31 : eva=15→0, evb=16 fixe  (logo darken gradient)
- *  - 32-63 : eva=0, evb=16 fixe     (held final state)
- *  BLDALPHA_BLEND(eva, evb) = (eva | (evb << 8)). */
-function _bldAlpha(eva: number, evb: number): number { return (eva & 0x1F) | ((evb & 0x1F) << 8); }
-export const gTitleScreenAlphaBlend: ReadonlyArray<number> = (() => {
-  const arr: number[] = new Array(64);
-  for (let i = 0; i <= 15; i++) arr[i] = _bldAlpha(16, i);
-  for (let i = 16; i <= 31; i++) arr[i] = _bldAlpha(31 - i, 16);
-  for (let i = 32; i <= 63; i++) arr[i] = _bldAlpha(0, 16);
-  return arr;
-})();
-
 // Scene 3 (Phase 0d+)
 export const sIntroPokeball_Pal = 'sIntroPokeball_Pal';
 export const sIntroPokeball_Tilemap = 'sIntroPokeball_Tilemap';
@@ -741,3 +961,114 @@ export const gIntroLightning_Gfx = 'gIntroLightning_Gfx';
 export const gIntroLightning_Pal = 'gIntroLightning_Pal';
 export const gIntroBubbles_Gfx = 'gIntroBubbles_Gfx';
 export const gIntroBubbles_Pal = 'gIntroBubbles_Pal';
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// GLOBAL TABLES (data extern décomp utilisée cross-module)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/** 1:1 décomp `const u16 gTitleScreenAlphaBlend[64]` (src/title_screen.c:74).
+ *  Utilisé par Task_BlendLogoIn/Out + title_screen pour BLDALPHA fade smooth.
+ *  - 0-15  : eva=16 fixe, evb=0→15  (logo lighten gradient)
+ *  - 16-31 : eva=15→0, evb=16 fixe  (logo darken gradient)
+ *  - 32-63 : eva=0, evb=16 fixe     (held final state)
+ *  BLDALPHA_BLEND(eva, evb) = (eva | (evb << 8)). */
+function _bldAlpha(eva: number, evb: number): number { return (eva & 0x1F) | ((evb & 0x1F) << 8); }
+export const gTitleScreenAlphaBlend: ReadonlyArray<number> = (() => {
+  const arr: number[] = new Array(64);
+  for (let i = 0; i <= 15; i++) arr[i] = _bldAlpha(16, i);
+  for (let i = 16; i <= 31; i++) arr[i] = _bldAlpha(31 - i, 16);
+  for (let i = 32; i < 64; i++) arr[i] = _bldAlpha(0, 16);
+  return arr;
+})();
+
+/** 1:1 décomp `BlendPalette(palOffset, numEntries, coeff, blendColor)` — mélange
+ *  gPlttBufferUnfaded vers gPlttBufferFaded. coeff = 0-16 (16 = 100% blendColor). */
+export function BlendPalette(palOffset: number, numEntries: number, coeff: number, blendColor: number): void {
+  const r = rt();
+  const bcR = blendColor & 0x1F;
+  const bcG = (blendColor >> 5) & 0x1F;
+  const bcB = (blendColor >> 10) & 0x1F;
+  for (let i = 0; i < numEntries; i++) {
+    const idx = palOffset + i;
+    const unfaded = r.gPlttBufferUnfaded.get(idx);
+    const r1 = unfaded & 0x1F;
+    const g1 = (unfaded >> 5) & 0x1F;
+    const b1 = (unfaded >> 10) & 0x1F;
+    const newR = r1 + (((bcR - r1) * coeff) >> 4);
+    const newG = g1 + (((bcG - g1) * coeff) >> 4);
+    const newB = b1 + (((bcB - b1) * coeff) >> 4);
+    r.gPlttBufferFaded.set(idx, ((newB & 0x1F) << 10) | ((newG & 0x1F) << 5) | (newR & 0x1F));
+  }
+}
+
+/** 1:1 décomp `RunTasks()` — exécute toutes les tasks actives. */
+export function RunTasks(): void {
+  rt().runTasks();
+}
+/** 1:1 décomp `AnimateSprites()` — met à jour les animations de sprites.
+ *  Notre engine gère les sprites dans tickFixed / syncSpritesToOam. */
+export function AnimateSprites(): void {
+  /* no-op — animations gérées par le runtime Phaser sync */
+}
+/** 1:1 décomp `BuildOamBuffer()` — construit l'OAM buffer pour le rendu.
+ *  Notre engine gère l'OAM via Phaser sync dans tickFixed. */
+export function BuildOamBuffer(): void {
+  /* no-op — OAM géré par le runtime Phaser sync */
+}
+
+// ─── Title screen / audio stubs ──────────────────────────────────────────────
+export function UpdateLegendaryMarkingColor(_counter: number): void {
+  // TODO: implement legendary marking palette cycling (needs gTitleScreenLegendaryMarkingsPalette)
+}
+export function FadeOutBGM(_speed: number): void {
+  // TODO: implement BGM fade out
+}
+export function CanResetRTC(): boolean {
+  return false; // stub
+}
+export let gBattle_BG1_X = 0;
+export let gBattle_BG1_Y = 0;
+export const gMPlayInfo_BGM = { status: 1 };
+
+// Synchronise les mutable exports sur globalThis pour que les modules auto-générés
+// puissent y accéder sans import ESM (évite "Assignment to constant variable").
+const _mutableGlobals: Record<string, { get: () => unknown; set: (v: unknown) => void }> = {
+  sIntroCharacterGender: { get: () => sIntroCharacterGender, set: (v) => { sIntroCharacterGender = v as number; } },
+  sFlygonYOffset: { get: () => sFlygonYOffset, set: (v) => { sFlygonYOffset = v as number; } },
+  gReservedSpritePaletteCount: { get: () => gReservedSpritePaletteCount, set: (v) => { gReservedSpritePaletteCount = v as number; } },
+  gBattle_BG1_X: { get: () => gBattle_BG1_X, set: (v) => { gBattle_BG1_X = v as number; } },
+  gBattle_BG1_Y: { get: () => gBattle_BG1_Y, set: (v) => { gBattle_BG1_Y = v as number; } },
+  gIntroCredits_MovingSceneryVBase: { get: () => gIntroCredits_MovingSceneryVBase, set: (v) => { gIntroCredits_MovingSceneryVBase = v as number; } },
+  gIntroCredits_MovingSceneryVOffset: { get: () => gIntroCredits_MovingSceneryVOffset, set: (v) => { gIntroCredits_MovingSceneryVOffset = v as number; } },
+  gIntroCredits_MovingSceneryState: { get: () => gIntroCredits_MovingSceneryState, set: (v) => { gIntroCredits_MovingSceneryState = v as number; } },
+};
+for (const [k, d] of Object.entries(_mutableGlobals)) {
+  if (!(k in globalThis)) {
+    Object.defineProperty(globalThis, k, { get: d.get, set: d.set, enumerable: true, configurable: true });
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// UI SYSTEM EXPORTS (window.c + text.c + menu.c adapters)
+// ═══════════════════════════════════════════════════════════════════════════════
+export * from './decomp-data/main-menu-data';
+export * from './gba-window-system';
+export * from './gba-text-system';
+export * from './gba-menu-system';
+export * from './gba-strings';
+export * from './decomp-data/auto/src/sprite-system-flat';
+export * from './decomp-data/auto/src/intro-c-data-auto';
+
+// ─── Stubs for main_menu-callbacks-auto.ts ───────────────────────────────────
+export function AddBirchSpeechObjects(_taskId: number): void { /* TODO */ }
+export function CreatePokeballSpriteToReleaseMon(_spriteId: number, _paletteBank: number, _x: number, _y: number, _a: number, _b: number, _c: number, _pal: number, _species: number): number { return 0; }
+export function InitSpriteAffineAnim(_sprite: any): void { /* TODO */ }
+export function NewGameBirchSpeech_StartFadeInTarget1OutTarget2(_taskId: number, _delay: number): void { /* TODO */ }
+export function NewGameBirchSpeech_StartFadeOutTarget1InTarget2(_taskId: number, _delay: number): void { /* TODO */ }
+export function NewGameBirchSpeech_StartFadePlatformIn(_taskId: number, _delay: number): void { /* TODO */ }
+export function NewGameBirchSpeech_StartFadePlatformOut(_taskId: number, _delay: number): void { /* TODO */ }
+
+/** 1:1 décomp `PIXEL_FILL(value)` macro — fills both nibbles of a byte. */
+export function PIXEL_FILL(value: number): number {
+  return value | (value << 4);
+}

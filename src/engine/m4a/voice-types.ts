@@ -43,6 +43,8 @@ export const enum VoiceType {
   Keysplit = 'keysplit',
   /** Keysplit all (single child voicegroup pour toutes les notes). */
   KeysplitAll = 'keysplit_all',
+  /** Fallback pour les voix non parsées par l'extracteur. */
+  Unknown = 'unknown',
 }
 
 /** ADSR envelope (Attack/Decay/Sustain/Release). 0-255 pour chaque champ. */
@@ -117,6 +119,11 @@ export interface VoiceKeysplitAll {
   subVoicegroupName: string;
 }
 
+/** Voice inconnue (fallback extracteur). */
+export interface VoiceUnknown {
+  type: VoiceType.Unknown;
+}
+
 /** Union de tous les voice types. */
 export type Voice =
   | VoiceDirectSound
@@ -124,7 +131,8 @@ export type Voice =
   | VoiceNoise
   | VoiceProgrammableWave
   | VoiceKeysplit
-  | VoiceKeysplitAll;
+  | VoiceKeysplitAll
+  | VoiceUnknown;
 
 /** Voicegroup complet : 128 entries (MIDI program 0-127) ou drumset offsetted. */
 export interface VoiceGroup {

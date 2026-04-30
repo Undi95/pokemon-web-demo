@@ -304,6 +304,10 @@ export async function playNote(
       envelope = voice.envelope;
       break;
     }
+    case 'unknown':
+      // Fallback du transpiler d'extracteur pour les voix non parsées.
+      // Silencieux : le player compte déjà skippedUnknownType.
+      return null;
     default:
       console.warn(`[m4a] Unknown voice type: ${(voice as { type: string }).type}`);
       return null;
