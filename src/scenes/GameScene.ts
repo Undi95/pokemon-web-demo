@@ -125,6 +125,54 @@ export class GameScene extends Phaser.Scene {
       blendMode: () => this.gba.blend.mode,
     };
 
+    // Devtools: pause/step/seek frame controls. Exposés via window.dev pour
+    // qu'on puisse les call depuis la console ou preview_eval.
+    const rt = this.rt;
+    (window as any).dev = {
+      pause: () => { rt.paused = true; rt.stepBudget = 0; return 'paused @ frame ' + rt.gIntroFrameCounter; },
+      resume: () => { rt.paused = false; rt.stepBudget = 0; return 'resumed @ frame ' + rt.gIntroFrameCounter; },
+      step: (n = 1) => { rt.paused = true; rt.stepBudget += n; return 'step ' + n + ' frames'; },
+      seek: (frame: number) => {
+        if (frame <= rt.gIntroFrameCounter) return 'cannot seek backward (would need full reset). current=' + rt.gIntroFrameCounter;
+        rt.paused = true; rt.stepBudget = frame - rt.gIntroFrameCounter;
+        return 'seeking ' + rt.stepBudget + ' frames forward to ' + frame;
+      },
+      speed: (mult: number) => { rt.speedMultiplier = mult; return 'speed = ' + mult + 'x'; },
+      frame: () => rt.gIntroFrameCounter,
+      // Convenience: dump full sprite state with names
+      sprites: () => {
+        const out: any[] = [];
+        for (const [id, s] of rt.gSprites.entries()) {
+          const oam = rt.gba.oam[s.oamIndex];
+          out.push({
+            id, x: s.x, y: s.y, x2: s.x2, y2: s.y2, invisible: s.invisible,
+            tileId: oam?.tileId, paletteBank: oam?.paletteBank,
+            shape: oam?.shape, size: oam?.size, bpp: oam?.paletteMode,
+            objMode: oam?.objMode, callback: s.callback ? 'fn' : null,
+            data: Array.from(s.data || []).slice(0, 8),
+          });
+        }
+        return out;
+      },
+      tasks: () => {
+        const out: any[] = [];
+        for (const [id, t] of rt.gTasks.entries()) {
+          out.push({ id, hasFunc: !!t.func, data: Array.from(t.data || []).slice(0, 8) });
+        }
+        return out;
+      },
+      bgs: () => {
+        return [0,1,2,3].map(i => ({ idx: i, ...rt.gba.bg(i as 0|1|2|3).config }));
+      },
+    };
+    console.log('[devtools] window.dev ready: pause(), resume(), step(n), seek(frame), speed(x), frame(), sprites(), tasks(), bgs()');
+
+    // ?pause query param → start paused for frame-accurate audit. ?slow=N → speed N.
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('pause')) { rt.paused = true; console.log('[devtools] startup paused — call dev.resume() or dev.step(N)'); }
+    const slow = params.get('slow');
+    if (slow) { rt.speedMultiplier = Number(slow); console.log('[devtools] speed = ' + slow + 'x'); }
+
     const frameImg = this.add.image(0, 0, 'game-frame').setOrigin(0, 0);
     if (GAME_W !== 240 || GAME_H !== 160) {
       frameImg.setPosition((GAME_W - 240) / 2, (GAME_H - 160) / 2);

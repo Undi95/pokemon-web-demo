@@ -1206,36 +1206,59 @@ export class DecompRuntime {
    *    8. gMain.vblankCallback?.()    — stub VBlank effects (scanline, etc.)
    *    9. gIntroFrameCounter++
    */
+  /** Devtools — paused = stop tickFixed entirely. stepBudget = nb frames à
+   *  exécuter en mode pause (consommé par 1 par frame). speedMultiplier = 1.0
+   *  par défaut, plus pour fast-forward, moins pour slow-mo. */
+  public paused = false;
+  public stepBudget = 0;
+  public speedMultiplier = 1.0;
+
   tickFixed(deltaMs: number): number {
-    this.accumulatorMs += deltaMs;
     let framesProcessed = 0;
+    // Devtools step mode : exécute stepBudget frames immédiatement (= burst).
+    if (this.paused) {
+      let safety = 1000;
+      while (this.stepBudget > 0 && safety-- > 0) {
+        this.runOneFrame();
+        framesProcessed++;
+        this.stepBudget--;
+      }
+      return framesProcessed;
+    }
+    this.accumulatorMs += deltaMs * this.speedMultiplier;
     let safety = 5;
     while (this.accumulatorMs >= this.FRAME_TIME_MS && safety-- > 0) {
       this.accumulatorMs -= this.FRAME_TIME_MS;
-      // 0. Input : calcul du front montant (newKeys) pour cette frame
-      this.gMain.newKeys = this.gMain.heldKeys & ~this.prevHeldKeys;
-      this.prevHeldKeys = this.gMain.heldKeys;
-      // 1. Main callback2 : dispatch scène courante (peut SetMainCallback2/CreateTask).
-      if (this.gMain.callback2) this.gMain.callback2(this);
-      this.UpdatePaletteFade();
-      this.tickSpriteAnims();
-      tickAllAffineAnims(this);
-      this.runSpriteCallbacks();
-      this.runTasks();
-      // RunTextPrinters render text into window pixel buffers,
-      // then flushDirtyWindows copies modified buffers to VRAM.
-      // This mirrors the real GBA main loop order (RunTasks → RunTextPrinters → VBlank DMA).
-      const globalRunTextPrinters = (globalThis as any).RunTextPrinters;
-      if (typeof globalRunTextPrinters === 'function') globalRunTextPrinters();
-      const globalFlushDirty = (globalThis as any).flushDirtyWindows;
-      if (typeof globalFlushDirty === 'function') globalFlushDirty();
-      this.syncSpritesToOam();
-      if (this.gMain.vblankCallback) this.gMain.vblankCallback();
-      this.gIntroFrameCounter++;
+      this.runOneFrame();
       framesProcessed++;
     }
     if (this.accumulatorMs > 10 * this.FRAME_TIME_MS) this.accumulatorMs = 0;
     return framesProcessed;
+  }
+
+  /** Une seule frame du main loop décomp, extraite pour pouvoir être appelée
+   *  manuellement par devtools (step). */
+  private runOneFrame(): void {
+    // 0. Input : calcul du front montant (newKeys) pour cette frame
+    this.gMain.newKeys = this.gMain.heldKeys & ~this.prevHeldKeys;
+    this.prevHeldKeys = this.gMain.heldKeys;
+    // 1. Main callback2 : dispatch scène courante (peut SetMainCallback2/CreateTask).
+    if (this.gMain.callback2) this.gMain.callback2(this);
+    this.UpdatePaletteFade();
+    this.tickSpriteAnims();
+    tickAllAffineAnims(this);
+    this.runSpriteCallbacks();
+    this.runTasks();
+    // RunTextPrinters render text into window pixel buffers,
+    // then flushDirtyWindows copies modified buffers to VRAM.
+    // This mirrors the real GBA main loop order (RunTasks → RunTextPrinters → VBlank DMA).
+    const globalRunTextPrinters = (globalThis as any).RunTextPrinters;
+    if (typeof globalRunTextPrinters === 'function') globalRunTextPrinters();
+    const globalFlushDirty = (globalThis as any).flushDirtyWindows;
+    if (typeof globalFlushDirty === 'function') globalFlushDirty();
+    this.syncSpritesToOam();
+    if (this.gMain.vblankCallback) this.gMain.vblankCallback();
+    this.gIntroFrameCounter++;
   }
 
   /** Run tous les sprite callbacks (1:1 décomp main loop sprite update). */
