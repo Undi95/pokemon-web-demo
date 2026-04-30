@@ -345,6 +345,30 @@ export const sSpriteSheet_RunningPokemon: ReadonlyArray<{ data: string, size: nu
   { data: '', size: 0, tag: '' },  // sentinel
 ];
 
+/** 1:1 décomp src/intro.c — Bubbles (Kyogre Scene 3). */
+export const sSpriteSheet_Bubbles: { data: string, size: number, tag: string | number } = {
+  data: 'gIntroBubbles_Gfx', size: 0x600, tag: 'TAG_BUBBLES',
+};
+export const sSpritePalette_Bubbles: { data: string, tag: string | number } = {
+  data: 'gIntroBubbles_Pal', tag: 'TAG_BUBBLES',
+};
+
+/** 1:1 décomp src/intro.c — Lightning (Rayquaza Scene 3). */
+export const sSpriteSheet_Lightning: { data: string, size: number, tag: string | number } = {
+  data: 'gIntroLightning_Gfx', size: 0xC00, tag: 'TAG_LIGHTNING',
+};
+export const sSpritePalette_Lightning: ReadonlyArray<{ data: string, tag: string | number }> = [
+  { data: 'gIntroLightning_Pal', tag: 'TAG_LIGHTNING' },
+];
+
+/** 1:1 décomp src/intro.c — Rayquaza orb (intro blast). */
+export const sSpriteSheet_RayquazaOrb: { data: string, size: number, tag: string | number } = {
+  data: 'sIntroMisc_Gfx', size: 0xA00, tag: 'TAG_RAYQUAZA_ORB',
+};
+export const sSpritePalette_RayquazaOrb: ReadonlyArray<{ data: string, tag: string | number }> = [
+  { data: 'sIntroRayquzaOrb_Pal', tag: 'TAG_RAYQUAZA_ORB' },
+];
+
 /** 1:1 décomp src/intro.c:281 — palettes OBJ pour Volbeat/Torchic/Manectric. */
 export const sSpritePalettes_RunningPokemon: ReadonlyArray<{ data: string, tag: string | number }> = [
   { data: 'gIntroVolbeat_Pal', tag: 'TAG_VOLBEAT' },
@@ -576,8 +600,27 @@ export function m4aMPlayAllStop(): void {
   void import('./m4a/player').then(({ stopSong }) => stopSong());
 }
 
-/** 1:1 décomp `PlaySE(seId)` — joue un sound effect one-shot. Phase 0c stub. */
-export function PlaySE(_seId: number): void { /* TODO Phase 1 Action 4 */ }
+/** 1:1 décomp `PlaySE(seId)` — joue un sound effect one-shot. Phase 0c stub.
+ *  TODO Phase 7 : router via m4aMPlayAllStop + start short SFX track. */
+export function PlaySE(_seId: number): void { /* TODO audio SFX */ }
+
+/** 1:1 décomp `PlayCryInternal(species, pan, volume, priority, mode)` — joue
+ *  le cri d'un Pokémon. Phase 0c stub : no-op (TODO charger gMonCryTable + jouer
+ *  via m4a engine). Sans ça, Scene 3 Groudon/Kyogre cries silencieux mais le
+ *  reste fonctionne (la state machine se base sur tDelay frame counters, pas
+ *  sur l'audio). */
+export function PlayCryInternal(
+  _species: number, _pan: number, _volume: number, _priority: number, _mode: number,
+): void { /* TODO Phase 7 cri Pokémon */ }
+
+/** 1:1 décomp constants pour PlayCryInternal. */
+export const SPECIES_GROUDON = 0x171;
+export const SPECIES_KYOGRE = 0x170;
+export const CRY_PRIORITY_NORMAL = 2;
+export const CRY_MODE_NORMAL = 0;
+
+/** 1:1 décomp `SE_INTRO_BLAST` — sound effect ID. */
+export const SE_INTRO_BLAST = 0x14;
 
 /** 1:1 décomp src/intro.c:2810 `PanFadeAndZoomScreen(screenX, screenY, zoom, alpha)`.
  *  Calcule BgAffineSet pour BG2 (texture (0x8000, 0x8000) → screen (screenX, screenY))
@@ -637,20 +680,73 @@ export function LZDecompressVram(srcSymbol: string, destAddr: number): void {
   }
 }
 
-/** Stubs Scene 3 sprite/palette loading (= utilise heap dans le décomp). */
-export function LoadCompressedSpriteSheetUsingHeap(_sheet: unknown): void { /* TODO Phase 3 */ }
-export function LoadCompressedSpritePaletteUsingHeap(_pal: unknown): void { /* TODO Phase 3 */ }
-export function FreeMonSpritesGfx(): void { /* TODO */ }
+/** Scene 3 sprite/palette loading via heap dans le décomp. Notre version
+ *  fait juste appel aux fonctions normales (pas besoin de heap puisque assets
+ *  préchargés en VRAM via `LoadCompressedSpriteSheet` standard). */
+export function LoadCompressedSpriteSheetUsingHeap(sheet: unknown): void {
+  if (!sheet) return;
+  // sheet peut être un objet single ou un array (cas LoadCompressedSpriteSheet).
+  if (Array.isArray(sheet)) {
+    const first = sheet[0] as { data: string, size: number, tag: string | number } | undefined;
+    if (first) LoadCompressedSpriteSheet(first);
+  } else {
+    LoadCompressedSpriteSheet(sheet as { data: string, size: number, tag: string | number });
+  }
+}
+export function LoadCompressedSpritePaletteUsingHeap(pal: unknown): void {
+  if (!pal) return;
+  if (Array.isArray(pal)) {
+    LoadSpritePalettes(pal as Array<{ data: string, tag: string | number }>);
+  } else {
+    LoadSpritePalette(pal);
+  }
+}
+export function FreeMonSpritesGfx(): void { /* no-op : pas de heap chez nous */ }
 
-/** 1:1 décomp `GET_TRUE_SPRITE_INDEX(animTag)` — retourne l'index du sprite
- *  dans gBattleAnimPicTable correspondant à l'anim tag. Phase 2 stub. */
+/** 1:1 décomp `GET_TRUE_SPRITE_INDEX(animTag)` macro = `animTag - ANIM_SPRITES_START`.
+ *  ANIM_SPRITES_START = 10000 (cf. constants/battle_anim.h). */
 export function GET_TRUE_SPRITE_INDEX(animTag: number): number {
-  return animTag;  // pass-through
+  return animTag - 10000;
 }
 
-/** Stubs tables battle anim (Scene 3 ANIM_TAG_ROCKS pour Groudon). */
-export const gBattleAnimPicTable: ReadonlyArray<{ data: string; size: number; tag: number }> = [];
-export const gBattleAnimPaletteTable: ReadonlyArray<{ data: string; tag: number }> = [];
+/** 1:1 décomp battle anim sprite sheets/palettes — gBattleAnimPicTable est une
+ *  table sparse ; on utilise un Proxy-like accès via Map pour pas remplir 256 stubs.
+ *  Scene 3 ANIM_TAG_ROCKS = 10058 → index 58. */
+const _battleAnimPicEntries: Record<number, { data: string; size: number; tag: string | number }> = {
+  // Index 58 = ROCKS (ANIM_TAG_ROCKS)
+  58: { data: 'gBattleAnimSpriteGfx_Rocks', size: 0x600, tag: 'ANIM_TAG_ROCKS' },
+};
+const _battleAnimPalEntries: Record<number, { data: string; tag: string | number }> = {
+  58: { data: 'gBattleAnimSpritePal_Rocks', tag: 'ANIM_TAG_ROCKS' },
+};
+
+// Length 256 max, retourne stub vide pour index inconnu (= no-op load).
+function _emptyAnimPic(idx: number) { return { data: '', size: 0, tag: idx }; }
+function _emptyAnimPal(idx: number) { return { data: '', tag: idx }; }
+export const gBattleAnimPicTable: ReadonlyArray<{ data: string; size: number; tag: string | number }> = new Proxy([], {
+  get(_t, prop) {
+    if (typeof prop === 'string' && /^\d+$/.test(prop)) {
+      const idx = Number(prop);
+      return _battleAnimPicEntries[idx] ?? _emptyAnimPic(idx);
+    }
+    if (prop === 'length') return 256;
+    return undefined;
+  },
+}) as unknown as ReadonlyArray<{ data: string; size: number; tag: string | number }>;
+export const gBattleAnimPaletteTable: ReadonlyArray<{ data: string; tag: string | number }> = new Proxy([], {
+  get(_t, prop) {
+    if (typeof prop === 'string' && /^\d+$/.test(prop)) {
+      const idx = Number(prop);
+      return _battleAnimPalEntries[idx] ?? _emptyAnimPal(idx);
+    }
+    if (prop === 'length') return 256;
+    return undefined;
+  },
+}) as unknown as ReadonlyArray<{ data: string; tag: string | number }>;
+
+/** Symbol-name keys pour gBattleAnimSpriteGfx_Rocks (preload Scene 3). */
+export const gBattleAnimSpriteGfx_Rocks = 'gBattleAnimSpriteGfx_Rocks';
+export const gBattleAnimSpritePal_Rocks = 'gBattleAnimSpritePal_Rocks';
 
 /** 1:1 décomp `gReservedSpritePaletteCount` — nombre de palettes OBJ
  *  réservées par le système. Le décomp le set à 8 pendant l'intro. */

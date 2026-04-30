@@ -340,6 +340,11 @@ export const SPRITE_SYSTEM_SOURCES = {
   "externalPalettes:gIntroSparkle_Gfx": "src/data/graphics/intro_scene.h"
 } as const;
 export const SPRITE_ANIMS = {
+  // Battle anim Rocks (Groudon Scene 3) — 4 frames différentes tailles, JUMP loop
+  "sAnim_BasicRock_Largest": {"frames":[{"tileNum":0,"duration":4}],"terminator":"END"},
+  "sAnim_BasicRock_Large":   {"frames":[{"tileNum":16,"duration":4}],"terminator":"END"},
+  "sAnim_BasicRock_Small":   {"frames":[{"tileNum":32,"duration":4}],"terminator":"END"},
+  "sAnim_BasicRock_Smallest":{"frames":[{"tileNum":48,"duration":4}],"terminator":"END"},
   "sAnim_Bicycle": {"frames":[{"tileNum":0,"duration":8},{"tileNum":32,"duration":8},{"tileNum":64,"duration":8},{"tileNum":96,"duration":8}],"terminator":"JUMP","jumpTo":0},
   "sAnim_Bubbles": {"frames":[{"tileNum":0,"duration":4},{"tileNum":8,"duration":4},{"tileNum":16,"duration":4},{"tileNum":24,"duration":4},{"tileNum":32,"duration":4}],"terminator":"END"},
   "sAnim_Cloud_Large": {"frames":[{"tileNum":16,"duration":30}],"terminator":"END"},
@@ -418,6 +423,8 @@ export const SPRITE_ANIMS = {
 } as const;
 
 export const SPRITE_ANIM_TABLES = {
+  // sAnims_BasicRock : 4 anims rock sizes (= sGroudonRockData[i][1] index 0-3).
+  "sAnims_BasicRock": {"anims":["sAnim_BasicRock_Largest","sAnim_BasicRock_Large","sAnim_BasicRock_Small","sAnim_BasicRock_Smallest"]},
   "sAnims_Bicycle": {"anims":["sAnim_Bicycle"]},
   "sAnims_Bubbles": {"anims":["sAnim_Bubbles"]},
   "sAnims_Clouds": {"anims":["sAnim_Cloud_Largest","sAnim_Cloud_Large","sAnim_Cloud_Small","sAnim_Cloud_Smallest"]},
@@ -497,9 +504,13 @@ export const SPRITE_TEMPLATES = {
   "sStartCopyrightBannerSpriteTemplate": {"tileTag":"TAG_PRESS_START_COPYRIGHT","paletteTag":"TAG_PRESS_START_COPYRIGHT","oam":"sOamData_CopyrightBanner","anims":"sStartCopyrightBannerAnimTable","images":"NULL","affineAnims":"gDummySpriteAffineAnimTable","callback":"SpriteCB_PressStartCopyrightBanner"},
   "sVersionBannerLeftSpriteTemplate": {"tileTag":"TAG_VERSION","paletteTag":"TAG_VERSION","oam":"sVersionBannerLeftOamData","anims":"sVersionBannerLeftAnimTable","images":"NULL","affineAnims":"gDummySpriteAffineAnimTable","callback":"SpriteCB_VersionBannerLeft"},
   "sVersionBannerRightSpriteTemplate": {"tileTag":"TAG_VERSION","paletteTag":"TAG_VERSION","oam":"sVersionBannerRightOamData","anims":"sVersionBannerRightAnimTable","images":"NULL","affineAnims":"gDummySpriteAffineAnimTable","callback":"SpriteCB_VersionBannerRight"},
+  // Battle anim Rocks (Groudon Scene 3) — 1:1 décomp battle_anim_rock.c
+  "gAncientPowerRockSpriteTemplate": {"tileTag":"ANIM_TAG_ROCKS","paletteTag":"ANIM_TAG_ROCKS","oam":"gOamData_AffineOff_ObjNormal_32x32","anims":"sAnims_BasicRock","images":"NULL","affineAnims":"gDummySpriteAffineAnimTable","callback":"AnimRaiseSprite"},
 } as const;
 
 export const OAM_DATAS = {
+  // Battle anim 32x32 normal sprite (Rocks, etc.) — équivalent décomp gOamData_AffineOff_ObjNormal_32x32
+  "gOamData_AffineOff_ObjNormal_32x32": {"y":"DISPLAY_HEIGHT","affineMode":"ST_OAM_AFFINE_OFF","objMode":"ST_OAM_OBJ_NORMAL","mosaic":"FALSE","bpp":"ST_OAM_4BPP","shape":"SPRITE_SHAPE(32x32)","x":"0","matrixNum":"0","size":"SPRITE_SIZE(32x32)","tileNum":"0","priority":"0","paletteNum":"0","affineParam":"0","_sizeWH":[32,32],"_shapeWH":[32,32]},
   "sClockOamData": {"y":"DISPLAY_HEIGHT","affineMode":"ST_OAM_AFFINE_OFF","objMode":"ST_OAM_OBJ_NORMAL","mosaic":"FALSE","bpp":"ST_OAM_4BPP","shape":"SPRITE_SHAPE(16x16)","x":"0","matrixNum":"0","size":"SPRITE_SIZE(16x16)","tileNum":"0","priority":"0","paletteNum":"0","affineParam":"0","_sizeWH":[16,16],"_shapeWH":[16,16]},
   "sOamData_Bicycle": {"y":"DISPLAY_HEIGHT","shape":"SPRITE_SHAPE(64x32)","size":"SPRITE_SIZE(64x32)","priority":"1","_sizeWH":[64,32],"_shapeWH":[64,32]},
   "sOamData_Bubbles": {"y":"DISPLAY_HEIGHT","affineMode":"ST_OAM_AFFINE_OFF","objMode":"ST_OAM_OBJ_NORMAL","mosaic":"FALSE","bpp":"ST_OAM_4BPP","shape":"SPRITE_SHAPE(16x32)","x":"0","matrixNum":"0","size":"SPRITE_SIZE(16x32)","tileNum":"0","priority":"0","paletteNum":"0","affineParam":"0","_sizeWH":[16,32],"_shapeWH":[16,32]},

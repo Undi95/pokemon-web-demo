@@ -289,6 +289,18 @@ export async function preloadScene3Assets(): Promise<void> {
     }
   }));
 
+  // Scene 3 battle anim Rocks (Groudon scene). Décomp utilise
+  // gBattleAnimPicTable[ANIM_TAG_ROCKS] pour récupérer le sprite sheet 32x192
+  // (96 tiles 4bpp) avec 4 anim frames pour les rocks ancestraux.
+  try {
+    const rocksGfx = await loadTileBin('/decomp/em/battle_anims/rocks.png', 4);
+    assetCache.set('gBattleAnimSpriteGfx_Rocks', rocksGfx);
+    const png = await loadIndexedPngStrict('/decomp/em/battle_anims/rocks.png', 4);
+    assetCache.set('gBattleAnimSpritePal_Rocks', png.palette);
+  } catch (e) {
+    console.warn('[intro-asset-loader] rocks.png failed:', e);
+  }
+
   // Scene 3 tilemaps (.bin)
   const externsTilemap: Array<{ symbol: string; url: string }> = [
     { symbol: 'gIntroGroudon_Tilemap', url: '/decomp/em/intro/scene_3/groudon.bin' },
