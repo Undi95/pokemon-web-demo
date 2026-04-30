@@ -59,10 +59,27 @@ function urlFor(decompPath: string): string {
 async function loadSymbol(symbol: string, source: { path: string; ext: string; type: string }): Promise<void> {
   const url = urlFor(source.path);
   if (source.ext === '.gbapal') {
-    // Si path est .png : extraire le PLTE du PNG (= palette embedded)
+    // Si path est .png : extraire le PLTE du PNG (= palette embedded).
+    // 1:1 décomp INCGFX_U16(png, ".gbapal") = lit PLTE direct (= 16 ou 256 entries).
+    // loadIndexedPngStrict utilise le PLTE FULL chunk (vs loadIndexedPng qui dedup
+    // les couleurs uniques observées dans les pixels — wrong pour les Pokemon
+    // sprites/BG qui ont PLTE 256 colors mais ne tous les utilisent pas).
     if (source.path.endsWith('.png')) {
-      const png = await loadIndexedPng(url);
-      assetCache.set(symbol, png.palette);
+      try {
+        // 8bpp PNGs (Pokeball/Groudon/Kyogre) → preserve full 256-color PLTE
+        const png = await loadIndexedPngStrict(url, 8);
+        assetCache.set(symbol, png.palette);
+      } catch {
+        // Fallback 4bpp (most other PNGs)
+        try {
+          const png = await loadIndexedPngStrict(url, 4);
+          assetCache.set(symbol, png.palette);
+        } catch {
+          // Final fallback : canvas-based (= remap indices, may be wrong)
+          const png = await loadIndexedPng(url);
+          assetCache.set(symbol, png.palette);
+        }
+      }
     } else {
       const pal = await loadGbaPal(url);
       assetCache.set(symbol, pal);

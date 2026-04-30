@@ -196,6 +196,10 @@ export class PaletteFade {
   startY = 0;
   /** endY (brightness final) */
   endY = 0;
+  /** Target color RGB15 components (5-bit each). Used by _applyPaletteFadeStep. */
+  targetR = 31;
+  targetG = 31;
+  targetB = 31;
 }
 
 // ─── gMain (1:1 décomp struct Main) ──────────────────────────────────────────
@@ -722,11 +726,15 @@ export class DecompRuntime {
 
   /** 1:1 décomp BeginNormalPaletteFade(palettes, delay, startY, endY, color).
    *  Démarre un fade de brightness startY → endY sur N frames (N = abs(endY-startY)).
-   *  Notre engine simplifié : utilise blend.brightness selon la couleur target.
-   *  - RGB_BLACK = mode 3 (BLDY brightness dec)
-   *  - RGB_WHITEALPHA / RGB_WHITE = mode 2 (BLDY brightness inc)
-   */
-  BeginNormalPaletteFade(_palettes: string, delay: number, startY: number, endY: number, color: string): void {
+   *
+   *  1:1 GBA palette_fade.c : modifie gPlttBufferFaded chaque frame en blendant
+   *  Unfaded vers la couleur target avec coefficient evY/16. Pour color custom
+   *  (e.g. RGB(9,10,10) = dark grey utilisé Lightning/Rayquaza), on doit blend
+   *  vers cette couleur, PAS vers white via BLDY.
+   *
+   *  La string `color` (= name like "RGB_WHITEALPHA" ou "RGB(9, 10, 10)") doit
+   *  être parsée pour extraire le RGB15 target. */
+  BeginNormalPaletteFade(_palettes: string | number, delay: number, startY: number, endY: number, color: string | number): void {
     this.gPaletteFade.active = true;
     this.gPaletteFade.startY = startY;
     this.gPaletteFade.endY = endY;
@@ -734,38 +742,104 @@ export class DecompRuntime {
     this.gPaletteFade.totalFrames = Math.max(1, Math.abs(endY - startY));
     this.gPaletteFade.delayPerStep = delay;
     this.gPaletteFade.delayRemaining = delay;
-    // Mode blend GBA selon couleur target
-    if (color === 'RGB_BLACK') {
-      this.gba.blend.mode = 3;  // brightness dec
+    // Parse target color → RGB15 u16. Color peut être :
+    //   - string macro: "RGB_BLACK" / "RGB_WHITEALPHA" / "RGB(9, 10, 10)"
+    //   - number direct: u16 RGB15 packed (cas auto code qui résout RGB() inline)
+    let targetR15 = 0, targetG15 = 0, targetB15 = 0;
+    if (typeof color === 'number') {
+      targetR15 = color & 0x1F;
+      targetG15 = (color >> 5) & 0x1F;
+      targetB15 = (color >> 10) & 0x1F;
+    } else if (color === 'RGB_BLACK') {
+      targetR15 = 0; targetG15 = 0; targetB15 = 0;
+    } else if (color === 'RGB_WHITE' || color === 'RGB_WHITEALPHA') {
+      targetR15 = 31; targetG15 = 31; targetB15 = 31;
+    } else if (typeof color === 'string') {
+      // "RGB(r, g, b)" form (= 5-bit per channel decomp values)
+      const m = color.match(/RGB\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/);
+      if (m) {
+        targetR15 = Math.min(31, +m[1]);
+        targetG15 = Math.min(31, +m[2]);
+        targetB15 = Math.min(31, +m[3]);
+      } else {
+        // Fallback white
+        targetR15 = 31; targetG15 = 31; targetB15 = 31;
+      }
     } else {
-      this.gba.blend.mode = 2;  // brightness inc (white/whitealpha)
+      targetR15 = 31; targetG15 = 31; targetB15 = 31;
     }
-    this.gba.blend.target1 = LAYER_BG0 | LAYER_BG1 | LAYER_BG2 | LAYER_BG3 | LAYER_OBJ | LAYER_BD;
-    this.gba.blend.brightness = startY;
+    this.gPaletteFade.targetR = targetR15;
+    this.gPaletteFade.targetG = targetG15;
+    this.gPaletteFade.targetB = targetB15;
+    // Désactive le BLDY brightness mode (= notre ancien hack pour fades white).
+    // Le fade modifie maintenant gPlttBufferFaded entries directement.
+    this.gba.blend.mode = 0;
+    this.gba.blend.brightness = 0;
+    // Apply initial brightness (= blend Unfaded → target avec coefficient startY/16)
+    this._applyPaletteFadeStep(startY);
+  }
+
+  /** Helper : applique le blend Unfaded → target sur tout gPlttBufferFaded. */
+  private _applyPaletteFadeStep(brightness: number): void {
+    const tR = this.gPaletteFade.targetR;
+    const tG = this.gPaletteFade.targetG;
+    const tB = this.gPaletteFade.targetB;
+    const w = brightness;  // 0..16 (16 = full target)
+    const inv = 16 - w;    // 0..16 (16 = full unfaded)
+    for (let i = 0; i < 512; i++) {
+      const u = this.gPlttBufferUnfaded.get(i);
+      const r5 = u & 0x1F;
+      const g5 = (u >> 5) & 0x1F;
+      const b5 = (u >> 10) & 0x1F;
+      const newR = (r5 * inv + tR * w + 8) >> 4;
+      const newG = (g5 * inv + tG * w + 8) >> 4;
+      const newB = (b5 * inv + tB * w + 8) >> 4;
+      const packed = (newR & 0x1F) | ((newG & 0x1F) << 5) | ((newB & 0x1F) << 10);
+      this.gPlttBufferFaded.set(i, packed);
+    }
   }
 
   /** Tick du palette fade. À call chaque frame.
-   *  Retourne TRUE tant que le fade est actif (1:1 décomp bool8). */
+   *  Retourne TRUE tant que le fade est actif (1:1 décomp bool8).
+   *  Modifie gPlttBufferFaded en blendant Unfaded vers target color
+   *  selon le brightness courant (startY → endY linéaire). */
   UpdatePaletteFade(): boolean {
-    if (!this.gPaletteFade.active) return false;
+    if (!this.gPaletteFade.active) {
+      // Fade inactif : copy Unfaded → Faded chaque frame (= 1:1 décomp pour
+      // permettre aux CpuCopy16 vers Unfaded de propager).
+      for (let i = 0; i < 512; i++) {
+        this.gPlttBufferFaded.set(i, this.gPlttBufferUnfaded.get(i));
+      }
+      return false;
+    }
 
     if (this.gPaletteFade.delayRemaining > 0) {
       this.gPaletteFade.delayRemaining--;
+      // Re-apply current brightness step (= unfaded peut avoir changé via
+      // CpuCopy16 between frames).
+      this._applyPaletteFadeStep(this._currentFadeBrightness());
       return true;
     }
 
     const f = this.gPaletteFade;
     f.currentFrame++;
     if (f.currentFrame >= f.totalFrames) {
-      this.gba.blend.brightness = f.endY;
+      // Apply final brightness
+      this._applyPaletteFadeStep(f.endY);
       f.active = false;
       return false;
     }
 
-    const t = f.currentFrame / f.totalFrames;
-    this.gba.blend.brightness = Math.round(f.startY + (f.endY - f.startY) * t);
+    const brightness = this._currentFadeBrightness();
+    this._applyPaletteFadeStep(brightness);
     f.delayRemaining = f.delayPerStep;
     return true;
+  }
+
+  private _currentFadeBrightness(): number {
+    const f = this.gPaletteFade;
+    const t = f.currentFrame / f.totalFrames;
+    return Math.round(f.startY + (f.endY - f.startY) * t);
   }
 
   // ============================================================================
@@ -1280,6 +1354,12 @@ export class DecompRuntime {
     if (typeof globalFlushDirty === 'function') globalFlushDirty();
     this.syncSpritesToOam();
     if (this.gMain.vblankCallback) this.gMain.vblankCallback();
+    // 1:1 décomp VBlankCB_Intro/Battle/etc. appellent ScanlineEffect_InitHBlankDmaTransfer
+    // chaque VBlank. Comme l'auto code transcrit `/* noop SetVBlankCallback */`,
+    // on appelle directement ScanlineEffect tick ici (= permet state===3 cleanup).
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const scanlineTick = (globalThis as any).__scanlineEffectTick;
+    if (typeof scanlineTick === 'function') scanlineTick();
     this.gIntroFrameCounter++;
   }
 

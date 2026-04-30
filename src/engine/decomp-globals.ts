@@ -867,9 +867,20 @@ export function ScanlineEffect_SetParams(_params: unknown): void {
 }
 
 export function ScanlineEffect_InitHBlankDmaTransfer(): void {
-  // No-op : our compositor calls hblankCallback directly per scanline.
-  // Real GBA uses DMA from gScanlineEffectRegBuffers to hardware regs.
+  // 1:1 décomp src/scanline_effect.c:72 — appelé chaque VBlank par VBlankCB_Intro.
+  // Quand `gScanlineEffect.state === 3`, le décomp stoppe le DMA + réinit state.
+  // Chez nous : pas de DMA mais on doit toujours clear le hblank callback pour
+  // que le BG arrête d'avoir le wave de la scène précédente.
+  if (gScanlineEffect.state === 3) {
+    ScanlineEffect_Stop();
+  }
+  // Real GBA uses DMA from gScanlineEffectRegBuffers to hardware regs (= no-op here).
 }
+
+// Expose globally pour que runOneFrame du runtime puisse l'appeler (sans avoir
+// à importer decomp-globals depuis decomp-runtime, qui créerait un cycle).
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(globalThis as any).__scanlineEffectTick = ScanlineEffect_InitHBlankDmaTransfer;
 
 export function ScanlineEffect_Stop(): void {
   waveParams = null;

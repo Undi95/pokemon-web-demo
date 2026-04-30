@@ -10,6 +10,108 @@ de la décompilation FR (`pokeemeraude`) + `@pkmn/sim` pour combats.
 
 ---
 
+## Session 70 (suite) — Phase 7 : Scene 3 1:1 GBA (Groudon/Kyogre/Rayquaza/Pokeball)
+
+### Visuel final observé via Claude Preview + comparaison VBAM
+
+Toutes les scènes Scene 3 maintenant 1:1 GBA :
+- **Pokeball spinning** : couleurs PNG PLTE 8bpp préservées (pinkish-red top, lavender bottom, beige center)
+- **Groudon scene** : red dirt BG + black silhouette + blue cracks (cycling blue↔red via INTRO3_RAW_PTR), 6 rocks sprites animés
+- **Kyogre scene** : blue water BG + bubbles + dark silhouette + red cracks, 18 bubble sprites figure-8
+- **Clouds approach** : dual BG0/BG1 cloud formations scrollent vers centre, plus de wave résiduelle
+- **Lightning** : 3 sprites lightning bolts × 2 strikes, palette flash idx 31 cycle
+- **Rayquaza scene** : green/yellow body avec rings, grey clouds tinted backdrop (RGB(9,10,10) fade)
+- **Orb attack** : white orb avec golden border + Rayquaza body partial behind
+- **Cinematic black bars** (WIN0V narrowing) sur toutes les scènes Scene 3
+- **Title transition** : intro → Pokemon logo + shine sweep ✅
+
+### 6 fixes critiques
+
+1. **Affine matrix `(texX << 8)` doublait shift** — texX = 0x8000 est DÉJÀ 28.8 fixed
+   (= 128.0 px). Avant : refX explosait à 8M+ → wrap chaotique. Fix : `dx = texX -
+   (screenX*pa + screenY*pb)` direct (= 1:1 BIOS BgAffineSet).
+
+2. **Affine matrix sign-extend s16 vs u16** — matrix.pa stocké u16 (pa=-66 = 65470)
+   mais compositor lit unsigned → texX explose. Fix : sign-extend dans
+   renderBgAffineScanline avant calcul.
+
+3. **Tilemap names swap (Groudon/Kyogre)** — `gIntroGroudon_Tilemap` est BG2 affine
+   (mapBase 24), `gIntroGroudonBg_Tilemap` est BG1 text (mapBase 28). Avant on les
+   avait inversés. Fix : split externsTilemap en text/affine listes dans
+   intro-asset-loader.
+
+4. **Gbagfx grayscale invert (THE BIG ONE)** — 1:1 décomp `tools/gbagfx/gfx.c:167`
+   `if (invertColors) { leftPixel = 15 - leftPixel; rightPixel = 15 - rightPixel; }`.
+   Pour PNG SANS PLTE (= grayscale comme legend_bg.png), gbagfx INVERTIT les valeurs
+   pixel. Notre extracteur ne le faisait pas → pixel value 2 mappait à
+   bg.pal[bank3 idx 2] = white au lieu de bg.pal[bank3 idx 13] = dark red.
+   Maintenant Groudon BG dirt = RED 1:1 GBA, Kyogre BG water = BLUE 1:1.
+
+5. **BG text negative hofs/vofs JS modulo bug** — `(x + hofs) % screenWPx` retourne
+   NEGATIVE pour hofs négatif (= JS modulo behavior). Avec hofs=-1, x=0 → vx=-1 →
+   tileX=-1 → mapIdx wrong row → ticks left edge. Fix : positive modulo
+   `((x + hofs) % w + w) % w`. Bug visible sur Groudon/Kyogre BG1 (= legend_bg
+   dirt/bubbles avec hofs=-3,-1).
+
+6. **BeginNormalPaletteFade custom color** — décomp `BeginNormalPaletteFade(...,
+   RGB(9,10,10))` (= grey tint pour Lightning/Rayquaza scenes). Notre impl ancien
+   ne supportait que RGB_WHITE / RGB_BLACK via BLDY brightness. Fix : parse
+   "RGB(r,g,b)" string + number forms, applique blend Unfaded→target color
+   directement dans gPlttBufferFaded chaque frame. Fix aussi UpdatePaletteFade
+   qui copiait juste Unfaded→Faded tout le temps.
+
+### ScanlineEffect cleanup state=3
+
+Bug racine : auto code `/* noop SetVBlankCallback */` dans Task_Scene1_FadeIn etc.
+→ VBlankCB_Intro jamais enregistré → ScanlineEffect_InitHBlankDmaTransfer jamais
+appelé → quand Task_Scene3_Groudon set `gScanlineEffect.state = 3`, rien ne nettoie
+le hblank callback du wave précédent → Cloud right scene avait wave résiduelle.
+
+Fix : ajout `__scanlineEffectTick` global appelé chaque frame dans `runOneFrame`
+après vblankCallback. Détecte state===3 et call ScanlineEffect_Stop (clear hblank
+callback + waveParams).
+
+### Devtools étendus (`window.dev`)
+
+Ajout pour debug frame-by-frame :
+- `back(n)` : reload + seekTo (= backward step via URL param `?seekTo=N`)
+- `vram(addr, len)` / `ovram(addr, len)` : hex dump VRAM/OBJ VRAM
+- `palBank(bank, mode, faded)` : dump palette bank (16 colors RGB15+RGB8)
+- `palDiff(count)` : compare unfaded vs faded
+- `bgVisible(idx, visible?)` : isolation BG layer (force visible/hide)
+- `objHide(hide?)` : hide all sprites pour isolation BG
+- `affineMat()` / `windows()` / `blend()` : state dumps
+- `info()` : panel info synthétique (frame, cb2, taskCount, bg2, blend, paletteFade)
+
+### Pokeball palette fix
+
+`loadIndexedPng` (canvas-based) remap les couleurs uniques observées dans pixels →
+palette length=13 au lieu de 256. Fix : `loadIndexedPngStrict 8bpp` qui lit le PLTE
+chunk PNG direct. Pokeball maintenant avec couleurs réelles (= 1:1 GBA confirmé via
+VBAM screenshot).
+
+### sSpriteSheet_Bubbles/Lightning/RayquazaOrb + audio
+
+- `sSpriteSheet_Bubbles/Lightning/RayquazaOrb` + `sSpritePalette_*` exports
+  (étaient absents → Tasks crashaient à LoadCompressedSpriteSheet)
+- `PlayCryInternal` wired vers `playCry(species)` pour Groudon/Kyogre cries (WAV)
+- `PlaySE`, `SE_INTRO_BLAST`, `SPECIES_GROUDON/KYOGRE` constants
+- `LoadCompressedSpriteSheetUsingHeap`/`Palette*UsingHeap` wrap normales versions
+  (étaient stubs → sprites jamais chargés)
+- `gBattleAnimPicTable`/`PaletteTable` Proxy sparse (ANIM_TAG_ROCKS=10058 → idx 58)
+- `gAncientPowerRockSpriteTemplate` + `sAnims_BasicRock` ajoutés SPRITE_TEMPLATES
+- `gOamData_AffineOff_ObjNormal_32x32` ajouté OAM_DATAS
+- Rocks battle anim asset extracted: `rocks.png → rocks.4bpp.bin` (96 tiles)
+- preloadScene3Assets charge gBattleAnimSpriteGfx_Rocks + Pal
+
+### Bugs résiduels Scene 3
+
+- Audio cris/SFX manquants pour Lightning/Rayquaza (ScanlineEffect_InitWave
+  underwater wave + cri Pokémon partiel)
+- Tile alignment minor edges scene transitions
+
+---
+
 ## Session 70 — Phase 6 : Scene 2 1:1 GBA (bike ride + Pokémon)
 
 ### Visuel observé via Claude Preview Tool (frame-by-frame audit `window.dev`)

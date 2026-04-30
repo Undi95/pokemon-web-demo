@@ -58,11 +58,14 @@ export function renderBgScanline(
   const [screenTilesW, screenTilesH] = SCREEN_TILES[config.screenSize];
   const screenWPx = screenTilesW * 8;
   const screenHPx = screenTilesH * 8;
-  const vy = (scanline + config.vofs) % screenHPx;
+  // Positive modulo : JS `%` retourne negative pour operande negative.
+  // Pour hofs/vofs négatifs (= scroll right/down), on doit wrap proprement.
+  // Sans ça, vx/vy négatif → tileX/tileY négatif → mapIdx wrong row → ticks edge.
+  const vy = ((scanline + config.vofs) % screenHPx + screenHPx) % screenHPx;
   const tileSizeBytes = config.paletteMode === 0 ? 32 : 64;
 
   for (let x = 0; x < SCREEN_W; x++) {
-    const vx = (x + config.hofs) % screenWPx;
+    const vx = ((x + config.hofs) % screenWPx + screenWPx) % screenWPx;
     const tileX = Math.floor(vx / 8);
     const tileY = Math.floor(vy / 8);
     const subX = vx % 8;

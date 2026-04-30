@@ -173,14 +173,118 @@ export class GameScene extends Phaser.Scene {
       bgs: () => {
         return [0,1,2,3].map(i => ({ idx: i, ...rt.gba.bg(i as 0|1|2|3).config }));
       },
+      // Backward step : reload + start paused + step forward to target frame.
+      back: (n = 1) => {
+        const target = Math.max(0, rt.gIntroFrameCounter - n);
+        const url = new URL(window.location.href);
+        url.searchParams.set('pause', '1');
+        url.searchParams.set('seekTo', String(target));
+        window.location.href = url.toString();
+        return 'reloading + seeking back to frame ' + target;
+      },
+      // VRAM hex dump (BG vram unifié 96KB). Address absolu depuis VRAM=0.
+      vram: (addr: number, len: number = 32) => {
+        const buf = rt.gba.vram.subarray(addr, Math.min(addr + len, rt.gba.vram.length));
+        return Array.from(buf).map(b => b.toString(16).padStart(2,'0')).join(' ');
+      },
+      // OBJ VRAM dump.
+      ovram: (addr: number, len: number = 32) => {
+        const buf = rt.gba.objVram.subarray(addr, Math.min(addr + len, rt.gba.objVram.length));
+        return Array.from(buf).map(b => b.toString(16).padStart(2,'0')).join(' ');
+      },
+      // Palette dump bank N (16 colors). Mode 'bg' ou 'obj'. faded=true → après UpdatePaletteFade.
+      palBank: (bank: number, mode: 'bg' | 'obj' = 'bg', faded: boolean = true) => {
+        const out: { idx: number; rgb15: string; rgb8: string }[] = [];
+        const buf = mode === 'bg'
+          ? (faded ? rt.gPlttBufferFaded : rt.gPlttBufferUnfaded)
+          : (faded ? rt.gPlttBufferFaded : rt.gPlttBufferUnfaded);
+        const offset = mode === 'bg' ? 0 : 256;
+        for (let i = 0; i < 16; i++) {
+          const flat = offset + bank * 16 + i;
+          const v = buf.get(flat);
+          const r5 = v & 0x1F, g5 = (v >> 5) & 0x1F, b5 = (v >> 10) & 0x1F;
+          out.push({ idx: i, rgb15: '0x'+v.toString(16).padStart(4,'0'), rgb8: `${r5*8},${g5*8},${b5*8}` });
+        }
+        return out;
+      },
+      // Compare gPlttBufferUnfaded vs Faded (= si fade actif, montre la diff).
+      palDiff: (count: number = 32) => {
+        const out: { idx: number; unfaded: string; faded: string; same: boolean }[] = [];
+        for (let i = 0; i < count; i++) {
+          const u = rt.gPlttBufferUnfaded.get(i);
+          const f = rt.gPlttBufferFaded.get(i);
+          out.push({ idx: i, unfaded: '0x'+u.toString(16).padStart(4,'0'), faded: '0x'+f.toString(16).padStart(4,'0'), same: u === f });
+        }
+        return out;
+      },
+      // Toggle BG visibility (= isolation pour debug). Returns prev state.
+      bgVisible: (idx: 0|1|2|3, visible?: boolean) => {
+        const cfg = rt.gba.bg(idx).config;
+        const prev = cfg.visible;
+        if (visible !== undefined) cfg.visible = visible;
+        return { idx, prev, current: cfg.visible };
+      },
+      // Hide all OBJ sprites (= isolate BG layers).
+      objHide: (hide: boolean = true) => {
+        for (let i = 0; i < 128; i++) {
+          if (hide) {
+            rt.gba.oam[i]._hiddenByDev = !rt.gba.oam[i].visible ? false : true;
+            rt.gba.oam[i].visible = false;
+          } else if (rt.gba.oam[i]._hiddenByDev) {
+            rt.gba.oam[i].visible = true;
+            rt.gba.oam[i]._hiddenByDev = false;
+          }
+        }
+        return hide ? 'all sprites hidden' : 'sprites restored';
+      },
+      // Affine matrix dump.
+      affineMat: () => ({
+        bg2: rt.gba.bgAffineMatrices[0],
+        bg3: rt.gba.bgAffineMatrices[1],
+      }),
+      // Window state dump.
+      windows: () => rt.gba.windows,
+      // Blend state dump.
+      blend: () => rt.gba.blend,
+      // Quick info panel for current frame.
+      info: () => ({
+        frame: rt.gIntroFrameCounter,
+        cb2: rt.gMain.callback2?.name || 'anon',
+        taskCount: rt.gTasks.size,
+        spriteCount: Array.from(rt.gSprites.values()).filter(s => !s.invisible).length,
+        bg2: rt.gba.bg(2).config,
+        blend: { mode: rt.gba.blend.mode, br: rt.gba.blend.brightness },
+        paletteFade: { active: rt.gPaletteFade.active, current: rt.gPaletteFade.currentFrame, total: rt.gPaletteFade.totalFrames },
+      }),
     };
-    console.log('[devtools] window.dev ready: pause(), resume(), step(n), seek(frame), speed(x), frame(), sprites(), tasks(), bgs()');
+    console.log('[devtools] window.dev ready:');
+    console.log('  pause/resume/step(n)/seek(frame)/back(n)/speed(x)/frame()');
+    console.log('  sprites/tasks/bgs/info');
+    console.log('  vram(addr,len)/ovram(addr,len)/palBank(bank,mode,faded)/palDiff(count)');
+    console.log('  bgVisible(idx,visible?)/objHide(hide?)/affineMat()/windows()/blend()');
 
     // ?pause query param → start paused for frame-accurate audit. ?slow=N → speed N.
+    // ?seekTo=N → after init, queue a seek to gIntroFrameCounter==N (= used by dev.back()).
     const params = new URLSearchParams(window.location.search);
     if (params.has('pause')) { rt.paused = true; console.log('[devtools] startup paused — call dev.resume() or dev.step(N)'); }
     const slow = params.get('slow');
     if (slow) { rt.speedMultiplier = Number(slow); console.log('[devtools] speed = ' + slow + 'x'); }
+    const seekTo = params.get('seekTo');
+    if (seekTo) {
+      const target = Number(seekTo);
+      console.log(`[devtools] seekTo=${target} requested, will burst when ready`);
+      // Queue : check periodically until rt has progressed (= bootIntro done).
+      const checkAndSeek = () => {
+        if (rt.gIntroFrameCounter > 0 || rt.gMain.callback2) {
+          rt.paused = true;
+          rt.stepBudget = target;
+          console.log(`[devtools] seekTo ${target} : burst ${target} frames`);
+        } else {
+          setTimeout(checkAndSeek, 100);
+        }
+      };
+      setTimeout(checkAndSeek, 500);
+    }
 
     const frameImg = this.add.image(0, 0, 'game-frame').setOrigin(0, 0);
     if (GAME_W !== 240 || GAME_H !== 160) {

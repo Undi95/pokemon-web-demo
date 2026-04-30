@@ -34,7 +34,7 @@ TestGbaScene (sanity) → click → GameScene
 | Copyright | partial (skip rapide) | ⏳ |
 | Scene 1 | Leaves + drops + GAME FREAK + ripple white + grass + mountains ✅ | **1:1 GBA** |
 | Scene 2 | May/bicycle + Manectric/Torchic/Volbeat/Flygon + mountains + pine trees ✅ | **1:1 GBA** session 70 |
-| Scene 3 | Clouds + lightning ✅ | ⚠️ Groudon/Kyogre partial |
+| Scene 3 | Pokeball + Groudon (red dirt) + Kyogre (blue water) + Rayquaza + Orb attack ✅ | **1:1 GBA** session 70 phase 7 |
 | Title | Logo + Rayquaza marking pulsant + clouds rise + Press Start ✅ | **1:1 GBA** |
 | Main Menu | NOUVELLE PARTIE + OPTION en FR ✅ | bug ♥ curseur dialogue traîne |
 | Birch | `Task_NewGameBirchSpeech_Init` reach | ⚠️ BGs invisibles |
@@ -44,7 +44,7 @@ TestGbaScene (sanity) → click → GameScene
 - **Engine GBA pixel-perfect** (`src/engine/gba/`) : BG/OAM/palette/blend/windows/affine/mosaic, VRAM unifié 96KB
 - **Engine M4A audio 1:1** (`src/engine/m4a/`) : ADSR/LFO/reverb/sample loop, validé 987/987 notes propre
 - **DecompRuntime** (`decomp-runtime.ts`) : `gMain.callback2` + `gTasks` + `gSprites` + `spriteCallbacks` Map + `tickFixed` 60Hz (vérifié 60.0 fps logic)
-- **Devtools** (`window.dev`) : `pause/resume/step(N)/seek/speed/sprites/tasks/bgs` + `?pause` query param
+- **Devtools** (`window.dev`) : `pause/resume/step(N)/seek(frame)/back(N)/speed/sprites/tasks/bgs/info/vram/ovram/palBank/palDiff/bgVisible/objHide/affineMat/windows/blend` + `?pause`/`?seekTo=N` query params
 - **decomp-globals** (`decomp-globals.ts`) : helpers décomp + `assetCache` + symbol-name strings
 - **copyright-boot** (`copyright-boot.ts`) : 1:1 `CB2_InitCopyrightScreenAfterBootup` state machine
 - **gba-text/window/menu-system** : Main Menu Pokémon Émeraude FR
@@ -105,10 +105,11 @@ TestGbaScene (sanity) → click → GameScene
 - **Phase 4 [DONE session 68]** : Merge AI work + DmaFill16 no-op + boot complet jusqu'à Birch
 - **Phase 5 [DONE session 69]** : Polish intro visuel — Title + Scene 1 1:1 GBA, fixes profonds (PNG IDAT extractor, charBase 32KB, LoadPalette unfaded sync, sprite anim END persistence)
 - **Phase 6 [DONE session 70]** : Scene 2 1:1 GBA — fix transpileur `0x7F` → `0x7`, register `SpriteCB_Bicycle` / `SpriteCB_FlygonRightHalf` / `Task_BicycleBgAnimation`, implement `sSpriteSheet_RunningPokemon` + `sSpritePalettes_RunningPokemon` (Volbeat/Torchic/Manectric)
-- **Phase 7 (next)** : Scene 3 polish (Groudon/Kyogre/Rayquaza) + Birch Speech BGs/sprites
-- **Phase 8** : Naming Screen (clavier FR + ♥/♦ symbols)
-- **Phase 9** : Overworld via opcodes décomp + script-runner
-- **Phase 10** : Battle via bridge `@pkmn/sim` + UI Tasks transcrites
+- **Phase 7 [DONE session 70]** : Scene 3 1:1 GBA — Pokeball/Groudon/Kyogre/Rayquaza/Orb visibles. Fixes profonds : affine matrix sign-extend + `(texX << 8)` bug + tilemap names swap + gbagfx grayscale invert (`15-x`) + BG text negative hofs/vofs JS modulo + custom color fade (`RGB(9,10,10)`) + ScanlineEffect state=3 cleanup + devtools étendus.
+- **Phase 8 (next)** : Birch Speech BGs/sprites (= Task_NewGameBirchSpeech_Init reach)
+- **Phase 9** : Naming Screen (clavier FR + ♥/♦ symbols)
+- **Phase 10** : Overworld via opcodes décomp + script-runner
+- **Phase 11** : Battle via bridge `@pkmn/sim` + UI Tasks transcrites
 
 ---
 
