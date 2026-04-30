@@ -248,10 +248,12 @@ export const Task_TitleScreenPhase2: TaskCallback = (task, rt) => {
       if (!(task.data[0] & 1) && task.data[3] != 0)
           task.data[3]++;
 
-       
-      yPos = task.data[3] * 256;
-      rt.SetGpuReg(REG_OFFSET_BG2Y_L, yPos);
-      rt.SetGpuReg(REG_OFFSET_BG2Y_H, yPos / 0x10000);
+      // Décomp : `u32 yPos` → multiplie en unsigned 32-bit. Pour data[3]=-32 → yPos
+      // = 0xFFFFE000 (cast u32). yPos/0x10000 (unsigned) = 0xFFFF (= sign-extend
+      // pour BG2Y_H 12-bit signed). En TS on force unsigned via `>>> 0`.
+      yPos = (task.data[3] * 256) >>> 0;
+      rt.SetGpuReg(REG_OFFSET_BG2Y_L, yPos & 0xFFFF);
+      rt.SetGpuReg(REG_OFFSET_BG2Y_H, (yPos >>> 16) & 0xFFFF);
 
       task.data[5] = 15;  
       task.data[6] = 6;

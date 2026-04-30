@@ -1135,8 +1135,26 @@ export function BuildOamBuffer(): void {
 }
 
 // ─── Title screen / audio stubs ──────────────────────────────────────────────
-export function UpdateLegendaryMarkingColor(_counter: number): void {
-  // TODO: implement legendary marking palette cycling (needs gTitleScreenLegendaryMarkingsPalette)
+/** 1:1 décomp title_screen.c:859 — color cycling sur BG palette 14 entry 15
+ *  (= Rayquaza eye marking). Recalcule la couleur tous les 4 frames depuis
+ *  Cos(frameNum, Q_8_8(0.5)) en RGB(r, g, 12). */
+export function UpdateLegendaryMarkingColor(frameNum: number): void {
+  if ((frameNum & 0xFF) % 4 !== 0) return;
+  // Cos(idx, amp) = (G_SINE_TABLE[(idx+64) & 0xFF] * amp) >> 8. Q_8_8(0.5) = 128.
+  const cosIdx = ((frameNum & 0xFF) + 64) & 0xFF;
+  const cosVal = (G_SINE_TABLE[cosIdx] * 128) >> 8;
+  // intensity = cosVal + 128 (= cos*0.5 + 0.5, en Q.8 fixed)
+  const intensity = cosVal + 128;
+  // r = 31 - (intensity * 31) >> 8, g = 31 - (intensity * 22) >> 8
+  const r = 31 - ((intensity * 31) >> 8);
+  const g = 31 - ((intensity * 22) >> 8);
+  const b = 12;
+  // RGB15 = (b << 10) | (g << 5) | r
+  const color = ((b & 0x1F) << 10) | ((g & 0x1F) << 5) | (r & 0x1F);
+  // BG_PLTT_ID(14) + 15 = 14*16 + 15 = 239
+  const slot = 14 * 16 + 15;
+  rt().gPlttBufferFaded.set(slot, color);
+  rt().gPlttBufferUnfaded?.set?.(slot, color);
 }
 export function FadeOutBGM(_speed: number): void {
   // TODO: implement BGM fade out
