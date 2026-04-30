@@ -1,8 +1,71 @@
 # Pokemon Web Demo — Dev Log
 
-Projet exploratoire : utiliser les décomps GBA (`pokeemeraude`, `pokerougefeu`)
-comme source d'assets et de données, + `@pkmn/sim` comme moteur de combat,
-pour construire un jeu Pokémon web natif (pas une émulation GBA).
+Projet : émulation web 1:1 GBA de Pokémon Émeraude en TypeScript, à partir
+de la décompilation FR (`pokeemeraude`) + `@pkmn/sim` pour combats.
+
+**Sources de référence** :
+- `D:/Projet 1/decomps/pokeemeraude` — décomp FR (= source de vérité, 1:1 ROM)
+- `D:/Projet 1/gen3src/RS/source` — sources Nintendo Ruby/Sapphire originales
+  (= références architecture, **PAS pour copier 1:1** — interdit par licence)
+
+---
+
+## Session 68 (suite) — Phase 4 : merge AI externe + boot complet jusqu'à Birch
+
+User a fait tourner une autre AI (3 jours non-stop) sur `D:/Projet 1 - Copie/`
+pendant absence. AI's état final : ~191 fichiers modifiés vs HEAD `8a63ca71`.
+
+### Travail AI récupéré
+- `copyright-boot.ts` : implémentation 1:1 `CB2_InitCopyrightScreenAfterBootup`
+  + `SetUpCopyrightScreen` state machine + `MainCB2_Intro`
+- `gba-text-system.ts` + `gba-window-system.ts` + `gba-menu-system.ts` :
+  systèmes text/window/menu pour Main Menu Pokemon Émeraude FR
+- `gba-task.ts` + `gba-strings.ts` + `gba-global-scope.ts` + `gba-io-regs.ts`
+- `main-menu-data.ts` : data extraite de `src/main_menu.c`
+- `DebugOverlayScene` : overlay fps/frame/tasks/sprites
+- `spriteCallbacks` Map dans DecompRuntime : register CB par nom string
+- `pollInput` keydown/keyup natif → `heldKeys` mask GBA-style
+- `VBlankCB` avec `TransferPlttBuffer`
+- `MainCB2` no-op (notre tickFixed fait déjà tout)
+- Title assets corrects (rayquaza/clouds/pokemon_logo)
+- AUDIT_BOOT.md : audit AI identifiant 8 écarts critiques
+
+### Test live post-merge
+- ✅ Boot complet : Copyright → Intro → Title screen
+- ✅ Title screen : logo POKÉMON™ jaune visible
+- ✅ Press B (START) → transition CB2_InitMainMenu
+- ✅ Main Menu : "NOUVELLE PARTIE" + "OPTION" en FR (curseur ♥)
+- ✅ Press W (A) sur NOUVELLE PARTIE → `Task_NewGameBirchSpeech_Init`
+- Bugs résiduels : Birch BG init incomplete, sprites Press Start manquants
+
+### BUG MAJEUR fixed Phase 4 — DmaFill16 effaçait char data
+Diagnostic via Claude Preview Tool live :
+- LZ77 trace : tous title char data copiés dans VRAM ✓
+- Mais eval VRAM bytes : char ranges vides ❌, tilemap ranges OK ✓
+
+Cause : `DmaFill16(VRAM, VRAM_SIZE)` du décomp pour clear avant nouvelle
+scene effaçait tout SAUF les tilemaps écrits APRÈS. Notre runtime ordre
+mal les calls (= async preload + tasks pas synchrones avec décomp).
+
+Fix : `DmaFill16` + `DmaFill32` = no-op (notre engine init VRAM zero au
+startup, pas besoin du clear décomp). Résultat live : Scene 3 visuelle
+(clouds bleus + lightning) + Title logo POKÉMON™ visible.
+
+### Commits clés Phase 4
+- `f4b6834f` merge AI work session 68 phase 4
+- `df24fb95` SetIntroPart2BgCnt impl 1:1 décomp
+- `393cfea2` BUG MAJEUR DmaFill16 no-op (efface char data entre transitions)
+
+### État final session 68
+- Boot end-to-end : Copyright → Scene 1 → Scene 2 → Scene 3 → Title → MainMenu → Birch Init
+- Scene 1 visuel partiel (BG layers OK, sprites partiels)
+- Scene 2 sprites May/Flygon/Manectric/Volbeat ✅, BG bike road ❌
+- Scene 3 clouds + lightning ✅, Groudon/Kyogre/Rayquaza partial
+- Title logo POKÉMON™ ✅, Rayquaza/clouds/Press Start ❌
+- MainMenu FR ✅
+- Birch BGs init incomplete
+
+---
 
 ## État actuel
 
