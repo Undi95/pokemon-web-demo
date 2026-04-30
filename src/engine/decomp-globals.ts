@@ -375,11 +375,25 @@ export function CreateBicycleBgAnimationTask(_mode: number, _bg1Speed: number, _
   return rt().CreateTask(() => { /* no-op stub */ }, 0);
 }
 
-/** 1:1 décomp src/intro_credits_graphics.c:761 — setup BGCNT pour Scene 2
- *  (priority + char/screen base + screen size). Phase 0c stub : no-op
- *  (= la Task_Scene2_Load setup déjà BGCNT directement). À remplacer si
- *  LoadIntroPart2Graphics démontre que c'est nécessaire. */
-export function SetIntroPart2BgCnt(_scenery: number): void { /* TODO Phase 1 #3 */ }
+/** 1:1 décomp src/intro_credits_graphics.c:761 — setup BGCNT pour Scene 2.
+ *  scenery=1 → trees bike ride (= utilisé par intro Scene 2). Active
+ *  BG1+BG2+BG3+OBJ via DISPCNT MODE_0. */
+export function SetIntroPart2BgCnt(scenery: number): void {
+  const r = rt();
+  const BG_PRI = (n: number) => n & 3;
+  const BG_CHARBASE = (n: number) => (n & 3) << 2;
+  const BG_SCREENBASE = (n: number) => (n & 31) << 8;
+  const BG_TXT_256 = 0x0000;
+  // BG3CNT (0x00E) : priority 3, charBase 0, screenBase 6
+  r.SetGpuReg(0x00E, BG_PRI(3) | BG_CHARBASE(0) | BG_SCREENBASE(6) | BG_TXT_256);
+  // BG2CNT (0x00C) : priority 2, charBase 0, screenBase 7
+  r.SetGpuReg(0x00C, BG_PRI(2) | BG_CHARBASE(0) | BG_SCREENBASE(7) | BG_TXT_256);
+  // BG1CNT (0x00A) : priority 1, charBase 1, screenBase 15
+  r.SetGpuReg(0x00A, BG_PRI(1) | BG_CHARBASE(1) | BG_SCREENBASE(15) | BG_TXT_256);
+  // DISPCNT (0x000) : MODE_0 | OBJ_1D_MAP | BG1_ON | BG2_ON | BG3_ON | OBJ_ON
+  r.SetGpuReg(0x000, 0 | 0x40 | 0x200 | 0x400 | 0x800 | 0x1000);
+  void scenery;  // case 0/1/2 partagent le même setup pour intro
+}
 /** 1:1 décomp src/intro_credits_graphics.c:989 — cycle palette scenery couleurs
  *  toutes les 4 frames pour effet shimmer (sun reflection on grass).
  *
