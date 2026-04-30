@@ -604,14 +604,24 @@ export function m4aMPlayAllStop(): void {
  *  TODO Phase 7 : router via m4aMPlayAllStop + start short SFX track. */
 export function PlaySE(_seId: number): void { /* TODO audio SFX */ }
 
+/** Map species ID → species name (= cri filename `cries/<name>.wav`). */
+const SPECIES_NAMES: Record<number, string> = {
+  0x170: 'kyogre',
+  0x171: 'groudon',
+  0x172: 'rayquaza',
+  // TODO étendre selon besoin (151 species + extensions Hoenn).
+};
+
 /** 1:1 décomp `PlayCryInternal(species, pan, volume, priority, mode)` — joue
- *  le cri d'un Pokémon. Phase 0c stub : no-op (TODO charger gMonCryTable + jouer
- *  via m4a engine). Sans ça, Scene 3 Groudon/Kyogre cries silencieux mais le
- *  reste fonctionne (la state machine se base sur tDelay frame counters, pas
- *  sur l'audio). */
+ *  le cri d'un Pokémon via WAV pré-extrait. Phase 7 minimal : ignore pan/volume/
+ *  priority/mode (le décomp ajuste pitch/pan via m4a, ici on joue le WAV direct). */
 export function PlayCryInternal(
-  _species: number, _pan: number, _volume: number, _priority: number, _mode: number,
-): void { /* TODO Phase 7 cri Pokémon */ }
+  species: number, _pan: number, _volume: number, _priority: number, _mode: number,
+): void {
+  const name = SPECIES_NAMES[species];
+  if (!name) return;
+  void import('./music').then(({ playCry }) => playCry(name)).catch(() => { /* silent */ });
+}
 
 /** 1:1 décomp constants pour PlayCryInternal. */
 export const SPECIES_GROUDON = 0x171;
@@ -642,9 +652,10 @@ export function PanFadeAndZoomScreen(screenX: number, screenY: number, zoom: num
   const pb = (-sin * zoom) >> 8;
   const pc = (sin * zoom) >> 8;
   const pd = (cos * zoom) >> 8;
-  // dx = texX - (screenX * pa + screenY * pb), en 28.8 fixed (× 256)
-  const dx = (texX << 8) - (screenX * pa + screenY * pb);
-  const dy = (texY << 8) - (screenX * pc + screenY * pd);
+  // 1:1 BIOS BgAffineSet : src.texX/texY sont DÉJÀ 28.8 fixed (= 0x8000 = 128.0 px).
+  // dest.dx = src.texX - (scrX * pa + scrY * pb). Pas de shift << 8 supplémentaire !
+  const dx = texX - (screenX * pa + screenY * pb);
+  const dy = texY - (screenX * pc + screenY * pd);
   // Set BG2 affine matrix index 0 (= bg(2).config.affineMatrixIndex)
   if (r.gba.bgAffineMatrices && r.gba.bgAffineMatrices[0]) {
     const m = r.gba.bgAffineMatrices[0] as { pa: number; pb: number; pc: number; pd: number };

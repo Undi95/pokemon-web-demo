@@ -177,11 +177,17 @@ export function renderBgAffineScanline(
   const refX = config.affineRefX;
   const refY = config.affineRefY;
   const sy = scanline;
+  // Sign-extend matrix elements (= s16 GBA hardware mais stockés u16 chez nous).
+  // Without : matrix.pa = 65470 lu comme +65470 au lieu de -66 → texX explose.
+  const pa = matrix.pa > 0x7FFF ? matrix.pa - 0x10000 : matrix.pa;
+  const pb = matrix.pb > 0x7FFF ? matrix.pb - 0x10000 : matrix.pb;
+  const pc = matrix.pc > 0x7FFF ? matrix.pc - 0x10000 : matrix.pc;
+  const pd = matrix.pd > 0x7FFF ? matrix.pd - 0x10000 : matrix.pd;
 
   for (let sx = 0; sx < SCREEN_W; sx++) {
     // Apply matrix : (texX, texY) en 28.8 fixed → integer pixel via >> 8
-    let texX = (refX + matrix.pa * sx + matrix.pb * sy) >> 8;
-    let texY = (refY + matrix.pc * sx + matrix.pd * sy) >> 8;
+    let texX = (refX + pa * sx + pb * sy) >> 8;
+    let texY = (refY + pc * sx + pd * sy) >> 8;
 
     // Wrap or clip
     if (config.wraparound) {
@@ -205,7 +211,8 @@ export function renderBgAffineScanline(
       continue;
     }
 
-    // Affine tilemap = u8 par entry (on lit le low byte du u16)
+    // Affine tilemap = u8 par entry. Notre Uint16Array view stocke 1 u8 par u16
+    // (loadAffineTilemapBin a expandé). Lit le low byte (high = 0 garanti).
     const tileId = tilemap[mapIdx] & 0xFF;
 
     // Décode tile 8bpp (cache)

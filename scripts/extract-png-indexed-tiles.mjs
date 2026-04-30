@@ -73,7 +73,15 @@ function parseIndexedPng(buf) {
     pos += 8 + length + 4;
   }
 
-  if (colorType !== 3) throw new Error(`PNG colorType=${colorType}, expected 3 (indexed)`);
+  // colorType : 3 = indexed (PLTE), 0 = grayscale (no palette).
+  // 1:1 décomp gbagfx : pour grayscale (pas de PLTE), gbagfx INVERTIT les valeurs
+  // pixel via `15 - pixelValue` (cf. tools/gbagfx/gfx.c ConvertToTiles4Bpp avec
+  // invertColors=!hasPalette). Sans cette inversion, les BGs grayscale comme
+  // legend_bg.png mappent à des palette indices low (= white) au lieu de high
+  // (= dirt red colors). On applique la même inversion ici pour correspondre
+  // au résultat de gbagfx.
+  if (colorType !== 3 && colorType !== 0) throw new Error(`PNG colorType=${colorType}, expected 3 (indexed) or 0 (grayscale)`);
+  const invertColors = colorType === 0;
   const idat = Buffer.concat(idatChunks);
   // IDAT is zlib-compressed. Use Node zlib.
   const raw = zlib.inflateSync(idat);
@@ -103,8 +111,10 @@ function parseIndexedPng(buf) {
       if (bitDepth === 4) {
         const byte = unfiltered[Math.floor(x / 2)];
         idx = (x % 2 === 0) ? (byte >> 4) & 0x0F : byte & 0x0F;
+        if (invertColors) idx = 15 - idx;
       } else if (bitDepth === 8) {
         idx = unfiltered[x];
+        if (invertColors) idx = 255 - idx;
       } else {
         throw new Error(`bitDepth ${bitDepth} unsupported`);
       }

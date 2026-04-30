@@ -1261,7 +1261,13 @@ export const Task_Scene3_LoadGroudon: TaskCallback = (task, rt) => {
           LZDecompressVram(gIntroGroudonBg_Tilemap, (BG_SCREEN_ADDR(28)));
           LoadCompressedSpriteSheetUsingHeap(gBattleAnimPicTable[GET_TRUE_SPRITE_INDEX(ANIM_TAG_ROCKS)]);
           LoadCompressedSpritePaletteUsingHeap(gBattleAnimPaletteTable[GET_TRUE_SPRITE_INDEX(ANIM_TAG_ROCKS)]);
-          rt.CpuCopy16((rt.getExtraPalette("gIntro3Bg_Pal") ?? new Uint16Array(0)), 0, 0, Math.floor((((gIntro3Bg_Pal)?.length ?? 32) / 2)));
+          // 1:1 décomp `CpuCopy16(gIntro3Bg_Pal, gPlttBufferUnfaded, sizeof(gIntro3Bg_Pal))`.
+          // sizeof = byte count, CpuCopy16 div par 2 = u16 entries. gIntro3Bg_Pal asset = 256 colors (= 512 bytes / 2 = 256 entries).
+          // Le transpileur lisait `.length` du symbol-name string (13 chars) → count=6 → palette tronquée.
+          {
+            const _pal = rt.getExtraPalette("gIntro3Bg_Pal") ?? new Uint16Array(0);
+            rt.CpuCopy16(_pal, 0, 0, _pal.length);
+          }
           task.func = (t) => Task_Scene3_InitGroudonBg(t, rt);
       }
 };

@@ -240,10 +240,27 @@ export async function preloadScene3Assets(): Promise<void> {
       console.error(`[intro-asset-loader] Scene 3 load failed for ${sym}:`, e);
     }
   }));
-  // gIntro3Bg_Pal pour INTRO3_RAW_PTR (= palette raw scene 3)
+  // Pokeball Tilemap est un AFFINE tilemap u8 (BG2 affine ScreenSize 1 = 32x32 tiles).
+  // loadSymbol l'a chargé via loadTilemapBin (u16 packed) → wrong format. Recharge
+  // via loadAffineTilemapBin (u8 → u16 expand chacun comme entry distincte).
   try {
-    const pal = await loadGbaPal('/decomp/em/intro/scene_3/misc.pal');
+    const tm = await loadAffineTilemapBin('/decomp/em/intro/scene_3/pokeball_map.bin');
+    assetCache.set('sIntroPokeball_Tilemap', tm);
+  } catch (e) {
+    console.warn('[intro-asset-loader] sIntroPokeball_Tilemap reload failed:', e);
+  }
+  // gIntro3Bg_Pal = palette complète 256 colors Scene 3 (= graphics/intro/scene_3/bg.pal).
+  // Used by Task_Scene3_LoadGroudon `CpuCopy16(gIntro3Bg_Pal, gPlttBufferUnfaded, sizeof(gIntro3Bg_Pal))`.
+  // L'ancienne version chargeait misc.pal (16 colors seulement) → palette tronquée.
+  // ALSO register dans runtime.extraPalettes pour que getExtraPalette() la trouve
+  // (= utilisé par auto-callbacks via `rt.getExtraPalette("gIntro3Bg_Pal")`).
+  try {
+    const pal = await loadGbaPal('/decomp/em/intro/scene_3/bg.pal');
     assetCache.set('gIntro3Bg_Pal', pal);
+    const { getRuntime } = await import('./decomp-globals');
+    try {
+      getRuntime().extraPalettes.set('gIntro3Bg_Pal', pal);
+    } catch { /* runtime not yet set, will fallback to assetCache */ }
   } catch (e) {
     console.warn('[intro-asset-loader] gIntro3Bg_Pal not loaded:', e);
   }
@@ -302,12 +319,12 @@ export async function preloadScene3Assets(): Promise<void> {
   }
 
   // Scene 3 tilemaps (.bin) — split entre text BGs (u16/tile) et affine BGs (u8/tile).
-  // 1:1 décomp : Groudon BG2 / Kyogre BG2 / Rayquaza BG2 sont en mode 1 affine,
-  // donc tilemap u8. Les autres (Groudon/Kyogre BG1 text, Clouds Left/Right, etc.)
-  // sont u16 text mode standard.
+  // 1:1 décomp : `gIntroGroudon_Tilemap` va à `BG_CHAR_ADDR(3)` (= screenBase 24
+  // = mapBase de BG2 affine). `gIntroGroudonBg_Tilemap` va à BG_SCREEN_ADDR(28)
+  // (= BG1 text). Les noms sont contre-intuitifs ! Idem Kyogre.
   const externsTilemapText: Array<{ symbol: string; url: string }> = [
-    { symbol: 'gIntroGroudon_Tilemap', url: '/decomp/em/intro/scene_3/groudon.bin' },
-    { symbol: 'gIntroKyogre_Tilemap', url: '/decomp/em/intro/scene_3/kyogre.bin' },
+    { symbol: 'gIntroGroudonBg_Tilemap', url: '/decomp/em/intro/scene_3/groudon_bg.bin' },
+    { symbol: 'gIntroKyogreBg_Tilemap', url: '/decomp/em/intro/scene_3/kyogre_bg.bin' },
     { symbol: 'gIntroCloudsLeft_Tilemap', url: '/decomp/em/intro/scene_3/clouds_left.bin' },
     { symbol: 'gIntroCloudsRight_Tilemap', url: '/decomp/em/intro/scene_3/clouds_right.bin' },
     { symbol: 'gIntroRayquaza_Tilemap', url: '/decomp/em/intro/scene_3/rayquaza.bin' },
@@ -315,8 +332,8 @@ export async function preloadScene3Assets(): Promise<void> {
   ];
   // Affine BG tilemaps : 1 byte/tile mais notre engine attend Uint16Array → expand u8 → u16.
   const externsTilemapAffine: Array<{ symbol: string; url: string }> = [
-    { symbol: 'gIntroGroudonBg_Tilemap', url: '/decomp/em/intro/scene_3/groudon_bg.bin' },
-    { symbol: 'gIntroKyogreBg_Tilemap', url: '/decomp/em/intro/scene_3/kyogre_bg.bin' },
+    { symbol: 'gIntroGroudon_Tilemap', url: '/decomp/em/intro/scene_3/groudon.bin' },
+    { symbol: 'gIntroKyogre_Tilemap', url: '/decomp/em/intro/scene_3/kyogre.bin' },
     { symbol: 'gIntroCloudsSun_Tilemap', url: '/decomp/em/intro/scene_3/clouds_sun.bin' },
   ];
   await Promise.all(externsTilemapText.map(async ({ symbol, url }) => {

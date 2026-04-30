@@ -38,12 +38,20 @@ import {
 import { PaletteBanks } from './palette';
 import { composeFrame } from './compositor';
 
-/** Taille tilemap en entries u16 selon screenSize (1:1 GBA hardware). */
+/** Taille tilemap en entries u16 selon screenSize (1:1 GBA hardware) — TEXT BG mode. */
 const TILEMAP_SIZES_BY_SCREEN_SIZE: Readonly<Record<0 | 1 | 2 | 3, number>> = {
   0: 1024,  // 32×32 tiles = 1 screen base = 0x800 bytes
   1: 2048,  // 64×32 tiles = 2 screen bases (TL, TR)
   2: 2048,  // 32×64 tiles = 2 screen bases (TL, BL)
   3: 4096,  // 64×64 tiles = 4 screen bases (TL, TR, BL, BR)
+};
+/** Taille tilemap en entries u8 (mais view u16 chez nous) pour AFFINE BG.
+ *  GBATEK : affine BG = 1 byte par tile. ScreenSize 0/1/2/3 = 16²/32²/64²/128². */
+const AFFINE_TILEMAP_ENTRIES: Readonly<Record<0 | 1 | 2 | 3, number>> = {
+  0: 256,    // 16×16 = 256 entries
+  1: 1024,   // 32×32 = 1024 entries
+  2: 4096,   // 64×64 = 4096 entries
+  3: 16384,  // 128×128 = 16384 entries
 };
 
 export interface GbaBg {
@@ -115,9 +123,16 @@ export class Gba {
         get tilemap(): Uint16Array {
           // View u16 dans VRAM unifié au mapBaseIndex actuel.
           // 1:1 GBA : screenBase 0-31 = byte offset 0/0x800/.../0xF800.
-          // Taille = entries u16 selon screenSize.
+          // Taille différente entre Text (entries u16) et Affine (entries u8 ;
+          // notre view en u16 lit 2 entries u8 par u16 → on doit doubler le
+          // nombre d'entries pour couvrir les bytes d'origine).
           const off = (cfg.mapBaseIndex & 31) * 0x800;
-          const numEntries = TILEMAP_SIZES_BY_SCREEN_SIZE[cfg.screenSize] ?? 1024;
+          // Affine : tilemap est u8 dans VRAM mais notre view u16 contient
+          // chaque u8 source comme entry distincte (loadAffineTilemapBin a déjà
+          // expandé u8 → u16). Donc numEntries = nombre de tiles directement.
+          const numEntries = cfg.isAffine
+            ? (AFFINE_TILEMAP_ENTRIES[cfg.screenSize] ?? 256)
+            : (TILEMAP_SIZES_BY_SCREEN_SIZE[cfg.screenSize] ?? 1024);
           // Cap par taille VRAM restante (évite out-of-bounds si mapBase haut + screenSize 3)
           const remainingBytes = vramBuf.byteLength - off;
           const cappedEntries = Math.min(numEntries, Math.floor(remainingBytes / 2));
