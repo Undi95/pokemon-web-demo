@@ -1151,10 +1151,18 @@ export function UpdateLegendaryMarkingColor(frameNum: number): void {
   const b = 12;
   // RGB15 = (b << 10) | (g << 5) | r
   const color = ((b & 0x1F) << 10) | ((g & 0x1F) << 5) | (r & 0x1F);
-  // BG_PLTT_ID(14) + 15 = 14*16 + 15 = 239
+  // 1:1 décomp : BG_PLTT_ID(14) + 15 = slot 239. Doit écrire dans unfaded ET
+  // faded car UpdatePaletteFade copie unfaded → faded chaque frame.
+  // ⚠️ Notre rayquaza.png a été extrait avec la palette gold (= "Legendary
+  // Marking") à idx 0 au lieu d'idx 15. Donc les pixels marking sont rendus
+  // transparents (notre BG renderer skip idx 0 = GBATEK behavior 4bpp). TODO
+  // ré-extraire rayquaza depuis ROM original ou re-mapper tile data + palette
+  // pour avoir gold à idx 15 (= 1:1 décomp). En attendant, ce write est sans
+  // effet visible mais reste 1:1 source.
   const slot = 14 * 16 + 15;
-  rt().gPlttBufferFaded.set(slot, color);
-  rt().gPlttBufferUnfaded?.set?.(slot, color);
+  const runtime = rt();
+  runtime.gPlttBufferUnfaded.set(slot, color);
+  runtime.gPlttBufferFaded.set(slot, color);
 }
 export function FadeOutBGM(_speed: number): void {
   // TODO: implement BGM fade out

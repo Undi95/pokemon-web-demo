@@ -44,7 +44,12 @@ import {
   SpriteCB_PlayerOnBicycle, SpriteCB_Flygon, SpriteCB_LogoLetter,
   SpriteCB_GameFreakLogo, SpriteCB_FlygonSilhouette, SpriteCB_RayquazaOrb,
 } from '../engine/decomp-data/auto/src/intro-callbacks-auto';
-import { CB2_InitTitleScreen } from '../engine/decomp-data/auto/src/title_screen-callbacks-auto';
+import {
+  CB2_InitTitleScreen,
+  SpriteCB_VersionBannerLeft, SpriteCB_VersionBannerRight,
+  SpriteCB_PressStartCopyrightBanner,
+  SpriteCB_PokemonLogoShine, SpriteCB_PokemonLogoShine_Fast,
+} from '../engine/decomp-data/auto/src/title_screen-callbacks-auto';
 import { CB2_InitCopyrightScreenAfterBootup, MainCB2_Intro } from '../engine/copyright-boot';
 
 export class GameScene extends Phaser.Scene {
@@ -95,6 +100,14 @@ export class GameScene extends Phaser.Scene {
     this.rt.spriteCallbacks.set('SpriteCB_GameFreakLogo', SpriteCB_GameFreakLogo);
     this.rt.spriteCallbacks.set('SpriteCB_FlygonSilhouette', SpriteCB_FlygonSilhouette);
     this.rt.spriteCallbacks.set('SpriteCB_RayquazaOrb', SpriteCB_RayquazaOrb);
+    // Title screen sprite callbacks (Version banner slide + alpha fade, Press Start
+    // blink, Pokemon logo shine sweep). Sans ces enregistrements, les sprites
+    // restent statiques (sprite.callback = null) → version banner stuck à y=4.
+    this.rt.spriteCallbacks.set('SpriteCB_VersionBannerLeft', SpriteCB_VersionBannerLeft as any);
+    this.rt.spriteCallbacks.set('SpriteCB_VersionBannerRight', SpriteCB_VersionBannerRight as any);
+    this.rt.spriteCallbacks.set('SpriteCB_PressStartCopyrightBanner', SpriteCB_PressStartCopyrightBanner as any);
+    this.rt.spriteCallbacks.set('SpriteCB_PokemonLogoShine', SpriteCB_PokemonLogoShine as any);
+    this.rt.spriteCallbacks.set('SpriteCB_PokemonLogoShine_Fast', SpriteCB_PokemonLogoShine_Fast as any);
 
     // Expose debug pour inspecter dans la console : window.debug.rt, debug.gba etc.
     (window as unknown as { debug: unknown }).debug = {
