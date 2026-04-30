@@ -414,7 +414,7 @@ export const SPRITE_ANIMS = {
   "sAnim_WaterDrop_UpperHalf": {"frames":[{"tileNum":16,"duration":8}],"terminator":"END"},
   "sPokemonLogoShineAnimSequence": {"frames":[{"tileNum":0,"duration":4}],"terminator":"END"},
   "sVersionBannerLeftAnimSequence": {"frames":[{"tileNum":0,"duration":30}],"terminator":"END"},
-  "sVersionBannerRightAnimSequence": {"frames":[{"tileNum":"VERSION_BANNER_RIGHT_TILEOFFSET","duration":30}],"terminator":"END"},
+  "sVersionBannerRightAnimSequence": {"frames":[{"tileNum":64,"duration":30}],"terminator":"END"},
 } as const;
 
 export const SPRITE_ANIM_TABLES = {
@@ -444,6 +444,7 @@ export const SPRITE_ANIM_TABLES = {
   "sAnims_Volbeat": {"anims":["sAnim_Volbeat"]},
   "sAnims_WaterDrop": {"anims":["sAnim_WaterDrop_UpperHalf","sAnim_WaterDrop_LowerHalf","sAnim_WaterDrop_Reflection","sAnim_WaterDrop_Ripple"]},
   "sPokemonLogoShineAnimTable": {"anims":["sPokemonLogoShineAnimSequence"]},
+  "sStartCopyrightBannerAnimTable": {"anims":["sAnim_PressStart_0","sAnim_PressStart_1","sAnim_PressStart_2","sAnim_PressStart_3","sAnim_PressStart_4","sAnim_Copyright_0","sAnim_Copyright_1","sAnim_Copyright_2","sAnim_Copyright_3","sAnim_Copyright_4"]},
   "sVersionBannerLeftAnimTable": {"anims":["sVersionBannerLeftAnimSequence"]},
   "sVersionBannerRightAnimTable": {"anims":["sVersionBannerRightAnimSequence"]},
 } as const;

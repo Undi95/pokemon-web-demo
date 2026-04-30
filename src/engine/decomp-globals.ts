@@ -690,8 +690,29 @@ export function ScanlineEffect_Stop(): void {
   gScanlineEffect.state = 0;
 }
 export function EnableInterrupts(_flag: number): void { /* no-op */ }
-export function LoadSpritePalette(_pal: { data: string, tag: string | number } | unknown): void {
-  /* Phase 3+ : implémenter via paletteTagToSlot register */
+/** 1:1 décomp `LoadSpritePalette(pal)` — alloue le prochain slot OBJ libre
+ *  (>= gReservedSpritePaletteCount), enregistre le tag, et copie 16 colors. */
+export function LoadSpritePalette(pal: { data: string, tag: string | number } | unknown): void {
+  if (!pal || typeof pal !== 'object') return;
+  const p = pal as { data: string, tag: string | number };
+  if (typeof p.data !== 'string') return;
+  const r = rt();
+  const tagStr = String(p.tag);
+  if (r.paletteTagToSlot.has(tagStr)) return;
+  const palData = getAsset(p.data);
+  if (!palData) return;
+  const u16 = palData instanceof Uint16Array
+    ? palData
+    : new Uint16Array(palData.buffer, palData.byteOffset, Math.floor(palData.byteLength / 2));
+  // Skip reserved slots — décomp behavior : LoadSpritePalette ignore les
+  // slots [0, gReservedSpritePaletteCount) et alloue à partir de là.
+  if (r.nextObjPalSlot < gReservedSpritePaletteCount) {
+    r.nextObjPalSlot = gReservedSpritePaletteCount;
+  }
+  if (r.nextObjPalSlot >= 16) return; // OBJ palette saturé
+  const slot = r.nextObjPalSlot++;
+  r.gba.palette.loadObjRange(slot * 16, u16.subarray(0, 16));
+  r.paletteTagToSlot.set(tagStr, slot);
 }
 
 /** 1:1 décomp `UpdatePaletteFade()` — tick palette fade + return active state.
@@ -747,8 +768,11 @@ export function ScanlineEffect_InitWave(
   waveDelayCounter = delayInterval;
   waveParams = { startLine, endLine, frequency, amplitude, regOffset, delayInterval, applyBattleBgOffsets };
 
-  // Base offset captured at scanline 0 each frame (matches battle BG offset behavior)
-  let frameBase = 0;
+  // Capture frameBase ONCE à l'init — pas à chaque frame. Lire depuis bg.config
+  // chaque scanline 0 cause drift (on overwrite la config à scanline 159, puis
+  // on re-lit cette valeur corrompue comme base au prochain scanline 0).
+  const bgInit = r.gba.bg(bgIndex as 0 | 1 | 2 | 3);
+  const frameBase = prop === 'hofs' ? bgInit.config.hofs : bgInit.config.vofs;
 
   r.gba.setHBlankCallback((scanline) => {
     if (!waveParams) return;
@@ -756,7 +780,6 @@ export function ScanlineEffect_InitWave(
     const bg = r.gba.bg(bgIndex as 0 | 1 | 2 | 3);
 
     if (scanline === 0) {
-      frameBase = prop === 'hofs' ? bg.config.hofs : bg.config.vofs;
       // Advance phase according to delayInterval (decomp tFramesUntilMove logic)
       if (waveDelayCounter === 0) {
         waveDelayCounter = waveParams.delayInterval;
@@ -829,8 +852,8 @@ export const sTitleScreenRayquazaTilemap = 'sTitleScreenRayquazaTilemap';
 export const sTitleScreenCloudsGfx = 'sTitleScreenCloudsGfx';
 export const gTitleScreenCloudsTilemap = 'gTitleScreenCloudsTilemap';
 export const gTitleScreenEmeraldVersionPal = 'gTitleScreenEmeraldVersionPal';
-export const sSpritePalette_PressStart: ReadonlyArray<{ data: string; tag: number }> = [
-  { data: 'sPressStart_Pal', tag: 1000 },
+export const sSpritePalette_PressStart: ReadonlyArray<{ data: string; tag: string }> = [
+  { data: 'gTitleScreenPressStartPal', tag: 'TAG_PRESS_START_COPYRIGHT' },
 ];
 
 /** gMain re-export (pour bodyC CB2_InitTitleScreen qui fait `gMain.state = N`). */

@@ -207,4 +207,26 @@ let gIntroCredits_MovingSceneryState = 0;
 }
 
 patchIntroCallbacks();
+
+function patchTitleScreenCallbacks() {
+  const FILE = path.resolve(SRC_DIR, 'title_screen-callbacks-auto.ts');
+  if (!fs.existsSync(FILE)) {
+    console.log('[post-transpile-patches] title_screen-callbacks-auto.ts not found, skip');
+    return;
+  }
+  let s = fs.readFileSync(FILE, 'utf8');
+  const before = s;
+
+  // PATCH T1 : (placeholder — sSpritePalette_PressStart correctement défini
+  // comme array dans decomp-globals, le `[0]` du transpileur est correct).
+
+  if (s !== before) {
+    fs.writeFileSync(FILE, s, 'utf8');
+    console.log('[post-transpile-patches] title_screen-callbacks-auto.ts patched');
+  } else {
+    console.log('[post-transpile-patches] title_screen-callbacks-auto.ts already patched (idempotent skip)');
+  }
+}
+
+patchTitleScreenCallbacks();
 console.log('[post-transpile-patches] done');

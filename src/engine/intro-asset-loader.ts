@@ -289,11 +289,11 @@ export async function preloadTitleAssets(): Promise<void> {
     // Affine tilemap = 1 byte par tile, doit être expandé en u16 pour le compositor
     { symbol: 'gTitleScreenPokemonLogoTilemap', url: '/decomp/em/boot/title_screen/pokemon_logo.bin', type: 'affinetilemap' },
     { symbol: 'gTitleScreenBgPalettes', url: '/decomp/em/boot/title_screen/pokemon_logo.pal', type: 'pal' },
-    // emerald_version : sprite sheet + palette embedded dans le PNG
-    { symbol: 'gTitleScreenEmeraldVersionGfx', url: '/decomp/em/boot/title_screen/emerald_version.png', type: 'png-strict-4bpp' },
-    // press_start : sprite sheet + palette
+    // emerald_version : 8bpp sprite (décomp INCGFX .8bpp.lz, sheet size 4096 bytes)
+    { symbol: 'gTitleScreenEmeraldVersionGfx', url: '/decomp/em/boot/title_screen/emerald_version.png', type: 'png8bpp' },
+    // press_start : 4bpp sprite sheet
     { symbol: 'gTitleScreenPressStartGfx', url: '/decomp/em/boot/title_screen/press_start.png', type: 'png-strict-4bpp' },
-    // logo_shine : sprite sheet
+    // logo_shine : 4bpp sprite sheet
     { symbol: 'sTitleScreenLogoShineGfx', url: '/decomp/em/boot/title_screen/logo_shine.png', type: 'png-strict-4bpp' },
     // Main menu palettes (needed when transitioning from title to menu)
     { symbol: 'sMainMenuBgPal', url: '/decomp/em/ui/interface/main_menu_bg.pal', type: 'pal' },
