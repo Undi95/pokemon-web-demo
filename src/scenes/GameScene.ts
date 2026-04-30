@@ -50,6 +50,9 @@ import {
   SpriteCB_PressStartCopyrightBanner,
   SpriteCB_PokemonLogoShine, SpriteCB_PokemonLogoShine_Fast,
 } from '../engine/decomp-data/auto/src/title_screen-callbacks-auto';
+import {
+  SpriteCB_Bicycle, SpriteCB_FlygonRightHalf, Task_BicycleBgAnimation,
+} from '../engine/decomp-data/auto/src/intro_credits_graphics-callbacks-auto';
 import { CB2_InitCopyrightScreenAfterBootup, MainCB2_Intro } from '../engine/copyright-boot';
 
 export class GameScene extends Phaser.Scene {
@@ -108,6 +111,12 @@ export class GameScene extends Phaser.Scene {
     this.rt.spriteCallbacks.set('SpriteCB_PressStartCopyrightBanner', SpriteCB_PressStartCopyrightBanner as any);
     this.rt.spriteCallbacks.set('SpriteCB_PokemonLogoShine', SpriteCB_PokemonLogoShine as any);
     this.rt.spriteCallbacks.set('SpriteCB_PokemonLogoShine_Fast', SpriteCB_PokemonLogoShine_Fast as any);
+    // Scene 2 sub-sprite callbacks (bicycle suit player, Flygon right half suit left half)
+    this.rt.spriteCallbacks.set('SpriteCB_Bicycle', SpriteCB_Bicycle);
+    this.rt.spriteCallbacks.set('SpriteCB_FlygonRightHalf', SpriteCB_FlygonRightHalf);
+    // Scene 2 BG scroll task (parallax bike ride). Stocké dans le même Map
+    // (typage permissif via `as any`) pour récupération depuis CreateBicycleBgAnimationTask.
+    this.rt.spriteCallbacks.set('Task_BicycleBgAnimation', Task_BicycleBgAnimation as any);
 
     // Expose debug pour inspecter dans la console : window.debug.rt, debug.gba etc.
     (window as unknown as { debug: unknown }).debug = {

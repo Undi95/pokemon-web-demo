@@ -693,7 +693,8 @@ function transpileBody(bodyC, ctx) {
   s = s.replace(/\bgPaletteFade\b/g, 'rt.gPaletteFade');
 
   // 27a. C numeric literal suffixes : 0.14f → 0.14 ; 100u → 100 ; 100U → 100 ; 100L → 100 ; 100UL → 100
-  s = s.replace(/(\d+\.?\d*|\.\d+)([fFlLuU]+)\b/g, '$1');
+  // \b au début sinon `0x7F` → `0x7` (le `F` est consommé comme suffixe).
+  s = s.replace(/\b(\d+\.?\d*|\.\d+)([fFlLuU]+)\b/g, '$1');
   // 27a1. C octal literals 00, 02, 010, 0xx → strip leading zeros (keep `0` itself)
   //       In `case 00:` etc. Avoid touching `0x...` / `0b...` / `0o...`
   s = s.replace(/(\W)0+([1-9]\d*)\b/g, '$1$2');

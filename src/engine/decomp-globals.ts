@@ -331,9 +331,23 @@ export function FreeAllSpritePalettes(): void {
 // TODO Phase 0c : implementer 1:1 décomp src/intro.c
 // ═══════════════════════════════════════════════════════════════════════════════
 
-/** Stub : data sheets avec .length=N pour les boucles. Le bodyC fait
- *  `for (i=0; i < (sSpriteSheet_RunningPokemon)?.length - 1; i++) LoadCompressedSpriteSheet(...)` */
-export const sSpriteSheet_RunningPokemon: ReadonlyArray<unknown> = [];
+/** 1:1 décomp src/intro.c:274 — sprite sheets pour Volbeat/Torchic/Manectric.
+ *  Boucle `for (i=0; i < ARRAY_COUNT-1; i++)` skip le sentinel `{}` final, donc
+ *  on inclut bien le terminateur vide (notre boucle traite `length - 1`). */
+export const sSpriteSheet_RunningPokemon: ReadonlyArray<{ data: string, size: number, tag: string | number }> = [
+  { data: 'gIntroVolbeat_Gfx', size: 0x400, tag: 'TAG_VOLBEAT' },
+  { data: 'gIntroTorchic_Gfx', size: 0xC00, tag: 'TAG_TORCHIC' },
+  { data: 'gIntroManectric_Gfx', size: 0x2000, tag: 'TAG_MANECTRIC' },
+  { data: '', size: 0, tag: '' },  // sentinel
+];
+
+/** 1:1 décomp src/intro.c:281 — palettes OBJ pour Volbeat/Torchic/Manectric. */
+export const sSpritePalettes_RunningPokemon: ReadonlyArray<{ data: string, tag: string | number }> = [
+  { data: 'gIntroVolbeat_Pal', tag: 'TAG_VOLBEAT' },
+  { data: 'gIntroTorchic_Pal', tag: 'TAG_TORCHIC' },
+  { data: 'gIntroManectric_Pal', tag: 'TAG_MANECTRIC' },
+];
+
 export const sAnims_PlayerBicycle: ReadonlyArray<unknown> = [];
 
 /** 1:1 décomp src/intro_credits_graphics.c:1118 — crée Brendan + bicycle sprites,
@@ -369,17 +383,46 @@ export function CreateIntroFlygonSprite(x: number, y: number): number {
   const right = r.getSprite(rightSpriteId);
   if (right) right.data[0] = leftSpriteId;  // sLeftSpriteId = data[0]
   r.StartSpriteAnim(rightSpriteId, 1);
-  // SpriteCB_FlygonRightHalf : transcrit dans intro_credits-callbacks-auto si dispo.
-  // Pour l'instant on attache pas de callback (= TODO Phase 2 audit runtime).
+  // 1:1 décomp : `gSprites[rightSpriteId].callback = &SpriteCB_FlygonRightHalf;`
+  // Override le callback du template (FlygonLeftHalf no-op) pour le right half.
+  const rightCb = r.spriteCallbacks.get('SpriteCB_FlygonRightHalf');
+  if (right && rightCb) {
+    right.callback = (spr) => rightCb(spr, r);
+  }
   return leftSpriteId;
 }
 
-/** 1:1 décomp src/intro_credits_graphics.c:924 — crée le Task qui anime les BG
- *  parallax pendant Scene 2 bike ride. Phase 0c stub : retourne un Task ID
- *  no-op (pas d'animation BG scroll). À remplacer par implementation 1:1. */
-export function CreateBicycleBgAnimationTask(_mode: number, _bg1Speed: number, _bg2Speed: number, _bg3Speed: number): number {
-  // TODO Phase 1 Action 4 #3 (couplé avec LoadIntroPart2Graphics)
-  return rt().CreateTask(() => { /* no-op stub */ }, 0);
+/** 1:1 décomp src/intro_credits_graphics.c:924 — crée le Task_BicycleBgAnimation
+ *  qui anime les BG parallax pendant Scene 2 bike ride.
+ *  data layout : data[0]=mode, data[1]=bg1Speed, [2]=bg1PosHi, [3]=bg1PosLo,
+ *  [4]=bg2Speed, [5]=bg2PosHi, [6]=bg2PosLo, [7]=bg3Speed, [8]=bg3PosHi=8, [9]=bg3PosLo.
+ *  Le callback Task_BicycleBgAnimation est enregistré dans spriteCallbacks par GameScene. */
+export function CreateBicycleBgAnimationTask(mode: number, bg1Speed: number, bg2Speed: number, bg3Speed: number): number {
+  const r = rt();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const taskFn = r.spriteCallbacks.get('Task_BicycleBgAnimation') as any;
+  if (!taskFn) {
+    console.warn('[decomp-globals] Task_BicycleBgAnimation not registered; BG scroll inactive');
+    return r.CreateTask(() => { /* no-op fallback */ }, 0);
+  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const taskId = r.CreateTask((t: any) => taskFn(t, r), 0);
+  const task = r.gTasks.get(taskId);
+  if (task) {
+    task.data[0] = mode;
+    task.data[1] = bg1Speed;
+    task.data[2] = 0;
+    task.data[3] = 0;
+    task.data[4] = bg2Speed;
+    task.data[5] = 0;
+    task.data[6] = 0;
+    task.data[7] = bg3Speed;
+    task.data[8] = 8;
+    task.data[9] = 0;
+    // 1:1 décomp : run task body immediately for first frame.
+    taskFn(task, r);
+  }
+  return taskId;
 }
 
 /** 1:1 décomp src/intro_credits_graphics.c:761 — setup BGCNT pour Scene 2.

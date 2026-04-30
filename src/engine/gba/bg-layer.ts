@@ -101,16 +101,6 @@ export function renderBgScanline(
     const rawEntry = tilemap[mapIdx];
     const entry = decodeBgMapEntry(rawEntry);
 
-    // DEBUG: log first few frames at window tile position
-    if (scanline === 8 && x === 16) {
-      const dbg = (globalThis as any).__bgDebug ?? { count: 0 };
-      if (dbg.count < 5) {
-        console.log(`[renderBgScanline] scanline=${scanline} x=${x} mapIdx=${mapIdx} rawEntry=0x${rawEntry.toString(16)} tileId=${entry.tileId} palBank=${entry.paletteBank} subX=${subX} subY=${subY} vram[${entry.tileId*32}]=0x${(vram256[entry.tileId*32]??0).toString(16)}`);
-        dbg.count++;
-        (globalThis as any).__bgDebug = dbg;
-      }
-    }
-
     // Décodage tile (avec cache)
     const cacheKey = `${entry.tileId}_${entry.flipH ? 1 : 0}${entry.flipV ? 1 : 0}_${config.paletteMode}`;
     let tilePixels = tileCache.get(cacheKey);

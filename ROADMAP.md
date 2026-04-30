@@ -7,7 +7,7 @@
 
 ---
 
-## État fin session 69 (Phase 5 — intro polish)
+## État fin session 70 (Phase 6 — Scene 2 1:1 GBA)
 
 ### Boot end-to-end qui marche
 
@@ -33,7 +33,7 @@ TestGbaScene (sanity) → click → GameScene
 |---|---|---|
 | Copyright | partial (skip rapide) | ⏳ |
 | Scene 1 | Leaves + drops + GAME FREAK + ripple white + grass + mountains ✅ | **1:1 GBA** |
-| Scene 2 | May/bicycle + mountains + pine trees + Pokémon ✅ | **1:1 GBA** |
+| Scene 2 | May/bicycle + Manectric/Torchic/Volbeat/Flygon + mountains + pine trees ✅ | **1:1 GBA** session 70 |
 | Scene 3 | Clouds + lightning ✅ | ⚠️ Groudon/Kyogre partial |
 | Title | Logo + Rayquaza marking pulsant + clouds rise + Press Start ✅ | **1:1 GBA** |
 | Main Menu | NOUVELLE PARTIE + OPTION en FR ✅ | bug ♥ curseur dialogue traîne |
@@ -104,10 +104,11 @@ TestGbaScene (sanity) → click → GameScene
 - **Phase 0-3 [DONE]** : Boot loop unique + Action 4 audit
 - **Phase 4 [DONE session 68]** : Merge AI work + DmaFill16 no-op + boot complet jusqu'à Birch
 - **Phase 5 [DONE session 69]** : Polish intro visuel — Title + Scene 1 1:1 GBA, fixes profonds (PNG IDAT extractor, charBase 32KB, LoadPalette unfaded sync, sprite anim END persistence)
-- **Phase 6 (next)** : Scene 2 + Scene 3 polish + Birch Speech BGs/sprites
-- **Phase 7** : Naming Screen (clavier FR + ♥/♦ symbols)
-- **Phase 8** : Overworld via opcodes décomp + script-runner
-- **Phase 9** : Battle via bridge `@pkmn/sim` + UI Tasks transcrites
+- **Phase 6 [DONE session 70]** : Scene 2 1:1 GBA — fix transpileur `0x7F` → `0x7`, register `SpriteCB_Bicycle` / `SpriteCB_FlygonRightHalf` / `Task_BicycleBgAnimation`, implement `sSpriteSheet_RunningPokemon` + `sSpritePalettes_RunningPokemon` (Volbeat/Torchic/Manectric)
+- **Phase 7 (next)** : Scene 3 polish (Groudon/Kyogre/Rayquaza) + Birch Speech BGs/sprites
+- **Phase 8** : Naming Screen (clavier FR + ♥/♦ symbols)
+- **Phase 9** : Overworld via opcodes décomp + script-runner
+- **Phase 10** : Battle via bridge `@pkmn/sim` + UI Tasks transcrites
 
 ---
 

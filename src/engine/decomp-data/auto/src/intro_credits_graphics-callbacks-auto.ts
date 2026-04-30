@@ -162,7 +162,7 @@ export function CreateBicycleBgAnimationTask(rt: DecompRuntime, mode: number, bg
 }
 
 /** Source: intro_credits_graphics.c → CreateMovingScenerySprites (helper) */
-export function CreateMovingScenerySprites(rt: DecompRuntime, hasVerticalMove: number, arg: any, arg: any, numSprites: number): number {
+export function CreateMovingScenerySprites(rt: DecompRuntime, hasVerticalMove: number, metadata: any, anims: any, numSprites: number): number {
   let sprite: any = _emptySprite;
   let task: any = _emptyTask;
   let i = 0;

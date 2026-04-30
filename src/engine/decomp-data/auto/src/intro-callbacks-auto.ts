@@ -1180,7 +1180,7 @@ export const Task_Scene2_BikeRide: TaskCallback = (task, rt) => {
           _gs(rt, task.data[1]).data[0] = 4;
 
        
-      offset = Sin(task.data[3] >> 2 & 0x7, 48);
+      offset = Sin(task.data[3] >> 2 & 0x7F, 48);
       (globalThis as any).sFlygonYOffset = offset;
       if (task.data[3] < 512)
           task.data[3]++;

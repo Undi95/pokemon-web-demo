@@ -10,6 +10,69 @@ de la décompilation FR (`pokeemeraude`) + `@pkmn/sim` pour combats.
 
 ---
 
+## Session 70 — Phase 6 : Scene 2 1:1 GBA (bike ride + Pokémon)
+
+### Visuel observé via Claude Preview Tool (frame-by-frame audit `window.dev`)
+
+À partir de `?pause` + `seek(1100)` + `step(N)` :
+- **Frame 1141** : May sur bicycle visible (top right, perfect)
+- **Frame 1211** : Manectric (yellow/blue Pokémon électrique) entre + Torchic (poussin orange) entre
+- **Frame 1361** : Volbeat (luciole) en figure-8 + tous les Pokémon courent
+- **Frame 1581** : Flygon (dragon vert/rose) entre par la droite + tous visible 1:1 GBA
+- **Frame 1981** : End scene Torchic seul (BG frozen)
+
+### 3 fixes critiques
+
+1. **Transpileur `0x7F` → `0x7`** (regex bug)
+   - Fichier : `scripts/transpile-callbacks.mjs:696`
+   - Avant : `s.replace(/(\d+\.?\d*|\.\d+)([fFlLuU]+)\b/g, '$1')` consommait le `F` de `0x7F`
+   - Après : `\b(\d+\.?\d*|\.\d+)([fFlLuU]+)\b` (boundary début) → exclut hex
+   - Impact : `Sin(... & 0x7, 48)` redevient `Sin(... & 0x7F, 48)` → Flygon Y-bobbing correct (cycle 128 vs 8 valeurs)
+   - Affecté aussi : `credits-callbacks-auto.ts` (4 occurrences, idem `intro` mais Scene non utilisée actuellement)
+
+2. **Sprite callbacks Scene 2 non-enregistrés** (étaient pas dans `spriteCallbacks` Map)
+   - `SpriteCB_Bicycle` (sync bicycle position avec player)
+   - `SpriteCB_FlygonRightHalf` (sync right half avec left half)
+   - `Task_BicycleBgAnimation` (BG parallax scroll bike)
+   - Fichier : `src/scenes/GameScene.ts` (registrations) + `src/engine/decomp-globals.ts` (CreateIntroFlygonSprite override callback right half)
+
+3. **`sSpriteSheet_RunningPokemon` + `sSpritePalettes_RunningPokemon` étaient `[]`** (stub vide)
+   - Avant : `export const sSpriteSheet_RunningPokemon: ReadonlyArray<unknown> = [];`
+   - Après : array 1:1 décomp `intro.c:274` avec Volbeat/Torchic/Manectric
+   - Impact : la boucle `for (i=0; i < length-1; i++) LoadCompressedSpriteSheet(...)` chargait RIEN → tile_id 0 (drops_logo) au lieu de tiles Pokémon → sprites rendus comme blocs aléatoires
+   - Maintenant : Manectric tileBase=864, Torchic=768, Volbeat=736, palettes 8/9/10 chargées correctement
+
+### Implementation `CreateBicycleBgAnimationTask`
+
+Le transpileur avait généré un `_emptyTask` placeholder cassé. Réécrit en helper TS 1:1 décomp :
+- Crée Task_BicycleBgAnimation
+- Init data[0..9] (mode, bg1Speed, bg1PosHi/Lo, bg2Speed, bg2PosHi/Lo, bg3Speed=8, bg3PosHi/Lo)
+- Run task body immédiatement (1ère frame init scroll positions)
+
+### Fix transpileur `arg, arg` duplicated param
+
+`intro_credits_graphics-callbacks-auto.ts:165` : `CreateMovingScenerySprites(rt, hasVerticalMove, arg, arg, numSprites)` → `metadata, anims` (renommé pour pas dupliquer "arg").
+
+### Sprites Scene 2 visibles 1:1 GBA
+
+| Sprite | Position init | Tag/Pal | Note |
+|---|---|---|---|
+| Manectric | (272, 128) | TAG_MANECTRIC pal 10 | 64×64 anim 4 frames |
+| Torchic | (288, 110) | TAG_TORCHIC pal 9 | 32×32 anim run/walk/trip |
+| Brendan/May | (272, 100) | TAG_BRENDAN/MAY pal 4/5 | callback SpriteCB_PlayerOnBicycle |
+| Bicycle | (272, 108) | TAG_BICYCLE pal 4/5 | callback SpriteCB_Bicycle (= sync player) |
+| Volbeat | (272, 80) | TAG_VOLBEAT pal 8 | 32×32 figure-8 motion |
+| Flygon left | (-96, 60) | TAG_FLYGON_LATIAS pal 7 | callback SpriteCB_Flygon |
+| Flygon right | (-32, 60) | TAG_FLYGON_LATIAS pal 7 | callback SpriteCB_FlygonRightHalf (sync left) |
+
+### Bugs résiduels Scene 2
+
+- ⚠️ Player drift back animation : visible mais à valider précisément (états 0/1/2/3/4 mappés mais transitions à auditer en step-by-step)
+- ⚠️ CycleSceneryPalette (couleurs arbres alternées) : à vérifier visuellement à zoom élevé
+- ⚠️ End fade Scene 2 → Scene 3 : transition observée OK (frame 1981 = Torchic alone)
+
+---
+
 ## Session 69 — Phase 5 : Polish intro 1:1 GBA (Title + Scene 1)
 
 ### Title screen 1:1 GBA
