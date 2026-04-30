@@ -206,7 +206,14 @@ export function LoadPalette(srcSymbol: string | Uint16Array | number, offset: nu
   } else {
     r.gba.palette.loadObjRange(offset - 256, u16.subarray(0, numEntries));
   }
-  
+  // 1:1 décomp : LoadPalette écrit dans gPlttBufferUnfaded (= source pour
+  // CpuCopy16 plus tard, et pour UpdatePaletteFade qui copie unfaded → faded).
+  // Sans ce write, les CpuCopy16 qui lisent gPlttBufferUnfaded[OBJ_PLTT_ID(0)]
+  // récupèrent 0 (= les copies ripple/etc échouent).
+  for (let i = 0; i < numEntries; i++) {
+    r.gPlttBufferUnfaded.set(offset + i, u16[i]);
+    r.gPlttBufferFaded.set(offset + i, u16[i]);
+  }
 }
 
 /** 1:1 décomp `LoadBgTiles` — copy tile data into BG VRAM.
@@ -742,6 +749,11 @@ export function LoadSpritePalette(pal: { data: string, tag: string | number } | 
   if (r.nextObjPalSlot >= 16) return; // OBJ palette saturé
   const slot = r.nextObjPalSlot++;
   r.gba.palette.loadObjRange(slot * 16, u16.subarray(0, 16));
+  // Sync gPlttBufferUnfaded/Faded pour CpuCopy16 ultérieur
+  for (let i = 0; i < Math.min(16, u16.length); i++) {
+    r.gPlttBufferUnfaded.set(256 + slot * 16 + i, u16[i]);
+    r.gPlttBufferFaded.set(256 + slot * 16 + i, u16[i]);
+  }
   r.paletteTagToSlot.set(tagStr, slot);
 }
 
@@ -1001,6 +1013,11 @@ export function LoadSpritePalettes(palettes: Array<{ data: string, tag: string |
       : new Uint16Array(palData.buffer, palData.byteOffset, Math.floor(palData.byteLength / 2));
     const slot = r.nextObjPalSlot++;
     r.gba.palette.loadObjRange(slot * 16, u16.subarray(0, 16));
+    // Sync gPlttBufferUnfaded/Faded pour CpuCopy16 ultérieur (= ripple variants)
+    for (let i = 0; i < Math.min(16, u16.length); i++) {
+      r.gPlttBufferUnfaded.set(256 + slot * 16 + i, u16[i]);
+      r.gPlttBufferFaded.set(256 + slot * 16 + i, u16[i]);
+    }
     r.paletteTagToSlot.set(tagStr, slot);
   }
 }

@@ -885,6 +885,12 @@ export class DecompRuntime {
    *
    *  Usage callback : rt.CpuCopy16(textPal, srcOffset, dstFlat, count) */
   CpuCopy16(src: ArrayLike<number>, srcOffset: number, dstFlat: number, count: number): void {
+    // Décomp écrit à `gPlttBufferUnfaded[...]` puis UpdatePaletteFade copie
+    // unfaded → faded chaque frame. Notre CpuCopy16 doit donc écrire dans
+    // unfaded (sinon faded sera overwritten au prochain tick). On écrit
+    // dans LES DEUX pour correspondre exactement au cas où le décomp targets
+    // faded (= effet immédiat) tout en gardant la cohérence pour fades futurs.
+    this.gPlttBufferUnfaded.cpuCopy16(src, srcOffset, dstFlat, count);
     this.gPlttBufferFaded.cpuCopy16(src, srcOffset, dstFlat, count);
   }
 
