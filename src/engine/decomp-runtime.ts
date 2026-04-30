@@ -929,7 +929,6 @@ export class DecompRuntime {
   runTasks(): void {
     // Snapshot pour permettre Tasks de mod gTasks
     const snapshot = Array.from(this.gTasks.values());
-    console.log('[runTasks] snapshot.length=', snapshot.length);
     for (const task of snapshot) {
       if (this.gTasks.has(task.taskId) && task.func) {
         task.func(task);

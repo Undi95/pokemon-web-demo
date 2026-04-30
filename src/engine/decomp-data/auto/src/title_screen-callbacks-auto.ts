@@ -214,7 +214,6 @@ export const Task_TitleScreenPhase1: TaskCallback = (task, rt) => {
 export const Task_TitleScreenPhase2: TaskCallback = (task, rt) => {
   const taskId = task.taskId;
   let yPos = 0;
-  console.log('[Task_TitleScreenPhase2] frame=', rt.gIntroFrameCounter, 'data0=', task.data[0], 'data1=', task.data[1]);
        
       if (JOY_NEW(A_B_START_SELECT) || task.data[1])
       {
@@ -262,12 +261,8 @@ export const Task_TitleScreenPhase2: TaskCallback = (task, rt) => {
 export const Task_TitleScreenPhase3: TaskCallback = (task, rt) => {
   const taskId = task.taskId;
   const newKeys = rt.gMain.newKeys;
-  if (rt.gIntroFrameCounter % 60 === 0) {
-    console.log('[Task_TitleScreenPhase3] frame=', rt.gIntroFrameCounter, 'newKeys=', newKeys.toString(16), 'taskId=', taskId);
-  }
   if ((JOY_NEW(A_BUTTON)) || (JOY_NEW(START_BUTTON)))
       {
-          console.log('[Task_TitleScreenPhase3] START/A pressed! Fading...');
           FadeOutBGM(4);
           rt.BeginNormalPaletteFade("PALETTES_ALL", 0, 0, 16, "RGB_WHITEALPHA");
           rt.SetMainCallback2(CB2_GoToMainMenu);

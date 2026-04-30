@@ -446,11 +446,13 @@ export function CycleSceneryPalette(mode: number): void {
  *  À étendre au fur et à mesure. */
 export const MUS_INTRO = 414;          // = MUS_DEMO1 (mus_intro.mid)
 export const MUS_INTRO_BATTLE = 442;   // = MUS_T_BATTLE (mus_intro_battle.mid)
+export const MUS_TITLE = 413;          // = MUS_TITLE3 (mus_title.mid)
 
 /** Mapping song ID → song NAME (= filename sans .mid). */
 const SONG_ID_TO_NAME: Record<number, string> = {
   [MUS_INTRO]: 'mus_intro',
   [MUS_INTRO_BATTLE]: 'mus_intro_battle',
+  [MUS_TITLE]: 'mus_title',
 };
 
 // State du M4A engine maison (notre `src/engine/m4a/`). Init lazy via m4aPrime().
@@ -523,12 +525,40 @@ export function m4aMPlayAllStop(): void {
 /** 1:1 décomp `PlaySE(seId)` — joue un sound effect one-shot. Phase 0c stub. */
 export function PlaySE(_seId: number): void { /* TODO Phase 1 Action 4 */ }
 
-/** 1:1 décomp src/intro.c PanFadeAndZoomScreen(screenX, screenY, zoom, alpha) :
- *  setup BG2 affine matrix pour Scene 3 Pokeball spin + zoom.
- *  Phase 2 stub no-op (= la Pokeball reste statique, pas de zoom).
- *  TODO Phase 2 audit : implémenter via gba.bgAffineMatrices[0] + bg(2) affine. */
-export function PanFadeAndZoomScreen(_screenX: number, _screenY: number, _zoom: number, _alpha: number): void {
-  /* no-op stub Phase 2 */
+/** 1:1 décomp src/intro.c:2810 `PanFadeAndZoomScreen(screenX, screenY, zoom, alpha)`.
+ *  Calcule BgAffineSet pour BG2 (texture (0x8000, 0x8000) → screen (screenX, screenY))
+ *  avec zoom (sx=sy) et rotation (alpha). Met à jour BG2PA/PB/PC/PD + BG2X/Y. */
+export function PanFadeAndZoomScreen(screenX: number, screenY: number, zoom: number, alpha: number): void {
+  const r = rt();
+  const texX = 0x8000;
+  const texY = 0x8000;
+  // BgAffineSet : alpha en u16 (0..0xFFFF = 0..360°), interprété via gSineTable.
+  // sin/cos en Q.8 fixed (-256..256). pa = cos*sx >> 8, pb = -sin*sy >> 8, etc.
+  const G_SINE = G_SINE_TABLE;
+  // sineIdx = (alpha >> 8) & 0xFF (256 entries par tour complet)
+  const sineIdx = (alpha >> 8) & 0xFF;
+  const cosIdx = (sineIdx + 64) & 0xFF;
+  const sin = G_SINE[sineIdx];
+  const cos = G_SINE[cosIdx];
+  // Q.8 fixed math : (cos * zoom) >> 8 = pa
+  const pa = (cos * zoom) >> 8;
+  const pb = (-sin * zoom) >> 8;
+  const pc = (sin * zoom) >> 8;
+  const pd = (cos * zoom) >> 8;
+  // dx = texX - (screenX * pa + screenY * pb), en 28.8 fixed (× 256)
+  const dx = (texX << 8) - (screenX * pa + screenY * pb);
+  const dy = (texY << 8) - (screenX * pc + screenY * pd);
+  // Set BG2 affine matrix index 0 (= bg(2).config.affineMatrixIndex)
+  if (r.gba.bgAffineMatrices && r.gba.bgAffineMatrices[0]) {
+    const m = r.gba.bgAffineMatrices[0] as { pa: number; pb: number; pc: number; pd: number };
+    m.pa = pa & 0xFFFF;
+    m.pb = pb & 0xFFFF;
+    m.pc = pc & 0xFFFF;
+    m.pd = pd & 0xFFFF;
+  }
+  // Sign-extend pour BG2X/Y (28-bit signed)
+  r.gba.bg(2).config.affineRefX = dx;
+  r.gba.bg(2).config.affineRefY = dy;
 }
 
 /** 1:1 décomp `SAFE_DIV(x, y)` macro = (y == 0) ? 0 : (x / y). */
@@ -811,10 +841,49 @@ export function ScanlineEffect_InitWave(
   return 0; // taskId (not used by caller in our engine)
 }
 
-/** 1:1 décomp `StartPokemonLogoShine(mode)` — stub Phase 0.
- *  Logo shine sparkle effect not yet implemented. */
-export function StartPokemonLogoShine(_mode: number): void {
-  // TODO Phase 3: implement shine sprite creation
+/** 1:1 décomp `StartPokemonLogoShine(mode)` — title_screen.c:527.
+ *  Crée le(s) sprite(s) shine sweep avec OAM_OBJ_WINDOW + SpriteCB_PokemonLogoShine.
+ *  - SHINE_MODE_SINGLE_NO_BG_COLOR (0) / SHINE_MODE_SINGLE (2) : 1 sprite normal
+ *  - SHINE_MODE_DOUBLE (1) : 1 sprite invisible BG color + 2 sprites Fast */
+export function StartPokemonLogoShine(mode: number): void {
+  const r = rt();
+  const SHINE_MODE_SINGLE_NO_BG_COLOR = 0;
+  const SHINE_MODE_DOUBLE = 1;
+  const SHINE_MODE_SINGLE = 2;
+  const ST_OAM_OBJ_WINDOW = 2;
+
+  if (mode === SHINE_MODE_SINGLE_NO_BG_COLOR || mode === SHINE_MODE_SINGLE) {
+    const spriteId = r.CreateSpriteFromTemplate('sPokemonLogoShineSpriteTemplate', 0, 68);
+    const sprite = r.gSprites.get(spriteId);
+    if (sprite) {
+      r.gba.oam[sprite.oamIndex].objMode = ST_OAM_OBJ_WINDOW;
+      sprite.data[0] = mode;  // sMode alias
+    }
+  } else if (mode === SHINE_MODE_DOUBLE) {
+    // Invisible sprite that updates BG color via SpriteCB_PokemonLogoShine
+    let spriteId = r.CreateSpriteFromTemplate('sPokemonLogoShineSpriteTemplate', 0, 68);
+    let sprite = r.gSprites.get(spriteId);
+    if (sprite) {
+      r.gba.oam[sprite.oamIndex].objMode = ST_OAM_OBJ_WINDOW;
+      sprite.data[0] = mode;
+      sprite.invisible = true;
+    }
+    // Two faster shine sprites — callback override via direct mutation
+    const fastCb = (globalThis as any).SpriteCB_PokemonLogoShine_Fast
+      ?? r.spriteCallbacks.get('SpriteCB_PokemonLogoShine_Fast');
+    spriteId = r.CreateSpriteFromTemplate('sPokemonLogoShineSpriteTemplate', 0, 68);
+    sprite = r.gSprites.get(spriteId);
+    if (sprite) {
+      r.gba.oam[sprite.oamIndex].objMode = ST_OAM_OBJ_WINDOW;
+      if (fastCb) sprite.callback = (spr: unknown) => (fastCb as (s: unknown, rt: unknown) => void)(spr, r);
+    }
+    spriteId = r.CreateSpriteFromTemplate('sPokemonLogoShineSpriteTemplate', -80, 68);
+    sprite = r.gSprites.get(spriteId);
+    if (sprite) {
+      r.gba.oam[sprite.oamIndex].objMode = ST_OAM_OBJ_WINDOW;
+      if (fastCb) sprite.callback = (spr: unknown) => (fastCb as (s: unknown, rt: unknown) => void)(spr, r);
+    }
+  }
 }
 
 /** Memory addresses GBA hardware constants. */
