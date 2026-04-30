@@ -131,6 +131,10 @@ export function composeFrame(
       let layer1 = LayerId.BD as number;
       let r2 = backdrop[0], g2 = backdrop[1], b2 = backdrop[2];
       let layer2 = LayerId.BD as number;
+      // OBJ_BLEND tracking : si layer1 vient d'un sprite OBJ_BLEND (objMode===1),
+      // GBA force ce sprite comme blend target1 indépendamment de BLDCNT_TGT1.
+      // Voir GBATEK : "Mode 1 = Semi-Transparent OBJ → ignore BLDCNT TGT1, force blend".
+      let layer1ObjBlend = false;
 
       // Détermine layer mask + blend gate pour ce pixel selon windows
       let layerMask = 0x3F;       // 0x3F = tous layers visibles
@@ -178,15 +182,31 @@ export function composeFrame(
             r2 = r1; g2 = g1; b2 = b1; layer2 = layer1;
             r1 = obSl[off]; g1 = obSl[off + 1]; b1 = obSl[off + 2];
             layer1 = LayerId.OBJ;
+            // a === 128 : sprite OBJ_BLEND (Semi-Transparent) — force target1
+            layer1ObjBlend = a === 128;
           }
         }
       }
 
       // Apply blend selon mode (gated par windows.blendAllowed)
       let r = r1, g = g1, b = b1;
-      if (blendAllowed && blend && blend.mode > 0) {
+      if (blendAllowed && blend) {
         const top1Mask = 1 << layer1;
-        if (blend.target1 & top1Mask) {
+        // OBJ_BLEND : sprite Semi-Transparent force alpha blend en target1
+        // INDÉPENDAMMENT du blend.mode + BLDCNT_TGT1. GBATEK : "Mode 1 OBJ
+        // ignores BLDCNT — performs alpha blending using BLDALPHA's evA/evB
+        // with itself as target1 and the next-down layer as target2 (if it
+        // matches BLDCNT_TGT2)."
+        if (layer1ObjBlend) {
+          const top2Mask = 1 << layer2;
+          if (blend.target2 & top2Mask) {
+            const a1w = Math.min(blend.alpha1, 16) / 16;
+            const a2w = Math.min(blend.alpha2, 16) / 16;
+            r = r1 * a1w + r2 * a2w;
+            g = g1 * a1w + g2 * a2w;
+            b = b1 * a1w + b2 * a2w;
+          }
+        } else if (blend.mode > 0 && (blend.target1 & top1Mask)) {
           if (blend.mode === 2) {
             // Brightness inc : pixel + (white - pixel) × (BLDY/16)
             const w = blend.brightness / 16;
@@ -308,7 +328,12 @@ function renderOamSpriteNormal(
 
     const off = screenX * 4;
     const buf = priorityBufs[sprite.priority];
-    buf[off] = r; buf[off + 1] = g; buf[off + 2] = b; buf[off + 3] = 255;
+    buf[off] = r; buf[off + 1] = g; buf[off + 2] = b;
+    // Encode objMode dans le canal alpha :
+    //   255 = OBJ_NORMAL (objMode 0)
+    //   128 = OBJ_BLEND  (objMode 1, GBA Semi-Transparent — force blend target1)
+    // Le compositor lit `a === 128` pour ajouter OBJ à blend.target1 implicite.
+    buf[off + 3] = sprite.objMode === 1 ? 128 : 255;
   }
 }
 
@@ -388,7 +413,9 @@ function renderOamSpriteAffine(
 
     const off = screenX * 4;
     const buf = priorityBufs[sprite.priority];
-    buf[off] = r; buf[off + 1] = g; buf[off + 2] = b; buf[off + 3] = 255;
+    buf[off] = r; buf[off + 1] = g; buf[off + 2] = b;
+    // OBJ_BLEND encoding (voir renderOamSpriteNormal) : 128 = semi-transparent.
+    buf[off + 3] = sprite.objMode === 1 ? 128 : 255;
   }
 }
 
