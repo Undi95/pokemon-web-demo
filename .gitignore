@@ -33,3 +33,6 @@ public/decomp/**/*.gba
 
 # External reference docs (PDFs/random)
 *.pdf
+
+# Reference videos (user's local files for visual comparison, not redistributable)
+*.mp4

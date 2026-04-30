@@ -7,7 +7,7 @@
 
 ---
 
-## État fin session 68 (Phase 4)
+## État fin session 69 (Phase 5 — intro polish)
 
 ### Boot end-to-end qui marche
 
@@ -32,10 +32,10 @@ TestGbaScene (sanity) → click → GameScene
 | Étape | Visuel | Note |
 |---|---|---|
 | Copyright | partial (skip rapide) | ⏳ |
-| Scene 1 | BG leaves + drops + letters | ⚠️ partial (sprites affine bug) |
-| Scene 2 | Sprites May/Flygon/Manectric/Volbeat ✅ | ⚠️ BG bike road ❌ |
-| Scene 3 | Clouds bleus + lightning ✅ | ⚠️ Groudon/Kyogre partial |
-| Title | Logo POKÉMON™ + Rayquaza + clouds ✅ | ⚠️ Press Start sprite palette ❌ |
+| Scene 1 | Leaves + drops + GAME FREAK + ripple white + grass + mountains ✅ | **1:1 GBA** |
+| Scene 2 | May/bicycle + mountains + pine trees + Pokémon ✅ | **1:1 GBA** |
+| Scene 3 | Clouds + lightning ✅ | ⚠️ Groudon/Kyogre partial |
+| Title | Logo + Rayquaza marking pulsant + clouds rise + Press Start ✅ | **1:1 GBA** |
 | Main Menu | NOUVELLE PARTIE + OPTION en FR ✅ | bug ♥ curseur dialogue traîne |
 | Birch | `Task_NewGameBirchSpeech_Init` reach | ⚠️ BGs invisibles |
 
@@ -43,55 +43,68 @@ TestGbaScene (sanity) → click → GameScene
 
 - **Engine GBA pixel-perfect** (`src/engine/gba/`) : BG/OAM/palette/blend/windows/affine/mosaic, VRAM unifié 96KB
 - **Engine M4A audio 1:1** (`src/engine/m4a/`) : ADSR/LFO/reverb/sample loop, validé 987/987 notes propre
-- **DecompRuntime** (`decomp-runtime.ts`) : `gMain.callback2` + `gTasks` + `gSprites` + `spriteCallbacks` Map + `tickFixed` 60Hz
-- **decomp-globals** (`decomp-globals.ts`) : helpers décomp (`LZ77UnCompVram`, `LoadPalette`, `DmaFill16` no-op, etc.) + `assetCache` + symbol-name strings
-- **copyright-boot** (`copyright-boot.ts`) : 1:1 `CB2_InitCopyrightScreenAfterBootup` + `SetUpCopyrightScreen` state machine + `MainCB2_Intro`
+- **DecompRuntime** (`decomp-runtime.ts`) : `gMain.callback2` + `gTasks` + `gSprites` + `spriteCallbacks` Map + `tickFixed` 60Hz (vérifié 60.0 fps logic)
+- **Devtools** (`window.dev`) : `pause/resume/step(N)/seek/speed/sprites/tasks/bgs` + `?pause` query param
+- **decomp-globals** (`decomp-globals.ts`) : helpers décomp + `assetCache` + symbol-name strings
+- **copyright-boot** (`copyright-boot.ts`) : 1:1 `CB2_InitCopyrightScreenAfterBootup` state machine
 - **gba-text/window/menu-system** : Main Menu Pokémon Émeraude FR
-- **Transpileur C→TS** + post-transpile-patches.mjs : 1632/1648 callbacks (99%) + patches manuels auto-injectés
-- **Boot loop unique** : `GameScene` (host Phaser canvas) + `TestGbaScene` (sanity engine)
+- **Transpileur C→TS** + post-transpile-patches.mjs : 1632/1648 callbacks (99%) + patches manuels auto
+- **Pipeline asset** : `extract-png-indexed-tiles.mjs` parse IDAT direct → `.4bpp.bin` / `.8bpp.bin` (préserve indices duplicate-color, voir Session 69 note)
+
+---
+
+## Session 69 — Polish intro visuel
+
+### Title screen (1:1 GBA)
+- ✅ `gTitleScreenBgPalettes` concat `pokemon_logo.gbapal` + `rayquaza_and_clouds.gbapal`
+- ✅ Rayquaza marking lines visible (yellow circles + lines pulsating gold)
+- ✅ Clouds rise (BG1VOFS via `gBattle_BG1_Y`)
+- ✅ "APPUYEZ SUR START" + "© 2005 GAMEFREAK inc." FR
+- ✅ Logo shine sweep (3 sprites SHINE_MODE_SINGLE/DOUBLE)
+- ✅ Logo zoom via `PanFadeAndZoomScreen` 1:1 décomp
+- ✅ `UpdateLegendaryMarkingColor` 1:1 (BG_PLTT_ID(14)+15 cycle Cos)
+- ✅ Music `mus_title.mid` (MUS_TITLE=413 ajouté au mapping)
+- ✅ Sprite callbacks Title (Version banner slide, Press Start blink, Logo shine) registered dans `GameScene.spriteCallbacks`
+
+### Scene 1 (1:1 GBA)
+- ✅ BG charBase view 16KB → 32KB (= mountains + grass + leaves rendus, plus de bande noire)
+- ✅ Sprite anim END terminator persistance (= ripple shape switch quand drop hits water)
+- ✅ `LoadPalette*/CpuCopy16` sync `gPlttBufferUnfaded` (= ripple white visible)
+- ✅ Drop slide + dangle + fall + ripple animations
+- ✅ Big drop, small drops, sparkles, GAME FREAK letters, Game Freak logo (blue per décomp)
+
+### Refactor majeur : extraction PNG
+- **Problème** : notre extraction via canvas.drawImage convertit PNG indexed → RGBA → on perd info d'index quand 2 entries PLTE ont la même couleur RGB. Ex : rayquaza.png entries 11 (body) et 15 (marking) sont tous deux `RGB(0,74,98)` mais doivent être DISTINGUÉS (le décomp `UpdateLegendaryMarkingColor` cycle entry 15 → marking gold pulsant).
+- **Fix** : `scripts/extract-png-indexed-tiles.mjs` parse IDAT PNG directement (zlib inflate + filter unfiltering + bitDepth-aware unpacking) → `.4bpp.bin` / `.8bpp.bin` préservant les indices originaux.
+- **Batch** : `scripts/extract-all-tile-bins.mjs` réextrait 37 PNGs (title + intro Scene 1/2/3).
+- **Loader runtime** : `loadTileBin(url, bpp)` fetch le `.bin` direct (= bypass canvas).
 
 ---
 
 ## Bugs résiduels Phase 5+
 
 ### Visuel intro à finir
-1. ~~**Title Rayquaza/clouds invisible**~~ ✅ FIXED session 69 : `gTitleScreenBgPalettes` doit concaténer `pokemon_logo.gbapal` + `rayquaza_and_clouds.gbapal` (1:1 décomp `graphics.c:1508` INCBIN double). Bank 14 venait du second fichier.
-2. **Title Press Start banner** — sprites visibles mais palette OBJ noire (= sprite sheet tile data OK, sprite palette pas mappée)
-3. **Scene 1 letters GAME FREAK** — sprite affine matrix XXL bug (= sAffineAnim_GameFreak_GrowAndShrink frame 0 init xScale=16, runtime affine pas exact)
-4. **Scene 2 BG bike road** — `SetIntroPart2BgCnt(1)` impl 1:1 mais BGs toujours invisibles (= probable VRAM not survival entre Scene 1 → Scene 2)
-5. **Scene 3 Groudon/Kyogre/Rayquaza** — Task_Scene3_LoadGroudon fait `LZDecompressVram(gIntroGroudon_Gfx)` mais asset pas preloadé
+1. **Scene 3 Groudon/Kyogre** — Task_Scene3_LoadGroudon partial, sprites pas créés
+2. **Press Start banner palette** — sprites OK mais palette OBJ silhouette noire occasional
+3. **GAME FREAK letters fade-in** — Task_BlendLogoIn / OBJ_BLEND mode pas pleinement supporté par notre compositor
+4. **Display 30fps** au lieu de 60fps — game logic interne 60fps OK (vérifié), mais browser/Phaser raf throttle le rendu. Acceptable pour le moment.
 
 ### Bugs runtime
-6. **Curseur ♥ dialogue traîne dans Main Menu** — affichage erroné d'un curseur fin-dialogue
-7. **OAM slots exhausted** Scene 1 (= Task_CreateSparkles boucle ?)
-8. **Aliases transpileur scope tracking** Task_Scene3_Groudon (`tTimer = data[5]` mal mappé à `data[7]`)
+5. **Curseur ♥ dialogue traîne dans Main Menu** — affichage erroné d'un curseur fin-dialogue
+6. **OAM slots exhausted** Scene 1 (= Task_CreateSparkles boucle ?)
+7. **Aliases transpileur scope tracking** Task_Scene3_Groudon (`tTimer = data[5]` mal mappé à `data[7]`)
 
 ### Birch Speech (= prochaine étape jeu)
-9. **Birch BGs invisibles** — `Task_NewGameBirchSpeech_Init` reach mais init BG/sprites incomplet
-
----
-
-## Audit AI session 68 phase 4 (AUDIT_BOOT.md)
-
-L'AI externe avait identifié 8 écarts critiques, dont les principaux DÉJÀ FIXED :
-- ✅ #1 MainCB2 implémenté (no-op stub car tickFixed gère tout)
-- ✅ #2 Main Menu BG0_ON setup correct via gba-menu-system
-- ✅ #5 VBlankCB avec TransferPlttBuffer
-- ⏳ #6 Stubs visuels (StartPokemonLogoShine, ScanlineEffect_InitWave, PanFadeAndZoomScreen) — Phase 5
-- ⏳ #7 Transitions TODO (CB2_NewGame fully wired but BGs init incomplete) — Phase 5
-- ⏳ #8 Birch Speech assets preload — Phase 5
-
-### Fix critique session 68 phase 4
-**`DmaFill16` no-op** : le décomp call pour clear VRAM avant nouvelle scene effaçait nos LZ77 char data juste chargés. Notre engine init VRAM zero au startup, pas besoin du clear. Résultat : Scene 3 + Title visuels débloqués.
+8. **Birch BGs invisibles** — `Task_NewGameBirchSpeech_Init` reach mais init BG/sprites incomplet
 
 ---
 
 ## Phases planifiées
 
-- **Phase 0-3 [DONE]** : Boot loop unique + Action 4 audit (audio, sprites, BG, palette)
+- **Phase 0-3 [DONE]** : Boot loop unique + Action 4 audit
 - **Phase 4 [DONE session 68]** : Merge AI work + DmaFill16 no-op + boot complet jusqu'à Birch
-- **Phase 5 (next)** : Polish intro visuel — Rayquaza/clouds Title + Press Start sprites + Scene 1 letters affine + Scene 2 BG + Scene 3 visuel complet
-- **Phase 6** : Birch Speech complet (BG + Brendan/May/Birch/Lotad sprites + dialogue FR)
+- **Phase 5 [DONE session 69]** : Polish intro visuel — Title + Scene 1 1:1 GBA, fixes profonds (PNG IDAT extractor, charBase 32KB, LoadPalette unfaded sync, sprite anim END persistence)
+- **Phase 6 (next)** : Scene 2 + Scene 3 polish + Birch Speech BGs/sprites
 - **Phase 7** : Naming Screen (clavier FR + ♥/♦ symbols)
 - **Phase 8** : Overworld via opcodes décomp + script-runner
 - **Phase 9** : Battle via bridge `@pkmn/sim` + UI Tasks transcrites
@@ -100,10 +113,10 @@ L'AI externe avait identifié 8 écarts critiques, dont les principaux DÉJÀ FI
 
 ## Outils disponibles
 
-- **Claude Preview Tool** (Phase 4) : preview_start + preview_click + preview_screenshot + preview_eval pour debug live frame-by-frame
-- **`window.debug`** exposé : `rt`, `gba`, `lz77Trace`, `assetCache`, `cacheKeys()`, etc.
+- **Claude Preview Tool** : preview_start + preview_click + preview_screenshot + preview_eval pour debug live frame-by-frame
+- **`window.dev`** : devtools `pause/resume/step/seek/speed/sprites/tasks/bgs` + `?pause` query param pour démarrer pausé
+- **`window.debug`** : `rt`, `gba`, `lz77Trace`, `assetCache`, `cacheKeys()`, etc.
 - **DebugOverlayScene** : overlay fps/frame/tasks/sprites en temps réel
-- **`localStorage.rtDebug = '1'`** : active logs CreateSprite/palette/sheet du runtime
 
 ## Sources non encore lues
 

@@ -49,7 +49,16 @@ const config: Phaser.Types.Core.GameConfig = {
   physics: {
     default: 'arcade',
     arcade: { debug: false }
-  }
+  },
+  // 1:1 GBA = 60Hz strict. forceSetTimeOut:true = bypass requestAnimationFrame
+  // qui peut throttle à 30Hz selon vsync/tab. Avec setTimeout(16.67), Phaser
+  // tick exactement 60 fois/sec → audio + animations + frame counter alignés.
+  // Sans ça, music/sons/cris désynchronisent par rapport à la logique 60Hz.
+  fps: {
+    target: 60,
+    forceSetTimeOut: true,
+    smoothStep: false,
+  },
 };
 
 const game = new Phaser.Game(config);

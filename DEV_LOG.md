@@ -10,6 +10,76 @@ de la décompilation FR (`pokeemeraude`) + `@pkmn/sim` pour combats.
 
 ---
 
+## Session 69 — Phase 5 : Polish intro 1:1 GBA (Title + Scene 1)
+
+### Title screen 1:1 GBA
+- `gTitleScreenBgPalettes` concat `pokemon_logo.gbapal` + `rayquaza_and_clouds.gbapal`
+  (= bank 14 vient du second fichier per `graphics.c:1508` INCBIN double)
+- Sprite callbacks Title registered (Version banner slide+alpha, Press Start blink,
+  Logo shine sweep) — étaient pas dans `GameScene.spriteCallbacks` Map
+- `UpdateLegendaryMarkingColor` 1:1 décomp : `BG_PLTT_ID(14)+15` cycle Cos
+- `PanFadeAndZoomScreen` impl complète (BgAffineSet via gSineTable)
+- `StartPokemonLogoShine` impl 3 modes (SINGLE_NO_BG_COLOR / SINGLE / DOUBLE)
+- `MUS_TITLE = 413` ajouté au mapping `SONG_ID_TO_NAME` (manquait, m4aSongNumStart skipait)
+- Cloud rise via `BG1VOFS = gBattle_BG1_Y` dans VBlankCB (était commenté)
+- `ScanlineEffect_InitWave` drift bug fix : capture frameBase ONCE à init
+  (était relu chaque frame depuis bg.config corrompu → drift cumulatif)
+- Phase 2 BG2Y_H unsigned arithmetic (`yPos / 0x10000` C unsigned ≠ TS signed)
+
+### Scene 1 1:1 GBA
+- **BG charBase view 16KB → 32KB** : décomp charge 32KB tile data à VRAM 0,
+  les 4 BGs samplent depuis charBase 0 mais référencent tile_id jusqu'à 1023.
+  Notre vram view limitait à 16KB → tiles >512 inaccessibles → bande noire.
+  Fix : `gba.ts` view 0x8000 max per BG. **Visuel : Scene 1 complet**
+  (mountains + grass blades autour de l'eau + leaves + drops).
+- **Sprite anim END terminator persistance** : `tickSpriteAnims` deletait le
+  state à fin d'anim END → `StartSpriteAnim(DROP_ANIM_RIPPLE)` no-op après
+  → tile reste sur 16/24 au lieu de 48 (ripple shape). Fix : garde state
+  avec frameIdx au dernier + animEnded=true.
+- **`LoadPalette*/CpuCopy16` sync `gPlttBufferUnfaded`** : le décomp utilise
+  `gPlttBufferUnfaded` comme source pour CpuCopy16 (= ripple variants
+  palettes 9-15). Notre LoadPalette/LoadSpritePalettes écrivait que dans
+  gba.palette, pas dans gPlttBufferUnfaded → CpuCopy16 lisait 0 → ripple
+  rendu en NOIR. Fix : sync les 2 buffers à chaque LoadPalette*. **Visuel :
+  drop ripple WHITE** quand goutte touche l'eau (match VBA emulator).
+
+### Refactor majeur : extraction PNG via IDAT direct
+- **Problème** : extraction via canvas.drawImage convertit PNG indexed → RGBA
+  → on perd info d'index quand 2 entries PLTE ont la même couleur RGB.
+  Ex : rayquaza.png entries 11 (body) et 15 (marking) sont tous deux
+  `RGB(0,74,98)` mais doivent être DISTINGUÉS (le décomp `UpdateLegendaryMarkingColor`
+  cycle entry 15 → marking gold pulsant). Notre extraction collapse 11 ↔ 15
+  → marking pixels invisibles (= 0 pixels at idx 15).
+- **Fix** : `scripts/extract-png-indexed-tiles.mjs` parse IDAT PNG directement
+  (zlib inflate + filter unfiltering + bitDepth-aware unpacking) → préserve
+  les indices originaux même quand PLTE a duplicate colors.
+- **Batch** : `scripts/extract-all-tile-bins.mjs` réextrait 37 PNGs (title +
+  intro Scene 1/2/3) → `.4bpp.bin` / `.8bpp.bin`.
+- **Loader runtime** : `loadTileBin(url, bpp)` fetch le `.bin` direct (= bypass
+  canvas). Update `preloadTitleAssets` + `preloadScene2Assets` + `preloadScene3Assets`
+  + `loadSymbol` (pour Scene 1 via GFX_SOURCES).
+
+### Devtools
+- `window.dev` : `pause/resume/step(N)/seek/speed/sprites/tasks/bgs`
+- `?pause` query param démarre runtime pausé pour audit frame-accurate
+- Burst mode dans tickFixed : exécute stepBudget frames immédiatement
+  (sans accumulator gating) — permet step(N) instantané
+
+### FPS lock 60Hz strict
+- Phaser config `fps.forceSetTimeOut: true` : bypass requestAnimationFrame
+  qui throttle à 30Hz (vsync/tab). Avec setTimeout(16.67), Phaser tick
+  exactement 60 fois/sec → audio + animations + frame counter alignés.
+  Sinon music/sons/cris désynchronisent par rapport à logique 60Hz.
+  Vérifié 60.4 fps réel via gIntroFrameCounter delta sur 2 secondes.
+
+### État fin session 69
+- ✅ Title screen 1:1 GBA (logo + Rayquaza marking pulsant + clouds rise + banners + music)
+- ✅ Scene 1 1:1 GBA (BG complet + drops slide/dangle/fall/ripple white + sparkles + GAME FREAK)
+- ⏳ Scene 2 (bike scene) — déjà visible (May/bicycle + mountains + trees + Pokémon) à polish
+- ⏳ Scene 3 (Pokeball + Groudon/Kyogre/Rayquaza) — à compléter
+
+---
+
 ## Session 68 (suite) — Phase 4 : merge AI externe + boot complet jusqu'à Birch
 
 User a fait tourner une autre AI (3 jours non-stop) sur `D:/Projet 1 - Copie/`
