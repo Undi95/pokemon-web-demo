@@ -805,11 +805,10 @@ export class DecompRuntime {
    *  selon le brightness courant (startY → endY linéaire). */
   UpdatePaletteFade(): boolean {
     if (!this.gPaletteFade.active) {
-      // Fade inactif : copy Unfaded → Faded chaque frame (= 1:1 décomp pour
-      // permettre aux CpuCopy16 vers Unfaded de propager).
-      for (let i = 0; i < 512; i++) {
-        this.gPlttBufferFaded.set(i, this.gPlttBufferUnfaded.get(i));
-      }
+      // 1:1 décomp UpdateNormalPaletteFade (palette.c:413) : returns immediately
+      // when fade inactive. Do NOT copy Unfaded → Faded here — would overwrite
+      // dynamic CpuCopy16(...&gPlttBufferFaded[X]...) writes from sprite cbs
+      // (e.g. SpriteCB_LogoLetter color cycle, SpriteCB_Lightning, orb attack).
       return false;
     }
 
@@ -954,18 +953,28 @@ export class DecompRuntime {
 
   /** 1:1 décomp CpuCopy16(src, dst, sizeBytes) : memcpy 16-bit aligné.
    *  Source : Uint16Array (e.g. extraPalettes.get('gIntroGameFreakTextFade_Pal')).
-   *  Dst : flatIdx dans gPlttBufferFaded (256 BG + 256 OBJ).
+   *  Dst : flatIdx dans gPlttBufferFaded/Unfaded (256 BG + 256 OBJ).
    *  Count : nombre d'entries u16 à copier (= sizeBytes / 2).
+   *
+   *  HEURISTIC : décomp differentiates `&gPlttBufferUnfaded[X]` (bulk init,
+   *  count > 1) vs `&gPlttBufferFaded[X]` (dynamic sprite cb, count == 1).
+   *  We can't see the dst symbol at runtime, but we can use the count :
+   *   - count == 1   → write FADED ONLY (= dynamic effect, Unfaded preserved
+   *     so future BlendPalette restores from original — critical for the
+   *     SpriteCB_Lightning / Orb attack flow on Scene 3).
+   *   - count >= 2   → write BOTH (= bulk palette load, Unfaded set as
+   *     reference + Faded set immediately for current display).
    *
    *  Usage callback : rt.CpuCopy16(textPal, srcOffset, dstFlat, count) */
   CpuCopy16(src: ArrayLike<number>, srcOffset: number, dstFlat: number, count: number): void {
-    // Décomp écrit à `gPlttBufferUnfaded[...]` puis UpdatePaletteFade copie
-    // unfaded → faded chaque frame. Notre CpuCopy16 doit donc écrire dans
-    // unfaded (sinon faded sera overwritten au prochain tick). On écrit
-    // dans LES DEUX pour correspondre exactement au cas où le décomp targets
-    // faded (= effet immédiat) tout en gardant la cohérence pour fades futurs.
-    this.gPlttBufferUnfaded.cpuCopy16(src, srcOffset, dstFlat, count);
-    this.gPlttBufferFaded.cpuCopy16(src, srcOffset, dstFlat, count);
+    if (count <= 1) {
+      // Dynamic sprite-cb effect (write Faded only, preserve Unfaded for fade restore).
+      this.gPlttBufferFaded.cpuCopy16(src, srcOffset, dstFlat, count);
+    } else {
+      // Bulk palette load (init or full bank copy) : both buffers.
+      this.gPlttBufferUnfaded.cpuCopy16(src, srcOffset, dstFlat, count);
+      this.gPlttBufferFaded.cpuCopy16(src, srcOffset, dstFlat, count);
+    }
   }
 
   /** Charge un .pal file et le stocke dans extraPalettes pour usage par CpuCopy16

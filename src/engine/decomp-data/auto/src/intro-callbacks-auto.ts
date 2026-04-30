@@ -359,14 +359,19 @@ export const SpriteCB_GroudonRocks: SpriteCallback = (sprite, rt) => {
       }
 };
 
-/** Source: intro.c → SpriteCB_KyogreBubbles */
+/** Source: intro.c → SpriteCB_KyogreBubbles
+ *  MANUAL FIX: transpileur scope tracking bug — sDelay should be data[6] (not data[2]).
+ *  Decomp aliases at intro.c:2224-2228:
+ *    sSinIdx=data[1], sBaseY=data[2], sTaskId=data[5], sDelay=data[6], sUnk=data[7].
+ *  Without this fix, sDelay collisions with sBaseY → bubbles bounce in place
+ *  instead of floating up & getting destroyed during scene zoom. */
 export const SpriteCB_KyogreBubbles: SpriteCallback = (sprite, rt) => {
   switch(sprite.data[0])
       {
       case 0:
-          if (sprite.data[2] == 0)
+          if (sprite.data[6] == 0)
           {
-               
+
               sprite.data[1] = (sprite.data[1] + 11) & 0xFF;
               sprite.x2 = Sin(sprite.data[1], 4);
               sprite.data[2] += 48;
@@ -374,15 +379,15 @@ export const SpriteCB_KyogreBubbles: SpriteCallback = (sprite, rt) => {
               if (sprite.animEnded)
                   rt.DestroySprite(sprite.spriteId);
           }
-          else if (--sprite.data[2] == 0)
+          else if (--sprite.data[6] == 0)
           {
-               
+
               rt.StartSpriteAnim(sprite.spriteId, 0);
               sprite.invisible = false;
           }
 
-           
-           
+
+
           if (_gt(rt, sprite.data[5]).data[0] > 11)
               sprite.data[0]++;
           break;
@@ -2076,7 +2081,8 @@ export function CreateGroudonRockSprites(taskId: number): number {
   return -1;
 }
 
-/** Source: intro.c → CreateKyogreBubbleSprites_Body (helper) */
+/** Source: intro.c → CreateKyogreBubbleSprites_Body (helper)
+ *  MANUAL FIX: sDelay alias = data[6] (not data[2]). See SpriteCB_KyogreBubbles note. */
 export function CreateKyogreBubbleSprites_Body(taskId: number): number {
   const rt = _getRuntime();
   let sprite: any = _emptySprite;
@@ -2086,19 +2092,22 @@ export function CreateKyogreBubbleSprites_Body(taskId: number): number {
 
       for (i = 0; i < NUM_BUBBLES_IN_SET; i++)
       {
-          spriteId = rt.CreateSpriteFromTemplate('sSpriteTemplate_Bubbles', 
+          spriteId = rt.CreateSpriteFromTemplate('sSpriteTemplate_Bubbles',
                                   sKyogreBubbleData[i][0],
                                   sKyogreBubbleData[i][1],
                                   i);
           _gs(rt, spriteId).invisible = true;
           _gs(rt, spriteId).data[5] = taskId;
-          _gs(rt, spriteId).data[2] = sKyogreBubbleData[i][2];
+          _gs(rt, spriteId).data[6] = sKyogreBubbleData[i][2];
           _gs(rt, spriteId).data[7] = 64;
       }
   return -1;
 }
 
-/** Source: intro.c → CreateKyogreBubbleSprites_Fins (helper) */
+/** Source: intro.c → CreateKyogreBubbleSprites_Fins (helper)
+ *  MANUAL FIX: sDelay alias = data[6] (not data[2]). See SpriteCB_KyogreBubbles note.
+ *  Note: décomp default build (no BUGFIX) uses sKyogreBubbleData[i][2] (the "wrong"
+ *  delay set per comment), so we keep that. */
 export function CreateKyogreBubbleSprites_Fins(): number {
   const rt = _getRuntime();
   let sprite: any = _emptySprite;
@@ -2108,13 +2117,12 @@ export function CreateKyogreBubbleSprites_Fins(): number {
 
       for (i = 0; i < NUM_BUBBLES_IN_SET; i++)
       {
-          spriteId = rt.CreateSpriteFromTemplate('sSpriteTemplate_Bubbles', 
+          spriteId = rt.CreateSpriteFromTemplate('sSpriteTemplate_Bubbles',
                                   sKyogreBubbleData[i + NUM_BUBBLES_IN_SET][0],
                                   sKyogreBubbleData[i + NUM_BUBBLES_IN_SET][1],
                                   i);
           _gs(rt, spriteId).invisible = true;
-          _gs(rt, spriteId).data[2] = sKyogreBubbleData[i + NUM_BUBBLES_IN_SET][2];
-          _gs(rt, spriteId).data[2] = sKyogreBubbleData[i][2];  
+          _gs(rt, spriteId).data[6] = sKyogreBubbleData[i][2];
           _gs(rt, spriteId).data[7] = 64;
       }
   return -1;

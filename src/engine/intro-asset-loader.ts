@@ -346,12 +346,14 @@ export async function preloadScene3Assets(): Promise<void> {
     { symbol: 'gIntroCloudsRight_Tilemap', url: '/decomp/em/intro/scene_3/clouds_right.bin' },
     { symbol: 'gIntroRayquaza_Tilemap', url: '/decomp/em/intro/scene_3/rayquaza.bin' },
     { symbol: 'gIntroRayquazaClouds_Tilemap', url: '/decomp/em/intro/scene_3/rayquaza_clouds.bin' },
+    // gIntroCloudsSun_Tilemap = BG2 TEXT mode (BGCNT_TXT256x256, 16 colors) per
+    // intro.c:2347-2351. File is 2048 bytes = 1024 u16 entries (NOT affine 1024 u8).
+    { symbol: 'gIntroCloudsSun_Tilemap', url: '/decomp/em/intro/scene_3/clouds_sun.bin' },
   ];
   // Affine BG tilemaps : 1 byte/tile mais notre engine attend Uint16Array → expand u8 → u16.
   const externsTilemapAffine: Array<{ symbol: string; url: string }> = [
     { symbol: 'gIntroGroudon_Tilemap', url: '/decomp/em/intro/scene_3/groudon.bin' },
     { symbol: 'gIntroKyogre_Tilemap', url: '/decomp/em/intro/scene_3/kyogre.bin' },
-    { symbol: 'gIntroCloudsSun_Tilemap', url: '/decomp/em/intro/scene_3/clouds_sun.bin' },
   ];
   await Promise.all(externsTilemapText.map(async ({ symbol, url }) => {
     try {
