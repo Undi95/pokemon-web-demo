@@ -301,24 +301,38 @@ export async function preloadScene3Assets(): Promise<void> {
     console.warn('[intro-asset-loader] rocks.png failed:', e);
   }
 
-  // Scene 3 tilemaps (.bin)
-  const externsTilemap: Array<{ symbol: string; url: string }> = [
+  // Scene 3 tilemaps (.bin) — split entre text BGs (u16/tile) et affine BGs (u8/tile).
+  // 1:1 décomp : Groudon BG2 / Kyogre BG2 / Rayquaza BG2 sont en mode 1 affine,
+  // donc tilemap u8. Les autres (Groudon/Kyogre BG1 text, Clouds Left/Right, etc.)
+  // sont u16 text mode standard.
+  const externsTilemapText: Array<{ symbol: string; url: string }> = [
     { symbol: 'gIntroGroudon_Tilemap', url: '/decomp/em/intro/scene_3/groudon.bin' },
     { symbol: 'gIntroKyogre_Tilemap', url: '/decomp/em/intro/scene_3/kyogre.bin' },
-    { symbol: 'gIntroGroudonBg_Tilemap', url: '/decomp/em/intro/scene_3/groudon_bg.bin' },
-    { symbol: 'gIntroKyogreBg_Tilemap', url: '/decomp/em/intro/scene_3/kyogre_bg.bin' },
-    { symbol: 'gIntroCloudsSun_Tilemap', url: '/decomp/em/intro/scene_3/clouds_sun.bin' },
     { symbol: 'gIntroCloudsLeft_Tilemap', url: '/decomp/em/intro/scene_3/clouds_left.bin' },
     { symbol: 'gIntroCloudsRight_Tilemap', url: '/decomp/em/intro/scene_3/clouds_right.bin' },
     { symbol: 'gIntroRayquaza_Tilemap', url: '/decomp/em/intro/scene_3/rayquaza.bin' },
     { symbol: 'gIntroRayquazaClouds_Tilemap', url: '/decomp/em/intro/scene_3/rayquaza_clouds.bin' },
   ];
-  await Promise.all(externsTilemap.map(async ({ symbol, url }) => {
+  // Affine BG tilemaps : 1 byte/tile mais notre engine attend Uint16Array → expand u8 → u16.
+  const externsTilemapAffine: Array<{ symbol: string; url: string }> = [
+    { symbol: 'gIntroGroudonBg_Tilemap', url: '/decomp/em/intro/scene_3/groudon_bg.bin' },
+    { symbol: 'gIntroKyogreBg_Tilemap', url: '/decomp/em/intro/scene_3/kyogre_bg.bin' },
+    { symbol: 'gIntroCloudsSun_Tilemap', url: '/decomp/em/intro/scene_3/clouds_sun.bin' },
+  ];
+  await Promise.all(externsTilemapText.map(async ({ symbol, url }) => {
     try {
       const tm = await loadTilemapBin(url);
       assetCache.set(symbol, tm);
     } catch (e) {
       console.warn(`[intro-asset-loader] Scene 3 tilemap ${symbol} failed:`, e);
+    }
+  }));
+  await Promise.all(externsTilemapAffine.map(async ({ symbol, url }) => {
+    try {
+      const tm = await loadAffineTilemapBin(url);
+      assetCache.set(symbol, tm);
+    } catch (e) {
+      console.warn(`[intro-asset-loader] Scene 3 affine tilemap ${symbol} failed:`, e);
     }
   }));
   console.log(`[intro-asset-loader] Scene 3 preload done (${assetCache.size} symbols total cached)`);
