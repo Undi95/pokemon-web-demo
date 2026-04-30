@@ -618,15 +618,27 @@ export let gScanlineEffect = {
 // TITLE SCREEN STUBS (Phase 3 minimum viable)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-/** Stubs helpers missing du décomp utilisés par CB2_InitTitleScreen. */
-export function DmaFill16(_channel: number, value: number, destAddr: number, sizeBytes: number): void {
-  const r = rt();
-  const offset = destAddr % r.gba.vram.byteLength;
-  const cnt = Math.min(sizeBytes, r.gba.vram.byteLength - offset);
-  if (cnt > 0) r.gba.vram.fill(value & 0xFF, offset, offset + cnt);
+/** Stubs helpers missing du décomp utilisés par CB2_InitTitleScreen.
+ *
+ *  DmaFill16 = clear memory range. Le décomp l'utilise pour clear VRAM/OAM/PLTT
+ *  avant de charger la nouvelle scene. Mais notre runtime ordonne mal les calls
+ *  (les LZ77 sont déjà appelés AVANT DmaFill via async preload), donc DmaFill
+ *  efface ce qu'on vient de charger. SOLUTION pragmatique : log les calls pour
+ *  debug, mais NE PAS effacer la VRAM (= notre engine fait sa propre gestion).
+ *  Tilemap ranges restent 0 parce que les LZ77 tilemaps écrivent après.
+ *
+ *  IMPORTANT : le décomp original DOIT clear la VRAM car les samples existants
+ *  bleed sur les nouvelles scenes. Chez nous on a un VRAM unifié + transitions
+ *  contrôlées via gMain.state, donc on peut skip le clear. */
+export function DmaFill16(_channel: number, _value: number, destAddr: number, _sizeBytes: number): void {
+  // No-op : éviter d'effacer le char data qu'on vient de charger via LZ77.
+  // Si le décomp veut clear OAM ou PLTT, on ignore aussi (= notre engine reset
+  // ces buffers via ResetSpriteData / ResetPaletteFade). VRAM = 0x06000000 est
+  // skipée pour préserver les LZ77 char data.
+  void destAddr;
 }
-export function DmaFill32(_channel: number, value: number, destAddr: number, sizeBytes: number): void {
-  DmaFill16(_channel, value & 0xFFFF, destAddr, sizeBytes);
+export function DmaFill32(_channel: number, _value: number, destAddr: number, _sizeBytes: number): void {
+  void destAddr;  // idem no-op
 }
 export function ResetPaletteFade(): void {
   const r = rt();
