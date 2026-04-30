@@ -965,12 +965,22 @@ export class DecompRuntime {
     this.nextSpriteId = 0;
   }
 
-  /** ResetSpriteData : remet tous les OAM à invisible (mimique décomp). */
+  /** ResetSpriteData : 1:1 décomp src/sprite.c:294 — ResetOamRange + ResetAllSprites
+   *  + ClearSpriteCopyRequests + ResetAffineAnimData + **FreeSpriteTileRanges**.
+   *  Le free des tile ranges est CRITIQUE entre 2 scènes pour que les tiles
+   *  Scene 1 (DROPS_LOGO/SPARKLE/FLYGON_SILHOUETTE) soient libérées avant le
+   *  load Scene 2 (BRENDAN/MAY/BICYCLE/FLYGON_LATIAS/VOLBEAT/TORCHIC/MANECTRIC).
+   *  Sans ça : 1024+ tiles d'OBJ VRAM overflow → Manectric tile_id 1056 hors
+   *  range → frame 4 transparent → clignotement. */
   ResetSpriteData(): void {
     for (let i = 0; i < 128; i++) this.gba.oam[i].visible = false;
     this.gSprites.clear();
+    this.spriteAnimStates.clear();
     this.nextOamSlot = 0;
     this.nextSpriteId = 0;
+    // FreeSpriteTileRanges : reset tile allocator (1024 tiles OBJ VRAM)
+    this.spriteSheetTagToTileStart.clear();
+    this.nextSpriteSheetByteOffset = 0;
   }
 
   /** IntroResetGpuRegs : reset DISPCNT et BG/blend regs (mimique décomp intro.c). */

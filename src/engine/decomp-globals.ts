@@ -321,9 +321,13 @@ export function LoadIntroPart2Graphics(scenery: number): void {
   // gReservedSpritePaletteCount = 8 → no-op chez nous (= alloc OBJ palette).
 }
 
-/** 1:1 décomp `FreeAllSpritePalettes` — Phase 0b stub no-op. */
+/** 1:1 décomp `FreeAllSpritePalettes` — libère tous les slots OBJ palette
+ *  alloués par tag. Permet de réutiliser les 16 slots OBJ palette entre 2 scènes
+ *  (= sinon overflow `nextObjPalSlot >= 16`). */
 export function FreeAllSpritePalettes(): void {
-  // TODO Phase 0c : reset paletteTagToSlot mapping
+  const r = rt();
+  r.paletteTagToSlot.clear();
+  r.nextObjPalSlot = 0;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
