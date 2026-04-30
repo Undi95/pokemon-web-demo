@@ -15,6 +15,28 @@ import { assetCache } from './decomp-globals';
 import { GFX_SOURCES } from './decomp-data/auto/src/intro-data';
 import { loadIndexedPng, loadIndexedPngStrict, loadTilemapBin, loadAffineTilemapBin, loadGbaPal } from './gba/png-loader';
 
+/** Charge un .4bpp.bin ou .8bpp.bin pré-extrait via scripts/extract-png-indexed-tiles.mjs.
+ *  Ces fichiers parsent l'IDAT PNG directement → préservent les indices palette
+ *  originaux même quand la PLTE a des couleurs duplicates (= cas Rayquaza
+ *  marking idx 15 vs body idx 11 qui ont même RGB(0,74,98)).
+ *  Fallback transparent si .bin pas trouvé : load PNG normalement. */
+async function loadTileBin(url: string, bpp: 4 | 8, fallbackPng?: string): Promise<Uint8Array> {
+  const binUrl = url.replace(/\.png$/, `.${bpp}bpp.bin`);
+  try {
+    const resp = await fetch(binUrl);
+    if (resp.ok) {
+      const buf = await resp.arrayBuffer();
+      return new Uint8Array(buf);
+    }
+  } catch {/* fall through */}
+  // Fallback PNG via canvas (perd les duplicate-color indices mais mieux que rien)
+  console.warn(`[intro-asset-loader] no ${binUrl}, fallback PNG canvas extraction`);
+  const png = bpp === 4
+    ? await loadIndexedPngStrict(fallbackPng ?? url, 4)
+    : await loadIndexedPngStrict(fallbackPng ?? url, 8);
+  return png.charData;
+}
+
 /** Charge un PNG 4bpp en préservant les indices palette du PLTE embedded.
  *  À utiliser pour les sprites/BG qui partagent une palette master (title screen,
  *  intro scenes) au lieu de `loadIndexedPng` qui remap "first insert wins". */
@@ -50,18 +72,19 @@ async function loadSymbol(symbol: string, source: { path: string; ext: string; t
     const tilemap = await loadTilemapBin(url);
     assetCache.set(symbol, tilemap);
   } else if (source.ext.includes('.4bpp.lz') || source.ext.includes('.4bpp')) {
-    // Char data 4bpp depuis PNG indexé
-    const png = await loadIndexedPngStrict(url, 4);
-    assetCache.set(symbol, png.charData);
-    // Si symbol _Pal correspondant pas en cache, populate avec le PLTE PNG
+    // Char data 4bpp via .4bpp.bin direct (préserve indices originaux).
+    const charData = await loadTileBin(url, 4);
+    assetCache.set(symbol, charData);
+    // Si symbol _Pal correspondant pas en cache, extrait via PNG canvas
     const palSymbol = symbol.endsWith('_Gfx') ? symbol.replace(/_Gfx$/, '_Pal') : null;
     if (palSymbol && !assetCache.has(palSymbol) && !(palSymbol in GFX_SOURCES)) {
+      const png = await loadIndexedPngStrict(url, 4);
       assetCache.set(palSymbol, png.palette);
     }
   } else if (source.ext.includes('.8bpp')) {
-    // Char data 8bpp (BG affine)
-    const png = await loadIndexedPng(url);
-    assetCache.set(symbol, png.charData);
+    // Char data 8bpp via .8bpp.bin direct
+    const charData = await loadTileBin(url, 8);
+    assetCache.set(symbol, charData);
   } else {
     console.warn(`[intro-asset-loader] unknown ext for ${symbol}: ${source.ext}`);
   }
@@ -166,12 +189,18 @@ export async function preloadScene2Assets(): Promise<void> {
 
   await Promise.all(scene2Assets.map(async ({ symbol, url, type }) => {
     try {
-      if (type === 'png' || type === 'png-strict-4bpp') {
-        const png = type === 'png-strict-4bpp'
-          ? await loadIndexedPngStrict(url, 4)
-          : await loadIndexedPng(url);
+      if (type === 'png-strict-4bpp') {
+        // .4bpp.bin direct (préserve indices originaux)
+        const charData = await loadTileBin(url, 4);
+        assetCache.set(symbol, charData);
+        const palSymbol = symbol.replace(/_Gfx$/, '_Pal');
+        if (palSymbol !== symbol && !assetCache.has(palSymbol)) {
+          const png = await loadIndexedPngStrict(url, 4);
+          assetCache.set(palSymbol, png.palette);
+        }
+      } else if (type === 'png') {
+        const png = await loadIndexedPng(url);
         assetCache.set(symbol, png.charData);
-        // Palette embedded PNG → populate _Pal symbol correspondant si pas dans cache
         const palSymbol = symbol.replace(/_Gfx$/, '_Pal');
         if (palSymbol !== symbol && !assetCache.has(palSymbol)) {
           assetCache.set(palSymbol, png.palette);
@@ -229,10 +258,13 @@ export async function preloadScene3Assets(): Promise<void> {
   ];
   await Promise.all(externs4bpp.map(async ({ symbol, url }) => {
     try {
-      const png = await loadIndexedPngStrict(url, 4);
-      assetCache.set(symbol, png.charData);
+      const charData = await loadTileBin(url, 4);
+      assetCache.set(symbol, charData);
       const palSymbol = symbol.replace(/_Gfx$/, '_Pal');
-      if (!assetCache.has(palSymbol)) assetCache.set(palSymbol, png.palette);
+      if (!assetCache.has(palSymbol)) {
+        const png = await loadIndexedPngStrict(url, 4);
+        assetCache.set(palSymbol, png.palette);
+      }
     } catch (e) {
       console.warn(`[intro-asset-loader] Scene 3 extern ${symbol} failed:`, e);
     }
@@ -245,10 +277,13 @@ export async function preloadScene3Assets(): Promise<void> {
   ];
   await Promise.all(externs8bpp.map(async ({ symbol, url }) => {
     try {
-      const data = await loadIndexedPngStrict(url, 8);
-      assetCache.set(symbol, data.charData);
+      const charData = await loadTileBin(url, 8);
+      assetCache.set(symbol, charData);
       const palSymbol = symbol.replace(/_Gfx$/, '_Pal');
-      if (!assetCache.has(palSymbol)) assetCache.set(palSymbol, data.palette);
+      if (!assetCache.has(palSymbol)) {
+        const png = await loadIndexedPngStrict(url, 8);
+        assetCache.set(palSymbol, png.palette);
+      }
     } catch (e) {
       console.warn(`[intro-asset-loader] Scene 3 8bpp ${symbol} failed:`, e);
     }
@@ -301,17 +336,30 @@ export async function preloadTitleAssets(): Promise<void> {
   ];
   await Promise.all(titleAssets.map(async ({ symbol, url, type }) => {
     try {
-      if (type === 'png' || type === 'png8bpp' || type === 'png-strict-4bpp') {
-        // png8bpp : utilise loadIndexedPngStrict (= extract PLTE PNG embedded au
-        // lieu de detect 4bpp uniques). Pour 256 colors palette type assets.
-        // png-strict-4bpp : préserve les indices du PLTE pour les assets avec
-        // palette master partagée (title screen, scenes).
-        const { loadIndexedPngStrict } = await import('./gba/png-loader');
-        const png = type === 'png8bpp'
-          ? await loadIndexedPngStrict(url, 8)
-          : type === 'png-strict-4bpp'
-          ? await loadIndexedPngStrict(url, 4)
-          : await loadIndexedPng(url);
+      if (type === 'png-strict-4bpp') {
+        // .4bpp.bin direct (= IDAT-parse, préserve duplicate-color indices).
+        const charData = await loadTileBin(url, 4);
+        assetCache.set(symbol, charData);
+        // Si symbol _Pal absent, extrait via PNG canvas pour la palette
+        const palSymbol = symbol.replace(/Gfx$/, 'Pal');
+        if (palSymbol !== symbol && !assetCache.has(palSymbol)) {
+          const { loadIndexedPngStrict } = await import('./gba/png-loader');
+          const png = await loadIndexedPngStrict(url, 4);
+          assetCache.set(palSymbol, png.palette);
+        }
+      } else if (type === 'png8bpp') {
+        // .8bpp.bin direct
+        const charData = await loadTileBin(url, 8);
+        assetCache.set(symbol, charData);
+        const palSymbol = symbol.replace(/Gfx$/, 'Pal');
+        if (palSymbol !== symbol && !assetCache.has(palSymbol)) {
+          const { loadIndexedPngStrict } = await import('./gba/png-loader');
+          const png = await loadIndexedPngStrict(url, 8);
+          assetCache.set(palSymbol, png.palette);
+        }
+      } else if (type === 'png') {
+        // Legacy : PNG via canvas
+        const png = await loadIndexedPng(url);
         if (symbol.endsWith('Pal')) {
           assetCache.set(symbol, png.palette);
         } else {
