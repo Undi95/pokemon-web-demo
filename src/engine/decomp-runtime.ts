@@ -1176,7 +1176,13 @@ export class DecompRuntime {
         if (anim.terminator === 'JUMP') {
           state.frameIdx = anim.jumpTo ?? 0;
         } else {
-          this.spriteAnimStates.delete(spriteId);
+          // END terminator : marque l'anim comme terminée mais GARDE le state
+          // (= permet à StartSpriteAnim de re-entrer + permet sprite.animEnded
+          // sentinel pour les callbacks). Tile reste sur la dernière frame.
+          state.frameIdx = anim.frames.length - 1;
+          state.framesRemaining = 1;  // attente perpétuelle
+          const sprite = this.gSprites.get(spriteId);
+          if (sprite) sprite.animEnded = true;
           continue;
         }
       }

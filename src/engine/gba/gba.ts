@@ -104,10 +104,13 @@ export class Gba {
       this.bgWrappers.push({
         config: cfg,
         get vram(): Uint8Array {
-          // View 16KB dans VRAM unifié au charBaseIndex actuel.
-          // 1:1 GBA : charBase 0-3 = byte offset 0/0x4000/0x8000/0xC000.
+          // View jusqu'à 32KB dans VRAM unifié au charBaseIndex actuel.
+          // 1:1 GBA : charBase 0-3 = byte offset 0/0x4000/0x8000/0xC000. En 4bpp
+          // un BG peut référencer tiles 0-1023 (= 32KB, soit 2 charBase blocks).
+          // On expose 32KB max, capped par taille restante VRAM.
           const off = (cfg.charBaseIndex & 3) * 0x4000;
-          return new Uint8Array(vramBuf.buffer, vramBuf.byteOffset + off, 0x4000);
+          const len = Math.min(0x8000, vramBuf.byteLength - off);
+          return new Uint8Array(vramBuf.buffer, vramBuf.byteOffset + off, len);
         },
         get tilemap(): Uint16Array {
           // View u16 dans VRAM unifié au mapBaseIndex actuel.
