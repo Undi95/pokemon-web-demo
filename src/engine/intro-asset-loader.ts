@@ -333,6 +333,23 @@ export async function preloadTitleAssets(): Promise<void> {
       console.warn(`[intro-asset-loader] Title load failed for ${symbol}:`, e);
     }
   }));
+
+  // 1:1 décomp graphics.c:1508 : gTitleScreenBgPalettes = INCBIN(pokemon_logo.gbapal,
+  // rayquaza_and_clouds.gbapal) concaténés. pokemon_logo n'utilise que 14 banks
+  // (224 colors), bank 14 vient du second fichier (= palette Rayquaza/Clouds).
+  // LoadPalette(gTitleScreenBgPalettes, 0, 15 * PLTT_SIZE_4BPP) charge 240 colors :
+  // banks 0-13 = logo, bank 14 = Rayquaza/Clouds.
+  try {
+    const logoPal = await loadGbaPal('/decomp/em/boot/title_screen/pokemon_logo.pal');
+    const rcPal = await loadGbaPal('/decomp/em/boot/title_screen/rayquaza_and_clouds.pal');
+    const concatPal = new Uint16Array(14 * 16 + rcPal.length);
+    concatPal.set(logoPal.subarray(0, 14 * 16), 0);
+    concatPal.set(rcPal, 14 * 16);
+    assetCache.set('gTitleScreenBgPalettes', concatPal);
+  } catch (e) {
+    console.warn('[intro-asset-loader] gTitleScreenBgPalettes concat failed:', e);
+  }
+
   console.log(`[intro-asset-loader] Title preload done (${assetCache.size} symbols total cached)`);
 }
 

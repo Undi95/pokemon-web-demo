@@ -35,7 +35,7 @@ TestGbaScene (sanity) → click → GameScene
 | Scene 1 | BG leaves + drops + letters | ⚠️ partial (sprites affine bug) |
 | Scene 2 | Sprites May/Flygon/Manectric/Volbeat ✅ | ⚠️ BG bike road ❌ |
 | Scene 3 | Clouds bleus + lightning ✅ | ⚠️ Groudon/Kyogre partial |
-| Title | Logo POKÉMON™ jaune ✅ | ⚠️ Rayquaza/clouds/Press Start ❌ |
+| Title | Logo POKÉMON™ + Rayquaza + clouds ✅ | ⚠️ Press Start sprite palette ❌ |
 | Main Menu | NOUVELLE PARTIE + OPTION en FR ✅ | bug ♥ curseur dialogue traîne |
 | Birch | `Task_NewGameBirchSpeech_Init` reach | ⚠️ BGs invisibles |
 
@@ -55,8 +55,8 @@ TestGbaScene (sanity) → click → GameScene
 ## Bugs résiduels Phase 5+
 
 ### Visuel intro à finir
-1. **Title Rayquaza/clouds invisible** — BG0 charBase 2 + BG1 charBase 3, char data chargé en VRAM mais palette ou DISPCNT mal config
-2. **Title sprites** — Press Start banner + Version banner sprites OAM pas créés (= LoadCompressedSpriteSheet TODO Title)
+1. ~~**Title Rayquaza/clouds invisible**~~ ✅ FIXED session 69 : `gTitleScreenBgPalettes` doit concaténer `pokemon_logo.gbapal` + `rayquaza_and_clouds.gbapal` (1:1 décomp `graphics.c:1508` INCBIN double). Bank 14 venait du second fichier.
+2. **Title Press Start banner** — sprites visibles mais palette OBJ noire (= sprite sheet tile data OK, sprite palette pas mappée)
 3. **Scene 1 letters GAME FREAK** — sprite affine matrix XXL bug (= sAffineAnim_GameFreak_GrowAndShrink frame 0 init xScale=16, runtime affine pas exact)
 4. **Scene 2 BG bike road** — `SetIntroPart2BgCnt(1)` impl 1:1 mais BGs toujours invisibles (= probable VRAM not survival entre Scene 1 → Scene 2)
 5. **Scene 3 Groudon/Kyogre/Rayquaza** — Task_Scene3_LoadGroudon fait `LZDecompressVram(gIntroGroudon_Gfx)` mais asset pas preloadé
