@@ -15,7 +15,12 @@ const { Midi } = pkg;
 
 const MUSIC_DIR = 'D:/Projet 1/pokemon-web-demo/public/decomp/em/music';
 
-const files = readdirSync(MUSIC_DIR).filter(f => f.endsWith('.mid'));
+// Restreint aux SE/PH (Sound Effects + Phrases) seulement. Les BGM multi-track
+// peuvent avoir des banks différents par channel et le naive "last seen" inject
+// fait des conflits → ne pas y toucher.
+const files = readdirSync(MUSIC_DIR).filter(f =>
+  f.endsWith('.mid') && (f.startsWith('se_') || f.startsWith('ph_'))
+);
 let fixed = 0, untouched = 0;
 
 for (const f of files) {
