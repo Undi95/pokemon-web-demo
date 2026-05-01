@@ -1057,14 +1057,43 @@ export class DecompRuntime {
     this.gTasks.delete(taskId);
   }
 
-  /** Run all tasks once (= 1 frame). À call chaque frame depuis update(). */
+  /** Run all tasks once (= 1 frame). À call chaque frame depuis update().
+   *
+   *  1:1 décomp src/task.c:RunTasks (lines 110-122) : itère via linked list
+   *  `.next` à partir de FindFirstActiveTask. Si une Task crée une NOUVELLE
+   *  Task pendant l'iteration (ex: Task_Scene1_WaterDrops → Task_BlendLogoIn
+   *  frame 128), InsertTask insère selon priorité — pour des priorités égales
+   *  (= 0 par défaut), la nouvelle Task est appendée à la FIN de la liste.
+   *  L'iteration via `.next` la rencontre avant la fin → elle tourne MÊME
+   *  FRAME que sa création.
+   *
+   *  Notre ancienne version utilisait un snapshot Array.from(...) avant
+   *  l'iteration → les nouvelles Tasks ne tournaient PAS la frame de création
+   *  → 1-frame race où Task_BlendLogoIn (BLDCNT setup pour alpha blend du
+   *  logo Game Freak) ne s'exécutait que frame 129, alors que SpriteCB
+   *  rendait le logo dès frame 128 → flicker solid → blended.
+   *
+   *  Fix : iteration dynamique. On utilise un Set pour tracker les Tasks DÉJÀ
+   *  visitées cette frame (évite double-exec si une task se re-crée par
+   *  réutilisation du même slot id). */
   runTasks(): void {
-    // Snapshot pour permettre Tasks de mod gTasks
-    const snapshot = Array.from(this.gTasks.values());
-    for (const task of snapshot) {
-      if (this.gTasks.has(task.taskId) && task.func) {
-        task.func(task);
+    const visited = new Set<number>();
+    let processed = 0;
+    const maxIters = 256;  // safety guard contre boucle infinie
+    while (processed < maxIters) {
+      let found: DecompTask | null = null;
+      for (const task of this.gTasks.values()) {
+        if (visited.has(task.taskId)) continue;
+        if (!task.func) continue;
+        found = task;
+        break;
       }
+      if (!found) break;
+      visited.add(found.taskId);
+      try { found.func(found); } catch (e) {
+        console.error('[runTasks] task threw:', e);
+      }
+      processed++;
     }
   }
 

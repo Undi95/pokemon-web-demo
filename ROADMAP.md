@@ -38,6 +38,7 @@ TestGbaScene (sanity) → click → GameScene
 | Title | Logo + Rayquaza marking pulsant + clouds rise + Press Start ✅ | **1:1 GBA** |
 | Main Menu | NOUVELLE PARTIE + OPTION en FR ✅ | bug ♥ curseur dialogue traîne |
 | Birch | `Task_NewGameBirchSpeech_Init` reach | ⚠️ BGs invisibles |
+| **Audio session 71** | Multi-slot BGM/SE1/SE2 + cris OK + render order 1:1 | ⚠️ SE noise = approximation (white noise + biquad ≠ GBA LFSR), à fix avant écran titre |
 
 ### Architecture en place
 
@@ -106,7 +107,19 @@ TestGbaScene (sanity) → click → GameScene
 - **Phase 5 [DONE session 69]** : Polish intro visuel — Title + Scene 1 1:1 GBA, fixes profonds (PNG IDAT extractor, charBase 32KB, LoadPalette unfaded sync, sprite anim END persistence)
 - **Phase 6 [DONE session 70]** : Scene 2 1:1 GBA — fix transpileur `0x7F` → `0x7`, register `SpriteCB_Bicycle` / `SpriteCB_FlygonRightHalf` / `Task_BicycleBgAnimation`, implement `sSpriteSheet_RunningPokemon` + `sSpritePalettes_RunningPokemon` (Volbeat/Torchic/Manectric)
 - **Phase 7 [DONE session 70]** : Scene 3 1:1 GBA — Pokeball/Groudon/Kyogre/Rayquaza/Orb visibles. Fixes profonds : affine matrix sign-extend + `(texX << 8)` bug + tilemap names swap + gbagfx grayscale invert (`15-x`) + BG text negative hofs/vofs JS modulo + custom color fade (`RGB(9,10,10)`) + ScanlineEffect state=3 cleanup + devtools étendus.
-- **Phase 8 (next)** : Birch Speech BGs/sprites (= Task_NewGameBirchSpeech_Init reach)
+- **Phase 7.5 [DONE session 71]** : Polish audio + render order 1:1 décomp.
+  - **M4A multi-slot** : `_currentPlayback` global → `_slots: { bgm, se1, se2 }` (1:1 `gMPlayInfo_BGM/SE1/SE2` cf src/m4a.c:13-21). PlaySE alterne se1/se2 (1:1 src/sound.c:577-598). Plus de coupure BGM par SE.
+  - **Generation counter** par slot dans `m4a/player.ts` : invalide les `endTimer` pending → empêche micro-replay de loop entre 2 BGMs.
+  - **MUS_INTRO loop=false 1:1** : pas de markers `[]` dans le `.mid` → mid2agb génère `ply_fine` = one-shot. Notre loop=true forçait un audible micro-replay avant scene 3.
+  - **Render order 1:1** : `runOneFrame` réordonné `RunTasks → AnimateSprites → BuildOamBuffer → UpdatePaletteFade` (= MainCB2_Intro src/intro.c:1042-1052).
+  - **runTasks linked-list 1:1** : ancien snapshot `Array.from(gTasks)` empêchait les nouvelles Tasks créées pendant l'iteration de tourner même frame. Fix iteration dynamique avec Set des visited (= 1:1 src/task.c:RunTasks linked-list `.next`). Résout le **flicker du logo Game Freak** : Task_BlendLogoIn créé frame 128 par Task_Scene1_WaterDrops tourne maintenant même frame → BLDCNT pour alpha-blend set AVANT le premier render visible du logo.
+  - **PlayCryInternal/PlaySE wired 1:1** : SPECIES_GROUDON/KYOGRE/RAYQUAZA = 405/404/406 (cf species.h). PlaySE via SONG_ID_TO_NAME (532 entries extraits de songs.h via `extract-song-table.mjs`).
+  - **selectedPalettes mask** dans `_applyPaletteFadeStep` : respect de `BeginNormalPaletteFade(... & ~0x21, ...)` 1:1 (palette.c:436-454).
+  - **CpuCopy16 heuristique** : count==1 → Faded seul (sprite cb dynamic), count>=2 → both (bulk init).
+  - **Cache-bust dev** : `window.fetch` monkey-patch en dev → `?_cb=<bootTimestamp>` sur URLs locales. Évite les bugs cache stale en test.
+  - **Bug résiduel** : PlaySE joue le MAUVAIS son (architecture multi-slot OK, voicegroup OK, mais notre noise emulation utilise white noise + biquad lowpass au lieu du LFSR GBA 1:1) → Phase 7.6 prochaine.
+- **Phase 7.6 (next)** : LFSR-accurate GBA noise emulation pour PlaySE 1:1. Le menu post-title aura plein de SE (bip à chaque touche, etc) — fix avant écran titre obligatoire.
+- **Phase 8** : Birch Speech BGs/sprites (= Task_NewGameBirchSpeech_Init reach)
 - **Phase 9** : Naming Screen (clavier FR + ♥/♦ symbols)
 - **Phase 10** : Overworld via opcodes décomp + script-runner
 - **Phase 11** : Battle via bridge `@pkmn/sim` + UI Tasks transcrites

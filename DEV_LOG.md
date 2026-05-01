@@ -10,6 +10,137 @@ de la décompilation FR (`pokeemeraude`) + `@pkmn/sim` pour combats.
 
 ---
 
+## Session 71 — Phase 7.5 : Polish audio + render order 1:1 décomp
+
+User feedback final fin intro : "Ca a l'air fixé" (Kyogre bubbles), "OK on attaque le polish".
+3 bugs résiduels après l'intro visuel, tous résolus côté décomp (pas de hardcode).
+
+### Bug 1 — PlaySE coupe la BGM + son incorrect
+
+**Cause confirmée par audit décomp** : `src/m4a.c:13-21` utilise 3 slots
+`gMPlayInfo_BGM/SE1/SE2` parallèles, chaque song table entry a son `ms` (=
+player slot). Notre engine TS avait UN seul `_currentPlayback` global → un
+SE écrasait la BGM via stopSong sync.
+
+**Fix** : refactor `m4a/player.ts` :
+- `_currentPlayback` → `_slots: Record<SlotKind, PlaybackState | null>`
+- `playSong(..., slot='bgm')` paramétrée
+- `stopSong(slot)` ne touche qu'un slot
+- Generation counter PAR slot
+- `stopAllSongs()` pour `m4aMPlayAllStop()`
+
+`PlaySE` (decomp-globals.ts) alterne `se1`/`se2` à chaque appel (1:1 src/sound.c:577-598).
+`m4aSongNumStart` reste sur `bgm` slot.
+
+Effet : Rayquaza orb laser SE ne coupe plus mus_intro_battle.
+
+### Bug 2 — "Loop furtif" entre Scene 2 et Scene 3
+
+**Cause confirmée** : MUS_INTRO bouclait artificiellement chez nous (`loop=true`
+forcé). Vérifié dans le `.mid` original (`grep ff 0[1-7]` = aucun marker
+`[]` que mid2agb détecte) → la décomp génère `ply_fine` (one-shot). MUS_INTRO
+joue 33.9s puis 0.6s silence avant scene 3 (m4aSongNumStart MUS_INTRO_BATTLE
+@ frame 2070). C'est le comportement GBA original.
+
+**Fix** : `loop=false` dans `m4aSongNumStart` (decomp-globals.ts).
+
+Ajout en plus d'un **generation counter** par slot dans `m4a/player.ts` qui
+invalide les `endTimer` pending : empêche un loop iteration de démarrer entre
+`stopSong` (sync) et la nouvelle `playSong` (async).
+
+### Bug 3 — Flicker random du logo Game Freak
+
+**Cause** : 1-frame race au moment où le logo devient visible (frame 128 =
+TIMER_LOGO_APPEAR). `Task_Scene1_WaterDrops` crée `Task_BlendLogoIn` MÊME
+frame, qui setup BLDCNT/BLDALPHA pour alpha-blend du logo (intro.c:2723-2734).
+
+Notre `runTasks` utilisait un **snapshot** : `const snapshot = Array.from(this.gTasks.values())`.
+Une nouvelle Task créée pendant l'iteration n'était PAS dans le snapshot → ne
+tournait pas même frame. Résultat : frame 128 = SpriteCB visible=true MAIS
+BLDCNT pas set → logo render solid blue (pas blendé). Frame 129 = BLDCNT
+set → render alpha-blendé. Différence visible = **flicker**.
+
+**Décomp** (`src/task.c:110-122`) : RunTasks itère via linked list `.next`. Une
+Task avec même priorité créée pendant l'iteration est appendée à la fin de
+la liste → l'iteration la rencontre et l'exécute MÊME frame.
+
+**Fix** : `runTasks` iteration dynamique avec Set des visited (1:1 décomp
+linked-list logic, sans implémenter le linked list complet — équivalent
+sémantique). Task_BlendLogoIn tourne maintenant frame 128 → BLDCNT setup
+AVANT le premier render visible du logo. **Flicker disparu.**
+
+### Bonus fixes session 71
+
+- **Render order MainCB2_Intro 1:1** : `runOneFrame` réordonné pour matcher
+  `intro.c:1042-1052` :
+  ```
+  callback2 → RunTasks → AnimateSprites (= cb + tickAnims + tickAffine)
+  → BuildOamBuffer (= syncSpritesToOam) → UpdatePaletteFade
+  ```
+  Avant : runTasks tournait APRÈS tickAllAffineAnims → 1-frame matrix stale
+  pour sprites créés pendant la frame.
+
+- **PlayCryInternal 1:1** :
+  - `SPECIES_GROUDON/KYOGRE/RAYQUAZA = 405/404/406` (1:1 species.h:410-412,
+    avant on avait 0x171/0x170/0x172 incorrect)
+  - SPECIES_NAMES map utilise les bonnes valeurs (cris se déclenchent maintenant)
+  - PlayCryInternal était un STUB local dans intro-callbacks-auto.ts qui
+    shadowait l'import. Fix manuel : remplacer le stub par l'import correct.
+
+- **PlaySE wired** : import de PlaySE dans intro-callbacks-auto.ts. La table
+  `SE_INTRO_BLAST = 103` mappe vers `se_intro_blast.mid` via `SONG_ID_TO_NAME`
+  (532 entries extraits de songs.h via `scripts/extract-song-table.mjs`).
+
+- **selectedPalettes mask** dans `_applyPaletteFadeStep` : avant on blendait
+  TOUTES les palettes même si fade specifique `& ~(0x21)`. Fix bug visuel
+  scene Rayquaza où bank 5 devenait grise au lieu de rester bleue.
+
+- **CpuCopy16 heuristique** : count==1 → Faded seul (sprite cb dynamic effect),
+  count>=2 → les deux buffers (init bulk). Avant on écrivait dans les deux
+  systématiquement → polluait Unfaded avec écritures dynamiques de sprite cb,
+  cassant le `BlendPalette(... → faded)` qui restore depuis Unfaded.
+
+- **UpdatePaletteFade inactive return early** : avant on copiait Unfaded →
+  Faded chaque frame quand fade inactif → écrasait les CpuCopy16 vers Faded
+  des sprite cbs (cycle palette logo letters etc.). 1:1 décomp = early return
+  quand !active (palette.c:413).
+
+- **gIntroCloudsSun_Tilemap** : était chargé en affine alors que BG2 est
+  TXT256x256 16-color (intro.c:2347-2351). Fix charge en text mode → soleil
+  + ciel bleu visibles dans la cinematic clouds.
+
+- **Cache-bust dev** : `main.ts` monkey-patch `window.fetch` en dev pour
+  ajouter `?_cb=<bootTimestamp>` aux URLs locales. Évite les bugs de cache
+  stale en test.
+
+### Bug résiduel : PlaySE = mauvais son
+
+Le voicegroup `rs_sfx_1` est correctement chargé, le sample `unknown_synth_snare`
+est dans `_manifest.json`, le voice résolu pour program 123 = `noise_alt`
+(correct cf rs_sfx_1.inc:125). Mais notre `synth.ts` impl du noise utilise
+`AudioBufferSourceNode` avec un buffer de white noise pré-généré +
+`BiquadFilter` lowpass. Le GBA réel utilise un **LFSR** (Linear Feedback
+Shift Register) avec une table de périodes 0-7 → la "couleur" du bruit est
+totalement différente.
+
+→ **Phase 7.6 prochaine** : LFSR-accurate GBA noise emulation. Avant écran
+titre car le menu post-title aura plein de SE (bip à chaque touche etc).
+
+### Files modifiés / créés
+
+- `src/engine/m4a/player.ts` — multi-slot refactor, generation counter
+- `src/engine/decomp-globals.ts` — m4aSongNumStart slot=bgm, PlaySE slot=se1/se2 alternance, PlayCryInternal/SE_ID mapping
+- `src/engine/decomp-runtime.ts` — runOneFrame reorder, runTasks linked-list iteration, BeginNormalPaletteFade selectedPalettes mask, CpuCopy16 heuristique, UpdatePaletteFade early-return, _applyPaletteFadeStep mask
+- `src/engine/decomp-data/auto/src/intro-callbacks-auto.ts` — manuel fix PlayCryInternal stub → import, SE_INTRO_BLAST/PlaySE imports
+- `src/engine/intro-asset-loader.ts` — gIntroCloudsSun_Tilemap text mode
+- `src/engine/m4a/synth.ts` — re-check stopped après await playNote (note stuck fix)
+- `src/main.ts` — cache-bust monkey-patch fetch en dev
+- `src/scenes/GameScene.ts` — preload MIDIs intro/title + cries dans bootIntro
+- **Nouveau** : `scripts/extract-song-table.mjs` — parse songs.h → 532 entries
+- **Nouveau** : `src/engine/decomp-data/auto/src/song-table.ts` — SONG_ID_TO_NAME complet (mus_/se_/ph_)
+
+---
+
 ## Session 70 (suite) — Phase 7 : Scene 3 1:1 GBA (Groudon/Kyogre/Rayquaza/Pokeball)
 
 ### Visuel final observé via Claude Preview + comparaison VBAM
