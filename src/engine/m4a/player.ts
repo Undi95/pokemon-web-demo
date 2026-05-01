@@ -157,54 +157,9 @@ export async function playSong(
   // songVolume 0-128 → 0-1 master gain. Default 128 = full.
   const songVolNorm = songVolume !== null ? Math.max(0, Math.min(1, songVolume / 128)) : 1.0;
 
-  // Pour les SE : bypass le Sequencer (qui reset bank select cross-track et
-  // gâche les SE) → fire les events MIDI directement via synth API. Pour les
-  // BGM : utiliser le Sequencer (= loops + tempo + features pleins).
-  if (slot === 'se1' || slot === 'se2') {
-    const ctx = getAudioContext();
-    const startTime = ctx.currentTime + 0.005;
-    for (const t of song.tracks) {
-      const ch = t.channel;
-      // 1. Bank select (CC 0 MSB + CC 32 LSB) à t=0 — précède le program change.
-      const cc0First = t.controlChanges?.[0]?.[0];
-      if (cc0First !== undefined) {
-        try { state.synth.controllerChange(ch, 0, Math.round(cc0First.value * 127), { time: startTime }); } catch { /* ignore */ }
-      }
-      const cc32First = t.controlChanges?.[32]?.[0];
-      if (cc32First !== undefined) {
-        try { state.synth.controllerChange(ch, 32, Math.round(cc32First.value * 127), { time: startTime }); } catch { /* ignore */ }
-      }
-      // 2. Program change.
-      if (t.instrument?.number !== undefined) {
-        try { state.synth.programChange(ch, t.instrument.number, { time: startTime + 0.001 }); } catch { /* ignore */ }
-      }
-      // 3. Autres CCs (volume CC 7, pan CC 10, expression CC 11, etc.).
-      for (const ccNumStr in t.controlChanges) {
-        const ccNum = parseInt(ccNumStr);
-        if (ccNum === 0 || ccNum === 32) continue;
-        const ccs = t.controlChanges[ccNumStr];
-        if (!ccs) continue;
-        for (const cc of ccs) {
-          try { state.synth.controllerChange(ch, ccNum as never, Math.round(cc.value * 127), { time: startTime + cc.time + 0.002 }); } catch { /* ignore */ }
-        }
-      }
-      // 4. Notes.
-      for (const note of t.notes) {
-        try { state.synth.noteOn(ch, note.midi, Math.round(note.velocity * 127), { time: startTime + note.time + 0.003 }); } catch { /* ignore */ }
-        try { state.synth.noteOff(ch, note.midi, { time: startTime + note.time + note.duration }); } catch { /* ignore */ }
-      }
-      // 5. Pitch bends (rare pour SE mais on les supporte).
-      for (const bend of t.pitchBends || []) {
-        const val = Math.round((bend.value + 1) * 8192);
-        try { state.synth.pitchWheel(ch, val, { time: startTime + bend.time }); } catch { /* ignore */ }
-      }
-    }
-    // Marker pour stopSong : on n'a pas de Sequencer à pause, mais on peut
-    // simuler via state.sequencer = null et un dummy stop function plus tard.
-    state.sequencer = null;
-    return;
-  }
-
+  // SE et BGM passent par le Sequencer. Les SE/PH .mid ont été pre-process
+  // (scripts/fix-se-banks.mjs) pour que le CC 0 (bank MSB) soit inline sur
+  // la track avec program change, garantissant la propagation cross-track.
   const seq = new Sequencer(state.synth);
   // loadNewSongList prend un tableau de MIDI. On joue 1 song à la fois.
   // Le clone .slice(0) protège le buffer partagé entre playSong successifs.
