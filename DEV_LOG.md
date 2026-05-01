@@ -10,6 +10,80 @@ de la décompilation FR (`pokeemeraude`) + `@pkmn/sim` pour combats.
 
 ---
 
+## Session 74 — Phase 10 : LE bug systémique « CC continus figés »
+
+User feedback post-Session 73 : « partout en fait, désolé Claude. Lorsqu'on a
+fait l'engine GBA, tu m'as dit "Impossible!" et en 1 jour c'était fait... ».
+Encouragement de continuer malgré le coût.
+
+Audit Opus round 3 a finalement trouvé LA cause systémique de « notes pas 1:1
+partout » — ce qui a échappé aux 2 audits précédents :
+
+### Phase 10.1 — CC continus figés au noteOn (LA cause)
+
+**Décomp** : `MPlayMain` (m4a_1.s:1361-1442) parcourt CHAQUE V-blank tous les
+tracks et appelle `TrkVolPitSet` (m4a.c:765-808) si `MPT_FLG_VOLCHG` ou
+`MPT_FLG_PITCHG` est set. Ces flags sont set par `ply_vol`/`ply_pan`/`ply_bend`
+qui correspondent aux MIDI CC7/CC10/bend events. Donc une note longue voit
+le nouveau volume/pan/bend **immédiatement** quand un CC change pendant
+qu'elle joue.
+
+**Notre code (avant)** : `player.ts:184-195 valueAtTime(events, note.time)`
+LECTURE UNIQUE au noteOn. Toute la note est figée à l'état CC du moment du
+noteOn. Tous les swells (CC11), bends progressifs, pans-rampes du compositeur
+sont **complètement plats** chez nous vs GBA.
+
+**Architecture du fix** :
+- Refactor `synth.ts` : ajout d'un `volumeCtrl` GainNode dédié dans la chain
+  audio. La chain devient :
+  `source → env (ADSR shape, dépend QUE de velocity) → volumeCtrl (CC dynamique) → [panL, panR] → merger → master`
+- `ActiveNote` interface étendue : expose `volumeCtrl`, `panL`, `panR`,
+  `voiceKind`, `baseKey`, `midiNote`, `panFixed` pour que player.ts puisse
+  ramper les params en cours de note.
+- Helper `scheduleCcDuringNote(active, note, startTime, songVolNorm, events)`
+  dans player.ts : pour chaque CC event qui tombe entre noteOn et noteOff,
+  schedule `setValueAtTime` sur le param correspondant à l'instant audio.
+- Volume CC7/CC11 → `volumeCtrl.gain` (recompute trackVolume = volCc × expCc × songVolNorm)
+- Pan CC10 → `panL.gain` / `panR.gain` (formule linear décomp). Skip si voicegroup
+  override pan (`panFixed = true` pour drumkits).
+- Pitch bend → playbackRate (DS) ou frequency (square worklet / pgm wave osc).
+  Pour CGB, utilise `midiKeyToCgbFreqHz(midi+intSemis, fineAdjust)` 1:1 décomp.
+
+### Phase 10.2 — Pitch bend × bendRange (default 2 demi-tons)
+
+**Décomp** `m4a.c:793` : `bend = track->bend × track->bendRange`. Default
+`bendRange = 2` (m4a.c:245). tonejs/midi expose le bend normalisé ∈ [-1, 1]
+(= 14-bit / 8192). On multiplie par 2 pour avoir les semis effectifs.
+
+**Avant** : notre engine produisait la moitié de l'amplitude bend du décomp.
+
+### Vérifications
+
+- Typecheck propre après refactor
+- Modules synth/player chargent en preview
+- ActiveNote expose tous les params dynamiques nécessaires
+
+### Effets attendus
+
+- Notes longues avec swells (CC11) suivront la rampe au lieu d'être figées
+- Bends et glissandos avec amplitude correcte (×2)
+- Pans dynamiques (CC10 dans la durée d'une note) appliqués
+- Drumkits gardent leur pan fixe (panFixed) — pas de surrender CC10
+
+### Files modifiés Session 74
+
+- `src/engine/m4a/synth.ts` — volumeCtrl GainNode + ActiveNote étendu
+- `src/engine/m4a/player.ts` — scheduleCcDuringNote + bendRange ×2 + helpers top-level
+
+### Audit fausses alertes (Phase 10 - vérifications strictes)
+
+L'audit Opus a fait du bon travail mais quelques claims étaient flous. Tous
+vérifiés en lisant l'asm exact :
+- "rhythmPan non décodé" (Phase 9 audit) : NON, notre formule `(panY+128)/256` reproduit déjà le décomp
+- "velocity double-counted" (Phase 9 audit) : NON, `track->vol` = ply_vol (CC7), pas la velocity de la note précédente
+
+---
+
 ## Session 73 — Phase 9 : Audit son round 2 (notes individuelles 1:1)
 
 User feedback post-Session 72 : « j'entends encore des notes pas 1:1 GBA, y nous

@@ -30,15 +30,28 @@ import {
   cgbEnvelopeGoal, cgb3VolQuantize,
 } from './envelope';
 
-/** Une note jouée — référence pour stop/release. */
+/** Une note jouée — référence pour stop/release ET pour modulation continue
+ *  (CC7/CC10/CC11/pitch bend qui changent PENDANT la note, 1:1 décomp `MPlayMain`
+ *  qui ré-applique TrkVolPitSet à chaque V-blank quand MPT_FLG_VOLCHG/PITCHG set). */
 export interface ActiveNote {
   /** Source audio (oscillator, bufferSource, ou AudioWorkletNode pour square aliased / noise LFSR). */
   source: AudioBufferSourceNode | OscillatorNode | AudioWorkletNode;
-  /** Gain envelope. */
+  /** Gain envelope ADSR (ne dépend QUE de velocity, pas de trackVolume). */
   envelope: GainNode;
-  /** Pan L et R (1:1 décomp volMR/volML linéaires séparés, pas equal-power). */
+  /** Volume control dynamique (CC7 × CC11 × songVol). Updatable pendant la note. */
+  volumeCtrl: GainNode;
+  /** Pan L et R (1:1 décomp volMR/volML linéaires séparés, pas equal-power).
+   *  Updatables pendant la note pour CC10 dynamique. */
   panL: GainNode;
   panR: GainNode;
+  /** Type de voice (utilisé par player pour savoir comment appliquer pitch bend). */
+  voiceKind: 'square' | 'wave' | 'noise' | 'directsound';
+  /** baseKey pour DirectSound (calcul du ratio playbackRate sur pitch bend dynamique). */
+  baseKey: number;
+  /** midiNote courant (pour recalcul pitch CGB sur bend dynamique). */
+  midiNote: number;
+  /** True si le voicegroup override le pan (drumkits) → CC10 dynamique ignoré. */
+  panFixed: boolean;
   /** Stop la note (release ADSR puis stop). */
   stop(time?: number): void;
   /** Timestamp AudioContext de création (pour voice stealing FIFO). */
@@ -308,31 +321,37 @@ export async function playNote(
   //   - DirectSound (PCM)  : 0-255 multiplicatif, exponentiel (cf. m4a_1.s)
   //   - CGB (square/noise) : 0-7 / 0-15 par steps, linéaire (cf. m4a.c CgbSound)
   // Helpers dans `./envelope.ts`.
+  //
+  // ARCHITECTURE 1:1 décomp : env (ADSR shape) ne dépend QUE de velocity et du
+  // master volume hardware-fixe. trackVolume (= CC7 × CC11 × songVol) est
+  // appliqué via volumeCtrl SÉPARÉ qui peut être mis à jour en cours de note
+  // pour suivre les changements MIDI dynamiques (= 1:1 MPlayMain qui ré-applique
+  // TrkVolPitSet à chaque V-blank quand MPT_FLG_VOLCHG set).
   const env = ctx.createGain();
-  // Velocity scaled par trackVolume (= MIDI CC7 × CC11 / 127² normalisé) — 1:1 décomp TrkVolPitSet
-  const velNorm = (velocity / 127) * trackVolume;
   const cgb = isCgbVoice(voice);
+  const velNorm01 = velocity / 127;  // 0-1 fixe au noteOn
 
   // Master volume DS-only : 1:1 `m4a_1.s:265-269` post-multiplie l'envelope par
   // `(masterVol+1)/16`. Default masterVol=12 (m4a.c:80) → 13/16 = 0.8125.
   // Les voices CGB passent par CgbModVol qui n'a pas ce factor → identité (×1).
   const DS_MASTER_VOL = 13 / 16;
-  const peakGain = cgb ? velNorm : velNorm * DS_MASTER_VOL;
+  const peakGain = cgb ? velNorm01 : velNorm01 * DS_MASTER_VOL;
 
   let sustainGain: number;
   let aTime: number;
   let cgbGoal = 15;  // utilisé seulement pour CGB
   const isPgmWave = voice.type === 'programmable_wave';
   if (cgb) {
-    // envelopeGoal CGB scale avec velNorm courant — moins de volume track =
+    // envelopeGoal CGB scale avec velNorm courant — moins de velocity =
     // moins de steps total = attack/decay plus rapides (1:1 m4a.c:910-919).
-    cgbGoal = cgbEnvelopeGoal(velNorm);
-    sustainGain = cgbSustainToGain(envelope.sustain, cgbGoal) * velNorm;
+    // Note : envelopeGoal dépend de velocity ici, PAS de trackVolume (qui est
+    // appliqué via volumeCtrl séparé).
+    cgbGoal = cgbEnvelopeGoal(velNorm01);
+    sustainGain = cgbSustainToGain(envelope.sustain, cgbGoal) * velNorm01;
     aTime = cgbAttackTimeSec(envelope.attack, cgbGoal);
     // Programmable wave (channel 3) quantization NR32 1:1 `m4a.c:1209 gCgb3Vol[]`.
-    // Hardware GBA n'a que 4 niveaux distincts (mute/25%/50%/100% + zone undefined).
     if (isPgmWave) {
-      sustainGain = cgb3VolQuantize(sustainGain / Math.max(1e-6, velNorm)) * velNorm;
+      sustainGain = cgb3VolQuantize(sustainGain / Math.max(1e-6, velNorm01)) * velNorm01;
     }
   } else {
     sustainGain = dsSustainToGain(envelope.sustain) * peakGain;
@@ -350,7 +369,7 @@ export async function playNote(
   // DECAY : descend de peak vers sustainGain
   if (cgb) {
     // CGB : linear ramp peak→sustain en cgbDecayTimeSec, ou step instantané si decay=0
-    const sustainLevel = velNorm > 0 ? sustainGain / velNorm : 0;
+    const sustainLevel = velNorm01 > 0 ? sustainGain / velNorm01 : 0;
     const dTime = cgbDecayTimeSec(envelope.decay, sustainLevel, cgbGoal);
     if (dTime > 0) {
       env.gain.linearRampToValueAtTime(sustainGain, startTime + aTime + dTime);
@@ -388,10 +407,17 @@ export async function playNote(
   panR.gain.value = (panY + 128) / 256;
   const merger = ctx.createChannelMerger(2);
 
-  // Connect graph : source → env → [panL, panR] → merger(L,R) → masterGain
+  // volumeCtrl : node de gain dédié pour les CC dynamiques (CC7 × CC11 × songVol).
+  // Updatable pendant la note via player.ts pour suivre les changements MIDI.
+  // 1:1 décomp `MPlayMain` qui ré-applique TrkVolPitSet à chaque V-blank.
+  const volumeCtrl = ctx.createGain();
+  volumeCtrl.gain.value = trackVolume;
+
+  // Connect graph : source → env → volumeCtrl → [panL, panR] → merger(L,R) → masterGain
   source.connect(env);
-  env.connect(panL);
-  env.connect(panR);
+  env.connect(volumeCtrl);
+  volumeCtrl.connect(panL);
+  volumeCtrl.connect(panR);
   panL.connect(merger, 0, 0);  // input port 0 (signal) → output channel 0 (L)
   panR.connect(merger, 0, 1);  // input port 0 (signal) → output channel 1 (R)
   merger.connect(getMasterGain());
@@ -442,7 +468,7 @@ export async function playNote(
       // modM ∈ [-depth, +depth] avec LFO triangle. Pour depth=127 :
       //   facteur ∈ [(0+128)/128 = 1, (127+128)/128 ≈ 2] → 0% à 100% du velNorm en mod.
       // Centré sur velNorm avec amplitude ±velNorm × depth/127.
-      const tremoloDepth = (lfo.depth / 127) * velNorm;
+      const tremoloDepth = (lfo.depth / 127) * velNorm01;
       lfoGain.gain.value = 0;
       lfoGain.gain.setValueAtTime(0, startTime);
       lfoGain.gain.linearRampToValueAtTime(tremoloDepth, startTime + lfoDelaySec + 0.05);
@@ -473,11 +499,23 @@ export async function playNote(
     (source as OscillatorNode | AudioBufferSourceNode).start(startTime);
   }
 
+  // voiceKind pour player.ts (savoir comment appliquer pitch bend dynamique)
+  const voiceKind: 'square' | 'wave' | 'noise' | 'directsound' =
+    voice.type === 'square_1' || voice.type === 'square_1_alt' ||
+    voice.type === 'square_2' || voice.type === 'square_2_alt' ? 'square' :
+    voice.type === 'programmable_wave' ? 'wave' :
+    voice.type === 'noise' || voice.type === 'noise_alt' ? 'noise' : 'directsound';
+
   const note: ActiveNote = {
     source,
     envelope: env,
+    volumeCtrl,
     panL,
     panR,
+    voiceKind,
+    baseKey: (voice as { baseKey?: number }).baseKey ?? 60,
+    midiNote,
+    panFixed: voicePan !== 0,
     startedAt: startTime,
     stop(time?: number) {
       const t = time ?? ctx.currentTime;
@@ -495,7 +533,7 @@ export async function playNote(
         // release=0 → cutoff "quasi-instantané" (3ms fade vs hardware oscillator off).
         // Cf. m4a.c:1064-1074 — hardware GBA a un filtrage analog naturel qu'on
         // approxime via cette mini-rampe pour éviter le click Web Audio.
-        const currentLevel = velNorm > 0 ? env.gain.value / velNorm : 0;
+        const currentLevel = velNorm01 > 0 ? env.gain.value / velNorm01 : 0;
         const rTime = cgbReleaseTimeSec(envelope.release, currentLevel, cgbGoal);
         if (rTime > 0) {
           env.gain.linearRampToValueAtTime(0, t + rTime);
@@ -519,7 +557,7 @@ export async function playNote(
       let totalDuration = releaseTotalSec;
       const pe = (voice as { pseudoEchoVolume?: number; pseudoEchoLength?: number });
       if (pe.pseudoEchoVolume && pe.pseudoEchoLength) {
-        const echoVol = velNorm * (pe.pseudoEchoVolume / 256);
+        const echoVol = velNorm01 * (pe.pseudoEchoVolume / 256);
         const echoSec = pe.pseudoEchoLength / 60;
         env.gain.setTargetAtTime(echoVol, t + releaseTotalSec, 0.005);
         env.gain.setTargetAtTime(0, t + releaseTotalSec + echoSec, 0.005);
