@@ -157,6 +157,28 @@ export async function playSong(
   // songVolume 0-128 → 0-1 master gain. Default 128 = full.
   const songVolNorm = songVolume !== null ? Math.max(0, Math.min(1, songVolume / 128)) : 1.0;
 
+  // Pre-fire le bank select (CC 0 MSB + CC 32 LSB) sur le synth AVANT que
+  // le Sequencer joue. Spessasynth's Sequencer ne propage pas toujours le
+  // bank select cross-track (= bug observé : SE intro_blast track 0 envoie
+  // CC 0=115 mais program change track 1 utilise bank 0). En pré-fixant le
+  // bank via API directe, on s'assure que le bon preset est sélectionné.
+  for (const t of song.tracks) {
+    const cc0 = t.controlChanges?.[0];
+    if (cc0?.length) {
+      const bankMSB = Math.round(cc0[cc0.length - 1].value * 127);
+      try { state.synth.controllerChange(t.channel, 0, bankMSB); } catch { /* ignore */ }
+    }
+    const cc32 = t.controlChanges?.[32];
+    if (cc32?.length) {
+      const bankLSB = Math.round(cc32[cc32.length - 1].value * 127);
+      try { state.synth.controllerChange(t.channel, 32, bankLSB); } catch { /* ignore */ }
+    }
+    // Pre-fire le program change aussi pour fixer (bank, program) AVANT seq.play().
+    if (t.instrument?.number !== undefined && t.notes.length > 0) {
+      try { state.synth.programChange(t.channel, t.instrument.number); } catch { /* ignore */ }
+    }
+  }
+
   const seq = new Sequencer(state.synth);
   // loadNewSongList prend un tableau de MIDI. On joue 1 song à la fois.
   // Le clone .slice(0) protège le buffer partagé entre playSong successifs.
