@@ -604,11 +604,12 @@ export function m4aMPlayAllStop(): void {
  *  TODO Phase 7 : router via m4aMPlayAllStop + start short SFX track. */
 export function PlaySE(_seId: number): void { /* TODO audio SFX */ }
 
-/** Map species ID → species name (= cri filename `cries/<name>.wav`). */
+/** Map species ID → species name (= cri filename `cries/<name>.wav`).
+ *  Values match décomp `include/constants/species.h` (SPECIES_KYOGRE=404 etc). */
 const SPECIES_NAMES: Record<number, string> = {
-  0x170: 'kyogre',
-  0x171: 'groudon',
-  0x172: 'rayquaza',
+  404: 'kyogre',     // SPECIES_KYOGRE
+  405: 'groudon',    // SPECIES_GROUDON
+  406: 'rayquaza',   // SPECIES_RAYQUAZA
   // TODO étendre selon besoin (151 species + extensions Hoenn).
 };
 
@@ -623,9 +624,10 @@ export function PlayCryInternal(
   void import('./music').then(({ playCry }) => playCry(name)).catch(() => { /* silent */ });
 }
 
-/** 1:1 décomp constants pour PlayCryInternal. */
-export const SPECIES_GROUDON = 0x171;
-export const SPECIES_KYOGRE = 0x170;
+/** 1:1 décomp constants pour PlayCryInternal (cf. species.h, sound.h). */
+export const SPECIES_GROUDON = 405;
+export const SPECIES_KYOGRE = 404;
+export const SPECIES_RAYQUAZA = 406;
 export const CRY_PRIORITY_NORMAL = 2;
 export const CRY_MODE_NORMAL = 0;
 

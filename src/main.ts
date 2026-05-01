@@ -1,4 +1,30 @@
 import Phaser from 'phaser';
+
+// ─── Dev cache-bust : monkey-patch fetch() pour ajouter ?_cb=<bootTimestamp>
+// aux URLs locales (relatives ou same-origin). Chaque rechargement de page
+// = nouveau timestamp → contourne HTTP cache du browser sur les assets PNG/.bin/
+// .pal/.wav/.json/.mid. Évite les bugs de cache stale en dev (ex: vieux tilemap
+// chargé alors qu'on vient de modifier l'extracteur).
+//
+// Production (import.meta.env.PROD) : skip — laissons le cache normal.
+if (!import.meta.env.PROD) {
+  const _origFetch = window.fetch.bind(window);
+  const _bootCb = String(Date.now());
+  window.fetch = (input, init) => {
+    try {
+      const u = typeof input === 'string' ? input : (input instanceof URL ? input.href : input.url);
+      // Local URL = relative path, or same origin /decomp/* / /src/* etc.
+      const isLocal = u.startsWith('/') || u.startsWith(window.location.origin);
+      if (isLocal && !u.includes('_cb=')) {
+        const sep = u.includes('?') ? '&' : '?';
+        const newUrl = `${u}${sep}_cb=${_bootCb}`;
+        return _origFetch(newUrl, init);
+      }
+    } catch { /* fallthrough */ }
+    return _origFetch(input as any, init);
+  };
+}
+
 import { TestGbaScene } from './scenes/TestGbaScene';
 import { GameScene } from './scenes/GameScene';
 import { DebugOverlayScene } from './scenes/DebugOverlayScene';

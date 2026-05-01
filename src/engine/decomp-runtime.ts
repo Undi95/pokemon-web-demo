@@ -200,6 +200,10 @@ export class PaletteFade {
   targetR = 31;
   targetG = 31;
   targetB = 31;
+  /** 1:1 décomp `gPaletteFade_selectedPalettes` u32 mask : bits 0-15 = BG palettes,
+   *  bits 16-31 = OBJ palettes. Only selected palettes are blended each frame.
+   *  Default 0xFFFFFFFF = all (matches BeginNormalPaletteFade default with PALETTES_ALL). */
+  selectedPalettes = 0xFFFFFFFF;
 }
 
 // ─── gMain (1:1 décomp struct Main) ──────────────────────────────────────────
@@ -734,7 +738,7 @@ export class DecompRuntime {
    *
    *  La string `color` (= name like "RGB_WHITEALPHA" ou "RGB(9, 10, 10)") doit
    *  être parsée pour extraire le RGB15 target. */
-  BeginNormalPaletteFade(_palettes: string | number, delay: number, startY: number, endY: number, color: string | number): void {
+  BeginNormalPaletteFade(palettes: string | number, delay: number, startY: number, endY: number, color: string | number): void {
     this.gPaletteFade.active = true;
     this.gPaletteFade.startY = startY;
     this.gPaletteFade.endY = endY;
@@ -742,6 +746,31 @@ export class DecompRuntime {
     this.gPaletteFade.totalFrames = Math.max(1, Math.abs(endY - startY));
     this.gPaletteFade.delayPerStep = delay;
     this.gPaletteFade.delayRemaining = delay;
+    // Parse selected palettes mask (1:1 décomp BG bits 0-15 + OBJ bits 16-31).
+    // Décomp: u32 mask, BG palettes 0-15 = bits 0-15, OBJ palettes 0-15 = bits 16-31.
+    // Default = "all" (e.g. PALETTES_ALL = 0xFFFFFFFF).
+    let palMask = 0xFFFFFFFF;
+    if (typeof palettes === 'number') {
+      palMask = palettes >>> 0;
+    } else if (typeof palettes === 'string') {
+      // Strings like "PALETTES_ALL", "PALETTES_BG", "PALETTES_BG & ~(0x21)", etc.
+      // Best-effort eval: substitute known constants then parse.
+      const PALETTES_ALL = 0xFFFFFFFF;
+      const PALETTES_BG = 0xFFFF;
+      const PALETTES_OBJECTS = 0xFFFF0000;
+      try {
+        const expr = palettes
+          .replace(/PALETTES_ALL/g, '0xFFFFFFFF')
+          .replace(/PALETTES_BG/g, '0xFFFF')
+          .replace(/PALETTES_OBJECTS/g, '0xFFFF0000');
+        // eslint-disable-next-line no-new-func
+        palMask = (new Function(`return (${expr}) >>> 0`))();
+      } catch {
+        palMask = 0xFFFFFFFF;
+        void PALETTES_ALL; void PALETTES_BG; void PALETTES_OBJECTS;
+      }
+    }
+    this.gPaletteFade.selectedPalettes = palMask >>> 0;
     // Parse target color → RGB15 u16. Color peut être :
     //   - string macro: "RGB_BLACK" / "RGB_WHITEALPHA" / "RGB(9, 10, 10)"
     //   - number direct: u16 RGB15 packed (cas auto code qui résout RGB() inline)
@@ -779,23 +808,37 @@ export class DecompRuntime {
     this._applyPaletteFadeStep(startY);
   }
 
-  /** Helper : applique le blend Unfaded → target sur tout gPlttBufferFaded. */
+  /** Helper : applique le blend Unfaded → target sur les palettes SÉLECTIONNÉES
+   *  uniquement. 1:1 décomp UpdateNormalPaletteFade : itère bank par bank
+   *  (16 entries chacun), skip les banks non-sélectionnés.
+   *
+   *  Pour les palettes NON sélectionnées : Faded[i] reste intact (= valeur écrite
+   *  par CpuCopy16 sprite cb, ou de la frame précédente). Critique pour bank 5
+   *  Rayquaza scene : excluded de la fade `& ~(0x21)` mais doit garder couleurs
+   *  d'origine (sky bleu, body green, etc) pendant que les autres banks fadent. */
   private _applyPaletteFadeStep(brightness: number): void {
     const tR = this.gPaletteFade.targetR;
     const tG = this.gPaletteFade.targetG;
     const tB = this.gPaletteFade.targetB;
     const w = brightness;  // 0..16 (16 = full target)
     const inv = 16 - w;    // 0..16 (16 = full unfaded)
-    for (let i = 0; i < 512; i++) {
-      const u = this.gPlttBufferUnfaded.get(i);
-      const r5 = u & 0x1F;
-      const g5 = (u >> 5) & 0x1F;
-      const b5 = (u >> 10) & 0x1F;
-      const newR = (r5 * inv + tR * w + 8) >> 4;
-      const newG = (g5 * inv + tG * w + 8) >> 4;
-      const newB = (b5 * inv + tB * w + 8) >> 4;
-      const packed = (newR & 0x1F) | ((newG & 0x1F) << 5) | ((newB & 0x1F) << 10);
-      this.gPlttBufferFaded.set(i, packed);
+    const selected = this.gPaletteFade.selectedPalettes >>> 0;
+    // 32 banks total (16 BG + 16 OBJ). Each bank = 16 entries u16.
+    for (let bank = 0; bank < 32; bank++) {
+      if (((selected >>> bank) & 1) === 0) continue;  // skip non-selected
+      const baseIdx = bank * 16;
+      for (let entry = 0; entry < 16; entry++) {
+        const i = baseIdx + entry;
+        const u = this.gPlttBufferUnfaded.get(i);
+        const r5 = u & 0x1F;
+        const g5 = (u >> 5) & 0x1F;
+        const b5 = (u >> 10) & 0x1F;
+        const newR = (r5 * inv + tR * w + 8) >> 4;
+        const newG = (g5 * inv + tG * w + 8) >> 4;
+        const newB = (b5 * inv + tB * w + 8) >> 4;
+        const packed = (newR & 0x1F) | ((newG & 0x1F) << 5) | ((newB & 0x1F) << 10);
+        this.gPlttBufferFaded.set(i, packed);
+      }
     }
   }
 
