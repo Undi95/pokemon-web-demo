@@ -10,6 +10,102 @@ de la décompilation FR (`pokeemeraude`) + `@pkmn/sim` pour combats.
 
 ---
 
+## Session 73 — Phase 9 : Audit son round 2 (notes individuelles 1:1)
+
+User feedback post-Session 72 : « j'entends encore des notes pas 1:1 GBA, y nous
+manque que ça ». L'OST est reconnaissable, mais des notes individuelles
+divergent encore vs émulateur GBA.
+
+Audit Opus round 2 a identifié 5 priorités. Après vérification stricte vs
+décomp asm, **2 d'entre elles étaient des fausses alertes** (l'audit avait mal
+lu certaines parties de m4a_1.s) :
+
+### Audit fausses alertes (vérifiées et démythifiées)
+- **B.3 « velocity double-counted »** : FAUX. `track->vol` est mis à jour par
+  `ply_vol` (= MIDI CC7), pas par `ply_note`. Cf. `m4a_1.s:973`. Notre formule
+  `velocity × trackVolume` est équivalente au décomp.
+- **B.4 « rhythmPan non décodé »** : FAUX. Notre pan logic actuelle reproduit
+  déjà la formule décomp `(panY+128)/256` / `(127-panY)/256` quand voice.pan ≠ 0.
+  L'extracteur lit la valeur source (pas le byte encodé `0x80 | val`), ce qui
+  donne directement le pan 0-127 attendu par notre formule.
+
+### Phase 9.1 — Pitch bend CGB via fineAdjust (au lieu de 2^(semis/12))
+
+**Cause** : `synth.ts` faisait `cgbHz × Math.pow(2, semis/12)` après le lookup
+table CGB. Mais la table `gCgbFreqTable` n'est PAS tempérée — elle quantifie
+sur le hardware NRx3 11-bit. Donc multiplier 2^(semis/12) sur une valeur déjà
+non-tempérée double le détune.
+
+**Décomp** (`m4a_1.s:1414-1421` + `m4a.c:830-843`) : passe `(track->pitM & 0xFF)`
+comme `fineAdjust` à `MidiKeyToCgbFreq`, qui interpole linéairement entre
+`rawVal(key)` et `rawVal(key+1)`.
+
+**Fix** : pour square + programmable_wave, décompose `pitchBendSemis` en
+intSemis + fracSemis, calcule `fineAdjust = round(fracSemis * 256)` ∈ [0, 255],
+appelle `midiKeyToCgbFreqHz(midiNote + intSemis, fineAdjust)`.
+
+Effet : vibratos / glissandos / portamento CGB préservent le grain vintage.
+
+### Phase 9.2 — gCgb3Vol quantization (programmable wave)
+
+**Cause** : programmable_wave (channel 3) sur GBA n'a que 4 niveaux NR32
+distincts (mute/25%/50%/100%) + une zone « undefined » (env 10-13). Notre
+engine appliquait un gain continu 0-1 → trop lisse.
+
+**Décomp** : `m4a_tables.c:168-175` :
+```c
+const u8 gCgb3Vol[] = {
+    0x00, 0x00,                 // env 0-1 → mute
+    0x60, 0x60, 0x60, 0x60,     // env 2-5 → 25%
+    0x40, 0x40, 0x40, 0x40,     // env 6-9 → 50%
+    0x80, 0x80, 0x80, 0x80,     // env 10-13 → undefined (silence)
+    0x20, 0x20,                 // env 14-15 → 100%
+};
+```
+
+**Fix** : helper `cgb3VolQuantize(continuousGain)` dans envelope.ts. Quantifie
+sustainGain selon le mapping ci-dessus pour les voices `programmable_wave`.
+
+Effet : programmable wave retrouvent le caractère « step » 8-bit caractéristique.
+
+### Phase 9.3 — Master volume DS-only
+
+**Cause** : Phase 8 appliquait `masterVolNorm = 12/15 ≈ 0.8` à TOUS les voices
+via le trackVolume. Mais le décomp applique `(masterVol+1)/16` UNIQUEMENT dans
+SoundMainRAM (= path DirectSound, `m4a_1.s:265-269`). Les voices CGB passent
+par CgbModVol qui n'utilise pas masterVolume → identité (×1).
+
+**Fix** : retire masterVolNorm du player.ts trackVolume. Applique
+`DS_MASTER_VOL = 13/16 = 0.8125` (formule exacte (masterVol+1)/16) dans synth.ts
+seulement pour les voices DirectSound (= peakGain × DS_MASTER_VOL).
+
+Effet : le mix DS/CGB retrouve son équilibre original (avant : DS et CGB
+identiquement atténués ; maintenant : seulement DS).
+
+### Files modifiés Session 73
+
+- `src/engine/m4a/envelope.ts` — ajout `cgb3VolQuantize`
+- `src/engine/m4a/synth.ts` — fineAdjust pitch bend (square + pgm wave) +
+  cgb3VolQuantize pour pgm wave + DS_MASTER_VOL DS-only
+- `src/engine/m4a/player.ts` — retire masterVolNorm du trackVolume global
+
+### Vérifications
+
+- A4 (MIDI 69) sans bend = 439.84 Hz ✓
+- A4 +0.5 semi via fineAdjust=128 = 451.97 Hz (correctement interpolé entre A4 et A#4=464.79)
+- gCgb3Vol quantize 0/0.2/0.5/0.7/1.0 → 0/0.25/0.5/0/1.0 ✓ (4 niveaux + zone undefined)
+- Typecheck propre
+
+### Reste connu (pas adressé Session 73, audit a confirmé)
+
+- Voice stealing FIFO vs priority-based : audible quand des leads volent les bass
+- LFO triangle continu vs quantifié 60 Hz : grain LFO perdu sur longs vibratos
+- DirectSound resample auto 48 kHz : aliasing inverse manquant
+- Square envelope 16-step staircase quantification : grain CGB partiellement perdu
+- NR10 sweep (channel 1) : 3 voices dans rs_sfx_2 (SE only, faible impact)
+
+---
+
 ## Session 72 — Phase 8 : Audit son complet + 1:1 GBA refactor
 
 User feedback : « tout sonne faux vs émulateur, les notes sont bonnes les

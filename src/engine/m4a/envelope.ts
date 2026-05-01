@@ -122,3 +122,23 @@ export function cgbReleaseTimeSec(release: number, currentLevel: number, envelop
   const stepsNeeded = Math.max(1, Math.round(currentLevel * envelopeGoal));
   return stepsNeeded * (release + 1) * CGB_TICK_PERIOD_SEC;
 }
+
+/** gCgb3Vol — quantization NRx2 du programmable wave (channel 3) GBA.
+ *  1:1 décomp `m4a_tables.c:168-175` :
+ *    envelopeVolume 0-1   → 0x00 → silence (0%)
+ *    envelopeVolume 2-5   → 0x60 → NR32 bits 5+6 = 25%
+ *    envelopeVolume 6-9   → 0x40 → NR32 bit 6   = 50%
+ *    envelopeVolume 10-13 → 0x80 → NR32 bit 7   = undefined (silence sur la plupart des emul)
+ *    envelopeVolume 14-15 → 0x20 → NR32 bit 5   = 100%
+ *  Le programmable wave hardware GBA n'a que 4 niveaux distincts + zone undefined.
+ *  Notre engine doit quantifier `sustainGain` selon ce mapping pour préserver le grain.
+ */
+export function cgb3VolQuantize(continuousGain: number): number {
+  // continuousGain 0-1 → envelopeVolume 0-15 → NR32 amplitude.
+  const env = Math.max(0, Math.min(15, Math.round(continuousGain * 15)));
+  if (env <= 1) return 0;        // silence
+  if (env <= 5) return 0.25;      // 25%
+  if (env <= 9) return 0.5;       // 50%
+  if (env <= 13) return 0;        // undefined → silence (mGBA emul)
+  return 1.0;                     // 100%
+}

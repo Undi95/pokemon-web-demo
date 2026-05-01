@@ -184,12 +184,13 @@ export async function playSong(
       const volCc = valueAtTime(volEvents, note.time, 1.0);
       const expCc = valueAtTime(expEvents, note.time, 1.0);
       const panCc = valueAtTime(panEvents, note.time, 0.5);
-      // Per-song volume 1:1 décomp `mid2agb -Vxxx` arg (cf. midi.cfg) + master
-      // volume default GBA (12/15 ≈ 0.8125, m4a.c:80). Scale appliqué au
-      // trackVolume pour rester cohérent avec velocity/CC7/CC11 multipliés.
+      // Per-song volume 1:1 décomp `mid2agb -Vxxx` arg (cf. midi.cfg).
+      // NB : le master volume `(masterVol+1)/16` (default 13/16, m4a.c:80) est
+      // appliqué uniquement côté DirectSound dans `m4a_1.s SoundMainRAM` — les
+      // voices CGB passent par CgbModVol qui n'utilise pas ce factor. Donc on
+      // l'applique côté synth.ts pour les DS seulement, pas ici globalement.
       const songVolNorm = songVolume !== null ? songVolume / 128 : 1.0;
-      const masterVolNorm = 12 / 15;  // default SoundInfo.masterVolume = 12 → ~0.8125
-      const trackVolume = volCc * expCc * songVolNorm * masterVolNorm;
+      const trackVolume = volCc * expCc * songVolNorm;
       const panMidi = Math.round(panCc * 127);
       const bend = valueAtTime(sortedBends as CcEvent[], note.time, 0);
       // Modulation depth via CC1 (mod wheel). M4A traduit en track->mod 0-127.

@@ -27,7 +27,7 @@ import {
   isCgbVoice,
   dsAttackTimeSec, dsEnvTimeConstant, dsSustainToGain,
   cgbAttackTimeSec, cgbSustainToGain, cgbDecayTimeSec, cgbReleaseTimeSec,
-  cgbEnvelopeGoal,
+  cgbEnvelopeGoal, cgb3VolQuantize,
 } from './envelope';
 
 /** Une note jouée — référence pour stop/release. */
@@ -191,8 +191,14 @@ export async function playNote(
       // le double lowpass DAC à 6.5 kHz dans audio-context.ts atténue les
       // harmoniques aigues comme le ferait le hardware.
       await ensureSquareWorklet();
-      const cgbHz = midiKeyToCgbFreqHz(midiNote);
-      const finalFreq = cgbHz * Math.pow(2, pitchBendSemis / 12);
+      // Pitch bend CGB 1:1 décomp `m4a.c:793-805 TrkVolPitSet` + `MidiKeyToCgbFreq`.
+      // Le décomp passe `(track->pitM & 0xFF)` comme fineAdjust à la table,
+      // qui interpole entre rawVal(key) et rawVal(key+1). Notre code multipliait
+      // par `2^(semis/12)` ce qui DOUBLE le détune (la table CGB est non-tempérée).
+      const intSemis = Math.floor(pitchBendSemis);
+      const fracSemis = pitchBendSemis - intSemis;
+      const fineAdjust = Math.max(0, Math.min(255, Math.round(fracSemis * 256)));
+      const finalFreq = midiKeyToCgbFreqHz(midiNote + intSemis, fineAdjust);
       const dutyCycle = squarePatternToDuty(voice.squarePattern);
       const node = createSquareNode(finalFreq, dutyCycle);
       if (!node) {
@@ -280,7 +286,11 @@ export async function playNote(
         osc.type = 'triangle';
       }
       // Pitch CGB exact (channel 3 utilise le même MidiKeyToCgbFreq que square).
-      osc.frequency.value = midiKeyToCgbFreqHz(midiNote) * Math.pow(2, pitchBendSemis / 12);
+      // Pitch bend via fineAdjust (table interpolation, 1:1 décomp).
+      const wIntSemis = Math.floor(pitchBendSemis);
+      const wFracSemis = pitchBendSemis - wIntSemis;
+      const wFineAdjust = Math.max(0, Math.min(255, Math.round(wFracSemis * 256)));
+      osc.frequency.value = midiKeyToCgbFreqHz(midiNote + wIntSemis, wFineAdjust);
       source = osc;
       envelope = voice.envelope;
       break;
@@ -303,26 +313,38 @@ export async function playNote(
   const velNorm = (velocity / 127) * trackVolume;
   const cgb = isCgbVoice(voice);
 
+  // Master volume DS-only : 1:1 `m4a_1.s:265-269` post-multiplie l'envelope par
+  // `(masterVol+1)/16`. Default masterVol=12 (m4a.c:80) → 13/16 = 0.8125.
+  // Les voices CGB passent par CgbModVol qui n'a pas ce factor → identité (×1).
+  const DS_MASTER_VOL = 13 / 16;
+  const peakGain = cgb ? velNorm : velNorm * DS_MASTER_VOL;
+
   let sustainGain: number;
   let aTime: number;
   let cgbGoal = 15;  // utilisé seulement pour CGB
+  const isPgmWave = voice.type === 'programmable_wave';
   if (cgb) {
     // envelopeGoal CGB scale avec velNorm courant — moins de volume track =
     // moins de steps total = attack/decay plus rapides (1:1 m4a.c:910-919).
     cgbGoal = cgbEnvelopeGoal(velNorm);
     sustainGain = cgbSustainToGain(envelope.sustain, cgbGoal) * velNorm;
     aTime = cgbAttackTimeSec(envelope.attack, cgbGoal);
+    // Programmable wave (channel 3) quantization NR32 1:1 `m4a.c:1209 gCgb3Vol[]`.
+    // Hardware GBA n'a que 4 niveaux distincts (mute/25%/50%/100% + zone undefined).
+    if (isPgmWave) {
+      sustainGain = cgb3VolQuantize(sustainGain / Math.max(1e-6, velNorm)) * velNorm;
+    }
   } else {
-    sustainGain = dsSustainToGain(envelope.sustain) * velNorm;
+    sustainGain = dsSustainToGain(envelope.sustain) * peakGain;
     aTime = dsAttackTimeSec(envelope.attack);
   }
 
-  // ATTACK : ramp 0→peak (velNorm) sur aTime, ou peak instantané si attack=0
+  // ATTACK : ramp 0→peakGain (= velNorm × DS_MASTER_VOL pour DS, velNorm pour CGB)
   if (envelope.attack <= 0) {
-    env.gain.setValueAtTime(velNorm, startTime);
+    env.gain.setValueAtTime(peakGain, startTime);
   } else {
     env.gain.setValueAtTime(0, startTime);
-    env.gain.linearRampToValueAtTime(velNorm, startTime + aTime);
+    env.gain.linearRampToValueAtTime(peakGain, startTime + aTime);
   }
 
   // DECAY : descend de peak vers sustainGain
