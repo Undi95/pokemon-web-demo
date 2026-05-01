@@ -74,124 +74,11 @@ export async function loadMidi(url: string): Promise<Midi> {
   return midi;
 }
 
-/** Type CC event minimal (= sous-ensemble du @tonejs/midi ControlChange). */
-type CcEvent = { time: number; value: number };
-
-/** valueAtTime(events, t, default) : trouve le dernier event ≤ t (events triés par time), ou default. */
-function valueAtTime(events: CcEvent[], t: number, defaultVal: number): number {
-  let val = defaultVal;
-  for (const ev of events) {
-    if (ev.time > t) break;
-    val = ev.value;
-  }
-  return val;
-}
-
-/** Calcule le ratio playbackRate DirectSound pour une note + bend semitones.
- *  baseFreq = midiNoteToFreq(baseKey), noteFreq = midiNoteToFreq(midi) × 2^(bend/12). */
-function dsPlaybackRate(midiNote: number, baseKey: number, bendSemis: number): number {
-  const noteFreq = 440 * Math.pow(2, (midiNote - 69) / 12);
-  const baseFreq = 440 * Math.pow(2, (baseKey - 69) / 12);
-  return (noteFreq / baseFreq) * Math.pow(2, bendSemis / 12);
-}
-
-/** 1:1 décomp MPlayMain : ré-applique TrkVolPitSet à chaque V-blank quand
- *  MPT_FLG_VOLCHG/PITCHG set. Notre player programme les CC events qui tombent
- *  pendant la note active sur les AudioParams correspondants.
- *
- *  `note.duration` (tonejs) inclut déjà gateTime/extra pour la durée note ON ;
- *  on schedule jusqu'à noteOff (= release).
- */
-async function scheduleCcDuringNote(
-  active: ActiveNote,
-  note: { time: number; duration: number; midi: number },
-  startTime: number,
-  songVolNorm: number,
-  events: { volEvents: CcEvent[]; expEvents: CcEvent[]; panEvents: CcEvent[]; sortedBends: CcEvent[] },
-): Promise<void> {
-  const noteOnTime = startTime + note.time;
-  const noteEnd = noteOnTime + note.duration;
-  // Import dynamique du helper CGB pitch (évite cycle d'import).
-  const { midiKeyToCgbFreqHz } = await import('./cgb-pitch');
-  const BEND_RANGE = 2;
-
-  // Volume : CC7/CC11 → volumeCtrl.gain (= track->vol × volX × songVol). CC events
-  // arrivent indifféremment sur volEvents (CC7) ou expEvents (CC11) ; on doit
-  // recomputer le PRODUIT à chaque event timestamp parmi les deux listes.
-  const volTimestamps: number[] = [];
-  for (const ev of events.volEvents) {
-    if (ev.time > note.time && startTime + ev.time <= noteEnd) volTimestamps.push(ev.time);
-  }
-  for (const ev of events.expEvents) {
-    if (ev.time > note.time && startTime + ev.time <= noteEnd) volTimestamps.push(ev.time);
-  }
-  volTimestamps.sort((a, b) => a - b);
-  for (const tEv of volTimestamps) {
-    const newVolCc = valueAtTime(events.volEvents, tEv, 1.0);
-    const newExpCc = valueAtTime(events.expEvents, tEv, 1.0);
-    const newTrackVol = newVolCc * newExpCc * songVolNorm;
-    try { active.volumeCtrl.gain.setValueAtTime(newTrackVol, startTime + tEv); } catch { /* ignore */ }
-  }
-
-  // Pan CC10 → panL.gain / panR.gain. Skip si voicegroup override pan (panFixed).
-  if (!active.panFixed) {
-    for (const ev of events.panEvents) {
-      const evAudio = startTime + ev.time;
-      if (ev.time > note.time && evAudio <= noteEnd) {
-        const newPan = Math.round(ev.value * 127);
-        const newPanY = 2 * (Math.max(0, Math.min(127, newPan)) - 64);
-        try {
-          active.panL.gain.setValueAtTime((127 - newPanY) / 256, evAudio);
-          active.panR.gain.setValueAtTime((newPanY + 128) / 256, evAudio);
-        } catch { /* ignore */ }
-      }
-    }
-  }
-
-  // Pitch bend → source frequency/playbackRate. Différent par voiceKind :
-  //   - directsound : playbackRate (12-TET ratio, OK car gFreqTable est 12-TET)
-  //   - square : AudioWorkletNode `frequency` param (via midiKeyToCgbFreqHz)
-  //   - wave : OscillatorNode.frequency (idem)
-  //   - noise : pas de pitch bend hardware (channel noise GBA n'a pas de bend coherent)
-  if (active.voiceKind !== 'noise') {
-    for (const ev of events.sortedBends) {
-      const evAudio = startTime + ev.time;
-      if (ev.time > note.time && evAudio <= noteEnd) {
-        const newBendSemis = ev.value * BEND_RANGE;
-        try {
-          if (active.voiceKind === 'directsound') {
-            const rate = dsPlaybackRate(note.midi, active.baseKey, newBendSemis);
-            (active.source as AudioBufferSourceNode).playbackRate.setValueAtTime(rate, evAudio);
-          } else if (active.voiceKind === 'square') {
-            // AudioWorkletNode square : frequency param via cgb-pitch + fineAdjust.
-            const intSemis = Math.floor(newBendSemis);
-            const fracSemis = newBendSemis - intSemis;
-            const fine = Math.max(0, Math.min(255, Math.round(fracSemis * 256)));
-            const newFreq = midiKeyToCgbFreqHz(note.midi + intSemis, fine);
-            const freqParam = (active.source as AudioWorkletNode).parameters.get('frequency');
-            freqParam?.setValueAtTime(newFreq, evAudio);
-          } else if (active.voiceKind === 'wave') {
-            // OscillatorNode programmable wave : idem CGB pitch.
-            const intSemis = Math.floor(newBendSemis);
-            const fracSemis = newBendSemis - intSemis;
-            const fine = Math.max(0, Math.min(255, Math.round(fracSemis * 256)));
-            const newFreq = midiKeyToCgbFreqHz(note.midi + intSemis, fine);
-            (active.source as OscillatorNode).frequency.setValueAtTime(newFreq, evAudio);
-          }
-        } catch { /* ignore : node may have been disposed */ }
-      }
-    }
-  }
-}
-
 /** Démarre la lecture d'un MIDI avec un voicegroup donné.
  *  @param song parsed Midi
  *  @param voicegroup le voicegroup à utiliser (ex: VOICEGROUP de title.ts)
  *  @param vgLookup callback pour résoudre les sub-voicegroups (keysplit)
  *  @param loop si true, replay quand fini
- *  @param slot bgm|se1|se2 (multi-slot 1:1 GBA)
- *  @param songVolume per-song volume scale 0-128 (1:1 décomp `mid2agb -Vxxx`).
- *                    `null`/undefined = pas de scaling (= 128 default).
  *  @returns Promise qui resolve quand la song termine (ou jamais si loop=true) */
 export async function playSong(
   song: Midi,
@@ -199,7 +86,6 @@ export async function playSong(
   vgLookup: VoiceGroupLookup,
   loop = false,
   slot: SlotKind = 'bgm',
-  songVolume: number | null = null,
 ): Promise<void> {
   // Stop la song courante DANS CE SLOT (BGM ne touche pas SE et vice-versa).
   stopSong(slot);
@@ -247,7 +133,8 @@ export async function playSong(
     const programNumber = track.instrument.number ?? 0;
 
     // Build sorted lists of CC events per type pour lookup binaire au noteOn time
-    // (volume CC=7, expression CC=11, pan CC=10). `CcEvent` est défini au top-level.
+    // (volume CC=7, expression CC=11, pan CC=10) :
+    type CcEvent = { time: number; value: number };
     const volEvents: CcEvent[] = [];
     const expEvents: CcEvent[] = [];
     const panEvents: CcEvent[] = [];
@@ -273,7 +160,15 @@ export async function playSong(
     const pitchBends = track.pitchBends ?? [];
     const sortedBends = [...pitchBends].sort((a, b) => a.time - b.time);
 
-    // valueAtTime déplacée au top-level du fichier.
+    /** Trouve la dernière valeur d'une liste CC à un time donné, ou default. */
+    const valueAtTime = (events: CcEvent[], t: number, defaultVal: number): number => {
+      let val = defaultVal;
+      for (const e of events) {
+        if (e.time > t) break;
+        val = e.value;
+      }
+      return val;
+    };
 
     for (const note of track.notes) {
       const noteOnTime = startTime + note.time;
@@ -285,20 +180,9 @@ export async function playSong(
       const volCc = valueAtTime(volEvents, note.time, 1.0);
       const expCc = valueAtTime(expEvents, note.time, 1.0);
       const panCc = valueAtTime(panEvents, note.time, 0.5);
-      // Per-song volume 1:1 décomp `mid2agb -Vxxx` arg (cf. midi.cfg).
-      // NB : le master volume `(masterVol+1)/16` (default 13/16, m4a.c:80) est
-      // appliqué uniquement côté DirectSound dans `m4a_1.s SoundMainRAM` — les
-      // voices CGB passent par CgbModVol qui n'utilise pas ce factor. Donc on
-      // l'applique côté synth.ts pour les DS seulement, pas ici globalement.
-      const songVolNorm = songVolume !== null ? songVolume / 128 : 1.0;
-      const trackVolume = volCc * expCc * songVolNorm;
+      const trackVolume = volCc * expCc;
       const panMidi = Math.round(panCc * 127);
-      // Pitch bend × bendRange (1:1 décomp `m4a.c:793 bend = track->bend × bendRange`).
-      // bendRange default = 2 demi-tons (m4a.c:245). tonejs/midi expose le bend
-      // normalisé ∈ [-1, 1] (= 14-bit pitch bend / 8192). Donc × 2 pour avoir
-      // les semis effectifs : bend ∈ [-2, +2].
-      const BEND_RANGE = 2;
-      const bend = valueAtTime(sortedBends as CcEvent[], note.time, 0) * BEND_RANGE;
+      const bend = valueAtTime(sortedBends as CcEvent[], note.time, 0);
       // Modulation depth via CC1 (mod wheel). M4A traduit en track->mod 0-127.
       // Default lfoSpeed=22 (cf. m4a.c:247 default), modT=0 (vibrato).
       // Si MIDI a des CC propriétaires pour lfoSpeed/modT (mid2agb peut utiliser
@@ -350,13 +234,6 @@ export async function playSong(
         if (active) {
           playback.activeNotes.set(key, active);
           playback.stats.played++;
-          // Schedule CC continus pendant la note active (1:1 décomp MPlayMain
-          // qui ré-applique TrkVolPitSet à chaque V-blank quand MPT_FLG_VOLCHG /
-          // MPT_FLG_PITCHG set). Sans ça, les swells/bends/pans-rampes du
-          // compositeur (CC11 dynamique notamment) sont figés au noteOn.
-          scheduleCcDuringNote(active, note, startTime, songVolNorm, {
-            volEvents, expEvents, panEvents, sortedBends: sortedBends as CcEvent[],
-          });
         } else {
           if (voice.type === 'directsound' || voice.type === 'directsound_no_resample') {
             playback.stats.skippedNoSample++;

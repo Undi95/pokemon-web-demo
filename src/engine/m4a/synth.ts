@@ -18,40 +18,16 @@
  */
 import type { Voice, AdsrEnvelope } from './voice-types';
 import { getAudioContext, getMasterGain } from './audio-context';
-import { loadSample } from './sample-loader';
-import { getNoiseLfsrBuffer, midiNoteToNoiseFreq } from './noise-engine';
-import { midiKeyToCgbFreqHz } from './cgb-pitch';
-import { getProgrammableWavePeriodic } from './programmable-wave';
-import { ensureSquareWorklet, createSquareNode } from './square-engine';
-import {
-  isCgbVoice,
-  dsAttackTimeSec, dsEnvTimeConstant, dsSustainToGain,
-  cgbAttackTimeSec, cgbSustainToGain, cgbDecayTimeSec, cgbReleaseTimeSec,
-  cgbEnvelopeGoal, cgb3VolQuantize,
-} from './envelope';
+import { loadSample, getNoiseBuffer } from './sample-loader';
 
-/** Une note jouée — référence pour stop/release ET pour modulation continue
- *  (CC7/CC10/CC11/pitch bend qui changent PENDANT la note, 1:1 décomp `MPlayMain`
- *  qui ré-applique TrkVolPitSet à chaque V-blank quand MPT_FLG_VOLCHG/PITCHG set). */
+/** Une note jouée — référence pour stop/release. */
 export interface ActiveNote {
-  /** Source audio (oscillator, bufferSource, ou AudioWorkletNode pour square aliased / noise LFSR). */
-  source: AudioBufferSourceNode | OscillatorNode | AudioWorkletNode;
-  /** Gain envelope ADSR (ne dépend QUE de velocity, pas de trackVolume). */
+  /** Source audio (oscillator ou bufferSource). */
+  source: AudioBufferSourceNode | OscillatorNode;
+  /** Gain envelope. */
   envelope: GainNode;
-  /** Volume control dynamique (CC7 × CC11 × songVol). Updatable pendant la note. */
-  volumeCtrl: GainNode;
-  /** Pan L et R (1:1 décomp volMR/volML linéaires séparés, pas equal-power).
-   *  Updatables pendant la note pour CC10 dynamique. */
-  panL: GainNode;
-  panR: GainNode;
-  /** Type de voice (utilisé par player pour savoir comment appliquer pitch bend). */
-  voiceKind: 'square' | 'wave' | 'noise' | 'directsound';
-  /** baseKey pour DirectSound (calcul du ratio playbackRate sur pitch bend dynamique). */
-  baseKey: number;
-  /** midiNote courant (pour recalcul pitch CGB sur bend dynamique). */
-  midiNote: number;
-  /** True si le voicegroup override le pan (drumkits) → CC10 dynamique ignoré. */
-  panFixed: boolean;
+  /** Pan. */
+  panner: StereoPannerNode;
   /** Stop la note (release ADSR puis stop). */
   stop(time?: number): void;
   /** Timestamp AudioContext de création (pour voice stealing FIFO). */
@@ -60,14 +36,15 @@ export interface ActiveNote {
 
 // ─── Polyphonie : voice stealing FIFO ───────────────────────────────────────
 //
-// 1:1 décomp : `MAX_DIRECTSOUND_CHANNELS = 12` (m4a_internal.h:167) +
-// 4 CGB hardware channels = 16 voices max effectives.
-// Le décomp default `maxChans = 8` (m4a.c:383) DirectSound + 4 CGB = 12.
+// GBA hardware M4A est limité à 6 canaux audio (2 PSG square + wave + noise +
+// 2 DirectSound). Le décomp utilise une couche M4A qui peut multiplexer
+// jusqu'à ~16 "virtual channels" via le mixer software. Mais sur web audio,
+// on n'a aucune limite hardware → on peut être beaucoup plus généreux.
 //
-// Sur Web Audio on pourrait aller plus large mais ça change le caractère du
-// mix (notes anciennes s'accumulent au lieu d'être stolées comme sur GBA).
-// On reste à 16 pour matcher l'enveloppe hardware tout en laissant marge.
-const MAX_POLYPHONY = 16;
+// MAX_POLYPHONY=128 = très ample. Avec 131 stealing events à 64 et ADSR ×4,
+// on monte la limite. Si encore stealing avec ADSR ×2 et 128 voices, c'est
+// que les notes longues s'accumulent en cas de note très soutenue (rare).
+const MAX_POLYPHONY = 128;
 const _activeNotes: ActiveNote[] = [];
 let _stealingCount = 0;
 
@@ -145,7 +122,50 @@ function getOrBuildSquareWave(ctx: AudioContext, duty: number): PeriodicWave {
   return wave;
 }
 
-// Helpers ADSR (CGB vs DirectSound) déplacés dans `./envelope.ts`.
+/** Tick rate de l'envelope M4A : m4aSoundMain est appelé chaque V-blank GBA = 60Hz. */
+const M4A_TICK_PERIOD_SEC = 1 / 60;
+
+/** Calcule la durée d'attack en seconds pour un rate ADSR (0-255).
+ *  1:1 décomp src/m4a_1.s : `envelopeVolume += attack` chaque tick (60Hz),
+ *  jusqu'à atteindre 255. Donc time = ceil(255 / attack) × tickPeriod.
+ *
+ *  attack=255 → 1 tick (16ms instant)
+ *  attack=128 → 2 ticks (33ms)
+ *  attack=64  → 4 ticks (67ms)
+ *  attack=4   → 64 ticks (1.06s)
+ *  attack=1   → 255 ticks (4.25s)
+ *  attack=0   → skip attack phase (envelopeVolume = peak directly) */
+function attackTimeSec(attack: number): number {
+  if (attack <= 0) return 0;        // skip phase
+  if (attack >= 255) return M4A_TICK_PERIOD_SEC;
+  return Math.ceil(255 / attack) * M4A_TICK_PERIOD_SEC;
+}
+
+/** Calcule la time constant pour un decay/release multiplicatif M4A → Web Audio
+ *  setTargetAtTime. M4A : `vol = (vol × rate) / 256` chaque tick (60Hz).
+ *  Web Audio setTargetAtTime simule `vol(t) = target + (initial - target) × exp(-t / τ)`.
+ *
+ *  Conversion : après 1 tick (16.67ms), le ratio préservé est rate/256.
+ *  Donc `exp(-tickPeriod / τ) = rate/256` → `τ = tickPeriod / -ln(rate/256)`.
+ *
+ *  rate=255 → τ ≈ 4.27 sec (decay très lent, preserves 99.6% par tick)
+ *  rate=235 → τ ≈ 195 ms (decay lent, preserves 92% par tick)
+ *  rate=200 → τ ≈ 67 ms (preserves 78%)
+ *  rate=128 → τ ≈ 24 ms (decay rapide, halve chaque tick)
+ *  rate=0   → τ ≈ 0 (instant)
+ *  rate=1-255 valid range. */
+function envTimeConstant(rate: number): number {
+  if (rate <= 0) return 0.001;                 // instant
+  if (rate >= 256) return 60;                  // virtually never (cap)
+  const ratio = rate / 256;
+  if (ratio >= 0.9999) return 60;              // would div by zero
+  return M4A_TICK_PERIOD_SEC / -Math.log(ratio);
+}
+
+/** Convertit un sustain value GBA M4A (0-255) en gain 0.0 - 1.0. */
+function gbaSustainToGain(value: number): number {
+  return Math.max(0, Math.min(1, value / 255));
+}
 
 /** Options LFO 1:1 décomp m4a_1.s LFO update :
  *  - Triangle wave avec phase accumulator (lfoSpeedC += lfoSpeed) chaque tick 60Hz
@@ -189,7 +209,7 @@ export async function playNote(
   // Apply pitch bend en frequency (= 2^(semis/12))
   const noteFreq = midiNoteToFreq(midiNote) * Math.pow(2, pitchBendSemis / 12);
 
-  let source: AudioBufferSourceNode | OscillatorNode | AudioWorkletNode;
+  let source: AudioBufferSourceNode | OscillatorNode;
   let envelope: AdsrEnvelope;
 
   switch (voice.type) {
@@ -197,56 +217,46 @@ export async function playNote(
     case 'square_1_alt':
     case 'square_2':
     case 'square_2_alt': {
-      // PSG square wave RAW aliased via AudioWorklet (1:1 hardware GBA).
-      // Web Audio `OscillatorNode 'square'` est band-limited (= trop propre).
-      // Le DAC GBA à 13.379 kHz produit l'aliasing caractéristique 8-bit qui
-      // donne le « buzz » des leads. Notre worklet émule un square raw, puis
-      // le double lowpass DAC à 6.5 kHz dans audio-context.ts atténue les
-      // harmoniques aigues comme le ferait le hardware.
-      await ensureSquareWorklet();
-      // Pitch bend CGB 1:1 décomp `m4a.c:793-805 TrkVolPitSet` + `MidiKeyToCgbFreq`.
-      // Le décomp passe `(track->pitM & 0xFF)` comme fineAdjust à la table,
-      // qui interpole entre rawVal(key) et rawVal(key+1). Notre code multipliait
-      // par `2^(semis/12)` ce qui DOUBLE le détune (la table CGB est non-tempérée).
-      const intSemis = Math.floor(pitchBendSemis);
-      const fracSemis = pitchBendSemis - intSemis;
-      const fineAdjust = Math.max(0, Math.min(255, Math.round(fracSemis * 256)));
-      const finalFreq = midiKeyToCgbFreqHz(midiNote + intSemis, fineAdjust);
+      // PSG square wave avec duty cycle exact (12.5/25/50/75% selon squarePattern).
+      // Web Audio Oscillator type 'square' = duty 50% par défaut.
+      // Pour autres duties, on génère une PeriodicWave custom (Fourier coefficients
+      // d'un square pulse de duty d : a_n = (2/(nπ)) × sin(nπd) ).
+      const osc = ctx.createOscillator();
       const dutyCycle = squarePatternToDuty(voice.squarePattern);
-      const node = createSquareNode(finalFreq, dutyCycle);
-      if (!node) {
-        // Fallback si worklet pas encore chargé (race condition rare au boot)
-        const osc = ctx.createOscillator();
+      if (Math.abs(dutyCycle - 0.5) < 0.01) {
         osc.type = 'square';
-        osc.frequency.value = finalFreq;
-        source = osc;
       } else {
-        source = node;
+        osc.setPeriodicWave(getOrBuildSquareWave(ctx, dutyCycle));
       }
+      osc.frequency.value = noteFreq;
+      source = osc;
       envelope = voice.envelope;
       break;
     }
     case 'noise':
     case 'noise_alt': {
-      // PSG noise : LFSR-accurate (1:1 GBA hardware).
-      //
-      // Le contenu du buffer est la vraie séquence LFSR du GBA :
-      //   - voice.period == 0 → 15-bit LFSR (32767 samples, white-ish)
-      //   - voice.period == 1 → 7-bit LFSR (127 samples, tonal/buzzy)
-      // 1:1 décomp asm/macros/music_voice.inc : `(\period & 0x1)` → un seul bit.
-      //
-      // La playbackRate suit la formule hardware NR43 (cf. m4a.c MidiKeyToCgbFreq
-      // + gNoiseTable) : la note MIDI est mappée à un NR43 byte qui détermine
-      // la cadence du LFSR. On joue donc le buffer à `noiseFreqHz / sampleRate`.
-      const periodVal = (voice as { period?: number }).period ?? 0;
-      const is7bit = (periodVal & 1) === 1;
+      // PSG noise : white noise buffer + biquad lowpass filter color selon `period`.
+      // 1:1 GBA : noise period 0-7 contrôle la "couleur" du bruit (LFSR feedback rate).
+      // Period 0 = fréquence haute (snare aigu), period 7 = grave (sub bass).
       const bs = ctx.createBufferSource();
-      bs.buffer = getNoiseLfsrBuffer(is7bit);
+      bs.buffer = getNoiseBuffer();
       bs.loop = true;
-      const noiseFreqHz = midiNoteToNoiseFreq(midiNote);
-      bs.playbackRate.value = noiseFreqHz / ctx.sampleRate;
+      bs.playbackRate.value = noteFreq / 440;  // base pitch via playback rate
+      // Filter : period 0-7 → cutoff 8000 Hz - 500 Hz
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      const periodVal = (voice as { period?: number }).period ?? 0;
+      filter.frequency.value = 8000 - (periodVal * 1000);  // 8000, 7000, ..., 1000 Hz
+      filter.Q.value = 1.5;
+      bs.connect(filter);
+      // On stocke le filter dans _noiseFilters pour cleanup, mais on connecte source
+      // au filter et on retourne une source "virtuelle" (le filter va vers env)
+      // Simplification : on retourne bs comme source mais le routing passe par filter
+      // → modifier le connect graph plus bas
       source = bs;
       envelope = voice.envelope;
+      // Mark le filter pour le routing (variable temp via WeakMap ou closure)
+      (bs as AudioBufferSourceNode & { _noiseFilter?: BiquadFilterNode })._noiseFilter = filter;
       break;
     }
     case 'directsound':
@@ -287,23 +297,9 @@ export async function playNote(
       //
       // Le décomp pokeemeraude n'expose PAS les programmable_wave_samples en .bin
       // dans le repo (juste le voicegroup binding). Donc fallback triangle wave.
-      // 1:1 décomp : 32 samples 4-bit (= 16 octets) chargés depuis le décomp via
-      // `extract-programmable-wave.mjs`. DFT → PeriodicWave Web Audio. Si symbole
-      // inconnu (rare), fallback `triangle`.
       const osc = ctx.createOscillator();
-      const waveSym = (voice as { waveSymbol?: string }).waveSymbol;
-      const pw = waveSym ? getProgrammableWavePeriodic(waveSym) : null;
-      if (pw) {
-        osc.setPeriodicWave(pw);
-      } else {
-        osc.type = 'triangle';
-      }
-      // Pitch CGB exact (channel 3 utilise le même MidiKeyToCgbFreq que square).
-      // Pitch bend via fineAdjust (table interpolation, 1:1 décomp).
-      const wIntSemis = Math.floor(pitchBendSemis);
-      const wFracSemis = pitchBendSemis - wIntSemis;
-      const wFineAdjust = Math.max(0, Math.min(255, Math.round(wFracSemis * 256)));
-      osc.frequency.value = midiKeyToCgbFreqHz(midiNote + wIntSemis, wFineAdjust);
+      osc.type = 'triangle';  // approximation acceptable pour la plupart des wave samples
+      osc.frequency.value = noteFreq;
       source = osc;
       envelope = voice.envelope;
       break;
@@ -317,110 +313,40 @@ export async function playNote(
       return null;
   }
 
-  // Envelope ADSR — split selon canal hardware :
-  //   - DirectSound (PCM)  : 0-255 multiplicatif, exponentiel (cf. m4a_1.s)
-  //   - CGB (square/noise) : 0-7 / 0-15 par steps, linéaire (cf. m4a.c CgbSound)
-  // Helpers dans `./envelope.ts`.
-  //
-  // ARCHITECTURE 1:1 décomp : env (ADSR shape) ne dépend QUE de velocity et du
-  // master volume hardware-fixe. trackVolume (= CC7 × CC11 × songVol) est
-  // appliqué via volumeCtrl SÉPARÉ qui peut être mis à jour en cours de note
-  // pour suivre les changements MIDI dynamiques (= 1:1 MPlayMain qui ré-applique
-  // TrkVolPitSet à chaque V-blank quand MPT_FLG_VOLCHG set).
+  // Envelope ADSR 1:1 décomp src/m4a_1.s :
+  //   ATTACK  : envelopeVolume += attack chaque tick → linear ramp 0→peak
+  //   DECAY   : envelopeVolume = (envelopeVolume × decay) >> 8 → exponential fade
+  //             vers sustainGoal (= setTargetAtTime avec timeConstant)
+  //   SUSTAIN : tenu à sustainGoal jusqu'à noteOff
+  //   RELEASE : envelopeVolume = (envelopeVolume × release) >> 8 → exponential fade vers 0
   const env = ctx.createGain();
-  const cgb = isCgbVoice(voice);
-  const velNorm01 = velocity / 127;  // 0-1 fixe au noteOn
+  // Velocity scaled par trackVolume (= MIDI CC7 × CC11 / 127² normalisé) — 1:1 décomp TrkVolPitSet
+  const velNorm = (velocity / 127) * trackVolume;
+  const sustainGain = gbaSustainToGain(envelope.sustain) * velNorm;
+  const aTime = attackTimeSec(envelope.attack);
+  const decayTau = envTimeConstant(envelope.decay);
 
-  // Master volume DS-only : 1:1 `m4a_1.s:265-269` post-multiplie l'envelope par
-  // `(masterVol+1)/16`. Default masterVol=12 (m4a.c:80) → 13/16 = 0.8125.
-  // Les voices CGB passent par CgbModVol qui n'a pas ce factor → identité (×1).
-  const DS_MASTER_VOL = 13 / 16;
-  const peakGain = cgb ? velNorm01 : velNorm01 * DS_MASTER_VOL;
-
-  let sustainGain: number;
-  let aTime: number;
-  let cgbGoal = 15;  // utilisé seulement pour CGB
-  const isPgmWave = voice.type === 'programmable_wave';
-  if (cgb) {
-    // envelopeGoal CGB scale avec velNorm courant — moins de velocity =
-    // moins de steps total = attack/decay plus rapides (1:1 m4a.c:910-919).
-    // Note : envelopeGoal dépend de velocity ici, PAS de trackVolume (qui est
-    // appliqué via volumeCtrl séparé).
-    cgbGoal = cgbEnvelopeGoal(velNorm01);
-    sustainGain = cgbSustainToGain(envelope.sustain, cgbGoal) * velNorm01;
-    aTime = cgbAttackTimeSec(envelope.attack, cgbGoal);
-    // Programmable wave (channel 3) quantization NR32 1:1 `m4a.c:1209 gCgb3Vol[]`.
-    if (isPgmWave) {
-      sustainGain = cgb3VolQuantize(sustainGain / Math.max(1e-6, velNorm01)) * velNorm01;
-    }
-  } else {
-    sustainGain = dsSustainToGain(envelope.sustain) * peakGain;
-    aTime = dsAttackTimeSec(envelope.attack);
-  }
-
-  // ATTACK : ramp 0→peakGain (= velNorm × DS_MASTER_VOL pour DS, velNorm pour CGB)
   if (envelope.attack <= 0) {
-    env.gain.setValueAtTime(peakGain, startTime);
+    env.gain.setValueAtTime(velNorm, startTime);
   } else {
     env.gain.setValueAtTime(0, startTime);
-    env.gain.linearRampToValueAtTime(peakGain, startTime + aTime);
+    env.gain.linearRampToValueAtTime(velNorm, startTime + aTime);
   }
-
-  // DECAY : descend de peak vers sustainGain
-  if (cgb) {
-    // CGB : linear ramp peak→sustain en cgbDecayTimeSec, ou step instantané si decay=0
-    const sustainLevel = velNorm01 > 0 ? sustainGain / velNorm01 : 0;
-    const dTime = cgbDecayTimeSec(envelope.decay, sustainLevel, cgbGoal);
-    if (dTime > 0) {
-      env.gain.linearRampToValueAtTime(sustainGain, startTime + aTime + dTime);
-    } else {
-      env.gain.setValueAtTime(sustainGain, startTime + aTime + 1 / 60);
-    }
-  } else {
-    // DirectSound : setTargetAtTime exponentiel (= multiplicatif M4A)
-    const decayTau = dsEnvTimeConstant(envelope.decay);
-    env.gain.setTargetAtTime(sustainGain, startTime + aTime, Math.max(0.001, decayTau));
-  }
+  env.gain.setTargetAtTime(sustainGain, startTime + aTime, Math.max(0.001, decayTau));
 
   // Pan
-  // Pan : si voice a un override absolu (1:1 décomp `_voice_directsound`/`_voice_square*` :
-  // byte pan stocké comme `(0x80 | val)` quand val != 0 → flag « pan fixe »).
-  // Notre extracteur lit la val source (0-127, sans le flag 0x80). Donc :
-  //   - Si voice.pan/panSweep != 0 : utilise comme pan absolu (drumkits stéréo).
-  //   - Sinon : retombe sur panMidi (= track CC10 + center default).
-  // Cf. `m4a.c:777 (y = 2 * track->pan + track->panX)` et `m4a_1.s:1612-1618` (TONEDATA_P_S_PAN).
-  const voicePan = (voice as { pan?: number; panSweep?: number }).pan
-                ?? (voice as { panSweep?: number }).panSweep
-                ?? 0;
-  const effectivePan = voicePan !== 0 ? voicePan : panMidi;
-  // Pan linéaire 1:1 décomp `m4a.c:777-788` (volMR/volML séparés, pas equal-power).
-  //   y = 2 × (effectivePan - 64) ∈ [-128, +126] (signé)
-  //   gainR = (y + 128) / 256 ∈ [0, 0.99]
-  //   gainL = (127 - y) / 256 ∈ [0, ~1.0]
-  // Au centre (effectivePan=64) : gainL=gainR≈0.5 → -6dB par côté = -3dB total.
-  // L'equal-power Web Audio donnerait 0.707 par côté → 0dB total (= 3dB plus
-  // FORT au centre que sur GBA). C'est ce qui rend les leads centrés trop forts.
-  const panY = 2 * (Math.max(0, Math.min(127, effectivePan)) - 64);
-  const panL = ctx.createGain();
-  const panR = ctx.createGain();
-  panL.gain.value = (127 - panY) / 256;
-  panR.gain.value = (panY + 128) / 256;
-  const merger = ctx.createChannelMerger(2);
+  const panner = ctx.createStereoPanner();
+  panner.pan.value = (panMidi - 64) / 64;  // -1 left, +1 right
 
-  // volumeCtrl : node de gain dédié pour les CC dynamiques (CC7 × CC11 × songVol).
-  // Updatable pendant la note via player.ts pour suivre les changements MIDI.
-  // 1:1 décomp `MPlayMain` qui ré-applique TrkVolPitSet à chaque V-blank.
-  const volumeCtrl = ctx.createGain();
-  volumeCtrl.gain.value = trackVolume;
-
-  // Connect graph : source → env → volumeCtrl → [panL, panR] → merger(L,R) → masterGain
-  source.connect(env);
-  env.connect(volumeCtrl);
-  volumeCtrl.connect(panL);
-  volumeCtrl.connect(panR);
-  panL.connect(merger, 0, 0);  // input port 0 (signal) → output channel 0 (L)
-  panR.connect(merger, 0, 1);  // input port 0 (signal) → output channel 1 (R)
-  merger.connect(getMasterGain());
+  // Connect graph (avec filter intermédiaire pour noise voices)
+  const noiseFilter = (source as { _noiseFilter?: BiquadFilterNode })._noiseFilter;
+  if (noiseFilter) {
+    noiseFilter.connect(env);
+  } else {
+    source.connect(env);
+  }
+  env.connect(panner);
+  panner.connect(getMasterGain());
 
   // LFO 1:1 décomp m4a_1.s : OscillatorNode triangle qui module pitch/volume/pan.
   // Setup APRES la création des nodes (besoin de source/env/panner pour modulation).
@@ -436,11 +362,12 @@ export async function playNote(
     lfoGain = ctx.createGain();
 
     if (lfo.type === 0) {
-      // VIBRATO : module la pitch.
-      // 1:1 décomp `m4a.c:801` (`x += 16 * track->modM`) puis `keyM = x >> 8`.
-      // modM = depth × LFO triangle ∈ [-depth, +depth]. Pour depth=127 :
-      //   keyM_max = (16 × 127) >> 8 = 7.94 → ±8 demi-tons (= 1:1 hardware GBA).
-      const maxSemis = (lfo.depth / 127) * 8;  // depth 127 = ±8 semitones (full range)
+      // VIBRATO : module la pitch (cents).
+      // 1:1 décomp : pitch += 16 × modM, modM range -127..127 → ±2032 cents max.
+      // Pour notre frequency : freq × 2^(cents/1200).
+      // Approximation : applique au playbackRate (DirectSound) ou frequency (PSG).
+      // Simplification : module la frequency directement ±semitones.
+      const maxSemis = (lfo.depth / 127) * 1.0;  // depth 127 = ±1 semitone (subtle vibrato)
       const freqDelta = noteFreq * (Math.pow(2, maxSemis / 12) - 1);
       lfoGain.gain.value = 0;
       lfoGain.gain.setValueAtTime(0, startTime);
@@ -464,116 +391,61 @@ export async function playNote(
       }
     } else if (lfo.type === 1) {
       // TREMOLO : module le volume.
-      // 1:1 décomp `m4a.c:774-775` : si modT==1, `x = (x × (modM + 128)) >> 7`.
-      // modM ∈ [-depth, +depth] avec LFO triangle. Pour depth=127 :
-      //   facteur ∈ [(0+128)/128 = 1, (127+128)/128 ≈ 2] → 0% à 100% du velNorm en mod.
-      // Centré sur velNorm avec amplitude ±velNorm × depth/127.
-      const tremoloDepth = (lfo.depth / 127) * velNorm01;
+      // 1:1 décomp : x = (vol × volX) >> 5 ; if modT==1 : x = (x × (modM + 128)) >> 7
+      // → volume oscille entre 0% et ~200% selon modM. Notre approximation : ±depth/2.
+      const tremoloDepth = (lfo.depth / 127) * 0.3 * velNorm;  // ±30% du volume max
       lfoGain.gain.value = 0;
       lfoGain.gain.setValueAtTime(0, startTime);
       lfoGain.gain.linearRampToValueAtTime(tremoloDepth, startTime + lfoDelaySec + 0.05);
       lfoOsc.connect(lfoGain);
       lfoGain.connect(env.gain);  // module l'envelope gain
     } else if (lfo.type === 2) {
-      // PAN_LFO : module le pan via inversion gainL/gainR.
-      // 1:1 décomp : y += modM. On module gainR positivement et gainL négativement
-      // (= panR.gain += depth × triangle, panL.gain -= depth × triangle).
-      const panDepth = (lfo.depth / 127) * 0.5;
+      // PAN_LFO : module le pan.
+      // 1:1 décomp : y += modM, range -1..+1 webAudio.
+      const panDepth = lfo.depth / 127;
       lfoGain.gain.value = 0;
       lfoGain.gain.setValueAtTime(0, startTime);
       lfoGain.gain.linearRampToValueAtTime(panDepth, startTime + lfoDelaySec + 0.05);
       lfoOsc.connect(lfoGain);
-      lfoGain.connect(panR.gain);
-      // panL = -panR : crée un 2e gain inversé
-      const lfoGainNeg = ctx.createGain();
-      lfoGainNeg.gain.value = -1;
-      lfoGain.connect(lfoGainNeg);
-      lfoGainNeg.connect(panL.gain);
+      lfoGain.connect(panner.pan);
     }
     lfoOsc.start(startTime);
   }
 
-  // start() : AudioWorkletNode démarre dès qu'il est connecté au graph (pas
-  // de méthode start). OscillatorNode et AudioBufferSourceNode ont un start.
-  if ('start' in source && typeof (source as { start?: unknown }).start === 'function') {
-    (source as OscillatorNode | AudioBufferSourceNode).start(startTime);
-  }
-
-  // voiceKind pour player.ts (savoir comment appliquer pitch bend dynamique)
-  const voiceKind: 'square' | 'wave' | 'noise' | 'directsound' =
-    voice.type === 'square_1' || voice.type === 'square_1_alt' ||
-    voice.type === 'square_2' || voice.type === 'square_2_alt' ? 'square' :
-    voice.type === 'programmable_wave' ? 'wave' :
-    voice.type === 'noise' || voice.type === 'noise_alt' ? 'noise' : 'directsound';
+  source.start(startTime);
 
   const note: ActiveNote = {
     source,
     envelope: env,
-    volumeCtrl,
-    panL,
-    panR,
-    voiceKind,
-    baseKey: (voice as { baseKey?: number }).baseKey ?? 60,
-    midiNote,
-    panFixed: voicePan !== 0,
+    panner,
     startedAt: startTime,
     stop(time?: number) {
       const t = time ?? ctx.currentTime;
+      const releaseTau = envTimeConstant(envelope.release);
+      const releaseTotalSec = Math.max(0.05, releaseTau * 5);
       env.gain.cancelScheduledValues(t);
       env.gain.setValueAtTime(env.gain.value, t);
-
-      // RELEASE — split CGB/DirectSound :
-      // Anti-click guard : Web Audio coupe l'oscillator à phase arbitraire,
-      // produisant un pop si gain change trop vite. On garantit ≥3ms de fade
-      // pour neutraliser le click (= sub-perceptuel, mais élimine la harshness).
-      const ANTICLICK_FADE = 0.003;
-      let releaseTotalSec: number;
-      if (cgb) {
-        // CGB : linear ramp current→0 en cgbReleaseTimeSec.
-        // release=0 → cutoff "quasi-instantané" (3ms fade vs hardware oscillator off).
-        // Cf. m4a.c:1064-1074 — hardware GBA a un filtrage analog naturel qu'on
-        // approxime via cette mini-rampe pour éviter le click Web Audio.
-        const currentLevel = velNorm01 > 0 ? env.gain.value / velNorm01 : 0;
-        const rTime = cgbReleaseTimeSec(envelope.release, currentLevel, cgbGoal);
-        if (rTime > 0) {
-          env.gain.linearRampToValueAtTime(0, t + rTime);
-          releaseTotalSec = rTime;
-        } else {
-          env.gain.linearRampToValueAtTime(0, t + ANTICLICK_FADE);
-          releaseTotalSec = ANTICLICK_FADE;
-        }
-      } else {
-        // DirectSound : setTargetAtTime exponentiel (5τ ≈ -60dB).
-        const releaseTau = dsEnvTimeConstant(envelope.release);
-        releaseTotalSec = Math.max(0.05, releaseTau * 5);
-        env.gain.setTargetAtTime(0, t, Math.max(0.001, releaseTau));
-      }
+      env.gain.setTargetAtTime(0, t, Math.max(0.001, releaseTau));
 
       // Pseudo-echo 1:1 décomp m4a_1.s _081DCFC8 :
-      // Après release, si pseudoEchoVolume > 0 : envVol = envelopeGoal ×
-      // pseudoEchoVolume / 256, tient pendant pseudoEchoLength ticks puis stop.
-      // Ces fields viennent des MIDI controllers BPSE/BPSL (non parsés actuellement),
-      // l'API est en place pour quand l'extension sera ajoutée.
+      // Après release, si pseudoEchoVolume > 0 :
+      //   envVol = envelopeGoal × pseudoEchoVolume / 256 (= queue niveau)
+      //   tient pendant pseudoEchoLength ticks (60Hz) puis stop
+      // = "tail" subtle après le release.
+      // Ces fields ne sont pas dans nos voicegroups M4A standard (rare),
+      // mais on supporte l'API si user veut les utiliser.
       let totalDuration = releaseTotalSec;
       const pe = (voice as { pseudoEchoVolume?: number; pseudoEchoLength?: number });
       if (pe.pseudoEchoVolume && pe.pseudoEchoLength) {
-        const echoVol = velNorm01 * (pe.pseudoEchoVolume / 256);
+        const echoVol = velNorm * (pe.pseudoEchoVolume / 256);
         const echoSec = pe.pseudoEchoLength / 60;
-        env.gain.setTargetAtTime(echoVol, t + releaseTotalSec, 0.005);
-        env.gain.setTargetAtTime(0, t + releaseTotalSec + echoSec, 0.005);
+        env.gain.setTargetAtTime(echoVol, t + releaseTotalSec, Math.max(0.001, releaseTau));
+        env.gain.setTargetAtTime(0, t + releaseTotalSec + echoSec, Math.max(0.001, releaseTau));
         totalDuration += echoSec + releaseTotalSec;
       }
 
       try {
-        if ('stop' in source && typeof (source as { stop?: unknown }).stop === 'function') {
-          (source as AudioBufferSourceNode | OscillatorNode).stop(t + totalDuration + 0.01);
-        } else {
-          // AudioWorkletNode : pas de méthode stop. Disconnect après le release
-          // pour libérer le CPU (le worklet continue de tourner sinon).
-          window.setTimeout(() => {
-            try { source.disconnect(); } catch { /* already disconnected */ }
-          }, Math.max(50, (totalDuration + 0.05) * 1000));
-        }
+        if ('stop' in source) (source as AudioBufferSourceNode | OscillatorNode).stop(t + totalDuration + 0.01);
       } catch { /* already stopped */ }
       if (lfoOsc) {
         try { lfoOsc.stop(t + totalDuration + 0.02); } catch { /* ignore */ }

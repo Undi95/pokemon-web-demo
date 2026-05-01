@@ -23,41 +23,35 @@ export function getAudioContext(): AudioContext {
   _masterGain = _ctx.createGain();
   _masterGain.gain.value = 1.0;
 
-  // GBA DAC simulation 1:1 hardware :
-  //   SOUND_MODE_FREQ_13379 = 13 379 Hz (default GBA mixer rate)
-  //   Nyquist = 13 379 / 2 ≈ 6 690 Hz
-  //   → tout au-dessus de ~6.7 kHz est aliasé/filtré par le DAC.
-  // Notre Web Audio rate = 48 000 Hz (8x plus propre). Pour matcher le grain
-  // « vintage » : double cascade de biquads à 6 500 Hz (= -12 dB/oct devient
-  // -24 dB/oct, plus proche d'un brick-wall analog DAC).
+  // GBA DAC simulation : lowpass à ~13 kHz pour matcher le sample rate GBA
+  // (SOUND_MODE_FREQ_13379 = 13 379 Hz). Le DAC GBA filtre tout au-dessus de
+  // ~6.7 kHz (Nyquist), donnant le grain "vintage" caractéristique.
+  // Notre Web Audio sample rate est typique 48000 Hz (= cleaner que GBA).
+  // BiquadFilter lowpass 8 kHz simule cet effet.
   const dacFilter = _ctx.createBiquadFilter();
   dacFilter.type = 'lowpass';
-  dacFilter.frequency.value = 6500;
-  dacFilter.Q.value = 0.7071;             // Butterworth flat
-  const dacFilter2 = _ctx.createBiquadFilter();
-  dacFilter2.type = 'lowpass';
-  dacFilter2.frequency.value = 6500;
-  dacFilter2.Q.value = 0.7071;
+  dacFilter.frequency.value = 8000;  // un peu en-dessous de Nyquist GBA pour le grain
+  dacFilter.Q.value = 0.7;             // pas de résonance (=Butterworth flat)
   _masterGain.connect(dacFilter);
-  dacFilter.connect(dacFilter2);
 
   // Reverb chain 1:1 décomp m4a_1.s SoundMainRAM_Reverb :
-  //   simple delay 1 frame (16.74ms à 59.7275Hz V-blank) + feedback gain (reverb/256)
+  //   simple delay 1 frame (16.67ms) + feedback gain (reverb/256)
   //   formule asm : output = (sample_now + sample_prev) × reverb >> 9
   //   = ~50% mix + ~25% gain effectif
-  // Routing : masterGain → dacFilter → dacFilter2 → [dry + (delay→feedback→delay)] → destination
+  // Routing : voicesGain → masterGain → [dry + (delay→feedback→delay)] → destination
   const dry = _ctx.createGain();
   const wet = _ctx.createGain();
   const delay = _ctx.createDelay(0.1);
   const feedback = _ctx.createGain();
   // Defaults : reverb level ~50 (typical Pokemon Emerald)
-  delay.delayTime.value = 1 / 59.7275;  // V-blank GBA exact (cf. m4a.c:409)
+  delay.delayTime.value = 1 / 60;       // 1 GBA frame
   feedback.gain.value = 50 / 256;       // ~20% feedback
   wet.gain.value = 0.4;                  // wet/dry mix
   dry.gain.value = 1.0;
-  dacFilter2.connect(dry);
+  // Connect : masterGain → dacFilter → [dry + wet] → destination
+  dacFilter.connect(dry);
   dry.connect(_ctx.destination);
-  dacFilter2.connect(delay);
+  dacFilter.connect(delay);
   delay.connect(feedback);
   feedback.connect(delay);    // feedback loop
   delay.connect(wet);
