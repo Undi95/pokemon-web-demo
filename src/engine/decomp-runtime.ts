@@ -1390,25 +1390,35 @@ export class DecompRuntime {
     // 0. Input : calcul du front montant (newKeys) pour cette frame
     this.gMain.newKeys = this.gMain.heldKeys & ~this.prevHeldKeys;
     this.prevHeldKeys = this.gMain.heldKeys;
-    // 1. Main callback2 : dispatch scène courante (peut SetMainCallback2/CreateTask).
+    // 1. Main callback2 : dispatch scène courante (= ce que la décomp appelle
+    //    via `gMain.callback2()`. La plupart des CB2 appellent à leur tour
+    //    RunTasks/AnimateSprites/BuildOamBuffer/UpdatePaletteFade dans CET
+    //    ORDRE — cf MainCB2_Intro src/intro.c:1042-1052).
     if (this.gMain.callback2) this.gMain.callback2(this);
-    this.UpdatePaletteFade();
+    // ─── 1:1 décomp MainCB2_Intro order ───────────────────────────────────
+    // 2. RunTasks() — Tasks AVANT tout sprite tick. Critique : la création
+    //    d'un sprite + StartSpriteAffineAnim DOIT précéder l'AnimateSprite
+    //    de la même frame, sinon la matrix OAM reste avec sa valeur stale
+    //    (= 1-frame flicker du logo Game Freak avec scale/rot random).
+    this.runTasks();
+    // 3. AnimateSprites() — partie 1 : sprite callback (= notre runSpriteCallbacks).
+    //    partie 2 : AnimateSprite qui advance les anims + applique affine
+    //    matrix dans gOamMatrices (= notre tickSpriteAnims + tickAllAffineAnims).
+    this.runSpriteCallbacks();
     this.tickSpriteAnims();
     tickAllAffineAnims(this);
-    this.runSpriteCallbacks();
-    this.runTasks();
     // RunTextPrinters render text into window pixel buffers,
     // then flushDirtyWindows copies modified buffers to VRAM.
-    // This mirrors the real GBA main loop order (RunTasks → RunTextPrinters → VBlank DMA).
     const globalRunTextPrinters = (globalThis as any).RunTextPrinters;
     if (typeof globalRunTextPrinters === 'function') globalRunTextPrinters();
     const globalFlushDirty = (globalThis as any).flushDirtyWindows;
     if (typeof globalFlushDirty === 'function') globalFlushDirty();
+    // 4. BuildOamBuffer() — copie gOamMatrices + sprite state → OAM.
     this.syncSpritesToOam();
+    // 5. UpdatePaletteFade() — APRÈS le rendu sprite (ordre décomp).
+    this.UpdatePaletteFade();
+    // VBlank callbacks (= VBlankCB_Intro etc) : ScanlineEffect tick.
     if (this.gMain.vblankCallback) this.gMain.vblankCallback();
-    // 1:1 décomp VBlankCB_Intro/Battle/etc. appellent ScanlineEffect_InitHBlankDmaTransfer
-    // chaque VBlank. Comme l'auto code transcrit `/* noop SetVBlankCallback */`,
-    // on appelle directement ScanlineEffect tick ici (= permet state===3 cleanup).
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const scanlineTick = (globalThis as any).__scanlineEffectTick;
     if (typeof scanlineTick === 'function') scanlineTick();

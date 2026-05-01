@@ -59,7 +59,7 @@ import {
   sGameFreakLetterData, sGameFreakLetterStartDelays, sGameFreakLettersMoveSpeed,
   sPresentsLetterData, sSparkleCoords, sGroudonRockData, sKyogreBubbleData,
 } from './_data-tables-flat';
-import { CreateBicycleBgAnimationTask, CreateIntroBrendanSprite, CreateIntroFlygonSprite, CreateIntroMaySprite, CycleSceneryPalette, DmaClear16, FreeAllSpritePalettes, INTRO3_RAW_PTR, LZ77UnCompVram, LZDecompressVram, LoadCompressedSpritePaletteUsingHeap, LoadCompressedSpriteSheet, LoadCompressedSpriteSheetUsingHeap, LoadIntroPart2Graphics, LoadPalette, LoadSpritePalette, LoadSpritePalettes, MALE, MUS_INTRO, MUS_INTRO_BATTLE, PanFadeAndZoomScreen, PlayCryInternal, ScanlineEffect_InitWave, SetIntroPart2BgCnt, VRAM, getRuntime as _getRuntime, gBattleAnimPaletteTable, gBattleAnimPicTable, gIntro3Bg_Pal, gIntroCloudsSun_Tilemap, gIntroCloudsLeft_Tilemap, gIntroCloudsRight_Tilemap, gIntroClouds_Gfx, gIntroGameFreakTextFade_Pal, gIntroGroudonBg_Tilemap, gIntroGroudon_Gfx, gIntroGroudon_Tilemap, gIntroKyogreBg_Tilemap, gIntroKyogre_Gfx, gIntroKyogre_Tilemap, gIntroLegendBg_Gfx, gIntroRayquaza_Tilemap, gIntroRayquazaClouds_Tilemap, gIntroRayquaza_Gfx, gIntroRayquazaClouds_Gfx, gPlttBufferUnfaded, gSaveBlock2Ptr, gScanlineEffect, gTitleScreenAlphaBlend, BlendPalette, UpdatePaletteFade, m4aSongNumStart, sAnims_PlayerBicycle, sGameFreakLetterData, sGameFreakLetterStartDelays, sGameFreakLettersMoveSpeed, sGroudonRockData, sIntro1Bg0_Tilemap, sIntro1Bg1_Tilemap, sIntro1Bg2_Tilemap, sIntro1Bg3_Tilemap, sIntro1Bg_Gfx, sIntro1Bg_Pal, sIntroPokeball_Gfx, sIntroPokeball_Pal, sIntroPokeball_Tilemap, sKyogreBubbleData, sSparkleCoords, sSpritePalette_Bubbles, sSpritePalette_Lightning, sSpritePalette_RayquazaOrb, sSpritePalette_Sparkle, sSpritePalettes_Intro1, sSpritePalettes_RunningPokemon, sSpriteSheet_Bubbles, sSpriteSheet_FlygonSilhouette, sSpriteSheet_Lightning, sSpriteSheet_RayquazaOrb, sSpriteSheet_RunningPokemon, sSpriteSheet_Sparkle, sSpriteSheet_WaterDropsAndLogo } from '../../../decomp-globals';
+import { CreateBicycleBgAnimationTask, CreateIntroBrendanSprite, CreateIntroFlygonSprite, CreateIntroMaySprite, CycleSceneryPalette, DmaClear16, FreeAllSpritePalettes, INTRO3_RAW_PTR, LZ77UnCompVram, LZDecompressVram, LoadCompressedSpritePaletteUsingHeap, LoadCompressedSpriteSheet, LoadCompressedSpriteSheetUsingHeap, LoadIntroPart2Graphics, LoadPalette, LoadSpritePalette, LoadSpritePalettes, MALE, MUS_INTRO, MUS_INTRO_BATTLE, PanFadeAndZoomScreen, PlayCryInternal, PlaySE, SE_INTRO_BLAST, ScanlineEffect_InitWave, SetIntroPart2BgCnt, VRAM, getRuntime as _getRuntime, gBattleAnimPaletteTable, gBattleAnimPicTable, gIntro3Bg_Pal, gIntroCloudsSun_Tilemap, gIntroCloudsLeft_Tilemap, gIntroCloudsRight_Tilemap, gIntroClouds_Gfx, gIntroGameFreakTextFade_Pal, gIntroGroudonBg_Tilemap, gIntroGroudon_Gfx, gIntroGroudon_Tilemap, gIntroKyogreBg_Tilemap, gIntroKyogre_Gfx, gIntroKyogre_Tilemap, gIntroLegendBg_Gfx, gIntroRayquaza_Tilemap, gIntroRayquazaClouds_Tilemap, gIntroRayquaza_Gfx, gIntroRayquazaClouds_Gfx, gPlttBufferUnfaded, gSaveBlock2Ptr, gScanlineEffect, gTitleScreenAlphaBlend, BlendPalette, UpdatePaletteFade, m4aSongNumStart, sAnims_PlayerBicycle, sGameFreakLetterData, sGameFreakLetterStartDelays, sGameFreakLettersMoveSpeed, sGroudonRockData, sIntro1Bg0_Tilemap, sIntro1Bg1_Tilemap, sIntro1Bg2_Tilemap, sIntro1Bg3_Tilemap, sIntro1Bg_Gfx, sIntro1Bg_Pal, sIntroPokeball_Gfx, sIntroPokeball_Pal, sIntroPokeball_Tilemap, sKyogreBubbleData, sSparkleCoords, sSpritePalette_Bubbles, sSpritePalette_Lightning, sSpritePalette_RayquazaOrb, sSpritePalette_Sparkle, sSpritePalettes_Intro1, sSpritePalettes_RunningPokemon, sSpriteSheet_Bubbles, sSpriteSheet_FlygonSilhouette, sSpriteSheet_Lightning, sSpriteSheet_RayquazaOrb, sSpriteSheet_RunningPokemon, sSpriteSheet_Sparkle, sSpriteSheet_WaterDropsAndLogo } from '../../../decomp-globals';
 import { gSpriteSheet_IntroBrendan, gSpriteSheet_IntroMay, gSpriteSheet_IntroBicycle, gSpriteSheet_IntroFlygon, gSpritePalettes_IntroPlayerFlygon } from './intro_credits_graphics-data';
 import { CB2_InitTitleScreen } from './title_screen-callbacks-auto';
 // Constants resolved from decomp #defines / enums / TS data modules :
@@ -84,7 +84,7 @@ const SAVE_STATUS_CORRUPT = 2;
 const SAVE_STATUS_EMPTY = 0;
 const SCANLINE_EFFECT_REG_BG1HOFS = 4;
 const SCANLINE_EFFECT_REG_BG1VOFS = 6;
-const SE_INTRO_BLAST = 103;
+// SE_INTRO_BLAST imported from decomp-globals (= 103, songs.h)
 const SPECIES_GROUDON = 405;
 const SPECIES_KYOGRE = 404;
 const TORCHIC_ANIM_RUN = 1;
@@ -1910,7 +1910,8 @@ export const Task_RayquazaAttack: TaskCallback = (task, rt) => {
               if (data[1] == 6)
               {
                   spriteId = rt.CreateSpriteFromTemplate('sSpriteTemplate_RayquazaOrb',  120, 88, 15);
-                  m4aSongNumStart(SE_INTRO_BLAST);
+                  // MANUAL FIX session 71 : décomp = PlaySE(SE_INTRO_BLAST), pas m4aSongNumStart.
+                  PlaySE(SE_INTRO_BLAST);
                   _gs(rt, spriteId).invisible = true;
                   _gs(rt, spriteId).data[3] = data[4];
                   data[0]++;

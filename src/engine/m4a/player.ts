@@ -27,7 +27,14 @@ interface PlaybackStats {
   skippedReasons: Map<string, number>; // détail par voice type / sample symbol manquant
 }
 
+/** 1:1 décomp slots de playback parallèles : `gMPlayInfo_BGM` / `gMPlayInfo_SE1`
+ *  / `gMPlayInfo_SE2` (cf src/m4a.c:13-21). Chaque slot a son propre playback
+ *  état, permettant à BGM et SE de coexister. Avant ce refactor : un seul
+ *  `_currentPlayback` global → playSE écrasait la BGM (cf audit Bug 1). */
+export type SlotKind = 'bgm' | 'se1' | 'se2';
+
 interface PlaybackState {
+  slot: SlotKind;
   song: Midi;
   voicegroup: VoiceGroup;
   vgLookup: VoiceGroupLookup;
@@ -36,18 +43,35 @@ interface PlaybackState {
   startCtxTime: number;
   loop: boolean;
   stopped: boolean;
+  generation: number;  // gen counter par slot — invalidé par stopSong(slot), vérifié par endTimer
   stats: PlaybackStats;
 }
 
-let _currentPlayback: PlaybackState | null = null;
+const _slots: Record<SlotKind, PlaybackState | null> = {
+  bgm: null,
+  se1: null,
+  se2: null,
+};
+// Generation counter PAR SLOT incrémenté à chaque stopSong/playSong sur ce
+// slot. Permet à un endTimer de loop de vérifier qu'il est toujours "actif".
+const _playbackGen: Record<SlotKind, number> = { bgm: 0, se1: 0, se2: 0 };
 
-/** Charge un fichier MIDI depuis URL → Midi parsed object. */
+/** Cache in-memory des Midi parsés pour éviter fetch+parse répétés.
+ *  Critique pour transitions BGM (m4aSongNumStart) : sans ça, switch
+ *  intro→intro_battle→title = ~50-150ms de gap silence par transition. */
+const _midiCache = new Map<string, Midi>();
+
+/** Charge un fichier MIDI depuis URL → Midi parsed object. Cached. */
 export async function loadMidi(url: string): Promise<Midi> {
+  const cached = _midiCache.get(url);
+  if (cached) return cached;
   const arrBuf = await fetch(url).then(r => {
     if (!r.ok) throw new Error(`MIDI fetch failed: ${url} → ${r.status}`);
     return r.arrayBuffer();
   });
-  return new Midi(arrBuf);
+  const midi = new Midi(arrBuf);
+  _midiCache.set(url, midi);
+  return midi;
 }
 
 /** Démarre la lecture d'un MIDI avec un voicegroup donné.
@@ -61,17 +85,25 @@ export async function playSong(
   voicegroup: VoiceGroup,
   vgLookup: VoiceGroupLookup,
   loop = false,
+  slot: SlotKind = 'bgm',
 ): Promise<void> {
-  // Stop la song courante si une est en cours
-  stopSong();
+  // Stop la song courante DANS CE SLOT (BGM ne touche pas SE et vice-versa).
+  stopSong(slot);
+
+  // Nouvelle génération pour ce slot
+  const myGeneration = ++_playbackGen[slot];
 
   // S'assure que le sample manifest est chargé (sinon DirectSound voices échouent)
   await loadSampleManifest();
+
+  // Si une autre playSong a démarré entre-temps SUR LE MÊME SLOT (await yields), abort.
+  if (myGeneration !== _playbackGen[slot]) return;
 
   const ctx = getAudioContext();
   const startTime = ctx.currentTime + 0.05;  // léger lookahead
 
   const playback: PlaybackState = {
+    slot,
     song,
     voicegroup,
     vgLookup,
@@ -80,6 +112,7 @@ export async function playSong(
     startCtxTime: startTime,
     loop,
     stopped: false,
+    generation: myGeneration,
     stats: {
       totalNotes: 0,
       played: 0,
@@ -89,7 +122,7 @@ export async function playSong(
       skippedReasons: new Map(),
     },
   };
-  _currentPlayback = playback;
+  _slots[slot] = playback;
   resetVoiceStealingCounter();
 
   // Schedule chaque note de chaque track. 1:1 décomp m4a TrkVolPitSet :
@@ -189,6 +222,15 @@ export async function playSong(
           voice, note.midi, Math.round(note.velocity * 127),
           panMidi, noteOnTime, trackVolume, bend, lfoConfig,
         );
+        // Re-check stopped APRÈS l'await async : si stopSong a été appelé
+        // pendant playNote (ex: scene transition), on stop la note tout de
+        // suite au lieu de la laisser stuck dans activeNotes.
+        if (playback.stopped) {
+          if (active) {
+            try { active.stop(); } catch { /* ignore */ }
+          }
+          return;
+        }
         if (active) {
           playback.activeNotes.set(key, active);
           playback.stats.played++;
@@ -236,13 +278,15 @@ export async function playSong(
   // Schedule end : si loop, replay (1:1 décomp `BTRACK_LOOP` / GOTO marker).
   const endMs = Math.max(0, (startTime + song.duration - ctx.currentTime) * 1000);
   const endTimer = window.setTimeout(() => {
+    // Double-check generation par slot : si stopSong/playSong a été appelé
+    // sur ce slot entre temps, ne pas déclencher de loop iteration.
     if (playback.stopped) return;
-    // Print stats when song ends (avant replay si loop)
+    if (playback.generation !== _playbackGen[slot]) return;
     logPlaybackStats(playback.stats);
     if (loop) {
-      void playSong(song, voicegroup, vgLookup, loop);
+      void playSong(song, voicegroup, vgLookup, loop, slot);
     } else {
-      _currentPlayback = null;
+      _slots[slot] = null;
     }
   }, endMs + 100);
   playback.scheduledTimers.push(endTimer);
@@ -269,19 +313,33 @@ function logPlaybackStats(stats: PlaybackStats): void {
   }
 }
 
-/** Stop immédiat de la song courante (release toutes les notes + voice stealing). */
-export function stopSong(): void {
-  if (!_currentPlayback) return;
-  _currentPlayback.stopped = true;
-  for (const t of _currentPlayback.scheduledTimers) clearTimeout(t);
-  for (const note of _currentPlayback.activeNotes.values()) {
+/** Stop immédiat de la song courante (release toutes les notes + voice stealing).
+ *  @param slot 'bgm' (default) | 'se1' | 'se2'. Si omis, stoppe BGM uniquement
+ *  (= ne pas tuer les SE en train de jouer). Pour stopper TOUT, appeler
+ *  `stopAllSongs()`. */
+export function stopSong(slot: SlotKind = 'bgm'): void {
+  // Bump generation pour invalider tout endTimer pending de ce slot.
+  _playbackGen[slot]++;
+  const playback = _slots[slot];
+  if (!playback) return;
+  playback.stopped = true;
+  for (const t of playback.scheduledTimers) clearTimeout(t);
+  for (const note of playback.activeNotes.values()) {
     try { note.stop(); } catch { /* ignore */ }
   }
-  _currentPlayback.activeNotes.clear();
-  _currentPlayback = null;
-  // Hard cleanup : kill toutes les notes orphelines (au cas où des voices stealing
-  // ou notes sans entry dans activeNotes restent en mémoire)
+  playback.activeNotes.clear();
+  _slots[slot] = null;
+  // Hard cleanup : kill TOUTES les notes orphelines (= voice stealing ou
+  // notes sans entry dans activeNotes). Note : ce cleanup est global, pas
+  // par-slot — accepté car les SE sont courts et le voice stealing est rare.
   stopAllActiveNotes();
+}
+
+/** Stop TOUS les slots (BGM + SE1 + SE2). 1:1 décomp `m4aMPlayAllStop()`. */
+export function stopAllSongs(): void {
+  stopSong('bgm');
+  stopSong('se1');
+  stopSong('se2');
 }
 
 /** Détecte si la song a un loopStart marker (meta event 0x6) via @tonejs/midi.
@@ -294,7 +352,8 @@ export function detectLoopStart(_song: Midi): number | null {
   return null;
 }
 
-/** Vrai si une song est en cours. */
-export function isPlaying(): boolean {
-  return _currentPlayback !== null && !_currentPlayback.stopped;
+/** Vrai si une song est en cours sur le slot donné (default: bgm). */
+export function isPlaying(slot: SlotKind = 'bgm'): boolean {
+  const playback = _slots[slot];
+  return playback !== null && !playback.stopped;
 }

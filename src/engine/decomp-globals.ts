@@ -25,6 +25,12 @@
 import type { DecompRuntime } from './decomp-runtime';
 import { BG_PLTT_ID, OBJ_PLTT_ID, BG_CHAR_ADDR, BG_SCREEN_ADDR } from './decomp-runtime';
 import { G_SINE_TABLE } from './decomp-data/auto/src/sine-table';
+import { SONG_ID_TO_NAME } from './decomp-data/auto/src/song-table';
+// Static imports m4a/player + synth pour pouvoir stopper la musique de FAÇON
+// SYNCHRONE depuis m4aSongNumStart (sinon le sync stop attend l'import async,
+// laissant la song précédente déclencher son endTimer de loop entre-temps).
+import { stopSong as _staticStopSong, loadMidi as _staticLoadMidi, playSong as _staticPlaySong } from './m4a/player';
+import { stopAllActiveNotes as _staticStopAllNotes } from './m4a/synth';
 
 // ─── Singleton runtime + asset cache ──────────────────────────────────────────
 
@@ -519,19 +525,13 @@ export function CycleSceneryPalette(mode: number): void {
 // Mapping song ID → URL via include/constants/songs.h.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-/** Constants 1:1 décomp `include/constants/songs.h`. Note : on n'a besoin que des
- *  songs utilisés par les Tasks transcrites (intro, title, credits, battle, etc.).
- *  À étendre au fur et à mesure. */
-export const MUS_INTRO = 414;          // = MUS_DEMO1 (mus_intro.mid)
-export const MUS_INTRO_BATTLE = 442;   // = MUS_T_BATTLE (mus_intro_battle.mid)
-export const MUS_TITLE = 413;          // = MUS_TITLE3 (mus_title.mid)
-
-/** Mapping song ID → song NAME (= filename sans .mid). */
-const SONG_ID_TO_NAME: Record<number, string> = {
-  [MUS_INTRO]: 'mus_intro',
-  [MUS_INTRO_BATTLE]: 'mus_intro_battle',
-  [MUS_TITLE]: 'mus_title',
-};
+/** Constants 1:1 décomp `include/constants/songs.h`. Re-exportés depuis la
+ *  song-table extraite (532 entries). Re-export ici pour compat avec les
+ *  imports existants `import { MUS_INTRO } from '../../decomp-globals'`.
+ *  La constante `SONG_ID_TO_NAME` complète est importée en tête du fichier. */
+export const MUS_INTRO = 414;          // mus_intro
+export const MUS_INTRO_BATTLE = 442;   // mus_intro_battle
+export const MUS_TITLE = 413;          // mus_title
 
 // State du M4A engine maison (notre `src/engine/m4a/`). Init lazy via m4aPrime().
 let _m4aPrimed = false;
@@ -561,12 +561,24 @@ async function m4aPrime(): Promise<void> {
  *  M4A engine maison (`src/engine/m4a/`). Pas SpessaSynth ni emerald.sf2.
  *  Async fire-and-forget : await m4aPrime() puis playSong().
  *  Le voicegroup est résolu via `song-voicegroups.json` (extracted décomp). */
+// Song ID courante (= dernière passée à m4aSongNumStart). Utilisée par le
+// handler visibilitychange dans main.ts pour replay au retour de focus.
+let _currentSongId: number | null = null;
+export function getCurrentSongId(): number | null { return _currentSongId; }
+
 export function m4aSongNumStart(songId: number): void {
   const songName = SONG_ID_TO_NAME[songId];
   if (!songName) {
     console.warn(`[m4aSongNumStart] song ID ${songId} not mapped, skip`);
     return;
   }
+  _currentSongId = songId;
+  // STOP IMMÉDIAT et SYNC du slot BGM uniquement (= laisse SE1/SE2 jouer).
+  // Static imports (top of file) garantissent disponibilité immédiate.
+  // Critique pour éviter le micro-replay de loop entre 2 BGMs.
+  // NOTE : on N'appelle PAS _staticStopAllNotes() ici car ça killerait aussi
+  // les SE en cours (architecture multi-slot 1:1 GBA).
+  _staticStopSong('bgm');
   void (async () => {
     try {
       await m4aPrime();
@@ -581,28 +593,85 @@ export function m4aSongNumStart(songId: number): void {
         console.warn(`[m4aSongNumStart] voicegroup '${vgName}' not found in lookup`);
         return;
       }
-      const { loadMidi, playSong, stopSong } = await import('./m4a/player');
-      stopSong();  // arrête song précédente si playing
-      const midi = await loadMidi(url);
-      // playSong(midi, voicegroup, vgLookup, loop). loop=true pour BGM.
-      await (playSong as (m: unknown, vg: unknown, lookup: VgLookupFn, loop: boolean) => Promise<void>)(
-        midi, voicegroup, _vgLookup!, true,
+      const midi = await _staticLoadMidi(url);
+      // Re-vérification : si une autre m4aSongNumStart est passée entre-temps,
+      // _currentSongId aura changé. Skip pour ne pas écraser la nouvelle.
+      if (_currentSongId !== songId) return;
+      // 1:1 GBA : loop=false par DEFAUT. Le LOOP est encodé dans le .mid via
+      // les markers `[` et `]` que mid2agb détecte pour générer `ply_goto`
+      // (cf tools/mid2agb/midi.cpp:286-292). MUS_INTRO n'a PAS ces markers
+      // → mid2agb génère `ply_fine` (one-shot). Donc dans le vrai GBA,
+      // MUS_INTRO joue une fois puis stoppe → 0.6s silence avant scene 3
+      // (frame ~2034 song end vs frame 2070 Task_Scene3_Load) = comportement
+      // original. Pour les BGMs qui DOIVENT looper (overworld), il faudra
+      // détecter les markers MIDI dans nos .mid (TODO Phase 8+) ou maintenir
+      // une liste explicite par songName.
+      await (_staticPlaySong as (m: unknown, vg: unknown, lookup: VgLookupFn, loop: boolean, slot: string) => Promise<void>)(
+        midi, voicegroup, _vgLookup!, false, 'bgm',
       );
-      console.log(`[m4aSongNumStart] playing ${url} via M4A maison (vg=${vgName})`);
+      console.log(`[m4aSongNumStart] playing ${url} via M4A maison (vg=${vgName}) slot=bgm`);
     } catch (e) {
       console.error('[m4aSongNumStart] failed:', e);
     }
   })();
 }
 
-/** 1:1 décomp `m4aMPlayAllStop()` — stoppe tout playback M4A. */
+/** 1:1 décomp `m4aMPlayAllStop()` — stoppe tout playback M4A (BGM + SE).
+ *  Utilise `stopAllSongs()` du player qui boucle sur les 3 slots (bgm/se1/se2). */
 export function m4aMPlayAllStop(): void {
-  void import('./m4a/player').then(({ stopSong }) => stopSong());
+  void import('./m4a/player').then(({ stopAllSongs }) => stopAllSongs());
 }
 
-/** 1:1 décomp `PlaySE(seId)` — joue un sound effect one-shot. Phase 0c stub.
- *  TODO Phase 7 : router via m4aMPlayAllStop + start short SFX track. */
-export function PlaySE(_seId: number): void { /* TODO audio SFX */ }
+/** 1:1 décomp `PlaySE(seId)` — joue un sound effect one-shot.
+ *
+ *  ARCHITECTURE 1:1 GBA : la décomp utilise des slots `gMPlayInfo_SE1` et
+ *  `gMPlayInfo_SE2` SÉPARÉS du `gMPlayInfo_BGM` (cf src/m4a.c:13-21). Ainsi
+ *  un SE et la BGM coexistent. Notre player.ts a maintenant la même
+ *  architecture : 3 slots `bgm`/`se1`/`se2` indépendants avec leurs propres
+ *  generations + activeNotes + scheduledTimers.
+ *
+ *  Mapping seId → song name via la table complète extraite de songs.h.
+ *  Voicegroup résolu via song-voicegroups.json (rs_sfx_1 / rs_sfx_2 / frlg_sfx). */
+let _seSlotToggle: 'se1' | 'se2' = 'se1';
+export function PlaySE(seId: number): void {
+  const name = SONG_ID_TO_NAME[seId];
+  if (!name) {
+    console.warn(`[PlaySE] SE id ${seId} not mapped — songs.h missing entry?`);
+    return;
+  }
+  if (!name.startsWith('se_') && !name.startsWith('ph_')) {
+    console.warn(`[PlaySE] id ${seId} = ${name} is NOT a SE/PH — use m4aSongNumStart instead`);
+    return;
+  }
+  // Alterne entre se1 et se2 (= 1:1 décomp src/sound.c:577-598 : si SE1
+  // occupé, utilise SE2). Permet 2 SE simultanés.
+  const slot: 'se1' | 'se2' = _seSlotToggle;
+  _seSlotToggle = slot === 'se1' ? 'se2' : 'se1';
+  void (async () => {
+    try {
+      await m4aPrime();
+      const url = `/decomp/em/music/${name}.mid`;
+      const vgName = _songVoicegroups![name];
+      if (!vgName) {
+        console.warn(`[PlaySE] no voicegroup for ${name}`);
+        return;
+      }
+      const voicegroup = _vgLookup!(vgName);
+      if (!voicegroup) {
+        console.warn(`[PlaySE] voicegroup '${vgName}' not in lookup`);
+        return;
+      }
+      const midi = await _staticLoadMidi(url);
+      // SE = loop=false + slot SE (PAS bgm). La BGM courante n'est PAS coupée :
+      // les 2 slots tournent en parallèle (1:1 GBA).
+      await (_staticPlaySong as (m: unknown, vg: unknown, lookup: VgLookupFn, loop: boolean, slot: string) => Promise<void>)(
+        midi, voicegroup, _vgLookup!, false, slot,
+      );
+    } catch (e) {
+      console.error('[PlaySE] failed:', e);
+    }
+  })();
+}
 
 /** Map species ID → species name (= cri filename `cries/<name>.wav`).
  *  Values match décomp `include/constants/species.h` (SPECIES_KYOGRE=404 etc). */
@@ -1154,7 +1223,12 @@ export function LoadCompressedSpriteSheet(sheet: { data: string, size: number, t
   const r = rt();
   // data = symbol décomp (e.g. 'sIntroDropsLogo_Gfx')
   const charData = getAsset(sheet.data);
-  if (!charData) return; // asset manquant
+  if (!charData) {
+    // ⚠️ ASSET MANQUANT : explicitement loud — sans ça flicker random du logo
+    // (sIntroDropsLogo_Gfx pas chargé à temps → tile data garbage en OAM VRAM).
+    console.error(`[LoadCompressedSpriteSheet] ASSET MISSING : '${sheet.data}' (tag=${sheet.tag}) — tile data NOT in OBJ VRAM. Will cause random sprite garbage.`);
+    return;
+  }
   const bytes = charData instanceof Uint16Array
     ? new Uint8Array(charData.buffer, charData.byteOffset, charData.byteLength)
     : charData;

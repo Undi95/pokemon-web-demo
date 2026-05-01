@@ -92,6 +92,10 @@ const game = new Phaser.Game(config);
 // Lance l'overlay debug en parallèle sur toutes les scènes
 void game.scene.add('DebugOverlayScene', DebugOverlayScene, true);
 
+// Pas de pause sur visibilitychange : retiré sur demande. L'onglet en arrière-plan
+// laisse tourner game + musique. Si le MIDI loop boucle pendant que tab masqué,
+// no big deal (acceptable comportement web).
+
 // Expose contrôle zoom à window pour les boutons HTML.
 (window as unknown as { setGameZoom: (z: number) => void }).setGameZoom = (z: number) => {
   game.scale.setZoom(Math.max(1, Math.min(8, z)));

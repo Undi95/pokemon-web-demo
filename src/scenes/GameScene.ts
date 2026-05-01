@@ -334,6 +334,23 @@ export class GameScene extends Phaser.Scene {
       await preloadTitleAssets();
       await preloadFontData();
 
+      // Pré-charge les MIDIs intro/title + cris légendaires pour éliminer le
+      // gap silence aux transitions m4aSongNumStart (sinon ~50-150ms de
+      // fetch+parse par switch intro→intro_battle→title).
+      // 1:1 ROM-équivalent : tous les sons sont "déjà là" comme dans la décomp.
+      const { loadMidi } = await import('../engine/m4a/player');
+      void Promise.all([
+        loadMidi('/decomp/em/music/mus_intro.mid').catch(() => {}),
+        loadMidi('/decomp/em/music/mus_intro_battle.mid').catch(() => {}),
+        loadMidi('/decomp/em/music/mus_title.mid').catch(() => {}),
+        loadMidi('/decomp/em/music/se_intro_blast.mid').catch(() => {}),
+      ]);
+      // Pré-charge cris Groudon/Kyogre via fetch warm (decodeAudioData est rapide).
+      void Promise.all([
+        fetch('/decomp/em/cries/groudon.wav').catch(() => {}),
+        fetch('/decomp/em/cries/kyogre.wav').catch(() => {}),
+      ]);
+
       // Transfère les palettes additionnelles préchargées dans le runtime
       // pour que CpuCopy16 puisse les utiliser (e.g. text.pal pour color cycle).
       const textPal = assetCache.get('gIntroGameFreakTextFade_Pal') as Uint16Array | undefined;
