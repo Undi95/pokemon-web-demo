@@ -1,67 +1,108 @@
 /**
- * M4A MIDI player Web Audio.
+ * M4A MIDI player — implémenté via spessasynth_lib + SoundFont Pokemon Emerald.
  *
- * Charge un fichier MIDI via @tonejs/midi (déjà dans deps), parse les tracks
- * et schedule chaque note via Web Audio API. Pour chaque note, résout le voice
- * via voice-resolver (selon program change MIDI) puis trigger via synth.playNote().
+ * Pipeline :
+ *   - SF2 (`/audio/emerald.sf2`) = SoundFont 1:1 rippé de la ROM Pokemon Emerald
+ *     (= contient tous les voicegroups + samples + ADSR + loops corrects).
+ *   - MIDI files (`/decomp/em/music/*.mid`) = pré-extraits depuis le décomp.
+ *   - spessasynth_lib WorkletSynthesizer joue les MIDI via le SF2 en Web Audio.
  *
- * Polyphonie : multiples notes peuvent être actives en même temps. On track les
- * `ActiveNote` par {trackIdx, noteId} pour pouvoir les stop au noteOff.
+ * Multi-slot (BGM/SE1/SE2 1:1 décomp `gMPlayInfo_*`) :
+ *   - 1 WorkletSynthesizer par slot (instance dédiée → channels indépendants,
+ *     SE n'arrête PAS la BGM).
+ *   - Le SF2 buffer est fetché 1 fois et partagé entre les synths.
  *
- * Loops : @tonejs/midi gère les loop markers (meta event 0x6 "Marker") ou on
- * peut juste replay le MIDI quand il finit.
+ * API publique conservée vs ancien player M4A custom :
+ *   - `loadMidi(url)` retourne un Midi (parsed @tonejs/midi) + cache son ArrayBuffer
+ *     en interne pour spessasynth_lib via WeakMap.
+ *   - `playSong(song, voicegroup, vgLookup, loop, slot, songVolume)` — les args
+ *     `voicegroup`/`vgLookup` sont ignorés (= le SF2 contient les voicegroups).
+ *   - `stopSong(slot)` / `stopAllSongs()` / `isPlaying(slot)` inchangés.
+ *   - `detectLoopStart` retourne null (loops gérés par spessasynth via marker MIDI).
  */
 import { Midi } from '@tonejs/midi';
+import { WorkletSynthesizer, Sequencer } from 'spessasynth_lib';
 import type { VoiceGroup } from './voice-types';
-import { resolveVoice, type VoiceGroupLookup } from './voice-resolver';
-import { playNote, stopAllActiveNotes, resetVoiceStealingCounter, getVoiceStealingCount, type ActiveNote } from './synth';
-import { getAudioContext } from './audio-context';
-import { loadSampleManifest } from './sample-loader';
+import type { VoiceGroupLookup } from './voice-resolver';
+import { getAudioContext, getMasterGain } from './audio-context';
 
-interface PlaybackStats {
-  totalNotes: number;
-  played: number;
-  skippedNoVoice: number;          // resolveVoice retourne null (keysplit non géré, etc.)
-  skippedNoSample: number;         // DirectSound sample non trouvé dans manifest
-  skippedUnknownType: number;      // ProgrammableWave ou type non implémenté
-  skippedReasons: Map<string, number>; // détail par voice type / sample symbol manquant
-}
-
-/** 1:1 décomp slots de playback parallèles : `gMPlayInfo_BGM` / `gMPlayInfo_SE1`
- *  / `gMPlayInfo_SE2` (cf src/m4a.c:13-21). Chaque slot a son propre playback
- *  état, permettant à BGM et SE de coexister. Avant ce refactor : un seul
- *  `_currentPlayback` global → playSE écrasait la BGM (cf audit Bug 1). */
 export type SlotKind = 'bgm' | 'se1' | 'se2';
 
-interface PlaybackState {
-  slot: SlotKind;
-  song: Midi;
-  voicegroup: VoiceGroup;
-  vgLookup: VoiceGroupLookup;
-  activeNotes: Map<string, ActiveNote>;   // key = `${trackIdx}_${noteName}_${time}`
-  scheduledTimers: number[];
-  startCtxTime: number;
-  loop: boolean;
-  stopped: boolean;
-  generation: number;  // gen counter par slot — invalidé par stopSong(slot), vérifié par endTimer
-  stats: PlaybackStats;
+const SF2_URL = '/audio/emerald.sf2';
+const WORKLET_URL = '/spessasynth_processor.min.js';
+
+// ─── Singletons partagés ────────────────────────────────────────────────────
+
+let _sfBuffer: ArrayBuffer | null = null;
+let _sfFetchPromise: Promise<ArrayBuffer> | null = null;
+let _workletModuleAdded = false;
+let _workletModulePromise: Promise<void> | null = null;
+
+async function ensureSfBuffer(): Promise<ArrayBuffer> {
+  if (_sfBuffer) return _sfBuffer;
+  if (_sfFetchPromise) return _sfFetchPromise;
+  _sfFetchPromise = fetch(SF2_URL).then(async r => {
+    if (!r.ok) throw new Error(`SF2 fetch failed: ${SF2_URL} → ${r.status}`);
+    const buf = await r.arrayBuffer();
+    _sfBuffer = buf;
+    console.log(`[m4a] SoundFont loaded (${(buf.byteLength / (1024 * 1024)).toFixed(1)} MiB)`);
+    return buf;
+  });
+  return _sfFetchPromise;
 }
 
-const _slots: Record<SlotKind, PlaybackState | null> = {
-  bgm: null,
-  se1: null,
-  se2: null,
-};
-// Generation counter PAR SLOT incrémenté à chaque stopSong/playSong sur ce
-// slot. Permet à un endTimer de loop de vérifier qu'il est toujours "actif".
-const _playbackGen: Record<SlotKind, number> = { bgm: 0, se1: 0, se2: 0 };
+async function ensureWorkletModule(ctx: BaseAudioContext): Promise<void> {
+  if (_workletModuleAdded) return;
+  if (_workletModulePromise) return _workletModulePromise;
+  _workletModulePromise = ctx.audioWorklet.addModule(WORKLET_URL).then(() => {
+    _workletModuleAdded = true;
+  });
+  return _workletModulePromise;
+}
 
-/** Cache in-memory des Midi parsés pour éviter fetch+parse répétés.
- *  Critique pour transitions BGM (m4aSongNumStart) : sans ça, switch
- *  intro→intro_battle→title = ~50-150ms de gap silence par transition. */
+// ─── Per-slot synth + sequencer ─────────────────────────────────────────────
+
+interface SlotState {
+  synth: WorkletSynthesizer;
+  sequencer: Sequencer | null;  // créé à la 1ère playSong
+  generation: number;            // bumped par stopSong/playSong → invalide les awaits pending
+}
+
+const _slots: Partial<Record<SlotKind, SlotState>> = {};
+const _slotInitPromises: Partial<Record<SlotKind, Promise<SlotState>>> = {};
+
+async function ensureSlotState(slot: SlotKind): Promise<SlotState> {
+  const existing = _slots[slot];
+  if (existing) return existing;
+  const pending = _slotInitPromises[slot];
+  if (pending) return pending;
+  const promise = (async () => {
+    const ctx = getAudioContext();
+    await ensureWorkletModule(ctx);
+    const synth = new WorkletSynthesizer(ctx);
+    // Route via masterGain pour respecter le master volume du jeu (cf audio-context.ts)
+    synth.connect(getMasterGain());
+    const sfBuf = await ensureSfBuffer();
+    // addSoundBank consomme le buffer (transferable). On en clone un slice à chaque
+    // appel pour éviter le neutering du buffer partagé entre slots.
+    await synth.soundBankManager.addSoundBank(sfBuf.slice(0), 'emerald');
+    await synth.isReady;
+    const state: SlotState = { synth, sequencer: null, generation: 0 };
+    _slots[slot] = state;
+    console.log(`[m4a] spessasynth synth ready for slot=${slot}`);
+    return state;
+  })();
+  _slotInitPromises[slot] = promise;
+  return promise;
+}
+
+// ─── MIDI buffer cache (pour passer au Sequencer) ───────────────────────────
+
+const _bufferByMidi = new WeakMap<Midi, ArrayBuffer>();
 const _midiCache = new Map<string, Midi>();
 
-/** Charge un fichier MIDI depuis URL → Midi parsed object. Cached. */
+/** Charge un MIDI depuis URL → Midi parsed. Cached. Le buffer brut est aussi
+ *  caché pour pouvoir le passer à spessasynth Sequencer.loadNewSongList. */
 export async function loadMidi(url: string): Promise<Midi> {
   const cached = _midiCache.get(url);
   if (cached) return cached;
@@ -70,278 +111,73 @@ export async function loadMidi(url: string): Promise<Midi> {
     return r.arrayBuffer();
   });
   const midi = new Midi(arrBuf);
+  _bufferByMidi.set(midi, arrBuf);
   _midiCache.set(url, midi);
   return midi;
 }
 
-/** Démarre la lecture d'un MIDI avec un voicegroup donné.
- *  @param song parsed Midi
- *  @param voicegroup le voicegroup à utiliser (ex: VOICEGROUP de title.ts)
- *  @param vgLookup callback pour résoudre les sub-voicegroups (keysplit)
- *  @param loop si true, replay quand fini
- *  @param slot bgm|se1|se2 (multi-slot 1:1 GBA)
- *  @param songVolume per-song volume scale 0-128 (1:1 décomp `mid2agb -Vxxx`).
- *                    `null`/undefined = pas de scaling (= 128 default).
- *  @returns Promise qui resolve quand la song termine (ou jamais si loop=true) */
+/** Démarre la lecture d'un MIDI sur un slot.
+ *  Args `_voicegroup` et `_vgLookup` ignorés (= SF2 contient les voicegroups).
+ *  songVolume 0-128 (1:1 décomp `mid2agb -Vxxx`) → mappé au master volume du synth. */
 export async function playSong(
   song: Midi,
-  voicegroup: VoiceGroup,
-  vgLookup: VoiceGroupLookup,
+  _voicegroup: VoiceGroup,
+  _vgLookup: VoiceGroupLookup,
   loop = false,
   slot: SlotKind = 'bgm',
   songVolume: number | null = null,
 ): Promise<void> {
-  // Stop la song courante DANS CE SLOT (BGM ne touche pas SE et vice-versa).
+  // Stop la song courante DANS CE SLOT
   stopSong(slot);
 
-  // Nouvelle génération pour ce slot
-  const myGeneration = ++_playbackGen[slot];
+  const state = await ensureSlotState(slot);
+  const myGen = ++state.generation;
 
-  // S'assure que le sample manifest est chargé (sinon DirectSound voices échouent)
-  await loadSampleManifest();
-
-  // Si une autre playSong a démarré entre-temps SUR LE MÊME SLOT (await yields), abort.
-  if (myGeneration !== _playbackGen[slot]) return;
-
-  const ctx = getAudioContext();
-  const startTime = ctx.currentTime + 0.05;  // léger lookahead
-
-  const playback: PlaybackState = {
-    slot,
-    song,
-    voicegroup,
-    vgLookup,
-    activeNotes: new Map(),
-    scheduledTimers: [],
-    startCtxTime: startTime,
-    loop,
-    stopped: false,
-    generation: myGeneration,
-    stats: {
-      totalNotes: 0,
-      played: 0,
-      skippedNoVoice: 0,
-      skippedNoSample: 0,
-      skippedUnknownType: 0,
-      skippedReasons: new Map(),
-    },
-  };
-  _slots[slot] = playback;
-  resetVoiceStealingCounter();
-
-  // Schedule chaque note de chaque track. 1:1 décomp m4a TrkVolPitSet :
-  // chaque note utilise les CC actifs (volume CC7, expression CC11, pan CC10, pitch bend)
-  // au moment de noteOn. @tonejs/midi expose track.controlChanges + track.pitchBends.
-  for (let tIdx = 0; tIdx < song.tracks.length; tIdx++) {
-    const track = song.tracks[tIdx];
-    const programNumber = track.instrument.number ?? 0;
-
-    // Build sorted lists of CC events per type pour lookup binaire au noteOn time
-    // (volume CC=7, expression CC=11, pan CC=10) :
-    type CcEvent = { time: number; value: number };
-    const volEvents: CcEvent[] = [];
-    const expEvents: CcEvent[] = [];
-    const panEvents: CcEvent[] = [];
-    const ccs = track.controlChanges as Record<string, Array<{ time: number; value: number }> | undefined>;
-    for (const ccArr of Object.values(ccs)) {
-      if (!Array.isArray(ccArr)) continue;
-      for (const cc of ccArr) {
-        // @tonejs/midi : ccArr est groupé par CC number (key string)
-      }
-    }
-    const modEvents: CcEvent[] = [];     // CC1 modulation depth → vibrato
-    const sustainEvents: CcEvent[] = []; // CC64 sustain pedal (>= 0.5 = on)
-    if (ccs[7])  for (const cc of ccs[7])  volEvents.push({ time: cc.time, value: cc.value });
-    if (ccs[11]) for (const cc of ccs[11]) expEvents.push({ time: cc.time, value: cc.value });
-    if (ccs[10]) for (const cc of ccs[10]) panEvents.push({ time: cc.time, value: cc.value });
-    if (ccs[1])  for (const cc of ccs[1])  modEvents.push({ time: cc.time, value: cc.value });
-    if (ccs[64]) for (const cc of ccs[64]) sustainEvents.push({ time: cc.time, value: cc.value });
-    volEvents.sort((a, b) => a.time - b.time);
-    expEvents.sort((a, b) => a.time - b.time);
-    panEvents.sort((a, b) => a.time - b.time);
-    modEvents.sort((a, b) => a.time - b.time);
-    sustainEvents.sort((a, b) => a.time - b.time);
-    const pitchBends = track.pitchBends ?? [];
-    const sortedBends = [...pitchBends].sort((a, b) => a.time - b.time);
-
-    /** Trouve la dernière valeur d'une liste CC à un time donné, ou default. */
-    const valueAtTime = (events: CcEvent[], t: number, defaultVal: number): number => {
-      let val = defaultVal;
-      for (const e of events) {
-        if (e.time > t) break;
-        val = e.value;
-      }
-      return val;
-    };
-
-    for (const note of track.notes) {
-      const noteOnTime = startTime + note.time;
-      const noteOffTime = noteOnTime + note.duration;
-      const key = `${tIdx}_${note.midi}_${note.time.toFixed(3)}`;
-
-      playback.stats.totalNotes++;
-
-      const volCc = valueAtTime(volEvents, note.time, 1.0);
-      const expCc = valueAtTime(expEvents, note.time, 1.0);
-      const panCc = valueAtTime(panEvents, note.time, 0.5);
-      // Per-song volume 1:1 décomp `mid2agb -Vxxx` arg (cf. midi.cfg) + master
-      // volume default GBA (12/15 ≈ 0.8125, m4a.c:80). Scale appliqué au
-      // trackVolume pour rester cohérent avec velocity/CC7/CC11 multipliés.
-      const songVolNorm = songVolume !== null ? songVolume / 128 : 1.0;
-      const masterVolNorm = 12 / 15;  // default SoundInfo.masterVolume = 12 → ~0.8125
-      const trackVolume = volCc * expCc * songVolNorm * masterVolNorm;
-      const panMidi = Math.round(panCc * 127);
-      const bend = valueAtTime(sortedBends as CcEvent[], note.time, 0);
-      // Modulation depth via CC1 (mod wheel). M4A traduit en track->mod 0-127.
-      // Default lfoSpeed=22 (cf. m4a.c:247 default), modT=0 (vibrato).
-      // Si MIDI a des CC propriétaires pour lfoSpeed/modT (mid2agb peut utiliser
-      // CC alternatifs), on les supporte ici :
-      //   CC 21 (général-purpose 1) → lfoSpeed
-      //   CC 22 (général-purpose 2) → modT (0=vibrato, 1=tremolo, 2=pan_lfo)
-      //   CC 26 (général-purpose 3) → lfoDelay ticks
-      // Note : MIDI standard ne mappe pas ces CC à ces fonctions ; c'est une
-      // convention si mid2agb les utilise. Sans mapping confirmé, on lit mais
-      // les valeurs default GBA sont conservées si CC absent.
-      const modCc = valueAtTime(modEvents, note.time, 0);
-      let lfoConfig = null as null | { speed: number; depth: number; type: 0 | 1 | 2; delayTicks: number };
-      if (modCc > 0) {
-        const speedCc = ccs[21] ? valueAtTime(ccs[21] as CcEvent[], note.time, 22 / 127) : 22 / 127;
-        const typeCc = ccs[22] ? valueAtTime(ccs[22] as CcEvent[], note.time, 0) : 0;
-        const delayCc = ccs[26] ? valueAtTime(ccs[26] as CcEvent[], note.time, 0) : 0;
-        const lfoSpeed = Math.max(1, Math.round(speedCc * 127)) || 22;
-        const modT = (Math.round(typeCc * 2) % 3) as 0 | 1 | 2;
-        lfoConfig = {
-          speed: lfoSpeed,
-          depth: Math.round(modCc * 127),
-          type: modT,
-          delayTicks: Math.round(delayCc * 30),
-        };
-      }
-
-      const timeoutMs = Math.max(0, (noteOnTime - ctx.currentTime) * 1000);
-      const onTimer = window.setTimeout(async () => {
-        if (playback.stopped) return;
-        const voice = resolveVoice(voicegroup, programNumber, note.midi, vgLookup);
-        if (!voice) {
-          playback.stats.skippedNoVoice++;
-          incReason(playback.stats, `noVoice:program=${programNumber}`);
-          return;
-        }
-        const active = await playNote(
-          voice, note.midi, Math.round(note.velocity * 127),
-          panMidi, noteOnTime, trackVolume, bend, lfoConfig,
-        );
-        // Re-check stopped APRÈS l'await async : si stopSong a été appelé
-        // pendant playNote (ex: scene transition), on stop la note tout de
-        // suite au lieu de la laisser stuck dans activeNotes.
-        if (playback.stopped) {
-          if (active) {
-            try { active.stop(); } catch { /* ignore */ }
-          }
-          return;
-        }
-        if (active) {
-          playback.activeNotes.set(key, active);
-          playback.stats.played++;
-        } else {
-          if (voice.type === 'directsound' || voice.type === 'directsound_no_resample') {
-            playback.stats.skippedNoSample++;
-            incReason(playback.stats, `noSample:${voice.sampleSymbol}`);
-          } else {
-            playback.stats.skippedUnknownType++;
-            incReason(playback.stats, `unknownType:${voice.type}`);
-          }
-        }
-      }, timeoutMs);
-      playback.scheduledTimers.push(onTimer);
-
-      // Sustain pedal CC64 : si pédale active au noteOff, retarder le release
-      // jusqu'au moment où la pédale relâche (CC64 < 0.5).
-      // 1:1 décomp : sustain pedal tient toutes les notes du track.
-      const sustainAtOff = valueAtTime(sustainEvents, note.time + note.duration, 0);
-      let actualOffTime = noteOffTime;
-      if (sustainAtOff >= 0.5) {
-        // Trouver le prochain event où sustain retombe < 0.5
-        for (const ev of sustainEvents) {
-          if (ev.time > note.time + note.duration && ev.value < 0.5) {
-            actualOffTime = startTime + ev.time;
-            break;
-          }
-        }
-      }
-
-      // Schedule noteOff (potentially delayed par sustain pedal)
-      const offTimeoutMs = Math.max(0, (actualOffTime - ctx.currentTime) * 1000);
-      const offTimer = window.setTimeout(() => {
-        if (playback.stopped) return;
-        const active = playback.activeNotes.get(key);
-        if (active) {
-          active.stop(actualOffTime);
-          playback.activeNotes.delete(key);
-        }
-      }, offTimeoutMs);
-      playback.scheduledTimers.push(offTimer);
-    }
+  const buffer = _bufferByMidi.get(song);
+  if (!buffer) {
+    console.error('[m4a] playSong: MIDI buffer not found in cache (was loadMidi() called?)');
+    return;
   }
 
-  // Schedule end : si loop, replay (1:1 décomp `BTRACK_LOOP` / GOTO marker).
-  const endMs = Math.max(0, (startTime + song.duration - ctx.currentTime) * 1000);
-  const endTimer = window.setTimeout(() => {
-    // Double-check generation par slot : si stopSong/playSong a été appelé
-    // sur ce slot entre temps, ne pas déclencher de loop iteration.
-    if (playback.stopped) return;
-    if (playback.generation !== _playbackGen[slot]) return;
-    logPlaybackStats(playback.stats);
-    if (loop) {
-      void playSong(song, voicegroup, vgLookup, loop, slot);
-    } else {
-      _slots[slot] = null;
-    }
-  }, endMs + 100);
-  playback.scheduledTimers.push(endTimer);
+  // Si stopSong a été appelé entre temps (await ensureSlotState yield), abort.
+  if (myGen !== state.generation) return;
 
-  return Promise.resolve();
-}
+  // songVolume 0-128 → 0-1 master gain. Default 128 = full.
+  const songVolNorm = songVolume !== null ? Math.max(0, Math.min(1, songVolume / 128)) : 1.0;
 
-function incReason(stats: PlaybackStats, reason: string): void {
-  stats.skippedReasons.set(reason, (stats.skippedReasons.get(reason) || 0) + 1);
-}
+  const seq = new Sequencer(state.synth);
+  // loadNewSongList prend un tableau de MIDI. On joue 1 song à la fois.
+  // Le clone .slice(0) protège le buffer partagé entre playSong successifs.
+  seq.loadNewSongList([{ binary: buffer.slice(0), fileName: 'song.mid' }]);
+  seq.loopCount = loop ? Infinity : 0;
+  seq.play();
 
-function logPlaybackStats(stats: PlaybackStats): void {
-  const skippedTotal = stats.skippedNoVoice + stats.skippedNoSample + stats.skippedUnknownType;
-  const stealing = getVoiceStealingCount();
-  console.log(`[m4a] Playback stats : ${stats.played}/${stats.totalNotes} notes played` +
-              ` (${skippedTotal} skipped : noVoice=${stats.skippedNoVoice}, noSample=${stats.skippedNoSample}, unknownType=${stats.skippedUnknownType})` +
-              ` | Voice stealing: ${stealing} events`);
-  if (stats.skippedReasons.size > 0) {
-    const top = [...stats.skippedReasons.entries()]
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 10);
-    console.log('[m4a] Top skip reasons:');
-    for (const [reason, count] of top) console.log(`  ${count}× ${reason}`);
+  // Master volume scaling : appliqué via le synth's master gain (1:1 décomp masterVolume).
+  // spessasynth ne gère pas un volume per-sequencer ; on règle au synth-level.
+  // Cf m4a.c:80 default masterVolume = 12 → ~0.8125 ; ici on multiplie par songVolNorm.
+  const synthMasterVol = 0.8125 * songVolNorm;
+  try {
+    state.synth.setMasterParameter('masterGain' as any, synthMasterVol);
+  } catch {
+    // Fallback : set audio-context master gain (= getMasterGain) à ce niveau ?
+    // Skip silently, default volume utilisé.
   }
+
+  state.sequencer = seq;
 }
 
-/** Stop immédiat de la song courante (release toutes les notes + voice stealing).
- *  @param slot 'bgm' (default) | 'se1' | 'se2'. Si omis, stoppe BGM uniquement
- *  (= ne pas tuer les SE en train de jouer). Pour stopper TOUT, appeler
- *  `stopAllSongs()`. */
+/** Stop immédiat de la song courante du slot. */
 export function stopSong(slot: SlotKind = 'bgm'): void {
-  // Bump generation pour invalider tout endTimer pending de ce slot.
-  _playbackGen[slot]++;
-  const playback = _slots[slot];
-  if (!playback) return;
-  playback.stopped = true;
-  for (const t of playback.scheduledTimers) clearTimeout(t);
-  for (const note of playback.activeNotes.values()) {
-    try { note.stop(); } catch { /* ignore */ }
+  const state = _slots[slot];
+  if (!state) return;
+  state.generation++;
+  if (state.sequencer) {
+    try {
+      state.sequencer.pause();
+      // spessasynth Sequencer n'a pas de "destroy" exposé ; pause + GC suffit.
+    } catch { /* already stopped */ }
+    state.sequencer = null;
   }
-  playback.activeNotes.clear();
-  _slots[slot] = null;
-  // Hard cleanup : kill TOUTES les notes orphelines (= voice stealing ou
-  // notes sans entry dans activeNotes). Note : ce cleanup est global, pas
-  // par-slot — accepté car les SE sont courts et le voice stealing est rare.
-  stopAllActiveNotes();
 }
 
 /** Stop TOUS les slots (BGM + SE1 + SE2). 1:1 décomp `m4aMPlayAllStop()`. */
@@ -351,18 +187,13 @@ export function stopAllSongs(): void {
   stopSong('se2');
 }
 
-/** Détecte si la song a un loopStart marker (meta event 0x6) via @tonejs/midi.
- *  Retourne le time en seconds ou null si pas de marker.
- *  TODO : @tonejs/midi expose les markers via `header.timeSignatures` ou
- *  `track.events` selon version. Pour MVP on retourne null (replay full). */
+/** Détection loopStart : non implémenté (spessasynth gère les markers MIDI lui-même). */
 export function detectLoopStart(_song: Midi): number | null {
-  // @tonejs/midi v2 expose marker meta events via Marker class si présents.
-  // Skip pour MVP — la plupart des MIDI Pokemon Emerald n'ont pas ces markers.
   return null;
 }
 
-/** Vrai si une song est en cours sur le slot donné (default: bgm). */
+/** Vrai si une song est en cours sur le slot donné. */
 export function isPlaying(slot: SlotKind = 'bgm'): boolean {
-  const playback = _slots[slot];
-  return playback !== null && !playback.stopped;
+  const state = _slots[slot];
+  return state?.sequencer != null;
 }
