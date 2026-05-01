@@ -135,18 +135,5 @@ export async function preloadSamples(symbols: string[]): Promise<void> {
   await Promise.all(symbols.map(s => loadSample(s)));
 }
 
-/** Génère un AudioBuffer de white noise (durée 1s, mono) pour les voices PSG noise.
- *  Cache global pour réutilisation. */
-let _noiseBuffer: AudioBuffer | null = null;
-export function getNoiseBuffer(): AudioBuffer {
-  if (_noiseBuffer) return _noiseBuffer;
-  const ctx = getAudioContext();
-  const lengthSec = 1;
-  const buf = ctx.createBuffer(1, ctx.sampleRate * lengthSec, ctx.sampleRate);
-  const data = buf.getChannelData(0);
-  for (let i = 0; i < data.length; i++) {
-    data[i] = Math.random() * 2 - 1;
-  }
-  _noiseBuffer = buf;
-  return buf;
-}
+// Le helper `getNoiseBuffer()` (white noise approximatif) a été remplacé par
+// le LFSR-accurate buffer dans `noise-engine.ts`. Cf. `getNoiseLfsrBuffer()`.

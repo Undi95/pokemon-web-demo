@@ -25,7 +25,8 @@
 import type { DecompRuntime } from './decomp-runtime';
 import { BG_PLTT_ID, OBJ_PLTT_ID, BG_CHAR_ADDR, BG_SCREEN_ADDR } from './decomp-runtime';
 import { G_SINE_TABLE } from './decomp-data/auto/src/sine-table';
-import { SONG_ID_TO_NAME } from './decomp-data/auto/src/song-table';
+import { SONG_ID_TO_NAME, getSongConfig } from './decomp-data/auto/src/song-table';
+import { setReverb as _staticSetReverb } from './m4a/audio-context';
 // Static imports m4a/player + synth pour pouvoir stopper la musique de FAÇON
 // SYNCHRONE depuis m4aSongNumStart (sinon le sync stop attend l'import async,
 // laissant la song précédente déclencher son endTimer de loop entre-temps).
@@ -597,6 +598,11 @@ export function m4aSongNumStart(songId: number): void {
       // Re-vérification : si une autre m4aSongNumStart est passée entre-temps,
       // _currentSongId aura changé. Skip pour ne pas écraser la nouvelle.
       if (_currentSongId !== songId) return;
+      // Reverb + volume par-song 1:1 décomp `sound/songs/midi/midi.cfg` (mid2agb args).
+      // Ex : mus_intro = R50 V90 (overworld léger), mus_cave_of_origin = R90 (cavernes).
+      const cfg = getSongConfig(songName);
+      if (cfg && cfg.reverb !== null) _staticSetReverb(cfg.reverb);
+      const songVol = cfg?.volume ?? null;
       // 1:1 GBA : loop=false par DEFAUT. Le LOOP est encodé dans le .mid via
       // les markers `[` et `]` que mid2agb détecte pour générer `ply_goto`
       // (cf tools/mid2agb/midi.cpp:286-292). MUS_INTRO n'a PAS ces markers
@@ -606,10 +612,10 @@ export function m4aSongNumStart(songId: number): void {
       // original. Pour les BGMs qui DOIVENT looper (overworld), il faudra
       // détecter les markers MIDI dans nos .mid (TODO Phase 8+) ou maintenir
       // une liste explicite par songName.
-      await (_staticPlaySong as (m: unknown, vg: unknown, lookup: VgLookupFn, loop: boolean, slot: string) => Promise<void>)(
-        midi, voicegroup, _vgLookup!, false, 'bgm',
+      await (_staticPlaySong as (m: unknown, vg: unknown, lookup: VgLookupFn, loop: boolean, slot: string, volume: number | null) => Promise<void>)(
+        midi, voicegroup, _vgLookup!, false, 'bgm', songVol,
       );
-      console.log(`[m4aSongNumStart] playing ${url} via M4A maison (vg=${vgName}) slot=bgm`);
+      console.log(`[m4aSongNumStart] playing ${url} via M4A maison (vg=${vgName}) slot=bgm V=${songVol ?? 'default'}`);
     } catch (e) {
       console.error('[m4aSongNumStart] failed:', e);
     }
@@ -662,10 +668,15 @@ export function PlaySE(seId: number): void {
         return;
       }
       const midi = await _staticLoadMidi(url);
+      // Reverb + volume par-song : si midi.cfg a des valeurs, on les respecte.
+      // Sinon on hérite du reverb BGM courant (= comportement 1:1 GBA m4aSoundMode).
+      const cfg = getSongConfig(name);
+      if (cfg && cfg.reverb !== null) _staticSetReverb(cfg.reverb);
+      const seSongVol = cfg?.volume ?? null;
       // SE = loop=false + slot SE (PAS bgm). La BGM courante n'est PAS coupée :
       // les 2 slots tournent en parallèle (1:1 GBA).
-      await (_staticPlaySong as (m: unknown, vg: unknown, lookup: VgLookupFn, loop: boolean, slot: string) => Promise<void>)(
-        midi, voicegroup, _vgLookup!, false, slot,
+      await (_staticPlaySong as (m: unknown, vg: unknown, lookup: VgLookupFn, loop: boolean, slot: string, volume: number | null) => Promise<void>)(
+        midi, voicegroup, _vgLookup!, false, slot, seSongVol,
       );
     } catch (e) {
       console.error('[PlaySE] failed:', e);

@@ -1,5 +1,5 @@
 // AUTO-GENERATED from sound\voicegroups\bard.inc by extract-voicegroups-m4a.mjs
-// Generated: 2026-04-27
+// Generated: 2026-05-01
 import type { VoiceGroup } from '../voice-types';
 
 export const VOICEGROUP: VoiceGroup = {

@@ -79,6 +79,9 @@ export async function loadMidi(url: string): Promise<Midi> {
  *  @param voicegroup le voicegroup à utiliser (ex: VOICEGROUP de title.ts)
  *  @param vgLookup callback pour résoudre les sub-voicegroups (keysplit)
  *  @param loop si true, replay quand fini
+ *  @param slot bgm|se1|se2 (multi-slot 1:1 GBA)
+ *  @param songVolume per-song volume scale 0-128 (1:1 décomp `mid2agb -Vxxx`).
+ *                    `null`/undefined = pas de scaling (= 128 default).
  *  @returns Promise qui resolve quand la song termine (ou jamais si loop=true) */
 export async function playSong(
   song: Midi,
@@ -86,6 +89,7 @@ export async function playSong(
   vgLookup: VoiceGroupLookup,
   loop = false,
   slot: SlotKind = 'bgm',
+  songVolume: number | null = null,
 ): Promise<void> {
   // Stop la song courante DANS CE SLOT (BGM ne touche pas SE et vice-versa).
   stopSong(slot);
@@ -180,7 +184,12 @@ export async function playSong(
       const volCc = valueAtTime(volEvents, note.time, 1.0);
       const expCc = valueAtTime(expEvents, note.time, 1.0);
       const panCc = valueAtTime(panEvents, note.time, 0.5);
-      const trackVolume = volCc * expCc;
+      // Per-song volume 1:1 décomp `mid2agb -Vxxx` arg (cf. midi.cfg) + master
+      // volume default GBA (12/15 ≈ 0.8125, m4a.c:80). Scale appliqué au
+      // trackVolume pour rester cohérent avec velocity/CC7/CC11 multipliés.
+      const songVolNorm = songVolume !== null ? songVolume / 128 : 1.0;
+      const masterVolNorm = 12 / 15;  // default SoundInfo.masterVolume = 12 → ~0.8125
+      const trackVolume = volCc * expCc * songVolNorm * masterVolNorm;
       const panMidi = Math.round(panCc * 127);
       const bend = valueAtTime(sortedBends as CcEvent[], note.time, 0);
       // Modulation depth via CC1 (mod wheel). M4A traduit en track->mod 0-127.

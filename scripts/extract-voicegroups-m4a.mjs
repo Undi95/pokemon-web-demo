@@ -41,13 +41,19 @@ function stripComment(line) {
   return (idx >= 0 ? line.slice(0, idx) : line).trim();
 }
 
-/** Parse une voice depuis ses tokens (après le voice_X). */
+/** Parse une voice depuis ses tokens (après le voice_X).
+ *  Tous les indexages sont 1:1 décomp `asm/macros/music_voice.inc`. Pas de
+ *  champ `length` : il n'existe pas dans les macros (les 3 octets fixes après
+ *  duty/period sont juste des padding 0 dans la sérialisation binaire).
+ */
 function parseVoiceArgs(type, args) {
   const a = args.map(s => s.trim());
   switch (type) {
     case 'directsound':
-    case 'directsound_no_resample': {
-      // baseKey, pan, sampleSymbol, attack, decay, sustain, release
+    case 'directsound_no_resample':
+    case 'directsound_alt': {
+      // 1:1 macro `voice_directsound{,_alt,_no_resample}` (music_voice.inc:1-14) :
+      // base_midi_key, pan, sample_data_pointer, attack, decay, sustain, release
       return {
         type, baseKey: parseInt(a[0]), pan: parseInt(a[1]),
         sampleSymbol: a[2],
@@ -56,46 +62,48 @@ function parseVoiceArgs(type, args) {
     }
     case 'square_1':
     case 'square_1_alt': {
-      // baseKey, panSweep, sweep, squarePattern, length, attack, decay, sustain
-      // (square_1_alt sans sweep)
-      const offset = type === 'square_1_alt' ? 0 : 0;
-      void offset;
+      // 1:1 macro `voice_square_1{,_alt}` (music_voice.inc:31-37) :
+      // base_midi_key, pan, sweep, duty_cycle, attack, decay, sustain, release
       return {
         type, baseKey: parseInt(a[0]), panSweep: parseInt(a[1]),
-        sweep: type === 'square_1' ? parseInt(a[2]) : 0,
-        squarePattern: parseInt(type === 'square_1' ? a[3] : a[2]),
-        length: parseInt(type === 'square_1' ? a[4] : a[3]),
-        envelope: type === 'square_1'
-          ? { attack: parseInt(a[5]), decay: parseInt(a[6]), sustain: parseInt(a[7]), release: parseInt(a[8] ?? '0') }
-          : { attack: parseInt(a[4]), decay: parseInt(a[5]), sustain: parseInt(a[6]), release: parseInt(a[7] ?? '0') },
+        sweep: parseInt(a[2]),
+        squarePattern: parseInt(a[3]),
+        length: 0,
+        envelope: { attack: parseInt(a[4]), decay: parseInt(a[5]), sustain: parseInt(a[6]), release: parseInt(a[7] ?? '0') },
       };
     }
     case 'square_2':
     case 'square_2_alt': {
-      // baseKey, panSweep, squarePattern, length, attack, decay, sustain
+      // 1:1 macro `voice_square_2{,_alt}` (music_voice.inc:56-62) :
+      // base_midi_key, pan, duty_cycle, attack, decay, sustain, release
       return {
         type, baseKey: parseInt(a[0]), panSweep: parseInt(a[1]),
         sweep: 0,
         squarePattern: parseInt(a[2]),
-        length: parseInt(a[3]),
-        envelope: { attack: parseInt(a[4]), decay: parseInt(a[5]), sustain: parseInt(a[6]), release: parseInt(a[7] ?? '0') },
+        length: 0,
+        envelope: { attack: parseInt(a[3]), decay: parseInt(a[4]), sustain: parseInt(a[5]), release: parseInt(a[6] ?? '0') },
       };
     }
     case 'noise':
     case 'noise_alt': {
-      // baseKey, panSweep, period, length, attack, decay, sustain
+      // 1:1 macro `voice_noise{,_alt}` (music_voice.inc:105-111) :
+      // base_midi_key, pan, period, attack, decay, sustain, release
+      // period & 0x1 → 0 = 15-bit LFSR, 1 = 7-bit LFSR
       return {
         type, baseKey: parseInt(a[0]), panSweep: parseInt(a[1]),
-        period: parseInt(a[2]), length: parseInt(a[3]),
-        envelope: { attack: parseInt(a[4]), decay: parseInt(a[5]), sustain: parseInt(a[6]), release: parseInt(a[7] ?? '0') },
+        period: parseInt(a[2]) & 0x1,
+        length: 0,
+        envelope: { attack: parseInt(a[3]), decay: parseInt(a[4]), sustain: parseInt(a[5]), release: parseInt(a[6] ?? '0') },
       };
     }
-    case 'programmable_wave': {
-      // baseKey, panSweep, waveSymbol, length, attack, decay, sustain
+    case 'programmable_wave':
+    case 'programmable_wave_alt': {
+      // 1:1 macro `voice_programmable_wave{,_alt}` (music_voice.inc:81-87) :
+      // base_midi_key, pan, wave_samples_pointer, attack, decay, sustain, release
       return {
-        type, baseKey: parseInt(a[0]), panSweep: parseInt(a[1]),
-        waveSymbol: a[2], length: parseInt(a[3]),
-        envelope: { attack: parseInt(a[4]), decay: parseInt(a[5]), sustain: parseInt(a[6]), release: parseInt(a[7] ?? '0') },
+        type: 'programmable_wave', baseKey: parseInt(a[0]), panSweep: parseInt(a[1]),
+        waveSymbol: a[2], length: 0,
+        envelope: { attack: parseInt(a[3]), decay: parseInt(a[4]), sustain: parseInt(a[5]), release: parseInt(a[6] ?? '0') },
       };
     }
     case 'keysplit': {

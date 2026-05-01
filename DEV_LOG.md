@@ -10,6 +10,127 @@ de la décompilation FR (`pokeemeraude`) + `@pkmn/sim` pour combats.
 
 ---
 
+## Session 72 — Phase 8 : Audit son complet + 1:1 GBA refactor
+
+User feedback : « tout sonne faux vs émulateur, les notes sont bonnes les
+instruments aussi mais c'est pas ça ». L'OST était reconnaissable post-Session
+71 mais le caractère timbral global ne correspondait pas à un GBA réel.
+
+User a délégué un audit profond pendant la nuit. Audit Opus a identifié 25
+divergences vs décomp, dont 7 critiques pour le « feel GBA ».
+
+### Phase 8.1 — Extracteur voicegroup ADSR aligné 1:1 macros
+voice_square_1/_alt (8 args), voice_square_2/_alt (7 args), voice_noise/_alt (7 args).
+Lus 1:1 depuis `asm/macros/music_voice.inc`. 195 voicegroups régénérés.
+
+### Phase 8.2 — Split engine CGB vs DirectSound (envelope.ts)
+Deux moteurs ADSR parallèles 1:1 décomp :
+- **DirectSound** : 0-255 multiplicatif exponentiel à V-blank 59.7275 Hz
+  `vol = (vol × decay) >> 8` chaque tick (m4a_1.s:1130-1148)
+- **CGB** : 0-7 / 0-15 step-based linéaire à 64 Hz
+  `envVol += 1` chaque (rate+1) ticks jusqu'à envelopeGoal (m4a.c:1116-1170)
+
+Critique : `envelopeGoal` CGB **scale avec le volume track courant**
+(`(leftVol+rightVol)/16` capped 15). velNorm=0.5 → envelopeGoal=8 → attack 2×
+plus rapide. Helper `cgbEnvelopeGoal(velNorm)` propagé partout.
+
+### Phase 8.3 — Pitch CGB 1:1 (cgb-pitch.ts)
+Port 1:1 `m4a.c:810-854 MidiKeyToCgbFreq` :
+- 132 entrées scale table (octave<<4 | semitone)
+- 12 entrées freq table (NRx3/NRx4 raw -2004..-1062)
+- `freq_hz = 131072 / (2048 - rawVal)`
+
+Square + programmable_wave utilisent maintenant cette formule. Préserve le
+micro-detune vintage GB (A4=439.84 Hz au lieu de 440 exact).
+
+### Phase 8.4 — LFSR-accurate noise (noise-engine.ts)
+Pré-calcule 2 buffers LFSR (15-bit 32767 + 7-bit 127 samples) lus comme
+AudioBufferSource avec playbackRate dérivé de `gNoiseTable[key-21]` → NR43 →
+`524288 / divisor / 2^(s+1)` Hz (m4a_tables.c:149).
+
+Drop-in replacement pour l'ancien white-noise + biquad.
+
+### Phase 8.5 — Programmable wave depuis .pcm
+Script `extract-programmable-wave.mjs` : 25 fichiers `.pcm` (16 octets =
+32 nibbles 4-bit) → `programmable-waves.ts`. Module `programmable-wave.ts` :
+DFT 32-point → Web Audio PeriodicWave (cache par symbole). Fix les voices
+channel 3 qui étaient en fallback triangle.
+
+### Phase 8.6 — Pan voicegroup linéaire (volMR/volML séparés)
+Ancien `StereoPannerNode` Web Audio = equal-power constant (0.707 par côté
+au centre = 0 dB total). Hardware GBA = LINÉAIRE séparé L/R (m4a.c:777-788) :
+```
+y = 2 × pan + panX  ∈ [-128, 127]
+gainR = (y + 128) / 256, gainL = (127 - y) / 256
+```
+Au centre : L = R ≈ 0.5 → -3 dB total (vs 0 dB Web Audio).
+
+Refactor : `StereoPannerNode` remplacé par 2 GainNode + ChannelMerger.
+
+### Phase 8.7 — Square wave RAW aliased AudioWorklet
+Le caractère « buzzy » 8-bit GBA vient de l'aliasing du DAC à 13.379 kHz.
+Notre Fourier 32-harmoniques était band-limited = trop propre.
+
+Fix : `m4a-square-processor.js` worklet génère un square RAW non band-limited
+via phase accumulator. `square-engine.ts` charge lazily. Voices PSG square
+1/2 utilisent maintenant le worklet (fallback OscillatorNode si race au boot).
+
+### Phase 8.8 — DAC double lowpass cascade 6500 Hz
+Audio context : remplace lowpass simple à 8 kHz par cascade 2 biquads à
+6500 Hz (= -24 dB/oct, plus proche brick-wall analog). Nyquist GBA = 6.69 kHz.
+
+### Phase 8.9 — Per-song volume (`-Vxxx`) + master volume default
+`extract-song-table.mjs` parse maintenant `sound/songs/midi/midi.cfg` (-Rxxx,
+-Vxxx, -G_X, -Pxxx). Exposé via `SONG_NAME_TO_CONFIG`.
+
+`m4aSongNumStart` et `PlaySE` lisent `cfg.volume` et le passent à
+`playSong(..., songVolume)`. Track volume final = `volCc × expCc × songVol/128 × 12/15`
+(12/15 = master volume default GBA, m4a.c:80).
+
+### Phase 8.10 — Reverb par-song
+`cfg.reverb` extrait par midi.cfg, appliqué via `setReverb()` avant playback.
+Avant : reverb fixe ~50 partout. mus_intro=R50, mus_cave_of_origin=R90 (auto).
+
+### Phase 8.11 — Polyphonie hardware-like (16 max)
+`MAX_POLYPHONY` 128 → 16 (= 1:1 décomp `MAX_DIRECTSOUND_CHANNELS=12` + 4 CGB).
+
+### Phase 8.12 — CGB envelope decay=0 fix
+Bug latent : `cgbDecayTimeSec(0, ...)` retournait 0 (instant). Décomp fait
+fast linear decay (15 ticks = ~234ms). Cf. m4a.c:1153-1163.
+
+### Phase 8.13 — Anti-click 3ms sur release=0
+Web Audio coupe à phase aléatoire = click audible. Remplace `setValueAtTime(0)`
+par `linearRampToValueAtTime(0, t+3ms)`.
+
+### Files créés Session 72
+
+**Nouveaux** :
+- `src/engine/m4a/envelope.ts` — split CGB/DS helpers
+- `src/engine/m4a/cgb-pitch.ts` — gCgbScaleTable + gCgbFreqTable
+- `src/engine/m4a/noise-engine.ts` — gNoiseTable + LFSR buffers
+- `src/engine/m4a/programmable-wave.ts` — DFT → PeriodicWave
+- `src/engine/m4a/square-engine.ts` — square AudioWorklet loader
+- `public/m4a-square-processor.js` — square RAW worklet processor
+- `scripts/extract-programmable-wave.mjs` — .pcm → TS
+- `scripts/inspect-mid-cc.mjs` — diagnostic MIDI CC
+- `src/engine/decomp-data/auto/src/programmable-waves.ts` (auto-gen)
+
+**Modifiés** :
+- `scripts/extract-voicegroups-m4a.mjs`, `scripts/extract-song-table.mjs`
+- `src/engine/m4a/synth.ts`, `audio-context.ts`, `player.ts`, `sample-loader.ts`
+- `src/engine/decomp-globals.ts`
+- `src/engine/decomp-data/auto/src/song-table.ts` (530 entries)
+- 195 fichiers `voicegroups-data/*.ts` régénérés
+
+### Top divergences encore présentes (pas adressées Session 72)
+
+- **Reverb comb filter** : décomp = comb 4-tap in-place pcmBuffer, on a delay+feedback classic
+- **Pseudo-echo BPSE/BPSL** : XCMD non parsés par @tonejs/midi
+- **DirectSound resample 48 kHz** : devrait être 13.379 kHz pour aliasing inverse
+- **Voice stealing par priority** : actuellement FIFO simple
+
+---
+
 ## Session 71 — Phase 7.5 : Polish audio + render order 1:1 décomp
 
 User feedback final fin intro : "Ca a l'air fixé" (Kyogre bubbles), "OK on attaque le polish".

@@ -1,5 +1,5 @@
 // AUTO-GENERATED from sound/keysplit_tables.inc by extract-voicegroups-m4a.mjs
-// Generated: 2026-04-27
+// Generated: 2026-05-01
 // Format : pour une note MIDI N, trouver le 1er split dont `maxNote >= N`,
 // puis utiliser `subVoiceIdx` comme index dans le sub-voicegroup.
 
