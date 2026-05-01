@@ -101,6 +101,18 @@ async function ensureSlotState(slot: SlotKind): Promise<SlotState> {
 const _bufferByMidi = new WeakMap<Midi, ArrayBuffer>();
 const _midiCache = new Map<string, Midi>();
 
+/** Précharge les 3 slots synth (bgm/se1/se2) en parallèle.
+ *  À appeler au boot du jeu (= idem `m4aPrime`) pour que le 1er PlaySE
+ *  ne souffre PAS d'une latence de 1-2s (load SF2 + worklet init).
+ *  Chaque slot reste indépendant (= 1:1 décomp gMPlayInfo_BGM/SE1/SE2). */
+export async function preloadAllSlots(): Promise<void> {
+  await Promise.all([
+    ensureSlotState('bgm'),
+    ensureSlotState('se1'),
+    ensureSlotState('se2'),
+  ]);
+}
+
 /** Charge un MIDI depuis URL → Midi parsed. Cached. Le buffer brut est aussi
  *  caché pour pouvoir le passer à spessasynth Sequencer.loadNewSongList. */
 export async function loadMidi(url: string): Promise<Midi> {

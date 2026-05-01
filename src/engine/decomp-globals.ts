@@ -540,22 +540,26 @@ type VgLookupFn = (name: string) => unknown;
 let _vgLookup: VgLookupFn | null = null;
 let _songVoicegroups: Record<string, string> | null = null;
 
-/** Init notre M4A engine maison (= NOTRE moteur 1:1 décomp, PAS SpessaSynth).
- *  Lazy-init au premier m4aSongNumStart. Idempotent. */
+/** Init audio engine (spessasynth_lib + emerald.sf2). Lazy au premier
+ *  m4aSongNumStart. Idempotent. Précharge les 3 synth slots en parallèle pour
+ *  que les premiers PlaySE n'aient PAS de latence cold-init (~1-2s SF2 load). */
 async function m4aPrime(): Promise<void> {
   if (_m4aPrimed) return;
   const { getAudioContext } = await import('./m4a/audio-context');
-  const { loadSampleManifest } = await import('./m4a/sample-loader');
+  const { preloadAllSlots } = await import('./m4a/player');
   const { lookupVoicegroup } = await import('./m4a/voicegroups-data/_all-voicegroups-index');
   // Init AudioContext (requires user gesture — déjà eu via click TestGba→GameScene)
   getAudioContext();
-  await loadSampleManifest();
-  // Load song → voicegroup mapping (extracted du décomp)
+  // Load song → voicegroup mapping (gardé pour les warnings PlaySE qui filtrent
+  // les slots, même si spessasynth ne consomme plus le voicegroup data lui-même).
   const resp = await fetch('/decomp/em/music/song-voicegroups.json');
   _songVoicegroups = await resp.json() as Record<string, string>;
   _vgLookup = lookupVoicegroup as VgLookupFn;
+  // Précharge les 3 synth slots (BGM + SE1 + SE2) en parallèle. Le SF2 buffer
+  // est fetch 1 fois et partagé via slice() entre les 3 instances.
+  await preloadAllSlots();
   _m4aPrimed = true;
-  console.log('[decomp-globals] M4A engine maison ready (1:1 décomp, pas SpessaSynth)');
+  console.log('[decomp-globals] audio engine ready (spessasynth_lib + emerald.sf2, 3 slots préchargés)');
 }
 
 /** 1:1 décomp `m4aSongNumStart(songId)` — démarre une song en boucle via NOTRE
