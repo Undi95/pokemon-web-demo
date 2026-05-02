@@ -228,8 +228,8 @@ export async function playSong(
                 volumeRamps.push({ time: relTime, value: cc.value });
               }
             }
-            // 3. Joue la vraie LFSR via AudioWorklet temps-réel + volume ramps.
-            playNoteNoiseWorklet(noteVoice, note.midi, velocity, when, note.duration, 1.0, volumeRamps);
+            // 3. Joue la vraie LFSR via AudioWorklet temps-réel + volume ramps + mono-cut.
+            playNoteNoiseWorklet(noteVoice, note.midi, velocity, when, note.duration, 1.0, volumeRamps, slot);
           }
         }
       }
@@ -249,6 +249,9 @@ export async function playSong(
  *  notes successives sur le même slot (= 1:1 hardware GBA noise channel mono).
  *  bs.stop ne peut être appelé qu'une fois → on cancel via env.gain à 0. */
 const _slotLfsrSources: Partial<Record<SlotKind, { bs: AudioBufferSourceNode; env: GainNode }[]>> = {};
+
+/** Track des AudioWorklet noise nodes per-slot pour mono-cut. */
+const _slotNoiseWorklets: Partial<Record<SlotKind, { node: AudioWorkletNode; env: GainNode }[]>> = {};
 
 /** Stop immédiat de la song courante du slot. */
 export function stopSong(slot: SlotKind = 'bgm'): void {
@@ -318,6 +321,7 @@ function playNoteNoiseWorklet(
   duration: number,
   trackVolume: number,
   volumeRamps: { time: number; value: number }[] = [],
+  slot: SlotKind = 'se1',
 ): void {
   const ctx = getAudioContext();
   if (!_noiseWorkletAdded) {
@@ -379,12 +383,35 @@ function playNoteNoiseWorklet(
   node.connect(env);
   env.connect(getMasterGain());
 
+  // MONO-CUT 1:1 GBA noise channel : avant de spawn cette nouvelle worklet,
+  // force gain à 0 sur tous les workletNodes précédents du même slot
+  // (= cut hard les LFSR en cours, comme hardware GBA cut au noteOn nouvelle note).
+  const prevList = _slotNoiseWorklets[slot];
+  if (prevList) {
+    for (const { env: prevEnv } of prevList) {
+      try {
+        prevEnv.gain.cancelScheduledValues(when);
+        prevEnv.gain.setValueAtTime(0, when);
+      } catch { /* ignore */ }
+    }
+  }
+
+  // Track ce node dans le slot pour cleanup futur.
+  if (!_slotNoiseWorklets[slot]) _slotNoiseWorklets[slot] = [];
+  const entry = { node, env };
+  _slotNoiseWorklets[slot]!.push(entry);
+
   // Cleanup : disconnect node après que le gain atteint 0 (sinon le worklet
   // continue à tourner CPU pour rien). AudioWorkletNode n'a pas de stop().
   const stopMs = Math.max(50, (noteOff + releaseSec + 0.05 - ctx.currentTime) * 1000);
   window.setTimeout(() => {
     try { node.disconnect(); } catch { /* already disconnected */ }
     try { env.disconnect(); } catch { /* already disconnected */ }
+    const list = _slotNoiseWorklets[slot];
+    if (list) {
+      const idx = list.indexOf(entry);
+      if (idx >= 0) list.splice(idx, 1);
+    }
   }, stopMs);
 }
 
