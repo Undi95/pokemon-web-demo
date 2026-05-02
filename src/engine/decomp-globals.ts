@@ -677,11 +677,23 @@ export function PlaySE(seId: number): void {
       const cfg = getSongConfig(name);
       if (cfg && cfg.reverb !== null) _staticSetReverb(cfg.reverb);
       const seSongVol = cfg?.volume ?? null;
-      // SE = loop=false + slot SE (PAS bgm). La BGM courante n'est PAS coupée :
-      // les 2 slots tournent en parallèle (1:1 GBA).
-      await (_staticPlaySong as (m: unknown, vg: unknown, lookup: VgLookupFn, loop: boolean, slot: string, volume: number | null) => Promise<void>)(
-        midi, voicegroup, _vgLookup!, false, slot, seSongVol,
-      );
+      // APPROCHE HYBRIDE : si la SE utilise une noise voice (Type 12 = LFSR PSG
+      // hardware GBA), spessasynth/SF2 reproduit MAL (pitch-shift d'un sample
+      // au lieu du LFSR pseudo-random). On route vers le custom synth pre-P8
+      // (white noise + biquad) qui sonne plus authentique pour les SE crash/blast.
+      const { songUsesNoiseVoice, playSongCustomSynth } = await import('./m4a/player');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const _vg = voicegroup as any;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const _lk = _vgLookup as any;
+      if (songUsesNoiseVoice(midi, _vg, _lk)) {
+        await playSongCustomSynth(midi, _vg, _lk, slot, seSongVol);
+      } else {
+        // SE non-noise = melodic/PCM → spessasynth (= bon son via SF2 sample-based).
+        await (_staticPlaySong as (m: unknown, vg: unknown, lookup: VgLookupFn, loop: boolean, slot: string, volume: number | null) => Promise<void>)(
+          midi, voicegroup, _vgLookup!, false, slot, seSongVol,
+        );
+      }
     } catch (e) {
       console.error('[PlaySE] failed:', e);
     }

@@ -24,6 +24,8 @@ import { Midi } from '@tonejs/midi';
 import { WorkletSynthesizer, Sequencer } from 'spessasynth_lib';
 import type { VoiceGroup } from './voice-types';
 import type { VoiceGroupLookup } from './voice-resolver';
+import { resolveVoice } from './voice-resolver';
+import { playNote } from './synth';
 import { getAudioContext, getMasterGain } from './audio-context';
 
 export type SlotKind = 'bgm' | 'se1' | 'se2';
@@ -205,6 +207,61 @@ export function stopAllSongs(): void {
 /** Détection loopStart : non implémenté (spessasynth gère les markers MIDI lui-même). */
 export function detectLoopStart(_song: Midi): number | null {
   return null;
+}
+
+/** Détermine si un MIDI utilise au moins une noise voice (Type 12/4 dans M4A
+ *  format = LFSR PSG channel sur GBA). spessasynth/SF2 ne reproduit PAS
+ *  correctement les noise voices : il pitch-shift le sample sf2 → résultat
+ *  tonal au lieu de crash/blast LFSR authentique. */
+export function songUsesNoiseVoice(
+  song: Midi,
+  voicegroup: VoiceGroup,
+  vgLookup: VoiceGroupLookup,
+): boolean {
+  for (const track of song.tracks) {
+    const program = track.instrument?.number ?? 0;
+    if (track.notes.length === 0) continue;
+    const voice = resolveVoice(voicegroup, program, track.notes[0].midi, vgLookup);
+    if (voice?.type === 'noise' || voice?.type === 'noise_alt') return true;
+  }
+  return false;
+}
+
+/** Joue une song via le custom synth pre-P8 (= playNote from synth.ts).
+ *  Utilisé pour les SE qui contiennent des noise voices, où SF2/spessasynth
+ *  ne reproduit pas le LFSR PSG correctement. Schedule chaque note via setTimeout
+ *  + playNote (= same path que l'ancien custom M4A engine). */
+export async function playSongCustomSynth(
+  song: Midi,
+  voicegroup: VoiceGroup,
+  vgLookup: VoiceGroupLookup,
+  slot: SlotKind = 'se1',
+  songVolume: number | null = null,
+): Promise<void> {
+  stopSong(slot);
+  const ctx = getAudioContext();
+  const startTime = ctx.currentTime + 0.005;
+  const trackVolNorm = songVolume !== null ? Math.max(0, Math.min(1, songVolume / 128)) : 1.0;
+  for (const track of song.tracks) {
+    const programNumber = track.instrument?.number ?? 0;
+    for (const note of track.notes) {
+      const noteVoice = resolveVoice(voicegroup, programNumber, note.midi, vgLookup);
+      if (!noteVoice) continue;
+      // Schedule via setTimeout (= playNote use AudioContext absolute when)
+      const when = startTime + note.time;
+      const velocity = Math.round(note.velocity * 127);
+      const panMidi = 64;  // center default — SE n'a typiquement pas de panning
+      // Fire & forget : noteOff via la duration de la note
+      void (async () => {
+        const active = await playNote(noteVoice, note.midi, velocity, panMidi, when, trackVolNorm);
+        if (active) {
+          window.setTimeout(() => {
+            try { active.stop(when + note.duration); } catch { /* ignore */ }
+          }, Math.max(0, (when + note.duration - ctx.currentTime) * 1000));
+        }
+      })();
+    }
+  }
 }
 
 /** Vrai si une song est en cours sur le slot donné. */
