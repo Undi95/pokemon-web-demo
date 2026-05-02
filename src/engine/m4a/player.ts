@@ -204,6 +204,21 @@ export async function playSong(
   if (!loop && (slot === 'se1' || slot === 'se2') && songUsesNoiseVoice(song, _voicegroup, _vgLookup)) {
     const ctx = getAudioContext();
     const sequencerStartTime = ctx.currentTime + 0.005;
+    // Identifie quels channels MIDI contiennent UNIQUEMENT des notes noise.
+    // Pour ces channels, on mute le channel entier via spessasynth (= sinon le
+    // sample SF2 noise joue en parallèle de notre worklet LFSR = double sound).
+    const channelsWithOnlyNoise = new Set<number>();
+    for (const track of song.tracks) {
+      if (track.notes.length === 0) continue;
+      const program = track.instrument?.number ?? 0;
+      const voice = resolveVoice(_voicegroup, program, track.notes[0].midi, _vgLookup);
+      if (voice?.type === 'noise' || voice?.type === 'noise_alt') {
+        channelsWithOnlyNoise.add(track.channel);
+      }
+    }
+    for (const ch of channelsWithOnlyNoise) {
+      try { state.synth.muteChannel(ch, true); } catch { /* ignore */ }
+    }
     // Lazy-load le noise worklet (= 1ère fois). Idempotent.
     void ensureNoiseWorklet(ctx).then(() => {
       for (const track of song.tracks) {
@@ -213,10 +228,9 @@ export async function playSong(
           if (noteVoice?.type === 'noise' || noteVoice?.type === 'noise_alt') {
             const when = sequencerStartTime + note.time;
             const velocity = Math.round(note.velocity * 127);
-            // 1. Mute spessasynth pour CETTE note (= force noteOff immédiat).
-            try {
-              state.synth.noteOff(track.channel, note.midi, { time: when + 0.001 });
-            } catch { /* ignore */ }
+            // 1. (déjà fait via muteChannel) Plus besoin de noteOff par note.
+            // Mais on garde le tracking pour le mono-cut entre worklets.
+            void velocity;
             // 2. Collecte les CC7 (volume) events de la track relatifs au noteOn,
             //    pour appliquer le fade-out via env.gain (sinon noise plays plein
             //    volume tout du long → bruit fort prolongé pour les notes >1s).
@@ -229,7 +243,7 @@ export async function playSong(
               }
             }
             // 3. Joue la vraie LFSR via AudioWorklet temps-réel + volume ramps + mono-cut.
-            playNoteNoiseWorklet(noteVoice, note.midi, velocity, when, note.duration, 1.0, volumeRamps, slot);
+            playNoteNoiseWorklet(noteVoice, note.midi, Math.round(note.velocity * 127), when, note.duration, 1.0, volumeRamps, slot);
           }
         }
       }
@@ -328,6 +342,7 @@ function playNoteNoiseWorklet(
     console.warn('[m4a-noise] worklet not loaded yet — skip note');
     return;
   }
+  console.log(`[m4a-noise] LFSR worklet fire: midi=${midiNote} freq=${midiNoteToNoiseFreq(midiNote).toFixed(0)}Hz dur=${duration.toFixed(2)}s 7bit=${(voice.period ?? 0) & 1}`);
   const periodVal = voice.period ?? 0;
   const is7bit = (periodVal & 1) === 1;
   const node = new AudioWorkletNode(ctx, 'm4a-noise-lfsr', {
@@ -343,7 +358,9 @@ function playNoteNoiseWorklet(
   // ADSR — CGB scale (attack/decay/release 0-7, sustain 0-15) en steps 1/60s.
   const env = ctx.createGain();
   const velNorm = (velocity / 127) * trackVolume;
-  const sustainNorm = (voice.envelope.sustain / 15) * velNorm * 0.4;
+  // 0.15 = empirique : le noise hardware GBA est faible vs DS sample (mixer
+  // SOUNDCNT_H : PSG = 25-100% selon bits, DS = full). 0.4 était trop fort.
+  const sustainNorm = (voice.envelope.sustain / 15) * velNorm * 0.15;
   const attackSec = voice.envelope.attack > 0 ? voice.envelope.attack * (1 / 60) : 0;
   const decaySec = voice.envelope.decay > 0 ? voice.envelope.decay * (1 / 60) : 0.005;
   const releaseSec = voice.envelope.release > 0 ? voice.envelope.release * (1 / 60) : 0.04;
