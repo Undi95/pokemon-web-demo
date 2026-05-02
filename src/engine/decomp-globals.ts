@@ -686,7 +686,9 @@ export function PlaySE(seId: number): void {
       const _vg = voicegroup as any;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const _lk = _vgLookup as any;
-      if (songUsesNoiseVoice(midi, _vg, _lk)) {
+      const isNoise = songUsesNoiseVoice(midi, _vg, _lk);
+      console.log(`[PlaySE] ${name} (vg=${vgName}) → noise=${isNoise} → using ${isNoise ? 'CUSTOM synth' : 'spessasynth'}`);
+      if (isNoise) {
         await playSongCustomSynth(midi, _vg, _lk, slot, seSongVol);
       } else {
         // SE non-noise = melodic/PCM → spessasynth (= bon son via SF2 sample-based).
