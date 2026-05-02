@@ -324,8 +324,21 @@ export async function playSongCustomSynth(
       if (!noteVoice) continue;
       const when = startTime + note.time;
       const velocity = Math.round(note.velocity * 127);
-      // NOISE → LFSR Phase 8 hardware-accurate (passe le slot pour cleanup track)
+      // NOISE → LFSR Phase 8 hardware-accurate. Sur GBA hardware le canal
+      // noise est monophonique : chaque nouvelle note CUT la précédente.
+      // Notre playSongCustomSynth schedule toutes les notes en avance ; la
+      // précédente peut overlap avec la suivante → bruit blanc cumulatif.
+      // Fix : force-stop chaque source LFSR active au timestamp `when`
+      // (= la nouvelle note prend la priorité 1:1 hardware).
       if (noteVoice.type === 'noise' || noteVoice.type === 'noise_alt') {
+        // Schedule un cut hard de TOUTES les précédentes LFSR sources au
+        // moment où cette note commence (= comportement monophonique GBA).
+        const prevList = _slotLfsrSources[slot];
+        if (prevList) {
+          for (const prevBs of prevList) {
+            try { prevBs.stop(when); } catch { /* already stopped */ }
+          }
+        }
         playNoteNoiseLFSR(noteVoice, note.midi, velocity, when, note.duration, trackVolNorm, slot);
         continue;
       }
