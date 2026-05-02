@@ -184,9 +184,10 @@ export async function playSong(
   state.sequencer = seq;
 }
 
-/** Track des AudioBufferSource LFSR per-slot pour pouvoir les stop quand une
- *  nouvelle SE arrive sur le slot (= 1:1 hardware GBA noise channel monophonique). */
-const _slotLfsrSources: Partial<Record<SlotKind, AudioBufferSourceNode[]>> = {};
+/** Track des LFSR sources per-slot (= bs + env GainNode) pour mono-cut entre
+ *  notes successives sur le même slot (= 1:1 hardware GBA noise channel mono).
+ *  bs.stop ne peut être appelé qu'une fois → on cancel via env.gain à 0. */
+const _slotLfsrSources: Partial<Record<SlotKind, { bs: AudioBufferSourceNode; env: GainNode }[]>> = {};
 
 /** Stop immédiat de la song courante du slot. */
 export function stopSong(slot: SlotKind = 'bgm'): void {
@@ -200,13 +201,16 @@ export function stopSong(slot: SlotKind = 'bgm'): void {
     } catch { /* already stopped */ }
     state.sequencer = null;
   }
-  // Stop les LFSR sources actives sur ce slot (= sinon multi-fire SE
-  // accumule → chaos de noise overlap).
+  // Stop les LFSR sources actives sur ce slot via env.gain → 0 immédiat.
   const lfsrs = _slotLfsrSources[slot];
   if (lfsrs && lfsrs.length > 0) {
-    for (const bs of lfsrs) {
-      try { bs.stop(); } catch { /* already stopped */ }
-      try { bs.disconnect(); } catch { /* already disconnected */ }
+    const ctx = getAudioContext();
+    const now = ctx.currentTime;
+    for (const { env } of lfsrs) {
+      try {
+        env.gain.cancelScheduledValues(now);
+        env.gain.setValueAtTime(0, now);
+      } catch { /* ignore */ }
     }
     _slotLfsrSources[slot] = [];
   }
@@ -291,13 +295,14 @@ function playNoteNoiseLFSR(
   bs.start(when);
   // Stop bs juste après que le gain atteint 0 (= silence garanti).
   bs.stop(noteOff + releaseSec + 0.005);
-  // Track le source pour cleanup via stopSong (= cancel quand multi-fire SE).
+  // Track le source + env pour cleanup via stopSong + mono-cut entre notes.
   if (!_slotLfsrSources[slot]) _slotLfsrSources[slot] = [];
-  _slotLfsrSources[slot]!.push(bs);
+  const entry = { bs, env };
+  _slotLfsrSources[slot]!.push(entry);
   bs.onended = () => {
     const list = _slotLfsrSources[slot];
     if (list) {
-      const idx = list.indexOf(bs);
+      const idx = list.indexOf(entry);
       if (idx >= 0) list.splice(idx, 1);
     }
   };
@@ -331,12 +336,16 @@ export async function playSongCustomSynth(
       // Fix : force-stop chaque source LFSR active au timestamp `when`
       // (= la nouvelle note prend la priorité 1:1 hardware).
       if (noteVoice.type === 'noise' || noteVoice.type === 'noise_alt') {
-        // Schedule un cut hard de TOUTES les précédentes LFSR sources au
-        // moment où cette note commence (= comportement monophonique GBA).
+        // Mono-cut : cancel les ramps + setValueAtTime(0) au timestamp `when`
+        // sur l'env GainNode de chaque LFSR source précédent (bs.stop déjà
+        // schedulé et ne peut pas être ré-appelé). Gain à 0 = silence audio.
         const prevList = _slotLfsrSources[slot];
         if (prevList) {
-          for (const prevBs of prevList) {
-            try { prevBs.stop(when); } catch { /* already stopped */ }
+          for (const { env: prevEnv } of prevList) {
+            try {
+              prevEnv.gain.cancelScheduledValues(when);
+              prevEnv.gain.setValueAtTime(0, when);
+            } catch { /* ignore */ }
           }
         }
         playNoteNoiseLFSR(noteVoice, note.midi, velocity, when, note.duration, trackVolNorm, slot);
