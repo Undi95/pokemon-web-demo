@@ -686,21 +686,15 @@ export function PlaySE(seId: number): void {
       // hardware GBA), spessasynth/SF2 reproduit MAL (pitch-shift d'un sample
       // au lieu du LFSR pseudo-random). On route vers le custom synth pre-P8
       // (white noise + biquad) qui sonne plus authentique pour les SE crash/blast.
-      const { songUsesNoiseVoice, playSongCustomSynth } = await import('./m4a/player');
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const _vg = voicegroup as any;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const _lk = _vgLookup as any;
-      const isNoise = songUsesNoiseVoice(midi, _vg, _lk);
-      console.log(`[PlaySE] ${name} (vg=${vgName}) → noise=${isNoise} → using ${isNoise ? 'CUSTOM synth' : 'spessasynth'}`);
-      if (isNoise) {
-        await playSongCustomSynth(midi, _vg, _lk, slot, seSongVol);
-      } else {
-        // SE non-noise = melodic/PCM → spessasynth (= bon son via SF2 sample-based).
-        await (_staticPlaySong as (m: unknown, vg: unknown, lookup: VgLookupFn, loop: boolean, slot: string, volume: number | null) => Promise<void>)(
-          midi, voicegroup, _vgLookup!, false, slot, seSongVol,
-        );
-      }
+      // SE = spessasynth pour tous (= unifié avec BGM, pas d'hybrid Phase 8).
+      // Le hybrid LFSR custom utilisait noise-engine.ts du Phase 8 abandonné
+      // (sessions 75-77 bisect : bug systémique). Quand on l'utilisait pour SE
+      // noise, ça déconnait (bruit blanc fort). Cf. memory project_audio_engine_status.
+      // Compromis : SE noise (intro_blast etc) sonne 'Bird Tweet'-ish via SF2
+      // pitch-shift au lieu d'un crash LFSR authentique. Acceptable pour MVP.
+      await (_staticPlaySong as (m: unknown, vg: unknown, lookup: VgLookupFn, loop: boolean, slot: string, volume: number | null) => Promise<void>)(
+        midi, voicegroup, _vgLookup!, false, slot, seSongVol,
+      );
     } catch (e) {
       console.error('[PlaySE] failed:', e);
     }
