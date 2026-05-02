@@ -74,11 +74,16 @@ while (p < pdtaEnd) {
       }
     } else {
       console.log(`\n!!! Bank 115 NOT FOUND in SF2 — explains the bird tweet bug.`);
-      // Show 0 bank
-      console.log(`Bank 0 (default GM-like) presets :`);
-      for (const p of (banks.get(0) || []).slice(0, 30)) {
-        console.log(`  prog ${p.program}: ${p.name}`);
-      }
+    }
+    // ALWAYS show bank 0 prog 120-127 (= où spessasynth fallback si en mode GM)
+    console.log(`\nBank 0 programs 120-127 (= où ça fallback en GM mode) :`);
+    for (const p of (banks.get(0) || []).filter(p => p.program >= 120)) {
+      console.log(`  prog ${p.program}: ${p.name}`);
+    }
+    // Bank 128 (= drumkits standard)
+    if (banks.has(128)) {
+      console.log(`\nBank 128 (drumkit) presets : ${banks.get(128).length}`);
+      for (const p of banks.get(128).slice(0, 5)) console.log(`  prog ${p.program}: ${p.name}`);
     }
     break;
   }
