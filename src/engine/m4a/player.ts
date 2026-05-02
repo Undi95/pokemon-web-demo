@@ -278,13 +278,19 @@ function playNoteNoiseLFSR(
   }
   env.gain.linearRampToValueAtTime(sustainGain, when + attackSec + decaySec);
   const noteOff = when + duration;
-  const releaseSec = voice.envelope.release > 0 ? voice.envelope.release * (1 / 60) : 0.05;
-  env.gain.setTargetAtTime(0, noteOff, Math.max(0.005, releaseSec / 5));
+  // RELEASE : linear ramp à 0 (pas setTargetAtTime exponential qui n'atteint
+  // jamais 0 et fait sortir du bruit blanc fort quand bs.stop cut hard).
+  const releaseSec = voice.envelope.release > 0 ? voice.envelope.release * (1 / 60) : 0.04;
+  env.gain.cancelScheduledValues(noteOff);
+  // Sustain niveau au noteOff puis decay linéaire vers 0.
+  env.gain.setValueAtTime(sustainGain, noteOff);
+  env.gain.linearRampToValueAtTime(0, noteOff + releaseSec);
 
   bs.connect(env);
   env.connect(getMasterGain());
   bs.start(when);
-  bs.stop(noteOff + releaseSec + 0.05);
+  // Stop bs juste après que le gain atteint 0 (= silence garanti).
+  bs.stop(noteOff + releaseSec + 0.005);
   // Track le source pour cleanup via stopSong (= cancel quand multi-fire SE).
   if (!_slotLfsrSources[slot]) _slotLfsrSources[slot] = [];
   _slotLfsrSources[slot]!.push(bs);
