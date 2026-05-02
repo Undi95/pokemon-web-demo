@@ -26,6 +26,7 @@ import type { VoiceGroup } from './voice-types';
 import type { VoiceGroupLookup } from './voice-resolver';
 import { resolveVoice } from './voice-resolver';
 import { playNote } from './synth';
+import { getNoiseLfsrBuffer, midiNoteToNoiseFreq } from './noise-engine';
 import { getAudioContext, getMasterGain } from './audio-context';
 
 export type SlotKind = 'bgm' | 'se1' | 'se2';
@@ -183,6 +184,10 @@ export async function playSong(
   state.sequencer = seq;
 }
 
+/** Track des AudioBufferSource LFSR per-slot pour pouvoir les stop quand une
+ *  nouvelle SE arrive sur le slot (= 1:1 hardware GBA noise channel monophonique). */
+const _slotLfsrSources: Partial<Record<SlotKind, AudioBufferSourceNode[]>> = {};
+
 /** Stop immédiat de la song courante du slot. */
 export function stopSong(slot: SlotKind = 'bgm'): void {
   const state = _slots[slot];
@@ -194,6 +199,16 @@ export function stopSong(slot: SlotKind = 'bgm'): void {
       // spessasynth Sequencer n'a pas de "destroy" exposé ; pause + GC suffit.
     } catch { /* already stopped */ }
     state.sequencer = null;
+  }
+  // Stop les LFSR sources actives sur ce slot (= sinon multi-fire SE
+  // accumule → chaos de noise overlap).
+  const lfsrs = _slotLfsrSources[slot];
+  if (lfsrs && lfsrs.length > 0) {
+    for (const bs of lfsrs) {
+      try { bs.stop(); } catch { /* already stopped */ }
+      try { bs.disconnect(); } catch { /* already disconnected */ }
+    }
+    _slotLfsrSources[slot] = [];
   }
 }
 
@@ -227,10 +242,64 @@ export function songUsesNoiseVoice(
   return false;
 }
 
-/** Joue une song via le custom synth pre-P8 (= playNote from synth.ts).
- *  Utilisé pour les SE qui contiennent des noise voices, où SF2/spessasynth
- *  ne reproduit pas le LFSR PSG correctement. Schedule chaque note via setTimeout
- *  + playNote (= same path que l'ancien custom M4A engine). */
+/** Joue 1 note noise via LFSR-accurate Phase 8 (noise-engine.ts).
+ *  Reproduit le LFSR pseudo-random hardware GBA (NR43 register + 15/7-bit shift).
+ *  Le buffer LFSR est cached après 1ère création.
+ *  Connecte directement à getMasterGain() — INDEPENDANT du spessasynth synth path,
+ *  donc n'affecte PAS la BGM en cours. */
+function playNoteNoiseLFSR(
+  voice: { period?: number; envelope: { attack: number; decay: number; sustain: number; release: number } },
+  midiNote: number,
+  velocity: number,
+  when: number,
+  duration: number,
+  trackVolume: number,
+  slot: SlotKind = 'se1',
+): void {
+  const ctx = getAudioContext();
+  const periodVal = voice.period ?? 0;
+  const is7bit = (periodVal & 1) === 1;
+  const bs = ctx.createBufferSource();
+  bs.buffer = getNoiseLfsrBuffer(is7bit);
+  bs.loop = true;
+  bs.playbackRate.value = midiNoteToNoiseFreq(midiNote) / ctx.sampleRate;
+
+  // ADSR — CGB scale (attack/decay/release 0-7, sustain 0-15) en steps de 1/60s.
+  const env = ctx.createGain();
+  const velNorm = (velocity / 127) * trackVolume;
+  const sustainGain = (voice.envelope.sustain / 15) * velNorm * 0.4;
+  const attackSec = voice.envelope.attack > 0 ? voice.envelope.attack * (1 / 60) : 0;
+  const decaySec = voice.envelope.decay > 0 ? voice.envelope.decay * (1 / 60) : 0.005;
+  if (attackSec > 0) {
+    env.gain.setValueAtTime(0, when);
+    env.gain.linearRampToValueAtTime(velNorm, when + attackSec);
+  } else {
+    env.gain.setValueAtTime(velNorm, when);
+  }
+  env.gain.linearRampToValueAtTime(sustainGain, when + attackSec + decaySec);
+  const noteOff = when + duration;
+  const releaseSec = voice.envelope.release > 0 ? voice.envelope.release * (1 / 60) : 0.05;
+  env.gain.setTargetAtTime(0, noteOff, Math.max(0.005, releaseSec / 5));
+
+  bs.connect(env);
+  env.connect(getMasterGain());
+  bs.start(when);
+  bs.stop(noteOff + releaseSec + 0.05);
+  // Track le source pour cleanup via stopSong (= cancel quand multi-fire SE).
+  if (!_slotLfsrSources[slot]) _slotLfsrSources[slot] = [];
+  _slotLfsrSources[slot]!.push(bs);
+  bs.onended = () => {
+    const list = _slotLfsrSources[slot];
+    if (list) {
+      const idx = list.indexOf(bs);
+      if (idx >= 0) list.splice(idx, 1);
+    }
+  };
+}
+
+/** Joue une song via le custom synth (LFSR pour noise voices, playNote pre-P8
+ *  fallback). Utilisé pour les SE noise (SF2/spessasynth pitch-shift le sample
+ *  noise → "Bird Tweet" tonal au lieu d'un crash LFSR pseudo-random). */
 export async function playSongCustomSynth(
   song: Midi,
   voicegroup: VoiceGroup,
@@ -247,11 +316,15 @@ export async function playSongCustomSynth(
     for (const note of track.notes) {
       const noteVoice = resolveVoice(voicegroup, programNumber, note.midi, vgLookup);
       if (!noteVoice) continue;
-      // Schedule via setTimeout (= playNote use AudioContext absolute when)
       const when = startTime + note.time;
       const velocity = Math.round(note.velocity * 127);
-      const panMidi = 64;  // center default — SE n'a typiquement pas de panning
-      // Fire & forget : noteOff via la duration de la note
+      // NOISE → LFSR Phase 8 hardware-accurate (passe le slot pour cleanup track)
+      if (noteVoice.type === 'noise' || noteVoice.type === 'noise_alt') {
+        playNoteNoiseLFSR(noteVoice, note.midi, velocity, when, note.duration, trackVolNorm, slot);
+        continue;
+      }
+      // Fallback : playNote pre-P8 pour autres types
+      const panMidi = 64;
       void (async () => {
         const active = await playNote(noteVoice, note.midi, velocity, panMidi, when, trackVolNorm);
         if (active) {
