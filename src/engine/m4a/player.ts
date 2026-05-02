@@ -192,7 +192,10 @@ export async function playSong(
   if (!loop && (slot === 'se1' || slot === 'se2') && songUsesNoiseVoice(song, _voicegroup, _vgLookup)) {
     const ctx = getAudioContext();
     const startTime = ctx.currentTime + 0.005;
-    const NOISE_TRUNCATE_SEC = 0.06;
+    // 250ms = sweet spot : transient blast complet + minimal sample loop répétitif.
+    // Les BGM noise notes max ≤ 132ms (route101) — donc 250ms ≥ tout BGM use case
+    // mais < 1.36s du SE intro_blast = on tronque uniquement la queue répétitive.
+    const NOISE_TRUNCATE_SEC = 0.25;
     for (const track of song.tracks) {
       for (const note of track.notes) {
         if (note.duration > NOISE_TRUNCATE_SEC) {
