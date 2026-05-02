@@ -182,6 +182,17 @@ export async function playSong(
   }
 
   state.sequencer = seq;
+
+  // FIX SE stuck-notes : pour les SE non-loop, certains presets SF2 ont
+  // sustainLevel=100% + release=infinite (= notes bloquées après noteOff
+  // → bruit blanc fort). Force-stop le synth slot après song duration.
+  // Pour BGM (loop=true) on skip (= laisse boucler).
+  if (!loop && (slot === 'se1' || slot === 'se2')) {
+    const totalSec = song.duration + 0.05;
+    window.setTimeout(() => {
+      try { state.synth.stopAll(true); } catch { /* ignore */ }
+    }, totalSec * 1000);
+  }
 }
 
 /** Track des LFSR sources per-slot (= bs + env GainNode) pour mono-cut entre
