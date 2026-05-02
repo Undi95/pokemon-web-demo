@@ -45,7 +45,7 @@ export function getAudioContext(): AudioContext {
   //   simple delay 1 frame (16.74ms à 59.7275Hz V-blank) + feedback gain (reverb/256)
   //   formule asm : output = (sample_now + sample_prev) × reverb >> 9
   //   = ~50% mix + ~25% gain effectif
-  // Routing : masterGain → dacFilter → dacFilter2 → [dry + (delay→feedback→delay)] → destination
+  // Routing : masterGain → dacFilter → dacFilter2 → [dry + (delay→feedback→delay)] → limiter → destination
   const dry = _ctx.createGain();
   const wet = _ctx.createGain();
   const delay = _ctx.createDelay(0.1);
@@ -55,13 +55,25 @@ export function getAudioContext(): AudioContext {
   feedback.gain.value = 50 / 256;       // ~20% feedback
   wet.gain.value = 0.4;                  // wet/dry mix
   dry.gain.value = 1.0;
+
+  // Master limiter (DynamicsCompressorNode) : absorbe les peaks SE + BGM combinés
+  // qui sinon clip à ±1.0 en sortie destination → distortion entendue comme
+  // "ticks". Réglages limiter strict : ratio élevé, attack rapide, threshold haut.
+  const limiter = _ctx.createDynamicsCompressor();
+  limiter.threshold.value = -3;     // dB : commence à comprimer au-dessus de -3 dB
+  limiter.knee.value = 0;           // dB : hard knee (= comportement limiter strict)
+  limiter.ratio.value = 20;         // 20:1 = quasi-limiter
+  limiter.attack.value = 0.001;     // 1 ms : très rapide pour capturer les transients
+  limiter.release.value = 0.05;     // 50 ms : retour rapide pour pas tasser le mix
+
   dacFilter2.connect(dry);
-  dry.connect(_ctx.destination);
+  dry.connect(limiter);
   dacFilter2.connect(delay);
   delay.connect(feedback);
   feedback.connect(delay);    // feedback loop
   delay.connect(wet);
-  wet.connect(_ctx.destination);
+  wet.connect(limiter);
+  limiter.connect(_ctx.destination);
 
   _reverbNode = { dry, wet, delay, feedback };
   return _ctx;
@@ -81,6 +93,25 @@ export function setReverb(value: number): void {
 export function getMasterGain(): GainNode {
   if (!_masterGain) getAudioContext();
   return _masterGain!;
+}
+
+/** Prime audio context : await resume + play silent buffer pour warm-up DAC.
+ *  Évite le "PTCH" + garbage au 1er SE après reload (= AudioContext suspended
+ *  glitch quand on schedule un buffer pendant qu'il se réveille). À call après
+ *  user gesture (= dans m4aPrime). */
+export async function primeAudioContext(): Promise<void> {
+  const ctx = getAudioContext();
+  if (ctx.state === 'suspended') {
+    try { await ctx.resume(); } catch { /* ignore */ }
+  }
+  // Play a tiny silent buffer (= 50ms) to flush DAC warmup + ensure pipeline OK
+  const silentBuf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.05), ctx.sampleRate);
+  // (channel data already zero-init = silence)
+  const src = ctx.createBufferSource();
+  src.buffer = silentBuf;
+  src.connect(ctx.destination);
+  src.start();
+  await new Promise(r => setTimeout(r, 60));
 }
 
 /** Volume master 0.0 - 1.0. */

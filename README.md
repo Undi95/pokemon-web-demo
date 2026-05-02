@@ -100,4 +100,3 @@ Si TestGba marche pixel-perfect, l'engine est validé.
 ## Sources de référence (lecture seule, **pas pour copier 1:1**)
 
 - `D:/Projet 1/decomps/pokeemeraude/` — décomp FR (= source de vérité 1:1 ROM)
-- `D:/Projet 1/gen3src/RS/source/` — sources Nintendo Ruby/Sapphire originales (= comprendre architecture)

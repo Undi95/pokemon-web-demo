@@ -31,6 +31,7 @@ import { setReverb as _staticSetReverb } from './m4a/audio-context';
 // SYNCHRONE depuis m4aSongNumStart (sinon le sync stop attend l'import async,
 // laissant la song précédente déclencher son endTimer de loop entre-temps).
 import { stopSong as _staticStopSong, loadMidi as _staticLoadMidi, playSong as _staticPlaySong } from './m4a/player';
+import { hasPrerenderedSE, playPrerenderedSE, stopPrerenderedSE, preloadPrerenderedList } from './m4a/se-noise-prerendered';
 import { stopAllActiveNotes as _staticStopAllNotes } from './m4a/synth';
 
 // ─── Singleton runtime + asset cache ──────────────────────────────────────────
@@ -558,6 +559,11 @@ async function m4aPrime(): Promise<void> {
   // Précharge les 3 synth slots (BGM + SE1 + SE2) en parallèle. Le SF2 buffer
   // est fetch 1 fois et partagé via slice() entre les 3 instances.
   await preloadAllSlots();
+  // Pre-load the list of pre-rendered SE so first PlaySE() is correctly routed
+  await preloadPrerenderedList();
+  // Warm-up AudioContext + DAC pour éviter "PTCH" sur le 1er SE après page load.
+  const { primeAudioContext } = await import('./m4a/audio-context');
+  await primeAudioContext();
   _m4aPrimed = true;
   console.log('[decomp-globals] audio engine ready (spessasynth_lib + emerald.sf2, 3 slots préchargés)');
 }
@@ -662,9 +668,26 @@ export function PlaySE(seId: number): void {
   // occupé, utilise SE2). Permet 2 SE simultanés.
   const slot: 'se1' | 'se2' = _seSlotToggle;
   _seSlotToggle = slot === 'se1' ? 'se2' : 'se1';
+
+  // CRITICAL : await m4aPrime AVANT de check hasPrerenderedSE.
+  // Sinon le 1er PlaySE après page load voit la list pas encore loaded,
+  // hasPrerenderedSE return false, on tombe sur le path runtime LFSR/spessasynth
+  // au lieu du pre-rendered WAV → garbage au 1er play, OK au 2ème (bug observé).
   void (async () => {
     try {
-      await m4aPrime();
+      await m4aPrime();  // = await la list de pre-rendered + audio prime
+
+      // Now safe to check : SE pré-rendus prennent priorité
+      if (hasPrerenderedSE(name)) {
+        const cfg = getSongConfig(name);
+        if (cfg && cfg.reverb !== null) _staticSetReverb(cfg.reverb);
+        const seSongVol = cfg?.volume ?? null;
+        _staticStopSong(slot);  // = sécurité, stop any spessasynth song
+        await playPrerenderedSE(name, slot, seSongVol);
+        return;
+      }
+
+      // Fallback : spessasynth path pour les SE non-pre-rendus
       const url = `/decomp/em/music/${name}.mid`;
       const vgName = _songVoicegroups![name];
       if (!vgName) {

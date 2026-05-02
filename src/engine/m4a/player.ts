@@ -28,6 +28,8 @@ import { resolveVoice } from './voice-resolver';
 import { playNote } from './synth';
 import { getNoiseLfsrBuffer, midiNoteToNoiseFreq } from './noise-engine';
 import { getAudioContext, getMasterGain } from './audio-context';
+import { songHasNoiseTrack, scheduleNoiseSE, stopNoiseSE } from './se-noise-engine';
+import { stopPrerenderedSE } from './se-noise-prerendered';
 
 export type SlotKind = 'bgm' | 'se1' | 'se2';
 
@@ -172,13 +174,40 @@ export async function playSong(
   // songVolume 0-128 → 0-1 master gain. Default 128 = full.
   const songVolNorm = songVolume !== null ? Math.max(0, Math.min(1, songVolume / 128)) : 1.0;
 
+  // ─── Détection + strip noise tracks AVANT seq.play() ────────────────────
+  // Si la song utilise des noise voices sur un slot SE → on les délègue à
+  // se-noise-engine.ts (M4A LFSR 1:1 hardware avec pitch bend + BENDR + CC7).
+  // En parallèle on FILTRE le MIDI buffer envoyé à spessasynth pour que le
+  // sample SF2 noise (= "buzzer" looped) ne joue PAS en doublon.
+  const isSE = !loop && (slot === 'se1' || slot === 'se2');
+  let bufferForSeq: ArrayBuffer = buffer;
+  let noiseTrackIndices: number[] = [];
+  if (isSE && songHasNoiseTrack(song, _voicegroup, _vgLookup)) {
+    // Lance le noise engine (= LFSR worklet temps-réel avec semantique M4A)
+    noiseTrackIndices = await scheduleNoiseSE(song, _voicegroup, _vgLookup, slot);
+    // Race-check après await
+    if (myGen !== state.generation) return;
+    // Strip les noise tracks du buffer MIDI envoyé à spessasynth
+    if (noiseTrackIndices.length > 0) {
+      const filteredMidi = new Midi(buffer.slice(0));
+      for (const idx of noiseTrackIndices) {
+        filteredMidi.tracks[idx].notes = [];
+      }
+      const arr = filteredMidi.toArray();
+      const ab = new ArrayBuffer(arr.byteLength);
+      new Uint8Array(ab).set(arr);
+      bufferForSeq = ab;
+      console.log(`[m4a] noise tracks (${noiseTrackIndices.length}) routed to se-noise-engine, stripped from spessasynth MIDI`);
+    }
+  }
+
   // SE et BGM passent par le Sequencer. Les SE/PH .mid ont été pre-process
   // (scripts/fix-se-banks.mjs) pour que le CC 0 (bank MSB) soit inline sur
   // la track avec program change, garantissant la propagation cross-track.
   const seq = new Sequencer(state.synth);
   // loadNewSongList prend un tableau de MIDI. On joue 1 song à la fois.
   // Le clone .slice(0) protège le buffer partagé entre playSong successifs.
-  seq.loadNewSongList([{ binary: buffer.slice(0), fileName: 'song.mid' }]);
+  seq.loadNewSongList([{ binary: bufferForSeq.slice(0), fileName: 'song.mid' }]);
   seq.loopCount = loop ? Infinity : 0;
   seq.play();
 
@@ -195,60 +224,8 @@ export async function playSong(
 
   state.sequencer = seq;
 
-  // HYBRID FINAL : SE qui utilisent noise voices = AudioWorklet LFSR temps-réel
-  // au lieu du SF2 sample pré-enregistré (qui loop → bruit blanc répétitif).
-  // Le worklet génère 1 bit pseudo-random par sample audio → pas de loop, pas
-  // de resampling artefact, 1:1 hardware GBA noise channel.
-  // Pour chaque noise note : tronquer noteOff dans spessasynth (= mute la
-  // version SF2) + jouer en parallèle via AudioWorklet (= vraie LFSR).
-  if (!loop && (slot === 'se1' || slot === 'se2') && songUsesNoiseVoice(song, _voicegroup, _vgLookup)) {
-    const ctx = getAudioContext();
-    const sequencerStartTime = ctx.currentTime + 0.005;
-    // Identifie quels channels MIDI contiennent UNIQUEMENT des notes noise.
-    // Pour ces channels, on mute le channel entier via spessasynth (= sinon le
-    // sample SF2 noise joue en parallèle de notre worklet LFSR = double sound).
-    const channelsWithOnlyNoise = new Set<number>();
-    for (const track of song.tracks) {
-      if (track.notes.length === 0) continue;
-      const program = track.instrument?.number ?? 0;
-      const voice = resolveVoice(_voicegroup, program, track.notes[0].midi, _vgLookup);
-      if (voice?.type === 'noise' || voice?.type === 'noise_alt') {
-        channelsWithOnlyNoise.add(track.channel);
-      }
-    }
-    for (const ch of channelsWithOnlyNoise) {
-      try { state.synth.muteChannel(ch, true); } catch { /* ignore */ }
-    }
-    // Lazy-load le noise worklet (= 1ère fois). Idempotent.
-    void ensureNoiseWorklet(ctx).then(() => {
-      for (const track of song.tracks) {
-        const programNumber = track.instrument?.number ?? 0;
-        for (const note of track.notes) {
-          const noteVoice = resolveVoice(_voicegroup, programNumber, note.midi, _vgLookup);
-          if (noteVoice?.type === 'noise' || noteVoice?.type === 'noise_alt') {
-            const when = sequencerStartTime + note.time;
-            const velocity = Math.round(note.velocity * 127);
-            // 1. (déjà fait via muteChannel) Plus besoin de noteOff par note.
-            // Mais on garde le tracking pour le mono-cut entre worklets.
-            void velocity;
-            // 2. Collecte les CC7 (volume) events de la track relatifs au noteOn,
-            //    pour appliquer le fade-out via env.gain (sinon noise plays plein
-            //    volume tout du long → bruit fort prolongé pour les notes >1s).
-            const cc7 = track.controlChanges?.[7] || [];
-            const volumeRamps: { time: number; value: number }[] = [];
-            for (const cc of cc7) {
-              const relTime = cc.time - note.time;
-              if (relTime >= 0 && relTime <= note.duration + 0.5) {
-                volumeRamps.push({ time: relTime, value: cc.value });
-              }
-            }
-            // 3. Joue la vraie LFSR via AudioWorklet temps-réel + volume ramps + mono-cut.
-            playNoteNoiseWorklet(noteVoice, note.midi, Math.round(note.velocity * 127), when, note.duration, 1.0, volumeRamps, slot);
-          }
-        }
-      }
-    });
-  }
+  // (Le scheduling noise SE est fait au-dessus, AVANT seq.play(), via
+  // se-noise-engine.ts. Aucun fallback inline ici.)
 
   // Force-stop SE après song duration (= safety net pour notes stuck).
   if (!loop && (slot === 'se1' || slot === 'se2')) {
@@ -279,7 +256,11 @@ export function stopSong(slot: SlotKind = 'bgm'): void {
     } catch { /* already stopped */ }
     state.sequencer = null;
   }
-  // Stop les LFSR sources actives sur ce slot via env.gain → 0 immédiat.
+  // Stop les noise SE engine nodes actifs sur ce slot.
+  stopNoiseSE(slot);
+  // Stop les SE pré-rendus actifs sur ce slot.
+  stopPrerenderedSE(slot);
+  // Stop les LFSR sources legacy actives sur ce slot via env.gain → 0 immédiat.
   const lfsrs = _slotLfsrSources[slot];
   if (lfsrs && lfsrs.length > 0) {
     const ctx = getAudioContext();

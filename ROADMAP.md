@@ -1,7 +1,6 @@
 # Roadmap — Pokémon Émeraude Web 1:1 GBA
 
 > **Source de vérité** : la décompilation `D:\Projet 1\decomps\pokeemeraude`.
-> **Référence architecture** : sources Nintendo R/S `D:\Projet 1\gen3src\RS\source` (= comprendre, **PAS copier 1:1**).
 > **Directive** : 1:1 GBA. ZÉRO hardcode. AUCUN pré-rendu PNG. Aucun ROM.
 > **Tout passe par le boot loop** `gMain.callback2 + RunTasks + AnimateSprites + BuildOamBuffer` (1:1 `AgbMain` décomp).
 
@@ -139,4 +138,3 @@ TestGbaScene (sanity) → click → GameScene
 - `Makefile` + `audio_rules.mk` + `spritesheet_rules.mk`
 - `ld_script.ld` (layout VRAM/EWRAM/IWRAM)
 - `tools/preproc/` (préprocesseur dialogues `_("text")`)
-- `D:/Projet 1/gen3src/RS/source/cyc_demo.c` etc. (= comprendre architecture R/S)

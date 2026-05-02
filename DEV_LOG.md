@@ -5,8 +5,6 @@ de la décompilation FR (`pokeemeraude`) + `@pkmn/sim` pour combats.
 
 **Sources de référence** :
 - `D:/Projet 1/decomps/pokeemeraude` — décomp FR (= source de vérité, 1:1 ROM)
-- `D:/Projet 1/gen3src/RS/source` — sources Nintendo Ruby/Sapphire originales
-  (= références architecture, **PAS pour copier 1:1** — interdit par licence)
 
 ---
 
