@@ -183,10 +183,28 @@ export async function playSong(
 
   state.sequencer = seq;
 
-  // FIX SE stuck-notes : pour les SE non-loop, certains presets SF2 ont
-  // sustainLevel=100% + release=infinite (= notes bloquées après noteOff
-  // → bruit blanc fort). Force-stop le synth slot après song duration.
-  // Pour BGM (loop=true) on skip (= laisse boucler).
+  // HACK SE noise voices : le SF2 ripped a capturé un slice fixe de LFSR
+  // pseudo-random comme sample. Quand joué pendant >0.1s, le sample loop
+  // → bruit blanc répétitif audible (au lieu du LFSR continu hardware).
+  // Workaround : force noteOff précoce (~50ms) sur les notes longues si la
+  // song utilise une noise voice. Garde le transient blast initial, supprime
+  // le loop répétitif.
+  if (!loop && (slot === 'se1' || slot === 'se2') && songUsesNoiseVoice(song, _voicegroup, _vgLookup)) {
+    const ctx = getAudioContext();
+    const startTime = ctx.currentTime + 0.005;
+    const NOISE_TRUNCATE_SEC = 0.06;
+    for (const track of song.tracks) {
+      for (const note of track.notes) {
+        if (note.duration > NOISE_TRUNCATE_SEC) {
+          try {
+            state.synth.noteOff(track.channel, note.midi, { time: startTime + note.time + NOISE_TRUNCATE_SEC });
+          } catch { /* ignore */ }
+        }
+      }
+    }
+  }
+
+  // Force-stop SE après song duration (= safety net pour notes stuck).
   if (!loop && (slot === 'se1' || slot === 'se2')) {
     const totalSec = song.duration + 0.05;
     window.setTimeout(() => {
