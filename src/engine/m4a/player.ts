@@ -217,8 +217,19 @@ export async function playSong(
             try {
               state.synth.noteOff(track.channel, note.midi, { time: when + 0.001 });
             } catch { /* ignore */ }
-            // 2. Joue la vraie LFSR via AudioWorklet temps-réel.
-            playNoteNoiseWorklet(noteVoice, note.midi, velocity, when, note.duration, 1.0);
+            // 2. Collecte les CC7 (volume) events de la track relatifs au noteOn,
+            //    pour appliquer le fade-out via env.gain (sinon noise plays plein
+            //    volume tout du long → bruit fort prolongé pour les notes >1s).
+            const cc7 = track.controlChanges?.[7] || [];
+            const volumeRamps: { time: number; value: number }[] = [];
+            for (const cc of cc7) {
+              const relTime = cc.time - note.time;
+              if (relTime >= 0 && relTime <= note.duration + 0.5) {
+                volumeRamps.push({ time: relTime, value: cc.value });
+              }
+            }
+            // 3. Joue la vraie LFSR via AudioWorklet temps-réel + volume ramps.
+            playNoteNoiseWorklet(noteVoice, note.midi, velocity, when, note.duration, 1.0, volumeRamps);
           }
         }
       }
@@ -306,6 +317,7 @@ function playNoteNoiseWorklet(
   when: number,
   duration: number,
   trackVolume: number,
+  volumeRamps: { time: number; value: number }[] = [],
 ): void {
   const ctx = getAudioContext();
   if (!_noiseWorkletAdded) {
@@ -343,9 +355,24 @@ function playNoteNoiseWorklet(
   }
   // Decay : velNorm → sustainNorm.
   env.gain.linearRampToValueAtTime(sustainNorm, when + attackSec + decaySec);
-  // Sustain hold jusqu'à noteOff.
+  // Volume ramps (= CC7 events de la track MIDI). Applique linear ramps sur env.gain
+  // pendant la note. Le sustainNorm est le 100% baseline ; CC7 (0-1) le scale.
+  // Filtre les events qui sont AVANT le noteOn (= startup CC) pour les appliquer
+  // immédiatement au noteOn time.
   const noteOff = when + duration;
-  env.gain.setValueAtTime(sustainNorm, noteOff);
+  let lastCcVal = 1.0;
+  for (const cc of volumeRamps) {
+    const ccTime = when + cc.time;
+    if (ccTime <= when) {
+      lastCcVal = cc.value;
+      continue;
+    }
+    if (ccTime >= noteOff) break;
+    env.gain.linearRampToValueAtTime(sustainNorm * cc.value, ccTime);
+    lastCcVal = cc.value;
+  }
+  // Sustain final value au noteOff (= dernière CC7 appliquée).
+  env.gain.setValueAtTime(sustainNorm * lastCcVal, noteOff);
   // Release : ramp linéaire à 0.
   env.gain.linearRampToValueAtTime(0, noteOff + releaseSec);
 
