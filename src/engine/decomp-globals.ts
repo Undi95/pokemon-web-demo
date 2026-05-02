@@ -562,6 +562,11 @@ async function m4aPrime(): Promise<void> {
   console.log('[decomp-globals] audio engine ready (spessasynth_lib + emerald.sf2, 3 slots préchargés)');
 }
 
+// Expose pour debug console
+if (typeof globalThis !== 'undefined') {
+  (globalThis as { __PlaySE?: typeof PlaySE }).__PlaySE = PlaySE;
+}
+
 /** 1:1 décomp `m4aSongNumStart(songId)` — démarre une song en boucle via NOTRE
  *  M4A engine maison (`src/engine/m4a/`). Pas SpessaSynth ni emerald.sf2.
  *  Async fire-and-forget : await m4aPrime() puis playSong().
@@ -729,8 +734,11 @@ export const SPECIES_RAYQUAZA = 406;
 export const CRY_PRIORITY_NORMAL = 2;
 export const CRY_MODE_NORMAL = 0;
 
-/** 1:1 décomp `SE_INTRO_BLAST` — sound effect ID. */
-export const SE_INTRO_BLAST = 0x14;
+/** 1:1 décomp `SE_INTRO_BLAST` — sound effect ID 103 (cf. songs.h:109).
+ *  Fix critique : avant cette session la valeur était 0x14 (= 20 = se_bang),
+ *  cause d'une copie hardcodée. PlaySE(SE_INTRO_BLAST) appelait donc PlaySE(20)
+ *  qui jouait se_bang à la place du blast Rayquaza. */
+export const SE_INTRO_BLAST = 103;
 
 /** 1:1 décomp src/intro.c:2810 `PanFadeAndZoomScreen(screenX, screenY, zoom, alpha)`.
  *  Calcule BgAffineSet pour BG2 (texture (0x8000, 0x8000) → screen (screenX, screenY))
