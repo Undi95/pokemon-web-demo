@@ -33,6 +33,7 @@ export type SlotKind = 'bgm' | 'se1' | 'se2';
 
 const SF2_URL = '/audio/emerald.sf2';
 const WORKLET_URL = '/spessasynth_processor.min.js';
+const NOISE_WORKLET_URL = '/m4a-noise-lfsr-processor.js';
 
 // ─── Singletons partagés ────────────────────────────────────────────────────
 
@@ -61,6 +62,17 @@ async function ensureWorkletModule(ctx: BaseAudioContext): Promise<void> {
     _workletModuleAdded = true;
   });
   return _workletModulePromise;
+}
+
+let _noiseWorkletAdded = false;
+let _noiseWorkletPromise: Promise<void> | null = null;
+async function ensureNoiseWorklet(ctx: BaseAudioContext): Promise<void> {
+  if (_noiseWorkletAdded) return;
+  if (_noiseWorkletPromise) return _noiseWorkletPromise;
+  _noiseWorkletPromise = ctx.audioWorklet.addModule(NOISE_WORKLET_URL).then(() => {
+    _noiseWorkletAdded = true;
+  });
+  return _noiseWorkletPromise;
 }
 
 // ─── Per-slot synth + sequencer ─────────────────────────────────────────────
@@ -183,28 +195,34 @@ export async function playSong(
 
   state.sequencer = seq;
 
-  // HACK SE noise voices : le SF2 ripped a capturé un slice fixe de LFSR
-  // pseudo-random comme sample. Quand joué pendant >0.1s, le sample loop
-  // → bruit blanc répétitif audible (au lieu du LFSR continu hardware).
-  // Workaround : force noteOff précoce (~50ms) sur les notes longues si la
-  // song utilise une noise voice. Garde le transient blast initial, supprime
-  // le loop répétitif.
+  // HYBRID FINAL : SE qui utilisent noise voices = AudioWorklet LFSR temps-réel
+  // au lieu du SF2 sample pré-enregistré (qui loop → bruit blanc répétitif).
+  // Le worklet génère 1 bit pseudo-random par sample audio → pas de loop, pas
+  // de resampling artefact, 1:1 hardware GBA noise channel.
+  // Pour chaque noise note : tronquer noteOff dans spessasynth (= mute la
+  // version SF2) + jouer en parallèle via AudioWorklet (= vraie LFSR).
   if (!loop && (slot === 'se1' || slot === 'se2') && songUsesNoiseVoice(song, _voicegroup, _vgLookup)) {
     const ctx = getAudioContext();
-    const startTime = ctx.currentTime + 0.005;
-    // 250ms = sweet spot : transient blast complet + minimal sample loop répétitif.
-    // Les BGM noise notes max ≤ 132ms (route101) — donc 250ms ≥ tout BGM use case
-    // mais < 1.36s du SE intro_blast = on tronque uniquement la queue répétitive.
-    const NOISE_TRUNCATE_SEC = 0.25;
-    for (const track of song.tracks) {
-      for (const note of track.notes) {
-        if (note.duration > NOISE_TRUNCATE_SEC) {
-          try {
-            state.synth.noteOff(track.channel, note.midi, { time: startTime + note.time + NOISE_TRUNCATE_SEC });
-          } catch { /* ignore */ }
+    const sequencerStartTime = ctx.currentTime + 0.005;
+    // Lazy-load le noise worklet (= 1ère fois). Idempotent.
+    void ensureNoiseWorklet(ctx).then(() => {
+      for (const track of song.tracks) {
+        const programNumber = track.instrument?.number ?? 0;
+        for (const note of track.notes) {
+          const noteVoice = resolveVoice(_voicegroup, programNumber, note.midi, _vgLookup);
+          if (noteVoice?.type === 'noise' || noteVoice?.type === 'noise_alt') {
+            const when = sequencerStartTime + note.time;
+            const velocity = Math.round(note.velocity * 127);
+            // 1. Mute spessasynth pour CETTE note (= force noteOff immédiat).
+            try {
+              state.synth.noteOff(track.channel, note.midi, { time: when + 0.001 });
+            } catch { /* ignore */ }
+            // 2. Joue la vraie LFSR via AudioWorklet temps-réel.
+            playNoteNoiseWorklet(noteVoice, note.midi, velocity, when, note.duration, 1.0);
+          }
         }
       }
-    }
+    });
   }
 
   // Force-stop SE après song duration (= safety net pour notes stuck).
@@ -276,6 +294,71 @@ export function songUsesNoiseVoice(
     if (voice?.type === 'noise' || voice?.type === 'noise_alt') return true;
   }
   return false;
+}
+
+/** Joue 1 note noise via AudioWorklet LFSR temps-réel (= 1:1 hardware GBA).
+ *  Génère 1 bit pseudo-random par audio sample → pas de loop, pas de
+ *  resampling artefact. Stop via env.gain à 0 + node.disconnect après duration. */
+function playNoteNoiseWorklet(
+  voice: { period?: number; envelope: { attack: number; decay: number; sustain: number; release: number } },
+  midiNote: number,
+  velocity: number,
+  when: number,
+  duration: number,
+  trackVolume: number,
+): void {
+  const ctx = getAudioContext();
+  if (!_noiseWorkletAdded) {
+    console.warn('[m4a-noise] worklet not loaded yet — skip note');
+    return;
+  }
+  const periodVal = voice.period ?? 0;
+  const is7bit = (periodVal & 1) === 1;
+  const node = new AudioWorkletNode(ctx, 'm4a-noise-lfsr', {
+    numberOfInputs: 0,
+    numberOfOutputs: 1,
+    outputChannelCount: [1],
+  });
+  const freqParam = node.parameters.get('frequency');
+  const is7bitParam = node.parameters.get('is7bit');
+  if (freqParam) freqParam.setValueAtTime(midiNoteToNoiseFreq(midiNote), when);
+  if (is7bitParam) is7bitParam.setValueAtTime(is7bit ? 1 : 0, when);
+
+  // ADSR — CGB scale (attack/decay/release 0-7, sustain 0-15) en steps 1/60s.
+  const env = ctx.createGain();
+  const velNorm = (velocity / 127) * trackVolume;
+  const sustainNorm = (voice.envelope.sustain / 15) * velNorm * 0.4;
+  const attackSec = voice.envelope.attack > 0 ? voice.envelope.attack * (1 / 60) : 0;
+  const decaySec = voice.envelope.decay > 0 ? voice.envelope.decay * (1 / 60) : 0.005;
+  const releaseSec = voice.envelope.release > 0 ? voice.envelope.release * (1 / 60) : 0.04;
+
+  // Pré-noteOn : silent.
+  env.gain.setValueAtTime(0, when - 0.001);
+  // Attack : ramp 0 → velNorm.
+  if (attackSec > 0) {
+    env.gain.setValueAtTime(0, when);
+    env.gain.linearRampToValueAtTime(velNorm, when + attackSec);
+  } else {
+    env.gain.setValueAtTime(velNorm, when);
+  }
+  // Decay : velNorm → sustainNorm.
+  env.gain.linearRampToValueAtTime(sustainNorm, when + attackSec + decaySec);
+  // Sustain hold jusqu'à noteOff.
+  const noteOff = when + duration;
+  env.gain.setValueAtTime(sustainNorm, noteOff);
+  // Release : ramp linéaire à 0.
+  env.gain.linearRampToValueAtTime(0, noteOff + releaseSec);
+
+  node.connect(env);
+  env.connect(getMasterGain());
+
+  // Cleanup : disconnect node après que le gain atteint 0 (sinon le worklet
+  // continue à tourner CPU pour rien). AudioWorkletNode n'a pas de stop().
+  const stopMs = Math.max(50, (noteOff + releaseSec + 0.05 - ctx.currentTime) * 1000);
+  window.setTimeout(() => {
+    try { node.disconnect(); } catch { /* already disconnected */ }
+    try { env.disconnect(); } catch { /* already disconnected */ }
+  }, stopMs);
 }
 
 /** Joue 1 note noise via LFSR-accurate Phase 8 (noise-engine.ts).
