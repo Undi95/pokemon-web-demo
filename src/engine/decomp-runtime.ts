@@ -162,10 +162,15 @@ export const BLDCNT_TGT2_OBJ = 0x1000;
 export const BLDCNT_TGT2_BD  = 0x2000;
 
 // ─── Palette base IDs ────────────────────────────────────────────────────────
-/** 1:1 décomp BG_PLTT_ID(n) = n × 16. Palette flat index (0-255). */
+// 1:1 décomp include/palette.h:20-24 :
+//   PLTT_ID(n) = n × 16
+//   BG_PLTT_OFFSET = 0x000, OBJ_PLTT_OFFSET = 0x100
+//   BG_PLTT_ID(n)  = BG_PLTT_OFFSET  + PLTT_ID(n) = n × 16
+//   OBJ_PLTT_ID(n) = OBJ_PLTT_OFFSET + PLTT_ID(n) = 256 + n × 16
+// LoadPalette utilise offset < 256 = BG, ≥ 256 = OBJ. Donc OBJ_PLTT_ID DOIT
+// inclure le 256 sinon les LoadPalette OBJ écrivent dans BG palette.
 export const BG_PLTT_ID = (n: number) => n * 16;
-/** 1:1 décomp OBJ_PLTT_ID(n) = n × 16. */
-export const OBJ_PLTT_ID = (n: number) => n * 16;
+export const OBJ_PLTT_ID = (n: number) => 256 + n * 16;
 /** 1:1 décomp BG_CHAR_ADDR(n) = n × 0x4000 (= charBase index). */
 export const BG_CHAR_ADDR = (n: number) => n * 0x4000;
 /** 1:1 décomp BG_SCREEN_ADDR(n) = n × 0x800 (= screen base index). */
