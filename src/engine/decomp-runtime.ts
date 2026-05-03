@@ -1424,18 +1424,29 @@ export class DecompRuntime {
     //    RunTasks/AnimateSprites/BuildOamBuffer/UpdatePaletteFade dans CET
     //    ORDRE — cf MainCB2_Intro src/intro.c:1042-1052).
     if (this.gMain.callback2) this.gMain.callback2(this);
-    // ─── 1:1 décomp MainCB2_Intro order ───────────────────────────────────
-    // 2. RunTasks() — Tasks AVANT tout sprite tick. Critique : la création
-    //    d'un sprite + StartSpriteAffineAnim DOIT précéder l'AnimateSprite
-    //    de la même frame, sinon la matrix OAM reste avec sa valeur stale
-    //    (= 1-frame flicker du logo Game Freak avec scale/rot random).
-    this.runTasks();
-    // 3. AnimateSprites() — partie 1 : sprite callback (= notre runSpriteCallbacks).
-    //    partie 2 : AnimateSprite qui advance les anims + applique affine
-    //    matrix dans gOamMatrices (= notre tickSpriteAnims + tickAllAffineAnims).
-    this.runSpriteCallbacks();
-    this.tickSpriteAnims();
-    tickAllAffineAnims(this);
+    // 1:1 décomp : seuls les `MainCB2*` callbacks (= main loops de scène)
+    // appellent RunTasks/AnimateSprites/BuildOamBuffer. Les CB2 de transition
+    // (CB2_GoToX) appellent UNIQUEMENT UpdatePaletteFade. Si on ne respecte pas
+    // ça, les Tasks de la scène sortante continuent de tourner pendant la
+    // transition → ex. Task_TitleScreenPhase3 re-trigger BeginNormalPaletteFade
+    // chaque frame pendant le fade vers Copyright → fade restart en boucle.
+    // Détection par nom : `CB2_GoTo*` = transition, skip Tasks/sprites.
+    const cbName = this.gMain.callback2?.name ?? '';
+    const isTransitionCB2 = cbName.startsWith('CB2_GoTo');
+    if (!isTransitionCB2) {
+      // ─── 1:1 décomp MainCB2_Intro order ───────────────────────────────────
+      // 2. RunTasks() — Tasks AVANT tout sprite tick. Critique : la création
+      //    d'un sprite + StartSpriteAffineAnim DOIT précéder l'AnimateSprite
+      //    de la même frame, sinon la matrix OAM reste avec sa valeur stale
+      //    (= 1-frame flicker du logo Game Freak avec scale/rot random).
+      this.runTasks();
+      // 3. AnimateSprites() — partie 1 : sprite callback (= notre runSpriteCallbacks).
+      //    partie 2 : AnimateSprite qui advance les anims + applique affine
+      //    matrix dans gOamMatrices (= notre tickSpriteAnims + tickAllAffineAnims).
+      this.runSpriteCallbacks();
+      this.tickSpriteAnims();
+      tickAllAffineAnims(this);
+    }
     // RunTextPrinters render text into window pixel buffers,
     // then flushDirtyWindows copies modified buffers to VRAM.
     const globalRunTextPrinters = (globalThis as any).RunTextPrinters;
