@@ -66,6 +66,11 @@ function _palView(buf: PaletteBuffer, base: number): ArrayLike<number> {
 export const SpriteCB_VersionBannerLeft: SpriteCallback = (sprite, rt) => {
   if (_gt(rt, sprite.data[1]).data[1])
       {
+          // MANUAL FIX session 81 : écrire sprite.objMode (= notre source de vérité,
+          // syncSpritesToOam propage). L'écriture directe à rt.gba.oam[].objMode
+          // était écrasée par la sync à la frame suivante → Émeraude restait en
+          // OBJ_BLEND (semi-transparent au lieu d'opaque).
+          sprite.objMode = ST_OAM_OBJ_NORMAL as 0 | 1 | 2;
           rt.gba.oam[sprite.oamIndex].objMode = ST_OAM_OBJ_NORMAL;
           sprite.y = VERSION_BANNER_Y_GOAL;
       }
@@ -83,6 +88,8 @@ export const SpriteCB_VersionBannerLeft: SpriteCallback = (sprite, rt) => {
 export const SpriteCB_VersionBannerRight: SpriteCallback = (sprite, rt) => {
   if (_gt(rt, sprite.data[1]).data[1])
       {
+          // MANUAL FIX session 81 : cf SpriteCB_VersionBannerLeft.
+          sprite.objMode = ST_OAM_OBJ_NORMAL as 0 | 1 | 2;
           rt.gba.oam[sprite.oamIndex].objMode = ST_OAM_OBJ_NORMAL;
           sprite.y = VERSION_BANNER_Y_GOAL;
       }
