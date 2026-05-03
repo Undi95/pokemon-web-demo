@@ -319,12 +319,9 @@ function renderOamSpriteNormal(
     }
     const finalTileId = sprite.tileId + tileIdOffset;
 
-    // OAM tileNum est en unités de 32 bytes. Pour décoder 8bpp (= 64 bytes/tile),
-    // décaler de 1 (= /2) pour convertir en index de tile 8bpp tile-byte unit.
-    const decodeId = sprite.paletteMode === 0 ? finalTileId : (finalTileId >> 1);
     const pixels = sprite.paletteMode === 0
-      ? decodeTile4bpp(objVram, decodeId, false, false)
-      : decodeTile8bpp(objVram, decodeId, false, false);
+      ? decodeTile4bpp(objVram, finalTileId, false, false)
+      : decodeTile8bpp(objVram, finalTileId, false, false);
     const colorIdx = pixels[subY * 8 + subX];
     const [r, g, b, a] = palette.getObjRgba(sprite.paletteBank, colorIdx, sprite.paletteMode);
     if (a === 0) continue;
@@ -407,11 +404,9 @@ function renderOamSpriteAffine(
     }
     const finalTileId = sprite.tileId + tileIdOffset;
 
-    // OAM tileNum en unités de 32 bytes → /2 pour 8bpp (= tile-byte units 64B).
-    const decodeId = sprite.paletteMode === 0 ? finalTileId : (finalTileId >> 1);
     const pixels = sprite.paletteMode === 0
-      ? decodeTile4bpp(objVram, decodeId, false, false)
-      : decodeTile8bpp(objVram, decodeId, false, false);
+      ? decodeTile4bpp(objVram, finalTileId, false, false)
+      : decodeTile8bpp(objVram, finalTileId, false, false);
     const colorIdx = pixels[subY * 8 + subX];
     const [r, g, b, a] = palette.getObjRgba(sprite.paletteBank, colorIdx, sprite.paletteMode);
     if (a === 0) continue;
@@ -480,11 +475,9 @@ function computeWinObjScanline(
         ? tileY * wTiles + tileX
         : (tileY * wTiles + tileX) * 2;
       const finalTileId = sprite.tileId + tileIdOffset;
-      // OAM tileNum en unités 32B → /2 pour 8bpp (= 64B tile-byte units).
-      const decodeId = sprite.paletteMode === 0 ? finalTileId : (finalTileId >> 1);
       const pixels = sprite.paletteMode === 0
-        ? decodeTile4bpp(objVram, decodeId, false, false)
-        : decodeTile8bpp(objVram, decodeId, false, false);
+        ? decodeTile4bpp(objVram, finalTileId, false, false)
+        : decodeTile8bpp(objVram, finalTileId, false, false);
       const colorIdx = pixels[subY * 8 + subX];
       if (colorIdx === 0) continue;
       mask[screenX] = 1;

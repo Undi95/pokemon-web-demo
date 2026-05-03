@@ -220,36 +220,6 @@ function patchTitleScreenCallbacks() {
   // PATCH T1 : (placeholder — sSpritePalette_PressStart correctement défini
   // comme array dans decomp-globals, le `[0]` du transpileur est correct).
 
-  // PATCH T2 (session 81) : import CB2_InitCopyrightScreenAfterTitleScreen depuis
-  // copyright-boot.ts (= pas auto-généré car défini hors décomp_data/auto).
-  if (!s.includes("from '../../../copyright-boot'")) {
-    s = s.replace(
-      `import { CB2_InitMainMenu } from './main_menu-callbacks-auto';`,
-      `import { CB2_InitMainMenu } from './main_menu-callbacks-auto';\nimport { CB2_InitCopyrightScreenAfterTitleScreen } from '../../../copyright-boot';`,
-    );
-  }
-
-  // PATCH T3 (session 81) : backdrop blanc 1:1 décomp title_screen.c:582
-  // `*(u16 *)PLTT = RGB_WHITE;` (= état CB2_InitTitleScreen state 0).
-  s = s.replace(
-    /\/\* deref-write skipped: \(PLTT\) = \*\/ void 0 ;\/\/ RGB_WHITE;/g,
-    `// MANUAL FIX session 81 : backdrop blanc 1:1 décomp title_screen.c:582\n          rt.gPlttBufferFaded.set(0, RGB_WHITE);`,
-  );
-
-  // PATCH T4 (session 81) : demo loop quand MUS_TITLE finit (Phase3) → fade
-  // + transition vers CB2_GoToCopyrightScreen. 1:1 décomp title_screen.c:818-822.
-  s = s.replace(
-    /(rt\.BeginNormalPaletteFade\("PALETTES_ALL", 0, 0, 16, "RGB_WHITEALPHA"\);\s*)\/\* TODO scene transition: SetMainCallback2\(CB2_GoToCopyrightScreen\) \*\/;/g,
-    `$1// MANUAL FIX session 81 : demo loop décomp title_screen.c:821\n              rt.SetMainCallback2(CB2_GoToCopyrightScreen);`,
-  );
-
-  // PATCH T5 (session 81) : CB2_GoToCopyrightScreen → CB2_InitCopyrightScreenAfterTitleScreen.
-  // 1:1 décomp title_screen.c:832-836.
-  s = s.replace(
-    /(if \(!UpdatePaletteFade\(\)\)\s*)\/\* TODO scene transition: SetMainCallback2\(CB2_InitCopyrightScreenAfterTitleScreen\) \*\/;/g,
-    `$1// MANUAL FIX session 81\n          rt.SetMainCallback2(CB2_InitCopyrightScreenAfterTitleScreen);`,
-  );
-
   if (s !== before) {
     fs.writeFileSync(FILE, s, 'utf8');
     console.log('[post-transpile-patches] title_screen-callbacks-auto.ts patched');

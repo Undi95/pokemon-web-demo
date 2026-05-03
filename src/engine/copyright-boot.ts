@@ -123,19 +123,3 @@ export const CB2_InitCopyrightScreenAfterBootup: CB2Callback = (rt) => {
     rt.SetMainCallback2(MainCB2_Intro);
   }
 };
-
-// ─── 1:1 décomp intro.c:1162 ────────────────────────────────────────────────
-// Démon loop : appelé depuis Task_TitleScreenPhase3 quand la BGM termine.
-// Ré-init le state machine SetUpCopyrightScreen depuis state 0 → reload Copyright
-// graphics → fade-in → Task_Scene1_Load → MainCB2_Intro.
-// Le décomp ne fait que `SetUpCopyrightScreen();` car en GBA gMain.state était
-// laissé à 5 (= sortie du title screen) et la state machine fall-through les
-// default cases jusqu'à state 141 (COPYRIGHT_START_INTRO). Sur notre engine on
-// préfère reset à 0 pour relancer un cycle copyright→intro→title propre.
-export const CB2_InitCopyrightScreenAfterTitleScreen: CB2Callback = (rt) => {
-  // Reset state machine au 1er tick de cette CB2 (= flag via gMain.state qui
-  // était à 5 sortant du title screen). Sinon on fall-through default → état
-  // visible "écran noir" pendant ~136 frames sans graphics.
-  if (gMain.state >= 2 && gMain.state < 141) gMain.state = 0;
-  SetUpCopyrightScreen();
-};
