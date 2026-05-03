@@ -30,7 +30,7 @@ import { setReverb as _staticSetReverb } from './m4a/audio-context';
 // Static imports m4a/player + synth pour pouvoir stopper la musique de FAÇON
 // SYNCHRONE depuis m4aSongNumStart (sinon le sync stop attend l'import async,
 // laissant la song précédente déclencher son endTimer de loop entre-temps).
-import { stopSong as _staticStopSong, loadMidi as _staticLoadMidi, playSong as _staticPlaySong } from './m4a/player';
+import { stopSong as _staticStopSong, loadMidi as _staticLoadMidi, playSong as _staticPlaySong, pauseSong as _staticPauseSong, resumeSong as _staticResumeSong, isPaused as _staticIsPaused } from './m4a/player';
 import { hasPrerenderedSE, playPrerenderedSE, stopPrerenderedSE, preloadPrerenderedList } from './m4a/se-noise-prerendered';
 import { stopAllActiveNotes as _staticStopAllNotes } from './m4a/synth';
 
@@ -640,6 +640,23 @@ export function m4aSongNumStart(songId: number, loop: boolean = false): void {
  *  Utilise `stopAllSongs()` du player qui boucle sur les 3 slots (bgm/se1/se2). */
 export function m4aMPlayAllStop(): void {
   void import('./m4a/player').then(({ stopAllSongs }) => stopAllSongs());
+}
+
+/** Pause la BGM courante sans la détruire. resumeBgm() reprend depuis la pause.
+ *  Cf. devtool Play/Pause toggle. À ne PAS confondre avec m4aMPlayAllStop qui
+ *  détruit la Sequencer (= bug de relance même MIDI après destruction). */
+export function pauseBgm(): void {
+  _staticPauseSong('bgm');
+}
+
+/** Resume la BGM précédemment pausée via pauseBgm(). */
+export function resumeBgm(): void {
+  _staticResumeSong('bgm');
+}
+
+/** True si la BGM est dans un état pausé (= playing puis paused, pas stopped). */
+export function isBgmPaused(): boolean {
+  return _staticIsPaused('bgm');
 }
 
 /** 1:1 décomp `PlaySE(seId)` — joue un sound effect one-shot.

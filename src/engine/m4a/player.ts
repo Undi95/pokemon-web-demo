@@ -282,6 +282,32 @@ export function stopSong(slot: SlotKind = 'bgm'): void {
   }
 }
 
+/** Pause la song courante du slot SANS la détruire. La playSong suivante du
+ *  MÊME songId pourra resume via `resumeSong(slot)` (= seq.play() sur la même
+ *  Sequencer qui resume depuis pausedTime). Utile pour le bouton Play/Pause
+ *  toggle du devtool : Pause + Resume marche même quand "Stop + Play same"
+ *  ne marche pas (= bug spessasynth/synth state stale). */
+export function pauseSong(slot: SlotKind = 'bgm'): void {
+  const state = _slots[slot];
+  if (!state?.sequencer) return;
+  try { state.sequencer.pause(); } catch { /* ignore */ }
+}
+
+/** Resume la song courante du slot (qui doit avoir été pausée via `pauseSong`).
+ *  No-op si rien n'est pausé. */
+export function resumeSong(slot: SlotKind = 'bgm'): void {
+  const state = _slots[slot];
+  if (!state?.sequencer) return;
+  try { state.sequencer.play(); } catch { /* ignore */ }
+}
+
+/** True si une song est dans un état pausé (= playing then paused, pas stopped). */
+export function isPaused(slot: SlotKind = 'bgm'): boolean {
+  const state = _slots[slot];
+  if (!state?.sequencer) return false;
+  return state.sequencer.paused;
+}
+
 /** Stop TOUS les slots (BGM + SE1 + SE2). 1:1 décomp `m4aMPlayAllStop()`. */
 export function stopAllSongs(): void {
   stopSong('bgm');

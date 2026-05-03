@@ -15,7 +15,7 @@
  * Volume persisté dans localStorage.audioDevtoolVolume (0.0–1.0).
  */
 import { SONG_ID_TO_NAME } from '../engine/decomp-data/auto/src/song-table';
-import { m4aSongNumStart, PlaySE, m4aMPlayAllStop } from '../engine/decomp-globals';
+import { m4aSongNumStart, PlaySE, m4aMPlayAllStop, pauseBgm, resumeBgm, isBgmPaused } from '../engine/decomp-globals';
 import { setMasterVolume } from '../engine/m4a/audio-context';
 
 interface SongEntry { id: number; name: string; }
@@ -152,6 +152,15 @@ export function createAudioDevtool(): void {
 
   const bgmButtons = document.createElement('div');
   bgmButtons.style.cssText = 'display:flex;gap:4px;margin-top:4px;';
+  // État du toggle Play/Pause :
+  //   'stopped' (default) : aucune song lancée → "▶ Play"
+  //   'playing' : song en cours → "⏸ Pause"
+  //   'paused'  : song pausée → "▶ Resume"
+  // On track localement pour éviter les race async sur isBgmPaused().
+  // L'ID de song actif change → on revient à 'stopped' (= forcera un play frais).
+  let bgmPlayState: 'stopped' | 'playing' | 'paused' = 'stopped';
+  let bgmActiveId: number | null = null;
+
   const bgmPlayBtn = document.createElement('button');
   bgmPlayBtn.textContent = '▶ Play';
   bgmPlayBtn.style.cssText = 'flex:1;background:#2a5a8a;color:#fff;border:none;padding:4px;cursor:pointer;font:11px monospace;';
@@ -168,22 +177,67 @@ export function createAudioDevtool(): void {
   bgmSection.appendChild(bgmButtons);
   body.appendChild(bgmSection);
 
+  function refreshPlayBtn(): void {
+    if (bgmPlayState === 'playing') {
+      bgmPlayBtn.textContent = '⏸ Pause';
+    } else if (bgmPlayState === 'paused') {
+      bgmPlayBtn.textContent = '▶ Resume';
+    } else {
+      bgmPlayBtn.textContent = '▶ Play';
+    }
+  }
+
   bgmPlayBtn.addEventListener('click', () => {
     const id = Number(bgmSelect.value);
-    if (Number.isFinite(id)) {
+    if (!Number.isFinite(id)) return;
+    // Si on a sélectionné une AUTRE song que celle active → force un Play frais
+    // (= switch song : marche bien car loadNewSongList avec MIDI différente
+    // reset implicite les états spessasynth).
+    const sameSong = bgmActiveId === id;
+    if (bgmPlayState === 'playing' && sameSong) {
+      pauseBgm();
+      bgmPlayState = 'paused';
+    } else if (bgmPlayState === 'paused' && sameSong) {
+      resumeBgm();
+      bgmPlayState = 'playing';
+    } else {
+      // 'stopped' OU song différente → fresh play
       m4aMPlayAllStop();
       m4aSongNumStart(id);
+      bgmActiveId = id;
+      bgmPlayState = 'playing';
+    }
+    refreshPlayBtn();
+  });
+
+  // Sync UI quand le user change de selection : reset state si on s'éloigne
+  // de la song active (= prochain click sera un fresh Play).
+  bgmSelect.addEventListener('change', () => {
+    const id = Number(bgmSelect.value);
+    if (Number.isFinite(id) && id !== bgmActiveId && bgmPlayState !== 'stopped') {
+      // Visuellement : reset le bouton à "▶ Play" pour signaler que ce sera
+      // un nouveau Play (pas un Resume sur la song précédente).
+      bgmPlayBtn.textContent = '▶ Play';
+    } else {
+      refreshPlayBtn();
     }
   });
+
   bgmLoopBtn.addEventListener('click', () => {
     const id = Number(bgmSelect.value);
     if (Number.isFinite(id)) {
       m4aMPlayAllStop();
       m4aSongNumStart(id, true);
+      bgmActiveId = id;
+      bgmPlayState = 'playing';
+      refreshPlayBtn();
     }
   });
   bgmStopBtn.addEventListener('click', () => {
     m4aMPlayAllStop();
+    bgmPlayState = 'stopped';
+    bgmActiveId = null;
+    refreshPlayBtn();
   });
 
   // ─── SE section ─────────────────────────────────────────────────────────
