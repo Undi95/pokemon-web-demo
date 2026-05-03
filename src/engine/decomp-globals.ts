@@ -23,7 +23,13 @@
  * include/gba/macro.h (DmaClear16 macro), src/main.c (CpuFill16/32).
  */
 import type { DecompRuntime } from './decomp-runtime';
-import { BG_PLTT_ID, OBJ_PLTT_ID, BG_CHAR_ADDR, BG_SCREEN_ADDR } from './decomp-runtime';
+import {
+  BG_PLTT_ID, OBJ_PLTT_ID, BG_CHAR_ADDR, BG_SCREEN_ADDR,
+  REG_OFFSET_DISPCNT, REG_OFFSET_BG1CNT, REG_OFFSET_BG2CNT, REG_OFFSET_BG3CNT,
+  BGCNT_PRIORITY, BGCNT_CHARBASE, BGCNT_SCREENBASE,
+  DISPCNT_MODE_0, DISPCNT_OBJ_1D_MAP,
+  DISPCNT_BG1_ON, DISPCNT_BG2_ON, DISPCNT_BG3_ON, DISPCNT_OBJ_ON,
+} from './decomp-runtime';
 import { G_SINE_TABLE } from './decomp-data/auto/src/sine-table';
 import { SONG_ID_TO_NAME, getSongConfig } from './decomp-data/auto/src/song-table';
 import { setReverb as _staticSetReverb } from './m4a/audio-context';
@@ -79,12 +85,14 @@ export function getAsset(symbol: string): Uint8Array | Uint16Array | null {
 export const BG_SCREEN_SIZE = 0x800;
 /** 1:1 décomp PLTT_SIZE = 0x400 bytes (= 256 colors × 2). */
 export const PLTT_SIZE = 0x400;
-/** 1:1 décomp PLTT_SIZE_4BPP = 0x20 bytes (= 16 colors × 2). */
-export const PLTT_SIZE_4BPP = 0x20;
-/** 1:1 décomp PLTT_SIZE_8BPP = 0x200 bytes (= 256 colors × 2). */
-export const PLTT_SIZE_8BPP = 0x200;
 /** 1:1 décomp VRAM_SIZE = 0x18000 bytes. */
 export const VRAM_SIZE = 0x18000;
+// Re-export depuis decomp-helpers (= source de vérité unique pour ces consts).
+export {
+  PLTT_SIZE_4BPP, PLTT_SIZE_8BPP, PLTT_SIZEOF,
+  BG_TILE_H_FLIP, BG_TILE_V_FLIP,
+  GET_TRUE_SPRITE_INDEX, ANIM_SPRITES_START,
+} from './decomp-helpers';
 
 // ─── Constants utilisées par intro-callbacks-auto sans être importées ─────────
 // (résolues par le constant resolver du transpileur, mais redéclarées ici pour
@@ -466,18 +474,11 @@ export function CreateBicycleBgAnimationTask(mode: number, bg1Speed: number, bg2
  *  BG1+BG2+BG3+OBJ via DISPCNT MODE_0. */
 export function SetIntroPart2BgCnt(scenery: number): void {
   const r = rt();
-  const BG_PRI = (n: number) => n & 3;
-  const BG_CHARBASE = (n: number) => (n & 3) << 2;
-  const BG_SCREENBASE = (n: number) => (n & 31) << 8;
-  const BG_TXT_256 = 0x0000;
-  // BG3CNT (0x00E) : priority 3, charBase 0, screenBase 6
-  r.SetGpuReg(0x00E, BG_PRI(3) | BG_CHARBASE(0) | BG_SCREENBASE(6) | BG_TXT_256);
-  // BG2CNT (0x00C) : priority 2, charBase 0, screenBase 7
-  r.SetGpuReg(0x00C, BG_PRI(2) | BG_CHARBASE(0) | BG_SCREENBASE(7) | BG_TXT_256);
-  // BG1CNT (0x00A) : priority 1, charBase 1, screenBase 15
-  r.SetGpuReg(0x00A, BG_PRI(1) | BG_CHARBASE(1) | BG_SCREENBASE(15) | BG_TXT_256);
-  // DISPCNT (0x000) : MODE_0 | OBJ_1D_MAP | BG1_ON | BG2_ON | BG3_ON | OBJ_ON
-  r.SetGpuReg(0x000, 0 | 0x40 | 0x200 | 0x400 | 0x800 | 0x1000);
+  // 1:1 décomp BGCNT_TXT256x256 = 0x0000 (= text mode 256×256, default).
+  r.SetGpuReg(REG_OFFSET_BG3CNT, BGCNT_PRIORITY(3) | BGCNT_CHARBASE(0) | BGCNT_SCREENBASE(6));
+  r.SetGpuReg(REG_OFFSET_BG2CNT, BGCNT_PRIORITY(2) | BGCNT_CHARBASE(0) | BGCNT_SCREENBASE(7));
+  r.SetGpuReg(REG_OFFSET_BG1CNT, BGCNT_PRIORITY(1) | BGCNT_CHARBASE(1) | BGCNT_SCREENBASE(15));
+  r.SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_MODE_0 | DISPCNT_OBJ_1D_MAP | DISPCNT_BG1_ON | DISPCNT_BG2_ON | DISPCNT_BG3_ON | DISPCNT_OBJ_ON);
   void scenery;  // case 0/1/2 partagent le même setup pour intro
 }
 /** 1:1 décomp src/intro_credits_graphics.c:989 — cycle palette scenery couleurs
@@ -855,11 +856,7 @@ export function LoadCompressedSpritePaletteUsingHeap(pal: unknown): void {
 }
 export function FreeMonSpritesGfx(): void { /* no-op : pas de heap chez nous */ }
 
-/** 1:1 décomp `GET_TRUE_SPRITE_INDEX(animTag)` macro = `animTag - ANIM_SPRITES_START`.
- *  ANIM_SPRITES_START = 10000 (cf. constants/battle_anim.h). */
-export function GET_TRUE_SPRITE_INDEX(animTag: number): number {
-  return animTag - 10000;
-}
+// GET_TRUE_SPRITE_INDEX re-exporté depuis decomp-helpers (= source unique).
 
 /** 1:1 décomp battle anim sprite sheets/palettes — gBattleAnimPicTable est une
  *  table sparse ; on utilise un Proxy-like accès via Map pour pas remplir 256 stubs.
@@ -1225,7 +1222,10 @@ export const WININ_WIN1_OBJ = 0x1000;
 export const WINOUT_WIN01_BG_ALL = 0xF;
 export const WINOUT_WIN01_OBJ = 0x10;
 export const WINOUT_WIN01_CLR = 0x20;
-export const WINOUT_WINOBJ_ALL = 0x1F00;
+// 1:1 décomp io_reg.h:582 = WINOUT_WINOBJ_BG_ALL(0xF00) | WINOUT_WINOBJ_OBJ(0x1000) |
+// WINOUT_WINOBJ_CLR(0x2000) = 0x3F00. Avant : 0x1F00 manquait le CLR bit → blend
+// special-effect pas activé dans WINOBJ region.
+export const WINOUT_WINOBJ_ALL = 0x3F00;
 
 /** Interrupt flags. */
 export const INTR_FLAG_VBLANK = 1;

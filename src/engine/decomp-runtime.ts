@@ -350,41 +350,22 @@ export class DecompRuntime {
   private _dispCntMode = 0;
 
   // ─── Affine ref point temp storage (BG2 = 0, BG3 = 1) ─────────────────────
-  private _bg2RefXL = 0;
-  private _bg2RefXH = 0;
-  private _bg2RefYL = 0;
-  private _bg2RefYH = 0;
-  private _bg3RefXL = 0;
-  private _bg3RefXH = 0;
-  private _bg3RefYL = 0;
-  private _bg3RefYH = 0;
+  // Affine reg low/high storage par bg index (= 2 ou 3, BG affine modes 1+).
+  // Indexed [bg][L=0/H=1] pour x et y. Permet d'écrire low puis high séparément
+  // (cf. décomp set BG2X_L puis BG2X_H, on assemble en s32 quand les deux sont set).
+  private _bgRefXL = [0, 0, 0, 0];
+  private _bgRefXH = [0, 0, 0, 0];
+  private _bgRefYL = [0, 0, 0, 0];
+  private _bgRefYH = [0, 0, 0, 0];
 
-  private _updateBg2Ref(): void {
-    const lowX = this._bg2RefXL;
-    const highX = this._bg2RefXH;
-    let x = (highX << 16) | lowX;
-    if (x >= 0x80000000) x -= 0x100000000;
-    this.gba.bg(2).config.affineRefX = x;
-
-    const lowY = this._bg2RefYL;
-    const highY = this._bg2RefYH;
-    let y = (highY << 16) | lowY;
-    if (y >= 0x80000000) y -= 0x100000000;
-    this.gba.bg(2).config.affineRefY = y;
-  }
-
-  private _updateBg3Ref(): void {
-    const lowX = this._bg3RefXL;
-    const highX = this._bg3RefXH;
-    let x = (highX << 16) | lowX;
-    if (x >= 0x80000000) x -= 0x100000000;
-    this.gba.bg(3).config.affineRefX = x;
-
-    const lowY = this._bg3RefYL;
-    const highY = this._bg3RefYH;
-    let y = (highY << 16) | lowY;
-    if (y >= 0x80000000) y -= 0x100000000;
-    this.gba.bg(3).config.affineRefY = y;
+  private _updateBgRef(bgIdx: 2 | 3): void {
+    const xRaw = (this._bgRefXH[bgIdx] << 16) | this._bgRefXL[bgIdx];
+    const yRaw = (this._bgRefYH[bgIdx] << 16) | this._bgRefYL[bgIdx];
+    // Sign-extend 32-bit (= JS bit ops keep 32-bit signed).
+    const x = xRaw >= 0x80000000 ? xRaw - 0x100000000 : xRaw;
+    const y = yRaw >= 0x80000000 ? yRaw - 0x100000000 : yRaw;
+    this.gba.bg(bgIdx).config.affineRefX = x;
+    this.gba.bg(bgIdx).config.affineRefY = y;
   }
 
   /** paletteTag (e.g. 'PALTAG_LOGO') → OBJ palette slot (0-15).
@@ -534,20 +515,20 @@ export class DecompRuntime {
       case REG_OFFSET_BG2PC: this.gba.bgAffineMatrices[0].pc = (value << 16) >> 16; break;
       case REG_OFFSET_BG2PD: this.gba.bgAffineMatrices[0].pd = (value << 16) >> 16; break;
       // Affine ref point BG2 (28.8 fixed, reconstructed from L/H halves)
-      case REG_OFFSET_BG2X_L: this._bg2RefXL = value & 0xFFFF; this._updateBg2Ref(); break;
-      case REG_OFFSET_BG2X_H: this._bg2RefXH = value & 0xFFFF; this._updateBg2Ref(); break;
-      case REG_OFFSET_BG2Y_L: this._bg2RefYL = value & 0xFFFF; this._updateBg2Ref(); break;
-      case REG_OFFSET_BG2Y_H: this._bg2RefYH = value & 0xFFFF; this._updateBg2Ref(); break;
+      case REG_OFFSET_BG2X_L: this._bgRefXL[2] = value & 0xFFFF; this._updateBgRef(2); break;
+      case REG_OFFSET_BG2X_H: this._bgRefXH[2] = value & 0xFFFF; this._updateBgRef(2); break;
+      case REG_OFFSET_BG2Y_L: this._bgRefYL[2] = value & 0xFFFF; this._updateBgRef(2); break;
+      case REG_OFFSET_BG2Y_H: this._bgRefYH[2] = value & 0xFFFF; this._updateBgRef(2); break;
       // Affine matrix BG3
       case REG_OFFSET_BG3PA: this.gba.bgAffineMatrices[1].pa = (value << 16) >> 16; break;
       case REG_OFFSET_BG3PB: this.gba.bgAffineMatrices[1].pb = (value << 16) >> 16; break;
       case REG_OFFSET_BG3PC: this.gba.bgAffineMatrices[1].pc = (value << 16) >> 16; break;
       case REG_OFFSET_BG3PD: this.gba.bgAffineMatrices[1].pd = (value << 16) >> 16; break;
       // Affine ref point BG3
-      case REG_OFFSET_BG3X_L: this._bg3RefXL = value & 0xFFFF; this._updateBg3Ref(); break;
-      case REG_OFFSET_BG3X_H: this._bg3RefXH = value & 0xFFFF; this._updateBg3Ref(); break;
-      case REG_OFFSET_BG3Y_L: this._bg3RefYL = value & 0xFFFF; this._updateBg3Ref(); break;
-      case REG_OFFSET_BG3Y_H: this._bg3RefYH = value & 0xFFFF; this._updateBg3Ref(); break;
+      case REG_OFFSET_BG3X_L: this._bgRefXL[3] = value & 0xFFFF; this._updateBgRef(3); break;
+      case REG_OFFSET_BG3X_H: this._bgRefXH[3] = value & 0xFFFF; this._updateBgRef(3); break;
+      case REG_OFFSET_BG3Y_L: this._bgRefYL[3] = value & 0xFFFF; this._updateBgRef(3); break;
+      case REG_OFFSET_BG3Y_H: this._bgRefYH[3] = value & 0xFFFF; this._updateBgRef(3); break;
     }
   }
 
@@ -676,13 +657,18 @@ export class DecompRuntime {
     dst.set(tilemap.subarray(0, dst.length));
   }
 
+  /** Helper : copie char data dans objVram avec clamp safety. */
+  private _writeToObjVram(charData: Uint8Array, byteOffset: number): void {
+    const remainingSpace = this.gba.objVram.length - byteOffset;
+    const copySize = Math.min(charData.length, remainingSpace);
+    if (copySize > 0) this.gba.objVram.set(charData.subarray(0, copySize), byteOffset);
+  }
+
   /** Charge un sprite sheet 4bpp dans objVram à un offset (en bytes). Auto-detect palette
    *  via les couleurs uniques (= ordre d'apparition pixels, peut diverger de PLTE). */
   async LoadCompressedSpriteSheet(pngUrl: string, byteOffset: number): Promise<{ palette: Uint16Array, byteSize: number }> {
     const png = await loadIndexedPng(pngUrl);
-    const remainingSpace = this.gba.objVram.length - byteOffset;
-    const copySize = Math.min(png.charData.length, remainingSpace);
-    if (copySize > 0) this.gba.objVram.set(png.charData.subarray(0, copySize), byteOffset);
+    this._writeToObjVram(png.charData, byteOffset);
     return { palette: png.palette, byteSize: png.charData.length };
   }
 
@@ -691,28 +677,29 @@ export class DecompRuntime {
    *  (drops_logo.png où drops + logo partagent l'atlas avec différentes runtime palettes). */
   async LoadCompressedSpriteSheetStrict(pngUrl: string, byteOffset: number): Promise<{ palette: Uint16Array, byteSize: number }> {
     const png = await loadIndexedPngStrict(pngUrl, 4);
-    const remainingSpace = this.gba.objVram.length - byteOffset;
-    const copySize = Math.min(png.charData.length, remainingSpace);
-    if (copySize > 0) this.gba.objVram.set(png.charData.subarray(0, copySize), byteOffset);
+    this._writeToObjVram(png.charData, byteOffset);
     return { palette: png.palette, byteSize: png.charData.length };
   }
 
   /** Variante avec palette canonique fournie. */
   async LoadCompressedSpriteSheetWithPal(pngUrl: string, byteOffset: number, palette: Uint16Array): Promise<{ byteSize: number }> {
     const png = await loadIndexedPngWithPal(pngUrl, palette.subarray(0, 16));
-    const remainingSpace = this.gba.objVram.length - byteOffset;
-    const copySize = Math.min(png.charData.length, remainingSpace);
-    if (copySize > 0) this.gba.objVram.set(png.charData.subarray(0, copySize), byteOffset);
+    this._writeToObjVram(png.charData, byteOffset);
     return { byteSize: png.charData.length };
   }
 
-  /** 1:1 décomp LoadPalette(src, paletteFlatIdx, sizeBytes). */
+  /** 1:1 décomp LoadPalette(src, paletteFlatIdx, sizeBytes).
+   *  flatIdx : index dans gPlttBuffer (0-511). 0-255 = BG, 256-511 = OBJ.
+   *  (= la même convention que `LoadPalette` dans decomp-globals.ts.) */
   LoadPaletteBg(palette: Uint16Array, flatIdx: number): void {
     this.gba.palette.loadBgRange(flatIdx, palette);
   }
 
   LoadPaletteObj(palette: Uint16Array, flatIdx: number): void {
-    this.gba.palette.loadObjRange(flatIdx, palette);
+    // flatIdx peut être un OBJ_PLTT_ID() (= 256+n*16) ou un idx OBJ-relative (0-255).
+    // gba.palette.loadObjRange attend 0-255 → soustraire 256 si nécessaire.
+    const objIdx = flatIdx >= 256 ? flatIdx - 256 : flatIdx;
+    this.gba.palette.loadObjRange(objIdx, palette);
   }
 
   /** Charge .pal file depuis URL puis charge dans BG palette. */
@@ -1054,7 +1041,7 @@ export class DecompRuntime {
     // `data[N] += K; if (data[N] == constant)` qui suppose s16 wrap.
     const task: DecompTask = { taskId, func, data: new Int16Array(16) as unknown as number[] };
     this.gTasks.set(taskId, task);
-    console.log('[CreateTask] taskId=', taskId, 'gTasks.size=', this.gTasks.size);
+    if (RT_DEBUG) console.log('[CreateTask] taskId=', taskId, 'gTasks.size=', this.gTasks.size);
     return taskId;
   }
 
@@ -1227,6 +1214,19 @@ export class DecompRuntime {
     }
   }
 
+  /** Helpers : décode les enum strings du décomp en valeurs numériques GBA OAM. */
+  private static parseAffineMode(s: string | undefined): 0 | 1 | 3 {
+    return s === 'ST_OAM_AFFINE_DOUBLE' ? 3
+         : s === 'ST_OAM_AFFINE_NORMAL' ? 1
+         : 0;
+  }
+
+  private static parseObjMode(s: string | undefined): 0 | 1 | 2 {
+    return s === 'ST_OAM_OBJ_BLEND' ? 1
+         : s === 'ST_OAM_OBJ_WINDOW' ? 2
+         : 0;
+  }
+
   /** 1:1 décomp `CreateSprite(&sSpriteTemplate_X, x, y, subpriority)` :
    *  résout template → OAM data + anim table + paletteTag/tileTag depuis sprite-system.ts,
    *  alloue un OAM slot, configure-le, enregistre l'anim state, retourne spriteId. */
@@ -1255,6 +1255,7 @@ export class DecompRuntime {
     const [w, h] = oam._sizeWH ?? [8, 8];  // default 8x8 si extracteur incomplet
     const { shape, size } = oamShapeSizeFromWH(w, h);
 
+    const affineModeNum = DecompRuntime.parseAffineMode(oam.affineMode);
     const result = this.CreateSpriteAtOam({
       tileId: tileBase + initialTileOffset,
       paletteBank: palSlot,
@@ -1262,9 +1263,7 @@ export class DecompRuntime {
       shape, size,
       priority: parseInt(oam.priority ?? '0', 10) || 0,
       paletteMode: oam.bpp === 'ST_OAM_8BPP' ? 1 : 0,
-      affineMode: oam.affineMode === 'ST_OAM_AFFINE_DOUBLE' ? 3
-                : oam.affineMode === 'ST_OAM_AFFINE_NORMAL' ? 1
-                : 0,
+      affineMode: affineModeNum,
     });
 
     if (animTable && firstAnim && firstAnim.frames.length > 0) {
@@ -1280,18 +1279,13 @@ export class DecompRuntime {
     const sprite = this.gSprites.get(result.spriteId);
     if (sprite) {
       sprite.tileBase = tileBase;
-      sprite.objMode = oam.objMode === 'ST_OAM_OBJ_BLEND' ? 1
-                     : oam.objMode === 'ST_OAM_OBJ_WINDOW' ? 2
-                     : 0;
+      sprite.objMode = DecompRuntime.parseObjMode(oam.objMode);
       // 1:1 décomp src/sprite.c:CreateSpriteAt — appel à CalcCenterToCornerVec
       // après init du sprite, pour positionnement correct selon shape/size/affineMode.
-      const affineModeNum = oam.affineMode === 'ST_OAM_AFFINE_DOUBLE' ? 3
-                          : oam.affineMode === 'ST_OAM_AFFINE_NORMAL' ? 1
-                          : 0;
       const ctcv = CalcCenterToCornerVec(shape, size, affineModeNum);
       sprite.centerToCornerVecX = ctcv.centerToCornerVecX;
       sprite.centerToCornerVecY = ctcv.centerToCornerVecY;
-      sprite.affineMode = affineModeNum as 0 | 1 | 3;
+      sprite.affineMode = affineModeNum;
       // 1:1 décomp src/sprite.c:CreateSpriteAt — sprite->affineAnims = template->affineAnims
       // Si non-dummy (= sAffineAnims_X au lieu de gDummySpriteAffineAnimTable),
       // on enregistre le table name pour StartSpriteAffineAnim plus tard.

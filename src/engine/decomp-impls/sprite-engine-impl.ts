@@ -75,7 +75,26 @@ export function StartSpriteAffineAnim(sprite: DecompSprite, animNum: number): vo
   sprite.affineAnimEnded = false;
 }
 
+/** 1:1 décomp src/sprite.c:ConvertScaleParam (l.1316-1320) :
+ *    s16 ConvertScaleParam(s16 scale) { return SAFE_DIV(0x10000, scale); }
+ *  Inverse le scale pour le passer à ObjAffineSet (= sprite affine = inverse
+ *  du visual scale). Sans ça, AFFINEANIMCMD_FRAME(128, 128, ...) zoom AU LIEU
+ *  de shrink (= GameFreak letters intro inversées).
+ */
+function convertScaleParam(scale: number): number {
+  if (scale === 0) return 0x7FFF;  // SAFE_DIV : avoid /0
+  // Sign extend : decomp s16. JS bit ops keep 32-bit, donc on simulate via clamp.
+  const result = (0x10000 / scale) | 0;
+  if (result > 0x7FFF) return 0x7FFF;
+  if (result < -0x8000) return -0x8000;
+  return result;
+}
+
 /** 1:1 décomp src/sprite.c:ObjAffineSet — calcule la matrix OAM depuis xScale, yScale, rotation.
+ *  IMPORTANT : xScale/yScale ici sont les paramètres POST `ConvertScaleParam`
+ *  (= 0x10000 / state.xScale). Donc state.xScale=128 → param=512 → matrix pa=512
+ *  → sprite affiché 0.5× (= shrink). State.xScale=512 → param=128 → matrix pa=128
+ *  → sprite affiché 2× (= zoom).
  *  Formule (cf. ObjAffineSet équivalent inline) :
  *    sin = gSineTable[rot & 0xFF]              // s16 in [-256, 256]
  *    cos = gSineTable[(rot + 64) & 0xFF]       // s16
@@ -83,18 +102,17 @@ export function StartSpriteAffineAnim(sprite: DecompSprite, animNum: number): vo
  *    pb = -(xScale * sin) >> 8
  *    pc =  (yScale * sin) >> 8
  *    pd =  (yScale * cos) >> 8
- *
- *  Identity (xScale=yScale=256, rotation=0) → pa=256, pb=0, pc=0, pd=256.
- *  xScale=128 (= half) → pa=128 → sprite affiché 2× plus grand visuellement
- *  (= sample 0.5 px par pixel screen).
  */
 function applyMatrixFromAffineState(sprite: DecompSprite, rt: DecompRuntime): void {
   const sin = gSineTable(sprite.rotation & 0xFF);
   const cos = gSineTable((sprite.rotation + 64) & 0xFF);
-  const pa =  (sprite.xScale * cos) >> 8;
-  const pb = -(sprite.xScale * sin) >> 8;
-  const pc =  (sprite.yScale * sin) >> 8;
-  const pd =  (sprite.yScale * cos) >> 8;
+  // Apply ConvertScaleParam avant matrix calc (1:1 décomp sprite.c:1309-1310).
+  const xScale = convertScaleParam(sprite.xScale);
+  const yScale = convertScaleParam(sprite.yScale);
+  const pa =  (xScale * cos) >> 8;
+  const pb = -(xScale * sin) >> 8;
+  const pc =  (yScale * sin) >> 8;
+  const pd =  (yScale * cos) >> 8;
   SetOamMatrix(rt.gba, sprite.matrixNum, pa, pb, pc, pd);
 }
 

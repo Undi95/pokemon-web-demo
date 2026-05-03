@@ -193,6 +193,12 @@ export function PLTT_SIZEOF(n: number): number { return n * 2; }
 export function OBJ_PLTT_ID_FADED(n: number): number { return 256 + n * 16; }
 export function BG_PLTT_ID_FADED(n: number): number { return n * 16; }
 
+// ─── BG tilemap entry helpers (1:1 décomp gba/defines.h:48-49) ───────────────
+/** BG_TILE_H_FLIP(n) = 0x400 + n. Set le flag horizontal flip + tile index n. */
+export function BG_TILE_H_FLIP(n: number): number { return 0x400 + n; }
+/** BG_TILE_V_FLIP(n) = 0x800 + n. Set le flag vertical flip + tile index n. */
+export function BG_TILE_V_FLIP(n: number): number { return 0x800 + n; }
+
 // ─── Function-like #define macros from include/gba/io_reg.h ──────────────────
 /** 1:1 décomp `#define BLDALPHA_BLEND(t1, t2) (((t2) << 8) | (t1))`. */
 export function BLDALPHA_BLEND(t1: number, t2: number): number {
