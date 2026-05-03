@@ -33,6 +33,7 @@ import {
 } from '../../title-screen-data';
 import { CanResetRTC, DmaFill16, DmaFill32, EnableInterrupts, FadeOutBGM, FreeAllSpritePalettes, INTR_FLAG_VBLANK, JOY_HELD, JOY_NEW, LZ77UnCompVram, LoadCompressedSpriteSheet, LoadPalette, LoadSpritePalette, OAM, OAM_SIZE, PLTT, PLTT_SIZE, PanFadeAndZoomScreen, REG_OFFSET_BG2X_H, REG_OFFSET_BG2X_L, REG_OFFSET_BG2Y_H, REG_OFFSET_BG2Y_L, ResetPaletteFade, ResetTasks, ScanlineEffect_InitWave, ScanlineEffect_Stop, StartPokemonLogoShine, TransferPlttBuffer, UpdateLegendaryMarkingColor, UpdatePaletteFade, VRAM, VRAM_SIZE, WININ_WIN0_BG_ALL, WININ_WIN0_OBJ, WININ_WIN1_BG_ALL, WININ_WIN1_OBJ, WINOUT_WIN01_BG_ALL, WINOUT_WIN01_OBJ, WINOUT_WINOBJ_ALL, getRuntime, gMPlayInfo_BGM, gMain, gTitleScreenAlphaBlend, gTitleScreenBgPalettes, gTitleScreenCloudsTilemap, gTitleScreenEmeraldVersionPal, gTitleScreenPokemonLogoGfx, gTitleScreenPokemonLogoTilemap, m4aMPlayAllStop, m4aSongNumStart, sPokemonLogoShineSpriteSheet, sSpritePalette_PressStart, sSpriteSheet_EmeraldVersion, sSpriteSheet_PressStart, sTitleScreenCloudsGfx, sTitleScreenRayquazaGfx, sTitleScreenRayquazaTilemap } from '../../../decomp-globals';
 import { CB2_InitMainMenu } from './main_menu-callbacks-auto';
+import { CB2_InitCopyrightScreenAfterTitleScreen } from '../../../copyright-boot';
 // Constants resolved from decomp #defines / enums / TS data modules :
 const A_B_START_SELECT = 15;
 const A_BUTTON = 1;
@@ -298,8 +299,11 @@ export const Task_TitleScreenPhase3: TaskCallback = (task, rt) => {
           UpdateLegendaryMarkingColor(task.data[0]);
           if ((gMPlayInfo_BGM.status & 0xFFFF) == 0)
           {
+              // MANUAL FIX session 81 : demo loop 1:1 décomp title_screen.c:818-822.
+              // Quand MUS_TITLE finit (= isPlaying('bgm')=false), fade-white +
+              // retour au copyright screen → relance Scene 1 → boucle infinie.
               rt.BeginNormalPaletteFade("PALETTES_ALL", 0, 0, 16, "RGB_WHITEALPHA");
-              /* TODO scene transition: SetMainCallback2(CB2_GoToCopyrightScreen) */;
+              rt.SetMainCallback2(CB2_GoToCopyrightScreen);
           }
       }
 };
@@ -334,7 +338,10 @@ export const CB2_InitTitleScreen: CB2Callback = (rt) => {
           rt.SetGpuReg(REG_OFFSET_BLDCNT, 0);
           rt.SetGpuReg(REG_OFFSET_BLDALPHA, 0);
           rt.SetGpuReg(REG_OFFSET_BLDY, 0);
-          /* deref-write skipped: (PLTT) = */ void 0 ;// RGB_WHITE;
+          // MANUAL FIX session 81 : 1:1 décomp title_screen.c:582 `*(u16 *)PLTT = RGB_WHITE;`
+          // Backdrop blanc avant fade-in. Sinon notre engine garde la backdrop verte
+          // (= color 0 d'une palette précédente) → fond vert pendant Phase1.
+          rt.gPlttBufferFaded.set(0, RGB_WHITE);
           rt.SetGpuReg(REG_OFFSET_DISPCNT, 0);
           rt.SetGpuReg(REG_OFFSET_BG2CNT, 0);
           rt.SetGpuReg(REG_OFFSET_BG1CNT, 0);
@@ -438,7 +445,8 @@ export const CB2_GoToMainMenu: CB2Callback = (rt) => {
 /** Source: title_screen.c → CB2_GoToCopyrightScreen */
 export const CB2_GoToCopyrightScreen: CB2Callback = (rt) => {
   if (!UpdatePaletteFade())
-          /* TODO scene transition: SetMainCallback2(CB2_InitCopyrightScreenAfterTitleScreen) */;
+          // MANUAL FIX session 81 : 1:1 décomp title_screen.c:832-836.
+          rt.SetMainCallback2(CB2_InitCopyrightScreenAfterTitleScreen);
 };
 
 /** Source: title_screen.c → CB2_GoToClearSaveDataScreen */

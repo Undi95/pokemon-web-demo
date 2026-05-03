@@ -30,7 +30,7 @@ import { setReverb as _staticSetReverb } from './m4a/audio-context';
 // Static imports m4a/player + synth pour pouvoir stopper la musique de FAÇON
 // SYNCHRONE depuis m4aSongNumStart (sinon le sync stop attend l'import async,
 // laissant la song précédente déclencher son endTimer de loop entre-temps).
-import { stopSong as _staticStopSong, loadMidi as _staticLoadMidi, playSong as _staticPlaySong } from './m4a/player';
+import { stopSong as _staticStopSong, loadMidi as _staticLoadMidi, playSong as _staticPlaySong, isPlaying as _staticIsPlaying } from './m4a/player';
 import { hasPrerenderedSE, playPrerenderedSE, stopPrerenderedSE, preloadPrerenderedList } from './m4a/se-noise-prerendered';
 import { stopAllActiveNotes as _staticStopAllNotes } from './m4a/synth';
 
@@ -1483,7 +1483,15 @@ export function CanResetRTC(): boolean {
 }
 export let gBattle_BG1_X = 0;
 export let gBattle_BG1_Y = 0;
-export const gMPlayInfo_BGM = { status: 1 };
+// 1:1 décomp `gMPlayInfo_BGM` (= struct MusicPlayerInfo). Le décomp lit
+// `gMPlayInfo_BGM.status & 0xFFFF == 0` pour détecter la fin de song
+// (= ex. Task_TitleScreenPhase3 demo loop quand MUS_TITLE finit).
+// On expose un getter qui mappe vers `isPlaying('bgm')` du player.ts :
+//   sequencer != null → status=1 (BGM playing)
+//   sequencer == null → status=0 (BGM stopped/finished)
+export const gMPlayInfo_BGM = {
+  get status(): number { return _staticIsPlaying('bgm') ? 1 : 0; },
+};
 
 // Synchronise les mutable exports sur globalThis pour que les modules auto-générés
 // puissent y accéder sans import ESM (évite "Assignment to constant variable").

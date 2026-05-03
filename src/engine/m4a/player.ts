@@ -227,11 +227,20 @@ export async function playSong(
   // (Le scheduling noise SE est fait au-dessus, AVANT seq.play(), via
   // se-noise-engine.ts. Aucun fallback inline ici.)
 
-  // Force-stop SE après song duration (= safety net pour notes stuck).
-  if (!loop && (slot === 'se1' || slot === 'se2')) {
+  // Auto-stop quand la song termine (= !loop). Pour les SE c'est un safety net
+  // (notes stuck). Pour la BGM c'est CRITIQUE : `gMPlayInfo_BGM.status` (cf
+  // decomp-globals.ts) lit `isPlaying('bgm')` pour signaler aux callbacks décomp
+  // (ex Task_TitleScreenPhase3) que la BGM est terminée → trigger demo loop
+  // 1:1 GBA. Si on ne nullifie pas state.sequencer, isPlaying reste true à vie.
+  if (!loop) {
     const totalSec = song.duration + 0.05;
+    const myGenAtSchedule = myGen;
     window.setTimeout(() => {
+      // Skip si une autre song est démarrée entre-temps (= generation bumped).
+      if (state.generation !== myGenAtSchedule) return;
       try { state.synth.stopAll(true); } catch { /* ignore */ }
+      try { state.sequencer?.pause(); } catch { /* already stopped */ }
+      state.sequencer = null;
     }, totalSec * 1000);
   }
 }
