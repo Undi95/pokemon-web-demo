@@ -148,9 +148,13 @@ export async function loadMidi(url: string): Promise<Midi> {
   _bufferByMidi.set(midi, arrBuf);
   // Parse aussi via BasicMIDI pour récupérer l'info loop (= markers MIDI `[`/`]`).
   // BasicMIDI consomme l'ArrayBuffer en interne ; on slice() pour éviter neutering.
+  // CHECK type === 'soft' : BasicMIDI fallback toujours à start=firstNoteOn /
+  // end=lastVoiceEventTick si aucun marker explicit → start !== end peut être vrai
+  // pour TOUTES les BGMs sans markers (= one-shot). Le `type` est 'soft' UNIQUEMENT
+  // si un CC 4/117 explicit a été trouvé pendant le parse (= vrai marker `]`).
   try {
     const bmidi = BasicMIDI.fromArrayBuffer(arrBuf.slice(0));
-    if (bmidi.loop && bmidi.loop.start !== bmidi.loop.end) {
+    if (bmidi.loop && bmidi.loop.type === 'soft') {
       (midi as unknown as { loop: { start: number; end: number } }).loop = {
         start: bmidi.loop.start,
         end: bmidi.loop.end,
