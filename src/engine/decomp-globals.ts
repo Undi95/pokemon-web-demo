@@ -103,7 +103,7 @@ export const PALETTES_ALL = 0xFFFFFFFF;
 // Tous les REG_OFFSET_*, BGCNT_*, DISPCNT_*, BLDCNT_*, BG_PLTT_ID, etc.
 // utilisés par les Tasks transcrites depuis le décomp.
 export {
-  BG_PLTT_ID, OBJ_PLTT_ID, BG_CHAR_ADDR, BG_SCREEN_ADDR,
+  BG_PLTT_ID, OBJ_PLTT_ID, BG_CHAR_ADDR, BG_SCREEN_ADDR, BG_VRAM,
   DISPLAY_WIDTH, DISPLAY_HEIGHT,
   // REG_OFFSET_* (1:1 décomp include/gba/io_reg.h)
   REG_OFFSET_DISPCNT,
@@ -164,8 +164,9 @@ export let gIntroCredits_MovingSceneryState = 0;
  *    - mais en pratique, addr ≤ 0x4000 = char data BG, ≥ 0x4000 = screen data
  *
  *  Notre routing simplifié : on assume que dest indique le bg index via
- *  l'adresse calculée. BG_CHAR_ADDR(n) = n*0x4000 → BG n, charBase = n*4.
- *  BG_SCREEN_ADDR(n) = n*0x800 → screen n. */
+ *  l'adresse calculée. BG_CHAR_ADDR(n) = BG_VRAM + n*0x4000 → BG n, charBase=n*4.
+ *  BG_SCREEN_ADDR(n) = BG_VRAM + n*0x800 → screen n. Le `% vram.byteLength`
+ *  ci-dessous strip BG_VRAM (0x06000000 mod 0x18000 = 0) → offset relatif clean. */
 export function LZ77UnCompVram(srcSymbol: string, destAddr: number): void {
   const data = getAsset(srcSymbol);
   if (!data) return; // asset manquant, déjà loggué
@@ -312,23 +313,23 @@ export function CpuFastSet(_src: any, _dest: any, _control: number): void {
  *  scenery=1 (toujours appelé avec 1) : trees scenery (= bike ride forest).
  *  scenery=0 : clouds (= jamais utilisé dans intro Pokemon Emerald).
  *
- *  Layout VRAM Scene 2 :
- *    - sGrass_Gfx → BG_CHAR_ADDR(1) = 0x4000 (BG3 ground char data)
- *    - sGrass_Tilemap → BG_SCREEN_ADDR(15) = 0x7800 (BG3 tilemap)
+ *  Layout VRAM Scene 2 (= adresses absolues GBA, modulo VRAM size) :
+ *    - sGrass_Gfx → BG_CHAR_ADDR(1)    (BG3 ground char data)
+ *    - sGrass_Tilemap → BG_SCREEN_ADDR(15) (BG3 tilemap)
  *    - sGrass_Pal → BG palette bank 15
- *    - sTrees_Gfx → VRAM = 0 (BG2 trees char data, partagé avec BG0/1 charBase 0)
- *    - sTrees_Tilemap → BG_SCREEN_ADDR(6) = 0x3000 (BG2 tilemap)
+ *    - sTrees_Gfx → BG_CHAR_ADDR(0)    (BG2 trees char data)
+ *    - sTrees_Tilemap → BG_SCREEN_ADDR(6) (BG2 tilemap)
  *    - sTrees_Pal → BG palette bank 0 */
 export function LoadIntroPart2Graphics(scenery: number): void {
   // Ground (BG3) — toujours chargé, peu importe scenery
-  LZ77UnCompVram(sGrass_Gfx, 0x4000);
-  LZ77UnCompVram(sGrass_Tilemap, 0x7800);
-  LoadPalette(sGrass_Pal, 15 * 16, 32);  // BG palette bank 15 = flat idx 240
+  LZ77UnCompVram(sGrass_Gfx, BG_CHAR_ADDR(1));
+  LZ77UnCompVram(sGrass_Tilemap, BG_SCREEN_ADDR(15));
+  LoadPalette(sGrass_Pal, BG_PLTT_ID(15), 32);  // BG palette bank 15
   if (scenery === 1) {
     // Trees + small trees sprites (= bike ride forest scenery)
-    LZ77UnCompVram(sTrees_Gfx, 0);
-    LZ77UnCompVram(sTrees_Tilemap, 0x3000);
-    LoadPalette(sTrees_Pal, 0, 32);  // BG palette bank 0 = flat idx 0
+    LZ77UnCompVram(sTrees_Gfx, BG_CHAR_ADDR(0));
+    LZ77UnCompVram(sTrees_Tilemap, BG_SCREEN_ADDR(6));
+    LoadPalette(sTrees_Pal, BG_PLTT_ID(0), 32);  // BG palette bank 0
     // TODO LoadCompressedSpriteSheet(sSpriteSheet_TreesSmall) + LoadPalette(sTreesSmall_Pal, OBJ)
     // TODO CreateTreeSprites() — Phase 2 (= sprite OAM trees animés)
   }
@@ -980,10 +981,21 @@ export function ResetTasks(): void {
   r.nextTaskId = 0;
   console.log('[ResetTasks] gTasks cleared, nextTaskId reset, size=', r.gTasks.size);
 }
+/** 1:1 décomp src/palette.c:103 `TransferPlttBuffer()` — DMA gPlttBufferFaded → PLTT
+ *  hardware register, gated par `gPaletteFade.bufferTransferDisabled`.
+ *
+ *  ⚠️ DÉVIATION : Notre `LoadPalette` / `_applyPaletteFadeStep` écrivent direct
+ *  dans `gba.palette` (= compositor-visible) en plus de `gPlttBufferFaded`.
+ *  Donc cette fonction est un no-op fonctionnel, mais on respecte le gate pour
+ *  matcher le contrat décomp (= si jamais bufferTransferDisabled set, on skip).
+ *  Cf. `PaletteFade.bufferTransferDisabled` doc pour rationale.
+ *
+ *  `sPlttBufferTransferPending` (= dirty flag du décomp) n'est pas tracké : on n'a
+ *  pas de queue write→VBlank, les writes sont sync. */
 export function TransferPlttBuffer(): void {
-  // Dans notre engine, gPlttBufferFaded écrit déjà directement dans gba.palette
-  // via PaletteBuffer.set() → loadBgRange/loadObjRange → refreshCache.
-  // Cette fonction est un no-op fonctionnel, conservée pour compatibilité C.
+  const r = rt();
+  if (r.gPaletteFade.bufferTransferDisabled) return;
+  // No-op : écritures déjà appliquées au moment du write (cf. doc fonction).
 }
 export function ScanlineEffect_Clear(): void {
   gScanlineEffectRegBuffers[0].fill(0);

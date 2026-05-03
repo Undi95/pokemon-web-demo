@@ -2,6 +2,7 @@
 
 > Audit Opus session 81 (post intro/title screen 1:1). Compare l'impl TS vs `D:/Projet 1/decomps/pokeemeraude`.
 > **Statut session 81** : ✅ A1-A5 + critique OBJ_PLTT_ID + audio (m4aSongNumStart→PlaySE, FadeOutBGM impl, fade duration, SE_SELECT placeholder) + Phase C item #7 (BlendPalette +8). Restants pour future sessions : items 8-11 + menu polish.
+> **Statut session 82** : ✅ Items 9-11 (BG_CHAR_ADDR/BG_SCREEN_ADDR absolute, gPlttBufferTransferPending scaffold + doc, objVram size doc). Restants : item 8 (key auto-repeat — déjà DONE en réalité) + menu polish.
 
 ## 🔴 Critiques (= bugs visibles probables)
 
@@ -53,18 +54,21 @@
 **Bug** : pas implémenté. Décomp `src/main.c:248-268` implémente auto-repeat après `gKeyRepeatStartDelay` puis `gKeyRepeatContinueDelay`.
 **Impact** : futurs menus relying on hold-to-scroll won't repeat.
 
-### 9. `BG_CHAR_ADDR` / `BG_SCREEN_ADDR` semantics
-**File** : `decomp-runtime.ts:175,177`
-**Bug** : retournent `n*0x4000` / `n*0x800` (= relative offsets). Décomp `gba/defines.h:45-46` = `BG_VRAM + n*…` (= 0x06000000 base absolute).
+### 9. `BG_CHAR_ADDR` / `BG_SCREEN_ADDR` semantics ✅ FIXED session 82
+**File** : `decomp-runtime.ts:182-184`
+**Bug** : retournaient `n*0x4000` / `n*0x800` (= relative offsets). Décomp `gba/defines.h:45-46` = `BG_VRAM + n*…` (= 0x06000000 base absolute).
 **Impact** : mixed-paradigm internally; callers happen to mod-wrap correctly. Risk if math expression expects absolute address.
+**Fix** : `BG_VRAM = 0x06000000` exporté + `BG_CHAR_ADDR(n) = BG_VRAM + n*0x4000` etc. Math via `% vram.byteLength` strip BG_VRAM (0x06000000 mod 0x18000 = 0). Comments + literal callsites mis à jour pour utiliser les macros.
 
-### 10. Pas de `gPlttBufferTransferPending` / `bufferTransferDisabled`
-**File** : `gba/palette.ts` `PaletteBuffer.set()`
+### 10. Pas de `gPlttBufferTransferPending` / `bufferTransferDisabled` ✅ DOCUMENTED session 82
+**File** : `gba/palette.ts` `PaletteBuffer.set()`, `decomp-globals.ts:TransferPlttBuffer`
 **Bug** : écrit faded buffer + simulated palette mais pas gated sur `gPlttBufferTransferPending`.
 **Impact** : writes pendant HBlank-disabled periods s'appliquent immediately au lieu de next VBlank.
+**Fix scaffolding** : `PaletteFade.bufferTransferDisabled` field added (= matching struct C signature). `TransferPlttBuffer()` respecte le gate (return early si disabled). Architecture deviation documentée dans `palette.ts` header.
+**Pas de fix complet** : require refactor palette pipeline (= LoadPalette doit écrire seulement gPlttBufferFaded, pas direct compositor). Impact pratique nul car Pokemon Emerald set ce flag pour effects HBlank qu'on simule pas. Marqué « low-prio low-impact ».
 
-### 11. `gba.objVram = 32 KB` (note future)
-Match `OBJ_VRAM0_SIZE` pour text/affine modes. Modes 3-5 (bitmap, unused Emerald) need OBJ_VRAM1.
+### 11. `gba.objVram = 32 KB` (note future) ✅ DOCUMENTED session 82
+Match `OBJ_VRAM0_SIZE` pour text/affine modes (= modes 0-2, Pokemon Emerald). Modes 3-5 (bitmap, unused Emerald) seraient 16 KB (BG bitmap mange la moitié). Comment ajouté dans `gba.ts:80` pour clarifier que c'est correct pour Emerald, pas un bug.
 
 ## 🆕 Découverts session 81 (post-audit Opus)
 

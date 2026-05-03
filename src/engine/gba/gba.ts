@@ -76,7 +76,9 @@ export class Gba {
   ];
   /** OAM : 128 sprites, par défaut tous invisibles. */
   readonly oam: OamEntry[] = Array.from({ length: 128 }, () => defaultOamEntry());
-  /** OBJ char data (sprite tile pixels). 32 KB max sur GBA réel. */
+  /** OBJ char data (sprite tile pixels). 32 KB en modes 0-2 (= text/affine, ce que
+   *  Pokemon Emerald utilise). En modes 3-5 (= bitmap, unused Emerald), seul 16 KB
+   *  serait dispo (le BG bitmap mange la première moitié). 1:1 GBATEK OBJ_VRAM0_SIZE. */
   readonly objVram = new Uint8Array(32768);
   /** Blend (BLDCNT/BLDALPHA/BLDY) : mode 0 par défaut = off. */
   readonly blend: BlendConfig = defaultBlendConfig();

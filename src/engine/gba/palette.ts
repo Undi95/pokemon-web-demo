@@ -12,6 +12,17 @@
  * Color index 0 dans une bank 4bpp = TRANSPARENT (le BG color show through).
  * Color index 0 de la bank 0 BG = backdrop color (visible si tous les pixels
  * sont transparents).
+ *
+ * ⚠️ ARCHITECTURE — DÉVIATION VBLANK :
+ * Le décomp GBA fait : LoadPalette → gPlttBufferFaded → TransferPlttBuffer (au VBlank)
+ * → DMA → PLTT hardware register (= ce que la PPU lit).
+ * Notre engine : `loadBgRange`/`loadObjRange` écrivent direct dans `bgRgb15`/`objRgb15`
+ * (= compositor-visible). Le compositor lit ces buffers chaque frame.
+ * Conséquence : les writes sont visibles IMMÉDIATEMENT, pas gated au VBlank.
+ * Impact pratique : nul — les Tasks runtime tournent une fois par frame, donc l'ordre
+ * write→render est cohérent. Seul cas qui diverge : effects HBlank-driven qu'on ne
+ * simule pas (= weather palette shifts pendant scanlines). Cf. `TransferPlttBuffer`
+ * stub dans decomp-globals.ts.
  */
 import { type Rgb15, rgb15ToRgba8 } from './types';
 

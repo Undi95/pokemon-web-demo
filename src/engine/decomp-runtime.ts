@@ -171,10 +171,17 @@ export const BLDCNT_TGT2_BD  = 0x2000;
 // inclure le 256 sinon les LoadPalette OBJ écrivent dans BG palette.
 export const BG_PLTT_ID = (n: number) => n * 16;
 export const OBJ_PLTT_ID = (n: number) => 256 + n * 16;
-/** 1:1 décomp BG_CHAR_ADDR(n) = n × 0x4000 (= charBase index). */
-export const BG_CHAR_ADDR = (n: number) => n * 0x4000;
-/** 1:1 décomp BG_SCREEN_ADDR(n) = n × 0x800 (= screen base index). */
-export const BG_SCREEN_ADDR = (n: number) => n * 0x800;
+/** 1:1 décomp `gba/defines.h:41-46` :
+ *    BG_VRAM           = VRAM           = 0x06000000
+ *    BG_CHAR_SIZE      = 0x4000
+ *    BG_SCREEN_SIZE    = 0x800
+ *    BG_CHAR_ADDR(n)   = BG_VRAM + BG_CHAR_SIZE   * n
+ *    BG_SCREEN_ADDR(n) = BG_VRAM + BG_SCREEN_SIZE * n
+ *  Adresses ABSOLUES (= GBA bus). Les callers (LZ77UnCompVram, DmaClear16, …)
+ *  font `addr % vram.byteLength` qui fonctionne car 0x06000000 mod 0x18000 = 0. */
+export const BG_VRAM = 0x06000000;
+export const BG_CHAR_ADDR = (n: number) => BG_VRAM + n * 0x4000;
+export const BG_SCREEN_ADDR = (n: number) => BG_VRAM + n * 0x800;
 /** 1:1 décomp DISPLAY_WIDTH/HEIGHT. */
 export const DISPLAY_WIDTH = 240;
 export const DISPLAY_HEIGHT = 160;
@@ -209,6 +216,15 @@ export class PaletteFade {
    *  bits 16-31 = OBJ palettes. Only selected palettes are blended each frame.
    *  Default 0xFFFFFFFF = all (matches BeginNormalPaletteFade default with PALETTES_ALL). */
   selectedPalettes = 0xFFFFFFFF;
+  /** 1:1 décomp `gPaletteFade.bufferTransferDisabled` — quand true, `TransferPlttBuffer()`
+   *  skip la DMA Faded→PLTT. Pokemon Emerald set ça pendant des effects HBlank/scanline
+   *  particuliers (= weather palette shifts).
+   *  ⚠️ NOTE : notre runtime applique les writes palette IMMEDIATEMENT (PaletteBuffer.set
+   *  écrit direct dans `gba.palette` qui est ce que le compositor lit). Donc même si
+   *  ce flag est set, les writes apparaissent quand même. C'est une déviation du décomp.
+   *  Impact en pratique : nul — Pokemon Emerald ne set ça que pour effects HBlank
+   *  qu'on ne simule pas. Conservé comme stub pour matcher la struct C. */
+  bufferTransferDisabled = false;
 }
 
 // ─── gMain (1:1 décomp struct Main) ──────────────────────────────────────────
