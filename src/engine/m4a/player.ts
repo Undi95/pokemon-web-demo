@@ -565,8 +565,13 @@ export async function playSongCustomSynth(
   }
 }
 
-/** Vrai si une song est en cours sur le slot donné. */
+/** Vrai si une song est en cours sur le slot donné (= playing OR paused, mais
+ *  PAS finished/stopped). gMPlayInfo_BGM.status lit ce check pour le demo loop
+ *  décomp : status=0 quand isFinished → trigger fade vers copyright/intro. */
 export function isPlaying(slot: SlotKind = 'bgm'): boolean {
   const state = _slots[slot];
-  return state?.sequencer != null;
+  if (!state?.sequencer) return false;
+  // isFinished = true quand la song non-loopée a atteint sa fin naturelle.
+  // Une song pausée a paused=true mais isFinished=false → toujours "playing".
+  return !state.sequencer.isFinished;
 }
