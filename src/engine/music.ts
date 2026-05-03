@@ -8,7 +8,7 @@
  * API conservée 1:1 pour ne pas casser les callers (BirchSpeechScene,
  * OverworldScene, BattleScene, script-runner, etc.).
  */
-import { getAudioContext, isAudioReady } from './m4a/audio-context';
+import { getAudioContext, getMasterGain, isAudioReady } from './m4a/audio-context';
 import { loadMidi, playSong, stopSong, isPlaying } from './m4a/player';
 import { lookupVoicegroup } from './m4a/voicegroups-data/_all-voicegroups-index';
 import type { Midi } from '@tonejs/midi';
@@ -148,7 +148,8 @@ export async function playSE(name: string): Promise<void> {
   }
 }
 
-/** Joue le cri d'un Pokémon (WAV pré-extrait). */
+/** Joue le cri d'un Pokémon (WAV pré-extrait). Routé via masterGain (= respect
+ *  du volume slider topbar/devtool). */
 export function playCry(species: string): void {
   const ctx = getAudioContext();
   if (!ctx) return;
@@ -162,7 +163,7 @@ export function playCry(species: string): void {
       src.buffer = audioBuf;
       const gain = ctx.createGain();
       gain.gain.value = 0.7;
-      src.connect(gain).connect(ctx.destination);
+      src.connect(gain).connect(getMasterGain());
       src.start();
     })
     .catch(e => console.warn('[music] cry fail', species, e));
