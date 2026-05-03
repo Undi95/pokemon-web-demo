@@ -197,7 +197,11 @@ export const Task_TitleScreenPhase1: TaskCallback = (task, rt) => {
       {
           let spriteId = 0;
 
-          rt.SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_MODE_1 | DISPCNT_OBJ_1D_MAP | DISPCNT_BG0_ON | DISPCNT_BG1_ON | DISPCNT_BG2_ON | DISPCNT_BG3_ON | DISPCNT_OBJ_ON);
+          // MANUAL FIX session 81 : 1:1 décomp title_screen.c:709 — DISPCNT
+          // = BG2+OBJ uniquement. Le transpileur a expansé en BG0+BG1+BG2+BG3
+          // par erreur → Rayquaza (BG0) + Clouds (BG1) visibles trop tôt
+          // pendant la descente du banner Émeraude (= devrait être BG noir).
+          rt.SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_MODE_1 | DISPCNT_OBJ_1D_MAP | DISPCNT_BG2_ON | DISPCNT_OBJ_ON);
           rt.SetGpuReg(REG_OFFSET_WININ, 0);
           rt.SetGpuReg(REG_OFFSET_WINOUT, 0);
           rt.SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_TGT1_OBJ | BLDCNT_EFFECT_BLEND | BLDCNT_TGT2_ALL);
