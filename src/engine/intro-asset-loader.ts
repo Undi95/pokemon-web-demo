@@ -444,17 +444,20 @@ export async function preloadTitleAssets(): Promise<void> {
     }
   }));
 
-  // 1:1 décomp graphics.c:1508 : gTitleScreenBgPalettes = INCBIN(pokemon_logo.gbapal,
-  // rayquaza_and_clouds.gbapal) concaténés. pokemon_logo n'utilise que 14 banks
-  // (224 colors), bank 14 vient du second fichier (= palette Rayquaza/Clouds).
-  // LoadPalette(gTitleScreenBgPalettes, 0, 15 * PLTT_SIZE_4BPP) charge 240 colors :
-  // banks 0-13 = logo, bank 14 = Rayquaza/Clouds.
+  // 1:1 décomp graphics.c:1508 : gTitleScreenBgPalettes = INCBIN_U16 raw concat
+  // de pokemon_logo.gbapal (256 colors = 512 bytes) + rayquaza_and_clouds.gbapal
+  // (16 colors = 32 bytes) → 544 bytes total. LoadPalette charge 240 colors depuis
+  // le début → COLORS 0-239 du pokemon_logo SEULEMENT (= banks 0-14 logo).
+  //
+  // Le bank 14 (= colors 224-239) du logo contient des teintes utilisées par les
+  // tiles du logo (TM trademark + ombres du É). Précédente version concat tronquait
+  // logo à 14 banks et écrasait bank 14 par rayquaza_and_clouds → "point noir" sur É.
   try {
     const logoPal = await loadGbaPal('/decomp/em/boot/title_screen/pokemon_logo.pal');
     const rcPal = await loadGbaPal('/decomp/em/boot/title_screen/rayquaza_and_clouds.pal');
-    const concatPal = new Uint16Array(14 * 16 + rcPal.length);
-    concatPal.set(logoPal.subarray(0, 14 * 16), 0);
-    concatPal.set(rcPal, 14 * 16);
+    const concatPal = new Uint16Array(logoPal.length + rcPal.length);
+    concatPal.set(logoPal, 0);
+    concatPal.set(rcPal, logoPal.length);
     assetCache.set('gTitleScreenBgPalettes', concatPal);
   } catch (e) {
     console.warn('[intro-asset-loader] gTitleScreenBgPalettes concat failed:', e);
