@@ -207,12 +207,12 @@ export const Task_SetClock_HandleConfirmInput: TaskCallback = (task, rt) => {
   switch (Menu_ProcessInputNoWrapClearOnChoose())
       {
       case 0:  
-          m4aSongNumStart(SE_SELECT);
+          PlaySE(SE_SELECT);
           task.func = (t) => Task_SetClock_Confirmed(t, rt);
           break;
       case 1:  
       case MENU_B_PRESSED:
-          m4aSongNumStart(SE_SELECT);
+          PlaySE(SE_SELECT);
           ClearStdWindowAndFrameToTransparent(WIN_MSG, false);
           ClearWindowTilemap(WIN_MSG);
           task.func = (t) => Task_SetClock_HandleInput(t, rt);

@@ -197,7 +197,7 @@ export const Task_HandleChooseMonInput: TaskCallback = (task, rt) => {
           case START_BUTTON:
               if (sPartyMenuInternal.chooseHalf)
               {
-                  m4aSongNumStart(SE_SELECT);
+                  PlaySE(SE_SELECT);
                   MoveCursorToConfirm();
               }
               break;
@@ -227,7 +227,7 @@ export const Task_HandleCancelChooseMonYesNoInput: TaskCallback = (task, rt) => 
           Task_ClosePartyMenu(taskId);
           break;
       case MENU_B_PRESSED:
-          m4aSongNumStart(SE_SELECT);
+          PlaySE(SE_SELECT);
            
       case 1:
           Task_ReturnToChooseMonAfterText(taskId);
@@ -318,7 +318,7 @@ export const Task_HandleCancelParticipationYesNoInput: TaskCallback = (task, rt)
           Task_ClosePartyMenu(taskId);
           break;
       case MENU_B_PRESSED:
-          m4aSongNumStart(SE_SELECT);
+          PlaySE(SE_SELECT);
            
       case 1:
           task.func = (t) => Task_ReturnToChooseMonAfterText(t, rt);
@@ -355,7 +355,7 @@ export const Task_HandleSelectionMenuInput: TaskCallback = (task, rt) => {
           case MENU_NOTHING_CHOSEN:
               break;
           case MENU_B_PRESSED:
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               PartyMenuRemoveWindow(sPartyMenuInternal.windowId[2]);
               sCursorOptions[sPartyMenuInternal.actions[sPartyMenuInternal.numActions - 1]].func(taskId);
               break;
@@ -494,7 +494,7 @@ export const Task_HandleSwitchItemsYesNoInput: TaskCallback = (task, rt) => {
           }
           break;
       case MENU_B_PRESSED:
-          m4aSongNumStart(SE_SELECT);
+          PlaySE(SE_SELECT);
            
       case 1:  
           task.func = (t) => Task_ReturnToChooseMonAfterText(t, rt);
@@ -568,7 +568,7 @@ export const Task_HandleTossHeldItemYesNoInput: TaskCallback = (task, rt) => {
           task.func = (t) => Task_TossHeldItem(t, rt);
           break;
       case MENU_B_PRESSED:
-          m4aSongNumStart(SE_SELECT);
+          PlaySE(SE_SELECT);
            
       case 1:
           task.func = (t) => Task_ReturnToChooseMonAfterText(t, rt);
@@ -620,7 +620,7 @@ export const Task_HandleSendMailToPCYesNoInput: TaskCallback = (task, rt) => {
           }
           break;
       case MENU_B_PRESSED:
-          m4aSongNumStart(SE_SELECT);
+          PlaySE(SE_SELECT);
            
       case 1:
           DisplayPartyMenuMessage(gText_MailMessageWillBeLost, true);
@@ -662,7 +662,7 @@ export const Task_HandleLoseMailMessageYesNoInput: TaskCallback = (task, rt) => 
           }
           break;
       case MENU_B_PRESSED:
-          m4aSongNumStart(SE_SELECT);
+          PlaySE(SE_SELECT);
            
       case 1:
           task.func = (t) => Task_ReturnToChooseMonAfterText(t, rt);
@@ -689,7 +689,7 @@ export const Task_HandleSpinTradeYesNoInput: TaskCallback = (task, rt) => {
           Task_ClosePartyMenu(taskId);
           break;
       case MENU_B_PRESSED:
-          m4aSongNumStart(SE_SELECT);
+          PlaySE(SE_SELECT);
            
       case 1:
           Task_ReturnToChooseMonAfterText(taskId);
@@ -717,7 +717,7 @@ export const Task_HandleFieldMoveExitAreaYesNoInput: TaskCallback = (task, rt) =
           Task_ClosePartyMenu(taskId);
           break;
       case MENU_B_PRESSED:
-          m4aSongNumStart(SE_SELECT);
+          PlaySE(SE_SELECT);
            
       case 1:
           gFieldCallback2 = null;
@@ -787,7 +787,7 @@ export const Task_HandleWhichMoveInput: TaskCallback = (task, rt) => {
       {
           if (input == MENU_B_PRESSED)
           {
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               ReturnToUseOnWhichMon(taskId);
           }
           else
@@ -867,7 +867,7 @@ export const Task_HandleReplaceMoveYesNoInput: TaskCallback = (task, rt) => {
           task.func = (t) => Task_ShowSummaryScreenToForgetMove(t, rt);
           break;
       case MENU_B_PRESSED:
-          m4aSongNumStart(SE_SELECT);
+          PlaySE(SE_SELECT);
            
       case 1:
           StopLearningMovePrompt(taskId);
@@ -947,7 +947,7 @@ export const Task_HandleStopLearningMoveYesNoInput: TaskCallback = (task, rt) =>
           }
           break;
       case MENU_B_PRESSED:
-          m4aSongNumStart(SE_SELECT);
+          PlaySE(SE_SELECT);
            
       case 1:
           GetMonNickname(mon, gStringVar1);
@@ -970,7 +970,7 @@ export const Task_DisplayLevelUpStatsPg1: TaskCallback = (task, rt) => {
   const taskId = task.taskId;
   if (WaitFanfare(false) && IsPartyMenuTextPrinterActive() != true && ((JOY_NEW(A_BUTTON)) || (JOY_NEW(B_BUTTON))))
       {
-          m4aSongNumStart(SE_SELECT);
+          PlaySE(SE_SELECT);
           DisplayLevelUpStatsPg1(taskId);
           task.func = (t) => Task_DisplayLevelUpStatsPg2(t, rt);
       }
@@ -981,7 +981,7 @@ export const Task_DisplayLevelUpStatsPg2: TaskCallback = (task, rt) => {
   const taskId = task.taskId;
   if ((JOY_NEW(A_BUTTON)) || (JOY_NEW(B_BUTTON)))
       {
-          m4aSongNumStart(SE_SELECT);
+          PlaySE(SE_SELECT);
           DisplayLevelUpStatsPg2(taskId);
           task.func = (t) => Task_TryLearnNewMoves(t, rt);
       }
@@ -1144,7 +1144,7 @@ export const Task_HandleSwitchItemsFromBagYesNoInput: TaskCallback = (task, rt) 
           }
           break;
       case MENU_B_PRESSED:
-          m4aSongNumStart(SE_SELECT);
+          PlaySE(SE_SELECT);
            
       case 1:  
           task.func = (t) => Task_UpdateHeldItemSpriteAndClosePartyMenu(t, rt);
@@ -1159,13 +1159,13 @@ export const Task_ValidateChosenHalfParty: TaskCallback = (task, rt) => {
 
       if (msgId != 0xFF)
       {
-          m4aSongNumStart(SE_FAILURE);
+          PlaySE(SE_FAILURE);
           DisplayPartyMenuStdMessage(msgId);
           task.func = (t) => Task_ContinueChoosingHalfParty(t, rt);
       }
       else
       {
-          m4aSongNumStart(SE_SELECT);
+          PlaySE(SE_SELECT);
           Task_ClosePartyMenu(taskId);
       }
 };
@@ -1175,7 +1175,7 @@ export const Task_ContinueChoosingHalfParty: TaskCallback = (task, rt) => {
   const taskId = task.taskId;
   if ((JOY_NEW(A_BUTTON)) || (JOY_NEW(B_BUTTON)))
       {
-          m4aSongNumStart(SE_SELECT);
+          PlaySE(SE_SELECT);
           DisplayPartyMenuStdMessage(PARTY_MSG_CHOOSE_MON);
           task.func = (t) => Task_HandleChooseMonInput(t, rt);
       }
@@ -1207,7 +1207,7 @@ export const Task_MultiPartnerPartySlideIn: TaskCallback = (task, rt) => {
                   if (gMultiPartnerParty[i - MULTI_PARTY_SIZE].species != SPECIES_NONE)
                       AnimateSelectedPartyIcon(sPartyMenuBoxes[i].monSpriteId, 0);
               }
-              m4aSongNumStart(SE_M_HARDEN);  
+              PlaySE(SE_M_HARDEN);  
               task.func = (t) => Task_WaitAfterMultiPartnerPartySlideIn(t, rt);
           }
       }

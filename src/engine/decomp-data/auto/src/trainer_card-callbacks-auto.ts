@@ -120,7 +120,7 @@ export const Task_TrainerCard: TaskCallback = (task, rt) => {
       case 8:
           if (!UpdatePaletteFade() && !IsDma3ManagerBusyWithBgCopy())
           {
-              m4aSongNumStart(SE_RG_CARD_OPEN);
+              PlaySE(SE_RG_CARD_OPEN);
               sData.mainState = STATE_HANDLE_INPUT_FRONT;
           }
           break;
@@ -139,7 +139,7 @@ export const Task_TrainerCard: TaskCallback = (task, rt) => {
           if (JOY_NEW(A_BUTTON))
           {
               FlipTrainerCard();
-              m4aSongNumStart(SE_RG_CARD_FLIP);
+              PlaySE(SE_RG_CARD_FLIP);
               sData.mainState = STATE_WAIT_FLIP_TO_BACK;
           }
           else if (JOY_NEW(B_BUTTON))
@@ -158,7 +158,7 @@ export const Task_TrainerCard: TaskCallback = (task, rt) => {
       case STATE_WAIT_FLIP_TO_BACK:
           if (IsCardFlipTaskActive() && Overworld_IsRecvQueueAtMax() != true)
           {
-              m4aSongNumStart(SE_RG_CARD_OPEN);
+              PlaySE(SE_RG_CARD_OPEN);
               sData.mainState = STATE_HANDLE_INPUT_BACK;
           }
           break;
@@ -178,7 +178,7 @@ export const Task_TrainerCard: TaskCallback = (task, rt) => {
               {
                   FlipTrainerCard();
                   sData.mainState = STATE_WAIT_FLIP_TO_FRONT;
-                  m4aSongNumStart(SE_RG_CARD_FLIP);
+                  PlaySE(SE_RG_CARD_FLIP);
               }
           }
           else if (JOY_NEW(A_BUTTON))
@@ -216,7 +216,7 @@ export const Task_TrainerCard: TaskCallback = (task, rt) => {
           if (IsCardFlipTaskActive() && Overworld_IsRecvQueueAtMax() != true)
           {
               sData.mainState = STATE_HANDLE_INPUT_FRONT;
-              m4aSongNumStart(SE_RG_CARD_OPEN);
+              PlaySE(SE_RG_CARD_OPEN);
           }
           break;
      }

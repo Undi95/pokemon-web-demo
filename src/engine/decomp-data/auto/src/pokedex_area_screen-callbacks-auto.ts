@@ -134,12 +134,12 @@ export const Task_HandlePokedexAreaScreenInput: TaskCallback = (task, rt) => {
           if (JOY_NEW(B_BUTTON))
           {
               task.data[1] = 1;
-              m4aSongNumStart(SE_PC_OFF);
+              PlaySE(SE_PC_OFF);
           }
           else if (JOY_NEW(DPAD_RIGHT) || (JOY_NEW(R_BUTTON) && gSaveBlock2Ptr.optionsButtonMode == OPTIONS_BUTTON_MODE_LR))
           {
               task.data[1] = 2;
-              m4aSongNumStart(SE_DEX_PAGE);
+              PlaySE(SE_DEX_PAGE);
           }
           else
               return;

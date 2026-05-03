@@ -663,6 +663,11 @@ function transpileBody(bodyC, ctx) {
   // 23. Decomp-only macros : SetVBlankCallback / SetMainCallback2 / m4aSongNumStart → noop
   s = s.replace(/\bSetVBlankCallback\s*\([^)]*\)\s*;/g, '/* noop SetVBlankCallback */;');
   s = s.replace(/\bSetMainCallback2\s*\(([^)]+)\)\s*;/g, '/* TODO scene transition: SetMainCallback2($1) */;');
+  // Décomp utilise m4aSongNumStart pour BGM ET SE indistinctement (= ID dans song table).
+  // Notre runtime sépare BGM (slot bgm) vs SE (slot se1/se2). On dispatch selon le préfixe :
+  // m4aSongNumStart(SE_X) → PlaySE(SE_X) (= one-shot SE slot).
+  // m4aSongNumStart(MUS_X) → m4aSongNumStart(MUS_X) (= BGM slot).
+  s = s.replace(/\bm4aSongNumStart\s*\(\s*SE_(\w+)\s*\)\s*;/g, 'PlaySE(SE_$1);');
   s = s.replace(/\bm4aSongNumStart\s*\([^)]*\)\s*;/g, '/* TODO sound: m4aSongNumStart */;');
   s = s.replace(/\bm4aSongNumStop\s*\([^)]*\)\s*;/g, '/* TODO sound: m4aSongNumStop */;');
   s = s.replace(/\bResetSerial\s*\(\s*\)\s*;/g, '/* noop ResetSerial */;');

@@ -66,7 +66,7 @@ export const Task_ChooseAnswer: TaskCallback = (task, rt) => {
           if (data[4])
               return;
 
-          m4aSongNumStart(SE_SELECT);
+          PlaySE(SE_SELECT);
           gSpecialVar_Result = MULTI_B_PRESSED;
           break;
       default:

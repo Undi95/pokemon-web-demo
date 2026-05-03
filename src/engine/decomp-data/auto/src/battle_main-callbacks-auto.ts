@@ -152,7 +152,7 @@ export const SpriteCB_VsLetter: SpriteCallback = (sprite, rt) => {
 export const SpriteCB_VsLetterInit: SpriteCallback = (sprite, rt) => {
   rt.StartSpriteAffineAnim(sprite.spriteId, 1);
       sprite.callback = SpriteCB_VsLetter;
-      m4aSongNumStart(SE_MUGSHOT);
+      PlaySE(SE_MUGSHOT);
 };
 
 /** Source: battle_main.c → SpriteCB_WildMon */

@@ -122,7 +122,7 @@ export const Task_HandlePokeblockMenuInput: TaskCallback = (task, rt) => {
               if (sSavedPokeblockData.scrollOffset + sSavedPokeblockData.selectedRow != sPokeblockMenu.itemsNo - 1)
               {
                    
-                  m4aSongNumStart(SE_SELECT);
+                  PlaySE(SE_SELECT);
                   DrawPokeblockMenuHighlight(sSavedPokeblockData.selectedRow, TILE_HIGHLIGHT_RED);
                   data[2] = sSavedPokeblockData.scrollOffset + sSavedPokeblockData.selectedRow;
                   sPokeblockMenu.isSwapping = true;
@@ -147,14 +147,14 @@ export const Task_HandlePokeblockMenuInput: TaskCallback = (task, rt) => {
               case LIST_NOTHING_CHOSEN:
                   break;
               case LIST_CANCEL:
-                  m4aSongNumStart(SE_SELECT);
+                  PlaySE(SE_SELECT);
                   gSpecialVar_Result = 0xFFFF;
                   gSpecialVar_ItemId = 0;
                   FadePaletteAndSetTaskToClosePokeblockCase(taskId);
                   break;
               default:
                    
-                  m4aSongNumStart(SE_SELECT);
+                  PlaySE(SE_SELECT);
                   gSpecialVar_ItemId = input;
                   ShowPokeblockActionsWindow(taskId);
                   break;
@@ -174,7 +174,7 @@ export const Task_HandlePokeblocksSwapInput: TaskCallback = (task, rt) => {
       if (JOY_NEW(SELECT_BUTTON))
       {
            
-          m4aSongNumStart(SE_SELECT);
+          PlaySE(SE_SELECT);
           ListMenuGetScrollAndRow(data[0], sSavedPokeblockData.scrollOffset, sSavedPokeblockData.selectedRow);
           UpdatePokeblockSwapMenu(taskId, false);
       }
@@ -205,7 +205,7 @@ export const Task_HandlePokeblocksSwapInput: TaskCallback = (task, rt) => {
           case LIST_NOTHING_CHOSEN:
               break;
           case LIST_CANCEL:
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               if (JOY_NEW(A_BUTTON))  
                   UpdatePokeblockSwapMenu(taskId, false);
               else
@@ -213,7 +213,7 @@ export const Task_HandlePokeblocksSwapInput: TaskCallback = (task, rt) => {
               break;
           default:
                
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               UpdatePokeblockSwapMenu(taskId, false);
               break;
           }
@@ -235,12 +235,12 @@ export const Task_HandlePokeblockActionsInput: TaskCallback = (task, rt) => {
       }
       else if (itemId == MENU_B_PRESSED)
       {
-          m4aSongNumStart(SE_SELECT);
+          PlaySE(SE_SELECT);
           PokeblockAction_Cancel(taskId);
       }
       else
       {
-          m4aSongNumStart(SE_SELECT);
+          PlaySE(SE_SELECT);
           sPokeblockMenuActions[sPokeblockMenu.pokeblockActionIds[itemId]].func.void_u8(taskId);
       }
 };

@@ -76,7 +76,7 @@ export const Task_HandleMultichoiceInput: TaskCallback = (task, rt) => {
                   {
                       if (data[4])
                           return;
-                      m4aSongNumStart(SE_SELECT);
+                      PlaySE(SE_SELECT);
                       gSpecialVar_Result = MULTI_B_PRESSED;
                   }
                   else
@@ -106,7 +106,7 @@ export const Task_HandleYesNoInput: TaskCallback = (task, rt) => {
           return;
       case MENU_B_PRESSED:
       case 1:
-          m4aSongNumStart(SE_SELECT);
+          PlaySE(SE_SELECT);
           gSpecialVar_Result = 0;
           break;
       case 0:
@@ -131,7 +131,7 @@ export const Task_HandleMultichoiceGridInput: TaskCallback = (task, rt) => {
       case MENU_B_PRESSED:
           if (data[4])
               return;
-          m4aSongNumStart(SE_SELECT);
+          PlaySE(SE_SELECT);
           gSpecialVar_Result = MULTI_B_PRESSED;
           break;
       default:

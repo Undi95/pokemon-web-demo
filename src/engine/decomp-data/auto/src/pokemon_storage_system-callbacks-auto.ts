@@ -733,7 +733,7 @@ export const Task_ShowPokeStorage: TaskCallback = (task, rt) => {
   switch (sStorage.state)
       {
       case 0:
-          m4aSongNumStart(SE_PC_LOGIN);
+          PlaySE(SE_PC_LOGIN);
           ComputerScreenOpenEffect(20, 0, 1);
           sStorage.state++;
           break;
@@ -790,7 +790,7 @@ export const Task_PokeStorageMain: TaskCallback = (task, rt) => {
           switch (HandleInput())
           {
           case INPUT_MOVE_CURSOR:
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               sStorage.state = MSTATE_MOVE_CURSOR;
               break;
           case INPUT_SHOW_PARTY:
@@ -825,14 +825,14 @@ export const Task_PokeStorageMain: TaskCallback = (task, rt) => {
               SetPokeStorageTask(Task_OnBPressed);
               break;
           case INPUT_BOX_OPTIONS:
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               SetPokeStorageTask(Task_HandleBoxOptions);
               break;
           case INPUT_IN_MENU:
               SetPokeStorageTask(Task_OnSelectedMon);
               break;
           case INPUT_SCROLL_RIGHT:
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               sStorage.newCurrBoxId = StorageGetCurrentBox() + 1;
               if (sStorage.newCurrBoxId >= TOTAL_BOXES_COUNT)
                   sStorage.newCurrBoxId = 0;
@@ -848,7 +848,7 @@ export const Task_PokeStorageMain: TaskCallback = (task, rt) => {
               }
               break;
           case INPUT_SCROLL_LEFT:
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               sStorage.newCurrBoxId = StorageGetCurrentBox() - 1;
               if (sStorage.newCurrBoxId < 0)
                   sStorage.newCurrBoxId = TOTAL_BOXES_COUNT - 1;
@@ -872,7 +872,7 @@ export const Task_PokeStorageMain: TaskCallback = (task, rt) => {
                   }
                   else
                   {
-                      m4aSongNumStart(SE_SELECT);
+                      PlaySE(SE_SELECT);
                       SetPokeStorageTask(Task_DepositMenu);
                   }
               }
@@ -888,7 +888,7 @@ export const Task_PokeStorageMain: TaskCallback = (task, rt) => {
               }
               else
               {
-                  m4aSongNumStart(SE_SELECT);
+                  PlaySE(SE_SELECT);
                   SetPokeStorageTask(Task_MoveMon);
               }
               break;
@@ -899,32 +899,32 @@ export const Task_PokeStorageMain: TaskCallback = (task, rt) => {
               }
               else
               {
-                  m4aSongNumStart(SE_SELECT);
+                  PlaySE(SE_SELECT);
                   SetPokeStorageTask(Task_ShiftMon);
               }
               break;
           case INPUT_WITHDRAW:
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               SetPokeStorageTask(Task_WithdrawMon);
               break;
           case INPUT_PLACE_MON:
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               SetPokeStorageTask(Task_PlaceMon);
               break;
           case INPUT_TAKE_ITEM:
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               SetPokeStorageTask(Task_TakeItemForMoving);
               break;
           case INPUT_GIVE_ITEM:
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               SetPokeStorageTask(Task_GiveMovingItemToMon);
               break;
           case INPUT_SWITCH_ITEMS:
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               SetPokeStorageTask(Task_SwitchSelectedItem);
               break;
           case INPUT_MULTIMOVE_START:
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               MultiMove_SetFunction(MULTIMOVE_START);
               sStorage.state = MSTATE_MULTIMOVE_RUN;
               break;
@@ -933,7 +933,7 @@ export const Task_PokeStorageMain: TaskCallback = (task, rt) => {
               sStorage.state = MSTATE_MULTIMOVE_RUN_CANCEL;
               break;
           case INPUT_MULTIMOVE_CHANGE_SELECTION:
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               MultiMove_SetFunction(MULTIMOVE_CHANGE_SELECTION);
               sStorage.state = MSTATE_MULTIMOVE_RUN_MOVED;
               break;
@@ -942,19 +942,19 @@ export const Task_PokeStorageMain: TaskCallback = (task, rt) => {
               sStorage.state = MSTATE_MULTIMOVE_RUN;
               break;
           case INPUT_MULTIMOVE_MOVE_MONS:
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               MultiMove_SetFunction(MULTIMOVE_MOVE_MONS);
               sStorage.state = MSTATE_MULTIMOVE_RUN_MOVED;
               break;
           case INPUT_MULTIMOVE_PLACE_MONS:
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               MultiMove_SetFunction(MULTIMOVE_PLACE_MONS);
               sStorage.state = MSTATE_MULTIMOVE_RUN;
               break;
           case INPUT_MULTIMOVE_UNABLE:
                
                
-              m4aSongNumStart(SE_FAILURE);
+              PlaySE(SE_FAILURE);
               break;
           }
           break;
@@ -1000,12 +1000,12 @@ export const Task_PokeStorageMain: TaskCallback = (task, rt) => {
           }
           break;
       case MSTATE_ERROR_LAST_PARTY_MON:
-          m4aSongNumStart(SE_FAILURE);
+          PlaySE(SE_FAILURE);
           PrintMessage(MSG_LAST_POKE);
           sStorage.state = MSTATE_WAIT_ERROR_MSG;
           break;
       case MSTATE_ERROR_HAS_MAIL:
-          m4aSongNumStart(SE_FAILURE);
+          PlaySE(SE_FAILURE);
           PrintMessage(MSG_PLEASE_REMOVE_MAIL);
           sStorage.state = MSTATE_WAIT_ERROR_MSG;
           break;
@@ -1072,7 +1072,7 @@ export const Task_HidePartyPokemon: TaskCallback = (task, rt) => {
   switch (sStorage.state)
       {
       case 0:
-          m4aSongNumStart(SE_SELECT);
+          PlaySE(SE_SELECT);
           SetUpHidePartyMenu();
           sStorage.state++;
           break;
@@ -1102,7 +1102,7 @@ export const Task_OnSelectedMon: TaskCallback = (task, rt) => {
       case 0:
           if (!IsDisplayMosaicActive())
           {
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               if (sStorage.boxOption != OPTION_MOVE_ITEMS)
                   PrintMessage(MSG_IS_SELECTED);
               else if (IsMovingItem() || sStorage.displayMonItemId != ITEM_NONE)
@@ -1133,13 +1133,13 @@ export const Task_OnSelectedMon: TaskCallback = (task, rt) => {
               }
               else
               {
-                  m4aSongNumStart(SE_SELECT);
+                  PlaySE(SE_SELECT);
                   ClearBottomWindow();
                   SetPokeStorageTask(Task_MoveMon);
               }
               break;
           case MENU_PLACE:
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               ClearBottomWindow();
               SetPokeStorageTask(Task_PlaceMon);
               break;
@@ -1150,13 +1150,13 @@ export const Task_OnSelectedMon: TaskCallback = (task, rt) => {
               }
               else
               {
-                  m4aSongNumStart(SE_SELECT);
+                  PlaySE(SE_SELECT);
                   ClearBottomWindow();
                   SetPokeStorageTask(Task_ShiftMon);
               }
               break;
           case MENU_WITHDRAW:
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               ClearBottomWindow();
               SetPokeStorageTask(Task_WithdrawMon);
               break;
@@ -1171,7 +1171,7 @@ export const Task_OnSelectedMon: TaskCallback = (task, rt) => {
               }
               else
               {
-                  m4aSongNumStart(SE_SELECT);
+                  PlaySE(SE_SELECT);
                   ClearBottomWindow();
                   SetPokeStorageTask(Task_DepositMenu);
               }
@@ -1191,35 +1191,35 @@ export const Task_OnSelectedMon: TaskCallback = (task, rt) => {
               }
               else
               {
-                  m4aSongNumStart(SE_SELECT);
+                  PlaySE(SE_SELECT);
                   SetPokeStorageTask(Task_ReleaseMon);
               }
               break;
           case MENU_SUMMARY:
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               SetPokeStorageTask(Task_ShowMonSummary);
               break;
           case MENU_MARK:
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               SetPokeStorageTask(Task_ShowMarkMenu);
               break;
           case MENU_TAKE:
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               SetPokeStorageTask(Task_TakeItemForMoving);
               break;
           case MENU_GIVE:
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               SetPokeStorageTask(Task_GiveMovingItemToMon);
               break;
           case MENU_BAG:
               SetPokeStorageTask(Task_ItemToBag);
               break;
           case MENU_SWITCH:
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               SetPokeStorageTask(Task_SwitchSelectedItem);
               break;
           case MENU_GIVE_2:
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               SetPokeStorageTask(Task_GiveItemFromBag);
               break;
           case MENU_INFO:
@@ -1228,17 +1228,17 @@ export const Task_OnSelectedMon: TaskCallback = (task, rt) => {
           }
           break;
       case 3:
-          m4aSongNumStart(SE_FAILURE);
+          PlaySE(SE_FAILURE);
           PrintMessage(MSG_LAST_POKE);
           sStorage.state = 6;
           break;
       case 5:
-          m4aSongNumStart(SE_FAILURE);
+          PlaySE(SE_FAILURE);
           PrintMessage(MSG_CANT_RELEASE_EGG);
           sStorage.state = 6;
           break;
       case 4:
-          m4aSongNumStart(SE_FAILURE);
+          PlaySE(SE_FAILURE);
           PrintMessage(MSG_PLEASE_REMOVE_MAIL);
           sStorage.state = 6;
           break;
@@ -1672,13 +1672,13 @@ export const Task_ItemToBag: TaskCallback = (task, rt) => {
       case 0:
           if (!AddBagItem(sStorage.displayMonItemId, 1))
           {
-              m4aSongNumStart(SE_FAILURE);
+              PlaySE(SE_FAILURE);
               PrintMessage(MSG_BAG_FULL);
               sStorage.state = 3;
           }
           else
           {
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               MoveItemFromMonToBag(sInPartyMenu ? CURSOR_AREA_IN_PARTY : CURSOR_AREA_IN_BOX, GetCursorPosition());
               sStorage.state = 1;
           }
@@ -1770,7 +1770,7 @@ export const Task_ShowItemInfo: TaskCallback = (task, rt) => {
       case 1:
           if (!IsDma3ManagerBusyWithBgCopy())
           {
-              m4aSongNumStart(SE_WIN_OPEN);
+              PlaySE(SE_WIN_OPEN);
               PrintItemDescription();
               InitItemInfoWindow();
               sStorage.state++;
@@ -1787,7 +1787,7 @@ export const Task_ShowItemInfo: TaskCallback = (task, rt) => {
       case 4:
           if (JOY_NEW(A_BUTTON | B_BUTTON | DPAD_ANY))
           {
-              m4aSongNumStart(SE_WIN_OPEN);
+              PlaySE(SE_WIN_OPEN);
               sStorage.state++;
           }
           break;
@@ -1808,7 +1808,7 @@ export const Task_CloseBoxWhileHoldingItem: TaskCallback = (task, rt) => {
   switch (sStorage.state)
       {
       case 0:
-          m4aSongNumStart(SE_SELECT);
+          PlaySE(SE_SELECT);
           PrintMessage(MSG_PUT_IN_BAG);
           ShowYesNoWindow(0);
           sStorage.state = 1;
@@ -1931,16 +1931,16 @@ export const Task_HandleBoxOptions: TaskCallback = (task, rt) => {
               SetPokeStorageTask(Task_PokeStorageMain);
               break;
           case MENU_NAME:
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               SetPokeStorageTask(Task_NameBox);
               break;
           case MENU_WALLPAPER:
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               ClearBottomWindow();
               SetPokeStorageTask(Task_HandleWallpapers);
               break;
           case MENU_JUMP:
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               ClearBottomWindow();
               SetPokeStorageTask(Task_JumpBox);
               break;
@@ -1976,14 +1976,14 @@ export const Task_HandleWallpapers: TaskCallback = (task, rt) => {
           case MENU_SCENERY_2:
           case MENU_SCENERY_3:
           case MENU_ETCETERA:
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               RemoveMenu();
               sStorage.wallpaperSetId -= MENU_WALLPAPER_SETS_START;
               sStorage.state++;
               break;
           case MENU_FRIENDS:
                
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               sStorage.wallpaperId = WALLPAPER_FRIENDS;
               RemoveMenu();
               ClearBottomWindow();
@@ -2010,7 +2010,7 @@ export const Task_HandleWallpapers: TaskCallback = (task, rt) => {
               sStorage.state = 0;
               break;
           default:
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               ClearBottomWindow();
               sStorage.wallpaperId -= MENU_WALLPAPERS_START;
               SetWallpaperForCurrentBox(sStorage.wallpaperId);
@@ -2152,7 +2152,7 @@ export const Task_OnCloseBoxPressed: TaskCallback = (task, rt) => {
       case 0:
           if (IsMonBeingMoved())
           {
-              m4aSongNumStart(SE_FAILURE);
+              PlaySE(SE_FAILURE);
               PrintMessage(MSG_HOLDING_POKE);
               sStorage.state = 1;
           }
@@ -2162,7 +2162,7 @@ export const Task_OnCloseBoxPressed: TaskCallback = (task, rt) => {
           }
           else
           {
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               PrintMessage(MSG_EXIT_BOX);
               ShowYesNoWindow(0);
               sStorage.state = 2;
@@ -2184,7 +2184,7 @@ export const Task_OnCloseBoxPressed: TaskCallback = (task, rt) => {
               SetPokeStorageTask(Task_PokeStorageMain);
               break;
           case 0:
-              m4aSongNumStart(SE_PC_OFF);
+              PlaySE(SE_PC_OFF);
               ClearBottomWindow();
               sStorage.state++;
               break;
@@ -2214,7 +2214,7 @@ export const Task_OnBPressed: TaskCallback = (task, rt) => {
       case 0:
           if (IsMonBeingMoved())
           {
-              m4aSongNumStart(SE_FAILURE);
+              PlaySE(SE_FAILURE);
               PrintMessage(MSG_HOLDING_POKE);
               sStorage.state = 1;
           }
@@ -2224,7 +2224,7 @@ export const Task_OnBPressed: TaskCallback = (task, rt) => {
           }
           else
           {
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               PrintMessage(MSG_CONTINUE_BOX);
               ShowYesNoWindow(0);
               sStorage.state = 2;
@@ -2246,7 +2246,7 @@ export const Task_OnBPressed: TaskCallback = (task, rt) => {
               break;
           case 1:
           case MENU_B_PRESSED:
-              m4aSongNumStart(SE_PC_OFF);
+              PlaySE(SE_PC_OFF);
               ClearBottomWindow();
               sStorage.state++;
               break;

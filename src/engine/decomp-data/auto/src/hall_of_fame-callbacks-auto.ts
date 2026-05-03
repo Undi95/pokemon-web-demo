@@ -252,7 +252,7 @@ export const Task_Hof_TrySaveData: TaskCallback = (task, rt) => {
       }
       else
       {
-          m4aSongNumStart(SE_SAVE);
+          PlaySE(SE_SAVE);
           task.func = (t) => Task_Hof_WaitToDisplayMon(t, rt);
           task.data[3] = 32;
       }
@@ -367,7 +367,7 @@ export const Task_Hof_PaletteFadeAndPrintWelcomeText: TaskCallback = (task, rt) 
       }
 
       HallOfFame_PrintWelcomeText(0, 15);
-      m4aSongNumStart(SE_APPLAUSE);
+      PlaySE(SE_APPLAUSE);
       task.data[3] = 400;
       task.func = (t) => Task_Hof_DoConfetti(t, rt);
 };

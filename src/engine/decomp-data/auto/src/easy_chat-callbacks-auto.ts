@@ -123,7 +123,7 @@ export const Task_EasyChatScreen: TaskCallback = (task, rt) => {
           }
           else if (funcId != ECFUNC_NONE)
           {
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               StartEasyChatFunction(funcId);
               data[0]++;  
           }

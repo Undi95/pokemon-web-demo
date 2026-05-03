@@ -71,7 +71,7 @@ export const Task_ClearSaveDataScreenYesNoChoice: TaskCallback = (task, rt) => {
           break;
       case 1:
       case MENU_B_PRESSED:
-          m4aSongNumStart(SE_SELECT);
+          PlaySE(SE_SELECT);
           rt.DestroyTask(taskId);
           /* TODO scene transition: SetMainCallback2(CB2_FadeAndDoReset) */;
       }

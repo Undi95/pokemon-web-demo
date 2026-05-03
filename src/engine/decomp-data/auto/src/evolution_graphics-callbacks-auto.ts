@@ -147,7 +147,7 @@ export const Task_Sparkles_SpiralUpward_Init: TaskCallback = (task, rt) => {
       task.data[15] = 0;
       rt.BeginNormalPaletteFade("3 << task.data[1]", 0xA, 0, 0x10, "RGB_WHITE");
       task.func = (t) => Task_Sparkles_SpiralUpward(t, rt);
-      m4aSongNumStart(SE_M_MEGA_KICK);
+      PlaySE(SE_M_MEGA_KICK);
 };
 
 /** Source: evolution_graphics.c → Task_Sparkles_SpiralUpward */
@@ -185,7 +185,7 @@ export const Task_Sparkles_ArcDown_Init: TaskCallback = (task, rt) => {
   SetEvoSparklesMatrices();
       task.data[15] = 0;
       task.func = (t) => Task_Sparkles_ArcDown(t, rt);
-      m4aSongNumStart(SE_M_BUBBLE_BEAM2);
+      PlaySE(SE_M_BUBBLE_BEAM2);
 };
 
 /** Source: evolution_graphics.c → Task_Sparkles_ArcDown */
@@ -219,7 +219,7 @@ export const Task_Sparkles_CircleInward_Init: TaskCallback = (task, rt) => {
   SetEvoSparklesMatrices();
       task.data[15] = 0;
       task.func = (t) => Task_Sparkles_CircleInward(t, rt);
-      m4aSongNumStart(SE_SHINY);
+      PlaySE(SE_SHINY);
 };
 
 /** Source: evolution_graphics.c → Task_Sparkles_CircleInward */
@@ -261,7 +261,7 @@ export const Task_Sparkles_SprayAndFlash_Init: TaskCallback = (task, rt) => {
       rt.CpuCopy16(_palView(rt.gPlttBufferFaded, ((2) * 16)), 0, ((2) * 16), Math.floor((3 * PLTT_SIZE_4BPP) / 2));
       rt.BeginNormalPaletteFade("0xFFF9041C", 0, 0, 0x10, "RGB_WHITE");  
       task.func = (t) => Task_Sparkles_SprayAndFlash(t, rt);
-      m4aSongNumStart(SE_M_PETAL_DANCE);
+      PlaySE(SE_M_PETAL_DANCE);
 };
 
 /** Source: evolution_graphics.c → Task_Sparkles_SprayAndFlash */
@@ -307,7 +307,7 @@ export const Task_Sparkles_SprayAndFlashTrade_Init: TaskCallback = (task, rt) =>
       rt.CpuCopy16(_palView(rt.gPlttBufferFaded, ((2) * 16)), 0, ((2) * 16), Math.floor((3 * PLTT_SIZE_4BPP) / 2));
       rt.BeginNormalPaletteFade("0xFFF90400", 0, 0, 0x10, "RGB_WHITE");  
       task.func = (t) => Task_Sparkles_SprayAndFlashTrade(t, rt);
-      m4aSongNumStart(SE_M_PETAL_DANCE);
+      PlaySE(SE_M_PETAL_DANCE);
 };
 
 /** Source: evolution_graphics.c → Task_Sparkles_SprayAndFlashTrade */

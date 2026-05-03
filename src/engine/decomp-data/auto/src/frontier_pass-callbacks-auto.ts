@@ -109,13 +109,13 @@ export const Task_HandleFrontierPassInput: TaskCallback = (task, rt) => {
           {
               if (sPassData.cursorArea <= CURSOR_AREA_RECORD)  
               {
-                  m4aSongNumStart(SE_SELECT);
+                  PlaySE(SE_SELECT);
                   if (TryCallPassAreaFunction(taskId, sPassData.cursorArea))
                       return;
               }
               else if (sPassData.cursorArea == CURSOR_AREA_CANCEL)
               {
-                  m4aSongNumStart(SE_PC_OFF);
+                  PlaySE(SE_PC_OFF);
                   /* TODO scene transition: SetMainCallback2(CB2_HideFrontierPass) */;
                   rt.DestroyTask(taskId);
                   return;
@@ -124,7 +124,7 @@ export const Task_HandleFrontierPassInput: TaskCallback = (task, rt) => {
 
           if (JOY_NEW(B_BUTTON))
           {
-              m4aSongNumStart(SE_PC_OFF);
+              PlaySE(SE_PC_OFF);
               /* TODO scene transition: SetMainCallback2(CB2_HideFrontierPass) */;
               rt.DestroyTask(taskId);
           }
@@ -242,7 +242,7 @@ export const Task_HandleFrontierMap: TaskCallback = (task, rt) => {
       case 1:
           if (JOY_NEW(B_BUTTON))
           {
-              m4aSongNumStart(SE_PC_OFF);
+              PlaySE(SE_PC_OFF);
               data[0] = 4;
           }
           else if (JOY_NEW(DPAD_DOWN))

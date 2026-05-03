@@ -55,11 +55,11 @@ export const Task_HandleGetDecorationMenuInput: TaskCallback = (task, rt) => {
               break;
           case MENU_B_PRESSED:
           case NUM_TRADER_ITEMS:  
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               Task_BufferDecorSelectionAndCloseWindow(taskId, 0);
               break;
           default:
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               gSpecialVar_0x8005 = input;
               StringCopy(gStringVar1, trader.playerNames[input]);
               ConvertInternationalString(gStringVar1, trader.language[input]);

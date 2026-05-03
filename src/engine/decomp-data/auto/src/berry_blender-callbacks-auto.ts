@@ -112,7 +112,7 @@ export const SpriteCB_Berry: SpriteCallback = (sprite, rt) => {
           if (++sprite.data[5] > 3)
               rt.DestroySprite(sprite.spriteId);
           else
-              m4aSongNumStart(SE_BALL_TRAY_EXIT);
+              PlaySE(SE_BALL_TRAY_EXIT);
       }
       sprite.x = sprite.data[1];
       sprite.y = sprite.data[2];
@@ -157,7 +157,7 @@ export const SpriteCB_CountdownNumber: SpriteCallback = (sprite, rt) => {
           if (sprite.data[1] > DISPLAY_HEIGHT / 2 + 8)
           {sprite.data[1] = Math.trunc(DISPLAY_HEIGHT / 2) + 8;
               sprite.data[0]++;
-              m4aSongNumStart(SE_BALL_BOUNCE_1);
+              PlaySE(SE_BALL_BOUNCE_1);
           }
           break;
       case 1:
@@ -199,7 +199,7 @@ export const SpriteCB_Start: SpriteCallback = (sprite, rt) => {
           {
               sprite.data[1] = 92;
               sprite.data[0]++;
-              m4aSongNumStart(SE_PIN);
+              PlaySE(SE_PIN);
           }
           break;
       case 1:
@@ -643,7 +643,7 @@ export const CB2_StartBlenderLink: CB2Callback = (rt) => {
           {
               sBerryBlender.mainState++;
               DrawBlenderCenter(sBerryBlender.bgAffineSrc);
-              m4aSongNumStart(SE_FALL);
+              PlaySE(SE_FALL);
               ShowBg(2);
           }
           break;
@@ -658,7 +658,7 @@ export const CB2_StartBlenderLink: CB2Callback = (rt) => {
               sBerryBlender.centerScale = 256;
               sBerryBlender.arrowPos = sArrowStartPos[sArrowStartPosIds[sBerryBlender.numPlayers - 2]];
               sBerryBlender.framesToWait = 0;
-              m4aSongNumStart(SE_TRUCK_DOOR);
+              PlaySE(SE_TRUCK_DOOR);
               SetPlayerIdMaps();
               PrintPlayerNames();
           }
@@ -806,7 +806,7 @@ export const CB2_StartBlenderLocal: CB2Callback = (rt) => {
       case 13:
           sBerryBlender.mainState++;
           SetPlayerIdMaps();
-          m4aSongNumStart(SE_FALL);
+          PlaySE(SE_FALL);
           DrawBlenderCenter(sBerryBlender.bgAffineSrc);
           ShowBg(2);
           break;
@@ -821,7 +821,7 @@ export const CB2_StartBlenderLocal: CB2Callback = (rt) => {
               sBerryBlender.arrowPos = sArrowStartPos[sArrowStartPosIds[sBerryBlender.numPlayers - 2]];
               SetGpuRegBits(REG_OFFSET_BG2CNT, BGCNT_PRIORITY(2));
               sBerryBlender.framesToWait = 0;
-              m4aSongNumStart(SE_TRUCK_DOOR);
+              PlaySE(SE_TRUCK_DOOR);
               PrintPlayerNames();
           }
           DrawBlenderCenter(sBerryBlender.bgAffineSrc);
@@ -876,7 +876,7 @@ export const CB2_StartBlenderLocal: CB2Callback = (rt) => {
               sBerryBlender.savedMusic = GetCurrentMapMusic();
 
           PlayBGM(MUS_CYCLING);
-          m4aSongNumStart(SE_BERRY_BLENDER);
+          PlaySE(SE_BERRY_BLENDER);
           UpdateHitPitch();
           break;
       }
@@ -1190,7 +1190,7 @@ export const CB2_CheckPlayAgainLink: CB2Callback = (rt) => {
       case 7:
           if (LinkPlayAgainHandleSaving())
           {
-              m4aSongNumStart(SE_SAVE);
+              PlaySE(SE_SAVE);
               sBerryBlender.gameEndState++;
           }
           break;

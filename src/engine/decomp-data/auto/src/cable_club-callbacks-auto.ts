@@ -118,13 +118,13 @@ export const Task_LinkupAwaitConnection: TaskCallback = (task, rt) => {
       task.data[3] = 0;
       if (IsLinkMaster() == true)
       {
-          m4aSongNumStart(SE_PIN);
+          PlaySE(SE_PIN);
           ShowFieldAutoScrollMessage(gText_ConfirmLinkWhenPlayersReady);
           task.func = (t) => Task_LinkupConfirmWhenReady(t, rt);
       }
       else
       {
-          m4aSongNumStart(SE_BOO);
+          PlaySE(SE_BOO);
           ShowFieldAutoScrollMessage(gText_AwaitingLinkup);
           task.func = (t) => Task_LinkupExchangeDataWithLeader(t, rt);
       }
@@ -193,7 +193,7 @@ export const Task_LinkupTryConfirmation: TaskCallback = (task, rt) => {
           }
           else if (JOY_HELD(A_BUTTON))
           {
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               CheckShouldAdvanceLinkState();
               task.func = (t) => Task_LinkupConfirm(t, rt);
           }

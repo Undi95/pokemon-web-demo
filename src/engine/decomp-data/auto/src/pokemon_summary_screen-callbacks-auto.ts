@@ -130,12 +130,12 @@ export const Task_HandleInput: TaskCallback = (task, rt) => {
                   if (sMonSummaryScreen.currPageIndex == PSS_PAGE_INFO)
                   {
                       StopPokemonAnimations();
-                      m4aSongNumStart(SE_SELECT);
+                      PlaySE(SE_SELECT);
                       BeginCloseSummaryScreen(taskId);
                   }
                   else  
                   {
-                      m4aSongNumStart(SE_SELECT);
+                      PlaySE(SE_SELECT);
                       SwitchToMoveSelection(taskId);
                   }
               }
@@ -143,7 +143,7 @@ export const Task_HandleInput: TaskCallback = (task, rt) => {
           else if (JOY_NEW(B_BUTTON))
           {
               StopPokemonAnimations();
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               BeginCloseSummaryScreen(taskId);
           }
       }
@@ -240,22 +240,22 @@ export const Task_HandleInput_MoveSelect: TaskCallback = (task, rt) => {
               if (sMonSummaryScreen.lockMovesFlag == true
                || (sMonSummaryScreen.newMove == MOVE_NONE && sMonSummaryScreen.firstMoveIndex == MAX_MON_MOVES))
               {
-                  m4aSongNumStart(SE_SELECT);
+                  PlaySE(SE_SELECT);
                   CloseMoveSelectMode(taskId);
               }
               else if (HasMoreThanOneMove() == true)
               {
-                  m4aSongNumStart(SE_SELECT);
+                  PlaySE(SE_SELECT);
                   SwitchToMovePositionSwitchMode(taskId);
               }
               else
               {
-                  m4aSongNumStart(SE_FAILURE);
+                  PlaySE(SE_FAILURE);
               }
           }
           else if (JOY_NEW(B_BUTTON))
           {
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               CloseMoveSelectMode(taskId);
           }
       }
@@ -332,21 +332,21 @@ export const Task_HandleReplaceMoveInput: TaskCallback = (task, rt) => {
                   if (CanReplaceMove() == true)
                   {
                       StopPokemonAnimations();
-                      m4aSongNumStart(SE_SELECT);
+                      PlaySE(SE_SELECT);
                       sMoveSlotToReplace = sMonSummaryScreen.firstMoveIndex;
                       gSpecialVar_0x8005 = sMoveSlotToReplace;
                       BeginCloseSummaryScreen(taskId);
                   }
                   else
                   {
-                      m4aSongNumStart(SE_FAILURE);
+                      PlaySE(SE_FAILURE);
                       ShowCantForgetHMsWindow(taskId);
                   }
               }
               else if (JOY_NEW(B_BUTTON))
               {
                   StopPokemonAnimations();
-                  m4aSongNumStart(SE_SELECT);
+                  PlaySE(SE_SELECT);
                   sMoveSlotToReplace = MAX_MON_MOVES;
                   gSpecialVar_0x8005 = MAX_MON_MOVES;
                   BeginCloseSummaryScreen(taskId);

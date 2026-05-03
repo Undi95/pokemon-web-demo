@@ -53,7 +53,7 @@ export const Task_RecordMixing_SoundEffect: TaskCallback = (task, rt) => {
   const taskId = task.taskId;
   if (++task.data[0] == 50)
       {
-          m4aSongNumStart(SE_M_ATTRACT);
+          PlaySE(SE_M_ATTRACT);
           task.data[0] = 0;
       }
 };
@@ -89,7 +89,7 @@ export const Task_RecordMixing_Main: TaskCallback = (task, rt) => {
       case 2:
           data[10] = rt.CreateTask((t) => Task_DoRecordMixing(t, rt), 10);
           data[0] = 3;
-          m4aSongNumStart(SE_M_BATON_PASS);
+          PlaySE(SE_M_BATON_PASS);
           break;
       case 3:  
           if (!_gt(rt, data[10]).isActive)
@@ -148,14 +148,14 @@ export const Task_MixingRecordsRecv: TaskCallback = (task, rt) => {
               {
                   if (players == GetSavedPlayerCount())
                   {
-                      m4aSongNumStart(SE_PIN);
+                      PlaySE(SE_PIN);
                       task.data[0] = 201;
                       task.data[12] = 0;
                   }
               }
               else
               {
-                  m4aSongNumStart(SE_BOO);
+                  PlaySE(SE_BOO);
                   task.data[0] = 301;
               }
           }

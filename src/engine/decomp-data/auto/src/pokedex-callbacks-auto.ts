@@ -334,7 +334,7 @@ export const Task_HandlePokedexInput: TaskCallback = (task, rt) => {
               rt.BeginNormalPaletteFade("~(1 << (rt.gba.oam[_gs(rt, sPokedexView.selectedMonSpriteId).oamIndex].paletteBank + 16))", 0, 0, 0x10, "RGB_BLACK");
               rt.setSpriteCallback(sPokedexView.selectedMonSpriteId, SpriteCB_MoveMonForInfoScreen);
               task.func = (t) => Task_OpenInfoScreenAfterMonMovement(t, rt);
-              m4aSongNumStart(SE_PIN);
+              PlaySE(SE_PIN);
               FreeWindowAndBgBuffers();
           }
           else if (JOY_NEW(START_BUTTON))
@@ -343,11 +343,11 @@ export const Task_HandlePokedexInput: TaskCallback = (task, rt) => {
               sPokedexView.menuIsOpen = true;
               sPokedexView.menuCursorPos = 0;
               task.func = (t) => Task_HandlePokedexStartMenuInput(t, rt);
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
           }
           else if (JOY_NEW(SELECT_BUTTON))
           {
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               rt.BeginNormalPaletteFade("PALETTES_ALL", 0, 0, 0x10, "RGB_BLACK");
               task.data[0] = LoadSearchMenu();
               sPokedexView.screenSwitchState = 0;
@@ -356,14 +356,14 @@ export const Task_HandlePokedexInput: TaskCallback = (task, rt) => {
               sPokedexView.dexModeBackup = sPokedexView.dexMode;
               sPokedexView.dexOrderBackup = sPokedexView.dexOrder;
               task.func = (t) => Task_WaitForExitSearch(t, rt);
-              m4aSongNumStart(SE_PC_LOGIN);
+              PlaySE(SE_PC_LOGIN);
               FreeWindowAndBgBuffers();
           }
           else if (JOY_NEW(B_BUTTON))
           {
               rt.BeginNormalPaletteFade("PALETTES_ALL", 0, 0, 0x10, "RGB_BLACK");
               task.func = (t) => Task_ClosePokedex(t, rt);
-              m4aSongNumStart(SE_PC_OFF);
+              PlaySE(SE_PC_OFF);
           }
           else
           {
@@ -419,7 +419,7 @@ export const Task_HandlePokedexStartMenuInput: TaskCallback = (task, rt) => {
               case 3:  
                   rt.BeginNormalPaletteFade("PALETTES_ALL", 0, 0, 0x10, "RGB_BLACK");
                   task.func = (t) => Task_ClosePokedex(t, rt);
-                  m4aSongNumStart(SE_PC_OFF);
+                  PlaySE(SE_PC_OFF);
                   break;
               }
           }
@@ -429,17 +429,17 @@ export const Task_HandlePokedexStartMenuInput: TaskCallback = (task, rt) => {
           {
               sPokedexView.menuIsOpen = false;
               task.func = (t) => Task_HandlePokedexInput(t, rt);
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
           }
           else if (JOY_REPEAT(DPAD_UP) && sPokedexView.menuCursorPos != 0)
           {
               sPokedexView.menuCursorPos--;
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
           }
           else if (JOY_REPEAT(DPAD_DOWN) && sPokedexView.menuCursorPos < 3)
           {
               sPokedexView.menuCursorPos++;
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
           }
       }
 };
@@ -547,7 +547,7 @@ export const Task_HandleSearchResultsInput: TaskCallback = (task, rt) => {
               rt.setSpriteCallback(sPokedexView.selectedMonSpriteId, SpriteCB_MoveMonForInfoScreen);
               rt.BeginNormalPaletteFade("~a", 0, 0, 0x10, "RGB_BLACK");
               task.func = (t) => Task_OpenSearchResultsInfoScreenAfterMonMovement(t, rt);
-              m4aSongNumStart(SE_PIN);
+              PlaySE(SE_PIN);
               FreeWindowAndBgBuffers();
           }
           else if (JOY_NEW(START_BUTTON))
@@ -556,7 +556,7 @@ export const Task_HandleSearchResultsInput: TaskCallback = (task, rt) => {
               sPokedexView.menuIsOpen = true;
               sPokedexView.menuCursorPos = 0;
               task.func = (t) => Task_HandleSearchResultsStartMenuInput(t, rt);
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
           }
           else if (JOY_NEW(SELECT_BUTTON))
           {
@@ -564,14 +564,14 @@ export const Task_HandleSearchResultsInput: TaskCallback = (task, rt) => {
               task.data[0] = LoadSearchMenu();
               sPokedexView.screenSwitchState = 0;
               task.func = (t) => Task_WaitForExitSearch(t, rt);
-              m4aSongNumStart(SE_PC_LOGIN);
+              PlaySE(SE_PC_LOGIN);
               FreeWindowAndBgBuffers();
           }
           else if (JOY_NEW(B_BUTTON))
           {
               rt.BeginNormalPaletteFade("PALETTES_ALL", 0, 0, 0x10, "RGB_BLACK");
               task.func = (t) => Task_ReturnToPokedexFromSearchResults(t, rt);
-              m4aSongNumStart(SE_PC_OFF);
+              PlaySE(SE_PC_OFF);
           }
           else
           {
@@ -626,12 +626,12 @@ export const Task_HandleSearchResultsStartMenuInput: TaskCallback = (task, rt) =
               case 3:  
                   rt.BeginNormalPaletteFade("PALETTES_ALL", 0, 0, 0x10, "RGB_BLACK");
                   task.func = (t) => Task_ReturnToPokedexFromSearchResults(t, rt);
-                  m4aSongNumStart(SE_TRUCK_DOOR);
+                  PlaySE(SE_TRUCK_DOOR);
                   break;
               case 4:  
                   rt.BeginNormalPaletteFade("PALETTES_ALL", 0, 0, 0x10, "RGB_BLACK");
                   task.func = (t) => Task_ClosePokedexFromSearchResultsStartMenu(t, rt);
-                  m4aSongNumStart(SE_PC_OFF);
+                  PlaySE(SE_PC_OFF);
                   break;
               }
           }
@@ -641,17 +641,17 @@ export const Task_HandleSearchResultsStartMenuInput: TaskCallback = (task, rt) =
           {
               sPokedexView.menuIsOpen = false;
               task.func = (t) => Task_HandleSearchResultsInput(t, rt);
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
           }
           else if (JOY_REPEAT(DPAD_UP) && sPokedexView.menuCursorPos)
           {
               sPokedexView.menuCursorPos--;
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
           }
           else if (JOY_REPEAT(DPAD_DOWN) && sPokedexView.menuCursorPos < 4)
           {
               sPokedexView.menuCursorPos++;
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
           }
       }
 };
@@ -838,14 +838,14 @@ export const Task_HandleInfoScreenInput: TaskCallback = (task, rt) => {
            
           rt.BeginNormalPaletteFade("PALETTES_ALL", 0, 0, 16, "RGB_BLACK");
           task.func = (t) => Task_LoadInfoScreenWaitForFade(t, rt);
-          m4aSongNumStart(SE_DEX_SCROLL);
+          PlaySE(SE_DEX_SCROLL);
           return;
       }
       if (JOY_NEW(B_BUTTON))
       {
           rt.BeginNormalPaletteFade("PALETTES_ALL", 0, 0, 16, "RGB_BLACK");
           task.func = (t) => Task_ExitInfoScreen(t, rt);
-          m4aSongNumStart(SE_PC_OFF);
+          PlaySE(SE_PC_OFF);
           return;
       }
       if (JOY_NEW(A_BUTTON))
@@ -856,31 +856,31 @@ export const Task_HandleInfoScreenInput: TaskCallback = (task, rt) => {
               rt.BeginNormalPaletteFade("PALETTES_ALL & ~(0x14)", 0, 0, 16, "RGB_BLACK");
               sPokedexView.screenSwitchState = 1;
               task.func = (t) => Task_SwitchScreensFromInfoScreen(t, rt);
-              m4aSongNumStart(SE_PIN);
+              PlaySE(SE_PIN);
               break;
           case CRY_SCREEN:
               rt.BeginNormalPaletteFade("PALETTES_ALL & ~(0x14)", 0, 0, 0x10, "RGB_BLACK");
               sPokedexView.screenSwitchState = 2;
               task.func = (t) => Task_SwitchScreensFromInfoScreen(t, rt);
-              m4aSongNumStart(SE_PIN);
+              PlaySE(SE_PIN);
               break;
           case SIZE_SCREEN:
               if (!sPokedexListItem.owned)
               {
-                  m4aSongNumStart(SE_FAILURE);
+                  PlaySE(SE_FAILURE);
               }
               else
               {
                   rt.BeginNormalPaletteFade("PALETTES_ALL & ~(0x14)", 0, 0, 0x10, "RGB_BLACK");
                   sPokedexView.screenSwitchState = 3;
                   task.func = (t) => Task_SwitchScreensFromInfoScreen(t, rt);
-                  m4aSongNumStart(SE_PIN);
+                  PlaySE(SE_PIN);
               }
               break;
           case CANCEL_SCREEN:
               rt.BeginNormalPaletteFade("PALETTES_ALL", 0, 0, 0x10, "RGB_BLACK");
               task.func = (t) => Task_ExitInfoScreen(t, rt);
-              m4aSongNumStart(SE_PC_OFF);
+              PlaySE(SE_PC_OFF);
               break;
           }
           return;
@@ -891,7 +891,7 @@ export const Task_HandleInfoScreenInput: TaskCallback = (task, rt) => {
       {
           sPokedexView.selectedScreen--;
           HighlightScreenSelectBarItem(sPokedexView.selectedScreen, 0xD);
-          m4aSongNumStart(SE_DEX_PAGE);
+          PlaySE(SE_DEX_PAGE);
           return;
       }
       if ((JOY_NEW(DPAD_RIGHT)
@@ -900,7 +900,7 @@ export const Task_HandleInfoScreenInput: TaskCallback = (task, rt) => {
       {
           sPokedexView.selectedScreen++;
           HighlightScreenSelectBarItem(sPokedexView.selectedScreen, 0xD);
-          m4aSongNumStart(SE_DEX_PAGE);
+          PlaySE(SE_DEX_PAGE);
           return;
       }
 };
@@ -1136,7 +1136,7 @@ export const Task_HandleCryScreenInput: TaskCallback = (task, rt) => {
               m4aMPlayContinue(gMPlayInfo_BGM);
               sPokedexView.screenSwitchState = 1;
               task.func = (t) => Task_SwitchScreensFromCryScreen(t, rt);
-              m4aSongNumStart(SE_PC_OFF);
+              PlaySE(SE_PC_OFF);
               return;
           }
           if (JOY_NEW(DPAD_LEFT)
@@ -1146,7 +1146,7 @@ export const Task_HandleCryScreenInput: TaskCallback = (task, rt) => {
               m4aMPlayContinue(gMPlayInfo_BGM);
               sPokedexView.screenSwitchState = 2;
               task.func = (t) => Task_SwitchScreensFromCryScreen(t, rt);
-              m4aSongNumStart(SE_DEX_PAGE);
+              PlaySE(SE_DEX_PAGE);
               return;
           }
           if (JOY_NEW(DPAD_RIGHT)
@@ -1154,7 +1154,7 @@ export const Task_HandleCryScreenInput: TaskCallback = (task, rt) => {
           {
               if (!sPokedexListItem.owned)
               {
-                  m4aSongNumStart(SE_FAILURE);
+                  PlaySE(SE_FAILURE);
               }
               else
               {
@@ -1162,7 +1162,7 @@ export const Task_HandleCryScreenInput: TaskCallback = (task, rt) => {
                   m4aMPlayContinue(gMPlayInfo_BGM);
                   sPokedexView.screenSwitchState = 3;
                   task.func = (t) => Task_SwitchScreensFromCryScreen(t, rt);
-                  m4aSongNumStart(SE_DEX_PAGE);
+                  PlaySE(SE_DEX_PAGE);
               }
               return;
           }
@@ -1299,7 +1299,7 @@ export const Task_HandleSizeScreenInput: TaskCallback = (task, rt) => {
           rt.BeginNormalPaletteFade("PALETTES_ALL & ~(0x14)", 0, 0, 0x10, "RGB_BLACK");
           sPokedexView.screenSwitchState = 1;
           task.func = (t) => Task_SwitchScreensFromSizeScreen(t, rt);
-          m4aSongNumStart(SE_PC_OFF);
+          PlaySE(SE_PC_OFF);
       }
       else if (JOY_NEW(DPAD_LEFT)
        || (JOY_NEW(L_BUTTON) && gSaveBlock2Ptr.optionsButtonMode == OPTIONS_BUTTON_MODE_LR))
@@ -1307,7 +1307,7 @@ export const Task_HandleSizeScreenInput: TaskCallback = (task, rt) => {
           rt.BeginNormalPaletteFade("PALETTES_ALL & ~(0x14)", 0, 0, 0x10, "RGB_BLACK");
           sPokedexView.screenSwitchState = 2;
           task.func = (t) => Task_SwitchScreensFromSizeScreen(t, rt);
-          m4aSongNumStart(SE_DEX_PAGE);
+          PlaySE(SE_DEX_PAGE);
       }
 };
 
@@ -1543,7 +1543,7 @@ export const Task_HandleSearchTopBarInput: TaskCallback = (task, rt) => {
   const taskId = task.taskId;
   if (JOY_NEW(B_BUTTON))
       {
-          m4aSongNumStart(SE_PC_OFF);
+          PlaySE(SE_PC_OFF);
           task.func = (t) => Task_ExitSearch(t, rt);
           return;
       }
@@ -1552,17 +1552,17 @@ export const Task_HandleSearchTopBarInput: TaskCallback = (task, rt) => {
           switch (task.data[0])
           {
           case SEARCH_TOPBAR_SEARCH:
-              m4aSongNumStart(SE_PIN);
+              PlaySE(SE_PIN);
               task.data[1] = SEARCH_NAME;
               task.func = (t) => Task_SwitchToSearchMenu(t, rt);
               break;
           case SEARCH_TOPBAR_SHIFT:
-              m4aSongNumStart(SE_PIN);
+              PlaySE(SE_PIN);
               task.data[1] = SEARCH_ORDER;
               task.func = (t) => Task_SwitchToSearchMenu(t, rt);
               break;
           case SEARCH_TOPBAR_CANCEL:
-              m4aSongNumStart(SE_PC_OFF);
+              PlaySE(SE_PC_OFF);
               task.func = (t) => Task_ExitSearch(t, rt);
               break;
           }
@@ -1570,7 +1570,7 @@ export const Task_HandleSearchTopBarInput: TaskCallback = (task, rt) => {
       }
       if (JOY_NEW(DPAD_LEFT) && task.data[0] > SEARCH_TOPBAR_SEARCH)
       {
-          m4aSongNumStart(SE_DEX_PAGE);
+          PlaySE(SE_DEX_PAGE);
           task.data[0]--;
           HighlightSelectedSearchTopBarItem(task.data[0]);
           CopyWindowToVram(0, COPYWIN_GFX);
@@ -1578,7 +1578,7 @@ export const Task_HandleSearchTopBarInput: TaskCallback = (task, rt) => {
       }
       if (JOY_NEW(DPAD_RIGHT) && task.data[0] < SEARCH_TOPBAR_CANCEL)
       {
-          m4aSongNumStart(SE_DEX_PAGE);
+          PlaySE(SE_DEX_PAGE);
           task.data[0]++;
           HighlightSelectedSearchTopBarItem(task.data[0]);
           CopyWindowToVram(0, COPYWIN_GFX);
@@ -1618,7 +1618,7 @@ export const Task_HandleSearchMenuInput: TaskCallback = (task, rt) => {
 
       if (JOY_NEW(B_BUTTON))
       {
-          m4aSongNumStart(SE_BALL);
+          PlaySE(SE_BALL);
           SetDefaultSearchModeAndOrder(taskId);
           task.func = (t) => Task_SwitchToSearchMenuTopBar(t, rt);
           return;
@@ -1639,20 +1639,20 @@ export const Task_HandleSearchMenuInput: TaskCallback = (task, rt) => {
                   sPokedexView.dexModeBackup = gSaveBlock2Ptr.pokedex.mode;
                   gSaveBlock2Ptr.pokedex.order = GetSearchModeSelection(taskId, SEARCH_ORDER);
                   sPokedexView.dexOrderBackup = gSaveBlock2Ptr.pokedex.order;
-                  m4aSongNumStart(SE_PC_OFF);
+                  PlaySE(SE_PC_OFF);
                   task.func = (t) => Task_ExitSearch(t, rt);
               }
               else
               {
                   EraseAndPrintSearchTextBox(gText_SearchingPleaseWait);
                   task.func = (t) => Task_StartPokedexSearch(t, rt);
-                  m4aSongNumStart(SE_DEX_SEARCH);
+                  PlaySE(SE_DEX_SEARCH);
                   CopyWindowToVram(0, COPYWIN_GFX);
               }
           }
           else
           {
-              m4aSongNumStart(SE_PIN);
+              PlaySE(SE_PIN);
               task.func = (t) => Task_SelectSearchMenuItem(t, rt);
           }
           return;
@@ -1660,7 +1660,7 @@ export const Task_HandleSearchMenuInput: TaskCallback = (task, rt) => {
 
       if (JOY_NEW(DPAD_LEFT) && movementMap[task.data[1]][0] != 0xFF)
       {
-          m4aSongNumStart(SE_SELECT);
+          PlaySE(SE_SELECT);
           task.data[1] = movementMap[task.data[1]][0];
           HighlightSelectedSearchMenuItem(task.data[0], task.data[1]);
           CopyWindowToVram(0, COPYWIN_GFX);
@@ -1668,7 +1668,7 @@ export const Task_HandleSearchMenuInput: TaskCallback = (task, rt) => {
       }
       if (JOY_NEW(DPAD_RIGHT) && movementMap[task.data[1]][1] != 0xFF)
       {
-          m4aSongNumStart(SE_SELECT);
+          PlaySE(SE_SELECT);
           task.data[1] = movementMap[task.data[1]][1];
           HighlightSelectedSearchMenuItem(task.data[0], task.data[1]);
           CopyWindowToVram(0, COPYWIN_GFX);
@@ -1676,7 +1676,7 @@ export const Task_HandleSearchMenuInput: TaskCallback = (task, rt) => {
       }
       if (JOY_NEW(DPAD_UP) && movementMap[task.data[1]][2] != 0xFF)
       {
-          m4aSongNumStart(SE_SELECT);
+          PlaySE(SE_SELECT);
           task.data[1] = movementMap[task.data[1]][2];
           HighlightSelectedSearchMenuItem(task.data[0], task.data[1]);
           CopyWindowToVram(0, COPYWIN_GFX);
@@ -1684,7 +1684,7 @@ export const Task_HandleSearchMenuInput: TaskCallback = (task, rt) => {
       }
       if (JOY_NEW(DPAD_DOWN) && movementMap[task.data[1]][3] != 0xFF)
       {
-          m4aSongNumStart(SE_SELECT);
+          PlaySE(SE_SELECT);
           task.data[1] = movementMap[task.data[1]][3];
           HighlightSelectedSearchMenuItem(task.data[0], task.data[1]);
           CopyWindowToVram(0, COPYWIN_GFX);
@@ -1713,12 +1713,12 @@ export const Task_WaitAndCompleteSearch: TaskCallback = (task, rt) => {
       {
           if (sPokedexView.pokemonListCount != 0)
           {
-              m4aSongNumStart(SE_SUCCESS);
+              PlaySE(SE_SUCCESS);
               EraseAndPrintSearchTextBox(gText_SearchCompleted);
           }
           else
           {
-              m4aSongNumStart(SE_FAILURE);
+              PlaySE(SE_FAILURE);
               EraseAndPrintSearchTextBox(gText_NoMatchingPkmnWereFound);
           }
           task.func = (t) => Task_SearchCompleteWaitForInput(t, rt);
@@ -1738,12 +1738,12 @@ export const Task_SearchCompleteWaitForInput: TaskCallback = (task, rt) => {
               sPokedexView.dexMode = GetSearchModeSelection(taskId, SEARCH_MODE);
               sPokedexView.dexOrder = GetSearchModeSelection(taskId, SEARCH_ORDER);
               task.func = (t) => Task_ExitSearch(t, rt);
-              m4aSongNumStart(SE_PC_OFF);
+              PlaySE(SE_PC_OFF);
           }
           else
           {
               task.func = (t) => Task_SwitchToSearchMenu(t, rt);
-              m4aSongNumStart(SE_BALL);
+              PlaySE(SE_BALL);
           }
       }
 };
@@ -1785,7 +1785,7 @@ export const Task_HandleSearchParameterInput: TaskCallback = (task, rt) => {
       maxOption = sSearchOptions[menuItem].numOptions - 1;
       if (JOY_NEW(A_BUTTON))
       {
-          m4aSongNumStart(SE_PIN);
+          PlaySE(SE_PIN);
           ClearSearchParameterBoxText();
           DrawOrEraseSearchParameterBox(true);
           task.func = (t) => Task_SwitchToSearchMenu(t, rt);
@@ -1795,7 +1795,7 @@ export const Task_HandleSearchParameterInput: TaskCallback = (task, rt) => {
       }
       if (JOY_NEW(B_BUTTON))
       {
-          m4aSongNumStart(SE_BALL);
+          PlaySE(SE_BALL);
           ClearSearchParameterBoxText();
           DrawOrEraseSearchParameterBox(true);
           cursorPos = task.data[14];
@@ -1826,7 +1826,7 @@ export const Task_HandleSearchParameterInput: TaskCallback = (task, rt) => {
           }
           if (moved)
           {
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               EraseAndPrintSearchTextBox(texts[cursorPos + scrollOffset].description);
               CopyWindowToVram(0, COPYWIN_GFX);
           }
@@ -1852,7 +1852,7 @@ export const Task_HandleSearchParameterInput: TaskCallback = (task, rt) => {
           }
           if (moved)
           {
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               EraseAndPrintSearchTextBox(texts[cursorPos + scrollOffset].description);
               CopyWindowToVram(0, COPYWIN_GFX);
           }

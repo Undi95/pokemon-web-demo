@@ -54,12 +54,12 @@ export const Task_CallYesOrNoCallback: TaskCallback = (task, rt) => {
   switch (Menu_ProcessInputNoWrapClearOnChoose())
       {
       case 0:
-          m4aSongNumStart(SE_SELECT);
+          PlaySE(SE_SELECT);
           sYesNo.yesFunc(taskId);
           break;
       case 1:
       case MENU_B_PRESSED:
-          m4aSongNumStart(SE_SELECT);
+          PlaySE(SE_SELECT);
           sYesNo.noFunc(taskId);
           break;
       }

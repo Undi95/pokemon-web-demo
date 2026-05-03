@@ -199,7 +199,7 @@ export const Task_ResetRtc_HandleInput: TaskCallback = (task, rt) => {
           task.func = (t) => Task_ResetRtc_Exit(t, rt);
           data[1] = false;
           data[2] = SELECTION_NONE;
-          m4aSongNumStart(SE_SELECT);
+          PlaySE(SE_SELECT);
           return;
       }
 
@@ -208,7 +208,7 @@ export const Task_ResetRtc_HandleInput: TaskCallback = (task, rt) => {
           if (selectionInfo.right)
           {
               data[2] = selectionInfo.right;
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               return;
           }
       }
@@ -218,7 +218,7 @@ export const Task_ResetRtc_HandleInput: TaskCallback = (task, rt) => {
           if (selectionInfo.left)
           {
               data[2] = selectionInfo.left;
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               return;
           }
       }
@@ -231,7 +231,7 @@ export const Task_ResetRtc_HandleInput: TaskCallback = (task, rt) => {
               gLocalTime.hours = tHours;
               gLocalTime.minutes = tMinutes;
               gLocalTime.seconds = tSeconds;
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               task.func = (t) => Task_ResetRtc_Exit(t, rt);
               data[1] = true;
               data[2] = SELECTION_NONE;
@@ -239,7 +239,7 @@ export const Task_ResetRtc_HandleInput: TaskCallback = (task, rt) => {
       }
       else if (MoveTimeUpDown(data[selectionInfo.dataIndex], selectionInfo.minVal, selectionInfo.maxVal, JOY_REPEAT(DPAD_UP | DPAD_DOWN)))
       {
-          m4aSongNumStart(SE_SELECT);
+          PlaySE(SE_SELECT);
           PrintTime(data[8], 0, 1, tDays, tHours, tMinutes, tSeconds);
           CopyWindowToVram(data[8], COPYWIN_GFX);
       }
@@ -305,7 +305,7 @@ export const Task_ShowResetRtcPrompt: TaskCallback = (task, rt) => {
           else if (JOY_NEW(A_BUTTON))
           {
                
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               rt.DestroyTask(taskId);
           }
           break;
@@ -382,12 +382,12 @@ export const Task_ResetRtcScreen: TaskCallback = (task, rt) => {
           if (TrySavingData(SAVE_NORMAL) == SAVE_STATUS_OK)
           {
               ShowMessage(gText_SaveCompleted);
-              m4aSongNumStart(SE_DING_DONG);
+              PlaySE(SE_DING_DONG);
           }
           else
           {
               ShowMessage(gText_SaveFailed);
-              m4aSongNumStart(SE_BOO);
+              PlaySE(SE_BOO);
           }
           data[0] = MAINSTATE_WAIT_EXIT;
            

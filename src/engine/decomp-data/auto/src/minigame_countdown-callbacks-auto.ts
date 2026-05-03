@@ -72,12 +72,12 @@ export const SpriteCB_StaticCountdown: SpriteCallback = (sprite, rt) => {
       case ANIM_TWO:
       case ANIM_ONE:
            
-          m4aSongNumStart(SE_BALL_BOUNCE_1);
+          PlaySE(SE_BALL_BOUNCE_1);
           rt.StartSpriteAnim(sprite.spriteId, sprite.data[4]);
           break;
       case ANIM_START_LEFT:
            
-          m4aSongNumStart(SE_PIN);
+          PlaySE(SE_PIN);
           rt.StartSpriteAnim(sprite.spriteId, sprite.data[4]);
           _gs(rt, tSpriteIds(1)).invisible = false;
           _gs(rt, tSpriteIds(2)).invisible = false;
@@ -110,7 +110,7 @@ export const SpriteCB_Start: SpriteCallback = (sprite, rt) => {
           sprite.y2 = data[5] >> 4;
           if (sprite.y2 >= 0)
           {
-              m4aSongNumStart(SE_BALL_BOUNCE_2);
+              PlaySE(SE_BALL_BOUNCE_2);
               sprite.y2 = 0;
               data[0]++;
           }
@@ -119,7 +119,7 @@ export const SpriteCB_Start: SpriteCallback = (sprite, rt) => {
           data[1] += 12;
           if (data[1] >= 128)
           {
-              m4aSongNumStart(SE_BALL_BOUNCE_2);
+              PlaySE(SE_BALL_BOUNCE_2);
               data[1] = 0;
               data[0]++;
           }
@@ -130,7 +130,7 @@ export const SpriteCB_Start: SpriteCallback = (sprite, rt) => {
           data[1] += 16;
           if (data[1] >= 128)
           {
-              m4aSongNumStart(SE_BALL_BOUNCE_2);
+              PlaySE(SE_BALL_BOUNCE_2);
               data[1] = 0;
               data[0]++;
           }
@@ -203,7 +203,7 @@ export const Task_StaticCountdown_Free: TaskCallback = (task, rt) => {
 export const Task_StaticCountdown_Start: TaskCallback = (task, rt) => {
   const taskId = task.taskId;
   const data = task.data;
-      m4aSongNumStart(SE_BALL_BOUNCE_1);
+      PlaySE(SE_BALL_BOUNCE_1);
       rt.setSpriteCallback(tSpriteIds(0), SpriteCB_StaticCountdown);
       _gs(rt, tSpriteIds(0)).invisible = false;
       task.data[0] = STATE_RUN;

@@ -64,7 +64,7 @@ export const Task_CloseTrainerHillRecordsOnButton: TaskCallback = (task, rt) => 
   /* task already param */
       if (JOY_NEW(A_BUTTON) || JOY_NEW(B_BUTTON))
       {
-          m4aSongNumStart(SE_SELECT);
+          PlaySE(SE_SELECT);
           task.func = Task_BeginPaletteFade;
       }
 };

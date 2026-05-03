@@ -1506,8 +1506,17 @@ export function UpdateLegendaryMarkingColor(frameNum: number): void {
   runtime.gPlttBufferUnfaded.set(slot, color);
   runtime.gPlttBufferFaded.set(slot, color);
 }
-export function FadeOutBGM(_speed: number): void {
-  // TODO: implement BGM fade out
+/** 1:1 décomp src/sound.c:290 — `m4aMPlayFadeOut(&gMPlayInfo_BGM, speed)`.
+ *  speed = nb de frames pour le fade complet (= unité décomp m4a). On simule
+ *  via setMasterParameter('masterGain') en N steps, puis stopSong à la fin
+ *  pour libérer le slot. */
+export function FadeOutBGM(speed: number): void {
+  void import('./m4a/player').then(({ fadeOutBgm }) => fadeOutBgm(speed));
+}
+
+/** 1:1 décomp src/sound.c:285 — `m4aMPlayFadeIn(&gMPlayInfo_BGM, speed)`. */
+export function FadeInBGM(speed: number): void {
+  void import('./m4a/player').then(({ fadeInBgm }) => fadeInBgm(speed));
 }
 export function CanResetRTC(): boolean {
   return false; // stub

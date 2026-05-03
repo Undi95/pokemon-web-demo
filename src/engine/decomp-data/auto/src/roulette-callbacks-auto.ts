@@ -280,7 +280,7 @@ export const SpriteCB_UnstickBall_TaillowPickUp: SpriteCallback = (sprite, rt) =
               sprite.animEnded = false;
               sprite.data[2] = 0;
               sprite.callback = SpriteCB_UnstickBall_TaillowDrop;
-              m4aSongNumStart(SE_BALL_THROW);
+              PlaySE(SE_BALL_THROW);
           }
       }
 };
@@ -343,7 +343,7 @@ export const SpriteCB_RollBall_TryLandAdjacent: SpriteCallback = (sprite, rt) =>
           {
                
               sprite.animPaused = true;
-              m4aSongNumStart(SE_BALL_BOUNCE_1);
+              PlaySE(SE_BALL_BOUNCE_1);
               SetBallStuck(sprite);
           }
       }
@@ -364,7 +364,7 @@ export const SpriteCB_RollBall_TryLand: SpriteCallback = (sprite, rt) => {
            
           let slotId = 0;
           let fallRight = 0;
-          m4aSongNumStart(SE_BALL_BOUNCE_1);
+          PlaySE(SE_BALL_BOUNCE_1);
           fallRight = Math.floor(Math.random() * 0x10000) & 1;
           if (fallRight)
           {
@@ -538,7 +538,7 @@ export const SpriteCB_ShroomishFall: SpriteCallback = (sprite, rt) => {
           _gs(rt, sprite.data[6]).data[1] = -2;
           _gs(rt, sprite.data[5]).invisible = false;
           rt.setSpriteCallback(sprite.data[5], SpriteCB_ShroomishShakeScreen);
-          m4aSongNumStart(SE_M_STRENGTH);
+          PlaySE(SE_M_STRENGTH);
       }
 };
 
@@ -561,7 +561,7 @@ export const SpriteCB_Shroomish: SpriteCallback = (sprite, rt) => {
 
           sprite.invisible = false;
           sprite.data[7]++;
-          m4aSongNumStart(SE_FALL);
+          PlaySE(SE_FALL);
           sRoulette.shroomishShadowTimer = 1;
           sRoulette.shroomishShadowAlpha = sShroomishShadowAlphas[0];
       }
@@ -639,7 +639,7 @@ export const SpriteCB_Taillow_PickUpBall: SpriteCallback = (sprite, rt) => {
           }
           else
           {
-              m4aSongNumStart(SE_FALL);
+              PlaySE(SE_FALL);
               rt.StartSpriteAnim(sprite.spriteId, sRoulette.ball.data[0] + 4);
               sprite.callback = SpriteCB_Taillow_FlyAway;
               _gs(rt, sprite.data[6]).affineAnimPaused = false;
@@ -735,7 +735,7 @@ export const SpriteCB_Taillow: SpriteCallback = (sprite, rt) => {
       }
       rt.setSpriteCallback(sprite.data[6], SpriteCB_TaillowShadow_FlyIn);
       rt.setSpriteCallback(sprite.data[4], SpriteCB_Taillow_FlyIn);
-      m4aSongNumStart(SE_FALL);
+      PlaySE(SE_FALL);
 };
 
 /** Source: roulette.c → Task_SpinWheel */
@@ -897,11 +897,11 @@ export const Task_HandleBetGridInput: TaskCallback = (task, rt) => {
           if (sRoulette.hitFlags & sGridSelections[task.data[4]].flag)
           {
                
-              m4aSongNumStart(SE_BOO);
+              PlaySE(SE_BOO);
           }
           else
           {
-              m4aSongNumStart(SE_SHOP);
+              PlaySE(SE_SHOP);
               task.func = (t) => Task_PlaceBet(t, rt);
           }
       }
@@ -983,7 +983,7 @@ export const Task_RollBall: TaskCallback = (task, rt) => {
       task.data[6]++;
       task.data[8]++;
       SetBallCounterNumLeft(BALLS_PER_ROUND - task.data[6]);
-      m4aSongNumStart(SE_ROULETTE_BALL);
+      PlaySE(SE_ROULETTE_BALL);
       task.func = (t) => Task_RecordBallHit(t, rt);
 };
 
@@ -1127,7 +1127,7 @@ export const Task_PrintSpinResult: TaskCallback = (task, rt) => {
           break;
       case false:
       default:
-          m4aSongNumStart(SE_FAILURE);
+          PlaySE(SE_FAILURE);
           DrawStdWindowFrame(sTextWindowId, false);
           AddTextPrinterParameterized(sTextWindowId, FONT_NORMAL, Roulette_Text_NothingDoing, 0, 1, TEXT_SKIP_DRAW, null);
           CopyWindowToVram(sTextWindowId, COPYWIN_FULL);
@@ -1144,7 +1144,7 @@ export const Task_GivePayout: TaskCallback = (task, rt) => {
       {
       case 0:
           task.data[13]++;
-          m4aSongNumStart(SE_PIN);
+          PlaySE(SE_PIN);
           SetCreditDigits(task.data[13]);
           if (task.data[13] >= MAX_COINS)
           {
@@ -1297,7 +1297,7 @@ export const Task_WaitForNextTask: TaskCallback = (task, rt) => {
       {
           task.func = (t) => sRoulette(t, rt).nextTask;
           if (sRoulette.taskWaitKey > 0)
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
           sRoulette.nextTask = null;
           sRoulette.taskWaitKey = 0;
           sRoulette.taskWaitDelay = 0;

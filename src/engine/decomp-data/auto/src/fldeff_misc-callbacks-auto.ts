@@ -66,7 +66,7 @@ function _palView(buf: PaletteBuffer, base: number): ArrayLike<number> {
 
 /** Source: fldeff_misc.c → SpriteCB_CaveEntranceInit */
 export const SpriteCB_CaveEntranceInit: SpriteCallback = (sprite, rt) => {
-  m4aSongNumStart(SE_M_ROCK_THROW);
+  PlaySE(SE_M_ROCK_THROW);
 
       sprite.data[0] = 0;
       sprite.callback = SpriteCB_CaveEntranceOpen;
@@ -94,7 +94,7 @@ export const SpriteCB_CaveEntranceEnd: SpriteCallback = (sprite, rt) => {
 
 /** Source: fldeff_misc.c → SpriteCB_TreeEntranceInit */
 export const SpriteCB_TreeEntranceInit: SpriteCallback = (sprite, rt) => {
-  m4aSongNumStart(SE_M_SCRATCH);
+  PlaySE(SE_M_SCRATCH);
 
       sprite.animNum = gFieldEffectArguments[7];
       sprite.data[0] = 0;
@@ -123,7 +123,7 @@ export const SpriteCB_TreeEntranceEnd: SpriteCallback = (sprite, rt) => {
 
 /** Source: fldeff_misc.c → SpriteCB_ShrubEntranceInit */
 export const SpriteCB_ShrubEntranceInit: SpriteCallback = (sprite, rt) => {
-  m4aSongNumStart(SE_M_POISON_POWDER);
+  PlaySE(SE_M_POISON_POWDER);
 
       sprite.data[0] = 0;
       sprite.callback = SpriteCB_ShrubEntranceOpen;
@@ -156,7 +156,7 @@ export const SpriteCB_GlitterMatSparkle: SpriteCallback = (sprite, rt) => {
   sprite.data[0]++;
 
       if (sprite.data[0] == 8)
-          m4aSongNumStart(SE_M_HEAL_BELL);
+          PlaySE(SE_M_HEAL_BELL);
 
       if (sprite.data[0] >= 32)
           rt.DestroySprite(sprite.spriteId);
@@ -164,7 +164,7 @@ export const SpriteCB_GlitterMatSparkle: SpriteCallback = (sprite, rt) => {
 
 /** Source: fldeff_misc.c → SpriteCB_SandPillar_BreakTop */
 export const SpriteCB_SandPillar_BreakTop: SpriteCallback = (sprite, rt) => {
-  m4aSongNumStart(SE_M_ROCK_THROW);
+  PlaySE(SE_M_ROCK_THROW);
 
       if (MapGridGetMetatileIdAt(gFieldEffectArguments[5], gFieldEffectArguments[6] - 1) == METATILE_SecretBase_SandOrnament_TopWall)
           MapGridSetMetatileIdAt(gFieldEffectArguments[5], gFieldEffectArguments[6] - 1, METATILE_SecretBase_Wall_TopMid | MAPGRID_IMPASSABLE);
@@ -403,28 +403,28 @@ export const Task_SecretBaseMusicNoteMatSound: TaskCallback = (task, rt) => {
           switch (task.data[0])
           {
           case METATILE_SecretBase_NoteMat_C_Low:
-              m4aSongNumStart(SE_NOTE_C);
+              PlaySE(SE_NOTE_C);
               break;
           case METATILE_SecretBase_NoteMat_D:
-              m4aSongNumStart(SE_NOTE_D);
+              PlaySE(SE_NOTE_D);
               break;
           case METATILE_SecretBase_NoteMat_E:
-              m4aSongNumStart(SE_NOTE_E);
+              PlaySE(SE_NOTE_E);
               break;
           case METATILE_SecretBase_NoteMat_F:
-              m4aSongNumStart(SE_NOTE_F);
+              PlaySE(SE_NOTE_F);
               break;
           case METATILE_SecretBase_NoteMat_G:
-              m4aSongNumStart(SE_NOTE_G);
+              PlaySE(SE_NOTE_G);
               break;
           case METATILE_SecretBase_NoteMat_A:
-              m4aSongNumStart(SE_NOTE_A);
+              PlaySE(SE_NOTE_A);
               break;
           case METATILE_SecretBase_NoteMat_B:
-              m4aSongNumStart(SE_NOTE_B);
+              PlaySE(SE_NOTE_B);
               break;
           case METATILE_SecretBase_NoteMat_C_High:
-              m4aSongNumStart(SE_NOTE_C_HIGH);
+              PlaySE(SE_NOTE_C_HIGH);
               break;
           }
 

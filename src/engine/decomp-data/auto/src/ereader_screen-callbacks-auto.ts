@@ -124,7 +124,7 @@ export const Task_EReader: TaskCallback = (task, rt) => {
           else if (JOY_NEW(B_BUTTON))
           {
               ResetTimer(data.timer);
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               data.state = ER_STATE_CANCELED_CARD_READ;
           }
           break;
@@ -132,7 +132,7 @@ export const Task_EReader: TaskCallback = (task, rt) => {
           if (JOY_NEW(B_BUTTON))
           {
                
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               CloseLink();
               ResetTimer(data.timer);
               data.state = ER_STATE_CANCELED_CARD_READ;
@@ -146,7 +146,7 @@ export const Task_EReader: TaskCallback = (task, rt) => {
           else if (ValidateEReaderConnection())
           {
                
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               CloseLink();
               ResetTimer(data.timer);
               data.state = ER_STATE_CONNECTING;
@@ -210,7 +210,7 @@ export const Task_EReader: TaskCallback = (task, rt) => {
               data.state = ER_STATE_WAIT_RECV_CARD;
               break;
           case RECV_CANCELED:
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               CloseLink();
               data.state = ER_STATE_CANCELED_CARD_READ;
               break;

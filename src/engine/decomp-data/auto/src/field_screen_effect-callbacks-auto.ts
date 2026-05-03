@@ -329,7 +329,7 @@ export const Task_ReturnToWorldFromLinkRoom: TaskCallback = (task, rt) => {
           ClearLinkCallback_2();
           FadeScreen(FADE_TO_BLACK, 0);
           TryFadeOutOldMapMusic();
-          m4aSongNumStart(SE_EXIT);
+          PlaySE(SE_EXIT);
           data[0]++;
           break;
       case 1:
@@ -501,7 +501,7 @@ export const Task_SpinExitWarp: TaskCallback = (task, rt) => {
       case 0:
           FreezeObjectEvents();
           LockPlayerFieldControls();
-          m4aSongNumStart(SE_WARP_IN);
+          PlaySE(SE_WARP_IN);
           DoPlayerSpinExit();
           task.data[0]++;
           break;

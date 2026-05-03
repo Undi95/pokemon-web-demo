@@ -70,14 +70,14 @@ export const Task_TryUseSoftboiledOnPartyMon: TaskCallback = (task, rt) => {
       }
 
        
-      m4aSongNumStart(SE_USE_ITEM);
+      PlaySE(SE_USE_ITEM);
       PartyMenuModifyHP(taskId, userPartyId, -1, GetMonData(gPlayerParty[userPartyId], MON_DATA_MAX_HP)/5, Task_SoftboiledRestoreHealth);
 };
 
 /** Source: fldeff_softboiled.c → Task_SoftboiledRestoreHealth */
 export const Task_SoftboiledRestoreHealth: TaskCallback = (task, rt) => {
   const taskId = task.taskId;
-  m4aSongNumStart(SE_USE_ITEM);
+  PlaySE(SE_USE_ITEM);
       PartyMenuModifyHP(taskId, gPartyMenu.slotId2, 1, GetMonData(gPlayerParty[gPartyMenu.slotId], MON_DATA_MAX_HP)/5, Task_DisplayHPRestoredMessage);
 };
 

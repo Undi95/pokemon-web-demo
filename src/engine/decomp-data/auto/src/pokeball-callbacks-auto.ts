@@ -124,7 +124,7 @@ export const SpriteCB_BallThrow_StartShrinkMon: SpriteCallback = (sprite, rt) =>
 export const SpriteCB_BallThrow_ShrinkMon: SpriteCallback = (sprite, rt) => {
   sprite.data[5]++;
       if (sprite.data[5] == 11)
-          m4aSongNumStart(SE_BALL_TRADE);
+          PlaySE(SE_BALL_TRADE);
 
       if (_gs(rt, gBattlerSpriteIds[sprite.data[6]]).affineAnimEnded)
       {
@@ -175,16 +175,16 @@ export const SpriteCB_BallThrow_FallToGround: SpriteCallback = (sprite, rt) => {
               switch (sprite.data[3] >> 8)
               {
               case 1:
-                  m4aSongNumStart(SE_BALL_BOUNCE_1);
+                  PlaySE(SE_BALL_BOUNCE_1);
                   break;
               case 2:
-                  m4aSongNumStart(SE_BALL_BOUNCE_2);
+                  PlaySE(SE_BALL_BOUNCE_2);
                   break;
               case 3:
-                  m4aSongNumStart(SE_BALL_BOUNCE_3);
+                  PlaySE(SE_BALL_BOUNCE_3);
                   break;
               default:
-                  m4aSongNumStart(SE_BALL_BOUNCE_4);
+                  PlaySE(SE_BALL_BOUNCE_4);
                   break;
               }
           }
@@ -226,7 +226,7 @@ export const SpriteCB_BallThrow_StartShakes: SpriteCallback = (sprite, rt) => {
           sprite.affineAnimPaused = true;
           rt.StartSpriteAffineAnim(sprite.spriteId, 1);
           sprite.callback = SpriteCB_BallThrow_Shake;
-          m4aSongNumStart(SE_BALL);
+          PlaySE(SE_BALL);
       }
 };
 
@@ -296,7 +296,7 @@ export const SpriteCB_BallThrow_Shake: SpriteCallback = (sprite, rt) => {
               else
                   rt.StartSpriteAffineAnim(sprite.spriteId, 1);
 
-              m4aSongNumStart(SE_BALL);
+              PlaySE(SE_BALL);
           }
           break;
       }
@@ -617,7 +617,7 @@ export const SpriteCB_TradePokeballSendOff: SpriteCallback = (sprite, rt) => {
 
       sprite.data[5]++;
       if (sprite.data[5] == 11)
-          m4aSongNumStart(SE_BALL_TRADE);
+          PlaySE(SE_BALL_TRADE);
 
       monSpriteId = sprite.data[0];
       if (_gs(rt, monSpriteId).affineAnimEnded)
@@ -740,7 +740,7 @@ export const Task_DoPokeballSendOutAnim: TaskCallback = (task, rt) => {
       rt.gba.oam[_gs(rt, ballSpriteId).oamIndex].affineParam = taskId;
       task.data[4] = gBattlerTarget;
       task.func = (t) => TaskDummy(t, rt);
-      m4aSongNumStart(SE_BALL_THROW);
+      PlaySE(SE_BALL_THROW);
 };
 
 /** Source: pokeball.c → Task_PlayCryWhenReleasedFromBall */

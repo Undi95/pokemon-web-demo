@@ -593,7 +593,7 @@ export const Task_DisplayMainMenuInvalidActionError: TaskCallback = (task, rt) =
           case 3:
               if (JOY_NEW(A_BUTTON | B_BUTTON))
               {
-                  m4aSongNumStart(SE_SELECT);
+                  PlaySE(SE_SELECT);
                   rt.BeginNormalPaletteFade("PALETTES_ALL", 0, 0, 16, "RGB_BLACK");
                   task.func = (t) => Task_HandleMainMenuBPressed(t, rt);
               }
@@ -855,13 +855,13 @@ export const Task_NewGameBirchSpeech_ChooseGender: TaskCallback = (task, rt) => 
       switch (gender)
       {
           case MALE:
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               gSaveBlock2Ptr.playerGender = gender;
               NewGameBirchSpeech_ClearGenderWindow(1, 1);
               task.func = (t) => Task_NewGameBirchSpeech_WhatsYourName(t, rt);
               break;
           case FEMALE:
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               gSaveBlock2Ptr.playerGender = gender;
               NewGameBirchSpeech_ClearGenderWindow(1, 1);
               task.func = (t) => Task_NewGameBirchSpeech_WhatsYourName(t, rt);
@@ -986,7 +986,7 @@ export const Task_NewGameBirchSpeech_ProcessNameYesNoMenu: TaskCallback = (task,
   switch (Menu_ProcessInputNoWrapClearOnChoose())
       {
           case 0:
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               rt.gba.oam[_gs(rt, task.data[2]).oamIndex].objMode = ST_OAM_OBJ_BLEND;
               NewGameBirchSpeech_StartFadeOutTarget1InTarget2(taskId, 2);
               NewGameBirchSpeech_StartFadePlatformIn(taskId, 1);
@@ -994,7 +994,7 @@ export const Task_NewGameBirchSpeech_ProcessNameYesNoMenu: TaskCallback = (task,
               break;
           case MENU_B_PRESSED:
           case 1:
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               task.func = (t) => Task_NewGameBirchSpeech_BoyOrGirl(t, rt);
       }
 };

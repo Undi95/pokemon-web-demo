@@ -126,7 +126,7 @@ export const Task_HandlePyramidBagInput: TaskCallback = (task, rt) => {
               ListMenuGetScrollAndRow(data[0], gPyramidBagMenuState.scrollPosition, gPyramidBagMenuState.cursorPosition);
               if (gPyramidBagMenuState.scrollPosition + gPyramidBagMenuState.cursorPosition != gPyramidBagMenu.listMenuCount - 1)
               {
-                  m4aSongNumStart(SE_SELECT);
+                  PlaySE(SE_SELECT);
                   Task_BeginItemSwap(taskId);
               }
           }
@@ -140,12 +140,12 @@ export const Task_HandlePyramidBagInput: TaskCallback = (task, rt) => {
           case LIST_NOTHING_CHOSEN:
               break;
           case LIST_CANCEL:
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               gSpecialVar_ItemId = ITEM_NONE;
               CloseBattlePyramidBag(taskId);
               break;
           default:
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               gSpecialVar_ItemId = gSaveBlock2Ptr.frontier.pyramidBag.itemId[gSaveBlock2Ptr.frontier.lvlMode][listId];
               data[1] = listId;
               data[2] = gSaveBlock2Ptr.frontier.pyramidBag.quantity[gSaveBlock2Ptr.frontier.lvlMode][listId];
@@ -170,7 +170,7 @@ export const Task_ChooseHowManyToToss: TaskCallback = (task, rt) => {
       else if (JOY_NEW(A_BUTTON))
       {
            
-          m4aSongNumStart(SE_SELECT);
+          PlaySE(SE_SELECT);
           ClearStdWindowAndFrameToTransparent(WIN_TOSS_NUM, false);
           ClearWindowTilemap(WIN_TOSS_NUM);
           ScheduleBgCopyTilemapToVram(1);
@@ -179,7 +179,7 @@ export const Task_ChooseHowManyToToss: TaskCallback = (task, rt) => {
       else if (JOY_NEW(B_BUTTON))
       {
            
-          m4aSongNumStart(SE_SELECT);
+          PlaySE(SE_SELECT);
           ClearStdWindowAndFrameToTransparent(WIN_TOSS_NUM, false);
           ClearWindowTilemap(WIN_TOSS_NUM);
           ScheduleBgCopyTilemapToVram(1);
@@ -196,7 +196,7 @@ export const Task_TossItem: TaskCallback = (task, rt) => {
 
       if (JOY_NEW(A_BUTTON | B_BUTTON))
       {
-          m4aSongNumStart(SE_SELECT);
+          PlaySE(SE_SELECT);
           RemovePyramidBagItem(gSpecialVar_ItemId, data[8]);
           DestroyListMenuTask(data[0], scrollOffset, selectedRow);
           UpdatePyramidBagList();
@@ -213,7 +213,7 @@ export const Task_WaitCloseErrorMessage: TaskCallback = (task, rt) => {
   const taskId = task.taskId;
   if (JOY_NEW(A_BUTTON))
       {
-          m4aSongNumStart(SE_SELECT);
+          PlaySE(SE_SELECT);
           Task_CloseBattlePyramidBagMessage(taskId);
       }
 };
@@ -254,7 +254,7 @@ export const Task_ItemSwapHandleInput: TaskCallback = (task, rt) => {
       {
           if (JOY_NEW(SELECT_BUTTON))
           {
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               ListMenuGetScrollAndRow(data[0], gPyramidBagMenuState.scrollPosition, gPyramidBagMenuState.cursorPosition);
               PerformItemSwap(taskId);
           }
@@ -269,14 +269,14 @@ export const Task_ItemSwapHandleInput: TaskCallback = (task, rt) => {
               case LIST_NOTHING_CHOSEN:
                   break;
               case LIST_CANCEL:
-                  m4aSongNumStart(SE_SELECT);
+                  PlaySE(SE_SELECT);
                   if (JOY_NEW(A_BUTTON))
                       PerformItemSwap(taskId);
                   else
                       CancelItemSwap(taskId);
                   break;
               default:
-                  m4aSongNumStart(SE_SELECT);
+                  PlaySE(SE_SELECT);
                   PerformItemSwap(taskId);
                   break;
               }

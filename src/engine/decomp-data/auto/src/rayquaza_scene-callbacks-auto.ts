@@ -420,7 +420,7 @@ export const SpriteCB_ChasesAway_KyogreLeave: SpriteCallback = (sprite, rt) => {
       }
 
       if (sprite.data[4] % 64 == 0)
-          m4aSongNumStart(SE_M_WHIRLPOOL);
+          PlaySE(SE_M_WHIRLPOOL);
 
       sprite.data[4]++;
 };
@@ -445,7 +445,7 @@ export const SpriteCB_ChasesAway_Rayquaza: SpriteCallback = (sprite, rt) => {
       {
           SpriteCB_ChasesAway_RayquazaFloat(sprite);
           if (sprite.data[4] == 0)
-              m4aSongNumStart(SE_MUGSHOT);
+              PlaySE(SE_MUGSHOT);
           if (sprite.data[4] == -3)
               ChasesAway_SetRayquazaAnim(sprite, 2, 48, 16);
       }
@@ -608,7 +608,7 @@ export const Task_DuoFightAnim: TaskCallback = (task, rt) => {
       BlendPalettes(PALETTES_ALL, 0x10, RGB_BLACK);
       rt.BeginNormalPaletteFade("PALETTES_ALL", 0, 0x10, 0, "RGB_BLACK");
       /* noop SetVBlankCallback */;
-      m4aSongNumStart(SE_DOWNPOUR);
+      PlaySE(SE_DOWNPOUR);
 };
 
 /** Source: rayquaza_scene.c → Task_DuoFight_AnimateClouds */
@@ -977,7 +977,7 @@ export const Task_HandleRayCharges: TaskCallback = (task, rt) => {
   const data = task.data;
       RayCharges_AnimateBg();
       if ((data[5] & 7) == 0 && data[0] <= 1 && data[1] <= 89)
-          m4aSongNumStart(SE_INTRO_BLAST);
+          PlaySE(SE_INTRO_BLAST);
 
       data[5]++;
       switch (data[0])
@@ -1224,7 +1224,7 @@ export const Task_ChasesAway_AnimateRing: TaskCallback = (task, rt) => {
           break;
       case 1:
           if (data[5] == 8)
-              m4aSongNumStart(SE_SLIDING_DOOR);
+              PlaySE(SE_SLIDING_DOOR);
           if (data[2] == 2)
           {
               data[0]++;

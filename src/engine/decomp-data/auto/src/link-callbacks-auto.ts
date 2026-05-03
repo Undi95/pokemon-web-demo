@@ -185,13 +185,13 @@ export const CB2_PrintErrorMessage: CB2Callback = (rt) => {
                   ShowBg(1);
               break;
           case  30:
-              m4aSongNumStart(SE_BOO);
+              PlaySE(SE_BOO);
               break;
           case  60:
-              m4aSongNumStart(SE_BOO);
+              PlaySE(SE_BOO);
               break;
           case  90:
-              m4aSongNumStart(SE_BOO);
+              PlaySE(SE_BOO);
               break;
           case 130:
               if (gWirelessCommType == 2)
@@ -206,7 +206,7 @@ export const CB2_PrintErrorMessage: CB2Callback = (rt) => {
           {
               if (JOY_NEW(A_BUTTON))
               {
-                  m4aSongNumStart(SE_PIN);
+                  PlaySE(SE_PIN);
                   gWirelessCommType = 0;
                   sLinkErrorBuffer.disconnected = false;
                   ReloadSave();

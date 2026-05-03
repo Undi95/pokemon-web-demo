@@ -293,7 +293,7 @@ export const Task_EvolutionScene: TaskCallback = (task, rt) => {
       case EVOSTATE_EVO_SOUND:
           if (!_gt(rt, sEvoGraphicsTaskId).isActive)
           {
-              m4aSongNumStart(SE_EXP);
+              PlaySE(SE_EXP);
               task.data[0]++;
           }
           break;
@@ -472,7 +472,7 @@ export const Task_EvolutionScene: TaskCallback = (task, rt) => {
               if (JOY_NEW(DPAD_UP) && sEvoCursorPos != 0)
               {
                    
-                  m4aSongNumStart(SE_SELECT);
+                  PlaySE(SE_SELECT);
                   BattleDestroyYesNoCursorAt(sEvoCursorPos);
                   sEvoCursorPos = 0;
                   BattleCreateYesNoCursorAt(0);
@@ -480,7 +480,7 @@ export const Task_EvolutionScene: TaskCallback = (task, rt) => {
               if (JOY_NEW(DPAD_DOWN) && sEvoCursorPos == 0)
               {
                    
-                  m4aSongNumStart(SE_SELECT);
+                  PlaySE(SE_SELECT);
                   BattleDestroyYesNoCursorAt(sEvoCursorPos);
                   sEvoCursorPos = 1;
                   BattleCreateYesNoCursorAt(1);
@@ -488,7 +488,7 @@ export const Task_EvolutionScene: TaskCallback = (task, rt) => {
               if (JOY_NEW(A_BUTTON))
               {
                   HandleBattleWindow(YESNOBOX_X_Y, WINDOW_CLEAR);
-                  m4aSongNumStart(SE_SELECT);
+                  PlaySE(SE_SELECT);
 
                   if (sEvoCursorPos != 0)
                   {
@@ -507,7 +507,7 @@ export const Task_EvolutionScene: TaskCallback = (task, rt) => {
               {
                    
                   HandleBattleWindow(YESNOBOX_X_Y, WINDOW_CLEAR);
-                  m4aSongNumStart(SE_SELECT);
+                  PlaySE(SE_SELECT);
                   task.data[6] = task.data[8];
               }
               break;
@@ -678,7 +678,7 @@ export const Task_TradeEvolutionScene: TaskCallback = (task, rt) => {
       case T_EVOSTATE_EVO_SOUND:
           if (!_gt(rt, sEvoGraphicsTaskId).isActive)
           {
-              m4aSongNumStart(SE_EXP);
+              PlaySE(SE_EXP);
               task.data[0]++;
           }
           break;

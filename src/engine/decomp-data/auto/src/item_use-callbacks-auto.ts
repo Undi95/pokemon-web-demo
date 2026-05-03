@@ -101,7 +101,7 @@ export const Task_UseItemfinder: TaskCallback = (task, rt) => {
               }
               return;
           }
-          m4aSongNumStart(SE_ITEMFINDER);
+          PlaySE(SE_ITEMFINDER);
           data[4]++;
       }
       data[3] = (data[3] + 1) & 0x1;
@@ -172,7 +172,7 @@ export const Task_StartUseRepel: TaskCallback = (task, rt) => {
       if (++data[8] > 7)
       {
           data[8] = 0;
-          m4aSongNumStart(SE_REPEL);
+          PlaySE(SE_REPEL);
           task.func = (t) => Task_UseRepel(t, rt);
       }
 };
@@ -196,7 +196,7 @@ export const Task_UsedBlackWhiteFlute: TaskCallback = (task, rt) => {
   const taskId = task.taskId;
   if(++task.data[8] > 7)
       {
-          m4aSongNumStart(SE_GLASS_FLUTE);
+          PlaySE(SE_GLASS_FLUTE);
           if (CurrentBattlePyramidLocation() == PYRAMID_LOCATION_NONE)
               DisplayItemMessage(taskId, FONT_NORMAL, gStringVar4, CloseItemMessage);
           else
@@ -229,7 +229,7 @@ export const Task_UseStatIncreaseItem: TaskCallback = (task, rt) => {
   const taskId = task.taskId;
   if(++task.data[8] > 7)
       {
-          m4aSongNumStart(SE_USE_ITEM);
+          PlaySE(SE_USE_ITEM);
           RemoveBagItem(gSpecialVar_ItemId, 1);
           if (CurrentBattlePyramidLocation() == PYRAMID_LOCATION_NONE)
               DisplayItemMessage(taskId, FONT_NORMAL, UseStatIncreaseItem(gSpecialVar_ItemId), Task_CloseStatIncreaseMessage);

@@ -112,7 +112,7 @@ export const Task_WirelessCommunicationScreen: TaskCallback = (task, rt) => {
           }
           if (JOY_NEW(A_BUTTON) || JOY_NEW(B_BUTTON))
           {
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               _gt(rt, sStatusScreen.rfuTaskId).data[15] = 0xFF;
               task.data[0]++;
           }

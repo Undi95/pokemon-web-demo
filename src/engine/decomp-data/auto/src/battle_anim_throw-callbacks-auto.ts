@@ -158,7 +158,7 @@ export const SpriteCB_Ball_MonShrink_Step: SpriteCallback = (sprite, rt) => {
       taskId = sprite.data[0];
 
       if (++task.data[1] == 11)
-          m4aSongNumStart(SE_BALL_TRADE);
+          PlaySE(SE_BALL_TRADE);
 
       switch (task.data[0])
       {
@@ -238,16 +238,16 @@ export const SpriteCB_Ball_Bounce_Step: SpriteCallback = (sprite, rt) => {
               switch (bounceCount)
               {
               case 1:
-                  m4aSongNumStart(SE_BALL_BOUNCE_1);
+                  PlaySE(SE_BALL_BOUNCE_1);
                   break;
               case 2:
-                  m4aSongNumStart(SE_BALL_BOUNCE_2);
+                  PlaySE(SE_BALL_BOUNCE_2);
                   break;
               case 3:
-                  m4aSongNumStart(SE_BALL_BOUNCE_3);
+                  PlaySE(SE_BALL_BOUNCE_3);
                   break;
               default:
-                  m4aSongNumStart(SE_BALL_BOUNCE_4);
+                  PlaySE(SE_BALL_BOUNCE_4);
                   break;
               }
           }
@@ -293,7 +293,7 @@ export const SpriteCB_Ball_Wobble: SpriteCallback = (sprite, rt) => {
           rt.StartSpriteAffineAnim(sprite.spriteId, BALL_ROTATE_RIGHT);
           gBattleSpritesDataPtr.animationData.ballSubpx = 0;
           sprite.callback = SpriteCB_Ball_Wobble_Step;
-          m4aSongNumStart(SE_BALL);
+          PlaySE(SE_BALL);
       }
 };
 
@@ -436,7 +436,7 @@ export const SpriteCB_Ball_Wobble_Step: SpriteCallback = (sprite, rt) => {
               else
                   rt.StartSpriteAffineAnim(sprite.spriteId, BALL_ROTATE_RIGHT);
 
-              m4aSongNumStart(SE_BALL);
+              PlaySE(SE_BALL);
           }
           break;
       }
@@ -467,7 +467,7 @@ export const SpriteCB_Ball_Capture_Step: SpriteCallback = (sprite, rt) => {
       sprite.data[1]++;
       if (sprite.data[1] == 40)
       {
-          m4aSongNumStart(SE_RG_BALL_CLICK);
+          PlaySE(SE_RG_BALL_CLICK);
           BlendPalettes(0x10000 << rt.gba.oam[sprite.oamIndex].paletteBank, 6, RGB_BLACK);
           MakeCaptureStars(sprite);
       }

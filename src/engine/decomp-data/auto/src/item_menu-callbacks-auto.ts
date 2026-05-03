@@ -151,7 +151,7 @@ export const Task_BagMenu_HandleInput: TaskCallback = (task, rt) => {
                       ListMenuGetScrollAndRow(data[0], scrollPos, cursorPos);
                       if ((scrollPos + cursorPos) != gBagMenu.numItemStacks[gBagPosition.pocket] - 1)
                       {
-                          m4aSongNumStart(SE_SELECT);
+                          PlaySE(SE_SELECT);
                           StartItemSwap(taskId);
                       }
                   }
@@ -169,15 +169,15 @@ export const Task_BagMenu_HandleInput: TaskCallback = (task, rt) => {
           case LIST_CANCEL:
               if (gBagPosition.location == ITEMMENULOCATION_BERRY_BLENDER_CRUSH)
               {
-                  m4aSongNumStart(SE_FAILURE);
+                  PlaySE(SE_FAILURE);
                   break;
               }
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               gSpecialVar_ItemId = ITEM_NONE;
               task.func = (t) => Task_FadeAndCloseBagMenu(t, rt);
               break;
           default:  
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               BagDestroyPocketScrollArrowPair();
               BagMenu_PrintCursor(data[0], COLORID_GRAY_CURSOR);
               data[1] = listPosition;
@@ -246,7 +246,7 @@ export const Task_HandleSwappingItemsInput: TaskCallback = (task, rt) => {
       {
           if (JOY_NEW(SELECT_BUTTON))
           {
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               ListMenuGetScrollAndRow(data[0], gBagPosition.scrollPosition[gBagPosition.pocket], gBagPosition.cursorPosition[gBagPosition.pocket]);
               DoItemSwap(taskId);
           }
@@ -261,14 +261,14 @@ export const Task_HandleSwappingItemsInput: TaskCallback = (task, rt) => {
               case LIST_NOTHING_CHOSEN:
                   break;
               case LIST_CANCEL:
-                  m4aSongNumStart(SE_SELECT);
+                  PlaySE(SE_SELECT);
                   if (JOY_NEW(A_BUTTON))
                       DoItemSwap(taskId);
                   else
                       CancelItemSwap(taskId);
                   break;
               default:
-                  m4aSongNumStart(SE_SELECT);
+                  PlaySE(SE_SELECT);
                   DoItemSwap(taskId);
                   break;
               }
@@ -300,11 +300,11 @@ export const Task_ItemContext_SingleRow: TaskCallback = (task, rt) => {
           case MENU_NOTHING_CHOSEN:
               break;
           case MENU_B_PRESSED:
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               sItemMenuActions[ACTION_CANCEL].func.void_u8(taskId);
               break;
           default:
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               sItemMenuActions[gBagMenu.contextMenuItemsPtr[selection]].func.void_u8(taskId);
               break;
           }
@@ -321,7 +321,7 @@ export const Task_ItemContext_MultipleRows: TaskCallback = (task, rt) => {
           {
               if (cursorPos > 0 && IsValidContextMenuPos(cursorPos - 2))
               {
-                  m4aSongNumStart(SE_SELECT);
+                  PlaySE(SE_SELECT);
                   ChangeMenuGridCursorPosition(MENU_CURSOR_DELTA_NONE, MENU_CURSOR_DELTA_UP);
               }
           }
@@ -329,7 +329,7 @@ export const Task_ItemContext_MultipleRows: TaskCallback = (task, rt) => {
           {
               if (cursorPos < (gBagMenu.contextMenuNumItems - 2) && IsValidContextMenuPos(cursorPos + 2))
               {
-                  m4aSongNumStart(SE_SELECT);
+                  PlaySE(SE_SELECT);
                   ChangeMenuGridCursorPosition(MENU_CURSOR_DELTA_NONE, MENU_CURSOR_DELTA_DOWN);
               }
           }
@@ -337,7 +337,7 @@ export const Task_ItemContext_MultipleRows: TaskCallback = (task, rt) => {
           {
               if ((cursorPos & 1) && IsValidContextMenuPos(cursorPos - 1))
               {
-                  m4aSongNumStart(SE_SELECT);
+                  PlaySE(SE_SELECT);
                   ChangeMenuGridCursorPosition(MENU_CURSOR_DELTA_LEFT, MENU_CURSOR_DELTA_NONE);
               }
           }
@@ -345,18 +345,18 @@ export const Task_ItemContext_MultipleRows: TaskCallback = (task, rt) => {
           {
               if (!(cursorPos & 1) && IsValidContextMenuPos(cursorPos + 1))
               {
-                  m4aSongNumStart(SE_SELECT);
+                  PlaySE(SE_SELECT);
                   ChangeMenuGridCursorPosition(MENU_CURSOR_DELTA_RIGHT, MENU_CURSOR_DELTA_NONE);
               }
           }
           else if (JOY_NEW(A_BUTTON))
           {
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               sItemMenuActions[gBagMenu.contextMenuItemsPtr[cursorPos]].func.void_u8(taskId);
           }
           else if (JOY_NEW(B_BUTTON))
           {
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               sItemMenuActions[ACTION_CANCEL].func.void_u8(taskId);
           }
       }
@@ -374,13 +374,13 @@ export const Task_ChooseHowManyToToss: TaskCallback = (task, rt) => {
       }
       else if (JOY_NEW(A_BUTTON))
       {
-          m4aSongNumStart(SE_SELECT);
+          PlaySE(SE_SELECT);
           BagMenu_RemoveWindow(ITEMWIN_QUANTITY);
           AskTossItems(taskId);
       }
       else if (JOY_NEW(B_BUTTON))
       {
-          m4aSongNumStart(SE_SELECT);
+          PlaySE(SE_SELECT);
           BagMenu_RemoveWindow(ITEMWIN_QUANTITY);
           CancelToss(taskId);
       }
@@ -395,7 +395,7 @@ export const Task_RemoveItemFromBag: TaskCallback = (task, rt) => {
 
       if (JOY_NEW(A_BUTTON | B_BUTTON))
       {
-          m4aSongNumStart(SE_SELECT);
+          PlaySE(SE_SELECT);
           RemoveBagItem(gSpecialVar_ItemId, data[8]);
           DestroyListMenuTask(data[0], scrollPos, cursorPos);
           UpdatePocketItemList(gBagPosition.pocket);
@@ -480,13 +480,13 @@ export const Task_ChooseHowManyToSell: TaskCallback = (task, rt) => {
       }
       else if (JOY_NEW(A_BUTTON))
       {
-          m4aSongNumStart(SE_SELECT);
+          PlaySE(SE_SELECT);
           BagMenu_RemoveWindow(ITEMWIN_QUANTITY_WIDE);
           DisplaySellItemPriceAndConfirm(taskId);
       }
       else if (JOY_NEW(B_BUTTON))
       {
-          m4aSongNumStart(SE_SELECT);
+          PlaySE(SE_SELECT);
           BagMenu_PrintCursor(data[0], COLORID_NORMAL);
           RemoveMoneyWindow();
           BagMenu_RemoveWindow(ITEMWIN_QUANTITY_WIDE);
@@ -528,13 +528,13 @@ export const Task_ChooseHowManyToDeposit: TaskCallback = (task, rt) => {
       }
       else if (JOY_NEW(A_BUTTON))
       {
-          m4aSongNumStart(SE_SELECT);
+          PlaySE(SE_SELECT);
           BagMenu_RemoveWindow(ITEMWIN_QUANTITY);
           TryDepositItem(taskId);
       }
       else if (JOY_NEW(B_BUTTON))
       {
-          m4aSongNumStart(SE_SELECT);
+          PlaySE(SE_SELECT);
           PrintItemDescription(data[1]);
           BagMenu_PrintCursor(data[0], COLORID_NORMAL);
           BagMenu_RemoveWindow(ITEMWIN_QUANTITY);
@@ -552,19 +552,19 @@ export const Task_WallyTutorialBagMenu: TaskCallback = (task, rt) => {
           switch (data[8])
           {
           case WALLY_BAG_DELAY * 1:
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               SwitchBagPocket(taskId, MENU_CURSOR_DELTA_RIGHT, false);
               data[8]++;
               break;
           case WALLY_BAG_DELAY * 2:
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               BagMenu_PrintCursor(data[0], COLORID_GRAY_CURSOR);
               gSpecialVar_ItemId = ITEM_POKE_BALL;
               OpenContextMenu(taskId);
               data[8]++;
               break;
           case WALLY_BAG_DELAY * 3:
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               RemoveContextWindow();
               DestroyListMenuTask(data[0], 0, 0);
               RestoreBagAfterWallyTutorial();

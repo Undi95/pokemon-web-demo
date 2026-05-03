@@ -141,7 +141,7 @@ export const Task_PrepareToGiveExpWithExpBar: TaskCallback = (task, rt) => {
       exp -= currLvlExp;
       expToNextLvl = gExperienceTables[gSpeciesInfo[species].growthRate][level + 1] - currLvlExp;
       SetBattleBarStruct(battler, gHealthboxSpriteIds[battler], expToNextLvl, exp, -gainedExp);
-      m4aSongNumStart(SE_EXP);
+      PlaySE(SE_EXP);
       task.func = (t) => Task_GiveExpWithExpBar(t, rt);
 };
 

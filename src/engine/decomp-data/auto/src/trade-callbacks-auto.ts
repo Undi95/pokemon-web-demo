@@ -122,7 +122,7 @@ function _palView(buf: PaletteBuffer, base: number): ArrayLike<number> {
 export const SpriteCB_LinkMonGlow: SpriteCallback = (sprite, rt) => {
   if (++sprite.data[0] == 10)
       {
-          m4aSongNumStart(SE_BALL);
+          PlaySE(SE_BALL);
           sprite.data[0] = 0;
       }
 };
@@ -131,7 +131,7 @@ export const SpriteCB_LinkMonGlow: SpriteCallback = (sprite, rt) => {
 export const SpriteCB_LinkMonGlowWireless: SpriteCallback = (sprite, rt) => {
   if (!sprite.invisible && ++sprite.data[0] == 10)
       {
-          m4aSongNumStart(SE_M_SWAGGER2);
+          PlaySE(SE_M_SWAGGER2);
           sprite.data[0] = 0;
       }
 };
@@ -169,7 +169,7 @@ export const SpriteCB_CableEndReceiving: SpriteCallback = (sprite, rt) => {
 export const SpriteCB_GbaScreen: SpriteCallback = (sprite, rt) => {
   if (++sprite.data[0] == 15)
       {
-          m4aSongNumStart(SE_M_MINIMIZE);
+          PlaySE(SE_M_MINIMIZE);
           sprite.data[0] = 0;
       }
 };
@@ -197,10 +197,10 @@ export const SpriteCB_BouncingPokeball: SpriteCallback = (sprite, rt) => {
 export const SpriteCB_BouncingPokeballDepart: SpriteCallback = (sprite, rt) => {
   sprite.y2 += sTradeBallVerticalVelocityTable[sprite.data[0]];
       if (sprite.data[0] == 22)
-          m4aSongNumStart(SE_BALL_BOUNCE_1);
+          PlaySE(SE_BALL_BOUNCE_1);
       if (++ sprite.data[0] == 44)
       {
-          m4aSongNumStart(SE_M_MEGA_KICK);
+          PlaySE(SE_M_MEGA_KICK);
           sprite.callback = SpriteCB_BouncingPokeballDepartEnd;
           sprite.data[0] = 0;
           rt.BeginNormalPaletteFade("1 << (16 + rt.gba.oam[sprite.oamIndex].paletteBank)", -1, 0, 16, "RGB_WHITEALPHA");
@@ -230,17 +230,17 @@ export const SpriteCB_BouncingPokeballArrive: SpriteCallback = (sprite, rt) => {
           {
               sprite.data[2] ++;
               sprite.data[0] = 0x16;
-              m4aSongNumStart(SE_BALL_BOUNCE_1);
+              PlaySE(SE_BALL_BOUNCE_1);
           }
       }
       else
       {
           if (sprite.data[0] == 0x42)
-              m4aSongNumStart(SE_BALL_BOUNCE_2);
+              PlaySE(SE_BALL_BOUNCE_2);
           if (sprite.data[0] == 0x5c)
-              m4aSongNumStart(SE_BALL_BOUNCE_3);
+              PlaySE(SE_BALL_BOUNCE_3);
           if (sprite.data[0] == 0x6b)
-              m4aSongNumStart(SE_BALL_BOUNCE_4);
+              PlaySE(SE_BALL_BOUNCE_4);
           sprite.y2 += sTradeBallVerticalVelocityTable[sprite.data[0]];
           if (++sprite.data[0] == 0x6c)
               sprite.callback = SpriteCallbackDummy;
@@ -295,7 +295,7 @@ export const Task_AnimateWirelessSignal: TaskCallback = (task, rt) => {
       }
 
       if (sWirelessSignalAnimParams[data[0]][0] == 0 && data[1] == 0)
-          m4aSongNumStart(SE_M_HEAL_BELL);
+          PlaySE(SE_M_HEAL_BELL);
 
       if (data[1] == sWirelessSignalAnimParams[data[0]][1])
       {

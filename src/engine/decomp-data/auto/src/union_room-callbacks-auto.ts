@@ -659,7 +659,7 @@ export const Task_TryJoinLinkGroup: TaskCallback = (task, rt) => {
           switch (id)
           {
           case 1:
-              m4aSongNumStart(SE_PC_LOGIN);
+              PlaySE(SE_PC_LOGIN);
               RedrawListMenu(data.listTaskId);
               break;
           case 0:
@@ -677,18 +677,18 @@ export const Task_TryJoinLinkGroup: TaskCallback = (task, rt) => {
                            
                           AskToJoinRfuGroup(data, id);
                           data.state = LG_STATE_ASK_JOIN_GROUP;
-                          m4aSongNumStart(SE_POKENAV_ON);
+                          PlaySE(SE_POKENAV_ON);
                       }
                       else
                       {
                           StringCopy(gStringVar4, sCantTransmitToTrainerTexts[readyStatus - 1]);
                           data.state = LG_STATE_TRADE_NOT_READY;
-                          m4aSongNumStart(SE_POKENAV_ON);
+                          PlaySE(SE_POKENAV_ON);
                       }
                   }
                   else
                   {
-                      m4aSongNumStart(SE_WALL_HIT);
+                      PlaySE(SE_WALL_HIT);
                   }
               }
               else if (JOY_NEW(B_BUTTON))
@@ -912,7 +912,7 @@ export const Task_ListenToWireless: TaskCallback = (task, rt) => {
           break;
       case 3:
           if (GetNewLeaderCandidate() == 1)
-              m4aSongNumStart(SE_PC_LOGIN);
+              PlaySE(SE_PC_LOGIN);
           if (task.data[15] == 0xFF)
               data.state = 10;
           break;
@@ -1485,7 +1485,7 @@ export const Task_CardOrNewsWithFriend: TaskCallback = (task, rt) => {
           switch (id)
           {
           case 1:
-              m4aSongNumStart(SE_PC_LOGIN);
+              PlaySE(SE_PC_LOGIN);
           default:
               RedrawListMenu(data.listTaskId);
               break;
@@ -1504,12 +1504,12 @@ export const Task_CardOrNewsWithFriend: TaskCallback = (task, rt) => {
                       RedrawListMenu(data.listTaskId);
                       CopyAndTranslatePlayerName(gStringVar1, data.playerList.players[data.leaderId]);
                       CreateTask_RfuReconnectWithParent(data.playerList.players[data.leaderId].rfu.name, ReadAsU16(data.playerList.players[data.leaderId].rfu.data.compatibility.playerTrainerId));
-                      m4aSongNumStart(SE_POKENAV_ON);
+                      PlaySE(SE_POKENAV_ON);
                       data.state = 4;
                   }
                   else
                   {
-                      m4aSongNumStart(SE_WALL_HIT);
+                      PlaySE(SE_WALL_HIT);
                   }
               }
               else if (JOY_NEW(B_BUTTON))
@@ -1632,7 +1632,7 @@ export const Task_CardOrNewsOverWireless: TaskCallback = (task, rt) => {
           switch (id)
           {
           case 1:
-              m4aSongNumStart(SE_PC_LOGIN);
+              PlaySE(SE_PC_LOGIN);
           default:
               if (data.showListMenu)
                   RedrawListMenu(data.listTaskId);
@@ -1651,12 +1651,12 @@ export const Task_CardOrNewsOverWireless: TaskCallback = (task, rt) => {
                           LoadWirelessStatusIndicatorSpriteGfx();
                           CreateWirelessStatusIndicatorSprite(0, 0);
                           CreateTask_RfuReconnectWithParent(data.playerList.players[0].rfu.name, ReadAsU16(data.playerList.players[0].rfu.data.compatibility.playerTrainerId));
-                          m4aSongNumStart(SE_POKENAV_ON);
+                          PlaySE(SE_POKENAV_ON);
                           data.state = 4;
                       }
                       else
                       {
-                          m4aSongNumStart(SE_BOO);
+                          PlaySE(SE_BOO);
                           data.state = 10;
                       }
                   }
@@ -1842,7 +1842,7 @@ export const Task_RunUnionRoom: TaskCallback = (task, rt) => {
               if (gSpecialVar_Result == UR_INTERACT_ATTENDANT)
               {
                   UpdateGameData_SetActivity(ACTIVITY_PLYRTALK | IN_UNION_ROOM, 0, true);
-                  m4aSongNumStart(SE_PC_LOGIN);
+                  PlaySE(SE_PC_LOGIN);
                   StringCopy(gStringVar1, gSaveBlock2Ptr.playerName);
                   uroom.state = UR_STATE_INTERACT_WITH_ATTENDANT;
                   gSpecialVar_Result = 0;
@@ -1867,7 +1867,7 @@ export const Task_RunUnionRoom: TaskCallback = (task, rt) => {
               {
                   if (TryInteractWithUnionRoomMember(uroom.playerList, taskData[0], taskData[1], uroom.spriteIds))
                   {
-                      m4aSongNumStart(SE_SELECT);
+                      PlaySE(SE_SELECT);
                       StartScriptInteraction();
                       uroom.state = UR_STATE_INTERACT_WITH_PLAYER;
                       break;
@@ -1875,7 +1875,7 @@ export const Task_RunUnionRoom: TaskCallback = (task, rt) => {
                   else if (IsPlayerFacingTradingBoard())
                   {
                       UpdateGameData_SetActivity(ACTIVITY_PLYRTALK | IN_UNION_ROOM, 0, true);
-                      m4aSongNumStart(SE_PC_LOGIN);
+                      PlaySE(SE_PC_LOGIN);
                       StartScriptInteraction();
                       StringCopy(gStringVar1, gSaveBlock2Ptr.playerName);
                       uroom.state = UR_STATE_CHECK_TRADING_BOARD;
@@ -1886,7 +1886,7 @@ export const Task_RunUnionRoom: TaskCallback = (task, rt) => {
               switch (HandlePlayerListUpdate())
               {
               case PLIST_NEW_PLAYER:
-                  m4aSongNumStart(SE_PC_LOGIN);
+                  PlaySE(SE_PC_LOGIN);
               case PLIST_RECENT_UPDATE:
                   ScheduleUnionRoomPlayerRefresh(uroom);
                   break;
@@ -2162,7 +2162,7 @@ export const Task_RunUnionRoom: TaskCallback = (task, rt) => {
               uroom.state = UR_STATE_START_ACTIVITY_FREE_UROOM;
           break;
       case UR_STATE_PLAYER_CONTACTED_YOU:
-          m4aSongNumStart(SE_DING_DONG);
+          PlaySE(SE_DING_DONG);
           StopUnionRoomLinkManager();
           uroom.state = UR_STATE_RECV_CONTACT_DATA;
           uroom.recvActivityRequest[0] = 0;

@@ -171,7 +171,7 @@ export const Task_HandleTruckSequence: TaskCallback = (task, rt) => {
               data[1] = 0;
               data[2] = rt.CreateTask((t) => Task_Truck1(t, rt), 0xA);
               data[0] = 1;
-              m4aSongNumStart(SE_TRUCK_MOVE);
+              PlaySE(SE_TRUCK_MOVE);
           }
           break;
       case 1:
@@ -191,7 +191,7 @@ export const Task_HandleTruckSequence: TaskCallback = (task, rt) => {
               rt.DestroyTask(data[2]);
               data[3] = rt.CreateTask((t) => Task_Truck2(t, rt), 0xA);
               data[0] = 3;
-              m4aSongNumStart(SE_TRUCK_STOP);
+              PlaySE(SE_TRUCK_STOP);
           }
           break;
       case 3:
@@ -207,7 +207,7 @@ export const Task_HandleTruckSequence: TaskCallback = (task, rt) => {
           data[1]++;
           if (data[1] == 90)
           {
-              m4aSongNumStart(SE_TRUCK_UNLOAD);
+              PlaySE(SE_TRUCK_UNLOAD);
               data[1] = 0;
               data[0] = 5;
           }
@@ -220,7 +220,7 @@ export const Task_HandleTruckSequence: TaskCallback = (task, rt) => {
               MapGridSetMetatileIdAt(4 + MAP_OFFSET, 2 + MAP_OFFSET, METATILE_InsideOfTruck_ExitLight_Mid);
               MapGridSetMetatileIdAt(4 + MAP_OFFSET, 3 + MAP_OFFSET, METATILE_InsideOfTruck_ExitLight_Bottom);
               DrawWholeMapView();
-              m4aSongNumStart(SE_TRUCK_DOOR);
+              PlaySE(SE_TRUCK_DOOR);
               rt.DestroyTask(taskId);
               UnlockPlayerFieldControls();
           }

@@ -91,7 +91,7 @@ export const Task_ShopMenu: TaskCallback = (task, rt) => {
       case MENU_NOTHING_CHOSEN:
           break;
       case MENU_B_PRESSED:
-          m4aSongNumStart(SE_SELECT);
+          PlaySE(SE_SELECT);
           Task_HandleShopMenuQuit(taskId);
           break;
       default:
@@ -171,11 +171,11 @@ export const Task_BuyMenu: TaskCallback = (task, rt) => {
           case LIST_NOTHING_CHOSEN:
               break;
           case LIST_CANCEL:
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               ExitBuyMenu(taskId);
               break;
           default:
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               data[5] = itemId;
               ClearWindowTilemap(WIN_ITEM_DESCRIPTION);
               BuyMenuRemoveScrollIndicatorArrows();
@@ -264,7 +264,7 @@ export const Task_BuyHowManyDialogueHandleInput: TaskCallback = (task, rt) => {
       {
           if (JOY_NEW(A_BUTTON))
           {
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               ClearStdWindowAndFrameToTransparent(WIN_QUANTITY_PRICE, false);
               ClearStdWindowAndFrameToTransparent(WIN_QUANTITY_IN_BAG, false);
               ClearWindowTilemap(WIN_QUANTITY_PRICE);
@@ -277,7 +277,7 @@ export const Task_BuyHowManyDialogueHandleInput: TaskCallback = (task, rt) => {
           }
           else if (JOY_NEW(B_BUTTON))
           {
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               ClearStdWindowAndFrameToTransparent(WIN_QUANTITY_PRICE, false);
               ClearStdWindowAndFrameToTransparent(WIN_QUANTITY_IN_BAG, false);
               ClearWindowTilemap(WIN_QUANTITY_PRICE);
@@ -294,7 +294,7 @@ export const Task_ReturnToItemListAfterItemPurchase: TaskCallback = (task, rt) =
 
       if (JOY_NEW(A_BUTTON | B_BUTTON))
       {
-          m4aSongNumStart(SE_SELECT);
+          PlaySE(SE_SELECT);
 
            
           if (data[5] == ITEM_POKE_BALL && data[1] >= 10 && AddBagItem(ITEM_PREMIER_BALL, 1) == true)
@@ -309,7 +309,7 @@ export const Task_ReturnToItemListAfterDecorationPurchase: TaskCallback = (task,
   const taskId = task.taskId;
   if (JOY_NEW(A_BUTTON | B_BUTTON))
       {
-          m4aSongNumStart(SE_SELECT);
+          PlaySE(SE_SELECT);
           BuyMenuReturnToItemList(taskId);
       }
 };

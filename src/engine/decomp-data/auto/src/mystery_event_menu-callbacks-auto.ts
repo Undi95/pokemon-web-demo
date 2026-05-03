@@ -138,13 +138,13 @@ export const CB2_MysteryEventMenu: CB2Callback = (rt) => {
       case 3:
           if ((gLinkStatus & LINK_STAT_MASTER) && (gLinkStatus & LINK_STAT_PLAYER_COUNT) > 4)
           {
-              m4aSongNumStart(SE_PIN);
+              PlaySE(SE_PIN);
               PrintMysteryMenuText(WIN_MSG, gText_PressAToLoadEvent, 1, 2, 1);
               gMain.state++;
           }
           if (JOY_NEW(B_BUTTON))
           {
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               CloseLink();
               gMain.state = 15;
           }
@@ -158,7 +158,7 @@ export const CB2_MysteryEventMenu: CB2Callback = (rt) => {
           {
               if (JOY_NEW(A_BUTTON))
               {
-                  m4aSongNumStart(SE_SELECT);
+                  PlaySE(SE_SELECT);
                   CheckShouldAdvanceLinkState();
                   DrawStdFrameWithCustomTileAndPalette(WIN_LOADING, true, 1, 0xD);
                   PrintMysteryMenuText(WIN_LOADING, gText_LoadingEvent, 1, 2, 0);
@@ -168,7 +168,7 @@ export const CB2_MysteryEventMenu: CB2Callback = (rt) => {
               }
               else if (JOY_NEW(B_BUTTON))
               {
-                  m4aSongNumStart(SE_SELECT);
+                  PlaySE(SE_SELECT);
                   CloseLink();
                   gMain.state = 15;
               }
@@ -208,7 +208,7 @@ export const CB2_MysteryEventMenu: CB2Callback = (rt) => {
           }
           else if (JOY_NEW(B_BUTTON))
           {
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               CloseLink();
               gMain.state = 15;
           }
@@ -255,7 +255,7 @@ export const CB2_MysteryEventMenu: CB2Callback = (rt) => {
       case 14:
           if (JOY_NEW(A_BUTTON))
           {
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               gMain.state++;
           }
           break;

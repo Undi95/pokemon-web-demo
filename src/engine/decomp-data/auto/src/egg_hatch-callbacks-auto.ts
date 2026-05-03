@@ -105,7 +105,7 @@ export const SpriteCB_Egg_Shake1: SpriteCallback = (sprite, rt) => {
           if (sprite.data[0] == 15)
           {
                
-              m4aSongNumStart(SE_BALL);
+              PlaySE(SE_BALL);
               rt.StartSpriteAnim(sprite.spriteId, EGG_ANIM_CRACKED_1);
               CreateRandomEggShardSprite();
           }
@@ -130,7 +130,7 @@ export const SpriteCB_Egg_Shake2: SpriteCallback = (sprite, rt) => {
               if (sprite.data[0] == 15)
               {
                    
-                  m4aSongNumStart(SE_BALL);
+                  PlaySE(SE_BALL);
                   rt.StartSpriteAnim(sprite.spriteId, EGG_ANIM_CRACKED_2);
               }
           }
@@ -160,14 +160,14 @@ export const SpriteCB_Egg_Shake3: SpriteCallback = (sprite, rt) => {
                    
                    
                    
-                  m4aSongNumStart(SE_BALL);
+                  PlaySE(SE_BALL);
                   rt.StartSpriteAnim(sprite.spriteId, EGG_ANIM_CRACKED_3);
                   rt.StartSpriteAnim(sprite.spriteId, EGG_ANIM_CRACKED_2);
                   CreateRandomEggShardSprite();
                   CreateRandomEggShardSprite();
               }
               if (sprite.data[0] == 30)
-                  m4aSongNumStart(SE_BALL);
+                  PlaySE(SE_BALL);
           }
       }
 };
@@ -201,7 +201,7 @@ export const SpriteCB_Egg_Hatch: SpriteCallback = (sprite, rt) => {
       if (!rt.gPaletteFade.active)
       {
            
-          m4aSongNumStart(SE_EGG_HATCH);
+          PlaySE(SE_EGG_HATCH);
           sprite.invisible = true;
           sprite.callback = SpriteCB_Egg_Reveal;
           sprite.data[0] = 0;

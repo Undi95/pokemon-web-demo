@@ -202,7 +202,7 @@ export const Task_HandleConfirmStarterInput: TaskCallback = (task, rt) => {
           break;
       case 1:   
       case MENU_B_PRESSED:
-          m4aSongNumStart(SE_SELECT);
+          PlaySE(SE_SELECT);
           spriteId = task.data[1];
           FreeOamMatrix(rt.gba.oam[_gs(rt, spriteId).oamIndex].affineParamIndex);
           FreeAndDestroyMonPicSprite(spriteId);

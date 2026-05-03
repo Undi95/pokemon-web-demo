@@ -734,7 +734,7 @@ export const Task_DrawFinalStandingNumber: TaskCallback = (task, rt) => {
               WriteSequenceToBgTilemapBuffer(2, firstTileNum + 0x10, 1, task.data[0] * 3 + 6, 2, 1, 17, 1);
               sContestResults.data.numStandingsPrinted++;
               rt.DestroyTask(taskId);
-              m4aSongNumStart(SE_CONTEST_PLACE);
+              PlaySE(SE_CONTEST_PLACE);
           }
       }
 };

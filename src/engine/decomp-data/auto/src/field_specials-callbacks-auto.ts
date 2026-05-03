@@ -140,7 +140,7 @@ export const Task_MoveElevator: TaskCallback = (task, rt) => {
           if (data[0] == data[3])
           {
                
-              m4aSongNumStart(SE_DING_DONG);
+              PlaySE(SE_DING_DONG);
               rt.DestroyTask(taskId);
               ScriptContext_Enable();
               InstallCameraPanAheadCallback();
@@ -433,7 +433,7 @@ export const Task_LoopWingFlapSE: TaskCallback = (task, rt) => {
       {
           playCount++;
           delay = 0;
-          m4aSongNumStart(SE_M_WING_ATTACK);
+          PlaySE(SE_M_WING_ATTACK);
       }
 
       if (playCount == gSpecialVar_0x8004 - 1)

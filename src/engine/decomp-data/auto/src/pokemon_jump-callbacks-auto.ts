@@ -117,7 +117,7 @@ export const SpriteCB_MonIntroBounce: SpriteCallback = (sprite, rt) => {
   switch (sprite.data[0])
       {
       case 0:
-          m4aSongNumStart(SE_BIKE_HOP);
+          PlaySE(SE_BIKE_HOP);
           sprite.data[1] = 0;
           sprite.data[0]++;
            

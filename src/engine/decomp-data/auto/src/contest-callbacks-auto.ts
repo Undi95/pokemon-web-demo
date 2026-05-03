@@ -382,7 +382,7 @@ export const Task_TryShowMoveSelectScreen: TaskCallback = (task, rt) => {
   const taskId = task.taskId;
   if ((JOY_NEW(A_BUTTON)) || (gMain.newKeys == B_BUTTON))
       {
-          m4aSongNumStart(SE_SELECT);
+          PlaySE(SE_SELECT);
           if (!Contest_IsMonsTurnDisabled(gContestPlayerMonIndex))
           {
               SetBottomSliderHeartsInvisibility(true);
@@ -450,7 +450,7 @@ export const Task_HandleMoveSelectInput: TaskCallback = (task, rt) => {
 
       if (JOY_NEW(A_BUTTON))
       {
-          m4aSongNumStart(SE_SELECT);
+          PlaySE(SE_SELECT);
           task.func = (t) => Task_SelectedMove(t, rt);
       }
       else
@@ -459,7 +459,7 @@ export const Task_HandleMoveSelectInput: TaskCallback = (task, rt) => {
           {
           case B_BUTTON:
                
-              m4aSongNumStart(SE_SELECT);
+              PlaySE(SE_SELECT);
               SetBottomSliderHeartsInvisibility(false);
               ConvertIntToDecimalStringN(gStringVar1, eContest.appealNumber + 1, STR_CONV_MODE_LEFT_ALIGN, 1);
               if (!Contest_IsMonsTurnDisabled(gContestPlayerMonIndex))
@@ -485,7 +485,7 @@ export const Task_HandleMoveSelectInput: TaskCallback = (task, rt) => {
               DrawMoveSelectArrow(eContest.playerMoveChoice);
               PrintContestMoveDescription(gContestMons[gContestPlayerMonIndex].moves[eContest.playerMoveChoice]);
               if (numMoves > 1)
-                  m4aSongNumStart(SE_SELECT);
+                  PlaySE(SE_SELECT);
               break;
           case DPAD_DOWN:
               EraseMoveSelectArrow(eContest.playerMoveChoice);
@@ -496,7 +496,7 @@ export const Task_HandleMoveSelectInput: TaskCallback = (task, rt) => {
               DrawMoveSelectArrow(eContest.playerMoveChoice);
               PrintContestMoveDescription(gContestMons[gContestPlayerMonIndex].moves[eContest.playerMoveChoice]);
               if (numMoves > 1)
-                  m4aSongNumStart(SE_SELECT);
+                  PlaySE(SE_SELECT);
               break;
           }
       }
@@ -842,7 +842,7 @@ export const Task_DoAppeals: TaskCallback = (task, rt) => {
           return;
       case APPEALSTATE_UPDATE_MOVE_USERS_STATUS:
           if (DrawStatusSymbol(contestant))
-              m4aSongNumStart(SE_CONTEST_ICON_CHANGE);
+              PlaySE(SE_CONTEST_ICON_CHANGE);
           task.data[0] = APPEALSTATE_UPDATE_OPPONENTS;
           return;
       case APPEALSTATE_UPDATE_OPPONENTS:
@@ -933,9 +933,9 @@ export const Task_DoAppeals: TaskCallback = (task, rt) => {
                   break;
           }
           if (DrawStatusSymbol(i))
-              m4aSongNumStart(SE_CONTEST_ICON_CHANGE);
+              PlaySE(SE_CONTEST_ICON_CHANGE);
           else
-              m4aSongNumStart(SE_CONTEST_ICON_CLEAR);
+              PlaySE(SE_CONTEST_ICON_CLEAR);
           if (eContestantStatus[i].judgesAttentionWasRemoved)
           {
               StopFlashJudgeAttentionEye(i);
@@ -1169,7 +1169,7 @@ export const Task_DoAppeals: TaskCallback = (task, rt) => {
               if (!eContest.waitForAudienceBlend)
               {
                   AnimateAudience();
-                  m4aSongNumStart(SE_M_ENCORE2);
+                  PlaySE(SE_M_ENCORE2);
                   ShowAndUpdateApplauseMeter(1);
                   task.data[10]++;
               }
@@ -1715,13 +1715,13 @@ export const Task_UpdateAppealHearts: TaskCallback = (task, rt) => {
           ContestBG_FillBoxWithTile(0, heartOffset, newNumHearts + 22, gContestantTurnOrder[contestant] * 5 + 2 + onSecondLine,  1, 1, 17);
           if (heartsDelta > 0)
           {
-              m4aSongNumStart(SE_CONTEST_HEART);
+              PlaySE(SE_CONTEST_HEART);
               m4aMPlayImmInit(gMPlayInfo_SE1);
               m4aMPlayPitchControl(gMPlayInfo_SE1, TRACKS_ALL, pitchMod * 256);
           }
           else
           {
-              m4aSongNumStart(SE_BOO);
+              PlaySE(SE_BOO);
           }
 
           if (!onSecondLine && newNumHearts == 0 && heartOffset == 0)

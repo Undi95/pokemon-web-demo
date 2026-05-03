@@ -350,6 +350,66 @@ export function stopAllSongs(): void {
   stopSong('se2');
 }
 
+/** 1:1 décomp `m4aMPlayFadeOut(&gMPlayInfo_BGM, speed)`. Fade le master gain
+ *  du synth BGM vers 0 sur ~speed frames puis stopSong. speed = nb de frames
+ *  unités décomp (= 60Hz) ; on convertit en secondes pour Web Audio.
+ *  Marche avec n'importe quel song (loop ou one-shot) car on touche au synth
+ *  pas à la sequencer. */
+const _fadeIntervals: Partial<Record<SlotKind, number>> = {};
+export function fadeOutBgm(speed: number): void {
+  const slot: SlotKind = 'bgm';
+  const state = _slots[slot];
+  if (!state?.sequencer) return;
+  // Cancel previous fade interval on this slot if any
+  const prevHandle = _fadeIntervals[slot];
+  if (prevHandle !== undefined) window.clearInterval(prevHandle);
+  const totalMs = Math.max(60, speed * (1000 / 60));  // speed frames at 60Hz
+  const stepMs = 33;  // ~30Hz fade resolution
+  const steps = Math.ceil(totalMs / stepMs);
+  let step = 0;
+  // Start gain ≈ current. Spessasynth default = 0.8125 (cf playSong:218).
+  const startGain = 0.8125;
+  const handle = window.setInterval(() => {
+    step++;
+    const remaining = Math.max(0, 1 - step / steps);
+    const gain = startGain * remaining;
+    try { state.synth.setMasterParameter('masterGain' as never, gain); } catch { /* ignore */ }
+    if (step >= steps) {
+      window.clearInterval(handle);
+      delete _fadeIntervals[slot];
+      stopSong(slot);
+    }
+  }, stepMs);
+  _fadeIntervals[slot] = handle;
+}
+
+/** 1:1 décomp `m4aMPlayFadeIn(&gMPlayInfo_BGM, speed)`. */
+export function fadeInBgm(speed: number): void {
+  const slot: SlotKind = 'bgm';
+  const state = _slots[slot];
+  if (!state?.sequencer) return;
+  const prevHandle = _fadeIntervals[slot];
+  if (prevHandle !== undefined) window.clearInterval(prevHandle);
+  const totalMs = Math.max(60, speed * (1000 / 60));
+  const stepMs = 33;
+  const steps = Math.ceil(totalMs / stepMs);
+  let step = 0;
+  const targetGain = 0.8125;
+  // Start at 0
+  try { state.synth.setMasterParameter('masterGain' as never, 0); } catch { /* ignore */ }
+  const handle = window.setInterval(() => {
+    step++;
+    const t = Math.min(1, step / steps);
+    const gain = targetGain * t;
+    try { state.synth.setMasterParameter('masterGain' as never, gain); } catch { /* ignore */ }
+    if (step >= steps) {
+      window.clearInterval(handle);
+      delete _fadeIntervals[slot];
+    }
+  }, stepMs);
+  _fadeIntervals[slot] = handle;
+}
+
 /** Détection loopStart : non implémenté (spessasynth gère les markers MIDI lui-même). */
 export function detectLoopStart(_song: Midi): number | null {
   return null;
