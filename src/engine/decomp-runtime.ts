@@ -229,7 +229,17 @@ export class MainStruct {
   /** 1:1 décomp gMain.newKeys / gMain.heldKeys — input keys this frame / held keys. */
   newKeys = 0;
   heldKeys = 0;
+  /** 1:1 décomp gMain.newAndRepeatedKeys — newKeys + auto-repeat (= hold to scroll
+   *  dans menus). Cf. ReadKeys src/main.c:243-268. Géré par tickFixed. */
+  newAndRepeatedKeys = 0;
+  /** 1:1 décomp gMain.keyRepeatCounter — countdown until next repeat fire. */
+  keyRepeatCounter = 0;
 }
+
+/** 1:1 décomp gKeyRepeatStartDelay = 40 (frames before 1ère répétition). */
+export const KEY_REPEAT_START_DELAY = 40;
+/** 1:1 décomp gKeyRepeatContinueDelay = 5 (frames entre répétitions suivantes). */
+export const KEY_REPEAT_CONTINUE_DELAY = 5;
 
 // ─── Sprite (1:1 décomp struct Sprite, simplifié) ────────────────────────────
 /** Sprite décomp. Mappe à un slot OAM gba + state machine via data[].
@@ -1415,9 +1425,27 @@ export class DecompRuntime {
   /** Une seule frame du main loop décomp, extraite pour pouvoir être appelée
    *  manuellement par devtools (step). */
   private runOneFrame(): void {
-    // 0. Input : calcul du front montant (newKeys) pour cette frame
-    this.gMain.newKeys = this.gMain.heldKeys & ~this.prevHeldKeys;
-    this.prevHeldKeys = this.gMain.heldKeys;
+    // 0. Input : calcul du front montant (newKeys) + auto-repeat
+    // 1:1 décomp src/main.c:ReadKeys (lines 243-268). newAndRepeatedKeys =
+    // newKeys + repeat fire après gKeyRepeatStartDelay puis chaque
+    // gKeyRepeatContinueDelay tant que la même touche est held.
+    const heldKeys = this.gMain.heldKeys;
+    const prevHeld = this.prevHeldKeys;
+    const newKeys = heldKeys & ~prevHeld;
+    this.gMain.newKeys = newKeys;
+    this.gMain.newAndRepeatedKeys = newKeys;
+    if (heldKeys !== 0 && heldKeys === prevHeld) {
+      // Same key(s) held this frame as last → countdown for repeat fire
+      this.gMain.keyRepeatCounter--;
+      if (this.gMain.keyRepeatCounter <= 0) {
+        this.gMain.newAndRepeatedKeys = heldKeys;
+        this.gMain.keyRepeatCounter = KEY_REPEAT_CONTINUE_DELAY;
+      }
+    } else {
+      // No input or input changed → reset counter to start delay
+      this.gMain.keyRepeatCounter = KEY_REPEAT_START_DELAY;
+    }
+    this.prevHeldKeys = heldKeys;
     // 1. Main callback2 : dispatch scène courante (= ce que la décomp appelle
     //    via `gMain.callback2()`. La plupart des CB2 appellent à leur tour
     //    RunTasks/AnimateSprites/BuildOamBuffer/UpdatePaletteFade dans CET

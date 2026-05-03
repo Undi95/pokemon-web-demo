@@ -1078,6 +1078,14 @@ export function JOY_HELD(buttonMask: number): number {
   return (rt().gMain as unknown as { heldKeys: number }).heldKeys & buttonMask;
 }
 
+/** 1:1 décomp `JOY_REPEAT(buttonMask)` (= JOY_REPT in some headers) —
+ *  retourne gMain.newAndRepeatedKeys & buttonMask. Utilisé par les menus pour
+ *  hold-to-scroll : fire au 1er press puis tous les 5 frames après 40 frames. */
+export function JOY_REPEAT(buttonMask: number): number {
+  return (rt().gMain as unknown as { newAndRepeatedKeys: number }).newAndRepeatedKeys & buttonMask;
+}
+export const JOY_REPT = JOY_REPEAT;
+
 // ─── ScanlineEffect_InitWave implementation ─────────────────────────────────
 
 let wavePhase = 0;
