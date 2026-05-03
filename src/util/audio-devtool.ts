@@ -5,7 +5,8 @@
  * Permet de tester rapidement n'importe quel song sans taper en console.
  *
  * BGM = mus_*  (joué sans loop pour tester)
- * SE  = se_* / ph_*  (one-shot natural)
+ * SE  = se_*  (one-shot natural)
+ * (ph_* phoneme songs are unused at runtime — filtered out)
  *
  * Activé seulement en dev (= !import.meta.env.PROD). Désactivable via
  * localStorage : `localStorage.setItem('audioDevtool', 'off')`.
@@ -23,7 +24,7 @@ function buildSongLists(): { bgm: SongEntry[]; se: SongEntry[] } {
     const name = SONG_ID_TO_NAME[id];
     if (!name) continue;
     if (name.startsWith('mus_')) bgm.push({ id, name });
-    else if (name.startsWith('se_') || name.startsWith('ph_')) se.push({ id, name });
+    else if (name.startsWith('se_')) se.push({ id, name });
   }
   bgm.sort((a, b) => a.name.localeCompare(b.name));
   se.sort((a, b) => a.name.localeCompare(b.name));
@@ -71,7 +72,7 @@ export function createAudioDevtool(): void {
   // ─── BGM section ────────────────────────────────────────────────────────
   const bgmSection = document.createElement('div');
   bgmSection.style.cssText = 'margin-bottom:8px;';
-  bgmSection.innerHTML = `<div style="margin-bottom:3px;color:#8af;">BGM (no loop):</div>`;
+  bgmSection.innerHTML = `<div style="margin-bottom:3px;color:#8af;">BGM (auto-loop si markers MIDI):</div>`;
   const bgmSelect = document.createElement('select');
   bgmSelect.style.cssText = 'width:100%;background:#222;color:#eee;border:1px solid #444;padding:2px;font:11px monospace;';
   for (const entry of bgm) {
@@ -86,10 +87,15 @@ export function createAudioDevtool(): void {
   const bgmPlayBtn = document.createElement('button');
   bgmPlayBtn.textContent = '▶ Play';
   bgmPlayBtn.style.cssText = 'flex:1;background:#2a5a8a;color:#fff;border:none;padding:4px;cursor:pointer;font:11px monospace;';
+  const bgmLoopBtn = document.createElement('button');
+  bgmLoopBtn.textContent = '🔁 Loop';
+  bgmLoopBtn.title = 'Force loop ON (= overrides MIDI markers)';
+  bgmLoopBtn.style.cssText = 'flex:1;background:#2a8a5a;color:#fff;border:none;padding:4px;cursor:pointer;font:11px monospace;';
   const bgmStopBtn = document.createElement('button');
   bgmStopBtn.textContent = '⏹ Stop all';
   bgmStopBtn.style.cssText = 'flex:1;background:#5a2a2a;color:#fff;border:none;padding:4px;cursor:pointer;font:11px monospace;';
   bgmButtons.appendChild(bgmPlayBtn);
+  bgmButtons.appendChild(bgmLoopBtn);
   bgmButtons.appendChild(bgmStopBtn);
   bgmSection.appendChild(bgmButtons);
   body.appendChild(bgmSection);
@@ -97,9 +103,17 @@ export function createAudioDevtool(): void {
   bgmPlayBtn.addEventListener('click', () => {
     const id = Number(bgmSelect.value);
     if (Number.isFinite(id)) {
-      // Stop d'abord pour éviter overlap
+      // Stop d'abord pour éviter overlap. loop=false → respecte markers MIDI.
       m4aMPlayAllStop();
       m4aSongNumStart(id);
+    }
+  });
+  bgmLoopBtn.addEventListener('click', () => {
+    const id = Number(bgmSelect.value);
+    if (Number.isFinite(id)) {
+      // Force loop=true (= bypass marker detection, utile pour BGM sans markers)
+      m4aMPlayAllStop();
+      m4aSongNumStart(id, true);
     }
   });
   bgmStopBtn.addEventListener('click', () => {
