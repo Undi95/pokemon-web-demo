@@ -1170,19 +1170,29 @@ export function StartPokemonLogoShine(mode: number): void {
   const SHINE_MODE_SINGLE = 2;
   const ST_OAM_OBJ_WINDOW = 2;
 
-  if (mode === SHINE_MODE_SINGLE_NO_BG_COLOR || mode === SHINE_MODE_SINGLE) {
-    const spriteId = r.CreateSpriteFromTemplate('sPokemonLogoShineSpriteTemplate', 0, 68);
+  // FIX session 81 : écrire sprite.objMode (= source de vérité, syncSpritesToOam
+  // propage). L'écriture seule à oam[].objMode était écrasée par syncSpritesToOam
+  // chaque frame → shine sprites rendaient en NORMAL (= grosse barre blanche
+  // visible) au lieu d'OBJ_WINDOW (= mask invisible pour winObj BG brightness).
+  function setObjWindow(spriteId: number): void {
     const sprite = r.gSprites.get(spriteId);
     if (sprite) {
+      sprite.objMode = ST_OAM_OBJ_WINDOW as 0 | 1 | 2;
       r.gba.oam[sprite.oamIndex].objMode = ST_OAM_OBJ_WINDOW;
-      sprite.data[0] = mode;  // sMode alias
     }
+  }
+
+  if (mode === SHINE_MODE_SINGLE_NO_BG_COLOR || mode === SHINE_MODE_SINGLE) {
+    const spriteId = r.CreateSpriteFromTemplate('sPokemonLogoShineSpriteTemplate', 0, 68);
+    setObjWindow(spriteId);
+    const sprite = r.gSprites.get(spriteId);
+    if (sprite) sprite.data[0] = mode;  // sMode alias
   } else if (mode === SHINE_MODE_DOUBLE) {
     // Invisible sprite that updates BG color via SpriteCB_PokemonLogoShine
     let spriteId = r.CreateSpriteFromTemplate('sPokemonLogoShineSpriteTemplate', 0, 68);
+    setObjWindow(spriteId);
     let sprite = r.gSprites.get(spriteId);
     if (sprite) {
-      r.gba.oam[sprite.oamIndex].objMode = ST_OAM_OBJ_WINDOW;
       sprite.data[0] = mode;
       sprite.invisible = true;
     }
@@ -1190,17 +1200,13 @@ export function StartPokemonLogoShine(mode: number): void {
     const fastCb = (globalThis as any).SpriteCB_PokemonLogoShine_Fast
       ?? r.spriteCallbacks.get('SpriteCB_PokemonLogoShine_Fast');
     spriteId = r.CreateSpriteFromTemplate('sPokemonLogoShineSpriteTemplate', 0, 68);
+    setObjWindow(spriteId);
     sprite = r.gSprites.get(spriteId);
-    if (sprite) {
-      r.gba.oam[sprite.oamIndex].objMode = ST_OAM_OBJ_WINDOW;
-      if (fastCb) sprite.callback = (spr: unknown) => (fastCb as (s: unknown, rt: unknown) => void)(spr, r);
-    }
+    if (sprite && fastCb) sprite.callback = (spr: unknown) => (fastCb as (s: unknown, rt: unknown) => void)(spr, r);
     spriteId = r.CreateSpriteFromTemplate('sPokemonLogoShineSpriteTemplate', -80, 68);
+    setObjWindow(spriteId);
     sprite = r.gSprites.get(spriteId);
-    if (sprite) {
-      r.gba.oam[sprite.oamIndex].objMode = ST_OAM_OBJ_WINDOW;
-      if (fastCb) sprite.callback = (spr: unknown) => (fastCb as (s: unknown, rt: unknown) => void)(spr, r);
-    }
+    if (sprite && fastCb) sprite.callback = (spr: unknown) => (fastCb as (s: unknown, rt: unknown) => void)(spr, r);
   }
 }
 
