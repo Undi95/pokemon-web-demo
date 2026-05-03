@@ -260,6 +260,43 @@ export function DmaClear16(_channel: number, destAddr: number, sizeBytes: number
   }
 }
 
+/** 1:1 décomp `DmaClearLarge16(channel, dest, size, blockSize)` — clear `size`
+ *  bytes à `dest` par chunks de `blockSize`. Pour notre engine = identique à
+ *  DmaClear16 (= pas de chunking nécessaire en JS). */
+export function DmaClearLarge16(_channel: number, destAddr: number, sizeBytes: number, _blockSize: number): void {
+  DmaClear16(_channel, destAddr, sizeBytes);
+}
+
+/** 1:1 décomp `DmaClear32(channel, dest, size)` — clear bytes à `dest`.
+ *  Routes : VRAM (0x06000000), OAM (0x07000000), PLTT (0x05000000).
+ *  Notre engine : `dest` est l'adresse GBA absolue, on dispatch au bon buffer. */
+export function DmaClear32(_channel: number, destAddr: number, sizeBytes: number): void {
+  const r = rt();
+  if (destAddr >= 0x07000000 && destAddr < 0x07000400) {
+    // OAM range : clear visible flags pour tous les sprites affectés.
+    const start = (destAddr - 0x07000000) / 8;
+    const count = Math.min(sizeBytes / 8, 128 - start);
+    for (let i = 0; i < count; i++) {
+      const oam = r.gba.oam[start + i];
+      if (oam) {
+        oam.visible = false;
+        oam.objMode = 0;
+        oam.affineMode = 0;
+      }
+    }
+  } else if (destAddr >= 0x05000000 && destAddr < 0x05000400) {
+    // PLTT range : clear gPlttBufferFaded (et palette buffer).
+    const start = (destAddr - 0x05000000) >> 1;
+    const count = sizeBytes >> 1;
+    for (let i = 0; i < count; i++) r.gPlttBufferFaded.set(start + i, 0);
+  } else {
+    // VRAM range (default).
+    const offset = destAddr % r.gba.vram.byteLength;
+    const clearSize = Math.min(sizeBytes, r.gba.vram.byteLength - offset);
+    if (clearSize > 0) r.gba.vram.fill(0, offset, offset + clearSize);
+  }
+}
+
 /** 1:1 décomp `CpuFill16(value, dest, size)` — fill 16-bit.
  *  Supporte VRAM et PLTT (address-based). */
 export function CpuFill16(value: number, destAddr: number, sizeBytes: number): void {

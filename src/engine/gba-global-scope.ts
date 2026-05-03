@@ -101,6 +101,8 @@ const symbolsToExpose: Record<string, unknown> = {
   DmaFill16: dg.DmaFill16,
   DmaFill32: dg.DmaFill32,
   DmaClear16: dg.DmaClear16,
+  DmaClearLarge16: dg.DmaClearLarge16,
+  DmaClear32: dg.DmaClear32,
   CpuFill16: dg.CpuFill16,
   CpuFill32: dg.CpuFill32,
   CreateTask: (func: (task: { taskId: number; func: ((task: unknown) => void) | null; data: number[] }) => void, priority: number) => {

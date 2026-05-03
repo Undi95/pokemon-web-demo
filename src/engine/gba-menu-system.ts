@@ -400,18 +400,27 @@ const FALLBACK_WINDOW_FRAME_PAL = new Uint16Array([
 ]);
 
 /** 1:1 décomp src/main_menu.c:2195 LoadMainMenuWindowFrameTiles. Charge les 9
- *  tiles de la frame style sélectionnée (= frame 1 par défaut, pas de save block
- *  pour l'instant) dans BG VRAM à `tileOffset`, et la palette dans BG_PLTT_ID(2).
+ *  tiles de la frame style sélectionnée dans BG VRAM à `tileOffset`, et la
+ *  palette dans BG_PLTT_ID(2).
  *
- *  ⚠️ Pour l'instant on utilise hand-drawn fallback : le ROM tile load via
- *  getAsset('gTextWindowFrame1_Gfx') produisait un checkerboard regression
- *  (= probablement palette mismatch ou layer BG1 polluted). À investiguer. */
+ *  Frame style = `gSaveBlock2Ptr->optionsWindowFrameType` (= 0-19). Default 0 =
+ *  frame 1 (= classic blue rounded). Asset cached par
+ *  `preloadOptionMenuAssets()` (cf. option-menu-impl.ts) qui charge les 20
+ *  frames depuis `text_window/{N}.png`. Fallback hand-drawn si asset manquant. */
 export function LoadMainMenuWindowFrameTiles(bgId: number, tileOffset: number): void {
-  // TODO Phase 2 : passer à `getAsset('gTextWindowFrame1_Gfx/Pal')` quand le
-  // checkerboard regression sera fixé. Asset déjà préchargé par
-  // preloadTitleAssets() pour quand on sera prêt.
-  LoadBgTiles(bgId, FALLBACK_WINDOW_FRAME_TILES, FALLBACK_WINDOW_FRAME_TILES.length, tileOffset);
-  LoadPalette(FALLBACK_WINDOW_FRAME_PAL, BG_PLTT_ID(2), PLTT_SIZE_4BPP);
+  const frameIdx = (gSaveBlock2Ptr.optionsWindowFrameType ?? 0) % 20;
+  const gfxKey = frameIdx === 0 ? 'gTextWindowFrame1_Gfx' : `sTextWindowFrame${frameIdx + 1}_Gfx`;
+  const palKey = frameIdx === 0 ? 'gTextWindowFrame1_Pal' : `sTextWindowFrame${frameIdx + 1}_Pal`;
+  const gfx = getAsset(gfxKey);
+  const pal = getAsset(palKey);
+  if (gfx && pal) {
+    LoadBgTiles(bgId, gfx as Uint8Array, 0x120, tileOffset);
+    LoadPalette(pal as Uint16Array, BG_PLTT_ID(2), PLTT_SIZE_4BPP);
+  } else {
+    console.warn(`[LoadMainMenuWindowFrameTiles] ${gfxKey}/${palKey} not preloaded → fallback hand-drawn`);
+    LoadBgTiles(bgId, FALLBACK_WINDOW_FRAME_TILES, FALLBACK_WINDOW_FRAME_TILES.length, tileOffset);
+    LoadPalette(FALLBACK_WINDOW_FRAME_PAL, BG_PLTT_ID(2), PLTT_SIZE_4BPP);
+  }
 }
 
 export function DrawMainMenuWindowBorder(template: any, baseTileNum: number): void {

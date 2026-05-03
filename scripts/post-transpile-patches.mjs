@@ -19,7 +19,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-const FILE = path.resolve('src/engine/decomp-data/auto/src/intro-callbacks-auto.ts');
+const SRC_DIR = path.resolve('src/engine/decomp-data/auto/src');
+const FILE = path.resolve(SRC_DIR, 'intro-callbacks-auto.ts');
 
 function patchIntroCallbacks() {
   let s = fs.readFileSync(FILE, 'utf8');
@@ -252,4 +253,58 @@ function patchTitleScreenCallbacks() {
 }
 
 patchTitleScreenCallbacks();
+
+// ─── Option menu (session 82) ────────────────────────────────────────────────
+
+function patchOptionMenuCallbacks() {
+  const FILE = path.resolve(SRC_DIR, 'option_menu-callbacks-auto.ts');
+  if (!fs.existsSync(FILE)) {
+    console.log('[post-transpile-patches] option_menu-callbacks-auto.ts not found, skip');
+    return;
+  }
+  let s = fs.readFileSync(FILE, 'utf8');
+  const before = s;
+
+  // PATCH O1 (session 82) : case 10 du CB2_InitOptionMenu utilise `task.data[X]`
+  // mais `task` n'existe pas dans le scope CB2 (= ReferenceError → state stuck
+  // à 10 → CreateTask en boucle). Fix : utiliser le helper local `_gt(rt, taskId)`
+  // au lieu de `task` direct.
+  if (s.includes(`let taskId = rt.CreateTask((t) => Task_OptionMenuFadeIn(t, rt), 0);\n\n          task.data[0] = 0;`)) {
+    s = s.replace(
+      `let taskId = rt.CreateTask((t) => Task_OptionMenuFadeIn(t, rt), 0);\n\n          task.data[0] = 0;`,
+      `const taskId = rt.CreateTask((t) => Task_OptionMenuFadeIn(t, rt), 0);\n          // ✅ FIX session 82 : \`task\` undefined dans CB2 scope → use _gt helper.\n          const task = _gt(rt, taskId);\n          task.data[0] = 0;`,
+    );
+  }
+
+  // PATCH O2 (session 82) : case 11 a `/* TODO scene transition: SetMainCallback2(MainCB2) */`
+  // → fade fire en boucle, pas de transition. Fix : appel réel.
+  s = s.replace(
+    /(rt\.BeginNormalPaletteFade\("PALETTES_ALL", 0, 16, 0, "RGB_BLACK"\);\s*\/\* noop SetVBlankCallback \*\/;\s*)\/\* TODO scene transition: SetMainCallback2\(MainCB2\) \*\/;/g,
+    `$1// ✅ FIX session 82 : transition vers MainCB2 (= était \`/* TODO */\`).\n          rt.SetMainCallback2(MainCB2);`,
+  );
+
+  // PATCH O3 (session 82) : Task_OptionMenuFadeOut a `/* TODO scene transition:
+  // SetMainCallback2(gMain.savedCallback) */` → bloqué sur écran noir. Fix : appel réel.
+  s = s.replace(
+    /(FreeAllWindowBuffers\(\);\s*)\/\* TODO scene transition: SetMainCallback2\(gMain\.savedCallback\) \*\/;/g,
+    `$1// ✅ FIX session 82 : retour à l'appelant (= main menu CB2_ReinitMainMenu, ou field menu).\n          rt.SetMainCallback2(gMain.savedCallback ?? null);`,
+  );
+
+  // PATCH O4 (session 82) : ajout `export const MainCB2 = (_rt) => {}` (= no-op,
+  // notre runtime drive RunTasks/UpdatePaletteFade pour les MainCB2*). Le
+  // transpileur omet ce export, on l'ajoute en fin de fichier.
+  if (!s.includes('export const MainCB2: CB2Callback')) {
+    s = s.trimEnd() + `\n\n/** Source: option_menu.c → MainCB2 (no-op chez nous, runtime drive RunTasks\n *  + UpdatePaletteFade automatiquement pour les callbacks \`MainCB2*\`).\n *  ⚠️ MANUAL FIX session 82 : transpileur omet ce export, ajouté in-place. */\nexport const MainCB2: CB2Callback = (_rt) => {\n  // No-op : runtime drives the rest.\n};\n`;
+  }
+
+  if (s !== before) {
+    fs.writeFileSync(FILE, s, 'utf8');
+    console.log('[post-transpile-patches] option_menu-callbacks-auto.ts patched');
+  } else {
+    console.log('[post-transpile-patches] option_menu-callbacks-auto.ts already patched (idempotent skip)');
+  }
+}
+
+patchOptionMenuCallbacks();
+
 console.log('[post-transpile-patches] done');
