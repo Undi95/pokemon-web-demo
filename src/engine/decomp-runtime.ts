@@ -823,9 +823,10 @@ export class DecompRuntime {
     const tG = this.gPaletteFade.targetG;
     const tB = this.gPaletteFade.targetB;
     const w = brightness;  // 0..16 (16 = full target)
-    const inv = 16 - w;    // 0..16 (16 = full unfaded)
     const selected = this.gPaletteFade.selectedPalettes >>> 0;
     // 32 banks total (16 BG + 16 OBJ). Each bank = 16 entries u16.
+    // 1:1 décomp src/util.c:264 BlendPalette : `r + (((tR - r) * coeff) >> 4)`
+    // Truncation, pas de +8 round (= match exact décomp).
     for (let bank = 0; bank < 32; bank++) {
       if (((selected >>> bank) & 1) === 0) continue;  // skip non-selected
       const baseIdx = bank * 16;
@@ -835,9 +836,9 @@ export class DecompRuntime {
         const r5 = u & 0x1F;
         const g5 = (u >> 5) & 0x1F;
         const b5 = (u >> 10) & 0x1F;
-        const newR = (r5 * inv + tR * w + 8) >> 4;
-        const newG = (g5 * inv + tG * w + 8) >> 4;
-        const newB = (b5 * inv + tB * w + 8) >> 4;
+        const newR = r5 + (((tR - r5) * w) >> 4);
+        const newG = g5 + (((tG - g5) * w) >> 4);
+        const newB = b5 + (((tB - b5) * w) >> 4);
         const packed = (newR & 0x1F) | ((newG & 0x1F) << 5) | ((newB & 0x1F) << 10);
         this.gPlttBufferFaded.set(i, packed);
       }

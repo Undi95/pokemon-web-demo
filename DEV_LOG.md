@@ -8,6 +8,91 @@ de la décompilation FR (`pokeemeraude`) + `@pkmn/sim` pour combats.
 
 ---
 
+## Session 81 — Title screen 1:1 GBA + audit complet 1:1 décomp + dedup
+
+### Demo loop title → intro (1:1 décomp title_screen.c)
+- `gMPlayInfo_BGM.status` getter dynamique sur `isPlaying('bgm')`
+- Phase3 demo loop : quand BGM finit → SetMainCallback2(CB2_GoToCopyrightScreen)
+- `CB2_InitCopyrightScreenAfterTitleScreen` 1:1 décomp intro.c:1162
+- Runtime : seuls les `MainCB2*` callbacks runs runTasks (= 1:1 décomp). Avant
+  on excluait `CB2_GoTo*` mais incluait CB2_Init* qui ne devraient pas non plus.
+
+### BGM auto-loop fix
+- `@tonejs/midi` n'a pas de `.loop` property → scan markers MIDI direct
+  (`FF 06 'loopStart'`/'loopEnd') sur le buffer brut.
+- Vérifié sur les .mid Pokemon : route101/littleroot/petalburg ont les markers,
+  mus_title/mus_intro non.
+
+### Audit Opus 1:1 décomp + audit Sonnet dedup
+
+**5 critiques fixes** :
+- A1 `LoadPaletteObj` flat-idx (256+slot×16 vs 0-255) → silent no-op pour sprite palettes
+- A2 `ConvertScaleParam` manquant → animations affine zoom inversées
+- A3 SKIP (= rate déjà correct, audit s'était trompé)
+- A4 `WINOUT_WINOBJ_ALL = 0x3F00` (était 0x1F00, manquait CLR bit)
+- A5 `BG_TILE_H/V_FLIP` ajoutés (préventif)
+
+**Bug systémique critique découvert** : `OBJ_PLTT_ID(n)` retournait `n*16`
+au lieu de `256 + n*16` (= manquait OBJ_PLTT_OFFSET). Conséquence : 86 sites
+de `LoadPalette(...OBJ_PLTT_ID(n))` écrivaient en BG palette au lieu d'OBJ.
+Visible : Émeraude version banner letters dim/dark au lieu de blanc opaque.
+Fix : 1:1 décomp `palette.h:24`.
+
+**Bug pattern SpriteCB.objMode** : SpriteCB transcrits écrivaient
+`rt.gba.oam[oamIndex].objMode = X`. Mais `syncSpritesToOam` propage
+`sprite.objMode → oam.objMode` chaque frame, écrasant. Fix : écrire
+`sprite.objMode` direct dans SpriteCB_VersionBanner + StartPokemonLogoShine.
+
+**7 dedup high-value** :
+- B1 PLTT_SIZE_* consolidé dans decomp-helpers
+- B2 GET_TRUE_SPRITE_INDEX dedup
+- B3 parseAffineMode/parseObjMode helpers extraits
+- B4 _updateBg2/3Ref mergés en _updateBgRef(idx)
+- B5 CreateTask debug log behind RT_DEBUG
+- B6 SetIntroPart2BgCnt locales lambdas → REG_OFFSET_*
+- B7 _writeToObjVram helper (= 3× variantes LoadCompressedSpriteSheet*)
+
+### Audio menus (= 8 jours d'audio engine investigation préservés)
+
+3 bugs résolus pour le passage title→menu :
+
+1. **m4aSongNumStart(SE_*) → PlaySE bug systémique** : 386 occurrences sur
+   52 fichiers auto. Le transpileur convertissait `PlaySE(SE_X)` du décomp
+   en `m4aSongNumStart(SE_X)` → SE jouait sur slot BGM, écrasant la musique.
+   Fix : transpileur regex + global sed sur les fichiers auto.
+
+2. **FadeOutBGM stub** : implémenté via `setMasterParameter('masterGain')`
+   rampe 1:1 décomp m4a.c (= 16 steps × speed frames). Pour `FadeOutBGM(4)`
+   → 64 frames = ~1.07s smooth fade.
+
+3. **SE_SELECT placeholder** : `gba-menu-system.ts:52` avait `const SE_SELECT = 1`
+   (= se_use_item) au lieu de 5 (= se_select). 1:1 décomp `songs.h:11`.
+
+### Phase C audit subtils
+- ✅ Item 7 BlendPalette `+8` rounding → matche maintenant décomp util.c:275
+  (= `r + ((tR - r) * w) >> 4` truncation, no +8)
+- ✅ Item 8 `gMain.newAndRepeatedKeys` + `JOY_REPEAT` ajoutés (= key auto-repeat
+  pour menus hold-to-scroll). 1:1 décomp main.c:243-268.
+- 🚧 Items 9-11 (BG_CHAR_ADDR semantic, gPlttBufferTransferPending) reportés
+  (= subtils, pas d'impact visible)
+
+### Restants pour future session
+- Main menu polish : tiles ROM gWindowFrames + WININ/WINOUT highlight + charset
+- Birch speech / new game flow (~3-4h)
+- Cf. `next_session_roadmap.md` mémoire user pour détails
+
+### État final session 81
+
+L'écran titre est 1:1 GBA pixel/note perfect (= confirmé visuellement vs VBA-M).
+Boot complet : Copyright → Intro Scene 1/2/3 → Title → Press START → Main Menu
+(NOUVELLE PARTIE/OPTION). Demo loop fonctionnel. Audio fade smooth. Toutes les
+audio palettes/sprites correctement routés grâce aux fixes systémiques.
+
+12 bugs systémiques résolus, 86+386=472 callsites auto-corrigés, 7 dedup,
+2 audit reports persistants (`AUDIT_1_1_DECOMP.md` + `AUDIT_DEDUP.md`).
+
+---
+
 ## Session 80 — Polish post-pivot SE + UX devtool
 
 Suite session 79 (= pivot audio SF2 + spessasynth_lib validé). User a explosé

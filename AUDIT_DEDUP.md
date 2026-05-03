@@ -1,6 +1,7 @@
 # Audit Dedup + Simplification
 
 > Audit Sonnet session 81. Le user veut : "Plus simple pour toi pour modifier, plus simple pour les gens pour fork".
+> **Statut session 81** : ✅ B1-B7 done. B8 (palette buffer sync helper) skipped (= moins critique, touche plusieurs fichiers).
 
 ## 🟢 High value (= cleanup visible, blockers fork ease)
 

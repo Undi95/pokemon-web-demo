@@ -1,6 +1,7 @@
 # Audit 1:1 Décomp — Bugs subtils
 
 > Audit Opus session 81 (post intro/title screen 1:1). Compare l'impl TS vs `D:/Projet 1/decomps/pokeemeraude`.
+> **Statut session 81** : ✅ A1-A5 + critique OBJ_PLTT_ID + audio (m4aSongNumStart→PlaySE, FadeOutBGM impl, fade duration, SE_SELECT placeholder) + Phase C item #7 (BlendPalette +8). Restants pour future sessions : items 8-11 + menu polish.
 
 ## 🔴 Critiques (= bugs visibles probables)
 
@@ -41,10 +42,11 @@
 **Bug** : match `MainCB2_EndIntro` mais décomp `intro.c:1054` ne fait que `UpdatePaletteFade`.
 **Impact** : benign maintenant (pas de task résiduelle ce moment), mais peut masquer futurs bugs.
 
-### 7. `BlendPalette` rounding mismatch
-**File** : `decomp-runtime.ts:841-843`
+### 7. `BlendPalette` rounding mismatch ✅ FIXED session 81
+**File** : `decomp-runtime.ts:_applyPaletteFadeStep`
 **Bug** : `(x + tx*w + 8) >> 4`. Décomp `src/util.c:275` = `r + ((tr - r) * coeff) >> 4` (truncation, no +8).
-**Impact** : off-by-one shifts edge cases (= très dark/light pixels low brightness).
+**Impact** : off-by-one shifts edge cases.
+**Fix** : refactor pour matcher exactement la formule décomp (= sans +8, sum after shift).
 
 ### 8. Pas de `gMain.newAndRepeatedKeys` / key repeat
 **File** : `decomp-runtime.ts` (gMain struct)
@@ -63,6 +65,47 @@
 
 ### 11. `gba.objVram = 32 KB` (note future)
 Match `OBJ_VRAM0_SIZE` pour text/affine modes. Modes 3-5 (bitmap, unused Emerald) need OBJ_VRAM1.
+
+## 🆕 Découverts session 81 (post-audit Opus)
+
+### A. **OBJ_PLTT_ID** retournait `n*16` au lieu de `256+n*16` ✅ FIXED
+Bug systémique sur 86 callsites. `LoadPalette(...OBJ_PLTT_ID(n))` écrivait dans
+BG palette space (= invisible). Cf. `decomp-runtime.ts:166` post-fix.
+
+### B. **m4aSongNumStart(SE_*)** transpileur bug ✅ FIXED
+386 occurrences sur 52 fichiers auto. `PlaySE(SE_X)` du décomp était converti
+en `m4aSongNumStart(SE_X)` → SE jouait sur slot BGM, écrasant la musique.
+Fix : transpileur regex `m4aSongNumStart(SE_X)` → `PlaySE(SE_X)` + global sed.
+
+### C. **FadeOutBGM** stub (= no fade title→menu) ✅ FIXED
+Implémenté via `setMasterParameter('masterGain')` rampe 1:1 décomp m4a.c
+(= 16 steps × speed frames). Aussi `FadeInBGM` en pendant.
+
+### D. **SE_SELECT = 1 placeholder** dans gba-menu-system.ts ✅ FIXED
+Plaçeholder oublié (= jouait `se_use_item` au lieu de `se_select`). Fix : 5.
+
+### E. **Sprite.objMode** vs `oam[].objMode` divergence ✅ FIXED
+Bug pattern : `SpriteCB_*` écrivait `rt.gba.oam[oamIndex].objMode = X`. Mais
+syncSpritesToOam propage `sprite.objMode → oam.objMode` chaque frame, écrasant.
+Fix appliqué sur SpriteCB_VersionBanner + StartPokemonLogoShine.
+
+### F. **`runTasks` per CB2 type** ✅ FIXED (= refactor session 81)
+Runtime appelait toujours runTasks(). Décomp : seuls les `MainCB2*` callbacks
+le font. Fix : `cbName.startsWith('MainCB2')` dans runOneFrame.
+
+### G. **MUS_TITLE auto-loop detection** ✅ FIXED
+@tonejs/midi n'a pas de `.loop` property. Scan MIDI markers `FF 06 'loopStart'`
+direct sur le buffer pour set `midi.loop` correctement.
+
+## 🚧 Pending — Menu polish (à faire en future session)
+
+Le main menu (= NOUVELLE PARTIE / OPTION) a des fenêtres avec bordures
+incorrectes (= solid blue/grey rectangles au lieu de tiles ROM stylisées).
+Investigation nécessaire :
+- Extract `gWindowFrames` tiles depuis ROM (= 9 tiles × 32 bytes par frame style)
+- Vérifier WININ/WINOUT pour highlight selectedItem
+- Charset alignment du texte (= heart icon à la fin = char id mismatch)
+- Cf. décomp `src/data/menu_message.h` + `src/dynamic_placeholder_text_util.c`
 
 ## ✅ Verified clean
 
