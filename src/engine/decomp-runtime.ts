@@ -1430,15 +1430,19 @@ export class DecompRuntime {
     //    ORDRE — cf MainCB2_Intro src/intro.c:1042-1052).
     if (this.gMain.callback2) this.gMain.callback2(this);
     // 1:1 décomp : seuls les `MainCB2*` callbacks (= main loops de scène)
-    // appellent RunTasks/AnimateSprites/BuildOamBuffer. Les CB2 de transition
-    // (CB2_GoToX) appellent UNIQUEMENT UpdatePaletteFade. Si on ne respecte pas
-    // ça, les Tasks de la scène sortante continuent de tourner pendant la
-    // transition → ex. Task_TitleScreenPhase3 re-trigger BeginNormalPaletteFade
-    // chaque frame pendant le fade vers Copyright → fade restart en boucle.
-    // Détection par nom : `CB2_GoTo*` = transition, skip Tasks/sprites.
+    // appellent RunTasks + AnimateSprites + BuildOamBuffer (cf intro.c:1042).
+    // Les CB2 de transition (CB2_GoTo*) et d'init (CB2_Init*) ne tournent que
+    // leur propre logique (UpdatePaletteFade + state machine). Sans cette
+    // distinction, les Tasks de la scène sortante continuent de tourner
+    // pendant les transitions → re-trigger BeginNormalPaletteFade en boucle,
+    // tasks créées par CB2_Init* qui démarrent avant SetMainCallback2(MainCB2),
+    // etc.
+    // Notre architecture : `gMain.callback2.name` indique si runTasks() doit
+    // tourner (= MainCB2* uniquement). UpdatePaletteFade reste appelé toujours
+    // (= cf bas du frame).
     const cbName = this.gMain.callback2?.name ?? '';
-    const isTransitionCB2 = cbName.startsWith('CB2_GoTo');
-    if (!isTransitionCB2) {
+    const isMainCB2 = cbName.startsWith('MainCB2');
+    if (isMainCB2) {
       // ─── 1:1 décomp MainCB2_Intro order ───────────────────────────────────
       // 2. RunTasks() — Tasks AVANT tout sprite tick. Critique : la création
       //    d'un sprite + StartSpriteAffineAnim DOIT précéder l'AnimateSprite

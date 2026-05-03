@@ -310,15 +310,12 @@ export const Task_TitleScreenPhase3: TaskCallback = (task, rt) => {
           UpdateLegendaryMarkingColor(task.data[0]);
           if ((gMPlayInfo_BGM.status & 0xFFFF) == 0)
           {
-              // MANUAL FIX session 81 : 1:1 décomp title_screen.c:818-822 demo loop.
-              // DestroyTask : notre runtime appelle RunTasks à chaque frame contrairement
-              // à la décomp où seuls les MainCB2_X le font. Sans destroy, Phase3 retrigger
-              // BeginNormalPaletteFade chaque frame pendant la transition (= jamais de
-              // fade complete). 1:1 décomp = équivalent (la task ne re-tournerait pas car
-              // RunTasks pas appelé pendant CB2_GoTo*/CB2_Init*).
+              // 1:1 décomp title_screen.c:818-822 demo loop. La task n'est pas
+              // détruite : runtime n'appelle plus runTasks() pendant les CB2 de
+              // transition (= seuls les MainCB2* le font), donc Phase3 ne
+              // retrigger pas après le SetMainCallback2 (= match exact décomp).
               rt.BeginNormalPaletteFade("PALETTES_ALL", 0, 0, 16, "RGB_WHITEALPHA");
               rt.SetMainCallback2(CB2_GoToCopyrightScreen);
-              rt.DestroyTask(taskId);
           }
       }
 };
