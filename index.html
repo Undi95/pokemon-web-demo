@@ -44,11 +44,13 @@
   <div class="topbar">
     <span>Z/Q/S/D ou flèches : déplacer &nbsp;|&nbsp; W : parler &nbsp;|&nbsp; B : menu</span>
     <span>Zoom :</span>
+    <button onclick="setGameZoom(1)" title="1:1 résolution native GBA (240×160)">×1</button>
     <button onclick="setGameZoom(2)">×2</button>
     <button onclick="setGameZoom(3)">×3</button>
     <button onclick="setGameZoom(4)">×4</button>
     <button onclick="setGameZoom(5)">×5</button>
     <button onclick="setGameZoom(6)">×6</button>
+    <button onclick="openRemapModal()" title="Personnaliser les touches">🎮 Remap</button>
   </div>
   <div id="game"></div>
   <script type="module" src="/src/main.ts"></script>

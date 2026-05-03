@@ -582,7 +582,7 @@ if (typeof globalThis !== 'undefined') {
 let _currentSongId: number | null = null;
 export function getCurrentSongId(): number | null { return _currentSongId; }
 
-export function m4aSongNumStart(songId: number): void {
+export function m4aSongNumStart(songId: number, loop: boolean = false): void {
   const songName = SONG_ID_TO_NAME[songId];
   if (!songName) {
     console.warn(`[m4aSongNumStart] song ID ${songId} not mapped, skip`);
@@ -618,19 +618,18 @@ export function m4aSongNumStart(songId: number): void {
       const cfg = getSongConfig(songName);
       if (cfg && cfg.reverb !== null) _staticSetReverb(cfg.reverb);
       const songVol = cfg?.volume ?? null;
-      // 1:1 GBA : loop=false par DEFAUT. Le LOOP est encodé dans le .mid via
-      // les markers `[` et `]` que mid2agb détecte pour générer `ply_goto`
-      // (cf tools/mid2agb/midi.cpp:286-292). MUS_INTRO n'a PAS ces markers
-      // → mid2agb génère `ply_fine` (one-shot). Donc dans le vrai GBA,
-      // MUS_INTRO joue une fois puis stoppe → 0.6s silence avant scene 3
-      // (frame ~2034 song end vs frame 2070 Task_Scene3_Load) = comportement
-      // original. Pour les BGMs qui DOIVENT looper (overworld), il faudra
-      // détecter les markers MIDI dans nos .mid (TODO Phase 8+) ou maintenir
-      // une liste explicite par songName.
+      // 1:1 GBA : LOOP encodé dans le .mid via markers `[` / `]` (mid2agb →
+      // ply_goto vs ply_fine). On lit `BasicMIDI.loop` qui parse ces markers
+      // et utilise loopCount=Infinity quand `loop.start !== loop.end`.
+      // MUS_INTRO n'a PAS ces markers → loop.start === loop.end → one-shot.
+      // L'arg `loop` explicite force le mode (pour dev tool / cas spécifiques).
+      const midiLoop = (midi as { loop?: { start: number; end: number } }).loop;
+      const hasLoopMarkers = !!midiLoop && midiLoop.start !== midiLoop.end;
+      const useLoop = loop || hasLoopMarkers;
       await (_staticPlaySong as (m: unknown, vg: unknown, lookup: VgLookupFn, loop: boolean, slot: string, volume: number | null) => Promise<void>)(
-        midi, voicegroup, _vgLookup!, false, 'bgm', songVol,
+        midi, voicegroup, _vgLookup!, useLoop, 'bgm', songVol,
       );
-      console.log(`[m4aSongNumStart] playing ${url} via M4A maison (vg=${vgName}) slot=bgm V=${songVol ?? 'default'}`);
+      console.log(`[m4aSongNumStart] playing ${url} (vg=${vgName}) slot=bgm V=${songVol ?? 'default'} loop=${useLoop}${hasLoopMarkers ? ' (auto-detected)' : ''}`);
     } catch (e) {
       console.error('[m4aSongNumStart] failed:', e);
     }

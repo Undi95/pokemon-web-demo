@@ -50,10 +50,8 @@ function walkFiles(dir, ext, baseDir = dir, results = []) {
 }
 
 /** Convertit un nom de fichier WAV en symbole asm DirectSoundWaveData_X.
- *  Convention décomp : `tubular_bell.wav` → `DirectSoundWaveData_sc88pro_tubular_bell`
- *  ou similar. La règle exacte dépend du voicegroup (préfixe variable selon set).
- *  Pour simplifier : on génère plusieurs symboles candidats. Le M4A engine
- *  essaie chacun jusqu'à trouver un match. */
+ *  Fallback heuristic seulement : si direct_sound_data.inc parsing échoue ou
+ *  manque un sample, on génère plusieurs candidats préfixés. */
 function makeSymbolCandidates(stem) {
   const candidates = [
     `DirectSoundWaveData_${stem}`,
@@ -64,27 +62,89 @@ function makeSymbolCandidates(stem) {
   return candidates;
 }
 
+/** Parse direct_sound_data.inc → mapping authoritative `symbol → bin path`.
+ *  Format :
+ *    DirectSoundWaveData_<symbol>::
+ *      .incbin "sound/direct_sound_samples/<file>.bin"
+ *  Le symbole peut différer du nom de fichier (= e.g. `unknown_8` → `unknown_08.bin`).
+ *  Cette mapping est utilisée par le linker GBA, donc c'est la source de vérité. */
+function parseDirectSoundDataInc(incPath) {
+  if (!existsSync(incPath)) {
+    console.warn(`  [warning] ${incPath} not found, skip authoritative mapping`);
+    return new Map();
+  }
+  const txt = readFileSync(incPath, 'utf-8');
+  const map = new Map();  // symbol → bin file basename (no extension)
+  const lines = txt.split('\n');
+  let pendingSymbol = null;
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (!line) continue;
+    // Symbol declaration : `DirectSoundWaveData_X::` or `DirectSoundWaveData_X:`
+    const symMatch = line.match(/^([A-Za-z0-9_]+)::?$/);
+    if (symMatch && symMatch[1].startsWith('DirectSoundWaveData_')) {
+      pendingSymbol = symMatch[1];
+      continue;
+    }
+    // .incbin "path" — bind to the most recent symbol
+    const incMatch = line.match(/^\.incbin\s+"([^"]+)"/);
+    if (incMatch && pendingSymbol) {
+      const path = incMatch[1];
+      // Extract basename without extension (.bin or .wav)
+      const stem = basename(path).replace(/\.(bin|wav)$/i, '');
+      map.set(pendingSymbol, stem);
+      pendingSymbol = null;
+    }
+  }
+  return map;
+}
+
 // ─── Direct Sound Samples ────────────────────────────────────────────────────
 
 console.log('[direct-sound] Scanning samples...');
 const wavFiles = walkFiles(srcDsDir, '.wav');
 console.log(`  Found ${wavFiles.length} WAV samples`);
 
+// Parse authoritative symbol → file mapping from direct_sound_data.inc
+const incMap = parseDirectSoundDataInc(resolve(decompRoot, 'sound', 'direct_sound_data.inc'));
+console.log(`  Parsed ${incMap.size} authoritative symbol bindings from direct_sound_data.inc`);
+
 const dsManifest = {};
 let copied = 0;
+// Index WAV stems for lookup
+const wavByStem = new Map();
 for (const { abs, relFromBase } of wavFiles) {
   const out = join(outDsDir, relFromBase);
   mkdirSync(dirname(out), { recursive: true });
   copyFileSync(abs, out);
   copied++;
-
   const stem = basename(relFromBase, '.wav');
+  wavByStem.set(stem, relFromBase);
+  // Heuristic candidates (= fallback for symbols not in direct_sound_data.inc)
   const url = `/decomp/em/sound/direct_sound_samples/${relFromBase}`;
-  // Map TOUS les candidats vers la même URL (le M4A engine résoudra)
   for (const sym of makeSymbolCandidates(stem)) {
-    dsManifest[sym] = url;
+    if (!dsManifest[sym]) dsManifest[sym] = url;  // don't override authoritative
   }
 }
+
+// Apply authoritative mappings (= overrides heuristic). Symbol → file as
+// declared in direct_sound_data.inc, even if names diverge (`unknown_8` →
+// `unknown_08.wav`).
+let authoritativeApplied = 0;
+let authoritativeMissing = 0;
+for (const [symbol, stem] of incMap) {
+  const relPath = wavByStem.get(stem);
+  if (!relPath) {
+    authoritativeMissing++;
+    if (authoritativeMissing <= 3) {
+      console.warn(`  [missing] ${symbol} → ${stem}.wav not on disk`);
+    }
+    continue;
+  }
+  dsManifest[symbol] = `/decomp/em/sound/direct_sound_samples/${relPath}`;
+  authoritativeApplied++;
+}
+console.log(`  Authoritative bindings applied: ${authoritativeApplied} (missing wav: ${authoritativeMissing})`);
 
 writeFileSync(
   join(outDsDir, '_manifest.json'),

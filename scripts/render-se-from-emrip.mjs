@@ -3,14 +3,24 @@
  *
  * Strategy :
  *   1. Parse decomp's song_table.inc → ordered [songIndex, songName] list.
- *   2. For each `se_*` song : load song{index+1:04}.mid + em.sf2 → spessa render.
+ *   2. For each `se_*` song : load song{index:04}.mid + em.sf2 → spessa render.
  *   3. Save WAV at public/audio/se_prerendered/<name>.wav.
  *   4. Update pre-rendered-list.json to include ALL rendered SE.
  *
  * em.sf2 from gba-mus-ripper has pre-recorded GBA hardware PSG samples
  * (= "Noise normal 42..", "square 50%A..", etc) baked in. These come from
- * Bregalad's psg_data.raw — actual GBA recordings — so SE that use noise
- * channel will sound 1:1 with real hardware.
+ * Bregalad's psg_data.raw — actual GBA hardware recordings — so SE that use
+ * noise/square channel sound 1:1 with real GBA without needing a software
+ * LFSR synth.
+ *
+ * External code / data this script depends on :
+ *   - gba-mus-ripper by Bregalad (= MIT) — produced the em-rip69/ folder
+ *     https://github.com/Bregalad/GBA_Mus_Ripper
+ *     (we do NOT include or modify gba-mus-ripper source; only its output)
+ *   - psg_data.raw by Bregalad — embedded inside em.sf2 as the PSG samples
+ *   - spessasynth_core (= MIT) — the offline SF2 synth
+ *     https://github.com/spessasus/SpessaSynth
+ *   - pokeemeraude decomp — we read song_table.inc to map song IDs → names
  */
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';

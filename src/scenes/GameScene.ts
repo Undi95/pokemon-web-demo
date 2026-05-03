@@ -54,6 +54,7 @@ import {
   SpriteCB_Bicycle, SpriteCB_FlygonRightHalf, Task_BicycleBgAnimation,
 } from '../engine/decomp-data/auto/src/intro_credits_graphics-callbacks-auto';
 import { CB2_InitCopyrightScreenAfterBootup, MainCB2_Intro } from '../engine/copyright-boot';
+import { keyToGbaMask } from '../util/key-bindings';
 
 export class GameScene extends Phaser.Scene {
   private gba!: Gba;
@@ -414,21 +415,10 @@ export class GameScene extends Phaser.Scene {
   }
 
   private keyToMask(key: string): number {
-    switch (key.toLowerCase()) {
-      case 'w': return 0x01;        // A
-      case 'x': return 0x02;        // B
-      case 'n': return 0x04;        // SELECT
-      case 'b': return 0x08;        // START
-      case 'enter': return 0x08;    // START (alternative)
-      case 'arrowright': return 0x10;
-      case 'arrowleft': return 0x20;
-      case 'arrowup': return 0x40;
-      case 'arrowdown': return 0x80;
-      case 'z': return 0x100;       // R
-      case 'a': return 0x200;       // L
-      case ' ': return 0x08;        // START (alternative)
-      default: return 0;
-    }
+    // Mapping clavier → GBA bitmask via key-bindings.ts (= configurable + persistant
+    // dans localStorage.keyBindings). Defaults : W=A X=B N=SELECT B/Enter/Space=START
+    // arrows=DPad Z=R A=L. Cf. src/util/key-bindings.ts.
+    return keyToGbaMask(key);
   }
 
   private pollInput(): void {

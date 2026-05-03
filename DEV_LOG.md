@@ -8,6 +8,85 @@ de la décompilation FR (`pokeemeraude`) + `@pkmn/sim` pour combats.
 
 ---
 
+## Session 80 — Polish post-pivot SE + UX devtool
+
+Suite session 79 (= pivot audio SF2 + spessasynth_lib validé). User a explosé
+de joie : « Je vais pleurer. Claude... Ca fonctionne. ». Puis demande de cleanup
++ polish UX avant transition vers écran titre.
+
+### Cleanup professionnel
+
+- **Pivot commit** : save de l'état T fonctionnel avant cleanup (= safety net).
+- **Suppression debug debt** : `scripts/vbam-cli/`, `scripts/vbam-cli-v223/`,
+  `scripts/m4a/{m4a-vbam-*,m4a-render-{noise,square,directsound,se},m4a-cgb-*,
+  m4a-tables,m4a-sample-loader,voicegroup-parser,dump-*,inspect-*,gdb-*,verify-*,
+  test-*,build-se-sf2}.mjs`, `scripts/auto-classify-and-render-se.mjs`,
+  `scripts/spessa-render-{all,decomp,poc}-se.mjs`, `scripts/check-*.mjs`,
+  `scripts/compare-*.mjs`, `scripts/inspect-se-*.mjs`, `scripts/sample-wav-peaks.mjs`,
+  `scripts/inspect-sf2-presets.mjs`,
+  `public/audio/se_prerendered_{OLD_AUTOCLASSIFY,custom_m4a,custom_sf2,spessa_poc}/`,
+  `public/audio/sample_compare/`, `public/audio/se_voicegroups.sf2`,
+  51 fichiers `public/decomp/em/music/ph_*.mid` (= phonèmes Latias non utilisés).
+- **Temp folder** : suppression `vbam-src`, `mgba-src`, `mgba-dl`, `blast_ffmpeg.wav`.
+- **Conservé** : `scripts/m4a/M4A_DECOMP_SPEC.md`, `analyze-wav.mjs`,
+  `spectrum-analyze.mjs` (= utiles pour future analyse audio).
+
+### Crédits 1:1
+
+`README.md` + header `scripts/render-se-from-emrip.mjs` créditent désormais :
+- **gba-mus-ripper** par Bregalad (= MIT) — outil ayant produit `em-rip69/`.
+- **`psg_data.raw`** par Bregalad — samples PSG enregistrés sur vrai hardware GBA,
+  intégrés dans `em.sf2`. C'est ça qui fait sonner le noise SE 1:1 sans LFSR.
+- **`spessasynth_core`** (= MIT) — synth offline SF2.
+- **pokeemeraude** decomp — `song_table.inc` pour mapping IDs songs.
+
+### Fix off-by-one mapping
+
+`render-se-from-emrip.mjs` utilisait `String(i + 1).padStart(4, '0')` pour
+le filename MIDI, mais `gba-mus-ripper` utilise indexing 0-based : `song0103.mid`
+= songs.h ID 103 (= se_intro_blast). User a remarqué : « la liste du site n'est
+pas la même, mauvais noms sur certains ». Fix → `String(i).padStart(4, '0')`.
+269/269 SE rendus correctement.
+
+### UX polish (4 features)
+
+1. **Phaser canvas-only input** (`src/main.ts`) : `input: { windowEvents: false }`
+   restreint les listeners au canvas (= cliquer hors du canvas n'affecte plus
+   le jeu, en particulier pas de conflit avec le devtool audio).
+2. **Audio devtool search + volume** (`src/util/audio-devtool.ts`) :
+   - Search textbox au-dessus de chaque dropdown (BGM/SE) qui filtre par
+     substring sur name OU id.
+   - Slider de volume master 0-100% relié à `setMasterVolume()` du
+     `audio-context.ts`. Persisté dans `localStorage.audioDevtoolVolume`.
+3. **Zoom ×1** (`index.html`) : nouveau bouton `×1` (= résolution native
+   GBA 240×160 « tout ptit » comme demandé par user).
+4. **Remap controls** : nouveau module `src/util/key-bindings.ts` (= keymap
+   configurable persisté localStorage) + `src/util/remap-modal.ts` (= overlay
+   listing les 10 boutons GBA, click "Remap" puis next keypress = réassigne).
+   `GameScene.keyToMask` refactoré pour appeler `keyToGbaMask()` au lieu d'un
+   switch hardcodé. Bouton `🎮 Remap` ajouté au topbar de `index.html`.
+
+### Files créés/modifiés
+
+```
+src/util/key-bindings.ts            (nouveau, 95 LOC)
+src/util/remap-modal.ts             (nouveau, 110 LOC)
+src/util/audio-devtool.ts           (search + volume + filtre ph_*)
+src/main.ts                         (windowEvents:false + import remap-modal)
+src/scenes/GameScene.ts             (keyToMask → keyToGbaMask)
+index.html                          (×1 button + 🎮 Remap button)
+scripts/render-se-from-emrip.mjs    (off-by-one fix + crédits)
+README.md                           (Crédits audio + Régénérer SE)
+DEV_LOG.md                          (cette section)
+```
+
+Build : `npx vite build` ✓ 17.7s. Pas de nouvelles erreurs TS (les 5 errors
+existants sur decomp-runtime/main/GameScene étaient déjà là avant).
+
+**Next session** : transition vers écran titre + main menu nouvelle partie 1:1.
+
+---
+
 ## Session 74 — Phase 10 : LE bug systémique « CC continus figés »
 
 User feedback post-Session 73 : « partout en fait, désolé Claude. Lorsqu'on a

@@ -36,6 +36,7 @@ import { BattleScene } from './scenes/BattleScene';
 import { MenuOverlayScene } from './scenes/MenuOverlayScene';
 import { OptionMenuScene } from './scenes/OptionMenuScene';
 import { createAudioDevtool } from './util/audio-devtool';
+import './util/remap-modal'; // exposes window.openRemapModal for the topbar button
 
 // Audio devtool panel (top-right corner). Dev only. Disable via
 // localStorage.setItem('audioDevtool', 'off').
@@ -83,6 +84,12 @@ const config: Phaser.Types.Core.GameConfig = {
   pixelArt: true,
   backgroundColor: '#000000',
   scene: [TestGbaScene, GameScene, MainMenuScene, BirchSpeechScene, NamingScene, OverworldScene, BattleScene, MenuOverlayScene, OptionMenuScene],
+  // Restrict input listeners to the canvas only (= clicks/keys outside the
+  // game window don't start/affect the game). Default Phaser behavior is to
+  // listen window-wide which interferes with the audio devtool topbar.
+  input: {
+    windowEvents: false,
+  },
   physics: {
     default: 'arcade',
     arcade: { debug: false }

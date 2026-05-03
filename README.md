@@ -31,9 +31,14 @@ npm run dev
 
 Vite ouvre `http://localhost:5173/`. Click ou key dans `TestGbaScene` → passe à `GameScene` (= la "ROM" qui tourne).
 
-**Touches GBA simulées** :
+**Touches GBA simulées (defaults)** :
 - W = A | X = B | N = SELECT | B / Enter / Espace = START
 - Flèches = D-Pad | Z = R | A = L | ESC = retour TestGbaScene
+
+Customisables via le bouton **🎮 Remap** du topbar (= persistant `localStorage`).
+
+**Topbar** : zoom ×1..×6 (×1 = résolution native GBA 240×160), Remap, et un
+panneau audio devtool (sous le canvas) avec search BGM/SE + slider volume master.
 
 ## Stack
 
@@ -100,3 +105,25 @@ Si TestGba marche pixel-perfect, l'engine est validé.
 ## Sources de référence (lecture seule, **pas pour copier 1:1**)
 
 - `D:/Projet 1/decomps/pokeemeraude/` — décomp FR (= source de vérité 1:1 ROM)
+
+## Crédits audio
+
+- **`em-rip69/em.sf2`** — généré par [gba-mus-ripper](https://github.com/Bregalad/GBA_Mus_Ripper)
+  de Bregalad (= MIT). Le SF2 contient les samples PSG (= square waves +
+  noise) **enregistrés sur vrai hardware GBA** par Bregalad (`psg_data.raw`).
+  C'est ça qui permet aux SE noise de sonner 1:1 avec une console réelle
+  sans avoir à émuler le LFSR.
+- **`em-rip69/songNNNN.mid`** — MIDIs rippés par gba-mus-ripper depuis la ROM.
+- **[`spessasynth_core`](https://github.com/spessasus/SpessaSynth)** (= MIT) —
+  synth offline qui rend les SF2 + MIDI en WAV (`scripts/render-se-from-emrip.mjs`).
+- **[`pokeemeraude`](https://github.com/qigast/pokeemeraude)** — décomp FR
+  qui fournit le `song_table.inc` pour mapper IDs songs → noms.
+
+## Régénérer les SE
+
+```bash
+node scripts/render-se-from-emrip.mjs
+```
+
+Lit `public/em-rip69/` + `decomps/pokeemeraude/sound/song_table.inc`,
+écrit `public/audio/se_prerendered/<name>.wav` × 269.
