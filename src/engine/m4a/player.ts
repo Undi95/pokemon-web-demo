@@ -22,6 +22,7 @@
  */
 import { Midi } from '@tonejs/midi';
 import { WorkletSynthesizer, Sequencer } from 'spessasynth_lib';
+import { BasicMIDI } from 'spessasynth_core';
 import type { VoiceGroup } from './voice-types';
 import type { VoiceGroupLookup } from './voice-resolver';
 import { resolveVoice } from './voice-resolver';
@@ -131,7 +132,11 @@ export async function preloadAllSlots(): Promise<void> {
 }
 
 /** Charge un MIDI depuis URL → Midi parsed. Cached. Le buffer brut est aussi
- *  caché pour pouvoir le passer à spessasynth Sequencer.loadNewSongList. */
+ *  caché pour pouvoir le passer à spessasynth Sequencer.loadNewSongList.
+ *  Aussi : attache `midi.loop = { start, end }` (= info parsée par BasicMIDI
+ *  spessasynth qui détecte les markers `[` / `]` de mid2agb-style). @tonejs/midi
+ *  n'expose pas cette info → on la patche ici pour que m4aSongNumStart puisse
+ *  auto-detecter les BGMs qui doivent looper. */
 export async function loadMidi(url: string): Promise<Midi> {
   const cached = _midiCache.get(url);
   if (cached) return cached;
@@ -141,6 +146,19 @@ export async function loadMidi(url: string): Promise<Midi> {
   });
   const midi = new Midi(arrBuf);
   _bufferByMidi.set(midi, arrBuf);
+  // Parse aussi via BasicMIDI pour récupérer l'info loop (= markers MIDI `[`/`]`).
+  // BasicMIDI consomme l'ArrayBuffer en interne ; on slice() pour éviter neutering.
+  try {
+    const bmidi = BasicMIDI.fromArrayBuffer(arrBuf.slice(0));
+    if (bmidi.loop && bmidi.loop.start !== bmidi.loop.end) {
+      (midi as unknown as { loop: { start: number; end: number } }).loop = {
+        start: bmidi.loop.start,
+        end: bmidi.loop.end,
+      };
+    }
+  } catch (e) {
+    console.warn(`[loadMidi] BasicMIDI parse failed for ${url}, no loop info:`, e);
+  }
   _midiCache.set(url, midi);
   return midi;
 }
