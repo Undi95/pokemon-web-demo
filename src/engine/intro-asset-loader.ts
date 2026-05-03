@@ -444,17 +444,25 @@ export async function preloadTitleAssets(): Promise<void> {
     }
   }));
 
-  // 1:1 décomp graphics.c:1508 : gTitleScreenBgPalettes = INCBIN(pokemon_logo.gbapal,
-  // rayquaza_and_clouds.gbapal) concaténés. pokemon_logo n'utilise que 14 banks
-  // (224 colors), bank 14 vient du second fichier (= palette Rayquaza/Clouds).
-  // LoadPalette(gTitleScreenBgPalettes, 0, 15 * PLTT_SIZE_4BPP) charge 240 colors :
-  // banks 0-13 = logo, bank 14 = Rayquaza/Clouds.
+  // 1:1 décomp graphics.c:1508 : gTitleScreenBgPalettes = INCBIN_U16(pokemon_logo.gbapal,
+  // rayquaza_and_clouds.gbapal) → 512 + 32 = 544 bytes raw concat.
+  // Le LoadPalette qui suit (CB2_InitTitleScreen state 1) charge 480 bytes
+  // (= 15 banks × 32 bytes = 240 colors) à partir du début → COLORS 0-239 du
+  // pokemon_logo SEULEMENT. La rayquaza_and_clouds palette est dans la suite
+  // du blob (bytes 512-543) MAIS pas chargée par cette LoadPalette — elle est
+  // utilisée seulement comme référence par la palette de logo bank 14
+  // (= shared par design : pokemon_logo[224-239] == rayquaza_and_clouds[0-15]).
+  // Bug session 81 : avant on faisait `concat(logo[0..223], rc[0..15])` ce qui
+  // EFFACAIT les colors 224-239 de logo (= bank 14) → "TM translucide" et
+  // "point noir" sur É car ces colors clés de la palette logo étaient absentes.
+  // Fix : INCBIN raw concat 1:1 décomp (512 + 32 = 544 bytes), garder TOUS les
+  // 256 colors logo + 16 rc à la suite. LoadPalette charge bien 240 colors logo.
   try {
     const logoPal = await loadGbaPal('/decomp/em/boot/title_screen/pokemon_logo.pal');
     const rcPal = await loadGbaPal('/decomp/em/boot/title_screen/rayquaza_and_clouds.pal');
-    const concatPal = new Uint16Array(14 * 16 + rcPal.length);
-    concatPal.set(logoPal.subarray(0, 14 * 16), 0);
-    concatPal.set(rcPal, 14 * 16);
+    const concatPal = new Uint16Array(logoPal.length + rcPal.length);
+    concatPal.set(logoPal, 0);
+    concatPal.set(rcPal, logoPal.length);
     assetCache.set('gTitleScreenBgPalettes', concatPal);
   } catch (e) {
     console.warn('[intro-asset-loader] gTitleScreenBgPalettes concat failed:', e);
