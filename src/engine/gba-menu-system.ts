@@ -49,7 +49,9 @@ let menuActive = false;
 let menuWindowId = 0;
 let menuCallback: (() => void) | null = null;
 
-const SE_SELECT = 1; // placeholder
+// 1:1 décomp include/constants/songs.h:11 → SE_SELECT = 5 (= se_select dans
+// song_table.inc:14). Avant : placeholder = 1 (= se_use_item) → mauvais son.
+const SE_SELECT = 5;
 const HAS_MYSTERY_EVENTS = ENUM_HAS_0.HAS_MYSTERY_EVENTS;
 
 // ─── Global vars used by auto-generated main_menu callbacks ──────────────────
