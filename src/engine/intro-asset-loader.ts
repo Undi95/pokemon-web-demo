@@ -395,6 +395,11 @@ export async function preloadTitleAssets(): Promise<void> {
     // Main menu palettes (needed when transitioning from title to menu)
     { symbol: 'sMainMenuBgPal', url: '/decomp/em/ui/interface/main_menu_bg.pal', type: 'pal' },
     { symbol: 'sMainMenuTextPal', url: '/decomp/em/ui/interface/main_menu_text.pal', type: 'pal' },
+    // Note : `gTextWindowFrame1_Gfx` n'est PAS preloaded ici. Cf.
+    // `option-menu-impl.ts:preloadOptionMenuAssets()` qui charge les 20 frames
+    // de manière uniforme (sans ça, frame 1 cached via title path et frames
+    // 2-20 via option-menu path → divergence visible bug). Pour main menu,
+    // c'est `gba-menu-system.ts:LoadMainMenuWindowFrameTiles` (= fallback hand-drawn).
   ];
   await Promise.all(titleAssets.map(async ({ symbol, url, type }) => {
     try {

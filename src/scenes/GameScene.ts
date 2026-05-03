@@ -329,11 +329,23 @@ export class GameScene extends Phaser.Scene {
 
   private async bootIntro(): Promise<void> {
     try {
+      // Charge les strings FR 1:1 décomp AVANT toute Task qui pourrait référencer
+      // gText_* (= main menu, Birch speech, default names, etc.).
+      const { initStringsFromDecomp } = await import('../engine/gba-strings');
+      await initStringsFromDecomp();
+
+      // Side-effect import : populate globalThis avec les helpers option_menu
+      // (DrawHeaderText, HighlightOptionMenuItem, *_DrawChoices, *_ProcessInput,
+      //  GetWindowFrameTilesPal, sArrowPressed). Nécessaire AVANT que l'auto file
+      // CB2_InitOptionMenu s'exécute (= il les résout via globalThis scope).
+      const { preloadOptionMenuAssets } = await import('../engine/option-menu-impl');
+
       await preloadScene1Assets();
       await preloadScene2Assets();
       await preloadScene3Assets();
       await preloadTitleAssets();
       await preloadFontData();
+      await preloadOptionMenuAssets();
 
       // Pré-charge les MIDIs intro/title + cris légendaires pour éliminer le
       // gap silence aux transitions m4aSongNumStart (sinon ~50-150ms de
@@ -396,20 +408,37 @@ export class GameScene extends Phaser.Scene {
   }
 
   private heldKeys = 0;
+  /** True quand la fenêtre game a le focus (= click ou pointerdown sur canvas).
+   *  Les arrow keys et autres touches GBA scroll/space la page si event pas
+   *  preventDefault() — on ne veut le bloquer QUE quand le user joue. */
+  private gameFocused = false;
 
   private createKeys(): void {
+    // Click sur le canvas Phaser → focus game. Click ailleurs (= devtool, etc.)
+    // → unfocus → arrow keys scrollent la page normalement.
+    const canvas = this.game.canvas;
+    canvas.addEventListener('pointerdown', () => { this.gameFocused = true; });
+    document.addEventListener('pointerdown', (e) => {
+      // Si click hors canvas, unfocus (= laisser scroll page)
+      if (!canvas.contains(e.target as Node)) this.gameFocused = false;
+    });
+
     // Utilise les événements natifs keydown/keyup au lieu de Phaser Key objects
     // car Puppeteer + Phaser addKey ne détectent pas toujours les touches.
     window.addEventListener('keydown', (e) => {
       const mask = this.keyToMask(e.key);
       if (mask) {
         this.heldKeys |= mask;
+        // Quand le game a le focus, bloque le scroll page (= arrow keys, space,
+        // page up/down). Sinon le user peut scroller la page normalement.
+        if (this.gameFocused) e.preventDefault();
       }
     });
     window.addEventListener('keyup', (e) => {
       const mask = this.keyToMask(e.key);
       if (mask) {
         this.heldKeys &= ~mask;
+        if (this.gameFocused) e.preventDefault();
       }
     });
   }

@@ -189,119 +189,39 @@ export const Task_OptionMenuSave: TaskCallback = (task, rt) => {
       task.func = (t) => Task_OptionMenuFadeOut(t, rt);
 };
 
-/** Source: option_menu.c → Task_OptionMenuFadeOut */
+/** Source: option_menu.c → Task_OptionMenuFadeOut
+ *  ⚠️ MANUAL FIX session 82 : `/* TODO scene transition: SetMainCallback2(gMain.savedCallback) *\/`
+ *  remplacé par l'appel réel. Sans ça, fade out done mais bloqué sur écran noir
+ *  car callback2 reste sur MainCB2_OptionMenu.
+ *  TODO : intégrer ce fix au transpileur. */
 export const Task_OptionMenuFadeOut: TaskCallback = (task, rt) => {
   const taskId = task.taskId;
   if (!rt.gPaletteFade.active)
       {
           rt.DestroyTask(taskId);
           FreeAllWindowBuffers();
-          /* TODO scene transition: SetMainCallback2(gMain.savedCallback) */;
+          // Retour à l'appelant (= main menu CB2_ReinitMainMenu, ou field menu).
+          // gMain.savedCallback est set par le caller juste avant SetMainCallback2(CB2_InitOptionMenu).
+          rt.SetMainCallback2(gMain.savedCallback ?? null);
       }
 };
 
-/** Source: option_menu.c → CB2_InitOptionMenu */
+/** Source: option_menu.c → CB2_InitOptionMenu
+ *  ⚠️ MANUAL FIX session 82 : le body original de cette fonction avait 2 bugs
+ *  bloquants :
+ *    1. case 10 référence `task.data[X] = ...` où `task` n'existe PAS dans le
+ *       scope CB2 (= ReferenceError → state stuck à 10 → CreateTask en boucle).
+ *    2. case 11 a `/* TODO scene transition: SetMainCallback2(MainCB2) *\/` →
+ *       fade fire en boucle infinie, pas de transition vers MainCB2.
+ *  Solution : déléguer à `CB2_InitOptionMenu_Hooked` (option-menu-impl.ts) qui
+ *  ré-écrit la state machine 1:1 décomp avec les fixes appliqués. Exposé via
+ *  globalThis. Cf. doc dans option-menu-impl.ts.
+ *  TODO : intégrer ces fixes au transpileur pour éliminer le manual override. */
 export const CB2_InitOptionMenu: CB2Callback = (rt) => {
-  switch (gMain.state)
-      {
-      default:
-      case 0:
-          /* noop SetVBlankCallback */;
-          gMain.state++;
-          break;
-      case 1:
-          DmaClearLarge16(3, (VRAM), VRAM_SIZE, 0x1000);
-          DmaClear32(3, OAM, OAM_SIZE);
-          /* TODO DmaClear16 (memory clear) */;
-          rt.SetGpuReg(REG_OFFSET_DISPCNT, 0);
-          ResetBgsAndClearDma3BusyFlags(0);
-          InitBgsFromTemplates(0, sOptionMenuBgTemplates, ((sOptionMenuBgTemplates)?.length ?? 0));
-          ChangeBgX(0, 0, BG_COORD_SET);
-          ChangeBgY(0, 0, BG_COORD_SET);
-          ChangeBgX(1, 0, BG_COORD_SET);
-          ChangeBgY(1, 0, BG_COORD_SET);
-          ChangeBgX(2, 0, BG_COORD_SET);
-          ChangeBgY(2, 0, BG_COORD_SET);
-          ChangeBgX(3, 0, BG_COORD_SET);
-          ChangeBgY(3, 0, BG_COORD_SET);
-          InitWindows(sOptionMenuWinTemplates);
-          DeactivateAllTextPrinters();
-          rt.SetGpuReg(REG_OFFSET_WIN0H, 0);
-          rt.SetGpuReg(REG_OFFSET_WIN0V, 0);
-          rt.SetGpuReg(REG_OFFSET_WININ, WININ_WIN0_BG0);
-          rt.SetGpuReg(REG_OFFSET_WINOUT, WINOUT_WIN01_BG0 | WINOUT_WIN01_BG1 | WINOUT_WIN01_CLR);
-          rt.SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_TGT1_BG0 | BLDCNT_EFFECT_DARKEN);
-          rt.SetGpuReg(REG_OFFSET_BLDALPHA, 0);
-          rt.SetGpuReg(REG_OFFSET_BLDY, 4);
-          rt.SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_WIN0_ON | DISPCNT_OBJ_ON | DISPCNT_OBJ_1D_MAP);
-          ShowBg(0);
-          ShowBg(1);
-          gMain.state++;
-          break;
-      case 2:
-          ResetPaletteFade();
-          ScanlineEffect_Stop();
-          ResetTasks();
-          rt.ResetSpriteData();
-          gMain.state++;
-          break;
-      case 3:
-          LoadBgTiles(1, GetWindowFrameTilesPal(gSaveBlock2Ptr.optionsWindowFrameType).tiles, 0x120, 0x1A2);
-          gMain.state++;
-          break;
-      case 4:
-          LoadPalette(sOptionMenuBg_Pal, BG_PLTT_ID(0), ((sOptionMenuBg_Pal)?.length ?? 32));
-          LoadPalette(GetWindowFrameTilesPal(gSaveBlock2Ptr.optionsWindowFrameType).pal, BG_PLTT_ID(7), PLTT_SIZE_4BPP);
-          gMain.state++;
-          break;
-      case 5:
-          LoadPalette(sOptionMenuText_Pal, BG_PLTT_ID(1), ((sOptionMenuText_Pal)?.length ?? 32));
-          gMain.state++;
-          break;
-      case 6:
-          PutWindowTilemap(WIN_HEADER);
-          DrawHeaderText();
-          gMain.state++;
-          break;
-      case 7:
-          gMain.state++;
-          break;
-      case 8:
-          PutWindowTilemap(WIN_OPTIONS);
-          DrawOptionMenuTexts();
-          gMain.state++;
-      case 9:
-          DrawBgWindowFrames();
-          gMain.state++;
-          break;
-      case 10:
-      {
-          let taskId = rt.CreateTask((t) => Task_OptionMenuFadeIn(t, rt), 0);
-
-          task.data[0] = 0;
-          task.data[1] = gSaveBlock2Ptr.optionsTextSpeed;
-          task.data[2] = gSaveBlock2Ptr.optionsBattleSceneOff;
-          task.data[3] = gSaveBlock2Ptr.optionsBattleStyle;
-          task.data[4] = gSaveBlock2Ptr.optionsSound;
-          task.data[5] = gSaveBlock2Ptr.optionsButtonMode;
-          task.data[6] = gSaveBlock2Ptr.optionsWindowFrameType;
-
-          TextSpeed_DrawChoices(task.data[1]);
-          BattleScene_DrawChoices(task.data[2]);
-          BattleStyle_DrawChoices(task.data[3]);
-          Sound_DrawChoices(task.data[4]);
-          ButtonMode_DrawChoices(task.data[5]);
-          FrameType_DrawChoices(task.data[6]);
-          HighlightOptionMenuItem(task.data[0]);
-
-          CopyWindowToVram(WIN_OPTIONS, COPYWIN_FULL);
-          gMain.state++;
-          break;
-      }
-      case 11:
-          rt.BeginNormalPaletteFade("PALETTES_ALL", 0, 16, 0, "RGB_BLACK");
-          /* noop SetVBlankCallback */;
-          /* TODO scene transition: SetMainCallback2(MainCB2) */;
-          return;
-      }
+  const hook = (globalThis as any).CB2_InitOptionMenu_Hooked as ((rt: any) => void) | undefined;
+  if (hook) {
+    hook(rt);
+  } else {
+    console.error('[CB2_InitOptionMenu] CB2_InitOptionMenu_Hooked not loaded — option-menu-impl.ts side-effect import missing?');
+  }
 };

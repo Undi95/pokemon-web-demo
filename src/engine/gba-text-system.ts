@@ -92,14 +92,34 @@ export function AddTextPrinterParameterized3(
     glyphWidths: glyphWidths!,
     x: left,
     y: top,
-    fgColor: colorArray[0] ?? 2,
-    bgColor: colorArray[1] ?? 1,
+    // 1:1 décomp src/text.c AddTextPrinterParameterized3 : `color` array layout
+    // is [bgColor, fgColor, shadowColor] (cf. printerTemplate.bgColor = color[0],
+    // fgColor = color[1], shadowColor = color[2]). Avant cette fix, on avait
+    // l'ordre INVERSÉ (= [fg, bg, shadow]) ce qui causait des BG résidu colorés
+    // et break le contrat décomp pour les arrays comme sTextColor_Headers.
+    bgColor: colorArray[0] ?? 1,
+    fgColor: colorArray[1] ?? 2,
     shadowColor: colorArray[2] ?? 3,
     textSpeed: speed === 255 ? 0 : speed,
     downArrowPixels: downArrowPixels ?? undefined,
   };
   const printer = addTextPrinter(opts);
-  gTextPrinters.push({ printer, windowId, finished: false });
+  // 1:1 décomp src/text.c:AddTextPrinter — quand speed === TEXT_SKIP_DRAW (255),
+  // le printer rend la string entière de façon synchrone et marque
+  // `sTextPrinters[id].active = FALSE`. RunTextPrinters skip ensuite, donc le
+  // down arrow n'est JAMAIS drawn (= comportement attendu pour menu items).
+  // Sans ce flush, le printer reste en RENDER_STATE_WAIT_WITH_DOWN_ARROW et
+  // RunTextPrinters() draw la flèche rouge à la fin de NOUVELLE PARTIE / OPTIONS.
+  let finished = false;
+  if (speed === 255) {
+    // Boucle borne (= équivalent décomp `for (j = 0; j < 0x400; ++j)`).
+    for (let j = 0; j < 0x400; j++) {
+      runTextPrinter(printer);
+      if (printer.state === RENDER_STATE_WAIT_WITH_DOWN_ARROW || printer.state === RENDER_STATE_FINISH) break;
+    }
+    finished = true;
+  }
+  gTextPrinters.push({ printer, windowId, finished });
   return gTextPrinters.length - 1;
 }
 
@@ -193,5 +213,9 @@ export function StringExpandPlaceholders(dest: string, src: string): string {
 
 // ─── Text colors helper ──────────────────────────────────────────────────────
 
-export const sTextColor_Headers = [2, 1, 3] as const; // fg=2, bg=1, shadow=3
+// 1:1 décomp main_menu.c:410 sTextColor_Headers — [bgColor, fgColor, shadowColor].
+// Décomp original : [TEXT_DYNAMIC_COLOR_1, _2, _3] = [10, 11, 12], remplis par
+// LoadPalette dynamique. On approxime avec les colors statiques équivalentes
+// visuellement (= bg=WHITE, fg=DARK_GRAY, shadow=LIGHT_GRAY) :
+export const sTextColor_Headers = [1, 2, 3] as const; // [bg=WHITE, fg=DARK_GRAY, shadow=LIGHT_GRAY]
 (globalThis as Record<string, unknown>).sTextColor_Headers = sTextColor_Headers;

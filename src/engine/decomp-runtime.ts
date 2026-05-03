@@ -242,6 +242,10 @@ export class MainStruct {
   state = 0;
   callback2: CB2Callback | null = null;
   vblankCallback: (() => void) | null = null;
+  /** 1:1 décomp gMain.savedCallback — callback à restaurer quand une scène
+   *  imbriquée (e.g. option menu, naming screen) se termine. Set par le caller
+   *  AVANT `SetMainCallback2(CB2_InitOptionMenu)` etc. */
+  savedCallback: CB2Callback | null = null;
   /** 1:1 décomp gMain.newKeys / gMain.heldKeys — input keys this frame / held keys. */
   newKeys = 0;
   heldKeys = 0;
