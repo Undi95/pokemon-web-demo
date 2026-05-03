@@ -22,7 +22,6 @@
  */
 import { Midi } from '@tonejs/midi';
 import { WorkletSynthesizer, Sequencer } from 'spessasynth_lib';
-import { BasicMIDI } from 'spessasynth_core';
 import type { VoiceGroup } from './voice-types';
 import type { VoiceGroupLookup } from './voice-resolver';
 import { resolveVoice } from './voice-resolver';
@@ -119,6 +118,26 @@ async function ensureSlotState(slot: SlotKind): Promise<SlotState> {
 const _bufferByMidi = new WeakMap<Midi, ArrayBuffer>();
 const _midiCache = new Map<string, Midi>();
 
+/** Scan brut le buffer MIDI à la recherche de markers meta `loopStart` /
+ *  `loopEnd` (= FF 06 <len> <text>). Retourne true si AU MOINS un loopStart
+ *  ou loopEnd est trouvé. C'est la convention utilisée par les .mid Pokémon
+ *  (= mid2agb les convertit en `ply_goto` côté ROM). */
+function midiHasLoopMarkers(buf: Uint8Array): boolean {
+  const td = new TextDecoder('utf-8', { fatal: false });
+  for (let i = 0; i < buf.length - 3; i++) {
+    if (buf[i] === 0xFF && buf[i + 1] === 0x06) {
+      // FF 06 = MIDI meta marker. Length encoded as variable-length quantity, but
+      // for typical < 128 byte text it's just 1 byte. Stay conservative.
+      const len = buf[i + 2];
+      if (len > 0 && len < 64 && i + 3 + len <= buf.length) {
+        const text = td.decode(buf.subarray(i + 3, i + 3 + len)).trim().toLowerCase();
+        if (text === 'loopstart' || text === 'loopend' || text === 'start') return true;
+      }
+    }
+  }
+  return false;
+}
+
 /** Précharge les 3 slots synth (bgm/se1/se2) en parallèle.
  *  À appeler au boot du jeu (= idem `m4aPrime`) pour que le 1er PlaySE
  *  ne souffre PAS d'une latence de 1-2s (load SF2 + worklet init).
@@ -146,22 +165,16 @@ export async function loadMidi(url: string): Promise<Midi> {
   });
   const midi = new Midi(arrBuf);
   _bufferByMidi.set(midi, arrBuf);
-  // Parse aussi via BasicMIDI pour récupérer l'info loop (= markers MIDI `[`/`]`).
-  // BasicMIDI consomme l'ArrayBuffer en interne ; on slice() pour éviter neutering.
-  // CHECK type === 'soft' : BasicMIDI fallback toujours à start=firstNoteOn /
-  // end=lastVoiceEventTick si aucun marker explicit → start !== end peut être vrai
-  // pour TOUTES les BGMs sans markers (= one-shot). Le `type` est 'soft' UNIQUEMENT
-  // si un CC 4/117 explicit a été trouvé pendant le parse (= vrai marker `]`).
-  try {
-    const bmidi = BasicMIDI.fromArrayBuffer(arrBuf.slice(0));
-    if (bmidi.loop && bmidi.loop.type === 'soft') {
-      (midi as unknown as { loop: { start: number; end: number } }).loop = {
-        start: bmidi.loop.start,
-        end: bmidi.loop.end,
-      };
-    }
-  } catch (e) {
-    console.warn(`[loadMidi] BasicMIDI parse failed for ${url}, no loop info:`, e);
+  // Détection markers MIDI `loopStart` / `loopEnd` (FF 06 meta events) que les
+  // .mid Pokémon utilisent pour signaler les BGMs qui doivent looper. mid2agb
+  // les convertit en `ply_goto` côté ROM. On scanne le buffer raw pour les
+  // détecter. Confirmé via `node` :
+  //   mus_route101/littleroot/petalburg → loopStart + loopEnd ✓
+  //   mus_title/mus_intro → pas de markers ✓
+  if (midiHasLoopMarkers(new Uint8Array(arrBuf))) {
+    (midi as unknown as { loop: { start: number; end: number } }).loop = {
+      start: 0, end: 1,  // valeurs symboliques (la lecture loop se fait worklet-side)
+    };
   }
   _midiCache.set(url, midi);
   return midi;
