@@ -267,6 +267,13 @@ function renderOamScanline(
     const sprite = oam[i];
     if (!sprite.visible) continue;
     if (sprite.affineMode === 2) continue; // HIDE
+    // OBJ_WINDOW (objMode === 2) ne dessine PAS de pixels colorés. Ces sprites
+    // définissent uniquement la zone WINOBJ (= mask alpha pour les BG layers).
+    // 1:1 GBATEK : "Object mode 2 = OBJ Window. Pixels are not displayed".
+    // computeWinObjScanline les utilise déjà séparément pour le winObjMask.
+    // Sans ce skip, ex. les shine sprites du title screen rendaient en blanc
+    // visible au lieu de servir de mask invisible.
+    if (sprite.objMode === 2) continue;
 
     const [wTiles, hTiles] = OAM_SIZES[sprite.shape][sprite.size];
     const wPx = wTiles * 8;
