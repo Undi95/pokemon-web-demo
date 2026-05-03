@@ -37,6 +37,7 @@ import { MenuOverlayScene } from './scenes/MenuOverlayScene';
 import { OptionMenuScene } from './scenes/OptionMenuScene';
 import { createAudioDevtool } from './util/audio-devtool';
 import './util/remap-modal'; // exposes window.openRemapModal for the topbar button
+import { setMasterVolume } from './engine/m4a/audio-context';
 
 // Audio devtool panel (top-right corner). Dev only. Disable via
 // localStorage.setItem('audioDevtool', 'off').
@@ -117,4 +118,40 @@ void game.scene.add('DebugOverlayScene', DebugOverlayScene, true);
 // Expose contrôle zoom à window pour les boutons HTML.
 (window as unknown as { setGameZoom: (z: number) => void }).setGameZoom = (z: number) => {
   game.scale.setZoom(Math.max(1, Math.min(8, z)));
+};
+
+// ─── Volume master (= slider topbar, visible user-facing) ─────────────────
+// Le devtool audio a un slider miroir (synchro via storage event + custom event).
+// Persiste dans localStorage.audioDevtoolVolume (= partagé avec le devtool).
+const VOLUME_KEY = 'audioDevtoolVolume';
+const initialVolStr = localStorage.getItem(VOLUME_KEY);
+const initialVol = Math.max(0, Math.min(1, parseFloat(initialVolStr ?? '1') || 1));
+setMasterVolume(initialVol);
+
+function syncVolumeUI(v: number): void {
+  const slider = document.getElementById('game-volume') as HTMLInputElement | null;
+  const label = document.getElementById('game-volume-value');
+  const pct = Math.round(v * 100);
+  if (slider) slider.value = String(pct);
+  if (label) label.textContent = `${pct}%`;
+}
+
+if (typeof window !== 'undefined') {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => syncVolumeUI(initialVol));
+  } else {
+    syncVolumeUI(initialVol);
+  }
+}
+
+(window as unknown as { setGameVolume: (v: number | string) => void }).setGameVolume = (v) => {
+  const n = typeof v === 'string' ? parseInt(v, 10) : v;
+  if (!Number.isFinite(n)) return;
+  const clamped = Math.max(0, Math.min(100, n));
+  const norm = clamped / 100;
+  setMasterVolume(norm);
+  localStorage.setItem(VOLUME_KEY, String(norm));
+  syncVolumeUI(norm);
+  // Notifie le devtool audio que le volume a changé (pour sync slider).
+  window.dispatchEvent(new CustomEvent('audio-volume-changed', { detail: { volume: norm } }));
 };

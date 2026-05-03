@@ -118,6 +118,15 @@ export function createAudioDevtool(): void {
     setMasterVolume(v);
     volValue.textContent = `${volSlider.value}%`;
     localStorage.setItem('audioDevtoolVolume', String(v));
+    // Notifie le slider topbar (= sync UX).
+    window.dispatchEvent(new CustomEvent('audio-volume-changed', { detail: { volume: v } }));
+  });
+  // Listen to volume changes coming from the topbar slider (= sync inverse).
+  window.addEventListener('audio-volume-changed', (e) => {
+    const v = (e as CustomEvent<{ volume: number }>).detail.volume;
+    if (Math.abs(Number(volSlider.value) / 100 - v) < 0.005) return; // ignore self-event
+    volSlider.value = String(Math.round(v * 100));
+    volValue.textContent = `${volSlider.value}%`;
   });
   volSection.appendChild(volLabel);
   volSection.appendChild(volSlider);

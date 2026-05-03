@@ -256,6 +256,13 @@ export function stopSong(slot: SlotKind = 'bgm'): void {
     } catch { /* already stopped */ }
     state.sequencer = null;
   }
+  // CRITIQUE : reset le synth (= mute toutes notes en cours + reset state interne)
+  // sinon une nouvelle Sequencer attachée au même synth ne peut pas relancer la
+  // même song proprement (= bug "Stop All puis Play A → silence" qui obligeait
+  // un refresh page). force=true → flush note-offs même les sustained.
+  try {
+    state.synth.stopAll(true);
+  } catch { /* ignore */ }
   // Stop les noise SE engine nodes actifs sur ce slot.
   stopNoiseSE(slot);
   // Stop les SE pré-rendus actifs sur ce slot.

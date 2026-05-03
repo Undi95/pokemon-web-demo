@@ -38,6 +38,18 @@
       font-family: monospace; font-size: 12px; padding: 2px 8px; cursor: pointer;
     }
     .topbar button:hover { background: #444; }
+    .topbar input[type="range"] {
+      accent-color: #88f;
+      cursor: pointer;
+      width: 100px;
+      vertical-align: middle;
+    }
+    .topbar .vol-value {
+      display: inline-block;
+      min-width: 32px;
+      text-align: right;
+      color: #ccc;
+    }
   </style>
 </head>
 <body>
@@ -51,6 +63,7 @@
     <button onclick="setGameZoom(5)">×5</button>
     <button onclick="setGameZoom(6)">×6</button>
     <button onclick="openRemapModal()" title="Personnaliser les touches">🎮 Remap</button>
+    <span title="Volume master (BGM + SE)">🔊 <input type="range" id="game-volume" min="0" max="100" value="100" oninput="setGameVolume(this.value)"><span id="game-volume-value" class="vol-value">100%</span></span>
   </div>
   <div id="game"></div>
   <script type="module" src="/src/main.ts"></script>
