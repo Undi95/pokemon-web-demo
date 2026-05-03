@@ -224,14 +224,6 @@ export async function playSong(
 
   state.sequencer = seq;
 
-  // DEBUG : logger quand la song finit naturellement (= songEnded event).
-  // Permet de diagnostiquer le demo loop title screen.
-  try {
-    seq.eventHandler.addEvent('songEnded', `dbg-${slot}-${myGen}`, () => {
-      console.log(`[m4a debug] song ended on slot=${slot} (loop=${loop}, duration=${song.duration.toFixed(1)}s)`);
-    });
-  } catch { /* ignore */ }
-
   // (Le scheduling noise SE est fait au-dessus, AVANT seq.play(), via
   // se-noise-engine.ts. Aucun fallback inline ici.)
 

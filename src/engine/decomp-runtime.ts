@@ -1433,10 +1433,6 @@ export class DecompRuntime {
     // Détection par nom : `CB2_GoTo*` = transition, skip Tasks/sprites.
     const cbName = this.gMain.callback2?.name ?? '';
     const isTransitionCB2 = cbName.startsWith('CB2_GoTo');
-    // DEBUG : log 1× par seconde quel CB2 actif et si tasks runs
-    if (this.gIntroFrameCounter % 60 === 0) {
-      console.log(`[runtime debug] callback2='${cbName}' isTransition=${isTransitionCB2} runTasks=${!isTransitionCB2}`);
-    }
     if (!isTransitionCB2) {
       // ─── 1:1 décomp MainCB2_Intro order ───────────────────────────────────
       // 2. RunTasks() — Tasks AVANT tout sprite tick. Critique : la création

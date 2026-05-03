@@ -297,16 +297,17 @@ export const Task_TitleScreenPhase3: TaskCallback = (task, rt) => {
               (globalThis as any).gBattle_BG1_X = 0;
           }
           UpdateLegendaryMarkingColor(task.data[0]);
-          // DEBUG : log gMPlayInfo_BGM.status une fois par seconde pour diag demo loop
-          if ((task.data[0] % 60) === 0) {
-            console.log(`[Phase3 debug] gMPlayInfo_BGM.status = ${gMPlayInfo_BGM.status} (frame ${task.data[0]})`);
-          }
           if ((gMPlayInfo_BGM.status & 0xFFFF) == 0)
           {
               // MANUAL FIX session 81 : 1:1 décomp title_screen.c:818-822 demo loop.
-              console.log('[Phase3 debug] DEMO LOOP TRIGGERED → fade + GoToCopyrightScreen');
+              // DestroyTask : notre runtime appelle RunTasks à chaque frame contrairement
+              // à la décomp où seuls les MainCB2_X le font. Sans destroy, Phase3 retrigger
+              // BeginNormalPaletteFade chaque frame pendant la transition (= jamais de
+              // fade complete). 1:1 décomp = équivalent (la task ne re-tournerait pas car
+              // RunTasks pas appelé pendant CB2_GoTo*/CB2_Init*).
               rt.BeginNormalPaletteFade("PALETTES_ALL", 0, 0, 16, "RGB_WHITEALPHA");
               rt.SetMainCallback2(CB2_GoToCopyrightScreen);
+              rt.DestroyTask(taskId);
           }
       }
 };

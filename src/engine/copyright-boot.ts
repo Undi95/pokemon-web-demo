@@ -125,20 +125,12 @@ export const CB2_InitCopyrightScreenAfterBootup: CB2Callback = (rt) => {
 };
 
 // ─── 1:1 décomp intro.c:1162 ────────────────────────────────────────────────
-// Démon loop : appelé depuis Task_TitleScreenPhase3 quand la BGM termine.
-// Re-init la state machine SetUpCopyrightScreen depuis state 0 → reload Copyright
-// graphics → fade-in → Task_Scene1_Load → MainCB2_Intro.
-// Flag one-shot pour reset gMain.state UNE seule fois au 1er appel (= sortie
-// title screen avec state=5). Sinon le check `state < 141` boucle car la state
-// machine repasse par 2-140 normalement → reset infini.
-let _afterTitleEntryFlag = false;
+// `void CB2_InitCopyrightScreenAfterTitleScreen(void) { SetUpCopyrightScreen(); }`
+// PAS de reset state (= décomp s'attend à entrer ici avec gMain.state laissé à 5
+// par le title screen, et la state machine fall-through les default cases jusqu'à
+// 141 = COPYRIGHT_START_INTRO → CreateTask Scene1 + SetMainCallback2 MainCB2_Intro).
+// Conséquence : pas de reload des graphics Copyright (state 0 skippé), juste un
+// délai de ~135 frames avant de relancer l'intro.
 export const CB2_InitCopyrightScreenAfterTitleScreen: CB2Callback = (_rt) => {
-  if (!_afterTitleEntryFlag) {
-    _afterTitleEntryFlag = true;
-    gMain.state = 0;  // re-init state machine depuis le début
-  }
   SetUpCopyrightScreen();
-  // Reset flag quand state COPYRIGHT_START_INTRO atteint (= cycle terminé)
-  // → prochain demo loop pourra reset state à 0 à nouveau.
-  if (gMain.state >= 141) _afterTitleEntryFlag = false;
 };
