@@ -1115,8 +1115,11 @@ export class DecompRuntime {
       }
       if (!found) break;
       visited.add(found.taskId);
-      try { found.func(found); } catch (e) {
-        console.error('[runTasks] task threw:', e);
+      const fn = found.func;  // narrow : on a déjà vérifié !task.func ci-dessus
+      if (fn) {
+        try { fn(found); } catch (e) {
+          console.error('[runTasks] task threw:', e);
+        }
       }
       processed++;
     }

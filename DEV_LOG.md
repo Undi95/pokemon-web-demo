@@ -8,6 +8,66 @@ de la décompilation FR (`pokeemeraude`) + `@pkmn/sim` pour combats.
 
 ---
 
+## Session 82 — Option menu 1:1 décomp + 5 fixes systémiques + foundations unifiées
+
+**Directive #1 établie par user** (= [`memory/directive_no_redo_unified_foundations.md`]) :
+1:1 décomp ABSOLU. Pas de code dupliqué (= state machine parallèle, helper réinventé).
+Pas de fix isolé qui laisse autres scènes broken. Le décomp gère les choses
+uniformément → notre impl doit aussi. Avant d'écrire : vérifier fondations
+existantes. Si on fix un système → grep tous callsites + tester multiples scènes.
+
+### Option menu fonctionnel 1:1 décomp
+- Auto file `option_menu-callbacks-auto.ts` patches IN-PLACE + post-transpile-patches.mjs idempotents (PATCH O1-O6) :
+  - O1 : case 10 `task.data[X]` → `_gt(rt, taskId).data[X]` (= scope fix)
+  - O2 : case 11 `SetMainCallback2(MainCB2)` (= était TODO)
+  - O3 : Task_OptionMenuFadeOut `SetMainCallback2(gMain.savedCallback)` (= était TODO, sortie freeze)
+  - O4 : ajout `MainCB2` + `VBlankCB` exports (= transpileur omet)
+  - O5 : `DmaClear16(PLTT)` au state 1 (= était `/* TODO DmaClear16 */`, palette HW clear pour pas de flash)
+  - O6 : `SetVBlankCallback(NULL/VBlankCB)` au state 0 + state 11 (= était `/* noop */`, mécanisme anti-flash)
+
+### 5 fixes systémiques sur fondations (= reusable pour Birch / battle / etc.)
+1. **`PaletteBuffer.set` ne propage plus à `gba.palette`** : write seulement le buffer
+   interne. PLTT register update via `TransferPlttBuffer.flushTo()`. 1:1 décomp arch.
+2. **`TransferPlttBuffer` proprement implémenté** : hook au end of `runOneFrame`,
+   appelé UNIQUEMENT si `gMain.vblankCallback` est non-null (= 1:1 décomp gating
+   où `SetVBlankCallback(NULL)` désactive le PLTT update pendant scene init).
+3. **`SetVBlankCallback(NULL/VBlankCB)` restore dans auto files** : transpileur
+   convertissait en `/* noop */` → mécanisme anti-flash perdu. Patches idempotents.
+4. **`BeginNormalPaletteFade` ne reset plus BLDCNT/BLDY hardware** : ancien hack
+   killait le WIN0 darken effect du option menu cursor au state 11. 1:1 décomp
+   ne touche pas ces registres dans BeginNormalPaletteFade.
+5. **`ResetPaletteFade` ne reset que internal fade state** : avant resettait
+   `blend.brightness = 0` (= BLDY register HW), ce qui kill le BLDY=4 du state 1.
+   1:1 décomp `palette.c:374` reset uniquement `gPaletteFade.y/.active/.bufferTransferDisabled`.
+
+### Foundations unifiées
+- **`gba-text-window.ts` (nouveau)** = 1:1 décomp `src/text_window.c`. Foundation partagée :
+  `GetWindowFrameTilesPal(idx)` + `preloadTextWindowFrames()` + `WINDOW_FRAMES_COUNT`.
+  Utilisé par option menu + main menu (= cycle frame style live).
+- **`sTextColor_Headers = [10, 11, 12]`** (= 1:1 décomp `[TEXT_DYNAMIC_COLOR_1, _2, _3]`).
+  Avant `[1, 2, 3]` hardcoded → palette[15*16+1] = BLUE (cursor) au lieu du BG WHITE.
+- **`gba-text-system.ts:colorArray ordering = [bg, fg, shadow]`** (= 1:1 décomp).
+  Avant inversé `[fg, bg, shadow]` → BG résidu coloré.
+- **`LoadMainMenuWindowFrameTiles` 4 lignes 1:1 décomp** (= était 50 lignes de
+  `FALLBACK_WINDOW_FRAME_TILES` hardcoded). Délègue à `GetWindowFrameTilesPal`.
+- **Save persistence** via `gSaveBlock2Ptr` Proxy → auto-persist localStorage sur
+  `set()`. Options préservées au refresh.
+
+### UX
+- **Lock canvas browser-native** : `canvas.tabIndex = 0` + `canvas.focus()` + check
+  `document.activeElement === canvas` pour preventDefault arrow keys. Pas de
+  custom state à maintenir, robuste à travers scenes.
+- **TestGbaScene** : retiré `pointerdown` exit. Exit uniquement sur vraie touche
+  GBA (= `keyToGbaMask !== 0`). Plus d'exits accidentels.
+
+### Restants pour session 83 (= audit foundations + Birch speech)
+- `gba-menu-system.ts:InitMainMenu` manuellement écrit → devrait passer par auto file `CB2_InitMainMenu` 1:1 décomp avec post-transpile-patches.
+- `option-menu-impl.ts:rightAlignX` = ~6px/char approx → devrait utiliser glyphwidths via GetStringWidth.
+- Birch speech CB2 callbacks ont `/* noop SetVBlankCallback */` (= même pattern O6 à appliquer).
+- Audit complet du codebase pour voir s'il reste duplications/hacks/approximations.
+
+---
+
 ## Session 81 — Title screen 1:1 GBA + audit complet 1:1 décomp + dedup
 
 ### Demo loop title → intro (1:1 décomp title_screen.c)

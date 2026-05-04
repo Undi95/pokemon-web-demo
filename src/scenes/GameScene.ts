@@ -226,14 +226,16 @@ export class GameScene extends Phaser.Scene {
         return { idx, prev, current: cfg.visible };
       },
       // Hide all OBJ sprites (= isolate BG layers).
+      // _hiddenByDev tracking : Set externe (= pas de pollution OamEntry).
       objHide: (hide: boolean = true) => {
+        const stash: Set<number> = ((window as unknown as { __objHideStash?: Set<number> }).__objHideStash ??= new Set());
         for (let i = 0; i < 128; i++) {
           if (hide) {
-            rt.gba.oam[i]._hiddenByDev = !rt.gba.oam[i].visible ? false : true;
+            if (rt.gba.oam[i].visible) stash.add(i);
             rt.gba.oam[i].visible = false;
-          } else if (rt.gba.oam[i]._hiddenByDev) {
+          } else if (stash.has(i)) {
             rt.gba.oam[i].visible = true;
-            rt.gba.oam[i]._hiddenByDev = false;
+            stash.delete(i);
           }
         }
         return hide ? 'all sprites hidden' : 'sprites restored';

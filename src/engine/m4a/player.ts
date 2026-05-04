@@ -373,12 +373,12 @@ function _fade(slot: SlotKind, speed: number, startGain: number, endGain: number
   const steps = Math.max(1, Math.ceil(totalMs / stepMs));
   let step = 0;
   // Start at startGain immediately
-  try { state.synth.setMasterParameter('masterGain' as never, startGain); } catch { /* ignore */ }
+  try { state.synth.setMasterParameter('masterGain', startGain); } catch { /* ignore */ }
   const handle = window.setInterval(() => {
     step++;
     const t = Math.min(1, step / steps);
     const gain = startGain + (endGain - startGain) * t;
-    try { state.synth.setMasterParameter('masterGain' as never, gain); } catch { /* ignore */ }
+    try { state.synth.setMasterParameter('masterGain', gain); } catch { /* ignore */ }
     if (step >= steps) {
       window.clearInterval(handle);
       delete _fadeIntervals[slot];

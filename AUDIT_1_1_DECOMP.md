@@ -3,6 +3,25 @@
 > Audit Opus session 81 (post intro/title screen 1:1). Compare l'impl TS vs `D:/Projet 1/decomps/pokeemeraude`.
 > **Statut session 81** : ✅ A1-A5 + critique OBJ_PLTT_ID + audio (m4aSongNumStart→PlaySE, FadeOutBGM impl, fade duration, SE_SELECT placeholder) + Phase C item #7 (BlendPalette +8). Restants pour future sessions : items 8-11 + menu polish.
 > **Statut session 82** : ✅ Items 9-11 (BG_CHAR_ADDR/BG_SCREEN_ADDR absolute, gPlttBufferTransferPending scaffold + doc, objVram size doc). Restants : item 8 (key auto-repeat — déjà DONE en réalité) + menu polish.
+>
+> **Session 82 (option menu + 5 fixes systémiques)** :
+> ✅ Option menu 1:1 décomp via auto file + post-transpile-patches.mjs (PATCH O1-O6).
+> ✅ **5 fixes systémiques sur fondations** (= pattern reusable pour Birch / battle / etc.) :
+>   1. PaletteBuffer.set ne propage plus à gba.palette → gPlttBufferFaded only.
+>   2. TransferPlttBuffer hook au end of runOneFrame UNIQUEMENT si vblankCallback non-null (= 1:1 décomp gating, prévient flash CB2_Init).
+>   3. SetVBlankCallback(NULL/VBlankCB) restore dans auto file (= mécanisme anti-flash décomp).
+>   4. BeginNormalPaletteFade ne reset plus BLDCNT/BLDY hardware (= était kill du WIN0 darken).
+>   5. ResetPaletteFade ne reset que internal fade state (= était kill du BLDY hardware).
+> ✅ gba-text-window.ts foundation partagée (GetWindowFrameTilesPal/preloadTextWindowFrames) — supprime duplication option-menu-impl ↔ gba-menu-system.
+> ✅ sTextColor_Headers = [10, 11, 12] (= 1:1 décomp DYNAMIC_COLOR positions, plus d'approximation hardcoded).
+> ✅ Save persistence localStorage via Proxy gSaveBlock2Ptr.
+> ✅ Lock canvas browser-native (tabIndex + document.activeElement).
+>
+> **Restants à 1:1 décomp pour next session** :
+>   - `gba-menu-system.ts:InitMainMenu` est MANUELLEMENT écrit (= approximation). Devrait passer par auto file `CB2_InitMainMenu` 1:1 décomp avec post-transpile-patches.
+>   - `option-menu-impl.ts:rightAlignX` = ~6px/char approx. Devrait utiliser glyphwidths réels via GetStringWidth.
+>   - Birch speech CB2 callbacks (auto file) ont `/* noop SetVBlankCallback */` à patcher (même pattern O6).
+>   - Audit complet du codebase pour voir s'il reste duplications/hacks/approximations.
 
 ## 🔴 Critiques (= bugs visibles probables)
 
