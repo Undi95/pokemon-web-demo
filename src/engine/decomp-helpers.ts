@@ -142,14 +142,26 @@ export class PaletteBuffer {
     return this.buffer[flatIdx] ?? 0;
   }
 
-  /** Écrit une entry (idx 0-511) + propage à gba.palette. */
+  /** Écrit une entry (idx 0-511) dans le buffer interne uniquement.
+   *  ⚠️ 1:1 décomp : LoadPalette + UpdatePaletteFade écrivent dans
+   *  gPlttBufferFaded. Le PLTT register (= compositor-visible palette) n'est
+   *  mis à jour qu'au VBlank via TransferPlttBuffer. Avant cette fix, on
+   *  propageait IMMEDIATEMENT à gba.palette → flash bright pendant les CB2
+   *  init de scène (= LoadPalette visible avant fade-in start). */
   set(flatIdx: number, rgb15: number): void {
     if (flatIdx < 0 || flatIdx >= 512) return;
     this.buffer[flatIdx] = rgb15;
-    if (flatIdx < 256) {
-      this.gba.palette.loadBgRange(flatIdx, [rgb15]);
-    } else {
-      this.gba.palette.loadObjRange(flatIdx - 256, [rgb15]);
+  }
+
+  /** 1:1 décomp `TransferPlttBuffer` body — copy this buffer → gba.palette
+   *  (= equivalent du DmaCopy16(faded → PLTT) au VBlank). À call depuis
+   *  TransferPlttBuffer (decomp-globals) à chaque VBlank. */
+  flushTo(): void {
+    for (let i = 0; i < 256; i++) {
+      this.gba.palette.loadBgRange(i, [this.buffer[i]]);
+    }
+    for (let i = 0; i < 256; i++) {
+      this.gba.palette.loadObjRange(i, [this.buffer[256 + i]]);
     }
   }
 

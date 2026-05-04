@@ -290,11 +290,37 @@ function patchOptionMenuCallbacks() {
     `$1// ✅ FIX session 82 : retour à l'appelant (= main menu CB2_ReinitMainMenu, ou field menu).\n          rt.SetMainCallback2(gMain.savedCallback ?? null);`,
   );
 
-  // PATCH O4 (session 82) : ajout `export const MainCB2 = (_rt) => {}` (= no-op,
-  // notre runtime drive RunTasks/UpdatePaletteFade pour les MainCB2*). Le
-  // transpileur omet ce export, on l'ajoute en fin de fichier.
+  // PATCH O5 (session 82) : DmaClear16 sur PLTT au case 1 (= était `/* TODO DmaClear16 */`).
+  // Sans ça, palette précédente persiste pendant init → flash bright pendant fade-in.
+  // 1:1 décomp option_menu.c:159.
+  s = s.replace(
+    /\/\* TODO DmaClear16 \(memory clear\) \*\/;/g,
+    `// ✅ FIX session 82 : DmaClear16 sur PLTT (= 0x05000000-0x050003FF) pour effacer\n          // la palette HW dès l'init (= screen black during state 1-10 jusqu'au fade-in).\n          DmaClear16(3, 0x05000000, 0x400);`,
+  );
+
+  // PATCH O6 (session 82) : `/* noop SetVBlankCallback */` → `rt.SetVBlankCallback(NULL/VBlankCB)`.
+  // Décomp `SetVBlankCallback(NULL)` au state 0 désactive PLTT transfer pendant init →
+  // pas de flash. Réinstall au state 11 (= via VBlankCB) → fade-in propre.
+  // Le transpileur convertit ces calls en TODO comments, on les réactive ici.
+  // CASE 0 : SetVBlankCallback(NULL).
+  s = s.replace(
+    /(case 0:\s*)\/\* noop SetVBlankCallback \*\/;/g,
+    `$1// ✅ FIX session 82 : disable VBlankCB pendant init pour pas de flash bright.\n          rt.SetVBlankCallback(null);`,
+  );
+  // CASE 11 : SetVBlankCallback(VBlankCB) — entre BeginNormalPaletteFade et SetMainCallback2.
+  s = s.replace(
+    /(rt\.BeginNormalPaletteFade\("PALETTES_ALL", 0, 16, 0, "RGB_BLACK"\);\s*)\/\* noop SetVBlankCallback \*\/;/g,
+    `$1// ✅ FIX session 82 : réinstall VBlankCB → TransferPlttBuffer reprend → fade-in.\n          rt.SetVBlankCallback(VBlankCB);`,
+  );
+
+  // PATCH O4 (session 82) : ajout `export const MainCB2 + VBlankCB = (_rt) => {}` (= no-op,
+  // notre runtime drive RunTasks/UpdatePaletteFade/TransferPlttBuffer auto). Le
+  // transpileur omet ces exports, on les ajoute en fin de fichier.
   if (!s.includes('export const MainCB2: CB2Callback')) {
     s = s.trimEnd() + `\n\n/** Source: option_menu.c → MainCB2 (no-op chez nous, runtime drive RunTasks\n *  + UpdatePaletteFade automatiquement pour les callbacks \`MainCB2*\`).\n *  ⚠️ MANUAL FIX session 82 : transpileur omet ce export, ajouté in-place. */\nexport const MainCB2: CB2Callback = (_rt) => {\n  // No-op : runtime drives the rest.\n};\n`;
+  }
+  if (!s.includes('export const VBlankCB:')) {
+    s = s.trimEnd() + `\n\n/** Source: option_menu.c → VBlankCB. 1:1 décomp call TransferPlttBuffer.\n *  Notre runtime factor le TransferPlttBuffer call quand vblankCallback non-null.\n *  ⚠️ MANUAL FIX session 82 : transpileur omet ce export, ajouté in-place. */\nexport const VBlankCB: () => void = () => {\n  // No-op : runtime calls TransferPlttBuffer when vblankCallback is set.\n};\n`;
   }
 
   if (s !== before) {

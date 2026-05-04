@@ -217,16 +217,9 @@ export function LoadPalette(srcSymbol: string | Uint16Array | number, offset: nu
     ? u16.length
     : Math.floor(sizeBytes / 2);
   const r = rt();
-  // offset < 256 = BG palette, ≥ 256 = OBJ palette
-  if (offset < 256) {
-    r.gba.palette.loadBgRange(offset, u16.subarray(0, numEntries));
-  } else {
-    r.gba.palette.loadObjRange(offset - 256, u16.subarray(0, numEntries));
-  }
-  // 1:1 décomp : LoadPalette écrit dans gPlttBufferUnfaded (= source pour
-  // CpuCopy16 plus tard, et pour UpdatePaletteFade qui copie unfaded → faded).
-  // Sans ce write, les CpuCopy16 qui lisent gPlttBufferUnfaded[OBJ_PLTT_ID(0)]
-  // récupèrent 0 (= les copies ripple/etc échouent).
+  // 1:1 décomp src/palette.c LoadPalette : écrit gPlttBufferUnfaded ET
+  // gPlttBufferFaded. PAS direct gba.palette (= PLTT register sera updaté au
+  // prochain VBlank via TransferPlttBuffer).
   for (let i = 0; i < numEntries; i++) {
     r.gPlttBufferUnfaded.set(offset + i, u16[i]);
     r.gPlttBufferFaded.set(offset + i, u16[i]);
@@ -252,11 +245,29 @@ export function LoadBgTiles(bg: number, src: Uint8Array, sizeBytes: number, dest
  *  Sémantique : DMA clear = écrire 0 dans `[destAddr..destAddr+sizeBytes]`. */
 export function DmaClear16(_channel: number, destAddr: number, sizeBytes: number): void {
   const r = rt();
-  const vram = r.gba.vram;
-  const offset = destAddr % vram.byteLength;
-  const clearSize = Math.min(sizeBytes, vram.byteLength - offset);
-  if (clearSize > 0) {
-    vram.fill(0, offset, offset + clearSize);
+  // Dispatch sur la région : VRAM (0x06000000), OAM (0x07000000), PLTT (0x05000000).
+  if (destAddr >= 0x05000000 && destAddr < 0x05000400) {
+    // PLTT range : clear gPlttBufferFaded + Unfaded + compositor.
+    const start = (destAddr - 0x05000000) >> 1;
+    const count = sizeBytes >> 1;
+    for (let i = 0; i < count; i++) {
+      r.gPlttBufferFaded.set(start + i, 0);
+      r.gPlttBufferUnfaded.set(start + i, 0);
+    }
+  } else if (destAddr >= 0x07000000 && destAddr < 0x07000400) {
+    // OAM range : clear visible flags
+    const start = (destAddr - 0x07000000) / 8;
+    const count = Math.min(sizeBytes / 8, 128 - start);
+    for (let i = 0; i < count; i++) {
+      const oam = r.gba.oam[start + i];
+      if (oam) oam.visible = false;
+    }
+  } else {
+    // VRAM range (default).
+    const vram = r.gba.vram;
+    const offset = destAddr % vram.byteLength;
+    const clearSize = Math.min(sizeBytes, vram.byteLength - offset);
+    if (clearSize > 0) vram.fill(0, offset, offset + clearSize);
   }
 }
 
@@ -1007,10 +1018,23 @@ export function DmaFill16(_channel: number, _value: number, destAddr: number, _s
 export function DmaFill32(_channel: number, _value: number, destAddr: number, _sizeBytes: number): void {
   void destAddr;  // idem no-op
 }
+/** 1:1 décomp src/palette.c ResetPaletteFade :
+ *  Resets internal fade STATE only (= gPaletteFade.y, .active, .targetY, etc.).
+ *  ⚠️ NE TOUCHE PAS le BLDY register (= gba.blend.brightness) ni le BLDCNT.
+ *  Avant cette fix, on resettait `r.gba.blend.brightness = 0`, ce qui kill le
+ *  BLDY=4 setup au state 1 de CB2_InitOptionMenu → cursor highlight darken
+ *  effect jamais visible. Cf. décomp palette.c:374 — ResetPaletteFade ne
+ *  set que `gPaletteFade.bufferTransferDisabled = FALSE` et internal fade
+ *  state. */
 export function ResetPaletteFade(): void {
   const r = rt();
   r.gPaletteFade.active = false;
-  r.gba.blend.brightness = 0;
+  r.gPaletteFade.brightness = 0;
+  r.gPaletteFade.startY = 0;
+  r.gPaletteFade.endY = 0;
+  r.gPaletteFade.currentFrame = 0;
+  r.gPaletteFade.totalFrames = 1;
+  r.gPaletteFade.bufferTransferDisabled = false;
 }
 export function ResetTasks(): void {
   const r = rt();
@@ -1018,21 +1042,16 @@ export function ResetTasks(): void {
   r.nextTaskId = 0;
   console.log('[ResetTasks] gTasks cleared, nextTaskId reset, size=', r.gTasks.size);
 }
-/** 1:1 décomp src/palette.c:103 `TransferPlttBuffer()` — DMA gPlttBufferFaded → PLTT
- *  hardware register, gated par `gPaletteFade.bufferTransferDisabled`.
+/** 1:1 décomp src/palette.c:103 `TransferPlttBuffer()` — copy gPlttBufferFaded
+ *  → PLTT register (= compositor-visible palette). Gated par
+ *  `gPaletteFade.bufferTransferDisabled`.
  *
- *  ⚠️ DÉVIATION : Notre `LoadPalette` / `_applyPaletteFadeStep` écrivent direct
- *  dans `gba.palette` (= compositor-visible) en plus de `gPlttBufferFaded`.
- *  Donc cette fonction est un no-op fonctionnel, mais on respecte le gate pour
- *  matcher le contrat décomp (= si jamais bufferTransferDisabled set, on skip).
- *  Cf. `PaletteFade.bufferTransferDisabled` doc pour rationale.
- *
- *  `sPlttBufferTransferPending` (= dirty flag du décomp) n'est pas tracké : on n'a
- *  pas de queue write→VBlank, les writes sont sync. */
+ *  Doit être called au VBlank (= une fois par frame). Notre runtime appelle
+ *  ce helper à la fin de runOneFrame pour simuler le timing VBlank décomp. */
 export function TransferPlttBuffer(): void {
   const r = rt();
   if (r.gPaletteFade.bufferTransferDisabled) return;
-  // No-op : écritures déjà appliquées au moment du write (cf. doc fonction).
+  r.gPlttBufferFaded.flushTo();
 }
 export function ScanlineEffect_Clear(): void {
   gScanlineEffectRegBuffers[0].fill(0);

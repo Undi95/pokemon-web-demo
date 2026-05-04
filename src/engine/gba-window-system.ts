@@ -249,12 +249,16 @@ export function InitBgFromTemplate(template: BgTemplate): void {
   // baseTile n'est pas utilisé dans notre engine pour l'instant
 }
 
+/** 1:1 décomp `ShowBg(bg)` — décomp `bg.c:ShowBg` set le flag dans
+ *  `sGpuBgConfigs.bgVisibilityAndMode` PUIS appelle `SyncBgVisibilityAndMode`
+ *  IMMEDIATEMENT (= setGpuReg DISPCNT bit BG_ON immediate). Pas de queue. */
 export function ShowBg(bg: number): void {
   const rt = getRuntime();
   if (!rt) return;
   rt.gba.bg(bg as 0 | 1 | 2 | 3).config.visible = true;
 }
 
+/** 1:1 décomp `HideBg(bg)` — same as ShowBg, immediate. */
 export function HideBg(bg: number): void {
   const rt = getRuntime();
   if (!rt) return;

@@ -531,13 +531,75 @@ export function VBlankCB_MainMenu(): void {
   // TODO: Transfer palette / OAM if needed
 }
 
-// ─── Save block stubs ────────────────────────────────────────────────────────
+// ─── Save block + persistence (= localStorage proxy) ────────────────────────
+//
+// 1:1 décomp : gSaveBlock2Ptr est un struct EWRAM qui contient les options
+// joueur (textSpeed, sound, frame style…) + identité player (gender, name).
+// Décomp persiste via flash mem sur GBA. Notre engine : localStorage.
+//
+// Mécanique : `_saveBlock2Storage` est l'objet runtime. `gSaveBlock2Ptr` est
+// un Proxy qui auto-persist toute écriture vers localStorage. Charge depuis
+// localStorage au boot (= options préservées au refresh).
 
-export const gSaveBlock1Ptr = {} as any;
-export const gSaveBlock2Ptr = {
+const SAVEBLOCK2_LSKEY = 'pokemon-web-demo:saveBlock2';
+
+const _saveBlock2Defaults: Record<string, unknown> = {
   playerGender: 0,
   playerName: 'PLAYER',
-} as any;
+  // Options (= 1:1 décomp save_data.c init values)
+  optionsTextSpeed: 1,        // OPTIONS_TEXT_SPEED_MID
+  optionsBattleSceneOff: 0,   // OPTIONS_BATTLE_SCENE_ON
+  optionsBattleStyle: 0,      // OPTIONS_BATTLE_STYLE_SHIFT
+  optionsSound: 0,            // OPTIONS_SOUND_MONO
+  optionsButtonMode: 0,       // OPTIONS_BUTTON_MODE_NORMAL
+  optionsWindowFrameType: 0,  // frame 1 (= classic blue rounded)
+};
+
+/** Charge depuis localStorage si dispo, sinon defaults. */
+function _loadSaveBlock2(): Record<string, unknown> {
+  const obj = { ..._saveBlock2Defaults };
+  try {
+    const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(SAVEBLOCK2_LSKEY) : null;
+    if (raw) {
+      const parsed = JSON.parse(raw) as Record<string, unknown>;
+      Object.assign(obj, parsed);
+    }
+  } catch (e) {
+    console.warn('[gSaveBlock2Ptr] failed to load from localStorage:', e);
+  }
+  return obj;
+}
+
+const _saveBlock2Storage: Record<string, unknown> = _loadSaveBlock2();
+
+/** Persist le storage actuel vers localStorage. */
+function _persistSaveBlock2(): void {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(SAVEBLOCK2_LSKEY, JSON.stringify(_saveBlock2Storage));
+    }
+  } catch (e) {
+    console.warn('[gSaveBlock2Ptr] failed to persist to localStorage:', e);
+  }
+}
+
+export const gSaveBlock1Ptr = {} as any;
+
+/** 1:1 décomp `gSaveBlock2Ptr` — Proxy auto-persistent vers localStorage.
+ *  Toute écriture (e.g. `gSaveBlock2Ptr.optionsTextSpeed = 2` dans
+ *  Task_OptionMenuSave) écrit immédiatement dans localStorage → préserve les
+ *  options au refresh. */
+export const gSaveBlock2Ptr: any = new Proxy(_saveBlock2Storage, {
+  get(target, prop: string | symbol) {
+    return target[prop as string];
+  },
+  set(target, prop: string | symbol, value: unknown) {
+    target[prop as string] = value;
+    _persistSaveBlock2();
+    return true;
+  },
+});
+
 export let gSaveFileStatus = 0; // SAVE_STATUS_EMPTY
 
 export function SetSaveFileStatus(status: number): void {

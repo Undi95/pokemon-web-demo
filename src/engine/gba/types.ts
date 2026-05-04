@@ -64,8 +64,14 @@ export function decodeBgMapEntry(packed: number): BgMapEntry {
 
 /** Configuration d'un BG layer (BG0-3). 1:1 décomp struct BgConfig. */
 export interface BgConfig {
-  /** Layer visible. */
+  /** Layer visible (= effective visibility used by compositor). */
   visible: boolean;
+  /** 1:1 décomp : ShowBg/HideBg set un FLAG queue qui n'est appliqué qu'au
+   *  prochain VBlank (= via SyncBgVisibilityAndMode). Sans ça, on a un flash
+   *  pendant les CB2 init de scène (= BG visible avant que la palette soit
+   *  loaded). Notre runtime sync `pendingVisible → visible` à la fin de
+   *  runOneFrame (= équivalent VBlank). */
+  pendingVisible: boolean | null;
   /** Priority 0-3 (0 = devant). En cas d'égalité : BG0 > BG1 > BG2 > BG3. */
   priority: number;
   /** Char base (où sont stockées les tile data en VRAM). 0-3 (×16KB). */
@@ -187,6 +193,7 @@ export function defaultOamEntry(): OamEntry {
 export function defaultBgConfig(): BgConfig {
   return {
     visible: false,
+    pendingVisible: null,
     priority: 0,
     charBaseIndex: 0,
     mapBaseIndex: 0,

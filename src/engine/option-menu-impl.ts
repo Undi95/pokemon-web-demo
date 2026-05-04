@@ -73,12 +73,19 @@ const TEXT_COLOR_LIGHT_GRAY = 3;
 const TEXT_COLOR_RED = 4;
 const TEXT_COLOR_LIGHT_RED = 5;
 
-/** 1:1 décomp option_menu.c FONT_NORMAL default + sTextColor_OptionMenuText :
- *  [bgColor, fgColor, shadowColor] — bg=TRANSPARENT (= leave underlying pixel
- *  from FillWindowPixelBuffer), fg=DARK_GRAY, shadow=LIGHT_GRAY. */
-const TEXT_COLOR_NORMAL: readonly number[] = [TEXT_COLOR_TRANSPARENT, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_LIGHT_GRAY];
+/** 1:1 décomp option_menu.c FONT_NORMAL default :
+ *  [bgColor, fgColor, shadowColor] = [WHITE, DARK_GRAY, LIGHT_GRAY] = [1, 2, 3]
+ *  (cf. text.c:131 sFontInfos[FONT_NORMAL]).
+ *
+ *  ⚠️ IMPORTANT : bgColor=WHITE (1), pas TRANSPARENT (0). Sinon les pixels idx 3
+ *  des glyphs (= "BOX_FILL" autour du glyph) s'affichent en TRANSPARENT →
+ *  fall-through au backdrop (= lavender) → "boîtes lavender visibles autour de
+ *  chaque glyph". Avec bg=WHITE, idx 3 = WHITE = matche FillWindowPixelBuffer(1)
+ *  → invisible (= pas de boîtes). Cf. décomp utilise `AddTextPrinterParameterized`
+ *  (sans 3) dans option_menu, qui prend bgColor=1 du FONT_NORMAL default. */
+const TEXT_COLOR_NORMAL: readonly number[] = [TEXT_COLOR_WHITE, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_LIGHT_GRAY];
 /** Highlight (red) variant — used when style=1 in DrawOptionMenuChoice. */
-const TEXT_COLOR_HIGHLIGHT: readonly number[] = [TEXT_COLOR_TRANSPARENT, TEXT_COLOR_RED, TEXT_COLOR_LIGHT_RED];
+const TEXT_COLOR_HIGHLIGHT: readonly number[] = [TEXT_COLOR_WHITE, TEXT_COLOR_RED, TEXT_COLOR_LIGHT_RED];
 
 // 1:1 décomp option_menu.c:79-88 sOptionMenuItemsNames
 const ITEM_LABEL_KEYS = [
@@ -468,19 +475,5 @@ Object.defineProperty(globalThis, 'sOptionMenuText_Pal', {
   enumerable: true, configurable: true,
 });
 
-// ─── Augmente gSaveBlock2Ptr avec les options fields ────────────────────────
-
-// Default values 1:1 décomp save_data.c options init.
-const defaultSaveOptions = {
-  optionsTextSpeed: 1,        // OPTIONS_TEXT_SPEED_MID
-  optionsBattleSceneOff: 0,   // OPTIONS_BATTLE_SCENE_ON
-  optionsBattleStyle: 0,      // OPTIONS_BATTLE_STYLE_SHIFT
-  optionsSound: 0,            // OPTIONS_SOUND_MONO
-  optionsButtonMode: 0,       // OPTIONS_BUTTON_MODE_NORMAL
-  optionsWindowFrameType: 0,  // frame 1
-};
-for (const [k, v] of Object.entries(defaultSaveOptions)) {
-  if (!(k in gSaveBlock2Ptr)) {
-    gSaveBlock2Ptr[k] = v;
-  }
-}
+// gSaveBlock2Ptr fields options* + persistence localStorage : cf.
+// `gba-menu-system.ts` (= source unique pour save block + Proxy auto-persist).

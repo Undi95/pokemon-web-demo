@@ -220,13 +220,19 @@ export const CB2_InitOptionMenu: CB2Callback = (rt) => {
       {
       default:
       case 0:
-          /* noop SetVBlankCallback */;
+          // ✅ FIX session 82 : SetVBlankCallback(NULL) au state 0 (= 1:1 décomp).
+          // Sans ça, TransferPlttBuffer continue de tourner pendant init → flash
+          // bright entre LoadPalette state 4 et fade-in state 11.
+          rt.SetVBlankCallback(null);
           gMain.state++;
           break;
       case 1:
           DmaClearLarge16(3, (VRAM), VRAM_SIZE, 0x1000);
           DmaClear32(3, OAM, OAM_SIZE);
-          /* TODO DmaClear16 (memory clear) */;
+          // ✅ FIX session 82 : DmaClear16 sur PLTT (= 0x05000000-0x050003FF)
+          // pour effacer la palette HW dès l'init (= screen black during state 1-10
+          // jusqu'au fade-in à state 11). 1:1 décomp option_menu.c:159.
+          DmaClear16(3, 0x05000000, 0x400);
           rt.SetGpuReg(REG_OFFSET_DISPCNT, 0);
           ResetBgsAndClearDma3BusyFlags(0);
           InitBgsFromTemplates(0, sOptionMenuBgTemplates, ((sOptionMenuBgTemplates)?.length ?? 0));
@@ -316,16 +322,27 @@ export const CB2_InitOptionMenu: CB2Callback = (rt) => {
       }
       case 11:
           rt.BeginNormalPaletteFade("PALETTES_ALL", 0, 16, 0, "RGB_BLACK");
-          /* noop SetVBlankCallback */;
+          // ✅ FIX session 82 : SetVBlankCallback(VBlankCB) au state 11 (= 1:1 décomp).
+          // Réinstalle le VBlankCB → TransferPlttBuffer reprend → fade-in visible.
+          rt.SetVBlankCallback(VBlankCB);
           // ✅ FIX session 82 : transition vers MainCB2 (= était `/* TODO */`).
           rt.SetMainCallback2(MainCB2);
           return;
       }
 };
 
-/** Source: option_meu.c → MainCB2 (no-op chez nous, runtime drive RunTasks
+/** Source: option_menu.c → MainCB2 (no-op chez nous, runtime drive RunTasks
  *  + UpdatePaletteFade automatiquement pour les callbacks `MainCB2*`).
  *  ⚠️ MANUAL FIX session 82 : transpileur omet ce export, ajouté in-place. */
 export const MainCB2: CB2Callback = (_rt) => {
   // No-op : runtime drives the rest.
+};
+
+/** Source: option_menu.c → VBlankCB. Le VBlankCB de chaque scène call
+ *  `TransferPlttBuffer()`. Notre runtime factor le TransferPlttBuffer call
+ *  automatiquement quand `gMain.vblankCallback` est non-null (= mécanisme qui
+ *  prévient le flash bright pendant CB2_Init). Donc ici body no-op suffit. */
+export const VBlankCB: () => void = () => {
+  // No-op : runtime appelle TransferPlttBuffer automatiquement quand vblankCallback
+  // est set (cf. decomp-runtime.ts:runOneFrame).
 };

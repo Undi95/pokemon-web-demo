@@ -213,9 +213,12 @@ export function StringExpandPlaceholders(dest: string, src: string): string {
 
 // ─── Text colors helper ──────────────────────────────────────────────────────
 
-// 1:1 décomp main_menu.c:410 sTextColor_Headers — [bgColor, fgColor, shadowColor].
-// Décomp original : [TEXT_DYNAMIC_COLOR_1, _2, _3] = [10, 11, 12], remplis par
-// LoadPalette dynamique. On approxime avec les colors statiques équivalentes
-// visuellement (= bg=WHITE, fg=DARK_GRAY, shadow=LIGHT_GRAY) :
-export const sTextColor_Headers = [1, 2, 3] as const; // [bg=WHITE, fg=DARK_GRAY, shadow=LIGHT_GRAY]
+// 1:1 décomp main_menu.c:410 sTextColor_Headers = [TEXT_DYNAMIC_COLOR_1, _2, _3]
+// = [10, 11, 12]. Ces palette indices sont chargés dynamiquement par main_menu
+// auto file (= palette[15*16+10] = WHITE, +11 = DARK_GRAY, +12 = LIGHT_GRAY).
+// AVANT j'avais hardcodé [1, 2, 3] (= approximation static) MAIS palette[15*16+1]
+// est chargée dynamiquement avec BLUE/PINK (= cursor highlight) → bg derrière
+// le texte = BLUE/PINK au lieu de WHITE. NE JAMAIS approximer les valeurs
+// décomp ; toujours utiliser les indices que le code dynamic load remplit.
+export const sTextColor_Headers = [10, 11, 12] as const; // [bg=DYNAMIC_1, fg=DYNAMIC_2, shadow=DYNAMIC_3]
 (globalThis as Record<string, unknown>).sTextColor_Headers = sTextColor_Headers;

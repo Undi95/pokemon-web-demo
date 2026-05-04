@@ -822,10 +822,12 @@ export class DecompRuntime {
     this.gPaletteFade.targetR = targetR15;
     this.gPaletteFade.targetG = targetG15;
     this.gPaletteFade.targetB = targetB15;
-    // Désactive le BLDY brightness mode (= notre ancien hack pour fades white).
-    // Le fade modifie maintenant gPlttBufferFaded entries directement.
-    this.gba.blend.mode = 0;
-    this.gba.blend.brightness = 0;
+    // ⚠️ NE PAS reset gba.blend.mode/brightness ici. C'était un ancien hack
+    // pour fades white (= quand notre palette fade était implémenté via BLDY).
+    // Maintenant le fade modifie gPlttBufferFaded entries directement, et BLDCNT/BLDY
+    // est utilisé INDEPENDAMMENT par certaines scènes (= option menu darken effect
+    // pour le WIN0 highlight cursor). 1:1 décomp BeginNormalPaletteFade ne touche
+    // pas BLDCNT/BLDY non plus.
     // Apply initial brightness (= blend Unfaded → target avec coefficient startY/16)
     this._applyPaletteFadeStep(startY);
   }
@@ -1509,8 +1511,20 @@ export class DecompRuntime {
     this.syncSpritesToOam();
     // 5. UpdatePaletteFade() — APRÈS le rendu sprite (ordre décomp).
     this.UpdatePaletteFade();
-    // VBlank callbacks (= VBlankCB_Intro etc) : ScanlineEffect tick.
-    if (this.gMain.vblankCallback) this.gMain.vblankCallback();
+    // VBlank callbacks (= VBlankCB_Intro etc) : ScanlineEffect tick + TransferPlttBuffer.
+    // 1:1 décomp : VBlankCB de chaque scène call TransferPlttBuffer. SI vblankCallback
+    // est NULL (= scene init via `SetVBlankCallback(NULL)`), AUCUN transfert ne
+    // tourne → PLTT register reste figé. C'est le mécanisme qui prévient le flash
+    // pendant les CB2 init (= state 0-10 LoadPalette modifie gPlttBufferFaded mais
+    // PLTT reste BLACK depuis le DmaClear16(PLTT) au state 1, jusqu'à ce que
+    // SetVBlankCallback(VBlankCB) soit appelé au state 11).
+    if (this.gMain.vblankCallback) {
+      this.gMain.vblankCallback();
+      // Simulate VBlankCB → TransferPlttBuffer (= chaque scène le fait, on factor ici).
+      if (!this.gPaletteFade.bufferTransferDisabled) {
+        this.gPlttBufferFaded.flushTo();
+      }
+    }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const scanlineTick = (globalThis as any).__scanlineEffectTick;
     if (typeof scanlineTick === 'function') scanlineTick();
