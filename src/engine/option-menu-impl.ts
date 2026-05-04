@@ -25,6 +25,7 @@ import {
   AddTextPrinterParameterized3, FillWindowPixelBuffer,
 } from './decomp-globals';
 import { FillWindowPixelRect } from './gba-window-system';
+import { GetStringRightAlignXOffset } from './gba-text-system';
 import { WINDOW_FRAMES_COUNT, GetWindowFrameTilesPal, preloadTextWindowFrames } from './gba-text-window';
 import { BG_PLTT_ID, REG_OFFSET_WIN0H, REG_OFFSET_WIN0V } from './decomp-runtime';
 import { PLTT_SIZE_4BPP, WIN_RANGE } from './decomp-helpers';
@@ -216,14 +217,15 @@ function gs(key: string): string {
   return String((globalThis as any)[key] ?? key);
 }
 
-// Helper : approximation right-align pour un string (= équivalent
-// GetStringRightAlignXOffset(FONT_NORMAL, str, 198)). On estime la pixel width
-// avec ~6px/char (= moyenne FONT_NORMAL) sans inclure les control codes.
+// Phase B audit session 83 : delégation à GetStringRightAlignXOffset (=
+// vraie pixel width via glyphWidths chargés depuis font-widths.json) au lieu
+// de l'ancienne approximation `~6px/char`. Élimine le décalage visuel sur
+// strings type "STÉRÉO" / "L=A" / "FAST" qui sont +/- larges qu'attendu.
+//
+// Wrapper local pour rester proche du signature du décomp (= GetStringRightAlignXOffset
+// prend FONT_NORMAL implicite ; nous n'avons que FONT_NORMAL pour l'instant).
 function rightAlignX(text: string, rightX: number): number {
-  // Strip {…} control codes pour la mesure
-  const visible = text.replace(/\{[^}]+\}/g, '');
-  const px = visible.length * 6; // approximation
-  return rightX - px;
+  return GetStringRightAlignXOffset(text, rightX);
 }
 
 /** 1:1 décomp option_menu.c:421-442 TextSpeed_DrawChoices. */

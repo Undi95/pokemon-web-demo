@@ -186,27 +186,43 @@ export const BG_SCREEN_ADDR = (n: number) => BG_VRAM + n * 0x800;
 export const DISPLAY_WIDTH = 240;
 export const DISPLAY_HEIGHT = 160;
 
+// ─── Palette fade mode constants (1:1 décomp src/palette.c:9-14) ────────────
+/** Fade type — `gPaletteFade.mode` choisit entre 3 algos :
+ *  - NORMAL_FADE = software blend Unfaded→target via gPlttBufferFaded (BeginNormalPaletteFade)
+ *  - FAST_FADE   = idem mais ×2 plus rapide (= deltaY=2). BeginFastPaletteFade.
+ *  - HARDWARE_FADE = pas de blend software, juste BLDCNT+BLDY hardware (BeginHardwarePaletteFade) */
+export const NORMAL_FADE = 0;
+export const FAST_FADE = 1;
+export const HARDWARE_FADE = 2;
+
 // ─── Palette fade state (1:1 décomp engine/palette_fade.c) ──────────────────
-/** gPaletteFade global. `.active = true` pendant un fade. */
+/** gPaletteFade global. `.active = true` pendant un fade.
+ *  ⚠️ Cette struct doit matcher le layout C (= `struct PaletteFadeControl` dans
+ *  `include/palette.h`). Tous les fields sont nécessaires car les auto-engine
+ *  callbacks transpilés depuis le décomp y accèdent par nom (= party_menu,
+ *  contest, trade, decoration, etc. font `gPaletteFade.softwareFadeFinishing`,
+ *  `gPaletteFade.deltaY`, etc.). Sans ces fields, ils deviennent NaN/undefined. */
 export class PaletteFade {
   active = false;
-  /** Target1 brightness 0-16 */
+  /** Current blend coefficient (0-16). Décomp : `y:5`. Notre alias = brightness. */
   brightness = 0;
-  /** Mode du fade (0=fade in, 1=fade out, etc) */
-  mode = 0;
+  /** Fade mode. NORMAL_FADE / FAST_FADE / HARDWARE_FADE (cf. constants ci-dessus).
+   *  Set par BeginNormalPaletteFade (= 0), BeginFastPaletteFade (= 1),
+   *  BeginHardwarePaletteFade (= 2). */
+  mode = NORMAL_FADE;
   /** Frame en cours du fade */
   currentFrame = 0;
   /** Total frames du fade */
   totalFrames = 1;
   /** Couleur cible (RGB15 ou special) */
   targetRgb15 = 0;
-  /** Delay restant avant qu'une frame de fade soit appliquée */
+  /** Delay restant avant qu'une frame de fade soit appliquée. Décomp : `delayCounter:6`. */
   delayRemaining = 0;
   /** Delay entre 2 steps */
   delayPerStep = 0;
   /** startY (brightness initial) */
   startY = 0;
-  /** endY (brightness final) */
+  /** endY (brightness final). Décomp : `targetY:5`. */
   endY = 0;
   /** Target color RGB15 components (5-bit each). Used by _applyPaletteFadeStep. */
   targetR = 31;
@@ -225,6 +241,42 @@ export class PaletteFade {
    *  Impact en pratique : nul — Pokemon Emerald ne set ça que pour effects HBlank
    *  qu'on ne simule pas. Conservé comme stub pour matcher la struct C. */
   bufferTransferDisabled = false;
+  // ─── Phase B audit session 83 : fields complétés pour matcher décomp ─────
+  /** 1:1 décomp `yDec:1` — direction du fade. true = brightness décroît (startY > endY).
+   *  Set par BeginNormalPaletteFade selon les arguments. Utilisé par UpdateNormalPaletteFade
+   *  pour incrémenter ou décrémenter `y` à chaque step. */
+  yDec = false;
+  /** 1:1 décomp `softwareFadeFinishingCounter:5` — frames d'attente AVANT que
+   *  softwareFadeFinishing soit set à true. Décomp init à 4 quand y atteint targetY,
+   *  decrement chaque frame, et set softwareFadeFinishing=true quand atteint 0.
+   *  Permet aux callers de detecter "fade vient de finir" sur 1 frame précise. */
+  softwareFadeFinishingCounter = 0;
+  /** 1:1 décomp `softwareFadeFinishing:1` — true pendant 1 frame quand le fade
+   *  vient de finir. Auto-engine callbacks check ça pour trigger leurs transitions
+   *  (e.g. `if (!gPaletteFade.active && gPaletteFade.softwareFadeFinishing) ...`). */
+  softwareFadeFinishing = false;
+  /** 1:1 décomp `objPaletteToggle:1` — alternance BG↔OBJ par frame pour spread le
+   *  travail de blend sur 2 frames. Notre impl applique toutes les palettes en 1 frame
+   *  (= compositor moderne, pas de budget VBlank), donc ce flag est essentiellement
+   *  cosmetic. Conservé pour matcher la struct C (et permettre toggle si futurs auto
+   *  callbacks le mutent). */
+  objPaletteToggle = false;
+  /** 1:1 décomp `deltaY:4` — vitesse du fade. 1 par défaut (NORMAL_FADE), 2 pour
+   *  FAST_FADE. Multiplicateur sur le step de y par frame. */
+  deltaY = 1;
+  /** 1:1 décomp `shouldResetBlendRegisters:1` — set par BeginHardwarePaletteFade
+   *  pour reset BLDCNT/BLDY à la fin du hardware fade. */
+  shouldResetBlendRegisters = false;
+  /** 1:1 décomp `hardwareFadeFinishing:1` — analogue de softwareFadeFinishing pour
+   *  HARDWARE_FADE mode. */
+  hardwareFadeFinishing = false;
+  /** 1:1 décomp `multipurpose1` (u32) — usage variable selon mode :
+   *   - HARDWARE_FADE : stocke la valeur BLDCNT cible
+   *   - FAST_FADE     : compteur intermédiaire
+   *  Conservé pour matcher la struct C. */
+  multipurpose1 = 0;
+  /** 1:1 décomp `multipurpose2:6` — usage similaire à multipurpose1, secondaire. */
+  multipurpose2 = 0;
 }
 
 // ─── gMain (1:1 décomp struct Main) ──────────────────────────────────────────
@@ -768,6 +820,16 @@ export class DecompRuntime {
     this.gPaletteFade.totalFrames = Math.max(1, Math.abs(endY - startY));
     this.gPaletteFade.delayPerStep = delay;
     this.gPaletteFade.delayRemaining = delay;
+    // ─── Phase B audit session 83 : init fields complets 1:1 décomp ────
+    this.gPaletteFade.mode = NORMAL_FADE;
+    this.gPaletteFade.yDec = startY > endY;
+    this.gPaletteFade.deltaY = 1;
+    this.gPaletteFade.softwareFadeFinishing = false;
+    this.gPaletteFade.softwareFadeFinishingCounter = 0;
+    this.gPaletteFade.hardwareFadeFinishing = false;
+    this.gPaletteFade.shouldResetBlendRegisters = false;
+    // brightness reflète l'état courant (= startY au lancement).
+    this.gPaletteFade.brightness = startY;
     // Parse selected palettes mask (1:1 décomp BG bits 0-15 + OBJ bits 16-31).
     // Décomp: u32 mask, BG palettes 0-15 = bits 0-15, OBJ palettes 0-15 = bits 16-31.
     // Default = "all" (e.g. PALETTES_ALL = 0xFFFFFFFF).
@@ -872,7 +934,16 @@ export class DecompRuntime {
    *  Modifie gPlttBufferFaded en blendant Unfaded vers target color
    *  selon le brightness courant (startY → endY linéaire). */
   UpdatePaletteFade(): boolean {
-    if (!this.gPaletteFade.active) {
+    const f = this.gPaletteFade;
+    if (!f.active) {
+      // ─── Phase B audit session 83 : softwareFadeFinishing latch ─────
+      // 1:1 décomp UpdateNormalPaletteFade : softwareFadeFinishing est set
+      // pour 1 frame après que active passe true→false, puis reset à false la
+      // frame suivante. Permet aux callers (auto callbacks party_menu/contest/
+      // etc.) de détecter "fade vient juste de finir" sur 1 tick précis.
+      if (f.softwareFadeFinishing) {
+        f.softwareFadeFinishing = false;  // already latched 1 frame, reset.
+      }
       // 1:1 décomp UpdateNormalPaletteFade (palette.c:413) : returns immediately
       // when fade inactive. Do NOT copy Unfaded → Faded here — would overwrite
       // dynamic CpuCopy16(...&gPlttBufferFaded[X]...) writes from sprite cbs
@@ -880,25 +951,34 @@ export class DecompRuntime {
       return false;
     }
 
-    if (this.gPaletteFade.delayRemaining > 0) {
-      this.gPaletteFade.delayRemaining--;
+    // 1:1 décomp objPaletteToggle alternance — toggle chaque tick (même si on
+    // applique tous les palettes en 1 step, le flag doit alterner pour matcher
+    // l'état struct du décomp).
+    f.objPaletteToggle = !f.objPaletteToggle;
+
+    if (f.delayRemaining > 0) {
+      f.delayRemaining--;
       // Re-apply current brightness step (= unfaded peut avoir changé via
       // CpuCopy16 between frames).
       this._applyPaletteFadeStep(this._currentFadeBrightness());
       return true;
     }
 
-    const f = this.gPaletteFade;
     f.currentFrame++;
     if (f.currentFrame >= f.totalFrames) {
       // Apply final brightness
       this._applyPaletteFadeStep(f.endY);
       f.active = false;
+      f.brightness = f.endY;
+      // ─── Phase B : signal "fade just finished" pour 1 frame ─────────
+      f.softwareFadeFinishing = true;
+      f.softwareFadeFinishingCounter = 0;
       return false;
     }
 
     const brightness = this._currentFadeBrightness();
     this._applyPaletteFadeStep(brightness);
+    f.brightness = brightness;
     f.delayRemaining = f.delayPerStep;
     return true;
   }

@@ -1028,13 +1028,27 @@ export function DmaFill32(_channel: number, _value: number, destAddr: number, _s
  *  state. */
 export function ResetPaletteFade(): void {
   const r = rt();
+  // 1:1 décomp ResetPaletteFade (palette.c:374) : reset internal fade state only.
+  // Phase B audit session 83 : tous les fields struct PaletteFadeControl reset.
   r.gPaletteFade.active = false;
   r.gPaletteFade.brightness = 0;
   r.gPaletteFade.startY = 0;
   r.gPaletteFade.endY = 0;
   r.gPaletteFade.currentFrame = 0;
   r.gPaletteFade.totalFrames = 1;
+  r.gPaletteFade.delayRemaining = 0;
+  r.gPaletteFade.delayPerStep = 0;
   r.gPaletteFade.bufferTransferDisabled = false;
+  r.gPaletteFade.mode = 0;  // NORMAL_FADE
+  r.gPaletteFade.yDec = false;
+  r.gPaletteFade.softwareFadeFinishing = false;
+  r.gPaletteFade.softwareFadeFinishingCounter = 0;
+  r.gPaletteFade.hardwareFadeFinishing = false;
+  r.gPaletteFade.shouldResetBlendRegisters = false;
+  r.gPaletteFade.objPaletteToggle = false;
+  r.gPaletteFade.deltaY = 1;
+  r.gPaletteFade.multipurpose1 = 0;
+  r.gPaletteFade.multipurpose2 = 0;
 }
 export function ResetTasks(): void {
   const r = rt();

@@ -47,6 +47,32 @@ export function preloadFontData(): Promise<void> {
   return loadFontData();
 }
 
+/** 1:1 décomp src/text.c `GetStringWidth(FONT_NORMAL, str, letterSpacing=0)`.
+ *  Retourne la pixel width réelle de `str` rendue avec FONT_NORMAL. Strip
+ *  les control codes `{NAME ...}` (= placeholders/color changes) avant
+ *  mesure (= analogue au switch sur EXT_CTRL_CODE_BEGIN du décomp).
+ *
+ *  Phase B audit session 83 : remplace l'approximation `~6px/char` qu'on
+ *  avait dans option-menu-impl.ts (= rightAlignX). Maintenant le right-align
+ *  des choices "FAST" / "OFF" / "STÉRÉO" / etc. matche exactement le décomp. */
+export function GetStringWidth(str: string): number {
+  ensureFontLoaded();
+  // Strip {NAME ...} control codes (= color changes, placeholders, etc.).
+  const visible = str.replace(/\{[^}]+\}/g, '');
+  const encoded = encodeStringForFont(visible, charmap!);
+  let width = 0;
+  for (let i = 0; i < encoded.length; i++) {
+    width += glyphWidths![encoded[i]] ?? 0;
+  }
+  return width;
+}
+
+/** 1:1 décomp src/text.c `GetStringRightAlignXOffset(FONT_NORMAL, str, rightX)`.
+ *  Retourne la X offset où placer le START de `str` pour qu'il finisse à `rightX`. */
+export function GetStringRightAlignXOffset(str: string, rightX: number): number {
+  return rightX - GetStringWidth(str);
+}
+
 function ensureFontLoaded(): void {
   if (!glyphData || !glyphWidths || !charmap) {
     throw new Error('[gba-text-system] Font data not loaded. Call preloadFontData() first.');
