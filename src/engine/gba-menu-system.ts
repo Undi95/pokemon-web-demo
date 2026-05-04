@@ -16,6 +16,9 @@
  *   - gSaveFileStatus mutable global
  */
 import { getRuntime } from './decomp-globals';
+import { AddWindow, DrawStdFrameWithCustomTileAndPalette, type WindowTemplate } from './gba-window-system';
+import { AddTextPrinterParameterized3 } from './gba-text-system';
+import { getString } from './gba-strings';
 
 // ─── Menu cursor state ───────────────────────────────────────────────────────
 
@@ -66,35 +69,51 @@ export function InitMenuInUpperLeftCornerNormal(windowId: number, numItems: numb
   menuActive = true;
 }
 
-// ─── Yes/No Menu stubs ───────────────────────────────────────────────────────
+// ─── Yes/No Menu (= 1:1 décomp src/menu.c:1623) ──────────────────────────────
 //
-// Phase D audit session 83 : stubs en attendant l'implémentation du vrai
-// Yes/No menu (= 1:1 décomp src/menu.c CreateYesNoMenu*). À implémenter pour
-// le flow Birch speech (= confirmation du nom joueur).
+// Phase E Step 1 : real impl 1:1 décomp. Le menu Yes/No est un window standard
+// (4 cells de large, 2 lines de haut) avec un frame border + texte "OUI/NON" +
+// cursor highlight via InitMenuInUpperLeftCornerNormal.
+//
+// Lecture input via Menu_ProcessInputNoWrapClearOnChoose() → retourne 0=OUI,
+// 1=NON, -1=B pressed (cancel).
 
-export function CreateYesNoMenuParameterized(
-  _windowId: number,
-  _fontId: number,
-  _frameTile: number,
-  _cursorTile: number,
-  _x: number,
-  _y: number,
+let sYesNoWindowId = -1;
+
+/** 1:1 décomp `menu.c:1623 CreateYesNoMenu(window, baseTileNum, paletteNum, initialCursorPos)`.
+ *  Affiche un window standard avec frame + texte "OUI/NON" + cursor à `initialCursorPos`. */
+export function CreateYesNoMenu(
+  window: WindowTemplate,
+  baseTileNum: number,
+  paletteNum: number,
+  initialCursorPos: number,
 ): void {
-  // TODO Phase D : implementer le vrai Yes/No menu.
-  menuNumItems = 2;
-  menuCursorPos = 0;
-  menuActive = true;
+  sYesNoWindowId = AddWindow(window);
+  DrawStdFrameWithCustomTileAndPalette(sYesNoWindowId, true, baseTileNum, paletteNum);
+
+  // 1:1 décomp printer setup : x=8, y=1 (= offset depuis le bord du window).
+  // colorArray = [bgColor, fgColor, shadowColor]. PIXEL_FILL(1) du DrawStdFrame
+  // remplit le pixel buffer avec idx 1, donc bgColor=1, fg=2, shadow=3 = pattern
+  // standard FONT_NORMAL.
+  const yesNoText = getString('gText_YesNo');  // "OUI\nNON" en FR
+  AddTextPrinterParameterized3(
+    sYesNoWindowId,
+    1,  // FONT_NORMAL
+    8, 1,  // x, y depuis bord du window
+    [1, 2, 3],  // [bgColor, fgColor, shadowColor]
+    255,  // TEXT_SKIP_DRAW = render synchronously, finished=true
+    yesNoText,
+  );
+
+  // 1:1 décomp ligne 1645 : InitMenuInUpperLeftCornerNormal(sYesNoWindowId, 2, initialCursorPos).
+  // 2 = numItems (OUI + NON).
+  InitMenuInUpperLeftCornerNormal(sYesNoWindowId, 2, initialCursorPos);
 }
 
-export function CreateYesNoMenu(
-  _x: number,
-  _y: number,
-  _windowId: number,
-): void {
-  // TODO Phase D : implementer le vrai Yes/No menu.
-  menuNumItems = 2;
-  menuCursorPos = 0;
-  menuActive = true;
+/** Helper pour les callers qui veulent l'ID du window Yes/No (= cleanup,
+ *  ClearStdWindowAndFrame après fermeture). */
+export function GetYesNoWindowId(): number {
+  return sYesNoWindowId;
 }
 
 // ─── Misc generic stubs ──────────────────────────────────────────────────────

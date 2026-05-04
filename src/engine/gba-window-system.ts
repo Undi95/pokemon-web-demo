@@ -307,6 +307,62 @@ export function ResetBgsAndClearDma3BusyFlags(_mode: number): void {
 
 // ─── Window helpers ──────────────────────────────────────────────────────────
 
+/** 1:1 décomp `bg.c CreateWindowTemplate(bg, left, top, width, height, paletteNum, baseBlock)`.
+ *  Phase E Step 1 : utilisé par `CreateYesNoMenuParameterized` pour wrapper Window struct. */
+export function CreateWindowTemplate(
+  bg: number,
+  tilemapLeft: number,
+  tilemapTop: number,
+  width: number,
+  height: number,
+  paletteNum: number,
+  baseBlock: number,
+): WindowTemplate {
+  return { bg, tilemapLeft, tilemapTop, width, height, paletteNum, baseBlock };
+}
+
+/** 1:1 décomp `menu.c:687 DrawStdFrameWithCustomTileAndPalette` :
+ *    sTileNum = baseTileNum; sPaletteNum = paletteNum;
+ *    CallWindowFunction(WindowFunc_DrawStdFrameWithCustomTileAndPalette);
+ *    FillWindowPixelBuffer(windowId, PIXEL_FILL(1));
+ *    PutWindowTilemap(windowId);
+ *    if (copyToVram) CopyWindowToVram(windowId, COPYWIN_FULL);
+ *
+ *  Le `WindowFunc_DrawStdFrameWithCustomTileAndPalette` dessine 9 frame tiles
+ *  (top-left/top/top-right/left/right/bot-left/bot/bot-right) en utilisant
+ *  baseTileNum + 0..8 comme indices de tile dans le tilemap du BG du window.
+ *  Phase E Step 1 : 1:1 décomp menu.c:710. */
+export function DrawStdFrameWithCustomTileAndPalette(
+  windowId: number,
+  copyToVram: boolean,
+  baseTileNum: number,
+  paletteNum: number,
+): void {
+  const gw = gWindows.find((w) => w.id === windowId);
+  if (!gw) return;
+  const { bg, tilemapLeft, tilemapTop, width, height } = gw.template;
+
+  // 1:1 décomp WindowFunc_DrawStdFrameWithCustomTileAndPalette : 8 FillBgTilemapBufferRect
+  // (= corners + 4 edges, le centre du window est laissé vide pour le contenu).
+  // tile 0=TL, 1=top, 2=TR, 3=left, 5=right, 6=BL, 7=bot, 8=BR.
+  FillBgTilemapBufferRect(bg, baseTileNum + 0, tilemapLeft - 1, tilemapTop - 1, 1, 1, paletteNum);
+  FillBgTilemapBufferRect(bg, baseTileNum + 1, tilemapLeft,     tilemapTop - 1, width, 1, paletteNum);
+  FillBgTilemapBufferRect(bg, baseTileNum + 2, tilemapLeft + width, tilemapTop - 1, 1, 1, paletteNum);
+  FillBgTilemapBufferRect(bg, baseTileNum + 3, tilemapLeft - 1, tilemapTop,     1, height, paletteNum);
+  FillBgTilemapBufferRect(bg, baseTileNum + 5, tilemapLeft + width, tilemapTop, 1, height, paletteNum);
+  FillBgTilemapBufferRect(bg, baseTileNum + 6, tilemapLeft - 1, tilemapTop + height, 1, 1, paletteNum);
+  FillBgTilemapBufferRect(bg, baseTileNum + 7, tilemapLeft,     tilemapTop + height, width, 1, paletteNum);
+  FillBgTilemapBufferRect(bg, baseTileNum + 8, tilemapLeft + width, tilemapTop + height, 1, 1, paletteNum);
+
+  // FillWindowPixelBuffer(windowId, PIXEL_FILL(1)) — fill avec idx 1 (= bgColor du window).
+  // PIXEL_FILL(1) = 0x11 (= les 2 nibbles à 1).
+  fillWindowPixelBuffer(gw.win, 0x11);
+  writeWindowTilemap(gw, false);
+  if (copyToVram) {
+    copyPixelBufferToVram(gw.win, gw.template.bg, gw.template.baseBlock);
+  }
+}
+
 export function LoadMessageBoxGfx(_bg: number, _baseTile: number, _palette: number): void {
   // TODO: charger les gfx de la message box
 }

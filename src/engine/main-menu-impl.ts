@@ -72,8 +72,10 @@ import {
 import {
   A_BUTTON, B_BUTTON, DPAD_UP, DPAD_DOWN,
   IsWirelessAdapterConnected,
+  CreateYesNoMenu,
   gSaveBlock2Ptr,
 } from './gba-menu-system';
+import { CreateWindowTemplate } from './gba-window-system';
 
 // 1:1 décomp include/constants/songs.h:11 → SE_SELECT = 5.
 const SE_SELECT = 5;
@@ -329,6 +331,24 @@ export function NewGameBirchSpeech_SetDefaultPlayerName(_presetIndex: number): v
 
 export function NewGameBirchSpeech_CreateNameYesNo(_windowId: number): void {
   // TODO Phase D : créer le menu Yes/No pour le nom.
+}
+
+/** 1:1 décomp `main_menu.c:2265 CreateYesNoMenuParameterized(x, y, baseTileNum,
+ *  baseBlock, yesNoPalNum, winPalNum)`. Wrapper qui crée un WindowTemplate
+ *  (5×4 cells, BG0, position x+1/y+1) puis appelle CreateYesNoMenu.
+ *  Phase E Step 1 audit session 84 (= real impl). */
+export function CreateYesNoMenuParameterized(
+  x: number,
+  y: number,
+  baseTileNum: number,
+  baseBlock: number,
+  yesNoPalNum: number,
+  winPalNum: number,
+): void {
+  // 1:1 décomp main_menu.c:2267 — bg=0, x+1, y+1, width=5, height=4.
+  const template = CreateWindowTemplate(0, x + 1, y + 1, 5, 4, winPalNum, baseBlock);
+  // 1:1 décomp main_menu.c:2268 — initialCursorPos=0 (= OUI sélectionné par défaut).
+  CreateYesNoMenu(template, baseTileNum, yesNoPalNum, 0);
 }
 
 // Phase D-cleanup audit session 83 : stubs déplacés depuis decomp-globals.ts
