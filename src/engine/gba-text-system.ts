@@ -80,8 +80,47 @@ function ensureFontLoaded(): void {
 }
 
 // ─── Global string buffer (1:1 décomp gStringVar4) ───────────────────────────
+//
+// Phase E Step 1 : transformé en mutable. Le décomp utilise `gStringVar4` comme
+// un buffer mutable u8[] que `StringExpandPlaceholders` remplit. Tous les
+// auto callbacks font `StringExpandPlaceholders(gStringVar4, gText_X)` puis
+// `AddTextPrinterForMessage` qui lit `gStringVar4`.
 
-export const gStringVar4: string = '';
+export let gStringVar4: string = '';
+export let gStringVar1: string = '';
+export let gStringVar2: string = '';
+export let gStringVar3: string = '';
+
+/** Setter pour les modules externes (= les auto callbacks ne peuvent pas
+ *  faire `gStringVar4 = ...` à cause des import bindings ES). */
+export function setStringVar4(value: string): void {
+  gStringVar4 = value;
+  (globalThis as Record<string, unknown>).gStringVar4 = value;
+}
+
+// Expose les string vars sur globalThis pour les auto callbacks.
+if (!('gStringVar4' in globalThis)) {
+  Object.defineProperty(globalThis, 'gStringVar4', {
+    get: () => gStringVar4,
+    set: (v) => { gStringVar4 = String(v); },
+    enumerable: true, configurable: true,
+  });
+  Object.defineProperty(globalThis, 'gStringVar1', {
+    get: () => gStringVar1,
+    set: (v) => { gStringVar1 = String(v); },
+    enumerable: true, configurable: true,
+  });
+  Object.defineProperty(globalThis, 'gStringVar2', {
+    get: () => gStringVar2,
+    set: (v) => { gStringVar2 = String(v); },
+    enumerable: true, configurable: true,
+  });
+  Object.defineProperty(globalThis, 'gStringVar3', {
+    get: () => gStringVar3,
+    set: (v) => { gStringVar3 = String(v); },
+    enumerable: true, configurable: true,
+  });
+}
 
 // ─── Text printers registry ──────────────────────────────────────────────────
 
@@ -231,10 +270,43 @@ export function DeactivateAllTextPrinters(): void {
 
 // ─── String placeholders stub ─────────────────────────────────────────────────
 
-export function StringExpandPlaceholders(dest: string, src: string): string {
-  // TODO: implémenter les vrais placeholders ( {PLAYER}, {STR_VAR_1}, etc.)
-  // Pour l'instant, retourne la source telle quelle.
-  return src;
+/** 1:1 décomp `string_util.c StringExpandPlaceholders(dest, src)`.
+ *  Résout les placeholders `{PLAYER}`, `{STR_VAR_1..3}`, `{RIVAL}`, etc. depuis
+ *  `src` et écrit le résultat dans `dest` (= globalement `gStringVar4` chez tous
+ *  les callers). Retourne dest pour chainage 1:1 décomp.
+ *
+ *  Phase E Step 1 audit session 84 : real impl. Avant : stub no-op qui retournait
+ *  src tel quel sans écrire dans dest → les placeholders n'étaient jamais
+ *  résolus et `gStringVar4` restait vide. */
+export function StringExpandPlaceholders(_dest: string, src: string): string {
+  // Tous les callers passent `gStringVar4` comme dest. On mute le module-level
+  // gStringVar4 directement (= les imports binding ES ne permettent pas l'écriture
+  // depuis l'extérieur de toute façon).
+  let result = src;
+
+  // Substitution des placeholders 1:1 décomp (= macros buffers sStringVarBuffers).
+  // {STR_VAR_1..3} → gStringVar1..3 contenu courant.
+  result = result.replace(/\{STR_VAR_1\}/g, () => gStringVar1);
+  result = result.replace(/\{STR_VAR_2\}/g, () => gStringVar2);
+  result = result.replace(/\{STR_VAR_3\}/g, () => gStringVar3);
+
+  // {PLAYER} = nom du joueur depuis gSaveBlock2Ptr.playerName.
+  // Lazy lookup sur globalThis pour éviter import circular.
+  const sb2 = (globalThis as Record<string, unknown>).gSaveBlock2Ptr as
+    | { playerName?: string } | undefined;
+  if (sb2?.playerName) {
+    result = result.replace(/\{PLAYER\}/g, sb2.playerName);
+  }
+
+  // {RIVAL} = nom du rival (si gender female → BRENDAN, else MAY) — TODO Phase E.
+  result = result.replace(/\{RIVAL\}/g, 'RIVAL');
+
+  // Mute le module-level gStringVar4. Écriture en dur (= ne mute PAS _dest car
+  // les strings TS sont immutables, et tous les callers utilisent gStringVar4
+  // de toute façon).
+  gStringVar4 = result;
+  (globalThis as Record<string, unknown>).gStringVar4 = result;
+  return result;
 }
 
 // ─── Text colors helper ──────────────────────────────────────────────────────

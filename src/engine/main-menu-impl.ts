@@ -356,21 +356,78 @@ export function CreateYesNoMenuParameterized(
 // stubs en attendant Phase D Birch implementation.
 
 /** 1:1 décomp main_menu.c AddBirchSpeechObjects — créé Birch sprite + Lotad
- *  + player + platform sprites. TODO Phase D. */
-export function AddBirchSpeechObjects(_taskId: number): void { /* TODO Phase D */ }
+ *  + player (boy + girl) + platform sprites. Phase E partial : assigne des
+ *  spriteId invisibles aux task.data[8..11] pour que les Tasks suivantes
+ *  (WaitToShowBirch etc.) ne crashent pas sur `_gs(rt, spriteId).x = X`.
+ *
+ *  TODO Phase E.2 : 1:1 décomp full impl quand les sBirch* assets seront
+ *  extraits + LoadCompressedSpriteSheet sBirchSpeechBirchSpriteTemplate. */
+export function AddBirchSpeechObjects(taskId: number): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  const task = rt.gTasks.get(taskId);
+  if (!task) return;
+  // Crée 4 sprites invisibles pour Birch / Lotad / boy player / girl player.
+  // Le décomp utilise CreateSprite avec sBirchSpeechObjectTemplate qui a un
+  // shape/size particulier, mais notre stub évite juste les crash en assignant
+  // des slots OAM valides.
+  const birchId = rt.CreateSpriteAtOam({
+    tileId: 0, paletteBank: 0, x: 0, y: 0,
+    shape: 0, size: 0, priority: 0,
+  }).spriteId;
+  rt.gSprites.get(birchId)!.invisible = true;
+  task.data[8] = birchId;   // Birch sprite
+  task.data[9] = birchId;   // Lotad (= dummy même sprite)
+  task.data[10] = birchId;  // Boy player
+  task.data[11] = birchId;  // Girl player
+}
 
-/** 1:1 décomp main_menu.c NewGameBirchSpeech_StartFadeInTarget1OutTarget2 —
- *  cross-fade BG1 (Birch) ↔ BG0 (player) via BLDCNT. TODO Phase D. */
-export function NewGameBirchSpeech_StartFadeInTarget1OutTarget2(_taskId: number, _delay: number): void { /* TODO Phase D */ }
+// Helpers fade Birch — Phase E partial : simulate fade complete instantly pour
+// débloquer le flow Tasks. TODO Phase E.2 : 1:1 décomp full impl avec sub-Task
+// d'animation BLDALPHA progressive + sync sur tDelay/tDelayTimer.
+//
+// Le flow Birch check `task.data[5]` (= tIsDoneFadingSprites macro) après chaque
+// StartFade* call. Le décomp animate BLDALPHA sur N frames puis set data[5]=1.
+// Notre stub set immediatement data[5]=1 (= no fade visuel mais avance).
+
+/** 1:1 décomp main_menu.c:1988 NewGameBirchSpeech_StartFadeInTarget1OutTarget2.
+ *  Cross-fade BG1 (Birch) ↔ BG0 (player) via BLDCNT. Setup hardware regs +
+ *  mark fade as instantly done pour débloquer Task_*WaitForSpriteFadeIn*. */
+export function NewGameBirchSpeech_StartFadeInTarget1OutTarget2(taskId: number, _delay: number): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  // 1:1 décomp setup BLDCNT/BLDALPHA/BLDY (= cross-fade hardware).
+  // BLDCNT = BLDCNT_TGT2_BG1 | BLDCNT_EFFECT_BLEND | BLDCNT_TGT1_OBJ.
+  // (= 0x0240 | 0x0040 | 0x0010 = 0x0250)
+  rt.SetGpuReg(0x050, 0x0250);  // REG_OFFSET_BLDCNT
+  rt.SetGpuReg(0x052, (0 << 0) | (16 << 8));  // REG_OFFSET_BLDALPHA = (eva=0, evb=16)
+  rt.SetGpuReg(0x054, 0);  // REG_OFFSET_BLDY = 0
+  const task = rt.gTasks.get(taskId);
+  if (task) task.data[5] = 1;  // tIsDoneFadingSprites = 1 (= simulate done).
+}
 
 /** Inverse de StartFadeInTarget1OutTarget2 (= cross-fade dans l'autre sens). */
-export function NewGameBirchSpeech_StartFadeOutTarget1InTarget2(_taskId: number, _delay: number): void { /* TODO Phase D */ }
+export function NewGameBirchSpeech_StartFadeOutTarget1InTarget2(taskId: number, _delay: number): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  rt.SetGpuReg(0x050, 0x0250);
+  rt.SetGpuReg(0x052, (16 << 0) | (0 << 8));  // (eva=16, evb=0) — inverse alpha.
+  rt.SetGpuReg(0x054, 0);
+  const task = rt.gTasks.get(taskId);
+  if (task) task.data[5] = 1;
+}
 
-/** Fade-in du platform sprite (= ombre sous Birch/Lotad). */
-export function NewGameBirchSpeech_StartFadePlatformIn(_taskId: number, _delay: number): void { /* TODO Phase D */ }
+/** Fade-in du platform sprite (= ombre sous Birch/Lotad). MVP stub. */
+export function NewGameBirchSpeech_StartFadePlatformIn(_taskId: number, _delay: number): void {
+  // TODO Phase E.2 : créer sub-Task qui anime sBirchSpeechBgGradientPal[i] vers
+  // sBirchSpeechPlatformBlackPal sur N frames. Pour MVP, on no-op (= la palette
+  // platform reste celle qu'elle est).
+}
 
-/** Fade-out du platform sprite. */
-export function NewGameBirchSpeech_StartFadePlatformOut(_taskId: number, _delay: number): void { /* TODO Phase D */ }
+/** Fade-out du platform sprite. MVP stub. */
+export function NewGameBirchSpeech_StartFadePlatformOut(_taskId: number, _delay: number): void {
+  // TODO Phase E.2 : inverse fade in.
+}
 
 export function DoNamingScreen(_type: number, _dest: unknown, _gender: number): void {
   // TODO Phase D : transition vers l'écran de nom (= naming_screen scene).
