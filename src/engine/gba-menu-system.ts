@@ -119,7 +119,7 @@ export function RtcGetErrorStatus(): number {
 }
 
 export function PlayBGM(_songNum: number): void {
-  // TODO : bridge vers m4aSongNumStart (= système audio session 80 spessasynth).
+  // TODO Phase E : bridge vers m4aSongNumStart (= système audio session 80 spessasynth).
 }
 
 // ─── Save block + persistence (= localStorage proxy) ─────────────────────────
