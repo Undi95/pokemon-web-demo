@@ -408,20 +408,17 @@ export class GameScene extends Phaser.Scene {
   }
 
   private heldKeys = 0;
-  /** True quand la fenêtre game a le focus (= click ou pointerdown sur canvas).
-   *  Les arrow keys et autres touches GBA scroll/space la page si event pas
-   *  preventDefault() — on ne veut le bloquer QUE quand le user joue. */
-  private gameFocused = false;
 
   private createKeys(): void {
-    // Click sur le canvas Phaser → focus game. Click ailleurs (= devtool, etc.)
-    // → unfocus → arrow keys scrollent la page normalement.
+    // Canvas focusable : focus par défaut → arrow keys/space ne scrollent pas
+    // la page. Click ailleurs (= devtool, autre élément) → canvas perd focus
+    // automatiquement (= browser default behavior). Click back sur canvas →
+    // refocus automatique.
     const canvas = this.game.canvas;
-    canvas.addEventListener('pointerdown', () => { this.gameFocused = true; });
-    document.addEventListener('pointerdown', (e) => {
-      // Si click hors canvas, unfocus (= laisser scroll page)
-      if (!canvas.contains(e.target as Node)) this.gameFocused = false;
-    });
+    canvas.tabIndex = 0;
+    canvas.style.outline = 'none'; // pas de border bleue ugly autour
+    // Default focus sur le canvas au chargement de la scene.
+    setTimeout(() => canvas.focus(), 0);
 
     // Utilise les événements natifs keydown/keyup au lieu de Phaser Key objects
     // car Puppeteer + Phaser addKey ne détectent pas toujours les touches.
@@ -429,16 +426,15 @@ export class GameScene extends Phaser.Scene {
       const mask = this.keyToMask(e.key);
       if (mask) {
         this.heldKeys |= mask;
-        // Quand le game a le focus, bloque le scroll page (= arrow keys, space,
-        // page up/down). Sinon le user peut scroller la page normalement.
-        if (this.gameFocused) e.preventDefault();
+        // preventDefault uniquement si canvas a le focus (= user joue).
+        if (document.activeElement === canvas) e.preventDefault();
       }
     });
     window.addEventListener('keyup', (e) => {
       const mask = this.keyToMask(e.key);
       if (mask) {
         this.heldKeys &= ~mask;
-        if (this.gameFocused) e.preventDefault();
+        if (document.activeElement === canvas) e.preventDefault();
       }
     });
   }

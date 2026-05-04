@@ -25,11 +25,12 @@ import {
   AddTextPrinterParameterized3, FillWindowPixelBuffer,
 } from './decomp-globals';
 import { FillWindowPixelRect } from './gba-window-system';
+import { WINDOW_FRAMES_COUNT, GetWindowFrameTilesPal, preloadTextWindowFrames } from './gba-text-window';
 import { BG_PLTT_ID, REG_OFFSET_WIN0H, REG_OFFSET_WIN0V } from './decomp-runtime';
 import { PLTT_SIZE_4BPP, WIN_RANGE } from './decomp-helpers';
 import { JOY_NEW } from './decomp-globals';
 import { gSaveBlock2Ptr } from './gba-menu-system';
-import { loadGbaPal, loadIndexedPngStrict } from './gba/png-loader';
+import { loadGbaPal } from './gba/png-loader';
 
 // ─── State globals ───────────────────────────────────────────────────────────
 
@@ -48,8 +49,7 @@ const DPAD_RIGHT = 0x10;
 const WIN_HEADER = 0;
 const WIN_OPTIONS = 1;
 
-// 1:1 décomp option_menu.c:34-38
-const WINDOW_FRAMES_COUNT = 20;
+// WINDOW_FRAMES_COUNT importé depuis gba-text-window (= foundation partagée).
 
 // 1:1 décomp option_menu.c YPOS macros = MENUITEM * 16
 const Y_TEXTSPEED = 0;
@@ -100,14 +100,12 @@ const ITEM_LABEL_KEYS = [
 
 // ─── Asset preload ───────────────────────────────────────────────────────────
 
-/** 1:1 décomp option_menu.c:198 LoadBgTiles utilise GetWindowFrameTilesPal(idx)
- *  qui retourne {tiles, pal} depuis sWindowFrames[idx]. Notre version :
- *  cache les assets ROM pour les 20 frames possibles. À call au boot + chaque
- *  fois qu'un nouveau frame est cyclé via FrameType_ProcessInput. */
+/** Pré-charge les assets spécifiques au option menu (= juste la palette texte
+ *  à part des frame tiles partagées). Les 20 frames sont chargées via
+ *  preloadTextWindowFrames() (= foundation partagée gba-text-window). */
 export async function preloadOptionMenuAssets(): Promise<void> {
-  // Frame 1 (= default) — déjà préloadé via preloadTitleAssets normalement.
   const tasks: Promise<void>[] = [];
-  // sOptionMenuText_Pal (= 16 colors RGB15)
+  // sOptionMenuText_Pal (= 16 colors RGB15) — spécifique option menu.
   if (!assetCache.has('sOptionMenuText_Pal')) {
     tasks.push(
       loadGbaPal('/decomp/em/ui/interface/option_menu_text.pal').then(p => {
@@ -115,37 +113,9 @@ export async function preloadOptionMenuAssets(): Promise<void> {
       }).catch(e => console.warn('[option-menu] sOptionMenuText_Pal load failed:', e))
     );
   }
-  // gTextWindowFrame1_Gfx + Pal — load depuis text_window/1.png si pas déjà cached
-  for (let n = 1; n <= WINDOW_FRAMES_COUNT; n++) {
-    const gfxKey = n === 1 ? 'gTextWindowFrame1_Gfx' : `sTextWindowFrame${n}_Gfx`;
-    const palKey = n === 1 ? 'gTextWindowFrame1_Pal' : `sTextWindowFrame${n}_Pal`;
-    if (assetCache.has(gfxKey) && assetCache.has(palKey)) continue;
-    const url = `/decomp/em/ui/text_window/${n}.png`;
-    tasks.push(
-      (async () => {
-        try {
-          const png = await loadIndexedPngStrict(url, 4);
-          assetCache.set(gfxKey, png.charData);
-          assetCache.set(palKey, png.palette);
-        } catch (e) {
-          console.warn(`[option-menu] frame ${n} load failed:`, e);
-        }
-      })()
-    );
-  }
+  // Frame tiles partagés (= main menu, dialogues, etc. l'utilisent aussi).
+  tasks.push(preloadTextWindowFrames());
   await Promise.all(tasks);
-  console.log(`[option-menu] preload done (${WINDOW_FRAMES_COUNT} frames + text pal)`);
-}
-
-/** 1:1 décomp text_window.c:GetWindowFrameTilesPal — retourne {tiles, pal} pour
- *  le frame style donné (0-19 = 1-20 PNG numbering). */
-export function GetWindowFrameTilesPal(idx: number): { tiles: Uint8Array; pal: Uint16Array } {
-  const n = (idx % WINDOW_FRAMES_COUNT) + 1;
-  const gfxKey = n === 1 ? 'gTextWindowFrame1_Gfx' : `sTextWindowFrame${n}_Gfx`;
-  const palKey = n === 1 ? 'gTextWindowFrame1_Pal' : `sTextWindowFrame${n}_Pal`;
-  const tiles = (getAsset(gfxKey) as Uint8Array | undefined) ?? new Uint8Array(0x120);
-  const pal = (getAsset(palKey) as Uint16Array | undefined) ?? new Uint16Array(16);
-  return { tiles, pal };
 }
 
 // ─── Helpers de rendu ────────────────────────────────────────────────────────
@@ -446,8 +416,7 @@ const _globals: Record<string, unknown> = {
   DmaClearLarge16, DmaClear32,
   // State
   sArrowPressed: undefined,  // Will be re-defined below as getter/setter
-  // Helpers
-  GetWindowFrameTilesPal,
+  // Helpers (GetWindowFrameTilesPal exposé via gba-text-window.ts foundation)
   DrawHeaderText, DrawOptionMenuTexts, DrawBgWindowFrames,
   HighlightOptionMenuItem, DrawOptionMenuChoice,
   TextSpeed_DrawChoices, BattleScene_DrawChoices, BattleStyle_DrawChoices,

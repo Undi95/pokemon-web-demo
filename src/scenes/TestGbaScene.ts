@@ -25,6 +25,7 @@ import { loadIndexedPng, loadTilemapBin } from '../engine/gba/png-loader';
 import { rotScaleAffineMatrix } from '../engine/gba/types';
 // M4A audio test
 import { loadMidi, playSong, stopSong, isPlaying } from '../engine/m4a/player';
+import { keyToGbaMask } from '../util/key-bindings';
 import { loadSampleManifest } from '../engine/m4a/sample-loader';
 import { getAudioContext } from '../engine/m4a/audio-context';
 import type { VoiceGroup } from '../engine/m4a/voice-types';
@@ -58,14 +59,18 @@ export class TestGbaScene extends Phaser.Scene {
     // Load assets async puis configure BG
     void this.loadAssetsAndStart();
 
-    // Inputs : 'P' = play song, 'S' = stop, autre key/click = exit
+    // Inputs : 'P' = play song, 'S' = stop, vraie touche GBA = exit.
+    // Pas de click-to-exit (= éviter les exits accidentels en cliquant dans
+    // le canvas). Seul un appui sur un bouton GBA (= A/B/Start/etc. selon
+    // key bindings) déclenche le passage au GameScene.
     this.input.keyboard?.on('keydown', (e: KeyboardEvent) => {
       const k = e.key.toLowerCase();
       if (k === 'p') { void this.playTestSong(); return; }
       if (k === 's') { stopSong(); return; }
-      this.exit();
+      if (keyToGbaMask(e.key) !== 0) {
+        this.exit();
+      }
     });
-    this.input.once('pointerdown', () => this.exit());
   }
 
   private async loadAssetsAndStart(): Promise<void> {
