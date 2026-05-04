@@ -35,85 +35,12 @@ export function loadMovementActions(json: Record<string, MovementActionDef>) {
   actionsFromJson = json || {};
 }
 
-/** Fallback hardcoded pour boot edge case (avant chargement JSON). */
-const ACTIONS_FALLBACK: Record<string, [number, number, Facing | null, number]> = {
-  // walk normal (vitesse joueur)
-  walk_up: [0, -1, 'up', 220],
-  walk_down: [0, 1, 'down', 220],
-  walk_left: [-1, 0, 'left', 220],
-  walk_right: [1, 0, 'right', 220],
-  // walk_slow_X (NPCs lents)
-  walk_slow_up: [0, -1, 'up', 320],
-  walk_slow_down: [0, 1, 'down', 320],
-  walk_slow_left: [-1, 0, 'left', 320],
-  walk_slow_right: [1, 0, 'right', 320],
-  walk_slowest_up: [0, -1, 'up', 480],
-  walk_slowest_down: [0, 1, 'down', 480],
-  walk_slowest_left: [-1, 0, 'left', 480],
-  walk_slowest_right: [1, 0, 'right', 480],
-  // walk_fast_X (course)
-  walk_fast_up: [0, -1, 'up', 130],
-  walk_fast_down: [0, 1, 'down', 130],
-  walk_fast_left: [-1, 0, 'left', 130],
-  walk_fast_right: [1, 0, 'right', 130],
-  walk_faster_up: [0, -1, 'up', 90],
-  walk_faster_down: [0, 1, 'down', 90],
-  walk_faster_left: [-1, 0, 'left', 90],
-  walk_faster_right: [1, 0, 'right', 90],
-  // face_X : tourne sans bouger
-  face_up: [0, 0, 'up', 30],
-  face_down: [0, 0, 'down', 30],
-  face_left: [0, 0, 'left', 30],
-  face_right: [0, 0, 'right', 30],
-  set_invisible: [0, 0, null, 1],
-  set_visible: [0, 0, null, 1],
-  // walk_in_place_X : marche sur place (anim de pas sans déplacement)
-  walk_in_place_up: [0, 0, 'up', 220],
-  walk_in_place_down: [0, 0, 'down', 220],
-  walk_in_place_left: [0, 0, 'left', 220],
-  walk_in_place_right: [0, 0, 'right', 220],
-  walk_in_place_fast_up: [0, 0, 'up', 130],
-  walk_in_place_fast_down: [0, 0, 'down', 130],
-  walk_in_place_fast_left: [0, 0, 'left', 130],
-  walk_in_place_fast_right: [0, 0, 'right', 130],
-  walk_in_place_faster_up: [0, 0, 'up', 90],
-  walk_in_place_faster_down: [0, 0, 'down', 90],
-  walk_in_place_faster_left: [0, 0, 'left', 90],
-  walk_in_place_faster_right: [0, 0, 'right', 90],
-  // jump_X : saut d'une case (utilisé pour le step off truck, ledges, etc.)
-  jump_up: [0, -1, 'up', 240],
-  jump_down: [0, 1, 'down', 240],
-  jump_left: [-1, 0, 'left', 240],
-  jump_right: [1, 0, 'right', 240],
-  // jump_2_X : saut de 2 cases (par-dessus un obstacle)
-  jump_2_up: [0, -2, 'up', 320],
-  jump_2_down: [0, 2, 'down', 320],
-  jump_2_left: [-2, 0, 'left', 320],
-  jump_2_right: [2, 0, 'right', 320],
-  // jump_in_place_X : saute sur place
-  jump_in_place_up: [0, 0, 'up', 240],
-  jump_in_place_down: [0, 0, 'down', 240],
-  jump_in_place_left: [0, 0, 'left', 240],
-  jump_in_place_right: [0, 0, 'right', 240],
-  // delays
-  delay_1: [0, 0, null, 16],
-  delay_2: [0, 0, null, 32],
-  delay_4: [0, 0, null, 64],
-  delay_8: [0, 0, null, 128],
-  delay_16: [0, 0, null, 256],
-  // Opcodes courants traités comme délais courts (emotes, face_player non implémentés)
-  // Permet à la séquence de continuer sans warn dans la console.
-  face_player: [0, 0, null, 30],
-  face_away_player: [0, 0, null, 30],
-  emote_exclamation_mark: [0, 0, null, 200],
-  emote_question_mark: [0, 0, null, 200],
-  emote_heart: [0, 0, null, 200],
-  emote_x: [0, 0, null, 200],
-  emote_double_exclamation_mark: [0, 0, null, 200],
-  emote_smile: [0, 0, null, 200],
-  lock_facing_direction: [0, 0, null, 1],
-  unlock_facing_direction: [0, 0, null, 1],
-};
+// Phase D-cleanup audit session 83 : ACTIONS_FALLBACK hardcoded retiré.
+// La source unique = `public/decomp/em/movement-actions.json` extrait par
+// `scripts/extract-movement-actions.mjs` depuis `asm/macros/movement.inc` +
+// `include/constants/event_object_movement.h`. Si une action est requested
+// avant que `loadMovementActions(json)` soit appelé, on log un warning et
+// on retourne null (= caller skip cette action). Pas de fallback duplication.
 
 export interface MovementSprite {
   sprite: Phaser.GameObjects.Sprite;
@@ -134,16 +61,22 @@ const STEP_END = 'step_end';
  * @param actions liste de tokens du label Movement_X (ex. ['walk_up', 'walk_up', 'face_left', 'step_end'])
  */
 /**
- * Lookup une action : JSON décomp en priorité, fallback hardcoded.
- * Retourne null si action inconnue (caller doit skip).
+ * Lookup une action : JSON décomp uniquement (source de vérité 1:1 décomp).
+ * Retourne null si action inconnue ou JSON pas chargé (caller skip cette action).
  */
+let _missingJsonWarned = false;
 function lookupAction(name: string): { dx: number; dy: number; facing: Facing | null; dur: number } | null {
   const fromJson = actionsFromJson[name];
   if (fromJson) {
     return { dx: fromJson.dx, dy: fromJson.dy, facing: fromJson.facing, dur: fromJson.speedMs };
   }
-  const fb = ACTIONS_FALLBACK[name];
-  if (fb) return { dx: fb[0], dy: fb[1], facing: fb[2], dur: fb[3] };
+  // No fallback hardcoded — si JSON pas chargé OU action inconnue, on log
+  // 1× le warning et on skip. Le caller (= runMovement) va simplement passer
+  // à l'action suivante.
+  if (Object.keys(actionsFromJson).length === 0 && !_missingJsonWarned) {
+    console.warn('[movement] movement-actions.json not loaded (= call loadMovementActions early in scene init)');
+    _missingJsonWarned = true;
+  }
   return null;
 }
 

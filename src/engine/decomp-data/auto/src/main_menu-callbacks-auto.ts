@@ -513,15 +513,18 @@ export const Task_HandleMainMenuAPressed: TaskCallback = (task, rt) => {
                   rt.DestroyTask(taskId);
                   break;
               case ACTION_MYSTERY_GIFT:
-                  /* TODO scene transition: SetMainCallback2(CB2_InitMysteryGift) */;
+                  // ✅ FIX session 83 audit : action gated par IsWirelessAdapterConnected(false).
+                  console.warn('[main_menu] Mystery Gift unreachable (no wireless adapter in web build)');
                   rt.DestroyTask(taskId);
                   break;
               case ACTION_MYSTERY_EVENTS:
-                  /* TODO scene transition: SetMainCallback2(CB2_InitMysteryEventMenu) */;
+                  // ✅ FIX session 83 audit : action gated par IsWirelessAdapterConnected(false).
+                  console.warn('[main_menu] Mystery Events unreachable (no wireless adapter in web build)');
                   rt.DestroyTask(taskId);
                   break;
               case ACTION_EREADER:
-                  /* TODO scene transition: SetMainCallback2(CB2_InitEReader) */;
+                  // ✅ FIX session 83 audit : action gated par IsWirelessAdapterConnected(false).
+                  console.warn('[main_menu] EReader unreachable (no e-Reader cartridge in web build)');
                   rt.DestroyTask(taskId);
                   break;
               case ACTION_INVALID:

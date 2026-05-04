@@ -545,6 +545,9 @@ export function CycleSceneryPalette(mode: number): void {
   if (mode === 1) return;
   if ((fc & 3) !== 0 || r.gPaletteFade.active) return;
 
+  // Phase D-cleanup audit session 83 : 1:1 décomp src/intro_credits_graphics.c
+  // CycleSceneryPalette écrit à gPlttBufferFaded (= TransferPlttBuffer fait
+  // le copy au PLTT register au prochain VBlank). Plus de direct gba.palette.
   if (mode === 2) {
     let x: number, y: number;
     if (fc & 4) {
@@ -554,8 +557,8 @@ export function CycleSceneryPalette(mode: number): void {
       x = (28) | ((24) << 5) | ((0) << 10);  // RGB(28,24,0)
       y = (7) | ((9) << 5) | ((15) << 10);   // RGB(7,9,15)
     }
-    r.gba.palette.loadBgRange(0 + 12, new Uint16Array([x]));
-    r.gba.palette.loadBgRange(0 + 13, new Uint16Array([y]));
+    r.gPlttBufferFaded.set(0 + 12, x);
+    r.gPlttBufferFaded.set(0 + 13, y);
   } else {
     // mode=0 default : swap palette colors 9 et 10
     let x: number, y: number;
@@ -566,8 +569,8 @@ export function CycleSceneryPalette(mode: number): void {
       x = r.gPlttBufferUnfaded.get(0 + 10);
       y = r.gPlttBufferUnfaded.get(0 + 9);
     }
-    r.gba.palette.loadBgRange(0 + 9, new Uint16Array([x]));
-    r.gba.palette.loadBgRange(0 + 10, new Uint16Array([y]));
+    r.gPlttBufferFaded.set(0 + 9, x);
+    r.gPlttBufferFaded.set(0 + 10, y);
   }
 }
 
@@ -1133,8 +1136,9 @@ export function LoadSpritePalette(pal: { data: string, tag: string | number } | 
   }
   if (r.nextObjPalSlot >= 16) return; // OBJ palette saturé
   const slot = r.nextObjPalSlot++;
-  r.gba.palette.loadObjRange(slot * 16, u16.subarray(0, 16));
-  // Sync gPlttBufferUnfaded/Faded pour CpuCopy16 ultérieur
+  // Phase D-cleanup audit session 83 : 1:1 décomp src/sprite.c LoadSpritePalette
+  // écrit à gPlttBufferUnfaded ET Faded. Le TransferPlttBuffer copie Faded
+  // au PLTT register au VBlank. Plus de direct gba.palette.loadObjRange.
   for (let i = 0; i < Math.min(16, u16.length); i++) {
     r.gPlttBufferUnfaded.set(256 + slot * 16 + i, u16[i]);
     r.gPlttBufferFaded.set(256 + slot * 16 + i, u16[i]);
@@ -1419,8 +1423,9 @@ export function LoadSpritePalettes(palettes: Array<{ data: string, tag: string |
       ? palData
       : new Uint16Array(palData.buffer, palData.byteOffset, Math.floor(palData.byteLength / 2));
     const slot = r.nextObjPalSlot++;
-    r.gba.palette.loadObjRange(slot * 16, u16.subarray(0, 16));
-    // Sync gPlttBufferUnfaded/Faded pour CpuCopy16 ultérieur (= ripple variants)
+    // Phase D-cleanup audit session 83 : 1:1 décomp src/sprite.c
+    // LoadSpritePalettes — écrit à gPlttBufferUnfaded/Faded uniquement.
+    // TransferPlttBuffer copie Faded → PLTT register au VBlank.
     for (let i = 0; i < Math.min(16, u16.length); i++) {
       r.gPlttBufferUnfaded.set(256 + slot * 16 + i, u16[i]);
       r.gPlttBufferFaded.set(256 + slot * 16 + i, u16[i]);
@@ -1647,13 +1652,21 @@ export * from './decomp-data/auto/src/sprite-system-flat';
 export * from './decomp-data/auto/src/intro-c-data-auto';
 
 // ─── Stubs for main_menu-callbacks-auto.ts ───────────────────────────────────
-export function AddBirchSpeechObjects(_taskId: number): void { /* TODO */ }
-export function CreatePokeballSpriteToReleaseMon(_spriteId: number, _paletteBank: number, _x: number, _y: number, _a: number, _b: number, _c: number, _pal: number, _species: number): number { return 0; }
-export function InitSpriteAffineAnim(_sprite: any): void { /* TODO */ }
-export function NewGameBirchSpeech_StartFadeInTarget1OutTarget2(_taskId: number, _delay: number): void { /* TODO */ }
-export function NewGameBirchSpeech_StartFadeOutTarget1InTarget2(_taskId: number, _delay: number): void { /* TODO */ }
-export function NewGameBirchSpeech_StartFadePlatformIn(_taskId: number, _delay: number): void { /* TODO */ }
-export function NewGameBirchSpeech_StartFadePlatformOut(_taskId: number, _delay: number): void { /* TODO */ }
+// Phase D-cleanup audit session 83 : stubs Birch-specific extraits vers
+// main-menu-impl.ts (= consolidation thématique). Ici ne reste que les
+// helpers sprite GENERIQUES (= utilisés dans plusieurs scenes).
+//
+// 1:1 décomp src/sprite.c InitSpriteAffineAnim — init affine animation state
+// pour un sprite. Stub no-op : notre engine n'a pas encore d'affine animation
+// runtime (= TODO future, utilisé par Birch player shrink + battle anims).
+export function InitSpriteAffineAnim(_sprite: any): void { /* TODO future affine anims */ }
+
+// 1:1 décomp src/pokemon.c CreatePokeballSpriteToReleaseMon — utilisé par
+// Birch (release Lotad) ET party_menu (release pokémon). Stub return 0
+// (= invalid sprite ID, scene continue).
+export function CreatePokeballSpriteToReleaseMon(_spriteId: number, _paletteBank: number, _x: number, _y: number, _a: number, _b: number, _c: number, _pal: number, _species: number): number {
+  return 0;
+}
 
 /** 1:1 décomp `PIXEL_FILL(value)` macro — fills both nibbles of a byte. */
 export function PIXEL_FILL(value: number): number {

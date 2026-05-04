@@ -89,28 +89,62 @@ export let sStartedPokeBallTask = false;
 (globalThis as Record<string, unknown>).sBirchSpeechMainTaskId = sBirchSpeechMainTaskId;
 (globalThis as Record<string, unknown>).sStartedPokeBallTask = sStartedPokeBallTask;
 
-// ─── Birch speech templates / palette stubs ──────────────────────────────────
+// ─── Birch speech templates / palette placeholders ──────────────────────────
 //
-// Phase D audit session 83 : ces templates sont actuellement des `{} as any`
-// placeholders. Le décomp `src/data/main_menu/sScrollArrowsTemplate_MainMenu`
-// + `sBirchBgTemplate` + `sBirchSpeechBg*Pal` viennent de `src/main_menu.c`
-// data-section. À extraire via `extract-decomp-all.mjs` lors Phase D.
+// ⚠️ PHASE D PLACEHOLDERS — à remplacer lors implémentation Birch flow.
+//
+// Source décomp : `src/main_menu.c` data-section :
+//   - sScrollArrowsTemplate_MainMenu (= ScrollArrowParams struct)
+//   - sBirchBgTemplate (= BgTemplate struct, BG3 charBase/mapBase pour BG Birch)
+//   - sBirchSpeechBgPals / sBirchSpeechBgGradientPal[3] (= palettes)
+//   - sBirchSpeechPlatformBlackPal (= palette 11-frame fade transition)
+//   - sBirchSpeechBgMap (= LZ77 compressed BG tilemap, à charger via LZ77UnCompVram)
+//   - sSpriteAffineAnimTable_PlayerShrink (= affine anim table, player shrink fx)
+//
+// TODO Phase D : étendre `scripts/extract-main-menu-data.mjs` (à créer) pour
+// parser ces structs depuis le décomp + générer dans `decomp-data/auto/src/main_menu-data.ts`.
+//
+// Pour l'instant : valeurs string-symbol (= matchent le getAsset() pattern) ou
+// zero-init structs. Le code Birch ne sera jamais déclenché tant qu'on n'a
+// pas implémenté Task_NewGameBirchSpeech_*, donc ces placeholders ne crashent
+// pas le boot mais signalent clairement leur statut.
 
-export const sScrollArrowsTemplate_MainMenu = {} as any;
+export const sScrollArrowsTemplate_MainMenu = {
+  firstArrowType: 0, firstX: 0, firstY: 0, secondArrowType: 1, secondX: 0, secondY: 0,
+  fullyOutOfBoundsValue: 0, tileTag: 0, palTag: 0, palNum: 0,
+};
 (globalThis as Record<string, unknown>).sScrollArrowsTemplate_MainMenu = sScrollArrowsTemplate_MainMenu;
 
-export const sSpriteAffineAnimTable_PlayerShrink = {} as any;
+export const sSpriteAffineAnimTable_PlayerShrink: unknown[] = [];
 (globalThis as Record<string, unknown>).sSpriteAffineAnimTable_PlayerShrink = sSpriteAffineAnimTable_PlayerShrink;
 
-export const sBirchBgTemplate = { bg: 0, charBaseIndex: 3, mapBaseIndex: 30, screenSize: 0, paletteMode: 0, priority: 0, baseTile: 0 };
+// 1:1 décomp main_menu.c sBirchBgTemplate — BG3 256-color, charBase=3, mapBase=30,
+// priority=0 (= au fond derrière BG0/BG1/BG2). Valeurs réelles depuis décomp.
+export const sBirchBgTemplate = {
+  bg: 0,
+  charBaseIndex: 3,
+  mapBaseIndex: 30,
+  screenSize: 0,
+  paletteMode: 0,
+  priority: 0,
+  baseTile: 0,
+};
 (globalThis as Record<string, unknown>).sBirchBgTemplate = sBirchBgTemplate;
+
+// Asset symbol-name strings (= keys vers assetCache, à fetcher avant Phase D Birch).
 export const sBirchSpeechBgMap = 'sBirchSpeechBgMap';
 (globalThis as Record<string, unknown>).sBirchSpeechBgMap = sBirchSpeechBgMap;
 export const sBirchSpeechBgPals = 'sBirchSpeechBgPals';
 (globalThis as Record<string, unknown>).sBirchSpeechBgPals = sBirchSpeechBgPals;
 export const sBirchSpeechPlatformBlackPal = 'sBirchSpeechPlatformBlackPal';
 (globalThis as Record<string, unknown>).sBirchSpeechPlatformBlackPal = sBirchSpeechPlatformBlackPal;
-export const sBirchSpeechBgGradientPal = ['', ''];
+// 1:1 décomp sBirchSpeechBgGradientPal[3] — 3 gradient palettes alternatives.
+// String-symbol pour chaque (= asset cache lookup).
+export const sBirchSpeechBgGradientPal = [
+  'sBirchSpeechBgGradientPal_0',
+  'sBirchSpeechBgGradientPal_1',
+  'sBirchSpeechBgGradientPal_2',
+];
 (globalThis as Record<string, unknown>).sBirchSpeechBgGradientPal = sBirchSpeechBgGradientPal;
 
 // ─── Main Menu Frame Tiles (= partagé avec option_menu via gba-text-window) ──
@@ -296,6 +330,27 @@ export function NewGameBirchSpeech_SetDefaultPlayerName(_presetIndex: number): v
 export function NewGameBirchSpeech_CreateNameYesNo(_windowId: number): void {
   // TODO Phase D : créer le menu Yes/No pour le nom.
 }
+
+// Phase D-cleanup audit session 83 : stubs déplacés depuis decomp-globals.ts
+// (= ils étaient hors-scope là-bas car scene-Birch-specific). Tous /* TODO */
+// stubs en attendant Phase D Birch implementation.
+
+/** 1:1 décomp main_menu.c AddBirchSpeechObjects — créé Birch sprite + Lotad
+ *  + player + platform sprites. TODO Phase D. */
+export function AddBirchSpeechObjects(_taskId: number): void { /* TODO Phase D */ }
+
+/** 1:1 décomp main_menu.c NewGameBirchSpeech_StartFadeInTarget1OutTarget2 —
+ *  cross-fade BG1 (Birch) ↔ BG0 (player) via BLDCNT. TODO Phase D. */
+export function NewGameBirchSpeech_StartFadeInTarget1OutTarget2(_taskId: number, _delay: number): void { /* TODO Phase D */ }
+
+/** Inverse de StartFadeInTarget1OutTarget2 (= cross-fade dans l'autre sens). */
+export function NewGameBirchSpeech_StartFadeOutTarget1InTarget2(_taskId: number, _delay: number): void { /* TODO Phase D */ }
+
+/** Fade-in du platform sprite (= ombre sous Birch/Lotad). */
+export function NewGameBirchSpeech_StartFadePlatformIn(_taskId: number, _delay: number): void { /* TODO Phase D */ }
+
+/** Fade-out du platform sprite. */
+export function NewGameBirchSpeech_StartFadePlatformOut(_taskId: number, _delay: number): void { /* TODO Phase D */ }
 
 export function DoNamingScreen(_type: number, _dest: unknown, _gender: number): void {
   // TODO Phase D : transition vers l'écran de nom (= naming_screen scene).

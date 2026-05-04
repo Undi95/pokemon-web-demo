@@ -333,6 +333,54 @@ function patchOptionMenuCallbacks() {
 
 patchOptionMenuCallbacks();
 
+// ─── Main menu Mystery Gift/Event/EReader stubs (= unreachable sans wireless) ─
+
+function patchMainMenuMysteryStubs() {
+  const FILE = path.resolve(SRC_DIR, 'main_menu-callbacks-auto.ts');
+  if (!fs.existsSync(FILE)) {
+    console.log('[post-transpile-patches] main_menu-callbacks-auto.ts not found, skip');
+    return;
+  }
+  let s = fs.readFileSync(FILE, 'utf8');
+  const before = s;
+
+  // PATCH M1 (audit session 83) : les 3 actions Mystery Gift/Event/EReader sont
+  // gated par IsWirelessAdapterConnected (= toujours false chez nous, web pas
+  // de wireless adapter) + IsMysteryGiftEnabled (= idem). Donc ces transitions
+  // sont code mort qu'on ne peut pas atteindre dans le flow normal.
+  // Pour 1:1 décomp + safe runtime : remplacer les TODOs par un console.warn
+  // explicite (= pas de scene transition). Si quelqu'un trigger ces actions
+  // (par dev tool), il verra un warning au lieu d'un silent fail.
+  const mysteryReplacements = [
+    {
+      from: '/* TODO scene transition: SetMainCallback2(CB2_InitMysteryGift) */;',
+      to: "console.warn('[main_menu] Mystery Gift unreachable (no wireless adapter in web build)');",
+    },
+    {
+      from: '/* TODO scene transition: SetMainCallback2(CB2_InitMysteryEventMenu) */;',
+      to: "console.warn('[main_menu] Mystery Events unreachable (no wireless adapter in web build)');",
+    },
+    {
+      from: '/* TODO scene transition: SetMainCallback2(CB2_InitEReader) */;',
+      to: "console.warn('[main_menu] EReader unreachable (no e-Reader cartridge in web build)');",
+    },
+  ];
+  for (const { from, to } of mysteryReplacements) {
+    if (s.includes(from)) {
+      s = s.replace(from, `// ✅ FIX session 83 audit : action gated par IsWirelessAdapterConnected(false).\n                  ${to}`);
+    }
+  }
+
+  if (s !== before) {
+    fs.writeFileSync(FILE, s, 'utf8');
+    console.log('[post-transpile-patches] main_menu-callbacks-auto.ts mystery stubs patched');
+  } else {
+    console.log('[post-transpile-patches] main_menu-callbacks-auto.ts mystery stubs already patched (idempotent skip)');
+  }
+}
+
+patchMainMenuMysteryStubs();
+
 // ─── Generic patches (= s'appliquent à TOUS les *-callbacks-auto.ts) ─────────
 //
 // Architecture observation #1 (audit session 83) : le pattern transpileur

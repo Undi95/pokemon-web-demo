@@ -392,18 +392,11 @@ export function getOptionMenuTextPal(): Uint16Array {
   return (getAsset('sOptionMenuText_Pal') as Uint16Array | undefined) ?? new Uint16Array(16);
 }
 
-// ─── Stubs pour fonctions DMA pas encore implémentées ───────────────────────
-
-/** Stub : notre runtime fait `vram.fill(0)` directement, pas de DMA réel.
- *  Utilisé par `case 1` de CB2_InitOptionMenu. */
-function DmaClearLarge16(_channel: number, dest: number, size: number, _blockSize: number): void {
-  // No-op : VRAM cleared par decomp-globals.DmaClear16 ailleurs.
-  void dest; void size;
-}
-
-function DmaClear32(_channel: number, dest: number, size: number): void {
-  void dest; void size;
-}
+// ─── DMA helpers (= vraies fonctions 1:1 décomp depuis decomp-globals) ──────
+// Phase D-cleanup audit session 83 : retiré les stubs no-op locaux qui
+// dupliquaient (en cassant la sémantique) les vrais DmaClearLarge16/DmaClear32
+// de decomp-globals.ts. Ces helpers font le bon dispatch sur VRAM/OAM/PLTT.
+import { DmaClearLarge16, DmaClear32 } from './decomp-globals';
 
 // Import templates depuis option_menu-data.ts (auto-générés)
 import { sOptionMenuBgTemplates, sOptionMenuWinTemplates } from './decomp-data/auto/src/option_menu-data';
@@ -414,7 +407,7 @@ const _globals: Record<string, unknown> = {
   // Templates auto file (= references via bare identifier)
   sOptionMenuBgTemplates,
   sOptionMenuWinTemplates,
-  // DMA stubs (= no-op, runtime utilise les helpers .fill)
+  // DMA helpers (= 1:1 décomp depuis decomp-globals, dispatch VRAM/OAM/PLTT)
   DmaClearLarge16, DmaClear32,
   // State
   sArrowPressed: undefined,  // Will be re-defined below as getter/setter

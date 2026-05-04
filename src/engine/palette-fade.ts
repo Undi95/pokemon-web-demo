@@ -1,13 +1,23 @@
 /**
  * palette-fade.ts
  * ----------------
- * Helper Phaser pour reproduire `BeginNormalPaletteFade` du décomp (palette.c).
+ * ⚠️ @deprecated — Phase D-cleanup audit session 83.
  *
- * Le décomp anime les couleurs PLTT (palette) entre 2 valeurs (startY/endY)
- * sur N frames vers une couleur cible (RGB_BLACK/RGB_WHITEALPHA/...).
+ * Wrapper Phaser legacy de `BeginNormalPaletteFade`. Conservé temporairement
+ * pour les 2 scenes Phaser legacy (`BirchSpeechScene.ts`, `MainMenuScene.ts`)
+ * qui n'ont pas encore été migrées vers le runtime décomp natif.
  *
- * Notre simplification web : Phaser camera.fadeIn/fadeOut wrappe le visuel
- * équivalent (toute la scène fade vers/depuis la couleur).
+ * **NE PAS utiliser dans du nouveau code**. Utiliser à la place :
+ *   `getRuntime()?.BeginNormalPaletteFade(palettes, delay, startY, endY, color)`
+ * (= 1:1 décomp src/palette.c, écrit gPlttBufferUnfaded → Faded → PLTT register
+ *  via TransferPlttBuffer au VBlank).
+ *
+ * Migration plan (= future session) :
+ *   1. Migrer BirchSpeechScene → CB2_NewGameBirchSpeech_* state machine
+ *      (= déjà transpilée dans `main_menu-callbacks-auto.ts`, juste à wirer).
+ *   2. Migrer MainMenuScene → CB2_InitMainMenu (= déjà transpilé, juste à
+ *      remplacer Phaser scene par GameScene + CB2 wiring).
+ *   3. Supprimer ce fichier (= duplication parallèle au CB2 décomp éliminée).
  *
  * Args décomp (1:1) :
  *   palettes  : bitmask des palettes affectées (PALETTES_ALL=0xFFFFFFFF, etc.)
@@ -15,10 +25,6 @@
  *   startY    : alpha initial (0=normal, 16=fully tinted)
  *   endY      : alpha final
  *   color     : couleur tint (RGB_BLACK, RGB_WHITEALPHA, etc.)
- *
- * Conversion web :
- *   fade duration ms ≈ |endY - startY| * (delay+1) * 16ms
- *   color RGB_BLACK = (0,0,0), RGB_WHITEALPHA = (255,255,255), etc.
  */
 import Phaser from 'phaser';
 
@@ -42,6 +48,8 @@ export interface PaletteFadeOpts {
 /**
  * Wrap Phaser camera fade en respectant les semantics décomp.
  * Si startY > endY = fade IN (de tint vers normal). Si startY < endY = fade OUT.
+ *
+ * ⚠️ @deprecated — utiliser `getRuntime().BeginNormalPaletteFade()` à la place.
  */
 export function beginPaletteFade(scene: Phaser.Scene, opts: PaletteFadeOpts): Promise<void> {
   const delay = opts.delay ?? 0;
