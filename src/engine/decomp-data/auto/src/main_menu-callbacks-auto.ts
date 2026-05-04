@@ -1264,15 +1264,11 @@ export const CB2_MainMenu: CB2Callback = (rt) => {
       AnimateSprites();
       BuildOamBuffer();
       UpdatePaletteFade();
-      if (rt.gIntroFrameCounter % 60 === 0) {
-        console.log('[CB2_MainMenu] tasks=', rt.gTasks.size, 'sprites=', rt.gSprites.size, 'fadeActive=', rt.gPaletteFade.active);
-      }
 };
 
 /** Source: main_menu.c → CB2_InitMainMenu */
 export const CB2_InitMainMenu: CB2Callback = (rt) => {
-  console.log('[CB2_InitMainMenu] called');
-  InitMainMenu(false);
+    InitMainMenu(false);
 };
 
 /** Source: main_menu.c → CB2_ReinitMainMenu */

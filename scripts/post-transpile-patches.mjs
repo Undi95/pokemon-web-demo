@@ -371,6 +371,18 @@ function patchMainMenuMysteryStubs() {
     }
   }
 
+  // PATCH M2 (audit session 83) : retire 2× console.log debug noisy dans
+  // CB2_MainMenu + CB2_InitMainMenu (= 1:1 décomp pure, le décomp n'a pas
+  // ces logs). Le transpileur les avait laissés en debug.
+  s = s.replace(
+    /\s*if \(rt\.gIntroFrameCounter % 60 === 0\) \{\s*\n\s*console\.log\('\[CB2_MainMenu\][^\n]+\);\s*\n\s*\}/,
+    '',
+  );
+  s = s.replace(
+    /\s*console\.log\('\[CB2_InitMainMenu\] called'\);\s*\n/,
+    '\n  ',
+  );
+
   if (s !== before) {
     fs.writeFileSync(FILE, s, 'utf8');
     console.log('[post-transpile-patches] main_menu-callbacks-auto.ts mystery stubs patched');

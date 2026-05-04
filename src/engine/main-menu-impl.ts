@@ -24,7 +24,7 @@
  *   - NewGameBirchSpeech_* stubs (8 fonctions, à implémenter Phase D)
  *   - sBirch* templates (= placeholders extraits via main-menu-data Phase D)
  */
-import { getRuntime, getAsset } from './decomp-globals';
+import { getRuntime } from './decomp-globals';
 import { GetWindowFrameTilesPal } from './gba-text-window';
 import {
   ResetBgsAndClearDma3BusyFlags,
@@ -415,12 +415,10 @@ export function InitMainMenu(returningFromOptionsMenu: boolean): void {
   DmaFill16(3, 0, PLTT + 2, PLTT_SIZE - 2);
 
   ResetPaletteFade();
-  // Load menu palettes (= AVANT le fade pour que les couleurs soient dans
-  // gPlttBufferUnfaded au moment où le fade commence).
-  const bgPal = getAsset('sMainMenuBgPal');
-  const textPal = getAsset('sMainMenuTextPal');
-  console.log('[InitMainMenu] sMainMenuBgPal cached?', !!bgPal, 'len', bgPal?.length ?? 0);
-  console.log('[InitMainMenu] sMainMenuTextPal cached?', !!textPal, 'len', textPal?.length ?? 0);
+  // 1:1 décomp main_menu.c:578-579 — Load menu palettes AVANT le fade pour
+  // que les couleurs soient dans gPlttBufferUnfaded au moment où le fade
+  // commence. (`getAsset()` lookup pour confirmer que les assets sont chargés
+  // est implicite via `LoadPalette` qui no-op si symbol non-cache.)
   LoadPalette('sMainMenuBgPal', BG_PLTT_ID(0), PLTT_SIZE_4BPP);
   LoadPalette('sMainMenuTextPal', BG_PLTT_ID(15), PLTT_SIZE_4BPP);
   ScanlineEffect_Stop();
