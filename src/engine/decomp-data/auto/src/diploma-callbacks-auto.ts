@@ -87,7 +87,7 @@ export const Task_DiplomaFadeOut: TaskCallback = (task, rt) => {
 
 /** Source: diploma.c → CB2_ShowDiploma */
 export const CB2_ShowDiploma: CB2Callback = (rt) => {
-  /* noop SetVBlankCallback */;
+  rt.SetVBlankCallback(VBlankCB);
       rt.SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_MODE_0);
       rt.SetGpuReg(REG_OFFSET_BG3CNT, 0);
       rt.SetGpuReg(REG_OFFSET_BG2CNT, 0);
@@ -124,7 +124,12 @@ export const CB2_ShowDiploma: CB2Callback = (rt) => {
       BlendPalettes(PALETTES_ALL, 16, RGB_BLACK);
       rt.BeginNormalPaletteFade("PALETTES_ALL", 0, 16, 0, "RGB_BLACK");
       EnableInterrupts(1);
-      /* noop SetVBlankCallback */;
+      rt.SetVBlankCallback(VBlankCB);
       /* TODO scene transition: SetMainCallback2(MainCB2) */;
       rt.CreateTask((t) => Task_DiplomaFadeIn(t, rt), 0);
 };
+
+/** ⚠️ Generic patch (post-transpile-patches.mjs) — VBlankCB no-op.
+ *  Notre runtime call TransferPlttBuffer auto si vblankCallback non-null,
+ *  donc le scene-side VBlankCB est essentiellement un marqueur "transfer ON". */
+const VBlankCB: () => void = () => { /* no-op */ };

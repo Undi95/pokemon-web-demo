@@ -137,7 +137,7 @@ export const Task_ExitCaveTransition5: TaskCallback = (task, rt) => {
   if (task.data[2])
           task.data[2]--;
       else
-          /* TODO scene transition: SetMainCallback2(gMain.savedCallback) */;
+          rt.SetMainCallback2(gMain.savedCallback ?? null);
 };
 
 /** Source: fldeff_flash.c → Task_EnterCaveTransition1 */
@@ -211,7 +211,7 @@ export const Task_EnterCaveTransition4: TaskCallback = (task, rt) => {
       else
       {
           LoadPalette(sCaveTransitionPalette_Black, BG_PLTT_ID(0), PLTT_SIZE_4BPP);
-          /* TODO scene transition: SetMainCallback2(gMain.savedCallback) */;
+          rt.SetMainCallback2(gMain.savedCallback ?? null);
       }
 };
 
@@ -227,7 +227,7 @@ export const CB2_ChangeMapMain: CB2Callback = (rt) => {
 export const CB2_DoChangeMap: CB2Callback = (rt) => {
   let ime = 0;
 
-      /* noop SetVBlankCallback */;
+      rt.SetVBlankCallback(VBlankCB);
       rt.SetGpuReg(REG_OFFSET_DISPCNT, 0);
       rt.SetGpuReg(REG_OFFSET_BG2CNT, 0);
       rt.SetGpuReg(REG_OFFSET_BG1CNT, 0);
@@ -248,8 +248,13 @@ export const CB2_DoChangeMap: CB2Callback = (rt) => {
       gbaIoRegs.REG_IME = 0;
       gbaIoRegs.REG_IE |= INTR_FLAG_VBLANK;
       gbaIoRegs.REG_IME = ime;
-      /* noop SetVBlankCallback */;
-      /* TODO scene transition: SetMainCallback2(CB2_ChangeMapMain) */;
+      rt.SetVBlankCallback(VBlankCB);
+      rt.SetMainCallback2(CB2_ChangeMapMain);
       if (!TryDoMapTransition())
-          /* TODO scene transition: SetMainCallback2(gMain.savedCallback) */;
+          rt.SetMainCallback2(gMain.savedCallback ?? null);
 };
+
+/** ⚠️ Generic patch (post-transpile-patches.mjs) — VBlankCB no-op.
+ *  Notre runtime call TransferPlttBuffer auto si vblankCallback non-null,
+ *  donc le scene-side VBlankCB est essentiellement un marqueur "transfer ON". */
+const VBlankCB: () => void = () => { /* no-op */ };

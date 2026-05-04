@@ -114,7 +114,7 @@ export const Task_TrainerCard: TaskCallback = (task, rt) => {
           }
           BlendPalettes(PALETTES_ALL, 16, sData.blendColor);
           rt.BeginNormalPaletteFade("PALETTES_ALL", 0, 16, 0, "sData.blendColor");
-          /* noop SetVBlankCallback */;
+          rt.SetVBlankCallback(VBlankCB);
           sData.mainState++;
           break;
       case 8:
@@ -293,3 +293,8 @@ export const CB2_InitTrainerCard: CB2Callback = (rt) => {
           break;
       }
 };
+
+/** ⚠️ Generic patch (post-transpile-patches.mjs) — VBlankCB no-op.
+ *  Notre runtime call TransferPlttBuffer auto si vblankCallback non-null,
+ *  donc le scene-side VBlankCB est essentiellement un marqueur "transfer ON". */
+const VBlankCB: () => void = () => { /* no-op */ };

@@ -229,7 +229,7 @@ export const CB2_LoadInterface: CB2Callback = (rt) => {
           {
               BlendPalettes(PALETTES_ALL, 16, RGB_BLACK);
               rt.BeginNormalPaletteFade("PALETTES_ALL", -1, 16, 0, "RGB_BLACK");
-              /* noop SetVBlankCallback */;
+              rt.SetVBlankCallback(VBlankCB);
               gMain.state++;
           }
           break;
@@ -237,7 +237,7 @@ export const CB2_LoadInterface: CB2Callback = (rt) => {
           UpdatePaletteFade();
           if (!rt.gPaletteFade.active)
           {
-              /* TODO scene transition: SetMainCallback2(CB2_UnionRoomChatMain) */;
+              rt.SetMainCallback2(CB2_UnionRoomChatMain);
               sChat.handleInputTask = rt.CreateTask((t) => Task_HandlePlayerInput(t, rt), 8);
               sChat.receiveMessagesTask = rt.CreateTask((t) => Task_ReceiveChatMessage(t, rt), 7);
               LoadWirelessStatusIndicatorSpriteGfx();
@@ -255,3 +255,8 @@ export const CB2_UnionRoomChatMain: CB2Callback = (rt) => {
       BuildOamBuffer();
       UpdatePaletteFade();
 };
+
+/** ⚠️ Generic patch (post-transpile-patches.mjs) — VBlankCB no-op.
+ *  Notre runtime call TransferPlttBuffer auto si vblankCallback non-null,
+ *  donc le scene-side VBlankCB est essentiellement un marqueur "transfer ON". */
+const VBlankCB: () => void = () => { /* no-op */ };

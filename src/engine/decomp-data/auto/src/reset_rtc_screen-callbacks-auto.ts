@@ -415,7 +415,7 @@ export const Task_ResetRtcScreen: TaskCallback = (task, rt) => {
 /** Source: reset_rtc_screen.c → CB2_InitResetRtcScreen */
 export const CB2_InitResetRtcScreen: CB2Callback = (rt) => {
   rt.SetGpuReg(REG_OFFSET_DISPCNT, 0);
-      /* noop SetVBlankCallback */;
+      rt.SetVBlankCallback(VBlankCB);
       /* TODO DmaClear16 (memory clear) */;
       DmaFillLarge16(3, 0, VRAM, VRAM_SIZE, 0x1000);
       ResetOamRange(0, 128);
@@ -426,8 +426,8 @@ export const CB2_InitResetRtcScreen: CB2Callback = (rt) => {
       ResetTasks();
       ResetPaletteFade();
       InitResetRtcScreenBgAndWindows();
-      /* noop SetVBlankCallback */;
-      /* TODO scene transition: SetMainCallback2(CB2_ResetRtcScreen) */;
+      rt.SetVBlankCallback(VBlankCB);
+      rt.SetMainCallback2(CB2_ResetRtcScreen);
       rt.CreateTask((t) => Task_ResetRtcScreen(t, rt), 80);
 };
 
@@ -439,3 +439,8 @@ export const CB2_ResetRtcScreen: CB2Callback = (rt) => {
       DoScheduledBgTilemapCopiesToVram();
       UpdatePaletteFade();
 };
+
+/** ⚠️ Generic patch (post-transpile-patches.mjs) — VBlankCB no-op.
+ *  Notre runtime call TransferPlttBuffer auto si vblankCallback non-null,
+ *  donc le scene-side VBlankCB est essentiellement un marqueur "transfer ON". */
+const VBlankCB: () => void = () => { /* no-op */ };

@@ -57,7 +57,7 @@ export const CB2_HoldContestPainting: CB2Callback = (rt) => {
 
 /** Source: contest_painting.c → CB2_QuitContestPainting */
 export const CB2_QuitContestPainting: CB2Callback = (rt) => {
-  /* TODO scene transition: SetMainCallback2(gMain.savedCallback) */;
+  rt.SetMainCallback2(gMain.savedCallback ?? null);
       FREE_AND_SET_NULL(gContestPaintingMonPalette);
       FREE_AND_SET_NULL(gContestMonPixels);
       RemoveWindow(sWindowId);

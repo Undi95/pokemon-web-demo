@@ -144,7 +144,7 @@ export const Task_StartPokemonJump: TaskCallback = (task, rt) => {
   switch (sPokemonJump.mainState)
       {
       case 0:
-          /* noop SetVBlankCallback */;
+          rt.SetVBlankCallback(VBlankCB);
           rt.ResetSpriteData();
           FreeAllSpritePalettes();
           SetTaskWithPokeJumpStruct(Task_CommunicateMonInfo, 5);
@@ -172,7 +172,7 @@ export const Task_StartPokemonJump: TaskCallback = (task, rt) => {
           {
               BlendPalettes(PALETTES_ALL, 16, RGB_BLACK);
               rt.BeginNormalPaletteFade("PALETTES_ALL", -1, 16, 0, "RGB_BLACK");
-              /* noop SetVBlankCallback */;
+              rt.SetVBlankCallback(VBlankCB);
               sPokemonJump.mainState++;
           }
           break;
@@ -353,3 +353,8 @@ export const CB2_PokemonJump: CB2Callback = (rt) => {
       BuildOamBuffer();
       UpdatePaletteFade();
 };
+
+/** ⚠️ Generic patch (post-transpile-patches.mjs) — VBlankCB no-op.
+ *  Notre runtime call TransferPlttBuffer auto si vblankCallback non-null,
+ *  donc le scene-side VBlankCB est essentiellement un marqueur "transfer ON". */
+const VBlankCB: () => void = () => { /* no-op */ };

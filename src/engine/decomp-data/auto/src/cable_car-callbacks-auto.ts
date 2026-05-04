@@ -199,7 +199,7 @@ export const Task_LoadCableCar: TaskCallback = (task, rt) => {
   const taskId = task.taskId;
   if (!rt.gPaletteFade.active)
       {
-          /* TODO scene transition: SetMainCallback2(CB2_LoadCableCar) */;
+          rt.SetMainCallback2(CB2_LoadCableCar);
           rt.DestroyTask(taskId);
       }
 };
@@ -267,10 +267,10 @@ export const Task_CableCar: TaskCallback = (task, rt) => {
               sCableCar.state = STATE_END;
           break;
       case STATE_END:
-          /* noop SetVBlankCallback */;
+          rt.SetVBlankCallback(VBlankCB);
           rt.DestroyTask(taskId);
           rt.DestroyTask(sCableCar.bgTaskId);
-          /* TODO scene transition: SetMainCallback2(CB2_EndCableCar) */;
+          rt.SetMainCallback2(CB2_EndCableCar);
           break;
       }
 };
@@ -368,7 +368,7 @@ export const CB2_LoadCableCar: CB2Callback = (rt) => {
       {
       case 0:
       default:
-          /* noop SetVBlankCallback */;
+          rt.SetVBlankCallback(VBlankCB);
           SetBgRegs(false);
           ScanlineEffect_Stop();
           DmaFillLarge16(3, 0, VRAM, VRAM_SIZE, 0x1000);
@@ -469,8 +469,8 @@ export const CB2_LoadCableCar: CB2Callback = (rt) => {
           gbaIoRegs.REG_IME = 0;
           gbaIoRegs.REG_IE |= INTR_FLAG_VBLANK;
           gbaIoRegs.REG_IME = imebak;
-          /* noop SetVBlankCallback */;
-          /* TODO scene transition: SetMainCallback2(CB2_CableCar) */;
+          rt.SetVBlankCallback(VBlankCB);
+          rt.SetMainCallback2(CB2_CableCar);
           rt.CreateTask((t) => Task_CableCar(t, rt), 0);
           if (!GOING_DOWN)
               sCableCar.bgTaskId = rt.CreateTask((t) => Task_AnimateBgGoingUp(t, rt), 1);
@@ -524,3 +524,8 @@ export const CB2_EndCableCar: CB2Callback = (rt) => {
       gFieldCallback = null;
       /* TODO scene transition: SetMainCallback2(CB2_LoadMap) */;
 };
+
+/** ⚠️ Generic patch (post-transpile-patches.mjs) — VBlankCB no-op.
+ *  Notre runtime call TransferPlttBuffer auto si vblankCallback non-null,
+ *  donc le scene-side VBlankCB est essentiellement un marqueur "transfer ON". */
+const VBlankCB: () => void = () => { /* no-op */ };

@@ -878,7 +878,7 @@ export const Task_StartContest: TaskCallback = (task, rt) => {
   if (!rt.gPaletteFade.active)
       {
           rt.DestroyTask(taskId);
-          /* TODO scene transition: SetMainCallback2(CB2_SetStartContestCallback) */;
+          rt.SetMainCallback2(CB2_SetStartContestCallback);
       }
 };
 
@@ -888,7 +888,7 @@ export const Task_StartShowContestResults: TaskCallback = (task, rt) => {
   if (!rt.gPaletteFade.active)
       {
           rt.DestroyTask(taskId);
-          /* TODO scene transition: SetMainCallback2(CB2_StartShowContestResults) */;
+          rt.SetMainCallback2(CB2_StartShowContestResults);
       }
 };
 
@@ -1066,7 +1066,7 @@ export const Task_LinkContestWaitForConnection: TaskCallback = (task, rt) => {
 /** Source: contest_util.c → CB2_StartShowContestResults */
 export const CB2_StartShowContestResults: CB2Callback = (rt) => {
   rt.gPaletteFade.bufferTransferDisabled = true;
-      /* noop SetVBlankCallback */;
+      rt.SetVBlankCallback(VBlankCB);
       AllocContestResults();
       InitContestResultsDisplay();
       ScanlineEffect_Clear();
@@ -1085,7 +1085,7 @@ export const CB2_StartShowContestResults: CB2Callback = (rt) => {
       rt.BeginNormalPaletteFade("PALETTES_ALL", 0, 16, 0, "RGB_BLACK");
       rt.gPaletteFade.bufferTransferDisabled = false;
       sContestResults.data.showResultsTaskId = rt.CreateTask((t) => Task_ShowContestResults(t, rt), 5);
-      /* TODO scene transition: SetMainCallback2(CB2_ShowContestResults) */;
+      rt.SetMainCallback2(CB2_ShowContestResults);
       gBattle_WIN1H = WIN_RANGE(0, DISPLAY_WIDTH);
       gBattle_WIN1V = WIN_RANGE(DISPLAY_HEIGHT - 32, DISPLAY_HEIGHT);
       rt.CreateTask((t) => Task_SlideContestResultsBg(t, rt), 20);
@@ -1095,7 +1095,7 @@ export const CB2_StartShowContestResults: CB2Callback = (rt) => {
       else
           PlayBGM(MUS_CONTEST_RESULTS);
 
-      /* noop SetVBlankCallback */;
+      rt.SetVBlankCallback(VBlankCB);
 };
 
 /** Source: contest_util.c → CB2_ShowContestResults */
@@ -1112,3 +1112,8 @@ export const CB2_ShowContestResults: CB2Callback = (rt) => {
 export const CB2_SetStartContestCallback: CB2Callback = (rt) => {
   /* TODO scene transition: SetMainCallback2(CB2_StartContest) */;
 };
+
+/** ⚠️ Generic patch (post-transpile-patches.mjs) — VBlankCB no-op.
+ *  Notre runtime call TransferPlttBuffer auto si vblankCallback non-null,
+ *  donc le scene-side VBlankCB est essentiellement un marqueur "transfer ON". */
+const VBlankCB: () => void = () => { /* no-op */ };

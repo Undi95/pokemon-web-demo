@@ -105,7 +105,7 @@ export const CB2_ReturnAndChooseMonToGivePokeblock: CB2Callback = (rt) => {
       gPokeblockMonId = GetSelectionIdFromPartyId(gPokeblockMonId);
       sInfo.monInTopHalf = (gPokeblockMonId <= PARTY_SIZE / 2) ? false : true;
       SetUsePokeblockCallback(LoadUsePokeblockMenu);
-      /* TODO scene transition: SetMainCallback2(CB2_ReturnToUsePokeblockMenu) */;
+      rt.SetMainCallback2(CB2_ReturnToUsePokeblockMenu);
 };
 
 /** Source: use_pokeblock.c → CB2_ReturnToUsePokeblockMenu */
@@ -117,7 +117,7 @@ export const CB2_ReturnToUsePokeblockMenu: CB2Callback = (rt) => {
       if (sInfo.callback == ShowUsePokeblockMenu)
       {
           sInfo.mainState = 0;
-          /* TODO scene transition: SetMainCallback2(CB2_ShowUsePokeblockMenuForResults) */;
+          rt.SetMainCallback2(CB2_ShowUsePokeblockMenuForResults);
       }
 };
 

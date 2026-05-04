@@ -303,7 +303,7 @@ export const CB2_InitSelectScreen: CB2Callback = (rt) => {
       case 0:
           TRY_FREE_AND_SET_NULL(sFactorySelectMons);
           SetHBlankCallback(null);
-          /* noop SetVBlankCallback */;
+          rt.SetVBlankCallback(VBlankCB);
           CpuFill32(0, VRAM, VRAM_SIZE);
           ResetBgsAndClearDma3BusyFlags(0);
           InitBgsFromTemplates(0, sSelect_BgTemplates, ((sSelect_BgTemplates)?.length ?? 0));
@@ -369,7 +369,7 @@ export const CB2_InitSelectScreen: CB2Callback = (rt) => {
           LoadCompressedSpriteSheet(sSelect_BallGfx);
           ShowBg(0);
           ShowBg(1);
-          /* noop SetVBlankCallback */;
+          rt.SetVBlankCallback(VBlankCB);
           rt.BeginNormalPaletteFade("PALETTES_ALL", 0, 16, 0, "RGB_BLACK");
           rt.SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_OBJ_ON | DISPCNT_BG0_ON | DISPCNT_BG1_ON | DISPCNT_OBJ_1D_MAP);
           if (sFactorySelectScreen && sFactorySelectScreen.fromSummaryScreen)
@@ -431,7 +431,7 @@ export const CB2_InitSelectScreen: CB2Callback = (rt) => {
               taskId = rt.CreateTask((t) => Select_Task_HandleMenu(t, rt), 0);
               task.data[0] = STATE_MENU_RESHOW;
           }
-          /* TODO scene transition: SetMainCallback2(CB2_SelectScreen) */;
+          rt.SetMainCallback2(CB2_SelectScreen);
           break;
       }
 };
@@ -444,7 +444,7 @@ export const CB2_InitSwapScreen: CB2Callback = (rt) => {
       {
       case 0:
           SetHBlankCallback(null);
-          /* noop SetVBlankCallback */;
+          rt.SetVBlankCallback(VBlankCB);
           CpuFill32(0, VRAM, VRAM_SIZE);
           ResetBgsAndClearDma3BusyFlags(0);
           InitBgsFromTemplates(0, sSwap_BgTemplates, ((sSwap_BgTemplates)?.length ?? 0));
@@ -504,7 +504,7 @@ export const CB2_InitSwapScreen: CB2Callback = (rt) => {
           LoadSpritePalettes(sSwap_SpritePalettes);
           LoadSpriteSheets(sSwap_SpriteSheets);
           LoadCompressedSpriteSheet(sSwap_BallGfx);
-          /* noop SetVBlankCallback */;
+          rt.SetVBlankCallback(VBlankCB);
           gMain.state++;
           break;
       case 5:
@@ -593,3 +593,8 @@ export const CB2_InitSwapScreen: CB2Callback = (rt) => {
           break;
       }
 };
+
+/** ⚠️ Generic patch (post-transpile-patches.mjs) — VBlankCB no-op.
+ *  Notre runtime call TransferPlttBuffer auto si vblankCallback non-null,
+ *  donc le scene-side VBlankCB est essentiellement un marqueur "transfer ON". */
+const VBlankCB: () => void = () => { /* no-op */ };

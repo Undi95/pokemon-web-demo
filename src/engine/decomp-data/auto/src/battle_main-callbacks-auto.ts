@@ -122,7 +122,7 @@ export const SpriteCB_UnusedBattleInit_Main: SpriteCallback = (sprite, rt) => {
       case 2:
           sprite.data[1]--;
           if (sprite.data[1] == 20)
-              /* TODO scene transition: SetMainCallback2(CB2_InitBattle) */;
+              rt.SetMainCallback2(CB2_InitBattle);
           break;
       }
 };
@@ -394,11 +394,11 @@ export const CB2_InitBattle: CB2Callback = (rt) => {
           else if (!(gBattleTypeFlags & BATTLE_TYPE_INGAME_PARTNER))
           {
               HandleLinkBattleSetup();
-              /* TODO scene transition: SetMainCallback2(CB2_PreInitMultiBattle) */;
+              rt.SetMainCallback2(CB2_PreInitMultiBattle);
           }
           else
           {
-              /* TODO scene transition: SetMainCallback2(CB2_PreInitIngamePlayerPartnerBattle) */;
+              rt.SetMainCallback2(CB2_PreInitIngamePlayerPartnerBattle);
           }
           gBattleCommunication[MULTIUSE_STATE] = 0;
       }
@@ -413,7 +413,7 @@ export const CB2_InitBattleInternal: CB2Callback = (rt) => {
   let i = 0;
 
       SetHBlankCallback(null);
-      /* noop SetVBlankCallback */;
+      rt.SetVBlankCallback(VBlankCB);
 
       CpuFill32(0, (VRAM), VRAM_SIZE);
 
@@ -471,17 +471,17 @@ export const CB2_InitBattleInternal: CB2Callback = (rt) => {
       DrawBattleEntryBackground();
       FreeAllSpritePalettes();
       (globalThis as any).gReservedSpritePaletteCount = MAX_BATTLERS_COUNT;
-      /* noop SetVBlankCallback */;
+      rt.SetVBlankCallback(VBlankCB);
       SetUpBattleVarsAndBirchZigzagoon();
 
       if (gBattleTypeFlags & BATTLE_TYPE_MULTI && gBattleTypeFlags & BATTLE_TYPE_BATTLE_TOWER)
-          /* TODO scene transition: SetMainCallback2(CB2_HandleStartMultiPartnerBattle) */;
+          rt.SetMainCallback2(CB2_HandleStartMultiPartnerBattle);
       else if (gBattleTypeFlags & BATTLE_TYPE_MULTI && gBattleTypeFlags & BATTLE_TYPE_INGAME_PARTNER)
-          /* TODO scene transition: SetMainCallback2(CB2_HandleStartMultiPartnerBattle) */;
+          rt.SetMainCallback2(CB2_HandleStartMultiPartnerBattle);
       else if (gBattleTypeFlags & BATTLE_TYPE_MULTI)
-          /* TODO scene transition: SetMainCallback2(CB2_HandleStartMultiBattle) */;
+          rt.SetMainCallback2(CB2_HandleStartMultiBattle);
       else
-          /* TODO scene transition: SetMainCallback2(CB2_HandleStartBattle) */;
+          rt.SetMainCallback2(CB2_HandleStartBattle);
 
       if (!(gBattleTypeFlags & (BATTLE_TYPE_LINK | BATTLE_TYPE_RECORDED)))
       {
@@ -1038,7 +1038,7 @@ export const CB2_PreInitMultiBattle: CB2Callback = (rt) => {
               {
                   gBattleTypeFlags = savedBattleTypeFlags;
                   gMain.savedCallback = savedCallback;
-                  /* TODO scene transition: SetMainCallback2(CB2_InitBattleInternal) */;
+                  rt.SetMainCallback2(CB2_InitBattleInternal);
                   FREE_AND_SET_NULL(sMultiPartnerPartyBuffer);
               }
           }
@@ -1046,7 +1046,7 @@ export const CB2_PreInitMultiBattle: CB2Callback = (rt) => {
           {
               gBattleTypeFlags = savedBattleTypeFlags;
               gMain.savedCallback = savedCallback;
-              /* TODO scene transition: SetMainCallback2(CB2_InitBattleInternal) */;
+              rt.SetMainCallback2(CB2_InitBattleInternal);
               FREE_AND_SET_NULL(sMultiPartnerPartyBuffer);
           }
           break;
@@ -1082,7 +1082,7 @@ export const CB2_PreInitIngamePlayerPartnerBattle: CB2Callback = (rt) => {
               gBattleCommunication[MULTIUSE_STATE] = 2;
               gBattleTypeFlags = savedBattleTypeFlags;
               gMain.savedCallback = savedCallback;
-              /* TODO scene transition: SetMainCallback2(CB2_InitBattleInternal) */;
+              rt.SetMainCallback2(CB2_InitBattleInternal);
               FREE_AND_SET_NULL(sMultiPartnerPartyBuffer);
           }
           break;
@@ -1397,7 +1397,7 @@ export const CB2_QuitRecordedBattle: CB2Callback = (rt) => {
           m4aMPlayStop(gMPlayInfo_SE2);
           FreeRestoreBattleData();
           FreeAllWindowBuffers();
-          /* TODO scene transition: SetMainCallback2(gMain.savedCallback) */;
+          rt.SetMainCallback2(gMain.savedCallback ?? null);
       }
 };
 
@@ -1407,12 +1407,12 @@ export const CB2_InitEndLinkBattle: CB2Callback = (rt) => {
       let taskId = 0;
 
       SetHBlankCallback(null);
-      /* noop SetVBlankCallback */;
+      rt.SetVBlankCallback(VBlankCB);
       gBattleTypeFlags &= ~BATTLE_TYPE_LINK_IN_BATTLE;
 
       if (gBattleTypeFlags & BATTLE_TYPE_FRONTIER)
       {
-          /* TODO scene transition: SetMainCallback2(gMain.savedCallback) */;
+          rt.SetMainCallback2(gMain.savedCallback ?? null);
           FreeBattleResources();
           FreeBattleSpritesData();
           FreeMonSpritesGfx();
@@ -1463,7 +1463,7 @@ export const CB2_InitEndLinkBattle: CB2Callback = (rt) => {
           rt.SetGpuReg(REG_OFFSET_WINOUT, WINOUT_WIN01_BG0 | WINOUT_WIN01_BG1 | WINOUT_WIN01_BG2 | WINOUT_WIN01_OBJ | WINOUT_WIN01_CLR);
           FreeAllSpritePalettes();
           (globalThis as any).gReservedSpritePaletteCount = MAX_BATTLERS_COUNT;
-          /* noop SetVBlankCallback */;
+          rt.SetVBlankCallback(VBlankCB);
 
            
           taskId = rt.CreateTask((t) => InitLinkBattleVsScreen(t, rt), 0);
@@ -1472,7 +1472,7 @@ export const CB2_InitEndLinkBattle: CB2Callback = (rt) => {
           task.data[5] = 1;
           BufferPartyVsScreenHealth_AtEnd(taskId);
 
-          /* TODO scene transition: SetMainCallback2(CB2_EndLinkBattle) */;
+          rt.SetMainCallback2(CB2_EndLinkBattle);
           gBattleCommunication[MULTIUSE_STATE] = 0;
       }
 };
@@ -1492,7 +1492,7 @@ export const CB2_InitAskRecordBattle: CB2Callback = (rt) => {
   let i = 0;
 
       SetHBlankCallback(null);
-      /* noop SetVBlankCallback */;
+      rt.SetVBlankCallback(VBlankCB);
       CpuFill32(0, (VRAM), VRAM_SIZE);
       ResetPaletteFade();
       gBattle_BG0_X = 0;
@@ -1514,8 +1514,8 @@ export const CB2_InitAskRecordBattle: CB2Callback = (rt) => {
       ResetTasks();
       FreeAllSpritePalettes();
       (globalThis as any).gReservedSpritePaletteCount = MAX_BATTLERS_COUNT;
-      /* noop SetVBlankCallback */;
-      /* TODO scene transition: SetMainCallback2(CB2_AskRecordBattle) */;
+      rt.SetVBlankCallback(VBlankCB);
+      rt.SetMainCallback2(CB2_AskRecordBattle);
       rt.BeginNormalPaletteFade("PALETTES_ALL", 0, 0x10, 0, "RGB_BLACK");
       gBattleCommunication[MULTIUSE_STATE] = 0;
 };
@@ -1529,3 +1529,8 @@ export const CB2_AskRecordBattle: CB2Callback = (rt) => {
       UpdatePaletteFade();
       RunTasks();
 };
+
+/** ⚠️ Generic patch (post-transpile-patches.mjs) — VBlankCB no-op.
+ *  Notre runtime call TransferPlttBuffer auto si vblankCallback non-null,
+ *  donc le scene-side VBlankCB est essentiellement un marqueur "transfer ON". */
+const VBlankCB: () => void = () => { /* no-op */ };

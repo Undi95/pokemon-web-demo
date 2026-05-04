@@ -73,7 +73,7 @@ export const CB2_OverworldBasic: CB2Callback = (rt) => {
 export const CB2_Overworld: CB2Callback = (rt) => {
   let fading = (rt.gPaletteFade.active != 0);
       if (fading)
-          /* noop SetVBlankCallback */;
+          rt.SetVBlankCallback(VBlankCB);
       OverworldBasic();
       if (fading)
           SetFieldVBlankCallback();
@@ -94,7 +94,7 @@ export const CB2_NewGame: CB2Callback = (rt) => {
       DoMapLoadLoop(gMain.state);
       SetFieldVBlankCallback();
       SetMainCallback1(CB1_Overworld);
-      /* TODO scene transition: SetMainCallback2(CB2_Overworld) */;
+      rt.SetMainCallback2(CB2_Overworld);
 };
 
 /** Source: overworld.c → CB2_WhiteOut */
@@ -115,7 +115,7 @@ export const CB2_WhiteOut: CB2Callback = (rt) => {
           DoMapLoadLoop(state);
           SetFieldVBlankCallback();
           SetMainCallback1(CB1_Overworld);
-          /* TODO scene transition: SetMainCallback2(CB2_Overworld) */;
+          rt.SetMainCallback2(CB2_Overworld);
       }
 };
 
@@ -134,7 +134,7 @@ export const CB2_LoadMap2: CB2Callback = (rt) => {
   DoMapLoadLoop(gMain.state);
       SetFieldVBlankCallback();
       SetMainCallback1(CB1_Overworld);
-      /* TODO scene transition: SetMainCallback2(CB2_Overworld) */;
+      rt.SetMainCallback2(CB2_Overworld);
 };
 
 /** Source: overworld.c → CB2_ReturnToFieldContestHall */
@@ -150,7 +150,7 @@ export const CB2_ReturnToFieldContestHall: CB2Callback = (rt) => {
       {
           SetFieldVBlankCallback();
           SetMainCallback1(CB1_Overworld);
-          /* TODO scene transition: SetMainCallback2(CB2_Overworld) */;
+          rt.SetMainCallback2(CB2_Overworld);
       }
 };
 
@@ -158,7 +158,7 @@ export const CB2_ReturnToFieldContestHall: CB2Callback = (rt) => {
 export const CB2_ReturnToFieldCableClub: CB2Callback = (rt) => {
   FieldClearVBlankHBlankCallbacks();
       gFieldCallback = FieldCB_ReturnToFieldWirelessLink;
-      /* TODO scene transition: SetMainCallback2(CB2_LoadMapOnReturnToFieldCableClub) */;
+      rt.SetMainCallback2(CB2_LoadMapOnReturnToFieldCableClub);
 };
 
 /** Source: overworld.c → CB2_LoadMapOnReturnToFieldCableClub */
@@ -168,7 +168,7 @@ export const CB2_LoadMapOnReturnToFieldCableClub: CB2Callback = (rt) => {
           SetFieldVBlankCallback();
           SetMainCallback1(CB1_OverworldLink);
           ResetAllMultiplayerState();
-          /* TODO scene transition: SetMainCallback2(CB2_Overworld) */;
+          rt.SetMainCallback2(CB2_Overworld);
       }
 };
 
@@ -176,12 +176,12 @@ export const CB2_LoadMapOnReturnToFieldCableClub: CB2Callback = (rt) => {
 export const CB2_ReturnToField: CB2Callback = (rt) => {
   if (IsOverworldLinkActive() == true)
       {
-          /* TODO scene transition: SetMainCallback2(CB2_ReturnToFieldLink) */;
+          rt.SetMainCallback2(CB2_ReturnToFieldLink);
       }
       else
       {
           FieldClearVBlankHBlankCallbacks();
-          /* TODO scene transition: SetMainCallback2(CB2_ReturnToFieldLocal) */;
+          rt.SetMainCallback2(CB2_ReturnToFieldLocal);
       }
 };
 
@@ -190,14 +190,14 @@ export const CB2_ReturnToFieldLocal: CB2Callback = (rt) => {
   if (ReturnToFieldLocal(gMain.state))
       {
           SetFieldVBlankCallback();
-          /* TODO scene transition: SetMainCallback2(CB2_Overworld) */;
+          rt.SetMainCallback2(CB2_Overworld);
       }
 };
 
 /** Source: overworld.c → CB2_ReturnToFieldLink */
 export const CB2_ReturnToFieldLink: CB2Callback = (rt) => {
   if (!Overworld_IsRecvQueueAtMax() && ReturnToFieldLink(gMain.state))
-          /* TODO scene transition: SetMainCallback2(CB2_Overworld) */;
+          rt.SetMainCallback2(CB2_Overworld);
 };
 
 /** Source: overworld.c → CB2_ReturnToFieldFromMultiplayer */
@@ -285,7 +285,7 @@ export const CB2_ContinueSavedGame: CB2Callback = (rt) => {
           SetWarpDestinationToContinueGameWarp();
           WarpIntoMap();
           TryPutTodaysRivalTrainerOnAir();
-          /* TODO scene transition: SetMainCallback2(CB2_LoadMap) */;
+          rt.SetMainCallback2(CB2_LoadMap);
       }
       else
       {
@@ -295,3 +295,8 @@ export const CB2_ContinueSavedGame: CB2Callback = (rt) => {
           CB2_ReturnToField();
       }
 };
+
+/** ⚠️ Generic patch (post-transpile-patches.mjs) — VBlankCB no-op.
+ *  Notre runtime call TransferPlttBuffer auto si vblankCallback non-null,
+ *  donc le scene-side VBlankCB est essentiellement un marqueur "transfer ON". */
+const VBlankCB: () => void = () => { /* no-op */ };

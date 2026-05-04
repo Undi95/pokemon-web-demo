@@ -283,20 +283,20 @@ export const Task_TitleScreenPhase3: TaskCallback = (task, rt) => {
       }
       else if (JOY_HELD(CLEAR_SAVE_BUTTON_COMBO) == CLEAR_SAVE_BUTTON_COMBO)
       {
-          /* TODO scene transition: SetMainCallback2(CB2_GoToClearSaveDataScreen) */;
+          rt.SetMainCallback2(CB2_GoToClearSaveDataScreen);
       }
       else if (JOY_HELD(RESET_RTC_BUTTON_COMBO) == RESET_RTC_BUTTON_COMBO
         && CanResetRTC() == true)
       {
           FadeOutBGM(4);
           rt.BeginNormalPaletteFade("PALETTES_ALL", 0, 0, 16, "RGB_BLACK");
-          /* TODO scene transition: SetMainCallback2(CB2_GoToResetRtcScreen) */;
+          rt.SetMainCallback2(CB2_GoToResetRtcScreen);
       }
       else if (JOY_HELD(BERRY_UPDATE_BUTTON_COMBO) == BERRY_UPDATE_BUTTON_COMBO)
       {
           FadeOutBGM(4);
           rt.BeginNormalPaletteFade("PALETTES_ALL", 0, 0, 16, "RGB_BLACK");
-          /* TODO scene transition: SetMainCallback2(CB2_GoToBerryFixScreen) */;
+          rt.SetMainCallback2(CB2_GoToBerryFixScreen);
       }
       else
       {
@@ -346,7 +346,7 @@ export const CB2_InitTitleScreen: CB2Callback = (rt) => {
       {
       default:
       case 0:
-          /* noop SetVBlankCallback */;
+          rt.SetVBlankCallback(VBlankCB);
           rt.SetGpuReg(REG_OFFSET_BLDCNT, 0);
           rt.SetGpuReg(REG_OFFSET_BLDALPHA, 0);
           rt.SetGpuReg(REG_OFFSET_BLDY, 0);

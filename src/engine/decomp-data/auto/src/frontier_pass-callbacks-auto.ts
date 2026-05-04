@@ -116,7 +116,7 @@ export const Task_HandleFrontierPassInput: TaskCallback = (task, rt) => {
               else if (sPassData.cursorArea == CURSOR_AREA_CANCEL)
               {
                   PlaySE(SE_PC_OFF);
-                  /* TODO scene transition: SetMainCallback2(CB2_HideFrontierPass) */;
+                  rt.SetMainCallback2(CB2_HideFrontierPass);
                   rt.DestroyTask(taskId);
                   return;
               }
@@ -125,7 +125,7 @@ export const Task_HandleFrontierPassInput: TaskCallback = (task, rt) => {
           if (JOY_NEW(B_BUTTON))
           {
               PlaySE(SE_PC_OFF);
-              /* TODO scene transition: SetMainCallback2(CB2_HideFrontierPass) */;
+              rt.SetMainCallback2(CB2_HideFrontierPass);
               rt.DestroyTask(taskId);
           }
       }
@@ -173,7 +173,7 @@ export const Task_PassAreaZoom: TaskCallback = (task, rt) => {
               ShowBg(1);
               ShowBg(2);
               LoadCursorAndSymbolSprites();
-              /* noop SetVBlankCallback */;
+              rt.SetVBlankCallback(VBlankCB);
               BlendPalettes(PALETTES_ALL, 16, RGB_WHITE);
               rt.BeginNormalPaletteFade("PALETTES_ALL", 0, 16, 0, "RGB_WHITE");
           }
@@ -211,7 +211,7 @@ export const Task_PassAreaZoom: TaskCallback = (task, rt) => {
           {
                
               rt.DestroyTask(taskId);
-              /* TODO scene transition: SetMainCallback2(CB2_ShowFrontierPassFeature) */;
+              rt.SetMainCallback2(CB2_ShowFrontierPassFeature);
           }
           else
           {
@@ -311,7 +311,7 @@ export const CB2_InitFrontierPass: CB2Callback = (rt) => {
   if (InitFrontierPass())
       {
           rt.CreateTask((t) => Task_HandleFrontierPassInput(t, rt), 0);
-          /* TODO scene transition: SetMainCallback2(CB2_FrontierPass) */;
+          rt.SetMainCallback2(CB2_FrontierPass);
       }
 };
 
@@ -342,7 +342,7 @@ export const CB2_ReshowFrontierPass: CB2Callback = (rt) => {
           break;
       }
 
-      /* TODO scene transition: SetMainCallback2(CB2_FrontierPass) */;
+      rt.SetMainCallback2(CB2_FrontierPass);
 };
 
 /** Source: frontier_pass.c → CB2_ReturnFromRecord */
@@ -364,7 +364,7 @@ export const CB2_ReturnFromRecord: CB2Callback = (rt) => {
           break;
       }
 
-      /* TODO scene transition: SetMainCallback2(CB2_ReshowFrontierPass) */;
+      rt.SetMainCallback2(CB2_ReshowFrontierPass);
 };
 
 /** Source: frontier_pass.c → CB2_ShowFrontierPassFeature */
@@ -389,3 +389,8 @@ export const CB2_ShowFrontierPassFeature: CB2Callback = (rt) => {
           break;
       }
 };
+
+/** ⚠️ Generic patch (post-transpile-patches.mjs) — VBlankCB no-op.
+ *  Notre runtime call TransferPlttBuffer auto si vblankCallback non-null,
+ *  donc le scene-side VBlankCB est essentiellement un marqueur "transfer ON". */
+const VBlankCB: () => void = () => { /* no-op */ };

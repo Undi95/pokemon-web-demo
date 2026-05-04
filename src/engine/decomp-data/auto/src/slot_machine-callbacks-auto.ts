@@ -590,7 +590,7 @@ export const Task_FadeToSlotMachine: TaskCallback = (task, rt) => {
       case 1:
           if (!rt.gPaletteFade.active)
           {
-              /* TODO scene transition: SetMainCallback2(CB2_SlotMachineSetup) */;
+              rt.SetMainCallback2(CB2_SlotMachineSetup);
               rt.DestroyTask(taskId);
           }
           break;
@@ -718,7 +718,7 @@ export const CB2_SlotMachineSetup: CB2Callback = (rt) => {
               gMain.state++;
               break;
           case 11:
-              /* TODO scene transition: SetMainCallback2(CB2_SlotMachine) */;
+              rt.SetMainCallback2(CB2_SlotMachine);
               break;
       }
 };

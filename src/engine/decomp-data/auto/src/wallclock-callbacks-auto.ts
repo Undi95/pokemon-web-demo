@@ -234,7 +234,7 @@ export const Task_SetClock_Exit: TaskCallback = (task, rt) => {
   if (!rt.gPaletteFade.active)
       {
           FreeAllWindowBuffers();
-          /* TODO scene transition: SetMainCallback2(gMain.savedCallback) */;
+          rt.SetMainCallback2(gMain.savedCallback ?? null);
       }
 };
 
@@ -264,7 +264,7 @@ export const Task_ViewClock_FadeOut: TaskCallback = (task, rt) => {
 export const Task_ViewClock_Exit: TaskCallback = (task, rt) => {
   const taskId = task.taskId;
   if (!rt.gPaletteFade.active)
-          /* TODO scene transition: SetMainCallback2(gMain.savedCallback) */;
+          rt.SetMainCallback2(gMain.savedCallback ?? null);
 };
 
 /** Source: wallclock.c → CB2_StartWallClock */

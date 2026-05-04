@@ -333,4 +333,121 @@ function patchOptionMenuCallbacks() {
 
 patchOptionMenuCallbacks();
 
+// ─── Generic patches (= s'appliquent à TOUS les *-callbacks-auto.ts) ─────────
+//
+// Architecture observation #1 (audit session 83) : le pattern transpileur
+// `/* TODO scene transition: SetMainCallback2(X) */;` et
+// `/* noop SetVBlankCallback */;` apparaissent dans 73 fichiers auto. Plutôt
+// que dupliquer une fonction de patch par fichier, on factor le générique ici.
+//
+// Les 3 fonctions spécifiques (intro/title_screen/option_menu) ci-dessus
+// patchent les cas particuliers AVANT, puis le générique ratisse le reste.
+// Idempotent : les patterns recherchés (`/* TODO */`, `/* noop */`) ont
+// disparu après replacement, donc re-run est safe.
+
+/**
+ * Apply generic patches that work on any *-callbacks-auto.ts file.
+ * @param {string} content
+ * @returns {{ content: string, changed: boolean, notes: string[] }}
+ */
+function applyGenericPatches(content) {
+  let s = content;
+  const notes = [];
+  const before = s;
+
+  // Extract import names to know which CB2_* are resolvable in this file.
+  // Avoid runtime ReferenceError on unimplemented scenes by only patching
+  // when the target is in scope (= imported, declared local, or in a known
+  // safe-globals list like `gMain.savedCallback`).
+  const importedSymbols = new Set();
+  for (const match of s.matchAll(/import\s*(?:type\s*)?\{([^}]+)\}\s*from/g)) {
+    for (const sym of match[1].split(',')) {
+      const name = sym.trim().split(/\s+as\s+/)[0].trim();
+      if (name) importedSymbols.add(name);
+    }
+  }
+  // Local exports (`export const X`) aussi callable depuis le fichier.
+  for (const match of s.matchAll(/export\s+(?:const|function)\s+(\w+)/g)) {
+    importedSymbols.add(match[1]);
+  }
+
+  function isResolvable(target) {
+    target = target.trim();
+    // Always resolvable : property access on globals (gMain.X, etc.).
+    if (target.startsWith('gMain.') || target.startsWith('gMain?.')) return true;
+    // Identifier — check imports/exports.
+    if (/^\w+$/.test(target)) return importedSymbols.has(target);
+    return false;  // Complex expression — safer to skip.
+  }
+
+  // ─── G1 : /* TODO scene transition: SetMainCallback2(X) */; → rt.SetMainCallback2(X) ─
+  let g1Patched = 0, g1Skipped = 0;
+  s = s.replace(
+    /\/\* TODO scene transition: SetMainCallback2\(([^)]+)\) \*\/;/g,
+    (match, target) => {
+      if (!isResolvable(target)) {
+        g1Skipped++;
+        return match;  // Leave TODO — target not in scope.
+      }
+      g1Patched++;
+      // gMain.savedCallback peut être null → ?? null fallback.
+      if (target.includes('savedCallback')) {
+        return `rt.SetMainCallback2(${target} ?? null);`;
+      }
+      return `rt.SetMainCallback2(${target});`;
+    },
+  );
+  if (g1Patched) notes.push(`G1 SetMainCallback2 ×${g1Patched}`);
+  if (g1Skipped) notes.push(`G1 skipped ×${g1Skipped} (target not imported)`);
+
+  // ─── G2 : /* noop SetVBlankCallback */; → rt.SetVBlankCallback(VBlankCB) ──
+  // Notre runtime drive TransferPlttBuffer auto si vblankCallback non-null.
+  // Le décomp pose `SetVBlankCallback(VBlankCB)` à la fin d'un init pour
+  // réactiver le transfer. On suit ce comportement par défaut.
+  // Cas spécifique (= disable VBlankCB pendant init pour pas de flash) géré
+  // par les patches scene-spécifiques (cf. PATCH O6 option_menu) AVANT ce générique.
+  let g2Patched = 0;
+  s = s.replace(/\/\* noop SetVBlankCallback \*\/;/g, () => {
+    g2Patched++;
+    return 'rt.SetVBlankCallback(VBlankCB);';
+  });
+  if (g2Patched) notes.push(`G2 SetVBlankCallback(VBlankCB) ×${g2Patched}`);
+
+  // ─── G3 : Inject `const VBlankCB` no-op si référencé mais pas défini ─────
+  // Notre runtime fait TransferPlttBuffer auto, donc le VBlankCB scene-side
+  // est essentiellement no-op (= sa présence non-null suffit à activer le transfer).
+  if (s.includes('rt.SetVBlankCallback(VBlankCB)') &&
+      !/(?:^|\n)(?:export\s+)?const\s+VBlankCB[\s:=]/.test(s) &&
+      !importedSymbols.has('VBlankCB')) {
+    s = s.trimEnd() + `
+
+/** ⚠️ Generic patch (post-transpile-patches.mjs) — VBlankCB no-op.
+ *  Notre runtime call TransferPlttBuffer auto si vblankCallback non-null,
+ *  donc le scene-side VBlankCB est essentiellement un marqueur "transfer ON". */
+const VBlankCB: () => void = () => { /* no-op */ };
+`;
+    notes.push('G3 added VBlankCB no-op');
+  }
+
+  return { content: s, changed: s !== before, notes };
+}
+
+function patchAllAutoFilesGeneric() {
+  const files = fs.readdirSync(SRC_DIR).filter(f => f.endsWith('-callbacks-auto.ts'));
+  let totalPatched = 0;
+  for (const fname of files) {
+    const filePath = path.resolve(SRC_DIR, fname);
+    const before = fs.readFileSync(filePath, 'utf8');
+    const { content: after, changed, notes } = applyGenericPatches(before);
+    if (changed) {
+      fs.writeFileSync(filePath, after, 'utf8');
+      totalPatched++;
+      console.log(`[post-transpile-patches] [generic] ${fname} : ${notes.join(', ')}`);
+    }
+  }
+  console.log(`[post-transpile-patches] [generic] ${totalPatched}/${files.length} auto files patched`);
+}
+
+patchAllAutoFilesGeneric();
+
 console.log('[post-transpile-patches] done');

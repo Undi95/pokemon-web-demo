@@ -125,7 +125,7 @@ export const Task_WirelessCommunicationScreen: TaskCallback = (task, rt) => {
       case 5:
           if (!rt.gPaletteFade.active)
           {
-              /* TODO scene transition: SetMainCallback2(CB2_ExitWirelessCommunicationStatusScreen) */;
+              rt.SetMainCallback2(CB2_ExitWirelessCommunicationStatusScreen);
               rt.DestroyTask(taskId);
           }
           break;
@@ -148,7 +148,7 @@ export const CB2_RunWirelessCommunicationScreen: CB2Callback = (rt) => {
 export const CB2_InitWirelessCommunicationScreen: CB2Callback = (rt) => {
   rt.SetGpuReg(REG_OFFSET_DISPCNT, 0);
       sStatusScreen = AllocZeroed(0);
-      /* noop SetVBlankCallback */;
+      rt.SetVBlankCallback(VBlankCB);
       ResetBgsAndClearDma3BusyFlags(0);
       InitBgsFromTemplates(0, sBgTemplates, ((sBgTemplates)?.length ?? 0));
       SetBgTilemapBuffer(1, Alloc(BG_SCREEN_SIZE));
@@ -162,7 +162,7 @@ export const CB2_InitWirelessCommunicationScreen: CB2Callback = (rt) => {
       ResetTasks();
       ScanlineEffect_Stop();
       m4aSoundVSyncOn();
-      /* noop SetVBlankCallback */;
+      rt.SetVBlankCallback(VBlankCB);
       sStatusScreen.taskId = rt.CreateTask((t) => Task_WirelessCommunicationScreen(t, rt), 0);
       sStatusScreen.rfuTaskId = CreateTask_ListenToWireless();
       sStatusScreen.prevGroupCounts[GROUPTYPE_TOTAL] = 1;
@@ -175,7 +175,7 @@ export const CB2_InitWirelessCommunicationScreen: CB2Callback = (rt) => {
       DynamicPlaceholderTextUtil_Reset();
       FillBgTilemapBufferRect(0, 0, 0, 0, 32, 32, 15);
       CopyBgTilemapBufferToVram(1);
-      /* TODO scene transition: SetMainCallback2(CB2_RunWirelessCommunicationScreen) */;
+      rt.SetMainCallback2(CB2_RunWirelessCommunicationScreen);
       RunTasks();
       RunTextPrinters();
       AnimateSprites();
@@ -194,3 +194,8 @@ export const CB2_ExitWirelessCommunicationStatusScreen: CB2Callback = (rt) => {
       Free(sStatusScreen);
       /* TODO scene transition: SetMainCallback2(CB2_ReturnToFieldContinueScriptPlayMapMusic) */;
 };
+
+/** ⚠️ Generic patch (post-transpile-patches.mjs) — VBlankCB no-op.
+ *  Notre runtime call TransferPlttBuffer auto si vblankCallback non-null,
+ *  donc le scene-side VBlankCB est essentiellement un marqueur "transfer ON". */
+const VBlankCB: () => void = () => { /* no-op */ };

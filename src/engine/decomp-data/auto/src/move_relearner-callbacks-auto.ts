@@ -47,7 +47,7 @@ export const Task_WaitForFadeOut: TaskCallback = (task, rt) => {
   const taskId = task.taskId;
   if (!rt.gPaletteFade.active)
       {
-          /* TODO scene transition: SetMainCallback2(CB2_InitLearnMove) */;
+          rt.SetMainCallback2(CB2_InitLearnMove);
           gFieldCallback = FieldCB_ContinueScriptHandleMusic;
           rt.DestroyTask(taskId);
       }
@@ -61,7 +61,7 @@ export const CB2_InitLearnMove: CB2Callback = (rt) => {
       ClearScheduledBgCopiesToVram();
       sMoveRelearnerStruct = AllocZeroed(((sMoveRelearnerStruct)?.length ?? 32));
       sMoveRelearnerStruct.partyMon = gSpecialVar_0x8004;
-      /* noop SetVBlankCallback */;
+      rt.SetVBlankCallback(VBlankCB);
 
       InitMoveRelearnerBackgroundLayers();
       InitMoveRelearnerWindows(false);
@@ -78,7 +78,7 @@ export const CB2_InitLearnMove: CB2Callback = (rt) => {
 
       sMoveRelearnerStruct.moveListMenuTask = ListMenuInit(gMultiuseListMenuTemplate, sMoveRelearnerMenuState.listOffset, sMoveRelearnerMenuState.listRow);
       SetBackdropFromColor(RGB_BLACK);
-      /* TODO scene transition: SetMainCallback2(CB2_MoveRelearnerMain) */;
+      rt.SetMainCallback2(CB2_MoveRelearnerMain);
 };
 
 /** Source: move_relearner.c → CB2_InitLearnMoveReturnFromSelectMove */
@@ -91,7 +91,7 @@ export const CB2_InitLearnMoveReturnFromSelectMove: CB2Callback = (rt) => {
       sMoveRelearnerStruct.state = MENU_STATE_FADE_FROM_SUMMARY_SCREEN;
       sMoveRelearnerStruct.partyMon = gSpecialVar_0x8004;
       sMoveRelearnerStruct.moveSlot = gSpecialVar_0x8005;
-      /* noop SetVBlankCallback */;
+      rt.SetVBlankCallback(VBlankCB);
 
       InitMoveRelearnerBackgroundLayers();
       InitMoveRelearnerWindows(sMoveRelearnerMenuState.showContestInfo);
@@ -103,7 +103,7 @@ export const CB2_InitLearnMoveReturnFromSelectMove: CB2Callback = (rt) => {
 
       sMoveRelearnerStruct.moveListMenuTask = ListMenuInit(gMultiuseListMenuTemplate, sMoveRelearnerMenuState.listOffset, sMoveRelearnerMenuState.listRow);
       SetBackdropFromColor(RGB_BLACK);
-      /* TODO scene transition: SetMainCallback2(CB2_MoveRelearnerMain) */;
+      rt.SetMainCallback2(CB2_MoveRelearnerMain);
 };
 
 /** Source: move_relearner.c → CB2_MoveRelearnerMain */
@@ -115,3 +115,8 @@ export const CB2_MoveRelearnerMain: CB2Callback = (rt) => {
       DoScheduledBgTilemapCopiesToVram();
       UpdatePaletteFade();
 };
+
+/** ⚠️ Generic patch (post-transpile-patches.mjs) — VBlankCB no-op.
+ *  Notre runtime call TransferPlttBuffer auto si vblankCallback non-null,
+ *  donc le scene-side VBlankCB est essentiellement un marqueur "transfer ON". */
+const VBlankCB: () => void = () => { /* no-op */ };

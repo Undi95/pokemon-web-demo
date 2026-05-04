@@ -198,7 +198,7 @@ export const Task_HandleConfirmStarterInput: TaskCallback = (task, rt) => {
            
           gSpecialVar_Result = task.data[0];
           ResetAllPicSprites();
-          /* TODO scene transition: SetMainCallback2(gMain.savedCallback) */;
+          rt.SetMainCallback2(gMain.savedCallback ?? null);
           break;
       case 1:   
       case MENU_B_PRESSED:
@@ -240,7 +240,7 @@ export const CB2_ChooseStarter: CB2Callback = (rt) => {
   let taskId = 0;
       let spriteId = 0;
 
-      /* noop SetVBlankCallback */;
+      rt.SetVBlankCallback(VBlankCB);
 
       rt.SetGpuReg(REG_OFFSET_DISPCNT, 0);
       rt.SetGpuReg(REG_OFFSET_BG3CNT, 0);
@@ -287,8 +287,8 @@ export const CB2_ChooseStarter: CB2Callback = (rt) => {
       rt.BeginNormalPaletteFade("PALETTES_ALL", 0, 0x10, 0, "RGB_BLACK");
 
       EnableInterrupts(DISPSTAT_VBLANK);
-      /* noop SetVBlankCallback */;
-      /* TODO scene transition: SetMainCallback2(CB2_StarterChoose) */;
+      rt.SetVBlankCallback(VBlankCB);
+      rt.SetMainCallback2(CB2_StarterChoose);
 
       rt.SetGpuReg(REG_OFFSET_WININ, WININ_WIN0_BG_ALL | WININ_WIN0_OBJ | WININ_WIN0_CLR);
       rt.SetGpuReg(REG_OFFSET_WINOUT, WINOUT_WIN01_BG_ALL | WINOUT_WIN01_OBJ);
@@ -334,3 +334,8 @@ export const CB2_StarterChoose: CB2Callback = (rt) => {
       DoScheduledBgTilemapCopiesToVram();
       UpdatePaletteFade();
 };
+
+/** ⚠️ Generic patch (post-transpile-patches.mjs) — VBlankCB no-op.
+ *  Notre runtime call TransferPlttBuffer auto si vblankCallback non-null,
+ *  donc le scene-side VBlankCB est essentiellement un marqueur "transfer ON". */
+const VBlankCB: () => void = () => { /* no-op */ };

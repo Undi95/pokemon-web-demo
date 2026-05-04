@@ -382,8 +382,13 @@ export const CB2_InitBuyMenu: CB2Callback = (rt) => {
           task.data[7] = ListMenuInit(gMultiuseListMenuTemplate, 0, 0);
           BlendPalettes(PALETTES_ALL, 16, RGB_BLACK);
           rt.BeginNormalPaletteFade("PALETTES_ALL", 0, 16, 0, "RGB_BLACK");
-          /* noop SetVBlankCallback */;
-          /* TODO scene transition: SetMainCallback2(CB2_BuyMenu) */;
+          rt.SetVBlankCallback(VBlankCB);
+          rt.SetMainCallback2(CB2_BuyMenu);
           break;
       }
 };
+
+/** ⚠️ Generic patch (post-transpile-patches.mjs) — VBlankCB no-op.
+ *  Notre runtime call TransferPlttBuffer auto si vblankCallback non-null,
+ *  donc le scene-side VBlankCB est essentiellement un marqueur "transfer ON". */
+const VBlankCB: () => void = () => { /* no-op */ };

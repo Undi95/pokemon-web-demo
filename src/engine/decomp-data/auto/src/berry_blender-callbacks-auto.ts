@@ -434,7 +434,7 @@ export const CB2_LoadBerryBlender: CB2Callback = (rt) => {
           rt.SetGpuReg(REG_OFFSET_DISPCNT, 0);
           rt.ResetSpriteData();
           FreeAllSpritePalettes();
-          /* noop SetVBlankCallback */;
+          rt.SetVBlankCallback(VBlankCB);
           ResetBgsAndClearDma3BusyFlags(0);
           InitBgsFromTemplates(1, sBgTemplates, ((sBgTemplates)?.length ?? 0));
           SetBgTilemapBuffer(1, sBerryBlender.tilemapBuffers[0]);
@@ -466,7 +466,7 @@ export const CB2_LoadBerryBlender: CB2Callback = (rt) => {
                   LoadWirelessStatusIndicatorSpriteGfx();
                   CreateWirelessStatusIndicatorSprite(0, 0);
               }
-              /* noop SetVBlankCallback */;
+              rt.SetVBlankCallback(VBlankCB);
               sBerryBlender.mainState++;
           }
           break;
@@ -495,7 +495,7 @@ export const CB2_LoadBerryBlender: CB2Callback = (rt) => {
               FreeAllWindowBuffers();
               UnsetBgTilemapBuffer(2);
               UnsetBgTilemapBuffer(1);
-              /* noop SetVBlankCallback */;
+              rt.SetVBlankCallback(VBlankCB);
               ChooseBerryForMachine(StartBlender);
 
               sBerryBlender.mainState = 0;
@@ -697,7 +697,7 @@ export const CB2_StartBlenderLink: CB2Callback = (rt) => {
       case 21:
           sBerryBlender.speed = MIN_ARROW_SPEED;
           sBerryBlender.gameFrameTime = 0;
-          /* TODO scene transition: SetMainCallback2(CB2_PlayBlender) */;
+          rt.SetMainCallback2(CB2_PlayBlender);
           if (GetCurrentMapMusic() != MUS_CYCLING)
           {
               sBerryBlender.savedMusic = GetCurrentMapMusic();
@@ -856,7 +856,7 @@ export const CB2_StartBlenderLocal: CB2Callback = (rt) => {
           sBerryBlender.gameFrameTime = 0;
           sBerryBlender.perfectOpponents = false;
           sBerryBlender.slowdownTimer = 0;
-          /* TODO scene transition: SetMainCallback2(CB2_PlayBlender) */;
+          rt.SetMainCallback2(CB2_PlayBlender);
 
           if (gSpecialVar_0x8004 == 1)
           {
@@ -907,7 +907,7 @@ export const CB2_PlayBlender: CB2Callback = (rt) => {
       {
           sBerryBlender.progressBarValue = MAX_PROGRESS_BAR;
           sBerryBlender.gameEndState = 1;
-          /* TODO scene transition: SetMainCallback2(CB2_EndBlenderGame) */;
+          rt.SetMainCallback2(CB2_EndBlenderGame);
       }
 
       Blender_DummiedOutFunc(sBerryBlender.bg_X, sBerryBlender.bg_Y);
@@ -1099,7 +1099,7 @@ export const CB2_EndBlenderGame: CB2Callback = (rt) => {
       case 12:
           if (gInGameOpponentsNo)
           {
-              /* TODO scene transition: SetMainCallback2(CB2_CheckPlayAgainLocal) */;
+              rt.SetMainCallback2(CB2_CheckPlayAgainLocal);
               sBerryBlender.gameEndState = 0;
               sBerryBlender.mainState = 0;
           }
@@ -1114,7 +1114,7 @@ export const CB2_EndBlenderGame: CB2Callback = (rt) => {
       case 13:
           if (PrintMessage(sBerryBlender.textState, sText_CommunicationStandby, GetPlayerTextSpeedDelay()))
           {
-              /* TODO scene transition: SetMainCallback2(CB2_CheckPlayAgainLink) */;
+              rt.SetMainCallback2(CB2_CheckPlayAgainLink);
               sBerryBlender.gameEndState = 0;
               sBerryBlender.mainState = 0;
           }
@@ -1302,3 +1302,8 @@ export const CB2_CheckPlayAgainLocal: CB2Callback = (rt) => {
       RunTextPrinters();
       UpdatePaletteFade();
 };
+
+/** ⚠️ Generic patch (post-transpile-patches.mjs) — VBlankCB no-op.
+ *  Notre runtime call TransferPlttBuffer auto si vblankCallback non-null,
+ *  donc le scene-side VBlankCB est essentiellement un marqueur "transfer ON". */
+const VBlankCB: () => void = () => { /* no-op */ };

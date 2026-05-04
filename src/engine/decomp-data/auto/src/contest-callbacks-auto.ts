@@ -2097,7 +2097,7 @@ export const CB2_StartContest: CB2Callback = (rt) => {
           AllocateMonSpritesGfx();
           FREE_AND_SET_NULL(gMonSpritesGfxPtr.firstDecompressed);
           gMonSpritesGfxPtr.firstDecompressed = AllocZeroed(0x4000);
-          /* noop SetVBlankCallback */;
+          rt.SetVBlankCallback(VBlankCB);
           InitContestInfoBgs();
           InitContestWindows();
           SetupContestGpuRegs();
@@ -2129,9 +2129,9 @@ export const CB2_StartContest: CB2Callback = (rt) => {
           (globalThis as any).gBattle_BG1_Y = 0;
           BeginFastPaletteFade(2);
           rt.gPaletteFade.bufferTransferDisabled = false;
-          /* noop SetVBlankCallback */;
+          rt.SetVBlankCallback(VBlankCB);
           eContest.mainTaskId = rt.CreateTask((t) => Task_StartContestWaitFade(t, rt), 10);
-          /* TODO scene transition: SetMainCallback2(CB2_ContestMain) */;
+          rt.SetMainCallback2(CB2_ContestMain);
           if (gLinkContestFlags & LINK_CONTEST_FLAG_IS_WIRELESS)
           {
               LoadWirelessStatusIndicatorSpriteGfx();
@@ -2157,3 +2157,8 @@ export const CB2_ContestMain: CB2Callback = (rt) => {
       }
       sContestBgCopyFlags = 0;
 };
+
+/** ⚠️ Generic patch (post-transpile-patches.mjs) — VBlankCB no-op.
+ *  Notre runtime call TransferPlttBuffer auto si vblankCallback non-null,
+ *  donc le scene-side VBlankCB est essentiellement un marqueur "transfer ON". */
+const VBlankCB: () => void = () => { /* no-op */ };

@@ -619,7 +619,7 @@ export const Task_InitPokeStorage: TaskCallback = (task, rt) => {
   switch (sStorage.state)
       {
       case 0:
-          /* noop SetVBlankCallback */;
+          rt.SetVBlankCallback(VBlankCB);
           rt.SetGpuReg(REG_OFFSET_DISPCNT, 0);
           ResetForPokeStorage();
           if (sStorage.isReopening)
@@ -718,7 +718,7 @@ export const Task_InitPokeStorage: TaskCallback = (task, rt) => {
               BlendPalettes(PALETTES_ALL, 16, RGB_BLACK);
               SetPokeStorageTask(Task_ReshowPokeStorage);
           }
-          /* noop SetVBlankCallback */;
+          rt.SetVBlankCallback(VBlankCB);
           return;
       default:
           return;
@@ -2285,7 +2285,7 @@ export const Task_ChangeScreen: TaskCallback = (task, rt) => {
       case SCREEN_CHANGE_EXIT_BOX:
       default:
           FreePokeStorageData();
-          /* TODO scene transition: SetMainCallback2(CB2_ExitPokeStorage) */;
+          rt.SetMainCallback2(CB2_ExitPokeStorage);
           break;
       case SCREEN_CHANGE_SUMMARY_SCREEN:
           boxMons = sStorage.summaryMon.box;
@@ -2375,7 +2375,7 @@ export const CB2_ReturnToPokeStorage: CB2Callback = (rt) => {
       sStorage = Alloc(((sStorage)?.length ?? 32));
       if (sStorage == null)
       {
-          /* TODO scene transition: SetMainCallback2(CB2_ExitPokeStorage) */;
+          rt.SetMainCallback2(CB2_ExitPokeStorage);
       }
       else
       {
@@ -2383,6 +2383,11 @@ export const CB2_ReturnToPokeStorage: CB2Callback = (rt) => {
           sStorage.isReopening = true;
           sStorage.state = 0;
           sStorage.taskId = rt.CreateTask((t) => Task_InitPokeStorage(t, rt), 3);
-          /* TODO scene transition: SetMainCallback2(CB2_PokeStorage) */;
+          rt.SetMainCallback2(CB2_PokeStorage);
       }
 };
+
+/** ⚠️ Generic patch (post-transpile-patches.mjs) — VBlankCB no-op.
+ *  Notre runtime call TransferPlttBuffer auto si vblankCallback non-null,
+ *  donc le scene-side VBlankCB est essentiellement un marqueur "transfer ON". */
+const VBlankCB: () => void = () => { /* no-op */ };

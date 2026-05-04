@@ -1055,7 +1055,7 @@ export const Task_StartActivity: TaskCallback = (task, rt) => {
           SavePlayerParty();
           LoadPlayerBag();
           WarpForCableClubActivity(MAP_GROUP(MAP_BATTLE_COLOSSEUM_2P), MAP_NUM(MAP_BATTLE_COLOSSEUM_2P), 6, 8, USING_SINGLE_BATTLE);
-          /* TODO scene transition: SetMainCallback2(CB2_TransitionToCableClub) */;
+          rt.SetMainCallback2(CB2_TransitionToCableClub);
           break;
       case ACTIVITY_BATTLE_DOUBLE:
           CleanupOverworldWindowsAndTilemaps();
@@ -1064,7 +1064,7 @@ export const Task_StartActivity: TaskCallback = (task, rt) => {
           LoadPlayerBag();
           CreateTrainerCardInBuffer(gBlockSendBuffer, true);
           WarpForCableClubActivity(MAP_GROUP(MAP_BATTLE_COLOSSEUM_2P), MAP_NUM(MAP_BATTLE_COLOSSEUM_2P), 6, 8, USING_DOUBLE_BATTLE);
-          /* TODO scene transition: SetMainCallback2(CB2_TransitionToCableClub) */;
+          rt.SetMainCallback2(CB2_TransitionToCableClub);
           break;
       case ACTIVITY_BATTLE_MULTI:
           CleanupOverworldWindowsAndTilemaps();
@@ -1073,19 +1073,19 @@ export const Task_StartActivity: TaskCallback = (task, rt) => {
           LoadPlayerBag();
           CreateTrainerCardInBuffer(gBlockSendBuffer, true);
           WarpForCableClubActivity(MAP_GROUP(MAP_BATTLE_COLOSSEUM_4P), MAP_NUM(MAP_BATTLE_COLOSSEUM_4P), 5, 8, USING_MULTI_BATTLE);
-          /* TODO scene transition: SetMainCallback2(CB2_TransitionToCableClub) */;
+          rt.SetMainCallback2(CB2_TransitionToCableClub);
           break;
       case ACTIVITY_TRADE:
           CreateTrainerCardInBuffer(gBlockSendBuffer, true);
           CleanupOverworldWindowsAndTilemaps();
           WarpForCableClubActivity(MAP_GROUP(MAP_TRADE_CENTER), MAP_NUM(MAP_TRADE_CENTER), 5, 8, USING_TRADE_CENTER);
-          /* TODO scene transition: SetMainCallback2(CB2_TransitionToCableClub) */;
+          rt.SetMainCallback2(CB2_TransitionToCableClub);
           break;
       case ACTIVITY_RECORD_CORNER:
           CreateTrainerCardInBuffer(gBlockSendBuffer, true);
           CleanupOverworldWindowsAndTilemaps();
           WarpForCableClubActivity(MAP_GROUP(MAP_RECORD_CORNER), MAP_NUM(MAP_RECORD_CORNER), 8, 9, USING_RECORD_CORNER);
-          /* TODO scene transition: SetMainCallback2(CB2_TransitionToCableClub) */;
+          rt.SetMainCallback2(CB2_TransitionToCableClub);
           break;
       case ACTIVITY_TRADE | IN_UNION_ROOM:
           CleanupOverworldWindowsAndTilemaps();
@@ -1107,7 +1107,7 @@ export const Task_StartActivity: TaskCallback = (task, rt) => {
       case ACTIVITY_CARD:
       case ACTIVITY_CARD | IN_UNION_ROOM:
           CreateTrainerCardInBuffer(gBlockSendBuffer, false);
-          /* TODO scene transition: SetMainCallback2(CB2_ShowCard) */;
+          rt.SetMainCallback2(CB2_ShowCard);
           break;
       case ACTIVITY_POKEMON_JUMP:
           WarpForWirelessMinigame(USING_MINIGAME, 5, 1);

@@ -27,12 +27,26 @@ import {
   EnableInterrupts,
   LoadBgTiles,
   PlaySE,
+  // ─── 1:1 décomp main_menu.c InitMainMenu (Phase A audit session 83) ───
+  DmaFill16, DmaFill32,
+  VRAM, VRAM_SIZE, OAM, OAM_SIZE, PLTT, PLTT_SIZE,
 } from './decomp-globals';
 import {
   FillBgTilemapBufferRect,
   CopyBgTilemapBufferToVram,
 } from './gba-window-system';
-import { BG_PLTT_ID, REG_OFFSET_WIN0H, REG_OFFSET_WIN0V } from './decomp-runtime';
+import {
+  BG_PLTT_ID,
+  // ─── REG_OFFSET_* + DISPCNT_* pour 1:1 décomp InitMainMenu ─────────────
+  REG_OFFSET_DISPCNT,
+  REG_OFFSET_BG0CNT, REG_OFFSET_BG1CNT, REG_OFFSET_BG2CNT,
+  REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS,
+  REG_OFFSET_BG1HOFS, REG_OFFSET_BG1VOFS,
+  REG_OFFSET_BG2HOFS, REG_OFFSET_BG2VOFS,
+  REG_OFFSET_WIN0H, REG_OFFSET_WIN0V, REG_OFFSET_WININ, REG_OFFSET_WINOUT,
+  REG_OFFSET_BLDCNT, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDY,
+  DISPCNT_WIN0_ON, DISPCNT_OBJ_ON, DISPCNT_OBJ_1D_MAP,
+} from './decomp-runtime';
 import { PLTT_SIZE_4BPP, WIN_RANGE } from './decomp-helpers';
 import { sMainMenuBgTemplates, sWindowTemplates_MainMenu, MAIN_MENU_BORDER_TILE, ENUM_HAS_0 } from './decomp-data/main-menu-data';
 import {
@@ -390,48 +404,57 @@ export function ClearMainMenuWindowTilemap(template: any): void {
   CopyBgTilemapBufferToVram(template.bg);
 }
 
-// ─── InitMainMenu (manuel — pas dans le fichier auto-généré) ────────────────
+// ─── InitMainMenu — 1:1 décomp src/main_menu.c:558-615 ─────────────────────
+//
+// ⚠️ TEMPORAIRE : cette fonction est encore manuelle. Phase C audit session 83
+// = la transpiler dans `main_menu-callbacks-auto.ts` puis patcher via
+// post-transpile-patches.mjs (= éliminer la duplication, comme option_menu).
+//
+// Phase A audit session 83 : nettoyage minimal — utilise les constants nommées
+// `REG_OFFSET_*` / `DISPCNT_*` (= plus de hex magic) + DmaFill16/32 1:1 décomp.
 
 export function InitMainMenu(returningFromOptionsMenu: boolean): void {
   const rt = getRuntime();
   if (!rt) return;
 
-  // Reset GPU
-  rt.SetGpuReg(0x000, 0); // DISPCNT
-  rt.SetGpuReg(0x008, 0); // BG0CNT
-  rt.SetGpuReg(0x00A, 0); // BG1CNT
-  rt.SetGpuReg(0x00C, 0); // BG2CNT
-  rt.SetGpuReg(0x010, 0); // BG0HOFS
-  rt.SetGpuReg(0x012, 0); // BG0VOFS
-  rt.SetGpuReg(0x014, 0); // BG1HOFS
-  rt.SetGpuReg(0x016, 0); // BG1VOFS
+  // 1:1 décomp main_menu.c:560 — désactive VBlankCB pendant init pour pas
+  // de TransferPlttBuffer pendant les manipulations PLTT/VRAM (= anti-flash).
+  rt.SetVBlankCallback(null);
 
-  // Clear VRAM / OAM / PLTT (simplified)
-  rt.gba.vram.fill(0);
-  rt.gba.objVram.fill(0);
-  rt.gba.palette.reset();
-  for (let i = 0; i < 128; i++) rt.gba.oam[i].visible = false;
+  rt.SetGpuReg(REG_OFFSET_DISPCNT, 0);
+  rt.SetGpuReg(REG_OFFSET_BG2CNT, 0);
+  rt.SetGpuReg(REG_OFFSET_BG1CNT, 0);
+  rt.SetGpuReg(REG_OFFSET_BG0CNT, 0);
+  rt.SetGpuReg(REG_OFFSET_BG2HOFS, 0);
+  rt.SetGpuReg(REG_OFFSET_BG2VOFS, 0);
+  rt.SetGpuReg(REG_OFFSET_BG1HOFS, 0);
+  rt.SetGpuReg(REG_OFFSET_BG1VOFS, 0);
+  rt.SetGpuReg(REG_OFFSET_BG0HOFS, 0);
+  rt.SetGpuReg(REG_OFFSET_BG0VOFS, 0);
 
-  // Reset systems
+  // 1:1 décomp main_menu.c:573-575 — VRAM/OAM/PLTT clear via DMA.
+  // Notre DmaFill16/32 sont no-op (= préserve LZ77 char data déjà chargé).
+  // Les buffers OAM/PLTT sont reset par ResetSpriteData/ResetPaletteFade ci-dessous.
+  DmaFill16(3, 0, VRAM, VRAM_SIZE);
+  DmaFill32(3, 0, OAM, OAM_SIZE);
+  DmaFill16(3, 0, PLTT + 2, PLTT_SIZE - 2);
+
   ResetPaletteFade();
-  ScanlineEffect_Stop();
-  ResetTasks();
-  rt.ResetSpriteData();
-  FreeAllSpritePalettes();
-  FreeAllWindowBuffers();
-
-  // Load menu palettes
+  // Load menu palettes (= AVANT le fade pour que les couleurs soient dans
+  // gPlttBufferUnfaded au moment où le fade commence).
   const bgPal = getAsset('sMainMenuBgPal');
   const textPal = getAsset('sMainMenuTextPal');
   console.log('[InitMainMenu] sMainMenuBgPal cached?', !!bgPal, 'len', bgPal?.length ?? 0);
   console.log('[InitMainMenu] sMainMenuTextPal cached?', !!textPal, 'len', textPal?.length ?? 0);
   LoadPalette('sMainMenuBgPal', BG_PLTT_ID(0), PLTT_SIZE_4BPP);
   LoadPalette('sMainMenuTextPal', BG_PLTT_ID(15), PLTT_SIZE_4BPP);
-
-  // Palette fade
-  rt.BeginNormalPaletteFade('PALETTES_ALL', 0, 16, 0, returningFromOptionsMenu ? 'RGB_BLACK' : 'RGB_WHITEALPHA');
-
-  // BG init
+  ScanlineEffect_Stop();
+  ResetTasks();
+  rt.ResetSpriteData();
+  FreeAllSpritePalettes();
+  // 1:1 décomp main_menu.c:585-587 — fade IN (startY=0x10 → endY=0).
+  rt.BeginNormalPaletteFade('PALETTES_ALL', 0, 0x10, 0,
+    returningFromOptionsMenu ? 'RGB_BLACK' : 'RGB_WHITEALPHA');
   ResetBgsAndClearDma3BusyFlags(0);
   InitBgsFromTemplates(0, sMainMenuBgTemplates as any, sMainMenuBgTemplates.length);
   ChangeBgX(0, 0, 0);
@@ -439,33 +462,26 @@ export function InitMainMenu(returningFromOptionsMenu: boolean): void {
   ChangeBgX(1, 0, 0);
   ChangeBgY(1, 0, 0);
 
-  // Windows
   InitWindows(sWindowTemplates_MainMenu as any);
   DeactivateAllTextPrinters();
   LoadMainMenuWindowFrameTiles(0, MAIN_MENU_BORDER_TILE);
 
-  // WIN / BLEND regs
-  rt.SetGpuReg(0x040, 0); // WIN0H
-  rt.SetGpuReg(0x044, 0); // WIN0V
-  rt.SetGpuReg(0x048, 0); // WININ
-  rt.SetGpuReg(0x04A, 0); // WINOUT
-  rt.SetGpuReg(0x050, 0); // BLDCNT
-  rt.SetGpuReg(0x052, 0); // BLDALPHA
-  rt.SetGpuReg(0x054, 0); // BLDY
+  rt.SetGpuReg(REG_OFFSET_WIN0H, 0);
+  rt.SetGpuReg(REG_OFFSET_WIN0V, 0);
+  rt.SetGpuReg(REG_OFFSET_WININ, 0);
+  rt.SetGpuReg(REG_OFFSET_WINOUT, 0);
+  rt.SetGpuReg(REG_OFFSET_BLDCNT, 0);
+  rt.SetGpuReg(REG_OFFSET_BLDALPHA, 0);
+  rt.SetGpuReg(REG_OFFSET_BLDY, 0);
 
-  // Enable interrupts (stub)
   EnableInterrupts(1);
-
-  // Set callbacks
   rt.SetVBlankCallback(VBlankCB_MainMenu);
   rt.SetMainCallback2(CB2_MainMenu);
-
-  // DISPCNT
-  rt.SetGpuReg(0x000, 0x100 | 0x200 | 0x2000 | 0x40 | 0x1000); // BG0_ON | BG1_ON | WIN0_ON | OBJ_1D_MAP | OBJ_ON
+  // 1:1 décomp main_menu.c:609 — DISPCNT_WIN0_ON | DISPCNT_OBJ_ON | DISPCNT_OBJ_1D_MAP.
+  // (BG0/BG1 sont activés implicitement par ShowBg(0)/HideBg(1) ci-dessous.)
+  rt.SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_WIN0_ON | DISPCNT_OBJ_ON | DISPCNT_OBJ_1D_MAP);
   ShowBg(0);
   HideBg(1);
-
-  // Create check save file task
   rt.CreateTask((t) => Task_MainMenuCheckSaveFile(t, rt), 0);
 }
 

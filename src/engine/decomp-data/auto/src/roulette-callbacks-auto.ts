@@ -1273,7 +1273,7 @@ export const Task_ExitRoulette: TaskCallback = (task, rt) => {
   const taskId = task.taskId;
   if (UpdatePaletteFade() == 0)
       {
-          /* noop SetVBlankCallback */;
+          rt.SetVBlankCallback(VBlankCB);
           gSpriteCoordOffsetX = gSpriteCoordOffsetY = 0;
           ResetVramOamAndBgCntRegs();
           ResetAllBgsCoordinates();
@@ -1318,8 +1318,8 @@ export const Task_FadeToRouletteGame: TaskCallback = (task, rt) => {
   const taskId = task.taskId;
   if (!rt.gPaletteFade.active)
       {
-          /* noop SetVBlankCallback */;
-          /* TODO scene transition: SetMainCallback2(CB2_LoadRoulette) */;
+          rt.SetVBlankCallback(VBlankCB);
+          rt.SetMainCallback2(CB2_LoadRoulette);
           rt.DestroyTask(taskId);
       }
 };
@@ -1431,7 +1431,7 @@ export const CB2_LoadRoulette: CB2Callback = (rt) => {
       switch (gMain.state)
       {
       case 0:
-          /* noop SetVBlankCallback */;
+          rt.SetVBlankCallback(VBlankCB);
           ScanlineEffect_Stop();
           SetVBlankHBlankCallbacksToNull();
           ResetVramOamAndBgCntRegs();
@@ -1497,15 +1497,20 @@ export const CB2_LoadRoulette: CB2Callback = (rt) => {
           break;
       case 8:
           EnableInterrupts(INTR_FLAG_VBLANK);
-          /* noop SetVBlankCallback */;
+          rt.SetVBlankCallback(VBlankCB);
           BeginHardwarePaletteFade(0xFF, 0, 16, 0, 1);
           taskId = sRoulette.playTaskId = rt.CreateTask((t) => Task_StartPlaying(t, rt), 0);
           task.data[6] = BALLS_PER_ROUND;
           task.data[13] = GetCoins();
           AlertTVThatPlayerPlayedRoulette(GetCoins());
           sRoulette.spinTaskId = rt.CreateTask((t) => Task_SpinWheel(t, rt), 1);
-          /* TODO scene transition: SetMainCallback2(CB2_Roulette) */;
+          rt.SetMainCallback2(CB2_Roulette);
           return;
       }
       gMain.state++;
 };
+
+/** ⚠️ Generic patch (post-transpile-patches.mjs) — VBlankCB no-op.
+ *  Notre runtime call TransferPlttBuffer auto si vblankCallback non-null,
+ *  donc le scene-side VBlankCB est essentiellement un marqueur "transfer ON". */
+const VBlankCB: () => void = () => { /* no-op */ };

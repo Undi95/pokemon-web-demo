@@ -56,7 +56,7 @@ export const CB2_InitMailRead: CB2Callback = (rt) => {
       {
           if (MailReadBuildGraphics() == true)
           {
-              /* TODO scene transition: SetMainCallback2(CB2_MailRead) */;
+              rt.SetMainCallback2(CB2_MailRead);
               break;
           }
       } while (MenuHelpers_IsLinkActive() != true);

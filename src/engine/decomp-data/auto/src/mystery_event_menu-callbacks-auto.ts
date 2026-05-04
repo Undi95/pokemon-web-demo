@@ -80,7 +80,7 @@ export const CB2_InitMysteryEventMenu: CB2Callback = (rt) => {
   rt.ResetSpriteData();
       FreeAllSpritePalettes();
       ResetTasks();
-      /* noop SetVBlankCallback */;
+      rt.SetVBlankCallback(VBlankCB);
       ResetBgsAndClearDma3BusyFlags(0);
       InitBgsFromTemplates(0, sBgTemplates, ((sBgTemplates)?.length ?? 0));
       if (InitWindows(sWindowTemplates))
@@ -104,7 +104,7 @@ export const CB2_InitMysteryEventMenu: CB2Callback = (rt) => {
           RunTextPrinters();
           UpdatePaletteFade();
           SetBackdropFromColor(RGB_BLACK);
-          /* TODO scene transition: SetMainCallback2(CB2_MysteryEventMenu) */;
+          rt.SetMainCallback2(CB2_MysteryEventMenu);
       }
 };
 
@@ -283,3 +283,8 @@ export const CB2_MysteryEventMenu: CB2Callback = (rt) => {
       RunTextPrinters();
       UpdatePaletteFade();
 };
+
+/** ⚠️ Generic patch (post-transpile-patches.mjs) — VBlankCB no-op.
+ *  Notre runtime call TransferPlttBuffer auto si vblankCallback non-null,
+ *  donc le scene-side VBlankCB est essentiellement un marqueur "transfer ON". */
+const VBlankCB: () => void = () => { /* no-op */ };

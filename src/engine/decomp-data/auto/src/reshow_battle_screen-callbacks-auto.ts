@@ -159,7 +159,7 @@ export const CB2_ReshowBattleScreenAfterMenu: CB2Callback = (rt) => {
           }
           break;
       default:
-          /* noop SetVBlankCallback */;
+          rt.SetVBlankCallback(VBlankCB);
           ClearBattleBgCntBaseBlocks();
           BeginHardwarePaletteFade(0xFF, 0, 0x10, 0, 1);
           rt.gPaletteFade.bufferTransferDisabled = 0;
@@ -170,3 +170,8 @@ export const CB2_ReshowBattleScreenAfterMenu: CB2Callback = (rt) => {
 
       gBattleScripting.reshowMainState++;
 };
+
+/** ⚠️ Generic patch (post-transpile-patches.mjs) — VBlankCB no-op.
+ *  Notre runtime call TransferPlttBuffer auto si vblankCallback non-null,
+ *  donc le scene-side VBlankCB est essentiellement un marqueur "transfer ON". */
+const VBlankCB: () => void = () => { /* no-op */ };

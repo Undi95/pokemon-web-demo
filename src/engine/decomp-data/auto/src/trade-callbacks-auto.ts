@@ -266,7 +266,7 @@ export const Task_InGameTrade: TaskCallback = (task, rt) => {
   const taskId = task.taskId;
   if (!rt.gPaletteFade.active)
       {
-          /* TODO scene transition: SetMainCallback2(CB2_InitInGameTrade) */;
+          rt.SetMainCallback2(CB2_InitInGameTrade);
           gFieldCallback = FieldCB_ContinueScriptHandleMusic;
           rt.DestroyTask(taskId);
       }
@@ -375,7 +375,7 @@ export const Task_CloseCenterWhiteColumn: TaskCallback = (task, rt) => {
 
 /** Source: trade.c → CB2_StartCreateTradeMenu */
 export const CB2_StartCreateTradeMenu: CB2Callback = (rt) => {
-  /* TODO scene transition: SetMainCallback2(CB2_CreateTradeMenu) */;
+  rt.SetMainCallback2(CB2_CreateTradeMenu);
       gMain.callback1 = null;
       gEnemyPartyCount = 0;
 };
@@ -632,7 +632,7 @@ export const CB2_CreateTradeMenu: CB2Callback = (rt) => {
           if (!rt.gPaletteFade.active)
           {
               gMain.callback1 = CB1_UpdateLink;
-              /* TODO scene transition: SetMainCallback2(CB2_TradeMenu) */;
+              rt.SetMainCallback2(CB2_TradeMenu);
           }
           break;
       }
@@ -815,7 +815,7 @@ export const CB2_ReturnToTradeMenu: CB2Callback = (rt) => {
           break;
       case 22:
           if (!rt.gPaletteFade.active)
-              /* TODO scene transition: SetMainCallback2(CB2_TradeMenu) */;
+              rt.SetMainCallback2(CB2_TradeMenu);
           break;
       }
 
@@ -859,7 +859,7 @@ export const CB2_LinkTrade: CB2Callback = (rt) => {
           ResetTasks();
           rt.ResetSpriteData();
           FreeAllSpritePalettes();
-          /* noop SetVBlankCallback */;
+          rt.SetVBlankCallback(VBlankCB);
           TradeAnimInit_LoadGfx();
           ClearLinkTimeoutTimer();
           gMain.state++;
@@ -964,7 +964,7 @@ export const CB2_LinkTrade: CB2Callback = (rt) => {
                   LoadWirelessStatusIndicatorSpriteGfx();
                   CreateWirelessStatusIndicatorSprite(0, 0);
               }
-              /* TODO scene transition: SetMainCallback2(CB2_UpdateLinkTrade) */;
+              rt.SetMainCallback2(CB2_UpdateLinkTrade);
           }
           break;
       }
@@ -994,7 +994,7 @@ export const CB2_InitInGameTrade: CB2Callback = (rt) => {
           ResetTasks();
           rt.ResetSpriteData();
           FreeAllSpritePalettes();
-          /* noop SetVBlankCallback */;
+          rt.SetVBlankCallback(VBlankCB);
           TradeAnimInit_LoadGfx();
           sTradeAnim.isLinkTrade = false;
           sTradeAnim.neverRead_8C = 0;
@@ -1046,7 +1046,7 @@ export const CB2_InitInGameTrade: CB2Callback = (rt) => {
           gMain.state++;
           break;
       case 12:
-          /* TODO scene transition: SetMainCallback2(CB2_InGameTrade) */;
+          rt.SetMainCallback2(CB2_InGameTrade);
           break;
       }
 
@@ -1082,9 +1082,9 @@ export const CB2_TryLinkTradeEvolution: CB2Callback = (rt) => {
           if (evoTarget != SPECIES_NONE)
               TradeEvolutionScene(gPlayerParty[gSelectedTradeMonPositions[TRADE_PLAYER]], evoTarget, sTradeAnim.monSpriteIds[TRADE_PARTNER], gSelectedTradeMonPositions[TRADE_PLAYER]);
           else if (IsWirelessTrade())
-              /* TODO scene transition: SetMainCallback2(CB2_SaveAndEndWirelessTrade) */;
+              rt.SetMainCallback2(CB2_SaveAndEndWirelessTrade);
           else
-              /* TODO scene transition: SetMainCallback2(CB2_SaveAndEndTrade) */;
+              rt.SetMainCallback2(CB2_SaveAndEndTrade);
           gSelectedTradeMonPositions[TRADE_PLAYER] = 255;
           break;
       }
@@ -1107,7 +1107,7 @@ export const CB2_UpdateLinkTrade: CB2Callback = (rt) => {
               sTradeAnim.linkData[0] = LINKCMD_READY_FINISH_TRADE;
               sTradeAnim.scheduleLinkTransfer = 1;
           }
-          /* TODO scene transition: SetMainCallback2(CB2_WaitTradeComplete) */;
+          rt.SetMainCallback2(CB2_WaitTradeComplete);
       }
       HandleLinkDataSend();
       HandleLinkDataReceive();
@@ -1123,7 +1123,7 @@ export const CB2_WaitTradeComplete: CB2Callback = (rt) => {
   let mpId = TradeGetMultiplayerId();
       if (IsWirelessTrade())
       {
-          /* TODO scene transition: SetMainCallback2(CB2_TryLinkTradeEvolution) */;
+          rt.SetMainCallback2(CB2_TryLinkTradeEvolution);
       }
       else
       {
@@ -1274,13 +1274,13 @@ export const CB2_SaveAndEndTrade: CB2Callback = (rt) => {
               if (_IsLinkTaskFinished())
               {
                   gSoftResetDisabled = false;
-                  /* TODO scene transition: SetMainCallback2(CB2_FreeTradeAnim) */;
+                  rt.SetMainCallback2(CB2_FreeTradeAnim);
               }
           }
           else if (!gReceivedRemoteLinkPlayers)
           {
               gSoftResetDisabled = false;
-              /* TODO scene transition: SetMainCallback2(CB2_FreeTradeAnim) */;
+              rt.SetMainCallback2(CB2_FreeTradeAnim);
           }
           break;
       }
@@ -1305,7 +1305,7 @@ export const CB2_FreeTradeAnim: CB2Callback = (rt) => {
           FREE_AND_SET_NULL(sTradeAnim);
           if (gWirelessCommType)
               DestroyWirelessStatusIndicatorSprite();
-          /* TODO scene transition: SetMainCallback2(gMain.savedCallback) */;
+          rt.SetMainCallback2(gMain.savedCallback ?? null);
       }
       RunTasks();
       AnimateSprites();
@@ -1412,7 +1412,7 @@ export const CB2_SaveAndEndWirelessTrade: CB2Callback = (rt) => {
           if (_IsLinkTaskFinished())
           {
               gSoftResetDisabled = false;
-              /* TODO scene transition: SetMainCallback2(CB2_FreeTradeAnim) */;
+              rt.SetMainCallback2(CB2_FreeTradeAnim);
           }
           break;
       }
@@ -1423,3 +1423,8 @@ export const CB2_SaveAndEndWirelessTrade: CB2Callback = (rt) => {
       BuildOamBuffer();
       UpdatePaletteFade();
 };
+
+/** ⚠️ Generic patch (post-transpile-patches.mjs) — VBlankCB no-op.
+ *  Notre runtime call TransferPlttBuffer auto si vblankCallback non-null,
+ *  donc le scene-side VBlankCB est essentiellement un marqueur "transfer ON". */
+const VBlankCB: () => void = () => { /* no-op */ };

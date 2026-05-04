@@ -101,7 +101,7 @@ export const Task_EasyChatScreen: TaskCallback = (task, rt) => {
       switch (data[0])
       {
       case MAINSTATE_FADE_IN:
-          /* noop SetVBlankCallback */;
+          rt.SetVBlankCallback(VBlankCB);
           BlendPalettes(PALETTES_ALL, 16, 0);
           rt.BeginNormalPaletteFade("PALETTES_ALL", -1, 16, 0, "RGB_BLACK");
           data[0] = MAINSTATE_WAIT_FADE_IN;
@@ -176,3 +176,8 @@ export const CB2_QuizLadyQuestion: CB2Callback = (rt) => {
       }
       gMain.state ++;
 };
+
+/** ⚠️ Generic patch (post-transpile-patches.mjs) — VBlankCB no-op.
+ *  Notre runtime call TransferPlttBuffer auto si vblankCallback non-null,
+ *  donc le scene-side VBlankCB est essentiellement un marqueur "transfer ON". */
+const VBlankCB: () => void = () => { /* no-op */ };

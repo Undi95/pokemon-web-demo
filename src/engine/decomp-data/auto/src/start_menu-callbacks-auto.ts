@@ -132,7 +132,7 @@ export const Task_SaveAfterLinkBattle: TaskCallback = (task, rt) => {
               break;
           case 4:
               FreeAllWindowBuffers();
-              /* TODO scene transition: SetMainCallback2(gMain.savedCallback) */;
+              rt.SetMainCallback2(gMain.savedCallback ?? null);
               rt.DestroyTask(taskId);
               break;
           case 5:
@@ -164,7 +164,7 @@ export const CB2_SetUpSaveAfterLinkBattle: CB2Callback = (rt) => {
   if (InitSaveWindowAfterLinkBattle(gMain.state))
       {
           rt.CreateTask((t) => Task_SaveAfterLinkBattle(t, rt), 0x50);
-          /* TODO scene transition: SetMainCallback2(CB2_SaveAfterLinkBattle) */;
+          rt.SetMainCallback2(CB2_SaveAfterLinkBattle);
       }
 };
 

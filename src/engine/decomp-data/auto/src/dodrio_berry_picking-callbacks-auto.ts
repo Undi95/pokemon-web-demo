@@ -93,7 +93,7 @@ export const Task_StartDodrioGame: TaskCallback = (task, rt) => {
       switch (sGame.startState)
       {
       case 0:
-          /* noop SetVBlankCallback */;
+          rt.SetVBlankCallback(VBlankCB);
           CreateTask_(Task_CommunicateMonInfo, 4);
           sGame.startState++;
           break;
@@ -141,7 +141,7 @@ export const Task_StartDodrioGame: TaskCallback = (task, rt) => {
       case 6:
           BlendPalettes(PALETTES_ALL, 0x10, 0x00);
           rt.BeginNormalPaletteFade("PALETTES_ALL", 0, 16, 0, "0");
-          /* noop SetVBlankCallback */;
+          rt.SetVBlankCallback(VBlankCB);
           sGame.startState++;
           break;
       case 7:
@@ -307,3 +307,8 @@ export const CB2_DodrioGame: CB2Callback = (rt) => {
       BuildOamBuffer();
       UpdatePaletteFade();
 };
+
+/** ⚠️ Generic patch (post-transpile-patches.mjs) — VBlankCB no-op.
+ *  Notre runtime call TransferPlttBuffer auto si vblankCallback non-null,
+ *  donc le scene-side VBlankCB est essentiellement un marqueur "transfer ON". */
+const VBlankCB: () => void = () => { /* no-op */ };

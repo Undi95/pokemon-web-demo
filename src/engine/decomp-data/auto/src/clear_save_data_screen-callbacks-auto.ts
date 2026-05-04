@@ -73,7 +73,7 @@ export const Task_ClearSaveDataScreenYesNoChoice: TaskCallback = (task, rt) => {
       case MENU_B_PRESSED:
           PlaySE(SE_SELECT);
           rt.DestroyTask(taskId);
-          /* TODO scene transition: SetMainCallback2(CB2_FadeAndDoReset) */;
+          rt.SetMainCallback2(CB2_FadeAndDoReset);
       }
 };
 
@@ -82,7 +82,7 @@ export const Task_ClearSaveData: TaskCallback = (task, rt) => {
   const taskId = task.taskId;
   ClearSaveData();
       rt.DestroyTask(taskId);
-      /* TODO scene transition: SetMainCallback2(CB2_FadeAndDoReset) */;
+      rt.SetMainCallback2(CB2_FadeAndDoReset);
 };
 
 /** Source: clear_save_data_screen.c → CB2_InitClearSaveDataScreen */

@@ -150,7 +150,7 @@ export const Task_ExitPokeblockFeed: TaskCallback = (task, rt) => {
           rt.ResetSpriteData();
           FreeAllSpritePalettes();
           m4aMPlayVolumeControl(gMPlayInfo_BGM, TRACKS_ALL, 0x100);
-          /* TODO scene transition: SetMainCallback2(gMain.savedCallback) */;
+          rt.SetMainCallback2(gMain.savedCallback ?? null);
           rt.DestroyTask(taskId);
           FreeAllWindowBuffers();
           Free(sPokeblockFeed);

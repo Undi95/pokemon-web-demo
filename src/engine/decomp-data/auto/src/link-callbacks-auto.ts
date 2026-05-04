@@ -138,7 +138,7 @@ export const CB2_LinkError: CB2Callback = (rt) => {
 
           ResetLinkRfuGFLayer();
       }
-      /* noop SetVBlankCallback */;
+      rt.SetVBlankCallback(VBlankCB);
       ResetBgsAndClearDma3BusyFlags(0);
       InitBgsFromTemplates(0, sLinkErrorBgTemplates, ((sLinkErrorBgTemplates)?.length ?? 0));
       sLinkErrorBgTilemapBuffer = tilemapBuffer = Alloc(BG_SCREEN_SIZE);
@@ -163,7 +163,7 @@ export const CB2_LinkError: CB2Callback = (rt) => {
           AnimateSprites();
           BuildOamBuffer();
           UpdatePaletteFade();
-          /* TODO scene transition: SetMainCallback2(CB2_PrintErrorMessage) */;
+          rt.SetMainCallback2(CB2_PrintErrorMessage);
       }
 };
 
@@ -226,3 +226,8 @@ export const CB2_PrintErrorMessage: CB2Callback = (rt) => {
       if (gMain.state != 160)
           gMain.state++;
 };
+
+/** ⚠️ Generic patch (post-transpile-patches.mjs) — VBlankCB no-op.
+ *  Notre runtime call TransferPlttBuffer auto si vblankCallback non-null,
+ *  donc le scene-side VBlankCB est essentiellement un marqueur "transfer ON". */
+const VBlankCB: () => void = () => { /* no-op */ };

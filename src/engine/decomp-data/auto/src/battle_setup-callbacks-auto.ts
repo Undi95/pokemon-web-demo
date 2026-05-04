@@ -123,7 +123,7 @@ export const CB2_GiveStarter: CB2Callback = (rt) => {
       ScriptGiveMon(starterMon, 5, ITEM_NONE, 0, 0, 0);
       ResetTasks();
       PlayBattleBGM();
-      /* TODO scene transition: SetMainCallback2(CB2_StartFirstBattle) */;
+      rt.SetMainCallback2(CB2_StartFirstBattle);
       BattleTransition_Start(B_TRANSITION_BLUR);
 };
 

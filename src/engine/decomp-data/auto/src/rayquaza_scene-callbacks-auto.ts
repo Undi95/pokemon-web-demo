@@ -607,7 +607,7 @@ export const Task_DuoFightAnim: TaskCallback = (task, rt) => {
 
       BlendPalettes(PALETTES_ALL, 0x10, RGB_BLACK);
       rt.BeginNormalPaletteFade("PALETTES_ALL", 0, 0x10, 0, "RGB_BLACK");
-      /* noop SetVBlankCallback */;
+      rt.SetVBlankCallback(VBlankCB);
       PlaySE(SE_DOWNPOUR);
 };
 
@@ -722,7 +722,7 @@ export const Task_DuoFightEnd: TaskCallback = (task, rt) => {
       {
           rt.DestroyTask(data[1]);
           ChangeBgY(1, 0, BG_COORD_SET);
-          /* noop SetVBlankCallback */;
+          rt.SetVBlankCallback(VBlankCB);
           ScanlineEffect_Stop();
           rt.ResetSpriteData();
           FreeAllSpritePalettes();
@@ -741,7 +741,7 @@ export const Task_RayTakesFlightAnim: TaskCallback = (task, rt) => {
       rt.SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_TGT1_OBJ | BLDCNT_TGT2_BG1 | BLDCNT_EFFECT_BLEND);
       rt.SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(8, 8));
       BlendPalettes(PALETTES_ALL, 16, 0);
-      /* noop SetVBlankCallback */;
+      rt.SetVBlankCallback(VBlankCB);
       rt.CreateTask((t) => Task_TakesFlight_CreateSmoke(t, rt), 0);
       data[0] = 0;
       data[1] = 0;
@@ -822,7 +822,7 @@ export const Task_RayTakesFlightEnd: TaskCallback = (task, rt) => {
   const taskId = task.taskId;
   if (!rt.gPaletteFade.active)
       {
-          /* noop SetVBlankCallback */;
+          rt.SetVBlankCallback(VBlankCB);
           rt.ResetSpriteData();
           FreeAllSpritePalettes();
           task.func = (t) => Task_SetNextAnim(t, rt);
@@ -867,7 +867,7 @@ export const Task_RayDescendsAnim: TaskCallback = (task, rt) => {
       SetGpuRegBits(REG_OFFSET_BLDCNT, BLDCNT_TGT1_BG0 | BLDCNT_TGT2_BG1 | BLDCNT_TGT2_BG2 | BLDCNT_TGT2_BG3 | BLDCNT_TGT2_OBJ | BLDCNT_EFFECT_BLEND);
       rt.SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(0, 16));
       BlendPalettes(PALETTES_ALL, 0x10, RGB_BLACK);
-      /* noop SetVBlankCallback */;
+      rt.SetVBlankCallback(VBlankCB);
       sRayScene.revealedLightLine = 0;
       sRayScene.revealedLightTimer = 0;
       data[0] = 0;
@@ -948,7 +948,7 @@ export const Task_RayDescendsEnd: TaskCallback = (task, rt) => {
   const taskId = task.taskId;
   if (!rt.gPaletteFade.active)
       {
-          /* noop SetVBlankCallback */;
+          rt.SetVBlankCallback(VBlankCB);
           SetHBlankCallback(null);
           rt.ResetSpriteData();
           FreeAllSpritePalettes();
@@ -964,7 +964,7 @@ export const Task_RayChargesAnim: TaskCallback = (task, rt) => {
       LoadChargesSceneGfx();
       SetWindowsHideVertBorders();
       BlendPalettes(PALETTES_ALL, 0x10, RGB_BLACK);
-      /* noop SetVBlankCallback */;
+      rt.SetVBlankCallback(VBlankCB);
       data[0] = 0;
       data[1] = 0;
       data[2] = rt.CreateTask((t) => Task_RayCharges_ShakeRayquaza(t, rt), 0);
@@ -1070,7 +1070,7 @@ export const Task_RayChargesEnd: TaskCallback = (task, rt) => {
       RayCharges_AnimateBg();
       if (!rt.gPaletteFade.active)
       {
-          /* noop SetVBlankCallback */;
+          rt.SetVBlankCallback(VBlankCB);
           ResetWindowDimensions();
           rt.DestroyTask(data[2]);
           task.func = (t) => Task_SetNextAnim(t, rt);
@@ -1088,7 +1088,7 @@ export const Task_RayChasesAwayAnim: TaskCallback = (task, rt) => {
       rt.SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_TGT1_BG0 | BLDCNT_TGT2_BG1 | BLDCNT_EFFECT_BLEND);
       rt.SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(9, 14));
       BlendPalettes(PALETTES_ALL, 0x10, RGB_BLACK);
-      /* noop SetVBlankCallback */;
+      rt.SetVBlankCallback(VBlankCB);
       data[0] = 0;
       data[1] = 0;
       task.func = (t) => Task_HandleRayChasesAway(t, rt);
@@ -1191,7 +1191,7 @@ export const Task_RayChasesAwayEnd: TaskCallback = (task, rt) => {
           StopMapMusic();
           if (data[1] == 0)
           {
-              /* noop SetVBlankCallback */;
+              rt.SetVBlankCallback(VBlankCB);
               ResetWindowDimensions();
               rt.ResetSpriteData();
               FreeAllSpritePalettes();
@@ -1266,7 +1266,7 @@ export const CB2_InitRayquazaScene: CB2Callback = (rt) => {
       ResetTasks();
       FillPalette(RGB_BLACK, BG_PLTT_ID(15), PLTT_SIZE_4BPP);
       CreateTask(sTasksForAnimations[sRayScene.animId], 0);
-      /* TODO scene transition: SetMainCallback2(CB2_RayquazaScene) */;
+      rt.SetMainCallback2(CB2_RayquazaScene);
 };
 
 /** Source: rayquaza_scene.c → CB2_RayquazaScene */
@@ -1277,3 +1277,8 @@ export const CB2_RayquazaScene: CB2Callback = (rt) => {
       DoScheduledBgTilemapCopiesToVram();
       UpdatePaletteFade();
 };
+
+/** ⚠️ Generic patch (post-transpile-patches.mjs) — VBlankCB no-op.
+ *  Notre runtime call TransferPlttBuffer auto si vblankCallback non-null,
+ *  donc le scene-side VBlankCB est essentiellement un marqueur "transfer ON". */
+const VBlankCB: () => void = () => { /* no-op */ };

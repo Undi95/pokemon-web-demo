@@ -927,7 +927,7 @@ export const SpriteCB_RayquazaOrb: SpriteCallback = (sprite, rt) => {
 /** Source: intro.c → Task_Scene1_Load */
 export const Task_Scene1_Load: TaskCallback = (task, rt) => {
   const taskId = task.taskId;
-  /* noop SetVBlankCallback */;
+  rt.SetVBlankCallback(VBlankCB);
       (globalThis as any).sIntroCharacterGender = ((Math.floor(Math.random() * 0x10000)) % (GENDER_COUNT));
       rt.IntroResetGpuRegs();
       rt.SetGpuReg(REG_OFFSET_BG3VOFS, 0);
@@ -969,7 +969,7 @@ export const Task_Scene1_Load: TaskCallback = (task, rt) => {
 export const Task_Scene1_FadeIn: TaskCallback = (task, rt) => {
   const taskId = task.taskId;
   rt.BeginNormalPaletteFade("PALETTES_ALL", 0, 16, 0, "RGB_BLACK");
-      /* noop SetVBlankCallback */;
+      rt.SetVBlankCallback(VBlankCB);
       rt.SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_MODE_0 | DISPCNT_OBJ_1D_MAP | DISPCNT_BG_ALL_ON | DISPCNT_OBJ_ON);
       task.func = (t) => Task_Scene1_WaterDrops(t, rt);
       rt.gIntroFrameCounter = 0;
@@ -1097,7 +1097,7 @@ export const Task_Scene1_End: TaskCallback = (task, rt) => {
 export const Task_Scene2_Load: TaskCallback = (task, rt) => {
   const taskId = task.taskId;
   rt.IntroResetGpuRegs();
-      /* noop SetVBlankCallback */;
+      rt.SetVBlankCallback(VBlankCB);
       rt.ResetSpriteData();
       FreeAllSpritePalettes();
       (globalThis as any).gIntroCredits_MovingSceneryVBase = 0;
@@ -1147,7 +1147,7 @@ export const Task_Scene2_CreateSprites: TaskCallback = (task, rt) => {
 
        
       rt.BeginNormalPaletteFade("PALETTES_ALL", 0, 16, 0, "RGB_WHITEALPHA");
-      /* noop SetVBlankCallback */;
+      rt.SetVBlankCallback(VBlankCB);
       task.data[0] = CreateBicycleBgAnimationTask(1, 0x4000, 0x400, 0x10);
       SetIntroPart2BgCnt(1);
       task.func = (t) => Task_Scene2_BikeRide(t, rt);
@@ -2219,3 +2219,7 @@ export function CreateGameFreakLogoSprites(x: number, y: number, unused: number)
   return -1;
 }
 
+/** ⚠️ Generic patch (post-transpile-patches.mjs) — VBlankCB no-op.
+ *  Notre runtime call TransferPlttBuffer auto si vblankCallback non-null,
+ *  donc le scene-side VBlankCB est essentiellement un marqueur "transfer ON". */
+const VBlankCB: () => void = () => { /* no-op */ };

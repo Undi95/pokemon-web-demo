@@ -729,7 +729,7 @@ export const Task_LoadInfoScreen: TaskCallback = (task, rt) => {
 
               sPokedexView.currentPage = PAGE_INFO;
               gPokedexVBlankCB = gMain.vblankCallback;
-              /* noop SetVBlankCallback */;
+              rt.SetVBlankCallback(VBlankCB);
               r2 = 0;
               if (task.data[1])
                   r2 += DISPCNT_OBJ_ON;
@@ -785,7 +785,7 @@ export const Task_LoadInfoScreen: TaskCallback = (task, rt) => {
               if (task.data[1])
                   preservedPalettes |= (1 << (rt.gba.oam[_gs(rt, task.data[3]).oamIndex].paletteBank + 16));
               rt.BeginNormalPaletteFade("~preservedPalettes", 0, 16, 0, "RGB_BLACK");
-              /* noop SetVBlankCallback */;
+              rt.SetVBlankCallback(VBlankCB);
               gMain.state++;
           }
           break;
@@ -959,7 +959,7 @@ export const Task_LoadAreaScreen: TaskCallback = (task, rt) => {
           {
               sPokedexView.currentPage = PAGE_AREA;
               gPokedexVBlankCB = gMain.vblankCallback;
-              /* noop SetVBlankCallback */;
+              rt.SetVBlankCallback(VBlankCB);
               ResetOtherVideoRegisters(DISPCNT_BG1_ON);
               sPokedexView.selectedScreen = AREA_SCREEN;
               gMain.state = 1;
@@ -974,7 +974,7 @@ export const Task_LoadAreaScreen: TaskCallback = (task, rt) => {
           break;
       case 2:
           ShowPokedexAreaScreen(NationalPokedexNumToSpecies(sPokedexListItem.dexNum), sPokedexView.screenSwitchState);
-          /* noop SetVBlankCallback */;
+          rt.SetVBlankCallback(VBlankCB);
           sPokedexView.screenSwitchState = 0;
           gMain.state = 0;
           task.func = (t) => Task_WaitForAreaScreenInput(t, rt);
@@ -1019,7 +1019,7 @@ export const Task_LoadCryScreen: TaskCallback = (task, rt) => {
               m4aMPlayStop(gMPlayInfo_BGM);
               sPokedexView.currentPage = PAGE_CRY;
               gPokedexVBlankCB = gMain.vblankCallback;
-              /* noop SetVBlankCallback */;
+              rt.SetVBlankCallback(VBlankCB);
               ResetOtherVideoRegisters(DISPCNT_BG1_ON);
               sPokedexView.selectedScreen = CRY_SCREEN;
               gMain.state = 1;
@@ -1090,7 +1090,7 @@ export const Task_LoadCryScreen: TaskCallback = (task, rt) => {
           break;
       case 8:
           rt.BeginNormalPaletteFade("PALETTES_ALL & ~(0x14)", 0, 0x10, 0, "RGB_BLACK");
-          /* noop SetVBlankCallback */;
+          rt.SetVBlankCallback(VBlankCB);
           gMain.state++;
           break;
       case 9:
@@ -1205,7 +1205,7 @@ export const Task_LoadSizeScreen: TaskCallback = (task, rt) => {
           {
               sPokedexView.currentPage = PAGE_SIZE;
               gPokedexVBlankCB = gMain.vblankCallback;
-              /* noop SetVBlankCallback */;
+              rt.SetVBlankCallback(VBlankCB);
               ResetOtherVideoRegisters(DISPCNT_BG1_ON);
               sPokedexView.selectedScreen = SIZE_SCREEN;
               gMain.state = 1;
@@ -1266,7 +1266,7 @@ export const Task_LoadSizeScreen: TaskCallback = (task, rt) => {
           break;
       case 7:
           rt.BeginNormalPaletteFade("PALETTES_ALL & ~(0x14)", 0, 0x10, 0, "RGB_BLACK");
-          /* noop SetVBlankCallback */;
+          rt.SetVBlankCallback(VBlankCB);
           gMain.state++;
           break;
       case 8:
@@ -1344,7 +1344,7 @@ export const Task_DisplayCaughtMonDexPage: TaskCallback = (task, rt) => {
           if (!rt.gPaletteFade.active)
           {
               gPokedexVBlankCB = gMain.vblankCallback;
-              /* noop SetVBlankCallback */;
+              rt.SetVBlankCallback(VBlankCB);
               ResetOtherVideoRegisters(DISPCNT_BG0_ON);
               ResetBgsAndClearDma3BusyFlags(0);
               InitBgsFromTemplates(0, sNewEntryInfoScreen_BgTemplate, ((sNewEntryInfoScreen_BgTemplate)?.length ?? 0));
@@ -1381,7 +1381,7 @@ export const Task_DisplayCaughtMonDexPage: TaskCallback = (task, rt) => {
           spriteId = CreateMonSpriteFromNationalDexNumber(dexNum, MON_PAGE_X, MON_PAGE_Y, 0);
           rt.gba.oam[_gs(rt, spriteId).oamIndex].priority = 0;
           rt.BeginNormalPaletteFade("PALETTES_ALL", 0, 0x10, 0, "RGB_BLACK");
-          /* noop SetVBlankCallback */;
+          rt.SetVBlankCallback(VBlankCB);
           task.data[3] = spriteId;
           task.data[0]++;
           break;
@@ -1883,7 +1883,7 @@ export const CB2_OpenPokedex: CB2Callback = (rt) => {
       {
       case 0:
       default:
-          /* noop SetVBlankCallback */;
+          rt.SetVBlankCallback(VBlankCB);
           ResetOtherVideoRegisters(0);
           DmaFillLarge16(3, 0, VRAM, VRAM_SIZE, 0x1000);
           DmaClear32(3, OAM, OAM_SIZE);
@@ -1926,8 +1926,8 @@ export const CB2_OpenPokedex: CB2Callback = (rt) => {
           break;
       case 3:
           EnableInterrupts(1);
-          /* noop SetVBlankCallback */;
-          /* TODO scene transition: SetMainCallback2(CB2_Pokedex) */;
+          rt.SetVBlankCallback(VBlankCB);
+          rt.SetMainCallback2(CB2_Pokedex);
           CreatePokedexList(sPokedexView.dexMode, sPokedexView.dexOrder);
           m4aMPlayVolumeControl(gMPlayInfo_BGM, TRACKS_ALL, 0x80);
           break;
@@ -1941,3 +1941,8 @@ export const CB2_Pokedex: CB2Callback = (rt) => {
       BuildOamBuffer();
       UpdatePaletteFade();
 };
+
+/** ⚠️ Generic patch (post-transpile-patches.mjs) — VBlankCB no-op.
+ *  Notre runtime call TransferPlttBuffer auto si vblankCallback non-null,
+ *  donc le scene-side VBlankCB est essentiellement un marqueur "transfer ON". */
+const VBlankCB: () => void = () => { /* no-op */ };

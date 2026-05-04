@@ -248,7 +248,7 @@ export const Task_EggHatch: TaskCallback = (task, rt) => {
   if (!rt.gPaletteFade.active)
       {
           CleanupOverworldWindowsAndTilemaps();
-          /* TODO scene transition: SetMainCallback2(CB2_LoadEggHatch) */;
+          rt.SetMainCallback2(CB2_LoadEggHatch);
           gFieldCallback = FieldCB_ContinueScriptHandleMusic;
           rt.DestroyTask(taskId);
       }
@@ -286,7 +286,7 @@ export const CB2_LoadEggHatch: CB2Callback = (rt) => {
           sEggHatchData.eggPartyId = gSpecialVar_0x8004;
           sEggHatchData.eggShardVelocityId = 0;
 
-          /* noop SetVBlankCallback */;
+          rt.SetVBlankCallback(VBlankCB);
           gSpecialVar_0x8005 = GetCurrentMapMusic();
 
           ResetTempTileDataBuffers();
@@ -350,7 +350,7 @@ export const CB2_LoadEggHatch: CB2Callback = (rt) => {
           gMain.state++;
           break;
       case 8:
-          /* TODO scene transition: SetMainCallback2(CB2_EggHatch) */;
+          rt.SetMainCallback2(CB2_EggHatch);
           sEggHatchData.state = 0;
           break;
       }
@@ -481,3 +481,8 @@ export const CB2_EggHatch: CB2Callback = (rt) => {
       BuildOamBuffer();
       UpdatePaletteFade();
 };
+
+/** ⚠️ Generic patch (post-transpile-patches.mjs) — VBlankCB no-op.
+ *  Notre runtime call TransferPlttBuffer auto si vblankCallback non-null,
+ *  donc le scene-side VBlankCB est essentiellement un marqueur "transfer ON". */
+const VBlankCB: () => void = () => { /* no-op */ };

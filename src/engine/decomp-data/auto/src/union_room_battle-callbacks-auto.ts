@@ -109,7 +109,7 @@ export const CB2_UnionRoomBattle: CB2Callback = (rt) => {
           LoadUserWindowBorderGfx(0, 1, BG_PLTT_ID(13));
           LoadUserWindowBorderGfx_(0, 1, BG_PLTT_ID(13));
           Menu_LoadStdPal();
-          /* noop SetVBlankCallback */;
+          rt.SetVBlankCallback(VBlankCB);
           gMain.state++;
           break;
       case 1:
@@ -173,7 +173,7 @@ export const CB2_UnionRoomBattle: CB2Callback = (rt) => {
       case 51:
           if (IsLinkTaskFinished())
           {
-              /* TODO scene transition: SetMainCallback2(CB2_SetUpPartiesAndStartBattle) */;
+              rt.SetMainCallback2(CB2_SetUpPartiesAndStartBattle);
           }
           break;
       case 6:
@@ -207,3 +207,8 @@ export const CB2_UnionRoomBattle: CB2Callback = (rt) => {
       BuildOamBuffer();
       UpdatePaletteFade();
 };
+
+/** ⚠️ Generic patch (post-transpile-patches.mjs) — VBlankCB no-op.
+ *  Notre runtime call TransferPlttBuffer auto si vblankCallback non-null,
+ *  donc le scene-side VBlankCB est essentiellement un marqueur "transfer ON". */
+const VBlankCB: () => void = () => { /* no-op */ };

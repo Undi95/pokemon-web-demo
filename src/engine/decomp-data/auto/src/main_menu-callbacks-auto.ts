@@ -1288,7 +1288,7 @@ export const CB2_NewGameBirchSpeech_ReturnFromNamingScreen: CB2Callback = (rt) =
       rt.SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_OBJ_ON | DISPCNT_OBJ_1D_MAP);
       InitBgsFromTemplates(0, sMainMenuBgTemplates, ((sMainMenuBgTemplates)?.length ?? 0));
       InitBgFromTemplate(sBirchBgTemplate);
-      /* noop SetVBlankCallback */;
+      rt.SetVBlankCallback(VBlankCB);
       rt.SetGpuReg(REG_OFFSET_BG2CNT, 0);
       rt.SetGpuReg(REG_OFFSET_BG1CNT, 0);
       rt.SetGpuReg(REG_OFFSET_BG0CNT, 0);
@@ -1344,7 +1344,7 @@ export const CB2_NewGameBirchSpeech_ReturnFromNamingScreen: CB2Callback = (rt) =
       gbaIoRegs.REG_IME = 0;
       gbaIoRegs.REG_IE |= 1;
       gbaIoRegs.REG_IME = savedIme;
-      /* noop SetVBlankCallback */;
+      rt.SetVBlankCallback(VBlankCB);
       rt.SetMainCallback2(CB2_MainMenu);
       InitWindows(sNewGameBirchSpeechTextWindows);
       LoadMainMenuWindowFrameTiles(0, 0xF3);
@@ -1352,3 +1352,8 @@ export const CB2_NewGameBirchSpeech_ReturnFromNamingScreen: CB2Callback = (rt) =
       PutWindowTilemap(0);
       CopyWindowToVram(0, COPYWIN_FULL);
 };
+
+/** ⚠️ Generic patch (post-transpile-patches.mjs) — VBlankCB no-op.
+ *  Notre runtime call TransferPlttBuffer auto si vblankCallback non-null,
+ *  donc le scene-side VBlankCB est essentiellement un marqueur "transfer ON". */
+const VBlankCB: () => void = () => { /* no-op */ };

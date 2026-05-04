@@ -1029,7 +1029,7 @@ export const CB2_EvolutionSceneLoadGraphics: CB2Callback = (rt) => {
       personality = GetMonData(mon, MON_DATA_PERSONALITY);
 
       SetHBlankCallback(null);
-      /* noop SetVBlankCallback */;
+      rt.SetVBlankCallback(VBlankCB);
       CpuFill32(0, (VRAM), VRAM_SIZE);
 
       rt.SetGpuReg(REG_OFFSET_MOSAIC, 0);
@@ -1076,8 +1076,8 @@ export const CB2_EvolutionSceneLoadGraphics: CB2Callback = (rt) => {
       rt.SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_OBJ_ON | DISPCNT_BG_ALL_ON | DISPCNT_OBJ_1D_MAP);
 
       SetHBlankCallback(EvoDummyFunc);
-      /* noop SetVBlankCallback */;
-      /* TODO scene transition: SetMainCallback2(CB2_EvolutionSceneUpdate) */;
+      rt.SetVBlankCallback(VBlankCB);
+      rt.SetMainCallback2(CB2_EvolutionSceneUpdate);
 
       rt.BeginNormalPaletteFade("PALETTES_ALL", 0, 0x10, 0, "RGB_BLACK");
 
@@ -1097,7 +1097,7 @@ export const CB2_TradeEvolutionSceneLoadGraphics: CB2Callback = (rt) => {
       case 0:
           rt.SetGpuReg(REG_OFFSET_DISPCNT, 0);
           SetHBlankCallback(null);
-          /* noop SetVBlankCallback */;
+          rt.SetVBlankCallback(VBlankCB);
           rt.ResetSpriteData();
           FreeAllSpritePalettes();
           (globalThis as any).gReservedSpritePaletteCount = 4;
@@ -1114,7 +1114,7 @@ export const CB2_TradeEvolutionSceneLoadGraphics: CB2Callback = (rt) => {
       case 1:
           ResetPaletteFade();
           SetHBlankCallback(EvoDummyFunc);
-          /* noop SetVBlankCallback */;
+          rt.SetVBlankCallback(VBlankCB);
           gMain.state++;
           break;
       case 2:
@@ -1167,7 +1167,7 @@ export const CB2_TradeEvolutionSceneLoadGraphics: CB2Callback = (rt) => {
           InitTradeSequenceBgGpuRegs();
           ShowBg(0);
           ShowBg(1);
-          /* TODO scene transition: SetMainCallback2(CB2_TradeEvolutionSceneUpdate) */;
+          rt.SetMainCallback2(CB2_TradeEvolutionSceneUpdate);
           rt.SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_OBJ_ON | DISPCNT_BG0_ON | DISPCNT_BG1_ON | DISPCNT_OBJ_1D_MAP);
           break;
       }
@@ -1190,3 +1190,8 @@ export const CB2_TradeEvolutionSceneUpdate: CB2Callback = (rt) => {
       UpdatePaletteFade();
       RunTasks();
 };
+
+/** ⚠️ Generic patch (post-transpile-patches.mjs) — VBlankCB no-op.
+ *  Notre runtime call TransferPlttBuffer auto si vblankCallback non-null,
+ *  donc le scene-side VBlankCB est essentiellement un marqueur "transfer ON". */
+const VBlankCB: () => void = () => { /* no-op */ };

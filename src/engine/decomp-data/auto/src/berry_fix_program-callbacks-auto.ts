@@ -48,7 +48,7 @@ export const CB2_InitBerryFixProgram: CB2Callback = (rt) => {
   DisableInterrupts(0xFFFF);  
       EnableInterrupts(INTR_FLAG_VBLANK);
       m4aSoundVSyncOff();
-      /* noop SetVBlankCallback */;
+      rt.SetVBlankCallback(VBlankCB);
       rt.ResetSpriteData();
       ResetTasks();
       ScanlineEffect_Stop();
@@ -58,3 +58,8 @@ export const CB2_InitBerryFixProgram: CB2Callback = (rt) => {
       sBerryFix.curScene = SCENE_NONE;
       /* TODO scene transition: SetMainCallback2(BerryFix_Main) */;
 };
+
+/** ⚠️ Generic patch (post-transpile-patches.mjs) — VBlankCB no-op.
+ *  Notre runtime call TransferPlttBuffer auto si vblankCallback non-null,
+ *  donc le scene-side VBlankCB est essentiellement un marqueur "transfer ON". */
+const VBlankCB: () => void = () => { /* no-op */ };

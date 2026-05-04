@@ -94,7 +94,7 @@ export const CB2_ShowTrainerHillRecords: CB2Callback = (rt) => {
   switch (gMain.state)
       {
       case 0:
-          /* noop SetVBlankCallback */;
+          rt.SetVBlankCallback(VBlankCB);
           ClearVramOamPlttRegs();
           gMain.state++;
           break;
@@ -135,7 +135,7 @@ export const CB2_ShowTrainerHillRecords: CB2Callback = (rt) => {
           break;
       case 7:
           SetDispcntReg();
-          /* noop SetVBlankCallback */;
+          rt.SetVBlankCallback(VBlankCB);
           PrintOnTrainerHillRecordsWindow();
           rt.CreateTask((t) => Task_TrainerHillWaitForPaletteFade(t, rt), 8);
           /* TODO scene transition: SetMainCallback2(MainCB2_TrainerHillRecords) */;
@@ -143,3 +143,8 @@ export const CB2_ShowTrainerHillRecords: CB2Callback = (rt) => {
           break;
       }
 };
+
+/** ⚠️ Generic patch (post-transpile-patches.mjs) — VBlankCB no-op.
+ *  Notre runtime call TransferPlttBuffer auto si vblankCallback non-null,
+ *  donc le scene-side VBlankCB est essentiellement un marqueur "transfer ON". */
+const VBlankCB: () => void = () => { /* no-op */ };

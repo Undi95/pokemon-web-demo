@@ -200,10 +200,10 @@ export const CB2_InitPokeNav: CB2Callback = (rt) => {
       {
           InitPokenavResources(gPokenavResources);
           ResetTasks();
-          /* noop SetVBlankCallback */;
+          rt.SetVBlankCallback(VBlankCB);
           rt.CreateTask((t) => Task_Pokenav(t, rt), 0);
-          /* TODO scene transition: SetMainCallback2(CB2_Pokenav) */;
-          /* noop SetVBlankCallback */;
+          rt.SetMainCallback2(CB2_Pokenav);
+          rt.SetVBlankCallback(VBlankCB);
       }
 };
 
@@ -225,10 +225,10 @@ export const CB2_InitPokenavForTutorial: CB2Callback = (rt) => {
           ResetTasks();
           rt.ResetSpriteData();
           FreeAllSpritePalettes();
-          /* noop SetVBlankCallback */;
+          rt.SetVBlankCallback(VBlankCB);
           rt.CreateTask((t) => Task_Pokenav(t, rt), 0);
-          /* TODO scene transition: SetMainCallback2(CB2_Pokenav) */;
-          /* noop SetVBlankCallback */;
+          rt.SetMainCallback2(CB2_Pokenav);
+          rt.SetVBlankCallback(VBlankCB);
       }
 };
 
@@ -239,3 +239,8 @@ export const CB2_Pokenav: CB2Callback = (rt) => {
       BuildOamBuffer();
       UpdatePaletteFade();
 };
+
+/** ⚠️ Generic patch (post-transpile-patches.mjs) — VBlankCB no-op.
+ *  Notre runtime call TransferPlttBuffer auto si vblankCallback non-null,
+ *  donc le scene-side VBlankCB est essentiellement un marqueur "transfer ON". */
+const VBlankCB: () => void = () => { /* no-op */ };

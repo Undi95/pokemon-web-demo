@@ -304,13 +304,13 @@ export const Task_ReadyBikeScene: TaskCallback = (task, rt) => {
 /** Source: credits.c → Task_SetBikeScene */
 export const Task_SetBikeScene: TaskCallback = (task, rt) => {
   const taskId = task.taskId;
-  /* noop SetVBlankCallback */;
+  rt.SetVBlankCallback(VBlankCB);
 
       if (LoadBikeScene(task.data[7], taskId))
       {
           rt.BeginNormalPaletteFade("PALETTES_ALL", 0, 16, 0, "RGB_BLACK");
           EnableInterrupts(INTR_FLAG_VBLANK);
-          /* noop SetVBlankCallback */;
+          rt.SetVBlankCallback(VBlankCB);
           task.func = (t) => Task_WaitPaletteFade(t, rt);
       }
 };
@@ -815,7 +815,7 @@ export const CB2_StartCreditsSequence: CB2Callback = (rt) => {
       let pageTaskId = 0;
 
       ResetGpuAndVram();
-      /* noop SetVBlankCallback */;
+      rt.SetVBlankCallback(VBlankCB);
       InitHeap(gHeap, HEAP_SIZE);
       ResetPaletteFade();
       ResetTasks();
@@ -846,9 +846,9 @@ export const CB2_StartCreditsSequence: CB2Callback = (rt) => {
 
       rt.BeginNormalPaletteFade("PALETTES_ALL", 0, 16, 0, "RGB_BLACK");
       EnableInterrupts(INTR_FLAG_VBLANK);
-      /* noop SetVBlankCallback */;
+      rt.SetVBlankCallback(VBlankCB);
       m4aSongNumStart(MUS_CREDITS);
-      /* TODO scene transition: SetMainCallback2(CB2_Credits) */;
+      rt.SetMainCallback2(CB2_Credits);
       sUsedSpeedUp = false;
       sCreditsData = AllocZeroed(0);
 
@@ -883,3 +883,8 @@ export function CreateCreditsMonSprite(rt: DecompRuntime, nationalDexNum: number
       return monSpriteId;
   return -1;
 }
+
+/** ⚠️ Generic patch (post-transpile-patches.mjs) — VBlankCB no-op.
+ *  Notre runtime call TransferPlttBuffer auto si vblankCallback non-null,
+ *  donc le scene-side VBlankCB est essentiellement un marqueur "transfer ON". */
+const VBlankCB: () => void = () => { /* no-op */ };

@@ -131,7 +131,7 @@ export const CB2_OpenFlyMap: CB2Callback = (rt) => {
   switch (gMain.state)
       {
       case 0:
-          /* noop SetVBlankCallback */;
+          rt.SetVBlankCallback(VBlankCB);
           rt.SetGpuReg(REG_OFFSET_DISPCNT, 0);
           rt.SetGpuReg(REG_OFFSET_BG0HOFS, 0);
           rt.SetGpuReg(REG_OFFSET_BG0VOFS, 0);
@@ -202,7 +202,7 @@ export const CB2_OpenFlyMap: CB2Callback = (rt) => {
           break;
       case 9:
           BlendPalettes(PALETTES_ALL, 16, 0);
-          /* noop SetVBlankCallback */;
+          rt.SetVBlankCallback(VBlankCB);
           gMain.state++;
           break;
       case 10:
@@ -212,7 +212,7 @@ export const CB2_OpenFlyMap: CB2Callback = (rt) => {
           ShowBg(1);
           ShowBg(2);
           SetFlyMapCallback(CB_FadeInFlyMap);
-          /* TODO scene transition: SetMainCallback2(CB2_FlyMap) */;
+          rt.SetMainCallback2(CB2_FlyMap);
           gMain.state++;
           break;
       }
@@ -225,3 +225,8 @@ export const CB2_FlyMap: CB2Callback = (rt) => {
       BuildOamBuffer();
       DoScheduledBgTilemapCopiesToVram();
 };
+
+/** ⚠️ Generic patch (post-transpile-patches.mjs) — VBlankCB no-op.
+ *  Notre runtime call TransferPlttBuffer auto si vblankCallback non-null,
+ *  donc le scene-side VBlankCB est essentiellement un marqueur "transfer ON". */
+const VBlankCB: () => void = () => { /* no-op */ };

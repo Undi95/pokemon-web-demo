@@ -601,7 +601,7 @@ export const CB2_MysteryGiftEReader: CB2Callback = (rt) => {
 export const CB2_InitMysteryGift: CB2Callback = (rt) => {
   if (HandleMysteryGiftOrEReaderSetup(false))
       {
-          /* TODO scene transition: SetMainCallback2(CB2_MysteryGiftEReader) */;
+          rt.SetMainCallback2(CB2_MysteryGiftEReader);
           gGiftIsFromEReader = false;
           CreateMysteryGiftTask();
       }
@@ -612,7 +612,7 @@ export const CB2_InitMysteryGift: CB2Callback = (rt) => {
 export const CB2_InitEReader: CB2Callback = (rt) => {
   if (HandleMysteryGiftOrEReaderSetup(true))
       {
-          /* TODO scene transition: SetMainCallback2(CB2_MysteryGiftEReader) */;
+          rt.SetMainCallback2(CB2_MysteryGiftEReader);
           gGiftIsFromEReader = true;
           CreateEReaderTask();
       }

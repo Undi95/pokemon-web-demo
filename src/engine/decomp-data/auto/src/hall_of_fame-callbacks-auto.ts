@@ -846,7 +846,7 @@ export const CB2_DoHallOfFamePC: CB2Callback = (rt) => {
       {
       case 0:
       default:
-          /* noop SetVBlankCallback */;
+          rt.SetVBlankCallback(VBlankCB);
           ClearVramOamPltt_LoadHofPal();
           sHofGfxPtr = AllocZeroed(((sHofGfxPtr)?.length ?? 32));
           gMain.state = 1;
@@ -868,7 +868,7 @@ export const CB2_DoHallOfFamePC: CB2Callback = (rt) => {
               let fameTeam: any = (gDecompressionBuffer);
               fameTeam.mon[0] = sDummyFameMon;
               ComputerScreenOpenEffect(0, 0, 0);
-              /* noop SetVBlankCallback */;
+              rt.SetVBlankCallback(VBlankCB);
               gMain.state++;
           }
           break;
@@ -895,8 +895,13 @@ export const CB2_DoHallOfFamePC: CB2Callback = (rt) => {
               }
 
               sHofMonPtr = AllocZeroed(SECTOR_SIZE * NUM_HOF_SECTORS);
-              /* TODO scene transition: SetMainCallback2(CB2_HallOfFame) */;
+              rt.SetMainCallback2(CB2_HallOfFame);
           }
           break;
       }
 };
+
+/** ⚠️ Generic patch (post-transpile-patches.mjs) — VBlankCB no-op.
+ *  Notre runtime call TransferPlttBuffer auto si vblankCallback non-null,
+ *  donc le scene-side VBlankCB est essentiellement un marqueur "transfer ON". */
+const VBlankCB: () => void = () => { /* no-op */ };

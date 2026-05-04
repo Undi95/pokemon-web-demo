@@ -78,7 +78,7 @@ export const CB2_SaveFailedScreen: CB2Callback = (rt) => {
       {
       case 0:
       default:
-          /* noop SetVBlankCallback */;
+          rt.SetVBlankCallback(VBlankCB);
           rt.SetGpuReg(REG_OFFSET_DISPCNT, 0);
           rt.SetGpuReg(REG_OFFSET_BG3CNT, 0);
           rt.SetGpuReg(REG_OFFSET_BG2CNT, 0);
@@ -126,7 +126,7 @@ export const CB2_SaveFailedScreen: CB2Callback = (rt) => {
           SaveFailedScreenTextPrint(gText_SaveFailedCheckingBackup, 1, 0);
           rt.BeginNormalPaletteFade("PALETTES_ALL", 0, 16, 0, "RGB_BLACK");
           EnableInterrupts(1);
-          /* noop SetVBlankCallback */;
+          rt.SetVBlankCallback(VBlankCB);
           rt.SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_OBJ_ON | DISPCNT_OBJ_1D_MAP);
           ShowBg(0);
           ShowBg(2);
@@ -136,8 +136,8 @@ export const CB2_SaveFailedScreen: CB2Callback = (rt) => {
       case 1:
           if (!UpdatePaletteFade())
           {
-              /* TODO scene transition: SetMainCallback2(CB2_WipeSave) */;
-              /* noop SetVBlankCallback */;
+              rt.SetMainCallback2(CB2_WipeSave);
+              rt.SetVBlankCallback(VBlankCB);
           }
           break;
       }
@@ -155,7 +155,7 @@ export const CB2_WipeSave: CB2Callback = (rt) => {
           {
               FillWindowPixelBuffer(sWindowIds[TEXT_WIN_ID], PIXEL_FILL(1));
               SaveFailedScreenTextPrint(gText_BackupMemoryDamaged, 1, 0);
-              /* TODO scene transition: SetMainCallback2(CB2_GameplayCannotBeContinued) */;
+              rt.SetMainCallback2(CB2_GameplayCannotBeContinued);
               return;
           }
 
@@ -187,7 +187,7 @@ export const CB2_WipeSave: CB2Callback = (rt) => {
               SaveFailedScreenTextPrint(gText_SaveCompletePressA, 1, 0);
       }
 
-      /* TODO scene transition: SetMainCallback2(CB2_FadeAndReturnToTitleScreen) */;
+      rt.SetMainCallback2(CB2_FadeAndReturnToTitleScreen);
 };
 
 /** Source: save_failed_screen.c → CB2_GameplayCannotBeContinued */
@@ -198,8 +198,8 @@ export const CB2_GameplayCannotBeContinued: CB2Callback = (rt) => {
       {
           FillWindowPixelBuffer(sWindowIds[TEXT_WIN_ID], PIXEL_FILL(1));
           SaveFailedScreenTextPrint(gText_GamePlayCannotBeContinued, 1, 0);
-          /* noop SetVBlankCallback */;
-          /* TODO scene transition: SetMainCallback2(CB2_FadeAndReturnToTitleScreen) */;
+          rt.SetVBlankCallback(VBlankCB);
+          rt.SetMainCallback2(CB2_FadeAndReturnToTitleScreen);
       }
 };
 
@@ -210,8 +210,8 @@ export const CB2_FadeAndReturnToTitleScreen: CB2Callback = (rt) => {
       if (JOY_NEW(A_BUTTON))
       {
           rt.BeginNormalPaletteFade("PALETTES_ALL", 0, 0, 16, "RGB_BLACK");
-          /* noop SetVBlankCallback */;
-          /* TODO scene transition: SetMainCallback2(CB2_ReturnToTitleScreen) */;
+          rt.SetVBlankCallback(VBlankCB);
+          rt.SetMainCallback2(CB2_ReturnToTitleScreen);
       }
 };
 
@@ -230,3 +230,8 @@ export const CB2_ReturnToTitleScreen: CB2Callback = (rt) => {
           }
       }
 };
+
+/** ⚠️ Generic patch (post-transpile-patches.mjs) — VBlankCB no-op.
+ *  Notre runtime call TransferPlttBuffer auto si vblankCallback non-null,
+ *  donc le scene-side VBlankCB est essentiellement un marqueur "transfer ON". */
+const VBlankCB: () => void = () => { /* no-op */ };

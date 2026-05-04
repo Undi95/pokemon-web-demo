@@ -391,7 +391,7 @@ export const Task_ShowTourneyInfoCard: TaskCallback = (task, rt) => {
       {
       case 0:
           SetHBlankCallback(null);
-          /* noop SetVBlankCallback */;
+          rt.SetVBlankCallback(VBlankCB);
           EnableInterrupts(INTR_FLAG_VBLANK);
           CpuFill32(0, VRAM, VRAM_SIZE);
           ResetBgsAndClearDma3BusyFlags(0);
@@ -446,7 +446,7 @@ export const Task_ShowTourneyInfoCard: TaskCallback = (task, rt) => {
           task.data[0]++;
           break;
       case 3:
-          /* noop SetVBlankCallback */;
+          rt.SetVBlankCallback(VBlankCB);
           sInfoCard = AllocZeroed(((sInfoCard)?.length ?? 32));
           for (i = 0; i < NUM_INFOCARD_SPRITES; i++)
               sInfoCard.spriteIds[i] = SPRITE_NONE;
@@ -1317,7 +1317,7 @@ export const Task_ShowTourneyTree: TaskCallback = (task, rt) => {
       {
       case 0:
           SetHBlankCallback(null);
-          /* noop SetVBlankCallback */;
+          rt.SetVBlankCallback(VBlankCB);
           EnableInterrupts(INTR_FLAG_HBLANK | INTR_FLAG_VBLANK);
           CpuFill32(0, VRAM, VRAM_SIZE);
           ResetBgsAndClearDma3BusyFlags(0);
@@ -1493,7 +1493,7 @@ export const Task_ShowTourneyTree: TaskCallback = (task, rt) => {
           CopyWindowToVram(TOURNEYWIN_NAMES_RIGHT, COPYWIN_FULL);
           CopyWindowToVram(TOURNEYWIN_TITLE, COPYWIN_FULL);
           SetHBlankCallback(HblankCb_TourneyTree);
-          /* noop SetVBlankCallback */;
+          rt.SetVBlankCallback(VBlankCB);
           if (r4 == 2)
           {
               if (notInteractive == false)
@@ -1618,3 +1618,8 @@ export const CB2_TourneyTree: CB2Callback = (rt) => {
       UpdatePaletteFade();
       RunTasks();
 };
+
+/** ⚠️ Generic patch (post-transpile-patches.mjs) — VBlankCB no-op.
+ *  Notre runtime call TransferPlttBuffer auto si vblankCallback non-null,
+ *  donc le scene-side VBlankCB est essentiellement un marqueur "transfer ON". */
+const VBlankCB: () => void = () => { /* no-op */ };
