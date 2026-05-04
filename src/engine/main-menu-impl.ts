@@ -62,7 +62,7 @@ import {
   DISPCNT_WIN0_ON, DISPCNT_OBJ_ON, DISPCNT_OBJ_1D_MAP,
 } from './decomp-runtime';
 import { PLTT_SIZE_4BPP, WIN_RANGE } from './decomp-helpers';
-import { sMainMenuBgTemplates, sWindowTemplates_MainMenu, MAIN_MENU_BORDER_TILE, ENUM_HAS_0 } from './decomp-data/main-menu-data';
+import { sMainMenuBgTemplates, sWindowTemplates_MainMenu, sNewGameBirchSpeechTextWindows, MAIN_MENU_BORDER_TILE, ENUM_HAS_0 } from './decomp-data/main-menu-data';
 import {
   Task_MainMenuCheckSaveFile,
   CB2_MainMenu,
@@ -73,9 +73,13 @@ import {
   A_BUTTON, B_BUTTON, DPAD_UP, DPAD_DOWN,
   IsWirelessAdapterConnected,
   CreateYesNoMenu,
+  Menu_ProcessInputNoWrapClearOnChoose,
+  InitMenuInUpperLeftCornerNormal,
   gSaveBlock2Ptr,
 } from './gba-menu-system';
-import { CreateWindowTemplate } from './gba-window-system';
+import { CreateWindowTemplate, FillWindowPixelBuffer, PutWindowTilemap, CopyWindowToVram } from './gba-window-system';
+import { AddTextPrinterParameterized3 } from './gba-text-system';
+import { getString } from './gba-strings';
 
 // 1:1 décomp include/constants/songs.h:11 → SE_SELECT = 5.
 const SE_SELECT = 5;
@@ -315,18 +319,78 @@ export function NewGameBirchSpeech_ClearGenderWindow(_windowId: number, _copyToV
   // TODO Phase D : effacer la fenêtre genre.
 }
 
+/** 1:1 décomp main_menu.c:2092 NewGameBirchSpeech_ShowGenderMenu.
+ *  Affiche dans le window 1 (= sNewGameBirchSpeechTextWindows[1]) le menu
+ *  "GARÇON / FILLE" via TextPrinter + InitMenu cursor.
+ *  Phase E Step 5 audit session 84 : real impl. */
 export function NewGameBirchSpeech_ShowGenderMenu(): void {
-  // TODO Phase D : afficher le menu genre via CreateYesNoMenu pattern.
+  // 1:1 décomp ligne 2094 — DrawMainMenuWindowBorder(sNewGameBirchSpeechTextWindows[1], 0xF3)
+  DrawMainMenuWindowBorder(sNewGameBirchSpeechTextWindows[1], 0xF3);
+  // 1:1 décomp ligne 2095 — FillWindowPixelBuffer(1, PIXEL_FILL(1))
+  FillWindowPixelBuffer(1, 0x11);  // PIXEL_FILL(1)
+  // 1:1 décomp ligne 2096 — PrintMenuTable(1, ARRAY_COUNT(sMenuActions_Gender), sMenuActions_Gender)
+  // sMenuActions_Gender = [{name: gText_BirchBoy}, {name: gText_BirchGirl}].
+  // Notre version utilise AddTextPrinterParameterized3 directement sur "GARÇON\nFILLE".
+  const boy = getString('gText_BirchBoy');    // "GARÇON"
+  const girl = getString('gText_BirchGirl');  // "FILLE"
+  AddTextPrinterParameterized3(
+    1,  // windowId = 1
+    1,  // FONT_NORMAL
+    8, 1,  // x, y depuis bord du window
+    [1, 2, 3],  // [bgColor, fgColor, shadowColor]
+    255,  // TEXT_SKIP_DRAW
+    `${boy}\n${girl}`,
+  );
+  // 1:1 décomp ligne 2097 — InitMenuInUpperLeftCornerNormal(1, 2, 0)
+  InitMenuInUpperLeftCornerNormal(1, 2, 0);
+  // 1:1 décomp ligne 2098-2099
+  PutWindowTilemap(1);
+  CopyWindowToVram(1, 3);  // COPYWIN_FULL = 3
 }
 
+/** 1:1 décomp main_menu.c:2102 NewGameBirchSpeech_ProcessGenderMenuInput.
+ *  Retourne 0=GARÇON, 1=FILLE, -1=B pressed (cancel). */
 export function NewGameBirchSpeech_ProcessGenderMenuInput(): number {
-  // TODO Phase D : process input du menu genre. Pour l'instant return -1
-  // (= still processing) pour ne pas avancer le flow tant que pas implémenté.
-  return -1;
+  // 1:1 décomp ligne 2104 — return Menu_ProcessInputNoWrap().
+  // Notre helper Menu_ProcessInputNoWrapClearOnChoose retourne :
+  //  - menuCursorPos (0/1) si A_BUTTON
+  //  - -1 si B_BUTTON
+  //  - -2 si still processing (≠ décomp qui retourne MENU_NOTHING_CHOSEN=-2 pareil)
+  return Menu_ProcessInputNoWrapClearOnChoose();
 }
 
-export function NewGameBirchSpeech_SetDefaultPlayerName(_presetIndex: number): void {
-  // TODO Phase D : définir le nom par défaut du joueur via gSaveBlock2Ptr.playerName.
+// 1:1 décomp main_menu.c:461-505 sMalePresetNames / sFemalePresetNames.
+// 20 noms preset par genre. Symbol-name lookup via gText_DefaultNameX strings.
+const sMalePresetNames = [
+  'gText_DefaultNameStu', 'gText_DefaultNameMilton', 'gText_DefaultNameTom',
+  'gText_DefaultNameKenny', 'gText_DefaultNameReid', 'gText_DefaultNameJude',
+  'gText_DefaultNameJaxson', 'gText_DefaultNameEaston', 'gText_DefaultNameWalker',
+  'gText_DefaultNameTeru', 'gText_DefaultNameJohnny', 'gText_DefaultNameBrett',
+  'gText_DefaultNameSeth', 'gText_DefaultNameTerry', 'gText_DefaultNameCasey',
+  'gText_DefaultNameDarren', 'gText_DefaultNameLandon', 'gText_DefaultNameCollin',
+  'gText_DefaultNameStanley', 'gText_DefaultNameQuincy',
+];
+const sFemalePresetNames = [
+  'gText_DefaultNameKimmy', 'gText_DefaultNameTiara', 'gText_DefaultNameBella',
+  'gText_DefaultNameJayla', 'gText_DefaultNameAllie', 'gText_DefaultNameLianna',
+  'gText_DefaultNameSara', 'gText_DefaultNameMonica', 'gText_DefaultNameCamila',
+  'gText_DefaultNameAubree', 'gText_DefaultNameRuthie', 'gText_DefaultNameHazel',
+  'gText_DefaultNameNadine', 'gText_DefaultNameTanja', 'gText_DefaultNameYasmin',
+  'gText_DefaultNameNicola', 'gText_DefaultNameLillie', 'gText_DefaultNameTerra',
+  'gText_DefaultNameLucy', 'gText_DefaultNameHalie',
+];
+
+/** 1:1 décomp main_menu.c:2107 NewGameBirchSpeech_SetDefaultPlayerName(nameId).
+ *  Set gSaveBlock2Ptr.playerName depuis sMalePresetNames[nameId] ou
+ *  sFemalePresetNames[nameId] selon le gender.
+ *  Phase E Step 5 : real impl. */
+export function NewGameBirchSpeech_SetDefaultPlayerName(nameId: number): void {
+  const MALE = 0;
+  const presetSymbol = gSaveBlock2Ptr.playerGender === MALE
+    ? sMalePresetNames[nameId % 20]
+    : sFemalePresetNames[nameId % 20];
+  const name = getString(presetSymbol);
+  gSaveBlock2Ptr.playerName = name;
 }
 
 export function NewGameBirchSpeech_CreateNameYesNo(_windowId: number): void {
@@ -429,9 +493,35 @@ export function NewGameBirchSpeech_StartFadePlatformOut(_taskId: number, _delay:
   // TODO Phase E.2 : inverse fade in.
 }
 
-export function DoNamingScreen(_type: number, _dest: unknown, _gender: number): void {
-  // TODO Phase D : transition vers l'écran de nom (= naming_screen scene).
-  console.warn('[main-menu-impl] DoNamingScreen not implemented');
+/** 1:1 décomp `naming_screen.c DoNamingScreen(type, dest, gender, monSpecies, monPersonality, callback)`.
+ *  Phase E Step 7 MVP : skip la naming scene complète (= 1:1 décomp future, gros
+ *  scope avec ~10 Tasks dans src/naming_screen.c). À la place, set un default
+ *  name aléatoire selon gender (= NewGameBirchSpeech_SetDefaultPlayerName(0))
+ *  et call le callback directement pour reprendre le flow Birch.
+ *
+ *  TODO Phase E.6 : transpiler `src/naming_screen.c` en 1:1 décomp (= permet au
+ *  joueur de saisir son nom via un keyboard on-screen 1:1 ROM). */
+export function DoNamingScreen(
+  type: number,
+  _dest: unknown,
+  gender: number,
+  _monSpecies: number,
+  _monPersonality: number,
+  callback: () => void,
+): void {
+  void type;  // NAMING_SCREEN_PLAYER = 0, NAMING_SCREEN_BOX = 1, NAMING_SCREEN_NICKNAME = 2.
+  const rt = getRuntime();
+  if (!rt) return;
+  // MVP : force gender (= déjà set via gSaveBlock2Ptr.playerGender) puis pick
+  // sMalePresetNames[0] = "STEF" / sFemalePresetNames[0] = "AGNES".
+  const MALE = 0;
+  gSaveBlock2Ptr.playerGender = gender;
+  const presetSymbol = gender === MALE ? sMalePresetNames[0] : sFemalePresetNames[0];
+  gSaveBlock2Ptr.playerName = getString(presetSymbol);
+  console.warn(`[main-menu-impl] DoNamingScreen MVP : default name "${gSaveBlock2Ptr.playerName}" (TODO Phase E.6 = real naming screen).`);
+  // Call le callback immédiatement (= simulate retour de la naming scene).
+  // Pour main_menu : callback = CB2_NewGameBirchSpeech_ReturnFromNamingScreen.
+  rt.SetMainCallback2(callback as any);
 }
 
 // ─── Sprite helpers (= bridges vers DestroySprite) ──────────────────────────
