@@ -15,7 +15,7 @@
  *   - gSaveBlock1Ptr / gSaveBlock2Ptr Proxy auto-persistant localStorage
  *   - gSaveFileStatus mutable global
  */
-import { getRuntime } from './decomp-globals';
+import { getRuntime, m4aSongNumStart } from './decomp-globals';
 import { AddWindow, DrawStdFrameWithCustomTileAndPalette, type WindowTemplate } from './gba-window-system';
 import { AddTextPrinterParameterized3 } from './gba-text-system';
 import { getString } from './gba-strings';
@@ -137,8 +137,10 @@ export function RtcGetErrorStatus(): number {
   return 0;
 }
 
-export function PlayBGM(_songNum: number): void {
-  // TODO Phase E : bridge vers m4aSongNumStart (= système audio session 80 spessasynth).
+/** 1:1 décomp `sound.c PlayBGM(songNum)` — bridge vers m4aSongNumStart avec loop=true.
+ *  Utilisé par Birch (MUS_ROUTE122) et autres scenes. */
+export function PlayBGM(songNum: number): void {
+  m4aSongNumStart(songNum, true);  // BGM = loop
 }
 
 // ─── Save block + persistence (= localStorage proxy) ─────────────────────────

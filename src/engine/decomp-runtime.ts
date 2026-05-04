@@ -813,6 +813,13 @@ export class DecompRuntime {
    *  La string `color` (= name like "RGB_WHITEALPHA" ou "RGB(9, 10, 10)") doit
    *  être parsée pour extraire le RGB15 target. */
   BeginNormalPaletteFade(palettes: string | number, delay: number, startY: number, endY: number, color: string | number): void {
+    // 1:1 décomp src/palette.c BeginNormalPaletteFade : si déjà active, retourne
+    // sans rien faire (= return FALSE). Phase E fix : sans ce check, un caller
+    // qui appelle en boucle (= e.g. Task qui ne progresse pas) reset currentFrame=0
+    // chaque frame → fade jamais terminé → bloque les Tasks qui attendent !active.
+    if (this.gPaletteFade.active) {
+      return;
+    }
     this.gPaletteFade.active = true;
     this.gPaletteFade.startY = startY;
     this.gPaletteFade.endY = endY;

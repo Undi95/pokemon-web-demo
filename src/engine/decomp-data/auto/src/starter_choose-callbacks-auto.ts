@@ -147,7 +147,7 @@ export const Task_HandleStarterChooseInput: TaskCallback = (task, rt) => {
 
            
           spriteId = CreatePokemonFrontSprite(GetStarterPokemon(task.data[0]), sPokeballCoords[selection][0], sPokeballCoords[selection][1]);
-          _gs(rt, spriteId).affineAnims = sAffineAnims_StarterPokemon;
+          _gs(rt, spriteId).affineAnimsTableName = sAffineAnims_StarterPokemon;
           rt.setSpriteCallback(spriteId, SpriteCB_StarterPokemon);
 
           task.data[1] = spriteId;

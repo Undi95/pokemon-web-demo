@@ -1011,15 +1011,81 @@ export let gScanlineEffect = {
  *  IMPORTANT : le décomp original DOIT clear la VRAM car les samples existants
  *  bleed sur les nouvelles scenes. Chez nous on a un VRAM unifié + transitions
  *  contrôlées via gMain.state, donc on peut skip le clear. */
-export function DmaFill16(_channel: number, _value: number, destAddr: number, _sizeBytes: number): void {
-  // No-op : éviter d'effacer le char data qu'on vient de charger via LZ77.
-  // Si le décomp veut clear OAM ou PLTT, on ignore aussi (= notre engine reset
-  // ces buffers via ResetSpriteData / ResetPaletteFade). VRAM = 0x06000000 est
-  // skipée pour préserver les LZ77 char data.
-  void destAddr;
+/** 1:1 décomp `DmaFill16(channel, value, dest, size)` : fill bytes à `dest` avec
+ *  `value` u16 répété. Routes : VRAM (0x06000000), OAM (0x07000000), PLTT (0x05000000).
+ *
+ *  Phase E fix : real impl (= était no-op qui laissait du garbage VRAM/tilemap
+ *  entre transitions Birch → Cleanup → CB2_NewGame). Le décomp clear
+ *  systématiquement entre scenes, on doit faire pareil. */
+export function DmaFill16(_channel: number, value: number, destAddr: number, sizeBytes: number): void {
+  const r = rt();
+  const v16 = value & 0xFFFF;
+  if (destAddr >= 0x06000000 && destAddr < 0x06018000) {
+    // VRAM range (96KB unifié BG + OBJ).
+    const offsetBytes = destAddr - 0x06000000;
+    const remaining = r.gba.vram.byteLength - offsetBytes;
+    const count = Math.min(sizeBytes, remaining) >> 1;
+    if (count > 0 && offsetBytes >= 0 && offsetBytes < r.gba.vram.byteLength) {
+      const u16 = new Uint16Array(r.gba.vram.buffer, r.gba.vram.byteOffset + offsetBytes, count);
+      u16.fill(v16);
+    }
+  } else if (destAddr >= 0x07000000 && destAddr < 0x07000400) {
+    // OAM range : reset visible + tileId pour les sprites affectés.
+    const offsetBytes = destAddr - 0x07000000;
+    const startIdx = offsetBytes >> 3;  // 8 bytes per OAM entry
+    const count = Math.min(sizeBytes >> 3, 128 - startIdx);
+    for (let i = 0; i < count; i++) {
+      const oam = r.gba.oam[startIdx + i];
+      if (oam) {
+        oam.visible = false;
+        oam.tileId = 0;
+      }
+    }
+  } else if (destAddr >= 0x05000000 && destAddr < 0x05000400) {
+    // PLTT range : clear gPlttBufferFaded + Unfaded.
+    const offsetBytes = destAddr - 0x05000000;
+    const startIdx = offsetBytes >> 1;
+    const count = sizeBytes >> 1;
+    for (let i = 0; i < count; i++) {
+      r.gPlttBufferFaded.set(startIdx + i, v16);
+      r.gPlttBufferUnfaded.set(startIdx + i, v16);
+    }
+  }
 }
-export function DmaFill32(_channel: number, _value: number, destAddr: number, _sizeBytes: number): void {
-  void destAddr;  // idem no-op
+
+export function DmaFill32(_channel: number, value: number, destAddr: number, sizeBytes: number): void {
+  const r = rt();
+  const v32 = value >>> 0;
+  if (destAddr >= 0x06000000 && destAddr < 0x06018000) {
+    const offsetBytes = destAddr - 0x06000000;
+    const remaining = r.gba.vram.byteLength - offsetBytes;
+    const count = Math.min(sizeBytes, remaining) >> 2;
+    if (count > 0 && offsetBytes >= 0 && offsetBytes < r.gba.vram.byteLength) {
+      const u32 = new Uint32Array(r.gba.vram.buffer, r.gba.vram.byteOffset + offsetBytes, count);
+      u32.fill(v32);
+    }
+  } else if (destAddr >= 0x07000000 && destAddr < 0x07000400) {
+    // OAM clear (= 8 bytes / OAM entry, on traite par groupes de 4 bytes).
+    const offsetBytes = destAddr - 0x07000000;
+    const startIdx = offsetBytes >> 3;
+    const count = Math.min(sizeBytes >> 3, 128 - startIdx);
+    for (let i = 0; i < count; i++) {
+      const oam = r.gba.oam[startIdx + i];
+      if (oam) {
+        oam.visible = false;
+        oam.tileId = 0;
+      }
+    }
+  } else if (destAddr >= 0x05000000 && destAddr < 0x05000400) {
+    const offsetBytes = destAddr - 0x05000000;
+    const startIdx = offsetBytes >> 1;
+    const count = sizeBytes >> 1;
+    const lo = v32 & 0xFFFF;
+    for (let i = 0; i < count; i++) {
+      r.gPlttBufferFaded.set(startIdx + i, lo);
+      r.gPlttBufferUnfaded.set(startIdx + i, lo);
+    }
+  }
 }
 /** 1:1 décomp src/palette.c ResetPaletteFade :
  *  Resets internal fade STATE only (= gPaletteFade.y, .active, .targetY, etc.).
@@ -1519,7 +1585,10 @@ export const gIntroBubbles_Pal = 'gIntroBubbles_Pal';
  *  - 16-31 : eva=15→0, evb=16 fixe  (logo darken gradient)
  *  - 32-63 : eva=0, evb=16 fixe     (held final state)
  *  BLDALPHA_BLEND(eva, evb) = (eva | (evb << 8)). */
-function _bldAlpha(eva: number, evb: number): number { return (eva & 0x1F) | ((evb & 0x1F) << 8); }
+/** 1:1 décomp `BLDALPHA_BLEND(eva, evb)` macro — pack eva (5-bit) + evb (5-bit) en u16
+ *  pour le BLDALPHA register. Utilisé par les fade animations + battle alpha effects. */
+export function BLDALPHA_BLEND(eva: number, evb: number): number { return (eva & 0x1F) | ((evb & 0x1F) << 8); }
+const _bldAlpha = BLDALPHA_BLEND;
 export const gTitleScreenAlphaBlend: ReadonlyArray<number> = (() => {
   const arr: number[] = new Array(64);
   for (let i = 0; i <= 15; i++) arr[i] = _bldAlpha(16, i);

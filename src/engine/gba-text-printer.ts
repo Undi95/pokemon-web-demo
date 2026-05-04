@@ -83,11 +83,40 @@ export const TEXT_COLOR = Object.freeze({
   DYNAMIC_COLOR_6: 0xF,
 });
 
-/** Render states (cf. include/text.h enum) */
+// 1:1 décomp gTextFlags global. Set par certaines scenes pour disable le
+// A/B speed up (= e.g. battle messages forcing fixed speed).
+export const gTextFlags = {
+  canABSpeedUpPrint: true,  // default TRUE pour Birch + dialogues normaux
+  forceMidTextSpeed: false,
+  autoScroll: false,
+};
+
+// Module-level input state mis à jour par RunTextPrinters à chaque frame.
+// Lu par runTextPrinter (= 1:1 décomp JOY_NEW/JOY_HELD inline).
+let _newABPressed = false;
+let _heldABPressed = false;
+
+export function _setTextInputState(newAB: boolean, heldAB: boolean): void {
+  _newABPressed = newAB;
+  _heldABPressed = heldAB;
+}
+
+/** Render states 1:1 décomp `include/text.h:32-39` enum :
+ *    HANDLE_CHAR, WAIT, CLEAR, SCROLL_START, SCROLL, WAIT_SE, PAUSE.
+ *  RENDER_STATE_FINISH n'existe pas dans le décomp (= EOS retourne RENDER_FINISH directement). */
 export const RENDER_STATE_HANDLE_CHAR = 0;
-export const RENDER_STATE_WAIT_WITH_DOWN_ARROW = 1;
-export const RENDER_STATE_FINISH = 2;
-export const RENDER_STATE_PAUSE = 3;
+export const RENDER_STATE_WAIT = 1;
+export const RENDER_STATE_CLEAR = 2;
+export const RENDER_STATE_SCROLL_START = 3;
+export const RENDER_STATE_SCROLL = 4;
+export const RENDER_STATE_WAIT_SE = 5;
+export const RENDER_STATE_PAUSE = 6;
+/** Alias backwards-compat — anciens callers utilisaient WAIT_WITH_DOWN_ARROW
+ *  comme générique "wait avec ❤️ visible". Maintenant on distingue CLEAR vs
+ *  SCROLL_START vs WAIT (= no arrow) selon le décomp. Cet alias pointe sur
+ *  CLEAR (= comportement le plus courant pour `\p`). */
+export const RENDER_STATE_WAIT_WITH_DOWN_ARROW = RENDER_STATE_CLEAR;
+export const RENDER_STATE_FINISH = -1;  // Pas un state du décomp, sentinel value pour code legacy.
 
 /** Codes de retour runTextPrinter */
 export const RENDER_FINISH = 0xFF;
@@ -145,6 +174,16 @@ export interface TextPrinter {
   downArrowDelay: number;
   downArrowYPosIdx: number;
 
+  // 1:1 décomp text.c scrollDistance — pixels restants à scroll pendant
+  // RENDER_STATE_SCROLL (= entre `\l` et reprise du rendering).
+  scrollDistance: number;
+
+  // 1:1 décomp text.c subStruct->hasPrintBeenSpedUp — set TRUE après JOY_NEW(A|B)
+  // pendant le rendering. Tant que A ou B est held, delayCounter reset à 0
+  // chaque frame (= 1 char rendu/frame, fast-forward). Reset à FALSE entre
+  // 2 printers.
+  hasPrintBeenSpedUp: boolean;
+
   // Données glyph
   glyphData: number[][];   // [256][128] depuis latfont.json
   glyphWidths: Uint8Array; // [256] depuis font-widths.json
@@ -180,6 +219,25 @@ export function createWindow(widthTiles: number, heightTiles: number, paletteNum
 }
 
 /** Remplit tout le pixelBuffer avec idx (text.c FillWindowPixelBuffer). */
+/** 1:1 décomp `window.c ScrollWindow(windowId, direction=0, distance, fillValue)`.
+ *  Direction 0 = shift content UP (= view scrolls up, content moves up,
+ *  bottom rows filled with fillValue). 1:1 décomp comportement.
+ *
+ *  Notre pixelBuffer est 1 byte/pixel (= idx 0-15 dans la palette). Le décomp
+ *  opère sur tileData 4bpp packed (= 2 pixels/byte) mais sémantiquement c'est
+ *  pareil : shift up + fill bottom. */
+export function scrollWindow(w: Window, deltaY: number, fillValue: number): void {
+  const stride = w.widthPx;
+  const height = w.heightPx;
+  if (deltaY <= 0 || deltaY >= height) return;
+  // Shift up : copy lignes [deltaY..height) → [0..height-deltaY)
+  w.pixelBuffer.copyWithin(0, deltaY * stride, height * stride);
+  // Fill lignes [height-deltaY..height) avec fillValue & 0xF (= idx palette,
+  // 1 byte/pixel chez nous, pas le packed nibbles 4bpp).
+  w.pixelBuffer.fill(fillValue & 0xF, (height - deltaY) * stride, height * stride);
+  w.needsFlush = true;
+}
+
 export function fillWindowPixelBuffer(w: Window, idx: number): void {
   w.pixelBuffer.fill(idx & 0x0F);
   w.needsFlush = true;
@@ -306,19 +364,18 @@ export function encodeStringForFont(str: string, charmap: Record<string, number>
       i++;
       continue;
     }
-    // 1:1 décomp escape sequences. Phase E Step 4 fix : \p = PROMPT_CLEAR (=
-    // page break wait A press), \l = PROMPT_SCROLL (= scroll up wait A press).
-    // MVP : treat \p comme double newline (= toute la page sur 1 écran sans
-    // pause for A press). TODO Phase E.4 : real impl avec wait for A.
+    // 1:1 décomp escape sequences. \p = PROMPT_CLEAR (= page break propre :
+    // clear window + wait A press + new page), \l = PROMPT_SCROLL (= scroll up
+    // + wait A press), \n = newline.
     if (ch === '\\' && i + 1 < str.length) {
       const next = str[i + 1];
       if (next === 'p') {
-        bytes.push(CHAR_NEWLINE, CHAR_NEWLINE);  // MVP : double newline.
+        bytes.push(CHAR_PROMPT_CLEAR);
         i += 2;
         continue;
       }
       if (next === 'l') {
-        bytes.push(CHAR_NEWLINE);  // MVP : single newline.
+        bytes.push(CHAR_PROMPT_SCROLL);
         i += 2;
         continue;
       }
@@ -396,6 +453,8 @@ export function addTextPrinter(opts: AddTextPrinterOpts): TextPrinter {
     downArrowDelay: 0,
     downArrowYPosIdx: 0,
     pauseCounter: 0,
+    scrollDistance: 0,
+    hasPrintBeenSpedUp: false,
     glyphData: opts.glyphData,
     glyphWidths: opts.glyphWidths,
     downArrowPixels: opts.downArrowPixels,
@@ -412,10 +471,19 @@ export function addTextPrinter(opts: AddTextPrinterOpts): TextPrinter {
  */
 export function runTextPrinter(printer: TextPrinter): number {
   if (printer.state === RENDER_STATE_FINISH) return RENDER_FINISH;
-  if (printer.state === RENDER_STATE_WAIT_WITH_DOWN_ARROW) return RENDER_UPDATE;
+  // 1:1 décomp text.c:1167-1188 — CLEAR/SCROLL_START/SCROLL/WAIT_SE/WAIT
+  // mettent le rendering en pause. Sans ça, runTextPrinter fall through au
+  // switch des chars et rend par-dessus le texte actuel pendant que le scroll
+  // ou la wait est en cours → 2 textes superposés visiblement.
+  if (printer.state === RENDER_STATE_CLEAR ||
+      printer.state === RENDER_STATE_SCROLL_START ||
+      printer.state === RENDER_STATE_SCROLL ||
+      printer.state === RENDER_STATE_WAIT) {
+    return RENDER_UPDATE;
+  }
 
   // PAUSE state : décrémenter pauseCounter chaque frame, retour HANDLE_CHAR à 0.
-  // Cf. décomp text.c:1013-1017 EXT_CTRL_CODE_PAUSE.
+  // Cf. décomp text.c:1215-1220 EXT_CTRL_CODE_PAUSE.
   if (printer.state === RENDER_STATE_PAUSE) {
     if (printer.pauseCounter > 0) {
       printer.pauseCounter--;
@@ -425,9 +493,21 @@ export function runTextPrinter(printer: TextPrinter): number {
     return RENDER_REPEAT;
   }
 
-  // textSpeed > 0 : delay entre chaque char (effet "machine à écrire")
-  if (printer.textSpeed > 0 && printer.delayCounter > 0) {
+  // 1:1 décomp text.c:944-955 — A/B speed up mécanisme.
+  // Si A ou B held + déjà sped-up auparavant, force delayCounter = 0
+  // (= 1 char par frame jusqu'à fin de page).
+  if (_heldABPressed && printer.hasPrintBeenSpedUp) {
+    printer.delayCounter = 0;
+  }
+
+  // textSpeed > 0 : delay entre chaque char (effet "machine à écrire").
+  if (printer.delayCounter > 0 && printer.textSpeed > 0) {
     printer.delayCounter--;
+    // 1:1 décomp text.c:950-953 — JOY_NEW(A|B) pendant le delay → speed up.
+    if (gTextFlags.canABSpeedUpPrint && _newABPressed) {
+      printer.hasPrintBeenSpedUp = true;
+      printer.delayCounter = 0;
+    }
     return RENDER_UPDATE;
   }
 
@@ -435,7 +515,11 @@ export function runTextPrinter(printer: TextPrinter): number {
   do {
     const byte = printer.encodedString[printer.currentChar];
     if (byte === undefined || byte === EOS) {
-      printer.state = RENDER_STATE_WAIT_WITH_DOWN_ARROW;
+      // 1:1 décomp text.c : EOS → RENDER_FINISH (= terminé, pas de wait A).
+      // CHAR_PROMPT_CLEAR/SCROLL gérés séparément ci-dessous (= wait A page break).
+      // Phase E fix : avant on set state = WAIT_WITH_DOWN_ARROW qui bloquait
+      // IsTextPrinterActive(0) éternellement (= state jamais → FINISH).
+      printer.state = RENDER_STATE_FINISH;
       if (printer.onCharRendered) printer.onCharRendered(printer, EOS);
       return RENDER_FINISH;
     }
@@ -447,9 +531,23 @@ export function runTextPrinter(printer: TextPrinter): number {
       continue;
     }
 
-    if (byte === CHAR_PROMPT_CLEAR || byte === CHAR_PROMPT_SCROLL) {
+    // 1:1 décomp text.c:1102-1109 — \p → CLEAR (clear window + reset cursor),
+    // \l → SCROLL_START (scroll up 1 line + reset X). Les 2 affichent le ❤️
+    // down arrow et attendent A press, mais le post-A behavior diffère.
+    if (byte === CHAR_PROMPT_CLEAR) {
       printer.currentChar++;
-      printer.state = RENDER_STATE_WAIT_WITH_DOWN_ARROW;
+      printer.state = RENDER_STATE_CLEAR;
+      // TextPrinterInitDownArrowCounters (= reset bobbing animation)
+      printer.downArrowDelay = 0;
+      printer.downArrowYPosIdx = 0;
+      if (printer.onCharRendered) printer.onCharRendered(printer, byte);
+      return RENDER_UPDATE;
+    }
+    if (byte === CHAR_PROMPT_SCROLL) {
+      printer.currentChar++;
+      printer.state = RENDER_STATE_SCROLL_START;
+      printer.downArrowDelay = 0;
+      printer.downArrowYPosIdx = 0;
       if (printer.onCharRendered) printer.onCharRendered(printer, byte);
       return RENDER_UPDATE;
     }
@@ -499,7 +597,11 @@ export function runTextPrinter(printer: TextPrinter): number {
     // Char normal : blit glyph + advance cursor
     const glyph = printer.glyphData[byte];
     const glyphW = printer.glyphWidths[byte] || 3;
-    if (glyph) {
+    // Fix Phase E : byte 0 = espace dans le charmap. Pas de blit (= empty glyph),
+    // juste advance currentX pour préserver le whitespace entre les mots. Sans
+    // ce skip, blitGlyphToWindow peut paint du bgColor sur les pixels du glyph
+    // précédent et "manger" le rendu (= mots collés "Cemonde" au lieu de "Ce monde").
+    if (glyph && byte !== 0) {
       blitGlyphToWindow(
         printer.window,
         glyph,

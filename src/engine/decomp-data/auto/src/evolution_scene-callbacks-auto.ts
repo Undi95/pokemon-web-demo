@@ -1067,7 +1067,7 @@ export const CB2_EvolutionSceneLoadGraphics: CB2Callback = (rt) => {
       LoadCompressedPalette(pokePal.data, OBJ_PLTT_ID(2), PLTT_SIZE_4BPP);
 
       SetMultiuseSpriteTemplateToPokemon(postEvoSpecies, B_POSITION_OPPONENT_RIGHT);
-      gMultiuseSpriteTemplate.affineAnims = gDummySpriteAffineAnimTable;
+      gMultiuseSpriteTemplate.affineAnimsTableName = gDummySpriteAffineAnimTable;
       sEvoStructPtr.postEvoSpriteId = id = rt.CreateSpriteFromTemplate('gMultiuseSpriteTemplate',  120, 64, 30);
 
       rt.setSpriteCallback(id, SpriteCallbackDummy_2);
@@ -1144,7 +1144,7 @@ export const CB2_TradeEvolutionSceneLoadGraphics: CB2Callback = (rt) => {
               let id = 0;
 
               SetMultiuseSpriteTemplateToPokemon(postEvoSpecies, B_POSITION_OPPONENT_LEFT);
-              gMultiuseSpriteTemplate.affineAnims = gDummySpriteAffineAnimTable;
+              gMultiuseSpriteTemplate.affineAnimsTableName = gDummySpriteAffineAnimTable;
               sEvoStructPtr.postEvoSpriteId = id = rt.CreateSpriteFromTemplate('gMultiuseSpriteTemplate',  120, 64, 30);
 
               rt.setSpriteCallback(id, SpriteCallbackDummy_2);

@@ -24,7 +24,7 @@
  *   - NewGameBirchSpeech_* stubs (8 fonctions, à implémenter Phase D)
  *   - sBirch* templates (= placeholders extraits via main-menu-data Phase D)
  */
-import { getRuntime } from './decomp-globals';
+import { getRuntime, assetCache } from './decomp-globals';
 import { GetWindowFrameTilesPal } from './gba-text-window';
 import {
   ResetBgsAndClearDma3BusyFlags,
@@ -68,6 +68,10 @@ import {
   CB2_MainMenu,
   Task_HandleMainMenuAPressed,
   Task_HandleMainMenuBPressed,
+  Task_NewGameBirchSpeech_FadeInTarget1OutTarget2,
+  Task_NewGameBirchSpeech_FadeOutTarget1InTarget2,
+  Task_NewGameBirchSpeech_FadePlatformIn,
+  Task_NewGameBirchSpeech_FadePlatformOut,
 } from './decomp-data/auto/src/main_menu-callbacks-auto';
 import {
   A_BUTTON, B_BUTTON, DPAD_UP, DPAD_DOWN,
@@ -121,7 +125,11 @@ export const sScrollArrowsTemplate_MainMenu = {
 };
 (globalThis as Record<string, unknown>).sScrollArrowsTemplate_MainMenu = sScrollArrowsTemplate_MainMenu;
 
-export const sSpriteAffineAnimTable_PlayerShrink: unknown[] = [];
+/** 1:1 décomp main_menu.c:451 sSpriteAffineAnimTable_PlayerShrink — string-symbol
+ *  pour lookup dans `SPRITE_AFFINE_ANIM_TABLES` (= auto-data sprite-system.ts:469).
+ *  Cette table contient `sSpriteAffineAnim_PlayerShrink` (= 1 frame xScale=-2,
+ *  yScale=-2, rotation=0, duration=48 → player shrink sur 48 frames). */
+export const sSpriteAffineAnimTable_PlayerShrink = 'sSpriteAffineAnimTable_PlayerShrink';
 (globalThis as Record<string, unknown>).sSpriteAffineAnimTable_PlayerShrink = sSpriteAffineAnimTable_PlayerShrink;
 
 // 1:1 décomp main_menu.c sBirchBgTemplate — BG3 256-color, charBase=3, mapBase=30,
@@ -146,13 +154,28 @@ export const sBirchSpeechBgPals = 'sBirchSpeechBgPals';
 (globalThis as Record<string, unknown>).sBirchSpeechBgPals = sBirchSpeechBgPals;
 export const sBirchSpeechPlatformBlackPal = 'sBirchSpeechPlatformBlackPal';
 (globalThis as Record<string, unknown>).sBirchSpeechPlatformBlackPal = sBirchSpeechPlatformBlackPal;
-// 1:1 décomp sBirchSpeechBgGradientPal[3] — 3 gradient palettes alternatives.
-// String-symbol pour chaque (= asset cache lookup).
-export const sBirchSpeechBgGradientPal = [
-  'sBirchSpeechBgGradientPal_0',
-  'sBirchSpeechBgGradientPal_1',
-  'sBirchSpeechBgGradientPal_2',
-];
+// 1:1 décomp main_menu.c:257 sBirchSpeechBgGradientPal — single u16 buffer
+// (= bg2.pal preloaded comme Uint16Array via preloadBirchSpeechAssets).
+// Le décomp accède via pointer arithmetic `sBirchSpeechBgGradientPal[i]` qui
+// est en fait `arr + i` (= sub-buffer à partir de l'offset i).
+//
+// Le auto file `Task_NewGameBirchSpeech_FadePlatformIn` fait
+// `LoadPalette(sBirchSpeechBgGradientPal[task.data[1]], BG_PLTT_ID(0) + 1, PLTT_SIZEOF(8))`
+// = load 8 colors à partir de l'offset task.data[1] (0..8). On utilise un Proxy
+// qui retourne subarray(i, i+8) du Uint16Array cached.
+export const sBirchSpeechBgGradientPal = new Proxy({} as Record<number, Uint16Array>, {
+  get(_target, prop) {
+    const idx = Number(prop);
+    if (Number.isInteger(idx) && idx >= 0) {
+      const cached = assetCache.get('sBirchSpeechBgGradientPal');
+      if (cached instanceof Uint16Array) {
+        return cached.subarray(idx, idx + 8);
+      }
+      return new Uint16Array(8);  // fallback empty (= asset pas chargé yet).
+    }
+    return undefined;
+  },
+});
 (globalThis as Record<string, unknown>).sBirchSpeechBgGradientPal = sBirchSpeechBgGradientPal;
 
 // ─── Main Menu Frame Tiles (= partagé avec option_menu via gba-text-window) ──
@@ -302,9 +325,22 @@ export function MainMenu_FormatSavegameText(): void {
   // TODO Phase D : formater le texte de la sauvegarde (player name, badges, play time)
 }
 
-export function CreateMainMenuErrorWindow(_text: string): void {
-  // TODO Phase D : afficher une fenêtre d'erreur avec _text.
-  console.warn('[main-menu-impl] CreateMainMenuErrorWindow:', _text);
+/** 1:1 décomp main_menu.c:2121-2130 CreateMainMenuErrorWindow.
+ *  Affiche une fenêtre d'erreur (= save corrupt, battery dry, etc.) dans
+ *  window 7 avec WIN0 visible. */
+export function CreateMainMenuErrorWindow(text: string): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  // 1:1 décomp : window 7 (= dernier window de sWindowTemplates_MainMenu).
+  FillWindowPixelBuffer(7, 0x11);  // PIXEL_FILL(1) = bg blanc
+  // Print text via FONT_NORMAL avec colorArray standard
+  AddTextPrinterParameterized3(7, 1, 0, 1, [1, 2, 3], 0, text);
+  PutWindowTilemap(7);
+  CopyWindowToVram(7, 2);  // COPYWIN_GFX
+  DrawMainMenuWindowBorder(sWindowTemplates_MainMenu[7], MAIN_MENU_BORDER_TILE);
+  // 1:1 décomp : SetGpuReg WIN0H/WIN0V pour révéler la zone error window
+  rt.SetGpuReg(0x040, (9 << 8) | (240 - 9));   // WIN0H = WIN_RANGE(9, DISPLAY_WIDTH - 9)
+  rt.SetGpuReg(0x044, (113 << 8) | (160 - 1));  // WIN0V = WIN_RANGE(113, DISPLAY_HEIGHT - 1)
 }
 
 // ─── Birch Speech helpers stubs (Phase D — à implémenter pour Birch flow) ────
@@ -341,8 +377,17 @@ export function NewGameBirchSpeech_ShowDialogueWindow(windowId: number, copyToVr
   }
 }
 
-export function NewGameBirchSpeech_ClearGenderWindow(_windowId: number, _copyToVram: boolean): void {
-  // TODO Phase D : effacer la fenêtre genre.
+/** 1:1 décomp main_menu.c:2233-2240 NewGameBirchSpeech_ClearGenderWindow.
+ *  Clear le window pixel buffer + tilemap (= dispose le menu OUI/NON gender). */
+export function NewGameBirchSpeech_ClearGenderWindow(windowId: number, copyToVram: boolean): void {
+  // 1:1 décomp : FillWindowPixelBuffer(windowId, PIXEL_FILL(0)) + ClearWindowTilemap.
+  FillWindowPixelBuffer(windowId, 0x00);  // PIXEL_FILL(0) = transparent.
+  // Note : décomp call CallWindowFunction(ClearStdWindowAndFrameToTransparent) avant
+  // qui dessine le 0-tile sur tout le frame. Notre runtime efface le pixel buffer
+  // (= pixels transparent), suffit pour MVP.
+  if (copyToVram) {
+    CopyWindowToVram(windowId, 2);  // COPYWIN_GFX
+  }
 }
 
 /** 1:1 décomp main_menu.c:2092 NewGameBirchSpeech_ShowGenderMenu.
@@ -472,52 +517,109 @@ export function AddBirchSpeechObjects(taskId: number): void {
   task.data[11] = birchId;  // Girl player
 }
 
-// Helpers fade Birch — Phase E partial : simulate fade complete instantly pour
-// débloquer le flow Tasks. TODO Phase E.2 : 1:1 décomp full impl avec sub-Task
-// d'animation BLDALPHA progressive + sync sur tDelay/tDelayTimer.
+// ─── Birch fade animations (= 1:1 décomp main_menu.c:1988-2084) ─────────────
 //
-// Le flow Birch check `task.data[5]` (= tIsDoneFadingSprites macro) après chaque
-// StartFade* call. Le décomp animate BLDALPHA sur N frames puis set data[5]=1.
-// Notre stub set immediatement data[5]=1 (= no fade visuel mais avance).
+// Pattern : chaque StartFade* fait 2 choses :
+//   1. Setup hardware BLDCNT/BLDALPHA/BLDY pour le blend mode désiré
+//   2. Crée une SOUS-TASK qui anime BLDALPHA progressivement frame-par-frame.
+//      Quand l'animation termine, la sous-task set `_gt(rt, mainTaskId).data[5] = true`
+//      (= tIsDoneFadingSprites macro) ce qui débloque la Task main Birch.
+//
+// Layout sub-Task data :
+//   data[0] = mainTaskId (= taskId de la Task Birch principale)
+//   data[1] = alphaCoeff1 (= eva BLDALPHA, target1 blend coeff 0-16)
+//   data[2] = alphaCoeff2 OU tDelayBefore selon le fade
+//   data[3] = tDelay (= frames entre 2 steps d'animation)
+//   data[4] = tDelayTimer (= compte à rebours, reset à tDelay à chaque step)
 
-/** 1:1 décomp main_menu.c:1988 NewGameBirchSpeech_StartFadeInTarget1OutTarget2.
- *  Cross-fade BG1 (Birch) ↔ BG0 (player) via BLDCNT. Setup hardware regs +
- *  mark fade as instantly done pour débloquer Task_*WaitForSpriteFadeIn*. */
-export function NewGameBirchSpeech_StartFadeInTarget1OutTarget2(taskId: number, _delay: number): void {
+/** 1:1 décomp main_menu.c:1988-2002 NewGameBirchSpeech_StartFadeInTarget1OutTarget2.
+ *  Cross-fade BG1 (Birch) ↔ OBJ (player) via BLDCNT/BLDALPHA. */
+export function NewGameBirchSpeech_StartFadeInTarget1OutTarget2(taskId: number, delay: number): void {
   const rt = getRuntime();
   if (!rt) return;
-  // 1:1 décomp setup BLDCNT/BLDALPHA/BLDY (= cross-fade hardware).
-  // BLDCNT = BLDCNT_TGT2_BG1 | BLDCNT_EFFECT_BLEND | BLDCNT_TGT1_OBJ.
-  // (= 0x0240 | 0x0040 | 0x0010 = 0x0250)
-  rt.SetGpuReg(0x050, 0x0250);  // REG_OFFSET_BLDCNT
-  rt.SetGpuReg(0x052, (0 << 0) | (16 << 8));  // REG_OFFSET_BLDALPHA = (eva=0, evb=16)
-  rt.SetGpuReg(0x054, 0);  // REG_OFFSET_BLDY = 0
-  const task = rt.gTasks.get(taskId);
-  if (task) task.data[5] = 1;  // tIsDoneFadingSprites = 1 (= simulate done).
-}
-
-/** Inverse de StartFadeInTarget1OutTarget2 (= cross-fade dans l'autre sens). */
-export function NewGameBirchSpeech_StartFadeOutTarget1InTarget2(taskId: number, _delay: number): void {
-  const rt = getRuntime();
-  if (!rt) return;
+  // BLDCNT = BLDCNT_TGT2_BG1 | BLDCNT_EFFECT_BLEND | BLDCNT_TGT1_OBJ = 0x0250.
   rt.SetGpuReg(0x050, 0x0250);
-  rt.SetGpuReg(0x052, (16 << 0) | (0 << 8));  // (eva=16, evb=0) — inverse alpha.
+  // BLDALPHA_BLEND(0, 16) = eva=0 + evb=16 (= start full target2 blend).
+  rt.SetGpuReg(0x052, (0 << 0) | (16 << 8));
   rt.SetGpuReg(0x054, 0);
-  const task = rt.gTasks.get(taskId);
-  if (task) task.data[5] = 1;
+  const mainTask = rt.gTasks.get(taskId);
+  if (mainTask) mainTask.data[5] = 0;  // tIsDoneFadingSprites = 0 (animation en cours).
+  const subTaskId = rt.CreateTask((t) => Task_NewGameBirchSpeech_FadeInTarget1OutTarget2(t, rt), 0);
+  const subTask = rt.gTasks.get(subTaskId);
+  if (subTask) {
+    subTask.data[0] = taskId;     // tMainTask
+    subTask.data[1] = 0;           // tAlphaCoeff1 (eva)
+    subTask.data[2] = 16;          // tAlphaCoeff2 (evb)
+    subTask.data[3] = delay;       // tDelay
+    subTask.data[4] = delay;       // tDelayTimer
+  }
 }
 
-/** Fade-in du platform sprite (= ombre sous Birch/Lotad). MVP stub. */
-export function NewGameBirchSpeech_StartFadePlatformIn(_taskId: number, _delay: number): void {
-  // TODO Phase E.2 : créer sub-Task qui anime sBirchSpeechBgGradientPal[i] vers
-  // sBirchSpeechPlatformBlackPal sur N frames. Pour MVP, on no-op (= la palette
-  // platform reste celle qu'elle est).
+/** 1:1 décomp main_menu.c:2014-2027 NewGameBirchSpeech_StartFadeOutTarget1InTarget2.
+ *  Inverse cross-fade : OBJ (player) ↔ BG1 (Birch). */
+export function NewGameBirchSpeech_StartFadeOutTarget1InTarget2(taskId: number, delay: number): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  rt.SetGpuReg(0x050, 0x0250);  // Same BLDCNT
+  rt.SetGpuReg(0x052, (16 << 0) | (0 << 8));  // BLDALPHA_BLEND(16, 0) = eva=16, evb=0 (= start full target1).
+  rt.SetGpuReg(0x054, 0);
+  const mainTask = rt.gTasks.get(taskId);
+  if (mainTask) mainTask.data[5] = 0;
+  const subTaskId = rt.CreateTask((t) => Task_NewGameBirchSpeech_FadeOutTarget1InTarget2(t, rt), 0);
+  const subTask = rt.gTasks.get(subTaskId);
+  if (subTask) {
+    subTask.data[0] = taskId;
+    subTask.data[1] = 16;          // tAlphaCoeff1 (eva start)
+    subTask.data[2] = 0;            // tAlphaCoeff2 (evb start)
+    subTask.data[3] = delay;
+    subTask.data[4] = delay;
+  }
 }
 
-/** Fade-out du platform sprite. MVP stub. */
-export function NewGameBirchSpeech_StartFadePlatformOut(_taskId: number, _delay: number): void {
-  // TODO Phase E.2 : inverse fade in.
+/** 1:1 décomp main_menu.c:2040-2050 NewGameBirchSpeech_StartFadePlatformIn.
+ *  Anime sBirchSpeechBgGradientPal[0..7] vers full visible (= platform apparaît).
+ *  data[1] = palIndex 0..8, data[2] = tDelayBefore=8 (= attente avant anim). */
+export function NewGameBirchSpeech_StartFadePlatformIn(taskId: number, delay: number): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  const subTaskId = rt.CreateTask((t) => Task_NewGameBirchSpeech_FadePlatformIn(t, rt), 0);
+  const subTask = rt.gTasks.get(subTaskId);
+  if (subTask) {
+    subTask.data[0] = taskId;
+    subTask.data[1] = 0;            // tPalIndex (= 1:1 décomp main_menu.c:2046)
+    subTask.data[2] = 8;            // tDelayBefore
+    subTask.data[3] = delay;
+    subTask.data[4] = delay;
+  }
 }
+
+/** 1:1 décomp main_menu.c:2074-2084 NewGameBirchSpeech_StartFadePlatformOut.
+ *  Anime sBirchSpeechBgGradientPal[8..0] vers black (= platform disparaît).
+ *  data[1] = palIndex 8 (= start), data[2] = tDelayBefore=8. */
+export function NewGameBirchSpeech_StartFadePlatformOut(taskId: number, delay: number): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  const subTaskId = rt.CreateTask((t) => Task_NewGameBirchSpeech_FadePlatformOut(t, rt), 0);
+  const subTask = rt.gTasks.get(subTaskId);
+  if (subTask) {
+    subTask.data[0] = taskId;
+    subTask.data[1] = 8;            // tPalIndex (= start at 8, descend vers 0)
+    subTask.data[2] = 8;            // tDelayBefore
+    subTask.data[3] = delay;
+    subTask.data[4] = delay;
+  }
+}
+
+/** 1:1 décomp main_menu.c NewGameBirchSpeech_WaitForThisIsPokemonText —
+ *  callback called by AddTextPrinterWithCallbackForMessage on each char rendered.
+ *  Le décomp avance la sBirchSpeechMainTaskId Task quand `lastByte` indique fin de
+ *  page (CHAR_PROMPT_CLEAR/SCROLL ou EOS). Phase E MVP : no-op (= la Task
+ *  parente avancera via le check `IsTextPrinterActive(0) === false`). */
+export function NewGameBirchSpeech_WaitForThisIsPokemonText(_printer: unknown, _lastByte: number): void {
+  // TODO Phase E.2 : real impl 1:1 décomp si necessaire.
+}
+
+(globalThis as Record<string, unknown>).NewGameBirchSpeech_WaitForThisIsPokemonText = NewGameBirchSpeech_WaitForThisIsPokemonText;
 
 /** 1:1 décomp `naming_screen.c DoNamingScreen(type, dest, gender, monSpecies, monPersonality, callback)`.
  *  Phase E Step 7 MVP : skip la naming scene complète (= 1:1 décomp future, gros

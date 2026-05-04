@@ -65,7 +65,7 @@ export const SpriteCB_ShakePokeblockCase: SpriteCallback = (sprite, rt) => {
       {
       case 0:
           rt.gba.oam[sprite.oamIndex].affineMode = ST_OAM_AFFINE_NORMAL;
-          sprite.affineAnims = sAffineAnims_PokeblockCaseShake;
+          sprite.affineAnimsTableName = sAffineAnims_PokeblockCaseShake;
           InitSpriteAffineAnim(sprite);
           sprite.data[0] = 1;
           sprite.data[1] = 0;

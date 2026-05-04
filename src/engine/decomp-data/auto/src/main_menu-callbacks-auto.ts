@@ -1106,7 +1106,7 @@ export const Task_NewGameBirchSpeech_ShrinkPlayer: TaskCallback = (task, rt) => 
           {
               spriteId = task.data[2];
               rt.gba.oam[_gs(rt, spriteId).oamIndex].affineMode = ST_OAM_AFFINE_NORMAL;
-              _gs(rt, spriteId).affineAnims = sSpriteAffineAnimTable_PlayerShrink;
+              _gs(rt, spriteId).affineAnimsTableName = sSpriteAffineAnimTable_PlayerShrink;
               InitSpriteAffineAnim(_gs(rt, spriteId));
               rt.StartSpriteAffineAnim(spriteId, 0);
               rt.setSpriteCallback(spriteId, SpriteCB_MovePlayerDownWhileShrinking);
@@ -1307,6 +1307,8 @@ export const CB2_NewGameBirchSpeech_ReturnFromNamingScreen: CB2Callback = (rt) =
       LoadPalette(sBirchSpeechBgGradientPal[1], BG_PLTT_ID(0) + 1, PLTT_SIZEOF(8));
       ResetTasks();
       taskId = rt.CreateTask((t) => Task_NewGameBirchSpeech_ReturnFromNamingScreenShowTextbox(t, rt), 0);
+      // ✅ FIX session Phase E : `task` undefined dans CB2 scope → use _gt helper (analogue PATCH O1).
+      const task = _gt(rt, taskId);
       task.data[7] = 5;
       task.data[4] = -60;
       ScanlineEffect_Stop();

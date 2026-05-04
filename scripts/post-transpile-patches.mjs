@@ -383,6 +383,17 @@ function patchMainMenuMysteryStubs() {
     '\n  ',
   );
 
+  // PATCH M3 (Phase E) : CB2_NewGameBirchSpeech_ReturnFromNamingScreen utilise
+  // `task.data[X]` mais `task` n'existe pas dans le scope CB2 (= bug du
+  // transpileur, analogue PATCH O1 pour option_menu). Fix : extract task via
+  // helper `_gt(rt, taskId)` après CreateTask.
+  if (s.includes(`taskId = rt.CreateTask((t) => Task_NewGameBirchSpeech_ReturnFromNamingScreenShowTextbox(t, rt), 0);\n      task.data[7] = 5;`)) {
+    s = s.replace(
+      `taskId = rt.CreateTask((t) => Task_NewGameBirchSpeech_ReturnFromNamingScreenShowTextbox(t, rt), 0);\n      task.data[7] = 5;`,
+      `taskId = rt.CreateTask((t) => Task_NewGameBirchSpeech_ReturnFromNamingScreenShowTextbox(t, rt), 0);\n      // ✅ FIX session Phase E : \`task\` undefined dans CB2 scope → use _gt helper (analogue PATCH O1).\n      const task = _gt(rt, taskId);\n      task.data[7] = 5;`,
+    );
+  }
+
   if (s !== before) {
     fs.writeFileSync(FILE, s, 'utf8');
     console.log('[post-transpile-patches] main_menu-callbacks-auto.ts mystery stubs patched');
@@ -459,6 +470,17 @@ function applyGenericPatches(content) {
   );
   if (g1Patched) notes.push(`G1 SetMainCallback2 ×${g1Patched}`);
   if (g1Skipped) notes.push(`G1 skipped ×${g1Skipped} (target not imported)`);
+
+  // ─── G4 : sprite.affineAnims = X → sprite.affineAnimsTableName = X ──────
+  // Notre DecompSprite struct utilise `affineAnimsTableName` (= string lookup
+  // dans SPRITE_AFFINE_ANIM_TABLES) au lieu du C-pointer `affineAnims` du décomp.
+  // Le transpileur génère `affineAnims = ...` → on rename pour matcher notre struct.
+  let g4Patched = 0;
+  s = s.replace(/(\b_gs\(rt, [^)]+\)|\bsprite|\b\w+)\.affineAnims = /g, (m, prefix) => {
+    g4Patched++;
+    return `${prefix}.affineAnimsTableName = `;
+  });
+  if (g4Patched) notes.push(`G4 affineAnimsTableName ×${g4Patched}`);
 
   // ─── G2 : /* noop SetVBlankCallback */; → rt.SetVBlankCallback(VBlankCB) ──
   // Notre runtime drive TransferPlttBuffer auto si vblankCallback non-null.

@@ -466,6 +466,69 @@ export async function preloadTitleAssets(): Promise<void> {
   console.log(`[intro-asset-loader] Title preload done (${assetCache.size} symbols total cached)`);
 }
 
+/** Pré-charge les assets Birch Speech (= forest scene avec Birch + Lotad).
+ *  1:1 décomp main_menu.c data section :
+ *    - sBirchSpeechShadowGfx (= shadow.png 4bpp)
+ *    - sBirchSpeechBgMap (= map.bin tilemap)
+ *    - sBirchSpeechBgPals (= bg0.pal + bg1.pal concat = 32 colors)
+ *    - sBirchSpeechBgGradientPal (= bg2.pal palette gradient)
+ *    - sBirchSpeechPlatformBlackPal (= 8 RGB_BLACK colors hardcoded décomp)
+ *  Les fichiers raw sont copiés depuis `decomps/pokeemeraude/graphics/birch_speech/`. */
+export async function preloadBirchSpeechAssets(): Promise<void> {
+  const birchAssets: Array<{ symbol: string; url: string; type: 'png-strict-4bpp' | 'pal' | 'tilemap' }> = [
+    // Shadow sprite (= ombre sous Birch/Lotad)
+    { symbol: 'sBirchSpeechShadowGfx', url: '/decomp/em/birch_speech/shadow.png', type: 'png-strict-4bpp' },
+    // BG tilemap (= 30x20 tiles forest scene)
+    { symbol: 'sBirchSpeechBgMap', url: '/decomp/em/birch_speech/map.bin', type: 'tilemap' },
+    // 3 palettes gradient pour le BG (bg0=top, bg1=mid, bg2=gradient anim)
+    { symbol: 'sBirchSpeechBgPal_0', url: '/decomp/em/birch_speech/bg0.pal', type: 'pal' },
+    { symbol: 'sBirchSpeechBgPal_1', url: '/decomp/em/birch_speech/bg1.pal', type: 'pal' },
+    { symbol: 'sBirchSpeechBgGradientPal', url: '/decomp/em/birch_speech/bg2.pal', type: 'pal' },
+    // Birch character sprite (4bpp)
+    { symbol: 'sBirchSpeechBirchSpriteGfx', url: '/decomp/em/birch_speech/birch.png', type: 'png-strict-4bpp' },
+  ];
+  await Promise.all(birchAssets.map(async ({ symbol, url, type }) => {
+    try {
+      if (type === 'png-strict-4bpp') {
+        const charData = await loadTileBin(url, 4);
+        assetCache.set(symbol, charData);
+        const palSymbol = symbol.replace(/Gfx$/, 'Pal');
+        if (palSymbol !== symbol && !assetCache.has(palSymbol)) {
+          const { loadIndexedPngStrict } = await import('./gba/png-loader');
+          const png = await loadIndexedPngStrict(url, 4);
+          assetCache.set(palSymbol, png.palette);
+        }
+      } else if (type === 'pal') {
+        const pal = await loadGbaPal(url);
+        assetCache.set(symbol, pal);
+      } else if (type === 'tilemap') {
+        const tilemap = await loadTilemapBin(url);
+        assetCache.set(symbol, tilemap);
+      }
+    } catch (e) {
+      console.warn(`[intro-asset-loader] Birch speech load failed for ${symbol}:`, e);
+    }
+  }));
+
+  // 1:1 décomp main_menu.c:258 — sBirchSpeechBgPals = bg0 + bg1 concat (= 2 palettes
+  // de 16 colors = 32 entries u16). Notre code cache séparément, on concat ici.
+  const p0 = assetCache.get('sBirchSpeechBgPal_0');
+  const p1 = assetCache.get('sBirchSpeechBgPal_1');
+  if (p0 instanceof Uint16Array && p1 instanceof Uint16Array) {
+    const merged = new Uint16Array(p0.length + p1.length);
+    merged.set(p0, 0);
+    merged.set(p1, p0.length);
+    assetCache.set('sBirchSpeechBgPals', merged);
+  }
+
+  // 1:1 décomp main_menu.c:258 — sBirchSpeechPlatformBlackPal = 8x RGB_BLACK.
+  // Hardcoded dans le décomp (pas un asset file), on construit ici.
+  const platformBlack = new Uint16Array(8).fill(0);
+  assetCache.set('sBirchSpeechPlatformBlackPal', platformBlack);
+
+  console.log(`[intro-asset-loader] Birch speech preload done (${assetCache.size} symbols total cached)`);
+}
+
 /** Charge les g-prefixed assets (= externs graphics.c décomp, hors GFX_SOURCES). */
 async function loadGPrefixedExtras(): Promise<void> {
   const externs: Array<{ symbol: string; url: string; type: 'png' | 'pal' }> = [

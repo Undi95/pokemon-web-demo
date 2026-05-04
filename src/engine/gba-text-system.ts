@@ -13,11 +13,22 @@ import {
   runTextPrinter,
   textPrinterDrawDownArrow,
   encodeStringForFont,
+  fillWindowPixelBuffer,
+  fillWindowPixelRect,
+  scrollWindow,
+  _setTextInputState,
   RENDER_STATE_FINISH,
+  RENDER_STATE_HANDLE_CHAR,
+  RENDER_STATE_CLEAR,
+  RENDER_STATE_SCROLL_START,
+  RENDER_STATE_SCROLL,
   RENDER_UPDATE,
+  RENDER_FINISH,
   RENDER_STATE_WAIT_WITH_DOWN_ARROW,
+  LINE_HEIGHT,
 } from './gba-text-printer';
 import { getWindowById } from './gba-window-system';
+import { getRuntime } from './decomp-globals';
 
 // ─── Font data (lazy loaded) ─────────────────────────────────────────────────
 
@@ -184,6 +195,10 @@ export function AddTextPrinterParameterized3(
     }
     finished = true;
   }
+  // 1:1 décomp : sTextPrinters[printer.id] = ... (slot fixe par windowId, pas
+  // push). Retire les anciens printers du même windowId pour éviter que leurs
+  // ❤️ down arrows résiduels continuent de s'animer.
+  gTextPrinters = gTextPrinters.filter((ap) => ap.windowId !== windowId);
   gTextPrinters.push({ printer, windowId, finished });
   return gTextPrinters.length - 1;
 }
@@ -207,6 +222,8 @@ export function AddTextPrinterForMessage(_allowSkipping: boolean): void {
     downArrowPixels: downArrowPixels ?? undefined,
   };
   const printer = addTextPrinter(opts);
+  // 1:1 décomp slot fixe : retire les anciens printers du même windowId.
+  gTextPrinters = gTextPrinters.filter((ap) => ap.windowId !== 0);
   gTextPrinters.push({ printer, windowId: 0, finished: false });
 }
 
@@ -233,17 +250,88 @@ export function AddTextPrinterWithCallbackForMessage(
     onCharRendered: callback,
   };
   const printer = addTextPrinter(opts);
+  // 1:1 décomp slot fixe : retire les anciens printers du même windowId.
+  gTextPrinters = gTextPrinters.filter((ap) => ap.windowId !== 0);
   gTextPrinters.push({ printer, windowId: 0, finished: false });
 }
 
+const A_BUTTON_TEXT = 0x01;
+const B_BUTTON_TEXT = 0x02;
+const AB_MASK = A_BUTTON_TEXT | B_BUTTON_TEXT;
+
+// Guard contre double-tick par frame. Le runtime call RunTextPrinters auto à
+// chaque runOneFrame, MAIS les Tasks décomp aussi (via RunTextPrintersAndIsPrinter0Active).
+// Sans ce guard, le ❤️ down arrow s'animerait 2x plus vite que le décomp ROM.
+let _lastRunTextPrintersFrame = -1;
+
 export function RunTextPrinters(): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  // Skip si déjà tick cette frame (= 1:1 décomp behavior, 1 call par frame).
+  if (rt.gIntroFrameCounter === _lastRunTextPrintersFrame) return;
+  _lastRunTextPrintersFrame = rt.gIntroFrameCounter;
+  // 1:1 décomp text.c:944-953 — A/B speed up via JOY_NEW + JOY_HELD.
+  const newAB = !!(rt.gMain.newKeys & AB_MASK);
+  const heldAB = !!(rt.gMain.heldKeys & AB_MASK);
+  _setTextInputState(newAB, heldAB);
+  const aPressed = rt.gMain.newKeys & AB_MASK;  // A or B for page advance.
+
   for (const ap of gTextPrinters) {
     if (ap.finished) continue;
+
+    // 1:1 décomp text.c:1171-1210 state machine transitions.
+    if (aPressed && ap.printer.state === RENDER_STATE_CLEAR) {
+      // 1:1 décomp text.c:1174-1177 : FillWindowPixelBuffer(bgColor) + cursor (x, y).
+      fillWindowPixelBuffer(ap.printer.window, (ap.printer.bgColor << 4) | ap.printer.bgColor);
+      ap.printer.currentX = ap.printer.x;
+      ap.printer.currentY = ap.printer.y;
+      ap.printer.state = RENDER_STATE_HANDLE_CHAR;
+    } else if (aPressed && ap.printer.state === RENDER_STATE_SCROLL_START) {
+      // 1:1 décomp text.c:1181-1187 : TextPrinterClearDownArrow → init scroll
+      // + cursor.x reset (Y reste). Sans clear de l'❤️ AVANT le scroll, l'ancien
+      // ❤️ shift up avec le content → 2 ❤️ visibles à la fin.
+      // text.c:838-848 TextPrinterClearDownArrow = FillWindowPixelRect 8x16 à
+      // (currentX, currentY).
+      fillWindowPixelRect(
+        ap.printer.window,
+        ap.printer.bgColor,
+        ap.printer.currentX,
+        ap.printer.currentY,
+        8,
+        16,
+      );
+      ap.printer.scrollDistance = LINE_HEIGHT + ap.printer.lineSpacing;
+      ap.printer.currentX = ap.printer.x;
+      // currentY ne reset PAS — c'est ce qui distingue de CLEAR.
+      ap.printer.state = RENDER_STATE_SCROLL;
+    } else if (ap.printer.state === RENDER_STATE_SCROLL) {
+      // 1:1 décomp text.c:1189-1209 : scroll progressif chaque frame.
+      // sWindowVerticalScrollSpeeds[textSpeed] : SLOW=1, MID=2, FAST=4 pixels/frame.
+      if (ap.printer.scrollDistance > 0) {
+        const sb2 = (globalThis as Record<string, unknown>).gSaveBlock2Ptr as
+          { optionsTextSpeed?: number } | undefined;
+        const textSpeed = sb2?.optionsTextSpeed ?? 1;  // default MID
+        const speeds = [1, 2, 4];  // SLOW, MID, FAST
+        const speed = speeds[textSpeed] ?? 2;
+        const deltaY = Math.min(ap.printer.scrollDistance, speed);
+        scrollWindow(ap.printer.window, deltaY, ap.printer.bgColor);
+        ap.printer.scrollDistance -= deltaY;
+      } else {
+        ap.printer.state = RENDER_STATE_HANDLE_CHAR;
+      }
+    }
+
     const result = runTextPrinter(ap.printer);
-    if (result === RENDER_UPDATE && ap.printer.state === RENDER_STATE_WAIT_WITH_DOWN_ARROW) {
+    // 1:1 décomp text.c:787-836 — TextPrinterDrawDownArrow appelé chaque frame
+    // pendant CLEAR ou SCROLL_START (= bobbing animation pendant l'attente A).
+    if (result === RENDER_UPDATE && (
+      ap.printer.state === RENDER_STATE_CLEAR ||
+      ap.printer.state === RENDER_STATE_SCROLL_START
+    )) {
       textPrinterDrawDownArrow(ap.printer);
     }
-    if (ap.printer.state === RENDER_STATE_FINISH) {
+    // 1:1 décomp pokeemerald RunTextPrinters : RENDER_FINISH → active = FALSE.
+    if (result === RENDER_FINISH) {
       ap.finished = true;
     }
   }
@@ -251,6 +339,11 @@ export function RunTextPrinters(): void {
 
 export function IsTextPrinterActive(windowId: number): boolean {
   return gTextPrinters.some((ap) => ap.windowId === windowId && !ap.finished);
+}
+
+/** DEBUG only — accès lecture aux active printers depuis window.dev. */
+export function _debugGetTextPrinters(): typeof gTextPrinters {
+  return gTextPrinters;
 }
 
 export function RunTextPrintersAndIsPrinter0Active(): boolean {

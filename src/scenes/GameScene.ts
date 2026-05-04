@@ -33,7 +33,7 @@ import { DecompRuntime, type CB2Callback } from '../engine/decomp-runtime';
 import { setGlobalRuntime, resetObjAllocations, lz77Trace, assetCache } from '../engine/decomp-globals';
 import { preloadFontData } from '../engine/gba-text-system';
 import { exposeGbaGlobals } from '../engine/gba-global-scope';
-import { preloadScene1Assets, preloadScene2Assets, preloadScene3Assets, preloadTitleAssets } from '../engine/intro-asset-loader';
+import { preloadScene1Assets, preloadScene2Assets, preloadScene3Assets, preloadTitleAssets, preloadBirchSpeechAssets } from '../engine/intro-asset-loader';
 import {
   Task_Scene1_Load, MainCB2_EndIntro,
   SpriteCB_Sparkle, SpriteCB_Volbeat, SpriteCB_Torchic, SpriteCB_Manectric,
@@ -139,6 +139,24 @@ export class GameScene extends Phaser.Scene {
     // qu'on puisse les call depuis la console ou preview_eval.
     const rt = this.rt;
     (window as any).dev = {
+      // DEBUG only — accès direct au runtime + helpers diagnostic Birch flow.
+      _rt: rt,
+      fade: () => ({
+        active: rt.gPaletteFade.active,
+        brightness: rt.gPaletteFade.brightness,
+        currentFrame: rt.gPaletteFade.currentFrame,
+        totalFrames: rt.gPaletteFade.totalFrames,
+        endY: rt.gPaletteFade.endY,
+        startY: rt.gPaletteFade.startY,
+      }),
+      printers: async () => {
+        const m = await import('../engine/gba-text-system');
+        return m._debugGetTextPrinters().map((ap, i) => ({
+          slot: i, windowId: ap.windowId, finished: ap.finished,
+          state: ap.printer.state, charIdx: (ap.printer as any).charIdx,
+          encodedLen: (ap.printer as any).encodedString?.length,
+        }));
+      },
       pause: () => { rt.paused = true; rt.stepBudget = 0; return 'paused @ frame ' + rt.gIntroFrameCounter; },
       resume: () => { rt.paused = false; rt.stepBudget = 0; return 'resumed @ frame ' + rt.gIntroFrameCounter; },
       step: (n = 1) => { rt.paused = true; rt.stepBudget += n; return 'step ' + n + ' frames'; },
@@ -348,6 +366,7 @@ export class GameScene extends Phaser.Scene {
       await preloadTitleAssets();
       await preloadFontData();
       await preloadOptionMenuAssets();
+      await preloadBirchSpeechAssets();
 
       // Pré-charge les MIDIs intro/title + cris légendaires pour éliminer le
       // gap silence aux transitions m4aSongNumStart (sinon ~50-150ms de

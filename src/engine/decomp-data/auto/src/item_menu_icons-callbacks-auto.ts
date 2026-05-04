@@ -66,9 +66,9 @@ export const SpriteCB_ShakeBagSprite: SpriteCallback = (sprite, rt) => {
 export const SpriteCB_SwitchPocketRotatingBallInit: SpriteCallback = (sprite, rt) => {
   rt.gba.oam[sprite.oamIndex].affineMode = ST_OAM_AFFINE_NORMAL;
       if (sprite.data[0] == -1)
-          sprite.affineAnims = sRotatingBallAnimCmds;
+          sprite.affineAnimsTableName = sRotatingBallAnimCmds;
       else
-          sprite.affineAnims = sRotatingBallAnimCmds_FullRotation;
+          sprite.affineAnimsTableName = sRotatingBallAnimCmds_FullRotation;
 
       InitSpriteAffineAnim(sprite);
       sprite.data[1] = sprite.centerToCornerVecX;

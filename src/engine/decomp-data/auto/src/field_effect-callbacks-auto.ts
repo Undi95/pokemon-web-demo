@@ -159,7 +159,7 @@ export const SpriteCB_FlyBirdLeaveBall: SpriteCallback = (sprite, rt) => {
           if (sprite.data[0] == 0)
           {
               rt.gba.oam[sprite.oamIndex].affineMode = ST_OAM_AFFINE_DOUBLE;
-              sprite.affineAnims = sAffineAnims_FlyBird;
+              sprite.affineAnimsTableName = sAffineAnims_FlyBird;
               InitSpriteAffineAnim(sprite);
               rt.StartSpriteAffineAnim(sprite.spriteId, 0);
               sprite.x = 0x76;
@@ -212,7 +212,7 @@ export const SpriteCB_FlyBirdReturnToBall: SpriteCallback = (sprite, rt) => {
           if (sprite.data[0] == 0)
           {
               rt.gba.oam[sprite.oamIndex].affineMode = ST_OAM_AFFINE_DOUBLE;
-              sprite.affineAnims = sAffineAnims_FlyBird;
+              sprite.affineAnimsTableName = sAffineAnims_FlyBird;
               InitSpriteAffineAnim(sprite);
               rt.StartSpriteAffineAnim(sprite.spriteId, 1);
               sprite.x = 0x5e;
