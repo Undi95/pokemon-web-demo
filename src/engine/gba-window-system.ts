@@ -363,8 +363,34 @@ export function DrawStdFrameWithCustomTileAndPalette(
   }
 }
 
-export function LoadMessageBoxGfx(_bg: number, _baseTile: number, _palette: number): void {
-  // TODO: charger les gfx de la message box
+/** 1:1 décomp `menu.c LoadMessageBoxGfx(bg, baseTile, paletteFlatIdx)`.
+ *  Charge les message-box frame tiles + palette standard pour le dialogue.
+ *  Phase E Step 4 MVP : charge une palette text inline (= 4 colors :
+ *    idx 0 = transparent (RGB(0,0,0))
+ *    idx 1 = bg blanc (RGB(31,31,31))
+ *    idx 2 = fg dark grey (RGB(7,7,7))
+ *    idx 3 = shadow light grey (RGB(15,15,15))
+ *  ).
+ *  Sans ça, palette 15 reste avec des valeurs arbitraires (BLEU pour main menu
+ *  cursor highlight) → boxes bleues autour des chars dans le dialogue Birch.
+ *  TODO Phase E.2 : load real `gMessageBox_Pal` depuis assets décomp. */
+export function LoadMessageBoxGfx(_bg: number, _baseTile: number, paletteFlatIdx: number): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  // RGB15 packed : (r) | (g << 5) | (b << 10).
+  const transparent = 0;  // (0, 0, 0) avec idx 0 traité transparent
+  const white = (31) | (31 << 5) | (31 << 10);
+  const darkGrey = (7) | (7 << 5) | (7 << 10);
+  const lightGrey = (15) | (15 << 5) | (15 << 10);
+  // Écrit dans gPlttBufferUnfaded + Faded pour que TransferPlttBuffer copie au PLTT.
+  rt.gPlttBufferUnfaded.set(paletteFlatIdx + 0, transparent);
+  rt.gPlttBufferFaded.set(paletteFlatIdx + 0, transparent);
+  rt.gPlttBufferUnfaded.set(paletteFlatIdx + 1, white);
+  rt.gPlttBufferFaded.set(paletteFlatIdx + 1, white);
+  rt.gPlttBufferUnfaded.set(paletteFlatIdx + 2, darkGrey);
+  rt.gPlttBufferFaded.set(paletteFlatIdx + 2, darkGrey);
+  rt.gPlttBufferUnfaded.set(paletteFlatIdx + 3, lightGrey);
+  rt.gPlttBufferFaded.set(paletteFlatIdx + 3, lightGrey);
 }
 
 export function ClearStdWindowAndFrame(windowId: number, _copyToVram: boolean): void {

@@ -77,7 +77,7 @@ import {
   InitMenuInUpperLeftCornerNormal,
   gSaveBlock2Ptr,
 } from './gba-menu-system';
-import { CreateWindowTemplate, FillWindowPixelBuffer, PutWindowTilemap, CopyWindowToVram } from './gba-window-system';
+import { CreateWindowTemplate, FillWindowPixelBuffer, FillWindowPixelRect, PutWindowTilemap, CopyWindowToVram } from './gba-window-system';
 import { AddTextPrinterParameterized3 } from './gba-text-system';
 import { getString } from './gba-strings';
 
@@ -138,6 +138,8 @@ export const sBirchBgTemplate = {
 (globalThis as Record<string, unknown>).sBirchBgTemplate = sBirchBgTemplate;
 
 // Asset symbol-name strings (= keys vers assetCache, à fetcher avant Phase D Birch).
+export const sBirchSpeechShadowGfx = 'sBirchSpeechShadowGfx';
+(globalThis as Record<string, unknown>).sBirchSpeechShadowGfx = sBirchSpeechShadowGfx;
 export const sBirchSpeechBgMap = 'sBirchSpeechBgMap';
 (globalThis as Record<string, unknown>).sBirchSpeechBgMap = sBirchSpeechBgMap;
 export const sBirchSpeechBgPals = 'sBirchSpeechBgPals';
@@ -307,12 +309,36 @@ export function CreateMainMenuErrorWindow(_text: string): void {
 
 // ─── Birch Speech helpers stubs (Phase D — à implémenter pour Birch flow) ────
 
-export function NewGameBirchSpeech_ClearWindow(_windowId: number): void {
-  // TODO Phase D : effacer la fenêtre dialogue.
+/** 1:1 décomp main_menu.c:2242 NewGameBirchSpeech_ClearWindow.
+ *  FillWindowPixelRect(windowId, bgColor, 0, 0, maxCharWidth * winWidth, maxCharHeight * winHeight)
+ *  + CopyWindowToVram. Phase E Step 4 fix : real impl pour clear le window
+ *  entre 2 pages de dialogue (= sinon le texte précédent reste visible). */
+export function NewGameBirchSpeech_ClearWindow(windowId: number): void {
+  // bgColor = 1 (= PIXEL_FILL(1) match ShowDialogueWindow). maxCharWidth = 8,
+  // maxCharHeight = 16 pour FONT_NORMAL standard.
+  // Window 0 dimension : 27x4 tiles = 216x32 pixels (cf. sNewGameBirchSpeechTextWindows[0]).
+  // On fill avec bgColor=1 toute la zone.
+  FillWindowPixelRect(windowId, 1, 0, 0, 216, 32);
+  CopyWindowToVram(windowId, 2);  // COPYWIN_GFX = 2
 }
 
-export function NewGameBirchSpeech_ShowDialogueWindow(_windowId: number, _copyToVram: boolean): void {
-  // TODO Phase D : afficher la fenêtre dialogue.
+/** 1:1 décomp main_menu.c:2271 NewGameBirchSpeech_ShowDialogueWindow.
+ *    CallWindowFunction(NewGameBirchSpeech_CreateDialogueWindowBorder);
+ *    FillWindowPixelBuffer(windowId, PIXEL_FILL(1));
+ *    PutWindowTilemap(windowId);
+ *    if (copyToVram) CopyWindowToVram(windowId, COPYWIN_FULL);
+ *
+ *  Phase E Step 4 fix : real impl. MVP : skip le custom dialogue border (= 9
+ *  tiles décoratifs spécifiques Birch via NewGameBirchSpeech_CreateDialogueWindowBorder),
+ *  juste fill le window pixel buffer en blanc + put tilemap + copy.
+ *  TODO Phase E.2 : draw le custom dialogue border 1:1 décomp main_menu.c:2280-2294. */
+export function NewGameBirchSpeech_ShowDialogueWindow(windowId: number, copyToVram: boolean): void {
+  // Fill avec PIXEL_FILL(1) = idx 1 dans 2 nibbles = 0x11.
+  FillWindowPixelBuffer(windowId, 0x11);
+  PutWindowTilemap(windowId);
+  if (copyToVram) {
+    CopyWindowToVram(windowId, 3);  // COPYWIN_FULL = 3
+  }
 }
 
 export function NewGameBirchSpeech_ClearGenderWindow(_windowId: number, _copyToVram: boolean): void {

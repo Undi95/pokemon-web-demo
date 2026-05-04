@@ -306,6 +306,28 @@ export function encodeStringForFont(str: string, charmap: Record<string, number>
       i++;
       continue;
     }
+    // 1:1 décomp escape sequences. Phase E Step 4 fix : \p = PROMPT_CLEAR (=
+    // page break wait A press), \l = PROMPT_SCROLL (= scroll up wait A press).
+    // MVP : treat \p comme double newline (= toute la page sur 1 écran sans
+    // pause for A press). TODO Phase E.4 : real impl avec wait for A.
+    if (ch === '\\' && i + 1 < str.length) {
+      const next = str[i + 1];
+      if (next === 'p') {
+        bytes.push(CHAR_NEWLINE, CHAR_NEWLINE);  // MVP : double newline.
+        i += 2;
+        continue;
+      }
+      if (next === 'l') {
+        bytes.push(CHAR_NEWLINE);  // MVP : single newline.
+        i += 2;
+        continue;
+      }
+      if (next === 'n') {
+        bytes.push(CHAR_NEWLINE);
+        i += 2;
+        continue;
+      }
+    }
     if (ch === '{') {
       const closeIdx = str.indexOf('}', i + 1);
       if (closeIdx > 0) {
