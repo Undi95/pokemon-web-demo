@@ -8,6 +8,126 @@ de la décompilation FR (`pokeemeraude`) + `@pkmn/sim` pour combats.
 
 ---
 
+## Session 83 — Audit complet 1:1 décomp + foundations unifiées (Phase A+B+C+D-cleanup)
+
+**Contexte** : Suite à directive #1 (= "1:1 décomp + foundations unifiées + pas de duplication" établie session 82), le user a demandé un audit complet du codebase AVANT le push + AVANT d'attaquer Birch. Audit délégué à Plan agent → 30+ violations identifiées, prioritisées HIGH/MED/LOW + 5 architecture observations.
+
+**Plan d'attaque appliqué** :
+- **Phase A** (= quick wins foundations) : generic post-transpile-patches loop + InitMainMenu cleanup
+- **Phase B** (= foundation upgrades) : PaletteFade complete struct + GetStringWidth glyph widths
+- **Phase C** (= refactor manuel → modulaire) : split gba-menu-system → main-menu-impl
+- **Phase D-cleanup** (= 8 items duplications cachées) : foundations contournées + stubs + deprecations
+- **Sweep additionnel** : debug logs cleanup
+
+### Bug fix priorité (= demandé user) : 4× TS strict errors
+
+* `decomp-runtime.ts:1118` (TS2721) : `found.func` possibly null. Fix : local `const fn = found.func; if (fn) fn(found)`.
+* `m4a/player.ts:376,381` (TS2345) : retiré `as never` cast inutile sur setMasterParameter('masterGain', ...).
+* `main.ts:10` (TS2339) : `import.meta.env` inconnu. Fix : créé `src/vite-env.d.ts` avec `/// <reference types="vite/client" />`.
+* `GameScene.ts:232-236` (TS2339) : `_hiddenByDev` polluait OamEntry. Fix : Set externe `window.__objHideStash`.
+* + rattrapage docs session 82 oubliées au précédent commit.
+* Commit `4de62f77`.
+
+### Phase A — Generic post-transpile-patches loop + InitMainMenu cleanup
+
+**Architecture observation #1 audit** : pattern transpileur `/* TODO scene transition: SetMainCallback2(X) */` et `/* noop SetVBlankCallback */` apparaît dans **73 auto files**. Plutôt que dupliquer une fonction de patch par fichier (n'aurait pas scalé), refactor en **applyGenericPatches()** une seule passe :
+
+* **G1** `/* TODO scene transition: SetMainCallback2(X) */;` → `rt.SetMainCallback2(X);` avec safeguard (= ne patche que si X imported/exported, sinon laisse TODO pour éviter ReferenceError sur scenes pas implémentées). `gMain.savedCallback` reçoit `?? null` fallback.
+* **G2** `/* noop SetVBlankCallback */;` → `rt.SetVBlankCallback(VBlankCB);` (= notre runtime drive TransferPlttBuffer auto si vblankCallback non-null).
+* **G3** Inject local `const VBlankCB: () => void = () => {};` no-op si référencé mais pas défini.
+* **patchAllAutoFilesGeneric()** : loop sur tous `*-callbacks-auto.ts`. Idempotent.
+
+Résultat : **53/153 auto files patchés en 1 passe**. Birch CB2 ReturnFromNamingScreen + tous Tasks scene-init à travers main_menu/intro/party_menu/contest/trade/shop/etc. ont maintenant SetMainCallback2/SetVBlankCallback fonctionnels.
+
+**gba-menu-system.ts InitMainMenu cleanup** :
+* 1:1 décomp main_menu.c:558-615 — REG_OFFSET_* nommés (plus 0x000/0x008/...), DISPCNT_WIN0_ON | DISPCNT_OBJ_ON | DISPCNT_OBJ_1D_MAP (plus `0x100|0x200|...`), DmaFill16/32 1:1 décomp au lieu de `vram.fill(0)` direct.
+* SetVBlankCallback(null) au début (= était omis) → empêche TransferPlttBuffer pendant init (anti-flash systémique, même pattern qu'option_menu state 0).
+* Reordering 1:1 décomp : LoadPalette + ScanlineEffect_Stop + ResetTasks + ResetSpriteData + FreeAllSpritePalettes dans l'ordre exact.
+* Commit `56110a1a`.
+
+### Phase B — PaletteFade complete struct + GetStringWidth glyph widths
+
+**Architecture observation #4 audit** : PaletteFade struct incomplet bloque 30+ auto callbacks (party_menu, contest, trade, decoration cf. grep auto-engine).
+
+* Constants enum `NORMAL_FADE = 0` / `FAST_FADE = 1` / `HARDWARE_FADE = 2` (= 1:1 décomp src/palette.c:9-14).
+* Struct PaletteFade complétée match `struct PaletteFadeControl` (include/palette.h:35-53) :
+  - `yDec` direction du fade
+  - `softwareFadeFinishing` (= flag set 1 frame quand active passe true→false)
+  - `softwareFadeFinishingCounter` (= compte à rebours)
+  - `hardwareFadeFinishing` (= analogue HARDWARE_FADE)
+  - `shouldResetBlendRegisters` (= set par BeginHardwarePaletteFade)
+  - `objPaletteToggle` (= alternance BG↔OBJ par frame)
+  - `deltaY` (= 1 par défaut, 2 pour FAST_FADE)
+  - `multipurpose1/2` (= union utilisée hardware/fast fade)
+* BeginNormalPaletteFade init tous ces fields. UpdatePaletteFade signal softwareFadeFinishing 1 frame + auto-reset frame d'après. Toggle objPaletteToggle chaque tick. ResetPaletteFade reset tous fields (= sinon état du fade précédent persiste).
+
+**GetStringWidth + GetStringRightAlignXOffset** dans `gba-text-system.ts` :
+* 1:1 décomp src/text.c GetStringWidth(FONT_NORMAL, str, 0). Strip control codes `{NAME ...}` + encode via charmap + somme glyphWidths[byte].
+* `option-menu-impl.ts:rightAlignX` délégué à `GetStringRightAlignXOffset` (= fini approximation `~6px/char`). Right-align FAST/OFF/STÉRÉO/L=A maintenant exactement aligné comme décomp ROM.
+* Commit `013d9864`.
+
+### Phase C — Split gba-menu-system → main-menu-impl
+
+**Architecture observation #2 audit** : `gba-menu-system.ts` (580 lignes) viole directive #1 systématiquement — mélange helpers menu génériques + tout le code spécifique main_menu.c.
+
+* **NEW `src/engine/main-menu-impl.ts`** (470 lignes) : pattern analogue option-menu-impl.ts. Tout ce qui est 1:1 décomp src/main_menu.c :
+  - InitMainMenu (= 1:1 décomp main_menu.c:558-615)
+  - HandleMainMenuInput (= 1:1 décomp main_menu.c:885-929) avec `IsWirelessAdapterConnected()` debug call ajouté (= ligne 892 décomp, était omis, 1:1 décomp pure désormais)
+  - HighlightSelectedMainMenuItem (= WIN0 cursor highlight)
+  - LoadMainMenuWindowFrameTiles (= partagé via gba-text-window foundation)
+  - DrawMainMenuWindowBorder / ClearMainMenuWindowTilemap
+  - VBlankCB_MainMenu
+  - 8 NewGameBirchSpeech_* stubs (TODO Phase E Birch flow)
+  - DoNamingScreen stub
+  - sBirch* templates / palettes placeholders
+* **gba-menu-system.ts refactored** (200 lignes) : helpers menu génériques + saveBlock seulement.
+  - Constants A_BUTTON/B_BUTTON/DPAD_*
+  - Menu_ProcessInputNoWrapClearOnChoose / Menu_GetCursorPos / InitMenuInUpperLeftCornerNormal
+  - CreateYesNoMenu* stubs
+  - IsWirelessAdapterConnected / IsMysteryGiftEnabled / etc.
+  - gSaveBlock1Ptr / gSaveBlock2Ptr Proxy localStorage
+* `decomp-globals.ts` : ajout `export * from './main-menu-impl'` pour les auto callbacks.
+* Commit `4864bd63`.
+
+### Phase D-cleanup — 8 items duplications cachées
+
+1. **Foundations contournées** (`decomp-globals.ts`) :
+   - CycleSceneryPalette : `r.gPlttBufferFaded.set()` au lieu de `r.gba.palette.loadBgRange()` direct (= 1:1 décomp).
+   - LoadSpritePalette + LoadSpritePalettes : retire double-write `gba.palette.loadObjRange` direct.
+
+2. **Mystery Gift/Event/EReader stubs** (post-transpile-patches.mjs) :
+   - patchMainMenuMysteryStubs() : 3× TODO scene transition → console.warn explicites (= scenes unreachable web build, IsWirelessAdapterConnected always false).
+
+3. **ACTIONS_FALLBACK retiré** (movement.ts) : 80 lignes hardcoded supprimées (= duplication movement-actions.json). lookupAction returns null + warn 1× si JSON pas chargé.
+
+4. **DmaClearLarge16/DmaClear32 stubs duplication retirée** (option-menu-impl.ts) : retire stubs no-op locaux qui dupliquaient (en cassant la sémantique) les vrais helpers decomp-globals.ts (= dispatch VRAM/OAM/PLTT).
+
+5. **Birch stubs déplacés** (decomp-globals.ts → main-menu-impl.ts) : AddBirchSpeechObjects + 4× NewGameBirchSpeech_StartFade* étaient hors-scope (= scene-Birch-specific). InitSpriteAffineAnim + CreatePokeballSpriteToReleaseMon restent (= helpers sprite génériques utilisés plusieurs scenes).
+
+6. **sBirch* templates documentation** (main-menu-impl.ts) : "PHASE D PLACEHOLDERS" explicit + valeurs sensées (ScrollArrowParams full struct au lieu de `{} as any`).
+
+7. **palette-fade.ts marked @deprecated** : wrapper Phaser legacy. Migration plan documenté pour future session (= migrer BirchSpeechScene + MainMenuScene Phaser legacy vers CB2 décomp natif puis supprimer).
+
+8. **Sweep transversal TODO/FALLBACK/HACK/hardcoded** : aucun action item critique restant. Items mentionnés sont soit légitimes 1:1 décomp (= asset symbol lists), soit acceptés par user (= audio engine), soit features futures hors scope.
+* Commit `7aaa5ee7`.
+
+### Sweep additionnel — debug logs cleanup
+
+* `main-menu-impl.ts` InitMainMenu : retire 2× console.log debug `'[InitMainMenu] sMainMenuBgPal cached?'`. Retire l'import getAsset inutilisé.
+* PATCH M2 dans post-transpile-patches.mjs : retire 2× console.log auto file (CB2_MainMenu stats toutes les 60 frames + CB2_InitMainMenu called).
+* Commit `2017dc73`.
+
+### Status final session 83
+
+- **0 erreur tsc**, Vite build OK 13-14s
+- **10 commits ahead origin** : 4de62f77, 56110a1a, 013d9864, 4864bd63, 7aaa5ee7, 2017dc73 (+ 4 commits session 82 ; total 10)
+- **Foundations unifiées 1:1 décomp pure** (= directive #1 respectée à 100%)
+- **Pattern reusable** pour futures scenes : auto file callbacks + post-transpile-patches.mjs idempotent + foundations partagées (gba-text-window, GetStringWidth, PaletteFade complete struct, REG_OFFSET_*/DISPCNT_* constants)
+
+**Pas pushé yet** (= user explicit "AVANT le prof on push, promis"). Phase E (= Birch flow real impl) à faire APRÈS push éventuellement, avec la base saine établie.
+
+---
+
 ## Session 82 — Option menu 1:1 décomp + 5 fixes systémiques + foundations unifiées
 
 **Directive #1 établie par user** (= [`memory/directive_no_redo_unified_foundations.md`]) :

@@ -104,7 +104,28 @@ Si TestGba marche pixel-perfect, l'engine est validé.
 
 ## Sources de référence (lecture seule, **pas pour copier 1:1**)
 
-- `D:/Projet 1/decomps/pokeemeraude/` — décomp FR (= source de vérité 1:1 ROM)
+- `D:/Projet 1/decomps/pokeemeraude/` — décomp FR (= source de vérité 1:1 ROM FR)
+- `D:/Projet 1/decomps/pokeemerald-master/` — décomp EN (= utilisée pour comparaison croisée
+  quand un commentaire ou un nom de fonction FR est ambigu)
+
+## Crédits décomp
+
+Ce projet n'existe que grâce au travail des équipes décompilation Pokémon. **Tous les codes
+de gameplay 1:1 (state machines, helpers GBA, layout windows, palettes, callbacks) sont
+transcrits depuis les sources C de ces décomps**, pas réinventés.
+
+- **[`qigast/pokeemeraude`](https://github.com/qigast/pokeemeraude)** — décomp française de
+  Pokémon Émeraude. **Source de vérité primaire** du projet : c'est ce que notre engine
+  reproduit 1:1 (= mêmes IDs, mêmes structures, mêmes constants, même ordre d'exécution).
+  La build de ce repo produit une ROM bit-perfect avec la cartouche FR officielle.
+- **[`pret/pokeemerald`](https://github.com/pret/pokeemerald)** — décomp anglaise officielle
+  de Pokémon Emerald (référence historique du projet pret). **Utilisée pour comparaison
+  croisée** : quand un commentaire ou un nom de symbole dans la décomp FR est ambigu, on
+  vérifie l'équivalent EN pour clarifier l'intention. Aucun code EN n'est utilisé en
+  production — toutes les valeurs viennent du repo FR.
+
+Merci aux contributeurs de ces deux projets pour l'énorme travail de reverse engineering
+qui rend ce port web possible.
 
 ## Crédits audio
 

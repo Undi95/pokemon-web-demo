@@ -22,6 +22,27 @@
 >   - `option-menu-impl.ts:rightAlignX` = ~6px/char approx. Devrait utiliser glyphwidths réels via GetStringWidth.
 >   - Birch speech CB2 callbacks (auto file) ont `/* noop SetVBlankCallback */` à patcher (même pattern O6).
 >   - Audit complet du codebase pour voir s'il reste duplications/hacks/approximations.
+>
+> **Session 83 (audit complet 1:1 décomp + foundations unifiées)** : ✅ **ALL CLEAR**
+> ✅ **Phase A** : Generic post-transpile-patches loop (= élimine duplication patch-par-fichier, traite TOUS les `*-callbacks-auto.ts`). 53/153 auto files patchés en 1 passe avec 3 patterns G1/G2/G3 (SetMainCallback2, SetVBlankCallback, VBlankCB no-op auto-inject). gba-menu-system.ts InitMainMenu cleanup hex magic → REG_OFFSET_*/DISPCNT_* + DmaFill16/32 + SetVBlankCallback(null) au début (= 1:1 décomp main_menu.c:558-615).
+> ✅ **Phase B** : PaletteFade struct complète (= softwareFadeFinishing, deltaY, objPaletteToggle, hardwareFadeFinishing, shouldResetBlendRegisters, multipurpose1/2 ; constants NORMAL_FADE/FAST_FADE/HARDWARE_FADE) match `struct PaletteFadeControl` du décomp. UpdatePaletteFade signal softwareFadeFinishing 1 frame à la fin. ResetPaletteFade reset tous les fields. GetStringWidth + GetStringRightAlignXOffset 1:1 décomp src/text.c via vraies glyphWidths (= fini approximation 6px/char).
+> ✅ **Phase C** : Split gba-menu-system.ts (580 lignes) → main-menu-impl.ts (470 lignes, scene-specific) + gba-menu-system.ts (200 lignes, helpers menu génériques). Pattern analogue option-menu-impl.ts. IsWirelessAdapterConnected() debug call ajouté dans HandleMainMenuInput pour 1:1 décomp pure.
+> ✅ **Phase D-cleanup** : 8 items duplications cachées :
+>    1. CycleSceneryPalette + LoadSpritePalette + LoadSpritePalettes : foundations contournées fix (= écrit gPlttBufferFaded seulement, plus de gba.palette direct).
+>    2. Mystery Gift/Event/EReader scene transitions stubs (= 3× console.warn explicites au lieu de TODO).
+>    3. ACTIONS_FALLBACK retiré de movement.ts (= 80 lignes hardcoded supprimées, source unique movement-actions.json décomp).
+>    4. DmaClearLarge16/DmaClear32 stubs no-op locaux retirés de option-menu-impl.ts (= duplication cachée des vrais helpers decomp-globals.ts).
+>    5. AddBirchSpeechObjects + 4× NewGameBirchSpeech_StartFade* déplacés decomp-globals → main-menu-impl (= consolidation thématique scene-Birch).
+>    6. sBirch* templates documentation explicite "PHASE D PLACEHOLDERS" + valeurs sensées (= ScrollArrowParams full struct).
+>    7. palette-fade.ts marked @deprecated (= Phaser legacy, migration plan documenté).
+>    8. Sweep transversal TODO/FALLBACK/HACK/hardcoded : aucun item critique restant.
+> ✅ **Sweep additionnel** : 4× console.log debug noisy retirés (CB2_MainMenu, CB2_InitMainMenu, InitMainMenu) via post-transpile-patches.mjs PATCH M2 + cleanup direct.
+>
+> **Architecture finale session 83** :
+> - 0 erreur tsc, Vite build OK 13-14s
+> - 10 commits ahead origin (= prêts pour push après Birch impl)
+> - Foundations unifiées 1:1 décomp pure (= directive #1 respectée)
+> - Pattern reusable pour future scenes : auto file callbacks + post-transpile-patches.mjs idempotent
 
 ## 🔴 Critiques (= bugs visibles probables)
 
