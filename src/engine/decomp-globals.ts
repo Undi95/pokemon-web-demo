@@ -794,13 +794,43 @@ export function PlaySE(seId: number): void {
 }
 
 /** Map species ID → species name (= cri filename `cries/<name>.wav`).
- *  Values match décomp `include/constants/species.h` (SPECIES_KYOGRE=404 etc). */
-const SPECIES_NAMES: Record<number, string> = {
-  404: 'kyogre',     // SPECIES_KYOGRE
-  405: 'groudon',    // SPECIES_GROUDON
-  406: 'rayquaza',   // SPECIES_RAYQUAZA
-  // TODO étendre selon besoin (151 species + extensions Hoenn).
-};
+ *  1:1 décomp `include/constants/species.h` — mapping généré dynamiquement
+ *  depuis `public/decomp/em/constants.json` (SPECIES_*) + cries.json (filename).
+ *  Au boot, `loadSpeciesNamesAsync()` populate ce map (= 388+ species). */
+const SPECIES_NAMES: Record<number, string> = {};
+let _speciesNamesLoaded = false;
+let _speciesNamesLoadingPromise: Promise<void> | null = null;
+
+/** Charge async la map species ID → name via constants.json + cries.json.
+ *  À call au boot (= GameScene.preload). Idempotent. */
+export async function loadSpeciesNamesAsync(): Promise<void> {
+  if (_speciesNamesLoaded) return;
+  if (_speciesNamesLoadingPromise) return _speciesNamesLoadingPromise;
+  _speciesNamesLoadingPromise = (async () => {
+    try {
+      const [constsResp, criesResp] = await Promise.all([
+        fetch('/decomp/em/constants.json'),
+        fetch('/decomp/em/cries.json'),
+      ]);
+      const consts = await constsResp.json() as Record<string, number>;
+      const cries = await criesResp.json() as Record<string, string>;
+      // Pour chaque SPECIES_X dans constants : SPECIES_NAMES[id] = name extrait du chemin cries.
+      for (const speciesKey of Object.keys(consts)) {
+        if (!speciesKey.startsWith('SPECIES_')) continue;
+        const id = consts[speciesKey];
+        const cryPath = cries[speciesKey];
+        if (typeof id !== 'number' || !cryPath) continue;
+        // cryPath = "cries/lotad.wav" → "lotad"
+        const m = cryPath.match(/cries\/(.+)\.wav$/);
+        if (m) SPECIES_NAMES[id] = m[1];
+      }
+      _speciesNamesLoaded = true;
+    } catch (e) {
+      console.warn('[loadSpeciesNamesAsync] failed:', e);
+    }
+  })();
+  return _speciesNamesLoadingPromise;
+}
 
 /** 1:1 décomp `PlayCryInternal(species, pan, volume, priority, mode)` — joue
  *  le cri d'un Pokémon via WAV pré-extrait. Phase 7 minimal : ignore pan/volume/
@@ -809,7 +839,11 @@ export function PlayCryInternal(
   species: number, _pan: number, _volume: number, _priority: number, _mode: number,
 ): void {
   const name = SPECIES_NAMES[species];
-  if (!name) return;
+  if (!name) {
+    // Si pas encore chargé, fire async load + skip cry pour ce frame
+    if (!_speciesNamesLoaded) void loadSpeciesNamesAsync();
+    return;
+  }
   void import('./music').then(({ playCry }) => playCry(name)).catch(() => { /* silent */ });
 }
 
@@ -1731,10 +1765,46 @@ export * from './decomp-data/auto/src/intro-c-data-auto';
 export function InitSpriteAffineAnim(_sprite: any): void { /* TODO future affine anims */ }
 
 // 1:1 décomp src/pokemon.c CreatePokeballSpriteToReleaseMon — utilisé par
-// Birch (release Lotad) ET party_menu (release pokémon). Stub return 0
-// (= invalid sprite ID, scene continue).
-export function CreatePokeballSpriteToReleaseMon(_spriteId: number, _paletteBank: number, _x: number, _y: number, _a: number, _b: number, _c: number, _pal: number, _species: number): number {
-  return 0;
+// Birch (release Lotad) ET party_menu (release pokémon). Notre version
+// déclenche SE_BALL_OPEN + cry du species après `delay` frames via une
+// Task dédiée (= matches le timing décomp pokeball anim sans nécessiter
+// la full pokeball sprite/anim chain).
+//
+// Signature 1:1 : (monSpriteId, monPalNum, x, y, oamPriority, subpriority, delay, fadePalettes, species).
+export function CreatePokeballSpriteToReleaseMon(
+  _monSpriteId: number, _monPalNum: number, _x: number, _y: number,
+  _oamPriority: number, _subpriority: number, delay: number,
+  _fadePalettes: number, species: number,
+): number {
+  const r = rt();
+  // 1:1 décomp pokeball.c:1031 : CreateTask(Task_PokeballRelease, ...) avec delay
+  // qui décompte avant de jouer SE + cry. SE_BALL_OPEN = 15 (cf. songs.h:21).
+  const SE_BALL_OPEN = 15;
+  const t = r.CreateTask((task) => {
+    if (task.data[0] > 0) {
+      task.data[0]--;
+      return;
+    }
+    if (task.data[1] === 0) {
+      // Step 0 : SE pokeball ouverture
+      PlaySE(SE_BALL_OPEN);
+      task.data[1] = 1;
+      task.data[0] = 8;  // 8 frames avant cry (= timing pokeball.c:Task_PlayCryWhenReleasedFromBall)
+      return;
+    }
+    if (task.data[1] === 1) {
+      // Step 1 : cry du Pokemon
+      PlayCryInternal(species, 0, 100, 2 /* CRY_PRIORITY_NORMAL */, 0 /* CRY_MODE_NORMAL */);
+      r.DestroyTask(task.taskId);
+      return;
+    }
+  }, 0);
+  const task = r.gTasks.get(t);
+  if (task) {
+    task.data[0] = delay;  // frames avant SE_BALL_OPEN
+    task.data[1] = 0;       // step (0=SE, 1=cry)
+  }
+  return 0;  // stub spriteId (= scene continue mais pas de pokeball visuelle)
 }
 
 /** 1:1 décomp `PIXEL_FILL(value)` macro — fills both nibbles of a byte. */

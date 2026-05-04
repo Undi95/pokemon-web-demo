@@ -368,6 +368,13 @@ export class GameScene extends Phaser.Scene {
       await preloadOptionMenuAssets();
       await preloadBirchSpeechAssets();
 
+      // 1:1 décomp species.h + cries.json : map species ID → cri filename.
+      // Au boot pour que PlayCryInternal(SPECIES_X) fonctionne pour TOUS les
+      // species (Lotad release Birch, evolutions, battles, etc.), pas juste
+      // les 3 hardcodés (Kyogre/Groudon/Rayquaza intro).
+      const { loadSpeciesNamesAsync } = await import('../engine/decomp-globals');
+      await loadSpeciesNamesAsync();
+
       // Pré-charge les MIDIs intro/title + cris légendaires pour éliminer le
       // gap silence aux transitions m4aSongNumStart (sinon ~50-150ms de
       // fetch+parse par switch intro→intro_battle→title).
