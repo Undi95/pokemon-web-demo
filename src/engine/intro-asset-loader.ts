@@ -526,6 +526,55 @@ export async function preloadBirchSpeechAssets(): Promise<void> {
   const platformBlack = new Uint16Array(8).fill(0);
   assetCache.set('sBirchSpeechPlatformBlackPal', platformBlack);
 
+  // 1:1 décomp src/field_effect.c:245 — sNewGameBirch_Gfx + sNewGameBirch_Pal
+  // viennent du même PNG `graphics/birch_speech/birch.png` (= déjà chargé en
+  // sBirchSpeechBirchSpriteGfx). On register sous les noms field_effect.c
+  // pour que AddNewGameBirchObject (= LoadSpritePalette + CreateSprite) les
+  // trouve dans assetCache.
+  const birchGfx = assetCache.get('sBirchSpeechBirchSpriteGfx');
+  if (birchGfx) assetCache.set('sNewGameBirch_Gfx', birchGfx);
+  // sBirchSpeechBirchSpritePal extrait via PNG canvas par loadSymbol → on remap.
+  const birchPal = assetCache.get('sBirchSpeechBirchSpritePal');
+  if (birchPal) assetCache.set('sNewGameBirch_Pal', birchPal);
+
+  // ─── Trainer front pics : Brendan + May ────────────────────────────────────
+  // 1:1 décomp data/trainer_graphics/front_pic_tables.h :
+  //   gTrainerFrontPic_Brendan = INCBIN(.4bpp.lz, "graphics/trainers/front_pics/brendan.png")
+  //   gTrainerPalette_Brendan = INCBIN(.gbapal.lz, palette du PNG)
+  // Notre engine : .4bpp.bin direct + palette extraite via PLTE chunk.
+  // CreateTrainerSprite(picId, ...) → LoadCompressedSpritePalette + LoadCompressedSpriteSheet
+  // pour les tags du gTrainerFrontPicTable. On charge sous les noms décomp.
+  const trainerPics: Array<{ symbol: string; url: string }> = [
+    { symbol: 'gTrainerFrontPic_Brendan', url: '/decomp/em/trainer_pics/brendan.png' },
+    { symbol: 'gTrainerFrontPic_May', url: '/decomp/em/trainer_pics/may.png' },
+  ];
+  await Promise.all(trainerPics.map(async ({ symbol, url }) => {
+    try {
+      const charData = await loadTileBin(url, 4);
+      assetCache.set(symbol, charData);
+      const palSymbol = symbol.replace(/^gTrainerFrontPic_/, 'gTrainerPalette_');
+      if (!assetCache.has(palSymbol)) {
+        const png = await loadIndexedPngStrict(url, 4);
+        assetCache.set(palSymbol, png.palette);
+      }
+    } catch (e) {
+      console.warn(`[intro-asset-loader] Trainer pic ${symbol} load failed:`, e);
+    }
+  }));
+
+  // ─── Lotad front pic ───────────────────────────────────────────────────────
+  // 1:1 décomp graphics/pokemon/lotad/front.png → gMonFrontPic_Lotad +
+  // graphics/pokemon/lotad/normal.pal → gMonPaletteTable[SPECIES_LOTAD]
+  // NewGameBirchSpeech_CreateLotadSprite → CreateMonPicSprite_Affine(SPECIES_LOTAD, ...)
+  try {
+    const lotadGfx = await loadTileBin('/decomp/em/pokemon/lotad/front.png', 4);
+    assetCache.set('gMonFrontPic_Lotad', lotadGfx);
+    const lotadPal = await loadGbaPal('/decomp/em/pokemon/lotad/normal.pal');
+    assetCache.set('gMonPalette_Lotad', lotadPal);
+  } catch (e) {
+    console.warn('[intro-asset-loader] Lotad pic load failed:', e);
+  }
+
   console.log(`[intro-asset-loader] Birch speech preload done (${assetCache.size} symbols total cached)`);
 }
 

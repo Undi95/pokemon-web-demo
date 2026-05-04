@@ -57,6 +57,14 @@ const targets = [
   { src: `${PUBLIC}/intro/scene_3/streaks.png`, bpp: 4 },
   { src: `${PUBLIC}/intro/scene_3/pokeball.png`, bpp: 8 },
   { src: `${PUBLIC}/intro/scene_3/misc.png`, bpp: 4 },
+  // Birch speech (sBirchSpeechShadowGfx + sBirchSpeechBirchSpriteGfx)
+  { src: `${PUBLIC}/birch_speech/shadow.png`, bpp: 4 },
+  { src: `${PUBLIC}/birch_speech/birch.png`, bpp: 4 },
+  // Trainer front pics (FacilityClassToPicIndex → CreateTrainerSprite)
+  { src: `${PUBLIC}/trainer_pics/brendan.png`, bpp: 4 },
+  { src: `${PUBLIC}/trainer_pics/may.png`, bpp: 4 },
+  // Lotad front pic (NewGameBirchSpeech_CreateLotadSprite via CreateMonPicSprite_Affine)
+  { src: `${PUBLIC}/pokemon/lotad/front.png`, bpp: 4 },
 ];
 
 let success = 0, fail = 0;

@@ -45,6 +45,8 @@ import {
   PlaySE,
   DmaFill16, DmaFill32,
   VRAM, VRAM_SIZE, OAM, OAM_SIZE, PLTT, PLTT_SIZE,
+  LoadSpritePalette,
+  LoadCompressedSpriteSheet,
 } from './decomp-globals';
 import {
   FillBgTilemapBufferRect,
@@ -490,31 +492,127 @@ export function CreateYesNoMenuParameterized(
 // (= ils étaient hors-scope là-bas car scene-Birch-specific). Tous /* TODO */
 // stubs en attendant Phase D Birch implementation.
 
-/** 1:1 décomp main_menu.c AddBirchSpeechObjects — créé Birch sprite + Lotad
- *  + player (boy + girl) + platform sprites. Phase E partial : assigne des
- *  spriteId invisibles aux task.data[8..11] pour que les Tasks suivantes
- *  (WaitToShowBirch etc.) ne crashent pas sur `_gs(rt, spriteId).x = X`.
- *
- *  TODO Phase E.2 : 1:1 décomp full impl quand les sBirch* assets seront
- *  extraits + LoadCompressedSpriteSheet sBirchSpeechBirchSpriteTemplate. */
+// 1:1 décomp include/data.h:10-12 — TRAINER_PIC_WIDTH/HEIGHT = 64, _SIZE = 2048.
+// Sprite 64x64 4bpp = 64 tiles × 32 bytes = 2048 bytes.
+const TRAINER_PIC_SIZE_BYTES = 64 * 64 / 2;
+// 1:1 décomp src/field_effect.c:336 — sSpritePalette_NewGameBirch.tag = 0x1006.
+const TAG_BIRCH_PALETTE = 0x1006;
+// Tag string keys (= spriteSheetTagToTileStart map keys) pour les sprites Birch.
+// 1:1 décomp : chaque pic a un trainerSpriteID unique (= picId index dans
+// gTrainerFrontPicTable). Ici on utilise des string tags stables.
+const TAG_BIRCH_SHEET = 'NewGameBirch';
+const TAG_BRENDAN_FRONT = 'TrainerFrontPic_Brendan';
+const TAG_MAY_FRONT = 'TrainerFrontPic_May';
+const TAG_LOTAD_FRONT = 'MonFrontPic_Lotad';
+
+/** 1:1 décomp `field_effect.c:909 AddNewGameBirchObject(x, y, subpriority)`.
+ *  → LoadSpritePalette(sSpritePalette_NewGameBirch) + CreateSprite(sSpriteTemplate_NewGameBirch).
+ *  Sprite 64x64 4bpp, palette tag 0x1006. */
+function AddNewGameBirchObject(x: number, y: number, subpriority: number): number {
+  void subpriority;  // notre engine n'expose pas subpriority dans CreateSpriteAtOam (= layer ordering géré via priority OAM)
+  const rt = getRuntime();
+  if (!rt) return -1;
+  // 1:1 décomp : LoadSpritePalette(&sSpritePalette_NewGameBirch).
+  LoadSpritePalette({ data: 'sNewGameBirch_Pal', tag: TAG_BIRCH_PALETTE });
+  // 1:1 décomp : sSpriteTemplate_NewGameBirch utilise images=sPicTable_NewGameBirch
+  // (= obj_frame_tiles(sNewGameBirch_Gfx)), pas un tileTag. Notre engine veut
+  // un tileTag via LoadCompressedSpriteSheet. On charge sous TAG_BIRCH_SHEET.
+  LoadCompressedSpriteSheet({ data: 'sNewGameBirch_Gfx', size: TRAINER_PIC_SIZE_BYTES, tag: TAG_BIRCH_SHEET });
+  const tileBase = rt.spriteSheetTagToTileStart.get(TAG_BIRCH_SHEET) ?? 0;
+  const palSlot = rt.paletteTagToSlot.get(String(TAG_BIRCH_PALETTE)) ?? 0;
+  // sOam_64x64 → shape=0 (square), size=3 (64x64), priority=0.
+  const { spriteId } = rt.CreateSpriteAtOam({
+    tileId: tileBase, paletteBank: palSlot, x, y,
+    shape: 0, size: 3, priority: 0,
+  });
+  return spriteId;
+}
+
+/** 1:1 décomp `field_effect.c:888 CreateTrainerSprite(picId, x, y, subpriority, buffer)`.
+ *  → LoadCompressedSpritePalette + LoadCompressedSpriteSheet for the trainer
+ *  pic data, then CreateSprite with sOam_64x64 template.
+ *  Notre version : prend les noms de symbols décomp (gTrainerFrontPic_X +
+ *  gTrainerPalette_X) directement au lieu de l'index picId. */
+function CreateTrainerSprite(gfxSymbol: string, palSymbol: string, tag: string, palTag: number, x: number, y: number, subpriority: number): number {
+  void subpriority;
+  const rt = getRuntime();
+  if (!rt) return -1;
+  LoadSpritePalette({ data: palSymbol, tag: palTag });
+  LoadCompressedSpriteSheet({ data: gfxSymbol, size: TRAINER_PIC_SIZE_BYTES, tag });
+  const tileBase = rt.spriteSheetTagToTileStart.get(tag) ?? 0;
+  const palSlot = rt.paletteTagToSlot.get(String(palTag)) ?? 0;
+  const { spriteId } = rt.CreateSpriteAtOam({
+    tileId: tileBase, paletteBank: palSlot, x, y,
+    shape: 0, size: 3, priority: 0,
+  });
+  return spriteId;
+}
+
+/** 1:1 décomp `main_menu.c:1878 NewGameBirchSpeech_CreateLotadSprite(x, y)`.
+ *  → CreateMonPicSprite_Affine(SPECIES_LOTAD, SHINY_ODDS, 0, MON_PIC_AFFINE_FRONT, x, y, 14, TAG_NONE).
+ *  Sprite 64x64 affine front Pokemon pic. */
+function NewGameBirchSpeech_CreateLotadSprite(x: number, y: number): number {
+  const rt = getRuntime();
+  if (!rt) return -1;
+  // paletteSlot=14 (= 1:1 décomp main_menu.c:1880, slot 14 in OBJ palette area).
+  const LOTAD_PAL_TAG = 0x1014;  // unique tag pour palette Lotad (slot 14 reserved)
+  LoadSpritePalette({ data: 'gMonPalette_Lotad', tag: LOTAD_PAL_TAG });
+  LoadCompressedSpriteSheet({ data: 'gMonFrontPic_Lotad', size: TRAINER_PIC_SIZE_BYTES, tag: TAG_LOTAD_FRONT });
+  const tileBase = rt.spriteSheetTagToTileStart.get(TAG_LOTAD_FRONT) ?? 0;
+  const palSlot = rt.paletteTagToSlot.get(String(LOTAD_PAL_TAG)) ?? 0;
+  const { spriteId } = rt.CreateSpriteAtOam({
+    tileId: tileBase, paletteBank: palSlot, x, y,
+    shape: 0, size: 3, priority: 0,
+  });
+  return spriteId;
+}
+
+/** 1:1 décomp `main_menu.c:1883 AddBirchSpeechObjects(taskId)`.
+ *  Crée 4 sprites (Birch + Lotad + Brendan + May), tous invisibles, OAM
+ *  priority 0, callback=SpriteCB_Null. Stocke les spriteIds dans
+ *  task.data[8..11] (= tBirchSpriteId/tLotadSpriteId/tBrendanSpriteId/tMaySpriteId). */
 export function AddBirchSpeechObjects(taskId: number): void {
   const rt = getRuntime();
   if (!rt) return;
   const task = rt.gTasks.get(taskId);
   if (!task) return;
-  // Crée 4 sprites invisibles pour Birch / Lotad / boy player / girl player.
-  // Le décomp utilise CreateSprite avec sBirchSpeechObjectTemplate qui a un
-  // shape/size particulier, mais notre stub évite juste les crash en assignant
-  // des slots OAM valides.
-  const birchId = rt.CreateSpriteAtOam({
-    tileId: 0, paletteBank: 0, x: 0, y: 0,
-    shape: 0, size: 0, priority: 0,
-  }).spriteId;
-  rt.gSprites.get(birchId)!.invisible = true;
-  task.data[8] = birchId;   // Birch sprite
-  task.data[9] = birchId;   // Lotad (= dummy même sprite)
-  task.data[10] = birchId;  // Boy player
-  task.data[11] = birchId;  // Girl player
+
+  // Birch (= 0x88, 0x3C = 136, 60).
+  const birchSpriteId = AddNewGameBirchObject(0x88, 0x3C, 1);
+  if (birchSpriteId !== -1) {
+    const s = rt.gSprites.get(birchSpriteId);
+    if (s) { s.callback = null; s.invisible = true; }
+    rt.gba.oam[rt.gSprites.get(birchSpriteId)!.oamIndex].priority = 0;
+  }
+  task.data[8] = birchSpriteId;  // tBirchSpriteId
+
+  // Lotad (= 100, 0x4B = 100, 75).
+  const lotadSpriteId = NewGameBirchSpeech_CreateLotadSprite(100, 0x4B);
+  if (lotadSpriteId !== -1) {
+    const s = rt.gSprites.get(lotadSpriteId);
+    if (s) { s.callback = null; s.invisible = true; }
+    rt.gba.oam[rt.gSprites.get(lotadSpriteId)!.oamIndex].priority = 0;
+  }
+  task.data[9] = lotadSpriteId;  // tLotadSpriteId
+
+  // Brendan (= 120, 60). picId = TRAINER_PIC_BRENDAN = FACILITY_CLASS_BRENDAN
+  // index dans gTrainerFrontPicTable. Notre version utilise les symbols directs.
+  const brendanSpriteId = CreateTrainerSprite('gTrainerFrontPic_Brendan', 'gTrainerPalette_Brendan', TAG_BRENDAN_FRONT, 0x1010, 120, 60, 0);
+  if (brendanSpriteId !== -1) {
+    const s = rt.gSprites.get(brendanSpriteId);
+    if (s) { s.callback = null; s.invisible = true; }
+    rt.gba.oam[rt.gSprites.get(brendanSpriteId)!.oamIndex].priority = 0;
+  }
+  task.data[10] = brendanSpriteId;  // tBrendanSpriteId
+
+  // May (= 120, 60).
+  const maySpriteId = CreateTrainerSprite('gTrainerFrontPic_May', 'gTrainerPalette_May', TAG_MAY_FRONT, 0x1011, 120, 60, 0);
+  if (maySpriteId !== -1) {
+    const s = rt.gSprites.get(maySpriteId);
+    if (s) { s.callback = null; s.invisible = true; }
+    rt.gba.oam[rt.gSprites.get(maySpriteId)!.oamIndex].priority = 0;
+  }
+  task.data[11] = maySpriteId;  // tMaySpriteId
 }
 
 // ─── Birch fade animations (= 1:1 décomp main_menu.c:1988-2084) ─────────────
