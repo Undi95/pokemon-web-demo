@@ -1,117 +1,41 @@
 /**
  * gba-menu-system.ts
  * ------------------
- * Couche d'adaptation menu.c + stubs divers pour le runtime décomp.
- * Gère l'input menu, les Yes/No menus, et les fonctions utilitaires
- * appelées par les callbacks auto-générés.
+ * Helpers menu GENERIQUES + persistence saveBlock. Tout ce qui est
+ * spécifique main_menu.c vit dans `main-menu-impl.ts` (= split Phase C
+ * audit session 83 pour respecter directive #1 "foundations unifiées").
+ *
+ * Architecture :
+ *   - Constantes input keys (A_BUTTON, B_BUTTON, DPAD_*) — partagées
+ *   - Menu cursor input générique (Menu_ProcessInputNoWrapClearOnChoose,
+ *     Menu_GetCursorPos, InitMenuInUpperLeftCornerNormal)
+ *   - Yes/No menu stubs (CreateYesNoMenuParameterized, CreateYesNoMenu)
+ *   - Misc generic stubs (IsWirelessAdapterConnected, IsMysteryGiftEnabled,
+ *     CanResetRTC, RtcGetErrorStatus, PlayBGM bridge)
+ *   - gSaveBlock1Ptr / gSaveBlock2Ptr Proxy auto-persistant localStorage
+ *   - gSaveFileStatus mutable global
  */
-import { getRuntime, getAsset } from './decomp-globals';
-import { GetWindowFrameTilesPal } from './gba-text-window';
-import { JOY_NEW } from './decomp-globals';
-import {
-  ResetBgsAndClearDma3BusyFlags,
-  InitBgsFromTemplates,
-  ChangeBgX,
-  ChangeBgY,
-  InitWindows,
-  DeactivateAllTextPrinters,
-  LoadPalette,
-  ShowBg,
-  HideBg,
-  FreeAllWindowBuffers,
-  ResetPaletteFade,
-  ScanlineEffect_Stop,
-  ResetTasks,
-  FreeAllSpritePalettes,
-  PALETTES_ALL,
-  EnableInterrupts,
-  LoadBgTiles,
-  PlaySE,
-  // ─── 1:1 décomp main_menu.c InitMainMenu (Phase A audit session 83) ───
-  DmaFill16, DmaFill32,
-  VRAM, VRAM_SIZE, OAM, OAM_SIZE, PLTT, PLTT_SIZE,
-} from './decomp-globals';
-import {
-  FillBgTilemapBufferRect,
-  CopyBgTilemapBufferToVram,
-} from './gba-window-system';
-import {
-  BG_PLTT_ID,
-  // ─── REG_OFFSET_* + DISPCNT_* pour 1:1 décomp InitMainMenu ─────────────
-  REG_OFFSET_DISPCNT,
-  REG_OFFSET_BG0CNT, REG_OFFSET_BG1CNT, REG_OFFSET_BG2CNT,
-  REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS,
-  REG_OFFSET_BG1HOFS, REG_OFFSET_BG1VOFS,
-  REG_OFFSET_BG2HOFS, REG_OFFSET_BG2VOFS,
-  REG_OFFSET_WIN0H, REG_OFFSET_WIN0V, REG_OFFSET_WININ, REG_OFFSET_WINOUT,
-  REG_OFFSET_BLDCNT, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDY,
-  DISPCNT_WIN0_ON, DISPCNT_OBJ_ON, DISPCNT_OBJ_1D_MAP,
-} from './decomp-runtime';
-import { PLTT_SIZE_4BPP, WIN_RANGE } from './decomp-helpers';
-import { sMainMenuBgTemplates, sWindowTemplates_MainMenu, MAIN_MENU_BORDER_TILE, ENUM_HAS_0 } from './decomp-data/main-menu-data';
-import {
-  Task_MainMenuCheckSaveFile,
-  CB2_MainMenu,
-  Task_HandleMainMenuAPressed,
-  Task_HandleMainMenuBPressed,
-} from './decomp-data/auto/src/main_menu-callbacks-auto';
+import { getRuntime } from './decomp-globals';
 
-// ─── Menu input state ────────────────────────────────────────────────────────
+// ─── Menu cursor state ───────────────────────────────────────────────────────
 
 let menuCursorPos = 0;
 let menuNumItems = 0;
 let menuActive = false;
 let menuWindowId = 0;
-let menuCallback: (() => void) | null = null;
+void menuWindowId;  // reserved for future use (= window ref).
 
-// 1:1 décomp include/constants/songs.h:11 → SE_SELECT = 5 (= se_select dans
-// song_table.inc:14). Avant : placeholder = 1 (= se_use_item) → mauvais son.
-const SE_SELECT = 5;
-const HAS_MYSTERY_EVENTS = ENUM_HAS_0.HAS_MYSTERY_EVENTS;
+// ─── Input keys (= shared with main-menu-impl.ts) ────────────────────────────
 
-// ─── Global vars used by auto-generated main_menu callbacks ──────────────────
+export const A_BUTTON = 0x01;
+export const B_BUTTON = 0x02;
+export const DPAD_UP = 0x40;
+export const DPAD_DOWN = 0x80;
 
-export let sCurrItemAndOptionMenuCheck = 0;
-export let sBirchSpeechMainTaskId = 0;
-export let sStartedPokeBallTask = false;
-
-// Expose on globalThis for auto-generated callback compatibility
-(globalThis as Record<string, unknown>).sCurrItemAndOptionMenuCheck = sCurrItemAndOptionMenuCheck;
-(globalThis as Record<string, unknown>).sBirchSpeechMainTaskId = sBirchSpeechMainTaskId;
-(globalThis as Record<string, unknown>).sStartedPokeBallTask = sStartedPokeBallTask;
-
-export const sScrollArrowsTemplate_MainMenu = {} as any;
-(globalThis as Record<string, unknown>).sScrollArrowsTemplate_MainMenu = sScrollArrowsTemplate_MainMenu;
-
-export const sSpriteAffineAnimTable_PlayerShrink = {} as any;
-(globalThis as Record<string, unknown>).sSpriteAffineAnimTable_PlayerShrink = sSpriteAffineAnimTable_PlayerShrink;
-
-// Birch speech stubs (prevent ReferenceError if reached)
-export const sBirchBgTemplate = { bg: 0, charBaseIndex: 3, mapBaseIndex: 30, screenSize: 0, paletteMode: 0, priority: 0, baseTile: 0 };
-(globalThis as Record<string, unknown>).sBirchBgTemplate = sBirchBgTemplate;
-export const sBirchSpeechBgMap = 'sBirchSpeechBgMap';
-(globalThis as Record<string, unknown>).sBirchSpeechBgMap = sBirchSpeechBgMap;
-export const sBirchSpeechBgPals = 'sBirchSpeechBgPals';
-(globalThis as Record<string, unknown>).sBirchSpeechBgPals = sBirchSpeechBgPals;
-export const sBirchSpeechPlatformBlackPal = 'sBirchSpeechPlatformBlackPal';
-(globalThis as Record<string, unknown>).sBirchSpeechPlatformBlackPal = sBirchSpeechPlatformBlackPal;
-export const sBirchSpeechBgGradientPal = ['', ''];
-(globalThis as Record<string, unknown>).sBirchSpeechBgGradientPal = sBirchSpeechBgGradientPal;
-
-// Expose InitMainMenu / VBlankCB_MainMenu for auto-generated callbacks (avoid ES module cycle)
-(globalThis as Record<string, unknown>).InitMainMenu = InitMainMenu;
-(globalThis as Record<string, unknown>).VBlankCB_MainMenu = VBlankCB_MainMenu;
-
-// ─── Menu_ProcessInputNoWrapClearOnChoose ────────────────────────────────────
-
-const A_BUTTON = 0x01;
-const B_BUTTON = 0x02;
-const DPAD_UP = 0x40;
-const DPAD_DOWN = 0x80;
+// ─── Menu_ProcessInputNoWrapClearOnChoose + helpers ──────────────────────────
 
 export function Menu_ProcessInputNoWrapClearOnChoose(): number {
   if (!menuActive) return -1;
-  const held = getRuntime()?.gMain.heldKeys ?? 0;
   const newKeys = getRuntime()?.gMain.newKeys ?? 0;
 
   if (newKeys & A_BUTTON) {
@@ -143,6 +67,10 @@ export function InitMenuInUpperLeftCornerNormal(windowId: number, numItems: numb
 }
 
 // ─── Yes/No Menu stubs ───────────────────────────────────────────────────────
+//
+// Phase D audit session 83 : stubs en attendant l'implémentation du vrai
+// Yes/No menu (= 1:1 décomp src/menu.c CreateYesNoMenu*). À implémenter pour
+// le flow Birch speech (= confirmation du nom joueur).
 
 export function CreateYesNoMenuParameterized(
   _windowId: number,
@@ -152,7 +80,7 @@ export function CreateYesNoMenuParameterized(
   _x: number,
   _y: number,
 ): void {
-  // TODO: implementer le vrai Yes/No menu
+  // TODO Phase D : implementer le vrai Yes/No menu.
   menuNumItems = 2;
   menuCursorPos = 0;
   menuActive = true;
@@ -163,174 +91,17 @@ export function CreateYesNoMenu(
   _y: number,
   _windowId: number,
 ): void {
+  // TODO Phase D : implementer le vrai Yes/No menu.
   menuNumItems = 2;
   menuCursorPos = 0;
   menuActive = true;
 }
 
-// ─── Main Menu helpers stubs ─────────────────────────────────────────────────
+// ─── Misc generic stubs ──────────────────────────────────────────────────────
 
-export function HandleMainMenuInput(taskId: number): boolean {
-  const rt = getRuntime();
-  if (!rt) return false;
-  const newKeys = rt.gMain.newKeys ?? 0;
-  const task = rt.gTasks.get(taskId);
-  if (!task) return false;
-  const data = task.data;
-  if (newKeys & A_BUTTON) {
-    PlaySE(SE_SELECT);
-    rt.BeginNormalPaletteFade('PALETTES_ALL', 0, 0, 0x10, 'RGB_BLACK');
-    task.func = (t: any) => Task_HandleMainMenuAPressed(t, rt);
-  } else if (newKeys & B_BUTTON) {
-    PlaySE(SE_SELECT);
-    rt.BeginNormalPaletteFade('PALETTES_ALL', 0, 0, 0x10, 'RGB_WHITEALPHA');
-    rt.SetGpuReg(REG_OFFSET_WIN0H, WIN_RANGE(0, 240));
-    rt.SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(0, 160));
-    task.func = (t: any) => Task_HandleMainMenuBPressed(t, rt);
-  } else if ((newKeys & DPAD_UP) && data[1] > 0) {
-    if (data[0] === HAS_MYSTERY_EVENTS && data[14] === 1 && data[1] === 1) {
-      ChangeBgY(0, 0x2000, 1); // BG_COORD_SUB
-      ChangeBgY(1, 0x2000, 1);
-      const arrowTask = rt.gTasks.get(data[13]);
-      if (arrowTask) arrowTask.data[15] = 0;
-      data[14] = 0;
-    }
-    data[1]--;
-    (globalThis as any).sCurrItemAndOptionMenuCheck = data[1];
-    return true;
-  } else if ((newKeys & DPAD_DOWN) && data[1] < data[12] - 1) {
-    if (data[0] === HAS_MYSTERY_EVENTS && data[1] === 3 && data[14] === 0) {
-      ChangeBgY(0, 0x2000, 0); // BG_COORD_ADD
-      ChangeBgY(1, 0x2000, 0);
-      const arrowTask = rt.gTasks.get(data[13]);
-      if (arrowTask) arrowTask.data[15] = 1;
-      data[14] = 1;
-    }
-    data[1]++;
-    (globalThis as any).sCurrItemAndOptionMenuCheck = data[1];
-    return true;
-  }
-  return false;
-}
-
-export function HighlightSelectedMainMenuItem(
-  menuType: number,
-  cursorPos: number,
-  isScrolled: boolean,
-): void {
-  const rt = getRuntime();
-  if (!rt) return;
-
-  // Horizontal window coords are constant for main menu
-  const winH = WIN_RANGE(9, 231);
-  rt.SetGpuReg(REG_OFFSET_WIN0H, winH);
-
-  // Vertical coords depend on selected item
-  const vCoords: number[] = [
-    WIN_RANGE(1, 31),   // WIN0
-    WIN_RANGE(33, 63),  // WIN1
-    WIN_RANGE(1, 63),   // WIN2
-    WIN_RANGE(65, 95),  // WIN3
-    WIN_RANGE(97, 127), // WIN4
-    WIN_RANGE(129, 159),// WIN5
-    WIN_RANGE(161, 191),// WIN6
-  ];
-  const scrollShift = WIN_RANGE(32, 32);
-
-  let winV = 0;
-  switch (menuType) {
-    case 0: // HAS_NO_SAVED_GAME
-    default:
-      winV = vCoords[cursorPos] ?? vCoords[0];
-      break;
-    case 1: // HAS_SAVED_GAME
-      winV = vCoords[cursorPos + 2] ?? vCoords[2];
-      break;
-    case 2: // HAS_MYSTERY_GIFT
-      winV = vCoords[cursorPos + 2] ?? vCoords[2];
-      break;
-    case 3: // HAS_MYSTERY_EVENTS
-      winV = vCoords[cursorPos + 2] ?? vCoords[2];
-      if (isScrolled && cursorPos >= 1 && cursorPos <= 3) {
-        winV -= scrollShift;
-      }
-      if (cursorPos === 4) {
-        winV = vCoords[6] - scrollShift;
-      }
-      break;
-  }
-  rt.SetGpuReg(REG_OFFSET_WIN0V, winV);
-}
-
-export function MainMenu_FormatSavegameText(): void {
-  // TODO: formater le texte de la sauvegarde (player name, badges, play time)
-}
-
-export function CreateMainMenuErrorWindow(_text: string): void {
-  // TODO: afficher une fenêtre d'erreur
-  console.warn('[gba-menu-system] CreateMainMenuErrorWindow:', _text);
-}
-
-// ─── Birch Speech helpers stubs ──────────────────────────────────────────────
-
-export function NewGameBirchSpeech_ClearWindow(_windowId: number): void {
-  // TODO: effacer la fenêtre dialogue
-}
-
-export function NewGameBirchSpeech_ShowDialogueWindow(_windowId: number, _copyToVram: boolean): void {
-  // TODO: afficher la fenêtre dialogue
-}
-
-export function NewGameBirchSpeech_ClearGenderWindow(_windowId: number, _copyToVram: boolean): void {
-  // TODO: effacer la fenêtre genre
-}
-
-export function NewGameBirchSpeech_ShowGenderMenu(): void {
-  // TODO: afficher le menu genre
-  menuNumItems = 2;
-  menuCursorPos = 0;
-  menuActive = true;
-}
-
-export function NewGameBirchSpeech_ProcessGenderMenuInput(): number {
-  if (!menuActive) return -1;
-  const newKeys = getRuntime()?.gMain.newKeys ?? 0;
-  if (newKeys & A_BUTTON) {
-    menuActive = false;
-    return menuCursorPos; // 0 = male, 1 = female
-  }
-  if (newKeys & DPAD_UP && menuCursorPos > 0) menuCursorPos--;
-  if (newKeys & DPAD_DOWN && menuCursorPos < 1) menuCursorPos++;
-  return -1;
-}
-
-export function NewGameBirchSpeech_SetDefaultPlayerName(_presetIndex: number): void {
-  // TODO: définir le nom par défaut du joueur
-}
-
-export function NewGameBirchSpeech_CreateNameYesNo(_windowId: number): void {
-  // TODO: créer le menu Yes/No pour le nom
-  menuNumItems = 2;
-  menuCursorPos = 0;
-  menuActive = true;
-}
-
-// ─── Scroll indicator stubs ──────────────────────────────────────────────────
-
-export function AddScrollIndicatorArrowPair(_params: unknown, _taskFunc: unknown): number {
-  return 0;
-}
-
-export function RemoveScrollIndicatorArrowPair(_taskId: number): void {
-  // no-op
-}
-
-export function Task_ScrollIndicatorArrowPairOnMainMenu(_task: unknown, _rt: unknown): void {
-  // no-op
-}
-
-// ─── Misc stubs ──────────────────────────────────────────────────────────────
-
+/** 1:1 décomp src/link.c IsWirelessAdapterConnected. Notre engine web : pas
+ *  de wireless adapter (= toujours false). Utilisé par main_menu.c pour les
+ *  Mystery Gift / Mystery Events checks. */
 export function IsWirelessAdapterConnected(): boolean {
   return false;
 }
@@ -347,149 +118,11 @@ export function RtcGetErrorStatus(): number {
   return 0;
 }
 
-export function DoNamingScreen(_type: number, _dest: unknown, _gender: number): void {
-  // TODO: transition vers l'écran de nom
-  console.warn('[gba-menu-system] DoNamingScreen not implemented');
-}
-
-export function FreeAndDestroyMonPicSprite(_spriteId: number): void {
-  const rt = getRuntime();
-  if (rt) rt.DestroySprite(_spriteId);
-}
-
-export function ResetAllPicSprites(): void {
-  // no-op
-}
-
 export function PlayBGM(_songNum: number): void {
-  // TODO: bridge vers m4aSongNumStart
+  // TODO : bridge vers m4aSongNumStart (= système audio session 80 spessasynth).
 }
 
-/** 1:1 décomp src/main_menu.c:2195 LoadMainMenuWindowFrameTiles :
- *    LoadBgTiles(bgId, GetWindowFrameTilesPal(...)->tiles, 0x120, tileOffset);
- *    LoadPalette(GetWindowFrameTilesPal(...)->pal, BG_PLTT_ID(2), PLTT_SIZE_4BPP);
- *
- *  Frame style = `gSaveBlock2Ptr->optionsWindowFrameType` (= 0-19). Asset
- *  préchargés par `preloadTextWindowFrames()` (cf. gba-text-window.ts).
- *  Notre `GetWindowFrameTilesPal` retourne des buffers vides si asset manquant
- *  (= warning console, pas crash). */
-export function LoadMainMenuWindowFrameTiles(bgId: number, tileOffset: number): void {
-  const fp = GetWindowFrameTilesPal(gSaveBlock2Ptr.optionsWindowFrameType ?? 0);
-  LoadBgTiles(bgId, fp.tiles, 0x120, tileOffset);
-  LoadPalette(fp.pal, BG_PLTT_ID(2), PLTT_SIZE_4BPP);
-}
-
-export function DrawMainMenuWindowBorder(template: any, baseTileNum: number): void {
-  const r9  = 1 + baseTileNum;
-  const r10 = 2 + baseTileNum;
-  const sp18 = 3 + baseTileNum;
-  const spC  = 5 + baseTileNum;
-  const sp10 = 6 + baseTileNum;
-  const sp14 = 7 + baseTileNum;
-  const r6   = 8 + baseTileNum;
-
-  FillBgTilemapBufferRect(template.bg, baseTileNum, template.tilemapLeft - 1, template.tilemapTop - 1, 1, 1, 2);
-  FillBgTilemapBufferRect(template.bg, r9,         template.tilemapLeft,     template.tilemapTop - 1, template.width, 1, 2);
-  FillBgTilemapBufferRect(template.bg, r10,        template.tilemapLeft + template.width, template.tilemapTop - 1, 1, 1, 2);
-  FillBgTilemapBufferRect(template.bg, sp18,       template.tilemapLeft - 1, template.tilemapTop, 1, template.height, 2);
-  FillBgTilemapBufferRect(template.bg, spC,        template.tilemapLeft + template.width, template.tilemapTop, 1, template.height, 2);
-  FillBgTilemapBufferRect(template.bg, sp10,       template.tilemapLeft - 1, template.tilemapTop + template.height, 1, 1, 2);
-  FillBgTilemapBufferRect(template.bg, sp14,       template.tilemapLeft,     template.tilemapTop + template.height, template.width, 1, 2);
-  FillBgTilemapBufferRect(template.bg, r6,         template.tilemapLeft + template.width, template.tilemapTop + template.height, 1, 1, 2);
-  CopyBgTilemapBufferToVram(template.bg);
-}
-
-export function ClearMainMenuWindowTilemap(template: any): void {
-  FillBgTilemapBufferRect(template.bg, 0, template.tilemapLeft - 1, template.tilemapTop - 1, template.tilemapLeft + template.width + 1, template.tilemapTop + template.height + 1, 2);
-  CopyBgTilemapBufferToVram(template.bg);
-}
-
-// ─── InitMainMenu — 1:1 décomp src/main_menu.c:558-615 ─────────────────────
-//
-// ⚠️ TEMPORAIRE : cette fonction est encore manuelle. Phase C audit session 83
-// = la transpiler dans `main_menu-callbacks-auto.ts` puis patcher via
-// post-transpile-patches.mjs (= éliminer la duplication, comme option_menu).
-//
-// Phase A audit session 83 : nettoyage minimal — utilise les constants nommées
-// `REG_OFFSET_*` / `DISPCNT_*` (= plus de hex magic) + DmaFill16/32 1:1 décomp.
-
-export function InitMainMenu(returningFromOptionsMenu: boolean): void {
-  const rt = getRuntime();
-  if (!rt) return;
-
-  // 1:1 décomp main_menu.c:560 — désactive VBlankCB pendant init pour pas
-  // de TransferPlttBuffer pendant les manipulations PLTT/VRAM (= anti-flash).
-  rt.SetVBlankCallback(null);
-
-  rt.SetGpuReg(REG_OFFSET_DISPCNT, 0);
-  rt.SetGpuReg(REG_OFFSET_BG2CNT, 0);
-  rt.SetGpuReg(REG_OFFSET_BG1CNT, 0);
-  rt.SetGpuReg(REG_OFFSET_BG0CNT, 0);
-  rt.SetGpuReg(REG_OFFSET_BG2HOFS, 0);
-  rt.SetGpuReg(REG_OFFSET_BG2VOFS, 0);
-  rt.SetGpuReg(REG_OFFSET_BG1HOFS, 0);
-  rt.SetGpuReg(REG_OFFSET_BG1VOFS, 0);
-  rt.SetGpuReg(REG_OFFSET_BG0HOFS, 0);
-  rt.SetGpuReg(REG_OFFSET_BG0VOFS, 0);
-
-  // 1:1 décomp main_menu.c:573-575 — VRAM/OAM/PLTT clear via DMA.
-  // Notre DmaFill16/32 sont no-op (= préserve LZ77 char data déjà chargé).
-  // Les buffers OAM/PLTT sont reset par ResetSpriteData/ResetPaletteFade ci-dessous.
-  DmaFill16(3, 0, VRAM, VRAM_SIZE);
-  DmaFill32(3, 0, OAM, OAM_SIZE);
-  DmaFill16(3, 0, PLTT + 2, PLTT_SIZE - 2);
-
-  ResetPaletteFade();
-  // Load menu palettes (= AVANT le fade pour que les couleurs soient dans
-  // gPlttBufferUnfaded au moment où le fade commence).
-  const bgPal = getAsset('sMainMenuBgPal');
-  const textPal = getAsset('sMainMenuTextPal');
-  console.log('[InitMainMenu] sMainMenuBgPal cached?', !!bgPal, 'len', bgPal?.length ?? 0);
-  console.log('[InitMainMenu] sMainMenuTextPal cached?', !!textPal, 'len', textPal?.length ?? 0);
-  LoadPalette('sMainMenuBgPal', BG_PLTT_ID(0), PLTT_SIZE_4BPP);
-  LoadPalette('sMainMenuTextPal', BG_PLTT_ID(15), PLTT_SIZE_4BPP);
-  ScanlineEffect_Stop();
-  ResetTasks();
-  rt.ResetSpriteData();
-  FreeAllSpritePalettes();
-  // 1:1 décomp main_menu.c:585-587 — fade IN (startY=0x10 → endY=0).
-  rt.BeginNormalPaletteFade('PALETTES_ALL', 0, 0x10, 0,
-    returningFromOptionsMenu ? 'RGB_BLACK' : 'RGB_WHITEALPHA');
-  ResetBgsAndClearDma3BusyFlags(0);
-  InitBgsFromTemplates(0, sMainMenuBgTemplates as any, sMainMenuBgTemplates.length);
-  ChangeBgX(0, 0, 0);
-  ChangeBgY(0, 0, 0);
-  ChangeBgX(1, 0, 0);
-  ChangeBgY(1, 0, 0);
-
-  InitWindows(sWindowTemplates_MainMenu as any);
-  DeactivateAllTextPrinters();
-  LoadMainMenuWindowFrameTiles(0, MAIN_MENU_BORDER_TILE);
-
-  rt.SetGpuReg(REG_OFFSET_WIN0H, 0);
-  rt.SetGpuReg(REG_OFFSET_WIN0V, 0);
-  rt.SetGpuReg(REG_OFFSET_WININ, 0);
-  rt.SetGpuReg(REG_OFFSET_WINOUT, 0);
-  rt.SetGpuReg(REG_OFFSET_BLDCNT, 0);
-  rt.SetGpuReg(REG_OFFSET_BLDALPHA, 0);
-  rt.SetGpuReg(REG_OFFSET_BLDY, 0);
-
-  EnableInterrupts(1);
-  rt.SetVBlankCallback(VBlankCB_MainMenu);
-  rt.SetMainCallback2(CB2_MainMenu);
-  // 1:1 décomp main_menu.c:609 — DISPCNT_WIN0_ON | DISPCNT_OBJ_ON | DISPCNT_OBJ_1D_MAP.
-  // (BG0/BG1 sont activés implicitement par ShowBg(0)/HideBg(1) ci-dessous.)
-  rt.SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_WIN0_ON | DISPCNT_OBJ_ON | DISPCNT_OBJ_1D_MAP);
-  ShowBg(0);
-  HideBg(1);
-  rt.CreateTask((t) => Task_MainMenuCheckSaveFile(t, rt), 0);
-}
-
-export function VBlankCB_MainMenu(): void {
-  // TODO: Transfer palette / OAM if needed
-}
-
-// ─── Save block + persistence (= localStorage proxy) ────────────────────────
+// ─── Save block + persistence (= localStorage proxy) ─────────────────────────
 //
 // 1:1 décomp : gSaveBlock2Ptr est un struct EWRAM qui contient les options
 // joueur (textSpeed, sound, frame style…) + identité player (gender, name).
@@ -564,15 +197,13 @@ export function SetSaveFileStatus(status: number): void {
   gSaveFileStatus = status;
 }
 
-// Synchronise les mutable exports sur globalThis pour les callbacks auto-générés.
-const _mutableGlobalsMenu: Record<string, { get: () => unknown; set: (v: unknown) => void }> = {
-  sCurrItemAndOptionMenuCheck: { get: () => sCurrItemAndOptionMenuCheck, set: (v) => { sCurrItemAndOptionMenuCheck = v as number; } },
-  sBirchSpeechMainTaskId: { get: () => sBirchSpeechMainTaskId, set: (v) => { sBirchSpeechMainTaskId = v as number; } },
-  sStartedPokeBallTask: { get: () => sStartedPokeBallTask, set: (v) => { sStartedPokeBallTask = v as boolean; } },
-  gSaveFileStatus: { get: () => gSaveFileStatus, set: (v) => { gSaveFileStatus = v as number; } },
-};
-for (const [k, d] of Object.entries(_mutableGlobalsMenu)) {
-  if (!(k in globalThis)) {
-    Object.defineProperty(globalThis, k, { get: d.get, set: d.set, enumerable: true, configurable: true });
-  }
+// Synchronise gSaveFileStatus mutable export sur globalThis pour les
+// callbacks auto-générés (= eval scope @ts-nocheck).
+if (!('gSaveFileStatus' in globalThis)) {
+  Object.defineProperty(globalThis, 'gSaveFileStatus', {
+    get: () => gSaveFileStatus,
+    set: (v) => { gSaveFileStatus = v as number; },
+    enumerable: true,
+    configurable: true,
+  });
 }
