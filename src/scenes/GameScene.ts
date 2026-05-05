@@ -133,6 +133,114 @@ export class GameScene extends Phaser.Scene {
       bgPal0: () => Array.from({ length: 16 }, (_, i) => this.gba.palette.getBgRgba(0, i, 0)),
       brightness: () => this.gba.blend.brightness,
       blendMode: () => this.gba.blend.mode,
+
+      // ─── F tool : dump runtime state for diff vs VBA-M GDB dump ───────
+      // Returns base64-encoded snapshots of VRAM/PLTT/OAM + register values
+      // matching VBA-M GDB layout. Used by scripts/diff-vbam/diff-vbam-vs-ours.py.
+      dumpState: () => {
+        const gba = this.gba;
+        const rt = this.rt;
+        // Helper: Uint8Array → base64
+        const b64 = (arr: Uint8Array): string => {
+          let bin = '';
+          for (let i = 0; i < arr.length; i++) bin += String.fromCharCode(arr[i]);
+          return btoa(bin);
+        };
+        // VRAM 96KB (= unified BG+OBJ).
+        const vram = b64(gba.vram);
+        // PLTT 1KB (= 256 BG + 256 OBJ entries, u16 each).
+        const pltt = new Uint8Array(0x400);
+        for (let i = 0; i < 256; i++) {
+          const bgEntry = rt.gPlttBufferFaded.get(i);
+          pltt[i * 2] = bgEntry & 0xFF;
+          pltt[i * 2 + 1] = (bgEntry >> 8) & 0xFF;
+          const objEntry = rt.gPlttBufferFaded.get(256 + i);
+          pltt[0x200 + i * 2] = objEntry & 0xFF;
+          pltt[0x200 + i * 2 + 1] = (objEntry >> 8) & 0xFF;
+        }
+        const plttB64 = b64(pltt);
+        // OAM 1KB (= 128 sprites × 8 bytes).
+        const oam = new Uint8Array(0x400);
+        for (let i = 0; i < 128; i++) {
+          const o = gba.oam[i];
+          if (!o.visible) continue;
+          // Reconstruct OAM attr0/1/2 from our struct
+          const y = o.y & 0xFF;
+          const affineMode = o.affineMode & 3;
+          const objMode = o.objMode & 3;
+          const bpp = o.paletteMode & 1;
+          const shape = o.shape & 3;
+          const attr0 = y | (affineMode << 8) | (objMode << 10) | (bpp << 13) | (shape << 14);
+          const x = o.x & 0x1FF;
+          const flipH = (o.flipH ? 1 : 0) << 12;
+          const flipV = (o.flipV ? 1 : 0) << 13;
+          const size = (o.size & 3) << 14;
+          const attr1 = x | flipH | flipV | size;
+          const tileId = o.tileId & 0x3FF;
+          const prio = (o.priority & 3) << 10;
+          const palBank = (o.paletteBank & 0xF) << 12;
+          const attr2 = tileId | prio | palBank;
+          oam[i * 8 + 0] = attr0 & 0xFF;
+          oam[i * 8 + 1] = (attr0 >> 8) & 0xFF;
+          oam[i * 8 + 2] = attr1 & 0xFF;
+          oam[i * 8 + 3] = (attr1 >> 8) & 0xFF;
+          oam[i * 8 + 4] = attr2 & 0xFF;
+          oam[i * 8 + 5] = (attr2 >> 8) & 0xFF;
+        }
+        const oamB64 = b64(oam);
+
+        // IO Registers (= reconstruct DISPCNT/BGxCNT/etc. from our config).
+        const ioregs = new Uint8Array(0x60);
+        // DISPCNT @ 0x000
+        let dispcnt = 0;
+        for (let bg = 0; bg < 4; bg++) {
+          if (gba.bg(bg as 0 | 1 | 2 | 3).config.visible) dispcnt |= (1 << (8 + bg));
+        }
+        // OBJ_ON if any sprite visible
+        if (Array.from(gba.oam).some(o => o.visible)) dispcnt |= (1 << 12);
+        ioregs[0] = dispcnt & 0xFF;
+        ioregs[1] = (dispcnt >> 8) & 0xFF;
+        // BGxCNT @ 0x008-0x00F
+        for (let bg = 0; bg < 4; bg++) {
+          const cfg = gba.bg(bg as 0 | 1 | 2 | 3).config;
+          const cnt = (cfg.priority & 3)
+            | ((cfg.charBaseIndex & 3) << 2)
+            | ((cfg.paletteMode & 1) << 7)
+            | ((cfg.mapBaseIndex & 0x1F) << 8)
+            | ((cfg.screenSize & 3) << 14);
+          ioregs[8 + bg * 2] = cnt & 0xFF;
+          ioregs[8 + bg * 2 + 1] = (cnt >> 8) & 0xFF;
+        }
+        // BGxHOFS/VOFS @ 0x010-0x01F
+        for (let bg = 0; bg < 4; bg++) {
+          const cfg = gba.bg(bg as 0 | 1 | 2 | 3).config;
+          ioregs[0x10 + bg * 4] = cfg.hofs & 0xFF;
+          ioregs[0x10 + bg * 4 + 1] = (cfg.hofs >> 8) & 0xFF;
+          ioregs[0x10 + bg * 4 + 2] = cfg.vofs & 0xFF;
+          ioregs[0x10 + bg * 4 + 3] = (cfg.vofs >> 8) & 0xFF;
+        }
+        // BLDCNT/BLDALPHA/BLDY @ 0x050-0x055
+        const blend = gba.blend;
+        const bldcnt = (blend.target1 & 0x3F) | ((blend.mode & 3) << 6) | ((blend.target2 & 0x3F) << 8);
+        ioregs[0x50] = bldcnt & 0xFF;
+        ioregs[0x51] = (bldcnt >> 8) & 0xFF;
+        const bldalpha = (blend.alpha1 & 0x1F) | ((blend.alpha2 & 0x1F) << 8);
+        ioregs[0x52] = bldalpha & 0xFF;
+        ioregs[0x53] = (bldalpha >> 8) & 0xFF;
+        ioregs[0x54] = blend.brightness & 0x1F;
+        const ioregsB64 = b64(ioregs);
+
+        return {
+          version: 1,
+          callback2: rt.gMain.callback2?.name ?? 'anon',
+          frameCounter: rt.gIntroFrameCounter ?? 0,
+          taskCount: rt.gTasks.size,
+          vram: vram,
+          pltt: plttB64,
+          oam: oamB64,
+          ioregs: ioregsB64,
+        };
+      },
     };
 
     // Devtools: pause/step/seek frame controls. Exposés via window.dev pour
