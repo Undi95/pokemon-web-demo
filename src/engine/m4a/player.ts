@@ -284,6 +284,17 @@ export function stopSong(slot: SlotKind = 'bgm'): void {
   const state = _slots[slot];
   if (!state) return;
   state.generation++;
+  // 1:1 décomp m4a.c : m4aMPlayStart override le state du slot, ce qui implicitement
+  // cancel tout fade-out en cours. Notre fade utilise un setInterval orphelin qui
+  // continue à set masterGain → 0 ET call stopSong à la fin. Sans clear ici, une
+  // nouvelle song démarre normalement puis se fait killer ~1s plus tard.
+  // Bug user : "BGM du prof ne se lance pas si A pressé trop vite" — title fade
+  // était encore en cours quand Birch BGM démarrait, ROUTE122 jouait 1s puis silence.
+  const prevFade = _fadeIntervals[slot];
+  if (prevFade !== undefined) {
+    window.clearInterval(prevFade);
+    delete _fadeIntervals[slot];
+  }
   if (state.sequencer) {
     try {
       state.sequencer.pause();
