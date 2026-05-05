@@ -575,6 +575,19 @@ export async function preloadBirchSpeechAssets(): Promise<void> {
     console.warn('[intro-asset-loader] Lotad pic load failed:', e);
   }
 
+  // ─── Pokeball sprite (= release Lotad in Birch + battle releases) ─────────
+  // 1:1 décomp src/data/graphics/pokeballs.h:1 — gBallGfx_Poke + gBallPal_Poke.
+  // Sprite = 16x48 (= 12 tiles 4bpp = 384 bytes per gBallSpriteSheets[BALL_POKE].size).
+  // 4 frames anim : closed, half-open, opening, fully-open.
+  try {
+    const pokeballGfx = await loadTileBin('/decomp/em/balls/poke.png', 4);
+    assetCache.set('gBallGfx_Poke', pokeballGfx);
+    const pokeballPal = await loadIndexedPngStrict('/decomp/em/balls/poke.png', 4);
+    assetCache.set('gBallPal_Poke', pokeballPal.palette);
+  } catch (e) {
+    console.warn('[intro-asset-loader] Pokeball pic load failed:', e);
+  }
+
   console.log(`[intro-asset-loader] Birch speech preload done (${assetCache.size} symbols total cached)`);
 }
 

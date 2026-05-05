@@ -67,6 +67,9 @@ const targets = [
   { src: `${PUBLIC}/pokemon/lotad/front.png`, bpp: 4 },
   // Dialog box frame tiles (gMessageBox_Gfx + gMessageBox_Pal — utilisé partout dans le jeu)
   { src: `${PUBLIC}/text_window/message_box.png`, bpp: 4 },
+  // Pokeball release sprite (Birch Lotad release scene + battle pokemon release)
+  { src: `${PUBLIC}/balls/poke.png`, bpp: 4 },
+  { src: `${PUBLIC}/balls/open.png`, bpp: 4 },
 ];
 
 let success = 0, fail = 0;

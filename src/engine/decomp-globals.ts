@@ -1777,47 +1777,78 @@ export * from './decomp-data/auto/src/intro-c-data-auto';
 // runtime (= TODO future, utilisé par Birch player shrink + battle anims).
 export function InitSpriteAffineAnim(_sprite: any): void { /* TODO future affine anims */ }
 
-// 1:1 décomp src/pokemon.c CreatePokeballSpriteToReleaseMon — utilisé par
-// Birch (release Lotad) ET party_menu (release pokémon). Notre version
-// déclenche SE_BALL_OPEN + cry du species après `delay` frames via une
-// Task dédiée (= matches le timing décomp pokeball anim sans nécessiter
-// la full pokeball sprite/anim chain).
-//
-// Signature 1:1 : (monSpriteId, monPalNum, x, y, oamPriority, subpriority, delay, fadePalettes, species).
+/** 1:1 décomp src/pokeball.c:1031 CreatePokeballSpriteToReleaseMon.
+ *  Crée un sprite pokeball à (x, y), hide le mon sprite (= Lotad), planifie
+ *  l'animation : delay frames → SE_BALL_OPEN + cry + reveal Lotad → fade ball.
+ *
+ *  Phase A impl simplifiée 1:1 : sprite pokeball visible + audio + Lotad reveal.
+ *  Phase B (future) : trajectoire interpolée + open frames anim + sparkles particles. */
 export function CreatePokeballSpriteToReleaseMon(
-  _monSpriteId: number, _monPalNum: number, _x: number, _y: number,
-  _oamPriority: number, _subpriority: number, delay: number,
+  monSpriteId: number, _monPalNum: number, x: number, y: number,
+  oamPriority: number, _subpriority: number, delay: number,
   _fadePalettes: number, species: number,
 ): number {
   const r = rt();
-  // 1:1 décomp pokeball.c:1031 : CreateTask(Task_PokeballRelease, ...) avec delay
-  // qui décompte avant de jouer SE + cry. SE_BALL_OPEN = 15 (cf. songs.h:21).
   const SE_BALL_OPEN = 15;
+  const POKEBALL_TAG = 'Pokeball_Birch';
+  const POKEBALL_PAL_TAG = 0xD6FF;  // = GFX_TAG_POKE_BALL = 55007
+
+  // 1:1 décomp pokeball.c:1035-1037 : LoadCompressedSpriteSheet + LoadCompressedSpritePalette + CreateSprite
+  LoadSpritePalette({ data: 'gBallPal_Poke', tag: POKEBALL_PAL_TAG });
+  LoadCompressedSpriteSheet({ data: 'gBallGfx_Poke', size: 384, tag: POKEBALL_TAG });
+  const tileBase = r.spriteSheetTagToTileStart.get(POKEBALL_TAG) ?? 0;
+  const palSlot = r.paletteTagToSlot.get(String(POKEBALL_PAL_TAG)) ?? 0;
+  // Pokeball sprite 16x16 (shape=0 size=1).
+  const { spriteId: ballSpriteId } = r.CreateSpriteAtOam({
+    tileId: tileBase, paletteBank: palSlot, x, y,
+    shape: 0, size: 1, priority: oamPriority,
+  });
+
+  // 1:1 décomp pokeball.c:1043-1044 : monSprite gets moved to ball position + invisible
+  // (= Lotad hidden during ball flight). Reveal at end of release anim.
+  const monSprite = r.gSprites.get(monSpriteId);
+  if (monSprite) {
+    monSprite.x = x;
+    monSprite.y = y;
+    monSprite.invisible = true;
+  }
+
+  // Task : delay frames → SE + reveal Lotad → fade ball after few more frames
   const t = r.CreateTask((task) => {
     if (task.data[0] > 0) {
       task.data[0]--;
       return;
     }
     if (task.data[1] === 0) {
-      // Step 0 : SE pokeball ouverture
+      // Step 0 : SE_BALL_OPEN + reveal Lotad + start ball fade
       PlaySE(SE_BALL_OPEN);
+      const m = r.gSprites.get(monSpriteId);
+      if (m) m.invisible = false;
       task.data[1] = 1;
-      task.data[0] = 8;  // 8 frames avant cry (= timing pokeball.c:Task_PlayCryWhenReleasedFromBall)
+      task.data[0] = 8;  // 8 frames avant cry
       return;
     }
     if (task.data[1] === 1) {
-      // Step 1 : cry du Pokemon
-      PlayCryInternal(species, 0, 100, 2 /* CRY_PRIORITY_NORMAL */, 0 /* CRY_MODE_NORMAL */);
+      // Step 1 : cry + start ball disappear
+      PlayCryInternal(species, 0, 100, 2, 0);
+      task.data[1] = 2;
+      task.data[0] = 16;  // 16 frames avant invisible
+      return;
+    }
+    if (task.data[1] === 2) {
+      // Step 2 : ball invisible
+      const ball = r.gSprites.get(ballSpriteId);
+      if (ball) ball.invisible = true;
       r.DestroyTask(task.taskId);
       return;
     }
   }, 0);
   const task = r.gTasks.get(t);
   if (task) {
-    task.data[0] = delay;  // frames avant SE_BALL_OPEN
-    task.data[1] = 0;       // step (0=SE, 1=cry)
+    task.data[0] = delay;
+    task.data[1] = 0;
   }
-  return 0;  // stub spriteId (= scene continue mais pas de pokeball visuelle)
+  return ballSpriteId;
 }
 
 /** 1:1 décomp `PIXEL_FILL(value)` macro — fills both nibbles of a byte. */
