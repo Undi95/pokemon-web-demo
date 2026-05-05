@@ -638,6 +638,19 @@ export class DecompRuntime {
 
   private applyBgCnt(bgIdx: 0 | 1 | 2 | 3, value: number): void {
     const cfg = this.gba.bg(bgIdx).config;
+    // 1:1 décomp src/bg.c : SetGpuReg(BGxCNT, value) écrit le HW register, mais
+    // sGpuBgConfigs (= notre cfg) reste intact. ShowBgInternal re-écrit le
+    // register depuis sGpuBgConfigs au prochain ShowBg.
+    //
+    // Bug session 87 fix : SetGpuReg(BGxCNT, 0) (= clear pattern utilisé par
+    // CB2_NewGameBirchSpeech_ReturnFromNamingScreen pour clear HW register)
+    // clobbait notre cfg → BG configs perdus après naming. Fix : skip update
+    // si value === 0 (= "hide register, preserve config").
+    if (value === 0) {
+      // Treat as "register off" without resetting config (= compositor uses cfg).
+      // Pas de modification cfg.priority/charBase/mapBase/etc.
+      return;
+    }
     cfg.priority = value & 3;
     cfg.charBaseIndex = (value >> 2) & 3;
     // Bit 6 : mosaic, bit 7 : 256 color
