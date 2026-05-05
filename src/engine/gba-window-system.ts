@@ -6,7 +6,7 @@
  * et fournit CopyWindowToVram / PutWindowTilemap qui transfèrent vers
  * l'engine GBA hardware (VRAM + tilemap) pour rendu par le compositor.
  */
-import { getRuntime } from './decomp-globals';
+import { getRuntime, assetCache, LoadBgTiles } from './decomp-globals';
 import {
   type Window,
   createWindow,
@@ -367,30 +367,62 @@ export function DrawStdFrameWithCustomTileAndPalette(
  *  Charge les message-box frame tiles + palette standard pour le dialogue.
  *  Phase E Step 4 MVP : charge une palette text inline (= 4 colors :
  *    idx 0 = transparent (RGB(0,0,0))
- *    idx 1 = bg blanc (RGB(31,31,31))
- *    idx 2 = fg dark grey (RGB(7,7,7))
- *    idx 3 = shadow light grey (RGB(15,15,15))
- *  ).
- *  Sans ça, palette 15 reste avec des valeurs arbitraires (BLEU pour main menu
- *  cursor highlight) → boxes bleues autour des chars dans le dialogue Birch.
- *  TODO Phase E.2 : load real `gMessageBox_Pal` depuis assets décomp. */
-export function LoadMessageBoxGfx(_bg: number, _baseTile: number, paletteFlatIdx: number): void {
+/** 1:1 décomp src/text_window.c:93 LoadMessageBoxGfx(windowId, destOffset, palOffset).
+ *
+ *  ```c
+ *  void LoadMessageBoxGfx(u8 windowId, u16 destOffset, u8 palOffset) {
+ *      LoadBgTiles(GetWindowAttribute(windowId, WINDOW_BG), gMessageBox_Gfx, 0x1C0, destOffset);
+ *      LoadPalette(GetOverworldTextboxPalettePtr(), palOffset, PLTT_SIZE_4BPP);
+ *  }
+ *  ```
+ *
+ *  - `gMessageBox_Gfx` = 14 tiles 4bpp (= 0x1C0 = 448 bytes) du frame dialog vert/cyan
+ *    (= corners arrondis + edges). PNG src : graphics/text_window/message_box.png 56x16.
+ *  - `gMessageBox_Pal` = 16 colors GBA palette (= cyan/vert/blanc/grey).
+ *  - destOffset = baseTile (= e.g. 0xFC pour Birch dialog) → tiles loaded à
+ *    BG charBase + destOffset * 32 dans VRAM.
+ *  - palOffset = BG palette index (= e.g. BG_PLTT_ID(15) = 240) → 16 colors
+ *    loaded à gPlttBufferFaded[palOffset..palOffset+15].
+ *
+ *  Préchargé via preloadTextWindowFrames() (gba-text-window.ts) au boot. */
+export function LoadMessageBoxGfx(bg: number, baseTile: number, paletteFlatIdx: number): void {
   const rt = getRuntime();
   if (!rt) return;
-  // RGB15 packed : (r) | (g << 5) | (b << 10).
-  const transparent = 0;  // (0, 0, 0) avec idx 0 traité transparent
-  const white = (31) | (31 << 5) | (31 << 10);
-  const darkGrey = (7) | (7 << 5) | (7 << 10);
-  const lightGrey = (15) | (15 << 5) | (15 << 10);
-  // Écrit dans gPlttBufferUnfaded + Faded pour que TransferPlttBuffer copie au PLTT.
-  rt.gPlttBufferUnfaded.set(paletteFlatIdx + 0, transparent);
-  rt.gPlttBufferFaded.set(paletteFlatIdx + 0, transparent);
-  rt.gPlttBufferUnfaded.set(paletteFlatIdx + 1, white);
-  rt.gPlttBufferFaded.set(paletteFlatIdx + 1, white);
-  rt.gPlttBufferUnfaded.set(paletteFlatIdx + 2, darkGrey);
-  rt.gPlttBufferFaded.set(paletteFlatIdx + 2, darkGrey);
-  rt.gPlttBufferUnfaded.set(paletteFlatIdx + 3, lightGrey);
-  rt.gPlttBufferFaded.set(paletteFlatIdx + 3, lightGrey);
+
+  // Charge tile data → BG VRAM at (baseTile * 32) bytes offset.
+  const gfxData = assetCache.get('gMessageBox_Gfx');
+  if (gfxData instanceof Uint8Array) {
+    // 1:1 décomp LoadBgTiles(bg, gMessageBox_Gfx, 0x1C0, destOffset).
+    LoadBgTiles(bg, gfxData, 0x1C0, baseTile);
+  } else {
+    console.warn('[LoadMessageBoxGfx] gMessageBox_Gfx not preloaded (= preloadTextWindowFrames non appelé) — dialog frame border invisible');
+  }
+
+  // Charge palette → BG palette banks.
+  const palData = assetCache.get('gMessageBox_Pal');
+  if (palData instanceof Uint16Array) {
+    // 1:1 décomp LoadPalette(GetOverworldTextboxPalettePtr() = gMessageBox_Pal, palOffset, 32 bytes = 16 colors).
+    for (let i = 0; i < Math.min(16, palData.length); i++) {
+      rt.gPlttBufferUnfaded.set(paletteFlatIdx + i, palData[i]);
+      rt.gPlttBufferFaded.set(paletteFlatIdx + i, palData[i]);
+    }
+  } else {
+    console.warn('[LoadMessageBoxGfx] gMessageBox_Pal not preloaded — fallback hardcoded grey palette');
+    // Fallback : 4 couleurs basiques (préserve l'ancien comportement) si l'asset
+    // n'est pas chargé. Ne devrait pas arriver en flow normal.
+    const transparent = 0;
+    const white = (31) | (31 << 5) | (31 << 10);
+    const darkGrey = (7) | (7 << 5) | (7 << 10);
+    const lightGrey = (15) | (15 << 5) | (15 << 10);
+    rt.gPlttBufferUnfaded.set(paletteFlatIdx + 0, transparent);
+    rt.gPlttBufferFaded.set(paletteFlatIdx + 0, transparent);
+    rt.gPlttBufferUnfaded.set(paletteFlatIdx + 1, white);
+    rt.gPlttBufferFaded.set(paletteFlatIdx + 1, white);
+    rt.gPlttBufferUnfaded.set(paletteFlatIdx + 2, darkGrey);
+    rt.gPlttBufferFaded.set(paletteFlatIdx + 2, darkGrey);
+    rt.gPlttBufferUnfaded.set(paletteFlatIdx + 3, lightGrey);
+    rt.gPlttBufferFaded.set(paletteFlatIdx + 3, lightGrey);
+  }
 }
 
 export function ClearStdWindowAndFrame(windowId: number, _copyToVram: boolean): void {

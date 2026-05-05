@@ -65,6 +65,8 @@ const targets = [
   { src: `${PUBLIC}/trainer_pics/may.png`, bpp: 4 },
   // Lotad front pic (NewGameBirchSpeech_CreateLotadSprite via CreateMonPicSprite_Affine)
   { src: `${PUBLIC}/pokemon/lotad/front.png`, bpp: 4 },
+  // Dialog box frame tiles (gMessageBox_Gfx + gMessageBox_Pal — utilisé partout dans le jeu)
+  { src: `${PUBLIC}/text_window/message_box.png`, bpp: 4 },
 ];
 
 let success = 0, fail = 0;

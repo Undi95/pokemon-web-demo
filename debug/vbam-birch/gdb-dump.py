@@ -29,19 +29,24 @@ def recv_until(sock, terminator=b"#"):
 
 
 def get_packet(sock):
-    """Wait for and extract a $...#XX packet from the stream. Returns payload."""
-    sock.sendall(b"+")  # ack any prior
+    """Wait for and extract a $...#XX packet from the stream. Returns payload.
+    Sends ACK to server after receiving the packet."""
     buf = b""
     while True:
         chunk = sock.recv(8192)
         if not chunk:
             break
         buf += chunk
+        # Skip leading + (= ACK for our last command) and - (= NAK request resend)
         # Look for $...#XX
         start = buf.find(b"$")
+        if start < 0:
+            continue
         end = buf.find(b"#", start + 1)
-        if start >= 0 and end >= 0 and len(buf) >= end + 3:
+        if end >= 0 and len(buf) >= end + 3:
             payload = buf[start + 1:end].decode("latin-1")
+            # Send ACK
+            sock.sendall(b"+")
             return payload
     return None
 
@@ -74,7 +79,7 @@ def read_mem(sock, addr, length, chunk=512):
 def main():
     HOST = "127.0.0.1"
     PORT = 55555
-    OUT_DIR = os.path.dirname(os.path.abspath(__file__))
+    OUT_DIR = os.environ.get('VBAM_DUMP_DIR') or os.path.dirname(os.path.abspath(__file__))
 
     print(f"Connecting to {HOST}:{PORT}...")
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -82,24 +87,22 @@ def main():
     sock.connect((HOST, PORT))
     print("Connected.")
 
+    # Send pre-emptive ACK (= GDB protocol "client just connected, ready").
+    sock.sendall(b"+")
+
     # Initial handshake — VBA-M GDB stub may send a stop reason on connect
-    sock.settimeout(2)
+    sock.settimeout(1)
     try:
         initial = sock.recv(4096)
         print(f"Initial: {initial[:80]!r}")
+        # Ack any received packet
+        if b"$" in initial and b"#" in initial:
+            sock.sendall(b"+")
     except socket.timeout:
         print("(no initial packet)")
     sock.settimeout(10)
 
-    # qSupported handshake
-    send_packet(sock, "qSupported:multiprocess+;swbreak+")
-    reply = get_packet(sock)
-    print(f"qSupported: {reply[:200] if reply else None!r}")
-
-    # Read halt reason (?) — also confirms target is paused
-    send_packet(sock, "?")
-    reply = get_packet(sock)
-    print(f"halt: {reply[:80] if reply else None!r}")
+    # Skip qSupported handshake (= VBA-M doesn't respond reliably). Direct memory reads work.
 
     regions = [
         ("pltt.bin", 0x05000000, 0x400),

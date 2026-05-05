@@ -374,17 +374,55 @@ export function NewGameBirchSpeech_ClearWindow(windowId: number): void {
   CopyWindowToVram(windowId, 2);  // COPYWIN_GFX = 2
 }
 
+/** 1:1 décomp main_menu.c:2280 NewGameBirchSpeech_CreateDialogueWindowBorder.
+ *  Place les 14 frame tiles (= corners + edges) du dialog box autour de la
+ *  fenêtre window via 13 FillBgTilemapBufferRect calls. Les tiles ont été
+ *  loadées en VRAM via LoadMessageBoxGfx(0, BIRCH_DLG_BASE_TILE_NUM, BG_PLTT_ID(15)).
+ *
+ *  Layout (= 1:1 décomp main_menu.c:2280-2295) :
+ *  - Top row    : tile 1 (corner), tile 3 (extend), tile 4 (top edge×width), tile 5 (R-extend), tile 6 (R-corner)
+ *  - Side rows  : tile 7 (left edge), tile 9 (interior fill×width+1), tile 10 (right edge)
+ *  - Bottom row : V_FLIP variants of top tiles (= bit 11 set in tilemap entry).
+ *
+ *  Tiles indices = BIRCH_DLG_BASE_TILE_NUM (= 0xFC = 252) + offset. */
+function NewGameBirchSpeech_CreateDialogueWindowBorder(
+  bg: number, x: number, y: number, width: number, height: number, palNum: number,
+): void {
+  const BIRCH_DLG = 0xFC;
+  // Top row (1 row above window).
+  FillBgTilemapBufferRect(bg, BIRCH_DLG +  1, x - 2,         y - 1, 1,         1, palNum);
+  FillBgTilemapBufferRect(bg, BIRCH_DLG +  3, x - 1,         y - 1, 1,         1, palNum);
+  FillBgTilemapBufferRect(bg, BIRCH_DLG +  4, x,             y - 1, width,     1, palNum);
+  FillBgTilemapBufferRect(bg, BIRCH_DLG +  5, x + width - 1, y - 1, 1,         1, palNum);
+  FillBgTilemapBufferRect(bg, BIRCH_DLG +  6, x + width,     y - 1, 1,         1, palNum);
+  // Middle rows (= window content area).
+  FillBgTilemapBufferRect(bg, BIRCH_DLG +  7, x - 2,         y,     1,         5, palNum);
+  FillBgTilemapBufferRect(bg, BIRCH_DLG +  9, x - 1,         y,     width + 1, 5, palNum);
+  FillBgTilemapBufferRect(bg, BIRCH_DLG + 10, x + width,     y,     1,         5, palNum);
+  // Bottom row (V_FLIP = bit 11 set).
+  const VFLIP = 0x800;
+  FillBgTilemapBufferRect(bg, (BIRCH_DLG +  1) | VFLIP, x - 2,         y + height, 1,         1, palNum);
+  FillBgTilemapBufferRect(bg, (BIRCH_DLG +  3) | VFLIP, x - 1,         y + height, 1,         1, palNum);
+  FillBgTilemapBufferRect(bg, (BIRCH_DLG +  4) | VFLIP, x,             y + height, width - 1, 1, palNum);
+  FillBgTilemapBufferRect(bg, (BIRCH_DLG +  5) | VFLIP, x + width - 1, y + height, 1,         1, palNum);
+  FillBgTilemapBufferRect(bg, (BIRCH_DLG +  6) | VFLIP, x + width,     y + height, 1,         1, palNum);
+}
+
 /** 1:1 décomp main_menu.c:2271 NewGameBirchSpeech_ShowDialogueWindow.
  *    CallWindowFunction(NewGameBirchSpeech_CreateDialogueWindowBorder);
  *    FillWindowPixelBuffer(windowId, PIXEL_FILL(1));
  *    PutWindowTilemap(windowId);
- *    if (copyToVram) CopyWindowToVram(windowId, COPYWIN_FULL);
- *
- *  Phase E Step 4 fix : real impl. MVP : skip le custom dialogue border (= 9
- *  tiles décoratifs spécifiques Birch via NewGameBirchSpeech_CreateDialogueWindowBorder),
- *  juste fill le window pixel buffer en blanc + put tilemap + copy.
- *  TODO Phase E.2 : draw le custom dialogue border 1:1 décomp main_menu.c:2280-2294. */
+ *    if (copyToVram) CopyWindowToVram(windowId, COPYWIN_FULL); */
 export function NewGameBirchSpeech_ShowDialogueWindow(windowId: number, copyToVram: boolean): void {
+  // 1:1 décomp ligne 2273 : CallWindowFunction(windowId, fn) appelle
+  // fn(bg, tilemapLeft, tilemapTop, width, height, paletteNum) avec les
+  // params extraits du WindowTemplate du windowId.
+  const tpl = sNewGameBirchSpeechTextWindows[windowId];
+  if (tpl) {
+    NewGameBirchSpeech_CreateDialogueWindowBorder(
+      tpl.bg, tpl.tilemapLeft, tpl.tilemapTop, tpl.width, tpl.height, tpl.paletteNum,
+    );
+  }
   // Fill avec PIXEL_FILL(1) = idx 1 dans 2 nibbles = 0x11.
   FillWindowPixelBuffer(windowId, 0x11);
   PutWindowTilemap(windowId);

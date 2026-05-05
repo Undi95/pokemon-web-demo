@@ -60,8 +60,27 @@ export async function preloadTextWindowFrames(): Promise<void> {
       })(),
     );
   }
+
+  // 1:1 décomp graphics.c:1472-1473 — gMessageBox_Gfx + gMessageBox_Pal
+  // (= text_window/message_box.png 56x16 = 14 tiles 4bpp). C'est la frame
+  // border verte/cyan du dialog box utilisée partout dans le jeu (Birch,
+  // overworld dialogues, party menu, pokedex, etc.) via LoadMessageBoxGfx.
+  if (!assetCache.has('gMessageBox_Gfx') || !assetCache.has('gMessageBox_Pal')) {
+    tasks.push(
+      (async () => {
+        try {
+          const png = await loadIndexedPngStrict('/decomp/em/text_window/message_box.png', 4);
+          assetCache.set('gMessageBox_Gfx', png.charData);
+          assetCache.set('gMessageBox_Pal', png.palette);
+        } catch (e) {
+          console.warn('[text_window] message_box load failed:', e);
+        }
+      })(),
+    );
+  }
+
   await Promise.all(tasks);
-  console.log(`[text_window] preload done (${WINDOW_FRAMES_COUNT} frames cached)`);
+  console.log(`[text_window] preload done (${WINDOW_FRAMES_COUNT} frames + message_box cached)`);
 }
 
 // Expose pour les auto files qui résolvent via globalThis scope.
