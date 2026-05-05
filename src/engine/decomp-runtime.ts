@@ -1451,6 +1451,14 @@ export class DecompRuntime {
     if (sprite) this.gba.oam[sprite.oamIndex].tileId = state.tileBase + tileNum;
   }
 
+  /** Wrappers publics pour AnimateSprites/BuildOamBuffer global helpers
+   *  (= appelés par les CB2 non-MainCB2, e.g. CB2_MainMenu, qui doivent
+   *  tick les sprites eux-mêmes 1:1 décomp). */
+  tickSpriteAnimsPublic(): void { this.tickSpriteAnims(); }
+  tickAllAffineAnimsPublic(): void { tickAllAffineAnims(this); }
+  runSpriteCallbacksPublic(): void { this.runSpriteCallbacks(); }
+  syncSpritesToOamPublic(): void { this.syncSpritesToOam(); }
+
   /** Tick toutes les sprite anims actives — 1:1 décomp anim system frame counter. */
   private tickSpriteAnims(): void {
     for (const [spriteId, state] of this.spriteAnimStates) {

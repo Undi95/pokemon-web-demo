@@ -1656,14 +1656,27 @@ export function RunTasks(): void {
   rt().runTasks();
 }
 /** 1:1 décomp `AnimateSprites()` — met à jour les animations de sprites.
- *  Notre engine gère les sprites dans tickFixed / syncSpritesToOam. */
+ *  Pour les CB2 non-MainCB2 (CB2_MainMenu, CB2_NewGame etc), runOneFrame ne
+ *  tick PAS les sprite anims/affine anims (= optimisation `isMainCB2` gate).
+ *  Donc AnimateSprites() doit faire ce travail explicitement quand appelé
+ *  depuis ces callbacks (= 1:1 décomp main_menu.c:CB2_MainMenu calls AnimateSprites).
+ *  Sans ça : Task_NewGameBirchSpeech_WaitForPlayerShrink stuck forever
+ *  (= player shrink anim ne s'applique jamais → affineAnimEnded reste false).
+ *
+ *  1:1 décomp src/sprite.c:AnimateSprite + main loop. */
 export function AnimateSprites(): void {
-  /* no-op — animations gérées par le runtime Phaser sync */
+  const r = rt();
+  // Sprite callbacks (= sprite.callback(sprite, rt) chaque frame).
+  r.runSpriteCallbacksPublic();
+  // Sprite frame anims (= StartSpriteAnim + frame.duration cycle).
+  r.tickSpriteAnimsPublic();
+  // Affine anims (= StartSpriteAffineAnim + xScale/yScale/rotation deltas).
+  r.tickAllAffineAnimsPublic();
 }
 /** 1:1 décomp `BuildOamBuffer()` — construit l'OAM buffer pour le rendu.
- *  Notre engine gère l'OAM via Phaser sync dans tickFixed. */
+ *  Sync sprite state → OAM (= position, visibility, affine matrix). */
 export function BuildOamBuffer(): void {
-  /* no-op — OAM géré par le runtime Phaser sync */
+  rt().syncSpritesToOamPublic();
 }
 
 // ─── Title screen / audio stubs ──────────────────────────────────────────────

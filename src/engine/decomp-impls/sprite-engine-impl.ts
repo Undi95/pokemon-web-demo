@@ -148,7 +148,10 @@ export function ApplyAffineAnimFrameRelative(sprite: DecompSprite, frame: Affine
 /** 1:1 décomp BeginAffineAnim(sprite) : appelé quand affineAnimBeginning=TRUE.
  *  Reset state + applique frame 0 + start delay counter. */
 export function BeginAffineAnim(sprite: DecompSprite, rt: DecompRuntime): void {
-  if (!(sprite.affineMode & ST_OAM_AFFINE_ON_MASK)) return;
+  // 1:1 décomp : check sprite.oam.affineMode. Notre split → OR avec sprite.affineMode.
+  const oam = rt.gba.oam[sprite.oamIndex];
+  const effective = (oam?.affineMode ?? 0) | sprite.affineMode;
+  if (!(effective & ST_OAM_AFFINE_ON_MASK)) return;
   const anim = getAffineAnim(sprite);
   if (!anim || anim.frames.length === 0) return;
   sprite.affineAnimCmdIndex = 0;
@@ -162,7 +165,9 @@ export function BeginAffineAnim(sprite: DecompSprite, rt: DecompRuntime): void {
 
 /** 1:1 décomp ContinueAffineAnim(sprite). Tick chaque frame. */
 export function ContinueAffineAnim(sprite: DecompSprite, rt: DecompRuntime): void {
-  if (!(sprite.affineMode & ST_OAM_AFFINE_ON_MASK)) return;
+  const oam = rt.gba.oam[sprite.oamIndex];
+  const effective = (oam?.affineMode ?? 0) | sprite.affineMode;
+  if (!(effective & ST_OAM_AFFINE_ON_MASK)) return;
 
   if (sprite.affineAnimDelayCounter > 0) {
     sprite.affineAnimDelayCounter--;
@@ -198,11 +203,24 @@ export function ContinueAffineAnim(sprite: DecompSprite, rt: DecompRuntime): voi
 }
 
 /** Tick à appeler chaque frame depuis runtime.tickFixed.
- *  Pour chaque sprite avec affine anim active, advance la frame. */
+ *  Pour chaque sprite avec affine anim active, advance la frame.
+ *
+ *  1:1 décomp : check `oam.affineMode` (= source of truth, le décomp set
+ *  `gSprites[id].oam.affineMode = ST_OAM_AFFINE_NORMAL` directement quand
+ *  il déclenche une affine anim, e.g. main_menu.c:1108 player shrink).
+ *  Notre split sprite.affineMode/oam.affineMode → on prend le OR pour
+ *  couvrir les deux call patterns (= callbacks transcrits qui set oam
+ *  uniquement, ET impl manuels qui set sprite.affineMode). */
 export function tickAllAffineAnims(rt: DecompRuntime): void {
   for (const sprite of rt.gSprites.values()) {
     if (!sprite.affineAnimsTableName) continue;
-    if (!(sprite.affineMode & ST_OAM_AFFINE_ON_MASK)) continue;
+    const oam = rt.gba.oam[sprite.oamIndex];
+    const effectiveAffineMode = (oam?.affineMode ?? 0) | sprite.affineMode;
+    if (!(effectiveAffineMode & ST_OAM_AFFINE_ON_MASK)) continue;
+    // Sync sprite.affineMode from OAM si l'OAM a été set externe (= auto callback).
+    if ((oam?.affineMode ?? 0) !== sprite.affineMode) {
+      sprite.affineMode = (oam?.affineMode ?? 0) as 0 | 1 | 2 | 3;
+    }
     if (sprite.affineAnimBeginning) {
       BeginAffineAnim(sprite, rt);
     } else if (!sprite.affineAnimEnded) {
