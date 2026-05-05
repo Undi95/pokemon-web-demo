@@ -79,22 +79,16 @@ export const CB2_Overworld: CB2Callback = (rt) => {
           SetFieldVBlankCallback();
 };
 
-/** Source: overworld.c → CB2_NewGame */
-export const CB2_NewGame: CB2Callback = (rt) => {
-  FieldClearVBlankHBlankCallbacks();
-      StopMapMusic();
-      ResetSafariZoneFlag_();
-      NewGameInitData();
-      ResetInitialPlayerAvatarState();
-      PlayTimeCounter_Start();
-      ScriptContext_Init();
-      UnlockPlayerFieldControls();
-      gFieldCallback = ExecuteTruckSequence;
-      gFieldCallback2 = null;
-      DoMapLoadLoop(gMain.state);
-      SetFieldVBlankCallback();
-      SetMainCallback1(CB1_Overworld);
-      rt.SetMainCallback2(CB2_Overworld);
+// MANUAL FIX session 86 : 1:1 décomp CB2_NewGame nécessite tout l'engine
+// overworld (= ~500KB décomp : map loading, object events, scripts, field
+// VBlank callback). Pas implémenté → on délègue à un placeholder welcome
+// scene qui affiche "BIENVENUE EN HOENN!" + BGM Littleroot. Sera remplacé
+// par la vraie impl quand engine overworld sera porté.
+import { CB2_OverworldWelcomePlaceholder } from '../../../overworld-welcome-impl';
+
+/** Source: overworld.c → CB2_NewGame (MANUAL FIX → placeholder welcome). */
+export const CB2_NewGame: CB2Callback = (_rt) => {
+  CB2_OverworldWelcomePlaceholder();
 };
 
 /** Source: overworld.c → CB2_WhiteOut */
