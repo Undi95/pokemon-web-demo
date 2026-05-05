@@ -134,22 +134,26 @@ export const sScrollArrowsTemplate_MainMenu = {
 export const sSpriteAffineAnimTable_PlayerShrink = 'sSpriteAffineAnimTable_PlayerShrink';
 (globalThis as Record<string, unknown>).sSpriteAffineAnimTable_PlayerShrink = sSpriteAffineAnimTable_PlayerShrink;
 
-// 1:1 décomp main_menu.c:434 sBirchBgTemplate avec charBaseIndex=3 mapBaseIndex=30.
-// MAIS le code décomp écrit ensuite les data via :
-//   LZ77UnCompVram(sBirchSpeechShadowGfx, (void *)VRAM)            // → offset 0
-//   LZ77UnCompVram(sBirchSpeechBgMap, (void *)BG_SCREEN_ADDR(7))   // → offset 0x3800
-// Le décomp original est inconsistent (= peut-être debug stale ?). Sur un real
-// GBA hardware avec charBase=3 (= 0xC000) et mapBase=30 (= 0xF000), le BG
-// lirait des tiles random (= rien à 0xC000). Notre engine respecte strictement
-// charBase/mapBase via gba.bg(n).vram = view at charBase*0x4000 → on overrides
-// pour matcher où les data SONT écrites (= charBase=0, mapBase=7).
+// 1:1 décomp main_menu.c:434 sBirchBgTemplate.
 //
-// Phase 2 fix session 87 : corrige BG forest scene visible (= avant black avec
-// platform sprite, maintenant forest tiles + tilemap correctement référencés).
+// IMPORTANT — comprendre le layout BG Birch (= 2 layers cooperants) :
+//   sMainMenuBgTemplates[]  → BG0 charBase=2 mapBase=30 priority=0 (= dialog box, front)
+//                             BG1 charBase=0 mapBase=7  priority=3 (= forest scene, back)
+//   sBirchBgTemplate        → override BG0 charBase=3 mapBase=30 priority=0 (= dialog)
+// Donc BG0 = dialog text/box, BG1 = forest scene.
+// LZ77UnCompVram(sBirchSpeechShadowGfx, VRAM) → tiles à offset 0 = BG1 charBase=0 ✅
+// LZ77UnCompVram(sBirchSpeechBgMap, BG_SCREEN_ADDR(7)) → tilemap à 0x3800 = BG1 mapBase=7 ✅
+// Dialog glyphs sur BG0 baseBlock=1 → offset 0xC020 (charBase=3) = pas de conflit avec BG1.
+//
+// Notre fix précédent (charBase=0/mapBase=7 sur sBirchBgTemplate) cassait le dialog
+// rendering (= dialog glyphs écrasaient les forest tiles à offset 32+). Revert au
+// 1:1 décomp original. Le bug "BG forest invisible" vient d'ailleurs (= probablement
+// BG1 ShowBg(1) pas correctement appelé OU sMainMenuBgTemplates pas initialisé avant
+// sBirchBgTemplate). À investiguer.
 export const sBirchBgTemplate = {
   bg: 0,
-  charBaseIndex: 0,  // override 1:1 décomp (= 3) → 0 pour match LZ77UnCompVram destination
-  mapBaseIndex: 7,    // override 1:1 décomp (= 30) → 7 pour match BG_SCREEN_ADDR(7)
+  charBaseIndex: 3,
+  mapBaseIndex: 30,
   screenSize: 0,
   paletteMode: 0,
   priority: 0,
