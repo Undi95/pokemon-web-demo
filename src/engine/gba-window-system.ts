@@ -425,11 +425,32 @@ export function LoadMessageBoxGfx(bg: number, baseTile: number, paletteFlatIdx: 
   }
 }
 
+/** 1:1 décomp src/menu.c:ClearStdWindowAndFrame.
+ *  Clear le window pixel buffer + clear les BG tilemap entries du frame border.
+ *
+ *  Bug session 87 fix : avant on clearait juste le pixel buffer. Le frame
+ *  border (= tiles placés par DrawStdFrameWithCustomTileAndPalette autour du
+ *  window) restait visible après remove window → "cadre vide" leftover après
+ *  OUI/NON confirm dans Birch flow + autres scenes.
+ *
+ *  Décomp clear toute la zone (= width+2, height+2 autour pour le frame). */
 export function ClearStdWindowAndFrame(windowId: number, _copyToVram: boolean): void {
   const gw = gWindows.find((w) => w.id === windowId);
   if (!gw) return;
   fillWindowPixelBuffer(gw.win, 0);
   writeWindowTilemap(gw, true);
+  // 1:1 décomp : clear BG tilemap rect autour du window (= frame border zone).
+  // FillBgTilemapBufferRect_Palette0(bg, tile=0, left-1, top-1, width+2, height+2).
+  const tpl = gw.template;
+  FillBgTilemapBufferRect(
+    tpl.bg,
+    0,  // tile=0 = transparent
+    tpl.tilemapLeft - 1,
+    tpl.tilemapTop - 1,
+    tpl.width + 2,
+    tpl.height + 2,
+    0,
+  );
 }
 
 export function FillBgTilemapBufferRect_Palette0(
