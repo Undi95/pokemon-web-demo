@@ -54,6 +54,7 @@ import {
   SpriteCB_Bicycle, SpriteCB_FlygonRightHalf, Task_BicycleBgAnimation,
 } from '../engine/decomp-data/auto/src/intro_credits_graphics-callbacks-auto';
 import { CB2_InitCopyrightScreenAfterBootup, MainCB2_Intro } from '../engine/copyright-boot';
+import { InitKeys } from '../engine/decomp-runtime';
 import { keyToGbaMask } from '../util/key-bindings';
 
 export class GameScene extends Phaser.Scene {
@@ -80,6 +81,15 @@ export class GameScene extends Phaser.Scene {
     setGlobalRuntime(this.rt);
     resetObjAllocations();
     exposeGbaGlobals();
+
+    // 1:1 décomp src/main.c:99 AgbMain : `InitKeys()` appelée AVANT
+    // `InitMainCallbacks` qui pose le 1er CB2. Init gKeyRepeatStartDelay=40 +
+    // gKeyRepeatContinueDelay=5 + clear heldKeys/newKeys/keyRepeatCounter.
+    // Sans ce call : gKeyRepeat valeurs étaient les const-defaults, ce qui
+    // marchait par accident, mais naming_screen.c:484 set gKeyRepeatStartDelay=16
+    // puis restore via keyRepeatStartDelayCopy au cleanup → si jamais re-init,
+    // restore à valeur arbitraire.
+    InitKeys(this.rt);
 
     // Enregistre les sprite callbacks de l'intro pour que CreateSpriteFromTemplate
     // puisse les résoudre depuis les templates (les fonctions ESM ne sont pas sur globalThis).

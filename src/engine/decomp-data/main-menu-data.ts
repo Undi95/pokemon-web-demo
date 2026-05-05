@@ -34,6 +34,9 @@ export const MENU_WIN_HCOORDS_EXPR = "WIN_RANGE(((MENU_LEFT - 1) * 8) + MENU_SHA
 export const MENU_SCROLL_SHIFT_EXPR = "WIN_RANGE(32, 32)";
 /** Raw expr from .c (can't be evaluated): `min(ARRAY_COUNT(sMalePresetNames), ARRAY_COUNT(sFemalePresetNames))` */
 export const NUM_PRESET_NAMES_EXPR = "min(ARRAY_COUNT(sMalePresetNames), ARRAY_COUNT(sFemalePresetNames))";
+// 1:1 décomp src/main_menu.c:461,484 — sMalePresetNames + sFemalePresetNames
+// each have 20 entries → NUM_PRESET_NAMES = min(20, 20) = 20.
+export const NUM_PRESET_NAMES = 20;
 export const MAIN_MENU_BORDER_TILE = 469;
 export const BIRCH_DLG_BASE_TILE_NUM = 252;
 /** Raw expr from .c (can't be evaluated): `data[0]` */

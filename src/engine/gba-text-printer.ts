@@ -399,6 +399,17 @@ export function encodeStringForFont(str: string, charmap: Record<string, number>
           else if (cmd === 'SHADOW') { subCode = EXT_CTRL_CODE_SHADOW; value = (TEXT_COLOR as Record<string, number>)[param] ?? null; }
           else if (cmd === 'HIGHLIGHT') { subCode = EXT_CTRL_CODE_HIGHLIGHT; value = (TEXT_COLOR as Record<string, number>)[param] ?? null; }
           else if (cmd === 'PAUSE') { subCode = EXT_CTRL_CODE_PAUSE; value = parseInt(param, 10); }
+          // 1:1 décomp src/text.c:1023-1043 :
+          //   CLEAR    : skip N pixels horizontally (advance currentX by N).
+          //   SKIP     : set currentX absolu (= window-relative origin x + N).
+          //   CLEAR_TO : pad jusqu'à ce que currentX atteigne x=N (window-relative).
+          // Utilisé par naming_screen.c:sNamingScreenKeyboardText pour kerner les
+          // chars selon sPageColumnXPos. Sans ces codes, les chars rendus
+          // char-par-char sont décalés vs cursor sprite anchor.
+          else if (cmd === 'CLEAR') { subCode = EXT_CTRL_CODE_CLEAR; value = parseInt(param, 10); }
+          else if (cmd === 'SKIP') { subCode = EXT_CTRL_CODE_SKIP; value = parseInt(param, 10); }
+          else if (cmd === 'CLEAR_TO') { subCode = EXT_CTRL_CODE_CLEAR_TO; value = parseInt(param, 10); }
+          else if (cmd === 'MIN_LETTER_SPACING') { subCode = EXT_CTRL_CODE_MIN_LETTER_SPACING; value = parseInt(param, 10); }
           if (subCode !== null && value !== null && Number.isFinite(value)) {
             bytes.push(EXT_CTRL_CODE_BEGIN, subCode, value);
             i = closeIdx + 1;
@@ -585,6 +596,41 @@ export function runTextPrinter(printer: TextPrinter): number {
       // SHADOW : set shadowColor. Cf. text.c:990-993. 3 bytes.
       if (subCode === EXT_CTRL_CODE_SHADOW) {
         printer.shadowColor = printer.encodedString[printer.currentChar + 2] ?? printer.shadowColor;
+        printer.currentChar += 3;
+        continue;
+      }
+      // CLEAR : advance currentX by N pixels (= horizontal kerning skip).
+      // 1:1 décomp src/text.c (case EXT_CTRL_CODE_CLEAR). 3 bytes.
+      // Utilisé par naming_screen.c:sNamingScreenKeyboardText pour aligner chars
+      // sur sPageColumnXPos. Sans handler : currentX inchangé → chars collés.
+      if (subCode === EXT_CTRL_CODE_CLEAR) {
+        const n = printer.encodedString[printer.currentChar + 2] ?? 0;
+        printer.currentX += n;
+        printer.currentChar += 3;
+        continue;
+      }
+      // SKIP : set currentX absolu = origin x + N. 3 bytes.
+      // 1:1 décomp src/text.c (case EXT_CTRL_CODE_SKIP).
+      if (subCode === EXT_CTRL_CODE_SKIP) {
+        const n = printer.encodedString[printer.currentChar + 2] ?? 0;
+        printer.currentX = printer.x + n;
+        printer.currentChar += 3;
+        continue;
+      }
+      // CLEAR_TO : pad jusqu'à ce que currentX atteigne origin x + N. 3 bytes.
+      // 1:1 décomp src/text.c (case EXT_CTRL_CODE_CLEAR_TO). Notre impl simple :
+      // set currentX = max(currentX, origin x + N) (= skip-to-target sans pad).
+      if (subCode === EXT_CTRL_CODE_CLEAR_TO) {
+        const n = printer.encodedString[printer.currentChar + 2] ?? 0;
+        const target = printer.x + n;
+        if (printer.currentX < target) printer.currentX = target;
+        printer.currentChar += 3;
+        continue;
+      }
+      // MIN_LETTER_SPACING : set min letter spacing. 3 bytes. Affecte rendu suivant.
+      if (subCode === EXT_CTRL_CODE_MIN_LETTER_SPACING) {
+        const n = printer.encodedString[printer.currentChar + 2] ?? 0;
+        printer.letterSpacing = n;
         printer.currentChar += 3;
         continue;
       }

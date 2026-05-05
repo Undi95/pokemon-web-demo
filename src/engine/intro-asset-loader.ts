@@ -563,11 +563,20 @@ export async function preloadBirchSpeechAssets(): Promise<void> {
   }));
 
   // ─── Lotad front pic ───────────────────────────────────────────────────────
-  // 1:1 décomp graphics/pokemon/lotad/front.png → gMonFrontPic_Lotad +
-  // graphics/pokemon/lotad/normal.pal → gMonPaletteTable[SPECIES_LOTAD]
-  // NewGameBirchSpeech_CreateLotadSprite → CreateMonPicSprite_Affine(SPECIES_LOTAD, ...)
+  // 1:1 décomp graphics/pokemon/lotad/anim_front.png (= 64×128 = 2 frames :
+  // frame 0 idle pose, frame 1 breath/blink pose). Used by
+  // DoMonFrontSpriteAnimation idle anim (= LaunchAnimationTaskForFrontSprite
+  // toggles between anims that switch tile region between frame 0 and 1).
+  //
+  // Session 91 fix : V2 audit reverted to single-frame `front.png` because
+  // PNG canvas fallback was producing garbage tile data when the PLTE chunk
+  // had >16 colors. With `anim_front.4bpp.bin` (extracted from PNG IDAT
+  // directly via scripts/extract-png-indexed-tiles.mjs), tile data preserves
+  // canonical palette indices identical to ROM build artifacts. The .bin
+  // file is 4096 bytes = 128 tiles = 2 × 64-tile frames, matching the decomp
+  // INCBIN(.4bpp.lz, "graphics/pokemon/lotad/anim_front.png") layout.
   try {
-    const lotadGfx = await loadTileBin('/decomp/em/pokemon/lotad/front.png', 4);
+    const lotadGfx = await loadTileBin('/decomp/em/pokemon/lotad/anim_front.png', 4);
     assetCache.set('gMonFrontPic_Lotad', lotadGfx);
     const lotadPal = await loadGbaPal('/decomp/em/pokemon/lotad/normal.pal');
     assetCache.set('gMonPalette_Lotad', lotadPal);
@@ -584,8 +593,26 @@ export async function preloadBirchSpeechAssets(): Promise<void> {
     assetCache.set('gBallGfx_Poke', pokeballGfx);
     const pokeballPal = await loadIndexedPngStrict('/decomp/em/balls/poke.png', 4);
     assetCache.set('gBallPal_Poke', pokeballPal.palette);
+    // 1:1 décomp src/data/graphics/pokeballs.h:37 gOpenPokeballGfx (= open.png 16x16 = 4 tiles).
+    // LoadBallGfx (pokeball.c:1326) overwrite les frames 8-11 du poke.png par open.png.
+    const openBallGfx = await loadTileBin('/decomp/em/balls/open.png', 4);
+    assetCache.set('gOpenPokeballGfx', openBallGfx);
   } catch (e) {
     console.warn('[intro-asset-loader] Pokeball pic load failed:', e);
+  }
+
+  // ─── Ball-open particle sparkles (= AnimateBallOpenParticles) ─────────────
+  // 1:1 décomp src/battle_anim_throw.c:143 sBallParticleSpriteSheets[BALL_POKE]
+  // = gBattleAnimSpriteGfx_Particles. Indexed 8x64 PNG = 8 tiles 8x8 4bpp.
+  // Used by EVERY pokeball release (Birch, battles, eggs, evolutions). Loaded
+  // once at boot; pokeball-effects.ts copies into OBJ VRAM on first use.
+  try {
+    const particlesGfx = await loadTileBin('/decomp/em/battle_anims/particles.png', 4);
+    assetCache.set('gBattleAnimSpriteGfx_Particles', particlesGfx);
+    const particlesPal = await loadIndexedPngStrict('/decomp/em/battle_anims/particles.png', 4);
+    assetCache.set('gBattleAnimSpritePal_Particles', particlesPal.palette);
+  } catch (e) {
+    console.warn('[intro-asset-loader] Ball particles load failed:', e);
   }
 
   console.log(`[intro-asset-loader] Birch speech preload done (${assetCache.size} symbols total cached)`);

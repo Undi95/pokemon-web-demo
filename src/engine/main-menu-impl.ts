@@ -74,6 +74,7 @@ import {
   Task_NewGameBirchSpeech_FadeOutTarget1InTarget2,
   Task_NewGameBirchSpeech_FadePlatformIn,
   Task_NewGameBirchSpeech_FadePlatformOut,
+  Task_NewGameBirchSpeechSub_InitPokeBall,
 } from './decomp-data/auto/src/main_menu-callbacks-auto';
 import {
   A_BUTTON, B_BUTTON, DPAD_UP, DPAD_DOWN,
@@ -83,7 +84,7 @@ import {
   InitMenuInUpperLeftCornerNormal,
   gSaveBlock2Ptr,
 } from './gba-menu-system';
-import { CreateWindowTemplate, FillWindowPixelBuffer, FillWindowPixelRect, PutWindowTilemap, CopyWindowToVram } from './gba-window-system';
+import { CreateWindowTemplate, FillWindowPixelBuffer, FillWindowPixelRect, PutWindowTilemap, CopyWindowToVram, ClearStdWindowAndFrame } from './gba-window-system';
 import { AddTextPrinterParameterized3 } from './gba-text-system';
 import { getString } from './gba-strings';
 
@@ -432,13 +433,22 @@ export function NewGameBirchSpeech_ShowDialogueWindow(windowId: number, copyToVr
 }
 
 /** 1:1 décomp main_menu.c:2233-2240 NewGameBirchSpeech_ClearGenderWindow.
- *  Clear le window pixel buffer + tilemap (= dispose le menu OUI/NON gender). */
+ *    CallWindowFunction(windowId, ClearStdWindowAndFrameToTransparent);
+ *    FillWindowPixelBuffer(windowId, PIXEL_FILL(0));
+ *    ClearWindowTilemap(windowId);
+ *    if (copyToVram == TRUE) CopyWindowToVram(windowId, COPYWIN_GFX);
+ *
+ *  Bug session 89 fix : avant on clearait juste le pixel buffer → le frame
+ *  border BG tilemap entries restaient visibles → "boite vide" leftover après
+ *  gender select. Maintenant ClearStdWindowAndFrame clear ET le frame border
+ *  BG tilemap ET le pixel buffer (cf. gba-window-system.ts:437). */
 export function NewGameBirchSpeech_ClearGenderWindow(windowId: number, copyToVram: boolean): void {
-  // 1:1 décomp : FillWindowPixelBuffer(windowId, PIXEL_FILL(0)) + ClearWindowTilemap.
+  // 1:1 décomp ligne 2235 : CallWindowFunction(windowId, ClearStdWindowAndFrameToTransparent).
+  // Notre ClearStdWindowAndFrame fait fill pixel buffer 0 + clear BG tilemap rect frame.
+  ClearStdWindowAndFrame(windowId, true);
+  // 1:1 décomp ligne 2236-2237 : FillWindowPixelBuffer + ClearWindowTilemap (déjà fait
+  // par ClearStdWindowAndFrame). Re-fill explicite pour 1:1 fidélité.
   FillWindowPixelBuffer(windowId, 0x00);  // PIXEL_FILL(0) = transparent.
-  // Note : décomp call CallWindowFunction(ClearStdWindowAndFrameToTransparent) avant
-  // qui dessine le 0-tile sur tout le frame. Notre runtime efface le pixel buffer
-  // (= pixels transparent), suffit pour MVP.
   if (copyToVram) {
     CopyWindowToVram(windowId, 2);  // COPYWIN_GFX
   }
@@ -545,8 +555,12 @@ export function CreateYesNoMenuParameterized(
 // stubs en attendant Phase D Birch implementation.
 
 // 1:1 décomp include/data.h:10-12 — TRAINER_PIC_WIDTH/HEIGHT = 64, _SIZE = 2048.
-// Sprite 64x64 4bpp = 64 tiles × 32 bytes = 2048 bytes.
+// Sprite 64x64 4bpp = 64 tiles × 32 bytes = 2048 bytes per frame.
 const TRAINER_PIC_SIZE_BYTES = 64 * 64 / 2;
+// Mon front pic with 2 frames (= anim_front.png 64×128). 1:1 décomp
+// `MON_PIC_SIZE * 2` for species that have 2-frame animation
+// (= sMonHasTwoFramesAnimationTable[species] == TRUE, true for most Gen 3 mons).
+const MON_PIC_2FRAME_SIZE_BYTES = TRAINER_PIC_SIZE_BYTES * 2;
 // 1:1 décomp src/field_effect.c:336 — sSpritePalette_NewGameBirch.tag = 0x1006.
 const TAG_BIRCH_PALETTE = 0x1006;
 // Tag string keys (= spriteSheetTagToTileStart map keys) pour les sprites Birch.
@@ -602,20 +616,56 @@ function CreateTrainerSprite(gfxSymbol: string, palSymbol: string, tag: string, 
 
 /** 1:1 décomp `main_menu.c:1878 NewGameBirchSpeech_CreateLotadSprite(x, y)`.
  *  → CreateMonPicSprite_Affine(SPECIES_LOTAD, SHINY_ODDS, 0, MON_PIC_AFFINE_FRONT, x, y, 14, TAG_NONE).
- *  Sprite 64x64 affine front Pokemon pic. */
+ *  Sprite 64×64 affine front Pokemon pic.
+ *
+ *  Audit V2 fix : 1:1 décomp `sOamData_Affine` (trainer_pokemon_sprites.c:38)
+ *  has `affineMode = ST_OAM_AFFINE_NORMAL` set from creation. Avant on créait
+ *  avec affineMode=0 (default), puis SetUpForReleaseAffineAnim retroactively
+ *  fixait → 1-frame race où oam.affineParamIndex = matrixNum mais
+ *  oam.affineMode=0 (= compositor renders sans affine, sprite normal).
+ *
+ *  Match decomp : create with affineMode=NORMAL + pre-alloc matrix slot.
+ *  InitSpriteAffineAnim is implicitly called by CreateSprite when
+ *  affineMode & ST_OAM_AFFINE_ON_MASK (sprite.c:582-583). */
 function NewGameBirchSpeech_CreateLotadSprite(x: number, y: number): number {
   const rt = getRuntime();
   if (!rt) return -1;
   // paletteSlot=14 (= 1:1 décomp main_menu.c:1880, slot 14 in OBJ palette area).
   const LOTAD_PAL_TAG = 0x1014;  // unique tag pour palette Lotad (slot 14 reserved)
   LoadSpritePalette({ data: 'gMonPalette_Lotad', tag: LOTAD_PAL_TAG });
-  LoadCompressedSpriteSheet({ data: 'gMonFrontPic_Lotad', size: TRAINER_PIC_SIZE_BYTES, tag: TAG_LOTAD_FRONT });
+  // Session 91 fix : load 2-frame anim_front (= 4096 bytes = 128 tiles).
+  // Frame 0 (tiles 0-63) = idle pose. Frame 1 (tiles 64-127) = breath/blink pose.
+  // Switched between via `LaunchAnimationTaskForFrontSprite` writing oam.tileId
+  // = tileBase + (animFrame * 64). 1:1 décomp `gMonFrontPicTable[SPECIES_LOTAD]`
+  // points at `INCBIN_U32("graphics/pokemon/lotad/anim_front.4bpp.lz")`.
+  LoadCompressedSpriteSheet({ data: 'gMonFrontPic_Lotad', size: MON_PIC_2FRAME_SIZE_BYTES, tag: TAG_LOTAD_FRONT });
   const tileBase = rt.spriteSheetTagToTileStart.get(TAG_LOTAD_FRONT) ?? 0;
   const palSlot = rt.paletteTagToSlot.get(String(LOTAD_PAL_TAG)) ?? 0;
+  // Audit V2 : affineMode=1 (NORMAL) at creation = 1:1 décomp sOamData_Affine.
+  // CreateSpriteAtOam doesn't auto-alloc matrix on its own; we need to alloc
+  // here to match decomp's InitSpriteAffineAnim path.
   const { spriteId } = rt.CreateSpriteAtOam({
     tileId: tileBase, paletteBank: palSlot, x, y,
     shape: 0, size: 3, priority: 0,
+    affineMode: 1,  // ST_OAM_AFFINE_NORMAL
   });
+  // 1:1 décomp src/sprite.c:582-583 : if affineMode & AFFINE_ON_MASK,
+  // InitSpriteAffineAnim → AllocOamMatrix + matrixNum set on sprite/oam.
+  // Session 91 fix : also write `sprite.tileBase` so that downstream consumers
+  // (= LaunchAnimationTaskForFrontSprite frame switching, FreeAndDestroyMonPicSprite
+  // teardown) can compute frame N tile offset = tileBase + N * tilesPerFrame.
+  // Without this, sprite.tileBase stayed at 0 (= initialized default), causing
+  // the breath anim to point at the WRONG tile region.
+  if (spriteId >= 0) {
+    const sprite = rt.gSprites.get(spriteId);
+    if (sprite) sprite.tileBase = tileBase;
+    const matrixNum = rt.AllocOamMatrix();
+    if (matrixNum > 0) {
+      if (sprite) sprite.matrixNum = matrixNum;
+      const oam = rt.gba.oam[rt.gSprites.get(spriteId)!.oamIndex];
+      if (oam) oam.affineParamIndex = matrixNum;
+    }
+  }
   return spriteId;
 }
 
@@ -764,7 +814,13 @@ export function NewGameBirchSpeech_StartFadePlatformOut(taskId: number, delay: n
  *  Callback called by AddTextPrinterWithCallbackForMessage on each char rendered.
  *  Quand le `lastByte` est EXT_CTRL_CODE_PAUSE (= `{PAUSE 96}` dans le texte
  *  "Voici ce qu'on appelle un POKéMON.{PAUSE 96}\\p"), spawn la sub-Task qui
- *  active Lotad + déclenche Pokeball release. */
+ *  active Lotad + déclenche Pokeball release.
+ *
+ *  ⚠️ Engine NOTE : sync import + try/catch wrap autour du call de la sub-task
+ *  → fix bug session 84 où le lambda async `void import(...).then(...)` tournait
+ *  en zombie (= reassignment de task.func vers WaitForLotad jamais appliqué car
+ *  l'inner throwait silently sur asset load race condition). Direct sync ref +
+ *  log explicite si erreur. */
 export function NewGameBirchSpeech_WaitForThisIsPokemonText(_printer: unknown, lastByte: number): void {
   // EXT_CTRL_CODE_PAUSE = 0x09 (cf. gba-text-printer.ts:48)
   const EXT_CTRL_CODE_PAUSE = 0x09;
@@ -773,47 +829,88 @@ export function NewGameBirchSpeech_WaitForThisIsPokemonText(_printer: unknown, l
   const started = (globalThis as Record<string, unknown>).sStartedPokeBallTask;
   if (started) return;
   (globalThis as Record<string, unknown>).sStartedPokeBallTask = true;
-  // Spawn sub-Task qui set Lotad visible + CreatePokeballSpriteToReleaseMon.
-  // Import dynamique pour éviter circular dep (auto-callbacks file).
-  void import('./decomp-data/auto/src/main_menu-callbacks-auto').then((mod) => {
-    const rt = getRuntime();
-    if (!rt) return;
-    rt.CreateTask((t) => mod.Task_NewGameBirchSpeechSub_InitPokeBall(t, rt), 0);
-  });
+  const rt = getRuntime();
+  if (!rt) return;
+  // 1:1 décomp main_menu.c:2261 : CreateTask(Task_NewGameBirchSpeechSub_InitPokeBall, 0).
+  // Sub-task spawned inside the text-printer per-char callback. Lambda wrap
+  // converte signature TaskCallback (task, rt) → décomp signature (task) du runtime.
+  rt.CreateTask((t) => {
+    try {
+      Task_NewGameBirchSpeechSub_InitPokeBall(t, rt);
+    } catch (e) {
+      console.error('[BirchSpeech_WaitForThisIsPokemonText] InitPokeBall threw:', e);
+    }
+  }, 0);
 }
 
 (globalThis as Record<string, unknown>).NewGameBirchSpeech_WaitForThisIsPokemonText = NewGameBirchSpeech_WaitForThisIsPokemonText;
 
-/** 1:1 décomp `naming_screen.c DoNamingScreen(type, dest, gender, monSpecies, monPersonality, callback)`.
+/** 1:1 décomp `naming_screen.c:396` :
+ *  `void DoNamingScreen(u8 templateNum, u8 *destBuffer, u16 monSpecies, u16 monGender, u32 monPersonality, MainCallback returnCallback)`.
+ *
  *  Phase 3 : real impl via naming-screen-impl.ts. Délègue tout le rendering +
- *  state machine au module dédié (= keyboard FR, sprite cursor, OK/Back, etc.). */
+ *  state machine au module dédié (= keyboard FR, sprite cursor, OK/Back, etc.).
+ *
+ *  ⚠️ Session 94 fix : preserve decomp arg order. Previously this bridge
+ *  swapped `monSpecies` / `monGender` — the auto-callback main_menu.c:1606
+ *  calls `DoNamingScreen(NAMING_SCREEN_PLAYER, playerName, playerGender, 0, 0, ...)`
+ *  where the 3rd arg slot is `monSpecies` per decomp signature. The decomp
+ *  REUSES the monSpecies field as `gender` for PLAYER context (cf.
+ *  NamingScreen_CreatePlayerIcon line 1402 which reads `sNamingScreen->monSpecies`
+ *  as the gender param to GetRivalAvatarGraphicsIdByStateIdAndGender). The
+ *  previous swap caused gender to land in the `monGender` field of our struct,
+ *  not `monSpecies` → CreatePlayerIcon always read 0 → always male trainer. */
 export function DoNamingScreen(
   type: number,
   dest: unknown,
-  gender: number,
   monSpecies: number,
+  monGender: number,
   monPersonality: number,
   callback: () => void,
 ): void {
-  void gender;  // gender stocké dans gSaveBlock2Ptr.playerGender déjà.
   // Lazy import pour éviter circular dep : naming-screen-impl importe depuis decomp-globals
   // qui peut éventuellement importer main-menu-impl (= chain d'import).
   void import('./naming-screen-impl').then((mod) => {
     mod.DoNamingScreen(
-      type, dest as number[], monSpecies, gender, monPersonality, callback as any,
+      type, dest as number[], monSpecies, monGender, monPersonality, callback as any,
     );
   });
 }
 
 // ─── Sprite helpers (= bridges vers DestroySprite) ──────────────────────────
 
-export function FreeAndDestroyMonPicSprite(_spriteId: number): void {
+/** 1:1 décomp src/trainer_pokemon_sprites.c FreeAndDestroyMonPicSprite — frees
+ *  the sprite tiles + palette + affine matrix slot AND destroys the sprite.
+ *
+ *  Audit V2 fix : avant on appelait juste DestroySprite, ce qui ne libérait
+ *  PAS le matrix slot. Si la scène re-create un sprite affine après, l'alloc
+ *  retournait un slot encore "owned" (= leak). Now we call FreeOamMatrix +
+ *  StopMonFrontSpriteAnimation explicitly. */
+export function FreeAndDestroyMonPicSprite(spriteId: number): void {
   const rt = getRuntime();
-  if (rt) rt.DestroySprite(_spriteId);
+  if (!rt) return;
+  const sprite = rt.gSprites.get(spriteId);
+  if (sprite) {
+    // 1:1 décomp src/sprite.c FreeSpriteOamMatrix : if affine, free matrix.
+    if (sprite.matrixNum > 0) {
+      rt.FreeOamMatrix(sprite.matrixNum);
+      sprite.matrixNum = 0;
+    }
+    // Stop idle animation if active (= clean up controller).
+    // Lazy import to avoid circular dep with pokemon-animation.
+    const stop = (globalThis as Record<string, unknown>).__StopMonFrontSpriteAnimation;
+    if (typeof stop === 'function') (stop as (rt: unknown, id: number) => void)(rt, spriteId);
+  }
+  rt.DestroySprite(spriteId);
 }
 
 export function ResetAllPicSprites(): void {
-  // no-op — notre runtime gère les sprites différemment.
+  // 1:1 décomp src/trainer_pokemon_sprites.c:ResetAllPicSprites — clears the
+  // sSpritePics[] table. We don't have that table, but we DO need to clear
+  // any pending mon idle animations (= prevents stale sprites referencing
+  // matrix slots that were freed externally).
+  const reset = (globalThis as Record<string, unknown>).__ResetAllMonAnimations;
+  if (typeof reset === 'function') (reset as () => void)();
 }
 
 // ─── Scroll indicator stubs (= Phase D Birch flow) ──────────────────────────

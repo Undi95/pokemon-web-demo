@@ -142,6 +142,35 @@ export async function loadIndexedPng(
 }
 
 /**
+ * Charge un .4bpp.bin ou .8bpp.bin pré-extrait via scripts/extract-png-indexed-tiles.mjs.
+ *
+ * Ces fichiers parsent l'IDAT PNG directement (= raw indices) → préservent
+ * les indices palette originaux même quand la PLTE a des couleurs duplicates
+ * (= cas Rayquaza marking idx 15 vs body idx 11 qui ont même RGB(0,74,98)),
+ * ou quand le canvas browser resample slightly off (= cas naming screen
+ * sprite tile data corruption / "rainbow stripes").
+ *
+ * Fallback : si le .bin n'existe pas, retombe sur la conversion canvas-based
+ * via loadIndexedPngStrict (= remap indices, may be wrong pour duplicates).
+ *
+ * Foundation : utilisée par intro-asset-loader, naming-screen-impl, et toute
+ * scène qui charge des sprite sheets.
+ */
+export async function loadTileBin(url: string, bpp: 4 | 8): Promise<Uint8Array> {
+  const binUrl = url.replace(/\.png$/, `.${bpp}bpp.bin`);
+  try {
+    const resp = await fetch(binUrl);
+    if (resp.ok) {
+      const buf = await resp.arrayBuffer();
+      return new Uint8Array(buf);
+    }
+  } catch {/* fall through */}
+  console.warn(`[png-loader] no ${binUrl}, fallback PNG canvas extraction (may corrupt indices)`);
+  const png = await loadIndexedPngStrict(url, bpp);
+  return png.charData;
+}
+
+/**
  * Variante 8bpp avec palette canonique (256 colors max).
  * Pour les BG affine GBA qui sont obligatoirement 8bpp.
  * Pack 1 byte par pixel (pas de nibbles), 64 bytes par tile 8×8.

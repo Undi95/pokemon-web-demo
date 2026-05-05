@@ -15,18 +15,30 @@
  *   - gSaveBlock1Ptr / gSaveBlock2Ptr Proxy auto-persistant localStorage
  *   - gSaveFileStatus mutable global
  */
-import { getRuntime, m4aSongNumStart } from './decomp-globals';
-import { AddWindow, DrawStdFrameWithCustomTileAndPalette, type WindowTemplate } from './gba-window-system';
+import { getRuntime, m4aSongNumStart, PlaySE } from './decomp-globals';
+import { AddWindow, DrawStdFrameWithCustomTileAndPalette, FillWindowPixelRect, CopyWindowToVram, type WindowTemplate } from './gba-window-system';
 import { AddTextPrinterParameterized3 } from './gba-text-system';
 import { getString } from './gba-strings';
+
+// 1:1 décomp include/constants/songs.h:11 : SE_SELECT = 5.
+const SE_SELECT_KEY = 5;
+// 1:1 décomp src/menu.c:945 : `gText_SelectorArrow3 = _("▶")` — cursor glyph.
+const CURSOR_CHAR = '▶';
+// Constantes layout cursor :
+//   x = 0 : aligné sur bord gauche du window (= 1:1 décomp sMenu.left).
+//   yPerRow = 16 : LINE_HEIGHT (14) + 2 (= 1:1 décomp menu.c:945 maxLetterHeight + 2).
+//   width/height = 8 / 16 : taille du glyph cursor à clear.
+const CURSOR_X = 0;
+const CURSOR_Y_PER_ROW = 16;
+const CURSOR_WIDTH = 8;
+const CURSOR_HEIGHT = 16;
 
 // ─── Menu cursor state ───────────────────────────────────────────────────────
 
 let menuCursorPos = 0;
 let menuNumItems = 0;
 let menuActive = false;
-let menuWindowId = 0;
-void menuWindowId;  // reserved for future use (= window ref).
+let menuWindowId = -1;  // -1 = no menu active. Utilisé par drawMenuCursor/clearMenuCursor.
 
 // ─── Input keys (= shared with main-menu-impl.ts) ────────────────────────────
 
@@ -43,21 +55,63 @@ export function Menu_ProcessInputNoWrapClearOnChoose(): number {
 
   if (newKeys & A_BUTTON) {
     menuActive = false;
+    clearMenuCursor();
     EraseYesNoWindow();  // 1:1 décomp menu.c:1219 (= clear + remove window)
     return menuCursorPos;
   }
   if (newKeys & B_BUTTON) {
     menuActive = false;
+    clearMenuCursor();
     EraseYesNoWindow();  // 1:1 décomp menu.c:1219
     return -1; // MENU_B_PRESSED
   }
   if (newKeys & DPAD_UP) {
-    if (menuCursorPos > 0) menuCursorPos--;
+    if (menuCursorPos > 0) {
+      // 1:1 décomp menu.c:945 ChangeListMenuPos → erase old + draw new + SE_SELECT.
+      clearMenuCursor();
+      menuCursorPos--;
+      drawMenuCursor();
+      PlaySE(SE_SELECT_KEY);
+    }
   }
   if (newKeys & DPAD_DOWN) {
-    if (menuCursorPos < menuNumItems - 1) menuCursorPos++;
+    if (menuCursorPos < menuNumItems - 1) {
+      clearMenuCursor();
+      menuCursorPos++;
+      drawMenuCursor();
+      PlaySE(SE_SELECT_KEY);
+    }
   }
   return -2; // still processing
+}
+
+/** 1:1 décomp src/menu.c:945 Menu_PrintCursor (FONT_NORMAL, gText_SelectorArrow3="▶").
+ *  Draws ▶ glyph dans le window au row courant. Couleur identique au texte
+ *  (= [bgColor=1, fgColor=2, shadowColor=3] standard FONT_NORMAL). */
+function drawMenuCursor(): void {
+  if (menuWindowId < 0) return;
+  AddTextPrinterParameterized3(
+    menuWindowId,
+    1,  // FONT_NORMAL
+    CURSOR_X, 1 + menuCursorPos * CURSOR_Y_PER_ROW,
+    [1, 2, 3],
+    255,  // TEXT_SKIP_DRAW = sync render finished=true
+    CURSOR_CHAR,
+  );
+  CopyWindowToVram(menuWindowId, 2);  // COPYWIN_GFX → flush pixel buffer.
+}
+
+/** Clear le glyph cursor à la position actuelle via FillWindowPixelRect.
+ *  bgColor=1 (= 1:1 décomp PIXEL_FILL(1) standard menu fill). */
+function clearMenuCursor(): void {
+  if (menuWindowId < 0) return;
+  FillWindowPixelRect(
+    menuWindowId,
+    1,  // bgColor
+    CURSOR_X, 1 + menuCursorPos * CURSOR_Y_PER_ROW,
+    CURSOR_WIDTH, CURSOR_HEIGHT,
+  );
+  CopyWindowToVram(menuWindowId, 2);  // COPYWIN_GFX = 2
 }
 
 /** 1:1 décomp src/menu.c:1219 EraseYesNoWindow.
@@ -80,11 +134,17 @@ export function Menu_GetCursorPos(): number {
   return menuCursorPos;
 }
 
+/** 1:1 décomp src/menu.c:1577 InitMenuInUpperLeftCornerNormal.
+ *    InitMenu(menuStruct, windowId, ...);
+ *    Menu_PrintCursor(0, FONT_NORMAL);   // ← draw initial ▶ cursor
+ *  Sans le draw initial → menu sans curseur visible (= bug session 89 OUI/NON
+ *  + GARÇON/FILLE silent without highlight). */
 export function InitMenuInUpperLeftCornerNormal(windowId: number, numItems: number, cursorPos: number): void {
   menuWindowId = windowId;
   menuNumItems = numItems;
   menuCursorPos = cursorPos;
   menuActive = true;
+  drawMenuCursor();  // 1:1 décomp ligne 1583 : Menu_PrintCursor(0, FONT_NORMAL) — auto-VRAM-copy.
 }
 
 // ─── Yes/No Menu (= 1:1 décomp src/menu.c:1623) ──────────────────────────────

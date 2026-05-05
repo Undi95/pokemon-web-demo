@@ -290,9 +290,16 @@ export class PaletteFade {
  *  callback2 : la fonction appelée chaque frame. null = no-op.
  *  vblankCallback : appelée en VBlank (notre engine = stub no-op pour l'instant). */
 export type CB2Callback = (rt: DecompRuntime) => void;
+export type CB1Callback = (rt: DecompRuntime) => void;
 export class MainStruct {
   state = 0;
   callback2: CB2Callback | null = null;
+  /** 1:1 décomp `MainCallback gMain.callback1` (= main.c:175 init `gMain.callback1 = NULL`).
+   *  Décomp main loop : `CallCallbacks()` invoque callback1() PUIS callback2()
+   *  chaque frame (main.c:181-188). callback1 est utilisé par overworld (CB1_Overworld
+   *  set par CB2_NewGame line 1546) pour tick object events + map scroll AVANT
+   *  que callback2 (= CB2_Overworld) ne déroule sa state machine de scène. */
+  callback1: CB1Callback | null = null;
   vblankCallback: (() => void) | null = null;
   /** 1:1 décomp gMain.savedCallback — callback à restaurer quand une scène
    *  imbriquée (e.g. option menu, naming screen) se termine. Set par le caller
@@ -308,10 +315,37 @@ export class MainStruct {
   keyRepeatCounter = 0;
 }
 
-/** 1:1 décomp gKeyRepeatStartDelay = 40 (frames before 1ère répétition). */
+/** 1:1 décomp gKeyRepeatStartDelay = 40 (frames before 1ère répétition).
+ *  Constant boot-default. Variable mutable runtime via gKeyRepeatStartDelay export. */
 export const KEY_REPEAT_START_DELAY = 40;
 /** 1:1 décomp gKeyRepeatContinueDelay = 5 (frames entre répétitions suivantes). */
 export const KEY_REPEAT_CONTINUE_DELAY = 5;
+
+/** 1:1 décomp `COMMON_DATA u16 gKeyRepeatStartDelay = 0;` (main.c:62).
+ *  Mutable global initialisé à 40 par InitKeys(). Modifiable par scenes spéciales :
+ *  - naming_screen.c:484 : `gKeyRepeatStartDelay = 16;`
+ *  - union_room_chat.c   : `gKeyRepeatStartDelay = 20;`
+ *  - cleanup scenes restore via `keyRepeatStartDelayCopy` field saved au pré-set.
+ *
+ *  Stocké dans un container object pour permettre mutation cross-module
+ *  (= ESM exports sont read-only par référence). Lecture : `gKeyRepeat.startDelay`.
+ *  Écriture : `gKeyRepeat.startDelay = N`. */
+export const gKeyRepeat = {
+  startDelay: KEY_REPEAT_START_DELAY,
+  continueDelay: KEY_REPEAT_CONTINUE_DELAY,
+};
+
+/** 1:1 décomp src/main.c:231-241 InitKeys.
+ *  Init key repeat delays + clear gMain.heldKeys/newKeys.
+ *  À appeler une fois au boot, AVANT le 1er CB2 (= conformément à AgbMain order). */
+export function InitKeys(rt: DecompRuntime): void {
+  gKeyRepeat.startDelay = KEY_REPEAT_START_DELAY;       // 40
+  gKeyRepeat.continueDelay = KEY_REPEAT_CONTINUE_DELAY; // 5
+  rt.gMain.heldKeys = 0;
+  rt.gMain.newKeys = 0;
+  rt.gMain.newAndRepeatedKeys = 0;
+  rt.gMain.keyRepeatCounter = 0;
+}
 
 // ─── Sprite (1:1 décomp struct Sprite, simplifié) ────────────────────────────
 /** Sprite décomp. Mappe à un slot OAM gba + state machine via data[].
@@ -427,6 +461,11 @@ export class DecompRuntime {
   private prevHeldKeys = 0;
   /** Flag pour ne logger OAM slots exhausted qu'une seule fois (évite spam 999×). */
   private _oamExhaustedWarned = false;
+  /** Track UpdatePaletteFade calls per frame (= 1:1 décomp idempotency).
+   *  Reset chaque frame à la fin de tickFixed. Permet à CB2_X qui appelle
+   *  UpdatePaletteFade dans son body de ne pas re-trigger l'appel à la fin
+   *  de la frame — sans ça la fade engine advance 2×, durée /2. */
+  private _paletteFadeCalledThisFrame = false;
 
   /** Mode vidéo courant (bits 0-2 de DISPCNT). Utilisé pour déterminer isAffine. */
   private _dispCntMode = 0;
@@ -826,30 +865,45 @@ export class DecompRuntime {
    *  La string `color` (= name like "RGB_WHITEALPHA" ou "RGB(9, 10, 10)") doit
    *  être parsée pour extraire le RGB15 target. */
   BeginNormalPaletteFade(palettes: string | number, delay: number, startY: number, endY: number, color: string | number): void {
-    // 1:1 décomp src/palette.c BeginNormalPaletteFade : si déjà active, retourne
-    // sans rien faire (= return FALSE). Phase E fix : sans ce check, un caller
-    // qui appelle en boucle (= e.g. Task qui ne progresse pas) reset currentFrame=0
-    // chaque frame → fade jamais terminé → bloque les Tasks qui attendent !active.
+    // 1:1 décomp src/palette.c:158 BeginNormalPaletteFade : si déjà active,
+    // retourne FALSE sans rien faire.
     if (this.gPaletteFade.active) {
       return;
     }
+    // 1:1 décomp l.169-175 : deltaY = 2 par défaut. Si delay < 0, deltaY +=
+    // (-delay) puis delay = 0 (= mode "négatif" qui accélère).
+    let effectiveDelay = delay;
+    let effectiveDeltaY = 2;
+    if (delay < 0) {
+      effectiveDeltaY += (-delay);
+      effectiveDelay = 0;
+    }
+    this.gPaletteFade.deltaY = effectiveDeltaY;
     this.gPaletteFade.active = true;
     this.gPaletteFade.startY = startY;
     this.gPaletteFade.endY = endY;
+    // currentFrame/totalFrames sont kept pour compat externe mais NOT used
+    // par le nouvel UpdatePaletteFade tick-based (= audit V2).
     this.gPaletteFade.currentFrame = 0;
     this.gPaletteFade.totalFrames = Math.max(1, Math.abs(endY - startY));
-    this.gPaletteFade.delayPerStep = delay;
-    this.gPaletteFade.delayRemaining = delay;
+    this.gPaletteFade.delayPerStep = effectiveDelay;
+    this.gPaletteFade.delayRemaining = effectiveDelay;
     // ─── Phase B audit session 83 : init fields complets 1:1 décomp ────
     this.gPaletteFade.mode = NORMAL_FADE;
     this.gPaletteFade.yDec = startY > endY;
-    this.gPaletteFade.deltaY = 1;
     this.gPaletteFade.softwareFadeFinishing = false;
     this.gPaletteFade.softwareFadeFinishingCounter = 0;
     this.gPaletteFade.hardwareFadeFinishing = false;
     this.gPaletteFade.shouldResetBlendRegisters = false;
-    // brightness reflète l'état courant (= startY au lancement).
+    // 1:1 décomp l.180 : `gPaletteFade.y = startY`. brightness = our `y`.
     this.gPaletteFade.brightness = startY;
+    // ⚠️ Audit Session 92 : the décomp `BeginNormalPaletteFade` (palette.c:158-202)
+    // does NOT reset `objPaletteToggle`. Our previous reset was a divergence —
+    // it could mis-align the BG/OBJ tick alternation across consecutive fades
+    // (= e.g. ball-release where the 2nd fade BACK from white must continue from
+    // the toggle state left by the 1st fade TO white). 1:1 décomp : preserve
+    // toggle. The decomp's `ResetPaletteFadeControl` (= called once at scene
+    // init) is the only place that resets it.
     // Parse selected palettes mask (1:1 décomp BG bits 0-15 + OBJ bits 16-31).
     // Décomp: u32 mask, BG palettes 0-15 = bits 0-15, OBJ palettes 0-15 = bits 16-31.
     // Default = "all" (e.g. PALETTES_ALL = 0xFFFFFFFF).
@@ -910,14 +964,25 @@ export class DecompRuntime {
     // est utilisé INDEPENDAMMENT par certaines scènes (= option menu darken effect
     // pour le WIN0 highlight cursor). 1:1 décomp BeginNormalPaletteFade ne touche
     // pas BLDCNT/BLDY non plus.
-    // Apply initial brightness (= blend Unfaded → target avec coefficient startY/16)
-    this._applyPaletteFadeStep(startY);
+    //
+    // 1:1 décomp BeginNormalPaletteFade l.191 : appelle UpdatePaletteFade() une
+    // fois avant return, pour appliquer le startY initial sur Faded buffer. Audit
+    // V2 : reset _paletteFadeCalledThisFrame avant pour ne pas être skippé.
+    const wasFlagged = this._paletteFadeCalledThisFrame;
+    this._paletteFadeCalledThisFrame = false;
+    this.UpdatePaletteFade();
+    this._paletteFadeCalledThisFrame = wasFlagged;
+    // 1:1 décomp l.193-199 : flush gPlttBufferFaded → PLTT direct (DMA copy
+    // immédiate). Notre engine fait via gPlttBufferFaded.flushTo() au prochain
+    // VBlank tick — équivalent fonctionnel.
   }
 
-  /** Helper : applique le blend Unfaded → target sur les palettes SÉLECTIONNÉES
-   *  uniquement. 1:1 décomp UpdateNormalPaletteFade : itère bank par bank
-   *  (16 entries chacun), skip les banks non-sélectionnés.
+  /** @deprecated audit V2 — utiliser _applyPaletteFadeStepHalf. Kept pour les
+   *  callers externes (e.g. tests) qui veulent un apply complet en 1 call.
+   *  Process BOTH BG + OBJ halves dans un seul call (= ancien comportement).
    *
+   *  1:1 décomp UpdateNormalPaletteFade : itère bank par bank (16 entries chacun),
+   *  skip les banks non-sélectionnés.
    *  Pour les palettes NON sélectionnées : Faded[i] reste intact (= valeur écrite
    *  par CpuCopy16 sprite cb, ou de la frame précédente). Critique pour bank 5
    *  Rayquaza scene : excluded de la fade `& ~(0x21)` mais doit garder couleurs
@@ -951,62 +1016,127 @@ export class DecompRuntime {
 
   /** Tick du palette fade. À call chaque frame.
    *  Retourne TRUE tant que le fade est actif (1:1 décomp bool8).
-   *  Modifie gPlttBufferFaded en blendant Unfaded vers target color
-   *  selon le brightness courant (startY → endY linéaire). */
+   *
+   *  ⚠️ Audit V2 rewrite : 1:1 décomp src/palette.c:UpdateNormalPaletteFade
+   *  (l.408-492). L'ancien impl utilisait un compteur frame linéaire
+   *  (currentFrame/totalFrames) qui calculait brightness via interpolation —
+   *  ça marchait pour les durées totales mais loupait :
+   *    1) `objPaletteToggle` qui gates le travail BG (toggle=0) vs OBJ (toggle=1).
+   *    2) `deltaY` step (2 par défaut) qui fait avancer y de 2 par "round complete"
+   *       (= un round = BG processed + OBJ processed = 2 frames).
+   *    3) `delayCounter` incrémente seulement quand toggle=0 (= 1 frame sur 2).
+   *    4) `softwareFadeFinishingCounter` qui attend 4 frames de plus une fois
+   *       y atteint targetY avant de set active=false.
+   *
+   *  Pour 1:1 fidélité, on simule le pattern tick-par-tick : chaque appel
+   *  process soit BG (= banks 0-15) soit OBJ (= banks 16-31), pas les deux.
+   *  y avance après que les deux halves soient processed. */
   UpdatePaletteFade(): boolean {
+    // 1:1 décomp idempotency guard : marque l'appel pour cette frame. Le
+    // tickFixed final check `!_paletteFadeCalledThisFrame` skip le second appel.
+    this._paletteFadeCalledThisFrame = true;
     const f = this.gPaletteFade;
     if (!f.active) {
-      // ─── Phase B audit session 83 : softwareFadeFinishing latch ─────
-      // 1:1 décomp UpdateNormalPaletteFade : softwareFadeFinishing est set
-      // pour 1 frame après que active passe true→false, puis reset à false la
-      // frame suivante. Permet aux callers (auto callbacks party_menu/contest/
-      // etc.) de détecter "fade vient juste de finir" sur 1 tick précis.
-      if (f.softwareFadeFinishing) {
-        f.softwareFadeFinishing = false;  // already latched 1 frame, reset.
-      }
-      // 1:1 décomp UpdateNormalPaletteFade (palette.c:413) : returns immediately
-      // when fade inactive. Do NOT copy Unfaded → Faded here — would overwrite
-      // dynamic CpuCopy16(...&gPlttBufferFaded[X]...) writes from sprite cbs
-      // (e.g. SpriteCB_LogoLetter color cycle, SpriteCB_Lightning, orb attack).
+      // softwareFadeFinishing latch : reset après 1 frame.
+      if (f.softwareFadeFinishing) f.softwareFadeFinishing = false;
       return false;
     }
 
-    // 1:1 décomp objPaletteToggle alternance — toggle chaque tick (même si on
-    // applique tous les palettes en 1 step, le flag doit alterner pour matcher
-    // l'état struct du décomp).
+    // ─── 1:1 décomp IsSoftwarePaletteFadeFinishing (l.809-830) ──────
+    // softwareFadeFinishingCounter ramps 0→4. Quand 4 atteint, active=false.
+    // Pendant ce temps, return ACTIVE (les callers sont bloqués).
+    if (f.softwareFadeFinishing) {
+      if (f.softwareFadeFinishingCounter === 4) {
+        f.active = false;
+        // (laisser softwareFadeFinishing à TRUE 1 frame de plus pour les
+        //  callers, reset au prochain tick via le if (!f.active) plus haut)
+        f.softwareFadeFinishingCounter = 0;
+      } else {
+        f.softwareFadeFinishingCounter++;
+      }
+      return true;  // = PALETTE_FADE_STATUS_ACTIVE while finishing
+    }
+
+    // ─── 1:1 décomp UpdateNormalPaletteFade body (l.420-486) ─────────
+    // Delay gate : delayCounter incrémente seulement quand toggle == 0.
+    // Quand counter atteint delayPerStep, reset à 0 et continue.
+    if (!f.objPaletteToggle) {
+      if (f.delayRemaining < f.delayPerStep) {
+        f.delayRemaining++;
+        return true;  // delay frame, ne process aucune palette
+      }
+      f.delayRemaining = 0;
+    }
+
+    // ─── Apply fade step pour BG (toggle=0) ou OBJ (toggle=1) ───────
+    // 1:1 décomp l.434-454 : selectedPalettes >> 16 si OBJ, sinon raw.
+    // paletteOffset = OBJ_PLTT_OFFSET (=256) si OBJ, sinon 0.
+    const half: 'bg' | 'obj' = f.objPaletteToggle ? 'obj' : 'bg';
+    this._applyPaletteFadeStepHalf(f.brightness, half);
+
+    // 1:1 décomp l.456 : objPaletteToggle ^= 1.
     f.objPaletteToggle = !f.objPaletteToggle;
 
-    if (f.delayRemaining > 0) {
-      f.delayRemaining--;
-      // Re-apply current brightness step (= unfaded peut avoir changé via
-      // CpuCopy16 between frames).
-      this._applyPaletteFadeStep(this._currentFadeBrightness());
-      return true;
+    // 1:1 décomp l.458 : if (!objPaletteToggle) — = juste après avoir processed
+    // OBJ (= maintenant on flip à BG = toggle becomes 0). À ce moment on
+    // advance y vers targetY.
+    if (!f.objPaletteToggle) {
+      if (f.brightness === f.endY) {
+        // Atteint : trigger finishing.
+        f.selectedPalettes = 0;  // 1:1 décomp l.462
+        f.softwareFadeFinishing = true;
+        // (compteur ramps depuis 0 dans IsSoftwarePaletteFadeFinishing)
+      } else {
+        // Advance y vers endY par deltaY.
+        if (!f.yDec) {
+          let val = f.brightness + f.deltaY;
+          if (val > f.endY) val = f.endY;
+          f.brightness = val;
+        } else {
+          let val = f.brightness - f.deltaY;
+          if (val < f.endY) val = f.endY;
+          f.brightness = val;
+        }
+      }
     }
 
-    f.currentFrame++;
-    if (f.currentFrame >= f.totalFrames) {
-      // Apply final brightness
-      this._applyPaletteFadeStep(f.endY);
-      f.active = false;
-      f.brightness = f.endY;
-      // ─── Phase B : signal "fade just finished" pour 1 frame ─────────
-      f.softwareFadeFinishing = true;
-      f.softwareFadeFinishingCounter = 0;
-      return false;
-    }
-
-    const brightness = this._currentFadeBrightness();
-    this._applyPaletteFadeStep(brightness);
-    f.brightness = brightness;
-    f.delayRemaining = f.delayPerStep;
-    return true;
+    return true;  // PALETTE_FADE_STATUS_ACTIVE
   }
 
+  /** 1:1 décomp UpdateNormalPaletteFade body inner loop (l.444-454).
+   *  Process une half (BG = banks 0-15, OBJ = banks 16-31) avec brightness coeff. */
+  private _applyPaletteFadeStepHalf(brightness: number, half: 'bg' | 'obj'): void {
+    const tR = this.gPaletteFade.targetR;
+    const tG = this.gPaletteFade.targetG;
+    const tB = this.gPaletteFade.targetB;
+    const w = brightness;
+    const selected = this.gPaletteFade.selectedPalettes >>> 0;
+    // BG: bits 0-15 of selected → banks 0-15. OBJ: bits 16-31 → banks 16-31.
+    const bankStart = half === 'bg' ? 0 : 16;
+    const bankEnd = half === 'bg' ? 16 : 32;
+    const bitOffset = half === 'bg' ? 0 : 16;
+    for (let bank = bankStart; bank < bankEnd; bank++) {
+      if (((selected >>> (bank - bankStart + bitOffset)) & 1) === 0) continue;
+      const baseIdx = bank * 16;
+      for (let entry = 0; entry < 16; entry++) {
+        const i = baseIdx + entry;
+        const u = this.gPlttBufferUnfaded.get(i);
+        const r5 = u & 0x1F;
+        const g5 = (u >> 5) & 0x1F;
+        const b5 = (u >> 10) & 0x1F;
+        const newR = r5 + (((tR - r5) * w) >> 4);
+        const newG = g5 + (((tG - g5) * w) >> 4);
+        const newB = b5 + (((tB - b5) * w) >> 4);
+        const packed = (newR & 0x1F) | ((newG & 0x1F) << 5) | ((newB & 0x1F) << 10);
+        this.gPlttBufferFaded.set(i, packed);
+      }
+    }
+  }
+
+  /** @deprecated kept for backward compat with code that still calls it externally.
+   *  Audit V2 : the new tick-based UpdatePaletteFade doesn't use this anymore. */
   private _currentFadeBrightness(): number {
-    const f = this.gPaletteFade;
-    const t = f.currentFrame / f.totalFrames;
-    return Math.round(f.startY + (f.endY - f.startY) * t);
+    return this.gPaletteFade.brightness;
   }
 
   // ============================================================================
@@ -1021,10 +1151,40 @@ export class DecompRuntime {
     shape: 0 | 1 | 2, size: 0 | 1 | 2 | 3, priority: number,
     paletteMode?: 0 | 1, affineMode?: 0 | 1 | 2 | 3, affineParamIndex?: number,
   }): { spriteId: number, oamIndex: number } {
-    // Recherche un slot OAM libre (visible = false = libéré par DestroySprite)
+    // Recherche un slot OAM libre.
+    // Bug session 89 fix : avant on testait `!oam.visible` pour décider si un
+    // slot était libre. MAIS un sprite alive avec sprite.invisible=true a son
+    // oam.visible=false (synced) — le slot est OWNED par ce sprite, PAS libre.
+    // Si on réalloue le slot, on a 2 sprites pointant le même oamIndex →
+    // syncSpritesToOam écrase les data du sprite plus ancien à chaque frame
+    // (last write wins).
+    //
+    // 1:1 décomp src/sprite.c CreateSprite : alloue le premier slot dont
+    // sprite.inUse == false (= slot vraiment libre, sprite owner détruit).
+    // On track les slots taken par les sprites alive et on alloue un slot
+    // qui n'apparaît pas dans cet ensemble.
+    const takenSlots = new Set<number>();
+    for (const s of this.gSprites.values()) {
+      if (s.inUse) takenSlots.add(s.oamIndex);
+    }
+    // Session 94 fix : subsprite child OAM slots are ALSO taken — a sprite
+    // with a SetSubspriteTables installed allocates N child OAM indices that
+    // primary `gSprites.inUse` tracking does NOT cover. Without this, the next
+    // CreateSpriteAtOam picks a slot that's shared with a button/frame child
+    // OAM → the button child gets stomped (= "RKBO" garbled BACK button,
+    // fragmented MAJ button, underscores rendering at wrong y with wrong
+    // tile data — naming screen Session 94 root cause).
+    //
+    // Foundation : reusable by every scene that mixes SetSubspriteTables +
+    // plain CreateSpriteAtOam (= party menu cursor, summary screen markings,
+    // status condition icons, future PC system, etc.).
+    const getChildOams = (globalThis as Record<string, unknown>)._getSubspriteChildOamIndices as (() => Set<number>) | undefined;
+    if (getChildOams) {
+      for (const idx of getChildOams()) takenSlots.add(idx);
+    }
     let oamIndex = -1;
     for (let i = 0; i < 128; i++) {
-      if (!this.gba.oam[i].visible) {
+      if (!takenSlots.has(i)) {
         oamIndex = i;
         break;
       }
@@ -1089,6 +1249,60 @@ export class DecompRuntime {
     return this.gSprites.get(spriteId);
   }
 
+  /** Tracks affine matrix slots in use (= gba.affineParams[0..31] = 32 slots).
+   *  1:1 décomp: src/sprite.c uses `sOamMatrixAllocBitmap` to track which of
+   *  the 32 OAM matrix slots are claimed. Slot 0 is reserved for the "identity"
+   *  default and must NOT be allocated (= screen wide identity, used by every
+   *  affineMode=OFF sprite). */
+  private _matrixUsed = new Set<number>();
+
+  /** 1:1 décomp src/sprite.c:AllocOamMatrix (l.1427-1446) — find a free slot in
+   *  `gba.affineParams[1..31]`, mark it used, return its index.
+   *  Returns -1 (= 0xFF in decomp) if all slots are exhausted.
+   *
+   *  ⚠️ Session 90 audit V2 fix : the decomp impl does NOT reset matrix values
+   *  upon alloc (= the slot retains stale values). HOWEVER, in the decomp,
+   *  every alloc is IMMEDIATELY followed by `AffineAnimStateReset` (cf.
+   *  InitSpriteAffineAnim line 1463-1473) + `AnimateSprite` which writes the
+   *  matrix to its first valid frame value (BeginAffineAnim line 1067-1082).
+   *
+   *  In our pipeline, there is a window between AllocOamMatrix and
+   *  _BeginAffineAnim where the compositor could read stale values from
+   *  `gba.affineParams[matrixNum]` — but only if syncSpritesToOam runs AND
+   *  the compositor renders before _BeginAffineAnim writes. In normal flow
+   *  this doesn't happen (alloc → BeginAffineAnim are in the same callback),
+   *  but if someone calls AllocOamMatrix and forgets to BeginAffineAnim, the
+   *  next frame would render with stale values.
+   *
+   *  Defense-in-depth : initialize slot to identity on alloc. Matches what
+   *  `FreeOamMatrix` does (line 1460 : `SetOamMatrix(matrixNum, 0x100, 0, 0, 0x100)`),
+   *  so we also reset on alloc to guarantee a clean slot. Cost: 4 fixed-size
+   *  writes, irrelevant for perf. */
+  AllocOamMatrix(): number {
+    for (let i = 1; i < 32; i++) {
+      if (!this._matrixUsed.has(i)) {
+        this._matrixUsed.add(i);
+        // Defense-in-depth (audit V2) : reset slot to identity matrix.
+        // 1:1 with FreeOamMatrix's reset on release (sprite.c:1460).
+        const m = this.gba.affineParams[i];
+        if (m) { m.pa = 0x100; m.pb = 0; m.pc = 0; m.pd = 0x100; }
+        return i;
+      }
+    }
+    if (RT_DEBUG) console.warn('[runtime] AllocOamMatrix: all 32 slots in use');
+    return -1;
+  }
+
+  /** 1:1 décomp src/sprite.c:FreeOamMatrix (l.1448-1461) — release a
+   *  previously-allocated matrix slot AND reset it to identity.
+   *  Decomp : `SetOamMatrix(matrixNum, 0x100, 0, 0, 0x100)`. */
+  FreeOamMatrix(matrixNum: number): void {
+    this._matrixUsed.delete(matrixNum);
+    // 1:1 décomp sprite.c:1460 — reset slot to identity on release.
+    const m = this.gba.affineParams[matrixNum];
+    if (m) { m.pa = 0x100; m.pb = 0; m.pc = 0; m.pd = 0x100; }
+  }
+
   /** Set sprite visibility — set sprite.invisible, syncSpritesToOam propage à oam. */
   setSpriteInvisible(spriteId: number, invisible: boolean): void {
     const s = this.gSprites.get(spriteId);
@@ -1113,6 +1327,15 @@ export class DecompRuntime {
   SetMainCallback2(cb: CB2Callback | null): void {
     this.gMain.callback2 = cb;
     this.gMain.state = 0;
+  }
+
+  /** 1:1 décomp `SetMainCallback1(cb)` — installe le callback1.
+   *  Décomp main loop CallCallbacks : `if (gMain.callback1) gMain.callback1();`
+   *  AVANT callback2. Utilisé par overworld (CB2_NewGame line 1546 set
+   *  CB1_Overworld). Pré-VBlank logic : object events tick + map scroll.
+   *  Set à NULL pendant les transitions (CB2_LoadMap line 1577). */
+  SetMainCallback1(cb: CB1Callback | null): void {
+    this.gMain.callback1 = cb;
   }
 
   /** 1:1 décomp `SetVBlankCallback(cb)` — installe une callback VBlank.
@@ -1256,6 +1479,7 @@ export class DecompRuntime {
     this.nextOamSlot = 0;
     this.nextTaskId = 0;
     this.nextSpriteId = 0;
+    this._matrixUsed.clear();
   }
 
   /** ResetSpriteData : 1:1 décomp src/sprite.c:294 — ResetOamRange + ResetAllSprites
@@ -1579,18 +1803,26 @@ export class DecompRuntime {
     this.gMain.newKeys = newKeys;
     this.gMain.newAndRepeatedKeys = newKeys;
     if (heldKeys !== 0 && heldKeys === prevHeld) {
-      // Same key(s) held this frame as last → countdown for repeat fire
+      // Same key(s) held this frame as last → countdown for repeat fire.
+      // Lecture via `gKeyRepeat.continueDelay` (mutable runtime, init via
+      // InitKeys, modifiable par scenes — naming_screen=16, union_chat=20).
       this.gMain.keyRepeatCounter--;
       if (this.gMain.keyRepeatCounter <= 0) {
         this.gMain.newAndRepeatedKeys = heldKeys;
-        this.gMain.keyRepeatCounter = KEY_REPEAT_CONTINUE_DELAY;
+        this.gMain.keyRepeatCounter = gKeyRepeat.continueDelay;
       }
     } else {
-      // No input or input changed → reset counter to start delay
-      this.gMain.keyRepeatCounter = KEY_REPEAT_START_DELAY;
+      // No input or input changed → reset counter to start delay (mutable).
+      this.gMain.keyRepeatCounter = gKeyRepeat.startDelay;
     }
     this.prevHeldKeys = heldKeys;
-    // 1. Main callback2 : dispatch scène courante (= ce que la décomp appelle
+    // 1. Main callback1 : pré-callback2 logic (= overworld object events tick,
+    //    map scroll, etc.). 1:1 décomp src/main.c:181-188 CallCallbacks :
+    //    `if (gMain.callback1) gMain.callback1(); if (gMain.callback2) gMain.callback2();`
+    //    Set par SetMainCallback1 (CB1_Overworld pour Phase 4). NULL pour les
+    //    scenes pré-overworld (intro/title/main_menu/birch/naming) → no-op.
+    if (this.gMain.callback1) this.gMain.callback1(this);
+    // 2. Main callback2 : dispatch scène courante (= ce que la décomp appelle
     //    via `gMain.callback2()`. La plupart des CB2 appellent à leur tour
     //    RunTasks/AnimateSprites/BuildOamBuffer/UpdatePaletteFade dans CET
     //    ORDRE — cf MainCB2_Intro src/intro.c:1042-1052).
@@ -1630,8 +1862,27 @@ export class DecompRuntime {
     if (typeof globalFlushDirty === 'function') globalFlushDirty();
     // 4. BuildOamBuffer() — copie gOamMatrices + sprite state → OAM.
     this.syncSpritesToOam();
+    // 4b. Subsprite OAM sync — naming screen, summary screen, etc. install
+    //     a globalThis._syncSubspriteOam hook that re-pins subsprite child
+    //     OAMs + re-hides primary OAM after syncSpritesToOam clobbered them.
+    //     Foundation pattern : any scene with multi-OAM-per-logical-sprite
+    //     registers this hook (= 1:1 décomp `AddSubspritesToOamBuffer` path
+    //     in src/sprite.c:1683 which runs as part of BuildOamBuffer).
+    const globalSyncSubsprite = (globalThis as any)._syncSubspriteOam;
+    if (typeof globalSyncSubsprite === 'function') globalSyncSubsprite();
     // 5. UpdatePaletteFade() — APRÈS le rendu sprite (ordre décomp).
-    this.UpdatePaletteFade();
+    // Bug session 89 fix : avant on appelait UpdatePaletteFade ICI inconditionnel
+    // ET via CB2_MainMenu body → fade advance 2× par frame → flash dure 8 frames
+    // au lieu de 16 (= 1:1 décomp). User feedback "flash trop court".
+    //
+    // 1:1 décomp : UpdatePaletteFade est appelé UNE FOIS par frame, par le
+    // CB2 actif. CB2_MainMenu/MainCB2_Intro/etc. l'appellent dans leur body.
+    // Ici on l'appelle UNIQUEMENT si le CB2 actif ne l'a pas déjà fait — détection
+    // via flag tracking dans UpdatePaletteFade lui-même (= idempotent par frame).
+    if (!this._paletteFadeCalledThisFrame) {
+      this.UpdatePaletteFade();
+    }
+    this._paletteFadeCalledThisFrame = false;  // reset for next frame
     // VBlank callbacks (= VBlankCB_Intro etc) : ScanlineEffect tick + TransferPlttBuffer.
     // 1:1 décomp : VBlankCB de chaque scène call TransferPlttBuffer. SI vblankCallback
     // est NULL (= scene init via `SetVBlankCallback(NULL)`), AUCUN transfert ne
@@ -1662,12 +1913,25 @@ export class DecompRuntime {
     }
   }
 
-  /** Sync les fields sprite → gba.oam. 1:1 décomp src/sprite.c:BuildOamBuffer :
+  /** Sync les fields sprite → gba.oam. 1:1 décomp src/sprite.c:BuildOamBuffer
+   *  + UpdateOamCoords (lines 339-359) :
    *    oam.x = sprite.x + sprite.x2 + sprite.centerToCornerVecX
    *    oam.y = sprite.y + sprite.y2 + sprite.centerToCornerVecY
    *  centerToCornerVec = -w/2, -h/2 (×2 si AFFINE_DOUBLE) → décale top-left
    *  pour que (sprite.x, sprite.y) soit le centre du sprite affiché.
-   *  Sans ce décalage, les sprites apparaissent décalés à droite + bas. */
+   *  Sans ce décalage, les sprites apparaissent décalés à droite + bas.
+   *
+   *  Session 90 audit V2 fix : ALSO sync sprite.affineMode → oam.affineMode.
+   *  Avant : seul oam.affineParamIndex était synced. Si une callback (e.g.
+   *  SetUpForReleaseAffineAnim) modifie sprite.affineMode mais pas oam.affineMode,
+   *  ou inversement, on a deux sources de vérité divergentes. Le décomp utilise
+   *  oam.* comme source unique (= gSprites[i].oam.affineMode). Notre split
+   *  sprite.affineMode / oam.affineMode → propage sprite → oam ICI.
+   *
+   *  Nuance importante : les auto-callbacks transcrits écrivent à
+   *  `gSprites[id].oam.affineMode = X` (= directement sur l'OAM). Notre runtime
+   *  les conserve sur `oam.affineMode` côté gba. Pour respecter LES DEUX call
+   *  patterns, on prend le OR : si l'un des deux est non-zero, on prend ça. */
   private syncSpritesToOam(): void {
     for (const sprite of this.gSprites.values()) {
       if (!sprite.inUse) continue;
@@ -1683,6 +1947,20 @@ export class DecompRuntime {
       oam.flipV = sprite.vFlip;
       oam.affineParamIndex = sprite.matrixNum;
       oam.objMode = sprite.objMode as 0 | 1 | 2;
+      // Audit V2 : merge sprite.affineMode + oam.affineMode (= last writer wins
+      // pour OFF-state explicit reset, but if either is set NORMAL/DOUBLE, we
+      // keep the affine mode active — matches decomp behavior where ANY write
+      // to gSprites[i].oam.affineMode is the new state).
+      const merged = (sprite.affineMode | (oam.affineMode ?? 0)) as 0 | 1 | 2 | 3;
+      // Détection : si sprite.affineMode a été explicitement set OFF (=0) après
+      // avoir été NORMAL, on doit propager OFF. Heuristique : si sprite.affineMode==0
+      // ET oam.affineMode!=0 ET sprite.matrixNum==0 (= explicit teardown via
+      // FreeOamMatrix → matrixNum=0), alors propager OFF.
+      if (sprite.affineMode === 0 && sprite.matrixNum === 0) {
+        oam.affineMode = 0;
+      } else {
+        oam.affineMode = merged;
+      }
     }
   }
 

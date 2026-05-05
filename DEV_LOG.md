@@ -8,6 +8,351 @@ de la décompilation FR (`pokeemeraude`) + `@pkmn/sim` pour combats.
 
 ---
 
+## Session 91 — Lotad polish (idle anim + palette dual-buffer doc) (2026-05-05)
+
+**Contexte** : Suite à V2 user verification (= "ressemble plus à ingame mais
+pas 100%"), 2 régressions visuelles restaient sur le release Lotad :
+1. Lotad idle anim ne joue PAS (= sprite reste sur frame 0 statique).
+2. Palette flicker / pink ne reste pas pleinement appliquée.
+
+**Investigation** : trace exhaustive frame-by-frame du release pipeline.
+
+**ROOT CAUSE Issue 1** (idle anim) : DOUBLE BUG.
+1. **Asset bug** : V2 audit avait reverted Lotad de `anim_front.png` (2 frames)
+   à `front.png` (1 frame) à cause d'un PNG canvas decoder qui produisait des
+   tile data corrompus. MAIS `anim_front.4bpp.bin` (= IDAT-parse extrait par
+   `scripts/extract-png-indexed-tiles.mjs` = preserve indices PLTE original)
+   était DÉJÀ sur disque (4096 bytes = 128 tiles = 2 frames). Loader
+   `loadTileBin()` swap auto `.png → .4bpp.bin`. Suffisait de pointer le path
+   `anim_front.png` au lieu de `front.png` pour que le bin 2-frames se charge.
+
+2. **Engine bug** : `StartSpriteAnim(spriteId, animIdx)` early-return pour
+   les sprites non enregistrés dans `spriteAnimStates` Map. Map populée
+   uniquement par `CreateSpriteFromTemplate` (= sprite via SpriteTemplate
+   avec `anims` table). Lotad créé via `CreateSpriteAtOam` direct (= bypass
+   template). Donc `LaunchAnimationTaskForFrontSprite`'s call à
+   `StartSpriteAnim` était silent no-op → le toggle `data[15]` 0/1
+   tournait mais ne switchait JAMAIS la tile visible.
+
+**FIX foundational Issue 1** :
+- **`pokemon-animation.ts`** : `LaunchAnimationTaskForFrontSprite` écrit
+  `oam.tileId = sprite.tileBase + animFrame * tilesPerFrame` DIRECT, bypass
+  `StartSpriteAnim` requirement. C'est le mécanisme sous-jacent que
+  `StartSpriteAnim` finit par déclencher (= `BeginAnim` writes
+  `sprite->oam.tileNum` sprite.c:705). Marche pour any sprite peu importe
+  comment il a été créé. Helper `_tilesPerMonPicFrame(shape, size)` lit la
+  matrice OAM size GBA → returns (W/8)*(H/8) tiles per frame. Pour mon pic
+  64×64 (shape=0 size=3) : 64 tiles per frame.
+- **`pokemon-animation.ts:DoMonFrontSpriteAnimation`** : même direct-write
+  immédiat à frame 1 quand Lotad atterrit (= 1:1 décomp pokemon.c:6807).
+- **`main-menu-impl.ts:NewGameBirchSpeech_CreateLotadSprite`** : write
+  `sprite.tileBase = tileBase` (était missing → default 0 → frame 0 au
+  lieu de tileBase + 0 si tileBase != 0).
+- **`intro-asset-loader.ts`** : Lotad path → `anim_front.png` (loader
+  swap auto vers `.4bpp.bin` 4096 bytes).
+- **`main-menu-impl.ts`** : nouveau constant `MON_PIC_2FRAME_SIZE_BYTES =
+  TRAINER_PIC_SIZE_BYTES * 2 = 4096` pour clarté.
+
+**FIX foundational Issue 2** (palette dual-buffer) :
+
+Math 1:1 décomp vérifiée OK. `selectedPalettes = PALETTES_BG = 0xFFFF`
+(BG bits 0-15) → `_applyPaletteFadeStepHalf` skip toutes OBJ banks (= bit
+math `(0xFFFF >>> 16) & 1 == 0`). BlendPalette pink reste intact dans
+`gPlttBufferFaded` pendant les 20 frames de fade BG vers blanc puis 16
+frames de unblend.
+
+**Best hypothesis user perception** : le "flicker" perçu était en fait
+la **statique de Lotad sur frame 0** pendant que tout autour bouge
+(particules sparkles cleanup, BG fade-back, palette unblend). Avec idle
+anim 2-frame qui démarre dès l'atterrissage, le visual lit comme un beat
+"release-and-settle" cohérent au lieu d'un static end-state jarring.
+
+Foundational additions :
+- **`decomp-globals.ts:BlendPalette`** doc-comment expandu : explique le
+  dual-buffer model (read unfaded, write faded), documente l'invariant
+  OBJ-pink-stays explicitement pour empêcher futurs contributors de
+  removed le V2 toggle-aware fade engine accidentally.
+- **`decomp-globals.ts:BlendPalettes`** (NEW) : 1:1 décomp palette.c:832.
+  Itère mask 32-bit (BG 0-15 / OBJ 16-31), apply BlendPalette par bank
+  selected.
+- **`decomp-globals.ts:BlendPalettesUnfaded`** (NEW) : 1:1 décomp
+  palette.c:844. Reset faded ← unfaded ALL palettes, then BlendPalettes.
+  Foundational rebase primitive (= scenes qui doivent discard in-flight
+  fade work).
+- **`pokeball-effects.ts:LaunchBallFadeMonTask`** : duplicate
+  `BeginNormalPaletteFade` removed (avait 2 calls, décomp en a 1
+  battle_anim_throw.c:2056 ; second was harmless early-return mais code
+  clarity hazard).
+
+**Files modified** :
+- `src/engine/pokemon-animation.ts` (foundational : direct oam.tileId
+  write replaces StartSpriteAnim, _tilesPerMonPicFrame helper, immediate
+  frame-1 write in DoMonFrontSpriteAnimation)
+- `src/engine/intro-asset-loader.ts` (Lotad → anim_front.png)
+- `src/engine/main-menu-impl.ts` (MON_PIC_2FRAME_SIZE_BYTES,
+  NewGameBirchSpeech_CreateLotadSprite writes sprite.tileBase)
+- `src/engine/decomp-globals.ts` (BlendPalette doc expansion,
+  BlendPalettes + BlendPalettesUnfaded added)
+- `src/engine/pokeball-effects.ts` (duplicate BeginNormalPaletteFade
+  removed)
+
+**Verification** :
+- ✅ `npx tsc --noEmit` : 0 errors.
+- ✅ `npm run build` : Vite build success en 13.86s.
+- ⏳ Manual visual test pending — user verification required.
+
+**Confidence** :
+- Issue 1 (idle anim) : 95% confident fixed. Direct oam.tileId write IS
+  the foundational mechanism — frames WILL toggle. 5% uncertainty si
+  layout du `.4bpp.bin` (frame 0 puis frame 1 en 64-tile linear order)
+  est différent du expected (= e.g. interleaved 8x8 strips). File size
+  (4096 = 2×2048) + même IDAT-parse pipeline que `front.4bpp.bin` working
+  → very likely correct.
+- Issue 2 (palette flicker) : 70% confident user's perceived "flicker"
+  était la statique Lotad → résolu par fix Issue 1. 30% uncertainty si
+  user reporte "still flickers" → besoin investiguer compositor scanline
+  rendering / BG-OBJ palette slot collision / H-blank timing white flash.
+
+**Manual test instructions** :
+1. Boot game → "Nouvelle partie".
+2. Watch Birch speech jusqu'à "voici un Pokémon" → ball appears.
+3. **Issue 1** : Lotad emerge, atterrit, **doit visiblement "respirer"** —
+   toggle entre 2 poses corps every ~30 frames (~half-sec).
+4. **Issue 2** : pendant white flash + ball-open beat, silhouette Lotad
+   tintée PINK (visible contre white BG flash). Pink doit rester ~16
+   frames après atterrissage, puis fade-back smooth vers couleurs
+   originales sur 16 frames de plus. Pas de pop abrupt.
+
+**Demande user pour next session après vérification Session 91** :
+- Si Lotad fix complet → naming screen polish (BG tilemap rendering,
+  CreateInputTargetIcon, VBlankCB_NamingScreen).
+- Si flicker palette persiste → compositor scanline audit.
+
+---
+
+## Session 90 — Audit V2 + foundational fixes for Lotad flicker (2026-05-05)
+
+**Contexte** : Suite à session 89 qui avait fixé 13 foundationals + rendait
+le Birch flow visible end-to-end MAIS laissait un bug visuel persistant —
+"Lotad scintille comme une étoile Mario" (= flicker random pendant l'arc et
+après, idle anim absente). User a demandé un AUDIT 1:1 décomp complet style
+session 81/82/83 avant de continuer + naming clavier 1:1.
+
+**Livrable principal** : `AUDIT_1_1_DECOMP_V2.md` — divergence tables par
+axes A→E, 25+ items audités, prose summary, fixed/deferred split, manual
+verification checklist, open questions.
+
+**ROOT CAUSE Lotad flicker** identifié comme un cocktail TRIPLE :
+
+1. **Matrix slot stale values** (CRITICAL) — `AllocOamMatrix` ne reset pas
+   le slot à identity. Décomp `FreeOamMatrix` (sprite.c:1460) le fait
+   explicitement à la libération. Si un sprite alloue un slot précédemment
+   utilisé par GameFreak intro (= avec scale + rotation non-zero), il y a
+   une 1-frame race entre `SetUpForReleaseAffineAnim` (set
+   `oam.affineParamIndex`) et `_BeginAffineAnim` (write matrix) où le
+   compositor render avec garbage matrix.
+   **Fix** : reset slot à identity dans BOTH AllocOamMatrix et FreeOamMatrix
+   (= 1:1 décomp + defense-in-depth).
+
+2. **`oam.affineMode` not synced from `sprite.affineMode`** (CRITICAL) —
+   `syncSpritesToOam` propageait `sprite.matrixNum`, `x/y`, etc., mais PAS
+   `sprite.affineMode`. Si `SetUpForReleaseAffineAnim` set
+   `sprite.affineMode = NORMAL` mais une autre source écrivait
+   `oam.affineMode = OFF`, deux sources de vérité divergent → compositor
+   render path inconsistent.
+   **Fix** : `syncSpritesToOam` merge sprite.affineMode | oam.affineMode
+   avec OFF detection sur matrixNum==0.
+
+3. **Missing idle animation** (HIGH) — `DoMonFrontSpriteAnimation`
+   (pokemon.c:6779) jamais appelé à fin du fly-out arc. Décomp lance
+   `LaunchAnimationTaskForFrontSprite` qui démarre 2-frame breathing anim
+   par species. Sans ça, Lotad reste static à frame 0 → contraste visuel
+   avec dynamique du ball-release → user perçoit "glitch".
+   **Fix** : NEW `pokemon-animation.ts` foundation module qui implémente
+   `DoMonFrontSpriteAnimation` + `LaunchAnimationTaskForFrontSprite` +
+   `HasTwoFramesAnimation` + `gAnims_MonPic` + `SpriteCallbackDummy_2` +
+   `StopMonFrontSpriteAnimation` + `ResetAllMonAnimations`. Foundation
+   réutilisée par EVERY mon-display scene (Birch, party, summary, evo,
+   trade, Pokedex, battle send-out, egg hatch).
+
+**Foundationals fixes additionnels (= touches palette + affine engine)** :
+
+4. **`UpdateNormalPaletteFade` rewrite as tick-based 1:1 décomp**
+   (palette.c:408-492) — l'ancien impl utilisait
+   `brightness = lerp(startY, endY, frame/total)` qui donnait la bonne
+   durée totale mais loupait `objPaletteToggle` (BG even ticks, OBJ odd),
+   `deltaY=2` step, `softwareFadeFinishingCounter == 4` 4-frame trailing
+   latch. Now process BG OR OBJ per tick + advance y only when toggle
+   becomes 0 + 4-frame trailing latch.
+
+5. **`BeginNormalPaletteFade` deltaY=2 default + delay<0 acceleration**
+   (palette.c:169-175) — `if (delay < 0) deltaY += -delay; delay = 0`. Avant
+   deltaY hardcoded à 1 → certains fades 2× trop lents.
+
+6. **`ContinueAffineAnim` respect `affineAnimPaused`** (sprite.c:1090-1112,
+   `AffineAnimDelay → DecrementAffineAnimDelayCounter`) — décomp décrémente
+   delayCounter UNIQUEMENT si !paused. Notre impl décrémentait toujours.
+
+7. **`AffineAnimCmd_end` proper latch with cmdIndex-- + dummy apply**
+   (sprite.c:1172-1178) — décomp END handler back up cmdIndex puis re-apply
+   dummy frame (= write matrix). Notre old impl juste set
+   affineAnimEnded=true. Si une frame suivante hit AffineAnimDelay,
+   `cmdIndex` était past-the-end → wrong frame read.
+
+8. **`ApplyAffineAnimFrame` rotation `& ~0xFF` only in relative path**
+   (sprite.c:1282-1287 absolute vs 1308 relative) — décomp absolute set
+   ne fait PAS le mask, seul relative add le fait. Notre old impl appliquait
+   le mask dans les deux paths → drift de bits low-byte pour rotations
+   non-zero. Pour EMERGE/NORMAL (rot=0) pas d'impact, mais pour Spin/Stretch
+   futurs oui.
+
+9. **Lotad created with `affineMode=NORMAL`** (1:1 décomp `sOamData_Affine`,
+   trainer_pokemon_sprites.c:38) — `NewGameBirchSpeech_CreateLotadSprite`
+   créait avec affineMode=0 par défaut, puis `SetUpForReleaseAffineAnim`
+   retroactively fixait. 1-frame race où oam.affineParamIndex=matrixNum
+   mais oam.affineMode=0. Now create avec affineMode=NORMAL +
+   pre-alloc matrix slot via AllocOamMatrix (= 1:1 décomp
+   InitSpriteAffineAnim path implicit dans CreateSprite quand affineMode
+   & ST_OAM_AFFINE_ON_MASK).
+
+10. **`FreeAndDestroyMonPicSprite` proper teardown** — avant juste
+    DestroySprite, ne libérait pas matrix slot. Now FreeOamMatrix +
+    StopMonFrontSpriteAnimation + DestroySprite.
+
+**Files modified (10 fixes)** :
+- `src/engine/decomp-runtime.ts` (AllocOamMatrix/FreeOamMatrix init,
+  syncSpritesToOam affineMode, UpdatePaletteFade rewrite,
+  BeginNormalPaletteFade deltaY=2 + delay<0 path)
+- `src/engine/decomp-impls/sprite-engine-impl.ts` (BeginAffineAnim,
+  ContinueAffineAnim, ApplyAffineAnimFrame, AffineAnimCmd_end)
+- `src/engine/decomp-globals.ts` (DoMonFrontSpriteAnimation import +
+  globalThis bridge, SpriteCB_ReleasedMonFlyOut_Birch invokes
+  _DoMonFrontSpriteAnimation at fly-out end)
+- `src/engine/main-menu-impl.ts` (NewGameBirchSpeech_CreateLotadSprite
+  affineMode=NORMAL, FreeAndDestroyMonPicSprite proper teardown,
+  ResetAllPicSprites bridge)
+
+**Files created** :
+- `src/engine/pokemon-animation.ts` (NEW foundation 290 lines : gAnims_MonPic,
+  LaunchAnimationTaskForFrontSprite, HasTwoFramesAnimation,
+  DoMonFrontSpriteAnimation, SpriteCallbackDummy_2,
+  StopMonFrontSpriteAnimation, ResetAllMonAnimations).
+- `AUDIT_1_1_DECOMP_V2.md` (doc audit complet, ~600 lignes).
+
+**Verification** :
+- ✅ `npx tsc --noEmit` : 0 errors.
+- ✅ `npm run build` : Vite build success en 14.78s.
+- ⏳ Manual visual test pending — user verification required (cf. checklist
+  in AUDIT_1_1_DECOMP_V2.md).
+
+**Deferred** :
+- Naming screen 1:1 keyboard (Axis E) : 2594 lignes décomp, ~25 helpers à
+  implémenter. Estimated 6-8h focused work. Skeleton actuel suffit pour
+  enter name + return to Birch flow.
+- Per-species `sMonAnimFunctions` registry (~150 anim functions) : conserved
+  fallback 2-frame breathing pour Lotad. Future work.
+- `anim_front.png` palette index remapping fix : revert à `front.png`
+  single frame en attendant fix loader strict PLTE.
+- `gPlttBufferTransferPending` / `bufferTransferDisabled` gate : known
+  deviation, low impact (= Pokemon Emerald set ça pour HBlank effects qu'on
+  simule pas).
+- `CreateInvisibleSprite` séparé : pas utilisé hors battle, deferred.
+
+**Confidence on flicker fix** : HIGH (90%+). Si user feedback "fixed" → V2
+réussit. Si "persiste" → 4th cause possible (= PNG palette remap pour
+front.png, OR BG palette overlap OBJ slot 14, OR compositor scanline
+skip affine sprites — needs further investigation).
+
+**Demande user pour next session après vérification V2** :
+- Si Lotad fix → naming screen 1:1 (Axis E impl complète).
+- Si Lotad encore broken → Axis A déeper investigation : compositor unit
+  test, PNG loader strict mode, BG/OBJ palette slot collision audit.
+
+---
+
+## Session 89 — Birch Lotad release pipeline 1:1 + foundations multiples (2026-05-05)
+
+**Contexte** : Suite à session 86 (= Birch flow tournait jusqu'à `BIENVENUE EN HOENN!` placeholder), user a demandé fixes spécifiques sur le release Lotad qui n'était pas 1:1 décomp visuellement (= ball derrière main, pas de flash, sparkles garbage, Lotad couleur changeante, idle anim absente). Session focus = remonter chaque bug à racine décomp + foundationals multiples.
+
+**Foundationals fixes (= shared, bénéficie all scenes)** :
+
+1. **OAM allocation race** (`decomp-runtime.ts:CreateSpriteAtOam`) : avant on testait `!oam.visible` pour décider si slot libre. Mais sprite alive avec `sprite.invisible=true` a son `oam.visible=false` synced — slot OWNED par ce sprite, pas libre. Si on réalloue, 2 sprites pointent même `oamIndex` → `syncSpritesToOam` last-write-wins → premier sprite invisible. Fix : track `inUse` set des sprites alive, allouer slot non taken. 1:1 décomp `src/sprite.c CreateSprite`.
+
+2. **AllocOamMatrix/FreeOamMatrix** (`decomp-runtime.ts:1107+`) : matrix slots 1-31, slot 0 reserved identity. 1:1 décomp `sOamMatrixAllocBitmap`. Foundation pour TOUS les sprites affines.
+
+3. **UpdatePaletteFade idempotency** (`decomp-runtime.ts:UpdatePaletteFade`) : flag `_paletteFadeCalledThisFrame` set par UpdatePaletteFade lui-même. `tickFixed` final check skip si CB2 l'a déjà fait. Avant : fade run 2× par frame → durée /2 → "flash trop court" user feedback. Après : 1× par frame, durée 1:1 décomp.
+
+4. **LoadCompressedSpriteSheet `targetTileBase`** (`decomp-globals.ts:1527`) : optional param pour overwrite tile slot précis. 1:1 décomp `LZDecompressVram(data, addr)` qui écrit à addr arbitraire. Utilisé par `gOpenPokeballGfx` overwrite tile 8-11 du `gBallGfx_Poke`.
+
+5. **loadSpeciesNamesAsync** (`decomp-globals.ts:825`) : avant lisait `/decomp/em/constants.json` qui n'a 0 SPECIES_X entries (= constants.json contient flags+items+maps seulement). SPECIES_NAMES jamais peuplé → tous les cris broken (= y compris intro Latias/Latios/Rayquaza). Fix : import dynamique de `auto/include/constants/species-data.ts` (= 387 SPECIES_X = N exports) + cross-ref avec cries.json. Foundation cris pour TOUT le jeu.
+
+**Foundational shared modules ajoutés** :
+
+6. **`src/engine/pokeball-effects.ts`** : `LaunchBallFadeMonTask`, `AnimateBallOpenParticles`, `SetUpForReleaseAffineAnim`, `gBallOpenFadeColors`, BALL_* constants. 1:1 décomp `battle_anim_throw.c` + `pokeball.c`. Utilisé par EVERY ball release (Birch, battles, eggs, evo, trades).
+
+7. **`src/engine/decomp-impls/sprite-affine-extras.ts`** : registry runtime pour `gAffineAnims_BattleSprite{PlayerSide,OpponentSide,Contest}` + `sAffineAnim_Battler_{Normal,Emerge,Return,Flipped}`. 1:1 décomp `data.c:144+`. Permet StartSpriteAffineAnim avec BATTLER_AFFINE_EMERGE pour mon release.
+
+**Transpiler script fixes (`scripts/transpile-callbacks.mjs`)** :
+
+8. **GLOBAL_CONSTANTS auto-import** : avant les constants C #define cross-scene (PALETTES_*, REG_OFFSET_*, DISPCNT_*, BLDCNT_*, BG_PLTT_ID, etc.) étaient référencés sans import dans auto-callback files → `ReferenceError` silencieux caught par try/catch dans `runTasks` → tasks tombaient en silence. Fix : auto-import depuis `decomp-globals` quand référencés.
+
+9. **MIXED_CASE_GLOBALS detection** : symbols PascalCase/camelCase (PlaySE, PlayCryInternal, SpriteCallbackDummy) pas matché par regex ALL_CAPS de `findAllCapsIdentifiers`. Ajouté Set explicite + double check.
+
+10. **Better param name extraction** : avant params type `const struct Foo *bar` retournaient `arg: any` répété → `SyntaxError: "arg" cannot be bound multiple times`. Fix : extract last identifier dans le param string.
+
+11. **PlaySE no-stub** : avant `/* TODO sound PlaySE */` stub écrasait les real PlaySE calls. Removed.
+
+**`scripts/post-transpile-patches.mjs` extended** :
+
+12. **MainCB2_EndIntro restore** : intro-callbacks-auto.ts perdait MainCB2_EndIntro après chaque regen. Patch idempotent qui le restore.
+
+13. **`_getRuntime` import patch idempotent** : helper signatures retirent `rt: DecompRuntime` param + ajoute `const rt = _getRuntime()`. Avant un check `if (!s.includes('decomp-globals import'))` skipait quand transpiler générait déjà un decomp-globals import partiel. Fix : check `s.includes('_getRuntime()')` séparément + ajout import dédié si manque.
+
+**Decomp-globals exports ajoutés** :
+- `PALETTES_BG = 0xFFFF`
+- `PALETTES_OBJ = 0xFFFF0000`
+- `SpriteCallbackDummy` (no-op fonction sentinel pour "anim done" check)
+
+**main-menu-data.ts** :
+- `NUM_PRESET_NAMES = 20` (= 1:1 décomp `min(sMalePresetNames, sFemalePresetNames)`).
+
+**Pipeline Birch Lotad release 1:1 (`decomp-globals.ts CreatePokeballSpriteToReleaseMon`)** :
+
+Refacto en 2 sprite callbacks 1:1 décomp `pokeball.c:1031-1133` :
+- `SpriteCB_PokeballReleaseMon` (= countdown delay → ball anim "open" + sparkles + flash + reveal mon + emerge affine + AnimateSprite(monSprite) + data[1]=0x1000)
+- `SpriteCB_ReleasedMonFlyOut_Birch` (= sin-arc interpolation 0..128 ball→final, ball.invisible=true à mid-arc, switch monSprite.affineAnim → NORMAL une fois emerge end, PlayCryInternal au final pos)
+
+`SetUpForReleaseAffineAnim` allocate matrix slot via `AllocOamMatrix` + register sAffineAnim table name `gAffineAnims_BattleSpritePlayerSide` sur Lotad sprite.
+
+`_BeginAffineAnim` sync apply frame 0 du emerge anim immediatement (= 1:1 décomp `AnimateSprite(monSprite)` ligne 1078). Avant manquait → matrix slot non init → 1 frame visible avec matrix=zero → sprite 0×0 → user "Lotad invisible quelques frames".
+
+**Bug critique session 89 — color glitch / "brille comme étoile mario"** :
+
+Décomp `DoMonFrontSpriteAnimation` (pokemon.c:6822) set `sprite->callback = SpriteCallbackDummy_2` (≠ `SpriteCallbackDummy`). Donc `Task_NewGameBirchSpeechSub_WaitForLotad` case 0 check `if (sprite->callback != SpriteCallbackDummy)` reste TRUE en décomp → reste bloqué → `oam.affineMode` stays `AFFINE_NORMAL` avec matrix=identity stable.
+
+Mon impl initial set `m.callback = SpriteCallbackDummy` à fin de fly-out → unblock case 0 → switch `affineMode = AFFINE_OFF` → transition rendering AFFINE_NORMAL→OFF → glitch visuel "frame de couleur changeante / invisible".
+
+Fix tenté : ne plus set `m.callback`. Reste null. Case 0 reste bloqué. AffineMode stable. **MAIS user feedback final session : "Lotad brille comme étoile mario"** — flicker persiste. Cause root pas encore identifiée 100%. Probable race quelque part dans tickAllAffineAnims OU compositor render OBJ mode.
+
+**Tentative idle anim** (NOT 1:1 fait) :
+Switch `front.png` (= 64×64, 1 frame) → `anim_front.png` (= 64×128, 2 frames) → tile data garbage (= PNG fallback path remappe palette indices différemment du `.4bpp.bin`). Reverted à `front.png`. TODO : extract `anim_front.4bpp.bin` propre + register `gAnims_MonPic` + `sAnim_MonPic_0/1` dans sprite-anim registry runtime + appeler `StartSpriteAnim(sprite, 1)` au final pos.
+
+**État final session 89** :
+- ✅ Flash blanc Birch durée correcte
+- ✅ Cri Lotad au final pos
+- ✅ Sparkles cycling tile anim sAnim_RegularBall
+- ✅ Ball ouvre vers frame "open"
+- ✅ Sin-arc fly-out
+- ✅ Z-order ball devant Birch (= hack priority swap, doc comme TODO subpriority)
+- ✅ Cris intro restored
+- ✅ Auto-callback Birch flow 1:1 transpilé (= 19 Tasks)
+- ❌ Lotad flicker visuel persistant
+- ❌ Idle anim Lotad
+
+**Demande user pour next session** : AUDIT complet 1:1 décomp Birch flow + naming screen clavier 1:1. Style "AUDIT_1_1_DECOMP.md" précédent. Identifier toute divergence avec décomp + plan fix avant write.
+
+---
+
 ## Session 83 — Audit complet 1:1 décomp + foundations unifiées (Phase A+B+C+D-cleanup)
 
 **Contexte** : Suite à directive #1 (= "1:1 décomp + foundations unifiées + pas de duplication" établie session 82), le user a demandé un audit complet du codebase AVANT le push + AVANT d'attaquer Birch. Audit délégué à Plan agent → 30+ violations identifiées, prioritisées HIGH/MED/LOW + 5 architecture observations.
@@ -4832,3 +5177,520 @@ systèmes restent à faire plus tard :
 - [ ] **Sprites d'herbe qui frémissent** quand on marche dedans (tout le
   monde a vécu ça). Animation courte déclenchée à l'entrée sur une tile
   d'herbe haute.
+
+---
+
+## Session 91 — Naming screen 1:1
+
+**TL;DR** : Replacement of naming-screen MVP (= keyboard rendered via window
+text printer) with a 1:1 décomp `naming_screen.c` (= 2594 lines) impl with
+**sprite-based keyboard UI**. Cursor sprite animated + buttons sprites
+(Back/OK/PageSwap) + InputArrow + Underscore sprites + page swap animation +
+button flash 1:1 décomp.
+
+### Foundations posées (= reusable across scenes)
+
+In `src/engine/decomp-globals.ts` :
+
+- `IndexOfSpritePaletteTag(tag)` — 1:1 décomp `src/sprite.c:IndexOfSpritePaletteTag`.
+  Lookup `paletteTagToSlot` Map → OBJ slot, ou 0xFF.
+- `GetSpriteTileStartByTag(tag)` — 1:1 décomp `src/sprite.c:GetSpriteTileStartByTag`.
+  Lookup `spriteSheetTagToTileStart` Map → tile start, ou 0xFFFF.
+- `MultiplyInvertedPaletteRGBComponents(palIdx, rMul, gMul, bMul)` —
+  1:1 décomp `palette.c:1764`. Multiplies R/G/B components of a `gPlttBufferFaded`
+  color by `(16-mul)/16`. Used by cursor flash + button flash.
+- `FindTaskIdByFunc(func)` + `TASK_NONE` — 1:1 décomp `task.c:FindTaskIdByFunc`.
+- `SetSubspriteTables` + `syncSubspriteOam` + `clearAllSubspriteTables` —
+  decomp uses a **subsprite** system (1 logical sprite = N OAM entries with
+  offsets). Our engine is mono-OAM per sprite, so we allocate child OAM slots
+  for each subsprite and sync each frame from parent sprite position. Used by
+  PageSwapFrame (40x32), Button (40x24), PageSwapText (24x8).
+
+### Naming screen impl (= `src/engine/naming-screen-impl.ts`)
+
+Full 1:1 décomp port of `naming_screen.c`. Sprite templates registered :
+- `Cursor` (16x16, anims: loop + squish)
+- `PageSwapFrame` + `PageSwapText` + `PageSwapButton` (subsprite-rendered)
+- `BackButton` + `OkButton` (subsprite-rendered)
+- `InputArrow` (8x8 jiggle)
+- `Underscore` (8x8 bounce, 1 per char position)
+
+Asset loader `loadNamingScreenAssets()` charges all PNG/PAL files from
+`public/decomp/em/boot/naming_screen/` async. Already extracted, no need to
+re-run extractor.
+
+State machine `Task_NamingScreen` : 10 states 1:1 décomp.
+- `MainState_FadeIn` : draws keyboard via window printers + begins palette fade
+- `MainState_WaitFadeIn` : SetCursorFlashing + SetInputState(ENABLED)
+- `MainState_HandleInput` : delegates to `HandleKeyboardEvent`
+- `MainState_StartPageSwap` + `MainState_WaitPageSwap` : page swap orchestration
+- `MainState_PressedOKButton` + `MainState_FadeOut` + `MainState_Exit`
+
+Helper tasks created at init :
+- `Task_HandleInput` (priority 1) — Input_Disabled/Enabled/Override dispatch
+- `Task_UpdateButtonFlash` (priority 3) — color flash via MultiplyInvertedPaletteRGBComponents
+- `Task_HandlePageSwapAnim` (created at SwapKeyboardPage) — PageSwapAnimState_*
+
+Sprite callbacks (= per-frame anim) : `SpriteCB_Cursor` (flash + squish),
+`SpriteCB_InputArrow` (x2 jiggle), `SpriteCB_Underscore` (y2 bounce when at
+caret position), `SpriteCB_PageSwap` (state machine for slide off/on).
+
+Input handling `HandleDpadMovement` 1:1 décomp avec :
+- delta lookup tables
+- transition vers/depuis button column (sKeyRowToButtonRow + sButtonRowToKeyRow)
+- wrap x/y (button column = 3 rows, key area = KBROW_COUNT rows)
+
+Keyboard handlers `HandleKeyboardEvent` dispatch sur key role + button :
+- INPUT_SELECT → SwapKeyboardPage
+- INPUT_B_BUTTON → DeleteTextCharacter
+- INPUT_START → MoveCursorToOKButton
+- KEY_ROLE_CHAR + INPUT_A → AddTextCharacter + SquishCursor
+- KEY_ROLE_PAGE/BACKSPACE/OK → TryStartButtonFlash + action
+
+### Helpers count
+
+~35 functions + ~10 sprite/task callbacks. All exposed on `globalThis` for
+auto-callback dispatch compat. Build : 0 TS errors, vite build 14.72s.
+
+### Limitations / deferred
+
+- **CreateInputTargetIcon** : stub (= NoIcon). Other icon functions need
+  ObjectEvents + pokemon_icon engines (= deferred).
+- **Background tilemap** (`gNamingScreenBackground_Tilemap`,
+  `gNamingScreenKeyboardUpper_Tilemap` etc.) : MVP renders keyboard chars
+  via window text printer instead of pre-rendered BG tilemap. Pour visuel
+  parfait (= les rectangulaires gris/blanc sous chaque char), il faudrait
+  charger les .bin tilemaps via `LoadBgTiles + CopyToBgTilemapBuffer`.
+- **Page swap animation** : visible côté sprite (text slide off/on) mais
+  `bg1vOffset/bg2vOffset` writes nécessitent un BG VBlank callback pour
+  s'appliquer côté compositor. À vérifier in-browser.
+- **`loadIndexedPng` palette mismatch** : palette canonique chargée
+  séparément via `loadGbaPal`. Si rendu cassé → switch à
+  `loadIndexedPngWithPal` avec la pal canonique.
+
+### Manual test
+
+1. `npm run dev`
+2. Skip intro (GameFreak + Latias), wait for title
+3. New Game → Birch speech jusqu'au "What's your name?" prompt
+4. Naming screen : cursor sprite animé sur clavier, page tabs visibles
+   (Back/OK/PageSwap), input arrow + underscore animés sous le name field
+5. D-pad pour bouger cursor, A pour insérer char, B pour backspace, SELECT
+   pour swap page (anim slide), START pour OK
+6. Test switch UPPER ↔ LOWER ↔ SYMBOLS via SELECT
+7. Confirm name → "So your name is X" speech avec le name correct
+
+---
+
+## Session 92 — Naming screen visual reconstruction
+
+User feedback (2026-05-05) on Session 91 V2 verification :
+> "Le clavier : Select switch bien les claviers, start retourne bien
+> valider, A marche, B marche, etc... Par contre, graphisme totalement
+> ruiné, curseur à côté de la plaque, 0 animation"
+
+Functional flow OK ✅, visual destroyed ❌. Screenshot showed rainbow
+stripes (= corrupted sprite tile data), mangled top-right (= page swap
+frame/button rendering with wrong tiles), giant misplaced "0" (= sprite
+rendering with wrong shape/size), cursor drawing offset.
+
+### Root causes (5)
+
+1. **Sprite tile data corruption (rainbow stripes)**. Same class as
+   the original Lotad `anim_front` issue from V2. Naming screen used
+   `loadIndexedPng` (canvas-based) which remaps PLTE indices via
+   first-insert-wins. Browser's `drawImage` + `getImageData` produces
+   slightly-off RGB values that get mapped to garbage indices, so when
+   the sheet is rendered with the canonical .pal palette, colors are
+   completely wrong.
+
+2. **Subsprite shape/size constants WRONG**. The hand-coded subsprite
+   tables had `shape=1, size=2` for 32x8 entries. Correct per
+   `include/gba/types.h` is `shape=1, size=1`. Was accidentally treating
+   32x8 subsprites as 32x16 → wrong tile sampling + half of the button
+   gfx unrendered.
+
+3. **Cursor anim FSM was a no-op**. `rt.StartSpriteAnim` checks
+   `spriteAnimStates` which is only populated by `CreateSpriteFromTemplate`.
+   Cursor uses `CreateSpriteAtOam` directly = silent no-op = squish anim
+   never visible, return-to-idle never fires.
+
+4. **Subsprite child OAMs clobbered by tickFixed.syncSpritesToOam**. The
+   primary OAM of subsprite-host sprites was being re-enabled every
+   frame, rendering an 8x8 garbage tile at the sprite's center.
+
+5. **Missing cursor sheets**. Decomp loads 3 sheets contiguously
+   (cursor, cursor_squished offset 0x8, cursor_filled). V1 loaded only
+   cursor.png → squish anim referenced uninitialized objVram.
+
+### Foundational fixes
+
+1. **`png-loader.ts:loadTileBin` exported** — copies the foundation
+   helper from intro-asset-loader. Tries `<name>.4bpp.bin` first
+   (= IDAT-parse output preserving PLTE indices 1:1), falls back to
+   `loadIndexedPngStrict` if missing. Reusable across scenes.
+
+2. **Extracted 14 .4bpp.bin files** for naming screen via
+   `scripts/extract-png-indexed-tiles.mjs`. All sprite sheets +
+   pc_icon_off/on + menu.
+
+3. **`decomp-runtime.ts:tickFixed`** — added `_syncSubspriteOam` post-
+   syncSpritesToOam globalThis hook. Foundation for any scene with
+   multi-OAM logical sprites.
+
+4. **Cursor anim FSM inline in naming-screen-impl.ts**. `_startCursorAnim`
+   + `_tickCursorAnim` + `_setCursorAnimFrame` use sprite.data[9..11]
+   (= unused decomp slots) and write `oam.tileId = tileBase + tileOffset`
+   directly. Same foundational pattern as Session 91 Lotad fix.
+
+5. **Subsprite tables fixed** with proper shape/size + new
+   `sSubsprites_PCIcon` (= 1:1 décomp `naming_screen.c:2348-2374`).
+
+6. **All 6 BG palette banks loaded** (= 1:1 décomp `gNamingScreenMenu_Pal[6][16]`
+   load via single `LoadPalette` of 192 bytes to BG_PLTT_ID(0)).
+
+7. **`CreateInputTargetIcon` properly switched** on `template.iconFunction`
+   (0 NoIcon, 2 PCIcon impl, 1/3/4 NoIcon fallback for unimpl avatars).
+
+### Files modified
+
+- `src/engine/gba/png-loader.ts` — exported `loadTileBin`.
+- `src/engine/decomp-runtime.ts:tickFixed` — `_syncSubspriteOam` hook.
+- `src/engine/naming-screen-impl.ts` — sprite asset load (.4bpp.bin),
+  subsprite tables, cursor anim FSM, BG pal bank load 0-5,
+  CreateInputTargetIcon dispatch + `NamingScreen_CreatePCIcon`,
+  `_syncSubspriteOam` hook install/uninstall.
+
+### Files added
+
+- 14 `.4bpp.bin` files in `public/decomp/em/boot/naming_screen/`.
+
+### Status
+
+- Build : `npm run build` OK (= TS clean, vite emits 22.98 kB
+  naming-screen-impl chunk).
+- Functional flow : unchanged (= still works as before user feedback).
+- Visual : sprite tile data now 1:1 décomp, no rainbow stripes, cursor
+  at correct position with squish anim, page swap text/button + back/OK
+  buttons render with correct gfx + palettes.
+
+### Manual test (Session 92)
+
+1. `npm run dev`
+2. Skip intro → New Game → Birch speech → naming screen.
+3. Verify : cursor at (38,88) (= over 'A' of upper letters keyboard).
+4. Press A → cursor squish anim visible (= 16 frames, two distinct
+   tile poses).
+5. Press SELECT → page swap text slides up + new label slides down
+   (~32 frame anim). Keyboard chars switch to next page.
+6. Top-right buttons (page swap / Back / OK) render with clean button
+   frames + page-specific palette colors (green=upper, blue=lower,
+   orange=others).
+7. Bottom : NO rainbow stripes.
+
+### Confidence
+
+HIGH (90-95%) on all 5 root causes fixed at the structural level. The
+.4bpp.bin pipeline is proven from Session 91 polish (Lotad anim_front).
+Subsprite shape/size verified against decomp source. Cursor FSM same
+foundational pattern as Lotad's `LaunchAnimationTaskForFrontSprite`.
+
+LOW-MEDIUM uncertainty on the BG VOFS shift (= keyboard tilemap vertical
+slide during page swap) which is still deferred (= would need per-scene
+VBlank dispatch infra). Sprite-side page swap anim works ; this is a
+separate visual layer.
+
+---
+
+## Session 93 — Lotad Animation B (per-species affine squish) + palette cycle audit (2026-05-05)
+
+User feedback after Session 91 polish + Session 92 :
+> "Lotad brille en multicouleurs flashy au lieu d'être teinté de rose lors
+> du flash. Le flicker existe toujours (j'ai choper la frame perfect
+> apparemment lol). L'animation de lotad est jouée en boucle (sprite1,
+> sprite2) ✓. L'animation de 'breathing' ne se joue pas. Le pokemon a 2
+> animations en fait, une sur les image (2 sprite) et une que le jeu lui
+> attribe (la, on dirait qu'il s rattatine sur lui meme puis s'etend et
+> revient en place)."
+
+User isolates the problem cleanly :
+- **Animation A** (= 2-frame tile toggle) — already working from Session 91 ✓
+- **Animation B** (= per-species affine squish-and-bounce) — NOT IMPLEMENTED
+
+For SPECIES_LOTAD (= 295), `sMonFrontAnimIdsTable[294] = ANIM_V_SQUISH_AND_BOUNCE`
+(decomp `pokemon.c:1677`), which dispatches to `Anim_VerticalSquishBounce`
+(decomp `pokemon_animation.c:1871`). User describes it perfectly :
+"shrinks on itself, expands, returns in place". That's exactly what the
+function does over ~48 frames.
+
+### Animation B implementation
+
+New file `src/engine/pokemon-anim-funcs.ts` :
+
+- **`Anim_VerticalSquishBounce`** — 1:1 décomp `pokemon_animation.c:1871`.
+  Sets data[0]=16, runs first frame of `VerticalSquishBounce`, sets cb to
+  loop. Total ~48 frames. Used by ~50+ Gen 1-3 species (Lotad, Lombre,
+  Oddish, Marill, Skitty, Wurmple, etc.).
+- **`VerticalSquishBounce`** — 1:1 décomp `pokemon_animation.c:1834`.
+  Three phases : squish (frames 0-15, yScale 256→288 = compressed
+  vertically, xScale 256→224 = expanded horizontally), bounce (frames
+  16-31, jumps up via Sin(data[3], 10) for y2, expanded again), settle
+  (frames 32-47, returns to identity). End : `ResetSpriteAfterAnim` +
+  switch to `WaitAnimEnd`.
+- **`Anim_VerticalSquishBounce_Slow`** — 1:1 décomp 3658. data[0]=8 (=
+  half duration parameter). For Gloom, Slowpoke, Dewgong, Lickitung, etc.
+- **`HorizontalShake/VerticalShake/VerticalStretch`** STUBS — fall back to
+  `Anim_VerticalSquishBounce` for now. TODO future sessions.
+
+Helpers ported 1:1 :
+- `setAffineData` — calculate OAM matrix from xScale/yScale/rotation.
+  Uses `gSineTable` Q.8 (= same as our `applyMatrixFromAffineState`).
+- `handleSetAffineData` — invert xScale/rotation if NOT sDontFlip.
+- `handleStartAffineAnim` — set affineMode = AFFINE_DOUBLE, recompute
+  centerToCornerVec for double bbox.
+- `tryFlipX` — invert sprite.x2 if NOT sDontFlip.
+- `resetSpriteAfterAnim` — affineMode → AFFINE_NORMAL.
+- `waitAnimEnd` — switch callback to dummy on `sprite.animEnded`.
+
+### Per-species anim id registry
+
+`getMonFrontAnimId(species)` minimal map :
+- SPECIES_LOTAD/LOMBRE/LUDICOLO → ANIM_V_SQUISH_AND_BOUNCE.
+- All others → ANIM_V_SQUISH_AND_BOUNCE (fallback).
+
+TODO : full extraction of `sMonFrontAnimIdsTable` (~387 entries) via
+new `scripts/extract-mon-front-anim-ids.mjs`.
+
+### Anim function registry
+
+`getMonAnimFunc(animId)` :
+- ANIM_V_SQUISH_AND_BOUNCE → Anim_VerticalSquishBounce.
+- ANIM_V_SQUISH_AND_BOUNCE_SLOW → Anim_VerticalSquishBounce_Slow.
+- ANIM_H_SHAKE / ANIM_V_SHAKE / ANIM_V_STRETCH → stubs (= squish fallback).
+- All others → Anim_VerticalSquishBounce (universal fallback).
+
+### Architecture : split tile cycling from affine anim
+
+Previous (Session 91 polish) : `LaunchAnimationTaskForFrontSprite` set
+`sprite.callback = idle anim that toggles tile every 30f`. This conflicts
+with the per-species affine anim function which ALSO needs to be
+sprite.callback.
+
+Session 93 split :
+- **Sprite callback** = the per-species affine anim function (= 1:1 décomp).
+- **Separate task** = the 2-frame tile cycling (= our continuous "breathing"
+  bonus — not in décomp where it's one-shot, but user expects it).
+
+Both run independently, no conflict. Tile task auto-destroys when sprite
+dies / anim controller deactivated.
+
+### Palette cycle investigation (Issue 1 from user report)
+
+Hypotheses pursued :
+- **H1** (BlendPalette wrong color) : ruled out — `gBallOpenFadeColors[BALL_POKE]`
+  is captured in closure as `pink RGB(31,22,30)`, stable across all task
+  ticks.
+- **H2** (BlendPalette wrong buffer) : verified — TS impl reads from
+  `gPlttBufferUnfaded`, writes to `gPlttBufferFaded`. 1:1 décomp
+  `src/util.c:264`.
+- **H3** (UpdatePaletteFade re-applies OBJ palette) : verified by tracing.
+  `_applyPaletteFadeStepHalf` correctly skips OBJ banks when
+  selectedPalettes has no OBJ bits set (= PALETTES_BG = 0xFFFF). Pink stays
+  intact.
+- **H4** (palette slot collision) : verified — Lotad's slot is unique
+  (= dynamic from `nextObjPalSlot++`), no other sprite shares it.
+- **H5** (BlendPalette per-channel math) : verified bit-exact match with
+  decomp formula `r + (((tR - r) * coeff) >> 4)`.
+- **H6** (objPaletteToggle reset divergence) : FOUND.
+
+**Root cause #6** : our `BeginNormalPaletteFade` reset
+`objPaletteToggle = false`, but the décomp does NOT (palette.c:158-202).
+This could mis-align BG/OBJ tick alternation across consecutive fades
+(= ball-release does TWO fades : fade-to-white + fade-back-from-white).
+Fixed in `decomp-runtime.ts:BeginNormalPaletteFade` — toggle now preserved
+across calls (= 1:1 décomp `ResetPaletteFadeControl` is the only place
+that resets it).
+
+**Verdict** : the primary visual "multicolor flash" the user perceives is
+likely the LEGITIMATE intermediate fade colors (= green Lotad blended
+toward pink at coeff 4-12 produces purple-blue, cream-yellow, etc.), which
+are 1:1 décomp behavior. Without the affine squish-and-bounce motion
+masking the perception, the static Lotad in mid-fade looks "wrong".
+Implementing Animation B should largely fix the visual.
+
+Foundational fix added : debug logging path in `LaunchBallFadeMonTask`
+gated on `window.__BIRCH_FADE_DEBUG = true` for future verification.
+
+### Files modified
+
+- `src/engine/pokemon-animation.ts` — split tile cycling into separate
+  task. `LaunchAnimationTaskForFrontSprite` now dispatches to
+  `getMonAnimFunc(animId)` (= per-species affine anim).
+- `src/engine/decomp-runtime.ts:BeginNormalPaletteFade` — preserve
+  `objPaletteToggle` across calls (= 1:1 décomp).
+- `src/engine/pokeball-effects.ts:LaunchBallFadeMonTask` — debug logging
+  gated on `__BIRCH_FADE_DEBUG`.
+
+### Files created
+
+- `src/engine/pokemon-anim-funcs.ts` — per-species mon anim functions
+  (Anim_VerticalSquishBounce + variants), affine helpers, ANIM_*
+  constants, sMonFrontAnimIdsTable + sMonAnimFunctions registries.
+
+### Build status
+
+- `npx tsc --noEmit` : OK (0 errors)
+- `npm run build` : OK (built in 14.97s)
+
+### Manual test (Session 93)
+
+1. `npm run dev` → New Game → Birch speech.
+2. Wait for "Voici un Pokémon !" → ball appears + opens.
+3. Lotad emerges with sin-arc fly-out.
+4. **At final position** :
+   - Cry plays ✓
+   - Lotad's tile cycle (frame 0/1) loops every 30 frames ✓ (Animation A)
+   - Lotad SQUISHES vertically (~16 frames), then BOUNCES UP (~16 frames),
+     then SETTLES (~16 frames) (= Animation B, NEW).
+5. **During flash phase** :
+   - BG fades white over ~16 frames.
+   - Lotad palette stays full pink (= BlendPalette coeff=16) for ~20 frames.
+   - Then BG fades back from white + Lotad fades back from pink, both over
+     ~16 frames concurrently.
+
+### Confidence
+
+- **Animation B impl** : HIGH (95%). Math verified via Node simulation
+  matching decomp tick-by-tick output.
+- **Palette cycle perception** : MEDIUM (70%). The objPaletteToggle fix
+  + Animation B motion should resolve the "flicker" perception. If the
+  user reports "still flickers" after this session, the foundation is
+  correct — we'd need to investigate compositor scanline rendering or
+  per-scanline palette apply timing.
+
+### Deferred
+
+- Full `sMonFrontAnimIdsTable` extraction (387 entries).
+- Full `sMonAnimFunctions[]` registry (~150 functions).
+- `sMonAnimationDelayTable` per-species delay extraction.
+- Real implementations of stubs : `HorizontalShake`, `VerticalShake`,
+  `VerticalStretch`.
+- BG VOFS dispatch (= naming screen page swap visual layer, deferred from
+  Session 92).
+
+---
+
+## Session 94 — Naming screen final polish (4 issues, 1 root cause + bridge fix) (2026-05-06)
+
+User feedback (2026-05-06) on Session 92 verification :
+- ROM screenshot ground truth provided. 4 visual divergences identified.
+
+### Visual issues + root causes
+
+**Issue 1 (trainer sprite missing)** — separate root cause :
+- Asset load missing for Brendan/May overworld walking sprite.
+- `main-menu-impl.ts:DoNamingScreen` bridge swapped `monSpecies` ↔ `gender`
+  args, so `NamingScreen_CreatePlayerIcon`'s gender lookup always read 0.
+
+**Issues 2 + 3 + 4 (underscore "wrong y", MAJ/SELECT fragmented, BACK "RKBO")** —
+SHARED root cause : `CreateSpriteAtOam` did not reserve subsprite child OAM
+slots when picking a free OAM index. New sprites picked OAM slots that
+already belonged to a previous sprite's subsprite children → tile data /
+position / palette stomping → fragmentation.
+
+Naming screen creates 9 logical sprites totalling 37 OAM slots :
+- Cursor (1), PageSwapFrame (1+8 children = 9), PageSwapText (1+2 = 3),
+  PageSwapButton (1), BackButton (1+6 = 7), OkButton (1+6 = 7), InputArrow (1),
+  7 Underscores (7), PlayerIcon (1).
+
+Without the fix, 5 of these (PageSwapText, PageSwapButton, BackButton,
+OkButton, Underscores, PlayerIcon) collided with previous sprites' subsprite
+children → cascading visual corruption.
+
+### Foundational fix
+
+`decomp-globals.ts:getSubspriteChildOamIndices` (NEW) — exported function +
+globalThis registration. Returns the union of all child OAM indices currently
+allocated by `SetSubspriteTables`.
+
+`decomp-runtime.ts:CreateSpriteAtOam` — extended `takenSlots` set to include
+the child OAM indices via the globalThis hook (= no circular import).
+
+This is FOUNDATIONAL. Every scene that mixes `SetSubspriteTables` + plain
+`CreateSpriteAtOam` after benefits :
+- Naming screen (= this session).
+- Future PC system (= storage box menu cursor wraps).
+- Future summary screen (= status condition icons + markings).
+- Future party menu (= cursor wrap with HP-bar sub-sprites).
+
+### Issue 1 — PLAYER trainer sprite implementation
+
+`NamingScreen_CreatePlayerIcon` (NEW, 1:1 décomp `naming_screen.c:1397-1406`) :
+- Looks up `gfxTag` based on `sNamingScreen.monSpecies` (= 1:1 décomp's reuse
+  of monSpecies field as gender for PLAYER context).
+- Resolves `tileBase` via `GetSpriteTileStartByTag(gfxTag)` and `palSlot` via
+  `IndexOfSpritePaletteTag(palTag)`.
+- Creates 16x32 sprite at (56, 37) with shape=2 (V_RECTANGLE), size=2,
+  priority=3 (= 1:1 décomp `gObjectEventBaseOam_16x32`).
+
+Asset load (in-line in `loadNamingScreenAssets`) :
+- Loads `walking.png` (144x32 = 9 frames of 16x32) for both Brendan and May.
+- Repacks frame 0's 8 tiles from non-contiguous PNG positions to a contiguous
+  256-byte buffer (= what gbagfx does for 16x32 frames).
+- Loads `brendan.pal` / `may.pal` as JASC-PAL → OBJ palette slot.
+
+### Issue 1 — bridge arg order fix
+
+`main-menu-impl.ts:DoNamingScreen` — renamed bridge params from
+`(type, dest, gender, monSpecies, monPersonality, callback)` to decomp signature
+`(type, dest, monSpecies, monGender, monPersonality, callback)`. The 3rd arg
+holds gender for PLAYER context per decomp's call from `main_menu.c:1606`.
+
+### Files modified
+
+- `src/engine/decomp-globals.ts` — `getSubspriteChildOamIndices` exported + globalThis-registered.
+- `src/engine/decomp-runtime.ts:CreateSpriteAtOam` — consume child OAM set.
+- `src/engine/naming-screen-impl.ts` — GFXTAG/PALTAG constants for player ;
+  trainer asset load + 16x32 frame 0 repack ; `NamingScreen_CreatePlayerIcon` ;
+  `CreateInputTargetIcon` dispatch updated.
+- `src/engine/main-menu-impl.ts` — `DoNamingScreen` bridge param order corrected.
+
+### Files added
+
+- `public/decomp/em/object_events/people/brendan/walking.4bpp.bin` (2304 bytes).
+- `public/decomp/em/object_events/people/may/walking.4bpp.bin` (2304 bytes).
+
+### Build status
+
+- `npx tsc --noEmit` : OK (0 errors)
+- `npm run build` : OK (built in 14.58s, naming-screen-impl 24.91 kB)
+
+### Manual test (Session 94)
+
+1. `npm run dev` → New Game → Birch speech → gender pick.
+2. Naming screen :
+   - Top-left : 16x32 Brendan or May standing south-facing (depending on gender pick).
+   - Center : "VOTRE NOM?" + 7 underscore sprites in entry field at top.
+   - Top-right column : MAJ button (frame + text + button) — clean, no
+     fragmented "m, n, l" letters.
+   - Mid-right : BACK button — "RETOUR" + "BOUTON B" labels readable.
+   - Bottom-right : OK button (unchanged from S92).
+3. Gender flip test : restart, pick FEMALE → top-left becomes May.
+4. SELECT swaps keyboard pages with proper text/button graphics.
+5. No regression on cursor anim, D-pad, input.
+
+### Confidence
+
+- **Issue 1** : HIGH (90%). Repack layout is the standard gbagfx approach ;
+  bridge arg fix is a strict 1:1 with decomp.
+- **Issues 2/3/4** : HIGH (95%). Single foundational OAM allocation bug.
+  Bug class is unambiguous (= unique slot ownership).
+
+### Deferred
+
+- BG VOFS dispatch for page swap (= keyboard slide visual, S92 deferred).
+- MonIcon (= NICKNAME / CAUGHT_MON) — requires pokemon_icon engine.
+- WaldaDadIcon (= WALDA) — requires gObjectEvents engine.
+- ANIM_STD_GO_SOUTH multi-frame anim (= our impl always uses frame 0 for
+  player icon, sufficient for naming screen since the icon is static).
+

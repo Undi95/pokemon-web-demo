@@ -22,7 +22,7 @@
  * 1:1 décomp src/decompress.c (LZ77UnCompVram), src/palette.c (LoadPalette),
  * include/gba/macro.h (DmaClear16 macro), src/main.c (CpuFill16/32).
  */
-import type { DecompRuntime } from './decomp-runtime';
+import type { DecompRuntime, DecompSprite } from './decomp-runtime';
 import {
   BG_PLTT_ID, OBJ_PLTT_ID, BG_CHAR_ADDR, BG_SCREEN_ADDR,
   REG_OFFSET_DISPCNT, REG_OFFSET_BG1CNT, REG_OFFSET_BG2CNT, REG_OFFSET_BG3CNT,
@@ -39,6 +39,16 @@ import { setReverb as _staticSetReverb } from './m4a/audio-context';
 import { stopSong as _staticStopSong, loadMidi as _staticLoadMidi, playSong as _staticPlaySong, pauseSong as _staticPauseSong, resumeSong as _staticResumeSong, isPaused as _staticIsPaused, isPlaying as _staticIsPlaying } from './m4a/player';
 import { hasPrerenderedSE, playPrerenderedSE, stopPrerenderedSE, preloadPrerenderedList } from './m4a/se-noise-prerendered';
 import { stopAllActiveNotes as _staticStopAllNotes } from './m4a/synth';
+// Side-effect import : registers battler affine animations (gAffineAnims_BattleSprite*)
+// in the affine extras registry consumed by sprite-engine-impl. Required for
+// EVERY mon release/return/emerge across battles, Birch, eggs, evolutions.
+import './decomp-impls/sprite-affine-extras';
+import { BeginAffineAnim as _BeginAffineAnim } from './decomp-impls/sprite-engine-impl';
+// Foundational pokeball release effects (sparkles + flash + emerge affine setup).
+import {
+  LaunchBallFadeMonTask, AnimateBallOpenParticles,
+  SetUpForReleaseAffineAnim, BALL_POKE,
+} from './pokeball-effects';
 
 // ─── Singleton runtime + asset cache ──────────────────────────────────────────
 
@@ -98,6 +108,16 @@ export {
 // (résolues par le constant resolver du transpileur, mais redéclarées ici pour
 //  cohérence + accès direct par decomp-globals.ts)
 export const PALETTES_ALL = 0xFFFFFFFF;
+// 1:1 décomp include/constants/rgb.h : PALETTES_BG = 0xFFFF (= 16 BG palettes bitmask).
+// Utilisé par e.g. CreatePokeballSpriteToReleaseMon(_, _, _, _, _, _, _, fadePalettes, _).
+export const PALETTES_BG = 0xFFFF;
+export const PALETTES_OBJ = 0xFFFF0000;
+
+// 1:1 décomp src/sprite.c:SpriteCallbackDummy — no-op sprite callback.
+// Utilisé comme sentinel par tout le décomp pour signaler "anim is done"
+// (e.g. WaitForLotad case 0 check `if (sprite.callback != SpriteCallbackDummy)`).
+// Cf. include/constants/sprite.h.
+export function SpriteCallbackDummy(_sprite: unknown, _rt?: unknown): void { /* no-op */ }
 
 // ─── Re-export complet decomp-runtime pour import en bloc côté bodyC ─────────
 // Tous les REG_OFFSET_*, BGCNT_*, DISPCNT_*, BLDCNT_*, BG_PLTT_ID, etc.
@@ -801,30 +821,38 @@ const SPECIES_NAMES: Record<number, string> = {};
 let _speciesNamesLoaded = false;
 let _speciesNamesLoadingPromise: Promise<void> | null = null;
 
-/** Charge async la map species ID → name via constants.json + cries.json.
+/** Charge async la map species ID → name via cries.json + species-data.ts.
+ *  Bug session 89 fix : avant on lisait `constants.json` qui ne contient PAS
+ *  les `SPECIES_X = N` (constants.json a uniquement les flags + items + maps).
+ *  Les species IDs vivent dans `auto/include/constants/species-data.ts` (= 387
+ *  consts `export const SPECIES_X = N`). On les import direct + on cross-ref
+ *  avec cries.json pour résoudre l'ID → cry filename.
+ *
  *  À call au boot (= GameScene.preload). Idempotent. */
 export async function loadSpeciesNamesAsync(): Promise<void> {
   if (_speciesNamesLoaded) return;
   if (_speciesNamesLoadingPromise) return _speciesNamesLoadingPromise;
   _speciesNamesLoadingPromise = (async () => {
     try {
-      const [constsResp, criesResp] = await Promise.all([
-        fetch('/decomp/em/constants.json'),
+      // species-data.ts exporte tous les `SPECIES_X = N`. Module import = sync
+      // après bundling, mais on dynamic-import pour rester async-safe.
+      const [speciesData, criesResp] = await Promise.all([
+        import('./decomp-data/auto/include/constants/species-data'),
         fetch('/decomp/em/cries.json'),
       ]);
-      const consts = await constsResp.json() as Record<string, number>;
       const cries = await criesResp.json() as Record<string, string>;
-      // Pour chaque SPECIES_X dans constants : SPECIES_NAMES[id] = name extrait du chemin cries.
-      for (const speciesKey of Object.keys(consts)) {
-        if (!speciesKey.startsWith('SPECIES_')) continue;
-        const id = consts[speciesKey];
-        const cryPath = cries[speciesKey];
-        if (typeof id !== 'number' || !cryPath) continue;
+      // Iterate species-data exports : pour chaque SPECIES_X = N, lookup cries[SPECIES_X].
+      for (const [key, value] of Object.entries(speciesData)) {
+        if (!key.startsWith('SPECIES_')) continue;
+        if (typeof value !== 'number') continue;
+        const cryPath = cries[key];
+        if (!cryPath) continue;
         // cryPath = "cries/lotad.wav" → "lotad"
         const m = cryPath.match(/cries\/(.+)\.wav$/);
-        if (m) SPECIES_NAMES[id] = m[1];
+        if (m) SPECIES_NAMES[value] = m[1];
       }
       _speciesNamesLoaded = true;
+      console.log('[loadSpeciesNamesAsync] loaded', Object.keys(SPECIES_NAMES).length, 'species cry mappings');
     } catch (e) {
       console.warn('[loadSpeciesNamesAsync] failed:', e);
     }
@@ -839,12 +867,21 @@ export function PlayCryInternal(
   species: number, _pan: number, _volume: number, _priority: number, _mode: number,
 ): void {
   const name = SPECIES_NAMES[species];
+  console.log('[PlayCryInternal] species=', species, 'name=', name, 'loaded=', _speciesNamesLoaded);
   if (!name) {
     // Si pas encore chargé, fire async load + skip cry pour ce frame
-    if (!_speciesNamesLoaded) void loadSpeciesNamesAsync();
+    if (!_speciesNamesLoaded) {
+      console.warn('[PlayCryInternal] SPECIES_NAMES not loaded, kicking async load');
+      void loadSpeciesNamesAsync();
+    } else {
+      console.warn('[PlayCryInternal] no name for species', species, '(loaded but missing entry)');
+    }
     return;
   }
-  void import('./music').then(({ playCry }) => playCry(name)).catch(() => { /* silent */ });
+  void import('./music').then(({ playCry }) => {
+    console.log('[PlayCryInternal] calling playCry(', name, ')');
+    playCry(name);
+  }).catch((e) => { console.error('[PlayCryInternal] import or playCry threw:', e); });
 }
 
 /** 1:1 décomp constants pour PlayCryInternal (cf. species.h, sound.h). */
@@ -1488,10 +1525,13 @@ export const FEMALE = 1;
 /** 1:1 décomp `LoadCompressedSpriteSheet(sheet)` — charge un sprite sheet
  *  individuel dans objVram. `sheet` = struct {data, size, tag}.
  *  Notre version : preload via assetCache, copy sync. */
-export function LoadCompressedSpriteSheet(sheet: { data: string, size: number, tag: string | number }): void {
-  // tag = unique ID, on l'enregistre comme tileTag pour CreateSpriteFromTemplate
+export function LoadCompressedSpriteSheet(sheet: { data: string, size: number, tag: string | number, targetTileBase?: number }): void {
+  // tag = unique ID, on l'enregistre comme tileTag pour CreateSpriteFromTemplate.
+  // targetTileBase (optional) = écrit à un tile offset précis au lieu du curseur
+  // d'allocation. 1:1 décomp src/decompress.c LZDecompressVram(data, dst) avec
+  // dst calculé. Utilisé par LoadBallGfx pour overwrite les "open" frames
+  // tile 8-11 du poke.png par open.png (cf. pokeball.c:1327).
   const r = rt();
-  // data = symbol décomp (e.g. 'sIntroDropsLogo_Gfx')
   const charData = getAsset(sheet.data);
   if (!charData) {
     // ⚠️ ASSET MANQUANT : explicitement loud — sans ça flicker random du logo
@@ -1503,6 +1543,15 @@ export function LoadCompressedSpriteSheet(sheet: { data: string, size: number, t
     ? new Uint8Array(charData.buffer, charData.byteOffset, charData.byteLength)
     : charData;
   const tagStr = String(sheet.tag);
+  // Targeted overwrite path : écrit aux tile offsets demandés sans avancer le
+  // curseur global d'allocation. Pas de check has() (= overwrite voulu).
+  if (sheet.targetTileBase !== undefined) {
+    const byteOffset = sheet.targetTileBase * 32;  // 32 bytes per 8x8 4bpp tile
+    const copySize = Math.min(bytes.length, r.gba.objVram.length - byteOffset);
+    if (copySize > 0) r.gba.objVram.set(bytes.subarray(0, copySize), byteOffset);
+    r.spriteSheetTagToTileStart.set(tagStr, sheet.targetTileBase);
+    return;
+  }
   if (r.spriteSheetTagToTileStart.has(tagStr)) return;
   const tileStart = (r.nextSpriteSheetByteOffset >> 5);
   const copySize = Math.min(bytes.length, r.gba.objVram.length - r.nextSpriteSheetByteOffset);
@@ -1539,6 +1588,213 @@ export function resetObjAllocations(): void {
   r.nextSpriteSheetByteOffset = 0;
   r.nextObjPalSlot = 0;
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// FOUNDATION : tag → slot/tile resolution (= 1:1 décomp src/sprite.c utilities)
+// Reusable across scenes (naming screen, slot machine, contest, etc.).
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/** 1:1 décomp src/sprite.c:IndexOfSpritePaletteTag — retourne le slot OBJ
+ *  palette (0-15) précédemment alloué pour ce tag via LoadSpritePalette/
+ *  LoadSpritePalettes/LoadSpritePalettesFromTable. Retourne 0xFF si non trouvé.
+ *
+ *  Le décomp utilise sSpritePaletteTags[16] indexé par slot. Notre runtime
+ *  utilise paletteTagToSlot Map<string, number>. Le tag peut être numérique
+ *  (e.g. 0x1006) ou string (e.g. 'PALTAG_CURSOR') — on stringify pour
+ *  cohérence avec LoadSpritePalette.
+ *
+ *  USAGE :
+ *    const palOffset = OBJ_PLTT_ID(IndexOfSpritePaletteTag(PALTAG_CURSOR)) + 1;
+ *    MultiplyInvertedPaletteRGBComponents(palOffset, r, g, b);   */
+export function IndexOfSpritePaletteTag(tag: string | number): number {
+  const slot = rt().paletteTagToSlot.get(String(tag));
+  return slot ?? 0xFF;
+}
+
+/** 1:1 décomp src/sprite.c:GetSpriteTileStartByTag — retourne le tileNum
+ *  start (offset en tiles 8x8 dans objVram) précédemment alloué pour ce tag
+ *  via LoadCompressedSpriteSheet. Retourne 0xFFFF si non trouvé. */
+export function GetSpriteTileStartByTag(tag: string | number): number {
+  const tile = rt().spriteSheetTagToTileStart.get(String(tag));
+  return tile ?? 0xFFFF;
+}
+
+/** 1:1 décomp src/util.c:MultiplyInvertedPaletteRGBComponents (palette.c:1764).
+ *  Pour chaque couleur du faded buffer à `paletteIdx` (= flat 0-511), multiplie
+ *  les composants R/G/B par (16-r)/16, (16-g)/16, (16-b)/16 (= "inverted"
+ *  multiply). Effet : assombrit/teinte la couleur cible vers noir avec un
+ *  facteur paramétrique. Utilisé par le button flash + cursor flash :
+ *  multiplier 0,0,0 → couleur originale ; multiplier 16,16,16 → noir.
+ *
+ *  Le décomp opère sur 1 entrée. Notre version : single index = même
+ *  signature. Écrit à gPlttBufferFaded uniquement (= faded est ce qui
+ *  s'affiche, Unfaded reste la référence pour Restore). */
+export function MultiplyInvertedPaletteRGBComponents(
+  paletteIdx: number, rMul: number, gMul: number, bMul: number,
+): void {
+  const r = rt();
+  const c = r.gPlttBufferUnfaded.get(paletteIdx);
+  const cR = c & 0x1F;
+  const cG = (c >> 5) & 0x1F;
+  const cB = (c >> 10) & 0x1F;
+  // Decomp formula : new = original - ((original * mul) >> 4)
+  // (= "inverted" since mul=0 leaves color, mul=16 reaches 0)
+  const nR = Math.max(0, cR - ((cR * rMul) >> 4));
+  const nG = Math.max(0, cG - ((cG * gMul) >> 4));
+  const nB = Math.max(0, cB - ((cB * bMul) >> 4));
+  const packed = (nR & 0x1F) | ((nG & 0x1F) << 5) | ((nB & 0x1F) << 10);
+  r.gPlttBufferFaded.set(paletteIdx, packed);
+}
+
+/** 1:1 décomp src/task.c:FindTaskIdByFunc — retourne le taskId du premier
+ *  Task dont func == funcRef. TASK_NONE (0xFF) si aucun. */
+export const TASK_NONE = 0xFF;
+
+export function FindTaskIdByFunc(funcRef: ((task: any) => void) | ((task: any, rt: any) => void)): number {
+  const r = rt();
+  for (const task of r.gTasks.values()) {
+    if (task.func === funcRef) return task.taskId;
+  }
+  // Tolerant fallback : sometimes auto-callbacks wrap the original task fn in
+  // a closure; we tag via task.funcName at create time for those callers.
+  for (const task of r.gTasks.values()) {
+    if ((task as { funcRef?: unknown }).funcRef === funcRef) return task.taskId;
+  }
+  return TASK_NONE;
+}
+
+/** 1:1 décomp src/sprite.c:SetSubspriteTables — installs a subsprite layout
+ *  on a sprite. The decomp's subsprite system renders a SINGLE sprite as N
+ *  OAM entries with offsets. Our compositor doesn't natively handle multi-OAM
+ *  per sprite, so we approximate : the primary sprite renders the FIRST
+ *  subsprite at its (x, y), and additional OAM slots are allocated for the
+ *  remaining subsprites with relative offsets. Stored on sprite.subsprites for
+ *  later sync.
+ *
+ *  Most naming screen subsprites (PageSwapFrame 40x32, Button 40x24, PCIcon
+ *  16x24) span a region larger than the OAM shape. The cleanest 1:1 approach
+ *  is to allocate child OAM entries that share the parent's tileBase + each
+ *  subsprite's tileOffset. */
+export interface NamingSubsprite {
+  x: number;
+  y: number;
+  shape: 0 | 1 | 2;
+  size: 0 | 1 | 2 | 3;
+  tileOffset: number;
+  priority: number;
+}
+
+const _spriteSubsprites = new Map<number, { childOamIndices: number[]; subsprites: NamingSubsprite[] }>();
+
+export function SetSubspriteTables(spriteId: number, subspriteTable: ReadonlyArray<NamingSubsprite>): void {
+  const r = rt();
+  const sprite = r.gSprites.get(spriteId);
+  if (!sprite) return;
+  // Free any previous child OAM entries for this sprite.
+  const prev = _spriteSubsprites.get(spriteId);
+  if (prev) {
+    for (const idx of prev.childOamIndices) {
+      const oam = r.gba.oam[idx];
+      if (oam) oam.visible = false;
+    }
+  }
+  const childOamIndices: number[] = [];
+  // Allocate OAM slots for each subsprite (skip slots used by sprites in use).
+  const taken = new Set<number>();
+  for (const s of r.gSprites.values()) {
+    if (s.inUse) taken.add(s.oamIndex);
+  }
+  for (const subs of _spriteSubsprites.values()) {
+    for (const idx of subs.childOamIndices) taken.add(idx);
+  }
+  for (let i = 0; i < subspriteTable.length; i++) {
+    let oamIdx = -1;
+    for (let k = 0; k < 128; k++) {
+      if (!taken.has(k)) { oamIdx = k; break; }
+    }
+    if (oamIdx === -1) break;
+    taken.add(oamIdx);
+    const sub = subspriteTable[i];
+    const oam = r.gba.oam[oamIdx];
+    if (!oam) continue;
+    oam.visible = !sprite.invisible;
+    oam.tileId = (sprite.tileBase ?? 0) + sub.tileOffset;
+    oam.paletteBank = r.gba.oam[sprite.oamIndex].paletteBank;
+    oam.x = sprite.x + sub.x;
+    oam.y = sprite.y + sub.y;
+    oam.shape = sub.shape;
+    oam.size = sub.size;
+    oam.priority = sub.priority;
+    oam.paletteMode = r.gba.oam[sprite.oamIndex].paletteMode;
+    oam.affineMode = 0;
+    oam.affineParamIndex = 0;
+    oam.flipH = false;
+    oam.flipV = false;
+    childOamIndices.push(oamIdx);
+  }
+  _spriteSubsprites.set(spriteId, { childOamIndices, subsprites: [...subspriteTable] });
+  // Hide the primary sprite's OAM slot — subsprites take over rendering.
+  // The primary sprite remains the "logical" sprite for callbacks, x/y manip.
+  r.gba.oam[sprite.oamIndex].visible = false;
+}
+
+/** Sync subsprite OAM coords each frame after primary sprite movement. Called
+ *  from naming-screen-impl tick (= 1:1 décomp BuildOamBuffer subsprite path). */
+export function syncSubspriteOam(): void {
+  const r = rt();
+  for (const [spriteId, info] of _spriteSubsprites) {
+    const sprite = r.gSprites.get(spriteId);
+    if (!sprite || !sprite.inUse) continue;
+    const primaryOam = r.gba.oam[sprite.oamIndex];
+    for (let i = 0; i < info.subsprites.length; i++) {
+      const oam = r.gba.oam[info.childOamIndices[i]];
+      const sub = info.subsprites[i];
+      if (!oam) continue;
+      oam.visible = !sprite.invisible;
+      oam.x = sprite.x + sprite.x2 + sub.x;
+      oam.y = sprite.y + sprite.y2 + sub.y;
+      oam.tileId = (sprite.tileBase ?? 0) + sub.tileOffset;
+      oam.paletteBank = primaryOam.paletteBank;
+      oam.priority = sub.priority;
+      oam.paletteMode = primaryOam.paletteMode;
+      // Re-hide primary OAM (defense against syncSpritesToOam reactivating).
+      primaryOam.visible = false;
+    }
+  }
+}
+
+/** Cleanup all subsprite tables (= scene exit). */
+export function clearAllSubspriteTables(): void {
+  const r = rt();
+  for (const info of _spriteSubsprites.values()) {
+    for (const idx of info.childOamIndices) {
+      const oam = r.gba.oam[idx];
+      if (oam) oam.visible = false;
+    }
+  }
+  _spriteSubsprites.clear();
+}
+
+/** Returns the set of OAM slot indices currently allocated to subsprite
+ *  children (= reserved for the multi-OAM expansion of sprites with subsprite
+ *  tables). `CreateSpriteAtOam` must skip these slots when picking a free OAM
+ *  index — otherwise the new sprite's OAM stomps on a child OAM, and `syncSubspriteOam`
+ *  re-writes button/frame tile data over what's supposed to be the new sprite's
+ *  position/tile data each frame.
+ *
+ *  Foundation : called from `decomp-runtime.ts:CreateSpriteAtOam`'s `taken` set
+ *  build. Without it, every scene that mixes `SetSubspriteTables` + plain
+ *  `CreateSpriteAtOam` after creates fragmentation bugs (= naming screen
+ *  Session 94 root cause). */
+export function getSubspriteChildOamIndices(): Set<number> {
+  const out = new Set<number>();
+  for (const info of _spriteSubsprites.values()) {
+    for (const idx of info.childOamIndices) out.add(idx);
+  }
+  return out;
+}
+// Expose globally for runtime to consume without a circular import dependency.
+(globalThis as Record<string, unknown>)._getSubspriteChildOamIndices = getSubspriteChildOamIndices;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // SYMBOL NAMES (self-reference strings) — pour que le code transcrit puisse écrire
@@ -1631,8 +1887,35 @@ export const gTitleScreenAlphaBlend: ReadonlyArray<number> = (() => {
   return arr;
 })();
 
+// ─── Bridge for pokeball-effects.ts (avoid circular import) ─────────────────
+// pokeball-effects.ts uses BlendPalette + getAsset + G_SINE_TABLE without
+// importing decomp-globals (which would create a circular dep, since
+// decomp-globals imports things from many places that may transitively import
+// pokeball-effects). We expose them via globalThis here.
+(globalThis as Record<string, unknown>).BlendPalette = (palOffset: number, numEntries: number, coeff: number, blendColor: number) => BlendPalette(palOffset, numEntries, coeff, blendColor);
+(globalThis as Record<string, unknown>).__getAssetForParticles = getAsset;
+(globalThis as Record<string, unknown>).G_SINE_TABLE = G_SINE_TABLE;
+
 /** 1:1 décomp `BlendPalette(palOffset, numEntries, coeff, blendColor)` — mélange
- *  gPlttBufferUnfaded vers gPlttBufferFaded. coeff = 0-16 (16 = 100% blendColor). */
+ *  gPlttBufferUnfaded vers gPlttBufferFaded. coeff = 0-16 (16 = 100% blendColor).
+ *
+ *  NB foundational dual-buffer model (= 1:1 décomp src/util.c:264 BlendPalette) :
+ *  - READS from gPlttBufferUnfaded (= the "master" snapshot of palettes since
+ *    last LoadPalette write).
+ *  - WRITES to gPlttBufferFaded (= the buffer flushed to PLTT register at
+ *    every VBlank via TransferPlttBuffer).
+ *  Means : BlendPalette is a "transient overlay" on top of unfaded. The next
+ *  LoadPalette/CpuCopy16 to unfaded will reset master, but the faded buffer
+ *  retains the blend until either a new BlendPalette/UpdatePaletteFade tick
+ *  hits the same range, or LoadPalette writes both buffers identically.
+ *
+ *  Critical invariant for ball-release flicker (= LaunchBallFadeMonTask) :
+ *  the OBJ palette is BlendPalette'd to full pink (coeff=16). The active fade
+ *  is on BG (selectedPalettes=PALETTES_BG). UpdatePaletteFade only processes
+ *  banks set in selectedPalettes → OBJ banks NOT touched → pink stays in
+ *  faded buffer until Task_FadeMon_ToNormal_Step ramps coeff back to 0.
+ *  Verified : `_applyPaletteFadeStepHalf` correctly skips OBJ banks when
+ *  PALETTES_BG fade is active. */
 export function BlendPalette(palOffset: number, numEntries: number, coeff: number, blendColor: number): void {
   const r = rt();
   const bcR = blendColor & 0x1F;
@@ -1649,6 +1932,39 @@ export function BlendPalette(palOffset: number, numEntries: number, coeff: numbe
     const newB = b1 + (((bcB - b1) * coeff) >> 4);
     r.gPlttBufferFaded.set(idx, ((newB & 0x1F) << 10) | ((newG & 0x1F) << 5) | (newR & 0x1F));
   }
+}
+
+/** 1:1 décomp `BlendPalettes(selectedPalettes, coeff, color)` — palette.c:832.
+ *  Iterates over a 32-bit mask (BG bits 0-15, OBJ bits 16-31) and applies
+ *  BlendPalette on each selected 16-color bank. Foundational : used by
+ *  battle scenes (= status condition tints), Cave fade-in, Trade scene.
+ *  Mask layout : bit N → palette bank N at offset N*16 in flat palette. */
+export function BlendPalettes(selectedPalettes: number, coeff: number, color: number): void {
+  let paletteOffset = 0;
+  let mask = selectedPalettes >>> 0;
+  while (mask !== 0) {
+    if (mask & 1) BlendPalette(paletteOffset, 16, coeff, color);
+    mask >>>= 1;
+    paletteOffset += 16;
+  }
+}
+
+/** 1:1 décomp `BlendPalettesUnfaded(selectedPalettes, coeff, color)` —
+ *  palette.c:844. Reset faded ← unfaded for ALL palettes (= DmaCopy32(unfaded,
+ *  faded, PLTT_SIZE)), then BlendPalettes the selected ones. Foundational :
+ *  used when a scene must "rebase" the faded buffer to baseline before
+ *  applying a new tint (= e.g. transition from one battle status to another).
+ *  Note : the full faded←unfaded copy is intentional — it discards any
+ *  in-flight UpdatePaletteFade or BlendPalette work, which is the décomp
+ *  semantic. */
+export function BlendPalettesUnfaded(selectedPalettes: number, coeff: number, color: number): void {
+  const r = rt();
+  // 1:1 décomp DmaCopy32(unfaded, faded, PLTT_SIZE) where PLTT_SIZE = 0x400 bytes
+  // = 512 entries × 2 bytes. Our PaletteBuffer is 512 entries already.
+  for (let i = 0; i < 512; i++) {
+    r.gPlttBufferFaded.set(i, r.gPlttBufferUnfaded.get(i));
+  }
+  BlendPalettes(selectedPalettes, coeff, color);
 }
 
 /** 1:1 décomp `RunTasks()` — exécute toutes les tasks actives. */
@@ -1766,6 +2082,42 @@ export * from './main-menu-impl';
 export * from './gba-strings';
 export * from './decomp-data/auto/src/sprite-system-flat';
 export * from './decomp-data/auto/src/intro-c-data-auto';
+// Foundational pokeball/release effects (used by Birch, battles, eggs, evolutions).
+export {
+  LaunchBallFadeMonTask, AnimateBallOpenParticles,
+  SetUpForReleaseAffineAnim, TearDownReleaseAffineAnim,
+  gBallOpenFadeColors,
+  BALL_POKE, BALL_GREAT, BALL_SAFARI, BALL_ULTRA, BALL_MASTER, BALL_NET,
+  BALL_DIVE, BALL_NEST, BALL_REPEAT, BALL_TIMER, BALL_LUXURY, BALL_PREMIER,
+  POKEBALL_COUNT,
+} from './pokeball-effects';
+
+// Audit V2 (session 90) — foundational mon-front-sprite animation system.
+// 1:1 décomp src/pokemon.c:6779 DoMonFrontSpriteAnimation +
+//          src/pokemon_animation.c:941 LaunchAnimationTaskForFrontSprite.
+// Used by Birch (final pos), battle send-out, egg hatch, evolution, trade,
+// Pokedex, Summary screen.
+import {
+  DoMonFrontSpriteAnimation as _DoMonFrontSpriteAnimation,
+  LaunchAnimationTaskForFrontSprite as _LaunchAnimationTaskForFrontSprite,
+  HasTwoFramesAnimation as _HasTwoFramesAnimation,
+  ResetAllMonAnimations as _ResetAllMonAnimations,
+  StopMonFrontSpriteAnimation as _StopMonFrontSpriteAnimation,
+} from './pokemon-animation';
+
+// Re-export pour usage par auto callbacks (= LaunchAnimationTaskForFrontSprite
+// est un symbol décomp standard utilisé par battle/Pokedex/etc).
+export const LaunchAnimationTaskForFrontSprite = _LaunchAnimationTaskForFrontSprite;
+export const HasTwoFramesAnimation = _HasTwoFramesAnimation;
+export const ResetAllMonAnimations = _ResetAllMonAnimations;
+export const StopMonFrontSpriteAnimation = _StopMonFrontSpriteAnimation;
+export const DoMonFrontSpriteAnimation = _DoMonFrontSpriteAnimation;
+
+// Bridge globalThis pour les callsites qui peuvent pas import directement
+// (= main-menu-impl.ts → FreeAndDestroyMonPicSprite would create a circular
+// dep pokemon-animation→main-menu-impl→pokemon-animation if direct).
+(globalThis as Record<string, unknown>).__StopMonFrontSpriteAnimation = _StopMonFrontSpriteAnimation;
+(globalThis as Record<string, unknown>).__ResetAllMonAnimations = _ResetAllMonAnimations;
 
 // ─── Stubs for main_menu-callbacks-auto.ts ───────────────────────────────────
 // Phase D-cleanup audit session 83 : stubs Birch-specific extraits vers
@@ -1786,7 +2138,7 @@ export function InitSpriteAffineAnim(_sprite: any): void { /* TODO future affine
 export function CreatePokeballSpriteToReleaseMon(
   monSpriteId: number, _monPalNum: number, x: number, y: number,
   oamPriority: number, _subpriority: number, delay: number,
-  _fadePalettes: number, species: number,
+  fadePalettes: number, species: number,
 ): number {
   const r = rt();
   const SE_BALL_OPEN = 15;
@@ -1798,57 +2150,260 @@ export function CreatePokeballSpriteToReleaseMon(
   LoadCompressedSpriteSheet({ data: 'gBallGfx_Poke', size: 384, tag: POKEBALL_TAG });
   const tileBase = r.spriteSheetTagToTileStart.get(POKEBALL_TAG) ?? 0;
   const palSlot = r.paletteTagToSlot.get(String(POKEBALL_PAL_TAG)) ?? 0;
+
+  // 1:1 décomp pokeball.c:1326-1328 LoadBallGfx :
+  //   LZDecompressVram(gOpenPokeballGfx, OBJ_VRAM0 + 0x100 + var * 32);
+  // Le poke.png ne contient que closed/opening (= 12 tiles) ; les 4 derniers
+  // tiles (= "frame open" tile 8-11) sont overwrite par open.png (16x16).
+  // Sans cette overwrite, oam.tileId = tileBase+8 affiche la frame 2 du poke.png
+  // (= état transition non-open) → user voit "le sprite de la ball ne passe
+  // jamais à 'ouvert'". Skipped pour BALL_DIVE/LUXURY/PREMIER (1:1 décomp).
+  LoadCompressedSpriteSheet({
+    data: 'gOpenPokeballGfx',
+    size: 128,
+    tag: POKEBALL_TAG + '_Open',
+    targetTileBase: tileBase + 8,  // overwrite tile 8-11 with open frame
+  });
   // Pokeball sprite 16x16 (shape=0 size=1).
+  // 1:1 décomp pokeball.c:1041 : oamPriority param. Ball z-order management :
+  // Birch sprite OAM index = 0 (créé EN PREMIER dans AddBirchSpeechObjects).
+  // Compositor itère OAM en ordre INVERSE (= sprite index 0 dessiné EN DERNIER
+  // → AU-DESSUS). Donc ball créé après Birch = OAM index plus élevé = dessiné
+  // EN PREMIER = derrière Birch. C'est le comportement 1:1 décomp (= Birch
+  // tient la ball, sa main couvre partiellement la ball). User screenshot OG
+  // confirm cette superposition.
   const { spriteId: ballSpriteId } = r.CreateSpriteAtOam({
     tileId: tileBase, paletteBank: palSlot, x, y,
     shape: 0, size: 1, priority: oamPriority,
   });
 
-  // 1:1 décomp pokeball.c:1043-1044 : monSprite gets moved to ball position + invisible
-  // (= Lotad hidden during ball flight). Reveal at end of release anim.
+  // 1:1 décomp pokeball.c:1040-1054 :
+  //   gSprites[spriteId].sFinalMonX = gSprites[monSpriteId].x;  // remember dest
+  //   gSprites[spriteId].sFinalMonY = gSprites[monSpriteId].y;
+  //   gSprites[monSpriteId].x = x;          // teleport mon to ball pos
+  //   gSprites[monSpriteId].y = y;
+  //   gSprites[monSpriteId].invisible = TRUE;
+  // The sFinalMonX/Y are later used by SpriteCB_ReleasedMonFlyOut to
+  // interpolate the mon back to its final target position via a sin arc.
   const monSprite = r.gSprites.get(monSpriteId);
+  let finalMonX = x, finalMonY = y;
   if (monSprite) {
+    finalMonX = monSprite.x;
+    finalMonY = monSprite.y;
     monSprite.x = x;
     monSprite.y = y;
     monSprite.invisible = true;
   }
-
-  // Task : delay frames → SE + reveal Lotad → fade ball after few more frames
-  const t = r.CreateTask((task) => {
-    if (task.data[0] > 0) {
-      task.data[0]--;
-      return;
+  // ⚠️ HACK Z-ORDER (= NON 1:1 décomp, à fix proprement) :
+  // Le décomp pokeball.c utilise `subpriority` pour z-order entre sprites de
+  // même priority OAM (= ball=0, Birch=0). Notre engine compositor utilise
+  // OAM index ordre seul → Birch créé EN PREMIER (OAM 0) drawn EN DERNIER
+  // (= au-dessus). User: "Pokeball derrière sa main" → bug visuel.
+  //
+  // Workaround : bumper Birch priority à 1 pendant la release anim → ball
+  // priority 0 drawn AU-DESSUS de Birch priority 1. Restored quand ball task
+  // termine. Birch sprite ID via main task data[8] (= tBirchSpriteId).
+  //
+  // TODO PROPRE : implémenter `subpriority` dans CreateSpriteAtOam +
+  // compositor sort par subpriority (= 1:1 décomp src/sprite.c CreateSpriteAt).
+  const mainTaskId = (globalThis as Record<string, unknown>).sBirchSpeechMainTaskId as number | undefined;
+  let birchOamIdx = -1;
+  let birchPrioritySaved = 0;
+  if (mainTaskId !== undefined) {
+    const mainTask = r.gTasks.get(mainTaskId);
+    if (mainTask) {
+      const birchSpriteId = mainTask.data[8];
+      const birchSprite = r.gSprites.get(birchSpriteId);
+      if (birchSprite) {
+        birchOamIdx = birchSprite.oamIndex;
+        birchPrioritySaved = r.gba.oam[birchOamIdx]?.priority ?? 0;
+        if (r.gba.oam[birchOamIdx]) r.gba.oam[birchOamIdx].priority = 1;
+      }
     }
-    if (task.data[1] === 0) {
-      // Step 0 : SE_BALL_OPEN + reveal Lotad + start ball fade
-      PlaySE(SE_BALL_OPEN);
-      const m = r.gSprites.get(monSpriteId);
-      if (m) m.invisible = false;
-      task.data[1] = 1;
-      task.data[0] = 8;  // 8 frames avant cry
-      return;
-    }
-    if (task.data[1] === 1) {
-      // Step 1 : cry + start ball disappear
-      PlayCryInternal(species, 0, 100, 2, 0);
-      task.data[1] = 2;
-      task.data[0] = 16;  // 16 frames avant invisible
-      return;
-    }
-    if (task.data[1] === 2) {
-      // Step 2 : ball invisible
-      const ball = r.gSprites.get(ballSpriteId);
-      if (ball) ball.invisible = true;
-      r.DestroyTask(task.taskId);
-      return;
-    }
-  }, 0);
-  const task = r.gTasks.get(t);
-  if (task) {
-    task.data[0] = delay;
-    task.data[1] = 0;
   }
+
+  // 1:1 décomp pokeball.c:1051 : `gSprites[spriteId].callback = SpriteCB_ReleaseMonFromBall`.
+  // On utilise sprite callback (= invoqué par runSpriteCallbacks chaque frame)
+  // plutôt qu'une task séparée → 1:1 fidélité + utilise l'infra existante
+  // (StartSpriteAffineAnim, PlayCryInternal, syncSpritesToOam).
+  //
+  // sprite.data[] usage (= 1:1 décomp pokeball.c:SpriteCB_ReleaseMonFromBall) :
+  //   data[0] = countdown frames
+  //   data[1] = step
+  //   data[6] = original monSprite priority (saved)
+  //
+  // Sequence simplifiée (= non-battle Birch release, single-mon path) :
+  //   step 0 : countdown delay frames (ball idle frame closed)
+  //   step 1 : ball anim "open" + SE_BALL_OPEN + reveal Lotad + StartSpriteAffineAnim emerge + PlayCryInternal
+  //   step 2 : wait emerge done + ball invisible + restore Birch priority
+  //   step 3 : sprite.callback = SpriteCallbackDummy (= signal WaitForLotad case 0)
+  // 1:1 décomp pokeball.c structure: TWO sprite callbacks (delay + fly-out arc),
+  // not a custom step machine. ball.data fields match decomp aliases :
+  //   data[0]  = sDelay (countdown initial)
+  //   data[6]  = sTrigIdx (fly-out interpolation 0..128, +4 per frame)
+  //   data[7]  = sFinalMonX (saved mon target x)
+  //   data[8]  = sFinalMonY (saved mon target y)
+  //
+  // Sequence (= pokeball.c:1057 + 1088) :
+  //   SpriteCB_PokeballReleaseMon : countdown → ball anim + sparkles + flash +
+  //                                 reveal mon + emerge affine, switch callback
+  //   SpriteCB_ReleasedMonFlyOut  : sin-arc interpolate mon ball→final, then
+  //                                 set callback = SpriteCallbackDummy.
+  //
+  // No cry for non-battle (= 1:1 décomp pokeball.c:761 `if (gMain.inBattle)`).
+  const TILES_PER_FRAME = 4;
+  const ballSprite = r.gSprites.get(ballSpriteId);
+  if (!ballSprite) return ballSpriteId;
+  ballSprite.data[0] = delay;
+  ballSprite.data[7] = finalMonX;
+  ballSprite.data[8] = finalMonY;
+  // Closure-captured fields used by SpriteCB_ReleasedMonFlyOut_Birch :
+  // 1:1 décomp `sprite->sMonSpriteId` + Birch-specific Z-order cleanup +
+  // species (utilisé par DoMonFrontSpriteAnimation pour PlayCry_Normal).
+  (ballSprite as DecompSprite & { _monSpriteId: number; _species: number })._monSpriteId = monSpriteId;
+  (ballSprite as DecompSprite & { _monSpriteId: number; _species: number })._species = species;
+  if (birchOamIdx >= 0) {
+    (ballSprite as DecompSprite & { _restoreBirchPriority: () => void })._restoreBirchPriority = () => {
+      if (r.gba.oam[birchOamIdx]) r.gba.oam[birchOamIdx].priority = birchPrioritySaved;
+    };
+  }
+
+  // 1:1 décomp pokeball.c:1057 SpriteCB_PokeballReleaseMon
+  ballSprite.callback = (sprite, runtime) => {
+    if (sprite.data[0] > 0) { sprite.data[0]--; return; }
+    const ball = sprite;
+    const m = runtime.gSprites.get(monSpriteId);
+    // Ball "open" anim frame (= StartSpriteAnim 1, ball.png frame index 2 = 8 tiles).
+    const ballOam = runtime.gba.oam[ball.oamIndex];
+    if (ballOam) ballOam.tileId = tileBase + TILES_PER_FRAME * 2;
+    PlaySE(SE_BALL_OPEN);
+    // 1:1 décomp pokeball.c:1072 AnimateBallOpenParticlesForPokeball.
+    AnimateBallOpenParticles(runtime, ball.x, ball.y - 5, oamPriority, 0, BALL_POKE);
+    if (m) {
+      // 1:1 décomp pokeball.c:1064 + main_menu.c InitPokeBall :
+      //   selectedPalettes = (u16)sprite->sFadePalsLo | ((u16)sprite->sFadePalsHi << 16);
+      // sFadePalsLo/Hi sont initialisés depuis le param `fadePalettes` de
+      // CreatePokeballSpriteToReleaseMon. main_menu.c:204 passe `PALETTES_BG`
+      // (= 0xFFFF, les 16 palettes BG). Le fade target1 = BG palettes (= le
+      // platform/sol flashe blanc), PAS la palette OBJ de Lotad.
+      //
+      // Du coup BlendPalette(OBJ pal, 16, 16, ball-pink) tinte Lotad en rose
+      // ET reste intact pendant le white fade BG. Sans ça, UpdatePaletteFade
+      // overwrite la palette OBJ chaque frame → rose disparaît immédiatement
+      // (= user feedback "rose appliquée switch trop vite").
+      const monOam = runtime.gba.oam[m.oamIndex];
+      const monPalNum = monOam ? monOam.paletteBank : 0;
+      LaunchBallFadeMonTask(runtime, true, monPalNum, fadePalettes, BALL_POKE);
+      // 1:1 décomp pokeball.c:1076-1079 : reveal mon + emerge affine + AnimateSprite.
+      m.invisible = false;
+      SetUpForReleaseAffineAnim(runtime, monSpriteId, 'player');
+      runtime.StartSpriteAffineAnim(monSpriteId, 1);  // BATTLER_AFFINE_EMERGE = 1
+      // 1:1 décomp pokeball.c:1078 `AnimateSprite(&gSprites[spriteId])` :
+      // applique frame 0 de l'affine anim IMMÉDIATEMENT pour init la matrix.
+      // Sans ça, la matrix slot N reste à zéro pendant 1 frame → sprite renders
+      // 0×0 → user feedback "sprite de Lotad invisible quelques frames".
+      _BeginAffineAnim(m, runtime);
+      // 1:1 décomp pokeball.c:1079 monSprite.data[1] = 0x1000 (= front anim
+      // delay tracker, utilisé par DoMonFrontSpriteAnimation).
+      m.data[1] = 0x1000;
+    }
+    // Switch to fly-out arc callback. data[6] = sTrigIdx initial 0.
+    ball.data[6] = 0;
+    ball.callback = SpriteCB_ReleasedMonFlyOut_Birch;
+  };
   return ballSpriteId;
+}
+
+/** 1:1 décomp pokeball.c:1088 SpriteCB_ReleasedMonFlyOut.
+ *  Each frame, interpolate mon position from ball pos → finalMonPos via
+ *  sTrigIdx (0→128, +4 per frame = 33 frames total). Sin curve adds parabolic
+ *  arc UP (mon goes up then settles). Switches callback to SpriteCallbackDummy
+ *  when arc done + emerge anim finished + ball anim ended.
+ *
+ *  Closure captures monSpriteId via ball.data[]. Birch context : finalMonX/Y
+ *  stored in ball.data[7]/[8]. Ball sprite ID assumed to have a hidden field
+ *  pointing to the mon (we use task.data[N] convention but for a sprite cb
+ *  we have to capture monSpriteId from the outer closure). */
+function SpriteCB_ReleasedMonFlyOut_Birch(sprite: DecompSprite, runtime: DecompRuntime): void {
+  const ball = sprite;
+  // monSpriteId is captured via the closure that created this callback —
+  // see CreatePokeballSpriteToReleaseMon. We retrieve via ball.data fields
+  // for explicit decomp-style indexing.
+  const monSpriteId = (ball as DecompSprite & { _monSpriteId?: number })._monSpriteId ?? -1;
+  if (monSpriteId < 0) return;
+  const m = runtime.gSprites.get(monSpriteId);
+  if (!m) return;
+  const finalMonX = ball.data[7];
+  const finalMonY = ball.data[8];
+
+  let emergeAnimFinished = false;
+  let atFinalPosition = false;
+
+  // 1:1 décomp pokeball.c:1095 : ball.animEnded → ball invisible.
+  // We approximate animEnded by sTrigIdx >= 32 (= ~half the fly-out duration,
+  // matches the ball "open" sprite anim length in original).
+  if (ball.data[6] >= 32) ball.invisible = true;
+
+  // 1:1 décomp pokeball.c:1098 : when emerge affine done, switch to NORMAL.
+  // Bug session 89 fix : avant on appelait StartSpriteAffineAnim(0) chaque frame
+  // après emerge end. Chaque appel reset affineAnimBeginning=true → tick reapply
+  // matrix → flicker visible. Guard via ball.data[10] = 1 pour call ONE TIME.
+  if (m.affineAnimEnded) {
+    if (!ball.data[10]) {
+      runtime.StartSpriteAffineAnim(monSpriteId, 0);  // BATTLER_AFFINE_NORMAL
+      ball.data[10] = 1;
+    }
+    emergeAnimFinished = true;
+  }
+
+  // 1:1 décomp pokeball.c:1104-1107 : interpolate mon position.
+  m.x = ((finalMonX - ball.x) * ball.data[6]) / 128 + ball.x;
+  m.y = ((finalMonY - ball.y) * ball.data[6]) / 128 + ball.y;
+
+  if (ball.data[6] < 128) {
+    // 1:1 décomp pokeball.c:1111 : sine = -(gSineTable[trigIdx] / 8).
+    const G = (globalThis as Record<string, unknown>).G_SINE_TABLE as number[] | undefined;
+    const tableVal = G && G.length === 256 ? G[ball.data[6] & 0xFF] : Math.round(Math.sin((ball.data[6] & 0xFF) * 2 * Math.PI / 256) * 256);
+    const sine = -((tableVal | 0) >> 3);
+    ball.data[6] += 4;
+    m.x2 = sine;
+    m.y2 = sine;
+  } else {
+    // 1:1 décomp pokeball.c:1119-1123 : snap to final, clear arc.
+    m.x = finalMonX;
+    m.y = finalMonY;
+    m.x2 = 0;
+    m.y2 = 0;
+    atFinalPosition = true;
+  }
+
+  // 1:1 décomp pokeball.c:1125-1132 : when fully done, DoMonFrontSpriteAnimation
+  // qui :
+  //   - PlayCry_Normal(species, pan) si !noCry (= toujours en non-battle, src/pokemon.c:6805)
+  //   - StartSpriteAnim(sprite, 1) si HasTwoFramesAnimation(species)
+  //   - LaunchAnimationTaskForFrontSprite (= idle breath anim, sMonFrontAnimIdsTable)
+  //   - sprite.callback = SpriteCallbackDummy_2 (= ticks the launched anim task)
+  //
+  // Audit V2 fix : utiliser le foundational `DoMonFrontSpriteAnimation` de
+  // pokemon-animation.ts qui implémente le pattern complet (cry + 2-frame
+  // anim + idle anim task). Avant on n'appelait que PlayCryInternal — pas de
+  // breathing anim → "Lotad reste figé une fois posé".
+  const speciesForCry = (ball as DecompSprite & { _species?: number })._species ?? 0;
+  if (ball.invisible && emergeAnimFinished && atFinalPosition && !ball.data[9]) {
+    // Restore Birch z-order priority (saved by closure in caller).
+    const restoreFn = (ball as DecompSprite & { _restoreBirchPriority?: () => void })._restoreBirchPriority;
+    if (restoreFn) restoreFn();
+    // 1:1 décomp pokemon.c:6779 DoMonFrontSpriteAnimation. Délègue à la
+    // foundation `pokemon-animation.ts` qui handle cry + 2-frame switch +
+    // idle anim launch. panModeAnimFlag=0 (= pan -25, default Birch).
+    if (speciesForCry > 0) {
+      _DoMonFrontSpriteAnimation(runtime, m, speciesForCry, false, 0,
+        (sp, pan) => PlayCryInternal(sp, pan, 100, 2, 0));
+    }
+    // ball callback = SpriteCallbackDummy (= no-op idle, ball est déjà invisible).
+    ball.callback = SpriteCallbackDummy;
+    ball.data[9] = 1;  // guard against double-fire
+  }
 }
 
 /** 1:1 décomp `PIXEL_FILL(value)` macro — fills both nibbles of a byte. */

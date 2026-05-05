@@ -1,5 +1,13 @@
 # Audit 1:1 Décomp — Bugs subtils
 
+> **🔴 Session 89 — AUDIT À LANCER next session** : user a explicitement demandé un audit complet style session 81/82/83 sur :
+> 1. **Birch flow Lotad release pipeline** (= `pokeball.c` + `pokemon.c:DoMonFrontSpriteAnimation` + `pokemon_animation.c`). Bug visuel persistant "Lotad brille comme étoile mario" (= flicker scintillant) malgré multiples fixes. Root cause encore non identifiée. Hypothèses : race tickAllAffineAnims, compositor render OBJ AFFINE_NORMAL avec matrix valid mais brief invalid frame, OU encore double-tick d'un autre engine call.
+> 2. **Foundations session 89** introduites — vérifier qu'elles ne cassent pas autres scènes : `UpdatePaletteFade` idempotency flag, `CreateSpriteAtOam` track `inUse`, `AllocOamMatrix/FreeOamMatrix`, `LoadCompressedSpriteSheet` `targetTileBase`, `pokeball-effects.ts` shared, `sprite-affine-extras.ts` registry, transpiler `GLOBAL_CONSTANTS` + `MIXED_CASE_GLOBALS` auto-import.
+> 3. **Naming screen clavier 1:1** (= `naming_screen.c` complet). 25 helpers manquants identifiés. User : "le clavier sera facile" — implémenter cursor sprite + page swap anim + Backspace/OK + tile cycling chaque char focused.
+> 4. **Reste flow Birch** ligne-par-ligne : `Task_NewGameBirchSpeech_StartPlayerFadeIn` → `BoyOrGirl` → `ChooseGender` → `WhatsYourName` → `StartNamingScreen` → ... → `Cleanup`.
+>
+> Cf. `next_session_roadmap.md` (= état détaillé session 89) + `DEV_LOG.md` section session 89 (= 13 fixes + bugs résiduels).
+
 > Audit Opus session 81 (post intro/title screen 1:1). Compare l'impl TS vs `D:/Projet 1/decomps/pokeemeraude`.
 > **Statut session 81** : ✅ A1-A5 + critique OBJ_PLTT_ID + audio (m4aSongNumStart→PlaySE, FadeOutBGM impl, fade duration, SE_SELECT placeholder) + Phase C item #7 (BlendPalette +8). Restants pour future sessions : items 8-11 + menu polish.
 > **Statut session 82** : ✅ Items 9-11 (BG_CHAR_ADDR/BG_SCREEN_ADDR absolute, gPlttBufferTransferPending scaffold + doc, objVram size doc). Restants : item 8 (key auto-repeat — déjà DONE en réalité) + menu polish.
