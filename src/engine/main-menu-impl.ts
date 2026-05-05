@@ -785,34 +785,24 @@ export function NewGameBirchSpeech_WaitForThisIsPokemonText(_printer: unknown, l
 (globalThis as Record<string, unknown>).NewGameBirchSpeech_WaitForThisIsPokemonText = NewGameBirchSpeech_WaitForThisIsPokemonText;
 
 /** 1:1 décomp `naming_screen.c DoNamingScreen(type, dest, gender, monSpecies, monPersonality, callback)`.
- *  Phase E Step 7 MVP : skip la naming scene complète (= 1:1 décomp future, gros
- *  scope avec ~10 Tasks dans src/naming_screen.c). À la place, set un default
- *  name aléatoire selon gender (= NewGameBirchSpeech_SetDefaultPlayerName(0))
- *  et call le callback directement pour reprendre le flow Birch.
- *
- *  TODO Phase E.6 : transpiler `src/naming_screen.c` en 1:1 décomp (= permet au
- *  joueur de saisir son nom via un keyboard on-screen 1:1 ROM). */
+ *  Phase 3 : real impl via naming-screen-impl.ts. Délègue tout le rendering +
+ *  state machine au module dédié (= keyboard FR, sprite cursor, OK/Back, etc.). */
 export function DoNamingScreen(
   type: number,
-  _dest: unknown,
+  dest: unknown,
   gender: number,
-  _monSpecies: number,
-  _monPersonality: number,
+  monSpecies: number,
+  monPersonality: number,
   callback: () => void,
 ): void {
-  void type;  // NAMING_SCREEN_PLAYER = 0, NAMING_SCREEN_BOX = 1, NAMING_SCREEN_NICKNAME = 2.
-  const rt = getRuntime();
-  if (!rt) return;
-  // MVP : force gender (= déjà set via gSaveBlock2Ptr.playerGender) puis pick
-  // sMalePresetNames[0] = "STEF" / sFemalePresetNames[0] = "AGNES".
-  const MALE = 0;
-  gSaveBlock2Ptr.playerGender = gender;
-  const presetSymbol = gender === MALE ? sMalePresetNames[0] : sFemalePresetNames[0];
-  gSaveBlock2Ptr.playerName = getString(presetSymbol);
-  console.warn(`[main-menu-impl] DoNamingScreen MVP : default name "${gSaveBlock2Ptr.playerName}" (TODO Phase E.6 = real naming screen).`);
-  // Call le callback immédiatement (= simulate retour de la naming scene).
-  // Pour main_menu : callback = CB2_NewGameBirchSpeech_ReturnFromNamingScreen.
-  rt.SetMainCallback2(callback as any);
+  void gender;  // gender stocké dans gSaveBlock2Ptr.playerGender déjà.
+  // Lazy import pour éviter circular dep : naming-screen-impl importe depuis decomp-globals
+  // qui peut éventuellement importer main-menu-impl (= chain d'import).
+  void import('./naming-screen-impl').then((mod) => {
+    mod.DoNamingScreen(
+      type, dest as number[], monSpecies, gender, monPersonality, callback as any,
+    );
+  });
 }
 
 // ─── Sprite helpers (= bridges vers DestroySprite) ──────────────────────────
