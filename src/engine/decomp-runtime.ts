@@ -1038,6 +1038,15 @@ export class DecompRuntime {
     oam.flipH = false;
     oam.flipV = false;
 
+    // 1:1 décomp src/sprite.c:CreateSpriteAt — CalcCenterToCornerVec
+    // appliqué SYSTÉMATIQUEMENT à la création (pas seulement pour affine
+    // sprites). oam.x = sprite.x + sprite.x2 + centerToCornerVecX (ligne 354).
+    // Sans ça, les sprites non-affines sont rendus avec leur top-left à
+    // (sprite.x, sprite.y) au lieu de leur CENTRE.
+    // Cf. ground truth VBA-M Birch dump : sprite.x=136 (= 0x88) → oam.x=104,
+    // diff = -32 = centerToCornerVecX pour shape=square size=64x64.
+    const ctcv = CalcCenterToCornerVec(cfg.shape, cfg.size, (cfg.affineMode ?? 0));
+
     const spriteId = this.nextSpriteId++;
     const sprite: DecompSprite = {
       oamIndex, data: new Int16Array(16) as unknown as number[], invisible: false,
@@ -1045,7 +1054,8 @@ export class DecompRuntime {
       x: cfg.x, y: cfg.y, x2: 0, y2: 0,
       hFlip: false, vFlip: false,
       matrixNum: cfg.affineParamIndex ?? 0,
-      centerToCornerVecX: 0, centerToCornerVecY: 0,
+      centerToCornerVecX: ctcv.centerToCornerVecX,
+      centerToCornerVecY: ctcv.centerToCornerVecY,
       animEnded: false, affineAnimEnded: false,
       callback: null,
       spriteId, tileBase: 0,
