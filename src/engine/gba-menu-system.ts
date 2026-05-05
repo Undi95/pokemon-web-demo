@@ -43,10 +43,12 @@ export function Menu_ProcessInputNoWrapClearOnChoose(): number {
 
   if (newKeys & A_BUTTON) {
     menuActive = false;
+    EraseYesNoWindow();  // 1:1 décomp menu.c:1219 (= clear + remove window)
     return menuCursorPos;
   }
   if (newKeys & B_BUTTON) {
     menuActive = false;
+    EraseYesNoWindow();  // 1:1 décomp menu.c:1219
     return -1; // MENU_B_PRESSED
   }
   if (newKeys & DPAD_UP) {
@@ -56,6 +58,22 @@ export function Menu_ProcessInputNoWrapClearOnChoose(): number {
     if (menuCursorPos < menuNumItems - 1) menuCursorPos++;
   }
   return -2; // still processing
+}
+
+/** 1:1 décomp src/menu.c:1219 EraseYesNoWindow.
+ *    ClearStdWindowAndFrameToTransparent(sYesNoWindowId, TRUE);
+ *    RemoveWindow(sYesNoWindowId);
+ *  Appelé après Menu_ProcessInputNoWrapClearOnChoose pour vider le window
+ *  et le retirer du registry. Sans ça → OUI/NON reste visible après choix. */
+function EraseYesNoWindow(): void {
+  if (sYesNoWindowId < 0) return;
+  // ClearStdWindowAndFrameToTransparent : fill pixels avec idx 0 (= transparent)
+  // + clear tilemap entries (= AddWindow utilise un baseBlock spécifique).
+  void import('./gba-window-system').then(({ ClearStdWindowAndFrame, RemoveWindow }) => {
+    ClearStdWindowAndFrame(sYesNoWindowId, true);
+    RemoveWindow(sYesNoWindowId);
+    sYesNoWindowId = -1;
+  });
 }
 
 export function Menu_GetCursorPos(): number {

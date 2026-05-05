@@ -24,7 +24,7 @@ import { AddTextPrinterParameterized3 } from './gba-text-system';
 import {
   ResetPaletteFade, FreeAllSpritePalettes, ResetTasks,
   LoadPalette, ShowBg, HideBg,
-  m4aSongNumStart,
+  PlaySE,
 } from './decomp-globals';
 import { gSaveBlock2Ptr } from './gba-menu-system';
 
@@ -484,7 +484,7 @@ function MainState_HandleInput(): void {
     // Insert char at cursor pos (or OK press)
     if (sNamingScreen.cursorOnOK) {
       sNamingScreen.state = STATE_PRESSED_OK;
-      m4aSongNumStart(5, false);  // SE_SELECT
+      PlaySE(5);  // SE_SELECT (= bonne route, slot SE pas BGM)
       return;
     }
     const ch = sKeyboardChars[sNamingScreen.currentPage][sNamingScreen.cursorRow][sNamingScreen.cursorCol];
@@ -492,7 +492,7 @@ function MainState_HandleInput(): void {
       sNamingScreen.textBuffer[sNamingScreen.textPos] = ch;
       sNamingScreen.textPos++;
       drawTextEntry();
-      m4aSongNumStart(5, false);  // SE_SELECT
+      PlaySE(5);  // SE_SELECT (= bonne route, slot SE pas BGM)
     }
   } else if (newKeys & B_BUTTON) {
     // Backspace
@@ -500,17 +500,17 @@ function MainState_HandleInput(): void {
       sNamingScreen.textPos--;
       sNamingScreen.textBuffer[sNamingScreen.textPos] = '';
       drawTextEntry();
-      m4aSongNumStart(5, false);
+      PlaySE(5);
     }
   } else if (newKeys & START_BUTTON) {
     // OK shortcut
     sNamingScreen.state = STATE_PRESSED_OK;
-    m4aSongNumStart(5, false);
+    PlaySE(5);
   } else if (newKeys & SELECT_BUTTON) {
     // Page swap
     sNamingScreen.currentPage = (sNamingScreen.currentPage + 1) % KBPAGE_COUNT;
     drawKeyboard();
-    m4aSongNumStart(5, false);
+    PlaySE(5);
   } else if (newKeys & DPAD_UP) {
     if (sNamingScreen.cursorRow > 0) sNamingScreen.cursorRow--;
     drawKeyboard();
