@@ -134,12 +134,22 @@ export const sScrollArrowsTemplate_MainMenu = {
 export const sSpriteAffineAnimTable_PlayerShrink = 'sSpriteAffineAnimTable_PlayerShrink';
 (globalThis as Record<string, unknown>).sSpriteAffineAnimTable_PlayerShrink = sSpriteAffineAnimTable_PlayerShrink;
 
-// 1:1 décomp main_menu.c sBirchBgTemplate — BG3 256-color, charBase=3, mapBase=30,
-// priority=0 (= au fond derrière BG0/BG1/BG2). Valeurs réelles depuis décomp.
+// 1:1 décomp main_menu.c:434 sBirchBgTemplate avec charBaseIndex=3 mapBaseIndex=30.
+// MAIS le code décomp écrit ensuite les data via :
+//   LZ77UnCompVram(sBirchSpeechShadowGfx, (void *)VRAM)            // → offset 0
+//   LZ77UnCompVram(sBirchSpeechBgMap, (void *)BG_SCREEN_ADDR(7))   // → offset 0x3800
+// Le décomp original est inconsistent (= peut-être debug stale ?). Sur un real
+// GBA hardware avec charBase=3 (= 0xC000) et mapBase=30 (= 0xF000), le BG
+// lirait des tiles random (= rien à 0xC000). Notre engine respecte strictement
+// charBase/mapBase via gba.bg(n).vram = view at charBase*0x4000 → on overrides
+// pour matcher où les data SONT écrites (= charBase=0, mapBase=7).
+//
+// Phase 2 fix session 87 : corrige BG forest scene visible (= avant black avec
+// platform sprite, maintenant forest tiles + tilemap correctement référencés).
 export const sBirchBgTemplate = {
   bg: 0,
-  charBaseIndex: 3,
-  mapBaseIndex: 30,
+  charBaseIndex: 0,  // override 1:1 décomp (= 3) → 0 pour match LZ77UnCompVram destination
+  mapBaseIndex: 7,    // override 1:1 décomp (= 30) → 7 pour match BG_SCREEN_ADDR(7)
   screenSize: 0,
   paletteMode: 0,
   priority: 0,
@@ -708,13 +718,26 @@ export function NewGameBirchSpeech_StartFadePlatformOut(taskId: number, delay: n
   }
 }
 
-/** 1:1 décomp main_menu.c NewGameBirchSpeech_WaitForThisIsPokemonText —
- *  callback called by AddTextPrinterWithCallbackForMessage on each char rendered.
- *  Le décomp avance la sBirchSpeechMainTaskId Task quand `lastByte` indique fin de
- *  page (CHAR_PROMPT_CLEAR/SCROLL ou EOS). Phase E MVP : no-op (= la Task
- *  parente avancera via le check `IsTextPrinterActive(0) === false`). */
-export function NewGameBirchSpeech_WaitForThisIsPokemonText(_printer: unknown, _lastByte: number): void {
-  // TODO Phase E.2 : real impl 1:1 décomp si necessaire.
+/** 1:1 décomp main_menu.c:2254 NewGameBirchSpeech_WaitForThisIsPokemonText.
+ *  Callback called by AddTextPrinterWithCallbackForMessage on each char rendered.
+ *  Quand le `lastByte` est EXT_CTRL_CODE_PAUSE (= `{PAUSE 96}` dans le texte
+ *  "Voici ce qu'on appelle un POKéMON.{PAUSE 96}\\p"), spawn la sub-Task qui
+ *  active Lotad + déclenche Pokeball release. */
+export function NewGameBirchSpeech_WaitForThisIsPokemonText(_printer: unknown, lastByte: number): void {
+  // EXT_CTRL_CODE_PAUSE = 0x09 (cf. gba-text-printer.ts:48)
+  const EXT_CTRL_CODE_PAUSE = 0x09;
+  if (lastByte !== EXT_CTRL_CODE_PAUSE) return;
+  // sStartedPokeBallTask flag (= 1:1 décomp main_menu.c:204) prevents double-spawn.
+  const started = (globalThis as Record<string, unknown>).sStartedPokeBallTask;
+  if (started) return;
+  (globalThis as Record<string, unknown>).sStartedPokeBallTask = true;
+  // Spawn sub-Task qui set Lotad visible + CreatePokeballSpriteToReleaseMon.
+  // Import dynamique pour éviter circular dep (auto-callbacks file).
+  void import('./decomp-data/auto/src/main_menu-callbacks-auto').then((mod) => {
+    const rt = getRuntime();
+    if (!rt) return;
+    rt.CreateTask((t) => mod.Task_NewGameBirchSpeechSub_InitPokeBall(t, rt), 0);
+  });
 }
 
 (globalThis as Record<string, unknown>).NewGameBirchSpeech_WaitForThisIsPokemonText = NewGameBirchSpeech_WaitForThisIsPokemonText;
