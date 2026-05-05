@@ -93,18 +93,25 @@ def dump_vbam_via_gdb(out_dir):
     sock.connect((HOST, GDB_PORT))
     print(f"[gdb] Connected.")
 
-    # Pre-emptive ACK
-    sock.sendall(b"+")
-
+    # No pre-emptive ACK — VBA-M sends $T05... stop signal first, we ACK that.
     # Try to read initial stop signal (= $T05thread:01;#XX)
-    sock.settimeout(1)
+    sock.settimeout(2)
     try:
         initial = sock.recv(4096)
-        if b"$" in initial:
-            sock.sendall(b"+")  # ack it
-        print(f"[gdb] Initial: {initial[:60]!r}")
+        if b"$" in initial and b"#" in initial:
+            sock.sendall(b"+")  # ack the stop signal
+            print(f"[gdb] Initial: {initial[:60]!r} (ACKed)")
+        else:
+            print(f"[gdb] Initial: {initial[:60]!r} (no $...# pattern)")
     except socket.timeout:
-        print(f"[gdb] (no initial packet — stub may already be in command mode)")
+        print(f"[gdb] (no initial packet — sending '?' to wake up stub)")
+        # Some stubs need an explicit halt query to start responding
+        _send_packet(sock, "?")
+        try:
+            reply = _get_packet(sock)
+            print(f"[gdb] '?' reply: {reply!r}")
+        except Exception as e:
+            print(f"[gdb] '?' failed: {e}")
     sock.settimeout(15)
 
     regions = [
@@ -147,6 +154,10 @@ def dump_ours_via_preview(out_dir):
     if json_path and os.path.isfile(json_path):
         with open(json_path, "r") as f:
             data = json.load(f)
+        # preview_eval saves "JSON.stringify(...)" which produces a JSON STRING.
+        # Parse a second time if we got a string instead of an object.
+        if isinstance(data, str):
+            data = json.loads(data)
     else:
         # Auto-fetch via preview HTTP endpoint (= TODO if exposed).
         # For now, print instructions and exit.
