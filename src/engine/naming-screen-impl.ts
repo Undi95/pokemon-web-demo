@@ -1118,12 +1118,20 @@ function MainState_WaitPageSwap(): void {
     }
     SetCursorPos(cursorX, cursorPos.y);
 
-    // Re-render keyboard text + BG tilemap on the on-deck window.
-    // 1:1 décomp:1977-2002 DrawKeyboardPageOnDeck — identifies which BG is
-    // currently the "deck" (= higher priority = drawn behind), draws the next
-    // page tilemap there, then prints the next page keyboard text.
+    // 1:1 décomp src/naming_screen.c:786 MainState_WaitPageSwap :
+    //   DrawKeyboardPageOnDeck();
+    //
+    // ⚠️ Bug fix : notre version ancien appelait `PrintKeyboardKeysOnFront()`
+    // ICI APRÈS DrawKeyboardPageOnDeck. PrintKeyboardKeysOnFront était
+    // hardcodé sur `WIN_KB_PAGE_1` (= n'inverse pas avec les swaps). Ça
+    // overwrite les glyphs SYMBOLS qui viennent d'être dessinés par
+    // DrawKeyboardPageOnDeck dans WIN_KB_PAGE_1 (quand bg1Priority>bg2Priority,
+    // = le on-deck est BG1) avec les glyphs LOWER → user voit DEUX pages
+    // LOWER au lieu de LOWER+SYMBOLS lors du 2e SELECT swap.
+    // Le décomp ne fait QUE DrawKeyboardPageOnDeck — la "front" reste comme
+    // elle était (= elle a été dessinée par le précédent DrawKeyboardPageOnDeck
+    // quand elle était on-deck).
     DrawKeyboardPageOnDeck();
-    PrintKeyboardKeysOnFront();
 
     SetInputState(INPUT_STATE_ENABLED);
     SetCursorInvisibility(false);
