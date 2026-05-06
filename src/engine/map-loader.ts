@@ -898,41 +898,8 @@ export function DrawMetatile(layerType: number, tiles: Uint16Array, tilesOffset:
   }
 }
 
-/** 1:1 décomp `DrawMetatileAt(mapLayout, offset, x, y)` (field_camera.c:226-243).
- *  Lookup metatileId via MapGridGetMetatileIdAt(x, y) puis dispatch dans le bon
- *  tileset (primary / secondary) pour récupérer les 8 u16 BG tiles. */
-export function DrawMetatileAt(mapLayout: MapLayout, mapOffset: number, x: number, y: number): void {
-  let metatileId = MapGridGetMetatileIdAt(x, y);
-  let metatiles: Uint16Array;
-  if (metatileId > NUM_METATILES_TOTAL) metatileId = 0;
-  if (metatileId < NUM_METATILES_IN_PRIMARY) {
-    metatiles = mapLayout.primaryTileset.metatiles;
-  } else {
-    metatiles = mapLayout.secondaryTileset.metatiles;
-    metatileId -= NUM_METATILES_IN_PRIMARY;
-  }
-  DrawMetatile(MapGridGetMetatileLayerTypeAt(x, y), metatiles, metatileId * NUM_TILES_PER_METATILE, mapOffset);
-}
-
-/** 1:1 décomp `DrawWholeMapViewInternal(x, y, mapLayout)` (field_camera.c:100-121).
- *  Draw les 16x16 metatiles visibles (= 32x32 BG tiles = 256x256 px). Position
- *  (x, y) = top-left metatile coord dans gBackupMapLayout. xTileOffset/yTileOffset
- *  = 0 par défaut (= no scroll wrap). */
-export function DrawWholeMapView(camX: number, camY: number, mapLayout: MapLayout): void {
-  // 1:1 décomp : i de 0 à 32 par pas de 2 (= 16 metatiles), j de 0 à 32 par pas
-  // de 2. Chaque metatile occupe 2x2 BG tiles dans le screen 32x32.
-  for (let i = 0; i < 32; i += 2) {
-    const ty = i;  // BG tile row (= xTileOffset = 0 simplification)
-    const r6 = ty * 32;
-    for (let j = 0; j < 32; j += 2) {
-      const tx = j;  // BG tile col
-      DrawMetatileAt(mapLayout, r6 + tx, camX + j / 2, camY + i / 2);
-    }
-  }
-}
-
 /** Push les 3 tilemap buffers BG1/BG2/BG3 vers la VRAM mapBase respective.
- *  À call après DrawWholeMapView ou DrawMetatileAt. */
+ *  À call après DrawWholeMapView ou DrawMetatileAt (= fonctions dans field-camera.ts). */
 export function flushOverworldTilemaps(rt: DecompRuntime): void {
   // BG1 mapBase = e.g. 28 (= mapBaseIndex 28 → VRAM offset 28 * 0x800 = 0xE000).
   // bg(N).tilemap est un Uint16Array view sur la VRAM unifié à l'offset mapBase.
@@ -949,25 +916,7 @@ export function clearOverworldTilemaps(): void {
   gOverworldTilemapBuffer_Bg3.fill(0);
 }
 
-// ─── 1:1 décomp camera helpers (subset, pour test) ──────────────────────────
-
-/** 1:1 décomp `SetCameraFocusCoords(x, y)` (fieldmap.c:792-796).
- *  Note : décomp utilise gSaveBlock1Ptr->pos. Phase 4.1 simplification :
- *  variables locales au module (= pas de save game encore). */
-let _camFocusX = 0;
-let _camFocusY = 0;
-export function SetCameraFocusCoords(x: number, y: number): void {
-  _camFocusX = x - MAP_OFFSET;
-  _camFocusY = y - MAP_OFFSET;
-}
-
-/** 1:1 décomp `GetCameraFocusCoords(x, y)` (fieldmap.c:798-802). */
-export function GetCameraFocusCoords(): { x: number; y: number } {
-  return { x: _camFocusX + MAP_OFFSET, y: _camFocusY + MAP_OFFSET };
-}
-
-/** Returns the current backup map camera origin (= top-left of view in
- *  gBackupMapLayout coords). Used by DrawWholeMapView. */
-export function GetCameraBackupCoords(): { x: number; y: number } {
-  return { x: _camFocusX, y: _camFocusY };
-}
+// Note : SetCameraFocusCoords / DrawMetatileAt / DrawWholeMapView sont
+// désormais dans `field-camera.ts` (= 1:1 décomp split fieldmap.c vs
+// field_camera.c). Cf. SetCameraTopLeftCoords + DrawWholeMapView dans
+// `field-camera.ts` qui consomment _camPos local au lieu de gSaveBlock1Ptr.

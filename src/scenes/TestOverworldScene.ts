@@ -24,13 +24,19 @@ import {
   InitMap,
   CopyMapTilesetsToVram,
   LoadMapTilesetPalettes,
-  DrawWholeMapView,
   flushOverworldTilemaps,
   clearOverworldTilemaps,
-  SetCameraFocusCoords,
-  GetCameraBackupCoords,
-  gMapHeader,
+  MAP_OFFSET,
 } from '../engine/map-loader';
+import {
+  DrawWholeMapView,
+  ResetFieldCamera,
+  FieldUpdateBgTilemapScroll,
+  CameraUpdate,
+  SetCameraTopLeftCoords,
+  GetCameraTopLeftCoords,
+  gFieldCamera,
+} from '../engine/field-camera';
 import { keyToGbaMask } from '../util/key-bindings';
 import { installEngineDevtools } from '../engine/engine-devtools';
 
@@ -55,7 +61,9 @@ export class TestOverworldScene extends Phaser.Scene {
     console.log('[TestOverworld] create()');
     this.cameras.main.setBackgroundColor('#000000');
 
-    this.statusText = this.add.text(4, 4, 'Loading Littleroot Town...', {
+    // y=14 pour passer SOUS le texte vert de DebugOverlayScene
+    // (= overlay fps/tasks/sprites qui occupe la première ligne 0-12).
+    this.statusText = this.add.text(4, 14, 'Loading Littleroot Town...', {
       fontFamily: 'monospace', fontSize: '8px', color: '#FFFFFF',
     }).setDepth(100);
 
@@ -137,27 +145,37 @@ export class TestOverworldScene extends Phaser.Scene {
       // 6. Load tileset palettes → BG palette banks 0-12.
       LoadMapTilesetPalettes(header.mapLayout);
 
-      // 7. Camera position : centre de la map.
-      //    Bourg-en-Vol = 20x20. Centre logique = (10, 10) en coords map.
-      //    SetCameraFocusCoords = en coords gBackupMapLayout (= +MAP_OFFSET).
-      const focusX = Math.floor(header.mapLayout.width / 2) + 7;  // MAP_OFFSET=7
-      const focusY = Math.floor(header.mapLayout.height / 2) + 7;
-      SetCameraFocusCoords(focusX, focusY);
+      // 7. Reset field camera + position initiale (= top-left de la view en
+      //    coords gBackupMapLayout). Pour Bourg-en-Vol 20x20, on commence à
+      //    la position du joueur classique (= centre map - 7 metatiles pour
+      //    le viewport 15x10). Camera top-left ≈ centre - 7,5.
+      ResetFieldCamera();
+      const camX = Math.floor(header.mapLayout.width / 2);  // = 10 (player x)
+      const camY = Math.floor(header.mapLayout.height / 2); // = 10 (player y)
+      // Camera top-left = player pos en coords gBackupMapLayout (= player + MAP_OFFSET pour saveBlock1.pos compat).
+      // Décomp DrawWholeMapView utilise gSaveBlock1Ptr->pos.x (= player coord -7).
+      // On simule : camera top-left = (player_x, player_y).
+      SetCameraTopLeftCoords(camX, camY);
 
       // 8. Draw whole map view dans les 3 BG tilemap buffers.
       clearOverworldTilemaps();
-      const cam = GetCameraBackupCoords();
-      console.log(`[TestOverworld] camera backup coords : (${cam.x}, ${cam.y})`);
+      const cam = GetCameraTopLeftCoords();
+      console.log(`[TestOverworld] camera top-left coords : (${cam.x}, ${cam.y})`);
       DrawWholeMapView(cam.x, cam.y, header.mapLayout);
 
-      // 9. Push tilemap buffers → VRAM mapBases.
+      // 9. Push tilemap buffers → VRAM mapBases + scroll registers.
       flushOverworldTilemaps(this.rt);
+      FieldUpdateBgTilemapScroll(this.rt);
 
       // 10. Force palette flush (= TransferPlttBuffer simulé) pour que les
       //     couleurs apparaissent dès la 1ère frame, sans attendre un VBlankCB.
       this.rt.gPlttBufferFaded.flushTo();
 
-      this.statusText?.setText(`Bourg-en-Vol ${header.mapLayout.width}x${header.mapLayout.height} loaded`);
+      // 11. Setup arrow keys → drive gFieldCamera.movementSpeed (= test scroll).
+      //     Phase 4.2 : pas de player avatar encore, on bouge juste la camera.
+      this.installCameraInputs();
+
+      this.statusText?.setText(`Bourg-en-Vol ${header.mapLayout.width}x${header.mapLayout.height} (arrows = scroll)`);
       this.booted = true;
       console.log('[TestOverworld] boot done');
     } catch (e) {
@@ -174,10 +192,40 @@ export class TestOverworldScene extends Phaser.Scene {
     } catch (e) {
       console.error('[TestOverworld.update] tickFixed THREW:', e);
     }
+    // Phase 4.2 : drive field camera scroll selon gFieldCamera.movementSpeed.
+    // (CameraUpdate accumule le sub-tile offset + redessine les bordures
+    // quand on traverse un tile boundary.) FieldUpdateBgTilemapScroll écrit
+    // hofs/vofs aux registres BG pour le rendering au frame courant.
+    try {
+      CameraUpdate();
+      flushOverworldTilemaps(this.rt);
+      FieldUpdateBgTilemapScroll(this.rt);
+    } catch (e) {
+      console.error('[TestOverworld.update] camera update THREW:', e);
+    }
     try {
       this.bridge.tick();
     } catch (e) {
       console.error('[TestOverworld.update] bridge.tick THREW:', e);
     }
+  }
+
+  /** Phase 4.2 : drive `gFieldCamera.movementSpeedX/Y` directement depuis les
+   *  flèches du clavier. Pas de player avatar encore — on bouge juste le viewport.
+   *  Speed = 2 px/frame (= 1 metatile en 8 frames = ~133ms = 1:1 ROM walk speed). */
+  private installCameraInputs(): void {
+    const SPEED = 2;
+    const kb = this.input.keyboard;
+    if (!kb) return;
+    const updateSpeed = (): void => {
+      const downHeld = kb.checkDown(kb.addKey(Phaser.Input.Keyboard.KeyCodes.DOWN));
+      const upHeld = kb.checkDown(kb.addKey(Phaser.Input.Keyboard.KeyCodes.UP));
+      const leftHeld = kb.checkDown(kb.addKey(Phaser.Input.Keyboard.KeyCodes.LEFT));
+      const rightHeld = kb.checkDown(kb.addKey(Phaser.Input.Keyboard.KeyCodes.RIGHT));
+      gFieldCamera.movementSpeedX = rightHeld ? SPEED : leftHeld ? -SPEED : 0;
+      gFieldCamera.movementSpeedY = downHeld ? SPEED : upHeld ? -SPEED : 0;
+    };
+    // Poll chaque frame via update event (= cleaner than keydown/keyup).
+    this.events.on(Phaser.Scenes.Events.UPDATE, updateSpeed);
   }
 }
