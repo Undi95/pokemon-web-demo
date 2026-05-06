@@ -44,6 +44,11 @@ import {
   PlayerStep,
   DIR_SOUTH,
 } from '../engine/player-avatar';
+import {
+  SpawnObjectEventsOnMap,
+  UpdateObjectEvents,
+  resetObjectEventAllocations,
+} from '../engine/object-events';
 import { installInputHandlers, setHeldKeysOverride } from '../engine/input-handler';
 import { installEngineDevtools } from '../engine/engine-devtools';
 
@@ -183,7 +188,13 @@ export class TestOverworldScene extends Phaser.Scene {
       //     couleurs apparaissent dès la 1ère frame, sans attendre un VBlankCB.
       this.rt.gPlttBufferFaded.flushTo();
 
-      // 12. Register MainCB2_Overworld (= per-frame callback) qui drive
+      // 12. Phase 4.4.a : spawn NPCs (= ObjectEvent templates from map JSON).
+      //     Doit être AVANT MainCB2 register pour que UpdateObjectEvents trouve
+      //     les sprites au 1er frame.
+      resetObjectEventAllocations();
+      await SpawnObjectEventsOnMap(this.rt);
+
+      // 13. Register MainCB2_Overworld (= per-frame callback) qui drive
       //     PlayerStep + CameraUpdate à FIXED 60Hz via rt.tickFixed.
       //     Critique pour timing 1:1 GBA : si on l'appelait dans update()
       //     Phaser, le player ralentirait quand le browser drop des frames.
@@ -192,6 +203,8 @@ export class TestOverworldScene extends Phaser.Scene {
       const MainCB2_Overworld = function MainCB2_Overworld(): void {
         PlayerStep(rt.gMain.heldKeys, rt.gMain.newKeys, rt);
         CameraUpdate();
+        // Phase 4.4.a : update sprite positions des NPCs selon camera scroll.
+        UpdateObjectEvents(rt);
         // 1:1 décomp `ScheduleBgCopyTilemapToVram` pattern : flush VRAM
         // SEULEMENT quand BG buffer modifié (= copyBGToVRAM flag). Évite
         // 18432 entries × 2 bytes copy par frame quand rien ne bouge.
