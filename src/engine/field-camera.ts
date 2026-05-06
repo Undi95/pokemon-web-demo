@@ -346,10 +346,12 @@ export function CameraUpdate(): void {
   }
 
   // Accumulate sub-tile pixel offset modulo 16.
-  gFieldCamera.x += movementSpeedX;
-  gFieldCamera.x = ((gFieldCamera.x % 16) + 16) % 16;
-  gFieldCamera.y += movementSpeedY;
-  gFieldCamera.y = ((gFieldCamera.y % 16) + 16) % 16;
+  // 1:1 décomp : utilise modulo C signé (= -2 % 16 = -2, pas 14). Critique
+  // pour que les conditions `curOff == -movementSpeed` ne matchent JAMAIS
+  // pendant un scroll constant. Si on normalise positif (= ((x % 16) + 16) % 16),
+  // les conditions firent des deltaX EXTRA mid-tile → wiggle bug.
+  gFieldCamera.x = (gFieldCamera.x + movementSpeedX) % 16;
+  gFieldCamera.y = (gFieldCamera.y + movementSpeedY) % 16;
 
   if (deltaX !== 0 || deltaY !== 0) {
     CameraMove(deltaX, deltaY);
