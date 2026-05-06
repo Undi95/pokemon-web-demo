@@ -47,6 +47,7 @@ import {
 import {
   SpawnObjectEventsOnMap,
   UpdateObjectEvents,
+  TickObjectEventMovements,
   resetObjectEventAllocations,
 } from '../engine/object-events';
 import { installInputHandlers, setHeldKeysOverride } from '../engine/input-handler';
@@ -203,6 +204,8 @@ export class TestOverworldScene extends Phaser.Scene {
       const MainCB2_Overworld = function MainCB2_Overworld(): void {
         PlayerStep(rt.gMain.heldKeys, rt.gMain.newKeys, rt);
         CameraUpdate();
+        // Phase 4.4.c : tick NPC movement state machine (LOOK_AROUND / WANDER).
+        TickObjectEventMovements(rt);
         // Phase 4.4.a : update sprite positions des NPCs selon camera scroll.
         UpdateObjectEvents(rt);
         // 1:1 décomp `ScheduleBgCopyTilemapToVram` pattern : flush VRAM
