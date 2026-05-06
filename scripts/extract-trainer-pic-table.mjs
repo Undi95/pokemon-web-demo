@@ -54,49 +54,44 @@ function findArrayBody(arrayName) {
   return m ? m[1] : null;
 }
 
-/** Parse `[TRAINER_PIC_X] = TRAINER_SPRITE(NAME, SIZE, GFX_SYMBOL)` style entries.
- *  Decomp uses helper macros : `TRAINER_SPRITE(short, size, gfx)` and
- *  `TRAINER_PAL(short, pal)`. We capture the raw arg list and extract names. */
-function parseTrainerEntries(body) {
+/** Parse trainer pic table entries. Le décomp pokeemeraude utilise des macros :
+ *   #define TRAINER_SPRITE(short, sprite, size) [TRAINER_PIC_##short] = {sprite, size, TRAINER_PIC_##short}
+ *   #define TRAINER_PAL(short, pal)             [TRAINER_PIC_##short] = {pal, TRAINER_PIC_##short}
+ *
+ *  Donc les entries sont `TRAINER_SPRITE(SHORT, gfx, size),` et `TRAINER_PAL(SHORT, pal),`.
+ *  On parse les calls macro au lieu des designated initializers. */
+function parseTrainerMacros(body, macroName) {
   const cleaned = body
     .replace(/\/\*[\s\S]*?\*\//g, '')
     .replace(/\/\/[^\n]*/g, '');
-  // Match each `[KEY] = ANY_VALUE,` where ANY_VALUE may contain parens.
-  // Use bracket-balance manual scan.
   const entries = [];
-  let i = 0;
-  while (i < cleaned.length) {
-    const lbIdx = cleaned.indexOf('[', i);
-    if (lbIdx < 0) break;
-    const rbIdx = cleaned.indexOf(']', lbIdx);
-    if (rbIdx < 0) break;
-    const eqIdx = cleaned.indexOf('=', rbIdx);
-    if (eqIdx < 0) break;
-    const key = cleaned.slice(lbIdx + 1, rbIdx).trim();
-    // Read value until next `,` at depth 0 (= top-level of array body).
-    let depth = 0;
-    let j = eqIdx + 1;
-    while (j < cleaned.length) {
+  // Match `MACRO_NAME(ARG_LIST)` — capture le contenu entre parens (manual depth scan).
+  const re = new RegExp(`\\b${macroName}\\s*\\(`, 'g');
+  let m;
+  while ((m = re.exec(cleaned)) !== null) {
+    let depth = 1;
+    let j = m.index + m[0].length;
+    const start = j;
+    while (j < cleaned.length && depth > 0) {
       const ch = cleaned[j];
-      if (ch === '(' || ch === '{') depth++;
-      else if (ch === ')' || ch === '}') depth--;
-      else if (ch === ',' && depth === 0) break;
-      j++;
+      if (ch === '(') depth++;
+      else if (ch === ')') depth--;
+      if (depth > 0) j++;
     }
-    const value = cleaned.slice(eqIdx + 1, j).trim();
-    entries.push({ key, value });
-    i = j + 1;
+    const argList = cleaned.slice(start, j).trim();
+    const args = argList.split(',').map((a) => a.trim());
+    if (args.length >= 2) {
+      entries.push({
+        key: 'TRAINER_PIC_' + args[0],
+        value: args[1],  // gfx ou pal symbol
+      });
+    }
   }
   return entries;
 }
 
-/** Extract gfx symbol from value. Decomp pattern :
- *   TRAINER_SPRITE(NAME, SIZE, gTrainerFrontPic_X)
- *   TRAINER_PAL(NAME, gTrainerPalette_X)
- *   { gTrainerFrontPic_X, SIZE, TRAINER_PIC_X }   (= legacy)
- *  We capture the gTrainerFrontPic_X / gTrainerPalette_X identifier. */
+/** Returns the symbol if it looks like an identifier, else null. */
 function extractSymbol(value) {
-  // Look for gTrainerFrontPic_X or gTrainerPalette_X
   const m = value.match(/g(?:TrainerFrontPic|TrainerPalette)_\w+/);
   return m ? m[0] : null;
 }
@@ -104,8 +99,8 @@ function extractSymbol(value) {
 const frontPicBody = findArrayBody('gTrainerFrontPicTable');
 const frontPalBody = findArrayBody('gTrainerFrontPicPaletteTable');
 
-const frontPicEntries = frontPicBody ? parseTrainerEntries(frontPicBody) : [];
-const frontPalEntries = frontPalBody ? parseTrainerEntries(frontPalBody) : [];
+const frontPicEntries = frontPicBody ? parseTrainerMacros(frontPicBody, 'TRAINER_SPRITE') : [];
+const frontPalEntries = frontPalBody ? parseTrainerMacros(frontPalBody, 'TRAINER_PAL') : [];
 
 console.log(`[extract-trainer-pic-table] reading: ${FRONT_PIC_TABLES}`);
 console.log(`  gTrainerFrontPicTable        : ${frontPicEntries.length} entries`);
