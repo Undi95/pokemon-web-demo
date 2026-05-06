@@ -1048,7 +1048,15 @@ function SetCursorPos(x: number, y: number): void {
   if (!sprite) return;
   const kbId = sPageToKeyboardId[sNamingScreen.currentPage];
   if (x < sPageColumnCounts[kbId]) {
-    sprite.x = sPageColumnXPos[kbId][x] + 38;
+    // 1:1 décomp:1136 sprite.x = sPageColumnXPos[col] + 38 (= cursor center
+    // at sprite.x + 8 = sPageColumnXPos[col] + 46 screen). Décomp's cursor
+    // sprite design + bitmap font widths put the ring visually centered sur
+    // le char. Notre cursor.png a le ring drawn dans la moitié droite du
+    // 16x16 tile (= ring center at sprite.x + 12 environ vs decomp +8), donc
+    // un -8 shift compense. User test data : "S donne Q" + symbol "?" out of
+    // bound → cursor ring 2-cols right of expected → shift -8 align ring sur
+    // le char attendu.
+    sprite.x = sPageColumnXPos[kbId][x] + 30;
   } else {
     // On button column — sprite cursor is invisible per SpriteCB_Cursor logic
     sprite.x = 0;

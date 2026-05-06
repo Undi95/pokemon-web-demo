@@ -63,12 +63,18 @@ export const FRAME_PALETTE_PREFIX = 'text_window';
 // ─── Menu items mapping label/choices/option key (option_menu.c:79-88) ──────
 // `sOptionMenuItemsNames` du décomp = labels seuls. Pour le rendu web on a
 // besoin du mapping vers les choices et la clé d'option JS.
+// optKey = field name dans gSaveBlock2Ptr. 1:1 décomp save_data.c struct
+// SaveBlock2 utilise prefix `options` pour tous les options fields. User
+// report Phase F.4 : "Le texte ne va pas plus vite à 3" → root cause :
+// option menu écrivait `gSaveBlock2Ptr.textSpeed` (= short key) mais le
+// helper GetPlayerTextSpeed lisait `gSaveBlock2Ptr.optionsTextSpeed`. Fix :
+// alignement sur les noms long préfixés `options`.
 export const MENUITEMS_DATA = [
-  { id: 'TEXTSPEED',   labelKey: 'gText_TextSpeed',        choices: ['gText_TextSpeedSlow', 'gText_TextSpeedMid', 'gText_TextSpeedFast'], optKey: 'textSpeed' },
-  { id: 'BATTLESCENE', labelKey: 'gText_BattleScene',      choices: ['gText_BattleSceneOn', 'gText_BattleSceneOff'], optKey: 'battleSceneOff' },
-  { id: 'BATTLESTYLE', labelKey: 'gText_BattleStyle',      choices: ['gText_BattleStyleShift', 'gText_BattleStyleSet'], optKey: 'battleStyle' },
-  { id: 'SOUND',       labelKey: 'gText_Sound',            choices: ['gText_SoundMono', 'gText_SoundStereo'], optKey: 'sound' },
-  { id: 'BUTTONMODE',  labelKey: 'gText_ButtonMode',       choices: ['gText_ButtonTypeNormal', 'gText_ButtonTypeLR', 'gText_ButtonTypeLEqualsA'], optKey: 'buttonMode' },
-  { id: 'FRAMETYPE',   labelKey: 'gText_Frame',            choices: ['gText_FrameType'], optKey: 'windowFrameType' },
+  { id: 'TEXTSPEED',   labelKey: 'gText_TextSpeed',        choices: ['gText_TextSpeedSlow', 'gText_TextSpeedMid', 'gText_TextSpeedFast'], optKey: 'optionsTextSpeed' },
+  { id: 'BATTLESCENE', labelKey: 'gText_BattleScene',      choices: ['gText_BattleSceneOn', 'gText_BattleSceneOff'], optKey: 'optionsBattleSceneOff' },
+  { id: 'BATTLESTYLE', labelKey: 'gText_BattleStyle',      choices: ['gText_BattleStyleShift', 'gText_BattleStyleSet'], optKey: 'optionsBattleStyle' },
+  { id: 'SOUND',       labelKey: 'gText_Sound',            choices: ['gText_SoundMono', 'gText_SoundStereo'], optKey: 'optionsSound' },
+  { id: 'BUTTONMODE',  labelKey: 'gText_ButtonMode',       choices: ['gText_ButtonTypeNormal', 'gText_ButtonTypeLR', 'gText_ButtonTypeLEqualsA'], optKey: 'optionsButtonMode' },
+  { id: 'FRAMETYPE',   labelKey: 'gText_Frame',            choices: ['gText_FrameType'], optKey: 'optionsWindowFrameType' },
   { id: 'CANCEL',      labelKey: 'gText_OptionMenuCancel', choices: [], optKey: '' },
 ] as const;
