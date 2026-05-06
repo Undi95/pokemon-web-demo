@@ -55,8 +55,8 @@ import {
 } from '../engine/decomp-data/auto/src/intro_credits_graphics-callbacks-auto';
 import { CB2_InitCopyrightScreenAfterBootup, MainCB2_Intro } from '../engine/copyright-boot';
 import { InitKeys } from '../engine/decomp-runtime';
-import { keyToGbaMask } from '../util/key-bindings';
 import { installEngineDevtools } from '../engine/engine-devtools';
+import { installInputHandlers, setHeldKeysOverride } from '../engine/input-handler';
 
 export class GameScene extends Phaser.Scene {
   private gba!: Gba;
@@ -259,7 +259,7 @@ export class GameScene extends Phaser.Scene {
     // les helpers (frame control, savestate, pixelTrace, hookFn, dumps, etc.)
     // sont identiques. ?pause/?seekTo/?slow query params gérés inside (idempotent).
     installEngineDevtools(this.rt, {
-      setHeldKeys: (mask) => { this.heldKeys = mask; },
+      setHeldKeys: (mask) => setHeldKeysOverride(this.rt, mask),
       sceneName: 'GameScene',
     });
 
@@ -370,7 +370,7 @@ export class GameScene extends Phaser.Scene {
 
   update(_: number, deltaMs: number) {
     if (!this.rt) return;
-    this.pollInput();
+    // Input → rt.gMain.heldKeys est déjà sync via input-handler.ts global.
     // Tick le runtime décomp (1:1 AgbMain main loop). Try/catch pour révéler
     // les erreurs silencieuses que Phaser swallow (= ne s'arrête pas mais
     // skip update suivants). Phase 3 debug Task_Scene3_Groudon GameScene halt.
@@ -391,48 +391,9 @@ export class GameScene extends Phaser.Scene {
 
   }
 
-  private heldKeys = 0;
-
+  // Input handlers : voir src/engine/input-handler.ts (= shared entre toutes
+  // les scenes runtime, écrit directement dans rt.gMain.heldKeys).
   private createKeys(): void {
-    // Canvas focusable : focus par défaut → arrow keys/space ne scrollent pas
-    // la page. Click ailleurs (= devtool, autre élément) → canvas perd focus
-    // automatiquement (= browser default behavior). Click back sur canvas →
-    // refocus automatique.
-    const canvas = this.game.canvas;
-    canvas.tabIndex = 0;
-    canvas.style.outline = 'none'; // pas de border bleue ugly autour
-    // Default focus sur le canvas au chargement de la scene.
-    setTimeout(() => canvas.focus(), 0);
-
-    // Utilise les événements natifs keydown/keyup au lieu de Phaser Key objects
-    // car Puppeteer + Phaser addKey ne détectent pas toujours les touches.
-    window.addEventListener('keydown', (e) => {
-      const mask = this.keyToMask(e.key);
-      if (mask) {
-        this.heldKeys |= mask;
-        // preventDefault uniquement si canvas a le focus (= user joue).
-        if (document.activeElement === canvas) e.preventDefault();
-      }
-    });
-    window.addEventListener('keyup', (e) => {
-      const mask = this.keyToMask(e.key);
-      if (mask) {
-        this.heldKeys &= ~mask;
-        if (document.activeElement === canvas) e.preventDefault();
-      }
-    });
-  }
-
-  private keyToMask(key: string): number {
-    // Mapping clavier → GBA bitmask via key-bindings.ts (= configurable + persistant
-    // dans localStorage.keyBindings). Defaults : W=A X=B N=SELECT B/Enter/Space=START
-    // arrows=DPad Z=R A=L. Cf. src/util/key-bindings.ts.
-    return keyToGbaMask(key);
-  }
-
-  private pollInput(): void {
-    // Copie les touches détenues dans le runtime pour que tickFixed puisse
-    // calculer newKeys (= front montant) chaque frame.
-    this.rt.gMain.heldKeys = this.heldKeys;
+    installInputHandlers(this, this.rt);
   }
 }

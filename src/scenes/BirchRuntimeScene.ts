@@ -64,19 +64,15 @@ import {
   REG_OFFSET_DISPCNT,
   DISPCNT_OBJ_ON, DISPCNT_OBJ_1D_MAP,
 } from '../engine/decomp-runtime';
-import { keyToGbaMask } from '../util/key-bindings';
 import { installEngineDevtools } from '../engine/engine-devtools';
+import { installInputHandlers, setHeldKeysOverride } from '../engine/input-handler';
 
 export class BirchRuntimeScene extends Phaser.Scene {
   private gba!: Gba;
-  // Public pour devtools (= window.dev access). Cf. birch-devtools.ts.
+  // Public pour devtools (= window.dev access).
   rt!: DecompRuntime;
   private bridge!: GbaPhaserBridge;
   private booted = false;
-  // Public pour devtools (= dev.skipUntil drive A button via heldKeys=1).
-  heldKeys = 0;
-  private keydownHandler?: (e: KeyboardEvent) => void;
-  private keyupHandler?: (e: KeyboardEvent) => void;
 
   constructor() { super({ key: 'BirchRuntimeScene' }); }
 
@@ -116,13 +112,15 @@ export class BirchRuntimeScene extends Phaser.Scene {
       this.scene.start('TestGbaScene');
     });
 
-    this.installKeyHandlers();
+    // Real keyboard → rt.gMain.heldKeys via handler global partagé.
+    // Cf. src/engine/input-handler.ts (= 1:1 décomp gMain.heldKeys canonical).
+    installInputHandlers(this, this.rt);
 
     // Devtools (= window.dev) pour debug interactif via console / preview_eval.
     // Cf. src/engine/engine-devtools.ts mini doc en header. Le poll auto-pause
     // est appelé par DecompRuntime.runOneFrame (= pas besoin de hook scene-side).
     installEngineDevtools(this.rt, {
-      setHeldKeys: (mask) => { this.heldKeys = mask; },
+      setHeldKeys: (mask) => setHeldKeysOverride(this.rt, mask),
       sceneName: 'BirchRuntimeScene',
     });
 
@@ -210,7 +208,7 @@ export class BirchRuntimeScene extends Phaser.Scene {
 
   update(_: number, deltaMs: number): void {
     if (!this.rt || !this.booted) return;
-    this.pollInput();
+    // Input → rt.gMain.heldKeys est déjà sync via input-handler.ts global.
     try {
       this.rt.tickFixed(deltaMs);
     } catch (e) {
@@ -226,41 +224,6 @@ export class BirchRuntimeScene extends Phaser.Scene {
     }
   }
 
-  // ─── Input handling — copie GameScene pattern ────────────────────────────────
-
-  private installKeyHandlers(): void {
-    const canvas = this.game.canvas;
-    canvas.tabIndex = 0;
-    canvas.style.outline = 'none';
-    setTimeout(() => canvas.focus(), 0);
-
-    this.keydownHandler = (e: KeyboardEvent) => {
-      const mask = keyToGbaMask(e.key);
-      if (mask) {
-        this.heldKeys |= mask;
-        if (document.activeElement === canvas) e.preventDefault();
-      }
-    };
-    this.keyupHandler = (e: KeyboardEvent) => {
-      const mask = keyToGbaMask(e.key);
-      if (mask) {
-        this.heldKeys &= ~mask;
-        if (document.activeElement === canvas) e.preventDefault();
-      }
-    };
-    window.addEventListener('keydown', this.keydownHandler);
-    window.addEventListener('keyup', this.keyupHandler);
-
-    // Cleanup : retire les listeners quand la scène shutdown (sinon les keys
-    // continuent de feed le runtime mort → null pointer au prochain update
-    // si la scène est restart).
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-      if (this.keydownHandler) window.removeEventListener('keydown', this.keydownHandler);
-      if (this.keyupHandler) window.removeEventListener('keyup', this.keyupHandler);
-    });
-  }
-
-  private pollInput(): void {
-    this.rt.gMain.heldKeys = this.heldKeys;
-  }
+  // Note : input handling moved to src/engine/input-handler.ts (= shared
+  // entre toutes les scenes runtime, écrit directement dans rt.gMain.heldKeys).
 }

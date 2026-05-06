@@ -37,7 +37,12 @@ import {
   GetCameraTopLeftCoords,
   gFieldCamera,
 } from '../engine/field-camera';
-import { keyToGbaMask } from '../util/key-bindings';
+import {
+  InitPlayerAvatar,
+  PlayerStep,
+  DIR_SOUTH,
+} from '../engine/player-avatar';
+import { installInputHandlers, setHeldKeysOverride } from '../engine/input-handler';
 import { installEngineDevtools } from '../engine/engine-devtools';
 
 // 1:1 décomp `DISPCNT_OBJ_ON | DISPCNT_OBJ_1D_MAP` flags.
@@ -52,7 +57,6 @@ export class TestOverworldScene extends Phaser.Scene {
   rt!: DecompRuntime;
   private bridge!: GbaPhaserBridge;
   private booted = false;
-  heldKeys = 0;
   private statusText?: Phaser.GameObjects.Text;
 
   constructor() { super({ key: 'TestOverworldScene' }); }
@@ -82,9 +86,13 @@ export class TestOverworldScene extends Phaser.Scene {
     }
 
     installEngineDevtools(this.rt, {
-      setHeldKeys: (mask) => { this.heldKeys = mask; },
+      setHeldKeys: (mask) => setHeldKeysOverride(this.rt, mask),
       sceneName: 'TestOverworldScene',
     });
+
+    // Real keyboard → rt.gMain.heldKeys via handler global partagé.
+    // Cf. src/engine/input-handler.ts (= 1:1 décomp gMain.heldKeys canonical).
+    installInputHandlers(this, this.rt);
 
     // Skip → TestGba si ESC.
     this.input.keyboard?.on('keydown-ESC', () => {
@@ -171,11 +179,16 @@ export class TestOverworldScene extends Phaser.Scene {
       //     couleurs apparaissent dès la 1ère frame, sans attendre un VBlankCB.
       this.rt.gPlttBufferFaded.flushTo();
 
-      // 11. Setup arrow keys → drive gFieldCamera.movementSpeed (= test scroll).
-      //     Phase 4.2 : pas de player avatar encore, on bouge juste la camera.
-      this.installCameraInputs();
+      // 11. Phase 4.3 : init player avatar (= sprite + state machine).
+      //     Player spawn à la position canonique de Bourg-en-Vol (= map (10, 10),
+      //     centre approximatif de la ville). PlayerStep() est appelé chaque frame
+      //     dans update() pour driver le walk state machine (= no manual camera
+      //     scroll input — c'est le player avatar qui driver gFieldCamera).
+      const spawnX = Math.floor(header.mapLayout.width / 2);
+      const spawnY = Math.floor(header.mapLayout.height / 2);
+      await InitPlayerAvatar(spawnX, spawnY, DIR_SOUTH, 'MALE', this.rt);
 
-      this.statusText?.setText(`Bourg-en-Vol ${header.mapLayout.width}x${header.mapLayout.height} (arrows = scroll)`);
+      this.statusText?.setText(`Bourg-en-Vol ${header.mapLayout.width}x${header.mapLayout.height} (arrows = walk)`);
       this.booted = true;
       console.log('[TestOverworld] boot done');
     } catch (e) {
@@ -186,46 +199,27 @@ export class TestOverworldScene extends Phaser.Scene {
 
   update(_: number, deltaMs: number): void {
     if (!this.rt || !this.booted) return;
-    this.rt.gMain.heldKeys = this.heldKeys;
+    // rt.gMain.heldKeys déjà à jour via input-handler.ts global.
     try {
       this.rt.tickFixed(deltaMs);
     } catch (e) {
       console.error('[TestOverworld.update] tickFixed THREW:', e);
     }
-    // Phase 4.2 : drive field camera scroll selon gFieldCamera.movementSpeed.
-    // (CameraUpdate accumule le sub-tile offset + redessine les bordures
-    // quand on traverse un tile boundary.) FieldUpdateBgTilemapScroll écrit
-    // hofs/vofs aux registres BG pour le rendering au frame courant.
+    // Phase 4.3 : PlayerStep drive gFieldCamera.movementSpeedX/Y selon input.
+    // (= 1:1 décomp PlayerStep → MovePlayerNotOnBike → PlayerWalkNormal qui
+    // démarre une 16-frame step. Camera follow automatique.)
     try {
+      PlayerStep(this.rt.gMain.heldKeys, this.rt.gMain.newKeys, this.rt);
       CameraUpdate();
       flushOverworldTilemaps(this.rt);
       FieldUpdateBgTilemapScroll(this.rt);
     } catch (e) {
-      console.error('[TestOverworld.update] camera update THREW:', e);
+      console.error('[TestOverworld.update] player/camera update THREW:', e);
     }
     try {
       this.bridge.tick();
     } catch (e) {
       console.error('[TestOverworld.update] bridge.tick THREW:', e);
     }
-  }
-
-  /** Phase 4.2 : drive `gFieldCamera.movementSpeedX/Y` directement depuis les
-   *  flèches du clavier. Pas de player avatar encore — on bouge juste le viewport.
-   *  Speed = 2 px/frame (= 1 metatile en 8 frames = ~133ms = 1:1 ROM walk speed). */
-  private installCameraInputs(): void {
-    const SPEED = 2;
-    const kb = this.input.keyboard;
-    if (!kb) return;
-    const updateSpeed = (): void => {
-      const downHeld = kb.checkDown(kb.addKey(Phaser.Input.Keyboard.KeyCodes.DOWN));
-      const upHeld = kb.checkDown(kb.addKey(Phaser.Input.Keyboard.KeyCodes.UP));
-      const leftHeld = kb.checkDown(kb.addKey(Phaser.Input.Keyboard.KeyCodes.LEFT));
-      const rightHeld = kb.checkDown(kb.addKey(Phaser.Input.Keyboard.KeyCodes.RIGHT));
-      gFieldCamera.movementSpeedX = rightHeld ? SPEED : leftHeld ? -SPEED : 0;
-      gFieldCamera.movementSpeedY = downHeld ? SPEED : upHeld ? -SPEED : 0;
-    };
-    // Poll chaque frame via update event (= cleaner than keydown/keyup).
-    this.events.on(Phaser.Scenes.Events.UPDATE, updateSpeed);
   }
 }
