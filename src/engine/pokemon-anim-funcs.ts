@@ -52,7 +52,15 @@ export const ANIM_V_SLIDE_SLOW = 71;
 export const ANIM_V_JUMPS_SMALL = 82;
 
 // ─── sMonFrontAnimIdsTable (1:1 décomp pokemon.c:1406-1791) ─────────────────
-// Map SPECIES_X → ANIM_*. Currently minimal. Full extraction = TODO.
+// Map SPECIES_X → ANIM_*. Two sources :
+//   1) Hardcoded minimal fallback (= 3 entries, ensures Lotad squish marche
+//      même sans extraction tournée).
+//   2) Generated data from `scripts/extract-mon-anim-tables.mjs` (= 387 species
+//      mapping extracted depuis pokemon.c). Run le script pour populate.
+//
+// Hardcoded fallbacks utilisés sauf override par generated data (= si user
+// run l'extraction, les 387 entries écrasent les 3 fallbacks).
+
 export const SPECIES_LOTAD = 295;
 export const SPECIES_LOMBRE = 296;
 export const SPECIES_LUDICOLO = 297;
@@ -63,9 +71,95 @@ const _sMonFrontAnimIds = new Map<number, number>([
   [SPECIES_LUDICOLO, ANIM_V_SQUISH_AND_BOUNCE],
 ]);
 
-/** Front anim id for a species, defaults to ANIM_V_SQUISH_AND_BOUNCE. */
+const _sMonAnimDelays = new Map<number, number>();
+const _sMonHasTwoFrames = new Map<number, boolean>();
+
+/** ANIM_* identifier → numerical constant lookup. Used to resolve string
+ *  keys from the extracted data file at module load. */
+const ANIM_NAME_TO_ID: Readonly<Record<string, number>> = {
+  ANIM_V_SQUISH_AND_BOUNCE,
+  ANIM_CIRCULAR_STRETCH_TWICE,
+  ANIM_H_VIBRATE,
+  ANIM_H_SLIDE,
+  ANIM_V_SLIDE,
+  ANIM_BOUNCE_ROTATE_TO_SIDES,
+  ANIM_V_JUMPS_H_JUMPS,
+  ANIM_GROW_VIBRATE,
+  ANIM_H_SHAKE,
+  ANIM_V_SHAKE,
+  ANIM_TWIST,
+  ANIM_SHRINK_GROW,
+  ANIM_H_STRETCH,
+  ANIM_V_STRETCH,
+  ANIM_V_SHAKE_TWICE,
+  ANIM_V_JUMPS_BIG,
+  ANIM_V_SQUISH_AND_BOUNCE_SLOW,
+  ANIM_H_SLIDE_SLOW,
+  ANIM_V_SLIDE_SLOW,
+  ANIM_V_JUMPS_SMALL,
+};
+
+/** Bridge from extracted data file (= SPECIES_X / ANIM_Y / 0/1 string keys)
+ *  → numerical Maps used at runtime. Lazy : called once at module load.
+ *  Resolves SPECIES_* via species-data.ts dynamic import (= 387 entries). */
+async function _hydrateFromGeneratedData(): Promise<void> {
+  try {
+    const [tablesMod, speciesMod] = await Promise.all([
+      import('./decomp-data/auto/src/mon-anim-tables-data'),
+      import('./decomp-data/auto/include/constants/species-data'),
+    ]);
+    const speciesNameToId = speciesMod as unknown as Record<string, number>;
+    // Front anim ids
+    for (const [speciesName, animName] of tablesMod.RAW_MON_FRONT_ANIM_IDS) {
+      const speciesId = speciesNameToId[speciesName];
+      const animId = ANIM_NAME_TO_ID[animName];
+      if (typeof speciesId === 'number' && typeof animId === 'number') {
+        _sMonFrontAnimIds.set(speciesId, animId);
+      }
+    }
+    // Delays (= raw int values in C, e.g. `[SPECIES_X - 1] = 0,` → string "0")
+    for (const [speciesName, delayStr] of tablesMod.RAW_MON_ANIM_DELAYS) {
+      const speciesId = speciesNameToId[speciesName];
+      const delay = parseInt(delayStr, 10);
+      if (typeof speciesId === 'number' && Number.isFinite(delay)) {
+        _sMonAnimDelays.set(speciesId, delay);
+      }
+    }
+    // Has two frames (= TRUE/FALSE in C)
+    for (const [speciesName, boolStr] of tablesMod.RAW_MON_HAS_TWO_FRAMES) {
+      const speciesId = speciesNameToId[speciesName];
+      if (typeof speciesId === 'number') {
+        _sMonHasTwoFrames.set(speciesId, /TRUE|1/i.test(boolStr));
+      }
+    }
+    if (tablesMod.RAW_MON_FRONT_ANIM_IDS.length > 0) {
+      console.log(`[pokemon-anim-funcs] hydrated ${tablesMod.RAW_MON_FRONT_ANIM_IDS.length} species → anim mappings from extracted data`);
+    }
+  } catch {
+    // Generated file missing / empty / malformed → graceful fallback to
+    // hardcoded minimal Map (= Lotad triplet). Pas de log spammy.
+  }
+}
+// Fire-and-forget hydration au module load. Async OK : 1ère utilisation
+// arrive bien après le boot async.
+void _hydrateFromGeneratedData();
+
+/** Front anim id for a species, defaults to ANIM_V_SQUISH_AND_BOUNCE.
+ *  Lit depuis la Map hybride (hardcoded triplet + generated 387 entries
+ *  une fois le script extraction tourné). */
 export function getMonFrontAnimId(species: number): number {
   return _sMonFrontAnimIds.get(species) ?? ANIM_V_SQUISH_AND_BOUNCE;
+}
+
+/** Per-species delay frames before idle anim launch. Default 0 (= immediate). */
+export function getMonAnimDelay(species: number): number {
+  return _sMonAnimDelays.get(species) ?? 0;
+}
+
+/** True if species has 2-frame anim_front sheet (= drives StartSpriteAnim 1).
+ *  Default true (= most Gen 3 mons have 2-frame animation). */
+export function hasTwoFramesAnimation(species: number): boolean {
+  return _sMonHasTwoFrames.get(species) ?? true;
 }
 
 // ─── Helpers (1:1 décomp pokemon_animation.c:984-1085) ──────────────────────
