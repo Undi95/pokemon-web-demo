@@ -206,18 +206,21 @@ export async function InitPlayerAvatar(
   // Create OAM sprite at SCREEN CENTER. Le player visuel reste fixe au centre
   // de l'écran ; le BG scroll donne l'illusion de movement.
   //
-  // Position : player visible à view (col 7, row 5) avec FEET aligned sur la
-  // BG metatile boundary. FieldUpdateBgTilemapScroll applique vofs +8 (= 1:1
-  // décomp field_camera.c:78) qui shift le BG content UP de 8px. Pour que le
-  // sprite soit visuellement on-grid :
-  //   BG row 5 visible aux screen y 72..88 (= 5*16-8 .. 6*16-8)
-  //   Player feet = bottom of sprite à screen y 88 (= bottom of row 5)
-  //   Sprite 16×32 → top at y = 88-32 = 56
+  // ⚠️ cfg.x/y passés à CreateSpriteAtOam = sprite CENTER (= 1:1 décomp
+  // convention sprite engine). syncSpritesToOam applique centerToCornerVec
+  // (= -8, -16 pour 16×32) chaque frame → final OAM x = center.x - 8,
+  // OAM y = center.y - 16. Pour sprite top à screen y = 64 (= row 4),
+  // sprite center y = 64 + 16 = 80.
   //
-  // Sans le -8 alignment, le sprite à y=64 aurait feet à y=96 = MID de row 6
-  // → "player entre 2 cases". Le -8 le snap sur la grid avec le vofs décomp.
-  const SCREEN_CENTER_X = 7 * 16;       // = 112
-  const SCREEN_CENTER_Y = 4 * 16 - 8;   // = 56 (= align with vofs+8 grid)
+  // Position : player visible à view (col 7, row 5) :
+  //   Sprite top à screen y 64 (= top of row 4)
+  //   Sprite bottom à screen y 96 (= bottom of row 5 = boundary row 6)
+  //   Feet visuellement sur view row 5 (= player position metatile)
+  //
+  // Center coords : x = view col 7 * 16 + 8 (= mid-metatile horiz) = 120
+  //                 y = view row 4 * 16 + 16 (= for OAM top at row 4) = 80
+  const SCREEN_CENTER_X = 7 * 16 + 8;  // = 120 (= sprite center horizontal)
+  const SCREEN_CENTER_Y = 4 * 16 + 16; // = 80 (= for OAM top at view row 4)
   const initialFrame = SPRITE_FRAMES[direction as keyof typeof SPRITE_FRAMES];
 
   const result = rt.CreateSpriteAtOam({

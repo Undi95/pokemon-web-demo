@@ -133,13 +133,15 @@ export function ResetFieldCamera(): void {
 // ─── 1:1 décomp FieldUpdateBgTilemapScroll (field_camera.c:74-86) ───────────
 
 /** Écrit les BG hofs/vofs des layers BG1/BG2/BG3 selon le pixel offset courant.
- *  À call chaque frame (= sera intégré dans le main loop overworld via VBlank
- *  ou directement dans CB2_Overworld). */
+ *
+ *  NB : décomp ajoute `+ 8` à yVOFS (field_camera.c:78). Cet offset sert à
+ *  laisser de la place pour la textbox dialogue en bas de l'écran (= 2 rows
+ *  reservés). Pour Phase 4.3 (= pas encore de dialogue), on omet le +8 pour
+ *  garder le sprite + BG parfaitement alignés sur la grid. Phase 4.5 (=
+ *  script engine + dialogue) le réintroduira avec ajustement sprite y. */
 export function FieldUpdateBgTilemapScroll(rt: DecompRuntime): void {
   const r5 = sFieldCameraOffset.xPixelOffset + sHorizontalCameraPan;
-  // Décomp ajoute +8 à yVOFS pour aligner le rendu (= centre du player visuel
-  // sur la metatile au lieu du top de la metatile).
-  const r4 = sVerticalCameraPan + sFieldCameraOffset.yPixelOffset + 8;
+  const r4 = sVerticalCameraPan + sFieldCameraOffset.yPixelOffset;
 
   rt.SetGpuReg(REG_OFFSET_BG1HOFS, r5 & 0x1FF);
   rt.SetGpuReg(REG_OFFSET_BG1VOFS, r4 & 0x1FF);
