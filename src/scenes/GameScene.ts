@@ -370,25 +370,22 @@ export class GameScene extends Phaser.Scene {
 
   update(_: number, deltaMs: number) {
     if (!this.rt) return;
-    // Input → rt.gMain.heldKeys est déjà sync via input-handler.ts global.
-    // Tick le runtime décomp (1:1 AgbMain main loop). Try/catch pour révéler
-    // les erreurs silencieuses que Phaser swallow (= ne s'arrête pas mais
-    // skip update suivants). Phase 3 debug Task_Scene3_Groudon GameScene halt.
+    // Optim : skip bridge.tick si pas de frame logique avancée. Cf
+    // TestOverworldScene.update().
+    let framesProcessed = 0;
     try {
-      this.rt.tickFixed(deltaMs);
+      framesProcessed = this.rt.tickFixed(deltaMs);
     } catch (e) {
       console.error('[GameScene.update] tickFixed THREW:', e);
       console.error('[GameScene.update] stack:', (e as Error).stack);
     }
-    // Main Menu now runs purely on GBA engine (no Phaser scene fallback)
-    // CB2_InitMainMenu / CB2_MainMenu are handled by the decomp runtime directly
-    try {
-      if (this.bridge) this.bridge.tick();
-    } catch (e) {
-      console.error('[GameScene.update] bridge.tick THREW:', e);
+    if (framesProcessed > 0) {
+      try {
+        if (this.bridge) this.bridge.tick();
+      } catch (e) {
+        console.error('[GameScene.update] bridge.tick THREW:', e);
+      }
     }
-    // Status update : montre l'état du runtime en live
-
   }
 
   // Input handlers : voir src/engine/input-handler.ts (= shared entre toutes

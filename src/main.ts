@@ -91,10 +91,14 @@ const config: Phaser.Types.Core.GameConfig = {
     default: 'arcade',
     arcade: { debug: false }
   },
-  // 1:1 GBA = 60Hz strict. forceSetTimeOut:true = bypass requestAnimationFrame
-  // qui peut throttle à 30Hz selon vsync/tab. Avec setTimeout(16.67), Phaser
-  // tick exactement 60 fois/sec → audio + animations + frame counter alignés.
-  // Sans ça, music/sons/cris désynchronisent par rapport à la logique 60Hz.
+  // 1:1 GBA = 60Hz strict. forceSetTimeOut:true fait Phaser utiliser
+  // setTimeout(16.67) au lieu de requestAnimationFrame (= bypass throttle
+  // rAF quand tab inactive ou monitor refresh non-60Hz). Critical pour
+  // audio/anim sync 60Hz.
+  //
+  // Optim : update() ne fait du rendu que si tickFixed accumule au moins
+  // 1 frame logique (= évite gba.tick + putImageData spam quand le tick
+  // est appelé > 60Hz). Voir TestOverworldScene.update().
   fps: {
     target: 60,
     forceSetTimeOut: true,

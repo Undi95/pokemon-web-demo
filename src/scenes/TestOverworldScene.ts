@@ -215,20 +215,23 @@ export class TestOverworldScene extends Phaser.Scene {
 
   update(_: number, deltaMs: number): void {
     if (!this.rt || !this.booted) return;
-    // rt.gMain.heldKeys déjà à jour via input-handler.ts global.
-    // PlayerStep + CameraUpdate sont driven par gMain.callback2 (=
-    // MainCB2_Overworld registered au boot) qui tourne dans tickFixed à
-    // FIXED 60Hz. Donc si le browser drop des frames, tickFixed accumule
-    // et exécute plusieurs runOneFrame d'affilée → timing reste 1:1 GBA.
+    // PlayerStep + CameraUpdate driven par gMain.callback2 dans tickFixed.
+    // Optim : tickFixed retourne le nb de frames LOGIQUES exécutées. Si
+    // 0 (= update appelé > 60Hz, accumulator pas plein), pas besoin de
+    // re-render. gba.tick (= composeFrame 5.3ms) + putImageData (= ~3ms)
+    // sont skip → on n'affiche pas une frame identique.
+    let framesProcessed = 0;
     try {
-      this.rt.tickFixed(deltaMs);
+      framesProcessed = this.rt.tickFixed(deltaMs);
     } catch (e) {
       console.error('[TestOverworld.update] tickFixed THREW:', e);
     }
-    try {
-      this.bridge.tick();
-    } catch (e) {
-      console.error('[TestOverworld.update] bridge.tick THREW:', e);
+    if (framesProcessed > 0) {
+      try {
+        this.bridge.tick();
+      } catch (e) {
+        console.error('[TestOverworld.update] bridge.tick THREW:', e);
+      }
     }
   }
 }

@@ -208,19 +208,21 @@ export class BirchRuntimeScene extends Phaser.Scene {
 
   update(_: number, deltaMs: number): void {
     if (!this.rt || !this.booted) return;
-    // Input → rt.gMain.heldKeys est déjà sync via input-handler.ts global.
+    // Optim : skip bridge.tick si pas de frame logique avancée (= update
+    // called > 60Hz par Phaser). Évite gba.tick (= composeFrame 5ms) +
+    // putImageData spam pour state identique. Voir TestOverworldScene.
+    let framesProcessed = 0;
     try {
-      this.rt.tickFixed(deltaMs);
+      framesProcessed = this.rt.tickFixed(deltaMs);
     } catch (e) {
       console.error('[BirchRuntime.update] tickFixed THREW:', e);
     }
-    // Note : le poll auto-pause (= dev.pauseAt) est désormais appelé par
-    // DecompRuntime.runOneFrame (= one place pour toute scene). Ex-hook
-    // __birchPauseCondition retiré.
-    try {
-      this.bridge.tick();
-    } catch (e) {
-      console.error('[BirchRuntime.update] bridge.tick THREW:', e);
+    if (framesProcessed > 0) {
+      try {
+        this.bridge.tick();
+      } catch (e) {
+        console.error('[BirchRuntime.update] bridge.tick THREW:', e);
+      }
     }
   }
 
