@@ -81,6 +81,11 @@ export interface ObjectEvent {
   walkFramesLeft: number;
   walkDirection: number;
   walkAnimAlt: 0 | 1;
+  /** 1:1 décomp `frozen` field. Si TRUE, state machine skip → NPC reste à
+   *  sa facing direction courante. Set par tryInteractWithFacingNPC pour
+   *  empêcher NPC de tourner mid-dialogue. Reset par UnfreezeAllNpcs (=
+   *  appelé quand player walk = exit interaction). */
+  frozen: boolean;
 }
 
 export const gObjectEvents: ObjectEvent[] = Array.from({ length: OBJECT_EVENTS_COUNT }, () => ({
@@ -102,6 +107,7 @@ export const gObjectEvents: ObjectEvent[] = Array.from({ length: OBJECT_EVENTS_C
   walkFramesLeft: 0,
   walkDirection: DIR_NONE,
   walkAnimAlt: 0,
+  frozen: false,
 }));
 
 // Expose pour collision check player (= évite circular import).
@@ -185,15 +191,28 @@ function pickRandomDelay(): number {
   return sMovementDelaysMedium[Math.floor(Math.random() * sMovementDelaysMedium.length)];
 }
 
-/** Check si target tile occupé par player (= 1:1 décomp player-as-blocker).
+/** Check si target tile occupé par player.
+ *  Considère AUSSI la player's destination cell quand player est MOVING (=
+ *  évite que NPC walk vers la cell où player s'apprête à aller).
  *  gPlayerAvatar.x/y sont en ORIGINAL map coords (= no MAP_OFFSET). */
 function isPlayerAt(x: number, y: number): boolean {
-  return gPlayerAvatar.x === x && gPlayerAvatar.y === y;
+  if (gPlayerAvatar.x === x && gPlayerAvatar.y === y) return true;
+  // Player MOVING : sa cible est gPlayerAvatar.x + DIR_TO_DX[stepDirection].
+  if (gPlayerAvatar.runningState === 2 /* MOVING */ && gPlayerAvatar.stepFramesLeft > 0) {
+    const sdx = DIR_TO_DX[gPlayerAvatar.stepDirection] ?? 0;
+    const sdy = DIR_TO_DY[gPlayerAvatar.stepDirection] ?? 0;
+    if (gPlayerAvatar.x + sdx === x && gPlayerAvatar.y + sdy === y) return true;
+  }
+  return false;
 }
 
 /** Check si NPC peut walker en `direction` depuis sa position courante.
- *  1:1 décomp `GetCollisionInDirection` : map collision + player collision.
- *  NPC-NPC collision skipped en 4.4.c (= rare overlap visuellement OK). */
+ *  1:1 décomp `GetCollisionInDirection` : map collision + player collision +
+ *  NPC-NPC collision (4.4.f, simplifié pour MVP : skip).
+ *
+ *  Considère la TARGET cell du player MOVING, pour éviter step-on race :
+ *  si NPC démarre walk vers cell C ET player démarre walk vers cell C en
+ *  même temps, le NPC voit player.target = C → bloqué. Fix bug 4.4.d. */
 function canWalk(npc: ObjectEvent, direction: number): boolean {
   const dx = DIR_TO_DX[direction] ?? 0;
   const dy = DIR_TO_DY[direction] ?? 0;
@@ -205,6 +224,15 @@ function canWalk(npc: ObjectEvent, direction: number): boolean {
   if (isPlayerAt(targetX, targetY)) return false;
   return true;
 }
+
+/** Un-freeze tous les NPCs (= appelé quand player commence à walker, =
+ *  exit interaction). 1:1 décomp pattern : ScriptUnlockAll fait équivalent. */
+export function UnfreezeAllNpcs(): void {
+  for (const npc of gObjectEvents) {
+    if (npc.active) npc.frozen = false;
+  }
+}
+(globalThis as Record<string, unknown>).__UnfreezeAllNpcs = UnfreezeAllNpcs;
 
 // ─── Sprite frame update ────────────────────────────────────────────────────
 
@@ -336,6 +364,9 @@ const MOVEMENT_HANDLERS: Record<string, { tick: 'look' | 'wander'; dirs: Readonl
 export function TickObjectEventMovements(rt: DecompRuntime): void {
   for (const npc of gObjectEvents) {
     if (!npc.active) continue;
+    // Frozen NPCs (= en interact) skip leur state machine. Reste à
+    // facingDirection courante. Un-freeze quand player walk.
+    if (npc.frozen) continue;
 
     const handler = MOVEMENT_HANDLERS[npc.movementType];
     if (handler) {
@@ -345,9 +376,6 @@ export function TickObjectEventMovements(rt: DecompRuntime): void {
         tickWanderAround(rt, npc, handler.dirs);
       }
     }
-    // Movement types non-handled (FACE_*, NONE, WALK_IN_PLACE_*, etc.) =
-    // statiques pour 4.4.c. Ajout futur Phase 4.4.f : WALK_BACK_AND_FORTH,
-    // WALK_SEQUENCE_*, ROTATE_*.
   }
 }
 

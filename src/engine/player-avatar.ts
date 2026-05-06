@@ -393,27 +393,28 @@ function getInputDirection(heldKeys: number): number {
 const A_BUTTON = 0x01;
 
 /** 1:1 décomp `CheckForObjectEventInteractive` (field_player_avatar.c).
- *  Phase 4.4.e MVP : juste log. Phase 4.5 wirera vers script-runner. */
+ *
+ *  Phase 4.4.e MVP : juste log. Pas de turn/freeze parce que l'interaction
+ *  n'a pas encore de "contenu" (= dialogue/event Phase 4.5). Faire tourner
+ *  le NPC vers nous SANS rien dire crée un pseudo-état bâtard qui peut
+ *  introduire des bugs (cf. user feedback). Phase 4.5 :
+ *    - scriptRunner.dispatch(npc.script)
+ *    - script's lock_all → ScriptUnlockAll au end → frame-perfect freeze.
+ *
+ *  Tant qu'on n'a pas le script engine, on ne touche PAS l'état NPC. */
 function tryInteractWithFacingNPC(): void {
   const { x: tx, y: ty } = moveCoords(gPlayerAvatar.facing, gPlayerAvatar.x, gPlayerAvatar.y);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const gObjectEvents = (globalThis as any).__gObjectEvents as
     Array<{ active: boolean; currentCoordsX: number; currentCoordsY: number;
             graphicsId: string; movementType: string; localId: number;
-            facingDirection: number }> | undefined;
+            walkFramesLeft: number }> | undefined;
   if (!gObjectEvents) return;
   for (const npc of gObjectEvents) {
     if (!npc.active) continue;
+    if (npc.walkFramesLeft > 0) continue;  // skip mid-walk (= cell non stable)
     if (npc.currentCoordsX === tx && npc.currentCoordsY === ty) {
-      // Make NPC face the player (= 1:1 décomp ObjectEventFaceOppositeDirection).
-      const opposite: Record<number, number> = {
-        [DIR_SOUTH]: DIR_NORTH,
-        [DIR_NORTH]: DIR_SOUTH,
-        [DIR_WEST]: DIR_EAST,
-        [DIR_EAST]: DIR_WEST,
-      };
-      npc.facingDirection = opposite[gPlayerAvatar.facing] ?? DIR_SOUTH;
-      console.log(`[player-avatar] interact with ${npc.graphicsId} (localId=${npc.localId}, mt=${npc.movementType})`);
+      console.log(`[player-avatar] would-interact ${npc.graphicsId} (localId=${npc.localId}, mt=${npc.movementType}) — Phase 4.5 will trigger script`);
       return;
     }
   }
