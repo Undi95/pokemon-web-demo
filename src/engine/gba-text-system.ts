@@ -147,17 +147,30 @@ let gTextPrinters: ActivePrinter[] = [];
 
 /** Lookup helper local pour éviter import circulaire avec gba-menu-system.
  *  Lit `gSaveBlock2Ptr.optionsTextSpeed` via globalThis (= dans tous les cas
- *  populated avant le 1er texte rendered). Returns frames-per-char delay. */
+ *  populated avant le 1er texte rendered). Returns frames-per-char delay.
+ *
+ *  ⚠️ DÉVIATION 1:1 décomp : x2 speed user-preference (= delays halved).
+ *  ROM menu.c:77 sTextSpeedFrameDelays = { 8, 4, 1 } SLOW/MID/FAST.
+ *  Notre web build : { 4, 2, 0 } = chaque speed deux fois plus rapide.
+ *  Raison : user feedback "speed text trop lent même en FAST + held".
+ *  Tradeoff accepté : frame-rate effectif = 2× ROM (= web build apparent
+ *  smoothness > pixel-perfect 1:1 timing pour ce cas).
+ *  Cf. text.c:961 `delayCounter = textSpeed;` — ramp identique, just halved.
+ *
+ *  Avec ces valeurs :
+ *    FAST (textSpeed=0) : 1 char par frame = 60 chars/sec
+ *    MID  (textSpeed=2) : 1 char par 3 frames = 20 chars/sec
+ *    SLOW (textSpeed=4) : 1 char par 5 frames = 12 chars/sec
+ *
+ *  A/B held override → delayCounter=0 chaque frame (= 60 chars/sec) gérée
+ *  dans gba-text-printer.ts runTextPrinter (pas ici). */
 function _getPlayerTextSpeedDelay(): number {
   const sb2 = (globalThis as Record<string, unknown>).gSaveBlock2Ptr as
     { optionsTextSpeed?: number } | undefined;
   const speed = (sb2?.optionsTextSpeed ?? 1) | 0;
-  // 1:1 décomp menu.c:77 sTextSpeedFrameDelays = { 8, 4, 1 } = SLOW/MID/FAST.
-  // A/B held override → textSpeed effectif = 1 (= FAST) gérée dans
-  // gba-text-printer.ts runTextPrinter (pas ici).
-  if (speed === 0) return 8;
-  if (speed === 2) return 1;  // FAST 1:1 décomp
-  return 4;  // MID default
+  if (speed === 0) return 4;  // SLOW : ROM 8 → x2 = 4
+  if (speed === 2) return 0;  // FAST : ROM 1 → x2 = 0 (= 1 char/frame, pas instant)
+  return 2;  // MID : ROM 4 → x2 = 2 (default)
 }
 
 export function AddTextPrinterParameterized3(

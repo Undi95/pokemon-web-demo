@@ -681,11 +681,17 @@ export function runTextPrinter(printer: TextPrinter): number {
     printer.currentChar++;
     if (printer.onCharRendered) printer.onCharRendered(printer, byte);
 
-    // Si textSpeed > 0, reset counter et arrête (1 char par frame)
+    // 1:1 décomp text.c:961 + RENDER_PRINT return after each glyph :
+    //   delayCounter = textSpeed;  (s'apply pour textSpeed > 0)
+    //   return RENDER_PRINT;       (toujours, 1 char par call/frame)
+    //
+    // Ancien bug : `if (textSpeed > 0) return` → si textSpeed=0, do-while
+    // continuait → tous les chars rendus en 1 frame (= INSTANT). Le décomp
+    // ROM textSpeed=0 = 1 char par call (= 60 chars/sec à 60Hz), pas instant.
     if (printer.textSpeed > 0) {
       printer.delayCounter = printer.textSpeed;
-      return RENDER_PRINT;
     }
+    return RENDER_PRINT;
   } while (true);
 }
 
