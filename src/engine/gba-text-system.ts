@@ -145,6 +145,19 @@ let gTextPrinters: ActivePrinter[] = [];
 
 // ─── API ─────────────────────────────────────────────────────────────────────
 
+/** Lookup helper local pour éviter import circulaire avec gba-menu-system.
+ *  Lit `gSaveBlock2Ptr.optionsTextSpeed` via globalThis (= dans tous les cas
+ *  populated avant le 1er texte rendered). Returns frames-per-char delay. */
+function _getPlayerTextSpeedDelay(): number {
+  const sb2 = (globalThis as Record<string, unknown>).gSaveBlock2Ptr as
+    { optionsTextSpeed?: number } | undefined;
+  const speed = (sb2?.optionsTextSpeed ?? 1) | 0;
+  // SLOW=8, MID=4, FAST=1 (= matches scroll speed [1,2,4] inverse)
+  if (speed === 0) return 8;
+  if (speed === 2) return 1;
+  return 4;  // MID default
+}
+
 export function AddTextPrinterParameterized3(
   windowId: number,
   _fontId: number,
@@ -176,7 +189,16 @@ export function AddTextPrinterParameterized3(
     bgColor: colorArray[0] ?? 1,
     fgColor: colorArray[1] ?? 2,
     shadowColor: colorArray[2] ?? 3,
-    textSpeed: speed === 255 ? 0 : speed,
+    // 1:1 décomp src/text.c : speed parameter encoding :
+    //   255 (TEXT_SKIP_DRAW) → instant render (= no per-char delay)
+    //   -1                   → use player's saved option (= GetPlayerTextSpeedDelay())
+    //   N >= 0               → explicit N-frame per-char delay
+    // Sentinel -1 ajouté pour permettre aux auto-callbacks de respecter le
+    // setting joueur via gSaveBlock2Ptr.optionsTextSpeed sans hardcoder les
+    // delay values per call site.
+    textSpeed: speed === 255 ? 0
+      : speed < 0 ? _getPlayerTextSpeedDelay()
+      : speed,
     downArrowPixels: downArrowPixels ?? undefined,
   };
   const printer = addTextPrinter(opts);

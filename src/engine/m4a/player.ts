@@ -645,7 +645,11 @@ export async function playSongCustomSynth(
         playNoteNoiseLFSR(noteVoice, note.midi, velocity, when, note.duration, trackVolNorm, slot);
         continue;
       }
-      // Fallback : playNote pre-P8 pour autres types
+      // Fallback : playNote pre-P8 pour autres types.
+      // TODO Phase 4 : extraire pan per-track depuis MIDI controller events
+      // (CC 10 = pan), apply via IsStereoSound() check (= si mono force 64,
+      // si stereo use track pan). Pour l'instant centered → user option
+      // mono/stereo n'a pas d'effet audible. Cf. gba-menu-system IsStereoSound.
       const panMidi = 64;
       void (async () => {
         const active = await playNote(noteVoice, note.midi, velocity, panMidi, when, trackVolNorm);

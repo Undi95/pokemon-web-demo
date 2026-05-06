@@ -296,6 +296,53 @@ export function SetSaveFileStatus(status: number): void {
   gSaveFileStatus = status;
 }
 
+// ─── Options helpers (= 1:1 décomp text.c + sound.c + main.c key remap) ────
+//
+// Décomp pattern : les call sites lisent gSaveBlock2Ptr.options* + appliquent
+// au système concerné. Notre engine fait pareil via les helpers ci-dessous,
+// utilisés par le text printer / audio engine / key handler runtime.
+
+/** OPTIONS_TEXT_SPEED_* enum (= include/constants/options.h). */
+export const OPTIONS_TEXT_SPEED_SLOW = 0;
+export const OPTIONS_TEXT_SPEED_MID  = 1;
+export const OPTIONS_TEXT_SPEED_FAST = 2;
+
+/** OPTIONS_SOUND_* (= 0=MONO, 1=STEREO). */
+export const OPTIONS_SOUND_MONO   = 0;
+export const OPTIONS_SOUND_STEREO = 1;
+
+/** OPTIONS_BUTTON_MODE_* (= 0=NORMAL, 1=LR, 2=L_EQUALS_A). */
+export const OPTIONS_BUTTON_MODE_NORMAL    = 0;
+export const OPTIONS_BUTTON_MODE_LR        = 1;
+export const OPTIONS_BUTTON_MODE_L_EQUALS_A = 2;
+
+/** 1:1 décomp `GetPlayerTextSpeed()` — current player text speed setting. */
+export function GetPlayerTextSpeed(): number {
+  return ((gSaveBlock2Ptr.optionsTextSpeed ?? OPTIONS_TEXT_SPEED_MID) | 0) & 3;
+}
+
+/** 1:1 décomp `GetPlayerTextSpeedDelay(speed)` — frames-per-char delay.
+ *  Map : SLOW=8, MID=4, FAST=1. Typewriter effect dans dialogue boxes.
+ *  Décomp utilise un table sTextSpeedFrameDelays. */
+export function GetPlayerTextSpeedDelay(speed?: number): number {
+  const s = speed ?? GetPlayerTextSpeed();
+  if (s === OPTIONS_TEXT_SPEED_SLOW) return 8;
+  if (s === OPTIONS_TEXT_SPEED_FAST) return 1;
+  return 4;  // MID default
+}
+
+/** Audio pan adjustment — applied par M4A engine quand `optionsSound` lu.
+ *  MONO : tous channels mixed centered. STEREO : pan respecté.
+ *  Returns true si stereo (= apply pan), false si mono (= centered). */
+export function IsStereoSound(): boolean {
+  return ((gSaveBlock2Ptr.optionsSound ?? OPTIONS_SOUND_MONO) | 0) === OPTIONS_SOUND_STEREO;
+}
+
+/** Bridge globalThis pour les auto-callbacks (= eval scope @ts-nocheck). */
+(globalThis as Record<string, unknown>).GetPlayerTextSpeed = GetPlayerTextSpeed;
+(globalThis as Record<string, unknown>).GetPlayerTextSpeedDelay = GetPlayerTextSpeedDelay;
+(globalThis as Record<string, unknown>).IsStereoSound = IsStereoSound;
+
 // Synchronise gSaveFileStatus mutable export sur globalThis pour les
 // callbacks auto-générés (= eval scope @ts-nocheck).
 if (!('gSaveFileStatus' in globalThis)) {

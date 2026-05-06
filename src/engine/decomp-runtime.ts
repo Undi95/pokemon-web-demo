@@ -1887,6 +1887,20 @@ export class DecompRuntime {
       // No input or input changed → reset counter to start delay (mutable).
       this.gMain.keyRepeatCounter = gKeyRepeat.startDelay;
     }
+    // 1:1 décomp src/main.c:273-281 ReadKeys L=A button remap.
+    // Si optionsButtonMode == OPTIONS_BUTTON_MODE_L_EQUALS_A, presser L
+    // déclenche aussi A. BUG note décomp : `newAndRepeatedKeys` n'est PAS
+    // remappé (cf. main.c comment), seuls newKeys + heldKeys.
+    // Lecture gSaveBlock2Ptr via globalThis pour éviter circular dep avec
+    // gba-menu-system (= mutable Proxy autopersistant localStorage).
+    const sb2 = (globalThis as Record<string, unknown>).gSaveBlock2Ptr as
+      { optionsButtonMode?: number } | undefined;
+    if (sb2 && sb2.optionsButtonMode === 2 /* OPTIONS_BUTTON_MODE_L_EQUALS_A */) {
+      const L_BUTTON = 0x200;
+      const A_BUTTON = 0x001;
+      if (this.gMain.newKeys & L_BUTTON) this.gMain.newKeys |= A_BUTTON;
+      if (this.gMain.heldKeys & L_BUTTON) this.gMain.heldKeys |= A_BUTTON;
+    }
     this.prevHeldKeys = heldKeys;
     // 1. Main callback1 : pré-callback2 logic (= overworld object events tick,
     //    map scroll, etc.). 1:1 décomp src/main.c:181-188 CallCallbacks :
