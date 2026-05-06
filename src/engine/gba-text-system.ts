@@ -152,7 +152,7 @@ function _getPlayerTextSpeedDelay(): number {
   const sb2 = (globalThis as Record<string, unknown>).gSaveBlock2Ptr as
     { optionsTextSpeed?: number } | undefined;
   const speed = (sb2?.optionsTextSpeed ?? 1) | 0;
-  // SLOW=8, MID=4, FAST=1 (= matches scroll speed [1,2,4] inverse)
+  // 1:1 décomp menu.c:77 sTextSpeedFrameDelays = { 8, 4, 1 } = SLOW/MID/FAST.
   if (speed === 0) return 8;
   if (speed === 2) return 1;
   return 4;  // MID default

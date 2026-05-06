@@ -322,8 +322,10 @@ export function GetPlayerTextSpeed(): number {
 }
 
 /** 1:1 décomp `GetPlayerTextSpeedDelay(speed)` — frames-per-char delay.
- *  Map : SLOW=8, MID=4, FAST=1. Typewriter effect dans dialogue boxes.
- *  Décomp utilise un table sTextSpeedFrameDelays. */
+ *  Map : SLOW=8, MID=4, FAST=1 (= verified menu.c:77 sTextSpeedFrameDelays).
+ *  Hold A/B accelerates encore plus (= bypass delay entièrement, 0 frames).
+ *  Donc même au max option (FAST=1), hold A/B reste plus rapide — c'est le
+ *  comportement du jeu original. */
 export function GetPlayerTextSpeedDelay(speed?: number): number {
   const s = speed ?? GetPlayerTextSpeed();
   if (s === OPTIONS_TEXT_SPEED_SLOW) return 8;
