@@ -203,15 +203,21 @@ export async function InitPlayerAvatar(
   }
   rt.gPlttBufferFaded.flushTo();
 
-  // Create OAM sprite at SCREEN CENTER (= 240/2 - 8 = 112, 160/2 - 16 = 64
-  // pour 16×32 sprite). Le player visuel reste fixe au centre de l'écran ;
-  // le BG scroll donne l'illusion de movement.
-  // Center of view in metatile coords = (7, 4) en metatile. Sprite size 16×32
-  // = 1 metatile wide, 2 metatiles tall. Center offset for "feet on tile 4-5" :
-  //   x = 7 metatile * 16 px = 112 px (= screen center x for 16-wide sprite)
-  //   y = 4 metatile * 16 px = 64 px (= one metatile up so feet at row 5)
-  const SCREEN_CENTER_X = 7 * 16;  // = 112
-  const SCREEN_CENTER_Y = 4 * 16;  // = 64
+  // Create OAM sprite at SCREEN CENTER. Le player visuel reste fixe au centre
+  // de l'écran ; le BG scroll donne l'illusion de movement.
+  //
+  // Position : player visible à view (col 7, row 5) avec FEET aligned sur la
+  // BG metatile boundary. FieldUpdateBgTilemapScroll applique vofs +8 (= 1:1
+  // décomp field_camera.c:78) qui shift le BG content UP de 8px. Pour que le
+  // sprite soit visuellement on-grid :
+  //   BG row 5 visible aux screen y 72..88 (= 5*16-8 .. 6*16-8)
+  //   Player feet = bottom of sprite à screen y 88 (= bottom of row 5)
+  //   Sprite 16×32 → top at y = 88-32 = 56
+  //
+  // Sans le -8 alignment, le sprite à y=64 aurait feet à y=96 = MID de row 6
+  // → "player entre 2 cases". Le -8 le snap sur la grid avec le vofs décomp.
+  const SCREEN_CENTER_X = 7 * 16;       // = 112
+  const SCREEN_CENTER_Y = 4 * 16 - 8;   // = 56 (= align with vofs+8 grid)
   const initialFrame = SPRITE_FRAMES[direction as keyof typeof SPRITE_FRAMES];
 
   const result = rt.CreateSpriteAtOam({
@@ -232,12 +238,14 @@ export async function InitPlayerAvatar(
     rt.gba.oam[result.oamIndex].flipH = initialFrame.hFlip;
   }
 
-  // Set camera focus = player position. Camera top-left = player - 7 metatiles
-  // pour visible center on player. SetCameraTopLeftCoords prend gBackupMapLayout
-  // coord ; ici on passe directement player_map_x = leftmost-visible-in-buffer-coord
-  // (= 7 metatiles west en map coords = 0-indexed mapX - 7, padded by MAP_OFFSET=7
-  // so net = mapX in gBackupMapLayout coord that points to leftmost drawn metatile).
-  SetCameraTopLeftCoords(mapX, mapY);
+  // Set camera focus = player position. Pour player au view (7, 5) :
+  //   gBackupMapLayout topmost drawn = mapY - 5 (view rows above feet) + MAP_OFFSET (7)
+  //                                 = mapY + 2
+  //   gBackupMapLayout leftmost drawn = mapX - 7 (view cols left of player) + MAP_OFFSET
+  //                                  = mapX (= 0 nett offset car player at view col 7
+  //                                    avec MAP_OFFSET=7)
+  // Sans ce +2 vertical, player visible at view row 7 → camera Y de 2 rows trop haut.
+  SetCameraTopLeftCoords(mapX, mapY + 2);
 }
 
 // ─── Direction → (dx, dy) en map coords ─────────────────────────────────────
@@ -279,9 +287,11 @@ function updateSpriteFrame(rt: DecompRuntime): void {
     // = 32 game-frames total = 2 metatile steps. Chaque step = 16 frames =
     // face (8) + walk (8). walkAnimAlt alterne entre walk_a et walk_b.
     //
-    // stepFramesLeft DECREMENTS de 16→0. Première moitié (15..8) = face,
-    // deuxième moitié (7..0) = walk_a OR walk_b.
-    if (gPlayerAvatar.stepFramesLeft > 8) {
+    // stepFramesLeft DECREMENTS de 16→1 sur les 16 frames de la step.
+    // Frames 0-7 (= stepFramesLeft 15..8) : face
+    // Frames 8-15 (= stepFramesLeft 7..0) : walk_a OR walk_b alternating
+    // Note `>= 8` pas `> 8` (= 8 frames face exact, 8 frames walk exact).
+    if (gPlayerAvatar.stepFramesLeft >= 8) {
       frameIdx = cfg.face;
     } else {
       frameIdx = gPlayerAvatar.walkAnimAlt === 0 ? cfg.walk1 : cfg.walk2;
