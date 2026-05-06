@@ -13,7 +13,7 @@
  * dans un buffer scanline réutilisable. Le compositor combine ensuite les
  * 4 BG layers + OAM + blend par scanline.
  */
-import { type AffineMatrix, type BgConfig, type TilePixels, decodeBgMapEntry, SCREEN_W } from './types';
+import { type AffineMatrix, type BgConfig, type TilePixels, SCREEN_W } from './types';
 import { PaletteBanks } from './palette';
 import { decodeTile4bpp, decodeTile8bpp } from './tile';
 
@@ -26,8 +26,13 @@ const SCREEN_TILES: Record<0 | 1 | 2 | 3, readonly [number, number]> = {
 };
 
 /** Cache de tiles décodées pour éviter de re-décoder à chaque pixel.
- *  Key = `${tileId}_${flipH ? 1 : 0}${flipV ? 1 : 0}_${paletteMode}`. */
-type TileCache = Map<string, TilePixels>;
+ *  Numeric key (= évite alloc string par pixel) :
+ *    bits 0-9   : tileId (0-1023)
+ *    bit  10    : flipH
+ *    bit  11    : flipV
+ *    bit  12    : paletteMode (0=4bpp, 1=8bpp)
+ *  Map<number,...> car tileId max ~1023 mais avec flips/mode peut atteindre ~8K. */
+type TileCache = Map<number, TilePixels>;
 
 /**
  * Render une scanline d'un BG layer dans `out` (Uint8ClampedArray RGBA, 240×4 = 960 bytes).
@@ -102,28 +107,31 @@ export function renderBgScanline(
     }
 
     const rawEntry = tilemap[mapIdx];
-    const entry = decodeBgMapEntry(rawEntry);
+    // Inline decodeBgMapEntry (= évite alloc object par pixel = 38400/frame).
+    const tileId = rawEntry & 0x3FF;
+    const flipH = (rawEntry & 0x400) !== 0;
+    const flipV = (rawEntry & 0x800) !== 0;
+    const paletteBank = (rawEntry >> 12) & 0xF;
 
-    // Décodage tile (avec cache)
-    const cacheKey = `${entry.tileId}_${entry.flipH ? 1 : 0}${entry.flipV ? 1 : 0}_${config.paletteMode}`;
+    // Décodage tile (avec cache numeric key = évite alloc string par pixel).
+    // Key = tileId | flipH<<10 | flipV<<11 | paletteMode<<12.
+    const cacheKey = tileId
+      | ((flipH ? 1 : 0) << 10)
+      | ((flipV ? 1 : 0) << 11)
+      | (config.paletteMode << 12);
     let tilePixels = tileCache.get(cacheKey);
     if (!tilePixels) {
       tilePixels = config.paletteMode === 0
-        ? decodeTile4bpp(vram256, entry.tileId, entry.flipH, entry.flipV)
-        : decodeTile8bpp(vram256, entry.tileId, entry.flipH, entry.flipV);
-      // Garde-fou : si tileId hors range, decodeTile retourne un buffer 0
+        ? decodeTile4bpp(vram256, tileId, flipH, flipV)
+        : decodeTile8bpp(vram256, tileId, flipH, flipV);
       tileCache.set(cacheKey, tilePixels);
     }
 
     const colorIdx = tilePixels[subY * 8 + subX];
-    const [r, g, b, a] = palette.getBgRgba(entry.paletteBank, colorIdx, config.paletteMode);
-    const off = x * 4;
-    out[off] = r;
-    out[off + 1] = g;
-    out[off + 2] = b;
-    out[off + 3] = a;
+    // Hot path : write RGBA direct dans `out` (= évite alloc array intermédiaire).
+    palette.writeBgRgbaTo(paletteBank, colorIdx, config.paletteMode, out, x * 4);
 
-    // Évite warning unused (cacheKey, tileSizeBytes)
+    // Évite warning unused (tileSizeBytes)
     void tileSizeBytes;
   }
 }

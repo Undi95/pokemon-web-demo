@@ -85,7 +85,8 @@ export class PaletteBanks {
   }
 
   /** Lookup direct RGBA888 pour BG, palette bank × index.
-   *  Retourne [r, g, b, a]. a = 0 si idx = 0 dans bank 4bpp (transparent). */
+   *  Retourne [r, g, b, a]. a = 0 si idx = 0 dans bank 4bpp (transparent).
+   *  PERF : préférer `writeBgRgbaTo` dans hot path (= évite alloc array). */
   getBgRgba(bank: number, idx: number, paletteMode: 0 | 1): readonly [number, number, number, number] {
     const flatIdx = paletteMode === 0
       ? bank * BANK_SIZE + idx        // 4bpp : bank × 16 + idx
@@ -100,6 +101,32 @@ export class PaletteBanks {
       this.bgRgba[baseOffset + 2],
       isTransparent ? 0 : 255,
     ];
+  }
+
+  /** Hot path : write RGBA direct dans `out` à l'offset `off`.
+   *  Évite alloc d'array intermédiaire. Used dans renderBgScanline (= 38400 px/frame). */
+  writeBgRgbaTo(bank: number, idx: number, paletteMode: 0 | 1, out: Uint8ClampedArray, off: number): void {
+    const flatIdx = paletteMode === 0
+      ? bank * BANK_SIZE + idx
+      : idx;
+    const baseOffset = flatIdx * 4;
+    out[off] = this.bgRgba[baseOffset];
+    out[off + 1] = this.bgRgba[baseOffset + 1];
+    out[off + 2] = this.bgRgba[baseOffset + 2];
+    // idx === 0 = transparent dans les 2 modes (cf. GBATEK).
+    out[off + 3] = idx === 0 ? 0 : 255;
+  }
+
+  /** Hot path OAM : write RGBA direct dans `out` à l'offset `off`. */
+  writeObjRgbaTo(bank: number, idx: number, paletteMode: 0 | 1, out: Uint8ClampedArray, off: number): void {
+    const flatIdx = paletteMode === 0
+      ? bank * BANK_SIZE + idx
+      : idx;
+    const baseOffset = flatIdx * 4;
+    out[off] = this.objRgba[baseOffset];
+    out[off + 1] = this.objRgba[baseOffset + 1];
+    out[off + 2] = this.objRgba[baseOffset + 2];
+    out[off + 3] = idx === 0 ? 0 : 255;
   }
 
   /** Idem pour OBJ. */

@@ -13,7 +13,7 @@
  */
 import {
   type AffineMatrix, type BgConfig, type BlendConfig, type HBlankCallback, type MosaicConfig,
-  type OamEntry, type Windows,
+  type OamEntry, type Windows, type TilePixels,
   LayerId, OAM_SIZES, SCREEN_W, SCREEN_H, windowsAreOff,
 } from './types';
 import { PaletteBanks } from './palette';
@@ -42,6 +42,24 @@ interface BgLayerData {
  * @param palette palette banks
  * @param hblankCallback optional (frame avant scanline 0..159)
  */
+// Module-level caches pour éviter allocations par frame (= GC pressure).
+// Réinitialisés au besoin dans composeFrame.
+const _scanlineBufsCache: Uint8ClampedArray[] = [];
+const _tileCachesCache: ReturnType<typeof createTileCache>[] = [];
+const _oamPriorityBufsCache: Uint8ClampedArray[] = [
+  new Uint8ClampedArray(SCREEN_W * 4),
+  new Uint8ClampedArray(SCREEN_W * 4),
+  new Uint8ClampedArray(SCREEN_W * 4),
+  new Uint8ClampedArray(SCREEN_W * 4),
+];
+const _sortedBgsCache: number[] = [];
+let _lastBgsLen = 0;
+
+// Cache tiles décodées OAM. Reset chaque frame (= début de composeFrame).
+// Key = decodeId | paletteMode<<13. Tiles changent rarement entre frames (=
+// objVram updates) mais on reset par sécurité.
+const _oamTileCache = new Map<number, TilePixels>();
+
 export function composeFrame(
   frameBuffer: Uint8ClampedArray,
   bgs: ReadonlyArray<BgLayerData>,
@@ -55,37 +73,63 @@ export function composeFrame(
   mosaic?: MosaicConfig,
   hblankCallback?: HBlankCallback,
 ): void {
-  const scanlineBufs: Uint8ClampedArray[] = bgs.map(() => new Uint8ClampedArray(SCREEN_W * 4));
-  const tileCaches = bgs.map(() => createTileCache());
+  // Resize caches si bgs.length change (= rare).
+  if (_scanlineBufsCache.length < bgs.length) {
+    while (_scanlineBufsCache.length < bgs.length) {
+      _scanlineBufsCache.push(new Uint8ClampedArray(SCREEN_W * 4));
+      _tileCachesCache.push(createTileCache());
+    }
+  }
+  const scanlineBufs = _scanlineBufsCache;
+  const tileCaches = _tileCachesCache;
   const backdrop = palette.getBackdropRgba();
 
-  // Pré-trier les BGs par priority (priority haute en arrière)
-  const sortedBgs = [...bgs.keys()].sort((a, b) => {
+  // Pré-trier les BGs par priority. Re-trier seulement si bgs structure changé
+  // (= len ou priorities). Pour MVP : re-tri à chaque frame mais réutilise
+  // l'array (pas d'alloc) — sort() est in-place sur _sortedBgsCache.
+  if (_sortedBgsCache.length !== bgs.length || _lastBgsLen !== bgs.length) {
+    _sortedBgsCache.length = 0;
+    for (let i = 0; i < bgs.length; i++) _sortedBgsCache.push(i);
+    _lastBgsLen = bgs.length;
+  }
+  _sortedBgsCache.sort((a, b) => {
     const pa = bgs[a].config.priority;
     const pb = bgs[b].config.priority;
     if (pa !== pb) return pb - pa;  // priority haute (3) en arrière
     return b - a;                    // BG index haut (3) en arrière
   });
+  const sortedBgs = _sortedBgsCache;
 
-  // OAM scanline buffer (par priority 0-3)
-  // 4 buffers = 1 par priority OBJ. Chacun stocke RGBA pour cette scanline.
-  const oamPriorityBufs: Uint8ClampedArray[] = oam
-    ? [0, 1, 2, 3].map(() => new Uint8ClampedArray(SCREEN_W * 4))
-    : [];
+  // OAM scanline buffers : module-level cache. Toujours 4 (1 par priority).
+  const oamPriorityBufs = oam ? _oamPriorityBufsCache : [];
+
+  // Clear OAM tile cache au début de chaque frame (= objVram peut changer
+  // entre frames, ex. player walk animation cycle change tileId).
+  _oamTileCache.clear();
 
   for (let y = 0; y < SCREEN_H; y++) {
     if (hblankCallback) hblankCallback(y);
 
-    // Render chaque BG layer dans son scanline buf
+    // Render chaque BG layer dans son scanline buf.
+    // Optim : skip si bg.config.visible = false. On zero le buf alpha pour
+    // que la priority loop ne l'utilise pas (= module-level cache pourrait
+    // contenir stale data d'une frame où le BG était visible).
     for (let i = 0; i < bgs.length; i++) {
       const bg = bgs[i];
+      const sl = scanlineBufs[i];
+      if (!bg.config.visible) {
+        // Zero alpha de toute la scanline (= invisible pour priority loop).
+        // Pas de boucle 240 fois — on use Uint8ClampedArray.fill(0).
+        sl.fill(0);
+        continue;
+      }
       if (bg.config.isAffine && bgAffineMatrices) {
         // Affine BG : utilise bgAffineMatrices[affineMatrixIndex]
         const matIdx = Math.min(1, Math.max(0, bg.config.affineMatrixIndex));
         const matrix = bgAffineMatrices[matIdx];
-        renderBgAffineScanline(y, bg.config, matrix, bg.vram, bg.tilemap, palette, scanlineBufs[i], tileCaches[i]);
+        renderBgAffineScanline(y, bg.config, matrix, bg.vram, bg.tilemap, palette, sl, tileCaches[i]);
       } else {
-        renderBgScanline(y, bg.config, bg.vram, bg.tilemap, palette, scanlineBufs[i], tileCaches[i]);
+        renderBgScanline(y, bg.config, bg.vram, bg.tilemap, palette, sl, tileCaches[i]);
       }
       // Apply mosaic horizontal sur la scanline si bg.config.mosaic && mosaic.bgH > 0
       if (bg.config.mosaic && mosaic && mosaic.bgH > 0) {
@@ -330,12 +374,18 @@ function renderOamSpriteNormal(
     // decodeTile8bpp attend tileId en unités tile-byte (= 64 bytes/tile 8bpp).
     // Donc /2 avant de décoder en 8bpp. 4bpp inchangé.
     const decodeId = sprite.paletteMode === 0 ? finalTileId : (finalTileId >> 1);
-    const pixels = sprite.paletteMode === 0
-      ? decodeTile4bpp(objVram, decodeId, false, false)
-      : decodeTile8bpp(objVram, decodeId, false, false);
+    // PERF : cache tiles décodées (= sprite 16×32 visit 8 fois la même tile par
+    // scanline = wasteful sans cache). Key = decodeId | paletteMode<<13.
+    const cacheKey = decodeId | (sprite.paletteMode << 13);
+    let pixels = _oamTileCache.get(cacheKey);
+    if (!pixels) {
+      pixels = sprite.paletteMode === 0
+        ? decodeTile4bpp(objVram, decodeId, false, false)
+        : decodeTile8bpp(objVram, decodeId, false, false);
+      _oamTileCache.set(cacheKey, pixels);
+    }
     const colorIdx = pixels[subY * 8 + subX];
-    const [r, g, b, a] = palette.getObjRgba(sprite.paletteBank, colorIdx, sprite.paletteMode);
-    if (a === 0) continue;
+    if (colorIdx === 0) continue;  // transparent
 
     // ⚠️ FIX session : truncate screenX (sprite.x peut être fractionnel via
     // sprite.x2 ou affine anim), GBA hardware OBJ ne supporte pas sub-pixel
@@ -346,7 +396,8 @@ function renderOamSpriteNormal(
     // affine 64×64 avec oam.x=73.25 ne rendait rien).
     const off = (screenX | 0) * 4;
     const buf = priorityBufs[sprite.priority];
-    buf[off] = r; buf[off + 1] = g; buf[off + 2] = b;
+    // Hot path : write RGB direct (= évite alloc array via getObjRgba).
+    palette.writeObjRgbaTo(sprite.paletteBank, colorIdx, sprite.paletteMode, buf, off);
     // Encode objMode dans le canal alpha :
     //   255 = OBJ_NORMAL (objMode 0)
     //   128 = OBJ_BLEND  (objMode 1, GBA Semi-Transparent — force blend target1)
@@ -426,18 +477,23 @@ function renderOamSpriteAffine(
     // decodeTile8bpp attend tileId en unités tile-byte (= 64 bytes/tile 8bpp).
     // Donc /2 avant de décoder en 8bpp. 4bpp inchangé.
     const decodeId = sprite.paletteMode === 0 ? finalTileId : (finalTileId >> 1);
-    const pixels = sprite.paletteMode === 0
-      ? decodeTile4bpp(objVram, decodeId, false, false)
-      : decodeTile8bpp(objVram, decodeId, false, false);
+    // PERF : cache tiles décodées (= partagé avec renderOamSpriteNormal).
+    const cacheKey = decodeId | (sprite.paletteMode << 13);
+    let pixels = _oamTileCache.get(cacheKey);
+    if (!pixels) {
+      pixels = sprite.paletteMode === 0
+        ? decodeTile4bpp(objVram, decodeId, false, false)
+        : decodeTile8bpp(objVram, decodeId, false, false);
+      _oamTileCache.set(cacheKey, pixels);
+    }
     const colorIdx = pixels[subY * 8 + subX];
-    const [r, g, b, a] = palette.getObjRgba(sprite.paletteBank, colorIdx, sprite.paletteMode);
-    if (a === 0) continue;
+    if (colorIdx === 0) continue;  // transparent
 
     // ⚠️ FIX session : voir renderOamSpriteNormal — truncate screenX pour
     // éviter writes aux mauvais byte offsets quand sprite.x est fractionnel.
     const off = (screenX | 0) * 4;
     const buf = priorityBufs[sprite.priority];
-    buf[off] = r; buf[off + 1] = g; buf[off + 2] = b;
+    palette.writeObjRgbaTo(sprite.paletteBank, colorIdx, sprite.paletteMode, buf, off);
     // OBJ_BLEND encoding (voir renderOamSpriteNormal) : 128 = semi-transparent.
     buf[off + 3] = sprite.objMode === 1 ? 128 : 255;
   }

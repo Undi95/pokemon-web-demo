@@ -36,6 +36,8 @@ import {
   SetCameraTopLeftCoords,
   GetCameraTopLeftCoords,
   gFieldCamera,
+  IsBgRedrawPending,
+  ClearBgRedrawPending,
 } from '../engine/field-camera';
 import {
   InitPlayerAvatar,
@@ -190,7 +192,14 @@ export class TestOverworldScene extends Phaser.Scene {
       const MainCB2_Overworld = function MainCB2_Overworld(): void {
         PlayerStep(rt.gMain.heldKeys, rt.gMain.newKeys, rt);
         CameraUpdate();
-        flushOverworldTilemaps(rt);
+        // 1:1 décomp `ScheduleBgCopyTilemapToVram` pattern : flush VRAM
+        // SEULEMENT quand BG buffer modifié (= copyBGToVRAM flag). Évite
+        // 18432 entries × 2 bytes copy par frame quand rien ne bouge.
+        // Le flag est set par DrawMetatile / RedrawMapSlice / DrawWholeMapView.
+        if (IsBgRedrawPending()) {
+          flushOverworldTilemaps(rt);
+          ClearBgRedrawPending();
+        }
         FieldUpdateBgTilemapScroll(rt);
       };
       this.rt.gMain.callback2 = MainCB2_Overworld;
