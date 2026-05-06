@@ -189,19 +189,20 @@ export function LaunchBallFadeMonTask(rt: DecompRuntime, unfadeLater: boolean, s
 
   const { BlendPalette } = _bp();
 
-  // Debug : enable via `window.__BIRCH_FADE_DEBUG = true` in console to log
-  // every BlendPalette call from this task. Helps diagnose palette cycling.
-  const _dbg = (globalThis as Record<string, unknown>).__BIRCH_FADE_DEBUG === true;
-  if (_dbg) {
-    console.log(`[BirchFade] LaunchBallFadeMonTask unfadeLater=${unfadeLater} palNum=${spritePalNum} (PLTT_OFFSET=${PLTT_OFFSET}) selPalettes=${selectedPalettes.toString(16)} ballId=${ballId} fadeColor=0x${fadeColor.toString(16).padStart(4, '0')} (RGB ${fadeColor & 0x1F}, ${(fadeColor >> 5) & 0x1F}, ${(fadeColor >> 10) & 0x1F})`);
-  }
+  // Debug session 96 : auto-enable temporairement (= remove après diagnostic)
+  // pour capturer logs Lotad pink flash issue.
+  const _dbg = true;
+  console.log(`[BirchFade] LaunchBallFadeMonTask unfadeLater=${unfadeLater} palNum=${spritePalNum} (PLTT_OFFSET=${PLTT_OFFSET}) selPalettes=0x${selectedPalettes.toString(16)} ballId=${ballId} fadeColor=0x${fadeColor.toString(16).padStart(4, '0')} (RGB5 r=${fadeColor & 0x1F} g=${(fadeColor >> 5) & 0x1F} b=${(fadeColor >> 10) & 0x1F})`);
 
   if (!unfadeLater) {
-    if (_dbg) console.log(`[BirchFade] initial BlendPalette coeff=0`);
     BlendPalette(PLTT_OFFSET, 16, 0, fadeColor);
   } else {
-    if (_dbg) console.log(`[BirchFade] initial BlendPalette coeff=16 (full pink)`);
+    console.log(`[BirchFade] BlendPalette coeff=16 → expect ALL 16 entries pink at faded[${PLTT_OFFSET}..${PLTT_OFFSET+15}]`);
     BlendPalette(PLTT_OFFSET, 16, 16, fadeColor);
+    // Capture state RIGHT after BlendPalette to verify it wrote correctly.
+    const sample = [];
+    for (let i = 0; i < 16; i++) sample.push(rt.gPlttBufferFaded.get(PLTT_OFFSET + i).toString(16).padStart(4, '0'));
+    console.log(`[BirchFade] post-BlendPalette faded buffer: ${sample.join(' ')}`);
   }
 
   // 1:1 décomp battle_anim_throw.c:2056 :
@@ -222,41 +223,40 @@ export function LaunchBallFadeMonTask(rt: DecompRuntime, unfadeLater: boolean, s
     const state = task.data[7];  // 0=ToBallColor, 1=ToNormalWait, 2=ToNormalStep
     if (state === 0) {
       if (task.data[2] <= 16) {
-        if (_dbg) console.log(`[BirchFade] s0 t=${task.data[2]} BlendPalette coeff=${task.data[0]} → faded[OBJ pal ${spritePalNum}]`);
+        console.log(`[BirchFade] s0 t=${task.data[2]} BlendPalette coeff=${task.data[0]} → faded[OBJ pal ${spritePalNum}]`);
         BlendPalette(task.data[3], 16, task.data[0], fadeColor);
         task.data[0] += task.data[1];  // tCoeff += tdCoeff
         task.data[2]++;                // tTimer++
       } else if (!rt.gPaletteFade.active) {
         const sel = (task.data[4] & 0xFFFF) | ((task.data[5] & 0xFFFF) << 16);
-        if (_dbg) console.log(`[BirchFade] s0→reverse fade BG (selPalettes=0x${sel.toString(16)})`);
+        console.log(`[BirchFade] s0→reverse fade BG (selPalettes=0x${sel.toString(16)})`);
         if (unfadeLater) {
-          // Task_FadeMon_ToNormal : trigger fade-back from white.
           rt.BeginNormalPaletteFade(sel, 0, 16, 0, RGB_WHITE);
           task.data[7] = 1;
         } else {
-          // Non-unfade path : just begin fade-out and destroy.
           rt.BeginNormalPaletteFade(sel, 0, 16, 0, RGB_WHITE);
           rt.DestroyTask(task.taskId);
         }
       }
     } else if (state === 1) {
-      // Task_FadeMon_ToNormal : wait for paletteFade to begin handling, then advance.
       if (!rt.gPaletteFade.active) {
         const sel = (task.data[4] & 0xFFFF) | ((task.data[5] & 0xFFFF) << 16);
-        if (_dbg) console.log(`[BirchFade] s1→s2 reverse BG fade (selPalettes=0x${sel.toString(16)})`);
+        // Sample OBJ pal at this critical moment (= just before reverse fade).
+        const sample = [];
+        for (let i = 0; i < 16; i++) sample.push(rt.gPlttBufferFaded.get(task.data[3] + i).toString(16).padStart(4, '0'));
+        console.log(`[BirchFade] s1→s2 reverse BG fade. OBJ pal ${spritePalNum} faded buffer NOW: ${sample.join(' ')}`);
         rt.BeginNormalPaletteFade(sel, 0, 16, 0, RGB_WHITE);
         task.data[7] = 2;
-        task.data[2] = 0;  // reset timer for step 2 (ToNormal_Step)
+        task.data[2] = 0;
       }
     } else if (state === 2) {
-      // Task_FadeMon_ToNormal_Step : ramp coeff back further then destroy.
       if (task.data[2] <= 16) {
-        if (_dbg) console.log(`[BirchFade] s2 t=${task.data[2]} BlendPalette coeff=${task.data[0]} → faded[OBJ pal ${spritePalNum}]`);
+        console.log(`[BirchFade] s2 t=${task.data[2]} BlendPalette coeff=${task.data[0]} → faded[OBJ pal ${spritePalNum}]`);
         BlendPalette(task.data[3], 16, task.data[0], fadeColor);
         task.data[0] += task.data[1];
         task.data[2]++;
       } else {
-        if (_dbg) console.log(`[BirchFade] s2 done, destroying task`);
+        console.log(`[BirchFade] s2 done, destroying task`);
         rt.DestroyTask(task.taskId);
       }
     }
