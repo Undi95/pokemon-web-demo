@@ -43,6 +43,12 @@ import { gSaveBlock2Ptr } from './gba-menu-system';
 import { loadGbaPal, loadTileBin } from './gba/png-loader';
 import type { DecompSprite, DecompTask } from './decomp-runtime';
 import { gKeyRepeat } from './decomp-runtime';
+import {
+  OBJ_EVENT_GFX_RIVAL_BRENDAN_NORMAL, OBJ_EVENT_GFX_RIVAL_MAY_NORMAL,
+  ANIM_STD_GO_SOUTH, PLAYER_AVATAR_STATE_NORMAL,
+  GetRivalAvatarGraphicsIdByStateIdAndGender,
+  loadObjectEventGraphicsInfo, CreateObjectGraphicsSprite,
+} from './object-event-graphics';
 
 // ─── Constants 1:1 décomp src/naming_screen.c ────────────────────────────────
 //
@@ -164,17 +170,9 @@ const GFXTAG_INPUT_ARROW      = 'GFXTAG_INPUT_ARROW';
 const GFXTAG_UNDERSCORE       = 'GFXTAG_UNDERSCORE';
 const GFXTAG_PC_ICON_OFF      = 'GFXTAG_PC_ICON_OFF';
 
-// 1:1 décomp src/data/object_events/object_event_graphics_info.h:13
-// `gObjectEventBaseOam_16x32` — overworld trainer/people sprites.
-// Used by `NamingScreen_CreatePlayerIcon` (= 1:1 décomp:1397-1406) which calls
-// `CreateObjectGraphicsSprite(rivalGfxId, ...)` then `StartSpriteAnim(ANIM_STD_GO_SOUTH)`.
-// `rivalGfxId` for PLAYER context dispatches by gender :
-//   0 (MALE)   → OBJ_EVENT_GFX_RIVAL_BRENDAN_NORMAL → Brendan walking sheet, frame 0 = south-standing.
-//   1 (FEMALE) → OBJ_EVENT_GFX_RIVAL_MAY_NORMAL     → May walking sheet,    frame 0 = south-standing.
-const GFXTAG_PLAYER_TRAINER_M = 'GFXTAG_PLAYER_TRAINER_M';
-const GFXTAG_PLAYER_TRAINER_F = 'GFXTAG_PLAYER_TRAINER_F';
-const PALTAG_PLAYER_TRAINER_M = 'PALTAG_PLAYER_TRAINER_M';
-const PALTAG_PLAYER_TRAINER_F = 'PALTAG_PLAYER_TRAINER_F';
+// PLAYER trainer icon (= Brendan/May overworld walking sprite) is dispatched
+// via `object-event-graphics.ts` framework. See OBJ_EVENT_GFX_RIVAL_BRENDAN_NORMAL
+// + sRivalAvatarGfxIds[PLAYER_AVATAR_STATE_NORMAL][gender] there.
 
 // 1:1 décomp src/naming_screen.c:281-300 — sKeyboardChars[KBPAGE_COUNT][KBROW_COUNT][KBCOL_COUNT].
 // Ordre = [KEYBOARD_LETTERS_LOWER, KEYBOARD_LETTERS_UPPER, KEYBOARD_SYMBOLS].
@@ -559,79 +557,16 @@ async function loadNamingScreenAssets(): Promise<void> {
     console.warn('[naming-screen] loadNamingScreenAssets sprite sheets failed:', e);
   }
 
-  // ─── PLAYER trainer icon (16x32 walking sprite frame 0 = south-standing) ──
-  // 1:1 décomp src/naming_screen.c:1397-1406 NamingScreen_CreatePlayerIcon :
-  //   rivalGfxId = sRivalAvatarGfxIds[PLAYER_AVATAR_STATE_NORMAL][gender]
-  //              = OBJ_EVENT_GFX_RIVAL_BRENDAN_NORMAL (male) | OBJ_EVENT_GFX_RIVAL_MAY_NORMAL (female)
-  //   spriteId = CreateObjectGraphicsSprite(rivalGfxId, ..., 56, 37, 0)
-  //   StartSpriteAnim(sprite, ANIM_STD_GO_SOUTH)
-  //
-  // We only need frame 0 of the walking sheet (= ANIM_STD_GO_SOUTH first frame =
-  // standing south-facing pose). The walking.png is 144x32 (= 9 frames of 16x32),
-  // laid out row-major as 18 wide × 4 tall in tile coords. Frame 0 occupies
-  // tile coordinates [c=0,r=0], [c=1,r=0], [c=0,r=1], [c=1,r=1], [c=0,r=2],
-  // [c=1,r=2], [c=0,r=3], [c=1,r=3] (= 8 tiles, NON-contiguous in the row-major
-  // .4bpp.bin extracted by extract-png-indexed-tiles.mjs).
-  //
-  // Repack frame 0's 8 tiles contiguously so that the 16x32 1D OAM (shape=2 size=2)
-  // can read 8 sequential tiles starting at tileBase. This is the same operation
-  // gbagfx tool does when converting the source .png to the ROM .4bpp file with
-  // a 16x32 frame layout.
+  // ─── PLAYER trainer icon assets (= via object_event_graphics framework) ───
+  // 1:1 décomp src/naming_screen.c:1397-1406 NamingScreen_CreatePlayerIcon
+  // utilise CreateObjectGraphicsSprite(rivalGfxId, ...) qui passe par le
+  // framework `gObjectEventGraphicsInfoPointers[gfxId]` → gfxInfo → loaded
+  // tile sheet + palette via le framework helper. La logique de repack
+  // frame-major est centralisée dans `loadObjectEventGraphicsInfo` pour TOUS
+  // les overworld sprites (= naming screen + Phase 4 NPCs + futur).
   try {
-    const trainerSrcs: ReadonlyArray<{ pngUrl: string; palUrl: string; gfxTag: string; palTag: string }> = [
-      { pngUrl: '/decomp/em/object_events/people/brendan/walking.png',
-        palUrl: '/decomp/em/object_events/palettes/brendan.pal',
-        gfxTag: GFXTAG_PLAYER_TRAINER_M, palTag: PALTAG_PLAYER_TRAINER_M },
-      { pngUrl: '/decomp/em/object_events/people/may/walking.png',
-        palUrl: '/decomp/em/object_events/palettes/may.pal',
-        gfxTag: GFXTAG_PLAYER_TRAINER_F, palTag: PALTAG_PLAYER_TRAINER_F },
-    ];
-    // 3 frames (= ANIM_STD_GO_SOUTH cycle frame0/1/0/2) × 8 tiles × 32 bytes
-    const FRAMES_TO_LOAD = 3;
-    const TILES_PER_FRAME = 8;
-    const TILE_BYTES = 32;
-    const SHEET_TILE_W = 18;
-    const FRAMES_BYTES = FRAMES_TO_LOAD * TILES_PER_FRAME * TILE_BYTES;
-    for (const src of trainerSrcs) {
-      if (!rt.paletteTagToSlot.has(src.palTag)) {
-        const pal = await loadGbaPal(src.palUrl);
-        const slot = rt.nextObjPalSlot++;
-        for (let i = 0; i < Math.min(16, pal.length); i++) {
-          rt.gPlttBufferUnfaded.set(256 + slot * 16 + i, pal[i]);
-          rt.gPlttBufferFaded.set(256 + slot * 16 + i, pal[i]);
-        }
-        rt.paletteTagToSlot.set(src.palTag, slot);
-      }
-      // Gfx repack : sheet layout 18 wide × 4 tall = 72 tiles. Each 16x32 frame
-      // occupies 2 cols × 4 rows = 8 tiles, NON-contiguous in row-major .bin.
-      // Frame N at cols [2N, 2N+1] all 4 rows. Repack contiguously so each
-      // 16x32 1D OAM read of `tileBase + N*8` reads frame N's 8 sequential tiles.
-      if (!rt.spriteSheetTagToTileStart.has(src.gfxTag)) {
-        const sheet = await loadTileBin(src.pngUrl, 4);
-        const repacked = new Uint8Array(FRAMES_BYTES);
-        let dst = 0;
-        for (let frame = 0; frame < FRAMES_TO_LOAD; frame++) {
-          const colStart = frame * 2;
-          for (let r = 0; r < 4; r++) {
-            for (let c = 0; c < 2; c++) {
-              const srcTileIdx = r * SHEET_TILE_W + (colStart + c);
-              const srcOff = srcTileIdx * TILE_BYTES;
-              if (srcOff + TILE_BYTES <= sheet.length) {
-                repacked.set(sheet.subarray(srcOff, srcOff + TILE_BYTES), dst);
-              }
-              dst += TILE_BYTES;
-            }
-          }
-        }
-        const tileStart = rt.nextSpriteSheetByteOffset >> 5;
-        const writeSize = Math.min(FRAMES_BYTES, rt.gba.objVram.length - rt.nextSpriteSheetByteOffset);
-        if (writeSize > 0) {
-          rt.gba.objVram.set(repacked.subarray(0, writeSize), rt.nextSpriteSheetByteOffset);
-        }
-        rt.spriteSheetTagToTileStart.set(src.gfxTag, tileStart);
-        rt.nextSpriteSheetByteOffset += FRAMES_BYTES;
-      }
-    }
+    await loadObjectEventGraphicsInfo(rt, OBJ_EVENT_GFX_RIVAL_BRENDAN_NORMAL);
+    await loadObjectEventGraphicsInfo(rt, OBJ_EVENT_GFX_RIVAL_MAY_NORMAL);
   } catch (e) {
     console.warn('[naming-screen] PLAYER trainer assets failed:', e);
   }
@@ -1608,73 +1543,32 @@ function CreateInputTargetIcon(): void {
 
 // 1:1 décomp src/naming_screen.c:1397-1406 NamingScreen_CreatePlayerIcon.
 //
-// rivalGfxId = sRivalAvatarGfxIds[PLAYER_AVATAR_STATE_NORMAL][gender]
-//   (= field_player_avatar.c:234-244, lookup by [state][gender])
-//   gender 0 (MALE)   → OBJ_EVENT_GFX_RIVAL_BRENDAN_NORMAL
-//   gender 1 (FEMALE) → OBJ_EVENT_GFX_RIVAL_MAY_NORMAL
+//   rivalGfxId = GetRivalAvatarGraphicsIdByStateIdAndGender(NORMAL, gender)
+//   spriteId   = CreateObjectGraphicsSprite(rivalGfxId, SpriteCallbackDummy, 56, 37, 0)
+//   gSprites[spriteId].oam.priority = 3
+//   StartSpriteAnim(&gSprites[spriteId], ANIM_STD_GO_SOUTH)
 //
-// Gender source : `sNamingScreen.monSpecies`. In the décomp, this field is
-// reused as `gender` for PLAYER context (cf. main_menu.c:1606
-//   DoNamingScreen(NAMING_SCREEN_PLAYER, gSaveBlock2Ptr->playerName,
-//                  gSaveBlock2Ptr->playerGender, 0, 0, ...)
-// where the 3rd arg = monSpecies field).
+// Gender source : `sNamingScreen.monSpecies` (= décomp réutilise ce field
+// comme gender pour PLAYER context, cf. main_menu.c:1606 DoNamingScreen call
+// où arg3 = playerGender).
 //
-// Position : (56, 37). 16x32 sprite (shape=2 V_RECTANGLE, size=2).
-// Priority : oam.priority = 3 (= rendered behind keyboard sprites).
-// Anim     : StartSpriteAnim(ANIM_STD_GO_SOUTH) — for our impl this is just
-//   "use frame 0 of the walking sheet" since we only loaded frame 0 (= standing
-//   south-facing pose, identical to the static frame used by ROM screenshot).
+// Le framework `object-event-graphics.ts` :
+//   - Resolve gfxId via sRivalAvatarGfxIds[NORMAL][gender]
+//   - Loads gfx + palette via loadObjectEventGraphicsInfo (= preloaded au state 5)
+//   - Creates sprite via CreateSpriteAtOam avec dimensions de gObjectEventGraphicsInfo_*
+//   - Register dans spriteAnimStates → tickSpriteAnims cycle frames 0/1/0/2 chaque 8f.
 function NamingScreen_CreatePlayerIcon(): void {
   if (!sNamingScreen) return;
-  const rt = getRuntime();
-  if (!rt) return;
   const gender = sNamingScreen.monSpecies & 0xFF;
-  const gfxTag = gender === 0 ? GFXTAG_PLAYER_TRAINER_M : GFXTAG_PLAYER_TRAINER_F;
-  const palTag = gender === 0 ? PALTAG_PLAYER_TRAINER_M : PALTAG_PLAYER_TRAINER_F;
-  const tileBase = GetSpriteTileStartByTag(gfxTag);
-  const palSlot = IndexOfSpritePaletteTag(palTag);
-  if (tileBase === 0xFFFF || palSlot === 0xFF) {
-    console.warn('[naming-screen] CreatePlayerIcon : trainer assets missing for gender', gender);
-    return;
-  }
-  // 1:1 décomp gObjectEventBaseOam_16x32 : shape=V_RECTANGLE (2), size=2.
-  const { spriteId } = rt.CreateSpriteAtOam({
-    tileId: tileBase, paletteBank: palSlot,
-    x: 56, y: 37, shape: 2, size: 2, priority: 3,
-  });
-  if (spriteId >= 0) {
-    const sprite = rt.gSprites.get(spriteId);
-    if (sprite) {
-      sprite.tileBase = tileBase;
-      // 1:1 décomp:1405 : StartSpriteAnim(sprite, ANIM_STD_GO_SOUTH).
-      // Install the walk-in-place callback (= 4-step cycle frame0/1/0/2 each
-      // 8 frames). data[2] = tileBase saved for callback frame offset compute.
-      sprite.data[0] = 0;       // step counter
-      sprite.data[1] = 0;       // step index (0..3)
-      sprite.data[2] = tileBase;
-      sprite.callback = SpriteCB_WalkInPlaceSouth;
-    }
+  const rivalGfxId = GetRivalAvatarGraphicsIdByStateIdAndGender(PLAYER_AVATAR_STATE_NORMAL, gender);
+  // 1:1 décomp:1403 : CreateObjectGraphicsSprite(rivalGfxId, SpriteCallbackDummy, 56, 37, 0).
+  // Le 3eme arg `subPriority=0` mappe vers OAM priority via le framework.
+  // Anim default = ANIM_STD_GO_SOUTH (= 4-step cycle south-stand/walk1/stand/walk2).
+  const spriteId = CreateObjectGraphicsSprite(rivalGfxId, null, 56, 37, 3, ANIM_STD_GO_SOUTH);
+  if (spriteId < 0) {
+    console.warn('[naming-screen] CreatePlayerIcon : framework returned -1 for gender', gender);
   }
 }
-
-// Walk-in-place south anim callback (= 1:1 décomp gAnims_StandardSouth /
-// ANIM_STD_GO_SOUTH). Cycles oam.tileId through frames 0/1/0/2 every 8 frames
-// (= decomp ANIMCMD_FRAME duration). Foundational : every overworld people
-// sprite uses this exact cycle for idle south-facing animation. When Phase 4
-// (overworld) lands, move this helper + 3 sister callbacks (North/West/East)
-// to a shared `gba-overworld-anims.ts` module.
-const WALK_IN_PLACE_FRAME_OFFSETS = [0, 8, 0, 16] as const;
-const WALK_IN_PLACE_STEP_DURATION = 8;
-const SpriteCB_WalkInPlaceSouth = (sprite: DecompSprite, _rt: unknown): void => {
-  if (++sprite.data[0] >= WALK_IN_PLACE_STEP_DURATION) {
-    sprite.data[0] = 0;
-    sprite.data[1] = (sprite.data[1] + 1) & 3;
-    const rt = getRuntime();
-    if (rt && sprite.oamIndex >= 0) {
-      rt.gba.oam[sprite.oamIndex].tileId = sprite.data[2] + WALK_IN_PLACE_FRAME_OFFSETS[sprite.data[1]];
-    }
-  }
-};
 
 function NamingScreen_CreatePCIcon(): void {
   if (!sNamingScreen) return;

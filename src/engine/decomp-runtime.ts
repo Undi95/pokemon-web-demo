@@ -502,6 +502,62 @@ export class DecompRuntime {
   nextSpriteSheetByteOffset = 0;
   /** State des sprite anims actives : spriteId → state. */
   private spriteAnimStates = new Map<number, SpriteAnimState>();
+
+  /** Runtime registry for dynamically-defined sprite anims (= 1:1 décomp pattern
+   *  d'enregistrement par module sans toucher le static auto-generated registry).
+   *  Consulté par tickSpriteAnims/StartSpriteAnim en fallback après SPRITE_ANIMS.
+   *  Foundation : object-event-graphics.ts registers 4-direction walk anims here ;
+   *  Phase 4 ajoutera surf/bike/fishing variants. */
+  private _extraAnims = new Map<string, { frames: ReadonlyArray<{ tileNum: number, duration: number, hFlip?: boolean, vFlip?: boolean }>, terminator: 'END' | 'JUMP', jumpTo?: number }>();
+  private _extraAnimTables = new Map<string, { anims: ReadonlyArray<string> }>();
+
+  /** Register a runtime sprite anim (= named cmd table + terminator). Idempotent. */
+  registerExtraAnim(name: string, def: { frames: ReadonlyArray<{ tileNum: number, duration: number, hFlip?: boolean, vFlip?: boolean }>, terminator: 'END' | 'JUMP', jumpTo?: number }): void {
+    this._extraAnims.set(name, def);
+  }
+
+  /** Register a runtime sprite anim TABLE (= named array of anim names). */
+  registerExtraAnimTable(name: string, table: { anims: ReadonlyArray<string> }): void {
+    this._extraAnimTables.set(name, table);
+  }
+
+  /** Public bridge for animations system : register a sprite's anim state directly.
+   *  Used by CreateObjectGraphicsSprite (= bypass static template-based path of
+   *  CreateSpriteFromTemplate, since the trainer/NPC templates are dynamic). */
+  spriteAnimStatesRegister(spriteId: number, animTableName: string, animIdx: number, tileBase: number): void {
+    const table = this._extraAnimTables.get(animTableName)
+      ?? (SPRITE_ANIM_TABLES as Record<string, { anims: ReadonlyArray<string> }>)[animTableName];
+    if (!table) {
+      console.warn(`[runtime] spriteAnimStatesRegister: anim table '${animTableName}' not found`);
+      return;
+    }
+    const animName = table.anims[animIdx];
+    if (!animName) return;
+    const anim = this._extraAnims.get(animName)
+      ?? (SPRITE_ANIMS as Record<string, { frames: ReadonlyArray<{ tileNum: number | string, duration: number }>, terminator: string, jumpTo?: number }>)[animName];
+    if (!anim || anim.frames.length === 0) return;
+    this.spriteAnimStates.set(spriteId, {
+      animTableName,
+      animIdx,
+      frameIdx: 0,
+      framesRemaining: anim.frames[0].duration,
+      tileBase,
+    });
+    // Apply frame 0 immediately to OAM (= 1:1 décomp StartSpriteAnim semantic).
+    const sprite = this.gSprites.get(spriteId);
+    if (sprite) {
+      const tileNum = (typeof anim.frames[0].tileNum === 'number') ? anim.frames[0].tileNum : 0;
+      this.gba.oam[sprite.oamIndex].tileId = tileBase + tileNum;
+      // hFlip/vFlip per-frame (= OAM hardware mirror, used by EAST direction
+      // which reuses WEST tiles flipped).
+      if ('hFlip' in anim.frames[0]) {
+        this.gba.oam[sprite.oamIndex].flipH = !!(anim.frames[0] as { hFlip?: boolean }).hFlip;
+      }
+      if ('vFlip' in anim.frames[0]) {
+        this.gba.oam[sprite.oamIndex].flipV = !!(anim.frames[0] as { vFlip?: boolean }).vFlip;
+      }
+    }
+  }
   /** Accumulator pour timing 60Hz fixed (Phaser update peut être > 60Hz). */
   private accumulatorMs = 0;
   /** Frame target = 60Hz GBA. */
@@ -1706,17 +1762,23 @@ export class DecompRuntime {
   runSpriteCallbacksPublic(): void { this.runSpriteCallbacks(); }
   syncSpritesToOamPublic(): void { this.syncSpritesToOam(); }
 
-  /** Tick toutes les sprite anims actives — 1:1 décomp anim system frame counter. */
+  /** Tick toutes les sprite anims actives — 1:1 décomp anim system frame counter.
+   *  Consulte d'abord _extraAnimTables/_extraAnims (= runtime registry des
+   *  modules comme object-event-graphics), fallback sur SPRITE_ANIM_TABLES/
+   *  SPRITE_ANIMS auto-generated. Cette double lookup permet d'enregistrer
+   *  des anims dynamiques sans modifier le auto-generated. */
   private tickSpriteAnims(): void {
     for (const [spriteId, state] of this.spriteAnimStates) {
       if (state.framesRemaining > 1) {
         state.framesRemaining--;
         continue;
       }
-      const animTable = (SPRITE_ANIM_TABLES as Record<string, { anims: ReadonlyArray<string> }>)[state.animTableName];
+      const animTable = this._extraAnimTables.get(state.animTableName)
+        ?? (SPRITE_ANIM_TABLES as Record<string, { anims: ReadonlyArray<string> }>)[state.animTableName];
       if (!animTable) { this.spriteAnimStates.delete(spriteId); continue; }
       const animName = animTable.anims[state.animIdx];
-      const anim = (SPRITE_ANIMS as Record<string, { frames: ReadonlyArray<{ tileNum: number | string, duration: number }>, terminator: string, jumpTo?: number }>)[animName];
+      const anim = this._extraAnims.get(animName)
+        ?? (SPRITE_ANIMS as Record<string, { frames: ReadonlyArray<{ tileNum: number | string, duration: number, hFlip?: boolean, vFlip?: boolean }>, terminator: string, jumpTo?: number }>)[animName];
       if (!anim) { this.spriteAnimStates.delete(spriteId); continue; }
 
       state.frameIdx++;
@@ -1738,7 +1800,17 @@ export class DecompRuntime {
       state.framesRemaining = frame.duration;
       const tileNum = (typeof frame.tileNum === 'number') ? frame.tileNum : 0;
       const sprite = this.gSprites.get(spriteId);
-      if (sprite) this.gba.oam[sprite.oamIndex].tileId = state.tileBase + tileNum;
+      if (sprite) {
+        this.gba.oam[sprite.oamIndex].tileId = state.tileBase + tileNum;
+        // Per-frame hFlip/vFlip (= OAM hardware mirror, e.g. EAST anim utilise
+        // les tiles WEST avec hFlip=true). 1:1 décomp ANIMCMD_FRAME flags.
+        if (typeof (frame as { hFlip?: boolean }).hFlip === 'boolean') {
+          this.gba.oam[sprite.oamIndex].flipH = (frame as { hFlip?: boolean }).hFlip!;
+        }
+        if (typeof (frame as { vFlip?: boolean }).vFlip === 'boolean') {
+          this.gba.oam[sprite.oamIndex].flipV = (frame as { vFlip?: boolean }).vFlip!;
+        }
+      }
     }
   }
 
