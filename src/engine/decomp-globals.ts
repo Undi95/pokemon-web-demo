@@ -1957,21 +1957,7 @@ export function BlendPalette(palOffset: number, numEntries: number, coeff: numbe
     const newR = r1 + (((bcR - r1) * coeff) >> 4);
     const newG = g1 + (((bcG - g1) * coeff) >> 4);
     const newB = b1 + (((bcB - b1) * coeff) >> 4);
-    const packed = ((newB & 0x1F) << 10) | ((newG & 0x1F) << 5) | (newR & 0x1F);
-    r.gPlttBufferFaded.set(idx, packed);
-    // Session 96 diagnostic : write DIRECTLY to PaletteBanks too. flushTo is
-    // only called at VBlank, but compositor reads PaletteBanks. If TransferPlttBuffer
-    // doesn't run (= no vblankCallback set during this scene moment), the pink
-    // stays in buffer but never reaches PaletteBanks → compositor reads stale.
-    // Direct write = immediate visibility.
-    if (idx >= 256) {
-      // OBJ palette : flatIdx = idx - 256.
-      const objFlatIdx = idx - 256;
-      r.gba.palette.loadObjRange(objFlatIdx, [packed]);
-    } else {
-      // BG palette.
-      r.gba.palette.loadBgRange(idx, [packed]);
-    }
+    r.gPlttBufferFaded.set(idx, ((newB & 0x1F) << 10) | ((newG & 0x1F) << 5) | (newR & 0x1F));
   }
 }
 

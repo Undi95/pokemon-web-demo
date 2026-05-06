@@ -189,28 +189,16 @@ export function LaunchBallFadeMonTask(rt: DecompRuntime, unfadeLater: boolean, s
 
   const { BlendPalette } = _bp();
 
-  // Debug session 96 : auto-enable temporairement (= remove après diagnostic)
-  // pour capturer logs Lotad pink flash issue.
-  const _dbg = true;
-  console.log(`[BirchFade] LaunchBallFadeMonTask unfadeLater=${unfadeLater} palNum=${spritePalNum} (PLTT_OFFSET=${PLTT_OFFSET}) selPalettes=0x${selectedPalettes.toString(16)} ballId=${ballId} fadeColor=0x${fadeColor.toString(16).padStart(4, '0')} (RGB5 r=${fadeColor & 0x1F} g=${(fadeColor >> 5) & 0x1F} b=${(fadeColor >> 10) & 0x1F})`);
+  // Debug : enable via `window.__BIRCH_FADE_DEBUG = true` in console.
+  const _dbg = (globalThis as Record<string, unknown>).__BIRCH_FADE_DEBUG === true;
+  if (_dbg) {
+    console.log(`[BirchFade] LaunchBallFadeMonTask unfadeLater=${unfadeLater} palNum=${spritePalNum} (PLTT_OFFSET=${PLTT_OFFSET}) selPalettes=${selectedPalettes.toString(16)} ballId=${ballId} fadeColor=0x${fadeColor.toString(16).padStart(4, '0')}`);
+  }
 
   if (!unfadeLater) {
     BlendPalette(PLTT_OFFSET, 16, 0, fadeColor);
   } else {
-    console.log(`[BirchFade] BlendPalette coeff=16 → expect ALL 16 entries pink at faded[${PLTT_OFFSET}..${PLTT_OFFSET+15}]`);
     BlendPalette(PLTT_OFFSET, 16, 16, fadeColor);
-    // Capture state RIGHT after BlendPalette to verify it wrote correctly.
-    const sample = [];
-    for (let i = 0; i < 16; i++) sample.push(rt.gPlttBufferFaded.get(PLTT_OFFSET + i).toString(16).padStart(4, '0'));
-    console.log(`[BirchFade] post-BlendPalette faded buffer: ${sample.join(' ')}`);
-    // Diagnostic : force flushTo + check PaletteBanks state via getObjRgba.
-    rt.gPlttBufferFaded.flushTo();
-    const banksRgb = [];
-    for (let i = 0; i < 4; i++) {
-      const [r, g, b, a] = rt.gba.palette.getObjRgba(spritePalNum, i, 0);
-      banksRgb.push(`(${r},${g},${b},a${a})`);
-    }
-    console.log(`[BirchFade] forceFlushTo → PaletteBanks objRgba pal ${spritePalNum} idx 0-3: ${banksRgb.join(' ')}`);
   }
 
   // 1:1 décomp battle_anim_throw.c:2056 :
@@ -231,13 +219,11 @@ export function LaunchBallFadeMonTask(rt: DecompRuntime, unfadeLater: boolean, s
     const state = task.data[7];  // 0=ToBallColor, 1=ToNormalWait, 2=ToNormalStep
     if (state === 0) {
       if (task.data[2] <= 16) {
-        console.log(`[BirchFade] s0 t=${task.data[2]} BlendPalette coeff=${task.data[0]} → faded[OBJ pal ${spritePalNum}]`);
         BlendPalette(task.data[3], 16, task.data[0], fadeColor);
         task.data[0] += task.data[1];  // tCoeff += tdCoeff
         task.data[2]++;                // tTimer++
       } else if (!rt.gPaletteFade.active) {
         const sel = (task.data[4] & 0xFFFF) | ((task.data[5] & 0xFFFF) << 16);
-        console.log(`[BirchFade] s0→reverse fade BG (selPalettes=0x${sel.toString(16)})`);
         if (unfadeLater) {
           rt.BeginNormalPaletteFade(sel, 0, 16, 0, RGB_WHITE);
           task.data[7] = 1;
@@ -249,22 +235,16 @@ export function LaunchBallFadeMonTask(rt: DecompRuntime, unfadeLater: boolean, s
     } else if (state === 1) {
       if (!rt.gPaletteFade.active) {
         const sel = (task.data[4] & 0xFFFF) | ((task.data[5] & 0xFFFF) << 16);
-        // Sample OBJ pal at this critical moment (= just before reverse fade).
-        const sample = [];
-        for (let i = 0; i < 16; i++) sample.push(rt.gPlttBufferFaded.get(task.data[3] + i).toString(16).padStart(4, '0'));
-        console.log(`[BirchFade] s1→s2 reverse BG fade. OBJ pal ${spritePalNum} faded buffer NOW: ${sample.join(' ')}`);
         rt.BeginNormalPaletteFade(sel, 0, 16, 0, RGB_WHITE);
         task.data[7] = 2;
         task.data[2] = 0;
       }
     } else if (state === 2) {
       if (task.data[2] <= 16) {
-        console.log(`[BirchFade] s2 t=${task.data[2]} BlendPalette coeff=${task.data[0]} → faded[OBJ pal ${spritePalNum}]`);
         BlendPalette(task.data[3], 16, task.data[0], fadeColor);
         task.data[0] += task.data[1];
         task.data[2]++;
       } else {
-        console.log(`[BirchFade] s2 done, destroying task`);
         rt.DestroyTask(task.taskId);
       }
     }
