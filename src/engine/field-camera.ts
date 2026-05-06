@@ -257,10 +257,22 @@ function RedrawMapSliceWest(camX: number, camY: number, mapLayout: MapLayout): v
 function RedrawMapSlicesForCameraUpdate(camX: number, camY: number, dx: number, dy: number): void {
   if (!gMapHeader) return;
   const mapLayout = gMapHeader.mapLayout;
-  if (dx > 0) RedrawMapSliceWest(camX, camY, mapLayout);
-  if (dx < 0) RedrawMapSliceEast(camX, camY, mapLayout);
-  if (dy > 0) RedrawMapSliceNorth(camX, camY, mapLayout);
-  if (dy < 0) RedrawMapSliceSouth(camX, camY, mapLayout);
+  if (dx > 0) {
+    _trace('RedrawMapSliceWest', { camX, mapColRedrawn: camX + 14, BGcolDest: (sFieldCameraOffset.xTileOffset + 28) % 32 });
+    RedrawMapSliceWest(camX, camY, mapLayout);
+  }
+  if (dx < 0) {
+    _trace('RedrawMapSliceEast', { camX, mapColRedrawn: camX, BGcolDest: sFieldCameraOffset.xTileOffset });
+    RedrawMapSliceEast(camX, camY, mapLayout);
+  }
+  if (dy > 0) {
+    _trace('RedrawMapSliceNorth', { camY, mapRowRedrawn: camY + 14, BGrowDest: (sFieldCameraOffset.yTileOffset + 28) % 32 });
+    RedrawMapSliceNorth(camX, camY, mapLayout);
+  }
+  if (dy < 0) {
+    _trace('RedrawMapSliceSouth', { camY, mapRowRedrawn: camY, BGrowDest: sFieldCameraOffset.yTileOffset });
+    RedrawMapSliceSouth(camX, camY, mapLayout);
+  }
   sFieldCameraOffset.copyBGToVRAM = true;
 }
 
@@ -298,6 +310,21 @@ export function CurrentMapDrawMetatileAt(camX: number, camY: number, x: number, 
 /** Camera position (= top-left metatile of current view, en gBackupMapLayout coords).
  *  Tracking interne pour Phase 4.2 — Phase 4.3 le wirera sur gSaveBlock1Ptr->pos. */
 const _camPos = { x: 0, y: 0 };
+
+/** DEV : trace buffer pour debug movement. Chaque event (= deltaX/Y fire,
+ *  RedrawMapSlice*) push ici. window.dev.movementLog() lit + clear.
+ *  Ajouté pour debug "map cassée au scroll" Phase 4.3. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const _moveTrace: Array<Record<string, any>> = [];
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(globalThis as any).__moveTrace = _moveTrace;
+function _trace(event: string, data: Record<string, unknown>): void {
+  if (_moveTrace.length < 200) {
+    _moveTrace.push({ t: _moveTrace.length, event, ...data });
+  }
+}
+export function clearMovementTrace(): void { _moveTrace.length = 0; }
+export function getMovementTrace(): ReadonlyArray<Record<string, unknown>> { return _moveTrace; }
 
 export function GetCameraTopLeftCoords(): { x: number; y: number } {
   return { x: _camPos.x, y: _camPos.y };
@@ -360,7 +387,19 @@ export function CameraUpdate(): void {
     // UpdateObjectEventsForCameraUpdate(deltaX, deltaY);  // TODO Phase 4.4
     // SetBerryTreesSeen();                                // TODO Phase 4.7
     AddCameraTileOffset(sFieldCameraOffset, deltaX * 2, deltaY * 2);
-    RedrawMapSlicesForCameraUpdate(_camPos.x, _camPos.y, deltaX * 2, deltaY * 2);
+    _trace('boundary_cross', {
+      deltaX, deltaY,
+      newCamPos: { ..._camPos },
+      newTileOffset: { x: sFieldCameraOffset.xTileOffset, y: sFieldCameraOffset.yTileOffset },
+    });
+    // FIX session 4.3 fix 5 : RedrawMapSlice* partial redraw a un bug latent
+    // dans le wiggle (= certains BG cols restent stale après plusieurs
+    // changements de direction). Décomp évite via player avatar enforce
+    // direction-locked walks. Pour notre impl, full redraw via
+    // DrawWholeMapView chaque boundary (= 256 metatile draws, négligeable).
+    if (gMapHeader) {
+      DrawWholeMapView(_camPos.x, _camPos.y, gMapHeader.mapLayout);
+    }
   }
 
   AddCameraPixelOffset(sFieldCameraOffset, movementSpeedX, movementSpeedY);
