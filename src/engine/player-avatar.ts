@@ -109,6 +109,9 @@ interface PlayerAvatar {
   stepFramesLeft: number;
   /** Direction de la step en cours (utilisé pour cleanup). */
   stepDirection: number;
+  /** Frames remaining in current turn-in-place (= 8..0 décrémente). 1:1 décomp
+   *  `PlayerTurnInPlace` (= TURN_DIRECTION lasts 8 frames). Évite wiggle rapide. */
+  turnFramesLeft: number;
   /** Sprite ID dans rt.gSprites. */
   spriteId: number;
   /** Walk anim : alternate walk1/walk2 sur step suivant. */
@@ -126,6 +129,7 @@ export const gPlayerAvatar: PlayerAvatar = {
   tileTransitionState: T_NOT_MOVING,
   stepFramesLeft: 0,
   stepDirection: DIR_NONE,
+  turnFramesLeft: 0,
   spriteId: -1,
   walkAnimAlt: 0,
   gender: 'MALE',
@@ -192,6 +196,7 @@ export async function InitPlayerAvatar(
   gPlayerAvatar.tileTransitionState = T_NOT_MOVING;
   gPlayerAvatar.stepFramesLeft = 0;
   gPlayerAvatar.stepDirection = DIR_NONE;
+  gPlayerAvatar.turnFramesLeft = 0;
   gPlayerAvatar.gender = gender;
   gPlayerAvatar.walkAnimAlt = 0;
 
@@ -389,6 +394,18 @@ export function PlayerStep(heldKeys: number, _newKeys: number, rt: DecompRuntime
     return;
   }
 
+  // 1:1 décomp `PlayerTurnInPlace` : turn-in-place lasts 8 frames. Pendant
+  // ce temps, input est ignoré → empêche wiggle rapide (= rate-limits
+  // direction changes pour éviter le stale col bug du redraw partial).
+  if (gPlayerAvatar.runningState === TURN_DIRECTION && gPlayerAvatar.turnFramesLeft > 0) {
+    gPlayerAvatar.turnFramesLeft--;
+    if (gPlayerAvatar.turnFramesLeft === 0) {
+      gPlayerAvatar.runningState = NOT_MOVING;
+    }
+    updateSpriteFrame(rt);
+    return;
+  }
+
   // 1:1 décomp `CheckMovementInputNotOnBike` (line 588) :
   //   - direction == DIR_NONE → NOT_MOVING (= face current direction)
   //   - direction != currentFacing && runningState != MOVING → TURN_DIRECTION
@@ -401,11 +418,14 @@ export function PlayerStep(heldKeys: number, _newKeys: number, rt: DecompRuntime
   }
 
   if (inputDir !== gPlayerAvatar.facing) {
-    // 1:1 décomp `PlayerNotOnBikeTurningInPlace` → PlayerTurnInPlace.
-    // Le player change face direction sans bouger. Décomp prend ~8 frames pour
-    // turn anim, mais simplification Phase 4.3 : turn instantané (= 1 frame).
+    // 1:1 décomp `PlayerNotOnBikeTurningInPlace` → PlayerTurnInPlace :
+    // change face direction sans bouger pendant 8 frames. Critique pour
+    // empêcher wiggle rapide (= rate-limits direction changes → 1 metatile
+    // step toutes les 24 frames au lieu de 17 → décomp's redraw partial
+    // marche correctement).
     gPlayerAvatar.facing = inputDir;
     gPlayerAvatar.runningState = TURN_DIRECTION;
+    gPlayerAvatar.turnFramesLeft = 8;
     updateSpriteFrame(rt);
     return;
   }

@@ -392,14 +392,11 @@ export function CameraUpdate(): void {
       newCamPos: { ..._camPos },
       newTileOffset: { x: sFieldCameraOffset.xTileOffset, y: sFieldCameraOffset.yTileOffset },
     });
-    // FIX session 4.3 fix 5 : RedrawMapSlice* partial redraw a un bug latent
-    // dans le wiggle (= certains BG cols restent stale après plusieurs
-    // changements de direction). Décomp évite via player avatar enforce
-    // direction-locked walks. Pour notre impl, full redraw via
-    // DrawWholeMapView chaque boundary (= 256 metatile draws, négligeable).
-    if (gMapHeader) {
-      DrawWholeMapView(_camPos.x, _camPos.y, gMapHeader.mapLayout);
-    }
+    // 1:1 décomp : RedrawMapSlice* partial redraw (= une seule colonne par
+    // scroll). Évite flicker du full DrawWholeMapView. Le bug "stale col
+    // après wiggle non-symétrique" est masqué par 8-frame turn-in-place
+    // dans le player avatar (= rate de direction change limité).
+    RedrawMapSlicesForCameraUpdate(_camPos.x, _camPos.y, deltaX * 2, deltaY * 2);
   }
 
   AddCameraPixelOffset(sFieldCameraOffset, movementSpeedX, movementSpeedY);
