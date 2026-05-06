@@ -86,6 +86,13 @@ export interface ObjectEvent {
    *  empêcher NPC de tourner mid-dialogue. Reset par UnfreezeAllNpcs (=
    *  appelé quand player walk = exit interaction). */
   frozen: boolean;
+  /** 1:1 décomp `objectEvent->initialCoords`. Position au spawn, utilisée
+   *  par WALK_BACK_AND_FORTH pour revenir à l'origin après une step. */
+  initialCoordsX: number;
+  initialCoordsY: number;
+  /** 1:1 décomp `directionSequenceIndex`. WALK_BACK_AND_FORTH : 0 = forward,
+   *  1 = backward. ROTATE_* : index dans la sequence rotation. */
+  directionSeqIdx: number;
 }
 
 export const gObjectEvents: ObjectEvent[] = Array.from({ length: OBJECT_EVENTS_COUNT }, () => ({
@@ -108,6 +115,9 @@ export const gObjectEvents: ObjectEvent[] = Array.from({ length: OBJECT_EVENTS_C
   walkDirection: DIR_NONE,
   walkAnimAlt: 0,
   frozen: false,
+  initialCoordsX: 0,
+  initialCoordsY: 0,
+  directionSeqIdx: 0,
 }));
 
 // Expose pour collision check player (= évite circular import).
@@ -339,8 +349,128 @@ function tickWanderAround(rt: DecompRuntime, npc: ObjectEvent, allowedDirections
   void rt;
 }
 
+/** 1:1 décomp `gClockwiseDirections` : DIR_SOUTH → WEST → NORTH → EAST → SOUTH...
+ *  Indexed by current direction. Used par RotateClockwise. */
+const NEXT_DIR_CW: Record<number, number> = {
+  [DIR_SOUTH]: DIR_WEST,
+  [DIR_WEST]: DIR_NORTH,
+  [DIR_NORTH]: DIR_EAST,
+  [DIR_EAST]: DIR_SOUTH,
+};
+const NEXT_DIR_CCW: Record<number, number> = {
+  [DIR_SOUTH]: DIR_EAST,
+  [DIR_EAST]: DIR_NORTH,
+  [DIR_NORTH]: DIR_WEST,
+  [DIR_WEST]: DIR_SOUTH,
+};
+
+const OPPOSITE_DIR: Record<number, number> = {
+  [DIR_SOUTH]: DIR_NORTH,
+  [DIR_NORTH]: DIR_SOUTH,
+  [DIR_WEST]: DIR_EAST,
+  [DIR_EAST]: DIR_WEST,
+};
+
+/** 1:1 décomp `MovementType_RotateClockwise_Step*` (3726-3762) /
+ *  `MovementType_RotateCounterclockwise_*` (similar).
+ *  4 états : init, face dir, wait 48 frames, rotate to next. */
+function tickRotate(rt: DecompRuntime, npc: ObjectEvent, clockwise: boolean): void {
+  switch (npc.movementStep) {
+    case 0:
+      npc.movementStep = 1;
+      // fallthrough
+    case 1:
+      // Face direction (instantaneous in our impl).
+      npc.movementDelay = 48;  // 1:1 décomp SetMovementDelay(sprite, 48)
+      npc.movementStep = 2;
+      break;
+    case 2:
+      // Wait delay.
+      if (npc.movementDelay > 0) {
+        npc.movementDelay--;
+      } else {
+        npc.movementStep = 3;
+      }
+      break;
+    case 3: {
+      // Rotate to next direction (clockwise or counterclockwise).
+      const table = clockwise ? NEXT_DIR_CW : NEXT_DIR_CCW;
+      npc.facingDirection = table[npc.facingDirection] ?? DIR_SOUTH;
+      npc.movementStep = 1;
+      break;
+    }
+  }
+  void rt;
+}
+
+/** 1:1 décomp `MovementType_WalkBackAndForth_Step*` (3766-3822).
+ *  NPC walk 1 metatile in initial dir, then back to initialCoords, repeat.
+ *  Si collision (= bord ou wall), turn around et walk autre côté. */
+function tickWalkBackAndForth(rt: DecompRuntime, npc: ObjectEvent, primaryDir: number): void {
+  switch (npc.movementStep) {
+    case 0:
+      npc.movementStep = 1;
+      // fallthrough
+    case 1: {
+      // Determine direction : primaryDir si seq=0, opposite si seq=1.
+      const dir = npc.directionSeqIdx === 0 ? primaryDir : (OPPOSITE_DIR[primaryDir] ?? primaryDir);
+      npc.facingDirection = dir;
+      npc.movementStep = 2;
+      // fallthrough
+    }
+    // eslint-disable-next-line no-fallthrough
+    case 2: {
+      // Check collision in walk direction.
+      // 1:1 décomp : si returned to initialCoords avec seq=1, reset seq=0.
+      if (npc.directionSeqIdx === 1
+          && npc.currentCoordsX === npc.initialCoordsX
+          && npc.currentCoordsY === npc.initialCoordsY) {
+        npc.directionSeqIdx = 0;
+        npc.facingDirection = primaryDir;
+      }
+      const dir = npc.facingDirection;
+      if (canWalk(npc, dir)) {
+        // Start walk anim 16 frames.
+        npc.walkDirection = dir;
+        npc.walkFramesLeft = 16;
+        npc.movementStep = 3;
+      } else {
+        // Collision : flip seq + retry next tick.
+        npc.directionSeqIdx = npc.directionSeqIdx === 0 ? 1 : 0;
+        npc.movementStep = 1;
+      }
+      break;
+    }
+    case 3: {
+      // Tick walk frames.
+      const speedX = DIR_TO_DX[npc.walkDirection] ?? 0;
+      const speedY = DIR_TO_DY[npc.walkDirection] ?? 0;
+      npc.worldX += speedX;
+      npc.worldY += speedY;
+      npc.walkFramesLeft--;
+      if (npc.walkFramesLeft === 0) {
+        npc.currentCoordsX += speedX;
+        npc.currentCoordsY += speedY;
+        npc.walkDirection = DIR_NONE;
+        npc.walkAnimAlt = (npc.walkAnimAlt ^ 1) as 0 | 1;
+        // Si arrived 1 step from initialCoords, increment seq → backward.
+        // Si returned to initialCoords, decrement seq → forward.
+        if (npc.directionSeqIdx === 0
+            && (npc.currentCoordsX !== npc.initialCoordsX || npc.currentCoordsY !== npc.initialCoordsY)) {
+          npc.directionSeqIdx = 1;  // Now we go back.
+        }
+        npc.movementStep = 1;
+      }
+      break;
+    }
+  }
+  void rt;
+}
+
 /** Map MOVEMENT_TYPE_* string → state machine handler + allowed directions.
- *  Ajout 4.4.c.2 : multi-direction look + multi-direction wander. */
+ *  Ajout 4.4.c.2 : multi-direction look + multi-direction wander.
+ *  Ajout 4.4.f : ROTATE_*, WALK_*_AND_*, WALK_IN_PLACE_* (= face static),
+ *  INVISIBLE (= sprite hidden). */
 const MOVEMENT_HANDLERS: Record<string, { tick: 'look' | 'wander'; dirs: ReadonlyArray<number> }> = {
   // Wander (= roam autour avec all 4 directions)
   'MOVEMENT_TYPE_WANDER_AROUND': { tick: 'wander', dirs: gStandardDirections },
@@ -360,12 +490,51 @@ const MOVEMENT_HANDLERS: Record<string, { tick: 'look' | 'wander'; dirs: Readonl
   'MOVEMENT_TYPE_FACE_DOWN_RIGHT_AND_LEFT': { tick: 'look', dirs: [DIR_SOUTH, DIR_EAST, DIR_WEST] },
 };
 
+/** Movement type pattern matching pour les types non-LookAround/Wander.
+ *  Returns le handler à appliquer + paramètres. Approche string-match évite
+ *  un huge map literal. */
+function dispatchSpecialMovement(rt: DecompRuntime, npc: ObjectEvent): boolean {
+  const mt = npc.movementType;
+  // ROTATE_CLOCKWISE / COUNTERCLOCKWISE
+  if (mt === 'MOVEMENT_TYPE_ROTATE_CLOCKWISE') {
+    tickRotate(rt, npc, true);
+    return true;
+  }
+  if (mt === 'MOVEMENT_TYPE_ROTATE_COUNTERCLOCKWISE') {
+    tickRotate(rt, npc, false);
+    return true;
+  }
+  // WALK_*_AND_* : extract primary direction du nom (= DOWN_AND_UP, RIGHT_AND_LEFT, etc).
+  if (mt.startsWith('MOVEMENT_TYPE_WALK_') && mt.includes('_AND_')) {
+    let primaryDir = DIR_SOUTH;
+    if (mt.includes('WALK_DOWN_AND_UP')) primaryDir = DIR_SOUTH;
+    else if (mt.includes('WALK_UP_AND_DOWN')) primaryDir = DIR_NORTH;
+    else if (mt.includes('WALK_LEFT_AND_RIGHT')) primaryDir = DIR_WEST;
+    else if (mt.includes('WALK_RIGHT_AND_LEFT')) primaryDir = DIR_EAST;
+    else return false;
+    tickWalkBackAndForth(rt, npc, primaryDir);
+    return true;
+  }
+  // WALK_IN_PLACE_* = face static avec walk anim "in place" cycle.
+  // MVP : juste static face, pas d'anim cycle (ajout futur si désiré).
+  if (mt.startsWith('MOVEMENT_TYPE_WALK_IN_PLACE_')) {
+    // Static face : facing direction déjà set au spawn par initialFacing.
+    // Aucun tick nécessaire.
+    return true;
+  }
+  // INVISIBLE : sprite hidden. Set npc.invisible.
+  if (mt === 'MOVEMENT_TYPE_INVISIBLE') {
+    npc.invisible = true;
+    return true;
+  }
+  return false;
+}
+
 /** Tick chaque NPC selon son movementType. À call chaque frame. */
 export function TickObjectEventMovements(rt: DecompRuntime): void {
   for (const npc of gObjectEvents) {
     if (!npc.active) continue;
-    // Frozen NPCs (= en interact) skip leur state machine. Reste à
-    // facingDirection courante. Un-freeze quand player walk.
+    // Frozen NPCs (= en interact) skip leur state machine.
     if (npc.frozen) continue;
 
     const handler = MOVEMENT_HANDLERS[npc.movementType];
@@ -375,7 +544,13 @@ export function TickObjectEventMovements(rt: DecompRuntime): void {
       } else {
         tickWanderAround(rt, npc, handler.dirs);
       }
+      continue;
     }
+    // Try special handlers (= ROTATE, WALK_*_AND_*, WALK_IN_PLACE_*, INVISIBLE).
+    dispatchSpecialMovement(rt, npc);
+    // Movement types non-supportés (BERRY_TREE_GROWTH, TREE_DISGUISE,
+    // COPY_PLAYER_*, MOUNTAIN_DISGUISE, WALK_SLOWLY_IN_PLACE_*, WALK_SEQUENCE_*) :
+    // statiques pour Phase 4.4.f. Implémentation future si besoin.
   }
 }
 
@@ -452,6 +627,10 @@ export async function SpawnObjectEventsOnMap(rt: DecompRuntime): Promise<void> {
     npc.walkFramesLeft = 0;
     npc.walkDirection = DIR_NONE;
     npc.walkAnimAlt = 0;
+    npc.frozen = false;
+    npc.initialCoordsX = template.x;  // 1:1 décomp objectEvent->initialCoords
+    npc.initialCoordsY = template.y;
+    npc.directionSeqIdx = 0;
 
     const cfg = NPC_SPRITE_FRAMES[npc.facingDirection] ?? NPC_SPRITE_FRAMES[DIR_SOUTH];
     const result = rt.CreateSpriteAtOam({
