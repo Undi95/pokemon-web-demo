@@ -510,15 +510,23 @@ export function runTextPrinter(printer: TextPrinter): number {
     return RENDER_REPEAT;
   }
 
-  // 1:1 décomp text.c:944-955 — A/B speed up mécanisme.
-  // Si A ou B held + déjà sped-up auparavant, override textSpeed effectif à
-  // FAST (= 1) sans aller en-dessous. User feedback session 96 :
-  // "Maintenir A/B en speed 1, 2, ou 3 donne TOUJOURS FAST (3)" —
-  // donc A/B held = ramène la vitesse à FAST, pas à 1 char/frame.
-  // Avant on faisait `delayCounter = 0` → 1 char/frame (= plus rapide que FAST,
-  // bug). Maintenant on cap delayCounter à 1 si plus grand (= effectif FAST).
+  // 1:1 décomp text.c:944-945 :
+  //   if (JOY_HELD(A|B) && hasPrintBeenSpedUp) delayCounter = 0;
+  //
+  // Held A/B + already spedUp = 0 delay → 1 char/frame = 60 chars/sec.
+  // Combiné avec `delayCounter = textSpeed` (ligne 961) après char render,
+  // donne le pattern :
+  //   Frame N : held + spedUp → delayCounter=0 → skip branch → render +
+  //             delayCounter=1 (= textSpeed FAST)
+  //   Frame N+1 : held + spedUp → delayCounter=0 (= overrides 1) → skip
+  //               branch → render. Etc.
+  // → 1 char par frame.
+  //
+  // Précédent bug session 96 : on capait `if > 1: = 1` (= 1 char par 2 frames
+  // = 30 chars/sec, 2× plus lent que ROM). User feedback "speed text trop
+  // lent même en FAST + held" venait de ce cap. Fix 1:1 : `= 0` strict.
   if (_heldABPressed && printer.hasPrintBeenSpedUp) {
-    if (printer.delayCounter > 1) printer.delayCounter = 1;
+    printer.delayCounter = 0;
   }
 
   // textSpeed > 0 : delay entre chaque char (effet "machine à écrire").
