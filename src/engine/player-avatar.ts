@@ -394,17 +394,10 @@ export function PlayerStep(heldKeys: number, _newKeys: number, rt: DecompRuntime
     return;
   }
 
-  // 1:1 décomp `PlayerTurnInPlace` : turn-in-place lasts 8 frames. Pendant
-  // ce temps, input est ignoré → empêche wiggle rapide (= rate-limits
-  // direction changes pour éviter le stale col bug du redraw partial).
-  if (gPlayerAvatar.runningState === TURN_DIRECTION && gPlayerAvatar.turnFramesLeft > 0) {
-    gPlayerAvatar.turnFramesLeft--;
-    if (gPlayerAvatar.turnFramesLeft === 0) {
-      gPlayerAvatar.runningState = NOT_MOVING;
-    }
-    updateSpriteFrame(rt);
-    return;
-  }
+  // 1:1 décomp `CheckMovementInputNotOnBike` (field_player_avatar.c:588) :
+  // TURN_DIRECTION is a 1-frame state (= just sets facing). Next frame, if
+  // input held → MOVING. If released (= tap) → NOT_MOVING (= just turned).
+  // Pas de blocage 8-frame → walking est réactif comme la ROM.
 
   // 1:1 décomp `CheckMovementInputNotOnBike` (line 588) :
   //   - direction == DIR_NONE → NOT_MOVING (= face current direction)
@@ -418,14 +411,11 @@ export function PlayerStep(heldKeys: number, _newKeys: number, rt: DecompRuntime
   }
 
   if (inputDir !== gPlayerAvatar.facing) {
-    // 1:1 décomp `PlayerNotOnBikeTurningInPlace` → PlayerTurnInPlace :
-    // change face direction sans bouger pendant 8 frames. Critique pour
-    // empêcher wiggle rapide (= rate-limits direction changes → 1 metatile
-    // step toutes les 24 frames au lieu de 17 → décomp's redraw partial
-    // marche correctement).
+    // 1:1 décomp `PlayerNotOnBikeTurningInPlace` → `PlayerTurnInPlace` :
+    // 1-frame state qui set facing. Si input toujours held next frame,
+    // MOVING. Si released (= tap), reste NOT_MOVING (= juste tourné).
     gPlayerAvatar.facing = inputDir;
     gPlayerAvatar.runningState = TURN_DIRECTION;
-    gPlayerAvatar.turnFramesLeft = 8;
     updateSpriteFrame(rt);
     return;
   }
