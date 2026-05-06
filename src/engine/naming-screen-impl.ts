@@ -34,6 +34,7 @@ import {
   PlaySE,
   IndexOfSpritePaletteTag, GetSpriteTileStartByTag,
   MultiplyInvertedPaletteRGBComponents,
+  BlendPalettes,
   SetSubspriteTables, syncSubspriteOam, clearAllSubspriteTables,
   CpuFill32, CpuFill16,
   VRAM, OAM, PLTT, VRAM_SIZE, OAM_SIZE, PLTT_SIZE,
@@ -557,12 +558,17 @@ async function loadNamingScreenAssets(): Promise<void> {
     { url: BASE + 'back_button.png',      tag: GFXTAG_BACK_BUTTON,      sizeBytes: 0x1E0, srcOffset: 0 },
     { url: BASE + 'ok_button.png',        tag: GFXTAG_OK_BUTTON,        sizeBytes: 0x1E0, srcOffset: 0 },
     { url: BASE + 'page_swap_frame.png',  tag: GFXTAG_PAGE_SWAP_FRAME,  sizeBytes: 0x280, srcOffset: 0 },
-    { url: BASE + 'page_swap_button.png', tag: GFXTAG_PAGE_SWAP_BUTTON, sizeBytes: 0x100, srcOffset: 0x8 },
+    // Note: décomp `gNamingScreenPageSwapButton_Gfx + 0x8` = `0x8 * sizeof(u32)`
+    // = 32 bytes = 1 tile offset. Notre srcOffset est en BYTES, donc 0x20 = 32.
+    // Bug session 96 : avant on avait 0x8 = 8 bytes → tile mal aligné, button bg
+    // ne couvrait pas le centre du frame → BG transparent visible derrière le texte.
+    { url: BASE + 'page_swap_button.png', tag: GFXTAG_PAGE_SWAP_BUTTON, sizeBytes: 0x100, srcOffset: 0x20 },
     { url: BASE + 'page_swap_upper.png',  tag: GFXTAG_PAGE_SWAP_UPPER,  sizeBytes: 0x060, srcOffset: 0 },
     { url: BASE + 'page_swap_lower.png',  tag: GFXTAG_PAGE_SWAP_LOWER,  sizeBytes: 0x060, srcOffset: 0 },
     { url: BASE + 'page_swap_others.png', tag: GFXTAG_PAGE_SWAP_OTHERS, sizeBytes: 0x060, srcOffset: 0 },
     { url: BASE + 'cursor.png',           tag: GFXTAG_CURSOR,           sizeBytes: 0x080, srcOffset: 0 },
-    { url: BASE + 'cursor_squished.png',  tag: GFXTAG_CURSOR_SQUISHED,  sizeBytes: 0x080, srcOffset: 0x8 },
+    // Same fix : décomp `gNamingScreenCursorSquished_Gfx + 0x8` u32 = 32 bytes.
+    { url: BASE + 'cursor_squished.png',  tag: GFXTAG_CURSOR_SQUISHED,  sizeBytes: 0x080, srcOffset: 0x20 },
     { url: BASE + 'cursor_filled.png',    tag: GFXTAG_CURSOR_FILLED,    sizeBytes: 0x080, srcOffset: 0 },
     { url: BASE + 'input_arrow.png',      tag: GFXTAG_INPUT_ARROW,      sizeBytes: 0x020, srcOffset: 0 },
     { url: BASE + 'underscore.png',       tag: GFXTAG_UNDERSCORE,       sizeBytes: 0x020, srcOffset: 0 },
@@ -763,6 +769,16 @@ function CB2_LoadNamingScreen(): void {
       break;
     case 7:
       CreateSprites();
+      // 1:1 décomp:447-451 case 7 : CreateSprites + UpdatePaletteFade + ShowBgs.
+      // Bug session 96 : entre case 5 (= LoadPalettes injected real colors) et
+      // MainState_FadeIn (= démarre BeginNormalPaletteFade brightness=16=black),
+      // l'écran rend ~3 frames avec colors visibles + BG vide → user feedback
+      // "screen flash 2 fois, 1 fois sprite seul, puis page complète".
+      // Fix : BlendPalettes(ALL, 16, BLACK) force le palette buffer faded à
+      // black avant ShowBgs → écran noir jusqu'au fade-in. Le décomp n'a pas
+      // ce problème car la previous scene laisse softwareFadeFinishing qui
+      // maintient brightness=16 ; notre ResetPaletteFade en case 2 le clear.
+      BlendPalettes(0xFFFFFFFF, 16, 0x0000);
       rt.UpdatePaletteFade();
       NamingScreen_ShowBgs();
       rt.gMain.state++;
@@ -2017,9 +2033,14 @@ function HandleDpadMovement(task: DecompTask, joyKeys: number): void {
     if (cursorY > KBROW_COUNT - 1) cursorY = 0;
   }
 
-  if (cursorX !== cur.x || cursorY !== cur.y) {
-    SetCursorPos(cursorX, cursorY);
-  }
+  // 1:1 décomp:1698 — TOUJOURS appeler SetCursorPos (= même si pas de
+  // mouvement). Critical : SetCursorPos updates sPrevX = sX BEFORE writing
+  // new sX. Si on call avec mêmes coords, sPrevX rattrape sX → la condition
+  // `sX != sPrevX` du SpriteCB_Cursor devient FALSE → le flash sColor pulse
+  // peut démarrer. Sans ce call chaque frame, sPrevX stale après tout move
+  // input → reset condition fire forever → cursor ne clignote jamais.
+  // Bug session 96.
+  SetCursorPos(cursorX, cursorY);
 }
 
 function GetInputEvent(): number {
@@ -2193,13 +2214,23 @@ function DrawTextEntry(): void {
   if (winText < 0) return;
   FillWindowPixelBuffer(winText, 0x11);
   const maxChars = sNamingScreen.template.maxChars;
-  let display = '';
+  // 1:1 décomp src/naming_screen.c:1908-1922 DrawTextEntry :
+  //   u16 x = sNamingScreen->inputCharBaseXPos - 0x40;
+  //   for (i = 0; i < maxChars; i++)
+  //     AddTextPrinterParameterized(WIN_TEXT_ENTRY, FONT_NORMAL, &textBuffer[i],
+  //                                 i * 8 + x + extraWidth, 1, TEXT_SKIP_DRAW, NULL);
+  // Chaque char est rendu à `x = i*8 + (inputCharBaseXPos - 0x40)` window-relative,
+  // sans espace entre eux. Les underscores sprites s'alignent à la même position
+  // (= sprite x = inputCharBaseXPos + i*8 → screen position match window x).
+  // Bug session 96 : avant on draw avec espace entre chars + start x=8 → décalage
+  // ~26px à gauche → user feedback "le texte est décalé sur la gauche, le > est
+  // au milieu du texte".
+  const baseX = sNamingScreen.inputCharBaseXPos - 0x40;
   for (let i = 0; i < maxChars; i++) {
     const c = sNamingScreen.textBuffer[i];
-    display += (c && c !== ' ') ? c : ' ';
-    if (i < maxChars - 1) display += ' ';
+    const ch = (c && c !== ' ') ? c : ' ';
+    AddTextPrinterParameterized3(winText, 1, i * 8 + baseX, 1, [1, 2, 3], 255, ch);
   }
-  AddTextPrinterParameterized3(winText, 1, 8, 1, [1, 2, 3], 255, display);
   PutWindowTilemap(winText);
   CopyWindowToVram(winText, 3);
 }

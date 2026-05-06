@@ -1659,11 +1659,16 @@ export function MultiplyInvertedPaletteRGBComponents(
   const cR = c & 0x1F;
   const cG = (c >> 5) & 0x1F;
   const cB = (c >> 10) & 0x1F;
-  // Decomp formula : new = original - ((original * mul) >> 4)
-  // (= "inverted" since mul=0 leaves color, mul=16 reaches 0)
-  const nR = Math.max(0, cR - ((cR * rMul) >> 4));
-  const nG = Math.max(0, cG - ((cG * gMul) >> 4));
-  const nB = Math.max(0, cB - ((cB * bMul) >> 4));
+  // 1:1 décomp src/util.c MultiplyInvertedPaletteRGBComponents :
+  //   newR = origR + (((0x1F - origR) * r) >> 4);
+  // Le mul ADD vers WHITE (= 31), pas SUB vers BLACK. mul=0 → no change,
+  // mul=16 → atteint 31 (= blanc complet). "Inverted" dans le nom = on
+  // multiplie la DISTANCE vers blanc, pas la valeur courante.
+  // Bug session 96 : on faisait `cR - ((cR * mul) >> 4)` (= SUB vers black)
+  // → user feedback "cursor clignote en blanc, pas en noir" inversé.
+  const nR = Math.min(31, cR + (((0x1F - cR) * rMul) >> 4));
+  const nG = Math.min(31, cG + (((0x1F - cG) * gMul) >> 4));
+  const nB = Math.min(31, cB + (((0x1F - cB) * bMul) >> 4));
   const packed = (nR & 0x1F) | ((nG & 0x1F) << 5) | ((nB & 0x1F) << 10);
   r.gPlttBufferFaded.set(paletteIdx, packed);
 }

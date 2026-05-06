@@ -174,21 +174,32 @@ const CENTER_OFFSETS_SQUARE: ReadonlyArray<readonly [number, number]> = [
   [-4, -4], [-8, -8], [-16, -16], [-32, -32],
 ];
 
-/** 1:1 décomp pokemon_animation.c:984 SetAffineData. Computes pa/pb/pc/pd from
- *  xScale/yScale/rotation (Q.8 fixed-point, 256 = identity) via ObjAffineSet
- *  inline math, writes to gOamMatrices[matrixNum].
+/** 1:1 décomp pokemon_animation.c:984 SetAffineData → BIOS ObjAffineSet.
+ *  Le BIOS GBA INVERSE le scale : matrice pa/pd = trig / scale, pas trig × scale.
+ *  Convention : xScale > 256 → stretch (sprite bigger), xScale < 256 → shrink.
+ *  Le rendu OAM applique matrix × screenCoord = textureCoord. Pour stretcher
+ *  le sprite, il faut que screen pixel ↦ smaller texture pixel → pa < 256.
+ *  Donc pa = cos × 256 / xScale (= inverse).
+ *
+ *  Bug session 96 : avant on faisait `(xScale * cos) >> 8` (= direct, pas
+ *  inverse) → effet visuellement INVERSÉ : décomp dit "stretch" notre impl
+ *  "shrink", et vice-versa. User feedback "Lotad squish effet moindre / pas
+ *  visible comme sur GBA" venait de cette inversion.
+ *
  *  Slot 0 reserved as identity for AFFINE_OFF — skip writes there. */
 function setAffineData(rt: DecompRuntime, sprite: DecompSprite, xScale: number, yScale: number, rotation: number): void {
   const matrixNum = sprite.matrixNum;
   if (matrixNum <= 0 || matrixNum >= 32) return;
+  if (xScale === 0 || yScale === 0) return;  // safety vs div-zero
 
   const rot = rotation & 0xFFFF;
   const sin = Sin(rot, 256);
   const cos = Sin(rot + 64, 256);
-  const pa =  (xScale * cos) >> 8;
-  const pb = -(xScale * sin) >> 8;
-  const pc =  (yScale * sin) >> 8;
-  const pd =  (yScale * cos) >> 8;
+  // 1:1 BIOS ObjAffineSet : pa/pb scale par xScale^-1, pc/pd par yScale^-1.
+  const pa =  ((cos << 8) / xScale) | 0;
+  const pb = -((sin << 8) / xScale) | 0;
+  const pc =  ((sin << 8) / yScale) | 0;
+  const pd =  ((cos << 8) / yScale) | 0;
 
   const m = rt.gba.affineParams[matrixNum];
   if (m) { m.pa = pa; m.pb = pb; m.pc = pc; m.pd = pd; }

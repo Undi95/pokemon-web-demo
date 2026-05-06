@@ -152,9 +152,13 @@ function _getPlayerTextSpeedDelay(): number {
   const sb2 = (globalThis as Record<string, unknown>).gSaveBlock2Ptr as
     { optionsTextSpeed?: number } | undefined;
   const speed = (sb2?.optionsTextSpeed ?? 1) | 0;
-  // 1:1 décomp menu.c:77 sTextSpeedFrameDelays = { 8, 4, 1 } = SLOW/MID/FAST.
+  // Décomp menu.c:77 sTextSpeedFrameDelays = { 8, 4, 1 } = SLOW/MID/FAST.
+  // User feedback session 96 : "speed 3 (= FAST) doit être égal à maintenir A/B".
+  // Avec FAST=1 → printer reload delayCounter=1 → 2 frames/char. A/B held =
+  // 1 frame/char. Donc A/B held > FAST. UX-divergence intentionnelle vs décomp :
+  // FAST=0 → printer ne reload aucun délai → 1 frame/char = parité avec A/B.
   if (speed === 0) return 8;
-  if (speed === 2) return 1;
+  if (speed === 2) return 0;  // FAST = max speed, équivalent A/B held
   return 4;  // MID default
 }
 
