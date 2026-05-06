@@ -29,7 +29,7 @@ import {
   MAP_OFFSET,
   gMapHeader,
 } from './map-loader';
-import { GetCameraTopLeftCoords, GetCameraOffsetState } from './field-camera';
+import { GetCameraTopLeftCoords, gTotalCamera } from './field-camera';
 import { DIR_SOUTH } from './player-avatar';
 
 const BASE = '/decomp/em';
@@ -88,6 +88,11 @@ export interface ObjectEvent {
   objTileBase: number;
   /** Palette bank dans gPlttBufferFaded OBJ section. */
   paletteBank: number;
+  /** World x position en pixels (= où le sprite "VIT" dans le monde, avec
+   *  référence l'INITIAL camPos au spawn). Update sprite.x = worldX +
+   *  gTotalCamera.pixelOffsetX (= 1:1 décomp gSpriteCoordOffsetX pattern). */
+  worldX: number;
+  worldY: number;
 }
 
 /** 1:1 décomp `EWRAM_DATA struct ObjectEvent gObjectEvents[OBJECT_EVENTS_COUNT]`
@@ -105,6 +110,8 @@ export const gObjectEvents: ObjectEvent[] = Array.from({ length: OBJECT_EVENTS_C
   frameIdx: 0,
   objTileBase: 0,
   paletteBank: 0,
+  worldX: 0,
+  worldY: 0,
 }));
 
 // ─── OBJ tile/palette allocation ────────────────────────────────────────────
@@ -267,6 +274,7 @@ export async function SpawnObjectEventsOnMap(rt: DecompRuntime): Promise<void> {
     rt.gPlttBufferFaded.flushTo();
 
     // Init ObjectEvent state.
+    const cam = GetCameraTopLeftCoords();
     const npc = gObjectEvents[slot];
     npc.active = true;
     npc.invisible = false;
@@ -279,6 +287,14 @@ export async function SpawnObjectEventsOnMap(rt: DecompRuntime): Promise<void> {
     npc.frameIdx = 0;
     npc.objTileBase = objTileBase;
     npc.paletteBank = paletteBank;
+    // worldX/Y : sprite center en pixels au spawn (= screen pos initial).
+    // On décale ensuite par gTotalCamera.pixelOffsetX/Y pour suivre le scroll.
+    // gBackupMapLayout coords : (template.x + MAP_OFFSET, template.y + MAP_OFFSET).
+    // Sprite center : (col - cam.x) * 16 + 8, (row - cam.y) * 16.
+    const npcGBackupCol = template.x + MAP_OFFSET;
+    const npcGBackupRow = template.y + MAP_OFFSET;
+    npc.worldX = (npcGBackupCol - cam.x) * 16 + 8;
+    npc.worldY = (npcGBackupRow - cam.y) * 16;
 
     // Create sprite (= initial position calculée par UpdateObjectEvents au
     // prochain frame, mais on init à 0 pour éviter flash off-screen).
@@ -304,43 +320,42 @@ export async function SpawnObjectEventsOnMap(rt: DecompRuntime): Promise<void> {
 // ─── Update sprite positions each frame ─────────────────────────────────────
 
 /** À call chaque frame depuis MainCB2_Overworld. Met à jour sprite.x/y de
- *  chaque NPC selon son currentCoords + camera state.
+ *  chaque NPC selon son worldX/Y + camera scroll cumulatif.
  *
- *  Formule (cf. analyse Phase 4.4.a) :
- *    spriteCenterX = (npcGBackupCol - _camPos.x) * 16 + 8 - (xPixelOffset mod 16)
- *    spriteCenterY = (npcGBackupRow - _camPos.y) * 16 - (yPixelOffset mod 16)
+ *  Formule (= 1:1 décomp gSpriteCoordOffsetX pattern) :
+ *    sprite.x = npc.worldX + gTotalCamera.pixelOffsetX
+ *    sprite.y = npc.worldY + gTotalCamera.pixelOffsetY
  *
- *  Où npcGBackupCol = npc.currentCoordsX + MAP_OFFSET. */
+ *  Où :
+ *    - npc.worldX : sprite center x au moment du spawn (= initial screen pos).
+ *    - gTotalCamera.pixelOffsetX : cumulative camera scroll (negatif quand
+ *      camera move east, set par CameraUpdate à -= movementSpeedX chaque frame).
+ *
+ *  Avantage vs (viewCol-camPos.x)*16 - subX : pas de jump 16px au boundary
+ *  cross, car gTotalCamera est lisse (= updated par 1 px chaque frame). */
 export function UpdateObjectEvents(rt: DecompRuntime): void {
   const cam = GetCameraTopLeftCoords();
-  const camOff = GetCameraOffsetState();
-
-  // Sub-tile offset (= 0..15). xPixelOffset peut être grand (= cumulative).
-  // Mod 16 normalisé positif (= JS `%` retourne signed).
-  const subX = ((camOff.xPixelOffset % 16) + 16) % 16;
-  const subY = ((camOff.yPixelOffset % 16) + 16) % 16;
+  const offX = gTotalCamera.pixelOffsetX;
+  const offY = gTotalCamera.pixelOffsetY;
 
   for (const npc of gObjectEvents) {
     if (!npc.active || npc.spriteId < 0) continue;
     const sprite = rt.gSprites.get(npc.spriteId);
     if (!sprite) continue;
 
+    // Cull : check si proche de la view (utilise position currentCoords vs cam).
     const npcGBackupCol = npc.currentCoordsX + MAP_OFFSET;
     const npcGBackupRow = npc.currentCoordsY + MAP_OFFSET;
     const viewCol = npcGBackupCol - cam.x;
     const viewRow = npcGBackupRow - cam.y;
-
-    // Cull si très loin de la view (= éviter writes inutiles à OAM hors écran).
-    // View visible : cols 0..14, rows 0..9. Buffer +1 chaque côté.
     if (viewCol < -2 || viewCol > 17 || viewRow < -2 || viewRow > 13) {
-      // Hide via x out-of-range. GBA OAM x is 9-bit, hors range = invisible.
       sprite.invisible = true;
       continue;
     }
     sprite.invisible = false;
 
-    sprite.x = viewCol * 16 + 8 - subX;
-    sprite.y = viewRow * 16 - subY;
+    sprite.x = npc.worldX + offX;
+    sprite.y = npc.worldY + offY;
   }
 }
 
