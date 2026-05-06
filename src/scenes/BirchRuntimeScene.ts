@@ -65,7 +65,7 @@ import {
   DISPCNT_OBJ_ON, DISPCNT_OBJ_1D_MAP,
 } from '../engine/decomp-runtime';
 import { keyToGbaMask } from '../util/key-bindings';
-import { installBirchDevtools } from '../engine/birch-devtools';
+import { installEngineDevtools } from '../engine/engine-devtools';
 
 export class BirchRuntimeScene extends Phaser.Scene {
   private gba!: Gba;
@@ -119,8 +119,12 @@ export class BirchRuntimeScene extends Phaser.Scene {
     this.installKeyHandlers();
 
     // Devtools (= window.dev) pour debug interactif via console / preview_eval.
-    // Cf. src/engine/birch-devtools.ts mini doc en header.
-    installBirchDevtools(this);
+    // Cf. src/engine/engine-devtools.ts mini doc en header. Le poll auto-pause
+    // est appelé par DecompRuntime.runOneFrame (= pas besoin de hook scene-side).
+    installEngineDevtools(this.rt, {
+      setHeldKeys: (mask) => { this.heldKeys = mask; },
+      sceneName: 'BirchRuntimeScene',
+    });
 
     // Boot async : preload assets + enqueue Task_NewGameBirchSpeech_Init.
     void this.bootBirch();
@@ -212,11 +216,9 @@ export class BirchRuntimeScene extends Phaser.Scene {
     } catch (e) {
       console.error('[BirchRuntime.update] tickFixed THREW:', e);
     }
-    // Devtools: poll auto-pause condition (= dev.pauseAt). Cheap noop si non-armé.
-    try {
-      const cb = (globalThis as Record<string, unknown>).__birchPauseCondition as (() => void) | undefined;
-      if (typeof cb === 'function') cb();
-    } catch { /* swallow — devtools internal */ }
+    // Note : le poll auto-pause (= dev.pauseAt) est désormais appelé par
+    // DecompRuntime.runOneFrame (= one place pour toute scene). Ex-hook
+    // __birchPauseCondition retiré.
     try {
       this.bridge.tick();
     } catch (e) {

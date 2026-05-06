@@ -1186,9 +1186,17 @@ export function ResetPaletteFade(): void {
   r.gPaletteFade.hardwareFadeFinishing = false;
   r.gPaletteFade.shouldResetBlendRegisters = false;
   r.gPaletteFade.objPaletteToggle = false;
-  r.gPaletteFade.deltaY = 1;
+  // 1:1 décomp palette.c:380 ResetPaletteFadeControl : `deltaY = 2`. Notre ancien
+  // `= 1` était une divergence (= fade 2× plus lent si UpdatePaletteFade tournait
+  // sans BeginNormalPaletteFade prior — masqué en pratique car Begin set deltaY=2).
+  r.gPaletteFade.deltaY = 2;
   r.gPaletteFade.multipurpose1 = 0;
   r.gPaletteFade.multipurpose2 = 0;
+  // 1:1 décomp palette.c:370 : `blendColor = 0` (= RGB15 0,0,0 = noir).
+  // Nos équivalents : targetR/G/B (set par BeginNormalPaletteFade depuis blendColor).
+  r.gPaletteFade.targetR = 0;
+  r.gPaletteFade.targetG = 0;
+  r.gPaletteFade.targetB = 0;
 }
 export function ResetTasks(): void {
   const r = rt();

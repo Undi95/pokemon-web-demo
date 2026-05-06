@@ -36,3 +36,11 @@ public/decomp/**/*.gba
 
 # Reference videos (user's local files for visual comparison, not redistributable)
 *.mp4
+
+# Dev memos / audit notes (= local working docs, not part of the public repo).
+# README.md reste tracké comme intro publique du projet.
+AUDIT_*.md
+DEV_LOG.md
+ROADMAP.md
+*_NOTES.md
+*_SCRATCH.md

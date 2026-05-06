@@ -28,14 +28,8 @@ if (!import.meta.env.PROD) {
 import { TestGbaScene } from './scenes/TestGbaScene';
 import { GameScene } from './scenes/GameScene';
 import { DebugOverlayScene } from './scenes/DebugOverlayScene';
-import { MainMenuScene } from './scenes/MainMenuScene';
-import { BirchSpeechScene } from './scenes/BirchSpeechScene';
 import { BirchRuntimeScene } from './scenes/BirchRuntimeScene';
-import { NamingScene } from './scenes/NamingScene';
 import { OverworldScene } from './scenes/OverworldScene';
-import { BattleScene } from './scenes/BattleScene';
-import { MenuOverlayScene } from './scenes/MenuOverlayScene';
-import { OptionMenuScene } from './scenes/OptionMenuScene';
 import { createAudioDevtool } from './util/audio-devtool';
 import './util/remap-modal'; // exposes window.openRemapModal for the topbar button
 import { setMasterVolume } from './engine/m4a/audio-context';
@@ -62,20 +56,17 @@ export const GAME_H = MAP_H * TILE_SIZE; // 160
 
 const DEFAULT_ZOOM = 4;
 
-// ⚠️ Phase 0+ : la "ROM" Pokemon Émeraude tourne intégralement dans GameScene
+// La "ROM" Pokemon Émeraude tourne intégralement dans GameScene
 // (= 1:1 décomp `AgbMain` boot loop). TestGbaScene reste en 1ère position pour
-// tester l'engine GBA + audio M4A sans déclencher la chaîne de scènes.
+// tester l'engine GBA + audio sans déclencher la chaîne de scènes.
 //
-// Toutes les anciennes scenes Phaser custom (IntroScene, TitleScene, MainMenuScene,
-// BirchSpeechScene, NamingScene, OverworldScene, BattleScene, IntroSceneGba,
-// IntroScene2Gba, TitleSceneGba, BootScene, OptionMenuScene, MenuOverlayScene)
-// sont conservées sur disque mais sorties du scene array — elles seront soit
-// portées vers le boot loop décomp (= Tasks transcrites), soit supprimées.
-//
-// Boot flow Phase 0c+ :
-//   TestGbaScene (1er) → click/key → GameScene → copyright → intro → title → MainMenuScene
+// Boot flow :
+//   TestGbaScene (1er) → click/key → GameScene
 //   GameScene → init Gba + DecompRuntime + audio → SetMainCallback2(CB2_InitCopyrightScreenAfterBootup)
-//             → tickFixed 60Hz → toute la chaîne CB2/Task décomp se déroule.
+//             → tickFixed 60Hz → toute la chaîne CB2/Task décomp se déroule
+//             (Copyright → Intro → Title → Main Menu native).
+//   BirchRuntimeScene : host alternatif pour le flow Birch sur runtime décomp natif.
+//   OverworldScene : scène legacy conservée (= ré-utilisable post Phase 4 overworld native).
 //   DebugOverlayScene : overlay global (fps / frame / tasks / sprites) sur toutes les scènes.
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -85,11 +76,7 @@ const config: Phaser.Types.Core.GameConfig = {
   zoom: DEFAULT_ZOOM,
   pixelArt: true,
   backgroundColor: '#000000',
-  // BirchRuntimeScene = nouveau host pour le flow Birch sur le runtime décomp
-  // natif (= remplace BirchSpeechScene legacy Phaser, voir scenes/BirchRuntimeScene.ts).
-  // BirchSpeechScene reste enregistrée le temps de valider la migration ; sera
-  // retirée à la prochaine itération.
-  scene: [TestGbaScene, GameScene, MainMenuScene, BirchRuntimeScene, BirchSpeechScene, NamingScene, OverworldScene, BattleScene, MenuOverlayScene, OptionMenuScene],
+  scene: [TestGbaScene, GameScene, BirchRuntimeScene, OverworldScene],
   // Restrict input listeners to the canvas only (= clicks/keys outside the
   // game window don't start/affect the game). Default Phaser behavior is to
   // listen window-wide which interferes with the audio devtool topbar.

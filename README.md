@@ -4,16 +4,9 @@
 **décompilation FR** [`qigast/pokeemeraude`](https://github.com/qigast/pokeemeraude)
 et de [`@pkmn/sim`](https://github.com/pkmn/ps) pour le moteur de combat.
 
-> **Directive du projet** : 1:1 décomp + foundations unifiées. Zéro hardcode, aucun
-> pré-rendu PNG, aucune ROM. Tout passe par le boot loop décomp
+> **Directive du projet** : 1:1 décomp + foundations unifiées. Zéro hardcode,
+> aucun pré-rendu PNG, aucune ROM. Tout passe par le boot loop décomp
 > `gMain.callback2 + RunTasks + AnimateSprites + BuildOamBuffer`.
-
-## Documents principaux
-
-- [`ROADMAP.md`](./ROADMAP.md) — état actuel, bugs résiduels, phases planifiées
-- [`DEV_LOG.md`](./DEV_LOG.md) — historique session par session
-- [`AUDIT_1_1_DECOMP.md`](./AUDIT_1_1_DECOMP.md) — audit 1:1 décomp + foundations
-- [`AUDIT_BOOT.md`](./AUDIT_BOOT.md) — audit boot flow Crédits → New Game
 
 ## Lancer
 
@@ -36,10 +29,6 @@ Customisables via le bouton **🎮 Remap** du topbar (= persistant `localStorage
 **Topbar** : zoom ×1..×6 (×1 = résolution native GBA 240×160), Remap, et un
 panneau audio devtool (sous le canvas) avec search BGM/SE + slider volume master.
 
-**Lock canvas** : focus géré nativement via `tabIndex` + `document.activeElement`.
-Cliquer ailleurs sur la page perd le focus naturellement, cliquer sur le canvas
-le récupère. Empêche le scroll page de hijacker les flèches pendant le jeu.
-
 ## Stack
 
 - **Vite + TypeScript + Phaser 3** — host canvas only, pas de logique jeu côté Phaser
@@ -54,24 +43,26 @@ le récupère. Empêche le scroll page de hijacker les flèches pendant le jeu.
   `gba-text-system` / `gba-text-window` / `gba-window-system` / `gba-menu-system`
 - **Modules scene-specific** : `option-menu-impl` (1:1 décomp `option_menu.c`),
   `main-menu-impl` (1:1 décomp `main_menu.c`), `copyright-boot`
-  (1:1 décomp `intro.c` boot loop)
+  (1:1 décomp `intro.c` boot loop), `naming-screen-impl` (1:1 décomp `naming_screen.c`),
+  `pokeball-effects` (1:1 décomp `pokeball.c`)
 - **Transpileur C → TS** (`scripts/transpile-callbacks.mjs`) :
   callbacks `Task_*` / `SpriteCB_*` / `CB2_*` transcrits automatiquement
-  depuis le décomp + `post-transpile-patches.mjs` idempotent (patterns
-  génériques + scene-specific)
+  depuis le décomp + `post-transpile-patches.mjs` idempotent
 - **Combat** : [`@pkmn/sim`](https://github.com/pkmn/ps) + `@pkmn/dex` (Gen 3)
+- **Devtools runtime** (`src/engine/engine-devtools.ts`) : `window.dev` exposé
+  pour debug interactif (frame control, savestate, pixelTrace, hookFn, dumps).
 
 ## Structure src/
 
 ```
 src/
   main.ts                         Phaser config (scenes array)
-  vite-env.d.ts                   Vite types reference
   scenes/
-    GameScene.ts                  Host unique, tick DecompRuntime à 60Hz, boot via copyright-boot
     TestGbaScene.ts               Sanity engine GBA + audio (Lotad rotation + mus_intro test)
+    GameScene.ts                  Host unique, tick DecompRuntime à 60Hz, boot via copyright-boot
+    BirchRuntimeScene.ts          Host alternatif pour le flow Birch sur runtime décomp natif
     DebugOverlayScene.ts          Overlay fps / frame / tasks / sprites
-    [legacy] BattleScene/Birch/Naming/Overworld/etc. — restaurés mais hors scene array
+    OverworldScene.ts             Scène legacy conservée (= reusable post-Phase 4 overworld native)
   engine/
     gba/                          Engine GBA pixel-perfect (BG/OAM/palette/blend/windows/affine)
     m4a/                          Audio runtime (SpessaSynth bridge + voicegroups + sample loader)
@@ -81,19 +72,20 @@ src/
     decomp-globals.ts             Helpers globaux 1:1 décomp (LZ77UnCompVram, LoadPalette, etc.)
     decomp-helpers.ts             Sin / Cos / SetOamMatrix / CalcCenterToCornerVec / PaletteBuffer.flushTo
     copyright-boot.ts             1:1 CB2_InitCopyrightScreenAfterBootup state machine
-    intro-asset-loader.ts         Preload Scene 1 + 2 + 3 + Title assets
+    intro-asset-loader.ts         Preload Scene 1 + 2 + 3 + Title + Birch assets
     gba-text-system.ts            Render text via GBA windows + GetStringWidth glyph widths
     gba-text-window.ts            Foundation partagée frame tiles (option_menu ↔ main_menu)
     gba-window-system.ts          Windows GBA (frames + content + FillBgTilemapBufferRect)
     gba-menu-system.ts            Helpers menu génériques (Yes/No, cursor input, gSaveBlock2Ptr proxy)
+    gba-text-printer.ts           Printer engine 1:1 décomp src/text.c (RunTextPrinter, etc.)
     main-menu-impl.ts             1:1 décomp main_menu.c (InitMainMenu, HandleMainMenuInput, …)
-    option-menu-impl.ts           1:1 décomp option_menu.c (Draw helpers, ProcessInput, save persistence)
+    option-menu-impl.ts           1:1 décomp option_menu.c
+    naming-screen-impl.ts         1:1 décomp naming_screen.c
+    pokeball-effects.ts           1:1 décomp pokeball.c (release flash + sparkles + emerge anim)
+    engine-devtools.ts            window.dev runtime debug helpers (= installé par les scenes)
     gba-strings.ts                Strings FR depuis /decomp/em/strings.json
-    gba-task.ts / gba-io-regs.ts / gba-global-scope.ts
-    decomp-data/main-menu-data.ts Data extracted from main_menu.c
-    palette-fade.ts               @deprecated — wrapper Phaser legacy
     music.ts                      SpessaSynth bridge BGM
-scripts/                          ~68 extracteurs Node ESM + transpileur + post-transpile-patches
+scripts/                          ~70 extracteurs Node ESM + transpileur + post-transpile-patches
 public/decomp/em/                 Assets extraits (re-générables)
 public/em-rip69/                  529 MIDI rippés depuis ROM (gba-mus-ripper)
 public/audio/se_prerendered/      269 SE WAV pré-rendus offline
@@ -127,6 +119,22 @@ G3 = `VBlankCB` no-op auto-inject).
 - vraie touche GBA (= W / X / Enter / etc.) = passe à `GameScene`
 
 Si `TestGba` marche pixel-perfect, l'engine est validé.
+
+## Devtools runtime (`window.dev`)
+
+Disponible dès qu'une scene runtime boot (`installEngineDevtools` est wired
+dans GameScene + BirchRuntimeScene). Type `dev.help()` dans la console pour
+la liste complète. Highlights :
+
+- **Frame control** : `dev.pause()` / `dev.resume()` / `dev.step(N)` / `dev.seek(F)`
+- **Auto-pause** : `dev.pauseAt(rt => rt.gSprites.size === 21, 'release')`
+- **Pixel trace** : `dev.pixelTrace(80, 50)` → quel sprite/BG occupe ce pixel
+- **Savestates** : `dev.savestate('foo')` / `dev.loadstate('foo')` (incomplet pour task closures)
+- **Function hooks** : `dev.hookFn('BlendPalette', { budget: 100 })` (log args)
+- **Memory dumps** : `dev.vram(addr, len)` / `dev.palBank(b, mode, faded)` / `dev.palDiff()`
+- **Visibility isolation** : `dev.bgVisible(idx, false)` / `dev.objHide(true)`
+
+URL params : `?pause` (boot pausé), `?seekTo=N` (skip à frame N), `?slow=0.25` (speed).
 
 ## Régénérer les SE
 
@@ -179,3 +187,8 @@ engineering qui rend ce port web possible.
   SF2 + MIDI en WAV (`scripts/render-se-from-emrip.mjs`).
 - **[`pokeemeraude`](https://github.com/qigast/pokeemeraude)** — décomp FR qui
   fournit le `song_table.inc` pour mapper IDs songs → noms.
+
+## License
+
+Code original de ce port web : MIT. Voir aussi les licenses des projets
+sources (pokeemeraude, pret/pokeemerald, spessasynth, gba-mus-ripper).

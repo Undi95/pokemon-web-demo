@@ -56,6 +56,7 @@ import {
 import { CB2_InitCopyrightScreenAfterBootup, MainCB2_Intro } from '../engine/copyright-boot';
 import { InitKeys } from '../engine/decomp-runtime';
 import { keyToGbaMask } from '../util/key-bindings';
+import { installEngineDevtools } from '../engine/engine-devtools';
 
 export class GameScene extends Phaser.Scene {
   private gba!: Gba;
@@ -253,177 +254,14 @@ export class GameScene extends Phaser.Scene {
       },
     };
 
-    // Devtools: pause/step/seek frame controls. Exposés via window.dev pour
-    // qu'on puisse les call depuis la console ou preview_eval.
-    const rt = this.rt;
-    (window as any).dev = {
-      // DEBUG only — accès direct au runtime + helpers diagnostic Birch flow.
-      _rt: rt,
-      fade: () => ({
-        active: rt.gPaletteFade.active,
-        brightness: rt.gPaletteFade.brightness,
-        currentFrame: rt.gPaletteFade.currentFrame,
-        totalFrames: rt.gPaletteFade.totalFrames,
-        endY: rt.gPaletteFade.endY,
-        startY: rt.gPaletteFade.startY,
-      }),
-      printers: async () => {
-        const m = await import('../engine/gba-text-system');
-        return m._debugGetTextPrinters().map((ap, i) => ({
-          slot: i, windowId: ap.windowId, finished: ap.finished,
-          state: ap.printer.state, charIdx: (ap.printer as any).charIdx,
-          encodedLen: (ap.printer as any).encodedString?.length,
-        }));
-      },
-      pause: () => { rt.paused = true; rt.stepBudget = 0; return 'paused @ frame ' + rt.gIntroFrameCounter; },
-      resume: () => { rt.paused = false; rt.stepBudget = 0; return 'resumed @ frame ' + rt.gIntroFrameCounter; },
-      step: (n = 1) => { rt.paused = true; rt.stepBudget += n; return 'step ' + n + ' frames'; },
-      seek: (frame: number) => {
-        if (frame <= rt.gIntroFrameCounter) return 'cannot seek backward (would need full reset). current=' + rt.gIntroFrameCounter;
-        rt.paused = true; rt.stepBudget = frame - rt.gIntroFrameCounter;
-        return 'seeking ' + rt.stepBudget + ' frames forward to ' + frame;
-      },
-      speed: (mult: number) => { rt.speedMultiplier = mult; return 'speed = ' + mult + 'x'; },
-      frame: () => rt.gIntroFrameCounter,
-      // Convenience: dump full sprite state with names
-      sprites: () => {
-        const out: any[] = [];
-        for (const [id, s] of rt.gSprites.entries()) {
-          const oam = rt.gba.oam[s.oamIndex];
-          out.push({
-            id, x: s.x, y: s.y, x2: s.x2, y2: s.y2, invisible: s.invisible,
-            tileId: oam?.tileId, paletteBank: oam?.paletteBank,
-            shape: oam?.shape, size: oam?.size, bpp: oam?.paletteMode,
-            objMode: oam?.objMode, callback: s.callback ? 'fn' : null,
-            data: Array.from(s.data || []).slice(0, 8),
-          });
-        }
-        return out;
-      },
-      tasks: () => {
-        const out: any[] = [];
-        for (const [id, t] of rt.gTasks.entries()) {
-          out.push({ id, hasFunc: !!t.func, data: Array.from(t.data || []).slice(0, 8) });
-        }
-        return out;
-      },
-      bgs: () => {
-        return [0,1,2,3].map(i => ({ idx: i, ...rt.gba.bg(i as 0|1|2|3).config }));
-      },
-      // Backward step : reload + start paused + step forward to target frame.
-      back: (n = 1) => {
-        const target = Math.max(0, rt.gIntroFrameCounter - n);
-        const url = new URL(window.location.href);
-        url.searchParams.set('pause', '1');
-        url.searchParams.set('seekTo', String(target));
-        window.location.href = url.toString();
-        return 'reloading + seeking back to frame ' + target;
-      },
-      // VRAM hex dump (BG vram unifié 96KB). Address absolu depuis VRAM=0.
-      vram: (addr: number, len: number = 32) => {
-        const buf = rt.gba.vram.subarray(addr, Math.min(addr + len, rt.gba.vram.length));
-        return Array.from(buf).map(b => b.toString(16).padStart(2,'0')).join(' ');
-      },
-      // OBJ VRAM dump.
-      ovram: (addr: number, len: number = 32) => {
-        const buf = rt.gba.objVram.subarray(addr, Math.min(addr + len, rt.gba.objVram.length));
-        return Array.from(buf).map(b => b.toString(16).padStart(2,'0')).join(' ');
-      },
-      // Palette dump bank N (16 colors). Mode 'bg' ou 'obj'. faded=true → après UpdatePaletteFade.
-      palBank: (bank: number, mode: 'bg' | 'obj' = 'bg', faded: boolean = true) => {
-        const out: { idx: number; rgb15: string; rgb8: string }[] = [];
-        const buf = mode === 'bg'
-          ? (faded ? rt.gPlttBufferFaded : rt.gPlttBufferUnfaded)
-          : (faded ? rt.gPlttBufferFaded : rt.gPlttBufferUnfaded);
-        const offset = mode === 'bg' ? 0 : 256;
-        for (let i = 0; i < 16; i++) {
-          const flat = offset + bank * 16 + i;
-          const v = buf.get(flat);
-          const r5 = v & 0x1F, g5 = (v >> 5) & 0x1F, b5 = (v >> 10) & 0x1F;
-          out.push({ idx: i, rgb15: '0x'+v.toString(16).padStart(4,'0'), rgb8: `${r5*8},${g5*8},${b5*8}` });
-        }
-        return out;
-      },
-      // Compare gPlttBufferUnfaded vs Faded (= si fade actif, montre la diff).
-      palDiff: (count: number = 32) => {
-        const out: { idx: number; unfaded: string; faded: string; same: boolean }[] = [];
-        for (let i = 0; i < count; i++) {
-          const u = rt.gPlttBufferUnfaded.get(i);
-          const f = rt.gPlttBufferFaded.get(i);
-          out.push({ idx: i, unfaded: '0x'+u.toString(16).padStart(4,'0'), faded: '0x'+f.toString(16).padStart(4,'0'), same: u === f });
-        }
-        return out;
-      },
-      // Toggle BG visibility (= isolation pour debug). Returns prev state.
-      bgVisible: (idx: 0|1|2|3, visible?: boolean) => {
-        const cfg = rt.gba.bg(idx).config;
-        const prev = cfg.visible;
-        if (visible !== undefined) cfg.visible = visible;
-        return { idx, prev, current: cfg.visible };
-      },
-      // Hide all OBJ sprites (= isolate BG layers).
-      // _hiddenByDev tracking : Set externe (= pas de pollution OamEntry).
-      objHide: (hide: boolean = true) => {
-        const stash: Set<number> = ((window as unknown as { __objHideStash?: Set<number> }).__objHideStash ??= new Set());
-        for (let i = 0; i < 128; i++) {
-          if (hide) {
-            if (rt.gba.oam[i].visible) stash.add(i);
-            rt.gba.oam[i].visible = false;
-          } else if (stash.has(i)) {
-            rt.gba.oam[i].visible = true;
-            stash.delete(i);
-          }
-        }
-        return hide ? 'all sprites hidden' : 'sprites restored';
-      },
-      // Affine matrix dump.
-      affineMat: () => ({
-        bg2: rt.gba.bgAffineMatrices[0],
-        bg3: rt.gba.bgAffineMatrices[1],
-      }),
-      // Window state dump.
-      windows: () => rt.gba.windows,
-      // Blend state dump.
-      blend: () => rt.gba.blend,
-      // Quick info panel for current frame.
-      info: () => ({
-        frame: rt.gIntroFrameCounter,
-        cb2: rt.gMain.callback2?.name || 'anon',
-        taskCount: rt.gTasks.size,
-        spriteCount: Array.from(rt.gSprites.values()).filter(s => !s.invisible).length,
-        bg2: rt.gba.bg(2).config,
-        blend: { mode: rt.gba.blend.mode, br: rt.gba.blend.brightness },
-        paletteFade: { active: rt.gPaletteFade.active, current: rt.gPaletteFade.currentFrame, total: rt.gPaletteFade.totalFrames },
-      }),
-    };
-    console.log('[devtools] window.dev ready:');
-    console.log('  pause/resume/step(n)/seek(frame)/back(n)/speed(x)/frame()');
-    console.log('  sprites/tasks/bgs/info');
-    console.log('  vram(addr,len)/ovram(addr,len)/palBank(bank,mode,faded)/palDiff(count)');
-    console.log('  bgVisible(idx,visible?)/objHide(hide?)/affineMat()/windows()/blend()');
-
-    // ?pause query param → start paused for frame-accurate audit. ?slow=N → speed N.
-    // ?seekTo=N → after init, queue a seek to gIntroFrameCounter==N (= used by dev.back()).
-    const params = new URLSearchParams(window.location.search);
-    if (params.has('pause')) { rt.paused = true; console.log('[devtools] startup paused — call dev.resume() or dev.step(N)'); }
-    const slow = params.get('slow');
-    if (slow) { rt.speedMultiplier = Number(slow); console.log('[devtools] speed = ' + slow + 'x'); }
-    const seekTo = params.get('seekTo');
-    if (seekTo) {
-      const target = Number(seekTo);
-      console.log(`[devtools] seekTo=${target} requested, will burst when ready`);
-      // Queue : check periodically until rt has progressed (= bootIntro done).
-      const checkAndSeek = () => {
-        if (rt.gIntroFrameCounter > 0 || rt.gMain.callback2) {
-          rt.paused = true;
-          rt.stepBudget = target;
-          console.log(`[devtools] seekTo ${target} : burst ${target} frames`);
-        } else {
-          setTimeout(checkAndSeek, 100);
-        }
-      };
-      setTimeout(checkAndSeek, 500);
-    }
+    // Devtools : window.dev unifié (= cf. src/engine/engine-devtools.ts).
+    // Toute scène basée sur DecompRuntime peut call installEngineDevtools(rt) ;
+    // les helpers (frame control, savestate, pixelTrace, hookFn, dumps, etc.)
+    // sont identiques. ?pause/?seekTo/?slow query params gérés inside (idempotent).
+    installEngineDevtools(this.rt, {
+      setHeldKeys: (mask) => { this.heldKeys = mask; },
+      sceneName: 'GameScene',
+    });
 
     const frameImg = this.add.image(0, 0, 'game-frame').setOrigin(0, 0);
     if (GAME_W !== 240 || GAME_H !== 160) {

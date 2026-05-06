@@ -946,7 +946,10 @@ export class DecompRuntime {
     this.gPaletteFade.delayRemaining = effectiveDelay;
     // ─── Phase B audit session 83 : init fields complets 1:1 décomp ────
     this.gPaletteFade.mode = NORMAL_FADE;
-    this.gPaletteFade.yDec = startY > endY;
+    // 1:1 décomp palette.c:186-189 : `if (startY < targetY) yDec = 0; else yDec = 1;`
+    // Cas startY == targetY → décomp set yDec=1 (= "decreasing"). Notre fix :
+    // strict 1:1 avec ce edge case (= startY < endY → false → yDec=1).
+    this.gPaletteFade.yDec = !(startY < endY);
     this.gPaletteFade.softwareFadeFinishing = false;
     this.gPaletteFade.softwareFadeFinishingCounter = 0;
     this.gPaletteFade.hardwareFadeFinishing = false;
@@ -1098,14 +1101,14 @@ export class DecompRuntime {
       return false;
     }
 
-    // ─── 1:1 décomp IsSoftwarePaletteFadeFinishing (l.809-830) ──────
-    // softwareFadeFinishingCounter ramps 0→4. Quand 4 atteint, active=false.
-    // Pendant ce temps, return ACTIVE (les callers sont bloqués).
+    // ─── 1:1 décomp IsSoftwarePaletteFadeFinishing (palette.c:809-830) ──
+    // Counter ramps 0→4 (= 5 frames). Quand 4 atteint : active=FALSE +
+    // softwareFadeFinishing=FALSE + counter=0 dans le MÊME call (= 1:1).
+    // Pendant ces 5 frames, return TRUE (= PALETTE_FADE_STATUS_ACTIVE).
     if (f.softwareFadeFinishing) {
       if (f.softwareFadeFinishingCounter === 4) {
         f.active = false;
-        // (laisser softwareFadeFinishing à TRUE 1 frame de plus pour les
-        //  callers, reset au prochain tick via le if (!f.active) plus haut)
+        f.softwareFadeFinishing = false;  // 1:1 décomp — clear MÊME tick
         f.softwareFadeFinishingCounter = 0;
       } else {
         f.softwareFadeFinishingCounter++;
@@ -1987,6 +1990,11 @@ export class DecompRuntime {
     const scanlineTick = (globalThis as any).__scanlineEffectTick;
     if (typeof scanlineTick === 'function') scanlineTick();
     this.gIntroFrameCounter++;
+    // Devtools : auto-pause condition poll (= dev.pauseAt). Cheap noop si non-armé.
+    // Posé sur globalThis par engine-devtools.ts pour fonctionner partout.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const enginePauseCb = (globalThis as any).__enginePauseCondition;
+    if (typeof enginePauseCb === 'function') enginePauseCb();
   }
 
   /** Run tous les sprite callbacks (1:1 décomp main loop sprite update). */
