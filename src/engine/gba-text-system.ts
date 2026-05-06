@@ -240,7 +240,7 @@ export function AddTextPrinterForMessage(_allowSkipping: boolean): void {
     glyphWidths: glyphWidths!,
     x: 0,
     y: 1,
-    textSpeed: 1,
+    textSpeed: _getPlayerTextSpeedDelay(),  // 1:1 décomp : lit gSaveBlock2Ptr.optionsTextSpeed
     downArrowPixels: downArrowPixels ?? undefined,
   };
   const printer = addTextPrinter(opts);
@@ -267,7 +267,7 @@ export function AddTextPrinterWithCallbackForMessage(
     glyphWidths: glyphWidths!,
     x: 0,
     y: 1,
-    textSpeed: 1,
+    textSpeed: _getPlayerTextSpeedDelay(),  // 1:1 décomp : lit gSaveBlock2Ptr.optionsTextSpeed
     downArrowPixels: downArrowPixels ?? undefined,
     onCharRendered: callback,
   };
