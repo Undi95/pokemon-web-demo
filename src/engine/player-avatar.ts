@@ -68,14 +68,29 @@ export const T_TILE_CENTER     = 2;
  *  Notre engine : speed 1 px/frame = 16 frames per metatile (= 16 px). */
 const WALK_SPEED_PX_PER_FRAME = 1;
 
-/** Sprite anim frames pour la marche (PNG indices) :
- *  Pour chaque direction : [face, walk_step_a, walk_step_b].
- *  La séquence walk anim = [walk_a, face, walk_b, face] (= 4 frames cycle). */
+/** Sprite anim frames 1:1 décomp `object_event_anims.h` :
+ *
+ *  sAnim_FaceSouth: FRAME(0, 16)   // face = 0
+ *  sAnim_FaceNorth: FRAME(1, 16)   // face = 1
+ *  sAnim_FaceWest:  FRAME(2, 16)   // face = 2
+ *  sAnim_FaceEast:  FRAME(2, 16, hFlip)  // face = 2 + flip
+ *
+ *  sAnim_GoSouth: FRAME(3,8) → FRAME(0,8) → FRAME(4,8) → FRAME(0,8)
+ *  sAnim_GoNorth: FRAME(5,8) → FRAME(1,8) → FRAME(6,8) → FRAME(1,8)
+ *  sAnim_GoWest:  FRAME(7,8) → FRAME(2,8) → FRAME(8,8) → FRAME(2,8)
+ *  sAnim_GoEast:  pareil avec hFlip
+ *
+ *  PNG layout 9 frames :
+ *    0=face_S, 1=face_N, 2=face_W,
+ *    3=walk_S_a, 4=walk_S_b, 5=walk_N_a, 6=walk_N_b, 7=walk_W_a, 8=walk_W_b
+ *
+ *  Cycle walk : walk_a → face → walk_b → face (= NOT face first!).
+ *  Pour 16-frame step : walk (8 frames) → face (8 frames). */
 const SPRITE_FRAMES = {
-  [DIR_SOUTH]: { face: 0, walk1: 1, walk2: 2, hFlip: false },
-  [DIR_NORTH]: { face: 3, walk1: 4, walk2: 5, hFlip: false },
-  [DIR_EAST]:  { face: 6, walk1: 7, walk2: 8, hFlip: false },
-  [DIR_WEST]:  { face: 6, walk1: 7, walk2: 8, hFlip: true },  // mirror right
+  [DIR_SOUTH]: { face: 0, walk1: 3, walk2: 4, hFlip: false },
+  [DIR_NORTH]: { face: 1, walk1: 5, walk2: 6, hFlip: false },
+  [DIR_WEST]:  { face: 2, walk1: 7, walk2: 8, hFlip: false },
+  [DIR_EAST]:  { face: 2, walk1: 7, walk2: 8, hFlip: true },  // mirror west
 } as const;
 
 // ─── Player Avatar struct (= simplified gPlayerAvatar) ──────────────────────
@@ -282,22 +297,24 @@ function updateSpriteFrame(rt: DecompRuntime): void {
 
   let frameIdx: number;
   if (gPlayerAvatar.runningState === MOVING && gPlayerAvatar.stepFramesLeft > 0) {
-    // Walk anim 1:1 décomp `sAnim_StdGoSouth` (data/object_events/object_event_anims.h) :
-    //   FRAME 0 (face) duration 8
-    //   FRAME 1 (walk_a) duration 8
-    //   FRAME 0 (face) duration 8
-    //   FRAME 2 (walk_b) duration 8
-    // = 32 game-frames total = 2 metatile steps. Chaque step = 16 frames =
-    // face (8) + walk (8). walkAnimAlt alterne entre walk_a et walk_b.
+    // Walk anim 1:1 décomp `sAnim_GoSouth` (object_event_anims.h) :
+    //   ANIMCMD_FRAME(walk_a, 8)
+    //   ANIMCMD_FRAME(face, 8)
+    //   ANIMCMD_FRAME(walk_b, 8)
+    //   ANIMCMD_FRAME(face, 8)
+    //   ANIMCMD_JUMP(0)
+    // Cycle = 32 game-frames = 2 metatile steps.
     //
-    // stepFramesLeft DECREMENTS de 16→1 sur les 16 frames de la step.
-    // Frames 0-7 (= stepFramesLeft 15..8) : face
-    // Frames 8-15 (= stepFramesLeft 7..0) : walk_a OR walk_b alternating
-    // Note `>= 8` pas `> 8` (= 8 frames face exact, 8 frames walk exact).
+    // Step 1 : walk_a (8 frames) → face (8 frames)
+    // Step 2 : walk_b (8 frames) → face (8 frames)  — walkAnimAlt switch
+    //
+    // stepFramesLeft DECREMENTS de 16→1.
+    // Frames 0-7 (= stepFramesLeft 15..8) : walk_a OR walk_b
+    // Frames 8-15 (= stepFramesLeft 7..0) : face
     if (gPlayerAvatar.stepFramesLeft >= 8) {
-      frameIdx = cfg.face;
-    } else {
       frameIdx = gPlayerAvatar.walkAnimAlt === 0 ? cfg.walk1 : cfg.walk2;
+    } else {
+      frameIdx = cfg.face;
     }
   } else {
     frameIdx = cfg.face;
