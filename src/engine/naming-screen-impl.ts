@@ -443,6 +443,18 @@ async function loadNamingScreenAssets(): Promise<void> {
   if (!rt) return;
   const BASE = '/decomp/em/boot/naming_screen/';
 
+  // ⚠️ Pre-blacken faded palette buffer at LOAD START + après CHAQUE LoadPalette.
+  // Le ROM décomp a softwareFadeFinishing actif pendant le loading qui maintient
+  // brightness=16 (= black) jusqu'à BeginNormalPaletteFade en MainState_FadeIn.
+  // Notre version : awaits inter-LoadPalette laissent passer 1+ frames où le
+  // compositor render avec partial palette (= bleu BG bank 0 visible). Fix :
+  // après chaque LoadPalette, on re-blackeng faded → next frame stays black.
+  // Helper local pour cette fonction uniquement.
+  const reBlackenFaded = (): void => {
+    BlendPalettes(0xFFFFFFFF, 16, 0x0000);
+  };
+  reBlackenFaded();
+
   // ─── BG palettes (banks 0-5 = gNamingScreenMenu_Pal[6][16], bank 10 = keyboard Pal,
   //     bank 11 = txt window pal) ─
   // 1:1 décomp src/naming_screen.c:1887-1892 LoadPalettes :
@@ -466,6 +478,7 @@ async function loadNamingScreenAssets(): Promise<void> {
       try {
         const pal = await loadGbaPal(e.url);
         LoadPalette(pal, e.bank * 16, Math.min(32, pal.byteLength));
+        reBlackenFaded();  // re-black after each load (= no bleu flash entre awaits)
       } catch (innerE) {
         console.warn(`[naming-screen] BG pal ${e.url} failed:`, innerE);
       }
@@ -473,6 +486,7 @@ async function loadNamingScreenAssets(): Promise<void> {
 
     const keyboardPal = await loadGbaPal(BASE + 'keyboard.pal');
     LoadPalette(keyboardPal, 10 * 16, 32);  // bank 10
+    reBlackenFaded();
 
     // 1:1 décomp src/naming_screen.c:1891 :
     //   LoadPalette(GetTextWindowPalette(2), BG_PLTT_ID(11), PLTT_SIZE_4BPP);
@@ -486,6 +500,7 @@ async function loadNamingScreenAssets(): Promise<void> {
       LoadPalette(textPal2, 11 * 16, 32);  // bank 11 = WIN_BANNER bg
       // Bank 14 (= used by some other text prints) — same pal pour cohérence.
       LoadPalette(textPal2, 14 * 16, 32);
+      reBlackenFaded();
     } catch (e) {
       console.warn('[naming-screen] text_pal2.pal failed, banner banner will be black:', e);
     }
@@ -527,6 +542,7 @@ async function loadNamingScreenAssets(): Promise<void> {
         rt.gPlttBufferFaded.set(256 + slot * 16 + i, pal[i]);
       }
       rt.paletteTagToSlot.set(e.tag, slot);
+      reBlackenFaded();
     }
   } catch (e) {
     console.warn('[naming-screen] loadNamingScreenAssets OBJ palettes failed:', e);
@@ -759,6 +775,11 @@ function CB2_LoadNamingScreen(): void {
         _loadInProgress = true;
         loadNamingScreenAssets().finally(() => {
           _loadInProgress = false;
+          // ⚠️ Pre-blacken palette buffer IMMEDIATELY après async load.
+          // Voir hook loadNamingScreenAssets() qui appelle BlendPalettes
+          // au DÉBUT (= avant les LoadPalette individuels) pour neutraliser
+          // les frames intermédiaires.
+          BlendPalettes(0xFFFFFFFF, 16, 0x0000);
           if (rt.gMain.state === 5) rt.gMain.state++;
         });
       }
@@ -769,15 +790,16 @@ function CB2_LoadNamingScreen(): void {
       break;
     case 7:
       CreateSprites();
-      // 1:1 décomp:447-451 case 7 : CreateSprites + UpdatePaletteFade + ShowBgs.
-      // Bug session 96 : entre case 5 (= LoadPalettes injected real colors) et
-      // MainState_FadeIn (= démarre BeginNormalPaletteFade brightness=16=black),
-      // l'écran rend ~3 frames avec colors visibles + BG vide → user feedback
-      // "screen flash 2 fois, 1 fois sprite seul, puis page complète".
-      // Fix : BlendPalettes(ALL, 16, BLACK) force le palette buffer faded à
-      // black avant ShowBgs → écran noir jusqu'au fade-in. Le décomp n'a pas
-      // ce problème car la previous scene laisse softwareFadeFinishing qui
-      // maintient brightness=16 ; notre ResetPaletteFade en case 2 le clear.
+      // ⚠️ Pre-black palette JUSTE AVANT ShowBgs.
+      // Le .finally() du case 5 BlendPalettes peut être trop tard (= state++
+      // déjà à 6 quand finally fire si LoadPalettes await yields), et même
+      // s'il fire à temps, frames intermédiaires entre LoadPalette (bank 0
+      // = menu.pal idx 0 = bleu keyboard bg) et finally restent visibles.
+      // Re-blacken juste avant ShowBgs garantit l'écran noir au premier
+      // frame où les BGs deviennent visibles → MainState_FadeIn fade depuis
+      // ce black. 1:1 ROM behavior reproduit (= ROM avait softwareFadeFinishing
+      // de la previous scene qui maintenait brightness=16 = black ; nous on
+      // simule via BlendPalettes synchrone.).
       BlendPalettes(0xFFFFFFFF, 16, 0x0000);
       rt.UpdatePaletteFade();
       NamingScreen_ShowBgs();
