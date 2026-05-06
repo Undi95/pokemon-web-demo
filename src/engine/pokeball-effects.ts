@@ -203,6 +203,14 @@ export function LaunchBallFadeMonTask(rt: DecompRuntime, unfadeLater: boolean, s
     const sample = [];
     for (let i = 0; i < 16; i++) sample.push(rt.gPlttBufferFaded.get(PLTT_OFFSET + i).toString(16).padStart(4, '0'));
     console.log(`[BirchFade] post-BlendPalette faded buffer: ${sample.join(' ')}`);
+    // Diagnostic : force flushTo + check PaletteBanks state via getObjRgba.
+    rt.gPlttBufferFaded.flushTo();
+    const banksRgb = [];
+    for (let i = 0; i < 4; i++) {
+      const [r, g, b, a] = rt.gba.palette.getObjRgba(spritePalNum, i, 0);
+      banksRgb.push(`(${r},${g},${b},a${a})`);
+    }
+    console.log(`[BirchFade] forceFlushTo → PaletteBanks objRgba pal ${spritePalNum} idx 0-3: ${banksRgb.join(' ')}`);
   }
 
   // 1:1 décomp battle_anim_throw.c:2056 :
