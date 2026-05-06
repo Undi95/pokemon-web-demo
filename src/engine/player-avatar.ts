@@ -344,15 +344,28 @@ function moveCoords(direction: number, x: number, y: number): { x: number; y: nu
   return { x: x + (DIR_TO_DX[direction] ?? 0), y: y + (DIR_TO_DY[direction] ?? 0) };
 }
 
-/** Simplification Phase 4.3 : on check juste MapGridGetCollisionAt.
- *  Phase 4.4 ajoutera object event collision (= NPCs).
- *  Returns COLLISION_NONE (0) ou COLLISION_IMPASSABLE (2). */
+/** Phase 4.4.d : check map collision + NPC collision.
+ *  1:1 décomp `CheckForPlayerAvatarCollision` (field_player_avatar.c:654).
+ *  Returns COLLISION_NONE (0), COLLISION_IMPASSABLE (2), ou
+ *  COLLISION_OBJECT_EVENT (5) si NPC bloque le passage. */
 function checkPlayerCollision(direction: number): number {
   const { x: dx, y: dy } = moveCoords(direction, gPlayerAvatar.x, gPlayerAvatar.y);
-  // 1:1 décomp : MapGridGetCollisionAt prend gBackupMapLayout coords.
-  // Player est en map coords (= 0-indexed) → ajoute MAP_OFFSET.
+  // Map collision (= wall/water/ledge).
   const collision = MapGridGetCollisionAt(dx + MAP_OFFSET, dy + MAP_OFFSET);
-  return collision > 0 ? 2 : 0;  // COLLISION_IMPASSABLE if any collision bit set
+  if (collision > 0) return 2; // COLLISION_IMPASSABLE
+  // NPC collision : check si target tile occupé par un NPC actif.
+  // Lookup dynamique via globalThis pour éviter circular import object-events ↔ player-avatar.
+  const gObjectEvents = (globalThis as Record<string, unknown>).__gObjectEvents as
+    Array<{ active: boolean; currentCoordsX: number; currentCoordsY: number }> | undefined;
+  if (gObjectEvents) {
+    for (const npc of gObjectEvents) {
+      if (!npc.active) continue;
+      if (npc.currentCoordsX === dx && npc.currentCoordsY === dy) {
+        return 5; // COLLISION_OBJECT_EVENT
+      }
+    }
+  }
+  return 0; // COLLISION_NONE
 }
 
 // ─── PlayerStep state machine ────────────────────────────────────────────────
@@ -376,10 +389,47 @@ function getInputDirection(heldKeys: number): number {
  *  @param newKeys   Touches qui viennent d'être pressées (= front montant)
  *  @param rt        DecompRuntime
  */
-export function PlayerStep(heldKeys: number, _newKeys: number, rt: DecompRuntime): void {
+/** GBA A button mask (= 0x01). 1:1 décomp `A_BUTTON`. */
+const A_BUTTON = 0x01;
+
+/** 1:1 décomp `CheckForObjectEventInteractive` (field_player_avatar.c).
+ *  Phase 4.4.e MVP : juste log. Phase 4.5 wirera vers script-runner. */
+function tryInteractWithFacingNPC(): void {
+  const { x: tx, y: ty } = moveCoords(gPlayerAvatar.facing, gPlayerAvatar.x, gPlayerAvatar.y);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const gObjectEvents = (globalThis as any).__gObjectEvents as
+    Array<{ active: boolean; currentCoordsX: number; currentCoordsY: number;
+            graphicsId: string; movementType: string; localId: number;
+            facingDirection: number }> | undefined;
+  if (!gObjectEvents) return;
+  for (const npc of gObjectEvents) {
+    if (!npc.active) continue;
+    if (npc.currentCoordsX === tx && npc.currentCoordsY === ty) {
+      // Make NPC face the player (= 1:1 décomp ObjectEventFaceOppositeDirection).
+      const opposite: Record<number, number> = {
+        [DIR_SOUTH]: DIR_NORTH,
+        [DIR_NORTH]: DIR_SOUTH,
+        [DIR_WEST]: DIR_EAST,
+        [DIR_EAST]: DIR_WEST,
+      };
+      npc.facingDirection = opposite[gPlayerAvatar.facing] ?? DIR_SOUTH;
+      console.log(`[player-avatar] interact with ${npc.graphicsId} (localId=${npc.localId}, mt=${npc.movementType})`);
+      return;
+    }
+  }
+}
+
+export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime): void {
   if (gPlayerAvatar.spriteId < 0) return;
 
   const inputDir = getInputDirection(heldKeys);
+
+  // Phase 4.4.e : A button interaction. Only when not MOVING (= 1:1 décomp).
+  if ((newKeys & A_BUTTON) && gPlayerAvatar.runningState !== MOVING && gPlayerAvatar.turnFramesLeft === 0) {
+    tryInteractWithFacingNPC();
+    // Don't return — laisse le PlayerStep continuer (= input direction
+    // toujours géré). Le décomp wire ensuite vers script-runner.
+  }
 
   // Si une step walk est en cours : tick frames, advance, et finir au tile boundary.
   if (gPlayerAvatar.runningState === MOVING && gPlayerAvatar.stepFramesLeft > 0) {

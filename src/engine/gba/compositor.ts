@@ -60,6 +60,11 @@ let _lastBgsLen = 0;
 // objVram updates) mais on reset par sécurité.
 const _oamTileCache = new Map<number, TilePixels>();
 
+// Cache OAM sort order par y (= 1:1 décomp subpriority pattern). Sort once
+// per frame, reuse across scanlines. Y ascending → highest y processed last
+// (= on top). Same y → higher OAM idx first (= sprite 0 wins ties = 1:1 GBA).
+const _oamSortedIndices: number[] = [];
+
 export function composeFrame(
   frameBuffer: Uint8ClampedArray,
   bgs: ReadonlyArray<BgLayerData>,
@@ -106,6 +111,20 @@ export function composeFrame(
   // Clear OAM tile cache au début de chaque frame (= objVram peut changer
   // entre frames, ex. player walk animation cycle change tileId).
   _oamTileCache.clear();
+
+  // Build sorted OAM indices by Y ascending (= highest y rendered last = on
+  // top). Tie-break par OAM idx descending (= sprite 0 wins for same y).
+  // Évite que player (= OAM 0) soit toujours au-dessus des NPCs : maintenant
+  // le sprite avec y le plus haut visuellement apparaît devant.
+  if (oam) {
+    _oamSortedIndices.length = 0;
+    for (let i = 0; i < oam.length; i++) _oamSortedIndices.push(i);
+    _oamSortedIndices.sort((a, b) => {
+      const sa = oam[a]; const sb = oam[b];
+      if (sa.y !== sb.y) return sa.y - sb.y;
+      return b - a;
+    });
+  }
 
   for (let y = 0; y < SCREEN_H; y++) {
     if (hblankCallback) hblankCallback(y);
@@ -305,9 +324,10 @@ function renderOamScanline(
   priorityBufs: Uint8ClampedArray[],
   affineParams?: ReadonlyArray<AffineMatrix>,
 ): void {
-  // Process sprites en ordre INVERSE pour que sprite index 0 soit le dernier
-  // écrit (= au-dessus en cas de pixel collision à même priority).
-  for (let i = oam.length - 1; i >= 0; i--) {
+  // Iterate sprites en y-ascending order (= sorted dans composeFrame).
+  // Last write wins → highest y appears on top (= correct depth for
+  // overworld where lower-on-screen NPCs sont devant ceux plus haut).
+  for (const i of _oamSortedIndices) {
     const sprite = oam[i];
     if (!sprite.visible) continue;
     if (sprite.affineMode === 2) continue; // HIDE

@@ -3,29 +3,22 @@
  *
  * Source de vérité (= ne JAMAIS diverger) :
  *   - `D:/Projet 1/decomps/pokeemeraude/src/event_object_movement.c`
- *     (= TrySpawnObjectEvents, MovementType_LookAround_*, MovementType_WanderAround_*)
+ *     (= TrySpawnObjectEvents, MovementType_*_Step*)
  *   - `D:/Projet 1/decomps/pokeemeraude/include/global.fieldmap.h`
- *     (= struct ObjectEvent)
- *   - `/decomp/em/object-event-graphics.json` (= mapping OBJ_EVENT_GFX_* → png path)
  *
- * Phase 4.4.a — MVP statique (DONE) :
- *   - gObjectEvents[16] array (= 1:1 décomp OBJECT_EVENTS_COUNT)
- *   - SpawnObjectEventsOnMap : load graphics/palette, create OAM sprite
- *   - UpdateObjectEvents : sprite.x = worldX + gTotalCamera.pixelOffsetX (smooth scroll)
+ * Phase 4.4.a — MVP statique (DONE)
+ * Phase 4.4.b — Face direction initial (DONE)
+ * Phase 4.4.c — LOOK_AROUND / WANDER (DONE)
+ * Phase 4.4.c.2 — Plus de movement types (THIS) :
+ *   - WANDER_UP_AND_DOWN, WANDER_LEFT_AND_RIGHT (= 2-direction wander)
+ *   - LOOK_DOWN_AND_UP, LOOK_LEFT_AND_RIGHT, LOOK_DOWN_LEFT_RIGHT etc.
+ *   - WALK_IN_PLACE_NORMAL_* (= just face anim, no walk)
+ *   - WANDER_AROUND avec player-as-blocker (= NPC ne walk pas dans player)
+ * Phase 4.4.d — Player ↔ NPC collision (DONE via globalThis)
+ * Phase 4.4.e — A button interact (DONE) + sprite update au interact (THIS)
  *
- * Phase 4.4.b — Face direction initial (DONE) :
- *   - movementTypeToInitialFacing → set facing au spawn
- *
- * Phase 4.4.c — LOOK_AROUND / WANDER (THIS) :
- *   - Per-NPC state machine 1:1 décomp (Step0..Step6)
- *   - LookAround : 5 états, change face direction every 32-128 frames random
- *   - WanderAround : 7 états, idem + walk 1 metatile if no collision
- *   - Walk anim cycle (face → walk_a → face → walk_b) 1:1 player avatar
- *   - TickObjectEventMovements appelé chaque frame depuis MainCB2_Overworld
- *
- * Phases suivantes :
- *   - 4.4.d : Player ↔ NPC collision (= block player movement onto NPC)
- *   - 4.4.e : A button → trigger script
+ * Phase suivante :
+ *   - 4.5 : script engine + dialogue
  */
 import type { DecompRuntime } from './decomp-runtime';
 import { loadIndexedPngStrict } from './gba/png-loader';
@@ -36,25 +29,18 @@ import {
   MapGridGetCollisionAt,
 } from './map-loader';
 import { GetCameraTopLeftCoords, gTotalCamera } from './field-camera';
-import { DIR_NONE, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST } from './player-avatar';
+import { DIR_NONE, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST, gPlayerAvatar } from './player-avatar';
 
 const BASE = '/decomp/em';
 
 // ─── Constants 1:1 décomp ────────────────────────────────────────────────────
 
-/** 1:1 décomp `OBJECT_EVENTS_COUNT` (event_object_movement.h:7).
- *  16 NPCs max simultanés à l'écran. */
 export const OBJECT_EVENTS_COUNT = 16;
 
-/** 1:1 décomp `sMovementDelaysMedium` (event_object_movement.c:709).
- *  Delay frames entre direction changes pour LOOK_AROUND / WANDER. */
 const sMovementDelaysMedium = [32, 64, 96, 128];
-
-/** 1:1 décomp `gStandardDirections` (event_object_movement.c).
- *  4 directions cardinales pour Random() & 3 lookup. */
 const gStandardDirections = [DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST];
 
-// ─── Object event graphics catalog (= cached after first load) ───────────────
+// ─── Object event graphics catalog ──────────────────────────────────────────
 
 interface GraphicsInfo {
   png: string;
@@ -74,49 +60,29 @@ async function loadGraphicsCatalog(): Promise<Record<string, GraphicsInfo>> {
   return _graphicsCatalog;
 }
 
-// ─── Object Event struct (= simplifié 1:1 décomp ObjectEvent) ───────────────
+// ─── Object Event struct ────────────────────────────────────────────────────
 
-/** 1:1 décomp `struct ObjectEvent` (global.fieldmap.h:194-255). Phase 4.4
- *  expose les champs minimaux pour movement state machine. */
 export interface ObjectEvent {
   active: boolean;
   invisible: boolean;
-  /** OAM sprite id (= rt.gSprites key). -1 if no sprite. */
   spriteId: number;
   graphicsId: string;
   movementType: string;
   localId: number;
-  /** Position en ORIGINAL map coords (= no MAP_OFFSET). Mis à jour à la fin
-   *  de chaque step walk dans WANDER. */
   currentCoordsX: number;
   currentCoordsY: number;
   facingDirection: number;
-  /** OBJ tile slot (8 tiles per frame, 9 frames per NPC = 72 tiles each). */
   objTileBase: number;
-  /** Palette bank dans gPlttBufferFaded OBJ section. */
   paletteBank: number;
-  /** World position en pixels (= sprite center). Update sprite.x = worldX +
-   *  gTotalCamera.pixelOffsetX (= 1:1 décomp gSpriteCoordOffsetX pattern). */
   worldX: number;
   worldY: number;
-
-  // ─── State machine 1:1 décomp `MovementType_*` (Phase 4.4.c) ─────────────
-  /** Current step ID dans la state machine (= 1:1 décomp `sprite->sTypeFuncId`).
-   *  0 = init. Cycle 1..N selon movement type. */
   movementStep: number;
-  /** Frames remaining dans le delay courant (= 1:1 décomp `SetMovementDelay`).
-   *  Counted down chaque frame. 0 = delay expiré. */
   movementDelay: number;
-  /** Pour WANDER : frames remaining dans le walk step (16..0). */
   walkFramesLeft: number;
-  /** Direction du walk en cours (DIR_NONE si pas de walk actif). */
   walkDirection: number;
-  /** Walk anim alternation : 0 = walk_a, 1 = walk_b (cycle alterné par step). */
   walkAnimAlt: 0 | 1;
 }
 
-/** 1:1 décomp `EWRAM_DATA struct ObjectEvent gObjectEvents[OBJECT_EVENTS_COUNT]`
- *  (event_object_movement.c:166). Allocated global state. */
 export const gObjectEvents: ObjectEvent[] = Array.from({ length: OBJECT_EVENTS_COUNT }, () => ({
   active: false,
   invisible: false,
@@ -137,6 +103,9 @@ export const gObjectEvents: ObjectEvent[] = Array.from({ length: OBJECT_EVENTS_C
   walkDirection: DIR_NONE,
   walkAnimAlt: 0,
 }));
+
+// Expose pour collision check player (= évite circular import).
+(globalThis as Record<string, unknown>).__gObjectEvents = gObjectEvents;
 
 // ─── OBJ tile/palette allocation ────────────────────────────────────────────
 
@@ -178,11 +147,8 @@ function pngTo1dObjLayout(pngCharData: Uint8Array, numFrames: number, pngWidthTi
   return out;
 }
 
-// ─── Sprite frame layout 1:1 player-avatar.ts SPRITE_FRAMES ─────────────────
+// ─── Sprite frame layout 1:1 player-avatar.ts ───────────────────────────────
 
-/** 9 frames per NPC PNG (= identique au player walking.png 144×32) :
- *    0=face_S, 1=face_N, 2=face_W (= flip pour east),
- *    3=walk_S_a, 4=walk_S_b, 5=walk_N_a, 6=walk_N_b, 7=walk_W_a, 8=walk_W_b. */
 const NPC_SPRITE_FRAMES: Record<number, { face: number; walk1: number; walk2: number; hFlip: boolean }> = {
   [DIR_SOUTH]: { face: 0, walk1: 3, walk2: 4, hFlip: false },
   [DIR_NORTH]: { face: 1, walk1: 5, walk2: 6, hFlip: false },
@@ -211,31 +177,40 @@ const DIR_TO_DY: Record<number, number> = {
   [DIR_SOUTH]: 1, [DIR_NORTH]: -1, [DIR_WEST]: 0, [DIR_EAST]: 0,
 };
 
-/** 1:1 décomp `Random() % 4` : pick random direction. */
-function pickRandomDirection(): number {
-  return gStandardDirections[Math.floor(Math.random() * 4)];
+function pickRandomDirection(allowed: ReadonlyArray<number> = gStandardDirections): number {
+  return allowed[Math.floor(Math.random() * allowed.length)];
 }
 
-/** 1:1 décomp `sMovementDelaysMedium[Random() % 4]`. */
 function pickRandomDelay(): number {
   return sMovementDelaysMedium[Math.floor(Math.random() * sMovementDelaysMedium.length)];
 }
 
+/** Check si target tile occupé par player (= 1:1 décomp player-as-blocker).
+ *  gPlayerAvatar.x/y sont en ORIGINAL map coords (= no MAP_OFFSET). */
+function isPlayerAt(x: number, y: number): boolean {
+  return gPlayerAvatar.x === x && gPlayerAvatar.y === y;
+}
+
 /** Check si NPC peut walker en `direction` depuis sa position courante.
- *  1:1 décomp `GetCollisionInDirection` (= just MapGridGetCollisionAt for now,
- *  Phase 4.4.d ajoutera NPC-NPC collision). */
+ *  1:1 décomp `GetCollisionInDirection` : map collision + player collision.
+ *  NPC-NPC collision skipped en 4.4.c (= rare overlap visuellement OK). */
 function canWalk(npc: ObjectEvent, direction: number): boolean {
   const dx = DIR_TO_DX[direction] ?? 0;
   const dy = DIR_TO_DY[direction] ?? 0;
-  const targetGBackupCol = npc.currentCoordsX + MAP_OFFSET + dx;
-  const targetGBackupRow = npc.currentCoordsY + MAP_OFFSET + dy;
-  // MapGridGetCollisionAt > 0 = blocked (= wall, ledge, etc).
-  return MapGridGetCollisionAt(targetGBackupCol, targetGBackupRow) === 0;
+  const targetX = npc.currentCoordsX + dx;
+  const targetY = npc.currentCoordsY + dy;
+  const targetGBackupCol = targetX + MAP_OFFSET;
+  const targetGBackupRow = targetY + MAP_OFFSET;
+  if (MapGridGetCollisionAt(targetGBackupCol, targetGBackupRow) !== 0) return false;
+  if (isPlayerAt(targetX, targetY)) return false;
+  return true;
 }
 
 // ─── Sprite frame update ────────────────────────────────────────────────────
 
-/** Update OAM sprite frame selon NPC state (face vs walk anim). */
+/** Update OAM sprite frame selon NPC state (face vs walk anim).
+ *  Exposé via globalThis __updateNpcSpriteFrame pour interact (= player-avatar
+ *  call this après interact pour forcer face-toward-player visible immédiatement). */
 function updateNpcSpriteFrame(rt: DecompRuntime, npc: ObjectEvent): void {
   if (npc.spriteId < 0) return;
   const sprite = rt.gSprites.get(npc.spriteId);
@@ -245,8 +220,6 @@ function updateNpcSpriteFrame(rt: DecompRuntime, npc: ObjectEvent): void {
 
   let frameIdx: number;
   if (npc.walkFramesLeft > 0) {
-    // Walk anim 1:1 player avatar : walk_a → face → walk_b → face per step.
-    // 16 frames per metatile : walk (8 frames) → face (8 frames).
     if (npc.walkFramesLeft >= 8) {
       frameIdx = npc.walkAnimAlt === 0 ? cfg.walk1 : cfg.walk2;
     } else {
@@ -261,31 +234,21 @@ function updateNpcSpriteFrame(rt: DecompRuntime, npc: ObjectEvent): void {
   oam.flipH = cfg.hFlip;
 }
 
+(globalThis as Record<string, unknown>).__updateNpcSpriteFrame = (rt: DecompRuntime, npc: ObjectEvent) => updateNpcSpriteFrame(rt, npc);
+
 // ─── Movement state machines 1:1 décomp ─────────────────────────────────────
 
-/** 1:1 décomp `MovementType_LookAround_Step*` (event_object_movement.c:2846-2893).
- *  5 états :
- *   0 → init (= clear movement state, → 1)
- *   1 → set face anim (= face current direction, → 2)
- *   2 → wait face anim done, set delay 32-128 random (→ 3)
- *   3 → wait delay (→ 4)
- *   4 → pick random direction, → 1
- *
- *  Notre impl : Step 1+2 collapsed (= face anim instant). */
-function tickLookAround(rt: DecompRuntime, npc: ObjectEvent): void {
+/** 1:1 décomp `MovementType_LookAround_Step*`. */
+function tickLookAround(rt: DecompRuntime, npc: ObjectEvent, allowedDirections: ReadonlyArray<number>): void {
   switch (npc.movementStep) {
     case 0:
-      // Init : start the cycle.
       npc.movementStep = 1;
       // fallthrough
     case 1:
-      // Set face anim → face direction (instant). Pick delay.
-      updateNpcSpriteFrame(rt, npc);
       npc.movementDelay = pickRandomDelay();
       npc.movementStep = 3;
       break;
     case 3:
-      // Wait delay.
       if (npc.movementDelay > 0) {
         npc.movementDelay--;
       } else {
@@ -293,30 +256,20 @@ function tickLookAround(rt: DecompRuntime, npc: ObjectEvent): void {
       }
       break;
     case 4:
-      // Pick random direction. → step 1.
-      npc.facingDirection = pickRandomDirection();
+      npc.facingDirection = pickRandomDirection(allowedDirections);
       npc.movementStep = 1;
       break;
   }
+  void rt;  // updateNpcSpriteFrame called from UpdateObjectEvents each frame
 }
 
-/** 1:1 décomp `MovementType_WanderAround_Step*` (event_object_movement.c:2566-2630).
- *  7 états :
- *   0 → init
- *   1 → set face anim
- *   2 → wait face anim done, set delay
- *   3 → wait delay
- *   4 → pick random direction. If collision → step 1 else step 5
- *   5 → set walk anim (= start walk, single movement active)
- *   6 → wait walk anim done (= 16 frames). update currentCoords. → step 1.
- */
-function tickWanderAround(rt: DecompRuntime, npc: ObjectEvent): void {
+/** 1:1 décomp `MovementType_WanderAround_Step*`. */
+function tickWanderAround(rt: DecompRuntime, npc: ObjectEvent, allowedDirections: ReadonlyArray<number>): void {
   switch (npc.movementStep) {
     case 0:
       npc.movementStep = 1;
       // fallthrough
     case 1:
-      updateNpcSpriteFrame(rt, npc);
       npc.movementDelay = pickRandomDelay();
       npc.movementStep = 3;
       break;
@@ -328,53 +281,73 @@ function tickWanderAround(rt: DecompRuntime, npc: ObjectEvent): void {
       }
       break;
     case 4: {
-      const dir = pickRandomDirection();
+      const dir = pickRandomDirection(allowedDirections);
       npc.facingDirection = dir;
       if (!canWalk(npc, dir)) {
-        // Collision : just face that direction, restart cycle.
         npc.movementStep = 1;
       } else {
-        // Start walking 1 metatile in `dir`.
         npc.walkDirection = dir;
         npc.walkFramesLeft = 16;
         npc.movementStep = 6;
       }
-      updateNpcSpriteFrame(rt, npc);
       break;
     }
     case 6: {
-      // Walk in progress : tick frames + advance worldX/Y.
       const speedX = DIR_TO_DX[npc.walkDirection] ?? 0;
       const speedY = DIR_TO_DY[npc.walkDirection] ?? 0;
       npc.worldX += speedX;
       npc.worldY += speedY;
       npc.walkFramesLeft--;
       if (npc.walkFramesLeft === 0) {
-        // Step done. Update currentCoords (= one metatile in walkDirection).
         npc.currentCoordsX += speedX;
         npc.currentCoordsY += speedY;
         npc.walkDirection = DIR_NONE;
         npc.walkAnimAlt = (npc.walkAnimAlt ^ 1) as 0 | 1;
         npc.movementStep = 1;
       }
-      updateNpcSpriteFrame(rt, npc);
       break;
     }
   }
+  void rt;
 }
 
-/** Tick chaque NPC selon son movementType. À call chaque frame depuis
- *  MainCB2_Overworld. */
+/** Map MOVEMENT_TYPE_* string → state machine handler + allowed directions.
+ *  Ajout 4.4.c.2 : multi-direction look + multi-direction wander. */
+const MOVEMENT_HANDLERS: Record<string, { tick: 'look' | 'wander'; dirs: ReadonlyArray<number> }> = {
+  // Wander (= roam autour avec all 4 directions)
+  'MOVEMENT_TYPE_WANDER_AROUND': { tick: 'wander', dirs: gStandardDirections },
+  'MOVEMENT_TYPE_WANDER_UP_AND_DOWN': { tick: 'wander', dirs: [DIR_SOUTH, DIR_NORTH] },
+  'MOVEMENT_TYPE_WANDER_LEFT_AND_RIGHT': { tick: 'wander', dirs: [DIR_WEST, DIR_EAST] },
+  // Look (= juste tourner sans bouger)
+  'MOVEMENT_TYPE_LOOK_AROUND': { tick: 'look', dirs: gStandardDirections },
+  'MOVEMENT_TYPE_FACE_DOWN_AND_UP': { tick: 'look', dirs: [DIR_SOUTH, DIR_NORTH] },
+  'MOVEMENT_TYPE_FACE_LEFT_AND_RIGHT': { tick: 'look', dirs: [DIR_WEST, DIR_EAST] },
+  'MOVEMENT_TYPE_FACE_UP_AND_LEFT': { tick: 'look', dirs: [DIR_NORTH, DIR_WEST] },
+  'MOVEMENT_TYPE_FACE_UP_AND_RIGHT': { tick: 'look', dirs: [DIR_NORTH, DIR_EAST] },
+  'MOVEMENT_TYPE_FACE_DOWN_AND_LEFT': { tick: 'look', dirs: [DIR_SOUTH, DIR_WEST] },
+  'MOVEMENT_TYPE_FACE_DOWN_AND_RIGHT': { tick: 'look', dirs: [DIR_SOUTH, DIR_EAST] },
+  'MOVEMENT_TYPE_FACE_DOWN_UP_AND_LEFT': { tick: 'look', dirs: [DIR_SOUTH, DIR_NORTH, DIR_WEST] },
+  'MOVEMENT_TYPE_FACE_DOWN_UP_AND_RIGHT': { tick: 'look', dirs: [DIR_SOUTH, DIR_NORTH, DIR_EAST] },
+  'MOVEMENT_TYPE_FACE_UP_RIGHT_AND_LEFT': { tick: 'look', dirs: [DIR_NORTH, DIR_EAST, DIR_WEST] },
+  'MOVEMENT_TYPE_FACE_DOWN_RIGHT_AND_LEFT': { tick: 'look', dirs: [DIR_SOUTH, DIR_EAST, DIR_WEST] },
+};
+
+/** Tick chaque NPC selon son movementType. À call chaque frame. */
 export function TickObjectEventMovements(rt: DecompRuntime): void {
   for (const npc of gObjectEvents) {
     if (!npc.active) continue;
 
-    if (npc.movementType.includes('LOOK_AROUND')) {
-      tickLookAround(rt, npc);
-    } else if (npc.movementType.includes('WANDER_AROUND')) {
-      tickWanderAround(rt, npc);
+    const handler = MOVEMENT_HANDLERS[npc.movementType];
+    if (handler) {
+      if (handler.tick === 'look') {
+        tickLookAround(rt, npc, handler.dirs);
+      } else {
+        tickWanderAround(rt, npc, handler.dirs);
+      }
     }
-    // FACE_* movement types = static (no tick).
+    // Movement types non-handled (FACE_*, NONE, WALK_IN_PLACE_*, etc.) =
+    // statiques pour 4.4.c. Ajout futur Phase 4.4.f : WALK_BACK_AND_FORTH,
+    // WALK_SEQUENCE_*, ROTATE_*.
   }
 }
 
@@ -401,27 +374,18 @@ export async function SpawnObjectEventsOnMap(rt: DecompRuntime): Promise<void> {
       continue;
     }
     if (graphics.frameWidth !== 16 || graphics.frameHeight !== 32) {
-      console.warn(`[object-events] ${graphicsKey} non-standard ${graphics.frameWidth}×${graphics.frameHeight}, skipping in 4.4.a`);
+      console.warn(`[object-events] ${graphicsKey} non-standard ${graphics.frameWidth}×${graphics.frameHeight}, skipping`);
       continue;
     }
     if (graphics.displayWidth !== graphics.frameWidth || graphics.displayHeight !== graphics.frameHeight) {
-      console.warn(`[object-events] ${graphicsKey} multi-frame composite, skipping in 4.4.a`);
+      console.warn(`[object-events] ${graphicsKey} multi-frame composite, skipping`);
       continue;
     }
 
     const slot = gObjectEvents.findIndex(o => !o.active);
-    if (slot < 0) {
-      console.warn(`[object-events] no free gObjectEvents slot, skipping`);
-      continue;
-    }
-    if (_nextNpcTileBase + TILES_PER_NPC > 1024) {
-      console.warn(`[object-events] OBJ VRAM full, skipping ${graphicsKey}`);
-      continue;
-    }
-    if (_nextNpcPaletteBank >= 16) {
-      console.warn(`[object-events] OBJ palette banks exhausted, skipping ${graphicsKey}`);
-      continue;
-    }
+    if (slot < 0) continue;
+    if (_nextNpcTileBase + TILES_PER_NPC > 1024) continue;
+    if (_nextNpcPaletteBank >= 16) continue;
 
     const png = await loadIndexedPngStrict(`${BASE}/${graphics.png}`, 4);
     const numFrames = (png.widthTiles * png.heightTiles) / TILES_PER_FRAME_16x32;
@@ -480,8 +444,11 @@ export async function SpawnObjectEventsOnMap(rt: DecompRuntime): Promise<void> {
   }
 }
 
-// ─── Update sprite positions each frame ─────────────────────────────────────
+// ─── Update sprite positions + frame each frame ────────────────────────────
 
+/** Update sprite.x/y selon worldX/Y + camera scroll, ET sprite frame selon
+ *  facingDirection courante. Appelé chaque frame depuis MainCB2_Overworld
+ *  APRÈS TickObjectEventMovements. */
 export function UpdateObjectEvents(rt: DecompRuntime): void {
   const cam = GetCameraTopLeftCoords();
   const offX = gTotalCamera.pixelOffsetX;
@@ -492,7 +459,6 @@ export function UpdateObjectEvents(rt: DecompRuntime): void {
     const sprite = rt.gSprites.get(npc.spriteId);
     if (!sprite) continue;
 
-    // Cull si très loin de la view.
     const npcGBackupCol = npc.currentCoordsX + MAP_OFFSET;
     const npcGBackupRow = npc.currentCoordsY + MAP_OFFSET;
     const viewCol = npcGBackupCol - cam.x;
@@ -505,6 +471,10 @@ export function UpdateObjectEvents(rt: DecompRuntime): void {
 
     sprite.x = npc.worldX + offX;
     sprite.y = npc.worldY + offY;
+
+    // Update sprite frame chaque frame (= keeps tile + flipH en sync avec
+    // facingDirection, important pour interact qui change facing instantané).
+    updateNpcSpriteFrame(rt, npc);
   }
 }
 
