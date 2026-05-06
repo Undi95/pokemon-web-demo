@@ -462,12 +462,17 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
   if (gPlayerAvatar.runningState === TURN_DIRECTION && gPlayerAvatar.turnFramesLeft > 0) {
     gPlayerAvatar.turnFramesLeft--;
     if (gPlayerAvatar.turnFramesLeft === 0) {
-      // Anim done : transition to NOT_MOVING. Next frame, le keypad logic
-      // décidera : si input tjrs held même direction → MOVING. Sinon → NOT_MOVING.
+      // Anim done MAINTENANT (= 1:1 décomp ObjectEventClearHeldMovementIfFinished
+      // returns TRUE et TryInterrupt returns FALSE same-frame). Fall through
+      // au keypad logic : si input tjrs held même direction → MOVING dans
+      // CETTE frame. Avant on returnait ici → 1 frame de delay extra.
       gPlayerAvatar.runningState = NOT_MOVING;
+      updateSpriteFrame(rt);
+      // Ne pas return, continue au keypad check ci-dessous.
+    } else {
+      updateSpriteFrame(rt);
+      return;  // skip keypad pendant l'anim
     }
-    updateSpriteFrame(rt);
-    return;  // = TryInterruptObjectEventSpecialAnim returned TRUE, skip keypad
   }
 
   // 1:1 décomp `CheckMovementInputNotOnBike` (line 588) :
