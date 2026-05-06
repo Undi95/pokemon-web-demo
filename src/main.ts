@@ -30,6 +30,7 @@ import { GameScene } from './scenes/GameScene';
 import { DebugOverlayScene } from './scenes/DebugOverlayScene';
 import { BirchRuntimeScene } from './scenes/BirchRuntimeScene';
 import { OverworldScene } from './scenes/OverworldScene';
+import { TestOverworldScene } from './scenes/TestOverworldScene';
 import { createAudioDevtool } from './util/audio-devtool';
 import './util/remap-modal'; // exposes window.openRemapModal for the topbar button
 import { setMasterVolume } from './engine/m4a/audio-context';
@@ -76,7 +77,10 @@ const config: Phaser.Types.Core.GameConfig = {
   zoom: DEFAULT_ZOOM,
   pixelArt: true,
   backgroundColor: '#000000',
-  scene: [TestGbaScene, GameScene, BirchRuntimeScene, OverworldScene],
+  // Phase 4.1 dev : TestOverworldScene en première position pour test natif
+  // map loader (= Bourg-en-Vol via fieldmap.c 1:1). Reviendra à TestGbaScene
+  // une fois le rendu validé.
+  scene: [TestOverworldScene, TestGbaScene, GameScene, BirchRuntimeScene, OverworldScene],
   // Restrict input listeners to the canvas only (= clicks/keys outside the
   // game window don't start/affect the game). Default Phaser behavior is to
   // listen window-wide which interferes with the audio devtool topbar.
