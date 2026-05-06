@@ -178,56 +178,53 @@ function registerAnimTable(name: string, table: AnimTable): void {
 
 const TILES_PER_TRAINER_FRAME = 8;  // 16x32 = 2×4 tiles
 
-// PNG layout convention pour pokeemerald walking sprites (144x32 = 9 frames
-// horizontal of 16x32). User test data Phase post-Phase B confirme :
-//   frame 0 : south stand
-//   frame 1 : north stand   ← (back of head visible dans screenshot 2)
-//   frame 2 : west stand
-//   frame 3 : south walk1
-//   frame 4 : north walk1
-//   frame 5 : west walk1
-//   frame 6 : south walk2
-//   frame 7 : north walk2
-//   frame 8 : west walk2
-// Donc cycle south walk-in-place = frames [0, 3, 0, 6] (= stand, walk1, stand, walk2).
+// 1:1 décomp `data/object_events/object_event_anims.h:202-236` sAnim_GoSouth/etc.
+// Cycle order : walk1 → stand → walk2 → stand → JUMP back. Le pied part EN PREMIER
+// puis revient (= pas stand→walk→stand→walk).
+//
+// Frame layout pokeemerald walking sheets 144x32 :
+//   0=south stand, 1=north stand, 2=west stand,
+//   3=south walk1, 4=south walk2,
+//   5=north walk1, 6=north walk2,
+//   7=west walk1,  8=west walk2
 
 registerAnim('sAnim_Standard_GoSouth', {
   frames: [
-    { tileNum: 0 * TILES_PER_TRAINER_FRAME, duration: 8 },  // frame 0 : south stand
     { tileNum: 3 * TILES_PER_TRAINER_FRAME, duration: 8 },  // frame 3 : south walk1
     { tileNum: 0 * TILES_PER_TRAINER_FRAME, duration: 8 },  // frame 0 : south stand
-    { tileNum: 6 * TILES_PER_TRAINER_FRAME, duration: 8 },  // frame 6 : south walk2
+    { tileNum: 4 * TILES_PER_TRAINER_FRAME, duration: 8 },  // frame 4 : south walk2
+    { tileNum: 0 * TILES_PER_TRAINER_FRAME, duration: 8 },  // frame 0 : south stand
   ],
   terminator: 'JUMP',
   jumpTo: 0,
 });
 registerAnim('sAnim_Standard_GoNorth', {
   frames: [
+    { tileNum: 5 * TILES_PER_TRAINER_FRAME, duration: 8 },  // frame 5 : north walk1
     { tileNum: 1 * TILES_PER_TRAINER_FRAME, duration: 8 },  // frame 1 : north stand
-    { tileNum: 4 * TILES_PER_TRAINER_FRAME, duration: 8 },  // frame 4 : north walk1
+    { tileNum: 6 * TILES_PER_TRAINER_FRAME, duration: 8 },  // frame 6 : north walk2
     { tileNum: 1 * TILES_PER_TRAINER_FRAME, duration: 8 },
-    { tileNum: 7 * TILES_PER_TRAINER_FRAME, duration: 8 },  // frame 7 : north walk2
   ],
   terminator: 'JUMP',
   jumpTo: 0,
 });
 registerAnim('sAnim_Standard_GoWest', {
   frames: [
+    { tileNum: 7 * TILES_PER_TRAINER_FRAME, duration: 8 },  // frame 7 : west walk1
     { tileNum: 2 * TILES_PER_TRAINER_FRAME, duration: 8 },  // frame 2 : west stand
-    { tileNum: 5 * TILES_PER_TRAINER_FRAME, duration: 8 },  // frame 5 : west walk1
-    { tileNum: 2 * TILES_PER_TRAINER_FRAME, duration: 8 },
     { tileNum: 8 * TILES_PER_TRAINER_FRAME, duration: 8 },  // frame 8 : west walk2
+    { tileNum: 2 * TILES_PER_TRAINER_FRAME, duration: 8 },
   ],
   terminator: 'JUMP',
   jumpTo: 0,
 });
 registerAnim('sAnim_Standard_GoEast', {
-  // East = west frames with hFlip (= GBA OAM hardware mirror).
+  // 1:1 décomp:229-236 : East = west frames avec hFlip (= GBA OAM hardware mirror).
   frames: [
-    { tileNum: 2 * TILES_PER_TRAINER_FRAME, duration: 8, hFlip: true },
-    { tileNum: 5 * TILES_PER_TRAINER_FRAME, duration: 8, hFlip: true },
+    { tileNum: 7 * TILES_PER_TRAINER_FRAME, duration: 8, hFlip: true },
     { tileNum: 2 * TILES_PER_TRAINER_FRAME, duration: 8, hFlip: true },
     { tileNum: 8 * TILES_PER_TRAINER_FRAME, duration: 8, hFlip: true },
+    { tileNum: 2 * TILES_PER_TRAINER_FRAME, duration: 8, hFlip: true },
   ],
   terminator: 'JUMP',
   jumpTo: 0,
