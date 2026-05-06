@@ -30,6 +30,7 @@ import { GameScene } from './scenes/GameScene';
 import { DebugOverlayScene } from './scenes/DebugOverlayScene';
 import { MainMenuScene } from './scenes/MainMenuScene';
 import { BirchSpeechScene } from './scenes/BirchSpeechScene';
+import { BirchRuntimeScene } from './scenes/BirchRuntimeScene';
 import { NamingScene } from './scenes/NamingScene';
 import { OverworldScene } from './scenes/OverworldScene';
 import { BattleScene } from './scenes/BattleScene';
@@ -84,7 +85,11 @@ const config: Phaser.Types.Core.GameConfig = {
   zoom: DEFAULT_ZOOM,
   pixelArt: true,
   backgroundColor: '#000000',
-  scene: [TestGbaScene, GameScene, MainMenuScene, BirchSpeechScene, NamingScene, OverworldScene, BattleScene, MenuOverlayScene, OptionMenuScene],
+  // BirchRuntimeScene = nouveau host pour le flow Birch sur le runtime décomp
+  // natif (= remplace BirchSpeechScene legacy Phaser, voir scenes/BirchRuntimeScene.ts).
+  // BirchSpeechScene reste enregistrée le temps de valider la migration ; sera
+  // retirée à la prochaine itération.
+  scene: [TestGbaScene, GameScene, MainMenuScene, BirchRuntimeScene, BirchSpeechScene, NamingScene, OverworldScene, BattleScene, MenuOverlayScene, OptionMenuScene],
   // Restrict input listeners to the canvas only (= clicks/keys outside the
   // game window don't start/affect the game). Default Phaser behavior is to
   // listen window-wide which interferes with the audio devtool topbar.

@@ -271,7 +271,12 @@ export class MainMenuScene extends Phaser.Scene {
       case 'NEW_GAME':
         // 1:1 : SetMainCallback2(NULL); CleanupOverworldWindowsAndTilemaps();
         //       gTasks[taskId].func = Task_NewGameBirchSpeech_Init;
-        this.transitionTo('BirchSpeechScene');
+        // Migration : on bascule sur le runtime décomp natif via BirchRuntimeScene
+        // (= main_menu-callbacks-auto.ts state machine, sprite OAM compositor,
+        // chaîne BlendPalette correcte pour le flash release Lotad pink).
+        // BirchSpeechScene legacy Phaser reste sur disque tant que la migration
+        // n'a pas été validée à 100%.
+        this.transitionTo('BirchRuntimeScene');
         break;
       case 'CONTINUE': {
         // 1:1 : SetMainCallback2(CB2_ContinueSavedGame); FreeAllWindowBuffers(); DestroyTask
