@@ -393,9 +393,12 @@ export function CameraUpdate(): void {
       newTileOffset: { x: sFieldCameraOffset.xTileOffset, y: sFieldCameraOffset.yTileOffset },
     });
     // 1:1 décomp : RedrawMapSlice* partial redraw (= une seule colonne par
-    // scroll). Évite flicker du full DrawWholeMapView. Le bug "stale col
-    // après wiggle non-symétrique" est masqué par 8-frame turn-in-place
-    // dans le player avatar (= rate de direction change limité).
+    // scroll). Critique : la décomp exploite le BG wrap pour que la col
+    // qui était view col 0 reste visible à GAUCHE de l'écran pendant le
+    // step suivant (= naturellement view col -1 visuellement). Un full
+    // DrawWholeMapView casse cette continuité visuelle car overwrite ces
+    // cols avec le buffer col logique (= mapCol pos.x+15) au lieu de
+    // mapCol pos.x-1.
     RedrawMapSlicesForCameraUpdate(_camPos.x, _camPos.y, deltaX * 2, deltaY * 2);
   }
 

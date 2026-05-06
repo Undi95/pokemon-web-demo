@@ -257,7 +257,10 @@ export async function InitPlayerAvatar(
   gPlayerAvatar.spriteId = result.spriteId;
 
   // Apply initial flip selon direction (= west = mirror right).
+  // Set sur sprite state (= survives syncSpritesToOam).
   if (gPlayerAvatar.spriteId >= 0) {
+    const sprite = rt.gSprites.get(gPlayerAvatar.spriteId);
+    if (sprite) sprite.hFlip = initialFrame.hFlip;
     rt.gba.oam[result.oamIndex].flipH = initialFrame.hFlip;
   }
 
@@ -326,6 +329,10 @@ function updateSpriteFrame(rt: DecompRuntime): void {
   }
 
   oam.tileId = PLAYER_OBJ_TILE_START + frameIdx * TILES_PER_FRAME;
+  // Set hFlip sur le SPRITE state (= source of truth pour syncSpritesToOam,
+  // appelé chaque frame dans tickFixed). Setter oam.flipH directement serait
+  // overridden au prochain syncSpritesToOam.
+  sprite.hFlip = cfg.hFlip;
   oam.flipH = cfg.hFlip;
 }
 
@@ -374,7 +381,7 @@ export function PlayerStep(heldKeys: number, _newKeys: number, rt: DecompRuntime
 
   const inputDir = getInputDirection(heldKeys);
 
-  // Si une step est en cours : tick frames, advance, et finir au tile boundary.
+  // Si une step walk est en cours : tick frames, advance, et finir au tile boundary.
   if (gPlayerAvatar.runningState === MOVING && gPlayerAvatar.stepFramesLeft > 0) {
     gPlayerAvatar.stepFramesLeft--;
     if (gPlayerAvatar.stepFramesLeft === 0) {
@@ -394,15 +401,28 @@ export function PlayerStep(heldKeys: number, _newKeys: number, rt: DecompRuntime
     return;
   }
 
-  // 1:1 décomp `CheckMovementInputNotOnBike` (field_player_avatar.c:588) :
-  // TURN_DIRECTION is a 1-frame state (= just sets facing). Next frame, if
-  // input held → MOVING. If released (= tap) → NOT_MOVING (= just turned).
-  // Pas de blocage 8-frame → walking est réactif comme la ROM.
+  // 1:1 décomp `TryInterruptObjectEventSpecialAnim` (field_player_avatar.c:353) :
+  // Pendant une anim WalkInPlaceFast (= TURN_DIRECTION), le keypad logic est
+  // BLOQUÉ. Le user voit le sprite tourner pendant 8 frames sans pouvoir
+  // walker pendant ce temps. C'est ce qui permet le "tap-to-turn" :
+  //   - Tap nouvelle direction → 8 frames de turn anim, puis NOT_MOVING.
+  //   - Hold nouvelle direction → 8 frames turn anim, puis MOVING.
+  //   - Hold/tap MÊME direction → MOVING immédiat (pas de turn anim).
+  if (gPlayerAvatar.runningState === TURN_DIRECTION && gPlayerAvatar.turnFramesLeft > 0) {
+    gPlayerAvatar.turnFramesLeft--;
+    if (gPlayerAvatar.turnFramesLeft === 0) {
+      // Anim done : transition to NOT_MOVING. Next frame, le keypad logic
+      // décidera : si input tjrs held même direction → MOVING. Sinon → NOT_MOVING.
+      gPlayerAvatar.runningState = NOT_MOVING;
+    }
+    updateSpriteFrame(rt);
+    return;  // = TryInterruptObjectEventSpecialAnim returned TRUE, skip keypad
+  }
 
   // 1:1 décomp `CheckMovementInputNotOnBike` (line 588) :
   //   - direction == DIR_NONE → NOT_MOVING (= face current direction)
   //   - direction != currentFacing && runningState != MOVING → TURN_DIRECTION
-  //   - else → MOVING
+  //   - else → MOVING (= immediate walk si même direction)
 
   if (inputDir === DIR_NONE) {
     gPlayerAvatar.runningState = NOT_MOVING;
@@ -411,16 +431,22 @@ export function PlayerStep(heldKeys: number, _newKeys: number, rt: DecompRuntime
   }
 
   if (inputDir !== gPlayerAvatar.facing) {
-    // 1:1 décomp `PlayerNotOnBikeTurningInPlace` → `PlayerTurnInPlace` :
-    // 1-frame state qui set facing. Si input toujours held next frame,
-    // MOVING. Si released (= tap), reste NOT_MOVING (= juste tourné).
+    // 1:1 décomp `PlayerNotOnBikeTurningInPlace` → `PlayerTurnInPlace` →
+    // `GetWalkInPlaceFastMovementAction` (= 8-frame anim).
+    // Pendant 8 frames : user voit sprite tourner, keypad bloqué (cf.
+    // TryInterruptObjectEventSpecialAnim qui returns TRUE car heldMovementId
+    // n'est PAS dans la slow range = 0x19..0x1C).
+    // Si user release → reste turné. Si user hold même direction → MOVING
+    // après les 8 frames.
     gPlayerAvatar.facing = inputDir;
     gPlayerAvatar.runningState = TURN_DIRECTION;
+    gPlayerAvatar.turnFramesLeft = 8;  // 1:1 décomp WalkInPlaceFast duration
     updateSpriteFrame(rt);
     return;
   }
 
-  // Direction matches current facing → check collision + walk.
+  // Direction matches current facing → check collision + walk IMMÉDIAT.
+  // Pas de turn anim car même direction (= réactif).
   const collision = checkPlayerCollision(inputDir);
   if (collision !== 0) {
     // 1:1 décomp `PlayerNotOnBikeCollide` : show collision bump (= just stay

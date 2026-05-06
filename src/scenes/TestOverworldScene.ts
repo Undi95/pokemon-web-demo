@@ -153,40 +153,47 @@ export class TestOverworldScene extends Phaser.Scene {
       // 6. Load tileset palettes → BG palette banks 0-12.
       LoadMapTilesetPalettes(header.mapLayout);
 
-      // 7. Reset field camera + position initiale (= top-left de la view en
-      //    coords gBackupMapLayout). Pour Bourg-en-Vol 20x20, on commence à
-      //    la position du joueur classique (= centre map - 7 metatiles pour
-      //    le viewport 15x10). Camera top-left ≈ centre - 7,5.
+      // 7. Reset field camera state.
       ResetFieldCamera();
-      const camX = Math.floor(header.mapLayout.width / 2);  // = 10 (player x)
-      const camY = Math.floor(header.mapLayout.height / 2); // = 10 (player y)
-      // Camera top-left = player pos en coords gBackupMapLayout (= player + MAP_OFFSET pour saveBlock1.pos compat).
-      // Décomp DrawWholeMapView utilise gSaveBlock1Ptr->pos.x (= player coord -7).
-      // On simule : camera top-left = (player_x, player_y).
-      SetCameraTopLeftCoords(camX, camY);
 
-      // 8. Draw whole map view dans les 3 BG tilemap buffers.
+      // 8. Init player avatar FIRST (= sprite + state machine + sets _camPos
+      //    correctly via SetCameraTopLeftCoords(spawnX, spawnY + 2) inside).
+      //    Si on draw avant, le BG buffer est rempli avec camY = spawnY au
+      //    lieu de spawnY+2 → 2 rows de mismatch visuel au boot. Le joueur
+      //    apparaîtra "entre 2 cases" jusqu'au 1er boundary cross qui
+      //    redraw via fix 8 dans CameraUpdate.
+      const spawnX = Math.floor(header.mapLayout.width / 2);
+      const spawnY = Math.floor(header.mapLayout.height / 2);
+      await InitPlayerAvatar(spawnX, spawnY, DIR_SOUTH, 'MALE', this.rt);
+
+      // 9. Draw whole map view dans les 3 BG tilemap buffers, en utilisant
+      //    le _camPos ÉTABLI par InitPlayerAvatar (= spawnX, spawnY+2).
       clearOverworldTilemaps();
       const cam = GetCameraTopLeftCoords();
       console.log(`[TestOverworld] camera top-left coords : (${cam.x}, ${cam.y})`);
       DrawWholeMapView(cam.x, cam.y, header.mapLayout);
 
-      // 9. Push tilemap buffers → VRAM mapBases + scroll registers.
+      // 10. Push tilemap buffers → VRAM mapBases + scroll registers.
       flushOverworldTilemaps(this.rt);
       FieldUpdateBgTilemapScroll(this.rt);
 
-      // 10. Force palette flush (= TransferPlttBuffer simulé) pour que les
+      // 11. Force palette flush (= TransferPlttBuffer simulé) pour que les
       //     couleurs apparaissent dès la 1ère frame, sans attendre un VBlankCB.
       this.rt.gPlttBufferFaded.flushTo();
 
-      // 11. Phase 4.3 : init player avatar (= sprite + state machine).
-      //     Player spawn à la position canonique de Bourg-en-Vol (= map (10, 10),
-      //     centre approximatif de la ville). PlayerStep() est appelé chaque frame
-      //     dans update() pour driver le walk state machine (= no manual camera
-      //     scroll input — c'est le player avatar qui driver gFieldCamera).
-      const spawnX = Math.floor(header.mapLayout.width / 2);
-      const spawnY = Math.floor(header.mapLayout.height / 2);
-      await InitPlayerAvatar(spawnX, spawnY, DIR_SOUTH, 'MALE', this.rt);
+      // 12. Register MainCB2_Overworld (= per-frame callback) qui drive
+      //     PlayerStep + CameraUpdate à FIXED 60Hz via rt.tickFixed.
+      //     Critique pour timing 1:1 GBA : si on l'appelait dans update()
+      //     Phaser, le player ralentirait quand le browser drop des frames.
+      //     Préfix "MainCB2" → tickFixed runs RunTasks/AnimateSprites/etc.
+      const rt = this.rt;
+      const MainCB2_Overworld = function MainCB2_Overworld(): void {
+        PlayerStep(rt.gMain.heldKeys, rt.gMain.newKeys, rt);
+        CameraUpdate();
+        flushOverworldTilemaps(rt);
+        FieldUpdateBgTilemapScroll(rt);
+      };
+      this.rt.gMain.callback2 = MainCB2_Overworld;
 
       this.statusText?.setText(`Bourg-en-Vol ${header.mapLayout.width}x${header.mapLayout.height} (arrows = walk)`);
       this.booted = true;
@@ -200,21 +207,14 @@ export class TestOverworldScene extends Phaser.Scene {
   update(_: number, deltaMs: number): void {
     if (!this.rt || !this.booted) return;
     // rt.gMain.heldKeys déjà à jour via input-handler.ts global.
+    // PlayerStep + CameraUpdate sont driven par gMain.callback2 (=
+    // MainCB2_Overworld registered au boot) qui tourne dans tickFixed à
+    // FIXED 60Hz. Donc si le browser drop des frames, tickFixed accumule
+    // et exécute plusieurs runOneFrame d'affilée → timing reste 1:1 GBA.
     try {
       this.rt.tickFixed(deltaMs);
     } catch (e) {
       console.error('[TestOverworld.update] tickFixed THREW:', e);
-    }
-    // Phase 4.3 : PlayerStep drive gFieldCamera.movementSpeedX/Y selon input.
-    // (= 1:1 décomp PlayerStep → MovePlayerNotOnBike → PlayerWalkNormal qui
-    // démarre une 16-frame step. Camera follow automatique.)
-    try {
-      PlayerStep(this.rt.gMain.heldKeys, this.rt.gMain.newKeys, this.rt);
-      CameraUpdate();
-      flushOverworldTilemaps(this.rt);
-      FieldUpdateBgTilemapScroll(this.rt);
-    } catch (e) {
-      console.error('[TestOverworld.update] player/camera update THREW:', e);
     }
     try {
       this.bridge.tick();
