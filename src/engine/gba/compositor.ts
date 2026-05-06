@@ -337,7 +337,14 @@ function renderOamSpriteNormal(
     const [r, g, b, a] = palette.getObjRgba(sprite.paletteBank, colorIdx, sprite.paletteMode);
     if (a === 0) continue;
 
-    const off = screenX * 4;
+    // ⚠️ FIX session : truncate screenX (sprite.x peut être fractionnel via
+    // sprite.x2 ou affine anim), GBA hardware OBJ ne supporte pas sub-pixel
+    // → tous les writes doivent landing sur integer pixel boundary. Sans
+    // truncation, off = 73.25*4 = 293 = G channel of pixel 73 → écrit le
+    // pixel R à offset G/B/A → corrupt G,B,A AND R-of-next-pixel. Visuellement
+    // sprite invisible / colors mélangées (= bug audit Lotad release : sprite
+    // affine 64×64 avec oam.x=73.25 ne rendait rien).
+    const off = (screenX | 0) * 4;
     const buf = priorityBufs[sprite.priority];
     buf[off] = r; buf[off + 1] = g; buf[off + 2] = b;
     // Encode objMode dans le canal alpha :
@@ -426,7 +433,9 @@ function renderOamSpriteAffine(
     const [r, g, b, a] = palette.getObjRgba(sprite.paletteBank, colorIdx, sprite.paletteMode);
     if (a === 0) continue;
 
-    const off = screenX * 4;
+    // ⚠️ FIX session : voir renderOamSpriteNormal — truncate screenX pour
+    // éviter writes aux mauvais byte offsets quand sprite.x est fractionnel.
+    const off = (screenX | 0) * 4;
     const buf = priorityBufs[sprite.priority];
     buf[off] = r; buf[off + 1] = g; buf[off + 2] = b;
     // OBJ_BLEND encoding (voir renderOamSpriteNormal) : 128 = semi-transparent.
