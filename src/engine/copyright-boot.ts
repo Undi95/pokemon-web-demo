@@ -12,7 +12,9 @@
 import {
   getRuntime, LZ77UnCompVram, LoadPalette, CpuFill16, CpuFill32,
   ResetPaletteFade, ResetTasks, FreeAllSpritePalettes,
-  ScanlineEffect_Stop, EnableInterrupts,
+  ScanlineEffect_Stop, ScanlineEffect_InitHBlankDmaTransfer,
+  LoadOam, ProcessSpriteCopyRequests, TransferPlttBuffer,
+  EnableInterrupts,
   UpdatePaletteFade, gMain,
   VRAM, OAM, PLTT, VRAM_SIZE, OAM_SIZE, PLTT_SIZE,
   REG_OFFSET_DISPCNT, REG_OFFSET_BG0CNT, REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS,
@@ -86,7 +88,18 @@ export function SetUpCopyrightScreen(): number {
         | BGCNT_TXT256x256
       );
       EnableInterrupts(INTR_FLAG_VBLANK);
-      runtime.SetVBlankCallback(() => { /* VBlankCB_Intro stub */ });
+      // 1:1 décomp src/intro.c:1034 VBlankCB_Intro :
+      //   LoadOam() ; ProcessSpriteCopyRequests() ; TransferPlttBuffer() ;
+      //   ScanlineEffect_InitHBlankDmaTransfer() ;
+      // Chain de 4 helpers VBlank standard (= utilisée par presque tous les
+      // VBlankCB_X de scènes décomp). Notre runtime tickFixed appelle ce
+      // callback à la fin de chaque frame (= simulation du VBlank GBA).
+      runtime.SetVBlankCallback(() => {
+        LoadOam();
+        ProcessSpriteCopyRequests();
+        TransferPlttBuffer();
+        ScanlineEffect_InitHBlankDmaTransfer();
+      });
       runtime.SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_MODE_0 | DISPCNT_OBJ_1D_MAP | DISPCNT_BG0_ON);
       GameCubeMultiBoot_Init(gMultibootProgramStruct);
       // Après l'init, comportement identique au default case (1:1 décomp fall-through)

@@ -1207,6 +1207,28 @@ export function TransferPlttBuffer(): void {
   if (r.gPaletteFade.bufferTransferDisabled) return;
   r.gPlttBufferFaded.flushTo();
 }
+
+/** 1:1 décomp src/sprite.c `LoadOam()` — copy gOamBuffer → OAM register region.
+ *  Sur GBA, le gOamBuffer est un EWRAM staging que le VBlank flush vers OAM
+ *  hardware (1KB). Notre compositor lit directement `gba.oam[]` chaque frame
+ *  (= no double-buffer), donc cette function est un no-op pour API compat
+ *  avec les VBlankCB scenes décomp qui l'appellent en 1ère position. */
+export function LoadOam(): void {
+  // No-op : compositor reads sprite OAM directly each frame. Foundation
+  // ready for Phase 4 si on ajoute un real OAM staging buffer.
+}
+
+/** 1:1 décomp src/sprite.c `ProcessSpriteCopyRequests()` — flush la queue
+ *  des `RequestSpriteCopy(src, dest, size)` accumulés depuis le dernier VBlank.
+ *  Décomp utilise pour batched tile data updates (= un sprite anim qui swap
+ *  tile pattern chaque frame queue un copy au lieu d'écrire OBJ VRAM live).
+ *
+ *  Notre impl : sprite tile copies sont eager (= LoadCompressedSpriteSheet
+ *  écrit OBJ VRAM immédiatement). No queue → no-op. Foundation ready si
+ *  Phase 4 a besoin de batched copies pour optimisation perf. */
+export function ProcessSpriteCopyRequests(): void {
+  // No-op : sprite tile copies are eager (immediate write to objVram).
+}
 export function ScanlineEffect_Clear(): void {
   gScanlineEffectRegBuffers[0].fill(0);
   gScanlineEffectRegBuffers[1].fill(0);
