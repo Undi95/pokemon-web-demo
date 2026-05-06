@@ -267,40 +267,83 @@ export class BirchSpeechScene extends Phaser.Scene {
       // Sparkles particles 1:1 décomp AnimateBallOpenParticles. 16 particules spawnées
       // une par frame, chacune fait un mouvement sin/cos rotatif vers l'extérieur.
       this.spawnPokeballParticles(pokeball.x, pokeball.y - 5);
-      // Flash blanc subtil (= LaunchBallFadeMonTaskForPokeball)
+      // Flash blanc + Lotad rose silhouette = 1:1 décomp LaunchBallFadeMonTask :
+      //   BlendPalette(OBJ pal, 16, 16, ball-pink) → Lotad palette OBJ entièrement
+      //   blendée vers ROSE BALL_POKE 0x7adf (= RGB888 0xF8B0F0).
+      //   BeginNormalPaletteFade(PALETTES_BG, 0, 0, 16, RGB_WHITE) → BG fade
+      //   blanc 16 frames. Puis 16 frames reverse (= white → original BG) +
+      //   Lotad palette ramp pink coeff 16→0 (= silhouette rose → couleurs normales).
+      //
+      // Total ~48 frames. Audit session 96 : avant on utilisait setTintFill(WHITE)
+      // initial puis setTintFill(PINK) à mi-parcours = inversé vs ROM.
+      // Cause racine : BirchSpeechScene est Phaser legacy (= pas le runtime décomp).
+      // Notre `LaunchBallFadeMonTask` du runtime tourne mais ne touche pas Lotad
+      // qui est un Phaser.Image. Fix tactique : tint pink directement dans Phaser.
+      const PINK_BALL_FILL = 0xF8B0F0;  // = décode RGB15 0x7adf BALL_POKE color
+      const FRAME_MS = 1000 / 60;
+      // Flash BG blanc 16 frames in + 16 frames out (= 1:1 décomp BG fade).
       const flash = this.add.rectangle(0, 0, GAME_W, GAME_H, 0xFFFFFF, 0)
         .setOrigin(0, 0).setDepth(1000);
       this.tweens.add({
-        targets: flash, alpha: { from: 0, to: 0.5, duration: 80 },
-        yoyo: true, onComplete: () => flash.destroy(),
+        targets: flash, alpha: { from: 0, to: 0.85, duration: 16 * FRAME_MS },
+        yoyo: true, hold: 0, onComplete: () => flash.destroy(),
       });
       // Lotad émerge — 1:1 décomp pokeball.c:1077 :
       //   StartSpriteAffineAnim(&gSprites[spriteId], BATTLER_AFFINE_EMERGE);
       //   data.c:144 sAffineAnim_Battler_Emerge :
       //     AFFINEANIMCMD_FRAME(0x28, 0x28, 0, 0)   = scale 0x28/0x100 = 0.156 instant
       //     AFFINEANIMCMD_FRAME(0x12, 0x12, 0, 12)  = scale +0x12/frame × 12 frames → 1.0
-      // + LaunchBallFadeMonTaskForPokeball : palette fade WHITE → normal (silhouette effet)
-      // Web : setTintFill(0xFFFFFF) = silhouette blanche, clearTint() après scale anim.
       const lotad = this.lotadSprite!;
       lotad.setPosition(112, 58).setAlpha(1);
       lotad.scaleX = 0.156;
       lotad.scaleY = 0.156;
-      lotad.setTintFill(0xFFFFFF); // silhouette blanche initiale (= palette white)
-      // Combo tween scale + position 1:1 SpriteCB_ReleasedMonFlyOut (32 frames)
+      // Lotad apparaît IMMÉDIATEMENT en silhouette ROSE (= 1:1 ROM behavior).
+      lotad.setTintFill(PINK_BALL_FILL);
+      // Combo tween scale + position 1:1 SpriteCB_ReleasedMonFlyOut (32 frames).
+      // Pendant ce temps, le tint reste ROSE (= silhouette rose pendant le flash).
       this.tweens.add({
         targets: lotad,
         scaleX: 1.0, scaleY: 1.0,
         x: 100, y: 75,
-        duration: 32 * 1000 / 60,
+        duration: 32 * FRAME_MS,
         ease: 'Sine.easeOut',
         onComplete: () => {
-          lotad.clearTint(); // reveal normal colors à la fin
-          void playCry('lotad'); // Cri 1:1 décomp
+          // Cri immédiat à la fin de l'arc = 1:1 décomp DoMonFrontSpriteAnimation.
+          void playCry('lotad');
+          // Phase 2 : ramp pink → original sur 16 frames (= 1:1 décomp
+          // Task_FadeMon_ToNormal_Step coeff 16→0). Phaser n'a pas de tween
+          // tint natif, on utilise setTintFill avec couleurs interpolées
+          // chaque step (= grossièrement linéaire pink → no-tint).
+          let step = 0;
+          const totalSteps = 16;
+          const fadeTimer = this.time.addEvent({
+            delay: FRAME_MS,
+            repeat: totalSteps,
+            callback: () => {
+              step++;
+              if (step >= totalSteps) {
+                lotad.clearTint();
+                fadeTimer.remove();
+                return;
+              }
+              // Interpolate pink toward white (= simulating BlendPalette ramping
+              // the OBJ pink fade toward unfaded original colors).
+              // Phaser tint shader does multiplicative tint with the original
+              // texture, so as we approach white (0xFFFFFF) the original
+              // colors emerge naturally.
+              const t = step / totalSteps;  // 0..1
+              const pinkR = (PINK_BALL_FILL >> 16) & 0xFF;
+              const pinkG = (PINK_BALL_FILL >> 8) & 0xFF;
+              const pinkB = PINK_BALL_FILL & 0xFF;
+              const r = Math.round(pinkR + (255 - pinkR) * t);
+              const g = Math.round(pinkG + (255 - pinkG) * t);
+              const b = Math.round(pinkB + (255 - pinkB) * t);
+              const tint = (r << 16) | (g << 8) | b;
+              if (t < 0.999) lotad.setTintFill(tint);
+              else lotad.clearTint();
+            },
+          });
         },
-      });
-      // Tint pink intermédiaire à mi-anim (silhouette se "colore" graduellement vers normal)
-      this.time.delayedCall(16 * 1000 / 60, () => {
-        lotad.setTintFill(0xFFB0D0); // pink à mi-parcours
       });
       pokeball.once('animationcomplete', () => pokeball.destroy());
     });
