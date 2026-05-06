@@ -511,10 +511,14 @@ export function runTextPrinter(printer: TextPrinter): number {
   }
 
   // 1:1 décomp text.c:944-955 — A/B speed up mécanisme.
-  // Si A ou B held + déjà sped-up auparavant, force delayCounter = 0
-  // (= 1 char par frame jusqu'à fin de page).
+  // Si A ou B held + déjà sped-up auparavant, override textSpeed effectif à
+  // FAST (= 1) sans aller en-dessous. User feedback session 96 :
+  // "Maintenir A/B en speed 1, 2, ou 3 donne TOUJOURS FAST (3)" —
+  // donc A/B held = ramène la vitesse à FAST, pas à 1 char/frame.
+  // Avant on faisait `delayCounter = 0` → 1 char/frame (= plus rapide que FAST,
+  // bug). Maintenant on cap delayCounter à 1 si plus grand (= effectif FAST).
   if (_heldABPressed && printer.hasPrintBeenSpedUp) {
-    printer.delayCounter = 0;
+    if (printer.delayCounter > 1) printer.delayCounter = 1;
   }
 
   // textSpeed > 0 : delay entre chaque char (effet "machine à écrire").
