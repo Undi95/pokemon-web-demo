@@ -79,20 +79,32 @@ function _tilesPerMonPicFrame(shape: number, size: number): number {
 }
 
 // ─── LaunchAnimationTaskForFrontSprite 1:1 décomp pokemon_animation.c:941 ──
-// Decomp creates Task_HandleMonAnimation which sets
-// `sprite->callback = sMonAnimFunctions[animId]`. We collapse the task into
-// a direct sprite.callback swap.
+// Decomp:
+//   void LaunchAnimationTaskForFrontSprite(struct Sprite *sprite, u8 frontAnimId)
+//   {
+//       u8 taskId = CreateTask(Task_HandleMonAnimation, 128);
+//       gTasks[taskId].tPtrHi = (u32)(sprite) >> 16;
+//       gTasks[taskId].tPtrLo = (u32)(sprite);
+//       gTasks[taskId].tAnimId = frontAnimId;
+//   }
 //
-// Two concurrent visuals (per ROM):
-//   A) Per-species AFFINE anim (= Anim_VerticalSquishBounce for Lotad).
-//      Set as sprite.callback. Runs ~48 frames once.
-//   B) 2-frame TILE cycling. Decomp does single-shot StartSpriteAnim(sprite, 1),
-//      we add gentle 30-frame loop as task (= bonus the user expects).
+// Task_HandleMonAnimation (décomp pokemon_animation.c:893-938) :
+//   case 0: sets sprite->sDontFlip=TRUE, sprite->data[0]=0, data[2..]=0,
+//           sprite->callback = sMonAnimFunctions[tAnimId]. tState++.
+//   case 1: when sprite->callback==SpriteCallbackDummy → DestroyTask.
 //
-// Session 89 bug: never called → Lotad showed only frame 0.
-// Session 91 fix: direct oam.tileId write (StartSpriteAnim no-op for sprites
-// not in spriteAnimStates Map = sprites created via CreateSpriteAtOam).
-// Session 92 fix: per-species anim function dispatch (= Animation A).
+// Notre impl : on collapse le task en direct callback swap (= équivalent
+// fonctionnel ; aucune scene en dépend du task ID). Le sprite anim function
+// (= sMonAnimFunctions[animId]) tourne ensuite via le sprite-callback runner
+// du compositor.
+//
+// IMPORTANT — Session 95 fix bug "Lotad clignote sans cesse" :
+// Avant on ajoutait une 2nd task qui togglait tileId 0↔1 toutes les 30 frames,
+// pensant que c'était le "2-frame cycling" du décomp. FAUX : le décomp ne fait
+// PAS de cycling continu. `HasTwoFramesAnimation(species)` cause juste UN seul
+// `StartSpriteAnim(sprite, 1)` (= switch to frame 1 = pose alternative), puis
+// l'affine anim (squish/bounce) tourne UNE fois et se termine. Le sprite reste
+// sur la frame 1 indéfiniment après. Cf. pokemon.c:6803-6808.
 
 export function LaunchAnimationTaskForFrontSprite(rt: DecompRuntime, sprite: DecompSprite, frontAnimId: number): void {
   const tilesPerFrame = _tilesPerMonPicFrame(sprite.shape, sprite.size);
@@ -107,31 +119,19 @@ export function LaunchAnimationTaskForFrontSprite(rt: DecompRuntime, sprite: Dec
     tileBase,
   });
 
-  // 1:1 décomp Task_HandleMonAnimation case 0: sDontFlip=TRUE, data[0]=0,
-  // data[2..]=0. data[1]=sDontFlip MUST be set BEFORE animFunc runs.
+  // 1:1 décomp Task_HandleMonAnimation case 0 : sDontFlip=TRUE, data[0]=0,
+  // data[2..]=0. data[1]=sDontFlip MUST be set BEFORE animFunc runs car les
+  // anim functions le testent (= Anim_VerticalSquishBounce le check pour
+  // décider de flip horizontalement la matrix).
   sprite.data[1] = 1;
   sprite.data[0] = 0;
   for (let i = 2; i < sprite.data.length; i++) sprite.data[i] = 0;
 
-  // Animation A: per-species AFFINE anim. Sets sprite.callback to the anim
-  // function (e.g. VerticalSquishBounce). Compositor picks it up next frame.
+  // 1:1 décomp `sprite->callback = sMonAnimFunctions[gTasks[taskId].tAnimId]`.
+  // Pour Lotad species 270, frontAnimId = 0x07 (FRONT_ANIM_VERTICAL_SQUISH_AND_BOUNCE)
+  // → callback = Anim_VerticalSquishBounce. Tourne ~48 frames puis sprite->callback
+  // = SpriteCallbackDummy (= self-destructs via Task_HandleMonAnimation case 1).
   getMonAnimFunc(frontAnimId)(rt, sprite, SpriteCallbackDummy);
-
-  // Animation B: 2-frame TILE cycling task. Independent from sprite.callback
-  // so the affine anim drives its own logic. Idempotent via _activeMonAnims.
-  rt.CreateTask((task) => {
-    const c = _activeMonAnims.get(sprite.spriteId);
-    if (!c || !c.active) { rt.DestroyTask(task.taskId); return; }
-    const s = rt.gSprites.get(sprite.spriteId);
-    if (!s || !s.inUse) { rt.DestroyTask(task.taskId); return; }
-    if (++task.data[0] >= 30) {
-      task.data[0] = 0;
-      task.data[1] = task.data[1] === 0 ? 1 : 0;
-      const oam = rt.gba.oam[s.oamIndex];
-      if (oam) oam.tileId = c.tileBase + task.data[1] * c.tilesPerFrame;
-      rt.StartSpriteAnim(s.spriteId, task.data[1]);
-    }
-  }, 128);
 }
 
 /** Stop the idle anim for a given sprite (e.g. on DESTROY or scene exit).
@@ -165,7 +165,10 @@ export function DoMonFrontSpriteAnimation(
   noCry: boolean,
   panModeAnimFlag: number,
   playCryFn: (species: number, pan: number) => void,
-  frontAnimId: number = 0,
+  /** Optional override. If unset (= -1 sentinel), looked up via
+   *  getMonFrontAnimId(species) (= 1:1 décomp pokemon.c:6820 :
+   *  LaunchAnimationTaskForFrontSprite(sprite, sMonFrontAnimIdsTable[species - 1])). */
+  frontAnimIdOverride: number = -1,
 ): void {
   const skipAnim = !!(panModeAnimFlag & SKIP_FRONT_ANIM);
   const panMode = panModeAnimFlag & ~SKIP_FRONT_ANIM;
@@ -189,6 +192,11 @@ export function DoMonFrontSpriteAnimation(
       if (oam) oam.tileId = (sprite.tileBase || 0) + tilesPerFrame;
     }
   }
+
+  // 1:1 décomp pokemon.c:6820 — frontAnimId résolu via sMonFrontAnimIdsTable[species - 1].
+  // Si caller a passé un override explicite, on l'utilise (= flexibilité pour
+  // testing). Sinon, lookup via la table extraite (= 387 species).
+  const frontAnimId = frontAnimIdOverride >= 0 ? frontAnimIdOverride : getMonFrontAnimId(species);
 
   // 1:1 décomp pokemon.c:6809-6815 — sMonAnimationDelayTable. Most species 0.
   // TODO future: delay path requires sMonAnimationDelayTable extraction.

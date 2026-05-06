@@ -270,6 +270,17 @@ export function VerticalSquishBounce(rt: DecompRuntime, sprite: DecompSprite, du
     handleSetAffineData(rt, sprite, 256, 256, 0);
     sprite.y2 = 0;
     resetSpriteAfterAnim(rt, sprite);
+    // User feedback session 96 : Lotad doit revenir sur frame BASE (= 0) après
+    // la squish anim, pas rester sur frame 1 (= alt pose). Le décomp laisse
+    // sprite anim 1 (= StartSpriteAnim(sprite, 1) au début, jamais reset),
+    // mais visuellement la ROM affiche frame 0. Cause probable : sprite
+    // animation system continue de cycle entre les 2 frames du anim_front.png
+    // une fois la squish terminée. Pour matcher la ROM observable, on switch
+    // explicitement à anim 0 + write oam.tileId direct (= StartSpriteAnim
+    // no-op pour sprites créés via CreateSpriteAtOam, donc fallback direct).
+    rt.StartSpriteAnim(sprite.spriteId, 0);
+    const oam = rt.gba.oam[sprite.oamIndex];
+    if (oam) oam.tileId = sprite.tileBase || 0;
     sprite.callback = (s, r) => waitAnimEnd(r, s, dummyCallback);
   } else {
     const yScale = Sin(sprite.data[4], 32) + 256;

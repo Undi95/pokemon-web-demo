@@ -23,14 +23,14 @@ import { OBJ_PLTT_ID } from './decomp-runtime';
 import {
   AddWindow, FillWindowPixelBuffer, PutWindowTilemap, CopyWindowToVram,
   InitBgsFromTemplates, ResetBgsAndClearDma3BusyFlags,
-  FillBgTilemapBufferRect_Palette0, type WindowTemplate,
+  FillBgTilemapBufferRect_Palette0, CopyToBgTilemapBuffer, type WindowTemplate,
   ShowBg as ShowBgWin, HideBg as HideBgWin,
 } from './gba-window-system';
 import { AddTextPrinterParameterized3 } from './gba-text-system';
 import {
   getRuntime,
   ResetPaletteFade, FreeAllSpritePalettes, ResetTasks,
-  LoadPalette, ShowBg, HideBg,
+  LoadPalette, LoadBgTiles, ShowBg, HideBg,
   PlaySE,
   IndexOfSpritePaletteTag, GetSpriteTileStartByTag,
   MultiplyInvertedPaletteRGBComponents,
@@ -40,7 +40,7 @@ import {
   type NamingSubsprite,
 } from './decomp-globals';
 import { gSaveBlock2Ptr } from './gba-menu-system';
-import { loadGbaPal, loadTileBin } from './gba/png-loader';
+import { loadGbaPal, loadTileBin, loadTilemapBin } from './gba/png-loader';
 import type { DecompSprite, DecompTask } from './decomp-runtime';
 import { gKeyRepeat } from './decomp-runtime';
 import {
@@ -405,6 +405,37 @@ const sNamingScreenTemplates = [
 // CB2_LoadNamingScreen case 6 (= LoadGfx).
 
 let _assetsLoaded = false;
+
+// ─── BG tile/tilemap caches (= 1:1 décomp gNamingScreenMenu_Gfx + gNamingScreenBackground_Tilemap + gNamingScreenKeyboard{Upper,Lower,Symbols}_Tilemap) ─
+// Foundationals : ces buffers sont chargés UNE fois depuis les .bin extraits
+// par `scripts/extract-png-tiles.mjs`, puis transmis à LoadBgTiles +
+// CopyToBgTilemapBuffer (= 1:1 décomp:1873-1876 + 623-626).
+let _menuGfx: Uint8Array | null = null;
+let _bgTilemapBackground: Uint16Array | null = null;
+let _bgTilemapKeyboardUpper: Uint16Array | null = null;
+let _bgTilemapKeyboardLower: Uint16Array | null = null;
+let _bgTilemapKeyboardSymbols: Uint16Array | null = null;
+
+/** Tilemap on-deck lookup (= 1:1 décomp:1968-1973 sNextKeyboardPageTilemaps).
+ *  Indexé par `sNamingScreen.currentPage` ; retourne le tilemap qui doit être
+ *  drawn sur la BG hors-écran (= la "next" page que le swap va révéler). */
+function getNextKeyboardTilemap(currentPage: number): Uint16Array | null {
+  if (currentPage === KBPAGE_SYMBOLS) return _bgTilemapKeyboardUpper;
+  if (currentPage === KBPAGE_LETTERS_UPPER) return _bgTilemapKeyboardLower;
+  if (currentPage === KBPAGE_LETTERS_LOWER) return _bgTilemapKeyboardSymbols;
+  return null;
+}
+
+/** 1:1 décomp src/naming_screen.c:1894-1897 :
+ *    static void DrawBgTilemap(u8 bg, const void *src) { CopyToBgTilemapBuffer(bg, src, 0, 0); }
+ *  Notre src est déjà décompressé (= les .bin extraits par scripts/) → on
+ *  utilise notre CopyToBgTilemapBuffer (= passe `mode=src.byteLength` pour
+ *  forcer copy au lieu de LZ77 que notre engine ne fait pas). */
+function DrawBgTilemap(bg: number, src: Uint16Array | null): void {
+  if (!src) return;
+  CopyToBgTilemapBuffer(bg, src, src.byteLength, 0);
+}
+
 async function loadNamingScreenAssets(): Promise<void> {
   if (_assetsLoaded) return;
   const rt = getRuntime();
@@ -442,16 +473,21 @@ async function loadNamingScreenAssets(): Promise<void> {
     const keyboardPal = await loadGbaPal(BASE + 'keyboard.pal');
     LoadPalette(keyboardPal, 10 * 16, 32);  // bank 10
 
-    // Fallback for bank 11 — GetTextWindowPalette(2) is a small set of grayscale
-    // text colors. Use a basic white/black set.
-    const textPal = new Uint16Array([
-      0x4631, 0x7FFF, 0x0000, 0x6F7B,  // bg blue, white, black, light grey
-      0x52B5, 0x3173, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-    ]);
-    LoadPalette(textPal, 11 * 16, 32);  // bank 11
-
-    // Bank 14 = text window pal 0 (= GetTextWindowPalette(0)). Used by some txt prints.
-    LoadPalette(textPal, 14 * 16, 32);
+    // 1:1 décomp src/naming_screen.c:1891 :
+    //   LoadPalette(GetTextWindowPalette(2), BG_PLTT_ID(11), PLTT_SIZE_4BPP);
+    // GetTextWindowPalette(2) → sTextWindowPalettes[2] (= text_window/text_pal2.pal).
+    // idx 15 = (74,205,238) light blue → bg color du WIN_BANNER (= "DEPL./A OK/B RET.").
+    // idx 12 = (49,82,205) blue, idx 13 = (164,197,246) light blue → text colors.
+    // Avant ce fix on avait un fallback grayscale → idx 15 = 0x0000 (= noir) →
+    // banner bg noir au lieu de bleu (= user feedback session 96).
+    try {
+      const textPal2 = await loadGbaPal('/decomp/em/ui/text_window/text_pal2.pal');
+      LoadPalette(textPal2, 11 * 16, 32);  // bank 11 = WIN_BANNER bg
+      // Bank 14 (= used by some other text prints) — same pal pour cohérence.
+      LoadPalette(textPal2, 14 * 16, 32);
+    } catch (e) {
+      console.warn('[naming-screen] text_pal2.pal failed, banner banner will be black:', e);
+    }
   } catch (e) {
     console.warn('[naming-screen] loadNamingScreenAssets BG palettes failed:', e);
   }
@@ -569,6 +605,41 @@ async function loadNamingScreenAssets(): Promise<void> {
     await loadObjectEventGraphicsInfo(rt, OBJ_EVENT_GFX_RIVAL_MAY_NORMAL);
   } catch (e) {
     console.warn('[naming-screen] PLAYER trainer assets failed:', e);
+  }
+
+  // ─── BG tile graphics + tilemaps (= 1:1 décomp:1873-1876 LoadGfx + 623-626 DrawBgTilemap) ─
+  // LoadGfx (décomp:1871-1879) :
+  //   LZ77UnCompWram(gNamingScreenMenu_Gfx, sNamingScreen->tileBuffer);
+  //   LoadBgTiles(1, sNamingScreen->tileBuffer, sizeof(sNamingScreen->tileBuffer), 0);
+  //   LoadBgTiles(2, sNamingScreen->tileBuffer, sizeof(sNamingScreen->tileBuffer), 0);
+  //   LoadBgTiles(3, sNamingScreen->tileBuffer, sizeof(sNamingScreen->tileBuffer), 0);
+  //
+  // gNamingScreenMenu_Gfx (= graphics/naming_screen/menu.png post-LZ77, 48 tiles
+  // 4bpp = 1536 bytes). On charge dans BG1+BG2 (charBase=2, mêmes tiles partagés)
+  // et BG3 (charBase=3, copie séparée). Notre engine bg(N).vram pointe sur le
+  // charBase de chaque BG → écriture à offset 0 dans chacun = 1:1 décomp.
+  try {
+    if (!_menuGfx) {
+      _menuGfx = await loadTileBin(BASE + 'menu.png', 4);
+    }
+    LoadBgTiles(1, _menuGfx, _menuGfx.byteLength, 0);
+    LoadBgTiles(2, _menuGfx, _menuGfx.byteLength, 0);
+    LoadBgTiles(3, _menuGfx, _menuGfx.byteLength, 0);
+  } catch (e) {
+    console.warn('[naming-screen] BG tiles (menu.4bpp) failed:', e);
+  }
+
+  // BG tilemaps (= 1:1 décomp:623-626 DrawBgTilemap calls dans MainState_FadeIn).
+  // Les .bin sont déjà décompressés (= 1280 bytes = 32×20 tiles entries u16).
+  // On les cache en module state ; DrawBgTilemap les copy dans bg.tilemap au
+  // call MainState_FadeIn + DrawKeyboardPageOnDeck.
+  try {
+    if (!_bgTilemapBackground)      _bgTilemapBackground      = await loadTilemapBin(BASE + 'background.bin');
+    if (!_bgTilemapKeyboardUpper)   _bgTilemapKeyboardUpper   = await loadTilemapBin(BASE + 'keyboard_upper.bin');
+    if (!_bgTilemapKeyboardLower)   _bgTilemapKeyboardLower   = await loadTilemapBin(BASE + 'keyboard_lower.bin');
+    if (!_bgTilemapKeyboardSymbols) _bgTilemapKeyboardSymbols = await loadTilemapBin(BASE + 'keyboard_symbols.bin');
+  } catch (e) {
+    console.warn('[naming-screen] BG tilemaps failed:', e);
   }
 
   _assetsLoaded = true;
@@ -751,6 +822,14 @@ function NamingScreen_InitBGs(): void {
 
   rt.SetGpuReg(0x000, 0);  // REG_OFFSET_DISPCNT = 0
 
+  // 1:1 décomp src/naming_screen.c:506-510 — reset BG vOFS/hOFS depuis le scene
+  // précédent (= Birch laisse BG1 vOFS=64, hOFS=3 après son fade slide).
+  // Sans ce reset, le 2-page keyboard apparaît shifted (= bug session 95).
+  rt.SetGpuReg(0x010, 0); rt.SetGpuReg(0x012, 0);  // BG0HOFS / BG0VOFS
+  rt.SetGpuReg(0x014, 0); rt.SetGpuReg(0x016, 0);  // BG1HOFS / BG1VOFS
+  rt.SetGpuReg(0x018, 0); rt.SetGpuReg(0x01A, 0);  // BG2HOFS / BG2VOFS
+  rt.SetGpuReg(0x01C, 0); rt.SetGpuReg(0x01E, 0);  // BG3HOFS / BG3VOFS
+
   ResetBgsAndClearDma3BusyFlags(0);
   InitBgsFromTemplates(0, sBgTemplates_NamingScreen as any, sBgTemplates_NamingScreen.length);
 
@@ -806,6 +885,22 @@ function CB2_NamingScreen(): void {
   // Subsprite OAM sync (= notre extension pour SetSubspriteTables)
   syncSubspriteOam();
   rt.UpdatePaletteFade();
+
+  // 1:1 décomp src/naming_screen.c:2033-2044 VBlankCB_NamingScreen — sync
+  // bg1vOffset/bg2vOffset + bg1Priority/bg2Priority depuis sNamingScreen state
+  // vers les GPU registers chaque frame. Critical pour :
+  //   - Reset BG offsets au démarrage (= sinon BG1 vOFS=64 hOFS=3 lingering
+  //     depuis Birch fade slide → keyboard shifted)
+  //   - Page swap animation : Sin wave anime bg1vOffset/bg2vOffset frame-par-
+  //     frame, BG affiché doit suivre.
+  //   - Page swap priority swap : à mid-anim, BG1<->BG2 priority flip pour
+  //     révéler la nouvelle page (= deck → front).
+  if (sNamingScreen) {
+    rt.SetGpuReg(0x016, sNamingScreen.bg1vOffset & 0x1FF);  // BG1VOFS
+    rt.SetGpuReg(0x01A, sNamingScreen.bg2vOffset & 0x1FF);  // BG2VOFS
+    rt.gba.bg(1).config.priority = (sNamingScreen.bg1Priority & 3) as 0 | 1 | 2 | 3;
+    rt.gba.bg(2).config.priority = (sNamingScreen.bg2Priority & 3) as 0 | 1 | 2 | 3;
+  }
 }
 
 // ─── Task_NamingScreen 1:1 décomp src/naming_screen.c:544-582 ────────────────
@@ -864,16 +959,26 @@ function MainState_FadeIn(): void {
   const rt = getRuntime();
   if (!rt) return;
 
-  // 1:1 décomp:621-640 — initial page set explicitly to UPPER, then keyboard
-  // "on deck" = LOWER. We just initialize the keyboard rendering.
+  // 1:1 décomp src/naming_screen.c:621-640 (MainState_FadeIn body) :
+  //   DrawBgTilemap(3, gNamingScreenBackground_Tilemap);
+  //   sNamingScreen->currentPage = KBPAGE_LETTERS_UPPER;
+  //   DrawBgTilemap(2, gNamingScreenKeyboardLower_Tilemap);
+  //   DrawBgTilemap(1, gNamingScreenKeyboardUpper_Tilemap);
+  //   PrintKeyboardKeys(WIN_KB_PAGE_2, KEYBOARD_LETTERS_LOWER);
+  //   PrintKeyboardKeys(WIN_KB_PAGE_1, KEYBOARD_LETTERS_UPPER);
+  //   ...DrawTextEntryBox / DrawTextEntry / PrintControls...
+  //   BeginNormalPaletteFade(...);
+  DrawBgTilemap(3, _bgTilemapBackground);
   sNamingScreen.currentPage = KBPAGE_LETTERS_UPPER;
+  DrawBgTilemap(2, _bgTilemapKeyboardLower);
+  DrawBgTilemap(1, _bgTilemapKeyboardUpper);
 
   // Draw text entry + title + banner (= window text printer)
   DrawTextEntryBox();
   DrawTextEntry();
   PrintControls();
-  // Keyboard text + cursor highlight rendered via window text printer (the
-  // background tilemap from the decomp was a bg .bin we don't extract yet).
+  // Keyboard text glyphs : OnFront = WIN_KB_PAGE_1 (= currentPage UPPER) +
+  // OnDeck = WIN_KB_PAGE_2 (= LOWER, ready to swap).
   PrintKeyboardKeysOnDeck();
   PrintKeyboardKeysOnFront();
 
@@ -975,12 +1080,36 @@ function MainState_WaitPageSwap(): void {
     }
     SetCursorPos(cursorX, cursorPos.y);
 
-    // Re-render keyboard text on the now-visible window.
+    // Re-render keyboard text + BG tilemap on the on-deck window.
+    // 1:1 décomp:1977-2002 DrawKeyboardPageOnDeck — identifies which BG is
+    // currently the "deck" (= higher priority = drawn behind), draws the next
+    // page tilemap there, then prints the next page keyboard text.
+    DrawKeyboardPageOnDeck();
     PrintKeyboardKeysOnFront();
-    PrintKeyboardKeysOnDeck();
 
     SetInputState(INPUT_STATE_ENABLED);
     SetCursorInvisibility(false);
+  }
+}
+
+// ─── DrawKeyboardPageOnDeck 1:1 décomp:1977-2002 ────────────────────────────
+function DrawKeyboardPageOnDeck(): void {
+  if (!sNamingScreen) return;
+  // Décomp lit BG1CNT/BG2CNT priority bits. Notre struct sNamingScreen tient
+  // les mêmes valeurs (= bg1Priority/bg2Priority sync via VBlankCB_NamingScreen).
+  // Higher priority = drawn behind = on-deck (= invisible currently).
+  let bg: number, windowId: number;
+  if (sNamingScreen.bg1Priority > sNamingScreen.bg2Priority) {
+    bg = 1;
+    windowId = sNamingScreen.windows[WIN_KB_PAGE_1];
+  } else {
+    bg = 2;
+    windowId = sNamingScreen.windows[WIN_KB_PAGE_2];
+  }
+  DrawBgTilemap(bg, getNextKeyboardTilemap(sNamingScreen.currentPage));
+  if (windowId >= 0) {
+    const kbId = sPageToNextKeyboardId[sNamingScreen.currentPage];
+    drawKeyboardWindow(windowId, kbId);
   }
 }
 
@@ -1048,15 +1177,15 @@ function SetCursorPos(x: number, y: number): void {
   if (!sprite) return;
   const kbId = sPageToKeyboardId[sNamingScreen.currentPage];
   if (x < sPageColumnCounts[kbId]) {
-    // 1:1 décomp:1136 sprite.x = sPageColumnXPos[col] + 38 (= cursor center
-    // at sprite.x + 8 = sPageColumnXPos[col] + 46 screen). Décomp's cursor
-    // sprite design + bitmap font widths put the ring visually centered sur
-    // le char. Notre cursor.png a le ring drawn dans la moitié droite du
-    // 16x16 tile (= ring center at sprite.x + 12 environ vs decomp +8), donc
-    // un -8 shift compense. User test data : "S donne Q" + symbol "?" out of
-    // bound → cursor ring 2-cols right of expected → shift -8 align ring sur
-    // le char attendu.
-    sprite.x = sPageColumnXPos[kbId][x] + 30;
+    // 1:1 décomp:1136 — sprite.x = sPageColumnXPos[col] + 38.
+    // Décomp `sprite.x` = LOGICAL CENTER. Le syncSpritesToOam compute
+    // oam.x = sprite.x + centerToCornerVecX (= -8 pour 16x16) → oam.x = +30.
+    // Note : lors d'un précédent test, cursor était décalé "S donne Q" →
+    // on avait poussé à +30. Le vrai cause était le BG tilemap clavier non
+    // loaded (= les glyph windows ne s'alignaient pas avec le frame). Avec
+    // les BG tilemaps maintenant correctement chargés, +38 strict décomp est
+    // OK et place le ring sur le char attendu.
+    sprite.x = sPageColumnXPos[kbId][x] + 38;
   } else {
     // On button column — sprite cursor is invisible per SpriteCB_Cursor logic
     sprite.x = 0;
@@ -2079,8 +2208,18 @@ function PrintControls(): void {
   if (!sNamingScreen) return;
   const winBanner = sNamingScreen.windows[WIN_BANNER];
   if (winBanner < 0) return;
-  FillWindowPixelBuffer(winBanner, 0xCC);
-  AddTextPrinterParameterized3(winBanner, 1, 4, 1, [12, 1, 2], 255, '+DEPL.  A OK  B RET.');
+  // 1:1 décomp src/naming_screen.c:2004-2010 PrintControls :
+  //   const u8 color[3] = { TEXT_DYNAMIC_COLOR_6, TEXT_COLOR_WHITE, TEXT_COLOR_DARK_GRAY };
+  //   FillWindowPixelBuffer(WIN_BANNER, PIXEL_FILL(15));
+  //   AddTextPrinterParameterized3(WIN_BANNER, FONT_SMALL, 2, 1, color, 0, gText_MoveOkBack);
+  //
+  // PIXEL_FILL(15) = 0xFF → idx 15 dans bank 11 (= text_pal2.pal idx 15 =
+  // light blue 74,205,238). Avant on avait 0xCC (= idx 12) avec un fallback
+  // grayscale → banner sortait noir au lieu de bleu (= user feedback session 96).
+  // Color triplet [DYNAMIC_6=15, WHITE=1, DARK_GRAY=2] : bg = idx 15 (= match
+  // PIXEL_FILL = invisible glyph "ghost"), fg = white, shadow = dark gray.
+  FillWindowPixelBuffer(winBanner, 0xFF);
+  AddTextPrinterParameterized3(winBanner, 1, 4, 1, [0xF, 0x1, 0x2], 255, '+DEPL.  A OK  B RET.');
   PutWindowTilemap(winBanner);
   CopyWindowToVram(winBanner, 3);
 }
@@ -2134,34 +2273,46 @@ const sNamingScreenKeyboardText: readonly string[][] = [
   ],
 ];
 
-// 1:1 décomp src/naming_screen.c:319-323 sKeyboardTextColors[KBPAGE_COUNT][3].
-// Per-page text color triplet : [bgColor, fgColor, shadowColor] indices dans
-// la palette du window. ROM colors:
-//   LOWER  : brown/orange BG (= idx 6 = brown, 1 = beige fg, 2 = dark shadow)
-//   UPPER  : blue BG          (= idx 4 = blue, 1 = white fg, 2 = dark shadow)
-//   SYMBOLS: green BG         (= idx 8 = green, 1 = white, 2 = dark)
-// Sans palettes BG décomp à dispo, on utilise les colors disponibles dans le
-// frame palette loaded au state 5 (= text frame palette). Idx 0 = transparent
-// (= laisse voir le BG2 derrière), 1 = light, 2 = mid, 3 = dark.
+// 1:1 décomp src/naming_screen.c:1942-1947 sFillValues[KBPAGE_COUNT].
+// PIXEL_FILL(idx) = (idx<<4)|idx (= 2 nibbles palette idx packés dans un byte).
+// Indices = banks dans la window palette (paletteNum=10 = keyboard.pal) :
+//   13 = idx 13 (123,172,197) = light blue   → KEYBOARD_LETTERS_UPPER bg
+//   14 = idx 14 (213,156,115) = orange       → KEYBOARD_LETTERS_LOWER bg
+//   15 = idx 15 (148,189,106) = green        → KEYBOARD_SYMBOLS bg
+const sFillValues: readonly number[] = [
+  /* KEYBOARD_LETTERS_LOWER = 0 */ 0xEE,  // PIXEL_FILL(14)
+  /* KEYBOARD_LETTERS_UPPER = 1 */ 0xDD,  // PIXEL_FILL(13)
+  /* KEYBOARD_SYMBOLS       = 2 */ 0xFF,  // PIXEL_FILL(15)
+];
+
+// 1:1 décomp src/naming_screen.c:1928-1954 sTextColorStruct + sKeyboardTextColors.
+// Triplets [bgColor, fgColor, shadowColor]. Le bgColor utilise un DYNAMIC_COLOR
+// (idx 13/14/15 dans la palette du window = matched avec sFillValues idx) :
+//   LOWER  : DYNAMIC_5=14 (orange) + WHITE + DARK_GRAY
+//   UPPER  : DYNAMIC_4=13 (blue)   + WHITE + DARK_GRAY
+//   SYMBOLS: DYNAMIC_6=15 (green)  + WHITE + DARK_GRAY
+// Le bgColor === sFillValues idx → "ghost" pixels du glyph se fondent dans
+// le bg fill (= invisible). Seuls fg (white) + shadow (dark gray) écrivent.
 const sKeyboardTextColors: ReadonlyArray<readonly number[]> = [
-  /* KBPAGE_SYMBOLS       */ [0, 2, 3],  // transparent BG + dark text
-  /* KBPAGE_LETTERS_UPPER */ [0, 2, 3],
-  /* KBPAGE_LETTERS_LOWER */ [0, 2, 3],
+  /* KEYBOARD_LETTERS_LOWER = 0 */ [0xE, 0x1, 0x2],  // DYNAMIC_5, WHITE, DARK_GRAY
+  /* KEYBOARD_LETTERS_UPPER = 1 */ [0xD, 0x1, 0x2],  // DYNAMIC_4, WHITE, DARK_GRAY
+  /* KEYBOARD_SYMBOLS       = 2 */ [0xF, 0x1, 0x2],  // DYNAMIC_6, WHITE, DARK_GRAY
 ];
 
 function drawKeyboardWindow(win: number, kbId: number): void {
-  // 1:1 décomp src/naming_screen.c:1956-1963 PrintKeyboardKeys :
+  // 1:1 décomp src/naming_screen.c:1956-1966 PrintKeyboardKeys :
+  //   FillWindowPixelBuffer(window, sFillValues[page]);
   //   for (i = 0; i < KBROW_COUNT; i++)
   //     AddTextPrinterParameterized3(window, FONT_NORMAL, 0, i * 16 + 1,
   //       sKeyboardTextColors[page], 0, sNamingScreenKeyboardText[page][i]);
+  //   PutWindowTilemap(window);
   //
-  // FillWindowPixelBuffer 0x00 = transparent (= idx 0 = pas de white box).
-  // Le BG2 (= keyboard background tilemap décomp) montre à travers.
-  // Avant on faisait 0x77 (= idx 7 = white box visible derrière chaque row).
-  FillWindowPixelBuffer(win, 0x00);
-  // Map kbId vers index sKeyboardTextColors. KEYBOARD_LETTERS_LOWER=0,
-  // KEYBOARD_LETTERS_UPPER=1, KEYBOARD_SYMBOLS=2 (= notre indexation interne).
-  const colors = sKeyboardTextColors[kbId] ?? [0, 2, 3];
+  // sFillValues + sKeyboardTextColors indexés par KEYBOARD_LETTERS_LOWER/UPPER/SYMBOLS
+  // (= 0/1/2). kbId est exactement cette valeur (cf. `sPageToKeyboardId` /
+  // `sPageToNextKeyboardId`).
+  const fill = sFillValues[kbId] ?? 0x00;
+  const colors = sKeyboardTextColors[kbId] ?? [0x0, 0x1, 0x2];
+  FillWindowPixelBuffer(win, fill);
   for (let row = 0; row < KBROW_COUNT; row++) {
     const text = sNamingScreenKeyboardText[kbId]?.[row];
     if (!text) continue;

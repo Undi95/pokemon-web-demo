@@ -494,6 +494,64 @@ export function CopyBgTilemapBufferToVram(_bg: number): void {
   // so no explicit copy to VRAM is needed.
 }
 
+/** 1:1 décomp `bg.c CopyToBgTilemapBuffer(u8 bg, const void *src, u16 mode, u16 destOffset)`
+ *  — copy raw u16 tilemap entries from `src` into BG tilemap @ destOffset.
+ *
+ *  Décomp behavior :
+ *    - mode != 0 → CpuCopy16(src, tilemap + destOffset*2, mode)  // mode = bytes
+ *    - mode == 0 → LZ77UnCompWram(src, tilemap + destOffset*2)   // src is LZ77
+ *
+ *  Notre engine : on assume `src` est déjà décompressé (= les .bin extraits par
+ *  scripts/extract-png-tiles.mjs sont post-LZ77). Pour mode=0, on copie tout
+ *  src.length entries. Pour mode!=0, on copie mode/2 entries.
+ *
+ *  Foundational : utilisé par tout scene qui charge un tilemap depuis ROM
+ *  (= naming screen, intro, title, battles, overworld maps, …). */
+export function CopyToBgTilemapBuffer(
+  bg: number,
+  src: Uint16Array,
+  mode: number,
+  destOffset: number,
+): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  const tilemap = rt.gba.bg(bg as 0 | 1 | 2 | 3).tilemap;
+  const numEntries = mode !== 0 ? Math.min(mode >> 1, src.length) : src.length;
+  for (let i = 0; i < numEntries && (destOffset + i) < tilemap.length; i++) {
+    tilemap[destOffset + i] = src[i];
+  }
+}
+
+/** 1:1 décomp `bg.c CopyRectToBgTilemapBuffer(bg, src, srcW, srcH, srcX, srcY, destX, destY, rectW, rectH, palette, baseTile, mode)`.
+ *  Simplifié : on copie un rect rectW×rectH depuis src (srcW×srcH) à destX/destY dans la BG tilemap. */
+export function CopyRectToBgTilemapBuffer(
+  bg: number,
+  src: Uint16Array,
+  srcW: number,
+  srcX: number,
+  srcY: number,
+  destX: number,
+  destY: number,
+  rectW: number,
+  rectH: number,
+): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  const gbaBg = rt.gba.bg(bg as 0 | 1 | 2 | 3);
+  const tilemap = gbaBg.tilemap;
+  const screenSize = gbaBg.config.screenSize;
+  for (let ty = 0; ty < rectH; ty++) {
+    for (let tx = 0; tx < rectW; tx++) {
+      const srcIdx = (srcY + ty) * srcW + (srcX + tx);
+      if (srcIdx < 0 || srcIdx >= src.length) continue;
+      const dstIdx = tileMapIndex(destX + tx, destY + ty, screenSize);
+      if (dstIdx >= 0 && dstIdx < tilemap.length) {
+        tilemap[dstIdx] = src[srcIdx];
+      }
+    }
+  }
+}
+
 // ─── Accesseur interne ───────────────────────────────────────────────────────
 
 export function getWindowById(windowId: number): Window | null {

@@ -389,7 +389,13 @@ export function encodeStringForFont(str: string, charmap: Record<string, number>
       const closeIdx = str.indexOf('}', i + 1);
       if (closeIdx > 0) {
         const inner = str.slice(i + 1, closeIdx).trim();
-        const m = inner.match(/^(COLOR|SHADOW|HIGHLIGHT|PAUSE)\s+(\S+)$/);
+        // Bug session 96 : ce regex ne matchait QUE COLOR/SHADOW/HIGHLIGHT/PAUSE.
+        // Du coup `{CLEAR N}` / `{SKIP N}` / `{CLEAR_TO N}` / `{MIN_LETTER_SPACING N}`
+        // tombaient dans le fallback "skip silencieusement" (= ligne 421), et
+        // les naming screen keyboard strings perdaient TOUS leurs CLEAR codes →
+        // lettres collées (= bug visuel ABCDEFGH crammed in left half).
+        // Fix : étendre regex à tous les ctrl codes valides.
+        const m = inner.match(/^(COLOR|SHADOW|HIGHLIGHT|PAUSE|CLEAR_TO|CLEAR|SKIP|MIN_LETTER_SPACING)\s+(\S+)$/);
         if (m) {
           const cmd = m[1];
           const param = m[2];
