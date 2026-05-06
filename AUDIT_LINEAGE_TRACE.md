@@ -519,6 +519,125 @@ L'audit ne révèle PAS de bug architectural fondamental. Les fondations sont so
 
 ---
 
+## Addendum Sessions 96+ — Phase A → G résultats
+
+Suite directe de l'audit ci-dessus. Branche `upd1`. 7 commits land sur les 4 critiques + 3 importantes identifiées.
+
+### Phase A — 3 critiques foundations (commit `683e438c`)
+
+| Critique audit | Fix landed |
+|---|---|
+| 🔴 Cursor offset 1 col naming screen | `{CLEAR N}` / `{SKIP N}` / `{CLEAR_TO N}` / `{MIN_LETTER_SPACING N}` control codes ajoutés au `gba-text-printer.ts` (encoder + renderer). Strings clavier 1:1 décomp `sNamingScreenKeyboardText[KBPAGE][KBROW]` portées. `drawKeyboardWindow` fait 1 `AddTextPrinterParameterized3` par row (= 1:1 `PrintKeyboardKeys` naming_screen.c:1956). |
+| 🔴 `gKeyRepeatStartDelay` jamais init à 40 | `gKeyRepeat` mutable container (startDelay/continueDelay), `InitKeys(rt)` au boot dans `GameScene.create()` (= 1:1 main.c:99 AgbMain). Naming screen save/override/restore via `keyRepeatStartDelayCopy` field. Tick keys lit les vars runtime au lieu des constantes. |
+| 🔴 `callback1` jamais invoqué | `MainStruct.callback1` field, `SetMainCallback1()` method, invocation dans tickFixed AVANT callback2 (= 1:1 main.c:181-188 CallCallbacks). Currently null Phase 0-3, infrastructure prête pour CB1_Overworld Phase 4. |
+
+### Phase B — object_event_graphics framework (commit `6cb66c8e`)
+
+🔴 **Critique audit** : porter le framework décomp `event_object_movement.c` + `data/object_events/object_event_graphics_info.h` qui sert TOUS les sprites NPC/player/rival/overworld. Bénéfice immédiat naming screen player icon, futur Phase 4 overworld NPCs + battle trainer sprites.
+
+Architecture portée :
+- `ObjectEventGraphicsInfo` type + `gObjectEventGraphicsInfoPointers` registry
+- `gAnims_Standard{South,North,West,East}` (= 4-step walk-in-place cycles, EAST utilise WEST tiles avec `hFlip=true`)
+- `sAnimTable_Standard` + `sRivalAvatarGfxIds[STATE][gender]` lookup
+- `loadObjectEventGraphicsInfo` (async asset load + frame-major repack)
+- `CreateObjectGraphicsSprite(gfxId, callback, x, y, subPriority, initialAnim)` factory
+
+Runtime registry bridge (`decomp-runtime.ts`) :
+- `_extraAnims` + `_extraAnimTables` Maps (= mutable runtime, distinct du static auto-generated)
+- `registerExtraAnim` / `registerExtraAnimTable` / `spriteAnimStatesRegister` helpers
+- `tickSpriteAnims` consulte les extras en fallback + applique `hFlip`/`vFlip` per-frame
+
+Naming screen migration : `NamingScreen_CreatePlayerIcon` utilise `CreateObjectGraphicsSprite` + ANIM_STD_GO_SOUTH initial anim. Suppression `SpriteCB_WalkInPlaceSouth` callback hardcodé + `WALK_IN_PLACE_*` constants + obsolete tags.
+
+Birch speech sprite (= 64x64 trainer pic via `sSpriteTemplate_NewGameBirch`) NON migré — type différent du framework 16x32 walking, reste as-is.
+
+### Phase F — options menu wiring (commit `19f6e14c`)
+
+🔴 **Critique audit** : bug user-visible (text speed locked at 2 même si lock sur 3, mono/stereo font rien). Save struct existait avec localStorage Proxy autopersistant — manquait juste le wiring options → systems.
+
+- F.1 : `gSaveBlock2` helpers (`GetPlayerTextSpeed/Delay`, `IsStereoSound`) + `OPTIONS_*` enums dans `gba-menu-system.ts`. Bridge globalThis pour auto-callbacks.
+- F.2 : `AddTextPrinterParameterized3` sentinel `speed=-1` = "use player saved" (= resolve via `gSaveBlock2Ptr.optionsTextSpeed`). 255 (TEXT_SKIP_DRAW) = instant (existant). N>=0 = explicit.
+- F.3 : Audio mono/stereo deferred Phase 4 (= `panMidi=64` hardcoded centered, pan per-track via MIDI CC 10 events parsing scope plus large). TODO documenté.
+- F.4 : Button mode L=A remap dans tickFixed ReadKeys (= 1:1 main.c:273-281). Si `optionsButtonMode == OPTIONS_BUTTON_MODE_L_EQUALS_A`, press L injecte aussi A dans `newKeys` + `heldKeys` (= bug note décomp : `newAndRepeatedKeys` PAS remappé).
+
+### Phase D — VBlankCB chain (commit `3a15f6e1`)
+
+🟡 **Importante audit** : 1:1 décomp pattern → presque tous les `VBlankCB_X` scenes appellent `LoadOam() ; ProcessSpriteCopyRequests() ; TransferPlttBuffer() ; ScanlineEffect_InitHBlankDmaTransfer()`.
+
+- `LoadOam()` no-op stub (= compositor lit `gba.oam[]` directement, no double-buffer)
+- `ProcessSpriteCopyRequests()` no-op stub (= sprite tile copies eager, no queue)
+- `VBlankCB_Intro` dans `copyright-boot.ts` wire la chain proper 4 helpers
+- `ScanlineEffect_InitHBlankDmaTransfer` reste stub (= scanline H-blank DMA real impl = TODO Phase 4 quand overworld weather/water)
+
+### Phase C — mon anim tables extraction (commit `15606a6c`)
+
+🟡 **Importante audit** : `sMonFrontAnimIdsTable` + `sMonAnimationDelayTable` + `sMonHasTwoFramesAnimationTable` extraction.
+
+Pattern décomp-driven (= matches `extract-png-indexed-tiles.mjs`, `transpile-callbacks.mjs`) :
+- `scripts/extract-mon-anim-tables.mjs` : parser + generator. Reads `pokemon.c`. Output string-form (= SPECIES_X / ANIM_Y identifiers preserved) → resolved au TS run-time.
+- `auto/src/mon-anim-tables-data.ts` : stub vide. Run script pour populate.
+- `pokemon-anim-funcs.ts` framework consumer : `_hydrateFromGeneratedData()` async lazy au module load. Resolves SPECIES_X via `species-data.ts` (387 entries) + ANIM_Y via local `ANIM_NAME_TO_ID`. Fallback sur Map hardcoded triplet (Lotad/Lombre/Ludicolo) si data file vide. Nouvelles APIs : `getMonAnimDelay(species)`, `hasTwoFramesAnimation(species)`.
+
+Activation : `node scripts/extract-mon-anim-tables.mjs` populate les 387 mappings.
+
+### Phase E — trainer pic table extraction (commit `ec9b2d39`)
+
+🟡 **Importante audit** : `gTrainerFrontPicTable` + `FacilityClassToPicIndex` extraction pour battle scenes Phase 4.
+
+Pattern symétrique Phase C :
+- `scripts/extract-trainer-pic-table.mjs` : reads `data/trainer_graphics/front_pic_tables.h`. Extrait `gTrainerFrontPicTable` + `gTrainerFrontPicPaletteTable`. Output string-form trainer pic ids + gfx symbols.
+- `auto/src/trainer-pic-tables-data.ts` : stub vide.
+- `trainer-pic-graphics.ts` framework consumer : `TrainerPicInfo` type + registry + lookup helpers (`GetTrainerFrontPicInfo`, `GetTrainerPicIdByName`). Async hydration au module load avec graceful fallback.
+
+Birch speech sprite reste sur son path one-off (= `sNewGameBirch_Gfx` 64x64 custom, hors `gTrainerFrontPicTable`). Ce framework concerne les trainer pics de battle exclusivement.
+
+Activation : `node scripts/extract-trainer-pic-table.mjs`.
+
+### Phase G — documentation + audit closure
+
+Ce addendum.
+
+### Status final post-Phase A-G
+
+| Critique | Status |
+|---|---|
+| 🔴 Cursor offset naming screen | ✅ fix Phase A.1 |
+| 🔴 InitKeys gKeyRepeat init | ✅ fix Phase A.2 |
+| 🔴 callback1 invocation | ✅ fix Phase A.3 |
+| 🔴 object_event_graphics framework | ✅ fix Phase B |
+| 🔴 Options menu user-visible bug | ✅ partial Phase F (text + button mode), audio Phase 4 |
+| 🟡 VBlankCB chain pattern | ✅ Phase D (stubs callable, ScanlineEffect deferred) |
+| 🟡 sMonAnimationDelayTable + sMonFrontAnimIdsTable | ✅ Phase C (extraction + framework, run script) |
+| 🟡 gTrainerFrontPicTable | ✅ Phase E (extraction + framework, run script) |
+| 🟡 Save system localStorage | ✅ existait déjà via gSaveBlock2Ptr Proxy |
+| 🟢 Lotad palette flicker, MainMenu_FormatSavegameText, BG keyboard tilemap, MonIcon/WaldaDadIcon, BGM status check, FadeOutBGM smooth | 🔍 deferred (= mineur, pas critique pour le boot flow) |
+
+### Pour activer les data tables Phase C + E
+
+```bash
+node scripts/extract-mon-anim-tables.mjs
+node scripts/extract-trainer-pic-table.mjs
+```
+
+Les frameworks consument automatiquement les data files générés (= graceful fallback si vides). Re-run quand la décomp update.
+
+### Phase 4 (overworld réel) — fondation prête
+
+Tout ce qui suit a maintenant son infrastructure :
+- NPCs sprites via `CreateObjectGraphicsSprite` + framework
+- Player avatar via `sRivalAvatarGfxIds` + extension PLAYER_AVATAR_STATE_*
+- VBlank chain pour scanline effects (= weather, water, transparency)
+- Options menu wired vers text + input
+- Mon anim per-species via tables extracted
+- Trainer pics via tables extracted
+- callback1 prêt pour CB1_Overworld
+- Save system fonctionnel (= options persist)
+
+Le mur entre nous et le fun est tombé. Sur la map maintenant.
+
+---
+
+
 
 
 

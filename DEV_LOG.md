@@ -5694,3 +5694,89 @@ holds gender for PLAYER context per decomp's call from `main_menu.c:1606`.
 - ANIM_STD_GO_SOUTH multi-frame anim (= our impl always uses frame 0 for
   player icon, sufficient for naming screen since the icon is static).
 
+---
+
+## Sessions 96+ — Phase A→G : audit lineage critiques fixés
+
+Branche `upd1`. 7 commits sur les 4 critiques + 3 importantes identifiées
+par `AUDIT_LINEAGE_TRACE.md`. Voir audit doc addendum pour détail complet.
+
+**Phase A** (`683e438c`) — 3 fixes foundationals :
+- `{CLEAR/SKIP/CLEAR_TO/MIN_LETTER_SPACING N}` control codes ajoutés au
+  `gba-text-printer.ts`. Strings clavier 1:1 décomp portées → cursor
+  alignment correct.
+- `gKeyRepeat` mutable + `InitKeys()` au boot. Naming screen save/restore
+  via `keyRepeatStartDelayCopy`.
+- `MainStruct.callback1` field + `SetMainCallback1()` + invocation
+  tickFixed AVANT callback2 (= 1:1 main.c CallCallbacks).
+
+**Phase B** (`6cb66c8e`) — `object-event-graphics.ts` framework :
+- `ObjectEventGraphicsInfo` + `gObjectEventGraphicsInfoPointers` registry
+- `gAnims_Standard{S,N,W,E}` + `sAnimTable_Standard` + `sRivalAvatarGfxIds`
+- `loadObjectEventGraphicsInfo` + `CreateObjectGraphicsSprite` factory
+- Runtime registry bridge (`_extraAnims`/`_extraAnimTables`) +
+  `spriteAnimStatesRegister` + `tickSpriteAnims` consulte extras
+- Naming screen migration : `NamingScreen_CreatePlayerIcon` utilise
+  framework + StartSpriteAnim ANIM_STD_GO_SOUTH. Suppression
+  `SpriteCB_WalkInPlaceSouth` hack hardcodé `[0, 8, 0, 16]`.
+
+**Phase F** (`19f6e14c`) — options menu wiring :
+- `gSaveBlock2` helpers (`GetPlayerTextSpeed`, `GetPlayerTextSpeedDelay`,
+  `IsStereoSound`) + `OPTIONS_*` enums
+- `AddTextPrinterParameterized3` sentinel `speed=-1` = use player saved
+- Audio mono/stereo deferred Phase 4 (= panMidi=64 hardcoded centered,
+  pan per-track via MIDI CC 10 = scope plus large)
+- Button mode L=A remap dans tickFixed ReadKeys (= 1:1 main.c:273-281)
+
+**Phase D** (`3a15f6e1`) — VBlankCB chain (= pattern décomp standard) :
+- `LoadOam()` + `ProcessSpriteCopyRequests()` no-op stubs (= compositor
+  read-direct + eager copies)
+- `VBlankCB_Intro` wired sur la chain proper 4 helpers (1:1 décomp)
+- `ScanlineEffect_InitHBlankDmaTransfer` reste stub (= TODO Phase 4
+  pour scanline weather/water effects)
+
+**Phase C** (`15606a6c`) — mon anim tables extraction :
+- `scripts/extract-mon-anim-tables.mjs` parser/generator
+- `auto/src/mon-anim-tables-data.ts` stub vide
+- `pokemon-anim-funcs.ts` consumer avec async hydration + fallback
+  triplet hardcoded (Lotad/Lombre/Ludicolo)
+- Nouvelles APIs : `getMonAnimDelay(species)`, `hasTwoFramesAnimation(species)`
+- Activation : `node scripts/extract-mon-anim-tables.mjs` populate les
+  387 species mappings
+
+**Phase E** (`ec9b2d39`) — trainer pic table extraction :
+- `scripts/extract-trainer-pic-table.mjs` parser/generator
+- `auto/src/trainer-pic-tables-data.ts` stub vide
+- `trainer-pic-graphics.ts` consumer (TrainerPicInfo + registry +
+  helpers) avec async hydration + graceful fallback
+- Activation : `node scripts/extract-trainer-pic-table.mjs` populate
+  les ~80 trainer pic entries
+- Birch speech sprite reste hors framework (= sNewGameBirch_Gfx 64x64
+  custom one-off, pas dans gTrainerFrontPicTable)
+
+**Phase G** — addendum audit + DEV_LOG (= ce bloc).
+
+### Status post-Phase A-G
+
+✅ **Toutes les 4 critiques + 3 importantes** du `AUDIT_LINEAGE_TRACE.md`
+landed. Phase 4 (overworld map réel) a maintenant ses fondations.
+
+🔍 **Restent en deferred** (= mineur, pas blocker pour Phase 4) :
+- Lotad palette multicolor flicker (= compositor scanline timing à investiguer)
+- `MainMenu_FormatSavegameText` (= dépend save system Continue path)
+- `MonIcon` / `WaldaDadIcon` naming screen (= dépend pokemon_icon engine + ObjectEvent system)
+- BGM `gMPlayInfo_BGM.status` end check (= title screen BGM timeout)
+- `FadeOutBGM(N)` smooth fade
+- BG tilemap rendering pour keyboard chars (= migration text printer → pre-baked tilemap, cosmétique)
+- Audio mono/stereo per-track pan (= pan per-track MIDI CC 10 events parsing scope plus large)
+
+**Pour activer les data tables Phase C + E** :
+```bash
+node scripts/extract-mon-anim-tables.mjs
+node scripts/extract-trainer-pic-table.mjs
+```
+
+Re-run quand la décomp pret update.
+
+**Prochaine étape** : Phase 4 — premiers pas dans Hoenn.
+
