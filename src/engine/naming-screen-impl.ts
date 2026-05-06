@@ -2134,22 +2134,39 @@ const sNamingScreenKeyboardText: readonly string[][] = [
   ],
 ];
 
+// 1:1 décomp src/naming_screen.c:319-323 sKeyboardTextColors[KBPAGE_COUNT][3].
+// Per-page text color triplet : [bgColor, fgColor, shadowColor] indices dans
+// la palette du window. ROM colors:
+//   LOWER  : brown/orange BG (= idx 6 = brown, 1 = beige fg, 2 = dark shadow)
+//   UPPER  : blue BG          (= idx 4 = blue, 1 = white fg, 2 = dark shadow)
+//   SYMBOLS: green BG         (= idx 8 = green, 1 = white, 2 = dark)
+// Sans palettes BG décomp à dispo, on utilise les colors disponibles dans le
+// frame palette loaded au state 5 (= text frame palette). Idx 0 = transparent
+// (= laisse voir le BG2 derrière), 1 = light, 2 = mid, 3 = dark.
+const sKeyboardTextColors: ReadonlyArray<readonly number[]> = [
+  /* KBPAGE_SYMBOLS       */ [0, 2, 3],  // transparent BG + dark text
+  /* KBPAGE_LETTERS_UPPER */ [0, 2, 3],
+  /* KBPAGE_LETTERS_LOWER */ [0, 2, 3],
+];
+
 function drawKeyboardWindow(win: number, kbId: number): void {
   // 1:1 décomp src/naming_screen.c:1956-1963 PrintKeyboardKeys :
   //   for (i = 0; i < KBROW_COUNT; i++)
   //     AddTextPrinterParameterized3(window, FONT_NORMAL, 0, i * 16 + 1,
   //       sKeyboardTextColors[page], 0, sNamingScreenKeyboardText[page][i]);
   //
-  // Une string par row. Le text printer parse les {CLEAR N} et avance currentX
-  // → chaque glyph rendu à la position prescrite par le décomp (= aligned
-  // avec cursor sprite). N'utilise PAS sPageColumnXPos[col] côté char (= seul
-  // le cursor sprite l'utilise).
-  FillWindowPixelBuffer(win, 0x77);
+  // FillWindowPixelBuffer 0x00 = transparent (= idx 0 = pas de white box).
+  // Le BG2 (= keyboard background tilemap décomp) montre à travers.
+  // Avant on faisait 0x77 (= idx 7 = white box visible derrière chaque row).
+  FillWindowPixelBuffer(win, 0x00);
+  // Map kbId vers index sKeyboardTextColors. KEYBOARD_LETTERS_LOWER=0,
+  // KEYBOARD_LETTERS_UPPER=1, KEYBOARD_SYMBOLS=2 (= notre indexation interne).
+  const colors = sKeyboardTextColors[kbId] ?? [0, 2, 3];
   for (let row = 0; row < KBROW_COUNT; row++) {
     const text = sNamingScreenKeyboardText[kbId]?.[row];
     if (!text) continue;
     const y = row * 16 + 1;
-    AddTextPrinterParameterized3(win, 1, 0, y, [1, 2, 3], 255, text);
+    AddTextPrinterParameterized3(win, 1, 0, y, colors, 255, text);
   }
   PutWindowTilemap(win);
   CopyWindowToVram(win, 3);
