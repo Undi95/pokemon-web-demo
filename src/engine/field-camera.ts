@@ -45,6 +45,7 @@ import {
   gMapHeader,
   GetMapBorderIdAt,
   GetIncomingConnection,
+  SaveMapView,
 } from './map-loader';
 import type { MapConnection } from './map-loader';
 import {
@@ -457,6 +458,13 @@ function CameraMove(deltaX: number, deltaY: number): boolean {
     _camPos.y += deltaY;
     return false;
   }
+
+  // 1:1 décomp `SaveMapView();` (fieldmap.c:663). Snapshot OLD map's view area
+  // (= 14×15 metatiles autour du player) AVANT le swap gMapHeader. Réinjecté
+  // par MoveMapViewToBackup dans NEW map's sBackupMapData après TransitionTo
+  // Connection pour visual continuité parfaite au cross-border.
+  // Notre conv : pos.x = `_camPos.x`, pos.y = `_camPos.y - 2` (= playerLogical).
+  SaveMapView(_camPos.x, _camPos.y - 2);
 
   // Signal le pending connection. _camPos sera override par MainCB2 scene
   // via SetCameraTopLeftCoords avec les new map coords.

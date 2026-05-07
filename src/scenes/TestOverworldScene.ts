@@ -29,6 +29,11 @@ import {
   MAP_OFFSET,
   TransitionToConnection,
   ComputeConnectionDestPos,
+  MoveMapViewToBackup,
+  CONNECTION_NORTH,
+  CONNECTION_SOUTH,
+  CONNECTION_WEST,
+  CONNECTION_EAST,
 } from '../engine/map-loader';
 import type { MapHeader, WarpEvent } from '../engine/map-loader';
 import {
@@ -66,6 +71,8 @@ import {
   destroyAllNpcSprites,
   UpdateObjectEventCoordsForCameraUpdate,
   RemoveObjectEventsOutsideView,
+  TrySpawnObjectEvents,
+  preloadNpcGraphicsForMap,
 } from '../engine/object-events';
 import { installInputHandlers, setHeldKeysOverride } from '../engine/input-handler';
 import { installEngineDevtools } from '../engine/engine-devtools';
@@ -143,14 +150,6 @@ export class TestOverworldScene extends Phaser.Scene {
    *  PlayerStep + ScriptContext_RunScript continueraient à tourner pendant
    *  le load → corruption state (= old map data + new player coords). */
   private warpInProgress = false;
-  /** Phase 4.8 : dynamic NPC respawn guard. À TRUE pendant un async
-   *  SpawnObjectEventsOnMap déclenché par MainCB2 → évite les spawns parallèles
-   *  redondants. Cleared après l'await. */
-  private _spawnInProgress = false;
-  /** Phase 4.8 : compteur frame pour throttle TrySpawnObjectEvents (= éviter
-   *  d'appeler async every frame ; on dedup quand même mais on économise les
-   *  await PNG cache lookups). */
-  private _trySpawnFrameCounter = 0;
 
   constructor() { super({ key: 'TestOverworldScene' }); }
 
@@ -315,19 +314,12 @@ export class TestOverworldScene extends Phaser.Scene {
         // sortent de leur range). Décomp call ça depuis
         // UpdateObjectEventsForCameraUpdate qui tourne post-CameraUpdate.
         RemoveObjectEventsOutsideView(rt);
-        // Phase 4.8 : dynamic NPC respawn (= 1:1 décomp `TrySpawnObjectEvents`
-        // tournant per-frame). Quand player walk vers une zone où des NPCs
-        // étaient out-of-view (= déjà removed), les re-spawne. SpawnObjectEvents
-        // OnMap dedup via (mapId, localId) → idempotent. Throttle every 30
-        // frames (≈ 0.5s) pour éviter await PNG cache lookups chaque frame.
-        if (++self._trySpawnFrameCounter >= 30 && !self._spawnInProgress) {
-          self._trySpawnFrameCounter = 0;
-          self._spawnInProgress = true;
-          void (async () => {
-            try { await SpawnObjectEventsOnMap(rt); }
-            finally { self._spawnInProgress = false; }
-          })();
-        }
+        // Phase 4.8 Tâche 2 : dynamic NPC respawn 1:1 décomp `TrySpawnObjectEvents`
+        // (event_object_movement.c:1645-1675). SYNC per-frame : iterate templates
+        // de gMapHeader, bounds check vs player, spawn ceux non-actifs déjà.
+        // Lit PNGs depuis _npcPngCache (préchargées au map init / cross-border).
+        // Pas de throttle, pas d'await — matches décomp behavior 1:1.
+        TrySpawnObjectEvents(rt);
         // Phase 4.7 : 1:1 décomp `HideShowWarpArrow` + sprite update. Per-frame
         // check : si player on ARROW_WARP tile + facing/walking matching dir
         // → show arrow at adjacent tile. Sinon hide. UpdateWarpArrowSprite tick
@@ -767,6 +759,42 @@ export class TestOverworldScene extends Phaser.Scene {
       newPos.camY + pending.deltaY + 2,
     );
 
+    // 1:1 décomp `MoveMapViewToBackup(direction);` (fieldmap.c:675). Restore
+    // OLD map's snapshot (= via SaveMapView dans CameraMove avant TransitionTo
+    // Connection) dans NEW map's sBackupMapData à player's POST-STEP logical pos.
+    //
+    // Décomp pos POST-step :
+    //   NORTH : pos.y = mapHeight - 1 (= newCamY + deltaY)
+    //   SOUTH : pos.y = 0           (= newCamY car déjà post-step dans notre conv)
+    //   WEST  : pos.x = mapWidth - 1 (= newCamX + deltaX)
+    //   EAST  : pos.x = 0           (= newCamX car déjà post-step dans notre conv)
+    //
+    // ComputeConnectionDestPos retourne mixed conventions :
+    //   - NORTH/WEST : pre-step (= mapH/mapW), need +delta pour post-step.
+    //   - SOUTH/EAST : already post-step (= 0), use directly.
+    //
+    // CRITIQUE : doit run AVANT clearOverworldTilemaps + DrawWholeMapView (=
+    // sinon le snapshot serait overwrite par new map's content au render).
+    let postStepX: number;
+    let postStepY: number;
+    switch (pending.direction) {
+      case CONNECTION_NORTH:
+        postStepX = newPos.camX + pending.deltaX;
+        postStepY = newPos.camY + pending.deltaY;
+        break;
+      case CONNECTION_WEST:
+        postStepX = newPos.camX + pending.deltaX;
+        postStepY = newPos.camY + pending.deltaY;
+        break;
+      case CONNECTION_SOUTH:
+      case CONNECTION_EAST:
+      default:
+        postStepX = newPos.camX;
+        postStepY = newPos.camY;
+        break;
+    }
+    MoveMapViewToBackup(pending.direction, postStepX, postStepY);
+
     // Étape 6-7 : redraw BG for new map. clearOverworldTilemaps + DrawWholeMapView.
     clearOverworldTilemaps();
     const cam = GetCameraTopLeftCoords();
@@ -805,7 +833,10 @@ export class TestOverworldScene extends Phaser.Scene {
     }
 
     // Update statusText pour debug.
-    this.statusText?.setText(`${newHeader.id} ${newHeader.mapLayout.width}x${newHeader.mapLayout.height} (connection)`);
+    // Status text = nom de la map cible. Pas de "(connection)" suffix car
+    // le user a interprété ça comme "stuck mid-loading" alors que c'est juste
+    // un debug indicator du chemin via cross-border vs warp.
+    this.statusText?.setText(`${newHeader.id} ${newHeader.mapLayout.width}x${newHeader.mapLayout.height}`);
 
     // Étape 10 : clear pending.
     clearPendingConnection();

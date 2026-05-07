@@ -22,8 +22,10 @@
  */
 import type { DecompRuntime } from './decomp-runtime';
 import { loadIndexedPngStrict } from './gba/png-loader';
+import type { LoadedPng } from './gba/png-loader';
 import {
   type ObjectEventTemplate,
+  type MapHeader,
   MAP_OFFSET,
   gMapHeader,
   MapGridGetCollisionAt,
@@ -63,6 +65,62 @@ async function loadGraphicsCatalog(): Promise<Record<string, GraphicsInfo>> {
   if (!r.ok) throw new Error(`object-event-graphics.json load failed: ${r.status}`);
   _graphicsCatalog = await r.json() as Record<string, GraphicsInfo>;
   return _graphicsCatalog;
+}
+
+// ─── PNG cache + parallel preload (Phase 4.8 Tâche 2) ───────────────────────
+// Décomp's TrySpawnObjectEvents est synchrone — pas d'async PNG loading mid-game.
+// Pour matcher : on pré-load TOUTES les PNGs de la map (+ connections) en
+// PARALLEL au map init/cross-border, puis SpawnObjectEventsOnMap +
+// TrySpawnObjectEvents lisent depuis le cache, sync.
+
+/** Cache des PNGs déjà parsées. Clé = full path (e.g. `/decomp/em/<png>`). */
+const _npcPngCache = new Map<string, LoadedPng>();
+/** Promises in-flight pour dedupe les loads concurrents. */
+const _npcPngLoading = new Map<string, Promise<LoadedPng>>();
+
+/** Load (or reuse cached) une PNG pour NPC graphics. Dedupe via _npcPngLoading. */
+async function loadNpcPng(path: string): Promise<LoadedPng> {
+  const cached = _npcPngCache.get(path);
+  if (cached) return cached;
+  let pending = _npcPngLoading.get(path);
+  if (!pending) {
+    pending = loadIndexedPngStrict(path, 4).then(png => {
+      _npcPngCache.set(path, png);
+      _npcPngLoading.delete(path);
+      return png;
+    }).catch(err => {
+      _npcPngLoading.delete(path);
+      throw err;
+    });
+    _npcPngLoading.set(path, pending);
+  }
+  return pending;
+}
+
+/** Pre-load PARALLEL toutes les PNGs des NPCs templates de mapHeader.
+ *  Resolved quand tous les loads done (ou ont silencieusement failed).
+ *  Idempotent : si déjà cached, no-op rapide. */
+export async function preloadNpcGraphicsForMap(mapHeader: MapHeader): Promise<void> {
+  const templates = mapHeader.events?.objectEvents ?? [];
+  if (templates.length === 0) return;
+  const catalog = await loadGraphicsCatalog();
+  const paths = new Set<string>();
+  for (const template of templates) {
+    if (!template.graphicsIdRaw) continue;
+    const graphics = catalog[template.graphicsIdRaw];
+    if (!graphics) continue;
+    if (graphics.frameWidth !== 16 || graphics.frameHeight !== 32) continue;
+    if (graphics.displayWidth !== graphics.frameWidth || graphics.displayHeight !== graphics.frameHeight) continue;
+    paths.add(`${BASE}/${graphics.png}`);
+  }
+  await Promise.all(
+    [...paths].map(p =>
+      loadNpcPng(p).catch((e: unknown) => {
+        console.warn(`[object-events] preload failed for ${p}:`, e);
+        return null;
+      }),
+    ),
+  );
 }
 
 // ─── Object Event struct ────────────────────────────────────────────────────
@@ -189,9 +247,25 @@ let _nextNpcTileBase = NPC_TILE_BASE_START;
 const NPC_PALETTE_START = 1;
 let _nextNpcPaletteBank = NPC_PALETTE_START;
 
+/** Phase 4.8 Tâche 3 : free list pour tile/palette slots des NPCs removed.
+ *  Sans ça : _nextNpcTileBase et _nextNpcPaletteBank croissent monotone à
+ *  chaque cross-border → pool exhaust à ~13 NPCs total. Avec : slots removed
+ *  poussés ici, ré-utilisés au prochain spawn. */
+const _freeNpcSlots: Array<{ tileBase: number; paletteBank: number }> = [];
+
+/** Push slot d'un NPC removed dans le free pool. À call AVANT de set
+ *  `npc.active = false` ou de reset spriteId. Idempotent : ne push pas si
+ *  les valeurs sont 0/start (= jamais alloué). */
+function _freeNpcSlot(npc: ObjectEvent): void {
+  if (npc.objTileBase >= NPC_TILE_BASE_START) {
+    _freeNpcSlots.push({ tileBase: npc.objTileBase, paletteBank: npc.paletteBank });
+  }
+}
+
 export function resetObjectEventAllocations(): void {
   _nextNpcTileBase = NPC_TILE_BASE_START;
   _nextNpcPaletteBank = NPC_PALETTE_START;
+  _freeNpcSlots.length = 0;
   for (const npc of gObjectEvents) {
     npc.active = false;
     npc.spriteId = -1;
@@ -213,6 +287,9 @@ export function destroyAllNpcSprites(rt: { gSprites: Map<number, { oamIndex: num
         rt.gba.oam[sprite.oamIndex].visible = false;
         sprite.inUse = false;
       }
+      // Phase 4.8 Tâche 3 : free slot pool aussi (note : caller utilise typiquement
+      // resetObjectEventAllocations après → pool wipe complet, free list = noop).
+      _freeNpcSlot(npc);
       npc.spriteId = -1;
     }
   }
@@ -697,6 +774,142 @@ export function TickObjectEventMovements(rt: DecompRuntime): void {
 
 // ─── Spawn ──────────────────────────────────────────────────────────────────
 
+/** Spawn 1 NPC depuis un template. SYNC : lit la PNG depuis _npcPngCache.
+ *  Returns true si spawn réussi, false si skipped (= dedup hit, pool full,
+ *  PNG pas cached, graphics non-standard, etc).
+ *
+ *  Phase 4.8 Tâche 2 : extracted depuis SpawnObjectEventsOnMap pour pouvoir
+ *  être appelé par TrySpawnObjectEvents per-frame sync. */
+function _spawnSingleNpcFromTemplate(
+  template: ObjectEventTemplate,
+  currentMapId: string,
+  rt: DecompRuntime,
+  catalog: Record<string, GraphicsInfo>,
+): boolean {
+  if (!template.graphicsIdRaw) return false;
+  const graphicsKey = template.graphicsIdRaw;
+  const graphics = catalog[graphicsKey];
+  if (!graphics) return false;
+  if (graphics.frameWidth !== 16 || graphics.frameHeight !== 32) return false;
+  if (graphics.displayWidth !== graphics.frameWidth || graphics.displayHeight !== graphics.frameHeight) return false;
+
+  // 1:1 décomp `GetAvailableObjectEventId` (event_object_movement.c:1263) :
+  // dedup par (localId, mapId). Notre loader set localId=0 pour templates
+  // avec local_id JSON (= placeholder, pas encore résolu), donc unreliable.
+  // Fallback : dedup via (mapId, initialCoordsX, initialCoordsY) uniques.
+  const existing = gObjectEvents.findIndex(
+    o => o.active
+      && o.mapId === currentMapId
+      && o.initialCoordsX === template.x
+      && o.initialCoordsY === template.y,
+  );
+  if (existing >= 0) return false;
+
+  const slot = gObjectEvents.findIndex(o => !o.active);
+  if (slot < 0) return false;
+
+  // SYNC : PNG depuis cache. Si pas cached, skip — caller doit avoir préload.
+  const pngPath = `${BASE}/${graphics.png}`;
+  const png = _npcPngCache.get(pngPath);
+  if (!png) return false;
+
+  // Phase 4.8 Tâche 3 : prefer free slot du pool removed avant d'allouer un
+  // nouveau (sinon pool exhaust à ~13 NPCs après plusieurs cross-borders).
+  let objTileBase: number;
+  let paletteBank: number;
+  const freeSlot = _freeNpcSlots.pop();
+  if (freeSlot) {
+    objTileBase = freeSlot.tileBase;
+    paletteBank = freeSlot.paletteBank;
+  } else {
+    if (_nextNpcTileBase + TILES_PER_NPC > 1024) return false;
+    if (_nextNpcPaletteBank >= 16) return false;
+    objTileBase = _nextNpcTileBase;
+    _nextNpcTileBase += TILES_PER_NPC;
+    paletteBank = _nextNpcPaletteBank++;
+  }
+
+  const numFrames = (png.widthTiles * png.heightTiles) / TILES_PER_FRAME_16x32;
+  const reordered = pngTo1dObjLayout(png.charData, numFrames, png.widthTiles, 16, 32);
+  rt.gba.objVram.set(reordered, objTileBase * 32);
+  const paletteSlot = 256 + paletteBank * 16;
+  for (let i = 0; i < Math.min(16, png.palette.length); i++) {
+    rt.gPlttBufferFaded.set(paletteSlot + i, png.palette[i]);
+    rt.gPlttBufferUnfaded.set(paletteSlot + i, png.palette[i]);
+  }
+  rt.gPlttBufferFaded.flushTo();
+
+  const cam = GetCameraTopLeftCoords();
+  const npc = gObjectEvents[slot];
+  npc.active = true;
+  npc.invisible = false;
+  npc.graphicsId = graphicsKey;
+  npc.movementType = template.movementTypeRaw ?? '';
+  npc.localId = template.localId;
+  npc.mapId = currentMapId;  // Phase 4.8 : track map of origin pour dedup cross-border.
+  npc.scriptLabel = template.script ?? '';
+  // 1:1 décomp `InitObjectEventStateFromTemplate` (event_object_movement.c:1309) :
+  // currentCoords = previousCoords = template position au spawn.
+  npc.currentCoordsX = template.x;
+  npc.currentCoordsY = template.y;
+  npc.previousCoordsX = template.x;
+  npc.previousCoordsY = template.y;
+  npc.facingDirection = movementTypeToInitialFacing(npc.movementType);
+  npc.objTileBase = objTileBase;
+  npc.paletteBank = paletteBank;
+  const npcGBackupCol = template.x + MAP_OFFSET;
+  const npcGBackupRow = template.y + MAP_OFFSET;
+  // Phase 4.8 : worldX/Y compensé par gTotalCamera (= cumulative scroll
+  // depuis boot). UpdateObjectEvents per-frame fait `sprite = worldY + offY`
+  // où offY = gTotalCamera.pixelOffsetY. Sans la compensation : NEW NPCs
+  // spawnés post-cross-border auraient worldY relative à new cam mais offY
+  // accumulé depuis boot (= différent contexte) → sprite décalé de l'amount
+  // accumulé. Fix : worldY = position naturelle - offY au spawn → quand
+  // UpdateObjectEvents fait + offY, ça s'annule au moment du spawn.
+  npc.worldX = (npcGBackupCol - cam.x) * 16 + 8 - gTotalCamera.pixelOffsetX;
+  npc.worldY = (npcGBackupRow - cam.y) * 16 - gTotalCamera.pixelOffsetY;
+  npc.movementStep = 0;
+  npc.movementDelay = 0;
+  npc.walkFramesLeft = 0;
+  npc.walkDirection = DIR_NONE;
+  npc.walkAnimAlt = 0;
+  npc.frozen = false;
+  npc.initialCoordsX = template.x;
+  npc.initialCoordsY = template.y;
+  npc.movementRangeX = template.movementRangeX;
+  npc.movementRangeY = template.movementRangeY;
+  // 1:1 décomp event_object_movement.c:1323-1328 — force range = 1 si 0 et
+  // movementType ∈ sMovementTypeHasRange.
+  if (movementTypeHasRange(npc.movementType)) {
+    if (npc.movementRangeX === 0) npc.movementRangeX = 1;
+    if (npc.movementRangeY === 0) npc.movementRangeY = 1;
+  }
+  npc.directionSeqIdx = 0;
+
+  const cfg = NPC_SPRITE_FRAMES[npc.facingDirection] ?? NPC_SPRITE_FRAMES[DIR_SOUTH];
+  const result = rt.CreateSpriteAtOam({
+    tileId: objTileBase + cfg.face * TILES_PER_FRAME_16x32,
+    paletteBank,
+    x: 0, y: 0,
+    shape: 2, size: 2,
+    priority: 2,
+    paletteMode: 0,
+    affineMode: 0,
+  });
+  npc.spriteId = result.spriteId;
+  const sprite = rt.gSprites.get(npc.spriteId);
+  if (sprite) sprite.hFlip = cfg.hFlip;
+  rt.gba.oam[result.oamIndex].flipH = cfg.hFlip;
+
+  console.log(`[object-events] spawn slot=${slot} ${graphicsKey} mt=${npc.movementType} at (${npc.currentCoordsX}, ${npc.currentCoordsY})`);
+  return true;
+}
+
+/** Phase 4.8 Tâche 2 : Spawn TOUS les NPC templates de la map courante.
+ *  Async car preload des PNGs (parallel). Iteration spawn elle-même est sync.
+ *  1:1 décomp `TrySpawnObjectEvents(0, 0)` au map init/warp (overworld.c:2159).
+ *  Pas de bounds check ici — décomp init spawn TOUS templates sans filter
+ *  (= le bounds check c'est pour TrySpawnObjectEvents per-frame). */
 export async function SpawnObjectEventsOnMap(rt: DecompRuntime): Promise<void> {
   if (!gMapHeader) throw new Error('SpawnObjectEventsOnMap: gMapHeader is null');
   const templates = gMapHeader.events?.objectEvents ?? [];
@@ -705,127 +918,57 @@ export async function SpawnObjectEventsOnMap(rt: DecompRuntime): Promise<void> {
     return;
   }
   const currentMapId = gMapHeader.id;
-
   const catalog = await loadGraphicsCatalog();
 
+  // PARALLEL preload (= élimine sequential await + matches décomp instant
+  // spawn). Templates qui referencent une PNG manquante après preload sont
+  // loggées (= via _spawnSingleNpcFromTemplate which checks cache).
+  await preloadNpcGraphicsForMap(gMapHeader);
+
+  // SYNC iteration spawn.
   for (const template of templates) {
-    if (!template.graphicsIdRaw) continue;
-    const graphicsKey = template.graphicsIdRaw;
-    const graphics = catalog[graphicsKey];
-    if (!graphics) {
-      if (!graphicsKey.startsWith('OBJ_EVENT_GFX_VAR_')) {
-        console.warn(`[object-events] no graphics for ${graphicsKey}, skipping`);
-      }
-      continue;
-    }
-    if (graphics.frameWidth !== 16 || graphics.frameHeight !== 32) {
-      console.warn(`[object-events] ${graphicsKey} non-standard ${graphics.frameWidth}×${graphics.frameHeight}, skipping`);
-      continue;
-    }
-    if (graphics.displayWidth !== graphics.frameWidth || graphics.displayHeight !== graphics.frameHeight) {
-      console.warn(`[object-events] ${graphicsKey} multi-frame composite, skipping`);
-      continue;
-    }
+    _spawnSingleNpcFromTemplate(template, currentMapId, rt, catalog);
+  }
+}
 
-    // 1:1 décomp `GetAvailableObjectEventId` (event_object_movement.c:1263) :
-    // dedup par (localId, mapId). Notre loader set localId=0 pour les NPCs
-    // qui ont un `local_id` JSON (= placeholder, pas encore résolu via
-    // constants), donc localId est unreliable. Fallback : dedup via
-    // (mapId, initialCoordsX, initialCoordsY) qui sont uniques par template.
-    // Skip si déjà spawné depuis la même map au même position d'origine.
-    const existing = gObjectEvents.findIndex(
-      o => o.active
-        && o.mapId === currentMapId
-        && o.initialCoordsX === template.x
-        && o.initialCoordsY === template.y,
-    );
-    if (existing >= 0) continue;
+/** 1:1 décomp `TrySpawnObjectEvents(s16 cameraX, s16 cameraY)`
+ *  (event_object_movement.c:1645-1675). Per-frame ou per-boundary-cross :
+ *  iterate tous les NPC templates de la map, spawn ceux dans bounds qui
+ *  ne sont pas déjà active (= dedup via (mapId, initialCoords)).
+ *
+ *  Bounds 1:1 décomp :
+ *    left   = pos.x - 2
+ *    right  = pos.x + MAP_OFFSET_W + 2 = pos.x + 17
+ *    top    = pos.y
+ *    bottom = pos.y + MAP_OFFSET_H + 2 = pos.y + 16
+ *  Compare avec npcX = template.x + MAP_OFFSET, npcY = template.y + MAP_OFFSET.
+ *  Réécrit en LOGICAL frame : template.x dans [pos.x - 9, pos.x + 10],
+ *  template.y dans [pos.y - 7, pos.y + 9].
+ *
+ *  SYNC : assume PNGs préchargées via preloadNpcGraphicsForMap. Si pas cached,
+ *  _spawnSingleNpcFromTemplate retourne false et le NPC sera retried frame
+ *  suivante (= no-op rapide). */
+export function TrySpawnObjectEvents(rt: DecompRuntime): void {
+  if (!gMapHeader) return;
+  const templates = gMapHeader.events?.objectEvents ?? [];
+  if (templates.length === 0) return;
+  if (!_graphicsCatalog) return;  // Catalog pas encore loaded — caller missed init.
+  const currentMapId = gMapHeader.id;
+  const catalog = _graphicsCatalog;
 
-    const slot = gObjectEvents.findIndex(o => !o.active);
-    if (slot < 0) continue;
-    if (_nextNpcTileBase + TILES_PER_NPC > 1024) continue;
-    if (_nextNpcPaletteBank >= 16) continue;
+  // 1:1 décomp pos.x/y. Notre conv : pos.x = playerLogical.x = gPlayerAvatar.x,
+  // pos.y = playerLogical.y = gPlayerAvatar.y.
+  const posX = gPlayerAvatar.x;
+  const posY = gPlayerAvatar.y;
+  const left = posX - 9;
+  const right = posX + 10;
+  const top = posY - 7;
+  const bottom = posY + 9;
 
-    const png = await loadIndexedPngStrict(`${BASE}/${graphics.png}`, 4);
-    const numFrames = (png.widthTiles * png.heightTiles) / TILES_PER_FRAME_16x32;
-    const reordered = pngTo1dObjLayout(png.charData, numFrames, png.widthTiles, 16, 32);
-
-    const objTileBase = _nextNpcTileBase;
-    rt.gba.objVram.set(reordered, objTileBase * 32);
-    _nextNpcTileBase += TILES_PER_NPC;
-
-    const paletteBank = _nextNpcPaletteBank++;
-    const paletteSlot = 256 + paletteBank * 16;
-    for (let i = 0; i < Math.min(16, png.palette.length); i++) {
-      rt.gPlttBufferFaded.set(paletteSlot + i, png.palette[i]);
-      rt.gPlttBufferUnfaded.set(paletteSlot + i, png.palette[i]);
-    }
-    rt.gPlttBufferFaded.flushTo();
-
-    const cam = GetCameraTopLeftCoords();
-    const npc = gObjectEvents[slot];
-    npc.active = true;
-    npc.invisible = false;
-    npc.graphicsId = graphicsKey;
-    npc.movementType = template.movementTypeRaw ?? '';
-    npc.localId = template.localId;
-    npc.mapId = currentMapId;  // Phase 4.8 : track map of origin pour dedup cross-border.
-    npc.scriptLabel = template.script ?? '';
-    // 1:1 décomp `InitObjectEventStateFromTemplate` (event_object_movement.c:1309) :
-    // currentCoords = previousCoords = template position au spawn.
-    npc.currentCoordsX = template.x;
-    npc.currentCoordsY = template.y;
-    npc.previousCoordsX = template.x;
-    npc.previousCoordsY = template.y;
-    npc.facingDirection = movementTypeToInitialFacing(npc.movementType);
-    npc.objTileBase = objTileBase;
-    npc.paletteBank = paletteBank;
-    const npcGBackupCol = template.x + MAP_OFFSET;
-    const npcGBackupRow = template.y + MAP_OFFSET;
-    // Phase 4.8 : worldX/Y compensé par gTotalCamera (= cumulative scroll
-    // depuis boot). UpdateObjectEvents per-frame fait `sprite = worldY + offY`
-    // où offY = gTotalCamera.pixelOffsetY. Sans la compensation : NEW NPCs
-    // spawnés post-cross-border auraient worldY relative à new cam mais offY
-    // accumulé depuis boot (= différent contexte) → sprite décalé de l'amount
-    // accumulé. Fix : worldY = position naturelle - offY au spawn → quand
-    // UpdateObjectEvents fait + offY, ça s'annule au moment du spawn.
-    npc.worldX = (npcGBackupCol - cam.x) * 16 + 8 - gTotalCamera.pixelOffsetX;
-    npc.worldY = (npcGBackupRow - cam.y) * 16 - gTotalCamera.pixelOffsetY;
-    npc.movementStep = 0;
-    npc.movementDelay = 0;
-    npc.walkFramesLeft = 0;
-    npc.walkDirection = DIR_NONE;
-    npc.walkAnimAlt = 0;
-    npc.frozen = false;
-    npc.initialCoordsX = template.x;  // 1:1 décomp objectEvent->initialCoords
-    npc.initialCoordsY = template.y;
-    npc.movementRangeX = template.movementRangeX;  // 1:1 décomp objectEvent->range.rangeX
-    npc.movementRangeY = template.movementRangeY;
-    // 1:1 décomp event_object_movement.c:1323-1328 — force range = 1 si 0 et
-    // movementType ∈ sMovementTypeHasRange (= WANDER/WALK/WALK_SEQUENCE_*).
-    // Sinon NPCs WANDER avec range 0 walk free → on a vu le bug session 102.
-    if (movementTypeHasRange(npc.movementType)) {
-      if (npc.movementRangeX === 0) npc.movementRangeX = 1;
-      if (npc.movementRangeY === 0) npc.movementRangeY = 1;
-    }
-    npc.directionSeqIdx = 0;
-
-    const cfg = NPC_SPRITE_FRAMES[npc.facingDirection] ?? NPC_SPRITE_FRAMES[DIR_SOUTH];
-    const result = rt.CreateSpriteAtOam({
-      tileId: objTileBase + cfg.face * TILES_PER_FRAME_16x32,
-      paletteBank,
-      x: 0, y: 0,
-      shape: 2, size: 2,
-      priority: 2,
-      paletteMode: 0,
-      affineMode: 0,
-    });
-    npc.spriteId = result.spriteId;
-    const sprite = rt.gSprites.get(npc.spriteId);
-    if (sprite) sprite.hFlip = cfg.hFlip;
-    rt.gba.oam[result.oamIndex].flipH = cfg.hFlip;
-
-    console.log(`[object-events] spawn slot=${slot} ${graphicsKey} mt=${npc.movementType} at (${npc.currentCoordsX}, ${npc.currentCoordsY})`);
+  for (const template of templates) {
+    if (template.x < left || template.x > right) continue;
+    if (template.y < top || template.y > bottom) continue;
+    _spawnSingleNpcFromTemplate(template, currentMapId, rt, catalog);
   }
 }
 
@@ -942,6 +1085,8 @@ export function RemoveObjectEventsOutsideView(rt: DecompRuntime): void {
       sprite.inUse = false;
       rt.gba.oam[sprite.oamIndex].visible = false;
     }
+    // Phase 4.8 Tâche 3 : free le slot tile/palette dans le pool pour réuse.
+    _freeNpcSlot(npc);
     npc.active = false;
     npc.spriteId = -1;
   }

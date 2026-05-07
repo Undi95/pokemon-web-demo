@@ -728,10 +728,10 @@ function InitBackupMapLayoutConnections(mapHeader: MapHeader): void {
 }
 
 // 1:1 décomp `CONNECTION_*` constants (constants/global.h).
-const CONNECTION_SOUTH = 1;
-const CONNECTION_NORTH = 2;
-const CONNECTION_WEST = 3;
-const CONNECTION_EAST = 4;
+export const CONNECTION_SOUTH = 1;
+export const CONNECTION_NORTH = 2;
+export const CONNECTION_WEST = 3;
+export const CONNECTION_EAST = 4;
 
 /** 1:1 décomp `FillConnection(x, y, connectedMapHeader, x2, y2, width, height)`
  *  (fieldmap.c:171-188). Copy `width * height` metatiles depuis la connection
@@ -1013,6 +1013,115 @@ export function TransitionToConnection(connection: MapConnection): boolean {
   void prefetchConnections(cMap);
 
   return true;
+}
+
+// ─── 1:1 décomp SaveMapView / MoveMapViewToBackup / ClearSavedMapView ────────
+//
+// Mécanisme décomp pour visual continuité parfaite au cross-border.
+// AVANT le cross : SaveMapView snapshot 14×15 metatiles autour du player.
+// APRÈS le cross + step delta apply : MoveMapViewToBackup réinjecte ce snapshot
+// dans NEW map's sBackupMapData à la position adjacente du border traversé.
+// Effet : les metatiles visibles AU MOMENT du cross sont EXACTEMENT le contenu
+// OLD map (plutôt que le edge tiles de la connection map qui peuvent légèrement
+// différer ou être désaligné de 1 metatile à cause du delta cross-step).
+//
+// Source vérité : `D:/Projet 1/decomps/pokeemeraude/src/fieldmap.c:428-566`.
+
+/** 1:1 décomp `gSaveBlock1Ptr->mapView` (struct SaveBlock1, u16[256]).
+ *  Snapshot temporaire entre SaveMapView (= avant cross) et MoveMapViewToBackup
+ *  (= après cross). Cleared par ClearSavedMapView après usage. Notre impl
+ *  module-local plutôt que SaveBlock1 struct car on n'a pas SaveBlock1
+ *  structuré (= sémantique identique : pure scratch buffer). */
+const _savedMapView = new Uint16Array(0x100);
+
+/** 1:1 décomp `SaveMapView(void)` (fieldmap.c:428-443).
+ *  Copy MAP_OFFSET_H × MAP_OFFSET_W metatiles depuis sBackupMapData (= camera
+ *  area + 2 rows top/bottom buffer + 0 col buffer) vers _savedMapView.
+ *
+ *  Décomp utilise `gSaveBlock1Ptr->pos.x/y` (= player logical coords). Nos
+ *  conventions : pos.x = `_camPos.x` (coïncidence viewColOffset = MAP_OFFSET = 7),
+ *  pos.y = `_camPos.y - 2`. On passe explicit car pas de gSaveBlock1Ptr global. */
+export function SaveMapView(posX: number, posY: number): void {
+  const mapView = _savedMapView;
+  const width = gBackupMapLayout.width;
+  let mapViewIdx = 0;
+  for (let i = posY; i < posY + MAP_OFFSET_H; i++) {
+    for (let j = posX; j < posX + MAP_OFFSET_W; j++) {
+      mapView[mapViewIdx++] = sBackupMapData[width * i + j];
+    }
+  }
+}
+
+/** 1:1 décomp `ClearSavedMapView(void)` (fieldmap.c:467-470).
+ *  CpuFill16(0, mapView, sizeof(mapView)). */
+export function ClearSavedMapView(): void {
+  _savedMapView.fill(0);
+}
+
+/** 1:1 décomp `MoveMapViewToBackup(u8 direction)` (fieldmap.c:512-566).
+ *  Restore _savedMapView snapshot dans NEW map's sBackupMapData à offset
+ *  approprié selon direction. Direction-specific x0/y0/r8/r9 shifts d'1 metatile
+ *  pour aligner avec le cross-step delta.
+ *
+ *  Appelé APRÈS TransitionToConnection (= sBackupMapData rebuilt par InitMap
+ *  pour new map) et AVANT clearOverworldTilemaps + DrawWholeMapView (= sinon
+ *  snapshot serait overwrite par new map's content au render).
+ *
+ *  Décomp utilise `gSaveBlock1Ptr->pos.x/y` qui est le player logical pos
+ *  POST-step (= post `pos += x/y` dans CameraMove fieldmap.c:673-674). Nos
+ *  conventions : caller doit passer post-step pos en LOGICAL coords du new map.
+ *
+ *  ClearSavedMapView() called automatiquement à la fin (= 1:1 décomp). */
+export function MoveMapViewToBackup(direction: number, posX: number, posY: number): void {
+  const mapView = _savedMapView;
+  const width = gBackupMapLayout.width;
+  let r9 = 0;
+  let r8 = 0;
+  let x0 = posX;
+  let y0 = posY;
+  let x2 = MAP_OFFSET_W;
+  let y2 = MAP_OFFSET_H;
+  switch (direction) {
+    case CONNECTION_NORTH:
+      y0 += 1;
+      y2 = MAP_OFFSET_H - 1;
+      break;
+    case CONNECTION_SOUTH:
+      r8 = 1;
+      y2 = MAP_OFFSET_H - 1;
+      break;
+    case CONNECTION_WEST:
+      x0 += 1;
+      x2 = MAP_OFFSET_W - 1;
+      break;
+    case CONNECTION_EAST:
+      r9 = 1;
+      x2 = MAP_OFFSET_W - 1;
+      break;
+  }
+  // 1:1 décomp double-loop (fieldmap.c:550-563). Bug décomp préservé : i et j
+  // sont incrementés en parallèle (= équivalents à x dans la boucle interne).
+  // Donc src = mapView[(y+r8)*MAP_OFFSET_W + r9 + x],
+  //     dest = sBackupMapData[x0 + width*(y+y0) + x].
+  // Bounds-check : si dest hors gBackupMapLayout (= très edge cases), skip
+  // pour éviter array OOB. Décomp pas de check car SaveMapView garantit src
+  // bounds via pos.x/y in [0, mapW-1] / [0, mapH-1], et width MAP_OFFSET = 7
+  // assure target stays within.
+  for (let y = 0; y < y2; y++) {
+    let i = 0;
+    let j = 0;
+    for (let x = 0; x < x2; x++) {
+      const desti = width * (y + y0);
+      const srci = (y + r8) * MAP_OFFSET_W + r9;
+      const destIdx = x0 + desti + j;
+      if (destIdx >= 0 && destIdx < sBackupMapData.length) {
+        sBackupMapData[destIdx] = mapView[srci + i];
+      }
+      i++;
+      j++;
+    }
+  }
+  ClearSavedMapView();
 }
 
 /** Helper : prefetch les map headers des connexions immédiates d'une map.
