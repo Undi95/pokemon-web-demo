@@ -592,7 +592,16 @@ export function CameraUpdate(): void {
     // DrawWholeMapView casse cette continuité visuelle car overwrite ces
     // cols avec le buffer col logique (= mapCol pos.x+15) au lieu de
     // mapCol pos.x-1.
-    RedrawMapSlicesForCameraUpdate(_camPos.x, _camPos.y, deltaX * 2, deltaY * 2);
+    //
+    // Phase 4.9 : skip si _pendingConnection (= cross-border détecté). À
+    // ce moment gBackupMapLayout = OLD map mais gMapHeader sera swap juste
+    // après par handleConnectionTransition. RedrawMapSliceX écrirait avec
+    // OLD tileset references, puis clearOverworldTilemaps + DrawWholeMapView
+    // les overwrite. Mais l'écriture du slice intermédiaire CRÉE un état
+    // transitoire que le user voit à 0.25x = mini flicker au cross. Skip.
+    if (!_pendingConnection) {
+      RedrawMapSlicesForCameraUpdate(_camPos.x, _camPos.y, deltaX * 2, deltaY * 2);
+    }
   }
 
   AddCameraPixelOffset(sFieldCameraOffset, movementSpeedX, movementSpeedY);
