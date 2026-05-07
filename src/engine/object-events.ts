@@ -74,6 +74,11 @@ export interface ObjectEvent {
   graphicsId: string;
   movementType: string;
   localId: number;
+  /** 1:1 décomp `objectEvent->mapNum + mapGroup`. Identifie de quelle map ce
+   *  NPC est originaire (= permet dedup quand on cross-border : NPCs old map
+   *  conservés, new map's NPCs spawnés à côté). Phase 4.8 connections.
+   *  Format : map ID string (e.g. 'MAP_LITTLEROOT_TOWN'). */
+  mapId: string;
   /** 1:1 décomp `objectEvent->script` : label du script à run on interact.
    *  Phase 4.5 : ScriptContext_SetupScript(npc.scriptLabel) au A button. */
   scriptLabel: string;
@@ -125,6 +130,7 @@ export const gObjectEvents: ObjectEvent[] = Array.from({ length: OBJECT_EVENTS_C
   graphicsId: '',
   movementType: '',
   localId: 0,
+  mapId: '',
   scriptLabel: '',
   currentCoordsX: 0,
   currentCoordsY: 0,
@@ -698,6 +704,7 @@ export async function SpawnObjectEventsOnMap(rt: DecompRuntime): Promise<void> {
     console.log('[object-events] no NPCs in this map');
     return;
   }
+  const currentMapId = gMapHeader.id;
 
   const catalog = await loadGraphicsCatalog();
 
@@ -719,6 +726,20 @@ export async function SpawnObjectEventsOnMap(rt: DecompRuntime): Promise<void> {
       console.warn(`[object-events] ${graphicsKey} multi-frame composite, skipping`);
       continue;
     }
+
+    // 1:1 décomp `GetAvailableObjectEventId` (event_object_movement.c:1263) :
+    // dedup par (localId, mapId). Notre loader set localId=0 pour les NPCs
+    // qui ont un `local_id` JSON (= placeholder, pas encore résolu via
+    // constants), donc localId est unreliable. Fallback : dedup via
+    // (mapId, initialCoordsX, initialCoordsY) qui sont uniques par template.
+    // Skip si déjà spawné depuis la même map au même position d'origine.
+    const existing = gObjectEvents.findIndex(
+      o => o.active
+        && o.mapId === currentMapId
+        && o.initialCoordsX === template.x
+        && o.initialCoordsY === template.y,
+    );
+    if (existing >= 0) continue;
 
     const slot = gObjectEvents.findIndex(o => !o.active);
     if (slot < 0) continue;
@@ -748,6 +769,7 @@ export async function SpawnObjectEventsOnMap(rt: DecompRuntime): Promise<void> {
     npc.graphicsId = graphicsKey;
     npc.movementType = template.movementTypeRaw ?? '';
     npc.localId = template.localId;
+    npc.mapId = currentMapId;  // Phase 4.8 : track map of origin pour dedup cross-border.
     npc.scriptLabel = template.script ?? '';
     // 1:1 décomp `InitObjectEventStateFromTemplate` (event_object_movement.c:1309) :
     // currentCoords = previousCoords = template position au spawn.
@@ -760,8 +782,15 @@ export async function SpawnObjectEventsOnMap(rt: DecompRuntime): Promise<void> {
     npc.paletteBank = paletteBank;
     const npcGBackupCol = template.x + MAP_OFFSET;
     const npcGBackupRow = template.y + MAP_OFFSET;
-    npc.worldX = (npcGBackupCol - cam.x) * 16 + 8;
-    npc.worldY = (npcGBackupRow - cam.y) * 16;
+    // Phase 4.8 : worldX/Y compensé par gTotalCamera (= cumulative scroll
+    // depuis boot). UpdateObjectEvents per-frame fait `sprite = worldY + offY`
+    // où offY = gTotalCamera.pixelOffsetY. Sans la compensation : NEW NPCs
+    // spawnés post-cross-border auraient worldY relative à new cam mais offY
+    // accumulé depuis boot (= différent contexte) → sprite décalé de l'amount
+    // accumulé. Fix : worldY = position naturelle - offY au spawn → quand
+    // UpdateObjectEvents fait + offY, ça s'annule au moment du spawn.
+    npc.worldX = (npcGBackupCol - cam.x) * 16 + 8 - gTotalCamera.pixelOffsetX;
+    npc.worldY = (npcGBackupRow - cam.y) * 16 - gTotalCamera.pixelOffsetY;
     npc.movementStep = 0;
     npc.movementDelay = 0;
     npc.walkFramesLeft = 0;
@@ -853,4 +882,67 @@ export function DestroyAllObjectEvents(rt: DecompRuntime): void {
     npc.spriteId = -1;
   }
   resetObjectEventAllocations();
+}
+
+// ─── Phase 4.8 : seamless cross-border NPC handling (1:1 décomp) ─────────────
+
+/** 1:1 décomp `UpdateObjectEventCoordsForCameraUpdate` (event_object_movement.c:2167).
+ *  Quand le camera traverse un border vers une connexion, gCamera.x/y =
+ *  old_pos.x/y - new_pos.x/y (= LOGICAL frame). Les NPCs old map ont des
+ *  currentCoords/initialCoords/previousCoords en gBackup frame de l'ancienne
+ *  map. On les translate par -gCamera.x/y pour qu'ils soient en gBackup frame
+ *  de la NEW map.
+ *
+ *  À call APRÈS TransitionToConnection (= gMapHeader swap) avant le prochain
+ *  frame. */
+export function UpdateObjectEventCoordsForCameraUpdate(dx: number, dy: number): void {
+  for (const npc of gObjectEvents) {
+    if (!npc.active) continue;
+    npc.currentCoordsX -= dx;
+    npc.currentCoordsY -= dy;
+    npc.previousCoordsX -= dx;
+    npc.previousCoordsY -= dy;
+    npc.initialCoordsX -= dx;
+    npc.initialCoordsY -= dy;
+  }
+}
+
+/** 1:1 décomp `RemoveObjectEventsOutsideView` (event_object_movement.c:1677).
+ *  Removes NPCs dont currentCoords ET initialCoords sont tous deux hors view+
+ *  buffer. Les NPCs traversant la border (= currentCoords in view via FillX)
+ *  restent visibles. À call per-frame depuis MainCB2 après UpdateObjectEvents.
+ *
+ *  Décomp bounds (pos LOGICAL frame) : [pos.x - 2, pos.x + 17], [pos.y, pos.y + 16].
+ *  NPC.coords en gBackup (= template + MAP_OFFSET). La comparaison mixed-frame
+ *  donne en LOGICAL : NPC.template ∈ [pos.x - 9, pos.x + 10] × [pos.y - 7, pos.y + 9].
+ *
+ *  Notre impl : NPC.coords = template (LOGICAL pur). _camPos.x = pos.x (=
+ *  coïncidence MAP_OFFSET=7=viewColOffset). _camPos.y = pos.y + 2.
+ *  Équivalent bounds en LOGICAL :
+ *    left = cam.x - 9, right = cam.x + 10.
+ *    top = (cam.y - 2) - 7 = cam.y - 9, bottom = (cam.y - 2) + 9 = cam.y + 7. */
+export function RemoveObjectEventsOutsideView(rt: DecompRuntime): void {
+  if (!gMapHeader) return;
+  const cam = GetCameraTopLeftCoords();
+  const left = cam.x - 9;
+  const right = cam.x + 10;
+  const top = cam.y - 9;
+  const bottom = cam.y + 7;
+
+  for (const npc of gObjectEvents) {
+    if (!npc.active || npc.spriteId < 0) continue;
+    const inViewCurrent = npc.currentCoordsX >= left && npc.currentCoordsX <= right
+      && npc.currentCoordsY >= top && npc.currentCoordsY <= bottom;
+    const inViewInitial = npc.initialCoordsX >= left && npc.initialCoordsX <= right
+      && npc.initialCoordsY >= top && npc.initialCoordsY <= bottom;
+    if (inViewCurrent || inViewInitial) continue;
+    // NPC outside view+buffer → remove.
+    const sprite = rt.gSprites.get(npc.spriteId);
+    if (sprite) {
+      sprite.inUse = false;
+      rt.gba.oam[sprite.oamIndex].visible = false;
+    }
+    npc.active = false;
+    npc.spriteId = -1;
+  }
 }

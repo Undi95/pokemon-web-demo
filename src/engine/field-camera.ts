@@ -43,7 +43,10 @@ import {
   NUM_TILES_PER_METATILE,
   METATILE_LAYER_TYPE_COVERED,
   gMapHeader,
+  GetMapBorderIdAt,
+  GetIncomingConnection,
 } from './map-loader';
+import type { MapConnection } from './map-loader';
 import {
   REG_OFFSET_BG1HOFS, REG_OFFSET_BG1VOFS,
   REG_OFFSET_BG2HOFS, REG_OFFSET_BG2VOFS,
@@ -387,13 +390,90 @@ export function SetCameraTopLeftCoords(x: number, y: number): void {
   _camPos.y = y;
 }
 
-/** 1:1 décomp `CameraMove(x, y)` (fieldmap.c:649-678) — version simplifiée Phase 4.2.
- *  Phase 4.6 (= warp / connections) implémentera le branch GetIncomingConnection.
- *  Pour l'instant : juste shift _camPos par (x, y) en metatiles. */
+/** Pending connection transition state (= signalé par CameraMove quand camera
+ *  crosse un border, picked up par MainCB2 scene pour run TransitionToConnection
+ *  + update player.x/y). Évite circular import entre field-camera ↔ player-avatar. */
+export interface PendingConnection {
+  direction: number;        // CONNECTION_NORTH / SOUTH / WEST / EAST
+  connection: MapConnection;
+  /** Camera coords AVANT le delta crossing (= gBackupMapLayout coords). */
+  oldCamX: number;
+  oldCamY: number;
+  /** Delta qui a causé le crossing (= ±1 metatile). */
+  deltaX: number;
+  deltaY: number;
+}
+
+let _pendingConnection: PendingConnection | null = null;
+
+export function getPendingConnection(): PendingConnection | null {
+  return _pendingConnection;
+}
+
+export function clearPendingConnection(): void {
+  _pendingConnection = null;
+}
+
+/** 1:1 décomp `CameraMove(x, y)` (fieldmap.c:649-678).
+ *  Update _camPos par (deltaX, deltaY) en metatiles. Si le camera traverse
+ *  un border vers une connexion, signaler via _pendingConnection (= MainCB2
+ *  scene picks ça up et run TransitionToConnection sync + update player.x/y).
+ *
+ *  Returns true si une connexion a été traversée (= équivalent gCamera.active=TRUE
+ *  dans décomp). */
 function CameraMove(deltaX: number, deltaY: number): boolean {
+  // 1:1 décomp `GetPostCameraMoveMapBorderId(x, y) = GetMapBorderIdAt(pos.x +
+  // MAP_OFFSET + x, pos.y + MAP_OFFSET + y)`. Décomp's `pos` est en LOGICAL
+  // coords donc `pos + MAP_OFFSET` = playerGBackup. + delta = post-step.
+  //
+  // Notre conv : _camPos = playerLogical + (0, 2) en gBackup frame.
+  //   playerGBackupX = _camPos.x + 7 (= MAP_OFFSET coïncidence avec viewCol 7)
+  //   playerGBackupY = _camPos.y + 5 (= viewRowOffset)
+  //   post-step playerGBackup{X,Y} = _camPos + (7, 5) + delta.
+  //
+  // Donc le check border doit utiliser `_camPos + (7, 5) + delta`, pas
+  // `_camPos + delta` qui était la camera position (= 5 rows trop haut pour
+  // y, déclenche trop tard).
+  const predictedPlayerGBX = _camPos.x + 7 + deltaX;
+  const predictedPlayerGBY = _camPos.y + 5 + deltaY;
+  const direction = GetMapBorderIdAt(predictedPlayerGBX, predictedPlayerGBY);
+
+  // CONNECTION_NONE (0) ou CONNECTION_INVALID (0xFF) : pas de border cross.
+  if (direction === 0 || direction === 0xFF) {
+    _camPos.x += deltaX;
+    _camPos.y += deltaY;
+    return false;
+  }
+
+  // Border crossed : find la connexion correspondante. Décomp's
+  // GetIncomingConnection prend `pos.x, pos.y` (= player logical AVANT step).
+  // Notre équivalent : _camPos.x (= playerLogical.x), _camPos.y - 2
+  // (= playerLogical.y).
+  const connection = GetIncomingConnection(direction, _camPos.x, _camPos.y - 2);
+  if (!connection) {
+    // Pas de connexion match malgré flag set (= edge case offset out-of-range).
+    // Fallback : juste move normal (= player va bumper le wall au prochain step).
+    _camPos.x += deltaX;
+    _camPos.y += deltaY;
+    return false;
+  }
+
+  // Signal le pending connection. _camPos sera override par MainCB2 scene
+  // via SetCameraTopLeftCoords avec les new map coords.
+  _pendingConnection = {
+    direction,
+    connection,
+    oldCamX: _camPos.x,
+    oldCamY: _camPos.y,
+    deltaX,
+    deltaY,
+  };
+  // Update _camPos pour que le frame courant continue à scroller visuellement
+  // (= si on ne le bouge pas, le visual hiccup au boundary cross). MainCB2 va
+  // override avec les vraies new coords après transition.
   _camPos.x += deltaX;
   _camPos.y += deltaY;
-  return false;  // = pas de connection traversée
+  return true;
 }
 
 /** 1:1 décomp `CameraUpdate()` (field_camera.c:360-426).

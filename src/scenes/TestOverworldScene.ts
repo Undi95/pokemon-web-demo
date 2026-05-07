@@ -27,6 +27,8 @@ import {
   flushOverworldTilemaps,
   clearOverworldTilemaps,
   MAP_OFFSET,
+  TransitionToConnection,
+  ComputeConnectionDestPos,
 } from '../engine/map-loader';
 import type { MapHeader, WarpEvent } from '../engine/map-loader';
 import {
@@ -41,7 +43,10 @@ import {
   gTotalCamera,
   IsBgRedrawPending,
   ClearBgRedrawPending,
+  getPendingConnection,
+  clearPendingConnection,
 } from '../engine/field-camera';
+import type { PendingConnection } from '../engine/field-camera';
 import {
   InitPlayerAvatar,
   PlayerStep,
@@ -59,6 +64,8 @@ import {
   TickObjectEventMovements,
   resetObjectEventAllocations,
   destroyAllNpcSprites,
+  UpdateObjectEventCoordsForCameraUpdate,
+  RemoveObjectEventsOutsideView,
 } from '../engine/object-events';
 import { installInputHandlers, setHeldKeysOverride } from '../engine/input-handler';
 import { installEngineDevtools } from '../engine/engine-devtools';
@@ -136,6 +143,14 @@ export class TestOverworldScene extends Phaser.Scene {
    *  PlayerStep + ScriptContext_RunScript continueraient à tourner pendant
    *  le load → corruption state (= old map data + new player coords). */
   private warpInProgress = false;
+  /** Phase 4.8 : dynamic NPC respawn guard. À TRUE pendant un async
+   *  SpawnObjectEventsOnMap déclenché par MainCB2 → évite les spawns parallèles
+   *  redondants. Cleared après l'await. */
+  private _spawnInProgress = false;
+  /** Phase 4.8 : compteur frame pour throttle TrySpawnObjectEvents (= éviter
+   *  d'appeler async every frame ; on dedup quand même mais on économise les
+   *  await PNG cache lookups). */
+  private _trySpawnFrameCounter = 0;
 
   constructor() { super({ key: 'TestOverworldScene' }); }
 
@@ -281,10 +296,38 @@ export class TestOverworldScene extends Phaser.Scene {
         TickFieldMessageBox();
         PlayerStep(rt.gMain.heldKeys, rt.gMain.newKeys, rt);
         CameraUpdate();
+        // Phase 4.8 : check seamless cross-border transition signalé par
+        // CameraMove. 1:1 décomp `LoadMapFromCameraTransition` flow : NO fade,
+        // sync swap des map data + tilesets. Primary tileset reste partagé
+        // entre la map sortante et la map entrante (= connections existent
+        // seulement entre maps avec primary tileset compatible).
+        const pendingConn = getPendingConnection();
+        if (pendingConn) {
+          self.handleConnectionTransition(pendingConn);
+        }
         // Phase 4.4.c : tick NPC movement state machine (LOOK_AROUND / WANDER).
         TickObjectEventMovements(rt);
         // Phase 4.4.a : update sprite positions des NPCs selon camera scroll.
         UpdateObjectEvents(rt);
+        // Phase 4.8 : 1:1 décomp `RemoveObjectEventsOutsideView`
+        // (event_object_movement.c:1677). Cleanup NPCs qui ont drift hors
+        // view+buffer (= old map NPCs après cross-border ou NPCs WANDER qui
+        // sortent de leur range). Décomp call ça depuis
+        // UpdateObjectEventsForCameraUpdate qui tourne post-CameraUpdate.
+        RemoveObjectEventsOutsideView(rt);
+        // Phase 4.8 : dynamic NPC respawn (= 1:1 décomp `TrySpawnObjectEvents`
+        // tournant per-frame). Quand player walk vers une zone où des NPCs
+        // étaient out-of-view (= déjà removed), les re-spawne. SpawnObjectEvents
+        // OnMap dedup via (mapId, localId) → idempotent. Throttle every 30
+        // frames (≈ 0.5s) pour éviter await PNG cache lookups chaque frame.
+        if (++self._trySpawnFrameCounter >= 30 && !self._spawnInProgress) {
+          self._trySpawnFrameCounter = 0;
+          self._spawnInProgress = true;
+          void (async () => {
+            try { await SpawnObjectEventsOnMap(rt); }
+            finally { self._spawnInProgress = false; }
+          })();
+        }
         // Phase 4.7 : 1:1 décomp `HideShowWarpArrow` + sprite update. Per-frame
         // check : si player on ARROW_WARP tile + facing/walking matching dir
         // → show arrow at adjacent tile. Sinon hide. UpdateWarpArrowSprite tick
@@ -645,6 +688,127 @@ export class TestOverworldScene extends Phaser.Scene {
       SetPlayerVisibility(this.rt, true);
       console.log('[executeWarp] DONE');
     }
+  }
+
+  /** Phase 4.8 : seamless cross-border transition. 1:1 décomp
+   *  `LoadMapFromCameraTransition` (overworld.c:784) appelé par `CameraMove`
+   *  quand le camera traverse un border vers une connexion.
+   *
+   *  Sync (= no fade, no async load) car prefetch depth 1 dans `loadMapByName`
+   *  garantit que tous les assets de la connexion sont en cache.
+   *
+   *  Steps :
+   *    1. Get pending connection (= direction + connection info from CameraMove).
+   *    2. ComputeConnectionDestPos : new player.x/y in destination map's
+   *       logical coords (= 1:1 décomp `SetPositionFromConnection` + delta).
+   *    3. TransitionToConnection : sync swap gMapHeader + InitMap + secondary
+   *       tileset/palette. Primary tileset stays in VRAM.
+   *    4. Update gPlayerAvatar.x/y to new logical coords.
+   *    5. SetCameraTopLeftCoords to the new map's view top-left.
+   *    6. clearOverworldTilemaps + DrawWholeMapView for new map.
+   *    7. flushOverworldTilemaps + FieldUpdateBgTilemapScroll.
+   *    8. destroyAllNpcSprites + async SpawnObjectEventsOnMap (= new map's NPCs
+   *       appear over a few frames, ~50ms ; pas critique car player près du
+   *       border, NPCs au centre/loin).
+   *    9. Switch BGM si nécessaire (= 1:1 `TransitionMapMusic`).
+   *   10. Clear pending connection. */
+  private handleConnectionTransition(pending: PendingConnection): void {
+    const { connection } = pending;
+    console.log(`[connection] crossing dir=${pending.direction} → ${connection.destMap}`);
+
+    // Compute new player logical pos in destination map.
+    // Inputs : OLD player.x/y. Notre _camPos.x = playerLogical.x (= coïncidence
+    // x : MAP_OFFSET=7 = view_col_offset). _camPos.y = playerLogical.y + 2.
+    // Donc oldPlayer.x = oldCamX. oldPlayer.y = oldCamY - 2.
+    const oldPlayerX = pending.oldCamX;
+    const oldPlayerY = pending.oldCamY - 2;
+    const newPos = ComputeConnectionDestPos(connection, pending.direction, oldPlayerX, oldPlayerY);
+
+    // Étape 3 : sync swap.
+    const ok = TransitionToConnection(connection);
+    if (!ok) {
+      // Fallback : connection pas en cache → log + clear pending pour ne pas spammer.
+      console.warn('[connection] TransitionToConnection failed, clearing pending');
+      clearPendingConnection();
+      return;
+    }
+    const newHeader = (globalThis as Record<string, unknown>).gMapHeader as MapHeader;
+
+    // Phase 4.8 critical : reset gTotalCamera au cross-border. Sans ça, le
+    // scroll cumulé depuis boot (= via walks dans old map) s'applique aux NEW
+    // NPCs spawnés post-cross → off-screen. Décomp's `LoadMapFromCameraTransition`
+    // ne reset pas explicitement gTotalCameraPixelOffsetX/Y mais le scroll
+    // continue dans NEW map's frame (= via le BG tilemap rebuild). Notre impl
+    // utilise gTotalCamera comme offset fixe au sprite → besoin reset pour
+    // que le baseline soit "0 scroll dans new map's frame".
+    gTotalCamera.pixelOffsetX = 0;
+    gTotalCamera.pixelOffsetY = 0;
+
+    // Étape 4 : update player logical coords. ComputeConnectionDestPos
+    // retourne la BORDER position (= newMap.height pour NORTH, etc) PRE-delta.
+    // Notre PlayerStep step end appliquera moveCoords (= y += deltaY) à f15
+    // pour finaliser le step.
+    //
+    // Pour NORTH (height 20) : newCamY = 20. gPlayerAvatar.y = 20 (= 1 past
+    // last valid row, in SOUTH border of new map). Step end → 19 (= last
+    // valid row). ✓
+    gPlayerAvatar.x = newPos.camX;
+    gPlayerAvatar.y = newPos.camY;
+    console.log(`[connection] player.x/y = ${newPos.camX}, ${newPos.camY} in ${newHeader.id} (pre-step-end)`);
+
+    // Étape 5 : SetCameraTopLeftCoords ANTICIPE le step end. _camPos.y =
+    // post-step playerLogical.y + 2. Pour NORTH avec deltaY=-1 :
+    //   post-step player.y = newCamY + deltaY = 19.
+    //   _camPos.y = 19 + 2 = 21 = newCamY + deltaY + 2.
+    // Pour x analogously, _camPos.x = playerLogical.x = post-step (= newCamX
+    // + deltaX), pas de +2 car viewColOffset=7=MAP_OFFSET coïncidence.
+    SetCameraTopLeftCoords(
+      newPos.camX + pending.deltaX,
+      newPos.camY + pending.deltaY + 2,
+    );
+
+    // Étape 6-7 : redraw BG for new map. clearOverworldTilemaps + DrawWholeMapView.
+    clearOverworldTilemaps();
+    const cam = GetCameraTopLeftCoords();
+    DrawWholeMapView(cam.x, cam.y, newHeader.mapLayout);
+    flushOverworldTilemaps(this.rt);
+    FieldUpdateBgTilemapScroll(this.rt);
+
+    // Étape 8 : 1:1 décomp NPC handling cross-border (event_object_movement.c:2167).
+    // GARDE les NPCs old map (= ils peuvent être visibles via FillX borders),
+    // translate leurs coords vers new map's frame, puis spawn new map's NPCs
+    // alongside. RemoveObjectEventsOutsideView (= per-frame) clean up ceux qui
+    // drift hors view.
+    //
+    // Décomp gCamera.x/y = old_pos.x/y - new_pos.x/y (LOGICAL frame, BEFORE
+    // delta apply). Our equivalent :
+    //   old_pos.y_logical = pending.oldCamY - 2 (= _camPos.y - 2 dans gBackup
+    //   frame nous donne playerLogical).
+    //   new_pos.y_logical = newPos.camY (= ComputeConnectionDestPos return,
+    //   pre-delta).
+    const gCameraDx = pending.oldCamX - newPos.camX;
+    const gCameraDy = (pending.oldCamY - 2) - newPos.camY;
+    UpdateObjectEventCoordsForCameraUpdate(gCameraDx, gCameraDy);
+
+    // Async spawn new map's NPCs (= dedup via mapId+localId, skip déjà spawnés).
+    void (async () => {
+      await SpawnObjectEventsOnMap(this.rt);
+      UpdateObjectEvents(this.rt);
+    })();
+
+    // Étape 9 : BGM transition. 1:1 décomp `TransitionMapMusic`.
+    const songId = (Songs as unknown as Record<string, number>)[newHeader.music] ?? 0;
+    if (songId > 0 && songId !== _currentMapBgmId) {
+      console.log(`[connection] PlayBGM(${newHeader.music} = ${songId})`);
+      PlayBGM(songId);
+      _currentMapBgmId = songId;
+    }
+
+    // Update statusText pour debug.
+    this.statusText?.setText(`${newHeader.id} ${newHeader.mapLayout.width}x${newHeader.mapLayout.height} (connection)`);
+
+    // Étape 10 : clear pending.
+    clearPendingConnection();
   }
 
   /** Wait que le forced movement (= forceMovement step auto) soit terminé.

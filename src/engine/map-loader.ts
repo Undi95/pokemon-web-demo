@@ -576,10 +576,32 @@ export async function loadMapHeader(mapId: string): Promise<MapHeader> {
   return header;
 }
 
-/** Pré-load complet d'une map (= tilesets + layout + header).
- *  Set `gMapHeader`. Synchroniquement disponible après. */
+/** Pré-load complet d'une map (= tilesets + layout + header + connexions).
+ *  Set `gMapHeader`. Synchroniquement disponible après.
+ *
+ *  Phase 4.8 : prefetch les map headers de toutes les connexions (depth 1)
+ *  pour que `InitBackupMapLayoutConnections` (= sync) puisse les lire dans le
+ *  cache. Sans ce prefetch, les border tiles seraient MAPGRID_UNDEFINED →
+ *  visuel cassé + collision wall au lieu de peek vers la map adjacente. */
 export async function loadMapByName(mapId: string): Promise<MapHeader> {
   const header = await loadMapHeader(mapId);
+
+  // Prefetch immediate connections (= depth 1). Cache les headers + layouts
+  // pour que InitBackupMapLayoutConnections puisse les lire sync. Skip dive/
+  // emerge (= 5/6) qui ne sont pas des border fills. Errors silencieuses (=
+  // si la connection map n'existe pas, on log warning + skip cette connexion
+  // dans Fill*Connection).
+  if (header.connections.length > 0) {
+    await Promise.all(
+      header.connections
+        .filter(c => c.direction >= CONNECTION_SOUTH && c.direction <= CONNECTION_EAST)
+        .map(c => loadMapHeader(c.destMap).catch((e: unknown) => {
+          console.warn(`[map-loader] failed to prefetch connection ${c.destMap}:`, e);
+          return null;
+        })),
+    );
+  }
+
   gMapHeader = header;
   // Audit Opus §3.3 : expose globalThis pour script-runtime.RunOnLoadMapScript
   // (= évite circular import map-loader ↔ script-runtime).
@@ -649,10 +671,385 @@ function InitBackupMapLayoutData(map: Uint16Array, width: number, height: number
   }
 }
 
+/** Connection flags : tracking de quelles directions ont une connexion sur la
+ *  map courante. Lu par `GetMapBorderIdAt` pour décider si une position dans
+ *  la zone border map vers une connexion ou est invalide.
+ *  1:1 décomp `sMapConnectionFlags` (fieldmap.c). */
+const sMapConnectionFlags = { south: false, north: false, west: false, east: false };
+
+export function GetMapConnectionFlags(): Readonly<typeof sMapConnectionFlags> {
+  return sMapConnectionFlags;
+}
+
 /** 1:1 décomp `InitBackupMapLayoutConnections(mapHeader)` (fieldmap.c:133-169).
- *  Phase 4.1 : stub. Phase 4.6 implémentera south/north/west/east connections. */
-function InitBackupMapLayoutConnections(_mapHeader: MapHeader): void {
-  // TODO Phase 4.6 : FillSouthConnection / FillNorthConnection / etc.
+ *  Pour chaque connexion (south/north/west/east), copie les metatiles de la
+ *  map connectée dans la border area de gBackupMapLayout via FillX_Connection.
+ *
+ *  Prérequis : les map headers des connexions doivent être déjà loadés en
+ *  cache (= via `loadMapByName` qui prefetch les connexions).
+ *  Si un header de connexion manque (= pas en cache, pas de await possible
+ *  ici car InitMap est sync), on log un warning + skip cette connexion. */
+function InitBackupMapLayoutConnections(mapHeader: MapHeader): void {
+  // Reset flags pour la new map.
+  sMapConnectionFlags.south = false;
+  sMapConnectionFlags.north = false;
+  sMapConnectionFlags.west = false;
+  sMapConnectionFlags.east = false;
+
+  if (!mapHeader.connections || mapHeader.connections.length === 0) return;
+
+  for (const connection of mapHeader.connections) {
+    const cMap = mapHeaderCache.get(connection.destMap);
+    if (!cMap) {
+      console.warn(`[map-loader] connection ${connection.destMap} not in cache, skipping fill (= prefetch missed)`);
+      continue;
+    }
+    const offset = connection.offset;
+    switch (connection.direction) {
+      case CONNECTION_SOUTH:
+        FillSouthConnection(mapHeader, cMap, offset);
+        sMapConnectionFlags.south = true;
+        break;
+      case CONNECTION_NORTH:
+        FillNorthConnection(mapHeader, cMap, offset);
+        sMapConnectionFlags.north = true;
+        break;
+      case CONNECTION_WEST:
+        FillWestConnection(mapHeader, cMap, offset);
+        sMapConnectionFlags.west = true;
+        break;
+      case CONNECTION_EAST:
+        FillEastConnection(mapHeader, cMap, offset);
+        sMapConnectionFlags.east = true;
+        break;
+      // dive/emerge (5/6) : skipped (= pas de border fill, juste warps).
+    }
+  }
+}
+
+// 1:1 décomp `CONNECTION_*` constants (constants/global.h).
+const CONNECTION_SOUTH = 1;
+const CONNECTION_NORTH = 2;
+const CONNECTION_WEST = 3;
+const CONNECTION_EAST = 4;
+
+/** 1:1 décomp `FillConnection(x, y, connectedMapHeader, x2, y2, width, height)`
+ *  (fieldmap.c:171-188). Copy `width * height` metatiles depuis la connection
+ *  map à (x2, y2) vers gBackupMapLayout à (x, y). */
+function FillConnection(
+  x: number, y: number,
+  cMap: MapHeader,
+  x2: number, y2: number,
+  width: number, height: number,
+): void {
+  const cMapWidth = cMap.mapLayout.width;
+  const src = cMap.mapLayout.map;
+  const destWidth = gBackupMapLayout.width;
+
+  for (let i = 0; i < height; i++) {
+    const srcOffset = (y2 + i) * cMapWidth + x2;
+    const destOffset = (y + i) * destWidth + x;
+    sBackupMapData.set(src.subarray(srcOffset, srcOffset + width), destOffset);
+  }
+}
+
+/** 1:1 décomp `FillSouthConnection` (fieldmap.c:190-227). Fills the bottom
+ *  border (= rows mapHeight+MAP_OFFSET..) avec les top rows de la connected map. */
+function FillSouthConnection(mapHeader: MapHeader, cMap: MapHeader, offset: number): void {
+  const cWidth = cMap.mapLayout.width;
+  let x = offset + MAP_OFFSET;
+  const y = mapHeader.mapLayout.height + MAP_OFFSET;
+  let x2: number;
+  let width: number;
+
+  if (x < 0) {
+    x2 = -x;
+    x += cWidth;
+    width = (x < gBackupMapLayout.width) ? x : gBackupMapLayout.width;
+    x = 0;
+  } else {
+    x2 = 0;
+    width = (x + cWidth < gBackupMapLayout.width) ? cWidth : gBackupMapLayout.width - x;
+  }
+
+  if (width > 0) FillConnection(x, y, cMap, x2, 0, width, MAP_OFFSET);
+}
+
+/** 1:1 décomp `FillNorthConnection` (fieldmap.c:229-268). Fills the top border
+ *  (= rows 0..MAP_OFFSET-1) avec les bottom rows de la connected map. */
+function FillNorthConnection(mapHeader: MapHeader, cMap: MapHeader, offset: number): void {
+  const cWidth = cMap.mapLayout.width;
+  const cHeight = cMap.mapLayout.height;
+  let x = offset + MAP_OFFSET;
+  const y2 = cHeight - MAP_OFFSET;
+  let x2: number;
+  let width: number;
+
+  if (x < 0) {
+    x2 = -x;
+    x += cWidth;
+    width = (x < gBackupMapLayout.width) ? x : gBackupMapLayout.width;
+    x = 0;
+  } else {
+    x2 = 0;
+    width = (x + cWidth < gBackupMapLayout.width) ? cWidth : gBackupMapLayout.width - x;
+  }
+  // Suppress unused mapHeader warning (used for symmetry with décomp signature).
+  void mapHeader;
+
+  if (width > 0) FillConnection(x, 0, cMap, x2, y2, width, MAP_OFFSET);
+}
+
+/** 1:1 décomp `FillWestConnection` (fieldmap.c:270-306). Fills the left border. */
+function FillWestConnection(mapHeader: MapHeader, cMap: MapHeader, offset: number): void {
+  const cWidth = cMap.mapLayout.width;
+  const cHeight = cMap.mapLayout.height;
+  let y = offset + MAP_OFFSET;
+  const x2 = cWidth - MAP_OFFSET;
+  let y2: number;
+  let height: number;
+
+  if (y < 0) {
+    y2 = -y;
+    height = (y + cHeight < gBackupMapLayout.height) ? y + cHeight : gBackupMapLayout.height;
+    y = 0;
+  } else {
+    y2 = 0;
+    height = (y + cHeight < gBackupMapLayout.height) ? cHeight : gBackupMapLayout.height - y;
+  }
+  void mapHeader;
+
+  if (height > 0) FillConnection(0, y, cMap, x2, y2, MAP_OFFSET, height);
+}
+
+/** 1:1 décomp `FillEastConnection` (fieldmap.c:308-?). Fills the right border. */
+function FillEastConnection(mapHeader: MapHeader, cMap: MapHeader, offset: number): void {
+  const cHeight = cMap.mapLayout.height;
+  const x = mapHeader.mapLayout.width + MAP_OFFSET;
+  let y = offset + MAP_OFFSET;
+  let y2: number;
+  let height: number;
+
+  if (y < 0) {
+    y2 = -y;
+    height = (y + cHeight < gBackupMapLayout.height) ? y + cHeight : gBackupMapLayout.height;
+    y = 0;
+  } else {
+    y2 = 0;
+    height = (y + cHeight < gBackupMapLayout.height) ? cHeight : gBackupMapLayout.height - y;
+  }
+
+  if (height > 0) FillConnection(x, y, cMap, 0, y2, MAP_OFFSET, height);
+}
+
+/** 1:1 décomp `GetMapBorderIdAt(x, y)` (fieldmap.c:568-605).
+ *  Retourne CONNECTION_NORTH/SOUTH/WEST/EAST si (x, y) (= en gBackupMapLayout
+ *  coords) est dans la zone border et la connexion existe. Retourne
+ *  CONNECTION_NONE si dans la map valide. CONNECTION_INVALID si hors map +
+ *  pas de connexion. */
+export function GetMapBorderIdAt(x: number, y: number): number {
+  if (GetMapGridBlockAt(x, y) === MAPGRID_UNDEFINED) return CONNECTION_INVALID;
+
+  if (x >= (gBackupMapLayout.width - (MAP_OFFSET + 1))) {
+    if (!sMapConnectionFlags.east) return CONNECTION_INVALID;
+    return CONNECTION_EAST;
+  } else if (x < MAP_OFFSET) {
+    if (!sMapConnectionFlags.west) return CONNECTION_INVALID;
+    return CONNECTION_WEST;
+  } else if (y >= (gBackupMapLayout.height - MAP_OFFSET)) {
+    if (!sMapConnectionFlags.south) return CONNECTION_INVALID;
+    return CONNECTION_SOUTH;
+  } else if (y < MAP_OFFSET) {
+    if (!sMapConnectionFlags.north) return CONNECTION_INVALID;
+    return CONNECTION_NORTH;
+  } else {
+    return CONNECTION_NONE;
+  }
+}
+
+const CONNECTION_NONE = 0;
+const CONNECTION_INVALID = 0xFF;
+
+// ─── Phase 4.8 : seamless cross-border transition (1:1 décomp) ───────────────
+
+/** 1:1 décomp `IsCoordInIncomingConnectingMap` (fieldmap.c:717). */
+function isCoordInIncomingConnectingMap(coord: number, srcMax: number, destMax: number, offset: number): boolean {
+  const offset2 = offset < 0 ? 0 : offset;
+  const start = offset2;
+  const end = offset + destMax;
+  // coord is in "outgoing map coord" frame. Adjusted by srcMax for some directions.
+  // 1:1 décomp logic.
+  void srcMax;
+  return coord >= start && coord < end;
+}
+
+/** 1:1 décomp `IsPosInIncomingConnectingMap` (fieldmap.c:701-715).
+ *  Checks if a position (x, y) in the current map maps onto the connection's
+ *  destination map (= the connection isn't an "edge" the player can cross
+ *  here — only spans certain offset ranges). */
+function isPosInIncomingConnectingMap(direction: number, x: number, y: number, connection: MapConnection): boolean {
+  const cMap = mapHeaderCache.get(connection.destMap);
+  if (!cMap || !gMapHeader) return false;
+  switch (direction) {
+    case CONNECTION_SOUTH:
+    case CONNECTION_NORTH:
+      return isCoordInIncomingConnectingMap(x, gMapHeader.mapLayout.width, cMap.mapLayout.width, connection.offset);
+    case CONNECTION_WEST:
+    case CONNECTION_EAST:
+      return isCoordInIncomingConnectingMap(y, gMapHeader.mapLayout.height, cMap.mapLayout.height, connection.offset);
+  }
+  return false;
+}
+
+/** 1:1 décomp `GetIncomingConnection` (fieldmap.c:680-699). Find the
+ *  connection in current map that matches a border crossing direction +
+ *  player position (= offset range). */
+export function GetIncomingConnection(direction: number, x: number, y: number): MapConnection | null {
+  if (!gMapHeader) return null;
+  for (const connection of gMapHeader.connections) {
+    if (connection.direction === direction && isPosInIncomingConnectingMap(direction, x, y, connection)) {
+      return connection;
+    }
+  }
+  return null;
+}
+
+/** 1:1 décomp `SetPositionFromConnection` (fieldmap.c:624-647). Computes the
+ *  new player logical position in the destination map based on connection
+ *  direction + offset.
+ *
+ *  Note : décomp set `gSaveBlock1Ptr->pos.x/y` à BORDER coords (= juste avant
+ *  le step) PUIS apply delta. NOTRE impl applique delta au step end via
+ *  PlayerStep's moveCoords → on ne doit PAS appliquer le delta ici sinon
+ *  double-count. Returns la pos AVANT delta apply (= équivalent décomp post-
+ *  SetPositionFromConnection mais pré `pos += delta`).
+ *
+ *  @param curPosX/Y  Player logical position in OLD map (= avant cross). Pour
+ *                    NORTH/SOUTH : curPosX utilisé pour calculer offset shift x.
+ *                    Pour EAST/WEST : curPosY utilisé pour offset shift y. */
+export function ComputeConnectionDestPos(
+  connection: MapConnection,
+  direction: number,
+  curPosX: number,  // OLD player logical x (= aligned avec décomp pos.x via convention coïncidence)
+  curPosY: number,  // OLD player logical y - 2 (= via _camPos.y = playerLogical + 2)
+): { camX: number; camY: number } {
+  const cMap = mapHeaderCache.get(connection.destMap);
+  if (!cMap) return { camX: curPosX, camY: curPosY };
+
+  let newCamX = curPosX;
+  let newCamY = curPosY;
+  switch (direction) {
+    case CONNECTION_EAST:
+      newCamX = 0;  // décomp : pos.x = -x (= -1 typiquement) ; sans delta → 0 (= 1 row INTO new map's WEST border)
+      newCamY = curPosY - connection.offset;
+      break;
+    case CONNECTION_WEST:
+      newCamX = cMap.mapLayout.width;  // décomp : pos.x = newMap.width ; après step end -1 → last valid col
+      newCamY = curPosY - connection.offset;
+      break;
+    case CONNECTION_SOUTH:
+      newCamX = curPosX - connection.offset;
+      newCamY = 0;  // décomp : pos.y = -y (= -1) ; sans delta → 0 (= NORTH border row)
+      break;
+    case CONNECTION_NORTH:
+      newCamX = curPosX - connection.offset;
+      newCamY = cMap.mapLayout.height;  // décomp : pos.y = newMap.height ; step end -1 → last valid row
+      break;
+  }
+  return { camX: newCamX, camY: newCamY };
+}
+
+/** Transition seamless vers une map connectée. Sync : assume tous les assets
+ *  de la connexion sont déjà cached (= via prefetch depth 1 dans loadMapByName).
+ *
+ *  1:1 décomp `LoadMapFromCameraTransition` (overworld.c:784-825) version
+ *  simplifiée pour notre web context :
+ *    - Swap gMapHeader vers la connection map.
+ *    - Re-init gBackupMapLayout (= InitMap).
+ *    - Sync copy new secondary tileset to VRAM (primary stays = shared).
+ *    - Sync load new secondary palette.
+ *    - Update gMapHeader globalThis ref.
+ *
+ *  Le caller (= CameraUpdate via warp-system trigger) doit ensuite :
+ *    - Update player.x/y selon ComputeConnectionDestPos.
+ *    - Update _camPos correspondant.
+ *    - Re-spawn NPCs (= async, OK car player près du border, NPCs au centre/loin).
+ *    - Trigger background prefetch des connections de la new map (= depth+1
+ *      pour seamless next hop).
+ *
+ *  @returns true si le swap a réussi (= cMap was cached). false si manqué
+ *  (= besoin async load, fallback to warp-style transition par caller). */
+export function TransitionToConnection(connection: MapConnection): boolean {
+  const cMap = mapHeaderCache.get(connection.destMap);
+  if (!cMap) {
+    console.warn(`[map-loader] TransitionToConnection: ${connection.destMap} not cached`);
+    return false;
+  }
+
+  // 1:1 décomp `ApplyCurrentWarp` + `LoadCurrentMapData` : update gMapHeader.
+  gMapHeader = cMap;
+  (globalThis as Record<string, unknown>).gMapHeader = cMap;
+
+  // 1:1 décomp `InitMap` : rebuild gBackupMapLayout + run on-load script.
+  // NB : InitMap call InitBackupMapLayoutConnections qui depend du cache des
+  // connections de cMap. Si pas cached (= depth 2 manquante), borders unfilled
+  // pour cette frame (= sera fillé async via prefetch en background).
+  InitMap();
+
+  // 1:1 décomp `CopySecondaryTilesetToVramUsingHeap` + `LoadSecondaryTilesetPalette` :
+  // primary tileset partagé entre les 2 maps connectées (= reste en VRAM tel quel),
+  // mais secondary peut différer → reload sync.
+  CopySecondaryTilesetToVram(cMap.mapLayout);
+  LoadSecondaryTilesetPalette(cMap.mapLayout);
+
+  // 1:1 décomp `InitSecondaryTilesetAnimation` : re-init secondary anim
+  // callback (= primary anim non touché).
+  // NB : geré via setSecondaryTilesetAnimCallback dans CopyMapTilesetsToVram,
+  // mais on n'appelle que le secondary ici donc need explicit re-set.
+  setSecondaryTilesetAnimCallback(cMap.mapLayout.secondaryTileset?.name ?? '');
+
+  // Trigger background prefetch des connections de cMap (= depth+1 pour seamless
+  // next hop). Si déjà en cache, no-op rapide.
+  void prefetchConnections(cMap);
+
+  return true;
+}
+
+/** Helper : prefetch les map headers des connexions immédiates d'une map.
+ *  Async, fire-and-forget. Errors silencieuses (= warning logged). */
+async function prefetchConnections(header: MapHeader): Promise<void> {
+  if (!header.connections || header.connections.length === 0) return;
+  await Promise.all(
+    header.connections
+      .filter(c => c.direction >= CONNECTION_SOUTH && c.direction <= CONNECTION_EAST)
+      .map(c => loadMapHeader(c.destMap).catch((e: unknown) => {
+        console.warn(`[map-loader] prefetchConnections failed for ${c.destMap}:`, e);
+        return null;
+      })),
+  );
+}
+
+/** Sync helper : copy secondary tileset to VRAM only. Used by
+ *  TransitionToConnection (= primary stays in VRAM, only secondary differs).
+ *  1:1 décomp `CopySecondaryTilesetToVramUsingHeap`. */
+function CopySecondaryTilesetToVram(mapLayout: MapLayout): void {
+  if (!mapLayout.secondaryTileset) return;
+  CopyTilesetToVram(
+    mapLayout.secondaryTileset,
+    NUM_TILES_TOTAL - NUM_TILES_IN_PRIMARY,
+    NUM_TILES_IN_PRIMARY,
+  );
+}
+
+/** Sync helper : load secondary palette only. 1:1 décomp `LoadSecondaryTilesetPalette`. */
+function LoadSecondaryTilesetPalette(mapLayout: MapLayout): void {
+  if (!mapLayout.secondaryTileset) return;
+  const PLTT_SIZE_4BPP = 32;
+  LoadTilesetPalette(
+    mapLayout.secondaryTileset,
+    NUM_PALS_IN_PRIMARY * 16,
+    (NUM_PALS_TOTAL - NUM_PALS_IN_PRIMARY) * PLTT_SIZE_4BPP,
+  );
 }
 
 // ─── 1:1 décomp fieldmap.c MapGridGet* ──────────────────────────────────────
