@@ -390,6 +390,77 @@ export function RunScriptImmediately(label: string): void {
   console.warn(`[script-runtime] RunScriptImmediately(${label}) didn't terminate after 100 ticks`);
 }
 
+// ─── Map script hooks (= 1:1 décomp `RunOn*MapScript`) ──────────────────────
+//
+// Audit Opus §3.3 : RunOnLoadMapScript était commenté TODO. Implémenté ici.
+//
+// Le `mapScripts` field de gMapHeader pointe vers un label "MapScripts" qui
+// contient une liste d'opcodes `map_script TYPE, scriptLabel`. On parse cette
+// liste pour trouver le scriptLabel correspondant à un type donné, puis on
+// run ce scriptLabel via RunScriptImmediately.
+//
+// Types supportés (1:1 décomp constants/map_scripts.h) :
+//   MAP_SCRIPT_ON_LOAD       (= entrée map = setdooropen, hide objects)
+//   MAP_SCRIPT_ON_TRANSITION (= load map après warp = position NPCs)
+//   MAP_SCRIPT_ON_FRAME_TABLE (= polled chaque frame)
+//   MAP_SCRIPT_ON_RESUME     (= return to overworld depuis menu/battle)
+//   MAP_SCRIPT_ON_WARP_INTO_MAP_TABLE (= sur warp arrival)
+//   MAP_SCRIPT_ON_DIVE_WARP (= dive)
+
+/** Find le scriptLabel d'un type donné dans le mapScripts table.
+ *  @param mapScriptsLabel Label de la map_scripts table (= header.mapScripts)
+ *  @param scriptType Type de script (e.g. 'MAP_SCRIPT_ON_LOAD')
+ *  @returns Le scriptLabel à run, ou null si pas de script de ce type. */
+function findMapScriptLabel(mapScriptsLabel: string, scriptType: string): string | null {
+  // Le mapScripts table est stocké comme un script regular (= entrée dans
+  // _scriptsByLabel) avec opcodes `map_script TYPE, label`.
+  const opcodes = _scriptsByLabel.get(mapScriptsLabel);
+  if (!opcodes) return null;
+  for (const opcode of opcodes) {
+    if (opcode.name === 'map_script' && opcode.args[0] === scriptType) {
+      return opcode.args[1] ?? null;
+    }
+  }
+  return null;
+}
+
+/** 1:1 décomp `RunOnLoadMapScript()` (fieldmap.c). Run le script `MAP_SCRIPT_ON_LOAD`
+ *  de la current map. Appelé par `InitMap` via le hook `setOnLoadMapScriptHook`.
+ *
+ *  Ce script est typiquement utilisé pour :
+ *  - `setmetatile` : modifier des tiles map (ex. moving boxes au début intro)
+ *  - `setdooropen` : ouvrir des doors selon flags
+ *  - `setflag` / `clearflag` : init state flags */
+export function RunOnLoadMapScript(): void {
+  // Lookup mapHeader.mapScripts via globalThis pour éviter circular import.
+  // map-loader.ts → script-runtime.ts → map-loader (= circular). Avec
+  // globalThis on évite le cycle.
+  const gMapHeader = (globalThis as Record<string, unknown>).gMapHeader as
+    { mapScripts?: string } | undefined;
+  if (!gMapHeader?.mapScripts) return;
+  const onLoadLabel = findMapScriptLabel(gMapHeader.mapScripts, 'MAP_SCRIPT_ON_LOAD');
+  if (!onLoadLabel) return;
+  console.log(`[script-runtime] RunOnLoadMapScript : ${onLoadLabel}`);
+  RunScriptImmediately(onLoadLabel);
+}
+
+/** 1:1 décomp `RunOnTransitionMapScript()` (fieldmap.c). Run le script
+ *  `MAP_SCRIPT_ON_TRANSITION`. Appelé après warp, pour positionner les NPCs
+ *  selon plot state. */
+export function RunOnTransitionMapScript(): void {
+  const gMapHeader = (globalThis as Record<string, unknown>).gMapHeader as
+    { mapScripts?: string } | undefined;
+  if (!gMapHeader?.mapScripts) return;
+  const label = findMapScriptLabel(gMapHeader.mapScripts, 'MAP_SCRIPT_ON_TRANSITION');
+  if (!label) return;
+  console.log(`[script-runtime] RunOnTransitionMapScript : ${label}`);
+  RunScriptImmediately(label);
+}
+
+// Setup le hook map-loader → ce module. À call au boot une seule fois.
+import { setOnLoadMapScriptHook } from './map-loader';
+setOnLoadMapScriptHook(RunOnLoadMapScript);
+
 // ─── Expose pour debug ───────────────────────────────────────────────────────
 
 (globalThis as Record<string, unknown>).__scriptRuntime = {

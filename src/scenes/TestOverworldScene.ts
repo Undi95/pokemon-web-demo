@@ -28,9 +28,11 @@ import {
   clearOverworldTilemaps,
   MAP_OFFSET,
 } from '../engine/map-loader';
+import type { MapHeader, WarpEvent } from '../engine/map-loader';
 import {
   DrawWholeMapView,
   ResetFieldCamera,
+  ResetCameraUpdateInfo,
   FieldUpdateBgTilemapScroll,
   CameraUpdate,
   SetCameraTopLeftCoords,
@@ -42,13 +44,19 @@ import {
 import {
   InitPlayerAvatar,
   PlayerStep,
+  DestroyPlayerAvatar,
+  DIR_NONE,
+  DIR_NORTH,
   DIR_SOUTH,
+  NOT_MOVING,
+  gPlayerAvatar,
 } from '../engine/player-avatar';
 import {
   SpawnObjectEventsOnMap,
   UpdateObjectEvents,
   TickObjectEventMovements,
   resetObjectEventAllocations,
+  destroyAllNpcSprites,
 } from '../engine/object-events';
 import { installInputHandlers, setHeldKeysOverride } from '../engine/input-handler';
 import { installEngineDevtools } from '../engine/engine-devtools';
@@ -56,7 +64,28 @@ import {
   loadMapScripts,
   ScriptContext_RunScript,
   ScriptContext_Init,
+  LockPlayerFieldControls,
+  UnlockPlayerFieldControls,
 } from '../engine/script-runtime';
+import {
+  getPendingWarp,
+  setPendingWarp,
+  getExitTaskKindFor,
+  getMetatileBehaviorAtPlayerPos,
+  getPlayerCoordsFromWarp,
+} from '../engine/warp-system';
+import type { WarpKind } from '../engine/warp-system';
+import {
+  GetDoorSoundEffect,
+  FieldAnimateDoorOpen,
+  FieldAnimateDoorClose,
+  FieldSetDoorOpened,
+} from '../engine/field-door';
+import { PlaySE } from '../engine/decomp-globals';
+import {
+  SE_EXIT,
+  SE_WARP_IN,
+} from '../engine/decomp-data/auto/include/constants/songs-data';
 import {
   InitFieldMessageBox,
   TickFieldMessageBox,
@@ -64,6 +93,8 @@ import {
 } from '../engine/field-message-box';
 import { preloadFontData } from '../engine/gba-text-system';
 import { preloadTextWindowFrames } from '../engine/gba-text-window';
+import { PlayBGM, FillPalBufferBlack } from '../engine/decomp-globals';
+import * as Songs from '../engine/decomp-data/auto/include/constants/songs-data';
 // Side-effect import : registers Phase 4.5 opcode handlers.
 import '../engine/script-opcodes';
 
@@ -81,6 +112,11 @@ export class TestOverworldScene extends Phaser.Scene {
   private bridge!: GbaPhaserBridge;
   private booted = false;
   private statusText?: Phaser.GameObjects.Text;
+  /** Phase 4.6 : flag pour skip MainCB2_Overworld pendant fade+load async d'un
+   *  warp. Set par executeWarp au start, cleared à la fin. Sans ce flag, le
+   *  PlayerStep + ScriptContext_RunScript continueraient à tourner pendant
+   *  le load → corruption state (= old map data + new player coords). */
+  private warpInProgress = false;
 
   constructor() { super({ key: 'TestOverworldScene' }); }
 
@@ -160,69 +196,11 @@ export class TestOverworldScene extends Phaser.Scene {
         DISPCNT_OBJ_ON | DISPCNT_OBJ_1D_MAP |
         DISPCNT_BG0_ON | DISPCNT_BG1_ON | DISPCNT_BG2_ON | DISPCNT_BG3_ON);
 
-      // 3. Load map + tilesets + layout (= async, parallèle).
-      this.statusText?.setText('Loading map data...');
-      const header = await loadMapByName('MAP_LITTLEROOT_TOWN');
-      console.log(`[TestOverworld] Loaded ${header.id} : ${header.mapLayout.width}x${header.mapLayout.height}`);
-      console.log(`  primary tileset : ${header.mapLayout.primaryTileset.tiles.length} bytes char + ${header.mapLayout.primaryTileset.metatiles.length / 8} metatiles`);
-      console.log(`  secondary tileset : ${header.mapLayout.secondaryTileset.tiles.length} bytes char + ${header.mapLayout.secondaryTileset.metatiles.length / 8} metatiles`);
-
-      // 4. InitMap : copie map.bin → gBackupMapLayout avec border padding.
-      InitMap();
-      console.log(`[TestOverworld] InitMap done : gBackupMapLayout ${header.mapLayout.width + 15}x${header.mapLayout.height + 14}`);
-
-      // 5. Copy tilesets → BG VRAM (charBase 0, tile 0..1023).
-      this.statusText?.setText('Copying tilesets to VRAM...');
-      CopyMapTilesetsToVram(header.mapLayout);
-
-      // 6. Load tileset palettes → BG palette banks 0-12.
-      LoadMapTilesetPalettes(header.mapLayout);
-
-      // 7. Reset field camera state.
-      ResetFieldCamera();
-
-      // 8. Init player avatar FIRST (= sprite + state machine + sets _camPos
-      //    correctly via SetCameraTopLeftCoords(spawnX, spawnY + 2) inside).
-      //    Si on draw avant, le BG buffer est rempli avec camY = spawnY au
-      //    lieu de spawnY+2 → 2 rows de mismatch visuel au boot. Le joueur
-      //    apparaîtra "entre 2 cases" jusqu'au 1er boundary cross qui
-      //    redraw via fix 8 dans CameraUpdate.
-      const spawnX = Math.floor(header.mapLayout.width / 2);
-      const spawnY = Math.floor(header.mapLayout.height / 2);
-      await InitPlayerAvatar(spawnX, spawnY, DIR_SOUTH, 'MALE', this.rt);
-
-      // 9. Draw whole map view dans les 3 BG tilemap buffers, en utilisant
-      //    le _camPos ÉTABLI par InitPlayerAvatar (= spawnX, spawnY+2).
-      clearOverworldTilemaps();
-      const cam = GetCameraTopLeftCoords();
-      console.log(`[TestOverworld] camera top-left coords : (${cam.x}, ${cam.y})`);
-      DrawWholeMapView(cam.x, cam.y, header.mapLayout);
-
-      // 10. Push tilemap buffers → VRAM mapBases + scroll registers.
-      flushOverworldTilemaps(this.rt);
-      FieldUpdateBgTilemapScroll(this.rt);
-
-      // 11. Force palette flush (= TransferPlttBuffer simulé) pour que les
-      //     couleurs apparaissent dès la 1ère frame, sans attendre un VBlankCB.
-      this.rt.gPlttBufferFaded.flushTo();
-
-      // 12. Phase 4.4.a : spawn NPCs (= ObjectEvent templates from map JSON).
-      //     Doit être AVANT MainCB2 register pour que UpdateObjectEvents trouve
-      //     les sprites au 1er frame.
-      resetObjectEventAllocations();
-      await SpawnObjectEventsOnMap(this.rt);
-
-      // 12bis. Phase 4.5 : preload font + text window assets (= dialog box gfx),
-      //        load les scripts de la map + init field message box state.
-      this.statusText?.setText('Loading scripts + font...');
-      await Promise.all([
-        preloadFontData(),
-        preloadTextWindowFrames(),
-        preloadStandardMenuPalette(),
-        loadMapScripts('LittlerootTown'),  // = nom JSON pré-extrait
-      ]);
-      InitFieldMessageBox();
-      ScriptContext_Init();
+      // 3-12 : load + init map (= 1:1 décomp `CB2_LoadMap` flow). Helper
+      //         réutilisé par executeWarp pour les map switches.
+      // Spawn position du boot : centre de Bourg-en-Vol (= défaut testing).
+      // Phase 4.7+ : remplacer par save game last known location.
+      const header = await this.loadAndInitMap('MAP_LITTLEROOT_TOWN', -1, -1, DIR_SOUTH);
 
       // 1:1 décomp `SetVBlankCallback(VBlankCB_Overworld)`. Le simple fait
       // d'avoir un vblankCallback set fait que tickFixed.runOneFrame call
@@ -242,7 +220,21 @@ export class TestOverworldScene extends Phaser.Scene {
       //     Phaser, le player ralentirait quand le browser drop des frames.
       //     Préfix "MainCB2" → tickFixed runs RunTasks/AnimateSprites/etc.
       const rt = this.rt;
+      // eslint-disable-next-line @typescript-eslint/no-this-alias
+      const self = this;
       const MainCB2_Overworld = function MainCB2_Overworld(): void {
+        // Phase 4.6 : pendant warp transition (= async load map), skip tout
+        // le game logic. tickFixed continue d'appeler UpdatePaletteFade
+        // automatiquement → le fade out/in render correctement.
+        if (self.warpInProgress) return;
+        // Phase 4.6 : check pending warp détecté par PlayerStep au step end
+        // ou collision push UP devant door. Si yes, démarre la transition
+        // async + skip ce frame de game logic.
+        const pending = getPendingWarp();
+        if (pending) {
+          void self.executeWarp(pending.warp, pending.kind);
+          return;
+        }
         // Phase 4.5 : tick script engine FIRST. ScriptContext_RunScript loop
         // les opcodes jusqu'à wait/end. Si script lock les controls,
         // PlayerStep skip son input.
@@ -296,5 +288,254 @@ export class TestOverworldScene extends Phaser.Scene {
         console.error('[TestOverworld.update] bridge.tick THREW:', e);
       }
     }
+  }
+
+  // ─── Phase 4.6 helpers : load + warp ──────────────────────────────────────
+
+  /** Refactored from bootOverworld step 3-12. Reusable pour boot + warp.
+   *  1:1 décomp `CB2_LoadMap` flow (overworld.c) :
+   *    LoadMapData + CopyMapTilesetsToVram + LoadMapTilesetPalettes +
+   *    InitObjectEventsLocal + InitMap + ResetFieldCamera + DrawWholeMapView.
+   *
+   *  @param mapId      Map ID literal (e.g. 'MAP_LITTLEROOT_TOWN')
+   *  @param spawnX     Player position X (-1 = use map center, fallback testing)
+   *  @param spawnY     Player position Y (-1 = use map center)
+   *  @param spawnDir   Player facing direction (DIR_*)
+   *  @returns The loaded MapHeader (= so caller can read warps for player coords).
+   */
+  private async loadAndInitMap(
+    mapId: string, spawnX: number, spawnY: number, spawnDir: number,
+  ): Promise<MapHeader> {
+    this.statusText?.setText(`Loading ${mapId}...`);
+    const header = await loadMapByName(mapId);
+    console.log(`[TestOverworld] Loaded ${header.id} : ${header.mapLayout.width}x${header.mapLayout.height}`);
+
+    // 1:1 décomp `InitMap` (fieldmap.c) — copy map.bin + border to gBackupMapLayout.
+    InitMap();
+
+    // 1:1 décomp `CopyMapTilesetsToVram` + `LoadMapTilesetPalettes` (fieldmap.c).
+    CopyMapTilesetsToVram(header.mapLayout);
+    LoadMapTilesetPalettes(header.mapLayout);
+
+    // 1:1 décomp `ResetFieldCamera` + `ResetCameraUpdateInfo` (= reset complet
+    // camera state pour la new map). Sans ResetCameraUpdateInfo, gFieldCamera.x/y
+    // (= sub-tile pixel offset) + gTotalCamera reste stale du map précédent →
+    // scroll wiggle / split visual au prochain step. 1:1 décomp `ResumeMap`
+    // (overworld.c:2138) appelle ResetCameraUpdateInfo systématiquement.
+    ResetFieldCamera();
+    ResetCameraUpdateInfo();
+
+    // Determine spawn coords (= -1 fallback to map center for boot testing).
+    const sx = spawnX >= 0 ? spawnX : Math.floor(header.mapLayout.width / 2);
+    const sy = spawnY >= 0 ? spawnY : Math.floor(header.mapLayout.height / 2);
+    // Phase 4.6 : destroy player sprite avant re-init pour éviter leak OAM.
+    DestroyPlayerAvatar(this.rt);
+    await InitPlayerAvatar(sx, sy, spawnDir, 'MALE', this.rt);
+
+    // 1:1 décomp `DrawWholeMapView` (field_camera.c).
+    clearOverworldTilemaps();
+    const cam = GetCameraTopLeftCoords();
+    DrawWholeMapView(cam.x, cam.y, header.mapLayout);
+    flushOverworldTilemaps(this.rt);
+    FieldUpdateBgTilemapScroll(this.rt);
+    this.rt.gPlttBufferFaded.flushTo();
+
+    // Phase 4.4.a : spawn NPCs. Phase 4.6 : destroy old NPC sprites first.
+    destroyAllNpcSprites(this.rt);
+    resetObjectEventAllocations();
+    await SpawnObjectEventsOnMap(this.rt);
+
+    // Phase 4.5 : preload font + scripts (fonts cached, scripts re-fetched).
+    // Le scriptsBaseName est dérivé de header.mapScripts (= e.g.
+    // 'LittlerootTown_BrendansHouse_1F_MapScripts' → strip `_MapScripts`).
+    const scriptsBaseName = header.mapScripts.replace(/_MapScripts$/, '');
+    await Promise.all([
+      preloadFontData(),
+      preloadTextWindowFrames(),
+      preloadStandardMenuPalette(),
+      loadMapScripts(scriptsBaseName),
+    ]);
+    InitFieldMessageBox();
+    ScriptContext_Init();
+
+    // 1:1 décomp `Overworld_PlaySpecialMapMusic`. Resolve song name → id via
+    // songs-data lookup (= auto-extracted from songs.h).
+    const songId = (Songs as unknown as Record<string, number>)[header.music] ?? 0;
+    if (songId > 0) {
+      console.log(`[TestOverworld] PlayBGM(${header.music} = ${songId})`);
+      PlayBGM(songId);
+    }
+    return header;
+  }
+
+  /** Phase 4.6 1:1 décomp warp dispatch : `DoWarp` / `DoDoorWarp` / etc. selon
+   *  WarpKind. Implémente la séquence de tasks `Task_DoDoorWarp` + `Task_WarpAndLoadMap`
+   *  + `FieldCB_DefaultWarpExit` + `SetUpWarpExitTask` (`Task_ExitDoor` /
+   *  `Task_ExitNonAnimDoor` / `Task_ExitNonDoor`).
+   *
+   *  Phases :
+   *    1. Pre-warp anim (kind-specific) :
+   *       - 'door' : `Task_DoDoorWarp` (= door open SE + anim + walk-up + door close)
+   *       - 'teleport' : SE_WARP_IN
+   *       - autres : rien
+   *    2. WarpFadeOutScreen (+ SE_EXIT pour step warps)
+   *    3. WarpIntoMap = load dest map + spawn player
+   *    4. WarpFadeInScreen
+   *    5. SetUpWarpExitTask = exit task selon dest tile metatile_behavior :
+   *       - 'door' : `Task_ExitDoor` (= door open instant + walk-down + door close)
+   *       - 'non_anim' : `Task_ExitNonAnimDoor` (= juste walk-down)
+   *       - 'none' : `Task_ExitNonDoor` (= juste unlock)
+   *
+   *  Pendant les phases 1 + 5 : `warpInProgress = false` (= MainCB2_Overworld
+   *  tourne pour tick PlayerStep qui drive forceMovement walks). Pendant les
+   *  phases 2-4 : `warpInProgress = true` (= scene logique skipped, juste fade
+   *  + load).
+   */
+  private async executeWarp(warp: WarpEvent, kind: WarpKind): Promise<void> {
+    if (this.warpInProgress) return;
+    setPendingWarp(null, null);  // claim le warp pending
+    LockPlayerFieldControls();
+    console.log(`[executeWarp] START kind=${kind} → ${warp.destMap}#${warp.warpId}`);
+
+    try {
+      // ─── Phase 1 : kind-specific pre-warp anim (= Task_DoDoorWarp pour 'door') ───
+      // warpInProgress = false : on laisse le player walk-up auto via forceMovement.
+      if (kind === 'door') {
+        // 1:1 décomp `Task_DoDoorWarp` (field_screen_effect.c:677).
+        // Door tile = position en face du player (= player.x, player.y - 1
+        // car player face NORTH au moment du collision dispatch).
+        const doorX = gPlayerAvatar.x;
+        const doorY = gPlayerAvatar.y - 1;
+        // case 0 : PlaySE(GetDoorSoundEffect) + FieldAnimateDoorOpen.
+        PlaySE(GetDoorSoundEffect(doorX, doorY));
+        await FieldAnimateDoorOpen(doorX, doorY);
+        // case 1 : ObjectEventSetHeldMovement(WALK_NORMAL_UP) — force walk player UP.
+        gPlayerAvatar.forceMovement = DIR_NORTH;
+        await this.waitForForcedWalkComplete();
+        // case 2-3 : FieldAnimateDoorClose + SetPlayerVisibility(FALSE).
+        await FieldAnimateDoorClose(doorX, doorY);
+        // (player visibility off géré par le fade out qui suit)
+      }
+
+      // ─── Phase 2 : fade out (= WarpFadeOutScreen + SE_EXIT) ─────────────
+      this.warpInProgress = true;
+      // 1:1 décomp `TryFadeOutOldMapMusic` : check si dest map music ID ≠ courante.
+      // TODO Phase 4.7 : implementer + wait BGMusicStopped. Pour MVP : skip,
+      // PlayBGM dans loadAndInitMap override automatiquement.
+      this.rt.BeginNormalPaletteFade('PALETTES_ALL', 0, 0, 16, 'RGB_BLACK');
+      // 1:1 décomp `DoWarp` line 490 : PlaySE(SE_EXIT) pour step warps.
+      // Pour 'door' : SE déjà joué dans Task_DoDoorWarp. Pour 'teleport' :
+      // SE_WARP_IN (= 1:1 décomp `DoTeleportTileWarp`).
+      if (kind === 'step' || kind === 'arrow' || kind === 'ladder') {
+        PlaySE(SE_EXIT);
+      } else if (kind === 'teleport') {
+        PlaySE(SE_WARP_IN);
+      }
+      await this.waitForFadeComplete();
+
+      // ─── Phase 3 : WarpIntoMap = load dest map + spawn ─────────────────
+      // 1:1 décomp `WarpIntoMap` → `ApplyCurrentWarp` + `SetPlayerCoordsFromWarp`.
+      // Audit Opus 2.6 : facing dépend du WarpKind :
+      //  - door warps (= door / step) → DIR_SOUTH (= player walks DOWN out of door)
+      //  - autres (= ladder / arrow / teleport / escalator / fall) → preserve current
+      const destPreheader = await loadMapByName(warp.destMap);
+      const coords = getPlayerCoordsFromWarp(destPreheader, warp.warpId);
+      const destX = coords.x;
+      const destY = coords.y;
+      const destDir = (kind === 'door' || kind === 'step')
+        ? DIR_SOUTH                // door warps : facing south (auto walk-down va override)
+        : coords.facing;           // ladders/arrows/etc : preserve current
+      const destHeader = await this.loadAndInitMap(warp.destMap, destX, destY, destDir);
+      console.log(`[executeWarp] loaded ${destHeader.id}, player at (${destX},${destY}) facing=${destDir}`);
+
+      // ─── Phase 4 : fade in (= 1:1 décomp `WarpFadeInScreen` field_screen_effect.c:74) ─
+      // L'ordre 1:1 décomp :
+      //   FillPalBufferBlack();   // = CpuFastFill16(RGB_BLACK, gPlttBufferFaded, PLTT_SIZE)
+      //   FadeScreen(FADE_FROM_BLACK, 0);  // = BeginNormalPaletteFade(ALL, 0, 16, 0, RGB_BLACK)
+      //
+      // Sans FillPalBufferBlack : LoadMapTilesetPalettes (dans loadAndInitMap) a
+      // écrit les NEW colors dans gPlttBufferFaded → flushTo() pousse les NEW
+      // colors → écran flash full-color avant le fade in (bug visible session 102 :
+      // entrée labo = magenta + tiles bizarres parce que palette transition wrong).
+      FillPalBufferBlack();
+      // Force flush BLACK au PLTT register IMMEDIATELY pour overrider le push
+      // de NEW colors fait par loadAndInitMap (= flushTo() à la fin de
+      // LoadMapTilesetPalettes). Sans ça, écran montre 1 frame full-color avant
+      // que le fade in commence à blender vers BLACK → flash visible.
+      this.rt.gPlttBufferFaded.flushTo();
+      this.rt.BeginNormalPaletteFade('PALETTES_ALL', 0, 16, 0, 'RGB_BLACK');
+      await this.waitForFadeComplete();
+
+      // ─── Phase 5 : SetUpWarpExitTask (kind-specific exit task) ──────────
+      // warpInProgress = false : on laisse PlayerStep tick le walk-down auto.
+      this.warpInProgress = false;
+      const exitKind = getExitTaskKindFor(getMetatileBehaviorAtPlayerPos());
+      console.log(`[executeWarp] exit task kind=${exitKind}`);
+
+      if (exitKind === 'door') {
+        // 1:1 décomp `Task_ExitDoor` (field_screen_effect.c:317).
+        // Door tile = player spawn position (= player on door après warp).
+        const doorX = gPlayerAvatar.x;
+        const doorY = gPlayerAvatar.y;
+        // case 0 : SetPlayerVisibility(FALSE) + FieldSetDoorOpened (= instant open, no SE).
+        FieldSetDoorOpened(doorX, doorY);
+        // case 1 : SetPlayerVisibility(TRUE) + ObjectEventSetHeldMovement(WALK_NORMAL_DOWN).
+        gPlayerAvatar.forceMovement = DIR_SOUTH;
+        await this.waitForForcedWalkComplete();
+        // case 2-3 : FieldAnimateDoorClose à la door position originale.
+        await FieldAnimateDoorClose(doorX, doorY);
+      } else if (exitKind === 'non_anim') {
+        // 1:1 décomp `Task_ExitNonAnimDoor` (field_screen_effect.c:366) :
+        // juste walk-down auto (= 1 step DOWN), no door anim.
+        gPlayerAvatar.forceMovement = DIR_SOUTH;
+        await this.waitForForcedWalkComplete();
+      }
+      // exitKind === 'none' (= MB_LADDER, MB_*_ARROW_WARP, etc.) :
+      // 1:1 décomp `Task_ExitNonDoor` (field_screen_effect.c:404) : juste unlock.
+
+      this.statusText?.setText(`${destHeader.id} ${destHeader.mapLayout.width}x${destHeader.mapLayout.height}`);
+    } catch (e) {
+      console.error('[executeWarp] failed:', e);
+      this.statusText?.setText(`WARP ERROR : ${e}`);
+    } finally {
+      // Toujours unlock + reset state.
+      UnlockPlayerFieldControls();
+      this.warpInProgress = false;
+      gPlayerAvatar.forceMovement = DIR_NONE;  // cleanup safety.
+      console.log('[executeWarp] DONE');
+    }
+  }
+
+  /** Wait que le forced movement (= forceMovement step auto) soit terminé.
+   *  forceMovement est cleared par PlayerStep block lock controls quand le
+   *  step auto se finit (= stepFramesLeft → 0). */
+  private waitForForcedWalkComplete(): Promise<void> {
+    return new Promise((resolve) => {
+      const check = (): void => {
+        // Step done = forceMovement reset à DIR_NONE par PlayerStep block lock
+        // controls + runningState = NOT_MOVING.
+        if (gPlayerAvatar.forceMovement === DIR_NONE && gPlayerAvatar.runningState === NOT_MOVING) {
+          resolve();
+        } else {
+          setTimeout(check, 17);
+        }
+      };
+      check();
+    });
+  }
+
+  /** Wait async pour que le palette fade soit terminé. Poll via setTimeout
+   *  ~17ms (= 1 frame GBA). Plus simple que créer un task décomp pour MVP. */
+  private waitForFadeComplete(): Promise<void> {
+    return new Promise((resolve) => {
+      const check = (): void => {
+        if (!this.rt.gPaletteFade.active) {
+          resolve();
+        } else {
+          setTimeout(check, 17);
+        }
+      };
+      check();
+    });
   }
 }

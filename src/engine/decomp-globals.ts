@@ -719,6 +719,31 @@ export function m4aMPlayAllStop(): void {
   void import('./m4a/player').then(({ stopAllSongs }) => stopAllSongs());
 }
 
+/** 1:1 décomp `FillPalBufferBlack()` (field_screen_effect.c:69-72) :
+ *    `CpuFastFill16(RGB_BLACK, gPlttBufferFaded, PLTT_SIZE)`
+ *  Reset toute la palette Faded à BLACK. Utilisé par `WarpFadeInScreen` AVANT
+ *  `FadeScreen(FADE_FROM_BLACK)` pour s'assurer que l'écran démarre BLACK
+ *  avant le fade in (= sinon LoadMapTilesetPalettes a écrit les NEW colors
+ *  dans Faded → flash en couleur normale avant le fade). */
+export function FillPalBufferBlack(): void {
+  const r = getRuntime();
+  if (!r) return;
+  for (let i = 0; i < 512; i++) {
+    r.gPlttBufferFaded.set(i, 0);  // RGB_BLACK = 0
+  }
+}
+
+/** 1:1 décomp `FillPalBufferWhite()` (field_screen_effect.c:64-67) — idem
+ *  pour WHITE (= warp transitions vers/depuis interior maps avec fade white). */
+export function FillPalBufferWhite(): void {
+  const r = getRuntime();
+  if (!r) return;
+  const RGB_WHITE = 0x7FFF;  // 31, 31, 31
+  for (let i = 0; i < 512; i++) {
+    r.gPlttBufferFaded.set(i, RGB_WHITE);
+  }
+}
+
 /** 1:1 décomp `PlayBGM(songNum)` (sound.c:563) :
  *    if (gDisableMusic) songNum = 0;
  *    if (songNum == MUS_NONE) songNum = 0;

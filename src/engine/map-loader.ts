@@ -576,20 +576,36 @@ export async function loadMapHeader(mapId: string): Promise<MapHeader> {
 export async function loadMapByName(mapId: string): Promise<MapHeader> {
   const header = await loadMapHeader(mapId);
   gMapHeader = header;
+  // Audit Opus §3.3 : expose globalThis pour script-runtime.RunOnLoadMapScript
+  // (= évite circular import map-loader ↔ script-runtime).
+  (globalThis as Record<string, unknown>).gMapHeader = header;
   return header;
 }
 
 // ─── 1:1 décomp fieldmap.c InitMap pipeline ─────────────────────────────────
 
+/** Hook registry pour `RunOnLoadMapScript`. Set par script-runtime.ts qui sait
+ *  parser et run les map_scripts entries. Map-loader évite ce circular import
+ *  via lookup ici. */
+let _runOnLoadMapScriptHook: (() => void) | null = null;
+export function setOnLoadMapScriptHook(fn: () => void): void {
+  _runOnLoadMapScriptHook = fn;
+}
+
 /** 1:1 décomp `InitMap()` (fieldmap.c:71-76).
  *  Init layout data + run on-load script + secret base entrance metatiles.
- *  Note : SetOccupiedSecretBaseEntranceMetatiles + RunOnLoadMapScript = stubs
- *  pour l'instant (pas critiques pour rendu basic). */
+ *
+ *  Audit Opus §3.3 : `RunOnLoadMapScript` était commenté TODO Phase 4.7 mais
+ *  est nécessaire pour les map_scripts entries `MAP_SCRIPT_ON_LOAD` qui
+ *  modifient le map au load (= setdooropen, hide/show NPCs). Maintenant
+ *  wired via hook registry. */
 export function InitMap(): void {
   if (!gMapHeader) throw new Error('InitMap: gMapHeader is null (call loadMapByName first)');
   InitMapLayoutData(gMapHeader);
-  // SetOccupiedSecretBaseEntranceMetatiles(gMapHeader.events);  // TODO Phase 4.5
-  // RunOnLoadMapScript();                                       // TODO Phase 4.7
+  // SetOccupiedSecretBaseEntranceMetatiles(gMapHeader.events);  // TODO Phase 4.7
+  // 1:1 décomp `RunOnLoadMapScript` (fieldmap.c:75) — script-runtime sait
+  // dispatch via mapScripts entries.
+  if (_runOnLoadMapScriptHook) _runOnLoadMapScriptHook();
 }
 
 /** 1:1 décomp `InitMapLayoutData(mapHeader)` (fieldmap.c:100-117).

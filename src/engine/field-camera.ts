@@ -130,18 +130,50 @@ export function ResetFieldCamera(): void {
   ResetCameraOffset(sFieldCameraOffset);
 }
 
+/** 1:1 décomp `ResetCameraUpdateInfo()` (field_camera.c:341-349) — reset
+ *  gFieldCamera state (= speeds + sub-tile pixel offset). À call au load de
+ *  map (= ResumeMap) sinon scroll buggy après warp (= state stale du map
+ *  précédent → wiggle / split visual au prochain step).
+ *  Aussi reset gTotalCamera (= 1:1 décomp `InitObjectEventsLocal:2168` qui
+ *  set gTotalCameraPixelOffsetX/Y = 0). */
+export function ResetCameraUpdateInfo(): void {
+  gFieldCamera.movementSpeedX = 0;
+  gFieldCamera.movementSpeedY = 0;
+  gFieldCamera.x = 0;
+  gFieldCamera.y = 0;
+  gFieldCamera.spriteId = 0;
+  gFieldCamera.callback = null;
+  gTotalCamera.pixelOffsetX = 0;
+  gTotalCamera.pixelOffsetY = 0;
+}
+
 // ─── 1:1 décomp FieldUpdateBgTilemapScroll (field_camera.c:74-86) ───────────
 
 /** Écrit les BG hofs/vofs des layers BG1/BG2/BG3 selon le pixel offset courant.
  *
- *  NB : décomp ajoute `+ 8` à yVOFS (field_camera.c:78). Cet offset sert à
- *  laisser de la place pour la textbox dialogue en bas de l'écran (= 2 rows
- *  reservés). Pour Phase 4.3 (= pas encore de dialogue), on omet le +8 pour
- *  garder le sprite + BG parfaitement alignés sur la grid. Phase 4.5 (=
- *  script engine + dialogue) le réintroduira avec ajustement sprite y. */
+ *  1:1 décomp `field_camera.c:74-86` :
+ *  ```c
+ *  void FieldUpdateBgTilemapScroll(void) {
+ *    s32 r5 = sFieldCameraOffset.xPixelOffset + sHorizontalCameraPan;
+ *    s32 r4 = sVerticalCameraPan + sFieldCameraOffset.yPixelOffset + 8;  // ← +8 critique
+ *    SetGpuReg(REG_BG1HOFS, r5);
+ *    SetGpuReg(REG_BG1VOFS, r4);
+ *    ...
+ *  }
+ *  ```
+ *
+ *  Le `+ 8` shifte tout le BG vers le bas de 8 px. C'est parce que le décomp
+ *  rend une "vue" 240×144 effective au top (= 18 rows visible) avec une
+ *  textbox dialog (= 2 rows = 32px) qui peut overlay BG0 en bas. Le sprite
+ *  player center y = 80 (= row 5 mid) devient row 5 mid + 8 = 88. Le BG
+ *  rendu décale de 8 → sprite reste visuellement aligné sur le tile.
+ *
+ *  Audit Opus 2.5 : avant ce fix, le `+ 8` était omis "Phase 4.3 sans dialogue".
+ *  Mais Phase 4.5 a wired la dialog box → décollage sprite/BG visible. Réintro
+ *  pour matcher 1:1 décomp + sprite y au boot ajusté avec offset +8. */
 export function FieldUpdateBgTilemapScroll(rt: DecompRuntime): void {
   const r5 = sFieldCameraOffset.xPixelOffset + sHorizontalCameraPan;
-  const r4 = sVerticalCameraPan + sFieldCameraOffset.yPixelOffset;
+  const r4 = sVerticalCameraPan + sFieldCameraOffset.yPixelOffset + 8;
 
   rt.SetGpuReg(REG_OFFSET_BG1HOFS, r5 & 0x1FF);
   rt.SetGpuReg(REG_OFFSET_BG1VOFS, r4 & 0x1FF);

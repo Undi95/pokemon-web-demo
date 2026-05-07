@@ -428,8 +428,48 @@ registerOpcode('waitstate', (_ctx) => {
   return false;
 });
 
+// ─── Special opcode dispatcher (= 1:1 décomp ScrCmd_special) ────────────────
+//
+// Audit Opus §4 minor : `special X` était no-op pour tous → beaucoup de
+// scripts dépendent de specials (e.g. Special_BookendObjectEventTextScript,
+// HealPlayerParty, PlayCryThenChooseUnown, etc.). Sans dispatch, scripts
+// branchent vers nulle part.
+//
+// Décomp `scrcmd.c:ScrCmd_special` :
+//   ```c
+//   bool8 ScrCmd_special(struct ScriptContext *ctx) {
+//     u16 specialId = ScriptReadHalfword(ctx);
+//     gSpecials[specialId]();  // = function pointer table
+//     return FALSE;
+//   }
+//   ```
+//
+// `gSpecials[]` (data/specials.inc) est une table de ~250 function pointers
+// qui sont appelés par leur index ou par leur nom symbolique.
+//
+// Notre version : registry name-based. Scripts JSON pré-extraits ont les
+// noms (= e.g. "HealPlayerParty"). On wire les specials nécessaires au fur
+// et à mesure. Special inconnu → log warning + continue (= 1:1 décomp ferait
+// un crash car function pointer invalide).
+
+const _specialHandlers: Record<string, () => void> = {};
+
+/** Register un special handler. À call par les modules qui implémentent un
+ *  special spécifique (= ex. battle module register `HealPlayerParty`). */
+export function registerSpecial(name: string, handler: () => void): void {
+  _specialHandlers[name] = handler;
+}
+
 registerOpcode('special', (_ctx, args) => {
-  console.log(`[opcode special] '${args[0]}' not implemented (Phase 4.5+)`);
+  const name = args[0] as string;
+  const handler = _specialHandlers[name];
+  if (handler) {
+    handler();
+  } else {
+    // Audit Opus : log avec context pour wirer les specials manquants au
+    // fur et à mesure. Phase 4.7+ : wire battle/heal/etc.
+    console.log(`[opcode special] '${name}' not registered yet — Phase 4.7+ wire`);
+  }
   return false;
 });
 

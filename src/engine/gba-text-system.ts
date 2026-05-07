@@ -149,18 +149,20 @@ let gTextPrinters: ActivePrinter[] = [];
  *  Lit `gSaveBlock2Ptr.optionsTextSpeed` via globalThis (= dans tous les cas
  *  populated avant le 1er texte rendered). Returns frames-per-char delay.
  *
- *  ⚠️ DÉVIATION 1:1 décomp : x2 speed user-preference (= delays halved).
- *  ROM menu.c:77 sTextSpeedFrameDelays = { 8, 4, 1 } SLOW/MID/FAST.
- *  Notre web build : { 4, 2, 0 } = chaque speed deux fois plus rapide.
- *  Raison : user feedback "speed text trop lent même en FAST + held".
- *  Tradeoff accepté : frame-rate effectif = 2× ROM (= web build apparent
- *  smoothness > pixel-perfect 1:1 timing pour ce cas).
- *  Cf. text.c:961 `delayCounter = textSpeed;` — ramp identique, just halved.
+ *  1:1 décomp `menu.c:77 sTextSpeedFrameDelays` :
+ *    [OPTIONS_TEXT_SPEED_SLOW] = 8,
+ *    [OPTIONS_TEXT_SPEED_MID]  = 4,
+ *    [OPTIONS_TEXT_SPEED_FAST] = 1,
  *
- *  Avec ces valeurs :
- *    FAST (textSpeed=0) : 1 char par frame = 60 chars/sec
- *    MID  (textSpeed=2) : 1 char par 3 frames = 20 chars/sec
- *    SLOW (textSpeed=4) : 1 char par 5 frames = 12 chars/sec
+ *  Avec ces valeurs (= 1:1 GBA ROM) :
+ *    FAST (textSpeed=1) : 1 char par 2 frames = 30 chars/sec
+ *    MID  (textSpeed=4) : 1 char par 5 frames = 12 chars/sec
+ *    SLOW (textSpeed=8) : 1 char par 9 frames = 6.7 chars/sec
+ *
+ *  Note : précédent commit 4249e141 hardcodait x2 ({ 4, 2, 0 }) pour préférence
+ *  user web build, mais ça déviait du 1:1 décomp. Reverted suite à audit text-tick :
+ *  le guard `_lastRunTextPrintersFrame` empêche le double-tick → vitesse vue =
+ *  vitesse ROM exacte. Le hardcode x2 rendait le texte 2× plus rapide qu'attendu.
  *
  *  A/B held override → delayCounter=0 chaque frame (= 60 chars/sec) gérée
  *  dans gba-text-printer.ts runTextPrinter (pas ici). */
@@ -168,9 +170,10 @@ function _getPlayerTextSpeedDelay(): number {
   const sb2 = (globalThis as Record<string, unknown>).gSaveBlock2Ptr as
     { optionsTextSpeed?: number } | undefined;
   const speed = (sb2?.optionsTextSpeed ?? 1) | 0;
-  if (speed === 0) return 4;  // SLOW : ROM 8 → x2 = 4
-  if (speed === 2) return 0;  // FAST : ROM 1 → x2 = 0 (= 1 char/frame, pas instant)
-  return 2;  // MID : ROM 4 → x2 = 2 (default)
+  // 1:1 décomp menu.c:77 sTextSpeedFrameDelays = { 8, 4, 1 }.
+  if (speed === 0) return 8;  // SLOW
+  if (speed === 2) return 1;  // FAST
+  return 4;                   // MID (default)
 }
 
 export function AddTextPrinterParameterized3(

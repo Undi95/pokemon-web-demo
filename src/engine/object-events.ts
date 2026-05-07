@@ -29,7 +29,12 @@ import {
   MapGridGetCollisionAt,
 } from './map-loader';
 import { GetCameraTopLeftCoords, gTotalCamera } from './field-camera';
-import { DIR_NONE, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST, gPlayerAvatar } from './player-avatar';
+import { gPlayerAvatar } from './player-avatar';
+import {
+  DIR_NONE, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST,
+  DIR_TO_DX, DIR_TO_DY, OPPOSITE_DIR,
+} from './direction-coords';
+import { _registerGObjectEvents, _registerNpcHelpers } from './field-globals';
 
 const BASE = '/decomp/em';
 
@@ -98,9 +103,16 @@ export interface ObjectEvent {
    *  appelé quand player walk = exit interaction). */
   frozen: boolean;
   /** 1:1 décomp `objectEvent->initialCoords`. Position au spawn, utilisée
-   *  par WALK_BACK_AND_FORTH pour revenir à l'origin après une step. */
+   *  par WALK_BACK_AND_FORTH pour revenir à l'origin après une step + par
+   *  IsCoordOutsideObjectEventMovementRange pour confiner les WANDER NPCs. */
   initialCoordsX: number;
   initialCoordsY: number;
+  /** 1:1 décomp `objectEvent->range.rangeX/rangeY` (event_object_movement.c).
+   *  Movement range bounds depuis initialCoords : NPCs WANDER/WALK ne peuvent
+   *  pas walk hors `[initial - range, initial + range]`. 0 = no range = libre.
+   *  Vient du template JSON `movement_range_x/y`. */
+  movementRangeX: number;
+  movementRangeY: number;
   /** 1:1 décomp `directionSequenceIndex`. WALK_BACK_AND_FORTH : 0 = forward,
    *  1 = backward. ROTATE_* : index dans la sequence rotation. */
   directionSeqIdx: number;
@@ -131,6 +143,8 @@ export const gObjectEvents: ObjectEvent[] = Array.from({ length: OBJECT_EVENTS_C
   frozen: false,
   initialCoordsX: 0,
   initialCoordsY: 0,
+  movementRangeX: 0,
+  movementRangeY: 0,
   directionSeqIdx: 0,
 }));
 
@@ -154,7 +168,11 @@ function ShiftStillObjectEventCoords(npc: ObjectEvent): void {
   npc.previousCoordsY = npc.currentCoordsY;
 }
 
-// Expose pour collision check player (= évite circular import).
+// Phase 4.6 audit Opus §5 : register vers field-globals (= type-safe lookup).
+// gObjectEvents reste exposé sur globalThis pour back-compat avec les
+// auto-callbacks décomp générés (= castent en `any`), mais les call-sites
+// internes (player-avatar, warp-system) doivent utiliser `getGObjectEvents`.
+_registerGObjectEvents(gObjectEvents);
 (globalThis as Record<string, unknown>).__gObjectEvents = gObjectEvents;
 
 // ─── OBJ tile/palette allocation ────────────────────────────────────────────
@@ -171,6 +189,26 @@ export function resetObjectEventAllocations(): void {
   for (const npc of gObjectEvents) {
     npc.active = false;
     npc.spriteId = -1;
+  }
+}
+
+/** Phase 4.6 : libère les sprites OAM des NPCs avant un warp / map switch.
+ *  resetObjectEventAllocations seul reset l'array logique mais laisse les
+ *  sprites dans rt.gSprites et leur tileBase/paletteBank occupé → leak +
+ *  collision palette quand on re-spawn la map suivante. Cette fonction kill
+ *  proprement chaque sprite avant le reset.
+ *
+ *  À appeler AVANT resetObjectEventAllocations + SpawnObjectEventsOnMap. */
+export function destroyAllNpcSprites(rt: { gSprites: Map<number, { oamIndex: number; inUse: boolean }>; gba: { oam: Array<{ visible: boolean }> } }): void {
+  for (const npc of gObjectEvents) {
+    if (npc.active && npc.spriteId >= 0) {
+      const sprite = rt.gSprites.get(npc.spriteId);
+      if (sprite) {
+        rt.gba.oam[sprite.oamIndex].visible = false;
+        sprite.inUse = false;
+      }
+      npc.spriteId = -1;
+    }
   }
 }
 
@@ -218,14 +256,10 @@ function movementTypeToInitialFacing(movementType: string): number {
   return DIR_SOUTH;
 }
 
-// ─── Direction helpers ──────────────────────────────────────────────────────
-
-const DIR_TO_DX: Record<number, number> = {
-  [DIR_SOUTH]: 0, [DIR_NORTH]: 0, [DIR_WEST]: -1, [DIR_EAST]: 1,
-};
-const DIR_TO_DY: Record<number, number> = {
-  [DIR_SOUTH]: 1, [DIR_NORTH]: -1, [DIR_WEST]: 0, [DIR_EAST]: 0,
-};
+// ─── Direction helpers depuis direction-coords (= source unique partagée) ──
+// Avant : DIR_TO_DX/DY locaux dupliquaient la table 1:1 décomp `sDirectionToVectors`.
+// Migrate vers direction-coords.ts pour cohérence avec player-avatar +
+// script-opcodes.
 
 function pickRandomDirection(allowed: ReadonlyArray<number> = gStandardDirections): number {
   return allowed[Math.floor(Math.random() * allowed.length)];
@@ -264,9 +298,44 @@ function isOtherNpcAt(x: number, y: number, excluding: ObjectEvent): boolean {
   return false;
 }
 
+/** 1:1 décomp `sMovementTypeHasRange[]` (event_object_movement.c:307).
+ *  Returns TRUE si le movement type doit avoir un range non-nul (= NPCs qui
+ *  walk : WANDER, WALK, WALK_SEQUENCE_*). FACE/LOOK_AROUND/etc. → no range. */
+function movementTypeHasRange(movementType: string): boolean {
+  if (!movementType) return false;
+  return movementType.startsWith('MOVEMENT_TYPE_WANDER_')
+      || movementType.startsWith('MOVEMENT_TYPE_WALK_')
+      || movementType === 'MOVEMENT_TYPE_WANDER_AROUND';
+}
+
+/** 1:1 décomp `IsCoordOutsideObjectEventMovementRange(objectEvent, x, y)`
+ *  (event_object_movement.c:4689). Returns TRUE si la cible (x, y) est hors
+ *  du rectangle de movement range défini par initialCoords ± rangeX/rangeY.
+ *
+ *  Le décomp utilise ce check pour confiner les NPCs WANDER_AROUND /
+ *  WANDER_UP_AND_DOWN / WALK_X dans une zone autour de leur spawn. Sans ce
+ *  check, les NPCs drift indéfiniment (= Audit Opus §3.1 manquement).
+ *
+ *  range.rangeX/rangeY = 0 signifie "pas de range" (= NPC libre). */
+function IsCoordOutsideObjectEventMovementRange(
+  npc: ObjectEvent, x: number, y: number,
+): boolean {
+  if (npc.movementRangeX !== 0) {
+    const left = npc.initialCoordsX - npc.movementRangeX;
+    const right = npc.initialCoordsX + npc.movementRangeX;
+    if (left > x || right < x) return true;
+  }
+  if (npc.movementRangeY !== 0) {
+    const top = npc.initialCoordsY - npc.movementRangeY;
+    const bottom = npc.initialCoordsY + npc.movementRangeY;
+    if (top > y || bottom < y) return true;
+  }
+  return false;
+}
+
 /** Check si NPC peut walker en `direction` depuis sa position courante.
  *  1:1 décomp `GetCollisionInDirection` : map collision + player collision +
- *  NPC-NPC collision (= IsCoordCollidingWithObjectEvent).
+ *  NPC-NPC collision (= IsCoordCollidingWithObjectEvent) + movement range.
  *
  *  Considère la TARGET cell du player MOVING ET d'un autre NPC walking,
  *  pour éviter step-on race : si 2 entités démarrent walk vers même cell
@@ -276,6 +345,9 @@ function canWalk(npc: ObjectEvent, direction: number): boolean {
   const dy = DIR_TO_DY[direction] ?? 0;
   const targetX = npc.currentCoordsX + dx;
   const targetY = npc.currentCoordsY + dy;
+  // Phase 4.6 audit Opus §3.1 : check movement range AVANT collision (= 1:1
+  // décomp `GetCollisionAtCoords` qui retourne COLLISION_OUTSIDE_RANGE en 1er).
+  if (IsCoordOutsideObjectEventMovementRange(npc, targetX, targetY)) return false;
   const targetGBackupCol = targetX + MAP_OFFSET;
   const targetGBackupRow = targetY + MAP_OFFSET;
   if (MapGridGetCollisionAt(targetGBackupCol, targetGBackupRow) !== 0) return false;
@@ -291,6 +363,7 @@ export function UnfreezeAllNpcs(): void {
     if (npc.active) npc.frozen = false;
   }
 }
+// Phase 4.6 audit Opus §5 : back-compat globalThis + register field-globals.
 (globalThis as Record<string, unknown>).__UnfreezeAllNpcs = UnfreezeAllNpcs;
 
 // ─── Sprite frame update ────────────────────────────────────────────────────
@@ -322,6 +395,14 @@ function updateNpcSpriteFrame(rt: DecompRuntime, npc: ObjectEvent): void {
 }
 
 (globalThis as Record<string, unknown>).__updateNpcSpriteFrame = (rt: DecompRuntime, npc: ObjectEvent) => updateNpcSpriteFrame(rt, npc);
+
+// Phase 4.6 audit Opus §5 : register field-globals avec helpers type-safe.
+// Permet aux call-sites internes (player-avatar, scripts) de lookup les
+// helpers sans cast `any` via globalThis.
+_registerNpcHelpers(
+  (rt, npc) => updateNpcSpriteFrame(rt as DecompRuntime, npc as ObjectEvent),
+  UnfreezeAllNpcs,
+);
 
 // ─── Movement state machines 1:1 décomp ─────────────────────────────────────
 
@@ -420,12 +501,7 @@ const NEXT_DIR_CCW: Record<number, number> = {
   [DIR_WEST]: DIR_SOUTH,
 };
 
-const OPPOSITE_DIR: Record<number, number> = {
-  [DIR_SOUTH]: DIR_NORTH,
-  [DIR_NORTH]: DIR_SOUTH,
-  [DIR_WEST]: DIR_EAST,
-  [DIR_EAST]: DIR_WEST,
-};
+// OPPOSITE_DIR migré vers direction-coords.ts (= source unique partagée).
 
 /** 1:1 décomp `MovementType_RotateClockwise_Step*` (3726-3762) /
  *  `MovementType_RotateCounterclockwise_*` (similar).
@@ -694,6 +770,15 @@ export async function SpawnObjectEventsOnMap(rt: DecompRuntime): Promise<void> {
     npc.frozen = false;
     npc.initialCoordsX = template.x;  // 1:1 décomp objectEvent->initialCoords
     npc.initialCoordsY = template.y;
+    npc.movementRangeX = template.movementRangeX;  // 1:1 décomp objectEvent->range.rangeX
+    npc.movementRangeY = template.movementRangeY;
+    // 1:1 décomp event_object_movement.c:1323-1328 — force range = 1 si 0 et
+    // movementType ∈ sMovementTypeHasRange (= WANDER/WALK/WALK_SEQUENCE_*).
+    // Sinon NPCs WANDER avec range 0 walk free → on a vu le bug session 102.
+    if (movementTypeHasRange(npc.movementType)) {
+      if (npc.movementRangeX === 0) npc.movementRangeX = 1;
+      if (npc.movementRangeY === 0) npc.movementRangeY = 1;
+    }
     npc.directionSeqIdx = 0;
 
     const cfg = NPC_SPRITE_FRAMES[npc.facingDirection] ?? NPC_SPRITE_FRAMES[DIR_SOUTH];
@@ -740,8 +825,13 @@ export function UpdateObjectEvents(rt: DecompRuntime): void {
     }
     sprite.invisible = false;
 
+    // Phase 4.6 audit Opus 2.5 + correction signe : `- 8` compense le `+8` du
+    // BG VOFS dans FieldUpdateBgTilemapScroll. GBA hardware BG VOFS=+8 fait
+    // que BG content apparaît 8 px PLUS HAUT (= screen y = world_y - 8). Donc
+    // sprite doit aussi être rendu 8 px plus haut pour rester aligned. 1:1
+    // décomp `gSpriteCoordOffsetY = ... - 8` (field_camera.c:462).
     sprite.x = npc.worldX + offX;
-    sprite.y = npc.worldY + offY;
+    sprite.y = npc.worldY + offY - 8;
 
     // Update sprite frame chaque frame (= keeps tile + flipH en sync avec
     // facingDirection, important pour interact qui change facing instantané).

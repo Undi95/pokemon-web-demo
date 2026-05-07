@@ -31,29 +31,63 @@ export interface LoadedTilemap {
   heightPx: number;
 }
 
-/** Metatile behavior IDs utilisés pour la logique de warp/spawn (cf. décomp).
- *  Source : `include/constants/metatile_behaviors.h`.
- *  Logique : `src/metatile_behavior.c` + `src/field_control_avatar.c`. */
-export const MB_NORMAL = 0x00;
-export const MB_BATTLE_PYRAMID_WARP = 0x12;
-export const MB_MOSSDEEP_GYM_WARP = 0x13;
-export const MB_MT_PYRE_HOLE = 0x14;
-export const MB_LAVARIDGE_GYM_B1F_WARP = 0x46;
-export const MB_NON_ANIMATED_DOOR = 0x60;
-export const MB_LADDER = 0x61;
-export const MB_EAST_ARROW_WARP = 0x62;
-export const MB_WEST_ARROW_WARP = 0x63;
-export const MB_NORTH_ARROW_WARP = 0x64;
-export const MB_SOUTH_ARROW_WARP = 0x65;
-export const MB_CRACKED_FLOOR_HOLE = 0x66;
-export const MB_AQUA_HIDEOUT_WARP = 0x67;
-export const MB_LAVARIDGE_GYM_1F_WARP = 0x68;
-export const MB_ANIMATED_DOOR = 0x69;
-export const MB_UP_ESCALATOR = 0x6A;
-export const MB_DOWN_ESCALATOR = 0x6B;
-export const MB_WATER_DOOR = 0x6C;
-export const MB_WATER_SOUTH_ARROW_WARP = 0x6D;
-export const MB_DEEP_SOUTH_WARP = 0x6E;
+/** Metatile behavior IDs 1:1 décomp `include/constants/metatile_behaviors.h`.
+ *  Re-export depuis le ENUM_MB_0 auto-extrait pour garantir l'alignement avec
+ *  le décomp source (= source unique de vérité).
+ *
+ *  Note historique : avant cet alignement, ces constantes étaient hardcoded
+ *  avec valeurs hex (= MB_BATTLE_PYRAMID_WARP=0x12, etc.) qui dévivaient des
+ *  vraies valeurs de l'enum (= MB_BATTLE_PYRAMID_WARP=13). Bug latent : tile
+ *  collision incorrect pour ces metatiles. Fix audit Opus session 102. */
+import { ENUM_MB_0 } from './decomp-data/auto/include/constants/metatile_behaviors-data';
+export const MB_NORMAL                     = ENUM_MB_0.MB_NORMAL;
+export const MB_TALL_GRASS                 = ENUM_MB_0.MB_TALL_GRASS;
+export const MB_LONG_GRASS                 = ENUM_MB_0.MB_LONG_GRASS;
+export const MB_BATTLE_PYRAMID_WARP        = ENUM_MB_0.MB_BATTLE_PYRAMID_WARP;
+export const MB_MOSSDEEP_GYM_WARP          = ENUM_MB_0.MB_MOSSDEEP_GYM_WARP;
+export const MB_MT_PYRE_HOLE               = ENUM_MB_0.MB_MT_PYRE_HOLE;
+export const MB_LAVARIDGE_GYM_B1F_WARP     = ENUM_MB_0.MB_LAVARIDGE_GYM_B1F_WARP;
+// Impassable directionnels — 1:1 décomp `IsEastBlocked/IsWestBlocked/etc.`
+// (metatile_behavior.c:933-977). Bloquent quand player essaie de quitter ce
+// tile dans la dir donnée (= utilisé par IsMetatileDirectionallyImpassable
+// via gOppositeDirectionBlockedMetatileFuncs).
+export const MB_IMPASSABLE_EAST            = ENUM_MB_0.MB_IMPASSABLE_EAST;
+export const MB_IMPASSABLE_WEST            = ENUM_MB_0.MB_IMPASSABLE_WEST;
+export const MB_IMPASSABLE_NORTH           = ENUM_MB_0.MB_IMPASSABLE_NORTH;
+export const MB_IMPASSABLE_SOUTH           = ENUM_MB_0.MB_IMPASSABLE_SOUTH;
+export const MB_IMPASSABLE_NORTHEAST       = ENUM_MB_0.MB_IMPASSABLE_NORTHEAST;
+export const MB_IMPASSABLE_NORTHWEST       = ENUM_MB_0.MB_IMPASSABLE_NORTHWEST;
+export const MB_IMPASSABLE_SOUTHEAST       = ENUM_MB_0.MB_IMPASSABLE_SOUTHEAST;
+export const MB_IMPASSABLE_SOUTHWEST       = ENUM_MB_0.MB_IMPASSABLE_SOUTHWEST;
+// Ledges (= jump 1-way drop) — 1:1 décomp `IsJumpEast/IsJumpWest/etc.`
+// (metatile_behavior.c:143-173). Player saute si walks dans cette direction
+// depuis ces tiles.
+export const MB_JUMP_EAST                  = ENUM_MB_0.MB_JUMP_EAST;
+export const MB_JUMP_WEST                  = ENUM_MB_0.MB_JUMP_WEST;
+export const MB_JUMP_NORTH                 = ENUM_MB_0.MB_JUMP_NORTH;
+export const MB_JUMP_SOUTH                 = ENUM_MB_0.MB_JUMP_SOUTH;
+export const MB_JUMP_NORTHEAST             = ENUM_MB_0.MB_JUMP_NORTHEAST;
+export const MB_JUMP_NORTHWEST             = ENUM_MB_0.MB_JUMP_NORTHWEST;
+export const MB_JUMP_SOUTHEAST             = ENUM_MB_0.MB_JUMP_SOUTHEAST;
+export const MB_JUMP_SOUTHWEST             = ENUM_MB_0.MB_JUMP_SOUTHWEST;
+export const MB_NON_ANIMATED_DOOR          = ENUM_MB_0.MB_NON_ANIMATED_DOOR;
+export const MB_LADDER                     = ENUM_MB_0.MB_LADDER;
+export const MB_EAST_ARROW_WARP            = ENUM_MB_0.MB_EAST_ARROW_WARP;
+export const MB_WEST_ARROW_WARP            = ENUM_MB_0.MB_WEST_ARROW_WARP;
+export const MB_NORTH_ARROW_WARP           = ENUM_MB_0.MB_NORTH_ARROW_WARP;
+export const MB_SOUTH_ARROW_WARP           = ENUM_MB_0.MB_SOUTH_ARROW_WARP;
+export const MB_CRACKED_FLOOR_HOLE         = ENUM_MB_0.MB_CRACKED_FLOOR_HOLE;
+export const MB_AQUA_HIDEOUT_WARP          = ENUM_MB_0.MB_AQUA_HIDEOUT_WARP;
+export const MB_LAVARIDGE_GYM_1F_WARP      = ENUM_MB_0.MB_LAVARIDGE_GYM_1F_WARP;
+export const MB_ANIMATED_DOOR              = ENUM_MB_0.MB_ANIMATED_DOOR;
+export const MB_UP_ESCALATOR               = ENUM_MB_0.MB_UP_ESCALATOR;
+export const MB_DOWN_ESCALATOR             = ENUM_MB_0.MB_DOWN_ESCALATOR;
+export const MB_WATER_DOOR                 = ENUM_MB_0.MB_WATER_DOOR;
+export const MB_WATER_SOUTH_ARROW_WARP     = ENUM_MB_0.MB_WATER_SOUTH_ARROW_WARP;
+export const MB_DEEP_SOUTH_WARP            = ENUM_MB_0.MB_DEEP_SOUTH_WARP;
+export const MB_SECRET_BASE_BREAKABLE_DOOR = ENUM_MB_0.MB_SECRET_BASE_BREAKABLE_DOOR;
+export const MB_IMPASSABLE_SOUTH_AND_NORTH = ENUM_MB_0.MB_IMPASSABLE_SOUTH_AND_NORTH;
+export const MB_IMPASSABLE_WEST_AND_EAST   = ENUM_MB_0.MB_IMPASSABLE_WEST_AND_EAST;
 
 import type { Facing } from './character-anims';
 
