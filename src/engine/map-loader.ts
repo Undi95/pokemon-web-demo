@@ -49,6 +49,7 @@
 import type { DecompRuntime } from './decomp-runtime';
 import { LoadBgTiles, LoadPalette } from './decomp-globals';
 import { extractPngPlte, loadIndexedPngStrict } from './gba/png-loader';
+import { setPrimaryTilesetAnimCallback, setSecondaryTilesetAnimCallback } from './tileset-anims';
 
 // ─── Constants 1:1 décomp include/fieldmap.h ────────────────────────────────
 
@@ -92,6 +93,9 @@ export const MB_INVALID = 0xFF;
 export interface Tileset {
   isCompressed: boolean;
   isSecondary: boolean;
+  /** Tileset name (= chemin normalisé, ex: "general", "petalburg"). Extension
+   *  non-décomp pour permettre le routing des callbacks d'animation. */
+  name: string;
   /** Char data 4bpp packed (= 32 bytes par tile). Pour primary : 512 tiles
    *  = 16384 bytes. Pour secondary : 512 tiles = 16384 bytes. */
   tiles: Uint8Array;
@@ -364,6 +368,7 @@ export async function loadTileset(gname: string): Promise<Tileset> {
   const tileset: Tileset = {
     isCompressed: false, // notre PNG est déjà décompressé
     isSecondary: sub === 'secondary',
+    name: dir,
     tiles: png.charData,
     palettes,
     metatiles,
@@ -808,11 +813,21 @@ function flattenPaletteBanks(banks: Uint16Array[], startBank: number, endBank: n
   return out;
 }
 
-/** 1:1 décomp `CopyMapTilesetsToVram(mapLayout)` (fieldmap.c:925-932). */
+/** 1:1 décomp `CopyMapTilesetsToVram(mapLayout)` (fieldmap.c:925-932).
+ *
+ *  Extension : set les callbacks d'animation tileset (= 1:1 décomp tileset struct
+ *  .callback field) via setPrimary/SecondaryTilesetAnimCallback depuis tileset-anims.ts.
+ *  Le routing utilise tileset.name (= chemin normalisé, e.g. "general", "petalburg").
+ *  InitTilesetAnimations() doit être appelé APRÈS CopyMapTilesetsToVram pour que les
+ *  callbacks soient prêts. */
 export function CopyMapTilesetsToVram(mapLayout: MapLayout | null): void {
   if (!mapLayout) return;
   CopyTilesetToVram(mapLayout.primaryTileset, NUM_TILES_IN_PRIMARY, 0);
   CopyTilesetToVram(mapLayout.secondaryTileset, NUM_TILES_TOTAL - NUM_TILES_IN_PRIMARY, NUM_TILES_IN_PRIMARY);
+  // Set animation init callbacks pour InitTilesetAnimations() qui sera appelé ensuite.
+  // Import dynamique évite la dépendance circulaire (tileset-anims → map-loader).
+  setPrimaryTilesetAnimCallback(mapLayout.primaryTileset?.name ?? '');
+  setSecondaryTilesetAnimCallback(mapLayout.secondaryTileset?.name ?? '');
 }
 
 /** 1:1 décomp `LoadMapTilesetPalettes(mapLayout)` (fieldmap.c:934-941).

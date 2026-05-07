@@ -56,6 +56,7 @@ import {
   findWarpEventAt,
   setPendingWarp,
   getWarpKindFor,
+  isArrowWarpMetatileBehavior,
 } from './warp-system';
 import {
   DIR_NONE as _DIR_NONE,
@@ -555,8 +556,14 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
       const speed = dirToCameraSpeed(gPlayerAvatar.forceMovement);
       gFieldCamera.movementSpeedX = speed.x * WALK_SPEED_PX_PER_FRAME;
       gFieldCamera.movementSpeedY = speed.y * WALK_SPEED_PX_PER_FRAME;
-    }
-    if (gPlayerAvatar.runningState === MOVING && gPlayerAvatar.stepFramesLeft > 0) {
+      // CRITICAL : `else if` ci-dessous (et NON pas un 2ème `if` indépendant)
+      // pour que le dec ne s'exécute PAS sur la frame de setup. Sinon on perd
+      // 1 tick de CameraUpdate par step (= step locked tournerait sur 16
+      // CameraUpdate calls dont la dernière a speed=0 → seulement 15 ticks de
+      // speed=1 appliqués → gFieldCamera.y stuck à 15 au lieu de wrap à 0).
+      // Avec else-if, locked path = 17 frames de CameraUpdate (= match unlocked
+      // path timing), 16 ticks de speed=1, gFieldCamera.y wrap proprement à 0.
+    } else if (gPlayerAvatar.runningState === MOVING && gPlayerAvatar.stepFramesLeft > 0) {
       // Finish current step (= 1:1 décomp player can't be locked mid-step,
       // OU step forced via forceMovement qui vient de démarrer ci-dessus).
       gPlayerAvatar.stepFramesLeft--;
@@ -642,7 +649,12 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
       // → Mid-walk turn = 0 frame de turn anim, walk continu dans new dir.
       // C'est ce qui donne le feel "tournera et continuera a marcher sans pause"
       // de la GBA réelle (cf. user testing session 100).
-      const { x: nx, y: ny } = moveCoords(gPlayerAvatar.stepDirection, gPlayerAvatar.x, gPlayerAvatar.y);
+      // Capture stepDirection AVANT reset à DIR_NONE — utilisé pour
+      // `isArrowWarpMetatileBehavior(behavior, direction)` check ci-dessous.
+      // Sinon : reset → DIR_NONE → IsArrowWarpMetatileBehavior(SOUTH_ARROW, NONE)
+      // = false → walk DOWN sur carpette ne TP pas (= player bloqué).
+      const stepDirAtEnd = gPlayerAvatar.stepDirection;
+      const { x: nx, y: ny } = moveCoords(stepDirAtEnd, gPlayerAvatar.x, gPlayerAvatar.y);
       gPlayerAvatar.x = nx;
       gPlayerAvatar.y = ny;
       gPlayerAvatar.tileTransitionState = T_NOT_MOVING;
@@ -659,21 +671,32 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
       // input via `ArePlayerFieldControlsLocked` pendant la transition.
       const warp = getWarpAtPlayerPos();
       if (warp) {
-        // 1:1 décomp `IsWarpMetatileBehavior` check : le warp event matching
-        // doit aussi avoir un metatile_behavior compatible. Sinon c'est un
-        // coord event (= autre system) ou un faux match.
+        // 1:1 décomp `TryStartWarpEventScript` (field_control_avatar.c:702) +
+        // `IsWarpMetatileBehavior` (line 751) : SEULEMENT door/ladder/escalator/
+        // non_anim_door/lavaridge/aqua_hideout/mt_pyre_hole/mossdeep_gym
+        // triggent un warp INSTANT à step end. Les ARROW_WARP ne sont PAS dans
+        // cette liste → ne triggent PAS au step end.
+        //
+        // Pour ARROW_WARP, le warp se déclenche via `TryArrowWarp` AU FRAME
+        // suivant (= pre-step check au-dessus, ligne ~770), quand player est
+        // STILL ON la tile + heldDirection match arrow direction.
+        //
+        // Cas couvert : player walks DOWN onto carpet (= step end on
+        // MB_SOUTH_ARROW_WARP). Step-end check ne trigger PAS (kind='arrow' →
+        // skip). Player s'arrête sur la carpette. Pour TP, user doit ré-appuyer
+        // DOWN (= TryArrowWarp pre-step check trigger au prochain frame).
         const playerBehavior = MapGridGetMetatileBehaviorAt(
           gPlayerAvatar.x + MAP_OFFSET, gPlayerAvatar.y + MAP_OFFSET);
         const kind = getWarpKindFor(playerBehavior);
-        if (kind) {
-          console.log(`[player-avatar] stepped onto warp tile (${warp.x},${warp.y}) kind=${kind} → ${warp.destMap}#${warp.warpId}`);
+        // Skip 'arrow' kind here : géré par pre-step TryArrowWarp.
+        if (kind && kind !== 'arrow') {
+          console.log(`[player-avatar] stepped onto warp tile (${warp.x},${warp.y}) kind=${kind} stepDir=${stepDirAtEnd} → ${warp.destMap}#${warp.warpId}`);
           setPendingWarp(warp, kind);
           gPlayerAvatar.runningState = NOT_MOVING;  // freeze player
           updateSpriteFrame(rt);
           return;  // skip keypad : don't start new step
         }
-        // Sinon : warp event sans metatile warp behavior — ignore (= pas un
-        // step warp valide, peut-être un door warp à trigger via push UP).
+        // 'arrow' kind : let player land on tile, TryArrowWarp handles next frame.
       }
       // ↓ NOTE : pas de `return` — fall through au keypad logic ci-dessous.
       // Si direction held → start new step (= continuous walk).
@@ -736,6 +759,33 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
     gPlayerAvatar.turnFramesLeft = 8;  // 1:1 décomp WalkInPlaceFast duration
     updateSpriteFrame(rt);
     return;
+  }
+
+  // 1:1 décomp `TryArrowWarp` (field_control_avatar.c:688) — check BEFORE walk
+  // step. Si player on MB_*_ARROW_WARP tile + intended direction matches arrow
+  // direction → trigger warp INSTEAD of walking.
+  //
+  // Cas couvert : player on carpet faces UP, presses DOWN. Turn 8 frames done,
+  // facing now SOUTH. Sans ce check, walk step DOWN se lance → player walks
+  // off carpet → step end check trigger pas (= player no longer on warp tile).
+  // Avec ce check, warp triggers BEFORE walking, player still on carpet.
+  //
+  // Décomp note : TryArrowWarp s'exécute dans ProcessPlayerFieldInput chaque
+  // frame, AVANT le step movement. C'est ici l'équivalent.
+  {
+    const playerBehavior = MapGridGetMetatileBehaviorAt(
+      gPlayerAvatar.x + MAP_OFFSET, gPlayerAvatar.y + MAP_OFFSET);
+    if (isArrowWarpMetatileBehavior(playerBehavior, inputDir)) {
+      const warp = findWarpEventAt(gPlayerAvatar.x, gPlayerAvatar.y);
+      if (warp) {
+        console.log(`[player-avatar] TryArrowWarp at (${gPlayerAvatar.x},${gPlayerAvatar.y}) dir=${inputDir} → ${warp.destMap}#${warp.warpId}`);
+        setPendingWarp(warp, 'arrow');
+        gPlayerAvatar.facing = inputDir;
+        gPlayerAvatar.runningState = NOT_MOVING;
+        updateSpriteFrame(rt);
+        return;
+      }
+    }
   }
 
   // MOVING dispatch : facing match (= réactif) OR mid-walk turn (= continuous).
@@ -829,4 +879,14 @@ export function DestroyPlayerAvatar(rt: DecompRuntime): void {
   gPlayerAvatar.spriteId = -1;
   gPlayerAvatar.runningState = NOT_MOVING;
   gPlayerAvatar.stepFramesLeft = 0;
+}
+
+/** 1:1 décomp `SetPlayerVisibility` (field_player_avatar.c).
+ *  Utilisé par Task_ExitDoor / Task_ExitNonAnimDoor pour cacher le sprite player
+ *  pendant fade-in (= sprite respawné post-warp avec son default facing avant
+ *  que le walk-down dispatch ne prenne effet). Appelé `false` avant fade-in,
+ *  `true` après fade-in done juste avant le walk-down forceMovement. */
+export function SetPlayerVisibility(rt: DecompRuntime, visible: boolean): void {
+  if (gPlayerAvatar.spriteId < 0) return;
+  rt.setSpriteInvisible(gPlayerAvatar.spriteId, !visible);
 }

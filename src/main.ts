@@ -77,10 +77,23 @@ const config: Phaser.Types.Core.GameConfig = {
   zoom: DEFAULT_ZOOM,
   pixelArt: true,
   backgroundColor: '#000000',
-  // Phase 4.1 dev : TestOverworldScene en première position pour test natif
-  // map loader (= Bourg-en-Vol via fieldmap.c 1:1). Reviendra à TestGbaScene
-  // une fois le rendu validé.
-  scene: [TestOverworldScene, TestGbaScene, GameScene, BirchRuntimeScene, OverworldScene],
+  // Boot scene order :
+  //   - Default : TestGbaScene en 1ère position (= Lotad sprite spinning au
+  //     centre, palette + audio test). User appuie sur A → GameScene qui run
+  //     l'intro complète via CB2_InitCopyrightScreenAfterBootup :
+  //       Copyright → Anim1 → Anim2 → Anim3 → TitleScreen → MainMenu (New
+  //       Game) → Birch intro (Lotad pokeball + naming).
+  //   - `?nointro` ou `?nointro=1` : skip direct vers TestOverworldScene
+  //     (= dev shortcut pour tester l'overworld sans repasser par l'intro
+  //     à chaque refresh).
+  // Les autres scènes restent dispo via game.scene.start() dans la chain.
+  scene: (() => {
+    const skipIntro = typeof window !== 'undefined'
+      && new URLSearchParams(window.location.search).has('nointro');
+    return skipIntro
+      ? [TestOverworldScene, TestGbaScene, GameScene, BirchRuntimeScene, OverworldScene]
+      : [TestGbaScene, GameScene, BirchRuntimeScene, TestOverworldScene, OverworldScene];
+  })(),
   // Restrict input listeners to the canvas only (= clicks/keys outside the
   // game window don't start/affect the game). Default Phaser behavior is to
   // listen window-wide which interferes with the audio devtool topbar.

@@ -59,15 +59,15 @@ export class TestGbaScene extends Phaser.Scene {
     // Load assets async puis configure BG
     void this.loadAssetsAndStart();
 
-    // Inputs : 'P' = play song, 'S' = stop, vraie touche GBA = exit.
-    // Pas de click-to-exit (= éviter les exits accidentels en cliquant dans
-    // le canvas). Seul un appui sur un bouton GBA (= A/B/Start/etc. selon
-    // key bindings) déclenche le passage au GameScene.
+    // Inputs : 'P' = play song, 'S' = stop, A button = launch intro.
+    // Seul A déclenche le passage à l'intro (= BirchRuntimeScene). Les autres
+    // touches GBA (= B/Start/Direction) n'ont pas d'effet sur cette scène pour
+    // éviter les transitions accidentelles.
     this.input.keyboard?.on('keydown', (e: KeyboardEvent) => {
       const k = e.key.toLowerCase();
       if (k === 'p') { void this.playTestSong(); return; }
       if (k === 's') { stopSong(); return; }
-      if (keyToGbaMask(e.key) !== 0) {
+      if (keyToGbaMask(e.key) === 0x01 /* A_BUTTON */) {
         this.exit();
       }
     });
@@ -217,7 +217,12 @@ export class TestGbaScene extends Phaser.Scene {
     this.exiting = true;
     stopSong();
     this.bridge?.destroy();
-    // Phase 0c+ : direct boot into GameScene (copyright is now native in decomp boot loop).
+    // Lance l'intro complète : GameScene init Gba + DecompRuntime + audio →
+    // SetMainCallback2(CB2_InitCopyrightScreenAfterBootup) → tickFixed 60Hz fait
+    // dérouler toute la chaîne CB2/Task décomp native :
+    //   Copyright → Anim1 → Anim2 → Anim3 → TitleScreen → MainMenu (New Game)
+    //   → Birch intro (Lotad pokeball release + naming screen).
+    // TestGbaScene sert de launcher : Lotad sprite affiché → user appuie A → tout démarre.
     this.scene.start('GameScene');
   }
 }

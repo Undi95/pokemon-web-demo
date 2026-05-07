@@ -41,6 +41,7 @@ import {
   NUM_METATILES_IN_PRIMARY,
   NUM_METATILES_TOTAL,
   NUM_TILES_PER_METATILE,
+  METATILE_LAYER_TYPE_COVERED,
   gMapHeader,
 } from './map-loader';
 import {
@@ -333,6 +334,25 @@ export function CurrentMapDrawMetatileAt(camX: number, camY: number, x: number, 
   const offset = MapPosToBgTilemapOffset(camX, camY, x, y);
   if (offset >= 0) {
     DrawMetatileAt(gMapHeader.mapLayout, offset, x, y);
+    sFieldCameraOffset.copyBGToVRAM = true;
+  }
+}
+
+/** 1:1 décomp `DrawDoorMetatileAt(x, y, tiles)` (field_camera.c:215-224).
+ *  Dessine un metatile avec layerType=COVERED (= bottom layer = door tiles,
+ *  top layer = transparent over). Utilisé par field-door.ts pour patcher
+ *  le tilemap pendant l'animation de porte.
+ *
+ *  @param camX/camY  Camera focus position en map coords.
+ *  @param x/y        Position du metatile à dessiner (= map coords).
+ *  @param tiles      8 u16 BG tilemap entries (= sortie de BuildDoorTiles).
+ *                    [0..3] = bottom layer (door tiles), [4..7] = top layer (= 0). */
+export function DrawDoorMetatileAt(
+  camX: number, camY: number, x: number, y: number, tiles: Uint16Array,
+): void {
+  const offset = MapPosToBgTilemapOffset(camX, camY, x, y);
+  if (offset >= 0) {
+    DrawMetatile(METATILE_LAYER_TYPE_COVERED, tiles, 0, offset);
     sFieldCameraOffset.copyBGToVRAM = true;
   }
 }
