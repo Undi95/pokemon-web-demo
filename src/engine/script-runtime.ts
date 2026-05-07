@@ -1,0 +1,400 @@
+/**
+ * script-runtime.ts — overworld script engine 1:1 décomp.
+ *
+ * Source de vérité : `D:/Projet 1/decomps/pokeemeraude/src/script.c` (= 1:1).
+ *
+ * Pokemon Emerald scripts = bytecode. Chaque opcode = 1 byte + args. Notre
+ * version : opcodes pré-extraits par map en JSON (= `/decomp/em/scripts/`),
+ * format `"opname arg1, arg2, ..."` per opcode. On parse ces strings comme
+ * "instructions haut-niveau" — équivalent fonctionnel du bytecode décomp.
+ *
+ * Architecture 1:1 décomp :
+ *   - 2 contexts : `sGlobalScriptContext` (= peut wait, used pour NPC dialog)
+ *     + `sImmediateScriptContext` (= synchronous, pour OnTransition / OnLoad).
+ *   - 3 modes : STOPPED / BYTECODE / NATIVE (= polling C function).
+ *   - 3 statuts globaux : RUNNING / WAITING / SHUTDOWN.
+ *
+ * Public API :
+ *   - ScriptContext_SetupScript(label) : démarre un script dans le global ctx
+ *   - ScriptContext_RunScript() : tick une fois ; appelé chaque frame
+ *   - ScriptContext_Stop() / ScriptContext_Enable() : pause/resume
+ *   - RunScriptImmediately(label) : run synchronous
+ *   - LockPlayerFieldControls() / UnlockPlayerFieldControls() : freeze input
+ *   - ArePlayerFieldControlsLocked() : pour PlayerStep skip input
+ *   - loadMapScripts(mapName) : fetch + parse JSON scripts d'une map
+ */
+
+// ─── Constants 1:1 décomp ────────────────────────────────────────────────────
+
+export const SCRIPT_MODE_STOPPED  = 0;
+export const SCRIPT_MODE_BYTECODE = 1;
+export const SCRIPT_MODE_NATIVE   = 2;
+
+export const CONTEXT_RUNNING  = 0;
+export const CONTEXT_WAITING  = 1;
+export const CONTEXT_SHUTDOWN = 2;
+
+const STACK_DEPTH = 20;
+const CTX_DATA_SIZE = 4;
+
+// ─── Types ───────────────────────────────────────────────────────────────────
+
+/** Une opcode parsed (= "msgbox X, MSGBOX_NPC" → { name: 'msgbox', args: ['X', 'MSGBOX_NPC'] }). */
+export interface Opcode {
+  name: string;
+  args: string[];
+}
+
+export interface ScriptContext {
+  mode: number;
+  /** Pointer "courant" dans le script : reference à un script (= array d'opcodes)
+   *  + offset (= index opcode courant). Combiné = équivalent `scriptPtr` décomp. */
+  scriptOpcodes: Opcode[] | null;
+  scriptIdx: number;
+  /** Stack pour call/return. Chaque entrée = (opcodes ref, index). */
+  stack: Array<{ opcodes: Opcode[]; idx: number } | null>;
+  stackDepth: number;
+  /** ctx->data[i] (= 4 entries). Used par msgbox pour stocker text label, etc. */
+  data: number[];
+  /** Pour SCRIPT_MODE_NATIVE : polling fn. Returns TRUE → revient en BYTECODE. */
+  nativeFn: (() => boolean) | null;
+  /** ctx->comparisonResult : LESS_THAN/EQUAL/GREATER_THAN après `compare`. */
+  comparisonResult: number;
+}
+
+function createContext(): ScriptContext {
+  return {
+    mode: SCRIPT_MODE_STOPPED,
+    scriptOpcodes: null,
+    scriptIdx: 0,
+    stack: Array.from({ length: STACK_DEPTH }, () => null),
+    stackDepth: 0,
+    data: new Array(CTX_DATA_SIZE).fill(0),
+    nativeFn: null,
+    comparisonResult: 0,
+  };
+}
+
+// ─── Module state ────────────────────────────────────────────────────────────
+
+const sGlobalScriptContext = createContext();
+const sImmediateScriptContext = createContext();
+let sGlobalScriptContextStatus = CONTEXT_SHUTDOWN;
+let sLockFieldControls = false;
+
+// Script library : labels → array of opcodes. Loaded au map switch.
+let _scriptsByLabel: Map<string, Opcode[]> = new Map();
+// Texts library : label → raw text string.
+let _textsByLabel: Map<string, string> = new Map();
+// Movements library : extracted comme "scripts" dans le JSON, mais ce sont des
+// movement label sequences. Stockés ensemble pour simplicité ; runtime distingue.
+// e.g. "LittlerootTown_Movement_PlayerEnterHouse" → ["walk_up", "walk_up", "step_end"].
+let _movementsByLabel: Map<string, string[]> = new Map();
+
+// ─── Map script JSON loader ──────────────────────────────────────────────────
+
+/** Format JSON d'une map :
+ *    { scripts: { label: [opcodeStr, ...], ... }, texts: { label: rawText, ... } }
+ *  Les "scripts" peuvent être en fait des movement sequences (= strings comme
+ *  "walk_up", "face_down", "step_end") plutôt que des opcodes. On classe par
+ *  contenu : si toutes les entries sont des single-word strings sans args et
+ *  finissent par "step_end", c'est un movement. */
+interface MapScriptsJson {
+  scripts: Record<string, string[]>;
+  texts: Record<string, string>;
+}
+
+function classifyAsMovement(lines: string[]): boolean {
+  if (lines.length === 0) return false;
+  const last = lines[lines.length - 1].trim();
+  if (last !== 'step_end' && last !== 'face_default' && last !== 'walk_in_place_down')
+    return false;
+  // Movement actions sont single-word ou avec un nombre (= delay_8, delay_16).
+  // Opcodes ont typiquement des args avec virgules ou underscores plus complexes.
+  for (const line of lines) {
+    const trimmed = line.trim();
+    // Opcode key reconnaissable : présence de virgule = args multiples.
+    if (trimmed.includes(',')) return false;
+    // Opcode key : commence par "msgbox", "lock", "release", "goto", etc.
+    if (/^(msgbox|lockall|releaseall|lock|release|faceplayer|message|waitmessage|closemessage|waitbuttonpress|setvar|setflag|clearflag|checkflag|compare|goto_if|call_if|gotostd|callstd|goto|call|return|end|delay|special|waitstate|playse|playfanfare|waitfanfare|opendoor|closedoor|waitdooranim|setobjectxy|setobjectxyperm|setobjectmovementtype|addobject|removeobject|hideobject|showobject|warp|warpsilent|signpost|applymovement|waitmovement|copyvar|setflag|setdooropen|checkplayergender|playmoncry|loadword|loadbyte|setptr|map_script|map_script_2|hideplayer|showpalettefade|fadeoutbgm|fadeinbgm|releaseobjectevent|moveobjectoffscreen)\b/.test(trimmed))
+      return false;
+  }
+  return true;
+}
+
+/** Parse une opcode line : "name arg1, arg2, arg3" → {name, args}. */
+export function parseOpcode(line: string): Opcode {
+  const trimmed = line.trim();
+  if (trimmed.length === 0) return { name: '', args: [] };
+  const spaceIdx = trimmed.indexOf(' ');
+  if (spaceIdx === -1) return { name: trimmed, args: [] };
+  const name = trimmed.slice(0, spaceIdx);
+  const argsStr = trimmed.slice(spaceIdx + 1);
+  const args = argsStr.split(',').map((s) => s.trim()).filter((s) => s.length > 0);
+  return { name, args };
+}
+
+/** Charge les scripts d'une map depuis le JSON pré-extrait. */
+export async function loadMapScripts(mapName: string): Promise<void> {
+  const url = `/decomp/em/scripts/${mapName}.json`;
+  let json: MapScriptsJson;
+  try {
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    json = await r.json();
+  } catch (e) {
+    console.warn(`[script-runtime] loadMapScripts(${mapName}) failed:`, e);
+    return;
+  }
+
+  _scriptsByLabel = new Map();
+  _textsByLabel = new Map();
+  _movementsByLabel = new Map();
+
+  let scriptCount = 0;
+  let movementCount = 0;
+  for (const [label, lines] of Object.entries(json.scripts)) {
+    if (classifyAsMovement(lines)) {
+      _movementsByLabel.set(label, lines);
+      movementCount++;
+    } else {
+      _scriptsByLabel.set(label, lines.map(parseOpcode));
+      scriptCount++;
+    }
+  }
+  for (const [label, raw] of Object.entries(json.texts)) {
+    _textsByLabel.set(label, raw);
+  }
+  console.log(`[script-runtime] loaded ${scriptCount} scripts + ${movementCount} movements + ${_textsByLabel.size} texts for ${mapName}`);
+}
+
+export function getScript(label: string): Opcode[] | undefined {
+  return _scriptsByLabel.get(label);
+}
+export function getText(label: string): string | undefined {
+  return _textsByLabel.get(label);
+}
+export function getMovement(label: string): string[] | undefined {
+  return _movementsByLabel.get(label);
+}
+
+// ─── Lock / Unlock 1:1 décomp ────────────────────────────────────────────────
+
+export function LockPlayerFieldControls(): void {
+  sLockFieldControls = true;
+}
+
+export function UnlockPlayerFieldControls(): void {
+  sLockFieldControls = false;
+}
+
+export function ArePlayerFieldControlsLocked(): boolean {
+  return sLockFieldControls;
+}
+
+// ─── Context primitives 1:1 décomp ───────────────────────────────────────────
+
+export function InitScriptContext(ctx: ScriptContext): void {
+  ctx.mode = SCRIPT_MODE_STOPPED;
+  ctx.scriptOpcodes = null;
+  ctx.scriptIdx = 0;
+  ctx.nativeFn = null;
+  ctx.stackDepth = 0;
+  ctx.comparisonResult = 0;
+  for (let i = 0; i < CTX_DATA_SIZE; i++) ctx.data[i] = 0;
+  for (let i = 0; i < STACK_DEPTH; i++) ctx.stack[i] = null;
+}
+
+export function SetupBytecodeScript(ctx: ScriptContext, opcodes: Opcode[]): boolean {
+  ctx.scriptOpcodes = opcodes;
+  ctx.scriptIdx = 0;
+  ctx.mode = SCRIPT_MODE_BYTECODE;
+  return true;
+}
+
+export function SetupNativeScript(ctx: ScriptContext, fn: () => boolean): void {
+  ctx.mode = SCRIPT_MODE_NATIVE;
+  ctx.nativeFn = fn;
+}
+
+export function StopScript(ctx: ScriptContext): void {
+  ctx.mode = SCRIPT_MODE_STOPPED;
+  ctx.scriptOpcodes = null;
+}
+
+export function ScriptJump(ctx: ScriptContext, opcodes: Opcode[]): void {
+  ctx.scriptOpcodes = opcodes;
+  ctx.scriptIdx = 0;
+}
+
+export function ScriptCall(ctx: ScriptContext, opcodes: Opcode[]): void {
+  // Push current position.
+  if (ctx.stackDepth + 1 >= STACK_DEPTH) {
+    console.warn('[script-runtime] stack overflow on call');
+    return;
+  }
+  ctx.stack[ctx.stackDepth] = { opcodes: ctx.scriptOpcodes ?? [], idx: ctx.scriptIdx };
+  ctx.stackDepth++;
+  ctx.scriptOpcodes = opcodes;
+  ctx.scriptIdx = 0;
+}
+
+export function ScriptReturn(ctx: ScriptContext): void {
+  if (ctx.stackDepth === 0) {
+    // 1:1 décomp : ScriptPop returns NULL → ctx->scriptPtr = NULL → mode = STOPPED.
+    ctx.scriptOpcodes = null;
+    return;
+  }
+  ctx.stackDepth--;
+  const top = ctx.stack[ctx.stackDepth];
+  if (top) {
+    ctx.scriptOpcodes = top.opcodes;
+    ctx.scriptIdx = top.idx;
+  } else {
+    ctx.scriptOpcodes = null;
+  }
+}
+
+// ─── Opcode handler registry ─────────────────────────────────────────────────
+
+/** Handler signature : returns
+ *    true  → wait (= ScriptContext_Stop, defer to next frame)
+ *    false → continue (= advance to next opcode)
+ *  Le throw "STOP" peut être utilisé pour terminer le script. */
+export type OpcodeHandler = (ctx: ScriptContext, args: string[]) => boolean;
+
+const _handlers: Map<string, OpcodeHandler> = new Map();
+
+export function registerOpcode(name: string, handler: OpcodeHandler): void {
+  _handlers.set(name, handler);
+}
+
+/** Lookup handler. Si pas trouvé : warn une fois, then noop. */
+const _warnedMissing = new Set<string>();
+function dispatchOpcode(ctx: ScriptContext, op: Opcode): boolean {
+  const handler = _handlers.get(op.name);
+  if (!handler) {
+    if (!_warnedMissing.has(op.name)) {
+      console.warn(`[script-runtime] opcode '${op.name}' not implemented (args: ${op.args.join(', ')}) — skipping`);
+      _warnedMissing.add(op.name);
+    }
+    return false;  // continue
+  }
+  return handler(ctx, op.args);
+}
+
+// ─── Run loop 1:1 décomp ─────────────────────────────────────────────────────
+
+/** 1:1 décomp `RunScriptCommand(ctx)`. Returns FALSE quand script done.
+ *  Tick :
+ *   - STOPPED : returns FALSE
+ *   - NATIVE  : poll nativeFn ; si TRUE, switch en BYTECODE ; returns TRUE
+ *   - BYTECODE : loop opcodes jusqu'à wait OR end. */
+export function RunScriptCommand(ctx: ScriptContext): boolean {
+  if (ctx.mode === SCRIPT_MODE_STOPPED) return false;
+  if (ctx.mode === SCRIPT_MODE_NATIVE) {
+    if (ctx.nativeFn) {
+      if (ctx.nativeFn() === true) {
+        ctx.mode = SCRIPT_MODE_BYTECODE;
+      }
+      return true;  // wait
+    }
+    ctx.mode = SCRIPT_MODE_BYTECODE;
+    // fallthrough
+  }
+  // BYTECODE : loop until wait or end
+  // Safety : cap iterations pour éviter infinite loop si bug dans script.
+  for (let iter = 0; iter < 10000; iter++) {
+    if (!ctx.scriptOpcodes) {
+      ctx.mode = SCRIPT_MODE_STOPPED;
+      return false;
+    }
+    if (ctx.scriptIdx >= ctx.scriptOpcodes.length) {
+      // Fall off the end (= no explicit end opcode). Stop.
+      ctx.mode = SCRIPT_MODE_STOPPED;
+      return false;
+    }
+    const op = ctx.scriptOpcodes[ctx.scriptIdx];
+    ctx.scriptIdx++;
+    const wait = dispatchOpcode(ctx, op);
+    if (wait) return true;
+    // Si dispatchOpcode a set mode = STOPPED (= via end opcode), bail.
+    if (ctx.mode === SCRIPT_MODE_STOPPED) return false;
+  }
+  console.warn('[script-runtime] iteration cap hit (10000) — runaway script?');
+  ctx.mode = SCRIPT_MODE_STOPPED;
+  return false;
+}
+
+// ─── ScriptContext_* (= primary global ctx avec wait support) ────────────────
+
+export function ScriptContext_IsEnabled(): boolean {
+  return sGlobalScriptContextStatus === CONTEXT_RUNNING;
+}
+
+export function ScriptContext_Init(): void {
+  InitScriptContext(sGlobalScriptContext);
+  sGlobalScriptContextStatus = CONTEXT_SHUTDOWN;
+}
+
+export function ScriptContext_RunScript(): boolean {
+  if (sGlobalScriptContextStatus === CONTEXT_SHUTDOWN) return false;
+  if (sGlobalScriptContextStatus === CONTEXT_WAITING) return false;
+  LockPlayerFieldControls();
+  if (!RunScriptCommand(sGlobalScriptContext)) {
+    sGlobalScriptContextStatus = CONTEXT_SHUTDOWN;
+    UnlockPlayerFieldControls();
+    return false;
+  }
+  return true;
+}
+
+/** 1:1 décomp `ScriptContext_SetupScript(const u8 *ptr)`. */
+export function ScriptContext_SetupScript(label: string): boolean {
+  const opcodes = _scriptsByLabel.get(label);
+  if (!opcodes) {
+    console.warn(`[script-runtime] script '${label}' not found`);
+    return false;
+  }
+  InitScriptContext(sGlobalScriptContext);
+  SetupBytecodeScript(sGlobalScriptContext, opcodes);
+  LockPlayerFieldControls();
+  sGlobalScriptContextStatus = CONTEXT_RUNNING;
+  console.log(`[script-runtime] starting script '${label}' (${opcodes.length} opcodes)`);
+  return true;
+}
+
+export function ScriptContext_Stop(): void {
+  sGlobalScriptContextStatus = CONTEXT_WAITING;
+}
+
+export function ScriptContext_Enable(): void {
+  sGlobalScriptContextStatus = CONTEXT_RUNNING;
+  LockPlayerFieldControls();
+}
+
+/** 1:1 décomp `RunScriptImmediately(const u8 *ptr)`. Run synchronous (=
+ *  utilisé par OnTransition / OnLoad / OnWarp). */
+export function RunScriptImmediately(label: string): void {
+  const opcodes = _scriptsByLabel.get(label);
+  if (!opcodes) {
+    console.warn(`[script-runtime] RunScriptImmediately: script '${label}' not found`);
+    return;
+  }
+  InitScriptContext(sImmediateScriptContext);
+  SetupBytecodeScript(sImmediateScriptContext, opcodes);
+  // Cap iterations pour éviter infinite loop.
+  for (let i = 0; i < 100; i++) {
+    if (!RunScriptCommand(sImmediateScriptContext)) return;
+  }
+  console.warn(`[script-runtime] RunScriptImmediately(${label}) didn't terminate after 100 ticks`);
+}
+
+// ─── Expose pour debug ───────────────────────────────────────────────────────
+
+(globalThis as Record<string, unknown>).__scriptRuntime = {
+  sGlobalScriptContext,
+  status: () => sGlobalScriptContextStatus,
+  scripts: _scriptsByLabel,
+  texts: _textsByLabel,
+};

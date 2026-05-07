@@ -46,6 +46,30 @@ interface BgLayerData {
 // Réinitialisés au besoin dans composeFrame.
 const _scanlineBufsCache: Uint8ClampedArray[] = [];
 const _tileCachesCache: ReturnType<typeof createTileCache>[] = [];
+
+/** Invalide les tiles décodées en cache pour un BG donné (= range tileIds).
+ *  À call après une écriture VRAM (= fillBgTilemap, copyPixelBufferToVram pour
+ *  les windows). Sans ce clear, le BG renderer affiche le contenu STALE du
+ *  cache (= tile rendered avant l'écriture VRAM).
+ *
+ *  La key du tileCache combine tileId + flipH<<10 + flipV<<11 + paletteMode<<12.
+ *  On clear les 8 combinations possibles par tileId. */
+export function invalidateBgTileCache(bgIdx: number, baseTileId: number, count: number): void {
+  const cache = _tileCachesCache[bgIdx];
+  if (!cache) return;
+  for (let t = 0; t < count; t++) {
+    const tileId = baseTileId + t;
+    // 8 combinations : flipH × flipV × paletteMode (4bpp/8bpp).
+    for (let mode = 0; mode < 2; mode++) {
+      for (let fH = 0; fH < 2; fH++) {
+        for (let fV = 0; fV < 2; fV++) {
+          const key = tileId | (fH << 10) | (fV << 11) | (mode << 12);
+          cache.delete(key);
+        }
+      }
+    }
+  }
+}
 const _oamPriorityBufsCache: Uint8ClampedArray[] = [
   new Uint8ClampedArray(SCREEN_W * 4),
   new Uint8ClampedArray(SCREEN_W * 4),
@@ -111,6 +135,14 @@ export function composeFrame(
   // Clear OAM tile cache au début de chaque frame (= objVram peut changer
   // entre frames, ex. player walk animation cycle change tileId).
   _oamTileCache.clear();
+
+  // Clear BG tile caches au début de chaque frame également (= bg.vram peut
+  // changer entre frames via LZ77UnCompVram, CpuCopy16, DmaCopy16, etc.).
+  // Garde l'optim cache cross-scanline (= 30 tiles décodés une fois pour 160
+  // scanlines). Perd l'optim cross-frame mais évite stale cache dans intro,
+  // scene transitions, et tout VRAM write non-tracké. Tradeoff : ~0.5ms/frame
+  // au pire (= 240 décodes max × 3 BG = 720 décodes/frame). Bug a0a6aff2 fix.
+  for (const cache of _tileCachesCache) cache.clear();
 
   // Build sorted OAM indices by Y ascending (= highest y rendered last = on
   // top). Tie-break par OAM idx descending (= sprite 0 wins for same y).

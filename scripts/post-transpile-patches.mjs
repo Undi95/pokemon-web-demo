@@ -34,8 +34,47 @@ function patchIntroCallbacks() {
     s = s.replace(`} from '../../intro-data';`, `} from '../../intro-data';${dataFlatImport}`);
   }
 
+  // PATCH 1b.0 : Le main transpiler auto-importe maintenant depuis decomp-globals
+  // (= cf. scan dynamic des exports). Mais il n'a PAS l'alias `getRuntime as _getRuntime`
+  // dont PATCH 4 a besoin. On injecte juste cet alias dans le block existant.
+  if (s.includes(`from '../../../decomp-globals'`) && !s.includes('getRuntime as _getRuntime')) {
+    s = s.replace(
+      /(import\s*\{)([\s\S]*?)(\}\s*from\s*'\.\.\/\.\.\/\.\.\/decomp-globals')/,
+      (_, open, body, close) => {
+        // Strip trailing whitespace + comma to avoid `,,` après merge.
+        const cleanBody = body.replace(/[\s,]+$/, '');
+        return `${open}${cleanBody},\n  getRuntime as _getRuntime,\n${close}`;
+      },
+    );
+  }
+
+  // PATCH 1b.1 : EWRAM_DATA vars MUTABLES locales au scope module.
+  // Le décomp src/intro.c + intro_credits_graphics.c les utilise en read+write.
+  // En ES modules, on ne peut PAS muter un import binding (= "Assignment to
+  // constant variable"). Solution : déclarer ces vars LOCALEMENT au file,
+  // shadow les `export let` de decomp-globals. À chaque var ajoutée à
+  // _mutableGlobals dans decomp-globals.ts, l'ajouter ici aussi (= future-proof).
+  const ewramLocals = [
+    'sIntroCharacterGender',
+    'sFlygonYOffset',
+    'gIntroCredits_MovingSceneryVBase',
+    'gIntroCredits_MovingSceneryVOffset',
+    'gIntroCredits_MovingSceneryState',
+    // Add more here as discovered. Pattern : si le code auto fait `X = ...` et
+    // X est `export let X` dans decomp-globals → ajouter X ici.
+  ];
+  // Insert after the last import (= `} from '...';` followed by newlines).
+  // Skip if already injected.
+  if (!s.includes('// EWRAM_DATA vars locales au scope module')) {
+    const reLastImport = /(\}\s*from\s*['"][^'"]+['"];\s*\n)(?![\s\S]*\}\s*from)/;
+    const localsBlock = `\n// EWRAM_DATA vars locales au scope module (1:1 décomp .c + shadow ES module\n// const binding pour permettre re-assignment). Auto-injecté par post-transpile-patches.mjs.\n${ewramLocals.map(v => `let ${v} = 0;`).join('\n')}\n`;
+    if (reLastImport.test(s)) {
+      s = s.replace(reLastImport, (m) => m + localsBlock);
+    }
+  }
+
   // PATCH 1b : Inject decomp-globals import block après l'import depuis intro-data.
-  // Skip si déjà appliqué.
+  // Skip si déjà appliqué (= legacy path quand le transpiler n'auto-importait pas).
   if (!s.includes(`from '../../../decomp-globals'`)) {
     const importMarker = `} from '../../intro-data';`;
     if (s.includes(importMarker)) {
@@ -198,6 +237,16 @@ let gIntroCredits_MovingSceneryState = 0;
     /SetOamMatrix\(rt\.gba, d \+ 2, c \+ 32, 0, 0, 2 \(c \+ 32\)\);/g,
     'SetOamMatrix(rt.gba, d + 2, c + 32, 0, 0, 2 * (c + 32));',
   );
+
+  // PATCH 6 : MainCB2_EndIntro (= static void dans intro.c → filtré par transpiler).
+  // Référencé par Task_EndIntroMovie (cb2Transitions) et copyright-boot.ts (import).
+  // Source 1:1 décomp src/intro.c:1054 :
+  //   static void MainCB2_EndIntro(void) {
+  //     if (!UpdatePaletteFade()) SetMainCallback2(CB2_InitTitleScreen);
+  //   }
+  if (!s.includes('export const MainCB2_EndIntro')) {
+    s = s.trimEnd() + `\n\n/** Source: intro.c:1054 → MainCB2_EndIntro (= static dans décomp donc\n *  filtré par transpile-callbacks.mjs ; ré-injecté manuellement ici).\n *  1:1 décomp : if !UpdatePaletteFade() SetMainCallback2(CB2_InitTitleScreen). */\nexport const MainCB2_EndIntro: CB2Callback = (rt) => {\n  if (!rt.UpdatePaletteFade()) {\n    rt.SetMainCallback2(CB2_InitTitleScreen);\n  }\n};\n`;
+  }
 
   if (s !== before) {
     fs.writeFileSync(FILE, s, 'utf8');

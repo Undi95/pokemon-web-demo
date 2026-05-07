@@ -205,6 +205,9 @@ export function LZ77UnCompVram(srcSymbol: string, destAddr: number): void {
     vram.set(bytes.subarray(0, copySize), offset);
     traceEntry.copied = copySize;
     traceEntry.reason = `vram[0x${offset.toString(16)}..0x${(offset + copySize).toString(16)}]`;
+    // Note : tile cache invalidation handled centrally par compositor's
+    // _tileCachesCache.clear() au début de chaque frame (cf. composeFrame).
+    // Couvre TOUS les VRAM writers (LZ77, CpuCopy, DmaCopy, etc.) sans hook.
   } else {
     traceEntry.reason = `dest 0x${offset.toString(16)} out of VRAM range, no-op`;
   }
@@ -254,6 +257,7 @@ export function LoadBgTiles(bg: number, src: Uint8Array, sizeBytes: number, dest
   const offset = destOffset * 32; // each tile = 32 bytes in 4bpp
   const end = Math.min(offset + sizeBytes, vram.length);
   vram.set(src.subarray(0, end - offset), offset);
+  // Note : tile cache invalidation handled par compositor's per-frame clear.
 }
 
 /** 1:1 décomp `DmaClear16(channel, dest, size)` — clear memory via DMA.
@@ -714,6 +718,48 @@ export function m4aSongNumStart(songId: number, loop: boolean = false): void {
 export function m4aMPlayAllStop(): void {
   void import('./m4a/player').then(({ stopAllSongs }) => stopAllSongs());
 }
+
+/** 1:1 décomp `PlayBGM(songNum)` (sound.c:563) :
+ *    if (gDisableMusic) songNum = 0;
+ *    if (songNum == MUS_NONE) songNum = 0;
+ *    m4aSongNumStart(songNum);
+ *
+ *  Wrapper qui dispatch vers notre m4aSongNumStart (= slot bgm via M4A engine
+ *  custom). Avant ce wrapper, les `PlayBGM(MUS_X)` des auto-callbacks tombaient
+ *  en undefined → BGM silence partout dans menus. */
+const MUS_NONE = 0;
+let _gDisableMusic = false;
+export function PlayBGM(songNum: number): void {
+  if (_gDisableMusic) songNum = 0;
+  if (songNum === MUS_NONE) songNum = 0;
+  m4aSongNumStart(songNum);
+}
+
+/** 1:1 décomp `gDisableMusic` accessor (= utilisé par option menu). */
+export function setDisableMusic(v: boolean): void { _gDisableMusic = v; }
+export function getDisableMusic(): boolean { return _gDisableMusic; }
+
+/** 1:1 décomp `PlayFanfare(songNum)` (sound.c) — joue un fanfare court (level
+ *  up, item obtained, etc.). Décomp utilise un slot dédié `gMPlayInfo_BGM` mais
+ *  avec auto-fade BGM pendant le fanfare puis resume. Pour MVP : juste m4a play
+ *  sur le slot bgm (= override BGM, comme le décomp final fait). */
+export function PlayFanfare(songNum: number): void {
+  m4aSongNumStart(songNum);
+}
+
+/** 1:1 décomp `PlayFanfareByFanfareNum` — alias avec id différent (= identique). */
+export function PlayFanfareByFanfareNum(num: number): void { PlayFanfare(num); }
+
+/** 1:1 décomp `IsFanfareTaskInactive` — true si pas de fanfare actif.
+ *  MVP : retourne true (= pas de tracking d'état). Phase audio ultérieure
+ *  ajoutera un proper Task pour gérer le fade BGM. */
+export function IsFanfareTaskInactive(): boolean { return true; }
+
+/** 1:1 décomp `WaitFanfare` — task qui attend la fin du fanfare. MVP no-op. */
+export function WaitFanfare(): boolean { return true; }
+
+/** 1:1 décomp `StopFanfare` — stoppe le fanfare en cours. MVP : stop bgm slot. */
+export function StopFanfare(): void { _staticStopSong('bgm'); }
 
 /** Pause la BGM courante sans la détruire. resumeBgm() reprend depuis la pause.
  *  Cf. devtool Play/Pause toggle. À ne PAS confondre avec m4aMPlayAllStop qui

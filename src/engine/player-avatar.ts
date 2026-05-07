@@ -44,6 +44,11 @@ import {
   SetCameraTopLeftCoords,
   GetCameraTopLeftCoords,
 } from './field-camera';
+import {
+  ArePlayerFieldControlsLocked,
+  ScriptContext_SetupScript,
+} from './script-runtime';
+import { gSelectedObjectEvent, gSpecialVar } from './script-vars';
 
 // ─── Constants 1:1 décomp ────────────────────────────────────────────────────
 
@@ -344,8 +349,18 @@ function moveCoords(direction: number, x: number, y: number): { x: number; y: nu
   return { x: x + (DIR_TO_DX[direction] ?? 0), y: y + (DIR_TO_DY[direction] ?? 0) };
 }
 
-/** Phase 4.4.d : check map collision + NPC collision.
- *  1:1 décomp `CheckForPlayerAvatarCollision` (field_player_avatar.c:654).
+/** Phase 4.4.d/g : check map collision + NPC collision.
+ *  1:1 décomp `CheckForPlayerAvatarCollision` (field_player_avatar.c:654) qui
+ *  appelle `GetCollisionAtCoords` → `DoesObjectCollideWithObjectAt`
+ *  (event_object_movement.c:4724) :
+ *
+ *    for npc in gObjectEvents:
+ *      if active && npc != self:
+ *        if currentCoords == (x,y) || previousCoords == (x,y): return TRUE
+ *
+ *  Pendant un walk, currentCoords = TARGET et previousCoords = SOURCE → les 2
+ *  cells sont bloquées simultanément. Empêche step-on race entre player et NPC.
+ *
  *  Returns COLLISION_NONE (0), COLLISION_IMPASSABLE (2), ou
  *  COLLISION_OBJECT_EVENT (5) si NPC bloque le passage. */
 function checkPlayerCollision(direction: number): number {
@@ -353,16 +368,18 @@ function checkPlayerCollision(direction: number): number {
   // Map collision (= wall/water/ledge).
   const collision = MapGridGetCollisionAt(dx + MAP_OFFSET, dy + MAP_OFFSET);
   if (collision > 0) return 2; // COLLISION_IMPASSABLE
-  // NPC collision : check si target tile occupé par un NPC actif.
-  // Lookup dynamique via globalThis pour éviter circular import object-events ↔ player-avatar.
+  // NPC collision via globalThis (= évite circular import object-events ↔ player-avatar).
   const gObjectEvents = (globalThis as Record<string, unknown>).__gObjectEvents as
-    Array<{ active: boolean; currentCoordsX: number; currentCoordsY: number }> | undefined;
+    Array<{
+      active: boolean; invisible: boolean;
+      currentCoordsX: number; currentCoordsY: number;
+      previousCoordsX: number; previousCoordsY: number;
+    }> | undefined;
   if (gObjectEvents) {
     for (const npc of gObjectEvents) {
-      if (!npc.active) continue;
-      if (npc.currentCoordsX === dx && npc.currentCoordsY === dy) {
-        return 5; // COLLISION_OBJECT_EVENT
-      }
+      if (!npc.active || npc.invisible) continue;
+      if (npc.currentCoordsX === dx && npc.currentCoordsY === dy) return 5;
+      if (npc.previousCoordsX === dx && npc.previousCoordsY === dy) return 5;
     }
   }
   return 0; // COLLISION_NONE
@@ -392,29 +409,38 @@ function getInputDirection(heldKeys: number): number {
 /** GBA A button mask (= 0x01). 1:1 décomp `A_BUTTON`. */
 const A_BUTTON = 0x01;
 
-/** 1:1 décomp `CheckForObjectEventInteractive` (field_player_avatar.c).
+/** 1:1 décomp `CheckForObjectEventInteractive` (field_player_avatar.c) +
+ *  `TryStartInteractionScript`. Phase 4.5 wire :
+ *    1. Find facing NPC (= adjacent tile in facing direction)
+ *    2. Set gSelectedObjectEvent.index = NPC slot (= used par lock/faceplayer)
+ *    3. Set gSpecialVar.LastTalked = NPC localId
+ *    4. ScriptContext_SetupScript(npc.scriptLabel) → script engine takes over
  *
- *  Phase 4.4.e MVP : juste log. Pas de turn/freeze parce que l'interaction
- *  n'a pas encore de "contenu" (= dialogue/event Phase 4.5). Faire tourner
- *  le NPC vers nous SANS rien dire crée un pseudo-état bâtard qui peut
- *  introduire des bugs (cf. user feedback). Phase 4.5 :
- *    - scriptRunner.dispatch(npc.script)
- *    - script's lock_all → ScriptUnlockAll au end → frame-perfect freeze.
- *
- *  Tant qu'on n'a pas le script engine, on ne touche PAS l'état NPC. */
+ *  ScriptContext_SetupScript appelle LockPlayerFieldControls() qui fait que
+ *  PlayerStep skip son keypad logic la frame suivante. Les opcodes lock /
+ *  faceplayer / msgbox / release gèrent eux-mêmes l'état NPC frozen. */
 function tryInteractWithFacingNPC(): void {
   const { x: tx, y: ty } = moveCoords(gPlayerAvatar.facing, gPlayerAvatar.x, gPlayerAvatar.y);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const gObjectEvents = (globalThis as any).__gObjectEvents as
     Array<{ active: boolean; currentCoordsX: number; currentCoordsY: number;
             graphicsId: string; movementType: string; localId: number;
-            walkFramesLeft: number }> | undefined;
+            walkFramesLeft: number; scriptLabel?: string }> | undefined;
   if (!gObjectEvents) return;
-  for (const npc of gObjectEvents) {
+  for (let i = 0; i < gObjectEvents.length; i++) {
+    const npc = gObjectEvents[i];
     if (!npc.active) continue;
     if (npc.walkFramesLeft > 0) continue;  // skip mid-walk (= cell non stable)
     if (npc.currentCoordsX === tx && npc.currentCoordsY === ty) {
-      console.log(`[player-avatar] would-interact ${npc.graphicsId} (localId=${npc.localId}, mt=${npc.movementType}) — Phase 4.5 will trigger script`);
+      gSelectedObjectEvent.index = i;
+      gSpecialVar.LastTalked = npc.localId;
+      const scriptLabel = npc.scriptLabel;
+      if (!scriptLabel) {
+        console.log(`[player-avatar] interact ${npc.graphicsId} (localId=${npc.localId}) — no script label`);
+        return;
+      }
+      console.log(`[player-avatar] interact ${npc.graphicsId} (localId=${npc.localId}) → script '${scriptLabel}'`);
+      ScriptContext_SetupScript(scriptLabel);
       return;
     }
   }
@@ -422,6 +448,33 @@ function tryInteractWithFacingNPC(): void {
 
 export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime): void {
   if (gPlayerAvatar.spriteId < 0) return;
+
+  // 1:1 décomp `field_player_avatar.c:PlayerAvatarTransition_*` : si controls
+  // sont locked (= un script tourne, dialogue ouvert, etc.), pas d'input. Le
+  // sprite reste en NOT_MOVING tant que UnlockPlayerFieldControls n'est pas
+  // call par release/releaseall. Si le player était en plein step, on laisse
+  // finir sa step (= tile-bound) puis on freeze.
+  if (ArePlayerFieldControlsLocked()) {
+    if (gPlayerAvatar.runningState === MOVING && gPlayerAvatar.stepFramesLeft > 0) {
+      // Finish current step (= 1:1 décomp player can't be locked mid-step).
+      gPlayerAvatar.stepFramesLeft--;
+      if (gPlayerAvatar.stepFramesLeft === 0) {
+        const { x: nx, y: ny } = moveCoords(gPlayerAvatar.stepDirection, gPlayerAvatar.x, gPlayerAvatar.y);
+        gPlayerAvatar.x = nx;
+        gPlayerAvatar.y = ny;
+        gPlayerAvatar.runningState = NOT_MOVING;
+        gPlayerAvatar.tileTransitionState = T_NOT_MOVING;
+        gPlayerAvatar.stepDirection = DIR_NONE;
+        gFieldCamera.movementSpeedX = 0;
+        gFieldCamera.movementSpeedY = 0;
+        gPlayerAvatar.walkAnimAlt = (gPlayerAvatar.walkAnimAlt ^ 1) as 0 | 1;
+      }
+    } else {
+      gPlayerAvatar.runningState = NOT_MOVING;
+    }
+    updateSpriteFrame(rt);
+    return;
+  }
 
   const inputDir = getInputDirection(heldKeys);
 

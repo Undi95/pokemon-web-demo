@@ -69,8 +69,19 @@ export interface ObjectEvent {
   graphicsId: string;
   movementType: string;
   localId: number;
+  /** 1:1 décomp `objectEvent->script` : label du script à run on interact.
+   *  Phase 4.5 : ScriptContext_SetupScript(npc.scriptLabel) au A button. */
+  scriptLabel: string;
+  /** 1:1 décomp `objectEvent->currentCoords`. Pendant un walk : TARGET cell
+   *  (= où le NPC va arriver). Hors walk : position stable (= current = previous). */
   currentCoordsX: number;
   currentCoordsY: number;
+  /** 1:1 décomp `objectEvent->previousCoords`. Pendant un walk : SOURCE cell
+   *  (= où le NPC est parti). Hors walk : = currentCoords (= position stable).
+   *  Used par DoesObjectCollideWithObjectAt pour bloquer SOURCE+TARGET pendant
+   *  un walk → empêche step-on race entre NPCs et entre player↔NPC. */
+  previousCoordsX: number;
+  previousCoordsY: number;
   facingDirection: number;
   objTileBase: number;
   paletteBank: number;
@@ -102,8 +113,11 @@ export const gObjectEvents: ObjectEvent[] = Array.from({ length: OBJECT_EVENTS_C
   graphicsId: '',
   movementType: '',
   localId: 0,
+  scriptLabel: '',
   currentCoordsX: 0,
   currentCoordsY: 0,
+  previousCoordsX: 0,
+  previousCoordsY: 0,
   facingDirection: DIR_SOUTH,
   objTileBase: 0,
   paletteBank: 0,
@@ -119,6 +133,26 @@ export const gObjectEvents: ObjectEvent[] = Array.from({ length: OBJECT_EVENTS_C
   initialCoordsY: 0,
   directionSeqIdx: 0,
 }));
+
+// ─── Coord shift helpers 1:1 décomp event_object_movement.c ─────────────────
+
+/** 1:1 décomp `ShiftObjectEventCoords` (event_object_movement.c:2117).
+ *  Used au DÉBUT d'un walk : previous = ancienne pos, current = nouvelle target.
+ *  Pendant le walk, current/previous restent figés à TARGET/SOURCE. */
+function ShiftObjectEventCoords(npc: ObjectEvent, x: number, y: number): void {
+  npc.previousCoordsX = npc.currentCoordsX;
+  npc.previousCoordsY = npc.currentCoordsY;
+  npc.currentCoordsX = x;
+  npc.currentCoordsY = y;
+}
+
+/** 1:1 décomp `ShiftStillObjectEventCoords` (event_object_movement.c:2162).
+ *  Used à la FIN d'un walk : previous = current → NPC stable, plus de
+ *  collision sur la source cell. */
+function ShiftStillObjectEventCoords(npc: ObjectEvent): void {
+  npc.previousCoordsX = npc.currentCoordsX;
+  npc.previousCoordsY = npc.currentCoordsY;
+}
 
 // Expose pour collision check player (= évite circular import).
 (globalThis as Record<string, unknown>).__gObjectEvents = gObjectEvents;
@@ -216,13 +250,27 @@ function isPlayerAt(x: number, y: number): boolean {
   return false;
 }
 
+/** 1:1 décomp `DoesObjectCollideWithObjectAt` (event_object_movement.c:4724).
+ *  Scan gObjectEvents, exclus self. Décomp check `currentCoords` ET
+ *  `previousCoords` → couvre TARGET + SOURCE pendant un walk.
+ *  Pas de check d'élévation pour MVP (= AreElevationsCompatible). */
+function isOtherNpcAt(x: number, y: number, excluding: ObjectEvent): boolean {
+  for (const other of gObjectEvents) {
+    if (other === excluding) continue;
+    if (!other.active || other.invisible) continue;
+    if (other.currentCoordsX === x && other.currentCoordsY === y) return true;
+    if (other.previousCoordsX === x && other.previousCoordsY === y) return true;
+  }
+  return false;
+}
+
 /** Check si NPC peut walker en `direction` depuis sa position courante.
  *  1:1 décomp `GetCollisionInDirection` : map collision + player collision +
- *  NPC-NPC collision (4.4.f, simplifié pour MVP : skip).
+ *  NPC-NPC collision (= IsCoordCollidingWithObjectEvent).
  *
- *  Considère la TARGET cell du player MOVING, pour éviter step-on race :
- *  si NPC démarre walk vers cell C ET player démarre walk vers cell C en
- *  même temps, le NPC voit player.target = C → bloqué. Fix bug 4.4.d. */
+ *  Considère la TARGET cell du player MOVING ET d'un autre NPC walking,
+ *  pour éviter step-on race : si 2 entités démarrent walk vers même cell
+ *  en même frame, la 2e voit la cell occupée → bloquée. */
 function canWalk(npc: ObjectEvent, direction: number): boolean {
   const dx = DIR_TO_DX[direction] ?? 0;
   const dy = DIR_TO_DY[direction] ?? 0;
@@ -232,6 +280,7 @@ function canWalk(npc: ObjectEvent, direction: number): boolean {
   const targetGBackupRow = targetY + MAP_OFFSET;
   if (MapGridGetCollisionAt(targetGBackupCol, targetGBackupRow) !== 0) return false;
   if (isPlayerAt(targetX, targetY)) return false;
+  if (isOtherNpcAt(targetX, targetY, npc)) return false;
   return true;
 }
 
@@ -324,6 +373,11 @@ function tickWanderAround(rt: DecompRuntime, npc: ObjectEvent, allowedDirections
       if (!canWalk(npc, dir)) {
         npc.movementStep = 1;
       } else {
+        // 1:1 décomp `InitNpcForMovement` (event_object_movement.c:5081) :
+        // shift coords AU DÉBUT du walk → previous = source, current = target.
+        const dx = DIR_TO_DX[dir] ?? 0;
+        const dy = DIR_TO_DY[dir] ?? 0;
+        ShiftObjectEventCoords(npc, npc.currentCoordsX + dx, npc.currentCoordsY + dy);
         npc.walkDirection = dir;
         npc.walkFramesLeft = 16;
         npc.movementStep = 6;
@@ -331,14 +385,16 @@ function tickWanderAround(rt: DecompRuntime, npc: ObjectEvent, allowedDirections
       break;
     }
     case 6: {
+      // worldX/Y tick visuel pendant le walk.
       const speedX = DIR_TO_DX[npc.walkDirection] ?? 0;
       const speedY = DIR_TO_DY[npc.walkDirection] ?? 0;
       npc.worldX += speedX;
       npc.worldY += speedY;
       npc.walkFramesLeft--;
       if (npc.walkFramesLeft === 0) {
-        npc.currentCoordsX += speedX;
-        npc.currentCoordsY += speedY;
+        // 1:1 décomp `ShiftStillObjectEventCoords` (event_object_movement.c:5120) :
+        // previous = current → NPC stable, plus de collision sur SOURCE cell.
+        ShiftStillObjectEventCoords(npc);
         npc.walkDirection = DIR_NONE;
         npc.walkAnimAlt = (npc.walkAnimAlt ^ 1) as 0 | 1;
         npc.movementStep = 1;
@@ -430,7 +486,10 @@ function tickWalkBackAndForth(rt: DecompRuntime, npc: ObjectEvent, primaryDir: n
       }
       const dir = npc.facingDirection;
       if (canWalk(npc, dir)) {
-        // Start walk anim 16 frames.
+        // 1:1 décomp `InitNpcForMovement` : shift current/previous au début.
+        const dx = DIR_TO_DX[dir] ?? 0;
+        const dy = DIR_TO_DY[dir] ?? 0;
+        ShiftObjectEventCoords(npc, npc.currentCoordsX + dx, npc.currentCoordsY + dy);
         npc.walkDirection = dir;
         npc.walkFramesLeft = 16;
         npc.movementStep = 3;
@@ -442,19 +501,19 @@ function tickWalkBackAndForth(rt: DecompRuntime, npc: ObjectEvent, primaryDir: n
       break;
     }
     case 3: {
-      // Tick walk frames.
+      // Tick walk frames (= worldX/Y visual).
       const speedX = DIR_TO_DX[npc.walkDirection] ?? 0;
       const speedY = DIR_TO_DY[npc.walkDirection] ?? 0;
       npc.worldX += speedX;
       npc.worldY += speedY;
       npc.walkFramesLeft--;
       if (npc.walkFramesLeft === 0) {
-        npc.currentCoordsX += speedX;
-        npc.currentCoordsY += speedY;
+        // 1:1 décomp `ShiftStillObjectEventCoords` : previous = current.
+        ShiftStillObjectEventCoords(npc);
         npc.walkDirection = DIR_NONE;
         npc.walkAnimAlt = (npc.walkAnimAlt ^ 1) as 0 | 1;
         // Si arrived 1 step from initialCoords, increment seq → backward.
-        // Si returned to initialCoords, decrement seq → forward.
+        // Si returned to initialCoords, decrement seq → forward (case 2).
         if (npc.directionSeqIdx === 0
             && (npc.currentCoordsX !== npc.initialCoordsX || npc.currentCoordsY !== npc.initialCoordsY)) {
           npc.directionSeqIdx = 1;  // Now we go back.
@@ -613,8 +672,13 @@ export async function SpawnObjectEventsOnMap(rt: DecompRuntime): Promise<void> {
     npc.graphicsId = graphicsKey;
     npc.movementType = template.movementTypeRaw ?? '';
     npc.localId = template.localId;
+    npc.scriptLabel = template.script ?? '';
+    // 1:1 décomp `InitObjectEventStateFromTemplate` (event_object_movement.c:1309) :
+    // currentCoords = previousCoords = template position au spawn.
     npc.currentCoordsX = template.x;
     npc.currentCoordsY = template.y;
+    npc.previousCoordsX = template.x;
+    npc.previousCoordsY = template.y;
     npc.facingDirection = movementTypeToInitialFacing(npc.movementType);
     npc.objTileBase = objTileBase;
     npc.paletteBank = paletteBank;

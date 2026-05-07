@@ -84,8 +84,10 @@ function copyPixelBufferToVram(
       }
     }
   }
-  // DEBUG: verify first tile written
-  
+
+  // Note : tile cache invalidation handled par compositor's per-frame clear
+  // (= cf. composeFrame _tileCachesCache.clear()). Couvre tous les VRAM writes.
+
   win.needsFlush = false;
 }
 
@@ -332,6 +334,76 @@ export function CreateWindowTemplate(
  *  (top-left/top/top-right/left/right/bot-left/bot/bot-right) en utilisant
  *  baseTileNum + 0..8 comme indices de tile dans le tilemap du BG du window.
  *  Phase E Step 1 : 1:1 décomp menu.c:710. */
+/** 1:1 décomp `DLG_WINDOW_BASE_TILE_NUM` (graphics.h) : tile 0xFC = base tile
+ *  pour les frame border tiles du dialog box (= chargé via LoadMessageBoxGfx). */
+export const DLG_WINDOW_BASE_TILE_NUM = 0xFC;
+
+/** 1:1 décomp `DLG_WINDOW_PALETTE_NUM` : palette 15 = couleurs du dialog box
+ *  (= cyan/teal frame + blanc bg + dark gray text + light gray shadow). */
+export const DLG_WINDOW_PALETTE_NUM = 15;
+
+/** 1:1 décomp `WindowFunc_DrawDialogueFrame` (menu.c:319-411).
+ *
+ *  Pose 14 frame tiles autour du window pour faire le frame border arrondi
+ *  du dialog box overworld. Layout :
+ *
+ *    +-----------+--------+-----+--------+--+
+ *    | tile +1   | tile+3 | +4… | tile+5 |+6|   ← top row (= top - 1)
+ *    +-----------+--------+-----+--------+--+
+ *    | tile+7    | tile +9 (= INTERIOR)  |+10|   (5 lignes : top..top+4)
+ *    +-----------+--------+-----+--------+--+
+ *    | V_FLIP +1 | V_FL+3 | +4 V| V_FL+5 |+6|   ← bottom row (= top + height)
+ *    +-----------+--------+-----+--------+--+
+ *
+ *  Le window pixel buffer (= text content) recouvre l'intérieur via
+ *  CopyWindowToVram et écrase tile +9 dans la zone window proprement dite. */
+export function WindowFunc_DrawDialogueFrame(
+  bg: number, tilemapLeft: number, tilemapTop: number,
+  width: number, height: number, paletteNum: number,
+): void {
+  const baseTile = DLG_WINDOW_BASE_TILE_NUM;
+  const V_FLIP = 0x800;
+  // Top row (1 row above content)
+  FillBgTilemapBufferRect(bg, baseTile + 1,  tilemapLeft - 2,         tilemapTop - 1, 1,         1, paletteNum);
+  FillBgTilemapBufferRect(bg, baseTile + 3,  tilemapLeft - 1,         tilemapTop - 1, 1,         1, paletteNum);
+  FillBgTilemapBufferRect(bg, baseTile + 4,  tilemapLeft,             tilemapTop - 1, width - 1, 1, paletteNum);
+  FillBgTilemapBufferRect(bg, baseTile + 5,  tilemapLeft + width - 1, tilemapTop - 1, 1,         1, paletteNum);
+  FillBgTilemapBufferRect(bg, baseTile + 6,  tilemapLeft + width,     tilemapTop - 1, 1,         1, paletteNum);
+  // Middle rows (= 5 rows from top to top+4 inclus = window content + bottom)
+  FillBgTilemapBufferRect(bg, baseTile + 7,  tilemapLeft - 2,         tilemapTop,     1,         5, paletteNum);
+  FillBgTilemapBufferRect(bg, baseTile + 9,  tilemapLeft - 1,         tilemapTop,     width + 1, 5, paletteNum);
+  FillBgTilemapBufferRect(bg, baseTile + 10, tilemapLeft + width,     tilemapTop,     1,         5, paletteNum);
+  // Bottom row (= V_FLIP des top tiles)
+  FillBgTilemapBufferRect(bg, (baseTile + 1) | V_FLIP, tilemapLeft - 2,         tilemapTop + height, 1,         1, paletteNum);
+  FillBgTilemapBufferRect(bg, (baseTile + 3) | V_FLIP, tilemapLeft - 1,         tilemapTop + height, 1,         1, paletteNum);
+  FillBgTilemapBufferRect(bg, (baseTile + 4) | V_FLIP, tilemapLeft,             tilemapTop + height, width - 1, 1, paletteNum);
+  FillBgTilemapBufferRect(bg, (baseTile + 5) | V_FLIP, tilemapLeft + width - 1, tilemapTop + height, 1,         1, paletteNum);
+  FillBgTilemapBufferRect(bg, (baseTile + 6) | V_FLIP, tilemapLeft + width,     tilemapTop + height, 1,         1, paletteNum);
+}
+
+/** 1:1 décomp `DrawDialogueFrame(windowId, copyToVram)` (menu.c:216) :
+ *    CallWindowFunction(WindowFunc_DrawDialogueFrame)
+ *    FillWindowPixelBuffer(windowId, PIXEL_FILL(1))
+ *    PutWindowTilemap(windowId)
+ *    if (copyToVram) CopyWindowToVram(windowId, COPYWIN_FULL)
+ *
+ *  Foundation partagée — utilisée par field-message-box (= overworld dialog),
+ *  Birch speech (= main-menu-impl), et toute autre scene qui veut un dialog box
+ *  standard. baseTile 0xFC + palette 15 doivent avoir été loaded via
+ *  LoadMessageBoxGfx avant l'appel. */
+export function DrawDialogueFrame(windowId: number, copyToVram: boolean): void {
+  const gw = gWindows.find((w) => w.id === windowId);
+  if (!gw) return;
+  const t = gw.template;
+  WindowFunc_DrawDialogueFrame(t.bg, t.tilemapLeft, t.tilemapTop, t.width, t.height, t.paletteNum);
+  // 1:1 décomp : FillWindowPixelBuffer(PIXEL_FILL(1)) = idx 1 (= bg = white).
+  fillWindowPixelBuffer(gw.win, 0x11);
+  writeWindowTilemap(gw, false);
+  if (copyToVram) {
+    copyPixelBufferToVram(gw.win, gw.template.bg, gw.template.baseBlock);
+  }
+}
+
 export function DrawStdFrameWithCustomTileAndPalette(
   windowId: number,
   copyToVram: boolean,
@@ -422,6 +494,35 @@ export function LoadMessageBoxGfx(bg: number, baseTile: number, paletteFlatIdx: 
     rt.gPlttBufferFaded.set(paletteFlatIdx + 2, darkGrey);
     rt.gPlttBufferUnfaded.set(paletteFlatIdx + 3, lightGrey);
     rt.gPlttBufferFaded.set(paletteFlatIdx + 3, lightGrey);
+  }
+}
+
+/** 1:1 décomp `ClearDialogWindowAndFrame` (menu.c:234) + `WindowFunc_ClearDialogWindowAndFrame`
+ *  (menu.c:419). Clear large rect autour du window — couvre les 2 colonnes de
+ *  frame border de chaque côté (= TL outer/inner + TR outer/inner) que
+ *  ClearStdWindowAndFrame ne clear PAS.
+ *
+ *    FillBgTilemapBufferRect(bg, 0, tilemapLeft-3, tilemapTop-1, width+6, height+2, STD_WIN_PALETTE_NUM);
+ *
+ *  À utiliser pour fermer un dialog box overworld (= field-message-box). */
+export function ClearDialogWindowAndFrame(windowId: number, copyToVram: boolean): void {
+  const gw = gWindows.find((w) => w.id === windowId);
+  if (!gw) return;
+  const t = gw.template;
+  // 1:1 décomp WindowFunc_ClearDialogWindowAndFrame : tile=0 + palette=0
+  // dans toute la zone (= width+6, height+2) débordant largement du frame.
+  FillBgTilemapBufferRect(
+    t.bg, 0,
+    t.tilemapLeft - 3,
+    t.tilemapTop - 1,
+    t.width + 6,
+    t.height + 2,
+    0,
+  );
+  fillWindowPixelBuffer(gw.win, 0x11);
+  writeWindowTilemap(gw, true);
+  if (copyToVram) {
+    copyPixelBufferToVram(gw.win, gw.template.bg, gw.template.baseBlock);
   }
 }
 

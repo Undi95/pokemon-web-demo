@@ -388,6 +388,9 @@ export function _debugGetTextPrinters(): typeof gTextPrinters {
   return gTextPrinters;
 }
 
+// Expose pour debug overworld dialog (= bundle module instance, pas dynamic import).
+(globalThis as Record<string, unknown>).__debugGetTextPrinters = _debugGetTextPrinters;
+
 export function RunTextPrintersAndIsPrinter0Active(): boolean {
   RunTextPrinters();
   return IsTextPrinterActive(0);

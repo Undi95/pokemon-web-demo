@@ -660,21 +660,23 @@ function transpileBody(bodyC, ctx) {
   // offsetof(TYPE, field) → 0 (placeholder)
   s = s.replace(/\boffsetof\s*\([^)]+\)/g, '/* offsetof */ 0');
 
-  // 23. Decomp-only macros : SetVBlankCallback / SetMainCallback2 / m4aSongNumStart → noop
+  // 23. Decomp-only macros : SetVBlankCallback / SetMainCallback2 → noop
   s = s.replace(/\bSetVBlankCallback\s*\([^)]*\)\s*;/g, '/* noop SetVBlankCallback */;');
   s = s.replace(/\bSetMainCallback2\s*\(([^)]+)\)\s*;/g, '/* TODO scene transition: SetMainCallback2($1) */;');
+  // Audio : préserver BGM + SE 1:1 décomp.
   // Décomp utilise m4aSongNumStart pour BGM ET SE indistinctement (= ID dans song table).
-  // Notre runtime sépare BGM (slot bgm) vs SE (slot se1/se2). On dispatch selon le préfixe :
-  // m4aSongNumStart(SE_X) → PlaySE(SE_X) (= one-shot SE slot).
-  // m4aSongNumStart(MUS_X) → m4aSongNumStart(MUS_X) (= BGM slot).
+  // Notre runtime sépare BGM (slot bgm) vs SE (slot se1/se2). Dispatch selon préfixe :
+  //   m4aSongNumStart(SE_X)  → PlaySE(SE_X)        (= one-shot SE slot)
+  //   m4aSongNumStart(MUS_X) → m4aSongNumStart(MUS_X) (= BGM slot, préservé)
   s = s.replace(/\bm4aSongNumStart\s*\(\s*SE_(\w+)\s*\)\s*;/g, 'PlaySE(SE_$1);');
-  s = s.replace(/\bm4aSongNumStart\s*\([^)]*\)\s*;/g, '/* TODO sound: m4aSongNumStart */;');
-  s = s.replace(/\bm4aSongNumStop\s*\([^)]*\)\s*;/g, '/* TODO sound: m4aSongNumStop */;');
+  // m4aSongNumStart pour MUS_X et m4aSongNumStop préservés tels quels (BGM control).
   s = s.replace(/\bResetSerial\s*\(\s*\)\s*;/g, '/* noop ResetSerial */;');
   s = s.replace(/\bIntroResetGpuRegs\s*\(\s*\)\s*;/g, 'rt.IntroResetGpuRegs();');
   s = s.replace(/\bResetSpriteData\s*\(\s*\)\s*;/g, 'rt.ResetSpriteData();');
   s = s.replace(/\bFreeAllSpritePalettes\s*\(\s*\)\s*;/g, '/* TODO FreeAllSpritePalettes */;');
-  s = s.replace(/\bPlaySE\s*\([^)]*\)\s*;/g, '/* TODO sound PlaySE */;');
+  // PlaySE / PlayBGM / PlayFanfare : préservés tels quels — exportés par
+  // decomp-globals.ts et auto-importés dans header (= cf. KNOWN_DECOMP_GLOBALS).
+  // Avant : ces calls étaient transformés en TODO comment → silence partout.
 
   // 24. SetGpuReg → rt.SetGpuReg
   s = s.replace(/\bSetGpuReg\s*\(/g, 'rt.SetGpuReg(');
@@ -1103,6 +1105,57 @@ function generateModule(sceneName, entries, aliases, constResolver) {
   lines.push(`  BLDALPHA_BLEND, WIN_RANGE, GET_TRUE_SPRITE_INDEX, ANIM_SPRITES_START,`);
   lines.push(`  gSineTable, PaletteBuffer,`);
   lines.push(`} from '../../../decomp-helpers';`);
+
+  // ── Auto-import depuis decomp-globals.ts : scan dynamique de TOUS les exports
+  // de decomp-globals.ts (= 250+ symbols) puis détecte ceux référencés dans les
+  // bodies. Future-proof : pas de whitelist à maintenir, suit auto les ajouts
+  // dans decomp-globals.ts.
+  const decompGlobalsExports = (() => {
+    try {
+      const pathLib = resolve(__dirname, '../src/engine/decomp-globals.ts');
+      const src = readFileSync(pathLib, 'utf8');
+      const names = new Set();
+      // Match `export function X`, `export const X`, `export class X`,
+      // `export type X`, `export enum X`, `export interface X`. SKIP `let`/`var`
+      // exports — ES modules ne permettent pas reassign de l'import binding,
+      // donc l'auto code qui fait `gBattle_BG1_Y = ...` casserait.
+      const reSingle = /^export\s+(?:async\s+)?(?:function|const|class|enum|interface)\s+([A-Za-z_$][\w$]*)/gm;
+      let m;
+      while ((m = reSingle.exec(src)) !== null) names.add(m[1]);
+      // export { A, B as C } from '...';  OR  export { A, B };
+      const reList = /^export\s*\{([^}]+)\}/gm;
+      while ((m = reList.exec(src)) !== null) {
+        for (const part of m[1].split(',')) {
+          const trimmed = part.trim();
+          if (!trimmed) continue;
+          // `Original as Alias` → garder Alias (= le nom exporté).
+          const aliasMatch = trimmed.match(/^\S+\s+as\s+([A-Za-z_$][\w$]*)$/);
+          names.add(aliasMatch ? aliasMatch[1] : trimmed.split(/\s+/)[0]);
+        }
+      }
+      return names;
+    } catch (e) {
+      console.warn(`[transpile-callbacks] failed to scan decomp-globals.ts exports: ${e.message}`);
+      return new Set();
+    }
+  })();
+  // Scan all transpiled bodies for any exported symbol of decomp-globals.
+  const usedDecompGlobals = new Set();
+  // Pre-extract identifiers from each body to avoid 250×N regex sweeps.
+  for (const r of [...transpiled.spriteCbs, ...transpiled.tasks, ...transpiled.cb2s, ...transpiled.helpers]) {
+    if (!r.tsCode) continue;
+    const ids = r.tsCode.match(/\b[A-Za-z_$][\w$]*\b/g) ?? [];
+    for (const id of ids) {
+      if (decompGlobalsExports.has(id)) usedDecompGlobals.add(id);
+    }
+  }
+  if (usedDecompGlobals.size > 0) {
+    const sorted = Array.from(usedDecompGlobals).sort();
+    lines.push(`import {`);
+    for (const sym of sorted) lines.push(`  ${sym},`);
+    lines.push(`} from '../../../decomp-globals';`);
+  }
+
   if (importsFromDataMod.length > 0) {
     importsFromDataMod.sort();
     lines.push(`import {`);
@@ -1187,14 +1240,34 @@ function generateModule(sceneName, entries, aliases, constResolver) {
       continue;
     }
     const params = r.info?.params ?? '';
+    // Extract param name + TS type. Décomp params come in many forms :
+    //   simple    : `bool8 hasVerticalMove`           → name: number
+    //   pointer   : `const struct Foo *metadata`      → name: any
+    //   array     : `u8 buffer[16]`                   → name: number (= array of bytes)
+    //   func ptr  : `void (*callback)(u8)`            → callback: any
+    // Strategy : extract the LAST identifier as name (= deepest dereference name);
+    // type is `any` if param has *, [, struct, union, const ; else `number`.
+    const usedNames = new Set();
     const tsParams = params
       .split(',')
       .map(p => p.trim())
       .filter(p => p && p !== 'void')
-      .map(p => {
-        const m = p.match(/^(?:u8|u16|u32|s8|s16|s32|int|bool8|bool32|size_t|vu8|vu16|vu32|vs8|vs16|vs32|char|short|long|float|double|f32|f64)\s+\*?\s*([a-zA-Z_][a-zA-Z0-9_]*)/);
-        if (m) return `${m[1]}: number`;
-        return `arg: any`;
+      .map((p, idx) => {
+        // Last identifier before ) or end-of-string (handles `(*name)`, `name[N]`, etc).
+        const nameMatch = p.match(/([a-zA-Z_][a-zA-Z0-9_]*)\s*(?:\[\s*\w*\s*\])?\s*\)?\s*$/);
+        let name = nameMatch ? nameMatch[1] : `arg${idx}`;
+        // Disambiguate duplicates (= same name appears twice) : append index.
+        let unique = name;
+        let suffix = 0;
+        while (usedNames.has(unique)) {
+          suffix++;
+          unique = `${name}${suffix}`;
+        }
+        usedNames.add(unique);
+        // Type : pointer/struct/array → any ; primitive → number.
+        const isComplex = /\*|\bstruct\b|\bunion\b|\benum\b|\[/.test(p);
+        const tsType = isComplex ? 'any' : 'number';
+        return `${unique}: ${tsType}`;
       })
       .join(', ');
     lines.push(`/** Source: ${sceneName}.c → ${r.name} (helper) */`);

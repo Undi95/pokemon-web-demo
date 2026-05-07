@@ -52,10 +52,25 @@ import {
 } from '../engine/object-events';
 import { installInputHandlers, setHeldKeysOverride } from '../engine/input-handler';
 import { installEngineDevtools } from '../engine/engine-devtools';
+import {
+  loadMapScripts,
+  ScriptContext_RunScript,
+  ScriptContext_Init,
+} from '../engine/script-runtime';
+import {
+  InitFieldMessageBox,
+  TickFieldMessageBox,
+  preloadStandardMenuPalette,
+} from '../engine/field-message-box';
+import { preloadFontData } from '../engine/gba-text-system';
+import { preloadTextWindowFrames } from '../engine/gba-text-window';
+// Side-effect import : registers Phase 4.5 opcode handlers.
+import '../engine/script-opcodes';
 
 // 1:1 décomp `DISPCNT_OBJ_ON | DISPCNT_OBJ_1D_MAP` flags.
 const DISPCNT_OBJ_ON = 0x1000;
 const DISPCNT_OBJ_1D_MAP = 0x40;
+const DISPCNT_BG0_ON = 0x100;
 const DISPCNT_BG1_ON = 0x200;
 const DISPCNT_BG2_ON = 0x400;
 const DISPCNT_BG3_ON = 0x800;
@@ -118,9 +133,11 @@ export class TestOverworldScene extends Phaser.Scene {
       //    (overworld.c:266-304). BG1/2/3 partagent charBase 0 (= tileset
       //    primary 0-511 + secondary 512-1023). Mapbases 29/28/30.
       //    BG0 (charBase 2 mapBase 31) = UI/dialogue (= pas utilisé Phase 4.1).
+      // BG0 = UI/dialog (= utilisé Phase 4.5 pour message box).
       const bg0 = this.rt.gba.bg(0).config;
       bg0.charBaseIndex = 2; bg0.mapBaseIndex = 31; bg0.screenSize = 0;
-      bg0.paletteMode = 0; bg0.priority = 0; bg0.visible = false;
+      bg0.paletteMode = 0; bg0.priority = 0; bg0.visible = true;
+      bg0.hofs = 0; bg0.vofs = 0;
 
       const bg1 = this.rt.gba.bg(1).config;
       bg1.charBaseIndex = 0; bg1.mapBaseIndex = 29; bg1.screenSize = 0;
@@ -141,7 +158,7 @@ export class TestOverworldScene extends Phaser.Scene {
       //    surprises plus tard quand on ajoutera les sprites.)
       this.rt.SetGpuReg(REG_OFFSET_DISPCNT,
         DISPCNT_OBJ_ON | DISPCNT_OBJ_1D_MAP |
-        DISPCNT_BG1_ON | DISPCNT_BG2_ON | DISPCNT_BG3_ON);
+        DISPCNT_BG0_ON | DISPCNT_BG1_ON | DISPCNT_BG2_ON | DISPCNT_BG3_ON);
 
       // 3. Load map + tilesets + layout (= async, parallèle).
       this.statusText?.setText('Loading map data...');
@@ -195,6 +212,30 @@ export class TestOverworldScene extends Phaser.Scene {
       resetObjectEventAllocations();
       await SpawnObjectEventsOnMap(this.rt);
 
+      // 12bis. Phase 4.5 : preload font + text window assets (= dialog box gfx),
+      //        load les scripts de la map + init field message box state.
+      this.statusText?.setText('Loading scripts + font...');
+      await Promise.all([
+        preloadFontData(),
+        preloadTextWindowFrames(),
+        preloadStandardMenuPalette(),
+        loadMapScripts('LittlerootTown'),  // = nom JSON pré-extrait
+      ]);
+      InitFieldMessageBox();
+      ScriptContext_Init();
+
+      // 1:1 décomp `SetVBlankCallback(VBlankCB_Overworld)`. Le simple fait
+      // d'avoir un vblankCallback set fait que tickFixed.runOneFrame call
+      // `gPlttBufferFaded.flushTo()` (= TransferPlttBuffer simulé). Sans ça,
+      // les nouvelles palettes (= dialog frame, fades) ne sont JAMAIS poussées
+      // au compositor → frame border noir + fades figés.
+      const _VBlankCB_Overworld: () => void = () => { /* no-op marker pour activer transfer */ };
+      this.rt.SetVBlankCallback(_VBlankCB_Overworld);
+      // SKIP OnTransition / OnFrame map_scripts pour l'instant (= éviterait la
+      // cinématique Maman si VAR_LITTLEROOT_INTRO_STATE pas init à 3). User
+      // warning : Phase 4.5+ pour wirer ces triggers proprement avec un état
+      // de jeu valide (= post-intro).
+
       // 13. Register MainCB2_Overworld (= per-frame callback) qui drive
       //     PlayerStep + CameraUpdate à FIXED 60Hz via rt.tickFixed.
       //     Critique pour timing 1:1 GBA : si on l'appelait dans update()
@@ -202,6 +243,12 @@ export class TestOverworldScene extends Phaser.Scene {
       //     Préfix "MainCB2" → tickFixed runs RunTasks/AnimateSprites/etc.
       const rt = this.rt;
       const MainCB2_Overworld = function MainCB2_Overworld(): void {
+        // Phase 4.5 : tick script engine FIRST. ScriptContext_RunScript loop
+        // les opcodes jusqu'à wait/end. Si script lock les controls,
+        // PlayerStep skip son input.
+        ScriptContext_RunScript();
+        // Phase 4.5 : tick field message box state machine.
+        TickFieldMessageBox();
         PlayerStep(rt.gMain.heldKeys, rt.gMain.newKeys, rt);
         CameraUpdate();
         // Phase 4.4.c : tick NPC movement state machine (LOOK_AROUND / WANDER).
