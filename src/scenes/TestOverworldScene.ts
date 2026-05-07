@@ -701,102 +701,29 @@ export class TestOverworldScene extends Phaser.Scene {
     const { connection } = pending;
     console.log(`[connection] crossing dir=${pending.direction} → ${connection.destMap}`);
 
-    // Compute new player logical pos in destination map.
-    // Inputs : OLD player.x/y. Notre _camPos.x = playerLogical.x (= coïncidence
-    // x : MAP_OFFSET=7 = view_col_offset). _camPos.y = playerLogical.y + 2.
-    // Donc oldPlayer.x = oldCamX. oldPlayer.y = oldCamY - 2.
-    const oldPlayerX = pending.oldCamX;
-    const oldPlayerY = pending.oldCamY - 2;
-    const newPos = ComputeConnectionDestPos(connection, pending.direction, oldPlayerX, oldPlayerY);
-
-    // Étape 3 : sync swap.
-    const ok = TransitionToConnection(connection);
-    if (!ok) {
-      // Fallback : connection pas en cache → log + clear pending pour ne pas spammer.
-      console.warn('[connection] TransitionToConnection failed, clearing pending');
+    // Phase 4.9 strict 1:1 décomp : CameraMove a déjà fait TOUT le swap sync
+    // (= TransitionToConnection + gPlayerAvatar pre-step + _camPos update +
+    // MoveMapViewToBackup + gCamera.active tracking). Le BG buffer est déjà
+    // dans le bon état grâce à RedrawMapSlicesForCameraUpdate qui s'exécute
+    // post-CameraMove dans CameraUpdate avec NEW gBackupMapLayout.
+    //
+    // handleConnectionTransition fait juste les scene-level ops :
+    //   - NPC orchestrator (= UpdateCoords + TrySpawn + RemoveOutsideView).
+    //   - BGM transition.
+    //   - Status text update.
+    const newHeader = (globalThis as Record<string, unknown>).gMapHeader as MapHeader;
+    if (!newHeader || newHeader.id === '') {
+      console.warn('[connection] gMapHeader not swapped, abort');
       clearPendingConnection();
       return;
     }
-    const newHeader = (globalThis as Record<string, unknown>).gMapHeader as MapHeader;
 
-    // Phase 4.8 : NE PAS reset gTotalCamera ici. La décomp ne le fait pas dans
-    // LoadMapFromCameraTransition. Reason : gTotalCamera.pixelOffsetY est
-    // l'équivalent de gSpriteCoordOffsetY décomp = un offset absolu cumulatif
-    // depuis baseline. NPC.worldY au spawn capture (cam.y, offY) au même
-    // moment, et tracking sprite.y = worldY + offY_now - 8 reste cohérent
-    // tant que cam_change_pixels + offY_change = 0 (= invariant qui tient au
-    // step boundary). Reset cassait cet invariant en cas de cross mid-step
-    // → drift de 15 px sur les NPCs spawnés mid-step post-cross.
-
-    // Étape 4 : 1:1 décomp `SetPositionFromConnection` + `pos += (x, y)`
-    // (fieldmap.c:642-674). Player position = PRE-step value en new map. Step
-    // animation continue naturellement — PlayerStep step end appliquera +delta
-    // → final pos = newCamY + deltaY. C'est le 1:1 décomp original.
-    //
-    // ComputeConnectionDestPos retourne maintenant TOUJOURS pre-step (= fix
-    // Phase 4.9 pour matcher SetPositionFromConnection 1:1).
-    //   NORTH : newCamY = mapHeight (= 1 row past SOUTH border) → step end → mapH-1.
-    //   SOUTH : newCamY = -1         (= 1 row above NORTH border) → step end → 0.
-    //   WEST  : newCamX = mapWidth   (= 1 col past EAST border) → step end → mapW-1.
-    //   EAST  : newCamX = -1         (= 1 col left of WEST border) → step end → 0.
-    //
-    // CRITIQUE : on ne reset PAS PlayerStep + gFieldCamera state ! Le step
-    // animation continue ses 16 frames, scroll BG smooth, step end applique
-    // +delta. Sans cette continuité, le user remarque un "TP d'1 case en
-    // avance" car frame 0 cross + frame 16 step end = 32 frames mais 2 cases
-    // parcourues au lieu d'1 (= ce que voulait le décomp original).
-    gPlayerAvatar.x = newPos.camX;
-    gPlayerAvatar.y = newPos.camY;
-    console.log(`[connection] player.x/y = ${newPos.camX}, ${newPos.camY} in ${newHeader.id} (pre-step ; step animation continues)`);
-
-    // Étape 5 : SetCameraTopLeftCoords. Player pre-step, mais cam doit
-    // anticiper le post-step pour que sprite reste à view row 5 dès le cross
-    // frame.
-    //   _camPos.y = post-step playerLogical.y + 2 = (newCamY + deltaY) + 2.
-    SetCameraTopLeftCoords(
-      newPos.camX + pending.deltaX,
-      newPos.camY + pending.deltaY + 2,
-    );
-
-    // 1:1 décomp `MoveMapViewToBackup(direction);` (fieldmap.c:675). Restore
-    // OLD map's snapshot dans NEW map's sBackupMapData à player's POST-step pos.
-    // (= pos après pos += (x, y) dans CameraMove, line 673-674). Notre
-    // équivalent : newCamX + deltaX, newCamY + deltaY.
-    // CRITIQUE : doit run AVANT clearOverworldTilemaps + DrawWholeMapView.
-    MoveMapViewToBackup(
-      pending.direction,
-      newPos.camX + pending.deltaX,
-      newPos.camY + pending.deltaY,
-    );
-
-    // Étape 6-7 : redraw BG for new map. clearOverworldTilemaps + DrawWholeMapView.
-    //
-    // 1:1 décomp : NE PAS reset sFieldCameraOffset (= LoadMapFromCameraTransition
-    // ne le fait pas non plus). La natural accumulation à travers le cross step
-    // animation (= 16 frames de speedY=-1 contribution) donne yPixelOffset
-    // multiple de 16 au step boundary, ce qui équivaut à 0 modulo 256 pour
-    // REG_BG_VOFS hardware. Reset cassait ça en désynchronisant gFieldCamera.y
-    // (= mid-step) vs sFieldCameraOffset (= 0).
-    clearOverworldTilemaps();
-    const cam = GetCameraTopLeftCoords();
-    DrawWholeMapView(cam.x, cam.y, newHeader.mapLayout);
-    flushOverworldTilemaps(this.rt);
-    FieldUpdateBgTilemapScroll(this.rt);
-
-    // Étape 8 : 1:1 décomp NPC orchestrator post-cross.
-    // gCamera.active a été set par CameraMove avec gCamera.x/y = old - new.
-    // UpdateObjectEventsForCameraUpdate orchestrate :
-    //   1. UpdateObjectEventCoordsForCameraUpdate (= translate NPCs si gCamera.active)
-    //   2. TrySpawnObjectEvents (= spawn new map's NPCs in bounds)
-    //   3. RemoveObjectEventsOutsideView (= cleanup hors bounds)
-    //
-    // Fire-and-forget preload pour populer _npcPngCache (= per-frame TrySpawn
-    // au prochain tile boundary captera les NPCs après cache populated).
+    // 1:1 décomp NPC orchestrator post-cross.
     void preloadNpcGraphicsForMap(newHeader);
     UpdateObjectEventsForCameraUpdate(this.rt, pending.deltaX, pending.deltaY);
     UpdateObjectEvents(this.rt);
 
-    // Étape 9 : BGM transition. 1:1 décomp `TransitionMapMusic`.
+    // BGM transition. 1:1 décomp `TransitionMapMusic`.
     const songId = (Songs as unknown as Record<string, number>)[newHeader.music] ?? 0;
     if (songId > 0 && songId !== _currentMapBgmId) {
       console.log(`[connection] PlayBGM(${newHeader.music} = ${songId})`);
@@ -804,14 +731,11 @@ export class TestOverworldScene extends Phaser.Scene {
       _currentMapBgmId = songId;
     }
 
-    // Update statusText pour debug.
-    // Status text = nom de la map cible. Pas de "(connection)" suffix car
-    // le user a interprété ça comme "stuck mid-loading" alors que c'est juste
-    // un debug indicator du chemin via cross-border vs warp.
+    // Status text.
     this.statusText?.setText(`${newHeader.id} ${newHeader.mapLayout.width}x${newHeader.mapLayout.height}`);
 
-    // Étape 10 : clear pending.
     clearPendingConnection();
+    void connection;
   }
 
   /** Wait que le forced movement (= forceMovement step auto) soit terminé.

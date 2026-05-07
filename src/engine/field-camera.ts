@@ -47,7 +47,10 @@ import {
   GetIncomingConnection,
   SaveMapView,
   ComputeConnectionDestPos,
+  TransitionToConnection,
+  MoveMapViewToBackup,
 } from './map-loader';
+import { gPlayerAvatar } from './player-avatar';
 import type { MapConnection } from './map-loader';
 import {
   REG_OFFSET_BG1HOFS, REG_OFFSET_BG1VOFS,
@@ -472,49 +475,69 @@ function CameraMove(deltaX: number, deltaY: number): boolean {
     return false;
   }
 
-  // 1:1 décomp `SaveMapView();` (fieldmap.c:663). Snapshot OLD map's view area
-  // AVANT le swap gMapHeader.
+  // 1:1 décomp CameraMove fieldmap.c:649-678 (cross-border path) :
+  //   SaveMapView();
+  //   ClearMirageTowerPulseBlendEffect();
+  //   old_x = pos.x; old_y = pos.y;
+  //   connection = GetIncomingConnection(direction, pos.x, pos.y);
+  //   SetPositionFromConnection(connection, direction, x, y);
+  //   LoadMapFromCameraTransition(connection->mapGroup, connection->mapNum);
+  //   gCamera.active = TRUE;
+  //   gCamera.x = old_x - pos.x;
+  //   gCamera.y = old_y - pos.y;
+  //   pos.x += x; pos.y += y;
+  //   MoveMapViewToBackup(direction);
+  //
+  // Notre conv : gPlayerAvatar.x/y = LOGICAL pos. _camPos.x/y = (pos.x, pos.y+2).
   SaveMapView(_camPos.x, _camPos.y - 2);
 
-  // 1:1 décomp gCamera tracking pour UpdateObjectEventCoordsForCameraUpdate.
-  // gCamera.x/y = old_pos - new_pos (= delta logique pour translater NPCs
-  // d'old map vers new map's frame). Calcul ici sync via ComputeConnectionDest
-  // Pos pour disposer du new_pos avant le swap (= scène fait le swap async via
-  // _pendingConnection mais le delta logique est calculable maintenant).
-  // Note : pour SOUTH/EAST notre ComputeConnectionDestPos retourne post-step
-  // (= 0). Décomp utilise pre-step (= -1). Pour gCamera tracking on convertit.
   const oldX = _camPos.x;
-  const oldY = _camPos.y - 2;  // = playerLogical.y old map
+  const oldY = _camPos.y - 2;
+
+  // SetPositionFromConnection : compute pre-step pos in new map.
+  // ComputeConnectionDestPos retourne maintenant TOUJOURS pre-step (= 1:1 fix).
   const newPos = ComputeConnectionDestPos(connection, direction, oldX, oldY);
-  // Convert to pre-step (= matches décomp gCamera tracking).
-  let preStepNewX = newPos.camX;
-  let preStepNewY = newPos.camY;
-  // SOUTH/EAST returned post-step in our conv (= 0). Subtract delta to get pre-step.
-  // NORTH/WEST already pre-step (= mapDim).
-  // CONNECTION_SOUTH=1, CONNECTION_EAST=4 (per map-loader.ts).
-  if (direction === 1 /* SOUTH */ || direction === 4 /* EAST */) {
-    preStepNewX = newPos.camX - deltaX;
-    preStepNewY = newPos.camY - deltaY;
-  }
+  const preStepNewX = newPos.camX;
+  const preStepNewY = newPos.camY;
+
+  // gPlayerAvatar.x/y set to PRE-step (= équivalent décomp's pos = pre-step).
+  gPlayerAvatar.x = preStepNewX;
+  gPlayerAvatar.y = preStepNewY;
+
+  // LoadMapFromCameraTransition : sync swap gMapHeader + InitMap + secondary
+  // tileset + palette. APRÈS ça, gBackupMapLayout = NEW map's data.
+  TransitionToConnection(connection);
+
+  // gCamera.active = TRUE + delta = old - new (pre-step) = 1:1 décomp.
   gCamera.active = true;
   gCamera.x = oldX - preStepNewX;
   gCamera.y = oldY - preStepNewY;
 
-  // Signal le pending connection. _camPos sera override par MainCB2 scene
-  // via SetCameraTopLeftCoords avec les new map coords.
+  // pos += delta (= post-step now). PlayerStep step end appliquera AUSSI
+  // moveCoords (= notre impl), donc finir au step end gPlayerAvatar = post-step
+  // + delta = double count. Pour éviter : laisse gPlayerAvatar pre-step ICI,
+  // step end fera le +delta naturellement.
+  // → Ne fait PAS `gPlayerAvatar.x/y += delta` ici comme décomp.
+
+  // _camPos = post-step + 2 (= notre conv anticipe view row 5).
+  _camPos.x = preStepNewX + deltaX;
+  _camPos.y = preStepNewY + deltaY + 2;
+
+  // MoveMapViewToBackup avec post-step pos (= 1:1 décomp).
+  MoveMapViewToBackup(direction, preStepNewX + deltaX, preStepNewY + deltaY);
+
+  // Signal pending pour scene-level handling (BGM, status, NPC orchestrator).
+  // Le swap visuel (BG buffer) est maintenant TOTALEMENT fait par CameraMove.
+  // RedrawMapSlicesForCameraUpdate qui suit dans CameraUpdate utilisera NEW
+  // gBackupMapLayout pour son partial redraw = strict 1:1 décomp.
   _pendingConnection = {
     direction,
     connection,
-    oldCamX: _camPos.x,
-    oldCamY: _camPos.y,
+    oldCamX: oldX,
+    oldCamY: oldY + 2,
     deltaX,
     deltaY,
   };
-  // Update _camPos pour que le frame courant continue à scroller visuellement
-  // (= si on ne le bouge pas, le visual hiccup au boundary cross). MainCB2 va
-  // override avec les vraies new coords après transition.
-  _camPos.x += deltaX;
-  _camPos.y += deltaY;
   return true;
 }
 
@@ -593,15 +616,11 @@ export function CameraUpdate(): void {
     // cols avec le buffer col logique (= mapCol pos.x+15) au lieu de
     // mapCol pos.x-1.
     //
-    // Phase 4.9 : skip si _pendingConnection (= cross-border détecté). À
-    // ce moment gBackupMapLayout = OLD map mais gMapHeader sera swap juste
-    // après par handleConnectionTransition. RedrawMapSliceX écrirait avec
-    // OLD tileset references, puis clearOverworldTilemaps + DrawWholeMapView
-    // les overwrite. Mais l'écriture du slice intermédiaire CRÉE un état
-    // transitoire que le user voit à 0.25x = mini flicker au cross. Skip.
-    if (!_pendingConnection) {
-      RedrawMapSlicesForCameraUpdate(_camPos.x, _camPos.y, deltaX * 2, deltaY * 2);
-    }
+    // Phase 4.9 strict 1:1 décomp : CameraMove fait maintenant le SWAP complet
+    // (= TransitionToConnection + MoveMapViewToBackup) sync au cross. À ce
+    // point, gBackupMapLayout = NEW map. RedrawMapSlicesForCameraUpdate utilise
+    // NEW gBackupMapLayout → 1:1 décomp comportement. Plus besoin de skip.
+    RedrawMapSlicesForCameraUpdate(_camPos.x, _camPos.y, deltaX * 2, deltaY * 2);
   }
 
   AddCameraPixelOffset(sFieldCameraOffset, movementSpeedX, movementSpeedY);
