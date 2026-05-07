@@ -792,6 +792,13 @@ export class TestOverworldScene extends Phaser.Scene {
     MoveMapViewToBackup(pending.direction, gPlayerAvatar.x, gPlayerAvatar.y);
 
     // Étape 6-7 : redraw BG for new map. clearOverworldTilemaps + DrawWholeMapView.
+    //
+    // Phase 4.9 fix : ResetFieldCamera AVANT redraw pour aligner sFieldCameraOffset
+    // sur step boundary state (= xPixelOffset/yPixelOffset/xTileOffset/yTileOffset
+    // tous à 0). Sans ça, le cross frame's residual -1 yPixelOffset s'accumule
+    // (= ~15 px = 1 case visuelle décalée). User feedback : "le visual de la
+    // map décalé d'1 case en haut, mais hitbox correcte."
+    ResetFieldCamera();
     clearOverworldTilemaps();
     const cam = GetCameraTopLeftCoords();
     DrawWholeMapView(cam.x, cam.y, newHeader.mapLayout);
