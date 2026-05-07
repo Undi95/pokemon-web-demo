@@ -30,13 +30,13 @@ import {
   gMapHeader,
   MapGridGetCollisionAt,
 } from './map-loader';
-import { GetCameraTopLeftCoords, gTotalCamera } from './field-camera';
+import { GetCameraTopLeftCoords, gTotalCamera, gCamera, gFieldCamera } from './field-camera';
 import { gPlayerAvatar } from './player-avatar';
 import {
   DIR_NONE, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST,
   DIR_TO_DX, DIR_TO_DY, OPPOSITE_DIR,
 } from './direction-coords';
-import { _registerGObjectEvents, _registerNpcHelpers } from './field-globals';
+import { _registerGObjectEvents, _registerNpcHelpers, _registerUpdateObjectEventsForCameraUpdate } from './field-globals';
 
 const BASE = '/decomp/em';
 
@@ -859,15 +859,41 @@ function _spawnSingleNpcFromTemplate(
   npc.paletteBank = paletteBank;
   const npcGBackupCol = template.x + MAP_OFFSET;
   const npcGBackupRow = template.y + MAP_OFFSET;
-  // Phase 4.8 : worldX/Y compensé par gTotalCamera (= cumulative scroll
-  // depuis boot). UpdateObjectEvents per-frame fait `sprite = worldY + offY`
-  // où offY = gTotalCamera.pixelOffsetY. Sans la compensation : NEW NPCs
-  // spawnés post-cross-border auraient worldY relative à new cam mais offY
-  // accumulé depuis boot (= différent contexte) → sprite décalé de l'amount
-  // accumulé. Fix : worldY = position naturelle - offY au spawn → quand
-  // UpdateObjectEvents fait + offY, ça s'annule au moment du spawn.
-  npc.worldX = (npcGBackupCol - cam.x) * 16 + 8 - gTotalCamera.pixelOffsetX;
-  npc.worldY = (npcGBackupRow - cam.y) * 16 - gTotalCamera.pixelOffsetY;
+  // Phase 4.9 audit : 1:1 décomp `SetSpritePosToMapCoords` (event_object_movement.c:4801).
+  //
+  // ```c
+  // s16 dx = -gTotalCameraPixelOffsetX - gFieldCamera.x;
+  // s16 dy = -gTotalCameraPixelOffsetY - gFieldCamera.y;
+  // if (gFieldCamera.x > 0) dx += 16;
+  // if (gFieldCamera.x < 0) dx -= 16;
+  // if (gFieldCamera.y > 0) dy += 16;
+  // if (gFieldCamera.y < 0) dy -= 16;
+  // *destX = ((mapX - pos.x) << 4) + dx;
+  // *destY = ((mapY - pos.y) << 4) + dy;
+  // ```
+  //
+  // Le `+/- 16` quand gFieldCamera.{x,y} non-zero (= mid-step) snap le spawn
+  // sprite à la post-step position. Sans ça, NPCs spawnés mid-step (= via
+  // orchestrator au tile boundary frame 0 où gFieldCamera.y = ±1 post-update)
+  // dérivent de 16 px sur le reste du step (= drift "1 case trop bas/haut").
+  //
+  // Notre conv : cam.y = playerLogical.y + 2 vs décomp pos.y = playerLogical.y.
+  // Adapt : utiliser gPlayerAvatar.x/y comme pos. cam.x reste = playerLogical.x
+  // (= coïncidence MAP_OFFSET=viewColOffset=7).
+  let dx = -gTotalCamera.pixelOffsetX - gFieldCamera.x;
+  let dy = -gTotalCamera.pixelOffsetY - gFieldCamera.y;
+  if (gFieldCamera.x > 0) dx += 16;
+  if (gFieldCamera.x < 0) dx -= 16;
+  if (gFieldCamera.y > 0) dy += 16;
+  if (gFieldCamera.y < 0) dy -= 16;
+  // npcGBackup - playerLogical = template + MAP_OFFSET - playerLogical
+  //                            = (npcGBackupCol - cam.x) for X (cam.x = playerLogical.x)
+  //                            = (npcGBackupRow - (cam.y - 2)) for Y (cam.y = playerLogical.y + 2)
+  // Pour Y : (npcGBackupRow - cam.y + 2)*16 = (template.y + 7 - playerLogical.y - 2)*16 = (template.y - playerLogical.y + 5)*16.
+  // Décomp : (mapY - pos.y)*16 = (template.y + 7 - playerLogical.y)*16. Diff : -32 px (= 2 metatiles).
+  // Notre player rendu à view row 5, décomp à view row 7. Diff = -32 px. Préservé via -8 BG VOFS comp + différent baseline. Math confirm sortie identique pour NPCs.
+  npc.worldX = (npcGBackupCol - cam.x) * 16 + 8 + dx;
+  npc.worldY = (npcGBackupRow - cam.y) * 16 + dy;
   npc.movementStep = 0;
   npc.movementDelay = 0;
   npc.walkFramesLeft = 0;
@@ -997,31 +1023,17 @@ export function UpdateObjectEvents(rt: DecompRuntime): void {
     }
     sprite.invisible = false;
 
-    // Phase 4.8 Tâche 2.5 : compute sprite.x/y DIRECTLY each frame depuis
-    // current cam + walk interpolation. NO worldY storage = NO spawn-time
-    // stale state = NPCs spawnés mid-step ne sont plus drift-1-metatile
-    // ("1 case trop haut/bas").
-    //
-    // Static NPC (= previousCoords == currentCoords) :
-    //   sprite.y = (npcGBackupRow - cam.y) * 16 - 8
-    //
-    // Walking NPC : currentCoords = TARGET (= shifted at walk start),
-    //   previousCoords = SOURCE. walkFramesLeft = 16 → 0. Interp linear :
-    //   sprite logical_y = currentY + (previousY - currentY) * (walkFramesLeft/16)
-    //   En px : sprite_y_px = currentY * 16 + (previousY - currentY) * walkFramesLeft
-    //   Validation : walkFramesLeft=0 → currentY*16 (= TARGET). walkFramesLeft=16
-    //   → previousY*16 (= SOURCE).
+    // Restored worldX/Y formula (= sub-tile tracking via offY tick per frame).
+    // Notre fix précédent "sprite.y direct from cam.y" cassait le sub-tile
+    // tracking → NPCs glissent off-grid quand player walk mid-step. Reverted.
     //
     // -8 : 1:1 décomp `gSpriteCoordOffsetY = ... - 8` (field_camera.c:462) =
-    //   compense BG VOFS=+8.
-    const walkOffsetX = (npc.previousCoordsX - npc.currentCoordsX) * npc.walkFramesLeft;
-    const walkOffsetY = (npc.previousCoordsY - npc.currentCoordsY) * npc.walkFramesLeft;
-    sprite.x = (npcGBackupCol - cam.x) * 16 + walkOffsetX;
-    sprite.y = (npcGBackupRow - cam.y) * 16 - 8 + walkOffsetY;
-    void offX;
-    void offY;
-    // Note : npc.worldX/Y kept dans struct pour back-compat (= TickObjectEvent
-    // Movements peut continuer à les ticker), mais pas utilisé pour rendering.
+    // compense BG VOFS=+8.
+    sprite.x = npc.worldX + offX;
+    sprite.y = npc.worldY + offY - 8;
+    void cam;
+    void npcGBackupCol;
+    void npcGBackupRow;
 
     // Update sprite frame chaque frame (= keeps tile + flipH en sync avec
     // facingDirection, important pour interact qui change facing instantané).
@@ -1047,16 +1059,30 @@ export function DestroyAllObjectEvents(rt: DecompRuntime): void {
 
 // ─── Phase 4.8 : seamless cross-border NPC handling (1:1 décomp) ─────────────
 
-/** 1:1 décomp `UpdateObjectEventCoordsForCameraUpdate` (event_object_movement.c:2167).
- *  Quand le camera traverse un border vers une connexion, gCamera.x/y =
- *  old_pos.x/y - new_pos.x/y (= LOGICAL frame). Les NPCs old map ont des
- *  currentCoords/initialCoords/previousCoords en gBackup frame de l'ancienne
- *  map. On les translate par -gCamera.x/y pour qu'ils soient en gBackup frame
- *  de la NEW map.
+/** 1:1 décomp `UpdateObjectEventCoordsForCameraUpdate` (event_object_movement.c:2167-2190).
  *
- *  À call APRÈS TransitionToConnection (= gMapHeader swap) avant le prochain
- *  frame. */
-export function UpdateObjectEventCoordsForCameraUpdate(dx: number, dy: number): void {
+ *  ```c
+ *  void UpdateObjectEventCoordsForCameraUpdate(void) {
+ *      if (gCamera.active) {
+ *          dx = gCamera.x;
+ *          dy = gCamera.y;
+ *          for (each active NPC) {
+ *              initialCoords -= (dx, dy);
+ *              currentCoords -= (dx, dy);
+ *              previousCoords -= (dx, dy);
+ *          }
+ *      }
+ *  }
+ *  ```
+ *
+ *  Phase 4.8 audit : changement de signature pour être 1:1 décomp. Avant on
+ *  passait dx/dy en paramètres. Maintenant on lit gCamera.active/x/y (= set
+ *  par CameraMove au cross-border, FALSE sinon). Per-frame call est safe car
+ *  no-op si gCamera.active=FALSE. */
+export function UpdateObjectEventCoordsForCameraUpdate(): void {
+  if (!gCamera.active) return;
+  const dx = gCamera.x;
+  const dy = gCamera.y;
   for (const npc of gObjectEvents) {
     if (!npc.active) continue;
     npc.currentCoordsX -= dx;
@@ -1067,6 +1093,34 @@ export function UpdateObjectEventCoordsForCameraUpdate(dx: number, dy: number): 
     npc.initialCoordsY -= dy;
   }
 }
+
+/** 1:1 décomp `UpdateObjectEventsForCameraUpdate(s16 x, s16 y)` (event_object_movement.c:2217).
+ *
+ *  ```c
+ *  void UpdateObjectEventsForCameraUpdate(s16 x, s16 y) {
+ *      UpdateObjectEventCoordsForCameraUpdate();   // si gCamera.active
+ *      TrySpawnObjectEvents(x, y);                  // bounds check + spawn
+ *      RemoveObjectEventsOutsideView();              // cleanup hors bounds
+ *  }
+ *  ```
+ *
+ *  Appelé depuis CameraUpdate (field_camera.c:416) UNIQUEMENT au tile
+ *  boundary (= deltaX/Y non-zero). Cette restriction au tile boundary élimine
+ *  le mid-step capture drift qu'on avait avec per-frame TrySpawn.
+ *
+ *  À call dans CameraUpdate après CameraMove (= ordre 1:1 décomp). */
+export function UpdateObjectEventsForCameraUpdate(rt: DecompRuntime, x: number, y: number): void {
+  void x;  // décomp passe deltaX/deltaY (= used as cameraX/Y dans TrySpawn signature)
+  void y;
+  UpdateObjectEventCoordsForCameraUpdate();
+  TrySpawnObjectEvents(rt);
+  RemoveObjectEventsOutsideView(rt);
+}
+
+// Register pour CameraUpdate orchestrator call via field-globals.
+_registerUpdateObjectEventsForCameraUpdate((rt, dx, dy) => {
+  UpdateObjectEventsForCameraUpdate(rt as DecompRuntime, dx, dy);
+});
 
 /** 1:1 décomp `RemoveObjectEventsOutsideView` (event_object_movement.c:1677).
  *  Removes NPCs dont currentCoords ET initialCoords sont tous deux hors view+

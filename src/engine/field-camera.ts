@@ -46,6 +46,7 @@ import {
   GetMapBorderIdAt,
   GetIncomingConnection,
   SaveMapView,
+  ComputeConnectionDestPos,
 } from './map-loader';
 import type { MapConnection } from './map-loader';
 import {
@@ -53,6 +54,8 @@ import {
   REG_OFFSET_BG2HOFS, REG_OFFSET_BG2VOFS,
   REG_OFFSET_BG3HOFS, REG_OFFSET_BG3VOFS,
 } from './decomp-runtime';
+import { callUpdateObjectEventsForCameraUpdate } from './field-globals';
+import { getRuntime } from './decomp-globals';
 
 // ─── 1:1 décomp `struct FieldCameraOffset` (field_camera.c:17-24) ───────────
 
@@ -84,6 +87,21 @@ let sVerticalCameraPan = 0;
  *  Tracking du déplacement total pour positionner les sprites overworld
  *  (= gSpriteCoordOffsetX/Y dérivé). */
 export const gTotalCamera = { pixelOffsetX: 0, pixelOffsetY: 0 };
+
+/** 1:1 décomp `EWRAM_DATA struct Camera gCamera` (fieldmap.c:30 / global.fieldmap.h).
+ *  Set par CameraMove (fieldmap.c:649) :
+ *    - `gCamera.active = FALSE` au début (= reset chaque tile boundary).
+ *    - Si cross-border : `gCamera.active = TRUE`, `gCamera.x = old_pos.x - new_pos.x`,
+ *      `gCamera.y = old_pos.y - new_pos.y` (= delta logique pour translater les
+ *      NPCs vers le frame de la new map).
+ *  Lu par UpdateObjectEventCoordsForCameraUpdate (event_object_movement.c:2167) :
+ *    si `gCamera.active`, translate `currentCoords/initialCoords/previousCoords`
+ *    de tous les NPCs actifs.
+ *
+ *  Phase 4.8 audit : ce flag manquait → on appelait UpdateObjectEventCoordsFor
+ *  CameraUpdate manuellement dans handleConnectionTransition sans control flag,
+ *  ce qui était fonctionnel mais pas 1:1 décomp. */
+export const gCamera = { active: false, x: 0, y: 0 };
 
 /** 1:1 décomp `struct CameraObject gFieldCamera` (field_camera.c:42).
  *  Tracks player sprite for camera follow. Phase 4.2 : version simplifiée
@@ -423,6 +441,10 @@ export function clearPendingConnection(): void {
  *  Returns true si une connexion a été traversée (= équivalent gCamera.active=TRUE
  *  dans décomp). */
 function CameraMove(deltaX: number, deltaY: number): boolean {
+  // 1:1 décomp `gCamera.active = FALSE;` (fieldmap.c:654) — reset chaque tile
+  // boundary. Set TRUE seulement si cross-border détecté.
+  gCamera.active = false;
+
   // 1:1 décomp `GetPostCameraMoveMapBorderId(x, y) = GetMapBorderIdAt(pos.x +
   // MAP_OFFSET + x, pos.y + MAP_OFFSET + y)`. Décomp's `pos` est en LOGICAL
   // coords donc `pos + MAP_OFFSET` = playerGBackup. + delta = post-step.
@@ -431,10 +453,6 @@ function CameraMove(deltaX: number, deltaY: number): boolean {
   //   playerGBackupX = _camPos.x + 7 (= MAP_OFFSET coïncidence avec viewCol 7)
   //   playerGBackupY = _camPos.y + 5 (= viewRowOffset)
   //   post-step playerGBackup{X,Y} = _camPos + (7, 5) + delta.
-  //
-  // Donc le check border doit utiliser `_camPos + (7, 5) + delta`, pas
-  // `_camPos + delta` qui était la camera position (= 5 rows trop haut pour
-  // y, déclenche trop tard).
   const predictedPlayerGBX = _camPos.x + 7 + deltaX;
   const predictedPlayerGBY = _camPos.y + 5 + deltaY;
   const direction = GetMapBorderIdAt(predictedPlayerGBX, predictedPlayerGBY);
@@ -446,25 +464,41 @@ function CameraMove(deltaX: number, deltaY: number): boolean {
     return false;
   }
 
-  // Border crossed : find la connexion correspondante. Décomp's
-  // GetIncomingConnection prend `pos.x, pos.y` (= player logical AVANT step).
-  // Notre équivalent : _camPos.x (= playerLogical.x), _camPos.y - 2
-  // (= playerLogical.y).
+  // Border crossed : find la connexion correspondante.
   const connection = GetIncomingConnection(direction, _camPos.x, _camPos.y - 2);
   if (!connection) {
-    // Pas de connexion match malgré flag set (= edge case offset out-of-range).
-    // Fallback : juste move normal (= player va bumper le wall au prochain step).
     _camPos.x += deltaX;
     _camPos.y += deltaY;
     return false;
   }
 
   // 1:1 décomp `SaveMapView();` (fieldmap.c:663). Snapshot OLD map's view area
-  // (= 14×15 metatiles autour du player) AVANT le swap gMapHeader. Réinjecté
-  // par MoveMapViewToBackup dans NEW map's sBackupMapData après TransitionTo
-  // Connection pour visual continuité parfaite au cross-border.
-  // Notre conv : pos.x = `_camPos.x`, pos.y = `_camPos.y - 2` (= playerLogical).
+  // AVANT le swap gMapHeader.
   SaveMapView(_camPos.x, _camPos.y - 2);
+
+  // 1:1 décomp gCamera tracking pour UpdateObjectEventCoordsForCameraUpdate.
+  // gCamera.x/y = old_pos - new_pos (= delta logique pour translater NPCs
+  // d'old map vers new map's frame). Calcul ici sync via ComputeConnectionDest
+  // Pos pour disposer du new_pos avant le swap (= scène fait le swap async via
+  // _pendingConnection mais le delta logique est calculable maintenant).
+  // Note : pour SOUTH/EAST notre ComputeConnectionDestPos retourne post-step
+  // (= 0). Décomp utilise pre-step (= -1). Pour gCamera tracking on convertit.
+  const oldX = _camPos.x;
+  const oldY = _camPos.y - 2;  // = playerLogical.y old map
+  const newPos = ComputeConnectionDestPos(connection, direction, oldX, oldY);
+  // Convert to pre-step (= matches décomp gCamera tracking).
+  let preStepNewX = newPos.camX;
+  let preStepNewY = newPos.camY;
+  // SOUTH/EAST returned post-step in our conv (= 0). Subtract delta to get pre-step.
+  // NORTH/WEST already pre-step (= mapDim).
+  // CONNECTION_SOUTH=1, CONNECTION_EAST=4 (per map-loader.ts).
+  if (direction === 1 /* SOUTH */ || direction === 4 /* EAST */) {
+    preStepNewX = newPos.camX - deltaX;
+    preStepNewY = newPos.camY - deltaY;
+  }
+  gCamera.active = true;
+  gCamera.x = oldX - preStepNewX;
+  gCamera.y = oldY - preStepNewY;
 
   // Signal le pending connection. _camPos sera override par MainCB2 scene
   // via SetCameraTopLeftCoords avec les new map coords.
@@ -524,7 +558,26 @@ export function CameraUpdate(): void {
 
   if (deltaX !== 0 || deltaY !== 0) {
     CameraMove(deltaX, deltaY);
-    // UpdateObjectEventsForCameraUpdate(deltaX, deltaY);  // TODO Phase 4.4
+    // 1:1 décomp `UpdateObjectEventsForCameraUpdate(deltaX, deltaY)`
+    // (field_camera.c:416). Orchestrate UpdateObjectEventCoordsForCameraUpdate
+    // (= translate NPCs si gCamera.active) + TrySpawnObjectEvents (= bounds
+    // check + spawn) + RemoveObjectEventsOutsideView (= cleanup).
+    //
+    // CRITIQUE : appelé UNIQUEMENT au tile boundary (= deltaX/Y non-zero) =
+    // 1:1 décomp. Élimine le mid-step capture drift qu'on avait avec per-frame
+    // TrySpawn (= NPCs spawnés mid-step capturaient stale cam.y/offY).
+    //
+    // Skip si _pendingConnection (= cross-border) : la scène handleConnection
+    // Transition appellera l'orchestrator après le swap gMapHeader, sinon
+    // TrySpawn iterait les templates de l'OLD map.
+    if (!_pendingConnection) {
+      try {
+        callUpdateObjectEventsForCameraUpdate(getRuntime(), deltaX, deltaY);
+      } catch (e) {
+        // Runtime not yet set au boot très early → no-op safe.
+        void e;
+      }
+    }
     // SetBerryTreesSeen();                                // TODO Phase 4.7
     AddCameraTileOffset(sFieldCameraOffset, deltaX * 2, deltaY * 2);
     _trace('boundary_cross', {

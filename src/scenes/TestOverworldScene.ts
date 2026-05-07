@@ -70,9 +70,7 @@ import {
   TickObjectEventMovements,
   resetObjectEventAllocations,
   destroyAllNpcSprites,
-  UpdateObjectEventCoordsForCameraUpdate,
-  RemoveObjectEventsOutsideView,
-  TrySpawnObjectEvents,
+  UpdateObjectEventsForCameraUpdate,
   preloadNpcGraphicsForMap,
 } from '../engine/object-events';
 import { installInputHandlers, setHeldKeysOverride } from '../engine/input-handler';
@@ -309,18 +307,12 @@ export class TestOverworldScene extends Phaser.Scene {
         TickObjectEventMovements(rt);
         // Phase 4.4.a : update sprite positions des NPCs selon camera scroll.
         UpdateObjectEvents(rt);
-        // Phase 4.8 : 1:1 décomp `RemoveObjectEventsOutsideView`
-        // (event_object_movement.c:1677). Cleanup NPCs qui ont drift hors
-        // view+buffer (= old map NPCs après cross-border ou NPCs WANDER qui
-        // sortent de leur range). Décomp call ça depuis
-        // UpdateObjectEventsForCameraUpdate qui tourne post-CameraUpdate.
-        RemoveObjectEventsOutsideView(rt);
-        // Phase 4.8 Tâche 2 : dynamic NPC respawn 1:1 décomp `TrySpawnObjectEvents`
-        // (event_object_movement.c:1645-1675). SYNC per-frame : iterate templates
-        // de gMapHeader, bounds check vs player, spawn ceux non-actifs déjà.
-        // Lit PNGs depuis _npcPngCache (préchargées au map init / cross-border).
-        // Pas de throttle, pas d'await — matches décomp behavior 1:1.
-        TrySpawnObjectEvents(rt);
+        // Phase 4.9 audit fix : `RemoveObjectEventsOutsideView` + `TrySpawn
+        // ObjectEvents` sont MAINTENANT appelés depuis `UpdateObjectEventsFor
+        // CameraUpdate` orchestrator dans `CameraUpdate` au tile boundary
+        // (= 1:1 décomp field_camera.c:416 + event_object_movement.c:2217).
+        // Plus de per-frame call ici (= éliminait le mid-step capture drift
+        // qui causait "1 case trop haut" sur NPCs spawnés mid-step).
         // Phase 4.7 : 1:1 décomp `HideShowWarpArrow` + sprite update. Per-frame
         // check : si player on ARROW_WARP tile + facing/walking matching dir
         // → show arrow at adjacent tile. Sinon hide. UpdateWarpArrowSprite tick
@@ -806,33 +798,17 @@ export class TestOverworldScene extends Phaser.Scene {
     flushOverworldTilemaps(this.rt);
     FieldUpdateBgTilemapScroll(this.rt);
 
-    // Étape 8 : 1:1 décomp NPC handling cross-border (event_object_movement.c:2167).
-    // GARDE les NPCs old map (= ils peuvent être visibles via FillX borders),
-    // translate leurs coords vers new map's frame, puis spawn new map's NPCs
-    // alongside. RemoveObjectEventsOutsideView (= per-frame) clean up ceux qui
-    // drift hors view.
+    // Étape 8 : 1:1 décomp NPC orchestrator post-cross.
+    // gCamera.active a été set par CameraMove avec gCamera.x/y = old - new.
+    // UpdateObjectEventsForCameraUpdate orchestrate :
+    //   1. UpdateObjectEventCoordsForCameraUpdate (= translate NPCs si gCamera.active)
+    //   2. TrySpawnObjectEvents (= spawn new map's NPCs in bounds)
+    //   3. RemoveObjectEventsOutsideView (= cleanup hors bounds)
     //
-    // Décomp gCamera.x/y = old_pos.x/y - new_pos.x/y (LOGICAL frame, BEFORE
-    // delta apply). Our equivalent :
-    //   old_pos.y_logical = pending.oldCamY - 2 (= _camPos.y - 2 dans gBackup
-    //   frame nous donne playerLogical).
-    //   new_pos.y_logical = newPos.camY (= ComputeConnectionDestPos return,
-    //   pre-delta).
-    const gCameraDx = pending.oldCamX - newPos.camX;
-    const gCameraDy = (pending.oldCamY - 2) - newPos.camY;
-    UpdateObjectEventCoordsForCameraUpdate(gCameraDx, gCameraDy);
-
-    // Spawn new map's NPCs SYNC pour éviter la race condition spawn-timing :
-    // si async, MainCB2 continue à tick (= PlayerStep démarre new step,
-    // CameraUpdate fire deltaY, cam.y bumps de +1, gTotalCamera change),
-    // donc le worldY computé au moment du spawn (= async microtask later)
-    // utiliserait stale cam/offY → NPCs misalignés de 1 metatile.
-    //
-    // Solution : spawn directement via TrySpawnObjectEvents (sync, uses
-    // _npcPngCache). Si PNGs pas cached, skip (= per-frame TrySpawn re-tries).
-    // Fire-and-forget preload pour populer cache pour future TrySpawn.
+    // Fire-and-forget preload pour populer _npcPngCache (= per-frame TrySpawn
+    // au prochain tile boundary captera les NPCs après cache populated).
     void preloadNpcGraphicsForMap(newHeader);
-    TrySpawnObjectEvents(this.rt);
+    UpdateObjectEventsForCameraUpdate(this.rt, pending.deltaX, pending.deltaY);
     UpdateObjectEvents(this.rt);
 
     // Étape 9 : BGM transition. 1:1 décomp `TransitionMapMusic`.

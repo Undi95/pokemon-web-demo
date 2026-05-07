@@ -33,12 +33,17 @@ interface FieldGlobals {
   updateNpcSpriteFrame: ((rt: unknown, npc: ObjectEvent) => void) | null;
   /** Un-freeze tous les NPCs (= player walk away from interact). */
   unfreezeAllNpcs: (() => void) | null;
+  /** 1:1 décomp `UpdateObjectEventsForCameraUpdate(s16, s16)` (event_object_movement.c:2217).
+   *  Orchestrator appelé par CameraUpdate au tile boundary. Rt passé pour
+   *  TrySpawn + RemoveOutsideView qui ont besoin du runtime. */
+  updateObjectEventsForCameraUpdate: ((rt: unknown, deltaX: number, deltaY: number) => void) | null;
 }
 
 const _registry: FieldGlobals = {
   gObjectEvents: [],
   updateNpcSpriteFrame: null,
   unfreezeAllNpcs: null,
+  updateObjectEventsForCameraUpdate: null,
 };
 
 // ─── Setup (= called by object-events.ts module init) ──────────────────────
@@ -73,4 +78,18 @@ export function callUpdateNpcSpriteFrame(rt: unknown, npc: ObjectEvent): void {
 /** Un-freeze tous les NPCs (= release/releaseall opcodes). */
 export function callUnfreezeAllNpcs(): void {
   _registry.unfreezeAllNpcs?.();
+}
+
+/** Register UpdateObjectEventsForCameraUpdate orchestrator. À call par
+ *  object-events.ts au module-level. */
+export function _registerUpdateObjectEventsForCameraUpdate(
+  fn: (rt: unknown, deltaX: number, deltaY: number) => void,
+): void {
+  _registry.updateObjectEventsForCameraUpdate = fn;
+}
+
+/** Call orchestrator depuis CameraUpdate (field-camera.ts) au tile boundary.
+ *  No-op si pas registered yet (= boot). */
+export function callUpdateObjectEventsForCameraUpdate(rt: unknown, deltaX: number, deltaY: number): void {
+  _registry.updateObjectEventsForCameraUpdate?.(rt, deltaX, deltaY);
 }
