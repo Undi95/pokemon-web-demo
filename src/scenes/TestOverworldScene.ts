@@ -61,6 +61,7 @@ import {
   DIR_NORTH,
   DIR_SOUTH,
   NOT_MOVING,
+  T_NOT_MOVING,
   gPlayerAvatar,
 } from '../engine/player-avatar';
 import {
@@ -726,62 +727,41 @@ export class TestOverworldScene extends Phaser.Scene {
     }
     const newHeader = (globalThis as Record<string, unknown>).gMapHeader as MapHeader;
 
-    // Phase 4.8 critical : reset gTotalCamera au cross-border. Sans ça, le
-    // scroll cumulé depuis boot (= via walks dans old map) s'applique aux NEW
-    // NPCs spawnés post-cross → off-screen. Décomp's `LoadMapFromCameraTransition`
-    // ne reset pas explicitement gTotalCameraPixelOffsetX/Y mais le scroll
-    // continue dans NEW map's frame (= via le BG tilemap rebuild). Notre impl
-    // utilise gTotalCamera comme offset fixe au sprite → besoin reset pour
-    // que le baseline soit "0 scroll dans new map's frame".
-    gTotalCamera.pixelOffsetX = 0;
-    gTotalCamera.pixelOffsetY = 0;
+    // Phase 4.8 : NE PAS reset gTotalCamera ici. La décomp ne le fait pas dans
+    // LoadMapFromCameraTransition. Reason : gTotalCamera.pixelOffsetY est
+    // l'équivalent de gSpriteCoordOffsetY décomp = un offset absolu cumulatif
+    // depuis baseline. NPC.worldY au spawn capture (cam.y, offY) au même
+    // moment, et tracking sprite.y = worldY + offY_now - 8 reste cohérent
+    // tant que cam_change_pixels + offY_change = 0 (= invariant qui tient au
+    // step boundary). Reset cassait cet invariant en cas de cross mid-step
+    // → drift de 15 px sur les NPCs spawnés mid-step post-cross.
 
-    // Étape 4 : update player logical coords. ComputeConnectionDestPos
-    // retourne la BORDER position (= newMap.height pour NORTH, etc) PRE-delta.
-    // Notre PlayerStep step end appliquera moveCoords (= y += deltaY) à f15
-    // pour finaliser le step.
+    // Étape 4 : update player logical coords ET force step end immédiatement.
     //
-    // Pour NORTH (height 20) : newCamY = 20. gPlayerAvatar.y = 20 (= 1 past
-    // last valid row, in SOUTH border of new map). Step end → 19 (= last
-    // valid row). ✓
-    gPlayerAvatar.x = newPos.camX;
-    gPlayerAvatar.y = newPos.camY;
-    console.log(`[connection] player.x/y = ${newPos.camX}, ${newPos.camY} in ${newHeader.id} (pre-step-end)`);
-
-    // Étape 5 : SetCameraTopLeftCoords ANTICIPE le step end. _camPos.y =
-    // post-step playerLogical.y + 2. Pour NORTH avec deltaY=-1 :
-    //   post-step player.y = newCamY + deltaY = 19.
-    //   _camPos.y = 19 + 2 = 21 = newCamY + deltaY + 2.
-    // Pour x analogously, _camPos.x = playerLogical.x = post-step (= newCamX
-    // + deltaX), pas de +2 car viewColOffset=7=MAP_OFFSET coïncidence.
-    SetCameraTopLeftCoords(
-      newPos.camX + pending.deltaX,
-      newPos.camY + pending.deltaY + 2,
-    );
-
-    // 1:1 décomp `MoveMapViewToBackup(direction);` (fieldmap.c:675). Restore
-    // OLD map's snapshot (= via SaveMapView dans CameraMove avant TransitionTo
-    // Connection) dans NEW map's sBackupMapData à player's POST-STEP logical pos.
+    // CRITIQUE — bug Y-drift NPCs (= "1 case trop haut") : si on garde le
+    // cross-step en cours (= stepFramesLeft > 0), les ~15 frames restantes
+    // continuent à incrémenter `gTotalCamera.pixelOffsetY` (= via -=
+    // movementSpeedY chaque frame) MAIS sans cam.y change correspondant
+    // (car cam.y est déjà set à la POST-step value via SetCameraTopLeftCoords).
+    // Résultat : offY drift de ~15 px par cross-border, NPCs apparaissent
+    // ~15 px (= 1 metatile) trop hauts.
     //
-    // Décomp pos POST-step :
+    // Fix : forcer le cross-step à se finir IMMÉDIATEMENT. Set player à la
+    // post-step position directement, reset PlayerStep + gFieldCamera state.
+    // Si user tient toujours la touche, PlayerStep démarrera un fresh step
+    // au prochain frame naturellement.
+    //
+    // Post-step value 1:1 décomp :
     //   NORTH : pos.y = mapHeight - 1 (= newCamY + deltaY)
     //   SOUTH : pos.y = 0           (= newCamY car déjà post-step dans notre conv)
     //   WEST  : pos.x = mapWidth - 1 (= newCamX + deltaX)
     //   EAST  : pos.x = 0           (= newCamX car déjà post-step dans notre conv)
-    //
-    // ComputeConnectionDestPos retourne mixed conventions :
-    //   - NORTH/WEST : pre-step (= mapH/mapW), need +delta pour post-step.
-    //   - SOUTH/EAST : already post-step (= 0), use directly.
-    //
-    // CRITIQUE : doit run AVANT clearOverworldTilemaps + DrawWholeMapView (=
-    // sinon le snapshot serait overwrite par new map's content au render).
+    // ComputeConnectionDestPos retourne mixed : NORTH/WEST = pre-step (need
+    // +delta), SOUTH/EAST = already post-step.
     let postStepX: number;
     let postStepY: number;
     switch (pending.direction) {
       case CONNECTION_NORTH:
-        postStepX = newPos.camX + pending.deltaX;
-        postStepY = newPos.camY + pending.deltaY;
-        break;
       case CONNECTION_WEST:
         postStepX = newPos.camX + pending.deltaX;
         postStepY = newPos.camY + pending.deltaY;
@@ -793,7 +773,31 @@ export class TestOverworldScene extends Phaser.Scene {
         postStepY = newPos.camY;
         break;
     }
-    MoveMapViewToBackup(pending.direction, postStepX, postStepY);
+    gPlayerAvatar.x = postStepX;
+    gPlayerAvatar.y = postStepY;
+    gPlayerAvatar.runningState = NOT_MOVING;
+    gPlayerAvatar.tileTransitionState = T_NOT_MOVING;
+    gPlayerAvatar.stepFramesLeft = 0;
+    gPlayerAvatar.stepDirection = DIR_NONE;
+    gFieldCamera.x = 0;
+    gFieldCamera.y = 0;
+    gFieldCamera.movementSpeedX = 0;
+    gFieldCamera.movementSpeedY = 0;
+    console.log(`[connection] player.x/y = ${gPlayerAvatar.x}, ${gPlayerAvatar.y} in ${newHeader.id} (post-step forced)`);
+
+    // Étape 5 : SetCameraTopLeftCoords. Player déjà à post-step, donc cam.y =
+    // playerLogical.y + 2 directement (= sans + deltaY supplémentaire).
+    SetCameraTopLeftCoords(
+      gPlayerAvatar.x,
+      gPlayerAvatar.y + 2,
+    );
+
+    // 1:1 décomp `MoveMapViewToBackup(direction);` (fieldmap.c:675). Restore
+    // OLD map's snapshot dans NEW map's sBackupMapData à player's post-step pos.
+    // CRITIQUE : doit run AVANT clearOverworldTilemaps + DrawWholeMapView (=
+    // sinon le snapshot serait overwrite par new map's content au render).
+    // gPlayerAvatar.x/y est déjà à post-step (= setup en Étape 4).
+    MoveMapViewToBackup(pending.direction, gPlayerAvatar.x, gPlayerAvatar.y);
 
     // Étape 6-7 : redraw BG for new map. clearOverworldTilemaps + DrawWholeMapView.
     clearOverworldTilemaps();
@@ -818,11 +822,18 @@ export class TestOverworldScene extends Phaser.Scene {
     const gCameraDy = (pending.oldCamY - 2) - newPos.camY;
     UpdateObjectEventCoordsForCameraUpdate(gCameraDx, gCameraDy);
 
-    // Async spawn new map's NPCs (= dedup via mapId+localId, skip déjà spawnés).
-    void (async () => {
-      await SpawnObjectEventsOnMap(this.rt);
-      UpdateObjectEvents(this.rt);
-    })();
+    // Spawn new map's NPCs SYNC pour éviter la race condition spawn-timing :
+    // si async, MainCB2 continue à tick (= PlayerStep démarre new step,
+    // CameraUpdate fire deltaY, cam.y bumps de +1, gTotalCamera change),
+    // donc le worldY computé au moment du spawn (= async microtask later)
+    // utiliserait stale cam/offY → NPCs misalignés de 1 metatile.
+    //
+    // Solution : spawn directement via TrySpawnObjectEvents (sync, uses
+    // _npcPngCache). Si PNGs pas cached, skip (= per-frame TrySpawn re-tries).
+    // Fire-and-forget preload pour populer cache pour future TrySpawn.
+    void preloadNpcGraphicsForMap(newHeader);
+    TrySpawnObjectEvents(this.rt);
+    UpdateObjectEvents(this.rt);
 
     // Étape 9 : BGM transition. 1:1 décomp `TransitionMapMusic`.
     const songId = (Songs as unknown as Record<string, number>)[newHeader.music] ?? 0;

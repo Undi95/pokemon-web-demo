@@ -997,13 +997,31 @@ export function UpdateObjectEvents(rt: DecompRuntime): void {
     }
     sprite.invisible = false;
 
-    // Phase 4.6 audit Opus 2.5 + correction signe : `- 8` compense le `+8` du
-    // BG VOFS dans FieldUpdateBgTilemapScroll. GBA hardware BG VOFS=+8 fait
-    // que BG content apparaît 8 px PLUS HAUT (= screen y = world_y - 8). Donc
-    // sprite doit aussi être rendu 8 px plus haut pour rester aligned. 1:1
-    // décomp `gSpriteCoordOffsetY = ... - 8` (field_camera.c:462).
-    sprite.x = npc.worldX + offX;
-    sprite.y = npc.worldY + offY - 8;
+    // Phase 4.8 Tâche 2.5 : compute sprite.x/y DIRECTLY each frame depuis
+    // current cam + walk interpolation. NO worldY storage = NO spawn-time
+    // stale state = NPCs spawnés mid-step ne sont plus drift-1-metatile
+    // ("1 case trop haut/bas").
+    //
+    // Static NPC (= previousCoords == currentCoords) :
+    //   sprite.y = (npcGBackupRow - cam.y) * 16 - 8
+    //
+    // Walking NPC : currentCoords = TARGET (= shifted at walk start),
+    //   previousCoords = SOURCE. walkFramesLeft = 16 → 0. Interp linear :
+    //   sprite logical_y = currentY + (previousY - currentY) * (walkFramesLeft/16)
+    //   En px : sprite_y_px = currentY * 16 + (previousY - currentY) * walkFramesLeft
+    //   Validation : walkFramesLeft=0 → currentY*16 (= TARGET). walkFramesLeft=16
+    //   → previousY*16 (= SOURCE).
+    //
+    // -8 : 1:1 décomp `gSpriteCoordOffsetY = ... - 8` (field_camera.c:462) =
+    //   compense BG VOFS=+8.
+    const walkOffsetX = (npc.previousCoordsX - npc.currentCoordsX) * npc.walkFramesLeft;
+    const walkOffsetY = (npc.previousCoordsY - npc.currentCoordsY) * npc.walkFramesLeft;
+    sprite.x = (npcGBackupCol - cam.x) * 16 + walkOffsetX;
+    sprite.y = (npcGBackupRow - cam.y) * 16 - 8 + walkOffsetY;
+    void offX;
+    void offY;
+    // Note : npc.worldX/Y kept dans struct pour back-compat (= TickObjectEvent
+    // Movements peut continuer à les ticker), mais pas utilisé pour rendering.
 
     // Update sprite frame chaque frame (= keeps tile + flipH en sync avec
     // facingDirection, important pour interact qui change facing instantané).
