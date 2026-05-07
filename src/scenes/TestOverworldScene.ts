@@ -728,77 +728,55 @@ export class TestOverworldScene extends Phaser.Scene {
     // step boundary). Reset cassait cet invariant en cas de cross mid-step
     // → drift de 15 px sur les NPCs spawnés mid-step post-cross.
 
-    // Étape 4 : update player logical coords ET force step end immédiatement.
+    // Étape 4 : 1:1 décomp `SetPositionFromConnection` + `pos += (x, y)`
+    // (fieldmap.c:642-674). Player position = PRE-step value en new map. Step
+    // animation continue naturellement — PlayerStep step end appliquera +delta
+    // → final pos = newCamY + deltaY. C'est le 1:1 décomp original.
     //
-    // CRITIQUE — bug Y-drift NPCs (= "1 case trop haut") : si on garde le
-    // cross-step en cours (= stepFramesLeft > 0), les ~15 frames restantes
-    // continuent à incrémenter `gTotalCamera.pixelOffsetY` (= via -=
-    // movementSpeedY chaque frame) MAIS sans cam.y change correspondant
-    // (car cam.y est déjà set à la POST-step value via SetCameraTopLeftCoords).
-    // Résultat : offY drift de ~15 px par cross-border, NPCs apparaissent
-    // ~15 px (= 1 metatile) trop hauts.
+    // ComputeConnectionDestPos retourne maintenant TOUJOURS pre-step (= fix
+    // Phase 4.9 pour matcher SetPositionFromConnection 1:1).
+    //   NORTH : newCamY = mapHeight (= 1 row past SOUTH border) → step end → mapH-1.
+    //   SOUTH : newCamY = -1         (= 1 row above NORTH border) → step end → 0.
+    //   WEST  : newCamX = mapWidth   (= 1 col past EAST border) → step end → mapW-1.
+    //   EAST  : newCamX = -1         (= 1 col left of WEST border) → step end → 0.
     //
-    // Fix : forcer le cross-step à se finir IMMÉDIATEMENT. Set player à la
-    // post-step position directement, reset PlayerStep + gFieldCamera state.
-    // Si user tient toujours la touche, PlayerStep démarrera un fresh step
-    // au prochain frame naturellement.
-    //
-    // Post-step value 1:1 décomp :
-    //   NORTH : pos.y = mapHeight - 1 (= newCamY + deltaY)
-    //   SOUTH : pos.y = 0           (= newCamY car déjà post-step dans notre conv)
-    //   WEST  : pos.x = mapWidth - 1 (= newCamX + deltaX)
-    //   EAST  : pos.x = 0           (= newCamX car déjà post-step dans notre conv)
-    // ComputeConnectionDestPos retourne mixed : NORTH/WEST = pre-step (need
-    // +delta), SOUTH/EAST = already post-step.
-    let postStepX: number;
-    let postStepY: number;
-    switch (pending.direction) {
-      case CONNECTION_NORTH:
-      case CONNECTION_WEST:
-        postStepX = newPos.camX + pending.deltaX;
-        postStepY = newPos.camY + pending.deltaY;
-        break;
-      case CONNECTION_SOUTH:
-      case CONNECTION_EAST:
-      default:
-        postStepX = newPos.camX;
-        postStepY = newPos.camY;
-        break;
-    }
-    gPlayerAvatar.x = postStepX;
-    gPlayerAvatar.y = postStepY;
-    gPlayerAvatar.runningState = NOT_MOVING;
-    gPlayerAvatar.tileTransitionState = T_NOT_MOVING;
-    gPlayerAvatar.stepFramesLeft = 0;
-    gPlayerAvatar.stepDirection = DIR_NONE;
-    gFieldCamera.x = 0;
-    gFieldCamera.y = 0;
-    gFieldCamera.movementSpeedX = 0;
-    gFieldCamera.movementSpeedY = 0;
-    console.log(`[connection] player.x/y = ${gPlayerAvatar.x}, ${gPlayerAvatar.y} in ${newHeader.id} (post-step forced)`);
+    // CRITIQUE : on ne reset PAS PlayerStep + gFieldCamera state ! Le step
+    // animation continue ses 16 frames, scroll BG smooth, step end applique
+    // +delta. Sans cette continuité, le user remarque un "TP d'1 case en
+    // avance" car frame 0 cross + frame 16 step end = 32 frames mais 2 cases
+    // parcourues au lieu d'1 (= ce que voulait le décomp original).
+    gPlayerAvatar.x = newPos.camX;
+    gPlayerAvatar.y = newPos.camY;
+    console.log(`[connection] player.x/y = ${newPos.camX}, ${newPos.camY} in ${newHeader.id} (pre-step ; step animation continues)`);
 
-    // Étape 5 : SetCameraTopLeftCoords. Player déjà à post-step, donc cam.y =
-    // playerLogical.y + 2 directement (= sans + deltaY supplémentaire).
+    // Étape 5 : SetCameraTopLeftCoords. Player pre-step, mais cam doit
+    // anticiper le post-step pour que sprite reste à view row 5 dès le cross
+    // frame.
+    //   _camPos.y = post-step playerLogical.y + 2 = (newCamY + deltaY) + 2.
     SetCameraTopLeftCoords(
-      gPlayerAvatar.x,
-      gPlayerAvatar.y + 2,
+      newPos.camX + pending.deltaX,
+      newPos.camY + pending.deltaY + 2,
     );
 
     // 1:1 décomp `MoveMapViewToBackup(direction);` (fieldmap.c:675). Restore
-    // OLD map's snapshot dans NEW map's sBackupMapData à player's post-step pos.
-    // CRITIQUE : doit run AVANT clearOverworldTilemaps + DrawWholeMapView (=
-    // sinon le snapshot serait overwrite par new map's content au render).
-    // gPlayerAvatar.x/y est déjà à post-step (= setup en Étape 4).
-    MoveMapViewToBackup(pending.direction, gPlayerAvatar.x, gPlayerAvatar.y);
+    // OLD map's snapshot dans NEW map's sBackupMapData à player's POST-step pos.
+    // (= pos après pos += (x, y) dans CameraMove, line 673-674). Notre
+    // équivalent : newCamX + deltaX, newCamY + deltaY.
+    // CRITIQUE : doit run AVANT clearOverworldTilemaps + DrawWholeMapView.
+    MoveMapViewToBackup(
+      pending.direction,
+      newPos.camX + pending.deltaX,
+      newPos.camY + pending.deltaY,
+    );
 
     // Étape 6-7 : redraw BG for new map. clearOverworldTilemaps + DrawWholeMapView.
     //
-    // Phase 4.9 fix : ResetFieldCamera AVANT redraw pour aligner sFieldCameraOffset
-    // sur step boundary state (= xPixelOffset/yPixelOffset/xTileOffset/yTileOffset
-    // tous à 0). Sans ça, le cross frame's residual -1 yPixelOffset s'accumule
-    // (= ~15 px = 1 case visuelle décalée). User feedback : "le visual de la
-    // map décalé d'1 case en haut, mais hitbox correcte."
-    ResetFieldCamera();
+    // 1:1 décomp : NE PAS reset sFieldCameraOffset (= LoadMapFromCameraTransition
+    // ne le fait pas non plus). La natural accumulation à travers le cross step
+    // animation (= 16 frames de speedY=-1 contribution) donne yPixelOffset
+    // multiple de 16 au step boundary, ce qui équivaut à 0 modulo 256 pour
+    // REG_BG_VOFS hardware. Reset cassait ça en désynchronisant gFieldCamera.y
+    // (= mid-step) vs sFieldCameraOffset (= 0).
     clearOverworldTilemaps();
     const cam = GetCameraTopLeftCoords();
     DrawWholeMapView(cam.x, cam.y, newHeader.mapLayout);

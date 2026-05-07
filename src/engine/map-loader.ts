@@ -938,22 +938,27 @@ export function ComputeConnectionDestPos(
 
   let newCamX = curPosX;
   let newCamY = curPosY;
+  // Phase 4.9 fix : 1:1 décomp `SetPositionFromConnection` (fieldmap.c:624-647)
+  // retourne PRE-step value. PlayerStep applique le step delta naturellement
+  // au step end → final pos = pre-step + delta. Sans cette correction, mon
+  // "force step end" + post-step value double-comptait le delta → player TP'd
+  // 1 case en avance (= bug user "transition zone 3 cases").
   switch (direction) {
     case CONNECTION_EAST:
-      newCamX = 0;  // décomp : pos.x = -x (= -1 typiquement) ; sans delta → 0 (= 1 row INTO new map's WEST border)
+      newCamX = -1;  // décomp : pos.x = -x = -1. Step end +1 → 0 (= WEST border col)
       newCamY = curPosY - connection.offset;
       break;
     case CONNECTION_WEST:
-      newCamX = cMap.mapLayout.width;  // décomp : pos.x = newMap.width ; après step end -1 → last valid col
+      newCamX = cMap.mapLayout.width;  // décomp : pos.x = newMap.width. Step end -1 → last valid col
       newCamY = curPosY - connection.offset;
       break;
     case CONNECTION_SOUTH:
       newCamX = curPosX - connection.offset;
-      newCamY = 0;  // décomp : pos.y = -y (= -1) ; sans delta → 0 (= NORTH border row)
+      newCamY = -1;  // décomp : pos.y = -y = -1. Step end +1 → 0 (= NORTH border row)
       break;
     case CONNECTION_NORTH:
       newCamX = curPosX - connection.offset;
-      newCamY = cMap.mapLayout.height;  // décomp : pos.y = newMap.height ; step end -1 → last valid row
+      newCamY = cMap.mapLayout.height;  // décomp : pos.y = newMap.height. Step end -1 → last valid row
       break;
   }
   return { camX: newCamX, camY: newCamY };
