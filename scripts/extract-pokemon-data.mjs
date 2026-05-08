@@ -374,6 +374,172 @@ function parseExperienceTables() {
   };
 }
 
+// ─── 15. trainers.h ────────────────────────────────────────────────────────
+
+function parseTrainers() {
+  const text = readDecomp('src/data/trainers.h');
+  if (!text) return {};
+  // Format : `[TRAINER_XXX] = { .partyFlags = N, .trainerClass = X, ..., }`
+  const re = /\[(TRAINER_\w+)\]\s*=\s*\{([\s\S]*?)\n\s*\},/g;
+  const out = {};
+  let m;
+  while ((m = re.exec(text)) !== null) {
+    const id = m[1];
+    const body = m[2];
+    const nameMatch = body.match(/\.trainerName\s*=\s*_\("([^"]*)"\)/);
+    const itemsMatch = body.match(/\.items\s*=\s*\{([^}]*)\}/);
+    const items = itemsMatch
+      ? (itemsMatch[1].match(/ITEM_\w+/g) ?? [])
+      : [];
+    out[id] = {
+      partyFlags:    parseField(body, 'partyFlags') ?? '0',
+      trainerClass:  parseField(body, 'trainerClass') ?? 'TRAINER_CLASS_PKMN_TRAINER_1',
+      encounterMusic: parseField(body, 'encounterMusic_gender') ?? 'TRAINER_ENCOUNTER_MUSIC_MALE',
+      trainerPic:    parseField(body, 'trainerPic') ?? 'TRAINER_PIC_HIKER',
+      trainerName:   nameMatch?.[1] ?? '',
+      items,
+      doubleBattle:  /\.doubleBattle\s*=\s*TRUE/.test(body),
+      aiFlags:       parseField(body, 'aiFlags') ?? '0',
+      partySize:     parseInt10(parseField(body, 'partySize')),
+    };
+  }
+  return out;
+}
+
+// ─── 16. contest_moves.h ───────────────────────────────────────────────────
+
+function parseContestMoves() {
+  const text = readDecomp('src/data/contest_moves.h');
+  if (!text) return {};
+  const re = /\[(MOVE_\w+)\]\s*=\s*\{([\s\S]*?)\n\s*\}/g;
+  const out = {};
+  let m;
+  while ((m = re.exec(text)) !== null) {
+    const moveId = m[1];
+    const body = m[2];
+    const comboMatch = body.match(/\.comboMoves\s*=\s*\{([^}]*)\}/);
+    const comboMoves = comboMatch
+      ? (comboMatch[1].match(/COMBO_STARTER_\w+/g) ?? [])
+      : [];
+    out[moveId] = {
+      effect:           parseField(body, 'effect') ?? 'CONTEST_EFFECT_HIGHLY_APPEALING',
+      contestCategory:  parseField(body, 'contestCategory') ?? 'CONTEST_CATEGORY_COOL',
+      comboStarterId:   parseField(body, 'comboStarterId') ?? '0',
+      comboMoves,
+    };
+  }
+  return out;
+}
+
+// ─── 17. evolution.h ──────────────────────────────────────────────────────
+
+function parseEvolutions() {
+  const text = readDecomp('src/data/pokemon/evolution.h');
+  if (!text) return {};
+  // Format : `[SPECIES_X] = {{EVO_METHOD, param, SPECIES_TARGET}, ...}`
+  const re = /\[(SPECIES_\w+)\]\s*=\s*\{([\s\S]*?)\n?\s*\},?$/gm;
+  const out = {};
+  let m;
+  while ((m = re.exec(text)) !== null) {
+    const speciesId = m[1];
+    const body = m[2];
+    const reEvo = /\{\s*(EVO_\w+)\s*,\s*(\d+|0x[\da-fA-F]+)\s*,\s*(SPECIES_\w+)\s*\}/g;
+    const evos = [];
+    let mm;
+    while ((mm = reEvo.exec(body)) !== null) {
+      evos.push({ method: mm[1], param: parseInt10(mm[2]), target: mm[3] });
+    }
+    if (evos.length > 0) out[speciesId] = evos;
+  }
+  return out;
+}
+
+// ─── 18. item_effects.h ─────────────────────────────────────────────────────
+
+function parseItemEffects() {
+  const text = readDecomp('src/data/pokemon/item_effects.h');
+  if (!text) return {};
+  // Format : `const u8 gItemEffect_XXX[N] = { [idx] = VALUE, ... }`.
+  // Capture la liste des fields set + la size.
+  const re = /const\s+u8\s+gItemEffect_(\w+)\[(\d+)\]\s*=\s*\{([\s\S]*?)\}/g;
+  const out = {};
+  let m;
+  while ((m = re.exec(text)) !== null) {
+    const itemName = m[1];
+    const size = Number(m[2]);
+    const body = m[3];
+    const reField = /\[(\d+)\]\s*=\s*([A-Z][A-Z0-9_]*|\d+)/g;
+    const fields = {};
+    let mm;
+    while ((mm = reField.exec(body)) !== null) {
+      fields[mm[1]] = mm[2];
+    }
+    out['ITEM_' + itemName.toUpperCase()] = { size, fields };
+  }
+  return out;
+}
+
+// ─── 19. pokedex_orders.h ──────────────────────────────────────────────────
+
+function parsePokedexOrders() {
+  const text = readDecomp('src/data/pokemon/pokedex_orders.h');
+  if (!text) return {};
+  // Plusieurs arrays : Alphabetical, Weight, Height, NationalDexNumberToHoenn, etc.
+  const re = /const\s+u16\s+gPokedexOrder_(\w+)\[\]\s*=\s*\{([\s\S]*?)\};/g;
+  const out = {};
+  let m;
+  while ((m = re.exec(text)) !== null) {
+    const orderName = m[1];
+    const body = m[2];
+    const dexNums = (body.match(/NATIONAL_DEX_\w+/g) ?? []);
+    out[orderName] = dexNums;
+  }
+  return out;
+}
+
+// ─── 20. trainer_class_lookups.h ───────────────────────────────────────────
+
+function parseTrainerClassLookups() {
+  const text = readDecomp('src/data/pokemon/trainer_class_lookups.h');
+  if (!text) return {};
+  // Plusieurs tables : gFacilityClassToPicIndex, gFacilityClassToTrainerClass, etc.
+  const out = {};
+  // gFacilityClassToPicIndex[]
+  const rePic = /\[(FACILITY_CLASS_\w+)\]\s*=\s*(TRAINER_PIC_\w+)/g;
+  let m;
+  out.facilityClassToPic = {};
+  while ((m = rePic.exec(text)) !== null) out.facilityClassToPic[m[1]] = m[2];
+  // gFacilityClassToTrainerClass[]
+  const reClass = /\[(FACILITY_CLASS_\w+)\]\s*=\s*(TRAINER_CLASS_\w+)/g;
+  out.facilityClassToTrainerClass = {};
+  while ((m = reClass.exec(text)) !== null) out.facilityClassToTrainerClass[m[1]] = m[2];
+  return out;
+}
+
+// ─── 21. battle_main.c gTypeEffectiveness ──────────────────────────────────
+
+function parseTypeChart() {
+  const text = readDecomp('src/battle_main.c');
+  if (!text) return [];
+  // Format : `const u8 gTypeEffectiveness[336] = { TYPE_X, TYPE_Y, TYPE_MUL_Z, ... }`.
+  const m = text.match(/const\s+u8\s+gTypeEffectiveness\[\d+\]\s*=\s*\{([\s\S]*?)\};/);
+  if (!m) return [];
+  const body = m[1];
+  // Each entry = 3 tokens : attackerType, defenderType, multiplier.
+  // TYPE_FORESIGHT (= sentinel 0xFE) marks beginning of foresight section.
+  // TYPE_ENDTABLE (= sentinel 0xFF) marks end.
+  const tokens = body.split(/[,\n]/).map(s => s.trim()).filter(s => s.startsWith('TYPE_'));
+  const out = [];
+  for (let i = 0; i + 2 < tokens.length; i += 3) {
+    const att = tokens[i];
+    const def = tokens[i + 1];
+    const mul = tokens[i + 2];
+    if (att === 'TYPE_FORESIGHT' || att === 'TYPE_ENDTABLE') break;
+    out.push([att, def, mul]);
+  }
+  return out;
+}
+
 // ─── Run all extractions ────────────────────────────────────────────────────
 
 console.log('Extracting Pokémon data tables from decomp...');
@@ -395,6 +561,14 @@ writeOut('nature-names-fr.json',      parseNatureNames());
 writeOut('trainer-class-names-fr.json', parseTrainerClassNames());
 writeOut('item-descriptions-fr.json', parseItemDescriptions());
 writeOut('experience-tables.json',    parseExperienceTables());
+
+writeOut('trainers.json',             parseTrainers());
+writeOut('contest-moves.json',        parseContestMoves());
+writeOut('evolutions.json',           parseEvolutions());
+writeOut('item-effects.json',         parseItemEffects());
+writeOut('pokedex-orders.json',       parsePokedexOrders());
+writeOut('trainer-class-lookups.json', parseTrainerClassLookups());
+writeOut('type-chart.json',           parseTypeChart());
 
 console.log('');
 console.log('Done.');

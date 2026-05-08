@@ -122,6 +122,7 @@ import '../engine/script-opcodes';
 // Side-effect import : registers gSpecials[] stubs (1:1 décomp scrcmd ScrCmd_special).
 import '../engine/specials-registry';
 import { ShowMapNamePopup, preloadMapNames } from '../engine/map-name-popup';
+import { loadGameData, installDexDevtools } from '../engine/data/game-data';
 import {
   InitTilesetAnimations,
   UpdateTilesetAnimations,
@@ -460,7 +461,9 @@ export class TestOverworldScene extends Phaser.Scene {
       loadMapScripts(scriptsBaseName),
       preloadDoorTiles(),  // Phase 4.7 : door anims rendering
       preloadMapNames(),   // Phase 4.9 : map-names-fr.json pour ShowMapNamePopup
+      loadGameData(),      // Phase 4.10 : 21 tables Pokémon (= base Pokédex / battles)
     ]);
+    installDexDevtools();  // dev.dex.* accessible en console
 
     // Phase 4.7 : warp arrow sprite (= 1:1 décomp `CreateWarpArrowSprite`).
     // Re-create at each map load (= ancien sprite cleanup automatique en interne).
