@@ -39,6 +39,8 @@ import {
   MapGridGetMetatileBehaviorAt,
   MAP_OFFSET,
 } from './map-loader';
+import { MB_TALL_GRASS } from './tilemap-loader';
+import { SpawnTallGrassEffect } from './field-effect-grass';
 import {
   gFieldCamera,
   SetCameraTopLeftCoords,
@@ -178,6 +180,10 @@ interface PlayerAvatar {
    *  Utilisé par updateSpriteFrame (= dash anim) + step duration (= 8 frames au
    *  lieu de 16) + movementSpeed (= 2× normal). */
   dashing: boolean;
+  /** 1:1 décomp ledge jump anim (= MovementAction_Jump2_*). Frames count down
+   *  de 32 → 0 (= JUMP_DISTANCE_FAR durée 32 frames). Pendant ce step, sprite
+   *  y2 offset suit la courbe sJumpY_High[i/2] pour effet visuel d'arc. */
+  jumpFramesLeft: number;
 }
 
 /** 1:1 décomp `EWRAM_DATA struct PlayerAvatar gPlayerAvatar` (global.fieldmap.h:374). */
@@ -197,6 +203,7 @@ export const gPlayerAvatar: PlayerAvatar = {
   walkAnimAlt: 0,
   gender: 'MALE',
   dashing: false,
+  jumpFramesLeft: 0,
 };
 
 // ─── OBJ VRAM allocation (= player sprite occupe les 1ères tiles) ──────────
@@ -363,6 +370,28 @@ export async function InitPlayerAvatar(
 // `dirToCameraSpeed` re-exporté ici via alias pour back-compat.
 const dirToCameraSpeed = _dirToCameraSpeed;
 
+// ─── 1:1 décomp jump anim (event_object_movement.c:8426-8444) ──────────────
+
+/** 1:1 décomp `sJumpY_High[]` (event_object_movement.c:8426).
+ *  Y offsets pour la courbe de saut "high" (= ledge jump JUMP_TYPE_HIGH).
+ *  16 entries → 32-frame jump (= JUMP_DISTANCE_FAR), each entry covers 2 frames
+ *  via `sJumpY_High[timer / 2]`. Negative = sprite va vers le HAUT. */
+const sJumpY_High: ReadonlyArray<number> = [
+  -4, -6, -8, -10, -11, -12, -12, -12,
+  -11, -10, -9, -8, -6, -4, 0, 0,
+];
+
+/** Compute jump y offset based on timer (= 0..31, 32-frame ledge jump).
+ *  Décomp utilise `GetJumpY(timer/2, JUMP_TYPE_HIGH)`. */
+function getJumpYOffset(timer: number): number {
+  const idx = Math.min(15, Math.max(0, timer >> 1));
+  return sJumpY_High[idx];
+}
+
+/** Flag interne : true pendant un ledge jump pour appliquer 2-tiles move au
+ *  step end. Set true quand collision = LEDGE_JUMP, cleared après step end. */
+let _pendingLedgeJump = false;
+
 // ─── Sprite frame update ─────────────────────────────────────────────────────
 
 /** Set la sprite frame courante (face/walk1/walk2) selon direction + state. */
@@ -426,6 +455,15 @@ function updateSpriteFrame(rt: DecompRuntime): void {
   // overridden au prochain syncSpritesToOam.
   sprite.hFlip = cfg.hFlip;
   oam.flipH = cfg.hFlip;
+  // 1:1 décomp ledge jump : sprite y2 offset suit sJumpY_High[timer/2] curve.
+  // Le sprite OAM y est SCREEN_CENTER_Y + jumpYOffset. jumpYOffset négatif =
+  // sprite vers le HAUT (= effet d'arc de saut). À 0 = sprite à position normale.
+  const jumpY = gPlayerAvatar.jumpFramesLeft > 0
+    ? getJumpYOffset(32 - gPlayerAvatar.jumpFramesLeft)
+    : 0;
+  // sprite.y stocké au CENTER. SCREEN_CENTER_Y est la baseline (= 72), apply
+  // jumpY offset additif. syncSpritesToOam applique centerToCornerVec auto.
+  sprite.y = (6 * 16 + 16 - 40) + jumpY;  // 72 + jumpY
 }
 
 // ─── Collision check ────────────────────────────────────────────────────────
@@ -466,15 +504,17 @@ function checkPlayerCollision(direction: number): number {
   const currentBehavior = MapGridGetMetatileBehaviorAt(
     gPlayerAvatar.x + MAP_OFFSET, gPlayerAvatar.y + MAP_OFFSET);
   const targetBehavior = MapGridGetMetatileBehaviorAt(dx + MAP_OFFSET, dy + MAP_OFFSET);
+  // 1:1 décomp `CheckForObjectEventCollision` (event_object_movement.c:676-697) :
+  //   ShouldJumpLedge est checké AVANT le impassable check car les ledge tiles
+  //   ONT mapCollision > 0 (= bloquent walk normal) mais le ledge jump override
+  //   cette collision pour permettre de sauter par dessus. L'anim de saut est
+  //   gérée via sJumpY_High curve dans updateSpriteFrame.
+  if (ShouldJumpLedge(targetBehavior, direction)) {
+    return COLLISION_LEDGE_JUMP;
+  }
   if (mapCollision > 0
    || IsMetatileDirectionallyImpassable(currentBehavior, targetBehavior, direction)) {
     return COLLISION_IMPASSABLE;
-  }
-  // 3. Ledge jump check (= 1:1 décomp `ShouldJumpLedge`, event_object_movement.c:4651).
-  //    Doit être checké AVANT NPC collision : un ledge avec NPC dessus reste
-  //    sautable (= NPC tracked sur tile target mais ledge prioritaire).
-  if (ShouldJumpLedge(targetBehavior, direction)) {
-    return COLLISION_LEDGE_JUMP;
   }
   // 4. NPC collision (= 1:1 décomp `DoesObjectCollideWithObjectAt`).
   //    Pendant un walk, currentCoords = TARGET et previousCoords = SOURCE →
@@ -692,6 +732,9 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
   // Si une step walk est en cours : tick frames, advance, et finir au tile boundary.
   if (gPlayerAvatar.runningState === MOVING && gPlayerAvatar.stepFramesLeft > 0) {
     gPlayerAvatar.stepFramesLeft--;
+    // 1:1 décomp ledge jump : decrement jumpFramesLeft pour suivre la curve
+    // sJumpY_High dans updateSpriteFrame.
+    if (gPlayerAvatar.jumpFramesLeft > 0) gPlayerAvatar.jumpFramesLeft--;
     if (gPlayerAvatar.stepFramesLeft === 0) {
       // Step complete : update player position en map coords, stop camera.
       // 1:1 décomp `field_player_avatar.c:588-596 CheckMovementInputNotOnBike` :
@@ -711,12 +754,28 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
       const { x: nx, y: ny } = moveCoords(stepDirAtEnd, gPlayerAvatar.x, gPlayerAvatar.y);
       gPlayerAvatar.x = nx;
       gPlayerAvatar.y = ny;
+      // 1:1 décomp ledge jump = 2 tiles total. Le 1er moveCoords ci-dessus
+      // applique 1 tile (= sortie du ledge tile). Si flag _pendingLedgeJump,
+      // applique 1 tile de plus pour atterrir sur la tile au-delà du ledge.
+      if (_pendingLedgeJump) {
+        const { x: nx2, y: ny2 } = moveCoords(stepDirAtEnd, gPlayerAvatar.x, gPlayerAvatar.y);
+        gPlayerAvatar.x = nx2;
+        gPlayerAvatar.y = ny2;
+        _pendingLedgeJump = false;
+      }
       gPlayerAvatar.tileTransitionState = T_NOT_MOVING;
       gPlayerAvatar.stepDirection = DIR_NONE;
       gFieldCamera.movementSpeedX = 0;
       gFieldCamera.movementSpeedY = 0;
       // Switch walk anim alt for next step (= alternate walk1/walk2).
       gPlayerAvatar.walkAnimAlt = (gPlayerAvatar.walkAnimAlt ^ 1) as 0 | 1;
+      // 1:1 décomp `GroundEffect_StepOnTallGrass` (event_object_movement.c:7815) :
+      // si player step ON tall grass tile → spawn rustle anim. Trigger au step
+      // end (= player vient d'arriver sur la new tile).
+      const newTileBehavior = MapGridGetMetatileBehaviorAt(nx + MAP_OFFSET, ny + MAP_OFFSET);
+      if (newTileBehavior === MB_TALL_GRASS) {
+        SpawnTallGrassEffect(rt, nx, ny);
+      }
       // Phase 4.6 : check warp tile au step end. 1:1 décomp `field_control_avatar.c
       // ProcessPlayerFieldInput → TryStartWarpEventScript` qui run après le step.
       // Si player vient de finir step ON un warp tile → set pending warp + freeze.
@@ -855,18 +914,20 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
       // 1:1 décomp `PlayerJumpLedge` (field_player_avatar.c:1015) :
       //   PlaySE(SE_LEDGE);
       //   PlayerSetAnimId(GetJump2MovementAction(direction), COPY_MOVE_JUMP2);
-      // Le Jump2 movement = 16 frames + sprite jump arc + walks 2 tiles dans
-      // la direction (= ledge drop south = saute 2 tiles south).
-      // TODO Phase 4.6+ : sprite jump arc visuel. Pour MVP : SE + walk normal
-      // sur 2 tiles (= simulé via 2 steps consécutifs forced).
+      // Le MovementAction_Jump2_X (= event_object_movement.c:5525) utilise
+      // InitJumpRegular(JUMP_DISTANCE_FAR, JUMP_TYPE_HIGH) → 32-frame anim avec
+      // sJumpY_High curve (= peak -12 px à mid-jump). Walks 2 tiles dans la dir.
+      // Notre impl : stepFramesLeft = 32 (= durée jump), jumpFramesLeft = 32
+      // (= sync compteur pour sprite y2 arc via getJumpYOffset dans updateSpriteFrame).
       PlaySE(SE_LEDGE);
-      // Walk normal sur 2 tiles dans la direction du ledge (= simplification).
-      // Phase 4.6+ proper : Jump2MovementAction = sprite arc + jump anim.
       gPlayerAvatar.runningState = MOVING;
       gPlayerAvatar.tileTransitionState = T_TILE_TRANSITION;
-      gPlayerAvatar.stepFramesLeft = 32;  // = 2 tiles à 16 frames each (= simplification, jump dur 16 dans décomp)
+      gPlayerAvatar.stepFramesLeft = 32;
+      gPlayerAvatar.jumpFramesLeft = 32;  // = sJumpY_High curve over 32 frames
       gPlayerAvatar.stepDirection = inputDir;
+      _pendingLedgeJump = true;  // = step end appliquera 2nd moveCoords (= 2 tiles)
       const jumpSpeed = dirToCameraSpeed(inputDir);
+      // Speed × 2 pour 2 tiles en 32 frames (= 1 tile per 16 frames standard).
       gFieldCamera.movementSpeedX = jumpSpeed.x * WALK_SPEED_PX_PER_FRAME;
       gFieldCamera.movementSpeedY = jumpSpeed.y * WALK_SPEED_PX_PER_FRAME;
       updateSpriteFrame(rt);

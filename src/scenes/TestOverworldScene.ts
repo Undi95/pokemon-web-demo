@@ -103,6 +103,11 @@ import {
   HideShowWarpArrow,
   UpdateWarpArrowSprite,
 } from '../engine/field-effect-arrow';
+import {
+  preloadTallGrassEffect,
+  UpdateTallGrassEffects,
+  DestroyAllTallGrassEffects,
+} from '../engine/field-effect-grass';
 import { PlaySE } from '../engine/decomp-globals';
 import {
   SE_EXIT,
@@ -323,6 +328,10 @@ export class TestOverworldScene extends Phaser.Scene {
         // anim + sync sprite OAM position avec camera scroll.
         HideShowWarpArrow(rt, gPlayerAvatar.x, gPlayerAvatar.y, gPlayerAvatar.facing);
         UpdateWarpArrowSprite(rt);
+        // 1:1 décomp tall grass field effect (= field_effect_helpers.c
+        // UpdateTallGrassFieldEffect) : tick anim + position tracking + auto
+        // destroy après cycle.
+        UpdateTallGrassEffects(rt);
         // 1:1 décomp `ScheduleBgCopyTilemapToVram` pattern : flush VRAM
         // SEULEMENT quand BG buffer modifié (= copyBGToVRAM flag). Évite
         // 18432 entries × 2 bytes copy par frame quand rien ne bouge.
@@ -469,6 +478,9 @@ export class TestOverworldScene extends Phaser.Scene {
     // Re-create at each map load (= ancien sprite cleanup automatique en interne).
     DestroyWarpArrowSprite(this.rt);
     await CreateWarpArrowSprite(this.rt);
+    // Phase 4.10 : preload tall grass effect assets + cleanup pool.
+    DestroyAllTallGrassEffects(this.rt);
+    await preloadTallGrassEffect(this.rt);
     InitFieldMessageBox();
     ScriptContext_Init();
 
