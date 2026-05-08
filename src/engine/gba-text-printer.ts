@@ -461,6 +461,20 @@ export interface AddTextPrinterOpts {
 export function addTextPrinter(opts: AddTextPrinterOpts): TextPrinter {
   const x = opts.x ?? 0;
   const y = opts.y ?? 1;
+  // 1:1 décomp text.c:294-301 — `--sTempTextPrinter.textSpeed` :
+  // si speed != 0 et != TEXT_SKIP_DRAW (= 255), DECREMENTE de 1 avant d'appliquer.
+  // Donc :
+  //   SLOW=8 → 7 wait frames/char (≈ 7.5 chars/sec)
+  //   MID=4  → 3 wait frames/char (≈ 15 chars/sec)
+  //   FAST=1 → 0 wait frames/char (= INSTANT, ALL chars rendered au 1er tick)
+  //   TEXT_SKIP_DRAW=255 → instant via skip path (= déjà géré).
+  // Sans ce -1, FAST=1 donnait 30 chars/sec (= la moitié de la vitesse ROM).
+  // Cause racine du "FAST feels slow" reporté par user session 122.
+  const TEXT_SKIP_DRAW = 255;
+  let normalizedSpeed = opts.textSpeed ?? 0;
+  if (normalizedSpeed !== 0 && normalizedSpeed !== TEXT_SKIP_DRAW) {
+    normalizedSpeed = Math.max(0, normalizedSpeed - 1);
+  }
   return {
     encodedString: opts.encodedString,
     currentChar: 0,
@@ -474,7 +488,7 @@ export function addTextPrinter(opts: AddTextPrinterOpts): TextPrinter {
     letterSpacing: 0,
     lineSpacing: 0,
     state: RENDER_STATE_HANDLE_CHAR,
-    textSpeed: opts.textSpeed ?? 0,
+    textSpeed: normalizedSpeed,
     delayCounter: 0,
     downArrowDelay: 0,
     downArrowYPosIdx: 0,
