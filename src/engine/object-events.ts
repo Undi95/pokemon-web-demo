@@ -1005,7 +1005,11 @@ function _spawnSingleNpcFromTemplate(
     rt.gPlttBufferFaded.set(paletteSlot + i, png.palette[i]);
     rt.gPlttBufferUnfaded.set(paletteSlot + i, png.palette[i]);
   }
-  rt.gPlttBufferFaded.flushTo();
+  // 1:1 décomp : NE PAS flushTo inline (= cf. player-avatar.ts:InitPlayerAvatar
+  // pour rationale détaillée). L'auto-flushTo VBlank pousse via TransferPlttBuffer
+  // qui respecte `bufferTransferDisabled` → permet de gater le palette transfer
+  // pendant warp load. Sans ce gate, chaque NPC spawn (SpawnObjectEventsOnMap fire
+  // N×) leak les NEW colors → flash de la dest map AVANT fade-in.
 
   const cam = GetCameraTopLeftCoords();
   const npc = gObjectEvents[slot];

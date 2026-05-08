@@ -143,7 +143,11 @@ export function preloadTallGrassEffect(rt: DecompRuntime): Promise<void> {
       rt.gPlttBufferUnfaded.set(slot + i, palette[i] ?? 0);
       rt.gPlttBufferFaded.set(slot + i, palette[i] ?? 0);
     }
-    rt.gPlttBufferFaded.flushTo();
+    // 1:1 décomp : NE PAS flushTo inline (= cf. player-avatar.ts:InitPlayerAvatar
+    // pour rationale détaillée). Auto-flushTo VBlank (= TransferPlttBuffer) gere
+    // ça en respectant `bufferTransferDisabled` pour gater le palette transfer
+    // pendant un warp load. Sans gate, preloadTallGrassEffect leak les NEW grass
+    // colors qui contribuent au flash visible avant fade-in dest map.
 
     // Init pool : tous slots à -1 (= libre).
     for (let i = 0; i < POOL_SIZE; i++) {

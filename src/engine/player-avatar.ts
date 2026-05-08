@@ -319,7 +319,12 @@ export async function InitPlayerAvatar(
     rt.gPlttBufferFaded.set(objPaletteSlot + i, palette[i]);
     rt.gPlttBufferUnfaded.set(objPaletteSlot + i, palette[i]);
   }
-  rt.gPlttBufferFaded.flushTo();
+  // 1:1 décomp : NE PAS flushTo inline ici. Le décomp `LoadSpritePalette` ne flush
+  // pas non plus — c'est `TransferPlttBuffer()` au prochain VBlank qui copie
+  // gPlttBufferFaded → PLTT register. Notre auto-flushTo (decomp-runtime tickFixed)
+  // fait pareil et respecte `gPaletteFade.bufferTransferDisabled` → permet de gater
+  // le palette transfer pendant un warp load (= sinon le player palette pousse les
+  // NEW colors du tileset à PaletteBanks → flash visible avant fade-in).
 
   // Create OAM sprite at SCREEN CENTER. Le player visuel reste fixe au centre
   // de l'écran ; le BG scroll donne l'illusion de movement.
