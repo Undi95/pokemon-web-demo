@@ -545,47 +545,79 @@ registerOpcode('waitfanfare', (_ctx) => {
 
 // ─── Object events utility opcodes ───────────────────────────────────────────
 
+/** Helper : match NPC par localIdRaw (= string, ex 'LOCALID_PLAYERS_HOUSE_1F_MOM').
+ *  Si l'arg est un nombre dans le décomp ROM, parseInt fallback. */
+function _findNpcByLocalId(arg: string): typeof gObjectEvents[number] | null {
+  if (!arg) return null;
+  // Match par localIdRaw (= string) en priorité.
+  for (const npc of gObjectEvents) {
+    if (npc.active && npc.localIdRaw === arg) return npc;
+  }
+  // Fallback : parseInt (= si arg est numérique).
+  const n = parseInt(arg, 10);
+  if (!Number.isNaN(n)) {
+    for (const npc of gObjectEvents) {
+      if (npc.active && npc.localId === n) return npc;
+    }
+  }
+  return null;
+}
+
+/** Helper : modifie aussi le template dans gMapHeader pour persister la position
+ *  permanente (= setobjectxyperm 1:1 décomp modifie gObjectEventTemplates). */
+function _findTemplateByLocalId(arg: string): ObjectEventTemplate | null {
+  if (!arg) return null;
+  const gMapHeader = (globalThis as Record<string, unknown>).gMapHeader as
+    { events?: { objectEvents?: ObjectEventTemplate[] } } | undefined;
+  const templates = gMapHeader?.events?.objectEvents ?? [];
+  for (const t of templates) {
+    if (t.localIdRaw === arg) return t;
+  }
+  return null;
+}
+
 registerOpcode('setobjectxy', (_ctx, args) => {
-  const localId = parseInt(args[0], 10) || 0;
   const x = parseValue(args[1]);
   const y = parseValue(args[2]);
-  for (const npc of gObjectEvents) {
-    if (npc.active && npc.localId === localId) {
-      npc.currentCoordsX = x;
-      npc.currentCoordsY = y;
-      npc.previousCoordsX = x;
-      npc.previousCoordsY = y;
-      break;
-    }
+  const npc = _findNpcByLocalId(args[0] ?? '');
+  if (npc) {
+    npc.currentCoordsX = x;
+    npc.currentCoordsY = y;
+    npc.previousCoordsX = x;
+    npc.previousCoordsY = y;
   }
   return false;
 });
 
 registerOpcode('setobjectxyperm', (_ctx, args) => {
-  // 1:1 décomp : modifie initialCoords (= position permanent au respawn).
-  const localId = parseInt(args[0], 10) || 0;
+  // 1:1 décomp `ScrCmd_setobjectxyperm` (scrcmd.c) :
+  //   modifie le TEMPLATE dans gObjectEventTemplates pour que le NPC respawn
+  //   à la new position (= survit au cross-border / map reload).
+  // On modifie aussi le NPC actif si présent (= sync immédiate).
   const x = parseValue(args[1]);
   const y = parseValue(args[2]);
-  for (const npc of gObjectEvents) {
-    if (npc.active && npc.localId === localId) {
-      npc.initialCoordsX = x;
-      npc.initialCoordsY = y;
-      break;
-    }
+  const tpl = _findTemplateByLocalId(args[0] ?? '');
+  if (tpl) {
+    tpl.x = x;
+    tpl.y = y;
+  }
+  const npc = _findNpcByLocalId(args[0] ?? '');
+  if (npc) {
+    npc.initialCoordsX = x;
+    npc.initialCoordsY = y;
   }
   return false;
 });
 
 registerOpcode('setobjectmovementtype', (_ctx, args) => {
-  const localId = parseInt(args[0], 10) || 0;
   const movementType = args[1];
-  for (const npc of gObjectEvents) {
-    if (npc.active && npc.localId === localId) {
-      npc.movementType = movementType;
-      // Reset movement step car le type a changé.
-      npc.movementStep = 0;
-      break;
-    }
+  // 1:1 décomp : modifie le TEMPLATE pour que le NPC respawn avec ce movement.
+  const tpl = _findTemplateByLocalId(args[0] ?? '');
+  if (tpl) tpl.movementTypeRaw = movementType;
+  const npc = _findNpcByLocalId(args[0] ?? '');
+  if (npc) {
+    npc.movementType = movementType;
+    npc.movementStep = 0;
   }
   return false;
 });

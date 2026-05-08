@@ -231,6 +231,27 @@ function _tickAction(action: string, target: MovementTarget, frame: number, rt: 
   if (action === 'face_up')    { _setFacing(target, DIR_NORTH); return true; }
   if (action === 'face_left')  { _setFacing(target, DIR_WEST);  return true; }
   if (action === 'face_right') { _setFacing(target, DIR_EAST);  return true; }
+
+  // face_player : 1:1 décomp `MovementAction_FacePlayer_Step0` — calcule la
+  // direction relative depuis le NPC vers le player et set la facing.
+  if (action === 'face_player') {
+    if (target.npc) {
+      const dx = gPlayerAvatar.x - target.npc.currentCoordsX;
+      const dy = gPlayerAvatar.y - target.npc.currentCoordsY;
+      // Priorité sur l'axe le plus grand (= 1:1 décomp behavior).
+      let dir = DIR_SOUTH;
+      if (Math.abs(dx) > Math.abs(dy)) {
+        dir = dx > 0 ? DIR_EAST : DIR_WEST;
+      } else {
+        dir = dy > 0 ? DIR_SOUTH : DIR_NORTH;
+      }
+      _setFacing(target, dir);
+    }
+    return true;
+  }
+  // face_originally_facing_direction : revert à template.movementType-based facing.
+  // MVP : no-op (= NPC garde sa current facing).
+  if (action === 'face_originally_facing_direction') return true;
   if (action === 'set_invisible') { _setInvisible(target, true, rt); return true; }
   if (action === 'set_visible')   { _setInvisible(target, false, rt); return true; }
   if (action === 'lock_facing_direction')   { return true; /* TODO future : flag */ }

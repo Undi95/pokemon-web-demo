@@ -136,8 +136,37 @@ export function parseOpcode(line: string): Opcode {
   return { name, args };
 }
 
-/** Charge les scripts d'une map depuis le JSON pré-extrait. */
+/** Common scripts/movements/texts loaded once au boot et merged dans chaque map.
+ *  Source : `public/decomp/em/scripts/_common.json` (= contient
+ *  Common_Movement_FacePlayer, Common_EventScript_*, etc.). */
+let _commonJson: MapScriptsJson | null = null;
+let _commonLoading: Promise<void> | null = null;
+
+async function _loadCommonScripts(): Promise<void> {
+  if (_commonJson) return;
+  if (_commonLoading) return _commonLoading;
+  _commonLoading = (async () => {
+    try {
+      const r = await fetch('/decomp/em/scripts/_common.json');
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      _commonJson = await r.json() as MapScriptsJson;
+      const sCount = Object.keys(_commonJson.scripts ?? {}).length;
+      const tCount = Object.keys(_commonJson.texts ?? {}).length;
+      console.log(`[script-runtime] _common.json loaded : ${sCount} scripts + ${tCount} texts`);
+    } catch (e) {
+      console.warn('[script-runtime] _common.json load failed:', e);
+      _commonJson = { scripts: {}, texts: {} };
+    } finally {
+      _commonLoading = null;
+    }
+  })();
+  return _commonLoading;
+}
+
+/** Charge les scripts d'une map depuis le JSON pré-extrait + merge _common.json
+ *  (= scripts/movements partagés comme Common_Movement_FacePlayer). */
 export async function loadMapScripts(mapName: string): Promise<void> {
+  await _loadCommonScripts();
   const url = `/decomp/em/scripts/${mapName}.json`;
   let json: MapScriptsJson;
   try {
@@ -146,28 +175,37 @@ export async function loadMapScripts(mapName: string): Promise<void> {
     json = await r.json();
   } catch (e) {
     console.warn(`[script-runtime] loadMapScripts(${mapName}) failed:`, e);
-    return;
+    json = { scripts: {}, texts: {} };
   }
 
   _scriptsByLabel = new Map();
   _textsByLabel = new Map();
   _movementsByLabel = new Map();
 
+  // Merge order : map-specific scripts override common ones (rare). Common load
+  // FIRST permet aux scripts map-specific de réutiliser les Common_* labels.
+  const sources: Array<{ scripts?: Record<string, string[]>; texts?: Record<string, string> }> = [
+    _commonJson ?? { scripts: {}, texts: {} },
+    json,
+  ];
+
   let scriptCount = 0;
   let movementCount = 0;
-  for (const [label, lines] of Object.entries(json.scripts)) {
-    if (classifyAsMovement(lines)) {
-      _movementsByLabel.set(label, lines);
-      movementCount++;
-    } else {
-      _scriptsByLabel.set(label, lines.map(parseOpcode));
-      scriptCount++;
+  for (const src of sources) {
+    for (const [label, lines] of Object.entries(src.scripts ?? {})) {
+      if (classifyAsMovement(lines)) {
+        _movementsByLabel.set(label, lines);
+        movementCount++;
+      } else {
+        _scriptsByLabel.set(label, lines.map(parseOpcode));
+        scriptCount++;
+      }
+    }
+    for (const [label, raw] of Object.entries(src.texts ?? {})) {
+      _textsByLabel.set(label, raw);
     }
   }
-  for (const [label, raw] of Object.entries(json.texts)) {
-    _textsByLabel.set(label, raw);
-  }
-  console.log(`[script-runtime] loaded ${scriptCount} scripts + ${movementCount} movements + ${_textsByLabel.size} texts for ${mapName}`);
+  console.log(`[script-runtime] loaded ${scriptCount} scripts + ${movementCount} movements + ${_textsByLabel.size} texts for ${mapName} (incl. _common)`);
 }
 
 export function getScript(label: string): Opcode[] | undefined {
