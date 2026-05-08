@@ -24,6 +24,8 @@
  *   - loadMapScripts(mapName) : fetch + parse JSON scripts d'une map
  */
 
+import { VarGet } from './script-vars';
+
 // ─── Constants 1:1 décomp ────────────────────────────────────────────────────
 
 export const SCRIPT_MODE_STOPPED  = 0;
@@ -461,6 +463,70 @@ export function RunOnTransitionMapScript(): void {
   if (!label) return;
   console.log(`[script-runtime] RunOnTransitionMapScript : ${label}`);
   RunScriptImmediately(label);
+}
+
+/** 1:1 décomp `MapHeaderCheckScriptTable(MAP_SCRIPT_ON_FRAME_TABLE)`
+ *  (script.c:299). Iterate les entries `map_script_2 VAR_X, value, scriptLabel`
+ *  du table. Pour chaque entry : si VarGet(VAR_X) === value → SetupScript +
+ *  return TRUE (= 1er match wins, comme decomp).
+ *
+ *  Polled chaque frame depuis MainCB2_Overworld. Ne re-trigger PAS si script
+ *  déjà running (= sGlobalScriptContextStatus check). 1:1 décomp décrémente
+ *  VAR à zéro après trigger pour éviter re-trigger ; nos scripts font
+ *  `setvar VAR_LITTLEROOT_INTRO_STATE, X+1` pour avancer le state. */
+export function TryRunOnFrameMapScript(): boolean {
+  // Skip si script déjà actif (= sinon race condition).
+  if (sGlobalScriptContextStatus !== CONTEXT_SHUTDOWN) return false;
+  const gMapHeader = (globalThis as Record<string, unknown>).gMapHeader as
+    { mapScripts?: string } | undefined;
+  if (!gMapHeader?.mapScripts) return false;
+  const tableLabel = findMapScriptLabel(gMapHeader.mapScripts, 'MAP_SCRIPT_ON_FRAME_TABLE');
+  if (!tableLabel) return false;
+  const opcodes = _scriptsByLabel.get(tableLabel);
+  if (!opcodes) return false;
+  for (const op of opcodes) {
+    if (op.name !== 'map_script_2') continue;
+    const [varName, valueTok, scriptLabel] = op.args;
+    if (!varName || !valueTok || !scriptLabel) continue;
+    const expected = /^-?\d+$/.test(valueTok) ? Number(valueTok) : 0;
+    if (VarGet(varName) === expected) {
+      console.log(`[script-runtime] OnFrame match : ${varName}=${expected} → ${scriptLabel}`);
+      // 1:1 décomp : OnFrame scripts can have waits (msgbox, applymovement +
+      // waitmovement, etc.). Use ScriptContext_SetupScript (= global ctx with
+      // wait support) plutôt que RunScriptImmediately (= sync, ne supporte
+      // pas les waits).
+      ScriptContext_SetupScript(scriptLabel);
+      return true;
+    }
+  }
+  return false;
+}
+
+/** Coord trigger : check si player est sur une coord_event qui match VAR.
+ *  À call chaque step end depuis PlayerStep. 1:1 décomp `TryRunCoordEventScript`
+ *  (field_control_avatar.c) qui iterate gMapHeader.events.coordEvents et trigger
+ *  si player at (x, y) AND var_name == var_value. */
+export function TryRunCoordEventScript(playerX: number, playerY: number): boolean {
+  if (sGlobalScriptContextStatus !== CONTEXT_SHUTDOWN) return false;
+  const gMapHeader = (globalThis as Record<string, unknown>).gMapHeader as
+    { events?: { coordEvents?: Array<{
+      x: number; y: number; trigger: string; index: number; script: string;
+    }> } } | undefined;
+  const coordEvents = gMapHeader?.events?.coordEvents;
+  if (!coordEvents || coordEvents.length === 0) return false;
+  for (const ce of coordEvents) {
+    if (ce.x !== playerX || ce.y !== playerY) continue;
+    if (!ce.script) continue;
+    // Trigger var var_value matching : si trigger = '' → always trigger ;
+    // sinon check VarGet(trigger) === index.
+    if (ce.trigger && VarGet(ce.trigger) !== ce.index) continue;
+    console.log(`[script-runtime] CoordEvent at (${playerX},${playerY}) match : ${ce.script}`);
+    // SetIntroFlags doesn't have waits, but be safe: use SetupScript pour
+    // supporter les scripts avec applymovement / msgbox.
+    ScriptContext_SetupScript(ce.script);
+    return true;
+  }
+  return false;
 }
 
 // Setup le hook map-loader → ce module. À call au boot une seule fois.

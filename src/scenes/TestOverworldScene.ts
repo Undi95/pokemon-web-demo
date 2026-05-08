@@ -84,6 +84,8 @@ import {
   ScriptContext_Init,
   LockPlayerFieldControls,
   UnlockPlayerFieldControls,
+  RunOnTransitionMapScript,
+  TryRunOnFrameMapScript,
 } from '../engine/script-runtime';
 import {
   getPendingWarp,
@@ -335,6 +337,11 @@ export class TestOverworldScene extends Phaser.Scene {
         // les opcodes jusqu'à wait/end. Si script lock les controls,
         // PlayerStep skip son input.
         ScriptContext_RunScript();
+        // Phase 4.10 : poll OnFrame map_script_2 entries per-frame. Trigger
+        // scripts conditionnels basés sur var values (= e.g. StepOffTruckMale
+        // quand VAR_LITTLEROOT_INTRO_STATE = 1). 1:1 décomp
+        // `MapHeaderCheckScriptTable(MAP_SCRIPT_ON_FRAME_TABLE)`.
+        TryRunOnFrameMapScript();
         // Phase 4.5 : tick field message box state machine.
         TickFieldMessageBox();
         PlayerStep(rt.gMain.heldKeys, rt.gMain.newKeys, rt);
@@ -525,6 +532,12 @@ export class TestOverworldScene extends Phaser.Scene {
       loadGameData(),      // Phase 4.10 : 21 tables Pokémon (= base Pokédex / battles)
     ]);
     installDexDevtools();  // dev.dex.* accessible en console
+
+    // Phase 4.10 : run OnTransition map_script (= 1:1 décomp `RunOnTransitionMapScript`,
+    // appelé après spawn NPCs + scripts chargés). Place les NPCs selon plot
+    // state (= setobjectxyperm + setobjectmovementtype dans MoveMomToX scripts).
+    // Doit run APRÈS loadMapScripts pour avoir le _scriptsByLabel populé.
+    RunOnTransitionMapScript();
 
     // Phase 4.7 : warp arrow sprite (= 1:1 décomp `CreateWarpArrowSprite`).
     // Re-create at each map load (= ancien sprite cleanup automatique en interne).

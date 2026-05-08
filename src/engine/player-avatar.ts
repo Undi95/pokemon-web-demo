@@ -51,6 +51,7 @@ import {
 import {
   ArePlayerFieldControlsLocked,
   ScriptContext_SetupScript,
+  TryRunCoordEventScript,
 } from './script-runtime';
 import { gSelectedObjectEvent, gSpecialVar, FlagGet } from './script-vars';
 import { B_BUTTON } from './gba-menu-system';
@@ -819,6 +820,14 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
           return;  // skip keypad : don't start new step
         }
         // 'arrow' kind : let player land on tile, TryArrowWarp handles next frame.
+      }
+      // Phase 4.10 : check coord triggers (= 1:1 décomp `TryRunCoordEventScript`,
+      // field_control_avatar.c:733). Si player step end on a coord_event tile
+      // qui match VAR_X = value, run le script. Used par truck SetIntroFlags.
+      if (TryRunCoordEventScript(gPlayerAvatar.x, gPlayerAvatar.y)) {
+        // Script triggered : freeze player + return (= no keypad).
+        updateSpriteFrame(rt);
+        return;
       }
       // ↓ NOTE : pas de `return` — fall through au keypad logic ci-dessous.
       // Si direction held → start new step (= continuous walk).
