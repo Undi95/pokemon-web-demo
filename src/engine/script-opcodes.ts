@@ -31,7 +31,8 @@ import {
 } from './object-events';
 import type { ObjectEventTemplate } from './map-loader';
 import { gameState } from './game-state';
-import { setPendingWarp } from './warp-system';
+import { setPendingWarp, getPendingWarp } from './warp-system';
+import { gMapHeader } from './map-loader';
 import { AddBagItem, RemoveBagItem, CheckBagHasItem } from './bag';
 import {
   gPlayerAvatar, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST,
@@ -439,18 +440,14 @@ registerOpcode('waitstate', (ctx) => {
   // → player et NPCs dégelés au mauvais moment.
   //
   // Notre impl : poll `getPendingWarp() === null` (= warp consumed) ET
-  // `_lastSeenMapName !== currentMapName` (= map switch terminé). Dès que
-  // les 2 conditions sont vraies, on continue.
-  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
-  const warpSys = require('./warp-system') as { getPendingWarp: () => unknown };
-  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
-  const mapLoader = require('./map-loader') as { gMapHeader: { name?: string } | null };
-  const startMapName = mapLoader.gMapHeader?.name;
+  // `gMapHeader.id` switch (= map réellement chargée). Imports ESM statiques
+  // (= require() introuvable en browser, fix bug session 122).
+  const startMapId = gMapHeader?.id;
   const tick = (): boolean => {
     // Waiting for warp to consume + map to switch.
-    if (warpSys.getPendingWarp()) return false;
-    const currentMapName = mapLoader.gMapHeader?.name;
-    if (currentMapName && currentMapName !== startMapName) return true;
+    if (getPendingWarp()) return false;
+    const currentMapId = gMapHeader?.id;
+    if (currentMapId && currentMapId !== startMapId) return true;
     // Si pas de warp en cours mais map identique : on attend un autre signal
     // (= multichoice exit, fade complete, etc.). Pour les warpsilent flow,
     // la 2e condition se vérifiera après le swap.

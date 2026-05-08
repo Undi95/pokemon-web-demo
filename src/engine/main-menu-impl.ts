@@ -85,8 +85,9 @@ import {
   gSaveBlock2Ptr,
 } from './gba-menu-system';
 import { CreateWindowTemplate, FillWindowPixelBuffer, FillWindowPixelRect, PutWindowTilemap, CopyWindowToVram, ClearStdWindowAndFrame } from './gba-window-system';
-import { AddTextPrinterParameterized3 } from './gba-text-system';
+import { AddTextPrinterParameterized3, GetStringRightAlignXOffset } from './gba-text-system';
 import { getString } from './gba-strings';
+import { FlagGet } from './script-vars';
 
 // 1:1 décomp include/constants/songs.h:11 → SE_SELECT = 5.
 const SE_SELECT = 5;
@@ -355,15 +356,10 @@ export function HighlightSelectedMainMenuItem(
  *  Strings FR (= strings.c:1363-1366) : "JOUEUR", "DUREE JEU", "POKéDEX", "BADGES".
  *  NUM_BADGES = 8 (FLAG_BADGE01..08). */
 export function MainMenu_FormatSavegameText(): void {
-  // Lazy require pour éviter cycle au module load.
-  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
-  const { gSaveBlock2Ptr } = require('./gba-menu-system') as { gSaveBlock2Ptr: Record<string, unknown> };
-  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
-  const { FlagGet } = require('./script-vars') as { FlagGet: (name: string) => boolean };
-  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
-  const textSys = require('./gba-text-system') as { GetStringRightAlignXOffset: (str: string, rightX: number) => number };
-
-  const sb2 = gSaveBlock2Ptr;
+  // 1:1 décomp : lit gSaveBlock2Ptr (= déjà importé statiquement plus haut),
+  // FlagGet (= script-vars), GetStringRightAlignXOffset (= gba-text-system).
+  // Tous imports ESM statiques (pas de require() — bug session 122 fix).
+  const sb2 = gSaveBlock2Ptr as Record<string, unknown>;
   const playerName = String(sb2.playerName ?? '???');
   const playTimeHours = Number(sb2.playTimeHours ?? 0);
   const playTimeMinutes = Number(sb2.playTimeMinutes ?? 0);
@@ -380,7 +376,7 @@ export function MainMenu_FormatSavegameText(): void {
   AddTextPrinterParameterized3(WIN_CONTINUE, FONT_NORMAL, 0, 17, colorMenuInfo, TEXT_SKIP_DRAW, 'JOUEUR');
   AddTextPrinterParameterized3(
     WIN_CONTINUE, FONT_NORMAL,
-    textSys.GetStringRightAlignXOffset(playerName, 100), 17,
+    GetStringRightAlignXOffset(playerName, 100), 17,
     colorMenuInfo, TEXT_SKIP_DRAW, playerName,
   );
 
@@ -391,7 +387,7 @@ export function MainMenu_FormatSavegameText(): void {
   AddTextPrinterParameterized3(WIN_CONTINUE, FONT_NORMAL, 0x6C, 17, colorMenuInfo, TEXT_SKIP_DRAW, 'DUREE JEU');
   AddTextPrinterParameterized3(
     WIN_CONTINUE, FONT_NORMAL,
-    textSys.GetStringRightAlignXOffset(timeStr, 0xD0), 17,
+    GetStringRightAlignXOffset(timeStr, 0xD0), 17,
     colorMenuInfo, TEXT_SKIP_DRAW, timeStr,
   );
 
@@ -402,7 +398,7 @@ export function MainMenu_FormatSavegameText(): void {
     AddTextPrinterParameterized3(WIN_CONTINUE, FONT_NORMAL, 0, 33, colorMenuInfo, TEXT_SKIP_DRAW, 'POKéDEX');
     AddTextPrinterParameterized3(
       WIN_CONTINUE, FONT_NORMAL,
-      textSys.GetStringRightAlignXOffset(dexStr, 100), 33,
+      GetStringRightAlignXOffset(dexStr, 100), 33,
       colorMenuInfo, TEXT_SKIP_DRAW, dexStr,
     );
   }
@@ -417,7 +413,7 @@ export function MainMenu_FormatSavegameText(): void {
   AddTextPrinterParameterized3(WIN_CONTINUE, FONT_NORMAL, 0x6C, 33, colorMenuInfo, TEXT_SKIP_DRAW, 'BADGES');
   AddTextPrinterParameterized3(
     WIN_CONTINUE, FONT_NORMAL,
-    textSys.GetStringRightAlignXOffset(badgeStr, 0xD0), 33,
+    GetStringRightAlignXOffset(badgeStr, 0xD0), 33,
     colorMenuInfo, TEXT_SKIP_DRAW, badgeStr,
   );
 }
