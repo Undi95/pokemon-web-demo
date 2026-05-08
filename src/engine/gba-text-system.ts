@@ -431,12 +431,20 @@ export function StringExpandPlaceholders(_dest: string, src: string): string {
   result = result.replace(/\{STR_VAR_2\}/g, () => gStringVar2);
   result = result.replace(/\{STR_VAR_3\}/g, () => gStringVar3);
 
-  // {PLAYER} = nom du joueur depuis gSaveBlock2Ptr.playerName.
-  // Lazy lookup sur globalThis pour éviter import circular.
-  const sb2 = (globalThis as Record<string, unknown>).gSaveBlock2Ptr as
+  // {PLAYER} = nom du joueur. Lookup priority :
+  //   1. window.gameState.playerName (= notre source canonique post Phase 4.10)
+  //   2. gSaveBlock2Ptr.playerName (= legacy save block proxy, fallback)
+  // Lazy via globalThis pour éviter import circular.
+  const gs = (globalThis as Record<string, unknown>).gameState as
     | { playerName?: string } | undefined;
-  if (sb2?.playerName) {
-    result = result.replace(/\{PLAYER\}/g, sb2.playerName);
+  let playerName: string | undefined = gs?.playerName;
+  if (!playerName) {
+    const sb2 = (globalThis as Record<string, unknown>).gSaveBlock2Ptr as
+      | { playerName?: string } | undefined;
+    playerName = sb2?.playerName;
+  }
+  if (playerName && playerName !== 'PLAYER') {
+    result = result.replace(/\{PLAYER\}/g, playerName);
   }
 
   // {RIVAL} = nom du rival (si gender female → BRENDAN, else MAY) — TODO Phase E.

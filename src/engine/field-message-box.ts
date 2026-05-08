@@ -29,6 +29,7 @@ import {
   IsTextPrinterActive,
   setStringVar4,
   gStringVar4,
+  StringExpandPlaceholders,
 } from './gba-text-system';
 import { getRuntime } from './decomp-globals';
 
@@ -85,11 +86,14 @@ export function InitFieldMessageBox(): void {
  *  encodeStringForFont gère les escape sequences. */
 export function ShowFieldMessage(str: string): boolean {
   if (sFieldMessageBoxMode !== FIELD_MESSAGE_BOX_HIDDEN) return false;
-  // 1:1 décomp : StringExpandPlaceholders(gStringVar4, str). Pour MVP on met
-  // le texte directement dans gStringVar4 sans expansion (les placeholders
-  // {PLAYER}, {RIVAL}, {STR_VAR_*} seront ajoutés Phase 4.5+ via un helper).
+  // 1:1 décomp `StringExpandPlaceholders(gStringVar4, str)` (= field_message_box.c).
+  // Résout les placeholders {PLAYER}, {RIVAL}, {STR_VAR_1..3} avant rendering
+  // (= expandStringVar4 est appelée à la racine ici, pas par le text printer).
+  // Sans cette expansion, le user voit "MAMAN: , on est là" (= virgule détachée
+  // car {PLAYER} reste tel quel et non substitué).
   // Strip $ EOS terminator (= 1:1 décomp end-of-string sentinel).
-  sCurrentText = str.replace(/\$$/, '');
+  const stripped = str.replace(/\$$/, '');
+  sCurrentText = StringExpandPlaceholders(gStringVar4, stripped);
   setStringVar4(sCurrentText);
   sFieldMessageBoxMode = FIELD_MESSAGE_BOX_NORMAL;
   sStateStep = 0;

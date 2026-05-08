@@ -28,6 +28,7 @@
 
 import { getRuntime } from './decomp-globals';
 import { REG_OFFSET_BG0VOFS } from './decomp-runtime';
+import { FlagGet } from './script-vars';
 import { gMapHeader } from './map-loader';
 import type { DecompTask } from './decomp-runtime';
 import {
@@ -222,6 +223,13 @@ async function loadTheme(theme: PopupTheme): Promise<LoadedTheme | null> {
 
 export function ShowMapNamePopup(): void {
   if (!gMapHeader) return;
+  // 1:1 décomp `ShowMapNamePopup` (map_name_popup.c:231) :
+  //   if (FlagGet(FLAG_HIDE_MAP_NAME_POPUP) != TRUE) { ... }
+  // Skip si le flag est set (= e.g. pendant la cinematic intro où SetIntroFlagsMale
+  // le set pour cacher "Bourg-en-Vol" pendant que le dialog Mom est visible).
+  // Sans ce check, le popup slide BG0VOFS pendant que le dialog est ouvert →
+  // le dialog "rebondit" avec le BG0 scroll.
+  if (FlagGet('FLAG_HIDE_MAP_NAME_POPUP')) return;
   const mapsec = gMapHeader.regionMapSectionId;
   if (mapsec === _sLastMapSectionId) return;
   _sLastMapSectionId = mapsec;
