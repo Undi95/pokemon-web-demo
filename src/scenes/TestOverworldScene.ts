@@ -274,13 +274,27 @@ export class TestOverworldScene extends Phaser.Scene {
       //
       // Phase 4.10 démo finale Chunk 1 : spawn dans le camion 1:1 décomp
       // `WarpToTruck` (new_game.c:127) qui place le joueur dans MAP_INSIDE_OF_TRUCK.
-      // Pour le demo MVP : MAP_DYNAMIC sortie directe vers Brendan's House 1F
-      // (= 1:1 décomp setdynamicwarp dans InsideOfTruck_EventScript_SetIntroFlagsMale,
-      // sauf qu'on skip la cinématique d'arrivée à Bourg-en-Vol pour l'instant).
       // Spawn coords (1, 2) = côté ouest du camion 5×5, le joueur marche east et
       // déclenche le coord trigger à (3, 2) qui setdynamicwarp + warps vers (4, 2).
-      // Truncation MVP : on skip Bourg intermediate, warp direct vers la maison.
-      gameState.setDynamicWarp('MAP_LITTLEROOT_TOWN_BRENDANS_HOUSE_1F', 8, 8);
+      //
+      // 1:1 décomp `InsideOfTruck_EventScript_SetIntroFlagsMale` (= triggered au
+      // coord trigger (3, 2)) :
+      //   setdynamicwarp MAP_LITTLEROOT_TOWN, 3, 10
+      //   setvar VAR_LITTLEROOT_INTRO_STATE, 1
+      //   setflag FLAG_HIDE_*  (= cache rivale, mom may, etc.)
+      //
+      // Player puis warp à (4, 2) → MAP_DYNAMIC → MAP_LITTLEROOT_TOWN (3, 10)
+      // (= position du camion à Bourg-en-Vol). Là, OnFrame trigger
+      // `LittlerootTown_EventScript_StepOffTruckMale` (= INTRO_STATE = 1) :
+      //   - applymovement player jump_right (= saut hors du camion)
+      //   - applymovement Mom MomApproachPlayerAtTruck (= maman descend)
+      //   - warpsilent MAP_LITTLEROOT_TOWN_BRENDANS_HOUSE_1F, 8, 8
+      //
+      // Pour l'instant on n'a pas le full script engine pour OnFrame map_script_2.
+      // Set dynamicWarp directly à Bourg (3, 10) — quand on arrive à Bourg, le
+      // cinematic StepOffTruck devrait tourner. Si pas wiré, le user peut walker
+      // librement sur Bourg (= map propre, NPCs visibles).
+      gameState.setDynamicWarp('MAP_LITTLEROOT_TOWN', 3, 10);
       const header = await this.loadAndInitMap('MAP_INSIDE_OF_TRUCK', 1, 2, DIR_EAST);
 
       // 1:1 décomp `SetVBlankCallback(VBlankCB_Overworld)`. Le simple fait
