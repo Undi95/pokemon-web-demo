@@ -78,18 +78,34 @@ export function hasTruckParam(): boolean {
 
 /**
  * Applique le preset `?nointro` :
- *   - Reset save complète.
- *   - Name = "Test", gender = MALE.
+ *   - Si save existante : preserve playerName + gender (= continue from where).
+ *     Sinon : default 'PLAYER' / MALE (= 1:1 décomp default placeholder).
  *   - Set NewGame flags (= 159 FLAG_HIDE_*).
  *   - Bag : 5× POKE BALL + 5× POTION.
  *   - FlagSet FLAG_SYS_B_DASH (= running shoes équipées).
- *   - Vars LITTLEROOT_INTRO_STATE = 6 (post-intro), LITTLEROOT_TOWN_STATE = 4
- *     (post-running-shoes), BIRCH_LAB_STATE = 0 (= peut aller au lab).
+ *   - Vars LITTLEROOT_INTRO_STATE = 6 (post-intro), LITTLEROOT_TOWN_STATE = 4.
  *   - Save persistée.
+ *
+ *  User feedback session 121 : "Aussi notre nom est remplacé par 'Test',
+ *  surement un leftover des test etc, retire". Le hardcoded "Test" qui était
+ *  appliqué à chaque ?nointro reset été source de confusion (= overwrite le
+ *  nom Birch). Maintenant ?nointro preserve le nom existant si présent.
  */
 function applyNoIntroPreset(): void {
-  // 1:1 décomp `Sav2_ClearSetDefault` puis name/gender choisis.
-  gameState.resetForNewGame('MALE', 'Test');
+  // Preserve playerName/gender existants si une save valide existait.
+  const existingName = gameState.playerName;
+  const existingGender = gameState.gender;
+  // 1:1 décomp `Sav2_ClearSetDefault` mais on restore les fields preserved.
+  gameState.reset();
+  if (existingName && existingName !== 'PLAYER') {
+    gameState.playerName = existingName;
+    gameState.gender = existingGender;
+  } else {
+    // No prior save : default 1:1 décomp placeholder. User devrait passer par
+    // l'intro proper pour set un vrai nom.
+    gameState.playerName = 'PLAYER';
+    gameState.gender = 'MALE';
+  }
   // 1:1 décomp `RunScriptImmediately(EventScript_ResetAllMapFlags)` au tout début
   // d'une nouvelle partie. Sans ça les NPCs cachés réapparaissent.
   NewGameInit();
@@ -99,14 +115,12 @@ function applyNoIntroPreset(): void {
   // Running shoes (= FLAG_SYS_B_DASH set par dad in
   // LittlerootTown_EventScript_SetReceivedRunningShoes scripts.inc:889).
   gameState.setFlag('FLAG_SYS_B_DASH');
-  // Vars post-intro (= 1:1 décomp final state après truck → mom → clock →
-  // running shoes). Cf. cheat.skipIntro() pour la même séquence.
+  // Vars post-intro.
   gameState.setVar('VAR_LITTLEROOT_INTRO_STATE', 6);
   gameState.setVar('VAR_LITTLEROOT_TOWN_STATE', 4);
-  gameState.setFlag('FLAG_SET_WALL_CLOCK'); // clock défini
-  // Save state immédiat pour que F5 garde le preset.
+  gameState.setFlag('FLAG_SET_WALL_CLOCK');
   gameState.save();
-  console.log('[boot-mode] ?nointro preset applied : Test/Male, 5× POKE_BALL + 5× POTION, FLAG_SYS_B_DASH, INTRO_STATE=6');
+  console.log(`[boot-mode] ?nointro preset : name='${gameState.playerName}' gender='${gameState.gender}' INTRO_STATE=6`);
 }
 
 /**
