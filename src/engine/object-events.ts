@@ -241,7 +241,10 @@ _registerGObjectEvents(gObjectEvents);
 
 // ─── OBJ tile/palette allocation ────────────────────────────────────────────
 
-const NPC_TILE_BASE_START = 72;
+/** Phase 4.9 : player sprite occupe maintenant tiles 0..143 (= 18 frames concat,
+ *  walking 0..8 + running 9..17 = 1:1 décomp sPicTable_BrendanNormal). NPCs
+ *  allouent depuis 144. */
+const NPC_TILE_BASE_START = 144;
 const TILES_PER_NPC = 72;
 let _nextNpcTileBase = NPC_TILE_BASE_START;
 const NPC_PALETTE_START = 1;

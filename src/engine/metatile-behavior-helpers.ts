@@ -23,8 +23,19 @@ import {
   MB_IMPASSABLE_SOUTH_AND_NORTH, MB_IMPASSABLE_WEST_AND_EAST,
   MB_SECRET_BASE_BREAKABLE_DOOR,
   MB_JUMP_EAST, MB_JUMP_WEST, MB_JUMP_NORTH, MB_JUMP_SOUTH,
+  MB_LONG_GRASS,
 } from './tilemap-loader';
+import { ENUM_MB_0 } from './decomp-data/auto/include/constants/metatile_behaviors-data';
 import { DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST } from './direction-coords';
+import { gMapHeader } from './map-loader';
+
+// ─── Constants pour running checks (= 1:1 décomp metatile_behavior.c:1043+) ──
+const MB_NO_RUNNING                       = ENUM_MB_0.MB_NO_RUNNING;
+const MB_HOT_SPRINGS                      = ENUM_MB_0.MB_HOT_SPRINGS;
+const MB_PACIFIDLOG_VERTICAL_LOG_TOP      = ENUM_MB_0.MB_PACIFIDLOG_VERTICAL_LOG_TOP;
+const MB_PACIFIDLOG_VERTICAL_LOG_BOTTOM   = ENUM_MB_0.MB_PACIFIDLOG_VERTICAL_LOG_BOTTOM;
+const MB_PACIFIDLOG_HORIZONTAL_LOG_LEFT   = ENUM_MB_0.MB_PACIFIDLOG_HORIZONTAL_LOG_LEFT;
+const MB_PACIFIDLOG_HORIZONTAL_LOG_RIGHT  = ENUM_MB_0.MB_PACIFIDLOG_HORIZONTAL_LOG_RIGHT;
 
 // ─── IsBlocked* — directional blocks (= 1:1 metatile_behavior.c:933+) ──────
 
@@ -153,4 +164,39 @@ export function ShouldJumpLedge(targetBehavior: number, direction: number): bool
   const idx = direction - 1;
   if (idx < 0 || idx >= 4) return false;
   return sJumpFuncs[idx](targetBehavior);
+}
+
+// ─── Running disallowed checks — 1:1 décomp bike.c + metatile_behavior.c ─────
+
+/** 1:1 décomp `MetatileBehavior_IsPacifidlogLog` (metatile_behavior.c:1043). */
+export function MetatileBehavior_IsPacifidlogLog(behavior: number): boolean {
+  return behavior === MB_PACIFIDLOG_VERTICAL_LOG_TOP
+      || behavior === MB_PACIFIDLOG_VERTICAL_LOG_BOTTOM
+      || behavior === MB_PACIFIDLOG_HORIZONTAL_LOG_LEFT
+      || behavior === MB_PACIFIDLOG_HORIZONTAL_LOG_RIGHT;
+}
+
+/** 1:1 décomp `MetatileBehavior_IsRunningDisallowed` (metatile_behavior.c:1258). */
+export function MetatileBehavior_IsRunningDisallowed(behavior: number): boolean {
+  return behavior === MB_NO_RUNNING
+      || behavior === MB_LONG_GRASS
+      || behavior === MB_HOT_SPRINGS
+      || MetatileBehavior_IsPacifidlogLog(behavior);
+}
+
+/** 1:1 décomp `IsRunningDisallowedByMetatile` (bike.c:901-908).
+ *  Phase 4.9 first cut : MetatileBehavior_IsFortreeBridge edge case omis (=
+ *  rare, requires PlayerGetElevation odd-bit check). À ajouter avec elevation
+ *  system si nécessaire pour Fortree gym. */
+export function IsRunningDisallowedByMetatile(behavior: number): boolean {
+  return MetatileBehavior_IsRunningDisallowed(behavior);
+}
+
+/** 1:1 décomp `IsRunningDisallowed` (bike.c:1056-1062).
+ *  Returns TRUE si :
+ *    - gMapHeader.allowRunning est FALSE (= map header flag, e.g. caves) OR
+ *    - le metatile courant interdit running (= MB_NO_RUNNING / LONG_GRASS / etc.) */
+export function IsRunningDisallowed(behavior: number): boolean {
+  if (!gMapHeader) return true;  // safety : pas de map = pas de run
+  return !gMapHeader.allowRunning || IsRunningDisallowedByMetatile(behavior);
 }

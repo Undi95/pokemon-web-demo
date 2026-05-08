@@ -48,7 +48,9 @@ import {
   ArePlayerFieldControlsLocked,
   ScriptContext_SetupScript,
 } from './script-runtime';
-import { gSelectedObjectEvent, gSpecialVar } from './script-vars';
+import { gSelectedObjectEvent, gSpecialVar, FlagGet } from './script-vars';
+import { B_BUTTON } from './gba-menu-system';
+import { IsRunningDisallowed } from './metatile-behavior-helpers';
 import { PlaySE } from './decomp-globals';
 import { SE_WALL_HIT, SE_LEDGE } from './decomp-data/auto/include/constants/songs-data';
 import {
@@ -171,6 +173,11 @@ interface PlayerAvatar {
   walkAnimAlt: 0 | 1;
   /** Player gender ('MALE' = Brendan, 'FEMALE' = May). */
   gender: 'MALE' | 'FEMALE';
+  /** 1:1 décomp `PLAYER_AVATAR_FLAG_DASH`. Set quand player run via B held +
+   *  FLAG_SYS_B_DASH set + IsRunningDisallowed=false (= field_player_avatar.c:641-647).
+   *  Utilisé par updateSpriteFrame (= dash anim) + step duration (= 8 frames au
+   *  lieu de 16) + movementSpeed (= 2× normal). */
+  dashing: boolean;
 }
 
 /** 1:1 décomp `EWRAM_DATA struct PlayerAvatar gPlayerAvatar` (global.fieldmap.h:374). */
@@ -189,14 +196,27 @@ export const gPlayerAvatar: PlayerAvatar = {
   spriteId: -1,
   walkAnimAlt: 0,
   gender: 'MALE',
+  dashing: false,
 };
 
 // ─── OBJ VRAM allocation (= player sprite occupe les 1ères tiles) ──────────
 
-/** Player sprite occupe OBJ tiles 0..71 (= 9 frames × 8 tiles each).
- *  Phase 4.4 (NPCs) allouera depuis tile 72. */
+/** Player sprite occupe OBJ tiles 0..143 (= 18 frames × 8 tiles).
+ *  1:1 décomp `sPicTable_BrendanNormal[18]` (object_event_pic_tables.h:1) :
+ *    indices 0..8 = `gObjectEventPic_BrendanNormal` (= walking.png frames)
+ *    indices 9..17 = `gObjectEventPic_BrendanRunning` (= running.png frames)
+ *  Walking + running concatenés permet à updateSpriteFrame d'utiliser
+ *  `frameIdx + (dashing ? 9 : 0)` comme offset = 1:1 sAnim_GoSouth vs sAnim_RunSouth
+ *  pointent vers le même SpriteFrameImage table.
+ *
+ *  Décomp utilise dynamic spriteImageAlloc (= 8 tiles VRAM avec frame swap
+ *  per-frame). Notre impl preload les 18 frames en VRAM (= 144 tiles) au boot
+ *  pour éviter la complexité du dynamic alloc. Functionally identique. */
 const PLAYER_OBJ_TILE_START = 0;
 const TILES_PER_FRAME = 8;  // 16x32 sprite = 2x4 tiles 4bpp
+const NUM_WALK_FRAMES = 9;  // = 1:1 décomp gObjectEventPic_BrendanNormal frame count
+const RUN_FRAME_OFFSET = 9;  // = 1:1 décomp sPicTable_BrendanNormal[9..17] offset
+const TOTAL_PLAYER_FRAMES = 18;  // = walking + running
 const PLAYER_PALETTE_BANK = 0;
 
 // ─── Async loader : sprite + palette ────────────────────────────────────────
@@ -259,22 +279,29 @@ export async function InitPlayerAvatar(
   gPlayerAvatar.gender = gender;
   gPlayerAvatar.walkAnimAlt = 0;
 
-  // Load walking.png (= 144×32, 4bpp indexed PLTE).
+  // 1:1 décomp `sPicTable_BrendanNormal[18]` : load walking.png + running.png
+  // en parallèle, concaténer en single VRAM block (= 18 frames). updateSpriteFrame
+  // utilise `frameIdx + (dashing ? 9 : 0)` comme offset.
   const name = gender === 'FEMALE' ? 'may' : 'brendan';
-  const url = `/decomp/em/object_events/people/${name}/walking.png`;
-  const png = await loadIndexedPngStrict(url, 4);
-  // PNG = 144 / 8 = 18 tiles wide × 32 / 8 = 4 tiles tall = 72 tiles total = 9 frames.
-  const numFrames = 9;
-  const reordered = pngTo1dObjLayout(png.charData, numFrames, png.widthTiles);
+  const [walkingPng, runningPng] = await Promise.all([
+    loadIndexedPngStrict(`/decomp/em/object_events/people/${name}/walking.png`, 4),
+    loadIndexedPngStrict(`/decomp/em/object_events/people/${name}/running.png`, 4),
+  ]);
+  const walkingReordered = pngTo1dObjLayout(walkingPng.charData, NUM_WALK_FRAMES, walkingPng.widthTiles);
+  const runningReordered = pngTo1dObjLayout(runningPng.charData, NUM_WALK_FRAMES, runningPng.widthTiles);
+  // Concaténation 1:1 décomp sPicTable[0..8 walking, 9..17 running].
+  const combined = new Uint8Array(walkingReordered.length + runningReordered.length);
+  combined.set(walkingReordered, 0);
+  combined.set(runningReordered, walkingReordered.length);
 
-  // Write to OBJ VRAM at PLAYER_OBJ_TILE_START.
-  // Notre engine : objVram = Uint8Array, offset = tile * 32 bytes.
   const objVram = rt.gba.objVram;
-  objVram.set(reordered, PLAYER_OBJ_TILE_START * 32);
+  objVram.set(combined, PLAYER_OBJ_TILE_START * 32);
 
   // Load palette → OBJ palette bank PLAYER_PALETTE_BANK (= bank 0 of OBJ).
-  // gPlttBufferFaded entries 256..271 = OBJ bank 0.
-  const palette = png.palette;
+  // gPlttBufferFaded entries 256..271 = OBJ bank 0. Décomp : walking + running
+  // partagent la même palette player → on charge celle de walking.
+  const palette = walkingPng.palette;
+  void runningPng;  // palette identique, pas besoin (= 1:1 décomp shared player palette)
   const objPaletteSlot = 256 + PLAYER_PALETTE_BANK * 16;
   for (let i = 0; i < Math.min(16, palette.length); i++) {
     rt.gPlttBufferFaded.set(objPaletteSlot + i, palette[i]);
@@ -357,13 +384,12 @@ function updateSpriteFrame(rt: DecompRuntime): void {
     //   ANIMCMD_JUMP(0)
     // Cycle = 32 game-frames = 2 metatile steps.
     //
-    // Step 1 : walk_a (8 frames) → face (8 frames)
-    // Step 2 : walk_b (8 frames) → face (8 frames)  — walkAnimAlt switch
-    //
-    // stepFramesLeft DECREMENTS de 16→1.
-    // Frames 0-7 (= stepFramesLeft 15..8) : walk_a OR walk_b
-    // Frames 8-15 (= stepFramesLeft 7..0) : face
-    if (gPlayerAvatar.stepFramesLeft >= 8) {
+    // Walk : step 16 frames → walk_a/b (8) + face (8). Threshold = 8.
+    // Dash : step 8 frames → walk_a/b (4) + face (4). Threshold = 4 (= /2).
+    //   Phase 4.9 first cut : utilise walk frames pour dash. Task (1) ajoutera
+    //   les vraies dash frames (= sprite course distinct) via running.png.
+    const halfStep = gPlayerAvatar.dashing ? 4 : 8;
+    if (gPlayerAvatar.stepFramesLeft >= halfStep) {
       frameIdx = gPlayerAvatar.walkAnimAlt === 0 ? cfg.walk1 : cfg.walk2;
     } else {
       frameIdx = cfg.face;
@@ -384,7 +410,17 @@ function updateSpriteFrame(rt: DecompRuntime): void {
     frameIdx = cfg.face;
   }
 
-  oam.tileId = PLAYER_OBJ_TILE_START + frameIdx * TILES_PER_FRAME;
+  // 1:1 décomp `sPicTable_BrendanNormal` : frames 0..8 = walking, 9..17 = running.
+  // Quand dashing pendant un step actif : shift frameIdx de RUN_FRAME_OFFSET (= 9)
+  // → utilise running pic. Hors step actif (= idle face / collide / turn), revient
+  // aux walking frames même si dashing reste true. 1:1 décomp `npc_clear_strange_bits`
+  // (field_player_avatar.c:390) clear le flag PLAYER_AVATAR_FLAG_DASH chaque frame
+  // avant keypad logic ; notre impl gate le visual sur runningState=MOVING + step.
+  const inActiveDashStep = gPlayerAvatar.dashing
+    && gPlayerAvatar.runningState === MOVING
+    && gPlayerAvatar.stepFramesLeft > 0;
+  const dashOffset = inActiveDashStep ? RUN_FRAME_OFFSET : 0;
+  oam.tileId = PLAYER_OBJ_TILE_START + (frameIdx + dashOffset) * TILES_PER_FRAME;
   // Set hFlip sur le SPRITE state (= source of truth pour syncSpritesToOam,
   // appelé chaque frame dans tickFixed). Setter oam.flipH directement serait
   // overridden au prochain syncSpritesToOam.
@@ -838,16 +874,31 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
     return;
   }
 
-  // 1:1 décomp `PlayerWalkNormal` : start a 16-frame step in direction.
+  // 1:1 décomp `PlayerWalkNormal` / `PlayerRun` (field_player_avatar.c:641-651) :
+  //   if (!UNDERWATER && (heldKeys & B_BUTTON) && FlagGet(FLAG_SYS_B_DASH)
+  //       && !IsRunningDisallowed(metatileBehavior))
+  //       PlayerRun(direction);  // = MOVEMENT_ACTION_PLAYER_RUN_* = 8-frame step à 2 px/frame
+  //   else
+  //       PlayerWalkNormal(direction);  // = MOVEMENT_ACTION_WALK_NORMAL_* = 16-frame step à 1 px/frame
+  const playerBehavior = MapGridGetMetatileBehaviorAt(
+    gPlayerAvatar.x + MAP_OFFSET, gPlayerAvatar.y + MAP_OFFSET);
+  const wantDash = (heldKeys & B_BUTTON) !== 0
+                && FlagGet('FLAG_SYS_B_DASH')
+                && !IsRunningDisallowed(playerBehavior);
+  gPlayerAvatar.dashing = wantDash;
+  // 1:1 décomp `sPicTable_BrendanNormal[0..8 walk, 9..17 run]` preloaded au boot.
+  // updateSpriteFrame applique `RUN_FRAME_OFFSET` quand dashing=true → utilise
+  // les running frames (= sprite course distinct). Pas de VRAM swap nécessaire.
   gPlayerAvatar.runningState = MOVING;
   gPlayerAvatar.tileTransitionState = T_TILE_TRANSITION;
-  gPlayerAvatar.stepFramesLeft = 16;  // = 1:1 ROM walk speed
+  // Dash : 8 frames step à 2 px/frame = 16 px = 1 metatile (= 2× plus rapide).
+  // Walk : 16 frames step à 1 px/frame = 16 px = 1 metatile.
+  gPlayerAvatar.stepFramesLeft = wantDash ? 8 : 16;
   gPlayerAvatar.stepDirection = inputDir;
-  // Camera move la SAME direction = player visual stays at center.
-  // Speed 1 px/frame × 16 frames = 16 px = 1 metatile. ✓
   const speed = dirToCameraSpeed(inputDir);
-  gFieldCamera.movementSpeedX = speed.x * WALK_SPEED_PX_PER_FRAME;
-  gFieldCamera.movementSpeedY = speed.y * WALK_SPEED_PX_PER_FRAME;
+  const speedMult = wantDash ? 2 : 1;
+  gFieldCamera.movementSpeedX = speed.x * WALK_SPEED_PX_PER_FRAME * speedMult;
+  gFieldCamera.movementSpeedY = speed.y * WALK_SPEED_PX_PER_FRAME * speedMult;
   updateSpriteFrame(rt);
 }
 
