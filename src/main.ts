@@ -55,6 +55,9 @@ import { SeedRngAndSetTrainerId } from './engine/random';
 // Side-effect import : pose window.dev.audit.* helpers (= state inspection,
 // asset cache, save slots, tile preview, audit reports). Cf. dev-audit-tools.ts.
 import './engine/dev-audit-tools';
+// Side-effect import : pose window.dev.breakpoint.* helpers (= pause-on-event
+// pour debugging frame-precise : fade-out/fade-in/map-change/palette-leak/etc.).
+import './engine/dev-breakpoint-tools';
 const _saveLoadStatus = LoadGameSave();
 SetSaveFileStatus(_saveLoadStatus);
 console.log(`[main] LoadGameSave at boot → status=${_saveLoadStatus}`);
