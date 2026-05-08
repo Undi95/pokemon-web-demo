@@ -1,0 +1,93 @@
+{
+  "srcFile": "src/map_name_popup.c",
+  "count": 6,
+  "functions": {
+    "ShowMapNamePopup": {
+      "returnType": "void",
+      "signature": "void ShowMapNamePopup(void)",
+      "paramsRaw": "void",
+      "body": "if (FlagGet(FLAG_HIDE_MAP_NAME_POPUP) != TRUE)\n    {\n        if (!FuncIsActiveTask(Task_MapNamePopUpWindow))\n        {\n             \n            sPopupTaskId = CreateTask(Task_MapNamePopUpWindow, 90);\n            SetGpuReg(REG_OFFSET_BG0VOFS, POPUP_OFFSCREEN_Y);\n            gTasks[sPopupTaskId].tState = STATE_PRINT;\n            gTasks[sPopupTaskId].tYOffset = POPUP_OFFSCREEN_Y;\n        }\n        else\n        {\n             \n             \n            if (gTasks[sPopupTaskId].tState != STATE_SLIDE_OUT)\n                gTasks[sPopupTaskId].tState = STATE_SLIDE_OUT;\n            gTasks[sPopupTaskId].tIncomingPopUp = TRUE;\n        }\n    }",
+      "callsTo": [
+        "CreateTask",
+        "FlagGet",
+        "FuncIsActiveTask",
+        "SetGpuReg"
+      ],
+      "lineCount": 19
+    },
+    "Task_MapNamePopUpWindow": {
+      "returnType": "void",
+      "signature": "static void Task_MapNamePopUpWindow(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "struct Task *task = &gTasks[taskId];\n\n    switch (task->tState)\n    {\n    case STATE_PRINT:\n         \n        if (++task->tPrintTimer > 30)\n        {\n            task->tState = STATE_SLIDE_IN;\n            task->tPrintTimer = 0;\n            ShowMapNamePopUpWindow();\n        }\n        break;\n    case STATE_SLIDE_IN:\n         \n        task->tYOffset -= POPUP_SLIDE_SPEED;\n        if (task->tYOffset <= 0 )\n        {\n            task->tYOffset = 0;\n            task->tState = STATE_WAIT;\n            gTasks[sPopupTaskId].data[1] = 0;\n        }\n        break;\n    case STATE_WAIT:\n         \n        if (++task->tOnscreenTimer > 120)\n        {\n            task->tOnscreenTimer = 0;\n            task->tState = STATE_SLIDE_OUT;\n        }\n        break;\n    case STATE_SLIDE_OUT:\n         \n        task->tYOffset += POPUP_SLIDE_SPEED;\n        if (task->tYOffset >= POPUP_OFFSCREEN_Y)\n        {\n            task->tYOffset = POPUP_OFFSCREEN_Y;\n            if (task->tIncomingPopUp)\n            {\n                 \n                 \n                task->tState = STATE_PRINT;\n                task->tPrintTimer = 0;\n                task->tIncomingPopUp = FALSE;\n            }\n            else\n            {\n                task->tState = STATE_ERASE;\n                return;\n            }\n        }\n        break;\n    case STATE_ERASE:\n        ClearStdWindowAndFrame(GetMapNamePopUpWindowId(), TRUE);\n        task->tState = STATE_END;\n        break;\n    case STATE_END:\n        HideMapNamePopUpWindow();\n        return;\n    }\n    SetGpuReg(REG_OFFSET_BG0VOFS, task->tYOffset);",
+      "callsTo": [
+        "ClearStdWindowAndFrame",
+        "GetMapNamePopUpWindowId",
+        "HideMapNamePopUpWindow",
+        "SetGpuReg",
+        "ShowMapNamePopUpWindow"
+      ],
+      "lineCount": 61
+    },
+    "HideMapNamePopUpWindow": {
+      "returnType": "void",
+      "signature": "void HideMapNamePopUpWindow(void)",
+      "paramsRaw": "void",
+      "body": "if (FuncIsActiveTask(Task_MapNamePopUpWindow))\n    {\n    #ifdef UBFIX\n        if (GetMapNamePopUpWindowId() != WINDOW_NONE)\n    #endif  \n        {\n            ClearStdWindowAndFrame(GetMapNamePopUpWindowId(), TRUE);\n            RemoveMapNamePopUpWindow();\n        }\n        SetGpuReg_ForcedBlank(REG_OFFSET_BG0VOFS, 0);\n        DestroyTask(sPopupTaskId);\n    }",
+      "callsTo": [
+        "ClearStdWindowAndFrame",
+        "DestroyTask",
+        "FuncIsActiveTask",
+        "GetMapNamePopUpWindowId",
+        "RemoveMapNamePopUpWindow",
+        "SetGpuReg_ForcedBlank"
+      ],
+      "lineCount": 12
+    },
+    "ShowMapNamePopUpWindow": {
+      "returnType": "void",
+      "signature": "static void ShowMapNamePopUpWindow(void)",
+      "paramsRaw": "void",
+      "body": "u8 mapDisplayHeader[24];\n    u8 *withoutPrefixPtr;\n    u8 x;\n    const u8 *mapDisplayHeaderSource;\n\n    if (CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE)\n    {\n        if (gMapHeader.mapLayoutId == LAYOUT_BATTLE_FRONTIER_BATTLE_PYRAMID_TOP)\n        {\n            withoutPrefixPtr = &(mapDisplayHeader[3]);\n            mapDisplayHeaderSource = sBattlePyramid_MapHeaderStrings[FRONTIER_STAGES_PER_CHALLENGE];\n        }\n        else\n        {\n            withoutPrefixPtr = &(mapDisplayHeader[3]);\n            mapDisplayHeaderSource = sBattlePyramid_MapHeaderStrings[gSaveBlock2Ptr->frontier.curChallengeBattleNum];\n        }\n        StringCopy(withoutPrefixPtr, mapDisplayHeaderSource);\n    }\n    else\n    {\n        withoutPrefixPtr = &(mapDisplayHeader[3]);\n        GetMapName(withoutPrefixPtr, gMapHeader.regionMapSectionId, 0);\n    }\n    AddMapNamePopUpWindow();\n    LoadMapNamePopUpWindowBg();\n    x = GetStringCenterAlignXOffset(FONT_NARROW, withoutPrefixPtr, 80);\n    mapDisplayHeader[0] = EXT_CTRL_CODE_BEGIN;\n    mapDisplayHeader[1] = EXT_CTRL_CODE_HIGHLIGHT;\n    mapDisplayHeader[2] = TEXT_COLOR_TRANSPARENT;\n    AddTextPrinterParameterized(GetMapNamePopUpWindowId(), FONT_NARROW, mapDisplayHeader, x, 3, TEXT_SKIP_DRAW, NULL);\n    CopyWindowToVram(GetMapNamePopUpWindowId(), COPYWIN_FULL);",
+      "callsTo": [
+        "AddMapNamePopUpWindow",
+        "AddTextPrinterParameterized",
+        "CopyWindowToVram",
+        "CurrentBattlePyramidLocation",
+        "GetMapName",
+        "GetMapNamePopUpWindowId",
+        "GetStringCenterAlignXOffset",
+        "LoadMapNamePopUpWindowBg",
+        "StringCopy"
+      ],
+      "lineCount": 32
+    },
+    "DrawMapNamePopUpFrame": {
+      "returnType": "void",
+      "signature": "static void DrawMapNamePopUpFrame(u8 bg, u8 x, u8 y, u8 deltaX, u8 deltaY, u8 unused)",
+      "paramsRaw": "u8 bg, u8 x, u8 y, u8 deltaX, u8 deltaY, u8 unused",
+      "body": "s32 i;\n\n     \n    for (i = 0; i < 1 + TILE_TOP_EDGE_END - TILE_TOP_EDGE_START; i++)\n        FillBgTilemapBufferRect(bg, TILE_TOP_EDGE_START + i, i - 1 + x, y - 1, 1, 1, 14);\n\n     \n    FillBgTilemapBufferRect(bg, TILE_LEFT_EDGE_TOP,       x - 1,     y, 1, 1, 14);\n    FillBgTilemapBufferRect(bg, TILE_RIGHT_EDGE_TOP, deltaX + x,     y, 1, 1, 14);\n    FillBgTilemapBufferRect(bg, TILE_LEFT_EDGE_MID,       x - 1, y + 1, 1, 1, 14);\n    FillBgTilemapBufferRect(bg, TILE_RIGHT_EDGE_MID, deltaX + x, y + 1, 1, 1, 14);\n    FillBgTilemapBufferRect(bg, TILE_LEFT_EDGE_BOT,       x - 1, y + 2, 1, 1, 14);\n    FillBgTilemapBufferRect(bg, TILE_RIGHT_EDGE_BOT, deltaX + x, y + 2, 1, 1, 14);\n\n     \n    for (i = 0; i < 1 + TILE_BOT_EDGE_END - TILE_BOT_EDGE_START; i++)\n        FillBgTilemapBufferRect(bg, TILE_BOT_EDGE_START + i, i - 1 + x, y + deltaY, 1, 1, 14);",
+      "callsTo": [
+        "FillBgTilemapBufferRect"
+      ],
+      "lineCount": 17
+    },
+    "LoadMapNamePopUpWindowBg": {
+      "returnType": "void",
+      "signature": "static void LoadMapNamePopUpWindowBg(void)",
+      "paramsRaw": "void",
+      "body": "u8 popUpThemeId;\n    u8 popupWindowId = GetMapNamePopUpWindowId();\n    mapsec_u16_t regionMapSectionId = gMapHeader.regionMapSectionId;\n\n    if (regionMapSectionId >= KANTO_MAPSEC_START)\n    {\n        if (regionMapSectionId > KANTO_MAPSEC_END)\n            regionMapSectionId -= KANTO_MAPSEC_COUNT;\n        else\n            regionMapSectionId = 0;  \n    }\n    popUpThemeId = sMapSectionToThemeId[regionMapSectionId];\n\n    LoadBgTiles(GetWindowAttribute(popupWindowId, WINDOW_BG), sMapPopUp_OutlineTable[popUpThemeId], 0x400, 0x21D);\n    CallWindowFunction(popupWindowId, DrawMapNamePopUpFrame);\n    PutWindowTilemap(popupWindowId);\n    if (gMapHeader.weather == WEATHER_UNDERWATER_BUBBLES)\n        LoadPalette(&sMapPopUp_Palette_Underwater, BG_PLTT_ID(14), sizeof(sMapPopUp_Palette_Underwater));\n    else\n        LoadPalette(sMapPopUp_PaletteTable[popUpThemeId], BG_PLTT_ID(14), sizeof(sMapPopUp_PaletteTable[0]));\n    BlitBitmapToWindow(popupWindowId, sMapPopUp_Table[popUpThemeId], 0, 0, 80, 24);",
+      "callsTo": [
+        "BG_PLTT_ID",
+        "BlitBitmapToWindow",
+        "CallWindowFunction",
+        "GetMapNamePopUpWindowId",
+        "GetWindowAttribute",
+        "LoadBgTiles",
+        "LoadPalette",
+        "PutWindowTilemap"
+      ],
+      "lineCount": 21
+    }
+  }
+}

@@ -1,0 +1,362 @@
+{
+  "srcFile": "src/pokeblock_feed.c",
+  "count": 28,
+  "functions": {
+    "CB2_PokeblockFeed": {
+      "returnType": "void",
+      "signature": "static void CB2_PokeblockFeed(void)",
+      "paramsRaw": "void",
+      "body": "RunTasks();\n    AnimateSprites();\n    BuildOamBuffer();\n    DoScheduledBgTilemapCopiesToVram();\n    UpdatePaletteFade();",
+      "callsTo": [
+        "AnimateSprites",
+        "BuildOamBuffer",
+        "DoScheduledBgTilemapCopiesToVram",
+        "RunTasks",
+        "UpdatePaletteFade"
+      ],
+      "lineCount": 5
+    },
+    "VBlankCB_PokeblockFeed": {
+      "returnType": "void",
+      "signature": "static void VBlankCB_PokeblockFeed(void)",
+      "paramsRaw": "void",
+      "body": "LoadOam();\n    ProcessSpriteCopyRequests();\n    TransferPlttBuffer();",
+      "callsTo": [
+        "LoadOam",
+        "ProcessSpriteCopyRequests",
+        "TransferPlttBuffer"
+      ],
+      "lineCount": 3
+    },
+    "LoadPokeblockFeedScene": {
+      "returnType": "bool8",
+      "signature": "static bool8 LoadPokeblockFeedScene(void)",
+      "paramsRaw": "void",
+      "body": "switch (gMain.state)\n    {\n    case 0:\n        sPokeblockFeed = AllocZeroed(sizeof(*sPokeblockFeed));\n        SetVBlankHBlankCallbacksToNull();\n        ClearScheduledBgCopiesToVram();\n        gMain.state++;\n        break;\n    case 1:\n        ResetPaletteFade();\n        gPaletteFade.bufferTransferDisabled = TRUE;\n        gMain.state++;\n        break;\n    case 2:\n        ResetSpriteData();\n        gMain.state++;\n        break;\n    case 3:\n        FreeAllSpritePalettes();\n        gMain.state++;\n        break;\n    case 4:\n        AllocateMonSpritesGfx();\n        gMain.state++;\n        break;\n    case 5:\n        HandleInitBackgrounds();\n        gMain.state++;\n        break;\n    case 6:\n        HandleInitWindows();\n        gMain.state++;\n        break;\n    case 7:\n        if (LoadMonAndSceneGfx(&gPlayerParty[gPokeblockMonId]))\n            gMain.state++;\n        break;\n    case 8:\n        sPokeblockFeed->pokeblockCaseSpriteId = CreatePokeblockCaseSpriteForFeeding();\n        gMain.state++;\n        break;\n    case 9:\n        sPokeblockFeed->monSpriteId = CreateMonSprite(&gPlayerParty[gPokeblockMonId]);\n        gMain.state++;\n        break;\n    case 10:\n        DrawStdFrameWithCustomTileAndPalette(0, TRUE, 1, 14);\n        gMain.state++;\n        break;\n    case 11:\n        LaunchPokeblockFeedTask();\n        gMain.state++;\n        break;\n    case 12:\n        BlendPalettes(PALETTES_ALL, 16, 0);\n        gMain.state++;\n        break;\n    case 13:\n        BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);\n        gPaletteFade.bufferTransferDisabled = FALSE;\n        gMain.state++;\n        break;\n    default:\n        SetVBlankCallback(VBlankCB_PokeblockFeed);\n        SetMainCallback2(CB2_PokeblockFeed);\n        return TRUE;\n    }\n    return FALSE;",
+      "callsTo": [
+        "AllocZeroed",
+        "AllocateMonSpritesGfx",
+        "BeginNormalPaletteFade",
+        "BlendPalettes",
+        "ClearScheduledBgCopiesToVram",
+        "CreateMonSprite",
+        "CreatePokeblockCaseSpriteForFeeding",
+        "DrawStdFrameWithCustomTileAndPalette",
+        "FreeAllSpritePalettes",
+        "HandleInitBackgrounds",
+        "HandleInitWindows",
+        "LaunchPokeblockFeedTask",
+        "LoadMonAndSceneGfx",
+        "ResetPaletteFade",
+        "ResetSpriteData",
+        "SetMainCallback2",
+        "SetVBlankCallback",
+        "SetVBlankHBlankCallbacksToNull"
+      ],
+      "lineCount": 68
+    },
+    "PreparePokeblockFeedScene": {
+      "returnType": "void",
+      "signature": "void PreparePokeblockFeedScene(void)",
+      "paramsRaw": "void",
+      "body": "while (1)\n    {\n        if (MenuHelpers_ShouldWaitForLinkRecv() == TRUE)\n            break;\n        if (LoadPokeblockFeedScene() == TRUE)\n            break;\n        if (MenuHelpers_IsLinkActive() == TRUE)\n            break;\n    }",
+      "callsTo": [
+        "LoadPokeblockFeedScene",
+        "MenuHelpers_IsLinkActive",
+        "MenuHelpers_ShouldWaitForLinkRecv"
+      ],
+      "lineCount": 9
+    },
+    "HandleInitBackgrounds": {
+      "returnType": "void",
+      "signature": "static void HandleInitBackgrounds(void)",
+      "paramsRaw": "void",
+      "body": "ResetVramOamAndBgCntRegs();\n\n    ResetBgsAndClearDma3BusyFlags(0);\n    InitBgsFromTemplates(0, sBackgroundTemplates, ARRAY_COUNT(sBackgroundTemplates));\n    SetBgTilemapBuffer(1, sPokeblockFeed->tilemapBuffer);\n    ResetAllBgsCoordinates();\n    ScheduleBgCopyTilemapToVram(1);\n\n    SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_OBJ_ON | DISPCNT_OBJ_1D_MAP);\n\n    ShowBg(0);\n    ShowBg(1);\n\n    SetGpuReg(REG_OFFSET_BLDCNT, 0);",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "InitBgsFromTemplates",
+        "ResetAllBgsCoordinates",
+        "ResetBgsAndClearDma3BusyFlags",
+        "ResetVramOamAndBgCntRegs",
+        "ScheduleBgCopyTilemapToVram",
+        "SetBgTilemapBuffer",
+        "SetGpuReg",
+        "ShowBg"
+      ],
+      "lineCount": 14
+    },
+    "LoadMonAndSceneGfx": {
+      "returnType": "bool8",
+      "signature": "static bool8 LoadMonAndSceneGfx(struct Pokemon *mon)",
+      "paramsRaw": "struct Pokemon *mon",
+      "body": "u16 species;\n    u32 personality, trainerId;\n    const struct CompressedSpritePalette *palette;\n\n    switch (sPokeblockFeed->loadGfxState)\n    {\n    case 0:\n         \n        species = GetMonData(mon, MON_DATA_SPECIES_OR_EGG);\n        personality = GetMonData(mon, MON_DATA_PERSONALITY);\n        HandleLoadSpecialPokePic_2(&gMonFrontPicTable[species], gMonSpritesGfxPtr->sprites.ptr[B_POSITION_OPPONENT_LEFT], species, personality);\n        sPokeblockFeed->loadGfxState++;\n        break;\n    case 1:\n         \n        species = GetMonData(mon, MON_DATA_SPECIES_OR_EGG);\n        personality = GetMonData(mon, MON_DATA_PERSONALITY);\n        trainerId = GetMonData(mon, MON_DATA_OT_ID);\n        palette = GetMonSpritePalStructFromOtIdPersonality(species, trainerId, personality);\n\n        LoadCompressedSpritePalette(palette);\n        SetMultiuseSpriteTemplateToPokemon(palette->tag, B_POSITION_OPPONENT_LEFT);\n        sPokeblockFeed->loadGfxState++;\n        break;\n    case 2:\n        LoadCompressedSpriteSheet(&gPokeblockCase_SpriteSheet);\n        sPokeblockFeed->loadGfxState++;\n        break;\n    case 3:\n        LoadCompressedSpritePalette(&gPokeblockCase_SpritePal);\n        sPokeblockFeed->loadGfxState++;\n        break;\n    case 4:\n        LoadCompressedSpriteSheet(&sSpriteSheet_Pokeblock);\n        sPokeblockFeed->loadGfxState++;\n        break;\n    case 5:\n        SetPokeblockSpritePal(gSpecialVar_ItemId);\n        LoadCompressedSpritePalette(&sPokeblockSpritePal);\n        sPokeblockFeed->loadGfxState++;\n        break;\n    case 6:\n        ResetTempTileDataBuffers();\n        DecompressAndCopyTileDataToVram(1, gBattleEnvironmentTiles_Building, 0, 0, 0);\n        sPokeblockFeed->loadGfxState++;\n        break;\n    case 7:\n        if (FreeTempTileDataBuffersIfPossible() != TRUE)\n        {\n            LZDecompressWram(gPokeblockFeedBg_Tilemap, sPokeblockFeed->tilemapBuffer);\n            sPokeblockFeed->loadGfxState++;\n        }\n        break;\n    case 8:\n        LoadCompressedPalette(gBattleEnvironmentPalette_Frontier, BG_PLTT_ID(2), 3 * PLTT_SIZE_4BPP);\n        sPokeblockFeed->loadGfxState = 0;\n        return TRUE;\n    }\n\n    return FALSE;",
+      "callsTo": [
+        "BG_PLTT_ID",
+        "DecompressAndCopyTileDataToVram",
+        "FreeTempTileDataBuffersIfPossible",
+        "GetMonData",
+        "GetMonSpritePalStructFromOtIdPersonality",
+        "HandleLoadSpecialPokePic_2",
+        "LZDecompressWram",
+        "LoadCompressedPalette",
+        "LoadCompressedSpritePalette",
+        "LoadCompressedSpriteSheet",
+        "ResetTempTileDataBuffers",
+        "SetMultiuseSpriteTemplateToPokemon",
+        "SetPokeblockSpritePal"
+      ],
+      "lineCount": 60
+    },
+    "HandleInitWindows": {
+      "returnType": "void",
+      "signature": "static void HandleInitWindows(void)",
+      "paramsRaw": "void",
+      "body": "InitWindows(sWindowTemplates);\n    DeactivateAllTextPrinters();\n    LoadUserWindowBorderGfx(0, 1, BG_PLTT_ID(14));\n    LoadPalette(gStandardMenuPalette, BG_PLTT_ID(15), PLTT_SIZE_4BPP);\n    FillWindowPixelBuffer(0, PIXEL_FILL(0));\n    PutWindowTilemap(0);\n    ScheduleBgCopyTilemapToVram(0);",
+      "callsTo": [
+        "BG_PLTT_ID",
+        "DeactivateAllTextPrinters",
+        "FillWindowPixelBuffer",
+        "InitWindows",
+        "LoadPalette",
+        "LoadUserWindowBorderGfx",
+        "PIXEL_FILL",
+        "PutWindowTilemap",
+        "ScheduleBgCopyTilemapToVram"
+      ],
+      "lineCount": 7
+    },
+    "SetPokeblockSpritePal": {
+      "returnType": "void",
+      "signature": "static void SetPokeblockSpritePal(u8 pokeblockCaseId)",
+      "paramsRaw": "u8 pokeblockCaseId",
+      "body": "u8 colorId = GetPokeblockData(&gSaveBlock1Ptr->pokeblocks[pokeblockCaseId], PBLOCK_COLOR);\n    sPokeblockSpritePal.data = sPokeblocksPals[colorId - 1];\n    sPokeblockSpritePal.tag = TAG_POKEBLOCK;",
+      "callsTo": [
+        "GetPokeblockData"
+      ],
+      "lineCount": 3
+    },
+    "Task_HandlePokeblockFeed": {
+      "returnType": "void",
+      "signature": "static void Task_HandlePokeblockFeed(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "if (!gPaletteFade.active)\n    {\n        switch (gTasks[taskId].tState)\n        {\n        case 0:\n            sPokeblockFeed->animRunState = 0;\n            sPokeblockFeed->timer = 0;\n            CalculateMonAnimLength();\n            break;\n        case STATE_START_THROW:\n            DoPokeblockCaseThrowEffect(sPokeblockFeed->pokeblockCaseSpriteId, gTasks[taskId].tHorizontalThrow);\n            break;\n        case STATE_SPAWN_PBLOCK:\n            sPokeblockFeed->pokeblockSpriteId = CreatePokeblockSprite();\n            break;\n        case STATE_START_JUMP:\n            StartMonJumpForPokeblock(sPokeblockFeed->monSpriteId);\n            break;\n        case STATE_PRINT_MSG:\n            gTasks[taskId].func = Task_PrintAtePokeblockMessage;\n            return;\n        }\n\n        if (sPokeblockFeed->timer < sPokeblockFeed->monAnimLength)\n            UpdateMonAnim();\n        else if (sPokeblockFeed->timer == sPokeblockFeed->monAnimLength)\n            gTasks[taskId].tState = STATE_START_THROW - 1;\n\n        sPokeblockFeed->timer++;\n        gTasks[taskId].tState++;\n    }",
+      "callsTo": [
+        "CalculateMonAnimLength",
+        "CreatePokeblockSprite",
+        "DoPokeblockCaseThrowEffect",
+        "StartMonJumpForPokeblock",
+        "UpdateMonAnim"
+      ],
+      "lineCount": 31
+    },
+    "LaunchPokeblockFeedTask": {
+      "returnType": "void",
+      "signature": "static void LaunchPokeblockFeedTask(void)",
+      "paramsRaw": "void",
+      "body": "u8 taskId = CreateTask(Task_HandlePokeblockFeed, 0);\n    gTasks[taskId].tState = 0;\n    gTasks[taskId].tHorizontalThrow = TRUE;",
+      "callsTo": [
+        "CreateTask"
+      ],
+      "lineCount": 3
+    },
+    "Task_WaitForAtePokeblockMessage": {
+      "returnType": "void",
+      "signature": "static void Task_WaitForAtePokeblockMessage(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "if (RunTextPrintersRetIsActive(0) != TRUE)\n        gTasks[taskId].func = Task_FadeOutPokeblockFeed;",
+      "callsTo": [
+        "RunTextPrintersRetIsActive"
+      ],
+      "lineCount": 2
+    },
+    "Task_PrintAtePokeblockMessage": {
+      "returnType": "void",
+      "signature": "static void Task_PrintAtePokeblockMessage(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "struct Pokemon *mon = &gPlayerParty[gPokeblockMonId];\n    struct Pokeblock *pokeblock = &gSaveBlock1Ptr->pokeblocks[gSpecialVar_ItemId];\n\n    gPokeblockGain = PokeblockGetGain(GetNature(mon), pokeblock);\n    GetMonNickname(mon, gStringVar1);\n    PokeblockCopyName(pokeblock, gStringVar2);\n\n    if (gPokeblockGain == 0)\n        StringExpandPlaceholders(gStringVar4, gText_Var1AteTheVar2);\n    else if (gPokeblockGain > 0)\n        StringExpandPlaceholders(gStringVar4, gText_Var1HappilyAteVar2);\n    else\n        StringExpandPlaceholders(gStringVar4, gText_Var1DisdainfullyAteVar2);\n\n    gTextFlags.canABSpeedUpPrint = TRUE;\n    AddTextPrinterParameterized2(0, FONT_NORMAL, gStringVar4, GetPlayerTextSpeedDelay(), NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);\n    gTasks[taskId].func = Task_WaitForAtePokeblockMessage;",
+      "callsTo": [
+        "AddTextPrinterParameterized2",
+        "GetMonNickname",
+        "GetNature",
+        "GetPlayerTextSpeedDelay",
+        "PokeblockCopyName",
+        "PokeblockGetGain",
+        "StringExpandPlaceholders"
+      ],
+      "lineCount": 17
+    },
+    "Task_ExitPokeblockFeed": {
+      "returnType": "void",
+      "signature": "static void Task_ExitPokeblockFeed(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "if (!gPaletteFade.active)\n    {\n        ResetSpriteData();\n        FreeAllSpritePalettes();\n        m4aMPlayVolumeControl(&gMPlayInfo_BGM, TRACKS_ALL, 0x100);\n        SetMainCallback2(gMain.savedCallback);\n        DestroyTask(taskId);\n        FreeAllWindowBuffers();\n        Free(sPokeblockFeed);\n        FreeMonSpritesGfx();\n    }",
+      "callsTo": [
+        "DestroyTask",
+        "Free",
+        "FreeAllSpritePalettes",
+        "FreeAllWindowBuffers",
+        "FreeMonSpritesGfx",
+        "ResetSpriteData",
+        "SetMainCallback2"
+      ],
+      "lineCount": 11
+    },
+    "Task_FadeOutPokeblockFeed": {
+      "returnType": "void",
+      "signature": "static void Task_FadeOutPokeblockFeed(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);\n    gTasks[taskId].func = Task_ExitPokeblockFeed;",
+      "callsTo": [
+        "BeginNormalPaletteFade"
+      ],
+      "lineCount": 2
+    },
+    "CreateMonSprite": {
+      "returnType": "u8",
+      "signature": "static u8 CreateMonSprite(struct Pokemon *mon)",
+      "paramsRaw": "struct Pokemon *mon",
+      "body": "u16 species = GetMonData(mon, MON_DATA_SPECIES_OR_EGG);\n    u8 spriteId = CreateSprite(&gMultiuseSpriteTemplate, MON_X, MON_Y, 2);\n\n    sPokeblockFeed->species = species;\n    sPokeblockFeed->monSpriteId_ = spriteId;\n    sPokeblockFeed->nature = GetNature(mon);\n    gSprites[spriteId].sSpecies = species;\n    gSprites[spriteId].callback = SpriteCallbackDummy;\n\n    sPokeblockFeed->noMonFlip = TRUE;\n    if (!IsMonSpriteNotFlipped(species))\n    {\n        gSprites[spriteId].affineAnims = sSpriteAffineAnimTable_MonNoFlip;\n        gSprites[spriteId].oam.affineMode = ST_OAM_AFFINE_DOUBLE;\n        CalcCenterToCornerVec(&gSprites[spriteId], gSprites[spriteId].oam.shape, gSprites[spriteId].oam.size, gSprites[spriteId].oam.affineMode);\n        sPokeblockFeed->noMonFlip = FALSE;\n    }\n\n    return spriteId;",
+      "callsTo": [
+        "CalcCenterToCornerVec",
+        "CreateSprite",
+        "GetMonData",
+        "GetNature",
+        "IsMonSpriteNotFlipped"
+      ],
+      "lineCount": 19
+    },
+    "StartMonJumpForPokeblock": {
+      "returnType": "void",
+      "signature": "static void StartMonJumpForPokeblock(u8 spriteId)",
+      "paramsRaw": "u8 spriteId",
+      "body": "gSprites[spriteId].x = MON_X;\n    gSprites[spriteId].y = MON_Y;\n    gSprites[spriteId].sSpeed = -8;\n    gSprites[spriteId].sAccel = 1;\n    gSprites[spriteId].callback = SpriteCB_MonJumpForPokeblock;",
+      "callsTo": [],
+      "lineCount": 5
+    },
+    "SpriteCB_MonJumpForPokeblock": {
+      "returnType": "void",
+      "signature": "static void SpriteCB_MonJumpForPokeblock(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "sprite->x += 4;\n    sprite->y += sprite->sSpeed;\n    sprite->sSpeed += sprite->sAccel;\n\n     \n    if (sprite->sSpeed == 0)\n        PlayCry_Normal(sprite->sSpecies, 0);\n\n    if (sprite->sSpeed == 9)\n        sprite->callback = SpriteCallbackDummy;",
+      "callsTo": [
+        "PlayCry_Normal"
+      ],
+      "lineCount": 10
+    },
+    "CreatePokeblockCaseSpriteForFeeding": {
+      "returnType": "u8",
+      "signature": "static u8 CreatePokeblockCaseSpriteForFeeding(void)",
+      "paramsRaw": "void",
+      "body": "u8 spriteId = CreatePokeblockCaseSprite(188, 100, 2);\n    gSprites[spriteId].oam.affineMode = ST_OAM_AFFINE_NORMAL;\n    gSprites[spriteId].affineAnims = sAffineAnims_PokeblockCase_Still;\n    gSprites[spriteId].callback = SpriteCallbackDummy;\n    InitSpriteAffineAnim(&gSprites[spriteId]);\n    return spriteId;",
+      "callsTo": [
+        "CreatePokeblockCaseSprite",
+        "InitSpriteAffineAnim"
+      ],
+      "lineCount": 6
+    },
+    "DoPokeblockCaseThrowEffect": {
+      "returnType": "void",
+      "signature": "static void DoPokeblockCaseThrowEffect(u8 spriteId, bool8 horizontalThrow)",
+      "paramsRaw": "u8 spriteId, bool8 horizontalThrow",
+      "body": "FreeOamMatrix(gSprites[spriteId].oam.matrixNum);\n    gSprites[spriteId].oam.affineMode = ST_OAM_AFFINE_DOUBLE;\n\n    if (!horizontalThrow)\n        gSprites[spriteId].affineAnims = sAffineAnims_PokeblockCase_ThrowFromVertical;  \n    else\n        gSprites[spriteId].affineAnims = sAffineAnims_PokeblockCase_ThrowFromHorizontal;\n\n    InitSpriteAffineAnim(&gSprites[spriteId]);",
+      "callsTo": [
+        "FreeOamMatrix",
+        "InitSpriteAffineAnim"
+      ],
+      "lineCount": 9
+    },
+    "CreatePokeblockSprite": {
+      "returnType": "u8",
+      "signature": "static u8 CreatePokeblockSprite(void)",
+      "paramsRaw": "void",
+      "body": "u8 spriteId = CreateSprite(&sSpriteTemplate_Pokeblock, 174, 84, 1);\n    gSprites[spriteId].sSpeed = -12;\n    gSprites[spriteId].sAccel = 1;\n    return spriteId;",
+      "callsTo": [
+        "CreateSprite"
+      ],
+      "lineCount": 4
+    },
+    "SpriteCB_ThrownPokeblock": {
+      "returnType": "void",
+      "signature": "static void SpriteCB_ThrownPokeblock(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "sprite->x -= 4;\n    sprite->y += sprite->sSpeed;\n    sprite->sSpeed += sprite->sAccel;\n    if (sprite->sSpeed == 10)\n        DestroySprite(sprite);",
+      "callsTo": [
+        "DestroySprite"
+      ],
+      "lineCount": 5
+    },
+    "CalculateMonAnimLength": {
+      "returnType": "void",
+      "signature": "static void CalculateMonAnimLength(void)",
+      "paramsRaw": "void",
+      "body": "u8 animId, i;\n    struct PokeblockFeed *pokeblockFeed;\n\n    pokeblockFeed = sPokeblockFeed;\n    pokeblockFeed->monAnimLength = 1;\n    animId = sNatureToMonPokeblockAnim[pokeblockFeed->nature][0];\n\n     \n    for (i = 0; i < 8; i++, animId++)\n    {\n        pokeblockFeed->monAnimLength += sMonPokeblockAnims[animId][ANIMDATA_TIME];\n        if (sMonPokeblockAnims[animId][ANIMDATA_IS_LAST] == TRUE)\n            break;\n    }",
+      "callsTo": [],
+      "lineCount": 14
+    },
+    "UpdateMonAnim": {
+      "returnType": "void",
+      "signature": "static void UpdateMonAnim(void)",
+      "paramsRaw": "void",
+      "body": "struct PokeblockFeed *pokeblockFeed = sPokeblockFeed;\n\n    switch (pokeblockFeed->animRunState)\n    {\n    case 0:\n        pokeblockFeed->animId = sNatureToMonPokeblockAnim[pokeblockFeed->nature][0];\n        pokeblockFeed->monSpritePtr = &gSprites[pokeblockFeed->monSpriteId_];\n        pokeblockFeed->savedMonSprite = *pokeblockFeed->monSpritePtr;\n        pokeblockFeed->animRunState = 10;\n        break;\n    case 1 ... 9:\n        break;\n    case 10:\n        InitMonAnimStage();\n        if (sNatureToMonPokeblockAnim[pokeblockFeed->nature][1] != AFFINE_NONE)\n        {\n             \n            pokeblockFeed->monSpritePtr->oam.affineMode = ST_OAM_AFFINE_DOUBLE;\n            pokeblockFeed->monSpritePtr->oam.matrixNum = 0;\n            pokeblockFeed->monSpritePtr->affineAnims = sAffineAnims_Mon;\n            InitSpriteAffineAnim(pokeblockFeed->monSpritePtr);\n        }\n        pokeblockFeed->animRunState = 50;\n    case 50:\n        if (sNatureToMonPokeblockAnim[pokeblockFeed->nature][1] != AFFINE_NONE)\n        {\n             \n            if (!pokeblockFeed->noMonFlip)  \n                StartSpriteAffineAnim(pokeblockFeed->monSpritePtr, sNatureToMonPokeblockAnim[pokeblockFeed->nature][1] + NUM_MON_AFFINES);\n            else\n                StartSpriteAffineAnim(pokeblockFeed->monSpritePtr, sNatureToMonPokeblockAnim[pokeblockFeed->nature][1]);\n        }\n        pokeblockFeed->animRunState = 60;\n        break;\n    case 60:\n        if (DoMonAnimStep() == TRUE)\n        {\n            if (!pokeblockFeed->animData[ANIMDATA_IS_LAST])\n            {\n                 \n                pokeblockFeed->animId++;\n                InitMonAnimStage();\n                pokeblockFeed->animRunState = 60;\n            }\n            else\n            {\n                 \n                FreeOamMatrix(pokeblockFeed->monSpritePtr->oam.matrixNum);\n                pokeblockFeed->animRunState = 70;\n            }\n        }\n        break;\n    case 70:\n        FreeMonSpriteOamMatrix();\n        pokeblockFeed->animId = 0;\n        pokeblockFeed->animRunState = 0;\n        break;\n    case 71 ... 90:\n        break;\n    }",
+      "callsTo": [
+        "DoMonAnimStep",
+        "FreeMonSpriteOamMatrix",
+        "FreeOamMatrix",
+        "InitMonAnimStage",
+        "InitSpriteAffineAnim",
+        "StartSpriteAffineAnim"
+      ],
+      "lineCount": 60
+    },
+    "InitMonAnimStage": {
+      "returnType": "bool8",
+      "signature": "static bool8 InitMonAnimStage(void)",
+      "paramsRaw": "void",
+      "body": "struct PokeblockFeed *pokeblockFeed = sPokeblockFeed;\n    u8 i;\n\n    for (i = 0; i < NUM_ANIMDATA; i++)\n        pokeblockFeed->animData[i] = sMonPokeblockAnims[pokeblockFeed->animId][i];\n\n    if (pokeblockFeed->animData[ANIMDATA_TIME] == 0)\n    {\n        return TRUE;\n    }\n    else\n    {\n        pokeblockFeed->monInitX = Sin(pokeblockFeed->animData[ANIMDATA_ROT_IDX], pokeblockFeed->animData[ANIMDATA_SIN_AMPLITUDE]);\n        pokeblockFeed->monInitY = Cos(pokeblockFeed->animData[ANIMDATA_ROT_IDX], pokeblockFeed->animData[ANIMDATA_COS_AMPLITUDE]);\n        pokeblockFeed->maxAnimStageTime = pokeblockFeed->animData[ANIMDATA_TIME];\n        pokeblockFeed->monX = pokeblockFeed->monSpritePtr->x2;\n        pokeblockFeed->monY = pokeblockFeed->monSpritePtr->y2;\n\n         \n         \n        CalculateMonAnimMovement();\n        pokeblockFeed->animData[ANIMDATA_TIME] = pokeblockFeed->maxAnimStageTime;\n        CalculateMonAnimMovementEnd();\n        pokeblockFeed->animData[ANIMDATA_TIME] = pokeblockFeed->maxAnimStageTime;  \n        return FALSE;\n    }",
+      "callsTo": [
+        "CalculateMonAnimMovement",
+        "CalculateMonAnimMovementEnd",
+        "Cos",
+        "Sin"
+      ],
+      "lineCount": 26
+    },
+    "DoMonAnimStep": {
+      "returnType": "bool8",
+      "signature": "static bool8 DoMonAnimStep(void)",
+      "paramsRaw": "void",
+      "body": "u16 time = sPokeblockFeed->maxAnimStageTime - sPokeblockFeed->animData[ANIMDATA_TIME];\n    sPokeblockFeed->monSpritePtr->x2 = sPokeblockFeed->monAnimX[time];\n    sPokeblockFeed->monSpritePtr->y2 = sPokeblockFeed->monAnimY[time];\n\n     \n     \n    if (--sPokeblockFeed->animData[ANIMDATA_TIME] == 0)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "lineCount": 10
+    },
+    "FreeMonSpriteOamMatrix": {
+      "returnType": "bool8",
+      "signature": "static bool8 FreeMonSpriteOamMatrix(void)",
+      "paramsRaw": "void",
+      "body": "FreeSpriteOamMatrix(sPokeblockFeed->monSpritePtr);\n    return FALSE;",
+      "callsTo": [
+        "FreeSpriteOamMatrix"
+      ],
+      "lineCount": 2
+    },
+    "CalculateMonAnimMovementEnd": {
+      "returnType": "void",
+      "signature": "static void CalculateMonAnimMovementEnd(void)",
+      "paramsRaw": "void",
+      "body": "struct PokeblockFeed *pokeblockFeed = sPokeblockFeed;\n    u16 i;\n    u16 approachTime = pokeblockFeed->animData[ANIMDATA_APPR_TIME];\n    u16 time = pokeblockFeed->maxAnimStageTime - approachTime;\n    s16 x = pokeblockFeed->monX + pokeblockFeed->animData[ANIMDATA_TARGET_X];\n    s16 y = pokeblockFeed->monY + pokeblockFeed->animData[ANIMDATA_TARGET_Y];\n\n    for (i = 0; i < time - 1; i++)\n    {\n        s16 xOffset = pokeblockFeed->monAnimX[approachTime + i] - x;\n        s16 yOffset = pokeblockFeed->monAnimY[approachTime + i] - y;\n\n        pokeblockFeed->monAnimX[approachTime + i] -= xOffset * (i + 1) / time;\n        pokeblockFeed->monAnimY[approachTime + i] -= yOffset * (i + 1) / time;\n    }\n\n    pokeblockFeed->monAnimX[approachTime + time - 1] = x;\n    pokeblockFeed->monAnimY[approachTime + time - 1] = y;",
+      "callsTo": [],
+      "lineCount": 18
+    },
+    "CalculateMonAnimMovement": {
+      "returnType": "void",
+      "signature": "static void CalculateMonAnimMovement(void)",
+      "paramsRaw": "void",
+      "body": "struct PokeblockFeed *pokeblockFeed = sPokeblockFeed;\n    bool8 negative = FALSE;\n    s16 x = pokeblockFeed->monX - pokeblockFeed->monInitX;\n    s16 y = pokeblockFeed->monY - pokeblockFeed->monInitY;\n\n    while (1)\n    {\n        u16 amplitude;\n        u16 time;\n        u16 acceleration;\n\n        acceleration = abs(pokeblockFeed->animData[ANIMDATA_ROT_ACCEL]);\n        amplitude = acceleration + pokeblockFeed->animData[ANIMDATA_COS_AMPLITUDE];\n        pokeblockFeed->animData[ANIMDATA_COS_AMPLITUDE] = amplitude;\n\n        if (pokeblockFeed->animData[ANIMDATA_SIN_AMPLITUDE] < 0)\n            negative = TRUE;\n\n        time = pokeblockFeed->maxAnimStageTime - pokeblockFeed->animData[ANIMDATA_TIME];\n\n        if (pokeblockFeed->animData[ANIMDATA_TIME] == 0)\n            break;\n\n        if (!negative)\n        {\n            pokeblockFeed->monAnimX[time] = Sin(pokeblockFeed->animData[ANIMDATA_ROT_IDX],\n                                                pokeblockFeed->animData[ANIMDATA_SIN_AMPLITUDE] + amplitude / 0x100) + x;\n            pokeblockFeed->monAnimY[time] = Cos(pokeblockFeed->animData[ANIMDATA_ROT_IDX],\n                                                pokeblockFeed->animData[ANIMDATA_COS_AMPLITUDE] + amplitude / 0x100) + y;\n        }\n        else\n        {\n            pokeblockFeed->monAnimX[time] = Sin(pokeblockFeed->animData[ANIMDATA_ROT_IDX],\n                                                pokeblockFeed->animData[ANIMDATA_SIN_AMPLITUDE] - amplitude / 0x100) + x;\n            pokeblockFeed->monAnimY[time] = Cos(pokeblockFeed->animData[ANIMDATA_ROT_IDX],\n                                                pokeblockFeed->animData[ANIMDATA_COS_AMPLITUDE] - amplitude / 0x100) + y;\n        }\n\n        pokeblockFeed->animData[ANIMDATA_ROT_IDX] += pokeblockFeed->animData[ANIMDATA_ROT_SPEED];\n        pokeblockFeed->animData[ANIMDATA_ROT_IDX] &= 0xFF;\n        pokeblockFeed->animData[ANIMDATA_TIME]--;\n    }",
+      "callsTo": [
+        "Cos",
+        "Sin"
+      ],
+      "lineCount": 42
+    }
+  }
+}

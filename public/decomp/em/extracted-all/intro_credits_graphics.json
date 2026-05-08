@@ -1,0 +1,216 @@
+{
+  "srcFile": "src/intro_credits_graphics.c",
+  "count": 19,
+  "functions": {
+    "LoadIntroPart2Graphics": {
+      "returnType": "void",
+      "signature": "void LoadIntroPart2Graphics(u8 scenery)",
+      "paramsRaw": "u8 scenery",
+      "body": "LZ77UnCompVram(sGrass_Gfx, (void *)(BG_CHAR_ADDR(1)));\n    LZ77UnCompVram(sGrass_Tilemap, (void *)(BG_SCREEN_ADDR(15)));\n    LoadPalette(&sGrass_Pal, BG_PLTT_ID(15), sizeof(sGrass_Pal));\n    switch (scenery)\n    {\n    case 0:\n    default:\n         \n         \n        LZ77UnCompVram(sCloudsBg_Gfx, (void *)(VRAM));\n        LZ77UnCompVram(sCloudsBg_Tilemap, (void *)(BG_SCREEN_ADDR(6)));\n        LoadPalette(&sCloudsBg_Pal, BG_PLTT_ID(0), sizeof(sCloudsBg_Pal));\n        LoadCompressedSpriteSheet(sSpriteSheet_Clouds);\n        LoadPalette(&sClouds_Pal, OBJ_PLTT_ID(0), sizeof(sClouds_Pal));\n        CreateCloudSprites();\n        break;\n    case 1:\n        LZ77UnCompVram(sTrees_Gfx, (void *)(VRAM));\n        LZ77UnCompVram(sTrees_Tilemap, (void *)(BG_SCREEN_ADDR(6)));\n        LoadPalette(&sTrees_Pal, BG_PLTT_ID(0), sizeof(sTrees_Pal));\n        LoadCompressedSpriteSheet(sSpriteSheet_TreesSmall);\n        LoadPalette(&sTreesSmall_Pal, OBJ_PLTT_ID(0), sizeof(sTreesSmall_Pal));\n        CreateTreeSprites();\n        break;\n    }\n    gIntroCredits_MovingSceneryState = INTROCRED_SCENERY_NORMAL;\n    gReservedSpritePaletteCount = 8;",
+      "callsTo": [
+        "BG_CHAR_ADDR",
+        "BG_PLTT_ID",
+        "BG_SCREEN_ADDR",
+        "CreateCloudSprites",
+        "CreateTreeSprites",
+        "LZ77UnCompVram",
+        "LoadCompressedSpriteSheet",
+        "LoadPalette",
+        "OBJ_PLTT_ID"
+      ],
+      "lineCount": 27
+    },
+    "SetIntroPart2BgCnt": {
+      "returnType": "void",
+      "signature": "void SetIntroPart2BgCnt(u8 scenery)",
+      "paramsRaw": "u8 scenery",
+      "body": "switch (scenery)\n    {\n    default:\n    case 0:\n        SetGpuReg(REG_OFFSET_BG3CNT, BGCNT_PRIORITY(3)\n                                   | BGCNT_CHARBASE(0)\n                                   | BGCNT_16COLOR\n                                   | BGCNT_SCREENBASE(6)\n                                   | BGCNT_TXT256x256);\n        SetGpuReg(REG_OFFSET_BG2CNT, BGCNT_PRIORITY(2)\n                                   | BGCNT_CHARBASE(0)\n                                   | BGCNT_16COLOR\n                                   | BGCNT_SCREENBASE(7)\n                                   | BGCNT_TXT256x256);\n        SetGpuReg(REG_OFFSET_BG1CNT, BGCNT_PRIORITY(1)\n                                   | BGCNT_CHARBASE(1)\n                                   | BGCNT_16COLOR\n                                   | BGCNT_SCREENBASE(15)\n                                   | BGCNT_TXT256x256);\n        SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_MODE_0\n                                    | DISPCNT_OBJ_1D_MAP\n                                    | DISPCNT_BG1_ON\n                                    | DISPCNT_BG2_ON\n                                    | DISPCNT_BG3_ON\n                                    | DISPCNT_OBJ_ON);\n        break;\n    case 1:\n        SetGpuReg(REG_OFFSET_BG3CNT, BGCNT_PRIORITY(3)\n                                   | BGCNT_CHARBASE(0)\n                                   | BGCNT_16COLOR\n                                   | BGCNT_SCREENBASE(6)\n                                   | BGCNT_TXT256x256);\n        SetGpuReg(REG_OFFSET_BG2CNT, BGCNT_PRIORITY(2)\n                                   | BGCNT_CHARBASE(0)\n                                   | BGCNT_16COLOR\n                                   | BGCNT_SCREENBASE(7)\n                                   | BGCNT_TXT256x256);\n        SetGpuReg(REG_OFFSET_BG1CNT, BGCNT_PRIORITY(1)\n                                   | BGCNT_CHARBASE(1)\n                                   | BGCNT_16COLOR\n                                   | BGCNT_SCREENBASE(15)\n                                   | BGCNT_TXT256x256);\n        SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_MODE_0\n                                    | DISPCNT_OBJ_1D_MAP\n                                    | DISPCNT_BG1_ON\n                                    | DISPCNT_BG2_ON\n                                    | DISPCNT_BG3_ON\n                                    | DISPCNT_OBJ_ON);\n        break;\n    case 2:\n        SetGpuReg(REG_OFFSET_BG3CNT, BGCNT_PRIORITY(3)\n                                   | BGCNT_CHARBASE(0)\n                                   | BGCNT_16COLOR\n                                   | BGCNT_SCREENBASE(6)\n                                   | BGCNT_TXT256x256);\n        SetGpuReg(REG_OFFSET_BG2CNT, BGCNT_PRIORITY(2)\n                                   | BGCNT_CHARBASE(0)\n                                   | BGCNT_16COLOR\n                                   | BGCNT_SCREENBASE(7)\n                                   | BGCNT_TXT256x256);\n        SetGpuReg(REG_OFFSET_BG1CNT, BGCNT_PRIORITY(1)\n                                   | BGCNT_CHARBASE(1)\n                                   | BGCNT_16COLOR\n                                   | BGCNT_SCREENBASE(15)\n                                   | BGCNT_TXT256x256);\n        SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_MODE_0\n                                    | DISPCNT_OBJ_1D_MAP\n                                    | DISPCNT_BG1_ON\n                                    | DISPCNT_BG2_ON\n                                    | DISPCNT_BG3_ON\n                                    | DISPCNT_OBJ_ON);\n        break;\n    }",
+      "callsTo": [
+        "BGCNT_CHARBASE",
+        "BGCNT_PRIORITY",
+        "BGCNT_SCREENBASE",
+        "SetGpuReg"
+      ],
+      "lineCount": 73
+    },
+    "LoadCreditsSceneGraphics": {
+      "returnType": "void",
+      "signature": "void LoadCreditsSceneGraphics(u8 scene)",
+      "paramsRaw": "u8 scene",
+      "body": "LZ77UnCompVram(sGrass_Gfx, (void *)(BG_CHAR_ADDR(1)));\n    LZ77UnCompVram(sGrass_Tilemap, (void *)(BG_SCREEN_ADDR(15)));\n    switch (scene)\n    {\n    case SCENE_OCEAN_MORNING:\n    default:\n        LoadPalette(&sGrass_Pal, BG_PLTT_ID(15), sizeof(sGrass_Pal));\n        LZ77UnCompVram(sCloudsBg_Gfx, (void *)(VRAM));\n        LZ77UnCompVram(sCloudsBg_Tilemap, (void *)(BG_SCREEN_ADDR(6)));\n        LoadPalette(&sCloudsBg_Pal, BG_PLTT_ID(0), sizeof(sCloudsBg_Pal));\n        LoadCompressedSpriteSheet(sSpriteSheet_Clouds);\n        LZ77UnCompVram(sClouds_Gfx, (void *)(OBJ_VRAM0));\n        LoadPalette(&sClouds_Pal, OBJ_PLTT_ID(0), sizeof(sClouds_Pal));\n        CreateCloudSprites();\n        break;\n    case SCENE_OCEAN_SUNSET:\n        LoadPalette(&sGrassSunset_Pal, BG_PLTT_ID(15), sizeof(sGrassSunset_Pal));\n        LZ77UnCompVram(sCloudsBg_Gfx, (void *)(VRAM));\n        LZ77UnCompVram(sCloudsBg_Tilemap, (void *)(BG_SCREEN_ADDR(6)));\n        LoadPalette(&sCloudsBgSunset_Pal, BG_PLTT_ID(0), sizeof(sCloudsBgSunset_Pal));\n        LoadCompressedSpriteSheet(sSpriteSheet_Clouds);\n        LZ77UnCompVram(sClouds_Gfx, (void *)(OBJ_VRAM0));\n        LoadPalette(&sCloudsSunset_Pal, OBJ_PLTT_ID(0), sizeof(sCloudsSunset_Pal));\n        CreateCloudSprites();\n        break;\n    case SCENE_FOREST_RIVAL_ARRIVE:\n    case SCENE_FOREST_CATCH_RIVAL:\n        LoadPalette(&sGrassSunset_Pal, BG_PLTT_ID(15), sizeof(sGrassSunset_Pal));\n        LZ77UnCompVram(sTrees_Gfx, (void *)(VRAM));\n        LZ77UnCompVram(sTrees_Tilemap, (void *)(BG_SCREEN_ADDR(6)));\n        LoadPalette(&sTreesSunset_Pal, BG_PLTT_ID(0), sizeof(sTreesSunset_Pal));\n        LoadCompressedSpriteSheet(sSpriteSheet_TreesSmall);\n        LoadPalette(&sTreesSunset_Pal, OBJ_PLTT_ID(0), sizeof(sTreesSunset_Pal));\n        CreateTreeSprites();\n        break;\n    case SCENE_CITY_NIGHT:\n        LoadPalette(&sGrassNight_Pal, BG_PLTT_ID(15), sizeof(sGrassNight_Pal));\n        LZ77UnCompVram(sHouses_Gfx, (void *)(VRAM));\n        LZ77UnCompVram(sHouses_Tilemap, (void *)(BG_SCREEN_ADDR(6)));\n        LoadPalette(&sHouses_Pal, BG_PLTT_ID(0), sizeof(sHouses_Pal));\n        LoadCompressedSpriteSheet(sSpriteSheet_HouseSilhouette);\n        LoadPalette(&sHouseSilhouette_Pal, OBJ_PLTT_ID(0), sizeof(sHouseSilhouette_Pal));\n        CreateHouseSprites();\n        break;\n    }\n    gReservedSpritePaletteCount = 8;\n    gIntroCredits_MovingSceneryState = INTROCRED_SCENERY_NORMAL;",
+      "callsTo": [
+        "BG_CHAR_ADDR",
+        "BG_PLTT_ID",
+        "BG_SCREEN_ADDR",
+        "CreateCloudSprites",
+        "CreateHouseSprites",
+        "CreateTreeSprites",
+        "LZ77UnCompVram",
+        "LoadCompressedSpriteSheet",
+        "LoadPalette",
+        "OBJ_PLTT_ID"
+      ],
+      "lineCount": 47
+    },
+    "SetCreditsSceneBgCnt": {
+      "returnType": "void",
+      "signature": "void SetCreditsSceneBgCnt(u8 scene)",
+      "paramsRaw": "u8 scene",
+      "body": "SetGpuReg(REG_OFFSET_BG3CNT, BGCNT_PRIORITY(3)\n                               | BGCNT_CHARBASE(0)\n                               | BGCNT_16COLOR\n                               | BGCNT_SCREENBASE(6)\n                               | BGCNT_TXT256x256);\n    SetGpuReg(REG_OFFSET_BG2CNT, BGCNT_PRIORITY(2)\n                               | BGCNT_CHARBASE(0)\n                               | BGCNT_16COLOR\n                               | BGCNT_SCREENBASE(7)\n                               | BGCNT_TXT256x256);\n    SetGpuReg(REG_OFFSET_BG1CNT, BGCNT_PRIORITY(1)\n                               | BGCNT_CHARBASE(1)\n                               | BGCNT_16COLOR\n                               | BGCNT_SCREENBASE(15)\n                               | BGCNT_TXT256x256);\n    SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_MODE_0\n                                | DISPCNT_OBJ_1D_MAP\n                                | DISPCNT_BG_ALL_ON\n                                | DISPCNT_OBJ_ON);",
+      "callsTo": [
+        "BGCNT_CHARBASE",
+        "BGCNT_PRIORITY",
+        "BGCNT_SCREENBASE",
+        "SetGpuReg"
+      ],
+      "lineCount": 19
+    },
+    "CreateBicycleBgAnimationTask": {
+      "returnType": "u8",
+      "signature": "u8 CreateBicycleBgAnimationTask(u8 mode, u16 bg1Speed, u16 bg2Speed, u16 bg3Speed)",
+      "paramsRaw": "u8 mode, u16 bg1Speed, u16 bg2Speed, u16 bg3Speed",
+      "body": "u8 taskId = CreateTask(Task_BicycleBgAnimation, 0);\n\n    gTasks[taskId].tMode = mode;\n    gTasks[taskId].tBg1Speed = bg1Speed;\n    gTasks[taskId].tBg1PosHi = 0;\n    gTasks[taskId].tBg1PosLo = 0;\n    gTasks[taskId].tBg2Speed = bg2Speed;\n    gTasks[taskId].tBg2PosHi = 0;\n    gTasks[taskId].tBg2PosLo = 0;\n    gTasks[taskId].tBg3Speed = bg3Speed;\n    gTasks[taskId].tBg3PosHi = 8;\n    gTasks[taskId].tBg3PosLo = 0;\n    Task_BicycleBgAnimation(taskId);\n    return taskId;",
+      "callsTo": [
+        "CreateTask",
+        "Task_BicycleBgAnimation"
+      ],
+      "lineCount": 14
+    },
+    "Task_BicycleBgAnimation": {
+      "returnType": "void",
+      "signature": "static void Task_BicycleBgAnimation(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "s16 bg1Speed;\n    s16 bg2Speed;\n    s16 bg3Speed;\n    s32 offset;\n\n     \n    bg1Speed = gTasks[taskId].tBg1Speed;\n    if (bg1Speed != 0)\n    {\n        offset = (gTasks[taskId].tBg1PosHi << 16) + (u16)gTasks[taskId].tBg1PosLo;\n        offset -= (u16)bg1Speed << 4;\n        gTasks[taskId].tBg1PosHi = offset >> 16;\n        gTasks[taskId].tBg1PosLo = offset;\n        SetGpuReg(REG_OFFSET_BG1HOFS, gTasks[taskId].tBg1PosHi);\n        SetGpuReg(REG_OFFSET_BG1VOFS, gIntroCredits_MovingSceneryVBase + gIntroCredits_MovingSceneryVOffset);\n    }\n\n     \n    bg2Speed = gTasks[taskId].tBg2Speed;\n    if (bg2Speed != 0)\n    {\n        offset = (gTasks[taskId].tBg2PosHi << 16) + (u16)gTasks[taskId].tBg2PosLo;\n        offset -= (u16)bg2Speed << 4;\n        gTasks[taskId].tBg2PosHi = offset >> 16;\n        gTasks[taskId].tBg2PosLo = offset;\n        SetGpuReg(REG_OFFSET_BG2HOFS, gTasks[taskId].tBg2PosHi);\n        if (gTasks[taskId].tMode != 0)\n            SetGpuReg(REG_OFFSET_BG2VOFS, gIntroCredits_MovingSceneryVBase + gIntroCredits_MovingSceneryVOffset);\n        else\n            SetGpuReg(REG_OFFSET_BG2VOFS, gIntroCredits_MovingSceneryVBase);\n    }\n\n     \n    bg3Speed = gTasks[taskId].tBg3Speed;\n    if (bg3Speed != 0)\n    {\n        offset = (gTasks[taskId].tBg3PosHi << 16) + (u16)gTasks[taskId].tBg3PosLo;\n        offset -= (u16)bg3Speed << 4;\n        gTasks[taskId].tBg3PosHi = offset >> 16;\n        gTasks[taskId].tBg3PosLo = offset;\n        SetGpuReg(REG_OFFSET_BG3HOFS, gTasks[taskId].tBg3PosHi);\n        SetGpuReg(REG_OFFSET_BG3VOFS, gIntroCredits_MovingSceneryVBase);\n    }",
+      "callsTo": [
+        "SetGpuReg"
+      ],
+      "lineCount": 43
+    },
+    "CycleSceneryPalette": {
+      "returnType": "void",
+      "signature": "void CycleSceneryPalette(u8 mode)",
+      "paramsRaw": "u8 mode",
+      "body": "u16 x;\n    u16 y;\n    switch (mode)\n    {\n        case 0:\n        default:\n            if (gMain.vblankCounter1 & 3 || gPaletteFade.active)\n                break;\n            if (gMain.vblankCounter1 & 4)\n            {\n                x = gPlttBufferUnfaded[BG_PLTT_ID(0) + 9];\n                y = gPlttBufferUnfaded[BG_PLTT_ID(0) + 10];\n            }\n            else\n            {\n                x = gPlttBufferUnfaded[BG_PLTT_ID(0) + 10];\n                y = gPlttBufferUnfaded[BG_PLTT_ID(0) + 9];\n            }\n            LoadPalette(&x, BG_PLTT_ID(0) + 9, sizeof(x));\n            LoadPalette(&y, BG_PLTT_ID(0) + 10, sizeof(y));\n            break;\n        case 2:\n            if (gMain.vblankCounter1 & 3 || gPaletteFade.active)\n                break;\n            if (gMain.vblankCounter1 & 4)\n            {\n                x = RGB(7, 9, 15);\n                y = RGB(21, 20, 0);\n            }\n            else\n            {\n                x = RGB(28, 24, 0);\n                y = RGB(7, 9, 15);\n            }\n            LoadPalette(&x, BG_PLTT_ID(0) + 12, sizeof(x));\n            LoadPalette(&y, BG_PLTT_ID(0) + 13, sizeof(y));\n            break;\n        case 1:\n            break;\n    }",
+      "callsTo": [
+        "BG_PLTT_ID",
+        "LoadPalette"
+      ],
+      "lineCount": 40
+    },
+    "SpriteCB_MovingScenery": {
+      "returnType": "void",
+      "signature": "static void SpriteCB_MovingScenery(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "s32 x;\n    s16 state = gIntroCredits_MovingSceneryState;\n\n    if (state != INTROCRED_SCENERY_FROZEN)\n    {\n        switch (state)\n        {\n        default:  \n            DestroySprite(sprite);\n            break;\n        case INTROCRED_SCENERY_NORMAL:\n            x = ((sprite->x << 16) | (u16)sprite->tXPos) + (u16)sprite->tXOffset;\n            sprite->x = x >> 16;\n            sprite->tXPos = x;\n            if (sprite->x > 255)\n                sprite->x = -32;\n            if (sprite->tHasVerticalMove)\n                sprite->y2 = -(gIntroCredits_MovingSceneryVBase + gIntroCredits_MovingSceneryVOffset);\n            else\n                sprite->y2 = -gIntroCredits_MovingSceneryVBase;\n            break;\n        }\n    }",
+      "callsTo": [
+        "DestroySprite"
+      ],
+      "lineCount": 23
+    },
+    "CreateMovingScenerySprites": {
+      "returnType": "void",
+      "signature": "static void CreateMovingScenerySprites(bool8 hasVerticalMove, const struct IntroCreditsSpriteMetadata *metadata, const union AnimCmd *const *anims, u8 numSprites)",
+      "paramsRaw": "bool8 hasVerticalMove, const struct IntroCreditsSpriteMetadata *metadata, const union AnimCmd *const *anims, u8 numSprites",
+      "body": "u8 i;\n\n    for(i = 0; i < numSprites; i++)\n    {\n        u8 sprite = CreateSprite(&sSpriteTemplate_MovingScenery, metadata[i].x, metadata[i].y, metadata[i].subpriority);\n        CalcCenterToCornerVec(&gSprites[sprite], metadata[i].shape, metadata[i].size, ST_OAM_AFFINE_OFF);\n        gSprites[sprite].oam.priority = 3;\n        gSprites[sprite].oam.shape = metadata[i].shape;\n        gSprites[sprite].oam.size = metadata[i].size;\n        gSprites[sprite].oam.paletteNum = 0;\n        gSprites[sprite].anims = anims;\n        StartSpriteAnim(&gSprites[sprite], metadata[i].animNum);\n        gSprites[sprite].tHasVerticalMove = hasVerticalMove;\n        gSprites[sprite].tXOffset = metadata[i].xOff;\n        gSprites[sprite].tXPos = 0;\n    }",
+      "callsTo": [
+        "CalcCenterToCornerVec",
+        "CreateSprite",
+        "StartSpriteAnim"
+      ],
+      "lineCount": 16
+    },
+    "CreateCloudSprites": {
+      "returnType": "void",
+      "signature": "static void CreateCloudSprites(void)",
+      "paramsRaw": "void",
+      "body": "CreateMovingScenerySprites(FALSE, sSpriteMetadata_Clouds, sAnims_Clouds, 9);",
+      "callsTo": [
+        "CreateMovingScenerySprites"
+      ],
+      "lineCount": 1
+    },
+    "CreateTreeSprites": {
+      "returnType": "void",
+      "signature": "static void CreateTreeSprites(void)",
+      "paramsRaw": "void",
+      "body": "CreateMovingScenerySprites(TRUE, sSpriteMetadata_Trees, sAnims_Trees, 12);",
+      "callsTo": [
+        "CreateMovingScenerySprites"
+      ],
+      "lineCount": 1
+    },
+    "CreateHouseSprites": {
+      "returnType": "void",
+      "signature": "static void CreateHouseSprites(void)",
+      "paramsRaw": "void",
+      "body": "CreateMovingScenerySprites(TRUE, sSpriteMetadata_HouseSilhouette, sAnims_HouseSilhouette, 6);",
+      "callsTo": [
+        "CreateMovingScenerySprites"
+      ],
+      "lineCount": 1
+    },
+    "SpriteCB_Player": {
+      "returnType": "void",
+      "signature": "static void SpriteCB_Player(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "SpriteCB_Bicycle": {
+      "returnType": "void",
+      "signature": "static void SpriteCB_Bicycle(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "sprite->invisible = gSprites[sprite->sPlayerSpriteId].invisible;\n    sprite->x = gSprites[sprite->sPlayerSpriteId].x;\n    sprite->y = gSprites[sprite->sPlayerSpriteId].y + 8;\n    sprite->x2 = gSprites[sprite->sPlayerSpriteId].x2;\n    sprite->y2 = gSprites[sprite->sPlayerSpriteId].y2;",
+      "callsTo": [],
+      "lineCount": 5
+    },
+    "CreateIntroBrendanSprite": {
+      "returnType": "u8",
+      "signature": "u8 CreateIntroBrendanSprite(s16 x, s16 y)",
+      "paramsRaw": "s16 x, s16 y",
+      "body": "u8 playerSpriteId = CreateSprite(&sSpriteTemplate_Brendan, x, y, 2);\n    u8 bicycleSpriteId = CreateSprite(&sSpriteTemplate_BrendanBicycle, x, y + 8, 3);\n    gSprites[bicycleSpriteId].sPlayerSpriteId = playerSpriteId;\n    return playerSpriteId;",
+      "callsTo": [
+        "CreateSprite"
+      ],
+      "lineCount": 4
+    },
+    "CreateIntroMaySprite": {
+      "returnType": "u8",
+      "signature": "u8 CreateIntroMaySprite(s16 x, s16 y)",
+      "paramsRaw": "s16 x, s16 y",
+      "body": "u8 playerSpriteId = CreateSprite(&sSpriteTemplate_May, x, y, 2);\n    u8 bicycleSpriteId = CreateSprite(&sSpriteTemplate_MayBicycle, x, y + 8, 3);\n    gSprites[bicycleSpriteId].sPlayerSpriteId = playerSpriteId;\n    return playerSpriteId;",
+      "callsTo": [
+        "CreateSprite"
+      ],
+      "lineCount": 4
+    },
+    "SpriteCB_FlygonLeftHalf": {
+      "returnType": "void",
+      "signature": "static void SpriteCB_FlygonLeftHalf(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "SpriteCB_FlygonRightHalf": {
+      "returnType": "void",
+      "signature": "static void SpriteCB_FlygonRightHalf(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "sprite->invisible = gSprites[sprite->sLeftSpriteId].invisible;\n    sprite->y = gSprites[sprite->sLeftSpriteId].y;\n    sprite->x2 = gSprites[sprite->sLeftSpriteId].x2;\n    sprite->y2 = gSprites[sprite->sLeftSpriteId].y2;",
+      "callsTo": [],
+      "lineCount": 4
+    },
+    "CreateIntroFlygonSprite": {
+      "returnType": "u8",
+      "signature": "u8 CreateIntroFlygonSprite(s16 x, s16 y)",
+      "paramsRaw": "s16 x, s16 y",
+      "body": "u8 leftSpriteId = CreateSprite(&sSpriteTemplate_FlygonLatias, x - 32, y, 5);\n    u8 rightSpriteId = CreateSprite(&sSpriteTemplate_FlygonLatias, x + 32, y, 6);\n    gSprites[rightSpriteId].sLeftSpriteId = leftSpriteId;\n    StartSpriteAnim(&gSprites[rightSpriteId], 1);\n    gSprites[rightSpriteId].callback = &SpriteCB_FlygonRightHalf;\n    return leftSpriteId;",
+      "callsTo": [
+        "CreateSprite",
+        "StartSpriteAnim"
+      ],
+      "lineCount": 6
+    }
+  }
+}

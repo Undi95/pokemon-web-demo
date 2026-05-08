@@ -1,0 +1,1197 @@
+{
+  "srcFile": "src/naming_screen.c",
+  "count": 106,
+  "functions": {
+    "DoNamingScreen": {
+      "returnType": "void",
+      "signature": "void DoNamingScreen(u8 templateNum, u8 *destBuffer, u16 monSpecies, u16 monGender, u32 monPersonality, MainCallback returnCallback)",
+      "paramsRaw": "u8 templateNum, u8 *destBuffer, u16 monSpecies, u16 monGender, u32 monPersonality, MainCallback returnCallback",
+      "body": "sNamingScreen = Alloc(sizeof(struct NamingScreenData));\n    if (!sNamingScreen)\n    {\n        SetMainCallback2(returnCallback);\n    }\n    else\n    {\n        sNamingScreen->templateNum = templateNum;\n        sNamingScreen->monSpecies = monSpecies;\n        sNamingScreen->monGender = monGender;\n        sNamingScreen->monPersonality = monPersonality;\n        sNamingScreen->destBuffer = destBuffer;\n        sNamingScreen->returnCallback = returnCallback;\n\n        if (templateNum == NAMING_SCREEN_PLAYER)\n            StartTimer1();\n\n        SetMainCallback2(CB2_LoadNamingScreen);\n    }",
+      "callsTo": [
+        "Alloc",
+        "SetMainCallback2",
+        "StartTimer1"
+      ],
+      "lineCount": 19
+    },
+    "CB2_LoadNamingScreen": {
+      "returnType": "void",
+      "signature": "static void CB2_LoadNamingScreen(void)",
+      "paramsRaw": "void",
+      "body": "switch (gMain.state)\n    {\n    case 0:\n        ResetVHBlank();\n        NamingScreen_Init();\n        gMain.state++;\n        break;\n    case 1:\n        NamingScreen_InitBGs();\n        gMain.state++;\n        break;\n    case 2:\n        ResetPaletteFade();\n        gMain.state++;\n        break;\n    case 3:\n        ResetSpriteData();\n        FreeAllSpritePalettes();\n        gMain.state++;\n        break;\n    case 4:\n        ResetTasks();\n        gMain.state++;\n        break;\n    case 5:\n        LoadPalettes();\n        gMain.state++;\n        break;\n    case 6:\n        LoadGfx();\n        gMain.state++;\n        break;\n    case 7:\n        CreateSprites();\n        UpdatePaletteFade();\n        NamingScreen_ShowBgs();\n        gMain.state++;\n        break;\n    default:\n        CreateHelperTasks();\n        CreateNamingScreenTask();\n        break;\n    }",
+      "callsTo": [
+        "CreateHelperTasks",
+        "CreateNamingScreenTask",
+        "CreateSprites",
+        "FreeAllSpritePalettes",
+        "LoadGfx",
+        "LoadPalettes",
+        "NamingScreen_Init",
+        "NamingScreen_InitBGs",
+        "NamingScreen_ShowBgs",
+        "ResetPaletteFade",
+        "ResetSpriteData",
+        "ResetTasks",
+        "ResetVHBlank",
+        "UpdatePaletteFade"
+      ],
+      "lineCount": 43
+    },
+    "NamingScreen_Init": {
+      "returnType": "void",
+      "signature": "static void NamingScreen_Init(void)",
+      "paramsRaw": "void",
+      "body": "sNamingScreen->state = STATE_FADE_IN;\n    sNamingScreen->bg1vOffset = 0;\n    sNamingScreen->bg2vOffset = 0;\n    sNamingScreen->bg1Priority = BGCNT_PRIORITY(1);\n    sNamingScreen->bg2Priority = BGCNT_PRIORITY(2);\n    sNamingScreen->bgToReveal = 0;\n    sNamingScreen->bgToHide = 1;\n    sNamingScreen->template = sNamingScreenTemplates[sNamingScreen->templateNum];\n    sNamingScreen->currentPage = sNamingScreen->template->initialPage;\n    sNamingScreen->inputCharBaseXPos = (DISPLAY_WIDTH - sNamingScreen->template->maxChars * 8) / 2 + 6;\n    if (sNamingScreen->templateNum == NAMING_SCREEN_WALDA)\n        sNamingScreen->inputCharBaseXPos += 11;\n    sNamingScreen->keyRepeatStartDelayCopy = gKeyRepeatStartDelay;\n    memset(sNamingScreen->textBuffer, EOS, sizeof(sNamingScreen->textBuffer));\n    if (sNamingScreen->template->copyExistingString)\n        StringCopy(sNamingScreen->textBuffer, sNamingScreen->destBuffer);\n    gKeyRepeatStartDelay = 16;",
+      "callsTo": [
+        "BGCNT_PRIORITY",
+        "StringCopy"
+      ],
+      "lineCount": 17
+    },
+    "SetSpritesVisible": {
+      "returnType": "void",
+      "signature": "static void SetSpritesVisible(void)",
+      "paramsRaw": "void",
+      "body": "u8 i;\n    for (i = 0; i < MAX_SPRITES; i++)\n    {\n        if (gSprites[i].inUse)\n            gSprites[i].invisible = FALSE;\n    }\n    SetCursorInvisibility(FALSE);",
+      "callsTo": [
+        "SetCursorInvisibility"
+      ],
+      "lineCount": 7
+    },
+    "NamingScreen_InitBGs": {
+      "returnType": "void",
+      "signature": "static void NamingScreen_InitBGs(void)",
+      "paramsRaw": "void",
+      "body": "u8 i;\n\n    DmaClearLarge16(3, (void *)VRAM, VRAM_SIZE, 0x1000);\n    DmaClear32(3, (void *)OAM, OAM_SIZE);\n    DmaClear16(3, (void *)PLTT, PLTT_SIZE);\n\n    SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_MODE_0);\n    ResetBgsAndClearDma3BusyFlags(0);\n    InitBgsFromTemplates(0, sBgTemplates, ARRAY_COUNT(sBgTemplates));\n\n    ChangeBgX(0, 0, BG_COORD_SET);\n    ChangeBgY(0, 0, BG_COORD_SET);\n    ChangeBgX(1, 0, BG_COORD_SET);\n    ChangeBgY(1, 0, BG_COORD_SET);\n    ChangeBgX(2, 0, BG_COORD_SET);\n    ChangeBgY(2, 0, BG_COORD_SET);\n    ChangeBgX(3, 0, BG_COORD_SET);\n    ChangeBgY(3, 0, BG_COORD_SET);\n\n    InitStandardTextBoxWindows();\n    InitTextBoxGfxAndPrinters();\n\n    for (i = 0; i < WIN_COUNT; i++)\n        sNamingScreen->windows[i] = AddWindow(&sWindowTemplates[i]);\n\n    SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_OBJ_1D_MAP | DISPCNT_OBJ_ON);\n    SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_EFFECT_BLEND | BLDCNT_TGT2_BG1 | BLDCNT_TGT2_BG2);\n    SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(12, 8));\n\n    SetBgTilemapBuffer(1, sNamingScreen->tilemapBuffer1);\n    SetBgTilemapBuffer(2, sNamingScreen->tilemapBuffer2);\n    SetBgTilemapBuffer(3, sNamingScreen->tilemapBuffer3);\n\n    FillBgTilemapBufferRect_Palette0(1, 0, 0, 0, 0x20, 0x20);\n    FillBgTilemapBufferRect_Palette0(2, 0, 0, 0, 0x20, 0x20);\n    FillBgTilemapBufferRect_Palette0(3, 0, 0, 0, 0x20, 0x20);",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "AddWindow",
+        "BLDALPHA_BLEND",
+        "ChangeBgX",
+        "ChangeBgY",
+        "DmaClear16",
+        "DmaClear32",
+        "DmaClearLarge16",
+        "FillBgTilemapBufferRect_Palette0",
+        "InitBgsFromTemplates",
+        "InitStandardTextBoxWindows",
+        "InitTextBoxGfxAndPrinters",
+        "ResetBgsAndClearDma3BusyFlags",
+        "SetBgTilemapBuffer",
+        "SetGpuReg"
+      ],
+      "lineCount": 36
+    },
+    "CreateNamingScreenTask": {
+      "returnType": "void",
+      "signature": "static void CreateNamingScreenTask(void)",
+      "paramsRaw": "void",
+      "body": "CreateTask(Task_NamingScreen, 2);\n    SetMainCallback2(CB2_NamingScreen);",
+      "callsTo": [
+        "CreateTask",
+        "SetMainCallback2"
+      ],
+      "lineCount": 2
+    },
+    "Task_NamingScreen": {
+      "returnType": "void",
+      "signature": "static void Task_NamingScreen(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "switch (sNamingScreen->state)\n    {\n    case STATE_FADE_IN:\n        MainState_FadeIn();\n        SetSpritesVisible();\n        SetVBlank();\n        break;\n    case STATE_WAIT_FADE_IN:\n        MainState_WaitFadeIn();\n        break;\n    case STATE_HANDLE_INPUT:\n        MainState_HandleInput();\n        break;\n    case STATE_MOVE_TO_OK_BUTTON:\n        MainState_MoveToOKButton();\n        MainState_HandleInput();\n        break;\n    case STATE_START_PAGE_SWAP:\n        MainState_StartPageSwap();\n        break;\n    case STATE_WAIT_PAGE_SWAP:\n        MainState_WaitPageSwap();\n        break;\n    case STATE_PRESSED_OK:\n        MainState_PressedOKButton();\n        break;\n    case STATE_WAIT_SENT_TO_PC_MESSAGE:\n        MainState_WaitSentToPCMessage();\n        break;\n    case STATE_FADE_OUT:\n        MainState_FadeOut();\n        break;\n    case STATE_EXIT:\n        MainState_Exit();\n        break;\n    }",
+      "callsTo": [
+        "MainState_Exit",
+        "MainState_FadeIn",
+        "MainState_FadeOut",
+        "MainState_HandleInput",
+        "MainState_MoveToOKButton",
+        "MainState_PressedOKButton",
+        "MainState_StartPageSwap",
+        "MainState_WaitFadeIn",
+        "MainState_WaitPageSwap",
+        "MainState_WaitSentToPCMessage",
+        "SetSpritesVisible",
+        "SetVBlank"
+      ],
+      "lineCount": 36
+    },
+    "PageToNextGfxId": {
+      "returnType": "u8",
+      "signature": "static u8 PageToNextGfxId(u8 page)",
+      "paramsRaw": "u8 page",
+      "body": "return sPageToNextGfxId[page];",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "CurrentPageToNextKeyboardId": {
+      "returnType": "u8",
+      "signature": "static u8 CurrentPageToNextKeyboardId(void)",
+      "paramsRaw": "void",
+      "body": "return sPageToNextKeyboardId[sNamingScreen->currentPage];",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "CurrentPageToKeyboardId": {
+      "returnType": "u8",
+      "signature": "static u8 CurrentPageToKeyboardId(void)",
+      "paramsRaw": "void",
+      "body": "return sPageToKeyboardId[sNamingScreen->currentPage];",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "MainState_FadeIn": {
+      "returnType": "bool8",
+      "signature": "static bool8 MainState_FadeIn(void)",
+      "paramsRaw": "void",
+      "body": "DrawBgTilemap(3, gNamingScreenBackground_Tilemap);\n    sNamingScreen->currentPage = KBPAGE_LETTERS_UPPER;\n    DrawBgTilemap(2, gNamingScreenKeyboardLower_Tilemap);\n    DrawBgTilemap(1, gNamingScreenKeyboardUpper_Tilemap);\n    PrintKeyboardKeys(sNamingScreen->windows[WIN_KB_PAGE_2], KEYBOARD_LETTERS_LOWER);\n    PrintKeyboardKeys(sNamingScreen->windows[WIN_KB_PAGE_1], KEYBOARD_LETTERS_UPPER);\n    NamingScreen_Dummy(2, KEYBOARD_LETTERS_LOWER);\n    NamingScreen_Dummy(1, KEYBOARD_LETTERS_UPPER);\n    DrawTextEntry();\n    DrawTextEntryBox();\n    PrintControls();\n    CopyBgTilemapBufferToVram(1);\n    CopyBgTilemapBufferToVram(2);\n    CopyBgTilemapBufferToVram(3);\n    BlendPalettes(PALETTES_ALL, 16, 0);\n    BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);\n    sNamingScreen->state++;\n    return FALSE;",
+      "callsTo": [
+        "BeginNormalPaletteFade",
+        "BlendPalettes",
+        "CopyBgTilemapBufferToVram",
+        "DrawBgTilemap",
+        "DrawTextEntry",
+        "DrawTextEntryBox",
+        "NamingScreen_Dummy",
+        "PrintControls",
+        "PrintKeyboardKeys"
+      ],
+      "lineCount": 18
+    },
+    "MainState_WaitFadeIn": {
+      "returnType": "bool8",
+      "signature": "static bool8 MainState_WaitFadeIn(void)",
+      "paramsRaw": "void",
+      "body": "if (!gPaletteFade.active)\n    {\n        SetInputState(INPUT_STATE_ENABLED);\n        SetCursorFlashing(TRUE);\n        sNamingScreen->state++;\n    }\n    return FALSE;",
+      "callsTo": [
+        "SetCursorFlashing",
+        "SetInputState"
+      ],
+      "lineCount": 7
+    },
+    "MainState_HandleInput": {
+      "returnType": "bool8",
+      "signature": "static bool8 MainState_HandleInput(void)",
+      "paramsRaw": "void",
+      "body": "return HandleKeyboardEvent();",
+      "callsTo": [
+        "HandleKeyboardEvent"
+      ],
+      "lineCount": 1
+    },
+    "MainState_MoveToOKButton": {
+      "returnType": "bool8",
+      "signature": "static bool8 MainState_MoveToOKButton(void)",
+      "paramsRaw": "void",
+      "body": "if (IsCursorAnimFinished())\n    {\n        SetInputState(INPUT_STATE_ENABLED);\n        MoveCursorToOKButton();\n        sNamingScreen->state = STATE_HANDLE_INPUT;\n    }\n    return FALSE;",
+      "callsTo": [
+        "IsCursorAnimFinished",
+        "MoveCursorToOKButton",
+        "SetInputState"
+      ],
+      "lineCount": 7
+    },
+    "MainState_PressedOKButton": {
+      "returnType": "bool8",
+      "signature": "static bool8 MainState_PressedOKButton(void)",
+      "paramsRaw": "void",
+      "body": "SaveInputText();\n    SetInputState(INPUT_STATE_DISABLED);\n    SetCursorFlashing(FALSE);\n    TryStartButtonFlash(BUTTON_COUNT, FALSE, TRUE);\n    if (sNamingScreen->templateNum == NAMING_SCREEN_CAUGHT_MON\n        && CalculatePlayerPartyCount() >= PARTY_SIZE)\n    {\n        DisplaySentToPCMessage();\n        sNamingScreen->state = STATE_WAIT_SENT_TO_PC_MESSAGE;\n        return FALSE;\n    }\n    else\n    {\n        sNamingScreen->state = STATE_FADE_OUT;\n        return TRUE;\n    }",
+      "callsTo": [
+        "CalculatePlayerPartyCount",
+        "DisplaySentToPCMessage",
+        "SaveInputText",
+        "SetCursorFlashing",
+        "SetInputState",
+        "TryStartButtonFlash"
+      ],
+      "lineCount": 16
+    },
+    "MainState_FadeOut": {
+      "returnType": "bool8",
+      "signature": "static bool8 MainState_FadeOut(void)",
+      "paramsRaw": "void",
+      "body": "BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);\n    sNamingScreen->state++;\n    return FALSE;",
+      "callsTo": [
+        "BeginNormalPaletteFade"
+      ],
+      "lineCount": 3
+    },
+    "MainState_Exit": {
+      "returnType": "bool8",
+      "signature": "static bool8 MainState_Exit(void)",
+      "paramsRaw": "void",
+      "body": "if (!gPaletteFade.active)\n    {\n        if (sNamingScreen->templateNum == NAMING_SCREEN_PLAYER)\n            SeedRngAndSetTrainerId();\n        SetMainCallback2(sNamingScreen->returnCallback);\n        DestroyTask(FindTaskIdByFunc(Task_NamingScreen));\n        FreeAllWindowBuffers();\n        FREE_AND_SET_NULL(sNamingScreen);\n    }\n    return FALSE;",
+      "callsTo": [
+        "DestroyTask",
+        "FREE_AND_SET_NULL",
+        "FindTaskIdByFunc",
+        "FreeAllWindowBuffers",
+        "SeedRngAndSetTrainerId",
+        "SetMainCallback2"
+      ],
+      "lineCount": 10
+    },
+    "DisplaySentToPCMessage": {
+      "returnType": "void",
+      "signature": "static void DisplaySentToPCMessage(void)",
+      "paramsRaw": "void",
+      "body": "u8 stringToDisplay = 0;\n\n    if (!IsDestinationBoxFull())\n    {\n        StringCopy(gStringVar1, GetBoxNamePtr(VarGet(VAR_PC_BOX_TO_SEND_MON)));\n        StringCopy(gStringVar2, sNamingScreen->destBuffer);\n    }\n    else\n    {\n        StringCopy(gStringVar1, GetBoxNamePtr(VarGet(VAR_PC_BOX_TO_SEND_MON)));\n        StringCopy(gStringVar2, sNamingScreen->destBuffer);\n        StringCopy(gStringVar3, GetBoxNamePtr(GetPCBoxToSendMon()));\n        stringToDisplay = 2;\n    }\n\n    if (FlagGet(FLAG_SYS_PC_LANETTE))\n        stringToDisplay++;\n\n    StringExpandPlaceholders(gStringVar4, sTransferredToPCMessages[stringToDisplay]);\n    DrawDialogueFrame(0, FALSE);\n    gTextFlags.canABSpeedUpPrint = TRUE;\n    AddTextPrinterParameterized2(0, FONT_NORMAL, gStringVar4, GetPlayerTextSpeedDelay(), 0, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);\n    CopyWindowToVram(0, COPYWIN_FULL);",
+      "callsTo": [
+        "AddTextPrinterParameterized2",
+        "CopyWindowToVram",
+        "DrawDialogueFrame",
+        "FlagGet",
+        "GetBoxNamePtr",
+        "GetPCBoxToSendMon",
+        "GetPlayerTextSpeedDelay",
+        "IsDestinationBoxFull",
+        "StringCopy",
+        "StringExpandPlaceholders",
+        "VarGet"
+      ],
+      "lineCount": 23
+    },
+    "MainState_WaitSentToPCMessage": {
+      "returnType": "bool8",
+      "signature": "static bool8 MainState_WaitSentToPCMessage(void)",
+      "paramsRaw": "void",
+      "body": "RunTextPrinters();\n    if (!IsTextPrinterActive(0) && JOY_NEW(A_BUTTON))\n        sNamingScreen->state = STATE_FADE_OUT;\n\n    return FALSE;",
+      "callsTo": [
+        "IsTextPrinterActive",
+        "JOY_NEW",
+        "RunTextPrinters"
+      ],
+      "lineCount": 5
+    },
+    "MainState_StartPageSwap": {
+      "returnType": "bool8",
+      "signature": "static bool8 MainState_StartPageSwap(void)",
+      "paramsRaw": "void",
+      "body": "SetInputState(INPUT_STATE_DISABLED);\n    StartPageSwapButtonAnim();\n    StartPageSwapAnim();\n    SetCursorInvisibility(TRUE);\n    TryStartButtonFlash(BUTTON_PAGE, FALSE, TRUE);\n    PlaySE(SE_WIN_OPEN);\n    sNamingScreen->state = STATE_WAIT_PAGE_SWAP;\n    return FALSE;",
+      "callsTo": [
+        "PlaySE",
+        "SetCursorInvisibility",
+        "SetInputState",
+        "StartPageSwapAnim",
+        "StartPageSwapButtonAnim",
+        "TryStartButtonFlash"
+      ],
+      "lineCount": 8
+    },
+    "MainState_WaitPageSwap": {
+      "returnType": "bool8",
+      "signature": "static bool8 MainState_WaitPageSwap(void)",
+      "paramsRaw": "void",
+      "body": "s16 cursorX;\n    s16 cursorY;\n    bool32 onLastColumn;\n\n    if (IsPageSwapAnimNotInProgress())\n    {\n\n        GetCursorPos(&cursorX, &cursorY);\n        onLastColumn = (cursorX == GetCurrentPageColumnCount());\n\n        sNamingScreen->state = STATE_HANDLE_INPUT;\n        sNamingScreen->currentPage++;\n        sNamingScreen->currentPage %= KBPAGE_COUNT;\n\n        if (onLastColumn)\n        {\n            cursorX = GetCurrentPageColumnCount();\n        }\n        else\n        {\n            if (cursorX >= GetCurrentPageColumnCount())\n                cursorX = GetCurrentPageColumnCount() - 1;\n        }\n\n        SetCursorPos(cursorX, cursorY);\n        DrawKeyboardPageOnDeck();\n        SetInputState(INPUT_STATE_ENABLED);\n        SetCursorInvisibility(FALSE);\n    }\n    return FALSE;",
+      "callsTo": [
+        "DrawKeyboardPageOnDeck",
+        "GetCurrentPageColumnCount",
+        "GetCursorPos",
+        "IsPageSwapAnimNotInProgress",
+        "SetCursorInvisibility",
+        "SetCursorPos",
+        "SetInputState"
+      ],
+      "lineCount": 30
+    },
+    "StartPageSwapAnim": {
+      "returnType": "void",
+      "signature": "static void StartPageSwapAnim(void)",
+      "paramsRaw": "void",
+      "body": "u8 taskId;\n\n    taskId = CreateTask(Task_HandlePageSwapAnim, 0);\n    Task_HandlePageSwapAnim(taskId);",
+      "callsTo": [
+        "CreateTask",
+        "Task_HandlePageSwapAnim"
+      ],
+      "lineCount": 4
+    },
+    "Task_HandlePageSwapAnim": {
+      "returnType": "void",
+      "signature": "static void Task_HandlePageSwapAnim(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "while (sPageSwapAnimStateFuncs[gTasks[taskId].tState](&gTasks[taskId]) != 0);",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "IsPageSwapAnimNotInProgress": {
+      "returnType": "bool8",
+      "signature": "static bool8 IsPageSwapAnimNotInProgress(void)",
+      "paramsRaw": "void",
+      "body": "if (FindTaskIdByFunc(Task_HandlePageSwapAnim) == TASK_NONE)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [
+        "FindTaskIdByFunc"
+      ],
+      "lineCount": 4
+    },
+    "PageSwapAnimState_Init": {
+      "returnType": "bool8",
+      "signature": "static bool8 PageSwapAnimState_Init(struct Task *task)",
+      "paramsRaw": "struct Task *task",
+      "body": "sNamingScreen->bg1vOffset = 0;\n    sNamingScreen->bg2vOffset = 0;\n    task->tState++;\n    return 0;",
+      "callsTo": [],
+      "lineCount": 4
+    },
+    "PageSwapAnimState_1": {
+      "returnType": "bool8",
+      "signature": "static bool8 PageSwapAnimState_1(struct Task *task)",
+      "paramsRaw": "struct Task *task",
+      "body": "u16 *const vOffsets[] =\n    {\n        &sNamingScreen->bg2vOffset,\n        &sNamingScreen->bg1vOffset\n    };\n\n    task->tFrameCount += 4;\n    *vOffsets[sNamingScreen->bgToReveal] = Sin(task->tFrameCount, 40);\n    *vOffsets[sNamingScreen->bgToHide] = Sin((task->tFrameCount + 128) & 0xFF, 40);\n    if (task->tFrameCount >= 64)\n    {\n        u8 temp = sNamingScreen->bg1Priority;   \n\n        sNamingScreen->bg1Priority = sNamingScreen->bg2Priority;\n        sNamingScreen->bg2Priority = temp;\n        task->tState++;\n    }\n    return 0;",
+      "callsTo": [
+        "Sin"
+      ],
+      "lineCount": 18
+    },
+    "PageSwapAnimState_2": {
+      "returnType": "bool8",
+      "signature": "static bool8 PageSwapAnimState_2(struct Task *task)",
+      "paramsRaw": "struct Task *task",
+      "body": "u16 *const vOffsets[] =\n    {\n        &sNamingScreen->bg2vOffset,\n        &sNamingScreen->bg1vOffset\n    };\n\n    task->tFrameCount += 4;\n    *vOffsets[sNamingScreen->bgToReveal] = Sin(task->tFrameCount, 40);\n    *vOffsets[sNamingScreen->bgToHide] = Sin((task->tFrameCount + 128) & 0xFF, 40);\n    if (task->tFrameCount >= 128)\n    {\n        u8 temp = sNamingScreen->bgToReveal;\n\n        sNamingScreen->bgToReveal = sNamingScreen->bgToHide;\n        sNamingScreen->bgToHide = temp;\n        task->tState++;\n    }\n    return 0;",
+      "callsTo": [
+        "Sin"
+      ],
+      "lineCount": 18
+    },
+    "PageSwapAnimState_Done": {
+      "returnType": "bool8",
+      "signature": "static bool8 PageSwapAnimState_Done(struct Task *task)",
+      "paramsRaw": "struct Task *task",
+      "body": "DestroyTask(FindTaskIdByFunc(Task_HandlePageSwapAnim));\n    return 0;",
+      "callsTo": [
+        "DestroyTask",
+        "FindTaskIdByFunc"
+      ],
+      "lineCount": 2
+    },
+    "CreateButtonFlashTask": {
+      "returnType": "void",
+      "signature": "static void CreateButtonFlashTask(void)",
+      "paramsRaw": "void",
+      "body": "u8 taskId;\n\n    taskId = CreateTask(Task_UpdateButtonFlash, 3);\n    gTasks[taskId].tButtonId = BUTTON_COUNT;",
+      "callsTo": [
+        "CreateTask"
+      ],
+      "lineCount": 4
+    },
+    "TryStartButtonFlash": {
+      "returnType": "void",
+      "signature": "static void TryStartButtonFlash(u8 button, bool8 keepFlashing, bool8 interruptCurFlash)",
+      "paramsRaw": "u8 button, bool8 keepFlashing, bool8 interruptCurFlash",
+      "body": "struct Task *task = &gTasks[FindTaskIdByFunc(Task_UpdateButtonFlash)];\n\n    if (button == task->tButtonId && !interruptCurFlash)\n    {\n        task->tKeepFlashing = keepFlashing;\n        task->tAllowFlash = TRUE;\n        return;\n    }\n    if (button == BUTTON_COUNT && !task->tKeepFlashing && !interruptCurFlash)\n        return;\n\n    if (task->tButtonId != BUTTON_COUNT)\n        RestoreButtonColor(task->tButtonId);\n\n    StartButtonFlash(task, button, keepFlashing);",
+      "callsTo": [
+        "FindTaskIdByFunc",
+        "RestoreButtonColor",
+        "StartButtonFlash"
+      ],
+      "lineCount": 15
+    },
+    "Task_UpdateButtonFlash": {
+      "returnType": "void",
+      "signature": "static void Task_UpdateButtonFlash(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "struct Task *task = &gTasks[taskId];\n\n    if (task->tButtonId == BUTTON_COUNT || !task->tAllowFlash)\n        return;\n\n    MultiplyInvertedPaletteRGBComponents(GetButtonPalOffset(task->tButtonId), task->tColor, task->tColor, task->tColor);\n\n    if (task->tColorDelay && --task->tColorDelay)\n        return;\n\n    task->tColorDelay = 2;\n    if (task->tColorIncr >= 0)\n    {\n        if (task->tColor < 14)\n        {\n            task->tColor += task->tColorIncr;\n            task->tColorDelta += task->tColorIncr;\n        }\n        else\n        {\n            task->tColor = 16;\n            task->tColorDelta++;\n        }\n    }\n    else\n    {\n        task->tColor += task->tColorIncr;\n        task->tColorDelta += task->tColorIncr;\n    }\n\n    if (task->tColor == 16 && task->tColorDelta == 22)\n    {\n        task->tColorIncr = -4;\n    }\n    else if (task->tColor == 0)\n    {\n        task->tAllowFlash = task->tKeepFlashing;\n        task->tColorIncr = 2;\n        task->tColorDelta = 0;\n    }",
+      "callsTo": [
+        "GetButtonPalOffset",
+        "MultiplyInvertedPaletteRGBComponents"
+      ],
+      "lineCount": 40
+    },
+    "GetButtonPalOffset": {
+      "returnType": "u16",
+      "signature": "static u16 GetButtonPalOffset(u8 button)",
+      "paramsRaw": "u8 button",
+      "body": "const u16 palOffsets[BUTTON_COUNT + 1] =\n    {\n        [BUTTON_PAGE]  = OBJ_PLTT_ID(IndexOfSpritePaletteTag(PALTAG_PAGE_SWAP)) + 14,\n        [BUTTON_BACK]  = OBJ_PLTT_ID(IndexOfSpritePaletteTag(PALTAG_BACK_BUTTON)) + 14,\n        [BUTTON_OK]    = OBJ_PLTT_ID(IndexOfSpritePaletteTag(PALTAG_OK_BUTTON)) + 14,\n        [BUTTON_COUNT] = OBJ_PLTT_ID(IndexOfSpritePaletteTag(PALTAG_OK_BUTTON)) + 1,\n    };\n\n    return palOffsets[button];",
+      "callsTo": [
+        "IndexOfSpritePaletteTag",
+        "OBJ_PLTT_ID"
+      ],
+      "lineCount": 9
+    },
+    "RestoreButtonColor": {
+      "returnType": "void",
+      "signature": "static void RestoreButtonColor(u8 button)",
+      "paramsRaw": "u8 button",
+      "body": "u16 index = GetButtonPalOffset(button);\n    gPlttBufferFaded[index] = gPlttBufferUnfaded[index];",
+      "callsTo": [
+        "GetButtonPalOffset"
+      ],
+      "lineCount": 2
+    },
+    "StartButtonFlash": {
+      "returnType": "void",
+      "signature": "static void StartButtonFlash(struct Task *task, u8 button, bool8 keepFlashing)",
+      "paramsRaw": "struct Task *task, u8 button, bool8 keepFlashing",
+      "body": "task->tButtonId = button;\n    task->tKeepFlashing = keepFlashing;\n    task->tAllowFlash = TRUE;\n    task->tColor = 4;\n    task->tColorIncr = 2;\n    task->tColorDelay = 0;\n    task->tColorDelta = 4;",
+      "callsTo": [],
+      "lineCount": 7
+    },
+    "SpriteCB_Cursor": {
+      "returnType": "void",
+      "signature": "static void SpriteCB_Cursor(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "if (sprite->animEnded)\n        StartSpriteAnim(sprite, 0);\n\n     \n    sprite->invisible = sprite->sInvisible;\n    if (sprite->sX == GetCurrentPageColumnCount())\n        sprite->invisible = TRUE;\n\n    if (sprite->invisible\n       || !(sprite->sFlashing)\n       || sprite->sX != sprite->sPrevX\n       || sprite->sY != sprite->sPrevY)\n    {\n        sprite->sColor = 0;\n        sprite->sColorIncr = 2;\n        sprite->sColorDelay = 2;\n    }\n\n    sprite->sColorDelay--;\n    if (sprite->sColorDelay == 0)\n    {\n        sprite->sColor += sprite->sColorIncr;\n        if (sprite->sColor == 16 || sprite->sColor == 0)\n            sprite->sColorIncr = -sprite->sColorIncr;\n        sprite->sColorDelay = 2;\n    }\n\n    if (sprite->sFlashing)\n    {\n        s8 gb = sprite->sColor;\n        s8 r = sprite->sColor >> 1;\n        u16 index = OBJ_PLTT_ID(IndexOfSpritePaletteTag(PALTAG_CURSOR)) + 1;\n\n        MultiplyInvertedPaletteRGBComponents(index, r, gb, gb);\n    }",
+      "callsTo": [
+        "GetCurrentPageColumnCount",
+        "IndexOfSpritePaletteTag",
+        "MultiplyInvertedPaletteRGBComponents",
+        "OBJ_PLTT_ID",
+        "StartSpriteAnim"
+      ],
+      "lineCount": 35
+    },
+    "SpriteCB_InputArrow": {
+      "returnType": "void",
+      "signature": "static void SpriteCB_InputArrow(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "const s16 x[] = {0, -4, -2, -1};\n\n    if (sprite->sDelay == 0 || --sprite->sDelay == 0)\n    {\n        sprite->sDelay = 8;\n        sprite->sXPosId = MOD(sprite->sXPosId + 1, ARRAY_COUNT(x));\n    }\n    sprite->x2 = x[sprite->sXPosId];",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "MOD"
+      ],
+      "lineCount": 8
+    },
+    "SpriteCB_Underscore": {
+      "returnType": "void",
+      "signature": "static void SpriteCB_Underscore(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "const s16 y[] = {2, 3, 2, 1};\n    u8 pos;\n\n    pos = GetTextEntryPosition();\n    if (pos != (u8)sprite->sId)\n    {\n        sprite->y2 = 0;\n        sprite->sYPosId = 0;\n        sprite->sDelay = 0;\n    }\n    else\n    {\n        sprite->y2 = y[sprite->sYPosId];\n        sprite->sDelay++;\n        if (sprite->sDelay > 8)\n        {\n            sprite->sYPosId = MOD(sprite->sYPosId + 1, ARRAY_COUNT(y));\n            sprite->sDelay = 0;\n        }\n    }",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "GetTextEntryPosition",
+        "MOD"
+      ],
+      "lineCount": 20
+    },
+    "CreateSprites": {
+      "returnType": "void",
+      "signature": "static void CreateSprites(void)",
+      "paramsRaw": "void",
+      "body": "CreateCursorSprite();\n    CreatePageSwapButtonSprites();\n    CreateBackOkSprites();\n    CreateTextEntrySprites();\n    CreateInputTargetIcon();",
+      "callsTo": [
+        "CreateBackOkSprites",
+        "CreateCursorSprite",
+        "CreateInputTargetIcon",
+        "CreatePageSwapButtonSprites",
+        "CreateTextEntrySprites"
+      ],
+      "lineCount": 5
+    },
+    "CreateCursorSprite": {
+      "returnType": "void",
+      "signature": "static void CreateCursorSprite(void)",
+      "paramsRaw": "void",
+      "body": "sNamingScreen->cursorSpriteId = CreateSprite(&sSpriteTemplate_Cursor, 38, 88, 1);\n    SetCursorInvisibility(TRUE);\n    gSprites[sNamingScreen->cursorSpriteId].oam.priority = 1;\n    gSprites[sNamingScreen->cursorSpriteId].oam.objMode = ST_OAM_OBJ_BLEND;\n    gSprites[sNamingScreen->cursorSpriteId].sColorIncr = 1;  \n    gSprites[sNamingScreen->cursorSpriteId].sColorIncr = 2;\n    SetCursorPos(0, 0);",
+      "callsTo": [
+        "CreateSprite",
+        "SetCursorInvisibility",
+        "SetCursorPos"
+      ],
+      "lineCount": 7
+    },
+    "SetCursorPos": {
+      "returnType": "void",
+      "signature": "static void SetCursorPos(s16 x, s16 y)",
+      "paramsRaw": "s16 x, s16 y",
+      "body": "struct Sprite *cursorSprite = &gSprites[sNamingScreen->cursorSpriteId];\n\n    if (x < sPageColumnCounts[CurrentPageToKeyboardId()])\n        cursorSprite->x = sPageColumnXPos[CurrentPageToKeyboardId()][x] + 38;\n    else\n        cursorSprite->x = 0;\n\n    cursorSprite->y = y * 16 + 88;\n    cursorSprite->sPrevX = cursorSprite->sX;\n    cursorSprite->sPrevY = cursorSprite->sY;\n    cursorSprite->sX = x;\n    cursorSprite->sY = y;",
+      "callsTo": [
+        "CurrentPageToKeyboardId"
+      ],
+      "lineCount": 12
+    },
+    "GetCursorPos": {
+      "returnType": "void",
+      "signature": "static void GetCursorPos(s16 *x, s16 *y)",
+      "paramsRaw": "s16 *x, s16 *y",
+      "body": "struct Sprite *cursorSprite = &gSprites[sNamingScreen->cursorSpriteId];\n\n    *x = cursorSprite->sX;\n    *y = cursorSprite->sY;",
+      "callsTo": [],
+      "lineCount": 4
+    },
+    "MoveCursorToOKButton": {
+      "returnType": "void",
+      "signature": "static void MoveCursorToOKButton(void)",
+      "paramsRaw": "void",
+      "body": "SetCursorPos(GetCurrentPageColumnCount(), 2);",
+      "callsTo": [
+        "GetCurrentPageColumnCount",
+        "SetCursorPos"
+      ],
+      "lineCount": 1
+    },
+    "SetCursorInvisibility": {
+      "returnType": "void",
+      "signature": "static void SetCursorInvisibility(bool8 invisible)",
+      "paramsRaw": "bool8 invisible",
+      "body": "gSprites[sNamingScreen->cursorSpriteId].data[4] &= 0xFF00;\n    gSprites[sNamingScreen->cursorSpriteId].data[4] |= invisible;  \n    StartSpriteAnim(&gSprites[sNamingScreen->cursorSpriteId], 0);",
+      "callsTo": [
+        "StartSpriteAnim"
+      ],
+      "lineCount": 3
+    },
+    "SetCursorFlashing": {
+      "returnType": "void",
+      "signature": "static void SetCursorFlashing(bool8 flashing)",
+      "paramsRaw": "bool8 flashing",
+      "body": "gSprites[sNamingScreen->cursorSpriteId].data[4] &= 0xFF;\n    gSprites[sNamingScreen->cursorSpriteId].data[4] |= flashing << 8;",
+      "callsTo": [],
+      "lineCount": 2
+    },
+    "SquishCursor": {
+      "returnType": "void",
+      "signature": "static void SquishCursor(void)",
+      "paramsRaw": "void",
+      "body": "StartSpriteAnim(&gSprites[sNamingScreen->cursorSpriteId], 1);",
+      "callsTo": [
+        "StartSpriteAnim"
+      ],
+      "lineCount": 1
+    },
+    "IsCursorAnimFinished": {
+      "returnType": "bool8",
+      "signature": "static bool8 IsCursorAnimFinished(void)",
+      "paramsRaw": "void",
+      "body": "return gSprites[sNamingScreen->cursorSpriteId].animEnded;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "GetKeyRoleAtCursorPos": {
+      "returnType": "u8",
+      "signature": "static u8 GetKeyRoleAtCursorPos(void)",
+      "paramsRaw": "void",
+      "body": "s16 cursorX;\n    s16 cursorY;\n\n    GetCursorPos(&cursorX, &cursorY);\n    if (cursorX < GetCurrentPageColumnCount())\n        return KEY_ROLE_CHAR;\n    else\n        return sButtonKeyRoles[cursorY];",
+      "callsTo": [
+        "GetCurrentPageColumnCount",
+        "GetCursorPos"
+      ],
+      "lineCount": 8
+    },
+    "GetCurrentPageColumnCount": {
+      "returnType": "u8",
+      "signature": "static u8 GetCurrentPageColumnCount(void)",
+      "paramsRaw": "void",
+      "body": "return sPageColumnCounts[CurrentPageToKeyboardId()];",
+      "callsTo": [
+        "CurrentPageToKeyboardId"
+      ],
+      "lineCount": 1
+    },
+    "CreatePageSwapButtonSprites": {
+      "returnType": "void",
+      "signature": "static void CreatePageSwapButtonSprites(void)",
+      "paramsRaw": "void",
+      "body": "u8 frameSpriteId;\n    u8 textSpriteId;\n    u8 buttonSpriteId;\n\n    frameSpriteId = CreateSprite(&sSpriteTemplate_PageSwapFrame, 204, 88, 0);\n    sNamingScreen->swapBtnFrameSpriteId = frameSpriteId;\n    SetSubspriteTables(&gSprites[frameSpriteId], sSubspriteTable_PageSwapFrame);\n    gSprites[frameSpriteId].invisible = TRUE;\n\n    textSpriteId = CreateSprite(&sSpriteTemplate_PageSwapText, 204, 84, 1);\n    gSprites[frameSpriteId].sTextSpriteId = textSpriteId;\n    SetSubspriteTables(&gSprites[textSpriteId], sSubspriteTable_PageSwapText);\n    gSprites[textSpriteId].invisible = TRUE;\n\n    buttonSpriteId = CreateSprite(&sSpriteTemplate_PageSwapButton, 204, 83, 2);\n    gSprites[buttonSpriteId].oam.priority = 1;\n    gSprites[frameSpriteId].sButtonSpriteId = buttonSpriteId;\n    gSprites[buttonSpriteId].invisible = TRUE;",
+      "callsTo": [
+        "CreateSprite",
+        "SetSubspriteTables"
+      ],
+      "lineCount": 18
+    },
+    "StartPageSwapButtonAnim": {
+      "returnType": "void",
+      "signature": "static void StartPageSwapButtonAnim(void)",
+      "paramsRaw": "void",
+      "body": "struct Sprite *sprite = &gSprites[sNamingScreen->swapBtnFrameSpriteId];\n\n    sprite->sState = 2;  \n    sprite->sPage = sNamingScreen->currentPage;",
+      "callsTo": [],
+      "lineCount": 4
+    },
+    "SpriteCB_PageSwap": {
+      "returnType": "void",
+      "signature": "static void SpriteCB_PageSwap(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "while (sPageSwapSpriteFuncs[sprite->sState](sprite));",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "PageSwapSprite_Init": {
+      "returnType": "bool8",
+      "signature": "static bool8 PageSwapSprite_Init(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "struct Sprite *text = &gSprites[sprite->sTextSpriteId];\n    struct Sprite *button = &gSprites[sprite->sButtonSpriteId];\n\n    SetPageSwapButtonGfx(PageToNextGfxId(sNamingScreen->currentPage), text, button);\n    sprite->sState++;\n    return FALSE;",
+      "callsTo": [
+        "PageToNextGfxId",
+        "SetPageSwapButtonGfx"
+      ],
+      "lineCount": 6
+    },
+    "PageSwapSprite_Idle": {
+      "returnType": "bool8",
+      "signature": "static bool8 PageSwapSprite_Idle(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "return FALSE;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "PageSwapSprite_SlideOff": {
+      "returnType": "bool8",
+      "signature": "static bool8 PageSwapSprite_SlideOff(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "struct Sprite *text = &gSprites[sprite->sTextSpriteId];\n    struct Sprite *button = &gSprites[sprite->sButtonSpriteId];\n\n    text->y2++;\n    if (text->y2 > 7)\n    {\n        sprite->sState++;\n        text->y2 = -4;\n        text->invisible = TRUE;\n        SetPageSwapButtonGfx(PageToNextGfxId(((u8)sprite->sPage + 1) % KBPAGE_COUNT), text, button);\n    }\n    return FALSE;",
+      "callsTo": [
+        "PageToNextGfxId",
+        "SetPageSwapButtonGfx"
+      ],
+      "lineCount": 12
+    },
+    "PageSwapSprite_SlideOn": {
+      "returnType": "bool8",
+      "signature": "static bool8 PageSwapSprite_SlideOn(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "struct Sprite *text = &gSprites[sprite->sTextSpriteId];\n\n    text->invisible = FALSE;\n    text->y2++;\n    if (text->y2 >= 0)\n    {\n        text->y2 = 0;\n        sprite->sState = 1;  \n    }\n    return FALSE;",
+      "callsTo": [],
+      "lineCount": 10
+    },
+    "SetPageSwapButtonGfx": {
+      "returnType": "void",
+      "signature": "static void SetPageSwapButtonGfx(u8 page, struct Sprite *text, struct Sprite *button)",
+      "paramsRaw": "u8 page, struct Sprite *text, struct Sprite *button",
+      "body": "button->oam.paletteNum = IndexOfSpritePaletteTag(sPageSwapPalTags[page]);\n    text->sheetTileStart = GetSpriteTileStartByTag(sPageSwapGfxTags[page]);\n    text->subspriteTableNum = page;",
+      "callsTo": [
+        "GetSpriteTileStartByTag",
+        "IndexOfSpritePaletteTag"
+      ],
+      "lineCount": 3
+    },
+    "CreateBackOkSprites": {
+      "returnType": "void",
+      "signature": "static void CreateBackOkSprites(void)",
+      "paramsRaw": "void",
+      "body": "u8 spriteId;\n\n    spriteId = CreateSprite(&sSpriteTemplate_BackButton, 204, 116, 0);\n    SetSubspriteTables(&gSprites[spriteId], sSubspriteTable_Button);\n    gSprites[spriteId].invisible = TRUE;\n\n    spriteId = CreateSprite(&sSpriteTemplate_OkButton, 204, 140, 0);\n    SetSubspriteTables(&gSprites[spriteId], sSubspriteTable_Button);\n    gSprites[spriteId].invisible = TRUE;",
+      "callsTo": [
+        "CreateSprite",
+        "SetSubspriteTables"
+      ],
+      "lineCount": 9
+    },
+    "CreateTextEntrySprites": {
+      "returnType": "void",
+      "signature": "static void CreateTextEntrySprites(void)",
+      "paramsRaw": "void",
+      "body": "u8 spriteId;\n    s16 xPos;\n    u8 i;\n\n    xPos = sNamingScreen->inputCharBaseXPos - 5;\n    spriteId = CreateSprite(&sSpriteTemplate_InputArrow, xPos, 56, 0);\n    gSprites[spriteId].oam.priority = 3;\n    gSprites[spriteId].invisible = TRUE;\n    xPos = sNamingScreen->inputCharBaseXPos;\n    for (i = 0; i < sNamingScreen->template->maxChars; i++, xPos += 8)\n    {\n        spriteId = CreateSprite(&sSpriteTemplate_Underscore, xPos + 3, 60, 0);\n        gSprites[spriteId].oam.priority = 3;\n        gSprites[spriteId].data[0] = i;\n        gSprites[spriteId].invisible = TRUE;\n    }",
+      "callsTo": [
+        "CreateSprite"
+      ],
+      "lineCount": 16
+    },
+    "CreateInputTargetIcon": {
+      "returnType": "void",
+      "signature": "static void CreateInputTargetIcon(void)",
+      "paramsRaw": "void",
+      "body": "sIconFunctions[sNamingScreen->template->iconFunction]();",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "NamingScreen_NoIcon": {
+      "returnType": "void",
+      "signature": "static void NamingScreen_NoIcon(void)",
+      "paramsRaw": "void",
+      "body": "",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "NamingScreen_CreatePlayerIcon": {
+      "returnType": "void",
+      "signature": "static void NamingScreen_CreatePlayerIcon(void)",
+      "paramsRaw": "void",
+      "body": "u8 rivalGfxId;\n    u8 spriteId;\n\n    rivalGfxId = GetRivalAvatarGraphicsIdByStateIdAndGender(PLAYER_AVATAR_STATE_NORMAL, sNamingScreen->monSpecies);\n    spriteId = CreateObjectGraphicsSprite(rivalGfxId, SpriteCallbackDummy, 56, 37, 0);\n    gSprites[spriteId].oam.priority = 3;\n    StartSpriteAnim(&gSprites[spriteId], ANIM_STD_GO_SOUTH);",
+      "callsTo": [
+        "CreateObjectGraphicsSprite",
+        "GetRivalAvatarGraphicsIdByStateIdAndGender",
+        "StartSpriteAnim"
+      ],
+      "lineCount": 7
+    },
+    "NamingScreen_CreatePCIcon": {
+      "returnType": "void",
+      "signature": "static void NamingScreen_CreatePCIcon(void)",
+      "paramsRaw": "void",
+      "body": "u8 spriteId;\n\n    spriteId = CreateSprite(&sSpriteTemplate_PCIcon, 56, 41, 0);\n    SetSubspriteTables(&gSprites[spriteId], sSubspriteTable_PCIcon);\n    gSprites[spriteId].oam.priority = 3;",
+      "callsTo": [
+        "CreateSprite",
+        "SetSubspriteTables"
+      ],
+      "lineCount": 5
+    },
+    "NamingScreen_CreateMonIcon": {
+      "returnType": "void",
+      "signature": "static void NamingScreen_CreateMonIcon(void)",
+      "paramsRaw": "void",
+      "body": "u8 spriteId;\n\n    LoadMonIconPalettes();\n    spriteId = CreateMonIcon(sNamingScreen->monSpecies, SpriteCallbackDummy, 56, 40, 0, sNamingScreen->monPersonality, 1);\n    gSprites[spriteId].oam.priority = 3;",
+      "callsTo": [
+        "CreateMonIcon",
+        "LoadMonIconPalettes"
+      ],
+      "lineCount": 5
+    },
+    "NamingScreen_CreateWaldaDadIcon": {
+      "returnType": "void",
+      "signature": "static void NamingScreen_CreateWaldaDadIcon(void)",
+      "paramsRaw": "void",
+      "body": "u8 spriteId;\n\n    spriteId = CreateObjectGraphicsSprite(OBJ_EVENT_GFX_MAN_1, SpriteCallbackDummy, 56, 37, 0);\n    gSprites[spriteId].oam.priority = 3;\n    StartSpriteAnim(&gSprites[spriteId], ANIM_STD_GO_SOUTH);",
+      "callsTo": [
+        "CreateObjectGraphicsSprite",
+        "StartSpriteAnim"
+      ],
+      "lineCount": 5
+    },
+    "HandleKeyboardEvent": {
+      "returnType": "bool8",
+      "signature": "static bool8 HandleKeyboardEvent(void)",
+      "paramsRaw": "void",
+      "body": "u8 input = GetInputEvent();\n    u8 keyRole = GetKeyRoleAtCursorPos();\n\n    if (input == INPUT_SELECT)\n    {\n        return SwapKeyboardPage();\n    }\n    else if (input == INPUT_B_BUTTON)\n    {\n        DeleteTextCharacter();\n        return FALSE;\n    }\n    else if (input == INPUT_START)\n    {\n        MoveCursorToOKButton();\n        return FALSE;\n    }\n    else\n    {\n        return sKeyboardKeyHandlers[keyRole](input);\n    }",
+      "callsTo": [
+        "DeleteTextCharacter",
+        "GetInputEvent",
+        "GetKeyRoleAtCursorPos",
+        "MoveCursorToOKButton",
+        "SwapKeyboardPage"
+      ],
+      "lineCount": 21
+    },
+    "KeyboardKeyHandler_Character": {
+      "returnType": "bool8",
+      "signature": "static bool8 KeyboardKeyHandler_Character(u8 input)",
+      "paramsRaw": "u8 input",
+      "body": "TryStartButtonFlash(BUTTON_COUNT, FALSE, FALSE);\n    if (input == INPUT_A_BUTTON)\n    {\n        bool8 textFull = AddTextCharacter();\n\n        SquishCursor();\n        if (textFull)\n        {\n            SetInputState(INPUT_STATE_OVERRIDE);\n            sNamingScreen->state = STATE_MOVE_TO_OK_BUTTON;\n        }\n    }\n    return FALSE;",
+      "callsTo": [
+        "AddTextCharacter",
+        "SetInputState",
+        "SquishCursor",
+        "TryStartButtonFlash"
+      ],
+      "lineCount": 13
+    },
+    "KeyboardKeyHandler_Page": {
+      "returnType": "bool8",
+      "signature": "static bool8 KeyboardKeyHandler_Page(u8 input)",
+      "paramsRaw": "u8 input",
+      "body": "TryStartButtonFlash(BUTTON_PAGE, TRUE, FALSE);\n    if (input == INPUT_A_BUTTON)\n        return SwapKeyboardPage();\n    else\n        return FALSE;",
+      "callsTo": [
+        "SwapKeyboardPage",
+        "TryStartButtonFlash"
+      ],
+      "lineCount": 5
+    },
+    "KeyboardKeyHandler_Backspace": {
+      "returnType": "bool8",
+      "signature": "static bool8 KeyboardKeyHandler_Backspace(u8 input)",
+      "paramsRaw": "u8 input",
+      "body": "TryStartButtonFlash(BUTTON_BACK, TRUE, FALSE);\n    if (input == INPUT_A_BUTTON)\n        DeleteTextCharacter();\n    return FALSE;",
+      "callsTo": [
+        "DeleteTextCharacter",
+        "TryStartButtonFlash"
+      ],
+      "lineCount": 4
+    },
+    "KeyboardKeyHandler_OK": {
+      "returnType": "bool8",
+      "signature": "static bool8 KeyboardKeyHandler_OK(u8 input)",
+      "paramsRaw": "u8 input",
+      "body": "TryStartButtonFlash(BUTTON_OK, TRUE, FALSE);\n    if (input == INPUT_A_BUTTON)\n    {\n        PlaySE(SE_SELECT);\n        sNamingScreen->state = STATE_PRESSED_OK;\n        return TRUE;\n    }\n    else\n        return FALSE;",
+      "callsTo": [
+        "PlaySE",
+        "TryStartButtonFlash"
+      ],
+      "lineCount": 9
+    },
+    "SwapKeyboardPage": {
+      "returnType": "bool8",
+      "signature": "static bool8 SwapKeyboardPage(void)",
+      "paramsRaw": "void",
+      "body": "sNamingScreen->state = STATE_START_PAGE_SWAP;\n    return TRUE;",
+      "callsTo": [],
+      "lineCount": 2
+    },
+    "CreateInputHandlerTask": {
+      "returnType": "void",
+      "signature": "static void CreateInputHandlerTask(void)",
+      "paramsRaw": "void",
+      "body": "CreateTask(Task_HandleInput, 1);",
+      "callsTo": [
+        "CreateTask"
+      ],
+      "lineCount": 1
+    },
+    "GetInputEvent": {
+      "returnType": "u8",
+      "signature": "static u8 GetInputEvent(void)",
+      "paramsRaw": "void",
+      "body": "u8 taskId = FindTaskIdByFunc(Task_HandleInput);\n\n    return gTasks[taskId].tKeyboardEvent;",
+      "callsTo": [
+        "FindTaskIdByFunc"
+      ],
+      "lineCount": 3
+    },
+    "SetInputState": {
+      "returnType": "void",
+      "signature": "static void SetInputState(u8 state)",
+      "paramsRaw": "u8 state",
+      "body": "u8 taskId = FindTaskIdByFunc(Task_HandleInput);\n\n    gTasks[taskId].tState = state;",
+      "callsTo": [
+        "FindTaskIdByFunc"
+      ],
+      "lineCount": 3
+    },
+    "Task_HandleInput": {
+      "returnType": "void",
+      "signature": "static void Task_HandleInput(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "sInputFuncs[gTasks[taskId].tState](&gTasks[taskId]);",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "Input_Disabled": {
+      "returnType": "void",
+      "signature": "static void Input_Disabled(struct Task *task)",
+      "paramsRaw": "struct Task *task",
+      "body": "task->tKeyboardEvent = INPUT_NONE;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "Input_Enabled": {
+      "returnType": "void",
+      "signature": "static void Input_Enabled(struct Task *task)",
+      "paramsRaw": "struct Task *task",
+      "body": "task->tKeyboardEvent = INPUT_NONE;\n\n    if (JOY_NEW(A_BUTTON))\n        task->tKeyboardEvent = INPUT_A_BUTTON;\n    else if (JOY_NEW(B_BUTTON))\n        task->tKeyboardEvent = INPUT_B_BUTTON;\n    else if (JOY_NEW(SELECT_BUTTON))\n        task->tKeyboardEvent = INPUT_SELECT;\n    else if (JOY_NEW(START_BUTTON))\n        task->tKeyboardEvent = INPUT_START;\n    else\n        HandleDpadMovement(task);",
+      "callsTo": [
+        "HandleDpadMovement",
+        "JOY_NEW"
+      ],
+      "lineCount": 12
+    },
+    "Input_Override": {
+      "returnType": "void",
+      "signature": "static void Input_Override(struct Task *task)",
+      "paramsRaw": "struct Task *task",
+      "body": "task->tKeyboardEvent = INPUT_NONE;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "HandleDpadMovement": {
+      "returnType": "void",
+      "signature": "static void HandleDpadMovement(struct Task *task)",
+      "paramsRaw": "struct Task *task",
+      "body": "const s16 sDpadDeltaX[] =\n    {\n        [INPUT_NONE]       = 0,\n        [INPUT_DPAD_UP]    = 0,\n        [INPUT_DPAD_DOWN]  = 0,\n        [INPUT_DPAD_LEFT]  = -1,\n        [INPUT_DPAD_RIGHT] = 1\n    };\n\n    const s16 sDpadDeltaY[] =\n    {\n        [INPUT_NONE]       = 0,\n        [INPUT_DPAD_UP]    = -1,\n        [INPUT_DPAD_DOWN]  = 1,\n        [INPUT_DPAD_LEFT]  = 0,\n        [INPUT_DPAD_RIGHT] = 0\n    };\n\n    const s16 sKeyRowToButtonRow[KBROW_COUNT] = {0, 1, 1, 2};\n    const s16 sButtonRowToKeyRow[BUTTON_COUNT] = {0, 0, 3};\n\n    s16 cursorX;\n    s16 cursorY;\n    u16 input;\n    s16 prevCursorX;\n\n    GetCursorPos(&cursorX, &cursorY);\n    input = INPUT_NONE;\n    if (JOY_REPEAT(DPAD_UP))\n        input = INPUT_DPAD_UP;\n    if (JOY_REPEAT(DPAD_DOWN))\n        input = INPUT_DPAD_DOWN;\n    if (JOY_REPEAT(DPAD_LEFT))\n        input = INPUT_DPAD_LEFT;\n    if (JOY_REPEAT(DPAD_RIGHT))\n        input = INPUT_DPAD_RIGHT;\n\n     \n    prevCursorX = cursorX;\n    cursorX += sDpadDeltaX[input];\n    cursorY += sDpadDeltaY[input];\n\n     \n    if (cursorX < 0)\n        cursorX = GetCurrentPageColumnCount();\n    if (cursorX > GetCurrentPageColumnCount())\n        cursorX = 0;\n\n\n     \n    if (sDpadDeltaX[input] != 0)\n    {\n        if (cursorX == GetCurrentPageColumnCount())\n        {\n             \n             \n            task->tButtonId = cursorY;\n            cursorY = sKeyRowToButtonRow[cursorY];\n        }\n        else if (prevCursorX == GetCurrentPageColumnCount())\n        {\n             \n             \n             \n            if (cursorY == BUTTON_COUNT / 2)\n                cursorY = task->tButtonId;\n            else\n                cursorY = sButtonRowToKeyRow[cursorY];\n        }\n    }\n\n     \n    if (cursorX == GetCurrentPageColumnCount())\n    {\n         \n         \n        if (cursorY < 0)\n            cursorY = BUTTON_COUNT - 1;\n        if (cursorY >= BUTTON_COUNT)\n            cursorY = 0;\n\n        if (cursorY == 0)\n            task->tButtonId = BUTTON_BACK;\n        else if (cursorY == BUTTON_COUNT - 1)\n            task->tButtonId = BUTTON_OK;\n    }\n    else\n    {\n        if (cursorY < 0)\n            cursorY = KBROW_COUNT - 1;\n        if (cursorY > KBROW_COUNT - 1)\n            cursorY = 0;\n    }\n    SetCursorPos(cursorX, cursorY);",
+      "callsTo": [
+        "GetCurrentPageColumnCount",
+        "GetCursorPos",
+        "JOY_REPEAT",
+        "SetCursorPos"
+      ],
+      "lineCount": 94
+    },
+    "DrawNormalTextEntryBox": {
+      "returnType": "void",
+      "signature": "static void DrawNormalTextEntryBox(void)",
+      "paramsRaw": "void",
+      "body": "FillWindowPixelBuffer(sNamingScreen->windows[WIN_TEXT_ENTRY_BOX], PIXEL_FILL(1));\n    AddTextPrinterParameterized(sNamingScreen->windows[WIN_TEXT_ENTRY_BOX], FONT_NORMAL, sNamingScreen->template->title, 8, 1, 0, 0);\n    PutWindowTilemap(sNamingScreen->windows[WIN_TEXT_ENTRY_BOX]);",
+      "callsTo": [
+        "AddTextPrinterParameterized",
+        "FillWindowPixelBuffer",
+        "PIXEL_FILL",
+        "PutWindowTilemap"
+      ],
+      "lineCount": 3
+    },
+    "DrawMonTextEntryBox": {
+      "returnType": "void",
+      "signature": "static void DrawMonTextEntryBox(void)",
+      "paramsRaw": "void",
+      "body": "u8 buffer[48];\n\n    StringCopy(gStringVar1, gSpeciesNames[sNamingScreen->monSpecies]);\n    StringExpandPlaceholders(buffer, sNamingScreen->template->title);\n    FillWindowPixelBuffer(sNamingScreen->windows[WIN_TEXT_ENTRY_BOX], PIXEL_FILL(1));\n    AddTextPrinterParameterized(sNamingScreen->windows[WIN_TEXT_ENTRY_BOX], FONT_NORMAL, buffer, 8, 1, 0, 0);\n    PutWindowTilemap(sNamingScreen->windows[WIN_TEXT_ENTRY_BOX]);",
+      "callsTo": [
+        "AddTextPrinterParameterized",
+        "FillWindowPixelBuffer",
+        "PIXEL_FILL",
+        "PutWindowTilemap",
+        "StringCopy",
+        "StringExpandPlaceholders"
+      ],
+      "lineCount": 7
+    },
+    "DrawTextEntryBox": {
+      "returnType": "void",
+      "signature": "static void DrawTextEntryBox(void)",
+      "paramsRaw": "void",
+      "body": "sDrawTextEntryBoxFuncs[sNamingScreen->templateNum]();",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "TryDrawGenderIcon": {
+      "returnType": "void",
+      "signature": "static void TryDrawGenderIcon(void)",
+      "paramsRaw": "void",
+      "body": "sDrawGenderIconFuncs[sNamingScreen->template->addGenderIcon]();",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "DummyGenderIcon": {
+      "returnType": "void",
+      "signature": "static void DummyGenderIcon(void)",
+      "paramsRaw": "void",
+      "body": "",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "DrawGenderIcon": {
+      "returnType": "void",
+      "signature": "static void DrawGenderIcon(void)",
+      "paramsRaw": "void",
+      "body": "u8 text[2];\n    bool8 isFemale = FALSE;\n\n    StringCopy(text, gText_MaleSymbol);\n    if (sNamingScreen->monGender != MON_GENDERLESS)\n    {\n        if (sNamingScreen->monGender == MON_FEMALE)\n        {\n            StringCopy(text, gText_FemaleSymbol);\n            isFemale = TRUE;\n        }\n        AddTextPrinterParameterized3(sNamingScreen->windows[WIN_TEXT_ENTRY], FONT_NORMAL, (POKEMON_NAME_LENGTH * 4) + 64, 1, sGenderColors[isFemale], TEXT_SKIP_DRAW, text);\n    }",
+      "callsTo": [
+        "AddTextPrinterParameterized3",
+        "StringCopy"
+      ],
+      "lineCount": 13
+    },
+    "GetCharAtKeyboardPos": {
+      "returnType": "u8",
+      "signature": "static u8 GetCharAtKeyboardPos(s16 x, s16 y)",
+      "paramsRaw": "s16 x, s16 y",
+      "body": "return sKeyboardChars[CurrentPageToKeyboardId()][y][x];",
+      "callsTo": [
+        "CurrentPageToKeyboardId"
+      ],
+      "lineCount": 1
+    },
+    "GetTextEntryPosition": {
+      "returnType": "u8",
+      "signature": "static u8 GetTextEntryPosition(void)",
+      "paramsRaw": "void",
+      "body": "u8 i;\n\n    for (i = 0; i < sNamingScreen->template->maxChars; i++)\n    {\n        if (sNamingScreen->textBuffer[i] == EOS)\n            return i;\n    }\n    return sNamingScreen->template->maxChars - 1;",
+      "callsTo": [],
+      "lineCount": 8
+    },
+    "GetPreviousTextCaretPosition": {
+      "returnType": "u8",
+      "signature": "static u8 GetPreviousTextCaretPosition(void)",
+      "paramsRaw": "void",
+      "body": "s8 i;\n\n    for (i = sNamingScreen->template->maxChars - 1; i > 0; i--)\n    {\n        if (sNamingScreen->textBuffer[i] != EOS)\n            return i;\n    }\n    return 0;",
+      "callsTo": [],
+      "lineCount": 8
+    },
+    "DeleteTextCharacter": {
+      "returnType": "void",
+      "signature": "static void DeleteTextCharacter(void)",
+      "paramsRaw": "void",
+      "body": "u8 index;\n    u8 keyRole;\n\n    index = GetPreviousTextCaretPosition();\n    sNamingScreen->textBuffer[index] = 0;\n    DrawTextEntry();\n    CopyBgTilemapBufferToVram(3);\n    sNamingScreen->textBuffer[index] = EOS;\n    keyRole = GetKeyRoleAtCursorPos();\n\n     \n     \n    if (keyRole == KEY_ROLE_CHAR || keyRole == KEY_ROLE_BACKSPACE)\n        TryStartButtonFlash(BUTTON_BACK, FALSE, TRUE);\n    PlaySE(SE_BALL);",
+      "callsTo": [
+        "CopyBgTilemapBufferToVram",
+        "DrawTextEntry",
+        "GetKeyRoleAtCursorPos",
+        "GetPreviousTextCaretPosition",
+        "PlaySE",
+        "TryStartButtonFlash"
+      ],
+      "lineCount": 15
+    },
+    "AddTextCharacter": {
+      "returnType": "bool8",
+      "signature": "static bool8 AddTextCharacter(void)",
+      "paramsRaw": "void",
+      "body": "s16 x;\n    s16 y;\n\n    GetCursorPos(&x, &y);\n    BufferCharacter(GetCharAtKeyboardPos(x, y));\n    DrawTextEntry();\n    CopyBgTilemapBufferToVram(3);\n    PlaySE(SE_SELECT);\n\n    if (GetPreviousTextCaretPosition() != sNamingScreen->template->maxChars - 1)\n        return FALSE;\n    else\n        return TRUE;",
+      "callsTo": [
+        "BufferCharacter",
+        "CopyBgTilemapBufferToVram",
+        "DrawTextEntry",
+        "GetCharAtKeyboardPos",
+        "GetCursorPos",
+        "GetPreviousTextCaretPosition",
+        "PlaySE"
+      ],
+      "lineCount": 13
+    },
+    "BufferCharacter": {
+      "returnType": "void",
+      "signature": "static void BufferCharacter(u8 ch)",
+      "paramsRaw": "u8 ch",
+      "body": "u8 index = GetTextEntryPosition();\n    sNamingScreen->textBuffer[index] = ch;",
+      "callsTo": [
+        "GetTextEntryPosition"
+      ],
+      "lineCount": 2
+    },
+    "SaveInputText": {
+      "returnType": "void",
+      "signature": "static void SaveInputText(void)",
+      "paramsRaw": "void",
+      "body": "u8 i;\n\n    for (i = 0; i < sNamingScreen->template->maxChars; i++)\n    {\n        if (sNamingScreen->textBuffer[i] != CHAR_SPACE && sNamingScreen->textBuffer[i] != EOS)\n        {\n            StringCopyN(sNamingScreen->destBuffer, sNamingScreen->textBuffer, sNamingScreen->template->maxChars + 1);\n            break;\n        }\n    }",
+      "callsTo": [
+        "StringCopyN"
+      ],
+      "lineCount": 10
+    },
+    "LoadGfx": {
+      "returnType": "void",
+      "signature": "static void LoadGfx(void)",
+      "paramsRaw": "void",
+      "body": "LZ77UnCompWram(gNamingScreenMenu_Gfx, sNamingScreen->tileBuffer);\n    LoadBgTiles(1, sNamingScreen->tileBuffer, sizeof(sNamingScreen->tileBuffer), 0);\n    LoadBgTiles(2, sNamingScreen->tileBuffer, sizeof(sNamingScreen->tileBuffer), 0);\n    LoadBgTiles(3, sNamingScreen->tileBuffer, sizeof(sNamingScreen->tileBuffer), 0);\n    LoadSpriteSheets(sSpriteSheets);\n    LoadSpritePalettes(sSpritePalettes);",
+      "callsTo": [
+        "LZ77UnCompWram",
+        "LoadBgTiles",
+        "LoadSpritePalettes",
+        "LoadSpriteSheets"
+      ],
+      "lineCount": 6
+    },
+    "CreateHelperTasks": {
+      "returnType": "void",
+      "signature": "static void CreateHelperTasks(void)",
+      "paramsRaw": "void",
+      "body": "CreateInputHandlerTask();\n    CreateButtonFlashTask();",
+      "callsTo": [
+        "CreateButtonFlashTask",
+        "CreateInputHandlerTask"
+      ],
+      "lineCount": 2
+    },
+    "LoadPalettes": {
+      "returnType": "void",
+      "signature": "static void LoadPalettes(void)",
+      "paramsRaw": "void",
+      "body": "LoadPalette(gNamingScreenMenu_Pal, BG_PLTT_ID(0), sizeof(gNamingScreenMenu_Pal));\n    LoadPalette(sKeyboard_Pal, BG_PLTT_ID(10), sizeof(sKeyboard_Pal));\n    LoadPalette(GetTextWindowPalette(2), BG_PLTT_ID(11), PLTT_SIZE_4BPP);",
+      "callsTo": [
+        "BG_PLTT_ID",
+        "GetTextWindowPalette",
+        "LoadPalette"
+      ],
+      "lineCount": 3
+    },
+    "DrawBgTilemap": {
+      "returnType": "void",
+      "signature": "static void DrawBgTilemap(u8 bg, const void *src)",
+      "paramsRaw": "u8 bg, const void *src",
+      "body": "CopyToBgTilemapBuffer(bg, src, 0, 0);",
+      "callsTo": [
+        "CopyToBgTilemapBuffer"
+      ],
+      "lineCount": 1
+    },
+    "NamingScreen_Dummy": {
+      "returnType": "void",
+      "signature": "static void NamingScreen_Dummy(u8 bg, u8 page)",
+      "paramsRaw": "u8 bg, u8 page",
+      "body": "",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "DrawTextEntry": {
+      "returnType": "void",
+      "signature": "static void DrawTextEntry(void)",
+      "paramsRaw": "void",
+      "body": "u8 i;\n    u8 temp[2];\n    u16 extraWidth;\n    u8 maxChars = sNamingScreen->template->maxChars;\n    u16 x = sNamingScreen->inputCharBaseXPos - 0x40;\n\n    FillWindowPixelBuffer(sNamingScreen->windows[WIN_TEXT_ENTRY], PIXEL_FILL(1));\n\n    for (i = 0; i < maxChars; i++)\n    {\n        temp[0] = sNamingScreen->textBuffer[i];\n        temp[1] = gText_ExpandedPlaceholder_Empty[0];\n        extraWidth = (IsWideLetter(temp[0]) == TRUE) ? 2 : 0;\n\n        AddTextPrinterParameterized(sNamingScreen->windows[WIN_TEXT_ENTRY], FONT_NORMAL, temp, i * 8 + x + extraWidth, 1, TEXT_SKIP_DRAW, NULL);\n    }\n\n    TryDrawGenderIcon();\n    CopyWindowToVram(sNamingScreen->windows[WIN_TEXT_ENTRY], COPYWIN_GFX);\n    PutWindowTilemap(sNamingScreen->windows[WIN_TEXT_ENTRY]);",
+      "callsTo": [
+        "AddTextPrinterParameterized",
+        "CopyWindowToVram",
+        "FillWindowPixelBuffer",
+        "IsWideLetter",
+        "PIXEL_FILL",
+        "PutWindowTilemap",
+        "TryDrawGenderIcon"
+      ],
+      "lineCount": 20
+    },
+    "PrintKeyboardKeys": {
+      "returnType": "void",
+      "signature": "static void PrintKeyboardKeys(u8 window, u8 page)",
+      "paramsRaw": "u8 window, u8 page",
+      "body": "u8 i;\n\n    FillWindowPixelBuffer(window, sFillValues[page]);\n\n    for (i = 0; i < KBROW_COUNT; i++)\n        AddTextPrinterParameterized3(window, FONT_NORMAL, 0, i * 16 + 1, sKeyboardTextColors[page], 0, sNamingScreenKeyboardText[page][i]);\n\n    PutWindowTilemap(window);",
+      "callsTo": [
+        "AddTextPrinterParameterized3",
+        "FillWindowPixelBuffer",
+        "PutWindowTilemap"
+      ],
+      "lineCount": 8
+    },
+    "DrawKeyboardPageOnDeck": {
+      "returnType": "void",
+      "signature": "static void DrawKeyboardPageOnDeck(void)",
+      "paramsRaw": "void",
+      "body": "u8 bg;\n    u8 bg_;\n    u8 windowId;\n    u8 bg1Priority = GetGpuReg(REG_OFFSET_BG1CNT) & 3;\n    u8 bg2Priority = GetGpuReg(REG_OFFSET_BG2CNT) & 3;\n\n    if (bg1Priority > bg2Priority)\n    {\n        bg = 1;\n        bg_ = 1;\n        windowId = sNamingScreen->windows[WIN_KB_PAGE_1];\n    }\n    else\n    {\n        bg = 2;\n        bg_ = 2;\n        windowId = sNamingScreen->windows[WIN_KB_PAGE_2];\n    }\n\n    DrawBgTilemap(bg, sNextKeyboardPageTilemaps[sNamingScreen->currentPage]);\n    PrintKeyboardKeys(windowId, CurrentPageToNextKeyboardId());\n    NamingScreen_Dummy(bg, CurrentPageToNextKeyboardId());\n    CopyBgTilemapBufferToVram(bg_);",
+      "callsTo": [
+        "CopyBgTilemapBufferToVram",
+        "CurrentPageToNextKeyboardId",
+        "DrawBgTilemap",
+        "GetGpuReg",
+        "NamingScreen_Dummy",
+        "PrintKeyboardKeys"
+      ],
+      "lineCount": 23
+    },
+    "PrintControls": {
+      "returnType": "void",
+      "signature": "static void PrintControls(void)",
+      "paramsRaw": "void",
+      "body": "const u8 color[3] = { TEXT_DYNAMIC_COLOR_6, TEXT_COLOR_WHITE, TEXT_COLOR_DARK_GRAY };\n\n    FillWindowPixelBuffer(sNamingScreen->windows[WIN_BANNER], PIXEL_FILL(15));\n    AddTextPrinterParameterized3(sNamingScreen->windows[WIN_BANNER], FONT_SMALL, 2, 1, color, 0, gText_MoveOkBack);\n    PutWindowTilemap(sNamingScreen->windows[WIN_BANNER]);\n    CopyWindowToVram(sNamingScreen->windows[WIN_BANNER], COPYWIN_FULL);",
+      "callsTo": [
+        "AddTextPrinterParameterized3",
+        "CopyWindowToVram",
+        "FillWindowPixelBuffer",
+        "PIXEL_FILL",
+        "PutWindowTilemap"
+      ],
+      "lineCount": 6
+    },
+    "CB2_NamingScreen": {
+      "returnType": "void",
+      "signature": "static void CB2_NamingScreen(void)",
+      "paramsRaw": "void",
+      "body": "RunTasks();\n    AnimateSprites();\n    BuildOamBuffer();\n    UpdatePaletteFade();",
+      "callsTo": [
+        "AnimateSprites",
+        "BuildOamBuffer",
+        "RunTasks",
+        "UpdatePaletteFade"
+      ],
+      "lineCount": 4
+    },
+    "ResetVHBlank": {
+      "returnType": "void",
+      "signature": "static void ResetVHBlank(void)",
+      "paramsRaw": "void",
+      "body": "SetVBlankCallback(NULL);\n    SetHBlankCallback(NULL);",
+      "callsTo": [
+        "SetHBlankCallback",
+        "SetVBlankCallback"
+      ],
+      "lineCount": 2
+    },
+    "SetVBlank": {
+      "returnType": "void",
+      "signature": "static void SetVBlank(void)",
+      "paramsRaw": "void",
+      "body": "SetVBlankCallback(VBlankCB_NamingScreen);",
+      "callsTo": [
+        "SetVBlankCallback"
+      ],
+      "lineCount": 1
+    },
+    "VBlankCB_NamingScreen": {
+      "returnType": "void",
+      "signature": "static void VBlankCB_NamingScreen(void)",
+      "paramsRaw": "void",
+      "body": "LoadOam();\n    ProcessSpriteCopyRequests();\n    TransferPlttBuffer();\n    SetGpuReg(REG_OFFSET_BG1VOFS, sNamingScreen->bg1vOffset);\n    SetGpuReg(REG_OFFSET_BG2VOFS, sNamingScreen->bg2vOffset);\n    SetGpuReg(REG_OFFSET_BG1CNT, GetGpuReg(REG_OFFSET_BG1CNT) & 0xFFFC);\n    SetGpuRegBits(REG_OFFSET_BG1CNT, sNamingScreen->bg1Priority);\n    SetGpuReg(REG_OFFSET_BG2CNT, GetGpuReg(REG_OFFSET_BG2CNT) & 0xFFFC);\n    SetGpuRegBits(REG_OFFSET_BG2CNT, sNamingScreen->bg2Priority);",
+      "callsTo": [
+        "GetGpuReg",
+        "LoadOam",
+        "ProcessSpriteCopyRequests",
+        "SetGpuReg",
+        "SetGpuRegBits",
+        "TransferPlttBuffer"
+      ],
+      "lineCount": 9
+    },
+    "NamingScreen_ShowBgs": {
+      "returnType": "void",
+      "signature": "static void NamingScreen_ShowBgs(void)",
+      "paramsRaw": "void",
+      "body": "ShowBg(0);\n    ShowBg(1);\n    ShowBg(2);\n    ShowBg(3);",
+      "callsTo": [
+        "ShowBg"
+      ],
+      "lineCount": 4
+    },
+    "IsWideLetter": {
+      "returnType": "bool8",
+      "signature": "static bool8 IsWideLetter(u8 character)",
+      "paramsRaw": "u8 character",
+      "body": "u8 i;\n\n    for (i = 0; sText_AlphabetUpperLower[i] != EOS; i++)\n    {\n        if (character == sText_AlphabetUpperLower[i])\n            return FALSE;\n    }\n    return FALSE;",
+      "callsTo": [],
+      "lineCount": 8
+    }
+  }
+}

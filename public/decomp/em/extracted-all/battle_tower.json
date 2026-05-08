@@ -1,0 +1,960 @@
+{
+  "srcFile": "src/battle_tower.c",
+  "count": 80,
+  "functions": {
+    "CallBattleTowerFunc": {
+      "returnType": "void",
+      "signature": "void CallBattleTowerFunc(void)",
+      "paramsRaw": "void",
+      "body": "sBattleTowerFuncs[gSpecialVar_0x8004]();",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "InitTowerChallenge": {
+      "returnType": "void",
+      "signature": "static void InitTowerChallenge(void)",
+      "paramsRaw": "void",
+      "body": "u32 lvlMode = gSaveBlock2Ptr->frontier.lvlMode;\n    u32 battleMode = VarGet(VAR_FRONTIER_BATTLE_MODE);\n\n    gSaveBlock2Ptr->frontier.challengeStatus = CHALLENGE_STATUS_SAVING;\n    gSaveBlock2Ptr->frontier.curChallengeBattleNum = 0;\n    gSaveBlock2Ptr->frontier.challengePaused = FALSE;\n    gSaveBlock2Ptr->frontier.disableRecordBattle = FALSE;\n    ResetFrontierTrainerIds();\n    if (!(gSaveBlock2Ptr->frontier.winStreakActiveFlags & sWinStreakFlags[battleMode][lvlMode]))\n        gSaveBlock2Ptr->frontier.towerWinStreaks[battleMode][lvlMode] = 0;\n\n    ValidateBattleTowerRecordChecksums();\n    SetDynamicWarp(0, gSaveBlock1Ptr->location.mapGroup, gSaveBlock1Ptr->location.mapNum, WARP_ID_NONE);\n    gTrainerBattleOpponent_A = 0;",
+      "callsTo": [
+        "ResetFrontierTrainerIds",
+        "SetDynamicWarp",
+        "ValidateBattleTowerRecordChecksums",
+        "VarGet"
+      ],
+      "lineCount": 14
+    },
+    "GetTowerData": {
+      "returnType": "void",
+      "signature": "static void GetTowerData(void)",
+      "paramsRaw": "void",
+      "body": "u32 lvlMode = gSaveBlock2Ptr->frontier.lvlMode;\n    u32 battleMode = VarGet(VAR_FRONTIER_BATTLE_MODE);\n\n    switch (gSpecialVar_0x8005)\n    {\n    case 0:\n        break;\n    case TOWER_DATA_WIN_STREAK:\n        gSpecialVar_Result = GetCurrentBattleTowerWinStreak(lvlMode, battleMode);\n        break;\n    case TOWER_DATA_WIN_STREAK_ACTIVE:\n        gSpecialVar_Result = ((gSaveBlock2Ptr->frontier.winStreakActiveFlags & sWinStreakFlags[battleMode][lvlMode]) != 0);\n        break;\n    case TOWER_DATA_LVL_MODE:\n        gSaveBlock2Ptr->frontier.towerLvlMode = gSaveBlock2Ptr->frontier.lvlMode;\n        break;\n    }",
+      "callsTo": [
+        "GetCurrentBattleTowerWinStreak",
+        "VarGet"
+      ],
+      "lineCount": 17
+    },
+    "SetTowerData": {
+      "returnType": "void",
+      "signature": "static void SetTowerData(void)",
+      "paramsRaw": "void",
+      "body": "u32 lvlMode = gSaveBlock2Ptr->frontier.lvlMode;\n    u32 battleMode = VarGet(VAR_FRONTIER_BATTLE_MODE);\n\n    switch (gSpecialVar_0x8005)\n    {\n    case 0:\n        break;\n    case TOWER_DATA_WIN_STREAK:\n        gSaveBlock2Ptr->frontier.towerWinStreaks[battleMode][lvlMode] = gSpecialVar_0x8006;\n        break;\n    case TOWER_DATA_WIN_STREAK_ACTIVE:\n        if (gSpecialVar_0x8006)\n            gSaveBlock2Ptr->frontier.winStreakActiveFlags |= sWinStreakFlags[battleMode][lvlMode];\n        else\n            gSaveBlock2Ptr->frontier.winStreakActiveFlags &= sWinStreakMasks[battleMode][lvlMode];\n        break;\n    case TOWER_DATA_LVL_MODE:\n        gSaveBlock2Ptr->frontier.towerLvlMode = gSaveBlock2Ptr->frontier.lvlMode;\n        break;\n    }",
+      "callsTo": [
+        "VarGet"
+      ],
+      "lineCount": 20
+    },
+    "SetTowerBattleWon": {
+      "returnType": "void",
+      "signature": "static void SetTowerBattleWon(void)",
+      "paramsRaw": "void",
+      "body": "if (gTrainerBattleOpponent_A == TRAINER_EREADER)\n        ClearEReaderTrainer(&gSaveBlock2Ptr->frontier.ereaderTrainer);\n\n     \n    if (gSaveBlock2Ptr->frontier.towerNumWins < MAX_STREAK)\n        gSaveBlock2Ptr->frontier.towerNumWins++;\n\n    gSaveBlock2Ptr->frontier.curChallengeBattleNum++;\n    SaveCurrentWinStreak();\n    gSpecialVar_Result = gSaveBlock2Ptr->frontier.curChallengeBattleNum;",
+      "callsTo": [
+        "ClearEReaderTrainer",
+        "SaveCurrentWinStreak"
+      ],
+      "lineCount": 10
+    },
+    "ChooseSpecialBattleTowerTrainer": {
+      "returnType": "bool8",
+      "signature": "static bool8 ChooseSpecialBattleTowerTrainer(void)",
+      "paramsRaw": "void",
+      "body": "s32 i, j, validMons;\n    s32 trainerIds[9];\n    s32 idsCount = 0;\n    s32 winStreak = 0;\n    u8 lvlMode = gSaveBlock2Ptr->frontier.lvlMode;\n    u8 battleMode = VarGet(VAR_FRONTIER_BATTLE_MODE);\n\n    if (VarGet(VAR_FRONTIER_FACILITY) != FRONTIER_FACILITY_TOWER)\n        return FALSE;\n\n    winStreak = GetCurrentBattleTowerWinStreak(lvlMode, battleMode);\n    for (i = 0; i < BATTLE_TOWER_RECORD_COUNT; i++)\n    {\n        u32 *record = (u32 *)(&gSaveBlock2Ptr->frontier.towerRecords[i]);\n        u32 recordHasData = 0;\n        u32 checksum = 0;\n        for (j = 0; j < (sizeof(struct EmeraldBattleTowerRecord) - 4) / 4; j++)  \n        {\n            recordHasData |= record[j];\n            checksum += record[j];\n        }\n        validMons = 0;\n        for (j = 0; j < MAX_FRONTIER_PARTY_SIZE; j++)\n        {\n            if (gSaveBlock2Ptr->frontier.towerRecords[i].party[j].species != SPECIES_NONE\n                && gSaveBlock2Ptr->frontier.towerRecords[i].party[j].level <= GetFrontierEnemyMonLevel(lvlMode))\n                validMons++;\n        }\n\n        if (validMons >= sBattleTowerPartySizes2[battleMode]\n            && gSaveBlock2Ptr->frontier.towerRecords[i].winStreak == winStreak\n            && gSaveBlock2Ptr->frontier.towerRecords[i].lvlMode == lvlMode\n            && recordHasData\n            && gSaveBlock2Ptr->frontier.towerRecords[i].checksum == checksum)\n        {\n            trainerIds[idsCount] = i + TRAINER_RECORD_MIXING_FRIEND;\n            idsCount++;\n        }\n    }\n\n    if (battleMode == FRONTIER_MODE_SINGLES)\n    {\n        ValidateApprenticesChecksums();\n        for (i = 0; i < APPRENTICE_COUNT; i++)\n        {\n            if (gSaveBlock2Ptr->apprentices[i].lvlMode != 0\n                && sApprenticeChallengeThreshold[gSaveBlock2Ptr->apprentices[i].numQuestions] == winStreak\n                && gSaveBlock2Ptr->apprentices[i].lvlMode - 1 == lvlMode)\n            {\n                trainerIds[idsCount] = i + TRAINER_RECORD_MIXING_APPRENTICE;\n                idsCount++;\n            }\n        }\n    }\n\n    if (idsCount != 0)\n    {\n        gTrainerBattleOpponent_A = trainerIds[Random() % idsCount];\n        return TRUE;\n    }\n    else\n    {\n        return FALSE;\n    }",
+      "callsTo": [
+        "GetCurrentBattleTowerWinStreak",
+        "GetFrontierEnemyMonLevel",
+        "Random",
+        "ValidateApprenticesChecksums",
+        "VarGet"
+      ],
+      "lineCount": 64
+    },
+    "SetNextFacilityOpponent": {
+      "returnType": "void",
+      "signature": "static void SetNextFacilityOpponent(void)",
+      "paramsRaw": "void",
+      "body": "u32 lvlMode = gSaveBlock2Ptr->frontier.lvlMode;\n    if (lvlMode == FRONTIER_LVL_TENT)\n    {\n        SetNextBattleTentOpponent();\n    }\n    else\n    {\n        u16 id;\n        u32 battleMode = VarGet(VAR_FRONTIER_BATTLE_MODE);\n        u16 winStreak = GetCurrentFacilityWinStreak();\n        u32 challengeNum = winStreak / FRONTIER_STAGES_PER_CHALLENGE;\n        SetFacilityPtrsGetLevel();\n\n        if (battleMode == FRONTIER_MODE_MULTIS || battleMode == FRONTIER_MODE_LINK_MULTIS)\n        {\n            id = gSaveBlock2Ptr->frontier.curChallengeBattleNum;\n            gTrainerBattleOpponent_A = gSaveBlock2Ptr->frontier.trainerIds[id * 2];\n            gTrainerBattleOpponent_B = gSaveBlock2Ptr->frontier.trainerIds[id * 2 + 1];\n            SetBattleFacilityTrainerGfxId(gTrainerBattleOpponent_A, 0);\n            SetBattleFacilityTrainerGfxId(gTrainerBattleOpponent_B, 1);\n        }\n        else if (ChooseSpecialBattleTowerTrainer())\n        {\n            SetBattleFacilityTrainerGfxId(gTrainerBattleOpponent_A, 0);\n            gSaveBlock2Ptr->frontier.trainerIds[gSaveBlock2Ptr->frontier.curChallengeBattleNum] = gTrainerBattleOpponent_A;\n        }\n        else\n        {\n            s32 i;\n            while (1)\n            {\n                id = GetRandomScaledFrontierTrainerId(challengeNum, gSaveBlock2Ptr->frontier.curChallengeBattleNum);\n\n                 \n                for (i = 0; i < gSaveBlock2Ptr->frontier.curChallengeBattleNum; i++)\n                {\n                    if (gSaveBlock2Ptr->frontier.trainerIds[i] == id)\n                        break;\n                }\n                if (i == gSaveBlock2Ptr->frontier.curChallengeBattleNum)\n                    break;\n            }\n\n            gTrainerBattleOpponent_A = id;\n            SetBattleFacilityTrainerGfxId(gTrainerBattleOpponent_A, 0);\n            if (gSaveBlock2Ptr->frontier.curChallengeBattleNum + 1 < FRONTIER_STAGES_PER_CHALLENGE)\n                gSaveBlock2Ptr->frontier.trainerIds[gSaveBlock2Ptr->frontier.curChallengeBattleNum] = gTrainerBattleOpponent_A;\n        }\n    }",
+      "callsTo": [
+        "ChooseSpecialBattleTowerTrainer",
+        "GetCurrentFacilityWinStreak",
+        "GetRandomScaledFrontierTrainerId",
+        "SetBattleFacilityTrainerGfxId",
+        "SetFacilityPtrsGetLevel",
+        "SetNextBattleTentOpponent",
+        "VarGet"
+      ],
+      "lineCount": 49
+    },
+    "GetRandomScaledFrontierTrainerId": {
+      "returnType": "u16",
+      "signature": "u16 GetRandomScaledFrontierTrainerId(u8 challengeNum, u8 battleNum)",
+      "paramsRaw": "u8 challengeNum, u8 battleNum",
+      "body": "u16 trainerId;\n\n    if (challengeNum <= 7)\n    {\n        if (battleNum == FRONTIER_STAGES_PER_CHALLENGE - 1)\n        {\n             \n            trainerId = (sFrontierTrainerIdRangesHard[challengeNum][1] - sFrontierTrainerIdRangesHard[challengeNum][0]) + 1;\n            trainerId = sFrontierTrainerIdRangesHard[challengeNum][0] + (Random() % trainerId);\n        }\n        else\n        {\n            trainerId = (sFrontierTrainerIdRanges[challengeNum][1] - sFrontierTrainerIdRanges[challengeNum][0]) + 1;\n            trainerId = sFrontierTrainerIdRanges[challengeNum][0] + (Random() % trainerId);\n        }\n    }\n    else\n    {\n         \n        trainerId = (sFrontierTrainerIdRanges[7][1] - sFrontierTrainerIdRanges[7][0]) + 1;\n        trainerId = sFrontierTrainerIdRanges[7][0] + (Random() % trainerId);\n    }\n\n    return trainerId;",
+      "callsTo": [
+        "Random"
+      ],
+      "lineCount": 24
+    },
+    "SetBattleFacilityTrainerGfxId": {
+      "returnType": "void",
+      "signature": "void SetBattleFacilityTrainerGfxId(u16 trainerId, u8 tempVarId)",
+      "paramsRaw": "u16 trainerId, u8 tempVarId",
+      "body": "u32 i;\n    u8 facilityClass;\n    u8 trainerObjectGfxId;\n\n    SetFacilityPtrsGetLevel();\n    if (trainerId == TRAINER_EREADER)\n    {\n        facilityClass = gSaveBlock2Ptr->frontier.ereaderTrainer.facilityClass;\n    }\n    else if (trainerId == TRAINER_FRONTIER_BRAIN)\n    {\n        SetFrontierBrainObjEventGfx_2();\n        return;\n    }\n    else if (trainerId < FRONTIER_TRAINERS_COUNT)\n    {\n        facilityClass = gFacilityTrainers[trainerId].facilityClass;\n    }\n    else if (trainerId < TRAINER_RECORD_MIXING_APPRENTICE)\n    {\n        facilityClass = gSaveBlock2Ptr->frontier.towerRecords[trainerId - TRAINER_RECORD_MIXING_FRIEND].facilityClass;\n    }\n    else\n    {\n        facilityClass = gApprentices[gSaveBlock2Ptr->apprentices[trainerId - TRAINER_RECORD_MIXING_APPRENTICE].id].facilityClass;\n    }\n\n     \n    for (i = 0; i < ARRAY_COUNT(gTowerMaleFacilityClasses); i++)\n    {\n        if (gTowerMaleFacilityClasses[i] == facilityClass)\n            break;\n    }\n    if (i != ARRAY_COUNT(gTowerMaleFacilityClasses))\n    {\n        trainerObjectGfxId = gTowerMaleTrainerGfxIds[i];\n        switch (tempVarId)\n        {\n        case 0:\n        default:\n            VarSet(VAR_OBJ_GFX_ID_0, trainerObjectGfxId);\n            return;\n        case 1:\n            VarSet(VAR_OBJ_GFX_ID_1, trainerObjectGfxId);\n            return;\n        case 15:\n            VarSet(VAR_OBJ_GFX_ID_E, trainerObjectGfxId);\n            return;\n        }\n    }\n\n     \n    for (i = 0; i < ARRAY_COUNT(gTowerFemaleFacilityClasses); i++)\n    {\n        if (gTowerFemaleFacilityClasses[i] == facilityClass)\n            break;\n    }\n    if (i != ARRAY_COUNT(gTowerFemaleFacilityClasses))\n    {\n        trainerObjectGfxId = gTowerFemaleTrainerGfxIds[i];\n        switch (tempVarId)\n        {\n        case 0:\n        default:\n            VarSet(VAR_OBJ_GFX_ID_0, trainerObjectGfxId);\n            return;\n        case 1:\n            VarSet(VAR_OBJ_GFX_ID_1, trainerObjectGfxId);\n            return;\n        case 15:\n            VarSet(VAR_OBJ_GFX_ID_E, trainerObjectGfxId);\n            return;\n        }\n    }\n\n    switch (tempVarId)\n    {\n    case 0:\n    default:\n        VarSet(VAR_OBJ_GFX_ID_0, OBJ_EVENT_GFX_BOY_1);\n        return;\n    case 1:\n        VarSet(VAR_OBJ_GFX_ID_1, OBJ_EVENT_GFX_BOY_1);\n        return;\n    case 15:\n        VarSet(VAR_OBJ_GFX_ID_E, OBJ_EVENT_GFX_BOY_1);\n        return;\n    }",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "SetFacilityPtrsGetLevel",
+        "SetFrontierBrainObjEventGfx_2",
+        "VarSet"
+      ],
+      "lineCount": 88
+    },
+    "SetEReaderTrainerGfxId": {
+      "returnType": "void",
+      "signature": "void SetEReaderTrainerGfxId(void)",
+      "paramsRaw": "void",
+      "body": "SetBattleFacilityTrainerGfxId(TRAINER_EREADER, 0);",
+      "callsTo": [
+        "SetBattleFacilityTrainerGfxId"
+      ],
+      "lineCount": 1
+    },
+    "GetBattleFacilityTrainerGfxId": {
+      "returnType": "u8",
+      "signature": "u8 GetBattleFacilityTrainerGfxId(u16 trainerId)",
+      "paramsRaw": "u16 trainerId",
+      "body": "u32 i;\n    u8 facilityClass;\n    u8 trainerObjectGfxId;\n\n    SetFacilityPtrsGetLevel();\n    if (trainerId == TRAINER_EREADER)\n    {\n        facilityClass = gSaveBlock2Ptr->frontier.ereaderTrainer.facilityClass;\n    }\n    else if (trainerId < FRONTIER_TRAINERS_COUNT)\n    {\n        facilityClass = gFacilityTrainers[trainerId].facilityClass;\n    }\n    else if (trainerId < TRAINER_RECORD_MIXING_APPRENTICE)\n    {\n        facilityClass = gSaveBlock2Ptr->frontier.towerRecords[trainerId - TRAINER_RECORD_MIXING_FRIEND].facilityClass;\n    }\n    else\n    {\n        facilityClass = gApprentices[gSaveBlock2Ptr->apprentices[trainerId - TRAINER_RECORD_MIXING_APPRENTICE].id].facilityClass;\n    }\n\n     \n    for (i = 0; i < ARRAY_COUNT(gTowerMaleFacilityClasses); i++)\n    {\n        if (gTowerMaleFacilityClasses[i] == facilityClass)\n            break;\n    }\n    if (i != ARRAY_COUNT(gTowerMaleFacilityClasses))\n    {\n        trainerObjectGfxId = gTowerMaleTrainerGfxIds[i];\n        return trainerObjectGfxId;\n    }\n\n     \n    for (i = 0; i < ARRAY_COUNT(gTowerFemaleFacilityClasses); i++)\n    {\n        if (gTowerFemaleFacilityClasses[i] == facilityClass)\n            break;\n    }\n    if (i != ARRAY_COUNT(gTowerFemaleFacilityClasses))\n    {\n        trainerObjectGfxId = gTowerFemaleTrainerGfxIds[i];\n        return trainerObjectGfxId;\n    }\n    else\n    {\n        return OBJ_EVENT_GFX_BOY_1;\n    }",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "SetFacilityPtrsGetLevel"
+      ],
+      "lineCount": 49
+    },
+    "PutNewBattleTowerRecord": {
+      "returnType": "void",
+      "signature": "void PutNewBattleTowerRecord(struct EmeraldBattleTowerRecord *newRecordEm)",
+      "paramsRaw": "struct EmeraldBattleTowerRecord *newRecordEm",
+      "body": "u16 slotValues[6];\n    u16 slotIds[6];\n    s32 i, j, k;\n    s32 slotsCount = 0;\n    struct EmeraldBattleTowerRecord *newRecord = newRecordEm;  \n\n     \n    for (i = 0; i < BATTLE_TOWER_RECORD_COUNT; i++)\n    {\n        k = 0;\n        for (j = 0; j < TRAINER_ID_LENGTH; j++)\n        {\n            if (gSaveBlock2Ptr->frontier.towerRecords[i].trainerId[j] != newRecord->trainerId[j])\n                break;\n        }\n        if (j == TRAINER_ID_LENGTH)\n        {\n            for (k = 0; k < PLAYER_NAME_LENGTH; k++)\n            {\n             \n            #ifdef BUGFIX\n                #define INDEX k\n            #else\n                #define INDEX j\n            #endif\n                if (gSaveBlock2Ptr->frontier.towerRecords[i].name[INDEX] != newRecord->name[INDEX])\n                    break;\n                if (newRecord->name[INDEX] == EOS)\n                {\n                    k = PLAYER_NAME_LENGTH;\n                    break;\n                }\n            }\n        }\n\n        if (k == PLAYER_NAME_LENGTH)\n            break;\n    }\n    if (i < BATTLE_TOWER_RECORD_COUNT)\n    {\n        gSaveBlock2Ptr->frontier.towerRecords[i] = *newRecord;\n        return;\n    }\n\n     \n    for (i = 0; i < BATTLE_TOWER_RECORD_COUNT; i++)\n    {\n        if (gSaveBlock2Ptr->frontier.towerRecords[i].winStreak == 0)\n            break;\n    }\n    if (i < BATTLE_TOWER_RECORD_COUNT)\n    {\n        gSaveBlock2Ptr->frontier.towerRecords[i] = *newRecord;\n        return;\n    }\n\n     \n    slotValues[0] = gSaveBlock2Ptr->frontier.towerRecords[0].winStreak;\n    slotIds[0] = 0;\n    slotsCount++;\n\n    for (i = 1; i < BATTLE_TOWER_RECORD_COUNT; i++)\n    {\n        for (j = 0; j < slotsCount; j++)\n        {\n            if (gSaveBlock2Ptr->frontier.towerRecords[i].winStreak < slotValues[j])\n            {\n                j = 0;\n                slotsCount = 1;\n                slotValues[0] = gSaveBlock2Ptr->frontier.towerRecords[i].winStreak;\n                slotIds[0] = i;\n                break;\n            }\n            else if (gSaveBlock2Ptr->frontier.towerRecords[i].winStreak > slotValues[j])\n            {\n                break;\n            }\n        }\n\n        if (j == slotsCount)\n        {\n            slotValues[slotsCount] = gSaveBlock2Ptr->frontier.towerRecords[i].winStreak;\n            slotIds[slotsCount] = i;\n            slotsCount++;\n        }\n    }\n\n    i = Random() % slotsCount;\n    gSaveBlock2Ptr->frontier.towerRecords[slotIds[i]] = *newRecord;",
+      "callsTo": [
+        "Random"
+      ],
+      "lineCount": 89
+    },
+    "GetFrontierTrainerFrontSpriteId": {
+      "returnType": "u8",
+      "signature": "u8 GetFrontierTrainerFrontSpriteId(u16 trainerId)",
+      "paramsRaw": "u16 trainerId",
+      "body": "SetFacilityPtrsGetLevel();\n\n    if (trainerId == TRAINER_EREADER)\n    {\n        return gFacilityClassToPicIndex[gSaveBlock2Ptr->frontier.ereaderTrainer.facilityClass];\n    }\n    else if (trainerId == TRAINER_FRONTIER_BRAIN)\n    {\n        return GetFrontierBrainTrainerPicIndex();\n    }\n    else if (trainerId < FRONTIER_TRAINERS_COUNT)\n    {\n        return gFacilityClassToPicIndex[gFacilityTrainers[trainerId].facilityClass];\n    }\n    else if (trainerId < TRAINER_RECORD_MIXING_APPRENTICE)\n    {\n        if (gBattleTypeFlags & BATTLE_TYPE_RECORDED)\n            return gFacilityClassToPicIndex[GetRecordedBattleRecordMixFriendClass()];\n        else\n            return gFacilityClassToPicIndex[gSaveBlock2Ptr->frontier.towerRecords[trainerId - TRAINER_RECORD_MIXING_FRIEND].facilityClass];\n    }\n    else\n    {\n        if (gBattleTypeFlags & BATTLE_TYPE_RECORDED)\n            return gFacilityClassToPicIndex[gApprentices[GetRecordedBattleApprenticeId()].facilityClass];\n        else\n            return gFacilityClassToPicIndex[gApprentices[gSaveBlock2Ptr->apprentices[trainerId - TRAINER_RECORD_MIXING_APPRENTICE].id].facilityClass];\n    }",
+      "callsTo": [
+        "GetFrontierBrainTrainerPicIndex",
+        "GetRecordedBattleApprenticeId",
+        "GetRecordedBattleRecordMixFriendClass",
+        "SetFacilityPtrsGetLevel"
+      ],
+      "lineCount": 28
+    },
+    "GetFrontierOpponentClass": {
+      "returnType": "u8",
+      "signature": "u8 GetFrontierOpponentClass(u16 trainerId)",
+      "paramsRaw": "u16 trainerId",
+      "body": "u8 trainerClass = 0;\n    SetFacilityPtrsGetLevel();\n\n    if (trainerId == TRAINER_EREADER)\n    {\n        trainerClass = gFacilityClassToTrainerClass[gSaveBlock2Ptr->frontier.ereaderTrainer.facilityClass];\n    }\n    else if (trainerId == TRAINER_FRONTIER_BRAIN)\n    {\n        return GetFrontierBrainTrainerClass();\n    }\n    else if (trainerId == TRAINER_STEVEN_PARTNER)\n    {\n        trainerClass = gTrainers[TRAINER_STEVEN].trainerClass;\n    }\n    else if (trainerId < FRONTIER_TRAINERS_COUNT)\n    {\n        trainerClass = gFacilityClassToTrainerClass[gFacilityTrainers[trainerId].facilityClass];\n    }\n    else if (trainerId < TRAINER_RECORD_MIXING_APPRENTICE)\n    {\n        if (gBattleTypeFlags & BATTLE_TYPE_RECORDED)\n        {\n            trainerClass = gFacilityClassToTrainerClass[GetRecordedBattleRecordMixFriendClass()];\n        }\n        else\n        {\n            trainerClass = gFacilityClassToTrainerClass[gSaveBlock2Ptr->frontier.towerRecords[trainerId - TRAINER_RECORD_MIXING_FRIEND].facilityClass];\n        }\n    }\n    else\n    {\n        if (gBattleTypeFlags & BATTLE_TYPE_RECORDED)\n        {\n            trainerClass = gFacilityClassToTrainerClass[gApprentices[GetRecordedBattleApprenticeId()].facilityClass];\n        }\n        else\n        {\n            trainerClass = gFacilityClassToTrainerClass[gApprentices[gSaveBlock2Ptr->apprentices[trainerId - TRAINER_RECORD_MIXING_APPRENTICE].id].facilityClass];\n        }\n    }\n\n    return trainerClass;",
+      "callsTo": [
+        "GetFrontierBrainTrainerClass",
+        "GetRecordedBattleApprenticeId",
+        "GetRecordedBattleRecordMixFriendClass",
+        "SetFacilityPtrsGetLevel"
+      ],
+      "lineCount": 43
+    },
+    "GetFrontierTrainerFacilityClass": {
+      "returnType": "u8",
+      "signature": "static u8 GetFrontierTrainerFacilityClass(u16 trainerId)",
+      "paramsRaw": "u16 trainerId",
+      "body": "u8 facilityClass;\n    SetFacilityPtrsGetLevel();\n\n    if (trainerId == TRAINER_EREADER)\n    {\n        facilityClass = gSaveBlock2Ptr->frontier.ereaderTrainer.facilityClass;\n    }\n    else if (trainerId < FRONTIER_TRAINERS_COUNT)\n    {\n        facilityClass = gFacilityTrainers[trainerId].facilityClass;\n    }\n    else if (trainerId < TRAINER_RECORD_MIXING_APPRENTICE)\n    {\n        if (gBattleTypeFlags & BATTLE_TYPE_RECORDED)\n            facilityClass = GetRecordedBattleRecordMixFriendClass();\n        else\n            facilityClass = gSaveBlock2Ptr->frontier.towerRecords[trainerId - TRAINER_RECORD_MIXING_FRIEND].facilityClass;\n    }\n    else\n    {\n        if (gBattleTypeFlags & BATTLE_TYPE_RECORDED)\n            facilityClass = gApprentices[GetRecordedBattleApprenticeId()].facilityClass;\n        else\n            facilityClass = gApprentices[gSaveBlock2Ptr->apprentices[trainerId - TRAINER_RECORD_MIXING_APPRENTICE].id].facilityClass;\n    }\n\n    return facilityClass;",
+      "callsTo": [
+        "GetRecordedBattleApprenticeId",
+        "GetRecordedBattleRecordMixFriendClass",
+        "SetFacilityPtrsGetLevel"
+      ],
+      "lineCount": 27
+    },
+    "GetFrontierTrainerName": {
+      "returnType": "void",
+      "signature": "void GetFrontierTrainerName(u8 *dst, u16 trainerId)",
+      "paramsRaw": "u8 *dst, u16 trainerId",
+      "body": "s32 i = 0;\n    SetFacilityPtrsGetLevel();\n\n    if (trainerId == TRAINER_EREADER)\n    {\n        for (i = 0; i < PLAYER_NAME_LENGTH; i++)\n            dst[i] = gSaveBlock2Ptr->frontier.ereaderTrainer.name[i];\n    }\n    else if (trainerId == TRAINER_FRONTIER_BRAIN)\n    {\n        CopyFrontierBrainTrainerName(dst);\n        return;\n    }\n    else if (trainerId == TRAINER_STEVEN_PARTNER)\n    {\n        for (i = 0; i < PLAYER_NAME_LENGTH; i++)\n            dst[i] = gTrainers[TRAINER_STEVEN].trainerName[i];\n    }\n    else if (trainerId < FRONTIER_TRAINERS_COUNT)\n    {\n        for (i = 0; i < PLAYER_NAME_LENGTH; i++)\n            dst[i] = gFacilityTrainers[trainerId].trainerName[i];\n    }\n    else if (trainerId < TRAINER_RECORD_MIXING_APPRENTICE)\n    {\n        if (gBattleTypeFlags & BATTLE_TYPE_RECORDED)\n        {\n            GetRecordedBattleRecordMixFriendName(dst);\n            return;\n        }\n        else\n        {\n            struct EmeraldBattleTowerRecord *record = &gSaveBlock2Ptr->frontier.towerRecords[trainerId - TRAINER_RECORD_MIXING_FRIEND];\n            TVShowConvertInternationalString(dst, record->name, record->language);\n            return;\n        }\n    }\n    else\n    {\n        u8 id, language;\n\n        if (gBattleTypeFlags & BATTLE_TYPE_RECORDED)\n        {\n            id = GetRecordedBattleApprenticeId();\n            language = GetRecordedBattleApprenticeLanguage();\n        }\n        else\n        {\n            struct Apprentice *apprentice = &gSaveBlock2Ptr->apprentices[trainerId - TRAINER_RECORD_MIXING_APPRENTICE];\n            id = apprentice->id;\n            language = apprentice->language;\n        }\n        TVShowConvertInternationalString(dst, GetApprenticeNameInLanguage(id, language), language);\n        return;\n    }\n\n    dst[i] = EOS;",
+      "callsTo": [
+        "CopyFrontierBrainTrainerName",
+        "GetApprenticeNameInLanguage",
+        "GetRecordedBattleApprenticeId",
+        "GetRecordedBattleApprenticeLanguage",
+        "GetRecordedBattleRecordMixFriendName",
+        "SetFacilityPtrsGetLevel",
+        "TVShowConvertInternationalString"
+      ],
+      "lineCount": 57
+    },
+    "IsFrontierTrainerFemale": {
+      "returnType": "bool8",
+      "signature": "bool8 IsFrontierTrainerFemale(u16 trainerId)",
+      "paramsRaw": "u16 trainerId",
+      "body": "u32 i;\n    u8 facilityClass;\n\n    SetFacilityPtrsGetLevel();\n    if (trainerId == TRAINER_EREADER)\n    {\n        facilityClass = gSaveBlock2Ptr->frontier.ereaderTrainer.facilityClass;\n    }\n    else if (trainerId == TRAINER_FRONTIER_BRAIN)\n    {\n        return IsFrontierBrainFemale();\n    }\n    else if (trainerId < FRONTIER_TRAINERS_COUNT)\n    {\n        facilityClass = gFacilityTrainers[trainerId].facilityClass;\n    }\n    else if (trainerId < TRAINER_RECORD_MIXING_APPRENTICE)\n    {\n        facilityClass = gSaveBlock2Ptr->frontier.towerRecords[trainerId - TRAINER_RECORD_MIXING_FRIEND].facilityClass;\n    }\n    else\n    {\n        facilityClass = gApprentices[gSaveBlock2Ptr->apprentices[trainerId - TRAINER_RECORD_MIXING_APPRENTICE].id].facilityClass;\n    }\n\n     \n    for (i = 0; i < ARRAY_COUNT(gTowerFemaleFacilityClasses); i++)\n    {\n        if (gTowerFemaleFacilityClasses[i] == facilityClass)\n            break;\n    }\n    if (i != ARRAY_COUNT(gTowerFemaleFacilityClasses))\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "IsFrontierBrainFemale",
+        "SetFacilityPtrsGetLevel"
+      ],
+      "lineCount": 35
+    },
+    "FillFrontierTrainerParty": {
+      "returnType": "void",
+      "signature": "void FillFrontierTrainerParty(u8 monsCount)",
+      "paramsRaw": "u8 monsCount",
+      "body": "ZeroEnemyPartyMons();\n    FillTrainerParty(gTrainerBattleOpponent_A, 0, monsCount);",
+      "callsTo": [
+        "FillTrainerParty",
+        "ZeroEnemyPartyMons"
+      ],
+      "lineCount": 2
+    },
+    "FillFrontierTrainersParties": {
+      "returnType": "void",
+      "signature": "void FillFrontierTrainersParties(u8 monsCount)",
+      "paramsRaw": "u8 monsCount",
+      "body": "ZeroEnemyPartyMons();\n    FillTrainerParty(gTrainerBattleOpponent_A, 0, monsCount);\n    FillTrainerParty(gTrainerBattleOpponent_B, 3, monsCount);",
+      "callsTo": [
+        "FillTrainerParty",
+        "ZeroEnemyPartyMons"
+      ],
+      "lineCount": 3
+    },
+    "FillTentTrainerParty": {
+      "returnType": "void",
+      "signature": "static void FillTentTrainerParty(u8 monsCount)",
+      "paramsRaw": "u8 monsCount",
+      "body": "ZeroEnemyPartyMons();\n    FillTentTrainerParty_(gTrainerBattleOpponent_A, 0, monsCount);",
+      "callsTo": [
+        "FillTentTrainerParty_",
+        "ZeroEnemyPartyMons"
+      ],
+      "lineCount": 2
+    },
+    "FillTrainerParty": {
+      "returnType": "void",
+      "signature": "static void FillTrainerParty(u16 trainerId, u8 firstMonId, u8 monCount)",
+      "paramsRaw": "u16 trainerId, u8 firstMonId, u8 monCount",
+      "body": "s32 i, j;\n    u16 chosenMonIndices[MAX_FRONTIER_PARTY_SIZE];\n    u8 friendship = MAX_FRIENDSHIP;\n    u8 level = SetFacilityPtrsGetLevel();\n    u8 fixedIV = 0;\n    u8 bfMonCount;\n    const u16 *monSet = NULL;\n    u32 otID = 0;\n\n    if (trainerId < FRONTIER_TRAINERS_COUNT)\n    {\n         \n        fixedIV = GetFrontierTrainerFixedIvs(trainerId);\n        monSet = gFacilityTrainers[gTrainerBattleOpponent_A].monSet;\n    }\n    else if (trainerId == TRAINER_EREADER)\n    {\n        for (i = firstMonId; i < firstMonId + FRONTIER_PARTY_SIZE; i++)\n            CreateBattleTowerMon(&gEnemyParty[i], &gSaveBlock2Ptr->frontier.ereaderTrainer.party[i - firstMonId]);\n        return;\n    }\n    else if (trainerId == TRAINER_FRONTIER_BRAIN)\n    {\n        CreateFrontierBrainPokemon();\n        return;\n    }\n    else if (trainerId < TRAINER_RECORD_MIXING_APPRENTICE)\n    {\n         \n        for (j = 0, i = firstMonId; i < firstMonId + monCount; j++, i++)\n        {\n            if (gSaveBlock2Ptr->frontier.towerRecords[trainerId - TRAINER_RECORD_MIXING_FRIEND].party[j].species != SPECIES_NONE\n                && gSaveBlock2Ptr->frontier.towerRecords[trainerId - TRAINER_RECORD_MIXING_FRIEND].party[j].level <= level)\n            {\n                CreateBattleTowerMon_HandleLevel(&gEnemyParty[i], &gSaveBlock2Ptr->frontier.towerRecords[trainerId - TRAINER_RECORD_MIXING_FRIEND].party[j], FALSE);\n            }\n        }\n        return;\n    }\n    else\n    {\n         \n        for (i = firstMonId; i < firstMonId + FRONTIER_PARTY_SIZE; i++)\n            CreateApprenticeMon(&gEnemyParty[i], &gSaveBlock2Ptr->apprentices[trainerId - TRAINER_RECORD_MIXING_APPRENTICE], i - firstMonId);\n        return;\n    }\n\n     \n     \n     \n     \n    for (bfMonCount = 0; monSet[bfMonCount] != 0xFFFF; bfMonCount++)\n        ;\n    i = 0;\n    otID = Random32();\n    while (i != monCount)\n    {\n        u16 monId = monSet[Random() % bfMonCount];\n\n         \n         \n        if ((level == FRONTIER_MAX_LEVEL_50 || level == 20) && monId > FRONTIER_MONS_HIGH_TIER)\n            continue;\n\n         \n        for (j = 0; j < i + firstMonId; j++)\n        {\n            if (GetMonData(&gEnemyParty[j], MON_DATA_SPECIES, NULL) == gFacilityTrainerMons[monId].species)\n                break;\n        }\n        if (j != i + firstMonId)\n            continue;\n\n         \n        for (j = 0; j < i + firstMonId; j++)\n        {\n            if (GetMonData(&gEnemyParty[j], MON_DATA_HELD_ITEM, NULL) != ITEM_NONE\n             && GetMonData(&gEnemyParty[j], MON_DATA_HELD_ITEM, NULL) == gBattleFrontierHeldItems[gFacilityTrainerMons[monId].itemTableId])\n                break;\n        }\n        if (j != i + firstMonId)\n            continue;\n\n         \n         \n        for (j = 0; j < i; j++)\n        {\n            if (chosenMonIndices[j] == monId)\n                break;\n        }\n        if (j != i)\n            continue;\n\n        chosenMonIndices[i] = monId;\n\n         \n        CreateMonWithEVSpreadNatureOTID(&gEnemyParty[i + firstMonId],\n                                             gFacilityTrainerMons[monId].species,\n                                             level,\n                                             gFacilityTrainerMons[monId].nature,\n                                             fixedIV,\n                                             gFacilityTrainerMons[monId].evSpread,\n                                             otID);\n\n        friendship = MAX_FRIENDSHIP;\n         \n        for (j = 0; j < MAX_MON_MOVES; j++)\n        {\n            SetMonMoveSlot(&gEnemyParty[i + firstMonId], gFacilityTrainerMons[monId].moves[j], j);\n            if (gFacilityTrainerMons[monId].moves[j] == MOVE_FRUSTRATION)\n                friendship = 0;   \n        }\n\n        SetMonData(&gEnemyParty[i + firstMonId], MON_DATA_FRIENDSHIP, &friendship);\n        SetMonData(&gEnemyParty[i + firstMonId], MON_DATA_HELD_ITEM, &gBattleFrontierHeldItems[gFacilityTrainerMons[monId].itemTableId]);\n\n         \n         \n        i++;\n    }",
+      "callsTo": [
+        "CreateApprenticeMon",
+        "CreateBattleTowerMon",
+        "CreateBattleTowerMon_HandleLevel",
+        "CreateFrontierBrainPokemon",
+        "CreateMonWithEVSpreadNatureOTID",
+        "GetFrontierTrainerFixedIvs",
+        "GetMonData",
+        "Random",
+        "Random32",
+        "SetFacilityPtrsGetLevel",
+        "SetMonData",
+        "SetMonMoveSlot"
+      ],
+      "lineCount": 120
+    },
+    "GetRandomFrontierMonFromSet": {
+      "returnType": "u16",
+      "signature": "u16 GetRandomFrontierMonFromSet(u16 trainerId)",
+      "paramsRaw": "u16 trainerId",
+      "body": "u8 level = SetFacilityPtrsGetLevel();\n    const u16 *monSet = gFacilityTrainers[trainerId].monSet;\n    u8 numMons = 0;\n    u32 monId = monSet[numMons];\n\n    while (monId != 0xFFFF)\n    {\n        numMons++;\n        monId = monSet[numMons];\n        if (monId == 0xFFFF)\n            break;\n    }\n\n    do\n    {\n         \n         \n        monId = monSet[Random() % numMons];\n    } while((level == FRONTIER_MAX_LEVEL_50 || level == 20) && monId > FRONTIER_MONS_HIGH_TIER);\n\n    return monId;",
+      "callsTo": [
+        "Random",
+        "SetFacilityPtrsGetLevel"
+      ],
+      "lineCount": 21
+    },
+    "FillFactoryTrainerParty": {
+      "returnType": "void",
+      "signature": "static void FillFactoryTrainerParty(void)",
+      "paramsRaw": "void",
+      "body": "ZeroEnemyPartyMons();\n    if (gSaveBlock2Ptr->frontier.lvlMode != FRONTIER_LVL_TENT)\n        FillFactoryFrontierTrainerParty(gTrainerBattleOpponent_A, 0);\n    else\n        FillFactoryTentTrainerParty(gTrainerBattleOpponent_A, 0);",
+      "callsTo": [
+        "FillFactoryFrontierTrainerParty",
+        "FillFactoryTentTrainerParty",
+        "ZeroEnemyPartyMons"
+      ],
+      "lineCount": 5
+    },
+    "FillFactoryFrontierTrainerParty": {
+      "returnType": "void",
+      "signature": "static void FillFactoryFrontierTrainerParty(u16 trainerId, u8 firstMonId)",
+      "paramsRaw": "u16 trainerId, u8 firstMonId",
+      "body": "u8 i, j;\n    u8 friendship;\n    u8 level;\n    u8 fixedIV;\n    u32 otID;\n\n    if (trainerId < FRONTIER_TRAINERS_COUNT)\n    {\n     \n    #ifdef BUGFIX\n        u8 lvlMode = gSaveBlock2Ptr->frontier.lvlMode;\n        u8 battleMode = VarGet(VAR_FRONTIER_BATTLE_MODE);\n        u8 challengeNum = gSaveBlock2Ptr->frontier.factoryWinStreaks[battleMode][lvlMode] / FRONTIER_STAGES_PER_CHALLENGE;\n    #else\n        u8 UNUSED lvlMode = gSaveBlock2Ptr->frontier.lvlMode;\n        u8 battleMode = VarGet(VAR_FRONTIER_BATTLE_MODE);\n        u8 challengeNum = gSaveBlock2Ptr->frontier.towerWinStreaks[battleMode][FRONTIER_LVL_50] / FRONTIER_STAGES_PER_CHALLENGE;\n    #endif\n        if (gSaveBlock2Ptr->frontier.curChallengeBattleNum < FRONTIER_STAGES_PER_CHALLENGE - 1)\n            fixedIV = GetFactoryMonFixedIV(challengeNum, FALSE);\n        else\n            fixedIV = GetFactoryMonFixedIV(challengeNum, TRUE);  \n    }\n    else if (trainerId == TRAINER_EREADER)\n    {\n        for (i = firstMonId; i < firstMonId + FRONTIER_PARTY_SIZE; i++)\n            CreateBattleTowerMon(&gEnemyParty[i], &gSaveBlock2Ptr->frontier.ereaderTrainer.party[i - firstMonId]);\n        return;\n    }\n    else if (trainerId == TRAINER_FRONTIER_BRAIN)\n    {\n        FillFactoryBrainParty();\n        return;\n    }\n    else\n    {\n        fixedIV = MAX_PER_STAT_IVS;\n    }\n\n    level = SetFacilityPtrsGetLevel();\n    otID = T1_READ_32(gSaveBlock2Ptr->playerTrainerId);\n    for (i = 0; i < FRONTIER_PARTY_SIZE; i++)\n    {\n        u16 monId = gFrontierTempParty[i];\n        CreateMonWithEVSpreadNatureOTID(&gEnemyParty[firstMonId + i],\n                                             gFacilityTrainerMons[monId].species,\n                                             level,\n                                             gFacilityTrainerMons[monId].nature,\n                                             fixedIV,\n                                             gFacilityTrainerMons[monId].evSpread,\n                                             otID);\n\n        friendship = 0;\n        for (j = 0; j < MAX_MON_MOVES; j++)\n            SetMonMoveAvoidReturn(&gEnemyParty[firstMonId + i], gFacilityTrainerMons[monId].moves[j], j);\n\n        SetMonData(&gEnemyParty[firstMonId + i], MON_DATA_FRIENDSHIP, &friendship);\n        SetMonData(&gEnemyParty[firstMonId + i], MON_DATA_HELD_ITEM, &gBattleFrontierHeldItems[gFacilityTrainerMons[monId].itemTableId]);\n    }",
+      "callsTo": [
+        "CreateBattleTowerMon",
+        "CreateMonWithEVSpreadNatureOTID",
+        "FillFactoryBrainParty",
+        "GetFactoryMonFixedIV",
+        "SetFacilityPtrsGetLevel",
+        "SetMonData",
+        "SetMonMoveAvoidReturn",
+        "T1_READ_32",
+        "VarGet"
+      ],
+      "lineCount": 59
+    },
+    "FillFactoryTentTrainerParty": {
+      "returnType": "void",
+      "signature": "static void FillFactoryTentTrainerParty(u16 trainerId, u8 firstMonId)",
+      "paramsRaw": "u16 trainerId, u8 firstMonId",
+      "body": "u8 i, j;\n    u8 friendship;\n    u8 level = TENT_MIN_LEVEL;\n    u8 fixedIV = 0;\n    u32 otID = T1_READ_32(gSaveBlock2Ptr->playerTrainerId);\n\n    for (i = 0; i < FRONTIER_PARTY_SIZE; i++)\n    {\n        u16 monId = gFrontierTempParty[i];\n        CreateMonWithEVSpreadNatureOTID(&gEnemyParty[firstMonId + i],\n                                             gFacilityTrainerMons[monId].species,\n                                             level,\n                                             gFacilityTrainerMons[monId].nature,\n                                             fixedIV,\n                                             gFacilityTrainerMons[monId].evSpread,\n                                             otID);\n\n        friendship = 0;\n        for (j = 0; j < MAX_MON_MOVES; j++)\n        {\n            SetMonMoveAvoidReturn(&gEnemyParty[firstMonId + i], gFacilityTrainerMons[monId].moves[j], j);\n            if (gFacilityTrainerMons[monId].moves[j] == MOVE_FRUSTRATION)\n                friendship = 0;\n        }\n\n        SetMonData(&gEnemyParty[firstMonId + i], MON_DATA_FRIENDSHIP, &friendship);\n        SetMonData(&gEnemyParty[firstMonId + i], MON_DATA_HELD_ITEM, &gBattleFrontierHeldItems[gFacilityTrainerMons[monId].itemTableId]);\n    }",
+      "callsTo": [
+        "CreateMonWithEVSpreadNatureOTID",
+        "SetMonData",
+        "SetMonMoveAvoidReturn",
+        "T1_READ_32"
+      ],
+      "lineCount": 28
+    },
+    "FrontierSpeechToString": {
+      "returnType": "void",
+      "signature": "void FrontierSpeechToString(const u16 *words)",
+      "paramsRaw": "const u16 *words",
+      "body": "OtherConvertEasyChatWordsToString(gStringVar4, words, 2, 3);",
+      "callsTo": [
+        "OtherConvertEasyChatWordsToString"
+      ],
+      "lineCount": 1
+    },
+    "GetOpponentIntroSpeech": {
+      "returnType": "void",
+      "signature": "static void GetOpponentIntroSpeech(void)",
+      "paramsRaw": "void",
+      "body": "u16 trainerId;\n    SetFacilityPtrsGetLevel();\n\n    if (gSpecialVar_0x8005)\n        trainerId = gTrainerBattleOpponent_B;\n    else\n        trainerId = gTrainerBattleOpponent_A;\n\n    if (trainerId == TRAINER_EREADER)\n        FrontierSpeechToString(gSaveBlock2Ptr->frontier.ereaderTrainer.greeting);\n    else if (trainerId < FRONTIER_TRAINERS_COUNT)\n        FrontierSpeechToString(gFacilityTrainers[trainerId].speechBefore);\n    else if (trainerId < TRAINER_RECORD_MIXING_APPRENTICE)\n        FrontierSpeechToString(gSaveBlock2Ptr->frontier.towerRecords[trainerId - TRAINER_RECORD_MIXING_FRIEND].greeting);\n    else\n        BufferApprenticeChallengeText(trainerId - TRAINER_RECORD_MIXING_APPRENTICE);",
+      "callsTo": [
+        "BufferApprenticeChallengeText",
+        "FrontierSpeechToString",
+        "SetFacilityPtrsGetLevel"
+      ],
+      "lineCount": 16
+    },
+    "FrontierSpeechToString2": {
+      "returnType": "void",
+      "signature": "void FrontierSpeechToString2(const u16 *words)",
+      "paramsRaw": "const u16 *words",
+      "body": "ConvertEasyChatWordsToString(gStringVar4, words, 3, 2);\n    if (GetStringWidth(FONT_NORMAL, gStringVar4, -1) > 204u)\n    {\n        s32 i = 0;\n\n        ConvertEasyChatWordsToString(gStringVar4, words, 2, 3);\n        while (gStringVar4[i++] != CHAR_NEWLINE)\n            ;\n        while (gStringVar4[i] != CHAR_NEWLINE)\n            i++;\n\n        gStringVar4[i] = CHAR_PROMPT_SCROLL;\n    }",
+      "callsTo": [
+        "ConvertEasyChatWordsToString",
+        "GetStringWidth"
+      ],
+      "lineCount": 13
+    },
+    "GetOpponentIntroSpeech2": {
+      "returnType": "void",
+      "signature": "static void GetOpponentIntroSpeech2(void)",
+      "paramsRaw": "void",
+      "body": "u16 trainerId;\n    SetFacilityPtrsGetLevel();\n\n    if (gSpecialVar_0x8005)\n        trainerId = gTrainerBattleOpponent_B;\n    else\n        trainerId = gTrainerBattleOpponent_A;\n\n    if (trainerId == TRAINER_EREADER)\n        FrontierSpeechToString2(gSaveBlock2Ptr->frontier.ereaderTrainer.greeting);\n    else if (trainerId < FRONTIER_TRAINERS_COUNT)\n        FrontierSpeechToString2(gFacilityTrainers[trainerId].speechBefore);\n    else if (trainerId < TRAINER_RECORD_MIXING_APPRENTICE)\n        FrontierSpeechToString2(gSaveBlock2Ptr->frontier.towerRecords[trainerId - TRAINER_RECORD_MIXING_FRIEND].greeting);\n    else\n        BufferApprenticeChallengeText(trainerId - TRAINER_RECORD_MIXING_APPRENTICE);",
+      "callsTo": [
+        "BufferApprenticeChallengeText",
+        "FrontierSpeechToString2",
+        "SetFacilityPtrsGetLevel"
+      ],
+      "lineCount": 16
+    },
+    "HandleSpecialTrainerBattleEnd": {
+      "returnType": "void",
+      "signature": "static void HandleSpecialTrainerBattleEnd(void)",
+      "paramsRaw": "void",
+      "body": "s32 i;\n\n    RecordedBattle_SaveBattleOutcome();\n    switch (gBattleScripting.specialTrainerBattleType)\n    {\n    case SPECIAL_BATTLE_TOWER:\n    case SPECIAL_BATTLE_DOME:\n    case SPECIAL_BATTLE_PALACE:\n    case SPECIAL_BATTLE_ARENA:\n    case SPECIAL_BATTLE_FACTORY:\n    case SPECIAL_BATTLE_PIKE_SINGLE:\n    case SPECIAL_BATTLE_PIKE_DOUBLE:\n    case SPECIAL_BATTLE_PYRAMID:\n        if (gSaveBlock2Ptr->frontier.battlesCount < 0xFFFFFF)\n        {\n            gSaveBlock2Ptr->frontier.battlesCount++;\n            if (gSaveBlock2Ptr->frontier.battlesCount % 20 == 0)\n                UpdateGymLeaderRematch();\n        }\n        else\n        {\n            gSaveBlock2Ptr->frontier.battlesCount = 0xFFFFFF;\n        }\n        break;\n    case SPECIAL_BATTLE_SECRET_BASE:\n        for (i = 0; i < PARTY_SIZE; i++)\n        {\n            u16 itemBefore = GetMonData(&gSaveBlock1Ptr->playerParty[i], MON_DATA_HELD_ITEM);\n            SetMonData(&gPlayerParty[i], MON_DATA_HELD_ITEM, &itemBefore);\n        }\n        break;\n    case SPECIAL_BATTLE_EREADER:\n        CopyEReaderTrainerFarewellMessage();\n        break;\n    }\n\n    SetMainCallback2(CB2_ReturnToFieldContinueScriptPlayMapMusic);",
+      "callsTo": [
+        "CopyEReaderTrainerFarewellMessage",
+        "GetMonData",
+        "RecordedBattle_SaveBattleOutcome",
+        "SetMainCallback2",
+        "SetMonData",
+        "UpdateGymLeaderRematch"
+      ],
+      "lineCount": 37
+    },
+    "Task_StartBattleAfterTransition": {
+      "returnType": "void",
+      "signature": "static void Task_StartBattleAfterTransition(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "if (IsBattleTransitionDone() == TRUE)\n    {\n        gMain.savedCallback = HandleSpecialTrainerBattleEnd;\n        SetMainCallback2(CB2_InitBattle);\n        DestroyTask(taskId);\n    }",
+      "callsTo": [
+        "DestroyTask",
+        "IsBattleTransitionDone",
+        "SetMainCallback2"
+      ],
+      "lineCount": 6
+    },
+    "DoSpecialTrainerBattle": {
+      "returnType": "void",
+      "signature": "void DoSpecialTrainerBattle(void)",
+      "paramsRaw": "void",
+      "body": "s32 i;\n\n    gBattleScripting.specialTrainerBattleType = gSpecialVar_0x8004;\n    switch (gSpecialVar_0x8004)\n    {\n    case SPECIAL_BATTLE_TOWER:\n        gBattleTypeFlags = BATTLE_TYPE_TRAINER | BATTLE_TYPE_BATTLE_TOWER;\n        switch (VarGet(VAR_FRONTIER_BATTLE_MODE))\n        {\n        case FRONTIER_MODE_SINGLES:\n            FillFrontierTrainerParty(FRONTIER_PARTY_SIZE);\n            break;\n        case FRONTIER_MODE_DOUBLES:\n            FillFrontierTrainerParty(FRONTIER_DOUBLES_PARTY_SIZE);\n            gBattleTypeFlags |= BATTLE_TYPE_DOUBLE;\n            break;\n        case FRONTIER_MODE_MULTIS:\n            FillFrontierTrainersParties(FRONTIER_MULTI_PARTY_SIZE);\n            gPartnerTrainerId = gSaveBlock2Ptr->frontier.trainerIds[17];\n            FillPartnerParty(gPartnerTrainerId);\n            gBattleTypeFlags |= BATTLE_TYPE_DOUBLE | BATTLE_TYPE_INGAME_PARTNER | BATTLE_TYPE_MULTI | BATTLE_TYPE_TWO_OPPONENTS;\n            break;\n        case FRONTIER_MODE_LINK_MULTIS:\n            gBattleTypeFlags |= BATTLE_TYPE_DOUBLE | BATTLE_TYPE_LINK | BATTLE_TYPE_MULTI | BATTLE_TYPE_TOWER_LINK_MULTI;\n            FillFrontierTrainersParties(FRONTIER_MULTI_PARTY_SIZE);\n            break;\n        }\n        CreateTask(Task_StartBattleAfterTransition, 1);\n        PlayMapChosenOrBattleBGM(0);\n        BattleTransition_StartOnField(GetSpecialBattleTransition(B_TRANSITION_GROUP_B_TOWER));\n        break;\n    case SPECIAL_BATTLE_SECRET_BASE:\n        for (i = 0; i < PARTY_SIZE; i++)\n        {\n            u16 itemBefore = GetMonData(&gPlayerParty[i], MON_DATA_HELD_ITEM);\n            SetMonData(&gSaveBlock1Ptr->playerParty[i], MON_DATA_HELD_ITEM, &itemBefore);\n        }\n        CreateTask(Task_StartBattleAfterTransition, 1);\n        PlayMapChosenOrBattleBGM(0);\n        BattleTransition_StartOnField(GetSpecialBattleTransition(B_TRANSITION_GROUP_SECRET_BASE));\n        break;\n    case SPECIAL_BATTLE_EREADER:\n        ZeroEnemyPartyMons();\n        for (i = 0; i < (int)ARRAY_COUNT(gSaveBlock2Ptr->frontier.ereaderTrainer.party); i++)\n            CreateBattleTowerMon(&gEnemyParty[i], &gSaveBlock2Ptr->frontier.ereaderTrainer.party[i]);\n        gBattleTypeFlags = BATTLE_TYPE_TRAINER | BATTLE_TYPE_EREADER_TRAINER;\n        gTrainerBattleOpponent_A = 0;\n        CreateTask(Task_StartBattleAfterTransition, 1);\n        PlayMapChosenOrBattleBGM(0);\n        BattleTransition_StartOnField(GetSpecialBattleTransition(B_TRANSITION_GROUP_E_READER));\n        break;\n    case SPECIAL_BATTLE_DOME:\n        gBattleTypeFlags = BATTLE_TYPE_TRAINER | BATTLE_TYPE_DOME;\n        if (VarGet(VAR_FRONTIER_BATTLE_MODE) == FRONTIER_MODE_DOUBLES)\n            gBattleTypeFlags |= BATTLE_TYPE_DOUBLE;\n        if (gTrainerBattleOpponent_A == TRAINER_FRONTIER_BRAIN)\n            FillFrontierTrainerParty(DOME_BATTLE_PARTY_SIZE);\n        CreateTask(Task_StartBattleAfterTransition, 1);\n        CreateTask_PlayMapChosenOrBattleBGM(0);\n        BattleTransition_StartOnField(GetSpecialBattleTransition(B_TRANSITION_GROUP_B_DOME));\n        break;\n    case SPECIAL_BATTLE_PALACE:\n        gBattleTypeFlags = BATTLE_TYPE_TRAINER | BATTLE_TYPE_PALACE;\n        if (VarGet(VAR_FRONTIER_BATTLE_MODE) == FRONTIER_MODE_DOUBLES)\n            gBattleTypeFlags |= BATTLE_TYPE_DOUBLE;\n        if (gSaveBlock2Ptr->frontier.lvlMode != FRONTIER_LVL_TENT)\n            FillFrontierTrainerParty(FRONTIER_PARTY_SIZE);\n        else\n            FillTentTrainerParty(FRONTIER_PARTY_SIZE);\n        CreateTask(Task_StartBattleAfterTransition, 1);\n        PlayMapChosenOrBattleBGM(0);\n        BattleTransition_StartOnField(GetSpecialBattleTransition(B_TRANSITION_GROUP_B_PALACE));\n        break;\n    case SPECIAL_BATTLE_ARENA:\n        gBattleTypeFlags = BATTLE_TYPE_TRAINER | BATTLE_TYPE_ARENA;\n        if (gSaveBlock2Ptr->frontier.lvlMode != FRONTIER_LVL_TENT)\n            FillFrontierTrainerParty(FRONTIER_PARTY_SIZE);\n        else\n            FillTentTrainerParty(FRONTIER_PARTY_SIZE);\n        CreateTask(Task_StartBattleAfterTransition, 1);\n        PlayMapChosenOrBattleBGM(0);\n        BattleTransition_StartOnField(GetSpecialBattleTransition(B_TRANSITION_GROUP_B_ARENA));\n        break;\n    case SPECIAL_BATTLE_FACTORY:\n        gBattleTypeFlags = BATTLE_TYPE_TRAINER | BATTLE_TYPE_FACTORY;\n        if (VarGet(VAR_FRONTIER_BATTLE_MODE) == FRONTIER_MODE_DOUBLES)\n            gBattleTypeFlags |= BATTLE_TYPE_DOUBLE;\n        FillFactoryTrainerParty();\n        CreateTask(Task_StartBattleAfterTransition, 1);\n        PlayMapChosenOrBattleBGM(0);\n        BattleTransition_StartOnField(GetSpecialBattleTransition(B_TRANSITION_GROUP_B_FACTORY));\n        break;\n    case SPECIAL_BATTLE_PIKE_SINGLE:\n        gBattleTypeFlags = BATTLE_TYPE_TRAINER | BATTLE_TYPE_BATTLE_TOWER;\n        FillFrontierTrainerParty(FRONTIER_PARTY_SIZE);\n        CreateTask(Task_StartBattleAfterTransition, 1);\n        PlayMapChosenOrBattleBGM(0);\n        BattleTransition_StartOnField(GetSpecialBattleTransition(B_TRANSITION_GROUP_B_PIKE));\n        break;\n    case SPECIAL_BATTLE_PYRAMID:\n        gBattleTypeFlags = BATTLE_TYPE_TRAINER | BATTLE_TYPE_PYRAMID;\n        FillFrontierTrainerParty(FRONTIER_PARTY_SIZE);\n        CreateTask(Task_StartBattleAfterTransition, 1);\n        PlayMapChosenOrBattleBGM(0);\n        BattleTransition_StartOnField(GetSpecialBattleTransition(B_TRANSITION_GROUP_B_PYRAMID));\n        break;\n    case SPECIAL_BATTLE_PIKE_DOUBLE:\n        gBattleTypeFlags = BATTLE_TYPE_TRAINER | BATTLE_TYPE_BATTLE_TOWER | BATTLE_TYPE_DOUBLE | BATTLE_TYPE_TWO_OPPONENTS;\n        FillFrontierTrainersParties(1);\n        CreateTask(Task_StartBattleAfterTransition, 1);\n        PlayMapChosenOrBattleBGM(0);\n        BattleTransition_StartOnField(GetSpecialBattleTransition(B_TRANSITION_GROUP_B_PIKE));\n        break;\n    case SPECIAL_BATTLE_STEVEN:\n        gBattleTypeFlags = BATTLE_TYPE_TRAINER | BATTLE_TYPE_DOUBLE | BATTLE_TYPE_TWO_OPPONENTS | BATTLE_TYPE_MULTI | BATTLE_TYPE_INGAME_PARTNER;\n        FillPartnerParty(TRAINER_STEVEN_PARTNER);\n        gApproachingTrainerId = 0;\n        BattleSetup_ConfigureTrainerBattle(MossdeepCity_SpaceCenter_2F_EventScript_MaxieTrainer + 1);\n        gApproachingTrainerId = 1;\n        BattleSetup_ConfigureTrainerBattle(MossdeepCity_SpaceCenter_2F_EventScript_TabithaTrainer + 1);\n        gPartnerTrainerId = TRAINER_STEVEN_PARTNER;\n        CreateTask(Task_StartBattleAfterTransition, 1);\n        PlayMapChosenOrBattleBGM(0);\n        BattleTransition_StartOnField(B_TRANSITION_MAGMA);\n        break;\n    }",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "BattleSetup_ConfigureTrainerBattle",
+        "BattleTransition_StartOnField",
+        "CreateBattleTowerMon",
+        "CreateTask",
+        "CreateTask_PlayMapChosenOrBattleBGM",
+        "FillFactoryTrainerParty",
+        "FillFrontierTrainerParty",
+        "FillFrontierTrainersParties",
+        "FillPartnerParty",
+        "FillTentTrainerParty",
+        "GetMonData",
+        "GetSpecialBattleTransition",
+        "PlayMapChosenOrBattleBGM",
+        "SetMonData",
+        "VarGet",
+        "ZeroEnemyPartyMons"
+      ],
+      "lineCount": 126
+    },
+    "SaveCurrentWinStreak": {
+      "returnType": "void",
+      "signature": "static void SaveCurrentWinStreak(void)",
+      "paramsRaw": "void",
+      "body": "u8 lvlMode = gSaveBlock2Ptr->frontier.lvlMode;\n    u8 battleMode = VarGet(VAR_FRONTIER_BATTLE_MODE);\n    u16 winStreak = GetCurrentBattleTowerWinStreak(lvlMode, battleMode);\n\n    if (gSaveBlock2Ptr->frontier.towerWinStreaks[battleMode][lvlMode] < winStreak)\n        gSaveBlock2Ptr->frontier.towerWinStreaks[battleMode][lvlMode] = winStreak;",
+      "callsTo": [
+        "GetCurrentBattleTowerWinStreak",
+        "VarGet"
+      ],
+      "lineCount": 6
+    },
+    "SaveBattleTowerRecord": {
+      "returnType": "void",
+      "signature": "static void SaveBattleTowerRecord(void)",
+      "paramsRaw": "void",
+      "body": "s32 i;\n    u8 lvlMode, battleMode, class;\n    struct EmeraldBattleTowerRecord *playerRecord = &gSaveBlock2Ptr->frontier.towerPlayer;\n\n    ClearBattleTowerRecord(playerRecord);\n    lvlMode = gSaveBlock2Ptr->frontier.lvlMode;\n    battleMode = VarGet(VAR_FRONTIER_BATTLE_MODE);\n    if (gSaveBlock2Ptr->playerGender != MALE)\n    {\n        class = gTowerFemaleFacilityClasses[(gSaveBlock2Ptr->playerTrainerId[0] +\n                                       gSaveBlock2Ptr->playerTrainerId[1] +\n                                       gSaveBlock2Ptr->playerTrainerId[2] +\n                                       gSaveBlock2Ptr->playerTrainerId[3]) % ARRAY_COUNT(gTowerFemaleFacilityClasses)];\n    }\n    else\n    {\n        class = gTowerMaleFacilityClasses[(gSaveBlock2Ptr->playerTrainerId[0] +\n                                     gSaveBlock2Ptr->playerTrainerId[1] +\n                                     gSaveBlock2Ptr->playerTrainerId[2] +\n                                     gSaveBlock2Ptr->playerTrainerId[3]) % ARRAY_COUNT(gTowerMaleFacilityClasses)];\n    }\n    playerRecord->lvlMode = lvlMode;\n    playerRecord->facilityClass = class;\n    CopyTrainerId(playerRecord->trainerId, gSaveBlock2Ptr->playerTrainerId);\n    StringCopy_PlayerName(playerRecord->name, gSaveBlock2Ptr->playerName);\n    playerRecord->winStreak = GetCurrentBattleTowerWinStreak(lvlMode, battleMode);\n\n    for (i = 0; i < EASY_CHAT_BATTLE_WORDS_COUNT; i++)\n    {\n        playerRecord->greeting[i] = gSaveBlock1Ptr->easyChatBattleStart[i];\n        playerRecord->speechWon[i] = gSaveBlock1Ptr->easyChatBattleWon[i];\n        playerRecord->speechLost[i] = gSaveBlock1Ptr->easyChatBattleLost[i];\n    }\n\n    for (i = 0; i < MAX_FRONTIER_PARTY_SIZE; i++)\n    {\n        if (gSaveBlock2Ptr->frontier.selectedPartyMons[i] != 0)\n            ConvertPokemonToBattleTowerPokemon(&gPlayerParty[gSaveBlock2Ptr->frontier.selectedPartyMons[i] - 1], &playerRecord->party[i]);\n    }\n\n    playerRecord->language = gGameLanguage;\n    CalcEmeraldBattleTowerChecksum(&gSaveBlock2Ptr->frontier.towerPlayer);\n    SaveCurrentWinStreak();",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "CalcEmeraldBattleTowerChecksum",
+        "ClearBattleTowerRecord",
+        "ConvertPokemonToBattleTowerPokemon",
+        "CopyTrainerId",
+        "GetCurrentBattleTowerWinStreak",
+        "SaveCurrentWinStreak",
+        "StringCopy_PlayerName",
+        "VarGet"
+      ],
+      "lineCount": 43
+    },
+    "SaveTowerChallenge": {
+      "returnType": "void",
+      "signature": "static void SaveTowerChallenge(void)",
+      "paramsRaw": "void",
+      "body": "u16 lvlMode = gSaveBlock2Ptr->frontier.lvlMode;\n    u16 battleMode = VarGet(VAR_FRONTIER_BATTLE_MODE);\n    s32 challengeNum = (signed)(gSaveBlock2Ptr->frontier.towerWinStreaks[battleMode][lvlMode] / FRONTIER_STAGES_PER_CHALLENGE);\n\n    if (gSpecialVar_0x8005 == 0 && (challengeNum > 1 || gSaveBlock2Ptr->frontier.curChallengeBattleNum != 0))\n        SaveBattleTowerRecord();\n\n    gSaveBlock2Ptr->frontier.challengeStatus = gSpecialVar_0x8005;\n    VarSet(VAR_TEMP_CHALLENGE_STATUS, 0);\n    gSaveBlock2Ptr->frontier.challengePaused = TRUE;\n    SaveGameFrontier();",
+      "callsTo": [
+        "SaveBattleTowerRecord",
+        "SaveGameFrontier",
+        "VarGet",
+        "VarSet"
+      ],
+      "lineCount": 11
+    },
+    "BattleTowerNop1": {
+      "returnType": "void",
+      "signature": "static void BattleTowerNop1(void)",
+      "paramsRaw": "void",
+      "body": "",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "BattleTowerNop2": {
+      "returnType": "void",
+      "signature": "static void BattleTowerNop2(void)",
+      "paramsRaw": "void",
+      "body": "",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "GetApprenticeMultiPartnerParty": {
+      "returnType": "void",
+      "signature": "static void GetApprenticeMultiPartnerParty(u16 trainerId)",
+      "paramsRaw": "u16 trainerId",
+      "body": "s32 i, count;\n    u32 validSpecies[MULTI_PARTY_SIZE];\n    u16 species1 = GetMonData(&gPlayerParty[0], MON_DATA_SPECIES, NULL);\n    u16 species2 = GetMonData(&gPlayerParty[1], MON_DATA_SPECIES, NULL);\n\n    count = 0;\n    for (i = 0; i < MULTI_PARTY_SIZE; i++)\n    {\n        u16 apprenticeSpecies = gSaveBlock2Ptr->apprentices[trainerId - TRAINER_RECORD_MIXING_APPRENTICE].party[i].species;\n        if (apprenticeSpecies != species1 && apprenticeSpecies != species2)\n        {\n            validSpecies[count] = i;\n            count++;\n        }\n    }\n\n    gFrontierTempParty[0] = validSpecies[Random() % count];\n    do\n    {\n        gFrontierTempParty[1] = validSpecies[Random() % count];\n    } while (gFrontierTempParty[0] == gFrontierTempParty[1]);",
+      "callsTo": [
+        "GetMonData",
+        "Random"
+      ],
+      "lineCount": 21
+    },
+    "GetRecordMixFriendMultiPartnerParty": {
+      "returnType": "void",
+      "signature": "static void GetRecordMixFriendMultiPartnerParty(u16 trainerId)",
+      "paramsRaw": "u16 trainerId",
+      "body": "s32 i, count;\n    u32 validSpecies[3];\n    u32 lvlMode = gSaveBlock2Ptr->frontier.lvlMode;\n    u16 species1 = GetMonData(&gPlayerParty[0], MON_DATA_SPECIES, NULL);\n    u16 species2 = GetMonData(&gPlayerParty[1], MON_DATA_SPECIES, NULL);\n\n    count = 0;\n    for (i = 0; i < MAX_FRONTIER_PARTY_SIZE; i++)\n    {\n        if (gSaveBlock2Ptr->frontier.towerRecords[trainerId - TRAINER_RECORD_MIXING_FRIEND].party[i].species != species1\n            && gSaveBlock2Ptr->frontier.towerRecords[trainerId - TRAINER_RECORD_MIXING_FRIEND].party[i].species != species2\n            && gSaveBlock2Ptr->frontier.towerRecords[trainerId - TRAINER_RECORD_MIXING_FRIEND].party[i].level <= GetFrontierEnemyMonLevel(lvlMode)\n            && gSaveBlock2Ptr->frontier.towerRecords[trainerId - TRAINER_RECORD_MIXING_FRIEND].party[i].species != SPECIES_NONE)\n        {\n            validSpecies[count] = i;\n            count++;\n        }\n    }\n\n    gFrontierTempParty[2] = validSpecies[Random() % count];\n    do\n    {\n        gFrontierTempParty[3] = validSpecies[Random() % count];\n    } while (gFrontierTempParty[2] == gFrontierTempParty[3]);",
+      "callsTo": [
+        "GetFrontierEnemyMonLevel",
+        "GetMonData",
+        "Random"
+      ],
+      "lineCount": 24
+    },
+    "LoadMultiPartnerCandidatesData": {
+      "returnType": "void",
+      "signature": "static void LoadMultiPartnerCandidatesData(void)",
+      "paramsRaw": "void",
+      "body": "s32 i, j, k;\n    u32 spArray[5];\n    s32 r10;\n    u16 trainerId;\n    u16 monId;\n    u32 lvlMode, battleMode;\n    s32 challengeNum;\n    u32 species1, species2;\n    u32 UNUSED level;\n    struct ObjectEventTemplate *objEventTemplates;\n\n    objEventTemplates = gSaveBlock1Ptr->objectEventTemplates;\n    lvlMode = gSaveBlock2Ptr->frontier.lvlMode;\n    battleMode = VarGet(VAR_FRONTIER_BATTLE_MODE);\n    challengeNum = gSaveBlock2Ptr->frontier.towerWinStreaks[battleMode][lvlMode] / FRONTIER_STAGES_PER_CHALLENGE;\n    species1 = GetMonData(&gPlayerParty[0], MON_DATA_SPECIES, NULL);\n    species2 = GetMonData(&gPlayerParty[1], MON_DATA_SPECIES, NULL);\n    level = SetFacilityPtrsGetLevel();\n\n    j = 0;\n    do\n    {\n        do\n        {\n            trainerId = GetRandomScaledFrontierTrainerId(challengeNum, 0);\n            for (i = 0; i < j; i++)\n            {\n                if (gSaveBlock2Ptr->frontier.trainerIds[i] == trainerId)\n                    break;\n                if (gFacilityTrainers[gSaveBlock2Ptr->frontier.trainerIds[i]].facilityClass == gFacilityTrainers[trainerId].facilityClass)\n                    break;\n            }\n        } while (i != j);\n        gSaveBlock2Ptr->frontier.trainerIds[j] = trainerId;\n        j++;\n    } while (j < 6);\n\n    r10 = 8;\n    for (i = 0; i < 6; i++)\n    {\n        trainerId = gSaveBlock2Ptr->frontier.trainerIds[i];\n        objEventTemplates[i + 1].graphicsId = GetBattleFacilityTrainerGfxId(trainerId);\n        for (j = 0; j < 2; j++)\n        {\n            while (1)\n            {\n                monId = GetRandomFrontierMonFromSet(trainerId);\n                if (j % 2 != 0 && gFacilityTrainerMons[gSaveBlock2Ptr->frontier.trainerIds[r10 - 1]].itemTableId == gFacilityTrainerMons[monId].itemTableId)\n                    continue;\n\n                for (k = 8; k < r10; k++)\n                {\n                    if (gFacilityTrainerMons[gSaveBlock2Ptr->frontier.trainerIds[k]].species == gFacilityTrainerMons[monId].species)\n                        break;\n                    if (species1 == gFacilityTrainerMons[monId].species)\n                        break;\n                    if (species2 == gFacilityTrainerMons[monId].species)\n                        break;\n                }\n                if (k == r10)\n                    break;\n            }\n\n            gSaveBlock2Ptr->frontier.trainerIds[r10] = monId;\n            r10++;\n        }\n    }\n\n    r10 = 0;\n    ValidateApprenticesChecksums();\n    for (i = 0; i < APPRENTICE_COUNT; i++)\n    {\n        if (gSaveBlock2Ptr->apprentices[i].lvlMode != 0\n            && sApprenticeChallengeThreshold[gSaveBlock2Ptr->apprentices[i].numQuestions] / FRONTIER_STAGES_PER_CHALLENGE <= challengeNum\n            && gSaveBlock2Ptr->apprentices[i].lvlMode - 1 == lvlMode)\n        {\n            k = 0;\n            for (j = 0; j < MULTI_PARTY_SIZE; j++)\n            {\n                if (species1 != gSaveBlock2Ptr->apprentices[i].party[j].species\n                    && species2 != gSaveBlock2Ptr->apprentices[i].party[j].species)\n                {\n                    k++;\n                }\n            }\n            if (k > 2)\n            {\n                spArray[r10] = i + TRAINER_RECORD_MIXING_APPRENTICE;\n                r10++;\n            }\n        }\n    }\n    if (r10 != 0)\n    {\n        gSaveBlock2Ptr->frontier.trainerIds[6] = spArray[Random() % r10];\n        objEventTemplates[7].graphicsId = GetBattleFacilityTrainerGfxId(gSaveBlock2Ptr->frontier.trainerIds[6]);\n        FlagClear(FLAG_HIDE_BATTLE_TOWER_MULTI_BATTLE_PARTNER_ALT_1);\n        GetApprenticeMultiPartnerParty(gSaveBlock2Ptr->frontier.trainerIds[6]);\n    }\n\n    r10 = 0;\n    for (i = 0; i < BATTLE_TOWER_RECORD_COUNT; i++)\n    {\n        u32 *record = (u32 *)(&gSaveBlock2Ptr->frontier.towerRecords[i]);\n        u32 recordHasData = 0;\n        u32 checksum = 0;\n        for (j = 0; j < (sizeof(struct EmeraldBattleTowerRecord) - 4) / 4; j++)  \n        {\n            recordHasData |= record[j];\n            checksum += record[j];\n        }\n\n        if (gSaveBlock2Ptr->frontier.towerRecords[i].winStreak / FRONTIER_STAGES_PER_CHALLENGE <= challengeNum\n            && gSaveBlock2Ptr->frontier.towerRecords[i].lvlMode == lvlMode\n            && recordHasData\n            && gSaveBlock2Ptr->frontier.towerRecords[i].checksum == checksum)\n        {\n            k = 0;\n            for (j = 0; j < MAX_FRONTIER_PARTY_SIZE; j++)\n            {\n                if (species1 != gSaveBlock2Ptr->frontier.towerRecords[i].party[j].species\n                    && species2 != gSaveBlock2Ptr->frontier.towerRecords[i].party[j].species\n                    && gSaveBlock2Ptr->frontier.towerRecords[i].party[j].level <= GetFrontierEnemyMonLevel(lvlMode)\n                    && gSaveBlock2Ptr->frontier.towerRecords[i].party[j].species != SPECIES_NONE)\n                {\n                    k++;\n                }\n            }\n            if (k > 1)\n            {\n                spArray[r10] = i + TRAINER_RECORD_MIXING_FRIEND;\n                r10++;\n            }\n        }\n    }\n    if (r10 != 0)\n    {\n        gSaveBlock2Ptr->frontier.trainerIds[7] = spArray[Random() % r10];\n        objEventTemplates[8].graphicsId = GetBattleFacilityTrainerGfxId(gSaveBlock2Ptr->frontier.trainerIds[7]);\n        FlagClear(FLAG_HIDE_BATTLE_TOWER_MULTI_BATTLE_PARTNER_ALT_2);\n        GetRecordMixFriendMultiPartnerParty(gSaveBlock2Ptr->frontier.trainerIds[7]);\n    }",
+      "callsTo": [
+        "FlagClear",
+        "GetApprenticeMultiPartnerParty",
+        "GetBattleFacilityTrainerGfxId",
+        "GetFrontierEnemyMonLevel",
+        "GetMonData",
+        "GetRandomFrontierMonFromSet",
+        "GetRandomScaledFrontierTrainerId",
+        "GetRecordMixFriendMultiPartnerParty",
+        "Random",
+        "SetFacilityPtrsGetLevel",
+        "ValidateApprenticesChecksums",
+        "VarGet"
+      ],
+      "lineCount": 142
+    },
+    "GetPotentialPartnerMoveAndSpecies": {
+      "returnType": "void",
+      "signature": "static void GetPotentialPartnerMoveAndSpecies(u16 trainerId, u16 monId)",
+      "paramsRaw": "u16 trainerId, u16 monId",
+      "body": "u16 move = MOVE_NONE;\n    u16 species = 0;\n    SetFacilityPtrsGetLevel();\n\n    if (trainerId != TRAINER_EREADER)\n    {\n        if (trainerId < FRONTIER_TRAINERS_COUNT)\n        {\n            move = gFacilityTrainerMons[monId].moves[0];\n            species = gFacilityTrainerMons[monId].species;\n        }\n        else if (trainerId < TRAINER_RECORD_MIXING_APPRENTICE)\n        {\n            move = gSaveBlock2Ptr->frontier.towerRecords[trainerId - TRAINER_RECORD_MIXING_FRIEND].party[gFrontierTempParty[gSpecialVar_0x8005 + 1]].moves[0];\n            species = gSaveBlock2Ptr->frontier.towerRecords[trainerId - TRAINER_RECORD_MIXING_FRIEND].party[gFrontierTempParty[gSpecialVar_0x8005 + 1]].species;\n        }\n        else\n        {\n            s32 i;\n\n            move = gSaveBlock2Ptr->apprentices[trainerId - TRAINER_RECORD_MIXING_APPRENTICE].party[gFrontierTempParty[gSpecialVar_0x8005 - 1]].moves[0];\n            species = gSaveBlock2Ptr->apprentices[trainerId - TRAINER_RECORD_MIXING_APPRENTICE].party[gFrontierTempParty[gSpecialVar_0x8005 - 1]].species;\n            for (i = 0; i < PLAYER_NAME_LENGTH; i++)\n                gStringVar3[i] = gSaveBlock2Ptr->apprentices[trainerId - TRAINER_RECORD_MIXING_APPRENTICE].playerName[i];\n            gStringVar3[i] = EOS;\n            ConvertInternationalString(gStringVar3, gSaveBlock2Ptr->apprentices[trainerId - TRAINER_RECORD_MIXING_APPRENTICE].language);\n        }\n    }\n\n    StringCopy(gStringVar1, gMoveNames[move]);\n    StringCopy(gStringVar2, gSpeciesNames[species]);",
+      "callsTo": [
+        "ConvertInternationalString",
+        "SetFacilityPtrsGetLevel",
+        "StringCopy"
+      ],
+      "lineCount": 31
+    },
+    "ShowPartnerCandidateMessage": {
+      "returnType": "void",
+      "signature": "static void ShowPartnerCandidateMessage(void)",
+      "paramsRaw": "void",
+      "body": "s32 i, j, partnerId;\n    s32 monId;\n    s32 UNUSED level = SetFacilityPtrsGetLevel();\n    u16 winStreak = GetCurrentFacilityWinStreak();\n    s32 challengeNum = winStreak / FRONTIER_STAGES_PER_CHALLENGE;\n    s32 k = gSpecialVar_LastTalked - 2;\n    s32 trainerId = gSaveBlock2Ptr->frontier.trainerIds[k];\n\n    for (partnerId = 0; partnerId < ARRAY_COUNT(sPartnerTrainerTextTables); partnerId++)\n    {\n        if (sPartnerTrainerTextTables[partnerId].facilityClass == GetFrontierTrainerFacilityClass(trainerId))\n            break;\n    }\n\n    switch (gSpecialVar_0x8005)\n    {\n    case PARTNER_MSGID_INTRO:\n        if (trainerId == TRAINER_EREADER)\n            return;\n        if (trainerId < FRONTIER_TRAINERS_COUNT)\n        {\n            GetFrontierTrainerName(gStringVar1, trainerId);\n        }\n        else if (trainerId < TRAINER_RECORD_MIXING_APPRENTICE)\n        {\n            GetFrontierTrainerName(gStringVar1, trainerId);\n        }\n        else\n        {\n            s32 i;\n            for (i = 0; i < PLAYER_NAME_LENGTH; i++)\n                gStringVar1[i] = gSaveBlock2Ptr->apprentices[trainerId - TRAINER_RECORD_MIXING_APPRENTICE].playerName[i];\n            gStringVar1[i] = EOS;\n            ConvertInternationalString(gStringVar1, gSaveBlock2Ptr->apprentices[trainerId - TRAINER_RECORD_MIXING_APPRENTICE].language);\n            ConvertIntToDecimalStringN(gStringVar2, gSaveBlock2Ptr->apprentices[trainerId - TRAINER_RECORD_MIXING_APPRENTICE].number, STR_CONV_MODE_LEFT_ALIGN, 3);\n            GetFrontierTrainerName(gStringVar3, trainerId);\n        }\n        break;\n    case PARTNER_MSGID_MON1:\n        monId = gSaveBlock2Ptr->frontier.trainerIds[8 + k * 2];\n        GetPotentialPartnerMoveAndSpecies(trainerId, monId);\n        break;\n    case PARTNER_MSGID_MON2_ASK:\n        monId = gSaveBlock2Ptr->frontier.trainerIds[9 + k * 2];\n        GetPotentialPartnerMoveAndSpecies(trainerId, monId);\n        break;\n    case PARTNER_MSGID_ACCEPT:\n        gPartnerTrainerId = trainerId;\n        if (trainerId < FRONTIER_TRAINERS_COUNT)\n        {\n            gSaveBlock2Ptr->frontier.trainerIds[18] = gSaveBlock2Ptr->frontier.trainerIds[8 + k * 2];\n            gSaveBlock2Ptr->frontier.trainerIds[19] = gSaveBlock2Ptr->frontier.trainerIds[9 + k * 2];\n        }\n        else if (trainerId < TRAINER_RECORD_MIXING_APPRENTICE)\n        {\n            gSaveBlock2Ptr->frontier.trainerIds[18] = gFrontierTempParty[2];\n            gSaveBlock2Ptr->frontier.trainerIds[19] = gFrontierTempParty[3];\n        }\n        else\n        {\n            gSaveBlock2Ptr->frontier.trainerIds[18] = gFrontierTempParty[0];\n            gSaveBlock2Ptr->frontier.trainerIds[19] = gFrontierTempParty[1];\n        }\n        for (k = 0; k < FRONTIER_STAGES_PER_CHALLENGE * 2; k++)\n        {\n            while (1)\n            {\n                i = GetRandomScaledFrontierTrainerId(challengeNum, k / 2);\n                if (gPartnerTrainerId == i)\n                    continue;\n\n                for (j = 0; j < k; j++)\n                {\n                    if (gSaveBlock2Ptr->frontier.trainerIds[j] == i)\n                        break;\n                }\n                if (j == k)\n                    break;\n            }\n            gSaveBlock2Ptr->frontier.trainerIds[k] = i;\n        }\n        gSaveBlock2Ptr->frontier.trainerIds[17] = trainerId;\n        break;\n    case PARTNER_MSGID_REJECT:\n        break;\n    }\n\n    if (trainerId == TRAINER_EREADER)\n        return;\n\n     \n    if (trainerId < FRONTIER_TRAINERS_COUNT)\n    {\n        ShowFieldMessage(sPartnerTrainerTextTables[partnerId].strings[gSpecialVar_0x8005]);\n    }\n    else if (trainerId < TRAINER_RECORD_MIXING_APPRENTICE)\n    {\n        ShowFieldMessage(sPartnerTrainerTextTables[partnerId].strings[gSpecialVar_0x8005]);\n    }\n     \n    else\n    {\n        u8 apprenticeId = gSaveBlock2Ptr->apprentices[trainerId - TRAINER_RECORD_MIXING_APPRENTICE].id;\n        ShowFieldMessage(sPartnerApprenticeTextTables[apprenticeId][gSpecialVar_0x8005]);\n    }",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "ConvertIntToDecimalStringN",
+        "ConvertInternationalString",
+        "GetCurrentFacilityWinStreak",
+        "GetFrontierTrainerFacilityClass",
+        "GetFrontierTrainerName",
+        "GetPotentialPartnerMoveAndSpecies",
+        "GetRandomScaledFrontierTrainerId",
+        "SetFacilityPtrsGetLevel",
+        "ShowFieldMessage"
+      ],
+      "lineCount": 105
+    },
+    "LoadLinkMultiOpponentsData": {
+      "returnType": "void",
+      "signature": "static void LoadLinkMultiOpponentsData(void)",
+      "paramsRaw": "void",
+      "body": "s32 challengeNum;\n    s32 i, j;\n    s32 trainerId = 0;\n    u32 lvlMode = gSaveBlock2Ptr->frontier.lvlMode;\n    u32 battleMode = VarGet(VAR_FRONTIER_BATTLE_MODE);\n    u32 battleNum = gSaveBlock2Ptr->frontier.curChallengeBattleNum;\n    GetMultiplayerId();  \n\n    switch (gSpecialVar_Result)\n    {\n    case 0:\n        if (battleMode == FRONTIER_MODE_LINK_MULTIS)\n        {\n            challengeNum = gSaveBlock2Ptr->frontier.towerWinStreaks[battleMode][lvlMode] / FRONTIER_STAGES_PER_CHALLENGE;\n            if (IsLinkTaskFinished())\n            {\n                SendBlock(BitmaskAllOtherLinkPlayers(), &challengeNum, sizeof(challengeNum));\n                gSpecialVar_Result = 1;\n            }\n        }\n        else\n        {\n            gSpecialVar_Result = 6;\n        }\n        break;\n    case 1:\n        if ((GetBlockReceivedStatus() & 3) == 3)\n        {\n            ResetBlockReceivedFlags();\n            if (gBlockRecvBuffer[0][0] > gBlockRecvBuffer[1][0])\n                challengeNum = gBlockRecvBuffer[0][0];\n            else\n                challengeNum = gBlockRecvBuffer[1][0];\n            for (i = 0; i < FRONTIER_STAGES_PER_CHALLENGE * 2; i++)\n            {\n                do\n                {\n                    trainerId = GetRandomScaledFrontierTrainerId(challengeNum, i / 2);\n                    for (j = 0; j < i; j++)\n                    {\n                        if (gSaveBlock2Ptr->frontier.trainerIds[j] == trainerId)\n                            break;\n                    }\n                } while (i != j);\n                if (i == j)  \n                    gSaveBlock2Ptr->frontier.trainerIds[i] = trainerId;\n            }\n            gSpecialVar_Result = 2;\n        }\n        break;\n    case 2:\n        if (IsLinkTaskFinished())\n        {\n            SendBlock(BitmaskAllOtherLinkPlayers(), &gSaveBlock2Ptr->frontier.trainerIds, sizeof(gSaveBlock2Ptr->frontier.trainerIds));\n            gSpecialVar_Result = 3;\n        }\n        break;\n    case 3:\n        if ((GetBlockReceivedStatus() & 3) == 3)\n        {\n            ResetBlockReceivedFlags();\n            memcpy(&gSaveBlock2Ptr->frontier.trainerIds, gBlockRecvBuffer, sizeof(gSaveBlock2Ptr->frontier.trainerIds));\n            gTrainerBattleOpponent_A = gSaveBlock2Ptr->frontier.trainerIds[battleNum * 2];\n            gTrainerBattleOpponent_B = gSaveBlock2Ptr->frontier.trainerIds[battleNum * 2 + 1];\n            SetBattleFacilityTrainerGfxId(gTrainerBattleOpponent_A, 0);\n            SetBattleFacilityTrainerGfxId(gTrainerBattleOpponent_B, 1);\n            if (gReceivedRemoteLinkPlayers && gWirelessCommType == 0)\n                gSpecialVar_Result = 4;\n            else\n                gSpecialVar_Result = 6;\n        }\n        break;\n    case 4:\n        SetCloseLinkCallback();\n        gSpecialVar_Result = 5;\n        break;\n    case 5:\n        if (gReceivedRemoteLinkPlayers == 0)\n        {\n            gSpecialVar_Result = 6;\n        }\n        break;\n    case 6:\n        return;\n    }",
+      "callsTo": [
+        "BitmaskAllOtherLinkPlayers",
+        "GetBlockReceivedStatus",
+        "GetMultiplayerId",
+        "GetRandomScaledFrontierTrainerId",
+        "IsLinkTaskFinished",
+        "ResetBlockReceivedFlags",
+        "SendBlock",
+        "SetBattleFacilityTrainerGfxId",
+        "SetCloseLinkCallback",
+        "VarGet"
+      ],
+      "lineCount": 85
+    },
+    "TowerTryCloseLink": {
+      "returnType": "void",
+      "signature": "static void TowerTryCloseLink(void)",
+      "paramsRaw": "void",
+      "body": "if (gWirelessCommType != 0)\n        SetCloseLinkCallback();",
+      "callsTo": [
+        "SetCloseLinkCallback"
+      ],
+      "lineCount": 2
+    },
+    "SetMultiPartnerGfx": {
+      "returnType": "void",
+      "signature": "static void SetMultiPartnerGfx(void)",
+      "paramsRaw": "void",
+      "body": "SetBattleFacilityTrainerGfxId(gSaveBlock2Ptr->frontier.trainerIds[17], 0xF);",
+      "callsTo": [
+        "SetBattleFacilityTrainerGfxId"
+      ],
+      "lineCount": 1
+    },
+    "SetTowerInterviewData": {
+      "returnType": "void",
+      "signature": "static void SetTowerInterviewData(void)",
+      "paramsRaw": "void",
+      "body": "s32 i;\n    u8 text[32];\n\n    if (VarGet(VAR_FRONTIER_BATTLE_MODE) != FRONTIER_MODE_SINGLES)\n        return;\n\n    GetFrontierTrainerName(text, gTrainerBattleOpponent_A);\n    StripExtCtrlCodes(text);\n     \n    text[7] = EOS;\n    StringCopy(gSaveBlock2Ptr->frontier.towerInterview.opponentName, text);\n    GetBattleTowerTrainerLanguage(&gSaveBlock2Ptr->frontier.towerInterview.opponentLanguage, gTrainerBattleOpponent_A);\n    gSaveBlock2Ptr->frontier.towerInterview.opponentSpecies = GetMonData(&gEnemyParty[gBattlerPartyIndexes[1]], MON_DATA_SPECIES, NULL);\n    gSaveBlock2Ptr->frontier.towerInterview.playerSpecies = GetMonData(&gPlayerParty[gBattlerPartyIndexes[0]], MON_DATA_SPECIES, NULL);\n    for (i = 0; i < POKEMON_NAME_LENGTH + 1; i++)\n        gSaveBlock2Ptr->frontier.towerInterview.opponentMonNickname[i] = gBattleMons[0].nickname[i];\n    gSaveBlock2Ptr->frontier.towerBattleOutcome = gBattleOutcome;",
+      "callsTo": [
+        "GetBattleTowerTrainerLanguage",
+        "GetFrontierTrainerName",
+        "GetMonData",
+        "StringCopy",
+        "StripExtCtrlCodes",
+        "VarGet"
+      ],
+      "lineCount": 17
+    },
+    "ValidateBattleTowerRecordChecksums": {
+      "returnType": "void",
+      "signature": "static void ValidateBattleTowerRecordChecksums(void)",
+      "paramsRaw": "void",
+      "body": "s32 i, j;\n    u32 *record = (u32 *)(&gSaveBlock2Ptr->frontier.towerPlayer);\n    u32 checksum = 0;\n\n    for (j = 0; j < (sizeof(struct EmeraldBattleTowerRecord) - 4) / 4; j++)  \n    {\n        checksum += record[j];\n    }\n    if (gSaveBlock2Ptr->frontier.towerPlayer.checksum != checksum)\n        ClearBattleTowerRecord(&gSaveBlock2Ptr->frontier.towerPlayer);\n\n    for (i = 0; i < BATTLE_TOWER_RECORD_COUNT; i++)\n    {\n        record = (u32 *)(&gSaveBlock2Ptr->frontier.towerRecords[i]);\n        checksum = 0;\n        for (j = 0; j < (sizeof(struct EmeraldBattleTowerRecord) - 4) / 4; j++)  \n        {\n            checksum += record[j];\n        }\n        if (gSaveBlock2Ptr->frontier.towerRecords[i].checksum != checksum)\n            ClearBattleTowerRecord(&gSaveBlock2Ptr->frontier.towerRecords[i]);\n    }",
+      "callsTo": [
+        "ClearBattleTowerRecord"
+      ],
+      "lineCount": 22
+    },
+    "CalcEmeraldBattleTowerChecksum": {
+      "returnType": "void",
+      "signature": "void CalcEmeraldBattleTowerChecksum(struct EmeraldBattleTowerRecord *record)",
+      "paramsRaw": "struct EmeraldBattleTowerRecord *record",
+      "body": "u32 i;\n\n    record->checksum = 0;\n    for (i = 0; i < (sizeof(struct EmeraldBattleTowerRecord) - 4) / 4; i++)  \n        record->checksum += ((u32 *)record)[i];",
+      "callsTo": [],
+      "lineCount": 5
+    },
+    "CalcRubyBattleTowerChecksum": {
+      "returnType": "void",
+      "signature": "void CalcRubyBattleTowerChecksum(struct RSBattleTowerRecord *record)",
+      "paramsRaw": "struct RSBattleTowerRecord *record",
+      "body": "u32 i;\n\n    record->checksum = 0;\n    for (i = 0; i < (sizeof(struct RSBattleTowerRecord) - 4) / 4; i++)  \n        record->checksum += ((u32 *)record)[i];",
+      "callsTo": [],
+      "lineCount": 5
+    },
+    "ClearBattleTowerRecord": {
+      "returnType": "void",
+      "signature": "static void ClearBattleTowerRecord(struct EmeraldBattleTowerRecord *record)",
+      "paramsRaw": "struct EmeraldBattleTowerRecord *record",
+      "body": "u32 i;\n\n    for (i = 0; i < sizeof(struct EmeraldBattleTowerRecord) / 4; i++)\n        ((u32 *)record)[i] = 0;",
+      "callsTo": [],
+      "lineCount": 4
+    },
+    "GetCurrentBattleTowerWinStreak": {
+      "returnType": "u16",
+      "signature": "u16 GetCurrentBattleTowerWinStreak(u8 lvlMode, u8 battleMode)",
+      "paramsRaw": "u8 lvlMode, u8 battleMode",
+      "body": "u16 winStreak = gSaveBlock2Ptr->frontier.towerWinStreaks[battleMode][lvlMode];\n\n    if (winStreak > MAX_STREAK)\n        return MAX_STREAK;\n    else\n        return winStreak;",
+      "callsTo": [],
+      "lineCount": 6
+    },
+    "GetMonCountForBattleMode": {
+      "returnType": "u8",
+      "signature": "static u8 GetMonCountForBattleMode(u8 battleMode)",
+      "paramsRaw": "u8 battleMode",
+      "body": "u8 partySizes[ARRAY_COUNT(sBattleTowerPartySizes)];\n    memcpy(partySizes, sBattleTowerPartySizes, sizeof(sBattleTowerPartySizes));\n\n    if (battleMode < ARRAY_COUNT(sBattleTowerPartySizes))\n        return partySizes[battleMode];\n    else\n        return FRONTIER_PARTY_SIZE;",
+      "callsTo": [
+        "ARRAY_COUNT"
+      ],
+      "lineCount": 7
+    },
+    "AwardBattleTowerRibbons": {
+      "returnType": "void",
+      "signature": "static void AwardBattleTowerRibbons(void)",
+      "paramsRaw": "void",
+      "body": "s32 i;\n    u32 partyIndex;\n#ifdef BUGFIX\n    struct RibbonCounter ribbons[MAX_FRONTIER_PARTY_SIZE];\n#else\n    struct RibbonCounter ribbons[3];  \n#endif\n    u8 ribbonType = 0;\n    u8 lvlMode = gSaveBlock2Ptr->frontier.lvlMode;\n    u8 battleMode = VarGet(VAR_FRONTIER_BATTLE_MODE);\n    u8 monCount = GetMonCountForBattleMode(battleMode);\n\n    if (lvlMode != FRONTIER_LVL_50)\n        ribbonType = MON_DATA_VICTORY_RIBBON;\n    else\n        ribbonType = MON_DATA_WINNING_RIBBON;\n\n    gSpecialVar_Result = FALSE;\n\n    if (GetCurrentBattleTowerWinStreak(lvlMode, battleMode) > 55)\n    {\n        for (i = 0; i < monCount; i++)\n        {\n            partyIndex = gSaveBlock2Ptr->frontier.selectedPartyMons[i] - 1;\n            ribbons[i].partyIndex = partyIndex;\n            ribbons[i].count = 0;\n            if (!GetMonData(&gSaveBlock1Ptr->playerParty[partyIndex], ribbonType))\n            {\n                gSpecialVar_Result = TRUE;\n                SetMonData(&gSaveBlock1Ptr->playerParty[partyIndex], ribbonType, &gSpecialVar_Result);\n                ribbons[i].count = GetRibbonCount(&gSaveBlock1Ptr->playerParty[partyIndex]);\n            }\n        }\n    }\n\n    if (gSpecialVar_Result)\n    {\n        IncrementGameStat(GAME_STAT_RECEIVED_RIBBONS);\n        for (i = 1; i < monCount; i++)\n        {\n            if (ribbons[i].count > ribbons[0].count)\n            {\n                struct RibbonCounter prevBest = ribbons[0];\n                ribbons[0] = ribbons[i];\n                ribbons[i] = prevBest;\n            }\n        }\n        if (ribbons[0].count > NUM_CUTIES_RIBBONS)\n        {\n            TryPutSpotTheCutiesOnAir(&gSaveBlock1Ptr->playerParty[ribbons[0].partyIndex], ribbonType);\n        }\n    }",
+      "callsTo": [
+        "GetCurrentBattleTowerWinStreak",
+        "GetMonCountForBattleMode",
+        "GetMonData",
+        "GetRibbonCount",
+        "IncrementGameStat",
+        "SetMonData",
+        "TryPutSpotTheCutiesOnAir",
+        "VarGet"
+      ],
+      "lineCount": 52
+    },
+    "GetEreaderTrainerFrontSpriteId": {
+      "returnType": "u8",
+      "signature": "u8 GetEreaderTrainerFrontSpriteId(void)",
+      "paramsRaw": "void",
+      "body": "return gFacilityClassToPicIndex[gSaveBlock2Ptr->frontier.ereaderTrainer.facilityClass];",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "GetEreaderTrainerClassId": {
+      "returnType": "u8",
+      "signature": "u8 GetEreaderTrainerClassId(void)",
+      "paramsRaw": "void",
+      "body": "return gFacilityClassToTrainerClass[gSaveBlock2Ptr->frontier.ereaderTrainer.facilityClass];",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "GetEreaderTrainerName": {
+      "returnType": "void",
+      "signature": "void GetEreaderTrainerName(u8 *dst)",
+      "paramsRaw": "u8 *dst",
+      "body": "s32 i;\n\n    for (i = 0; i < 5; i++)\n        dst[i] = gSaveBlock2Ptr->frontier.ereaderTrainer.name[i];\n\n    dst[i] = EOS;",
+      "callsTo": [],
+      "lineCount": 6
+    },
+    "ValidateEReaderTrainer": {
+      "returnType": "void",
+      "signature": "void ValidateEReaderTrainer(void)",
+      "paramsRaw": "void",
+      "body": "u32 i;\n    u32 checksum;\n    struct BattleTowerEReaderTrainer *ereaderTrainer;\n\n    gSpecialVar_Result = FALSE;\n    ereaderTrainer = &gSaveBlock2Ptr->frontier.ereaderTrainer;\n\n    checksum = 0;\n    for (i = 0; i < (sizeof(struct BattleTowerEReaderTrainer) - 4) / 4; i++)  \n        checksum |= ((u32 *)ereaderTrainer)[i];\n\n    if (checksum == 0)\n    {\n        gSpecialVar_Result = TRUE;\n        return;\n    }\n\n    checksum = 0;\n    for (i = 0; i < (sizeof(struct BattleTowerEReaderTrainer) - 4) / 4; i++)  \n        checksum += ((u32 *)ereaderTrainer)[i];\n\n    if (gSaveBlock2Ptr->frontier.ereaderTrainer.checksum != checksum)\n    {\n        ClearEReaderTrainer(&gSaveBlock2Ptr->frontier.ereaderTrainer);\n        gSpecialVar_Result = TRUE;\n    }",
+      "callsTo": [
+        "ClearEReaderTrainer"
+      ],
+      "lineCount": 26
+    },
+    "SetEReaderTrainerChecksum": {
+      "returnType": "void",
+      "signature": "static void SetEReaderTrainerChecksum(struct BattleTowerEReaderTrainer *ereaderTrainer)",
+      "paramsRaw": "struct BattleTowerEReaderTrainer *ereaderTrainer",
+      "body": "s32 i;\n\n    ereaderTrainer->checksum = 0;\n    for (i = 0; i < (sizeof(struct BattleTowerEReaderTrainer) - 4) / 4; i++)  \n        ereaderTrainer->checksum += ((u32 *)ereaderTrainer)[i];",
+      "callsTo": [],
+      "lineCount": 5
+    },
+    "ClearEReaderTrainer": {
+      "returnType": "void",
+      "signature": "void ClearEReaderTrainer(struct BattleTowerEReaderTrainer *ereaderTrainer)",
+      "paramsRaw": "struct BattleTowerEReaderTrainer *ereaderTrainer",
+      "body": "u32 i;\n\n    for (i = 0; i < (sizeof(struct BattleTowerEReaderTrainer)) / 4; i++)\n        ((u32 *)ereaderTrainer)[i] = 0;",
+      "callsTo": [],
+      "lineCount": 4
+    },
+    "CopyEReaderTrainerGreeting": {
+      "returnType": "void",
+      "signature": "void CopyEReaderTrainerGreeting(void)",
+      "paramsRaw": "void",
+      "body": "FrontierSpeechToString(gSaveBlock2Ptr->frontier.ereaderTrainer.greeting);",
+      "callsTo": [
+        "FrontierSpeechToString"
+      ],
+      "lineCount": 1
+    },
+    "CopyEReaderTrainerFarewellMessage": {
+      "returnType": "void",
+      "signature": "static void CopyEReaderTrainerFarewellMessage(void)",
+      "paramsRaw": "void",
+      "body": "if (gBattleOutcome == B_OUTCOME_DREW)\n        gStringVar4[0] = EOS;\n    else if (gBattleOutcome == B_OUTCOME_WON)\n        FrontierSpeechToString(gSaveBlock2Ptr->frontier.ereaderTrainer.farewellPlayerWon);\n    else\n        FrontierSpeechToString(gSaveBlock2Ptr->frontier.ereaderTrainer.farewellPlayerLost);",
+      "callsTo": [
+        "FrontierSpeechToString"
+      ],
+      "lineCount": 6
+    },
+    "TryHideBattleTowerReporter": {
+      "returnType": "void",
+      "signature": "void TryHideBattleTowerReporter(void)",
+      "paramsRaw": "void",
+      "body": "if (gSaveBlock2Ptr->frontier.challengeStatus == CHALLENGE_STATUS_SAVING)\n        HideBattleTowerReporter();\n    if (FlagGet(FLAG_CANCEL_BATTLE_ROOM_CHALLENGE) == TRUE)\n    {\n        HideBattleTowerReporter();\n        FlagClear(FLAG_CANCEL_BATTLE_ROOM_CHALLENGE);\n    }",
+      "callsTo": [
+        "FlagClear",
+        "FlagGet",
+        "HideBattleTowerReporter"
+      ],
+      "lineCount": 7
+    },
+    "FillPartnerParty": {
+      "returnType": "void",
+      "signature": "static void FillPartnerParty(u16 trainerId)",
+      "paramsRaw": "u16 trainerId",
+      "body": "s32 i, j;\n    u32 ivs, level;\n    u32 friendship;\n    u16 monId;\n    u32 otID;\n    u8 trainerName[PLAYER_NAME_LENGTH + 1];\n    SetFacilityPtrsGetLevel();\n\n    if (trainerId == TRAINER_STEVEN_PARTNER)\n    {\n        for (i = 0; i < MULTI_PARTY_SIZE; i++)\n        {\n            do\n            {\n                j = Random32();\n            } while (IsShinyOtIdPersonality(STEVEN_OTID, j) || sStevenMons[i].nature != GetNatureFromPersonality(j));\n            CreateMon(&gPlayerParty[MULTI_PARTY_SIZE + i],\n                      sStevenMons[i].species,\n                      sStevenMons[i].level,\n                      sStevenMons[i].fixedIV,\n                      TRUE,\n                      #ifdef BUGFIX\n                      j,\n                      #else\n                      i,  \n                      #endif\n                      OT_ID_PRESET, STEVEN_OTID);\n            for (j = 0; j < PARTY_SIZE; j++)\n                SetMonData(&gPlayerParty[MULTI_PARTY_SIZE + i], MON_DATA_HP_EV + j, &sStevenMons[i].evs[j]);\n            for (j = 0; j < MAX_MON_MOVES; j++)\n                SetMonMoveSlot(&gPlayerParty[MULTI_PARTY_SIZE + i], sStevenMons[i].moves[j], j);\n            SetMonData(&gPlayerParty[MULTI_PARTY_SIZE + i], MON_DATA_OT_NAME, gTrainers[TRAINER_STEVEN].trainerName);\n            j = MALE;\n            SetMonData(&gPlayerParty[MULTI_PARTY_SIZE + i], MON_DATA_OT_GENDER, &j);\n            CalculateMonStats(&gPlayerParty[MULTI_PARTY_SIZE + i]);\n        }\n    }\n    else if (trainerId == TRAINER_EREADER)\n    {\n         \n        trainerName[0] = gGameLanguage;\n    }\n    else if (trainerId < FRONTIER_TRAINERS_COUNT)\n    {\n        level = SetFacilityPtrsGetLevel();\n        ivs = GetFrontierTrainerFixedIvs(trainerId);\n        otID = Random32();\n        for (i = 0; i < FRONTIER_MULTI_PARTY_SIZE; i++)\n        {\n            monId = gSaveBlock2Ptr->frontier.trainerIds[i + 18];\n            CreateMonWithEVSpreadNatureOTID(&gPlayerParty[MULTI_PARTY_SIZE + i],\n                                                 gFacilityTrainerMons[monId].species,\n                                                 level,\n                                                 gFacilityTrainerMons[monId].nature,\n                                                 ivs,\n                                                 gFacilityTrainerMons[monId].evSpread,\n                                                 otID);\n            friendship = MAX_FRIENDSHIP;\n            for (j = 0; j < MAX_MON_MOVES; j++)\n            {\n                SetMonMoveSlot(&gPlayerParty[MULTI_PARTY_SIZE + i], gFacilityTrainerMons[monId].moves[j], j);\n                if (gFacilityTrainerMons[monId].moves[j] == MOVE_FRUSTRATION)\n                    friendship = 0;\n            }\n            SetMonData(&gPlayerParty[MULTI_PARTY_SIZE + i], MON_DATA_FRIENDSHIP, &friendship);\n            SetMonData(&gPlayerParty[MULTI_PARTY_SIZE + i], MON_DATA_HELD_ITEM, &gBattleFrontierHeldItems[gFacilityTrainerMons[monId].itemTableId]);\n            for (j = 0; j < PLAYER_NAME_LENGTH + 1; j++)\n                trainerName[j] = gFacilityTrainers[trainerId].trainerName[j];\n            SetMonData(&gPlayerParty[MULTI_PARTY_SIZE + i], MON_DATA_OT_NAME, &trainerName);\n            j = IsFrontierTrainerFemale(trainerId);\n            SetMonData(&gPlayerParty[MULTI_PARTY_SIZE + i], MON_DATA_OT_GENDER, &j);\n        }\n    }\n    else if (trainerId < TRAINER_RECORD_MIXING_APPRENTICE)\n    {\n        trainerId -= TRAINER_RECORD_MIXING_FRIEND;\n        for (i = 0; i < FRONTIER_MULTI_PARTY_SIZE; i++)\n        {\n            struct EmeraldBattleTowerRecord *record = &gSaveBlock2Ptr->frontier.towerRecords[trainerId];\n            struct BattleTowerPokemon monData = record->party[gSaveBlock2Ptr->frontier.trainerIds[18 + i]];\n            StringCopy(trainerName, record->name);\n            if (record->language == LANGUAGE_JAPANESE)\n            {\n                if (monData.nickname[0] != EXT_CTRL_CODE_BEGIN || monData.nickname[1] != EXT_CTRL_CODE_JPN)\n                {\n                    monData.nickname[5] = EOS;\n                    ConvertInternationalString(monData.nickname, LANGUAGE_JAPANESE);\n                }\n            }\n            else\n            {\n                if (monData.nickname[0] == EXT_CTRL_CODE_BEGIN && monData.nickname[1] == EXT_CTRL_CODE_JPN)\n                    trainerName[5] = EOS;\n            }\n            CreateBattleTowerMon_HandleLevel(&gPlayerParty[MULTI_PARTY_SIZE + i], &monData, TRUE);\n            SetMonData(&gPlayerParty[MULTI_PARTY_SIZE + i], MON_DATA_OT_NAME, trainerName);\n            j = IsFrontierTrainerFemale(trainerId + TRAINER_RECORD_MIXING_FRIEND);\n            SetMonData(&gPlayerParty[MULTI_PARTY_SIZE + i], MON_DATA_OT_GENDER, &j);\n        }\n    }\n    else\n    {\n        trainerId -= TRAINER_RECORD_MIXING_APPRENTICE;\n        for (i = 0; i < FRONTIER_MULTI_PARTY_SIZE; i++)\n        {\n            CreateApprenticeMon(&gPlayerParty[MULTI_PARTY_SIZE + i], &gSaveBlock2Ptr->apprentices[trainerId], gSaveBlock2Ptr->frontier.trainerIds[18 + i]);\n            j = IsFrontierTrainerFemale(trainerId + TRAINER_RECORD_MIXING_APPRENTICE);\n            SetMonData(&gPlayerParty[MULTI_PARTY_SIZE + i], MON_DATA_OT_GENDER, &j);\n        }\n    }",
+      "callsTo": [
+        "CalculateMonStats",
+        "ConvertInternationalString",
+        "CreateApprenticeMon",
+        "CreateBattleTowerMon_HandleLevel",
+        "CreateMon",
+        "CreateMonWithEVSpreadNatureOTID",
+        "GetFrontierTrainerFixedIvs",
+        "GetNatureFromPersonality",
+        "IsFrontierTrainerFemale",
+        "IsShinyOtIdPersonality",
+        "Random32",
+        "SetFacilityPtrsGetLevel",
+        "SetMonData",
+        "SetMonMoveSlot",
+        "StringCopy"
+      ],
+      "lineCount": 110
+    },
+    "RubyBattleTowerRecordToEmerald": {
+      "returnType": "bool32",
+      "signature": "bool32 RubyBattleTowerRecordToEmerald(struct RSBattleTowerRecord *src, struct EmeraldBattleTowerRecord *dst)",
+      "paramsRaw": "struct RSBattleTowerRecord *src, struct EmeraldBattleTowerRecord *dst",
+      "body": "s32 i, validMons = 0;\n\n    for (i = 0; i < FRONTIER_PARTY_SIZE; i++)\n    {\n        if (src->party[i].species)\n            validMons++;\n    }\n\n    if (validMons != FRONTIER_PARTY_SIZE)\n    {\n        memset(dst, 0, sizeof(*dst));\n        return FALSE;\n    }\n    else\n    {\n        dst->lvlMode = src->lvlMode;\n        dst->winStreak = src->winStreak;\n         \n        #ifdef UBFIX\n        for (i = 0; i < ARRAY_COUNT(sRubyFacilityClassToEmerald); i++)\n        #else\n        for (i = 0; i < FACILITY_CLASSES_COUNT; i++)\n        #endif\n        {\n            if (sRubyFacilityClassToEmerald[i][0] == src->facilityClass)\n                break;\n        }\n        if (i != FACILITY_CLASSES_COUNT)\n            dst->facilityClass = sRubyFacilityClassToEmerald[i][1];\n        else\n            dst->facilityClass = FACILITY_CLASS_YOUNGSTER;\n\n        for (i = 0; i < PLAYER_NAME_LENGTH + 1; i++)\n            dst->name[i] = src->name[i];\n        for (i = 0; i < TRAINER_ID_LENGTH; i++)\n            dst->trainerId[i] = src->trainerId[i];\n        for (i = 0; i < EASY_CHAT_BATTLE_WORDS_COUNT; i++)\n            dst->greeting[i] = src->greeting[i];\n        for (i = 0; i < EASY_CHAT_BATTLE_WORDS_COUNT; i++)\n            dst->speechWon[i] = sRecordTrainerSpeechWon[i];\n        for (i = 0; i < EASY_CHAT_BATTLE_WORDS_COUNT; i++)\n            dst->speechLost[i] = sRecordTrainerSpeechLost[i];\n        for (i = 0; i < FRONTIER_PARTY_SIZE; i++)\n            dst->party[i] = src->party[i];\n\n        CpuFill32(0, &dst->party[FRONTIER_PARTY_SIZE], sizeof(dst->party[FRONTIER_PARTY_SIZE]));\n        CalcEmeraldBattleTowerChecksum(dst);\n        return TRUE;\n    }",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "CalcEmeraldBattleTowerChecksum",
+        "CpuFill32"
+      ],
+      "lineCount": 49
+    },
+    "EmeraldBattleTowerRecordToRuby": {
+      "returnType": "bool32",
+      "signature": "bool32 EmeraldBattleTowerRecordToRuby(struct EmeraldBattleTowerRecord *src, struct RSBattleTowerRecord *dst)",
+      "paramsRaw": "struct EmeraldBattleTowerRecord *src, struct RSBattleTowerRecord *dst",
+      "body": "s32 i, validMons = 0;\n\n    for (i = 0; i < FRONTIER_PARTY_SIZE; i++)\n    {\n        if (src->party[i].species)\n            validMons++;\n    }\n\n    if (validMons != FRONTIER_PARTY_SIZE)\n    {\n        memset(dst, 0, sizeof(*dst));\n        return FALSE;\n    }\n    else\n    {\n        dst->lvlMode = src->lvlMode;\n        dst->winStreak = src->winStreak;\n         \n        #ifdef UBFIX\n        for (i = 0; i < ARRAY_COUNT(sRubyFacilityClassToEmerald); i++)\n        #else\n        for (i = 0; i < FACILITY_CLASSES_COUNT; i++)\n        #endif\n        {\n            if (sRubyFacilityClassToEmerald[i][1] == src->facilityClass)\n                break;\n        }\n        if (i != FACILITY_CLASSES_COUNT)\n            dst->facilityClass = sRubyFacilityClassToEmerald[i][0];\n        else\n            dst->facilityClass = RS_FACILITY_CLASS_YOUNGSTER;\n\n        for (i = 0; i < PLAYER_NAME_LENGTH + 1; i++)\n            dst->name[i] = src->name[i];\n        for (i = 0; i < TRAINER_ID_LENGTH; i++)\n            dst->trainerId[i] = src->trainerId[i];\n        for (i = 0; i < EASY_CHAT_BATTLE_WORDS_COUNT; i++)\n            dst->greeting[i] = src->greeting[i];\n        for (i = 0; i < FRONTIER_PARTY_SIZE; i++)\n            dst->party[i] = src->party[i];\n\n        CalcRubyBattleTowerChecksum(dst);\n        return TRUE;\n    }",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "CalcRubyBattleTowerChecksum"
+      ],
+      "lineCount": 44
+    },
+    "CalcApprenticeChecksum": {
+      "returnType": "void",
+      "signature": "void CalcApprenticeChecksum(struct Apprentice *apprentice)",
+      "paramsRaw": "struct Apprentice *apprentice",
+      "body": "s32 i;\n\n    apprentice->checksum = 0;\n    for (i = 0; i < offsetof(struct Apprentice, checksum) / sizeof(u32); i++)\n        apprentice->checksum += ((u32 *)apprentice)[i];",
+      "callsTo": [],
+      "lineCount": 5
+    },
+    "ClearApprentice": {
+      "returnType": "void",
+      "signature": "static void ClearApprentice(struct Apprentice *apprentice)",
+      "paramsRaw": "struct Apprentice *apprentice",
+      "body": "s32 i;\n\n    for (i = 0; i < sizeof(struct Apprentice) / sizeof(u32); i++)\n        ((u32 *)apprentice)[i] = 0;\n    ResetApprenticeStruct(apprentice);",
+      "callsTo": [
+        "ResetApprenticeStruct"
+      ],
+      "lineCount": 5
+    },
+    "ValidateApprenticesChecksums": {
+      "returnType": "void",
+      "signature": "static void ValidateApprenticesChecksums(void)",
+      "paramsRaw": "void",
+      "body": "s32 i, j;\n\n    for (i = 0; i < APPRENTICE_COUNT; i++)\n    {\n        u32 *data = (u32 *) &gSaveBlock2Ptr->apprentices[i];\n        u32 checksum = 0;\n        for (j = 0; j < offsetof(struct Apprentice, checksum) / sizeof(u32); j++)\n            checksum += data[j];\n        if (gSaveBlock2Ptr->apprentices[i].checksum != checksum)\n            ClearApprentice(&gSaveBlock2Ptr->apprentices[i]);\n    }",
+      "callsTo": [
+        "ClearApprentice"
+      ],
+      "lineCount": 11
+    },
+    "GetBattleTowerTrainerLanguage": {
+      "returnType": "void",
+      "signature": "void GetBattleTowerTrainerLanguage(u8 *dst, u16 trainerId)",
+      "paramsRaw": "u8 *dst, u16 trainerId",
+      "body": "if (trainerId == TRAINER_EREADER)\n    {\n        *dst = gGameLanguage;\n    }\n    else if (trainerId < FRONTIER_TRAINERS_COUNT)\n    {\n        *dst = gGameLanguage;\n    }\n    else if (trainerId < TRAINER_RECORD_MIXING_APPRENTICE)\n    {\n        if (gBattleTypeFlags & BATTLE_TYPE_RECORDED)\n            *dst = GetRecordedBattleRecordMixFriendLanguage();\n        else\n            *dst = gSaveBlock2Ptr->frontier.towerRecords[trainerId - TRAINER_RECORD_MIXING_FRIEND].language;\n    }\n    else\n    {\n        if (gBattleTypeFlags & BATTLE_TYPE_RECORDED)\n            *dst = GetRecordedBattleApprenticeLanguage();\n        else\n            *dst = gSaveBlock2Ptr->apprentices[trainerId - TRAINER_RECORD_MIXING_APPRENTICE].language;\n    }",
+      "callsTo": [
+        "GetRecordedBattleApprenticeLanguage",
+        "GetRecordedBattleRecordMixFriendLanguage"
+      ],
+      "lineCount": 22
+    },
+    "SetFacilityPtrsGetLevel": {
+      "returnType": "u8",
+      "signature": "u8 SetFacilityPtrsGetLevel(void)",
+      "paramsRaw": "void",
+      "body": "if (gSaveBlock2Ptr->frontier.lvlMode == FRONTIER_LVL_TENT)\n    {\n        return SetTentPtrsGetLevel();\n    }\n    else\n    {\n        gFacilityTrainers = gBattleFrontierTrainers;\n        gFacilityTrainerMons = gBattleFrontierMons;\n        return GetFrontierEnemyMonLevel(gSaveBlock2Ptr->frontier.lvlMode);\n    }",
+      "callsTo": [
+        "GetFrontierEnemyMonLevel",
+        "SetTentPtrsGetLevel"
+      ],
+      "lineCount": 10
+    },
+    "GetFrontierEnemyMonLevel": {
+      "returnType": "u8",
+      "signature": "u8 GetFrontierEnemyMonLevel(u8 lvlMode)",
+      "paramsRaw": "u8 lvlMode",
+      "body": "u8 level;\n\n    switch (lvlMode)\n    {\n    default:\n    case FRONTIER_LVL_50:\n        level = FRONTIER_MAX_LEVEL_50;\n        break;\n    case FRONTIER_LVL_OPEN:\n        level = GetHighestLevelInPlayerParty();\n        if (level < FRONTIER_MIN_LEVEL_OPEN)\n            level = FRONTIER_MIN_LEVEL_OPEN;\n        break;\n    }\n\n    return level;",
+      "callsTo": [
+        "GetHighestLevelInPlayerParty"
+      ],
+      "lineCount": 16
+    },
+    "GetHighestLevelInPlayerParty": {
+      "returnType": "s32",
+      "signature": "s32 GetHighestLevelInPlayerParty(void)",
+      "paramsRaw": "void",
+      "body": "s32 highestLevel = 0;\n    s32 i;\n\n    for (i = 0; i < PARTY_SIZE; i++)\n    {\n        if (GetMonData(&gPlayerParty[i], MON_DATA_SPECIES, NULL)\n            && GetMonData(&gPlayerParty[i], MON_DATA_SPECIES_OR_EGG, NULL) != SPECIES_EGG)\n        {\n            s32 level = GetMonData(&gPlayerParty[i], MON_DATA_LEVEL, NULL);\n            if (level > highestLevel)\n                highestLevel = level;\n        }\n    }\n\n    return highestLevel;",
+      "callsTo": [
+        "GetMonData"
+      ],
+      "lineCount": 15
+    },
+    "GetFrontierTrainerFixedIvs": {
+      "returnType": "u8",
+      "signature": "static u8 GetFrontierTrainerFixedIvs(u16 trainerId)",
+      "paramsRaw": "u16 trainerId",
+      "body": "u8 fixedIv;\n\n    if (trainerId <= FRONTIER_TRAINER_JILL)          \n        fixedIv = 3;\n    else if (trainerId <= FRONTIER_TRAINER_CHLOE)    \n        fixedIv = 6;\n    else if (trainerId <= FRONTIER_TRAINER_SOFIA)    \n        fixedIv = 9;\n    else if (trainerId <= FRONTIER_TRAINER_JAZLYN)   \n        fixedIv = 12;\n    else if (trainerId <= FRONTIER_TRAINER_ALISON)   \n        fixedIv = 15;\n    else if (trainerId <= FRONTIER_TRAINER_LAMAR)    \n        fixedIv = 18;\n    else if (trainerId <= FRONTIER_TRAINER_TESS)     \n        fixedIv = 21;\n    else                                             \n        fixedIv = MAX_PER_STAT_IVS;\n\n    return fixedIv;",
+      "callsTo": [],
+      "lineCount": 20
+    },
+    "GetBattleTentTrainerId": {
+      "returnType": "u16",
+      "signature": "static u16 GetBattleTentTrainerId(void)",
+      "paramsRaw": "void",
+      "body": "u32 facility = VarGet(VAR_FRONTIER_FACILITY);\n\n    if (facility == FRONTIER_FACILITY_PALACE)        \n        return Random() % NUM_BATTLE_TENT_TRAINERS;\n    else if (facility == FRONTIER_FACILITY_ARENA)    \n        return Random() % NUM_BATTLE_TENT_TRAINERS;\n    else if (facility == FRONTIER_FACILITY_FACTORY)  \n        return Random() % NUM_BATTLE_TENT_TRAINERS;\n    else if (facility == FRONTIER_FACILITY_TOWER)\n        return 0;\n    else\n        return 0;",
+      "callsTo": [
+        "Random",
+        "VarGet"
+      ],
+      "lineCount": 12
+    },
+    "SetTentPtrsGetLevel": {
+      "returnType": "u8",
+      "signature": "static u8 SetTentPtrsGetLevel(void)",
+      "paramsRaw": "void",
+      "body": "u8 level = TENT_MIN_LEVEL;\n    u32 facility = VarGet(VAR_FRONTIER_FACILITY);\n\n    if (facility == FRONTIER_FACILITY_FACTORY)\n    {\n        gFacilityTrainers = gSlateportBattleTentTrainers;\n        gFacilityTrainerMons = gSlateportBattleTentMons;\n    }\n    else if (facility == FRONTIER_FACILITY_PALACE)\n    {\n        gFacilityTrainers = gVerdanturfBattleTentTrainers;\n        gFacilityTrainerMons = gVerdanturfBattleTentMons;\n    }\n    else if (facility == FRONTIER_FACILITY_ARENA)\n    {\n        gFacilityTrainers = gFallarborBattleTentTrainers;\n        gFacilityTrainerMons = gFallarborBattleTentMons;\n    }\n    else\n    {\n        gFacilityTrainers = gBattleFrontierTrainers;\n        gFacilityTrainerMons = gBattleFrontierMons;\n    }\n\n    level = GetHighestLevelInPlayerParty();\n    if (level < TENT_MIN_LEVEL)\n        level = TENT_MIN_LEVEL;\n\n    return level;",
+      "callsTo": [
+        "GetHighestLevelInPlayerParty",
+        "VarGet"
+      ],
+      "lineCount": 29
+    },
+    "SetNextBattleTentOpponent": {
+      "returnType": "void",
+      "signature": "static void SetNextBattleTentOpponent(void)",
+      "paramsRaw": "void",
+      "body": "s32 i;\n    u16 trainerId;\n\n    do\n    {\n        trainerId = GetBattleTentTrainerId();\n        for (i = 0; i < gSaveBlock2Ptr->frontier.curChallengeBattleNum; i++)\n        {\n            if (gSaveBlock2Ptr->frontier.trainerIds[i] == trainerId)\n                break;\n        }\n    } while (i != gSaveBlock2Ptr->frontier.curChallengeBattleNum);\n\n    gTrainerBattleOpponent_A = trainerId;\n    SetBattleFacilityTrainerGfxId(gTrainerBattleOpponent_A, 0);\n    if (gSaveBlock2Ptr->frontier.curChallengeBattleNum + 1 < TENT_STAGES_PER_CHALLENGE)\n       gSaveBlock2Ptr->frontier.trainerIds[gSaveBlock2Ptr->frontier.curChallengeBattleNum] = gTrainerBattleOpponent_A;",
+      "callsTo": [
+        "GetBattleTentTrainerId",
+        "SetBattleFacilityTrainerGfxId"
+      ],
+      "lineCount": 17
+    },
+    "FillTentTrainerParty_": {
+      "returnType": "void",
+      "signature": "static void FillTentTrainerParty_(u16 trainerId, u8 firstMonId, u8 monCount)",
+      "paramsRaw": "u16 trainerId, u8 firstMonId, u8 monCount",
+      "body": "s32 i, j;\n    u16 chosenMonIndices[MAX_FRONTIER_PARTY_SIZE];\n    u8 friendship;\n    u8 level = SetTentPtrsGetLevel();\n    u8 fixedIV = 0;\n    u8 bfMonCount;\n    const u16 *monSet = NULL;\n    u32 otID = 0;\n    u16 monId;\n\n    monSet = gFacilityTrainers[gTrainerBattleOpponent_A].monSet;\n\n    bfMonCount = 0;\n    monId = monSet[bfMonCount];\n    while (monId != 0xFFFF)\n    {\n        bfMonCount++;\n        monId = monSet[bfMonCount];\n        if (monId == 0xFFFF)\n            break;\n    }\n\n    i = 0;\n    otID = Random32();\n    while (i != monCount)\n    {\n        u16 monId = monSet[Random() % bfMonCount];\n\n         \n        for (j = 0; j < i + firstMonId; j++)\n        {\n            if (GetMonData(&gEnemyParty[j], MON_DATA_SPECIES, NULL) == gFacilityTrainerMons[monId].species)\n                break;\n        }\n        if (j != i + firstMonId)\n            continue;\n\n         \n        for (j = 0; j < i + firstMonId; j++)\n        {\n            if (GetMonData(&gEnemyParty[j], MON_DATA_HELD_ITEM, NULL) != ITEM_NONE\n             && GetMonData(&gEnemyParty[j], MON_DATA_HELD_ITEM, NULL) == gBattleFrontierHeldItems[gFacilityTrainerMons[monId].itemTableId])\n                break;\n        }\n        if (j != i + firstMonId)\n            continue;\n\n         \n         \n        for (j = 0; j < i; j++)\n        {\n            if (chosenMonIndices[j] == monId)\n                break;\n        }\n        if (j != i)\n            continue;\n\n        chosenMonIndices[i] = monId;\n\n         \n        CreateMonWithEVSpreadNatureOTID(&gEnemyParty[i + firstMonId],\n                                             gFacilityTrainerMons[monId].species,\n                                             level,\n                                             gFacilityTrainerMons[monId].nature,\n                                             fixedIV,\n                                             gFacilityTrainerMons[monId].evSpread,\n                                             otID);\n\n        friendship = MAX_FRIENDSHIP;\n         \n        for (j = 0; j < MAX_MON_MOVES; j++)\n        {\n            SetMonMoveSlot(&gEnemyParty[i + firstMonId], gFacilityTrainerMons[monId].moves[j], j);\n            if (gFacilityTrainerMons[monId].moves[j] == MOVE_FRUSTRATION)\n                friendship = 0;   \n        }\n\n        SetMonData(&gEnemyParty[i + firstMonId], MON_DATA_FRIENDSHIP, &friendship);\n        SetMonData(&gEnemyParty[i + firstMonId], MON_DATA_HELD_ITEM, &gBattleFrontierHeldItems[gFacilityTrainerMons[monId].itemTableId]);\n\n         \n         \n        i++;\n    }",
+      "callsTo": [
+        "CreateMonWithEVSpreadNatureOTID",
+        "GetMonData",
+        "Random",
+        "Random32",
+        "SetMonData",
+        "SetMonMoveSlot",
+        "SetTentPtrsGetLevel"
+      ],
+      "lineCount": 84
+    },
+    "FacilityClassToGraphicsId": {
+      "returnType": "u8",
+      "signature": "u8 FacilityClassToGraphicsId(u8 facilityClass)",
+      "paramsRaw": "u8 facilityClass",
+      "body": "u8 trainerObjectGfxId;\n    u8 i;\n\n     \n    for (i = 0; i < ARRAY_COUNT(gTowerMaleFacilityClasses); i++)\n    {\n        if (gTowerMaleFacilityClasses[i] == facilityClass)\n            break;\n    }\n    if (i != ARRAY_COUNT(gTowerMaleFacilityClasses))\n    {\n        trainerObjectGfxId = gTowerMaleTrainerGfxIds[i];\n        return trainerObjectGfxId;\n    }\n\n     \n    for (i = 0; i < ARRAY_COUNT(gTowerFemaleFacilityClasses); i++)\n    {\n        if (gTowerFemaleFacilityClasses[i] == facilityClass)\n            break;\n    }\n    if (i != ARRAY_COUNT(gTowerFemaleFacilityClasses))\n    {\n        trainerObjectGfxId = gTowerFemaleTrainerGfxIds[i];\n        return trainerObjectGfxId;\n    }\n    else\n    {\n        return OBJ_EVENT_GFX_BOY_1;\n    }",
+      "callsTo": [
+        "ARRAY_COUNT"
+      ],
+      "lineCount": 30
+    },
+    "ValidateBattleTowerRecord": {
+      "returnType": "bool32",
+      "signature": "bool32 ValidateBattleTowerRecord(u8 recordId)",
+      "paramsRaw": "u8 recordId",
+      "body": "s32 i;\n    u32 *record = (u32 *)(&gSaveBlock2Ptr->frontier.towerRecords[recordId]);\n    u32 checksum = 0;\n    u32 hasData = 0;\n    for (i = 0; i < offsetof(struct EmeraldBattleTowerRecord, checksum) / sizeof(u32); i++)\n    {\n        checksum += record[i];\n        hasData |= record[i];\n    }\n\n    if (checksum == 0 && hasData == 0)\n    {\n        return FALSE;\n    }\n    else if (gSaveBlock2Ptr->frontier.towerRecords[recordId].checksum != checksum)\n    {\n        ClearBattleTowerRecord(&gSaveBlock2Ptr->frontier.towerRecords[recordId]);\n        return FALSE;\n    }\n    else\n    {\n        return TRUE;\n    }",
+      "callsTo": [
+        "ClearBattleTowerRecord"
+      ],
+      "lineCount": 23
+    },
+    "TrySetLinkBattleTowerEnemyPartyLevel": {
+      "returnType": "void",
+      "signature": "void TrySetLinkBattleTowerEnemyPartyLevel(void)",
+      "paramsRaw": "void",
+      "body": "if (gBattleTypeFlags & (BATTLE_TYPE_LINK | BATTLE_TYPE_RECORDED_LINK))\n    {\n        s32 i;\n        u8 enemyLevel = SetFacilityPtrsGetLevel();\n\n        for (i = 0; i < PARTY_SIZE; i++)\n        {\n            u32 species = GetMonData(&gEnemyParty[i], MON_DATA_SPECIES, NULL);\n            if (species)\n            {\n                SetMonData(&gEnemyParty[i], MON_DATA_EXP, &gExperienceTables[gSpeciesInfo[species].growthRate][enemyLevel]);\n                CalculateMonStats(&gEnemyParty[i]);\n            }\n        }\n    }",
+      "callsTo": [
+        "CalculateMonStats",
+        "GetMonData",
+        "SetFacilityPtrsGetLevel",
+        "SetMonData"
+      ],
+      "lineCount": 15
+    }
+  }
+}

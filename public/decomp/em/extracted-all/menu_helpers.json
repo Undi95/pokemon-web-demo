@@ -1,0 +1,262 @@
+{
+  "srcFile": "src/menu_helpers.c",
+  "count": 25,
+  "functions": {
+    "ResetVramOamAndBgCntRegs": {
+      "returnType": "void",
+      "signature": "void ResetVramOamAndBgCntRegs(void)",
+      "paramsRaw": "void",
+      "body": "SetGpuReg(REG_OFFSET_DISPCNT, 0);\n    SetGpuReg(REG_OFFSET_BG3CNT, 0);\n    SetGpuReg(REG_OFFSET_BG2CNT, 0);\n    SetGpuReg(REG_OFFSET_BG1CNT, 0);\n    SetGpuReg(REG_OFFSET_BG0CNT, 0);\n    CpuFill16(0, (void *) VRAM, VRAM_SIZE);\n    CpuFill32(0, (void *) OAM, OAM_SIZE);\n    CpuFill16(0, (void *) PLTT, PLTT_SIZE);",
+      "callsTo": [
+        "CpuFill16",
+        "CpuFill32",
+        "SetGpuReg"
+      ],
+      "lineCount": 8
+    },
+    "ResetAllBgsCoordinates": {
+      "returnType": "void",
+      "signature": "void ResetAllBgsCoordinates(void)",
+      "paramsRaw": "void",
+      "body": "ChangeBgX(0, 0, BG_COORD_SET);\n    ChangeBgY(0, 0, BG_COORD_SET);\n    ChangeBgX(1, 0, BG_COORD_SET);\n    ChangeBgY(1, 0, BG_COORD_SET);\n    ChangeBgX(2, 0, BG_COORD_SET);\n    ChangeBgY(2, 0, BG_COORD_SET);\n    ChangeBgX(3, 0, BG_COORD_SET);\n    ChangeBgY(3, 0, BG_COORD_SET);",
+      "callsTo": [
+        "ChangeBgX",
+        "ChangeBgY"
+      ],
+      "lineCount": 8
+    },
+    "SetVBlankHBlankCallbacksToNull": {
+      "returnType": "void",
+      "signature": "void SetVBlankHBlankCallbacksToNull(void)",
+      "paramsRaw": "void",
+      "body": "SetVBlankCallback(NULL);\n    SetHBlankCallback(NULL);",
+      "callsTo": [
+        "SetHBlankCallback",
+        "SetVBlankCallback"
+      ],
+      "lineCount": 2
+    },
+    "DisplayMessageAndContinueTask": {
+      "returnType": "void",
+      "signature": "void DisplayMessageAndContinueTask(u8 taskId, u8 windowId, u16 tileNum, u8 paletteNum, u8 fontId, u8 textSpeed, const u8 *string, void *taskFunc)",
+      "paramsRaw": "u8 taskId, u8 windowId, u16 tileNum, u8 paletteNum, u8 fontId, u8 textSpeed, const u8 *string, void *taskFunc",
+      "body": "sMessageWindowId = windowId;\n    DrawDialogFrameWithCustomTileAndPalette(windowId, TRUE, tileNum, paletteNum);\n\n    if (string != gStringVar4)\n        StringExpandPlaceholders(gStringVar4, string);\n\n    gTextFlags.canABSpeedUpPrint = 1;\n    AddTextPrinterParameterized2(windowId, fontId, gStringVar4, textSpeed, NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);\n    sMessageNextTask = taskFunc;\n    gTasks[taskId].func = Task_ContinueTaskAfterMessagePrints;",
+      "callsTo": [
+        "AddTextPrinterParameterized2",
+        "DrawDialogFrameWithCustomTileAndPalette",
+        "StringExpandPlaceholders"
+      ],
+      "lineCount": 10
+    },
+    "RunTextPrintersRetIsActive": {
+      "returnType": "bool16",
+      "signature": "bool16 RunTextPrintersRetIsActive(u8 textPrinterId)",
+      "paramsRaw": "u8 textPrinterId",
+      "body": "RunTextPrinters();\n    return IsTextPrinterActive(textPrinterId);",
+      "callsTo": [
+        "IsTextPrinterActive",
+        "RunTextPrinters"
+      ],
+      "lineCount": 2
+    },
+    "Task_ContinueTaskAfterMessagePrints": {
+      "returnType": "void",
+      "signature": "static void Task_ContinueTaskAfterMessagePrints(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "if (!RunTextPrintersRetIsActive(sMessageWindowId))\n        sMessageNextTask(taskId);",
+      "callsTo": [
+        "RunTextPrintersRetIsActive"
+      ],
+      "lineCount": 2
+    },
+    "DoYesNoFuncWithChoice": {
+      "returnType": "void",
+      "signature": "void DoYesNoFuncWithChoice(u8 taskId, const struct YesNoFuncTable *data)",
+      "paramsRaw": "u8 taskId, const struct YesNoFuncTable *data",
+      "body": "sYesNo = *data;\n    gTasks[taskId].func = Task_CallYesOrNoCallback;",
+      "callsTo": [],
+      "lineCount": 2
+    },
+    "CreateYesNoMenuWithCallbacks": {
+      "returnType": "void",
+      "signature": "void CreateYesNoMenuWithCallbacks(u8 taskId, const struct WindowTemplate *template, u8 unused1, u8 unused2, u8 unused3, u16 tileStart, u8 palette, const struct YesNoFuncTable *yesNo)",
+      "paramsRaw": "u8 taskId, const struct WindowTemplate *template, u8 unused1, u8 unused2, u8 unused3, u16 tileStart, u8 palette, const struct YesNoFuncTable *yesNo",
+      "body": "CreateYesNoMenu(template, tileStart, palette, 0);\n    sYesNo = *yesNo;\n    gTasks[taskId].func = Task_CallYesOrNoCallback;",
+      "callsTo": [
+        "CreateYesNoMenu"
+      ],
+      "lineCount": 3
+    },
+    "Task_CallYesOrNoCallback": {
+      "returnType": "void",
+      "signature": "static void Task_CallYesOrNoCallback(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "switch (Menu_ProcessInputNoWrapClearOnChoose())\n    {\n    case 0:\n        PlaySE(SE_SELECT);\n        sYesNo.yesFunc(taskId);\n        break;\n    case 1:\n    case MENU_B_PRESSED:\n        PlaySE(SE_SELECT);\n        sYesNo.noFunc(taskId);\n        break;\n    }",
+      "callsTo": [
+        "Menu_ProcessInputNoWrapClearOnChoose",
+        "PlaySE"
+      ],
+      "lineCount": 12
+    },
+    "AdjustQuantityAccordingToDPadInput": {
+      "returnType": "bool8",
+      "signature": "bool8 AdjustQuantityAccordingToDPadInput(s16 *quantity, u16 max)",
+      "paramsRaw": "s16 *quantity, u16 max",
+      "body": "s16 valBefore = *quantity;\n\n    if (JOY_REPEAT(DPAD_ANY) == DPAD_UP)\n    {\n        (*quantity)++;\n        if (*quantity > max)\n            *quantity = 1;\n\n        if (*quantity == valBefore)\n        {\n            return FALSE;\n        }\n        else\n        {\n            PlaySE(SE_SELECT);\n            return TRUE;\n        }\n    }\n    else if (JOY_REPEAT(DPAD_ANY) == DPAD_DOWN)\n    {\n        (*quantity)--;\n        if (*quantity <= 0)\n            *quantity = max;\n\n        if (*quantity == valBefore)\n        {\n            return FALSE;\n        }\n        else\n        {\n            PlaySE(SE_SELECT);\n            return TRUE;\n        }\n    }\n    else if (JOY_REPEAT(DPAD_ANY) == DPAD_RIGHT)\n    {\n        *quantity += 10;\n        if (*quantity > max)\n            *quantity = max;\n\n        if (*quantity == valBefore)\n        {\n            return FALSE;\n        }\n        else\n        {\n            PlaySE(SE_SELECT);\n            return TRUE;\n        }\n    }\n    else if (JOY_REPEAT(DPAD_ANY) == DPAD_LEFT)\n    {\n        *quantity -= 10;\n        if (*quantity <= 0)\n            *quantity = 1;\n\n        if (*quantity == valBefore)\n        {\n            return FALSE;\n        }\n        else\n        {\n            PlaySE(SE_SELECT);\n            return TRUE;\n        }\n    }\n\n    return FALSE;",
+      "callsTo": [
+        "JOY_REPEAT",
+        "PlaySE"
+      ],
+      "lineCount": 68
+    },
+    "GetLRKeysPressed": {
+      "returnType": "u8",
+      "signature": "u8 GetLRKeysPressed(void)",
+      "paramsRaw": "void",
+      "body": "if (gSaveBlock2Ptr->optionsButtonMode == OPTIONS_BUTTON_MODE_LR)\n    {\n        if (JOY_NEW(L_BUTTON))\n            return MENU_L_PRESSED;\n        if (JOY_NEW(R_BUTTON))\n            return MENU_R_PRESSED;\n    }\n\n    return 0;",
+      "callsTo": [
+        "JOY_NEW"
+      ],
+      "lineCount": 9
+    },
+    "GetLRKeysPressedAndHeld": {
+      "returnType": "u8",
+      "signature": "u8 GetLRKeysPressedAndHeld(void)",
+      "paramsRaw": "void",
+      "body": "if (gSaveBlock2Ptr->optionsButtonMode == OPTIONS_BUTTON_MODE_LR)\n    {\n        if (JOY_REPEAT(L_BUTTON))\n            return MENU_L_PRESSED;\n        if (JOY_REPEAT(R_BUTTON))\n            return MENU_R_PRESSED;\n    }\n\n    return 0;",
+      "callsTo": [
+        "JOY_REPEAT"
+      ],
+      "lineCount": 9
+    },
+    "IsHoldingItemAllowed": {
+      "returnType": "bool8",
+      "signature": "bool8 IsHoldingItemAllowed(u16 itemId)",
+      "paramsRaw": "u16 itemId",
+      "body": "if (itemId == ITEM_ENIGMA_BERRY\n     && ((gSaveBlock1Ptr->location.mapGroup == MAP_GROUP(MAP_TRADE_CENTER)\n       && gSaveBlock1Ptr->location.mapNum == MAP_NUM(MAP_TRADE_CENTER))\n       || InUnionRoom() == TRUE))\n        return FALSE;\n    else\n        return TRUE;",
+      "callsTo": [
+        "InUnionRoom",
+        "MAP_GROUP",
+        "MAP_NUM"
+      ],
+      "lineCount": 7
+    },
+    "IsWritingMailAllowed": {
+      "returnType": "bool8",
+      "signature": "bool8 IsWritingMailAllowed(u16 itemId)",
+      "paramsRaw": "u16 itemId",
+      "body": "if ((IsOverworldLinkActive() == TRUE || InUnionRoom() == TRUE) && ItemIsMail(itemId) == TRUE)\n        return FALSE;\n    else\n        return TRUE;",
+      "callsTo": [
+        "InUnionRoom",
+        "IsOverworldLinkActive",
+        "ItemIsMail"
+      ],
+      "lineCount": 4
+    },
+    "MenuHelpers_IsLinkActive": {
+      "returnType": "bool8",
+      "signature": "bool8 MenuHelpers_IsLinkActive(void)",
+      "paramsRaw": "void",
+      "body": "if (IsOverworldLinkActive() == TRUE || gReceivedRemoteLinkPlayers == 1)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [
+        "IsOverworldLinkActive"
+      ],
+      "lineCount": 4
+    },
+    "IsActiveOverworldLinkBusy": {
+      "returnType": "bool8",
+      "signature": "static bool8 IsActiveOverworldLinkBusy(void)",
+      "paramsRaw": "void",
+      "body": "if (!MenuHelpers_IsLinkActive())\n        return FALSE;\n    else\n        return Overworld_IsRecvQueueAtMax();",
+      "callsTo": [
+        "MenuHelpers_IsLinkActive",
+        "Overworld_IsRecvQueueAtMax"
+      ],
+      "lineCount": 4
+    },
+    "MenuHelpers_ShouldWaitForLinkRecv": {
+      "returnType": "bool8",
+      "signature": "bool8 MenuHelpers_ShouldWaitForLinkRecv(void)",
+      "paramsRaw": "void",
+      "body": "if (IsActiveOverworldLinkBusy() == TRUE || IsLinkRecvQueueAtOverworldMax() == TRUE )\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [
+        "IsActiveOverworldLinkBusy",
+        "IsLinkRecvQueueAtOverworldMax"
+      ],
+      "lineCount": 4
+    },
+    "SetItemListPerPageCount": {
+      "returnType": "void",
+      "signature": "void SetItemListPerPageCount(struct ItemSlot *slots, u8 slotsCount, u8 *pageItems, u8 *totalItems, u8 maxPerPage)",
+      "paramsRaw": "struct ItemSlot *slots, u8 slotsCount, u8 *pageItems, u8 *totalItems, u8 maxPerPage",
+      "body": "u16 i;\n    struct ItemSlot *slots_ = slots;\n\n     \n    *totalItems = 0;\n    for (i = 0; i < slotsCount; i++)\n    {\n        if (slots_[i].itemId != ITEM_NONE)\n            (*totalItems)++;\n    }\n    (*totalItems)++;  \n\n     \n    if (*totalItems > maxPerPage)\n        *pageItems = maxPerPage;\n    else\n        *pageItems = *totalItems;",
+      "callsTo": [],
+      "lineCount": 17
+    },
+    "SetCursorWithinListBounds": {
+      "returnType": "void",
+      "signature": "void SetCursorWithinListBounds(u16 *scrollOffset, u16 *cursorPos, u8 maxShownItems, u8 totalItems)",
+      "paramsRaw": "u16 *scrollOffset, u16 *cursorPos, u8 maxShownItems, u8 totalItems",
+      "body": "if (*scrollOffset != 0 && *scrollOffset + maxShownItems > totalItems)\n        *scrollOffset = totalItems - maxShownItems;\n\n    if (*scrollOffset + *cursorPos >= totalItems)\n    {\n        if (totalItems == 0)\n            *cursorPos = 0;\n        else\n            *cursorPos = totalItems - 1;\n    }",
+      "callsTo": [],
+      "lineCount": 10
+    },
+    "SetCursorScrollWithinListBounds": {
+      "returnType": "void",
+      "signature": "void SetCursorScrollWithinListBounds(u16 *scrollOffset, u16 *cursorPos, u8 shownItems, u8 totalItems, u8 maxShownItems)",
+      "paramsRaw": "u16 *scrollOffset, u16 *cursorPos, u8 shownItems, u8 totalItems, u8 maxShownItems",
+      "body": "u8 i;\n\n    if (maxShownItems % 2 != 0)\n    {\n         \n        if (*cursorPos >= maxShownItems / 2)\n        {\n            for (i = 0; i < *cursorPos - (maxShownItems / 2); i++)\n            {\n                 \n                if (*scrollOffset + shownItems == totalItems)\n                    break;\n                (*cursorPos)--;\n                (*scrollOffset)++;\n            }\n        }\n    }\n    else\n    {\n         \n        if (*cursorPos >= (maxShownItems / 2) + 1)\n        {\n            for (i = 0; i <= *cursorPos - (maxShownItems / 2); i++)\n            {\n                 \n                if (*scrollOffset + shownItems == totalItems)\n                    break;\n                (*cursorPos)--;\n                (*scrollOffset)++;\n            }\n        }\n    }",
+      "callsTo": [],
+      "lineCount": 32
+    },
+    "LoadListMenuSwapLineGfx": {
+      "returnType": "void",
+      "signature": "void LoadListMenuSwapLineGfx(void)",
+      "paramsRaw": "void",
+      "body": "LoadCompressedSpriteSheet(&sSpriteSheet_SwapLine);\n    LoadCompressedSpritePalette(&sSpritePalette_SwapLine);",
+      "callsTo": [
+        "LoadCompressedSpritePalette",
+        "LoadCompressedSpriteSheet"
+      ],
+      "lineCount": 2
+    },
+    "CreateSwapLineSprites": {
+      "returnType": "void",
+      "signature": "void CreateSwapLineSprites(u8 *spriteIds, u8 count)",
+      "paramsRaw": "u8 *spriteIds, u8 count",
+      "body": "u8 i;\n\n    for (i = 0; i < count; i++)\n    {\n        spriteIds[i] = CreateSprite(&sSpriteTemplate_SwapLine, i * 16, 0, 0);\n        if (i != 0)\n            StartSpriteAnim(&gSprites[spriteIds[i]], 1);\n\n        gSprites[spriteIds[i]].invisible = TRUE;\n    }",
+      "callsTo": [
+        "CreateSprite",
+        "StartSpriteAnim"
+      ],
+      "lineCount": 10
+    },
+    "DestroySwapLineSprites": {
+      "returnType": "void",
+      "signature": "void DestroySwapLineSprites(u8 *spriteIds, u8 count)",
+      "paramsRaw": "u8 *spriteIds, u8 count",
+      "body": "u8 i;\n\n    for (i = 0; i < count; i++)\n    {\n        if (i == count - 1)\n            DestroySpriteAndFreeResources(&gSprites[spriteIds[i]]);\n        else\n            DestroySprite(&gSprites[spriteIds[i]]);\n    }",
+      "callsTo": [
+        "DestroySprite",
+        "DestroySpriteAndFreeResources"
+      ],
+      "lineCount": 9
+    },
+    "SetSwapLineSpritesInvisibility": {
+      "returnType": "void",
+      "signature": "void SetSwapLineSpritesInvisibility(u8 *spriteIds, u8 count, bool8 invisible)",
+      "paramsRaw": "u8 *spriteIds, u8 count, bool8 invisible",
+      "body": "u8 i;\n\n    for (i = 0; i < count; i++)\n        gSprites[spriteIds[i]].invisible = invisible;",
+      "callsTo": [],
+      "lineCount": 4
+    },
+    "UpdateSwapLineSpritesPos": {
+      "returnType": "void",
+      "signature": "void UpdateSwapLineSpritesPos(u8 *spriteIds, u8 count, s16 x, u16 y)",
+      "paramsRaw": "u8 *spriteIds, u8 count, s16 x, u16 y",
+      "body": "u8 i;\n    bool8 hasMargin = count & SWAP_LINE_HAS_MARGIN;\n    count &= ~SWAP_LINE_HAS_MARGIN;\n\n    for (i = 0; i < count; i++)\n    {\n         \n         \n         \n         \n        if (i == count - 1 && hasMargin)\n            gSprites[spriteIds[i]].x2 = x - 8;\n        else\n            gSprites[spriteIds[i]].x2 = x;\n\n        gSprites[spriteIds[i]].y = 1 + y;\n    }",
+      "callsTo": [],
+      "lineCount": 17
+    }
+  }
+}

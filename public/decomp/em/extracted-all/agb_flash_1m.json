@@ -1,0 +1,29 @@
+{
+  "srcFile": "src/agb_flash_1m.c",
+  "count": 2,
+  "functions": {
+    "IdentifyFlash": {
+      "returnType": "u16",
+      "signature": "u16 IdentifyFlash(void)",
+      "paramsRaw": "void",
+      "body": "u16 result;\n    u16 flashId;\n    const struct FlashSetupInfo *const *setupInfo;\n\n    REG_WAITCNT = (REG_WAITCNT & ~WAITCNT_SRAM_MASK) | WAITCNT_SRAM_8;\n\n    flashId = ReadFlashId();\n\n    setupInfo = sSetupInfos;\n    result = 1;\n\n    for (;;)\n    {\n        if ((*setupInfo)->type.ids.separate.makerId == 0)\n            break;\n\n        if (flashId == (*setupInfo)->type.ids.joined)\n        {\n            result = 0;\n            break;\n        }\n\n        setupInfo++;\n    }\n\n    ProgramFlashByte = (*setupInfo)->programFlashByte;\n    ProgramFlashSector = (*setupInfo)->programFlashSector;\n    EraseFlashChip = (*setupInfo)->eraseFlashChip;\n    EraseFlashSector = (*setupInfo)->eraseFlashSector;\n    WaitForFlashWrite = (*setupInfo)->WaitForFlashWrite;\n    gFlashMaxTime = (*setupInfo)->maxTime;\n    gFlash = &(*setupInfo)->type;\n\n    return result;",
+      "callsTo": [
+        "ReadFlashId"
+      ],
+      "lineCount": 34
+    },
+    "WaitForFlashWrite_Common": {
+      "returnType": "u16",
+      "signature": "u16 WaitForFlashWrite_Common(u8 phase, u8 *addr, u8 lastData)",
+      "paramsRaw": "u8 phase, u8 *addr, u8 lastData",
+      "body": "u16 result = 0;\n    u8 status;\n\n    StartFlashTimer(phase);\n\n    while ((status = PollFlashStatus(addr)) != lastData)\n    {\n        if (status & 0x20)\n        {\n             \n\n            if (PollFlashStatus(addr) == lastData)\n                break;\n\n            FLASH_WRITE(0x5555, 0xF0);\n            result = phase | 0xA000u;\n            break;\n        }\n\n        if (gFlashTimeoutFlag)\n        {\n            if (PollFlashStatus(addr) == lastData)\n                break;\n\n            FLASH_WRITE(0x5555, 0xF0);\n            result = phase | 0xC000u;\n            break;\n        }\n    }\n\n    StopFlashTimer();\n\n    return result;",
+      "callsTo": [
+        "FLASH_WRITE",
+        "PollFlashStatus",
+        "StartFlashTimer",
+        "StopFlashTimer"
+      ],
+      "lineCount": 33
+    }
+  }
+}

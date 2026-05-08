@@ -1,0 +1,224 @@
+{
+  "srcFile": "src/decompress.c",
+  "count": 20,
+  "functions": {
+    "LZDecompressWram": {
+      "returnType": "void",
+      "signature": "void LZDecompressWram(const u32 *src, void *dest)",
+      "paramsRaw": "const u32 *src, void *dest",
+      "body": "LZ77UnCompWram(src, dest);",
+      "callsTo": [
+        "LZ77UnCompWram"
+      ],
+      "lineCount": 1
+    },
+    "LZDecompressVram": {
+      "returnType": "void",
+      "signature": "void LZDecompressVram(const u32 *src, void *dest)",
+      "paramsRaw": "const u32 *src, void *dest",
+      "body": "LZ77UnCompVram(src, dest);",
+      "callsTo": [
+        "LZ77UnCompVram"
+      ],
+      "lineCount": 1
+    },
+    "LoadCompressedSpriteSheet": {
+      "returnType": "u16",
+      "signature": "u16 LoadCompressedSpriteSheet(const struct CompressedSpriteSheet *src)",
+      "paramsRaw": "const struct CompressedSpriteSheet *src",
+      "body": "struct SpriteSheet dest;\n\n    LZ77UnCompWram(src->data, gDecompressionBuffer);\n    dest.data = gDecompressionBuffer;\n    dest.size = src->size;\n    dest.tag = src->tag;\n    return LoadSpriteSheet(&dest);",
+      "callsTo": [
+        "LZ77UnCompWram",
+        "LoadSpriteSheet"
+      ],
+      "lineCount": 7
+    },
+    "LoadCompressedSpriteSheetOverrideBuffer": {
+      "returnType": "void",
+      "signature": "void LoadCompressedSpriteSheetOverrideBuffer(const struct CompressedSpriteSheet *src, void *buffer)",
+      "paramsRaw": "const struct CompressedSpriteSheet *src, void *buffer",
+      "body": "struct SpriteSheet dest;\n\n    LZ77UnCompWram(src->data, buffer);\n    dest.data = buffer;\n    dest.size = src->size;\n    dest.tag = src->tag;\n    LoadSpriteSheet(&dest);",
+      "callsTo": [
+        "LZ77UnCompWram",
+        "LoadSpriteSheet"
+      ],
+      "lineCount": 7
+    },
+    "LoadCompressedSpritePalette": {
+      "returnType": "void",
+      "signature": "void LoadCompressedSpritePalette(const struct CompressedSpritePalette *src)",
+      "paramsRaw": "const struct CompressedSpritePalette *src",
+      "body": "struct SpritePalette dest;\n\n    LZ77UnCompWram(src->data, gDecompressionBuffer);\n    dest.data = (void *) gDecompressionBuffer;\n    dest.tag = src->tag;\n    LoadSpritePalette(&dest);",
+      "callsTo": [
+        "LZ77UnCompWram",
+        "LoadSpritePalette"
+      ],
+      "lineCount": 6
+    },
+    "LoadCompressedSpritePaletteOverrideBuffer": {
+      "returnType": "void",
+      "signature": "void LoadCompressedSpritePaletteOverrideBuffer(const struct CompressedSpritePalette *src, void *buffer)",
+      "paramsRaw": "const struct CompressedSpritePalette *src, void *buffer",
+      "body": "struct SpritePalette dest;\n\n    LZ77UnCompWram(src->data, buffer);\n    dest.data = buffer;\n    dest.tag = src->tag;\n    LoadSpritePalette(&dest);",
+      "callsTo": [
+        "LZ77UnCompWram",
+        "LoadSpritePalette"
+      ],
+      "lineCount": 6
+    },
+    "DecompressPicFromTable": {
+      "returnType": "void",
+      "signature": "void DecompressPicFromTable(const struct CompressedSpriteSheet *src, void *buffer, s32 species)",
+      "paramsRaw": "const struct CompressedSpriteSheet *src, void *buffer, s32 species",
+      "body": "if (species > NUM_SPECIES)\n        LZ77UnCompWram(gMonFrontPicTable[0].data, buffer);\n    else\n        LZ77UnCompWram(src->data, buffer);\n    DuplicateDeoxysTiles(buffer, species);",
+      "callsTo": [
+        "DuplicateDeoxysTiles",
+        "LZ77UnCompWram"
+      ],
+      "lineCount": 5
+    },
+    "HandleLoadSpecialPokePic": {
+      "returnType": "void",
+      "signature": "void HandleLoadSpecialPokePic(const struct CompressedSpriteSheet *src, void *dest, s32 species, u32 personality)",
+      "paramsRaw": "const struct CompressedSpriteSheet *src, void *dest, s32 species, u32 personality",
+      "body": "bool8 isFrontPic;\n\n    if (src == &gMonFrontPicTable[species])\n        isFrontPic = TRUE;  \n    else\n        isFrontPic = FALSE;  \n\n    LoadSpecialPokePic_2(src, dest, species, personality, isFrontPic);",
+      "callsTo": [
+        "LoadSpecialPokePic_2"
+      ],
+      "lineCount": 8
+    },
+    "LoadSpecialPokePic": {
+      "returnType": "void",
+      "signature": "void LoadSpecialPokePic(const struct CompressedSpriteSheet *src, void *dest, s32 species, u32 personality, bool8 isFrontPic)",
+      "paramsRaw": "const struct CompressedSpriteSheet *src, void *dest, s32 species, u32 personality, bool8 isFrontPic",
+      "body": "if (species == SPECIES_UNOWN)\n    {\n        u16 i = GET_UNOWN_LETTER(personality);\n\n         \n        if (i == 0)\n            i = SPECIES_UNOWN;\n        else\n            i += SPECIES_UNOWN_B - 1;\n\n        if (!isFrontPic)\n            LZ77UnCompWram(gMonBackPicTable[i].data, dest);\n        else\n            LZ77UnCompWram(gMonFrontPicTable[i].data, dest);\n    }\n    else if (species > NUM_SPECIES)  \n    {\n        LZ77UnCompWram(gMonFrontPicTable[0].data, dest);\n    }\n    else\n    {\n        LZ77UnCompWram(src->data, dest);\n    }\n\n    DuplicateDeoxysTiles(dest, species);\n    DrawSpindaSpots(species, personality, dest, isFrontPic);",
+      "callsTo": [
+        "DrawSpindaSpots",
+        "DuplicateDeoxysTiles",
+        "GET_UNOWN_LETTER",
+        "LZ77UnCompWram"
+      ],
+      "lineCount": 26
+    },
+    "Unused_LZDecompressWramIndirect": {
+      "returnType": "void",
+      "signature": "void Unused_LZDecompressWramIndirect(const void **src, void *dest)",
+      "paramsRaw": "const void **src, void *dest",
+      "body": "LZ77UnCompWram(*src, dest);",
+      "callsTo": [
+        "LZ77UnCompWram"
+      ],
+      "lineCount": 1
+    },
+    "GetDecompressedDataSize": {
+      "returnType": "u32",
+      "signature": "u32 GetDecompressedDataSize(const u32 *ptr)",
+      "paramsRaw": "const u32 *ptr",
+      "body": "const u8 *ptr8 = (const u8 *)ptr;\n    return (ptr8[3] << 16) | (ptr8[2] << 8) | (ptr8[1]);",
+      "callsTo": [],
+      "lineCount": 2
+    },
+    "LoadCompressedSpriteSheetUsingHeap": {
+      "returnType": "bool8",
+      "signature": "bool8 LoadCompressedSpriteSheetUsingHeap(const struct CompressedSpriteSheet *src)",
+      "paramsRaw": "const struct CompressedSpriteSheet *src",
+      "body": "struct SpriteSheet dest;\n    void *buffer;\n\n    buffer = AllocZeroed(src->data[0] >> 8);\n    LZ77UnCompWram(src->data, buffer);\n\n    dest.data = buffer;\n    dest.size = src->size;\n    dest.tag = src->tag;\n\n    LoadSpriteSheet(&dest);\n    Free(buffer);\n    return FALSE;",
+      "callsTo": [
+        "AllocZeroed",
+        "Free",
+        "LZ77UnCompWram",
+        "LoadSpriteSheet"
+      ],
+      "lineCount": 13
+    },
+    "LoadCompressedSpritePaletteUsingHeap": {
+      "returnType": "bool8",
+      "signature": "bool8 LoadCompressedSpritePaletteUsingHeap(const struct CompressedSpritePalette *src)",
+      "paramsRaw": "const struct CompressedSpritePalette *src",
+      "body": "struct SpritePalette dest;\n    void *buffer;\n\n    buffer = AllocZeroed(src->data[0] >> 8);\n    LZ77UnCompWram(src->data, buffer);\n    dest.data = buffer;\n    dest.tag = src->tag;\n\n    LoadSpritePalette(&dest);\n    Free(buffer);\n    return FALSE;",
+      "callsTo": [
+        "AllocZeroed",
+        "Free",
+        "LZ77UnCompWram",
+        "LoadSpritePalette"
+      ],
+      "lineCount": 11
+    },
+    "DecompressPicFromTable_2": {
+      "returnType": "void",
+      "signature": "void DecompressPicFromTable_2(const struct CompressedSpriteSheet *src, void *buffer, s32 species)",
+      "paramsRaw": "const struct CompressedSpriteSheet *src, void *buffer, s32 species",
+      "body": "if (species > NUM_SPECIES)\n        LZ77UnCompWram(gMonFrontPicTable[0].data, buffer);\n    else\n        LZ77UnCompWram(src->data, buffer);\n    DuplicateDeoxysTiles(buffer, species);",
+      "callsTo": [
+        "DuplicateDeoxysTiles",
+        "LZ77UnCompWram"
+      ],
+      "lineCount": 5
+    },
+    "LoadSpecialPokePic_2": {
+      "returnType": "void",
+      "signature": "void LoadSpecialPokePic_2(const struct CompressedSpriteSheet *src, void *dest, s32 species, u32 personality, bool8 isFrontPic)",
+      "paramsRaw": "const struct CompressedSpriteSheet *src, void *dest, s32 species, u32 personality, bool8 isFrontPic",
+      "body": "if (species == SPECIES_UNOWN)\n    {\n        u16 i = GET_UNOWN_LETTER(personality);\n\n         \n        if (i == 0)\n            i = SPECIES_UNOWN;\n        else\n            i += SPECIES_UNOWN_B - 1;\n\n        if (!isFrontPic)\n            LZ77UnCompWram(gMonBackPicTable[i].data, dest);\n        else\n            LZ77UnCompWram(gMonFrontPicTable[i].data, dest);\n    }\n    else if (species > NUM_SPECIES)  \n    {\n        LZ77UnCompWram(gMonFrontPicTable[0].data, dest);\n    }\n    else\n    {\n        LZ77UnCompWram(src->data, dest);\n    }\n\n    DuplicateDeoxysTiles(dest, species);\n    DrawSpindaSpots(species, personality, dest, isFrontPic);",
+      "callsTo": [
+        "DrawSpindaSpots",
+        "DuplicateDeoxysTiles",
+        "GET_UNOWN_LETTER",
+        "LZ77UnCompWram"
+      ],
+      "lineCount": 26
+    },
+    "HandleLoadSpecialPokePic_2": {
+      "returnType": "void",
+      "signature": "void HandleLoadSpecialPokePic_2(const struct CompressedSpriteSheet *src, void *dest, s32 species, u32 personality)",
+      "paramsRaw": "const struct CompressedSpriteSheet *src, void *dest, s32 species, u32 personality",
+      "body": "bool8 isFrontPic;\n\n    if (src == &gMonFrontPicTable[species])\n        isFrontPic = TRUE;  \n    else\n        isFrontPic = FALSE;  \n\n    LoadSpecialPokePic_2(src, dest, species, personality, isFrontPic);",
+      "callsTo": [
+        "LoadSpecialPokePic_2"
+      ],
+      "lineCount": 8
+    },
+    "DecompressPicFromTable_DontHandleDeoxys": {
+      "returnType": "void",
+      "signature": "void DecompressPicFromTable_DontHandleDeoxys(const struct CompressedSpriteSheet *src, void *buffer, s32 species)",
+      "paramsRaw": "const struct CompressedSpriteSheet *src, void *buffer, s32 species",
+      "body": "if (species > NUM_SPECIES)\n        LZ77UnCompWram(gMonFrontPicTable[0].data, buffer);\n    else\n        LZ77UnCompWram(src->data, buffer);",
+      "callsTo": [
+        "LZ77UnCompWram"
+      ],
+      "lineCount": 4
+    },
+    "HandleLoadSpecialPokePic_DontHandleDeoxys": {
+      "returnType": "void",
+      "signature": "void HandleLoadSpecialPokePic_DontHandleDeoxys(const struct CompressedSpriteSheet *src, void *dest, s32 species, u32 personality)",
+      "paramsRaw": "const struct CompressedSpriteSheet *src, void *dest, s32 species, u32 personality",
+      "body": "bool8 isFrontPic;\n\n    if (src == &gMonFrontPicTable[species])\n        isFrontPic = TRUE;  \n    else\n        isFrontPic = FALSE;  \n\n    LoadSpecialPokePic_DontHandleDeoxys(src, dest, species, personality, isFrontPic);",
+      "callsTo": [
+        "LoadSpecialPokePic_DontHandleDeoxys"
+      ],
+      "lineCount": 8
+    },
+    "LoadSpecialPokePic_DontHandleDeoxys": {
+      "returnType": "void",
+      "signature": "void LoadSpecialPokePic_DontHandleDeoxys(const struct CompressedSpriteSheet *src, void *dest, s32 species, u32 personality, bool8 isFrontPic)",
+      "paramsRaw": "const struct CompressedSpriteSheet *src, void *dest, s32 species, u32 personality, bool8 isFrontPic",
+      "body": "if (species == SPECIES_UNOWN)\n    {\n        u16 i = GET_UNOWN_LETTER(personality);\n\n         \n        if (i == 0)\n            i = SPECIES_UNOWN;\n        else\n            i += SPECIES_UNOWN_B - 1;\n\n        if (!isFrontPic)\n            LZ77UnCompWram(gMonBackPicTable[i].data, dest);\n        else\n            LZ77UnCompWram(gMonFrontPicTable[i].data, dest);\n    }\n    else if (species > NUM_SPECIES)  \n    {\n        LZ77UnCompWram(gMonFrontPicTable[0].data, dest);\n    }\n    else\n    {\n        LZ77UnCompWram(src->data, dest);\n    }\n\n    DrawSpindaSpots(species, personality, dest, isFrontPic);",
+      "callsTo": [
+        "DrawSpindaSpots",
+        "GET_UNOWN_LETTER",
+        "LZ77UnCompWram"
+      ],
+      "lineCount": 25
+    },
+    "DuplicateDeoxysTiles": {
+      "returnType": "void",
+      "signature": "static void DuplicateDeoxysTiles(void *pointer, s32 species)",
+      "paramsRaw": "void *pointer, s32 species",
+      "body": "if (species == SPECIES_DEOXYS)\n        CpuCopy32(pointer + MON_PIC_SIZE, pointer, MON_PIC_SIZE);",
+      "callsTo": [
+        "CpuCopy32"
+      ],
+      "lineCount": 2
+    }
+  }
+}

@@ -1,0 +1,419 @@
+{
+  "srcFile": "src/battle_anim_ice.c",
+  "count": 32,
+  "functions": {
+    "AnimUnusedIceCrystalThrow": {
+      "returnType": "void",
+      "signature": "static void AnimUnusedIceCrystalThrow(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "s16 targetX, targetY, attackerX, attackerY;\n\n    sprite->oam.tileNum += 7;\n    targetX = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_X_2);\n    targetY = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_Y_PIC_OFFSET);\n    attackerX = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_X_2);\n    attackerY = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_Y_PIC_OFFSET);\n    sprite->data[0] = gBattleAnimArgs[4];\n    sprite->data[1] = gBattleAnimArgs[0] + attackerX;\n    sprite->data[2] = gBattleAnimArgs[2] + targetX;\n    sprite->data[3] = gBattleAnimArgs[1] + attackerY;\n    sprite->data[4] = gBattleAnimArgs[3] + targetY;\n    ConvertPosDataToTranslateLinearData(sprite);\n\n    for (;(targetX >= -32 && targetX <= DISPLAY_WIDTH + 32) && (targetY >= -32 && targetY <= DISPLAY_HEIGHT + 32);\n           targetX += sprite->data[1], targetY += sprite->data[2])\n        ;\n\n    sprite->data[1] = -sprite->data[1];\n    sprite->data[2] = -sprite->data[2];\n    for (;(attackerX >= -32 && attackerX <= DISPLAY_WIDTH + 32) && (attackerY >= -32 && attackerY <= DISPLAY_HEIGHT + 32);\n           attackerX += sprite->data[1], attackerY += sprite->data[2])\n        ;\n\n    sprite->x = attackerX;\n    sprite->y = attackerY;\n    sprite->data[0] = gBattleAnimArgs[4];\n    sprite->data[1] = attackerX;\n    sprite->data[2] = targetX;\n    sprite->data[3] = attackerY;\n    sprite->data[4] = targetY;\n    ConvertPosDataToTranslateLinearData(sprite);\n    sprite->data[3] = gBattleAnimArgs[5];\n    sprite->data[4] = gBattleAnimArgs[6];\n    sprite->callback = AnimUnusedIceCrystalThrow_Step;",
+      "callsTo": [
+        "ConvertPosDataToTranslateLinearData",
+        "GetBattlerSpriteCoord"
+      ],
+      "lineCount": 35
+    },
+    "AnimUnusedIceCrystalThrow_Step": {
+      "returnType": "void",
+      "signature": "static void AnimUnusedIceCrystalThrow_Step(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "if (sprite->data[0] != 0)\n    {\n        sprite->data[5] += sprite->data[1];\n        sprite->data[6] += sprite->data[2];\n        sprite->x2 = sprite->data[5];\n        sprite->y2 = sprite->data[6];\n        sprite->x2 += Sin(sprite->data[7], sprite->data[3]);\n        sprite->y2 += Sin(sprite->data[7], sprite->data[3]);\n        sprite->data[7] = (sprite->data[7] + sprite->data[4]) & 0xFF;\n        sprite->data[0]--;\n    }\n    else\n    {\n        DestroyAnimSprite(sprite);\n    }",
+      "callsTo": [
+        "DestroyAnimSprite",
+        "Sin"
+      ],
+      "lineCount": 15
+    },
+    "AnimIcePunchSwirlingParticle": {
+      "returnType": "void",
+      "signature": "static void AnimIcePunchSwirlingParticle(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "sprite->data[0] = gBattleAnimArgs[0];\n    sprite->data[1] = 60;\n    sprite->data[2] = 9;\n    sprite->data[3] = 30;\n    sprite->data[4] = -512;\n    StoreSpriteCallbackInData6(sprite, DestroyAnimSprite);\n    sprite->callback = TranslateSpriteInGrowingCircle;\n    sprite->callback(sprite);",
+      "callsTo": [
+        "StoreSpriteCallbackInData6"
+      ],
+      "lineCount": 8
+    },
+    "AnimIceBeamParticle": {
+      "returnType": "void",
+      "signature": "static void AnimIceBeamParticle(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "InitSpritePosToAnimAttacker(sprite, TRUE);\n    sprite->data[2] = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_X_2);\n\n    if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)\n        sprite->data[2] -= gBattleAnimArgs[2];\n    else\n        sprite->data[2] += gBattleAnimArgs[2];\n\n    sprite->data[4] = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_Y_PIC_OFFSET) + gBattleAnimArgs[3];\n    sprite->data[0] = gBattleAnimArgs[4];\n    StoreSpriteCallbackInData6(sprite, DestroyAnimSprite);\n    sprite->callback = StartAnimLinearTranslation;",
+      "callsTo": [
+        "GetBattlerSide",
+        "GetBattlerSpriteCoord",
+        "InitSpritePosToAnimAttacker",
+        "StoreSpriteCallbackInData6"
+      ],
+      "lineCount": 12
+    },
+    "AnimIceEffectParticle": {
+      "returnType": "void",
+      "signature": "static void AnimIceEffectParticle(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "if (gBattleAnimArgs[2] == 0)\n    {\n        InitSpritePosToAnimTarget(sprite, TRUE);\n    }\n    else\n    {\n        SetAverageBattlerPositions(gBattleAnimTarget, TRUE, &sprite->x, &sprite->y);\n        if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)\n            gBattleAnimArgs[0] = -gBattleAnimArgs[0];\n\n        sprite->x += gBattleAnimArgs[0];\n        sprite->y += gBattleAnimArgs[1];\n    }\n\n    StoreSpriteCallbackInData6(sprite, AnimFlickerIceEffectParticle);\n    sprite->callback = RunStoredCallbackWhenAffineAnimEnds;",
+      "callsTo": [
+        "GetBattlerSide",
+        "InitSpritePosToAnimTarget",
+        "SetAverageBattlerPositions",
+        "StoreSpriteCallbackInData6"
+      ],
+      "lineCount": 16
+    },
+    "AnimFlickerIceEffectParticle": {
+      "returnType": "void",
+      "signature": "static void AnimFlickerIceEffectParticle(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "sprite->invisible ^= 1;\n    sprite->data[0] += 1;\n    if (sprite->data[0] == 20)\n        DestroySpriteAndMatrix(sprite);",
+      "callsTo": [
+        "DestroySpriteAndMatrix"
+      ],
+      "lineCount": 4
+    },
+    "AnimSwirlingSnowball": {
+      "returnType": "void",
+      "signature": "static void AnimSwirlingSnowball(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "int i;\n    s16 tempDataHolder[8];\n\n    InitSpritePosToAnimAttacker(sprite, TRUE);\n\n    sprite->data[0] = gBattleAnimArgs[4];\n    sprite->data[1] = sprite->x;\n    sprite->data[3] = sprite->y;\n\n    if (!gBattleAnimArgs[5])\n    {\n        sprite->data[2] = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_X_2);\n        sprite->data[4] = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_Y_PIC_OFFSET) + gBattleAnimArgs[3];\n    }\n    else\n    {\n        SetAverageBattlerPositions(gBattleAnimTarget, TRUE, &sprite->data[2], &sprite->data[4]);\n    }\n\n    if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)\n        sprite->data[2] -= gBattleAnimArgs[2];\n    else\n        sprite->data[2] += gBattleAnimArgs[2];\n\n    for (i = 0; i < 8; i++)\n        tempDataHolder[i] = sprite->data[i];\n\n    InitAnimFastLinearTranslationWithSpeed(sprite);\n    sprite->data[1] ^= 1;\n    sprite->data[2] ^= 1;\n\n    while (1)\n    {\n        sprite->data[0] = 1;\n        AnimFastTranslateLinear(sprite);\n\n        if (sprite->x + sprite->x2 > DISPLAY_WIDTH + 16\n         || sprite->x + sprite->x2 < -16\n         || sprite->y + sprite->y2 > DISPLAY_HEIGHT\n         || sprite->y + sprite->y2 < -16)\n            break;\n    }\n\n    sprite->x += sprite->x2;\n    sprite->y += sprite->y2;\n    sprite->y2 = 0;\n    sprite->x2 = 0;\n\n    for (i = 0; i < 8; i++)\n        sprite->data[i] = tempDataHolder[i];\n\n    sprite->callback = InitAnimFastLinearTranslationWithSpeedAndPos;\n    StoreSpriteCallbackInData6(sprite, AnimSwirlingSnowball_Step1);",
+      "callsTo": [
+        "AnimFastTranslateLinear",
+        "GetBattlerSide",
+        "GetBattlerSpriteCoord",
+        "InitAnimFastLinearTranslationWithSpeed",
+        "InitSpritePosToAnimAttacker",
+        "SetAverageBattlerPositions",
+        "StoreSpriteCallbackInData6"
+      ],
+      "lineCount": 53
+    },
+    "AnimSwirlingSnowball_Step1": {
+      "returnType": "void",
+      "signature": "static void AnimSwirlingSnowball_Step1(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "s16 tempVar;\n\n    sprite->x += sprite->x2;\n    sprite->y += sprite->y2;\n    sprite->y2 = 0;\n    sprite->x2 = 0;\n    sprite->data[0] = 128;\n\n    tempVar = GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER ? 20 : -20;\n\n    sprite->data[3] = Sin(sprite->data[0], tempVar);\n    sprite->data[4] = Cos(sprite->data[0], 0xF);\n    sprite->data[5] = 0;\n    sprite->callback = AnimSwirlingSnowball_Step2;\n    sprite->callback(sprite);",
+      "callsTo": [
+        "Cos",
+        "GetBattlerSide",
+        "Sin"
+      ],
+      "lineCount": 15
+    },
+    "AnimSwirlingSnowball_Step2": {
+      "returnType": "void",
+      "signature": "static void AnimSwirlingSnowball_Step2(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "s16 tempVar;\n    tempVar = GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER ? 20 : -20;\n\n    if (sprite->data[5] <= 31)\n    {\n        sprite->x2 = Sin(sprite->data[0], tempVar) - sprite->data[3];\n        sprite->y2 = Cos(sprite->data[0], 15)      - sprite->data[4];\n        sprite->data[0] = (sprite->data[0] + 16) & 0xFF;\n        sprite->data[5] += 1;\n    }\n    else\n    {\n        sprite->x += sprite->x2;\n        sprite->y += sprite->y2;\n        sprite->y2 = 0;\n        sprite->x2 = 0;\n        sprite->data[4] = 0;\n        sprite->data[3] = 0;\n        sprite->callback = AnimSwirlingSnowball_End;\n    }",
+      "callsTo": [
+        "Cos",
+        "GetBattlerSide",
+        "Sin"
+      ],
+      "lineCount": 20
+    },
+    "AnimSwirlingSnowball_End": {
+      "returnType": "void",
+      "signature": "static void AnimSwirlingSnowball_End(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "sprite->data[0] = 1;\n    AnimFastTranslateLinear(sprite);\n\n    if (sprite->x + sprite->x2 > 256\n     || sprite->x + sprite->x2 < -16\n     || sprite->y + sprite->y2 > 256\n     || sprite->y + sprite->y2 < -16)\n        DestroyAnimSprite(sprite);",
+      "callsTo": [
+        "AnimFastTranslateLinear",
+        "DestroyAnimSprite"
+      ],
+      "lineCount": 8
+    },
+    "AnimMoveParticleBeyondTarget": {
+      "returnType": "void",
+      "signature": "static void AnimMoveParticleBeyondTarget(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "int i;\n    s16 tempDataHolder[8];\n\n    InitSpritePosToAnimAttacker(sprite, TRUE);\n\n    sprite->data[0] = gBattleAnimArgs[4];\n    sprite->data[1] = sprite->x;\n    sprite->data[3] = sprite->y;\n\n    if (!gBattleAnimArgs[7])\n    {\n        sprite->data[2] = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_X_2);\n        sprite->data[4] = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_Y_PIC_OFFSET);\n    }\n    else\n    {\n        SetAverageBattlerPositions(gBattleAnimTarget, TRUE, &sprite->data[2], &sprite->data[4]);\n    }\n\n    if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)\n        sprite->data[2] -= gBattleAnimArgs[2];\n    else\n        sprite->data[2] += gBattleAnimArgs[2];\n\n    sprite->data[4] += gBattleAnimArgs[3];\n    InitAnimFastLinearTranslationWithSpeed(sprite);\n    for (i = 0; i < 8; i++)\n        tempDataHolder[i] = sprite->data[i];\n\n    sprite->data[1] ^= 1;\n    sprite->data[2] ^= 1;\n\n    while (1)\n    {\n        sprite->data[0] = 1;\n        AnimFastTranslateLinear(sprite);\n        if (sprite->x + sprite->x2 > DISPLAY_WIDTH + 16\n         || sprite->x + sprite->x2 < -16\n         || sprite->y + sprite->y2 > DISPLAY_HEIGHT\n         || sprite->y + sprite->y2 < -16)\n            break;\n    }\n\n    sprite->x += sprite->x2;\n    sprite->y += sprite->y2;\n    sprite->y2 = 0;\n    sprite->x2 = 0;\n\n    for (i = 0; i < 8; i++)\n        sprite->data[i] = tempDataHolder[i];\n\n    sprite->data[5] = gBattleAnimArgs[5];\n    sprite->data[6] = gBattleAnimArgs[6];\n    sprite->callback = AnimWiggleParticleTowardsTarget;",
+      "callsTo": [
+        "AnimFastTranslateLinear",
+        "GetBattlerSide",
+        "GetBattlerSpriteCoord",
+        "InitAnimFastLinearTranslationWithSpeed",
+        "InitSpritePosToAnimAttacker",
+        "SetAverageBattlerPositions"
+      ],
+      "lineCount": 54
+    },
+    "AnimWiggleParticleTowardsTarget": {
+      "returnType": "void",
+      "signature": "static void AnimWiggleParticleTowardsTarget(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "AnimFastTranslateLinear(sprite);\n    if (sprite->data[0] == 0)\n        sprite->data[0] = 1;\n\n    sprite->y2 += Sin(sprite->data[7], sprite->data[5]);\n    sprite->data[7] = (sprite->data[7] + sprite->data[6]) & 0xFF;\n    if (sprite->data[0] == 1)\n    {\n        if (sprite->x + sprite->x2 > DISPLAY_WIDTH + 16\n         || sprite->x + sprite->x2 < -16\n         || sprite->y + sprite->y2 > DISPLAY_HEIGHT\n         || sprite->y + sprite->y2 < -16)\n            DestroyAnimSprite(sprite);\n    }",
+      "callsTo": [
+        "AnimFastTranslateLinear",
+        "DestroyAnimSprite",
+        "Sin"
+      ],
+      "lineCount": 14
+    },
+    "AnimWaveFromCenterOfTarget": {
+      "returnType": "void",
+      "signature": "static void AnimWaveFromCenterOfTarget(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "if (sprite->data[0] == 0)\n    {\n        if (gBattleAnimArgs[2] == 0)\n        {\n            InitSpritePosToAnimTarget(sprite, FALSE);\n        }\n        else\n        {\n            SetAverageBattlerPositions(gBattleAnimTarget, FALSE, &sprite->x, &sprite->y);\n\n            if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)\n                gBattleAnimArgs[0] = -gBattleAnimArgs[0];\n\n            sprite->x += gBattleAnimArgs[0];\n            sprite->y += gBattleAnimArgs[1];\n        }\n\n        sprite->data[0]++;\n    }\n    else\n    {\n        if (sprite->animEnded)\n            DestroyAnimSprite(sprite);\n    }",
+      "callsTo": [
+        "DestroyAnimSprite",
+        "GetBattlerSide",
+        "InitSpritePosToAnimTarget",
+        "SetAverageBattlerPositions"
+      ],
+      "lineCount": 24
+    },
+    "InitSwirlingFogAnim": {
+      "returnType": "void",
+      "signature": "static void InitSwirlingFogAnim(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "s16 tempVar;\n    u8  battler;\n\n    if (gBattleAnimArgs[4] == 0)\n    {\n        if (gBattleAnimArgs[5] == 0)\n        {\n            InitSpritePosToAnimAttacker(sprite, FALSE);\n        }\n        else\n        {\n            SetAverageBattlerPositions(gBattleAnimAttacker, FALSE, &sprite->x, &sprite->y);\n            if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)\n                sprite->x -= gBattleAnimArgs[0];\n            else\n                sprite->x += gBattleAnimArgs[0];\n\n            sprite->y += gBattleAnimArgs[1];\n        }\n\n        battler = gBattleAnimAttacker;\n    }\n    else\n    {\n        if (gBattleAnimArgs[5] == 0)\n        {\n            InitSpritePosToAnimTarget(sprite, FALSE);\n        }\n        else\n        {\n            SetAverageBattlerPositions(gBattleAnimTarget, FALSE, &sprite->x, &sprite->y);\n            if (GetBattlerSide(gBattleAnimTarget) != B_SIDE_PLAYER)\n                sprite->x -= gBattleAnimArgs[0];\n            else\n                sprite->x += gBattleAnimArgs[0];\n\n            sprite->y += gBattleAnimArgs[1];\n        }\n\n        battler = gBattleAnimTarget;\n    }\n\n    sprite->data[7] = battler;\n    if (gBattleAnimArgs[5] == 0 || !IsDoubleBattle())\n        tempVar = 0x20;\n    else\n        tempVar = 0x40;\n\n    sprite->data[6] = tempVar;\n    if (GetBattlerSide(gBattleAnimTarget) == B_SIDE_PLAYER)\n        sprite->y += 8;\n\n    sprite->data[0] = gBattleAnimArgs[3];\n    sprite->data[1] = sprite->x;\n    sprite->data[2] = sprite->x;\n    sprite->data[3] = sprite->y;\n    sprite->data[4] = sprite->y + gBattleAnimArgs[2];\n\n    InitAnimLinearTranslation(sprite);\n\n    sprite->data[5] = 64;\n    sprite->callback = AnimSwirlingFogAnim;\n    sprite->callback(sprite);",
+      "callsTo": [
+        "GetBattlerSide",
+        "InitAnimLinearTranslation",
+        "InitSpritePosToAnimAttacker",
+        "InitSpritePosToAnimTarget",
+        "IsDoubleBattle",
+        "SetAverageBattlerPositions"
+      ],
+      "lineCount": 63
+    },
+    "AnimSwirlingFogAnim": {
+      "returnType": "void",
+      "signature": "static void AnimSwirlingFogAnim(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "if (!AnimTranslateLinear(sprite))\n    {\n        sprite->x2 += Sin(sprite->data[5], sprite->data[6]);\n        sprite->y2 += Cos(sprite->data[5], -6);\n\n        if ((u16)(sprite->data[5] - 64) <= 0x7F)\n            sprite->oam.priority = GetBattlerSpriteBGPriority(sprite->data[7]);\n        else\n            sprite->oam.priority = GetBattlerSpriteBGPriority(sprite->data[7]) + 1;\n\n        sprite->data[5] = (sprite->data[5] + 3) & 0xFF;\n    }\n    else\n    {\n        DestroyAnimSprite(sprite);\n    }",
+      "callsTo": [
+        "AnimTranslateLinear",
+        "Cos",
+        "DestroyAnimSprite",
+        "GetBattlerSpriteBGPriority",
+        "Sin"
+      ],
+      "lineCount": 16
+    },
+    "AnimTask_HazeScrollingFog": {
+      "returnType": "void",
+      "signature": "void AnimTask_HazeScrollingFog(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "struct BattleAnimBgData animBg;\n\n    SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_TGT1_BG1 | BLDCNT_EFFECT_BLEND | BLDCNT_TGT2_ALL);\n    SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(0, 16));\n    SetAnimBgAttribute(1, BG_ANIM_PRIORITY, 1);\n    SetAnimBgAttribute(1, BG_ANIM_SCREEN_SIZE, 0);\n\n    if (!IsContest())\n        SetAnimBgAttribute(1, BG_ANIM_CHAR_BASE_BLOCK, 1);\n\n    gBattle_BG1_X = 0;\n    gBattle_BG1_Y = 0;\n    SetGpuReg(REG_OFFSET_BG1HOFS, gBattle_BG1_X);\n    SetGpuReg(REG_OFFSET_BG1VOFS, gBattle_BG1_Y);\n\n    GetBattleAnimBg1Data(&animBg);\n    LoadBgTiles(animBg.bgId, gWeatherFogHorizontalTiles, 0x800, animBg.tilesOffset);\n    AnimLoadCompressedBgTilemapHandleContest(&animBg, gBattleAnimFogTilemap, FALSE);\n    LoadPalette(&gFogPalette, BG_PLTT_ID(animBg.paletteId), PLTT_SIZE_4BPP);\n\n    gTasks[taskId].func = AnimTask_HazeScrollingFog_Step;",
+      "callsTo": [
+        "AnimLoadCompressedBgTilemapHandleContest",
+        "BG_PLTT_ID",
+        "BLDALPHA_BLEND",
+        "GetBattleAnimBg1Data",
+        "IsContest",
+        "LoadBgTiles",
+        "LoadPalette",
+        "SetAnimBgAttribute",
+        "SetGpuReg"
+      ],
+      "lineCount": 21
+    },
+    "AnimTask_HazeScrollingFog_Step": {
+      "returnType": "void",
+      "signature": "static void AnimTask_HazeScrollingFog_Step(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "struct BattleAnimBgData animBg;\n\n    gBattle_BG1_X += -1;\n    gBattle_BG1_Y += 0;\n\n    switch (gTasks[taskId].data[12])\n    {\n    case 0:\n        if (++gTasks[taskId].data[10] == 4)\n        {\n            gTasks[taskId].data[10] = 0;\n            gTasks[taskId].data[9]++;\n            gTasks[taskId].data[11] = sHazeBlendAmounts[gTasks[taskId].data[9]];\n\n            SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(gTasks[taskId].data[11], 16 - gTasks[taskId].data[11]));\n            if (gTasks[taskId].data[11] == 9)\n            {\n                gTasks[taskId].data[12]++;\n                gTasks[taskId].data[11] = 0;\n            }\n        }\n        break;\n    case 1:\n        if (++gTasks[taskId].data[11] == 0x51)\n        {\n            gTasks[taskId].data[11] = 9;\n            gTasks[taskId].data[12]++;\n        }\n        break;\n    case 2:\n        if (++gTasks[taskId].data[10] == 4)\n        {\n            gTasks[taskId].data[10] = 0;\n            gTasks[taskId].data[11]--;\n\n            SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(gTasks[taskId].data[11], 16 - gTasks[taskId].data[11]));\n            if (gTasks[taskId].data[11] == 0)\n            {\n                gTasks[taskId].data[12]++;\n                gTasks[taskId].data[11] = 0;\n            }\n        }\n        break;\n    case 3:\n        GetBattleAnimBg1Data(&animBg);\n        ClearBattleAnimBg(1);\n        ClearBattleAnimBg(2);\n        gTasks[taskId].data[12]++;\n         \n    case 4:\n        if (!IsContest())\n            SetAnimBgAttribute(1, BG_ANIM_CHAR_BASE_BLOCK, 0);\n\n        gBattle_BG1_X = 0;\n        gBattle_BG1_Y = 0;\n        SetGpuReg(REG_OFFSET_BLDCNT, 0);\n        SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(0, 0));\n        SetAnimBgAttribute(1, BG_ANIM_PRIORITY, 1);\n        DestroyAnimVisualTask(taskId);\n        break;\n    }",
+      "callsTo": [
+        "BLDALPHA_BLEND",
+        "ClearBattleAnimBg",
+        "DestroyAnimVisualTask",
+        "GetBattleAnimBg1Data",
+        "IsContest",
+        "SetAnimBgAttribute",
+        "SetGpuReg"
+      ],
+      "lineCount": 61
+    },
+    "AnimThrowMistBall": {
+      "returnType": "void",
+      "signature": "static void AnimThrowMistBall(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "sprite->x = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_X_2);\n    sprite->y = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_Y_PIC_OFFSET);\n    sprite->callback = TranslateAnimSpriteToTargetMonLocation;",
+      "callsTo": [
+        "GetBattlerSpriteCoord"
+      ],
+      "lineCount": 3
+    },
+    "AnimTask_MistBallFog": {
+      "returnType": "void",
+      "signature": "void AnimTask_MistBallFog(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "struct BattleAnimBgData animBg;\n\n    SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_TGT1_BG1 | BLDCNT_EFFECT_BLEND | BLDCNT_TGT2_ALL);\n    SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(0, 16));\n    SetAnimBgAttribute(1, BG_ANIM_PRIORITY, 1);\n    SetAnimBgAttribute(1, BG_ANIM_SCREEN_SIZE, 0);\n\n    if (!IsContest())\n        SetAnimBgAttribute(1, BG_ANIM_CHAR_BASE_BLOCK, 1);\n\n    gBattle_BG1_X = 0;\n    gBattle_BG1_Y = 0;\n    SetGpuReg(REG_OFFSET_BG1HOFS, gBattle_BG1_X);\n    SetGpuReg(REG_OFFSET_BG1VOFS, gBattle_BG1_Y);\n\n    GetBattleAnimBg1Data(&animBg);\n    LoadBgTiles(animBg.bgId, gWeatherFogHorizontalTiles, 0x800, animBg.tilesOffset);\n    AnimLoadCompressedBgTilemapHandleContest(&animBg, gBattleAnimFogTilemap, FALSE);\n    LoadPalette(&gFogPalette, BG_PLTT_ID(animBg.paletteId), PLTT_SIZE_4BPP);\n\n    gTasks[taskId].data[15] = -1;\n    gTasks[taskId].func = AnimTask_MistBallFog_Step;",
+      "callsTo": [
+        "AnimLoadCompressedBgTilemapHandleContest",
+        "BG_PLTT_ID",
+        "BLDALPHA_BLEND",
+        "GetBattleAnimBg1Data",
+        "IsContest",
+        "LoadBgTiles",
+        "LoadPalette",
+        "SetAnimBgAttribute",
+        "SetGpuReg"
+      ],
+      "lineCount": 22
+    },
+    "AnimTask_MistBallFog_Step": {
+      "returnType": "void",
+      "signature": "static void AnimTask_MistBallFog_Step(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "struct BattleAnimBgData animBg;\n\n    gBattle_BG1_X += gTasks[taskId].data[15];\n    gBattle_BG1_Y += 0;\n\n    switch (gTasks[taskId].data[12])\n    {\n    case 0:\n        gTasks[taskId].data[9] += 1;\n        gTasks[taskId].data[11] = sMistBlendAmounts[gTasks[taskId].data[9]];\n        SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(gTasks[taskId].data[11], 17 - gTasks[taskId].data[11]));\n        if (gTasks[taskId].data[11] == 5)\n        {\n            gTasks[taskId].data[12]++;\n            gTasks[taskId].data[11] = 0;\n        }\n        break;\n    case 1:\n        if (++gTasks[taskId].data[11] == 0x51)\n        {\n            gTasks[taskId].data[11] = 5;\n            gTasks[taskId].data[12]++;\n        }\n        break;\n    case 2:\n        if (++gTasks[taskId].data[10] == 4)\n        {\n            gTasks[taskId].data[10] = 0;\n            gTasks[taskId].data[11] -= 1;\n            SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(gTasks[taskId].data[11], 16 - gTasks[taskId].data[11]));\n            if (gTasks[taskId].data[11] == 0)\n            {\n                gTasks[taskId].data[12]++;\n                gTasks[taskId].data[11] = 0;\n            }\n        }\n        break;\n    case 3:\n        GetBattleAnimBg1Data(&animBg);\n        ClearBattleAnimBg(1);\n        ClearBattleAnimBg(2);\n\n        gTasks[taskId].data[12]++;\n\n         \n    case 4:\n        if (!IsContest())\n            SetAnimBgAttribute(1, BG_ANIM_CHAR_BASE_BLOCK, 0);\n\n        gBattle_BG1_X = 0;\n        gBattle_BG1_Y = 0;\n        SetGpuReg(REG_OFFSET_BLDCNT, 0);\n        SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(0, 0));\n        SetAnimBgAttribute(1, BG_ANIM_PRIORITY, 1);\n        DestroyAnimVisualTask(taskId);\n        break;\n    }",
+      "callsTo": [
+        "BLDALPHA_BLEND",
+        "ClearBattleAnimBg",
+        "DestroyAnimVisualTask",
+        "GetBattleAnimBg1Data",
+        "IsContest",
+        "SetAnimBgAttribute",
+        "SetGpuReg"
+      ],
+      "lineCount": 57
+    },
+    "InitPoisonGasCloudAnim": {
+      "returnType": "void",
+      "signature": "static void InitPoisonGasCloudAnim(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "sprite->data[0] = gBattleAnimArgs[0];\n\n    if (GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_X_2) < GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_X_2))\n        sprite->data[7] = 0x8000;\n\n    if (GET_BATTLER_SIDE2(gBattleAnimTarget) == B_SIDE_PLAYER)\n    {\n        gBattleAnimArgs[1] = -gBattleAnimArgs[1];\n        gBattleAnimArgs[3] = -gBattleAnimArgs[3];\n\n        if ((sprite->data[7] & 0x8000) && GET_BATTLER_SIDE2(gBattleAnimAttacker) == B_SIDE_PLAYER)\n            sprite->subpriority = gSprites[GetAnimBattlerSpriteId(ANIM_TARGET)].subpriority + 1;\n\n        sprite->data[6] = 1;\n    }\n\n    sprite->x = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_X_2);\n    sprite->y = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_Y_PIC_OFFSET);\n    if (gBattleAnimArgs[7])\n    {\n        sprite->data[1] = sprite->x + gBattleAnimArgs[1];\n        sprite->data[2] = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_X_2) + gBattleAnimArgs[3];\n        sprite->data[3] = sprite->y + gBattleAnimArgs[2];\n        sprite->data[4] = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_Y_PIC_OFFSET) + gBattleAnimArgs[4];\n        sprite->data[7] |= GetBattlerSpriteBGPriority(gBattleAnimTarget) << 8;\n    }\n    else\n    {\n        sprite->data[1] = sprite->x + gBattleAnimArgs[1];\n        sprite->data[2] = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_X) + gBattleAnimArgs[3];\n        sprite->data[3] = sprite->y + gBattleAnimArgs[2];\n        sprite->data[4] = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_Y) + gBattleAnimArgs[4];\n        sprite->data[7] |= GetBattlerSpriteBGPriority(gBattleAnimTarget) << 8;\n    }\n\n    if (IsContest())\n    {\n        sprite->data[6] = 1;\n        sprite->subpriority = 0x80;\n    }\n\n    InitAnimLinearTranslation(sprite);\n    sprite->callback = MovePoisonGasCloud;",
+      "callsTo": [
+        "GET_BATTLER_SIDE2",
+        "GetAnimBattlerSpriteId",
+        "GetBattlerSpriteBGPriority",
+        "GetBattlerSpriteCoord",
+        "InitAnimLinearTranslation",
+        "IsContest"
+      ],
+      "lineCount": 43
+    },
+    "MovePoisonGasCloud": {
+      "returnType": "void",
+      "signature": "static void MovePoisonGasCloud(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "int value;\n\n    switch (sprite->data[7] & 0xFF)\n    {\n    case 0:\n        AnimTranslateLinear(sprite);\n        value = gSineTable[sprite->data[5]];\n        sprite->x2 += value >> 4;\n        if (sprite->data[6])\n            sprite->data[5] = (sprite->data[5] - 8) & 0xFF;\n        else\n            sprite->data[5] = (sprite->data[5] + 8) & 0xFF;\n\n        if (sprite->data[0] <= 0)\n        {\n            sprite->data[0] = 80;\n            sprite->x = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_X);\n            sprite->data[1] = sprite->x;\n            sprite->data[2] = sprite->x;\n            sprite->y += sprite->y2;\n            sprite->data[3] = sprite->y;\n            sprite->data[4] = sprite->y + 29;\n            sprite->data[7]++;\n            if (IsContest())\n                sprite->data[5] = 80;\n            else if (GET_BATTLER_SIDE2(gBattleAnimTarget) != B_SIDE_PLAYER)\n                sprite->data[5] = 204;\n            else\n                sprite->data[5] = 80;\n\n            sprite->y2 = 0;\n            value = gSineTable[sprite->data[5]];\n            sprite->x2 = value >> 3;\n            sprite->data[5] = (sprite->data[5] + 2) & 0xFF;\n            InitAnimLinearTranslation(sprite);\n        }\n        break;\n    case 1:\n        AnimTranslateLinear(sprite);\n        value = gSineTable[sprite->data[5]];\n        sprite->x2 += value >> 3;\n        sprite->y2 += (gSineTable[sprite->data[5] + 0x40] * -3) >> 8;\n        if (!IsContest())\n        {\n            u16 var0 = sprite->data[5] - 0x40;\n            if (var0 <= 0x7F)\n                sprite->oam.priority = sprite->data[7] >> 8;\n            else\n                sprite->oam.priority = (sprite->data[7] >> 8) + 1;\n\n            sprite->data[5] = (sprite->data[5] + 4) & 0xFF;\n        }\n        else\n        {\n            u16 var0 = sprite->data[5] - 0x40;\n            if (var0 <= 0x7F)\n                sprite->subpriority = 128;\n            else\n                sprite->subpriority = 140;\n\n            sprite->data[5] = (sprite->data[5] - 4) & 0xFF;\n        }\n\n        if (sprite->data[0] <= 0)\n        {\n            sprite->data[0] = 0x300;\n            sprite->data[1] = sprite->x += sprite->x2;\n            sprite->data[3] = sprite->y += sprite->y2;\n            sprite->data[4] = sprite->y + 4;\n            if (IsContest())\n                sprite->data[2] = -16;\n            else if (GET_BATTLER_SIDE2(gBattleAnimTarget) != B_SIDE_PLAYER)\n                sprite->data[2] = DISPLAY_WIDTH + 16;\n            else\n                sprite->data[2] = -16;\n\n            sprite->data[7]++;\n            sprite->x2 = sprite->y2 = 0;\n            InitAnimLinearTranslationWithSpeed(sprite);\n        }\n        break;\n    case 2:\n        if (AnimTranslateLinear(sprite))\n        {\n            if (sprite->oam.affineMode & 1)\n            {\n                FreeOamMatrix(sprite->oam.matrixNum);\n                sprite->oam.affineMode = ST_OAM_AFFINE_OFF;\n            }\n\n            DestroySprite(sprite);\n            gAnimVisualTaskCount--;\n        }\n        break;\n    }",
+      "callsTo": [
+        "AnimTranslateLinear",
+        "DestroySprite",
+        "FreeOamMatrix",
+        "GET_BATTLER_SIDE2",
+        "GetBattlerSpriteCoord",
+        "InitAnimLinearTranslation",
+        "InitAnimLinearTranslationWithSpeed",
+        "IsContest"
+      ],
+      "lineCount": 95
+    },
+    "AnimTask_Hail": {
+      "returnType": "void",
+      "signature": "void AnimTask_Hail(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "struct Task *task = &gTasks[taskId];\n\n    task->func = AnimTask_Hail2;",
+      "callsTo": [],
+      "lineCount": 3
+    },
+    "AnimTask_Hail2": {
+      "returnType": "void",
+      "signature": "static void AnimTask_Hail2(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "struct Task *task = &gTasks[taskId];\n    switch (task->tState)\n    {\n    case 0:\n        if (++task->tInitialDelayTimer > 2)\n        {\n            task->tInitialDelayTimer = 0;\n            task->tHailSpawnTimer = 0;\n            task->tHailAffineAnimNum = 0;\n            task->tState++;\n        }\n        break;\n    case 1:\n        if (task->tHailSpawnTimer == 0)\n        {\n            if (GenerateHailParticle(task->tHailStructId, task->tHailAffineAnimNum, taskId, 1))\n                task->tSpriteCount++;\n\n            if (++task->tHailAffineAnimNum == (int)ARRAY_COUNT(sAffineAnims_HailParticle))\n            {\n                if (++task->tHailStructId == (int)ARRAY_COUNT(sHailCoordData))\n                    task->tState++;\n                else\n                    task->tState--;\n            }\n            else\n            {\n                task->tHailSpawnTimer = 1;\n            }\n\n        }\n        else\n        {\n            task->tHailSpawnTimer--;\n        }\n        break;\n    case 2:\n        if (task->tSpriteCount == 0)\n            DestroyAnimVisualTask(taskId);\n        break;\n    }",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "DestroyAnimVisualTask",
+        "GenerateHailParticle"
+      ],
+      "lineCount": 41
+    },
+    "GenerateHailParticle": {
+      "returnType": "bool8",
+      "signature": "static bool8 GenerateHailParticle(u8 hailStructId, u8 affineAnimNum, u8 taskId, u8 c)",
+      "paramsRaw": "u8 hailStructId, u8 affineAnimNum, u8 taskId, u8 c",
+      "body": "u8 id;\n    s16 battlerX, battlerY;\n    s16 spriteX;\n    bool8 shouldSpawnImpactEffect = FALSE;\n    s8 type = sHailCoordData[hailStructId].type;\n\n    if (type != HAILSTRUCTTYPE_FIXED_POSITION)\n    {\n        id = GetBattlerAtPosition(sHailCoordData[hailStructId].bPosition);\n        if (IsBattlerSpriteVisible(id))\n        {\n            shouldSpawnImpactEffect = TRUE;\n            battlerX = GetBattlerSpriteCoord(id, BATTLER_COORD_X_2);\n            battlerY = GetBattlerSpriteCoord(id, BATTLER_COORD_Y_PIC_OFFSET);\n            switch (type)\n            {\n            case HAILSTRUCTTYPE_NEGATIVE_POS_MOD:\n                battlerX -= GetBattlerSpriteCoordAttr(id, BATTLER_COORD_ATTR_WIDTH) / 6;\n                battlerY -= GetBattlerSpriteCoordAttr(id, BATTLER_COORD_ATTR_HEIGHT) / 6;\n                break;\n            case HAILSTRUCTTYPE_POSITIVE_POS_MOD:\n                battlerX += GetBattlerSpriteCoordAttr(id, BATTLER_COORD_ATTR_WIDTH) / 6;\n                battlerY += GetBattlerSpriteCoordAttr(id, BATTLER_COORD_ATTR_HEIGHT) / 6;\n                break;\n            }\n        }\n        else\n        {\n            battlerX = sHailCoordData[hailStructId].x;\n            battlerY = sHailCoordData[hailStructId].y;\n        }\n    }\n    else\n    {\n        battlerX = sHailCoordData[hailStructId].x;\n        battlerY = sHailCoordData[hailStructId].y;\n    }\n    spriteX = battlerX - ((battlerY + 8) / 2);\n    id = CreateSprite(&gHailParticleSpriteTemplate, spriteX, -8, 18);\n    if (id == MAX_SPRITES)\n    {\n        return FALSE;\n    }\n    else\n    {\n        StartSpriteAffineAnim(&gSprites[id], affineAnimNum);\n        gSprites[id].sSpawnImpactEffect = shouldSpawnImpactEffect;\n        gSprites[id].sTargetX           = battlerX;\n        gSprites[id].sTargetY           = battlerY;\n        gSprites[id].sAffineAnimNum     = affineAnimNum;\n        gSprites[id].sOwnerTaskId       = taskId;\n        gSprites[id].sOwnerTaskSpriteCountField = c;\n        return TRUE;\n    }",
+      "callsTo": [
+        "CreateSprite",
+        "GetBattlerAtPosition",
+        "GetBattlerSpriteCoord",
+        "GetBattlerSpriteCoordAttr",
+        "IsBattlerSpriteVisible",
+        "StartSpriteAffineAnim"
+      ],
+      "lineCount": 54
+    },
+    "AnimHailBegin": {
+      "returnType": "void",
+      "signature": "static void AnimHailBegin(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "u8 spriteId;\n\n    sprite->x += 4;\n    sprite->y += 8;\n\n    if (sprite->x < sprite->sTargetX && sprite->y < sprite->sTargetY)\n        return;\n\n    if (sprite->sSpawnImpactEffect == 1 && sprite->sAffineAnimNum == 0)\n    {\n        spriteId = CreateSprite(&gIceCrystalHitLargeSpriteTemplate,\n                                sprite->sTargetX, sprite->sTargetY, sprite->subpriority);\n\n        sprite->data[0] = spriteId;\n        if (spriteId != MAX_SPRITES)\n        {\n             \n             \n             \n            gSprites[sprite->data[0]].callback = AnimHailContinue;\n            gSprites[sprite->data[0]].sOwnerTaskId = sprite->sOwnerTaskId;\n            gSprites[sprite->data[0]].sOwnerTaskSpriteCountField = sprite->sOwnerTaskSpriteCountField;\n        }\n\n        FreeOamMatrix(sprite->oam.matrixNum);\n        DestroySprite(sprite);\n    }\n    else\n    {\n        gTasks[sprite->sOwnerTaskId].data[sprite->sOwnerTaskSpriteCountField]--;\n        FreeOamMatrix(sprite->oam.matrixNum);\n        DestroySprite(sprite);\n    }",
+      "callsTo": [
+        "CreateSprite",
+        "DestroySprite",
+        "FreeOamMatrix"
+      ],
+      "lineCount": 33
+    },
+    "AnimHailContinue": {
+      "returnType": "void",
+      "signature": "static void AnimHailContinue(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "if (++sprite->sTimer == 20)\n    {\n        gTasks[sprite->sOwnerTaskId].data[sprite->sOwnerTaskSpriteCountField]--;\n        FreeOamMatrix(sprite->oam.matrixNum);\n        DestroySprite(sprite);\n    }",
+      "callsTo": [
+        "DestroySprite",
+        "FreeOamMatrix"
+      ],
+      "lineCount": 6
+    },
+    "InitIceBallAnim": {
+      "returnType": "void",
+      "signature": "static void InitIceBallAnim(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "u8 animNum = gAnimDisableStructPtr->rolloutTimerStartValue - gAnimDisableStructPtr->rolloutTimer - 1;\n\n    if (animNum > 4)\n        animNum = 4;\n\n    StartSpriteAffineAnim(sprite, animNum);\n    InitSpritePosToAnimAttacker(sprite, TRUE);\n\n    sprite->data[0] = gBattleAnimArgs[4];\n\n    if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)\n        gBattleAnimArgs[2] = -gBattleAnimArgs[2];\n\n    sprite->data[2] = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_X_2) + gBattleAnimArgs[2];\n    sprite->data[4] = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_Y_PIC_OFFSET) + gBattleAnimArgs[3];\n    sprite->data[5] = gBattleAnimArgs[5];\n\n    InitAnimArcTranslation(sprite);\n\n    sprite->callback = AnimThrowIceBall;",
+      "callsTo": [
+        "GetBattlerSide",
+        "GetBattlerSpriteCoord",
+        "InitAnimArcTranslation",
+        "InitSpritePosToAnimAttacker",
+        "StartSpriteAffineAnim"
+      ],
+      "lineCount": 20
+    },
+    "AnimThrowIceBall": {
+      "returnType": "void",
+      "signature": "static void AnimThrowIceBall(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "if (!TranslateAnimHorizontalArc(sprite))\n        return;\n\n    StartSpriteAnim(sprite, 1);\n    sprite->callback = RunStoredCallbackWhenAnimEnds;\n    StoreSpriteCallbackInData6(sprite, DestroyAnimSprite);",
+      "callsTo": [
+        "StartSpriteAnim",
+        "StoreSpriteCallbackInData6",
+        "TranslateAnimHorizontalArc"
+      ],
+      "lineCount": 6
+    },
+    "InitIceBallParticle": {
+      "returnType": "void",
+      "signature": "static void InitIceBallParticle(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "s16 randA, randB;\n\n    sprite->oam.tileNum += 8;\n    InitSpritePosToAnimTarget(sprite, TRUE);\n\n    randA = (Random2() & 0xFF) + 256;\n    randB = Random2() & 0x1FF;\n\n    if (randB > 0xFF)\n        randB = 256 - randB;\n\n    sprite->data[1] = randA;\n    sprite->data[2] = randB;\n    sprite->callback = AnimIceBallParticle;",
+      "callsTo": [
+        "InitSpritePosToAnimTarget",
+        "Random2"
+      ],
+      "lineCount": 14
+    },
+    "AnimIceBallParticle": {
+      "returnType": "void",
+      "signature": "static void AnimIceBallParticle(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "sprite->data[3] += sprite->data[1];\n    sprite->data[4] += sprite->data[2];\n\n    if (sprite->data[1] & 1)\n        sprite->x2 = -(sprite->data[3] >> 8);\n    else\n        sprite->x2 = sprite->data[3] >> 8;\n\n    sprite->y2 = sprite->data[4] >> 8;\n\n    if (++sprite->data[0] == 21)\n        DestroyAnimSprite(sprite);",
+      "callsTo": [
+        "DestroyAnimSprite"
+      ],
+      "lineCount": 12
+    },
+    "AnimTask_GetIceBallCounter": {
+      "returnType": "void",
+      "signature": "void AnimTask_GetIceBallCounter(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "u8 arg = gBattleAnimArgs[0];\n\n    gBattleAnimArgs[arg] = gAnimDisableStructPtr->rolloutTimerStartValue - gAnimDisableStructPtr->rolloutTimer - 1;\n    DestroyAnimVisualTask(taskId);",
+      "callsTo": [
+        "DestroyAnimVisualTask"
+      ],
+      "lineCount": 4
+    }
+  }
+}

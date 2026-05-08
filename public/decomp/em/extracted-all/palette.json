@@ -1,0 +1,356 @@
+{
+  "srcFile": "src/palette.c",
+  "count": 34,
+  "functions": {
+    "LoadCompressedPalette": {
+      "returnType": "void",
+      "signature": "void LoadCompressedPalette(const u32 *src, u16 offset, u16 size)",
+      "paramsRaw": "const u32 *src, u16 offset, u16 size",
+      "body": "LZDecompressWram(src, gPaletteDecompressionBuffer);\n    CpuCopy16(gPaletteDecompressionBuffer, &gPlttBufferUnfaded[offset], size);\n    CpuCopy16(gPaletteDecompressionBuffer, &gPlttBufferFaded[offset], size);",
+      "callsTo": [
+        "CpuCopy16",
+        "LZDecompressWram"
+      ],
+      "lineCount": 3
+    },
+    "LoadPalette": {
+      "returnType": "void",
+      "signature": "void LoadPalette(const void *src, u16 offset, u16 size)",
+      "paramsRaw": "const void *src, u16 offset, u16 size",
+      "body": "CpuCopy16(src, &gPlttBufferUnfaded[offset], size);\n    CpuCopy16(src, &gPlttBufferFaded[offset], size);",
+      "callsTo": [
+        "CpuCopy16"
+      ],
+      "lineCount": 2
+    },
+    "FillPalette": {
+      "returnType": "void",
+      "signature": "void FillPalette(u16 value, u16 offset, u16 size)",
+      "paramsRaw": "u16 value, u16 offset, u16 size",
+      "body": "CpuFill16(value, &gPlttBufferUnfaded[offset], size);\n    CpuFill16(value, &gPlttBufferFaded[offset], size);",
+      "callsTo": [
+        "CpuFill16"
+      ],
+      "lineCount": 2
+    },
+    "TransferPlttBuffer": {
+      "returnType": "void",
+      "signature": "void TransferPlttBuffer(void)",
+      "paramsRaw": "void",
+      "body": "if (!gPaletteFade.bufferTransferDisabled)\n    {\n        void *src = gPlttBufferFaded;\n        void *dest = (void *)PLTT;\n        DmaCopy16(3, src, dest, PLTT_SIZE);\n        sPlttBufferTransferPending = FALSE;\n        if (gPaletteFade.mode == HARDWARE_FADE && gPaletteFade.active)\n            UpdateBlendRegisters();\n    }",
+      "callsTo": [
+        "DmaCopy16",
+        "UpdateBlendRegisters"
+      ],
+      "lineCount": 9
+    },
+    "UpdatePaletteFade": {
+      "returnType": "u8",
+      "signature": "u8 UpdatePaletteFade(void)",
+      "paramsRaw": "void",
+      "body": "u8 result;\n    u8 dummy = 0;\n\n    if (sPlttBufferTransferPending)\n        return PALETTE_FADE_STATUS_LOADING;\n\n    if (gPaletteFade.mode == NORMAL_FADE)\n        result = UpdateNormalPaletteFade();\n    else if (gPaletteFade.mode == FAST_FADE)\n        result = UpdateFastPaletteFade();\n    else\n        result = UpdateHardwarePaletteFade();\n\n    sPlttBufferTransferPending = gPaletteFade.multipurpose1 | dummy;\n\n    return result;",
+      "callsTo": [
+        "UpdateFastPaletteFade",
+        "UpdateHardwarePaletteFade",
+        "UpdateNormalPaletteFade"
+      ],
+      "lineCount": 16
+    },
+    "ResetPaletteFade": {
+      "returnType": "void",
+      "signature": "void ResetPaletteFade(void)",
+      "paramsRaw": "void",
+      "body": "u8 i;\n\n    for (i = 0; i < NUM_PALETTE_STRUCTS; i++)\n        PaletteStruct_Reset(i);\n\n    ResetPaletteFadeControl();",
+      "callsTo": [
+        "PaletteStruct_Reset",
+        "ResetPaletteFadeControl"
+      ],
+      "lineCount": 6
+    },
+    "ReadPlttIntoBuffers": {
+      "returnType": "void",
+      "signature": "static void ReadPlttIntoBuffers(void)",
+      "paramsRaw": "void",
+      "body": "u16 i;\n    u16 *pltt = (u16 *)PLTT;\n\n    for (i = 0; i < PLTT_BUFFER_SIZE; i++)\n    {\n        gPlttBufferUnfaded[i] = pltt[i];\n        gPlttBufferFaded[i] = pltt[i];\n    }",
+      "callsTo": [],
+      "lineCount": 8
+    },
+    "BeginNormalPaletteFade": {
+      "returnType": "bool8",
+      "signature": "bool8 BeginNormalPaletteFade(u32 selectedPalettes, s8 delay, u8 startY, u8 targetY, u16 blendColor)",
+      "paramsRaw": "u32 selectedPalettes, s8 delay, u8 startY, u8 targetY, u16 blendColor",
+      "body": "u8 temp;\n    u16 color = blendColor;\n\n    if (gPaletteFade.active)\n    {\n        return FALSE;\n    }\n    else\n    {\n        gPaletteFade.deltaY = 2;\n\n        if (delay < 0)\n        {\n            gPaletteFade.deltaY += (delay * -1);\n            delay = 0;\n        }\n\n        gPaletteFade_selectedPalettes = selectedPalettes;\n        gPaletteFade.delayCounter = delay;\n        gPaletteFade_delay = delay;\n        gPaletteFade.y = startY;\n        gPaletteFade.targetY = targetY;\n        gPaletteFade.blendColor = color;\n        gPaletteFade.active = TRUE;\n        gPaletteFade.mode = NORMAL_FADE;\n\n        if (startY < targetY)\n            gPaletteFade.yDec = 0;\n        else\n            gPaletteFade.yDec = 1;\n\n        UpdatePaletteFade();\n\n        temp = gPaletteFade.bufferTransferDisabled;\n        gPaletteFade.bufferTransferDisabled = FALSE;\n        CpuCopy32(gPlttBufferFaded, (void *)PLTT, PLTT_SIZE);\n        sPlttBufferTransferPending = FALSE;\n        if (gPaletteFade.mode == HARDWARE_FADE && gPaletteFade.active)\n            UpdateBlendRegisters();\n        gPaletteFade.bufferTransferDisabled = temp;\n        return TRUE;\n    }",
+      "callsTo": [
+        "CpuCopy32",
+        "UpdateBlendRegisters",
+        "UpdatePaletteFade"
+      ],
+      "lineCount": 42
+    },
+    "PaletteStruct_Copy": {
+      "returnType": "void",
+      "signature": "static void PaletteStruct_Copy(struct PaletteStruct *palStruct, u32 *unkFlags)",
+      "paramsRaw": "struct PaletteStruct *palStruct, u32 *unkFlags",
+      "body": "s32 srcIndex;\n    s32 srcCount;\n    u8 i = 0;\n    u16 srcOffset = palStruct->srcIndex * palStruct->template->size;\n\n    if (!palStruct->template->pst_field_8_0)\n    {\n        while (i < palStruct->template->size)\n        {\n            gPlttBufferUnfaded[palStruct->destOffset] = palStruct->template->src[srcOffset];\n            gPlttBufferFaded[palStruct->destOffset] = palStruct->template->src[srcOffset];\n            i++;\n            palStruct->destOffset++;\n            srcOffset++;\n        }\n    }\n    else\n    {\n        while (i < palStruct->template->size)\n        {\n            gPlttBufferFaded[palStruct->destOffset] = palStruct->template->src[srcOffset];\n            i++;\n            palStruct->destOffset++;\n            srcOffset++;\n        }\n    }\n\n    palStruct->destOffset = palStruct->baseDestOffset;\n    palStruct->countdown1 = palStruct->template->time1;\n    palStruct->srcIndex++;\n\n    srcIndex = palStruct->srcIndex;\n    srcCount = palStruct->template->srcCount;\n\n    if (srcIndex >= srcCount)\n    {\n        if (palStruct->countdown2)\n            palStruct->countdown2--;\n        palStruct->srcIndex = 0;\n    }\n\n    *unkFlags |= 1 << (palStruct->baseDestOffset >> 4);",
+      "callsTo": [],
+      "lineCount": 42
+    },
+    "PaletteStruct_Blend": {
+      "returnType": "void",
+      "signature": "static void PaletteStruct_Blend(struct PaletteStruct *palStruct, u32 *unkFlags)",
+      "paramsRaw": "struct PaletteStruct *palStruct, u32 *unkFlags",
+      "body": "if (gPaletteFade.active && ((1 << (palStruct->baseDestOffset >> 4)) & gPaletteFade_selectedPalettes))\n    {\n        if (!palStruct->template->pst_field_8_0)\n        {\n            if (gPaletteFade.delayCounter != gPaletteFade_delay)\n            {\n                BlendPalette(\n                    palStruct->baseDestOffset,\n                    palStruct->template->size,\n                    gPaletteFade.y,\n                    gPaletteFade.blendColor);\n            }\n        }\n        else\n        {\n            if (!gPaletteFade.delayCounter)\n            {\n                if (palStruct->countdown1 != palStruct->template->time1)\n                {\n                    u32 srcOffset = palStruct->srcIndex * palStruct->template->size;\n                    u8 i;\n\n                    for (i = 0; i < palStruct->template->size; i++)\n                        gPlttBufferFaded[palStruct->baseDestOffset + i] = palStruct->template->src[srcOffset + i];\n                }\n            }\n        }\n    }",
+      "callsTo": [
+        "BlendPalette"
+      ],
+      "lineCount": 28
+    },
+    "PaletteStruct_TryEnd": {
+      "returnType": "void",
+      "signature": "static void PaletteStruct_TryEnd(struct PaletteStruct *pal)",
+      "paramsRaw": "struct PaletteStruct *pal",
+      "body": "if (pal->countdown2 == 0)\n    {\n        s32 state = pal->template->state;\n\n        if (state == 0)\n        {\n            pal->srcIndex = 0;\n            pal->countdown1 = pal->template->time1;\n            pal->countdown2 = pal->template->time2;\n            pal->destOffset = pal->baseDestOffset;\n        }\n        else\n        {\n            if (state < 0)\n                return;\n            if (state > 2)\n                return;\n            PaletteStruct_ResetById(pal->template->id);\n        }\n    }\n    else\n    {\n        pal->countdown2--;\n    }",
+      "callsTo": [
+        "PaletteStruct_ResetById"
+      ],
+      "lineCount": 24
+    },
+    "PaletteStruct_ResetById": {
+      "returnType": "void",
+      "signature": "void PaletteStruct_ResetById(u16 id)",
+      "paramsRaw": "u16 id",
+      "body": "u8 paletteNum = PaletteStruct_GetPalNum(id);\n    if (paletteNum != NUM_PALETTE_STRUCTS)\n        PaletteStruct_Reset(paletteNum);",
+      "callsTo": [
+        "PaletteStruct_GetPalNum",
+        "PaletteStruct_Reset"
+      ],
+      "lineCount": 3
+    },
+    "PaletteStruct_Reset": {
+      "returnType": "void",
+      "signature": "static void PaletteStruct_Reset(u8 paletteNum)",
+      "paramsRaw": "u8 paletteNum",
+      "body": "sPaletteStructs[paletteNum].template = &sDummyPaletteStructTemplate;\n    sPaletteStructs[paletteNum].active = FALSE;\n    sPaletteStructs[paletteNum].baseDestOffset = 0;\n    sPaletteStructs[paletteNum].destOffset = 0;\n    sPaletteStructs[paletteNum].srcIndex = 0;\n    sPaletteStructs[paletteNum].flag = 0;\n    sPaletteStructs[paletteNum].countdown1 = 0;\n    sPaletteStructs[paletteNum].countdown2 = 0;",
+      "callsTo": [],
+      "lineCount": 8
+    },
+    "ResetPaletteFadeControl": {
+      "returnType": "void",
+      "signature": "void ResetPaletteFadeControl(void)",
+      "paramsRaw": "void",
+      "body": "gPaletteFade.multipurpose1 = 0;\n    gPaletteFade.multipurpose2 = 0;\n    gPaletteFade.delayCounter = 0;\n    gPaletteFade.y = 0;\n    gPaletteFade.targetY = 0;\n    gPaletteFade.blendColor = 0;\n    gPaletteFade.active = FALSE;\n    gPaletteFade.multipurpose2 = 0;  \n    gPaletteFade.yDec = 0;\n    gPaletteFade.bufferTransferDisabled = FALSE;\n    gPaletteFade.shouldResetBlendRegisters = FALSE;\n    gPaletteFade.hardwareFadeFinishing = FALSE;\n    gPaletteFade.softwareFadeFinishing = FALSE;\n    gPaletteFade.softwareFadeFinishingCounter = 0;\n    gPaletteFade.objPaletteToggle = 0;\n    gPaletteFade.deltaY = 2;",
+      "callsTo": [],
+      "lineCount": 16
+    },
+    "PaletteStruct_GetPalNum": {
+      "returnType": "u8",
+      "signature": "static u8 PaletteStruct_GetPalNum(u16 id)",
+      "paramsRaw": "u16 id",
+      "body": "u8 i;\n\n    for (i = 0; i < NUM_PALETTE_STRUCTS; i++)\n        if (sPaletteStructs[i].template->id == id)\n            return i;\n\n    return NUM_PALETTE_STRUCTS;",
+      "callsTo": [],
+      "lineCount": 7
+    },
+    "UpdateNormalPaletteFade": {
+      "returnType": "u8",
+      "signature": "static u8 UpdateNormalPaletteFade(void)",
+      "paramsRaw": "void",
+      "body": "u16 paletteOffset;\n    u16 selectedPalettes;\n\n    if (!gPaletteFade.active)\n        return PALETTE_FADE_STATUS_DONE;\n\n    if (IsSoftwarePaletteFadeFinishing())\n    {\n        return gPaletteFade.active ? PALETTE_FADE_STATUS_ACTIVE : PALETTE_FADE_STATUS_DONE;\n    }\n    else\n    {\n        if (!gPaletteFade.objPaletteToggle)\n        {\n            if (gPaletteFade.delayCounter < gPaletteFade_delay)\n            {\n                gPaletteFade.delayCounter++;\n                return 2;\n            }\n            gPaletteFade.delayCounter = 0;\n        }\n\n        paletteOffset = 0;\n\n        if (!gPaletteFade.objPaletteToggle)\n        {\n            selectedPalettes = gPaletteFade_selectedPalettes;\n        }\n        else\n        {\n            selectedPalettes = gPaletteFade_selectedPalettes >> 16;\n            paletteOffset = OBJ_PLTT_OFFSET;\n        }\n\n        while (selectedPalettes)\n        {\n            if (selectedPalettes & 1)\n                BlendPalette(\n                    paletteOffset,\n                    16,\n                    gPaletteFade.y,\n                    gPaletteFade.blendColor);\n            selectedPalettes >>= 1;\n            paletteOffset += 16;\n        }\n\n        gPaletteFade.objPaletteToggle ^= 1;\n\n        if (!gPaletteFade.objPaletteToggle)\n        {\n            if (gPaletteFade.y == gPaletteFade.targetY)\n            {\n                gPaletteFade_selectedPalettes = 0;\n                gPaletteFade.softwareFadeFinishing = TRUE;\n            }\n            else\n            {\n                s8 val;\n\n                if (!gPaletteFade.yDec)\n                {\n                    val = gPaletteFade.y;\n                    val += gPaletteFade.deltaY;\n                    if (val > gPaletteFade.targetY)\n                        val = gPaletteFade.targetY;\n                    gPaletteFade.y = val;\n                }\n                else\n                {\n                    val = gPaletteFade.y;\n                    val -= gPaletteFade.deltaY;\n                    if (val < gPaletteFade.targetY)\n                        val = gPaletteFade.targetY;\n                    gPaletteFade.y = val;\n                }\n            }\n        }\n\n         \n         \n        return gPaletteFade.active ? PALETTE_FADE_STATUS_ACTIVE : PALETTE_FADE_STATUS_DONE;\n    }",
+      "callsTo": [
+        "BlendPalette",
+        "IsSoftwarePaletteFadeFinishing"
+      ],
+      "lineCount": 82
+    },
+    "InvertPlttBuffer": {
+      "returnType": "void",
+      "signature": "void InvertPlttBuffer(u32 selectedPalettes)",
+      "paramsRaw": "u32 selectedPalettes",
+      "body": "u16 paletteOffset = 0;\n\n    while (selectedPalettes)\n    {\n        if (selectedPalettes & 1)\n        {\n            u8 i;\n            for (i = 0; i < 16; i++)\n                gPlttBufferFaded[paletteOffset + i] = ~gPlttBufferFaded[paletteOffset + i];\n        }\n        selectedPalettes >>= 1;\n        paletteOffset += 16;\n    }",
+      "callsTo": [],
+      "lineCount": 13
+    },
+    "TintPlttBuffer": {
+      "returnType": "void",
+      "signature": "void TintPlttBuffer(u32 selectedPalettes, s8 r, s8 g, s8 b)",
+      "paramsRaw": "u32 selectedPalettes, s8 r, s8 g, s8 b",
+      "body": "u16 paletteOffset = 0;\n\n    while (selectedPalettes)\n    {\n        if (selectedPalettes & 1)\n        {\n            u8 i;\n            for (i = 0; i < 16; i++)\n            {\n                struct PlttData *data = (struct PlttData *)&gPlttBufferFaded[paletteOffset + i];\n                data->r += r;\n                data->g += g;\n                data->b += b;\n            }\n        }\n        selectedPalettes >>= 1;\n        paletteOffset += 16;\n    }",
+      "callsTo": [],
+      "lineCount": 18
+    },
+    "UnfadePlttBuffer": {
+      "returnType": "void",
+      "signature": "void UnfadePlttBuffer(u32 selectedPalettes)",
+      "paramsRaw": "u32 selectedPalettes",
+      "body": "u16 paletteOffset = 0;\n\n    while (selectedPalettes)\n    {\n        if (selectedPalettes & 1)\n        {\n            u8 i;\n            for (i = 0; i < 16; i++)\n                gPlttBufferFaded[paletteOffset + i] = gPlttBufferUnfaded[paletteOffset + i];\n        }\n        selectedPalettes >>= 1;\n        paletteOffset += 16;\n    }",
+      "callsTo": [],
+      "lineCount": 13
+    },
+    "BeginFastPaletteFade": {
+      "returnType": "void",
+      "signature": "void BeginFastPaletteFade(u8 submode)",
+      "paramsRaw": "u8 submode",
+      "body": "gPaletteFade.deltaY = 2;\n    BeginFastPaletteFadeInternal(submode);",
+      "callsTo": [
+        "BeginFastPaletteFadeInternal"
+      ],
+      "lineCount": 2
+    },
+    "BeginFastPaletteFadeInternal": {
+      "returnType": "void",
+      "signature": "static void BeginFastPaletteFadeInternal(u8 submode)",
+      "paramsRaw": "u8 submode",
+      "body": "gPaletteFade.y = 31;\n    gPaletteFade_submode = submode & 0x3F;\n    gPaletteFade.active = TRUE;\n    gPaletteFade.mode = FAST_FADE;\n\n    if (submode == FAST_FADE_IN_FROM_BLACK)\n        CpuFill16(RGB_BLACK, gPlttBufferFaded, PLTT_SIZE);\n\n    if (submode == FAST_FADE_IN_FROM_WHITE)\n        CpuFill16(RGB_WHITE, gPlttBufferFaded, PLTT_SIZE);\n\n    UpdatePaletteFade();",
+      "callsTo": [
+        "CpuFill16",
+        "UpdatePaletteFade"
+      ],
+      "lineCount": 12
+    },
+    "UpdateFastPaletteFade": {
+      "returnType": "u8",
+      "signature": "static u8 UpdateFastPaletteFade(void)",
+      "paramsRaw": "void",
+      "body": "u16 i;\n    u16 paletteOffsetStart;\n    u16 paletteOffsetEnd;\n    s8 r0;\n    s8 g0;\n    s8 b0;\n    s8 r;\n    s8 g;\n    s8 b;\n\n    if (!gPaletteFade.active)\n        return PALETTE_FADE_STATUS_DONE;\n\n    if (IsSoftwarePaletteFadeFinishing())\n        return gPaletteFade.active ? PALETTE_FADE_STATUS_ACTIVE : PALETTE_FADE_STATUS_DONE;\n\n\n    if (gPaletteFade.objPaletteToggle)\n    {\n        paletteOffsetStart = OBJ_PLTT_OFFSET;\n        paletteOffsetEnd = PLTT_BUFFER_SIZE;\n    }\n    else\n    {\n        paletteOffsetStart = 0;\n        paletteOffsetEnd = OBJ_PLTT_OFFSET;\n    }\n\n    switch (gPaletteFade_submode)\n    {\n    case FAST_FADE_IN_FROM_WHITE:\n        for (i = paletteOffsetStart; i < paletteOffsetEnd; i++)\n        {\n            struct PlttData *unfaded;\n            struct PlttData *faded;\n\n            unfaded = (struct PlttData *)&gPlttBufferUnfaded[i];\n            r0 = unfaded->r;\n            g0 = unfaded->g;\n            b0 = unfaded->b;\n\n            faded = (struct PlttData *)&gPlttBufferFaded[i];\n            r = faded->r - 2;\n            g = faded->g - 2;\n            b = faded->b - 2;\n\n            if (r < r0)\n                r = r0;\n            if (g < g0)\n                g = g0;\n            if (b < b0)\n                b = b0;\n\n            gPlttBufferFaded[i] = RGB(r, g, b);\n        }\n        break;\n    case FAST_FADE_OUT_TO_WHITE:\n        for (i = paletteOffsetStart; i < paletteOffsetEnd; i++)\n        {\n            struct PlttData *data = (struct PlttData *)&gPlttBufferFaded[i];\n            r = data->r + 2;\n            g = data->g + 2;\n            b = data->b + 2;\n\n            if (r > 31)\n                r = 31;\n            if (g > 31)\n                g = 31;\n            if (b > 31)\n                b = 31;\n\n            gPlttBufferFaded[i] = RGB(r, g, b);\n        }\n        break;\n    case FAST_FADE_IN_FROM_BLACK:\n        for (i = paletteOffsetStart; i < paletteOffsetEnd; i++)\n        {\n            struct PlttData *unfaded;\n            struct PlttData *faded;\n\n            unfaded = (struct PlttData *)&gPlttBufferUnfaded[i];\n            r0 = unfaded->r;\n            g0 = unfaded->g;\n            b0 = unfaded->b;\n\n            faded = (struct PlttData *)&gPlttBufferFaded[i];\n            r = faded->r + 2;\n            g = faded->g + 2;\n            b = faded->b + 2;\n\n            if (r > r0)\n                r = r0;\n            if (g > g0)\n                g = g0;\n            if (b > b0)\n                b = b0;\n\n            gPlttBufferFaded[i] = RGB(r, g, b);\n        }\n        break;\n    case FAST_FADE_OUT_TO_BLACK:\n        for (i = paletteOffsetStart; i < paletteOffsetEnd; i++)\n        {\n            struct PlttData *data = (struct PlttData *)&gPlttBufferFaded[i];\n            r = data->r - 2;\n            g = data->g - 2;\n            b = data->b - 2;\n\n            if (r < 0)\n                r = 0;\n            if (g < 0)\n                g = 0;\n            if (b < 0)\n                b = 0;\n\n            gPlttBufferFaded[i] = RGB(r, g, b);\n        }\n    }\n\n    gPaletteFade.objPaletteToggle ^= 1;\n\n    if (gPaletteFade.objPaletteToggle)\n         \n         \n        return gPaletteFade.active ? PALETTE_FADE_STATUS_ACTIVE : PALETTE_FADE_STATUS_DONE;\n\n    if (gPaletteFade.y - gPaletteFade.deltaY < 0)\n        gPaletteFade.y = 0;\n    else\n        gPaletteFade.y -= gPaletteFade.deltaY;\n\n    if (gPaletteFade.y == 0)\n    {\n        switch (gPaletteFade_submode)\n        {\n        case FAST_FADE_IN_FROM_WHITE:\n        case FAST_FADE_IN_FROM_BLACK:\n            CpuCopy32(gPlttBufferUnfaded, gPlttBufferFaded, PLTT_SIZE);\n            break;\n        case FAST_FADE_OUT_TO_WHITE:\n            CpuFill32(0xFFFFFFFF, gPlttBufferFaded, PLTT_SIZE);\n            break;\n        case FAST_FADE_OUT_TO_BLACK:\n            CpuFill32(0x00000000, gPlttBufferFaded, PLTT_SIZE);\n            break;\n        }\n\n        gPaletteFade.mode = NORMAL_FADE;\n        gPaletteFade.softwareFadeFinishing = TRUE;\n    }\n\n     \n     \n    return gPaletteFade.active ? PALETTE_FADE_STATUS_ACTIVE : PALETTE_FADE_STATUS_DONE;",
+      "callsTo": [
+        "CpuCopy32",
+        "CpuFill32",
+        "IsSoftwarePaletteFadeFinishing"
+      ],
+      "lineCount": 154
+    },
+    "BeginHardwarePaletteFade": {
+      "returnType": "void",
+      "signature": "void BeginHardwarePaletteFade(u8 blendCnt, u8 delay, u8 y, u8 targetY, u8 shouldResetBlendRegisters)",
+      "paramsRaw": "u8 blendCnt, u8 delay, u8 y, u8 targetY, u8 shouldResetBlendRegisters",
+      "body": "gPaletteFade_blendCnt = blendCnt;\n    gPaletteFade.delayCounter = delay;\n    gPaletteFade_delay = delay;\n    gPaletteFade.y = y;\n    gPaletteFade.targetY = targetY;\n    gPaletteFade.active = TRUE;\n    gPaletteFade.mode = HARDWARE_FADE;\n    gPaletteFade.shouldResetBlendRegisters = shouldResetBlendRegisters & 1;\n    gPaletteFade.hardwareFadeFinishing = FALSE;\n\n    if (y < targetY)\n        gPaletteFade.yDec = 0;\n    else\n        gPaletteFade.yDec = 1;",
+      "callsTo": [],
+      "lineCount": 14
+    },
+    "UpdateHardwarePaletteFade": {
+      "returnType": "u8",
+      "signature": "static u8 UpdateHardwarePaletteFade(void)",
+      "paramsRaw": "void",
+      "body": "if (!gPaletteFade.active)\n        return PALETTE_FADE_STATUS_DONE;\n\n    if (gPaletteFade.delayCounter < gPaletteFade_delay)\n    {\n        gPaletteFade.delayCounter++;\n        return PALETTE_FADE_STATUS_DELAY;\n    }\n\n    gPaletteFade.delayCounter = 0;\n\n    if (!gPaletteFade.yDec)\n    {\n        gPaletteFade.y++;\n        if (gPaletteFade.y > gPaletteFade.targetY)\n        {\n            gPaletteFade.hardwareFadeFinishing++;\n            gPaletteFade.y--;\n        }\n    }\n    else\n    {\n        s32 y = gPaletteFade.y--;\n        if (y - 1 < gPaletteFade.targetY)\n        {\n            gPaletteFade.hardwareFadeFinishing++;\n            gPaletteFade.y++;\n        }\n    }\n\n    if (gPaletteFade.hardwareFadeFinishing)\n    {\n        if (gPaletteFade.shouldResetBlendRegisters)\n        {\n            gPaletteFade_blendCnt = 0;\n            gPaletteFade.y = 0;\n        }\n        gPaletteFade.shouldResetBlendRegisters = FALSE;\n    }\n\n     \n     \n    return gPaletteFade.active ? PALETTE_FADE_STATUS_ACTIVE : PALETTE_FADE_STATUS_DONE;",
+      "callsTo": [],
+      "lineCount": 43
+    },
+    "UpdateBlendRegisters": {
+      "returnType": "void",
+      "signature": "static void UpdateBlendRegisters(void)",
+      "paramsRaw": "void",
+      "body": "SetGpuReg(REG_OFFSET_BLDCNT, (u16)gPaletteFade_blendCnt);\n    SetGpuReg(REG_OFFSET_BLDY, gPaletteFade.y);\n    if (gPaletteFade.hardwareFadeFinishing)\n    {\n        gPaletteFade.hardwareFadeFinishing = FALSE;\n        gPaletteFade.mode = 0;\n        gPaletteFade_blendCnt = 0;\n        gPaletteFade.y = 0;\n        gPaletteFade.active = FALSE;\n    }",
+      "callsTo": [
+        "SetGpuReg"
+      ],
+      "lineCount": 10
+    },
+    "IsSoftwarePaletteFadeFinishing": {
+      "returnType": "bool8",
+      "signature": "static bool8 IsSoftwarePaletteFadeFinishing(void)",
+      "paramsRaw": "void",
+      "body": "if (gPaletteFade.softwareFadeFinishing)\n    {\n        if (gPaletteFade.softwareFadeFinishingCounter == 4)\n        {\n            gPaletteFade.active = FALSE;\n            gPaletteFade.softwareFadeFinishing = FALSE;\n            gPaletteFade.softwareFadeFinishingCounter = 0;\n        }\n        else\n        {\n            gPaletteFade.softwareFadeFinishingCounter++;\n        }\n\n        return TRUE;\n    }\n    else\n    {\n        return FALSE;\n    }",
+      "callsTo": [],
+      "lineCount": 19
+    },
+    "BlendPalettes": {
+      "returnType": "void",
+      "signature": "void BlendPalettes(u32 selectedPalettes, u8 coeff, u16 color)",
+      "paramsRaw": "u32 selectedPalettes, u8 coeff, u16 color",
+      "body": "u16 paletteOffset;\n\n    for (paletteOffset = 0; selectedPalettes; paletteOffset += 16)\n    {\n        if (selectedPalettes & 1)\n            BlendPalette(paletteOffset, 16, coeff, color);\n        selectedPalettes >>= 1;\n    }",
+      "callsTo": [
+        "BlendPalette"
+      ],
+      "lineCount": 8
+    },
+    "BlendPalettesUnfaded": {
+      "returnType": "void",
+      "signature": "void BlendPalettesUnfaded(u32 selectedPalettes, u8 coeff, u16 color)",
+      "paramsRaw": "u32 selectedPalettes, u8 coeff, u16 color",
+      "body": "void *src = gPlttBufferUnfaded;\n    void *dest = gPlttBufferFaded;\n    DmaCopy32(3, src, dest, PLTT_SIZE);\n    BlendPalettes(selectedPalettes, coeff, color);",
+      "callsTo": [
+        "BlendPalettes",
+        "DmaCopy32"
+      ],
+      "lineCount": 4
+    },
+    "TintPalette_GrayScale": {
+      "returnType": "void",
+      "signature": "void TintPalette_GrayScale(u16 *palette, u16 count)",
+      "paramsRaw": "u16 *palette, u16 count",
+      "body": "s32 r, g, b, i;\n    u32 gray;\n\n    for (i = 0; i < count; i++)\n    {\n        r = GET_R(*palette);\n        g = GET_G(*palette);\n        b = GET_B(*palette);\n\n        gray = (r * Q_8_8(0.3) + g * Q_8_8(0.59) + b * Q_8_8(0.1133)) >> 8;\n\n        *palette++ = RGB2(gray, gray, gray);\n    }",
+      "callsTo": [
+        "GET_B",
+        "GET_G",
+        "GET_R",
+        "Q_8_8",
+        "RGB2"
+      ],
+      "lineCount": 13
+    },
+    "TintPalette_GrayScale2": {
+      "returnType": "void",
+      "signature": "void TintPalette_GrayScale2(u16 *palette, u16 count)",
+      "paramsRaw": "u16 *palette, u16 count",
+      "body": "s32 r, g, b, i;\n    u32 gray;\n\n    for (i = 0; i < count; i++)\n    {\n        r = GET_R(*palette);\n        g = GET_G(*palette);\n        b = GET_B(*palette);\n\n        gray = (r * Q_8_8(0.3) + g * Q_8_8(0.59) + b * Q_8_8(0.1133)) >> 8;\n\n        if (gray > 31)\n            gray = 31;\n\n        gray = sRoundedDownGrayscaleMap[gray];\n\n        *palette++ = RGB2(gray, gray, gray);\n    }",
+      "callsTo": [
+        "GET_B",
+        "GET_G",
+        "GET_R",
+        "Q_8_8",
+        "RGB2"
+      ],
+      "lineCount": 18
+    },
+    "TintPalette_SepiaTone": {
+      "returnType": "void",
+      "signature": "void TintPalette_SepiaTone(u16 *palette, u16 count)",
+      "paramsRaw": "u16 *palette, u16 count",
+      "body": "s32 r, g, b, i;\n    u32 gray;\n\n    for (i = 0; i < count; i++)\n    {\n        r = GET_R(*palette);\n        g = GET_G(*palette);\n        b = GET_B(*palette);\n\n        gray = (r * Q_8_8(0.3) + g * Q_8_8(0.59) + b * Q_8_8(0.1133)) >> 8;\n\n        r = (u16)((Q_8_8(1.2) * gray)) >> 8;\n        g = (u16)((Q_8_8(1.0) * gray)) >> 8;\n        b = (u16)((Q_8_8(0.94) * gray)) >> 8;\n\n        if (r > 31)\n            r = 31;\n\n        *palette++ = RGB2(r, g, b);\n    }",
+      "callsTo": [
+        "GET_B",
+        "GET_G",
+        "GET_R",
+        "Q_8_8",
+        "RGB2"
+      ],
+      "lineCount": 20
+    },
+    "TintPalette_CustomTone": {
+      "returnType": "void",
+      "signature": "void TintPalette_CustomTone(u16 *palette, u16 count, u16 rTone, u16 gTone, u16 bTone)",
+      "paramsRaw": "u16 *palette, u16 count, u16 rTone, u16 gTone, u16 bTone",
+      "body": "s32 r, g, b, i;\n    u32 gray;\n\n    for (i = 0; i < count; i++)\n    {\n        r = GET_R(*palette);\n        g = GET_G(*palette);\n        b = GET_B(*palette);\n\n        gray = (r * Q_8_8(0.3) + g * Q_8_8(0.59) + b * Q_8_8(0.1133)) >> 8;\n\n        r = (u16)((rTone * gray)) >> 8;\n        g = (u16)((gTone * gray)) >> 8;\n        b = (u16)((bTone * gray)) >> 8;\n\n        if (r > 31)\n            r = 31;\n        if (g > 31)\n            g = 31;\n        if (b > 31)\n            b = 31;\n\n        *palette++ = RGB2(r, g, b);\n    }",
+      "callsTo": [
+        "GET_B",
+        "GET_G",
+        "GET_R",
+        "Q_8_8",
+        "RGB2"
+      ],
+      "lineCount": 24
+    },
+    "BlendPalettesGradually": {
+      "returnType": "void",
+      "signature": "void BlendPalettesGradually(u32 selectedPalettes, s8 delay, u8 coeff, u8 coeffTarget, u16 color, u8 priority, u8 id)",
+      "paramsRaw": "u32 selectedPalettes, s8 delay, u8 coeff, u8 coeffTarget, u16 color, u8 priority, u8 id",
+      "body": "u8 taskId;\n\n    taskId = CreateTask(Task_BlendPalettesGradually, priority);\n    gTasks[taskId].tCoeff = coeff;\n    gTasks[taskId].tCoeffTarget = coeffTarget;\n\n    if (delay >= 0)\n    {\n        gTasks[taskId].tDelay = delay;\n        gTasks[taskId].tCoeffDelta = 1;\n    }\n    else\n    {\n        gTasks[taskId].tDelay = 0;\n        gTasks[taskId].tCoeffDelta = -delay + 1;\n    }\n\n    if (coeffTarget < coeff)\n        gTasks[taskId].tCoeffDelta *= -1;\n\n    SetWordTaskArg(taskId, tPalettes, selectedPalettes);\n    gTasks[taskId].tColor = color;\n    gTasks[taskId].tId = id;\n    gTasks[taskId].func(taskId);",
+      "callsTo": [
+        "CreateTask",
+        "SetWordTaskArg"
+      ],
+      "lineCount": 24
+    },
+    "Task_BlendPalettesGradually": {
+      "returnType": "void",
+      "signature": "static void Task_BlendPalettesGradually(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "u32 palettes;\n    s16 *data;\n    s16 target;\n\n    data = gTasks[taskId].data;\n    palettes = GetWordTaskArg(taskId, tPalettes);\n\n    if (++tDelayTimer > tDelay)\n    {\n        tDelayTimer = 0;\n        BlendPalettes(palettes, tCoeff, tColor);\n        target = tCoeffTarget;\n        if (tCoeff == target)\n        {\n            DestroyTask(taskId);\n        }\n        else\n        {\n            tCoeff += tCoeffDelta;\n            if (tCoeffDelta >= 0)\n            {\n                if (tCoeff < target)\n                    return;\n            }\n            else if (tCoeff > target)\n            {\n                return;\n            }\n            tCoeff = target;\n        }\n    }",
+      "callsTo": [
+        "BlendPalettes",
+        "DestroyTask",
+        "GetWordTaskArg"
+      ],
+      "lineCount": 31
+    }
+  }
+}

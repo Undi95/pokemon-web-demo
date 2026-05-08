@@ -1,0 +1,170 @@
+{
+  "srcFile": "src/money.c",
+  "count": 15,
+  "functions": {
+    "GetMoney": {
+      "returnType": "u32",
+      "signature": "u32 GetMoney(u32 *moneyPtr)",
+      "paramsRaw": "u32 *moneyPtr",
+      "body": "return *moneyPtr ^ gSaveBlock2Ptr->encryptionKey;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "SetMoney": {
+      "returnType": "void",
+      "signature": "void SetMoney(u32 *moneyPtr, u32 newValue)",
+      "paramsRaw": "u32 *moneyPtr, u32 newValue",
+      "body": "*moneyPtr = gSaveBlock2Ptr->encryptionKey ^ newValue;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "IsEnoughMoney": {
+      "returnType": "bool8",
+      "signature": "bool8 IsEnoughMoney(u32 *moneyPtr, u32 cost)",
+      "paramsRaw": "u32 *moneyPtr, u32 cost",
+      "body": "if (GetMoney(moneyPtr) >= cost)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [
+        "GetMoney"
+      ],
+      "lineCount": 4
+    },
+    "AddMoney": {
+      "returnType": "void",
+      "signature": "void AddMoney(u32 *moneyPtr, u32 toAdd)",
+      "paramsRaw": "u32 *moneyPtr, u32 toAdd",
+      "body": "u32 toSet = GetMoney(moneyPtr);\n\n     \n    if (toSet + toAdd > MAX_MONEY)\n    {\n        toSet = MAX_MONEY;\n    }\n    else\n    {\n        toSet += toAdd;\n         \n        if (toSet < GetMoney(moneyPtr))\n            toSet = MAX_MONEY;\n    }\n\n    SetMoney(moneyPtr, toSet);",
+      "callsTo": [
+        "GetMoney",
+        "SetMoney"
+      ],
+      "lineCount": 16
+    },
+    "RemoveMoney": {
+      "returnType": "void",
+      "signature": "void RemoveMoney(u32 *moneyPtr, u32 toSub)",
+      "paramsRaw": "u32 *moneyPtr, u32 toSub",
+      "body": "u32 toSet = GetMoney(moneyPtr);\n\n     \n    if (toSet < toSub)\n        toSet = 0;\n    else\n        toSet -= toSub;\n\n    SetMoney(moneyPtr, toSet);",
+      "callsTo": [
+        "GetMoney",
+        "SetMoney"
+      ],
+      "lineCount": 9
+    },
+    "IsEnoughForCostInVar0x8005": {
+      "returnType": "bool8",
+      "signature": "bool8 IsEnoughForCostInVar0x8005(void)",
+      "paramsRaw": "void",
+      "body": "return IsEnoughMoney(&gSaveBlock1Ptr->money, gSpecialVar_0x8005);",
+      "callsTo": [
+        "IsEnoughMoney"
+      ],
+      "lineCount": 1
+    },
+    "SubtractMoneyFromVar0x8005": {
+      "returnType": "void",
+      "signature": "void SubtractMoneyFromVar0x8005(void)",
+      "paramsRaw": "void",
+      "body": "RemoveMoney(&gSaveBlock1Ptr->money, gSpecialVar_0x8005);",
+      "callsTo": [
+        "RemoveMoney"
+      ],
+      "lineCount": 1
+    },
+    "PrintMoneyAmountInMoneyBox": {
+      "returnType": "void",
+      "signature": "void PrintMoneyAmountInMoneyBox(u8 windowId, int amount, u8 speed)",
+      "paramsRaw": "u8 windowId, int amount, u8 speed",
+      "body": "PrintMoneyAmount(windowId, 38, 1, amount, speed);",
+      "callsTo": [
+        "PrintMoneyAmount"
+      ],
+      "lineCount": 1
+    },
+    "PrintMoneyAmount": {
+      "returnType": "void",
+      "signature": "void PrintMoneyAmount(u8 windowId, u8 x, u8 y, int amount, u8 speed)",
+      "paramsRaw": "u8 windowId, u8 x, u8 y, int amount, u8 speed",
+      "body": "u8 *txtPtr;\n    s32 strLength;\n\n    ConvertIntToDecimalStringN(gStringVar1, amount, STR_CONV_MODE_LEFT_ALIGN, 6);\n\n    strLength = 6 - StringLength(gStringVar1);\n    txtPtr = gStringVar4;\n\n    while (strLength-- > 0)\n        *(txtPtr++) = CHAR_SPACER;\n\n    StringExpandPlaceholders(txtPtr, gText_PokedollarVar1);\n    AddTextPrinterParameterized(windowId, FONT_NORMAL, gStringVar4, x, y, speed, NULL);",
+      "callsTo": [
+        "AddTextPrinterParameterized",
+        "ConvertIntToDecimalStringN",
+        "StringExpandPlaceholders",
+        "StringLength"
+      ],
+      "lineCount": 13
+    },
+    "PrintMoneyAmountInMoneyBoxWithBorder": {
+      "returnType": "void",
+      "signature": "void PrintMoneyAmountInMoneyBoxWithBorder(u8 windowId, u16 tileStart, u8 pallete, int amount)",
+      "paramsRaw": "u8 windowId, u16 tileStart, u8 pallete, int amount",
+      "body": "DrawStdFrameWithCustomTileAndPalette(windowId, FALSE, tileStart, pallete);\n    PrintMoneyAmountInMoneyBox(windowId, amount, 0);",
+      "callsTo": [
+        "DrawStdFrameWithCustomTileAndPalette",
+        "PrintMoneyAmountInMoneyBox"
+      ],
+      "lineCount": 2
+    },
+    "ChangeAmountInMoneyBox": {
+      "returnType": "void",
+      "signature": "void ChangeAmountInMoneyBox(int amount)",
+      "paramsRaw": "int amount",
+      "body": "PrintMoneyAmountInMoneyBox(sMoneyBoxWindowId, amount, 0);",
+      "callsTo": [
+        "PrintMoneyAmountInMoneyBox"
+      ],
+      "lineCount": 1
+    },
+    "DrawMoneyBox": {
+      "returnType": "void",
+      "signature": "void DrawMoneyBox(int amount, u8 x, u8 y)",
+      "paramsRaw": "int amount, u8 x, u8 y",
+      "body": "struct WindowTemplate template;\n\n    SetWindowTemplateFields(&template, 0, x + 1, y + 1, 10, 2, 15, 8);\n    sMoneyBoxWindowId = AddWindow(&template);\n    FillWindowPixelBuffer(sMoneyBoxWindowId, PIXEL_FILL(0));\n    PutWindowTilemap(sMoneyBoxWindowId);\n    CopyWindowToVram(sMoneyBoxWindowId, COPYWIN_MAP);\n    PrintMoneyAmountInMoneyBoxWithBorder(sMoneyBoxWindowId, 0x214, 14, amount);\n    AddMoneyLabelObject((8 * x) + 24, (8 * y) + 11);",
+      "callsTo": [
+        "AddMoneyLabelObject",
+        "AddWindow",
+        "CopyWindowToVram",
+        "FillWindowPixelBuffer",
+        "PIXEL_FILL",
+        "PrintMoneyAmountInMoneyBoxWithBorder",
+        "PutWindowTilemap",
+        "SetWindowTemplateFields"
+      ],
+      "lineCount": 9
+    },
+    "HideMoneyBox": {
+      "returnType": "void",
+      "signature": "void HideMoneyBox(void)",
+      "paramsRaw": "void",
+      "body": "RemoveMoneyLabelObject();\n    ClearStdWindowAndFrameToTransparent(sMoneyBoxWindowId, FALSE);\n    CopyWindowToVram(sMoneyBoxWindowId, COPYWIN_GFX);\n    RemoveWindow(sMoneyBoxWindowId);",
+      "callsTo": [
+        "ClearStdWindowAndFrameToTransparent",
+        "CopyWindowToVram",
+        "RemoveMoneyLabelObject",
+        "RemoveWindow"
+      ],
+      "lineCount": 4
+    },
+    "AddMoneyLabelObject": {
+      "returnType": "void",
+      "signature": "void AddMoneyLabelObject(u16 x, u16 y)",
+      "paramsRaw": "u16 x, u16 y",
+      "body": "LoadCompressedSpriteSheet(&sSpriteSheet_MoneyLabel);\n    LoadCompressedSpritePalette(&sSpritePalette_MoneyLabel);\n    sMoneyLabelSpriteId = CreateSprite(&sSpriteTemplate_MoneyLabel, x, y, 0);",
+      "callsTo": [
+        "CreateSprite",
+        "LoadCompressedSpritePalette",
+        "LoadCompressedSpriteSheet"
+      ],
+      "lineCount": 3
+    },
+    "RemoveMoneyLabelObject": {
+      "returnType": "void",
+      "signature": "void RemoveMoneyLabelObject(void)",
+      "paramsRaw": "void",
+      "body": "DestroySpriteAndFreeResources(&gSprites[sMoneyLabelSpriteId]);",
+      "callsTo": [
+        "DestroySpriteAndFreeResources"
+      ],
+      "lineCount": 1
+    }
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "srcFile": "src/bard_music.c",
+  "count": 2,
+  "functions": {
+    "GetWordPitch": {
+      "returnType": "s16",
+      "signature": "static s16 GetWordPitch(int tableIndex, int pitchIndex)",
+      "paramsRaw": "int tableIndex, int pitchIndex",
+      "body": "return sPitchTables[tableIndex][pitchIndex];",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "CalcWordSounds": {
+      "returnType": "void",
+      "signature": "void CalcWordSounds(struct BardSong *song, u16 pitchTableIndex)",
+      "paramsRaw": "struct BardSong *song, u16 pitchTableIndex",
+      "body": "int i;\n    const struct BardSoundTemplate *template;\n\n    song->length = 0;\n\n    for (i = 0; i < MAX_BARD_SOUNDS_PER_WORD; i ++)\n    {\n        template = &song->soundTemplates[i];\n        if (template->songId != PHONEME_ID_NONE)\n        {\n             \n             \n             \n            song->sounds[i].length = template->lengthAdjustment + sPhonemeLengths[template->songId];\n            song->sounds[i].pitch = GetWordPitch(pitchTableIndex + BASE_PITCH_TABLE_INDEX, i);\n\n             \n            song->length += song->sounds[i].length;\n        }\n    }\n    song->soundIndex = 0;\n    song->voiceInflection = 0;",
+      "callsTo": [
+        "GetWordPitch"
+      ],
+      "lineCount": 22
+    }
+  }
+}

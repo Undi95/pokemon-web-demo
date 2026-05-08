@@ -1,0 +1,486 @@
+{
+  "srcFile": "src/mystery_gift_menu.c",
+  "count": 34,
+  "functions": {
+    "VBlankCB_MysteryGiftEReader": {
+      "returnType": "void",
+      "signature": "static void VBlankCB_MysteryGiftEReader(void)",
+      "paramsRaw": "void",
+      "body": "ProcessSpriteCopyRequests();\n    LoadOam();\n    TransferPlttBuffer();",
+      "callsTo": [
+        "LoadOam",
+        "ProcessSpriteCopyRequests",
+        "TransferPlttBuffer"
+      ],
+      "lineCount": 3
+    },
+    "CB2_MysteryGiftEReader": {
+      "returnType": "void",
+      "signature": "void CB2_MysteryGiftEReader(void)",
+      "paramsRaw": "void",
+      "body": "RunTasks();\n    RunTextPrinters();\n    AnimateSprites();\n    BuildOamBuffer();",
+      "callsTo": [
+        "AnimateSprites",
+        "BuildOamBuffer",
+        "RunTasks",
+        "RunTextPrinters"
+      ],
+      "lineCount": 4
+    },
+    "HandleMysteryGiftOrEReaderSetup": {
+      "returnType": "bool32",
+      "signature": "static bool32 HandleMysteryGiftOrEReaderSetup(s32 isEReader)",
+      "paramsRaw": "s32 isEReader",
+      "body": "switch (gMain.state)\n    {\n    case 0:\n        SetVBlankCallback(NULL);\n        ResetPaletteFade();\n        ResetSpriteData();\n        FreeAllSpritePalettes();\n        ResetTasks();\n        ScanlineEffect_Stop();\n        ResetBgsAndClearDma3BusyFlags(0);\n\n        InitBgsFromTemplates(0, sBGTemplates, ARRAY_COUNT(sBGTemplates));\n        ChangeBgX(0, 0, BG_COORD_SET);\n        ChangeBgY(0, 0, BG_COORD_SET);\n        ChangeBgX(1, 0, BG_COORD_SET);\n        ChangeBgY(1, 0, BG_COORD_SET);\n        ChangeBgX(2, 0, BG_COORD_SET);\n        ChangeBgY(2, 0, BG_COORD_SET);\n        ChangeBgX(3, 0, BG_COORD_SET);\n        ChangeBgY(3, 0, BG_COORD_SET);\n\n        SetBgTilemapBuffer(3, Alloc(BG_SCREEN_SIZE));\n        SetBgTilemapBuffer(2, Alloc(BG_SCREEN_SIZE));\n        SetBgTilemapBuffer(1, Alloc(BG_SCREEN_SIZE));\n        SetBgTilemapBuffer(0, Alloc(BG_SCREEN_SIZE));\n\n        LoadMysteryGiftTextboxBorder(3);\n        InitWindows(sMainWindows);\n        DeactivateAllTextPrinters();\n        ClearGpuRegBits(REG_OFFSET_DISPCNT, DISPCNT_WIN0_ON | DISPCNT_WIN1_ON);\n        SetGpuReg(REG_OFFSET_BLDCNT, 0);\n        SetGpuReg(REG_OFFSET_BLDALPHA, 0);\n        SetGpuReg(REG_OFFSET_BLDY, 0);\n        gMain.state++;\n        break;\n    case 1:\n        LoadPalette(sTextboxBorder_Pal, BG_PLTT_ID(0), PLTT_SIZE_4BPP);\n        LoadPalette(GetTextWindowPalette(2), BG_PLTT_ID(13), PLTT_SIZE_4BPP);\n        Menu_LoadStdPalAt(BG_PLTT_ID(12));\n        LoadUserWindowBorderGfx(0, 0xA, BG_PLTT_ID(14));\n        LoadUserWindowBorderGfx_(0, 0x1, BG_PLTT_ID(15));\n        FillBgTilemapBufferRect(0, 0x000, 0, 0, 32, 32, 17);\n        FillBgTilemapBufferRect(1, 0x000, 0, 0, 32, 32, 17);\n        FillBgTilemapBufferRect(2, 0x000, 0, 0, 32, 32, 17);\n        MG_DrawCheckerboardPattern(3);\n        PrintMysteryGiftOrEReaderHeader(isEReader, FALSE);\n        gMain.state++;\n        break;\n    case 2:\n        CopyBgTilemapBufferToVram(3);\n        CopyBgTilemapBufferToVram(2);\n        CopyBgTilemapBufferToVram(1);\n        CopyBgTilemapBufferToVram(0);\n        gMain.state++;\n        break;\n    case 3:\n        ShowBg(0);\n        ShowBg(3);\n        PlayBGM(MUS_RG_MYSTERY_GIFT);\n        SetVBlankCallback(VBlankCB_MysteryGiftEReader);\n        EnableInterrupts(INTR_FLAG_VBLANK | INTR_FLAG_VCOUNT | INTR_FLAG_TIMER3 | INTR_FLAG_SERIAL);\n        return TRUE;\n    }\n\n    return FALSE;",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "Alloc",
+        "BG_PLTT_ID",
+        "ChangeBgX",
+        "ChangeBgY",
+        "ClearGpuRegBits",
+        "CopyBgTilemapBufferToVram",
+        "DeactivateAllTextPrinters",
+        "EnableInterrupts",
+        "FillBgTilemapBufferRect",
+        "FreeAllSpritePalettes",
+        "GetTextWindowPalette",
+        "InitBgsFromTemplates",
+        "InitWindows",
+        "LoadMysteryGiftTextboxBorder",
+        "LoadPalette",
+        "LoadUserWindowBorderGfx",
+        "LoadUserWindowBorderGfx_",
+        "MG_DrawCheckerboardPattern",
+        "Menu_LoadStdPalAt",
+        "PlayBGM",
+        "PrintMysteryGiftOrEReaderHeader",
+        "ResetBgsAndClearDma3BusyFlags",
+        "ResetPaletteFade",
+        "ResetSpriteData",
+        "ResetTasks",
+        "ScanlineEffect_Stop",
+        "SetBgTilemapBuffer",
+        "SetGpuReg",
+        "SetVBlankCallback",
+        "ShowBg"
+      ],
+      "lineCount": 65
+    },
+    "CB2_InitMysteryGift": {
+      "returnType": "void",
+      "signature": "void CB2_InitMysteryGift(void)",
+      "paramsRaw": "void",
+      "body": "if (HandleMysteryGiftOrEReaderSetup(FALSE))\n    {\n        SetMainCallback2(CB2_MysteryGiftEReader);\n        gGiftIsFromEReader = FALSE;\n        CreateMysteryGiftTask();\n    }\n    RunTasks();",
+      "callsTo": [
+        "CreateMysteryGiftTask",
+        "HandleMysteryGiftOrEReaderSetup",
+        "RunTasks",
+        "SetMainCallback2"
+      ],
+      "lineCount": 7
+    },
+    "CB2_InitEReader": {
+      "returnType": "void",
+      "signature": "void CB2_InitEReader(void)",
+      "paramsRaw": "void",
+      "body": "if (HandleMysteryGiftOrEReaderSetup(TRUE))\n    {\n        SetMainCallback2(CB2_MysteryGiftEReader);\n        gGiftIsFromEReader = TRUE;\n        CreateEReaderTask();\n    }",
+      "callsTo": [
+        "CreateEReaderTask",
+        "HandleMysteryGiftOrEReaderSetup",
+        "SetMainCallback2"
+      ],
+      "lineCount": 6
+    },
+    "MainCB_FreeAllBuffersAndReturnToInitTitleScreen": {
+      "returnType": "void",
+      "signature": "void MainCB_FreeAllBuffersAndReturnToInitTitleScreen(void)",
+      "paramsRaw": "void",
+      "body": "gGiftIsFromEReader = FALSE;\n    FreeAllWindowBuffers();\n    Free(GetBgTilemapBuffer(0));\n    Free(GetBgTilemapBuffer(1));\n    Free(GetBgTilemapBuffer(2));\n    Free(GetBgTilemapBuffer(3));\n    SetMainCallback2(CB2_InitTitleScreen);",
+      "callsTo": [
+        "Free",
+        "FreeAllWindowBuffers",
+        "GetBgTilemapBuffer",
+        "SetMainCallback2"
+      ],
+      "lineCount": 7
+    },
+    "PrintMysteryGiftOrEReaderHeader": {
+      "returnType": "void",
+      "signature": "void PrintMysteryGiftOrEReaderHeader(bool8 isEReader, bool32 useCancel)",
+      "paramsRaw": "bool8 isEReader, bool32 useCancel",
+      "body": "const u8 *title;\n    const u8 *options;\n    FillWindowPixelBuffer(WIN_HEADER, 0);\n    if (!isEReader)\n    {\n        title = gText_MysteryGift;\n        options = !useCancel ? gText_PickOKExit : gText_PickOKCancel;\n    }\n    else\n    {\n        title = gJPText_MysteryGift;\n        options = gJPText_DecideStop;\n    }\n\n    AddTextPrinterParameterized4(WIN_HEADER, FONT_NORMAL, 4, 1, 0, 0, sTextColors_Header, TEXT_SKIP_DRAW, title);\n    AddTextPrinterParameterized4(WIN_HEADER, FONT_SMALL, GetStringRightAlignXOffset(FONT_SMALL, options, 0xDE), 1, 0, 0, sTextColors_Header, TEXT_SKIP_DRAW, options);\n    CopyWindowToVram(WIN_HEADER, COPYWIN_GFX);\n    PutWindowTilemap(WIN_HEADER);",
+      "callsTo": [
+        "AddTextPrinterParameterized4",
+        "CopyWindowToVram",
+        "FillWindowPixelBuffer",
+        "GetStringRightAlignXOffset",
+        "PutWindowTilemap"
+      ],
+      "lineCount": 18
+    },
+    "MG_DrawTextBorder": {
+      "returnType": "void",
+      "signature": "void MG_DrawTextBorder(u8 windowId)",
+      "paramsRaw": "u8 windowId",
+      "body": "DrawTextBorderOuter(windowId, 0x01, 0xF);",
+      "callsTo": [
+        "DrawTextBorderOuter"
+      ],
+      "lineCount": 1
+    },
+    "MG_DrawCheckerboardPattern": {
+      "returnType": "void",
+      "signature": "void MG_DrawCheckerboardPattern(u32 bg)",
+      "paramsRaw": "u32 bg",
+      "body": "s32 i = 0, j;\n\n    FillBgTilemapBufferRect(bg, 0x003, 0, 0, 32, 2, 17);\n\n    for (i = 0; i < 18; i++)\n    {\n        for (j = 0; j < 32; j++)\n        {\n            if ((i & 1) != (j & 1))\n                FillBgTilemapBufferRect(bg, 1, j, i + 2, 1, 1, 17);\n            else\n                FillBgTilemapBufferRect(bg, 2, j, i + 2, 1, 1, 17);\n        }\n    }",
+      "callsTo": [
+        "FillBgTilemapBufferRect"
+      ],
+      "lineCount": 14
+    },
+    "ClearScreenInBg0": {
+      "returnType": "void",
+      "signature": "static void ClearScreenInBg0(bool32 ignoreTopTwoRows)",
+      "paramsRaw": "bool32 ignoreTopTwoRows",
+      "body": "switch (ignoreTopTwoRows)\n    {\n    case 0:\n        FillBgTilemapBufferRect(0, 0, 0, 0, 32, 32, 17);\n        break;\n    case 1:\n        FillBgTilemapBufferRect(0, 0, 0, 2, 32, 30, 17);\n        break;\n    }\n    CopyBgTilemapBufferToVram(0);",
+      "callsTo": [
+        "CopyBgTilemapBufferToVram",
+        "FillBgTilemapBufferRect"
+      ],
+      "lineCount": 10
+    },
+    "MG_AddMessageTextPrinter": {
+      "returnType": "void",
+      "signature": "void MG_AddMessageTextPrinter(const u8 *str)",
+      "paramsRaw": "const u8 *str",
+      "body": "StringExpandPlaceholders(gStringVar4, str);\n    FillWindowPixelBuffer(WIN_MSG, 0x11);\n    AddTextPrinterParameterized4(WIN_MSG, FONT_NORMAL, 0, 1, 0, 0, sMG_Ereader_TextColor_2, 0, gStringVar4);\n    DrawTextBorderOuter(WIN_MSG, 0x001, 0xF);\n    PutWindowTilemap(WIN_MSG);\n    CopyWindowToVram(WIN_MSG, COPYWIN_FULL);",
+      "callsTo": [
+        "AddTextPrinterParameterized4",
+        "CopyWindowToVram",
+        "DrawTextBorderOuter",
+        "FillWindowPixelBuffer",
+        "PutWindowTilemap",
+        "StringExpandPlaceholders"
+      ],
+      "lineCount": 6
+    },
+    "ClearMessage": {
+      "returnType": "void",
+      "signature": "static void ClearMessage(void)",
+      "paramsRaw": "void",
+      "body": "rbox_fill_rectangle(WIN_MSG);\n    ClearWindowTilemap(WIN_MSG);\n    CopyWindowToVram(WIN_MSG, COPYWIN_MAP);",
+      "callsTo": [
+        "ClearWindowTilemap",
+        "CopyWindowToVram"
+      ],
+      "lineCount": 3
+    },
+    "PrintMysteryGiftMenuMessage": {
+      "returnType": "bool32",
+      "signature": "bool32 PrintMysteryGiftMenuMessage(u8 *textState, const u8 *str)",
+      "paramsRaw": "u8 *textState, const u8 *str",
+      "body": "switch (*textState)\n    {\n    case 0:\n        MG_AddMessageTextPrinter(str);\n        (*textState)++;\n        break;\n    case 1:\n        DrawDownArrow(WIN_MSG, DOWN_ARROW_X, DOWN_ARROW_Y, 1, FALSE, &sDownArrowCounterAndYCoordIdx[0], &sDownArrowCounterAndYCoordIdx[1]);\n        if (JOY_NEW(A_BUTTON | B_BUTTON))\n            (*textState)++;\n        break;\n    case 2:\n        DrawDownArrow(WIN_MSG, DOWN_ARROW_X, DOWN_ARROW_Y, 1, TRUE, &sDownArrowCounterAndYCoordIdx[0], &sDownArrowCounterAndYCoordIdx[1]);\n        *textState = 0;\n        ClearMessage();\n        return TRUE;\n    case 0xFF:\n        *textState = 2;\n        return FALSE;\n    }\n    return FALSE;",
+      "callsTo": [
+        "ClearMessage",
+        "DrawDownArrow",
+        "JOY_NEW",
+        "MG_AddMessageTextPrinter"
+      ],
+      "lineCount": 21
+    },
+    "HideDownArrow": {
+      "returnType": "void",
+      "signature": "static void HideDownArrow(void)",
+      "paramsRaw": "void",
+      "body": "DrawDownArrow(WIN_MSG, DOWN_ARROW_X, DOWN_ARROW_Y, 1, FALSE, &sDownArrowCounterAndYCoordIdx[0], &sDownArrowCounterAndYCoordIdx[1]);",
+      "callsTo": [
+        "DrawDownArrow"
+      ],
+      "lineCount": 1
+    },
+    "ShowDownArrow": {
+      "returnType": "void",
+      "signature": "static void ShowDownArrow(void)",
+      "paramsRaw": "void",
+      "body": "DrawDownArrow(WIN_MSG, DOWN_ARROW_X, DOWN_ARROW_Y, 1, TRUE, &sDownArrowCounterAndYCoordIdx[0], &sDownArrowCounterAndYCoordIdx[1]);",
+      "callsTo": [
+        "DrawDownArrow"
+      ],
+      "lineCount": 1
+    },
+    "PrintStringAndWait2Seconds": {
+      "returnType": "bool32",
+      "signature": "static bool32 PrintStringAndWait2Seconds(u8 *counter, const u8 *str)",
+      "paramsRaw": "u8 *counter, const u8 *str",
+      "body": "if (*counter == 0)\n        MG_AddMessageTextPrinter(str);\n\n    if (++(*counter) > 120)\n    {\n        *counter = 0;\n        ClearMessage();\n        return TRUE;\n    }\n    else\n    {\n        return FALSE;\n    }",
+      "callsTo": [
+        "ClearMessage",
+        "MG_AddMessageTextPrinter"
+      ],
+      "lineCount": 13
+    },
+    "MysteryGift_HandleThreeOptionMenu": {
+      "returnType": "u32",
+      "signature": "static u32 MysteryGift_HandleThreeOptionMenu(u8 *unused0, u16 *unused1, u8 whichMenu)",
+      "paramsRaw": "u8 *unused0, u16 *unused1, u8 whichMenu",
+      "body": "struct ListMenuTemplate listMenuTemplate = sListMenuTemplate_ThreeOptions;\n    struct WindowTemplate windowTemplate = sWindowTemplate_ThreeOptions;\n    s32 width;\n    s32 response;\n\n    if (whichMenu == 0)\n        listMenuTemplate.items = sListMenuItems_CardsOrNews;\n    else\n        listMenuTemplate.items = sListMenuItems_WirelessOrFriend;\n\n    width = Intl_GetListMenuWidth(&listMenuTemplate);\n    if (width & 1)\n        width++;\n\n    windowTemplate.width = width;\n    if (width < DISPLAY_TILE_WIDTH)\n        windowTemplate.tilemapLeft = (DISPLAY_TILE_WIDTH - width) / 2;\n    else\n        windowTemplate.tilemapLeft = 0;\n\n    response = DoMysteryGiftListMenu(&windowTemplate, &listMenuTemplate, 1, LIST_MENU_TILE_NUM, LIST_MENU_PAL_NUM);\n    if (response != LIST_NOTHING_CHOSEN)\n    {\n        ClearWindowTilemap(WIN_UNK);\n        CopyWindowToVram(WIN_UNK, COPYWIN_MAP);\n    }\n    return response;",
+      "callsTo": [
+        "ClearWindowTilemap",
+        "CopyWindowToVram",
+        "DoMysteryGiftListMenu",
+        "Intl_GetListMenuWidth"
+      ],
+      "lineCount": 27
+    },
+    "DoMysteryGiftYesNo": {
+      "returnType": "s8",
+      "signature": "s8 DoMysteryGiftYesNo(u8 *textState, u16 *windowId, bool8 yesNoBoxPlacement, const u8 *str)",
+      "paramsRaw": "u8 *textState, u16 *windowId, bool8 yesNoBoxPlacement, const u8 *str",
+      "body": "struct WindowTemplate windowTemplate;\n    s8 input;\n\n    switch (*textState)\n    {\n    case 0:\n         \n        StringExpandPlaceholders(gStringVar4, str);\n        if (yesNoBoxPlacement == 0)\n            *windowId = AddWindow(&sWindowTemplate_YesNoMsg_Wide);\n        else\n            *windowId = AddWindow(&sWindowTemplate_YesNoMsg);\n        FillWindowPixelBuffer(*windowId, 0x11);\n        AddTextPrinterParameterized4(*windowId, FONT_NORMAL, 0, 1, 0, 0, sMG_Ereader_TextColor_2, 0, gStringVar4);\n        DrawTextBorderOuter(*windowId, 0x001, 0x0F);\n        CopyWindowToVram(*windowId, COPYWIN_GFX);\n        PutWindowTilemap(*windowId);\n        (*textState)++;\n        break;\n    case 1:\n         \n        windowTemplate = sWindowTemplate_YesNoBox;\n        if (yesNoBoxPlacement == 0)\n            windowTemplate.tilemapTop = 9;\n        else\n            windowTemplate.tilemapTop = 15;\n        CreateYesNoMenu(&windowTemplate, 10, 14, 0);\n        (*textState)++;\n        break;\n    case 2:\n         \n        input = Menu_ProcessInputNoWrapClearOnChoose();\n        if (input == MENU_B_PRESSED || input == 0 || input == 1)\n        {\n            *textState = 0;\n            rbox_fill_rectangle(*windowId);\n            ClearWindowTilemap(*windowId);\n            CopyWindowToVram(*windowId, COPYWIN_MAP);\n            RemoveWindow(*windowId);\n            return input;\n        }\n        break;\n    case 0xFF:\n        *textState = 0;\n        rbox_fill_rectangle(*windowId);\n        ClearWindowTilemap(*windowId);\n        CopyWindowToVram(*windowId, COPYWIN_MAP);\n        RemoveWindow(*windowId);\n        return MENU_B_PRESSED;\n    }\n\n    return MENU_NOTHING_CHOSEN;",
+      "callsTo": [
+        "AddTextPrinterParameterized4",
+        "AddWindow",
+        "ClearWindowTilemap",
+        "CopyWindowToVram",
+        "CreateYesNoMenu",
+        "DrawTextBorderOuter",
+        "FillWindowPixelBuffer",
+        "Menu_ProcessInputNoWrapClearOnChoose",
+        "PutWindowTilemap",
+        "RemoveWindow",
+        "StringExpandPlaceholders"
+      ],
+      "lineCount": 52
+    },
+    "HandleGiftSelectMenu": {
+      "returnType": "s32",
+      "signature": "static s32 HandleGiftSelectMenu(u8 *textState, u16 *windowId, bool32 cannotToss, bool32 cannotSend)",
+      "paramsRaw": "u8 *textState, u16 *windowId, bool32 cannotToss, bool32 cannotSend",
+      "body": "struct WindowTemplate UNUSED windowTemplate;\n    s32 input;\n\n    switch (*textState)\n    {\n    case 0:\n         \n        if (!cannotToss)\n            StringExpandPlaceholders(gStringVar4, gText_WhatToDoWithCards);\n        else\n            StringExpandPlaceholders(gStringVar4, gText_WhatToDoWithNews);\n        *windowId = AddWindow(&sWindowTemplate_GiftSelect);\n        FillWindowPixelBuffer(*windowId, 0x11);\n        AddTextPrinterParameterized4(*windowId, FONT_NORMAL, 0, 1, 0, 0, sMG_Ereader_TextColor_2, 0, gStringVar4);\n        DrawTextBorderOuter(*windowId, 0x001, 0x0F);\n        CopyWindowToVram(*windowId, COPYWIN_GFX);\n        PutWindowTilemap(*windowId);\n        (*textState)++;\n        break;\n    case 1:\n        windowTemplate = sWindowTemplate_YesNoBox;\n        if (cannotSend)\n        {\n            if (!cannotToss)\n                input = DoMysteryGiftListMenu(&sWindowTemplate_GiftSelect_2Options, &sListMenu_ReceiveToss, 1, LIST_MENU_TILE_NUM, LIST_MENU_PAL_NUM);\n            else\n                input = DoMysteryGiftListMenu(&sWindowTemplate_GiftSelect_1Option, &sListMenu_Receive, 1, LIST_MENU_TILE_NUM, LIST_MENU_PAL_NUM);\n        }\n        else\n        {\n            if (!cannotToss)\n                input = DoMysteryGiftListMenu(&sWindowTemplate_GiftSelect_3Options, &sListMenu_ReceiveSendToss, 1, LIST_MENU_TILE_NUM, LIST_MENU_PAL_NUM);\n            else\n                input = DoMysteryGiftListMenu(&sWindowTemplate_GiftSelect_2Options, &sListMenu_ReceiveSend, 1, LIST_MENU_TILE_NUM, LIST_MENU_PAL_NUM);\n        }\n        if (input != LIST_NOTHING_CHOSEN)\n        {\n            *textState = 0;\n            rbox_fill_rectangle(*windowId);\n            ClearWindowTilemap(*windowId);\n            CopyWindowToVram(*windowId, COPYWIN_MAP);\n            RemoveWindow(*windowId);\n            return input;\n        }\n        break;\n    case 0xFF:\n        *textState = 0;\n        rbox_fill_rectangle(*windowId);\n        ClearWindowTilemap(*windowId);\n        CopyWindowToVram(*windowId, COPYWIN_MAP);\n        RemoveWindow(*windowId);\n        return LIST_CANCEL;\n    }\n\n    return LIST_NOTHING_CHOSEN;",
+      "callsTo": [
+        "AddTextPrinterParameterized4",
+        "AddWindow",
+        "ClearWindowTilemap",
+        "CopyWindowToVram",
+        "DoMysteryGiftListMenu",
+        "DrawTextBorderOuter",
+        "FillWindowPixelBuffer",
+        "PutWindowTilemap",
+        "RemoveWindow",
+        "StringExpandPlaceholders"
+      ],
+      "lineCount": 55
+    },
+    "ValidateCardOrNews": {
+      "returnType": "bool32",
+      "signature": "static bool32 ValidateCardOrNews(bool32 isWonderNews)",
+      "paramsRaw": "bool32 isWonderNews",
+      "body": "if (!isWonderNews)\n        return ValidateSavedWonderCard();\n    else\n        return ValidateSavedWonderNews();",
+      "callsTo": [
+        "ValidateSavedWonderCard",
+        "ValidateSavedWonderNews"
+      ],
+      "lineCount": 4
+    },
+    "HandleLoadWonderCardOrNews": {
+      "returnType": "bool32",
+      "signature": "static bool32 HandleLoadWonderCardOrNews(u8 *state, bool32 isWonderNews)",
+      "paramsRaw": "u8 *state, bool32 isWonderNews",
+      "body": "switch (*state)\n    {\n    case 0:\n        if (!isWonderNews)\n            WonderCard_Init(GetSavedWonderCard(), GetSavedWonderCardMetadata());\n        else\n            WonderNews_Init(GetSavedWonderNews());\n        (*state)++;\n        break;\n    case 1:\n        if (!isWonderNews)\n        {\n            if (!WonderCard_Enter())\n                return FALSE;\n        }\n        else\n        {\n            if (!WonderNews_Enter())\n                return FALSE;\n        }\n        *state = 0;\n        return TRUE;\n    }\n\n    return FALSE;",
+      "callsTo": [
+        "GetSavedWonderCard",
+        "GetSavedWonderCardMetadata",
+        "GetSavedWonderNews",
+        "WonderCard_Enter",
+        "WonderCard_Init",
+        "WonderNews_Enter",
+        "WonderNews_Init"
+      ],
+      "lineCount": 25
+    },
+    "ClearSavedNewsOrCard": {
+      "returnType": "bool32",
+      "signature": "static bool32 ClearSavedNewsOrCard(bool32 isWonderNews)",
+      "paramsRaw": "bool32 isWonderNews",
+      "body": "if (!isWonderNews)\n        ClearSavedWonderCardAndRelated();\n    else\n        ClearSavedWonderNewsAndRelated();\n    return TRUE;",
+      "callsTo": [
+        "ClearSavedWonderCardAndRelated",
+        "ClearSavedWonderNewsAndRelated"
+      ],
+      "lineCount": 5
+    },
+    "ExitWonderCardOrNews": {
+      "returnType": "bool32",
+      "signature": "static bool32 ExitWonderCardOrNews(bool32 isWonderNews, bool32 useCancel)",
+      "paramsRaw": "bool32 isWonderNews, bool32 useCancel",
+      "body": "if (!isWonderNews)\n    {\n        if (WonderCard_Exit(useCancel))\n        {\n            WonderCard_Destroy();\n            return TRUE;\n        }\n        else\n        {\n            return FALSE;\n        }\n    }\n    else\n    {\n        if (WonderNews_Exit(useCancel))\n        {\n            WonderNews_Destroy();\n            return TRUE;\n        }\n        else\n        {\n            return FALSE;\n        }\n    }",
+      "callsTo": [
+        "WonderCard_Destroy",
+        "WonderCard_Exit",
+        "WonderNews_Destroy",
+        "WonderNews_Exit"
+      ],
+      "lineCount": 24
+    },
+    "AskDiscardGift": {
+      "returnType": "s32",
+      "signature": "static s32 AskDiscardGift(u8 *textState, u16 *windowId, bool32 isWonderNews)",
+      "paramsRaw": "u8 *textState, u16 *windowId, bool32 isWonderNews",
+      "body": "if (!isWonderNews)\n        return DoMysteryGiftYesNo(textState, windowId, TRUE, gText_IfThrowAwayCardEventWontHappen);\n    else\n        return DoMysteryGiftYesNo(textState, windowId, TRUE, gText_OkayToDiscardNews);",
+      "callsTo": [
+        "DoMysteryGiftYesNo"
+      ],
+      "lineCount": 4
+    },
+    "PrintThrownAway": {
+      "returnType": "bool32",
+      "signature": "static bool32 PrintThrownAway(u8 *textState, bool32 isWonderNews)",
+      "paramsRaw": "u8 *textState, bool32 isWonderNews",
+      "body": "if (!isWonderNews)\n        return PrintMysteryGiftMenuMessage(textState, gText_WonderCardThrownAway);\n    else\n        return PrintMysteryGiftMenuMessage(textState, gText_WonderNewsThrownAway);",
+      "callsTo": [
+        "PrintMysteryGiftMenuMessage"
+      ],
+      "lineCount": 4
+    },
+    "SaveOnMysteryGiftMenu": {
+      "returnType": "bool32",
+      "signature": "static bool32 SaveOnMysteryGiftMenu(u8 *state)",
+      "paramsRaw": "u8 *state",
+      "body": "switch (*state)\n    {\n    case 0:\n        MG_AddMessageTextPrinter(gText_DataWillBeSaved);\n        (*state)++;\n        break;\n    case 1:\n        TrySavingData(SAVE_NORMAL);\n        (*state)++;\n        break;\n    case 2:\n        MG_AddMessageTextPrinter(gText_SaveCompletedPressA);\n        (*state)++;\n        break;\n    case 3:\n        if (JOY_NEW(A_BUTTON | B_BUTTON))\n            (*state)++;\n        break;\n    case 4:\n        *state = 0;\n        ClearMessage();\n        return TRUE;\n    }\n\n    return FALSE;",
+      "callsTo": [
+        "ClearMessage",
+        "JOY_NEW",
+        "MG_AddMessageTextPrinter",
+        "TrySavingData"
+      ],
+      "lineCount": 25
+    },
+    "GetClientResultMessage": {
+      "returnType": "const u8 *",
+      "signature": "static const u8 * GetClientResultMessage(bool32 *successMsg, bool8 isWonderNews, bool8 sourceIsFriend, u32 msgId)",
+      "paramsRaw": "bool32 *successMsg, bool8 isWonderNews, bool8 sourceIsFriend, u32 msgId",
+      "body": "const u8 *msg = NULL;\n    *successMsg = FALSE;\n\n    switch (msgId)\n    {\n    case CLI_MSG_NOTHING_SENT:\n        *successMsg = FALSE;\n        msg = gText_NothingSentOver;\n        break;\n    case CLI_MSG_RECORD_UPLOADED:\n        *successMsg = FALSE;\n        msg = gText_RecordUploadedViaWireless;\n        break;\n    case CLI_MSG_CARD_RECEIVED:\n        *successMsg = TRUE;\n        msg = !sourceIsFriend ? gText_WonderCardReceived : gText_WonderCardReceivedFrom;\n        break;\n    case CLI_MSG_NEWS_RECEIVED:\n        *successMsg = TRUE;\n        msg = !sourceIsFriend ? gText_WonderNewsReceived : gText_WonderNewsReceivedFrom;\n        break;\n    case CLI_MSG_STAMP_RECEIVED:\n        *successMsg = TRUE;\n        msg = gText_NewStampReceived;\n        break;\n    case CLI_MSG_HAD_CARD:\n        *successMsg = FALSE;\n        msg = gText_AlreadyHadCard;\n        break;\n    case CLI_MSG_HAD_STAMP:\n        *successMsg = FALSE;\n        msg = gText_AlreadyHadStamp;\n        break;\n    case CLI_MSG_HAD_NEWS:\n        *successMsg = FALSE;\n        msg = gText_AlreadyHadNews;\n        break;\n    case CLI_MSG_NO_ROOM_STAMPS:\n        *successMsg = FALSE;\n        msg = gText_NoMoreRoomForStamps;\n        break;\n    case CLI_MSG_COMM_CANCELED:\n        *successMsg = FALSE;\n        msg = gText_CommunicationCanceled;\n        break;\n    case CLI_MSG_CANT_ACCEPT:\n        *successMsg = FALSE;\n        msg = !isWonderNews ? gText_CantAcceptCardFromTrainer : gText_CantAcceptNewsFromTrainer;\n        break;\n    case CLI_MSG_COMM_ERROR:\n        *successMsg = FALSE;\n        msg = gText_CommunicationError;\n        break;\n    case CLI_MSG_TRAINER_RECEIVED:\n        *successMsg = TRUE;\n        msg = gText_NewTrainerReceived;\n        break;\n    case CLI_MSG_BUFFER_SUCCESS:\n        *successMsg = TRUE;\n         \n        break;\n    case CLI_MSG_BUFFER_FAILURE:\n        *successMsg = FALSE;\n         \n        break;\n    }\n\n    return msg;",
+      "callsTo": [],
+      "lineCount": 68
+    },
+    "PrintSuccessMessage": {
+      "returnType": "bool32",
+      "signature": "static bool32 PrintSuccessMessage(u8 *state, const u8 *msg, u16 *timer)",
+      "paramsRaw": "u8 *state, const u8 *msg, u16 *timer",
+      "body": "switch (*state)\n    {\n    case 0:\n        if (msg != NULL)\n            MG_AddMessageTextPrinter(msg);\n        PlayFanfare(MUS_OBTAIN_ITEM);\n        *timer = 0;\n        (*state)++;\n        break;\n    case 1:\n        if (++(*timer) > 240)\n            (*state)++;\n        break;\n    case 2:\n        if (IsFanfareTaskInactive())\n        {\n            *state = 0;\n            ClearMessage();\n            return TRUE;\n        }\n        break;\n    }\n    return FALSE;",
+      "callsTo": [
+        "ClearMessage",
+        "IsFanfareTaskInactive",
+        "MG_AddMessageTextPrinter",
+        "PlayFanfare"
+      ],
+      "lineCount": 23
+    },
+    "GetServerResultMessage": {
+      "returnType": "const u8 *",
+      "signature": "static const u8 * GetServerResultMessage(bool32 *wonderSuccess, bool8 sourceIsFriend, u32 msgId)",
+      "paramsRaw": "bool32 *wonderSuccess, bool8 sourceIsFriend, u32 msgId",
+      "body": "const u8 *result = gText_CommunicationError;\n    *wonderSuccess = FALSE;\n    switch (msgId)\n    {\n    case SVR_MSG_NOTHING_SENT:\n        result = gText_NothingSentOver;\n        break;\n    case SVR_MSG_RECORD_UPLOADED:\n        result = gText_RecordUploadedViaWireless;\n        break;\n    case SVR_MSG_CARD_SENT:\n        result = gText_WonderCardSentTo;\n        *wonderSuccess = TRUE;\n        break;\n    case SVR_MSG_NEWS_SENT:\n        result = gText_WonderNewsSentTo;\n        *wonderSuccess = TRUE;\n        break;\n    case SVR_MSG_STAMP_SENT:\n        result = gText_StampSentTo;\n        break;\n    case SVR_MSG_HAS_CARD:\n        result = gText_OtherTrainerHasCard;\n        break;\n    case SVR_MSG_HAS_STAMP:\n        result = gText_OtherTrainerHasStamp;\n        break;\n    case SVR_MSG_HAS_NEWS:\n        result = gText_OtherTrainerHasNews;\n        break;\n    case SVR_MSG_NO_ROOM_STAMPS:\n        result = gText_NoMoreRoomForStamps;\n        break;\n    case SVR_MSG_CLIENT_CANCELED:\n        result = gText_OtherTrainerCanceled;\n        break;\n    case SVR_MSG_CANT_SEND_GIFT_1:\n        result = gText_CantSendGiftToTrainer;\n        break;\n    case SVR_MSG_COMM_ERROR:\n        result = gText_CommunicationError;\n        break;\n    case SVR_MSG_GIFT_SENT_1:\n        result = gText_GiftSentTo;\n        break;\n    case SVR_MSG_GIFT_SENT_2:\n        result = gText_GiftSentTo;\n        break;\n    case SVR_MSG_CANT_SEND_GIFT_2:\n        result = gText_CantSendGiftToTrainer;\n        break;\n    }\n    return result;",
+      "callsTo": [],
+      "lineCount": 53
+    },
+    "PrintServerResultMessage": {
+      "returnType": "bool32",
+      "signature": "static bool32 PrintServerResultMessage(u8 *state, u16 *timer, bool8 sourceIsFriend, u32 msgId)",
+      "paramsRaw": "u8 *state, u16 *timer, bool8 sourceIsFriend, u32 msgId",
+      "body": "bool32 wonderSuccess;\n    const u8 *str = GetServerResultMessage(&wonderSuccess, sourceIsFriend, msgId);\n    if (wonderSuccess)\n        return PrintSuccessMessage(state, str, timer);\n    else\n        return PrintMysteryGiftMenuMessage(state, str);",
+      "callsTo": [
+        "GetServerResultMessage",
+        "PrintMysteryGiftMenuMessage",
+        "PrintSuccessMessage"
+      ],
+      "lineCount": 6
+    },
+    "CreateMysteryGiftTask": {
+      "returnType": "void",
+      "signature": "static void CreateMysteryGiftTask(void)",
+      "paramsRaw": "void",
+      "body": "u8 taskId = CreateTask(Task_MysteryGift, 0);\n    struct MysteryGiftTaskData *data = (void *)gTasks[taskId].data;\n    data->state = MG_STATE_TO_MAIN_MENU;\n    data->textState = 0;\n    data->unused4 = 0;\n    data->unused5 = 0;\n    data->isWonderNews = 0;\n    data->sourceIsFriend = 0;\n    data->var = 0;\n    data->unused1 = 0;\n    data->unused2 = 0;\n    data->unused3 = 0;\n    data->msgId = 0;\n    data->clientMsg = AllocZeroed(CLIENT_MAX_MSG_SIZE);",
+      "callsTo": [
+        "AllocZeroed",
+        "CreateTask"
+      ],
+      "lineCount": 14
+    },
+    "Task_MysteryGift": {
+      "returnType": "void",
+      "signature": "static void Task_MysteryGift(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "struct MysteryGiftTaskData *data = (void *)gTasks[taskId].data;\n    u32 successMsg, input;\n    const u8 *msg;\n\n    switch (data->state)\n    {\n    case MG_STATE_TO_MAIN_MENU:\n        data->state = MG_STATE_MAIN_MENU;\n        break;\n    case MG_STATE_MAIN_MENU:\n         \n        switch (MysteryGift_HandleThreeOptionMenu(&data->textState, &data->var, FALSE))\n        {\n        case 0:  \n            data->isWonderNews = FALSE;\n            if (ValidateSavedWonderCard() == TRUE)\n                data->state = MG_STATE_LOAD_GIFT;\n            else\n                data->state = MG_STATE_DONT_HAVE_ANY;\n            break;\n        case 1:  \n            data->isWonderNews = TRUE;\n            if (ValidateSavedWonderNews() == TRUE)\n                data->state = MG_STATE_LOAD_GIFT;\n            else\n                data->state = MG_STATE_DONT_HAVE_ANY;\n            break;\n        case LIST_CANCEL:\n            data->state = MG_STATE_EXIT;\n            break;\n        }\n        break;\n    case MG_STATE_DONT_HAVE_ANY:\n    {\n         \n         \n        if (!data->isWonderNews)\n        {\n            if (PrintMysteryGiftMenuMessage(&data->textState, gText_DontHaveCardNewOneInput))\n            {\n                data->state = MG_STATE_SOURCE_PROMPT;\n                PrintMysteryGiftOrEReaderHeader(FALSE, TRUE);\n            }\n        }\n        else\n        {\n            if (PrintMysteryGiftMenuMessage(&data->textState, gText_DontHaveNewsNewOneInput))\n            {\n                data->state = MG_STATE_SOURCE_PROMPT;\n                PrintMysteryGiftOrEReaderHeader(FALSE, TRUE);\n            }\n        }\n        break;\n    }\n    case MG_STATE_SOURCE_PROMPT:\n        if (!data->isWonderNews)\n            MG_AddMessageTextPrinter(gText_WhereShouldCardBeAccessed);\n        else\n            MG_AddMessageTextPrinter(gText_WhereShouldNewsBeAccessed);\n        data->state = MG_STATE_SOURCE_PROMPT_INPUT;\n        break;\n    case MG_STATE_SOURCE_PROMPT_INPUT:\n         \n        switch (MysteryGift_HandleThreeOptionMenu(&data->textState, &data->var, TRUE))\n        {\n        case 0:  \n            ClearMessage();\n            data->state = MG_STATE_CLIENT_LINK_START;\n            data->sourceIsFriend = FALSE;\n            break;\n        case 1:  \n            ClearMessage();\n            data->state = MG_STATE_CLIENT_LINK_START;\n            data->sourceIsFriend = TRUE;\n            break;\n        case LIST_CANCEL:\n            ClearMessage();\n            if (ValidateCardOrNews(data->isWonderNews))\n            {\n                data->state = MG_STATE_LOAD_GIFT;\n            }\n            else\n            {\n                data->state = MG_STATE_TO_MAIN_MENU;\n                PrintMysteryGiftOrEReaderHeader(FALSE, FALSE);\n            }\n            break;\n        }\n        break;\n    case MG_STATE_CLIENT_LINK_START:\n        *gStringVar1 = EOS;\n        *gStringVar2 = EOS;\n        *gStringVar3 = EOS;\n\n        switch (data->isWonderNews)\n        {\n        case FALSE:\n            if (data->sourceIsFriend == TRUE)\n                CreateTask_LinkMysteryGiftWithFriend(ACTIVITY_WONDER_CARD);\n            else if (data->sourceIsFriend == FALSE)\n                CreateTask_LinkMysteryGiftOverWireless(ACTIVITY_WONDER_CARD);\n            break;\n        case TRUE:\n            if (data->sourceIsFriend == TRUE)\n                CreateTask_LinkMysteryGiftWithFriend(ACTIVITY_WONDER_NEWS);\n            else if (data->sourceIsFriend == FALSE)\n                CreateTask_LinkMysteryGiftOverWireless(ACTIVITY_WONDER_NEWS);\n            break;\n        }\n        data->state = MG_STATE_CLIENT_LINK_WAIT;\n        break;\n    case MG_STATE_CLIENT_LINK_WAIT:\n        if (gReceivedRemoteLinkPlayers)\n        {\n            ClearScreenInBg0(TRUE);\n            data->state = MG_STATE_CLIENT_COMMUNICATING;\n            MysteryGiftClient_Create(data->isWonderNews);\n        }\n        else if (gSpecialVar_Result == LINKUP_FAILED)\n        {\n             \n            ClearScreenInBg0(TRUE);\n            data->state = MG_STATE_SOURCE_PROMPT;\n        }\n        break;\n    case MG_STATE_CLIENT_COMMUNICATING:\n        MG_AddMessageTextPrinter(gText_Communicating);\n        data->state = MG_STATE_CLIENT_LINK;\n        break;\n    case MG_STATE_CLIENT_LINK:\n        switch (MysteryGiftClient_Run(&data->var))\n        {\n        case CLI_RET_END:\n            Rfu_SetCloseLinkCallback();\n            data->msgId = data->var;\n            data->state = MG_STATE_CLIENT_LINK_END;\n            break;\n        case CLI_RET_COPY_MSG:\n            memcpy(data->clientMsg, MysteryGiftClient_GetMsg(), CLIENT_MAX_MSG_SIZE);\n            MysteryGiftClient_AdvanceState();\n            break;\n        case CLI_RET_PRINT_MSG:\n            data->state = MG_STATE_CLIENT_MESSAGE;\n            break;\n        case CLI_RET_YES_NO:\n            data->state = MG_STATE_CLIENT_YES_NO;\n            break;\n        case CLI_RET_ASK_TOSS:\n            data->state = MG_STATE_CLIENT_ASK_TOSS;\n            StringCopy(gStringVar1, gLinkPlayers[0].name);\n            break;\n        }\n        break;\n    case MG_STATE_CLIENT_YES_NO:\n        input = DoMysteryGiftYesNo(&data->textState, &data->var, FALSE, MysteryGiftClient_GetMsg());\n        switch (input)\n        {\n        case 0:  \n            MysteryGiftClient_SetParam(FALSE);\n            MysteryGiftClient_AdvanceState();\n            data->state = MG_STATE_CLIENT_COMMUNICATING;\n            break;\n        case 1:  \n        case MENU_B_PRESSED:\n            MysteryGiftClient_SetParam(TRUE);\n            MysteryGiftClient_AdvanceState();\n            data->state = MG_STATE_CLIENT_COMMUNICATING;\n            break;\n        }\n        break;\n    case MG_STATE_CLIENT_MESSAGE:\n        if (PrintMysteryGiftMenuMessage(&data->textState, MysteryGiftClient_GetMsg()))\n        {\n            MysteryGiftClient_AdvanceState();\n            data->state = MG_STATE_CLIENT_COMMUNICATING;\n        }\n        break;\n    case MG_STATE_CLIENT_ASK_TOSS:\n         \n         \n        input = DoMysteryGiftYesNo(&data->textState, &data->var, FALSE, gText_ThrowAwayWonderCard);\n        switch (input)\n        {\n        case 0:  \n            if (IsSavedWonderCardGiftNotReceived() == TRUE)\n            {\n                data->state = MG_STATE_CLIENT_ASK_TOSS_UNRECEIVED;\n            }\n            else\n            {\n                MysteryGiftClient_SetParam(FALSE);\n                MysteryGiftClient_AdvanceState();\n                data->state = MG_STATE_CLIENT_COMMUNICATING;\n            }\n            break;\n        case 1:  \n        case MENU_B_PRESSED:\n            MysteryGiftClient_SetParam(TRUE);\n            MysteryGiftClient_AdvanceState();\n            data->state = MG_STATE_CLIENT_COMMUNICATING;\n            break;\n        }\n        break;\n    case MG_STATE_CLIENT_ASK_TOSS_UNRECEIVED:\n         \n         \n        input = DoMysteryGiftYesNo(&data->textState, &data->var, FALSE, gText_HaventReceivedCardsGift);\n        switch (input)\n        {\n        case 0:  \n            MysteryGiftClient_SetParam(FALSE);\n            MysteryGiftClient_AdvanceState();\n            data->state = MG_STATE_CLIENT_COMMUNICATING;\n            break;\n        case 1:  \n        case MENU_B_PRESSED:\n            MysteryGiftClient_SetParam(TRUE);\n            MysteryGiftClient_AdvanceState();\n            data->state = MG_STATE_CLIENT_COMMUNICATING;\n            break;\n        }\n        break;\n    case MG_STATE_CLIENT_LINK_END:\n        if (gReceivedRemoteLinkPlayers == 0)\n        {\n            DestroyWirelessStatusIndicatorSprite();\n            data->state = MG_STATE_CLIENT_COMM_COMPLETED;\n        }\n        break;\n    case MG_STATE_CLIENT_COMM_COMPLETED:\n        if (PrintStringAndWait2Seconds(&data->textState, gText_CommunicationCompleted))\n        {\n            if (data->sourceIsFriend == TRUE)\n                StringCopy(gStringVar1, gLinkPlayers[0].name);\n            data->state = MG_STATE_CLIENT_RESULT_MSG;\n        }\n        break;\n    case MG_STATE_CLIENT_RESULT_MSG:\n        msg = GetClientResultMessage(&successMsg, data->isWonderNews, data->sourceIsFriend, data->msgId);\n        if (msg == NULL)\n            msg = data->clientMsg;\n        if (successMsg)\n            input = PrintSuccessMessage(&data->textState, msg, &data->var);\n        else\n            input = PrintMysteryGiftMenuMessage(&data->textState, msg);\n         \n        if (input)\n        {\n            if (data->msgId == CLI_MSG_NEWS_RECEIVED)\n            {\n                if (data->sourceIsFriend == TRUE)\n                    WonderNews_SetReward(WONDER_NEWS_RECV_FRIEND);\n                else\n                    WonderNews_SetReward(WONDER_NEWS_RECV_WIRELESS);\n            }\n            if (!successMsg)\n            {\n                 \n                data->state = MG_STATE_TO_MAIN_MENU;\n                PrintMysteryGiftOrEReaderHeader(FALSE, FALSE);\n            }\n            else\n            {\n                data->state = MG_STATE_SAVE_LOAD_GIFT;\n            }\n        }\n        break;\n    case MG_STATE_SAVE_LOAD_GIFT:\n        if (SaveOnMysteryGiftMenu(&data->textState))\n            data->state = MG_STATE_LOAD_GIFT;\n        break;\n    case MG_STATE_LOAD_GIFT:\n        if (HandleLoadWonderCardOrNews(&data->textState, data->isWonderNews))\n            data->state = MG_STATE_HANDLE_GIFT_INPUT;\n        break;\n    case MG_STATE_HANDLE_GIFT_INPUT:\n        if (!data->isWonderNews)\n        {\n             \n            if (JOY_NEW(A_BUTTON))\n                data->state = MG_STATE_HANDLE_GIFT_SELECT;\n            if (JOY_NEW(B_BUTTON))\n                data->state = MG_STATE_GIFT_INPUT_EXIT;\n        }\n        else\n        {\n            switch (WonderNews_GetInput(gMain.newKeys))\n            {\n            case NEWS_INPUT_A:\n                WonderNews_RemoveScrollIndicatorArrowPair();\n                data->state = MG_STATE_HANDLE_GIFT_SELECT;\n                break;\n            case NEWS_INPUT_B:\n                data->state = MG_STATE_GIFT_INPUT_EXIT;\n                break;\n            }\n        }\n        break;\n    case MG_STATE_HANDLE_GIFT_SELECT:\n    {\n         \n        u32 result;\n        if (!data->isWonderNews)\n        {\n            if (IsSendingSavedWonderCardAllowed())\n                result = HandleGiftSelectMenu(&data->textState, &data->var, data->isWonderNews, FALSE);\n            else\n                result = HandleGiftSelectMenu(&data->textState, &data->var, data->isWonderNews, TRUE);\n        }\n        else\n        {\n            if (IsSendingSavedWonderNewsAllowed())\n                result = HandleGiftSelectMenu(&data->textState, &data->var, data->isWonderNews, FALSE);\n            else\n                result = HandleGiftSelectMenu(&data->textState, &data->var, data->isWonderNews, TRUE);\n        }\n        switch (result)\n        {\n        case 0:  \n            data->state = MG_STATE_RECEIVE;\n            break;\n        case 1:  \n            data->state = MG_STATE_SEND;\n            break;\n        case 2:  \n            data->state = MG_STATE_ASK_TOSS;\n            break;\n        case LIST_CANCEL:\n            if (data->isWonderNews == TRUE)\n                WonderNews_AddScrollIndicatorArrowPair();\n            data->state = MG_STATE_HANDLE_GIFT_INPUT;\n            break;\n        }\n        break;\n    }\n    case MG_STATE_ASK_TOSS:\n         \n        switch (AskDiscardGift(&data->textState, &data->var, data->isWonderNews))\n        {\n        case 0:  \n            if (!data->isWonderNews && IsSavedWonderCardGiftNotReceived() == TRUE)\n                data->state = MG_STATE_ASK_TOSS_UNRECEIVED;\n            else\n                data->state = MG_STATE_TOSS;\n            break;\n        case 1:  \n        case MENU_B_PRESSED:\n            data->state = MG_STATE_HANDLE_GIFT_SELECT;\n            break;\n        }\n        break;\n    case MG_STATE_ASK_TOSS_UNRECEIVED:\n         \n         \n        switch ((u32)DoMysteryGiftYesNo(&data->textState, &data->var, TRUE, gText_HaventReceivedGiftOkayToDiscard))\n        {\n        case 0:  \n            data->state = MG_STATE_TOSS;\n            break;\n        case 1:  \n        case MENU_B_PRESSED:\n            data->state = MG_STATE_HANDLE_GIFT_SELECT;\n            break;\n        }\n        break;\n    case MG_STATE_TOSS:\n        if (ExitWonderCardOrNews(data->isWonderNews, TRUE))\n        {\n            ClearSavedNewsOrCard(data->isWonderNews);\n            data->state = MG_STATE_TOSS_SAVE;\n        }\n        break;\n    case MG_STATE_TOSS_SAVE:\n        if (SaveOnMysteryGiftMenu(&data->textState))\n            data->state = MG_STATE_TOSSED;\n        break;\n    case MG_STATE_TOSSED:\n        if (PrintThrownAway(&data->textState, data->isWonderNews))\n        {\n            data->state = MG_STATE_TO_MAIN_MENU;\n            PrintMysteryGiftOrEReaderHeader(FALSE, FALSE);\n        }\n        break;\n    case MG_STATE_GIFT_INPUT_EXIT:\n        if (ExitWonderCardOrNews(data->isWonderNews, FALSE))\n            data->state = MG_STATE_TO_MAIN_MENU;\n        break;\n    case MG_STATE_RECEIVE:\n        if (ExitWonderCardOrNews(data->isWonderNews, TRUE))\n            data->state = MG_STATE_SOURCE_PROMPT;\n        break;\n    case MG_STATE_SEND:\n        if (ExitWonderCardOrNews(data->isWonderNews, TRUE))\n        {\n            switch (data->isWonderNews)\n            {\n            case FALSE:\n                CreateTask_SendMysteryGift(ACTIVITY_WONDER_CARD);\n                break;\n            case TRUE:\n                CreateTask_SendMysteryGift(ACTIVITY_WONDER_NEWS);\n                break;\n            }\n            data->sourceIsFriend = TRUE;\n            data->state = MG_STATE_SERVER_LINK_WAIT;\n        }\n        break;\n    case MG_STATE_SERVER_LINK_WAIT:\n        if (gReceivedRemoteLinkPlayers)\n        {\n            ClearScreenInBg0(TRUE);\n            data->state = MG_STATE_SERVER_LINK_START;\n        }\n        else if (gSpecialVar_Result == LINKUP_FAILED)\n        {\n            ClearScreenInBg0(TRUE);\n            data->state = MG_STATE_LOAD_GIFT;\n        }\n        break;\n    case MG_STATE_SERVER_LINK_START:\n        *gStringVar1 = EOS;\n        *gStringVar2 = EOS;\n        *gStringVar3 = EOS;\n\n        if (!data->isWonderNews)\n        {\n            MG_AddMessageTextPrinter(gText_SendingWonderCard);\n            MysterGiftServer_CreateForCard();\n        }\n        else\n        {\n            MG_AddMessageTextPrinter(gText_SendingWonderNews);\n            MysterGiftServer_CreateForNews();\n        }\n        data->state = MG_STATE_SERVER_LINK;\n        break;\n    case MG_STATE_SERVER_LINK:\n        if (MysterGiftServer_Run(&data->var) == SVR_RET_END)\n        {\n            data->msgId = data->var;\n            data->state = MG_STATE_SERVER_LINK_END;\n        }\n        break;\n    case MG_STATE_SERVER_LINK_END:\n        Rfu_SetCloseLinkCallback();\n        StringCopy(gStringVar1, gLinkPlayers[1].name);\n        data->state = MG_STATE_SERVER_LINK_END_WAIT;\n        break;\n    case MG_STATE_SERVER_LINK_END_WAIT:\n        if (gReceivedRemoteLinkPlayers == 0)\n        {\n            DestroyWirelessStatusIndicatorSprite();\n            data->state = MG_STATE_SERVER_RESULT_MSG;\n        }\n        break;\n    case MG_STATE_SERVER_RESULT_MSG:\n        if (PrintServerResultMessage(&data->textState, &data->var, data->sourceIsFriend, data->msgId))\n        {\n            if (data->sourceIsFriend == TRUE && data->msgId == SVR_MSG_NEWS_SENT)\n            {\n                WonderNews_SetReward(WONDER_NEWS_SENT);\n                data->state = MG_STATE_SAVE_LOAD_GIFT;\n            }\n            else\n            {\n                data->state = MG_STATE_TO_MAIN_MENU;\n                PrintMysteryGiftOrEReaderHeader(FALSE, FALSE);\n            }\n        }\n        break;\n    case MG_STATE_CLIENT_ERROR:\n    case MG_STATE_SERVER_ERROR:\n        if (PrintMysteryGiftMenuMessage(&data->textState, gText_CommunicationError))\n        {\n            data->state = MG_STATE_TO_MAIN_MENU;\n            PrintMysteryGiftOrEReaderHeader(FALSE, FALSE);\n        }\n        break;\n    case MG_STATE_EXIT:\n        CloseLink();\n        Free(data->clientMsg);\n        DestroyTask(taskId);\n        SetMainCallback2(MainCB_FreeAllBuffersAndReturnToInitTitleScreen);\n        break;\n    }",
+      "callsTo": [
+        "AskDiscardGift",
+        "ClearMessage",
+        "ClearSavedNewsOrCard",
+        "ClearScreenInBg0",
+        "CloseLink",
+        "CreateTask_LinkMysteryGiftOverWireless",
+        "CreateTask_LinkMysteryGiftWithFriend",
+        "CreateTask_SendMysteryGift",
+        "DestroyTask",
+        "DestroyWirelessStatusIndicatorSprite",
+        "DoMysteryGiftYesNo",
+        "ExitWonderCardOrNews",
+        "Free",
+        "GetClientResultMessage",
+        "HandleGiftSelectMenu",
+        "HandleLoadWonderCardOrNews",
+        "IsSavedWonderCardGiftNotReceived",
+        "IsSendingSavedWonderCardAllowed",
+        "IsSendingSavedWonderNewsAllowed",
+        "JOY_NEW",
+        "MG_AddMessageTextPrinter",
+        "MysterGiftServer_CreateForCard",
+        "MysterGiftServer_CreateForNews",
+        "MysterGiftServer_Run",
+        "MysteryGiftClient_AdvanceState",
+        "MysteryGiftClient_Create",
+        "MysteryGiftClient_GetMsg",
+        "MysteryGiftClient_Run",
+        "MysteryGiftClient_SetParam",
+        "MysteryGift_HandleThreeOptionMenu",
+        "PrintMysteryGiftMenuMessage",
+        "PrintMysteryGiftOrEReaderHeader",
+        "PrintServerResultMessage",
+        "PrintStringAndWait2Seconds",
+        "PrintSuccessMessage",
+        "PrintThrownAway",
+        "Rfu_SetCloseLinkCallback",
+        "SaveOnMysteryGiftMenu",
+        "SetMainCallback2",
+        "StringCopy",
+        "ValidateCardOrNews",
+        "ValidateSavedWonderCard",
+        "ValidateSavedWonderNews",
+        "WonderNews_AddScrollIndicatorArrowPair",
+        "WonderNews_GetInput",
+        "WonderNews_RemoveScrollIndicatorArrowPair",
+        "WonderNews_SetReward"
+      ],
+      "lineCount": 485
+    },
+    "GetMysteryGiftBaseBlock": {
+      "returnType": "u16",
+      "signature": "u16 GetMysteryGiftBaseBlock(void)",
+      "paramsRaw": "void",
+      "body": "return 0x1A9;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "LoadMysteryGiftTextboxBorder": {
+      "returnType": "void",
+      "signature": "static void LoadMysteryGiftTextboxBorder(u8 bgId)",
+      "paramsRaw": "u8 bgId",
+      "body": "DecompressAndLoadBgGfxUsingHeap(bgId, sTextboxBorder_Gfx, 0x100, 0, 0);",
+      "callsTo": [
+        "DecompressAndLoadBgGfxUsingHeap"
+      ],
+      "lineCount": 1
+    }
+  }
+}

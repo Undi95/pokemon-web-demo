@@ -1,0 +1,862 @@
+{
+  "srcFile": "src/tileset_anims.c",
+  "count": 84,
+  "functions": {
+    "ResetTilesetAnimBuffer": {
+      "returnType": "void",
+      "signature": "static void ResetTilesetAnimBuffer(void)",
+      "paramsRaw": "void",
+      "body": "sTilesetDMA3TransferBufferSize = 0;\n    CpuFill32(0, sTilesetDMA3TransferBuffer, sizeof sTilesetDMA3TransferBuffer);",
+      "callsTo": [
+        "CpuFill32"
+      ],
+      "lineCount": 2
+    },
+    "AppendTilesetAnimToBuffer": {
+      "returnType": "void",
+      "signature": "static void AppendTilesetAnimToBuffer(const u16 *src, u16 *dest, u16 size)",
+      "paramsRaw": "const u16 *src, u16 *dest, u16 size",
+      "body": "if (sTilesetDMA3TransferBufferSize < 20)\n    {\n        sTilesetDMA3TransferBuffer[sTilesetDMA3TransferBufferSize].src = src;\n        sTilesetDMA3TransferBuffer[sTilesetDMA3TransferBufferSize].dest = dest;\n        sTilesetDMA3TransferBuffer[sTilesetDMA3TransferBufferSize].size = size;\n        sTilesetDMA3TransferBufferSize ++;\n    }",
+      "callsTo": [],
+      "lineCount": 7
+    },
+    "TransferTilesetAnimsBuffer": {
+      "returnType": "void",
+      "signature": "void TransferTilesetAnimsBuffer(void)",
+      "paramsRaw": "void",
+      "body": "int i;\n\n    for (i = 0; i < sTilesetDMA3TransferBufferSize; i ++)\n        DmaCopy16(3, sTilesetDMA3TransferBuffer[i].src, sTilesetDMA3TransferBuffer[i].dest, sTilesetDMA3TransferBuffer[i].size);\n\n    sTilesetDMA3TransferBufferSize = 0;",
+      "callsTo": [
+        "DmaCopy16"
+      ],
+      "lineCount": 6
+    },
+    "InitTilesetAnimations": {
+      "returnType": "void",
+      "signature": "void InitTilesetAnimations(void)",
+      "paramsRaw": "void",
+      "body": "ResetTilesetAnimBuffer();\n    _InitPrimaryTilesetAnimation();\n    _InitSecondaryTilesetAnimation();",
+      "callsTo": [
+        "ResetTilesetAnimBuffer",
+        "_InitPrimaryTilesetAnimation",
+        "_InitSecondaryTilesetAnimation"
+      ],
+      "lineCount": 3
+    },
+    "InitSecondaryTilesetAnimation": {
+      "returnType": "void",
+      "signature": "void InitSecondaryTilesetAnimation(void)",
+      "paramsRaw": "void",
+      "body": "_InitSecondaryTilesetAnimation();",
+      "callsTo": [
+        "_InitSecondaryTilesetAnimation"
+      ],
+      "lineCount": 1
+    },
+    "UpdateTilesetAnimations": {
+      "returnType": "void",
+      "signature": "void UpdateTilesetAnimations(void)",
+      "paramsRaw": "void",
+      "body": "ResetTilesetAnimBuffer();\n    if (++sPrimaryTilesetAnimCounter >= sPrimaryTilesetAnimCounterMax)\n        sPrimaryTilesetAnimCounter = 0;\n    if (++sSecondaryTilesetAnimCounter >= sSecondaryTilesetAnimCounterMax)\n        sSecondaryTilesetAnimCounter = 0;\n\n    if (sPrimaryTilesetAnimCallback)\n        sPrimaryTilesetAnimCallback(sPrimaryTilesetAnimCounter);\n    if (sSecondaryTilesetAnimCallback)\n        sSecondaryTilesetAnimCallback(sSecondaryTilesetAnimCounter);",
+      "callsTo": [
+        "ResetTilesetAnimBuffer"
+      ],
+      "lineCount": 10
+    },
+    "_InitPrimaryTilesetAnimation": {
+      "returnType": "void",
+      "signature": "static void _InitPrimaryTilesetAnimation(void)",
+      "paramsRaw": "void",
+      "body": "sPrimaryTilesetAnimCounter = 0;\n    sPrimaryTilesetAnimCounterMax = 0;\n    sPrimaryTilesetAnimCallback = NULL;\n    if (gMapHeader.mapLayout->primaryTileset && gMapHeader.mapLayout->primaryTileset->callback)\n        gMapHeader.mapLayout->primaryTileset->callback();",
+      "callsTo": [],
+      "lineCount": 5
+    },
+    "_InitSecondaryTilesetAnimation": {
+      "returnType": "void",
+      "signature": "static void _InitSecondaryTilesetAnimation(void)",
+      "paramsRaw": "void",
+      "body": "sSecondaryTilesetAnimCounter = 0;\n    sSecondaryTilesetAnimCounterMax = 0;\n    sSecondaryTilesetAnimCallback = NULL;\n    if (gMapHeader.mapLayout->secondaryTileset && gMapHeader.mapLayout->secondaryTileset->callback)\n        gMapHeader.mapLayout->secondaryTileset->callback();",
+      "callsTo": [],
+      "lineCount": 5
+    },
+    "InitTilesetAnim_General": {
+      "returnType": "void",
+      "signature": "void InitTilesetAnim_General(void)",
+      "paramsRaw": "void",
+      "body": "sPrimaryTilesetAnimCounter = 0;\n    sPrimaryTilesetAnimCounterMax = 256;\n    sPrimaryTilesetAnimCallback = TilesetAnim_General;",
+      "callsTo": [],
+      "lineCount": 3
+    },
+    "InitTilesetAnim_Building": {
+      "returnType": "void",
+      "signature": "void InitTilesetAnim_Building(void)",
+      "paramsRaw": "void",
+      "body": "sPrimaryTilesetAnimCounter = 0;\n    sPrimaryTilesetAnimCounterMax = 256;\n    sPrimaryTilesetAnimCallback = TilesetAnim_Building;",
+      "callsTo": [],
+      "lineCount": 3
+    },
+    "TilesetAnim_General": {
+      "returnType": "void",
+      "signature": "static void TilesetAnim_General(u16 timer)",
+      "paramsRaw": "u16 timer",
+      "body": "if (timer % 16 == 0)\n        QueueAnimTiles_General_Flower(timer / 16);\n    if (timer % 16 == 1)\n        QueueAnimTiles_General_Water(timer / 16);\n    if (timer % 16 == 2)\n        QueueAnimTiles_General_SandWaterEdge(timer / 16);\n    if (timer % 16 == 3)\n        QueueAnimTiles_General_Waterfall(timer / 16);\n    if (timer % 16 == 4)\n        QueueAnimTiles_General_LandWaterEdge(timer / 16);",
+      "callsTo": [
+        "QueueAnimTiles_General_Flower",
+        "QueueAnimTiles_General_LandWaterEdge",
+        "QueueAnimTiles_General_SandWaterEdge",
+        "QueueAnimTiles_General_Water",
+        "QueueAnimTiles_General_Waterfall"
+      ],
+      "lineCount": 10
+    },
+    "TilesetAnim_Building": {
+      "returnType": "void",
+      "signature": "static void TilesetAnim_Building(u16 timer)",
+      "paramsRaw": "u16 timer",
+      "body": "if (timer % 8 == 0)\n        QueueAnimTiles_Building_TVTurnedOn(timer / 8);",
+      "callsTo": [
+        "QueueAnimTiles_Building_TVTurnedOn"
+      ],
+      "lineCount": 2
+    },
+    "QueueAnimTiles_General_Flower": {
+      "returnType": "void",
+      "signature": "static void QueueAnimTiles_General_Flower(u16 timer)",
+      "paramsRaw": "u16 timer",
+      "body": "u16 i = timer % ARRAY_COUNT(gTilesetAnims_General_Flower);\n    AppendTilesetAnimToBuffer(gTilesetAnims_General_Flower[i], (u16 *)(BG_VRAM + TILE_OFFSET_4BPP(508)), 4 * TILE_SIZE_4BPP);",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "AppendTilesetAnimToBuffer",
+        "TILE_OFFSET_4BPP"
+      ],
+      "lineCount": 2
+    },
+    "QueueAnimTiles_General_Water": {
+      "returnType": "void",
+      "signature": "static void QueueAnimTiles_General_Water(u16 timer)",
+      "paramsRaw": "u16 timer",
+      "body": "u8 i = timer % ARRAY_COUNT(gTilesetAnims_General_Water);\n    AppendTilesetAnimToBuffer(gTilesetAnims_General_Water[i], (u16 *)(BG_VRAM + TILE_OFFSET_4BPP(432)), 30 * TILE_SIZE_4BPP);",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "AppendTilesetAnimToBuffer",
+        "TILE_OFFSET_4BPP"
+      ],
+      "lineCount": 2
+    },
+    "QueueAnimTiles_General_SandWaterEdge": {
+      "returnType": "void",
+      "signature": "static void QueueAnimTiles_General_SandWaterEdge(u16 timer)",
+      "paramsRaw": "u16 timer",
+      "body": "u16 i = timer % ARRAY_COUNT(gTilesetAnims_General_SandWaterEdge);\n    AppendTilesetAnimToBuffer(gTilesetAnims_General_SandWaterEdge[i], (u16 *)(BG_VRAM + TILE_OFFSET_4BPP(464)), 10 * TILE_SIZE_4BPP);",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "AppendTilesetAnimToBuffer",
+        "TILE_OFFSET_4BPP"
+      ],
+      "lineCount": 2
+    },
+    "QueueAnimTiles_General_Waterfall": {
+      "returnType": "void",
+      "signature": "static void QueueAnimTiles_General_Waterfall(u16 timer)",
+      "paramsRaw": "u16 timer",
+      "body": "u16 i = timer % ARRAY_COUNT(gTilesetAnims_General_Waterfall);\n    AppendTilesetAnimToBuffer(gTilesetAnims_General_Waterfall[i], (u16 *)(BG_VRAM + TILE_OFFSET_4BPP(496)), 6 * TILE_SIZE_4BPP);",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "AppendTilesetAnimToBuffer",
+        "TILE_OFFSET_4BPP"
+      ],
+      "lineCount": 2
+    },
+    "InitTilesetAnim_Petalburg": {
+      "returnType": "void",
+      "signature": "void InitTilesetAnim_Petalburg(void)",
+      "paramsRaw": "void",
+      "body": "sSecondaryTilesetAnimCounter = 0;\n    sSecondaryTilesetAnimCounterMax = sPrimaryTilesetAnimCounterMax;\n    sSecondaryTilesetAnimCallback = NULL;",
+      "callsTo": [],
+      "lineCount": 3
+    },
+    "InitTilesetAnim_Rustboro": {
+      "returnType": "void",
+      "signature": "void InitTilesetAnim_Rustboro(void)",
+      "paramsRaw": "void",
+      "body": "sSecondaryTilesetAnimCounter = 0;\n    sSecondaryTilesetAnimCounterMax = sPrimaryTilesetAnimCounterMax;\n    sSecondaryTilesetAnimCallback = TilesetAnim_Rustboro;",
+      "callsTo": [],
+      "lineCount": 3
+    },
+    "InitTilesetAnim_Dewford": {
+      "returnType": "void",
+      "signature": "void InitTilesetAnim_Dewford(void)",
+      "paramsRaw": "void",
+      "body": "sSecondaryTilesetAnimCounter = 0;\n    sSecondaryTilesetAnimCounterMax = sPrimaryTilesetAnimCounterMax;\n    sSecondaryTilesetAnimCallback = TilesetAnim_Dewford;",
+      "callsTo": [],
+      "lineCount": 3
+    },
+    "InitTilesetAnim_Slateport": {
+      "returnType": "void",
+      "signature": "void InitTilesetAnim_Slateport(void)",
+      "paramsRaw": "void",
+      "body": "sSecondaryTilesetAnimCounter = 0;\n    sSecondaryTilesetAnimCounterMax = sPrimaryTilesetAnimCounterMax;\n    sSecondaryTilesetAnimCallback = TilesetAnim_Slateport;",
+      "callsTo": [],
+      "lineCount": 3
+    },
+    "InitTilesetAnim_Mauville": {
+      "returnType": "void",
+      "signature": "void InitTilesetAnim_Mauville(void)",
+      "paramsRaw": "void",
+      "body": "sSecondaryTilesetAnimCounter = sPrimaryTilesetAnimCounter;\n    sSecondaryTilesetAnimCounterMax = sPrimaryTilesetAnimCounterMax;\n    sSecondaryTilesetAnimCallback = TilesetAnim_Mauville;",
+      "callsTo": [],
+      "lineCount": 3
+    },
+    "InitTilesetAnim_Lavaridge": {
+      "returnType": "void",
+      "signature": "void InitTilesetAnim_Lavaridge(void)",
+      "paramsRaw": "void",
+      "body": "sSecondaryTilesetAnimCounter = 0;\n    sSecondaryTilesetAnimCounterMax = sPrimaryTilesetAnimCounterMax;\n    sSecondaryTilesetAnimCallback = TilesetAnim_Lavaridge;",
+      "callsTo": [],
+      "lineCount": 3
+    },
+    "InitTilesetAnim_Fallarbor": {
+      "returnType": "void",
+      "signature": "void InitTilesetAnim_Fallarbor(void)",
+      "paramsRaw": "void",
+      "body": "sSecondaryTilesetAnimCounter = 0;\n    sSecondaryTilesetAnimCounterMax = sPrimaryTilesetAnimCounterMax;\n    sSecondaryTilesetAnimCallback = NULL;",
+      "callsTo": [],
+      "lineCount": 3
+    },
+    "InitTilesetAnim_Fortree": {
+      "returnType": "void",
+      "signature": "void InitTilesetAnim_Fortree(void)",
+      "paramsRaw": "void",
+      "body": "sSecondaryTilesetAnimCounter = 0;\n    sSecondaryTilesetAnimCounterMax = sPrimaryTilesetAnimCounterMax;\n    sSecondaryTilesetAnimCallback = NULL;",
+      "callsTo": [],
+      "lineCount": 3
+    },
+    "InitTilesetAnim_Lilycove": {
+      "returnType": "void",
+      "signature": "void InitTilesetAnim_Lilycove(void)",
+      "paramsRaw": "void",
+      "body": "sSecondaryTilesetAnimCounter = 0;\n    sSecondaryTilesetAnimCounterMax = sPrimaryTilesetAnimCounterMax;\n    sSecondaryTilesetAnimCallback = NULL;",
+      "callsTo": [],
+      "lineCount": 3
+    },
+    "InitTilesetAnim_Mossdeep": {
+      "returnType": "void",
+      "signature": "void InitTilesetAnim_Mossdeep(void)",
+      "paramsRaw": "void",
+      "body": "sSecondaryTilesetAnimCounter = 0;\n    sSecondaryTilesetAnimCounterMax = sPrimaryTilesetAnimCounterMax;\n    sSecondaryTilesetAnimCallback = NULL;",
+      "callsTo": [],
+      "lineCount": 3
+    },
+    "InitTilesetAnim_EverGrande": {
+      "returnType": "void",
+      "signature": "void InitTilesetAnim_EverGrande(void)",
+      "paramsRaw": "void",
+      "body": "sSecondaryTilesetAnimCounter = 0;\n    sSecondaryTilesetAnimCounterMax = sPrimaryTilesetAnimCounterMax;\n    sSecondaryTilesetAnimCallback = TilesetAnim_EverGrande;",
+      "callsTo": [],
+      "lineCount": 3
+    },
+    "InitTilesetAnim_Pacifidlog": {
+      "returnType": "void",
+      "signature": "void InitTilesetAnim_Pacifidlog(void)",
+      "paramsRaw": "void",
+      "body": "sSecondaryTilesetAnimCounter = sPrimaryTilesetAnimCounter;\n    sSecondaryTilesetAnimCounterMax = sPrimaryTilesetAnimCounterMax;\n    sSecondaryTilesetAnimCallback = TilesetAnim_Pacifidlog;",
+      "callsTo": [],
+      "lineCount": 3
+    },
+    "InitTilesetAnim_Sootopolis": {
+      "returnType": "void",
+      "signature": "void InitTilesetAnim_Sootopolis(void)",
+      "paramsRaw": "void",
+      "body": "sSecondaryTilesetAnimCounter = 0;\n    sSecondaryTilesetAnimCounterMax = sPrimaryTilesetAnimCounterMax;\n    sSecondaryTilesetAnimCallback = TilesetAnim_Sootopolis;",
+      "callsTo": [],
+      "lineCount": 3
+    },
+    "InitTilesetAnim_BattleFrontierOutsideWest": {
+      "returnType": "void",
+      "signature": "void InitTilesetAnim_BattleFrontierOutsideWest(void)",
+      "paramsRaw": "void",
+      "body": "sSecondaryTilesetAnimCounter = 0;\n    sSecondaryTilesetAnimCounterMax = sPrimaryTilesetAnimCounterMax;\n    sSecondaryTilesetAnimCallback = TilesetAnim_BattleFrontierOutsideWest;",
+      "callsTo": [],
+      "lineCount": 3
+    },
+    "InitTilesetAnim_BattleFrontierOutsideEast": {
+      "returnType": "void",
+      "signature": "void InitTilesetAnim_BattleFrontierOutsideEast(void)",
+      "paramsRaw": "void",
+      "body": "sSecondaryTilesetAnimCounter = 0;\n    sSecondaryTilesetAnimCounterMax = sPrimaryTilesetAnimCounterMax;\n    sSecondaryTilesetAnimCallback = TilesetAnim_BattleFrontierOutsideEast;",
+      "callsTo": [],
+      "lineCount": 3
+    },
+    "InitTilesetAnim_Underwater": {
+      "returnType": "void",
+      "signature": "void InitTilesetAnim_Underwater(void)",
+      "paramsRaw": "void",
+      "body": "sSecondaryTilesetAnimCounter = 0;\n    sSecondaryTilesetAnimCounterMax = 128;\n    sSecondaryTilesetAnimCallback = TilesetAnim_Underwater;",
+      "callsTo": [],
+      "lineCount": 3
+    },
+    "InitTilesetAnim_SootopolisGym": {
+      "returnType": "void",
+      "signature": "void InitTilesetAnim_SootopolisGym(void)",
+      "paramsRaw": "void",
+      "body": "sSecondaryTilesetAnimCounter = 0;\n    sSecondaryTilesetAnimCounterMax = 240;\n    sSecondaryTilesetAnimCallback = TilesetAnim_SootopolisGym;",
+      "callsTo": [],
+      "lineCount": 3
+    },
+    "InitTilesetAnim_Cave": {
+      "returnType": "void",
+      "signature": "void InitTilesetAnim_Cave(void)",
+      "paramsRaw": "void",
+      "body": "sSecondaryTilesetAnimCounter = 0;\n    sSecondaryTilesetAnimCounterMax = sPrimaryTilesetAnimCounterMax;\n    sSecondaryTilesetAnimCallback = TilesetAnim_Cave;",
+      "callsTo": [],
+      "lineCount": 3
+    },
+    "InitTilesetAnim_EliteFour": {
+      "returnType": "void",
+      "signature": "void InitTilesetAnim_EliteFour(void)",
+      "paramsRaw": "void",
+      "body": "sSecondaryTilesetAnimCounter = 0;\n    sSecondaryTilesetAnimCounterMax = 128;\n    sSecondaryTilesetAnimCallback = TilesetAnim_EliteFour;",
+      "callsTo": [],
+      "lineCount": 3
+    },
+    "InitTilesetAnim_MauvilleGym": {
+      "returnType": "void",
+      "signature": "void InitTilesetAnim_MauvilleGym(void)",
+      "paramsRaw": "void",
+      "body": "sSecondaryTilesetAnimCounter = 0;\n    sSecondaryTilesetAnimCounterMax = sPrimaryTilesetAnimCounterMax;\n    sSecondaryTilesetAnimCallback = TilesetAnim_MauvilleGym;",
+      "callsTo": [],
+      "lineCount": 3
+    },
+    "InitTilesetAnim_BikeShop": {
+      "returnType": "void",
+      "signature": "void InitTilesetAnim_BikeShop(void)",
+      "paramsRaw": "void",
+      "body": "sSecondaryTilesetAnimCounter = 0;\n    sSecondaryTilesetAnimCounterMax = sPrimaryTilesetAnimCounterMax;\n    sSecondaryTilesetAnimCallback = TilesetAnim_BikeShop;",
+      "callsTo": [],
+      "lineCount": 3
+    },
+    "InitTilesetAnim_BattlePyramid": {
+      "returnType": "void",
+      "signature": "void InitTilesetAnim_BattlePyramid(void)",
+      "paramsRaw": "void",
+      "body": "sSecondaryTilesetAnimCounter = 0;\n    sSecondaryTilesetAnimCounterMax = sPrimaryTilesetAnimCounterMax;\n    sSecondaryTilesetAnimCallback = TilesetAnim_BattlePyramid;",
+      "callsTo": [],
+      "lineCount": 3
+    },
+    "InitTilesetAnim_BattleDome": {
+      "returnType": "void",
+      "signature": "void InitTilesetAnim_BattleDome(void)",
+      "paramsRaw": "void",
+      "body": "sSecondaryTilesetAnimCounter = 0;\n    sSecondaryTilesetAnimCounterMax = sPrimaryTilesetAnimCounterMax;\n    sSecondaryTilesetAnimCallback = TilesetAnim_BattleDome;",
+      "callsTo": [],
+      "lineCount": 3
+    },
+    "TilesetAnim_Rustboro": {
+      "returnType": "void",
+      "signature": "static void TilesetAnim_Rustboro(u16 timer)",
+      "paramsRaw": "u16 timer",
+      "body": "if (timer % 8 == 0)\n    {\n        QueueAnimTiles_Rustboro_WindyWater(timer / 8, 0);\n        QueueAnimTiles_Rustboro_Fountain(timer / 8);\n    }\n    if (timer % 8 == 1)\n        QueueAnimTiles_Rustboro_WindyWater(timer / 8, 1);\n    if (timer % 8 == 2)\n        QueueAnimTiles_Rustboro_WindyWater(timer / 8, 2);\n    if (timer % 8 == 3)\n        QueueAnimTiles_Rustboro_WindyWater(timer / 8, 3);\n    if (timer % 8 == 4)\n        QueueAnimTiles_Rustboro_WindyWater(timer / 8, 4);\n    if (timer % 8 == 5)\n        QueueAnimTiles_Rustboro_WindyWater(timer / 8, 5);\n    if (timer % 8 == 6)\n        QueueAnimTiles_Rustboro_WindyWater(timer / 8, 6);\n    if (timer % 8 == 7)\n        QueueAnimTiles_Rustboro_WindyWater(timer / 8, 7);",
+      "callsTo": [
+        "QueueAnimTiles_Rustboro_Fountain",
+        "QueueAnimTiles_Rustboro_WindyWater"
+      ],
+      "lineCount": 19
+    },
+    "TilesetAnim_Dewford": {
+      "returnType": "void",
+      "signature": "static void TilesetAnim_Dewford(u16 timer)",
+      "paramsRaw": "u16 timer",
+      "body": "if (timer % 8 == 0)\n        QueueAnimTiles_Dewford_Flag(timer / 8);",
+      "callsTo": [
+        "QueueAnimTiles_Dewford_Flag"
+      ],
+      "lineCount": 2
+    },
+    "TilesetAnim_Slateport": {
+      "returnType": "void",
+      "signature": "static void TilesetAnim_Slateport(u16 timer)",
+      "paramsRaw": "u16 timer",
+      "body": "if (timer % 16 == 0)\n        QueueAnimTiles_Slateport_Balloons(timer / 16);",
+      "callsTo": [
+        "QueueAnimTiles_Slateport_Balloons"
+      ],
+      "lineCount": 2
+    },
+    "TilesetAnim_Mauville": {
+      "returnType": "void",
+      "signature": "static void TilesetAnim_Mauville(u16 timer)",
+      "paramsRaw": "u16 timer",
+      "body": "if (timer % 8 == 0)\n        QueueAnimTiles_Mauville_Flowers(timer / 8, 0);\n    if (timer % 8 == 1)\n        QueueAnimTiles_Mauville_Flowers(timer / 8, 1);\n    if (timer % 8 == 2)\n        QueueAnimTiles_Mauville_Flowers(timer / 8, 2);\n    if (timer % 8 == 3)\n        QueueAnimTiles_Mauville_Flowers(timer / 8, 3);\n    if (timer % 8 == 4)\n        QueueAnimTiles_Mauville_Flowers(timer / 8, 4);\n    if (timer % 8 == 5)\n        QueueAnimTiles_Mauville_Flowers(timer / 8, 5);\n    if (timer % 8 == 6)\n        QueueAnimTiles_Mauville_Flowers(timer / 8, 6);\n    if (timer % 8 == 7)\n        QueueAnimTiles_Mauville_Flowers(timer / 8, 7);",
+      "callsTo": [
+        "QueueAnimTiles_Mauville_Flowers"
+      ],
+      "lineCount": 16
+    },
+    "TilesetAnim_Lavaridge": {
+      "returnType": "void",
+      "signature": "static void TilesetAnim_Lavaridge(u16 timer)",
+      "paramsRaw": "u16 timer",
+      "body": "if (timer % 16 == 0)\n        QueueAnimTiles_Lavaridge_Steam(timer / 16);\n    if (timer % 16 == 1)\n        QueueAnimTiles_Lavaridge_Lava(timer / 16);",
+      "callsTo": [
+        "QueueAnimTiles_Lavaridge_Lava",
+        "QueueAnimTiles_Lavaridge_Steam"
+      ],
+      "lineCount": 4
+    },
+    "TilesetAnim_EverGrande": {
+      "returnType": "void",
+      "signature": "static void TilesetAnim_EverGrande(u16 timer)",
+      "paramsRaw": "u16 timer",
+      "body": "if (timer % 8 == 0)\n        QueueAnimTiles_EverGrande_Flowers(timer / 8, 0);\n    if (timer % 8 == 1)\n        QueueAnimTiles_EverGrande_Flowers(timer / 8, 1);\n    if (timer % 8 == 2)\n        QueueAnimTiles_EverGrande_Flowers(timer / 8, 2);\n    if (timer % 8 == 3)\n        QueueAnimTiles_EverGrande_Flowers(timer / 8, 3);\n    if (timer % 8 == 4)\n        QueueAnimTiles_EverGrande_Flowers(timer / 8, 4);\n    if (timer % 8 == 5)\n        QueueAnimTiles_EverGrande_Flowers(timer / 8, 5);\n    if (timer % 8 == 6)\n        QueueAnimTiles_EverGrande_Flowers(timer / 8, 6);\n    if (timer % 8 == 7)\n        QueueAnimTiles_EverGrande_Flowers(timer / 8, 7);",
+      "callsTo": [
+        "QueueAnimTiles_EverGrande_Flowers"
+      ],
+      "lineCount": 16
+    },
+    "TilesetAnim_Pacifidlog": {
+      "returnType": "void",
+      "signature": "static void TilesetAnim_Pacifidlog(u16 timer)",
+      "paramsRaw": "u16 timer",
+      "body": "if (timer % 16 == 0)\n        QueueAnimTiles_Pacifidlog_LogBridges(timer / 16);\n    if (timer % 16 == 1)\n        QueueAnimTiles_Pacifidlog_WaterCurrents(timer / 16);",
+      "callsTo": [
+        "QueueAnimTiles_Pacifidlog_LogBridges",
+        "QueueAnimTiles_Pacifidlog_WaterCurrents"
+      ],
+      "lineCount": 4
+    },
+    "TilesetAnim_Sootopolis": {
+      "returnType": "void",
+      "signature": "static void TilesetAnim_Sootopolis(u16 timer)",
+      "paramsRaw": "u16 timer",
+      "body": "if (timer % 16 == 0)\n        QueueAnimTiles_Sootopolis_StormyWater(timer / 16);",
+      "callsTo": [
+        "QueueAnimTiles_Sootopolis_StormyWater"
+      ],
+      "lineCount": 2
+    },
+    "TilesetAnim_Underwater": {
+      "returnType": "void",
+      "signature": "static void TilesetAnim_Underwater(u16 timer)",
+      "paramsRaw": "u16 timer",
+      "body": "if (timer % 16 == 0)\n        QueueAnimTiles_Underwater_Seaweed(timer / 16);",
+      "callsTo": [
+        "QueueAnimTiles_Underwater_Seaweed"
+      ],
+      "lineCount": 2
+    },
+    "TilesetAnim_Cave": {
+      "returnType": "void",
+      "signature": "static void TilesetAnim_Cave(u16 timer)",
+      "paramsRaw": "u16 timer",
+      "body": "if (timer % 16 == 1)\n        QueueAnimTiles_Cave_Lava(timer / 16);",
+      "callsTo": [
+        "QueueAnimTiles_Cave_Lava"
+      ],
+      "lineCount": 2
+    },
+    "TilesetAnim_BattleFrontierOutsideWest": {
+      "returnType": "void",
+      "signature": "static void TilesetAnim_BattleFrontierOutsideWest(u16 timer)",
+      "paramsRaw": "u16 timer",
+      "body": "if (timer % 8 == 0)\n        QueueAnimTiles_BattleFrontierOutsideWest_Flag(timer / 8);",
+      "callsTo": [
+        "QueueAnimTiles_BattleFrontierOutsideWest_Flag"
+      ],
+      "lineCount": 2
+    },
+    "TilesetAnim_BattleFrontierOutsideEast": {
+      "returnType": "void",
+      "signature": "static void TilesetAnim_BattleFrontierOutsideEast(u16 timer)",
+      "paramsRaw": "u16 timer",
+      "body": "if (timer % 8 == 0)\n        QueueAnimTiles_BattleFrontierOutsideEast_Flag(timer / 8);",
+      "callsTo": [
+        "QueueAnimTiles_BattleFrontierOutsideEast_Flag"
+      ],
+      "lineCount": 2
+    },
+    "QueueAnimTiles_General_LandWaterEdge": {
+      "returnType": "void",
+      "signature": "static void QueueAnimTiles_General_LandWaterEdge(u16 timer)",
+      "paramsRaw": "u16 timer",
+      "body": "u16 i = timer % ARRAY_COUNT(gTilesetAnims_General_LandWaterEdge);\n    AppendTilesetAnimToBuffer(gTilesetAnims_General_LandWaterEdge[i], (u16 *)(BG_VRAM + TILE_OFFSET_4BPP(480)), 10 * TILE_SIZE_4BPP);",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "AppendTilesetAnimToBuffer",
+        "TILE_OFFSET_4BPP"
+      ],
+      "lineCount": 2
+    },
+    "QueueAnimTiles_Lavaridge_Steam": {
+      "returnType": "void",
+      "signature": "static void QueueAnimTiles_Lavaridge_Steam(u8 timer)",
+      "paramsRaw": "u8 timer",
+      "body": "u8 i = timer % ARRAY_COUNT(gTilesetAnims_Lavaridge_Steam);\n    AppendTilesetAnimToBuffer(gTilesetAnims_Lavaridge_Steam[i], (u16 *)(BG_VRAM + TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 288)), 4 * TILE_SIZE_4BPP);\n\n    i = (timer + 2) % (int)ARRAY_COUNT(gTilesetAnims_Lavaridge_Steam);\n    AppendTilesetAnimToBuffer(gTilesetAnims_Lavaridge_Steam[i], (u16 *)(BG_VRAM + TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 292)), 4 * TILE_SIZE_4BPP);",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "AppendTilesetAnimToBuffer",
+        "TILE_OFFSET_4BPP"
+      ],
+      "lineCount": 5
+    },
+    "QueueAnimTiles_Pacifidlog_LogBridges": {
+      "returnType": "void",
+      "signature": "static void QueueAnimTiles_Pacifidlog_LogBridges(u8 timer)",
+      "paramsRaw": "u8 timer",
+      "body": "u8 i = timer % ARRAY_COUNT(gTilesetAnims_Pacifidlog_LogBridges);\n    AppendTilesetAnimToBuffer(gTilesetAnims_Pacifidlog_LogBridges[i], (u16 *)(BG_VRAM + TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 464)), 30 * TILE_SIZE_4BPP);",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "AppendTilesetAnimToBuffer",
+        "TILE_OFFSET_4BPP"
+      ],
+      "lineCount": 2
+    },
+    "QueueAnimTiles_Underwater_Seaweed": {
+      "returnType": "void",
+      "signature": "static void QueueAnimTiles_Underwater_Seaweed(u8 timer)",
+      "paramsRaw": "u8 timer",
+      "body": "u8 i = timer % ARRAY_COUNT(gTilesetAnims_Underwater_Seaweed);\n    AppendTilesetAnimToBuffer(gTilesetAnims_Underwater_Seaweed[i], (u16 *)(BG_VRAM + TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 496)), 4 * TILE_SIZE_4BPP);",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "AppendTilesetAnimToBuffer",
+        "TILE_OFFSET_4BPP"
+      ],
+      "lineCount": 2
+    },
+    "QueueAnimTiles_Pacifidlog_WaterCurrents": {
+      "returnType": "void",
+      "signature": "static void QueueAnimTiles_Pacifidlog_WaterCurrents(u8 timer)",
+      "paramsRaw": "u8 timer",
+      "body": "u8 i = timer % ARRAY_COUNT(gTilesetAnims_Pacifidlog_WaterCurrents);\n    AppendTilesetAnimToBuffer(gTilesetAnims_Pacifidlog_WaterCurrents[i], (u16 *)(BG_VRAM + TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 496)), 8 * TILE_SIZE_4BPP);",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "AppendTilesetAnimToBuffer",
+        "TILE_OFFSET_4BPP"
+      ],
+      "lineCount": 2
+    },
+    "QueueAnimTiles_Mauville_Flowers": {
+      "returnType": "void",
+      "signature": "static void QueueAnimTiles_Mauville_Flowers(u16 timer_div, u8 timer_mod)",
+      "paramsRaw": "u16 timer_div, u8 timer_mod",
+      "body": "timer_div -= timer_mod;\n    if (timer_div < min(ARRAY_COUNT(gTilesetAnims_Mauville_Flower1), ARRAY_COUNT(gTilesetAnims_Mauville_Flower2)))\n    {\n        timer_div %= min(ARRAY_COUNT(gTilesetAnims_Mauville_Flower1), ARRAY_COUNT(gTilesetAnims_Mauville_Flower2));\n        AppendTilesetAnimToBuffer(gTilesetAnims_Mauville_Flower1[timer_div], gTilesetAnims_Mauville_Flower1_VDests[timer_mod], 4 * TILE_SIZE_4BPP);\n        AppendTilesetAnimToBuffer(gTilesetAnims_Mauville_Flower2[timer_div], gTilesetAnims_Mauville_Flower2_VDests[timer_mod], 4 * TILE_SIZE_4BPP);\n    }\n    else\n    {\n        timer_div %= min(ARRAY_COUNT(gTilesetAnims_Mauville_Flower1_B), ARRAY_COUNT(gTilesetAnims_Mauville_Flower2_B));\n        AppendTilesetAnimToBuffer(gTilesetAnims_Mauville_Flower1_B[timer_div], gTilesetAnims_Mauville_Flower1_VDests[timer_mod], 4 * TILE_SIZE_4BPP);\n        AppendTilesetAnimToBuffer(gTilesetAnims_Mauville_Flower2_B[timer_div], gTilesetAnims_Mauville_Flower2_VDests[timer_mod], 4 * TILE_SIZE_4BPP);\n    }",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "AppendTilesetAnimToBuffer"
+      ],
+      "lineCount": 13
+    },
+    "QueueAnimTiles_Rustboro_WindyWater": {
+      "returnType": "void",
+      "signature": "static void QueueAnimTiles_Rustboro_WindyWater(u16 timer_div, u8 timer_mod)",
+      "paramsRaw": "u16 timer_div, u8 timer_mod",
+      "body": "timer_div -= timer_mod;\n    timer_div %= ARRAY_COUNT(gTilesetAnims_Rustboro_WindyWater);\n    if (gTilesetAnims_Rustboro_WindyWater[timer_div])\n        AppendTilesetAnimToBuffer(gTilesetAnims_Rustboro_WindyWater[timer_div], gTilesetAnims_Rustboro_WindyWater_VDests[timer_mod], 4 * TILE_SIZE_4BPP);",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "AppendTilesetAnimToBuffer"
+      ],
+      "lineCount": 4
+    },
+    "QueueAnimTiles_Rustboro_Fountain": {
+      "returnType": "void",
+      "signature": "static void QueueAnimTiles_Rustboro_Fountain(u16 timer)",
+      "paramsRaw": "u16 timer",
+      "body": "u16 i = timer % ARRAY_COUNT(gTilesetAnims_Rustboro_Fountain);\n    AppendTilesetAnimToBuffer(gTilesetAnims_Rustboro_Fountain[i], (u16 *)(BG_VRAM + TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 448)), 4 * TILE_SIZE_4BPP);",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "AppendTilesetAnimToBuffer",
+        "TILE_OFFSET_4BPP"
+      ],
+      "lineCount": 2
+    },
+    "QueueAnimTiles_Lavaridge_Lava": {
+      "returnType": "void",
+      "signature": "static void QueueAnimTiles_Lavaridge_Lava(u16 timer)",
+      "paramsRaw": "u16 timer",
+      "body": "u16 i = timer % ARRAY_COUNT(gTilesetAnims_Lavaridge_Cave_Lava);\n    AppendTilesetAnimToBuffer(gTilesetAnims_Lavaridge_Cave_Lava[i], (u16 *)(BG_VRAM + TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 160)), 4 * TILE_SIZE_4BPP);",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "AppendTilesetAnimToBuffer",
+        "TILE_OFFSET_4BPP"
+      ],
+      "lineCount": 2
+    },
+    "QueueAnimTiles_EverGrande_Flowers": {
+      "returnType": "void",
+      "signature": "static void QueueAnimTiles_EverGrande_Flowers(u16 timer_div, u8 timer_mod)",
+      "paramsRaw": "u16 timer_div, u8 timer_mod",
+      "body": "timer_div -= timer_mod;\n    timer_div %= ARRAY_COUNT(gTilesetAnims_EverGrande_Flowers);\n\n    AppendTilesetAnimToBuffer(gTilesetAnims_EverGrande_Flowers[timer_div], gTilesetAnims_EverGrande_VDests[timer_mod], 4 * TILE_SIZE_4BPP);",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "AppendTilesetAnimToBuffer"
+      ],
+      "lineCount": 4
+    },
+    "QueueAnimTiles_Cave_Lava": {
+      "returnType": "void",
+      "signature": "static void QueueAnimTiles_Cave_Lava(u16 timer)",
+      "paramsRaw": "u16 timer",
+      "body": "u16 i = timer % ARRAY_COUNT(gTilesetAnims_Lavaridge_Cave_Lava);\n    AppendTilesetAnimToBuffer(gTilesetAnims_Lavaridge_Cave_Lava[i], (u16 *)(BG_VRAM + TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 416)), 4 * TILE_SIZE_4BPP);",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "AppendTilesetAnimToBuffer",
+        "TILE_OFFSET_4BPP"
+      ],
+      "lineCount": 2
+    },
+    "QueueAnimTiles_Dewford_Flag": {
+      "returnType": "void",
+      "signature": "static void QueueAnimTiles_Dewford_Flag(u16 timer)",
+      "paramsRaw": "u16 timer",
+      "body": "u16 i = timer % ARRAY_COUNT(gTilesetAnims_Dewford_Flag);\n    AppendTilesetAnimToBuffer(gTilesetAnims_Dewford_Flag[i], (u16 *)(BG_VRAM + TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 170)), 6 * TILE_SIZE_4BPP);",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "AppendTilesetAnimToBuffer",
+        "TILE_OFFSET_4BPP"
+      ],
+      "lineCount": 2
+    },
+    "QueueAnimTiles_BattleFrontierOutsideWest_Flag": {
+      "returnType": "void",
+      "signature": "static void QueueAnimTiles_BattleFrontierOutsideWest_Flag(u16 timer)",
+      "paramsRaw": "u16 timer",
+      "body": "u16 i = timer % ARRAY_COUNT(gTilesetAnims_BattleFrontierOutsideWest_Flag);\n    AppendTilesetAnimToBuffer(gTilesetAnims_BattleFrontierOutsideWest_Flag[i], (u16 *)(BG_VRAM + TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 218)), 6 * TILE_SIZE_4BPP);",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "AppendTilesetAnimToBuffer",
+        "TILE_OFFSET_4BPP"
+      ],
+      "lineCount": 2
+    },
+    "QueueAnimTiles_BattleFrontierOutsideEast_Flag": {
+      "returnType": "void",
+      "signature": "static void QueueAnimTiles_BattleFrontierOutsideEast_Flag(u16 timer)",
+      "paramsRaw": "u16 timer",
+      "body": "u16 i = timer % ARRAY_COUNT(gTilesetAnims_BattleFrontierOutsideEast_Flag);\n    AppendTilesetAnimToBuffer(gTilesetAnims_BattleFrontierOutsideEast_Flag[i], (u16 *)(BG_VRAM + TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 218)), 6 * TILE_SIZE_4BPP);",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "AppendTilesetAnimToBuffer",
+        "TILE_OFFSET_4BPP"
+      ],
+      "lineCount": 2
+    },
+    "QueueAnimTiles_Slateport_Balloons": {
+      "returnType": "void",
+      "signature": "static void QueueAnimTiles_Slateport_Balloons(u16 timer)",
+      "paramsRaw": "u16 timer",
+      "body": "u16 i = timer % ARRAY_COUNT(gTilesetAnims_Slateport_Balloons);\n    AppendTilesetAnimToBuffer(gTilesetAnims_Slateport_Balloons[i], (u16 *)(BG_VRAM + TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 224)), 4 * TILE_SIZE_4BPP);",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "AppendTilesetAnimToBuffer",
+        "TILE_OFFSET_4BPP"
+      ],
+      "lineCount": 2
+    },
+    "TilesetAnim_MauvilleGym": {
+      "returnType": "void",
+      "signature": "static void TilesetAnim_MauvilleGym(u16 timer)",
+      "paramsRaw": "u16 timer",
+      "body": "if (timer % 2 == 0)\n        QueueAnimTiles_MauvilleGym_ElectricGates(timer / 2);",
+      "callsTo": [
+        "QueueAnimTiles_MauvilleGym_ElectricGates"
+      ],
+      "lineCount": 2
+    },
+    "TilesetAnim_SootopolisGym": {
+      "returnType": "void",
+      "signature": "static void TilesetAnim_SootopolisGym(u16 timer)",
+      "paramsRaw": "u16 timer",
+      "body": "if (timer % 8 == 0)\n        QueueAnimTiles_SootopolisGym_Waterfalls(timer / 8);",
+      "callsTo": [
+        "QueueAnimTiles_SootopolisGym_Waterfalls"
+      ],
+      "lineCount": 2
+    },
+    "TilesetAnim_EliteFour": {
+      "returnType": "void",
+      "signature": "static void TilesetAnim_EliteFour(u16 timer)",
+      "paramsRaw": "u16 timer",
+      "body": "if (timer % 64 == 1)\n        QueueAnimTiles_EliteFour_GroundLights(timer / 64);\n    if (timer % 8 == 1)\n        QueueAnimTiles_EliteFour_WallLights(timer / 8);",
+      "callsTo": [
+        "QueueAnimTiles_EliteFour_GroundLights",
+        "QueueAnimTiles_EliteFour_WallLights"
+      ],
+      "lineCount": 4
+    },
+    "TilesetAnim_BikeShop": {
+      "returnType": "void",
+      "signature": "static void TilesetAnim_BikeShop(u16 timer)",
+      "paramsRaw": "u16 timer",
+      "body": "if (timer % 4 == 0)\n        QueueAnimTiles_BikeShop_BlinkingLights(timer / 4);",
+      "callsTo": [
+        "QueueAnimTiles_BikeShop_BlinkingLights"
+      ],
+      "lineCount": 2
+    },
+    "TilesetAnim_BattlePyramid": {
+      "returnType": "void",
+      "signature": "static void TilesetAnim_BattlePyramid(u16 timer)",
+      "paramsRaw": "u16 timer",
+      "body": "if (timer % 8 == 0)\n    {\n        QueueAnimTiles_BattlePyramid_Torch(timer / 8);\n        QueueAnimTiles_BattlePyramid_StatueShadow(timer / 8);\n    }",
+      "callsTo": [
+        "QueueAnimTiles_BattlePyramid_StatueShadow",
+        "QueueAnimTiles_BattlePyramid_Torch"
+      ],
+      "lineCount": 5
+    },
+    "TilesetAnim_BattleDome": {
+      "returnType": "void",
+      "signature": "static void TilesetAnim_BattleDome(u16 timer)",
+      "paramsRaw": "u16 timer",
+      "body": "if (timer % 4 == 0)\n        BlendAnimPalette_BattleDome_FloorLights(timer / 4);",
+      "callsTo": [
+        "BlendAnimPalette_BattleDome_FloorLights"
+      ],
+      "lineCount": 2
+    },
+    "TilesetAnim_BattleDome2": {
+      "returnType": "void",
+      "signature": "static void TilesetAnim_BattleDome2(u16 timer)",
+      "paramsRaw": "u16 timer",
+      "body": "if (timer % 4 == 0)\n        BlendAnimPalette_BattleDome_FloorLightsNoBlend(timer / 4);",
+      "callsTo": [
+        "BlendAnimPalette_BattleDome_FloorLightsNoBlend"
+      ],
+      "lineCount": 2
+    },
+    "QueueAnimTiles_Building_TVTurnedOn": {
+      "returnType": "void",
+      "signature": "static void QueueAnimTiles_Building_TVTurnedOn(u16 timer)",
+      "paramsRaw": "u16 timer",
+      "body": "u16 i = timer % ARRAY_COUNT(gTilesetAnims_Building_TvTurnedOn);\n    AppendTilesetAnimToBuffer(gTilesetAnims_Building_TvTurnedOn[i], (u16 *)(BG_VRAM + TILE_OFFSET_4BPP(496)), 4 * TILE_SIZE_4BPP);",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "AppendTilesetAnimToBuffer",
+        "TILE_OFFSET_4BPP"
+      ],
+      "lineCount": 2
+    },
+    "QueueAnimTiles_SootopolisGym_Waterfalls": {
+      "returnType": "void",
+      "signature": "static void QueueAnimTiles_SootopolisGym_Waterfalls(u16 timer)",
+      "paramsRaw": "u16 timer",
+      "body": "u16 i = timer % min(ARRAY_COUNT(gTilesetAnims_SootopolisGym_SideWaterfall), ARRAY_COUNT(gTilesetAnims_SootopolisGym_FrontWaterfall));\n    AppendTilesetAnimToBuffer(gTilesetAnims_SootopolisGym_SideWaterfall[i], (u16 *)(BG_VRAM + TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 496)), 12 * TILE_SIZE_4BPP);\n    AppendTilesetAnimToBuffer(gTilesetAnims_SootopolisGym_FrontWaterfall[i], (u16 *)(BG_VRAM + TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 464)), 20 * TILE_SIZE_4BPP);",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "AppendTilesetAnimToBuffer",
+        "TILE_OFFSET_4BPP"
+      ],
+      "lineCount": 3
+    },
+    "QueueAnimTiles_EliteFour_WallLights": {
+      "returnType": "void",
+      "signature": "static void QueueAnimTiles_EliteFour_WallLights(u16 timer)",
+      "paramsRaw": "u16 timer",
+      "body": "u16 i = timer % ARRAY_COUNT(gTilesetAnims_EliteFour_WallLights);\n    AppendTilesetAnimToBuffer(gTilesetAnims_EliteFour_WallLights[i], (u16 *)(BG_VRAM + TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 504)), 1 * TILE_SIZE_4BPP);",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "AppendTilesetAnimToBuffer",
+        "TILE_OFFSET_4BPP"
+      ],
+      "lineCount": 2
+    },
+    "QueueAnimTiles_EliteFour_GroundLights": {
+      "returnType": "void",
+      "signature": "static void QueueAnimTiles_EliteFour_GroundLights(u16 timer)",
+      "paramsRaw": "u16 timer",
+      "body": "u16 i = timer % ARRAY_COUNT(gTilesetAnims_EliteFour_FloorLight);\n    AppendTilesetAnimToBuffer(gTilesetAnims_EliteFour_FloorLight[i], (u16 *)(BG_VRAM + TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 480)), 4 * TILE_SIZE_4BPP);",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "AppendTilesetAnimToBuffer",
+        "TILE_OFFSET_4BPP"
+      ],
+      "lineCount": 2
+    },
+    "QueueAnimTiles_MauvilleGym_ElectricGates": {
+      "returnType": "void",
+      "signature": "static void QueueAnimTiles_MauvilleGym_ElectricGates(u16 timer)",
+      "paramsRaw": "u16 timer",
+      "body": "u16 i = timer % ARRAY_COUNT(gTilesetAnims_MauvilleGym_ElectricGates);\n    AppendTilesetAnimToBuffer(gTilesetAnims_MauvilleGym_ElectricGates[i], (u16 *)(BG_VRAM + TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 144)), 16 * TILE_SIZE_4BPP);",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "AppendTilesetAnimToBuffer",
+        "TILE_OFFSET_4BPP"
+      ],
+      "lineCount": 2
+    },
+    "QueueAnimTiles_BikeShop_BlinkingLights": {
+      "returnType": "void",
+      "signature": "static void QueueAnimTiles_BikeShop_BlinkingLights(u16 timer)",
+      "paramsRaw": "u16 timer",
+      "body": "u16 i = timer % ARRAY_COUNT(gTilesetAnims_BikeShop_BlinkingLights);\n    AppendTilesetAnimToBuffer(gTilesetAnims_BikeShop_BlinkingLights[i], (u16 *)(BG_VRAM + TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 496)), 9 * TILE_SIZE_4BPP);",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "AppendTilesetAnimToBuffer",
+        "TILE_OFFSET_4BPP"
+      ],
+      "lineCount": 2
+    },
+    "QueueAnimTiles_Sootopolis_StormyWater": {
+      "returnType": "void",
+      "signature": "static void QueueAnimTiles_Sootopolis_StormyWater(u16 timer)",
+      "paramsRaw": "u16 timer",
+      "body": "u16 i = timer % ARRAY_COUNT(gTilesetAnims_Sootopolis_StormyWater);\n    AppendTilesetAnimToBuffer(gTilesetAnims_Sootopolis_StormyWater[i], (u16 *)(BG_VRAM + TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 240)), 96 * TILE_SIZE_4BPP);",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "AppendTilesetAnimToBuffer",
+        "TILE_OFFSET_4BPP"
+      ],
+      "lineCount": 2
+    },
+    "QueueAnimTiles_BattlePyramid_Torch": {
+      "returnType": "void",
+      "signature": "static void QueueAnimTiles_BattlePyramid_Torch(u16 timer)",
+      "paramsRaw": "u16 timer",
+      "body": "u16 i = timer % ARRAY_COUNT(gTilesetAnims_BattlePyramid_Torch);\n    AppendTilesetAnimToBuffer(gTilesetAnims_BattlePyramid_Torch[i], (u16 *)(BG_VRAM + TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 151)), 8 * TILE_SIZE_4BPP);",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "AppendTilesetAnimToBuffer",
+        "TILE_OFFSET_4BPP"
+      ],
+      "lineCount": 2
+    },
+    "QueueAnimTiles_BattlePyramid_StatueShadow": {
+      "returnType": "void",
+      "signature": "static void QueueAnimTiles_BattlePyramid_StatueShadow(u16 timer)",
+      "paramsRaw": "u16 timer",
+      "body": "u16 i = timer % ARRAY_COUNT(gTilesetAnims_BattlePyramid_StatueShadow);\n    AppendTilesetAnimToBuffer(gTilesetAnims_BattlePyramid_StatueShadow[i], (u16 *)(BG_VRAM + TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 135)), 8 * TILE_SIZE_4BPP);",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "AppendTilesetAnimToBuffer",
+        "TILE_OFFSET_4BPP"
+      ],
+      "lineCount": 2
+    },
+    "BlendAnimPalette_BattleDome_FloorLights": {
+      "returnType": "void",
+      "signature": "static void BlendAnimPalette_BattleDome_FloorLights(u16 timer)",
+      "paramsRaw": "u16 timer",
+      "body": "CpuCopy16(sTilesetAnims_BattleDomeFloorLightPals[timer % ARRAY_COUNT(sTilesetAnims_BattleDomeFloorLightPals)], &gPlttBufferUnfaded[BG_PLTT_ID(8)], PLTT_SIZE_4BPP);\n    BlendPalette(BG_PLTT_ID(8), 16, gPaletteFade.y, gPaletteFade.blendColor & 0x7FFF);\n    if ((u8)FindTaskIdByFunc(Task_BattleTransition_Intro) != TASK_NONE)\n    {\n        sSecondaryTilesetAnimCallback = TilesetAnim_BattleDome2;\n        sSecondaryTilesetAnimCounterMax = 32;\n    }",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "BG_PLTT_ID",
+        "BlendPalette",
+        "CpuCopy16",
+        "FindTaskIdByFunc"
+      ],
+      "lineCount": 7
+    },
+    "BlendAnimPalette_BattleDome_FloorLightsNoBlend": {
+      "returnType": "void",
+      "signature": "static void BlendAnimPalette_BattleDome_FloorLightsNoBlend(u16 timer)",
+      "paramsRaw": "u16 timer",
+      "body": "CpuCopy16(sTilesetAnims_BattleDomeFloorLightPals[timer % ARRAY_COUNT(sTilesetAnims_BattleDomeFloorLightPals)], &gPlttBufferUnfaded[BG_PLTT_ID(8)], PLTT_SIZE_4BPP);\n    if ((u8)FindTaskIdByFunc(Task_BattleTransition_Intro) == TASK_NONE)\n    {\n        BlendPalette(BG_PLTT_ID(8), 16, gPaletteFade.y, gPaletteFade.blendColor & 0x7FFF);\n        if (!--sSecondaryTilesetAnimCounterMax)\n            sSecondaryTilesetAnimCallback = NULL;\n    }",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "BG_PLTT_ID",
+        "BlendPalette",
+        "CpuCopy16",
+        "FindTaskIdByFunc"
+      ],
+      "lineCount": 7
+    }
+  }
+}

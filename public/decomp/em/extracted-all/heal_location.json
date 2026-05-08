@@ -1,0 +1,16 @@
+{
+  "srcFile": "src/heal_location.c",
+  "count": 1,
+  "functions": {
+    "GetHealLocationIndexByMap": {
+      "returnType": "u32",
+      "signature": "u32 GetHealLocationIndexByMap(u16 mapGroup, u16 mapNum)",
+      "paramsRaw": "u16 mapGroup, u16 mapNum",
+      "body": "u32 i;\n\n    for (i = 0; i < ARRAY_COUNT(sHealLocations); i++)\n    {\n        if (sHealLocations[i].mapGroup == mapGroup && sHealLocations[i].mapNum == mapNum)\n            return i + 1;\n    }\n    return HEAL_LOCATION_NONE;",
+      "callsTo": [
+        "ARRAY_COUNT"
+      ],
+      "lineCount": 8
+    }
+  }
+}

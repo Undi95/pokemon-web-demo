@@ -1,0 +1,100 @@
+{
+  "srcFile": "src/wonder_news.c",
+  "count": 9,
+  "functions": {
+    "WonderNews_SetReward": {
+      "returnType": "void",
+      "signature": "void WonderNews_SetReward(u32 newsType)",
+      "paramsRaw": "u32 newsType",
+      "body": "struct WonderNewsMetadata *data = GetSavedWonderNewsMetadata();\n\n    data->newsType = newsType;\n    switch (newsType)\n    {\n    case WONDER_NEWS_NONE:\n        break;\n    case WONDER_NEWS_RECV_FRIEND:\n    case WONDER_NEWS_RECV_WIRELESS:\n         \n        data->berry = (Random() % 15) + ITEM_TO_BERRY(ITEM_RAZZ_BERRY);\n        break;\n    case WONDER_NEWS_SENT:\n         \n        data->berry = (Random() % 15) + ITEM_TO_BERRY(ITEM_CHERI_BERRY);\n        break;\n    }",
+      "callsTo": [
+        "GetSavedWonderNewsMetadata",
+        "ITEM_TO_BERRY",
+        "Random"
+      ],
+      "lineCount": 17
+    },
+    "WonderNews_Reset": {
+      "returnType": "void",
+      "signature": "void WonderNews_Reset(void)",
+      "paramsRaw": "void",
+      "body": "struct WonderNewsMetadata *data = GetSavedWonderNewsMetadata();\n\n    data->newsType = WONDER_NEWS_NONE;\n    data->sentRewardCounter = 0;\n    data->rewardCounter = 0;\n    data->berry = 0;\n    VarSet(VAR_WONDER_NEWS_STEP_COUNTER, 0);",
+      "callsTo": [
+        "GetSavedWonderNewsMetadata",
+        "VarSet"
+      ],
+      "lineCount": 7
+    },
+    "WonderNews_IncrementStepCounter": {
+      "returnType": "void",
+      "signature": "void WonderNews_IncrementStepCounter(void)",
+      "paramsRaw": "void",
+      "body": "u16 *stepCounter = GetVarPointer(VAR_WONDER_NEWS_STEP_COUNTER);\n    struct WonderNewsMetadata *data = GetSavedWonderNewsMetadata();\n\n     \n     \n     \n    if (data->rewardCounter >= MAX_REWARD && ++(*stepCounter) >= 500)\n    {\n        data->rewardCounter = 0;\n        *stepCounter = 0;\n    }",
+      "callsTo": [
+        "GetSavedWonderNewsMetadata",
+        "GetVarPointer"
+      ],
+      "lineCount": 11
+    },
+    "WonderNews_GetRewardInfo": {
+      "returnType": "u16",
+      "signature": "u16 WonderNews_GetRewardInfo(void)",
+      "paramsRaw": "void",
+      "body": "u16 *result = &gSpecialVar_Result;\n    struct WonderNewsMetadata *data = GetSavedWonderNewsMetadata();\n    u16 rewardType;\n\n     \n    if (!IsMysteryEventEnabled() || !ValidateSavedWonderNews())\n        return NEWS_REWARD_NONE;\n\n    rewardType = GetRewardType(data);\n\n    switch (rewardType)\n    {\n    case NEWS_REWARD_RECV_SMALL:\n    case NEWS_REWARD_RECV_BIG:\n        *result = GetRewardItem(data);\n        break;\n    case NEWS_REWARD_SENT_SMALL:\n        *result = GetRewardItem(data);\n        IncrementSentRewardCounter(data);\n        break;\n    case NEWS_REWARD_SENT_BIG:\n        *result = GetRewardItem(data);\n        ResetSentRewardCounter(data);\n        break;\n    case NEWS_REWARD_NONE:\n    case NEWS_REWARD_WAITING:\n    case NEWS_REWARD_AT_MAX:\n        break;\n    }\n\n    return rewardType;",
+      "callsTo": [
+        "GetRewardItem",
+        "GetRewardType",
+        "GetSavedWonderNewsMetadata",
+        "IncrementSentRewardCounter",
+        "IsMysteryEventEnabled",
+        "ResetSentRewardCounter",
+        "ValidateSavedWonderNews"
+      ],
+      "lineCount": 31
+    },
+    "GetRewardItem": {
+      "returnType": "u32",
+      "signature": "static u32 GetRewardItem(struct WonderNewsMetadata *data)",
+      "paramsRaw": "struct WonderNewsMetadata *data",
+      "body": "u32 itemId;\n    data->newsType = WONDER_NEWS_NONE;\n    itemId = data->berry + FIRST_BERRY_INDEX - 1;\n    data->berry = 0;\n    IncrementRewardCounter(data);\n    return itemId;",
+      "callsTo": [
+        "IncrementRewardCounter"
+      ],
+      "lineCount": 6
+    },
+    "ResetSentRewardCounter": {
+      "returnType": "void",
+      "signature": "static void ResetSentRewardCounter(struct WonderNewsMetadata *data)",
+      "paramsRaw": "struct WonderNewsMetadata *data",
+      "body": "data->sentRewardCounter = 0;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "IncrementSentRewardCounter": {
+      "returnType": "void",
+      "signature": "static void IncrementSentRewardCounter(struct WonderNewsMetadata *data)",
+      "paramsRaw": "struct WonderNewsMetadata *data",
+      "body": "data->sentRewardCounter++;\n    if (data->sentRewardCounter > MAX_SENT_REWARD)\n        data->sentRewardCounter = MAX_SENT_REWARD;",
+      "callsTo": [],
+      "lineCount": 3
+    },
+    "IncrementRewardCounter": {
+      "returnType": "void",
+      "signature": "static void IncrementRewardCounter(struct WonderNewsMetadata *data)",
+      "paramsRaw": "struct WonderNewsMetadata *data",
+      "body": "data->rewardCounter++;\n    if (data->rewardCounter > MAX_REWARD)\n        data->rewardCounter = MAX_REWARD;",
+      "callsTo": [],
+      "lineCount": 3
+    },
+    "GetRewardType": {
+      "returnType": "u32",
+      "signature": "static u32 GetRewardType(struct WonderNewsMetadata *data)",
+      "paramsRaw": "struct WonderNewsMetadata *data",
+      "body": "if (data->rewardCounter == MAX_REWARD)\n        return NEWS_REWARD_AT_MAX;\n\n    switch (data->newsType)\n    {\n    case WONDER_NEWS_NONE:\n        return NEWS_REWARD_WAITING;\n    case WONDER_NEWS_RECV_FRIEND:\n        return NEWS_REWARD_RECV_SMALL;\n    case WONDER_NEWS_RECV_WIRELESS:\n        return NEWS_REWARD_RECV_BIG;\n    case WONDER_NEWS_SENT:\n        if (data->sentRewardCounter < MAX_SENT_REWARD - 1)\n            return NEWS_REWARD_SENT_SMALL;\n        return NEWS_REWARD_SENT_BIG;\n    default:\n        AGB_ASSERT(0);\n        return NEWS_REWARD_NONE;\n    }",
+      "callsTo": [
+        "AGB_ASSERT"
+      ],
+      "lineCount": 19
+    }
+  }
+}

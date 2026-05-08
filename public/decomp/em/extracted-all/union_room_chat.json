@@ -1,0 +1,1439 @@
+{
+  "srcFile": "src/union_room_chat.c",
+  "count": 115,
+  "functions": {
+    "EnterUnionRoomChat": {
+      "returnType": "void",
+      "signature": "void EnterUnionRoomChat(void)",
+      "paramsRaw": "void",
+      "body": "sChat = Alloc(sizeof(*sChat));\n    InitUnionRoomChat(sChat);\n    gKeyRepeatStartDelay = 20;\n    SetVBlankCallback(NULL);\n    SetMainCallback2(CB2_LoadInterface);",
+      "callsTo": [
+        "Alloc",
+        "InitUnionRoomChat",
+        "SetMainCallback2",
+        "SetVBlankCallback"
+      ],
+      "lineCount": 5
+    },
+    "InitUnionRoomChat": {
+      "returnType": "void",
+      "signature": "static void InitUnionRoomChat(struct UnionRoomChat *chat)",
+      "paramsRaw": "struct UnionRoomChat *chat",
+      "body": "int i;\n\n    chat->funcId = CHAT_FUNC_JOIN;\n    chat->funcState = 0;\n    chat->currentPage = 0;\n    chat->currentCol = 0;\n    chat->currentRow = 0;\n    chat->lastBufferCursorPos = 0;\n    chat->bufferCursorPos = 0;\n    chat->receivedPlayerIndex = 0;\n    chat->messageEntryBuffer[0] = EOS;\n    chat->linkPlayerCount = GetLinkPlayerCount();\n    chat->multiplayerId = GetMultiplayerId();\n    chat->exitType = CHAT_EXIT_NONE;\n    chat->changedRegisteredTexts = FALSE;\n    PrepareSendBuffer_Null(chat->sendMessageBuffer);\n    for (i = 0; i < UNION_ROOM_KB_ROW_COUNT; i++)\n        StringCopy(chat->registeredTexts[i], gSaveBlock1Ptr->registeredTexts[i]);",
+      "callsTo": [
+        "GetLinkPlayerCount",
+        "GetMultiplayerId",
+        "PrepareSendBuffer_Null",
+        "StringCopy"
+      ],
+      "lineCount": 18
+    },
+    "FreeUnionRoomChat": {
+      "returnType": "void",
+      "signature": "static void FreeUnionRoomChat(void)",
+      "paramsRaw": "void",
+      "body": "DestroyTask(sChat->handleInputTask);\n    DestroyTask(sChat->receiveMessagesTask);\n    Free(sChat);",
+      "callsTo": [
+        "DestroyTask",
+        "Free"
+      ],
+      "lineCount": 3
+    },
+    "CB2_LoadInterface": {
+      "returnType": "void",
+      "signature": "static void CB2_LoadInterface(void)",
+      "paramsRaw": "void",
+      "body": "switch (gMain.state)\n    {\n    case 0:\n        ResetTasks();\n        ResetSpriteData();\n        FreeAllSpritePalettes();\n        TryAllocDisplay();\n        gMain.state++;\n        break;\n    case 1:\n        RunDisplaySubtasks();\n        if (!IsDisplaySubtask0Active())\n        {\n            BlendPalettes(PALETTES_ALL, 16, RGB_BLACK);\n            BeginNormalPaletteFade(PALETTES_ALL, -1, 16, 0, RGB_BLACK);\n            SetVBlankCallback(VBlankCB_UnionRoomChatMain);\n            gMain.state++;\n        }\n        break;\n    case 2:\n        UpdatePaletteFade();\n        if (!gPaletteFade.active)\n        {\n            SetMainCallback2(CB2_UnionRoomChatMain);\n            sChat->handleInputTask = CreateTask(Task_HandlePlayerInput, 8);\n            sChat->receiveMessagesTask = CreateTask(Task_ReceiveChatMessage, 7);\n            LoadWirelessStatusIndicatorSpriteGfx();\n            CreateWirelessStatusIndicatorSprite(DISPLAY_WIDTH - 8, DISPLAY_HEIGHT - 10);\n        }\n        break;\n    }",
+      "callsTo": [
+        "BeginNormalPaletteFade",
+        "BlendPalettes",
+        "CreateTask",
+        "CreateWirelessStatusIndicatorSprite",
+        "FreeAllSpritePalettes",
+        "IsDisplaySubtask0Active",
+        "LoadWirelessStatusIndicatorSpriteGfx",
+        "ResetSpriteData",
+        "ResetTasks",
+        "RunDisplaySubtasks",
+        "SetMainCallback2",
+        "SetVBlankCallback",
+        "TryAllocDisplay",
+        "UpdatePaletteFade"
+      ],
+      "lineCount": 31
+    },
+    "VBlankCB_UnionRoomChatMain": {
+      "returnType": "void",
+      "signature": "static void VBlankCB_UnionRoomChatMain(void)",
+      "paramsRaw": "void",
+      "body": "TransferPlttBuffer();\n    LoadOam();\n    ProcessSpriteCopyRequests();\n    ScanlineEffect_InitHBlankDmaTransfer();",
+      "callsTo": [
+        "LoadOam",
+        "ProcessSpriteCopyRequests",
+        "ScanlineEffect_InitHBlankDmaTransfer",
+        "TransferPlttBuffer"
+      ],
+      "lineCount": 4
+    },
+    "CB2_UnionRoomChatMain": {
+      "returnType": "void",
+      "signature": "static void CB2_UnionRoomChatMain(void)",
+      "paramsRaw": "void",
+      "body": "RunTasks();\n    RunDisplaySubtasks();\n    AnimateSprites();\n    BuildOamBuffer();\n    UpdatePaletteFade();",
+      "callsTo": [
+        "AnimateSprites",
+        "BuildOamBuffer",
+        "RunDisplaySubtasks",
+        "RunTasks",
+        "UpdatePaletteFade"
+      ],
+      "lineCount": 5
+    },
+    "Task_HandlePlayerInput": {
+      "returnType": "void",
+      "signature": "static void Task_HandlePlayerInput(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "switch (sChat->exitType)\n    {\n    case CHAT_EXIT_ONLY_LEADER:\n        SetChatFunction(CHAT_FUNC_EXIT);\n        sChat->exitType = CHAT_EXIT_NONE;\n        break;\n    case CHAT_EXIT_DROPPED:\n        SetChatFunction(CHAT_FUNC_DROP);\n        sChat->exitType = CHAT_EXIT_NONE;\n        break;\n    case CHAT_EXIT_DISBANDED:\n        SetChatFunction(CHAT_FUNC_DISBANDED);\n        sChat->exitType = CHAT_EXIT_NONE;\n        break;\n    }\n\n    sChatMainFunctions[sChat->funcId]();",
+      "callsTo": [
+        "SetChatFunction"
+      ],
+      "lineCount": 17
+    },
+    "Chat_Join": {
+      "returnType": "void",
+      "signature": "static void Chat_Join(void)",
+      "paramsRaw": "void",
+      "body": "switch (sChat->funcState)\n    {\n    case 0:\n        PrepareSendBuffer_Join(sChat->sendMessageBuffer);\n        sChat->funcState++;\n         \n    case 1:\n        if (IsLinkTaskFinished() && !Rfu_IsPlayerExchangeActive())\n        {\n            if (SendBlock(0, sChat->sendMessageBuffer, sizeof(sChat->sendMessageBuffer)))\n                sChat->funcState++;\n        }\n        break;\n    case 2:\n        if (IsLinkTaskFinished())\n            SetChatFunction(CHAT_FUNC_HANDLE_INPUT);\n        break;\n    }",
+      "callsTo": [
+        "IsLinkTaskFinished",
+        "PrepareSendBuffer_Join",
+        "Rfu_IsPlayerExchangeActive",
+        "SendBlock",
+        "SetChatFunction"
+      ],
+      "lineCount": 18
+    },
+    "Chat_HandleInput": {
+      "returnType": "void",
+      "signature": "static void Chat_HandleInput(void)",
+      "paramsRaw": "void",
+      "body": "bool8 updateMsgActive, cursorBlinkActive;\n\n    switch (sChat->funcState)\n    {\n    case 0:\n        if (JOY_NEW(START_BUTTON))\n        {\n            if (sChat->bufferCursorPos)\n                SetChatFunction(CHAT_FUNC_SEND);\n        }\n        else if (JOY_NEW(SELECT_BUTTON))\n        {\n            SetChatFunction(CHAT_FUNC_SWITCH);\n        }\n        else if (JOY_REPEAT(B_BUTTON))\n        {\n            if (sChat->bufferCursorPos)\n            {\n                DeleteLastMessageCharacter();\n                StartDisplaySubtask(CHATDISPLAY_FUNC_UPDATE_MSG, 0);\n                sChat->funcState = 1;\n            }\n            else\n            {\n                SetChatFunction(CHAT_FUNC_ASK_QUIT);\n            }\n        }\n        else if (JOY_NEW(A_BUTTON))\n        {\n            AppendTextToMessage();\n            StartDisplaySubtask(CHATDISPLAY_FUNC_UPDATE_MSG, 0);\n            StartDisplaySubtask(CHATDISPLAY_FUNC_CURSOR_BLINK, 1);\n            sChat->funcState = 1;\n        }\n        else if (JOY_NEW(R_BUTTON))\n        {\n            if (sChat->currentPage != UNION_ROOM_KB_PAGE_REGISTER)\n            {\n                SwitchCaseOfLastMessageCharacter();\n                StartDisplaySubtask(CHATDISPLAY_FUNC_UPDATE_MSG, 0);\n                sChat->funcState = 1;\n            }\n            else\n            {\n                SetChatFunction(CHAT_FUNC_REGISTER);\n            }\n        }\n        else if (HandleDPadInput())\n        {\n            StartDisplaySubtask(CHATDISPLAY_FUNC_MOVE_KB_CURSOR, 0);\n            sChat->funcState = 1;\n        }\n        break;\n    case 1:\n        updateMsgActive = IsDisplaySubtaskActive(0);\n        cursorBlinkActive = IsDisplaySubtaskActive(1);\n        if (!updateMsgActive && !cursorBlinkActive)\n            sChat->funcState = 0;\n        break;\n    }",
+      "callsTo": [
+        "AppendTextToMessage",
+        "DeleteLastMessageCharacter",
+        "HandleDPadInput",
+        "IsDisplaySubtaskActive",
+        "JOY_NEW",
+        "JOY_REPEAT",
+        "SetChatFunction",
+        "StartDisplaySubtask",
+        "SwitchCaseOfLastMessageCharacter"
+      ],
+      "lineCount": 60
+    },
+    "Chat_Switch": {
+      "returnType": "void",
+      "signature": "static void Chat_Switch(void)",
+      "paramsRaw": "void",
+      "body": "s16 input;\n    bool32 shouldSwitchPages;\n\n    switch (sChat->funcState)\n    {\n    case 0:\n        StartDisplaySubtask(CHATDISPLAY_FUNC_SHOW_KB_SWAP_MENU, 0);\n        sChat->funcState++;\n        break;\n    case 1:\n        if (!IsDisplaySubtaskActive(0))\n            sChat->funcState++;\n        break;\n    case 2:\n        input = Menu_ProcessInput();\n        switch (input)\n        {\n        default:\n            StartDisplaySubtask(CHATDISPLAY_FUNC_HIDE_KB_SWAP_MENU, 0);\n            shouldSwitchPages = TRUE;\n            if (sChat->currentPage == input || input > UNION_ROOM_KB_PAGE_REGISTER)\n                shouldSwitchPages = FALSE;\n            break;\n        case MENU_NOTHING_CHOSEN:\n            if (JOY_NEW(SELECT_BUTTON))\n            {\n                PlaySE(SE_SELECT);\n                Menu_MoveCursor(1);\n            }\n            return;\n        case MENU_B_PRESSED:\n            StartDisplaySubtask(CHATDISPLAY_FUNC_HIDE_KB_SWAP_MENU, 0);\n            sChat->funcState = 3;\n            return;\n        }\n\n        if (!shouldSwitchPages)\n        {\n            sChat->funcState = 3;\n            return;\n        }\n\n        sChat->currentCol = 0;\n        sChat->currentRow = 0;\n        StartDisplaySubtask(CHATDISPLAY_FUNC_SWITCH_PAGES, 1);\n        sChat->currentPage = input;\n        sChat->funcState = 4;\n        break;\n    case 3:\n        if (!IsDisplaySubtaskActive(0))\n            SetChatFunction(CHAT_FUNC_HANDLE_INPUT);\n        break;\n    case 4:\n        if (!IsDisplaySubtaskActive(0) && !IsDisplaySubtaskActive(1))\n            SetChatFunction(CHAT_FUNC_HANDLE_INPUT);\n        break;\n    }",
+      "callsTo": [
+        "IsDisplaySubtaskActive",
+        "JOY_NEW",
+        "Menu_MoveCursor",
+        "Menu_ProcessInput",
+        "PlaySE",
+        "SetChatFunction",
+        "StartDisplaySubtask"
+      ],
+      "lineCount": 57
+    },
+    "Chat_AskQuitChatting": {
+      "returnType": "void",
+      "signature": "static void Chat_AskQuitChatting(void)",
+      "paramsRaw": "void",
+      "body": "s8 input;\n\n    switch (sChat->funcState)\n    {\n    case 0:\n        StartDisplaySubtask(CHATDISPLAY_FUNC_ASK_QUIT_CHATTING, 0);\n        sChat->funcState = 1;\n        break;\n    case 1:\n        if (!IsDisplaySubtaskActive(0))\n            sChat->funcState = 2;\n        break;\n    case 2:\n        input = ProcessMenuInput();\n        switch (input)\n        {\n        case MENU_B_PRESSED:\n        case 1:\n            StartDisplaySubtask(CHATDISPLAY_FUNC_DESTROY_YESNO, 0);\n            sChat->funcState = 3;\n            break;\n        case 0:\n            if (sChat->multiplayerId == 0)\n            {\n                PrepareSendBuffer_Disband(sChat->sendMessageBuffer);\n                StartDisplaySubtask(CHATDISPLAY_FUNC_DESTROY_YESNO, 0);\n                sChat->funcState = 9;\n            }\n            else\n            {\n                PrepareSendBuffer_Leave(sChat->sendMessageBuffer);\n                sChat->funcState = 4;\n            }\n            break;\n        }\n        break;\n    case 3:\n        if (!IsDisplaySubtaskActive(0))\n            SetChatFunction(CHAT_FUNC_HANDLE_INPUT);\n        break;\n    case 9:\n        if (!IsDisplaySubtaskActive(0))\n        {\n            StartDisplaySubtask(CHATDISPLAY_FUNC_ASK_CONFIRM_LEADER_LEAVE, 0);\n            sChat->funcState = 10;\n        }\n        break;\n    case 10:\n        if (!IsDisplaySubtaskActive(0))\n            sChat->funcState = 8;\n        break;\n    case 8:\n        input = ProcessMenuInput();\n        switch (input)\n        {\n        case MENU_B_PRESSED:\n        case 1:\n            StartDisplaySubtask(CHATDISPLAY_FUNC_DESTROY_YESNO, 0);\n            sChat->funcState = 3;\n            break;\n        case 0:\n            Rfu_StopPartnerSearch();\n            PrepareSendBuffer_Disband(sChat->sendMessageBuffer);\n            sChat->funcState = 4;\n            sChat->tryQuitAgainTimer = 0;\n            break;\n        }\n        break;\n    case 4:\n        if (IsLinkTaskFinished() && !Rfu_IsPlayerExchangeActive() && SendBlock(0, sChat->sendMessageBuffer, sizeof(sChat->sendMessageBuffer)))\n        {\n            if (!sChat->multiplayerId)\n                sChat->funcState = 6;\n            else\n                sChat->funcState = 5;\n        }\n\n        if (!gReceivedRemoteLinkPlayers)\n            SetChatFunction(CHAT_FUNC_SAVE_AND_EXIT);\n        break;\n    case 5:\n        if (!gReceivedRemoteLinkPlayers)\n        {\n            SetChatFunction(CHAT_FUNC_SAVE_AND_EXIT);\n        }\n        else if (++sChat->tryQuitAgainTimer > 300)\n        {\n            sChat->tryQuitAgainTimer = 0;\n            sChat->funcState = 4;\n        }\n        break;\n    }",
+      "callsTo": [
+        "IsDisplaySubtaskActive",
+        "IsLinkTaskFinished",
+        "PrepareSendBuffer_Disband",
+        "PrepareSendBuffer_Leave",
+        "ProcessMenuInput",
+        "Rfu_IsPlayerExchangeActive",
+        "Rfu_StopPartnerSearch",
+        "SendBlock",
+        "SetChatFunction",
+        "StartDisplaySubtask"
+      ],
+      "lineCount": 92
+    },
+    "Chat_Exit": {
+      "returnType": "void",
+      "signature": "static void Chat_Exit(void)",
+      "paramsRaw": "void",
+      "body": "switch (sChat->funcState)\n    {\n    case 0:\n        if (!FuncIsActiveTask(Task_ReceiveChatMessage))\n        {\n            StartDisplaySubtask(CHATDISPLAY_FUNC_DESTROY_YESNO, 0);\n            sChat->funcState++;\n        }\n        break;\n    case 1:\n        if (!IsDisplaySubtaskActive(0))\n        {\n            StartDisplaySubtask(CHATDISPLAY_FUNC_PRINT_EXITING_CHAT, 0);\n            sChat->funcState++;\n        }\n        break;\n    case 2:\n        if (!IsDisplaySubtaskActive(0))\n        {\n            PrepareSendBuffer_Drop(sChat->sendMessageBuffer);\n            sChat->funcState++;\n        }\n        break;\n    case 3:\n        if (IsLinkTaskFinished() && !Rfu_IsPlayerExchangeActive() && SendBlock(0, sChat->sendMessageBuffer, sizeof(sChat->sendMessageBuffer)))\n            sChat->funcState++;\n        break;\n    case 4:\n        if ((GetBlockReceivedStatus() & 1) && !Rfu_IsPlayerExchangeActive())\n            sChat->funcState++;\n        break;\n    case 5:\n        if (IsLinkTaskFinished() && !Rfu_IsPlayerExchangeActive())\n        {\n            SetCloseLinkCallback();\n            sChat->exitDelayTimer = 0;\n            sChat->funcState++;\n        }\n        break;\n    case 6:\n        if (sChat->exitDelayTimer < 150)\n            sChat->exitDelayTimer++;\n\n        if (!gReceivedRemoteLinkPlayers)\n            sChat->funcState++;\n        break;\n    case 7:\n        if (sChat->exitDelayTimer >= 150)\n            SetChatFunction(CHAT_FUNC_SAVE_AND_EXIT);\n        else\n            sChat->exitDelayTimer++;\n        break;\n    }",
+      "callsTo": [
+        "FuncIsActiveTask",
+        "GetBlockReceivedStatus",
+        "IsDisplaySubtaskActive",
+        "IsLinkTaskFinished",
+        "PrepareSendBuffer_Drop",
+        "Rfu_IsPlayerExchangeActive",
+        "SendBlock",
+        "SetChatFunction",
+        "SetCloseLinkCallback",
+        "StartDisplaySubtask"
+      ],
+      "lineCount": 53
+    },
+    "Chat_Drop": {
+      "returnType": "void",
+      "signature": "static void Chat_Drop(void)",
+      "paramsRaw": "void",
+      "body": "switch (sChat->funcState)\n    {\n    case 0:\n        if (!FuncIsActiveTask(Task_ReceiveChatMessage))\n        {\n            StartDisplaySubtask(CHATDISPLAY_FUNC_DESTROY_YESNO, 0);\n            sChat->funcState++;\n        }\n        break;\n    case 1:\n        if (!IsDisplaySubtaskActive(0) && IsLinkTaskFinished() && !Rfu_IsPlayerExchangeActive())\n        {\n            SetCloseLinkCallback();\n            sChat->exitDelayTimer = 0;\n            sChat->funcState++;\n        }\n        break;\n    case 2:\n        if (sChat->exitDelayTimer < 150)\n            sChat->exitDelayTimer++;\n\n        if (!gReceivedRemoteLinkPlayers)\n            sChat->funcState++;\n        break;\n    case 3:\n        if (sChat->exitDelayTimer >= 150)\n            SetChatFunction(CHAT_FUNC_SAVE_AND_EXIT);\n        else\n            sChat->exitDelayTimer++;\n        break;\n    }",
+      "callsTo": [
+        "FuncIsActiveTask",
+        "IsDisplaySubtaskActive",
+        "IsLinkTaskFinished",
+        "Rfu_IsPlayerExchangeActive",
+        "SetChatFunction",
+        "SetCloseLinkCallback",
+        "StartDisplaySubtask"
+      ],
+      "lineCount": 31
+    },
+    "Chat_Disbanded": {
+      "returnType": "void",
+      "signature": "static void Chat_Disbanded(void)",
+      "paramsRaw": "void",
+      "body": "switch (sChat->funcState)\n    {\n    case 0:\n        if (!FuncIsActiveTask(Task_ReceiveChatMessage))\n        {\n            if (sChat->multiplayerId)\n                StartDisplaySubtask(CHATDISPLAY_FUNC_DESTROY_YESNO, 0);\n\n            sChat->funcState++;\n        }\n        break;\n    case 1:\n        if (!IsDisplaySubtaskActive(0))\n        {\n            if (sChat->multiplayerId)\n                StartDisplaySubtask(CHATDISPLAY_FUNC_PRINT_LEADER_LEFT, 0);\n\n            sChat->funcState++;\n        }\n        break;\n    case 2:\n        if (IsDisplaySubtaskActive(0) != TRUE && IsLinkTaskFinished() && !Rfu_IsPlayerExchangeActive())\n        {\n            SetCloseLinkCallback();\n            sChat->exitDelayTimer = 0;\n            sChat->funcState++;\n        }\n        break;\n    case 3:\n        if (sChat->exitDelayTimer < 150)\n            sChat->exitDelayTimer++;\n\n        if (!gReceivedRemoteLinkPlayers)\n            sChat->funcState++;\n        break;\n    case 4:\n        if (sChat->exitDelayTimer >= 150)\n            SetChatFunction(CHAT_FUNC_SAVE_AND_EXIT);\n        else\n            sChat->exitDelayTimer++;\n        break;\n    }",
+      "callsTo": [
+        "FuncIsActiveTask",
+        "IsDisplaySubtaskActive",
+        "IsLinkTaskFinished",
+        "Rfu_IsPlayerExchangeActive",
+        "SetChatFunction",
+        "SetCloseLinkCallback",
+        "StartDisplaySubtask"
+      ],
+      "lineCount": 42
+    },
+    "Chat_SendMessage": {
+      "returnType": "void",
+      "signature": "static void Chat_SendMessage(void)",
+      "paramsRaw": "void",
+      "body": "switch (sChat->funcState)\n    {\n    case 0:\n        if (!gReceivedRemoteLinkPlayers)\n        {\n            SetChatFunction(CHAT_FUNC_HANDLE_INPUT);\n            break;\n        }\n\n        PrepareSendBuffer_Chat(sChat->sendMessageBuffer);\n        sChat->funcState++;\n         \n    case 1:\n        if (IsLinkTaskFinished() == TRUE && !Rfu_IsPlayerExchangeActive() && SendBlock(0, sChat->sendMessageBuffer, sizeof(sChat->sendMessageBuffer)))\n            sChat->funcState++;\n        break;\n    case 2:\n        ResetMessageEntryBuffer();\n        StartDisplaySubtask(CHATDISPLAY_FUNC_UPDATE_MSG, 0);\n        sChat->funcState++;\n        break;\n    case 3:\n        if (!IsDisplaySubtaskActive(0))\n            sChat->funcState++;\n        break;\n    case 4:\n        if (IsLinkTaskFinished())\n            SetChatFunction(CHAT_FUNC_HANDLE_INPUT);\n        break;\n    }",
+      "callsTo": [
+        "IsDisplaySubtaskActive",
+        "IsLinkTaskFinished",
+        "PrepareSendBuffer_Chat",
+        "ResetMessageEntryBuffer",
+        "Rfu_IsPlayerExchangeActive",
+        "SendBlock",
+        "SetChatFunction",
+        "StartDisplaySubtask"
+      ],
+      "lineCount": 30
+    },
+    "Chat_Register": {
+      "returnType": "void",
+      "signature": "static void Chat_Register(void)",
+      "paramsRaw": "void",
+      "body": "switch (sChat->funcState)\n    {\n    case 0:\n        if (ChatMessageIsNotEmpty())\n        {\n            StartDisplaySubtask(CHATDISPLAY_FUNC_ASK_REGISTER_TEXT, 0);\n            sChat->funcState = 2;\n        }\n        else\n        {\n            StartDisplaySubtask(CHATDISPLAY_FUNC_PRINT_INPUT_TEXT, 0);\n            sChat->funcState = 5;\n        }\n        break;\n    case 1:\n        if (JOY_NEW(A_BUTTON))\n        {\n            RegisterTextAtRow();\n            StartDisplaySubtask(CHATDISPLAY_FUNC_RETURN_TO_KB, 0);\n            sChat->funcState = 3;\n        }\n        else if (JOY_NEW(B_BUTTON))\n        {\n            StartDisplaySubtask(CHATDISPLAY_FUNC_CANCEL_REGISTER, 0);\n            sChat->funcState = 4;\n        }\n        else if (HandleDPadInput())\n        {\n            StartDisplaySubtask(CHATDISPLAY_FUNC_MOVE_KB_CURSOR, 0);\n            sChat->funcState = 2;\n        }\n        break;\n    case 2:\n        if (!IsDisplaySubtaskActive(0))\n            sChat->funcState = 1;\n        break;\n    case 3:\n        if (!IsDisplaySubtaskActive(0))\n        {\n            StartDisplaySubtask(CHATDISPLAY_FUNC_CANCEL_REGISTER, 0);\n            sChat->funcState = 4;\n        }\n        break;\n    case 4:\n        if (!IsDisplaySubtaskActive(0))\n            SetChatFunction(CHAT_FUNC_HANDLE_INPUT);\n        break;\n    case 5:\n        if (!IsDisplaySubtaskActive(0))\n            sChat->funcState = 6;\n        break;\n    case 6:\n        if (JOY_NEW(A_BUTTON | B_BUTTON))\n        {\n            StartDisplaySubtask(CHATDISPLAY_FUNC_DESTROY_YESNO, 0);\n            sChat->funcState = 4;\n        }\n        break;\n    }",
+      "callsTo": [
+        "ChatMessageIsNotEmpty",
+        "HandleDPadInput",
+        "IsDisplaySubtaskActive",
+        "JOY_NEW",
+        "RegisterTextAtRow",
+        "SetChatFunction",
+        "StartDisplaySubtask"
+      ],
+      "lineCount": 59
+    },
+    "Chat_SaveAndExit": {
+      "returnType": "void",
+      "signature": "static void Chat_SaveAndExit(void)",
+      "paramsRaw": "void",
+      "body": "s8 input;\n\n    switch (sChat->funcState)\n    {\n    case 0:\n        if (!sChat->changedRegisteredTexts)\n        {\n            sChat->funcState = 12;\n        }\n        else\n        {\n            StartDisplaySubtask(CHATDISPLAY_FUNC_DESTROY_YESNO, 0);\n            sChat->funcState = 1;\n        }\n        break;\n    case 1:\n        if (!IsDisplaySubtaskActive(0))\n        {\n            StartDisplaySubtask(CHATDISPLAY_FUNC_ASK_SAVE, 0);\n            sChat->funcState = 2;\n        }\n        break;\n    case 2:\n        input = ProcessMenuInput();\n        switch (input)\n        {\n        case MENU_B_PRESSED:\n        case 1:\n            sChat->funcState = 12;\n            break;\n        case 0:\n            StartDisplaySubtask(CHATDISPLAY_FUNC_DESTROY_YESNO, 0);\n            sChat->funcState = 3;\n            break;\n        }\n        break;\n    case 3:\n        if (!IsDisplaySubtaskActive(0))\n        {\n            StartDisplaySubtask(CHATDISPLAY_FUNC_ASK_OVERWRITE_SAVE, 0);\n            sChat->funcState = 4;\n        }\n        break;\n    case 4:\n        if (!IsDisplaySubtaskActive(0))\n            sChat->funcState = 5;\n        break;\n    case 5:\n        input = ProcessMenuInput();\n        switch (input)\n        {\n        case MENU_B_PRESSED:\n        case 1:\n            sChat->funcState = 12;\n            break;\n        case 0:\n            StartDisplaySubtask(CHATDISPLAY_FUNC_DESTROY_YESNO, 0);\n            sChat->funcState = 6;\n            break;\n        }\n        break;\n    case 6:\n        if (!IsDisplaySubtaskActive(0))\n        {\n            StartDisplaySubtask(CHATDISPLAY_FUNC_PRINT_SAVING, 0);\n            SaveRegisteredTexts();\n            sChat->funcState = 7;\n        }\n        break;\n    case 7:\n        if (!IsDisplaySubtaskActive(0))\n        {\n            SetContinueGameWarpStatusToDynamicWarp();\n            TrySavingData(SAVE_NORMAL);\n            sChat->funcState = 8;\n        }\n        break;\n    case 8:\n        StartDisplaySubtask(CHATDISPLAY_FUNC_PRINT_SAVED_GAME, 0);\n        sChat->funcState = 9;\n        break;\n    case 9:\n        if (!IsDisplaySubtaskActive(0))\n        {\n            PlaySE(SE_SAVE);\n            ClearContinueGameWarpStatus2();\n            sChat->funcState = 10;\n        }\n        break;\n    case 10:\n        sChat->afterSaveTimer = 0;\n        sChat->funcState = 11;\n        break;\n    case 11:\n        sChat->afterSaveTimer++;\n        if (sChat->afterSaveTimer > 120)\n            sChat->funcState = 12;\n        break;\n    case 12:\n        BeginNormalPaletteFade(PALETTES_ALL, -1, 0, 16, RGB_BLACK);\n        sChat->funcState = 13;\n        break;\n    case 13:\n        if (!gPaletteFade.active)\n        {\n            FreeDisplay();\n            FreeUnionRoomChat();\n            SetMainCallback2(CB2_ReturnToField);\n        }\n        break;\n    }",
+      "callsTo": [
+        "BeginNormalPaletteFade",
+        "ClearContinueGameWarpStatus2",
+        "FreeDisplay",
+        "FreeUnionRoomChat",
+        "IsDisplaySubtaskActive",
+        "PlaySE",
+        "ProcessMenuInput",
+        "SaveRegisteredTexts",
+        "SetContinueGameWarpStatusToDynamicWarp",
+        "SetMainCallback2",
+        "StartDisplaySubtask",
+        "TrySavingData"
+      ],
+      "lineCount": 111
+    },
+    "SetChatFunction": {
+      "returnType": "void",
+      "signature": "static void SetChatFunction(u16 funcId)",
+      "paramsRaw": "u16 funcId",
+      "body": "sChat->funcId = funcId;\n    sChat->funcState = 0;",
+      "callsTo": [],
+      "lineCount": 2
+    },
+    "HandleDPadInput": {
+      "returnType": "bool32",
+      "signature": "static bool32 HandleDPadInput(void)",
+      "paramsRaw": "void",
+      "body": "do\n    {\n        if (JOY_REPEAT(DPAD_UP))\n        {\n            if (sChat->currentRow > 0)\n                sChat->currentRow--;\n            else\n                sChat->currentRow = sKeyboardPageMaxRow[sChat->currentPage];\n            break;\n        }\n        if (JOY_REPEAT(DPAD_DOWN))\n        {\n            if (sChat->currentRow < sKeyboardPageMaxRow[sChat->currentPage])\n                sChat->currentRow++;\n            else\n                sChat->currentRow = 0;\n            break;\n        }\n        if (sChat->currentPage != UNION_ROOM_KB_PAGE_REGISTER)\n        {\n            if (JOY_REPEAT(DPAD_LEFT))\n            {\n                if (sChat->currentCol > 0)\n                    sChat->currentCol--;\n                else\n                    sChat->currentCol = 4;\n                break;\n            }\n            else if (JOY_REPEAT(DPAD_RIGHT))\n            {\n                if (sChat->currentCol < 4)\n                    sChat->currentCol++;\n                else\n                    sChat->currentCol = 0;\n                break;\n            }\n        }\n        return FALSE;\n    } while (0);\n\n    return TRUE;",
+      "callsTo": [
+        "JOY_REPEAT"
+      ],
+      "lineCount": 41
+    },
+    "AppendTextToMessage": {
+      "returnType": "void",
+      "signature": "static void AppendTextToMessage(void)",
+      "paramsRaw": "void",
+      "body": "int i;\n    const u8 *charsStr;\n    int strLength;\n    u8 *str;\n    u8 buffer[21];\n\n    if (sChat->currentPage != UNION_ROOM_KB_PAGE_REGISTER)\n    {\n         \n        charsStr = sUnionRoomKeyboardText[sChat->currentPage][sChat->currentRow];\n        for (i = 0; i < sChat->currentCol; i++)\n        {\n            if (*charsStr == CHAR_EXTRA_SYMBOL)\n                charsStr++;\n            charsStr++;\n        }\n\n        strLength = 1;\n    }\n    else\n    {\n         \n        u8 *tempStr = StringCopy(buffer, sChat->registeredTexts[sChat->currentRow]);\n        tempStr[0] = CHAR_SPACE;\n        tempStr[1] = EOS;\n        charsStr = buffer;\n        strLength = StringLength_Multibyte(buffer);\n    }\n\n    sChat->lastBufferCursorPos = sChat->bufferCursorPos;\n    if (!charsStr)\n        return;\n\n    str = GetEndOfMessagePtr();\n    while (--strLength != -1 && sChat->bufferCursorPos < MAX_MESSAGE_LENGTH)\n    {\n        if (*charsStr == CHAR_EXTRA_SYMBOL)\n        {\n            *str = *charsStr;\n            charsStr++;\n            str++;\n        }\n\n        *str = *charsStr;\n        charsStr++;\n        str++;\n\n        sChat->bufferCursorPos++;\n    }\n\n    *str = EOS;",
+      "callsTo": [
+        "GetEndOfMessagePtr",
+        "StringCopy",
+        "StringLength_Multibyte"
+      ],
+      "lineCount": 51
+    },
+    "DeleteLastMessageCharacter": {
+      "returnType": "void",
+      "signature": "static void DeleteLastMessageCharacter(void)",
+      "paramsRaw": "void",
+      "body": "sChat->lastBufferCursorPos = sChat->bufferCursorPos;\n    if (sChat->bufferCursorPos)\n    {\n        u8 *str = GetLastCharOfMessagePtr();\n        *str = EOS;\n        sChat->bufferCursorPos--;\n    }",
+      "callsTo": [
+        "GetLastCharOfMessagePtr"
+      ],
+      "lineCount": 7
+    },
+    "SwitchCaseOfLastMessageCharacter": {
+      "returnType": "void",
+      "signature": "static void SwitchCaseOfLastMessageCharacter(void)",
+      "paramsRaw": "void",
+      "body": "u8 *str;\n    u8 character;\n\n    sChat->lastBufferCursorPos = sChat->bufferCursorPos - 1;\n    str = GetLastCharOfMessagePtr();\n    if (*str != CHAR_EXTRA_SYMBOL)\n    {\n        character = sCaseToggleTable[*str];\n        if (character)\n            *str = character;\n    }",
+      "callsTo": [
+        "GetLastCharOfMessagePtr"
+      ],
+      "lineCount": 11
+    },
+    "ChatMessageIsNotEmpty": {
+      "returnType": "bool32",
+      "signature": "static bool32 ChatMessageIsNotEmpty(void)",
+      "paramsRaw": "void",
+      "body": "if (sChat->bufferCursorPos)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "lineCount": 4
+    },
+    "RegisterTextAtRow": {
+      "returnType": "void",
+      "signature": "static void RegisterTextAtRow(void)",
+      "paramsRaw": "void",
+      "body": "u8 *src = GetLimitedMessageStartPtr();\n    StringCopy(sChat->registeredTexts[sChat->currentRow], src);\n    sChat->changedRegisteredTexts = TRUE;",
+      "callsTo": [
+        "GetLimitedMessageStartPtr",
+        "StringCopy"
+      ],
+      "lineCount": 3
+    },
+    "ResetMessageEntryBuffer": {
+      "returnType": "void",
+      "signature": "static void ResetMessageEntryBuffer(void)",
+      "paramsRaw": "void",
+      "body": "sChat->messageEntryBuffer[0] = EOS;\n    sChat->lastBufferCursorPos = MAX_MESSAGE_LENGTH;\n    sChat->bufferCursorPos = 0;",
+      "callsTo": [],
+      "lineCount": 3
+    },
+    "SaveRegisteredTexts": {
+      "returnType": "void",
+      "signature": "static void SaveRegisteredTexts(void)",
+      "paramsRaw": "void",
+      "body": "int i;\n    for (i = 0; i < UNION_ROOM_KB_ROW_COUNT; i++)\n        StringCopy(gSaveBlock1Ptr->registeredTexts[i], sChat->registeredTexts[i]);",
+      "callsTo": [
+        "StringCopy"
+      ],
+      "lineCount": 3
+    },
+    "GetNumOverflowCharsInMessage": {
+      "returnType": "u16",
+      "signature": "static u16 GetNumOverflowCharsInMessage(void)",
+      "paramsRaw": "void",
+      "body": "u8 *str;\n    u32 i, numChars, strLength;\n\n    strLength = StringLength_Multibyte(sChat->messageEntryBuffer);\n    str = sChat->messageEntryBuffer;\n    numChars = 0;\n    if (strLength > 10)\n    {\n        strLength -= 10;\n        for (i = 0; i < strLength; i++)\n        {\n            if (*str == CHAR_EXTRA_SYMBOL)\n                str++;\n\n            str++;\n            numChars++;\n        }\n    }\n\n    return numChars;",
+      "callsTo": [
+        "StringLength_Multibyte"
+      ],
+      "lineCount": 20
+    },
+    "PrepareSendBuffer_Null": {
+      "returnType": "void",
+      "signature": "static void PrepareSendBuffer_Null(u8 *buffer)",
+      "paramsRaw": "u8 *buffer",
+      "body": "buffer[0] = CHAT_MESSAGE_NONE;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "PrepareSendBuffer_Join": {
+      "returnType": "void",
+      "signature": "static void PrepareSendBuffer_Join(u8 *buffer)",
+      "paramsRaw": "u8 *buffer",
+      "body": "buffer[0] = CHAT_MESSAGE_JOIN;\n    StringCopy(&buffer[1], gSaveBlock2Ptr->playerName);\n    buffer[1 + (PLAYER_NAME_LENGTH + 1)] = sChat->multiplayerId;",
+      "callsTo": [
+        "StringCopy"
+      ],
+      "lineCount": 3
+    },
+    "PrepareSendBuffer_Chat": {
+      "returnType": "void",
+      "signature": "static void PrepareSendBuffer_Chat(u8 *buffer)",
+      "paramsRaw": "u8 *buffer",
+      "body": "buffer[0] = CHAT_MESSAGE_CHAT;\n    StringCopy(&buffer[1], gSaveBlock2Ptr->playerName);\n    StringCopy(&buffer[1 + (PLAYER_NAME_LENGTH + 1)], sChat->messageEntryBuffer);",
+      "callsTo": [
+        "StringCopy"
+      ],
+      "lineCount": 3
+    },
+    "PrepareSendBuffer_Leave": {
+      "returnType": "void",
+      "signature": "static void PrepareSendBuffer_Leave(u8 *buffer)",
+      "paramsRaw": "u8 *buffer",
+      "body": "buffer[0] = CHAT_MESSAGE_LEAVE;\n    StringCopy(&buffer[1], gSaveBlock2Ptr->playerName);\n    buffer[1 + (PLAYER_NAME_LENGTH + 1)] = sChat->multiplayerId;\n    RfuSetNormalDisconnectMode();",
+      "callsTo": [
+        "RfuSetNormalDisconnectMode",
+        "StringCopy"
+      ],
+      "lineCount": 4
+    },
+    "PrepareSendBuffer_Drop": {
+      "returnType": "void",
+      "signature": "static void PrepareSendBuffer_Drop(u8 *buffer)",
+      "paramsRaw": "u8 *buffer",
+      "body": "buffer[0] = CHAT_MESSAGE_DROP;\n    StringCopy(&buffer[1], gSaveBlock2Ptr->playerName);\n    buffer[1 + (PLAYER_NAME_LENGTH + 1)] = sChat->multiplayerId;",
+      "callsTo": [
+        "StringCopy"
+      ],
+      "lineCount": 3
+    },
+    "PrepareSendBuffer_Disband": {
+      "returnType": "void",
+      "signature": "static void PrepareSendBuffer_Disband(u8 *buffer)",
+      "paramsRaw": "u8 *buffer",
+      "body": "buffer[0] = CHAT_MESSAGE_DISBAND;\n    StringCopy(&buffer[1], gSaveBlock2Ptr->playerName);\n    buffer[1 + (PLAYER_NAME_LENGTH + 1)] = sChat->multiplayerId;",
+      "callsTo": [
+        "StringCopy"
+      ],
+      "lineCount": 3
+    },
+    "ProcessReceivedChatMessage": {
+      "returnType": "bool32",
+      "signature": "static bool32 ProcessReceivedChatMessage(u8 *dest, u8 *recvMessage)",
+      "paramsRaw": "u8 *dest, u8 *recvMessage",
+      "body": "u8 *tempStr;\n    u8 cmd = *recvMessage;\n    u8 *name = recvMessage + 1;\n    recvMessage = name;\n    recvMessage += PLAYER_NAME_LENGTH + 1;\n\n    switch (cmd)\n    {\n    case CHAT_MESSAGE_JOIN:\n        if (sChat->multiplayerId != name[PLAYER_NAME_LENGTH + 1])\n        {\n            DynamicPlaceholderTextUtil_Reset();\n            DynamicPlaceholderTextUtil_SetPlaceholderPtr(0, name);\n            DynamicPlaceholderTextUtil_ExpandPlaceholders(dest, gText_F700JoinedChat);\n            return TRUE;\n        }\n        break;\n    case CHAT_MESSAGE_CHAT:\n        tempStr = StringCopy(dest, name);\n        *(tempStr++) = EXT_CTRL_CODE_BEGIN;\n        *(tempStr++) = EXT_CTRL_CODE_CLEAR_TO;\n        *(tempStr++) = 42;\n        *(tempStr++) = CHAR_COLON;\n        StringCopy(tempStr, recvMessage);\n        return TRUE;\n    case CHAT_MESSAGE_DISBAND:\n        StringCopy(sChat->hostName, name);\n         \n    case CHAT_MESSAGE_LEAVE:\n        if (sChat->multiplayerId != *recvMessage)\n        {\n            DynamicPlaceholderTextUtil_Reset();\n            DynamicPlaceholderTextUtil_SetPlaceholderPtr(0, name);\n            DynamicPlaceholderTextUtil_ExpandPlaceholders(dest, gText_F700LeftChat);\n            return TRUE;\n        }\n        break;\n    }\n\n    return FALSE;",
+      "callsTo": [
+        "DynamicPlaceholderTextUtil_ExpandPlaceholders",
+        "DynamicPlaceholderTextUtil_Reset",
+        "DynamicPlaceholderTextUtil_SetPlaceholderPtr",
+        "StringCopy"
+      ],
+      "lineCount": 40
+    },
+    "GetCurrentKeyboardPage": {
+      "returnType": "u8",
+      "signature": "static u8 GetCurrentKeyboardPage(void)",
+      "paramsRaw": "void",
+      "body": "return sChat->currentPage;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "GetCurrentKeyboardColAndRow": {
+      "returnType": "void",
+      "signature": "static void GetCurrentKeyboardColAndRow(u8 *col, u8 *row)",
+      "paramsRaw": "u8 *col, u8 *row",
+      "body": "*col = sChat->currentCol;\n    *row = sChat->currentRow;",
+      "callsTo": [],
+      "lineCount": 2
+    },
+    "GetLengthOfMessageEntry": {
+      "returnType": "int",
+      "signature": "static int GetLengthOfMessageEntry(void)",
+      "paramsRaw": "void",
+      "body": "u8 *str = GetMessageEntryBuffer();\n    return StringLength_Multibyte(str);",
+      "callsTo": [
+        "GetMessageEntryBuffer",
+        "StringLength_Multibyte"
+      ],
+      "lineCount": 2
+    },
+    "GetBufferSelectionRegion": {
+      "returnType": "void",
+      "signature": "static void GetBufferSelectionRegion(u32 *x, u32 *width)",
+      "paramsRaw": "u32 *x, u32 *width",
+      "body": "int diff = sChat->bufferCursorPos - sChat->lastBufferCursorPos;\n    if (diff < 0)\n    {\n        diff *= -1;\n        *x = sChat->bufferCursorPos;\n    }\n    else\n    {\n        *x = sChat->lastBufferCursorPos;\n    }\n\n    *width = diff;",
+      "callsTo": [],
+      "lineCount": 12
+    },
+    "GetLimitedMessageStartPos": {
+      "returnType": "u16",
+      "signature": "static u16 GetLimitedMessageStartPos(void)",
+      "paramsRaw": "void",
+      "body": "u16 count;\n    u32 i;\n    u16 numChars = GetNumOverflowCharsInMessage();\n    u8 *str = sChat->messageEntryBuffer;\n    for (count = 0, i = 0; i < numChars; count++, i++)\n    {\n        if (*str == CHAR_EXTRA_SYMBOL)\n            str++;\n\n        str++;\n    }\n\n    return count;",
+      "callsTo": [
+        "GetNumOverflowCharsInMessage"
+      ],
+      "lineCount": 13
+    },
+    "GetReceivedPlayerIndex": {
+      "returnType": "u8",
+      "signature": "static u8 GetReceivedPlayerIndex(void)",
+      "paramsRaw": "void",
+      "body": "return sChat->receivedPlayerIndex;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "GetTextEntryCursorPosition": {
+      "returnType": "int",
+      "signature": "static int GetTextEntryCursorPosition(void)",
+      "paramsRaw": "void",
+      "body": "return sChat->bufferCursorPos;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "GetShouldShowCaseToggleIcon": {
+      "returnType": "int",
+      "signature": "static int GetShouldShowCaseToggleIcon(void)",
+      "paramsRaw": "void",
+      "body": "u8 *str = GetLastCharOfMessagePtr();\n    u32 character = *str;\n    if (character > EOS || sCaseToggleTable[character] == character || sCaseToggleTable[character] == CHAR_SPACE)\n        return 3;  \n    else\n        return 0;",
+      "callsTo": [
+        "GetLastCharOfMessagePtr"
+      ],
+      "lineCount": 6
+    },
+    "InitUnionRoomChatRegisteredTexts": {
+      "returnType": "void",
+      "signature": "void InitUnionRoomChatRegisteredTexts(void)",
+      "paramsRaw": "void",
+      "body": "StringCopy(gSaveBlock1Ptr->registeredTexts[0], gText_Hello);\n    StringCopy(gSaveBlock1Ptr->registeredTexts[1], gText_Pokemon2);\n    StringCopy(gSaveBlock1Ptr->registeredTexts[2], gText_Trade);\n    StringCopy(gSaveBlock1Ptr->registeredTexts[3], gText_Battle);\n    StringCopy(gSaveBlock1Ptr->registeredTexts[4], gText_Lets);\n    StringCopy(gSaveBlock1Ptr->registeredTexts[5], gText_Ok);\n    StringCopy(gSaveBlock1Ptr->registeredTexts[6], gText_Sorry);\n    StringCopy(gSaveBlock1Ptr->registeredTexts[7], gText_YaySmileEmoji);\n    StringCopy(gSaveBlock1Ptr->registeredTexts[8], gText_ThankYou);\n    StringCopy(gSaveBlock1Ptr->registeredTexts[9], gText_ByeBye);",
+      "callsTo": [
+        "StringCopy"
+      ],
+      "lineCount": 10
+    },
+    "Task_ReceiveChatMessage": {
+      "returnType": "void",
+      "signature": "static void Task_ReceiveChatMessage(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "u8 *buffer;\n    s16 *data = gTasks[taskId].data;\n\n    switch (tState)\n    {\n    case 0:\n        if (!gReceivedRemoteLinkPlayers)\n        {\n            DestroyTask(taskId);\n            return;\n        }\n\n        tState = 1;\n         \n    case 1:\n        tLinkPlayerCount = GetLinkPlayerCount();\n        if (sChat->linkPlayerCount != tLinkPlayerCount)\n        {\n            tState = 2;\n            sChat->linkPlayerCount = tLinkPlayerCount;\n            return;\n        }\n\n        tBlockReceivedStatus = GetBlockReceivedStatus();\n        if (!tBlockReceivedStatus && Rfu_IsPlayerExchangeActive())\n            return;\n\n        tI = 0;\n        tState = 3;\n         \n    case 3:\n        for (; tI < MAX_RFU_PLAYERS && ((tBlockReceivedStatus >> tI) & 1) == 0; tI++)\n            ;\n\n        if (tI == MAX_RFU_PLAYERS)\n        {\n            tState = 1;\n            return;\n        }\n\n        tCurrLinkPlayer = tI;\n        ResetBlockReceivedFlag(tCurrLinkPlayer);\n        buffer = (u8 *)gBlockRecvBuffer[tI];\n        switch (buffer[0])\n        {\n            default:\n            case CHAT_MESSAGE_CHAT:    tNextState = 3; break;\n            case CHAT_MESSAGE_JOIN:    tNextState = 3; break;\n            case CHAT_MESSAGE_LEAVE:   tNextState = 4; break;\n            case CHAT_MESSAGE_DROP:    tNextState = 5; break;\n            case CHAT_MESSAGE_DISBAND: tNextState = 6; break;\n        }\n\n        if (ProcessReceivedChatMessage(sChat->receivedMessage, (u8 *)gBlockRecvBuffer[tI]))\n        {\n            sChat->receivedPlayerIndex = tI;\n            StartDisplaySubtask(CHATDISPLAY_FUNC_SCROLL_CHAT, 2);\n            tState = 7;\n        }\n        else\n        {\n            tState = tNextState;\n        }\n\n        tI++;\n        break;\n    case 7:\n        if (!IsDisplaySubtaskActive(2))\n            tState = tNextState;\n        break;\n    case 4:\n        if (!sChat->multiplayerId && tCurrLinkPlayer)\n        {\n            if (GetLinkPlayerCount() == 2)\n            {\n                Rfu_StopPartnerSearch();\n                sChat->exitType = CHAT_EXIT_ONLY_LEADER;\n                DestroyTask(taskId);\n                return;\n            }\n            Rfu_DisconnectPlayerById(tCurrLinkPlayer);\n        }\n\n        tState = 3;\n        break;\n    case 5:\n        if (sChat->multiplayerId)\n            sChat->exitType = CHAT_EXIT_DROPPED;\n\n        DestroyTask(taskId);\n        break;\n    case 6:\n        sChat->exitType = CHAT_EXIT_DISBANDED;\n        DestroyTask(taskId);\n        break;\n    case 2:\n        if (!Rfu_IsPlayerExchangeActive())\n        {\n            if (!sChat->multiplayerId)\n                SetUnionRoomChatPlayerData(sChat->linkPlayerCount);\n\n            tState = 1;\n        }\n        break;\n    }",
+      "callsTo": [
+        "DestroyTask",
+        "GetBlockReceivedStatus",
+        "GetLinkPlayerCount",
+        "IsDisplaySubtaskActive",
+        "ProcessReceivedChatMessage",
+        "ResetBlockReceivedFlag",
+        "Rfu_DisconnectPlayerById",
+        "Rfu_IsPlayerExchangeActive",
+        "Rfu_StopPartnerSearch",
+        "SetUnionRoomChatPlayerData",
+        "StartDisplaySubtask"
+      ],
+      "lineCount": 105
+    },
+    "TryAllocDisplay": {
+      "returnType": "bool8",
+      "signature": "static bool8 TryAllocDisplay(void)",
+      "paramsRaw": "void",
+      "body": "sDisplay = Alloc(sizeof(*sDisplay));\n    if (sDisplay && TryAllocSprites())\n    {\n        ResetBgsAndClearDma3BusyFlags(0);\n        InitBgsFromTemplates(0, sBgTemplates, ARRAY_COUNT(sBgTemplates));\n        InitWindows(sWinTemplates);\n        ResetTempTileDataBuffers();\n        InitScanlineEffect();\n        InitDisplay(sDisplay);\n        ResetDisplaySubtasks();\n        StartDisplaySubtask(CHATDISPLAY_FUNC_LOAD_GFX, 0);\n        return TRUE;\n    }\n    else\n    {\n        return FALSE;\n    }",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "Alloc",
+        "InitBgsFromTemplates",
+        "InitDisplay",
+        "InitScanlineEffect",
+        "InitWindows",
+        "ResetBgsAndClearDma3BusyFlags",
+        "ResetDisplaySubtasks",
+        "ResetTempTileDataBuffers",
+        "StartDisplaySubtask",
+        "TryAllocSprites"
+      ],
+      "lineCount": 17
+    },
+    "IsDisplaySubtask0Active": {
+      "returnType": "bool32",
+      "signature": "static bool32 IsDisplaySubtask0Active(void)",
+      "paramsRaw": "void",
+      "body": "return IsDisplaySubtaskActive(0);",
+      "callsTo": [
+        "IsDisplaySubtaskActive"
+      ],
+      "lineCount": 1
+    },
+    "FreeDisplay": {
+      "returnType": "void",
+      "signature": "static void FreeDisplay(void)",
+      "paramsRaw": "void",
+      "body": "FreeSprites();\n    TRY_FREE_AND_SET_NULL(sDisplay);\n\n    FreeAllWindowBuffers();\n    gScanlineEffect.state = 3;",
+      "callsTo": [
+        "FreeAllWindowBuffers",
+        "FreeSprites",
+        "TRY_FREE_AND_SET_NULL"
+      ],
+      "lineCount": 5
+    },
+    "InitDisplay": {
+      "returnType": "void",
+      "signature": "static void InitDisplay(struct UnionRoomChatDisplay *display)",
+      "paramsRaw": "struct UnionRoomChatDisplay *display",
+      "body": "display->yesNoMenuWindowId = WINDOW_NONE;\n    display->messageWindowId = WINDOW_NONE;\n    display->currLine = 0;",
+      "callsTo": [],
+      "lineCount": 3
+    },
+    "ResetDisplaySubtasks": {
+      "returnType": "void",
+      "signature": "static void ResetDisplaySubtasks(void)",
+      "paramsRaw": "void",
+      "body": "int i;\n\n    if (!sDisplay)\n        return;\n\n    for (i = 0; i < (int)ARRAY_COUNT(sDisplay->subtasks); i++)\n    {\n        sDisplay->subtasks[i].callback = Display_Dummy;\n        sDisplay->subtasks[i].active = FALSE;\n        sDisplay->subtasks[i].state = 0;\n    }",
+      "callsTo": [
+        "ARRAY_COUNT"
+      ],
+      "lineCount": 11
+    },
+    "RunDisplaySubtasks": {
+      "returnType": "void",
+      "signature": "static void RunDisplaySubtasks(void)",
+      "paramsRaw": "void",
+      "body": "int i;\n\n    if (!sDisplay)\n        return;\n\n    for (i = 0; i < (int)ARRAY_COUNT(sDisplay->subtasks); i++)\n    {\n        sDisplay->subtasks[i].active =\n            sDisplay->subtasks[i].callback(&sDisplay->subtasks[i].state);\n    }",
+      "callsTo": [
+        "ARRAY_COUNT"
+      ],
+      "lineCount": 10
+    },
+    "StartDisplaySubtask": {
+      "returnType": "void",
+      "signature": "static void StartDisplaySubtask(u16 subtaskId, u8 assignId)",
+      "paramsRaw": "u16 subtaskId, u8 assignId",
+      "body": "u32 i;\n\n    sDisplay->subtasks[assignId].callback = Display_Dummy;\n    for (i = 0; i < ARRAY_COUNT(sDisplaySubtasks); i++)\n    {\n        if (sDisplaySubtasks[i].idx == subtaskId)\n        {\n            sDisplay->subtasks[assignId].callback = sDisplaySubtasks[i].callback;\n            sDisplay->subtasks[assignId].active = TRUE;\n            sDisplay->subtasks[assignId].state = 0;\n            break;\n        }\n    }",
+      "callsTo": [
+        "ARRAY_COUNT"
+      ],
+      "lineCount": 13
+    },
+    "IsDisplaySubtaskActive": {
+      "returnType": "bool8",
+      "signature": "static bool8 IsDisplaySubtaskActive(u8 id)",
+      "paramsRaw": "u8 id",
+      "body": "return sDisplay->subtasks[id].active;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "Display_LoadGfx": {
+      "returnType": "bool32",
+      "signature": "static bool32 Display_LoadGfx(u8 *state)",
+      "paramsRaw": "u8 *state",
+      "body": "if (FreeTempTileDataBuffersIfPossible() == TRUE)\n        return TRUE;\n\n    switch (*state)\n    {\n    case 0:\n        ResetGpuBgState();\n        SetBgTilemapBuffers();\n        break;\n    case 1:\n        ClearBg0();\n        break;\n    case 2:\n        LoadKeyboardWindowGfx();\n        break;\n    case 3:\n        LoadChatWindowGfx();\n        break;\n    case 4:\n        LoadChatUnkPalette();\n        break;\n    case 5:\n        LoadChatMessagesWindow();\n        DrawKeyboardWindow();\n        LoadKeyboardSwapWindow();\n        LoadTextEntryWindow();\n        break;\n    case 6:\n        if (!IsDma3ManagerBusyWithBgCopy())\n        {\n            CreateKeyboardCursorSprite();\n            CreateTextEntrySprites();\n            CreateRButtonSprites();\n        }\n        break;\n    default:\n        return FALSE;\n    }\n\n    (*state)++;\n    return TRUE;",
+      "callsTo": [
+        "ClearBg0",
+        "CreateKeyboardCursorSprite",
+        "CreateRButtonSprites",
+        "CreateTextEntrySprites",
+        "DrawKeyboardWindow",
+        "FreeTempTileDataBuffersIfPossible",
+        "IsDma3ManagerBusyWithBgCopy",
+        "LoadChatMessagesWindow",
+        "LoadChatUnkPalette",
+        "LoadChatWindowGfx",
+        "LoadKeyboardSwapWindow",
+        "LoadKeyboardWindowGfx",
+        "LoadTextEntryWindow",
+        "ResetGpuBgState",
+        "SetBgTilemapBuffers"
+      ],
+      "lineCount": 41
+    },
+    "Display_ShowKeyboardSwapMenu": {
+      "returnType": "bool32",
+      "signature": "static bool32 Display_ShowKeyboardSwapMenu(u8 *state)",
+      "paramsRaw": "u8 *state",
+      "body": "switch (*state)\n    {\n    case 0:\n        ShowKeyboardSwapMenu();\n        CopyWindowToVram(WIN_SWAP_MENU, COPYWIN_FULL);\n        break;\n    case 1:\n        return IsDma3ManagerBusyWithBgCopy();\n    }\n\n    (*state)++;\n    return TRUE;",
+      "callsTo": [
+        "CopyWindowToVram",
+        "IsDma3ManagerBusyWithBgCopy",
+        "ShowKeyboardSwapMenu"
+      ],
+      "lineCount": 12
+    },
+    "Display_HideKeyboardSwapMenu": {
+      "returnType": "bool32",
+      "signature": "static bool32 Display_HideKeyboardSwapMenu(u8 *state)",
+      "paramsRaw": "u8 *state",
+      "body": "switch (*state)\n    {\n    case 0:\n        HideKeyboardSwapMenu();\n        CopyWindowToVram(WIN_SWAP_MENU, COPYWIN_FULL);\n        break;\n    case 1:\n        return IsDma3ManagerBusyWithBgCopy();\n    }\n\n    (*state)++;\n    return TRUE;",
+      "callsTo": [
+        "CopyWindowToVram",
+        "HideKeyboardSwapMenu",
+        "IsDma3ManagerBusyWithBgCopy"
+      ],
+      "lineCount": 12
+    },
+    "Display_SwitchPages": {
+      "returnType": "bool32",
+      "signature": "static bool32 Display_SwitchPages(u8 *state)",
+      "paramsRaw": "u8 *state",
+      "body": "switch (*state)\n    {\n    case 0:\n        SetKeyboardCursorInvisibility(TRUE);\n        if (SlideKeyboardPageOut())\n            return TRUE;\n\n        PrintCurrentKeyboardPage();\n        CopyWindowToVram(WIN_KEYBOARD, COPYWIN_GFX);\n        break;\n    case 1:\n        if (IsDma3ManagerBusyWithBgCopy())\n            return TRUE;\n        break;\n    case 2:\n        if (SlideKeyboardPageIn())\n            return TRUE;\n\n        MoveKeyboardCursor();\n        SetKeyboardCursorInvisibility(FALSE);\n        UpdateRButtonLabel();\n        return FALSE;\n    }\n\n    (*state)++;\n    return TRUE;",
+      "callsTo": [
+        "CopyWindowToVram",
+        "IsDma3ManagerBusyWithBgCopy",
+        "MoveKeyboardCursor",
+        "PrintCurrentKeyboardPage",
+        "SetKeyboardCursorInvisibility",
+        "SlideKeyboardPageIn",
+        "SlideKeyboardPageOut",
+        "UpdateRButtonLabel"
+      ],
+      "lineCount": 26
+    },
+    "Display_MoveKeyboardCursor": {
+      "returnType": "bool32",
+      "signature": "static bool32 Display_MoveKeyboardCursor(u8 *state)",
+      "paramsRaw": "u8 *state",
+      "body": "MoveKeyboardCursor();\n    return FALSE;",
+      "callsTo": [
+        "MoveKeyboardCursor"
+      ],
+      "lineCount": 2
+    },
+    "Display_AskQuitChatting": {
+      "returnType": "bool32",
+      "signature": "static bool32 Display_AskQuitChatting(u8 *state)",
+      "paramsRaw": "u8 *state",
+      "body": "switch (*state)\n    {\n    case 0:\n        AddStdMessageWindow(STDMESSAGE_QUIT_CHATTING, 0);\n        AddYesNoMenuAt(23, 11, 1);\n        CopyWindowToVram(sDisplay->messageWindowId, COPYWIN_FULL);\n        break;\n    case 1:\n        return IsDma3ManagerBusyWithBgCopy();\n    }\n\n    (*state)++;\n    return TRUE;",
+      "callsTo": [
+        "AddStdMessageWindow",
+        "AddYesNoMenuAt",
+        "CopyWindowToVram",
+        "IsDma3ManagerBusyWithBgCopy"
+      ],
+      "lineCount": 13
+    },
+    "Display_DestroyYesNoDialog": {
+      "returnType": "bool32",
+      "signature": "static bool32 Display_DestroyYesNoDialog(u8 *state)",
+      "paramsRaw": "u8 *state",
+      "body": "switch (*state)\n    {\n    case 0:\n        HideStdMessageWindow();\n        HideYesNoMenuWindow();\n        CopyBgTilemapBufferToVram(0);\n        break;\n    case 1:\n        if (IsDma3ManagerBusyWithBgCopy())\n            return TRUE;\n\n        DestroyStdMessageWindow();\n        DestroyYesNoMenuWindow();\n        return FALSE;\n    }\n\n    (*state)++;\n    return TRUE;",
+      "callsTo": [
+        "CopyBgTilemapBufferToVram",
+        "DestroyStdMessageWindow",
+        "DestroyYesNoMenuWindow",
+        "HideStdMessageWindow",
+        "HideYesNoMenuWindow",
+        "IsDma3ManagerBusyWithBgCopy"
+      ],
+      "lineCount": 18
+    },
+    "Display_UpdateMessageBuffer": {
+      "returnType": "bool32",
+      "signature": "static bool32 Display_UpdateMessageBuffer(u8 *state)",
+      "paramsRaw": "u8 *state",
+      "body": "u32 x, width;\n    u8 *str;\n\n    switch (*state)\n    {\n    case 0:\n        GetBufferSelectionRegion(&x, &width);\n        FillTextEntryWindow(x, width, 0);\n        str = GetMessageEntryBuffer();\n        DrawTextEntryMessage(0, str, 3, 1, 2);\n        CopyWindowToVram(WIN_TEXT_ENTRY, COPYWIN_GFX);\n        break;\n    case 1:\n        if (!IsDma3ManagerBusyWithBgCopy())\n        {\n            UpdateRButtonLabel();\n            return FALSE;\n        }\n        return TRUE;\n    }\n\n    (*state)++;\n    return TRUE;",
+      "callsTo": [
+        "CopyWindowToVram",
+        "DrawTextEntryMessage",
+        "FillTextEntryWindow",
+        "GetBufferSelectionRegion",
+        "GetMessageEntryBuffer",
+        "IsDma3ManagerBusyWithBgCopy",
+        "UpdateRButtonLabel"
+      ],
+      "lineCount": 23
+    },
+    "Display_AskRegisterText": {
+      "returnType": "bool32",
+      "signature": "static bool32 Display_AskRegisterText(u8 *state)",
+      "paramsRaw": "u8 *state",
+      "body": "u16 x;\n    u8 *str;\n    u16 length;\n\n    switch (*state)\n    {\n    case 0:\n        x = GetLimitedMessageStartPos();\n        str = GetLimitedMessageStartPtr();\n        length = StringLength_Multibyte(str);\n        FillTextEntryWindow(x, length, PIXEL_FILL(6));\n        DrawTextEntryMessage(x, str, 0, 4, 5);\n        CopyWindowToVram(WIN_TEXT_ENTRY, COPYWIN_GFX);\n        break;\n    case 1:\n        if (!IsDma3ManagerBusyWithBgCopy())\n        {\n            AddStdMessageWindow(STDMESSAGE_REGISTER_WHERE, 16);\n            CopyWindowToVram(sDisplay->messageWindowId, COPYWIN_FULL);\n        }\n        else\n        {\n            return TRUE;\n        }\n        break;\n    case 2:\n        if (!IsDma3ManagerBusyWithBgCopy())\n            SetRegisteredTextPalette(TRUE);\n        else\n            return TRUE;\n        break;\n    case 3:\n        return FALSE;\n    }\n\n    (*state)++;\n    return TRUE;",
+      "callsTo": [
+        "AddStdMessageWindow",
+        "CopyWindowToVram",
+        "DrawTextEntryMessage",
+        "FillTextEntryWindow",
+        "GetLimitedMessageStartPos",
+        "GetLimitedMessageStartPtr",
+        "IsDma3ManagerBusyWithBgCopy",
+        "PIXEL_FILL",
+        "SetRegisteredTextPalette",
+        "StringLength_Multibyte"
+      ],
+      "lineCount": 37
+    },
+    "Display_CancelRegister": {
+      "returnType": "bool32",
+      "signature": "static bool32 Display_CancelRegister(u8 *state)",
+      "paramsRaw": "u8 *state",
+      "body": "u16 x;\n    u8 *str;\n    u16 length;\n\n    switch (*state)\n    {\n    case 0:\n        x = GetLimitedMessageStartPos();\n        str = GetLimitedMessageStartPtr();\n        length = StringLength_Multibyte(str);\n        FillTextEntryWindow(x, length, PIXEL_FILL(0));\n        DrawTextEntryMessage(x, str, 3, 1, 2);\n        CopyWindowToVram(WIN_TEXT_ENTRY, COPYWIN_GFX);\n        break;\n    case 1:\n        if (!IsDma3ManagerBusyWithBgCopy())\n        {\n            HideStdMessageWindow();\n            CopyWindowToVram(sDisplay->messageWindowId, COPYWIN_FULL);\n        }\n        else\n        {\n            return TRUE;\n        }\n        break;\n    case 2:\n        if (!IsDma3ManagerBusyWithBgCopy())\n        {\n            SetRegisteredTextPalette(FALSE);\n            DestroyStdMessageWindow();\n        }\n        else\n        {\n            return TRUE;\n        }\n        break;\n    case 3:\n        return FALSE;\n    }\n\n    (*state)++;\n    return TRUE;",
+      "callsTo": [
+        "CopyWindowToVram",
+        "DestroyStdMessageWindow",
+        "DrawTextEntryMessage",
+        "FillTextEntryWindow",
+        "GetLimitedMessageStartPos",
+        "GetLimitedMessageStartPtr",
+        "HideStdMessageWindow",
+        "IsDma3ManagerBusyWithBgCopy",
+        "PIXEL_FILL",
+        "SetRegisteredTextPalette",
+        "StringLength_Multibyte"
+      ],
+      "lineCount": 42
+    },
+    "Display_ReturnToKeyboard": {
+      "returnType": "bool32",
+      "signature": "static bool32 Display_ReturnToKeyboard(u8 *state)",
+      "paramsRaw": "u8 *state",
+      "body": "switch (*state)\n    {\n    case 0:\n        PrintCurrentKeyboardPage();\n        CopyWindowToVram(WIN_KEYBOARD, COPYWIN_GFX);\n        (*state)++;\n        break;\n    case 1:\n        if (IsDma3ManagerBusyWithBgCopy())\n            return TRUE;\n        else\n            return FALSE;\n    }\n\n    return TRUE;",
+      "callsTo": [
+        "CopyWindowToVram",
+        "IsDma3ManagerBusyWithBgCopy",
+        "PrintCurrentKeyboardPage"
+      ],
+      "lineCount": 15
+    },
+    "Display_ScrollChat": {
+      "returnType": "bool32",
+      "signature": "static bool32 Display_ScrollChat(u8 *state)",
+      "paramsRaw": "u8 *state",
+      "body": "u16 row;\n    u8 *str;\n    u8 colorIdx;\n\n    switch (*state)\n    {\n    case 0:\n        row = sDisplay->currLine;\n        str = GetLastReceivedMessage();\n        colorIdx = GetReceivedPlayerIndex();\n        PrintChatMessage(row, str, colorIdx);\n        CopyWindowToVram(WIN_CHAT_HISTORY, COPYWIN_GFX);\n        break;\n    case 1:\n        if (IsDma3ManagerBusyWithBgCopy())\n            return TRUE;\n\n        if (sDisplay->currLine < 9)\n        {\n            sDisplay->currLine++;\n            *state = 4;\n            return FALSE;\n        }\n        else\n        {\n            sDisplay->scrollCount = 0;\n            (*state)++;\n        }\n         \n    case 2:\n        ScrollWindow(WIN_CHAT_HISTORY, 0, 5, PIXEL_FILL(1));\n        CopyWindowToVram(WIN_CHAT_HISTORY, COPYWIN_GFX);\n        sDisplay->scrollCount++;\n        (*state)++;\n         \n    case 3:\n        if (IsDma3ManagerBusyWithBgCopy())\n            return TRUE;\n\n        if (sDisplay->scrollCount < 3)\n        {\n            (*state)--;\n            return TRUE;\n        }\n        break;\n    case 4:\n        return FALSE;\n    default:\n        return TRUE;\n    }\n\n    (*state)++;\n    return TRUE;",
+      "callsTo": [
+        "CopyWindowToVram",
+        "GetLastReceivedMessage",
+        "GetReceivedPlayerIndex",
+        "IsDma3ManagerBusyWithBgCopy",
+        "PIXEL_FILL",
+        "PrintChatMessage",
+        "ScrollWindow"
+      ],
+      "lineCount": 53
+    },
+    "Display_AnimateKeyboardCursor": {
+      "returnType": "bool32",
+      "signature": "static bool32 Display_AnimateKeyboardCursor(u8 *state)",
+      "paramsRaw": "u8 *state",
+      "body": "switch (*state)\n    {\n    case 0:\n        StartKeyboardCursorAnim();\n        (*state)++;\n        break;\n    case 1:\n        return TryKeyboardCursorReopen();\n    }\n\n    return TRUE;",
+      "callsTo": [
+        "StartKeyboardCursorAnim",
+        "TryKeyboardCursorReopen"
+      ],
+      "lineCount": 11
+    },
+    "Display_PrintInputText": {
+      "returnType": "bool32",
+      "signature": "static bool32 Display_PrintInputText(u8 *state)",
+      "paramsRaw": "u8 *state",
+      "body": "switch (*state)\n    {\n    case 0:\n        AddStdMessageWindow(STDMESSAGE_INPUT_TEXT, 16);\n        CopyWindowToVram(sDisplay->messageWindowId, COPYWIN_FULL);\n        (*state)++;\n        break;\n    case 1:\n        return IsDma3ManagerBusyWithBgCopy();\n    }\n\n    return TRUE;",
+      "callsTo": [
+        "AddStdMessageWindow",
+        "CopyWindowToVram",
+        "IsDma3ManagerBusyWithBgCopy"
+      ],
+      "lineCount": 12
+    },
+    "Display_PrintExitingChat": {
+      "returnType": "bool32",
+      "signature": "static bool32 Display_PrintExitingChat(u8 *state)",
+      "paramsRaw": "u8 *state",
+      "body": "switch (*state)\n    {\n    case 0:\n        AddStdMessageWindow(STDMESSAGE_EXITING_CHAT, 0);\n        CopyWindowToVram(sDisplay->messageWindowId, COPYWIN_FULL);\n        (*state)++;\n        break;\n    case 1:\n        return IsDma3ManagerBusyWithBgCopy();\n    }\n\n    return TRUE;",
+      "callsTo": [
+        "AddStdMessageWindow",
+        "CopyWindowToVram",
+        "IsDma3ManagerBusyWithBgCopy"
+      ],
+      "lineCount": 12
+    },
+    "Display_PrintLeaderLeft": {
+      "returnType": "bool32",
+      "signature": "static bool32 Display_PrintLeaderLeft(u8 *state)",
+      "paramsRaw": "u8 *state",
+      "body": "u8 *str;\n\n    switch (*state)\n    {\n    case 0:\n        DynamicPlaceholderTextUtil_Reset();\n        str = GetChatHostName();\n        DynamicPlaceholderTextUtil_SetPlaceholderPtr(0, str);\n        AddStdMessageWindow(STDMESSAGE_LEADER_LEFT, 0);\n        CopyWindowToVram(sDisplay->messageWindowId, COPYWIN_FULL);\n        (*state)++;\n        break;\n    case 1:\n        return IsDma3ManagerBusyWithBgCopy();\n    }\n\n    return TRUE;",
+      "callsTo": [
+        "AddStdMessageWindow",
+        "CopyWindowToVram",
+        "DynamicPlaceholderTextUtil_Reset",
+        "DynamicPlaceholderTextUtil_SetPlaceholderPtr",
+        "GetChatHostName",
+        "IsDma3ManagerBusyWithBgCopy"
+      ],
+      "lineCount": 17
+    },
+    "Display_AskSave": {
+      "returnType": "bool32",
+      "signature": "static bool32 Display_AskSave(u8 *state)",
+      "paramsRaw": "u8 *state",
+      "body": "switch (*state)\n    {\n    case 0:\n        AddStdMessageWindow(STDMESSAGE_ASK_SAVE, 0);\n        AddYesNoMenuAt(23, 10, 1);\n        CopyWindowToVram(sDisplay->messageWindowId, COPYWIN_FULL);\n        (*state)++;\n        break;\n    case 1:\n        return IsDma3ManagerBusyWithBgCopy();\n    }\n\n    return TRUE;",
+      "callsTo": [
+        "AddStdMessageWindow",
+        "AddYesNoMenuAt",
+        "CopyWindowToVram",
+        "IsDma3ManagerBusyWithBgCopy"
+      ],
+      "lineCount": 13
+    },
+    "Display_AskOverwriteSave": {
+      "returnType": "bool32",
+      "signature": "static bool32 Display_AskOverwriteSave(u8 *state)",
+      "paramsRaw": "u8 *state",
+      "body": "switch (*state)\n    {\n    case 0:\n        AddStdMessageWindow(STDMESSAGE_ASK_OVERWRITE, 0);\n        AddYesNoMenuAt(23, 10, 1);\n        CopyWindowToVram(sDisplay->messageWindowId, COPYWIN_FULL);\n        (*state)++;\n        break;\n    case 1:\n        return IsDma3ManagerBusyWithBgCopy();\n    }\n\n    return TRUE;",
+      "callsTo": [
+        "AddStdMessageWindow",
+        "AddYesNoMenuAt",
+        "CopyWindowToVram",
+        "IsDma3ManagerBusyWithBgCopy"
+      ],
+      "lineCount": 13
+    },
+    "Display_PrintSavingDontTurnOff": {
+      "returnType": "bool32",
+      "signature": "static bool32 Display_PrintSavingDontTurnOff(u8 *state)",
+      "paramsRaw": "u8 *state",
+      "body": "switch (*state)\n    {\n    case 0:\n        AddStdMessageWindow(STDMESSAGE_SAVING_NO_OFF, 0);\n        CopyWindowToVram(sDisplay->messageWindowId, COPYWIN_FULL);\n        (*state)++;\n        break;\n    case 1:\n        return IsDma3ManagerBusyWithBgCopy();\n    }\n\n    return TRUE;",
+      "callsTo": [
+        "AddStdMessageWindow",
+        "CopyWindowToVram",
+        "IsDma3ManagerBusyWithBgCopy"
+      ],
+      "lineCount": 12
+    },
+    "Display_PrintSavedTheGame": {
+      "returnType": "bool32",
+      "signature": "static bool32 Display_PrintSavedTheGame(u8 *state)",
+      "paramsRaw": "u8 *state",
+      "body": "switch (*state)\n    {\n    case 0:\n        DynamicPlaceholderTextUtil_Reset();\n        DynamicPlaceholderTextUtil_SetPlaceholderPtr(0, gSaveBlock2Ptr->playerName);\n        AddStdMessageWindow(STDMESSAGE_SAVED_THE_GAME, 0);\n        CopyWindowToVram(sDisplay->messageWindowId, COPYWIN_FULL);\n        (*state)++;\n        break;\n    case 1:\n        return IsDma3ManagerBusyWithBgCopy();\n    }\n\n    return TRUE;",
+      "callsTo": [
+        "AddStdMessageWindow",
+        "CopyWindowToVram",
+        "DynamicPlaceholderTextUtil_Reset",
+        "DynamicPlaceholderTextUtil_SetPlaceholderPtr",
+        "IsDma3ManagerBusyWithBgCopy"
+      ],
+      "lineCount": 14
+    },
+    "Display_AskConfirmLeaderLeave": {
+      "returnType": "bool32",
+      "signature": "static bool32 Display_AskConfirmLeaderLeave(u8 *state)",
+      "paramsRaw": "u8 *state",
+      "body": "switch (*state)\n    {\n    case 0:\n        AddStdMessageWindow(STDMESSAGE_WARN_LEADER_LEAVE, 0);\n        AddYesNoMenuAt(23, 10, 1);\n        CopyWindowToVram(sDisplay->messageWindowId, COPYWIN_FULL);\n        (*state)++;\n        break;\n    case 1:\n        return IsDma3ManagerBusyWithBgCopy();\n    }\n\n    return TRUE;",
+      "callsTo": [
+        "AddStdMessageWindow",
+        "AddYesNoMenuAt",
+        "CopyWindowToVram",
+        "IsDma3ManagerBusyWithBgCopy"
+      ],
+      "lineCount": 13
+    },
+    "Display_Dummy": {
+      "returnType": "bool32",
+      "signature": "static bool32 Display_Dummy(u8 *state)",
+      "paramsRaw": "u8 *state",
+      "body": "return FALSE;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "AddYesNoMenuAt": {
+      "returnType": "void",
+      "signature": "static void AddYesNoMenuAt(u8 left, u8 top, u8 initialCursorPos)",
+      "paramsRaw": "u8 left, u8 top, u8 initialCursorPos",
+      "body": "struct WindowTemplate template;\n    template.bg = 0;\n    template.tilemapLeft = left;\n    template.tilemapTop = top;\n    template.width = 6;\n    template.height = 4;\n    template.paletteNum = 14;\n    template.baseBlock = 0x52;\n    sDisplay->yesNoMenuWindowId = AddWindow(&template);\n    if (sDisplay->yesNoMenuWindowId != WINDOW_NONE)\n    {\n        FillWindowPixelBuffer(sDisplay->yesNoMenuWindowId, PIXEL_FILL(1));\n        PutWindowTilemap(sDisplay->yesNoMenuWindowId);\n        AddTextPrinterParameterized(sDisplay->yesNoMenuWindowId, FONT_NORMAL, gText_Yes, 8, 1, TEXT_SKIP_DRAW, NULL);\n        AddTextPrinterParameterized(sDisplay->yesNoMenuWindowId, FONT_NORMAL, gText_No, 8, 17, TEXT_SKIP_DRAW, NULL);\n        DrawTextBorderOuter(sDisplay->yesNoMenuWindowId, 1, 13);\n        InitMenuInUpperLeftCornerNormal(sDisplay->yesNoMenuWindowId, 2, initialCursorPos);\n    }",
+      "callsTo": [
+        "AddTextPrinterParameterized",
+        "AddWindow",
+        "DrawTextBorderOuter",
+        "FillWindowPixelBuffer",
+        "InitMenuInUpperLeftCornerNormal",
+        "PIXEL_FILL",
+        "PutWindowTilemap"
+      ],
+      "lineCount": 18
+    },
+    "HideYesNoMenuWindow": {
+      "returnType": "void",
+      "signature": "static void HideYesNoMenuWindow(void)",
+      "paramsRaw": "void",
+      "body": "if (sDisplay->yesNoMenuWindowId != WINDOW_NONE)\n    {\n        ClearStdWindowAndFrameToTransparent(sDisplay->yesNoMenuWindowId, FALSE);\n        ClearWindowTilemap(sDisplay->yesNoMenuWindowId);\n    }",
+      "callsTo": [
+        "ClearStdWindowAndFrameToTransparent",
+        "ClearWindowTilemap"
+      ],
+      "lineCount": 5
+    },
+    "DestroyYesNoMenuWindow": {
+      "returnType": "void",
+      "signature": "static void DestroyYesNoMenuWindow(void)",
+      "paramsRaw": "void",
+      "body": "if (sDisplay->yesNoMenuWindowId != WINDOW_NONE)\n    {\n        RemoveWindow(sDisplay->yesNoMenuWindowId);\n        sDisplay->yesNoMenuWindowId = WINDOW_NONE;\n    }",
+      "callsTo": [
+        "RemoveWindow"
+      ],
+      "lineCount": 5
+    },
+    "ProcessMenuInput": {
+      "returnType": "s8",
+      "signature": "static s8 ProcessMenuInput(void)",
+      "paramsRaw": "void",
+      "body": "return Menu_ProcessInput();",
+      "callsTo": [
+        "Menu_ProcessInput"
+      ],
+      "lineCount": 1
+    },
+    "AddStdMessageWindow": {
+      "returnType": "void",
+      "signature": "static void AddStdMessageWindow(int msgId, u16 bg0vofs)",
+      "paramsRaw": "int msgId, u16 bg0vofs",
+      "body": "const u8 *str;\n    int windowId;\n    struct WindowTemplate template;\n    template.bg = 0;\n    template.tilemapLeft = 8;\n    template.tilemapTop = 16;\n    template.width = 21;\n    template.height = 4;\n    template.paletteNum = 14;\n    template.baseBlock = 0x6A;\n    if (sDisplayStdMessages[msgId].useWiderBox)\n    {\n        template.tilemapLeft -= 7;\n        template.width += 7;\n    }\n\n    sDisplay->messageWindowId = AddWindow(&template);\n    windowId = sDisplay->messageWindowId;\n    if (sDisplay->messageWindowId == WINDOW_NONE)\n        return;\n\n    if (sDisplayStdMessages[msgId].hasPlaceholders)\n    {\n        DynamicPlaceholderTextUtil_ExpandPlaceholders(sDisplay->expandedPlaceholdersBuffer, sDisplayStdMessages[msgId].text);\n        str = sDisplay->expandedPlaceholdersBuffer;\n    }\n    else\n    {\n        str = sDisplayStdMessages[msgId].text;\n    }\n\n    ChangeBgY(0, bg0vofs * 256, BG_COORD_SET);\n    FillWindowPixelBuffer(windowId, PIXEL_FILL(1));\n    PutWindowTilemap(windowId);\n    if (sDisplayStdMessages[msgId].boxType == 1)\n    {\n        DrawTextBorderInner(windowId, 0xA, 2);\n        AddTextPrinterParameterized5(\n            windowId,\n            FONT_NORMAL,\n            str,\n            sDisplayStdMessages[msgId].x + 8,\n            sDisplayStdMessages[msgId].y + 8,\n            TEXT_SKIP_DRAW,\n            NULL,\n            sDisplayStdMessages[msgId].letterSpacing,\n            sDisplayStdMessages[msgId].lineSpacing);\n    }\n    else\n    {\n        DrawTextBorderOuter(windowId, 0xA, 2);\n        AddTextPrinterParameterized5(\n            windowId,\n            FONT_NORMAL,\n            str,\n            sDisplayStdMessages[msgId].x,\n            sDisplayStdMessages[msgId].y,\n            TEXT_SKIP_DRAW,\n            NULL,\n            sDisplayStdMessages[msgId].letterSpacing,\n            sDisplayStdMessages[msgId].lineSpacing);\n    }\n\n    sDisplay->messageWindowId = windowId;",
+      "callsTo": [
+        "AddTextPrinterParameterized5",
+        "AddWindow",
+        "ChangeBgY",
+        "DrawTextBorderInner",
+        "DrawTextBorderOuter",
+        "DynamicPlaceholderTextUtil_ExpandPlaceholders",
+        "FillWindowPixelBuffer",
+        "PIXEL_FILL",
+        "PutWindowTilemap"
+      ],
+      "lineCount": 64
+    },
+    "HideStdMessageWindow": {
+      "returnType": "void",
+      "signature": "static void HideStdMessageWindow(void)",
+      "paramsRaw": "void",
+      "body": "if (sDisplay->messageWindowId != WINDOW_NONE)\n    {\n        ClearStdWindowAndFrameToTransparent(sDisplay->messageWindowId, FALSE);\n        ClearWindowTilemap(sDisplay->messageWindowId);\n    }\n\n    ChangeBgY(0, 0, BG_COORD_SET);",
+      "callsTo": [
+        "ChangeBgY",
+        "ClearStdWindowAndFrameToTransparent",
+        "ClearWindowTilemap"
+      ],
+      "lineCount": 7
+    },
+    "DestroyStdMessageWindow": {
+      "returnType": "void",
+      "signature": "static void DestroyStdMessageWindow(void)",
+      "paramsRaw": "void",
+      "body": "if (sDisplay->messageWindowId != WINDOW_NONE)\n    {\n        RemoveWindow(sDisplay->messageWindowId);\n        sDisplay->messageWindowId = WINDOW_NONE;\n    }",
+      "callsTo": [
+        "RemoveWindow"
+      ],
+      "lineCount": 5
+    },
+    "FillTextEntryWindow": {
+      "returnType": "void",
+      "signature": "static void FillTextEntryWindow(u16 x, u16 width, u8 fillValue)",
+      "paramsRaw": "u16 x, u16 width, u8 fillValue",
+      "body": "FillWindowPixelRect(WIN_TEXT_ENTRY, fillValue, x * 8, 1, width * 8, 14);",
+      "callsTo": [
+        "FillWindowPixelRect"
+      ],
+      "lineCount": 1
+    },
+    "DrawTextEntryMessage": {
+      "returnType": "void",
+      "signature": "static void DrawTextEntryMessage(u16 x, u8 *str, u8 bgColor, u8 fgColor, u8 shadowColor)",
+      "paramsRaw": "u16 x, u8 *str, u8 bgColor, u8 fgColor, u8 shadowColor",
+      "body": "u8 color[3];\n    u8 strBuffer[35];\n    if (bgColor != TEXT_COLOR_TRANSPARENT)\n        FillTextEntryWindow(x, GetTextEntryCursorPosition() - x, bgColor);\n\n    color[0] = bgColor;\n    color[1] = fgColor;\n    color[2] = shadowColor;\n    strBuffer[0] = EXT_CTRL_CODE_BEGIN;\n    strBuffer[1] = EXT_CTRL_CODE_MIN_LETTER_SPACING;\n    strBuffer[2] = 8;\n    StringCopy(&strBuffer[3], str);\n    AddTextPrinterParameterized3(WIN_TEXT_ENTRY, FONT_SHORT, x * 8, 1, color, TEXT_SKIP_DRAW, strBuffer);",
+      "callsTo": [
+        "AddTextPrinterParameterized3",
+        "FillTextEntryWindow",
+        "GetTextEntryCursorPosition",
+        "StringCopy"
+      ],
+      "lineCount": 13
+    },
+    "PrintCurrentKeyboardPage": {
+      "returnType": "void",
+      "signature": "static void PrintCurrentKeyboardPage(void)",
+      "paramsRaw": "void",
+      "body": "u8 page;\n    int i;\n    u16 left;\n    u16 top;\n    u8 color[3];\n    u8 str[45];\n    u8 *str2;\n\n    FillWindowPixelBuffer(WIN_KEYBOARD, PIXEL_FILL(15));\n    page = GetCurrentKeyboardPage();\n    color[0] = TEXT_COLOR_TRANSPARENT;\n    color[1] = TEXT_DYNAMIC_COLOR_5;\n    color[2] = TEXT_DYNAMIC_COLOR_4;\n    if (page != UNION_ROOM_KB_PAGE_REGISTER)\n    {\n        str[0] = EXT_CTRL_CODE_BEGIN;\n        str[1] = EXT_CTRL_CODE_MIN_LETTER_SPACING;\n        str[2] = 8;\n\n        if (page == UNION_ROOM_KB_PAGE_EMOJI)\n            left = 6;\n        else\n            left = 8;\n\n        for (i = 0, top = 0; i < UNION_ROOM_KB_ROW_COUNT; i++, top += 12)\n        {\n            if (!sUnionRoomKeyboardText[page][i])\n                return;\n\n            StringCopy(&str[3], sUnionRoomKeyboardText[page][i]);\n            AddTextPrinterParameterized3(WIN_KEYBOARD, FONT_SMALL, left, top, color, TEXT_SKIP_DRAW, str);\n        }\n    }\n    else\n    {\n        left = 4;\n        for (i = 0, top = 0; i < UNION_ROOM_KB_ROW_COUNT; i++, top += 12)\n        {\n            str2 = GetRegisteredTextByRow(i);\n            if (GetStringWidth(FONT_SMALL, str2, 0) <= 40)\n            {\n                AddTextPrinterParameterized3(WIN_KEYBOARD, FONT_SMALL, left, top, color, TEXT_SKIP_DRAW, str2);\n            }\n            else\n            {\n                int length = StringLength_Multibyte(str2);\n                do\n                {\n                    length--;\n                    StringCopyN_Multibyte(str, str2, length);\n                } while (GetStringWidth(FONT_SMALL, str, 0) > 35);\n\n                AddTextPrinterParameterized3(WIN_KEYBOARD, FONT_SMALL, left, top, color, TEXT_SKIP_DRAW, str);\n                AddTextPrinterParameterized3(WIN_KEYBOARD, FONT_SMALL, left + 35, top, color, TEXT_SKIP_DRAW, sText_Ellipsis);\n            }\n        }\n    }",
+      "callsTo": [
+        "AddTextPrinterParameterized3",
+        "FillWindowPixelBuffer",
+        "GetCurrentKeyboardPage",
+        "GetRegisteredTextByRow",
+        "GetStringWidth",
+        "PIXEL_FILL",
+        "StringCopy",
+        "StringCopyN_Multibyte",
+        "StringLength_Multibyte"
+      ],
+      "lineCount": 57
+    },
+    "SlideKeyboardPageOut": {
+      "returnType": "bool32",
+      "signature": "static bool32 SlideKeyboardPageOut(void)",
+      "paramsRaw": "void",
+      "body": "if (sDisplay->bg1hofs < KEYBOARD_HOFS_END)\n    {\n        sDisplay->bg1hofs += 12;\n        if (sDisplay->bg1hofs >= KEYBOARD_HOFS_END)\n            sDisplay->bg1hofs = KEYBOARD_HOFS_END;\n\n        if (sDisplay->bg1hofs < KEYBOARD_HOFS_END)\n        {\n             \n            UpdateSlidingKeyboard(sDisplay->bg1hofs);\n            return TRUE;\n        }\n    }\n\n    FinishSlidingKeyboard(sDisplay->bg1hofs);\n    return FALSE;",
+      "callsTo": [
+        "FinishSlidingKeyboard",
+        "UpdateSlidingKeyboard"
+      ],
+      "lineCount": 16
+    },
+    "SlideKeyboardPageIn": {
+      "returnType": "bool32",
+      "signature": "static bool32 SlideKeyboardPageIn(void)",
+      "paramsRaw": "void",
+      "body": "if (sDisplay->bg1hofs > 0)\n    {\n        sDisplay->bg1hofs -= 12;\n        if (sDisplay->bg1hofs <= 0)\n            sDisplay->bg1hofs = 0;\n\n        if (sDisplay->bg1hofs > 0)\n        {\n             \n            UpdateSlidingKeyboard(sDisplay->bg1hofs);\n            return TRUE;\n        }\n    }\n\n    FinishSlidingKeyboard(sDisplay->bg1hofs);\n    return FALSE;",
+      "callsTo": [
+        "FinishSlidingKeyboard",
+        "UpdateSlidingKeyboard"
+      ],
+      "lineCount": 16
+    },
+    "ShowKeyboardSwapMenu": {
+      "returnType": "void",
+      "signature": "static void ShowKeyboardSwapMenu(void)",
+      "paramsRaw": "void",
+      "body": "FillWindowPixelBuffer(WIN_SWAP_MENU, PIXEL_FILL(1));\n    DrawTextBorderOuter(WIN_SWAP_MENU, 1, 13);\n    PrintMenuActionTextsAtPos(WIN_SWAP_MENU, FONT_SHORT, 8, 1, 14, ARRAY_COUNT(sKeyboardPageTitleTexts), sKeyboardPageTitleTexts);\n    InitMenuNormal(WIN_SWAP_MENU, FONT_SHORT, 0, 1, 14, 5, GetCurrentKeyboardPage());\n    PutWindowTilemap(WIN_SWAP_MENU);",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "DrawTextBorderOuter",
+        "FillWindowPixelBuffer",
+        "GetCurrentKeyboardPage",
+        "InitMenuNormal",
+        "PIXEL_FILL",
+        "PrintMenuActionTextsAtPos",
+        "PutWindowTilemap"
+      ],
+      "lineCount": 5
+    },
+    "HideKeyboardSwapMenu": {
+      "returnType": "void",
+      "signature": "static void HideKeyboardSwapMenu(void)",
+      "paramsRaw": "void",
+      "body": "ClearStdWindowAndFrameToTransparent(WIN_SWAP_MENU, FALSE);\n    ClearWindowTilemap(WIN_SWAP_MENU);",
+      "callsTo": [
+        "ClearStdWindowAndFrameToTransparent",
+        "ClearWindowTilemap"
+      ],
+      "lineCount": 2
+    },
+    "PrintChatMessage": {
+      "returnType": "void",
+      "signature": "static void PrintChatMessage(u16 row, u8 *str, u8 colorIdx)",
+      "paramsRaw": "u16 row, u8 *str, u8 colorIdx",
+      "body": "u8 color[3];\n    color[0] = TEXT_COLOR_WHITE;\n    color[1] = colorIdx * 2 + 2;\n    color[2] = colorIdx * 2 + 3;\n    FillWindowPixelRect(WIN_CHAT_HISTORY, PIXEL_FILL(1), 0, row * 15, 168, 15);\n    AddTextPrinterParameterized3(WIN_CHAT_HISTORY, FONT_SHORT, 0, row * 15 + 1, color, TEXT_SKIP_DRAW, str);",
+      "callsTo": [
+        "AddTextPrinterParameterized3",
+        "FillWindowPixelRect",
+        "PIXEL_FILL"
+      ],
+      "lineCount": 6
+    },
+    "ResetGpuBgState": {
+      "returnType": "void",
+      "signature": "static void ResetGpuBgState(void)",
+      "paramsRaw": "void",
+      "body": "ChangeBgX(0, 0, BG_COORD_SET);\n    ChangeBgY(0, 0, BG_COORD_SET);\n    ChangeBgX(1, 0, BG_COORD_SET);\n    ChangeBgY(1, 0, BG_COORD_SET);\n    ChangeBgX(2, 0, BG_COORD_SET);\n    ChangeBgY(2, 0, BG_COORD_SET);\n    ChangeBgX(3, 0, BG_COORD_SET);\n    ChangeBgY(3, 0, BG_COORD_SET);\n    ShowBg(0);\n    ShowBg(1);\n    ShowBg(2);\n    ShowBg(3);\n    SetGpuRegBits(REG_OFFSET_DISPCNT, DISPCNT_OBJ_ON | DISPCNT_OBJ_1D_MAP);\n    SetGpuReg(REG_OFFSET_BLDCNT, 0);\n    ClearGpuRegBits(REG_OFFSET_DISPCNT, DISPCNT_WIN0_ON | DISPCNT_WIN1_ON | DISPCNT_OBJWIN_ON);\n    SetGpuRegBits(REG_OFFSET_DISPCNT, DISPCNT_WIN0_ON);\n    SetGpuReg(REG_OFFSET_WIN0H, WIN_RANGE(64, DISPLAY_WIDTH));\n    SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(0, DISPLAY_HEIGHT - 16));\n    SetGpuReg(REG_OFFSET_WININ, WININ_WIN0_BG0 | WININ_WIN0_BG2 | WININ_WIN0_BG3\n                              | WININ_WIN0_OBJ | WININ_WIN0_CLR);\n    SetGpuReg(REG_OFFSET_WINOUT, WINOUT_WIN01_BG_ALL | WINOUT_WIN01_OBJ | WINOUT_WIN01_CLR);",
+      "callsTo": [
+        "ChangeBgX",
+        "ChangeBgY",
+        "ClearGpuRegBits",
+        "SetGpuReg",
+        "SetGpuRegBits",
+        "ShowBg",
+        "WIN_RANGE"
+      ],
+      "lineCount": 21
+    },
+    "SetBgTilemapBuffers": {
+      "returnType": "void",
+      "signature": "static void SetBgTilemapBuffers(void)",
+      "paramsRaw": "void",
+      "body": "SetBgTilemapBuffer(0, sDisplay->bg0Buffer);\n    SetBgTilemapBuffer(1, sDisplay->bg1Buffer);\n    SetBgTilemapBuffer(3, sDisplay->bg3Buffer);\n    SetBgTilemapBuffer(2, sDisplay->bg2Buffer);",
+      "callsTo": [
+        "SetBgTilemapBuffer"
+      ],
+      "lineCount": 4
+    },
+    "ClearBg0": {
+      "returnType": "void",
+      "signature": "static void ClearBg0(void)",
+      "paramsRaw": "void",
+      "body": "RequestDma3Fill(0, (void *)BG_CHAR_ADDR(0), 0x20, 1);\n    FillBgTilemapBufferRect_Palette0(0, 0, 0, 0, 32, 32);\n    CopyBgTilemapBufferToVram(0);",
+      "callsTo": [
+        "BG_CHAR_ADDR",
+        "CopyBgTilemapBufferToVram",
+        "FillBgTilemapBufferRect_Palette0",
+        "RequestDma3Fill"
+      ],
+      "lineCount": 3
+    },
+    "LoadKeyboardWindowGfx": {
+      "returnType": "void",
+      "signature": "static void LoadKeyboardWindowGfx(void)",
+      "paramsRaw": "void",
+      "body": "LoadPalette(gUnionRoomChat_Keyboard_Pal, BG_PLTT_ID(7), PLTT_SIZE_4BPP);\n    LoadPalette(gUnionRoomChat_InputText_Pal, BG_PLTT_ID(12), PLTT_SIZE_4BPP);\n    DecompressAndCopyTileDataToVram(1, gUnionRoomChat_Keyboard_Gfx, 0, 0, 0);\n    CopyToBgTilemapBuffer(1, gUnionRoomChat_Keyboard_Tilemap, 0, 0);\n    CopyBgTilemapBufferToVram(1);",
+      "callsTo": [
+        "BG_PLTT_ID",
+        "CopyBgTilemapBufferToVram",
+        "CopyToBgTilemapBuffer",
+        "DecompressAndCopyTileDataToVram",
+        "LoadPalette"
+      ],
+      "lineCount": 5
+    },
+    "LoadChatWindowGfx": {
+      "returnType": "void",
+      "signature": "static void LoadChatWindowGfx(void)",
+      "paramsRaw": "void",
+      "body": "u8 *ptr;\n\n    LoadPalette(gUnionRoomChat_Background_Pal, BG_PLTT_ID(0), PLTT_SIZE_4BPP);\n    ptr = DecompressAndCopyTileDataToVram(2, gUnionRoomChat_Background_Gfx, 0, 0, 0);\n    if (ptr)\n    {\n         \n         \n         \n         \n        CpuFastCopy(&ptr[0x11 * TILE_SIZE_4BPP], &sDisplay->textEntryTiles[TILE_SIZE_4BPP * 0], TILE_SIZE_4BPP);\n        CpuFastCopy(&ptr[0x21 * TILE_SIZE_4BPP], &sDisplay->textEntryTiles[TILE_SIZE_4BPP * 1], TILE_SIZE_4BPP);\n    }\n\n    CopyToBgTilemapBuffer(2, gUnionRoomChat_Background_Tilemap, 0, 0);\n    CopyBgTilemapBufferToVram(2);",
+      "callsTo": [
+        "BG_PLTT_ID",
+        "CopyBgTilemapBufferToVram",
+        "CopyToBgTilemapBuffer",
+        "CpuFastCopy",
+        "DecompressAndCopyTileDataToVram",
+        "LoadPalette"
+      ],
+      "lineCount": 16
+    },
+    "LoadChatUnkPalette": {
+      "returnType": "void",
+      "signature": "static void LoadChatUnkPalette(void)",
+      "paramsRaw": "void",
+      "body": "LoadPalette(sUnusedPalette, BG_PLTT_ID(8), sizeof(sUnusedPalette));\n    RequestDma3Fill(0, (void *)BG_CHAR_ADDR(1) + TILE_SIZE_4BPP, TILE_SIZE_4BPP, 1);",
+      "callsTo": [
+        "BG_CHAR_ADDR",
+        "BG_PLTT_ID",
+        "LoadPalette",
+        "RequestDma3Fill"
+      ],
+      "lineCount": 2
+    },
+    "LoadChatMessagesWindow": {
+      "returnType": "void",
+      "signature": "static void LoadChatMessagesWindow(void)",
+      "paramsRaw": "void",
+      "body": "LoadPalette(sChatMessagesWindow_Pal, BG_PLTT_ID(15), sizeof(sChatMessagesWindow_Pal));\n    PutWindowTilemap(WIN_CHAT_HISTORY);\n    FillWindowPixelBuffer(WIN_CHAT_HISTORY, PIXEL_FILL(1));\n    CopyWindowToVram(WIN_CHAT_HISTORY, COPYWIN_FULL);",
+      "callsTo": [
+        "BG_PLTT_ID",
+        "CopyWindowToVram",
+        "FillWindowPixelBuffer",
+        "LoadPalette",
+        "PIXEL_FILL",
+        "PutWindowTilemap"
+      ],
+      "lineCount": 4
+    },
+    "DrawKeyboardWindow": {
+      "returnType": "void",
+      "signature": "static void DrawKeyboardWindow(void)",
+      "paramsRaw": "void",
+      "body": "PutWindowTilemap(WIN_KEYBOARD);\n    PrintCurrentKeyboardPage();\n    CopyWindowToVram(WIN_KEYBOARD, COPYWIN_FULL);",
+      "callsTo": [
+        "CopyWindowToVram",
+        "PrintCurrentKeyboardPage",
+        "PutWindowTilemap"
+      ],
+      "lineCount": 3
+    },
+    "LoadTextEntryWindow": {
+      "returnType": "void",
+      "signature": "static void LoadTextEntryWindow(void)",
+      "paramsRaw": "void",
+      "body": "int i;\n    u8 unused[2];\n    unused[0] = 0;\n    unused[1] = 0xFF;\n\n     \n    for (i = 0; i < MAX_MESSAGE_LENGTH; i++)\n        BlitBitmapToWindow(WIN_TEXT_ENTRY, sDisplay->textEntryTiles, i * 8, 0, 8, 16);\n\n    FillWindowPixelBuffer(WIN_TEXT_ENTRY, PIXEL_FILL(0));\n    PutWindowTilemap(WIN_TEXT_ENTRY);\n    CopyWindowToVram(WIN_TEXT_ENTRY, COPYWIN_FULL);",
+      "callsTo": [
+        "BlitBitmapToWindow",
+        "CopyWindowToVram",
+        "FillWindowPixelBuffer",
+        "PIXEL_FILL",
+        "PutWindowTilemap"
+      ],
+      "lineCount": 12
+    },
+    "LoadKeyboardSwapWindow": {
+      "returnType": "void",
+      "signature": "static void LoadKeyboardSwapWindow(void)",
+      "paramsRaw": "void",
+      "body": "FillWindowPixelBuffer(WIN_SWAP_MENU, PIXEL_FILL(1));\n    LoadUserWindowBorderGfx(WIN_SWAP_MENU, 1, BG_PLTT_ID(13));\n    LoadUserWindowBorderGfx_(WIN_SWAP_MENU, 0xA, BG_PLTT_ID(2));\n    LoadPalette(gStandardMenuPalette, BG_PLTT_ID(14), PLTT_SIZE_4BPP);",
+      "callsTo": [
+        "BG_PLTT_ID",
+        "FillWindowPixelBuffer",
+        "LoadPalette",
+        "LoadUserWindowBorderGfx",
+        "LoadUserWindowBorderGfx_",
+        "PIXEL_FILL"
+      ],
+      "lineCount": 4
+    },
+    "InitScanlineEffect": {
+      "returnType": "void",
+      "signature": "static void InitScanlineEffect(void)",
+      "paramsRaw": "void",
+      "body": "struct ScanlineEffectParams params;\n    params.dmaControl = SCANLINE_EFFECT_DMACNT_16BIT;\n    params.dmaDest = &REG_BG1HOFS;\n    params.initState = 1;\n    params.unused9 = 0;\n    sDisplay->bg1hofs = 0;\n    CpuFastFill(0, gScanlineEffectRegBuffers, sizeof(gScanlineEffectRegBuffers));\n    ScanlineEffect_SetParams(params);",
+      "callsTo": [
+        "CpuFastFill",
+        "ScanlineEffect_SetParams"
+      ],
+      "lineCount": 8
+    },
+    "UpdateSlidingKeyboard": {
+      "returnType": "void",
+      "signature": "static void UpdateSlidingKeyboard(s16 bg1hofs)",
+      "paramsRaw": "s16 bg1hofs",
+      "body": "CpuFill16(bg1hofs, gScanlineEffectRegBuffers[gScanlineEffect.srcBuffer], 0x120);\n    CpuFill16(0,       gScanlineEffectRegBuffers[gScanlineEffect.srcBuffer] + 0x90, 0x20);",
+      "callsTo": [
+        "CpuFill16"
+      ],
+      "lineCount": 2
+    },
+    "FinishSlidingKeyboard": {
+      "returnType": "void",
+      "signature": "static void FinishSlidingKeyboard(s16 bg1hofs)",
+      "paramsRaw": "s16 bg1hofs",
+      "body": "CpuFill16(bg1hofs, gScanlineEffectRegBuffers[0],         0x120);\n    CpuFill16(0,       gScanlineEffectRegBuffers[0] +  0x90, 0x20);\n    CpuFill16(bg1hofs, gScanlineEffectRegBuffers[0] + 0x3C0, 0x120);\n    CpuFill16(0,       gScanlineEffectRegBuffers[0] + 0x450, 0x20);",
+      "callsTo": [
+        "CpuFill16"
+      ],
+      "lineCount": 4
+    },
+    "TryAllocSprites": {
+      "returnType": "bool32",
+      "signature": "static bool32 TryAllocSprites(void)",
+      "paramsRaw": "void",
+      "body": "u32 i;\n    for (i = 0; i < ARRAY_COUNT(sSpriteSheets); i++)\n        LoadCompressedSpriteSheet(&sSpriteSheets[i]);\n\n    LoadSpritePalette(&sSpritePalette);\n    sSprites = Alloc(sizeof(*sSprites));\n    if (!sSprites)\n        return FALSE;\n\n    return TRUE;",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "Alloc",
+        "LoadCompressedSpriteSheet",
+        "LoadSpritePalette"
+      ],
+      "lineCount": 10
+    },
+    "FreeSprites": {
+      "returnType": "void",
+      "signature": "static void FreeSprites(void)",
+      "paramsRaw": "void",
+      "body": "if (sSprites)\n        Free(sSprites);",
+      "callsTo": [
+        "Free"
+      ],
+      "lineCount": 2
+    },
+    "CreateKeyboardCursorSprite": {
+      "returnType": "void",
+      "signature": "static void CreateKeyboardCursorSprite(void)",
+      "paramsRaw": "void",
+      "body": "u8 spriteId = CreateSprite(&sSpriteTemplate_KeyboardCursor, 10, 24, 0);\n    sSprites->keyboardCursor = &gSprites[spriteId];",
+      "callsTo": [
+        "CreateSprite"
+      ],
+      "lineCount": 2
+    },
+    "SetKeyboardCursorInvisibility": {
+      "returnType": "void",
+      "signature": "static void SetKeyboardCursorInvisibility(bool32 invisible)",
+      "paramsRaw": "bool32 invisible",
+      "body": "sSprites->keyboardCursor->invisible = invisible;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "MoveKeyboardCursor": {
+      "returnType": "void",
+      "signature": "static void MoveKeyboardCursor(void)",
+      "paramsRaw": "void",
+      "body": "u8 x, y;\n    u8 page = GetCurrentKeyboardPage();\n    GetCurrentKeyboardColAndRow(&x, &y);\n    if (page != UNION_ROOM_KB_PAGE_REGISTER)\n    {\n        StartSpriteAnim(sSprites->keyboardCursor, 0);\n        sSprites->keyboardCursor->x = x * 8 + 10;\n        sSprites->keyboardCursor->y = y * 12 + 24;\n    }\n    else\n    {\n        StartSpriteAnim(sSprites->keyboardCursor, 2);\n        sSprites->keyboardCursor->x = 24;\n        sSprites->keyboardCursor->y = y * 12 + 24;\n    }",
+      "callsTo": [
+        "GetCurrentKeyboardColAndRow",
+        "GetCurrentKeyboardPage",
+        "StartSpriteAnim"
+      ],
+      "lineCount": 15
+    },
+    "SetRegisteredTextPalette": {
+      "returnType": "void",
+      "signature": "static void SetRegisteredTextPalette(bool32 registering)",
+      "paramsRaw": "bool32 registering",
+      "body": "const u16 *palette = &sUnionRoomChatInterfacePal[registering * 2 + 1];\n    u8 index = IndexOfSpritePaletteTag(PALTAG_INTERFACE);\n    LoadPalette(palette, OBJ_PLTT_ID(index) + 1, PLTT_SIZEOF(2));",
+      "callsTo": [
+        "IndexOfSpritePaletteTag",
+        "LoadPalette",
+        "OBJ_PLTT_ID",
+        "PLTT_SIZEOF"
+      ],
+      "lineCount": 3
+    },
+    "StartKeyboardCursorAnim": {
+      "returnType": "void",
+      "signature": "static void StartKeyboardCursorAnim(void)",
+      "paramsRaw": "void",
+      "body": "if (GetCurrentKeyboardPage() != UNION_ROOM_KB_PAGE_REGISTER)\n        StartSpriteAnim(sSprites->keyboardCursor, 1);\n    else\n        StartSpriteAnim(sSprites->keyboardCursor, 3);\n\n    sSprites->cursorBlinkTimer = 0;",
+      "callsTo": [
+        "GetCurrentKeyboardPage",
+        "StartSpriteAnim"
+      ],
+      "lineCount": 6
+    },
+    "TryKeyboardCursorReopen": {
+      "returnType": "bool32",
+      "signature": "static bool32 TryKeyboardCursorReopen(void)",
+      "paramsRaw": "void",
+      "body": "if (sSprites->cursorBlinkTimer > 3)\n        return FALSE;\n\n    if (++sSprites->cursorBlinkTimer > 3)\n    {\n        if (GetCurrentKeyboardPage() != UNION_ROOM_KB_PAGE_REGISTER)\n            StartSpriteAnim(sSprites->keyboardCursor, 0);\n        else\n            StartSpriteAnim(sSprites->keyboardCursor, 2);\n\n        return FALSE;\n    }\n\n    return TRUE;",
+      "callsTo": [
+        "GetCurrentKeyboardPage",
+        "StartSpriteAnim"
+      ],
+      "lineCount": 14
+    },
+    "CreateTextEntrySprites": {
+      "returnType": "void",
+      "signature": "static void CreateTextEntrySprites(void)",
+      "paramsRaw": "void",
+      "body": "u8 spriteId = CreateSprite(&sSpriteTemplate_TextEntryCursor, 76, 152, 2);\n    sSprites->textEntryCursor = &gSprites[spriteId];\n    spriteId = CreateSprite(&sSpriteTemplate_TextEntryArrow, 64, 152, 1);\n    sSprites->textEntryArrow = &gSprites[spriteId];",
+      "callsTo": [
+        "CreateSprite"
+      ],
+      "lineCount": 4
+    },
+    "SpriteCB_TextEntryCursor": {
+      "returnType": "void",
+      "signature": "static void SpriteCB_TextEntryCursor(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "int pos = GetTextEntryCursorPosition();\n    if (pos == MAX_MESSAGE_LENGTH)\n    {\n        sprite->invisible = TRUE;\n    }\n    else\n    {\n        sprite->invisible = FALSE;\n        sprite->x = pos * 8 + 76;\n    }",
+      "callsTo": [
+        "GetTextEntryCursorPosition"
+      ],
+      "lineCount": 10
+    },
+    "SpriteCB_TextEntryArrow": {
+      "returnType": "void",
+      "signature": "static void SpriteCB_TextEntryArrow(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "if (++sprite->data[0] > 4)\n    {\n        sprite->data[0] = 0;\n        if (++sprite->x2 > 4)\n            sprite->x2 = 0;\n    }",
+      "callsTo": [],
+      "lineCount": 6
+    },
+    "CreateRButtonSprites": {
+      "returnType": "void",
+      "signature": "static void CreateRButtonSprites(void)",
+      "paramsRaw": "void",
+      "body": "u8 spriteId = CreateSprite(&sSpriteTemplate_RButtonIcon, 8, 152, 3);\n    sSprites->rButtonIcon = &gSprites[spriteId];\n    spriteId = CreateSprite(&sSpriteTemplate_RButtonLabels, 32, 152, 4);\n    sSprites->rButtonLabel = &gSprites[spriteId];\n    sSprites->rButtonLabel->invisible = TRUE;",
+      "callsTo": [
+        "CreateSprite"
+      ],
+      "lineCount": 5
+    },
+    "UpdateRButtonLabel": {
+      "returnType": "void",
+      "signature": "static void UpdateRButtonLabel(void)",
+      "paramsRaw": "void",
+      "body": "if (GetCurrentKeyboardPage() == UNION_ROOM_KB_PAGE_REGISTER)\n    {\n        if (GetLengthOfMessageEntry() != 0)\n        {\n             \n            sSprites->rButtonLabel->invisible = FALSE;\n            StartSpriteAnim(sSprites->rButtonLabel, 3);\n        }\n        else\n        {\n            sSprites->rButtonLabel->invisible = TRUE;\n        }\n    }\n    else\n    {\n        int anim = GetShouldShowCaseToggleIcon();\n        if (anim == 3)\n        {\n            sSprites->rButtonLabel->invisible = TRUE;\n        }\n        else\n        {\n             \n            sSprites->rButtonLabel->invisible = FALSE;\n            StartSpriteAnim(sSprites->rButtonLabel, anim);\n        }\n    }",
+      "callsTo": [
+        "GetCurrentKeyboardPage",
+        "GetLengthOfMessageEntry",
+        "GetShouldShowCaseToggleIcon",
+        "StartSpriteAnim"
+      ],
+      "lineCount": 27
+    }
+  }
+}

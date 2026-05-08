@@ -1,0 +1,231 @@
+{
+  "srcFile": "src/item_menu_icons.c",
+  "count": 21,
+  "functions": {
+    "RemoveBagSprite": {
+      "returnType": "void",
+      "signature": "void RemoveBagSprite(u8 id)",
+      "paramsRaw": "u8 id",
+      "body": "u8 *spriteId = &gBagMenu->spriteIds[id];\n    if (*spriteId != SPRITE_NONE)\n    {\n        FreeSpriteTilesByTag(id + TAG_BAG_GFX);\n        FreeSpritePaletteByTag(id + TAG_BAG_GFX);\n        FreeSpriteOamMatrix(&gSprites[*spriteId]);\n        DestroySprite(&gSprites[*spriteId]);\n        *spriteId = SPRITE_NONE;\n    }",
+      "callsTo": [
+        "DestroySprite",
+        "FreeSpriteOamMatrix",
+        "FreeSpritePaletteByTag",
+        "FreeSpriteTilesByTag"
+      ],
+      "lineCount": 9
+    },
+    "AddBagVisualSprite": {
+      "returnType": "void",
+      "signature": "void AddBagVisualSprite(u8 bagPocketId)",
+      "paramsRaw": "u8 bagPocketId",
+      "body": "u8 *spriteId = &gBagMenu->spriteIds[ITEMMENUSPRITE_BAG];\n    *spriteId = CreateSprite(&sBagSpriteTemplate, 68, 66, 0);\n    SetBagVisualPocketId(bagPocketId, FALSE);",
+      "callsTo": [
+        "CreateSprite",
+        "SetBagVisualPocketId"
+      ],
+      "lineCount": 3
+    },
+    "SetBagVisualPocketId": {
+      "returnType": "void",
+      "signature": "void SetBagVisualPocketId(u8 bagPocketId, bool8 isSwitchingPockets)",
+      "paramsRaw": "u8 bagPocketId, bool8 isSwitchingPockets",
+      "body": "struct Sprite *sprite = &gSprites[gBagMenu->spriteIds[ITEMMENUSPRITE_BAG]];\n    if (isSwitchingPockets)\n    {\n        sprite->y2 = -5;\n        sprite->callback = SpriteCB_BagVisualSwitchingPockets;\n        sprite->sPocketId = bagPocketId + 1;\n        StartSpriteAnim(sprite, POCKET_NONE);\n    }\n    else\n    {\n        StartSpriteAnim(sprite, bagPocketId + 1);\n    }",
+      "callsTo": [
+        "StartSpriteAnim"
+      ],
+      "lineCount": 12
+    },
+    "SpriteCB_BagVisualSwitchingPockets": {
+      "returnType": "void",
+      "signature": "static void SpriteCB_BagVisualSwitchingPockets(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "if (sprite->y2 != 0)\n    {\n        sprite->y2++;\n    }\n    else\n    {\n        StartSpriteAnim(sprite, sprite->sPocketId);\n        sprite->callback = SpriteCallbackDummy;\n    }",
+      "callsTo": [
+        "StartSpriteAnim"
+      ],
+      "lineCount": 9
+    },
+    "ShakeBagSprite": {
+      "returnType": "void",
+      "signature": "void ShakeBagSprite(void)",
+      "paramsRaw": "void",
+      "body": "struct Sprite *sprite = &gSprites[gBagMenu->spriteIds[ITEMMENUSPRITE_BAG]];\n    if (sprite->affineAnimEnded)\n    {\n        StartSpriteAffineAnim(sprite, ANIM_BAG_SHAKE);\n        sprite->callback = SpriteCB_ShakeBagSprite;\n    }",
+      "callsTo": [
+        "StartSpriteAffineAnim"
+      ],
+      "lineCount": 6
+    },
+    "SpriteCB_ShakeBagSprite": {
+      "returnType": "void",
+      "signature": "static void SpriteCB_ShakeBagSprite(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "if (sprite->affineAnimEnded)\n    {\n        StartSpriteAffineAnim(sprite, ANIM_BAG_NORMAL);\n        sprite->callback = SpriteCallbackDummy;\n    }",
+      "callsTo": [
+        "StartSpriteAffineAnim"
+      ],
+      "lineCount": 5
+    },
+    "AddSwitchPocketRotatingBallSprite": {
+      "returnType": "void",
+      "signature": "void AddSwitchPocketRotatingBallSprite(s16 rotationDirection)",
+      "paramsRaw": "s16 rotationDirection",
+      "body": "u8 *spriteId = &gBagMenu->spriteIds[ITEMMENUSPRITE_BALL];\n    LoadSpriteSheet(&sRotatingBallTable);\n    LoadSpritePalette(&sRotatingBallPaletteTable);\n    *spriteId = CreateSprite(&sRotatingBallSpriteTemplate, 16, 16, 0);\n    gSprites[*spriteId].data[0] = rotationDirection;",
+      "callsTo": [
+        "CreateSprite",
+        "LoadSpritePalette",
+        "LoadSpriteSheet"
+      ],
+      "lineCount": 5
+    },
+    "UpdateSwitchPocketRotatingBallCoords": {
+      "returnType": "void",
+      "signature": "static void UpdateSwitchPocketRotatingBallCoords(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "sprite->centerToCornerVecX = sprite->data[1] - ((sprite->data[3] + 1) & 1);\n    sprite->centerToCornerVecY = sprite->data[1] - ((sprite->data[3] + 1) & 1);",
+      "callsTo": [],
+      "lineCount": 2
+    },
+    "SpriteCB_SwitchPocketRotatingBallInit": {
+      "returnType": "void",
+      "signature": "static void SpriteCB_SwitchPocketRotatingBallInit(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "sprite->oam.affineMode = ST_OAM_AFFINE_NORMAL;\n    if (sprite->data[0] == -1)\n        sprite->affineAnims = sRotatingBallAnimCmds;\n    else\n        sprite->affineAnims = sRotatingBallAnimCmds_FullRotation;\n\n    InitSpriteAffineAnim(sprite);\n    sprite->data[1] = sprite->centerToCornerVecX;\n    sprite->data[1] = sprite->centerToCornerVecY;\n    UpdateSwitchPocketRotatingBallCoords(sprite);\n    sprite->callback = SpriteCB_SwitchPocketRotatingBallContinue;",
+      "callsTo": [
+        "InitSpriteAffineAnim",
+        "UpdateSwitchPocketRotatingBallCoords"
+      ],
+      "lineCount": 11
+    },
+    "SpriteCB_SwitchPocketRotatingBallContinue": {
+      "returnType": "void",
+      "signature": "static void SpriteCB_SwitchPocketRotatingBallContinue(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "sprite->data[3]++;\n    UpdateSwitchPocketRotatingBallCoords(sprite);\n    if (sprite->data[3] == 16)\n        RemoveBagSprite(ITEMMENUSPRITE_BALL);",
+      "callsTo": [
+        "RemoveBagSprite",
+        "UpdateSwitchPocketRotatingBallCoords"
+      ],
+      "lineCount": 4
+    },
+    "AddBagItemIconSprite": {
+      "returnType": "void",
+      "signature": "void AddBagItemIconSprite(u16 itemId, u8 id)",
+      "paramsRaw": "u16 itemId, u8 id",
+      "body": "u8 *spriteId = &gBagMenu->spriteIds[id + ITEMMENUSPRITE_ITEM];\n    if (*spriteId == SPRITE_NONE)\n    {\n        u8 iconSpriteId;\n\n         \n        FreeSpriteTilesByTag(id + TAG_ITEM_ICON);\n        FreeSpritePaletteByTag(id + TAG_ITEM_ICON);\n        iconSpriteId = AddItemIconSprite(id + TAG_ITEM_ICON, id + TAG_ITEM_ICON, itemId);\n        if (iconSpriteId != MAX_SPRITES)\n        {\n            *spriteId = iconSpriteId;\n            gSprites[iconSpriteId].x2 = 24;\n            gSprites[iconSpriteId].y2 = 88;\n        }\n    }",
+      "callsTo": [
+        "AddItemIconSprite",
+        "FreeSpritePaletteByTag",
+        "FreeSpriteTilesByTag"
+      ],
+      "lineCount": 16
+    },
+    "RemoveBagItemIconSprite": {
+      "returnType": "void",
+      "signature": "void RemoveBagItemIconSprite(u8 id)",
+      "paramsRaw": "u8 id",
+      "body": "#ifdef BUGFIX\n    u8 *spriteId = &gBagMenu->spriteIds[ITEMMENUSPRITE_ITEM];\n\n    if (spriteId[id ^ 1] != SPRITE_NONE)\n        gSprites[spriteId[id ^ 1]].invisible = TRUE;\n\n    if (spriteId[id] != SPRITE_NONE)\n    {\n        DestroySpriteAndFreeResources(&gSprites[spriteId[id]]);\n        spriteId[id] = SPRITE_NONE;\n    }\n#else\n    RemoveBagSprite(id + ITEMMENUSPRITE_ITEM);\n#endif",
+      "callsTo": [
+        "DestroySpriteAndFreeResources",
+        "RemoveBagSprite"
+      ],
+      "lineCount": 14
+    },
+    "CreateItemMenuSwapLine": {
+      "returnType": "void",
+      "signature": "void CreateItemMenuSwapLine(void)",
+      "paramsRaw": "void",
+      "body": "CreateSwapLineSprites(&gBagMenu->spriteIds[ITEMMENUSPRITE_SWAP_LINE], ITEMMENU_SWAP_LINE_LENGTH);",
+      "callsTo": [
+        "CreateSwapLineSprites"
+      ],
+      "lineCount": 1
+    },
+    "SetItemMenuSwapLineInvisibility": {
+      "returnType": "void",
+      "signature": "void SetItemMenuSwapLineInvisibility(bool8 invisible)",
+      "paramsRaw": "bool8 invisible",
+      "body": "SetSwapLineSpritesInvisibility(&gBagMenu->spriteIds[ITEMMENUSPRITE_SWAP_LINE], ITEMMENU_SWAP_LINE_LENGTH, invisible);",
+      "callsTo": [
+        "SetSwapLineSpritesInvisibility"
+      ],
+      "lineCount": 1
+    },
+    "UpdateItemMenuSwapLinePos": {
+      "returnType": "void",
+      "signature": "void UpdateItemMenuSwapLinePos(u8 y)",
+      "paramsRaw": "u8 y",
+      "body": "UpdateSwapLineSpritesPos(&gBagMenu->spriteIds[ITEMMENUSPRITE_SWAP_LINE], ITEMMENU_SWAP_LINE_LENGTH | SWAP_LINE_HAS_MARGIN, 120, (y + 1) * 16);",
+      "callsTo": [
+        "UpdateSwapLineSpritesPos"
+      ],
+      "lineCount": 1
+    },
+    "ArrangeBerryGfx": {
+      "returnType": "void",
+      "signature": "static void ArrangeBerryGfx(void *src, void *dest)",
+      "paramsRaw": "void *src, void *dest",
+      "body": "u8 i, j;\n\n    memset(dest, 0, 0x800);\n\n     \n    dest += 0x100;\n\n    for (i = 0; i < 6; i++)\n    {\n         \n        dest += 0x20;\n\n         \n        for (j = 0; j < 6; j++)\n        {\n            memcpy(dest, src, 0x20);\n            dest += 0x20;\n            src += 0x20;\n        }\n\n         \n        if (i != 5)\n            dest += 0x20;\n    }",
+      "callsTo": [],
+      "lineCount": 24
+    },
+    "LoadBerryGfx": {
+      "returnType": "void",
+      "signature": "static void LoadBerryGfx(u8 berryId)",
+      "paramsRaw": "u8 berryId",
+      "body": "struct CompressedSpritePalette pal;\n\n    if (berryId == ITEM_TO_BERRY(ITEM_ENIGMA_BERRY) - 1 && IsEnigmaBerryValid())\n    {\n         \n    }\n\n    pal.data = sBerryPicTable[berryId].pal;\n    pal.tag = TAG_BERRY_PIC_PAL;\n    LoadCompressedSpritePalette(&pal);\n    LZDecompressWram(sBerryPicTable[berryId].tiles, &gDecompressionBuffer[0x1000]);\n    ArrangeBerryGfx(&gDecompressionBuffer[0x1000], &gDecompressionBuffer[0]);",
+      "callsTo": [
+        "ArrangeBerryGfx",
+        "ITEM_TO_BERRY",
+        "IsEnigmaBerryValid",
+        "LZDecompressWram",
+        "LoadCompressedSpritePalette"
+      ],
+      "lineCount": 12
+    },
+    "CreateBerryTagSprite": {
+      "returnType": "u8",
+      "signature": "u8 CreateBerryTagSprite(u8 id, s16 x, s16 y)",
+      "paramsRaw": "u8 id, s16 x, s16 y",
+      "body": "LoadBerryGfx(id);\n    return CreateSprite(&sBerryPicSpriteTemplate, x, y, 0);",
+      "callsTo": [
+        "CreateSprite",
+        "LoadBerryGfx"
+      ],
+      "lineCount": 2
+    },
+    "FreeBerryTagSpritePalette": {
+      "returnType": "void",
+      "signature": "void FreeBerryTagSpritePalette(void)",
+      "paramsRaw": "void",
+      "body": "FreeSpritePaletteByTag(TAG_BERRY_PIC_PAL);",
+      "callsTo": [
+        "FreeSpritePaletteByTag"
+      ],
+      "lineCount": 1
+    },
+    "CreateSpinningBerrySprite": {
+      "returnType": "u8",
+      "signature": "u8 CreateSpinningBerrySprite(u8 berryId, u8 x, u8 y, bool8 startAffine)",
+      "paramsRaw": "u8 berryId, u8 x, u8 y, bool8 startAffine",
+      "body": "u8 spriteId;\n\n    FreeSpritePaletteByTag(TAG_BERRY_PIC_PAL);\n    LoadBerryGfx(berryId);\n    spriteId = CreateSprite(&sBerryPicRotatingSpriteTemplate, x, y, 0);\n    if (startAffine == TRUE)\n        StartSpriteAffineAnim(&gSprites[spriteId], 1);\n\n    return spriteId;",
+      "callsTo": [
+        "CreateSprite",
+        "FreeSpritePaletteByTag",
+        "LoadBerryGfx",
+        "StartSpriteAffineAnim"
+      ],
+      "lineCount": 9
+    },
+    "CreateBerryFlavorCircleSprite": {
+      "returnType": "u8",
+      "signature": "u8 CreateBerryFlavorCircleSprite(s16 x)",
+      "paramsRaw": "s16 x",
+      "body": "return CreateSprite(&sBerryCheckCircleSpriteTemplate, x, 116, 0);",
+      "callsTo": [
+        "CreateSprite"
+      ],
+      "lineCount": 1
+    }
+  }
+}

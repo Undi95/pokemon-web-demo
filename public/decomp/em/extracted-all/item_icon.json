@@ -1,0 +1,78 @@
+{
+  "srcFile": "src/item_icon.c",
+  "count": 5,
+  "functions": {
+    "AllocItemIconTemporaryBuffers": {
+      "returnType": "bool8",
+      "signature": "bool8 AllocItemIconTemporaryBuffers(void)",
+      "paramsRaw": "void",
+      "body": "gItemIconDecompressionBuffer = Alloc(0x120);\n    if (gItemIconDecompressionBuffer == NULL)\n        return FALSE;\n\n    gItemIcon4x4Buffer = AllocZeroed(0x200);\n    if (gItemIcon4x4Buffer == NULL)\n    {\n        Free(gItemIconDecompressionBuffer);\n        return FALSE;\n    }\n\n    return TRUE;",
+      "callsTo": [
+        "Alloc",
+        "AllocZeroed",
+        "Free"
+      ],
+      "lineCount": 12
+    },
+    "FreeItemIconTemporaryBuffers": {
+      "returnType": "void",
+      "signature": "void FreeItemIconTemporaryBuffers(void)",
+      "paramsRaw": "void",
+      "body": "Free(gItemIconDecompressionBuffer);\n    Free(gItemIcon4x4Buffer);",
+      "callsTo": [
+        "Free"
+      ],
+      "lineCount": 2
+    },
+    "CopyItemIconPicTo4x4Buffer": {
+      "returnType": "void",
+      "signature": "void CopyItemIconPicTo4x4Buffer(const void *src, void *dest)",
+      "paramsRaw": "const void *src, void *dest",
+      "body": "u8 i;\n\n    for (i = 0; i < 3; i++)\n        CpuCopy16(src + i * 96, dest + i * 128, 0x60);",
+      "callsTo": [
+        "CpuCopy16"
+      ],
+      "lineCount": 4
+    },
+    "AddItemIconSprite": {
+      "returnType": "u8",
+      "signature": "u8 AddItemIconSprite(u16 tilesTag, u16 paletteTag, u16 itemId)",
+      "paramsRaw": "u16 tilesTag, u16 paletteTag, u16 itemId",
+      "body": "if (!AllocItemIconTemporaryBuffers())\n    {\n        return MAX_SPRITES;\n    }\n    else\n    {\n        u8 spriteId;\n        struct SpriteSheet spriteSheet;\n        struct CompressedSpritePalette spritePalette;\n        struct SpriteTemplate *spriteTemplate;\n\n        LZDecompressWram(GetItemIconPicOrPalette(itemId, 0), gItemIconDecompressionBuffer);\n        CopyItemIconPicTo4x4Buffer(gItemIconDecompressionBuffer, gItemIcon4x4Buffer);\n        spriteSheet.data = gItemIcon4x4Buffer;\n        spriteSheet.size = 0x200;\n        spriteSheet.tag = tilesTag;\n        LoadSpriteSheet(&spriteSheet);\n\n        spritePalette.data = GetItemIconPicOrPalette(itemId, 1);\n        spritePalette.tag = paletteTag;\n        LoadCompressedSpritePalette(&spritePalette);\n\n        spriteTemplate = Alloc(sizeof(*spriteTemplate));\n        CpuCopy16(&gItemIconSpriteTemplate, spriteTemplate, sizeof(*spriteTemplate));\n        spriteTemplate->tileTag = tilesTag;\n        spriteTemplate->paletteTag = paletteTag;\n        spriteId = CreateSprite(spriteTemplate, 0, 0, 0);\n\n        FreeItemIconTemporaryBuffers();\n        Free(spriteTemplate);\n\n        return spriteId;\n    }",
+      "callsTo": [
+        "Alloc",
+        "AllocItemIconTemporaryBuffers",
+        "CopyItemIconPicTo4x4Buffer",
+        "CpuCopy16",
+        "CreateSprite",
+        "Free",
+        "FreeItemIconTemporaryBuffers",
+        "GetItemIconPicOrPalette",
+        "LZDecompressWram",
+        "LoadCompressedSpritePalette",
+        "LoadSpriteSheet"
+      ],
+      "lineCount": 33
+    },
+    "AddCustomItemIconSprite": {
+      "returnType": "u8",
+      "signature": "u8 AddCustomItemIconSprite(const struct SpriteTemplate *customSpriteTemplate, u16 tilesTag, u16 paletteTag, u16 itemId)",
+      "paramsRaw": "const struct SpriteTemplate *customSpriteTemplate, u16 tilesTag, u16 paletteTag, u16 itemId",
+      "body": "if (!AllocItemIconTemporaryBuffers())\n    {\n        return MAX_SPRITES;\n    }\n    else\n    {\n        u8 spriteId;\n        struct SpriteSheet spriteSheet;\n        struct CompressedSpritePalette spritePalette;\n        struct SpriteTemplate *spriteTemplate;\n\n        LZDecompressWram(GetItemIconPicOrPalette(itemId, 0), gItemIconDecompressionBuffer);\n        CopyItemIconPicTo4x4Buffer(gItemIconDecompressionBuffer, gItemIcon4x4Buffer);\n        spriteSheet.data = gItemIcon4x4Buffer;\n        spriteSheet.size = 0x200;\n        spriteSheet.tag = tilesTag;\n        LoadSpriteSheet(&spriteSheet);\n\n        spritePalette.data = GetItemIconPicOrPalette(itemId, 1);\n        spritePalette.tag = paletteTag;\n        LoadCompressedSpritePalette(&spritePalette);\n\n        spriteTemplate = Alloc(sizeof(*spriteTemplate));\n        CpuCopy16(customSpriteTemplate, spriteTemplate, sizeof(*spriteTemplate));\n        spriteTemplate->tileTag = tilesTag;\n        spriteTemplate->paletteTag = paletteTag;\n        spriteId = CreateSprite(spriteTemplate, 0, 0, 0);\n\n        FreeItemIconTemporaryBuffers();\n        Free(spriteTemplate);\n\n        return spriteId;\n    }",
+      "callsTo": [
+        "Alloc",
+        "AllocItemIconTemporaryBuffers",
+        "CopyItemIconPicTo4x4Buffer",
+        "CpuCopy16",
+        "CreateSprite",
+        "Free",
+        "FreeItemIconTemporaryBuffers",
+        "GetItemIconPicOrPalette",
+        "LZDecompressWram",
+        "LoadCompressedSpritePalette",
+        "LoadSpriteSheet"
+      ],
+      "lineCount": 33
+    }
+  }
+}

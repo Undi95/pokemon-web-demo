@@ -1,0 +1,737 @@
+{
+  "srcFile": "src/battle_controller_safari.c",
+  "count": 70,
+  "functions": {
+    "SetControllerToSafari": {
+      "returnType": "void",
+      "signature": "void SetControllerToSafari(void)",
+      "paramsRaw": "void",
+      "body": "gBattlerControllerFuncs[gActiveBattler] = SafariBufferRunCommand;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "SafariBufferRunCommand": {
+      "returnType": "void",
+      "signature": "static void SafariBufferRunCommand(void)",
+      "paramsRaw": "void",
+      "body": "if (gBattleControllerExecFlags & gBitTable[gActiveBattler])\n    {\n        if (gBattleBufferA[gActiveBattler][0] < ARRAY_COUNT(sSafariBufferCommands))\n            sSafariBufferCommands[gBattleBufferA[gActiveBattler][0]]();\n        else\n            SafariBufferExecCompleted();\n    }",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "SafariBufferExecCompleted"
+      ],
+      "lineCount": 7
+    },
+    "HandleInputChooseAction": {
+      "returnType": "void",
+      "signature": "static void HandleInputChooseAction(void)",
+      "paramsRaw": "void",
+      "body": "if (JOY_NEW(A_BUTTON))\n    {\n        PlaySE(SE_SELECT);\n\n        switch (gActionSelectionCursor[gActiveBattler])\n        {\n        case 0:\n            BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, B_ACTION_SAFARI_BALL, 0);\n            break;\n        case 1:\n            BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, B_ACTION_SAFARI_POKEBLOCK, 0);\n            break;\n        case 2:\n            BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, B_ACTION_SAFARI_GO_NEAR, 0);\n            break;\n        case 3:\n            BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, B_ACTION_SAFARI_RUN, 0);\n            break;\n        }\n        SafariBufferExecCompleted();\n    }\n    else if (JOY_NEW(DPAD_LEFT))\n    {\n        if (gActionSelectionCursor[gActiveBattler] & 1)\n        {\n            PlaySE(SE_SELECT);\n            ActionSelectionDestroyCursorAt(gActionSelectionCursor[gActiveBattler]);\n            gActionSelectionCursor[gActiveBattler] ^= 1;\n            ActionSelectionCreateCursorAt(gActionSelectionCursor[gActiveBattler], 0);\n        }\n    }\n    else if (JOY_NEW(DPAD_RIGHT))\n    {\n        if (!(gActionSelectionCursor[gActiveBattler] & 1))\n        {\n            PlaySE(SE_SELECT);\n            ActionSelectionDestroyCursorAt(gActionSelectionCursor[gActiveBattler]);\n            gActionSelectionCursor[gActiveBattler] ^= 1;\n            ActionSelectionCreateCursorAt(gActionSelectionCursor[gActiveBattler], 0);\n        }\n    }\n    else if (JOY_NEW(DPAD_UP))\n    {\n        if (gActionSelectionCursor[gActiveBattler] & 2)\n        {\n            PlaySE(SE_SELECT);\n            ActionSelectionDestroyCursorAt(gActionSelectionCursor[gActiveBattler]);\n            gActionSelectionCursor[gActiveBattler] ^= 2;\n            ActionSelectionCreateCursorAt(gActionSelectionCursor[gActiveBattler], 0);\n        }\n    }\n    else if (JOY_NEW(DPAD_DOWN))\n    {\n        if (!(gActionSelectionCursor[gActiveBattler] & 2))\n        {\n            PlaySE(SE_SELECT);\n            ActionSelectionDestroyCursorAt(gActionSelectionCursor[gActiveBattler]);\n            gActionSelectionCursor[gActiveBattler] ^= 2;\n            ActionSelectionCreateCursorAt(gActionSelectionCursor[gActiveBattler], 0);\n        }\n    }",
+      "callsTo": [
+        "ActionSelectionCreateCursorAt",
+        "ActionSelectionDestroyCursorAt",
+        "BtlController_EmitTwoReturnValues",
+        "JOY_NEW",
+        "PlaySE",
+        "SafariBufferExecCompleted"
+      ],
+      "lineCount": 61
+    },
+    "CompleteOnBattlerSpriteCallbackDummy": {
+      "returnType": "void",
+      "signature": "static void CompleteOnBattlerSpriteCallbackDummy(void)",
+      "paramsRaw": "void",
+      "body": "if (gSprites[gBattlerSpriteIds[gActiveBattler]].callback == SpriteCallbackDummy)\n        SafariBufferExecCompleted();",
+      "callsTo": [
+        "SafariBufferExecCompleted"
+      ],
+      "lineCount": 2
+    },
+    "CompleteOnInactiveTextPrinter": {
+      "returnType": "void",
+      "signature": "static void CompleteOnInactiveTextPrinter(void)",
+      "paramsRaw": "void",
+      "body": "if (!IsTextPrinterActive(B_WIN_MSG))\n        SafariBufferExecCompleted();",
+      "callsTo": [
+        "IsTextPrinterActive",
+        "SafariBufferExecCompleted"
+      ],
+      "lineCount": 2
+    },
+    "CompleteOnHealthboxSpriteCallbackDummy": {
+      "returnType": "void",
+      "signature": "static void CompleteOnHealthboxSpriteCallbackDummy(void)",
+      "paramsRaw": "void",
+      "body": "if (gSprites[gHealthboxSpriteIds[gActiveBattler]].callback == SpriteCallbackDummy)\n        SafariBufferExecCompleted();",
+      "callsTo": [
+        "SafariBufferExecCompleted"
+      ],
+      "lineCount": 2
+    },
+    "SafariSetBattleEndCallbacks": {
+      "returnType": "void",
+      "signature": "static void SafariSetBattleEndCallbacks(void)",
+      "paramsRaw": "void",
+      "body": "if (!gPaletteFade.active)\n    {\n        gMain.inBattle = FALSE;\n        gMain.callback1 = gPreBattleCallback1;\n        SetMainCallback2(gMain.savedCallback);\n    }",
+      "callsTo": [
+        "SetMainCallback2"
+      ],
+      "lineCount": 6
+    },
+    "CompleteOnSpecialAnimDone": {
+      "returnType": "void",
+      "signature": "static void CompleteOnSpecialAnimDone(void)",
+      "paramsRaw": "void",
+      "body": "if (!gDoingBattleAnim || !gBattleSpritesDataPtr->healthBoxesData[gActiveBattler].specialAnimActive)\n        SafariBufferExecCompleted();",
+      "callsTo": [
+        "SafariBufferExecCompleted"
+      ],
+      "lineCount": 2
+    },
+    "SafariOpenPokeblockCase": {
+      "returnType": "void",
+      "signature": "static void SafariOpenPokeblockCase(void)",
+      "paramsRaw": "void",
+      "body": "if (!gPaletteFade.active)\n    {\n        gBattlerControllerFuncs[gActiveBattler] = CompleteWhenChosePokeblock;\n        FreeAllWindowBuffers();\n        OpenPokeblockCaseInBattle();\n    }",
+      "callsTo": [
+        "FreeAllWindowBuffers",
+        "OpenPokeblockCaseInBattle"
+      ],
+      "lineCount": 6
+    },
+    "CompleteWhenChosePokeblock": {
+      "returnType": "void",
+      "signature": "static void CompleteWhenChosePokeblock(void)",
+      "paramsRaw": "void",
+      "body": "if (gMain.callback2 == BattleMainCB2 && !gPaletteFade.active)\n    {\n        BtlController_EmitOneReturnValue(B_COMM_TO_ENGINE, gSpecialVar_ItemId);\n        SafariBufferExecCompleted();\n    }",
+      "callsTo": [
+        "BtlController_EmitOneReturnValue",
+        "SafariBufferExecCompleted"
+      ],
+      "lineCount": 5
+    },
+    "CompleteOnFinishedBattleAnimation": {
+      "returnType": "void",
+      "signature": "static void CompleteOnFinishedBattleAnimation(void)",
+      "paramsRaw": "void",
+      "body": "if (!gBattleSpritesDataPtr->healthBoxesData[gActiveBattler].animFromTableActive)\n        SafariBufferExecCompleted();",
+      "callsTo": [
+        "SafariBufferExecCompleted"
+      ],
+      "lineCount": 2
+    },
+    "SafariBufferExecCompleted": {
+      "returnType": "void",
+      "signature": "static void SafariBufferExecCompleted(void)",
+      "paramsRaw": "void",
+      "body": "gBattlerControllerFuncs[gActiveBattler] = SafariBufferRunCommand;\n    if (gBattleTypeFlags & BATTLE_TYPE_LINK)\n    {\n        u8 playerId = GetMultiplayerId();\n\n        PrepareBufferDataTransferLink(B_COMM_CONTROLLER_IS_DONE, 4, &playerId);\n        gBattleBufferA[gActiveBattler][0] = CONTROLLER_TERMINATOR_NOP;\n    }\n    else\n    {\n        gBattleControllerExecFlags &= ~gBitTable[gActiveBattler];\n    }",
+      "callsTo": [
+        "GetMultiplayerId",
+        "PrepareBufferDataTransferLink"
+      ],
+      "lineCount": 12
+    },
+    "SafariHandleGetMonData": {
+      "returnType": "void",
+      "signature": "static void SafariHandleGetMonData(void)",
+      "paramsRaw": "void",
+      "body": "SafariBufferExecCompleted();",
+      "callsTo": [
+        "SafariBufferExecCompleted"
+      ],
+      "lineCount": 1
+    },
+    "SafariHandleGetRawMonData": {
+      "returnType": "void",
+      "signature": "static void SafariHandleGetRawMonData(void)",
+      "paramsRaw": "void",
+      "body": "SafariBufferExecCompleted();",
+      "callsTo": [
+        "SafariBufferExecCompleted"
+      ],
+      "lineCount": 1
+    },
+    "SafariHandleSetMonData": {
+      "returnType": "void",
+      "signature": "static void SafariHandleSetMonData(void)",
+      "paramsRaw": "void",
+      "body": "SafariBufferExecCompleted();",
+      "callsTo": [
+        "SafariBufferExecCompleted"
+      ],
+      "lineCount": 1
+    },
+    "SafariHandleSetRawMonData": {
+      "returnType": "void",
+      "signature": "static void SafariHandleSetRawMonData(void)",
+      "paramsRaw": "void",
+      "body": "SafariBufferExecCompleted();",
+      "callsTo": [
+        "SafariBufferExecCompleted"
+      ],
+      "lineCount": 1
+    },
+    "SafariHandleLoadMonSprite": {
+      "returnType": "void",
+      "signature": "static void SafariHandleLoadMonSprite(void)",
+      "paramsRaw": "void",
+      "body": "SafariBufferExecCompleted();",
+      "callsTo": [
+        "SafariBufferExecCompleted"
+      ],
+      "lineCount": 1
+    },
+    "SafariHandleSwitchInAnim": {
+      "returnType": "void",
+      "signature": "static void SafariHandleSwitchInAnim(void)",
+      "paramsRaw": "void",
+      "body": "SafariBufferExecCompleted();",
+      "callsTo": [
+        "SafariBufferExecCompleted"
+      ],
+      "lineCount": 1
+    },
+    "SafariHandleReturnMonToBall": {
+      "returnType": "void",
+      "signature": "static void SafariHandleReturnMonToBall(void)",
+      "paramsRaw": "void",
+      "body": "SafariBufferExecCompleted();",
+      "callsTo": [
+        "SafariBufferExecCompleted"
+      ],
+      "lineCount": 1
+    },
+    "SafariHandleDrawTrainerPic": {
+      "returnType": "void",
+      "signature": "static void SafariHandleDrawTrainerPic(void)",
+      "paramsRaw": "void",
+      "body": "DecompressTrainerBackPic(gSaveBlock2Ptr->playerGender, gActiveBattler);\n    SetMultiuseSpriteTemplateToTrainerBack(gSaveBlock2Ptr->playerGender, GetBattlerPosition(gActiveBattler));\n    gBattlerSpriteIds[gActiveBattler] = CreateSprite(\n      &gMultiuseSpriteTemplate,\n      80,\n      (8 - gTrainerBackPicCoords[gSaveBlock2Ptr->playerGender].size) * 4 + 80,\n      30);\n    gSprites[gBattlerSpriteIds[gActiveBattler]].oam.paletteNum = gActiveBattler;\n    gSprites[gBattlerSpriteIds[gActiveBattler]].x2 = DISPLAY_WIDTH;\n    gSprites[gBattlerSpriteIds[gActiveBattler]].sSpeedX = -2;\n    gSprites[gBattlerSpriteIds[gActiveBattler]].callback = SpriteCB_TrainerSlideIn;\n    gBattlerControllerFuncs[gActiveBattler] = CompleteOnBattlerSpriteCallbackDummy;",
+      "callsTo": [
+        "CreateSprite",
+        "DecompressTrainerBackPic",
+        "GetBattlerPosition",
+        "SetMultiuseSpriteTemplateToTrainerBack"
+      ],
+      "lineCount": 12
+    },
+    "SafariHandleTrainerSlide": {
+      "returnType": "void",
+      "signature": "static void SafariHandleTrainerSlide(void)",
+      "paramsRaw": "void",
+      "body": "SafariBufferExecCompleted();",
+      "callsTo": [
+        "SafariBufferExecCompleted"
+      ],
+      "lineCount": 1
+    },
+    "SafariHandleTrainerSlideBack": {
+      "returnType": "void",
+      "signature": "static void SafariHandleTrainerSlideBack(void)",
+      "paramsRaw": "void",
+      "body": "SafariBufferExecCompleted();",
+      "callsTo": [
+        "SafariBufferExecCompleted"
+      ],
+      "lineCount": 1
+    },
+    "SafariHandleFaintAnimation": {
+      "returnType": "void",
+      "signature": "static void SafariHandleFaintAnimation(void)",
+      "paramsRaw": "void",
+      "body": "SafariBufferExecCompleted();",
+      "callsTo": [
+        "SafariBufferExecCompleted"
+      ],
+      "lineCount": 1
+    },
+    "SafariHandlePaletteFade": {
+      "returnType": "void",
+      "signature": "static void SafariHandlePaletteFade(void)",
+      "paramsRaw": "void",
+      "body": "SafariBufferExecCompleted();",
+      "callsTo": [
+        "SafariBufferExecCompleted"
+      ],
+      "lineCount": 1
+    },
+    "SafariHandleSuccessBallThrowAnim": {
+      "returnType": "void",
+      "signature": "static void SafariHandleSuccessBallThrowAnim(void)",
+      "paramsRaw": "void",
+      "body": "gBattleSpritesDataPtr->animationData->ballThrowCaseId = BALL_3_SHAKES_SUCCESS;\n    gDoingBattleAnim = TRUE;\n    InitAndLaunchSpecialAnimation(gActiveBattler, gActiveBattler, GetBattlerAtPosition(B_POSITION_OPPONENT_LEFT), B_ANIM_BALL_THROW_WITH_TRAINER);\n    gBattlerControllerFuncs[gActiveBattler] = CompleteOnSpecialAnimDone;",
+      "callsTo": [
+        "GetBattlerAtPosition",
+        "InitAndLaunchSpecialAnimation"
+      ],
+      "lineCount": 4
+    },
+    "SafariHandleBallThrowAnim": {
+      "returnType": "void",
+      "signature": "static void SafariHandleBallThrowAnim(void)",
+      "paramsRaw": "void",
+      "body": "u8 ballThrowCaseId = gBattleBufferA[gActiveBattler][1];\n\n    gBattleSpritesDataPtr->animationData->ballThrowCaseId = ballThrowCaseId;\n    gDoingBattleAnim = TRUE;\n    InitAndLaunchSpecialAnimation(gActiveBattler, gActiveBattler, GetBattlerAtPosition(B_POSITION_OPPONENT_LEFT), B_ANIM_BALL_THROW_WITH_TRAINER);\n    gBattlerControllerFuncs[gActiveBattler] = CompleteOnSpecialAnimDone;",
+      "callsTo": [
+        "GetBattlerAtPosition",
+        "InitAndLaunchSpecialAnimation"
+      ],
+      "lineCount": 6
+    },
+    "SafariHandlePause": {
+      "returnType": "void",
+      "signature": "static void SafariHandlePause(void)",
+      "paramsRaw": "void",
+      "body": "SafariBufferExecCompleted();",
+      "callsTo": [
+        "SafariBufferExecCompleted"
+      ],
+      "lineCount": 1
+    },
+    "SafariHandleMoveAnimation": {
+      "returnType": "void",
+      "signature": "static void SafariHandleMoveAnimation(void)",
+      "paramsRaw": "void",
+      "body": "SafariBufferExecCompleted();",
+      "callsTo": [
+        "SafariBufferExecCompleted"
+      ],
+      "lineCount": 1
+    },
+    "SafariHandlePrintString": {
+      "returnType": "void",
+      "signature": "static void SafariHandlePrintString(void)",
+      "paramsRaw": "void",
+      "body": "u16 *stringId;\n\n    gBattle_BG0_X = 0;\n    gBattle_BG0_Y = 0;\n    stringId = (u16 *)(&gBattleBufferA[gActiveBattler][2]);\n    BufferStringBattle(*stringId);\n    BattlePutTextOnWindow(gDisplayedStringBattle, B_WIN_MSG);\n    gBattlerControllerFuncs[gActiveBattler] = CompleteOnInactiveTextPrinter;",
+      "callsTo": [
+        "BattlePutTextOnWindow",
+        "BufferStringBattle"
+      ],
+      "lineCount": 8
+    },
+    "SafariHandlePrintSelectionString": {
+      "returnType": "void",
+      "signature": "static void SafariHandlePrintSelectionString(void)",
+      "paramsRaw": "void",
+      "body": "if (GetBattlerSide(gActiveBattler) == B_SIDE_PLAYER)\n        SafariHandlePrintString();\n    else\n        SafariBufferExecCompleted();",
+      "callsTo": [
+        "GetBattlerSide",
+        "SafariBufferExecCompleted",
+        "SafariHandlePrintString"
+      ],
+      "lineCount": 4
+    },
+    "HandleChooseActionAfterDma3": {
+      "returnType": "void",
+      "signature": "static void HandleChooseActionAfterDma3(void)",
+      "paramsRaw": "void",
+      "body": "if (!IsDma3ManagerBusyWithBgCopy())\n    {\n        gBattle_BG0_X = 0;\n        gBattle_BG0_Y = DISPLAY_HEIGHT;\n        gBattlerControllerFuncs[gActiveBattler] = HandleInputChooseAction;\n    }",
+      "callsTo": [
+        "IsDma3ManagerBusyWithBgCopy"
+      ],
+      "lineCount": 6
+    },
+    "SafariHandleChooseAction": {
+      "returnType": "void",
+      "signature": "static void SafariHandleChooseAction(void)",
+      "paramsRaw": "void",
+      "body": "s32 i;\n\n    gBattlerControllerFuncs[gActiveBattler] = HandleChooseActionAfterDma3;\n    BattlePutTextOnWindow(gText_SafariZoneMenu, B_WIN_ACTION_MENU);\n\n    for (i = 0; i < 4; i++)\n        ActionSelectionDestroyCursorAt(i);\n\n    ActionSelectionCreateCursorAt(gActionSelectionCursor[gActiveBattler], 0);\n    BattleStringExpandPlaceholdersToDisplayedString(gText_WhatWillPkmnDo2);\n    BattlePutTextOnWindow(gDisplayedStringBattle, B_WIN_ACTION_PROMPT);",
+      "callsTo": [
+        "ActionSelectionCreateCursorAt",
+        "ActionSelectionDestroyCursorAt",
+        "BattlePutTextOnWindow",
+        "BattleStringExpandPlaceholdersToDisplayedString"
+      ],
+      "lineCount": 11
+    },
+    "SafariHandleYesNoBox": {
+      "returnType": "void",
+      "signature": "static void SafariHandleYesNoBox(void)",
+      "paramsRaw": "void",
+      "body": "SafariBufferExecCompleted();",
+      "callsTo": [
+        "SafariBufferExecCompleted"
+      ],
+      "lineCount": 1
+    },
+    "SafariHandleChooseMove": {
+      "returnType": "void",
+      "signature": "static void SafariHandleChooseMove(void)",
+      "paramsRaw": "void",
+      "body": "SafariBufferExecCompleted();",
+      "callsTo": [
+        "SafariBufferExecCompleted"
+      ],
+      "lineCount": 1
+    },
+    "SafariHandleChooseItem": {
+      "returnType": "void",
+      "signature": "static void SafariHandleChooseItem(void)",
+      "paramsRaw": "void",
+      "body": "BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);\n    gBattlerControllerFuncs[gActiveBattler] = SafariOpenPokeblockCase;\n    gBattlerInMenuId = gActiveBattler;",
+      "callsTo": [
+        "BeginNormalPaletteFade"
+      ],
+      "lineCount": 3
+    },
+    "SafariHandleChoosePokemon": {
+      "returnType": "void",
+      "signature": "static void SafariHandleChoosePokemon(void)",
+      "paramsRaw": "void",
+      "body": "SafariBufferExecCompleted();",
+      "callsTo": [
+        "SafariBufferExecCompleted"
+      ],
+      "lineCount": 1
+    },
+    "SafariHandleCmd23": {
+      "returnType": "void",
+      "signature": "static void SafariHandleCmd23(void)",
+      "paramsRaw": "void",
+      "body": "SafariBufferExecCompleted();",
+      "callsTo": [
+        "SafariBufferExecCompleted"
+      ],
+      "lineCount": 1
+    },
+    "SafariHandleHealthBarUpdate": {
+      "returnType": "void",
+      "signature": "static void SafariHandleHealthBarUpdate(void)",
+      "paramsRaw": "void",
+      "body": "SafariBufferExecCompleted();",
+      "callsTo": [
+        "SafariBufferExecCompleted"
+      ],
+      "lineCount": 1
+    },
+    "SafariHandleExpUpdate": {
+      "returnType": "void",
+      "signature": "static void SafariHandleExpUpdate(void)",
+      "paramsRaw": "void",
+      "body": "SafariBufferExecCompleted();",
+      "callsTo": [
+        "SafariBufferExecCompleted"
+      ],
+      "lineCount": 1
+    },
+    "SafariHandleStatusIconUpdate": {
+      "returnType": "void",
+      "signature": "static void SafariHandleStatusIconUpdate(void)",
+      "paramsRaw": "void",
+      "body": "UpdateHealthboxAttribute(gHealthboxSpriteIds[gActiveBattler], &gPlayerParty[gBattlerPartyIndexes[gActiveBattler]], HEALTHBOX_SAFARI_BALLS_TEXT);\n    SafariBufferExecCompleted();",
+      "callsTo": [
+        "SafariBufferExecCompleted",
+        "UpdateHealthboxAttribute"
+      ],
+      "lineCount": 2
+    },
+    "SafariHandleStatusAnimation": {
+      "returnType": "void",
+      "signature": "static void SafariHandleStatusAnimation(void)",
+      "paramsRaw": "void",
+      "body": "SafariBufferExecCompleted();",
+      "callsTo": [
+        "SafariBufferExecCompleted"
+      ],
+      "lineCount": 1
+    },
+    "SafariHandleStatusXor": {
+      "returnType": "void",
+      "signature": "static void SafariHandleStatusXor(void)",
+      "paramsRaw": "void",
+      "body": "SafariBufferExecCompleted();",
+      "callsTo": [
+        "SafariBufferExecCompleted"
+      ],
+      "lineCount": 1
+    },
+    "SafariHandleDataTransfer": {
+      "returnType": "void",
+      "signature": "static void SafariHandleDataTransfer(void)",
+      "paramsRaw": "void",
+      "body": "SafariBufferExecCompleted();",
+      "callsTo": [
+        "SafariBufferExecCompleted"
+      ],
+      "lineCount": 1
+    },
+    "SafariHandleDMA3Transfer": {
+      "returnType": "void",
+      "signature": "static void SafariHandleDMA3Transfer(void)",
+      "paramsRaw": "void",
+      "body": "SafariBufferExecCompleted();",
+      "callsTo": [
+        "SafariBufferExecCompleted"
+      ],
+      "lineCount": 1
+    },
+    "SafariHandlePlayBGM": {
+      "returnType": "void",
+      "signature": "static void SafariHandlePlayBGM(void)",
+      "paramsRaw": "void",
+      "body": "SafariBufferExecCompleted();",
+      "callsTo": [
+        "SafariBufferExecCompleted"
+      ],
+      "lineCount": 1
+    },
+    "SafariHandleCmd32": {
+      "returnType": "void",
+      "signature": "static void SafariHandleCmd32(void)",
+      "paramsRaw": "void",
+      "body": "SafariBufferExecCompleted();",
+      "callsTo": [
+        "SafariBufferExecCompleted"
+      ],
+      "lineCount": 1
+    },
+    "SafariHandleTwoReturnValues": {
+      "returnType": "void",
+      "signature": "static void SafariHandleTwoReturnValues(void)",
+      "paramsRaw": "void",
+      "body": "SafariBufferExecCompleted();",
+      "callsTo": [
+        "SafariBufferExecCompleted"
+      ],
+      "lineCount": 1
+    },
+    "SafariHandleChosenMonReturnValue": {
+      "returnType": "void",
+      "signature": "static void SafariHandleChosenMonReturnValue(void)",
+      "paramsRaw": "void",
+      "body": "SafariBufferExecCompleted();",
+      "callsTo": [
+        "SafariBufferExecCompleted"
+      ],
+      "lineCount": 1
+    },
+    "SafariHandleOneReturnValue": {
+      "returnType": "void",
+      "signature": "static void SafariHandleOneReturnValue(void)",
+      "paramsRaw": "void",
+      "body": "SafariBufferExecCompleted();",
+      "callsTo": [
+        "SafariBufferExecCompleted"
+      ],
+      "lineCount": 1
+    },
+    "SafariHandleOneReturnValue_Duplicate": {
+      "returnType": "void",
+      "signature": "static void SafariHandleOneReturnValue_Duplicate(void)",
+      "paramsRaw": "void",
+      "body": "SafariBufferExecCompleted();",
+      "callsTo": [
+        "SafariBufferExecCompleted"
+      ],
+      "lineCount": 1
+    },
+    "SafariHandleClearUnkVar": {
+      "returnType": "void",
+      "signature": "static void SafariHandleClearUnkVar(void)",
+      "paramsRaw": "void",
+      "body": "SafariBufferExecCompleted();",
+      "callsTo": [
+        "SafariBufferExecCompleted"
+      ],
+      "lineCount": 1
+    },
+    "SafariHandleSetUnkVar": {
+      "returnType": "void",
+      "signature": "static void SafariHandleSetUnkVar(void)",
+      "paramsRaw": "void",
+      "body": "SafariBufferExecCompleted();",
+      "callsTo": [
+        "SafariBufferExecCompleted"
+      ],
+      "lineCount": 1
+    },
+    "SafariHandleClearUnkFlag": {
+      "returnType": "void",
+      "signature": "static void SafariHandleClearUnkFlag(void)",
+      "paramsRaw": "void",
+      "body": "SafariBufferExecCompleted();",
+      "callsTo": [
+        "SafariBufferExecCompleted"
+      ],
+      "lineCount": 1
+    },
+    "SafariHandleToggleUnkFlag": {
+      "returnType": "void",
+      "signature": "static void SafariHandleToggleUnkFlag(void)",
+      "paramsRaw": "void",
+      "body": "SafariBufferExecCompleted();",
+      "callsTo": [
+        "SafariBufferExecCompleted"
+      ],
+      "lineCount": 1
+    },
+    "SafariHandleHitAnimation": {
+      "returnType": "void",
+      "signature": "static void SafariHandleHitAnimation(void)",
+      "paramsRaw": "void",
+      "body": "SafariBufferExecCompleted();",
+      "callsTo": [
+        "SafariBufferExecCompleted"
+      ],
+      "lineCount": 1
+    },
+    "SafariHandleCantSwitch": {
+      "returnType": "void",
+      "signature": "static void SafariHandleCantSwitch(void)",
+      "paramsRaw": "void",
+      "body": "SafariBufferExecCompleted();",
+      "callsTo": [
+        "SafariBufferExecCompleted"
+      ],
+      "lineCount": 1
+    },
+    "SafariHandlePlaySE": {
+      "returnType": "void",
+      "signature": "static void SafariHandlePlaySE(void)",
+      "paramsRaw": "void",
+      "body": "s8 pan;\n\n    if (GetBattlerSide(gActiveBattler) == B_SIDE_PLAYER)\n        pan = SOUND_PAN_ATTACKER;\n    else\n        pan = SOUND_PAN_TARGET;\n\n    PlaySE12WithPanning(gBattleBufferA[gActiveBattler][1] | (gBattleBufferA[gActiveBattler][2] << 8), pan);\n    SafariBufferExecCompleted();",
+      "callsTo": [
+        "GetBattlerSide",
+        "PlaySE12WithPanning",
+        "SafariBufferExecCompleted"
+      ],
+      "lineCount": 9
+    },
+    "SafariHandlePlayFanfareOrBGM": {
+      "returnType": "void",
+      "signature": "static void SafariHandlePlayFanfareOrBGM(void)",
+      "paramsRaw": "void",
+      "body": "if (gBattleBufferA[gActiveBattler][3])\n    {\n        BattleStopLowHpSound();\n        PlayBGM(gBattleBufferA[gActiveBattler][1] | (gBattleBufferA[gActiveBattler][2] << 8));\n    }\n    else\n    {\n        PlayFanfare(gBattleBufferA[gActiveBattler][1] | (gBattleBufferA[gActiveBattler][2] << 8));\n    }\n\n    SafariBufferExecCompleted();",
+      "callsTo": [
+        "BattleStopLowHpSound",
+        "PlayBGM",
+        "PlayFanfare",
+        "SafariBufferExecCompleted"
+      ],
+      "lineCount": 11
+    },
+    "SafariHandleFaintingCry": {
+      "returnType": "void",
+      "signature": "static void SafariHandleFaintingCry(void)",
+      "paramsRaw": "void",
+      "body": "u16 species = GetMonData(&gPlayerParty[gBattlerPartyIndexes[gActiveBattler]], MON_DATA_SPECIES);\n\n    PlayCry_Normal(species, 25);\n    SafariBufferExecCompleted();",
+      "callsTo": [
+        "GetMonData",
+        "PlayCry_Normal",
+        "SafariBufferExecCompleted"
+      ],
+      "lineCount": 4
+    },
+    "SafariHandleIntroSlide": {
+      "returnType": "void",
+      "signature": "static void SafariHandleIntroSlide(void)",
+      "paramsRaw": "void",
+      "body": "HandleIntroSlide(gBattleBufferA[gActiveBattler][1]);\n    gIntroSlideFlags |= 1;\n    SafariBufferExecCompleted();",
+      "callsTo": [
+        "HandleIntroSlide",
+        "SafariBufferExecCompleted"
+      ],
+      "lineCount": 3
+    },
+    "SafariHandleIntroTrainerBallThrow": {
+      "returnType": "void",
+      "signature": "static void SafariHandleIntroTrainerBallThrow(void)",
+      "paramsRaw": "void",
+      "body": "UpdateHealthboxAttribute(gHealthboxSpriteIds[gActiveBattler], &gPlayerParty[gBattlerPartyIndexes[gActiveBattler]], HEALTHBOX_SAFARI_ALL_TEXT);\n    StartHealthboxSlideIn(gActiveBattler);\n    SetHealthboxSpriteVisible(gHealthboxSpriteIds[gActiveBattler]);\n    gBattlerControllerFuncs[gActiveBattler] = CompleteOnHealthboxSpriteCallbackDummy;",
+      "callsTo": [
+        "SetHealthboxSpriteVisible",
+        "StartHealthboxSlideIn",
+        "UpdateHealthboxAttribute"
+      ],
+      "lineCount": 4
+    },
+    "SafariHandleDrawPartyStatusSummary": {
+      "returnType": "void",
+      "signature": "static void SafariHandleDrawPartyStatusSummary(void)",
+      "paramsRaw": "void",
+      "body": "SafariBufferExecCompleted();",
+      "callsTo": [
+        "SafariBufferExecCompleted"
+      ],
+      "lineCount": 1
+    },
+    "SafariHandleHidePartyStatusSummary": {
+      "returnType": "void",
+      "signature": "static void SafariHandleHidePartyStatusSummary(void)",
+      "paramsRaw": "void",
+      "body": "SafariBufferExecCompleted();",
+      "callsTo": [
+        "SafariBufferExecCompleted"
+      ],
+      "lineCount": 1
+    },
+    "SafariHandleEndBounceEffect": {
+      "returnType": "void",
+      "signature": "static void SafariHandleEndBounceEffect(void)",
+      "paramsRaw": "void",
+      "body": "SafariBufferExecCompleted();",
+      "callsTo": [
+        "SafariBufferExecCompleted"
+      ],
+      "lineCount": 1
+    },
+    "SafariHandleSpriteInvisibility": {
+      "returnType": "void",
+      "signature": "static void SafariHandleSpriteInvisibility(void)",
+      "paramsRaw": "void",
+      "body": "SafariBufferExecCompleted();",
+      "callsTo": [
+        "SafariBufferExecCompleted"
+      ],
+      "lineCount": 1
+    },
+    "SafariHandleBattleAnimation": {
+      "returnType": "void",
+      "signature": "static void SafariHandleBattleAnimation(void)",
+      "paramsRaw": "void",
+      "body": "u8 animationId = gBattleBufferA[gActiveBattler][1];\n    u16 argument = gBattleBufferA[gActiveBattler][2] | (gBattleBufferA[gActiveBattler][3] << 8);\n\n    if (TryHandleLaunchBattleTableAnimation(gActiveBattler, gActiveBattler, gActiveBattler, animationId, argument))\n        SafariBufferExecCompleted();\n    else\n        gBattlerControllerFuncs[gActiveBattler] = CompleteOnFinishedBattleAnimation;",
+      "callsTo": [
+        "SafariBufferExecCompleted",
+        "TryHandleLaunchBattleTableAnimation"
+      ],
+      "lineCount": 7
+    },
+    "SafariHandleLinkStandbyMsg": {
+      "returnType": "void",
+      "signature": "static void SafariHandleLinkStandbyMsg(void)",
+      "paramsRaw": "void",
+      "body": "SafariBufferExecCompleted();",
+      "callsTo": [
+        "SafariBufferExecCompleted"
+      ],
+      "lineCount": 1
+    },
+    "SafariHandleResetActionMoveSelection": {
+      "returnType": "void",
+      "signature": "static void SafariHandleResetActionMoveSelection(void)",
+      "paramsRaw": "void",
+      "body": "SafariBufferExecCompleted();",
+      "callsTo": [
+        "SafariBufferExecCompleted"
+      ],
+      "lineCount": 1
+    },
+    "SafariHandleEndLinkBattle": {
+      "returnType": "void",
+      "signature": "static void SafariHandleEndLinkBattle(void)",
+      "paramsRaw": "void",
+      "body": "gBattleOutcome = gBattleBufferA[gActiveBattler][1];\n    FadeOutMapMusic(5);\n    BeginFastPaletteFade(3);\n    SafariBufferExecCompleted();\n    if ((gBattleTypeFlags & BATTLE_TYPE_LINK) && !(gBattleTypeFlags & BATTLE_TYPE_IS_MASTER))\n        gBattlerControllerFuncs[gActiveBattler] = SafariSetBattleEndCallbacks;",
+      "callsTo": [
+        "BeginFastPaletteFade",
+        "FadeOutMapMusic",
+        "SafariBufferExecCompleted"
+      ],
+      "lineCount": 6
+    },
+    "SafariCmdEnd": {
+      "returnType": "void",
+      "signature": "static void SafariCmdEnd(void)",
+      "paramsRaw": "void",
+      "body": "",
+      "callsTo": [],
+      "lineCount": 1
+    }
+  }
+}

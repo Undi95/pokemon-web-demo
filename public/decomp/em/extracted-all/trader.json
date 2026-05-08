@@ -1,0 +1,155 @@
+{
+  "srcFile": "src/trader.c",
+  "count": 13,
+  "functions": {
+    "TraderSetup": {
+      "returnType": "void",
+      "signature": "void TraderSetup(void)",
+      "paramsRaw": "void",
+      "body": "u8 i;\n    struct MauvilleOldManTrader *trader = &gSaveBlock1Ptr->oldMan.trader;\n\n    trader->id = MAUVILLE_MAN_TRADER;\n    trader->alreadyTraded = FALSE;\n\n    for (i = 0; i < NUM_TRADER_ITEMS; i++)\n    {\n        StringCopy(trader->playerNames[i], sDefaultTraderNames[i]);\n        trader->decorations[i] = sDefaultTraderDecorations[i];\n        trader->language[i] = GAME_LANGUAGE;\n    }",
+      "callsTo": [
+        "StringCopy"
+      ],
+      "lineCount": 12
+    },
+    "Trader_ResetFlag": {
+      "returnType": "void",
+      "signature": "void Trader_ResetFlag(void)",
+      "paramsRaw": "void",
+      "body": "struct MauvilleOldManTrader *trader = &gSaveBlock1Ptr->oldMan.trader;\n    trader->alreadyTraded = FALSE;",
+      "callsTo": [],
+      "lineCount": 2
+    },
+    "CreateAvailableDecorationsMenu": {
+      "returnType": "void",
+      "signature": "void CreateAvailableDecorationsMenu(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "u8 i;\n    s16 *data = gTasks[taskId].data;\n    struct MauvilleOldManTrader *trader = &gSaveBlock1Ptr->oldMan.trader;\n    struct WindowTemplate windowTemplate = {\n        .bg = 0,\n        .tilemapLeft = 1,\n        .tilemapTop = 1,\n        .width = 10,\n        .height = 10,\n        .paletteNum = 15,\n        .baseBlock = 1\n    };\n    s32 windowWidth = GetStringWidth(FONT_NORMAL, gText_Exit, 0);\n    s32 fiveMarksWidth = GetStringWidth(FONT_NORMAL, gText_FiveMarks, 0);\n    for (i = 0; i < NUM_TRADER_ITEMS; i++)\n    {\n        s32 curWidth;\n        if (trader->decorations[i] > NUM_DECORATIONS)\n            curWidth = fiveMarksWidth;\n        else\n            curWidth = GetStringWidth(FONT_NORMAL, gDecorations[trader->decorations[i]].name, 0);\n        if (curWidth > windowWidth)\n            windowWidth = curWidth;\n    }\n    windowTemplate.width = ConvertPixelWidthToTileWidth(windowWidth);\n    tWindowId = AddWindow(&windowTemplate);\n    DrawStdFrameWithCustomTileAndPalette(tWindowId, FALSE, 0x214, 14);\n    for (i = 0; i < NUM_TRADER_ITEMS; i++)\n    {\n        if (trader->decorations[i] > NUM_DECORATIONS)\n            AddTextPrinterParameterized(tWindowId, FONT_NORMAL, gText_FiveMarks, 8, 16 * i + 1, TEXT_SKIP_DRAW, NULL);\n        else\n            AddTextPrinterParameterized(tWindowId, FONT_NORMAL, gDecorations[trader->decorations[i]].name, 8, 16 * i + 1, TEXT_SKIP_DRAW, NULL);\n    }\n    AddTextPrinterParameterized(tWindowId, FONT_NORMAL, gText_Exit, 8, 16 * i + 1, TEXT_SKIP_DRAW, NULL);\n    InitMenuInUpperLeftCornerNormal(tWindowId, NUM_TRADER_ITEMS + 1, 0);\n    ScheduleBgCopyTilemapToVram(0);",
+      "callsTo": [
+        "AddTextPrinterParameterized",
+        "AddWindow",
+        "ConvertPixelWidthToTileWidth",
+        "DrawStdFrameWithCustomTileAndPalette",
+        "GetStringWidth",
+        "InitMenuInUpperLeftCornerNormal",
+        "ScheduleBgCopyTilemapToVram"
+      ],
+      "lineCount": 37
+    },
+    "Task_BufferDecorSelectionAndCloseWindow": {
+      "returnType": "void",
+      "signature": "void Task_BufferDecorSelectionAndCloseWindow(u8 taskId, u8 decorationId)",
+      "paramsRaw": "u8 taskId, u8 decorationId",
+      "body": "s16 *data = gTasks[taskId].data;\n    if (decorationId > NUM_DECORATIONS)\n        gSpecialVar_0x8004 = 0xFFFF;\n    else\n        gSpecialVar_0x8004 = decorationId;\n\n    ClearStdWindowAndFrameToTransparent(tWindowId, FALSE);\n    ClearWindowTilemap(tWindowId);\n    RemoveWindow(tWindowId);\n    ScheduleBgCopyTilemapToVram(0);\n    DestroyTask(taskId);\n    ScriptContext_Enable();",
+      "callsTo": [
+        "ClearStdWindowAndFrameToTransparent",
+        "ClearWindowTilemap",
+        "DestroyTask",
+        "RemoveWindow",
+        "ScheduleBgCopyTilemapToVram",
+        "ScriptContext_Enable"
+      ],
+      "lineCount": 12
+    },
+    "Task_HandleGetDecorationMenuInput": {
+      "returnType": "void",
+      "signature": "void Task_HandleGetDecorationMenuInput(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "struct MauvilleOldManTrader *trader = &gSaveBlock1Ptr->oldMan.trader;\n    s8 input = Menu_ProcessInput();\n\n    switch (input)\n    {\n        case MENU_NOTHING_CHOSEN:\n            break;\n        case MENU_B_PRESSED:\n        case NUM_TRADER_ITEMS:  \n            PlaySE(SE_SELECT);\n            Task_BufferDecorSelectionAndCloseWindow(taskId, 0);\n            break;\n        default:\n            PlaySE(SE_SELECT);\n            gSpecialVar_0x8005 = input;\n            StringCopy(gStringVar1, trader->playerNames[input]);\n            ConvertInternationalString(gStringVar1, trader->language[input]);\n            Task_BufferDecorSelectionAndCloseWindow(taskId, trader->decorations[input]);\n            break;\n    }",
+      "callsTo": [
+        "ConvertInternationalString",
+        "Menu_ProcessInput",
+        "PlaySE",
+        "StringCopy",
+        "Task_BufferDecorSelectionAndCloseWindow"
+      ],
+      "lineCount": 20
+    },
+    "GetTraderTradedFlag": {
+      "returnType": "void",
+      "signature": "void GetTraderTradedFlag(void)",
+      "paramsRaw": "void",
+      "body": "struct MauvilleOldManTrader *trader = &gSaveBlock1Ptr->oldMan.trader;\n    gSpecialVar_Result = trader->alreadyTraded;",
+      "callsTo": [],
+      "lineCount": 2
+    },
+    "DoesPlayerHaveNoDecorations": {
+      "returnType": "void",
+      "signature": "void DoesPlayerHaveNoDecorations(void)",
+      "paramsRaw": "void",
+      "body": "u8 i;\n\n    for (i = 0; i < DECORCAT_COUNT; i++)\n    {\n        if (GetNumOwnedDecorationsInCategory(i))\n        {\n            gSpecialVar_Result = FALSE;\n            return;\n        }\n    }\n    gSpecialVar_Result = TRUE;",
+      "callsTo": [
+        "GetNumOwnedDecorationsInCategory"
+      ],
+      "lineCount": 11
+    },
+    "IsDecorationCategoryFull": {
+      "returnType": "void",
+      "signature": "void IsDecorationCategoryFull(void)",
+      "paramsRaw": "void",
+      "body": "gSpecialVar_Result = FALSE;\n    if (gDecorations[gSpecialVar_0x8004].category != gDecorations[gSpecialVar_0x8006].category\n        && GetFirstEmptyDecorSlot(gDecorations[gSpecialVar_0x8004].category) == -1)\n    {\n        CopyDecorationCategoryName(gStringVar2, gDecorations[gSpecialVar_0x8004].category);\n        gSpecialVar_Result = TRUE;\n    }",
+      "callsTo": [
+        "CopyDecorationCategoryName",
+        "GetFirstEmptyDecorSlot"
+      ],
+      "lineCount": 7
+    },
+    "TraderShowDecorationMenu": {
+      "returnType": "void",
+      "signature": "void TraderShowDecorationMenu(void)",
+      "paramsRaw": "void",
+      "body": "CreateTask(ShowDecorationCategoriesWindow, 0);",
+      "callsTo": [
+        "CreateTask"
+      ],
+      "lineCount": 1
+    },
+    "DecorationItemsMenuAction_Trade": {
+      "returnType": "void",
+      "signature": "void DecorationItemsMenuAction_Trade(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "if (IsSelectedDecorInThePC() == TRUE)\n    {\n        gSpecialVar_0x8006 = gCurDecorationItems[gCurDecorationIndex];\n        StringCopy(gStringVar3, gDecorations[gSpecialVar_0x8004].name);\n        StringCopy(gStringVar2, gDecorations[gSpecialVar_0x8006].name);\n    }\n    else\n    {\n        gSpecialVar_0x8006 = 0xFFFF;\n    }\n    DestroyTask(taskId);\n    ScriptContext_Enable();",
+      "callsTo": [
+        "DestroyTask",
+        "IsSelectedDecorInThePC",
+        "ScriptContext_Enable",
+        "StringCopy"
+      ],
+      "lineCount": 12
+    },
+    "ExitTraderMenu": {
+      "returnType": "void",
+      "signature": "void ExitTraderMenu(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "gSpecialVar_0x8006 = 0;\n    DestroyTask(taskId);\n    ScriptContext_Enable();",
+      "callsTo": [
+        "DestroyTask",
+        "ScriptContext_Enable"
+      ],
+      "lineCount": 3
+    },
+    "TraderDoDecorationTrade": {
+      "returnType": "void",
+      "signature": "void TraderDoDecorationTrade(void)",
+      "paramsRaw": "void",
+      "body": "struct MauvilleOldManTrader *trader = &gSaveBlock1Ptr->oldMan.trader;\n\n    DecorationRemove(gSpecialVar_0x8006);\n    DecorationAdd(gSpecialVar_0x8004);\n    StringCopy(trader->playerNames[gSpecialVar_0x8005], gSaveBlock2Ptr->playerName);\n    trader->decorations[gSpecialVar_0x8005] = gSpecialVar_0x8006;\n    trader->language[gSpecialVar_0x8005] = GAME_LANGUAGE;\n    trader->alreadyTraded = TRUE;",
+      "callsTo": [
+        "DecorationAdd",
+        "DecorationRemove",
+        "StringCopy"
+      ],
+      "lineCount": 8
+    },
+    "TraderMenuGetDecoration": {
+      "returnType": "void",
+      "signature": "void TraderMenuGetDecoration(void)",
+      "paramsRaw": "void",
+      "body": "u8 taskId = CreateTask(Task_HandleGetDecorationMenuInput, 0);\n    CreateAvailableDecorationsMenu(taskId);",
+      "callsTo": [
+        "CreateAvailableDecorationsMenu",
+        "CreateTask"
+      ],
+      "lineCount": 2
+    }
+  }
+}

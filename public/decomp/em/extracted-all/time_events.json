@@ -1,0 +1,116 @@
+{
+  "srcFile": "src/time_events.c",
+  "count": 10,
+  "functions": {
+    "GetMirageRnd": {
+      "returnType": "u32",
+      "signature": "static u32 GetMirageRnd(void)",
+      "paramsRaw": "void",
+      "body": "u32 hi = VarGet(VAR_MIRAGE_RND_H);\n    u32 lo = VarGet(VAR_MIRAGE_RND_L);\n    return (hi << 16) | lo;",
+      "callsTo": [
+        "VarGet"
+      ],
+      "lineCount": 3
+    },
+    "SetMirageRnd": {
+      "returnType": "void",
+      "signature": "static void SetMirageRnd(u32 rnd)",
+      "paramsRaw": "u32 rnd",
+      "body": "VarSet(VAR_MIRAGE_RND_H, rnd >> 16);\n    VarSet(VAR_MIRAGE_RND_L, rnd);",
+      "callsTo": [
+        "VarSet"
+      ],
+      "lineCount": 2
+    },
+    "InitMirageRnd": {
+      "returnType": "void",
+      "signature": "void InitMirageRnd(void)",
+      "paramsRaw": "void",
+      "body": "SetMirageRnd((Random() << 16) | Random());",
+      "callsTo": [
+        "Random",
+        "SetMirageRnd"
+      ],
+      "lineCount": 1
+    },
+    "UpdateMirageRnd": {
+      "returnType": "void",
+      "signature": "void UpdateMirageRnd(u16 days)",
+      "paramsRaw": "u16 days",
+      "body": "s32 rnd = GetMirageRnd();\n    while (days)\n    {\n        rnd = ISO_RANDOMIZE2(rnd);\n        days--;\n    }\n    SetMirageRnd(rnd);",
+      "callsTo": [
+        "GetMirageRnd",
+        "ISO_RANDOMIZE2",
+        "SetMirageRnd"
+      ],
+      "lineCount": 7
+    },
+    "IsMirageIslandPresent": {
+      "returnType": "bool8",
+      "signature": "bool8 IsMirageIslandPresent(void)",
+      "paramsRaw": "void",
+      "body": "u16 rnd = GetMirageRnd() >> 16;\n    int i;\n\n    for (i = 0; i < PARTY_SIZE; i++)\n        if (GetMonData(&gPlayerParty[i], MON_DATA_SPECIES) && (GetMonData(&gPlayerParty[i], MON_DATA_PERSONALITY) & 0xFFFF) == rnd)\n            return TRUE;\n\n    return FALSE;",
+      "callsTo": [
+        "GetMirageRnd",
+        "GetMonData"
+      ],
+      "lineCount": 8
+    },
+    "UpdateShoalTideFlag": {
+      "returnType": "void",
+      "signature": "void UpdateShoalTideFlag(void)",
+      "paramsRaw": "void",
+      "body": "static const u8 tide[] =\n    {\n        1,  \n        1,  \n        1,  \n        0,  \n        0,  \n        0,  \n        0,  \n        0,  \n        0,  \n        1,  \n        1,  \n        1,  \n        1,  \n        1,  \n        1,  \n        0,  \n        0,  \n        0,  \n        0,  \n        0,  \n        0,  \n        1,  \n        1,  \n        1,  \n    };\n\n    if (IsMapTypeOutdoors(GetLastUsedWarpMapType()))\n    {\n        RtcCalcLocalTime();\n        if (tide[gLocalTime.hours])\n            FlagSet(FLAG_SYS_SHOAL_TIDE);\n        else\n            FlagClear(FLAG_SYS_SHOAL_TIDE);\n    }",
+      "callsTo": [
+        "FlagClear",
+        "FlagSet",
+        "GetLastUsedWarpMapType",
+        "IsMapTypeOutdoors",
+        "RtcCalcLocalTime"
+      ],
+      "lineCount": 36
+    },
+    "Task_WaitWeather": {
+      "returnType": "void",
+      "signature": "static void Task_WaitWeather(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "if (IsWeatherChangeComplete())\n    {\n        ScriptContext_Enable();\n        DestroyTask(taskId);\n    }",
+      "callsTo": [
+        "DestroyTask",
+        "IsWeatherChangeComplete",
+        "ScriptContext_Enable"
+      ],
+      "lineCount": 5
+    },
+    "WaitWeather": {
+      "returnType": "void",
+      "signature": "void WaitWeather(void)",
+      "paramsRaw": "void",
+      "body": "CreateTask(Task_WaitWeather, 80);",
+      "callsTo": [
+        "CreateTask"
+      ],
+      "lineCount": 1
+    },
+    "InitBirchState": {
+      "returnType": "void",
+      "signature": "void InitBirchState(void)",
+      "paramsRaw": "void",
+      "body": "*GetVarPointer(VAR_BIRCH_STATE) = 0;",
+      "callsTo": [
+        "GetVarPointer"
+      ],
+      "lineCount": 1
+    },
+    "UpdateBirchState": {
+      "returnType": "void",
+      "signature": "void UpdateBirchState(u16 days)",
+      "paramsRaw": "u16 days",
+      "body": "u16 *state = GetVarPointer(VAR_BIRCH_STATE);\n    *state += days;\n    *state %= 7;",
+      "callsTo": [
+        "GetVarPointer"
+      ],
+      "lineCount": 3
+    }
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "srcFile": "src/pokedex_area_region_map.c",
+  "count": 4,
+  "functions": {
+    "LoadPokedexAreaMapGfx": {
+      "returnType": "void",
+      "signature": "void LoadPokedexAreaMapGfx(const struct PokedexAreaMapTemplate *template)",
+      "paramsRaw": "const struct PokedexAreaMapTemplate *template",
+      "body": "u8 mode;\n    void *tilemap;\n    sPokedexAreaMapBgNum = Alloc(sizeof(sPokedexAreaMapBgNum));\n    mode = template->mode;\n\n    if (mode == 0)\n    {\n        SetBgAttribute(template->bg, BG_ATTR_METRIC, 0);\n        DecompressAndCopyTileDataToVram(template->bg, sPokedexAreaMap_Gfx, 0, template->offset, 0);\n        tilemap = DecompressAndCopyTileDataToVram(template->bg, sPokedexAreaMap_Tilemap, 0, 0, 1);\n        AddValToTilemapBuffer(tilemap, template->offset, 32, 32, FALSE);  \n    }\n    else\n    {\n         \n        SetBgAttribute(template->bg, BG_ATTR_METRIC, 2);\n        SetBgAttribute(template->bg, BG_ATTR_TYPE, BG_TYPE_AFFINE);  \n        DecompressAndCopyTileDataToVram(template->bg, sPokedexAreaMapAffine_Gfx, 0, template->offset, 0);\n        tilemap = DecompressAndCopyTileDataToVram(template->bg, sPokedexAreaMapAffine_Tilemap, 0, 0, 1);\n        AddValToTilemapBuffer(tilemap, template->offset, 64, 64, TRUE);  \n    }\n\n    ChangeBgX(template->bg, 0, BG_COORD_SET);\n    ChangeBgY(template->bg, 0, BG_COORD_SET);\n    SetBgAttribute(template->bg, BG_ATTR_PALETTEMODE, 1);\n    CpuCopy32(sPokedexAreaMap_Pal, &gPlttBufferUnfaded[BG_PLTT_ID(7)], sizeof(sPokedexAreaMap_Pal));\n    *sPokedexAreaMapBgNum = template->bg;",
+      "callsTo": [
+        "AddValToTilemapBuffer",
+        "Alloc",
+        "BG_PLTT_ID",
+        "ChangeBgX",
+        "ChangeBgY",
+        "CpuCopy32",
+        "DecompressAndCopyTileDataToVram",
+        "SetBgAttribute"
+      ],
+      "lineCount": 27
+    },
+    "TryShowPokedexAreaMap": {
+      "returnType": "bool32",
+      "signature": "bool32 TryShowPokedexAreaMap(void)",
+      "paramsRaw": "void",
+      "body": "if (!FreeTempTileDataBuffersIfPossible())\n    {\n        ShowBg(*sPokedexAreaMapBgNum);\n        return FALSE;\n    }\n    else\n    {\n        return TRUE;\n    }",
+      "callsTo": [
+        "FreeTempTileDataBuffersIfPossible",
+        "ShowBg"
+      ],
+      "lineCount": 9
+    },
+    "FreePokedexAreaMapBgNum": {
+      "returnType": "void",
+      "signature": "void FreePokedexAreaMapBgNum(void)",
+      "paramsRaw": "void",
+      "body": "TRY_FREE_AND_SET_NULL(sPokedexAreaMapBgNum);",
+      "callsTo": [
+        "TRY_FREE_AND_SET_NULL"
+      ],
+      "lineCount": 1
+    },
+    "PokedexAreaMapChangeBgY": {
+      "returnType": "void",
+      "signature": "void PokedexAreaMapChangeBgY(u32 move)",
+      "paramsRaw": "u32 move",
+      "body": "ChangeBgY(*sPokedexAreaMapBgNum, move * 0x100, BG_COORD_SET);",
+      "callsTo": [
+        "ChangeBgY"
+      ],
+      "lineCount": 1
+    }
+  }
+}

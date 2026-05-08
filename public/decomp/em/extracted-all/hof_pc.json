@@ -1,0 +1,52 @@
+{
+  "srcFile": "src/hof_pc.c",
+  "count": 4,
+  "functions": {
+    "AccessHallOfFamePC": {
+      "returnType": "void",
+      "signature": "void AccessHallOfFamePC(void)",
+      "paramsRaw": "void",
+      "body": "SetMainCallback2(CB2_DoHallOfFamePC);\n    LockPlayerFieldControls();",
+      "callsTo": [
+        "LockPlayerFieldControls",
+        "SetMainCallback2"
+      ],
+      "lineCount": 2
+    },
+    "ReturnFromHallOfFamePC": {
+      "returnType": "void",
+      "signature": "void ReturnFromHallOfFamePC(void)",
+      "paramsRaw": "void",
+      "body": "SetMainCallback2(CB2_ReturnToField);\n    gFieldCallback = ReshowPCMenuAfterHallOfFamePC;",
+      "callsTo": [
+        "SetMainCallback2"
+      ],
+      "lineCount": 2
+    },
+    "ReshowPCMenuAfterHallOfFamePC": {
+      "returnType": "void",
+      "signature": "static void ReshowPCMenuAfterHallOfFamePC(void)",
+      "paramsRaw": "void",
+      "body": "LockPlayerFieldControls();\n    Overworld_PlaySpecialMapMusic();\n    ScriptMenu_CreatePCMultichoice();\n    ScriptMenu_DisplayPCStartupPrompt();\n    BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_BLACK);\n    CreateTask(Task_WaitForPaletteFade, 10);",
+      "callsTo": [
+        "BeginNormalPaletteFade",
+        "CreateTask",
+        "LockPlayerFieldControls",
+        "Overworld_PlaySpecialMapMusic",
+        "ScriptMenu_CreatePCMultichoice",
+        "ScriptMenu_DisplayPCStartupPrompt"
+      ],
+      "lineCount": 6
+    },
+    "Task_WaitForPaletteFade": {
+      "returnType": "void",
+      "signature": "static void Task_WaitForPaletteFade(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "if (!gPaletteFade.active)\n        DestroyTask(taskId);",
+      "callsTo": [
+        "DestroyTask"
+      ],
+      "lineCount": 2
+    }
+  }
+}

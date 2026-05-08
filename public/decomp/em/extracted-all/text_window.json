@@ -1,0 +1,96 @@
+{
+  "srcFile": "src/text_window.c",
+  "count": 8,
+  "functions": {
+    "LoadMessageBoxGfx": {
+      "returnType": "void",
+      "signature": "void LoadMessageBoxGfx(u8 windowId, u16 destOffset, u8 palOffset)",
+      "paramsRaw": "u8 windowId, u16 destOffset, u8 palOffset",
+      "body": "LoadBgTiles(GetWindowAttribute(windowId, WINDOW_BG), gMessageBox_Gfx, 0x1C0, destOffset);\n    LoadPalette(GetOverworldTextboxPalettePtr(), palOffset, PLTT_SIZE_4BPP);",
+      "callsTo": [
+        "GetOverworldTextboxPalettePtr",
+        "GetWindowAttribute",
+        "LoadBgTiles",
+        "LoadPalette"
+      ],
+      "lineCount": 2
+    },
+    "LoadUserWindowBorderGfx_": {
+      "returnType": "void",
+      "signature": "void LoadUserWindowBorderGfx_(u8 windowId, u16 destOffset, u8 palOffset)",
+      "paramsRaw": "u8 windowId, u16 destOffset, u8 palOffset",
+      "body": "LoadUserWindowBorderGfx(windowId, destOffset, palOffset);",
+      "callsTo": [
+        "LoadUserWindowBorderGfx"
+      ],
+      "lineCount": 1
+    },
+    "LoadWindowGfx": {
+      "returnType": "void",
+      "signature": "void LoadWindowGfx(u8 windowId, u8 frameId, u16 destOffset, u8 palOffset)",
+      "paramsRaw": "u8 windowId, u8 frameId, u16 destOffset, u8 palOffset",
+      "body": "LoadBgTiles(GetWindowAttribute(windowId, WINDOW_BG), sWindowFrames[frameId].tiles, 0x120, destOffset);\n    LoadPalette(sWindowFrames[frameId].pal, palOffset, PLTT_SIZE_4BPP);",
+      "callsTo": [
+        "GetWindowAttribute",
+        "LoadBgTiles",
+        "LoadPalette"
+      ],
+      "lineCount": 2
+    },
+    "LoadUserWindowBorderGfx": {
+      "returnType": "void",
+      "signature": "void LoadUserWindowBorderGfx(u8 windowId, u16 destOffset, u8 palOffset)",
+      "paramsRaw": "u8 windowId, u16 destOffset, u8 palOffset",
+      "body": "LoadWindowGfx(windowId, gSaveBlock2Ptr->optionsWindowFrameType, destOffset, palOffset);",
+      "callsTo": [
+        "LoadWindowGfx"
+      ],
+      "lineCount": 1
+    },
+    "DrawTextBorderOuter": {
+      "returnType": "void",
+      "signature": "void DrawTextBorderOuter(u8 windowId, u16 tileNum, u8 palNum)",
+      "paramsRaw": "u8 windowId, u16 tileNum, u8 palNum",
+      "body": "u8 bgLayer = GetWindowAttribute(windowId, WINDOW_BG);\n    u16 tilemapLeft = GetWindowAttribute(windowId, WINDOW_TILEMAP_LEFT);\n    u16 tilemapTop = GetWindowAttribute(windowId, WINDOW_TILEMAP_TOP);\n    u16 width = GetWindowAttribute(windowId, WINDOW_WIDTH);\n    u16 height = GetWindowAttribute(windowId, WINDOW_HEIGHT);\n\n    FillBgTilemapBufferRect(bgLayer, tileNum + 0, tilemapLeft - 1,      tilemapTop - 1,         1,      1,      palNum);\n    FillBgTilemapBufferRect(bgLayer, tileNum + 1, tilemapLeft,          tilemapTop - 1,         width,  1,      palNum);\n    FillBgTilemapBufferRect(bgLayer, tileNum + 2, tilemapLeft + width,  tilemapTop - 1,         1,      1,      palNum);\n    FillBgTilemapBufferRect(bgLayer, tileNum + 3, tilemapLeft - 1,      tilemapTop,             1,      height, palNum);\n    FillBgTilemapBufferRect(bgLayer, tileNum + 5, tilemapLeft + width,  tilemapTop,             1,      height, palNum);\n    FillBgTilemapBufferRect(bgLayer, tileNum + 6, tilemapLeft - 1,      tilemapTop + height,    1,      1,      palNum);\n    FillBgTilemapBufferRect(bgLayer, tileNum + 7, tilemapLeft,          tilemapTop + height,    width,  1,      palNum);\n    FillBgTilemapBufferRect(bgLayer, tileNum + 8, tilemapLeft + width,  tilemapTop + height,    1,      1,      palNum);",
+      "callsTo": [
+        "FillBgTilemapBufferRect",
+        "GetWindowAttribute"
+      ],
+      "lineCount": 14
+    },
+    "DrawTextBorderInner": {
+      "returnType": "void",
+      "signature": "void DrawTextBorderInner(u8 windowId, u16 tileNum, u8 palNum)",
+      "paramsRaw": "u8 windowId, u16 tileNum, u8 palNum",
+      "body": "u8 bgLayer = GetWindowAttribute(windowId, WINDOW_BG);\n    u16 tilemapLeft = GetWindowAttribute(windowId, WINDOW_TILEMAP_LEFT);\n    u16 tilemapTop = GetWindowAttribute(windowId, WINDOW_TILEMAP_TOP);\n    u16 width = GetWindowAttribute(windowId, WINDOW_WIDTH);\n    u16 height = GetWindowAttribute(windowId, WINDOW_HEIGHT);\n\n    FillBgTilemapBufferRect(bgLayer, tileNum + 0, tilemapLeft,              tilemapTop,                 1,          1,          palNum);\n    FillBgTilemapBufferRect(bgLayer, tileNum + 1, tilemapLeft + 1,          tilemapTop,                 width - 2,  1,          palNum);\n    FillBgTilemapBufferRect(bgLayer, tileNum + 2, tilemapLeft + width - 1,  tilemapTop,                 1,          1,          palNum);\n    FillBgTilemapBufferRect(bgLayer, tileNum + 3, tilemapLeft,              tilemapTop + 1,             1,          height - 2, palNum);\n    FillBgTilemapBufferRect(bgLayer, tileNum + 5, tilemapLeft + width - 1,  tilemapTop + 1,             1,          height - 2, palNum);\n    FillBgTilemapBufferRect(bgLayer, tileNum + 6, tilemapLeft,              tilemapTop + height - 1,    1,          1,          palNum);\n    FillBgTilemapBufferRect(bgLayer, tileNum + 7, tilemapLeft + 1,          tilemapTop + height - 1,    width -     2,  1,      palNum);\n    FillBgTilemapBufferRect(bgLayer, tileNum + 8, tilemapLeft + width - 1,  tilemapTop + height - 1,    1,          1,          palNum);",
+      "callsTo": [
+        "FillBgTilemapBufferRect",
+        "GetWindowAttribute"
+      ],
+      "lineCount": 14
+    },
+    "rbox_fill_rectangle": {
+      "returnType": "void",
+      "signature": "void rbox_fill_rectangle(u8 windowId)",
+      "paramsRaw": "u8 windowId",
+      "body": "u8 bgLayer = GetWindowAttribute(windowId, WINDOW_BG);\n    u16 tilemapLeft = GetWindowAttribute(windowId, WINDOW_TILEMAP_LEFT);\n    u16 tilemapTop = GetWindowAttribute(windowId, WINDOW_TILEMAP_TOP);\n    u16 width = GetWindowAttribute(windowId, WINDOW_WIDTH);\n    u16 height = GetWindowAttribute(windowId, WINDOW_HEIGHT);\n\n    FillBgTilemapBufferRect(bgLayer, 0, tilemapLeft - 1, tilemapTop - 1, width + 2, height + 2, 0x11);",
+      "callsTo": [
+        "FillBgTilemapBufferRect",
+        "GetWindowAttribute"
+      ],
+      "lineCount": 7
+    },
+    "LoadUserWindowBorderGfxOnBg": {
+      "returnType": "void",
+      "signature": "void LoadUserWindowBorderGfxOnBg(u8 bg, u16 destOffset, u8 palOffset)",
+      "paramsRaw": "u8 bg, u16 destOffset, u8 palOffset",
+      "body": "LoadBgTiles(bg, sWindowFrames[gSaveBlock2Ptr->optionsWindowFrameType].tiles, 0x120, destOffset);\n    LoadPalette(GetWindowFrameTilesPal(gSaveBlock2Ptr->optionsWindowFrameType)->pal, palOffset, PLTT_SIZE_4BPP);",
+      "callsTo": [
+        "GetWindowFrameTilesPal",
+        "LoadBgTiles",
+        "LoadPalette"
+      ],
+      "lineCount": 2
+    }
+  }
+}

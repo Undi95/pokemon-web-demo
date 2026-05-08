@@ -1,0 +1,459 @@
+{
+  "srcFile": "src/field_weather.c",
+  "count": 46,
+  "functions": {
+    "StartWeather": {
+      "returnType": "void",
+      "signature": "void StartWeather(void)",
+      "paramsRaw": "void",
+      "body": "if (!FuncIsActiveTask(Task_WeatherMain))\n    {\n        u8 index = AllocSpritePalette(PALTAG_WEATHER);\n        CpuCopy32(gFogPalette, &gPlttBufferUnfaded[OBJ_PLTT_ID(index)], PLTT_SIZE_4BPP);\n        BuildColorMaps();\n        gWeatherPtr->contrastColorMapSpritePalIndex = index;\n        gWeatherPtr->weatherPicSpritePalIndex = AllocSpritePalette(PALTAG_WEATHER_2);\n        gWeatherPtr->rainSpriteCount = 0;\n        gWeatherPtr->curRainSpriteIndex = 0;\n        gWeatherPtr->cloudSpritesCreated = 0;\n        gWeatherPtr->snowflakeSpriteCount = 0;\n        gWeatherPtr->ashSpritesCreated = 0;\n        gWeatherPtr->fogHSpritesCreated = 0;\n        gWeatherPtr->fogDSpritesCreated = 0;\n        gWeatherPtr->sandstormSpritesCreated = 0;\n        gWeatherPtr->sandstormSwirlSpritesCreated = 0;\n        gWeatherPtr->bubblesSpritesCreated = 0;\n        gWeatherPtr->lightenedFogSpritePalsCount = 0;\n        Weather_SetBlendCoeffs(16, 0);\n        gWeatherPtr->currWeather = 0;\n        gWeatherPtr->palProcessingState = WEATHER_PAL_STATE_IDLE;\n        gWeatherPtr->readyForInit = FALSE;\n        gWeatherPtr->weatherChangeComplete = TRUE;\n        gWeatherPtr->taskId = CreateTask(Task_WeatherInit, 80);\n    }",
+      "callsTo": [
+        "AllocSpritePalette",
+        "BuildColorMaps",
+        "CpuCopy32",
+        "CreateTask",
+        "FuncIsActiveTask",
+        "OBJ_PLTT_ID",
+        "Weather_SetBlendCoeffs"
+      ],
+      "lineCount": 25
+    },
+    "SetNextWeather": {
+      "returnType": "void",
+      "signature": "void SetNextWeather(u8 weather)",
+      "paramsRaw": "u8 weather",
+      "body": "if (weather != WEATHER_RAIN && weather != WEATHER_RAIN_THUNDERSTORM && weather != WEATHER_DOWNPOUR)\n    {\n        PlayRainStoppingSoundEffect();\n    }\n\n    if (gWeatherPtr->nextWeather != weather && gWeatherPtr->currWeather == weather)\n    {\n        sWeatherFuncs[weather].initVars();\n    }\n\n    gWeatherPtr->weatherChangeComplete = FALSE;\n    gWeatherPtr->nextWeather = weather;\n    gWeatherPtr->finishStep = 0;",
+      "callsTo": [
+        "PlayRainStoppingSoundEffect"
+      ],
+      "lineCount": 13
+    },
+    "SetCurrentAndNextWeather": {
+      "returnType": "void",
+      "signature": "void SetCurrentAndNextWeather(u8 weather)",
+      "paramsRaw": "u8 weather",
+      "body": "PlayRainStoppingSoundEffect();\n    gWeatherPtr->currWeather = weather;\n    gWeatherPtr->nextWeather = weather;",
+      "callsTo": [
+        "PlayRainStoppingSoundEffect"
+      ],
+      "lineCount": 3
+    },
+    "SetCurrentAndNextWeatherNoDelay": {
+      "returnType": "void",
+      "signature": "void SetCurrentAndNextWeatherNoDelay(u8 weather)",
+      "paramsRaw": "u8 weather",
+      "body": "PlayRainStoppingSoundEffect();\n    gWeatherPtr->currWeather = weather;\n    gWeatherPtr->nextWeather = weather;\n     \n    gWeatherPtr->readyForInit = TRUE;",
+      "callsTo": [
+        "PlayRainStoppingSoundEffect"
+      ],
+      "lineCount": 5
+    },
+    "Task_WeatherInit": {
+      "returnType": "void",
+      "signature": "static void Task_WeatherInit(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "if (gWeatherPtr->readyForInit)\n    {\n        sWeatherFuncs[gWeatherPtr->currWeather].initAll();\n        gTasks[taskId].func = Task_WeatherMain;\n    }",
+      "callsTo": [],
+      "lineCount": 5
+    },
+    "Task_WeatherMain": {
+      "returnType": "void",
+      "signature": "static void Task_WeatherMain(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "if (gWeatherPtr->currWeather != gWeatherPtr->nextWeather)\n    {\n        if (!sWeatherFuncs[gWeatherPtr->currWeather].finish()\n            && gWeatherPtr->palProcessingState != WEATHER_PAL_STATE_SCREEN_FADING_OUT)\n        {\n             \n            sWeatherFuncs[gWeatherPtr->nextWeather].initVars();\n            gWeatherPtr->colorMapStepCounter = 0;\n            gWeatherPtr->palProcessingState = WEATHER_PAL_STATE_CHANGING_WEATHER;\n            gWeatherPtr->currWeather = gWeatherPtr->nextWeather;\n            gWeatherPtr->weatherChangeComplete = TRUE;\n        }\n    }\n    else\n    {\n        sWeatherFuncs[gWeatherPtr->currWeather].main();\n    }\n\n    gWeatherPalStateFuncs[gWeatherPtr->palProcessingState]();",
+      "callsTo": [],
+      "lineCount": 19
+    },
+    "None_Init": {
+      "returnType": "void",
+      "signature": "static void None_Init(void)",
+      "paramsRaw": "void",
+      "body": "gWeatherPtr->targetColorMapIndex = 0;\n    gWeatherPtr->colorMapStepDelay = 0;",
+      "callsTo": [],
+      "lineCount": 2
+    },
+    "None_Main": {
+      "returnType": "void",
+      "signature": "static void None_Main(void)",
+      "paramsRaw": "void",
+      "body": "",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "None_Finish": {
+      "returnType": "u8",
+      "signature": "static u8 None_Finish(void)",
+      "paramsRaw": "void",
+      "body": "return 0;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "BuildColorMaps": {
+      "returnType": "void",
+      "signature": "static void BuildColorMaps(void)",
+      "paramsRaw": "void",
+      "body": "u16 i;\n    u8 (*colorMaps)[32];\n    u16 colorVal;\n    u16 curBrightness;\n    u16 brightnessDelta;\n    u16 colorMapIndex;\n    u16 baseBrightness;\n    s16 diff;\n\n    sPaletteColorMapTypes = sBasePaletteColorMapTypes;\n    for (i = 0; i < 2; i++)\n    {\n        if (i == 0)\n            colorMaps = gWeatherPtr->darkenedContrastColorMaps;\n        else\n            colorMaps = gWeatherPtr->contrastColorMaps;\n\n        for (colorVal = 0; colorVal < 32; colorVal++)\n        {\n            curBrightness = colorVal << 8;\n            if (i == 0)\n                brightnessDelta = (colorVal << 8) / 16;\n            else\n                brightnessDelta = 0;\n\n             \n             \n            for (colorMapIndex = 0; colorMapIndex < 3; colorMapIndex++)\n            {\n                curBrightness -= brightnessDelta;\n                colorMaps[colorMapIndex][colorVal] = curBrightness >> 8;\n            }\n\n            baseBrightness = curBrightness;\n            brightnessDelta = (0x1f00 - curBrightness) / (NUM_WEATHER_COLOR_MAPS - 3);\n            if (colorVal < 12)\n            {\n                 \n                 \n                 \n                 \n                for (; colorMapIndex < NUM_WEATHER_COLOR_MAPS; colorMapIndex++)\n                {\n                    curBrightness += brightnessDelta;\n                    diff = curBrightness - baseBrightness;\n                    if (diff > 0)\n                        curBrightness -= diff / 2;\n                    colorMaps[colorMapIndex][colorVal] = curBrightness >> 8;\n                    if (colorMaps[colorMapIndex][colorVal] > 31)\n                        colorMaps[colorMapIndex][colorVal] = 31;\n                }\n            }\n            else\n            {\n                 \n                 \n                 \n                for (; colorMapIndex < NUM_WEATHER_COLOR_MAPS; colorMapIndex++)\n                {\n                    curBrightness += brightnessDelta;\n                    colorMaps[colorMapIndex][colorVal] = curBrightness >> 8;\n                    if (colorMaps[colorMapIndex][colorVal] > 31)\n                        colorMaps[colorMapIndex][colorVal] = 31;\n                }\n            }\n        }\n    }",
+      "callsTo": [],
+      "lineCount": 67
+    },
+    "UpdateWeatherColorMap": {
+      "returnType": "void",
+      "signature": "static void UpdateWeatherColorMap(void)",
+      "paramsRaw": "void",
+      "body": "if (gWeatherPtr->palProcessingState != WEATHER_PAL_STATE_SCREEN_FADING_OUT)\n    {\n        if (gWeatherPtr->colorMapIndex == gWeatherPtr->targetColorMapIndex)\n        {\n            gWeatherPtr->palProcessingState = WEATHER_PAL_STATE_IDLE;\n        }\n        else\n        {\n            if (++gWeatherPtr->colorMapStepCounter >= gWeatherPtr->colorMapStepDelay)\n            {\n                gWeatherPtr->colorMapStepCounter = 0;\n                if (gWeatherPtr->colorMapIndex < gWeatherPtr->targetColorMapIndex)\n                    gWeatherPtr->colorMapIndex++;\n                else\n                    gWeatherPtr->colorMapIndex--;\n\n                ApplyColorMap(0, 32, gWeatherPtr->colorMapIndex);\n            }\n        }\n    }",
+      "callsTo": [
+        "ApplyColorMap"
+      ],
+      "lineCount": 20
+    },
+    "FadeInScreenWithWeather": {
+      "returnType": "void",
+      "signature": "static void FadeInScreenWithWeather(void)",
+      "paramsRaw": "void",
+      "body": "if (++gWeatherPtr->fadeInTimer > 1)\n        gWeatherPtr->fadeInFirstFrame = FALSE;\n\n    switch (gWeatherPtr->currWeather)\n    {\n    case WEATHER_RAIN:\n    case WEATHER_RAIN_THUNDERSTORM:\n    case WEATHER_DOWNPOUR:\n    case WEATHER_SNOW:\n    case WEATHER_SHADE:\n        if (FadeInScreen_RainShowShade() == FALSE)\n        {\n            gWeatherPtr->colorMapIndex = 3;\n            gWeatherPtr->palProcessingState = WEATHER_PAL_STATE_IDLE;\n        }\n        break;\n    case WEATHER_DROUGHT:\n        if (FadeInScreen_Drought() == FALSE)\n        {\n            gWeatherPtr->colorMapIndex = -6;\n            gWeatherPtr->palProcessingState = WEATHER_PAL_STATE_IDLE;\n        }\n        break;\n    case WEATHER_FOG_HORIZONTAL:\n        if (FadeInScreen_FogHorizontal() == FALSE)\n        {\n            gWeatherPtr->colorMapIndex = 0;\n            gWeatherPtr->palProcessingState = WEATHER_PAL_STATE_IDLE;\n        }\n        break;\n    case WEATHER_VOLCANIC_ASH:\n    case WEATHER_SANDSTORM:\n    case WEATHER_FOG_DIAGONAL:\n    case WEATHER_UNDERWATER:\n    default:\n        if (!gPaletteFade.active)\n        {\n            gWeatherPtr->colorMapIndex = gWeatherPtr->targetColorMapIndex;\n            gWeatherPtr->palProcessingState = WEATHER_PAL_STATE_IDLE;\n        }\n        break;\n    }",
+      "callsTo": [
+        "FadeInScreen_Drought",
+        "FadeInScreen_FogHorizontal",
+        "FadeInScreen_RainShowShade"
+      ],
+      "lineCount": 42
+    },
+    "FadeInScreen_RainShowShade": {
+      "returnType": "bool8",
+      "signature": "static bool8 FadeInScreen_RainShowShade(void)",
+      "paramsRaw": "void",
+      "body": "if (gWeatherPtr->fadeScreenCounter == 16)\n        return FALSE;\n\n    if (++gWeatherPtr->fadeScreenCounter >= 16)\n    {\n        ApplyColorMap(0, 32, 3);\n        gWeatherPtr->fadeScreenCounter = 16;\n        return FALSE;\n    }\n\n    ApplyColorMapWithBlend(0, 32, 3, 16 - gWeatherPtr->fadeScreenCounter, gWeatherPtr->fadeDestColor);\n    return TRUE;",
+      "callsTo": [
+        "ApplyColorMap",
+        "ApplyColorMapWithBlend"
+      ],
+      "lineCount": 12
+    },
+    "FadeInScreen_Drought": {
+      "returnType": "bool8",
+      "signature": "static bool8 FadeInScreen_Drought(void)",
+      "paramsRaw": "void",
+      "body": "if (gWeatherPtr->fadeScreenCounter == 16)\n        return FALSE;\n\n    if (++gWeatherPtr->fadeScreenCounter >= 16)\n    {\n        ApplyColorMap(0, 32, -6);\n        gWeatherPtr->fadeScreenCounter = 16;\n        return FALSE;\n    }\n\n    ApplyDroughtColorMapWithBlend(-6, 16 - gWeatherPtr->fadeScreenCounter, gWeatherPtr->fadeDestColor);\n    return TRUE;",
+      "callsTo": [
+        "ApplyColorMap",
+        "ApplyDroughtColorMapWithBlend"
+      ],
+      "lineCount": 12
+    },
+    "FadeInScreen_FogHorizontal": {
+      "returnType": "bool8",
+      "signature": "static bool8 FadeInScreen_FogHorizontal(void)",
+      "paramsRaw": "void",
+      "body": "if (gWeatherPtr->fadeScreenCounter == 16)\n        return FALSE;\n\n    gWeatherPtr->fadeScreenCounter++;\n    ApplyFogBlend(16 - gWeatherPtr->fadeScreenCounter, gWeatherPtr->fadeDestColor);\n    return TRUE;",
+      "callsTo": [
+        "ApplyFogBlend"
+      ],
+      "lineCount": 6
+    },
+    "DoNothing": {
+      "returnType": "void",
+      "signature": "static void DoNothing(void)",
+      "paramsRaw": "void",
+      "body": "",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "ApplyColorMap": {
+      "returnType": "void",
+      "signature": "static void ApplyColorMap(u8 startPalIndex, u8 numPalettes, s8 colorMapIndex)",
+      "paramsRaw": "u8 startPalIndex, u8 numPalettes, s8 colorMapIndex",
+      "body": "u16 curPalIndex;\n    u16 palOffset;\n    u8 *colorMap;\n    u16 i;\n\n    if (colorMapIndex > 0)\n    {\n        colorMapIndex--;\n        palOffset = PLTT_ID(startPalIndex);\n        numPalettes += startPalIndex;\n        curPalIndex = startPalIndex;\n\n         \n        while (curPalIndex < numPalettes)\n        {\n            if (sPaletteColorMapTypes[curPalIndex] == COLOR_MAP_NONE)\n            {\n                 \n                CpuFastCopy(&gPlttBufferUnfaded[palOffset], &gPlttBufferFaded[palOffset], PLTT_SIZE_4BPP);\n                palOffset += 16;\n            }\n            else\n            {\n                u8 r, g, b;\n\n                if (sPaletteColorMapTypes[curPalIndex] == COLOR_MAP_CONTRAST || curPalIndex - 16 == gWeatherPtr->contrastColorMapSpritePalIndex)\n                    colorMap = gWeatherPtr->contrastColorMaps[colorMapIndex];\n                else\n                    colorMap = gWeatherPtr->darkenedContrastColorMaps[colorMapIndex];\n\n                for (i = 0; i < 16; i++)\n                {\n                     \n                    struct RGBColor baseColor = *(struct RGBColor *)&gPlttBufferUnfaded[palOffset];\n                    r = colorMap[baseColor.r];\n                    g = colorMap[baseColor.g];\n                    b = colorMap[baseColor.b];\n                    gPlttBufferFaded[palOffset++] = RGB2(r, g, b);\n                }\n            }\n\n            curPalIndex++;\n        }\n    }\n    else if (colorMapIndex < 0)\n    {\n         \n        colorMapIndex = -colorMapIndex - 1;\n        palOffset = PLTT_ID(startPalIndex);\n        numPalettes += startPalIndex;\n        curPalIndex = startPalIndex;\n\n        while (curPalIndex < numPalettes)\n        {\n            if (sPaletteColorMapTypes[curPalIndex] == COLOR_MAP_NONE)\n            {\n                 \n                CpuFastCopy(&gPlttBufferUnfaded[palOffset], &gPlttBufferFaded[palOffset], PLTT_SIZE_4BPP);\n                palOffset += 16;\n            }\n            else\n            {\n                for (i = 0; i < 16; i++)\n                {\n                    gPlttBufferFaded[palOffset] = sDroughtWeatherColors[colorMapIndex][DROUGHT_COLOR_INDEX(gPlttBufferUnfaded[palOffset])];\n                    palOffset++;\n                }\n            }\n\n            curPalIndex++;\n        }\n    }\n    else\n    {\n         \n        CpuFastCopy(&gPlttBufferUnfaded[PLTT_ID(startPalIndex)], &gPlttBufferFaded[PLTT_ID(startPalIndex)], numPalettes * PLTT_SIZE_4BPP);\n    }",
+      "callsTo": [
+        "CpuFastCopy",
+        "DROUGHT_COLOR_INDEX",
+        "PLTT_ID",
+        "RGB2"
+      ],
+      "lineCount": 77
+    },
+    "ApplyColorMapWithBlend": {
+      "returnType": "void",
+      "signature": "static void ApplyColorMapWithBlend(u8 startPalIndex, u8 numPalettes, s8 colorMapIndex, u8 blendCoeff, u16 blendColor)",
+      "paramsRaw": "u8 startPalIndex, u8 numPalettes, s8 colorMapIndex, u8 blendCoeff, u16 blendColor",
+      "body": "u16 palOffset;\n    u16 curPalIndex;\n    u16 i;\n    struct RGBColor color = *(struct RGBColor *)&blendColor;\n    u8 rBlend = color.r;\n    u8 gBlend = color.g;\n    u8 bBlend = color.b;\n\n    palOffset = PLTT_ID(startPalIndex);\n    numPalettes += startPalIndex;\n    colorMapIndex--;\n    curPalIndex = startPalIndex;\n\n    while (curPalIndex < numPalettes)\n    {\n        if (sPaletteColorMapTypes[curPalIndex] == COLOR_MAP_NONE)\n        {\n             \n            BlendPalette(palOffset, 16, blendCoeff, blendColor);\n            palOffset += 16;\n        }\n        else\n        {\n            u8 *colorMap;\n\n            if (sPaletteColorMapTypes[curPalIndex] == COLOR_MAP_DARK_CONTRAST)\n                colorMap = gWeatherPtr->darkenedContrastColorMaps[colorMapIndex];\n            else\n                colorMap = gWeatherPtr->contrastColorMaps[colorMapIndex];\n\n            for (i = 0; i < 16; i++)\n            {\n                struct RGBColor baseColor = *(struct RGBColor *)&gPlttBufferUnfaded[palOffset];\n                u8 r = colorMap[baseColor.r];\n                u8 g = colorMap[baseColor.g];\n                u8 b = colorMap[baseColor.b];\n\n                 \n                r += ((rBlend - r) * blendCoeff) >> 4;\n                g += ((gBlend - g) * blendCoeff) >> 4;\n                b += ((bBlend - b) * blendCoeff) >> 4;\n                gPlttBufferFaded[palOffset++] = RGB2(r, g, b);\n            }\n        }\n\n        curPalIndex++;\n    }",
+      "callsTo": [
+        "BlendPalette",
+        "PLTT_ID",
+        "RGB2"
+      ],
+      "lineCount": 47
+    },
+    "ApplyDroughtColorMapWithBlend": {
+      "returnType": "void",
+      "signature": "static void ApplyDroughtColorMapWithBlend(s8 colorMapIndex, u8 blendCoeff, u16 blendColor)",
+      "paramsRaw": "s8 colorMapIndex, u8 blendCoeff, u16 blendColor",
+      "body": "struct RGBColor color;\n    u8 rBlend;\n    u8 gBlend;\n    u8 bBlend;\n    u16 curPalIndex;\n    u16 palOffset;\n    u16 i;\n\n    colorMapIndex = -colorMapIndex - 1;\n    color = *(struct RGBColor *)&blendColor;\n    rBlend = color.r;\n    gBlend = color.g;\n    bBlend = color.b;\n    palOffset = 0;\n    for (curPalIndex = 0; curPalIndex < 32; curPalIndex++)\n    {\n        if (sPaletteColorMapTypes[curPalIndex] == COLOR_MAP_NONE)\n        {\n             \n            BlendPalette(palOffset, 16, blendCoeff, blendColor);\n            palOffset += 16;\n        }\n        else\n        {\n            for (i = 0; i < 16; i++)\n            {\n                u32 offset;\n                struct RGBColor color1;\n                struct RGBColor color2;\n                u8 r1, g1, b1;\n                u8 r2, g2, b2;\n\n                color1 = *(struct RGBColor *)&gPlttBufferUnfaded[palOffset];\n                r1 = color1.r;\n                g1 = color1.g;\n                b1 = color1.b;\n\n                offset = ((b1 & 0x1E) << 7) | ((g1 & 0x1E) << 3) | ((r1 & 0x1E) >> 1);\n                color2 = *(struct RGBColor *)&sDroughtWeatherColors[colorMapIndex][offset];\n                r2 = color2.r;\n                g2 = color2.g;\n                b2 = color2.b;\n\n                r2 += ((rBlend - r2) * blendCoeff) >> 4;\n                g2 += ((gBlend - g2) * blendCoeff) >> 4;\n                b2 += ((bBlend - b2) * blendCoeff) >> 4;\n\n                gPlttBufferFaded[palOffset++] = RGB2(r2, g2, b2);\n            }\n        }\n    }",
+      "callsTo": [
+        "BlendPalette",
+        "RGB2"
+      ],
+      "lineCount": 51
+    },
+    "ApplyFogBlend": {
+      "returnType": "void",
+      "signature": "static void ApplyFogBlend(u8 blendCoeff, u16 blendColor)",
+      "paramsRaw": "u8 blendCoeff, u16 blendColor",
+      "body": "struct RGBColor color;\n    u8 rBlend;\n    u8 gBlend;\n    u8 bBlend;\n    u16 curPalIndex;\n\n    BlendPalette(BG_PLTT_ID(0), 16 * 16, blendCoeff, blendColor);\n    color = *(struct RGBColor *)&blendColor;\n    rBlend = color.r;\n    gBlend = color.g;\n    bBlend = color.b;\n\n    for (curPalIndex = 16; curPalIndex < 32; curPalIndex++)\n    {\n        if (LightenSpritePaletteInFog(curPalIndex))\n        {\n            u16 palEnd = PLTT_ID(curPalIndex + 1);\n            u16 palOffset = PLTT_ID(curPalIndex);\n\n            while (palOffset < palEnd)\n            {\n                struct RGBColor color = *(struct RGBColor *)&gPlttBufferUnfaded[palOffset];\n                u8 r = color.r;\n                u8 g = color.g;\n                u8 b = color.b;\n\n                r += ((28 - r) * 3) >> 2;\n                g += ((31 - g) * 3) >> 2;\n                b += ((28 - b) * 3) >> 2;\n\n                r += ((rBlend - r) * blendCoeff) >> 4;\n                g += ((gBlend - g) * blendCoeff) >> 4;\n                b += ((bBlend - b) * blendCoeff) >> 4;\n\n                gPlttBufferFaded[palOffset] = RGB2(r, g, b);\n                palOffset++;\n            }\n        }\n        else\n        {\n            BlendPalette(PLTT_ID(curPalIndex), 16, blendCoeff, blendColor);\n        }\n    }",
+      "callsTo": [
+        "BG_PLTT_ID",
+        "BlendPalette",
+        "LightenSpritePaletteInFog",
+        "PLTT_ID",
+        "RGB2"
+      ],
+      "lineCount": 43
+    },
+    "MarkFogSpritePalToLighten": {
+      "returnType": "void",
+      "signature": "static void MarkFogSpritePalToLighten(u8 paletteIndex)",
+      "paramsRaw": "u8 paletteIndex",
+      "body": "if (gWeatherPtr->lightenedFogSpritePalsCount < 6)\n    {\n        gWeatherPtr->lightenedFogSpritePals[gWeatherPtr->lightenedFogSpritePalsCount] = paletteIndex;\n        gWeatherPtr->lightenedFogSpritePalsCount++;\n    }",
+      "callsTo": [],
+      "lineCount": 5
+    },
+    "LightenSpritePaletteInFog": {
+      "returnType": "bool8",
+      "signature": "static bool8 LightenSpritePaletteInFog(u8 paletteIndex)",
+      "paramsRaw": "u8 paletteIndex",
+      "body": "u16 i;\n\n    for (i = 0; i < gWeatherPtr->lightenedFogSpritePalsCount; i++)\n    {\n        if (gWeatherPtr->lightenedFogSpritePals[i] == paletteIndex)\n            return TRUE;\n    }\n\n    return FALSE;",
+      "callsTo": [],
+      "lineCount": 9
+    },
+    "ApplyWeatherColorMapIfIdle": {
+      "returnType": "void",
+      "signature": "void ApplyWeatherColorMapIfIdle(s8 colorMapIndex)",
+      "paramsRaw": "s8 colorMapIndex",
+      "body": "if (gWeatherPtr->palProcessingState == WEATHER_PAL_STATE_IDLE)\n    {\n        ApplyColorMap(0, 32, colorMapIndex);\n        gWeatherPtr->colorMapIndex = colorMapIndex;\n    }",
+      "callsTo": [
+        "ApplyColorMap"
+      ],
+      "lineCount": 5
+    },
+    "ApplyWeatherColorMapIfIdle_Gradual": {
+      "returnType": "void",
+      "signature": "void ApplyWeatherColorMapIfIdle_Gradual(u8 colorMapIndex, u8 targetColorMapIndex, u8 colorMapStepDelay)",
+      "paramsRaw": "u8 colorMapIndex, u8 targetColorMapIndex, u8 colorMapStepDelay",
+      "body": "if (gWeatherPtr->palProcessingState == WEATHER_PAL_STATE_IDLE)\n    {\n        gWeatherPtr->palProcessingState = WEATHER_PAL_STATE_CHANGING_WEATHER;\n        gWeatherPtr->colorMapIndex = colorMapIndex;\n        gWeatherPtr->targetColorMapIndex = targetColorMapIndex;\n        gWeatherPtr->colorMapStepCounter = 0;\n        gWeatherPtr->colorMapStepDelay = colorMapStepDelay;\n        ApplyWeatherColorMapIfIdle(colorMapIndex);\n    }",
+      "callsTo": [
+        "ApplyWeatherColorMapIfIdle"
+      ],
+      "lineCount": 9
+    },
+    "FadeScreen": {
+      "returnType": "void",
+      "signature": "void FadeScreen(u8 mode, s8 delay)",
+      "paramsRaw": "u8 mode, s8 delay",
+      "body": "u32 fadeColor;\n    bool8 fadeOut;\n    bool8 useWeatherPal;\n\n    switch (mode)\n    {\n    case FADE_FROM_BLACK:\n        fadeColor = RGB_BLACK;\n        fadeOut = FALSE;\n        break;\n    case FADE_FROM_WHITE:\n        fadeColor = RGB_WHITEALPHA;\n        fadeOut = FALSE;\n        break;\n    case FADE_TO_BLACK:\n        fadeColor = RGB_BLACK;\n        fadeOut = TRUE;\n        break;\n    case FADE_TO_WHITE:\n        fadeColor = RGB_WHITEALPHA;\n        fadeOut = TRUE;\n        break;\n    default:\n        return;\n    }\n\n    switch (gWeatherPtr->currWeather)\n    {\n    case WEATHER_RAIN:\n    case WEATHER_RAIN_THUNDERSTORM:\n    case WEATHER_DOWNPOUR:\n    case WEATHER_SNOW:\n    case WEATHER_FOG_HORIZONTAL:\n    case WEATHER_SHADE:\n    case WEATHER_DROUGHT:\n        useWeatherPal = TRUE;\n        break;\n    default:\n        useWeatherPal = FALSE;\n        break;\n    }\n\n    if (fadeOut)\n    {\n        if (useWeatherPal)\n            CpuFastCopy(gPlttBufferFaded, gPlttBufferUnfaded, PLTT_SIZE);\n\n        BeginNormalPaletteFade(PALETTES_ALL, delay, 0, 16, fadeColor);\n        gWeatherPtr->palProcessingState = WEATHER_PAL_STATE_SCREEN_FADING_OUT;\n    }\n    else\n    {\n        gWeatherPtr->fadeDestColor = fadeColor;\n        if (useWeatherPal)\n            gWeatherPtr->fadeScreenCounter = 0;\n        else\n            BeginNormalPaletteFade(PALETTES_ALL, delay, 16, 0, fadeColor);\n\n        gWeatherPtr->palProcessingState = WEATHER_PAL_STATE_SCREEN_FADING_IN;\n        gWeatherPtr->fadeInFirstFrame = TRUE;\n        gWeatherPtr->fadeInTimer = 0;\n        Weather_SetBlendCoeffs(gWeatherPtr->currBlendEVA, gWeatherPtr->currBlendEVB);\n        gWeatherPtr->readyForInit = TRUE;\n    }",
+      "callsTo": [
+        "BeginNormalPaletteFade",
+        "CpuFastCopy",
+        "Weather_SetBlendCoeffs"
+      ],
+      "lineCount": 64
+    },
+    "IsWeatherNotFadingIn": {
+      "returnType": "bool8",
+      "signature": "bool8 IsWeatherNotFadingIn(void)",
+      "paramsRaw": "void",
+      "body": "return (gWeatherPtr->palProcessingState != WEATHER_PAL_STATE_SCREEN_FADING_IN);",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "UpdateSpritePaletteWithWeather": {
+      "returnType": "void",
+      "signature": "void UpdateSpritePaletteWithWeather(u8 spritePaletteIndex)",
+      "paramsRaw": "u8 spritePaletteIndex",
+      "body": "u16 paletteIndex = 16 + spritePaletteIndex;\n    u16 i;\n\n    switch (gWeatherPtr->palProcessingState)\n    {\n    case WEATHER_PAL_STATE_SCREEN_FADING_IN:\n        if (gWeatherPtr->fadeInFirstFrame)\n        {\n            if (gWeatherPtr->currWeather == WEATHER_FOG_HORIZONTAL)\n                MarkFogSpritePalToLighten(paletteIndex);\n            paletteIndex = PLTT_ID(paletteIndex);\n            for (i = 0; i < 16; i++)\n                gPlttBufferFaded[paletteIndex + i] = gWeatherPtr->fadeDestColor;\n        }\n        break;\n    case WEATHER_PAL_STATE_SCREEN_FADING_OUT:\n        paletteIndex = PLTT_ID(paletteIndex);\n        CpuFastCopy(&gPlttBufferFaded[paletteIndex], &gPlttBufferUnfaded[paletteIndex], PLTT_SIZE_4BPP);\n        BlendPalette(paletteIndex, 16, gPaletteFade.y, gPaletteFade.blendColor);\n        break;\n     \n     \n    default:\n        if (gWeatherPtr->currWeather != WEATHER_FOG_HORIZONTAL)\n        {\n            ApplyColorMap(paletteIndex, 1, gWeatherPtr->colorMapIndex);\n        }\n        else\n        {\n            paletteIndex = PLTT_ID(paletteIndex);\n            BlendPalette(paletteIndex, 16, 12, RGB(28, 31, 28));\n        }\n        break;\n    }",
+      "callsTo": [
+        "ApplyColorMap",
+        "BlendPalette",
+        "CpuFastCopy",
+        "MarkFogSpritePalToLighten",
+        "PLTT_ID"
+      ],
+      "lineCount": 34
+    },
+    "ApplyWeatherColorMapToPal": {
+      "returnType": "void",
+      "signature": "void ApplyWeatherColorMapToPal(u8 paletteIndex)",
+      "paramsRaw": "u8 paletteIndex",
+      "body": "ApplyColorMap(paletteIndex, 1, gWeatherPtr->colorMapIndex);",
+      "callsTo": [
+        "ApplyColorMap"
+      ],
+      "lineCount": 1
+    },
+    "LoadCustomWeatherSpritePalette": {
+      "returnType": "void",
+      "signature": "void LoadCustomWeatherSpritePalette(const u16 *palette)",
+      "paramsRaw": "const u16 *palette",
+      "body": "LoadPalette(palette, OBJ_PLTT_ID(gWeatherPtr->weatherPicSpritePalIndex), PLTT_SIZE_4BPP);\n    UpdateSpritePaletteWithWeather(gWeatherPtr->weatherPicSpritePalIndex);",
+      "callsTo": [
+        "LoadPalette",
+        "OBJ_PLTT_ID",
+        "UpdateSpritePaletteWithWeather"
+      ],
+      "lineCount": 2
+    },
+    "LoadDroughtWeatherPalette": {
+      "returnType": "void",
+      "signature": "static void LoadDroughtWeatherPalette(u8 *palsIndex, u8 *palsOffset)",
+      "paramsRaw": "u8 *palsIndex, u8 *palsOffset",
+      "body": "*palsIndex = 0x20;\n    *palsOffset = 0x20;",
+      "callsTo": [],
+      "lineCount": 2
+    },
+    "ResetDroughtWeatherPaletteLoading": {
+      "returnType": "void",
+      "signature": "void ResetDroughtWeatherPaletteLoading(void)",
+      "paramsRaw": "void",
+      "body": "gWeatherPtr->loadDroughtPalsIndex = 1;\n    gWeatherPtr->loadDroughtPalsOffset = 1;",
+      "callsTo": [],
+      "lineCount": 2
+    },
+    "LoadDroughtWeatherPalettes": {
+      "returnType": "bool8",
+      "signature": "bool8 LoadDroughtWeatherPalettes(void)",
+      "paramsRaw": "void",
+      "body": "if (gWeatherPtr->loadDroughtPalsIndex < 32)\n    {\n        LoadDroughtWeatherPalette(&gWeatherPtr->loadDroughtPalsIndex, &gWeatherPtr->loadDroughtPalsOffset);\n        if (gWeatherPtr->loadDroughtPalsIndex < 32)\n            return TRUE;\n    }\n    return FALSE;",
+      "callsTo": [
+        "LoadDroughtWeatherPalette"
+      ],
+      "lineCount": 7
+    },
+    "SetDroughtColorMap": {
+      "returnType": "void",
+      "signature": "static void SetDroughtColorMap(s8 colorMapIndex)",
+      "paramsRaw": "s8 colorMapIndex",
+      "body": "ApplyWeatherColorMapIfIdle(-colorMapIndex - 1);",
+      "callsTo": [
+        "ApplyWeatherColorMapIfIdle"
+      ],
+      "lineCount": 1
+    },
+    "DroughtStateInit": {
+      "returnType": "void",
+      "signature": "void DroughtStateInit(void)",
+      "paramsRaw": "void",
+      "body": "gWeatherPtr->droughtBrightnessStage = 0;\n    gWeatherPtr->droughtTimer = 0;\n    gWeatherPtr->droughtState = 0;\n    gWeatherPtr->droughtLastBrightnessStage = 0;",
+      "callsTo": [],
+      "lineCount": 4
+    },
+    "DroughtStateRun": {
+      "returnType": "void",
+      "signature": "void DroughtStateRun(void)",
+      "paramsRaw": "void",
+      "body": "switch (gWeatherPtr->droughtState)\n    {\n    case 0:\n        if (++gWeatherPtr->droughtTimer > 5)\n        {\n            gWeatherPtr->droughtTimer = 0;\n            SetDroughtColorMap(gWeatherPtr->droughtBrightnessStage++);\n            if (gWeatherPtr->droughtBrightnessStage > 5)\n            {\n                gWeatherPtr->droughtLastBrightnessStage = gWeatherPtr->droughtBrightnessStage;\n                gWeatherPtr->droughtState = 1;\n                gWeatherPtr->droughtTimer = 60;\n            }\n        }\n        break;\n    case 1:\n        gWeatherPtr->droughtTimer = (gWeatherPtr->droughtTimer + 3) & 0x7F;\n        gWeatherPtr->droughtBrightnessStage = ((gSineTable[gWeatherPtr->droughtTimer] - 1) >> 6) + 2;\n        if (gWeatherPtr->droughtBrightnessStage != gWeatherPtr->droughtLastBrightnessStage)\n            SetDroughtColorMap(gWeatherPtr->droughtBrightnessStage);\n        gWeatherPtr->droughtLastBrightnessStage = gWeatherPtr->droughtBrightnessStage;\n        break;\n    case 2:\n        if (++gWeatherPtr->droughtTimer > 5)\n        {\n            gWeatherPtr->droughtTimer = 0;\n            SetDroughtColorMap(--gWeatherPtr->droughtBrightnessStage);\n            if (gWeatherPtr->droughtBrightnessStage == 3)\n                gWeatherPtr->droughtState = 0;\n        }\n        break;\n    }",
+      "callsTo": [
+        "SetDroughtColorMap"
+      ],
+      "lineCount": 32
+    },
+    "Weather_SetBlendCoeffs": {
+      "returnType": "void",
+      "signature": "void Weather_SetBlendCoeffs(u8 eva, u8 evb)",
+      "paramsRaw": "u8 eva, u8 evb",
+      "body": "gWeatherPtr->currBlendEVA = eva;\n    gWeatherPtr->currBlendEVB = evb;\n    gWeatherPtr->targetBlendEVA = eva;\n    gWeatherPtr->targetBlendEVB = evb;\n    SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(eva, evb));",
+      "callsTo": [
+        "BLDALPHA_BLEND",
+        "SetGpuReg"
+      ],
+      "lineCount": 5
+    },
+    "Weather_SetTargetBlendCoeffs": {
+      "returnType": "void",
+      "signature": "void Weather_SetTargetBlendCoeffs(u8 eva, u8 evb, int delay)",
+      "paramsRaw": "u8 eva, u8 evb, int delay",
+      "body": "gWeatherPtr->targetBlendEVA = eva;\n    gWeatherPtr->targetBlendEVB = evb;\n    gWeatherPtr->blendDelay = delay;\n    gWeatherPtr->blendFrameCounter = 0;\n    gWeatherPtr->blendUpdateCounter = 0;",
+      "callsTo": [],
+      "lineCount": 5
+    },
+    "Weather_UpdateBlend": {
+      "returnType": "bool8",
+      "signature": "bool8 Weather_UpdateBlend(void)",
+      "paramsRaw": "void",
+      "body": "if (gWeatherPtr->currBlendEVA == gWeatherPtr->targetBlendEVA\n     && gWeatherPtr->currBlendEVB == gWeatherPtr->targetBlendEVB)\n        return TRUE;\n\n    if (++gWeatherPtr->blendFrameCounter > gWeatherPtr->blendDelay)\n    {\n        gWeatherPtr->blendFrameCounter = 0;\n        gWeatherPtr->blendUpdateCounter++;\n\n         \n        if (gWeatherPtr->blendUpdateCounter & 1)\n        {\n            if (gWeatherPtr->currBlendEVA < gWeatherPtr->targetBlendEVA)\n                gWeatherPtr->currBlendEVA++;\n            else if (gWeatherPtr->currBlendEVA > gWeatherPtr->targetBlendEVA)\n                gWeatherPtr->currBlendEVA--;\n        }\n        else\n        {\n            if (gWeatherPtr->currBlendEVB < gWeatherPtr->targetBlendEVB)\n                gWeatherPtr->currBlendEVB++;\n            else if (gWeatherPtr->currBlendEVB > gWeatherPtr->targetBlendEVB)\n                gWeatherPtr->currBlendEVB--;\n        }\n    }\n\n    SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(gWeatherPtr->currBlendEVA, gWeatherPtr->currBlendEVB));\n\n    if (gWeatherPtr->currBlendEVA == gWeatherPtr->targetBlendEVA\n     && gWeatherPtr->currBlendEVB == gWeatherPtr->targetBlendEVB)\n        return TRUE;\n\n    return FALSE;",
+      "callsTo": [
+        "BLDALPHA_BLEND",
+        "SetGpuReg"
+      ],
+      "lineCount": 33
+    },
+    "GetCurrentWeather": {
+      "returnType": "u8",
+      "signature": "u8 GetCurrentWeather(void)",
+      "paramsRaw": "void",
+      "body": "return gWeatherPtr->currWeather;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "SetRainStrengthFromSoundEffect": {
+      "returnType": "void",
+      "signature": "void SetRainStrengthFromSoundEffect(u16 soundEffect)",
+      "paramsRaw": "u16 soundEffect",
+      "body": "if (gWeatherPtr->palProcessingState != WEATHER_PAL_STATE_SCREEN_FADING_OUT)\n    {\n        switch (soundEffect)\n        {\n        case SE_RAIN:\n            gWeatherPtr->rainStrength = 0;\n            break;\n        case SE_DOWNPOUR:\n            gWeatherPtr->rainStrength = 1;\n            break;\n        case SE_THUNDERSTORM:\n            gWeatherPtr->rainStrength = 2;\n            break;\n        default:\n            return;\n        }\n\n        PlaySE(soundEffect);\n    }",
+      "callsTo": [
+        "PlaySE"
+      ],
+      "lineCount": 19
+    },
+    "PlayRainStoppingSoundEffect": {
+      "returnType": "void",
+      "signature": "void PlayRainStoppingSoundEffect(void)",
+      "paramsRaw": "void",
+      "body": "if (IsSpecialSEPlaying())\n    {\n        switch (gWeatherPtr->rainStrength)\n        {\n        case 0:\n            PlaySE(SE_RAIN_STOP);\n            break;\n        case 1:\n            PlaySE(SE_DOWNPOUR_STOP);\n            break;\n        case 2:\n        default:\n            PlaySE(SE_THUNDERSTORM_STOP);\n            break;\n        }\n    }",
+      "callsTo": [
+        "IsSpecialSEPlaying",
+        "PlaySE"
+      ],
+      "lineCount": 16
+    },
+    "IsWeatherChangeComplete": {
+      "returnType": "u8",
+      "signature": "u8 IsWeatherChangeComplete(void)",
+      "paramsRaw": "void",
+      "body": "return gWeatherPtr->weatherChangeComplete;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "SetWeatherScreenFadeOut": {
+      "returnType": "void",
+      "signature": "void SetWeatherScreenFadeOut(void)",
+      "paramsRaw": "void",
+      "body": "gWeatherPtr->palProcessingState = WEATHER_PAL_STATE_SCREEN_FADING_OUT;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "SetWeatherPalStateIdle": {
+      "returnType": "void",
+      "signature": "void SetWeatherPalStateIdle(void)",
+      "paramsRaw": "void",
+      "body": "gWeatherPtr->palProcessingState = WEATHER_PAL_STATE_IDLE;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "PreservePaletteInWeather": {
+      "returnType": "void",
+      "signature": "void PreservePaletteInWeather(u8 preservedPalIndex)",
+      "paramsRaw": "u8 preservedPalIndex",
+      "body": "CpuCopy16(sBasePaletteColorMapTypes, sFieldEffectPaletteColorMapTypes, 32);\n    sFieldEffectPaletteColorMapTypes[preservedPalIndex] = COLOR_MAP_NONE;\n    sPaletteColorMapTypes = sFieldEffectPaletteColorMapTypes;",
+      "callsTo": [
+        "CpuCopy16"
+      ],
+      "lineCount": 3
+    },
+    "ResetPreservedPalettesInWeather": {
+      "returnType": "void",
+      "signature": "void ResetPreservedPalettesInWeather(void)",
+      "paramsRaw": "void",
+      "body": "sPaletteColorMapTypes = sBasePaletteColorMapTypes;",
+      "callsTo": [],
+      "lineCount": 1
+    }
+  }
+}

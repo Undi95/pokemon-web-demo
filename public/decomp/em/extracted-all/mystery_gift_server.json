@@ -1,0 +1,158 @@
+{
+  "srcFile": "src/mystery_gift_server.c",
+  "count": 14,
+  "functions": {
+    "MysterGiftServer_CreateForNews": {
+      "returnType": "void",
+      "signature": "void MysterGiftServer_CreateForNews(void)",
+      "paramsRaw": "void",
+      "body": "sServer = AllocZeroed(sizeof(*sServer));\n    MysteryGiftServer_Init(sServer, gMysteryGiftServerScript_SendWonderNews, 0, 1);",
+      "callsTo": [
+        "AllocZeroed",
+        "MysteryGiftServer_Init"
+      ],
+      "lineCount": 2
+    },
+    "MysterGiftServer_CreateForCard": {
+      "returnType": "void",
+      "signature": "void MysterGiftServer_CreateForCard(void)",
+      "paramsRaw": "void",
+      "body": "sServer = AllocZeroed(sizeof(*sServer));\n    MysteryGiftServer_Init(sServer, gMysteryGiftServerScript_SendWonderCard, 0, 1);",
+      "callsTo": [
+        "AllocZeroed",
+        "MysteryGiftServer_Init"
+      ],
+      "lineCount": 2
+    },
+    "MysterGiftServer_Run": {
+      "returnType": "u32",
+      "signature": "u32 MysterGiftServer_Run(u16 *endVal)",
+      "paramsRaw": "u16 *endVal",
+      "body": "u32 result;\n    if (sServer == NULL)\n        return SVR_RET_END;\n    result = MysteryGiftServer_CallFunc(sServer);\n    if (result == SVR_RET_END)\n    {\n        *endVal = sServer->param;\n        MysteryGiftServer_Free(sServer);\n        FREE_AND_SET_NULL(sServer);\n    }\n    return result;",
+      "callsTo": [
+        "FREE_AND_SET_NULL",
+        "MysteryGiftServer_CallFunc",
+        "MysteryGiftServer_Free"
+      ],
+      "lineCount": 11
+    },
+    "MysteryGiftServer_Init": {
+      "returnType": "void",
+      "signature": "static void MysteryGiftServer_Init(struct MysteryGiftServer *svr, const void *script, u32 sendPlayerId, u32 recvPlayerId)",
+      "paramsRaw": "struct MysteryGiftServer *svr, const void *script, u32 sendPlayerId, u32 recvPlayerId",
+      "body": "svr->unused = 0;\n    svr->funcId = FUNC_INIT;\n    svr->card = AllocZeroed(sizeof(*svr->card));\n    svr->news = AllocZeroed(sizeof(*svr->news));\n    svr->recvBuffer = AllocZeroed(MG_LINK_BUFFER_SIZE);\n    svr->linkGameData = AllocZeroed(sizeof(*svr->linkGameData));\n    svr->script = script;\n    svr->cmdidx = 0;\n    MysteryGiftLink_Init(&svr->link, sendPlayerId, recvPlayerId);",
+      "callsTo": [
+        "AllocZeroed",
+        "MysteryGiftLink_Init"
+      ],
+      "lineCount": 9
+    },
+    "MysteryGiftServer_Free": {
+      "returnType": "void",
+      "signature": "static void MysteryGiftServer_Free(struct MysteryGiftServer *svr)",
+      "paramsRaw": "struct MysteryGiftServer *svr",
+      "body": "Free(svr->card);\n    Free(svr->news);\n    Free(svr->recvBuffer);\n    Free(svr->linkGameData);",
+      "callsTo": [
+        "Free"
+      ],
+      "lineCount": 4
+    },
+    "MysteryGiftServer_InitSend": {
+      "returnType": "void",
+      "signature": "static void MysteryGiftServer_InitSend(struct MysteryGiftServer *svr, u32 ident, const void *src, u32 size)",
+      "paramsRaw": "struct MysteryGiftServer *svr, u32 ident, const void *src, u32 size",
+      "body": "AGB_ASSERT(size <= MG_LINK_BUFFER_SIZE);\n    MysteryGiftLink_InitSend(&svr->link, ident, src, size);",
+      "callsTo": [
+        "AGB_ASSERT",
+        "MysteryGiftLink_InitSend"
+      ],
+      "lineCount": 2
+    },
+    "MysteryGiftServer_GetSendData": {
+      "returnType": "const void *",
+      "signature": "static const void * MysteryGiftServer_GetSendData(const void *dynamicData, const void *defaultData)",
+      "paramsRaw": "const void *dynamicData, const void *defaultData",
+      "body": "if (dynamicData != NULL)\n        return dynamicData;\n    else\n        return defaultData;",
+      "callsTo": [],
+      "lineCount": 4
+    },
+    "MysteryGiftServer_Compare": {
+      "returnType": "u32",
+      "signature": "static u32 MysteryGiftServer_Compare(const void *a, const void *b)",
+      "paramsRaw": "const void *a, const void *b",
+      "body": "if (b < a)\n        return 0;\n    else if (b == a)\n        return 1;\n    else\n        return 2;",
+      "callsTo": [],
+      "lineCount": 6
+    },
+    "Server_Init": {
+      "returnType": "u32",
+      "signature": "static u32 Server_Init(struct MysteryGiftServer *svr)",
+      "paramsRaw": "struct MysteryGiftServer *svr",
+      "body": "svr->funcId = FUNC_RUN;\n    return SVR_RET_INIT;",
+      "callsTo": [],
+      "lineCount": 2
+    },
+    "Server_Done": {
+      "returnType": "u32",
+      "signature": "static u32 Server_Done(struct MysteryGiftServer *svr)",
+      "paramsRaw": "struct MysteryGiftServer *svr",
+      "body": "return SVR_RET_END;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "Server_Recv": {
+      "returnType": "u32",
+      "signature": "static u32 Server_Recv(struct MysteryGiftServer *svr)",
+      "paramsRaw": "struct MysteryGiftServer *svr",
+      "body": "if (MysteryGiftLink_Recv(&svr->link))\n        svr->funcId = FUNC_RUN;\n    return SVR_RET_ACTIVE;",
+      "callsTo": [
+        "MysteryGiftLink_Recv"
+      ],
+      "lineCount": 3
+    },
+    "Server_Send": {
+      "returnType": "u32",
+      "signature": "static u32 Server_Send(struct MysteryGiftServer *svr)",
+      "paramsRaw": "struct MysteryGiftServer *svr",
+      "body": "if (MysteryGiftLink_Send(&svr->link))\n        svr->funcId = FUNC_RUN;\n    return SVR_RET_ACTIVE;",
+      "callsTo": [
+        "MysteryGiftLink_Send"
+      ],
+      "lineCount": 3
+    },
+    "Server_Run": {
+      "returnType": "u32",
+      "signature": "static u32 Server_Run(struct MysteryGiftServer *svr)",
+      "paramsRaw": "struct MysteryGiftServer *svr",
+      "body": "const struct MysteryGiftServerCmd *cmd = &svr->script[svr->cmdidx];\n    const void *ptr;\n    svr->cmdidx++;\n\n    switch (cmd->instr)\n    {\n    case SVR_RETURN:\n        AGB_ASSERT(cmd->ptr == NULL);\n        svr->funcId = FUNC_DONE;\n        svr->param = cmd->parameter;  \n        break;\n    case SVR_SEND:\n        svr->funcId = FUNC_SEND;\n        break;\n    case SVR_RECV:\n        AGB_ASSERT(cmd->ptr == NULL);\n        MysteryGiftLink_InitRecv(&svr->link, cmd->parameter, svr->recvBuffer);\n        svr->funcId = FUNC_RECV;\n        break;\n    case SVR_GOTO:\n        AGB_ASSERT(cmd->parameter == 0);\n        svr->cmdidx = 0;\n        svr->script = cmd->ptr;\n        break;\n    case SVR_COPY_GAME_DATA:\n        AGB_ASSERT(cmd->parameter == 0);\n        AGB_ASSERT(cmd->ptr == NULL);\n        memcpy(svr->linkGameData, svr->recvBuffer, sizeof(*svr->linkGameData));\n        break;\n    case SVR_CHECK_GAME_DATA_CARD:\n        AGB_ASSERT(cmd->parameter == 0);\n        AGB_ASSERT(cmd->ptr == NULL);\n        svr->param = MysteryGift_ValidateLinkGameData(svr->linkGameData, FALSE);\n        break;\n    case SVR_CHECK_GAME_DATA_NEWS:\n        AGB_ASSERT(cmd->parameter == 0);\n        AGB_ASSERT(cmd->ptr == NULL);\n        svr->param = MysteryGift_ValidateLinkGameData(svr->linkGameData, TRUE);\n        break;\n    case SVR_GOTO_IF_EQ:\n        if (svr->param == cmd->parameter)\n        {\n            svr->cmdidx = 0;\n            svr->script = cmd->ptr;\n        }\n        break;\n    case SVR_CHECK_EXISTING_CARD:\n        AGB_ASSERT(cmd->parameter == 0);\n        ptr = MysteryGiftServer_GetSendData(cmd->ptr, svr->card);\n        svr->param = MysteryGift_CompareCardFlags(ptr, svr->linkGameData, ptr);\n        break;\n    case SVR_READ_RESPONSE:\n        AGB_ASSERT(cmd->parameter == 0);\n        AGB_ASSERT(cmd->ptr == NULL);\n        svr->param = *(u32 *)svr->recvBuffer;\n        break;\n    case SVR_CHECK_EXISTING_STAMPS:\n        AGB_ASSERT(cmd->parameter == 0);\n        ptr = MysteryGiftServer_GetSendData(cmd->ptr, &svr->stamp);\n        svr->param = MysteryGift_CheckStamps(ptr, svr->linkGameData, ptr);\n        break;\n    case SVR_GET_CARD_STAT:\n        AGB_ASSERT(cmd->ptr == NULL);\n        svr->param = MysteryGift_GetCardStatFromLinkData(svr->linkGameData, cmd->parameter);\n        break;\n    case SVR_CHECK_QUESTIONNAIRE:\n        AGB_ASSERT(cmd->parameter == 0);\n        svr->param = MysteryGift_DoesQuestionnaireMatch(svr->linkGameData, cmd->ptr);\n        break;\n    case SVR_COMPARE:\n        AGB_ASSERT(cmd->parameter == 0);\n        svr->param = MysteryGiftServer_Compare(cmd->ptr, *(void **)svr->recvBuffer);\n        break;\n    case SVR_LOAD_NEWS:\n        AGB_ASSERT(cmd->parameter == 0);\n        MysteryGiftServer_InitSend(svr, MG_LINKID_NEWS, MysteryGiftServer_GetSendData(cmd->ptr, svr->news), sizeof(*svr->news));\n        break;\n    case SVR_LOAD_CARD:\n        AGB_ASSERT(cmd->parameter == 0);\n        MysteryGiftServer_InitSend(svr, MG_LINKID_CARD, MysteryGiftServer_GetSendData(cmd->ptr, svr->card), sizeof(*svr->card));\n        break;\n    case SVR_LOAD_STAMP:\n        AGB_ASSERT(cmd->parameter == 0);\n        MysteryGiftServer_InitSend(svr, MG_LINKID_STAMP, MysteryGiftServer_GetSendData(cmd->ptr, &svr->stamp), sizeof(svr->stamp));\n        break;\n    case SVR_LOAD_RAM_SCRIPT:\n        if (cmd->ptr == NULL)\n            MysteryGiftServer_InitSend(svr, MG_LINKID_RAM_SCRIPT, svr->ramScript, svr->ramScriptSize);\n        else\n            MysteryGiftServer_InitSend(svr, MG_LINKID_RAM_SCRIPT, cmd->ptr, cmd->parameter);\n        break;\n    case SVR_LOAD_CLIENT_SCRIPT:\n        if (cmd->ptr == NULL)\n            MysteryGiftServer_InitSend(svr, MG_LINKID_CLIENT_SCRIPT, svr->clientScript, svr->clientScriptSize);\n        else\n            MysteryGiftServer_InitSend(svr, MG_LINKID_CLIENT_SCRIPT, cmd->ptr, cmd->parameter);\n        break;\n    case SVR_LOAD_EREADER_TRAINER:\n        AGB_ASSERT(cmd->parameter == 0);\n        MysteryGiftServer_InitSend(svr, MG_LINKID_EREADER_TRAINER, cmd->ptr, sizeof(struct BattleTowerEReaderTrainer));\n        break;\n    case SVR_LOAD_MSG:\n        MysteryGiftServer_InitSend(svr, MG_LINKID_DYNAMIC_MSG, cmd->ptr, cmd->parameter);\n        break;\n    case SVR_LOAD_UNK_2:\n        MysteryGiftServer_InitSend(svr, MG_LINKID_UNK_2, cmd->ptr, cmd->parameter);\n        break;\n    case SVR_COPY_CARD:\n        AGB_ASSERT(cmd->parameter == 0);\n        memcpy(svr->card, cmd->ptr, sizeof(*svr->card));\n        break;\n    case SVR_COPY_NEWS:\n        AGB_ASSERT(cmd->parameter == 0);\n        memcpy(svr->news, cmd->ptr, sizeof(*svr->news));\n        break;\n    case SVR_COPY_STAMP:\n        AGB_ASSERT(cmd->parameter == 0);\n        svr->stamp = *(u32 *)cmd->ptr;\n        break;\n    case SVR_SET_RAM_SCRIPT:\n        svr->ramScript = cmd->ptr;\n        svr->ramScriptSize = cmd->parameter;\n        break;\n    case SVR_SET_CLIENT_SCRIPT:\n        svr->clientScript = cmd->ptr;\n        svr->clientScriptSize = cmd->parameter;\n        break;\n    case SVR_COPY_SAVED_CARD:\n        AGB_ASSERT(cmd->parameter == 0 && cmd->ptr == NULL);\n        memcpy(svr->card, GetSavedWonderCard(), sizeof(*svr->card));\n        DisableWonderCardSending(svr->card);\n        break;\n    case SVR_COPY_SAVED_NEWS:\n        AGB_ASSERT(cmd->parameter == 0 && cmd->ptr == NULL);\n        memcpy(svr->news, GetSavedWonderNews(), sizeof(*svr->news));\n        break;\n    case SVR_COPY_SAVED_RAM_SCRIPT:\n        AGB_ASSERT(cmd->parameter == 0 && cmd->ptr == NULL);\n        svr->ramScript = GetSavedRamScriptIfValid();\n        break;\n    case SVR_LOAD_UNK_1:\n        MysteryGiftServer_InitSend(svr, MG_LINKID_UNK_1, cmd->ptr, cmd->parameter);\n        break;\n    }\n\n    return SVR_RET_ACTIVE;",
+      "callsTo": [
+        "AGB_ASSERT",
+        "DisableWonderCardSending",
+        "GetSavedRamScriptIfValid",
+        "GetSavedWonderCard",
+        "GetSavedWonderNews",
+        "MysteryGiftLink_InitRecv",
+        "MysteryGiftServer_Compare",
+        "MysteryGiftServer_GetSendData",
+        "MysteryGiftServer_InitSend",
+        "MysteryGift_CheckStamps",
+        "MysteryGift_CompareCardFlags",
+        "MysteryGift_DoesQuestionnaireMatch",
+        "MysteryGift_GetCardStatFromLinkData",
+        "MysteryGift_ValidateLinkGameData"
+      ],
+      "lineCount": 146
+    },
+    "MysteryGiftServer_CallFunc": {
+      "returnType": "u32",
+      "signature": "static u32 MysteryGiftServer_CallFunc(struct MysteryGiftServer *svr)",
+      "paramsRaw": "struct MysteryGiftServer *svr",
+      "body": "u32 response;\n    AGB_ASSERT(svr->funcId < ARRAY_COUNT(sFuncTable));\n    response = sFuncTable[svr->funcId](svr);\n    AGB_ASSERT(svr->funcId < ARRAY_COUNT(sFuncTable));\n    return response;",
+      "callsTo": [
+        "AGB_ASSERT",
+        "ARRAY_COUNT"
+      ],
+      "lineCount": 5
+    }
+  }
+}

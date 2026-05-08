@@ -1,0 +1,45 @@
+{
+  "srcFile": "src/librfu_sio32id.c",
+  "count": 4,
+  "functions": {
+    "AgbRFU_checkID": {
+      "returnType": "s32",
+      "signature": "s32 AgbRFU_checkID(u8 maxTries)",
+      "paramsRaw": "u8 maxTries",
+      "body": "u16 ieBak;\n    vu16 *regTMCNTL;\n    s32 id;\n\n     \n    if (REG_IME == 0)\n        return -1;\n    ieBak = REG_IE;\n    gSTWIStatus->state = 10;\n    STWI_set_Callback_ID(Sio32IDIntr);\n    Sio32IDInit();\n    regTMCNTL = &REG_TMCNT_L(gSTWIStatus->timerSelect);\n    maxTries *= 8;\n    while (--maxTries != 0xFF)\n    {\n        id = Sio32IDMain();\n        if (id != 0)\n            break;\n        regTMCNTL[1] = 0;\n        regTMCNTL[0] = 0;\n        regTMCNTL[1] = TIMER_1024CLK | TIMER_ENABLE;\n        while (regTMCNTL[0] < 32)\n            ;\n        regTMCNTL[1] = 0;\n        regTMCNTL[0] = 0;\n    }\n    REG_IME = 0;\n    REG_IE = ieBak;\n    REG_IME = 1;\n    gSTWIStatus->state = 0;\n    STWI_set_Callback_ID(NULL);\n    return id;",
+      "callsTo": [
+        "REG_TMCNT_L",
+        "STWI_set_Callback_ID",
+        "Sio32IDInit",
+        "Sio32IDMain"
+      ],
+      "lineCount": 32
+    },
+    "Sio32IDInit": {
+      "returnType": "void",
+      "signature": "static void Sio32IDInit(void)",
+      "paramsRaw": "void",
+      "body": "REG_IME = 0;\n    REG_IE &= ~((8 << gSTWIStatus->timerSelect) | INTR_FLAG_SERIAL);\n    REG_IME = 1;\n    REG_RCNT = 0;\n    REG_SIOCNT = SIO_32BIT_MODE;\n    REG_SIOCNT |= SIO_INTR_ENABLE | SIO_ENABLE;\n    CpuFill32(0, &gRfuSIO32Id, sizeof(struct RfuSIO32Id));\n    REG_IF = INTR_FLAG_SERIAL;",
+      "callsTo": [
+        "CpuFill32"
+      ],
+      "lineCount": 8
+    },
+    "Sio32IDMain": {
+      "returnType": "s32",
+      "signature": "static s32 Sio32IDMain(void)",
+      "paramsRaw": "void",
+      "body": "switch (gRfuSIO32Id.state)\n    {\n    case 0:\n        gRfuSIO32Id.MS_mode = AGB_CLK_MASTER;\n        REG_SIOCNT |= SIO_38400_BPS;\n        REG_IME = 0;\n        REG_IE |= INTR_FLAG_SERIAL;\n        REG_IME = 1;\n        gRfuSIO32Id.state = 1;\n        *(vu8 *)&REG_SIOCNT |= SIO_ENABLE;\n        break;\n    case 1:\n        if (gRfuSIO32Id.lastId == 0)\n        {\n            if (gRfuSIO32Id.MS_mode == AGB_CLK_MASTER)\n            {\n                if (gRfuSIO32Id.count == 0)\n                {\n                    REG_IME = 0;\n                    REG_SIOCNT |= SIO_ENABLE;\n                    REG_IME = 1;\n                }\n            }\n            else if (gRfuSIO32Id.send_id != RFU_ID && !gRfuSIO32Id.count)\n            {\n                REG_IME = 0;\n                REG_IE &= ~INTR_FLAG_SERIAL;\n                REG_IME = 1;\n                REG_SIOCNT = 0;\n                REG_SIOCNT = SIO_32BIT_MODE;\n                REG_IF = INTR_FLAG_SERIAL;\n                REG_SIOCNT |= SIO_INTR_ENABLE | SIO_ENABLE;\n                REG_IME = 0;\n                REG_IE |= INTR_FLAG_SERIAL;\n                REG_IME = 1;\n            }\n            break;\n        }\n        else\n        {\n            gRfuSIO32Id.state = 2;\n             \n        }\n    default:\n        return gRfuSIO32Id.lastId;\n    }\n    return 0;",
+      "callsTo": [],
+      "lineCount": 47
+    },
+    "Sio32IDIntr": {
+      "returnType": "void",
+      "signature": "static void Sio32IDIntr(void)",
+      "paramsRaw": "void",
+      "body": "u32 regSIODATA32;\n    u16 delay;\n    u32 rfuSIO32IdUnk0_times_16;\n\n    regSIODATA32 = REG_SIODATA32;\n    if (gRfuSIO32Id.MS_mode != AGB_CLK_MASTER)\n        REG_SIOCNT |= SIO_ENABLE;\n    rfuSIO32IdUnk0_times_16 = (regSIODATA32 << (16 * gRfuSIO32Id.MS_mode)) >> 16;\n    regSIODATA32 = (regSIODATA32 << 16 * (1 - gRfuSIO32Id.MS_mode)) >> 16;\n    if (gRfuSIO32Id.lastId == 0)\n    {\n        u16 backup = rfuSIO32IdUnk0_times_16;\n        if (backup == gRfuSIO32Id.recv_id)\n        {\n            if (gRfuSIO32Id.count < 4)\n            {\n                backup = (u16)~gRfuSIO32Id.send_id;\n                if (gRfuSIO32Id.recv_id == backup)\n                {\n                    if (regSIODATA32 == (u16)~gRfuSIO32Id.recv_id)\n                        ++gRfuSIO32Id.count;\n                }\n            }\n            else\n            {\n                gRfuSIO32Id.lastId = regSIODATA32;\n            }\n        }\n        else\n        {\n            gRfuSIO32Id.count = 0;\n        }\n    }\n    if (gRfuSIO32Id.count < 4)\n        gRfuSIO32Id.send_id = *(gRfuSIO32Id.count + Sio32ConnectionData);\n    else\n        gRfuSIO32Id.send_id = RFU_ID;\n    gRfuSIO32Id.recv_id = ~regSIODATA32;\n    REG_SIODATA32 = (gRfuSIO32Id.send_id << 16 * (1 - gRfuSIO32Id.MS_mode))\n                  + (gRfuSIO32Id.recv_id << 16 * gRfuSIO32Id.MS_mode);\n    if (gRfuSIO32Id.MS_mode == AGB_CLK_MASTER && (gRfuSIO32Id.count != 0 || regSIODATA32 == 0x494e))\n    {\n        for (delay = 0; delay < 600; ++delay)\n            ;\n        if (gRfuSIO32Id.lastId == 0)\n            REG_SIOCNT |= SIO_ENABLE;\n    }",
+      "callsTo": [],
+      "lineCount": 47
+    }
+  }
+}

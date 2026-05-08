@@ -1,0 +1,372 @@
+{
+  "srcFile": "src/berry_tag_screen.c",
+  "count": 27,
+  "functions": {
+    "DoBerryTagScreen": {
+      "returnType": "void",
+      "signature": "void DoBerryTagScreen(void)",
+      "paramsRaw": "void",
+      "body": "sBerryTag = AllocZeroed(sizeof(*sBerryTag));\n    sBerryTag->berryId = ItemIdToBerryType(gSpecialVar_ItemId);\n    SetMainCallback2(CB2_InitBerryTagScreen);",
+      "callsTo": [
+        "AllocZeroed",
+        "ItemIdToBerryType",
+        "SetMainCallback2"
+      ],
+      "lineCount": 3
+    },
+    "CB2_BerryTagScreen": {
+      "returnType": "void",
+      "signature": "static void CB2_BerryTagScreen(void)",
+      "paramsRaw": "void",
+      "body": "RunTasks();\n    AnimateSprites();\n    BuildOamBuffer();\n    DoScheduledBgTilemapCopiesToVram();\n    UpdatePaletteFade();",
+      "callsTo": [
+        "AnimateSprites",
+        "BuildOamBuffer",
+        "DoScheduledBgTilemapCopiesToVram",
+        "RunTasks",
+        "UpdatePaletteFade"
+      ],
+      "lineCount": 5
+    },
+    "VblankCB": {
+      "returnType": "void",
+      "signature": "static void VblankCB(void)",
+      "paramsRaw": "void",
+      "body": "LoadOam();\n    ProcessSpriteCopyRequests();\n    TransferPlttBuffer();",
+      "callsTo": [
+        "LoadOam",
+        "ProcessSpriteCopyRequests",
+        "TransferPlttBuffer"
+      ],
+      "lineCount": 3
+    },
+    "CB2_InitBerryTagScreen": {
+      "returnType": "void",
+      "signature": "static void CB2_InitBerryTagScreen(void)",
+      "paramsRaw": "void",
+      "body": "while (1)\n    {\n        if (MenuHelpers_ShouldWaitForLinkRecv() == TRUE)\n            break;\n        if (InitBerryTagScreen() == TRUE)\n            break;\n        if (MenuHelpers_IsLinkActive() == TRUE)\n            break;\n    }",
+      "callsTo": [
+        "InitBerryTagScreen",
+        "MenuHelpers_IsLinkActive",
+        "MenuHelpers_ShouldWaitForLinkRecv"
+      ],
+      "lineCount": 9
+    },
+    "InitBerryTagScreen": {
+      "returnType": "bool8",
+      "signature": "static bool8 InitBerryTagScreen(void)",
+      "paramsRaw": "void",
+      "body": "switch (gMain.state)\n    {\n    case 0:\n        SetVBlankHBlankCallbacksToNull();\n        ResetVramOamAndBgCntRegs();\n        ClearScheduledBgCopiesToVram();\n        gMain.state++;\n        break;\n    case 1:\n        ScanlineEffect_Stop();\n        gMain.state++;\n        break;\n    case 2:\n        ResetPaletteFade();\n        gPaletteFade.bufferTransferDisabled = 1;\n        gMain.state++;\n        break;\n    case 3:\n        ResetSpriteData();\n        gMain.state++;\n        break;\n    case 4:\n        FreeAllSpritePalettes();\n        gMain.state++;\n        break;\n    case 5:\n        if (!MenuHelpers_IsLinkActive())\n            ResetTasks();\n        gMain.state++;\n        break;\n    case 6:\n        HandleInitBackgrounds();\n        sBerryTag->gfxState = 0;\n        gMain.state++;\n        break;\n    case 7:\n        if (LoadBerryTagGfx())\n            gMain.state++;\n        break;\n    case 8:\n        HandleInitWindows();\n        gMain.state++;\n        break;\n    case 9:\n        AddBerryTagTextToBg0();\n        gMain.state++;\n        break;\n    case 10:\n        PrintAllBerryData();\n        gMain.state++;\n        break;\n    case 11:\n        CreateBerrySprite();\n        gMain.state++;\n        break;\n    case 12:\n        CreateFlavorCircleSprites();\n        SetFlavorCirclesVisiblity();\n        gMain.state++;\n        break;\n    case 13:\n        CreateTask(Task_HandleInput, 0);\n        gMain.state++;\n        break;\n    case 14:\n        BlendPalettes(PALETTES_ALL, 0x10, RGB_BLACK);\n        gMain.state++;\n        break;\n    case 15:\n        BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_BLACK);\n        gPaletteFade.bufferTransferDisabled = 0;\n        gMain.state++;\n        break;\n    default:  \n        SetVBlankCallback(VblankCB);\n        SetMainCallback2(CB2_BerryTagScreen);\n        return TRUE;\n    }\n\n    return FALSE;",
+      "callsTo": [
+        "AddBerryTagTextToBg0",
+        "BeginNormalPaletteFade",
+        "BlendPalettes",
+        "ClearScheduledBgCopiesToVram",
+        "CreateBerrySprite",
+        "CreateFlavorCircleSprites",
+        "CreateTask",
+        "FreeAllSpritePalettes",
+        "HandleInitBackgrounds",
+        "HandleInitWindows",
+        "LoadBerryTagGfx",
+        "MenuHelpers_IsLinkActive",
+        "PrintAllBerryData",
+        "ResetPaletteFade",
+        "ResetSpriteData",
+        "ResetTasks",
+        "ResetVramOamAndBgCntRegs",
+        "ScanlineEffect_Stop",
+        "SetFlavorCirclesVisiblity",
+        "SetMainCallback2",
+        "SetVBlankCallback",
+        "SetVBlankHBlankCallbacksToNull"
+      ],
+      "lineCount": 80
+    },
+    "HandleInitBackgrounds": {
+      "returnType": "void",
+      "signature": "static void HandleInitBackgrounds(void)",
+      "paramsRaw": "void",
+      "body": "ResetBgsAndClearDma3BusyFlags(0);\n    InitBgsFromTemplates(0, sBackgroundTemplates, ARRAY_COUNT(sBackgroundTemplates));\n    SetBgTilemapBuffer(2, sBerryTag->tilemapBuffers[0]);\n    SetBgTilemapBuffer(3, sBerryTag->tilemapBuffers[1]);\n    ResetAllBgsCoordinates();\n    ScheduleBgCopyTilemapToVram(2);\n    ScheduleBgCopyTilemapToVram(3);\n    SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_OBJ_1D_MAP | DISPCNT_OBJ_ON);\n    SetGpuReg(REG_OFFSET_BLDCNT, 0);\n    ShowBg(0);\n    ShowBg(1);\n    ShowBg(2);\n    ShowBg(3);",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "InitBgsFromTemplates",
+        "ResetAllBgsCoordinates",
+        "ResetBgsAndClearDma3BusyFlags",
+        "ScheduleBgCopyTilemapToVram",
+        "SetBgTilemapBuffer",
+        "SetGpuReg",
+        "ShowBg"
+      ],
+      "lineCount": 13
+    },
+    "LoadBerryTagGfx": {
+      "returnType": "bool8",
+      "signature": "static bool8 LoadBerryTagGfx(void)",
+      "paramsRaw": "void",
+      "body": "u16 i;\n\n    switch (sBerryTag->gfxState)\n    {\n    case 0:\n        ResetTempTileDataBuffers();\n        DecompressAndCopyTileDataToVram(2, gBerryCheck_Gfx, 0, 0, 0);\n        sBerryTag->gfxState++;\n        break;\n    case 1:\n        if (FreeTempTileDataBuffersIfPossible() != TRUE)\n        {\n            LZDecompressWram(gBerryTag_Gfx, sBerryTag->tilemapBuffers[0]);\n            sBerryTag->gfxState++;\n        }\n        break;\n    case 2:\n        LZDecompressWram(gBerryTag_Tilemap, sBerryTag->tilemapBuffers[2]);\n        sBerryTag->gfxState++;\n        break;\n    case 3:\n         \n        if (gSaveBlock2Ptr->playerGender == MALE)\n        {\n            for (i = 0; i < ARRAY_COUNT(sBerryTag->tilemapBuffers[1]); i++)\n                sBerryTag->tilemapBuffers[1][i] = (4 << 12) | BG_TILE;\n        }\n        else\n        {\n            for (i = 0; i < ARRAY_COUNT(sBerryTag->tilemapBuffers[1]); i++)\n                sBerryTag->tilemapBuffers[1][i] = (5 << 12) | BG_TILE;\n        }\n        sBerryTag->gfxState++;\n        break;\n    case 4:\n        LoadCompressedPalette(gBerryCheck_Pal, BG_PLTT_ID(0), 6 * PLTT_SIZE_4BPP);\n        sBerryTag->gfxState++;\n        break;\n    case 5:\n        LoadCompressedSpriteSheet(&gBerryCheckCircleSpriteSheet);\n        sBerryTag->gfxState++;\n        break;\n    default:\n        LoadCompressedSpritePalette(&gBerryCheckCirclePaletteTable);\n        return TRUE;  \n    }\n\n    return FALSE;",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "BG_PLTT_ID",
+        "DecompressAndCopyTileDataToVram",
+        "FreeTempTileDataBuffersIfPossible",
+        "LZDecompressWram",
+        "LoadCompressedPalette",
+        "LoadCompressedSpritePalette",
+        "LoadCompressedSpriteSheet",
+        "ResetTempTileDataBuffers"
+      ],
+      "lineCount": 48
+    },
+    "HandleInitWindows": {
+      "returnType": "void",
+      "signature": "static void HandleInitWindows(void)",
+      "paramsRaw": "void",
+      "body": "u16 i;\n\n    InitWindows(sWindowTemplates);\n    DeactivateAllTextPrinters();\n    LoadPalette(sFontPalette, BG_PLTT_ID(15), sizeof(sFontPalette));\n    for (i = 0; i < ARRAY_COUNT(sWindowTemplates) - 1; i++)\n        PutWindowTilemap(i);\n    ScheduleBgCopyTilemapToVram(0);\n    ScheduleBgCopyTilemapToVram(1);",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "BG_PLTT_ID",
+        "DeactivateAllTextPrinters",
+        "InitWindows",
+        "LoadPalette",
+        "PutWindowTilemap",
+        "ScheduleBgCopyTilemapToVram"
+      ],
+      "lineCount": 9
+    },
+    "PrintTextInBerryTagScreen": {
+      "returnType": "void",
+      "signature": "static void PrintTextInBerryTagScreen(u8 windowId, const u8 *text, u8 x, u8 y, s32 speed, u8 colorStructId)",
+      "paramsRaw": "u8 windowId, const u8 *text, u8 x, u8 y, s32 speed, u8 colorStructId",
+      "body": "AddTextPrinterParameterized4(windowId, FONT_NORMAL, x, y, 0, 0, sTextColors[colorStructId], speed, text);",
+      "callsTo": [
+        "AddTextPrinterParameterized4"
+      ],
+      "lineCount": 1
+    },
+    "AddBerryTagTextToBg0": {
+      "returnType": "void",
+      "signature": "static void AddBerryTagTextToBg0(void)",
+      "paramsRaw": "void",
+      "body": "memcpy(GetBgTilemapBuffer(0), sBerryTag->tilemapBuffers[2], sizeof(sBerryTag->tilemapBuffers[2]));\n    FillWindowPixelBuffer(WIN_BERRY_TAG, PIXEL_FILL(15));\n    PrintTextInBerryTagScreen(WIN_BERRY_TAG, gText_BerryTag, GetStringCenterAlignXOffset(FONT_NORMAL, gText_BerryTag, 0x40), 1, 0, 1);\n    PutWindowTilemap(WIN_BERRY_TAG);\n    ScheduleBgCopyTilemapToVram(0);",
+      "callsTo": [
+        "FillWindowPixelBuffer",
+        "GetBgTilemapBuffer",
+        "GetStringCenterAlignXOffset",
+        "PIXEL_FILL",
+        "PrintTextInBerryTagScreen",
+        "PutWindowTilemap",
+        "ScheduleBgCopyTilemapToVram"
+      ],
+      "lineCount": 5
+    },
+    "PrintAllBerryData": {
+      "returnType": "void",
+      "signature": "static void PrintAllBerryData(void)",
+      "paramsRaw": "void",
+      "body": "PrintBerryNumberAndName();\n    PrintBerrySize();\n    PrintBerryFirmness();\n    PrintBerryDescription1();\n    PrintBerryDescription2();",
+      "callsTo": [
+        "PrintBerryDescription1",
+        "PrintBerryDescription2",
+        "PrintBerryFirmness",
+        "PrintBerryNumberAndName",
+        "PrintBerrySize"
+      ],
+      "lineCount": 5
+    },
+    "PrintBerryNumberAndName": {
+      "returnType": "void",
+      "signature": "static void PrintBerryNumberAndName(void)",
+      "paramsRaw": "void",
+      "body": "const struct Berry *berry;\n\n    ConvertIntToDecimalStringN(gStringVar1, sBerryTag->berryId, STR_CONV_MODE_LEADING_ZEROS, 2);\n    berry = GetBerryInfo(sBerryTag->berryId);  \n    StringCopy(gStringVar2, berry->name);\n    StringExpandPlaceholders(gStringVar4, gText_NumberVar1Var2);\n    PrintTextInBerryTagScreen(WIN_BERRY_NAME, gStringVar4, 0, 1, 0, 0);",
+      "callsTo": [
+        "ConvertIntToDecimalStringN",
+        "GetBerryInfo",
+        "PrintTextInBerryTagScreen",
+        "StringCopy",
+        "StringExpandPlaceholders"
+      ],
+      "lineCount": 7
+    },
+    "PrintBerrySize": {
+      "returnType": "void",
+      "signature": "static void PrintBerrySize(void)",
+      "paramsRaw": "void",
+      "body": "const struct Berry *berry = GetBerryInfo(sBerryTag->berryId);\n    AddTextPrinterParameterized(WIN_SIZE_FIRM, FONT_NORMAL, gText_SizeSlash, 0, 1, TEXT_SKIP_DRAW, NULL);\n    if (berry->size != 0)\n    {\n        ConvertIntToDecimalStringN(gStringVar1, berry->size / 10, STR_CONV_MODE_LEFT_ALIGN, 2);\n        ConvertIntToDecimalStringN(gStringVar2, berry->size % 10, STR_CONV_MODE_LEFT_ALIGN, 2);\n        StringExpandPlaceholders(gStringVar4, gText_Var1DotVar2);\n        AddTextPrinterParameterized(WIN_SIZE_FIRM, FONT_NORMAL, gStringVar4, 0x28, 1, 0, NULL);\n    }\n    else\n    {\n        AddTextPrinterParameterized(WIN_SIZE_FIRM, FONT_NORMAL, gText_ThreeMarks, 0x28, 1, 0, NULL);\n    }",
+      "callsTo": [
+        "AddTextPrinterParameterized",
+        "ConvertIntToDecimalStringN",
+        "GetBerryInfo",
+        "StringExpandPlaceholders"
+      ],
+      "lineCount": 13
+    },
+    "PrintBerryFirmness": {
+      "returnType": "void",
+      "signature": "static void PrintBerryFirmness(void)",
+      "paramsRaw": "void",
+      "body": "const struct Berry *berry = GetBerryInfo(sBerryTag->berryId);\n    AddTextPrinterParameterized(WIN_SIZE_FIRM, FONT_NORMAL, gText_FirmSlash, 0, 0x11, TEXT_SKIP_DRAW, NULL);\n    if (berry->firmness != 0)\n        AddTextPrinterParameterized(WIN_SIZE_FIRM, FONT_NORMAL, sBerryFirmnessStrings[berry->firmness - 1], 0x28, 0x11, 0, NULL);\n    else\n        AddTextPrinterParameterized(WIN_SIZE_FIRM, FONT_NORMAL, gText_ThreeMarks, 0x28, 0x11, 0, NULL);",
+      "callsTo": [
+        "AddTextPrinterParameterized",
+        "GetBerryInfo"
+      ],
+      "lineCount": 6
+    },
+    "PrintBerryDescription1": {
+      "returnType": "void",
+      "signature": "static void PrintBerryDescription1(void)",
+      "paramsRaw": "void",
+      "body": "const struct Berry *berry = GetBerryInfo(sBerryTag->berryId);\n    AddTextPrinterParameterized(WIN_DESC, FONT_NORMAL, berry->description1, 5, 1, 0, NULL);",
+      "callsTo": [
+        "AddTextPrinterParameterized",
+        "GetBerryInfo"
+      ],
+      "lineCount": 2
+    },
+    "PrintBerryDescription2": {
+      "returnType": "void",
+      "signature": "static void PrintBerryDescription2(void)",
+      "paramsRaw": "void",
+      "body": "const struct Berry *berry = GetBerryInfo(sBerryTag->berryId);\n    AddTextPrinterParameterized(WIN_DESC, FONT_NORMAL, berry->description2, 5, 0x11, 0, NULL);",
+      "callsTo": [
+        "AddTextPrinterParameterized",
+        "GetBerryInfo"
+      ],
+      "lineCount": 2
+    },
+    "CreateBerrySprite": {
+      "returnType": "void",
+      "signature": "static void CreateBerrySprite(void)",
+      "paramsRaw": "void",
+      "body": "sBerryTag->berrySpriteId = CreateBerryTagSprite(sBerryTag->berryId - 1, 56, 64);",
+      "callsTo": [
+        "CreateBerryTagSprite"
+      ],
+      "lineCount": 1
+    },
+    "DestroyBerrySprite": {
+      "returnType": "void",
+      "signature": "static void DestroyBerrySprite(void)",
+      "paramsRaw": "void",
+      "body": "DestroySprite(&gSprites[sBerryTag->berrySpriteId]);\n    FreeBerryTagSpritePalette();",
+      "callsTo": [
+        "DestroySprite",
+        "FreeBerryTagSpritePalette"
+      ],
+      "lineCount": 2
+    },
+    "CreateFlavorCircleSprites": {
+      "returnType": "void",
+      "signature": "static void CreateFlavorCircleSprites(void)",
+      "paramsRaw": "void",
+      "body": "sBerryTag->flavorCircleIds[FLAVOR_SPICY] = CreateBerryFlavorCircleSprite(64);\n    sBerryTag->flavorCircleIds[FLAVOR_DRY] = CreateBerryFlavorCircleSprite(104);\n    sBerryTag->flavorCircleIds[FLAVOR_SWEET] = CreateBerryFlavorCircleSprite(144);\n    sBerryTag->flavorCircleIds[FLAVOR_BITTER] = CreateBerryFlavorCircleSprite(184);\n    sBerryTag->flavorCircleIds[FLAVOR_SOUR] = CreateBerryFlavorCircleSprite(224);",
+      "callsTo": [
+        "CreateBerryFlavorCircleSprite"
+      ],
+      "lineCount": 5
+    },
+    "SetFlavorCirclesVisiblity": {
+      "returnType": "void",
+      "signature": "static void SetFlavorCirclesVisiblity(void)",
+      "paramsRaw": "void",
+      "body": "const struct Berry *berry = GetBerryInfo(sBerryTag->berryId);\n\n    if (berry->spicy)\n        gSprites[sBerryTag->flavorCircleIds[FLAVOR_SPICY]].invisible = FALSE;\n    else\n        gSprites[sBerryTag->flavorCircleIds[FLAVOR_SPICY]].invisible = TRUE;\n\n    if (berry->dry)\n        gSprites[sBerryTag->flavorCircleIds[FLAVOR_DRY]].invisible = FALSE;\n    else\n        gSprites[sBerryTag->flavorCircleIds[FLAVOR_DRY]].invisible = TRUE;\n\n    if (berry->sweet)\n        gSprites[sBerryTag->flavorCircleIds[FLAVOR_SWEET]].invisible = FALSE;\n    else\n        gSprites[sBerryTag->flavorCircleIds[FLAVOR_SWEET]].invisible = TRUE;\n\n    if (berry->bitter)\n        gSprites[sBerryTag->flavorCircleIds[FLAVOR_BITTER]].invisible = FALSE;\n    else\n        gSprites[sBerryTag->flavorCircleIds[FLAVOR_BITTER]].invisible = TRUE;\n\n    if (berry->sour)\n        gSprites[sBerryTag->flavorCircleIds[FLAVOR_SOUR]].invisible = FALSE;\n    else\n        gSprites[sBerryTag->flavorCircleIds[FLAVOR_SOUR]].invisible = TRUE;",
+      "callsTo": [
+        "GetBerryInfo"
+      ],
+      "lineCount": 26
+    },
+    "DestroyFlavorCircleSprites": {
+      "returnType": "void",
+      "signature": "static void DestroyFlavorCircleSprites(void)",
+      "paramsRaw": "void",
+      "body": "u16 i;\n\n    for (i = 0; i < FLAVOR_COUNT; i++)\n        DestroySprite(&gSprites[sBerryTag->flavorCircleIds[i]]);",
+      "callsTo": [
+        "DestroySprite"
+      ],
+      "lineCount": 4
+    },
+    "PrepareToCloseBerryTagScreen": {
+      "returnType": "void",
+      "signature": "static void PrepareToCloseBerryTagScreen(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "PlaySE(SE_SELECT);\n    BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);\n    gTasks[taskId].func = Task_CloseBerryTagScreen;",
+      "callsTo": [
+        "BeginNormalPaletteFade",
+        "PlaySE"
+      ],
+      "lineCount": 3
+    },
+    "Task_CloseBerryTagScreen": {
+      "returnType": "void",
+      "signature": "static void Task_CloseBerryTagScreen(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "if (!gPaletteFade.active)\n    {\n        DestroyBerrySprite();\n        DestroyFlavorCircleSprites();\n        Free(sBerryTag);\n        FreeAllWindowBuffers();\n        SetMainCallback2(CB2_ReturnToBagMenuPocket);\n        DestroyTask(taskId);\n    }",
+      "callsTo": [
+        "DestroyBerrySprite",
+        "DestroyFlavorCircleSprites",
+        "DestroyTask",
+        "Free",
+        "FreeAllWindowBuffers",
+        "SetMainCallback2"
+      ],
+      "lineCount": 9
+    },
+    "Task_HandleInput": {
+      "returnType": "void",
+      "signature": "static void Task_HandleInput(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "if (!gPaletteFade.active)\n    {\n        u16 arrowKeys = JOY_REPEAT(DPAD_ANY);\n        if (arrowKeys == DPAD_UP)\n            TryChangeDisplayedBerry(taskId, -1);\n        else if (arrowKeys == DPAD_DOWN)\n            TryChangeDisplayedBerry(taskId, 1);\n        else if (JOY_NEW(A_BUTTON | B_BUTTON))\n            PrepareToCloseBerryTagScreen(taskId);\n    }",
+      "callsTo": [
+        "JOY_NEW",
+        "JOY_REPEAT",
+        "PrepareToCloseBerryTagScreen",
+        "TryChangeDisplayedBerry"
+      ],
+      "lineCount": 10
+    },
+    "TryChangeDisplayedBerry": {
+      "returnType": "void",
+      "signature": "static void TryChangeDisplayedBerry(u8 taskId, s8 toMove)",
+      "paramsRaw": "u8 taskId, s8 toMove",
+      "body": "s16 *data = gTasks[taskId].data;\n    s16 currPocketPosition = gBagPosition.scrollPosition[BERRIES_POCKET] + gBagPosition.cursorPosition[BERRIES_POCKET];\n    u32 newPocketPosition = currPocketPosition + toMove;\n    if (newPocketPosition < ITEM_TO_BERRY(MAX_BERRY_INDEX) && BagGetItemIdByPocketPosition(POCKET_BERRIES, newPocketPosition) != ITEM_NONE)\n    {\n        if (toMove < 0)\n            tBgOp = BG_COORD_SUB;\n        else\n            tBgOp = BG_COORD_ADD;\n\n        tBerryY = 0;\n        PlaySE(SE_SELECT);\n        HandleBagCursorPositionChange(toMove);\n        gTasks[taskId].func = Task_DisplayAnotherBerry;\n    }",
+      "callsTo": [
+        "BagGetItemIdByPocketPosition",
+        "HandleBagCursorPositionChange",
+        "ITEM_TO_BERRY",
+        "PlaySE"
+      ],
+      "lineCount": 15
+    },
+    "HandleBagCursorPositionChange": {
+      "returnType": "void",
+      "signature": "static void HandleBagCursorPositionChange(s8 toMove)",
+      "paramsRaw": "s8 toMove",
+      "body": "u16 *scrollPos = &gBagPosition.scrollPosition[BERRIES_POCKET];\n    u16 *cursorPos = &gBagPosition.cursorPosition[BERRIES_POCKET];\n    if (toMove > 0)\n    {\n        if (*cursorPos < 4 || BagGetItemIdByPocketPosition(POCKET_BERRIES, *scrollPos + 8) == 0)\n            *cursorPos += toMove;\n        else\n            *scrollPos += toMove;\n    }\n    else\n    {\n        if (*cursorPos > 3 || *scrollPos == 0)\n            *cursorPos += toMove;\n        else\n            *scrollPos += toMove;\n    }\n\n    sBerryTag->berryId = ItemIdToBerryType(BagGetItemIdByPocketPosition(POCKET_BERRIES, *scrollPos + *cursorPos));",
+      "callsTo": [
+        "BagGetItemIdByPocketPosition",
+        "ItemIdToBerryType"
+      ],
+      "lineCount": 18
+    },
+    "Task_DisplayAnotherBerry": {
+      "returnType": "void",
+      "signature": "static void Task_DisplayAnotherBerry(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "u16 i;\n    s16 y;\n    s16 *data = gTasks[taskId].data;\n    tBerryY += DISPLAY_SPEED;\n    tBerryY &= 0xFF;\n\n    if (tBgOp == BG_COORD_ADD)\n    {\n        switch (tBerryY)\n        {\n        case 3 * DISPLAY_SPEED:\n            FillWindowPixelBuffer(WIN_BERRY_NAME, PIXEL_FILL(0));\n            break;\n        case 4 * DISPLAY_SPEED:\n            PrintBerryNumberAndName();\n            break;\n        case 5 * DISPLAY_SPEED:\n            DestroyBerrySprite();\n            CreateBerrySprite();\n            break;\n        case 6 * DISPLAY_SPEED:\n            FillWindowPixelBuffer(WIN_SIZE_FIRM, PIXEL_FILL(0));\n            break;\n        case 7 * DISPLAY_SPEED:\n            PrintBerrySize();\n            break;\n        case 8 * DISPLAY_SPEED:\n            PrintBerryFirmness();\n            break;\n        case 9 * DISPLAY_SPEED:\n            SetFlavorCirclesVisiblity();\n            break;\n        case 10 * DISPLAY_SPEED:\n            FillWindowPixelBuffer(WIN_DESC, PIXEL_FILL(0));\n            break;\n        case 11 * DISPLAY_SPEED:\n            PrintBerryDescription1();\n            break;\n        case 12 * DISPLAY_SPEED:\n            PrintBerryDescription2();\n            break;\n        }\n    }\n    else  \n    {\n        switch (tBerryY)\n        {\n        case 3 * DISPLAY_SPEED:\n            FillWindowPixelBuffer(WIN_DESC, PIXEL_FILL(0));\n            break;\n        case 4 * DISPLAY_SPEED:\n            PrintBerryDescription2();\n            break;\n        case 5 * DISPLAY_SPEED:\n            PrintBerryDescription1();\n            break;\n        case 6 * DISPLAY_SPEED:\n            SetFlavorCirclesVisiblity();\n            break;\n        case 7 * DISPLAY_SPEED:\n            FillWindowPixelBuffer(WIN_SIZE_FIRM, PIXEL_FILL(0));\n            break;\n        case 8 * DISPLAY_SPEED:\n            PrintBerryFirmness();\n            break;\n        case 9 * DISPLAY_SPEED:\n            PrintBerrySize();\n            break;\n        case 10 * DISPLAY_SPEED:\n            DestroyBerrySprite();\n            CreateBerrySprite();\n            break;\n        case 11 * DISPLAY_SPEED:\n            FillWindowPixelBuffer(WIN_BERRY_NAME, PIXEL_FILL(0));\n            break;\n        case 12 * DISPLAY_SPEED:\n            PrintBerryNumberAndName();\n            break;\n        }\n    }\n\n    if (tBgOp == BG_COORD_ADD)\n        y = -tBerryY;\n    else\n        y = tBerryY;\n\n    gSprites[sBerryTag->berrySpriteId].y2 = y;\n    for (i = 0; i < FLAVOR_COUNT; i++)\n        gSprites[sBerryTag->flavorCircleIds[i]].y2 = y;\n\n    ChangeBgY(1, 0x1000, tBgOp);\n    ChangeBgY(2, 0x1000, tBgOp);\n\n    if (tBerryY == 0)\n        gTasks[taskId].func = Task_HandleInput;",
+      "callsTo": [
+        "ChangeBgY",
+        "CreateBerrySprite",
+        "DestroyBerrySprite",
+        "FillWindowPixelBuffer",
+        "PIXEL_FILL",
+        "PrintBerryDescription1",
+        "PrintBerryDescription2",
+        "PrintBerryFirmness",
+        "PrintBerryNumberAndName",
+        "PrintBerrySize",
+        "SetFlavorCirclesVisiblity"
+      ],
+      "lineCount": 95
+    }
+  }
+}

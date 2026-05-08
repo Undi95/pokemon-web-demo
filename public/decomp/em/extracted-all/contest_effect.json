@@ -1,0 +1,543 @@
+{
+  "srcFile": "src/contest_effect.c",
+  "count": 51,
+  "functions": {
+    "AreMovesContestCombo": {
+      "returnType": "bool8",
+      "signature": "bool8 AreMovesContestCombo(u16 lastMove, u16 nextMove)",
+      "paramsRaw": "u16 lastMove, u16 nextMove",
+      "body": "u8 nextMoveComboMoves[4];\n    u8 lastMoveComboStarterId = gContestMoves[lastMove].comboStarterId;\n    nextMoveComboMoves[0] = gContestMoves[nextMove].comboMoves[0];\n    nextMoveComboMoves[1] = gContestMoves[nextMove].comboMoves[1];\n    nextMoveComboMoves[2] = gContestMoves[nextMove].comboMoves[2];\n    nextMoveComboMoves[3] = gContestMoves[nextMove].comboMoves[3];\n\n    if (lastMoveComboStarterId == 0)\n        return FALSE;\n    else if (lastMoveComboStarterId == nextMoveComboMoves[0]\n          || lastMoveComboStarterId == nextMoveComboMoves[1]\n          || lastMoveComboStarterId == nextMoveComboMoves[2]\n          || lastMoveComboStarterId == nextMoveComboMoves[3])\n        return gComboStarterLookupTable[lastMoveComboStarterId];\n    else\n        return FALSE;",
+      "callsTo": [],
+      "lineCount": 16
+    },
+    "ContestEffect_HighlyAppealing": {
+      "returnType": "void",
+      "signature": "static void ContestEffect_HighlyAppealing(void)",
+      "paramsRaw": "void",
+      "body": "",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "ContestEffect_UserMoreEasilyStartled": {
+      "returnType": "void",
+      "signature": "static void ContestEffect_UserMoreEasilyStartled(void)",
+      "paramsRaw": "void",
+      "body": "eContestantStatus[eContestAppealResults.contestant].moreEasilyStartled = TRUE;\n    SetContestantEffectStringID(eContestAppealResults.contestant, CONTEST_STRING_MORE_CONSCIOUS);",
+      "callsTo": [
+        "SetContestantEffectStringID"
+      ],
+      "lineCount": 2
+    },
+    "ContestEffect_GreatAppealButNoMoreMoves": {
+      "returnType": "void",
+      "signature": "static void ContestEffect_GreatAppealButNoMoreMoves(void)",
+      "paramsRaw": "void",
+      "body": "eContestantStatus[eContestAppealResults.contestant].exploded = TRUE;\n    SetContestantEffectStringID(eContestAppealResults.contestant, CONTEST_STRING_NO_APPEAL);",
+      "callsTo": [
+        "SetContestantEffectStringID"
+      ],
+      "lineCount": 2
+    },
+    "ContestEffect_RepetitionNotBoring": {
+      "returnType": "void",
+      "signature": "static void ContestEffect_RepetitionNotBoring(void)",
+      "paramsRaw": "void",
+      "body": "eContestantStatus[eContestAppealResults.contestant].usedRepeatableMove = TRUE;\n    eContestantStatus[eContestAppealResults.contestant].repeatedMove = FALSE;\n    eContestantStatus[eContestAppealResults.contestant].moveRepeatCount = 0;",
+      "callsTo": [],
+      "lineCount": 3
+    },
+    "ContestEffect_AvoidStartleOnce": {
+      "returnType": "void",
+      "signature": "static void ContestEffect_AvoidStartleOnce(void)",
+      "paramsRaw": "void",
+      "body": "eContestantStatus[eContestAppealResults.contestant].jamSafetyCount = 1;\n    SetContestantEffectStringID(eContestAppealResults.contestant, CONTEST_STRING_SETTLE_DOWN);",
+      "callsTo": [
+        "SetContestantEffectStringID"
+      ],
+      "lineCount": 2
+    },
+    "ContestEffect_AvoidStartle": {
+      "returnType": "void",
+      "signature": "static void ContestEffect_AvoidStartle(void)",
+      "paramsRaw": "void",
+      "body": "eContestantStatus[eContestAppealResults.contestant].immune = TRUE;\n    SetContestantEffectStringID(eContestAppealResults.contestant, CONTEST_STRING_OBLIVIOUS_TO_OTHERS);",
+      "callsTo": [
+        "SetContestantEffectStringID"
+      ],
+      "lineCount": 2
+    },
+    "ContestEffect_AvoidStartleSlightly": {
+      "returnType": "void",
+      "signature": "static void ContestEffect_AvoidStartleSlightly(void)",
+      "paramsRaw": "void",
+      "body": "eContestantStatus[eContestAppealResults.contestant].jamReduction = 20;\n    SetContestantEffectStringID(eContestAppealResults.contestant,CONTEST_STRING_LESS_AWARE);",
+      "callsTo": [
+        "SetContestantEffectStringID"
+      ],
+      "lineCount": 2
+    },
+    "ContestEffect_UserLessEasilyStartled": {
+      "returnType": "void",
+      "signature": "static void ContestEffect_UserLessEasilyStartled(void)",
+      "paramsRaw": "void",
+      "body": "eContestantStatus[eContestAppealResults.contestant].resistant = TRUE;\n    SetContestantEffectStringID(eContestAppealResults.contestant,CONTEST_STRING_STOPPED_CARING);",
+      "callsTo": [
+        "SetContestantEffectStringID"
+      ],
+      "lineCount": 2
+    },
+    "ContestEffect_StartleFrontMon": {
+      "returnType": "void",
+      "signature": "static void ContestEffect_StartleFrontMon(void)",
+      "paramsRaw": "void",
+      "body": "u8 idx = 0;\n    u8 a = eContestAppealResults.contestant;\n\n    if (eContestAppealResults.turnOrder[a] != 0)\n    {\n        int i;\n\n        for (i = 0; i < CONTESTANT_COUNT; i++)\n        {\n            if (eContestAppealResults.turnOrder[a] - 1 == eContestAppealResults.turnOrder[i])\n                break;\n        }\n        eContestAppealResults.jamQueue[0] = i;\n        eContestAppealResults.jamQueue[1] = CONTESTANT_NONE;\n        idx = WasAtLeastOneOpponentJammed();\n    }\n    if (idx == 0)\n        SetContestantEffectStringID2(eContestAppealResults.contestant, CONTEST_STRING_MESSED_UP2);\n    SetContestantEffectStringID(eContestAppealResults.contestant, CONTEST_STRING_ATTEMPT_STARTLE);",
+      "callsTo": [
+        "SetContestantEffectStringID",
+        "SetContestantEffectStringID2",
+        "WasAtLeastOneOpponentJammed"
+      ],
+      "lineCount": 19
+    },
+    "ContestEffect_StartlePrevMons": {
+      "returnType": "void",
+      "signature": "static void ContestEffect_StartlePrevMons(void)",
+      "paramsRaw": "void",
+      "body": "u8 idx = 0;\n    u8 contestant = eContestAppealResults.contestant;\n\n    if (eContestAppealResults.turnOrder[contestant] != 0)\n    {\n        int i, j;\n\n        for (i = 0, j = 0; i < CONTESTANT_COUNT; i++)\n        {\n            if (eContestAppealResults.turnOrder[contestant] > eContestAppealResults.turnOrder[i])\n                eContestAppealResults.jamQueue[j++] = i;\n        }\n\n        eContestAppealResults.jamQueue[j] = CONTESTANT_NONE;\n        idx = WasAtLeastOneOpponentJammed();\n    }\n    if (idx == 0)\n        SetContestantEffectStringID2(eContestAppealResults.contestant, CONTEST_STRING_MESSED_UP2);\n    SetContestantEffectStringID(eContestAppealResults.contestant, CONTEST_STRING_ATTEMPT_STARTLE);",
+      "callsTo": [
+        "SetContestantEffectStringID",
+        "SetContestantEffectStringID2",
+        "WasAtLeastOneOpponentJammed"
+      ],
+      "lineCount": 19
+    },
+    "ContestEffect_StartlePrevMon2": {
+      "returnType": "void",
+      "signature": "static void ContestEffect_StartlePrevMon2(void)",
+      "paramsRaw": "void",
+      "body": "u8 rval = Random() % 10;\n    int jam;\n\n    if (rval < 2)\n        jam = 20;\n    else if (rval < 8)\n        jam = 40;\n    else\n        jam = 60;\n\n    eContestAppealResults.jam = jam;\n    ContestEffect_StartleFrontMon();",
+      "callsTo": [
+        "ContestEffect_StartleFrontMon",
+        "Random"
+      ],
+      "lineCount": 12
+    },
+    "ContestEffect_StartlePrevMons2": {
+      "returnType": "void",
+      "signature": "static void ContestEffect_StartlePrevMons2(void)",
+      "paramsRaw": "void",
+      "body": "u8 numStartled = 0;\n    u8 contestant = eContestAppealResults.contestant;\n    u8 turnOrder = eContestAppealResults.turnOrder[contestant];\n\n    if (turnOrder != 0)\n    {\n        int i;\n\n        for (i = 0; i < 4; i++)\n        {\n            if (eContestAppealResults.turnOrder[contestant] > eContestAppealResults.turnOrder[i])\n            {\n                u8 rval, jam;\n\n                eContestAppealResults.jamQueue[0] = i;\n                eContestAppealResults.jamQueue[1] = CONTESTANT_NONE;\n                rval = Random() % 10;\n\n                if (rval == 0)\n                    jam = 0;\n                else if (rval <= 2)\n                    jam = 10;\n                else if (rval <= 4)\n                    jam = 20;\n                else if (rval <= 6)\n                    jam = 30;\n                else if (rval <= 8)\n                    jam = 40;\n                else\n                    jam = 60;\n\n                eContestAppealResults.jam = jam;\n\n                if (WasAtLeastOneOpponentJammed())\n                    numStartled++;\n            }\n        }\n    }\n    SetContestantEffectStringID(eContestAppealResults.contestant, CONTEST_STRING_ATTEMPT_STARTLE);\n    if (numStartled == 0)\n        SetContestantEffectStringID2(eContestAppealResults.contestant, CONTEST_STRING_MESSED_UP2);",
+      "callsTo": [
+        "Random",
+        "SetContestantEffectStringID",
+        "SetContestantEffectStringID2",
+        "WasAtLeastOneOpponentJammed"
+      ],
+      "lineCount": 41
+    },
+    "ContestEffect_ShiftJudgeAttention": {
+      "returnType": "void",
+      "signature": "static void ContestEffect_ShiftJudgeAttention(void)",
+      "paramsRaw": "void",
+      "body": "bool32 hitAny = FALSE;\n    u8 contestant = eContestAppealResults.contestant;\n\n    if (eContestAppealResults.turnOrder[eContestAppealResults.contestant] != 0)\n    {\n        int i;\n\n        for (i = 0; i < 4; i++)\n        {\n            if (eContestAppealResults.turnOrder[contestant] > eContestAppealResults.turnOrder[i] &&\n                eContestantStatus[i].hasJudgesAttention &&\n                CanUnnerveContestant(i))\n            {\n                eContestantStatus[i].hasJudgesAttention = FALSE;\n                eContestantStatus[i].judgesAttentionWasRemoved = TRUE;\n                SetContestantEffectStringID(i, CONTEST_STRING_JUDGE_LOOK_AWAY2);\n                hitAny = TRUE;\n            }\n        }\n    }\n    SetContestantEffectStringID(eContestAppealResults.contestant,CONTEST_STRING_DAZZLE_ATTEMPT);\n    if (!hitAny)\n    {\n        SetContestantEffectStringID2(eContestAppealResults.contestant, CONTEST_STRING_MESSED_UP2);\n    }",
+      "callsTo": [
+        "CanUnnerveContestant",
+        "SetContestantEffectStringID",
+        "SetContestantEffectStringID2"
+      ],
+      "lineCount": 25
+    },
+    "ContestEffect_StartleMonWithJudgesAttention": {
+      "returnType": "void",
+      "signature": "static void ContestEffect_StartleMonWithJudgesAttention(void)",
+      "paramsRaw": "void",
+      "body": "u8 numStartled = 0;\n    u8 contestant = eContestAppealResults.contestant;\n\n    if (eContestAppealResults.turnOrder[eContestAppealResults.contestant] != 0)\n    {\n        int i;\n\n        for (i = 0; i < 4; i++)\n        {\n            if (eContestAppealResults.turnOrder[contestant] > eContestAppealResults.turnOrder[i])\n            {\n                if (eContestantStatus[i].hasJudgesAttention)\n                    eContestAppealResults.jam = 50;\n                else\n                    eContestAppealResults.jam = 10;\n                eContestAppealResults.jamQueue[0] = i;\n                eContestAppealResults.jamQueue[1] = CONTESTANT_NONE;\n                if (WasAtLeastOneOpponentJammed())\n                    numStartled++;\n            }\n        }\n    }\n    SetContestantEffectStringID(eContestAppealResults.contestant, CONTEST_STRING_ATTEMPT_STARTLE);\n    if (numStartled == 0)\n        SetContestantEffectStringID2(eContestAppealResults.contestant, CONTEST_STRING_MESSED_UP2);",
+      "callsTo": [
+        "SetContestantEffectStringID",
+        "SetContestantEffectStringID2",
+        "WasAtLeastOneOpponentJammed"
+      ],
+      "lineCount": 25
+    },
+    "ContestEffect_JamsOthersButMissOneTurn": {
+      "returnType": "void",
+      "signature": "static void ContestEffect_JamsOthersButMissOneTurn(void)",
+      "paramsRaw": "void",
+      "body": "eContestantStatus[eContestAppealResults.contestant].turnSkipped = TRUE;\n    ContestEffect_StartlePrevMons();\n    SetContestantEffectStringID(eContestAppealResults.contestant, CONTEST_STRING_ATTEMPT_STARTLE);",
+      "callsTo": [
+        "ContestEffect_StartlePrevMons",
+        "SetContestantEffectStringID"
+      ],
+      "lineCount": 3
+    },
+    "ContestEffect_StartleMonsSameTypeAppeal": {
+      "returnType": "void",
+      "signature": "static void ContestEffect_StartleMonsSameTypeAppeal(void)",
+      "paramsRaw": "void",
+      "body": "u16 move = eContestantStatus[eContestAppealResults.contestant].currMove;\n    JamByMoveCategory(gContestMoves[move].contestCategory);\n    SetContestantEffectStringID(eContestAppealResults.contestant, CONTEST_STRING_ATTEMPT_STARTLE);",
+      "callsTo": [
+        "JamByMoveCategory",
+        "SetContestantEffectStringID"
+      ],
+      "lineCount": 3
+    },
+    "ContestEffect_StartleMonsCoolAppeal": {
+      "returnType": "void",
+      "signature": "static void ContestEffect_StartleMonsCoolAppeal(void)",
+      "paramsRaw": "void",
+      "body": "JamByMoveCategory(CONTEST_CATEGORY_COOL);\n    SetContestantEffectStringID(eContestAppealResults.contestant, CONTEST_STRING_ATTEMPT_STARTLE);",
+      "callsTo": [
+        "JamByMoveCategory",
+        "SetContestantEffectStringID"
+      ],
+      "lineCount": 2
+    },
+    "ContestEffect_StartleMonsBeautyAppeal": {
+      "returnType": "void",
+      "signature": "static void ContestEffect_StartleMonsBeautyAppeal(void)",
+      "paramsRaw": "void",
+      "body": "JamByMoveCategory(CONTEST_CATEGORY_BEAUTY);\n    SetContestantEffectStringID(eContestAppealResults.contestant, CONTEST_STRING_ATTEMPT_STARTLE);",
+      "callsTo": [
+        "JamByMoveCategory",
+        "SetContestantEffectStringID"
+      ],
+      "lineCount": 2
+    },
+    "ContestEffect_StartleMonsCuteAppeal": {
+      "returnType": "void",
+      "signature": "static void ContestEffect_StartleMonsCuteAppeal(void)",
+      "paramsRaw": "void",
+      "body": "JamByMoveCategory(CONTEST_CATEGORY_CUTE);\n    SetContestantEffectStringID(eContestAppealResults.contestant, CONTEST_STRING_ATTEMPT_STARTLE);",
+      "callsTo": [
+        "JamByMoveCategory",
+        "SetContestantEffectStringID"
+      ],
+      "lineCount": 2
+    },
+    "ContestEffect_StartleMonsSmartAppeal": {
+      "returnType": "void",
+      "signature": "static void ContestEffect_StartleMonsSmartAppeal(void)",
+      "paramsRaw": "void",
+      "body": "JamByMoveCategory(CONTEST_CATEGORY_SMART);\n    SetContestantEffectStringID(eContestAppealResults.contestant, CONTEST_STRING_ATTEMPT_STARTLE);",
+      "callsTo": [
+        "JamByMoveCategory",
+        "SetContestantEffectStringID"
+      ],
+      "lineCount": 2
+    },
+    "ContestEffect_StartleMonsToughAppeal": {
+      "returnType": "void",
+      "signature": "static void ContestEffect_StartleMonsToughAppeal(void)",
+      "paramsRaw": "void",
+      "body": "JamByMoveCategory(CONTEST_CATEGORY_TOUGH);\n    SetContestantEffectStringID(eContestAppealResults.contestant, CONTEST_STRING_ATTEMPT_STARTLE);",
+      "callsTo": [
+        "JamByMoveCategory",
+        "SetContestantEffectStringID"
+      ],
+      "lineCount": 2
+    },
+    "ContestEffect_MakeFollowingMonNervous": {
+      "returnType": "void",
+      "signature": "static void ContestEffect_MakeFollowingMonNervous(void)",
+      "paramsRaw": "void",
+      "body": "bool32 hitAny = FALSE;\n\n    if (eContestAppealResults.turnOrder[eContestAppealResults.contestant] != 3)\n    {\n        int i;\n\n        for (i = 0; i < 4; i++)\n        {\n            if (eContestAppealResults.turnOrder[eContestAppealResults.contestant] + 1 == eContestAppealResults.turnOrder[i])\n            {\n                if (CanUnnerveContestant(i))\n                {\n                    MakeContestantNervous(i);\n                    SetContestantEffectStringID(i, CONTEST_STRING_NERVOUS);\n                    hitAny = TRUE;\n                }\n                else\n                {\n                    SetContestantEffectStringID(i, CONTEST_STRING_UNAFFECTED);\n                    hitAny = TRUE;\n                }\n            }\n        }\n    }\n    SetContestantEffectStringID(eContestAppealResults.contestant, CONTEST_STRING_UNNERVE_ATTEMPT);\n    if (!hitAny)\n        SetContestantEffectStringID2(eContestAppealResults.contestant, CONTEST_STRING_MESSED_UP2);",
+      "callsTo": [
+        "CanUnnerveContestant",
+        "MakeContestantNervous",
+        "SetContestantEffectStringID",
+        "SetContestantEffectStringID2"
+      ],
+      "lineCount": 27
+    },
+    "ContestEffect_MakeFollowingMonsNervous": {
+      "returnType": "void",
+      "signature": "static void ContestEffect_MakeFollowingMonsNervous(void)",
+      "paramsRaw": "void",
+      "body": "u8 numUnnerved = 0;\n    bool32 contestantUnnerved = FALSE;\n    u8 contestantIds[5];\n    int i;\n    int numAfter;\n    s16 oddsMod[CONTESTANT_COUNT];\n    s16 odds[CONTESTANT_COUNT];\n\n    memset(contestantIds, CONTESTANT_NONE, ARRAY_COUNT(contestantIds));\n    for (i = 0, numAfter = 0; i < CONTESTANT_COUNT; i++)\n    {\n        if (eContestAppealResults.turnOrder[eContestAppealResults.contestant] < eContestAppealResults.turnOrder[i] &&\n            !eContestantStatus[i].nervous && !Contest_IsMonsTurnDisabled(i))\n            contestantIds[numAfter++] = i;\n    }\n\n    if (numAfter == 1)\n    {\n        odds[0] = 60;\n    }\n    else if (numAfter == 2)\n    {\n        odds[0] = 30;\n        odds[1] = 30;\n    }\n    else if (numAfter == 3)\n    {\n        odds[0] = 20;\n        odds[1] = 20;\n        odds[2] = 20;\n    }\n    else\n    {\n        for (i = 0; i < CONTESTANT_COUNT; i++)\n            odds[i] = 0;\n    }\n    for (i = 0; i < CONTESTANT_COUNT; i++)\n    {\n        if (eContestantStatus[i].hasJudgesAttention && IsContestantAllowedToCombo(i))\n            oddsMod[i] = gComboStarterLookupTable[gContestMoves[eContestantStatus[i].prevMove].comboStarterId] * 10;\n        else\n            oddsMod[i] = 0;\n        oddsMod[i] -= (eContestantStatus[i].condition / 10) * 10;\n    }\n    if (odds[0] != 0)\n    {\n        for (i = 0; contestantIds[i] != CONTESTANT_NONE; i++)\n        {\n            if (Random() % 100 < odds[i] + oddsMod[contestantIds[i]])\n            {\n                if (CanUnnerveContestant(contestantIds[i]))\n                {\n                    MakeContestantNervous(contestantIds[i]);\n                    SetContestantEffectStringID(contestantIds[i], CONTEST_STRING_NERVOUS);\n                    numUnnerved++;\n                }\n                else\n                {\n                    contestantUnnerved = TRUE;\n                }\n            }\n            else\n            {\n                contestantUnnerved = TRUE;\n            }\n\n            if (contestantUnnerved)\n            {\n                contestantUnnerved = FALSE;\n                SetContestantEffectStringID(contestantIds[i], CONTEST_STRING_UNAFFECTED);\n                numUnnerved++;\n            }\n            eContestAppealResults.unnervedPokes[contestantIds[i]] = 1;\n        }\n    }\n    SetContestantEffectStringID(eContestAppealResults.contestant, CONTEST_STRING_UNNERVE_WAITING);\n    if (numUnnerved == 0)\n        SetContestantEffectStringID2(eContestAppealResults.contestant, CONTEST_STRING_MESSED_UP2);",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "CanUnnerveContestant",
+        "Contest_IsMonsTurnDisabled",
+        "IsContestantAllowedToCombo",
+        "MakeContestantNervous",
+        "Random",
+        "SetContestantEffectStringID",
+        "SetContestantEffectStringID2"
+      ],
+      "lineCount": 78
+    },
+    "ContestEffect_WorsenConditionOfPrevMons": {
+      "returnType": "void",
+      "signature": "static void ContestEffect_WorsenConditionOfPrevMons(void)",
+      "paramsRaw": "void",
+      "body": "u8 numHit = 0;\n    int i;\n\n    for (i = 0; i < CONTESTANT_COUNT; i++)\n    {\n        if (eContestAppealResults.turnOrder[eContestAppealResults.contestant] > eContestAppealResults.turnOrder[i] &&\n            eContestantStatus[i].condition > 0 &&\n            CanUnnerveContestant(i))\n        {\n            eContestantStatus[i].condition = 0;\n            eContestantStatus[i].conditionMod = CONDITION_LOSE;\n            SetContestantEffectStringID(i, CONTEST_STRING_REGAINED_FORM);\n            numHit++;\n        }\n    }\n\n    SetContestantEffectStringID(eContestAppealResults.contestant, CONTEST_STRING_TAUNT_WELL);\n    if (numHit == 0)\n        SetContestantEffectStringID2(eContestAppealResults.contestant, CONTEST_STRING_IGNORED);",
+      "callsTo": [
+        "CanUnnerveContestant",
+        "SetContestantEffectStringID",
+        "SetContestantEffectStringID2"
+      ],
+      "lineCount": 19
+    },
+    "ContestEffect_BadlyStartlesMonsInGoodCondition": {
+      "returnType": "void",
+      "signature": "static void ContestEffect_BadlyStartlesMonsInGoodCondition(void)",
+      "paramsRaw": "void",
+      "body": "u8 numHit = 0;\n    int i;\n\n    for (i = 0; i < CONTESTANT_COUNT; i++)\n    {\n        if (eContestAppealResults.turnOrder[eContestAppealResults.contestant] > eContestAppealResults.turnOrder[i])\n        {\n            if (eContestantStatus[i].condition > 0)\n                eContestAppealResults.jam = 40;\n            else\n                eContestAppealResults.jam = 10;\n            eContestAppealResults.jamQueue[0] = i;\n            eContestAppealResults.jamQueue[1] = CONTESTANT_NONE;\n            if (WasAtLeastOneOpponentJammed())\n                numHit++;\n        }\n    }\n    SetContestantEffectStringID(eContestAppealResults.contestant, CONTEST_STRING_JAM_WELL);\n    if (numHit == 0)\n        SetContestantEffectStringID2(eContestAppealResults.contestant, CONTEST_STRING_IGNORED);",
+      "callsTo": [
+        "SetContestantEffectStringID",
+        "SetContestantEffectStringID2",
+        "WasAtLeastOneOpponentJammed"
+      ],
+      "lineCount": 20
+    },
+    "ContestEffect_BetterIfFirst": {
+      "returnType": "void",
+      "signature": "static void ContestEffect_BetterIfFirst(void)",
+      "paramsRaw": "void",
+      "body": "if (gContestantTurnOrder[eContestAppealResults.contestant] == 0)\n    {\n        u16 move = eContestantStatus[eContestAppealResults.contestant].currMove;\n        eContestantStatus[eContestAppealResults.contestant].appeal += 2 * gContestEffects[gContestMoves[move].effect].appeal;\n        SetContestantEffectStringID(eContestAppealResults.contestant, CONTEST_STRING_HUSTLE_STANDOUT);\n    }",
+      "callsTo": [
+        "SetContestantEffectStringID"
+      ],
+      "lineCount": 6
+    },
+    "ContestEffect_BetterIfLast": {
+      "returnType": "void",
+      "signature": "static void ContestEffect_BetterIfLast(void)",
+      "paramsRaw": "void",
+      "body": "if (gContestantTurnOrder[eContestAppealResults.contestant] == 3)\n    {\n        u16 move = eContestantStatus[eContestAppealResults.contestant].currMove;\n        eContestantStatus[eContestAppealResults.contestant].appeal += 2 * gContestEffects[gContestMoves[move].effect].appeal;\n        SetContestantEffectStringID(eContestAppealResults.contestant, CONTEST_STRING_WORK_HARD_UNNOTICED);\n    }",
+      "callsTo": [
+        "SetContestantEffectStringID"
+      ],
+      "lineCount": 6
+    },
+    "ContestEffect_AppealAsGoodAsPrevOnes": {
+      "returnType": "void",
+      "signature": "static void ContestEffect_AppealAsGoodAsPrevOnes(void)",
+      "paramsRaw": "void",
+      "body": "int i;\n    int appealSum;\n\n    for (i = 0, appealSum = 0; i < CONTESTANT_COUNT; i++)\n    {\n        if (eContestAppealResults.turnOrder[eContestAppealResults.contestant] > eContestAppealResults.turnOrder[i])\n            appealSum += eContestantStatus[i].appeal;\n    }\n    if (appealSum < 0)\n        appealSum = 0;\n\n    if (eContestAppealResults.turnOrder[eContestAppealResults.contestant] == 0 || appealSum == 0)\n    {\n        SetContestantEffectStringID(eContestAppealResults.contestant, CONTEST_STRING_APPEAL_NOT_WELL);\n    }\n    else\n    {\n        eContestantStatus[eContestAppealResults.contestant].appeal += appealSum / 2;\n        SetContestantEffectStringID(eContestAppealResults.contestant, CONTEST_STRING_WORK_BEFORE);\n    }\n    eContestantStatus[eContestAppealResults.contestant].appeal = RoundTowardsZero(eContestantStatus[eContestAppealResults.contestant].appeal);",
+      "callsTo": [
+        "RoundTowardsZero",
+        "SetContestantEffectStringID"
+      ],
+      "lineCount": 21
+    },
+    "ContestEffect_AppealAsGoodAsPrevOne": {
+      "returnType": "void",
+      "signature": "static void ContestEffect_AppealAsGoodAsPrevOne(void)",
+      "paramsRaw": "void",
+      "body": "s16 appeal = 0;\n\n    if (eContestAppealResults.turnOrder[eContestAppealResults.contestant] != 0)\n    {\n        int i;\n        for (i = 0; i < CONTESTANT_COUNT; i++)\n        {\n            if (eContestAppealResults.turnOrder[eContestAppealResults.contestant] - 1 == eContestAppealResults.turnOrder[i])\n                appeal = eContestantStatus[i].appeal;\n        }\n    }\n    if (eContestAppealResults.turnOrder[eContestAppealResults.contestant] == 0 || appeal <= 0)\n    {\n        SetContestantEffectStringID(eContestAppealResults.contestant, CONTEST_STRING_APPEAL_NOT_WELL2);\n    }\n    else\n    {\n        eContestantStatus[eContestAppealResults.contestant].appeal += appeal;\n        SetContestantEffectStringID(eContestAppealResults.contestant, CONTEST_STRING_WORK_PRECEDING);\n    }",
+      "callsTo": [
+        "SetContestantEffectStringID"
+      ],
+      "lineCount": 20
+    },
+    "ContestEffect_BetterWhenLater": {
+      "returnType": "void",
+      "signature": "static void ContestEffect_BetterWhenLater(void)",
+      "paramsRaw": "void",
+      "body": "u8 whichTurn = eContestAppealResults.turnOrder[eContestAppealResults.contestant];\n    if (whichTurn == 0)\n        eContestantStatus[eContestAppealResults.contestant].appeal = 10;\n    else\n        eContestantStatus[eContestAppealResults.contestant].appeal = 20 * whichTurn;\n    if (whichTurn == 0)\n        SetContestantEffectStringID(eContestAppealResults.contestant, CONTEST_STRING_APPEAL_NOT_SHOWN_WELL);\n    else if (whichTurn == 1)\n        SetContestantEffectStringID(eContestAppealResults.contestant, CONTEST_STRING_APPEAL_SLIGHTLY_WELL);\n    else if (whichTurn == 2)\n        SetContestantEffectStringID(eContestAppealResults.contestant, CONTEST_STRING_APPEAL_PRETTY_WELL);\n    else\n        SetContestantEffectStringID(eContestAppealResults.contestant, CONTEST_STRING_APPEAL_EXCELLENTLY);",
+      "callsTo": [
+        "SetContestantEffectStringID"
+      ],
+      "lineCount": 13
+    },
+    "ContestEffect_QualityDependsOnTiming": {
+      "returnType": "void",
+      "signature": "static void ContestEffect_QualityDependsOnTiming(void)",
+      "paramsRaw": "void",
+      "body": "u8 rval = Random() % 10;\n    s16 appeal;\n\n    if (rval < 3)\n    {\n        appeal = 10;\n        SetContestantEffectStringID(eContestAppealResults.contestant, CONTEST_STRING_APPEAL_NOT_VERY_WELL);\n    }\n    else if (rval < 6)\n    {\n        appeal = 20;\n        SetContestantEffectStringID(eContestAppealResults.contestant, CONTEST_STRING_APPEAL_SLIGHTLY_WELL2);\n    }\n    else if (rval < 8)\n    {\n        appeal = 40;\n        SetContestantEffectStringID(eContestAppealResults.contestant, CONTEST_STRING_APPEAL_PRETTY_WELL2);\n    }\n    else if (rval < 9)\n    {\n        appeal = 60;\n        SetContestantEffectStringID(eContestAppealResults.contestant, CONTEST_STRING_APPEAL_VERY_WELL);\n    }\n    else\n    {\n        appeal = 80;\n        SetContestantEffectStringID(eContestAppealResults.contestant, CONTEST_STRING_APPEAL_EXCELLENTLY2);\n    }\n    eContestantStatus[eContestAppealResults.contestant].appeal = appeal;",
+      "callsTo": [
+        "Random",
+        "SetContestantEffectStringID"
+      ],
+      "lineCount": 29
+    },
+    "ContestEffect_BetterIfSameType": {
+      "returnType": "void",
+      "signature": "static void ContestEffect_BetterIfSameType(void)",
+      "paramsRaw": "void",
+      "body": "s8 turnOrder = eContestAppealResults.turnOrder[eContestAppealResults.contestant];\n    s8 i = turnOrder - 1, j;\n    u16 move;\n\n    if (turnOrder == 0)\n        return;\n\n    while (1)\n    {\n        for (j = 0; j < CONTESTANT_COUNT; j++)\n        {\n            if (eContestAppealResults.turnOrder[j] == i)\n                break;\n        }\n        if (eContestantStatus[j].noMoreTurns || eContestantStatus[j].nervous || eContestantStatus[j].numTurnsSkipped)\n        {\n            if (--i < 0)\n                return;\n        }\n        else\n        {\n            break;\n        }\n    }\n\n    move = eContestantStatus[eContestAppealResults.contestant].currMove;\n    if (gContestMoves[move].contestCategory == gContestMoves[eContestantStatus[j].currMove].contestCategory)\n    {\n        eContestantStatus[eContestAppealResults.contestant].appeal += gContestEffects[gContestMoves[move].effect].appeal * 2;\n        SetContestantEffectStringID(eContestAppealResults.contestant, CONTEST_STRING_SAME_TYPE_GOOD);\n    }",
+      "callsTo": [
+        "SetContestantEffectStringID"
+      ],
+      "lineCount": 31
+    },
+    "ContestEffect_BetterIfDiffType": {
+      "returnType": "void",
+      "signature": "static void ContestEffect_BetterIfDiffType(void)",
+      "paramsRaw": "void",
+      "body": "if (eContestAppealResults.turnOrder[eContestAppealResults.contestant] != 0)\n    {\n        u16 move = eContestantStatus[eContestAppealResults.contestant].currMove;\n        int i;\n\n        for (i = 0; i < CONTESTANT_COUNT; i++)\n        {\n            if (eContestAppealResults.turnOrder[eContestAppealResults.contestant] - 1 == eContestAppealResults.turnOrder[i] &&\n                gContestMoves[move].contestCategory != gContestMoves[eContestantStatus[i].currMove].contestCategory)\n            {\n                eContestantStatus[eContestAppealResults.contestant].appeal += gContestEffects[gContestMoves[move].effect].appeal * 2;\n                SetContestantEffectStringID(eContestAppealResults.contestant, CONTEST_STRING_DIFF_TYPE_GOOD);\n                break;\n            }\n        }\n    }",
+      "callsTo": [
+        "SetContestantEffectStringID"
+      ],
+      "lineCount": 16
+    },
+    "ContestEffect_AffectedByPrevAppeal": {
+      "returnType": "void",
+      "signature": "static void ContestEffect_AffectedByPrevAppeal(void)",
+      "paramsRaw": "void",
+      "body": "if (eContestAppealResults.turnOrder[eContestAppealResults.contestant] != 0)\n    {\n        int i;\n\n        for (i = 0; i < CONTESTANT_COUNT; i++)\n        {\n            if (eContestAppealResults.turnOrder[eContestAppealResults.contestant] - 1 == eContestAppealResults.turnOrder[i])\n            {\n                if (eContestantStatus[eContestAppealResults.contestant].appeal > eContestantStatus[i].appeal)\n                {\n                    eContestantStatus[eContestAppealResults.contestant].appeal *= 2;\n                    SetContestantEffectStringID(eContestAppealResults.contestant, CONTEST_STRING_STOOD_OUT_AS_MUCH);\n                }\n                else if (eContestantStatus[eContestAppealResults.contestant].appeal < eContestantStatus[i].appeal)\n                {\n                    eContestantStatus[eContestAppealResults.contestant].appeal = 0;\n                    SetContestantEffectStringID(eContestAppealResults.contestant, CONTEST_STRING_NOT_AS_WELL);\n                }\n            }\n        }\n    }",
+      "callsTo": [
+        "SetContestantEffectStringID"
+      ],
+      "lineCount": 21
+    },
+    "ContestEffect_ImproveConditionPreventNervousness": {
+      "returnType": "void",
+      "signature": "static void ContestEffect_ImproveConditionPreventNervousness(void)",
+      "paramsRaw": "void",
+      "body": "if (eContestantStatus[eContestAppealResults.contestant].condition < 30)\n    {\n        eContestantStatus[eContestAppealResults.contestant].condition += 10;\n        eContestantStatus[eContestAppealResults.contestant].conditionMod = CONDITION_GAIN;\n        SetContestantEffectStringID(eContestAppealResults.contestant, CONTEST_STRING_CONDITION_ROSE);\n    }\n    else\n    {\n        SetContestantEffectStringID(eContestAppealResults.contestant, CONTEST_STRING_NO_CONDITION_IMPROVE);\n    }",
+      "callsTo": [
+        "SetContestantEffectStringID"
+      ],
+      "lineCount": 10
+    },
+    "ContestEffect_BetterWithGoodCondition": {
+      "returnType": "void",
+      "signature": "static void ContestEffect_BetterWithGoodCondition(void)",
+      "paramsRaw": "void",
+      "body": "eContestantStatus[eContestAppealResults.contestant].appealTripleCondition = TRUE;\n    if (eContestantStatus[eContestAppealResults.contestant].condition != 0)\n        SetContestantEffectStringID(eContestAppealResults.contestant, CONTEST_STRING_HOT_STATUS);\n    else\n        SetContestantEffectStringID(eContestAppealResults.contestant, CONTEST_STRING_BAD_CONDITION_WEAK_APPEAL);",
+      "callsTo": [
+        "SetContestantEffectStringID"
+      ],
+      "lineCount": 5
+    },
+    "ContestEffect_NextAppealEarlier": {
+      "returnType": "void",
+      "signature": "static void ContestEffect_NextAppealEarlier(void)",
+      "paramsRaw": "void",
+      "body": "s8 i;\n    s8 j;\n    u8 turnOrder[CONTESTANT_COUNT];\n\n    if (eContest.appealNumber != CONTEST_LAST_APPEAL)\n    {\n        for (i = 0; i < CONTESTANT_COUNT; i++)\n            turnOrder[i] = eContestantStatus[i].nextTurnOrder;\n\n        turnOrder[eContestAppealResults.contestant] = CONTESTANT_NONE;\n\n        for (i = 0; i < CONTESTANT_COUNT; i++)\n        {\n            for (j = 0; j < CONTESTANT_COUNT; j++)\n            {\n                if (j != eContestAppealResults.contestant &&\n                    i == turnOrder[j] &&\n                    turnOrder[j] == eContestantStatus[j].nextTurnOrder)\n                {\n                    turnOrder[j]++;\n                    break;\n                }\n            }\n            if (j == CONTESTANT_COUNT)\n                break;\n        }\n\n        turnOrder[eContestAppealResults.contestant] = 0;\n        eContestantStatus[eContestAppealResults.contestant].turnOrderMod = 1;\n\n        for (i = 0; i < CONTESTANT_COUNT; i++)\n        {\n            eContestantStatus[i].nextTurnOrder = turnOrder[i];\n        }\n        eContestantStatus[eContestAppealResults.contestant].turnOrderModAction = 1;\n        SetContestantEffectStringID(eContestAppealResults.contestant, CONTEST_STRING_MOVE_UP_LINE);\n    }",
+      "callsTo": [
+        "SetContestantEffectStringID"
+      ],
+      "lineCount": 37
+    },
+    "ContestEffect_NextAppealLater": {
+      "returnType": "void",
+      "signature": "static void ContestEffect_NextAppealLater(void)",
+      "paramsRaw": "void",
+      "body": "s8 i;\n    s8 j;\n    u8 turnOrder[CONTESTANT_COUNT];\n\n    if (eContest.appealNumber != CONTEST_LAST_APPEAL)\n    {\n        for (i = 0; i < CONTESTANT_COUNT; i++)\n            turnOrder[i] = eContestantStatus[i].nextTurnOrder;\n\n        turnOrder[eContestAppealResults.contestant] = CONTESTANT_NONE;\n\n        for (i = CONTESTANT_COUNT - 1; i > -1; i--)\n        {\n            for (j = 0; j < CONTESTANT_COUNT; j++)\n            {\n                if (j != eContestAppealResults.contestant &&\n                    i == turnOrder[j] &&\n                    turnOrder[j] == eContestantStatus[j].nextTurnOrder)\n                {\n                    turnOrder[j]--;\n                    break;\n                }\n            }\n            if (j == CONTESTANT_COUNT)\n                break;\n        }\n\n        turnOrder[eContestAppealResults.contestant] = CONTESTANT_COUNT - 1;\n        eContestantStatus[eContestAppealResults.contestant].turnOrderMod = 1;\n\n        for (i = 0; i < CONTESTANT_COUNT; i++)\n        {\n            eContestantStatus[i].nextTurnOrder = turnOrder[i];\n        }\n        eContestantStatus[eContestAppealResults.contestant].turnOrderModAction = 2;\n        SetContestantEffectStringID(eContestAppealResults.contestant, CONTEST_STRING_MOVE_BACK_LINE);\n    }",
+      "callsTo": [
+        "SetContestantEffectStringID"
+      ],
+      "lineCount": 37
+    },
+    "ContestEffect_MakeScramblingTurnOrderEasier": {
+      "returnType": "void",
+      "signature": "static void ContestEffect_MakeScramblingTurnOrderEasier(void)",
+      "paramsRaw": "void",
+      "body": "",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "ContestEffect_ScrambleNextTurnOrder": {
+      "returnType": "void",
+      "signature": "static void ContestEffect_ScrambleNextTurnOrder(void)",
+      "paramsRaw": "void",
+      "body": "s8 i;\n    s8 j;\n    u8 turnOrder[CONTESTANT_COUNT];\n    u8 unselectedContestants[CONTESTANT_COUNT];\n\n    if (eContest.appealNumber != CONTEST_LAST_APPEAL)\n    {\n        for (i = 0; i < CONTESTANT_COUNT; i++)\n        {\n            turnOrder[i] = eContestantStatus[i].nextTurnOrder;\n            unselectedContestants[i] = i;\n        }\n\n        for (i = 0; i < CONTESTANT_COUNT; i++)\n        {\n            u8 rval = Random() % (CONTESTANT_COUNT - i);\n\n            for (j = 0; j < CONTESTANT_COUNT; j++)\n            {\n                if (unselectedContestants[j] != CONTESTANT_NONE)\n                {\n                    if (rval == 0)\n                    {\n                        turnOrder[j] = i;\n                        unselectedContestants[j] = CONTESTANT_NONE;\n                        break;\n                    }\n                    else\n                    {\n                        rval--;\n                    }\n                }\n            }\n        }\n\n        for (i = 0; i < CONTESTANT_COUNT; i++)\n        {\n            eContestantStatus[i].nextTurnOrder = turnOrder[i];\n            eContestantStatus[i].turnOrderMod = 2;\n        }\n        eContestantStatus[eContestAppealResults.contestant].turnOrderModAction = 3;\n        SetContestantEffectStringID(eContestAppealResults.contestant, CONTEST_STRING_SCRAMBLE_ORDER);\n    }",
+      "callsTo": [
+        "Random",
+        "SetContestantEffectStringID"
+      ],
+      "lineCount": 43
+    },
+    "ContestEffect_ExciteAudienceInAnyContest": {
+      "returnType": "void",
+      "signature": "static void ContestEffect_ExciteAudienceInAnyContest(void)",
+      "paramsRaw": "void",
+      "body": "if (gContestMoves[eContestantStatus[eContestAppealResults.contestant].currMove].contestCategory != gSpecialVar_ContestCategory)\n    {\n        eContestantStatus[eContestAppealResults.contestant].overrideCategoryExcitementMod = TRUE;\n    }",
+      "callsTo": [],
+      "lineCount": 4
+    },
+    "ContestEffect_BadlyStartleMonsWithGoodAppeals": {
+      "returnType": "void",
+      "signature": "static void ContestEffect_BadlyStartleMonsWithGoodAppeals(void)",
+      "paramsRaw": "void",
+      "body": "int i;\n    u8 numJammed = 0;\n\n    for (i = 0; i < CONTESTANT_COUNT; i++)\n    {\n        if (eContestAppealResults.turnOrder[eContestAppealResults.contestant] > eContestAppealResults.turnOrder[i])\n        {\n            if (eContestantStatus[i].appeal > 0)\n            {\n                eContestAppealResults.jam = eContestantStatus[i].appeal / 2;\n                eContestAppealResults.jam = RoundUp(eContestAppealResults.jam);\n            }\n            else\n            {\n                eContestAppealResults.jam = 10;\n            }\n            eContestAppealResults.jamQueue[0] = i;\n            eContestAppealResults.jamQueue[1] = CONTESTANT_NONE;\n            if (WasAtLeastOneOpponentJammed())\n                numJammed++;\n        }\n    }\n    if (numJammed == 0)\n        SetContestantEffectStringID2(eContestAppealResults.contestant, CONTEST_STRING_MESSED_UP2);\n    SetContestantEffectStringID(eContestAppealResults.contestant, CONTEST_STRING_ATTEMPT_STARTLE);",
+      "callsTo": [
+        "RoundUp",
+        "SetContestantEffectStringID",
+        "SetContestantEffectStringID2",
+        "WasAtLeastOneOpponentJammed"
+      ],
+      "lineCount": 25
+    },
+    "ContestEffect_BetterWhenAudienceExcited": {
+      "returnType": "void",
+      "signature": "static void ContestEffect_BetterWhenAudienceExcited(void)",
+      "paramsRaw": "void",
+      "body": "s16 appeal;\n\n    if (eContest.applauseLevel == 0)\n    {\n        appeal = 10;\n        SetContestantEffectStringID(eContestAppealResults.contestant, CONTEST_STRING_APPEAL_NOT_VERY_WELL);\n    }\n    else if (eContest.applauseLevel == 1)\n    {\n        appeal = 20;\n        SetContestantEffectStringID(eContestAppealResults.contestant, CONTEST_STRING_APPEAL_SLIGHTLY_WELL2);\n    }\n    else if (eContest.applauseLevel == 2)\n    {\n        appeal = 30;\n        SetContestantEffectStringID(eContestAppealResults.contestant, CONTEST_STRING_APPEAL_PRETTY_WELL2);\n    }\n    else if (eContest.applauseLevel == 3)\n    {\n        appeal = 50;\n        SetContestantEffectStringID(eContestAppealResults.contestant, CONTEST_STRING_APPEAL_VERY_WELL);\n    }\n    else\n    {\n        appeal = 60;\n        SetContestantEffectStringID(eContestAppealResults.contestant, CONTEST_STRING_APPEAL_EXCELLENTLY2);\n    }\n    eContestantStatus[eContestAppealResults.contestant].appeal = appeal;",
+      "callsTo": [
+        "SetContestantEffectStringID"
+      ],
+      "lineCount": 28
+    },
+    "ContestEffect_DontExciteAudience": {
+      "returnType": "void",
+      "signature": "static void ContestEffect_DontExciteAudience(void)",
+      "paramsRaw": "void",
+      "body": "if (!eContestExcitement.frozen)\n    {\n        eContestExcitement.frozen = TRUE;\n        eContestExcitement.freezer = eContestAppealResults.contestant;\n        SetContestantEffectStringID(eContestAppealResults.contestant, CONTEST_STRING_ATTRACTED_ATTENTION);\n    }",
+      "callsTo": [
+        "SetContestantEffectStringID"
+      ],
+      "lineCount": 6
+    },
+    "JamByMoveCategory": {
+      "returnType": "void",
+      "signature": "static void JamByMoveCategory(u8 category)",
+      "paramsRaw": "u8 category",
+      "body": "int i;\n    int numJammed = 0;\n\n    for (i = 0; i < CONTESTANT_COUNT; i++)\n    {\n        if (eContestAppealResults.turnOrder[eContestAppealResults.contestant] > eContestAppealResults.turnOrder[i])\n        {\n            if (category == gContestMoves[eContestantStatus[i].currMove].contestCategory)\n                eContestAppealResults.jam = 40;\n            else\n                eContestAppealResults.jam = 10;\n            eContestAppealResults.jamQueue[0] = i;\n            eContestAppealResults.jamQueue[1] = CONTESTANT_NONE;\n            if (WasAtLeastOneOpponentJammed())\n                numJammed++;\n        }\n    }\n\n    if (numJammed == 0)\n        SetContestantEffectStringID2(eContestAppealResults.contestant, CONTEST_STRING_MESSED_UP2);",
+      "callsTo": [
+        "SetContestantEffectStringID2",
+        "WasAtLeastOneOpponentJammed"
+      ],
+      "lineCount": 20
+    },
+    "CanUnnerveContestant": {
+      "returnType": "bool8",
+      "signature": "static bool8 CanUnnerveContestant(u8 i)",
+      "paramsRaw": "u8 i",
+      "body": "eContestAppealResults.unnervedPokes[i] = 1;\n    if (eContestantStatus[i].immune)\n    {\n        SetContestantEffectStringID(i, CONTEST_STRING_AVOID_SEEING);\n        return FALSE;\n    }\n    else if (eContestantStatus[i].jamSafetyCount != 0)\n    {\n        eContestantStatus[i].jamSafetyCount--;\n        SetContestantEffectStringID(i, CONTEST_STRING_AVERT_GAZE);\n        return FALSE;\n    }\n    else if (!eContestantStatus[i].noMoreTurns && eContestantStatus[i].numTurnsSkipped == 0)\n    {\n        return TRUE;\n    }\n    else\n    {\n        return FALSE;\n    }",
+      "callsTo": [
+        "SetContestantEffectStringID"
+      ],
+      "lineCount": 20
+    },
+    "WasAtLeastOneOpponentJammed": {
+      "returnType": "bool8",
+      "signature": "static bool8 WasAtLeastOneOpponentJammed(void)",
+      "paramsRaw": "void",
+      "body": "s16 jamBuffer[CONTESTANT_COUNT] = {0};\n    int i;\n\n    for (i = 0; eContestAppealResults.jamQueue[i] != CONTESTANT_NONE; i++)\n    {\n        u8 contestant = eContestAppealResults.jamQueue[i];\n        if (CanUnnerveContestant(contestant))\n        {\n            eContestAppealResults.jam2 = eContestAppealResults.jam;\n            if (eContestantStatus[contestant].moreEasilyStartled)\n                eContestAppealResults.jam2 *= 2;\n            if (eContestantStatus[contestant].resistant)\n            {\n                eContestAppealResults.jam2 = 10;\n                SetContestantEffectStringID(contestant, CONTEST_STRING_LITTLE_DISTRACTED);\n            }\n            else\n            {\n                eContestAppealResults.jam2 -= eContestantStatus[contestant].jamReduction;\n                if (eContestAppealResults.jam2 <= 0)\n                {\n                    eContestAppealResults.jam2 = 0;\n                    SetContestantEffectStringID(contestant, CONTEST_STRING_NOT_FAZED);\n                }\n                else\n                {\n                    JamContestant(contestant, eContestAppealResults.jam2);\n                    SetStartledString(contestant, eContestAppealResults.jam2);\n                    jamBuffer[contestant] = eContestAppealResults.jam2;\n                }\n            }\n        }\n    }\n\n    for (i = 0; i < CONTESTANT_COUNT; i++)\n    {\n        if (jamBuffer[i] != 0)\n            return TRUE;\n    }\n    return FALSE;",
+      "callsTo": [
+        "CanUnnerveContestant",
+        "JamContestant",
+        "SetContestantEffectStringID",
+        "SetStartledString"
+      ],
+      "lineCount": 40
+    },
+    "JamContestant": {
+      "returnType": "void",
+      "signature": "static void JamContestant(u8 i, u8 jam)",
+      "paramsRaw": "u8 i, u8 jam",
+      "body": "eContestantStatus[i].appeal -= jam;\n    eContestantStatus[i].jam += jam;",
+      "callsTo": [],
+      "lineCount": 2
+    },
+    "RoundTowardsZero": {
+      "returnType": "s16",
+      "signature": "static s16 RoundTowardsZero(s16 score)",
+      "paramsRaw": "s16 score",
+      "body": "s16 absScore = abs(score) % 10;\n    if (score < 0)\n    {\n        if (absScore != 0)\n            score -= 10 - absScore;\n    }\n    else\n    {\n        score -= absScore;\n    }\n    return score;",
+      "callsTo": [],
+      "lineCount": 11
+    },
+    "RoundUp": {
+      "returnType": "s16",
+      "signature": "static s16 RoundUp(s16 score)",
+      "paramsRaw": "s16 score",
+      "body": "s16 absScore = abs(score) % 10;\n    if (absScore != 0)\n        score += 10 - absScore;\n    return score;",
+      "callsTo": [],
+      "lineCount": 4
+    }
+  }
+}

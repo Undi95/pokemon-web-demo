@@ -1,0 +1,146 @@
+{
+  "srcFile": "src/coord_event_weather.c",
+  "count": 14,
+  "functions": {
+    "CoordEventWeather_Clouds": {
+      "returnType": "void",
+      "signature": "static void CoordEventWeather_Clouds(void)",
+      "paramsRaw": "void",
+      "body": "SetWeather(WEATHER_SUNNY_CLOUDS);",
+      "callsTo": [
+        "SetWeather"
+      ],
+      "lineCount": 1
+    },
+    "CoordEventWeather_Sunny": {
+      "returnType": "void",
+      "signature": "static void CoordEventWeather_Sunny(void)",
+      "paramsRaw": "void",
+      "body": "SetWeather(WEATHER_SUNNY);",
+      "callsTo": [
+        "SetWeather"
+      ],
+      "lineCount": 1
+    },
+    "CoordEventWeather_Rain": {
+      "returnType": "void",
+      "signature": "static void CoordEventWeather_Rain(void)",
+      "paramsRaw": "void",
+      "body": "SetWeather(WEATHER_RAIN);",
+      "callsTo": [
+        "SetWeather"
+      ],
+      "lineCount": 1
+    },
+    "CoordEventWeather_Snow": {
+      "returnType": "void",
+      "signature": "static void CoordEventWeather_Snow(void)",
+      "paramsRaw": "void",
+      "body": "SetWeather(WEATHER_SNOW);",
+      "callsTo": [
+        "SetWeather"
+      ],
+      "lineCount": 1
+    },
+    "CoordEventWeather_Thunderstorm": {
+      "returnType": "void",
+      "signature": "static void CoordEventWeather_Thunderstorm(void)",
+      "paramsRaw": "void",
+      "body": "SetWeather(WEATHER_RAIN_THUNDERSTORM);",
+      "callsTo": [
+        "SetWeather"
+      ],
+      "lineCount": 1
+    },
+    "CoordEventWeather_HorizontalFog": {
+      "returnType": "void",
+      "signature": "static void CoordEventWeather_HorizontalFog(void)",
+      "paramsRaw": "void",
+      "body": "SetWeather(WEATHER_FOG_HORIZONTAL);",
+      "callsTo": [
+        "SetWeather"
+      ],
+      "lineCount": 1
+    },
+    "CoordEventWeather_DiagonalFog": {
+      "returnType": "void",
+      "signature": "static void CoordEventWeather_DiagonalFog(void)",
+      "paramsRaw": "void",
+      "body": "SetWeather(WEATHER_FOG_DIAGONAL);",
+      "callsTo": [
+        "SetWeather"
+      ],
+      "lineCount": 1
+    },
+    "CoordEventWeather_Ash": {
+      "returnType": "void",
+      "signature": "static void CoordEventWeather_Ash(void)",
+      "paramsRaw": "void",
+      "body": "SetWeather(WEATHER_VOLCANIC_ASH);",
+      "callsTo": [
+        "SetWeather"
+      ],
+      "lineCount": 1
+    },
+    "CoordEventWeather_Sandstorm": {
+      "returnType": "void",
+      "signature": "static void CoordEventWeather_Sandstorm(void)",
+      "paramsRaw": "void",
+      "body": "SetWeather(WEATHER_SANDSTORM);",
+      "callsTo": [
+        "SetWeather"
+      ],
+      "lineCount": 1
+    },
+    "CoordEventWeather_Shade": {
+      "returnType": "void",
+      "signature": "static void CoordEventWeather_Shade(void)",
+      "paramsRaw": "void",
+      "body": "SetWeather(WEATHER_SHADE);",
+      "callsTo": [
+        "SetWeather"
+      ],
+      "lineCount": 1
+    },
+    "CoordEventWeather_Drought": {
+      "returnType": "void",
+      "signature": "static void CoordEventWeather_Drought(void)",
+      "paramsRaw": "void",
+      "body": "SetWeather(WEATHER_DROUGHT);",
+      "callsTo": [
+        "SetWeather"
+      ],
+      "lineCount": 1
+    },
+    "CoordEventWeather_Route119Cycle": {
+      "returnType": "void",
+      "signature": "static void CoordEventWeather_Route119Cycle(void)",
+      "paramsRaw": "void",
+      "body": "SetWeather(WEATHER_ROUTE119_CYCLE);",
+      "callsTo": [
+        "SetWeather"
+      ],
+      "lineCount": 1
+    },
+    "CoordEventWeather_Route123Cycle": {
+      "returnType": "void",
+      "signature": "static void CoordEventWeather_Route123Cycle(void)",
+      "paramsRaw": "void",
+      "body": "SetWeather(WEATHER_ROUTE123_CYCLE);",
+      "callsTo": [
+        "SetWeather"
+      ],
+      "lineCount": 1
+    },
+    "DoCoordEventWeather": {
+      "returnType": "void",
+      "signature": "void DoCoordEventWeather(u8 coordEventWeather)",
+      "paramsRaw": "u8 coordEventWeather",
+      "body": "u8 i;\n    for (i = 0; i < ARRAY_COUNT(sCoordEventWeatherFuncs); i++)\n    {\n        if (sCoordEventWeatherFuncs[i].coordEventWeather == coordEventWeather)\n        {\n            sCoordEventWeatherFuncs[i].func();\n            return;\n        }\n    }",
+      "callsTo": [
+        "ARRAY_COUNT"
+      ],
+      "lineCount": 9
+    }
+  }
+}

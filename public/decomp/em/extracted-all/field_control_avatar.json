@@ -1,0 +1,418 @@
+{
+  "srcFile": "src/field_control_avatar.c",
+  "count": 29,
+  "functions": {
+    "FieldClearPlayerInput": {
+      "returnType": "void",
+      "signature": "void FieldClearPlayerInput(struct FieldInput *input)",
+      "paramsRaw": "struct FieldInput *input",
+      "body": "input->pressedAButton = FALSE;\n    input->checkStandardWildEncounter = FALSE;\n    input->pressedStartButton = FALSE;\n    input->pressedSelectButton = FALSE;\n    input->heldDirection = FALSE;\n    input->heldDirection2 = FALSE;\n    input->tookStep = FALSE;\n    input->pressedBButton = FALSE;\n    input->input_field_1_0 = FALSE;\n    input->input_field_1_1 = FALSE;\n    input->input_field_1_2 = FALSE;\n    input->input_field_1_3 = FALSE;\n    input->dpadDirection = 0;",
+      "callsTo": [],
+      "lineCount": 13
+    },
+    "FieldGetPlayerInput": {
+      "returnType": "void",
+      "signature": "void FieldGetPlayerInput(struct FieldInput *input, u16 newKeys, u16 heldKeys)",
+      "paramsRaw": "struct FieldInput *input, u16 newKeys, u16 heldKeys",
+      "body": "u8 tileTransitionState = gPlayerAvatar.tileTransitionState;\n    u8 runningState = gPlayerAvatar.runningState;\n    bool8 forcedMove = MetatileBehavior_IsForcedMovementTile(GetPlayerCurMetatileBehavior(runningState));\n\n    if ((tileTransitionState == T_TILE_CENTER && forcedMove == FALSE) || tileTransitionState == T_NOT_MOVING)\n    {\n        if (GetPlayerSpeed() != PLAYER_SPEED_FASTEST)\n        {\n            if (newKeys & START_BUTTON)\n                input->pressedStartButton = TRUE;\n            if (newKeys & SELECT_BUTTON)\n                input->pressedSelectButton = TRUE;\n            if (newKeys & A_BUTTON)\n                input->pressedAButton = TRUE;\n            if (newKeys & B_BUTTON)\n                input->pressedBButton = TRUE;\n        }\n\n        if (heldKeys & (DPAD_UP | DPAD_DOWN | DPAD_LEFT | DPAD_RIGHT))\n        {\n            input->heldDirection = TRUE;\n            input->heldDirection2 = TRUE;\n        }\n    }\n\n    if (forcedMove == FALSE)\n    {\n        if (tileTransitionState == T_TILE_CENTER && runningState == MOVING)\n            input->tookStep = TRUE;\n        if (forcedMove == FALSE && tileTransitionState == T_TILE_CENTER)\n            input->checkStandardWildEncounter = TRUE;\n    }\n\n    if (heldKeys & DPAD_UP)\n        input->dpadDirection = DIR_NORTH;\n    else if (heldKeys & DPAD_DOWN)\n        input->dpadDirection = DIR_SOUTH;\n    else if (heldKeys & DPAD_LEFT)\n        input->dpadDirection = DIR_WEST;\n    else if (heldKeys & DPAD_RIGHT)\n        input->dpadDirection = DIR_EAST;",
+      "callsTo": [
+        "GetPlayerCurMetatileBehavior",
+        "GetPlayerSpeed",
+        "MetatileBehavior_IsForcedMovementTile"
+      ],
+      "lineCount": 41
+    },
+    "ProcessPlayerFieldInput": {
+      "returnType": "int",
+      "signature": "int ProcessPlayerFieldInput(struct FieldInput *input)",
+      "paramsRaw": "struct FieldInput *input",
+      "body": "struct MapPosition position;\n    u8 playerDirection;\n    u16 metatileBehavior;\n\n    gSpecialVar_LastTalked = LOCALID_NONE;\n    gSelectedObjectEvent = 0;\n\n    playerDirection = GetPlayerFacingDirection();\n    GetPlayerPosition(&position);\n    metatileBehavior = MapGridGetMetatileBehaviorAt(position.x, position.y);\n\n    if (CheckForTrainersWantingBattle() == TRUE)\n        return TRUE;\n\n    if (TryRunOnFrameMapScript() == TRUE)\n        return TRUE;\n\n    if (input->pressedBButton && TrySetupDiveEmergeScript() == TRUE)\n        return TRUE;\n    if (input->tookStep)\n    {\n        IncrementGameStat(GAME_STAT_STEPS);\n        IncrementBirthIslandRockStepCount();\n        if (TryStartStepBasedScript(&position, metatileBehavior, playerDirection) == TRUE)\n            return TRUE;\n    }\n    if (input->checkStandardWildEncounter && CheckStandardWildEncounter(metatileBehavior) == TRUE)\n        return TRUE;\n    if (input->heldDirection && input->dpadDirection == playerDirection)\n    {\n        if (TryArrowWarp(&position, metatileBehavior, playerDirection) == TRUE)\n            return TRUE;\n    }\n\n    GetInFrontOfPlayerPosition(&position);\n    metatileBehavior = MapGridGetMetatileBehaviorAt(position.x, position.y);\n    if (input->pressedAButton && TryStartInteractionScript(&position, metatileBehavior, playerDirection) == TRUE)\n        return TRUE;\n\n    if (input->heldDirection2 && input->dpadDirection == playerDirection)\n    {\n        if (TryDoorWarp(&position, metatileBehavior, playerDirection) == TRUE)\n            return TRUE;\n    }\n    if (input->pressedAButton && TrySetupDiveDownScript() == TRUE)\n        return TRUE;\n    if (input->pressedStartButton)\n    {\n        PlaySE(SE_WIN_OPEN);\n        ShowStartMenu();\n        return TRUE;\n    }\n    if (input->pressedSelectButton && UseRegisteredKeyItemOnField() == TRUE)\n        return TRUE;\n\n    return FALSE;",
+      "callsTo": [
+        "CheckForTrainersWantingBattle",
+        "CheckStandardWildEncounter",
+        "GetInFrontOfPlayerPosition",
+        "GetPlayerFacingDirection",
+        "GetPlayerPosition",
+        "IncrementBirthIslandRockStepCount",
+        "IncrementGameStat",
+        "MapGridGetMetatileBehaviorAt",
+        "PlaySE",
+        "ShowStartMenu",
+        "TryArrowWarp",
+        "TryDoorWarp",
+        "TryRunOnFrameMapScript",
+        "TrySetupDiveDownScript",
+        "TrySetupDiveEmergeScript",
+        "TryStartInteractionScript",
+        "TryStartStepBasedScript",
+        "UseRegisteredKeyItemOnField"
+      ],
+      "lineCount": 56
+    },
+    "GetPlayerPosition": {
+      "returnType": "void",
+      "signature": "static void GetPlayerPosition(struct MapPosition *position)",
+      "paramsRaw": "struct MapPosition *position",
+      "body": "PlayerGetDestCoords(&position->x, &position->y);\n    position->elevation = PlayerGetElevation();",
+      "callsTo": [
+        "PlayerGetDestCoords",
+        "PlayerGetElevation"
+      ],
+      "lineCount": 2
+    },
+    "GetInFrontOfPlayerPosition": {
+      "returnType": "void",
+      "signature": "static void GetInFrontOfPlayerPosition(struct MapPosition *position)",
+      "paramsRaw": "struct MapPosition *position",
+      "body": "s16 x, y;\n\n    GetXYCoordsOneStepInFrontOfPlayer(&position->x, &position->y);\n    PlayerGetDestCoords(&x, &y);\n    if (MapGridGetElevationAt(x, y) != ELEVATION_TRANSITION)\n        position->elevation = PlayerGetElevation();\n    else\n        position->elevation = ELEVATION_TRANSITION;",
+      "callsTo": [
+        "GetXYCoordsOneStepInFrontOfPlayer",
+        "MapGridGetElevationAt",
+        "PlayerGetDestCoords",
+        "PlayerGetElevation"
+      ],
+      "lineCount": 8
+    },
+    "GetPlayerCurMetatileBehavior": {
+      "returnType": "u16",
+      "signature": "static u16 GetPlayerCurMetatileBehavior(int runningState)",
+      "paramsRaw": "int runningState",
+      "body": "s16 x, y;\n\n    PlayerGetDestCoords(&x, &y);\n    return MapGridGetMetatileBehaviorAt(x, y);",
+      "callsTo": [
+        "MapGridGetMetatileBehaviorAt",
+        "PlayerGetDestCoords"
+      ],
+      "lineCount": 4
+    },
+    "TryStartInteractionScript": {
+      "returnType": "bool8",
+      "signature": "static bool8 TryStartInteractionScript(struct MapPosition *position, u16 metatileBehavior, u8 direction)",
+      "paramsRaw": "struct MapPosition *position, u16 metatileBehavior, u8 direction",
+      "body": "const u8 *script = GetInteractionScript(position, metatileBehavior, direction);\n    if (script == NULL)\n        return FALSE;\n\n     \n    if (script != LittlerootTown_BrendansHouse_2F_EventScript_PC\n     && script != LittlerootTown_MaysHouse_2F_EventScript_PC\n     && script != SecretBase_EventScript_PC\n     && script != SecretBase_EventScript_RecordMixingPC\n     && script != SecretBase_EventScript_DollInteract\n     && script != SecretBase_EventScript_CushionInteract\n     && script != EventScript_PC)\n        PlaySE(SE_SELECT);\n\n    ScriptContext_SetupScript(script);\n    return TRUE;",
+      "callsTo": [
+        "GetInteractionScript",
+        "PlaySE",
+        "ScriptContext_SetupScript"
+      ],
+      "lineCount": 16
+    },
+    "TrySetupDiveDownScript": {
+      "returnType": "bool32",
+      "signature": "static bool32 TrySetupDiveDownScript(void)",
+      "paramsRaw": "void",
+      "body": "if (FlagGet(FLAG_BADGE07_GET) && TrySetDiveWarp() == 2)\n    {\n        ScriptContext_SetupScript(EventScript_UseDive);\n        return TRUE;\n    }\n    return FALSE;",
+      "callsTo": [
+        "FlagGet",
+        "ScriptContext_SetupScript",
+        "TrySetDiveWarp"
+      ],
+      "lineCount": 6
+    },
+    "TrySetupDiveEmergeScript": {
+      "returnType": "bool32",
+      "signature": "static bool32 TrySetupDiveEmergeScript(void)",
+      "paramsRaw": "void",
+      "body": "if (FlagGet(FLAG_BADGE07_GET) && gMapHeader.mapType == MAP_TYPE_UNDERWATER && TrySetDiveWarp() == 1)\n    {\n        ScriptContext_SetupScript(EventScript_UseDiveUnderwater);\n        return TRUE;\n    }\n    return FALSE;",
+      "callsTo": [
+        "FlagGet",
+        "ScriptContext_SetupScript",
+        "TrySetDiveWarp"
+      ],
+      "lineCount": 6
+    },
+    "TryStartStepBasedScript": {
+      "returnType": "bool8",
+      "signature": "static bool8 TryStartStepBasedScript(struct MapPosition *position, u16 metatileBehavior, u16 direction)",
+      "paramsRaw": "struct MapPosition *position, u16 metatileBehavior, u16 direction",
+      "body": "if (TryStartCoordEventScript(position) == TRUE)\n        return TRUE;\n    if (TryStartWarpEventScript(position, metatileBehavior) == TRUE)\n        return TRUE;\n    if (TryStartMiscWalkingScripts(metatileBehavior) == TRUE)\n        return TRUE;\n    if (TryStartStepCountScript(metatileBehavior) == TRUE)\n        return TRUE;\n    if (UpdateRepelCounter() == TRUE)\n        return TRUE;\n    return FALSE;",
+      "callsTo": [
+        "TryStartCoordEventScript",
+        "TryStartMiscWalkingScripts",
+        "TryStartStepCountScript",
+        "TryStartWarpEventScript",
+        "UpdateRepelCounter"
+      ],
+      "lineCount": 11
+    },
+    "TryStartCoordEventScript": {
+      "returnType": "bool8",
+      "signature": "static bool8 TryStartCoordEventScript(struct MapPosition *position)",
+      "paramsRaw": "struct MapPosition *position",
+      "body": "const u8 *script = GetCoordEventScriptAtPosition(&gMapHeader, position->x - MAP_OFFSET, position->y - MAP_OFFSET, position->elevation);\n\n    if (script == NULL)\n        return FALSE;\n    ScriptContext_SetupScript(script);\n    return TRUE;",
+      "callsTo": [
+        "GetCoordEventScriptAtPosition",
+        "ScriptContext_SetupScript"
+      ],
+      "lineCount": 6
+    },
+    "TryStartMiscWalkingScripts": {
+      "returnType": "bool8",
+      "signature": "static bool8 TryStartMiscWalkingScripts(u16 metatileBehavior)",
+      "paramsRaw": "u16 metatileBehavior",
+      "body": "s16 x, y;\n\n    if (MetatileBehavior_IsCrackedFloorHole(metatileBehavior))\n    {\n        ScriptContext_SetupScript(EventScript_FallDownHole);\n        return TRUE;\n    }\n    else if (MetatileBehavior_IsBattlePyramidWarp(metatileBehavior))\n    {\n        ScriptContext_SetupScript(BattlePyramid_WarpToNextFloor);\n        return TRUE;\n    }\n    else if (MetatileBehavior_IsSecretBaseGlitterMat(metatileBehavior) == TRUE)\n    {\n        DoSecretBaseGlitterMatSparkle();\n        return FALSE;\n    }\n    else if (MetatileBehavior_IsSecretBaseSoundMat(metatileBehavior) == TRUE)\n    {\n        PlayerGetDestCoords(&x, &y);\n        PlaySecretBaseMusicNoteMatSound(MapGridGetMetatileIdAt(x, y));\n        return FALSE;\n    }\n    return FALSE;",
+      "callsTo": [
+        "DoSecretBaseGlitterMatSparkle",
+        "MapGridGetMetatileIdAt",
+        "MetatileBehavior_IsBattlePyramidWarp",
+        "MetatileBehavior_IsCrackedFloorHole",
+        "MetatileBehavior_IsSecretBaseGlitterMat",
+        "MetatileBehavior_IsSecretBaseSoundMat",
+        "PlaySecretBaseMusicNoteMatSound",
+        "PlayerGetDestCoords",
+        "ScriptContext_SetupScript"
+      ],
+      "lineCount": 24
+    },
+    "TryStartStepCountScript": {
+      "returnType": "bool8",
+      "signature": "static bool8 TryStartStepCountScript(u16 metatileBehavior)",
+      "paramsRaw": "u16 metatileBehavior",
+      "body": "if (InUnionRoom() == TRUE)\n    {\n        return FALSE;\n    }\n\n    IncrementRematchStepCounter();\n    UpdateFriendshipStepCounter();\n    UpdateFarawayIslandStepCounter();\n\n    if (!(gPlayerAvatar.flags & PLAYER_AVATAR_FLAG_FORCED_MOVE) && !MetatileBehavior_IsForcedMovementTile(metatileBehavior))\n    {\n        if (UpdatePoisonStepCounter() == TRUE)\n        {\n            ScriptContext_SetupScript(EventScript_FieldPoison);\n            return TRUE;\n        }\n        if (ShouldEggHatch())\n        {\n            IncrementGameStat(GAME_STAT_HATCHED_EGGS);\n            ScriptContext_SetupScript(EventScript_EggHatch);\n            return TRUE;\n        }\n        if (AbnormalWeatherHasExpired() == TRUE)\n        {\n            ScriptContext_SetupScript(AbnormalWeather_EventScript_EndEventAndCleanup_1);\n            return TRUE;\n        }\n        if (ShouldDoBrailleRegicePuzzle() == TRUE)\n        {\n            ScriptContext_SetupScript(IslandCave_EventScript_OpenRegiEntrance);\n            return TRUE;\n        }\n        if (ShouldDoWallyCall() == TRUE)\n        {\n            ScriptContext_SetupScript(MauvilleCity_EventScript_RegisterWallyCall);\n            return TRUE;\n        }\n        if (ShouldDoScottFortreeCall() == TRUE)\n        {\n            ScriptContext_SetupScript(Route119_EventScript_ScottWonAtFortreeGymCall);\n            return TRUE;\n        }\n        if (ShouldDoScottBattleFrontierCall() == TRUE)\n        {\n            ScriptContext_SetupScript(LittlerootTown_ProfessorBirchsLab_EventScript_ScottAboardSSTidalCall);\n            return TRUE;\n        }\n        if (ShouldDoRoxanneCall() == TRUE)\n        {\n            ScriptContext_SetupScript(RustboroCity_Gym_EventScript_RegisterRoxanne);\n            return TRUE;\n        }\n        if (ShouldDoRivalRayquazaCall() == TRUE)\n        {\n            ScriptContext_SetupScript(MossdeepCity_SpaceCenter_2F_EventScript_RivalRayquazaCall);\n            return TRUE;\n        }\n    }\n\n    if (SafariZoneTakeStep() == TRUE)\n        return TRUE;\n    if (CountSSTidalStep(1) == TRUE)\n    {\n        ScriptContext_SetupScript(SSTidalCorridor_EventScript_ReachedStepCount);\n        return TRUE;\n    }\n    if (TryStartMatchCall())\n        return TRUE;\n    return FALSE;",
+      "callsTo": [
+        "AbnormalWeatherHasExpired",
+        "CountSSTidalStep",
+        "InUnionRoom",
+        "IncrementGameStat",
+        "IncrementRematchStepCounter",
+        "MetatileBehavior_IsForcedMovementTile",
+        "SafariZoneTakeStep",
+        "ScriptContext_SetupScript",
+        "ShouldDoBrailleRegicePuzzle",
+        "ShouldDoRivalRayquazaCall",
+        "ShouldDoRoxanneCall",
+        "ShouldDoScottBattleFrontierCall",
+        "ShouldDoScottFortreeCall",
+        "ShouldDoWallyCall",
+        "ShouldEggHatch",
+        "TryStartMatchCall",
+        "UpdateFarawayIslandStepCounter",
+        "UpdateFriendshipStepCounter",
+        "UpdatePoisonStepCounter"
+      ],
+      "lineCount": 69
+    },
+    "UpdateFriendshipStepCounter": {
+      "returnType": "void",
+      "signature": "static void UpdateFriendshipStepCounter(void)",
+      "paramsRaw": "void",
+      "body": "u16 *ptr = GetVarPointer(VAR_FRIENDSHIP_STEP_COUNTER);\n    int i;\n\n    (*ptr)++;\n    (*ptr) %= 128;\n    if (*ptr == 0)\n    {\n        struct Pokemon *mon = gPlayerParty;\n        for (i = 0; i < PARTY_SIZE; i++)\n        {\n            AdjustFriendship(mon, FRIENDSHIP_EVENT_WALKING);\n            mon++;\n        }\n    }",
+      "callsTo": [
+        "AdjustFriendship",
+        "GetVarPointer"
+      ],
+      "lineCount": 14
+    },
+    "ClearPoisonStepCounter": {
+      "returnType": "void",
+      "signature": "void ClearPoisonStepCounter(void)",
+      "paramsRaw": "void",
+      "body": "VarSet(VAR_POISON_STEP_COUNTER, 0);",
+      "callsTo": [
+        "VarSet"
+      ],
+      "lineCount": 1
+    },
+    "UpdatePoisonStepCounter": {
+      "returnType": "bool8",
+      "signature": "static bool8 UpdatePoisonStepCounter(void)",
+      "paramsRaw": "void",
+      "body": "u16 *ptr;\n\n    if (gMapHeader.mapType != MAP_TYPE_SECRET_BASE)\n    {\n        ptr = GetVarPointer(VAR_POISON_STEP_COUNTER);\n        (*ptr)++;\n        (*ptr) %= 4;\n        if (*ptr == 0)\n        {\n            switch (DoPoisonFieldEffect())\n            {\n            case FLDPSN_NONE:\n                return FALSE;\n            case FLDPSN_PSN:\n                return FALSE;\n            case FLDPSN_FNT:\n                return TRUE;\n            }\n        }\n    }\n    return FALSE;",
+      "callsTo": [
+        "DoPoisonFieldEffect",
+        "GetVarPointer"
+      ],
+      "lineCount": 21
+    },
+    "RestartWildEncounterImmunitySteps": {
+      "returnType": "void",
+      "signature": "void RestartWildEncounterImmunitySteps(void)",
+      "paramsRaw": "void",
+      "body": "sWildEncounterImmunitySteps = 0;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "CheckStandardWildEncounter": {
+      "returnType": "bool8",
+      "signature": "static bool8 CheckStandardWildEncounter(u16 metatileBehavior)",
+      "paramsRaw": "u16 metatileBehavior",
+      "body": "if (sWildEncounterImmunitySteps < 4)\n    {\n        sWildEncounterImmunitySteps++;\n        sPrevMetatileBehavior = metatileBehavior;\n        return FALSE;\n    }\n\n    if (StandardWildEncounter(metatileBehavior, sPrevMetatileBehavior) == TRUE)\n    {\n        sWildEncounterImmunitySteps = 0;\n        sPrevMetatileBehavior = metatileBehavior;\n        return TRUE;\n    }\n\n    sPrevMetatileBehavior = metatileBehavior;\n    return FALSE;",
+      "callsTo": [
+        "StandardWildEncounter"
+      ],
+      "lineCount": 16
+    },
+    "TryArrowWarp": {
+      "returnType": "bool8",
+      "signature": "static bool8 TryArrowWarp(struct MapPosition *position, u16 metatileBehavior, u8 direction)",
+      "paramsRaw": "struct MapPosition *position, u16 metatileBehavior, u8 direction",
+      "body": "s8 warpEventId = GetWarpEventAtMapPosition(&gMapHeader, position);\n\n    if (IsArrowWarpMetatileBehavior(metatileBehavior, direction) == TRUE && warpEventId != WARP_ID_NONE)\n    {\n        StoreInitialPlayerAvatarState();\n        SetupWarp(&gMapHeader, warpEventId, position);\n        DoWarp();\n        return TRUE;\n    }\n    return FALSE;",
+      "callsTo": [
+        "DoWarp",
+        "GetWarpEventAtMapPosition",
+        "IsArrowWarpMetatileBehavior",
+        "SetupWarp",
+        "StoreInitialPlayerAvatarState"
+      ],
+      "lineCount": 10
+    },
+    "TryStartWarpEventScript": {
+      "returnType": "bool8",
+      "signature": "static bool8 TryStartWarpEventScript(struct MapPosition *position, u16 metatileBehavior)",
+      "paramsRaw": "struct MapPosition *position, u16 metatileBehavior",
+      "body": "s8 warpEventId = GetWarpEventAtMapPosition(&gMapHeader, position);\n\n    if (warpEventId != WARP_ID_NONE && IsWarpMetatileBehavior(metatileBehavior) == TRUE)\n    {\n        StoreInitialPlayerAvatarState();\n        SetupWarp(&gMapHeader, warpEventId, position);\n        if (MetatileBehavior_IsEscalator(metatileBehavior) == TRUE)\n        {\n            DoEscalatorWarp(metatileBehavior);\n            return TRUE;\n        }\n        if (MetatileBehavior_IsLavaridgeB1FWarp(metatileBehavior) == TRUE)\n        {\n            DoLavaridgeGymB1FWarp();\n            return TRUE;\n        }\n        if (MetatileBehavior_IsLavaridge1FWarp(metatileBehavior) == TRUE)\n        {\n            DoLavaridgeGym1FWarp();\n            return TRUE;\n        }\n        if (MetatileBehavior_IsAquaHideoutWarp(metatileBehavior) == TRUE)\n        {\n            DoTeleportTileWarp();\n            return TRUE;\n        }\n        if (MetatileBehavior_IsUnionRoomWarp(metatileBehavior) == TRUE)\n        {\n            DoSpinExitWarp();\n            return TRUE;\n        }\n        if (MetatileBehavior_IsMtPyreHole(metatileBehavior) == TRUE)\n        {\n            ScriptContext_SetupScript(EventScript_FallDownHoleMtPyre);\n            return TRUE;\n        }\n        if (MetatileBehavior_IsMossdeepGymWarp(metatileBehavior) == TRUE)\n        {\n            DoMossdeepGymWarp();\n            return TRUE;\n        }\n        DoWarp();\n        return TRUE;\n    }\n    return FALSE;",
+      "callsTo": [
+        "DoEscalatorWarp",
+        "DoLavaridgeGym1FWarp",
+        "DoLavaridgeGymB1FWarp",
+        "DoMossdeepGymWarp",
+        "DoSpinExitWarp",
+        "DoTeleportTileWarp",
+        "DoWarp",
+        "GetWarpEventAtMapPosition",
+        "IsWarpMetatileBehavior",
+        "MetatileBehavior_IsAquaHideoutWarp",
+        "MetatileBehavior_IsEscalator",
+        "MetatileBehavior_IsLavaridge1FWarp",
+        "MetatileBehavior_IsLavaridgeB1FWarp",
+        "MetatileBehavior_IsMossdeepGymWarp",
+        "MetatileBehavior_IsMtPyreHole",
+        "MetatileBehavior_IsUnionRoomWarp",
+        "ScriptContext_SetupScript",
+        "SetupWarp",
+        "StoreInitialPlayerAvatarState"
+      ],
+      "lineCount": 45
+    },
+    "IsWarpMetatileBehavior": {
+      "returnType": "bool8",
+      "signature": "static bool8 IsWarpMetatileBehavior(u16 metatileBehavior)",
+      "paramsRaw": "u16 metatileBehavior",
+      "body": "if (MetatileBehavior_IsWarpDoor(metatileBehavior) != TRUE\n     && MetatileBehavior_IsLadder(metatileBehavior) != TRUE\n     && MetatileBehavior_IsEscalator(metatileBehavior) != TRUE\n     && MetatileBehavior_IsNonAnimDoor(metatileBehavior) != TRUE\n     && MetatileBehavior_IsLavaridgeB1FWarp(metatileBehavior) != TRUE\n     && MetatileBehavior_IsLavaridge1FWarp(metatileBehavior) != TRUE\n     && MetatileBehavior_IsAquaHideoutWarp(metatileBehavior) != TRUE\n     && MetatileBehavior_IsMtPyreHole(metatileBehavior) != TRUE\n     && MetatileBehavior_IsMossdeepGymWarp(metatileBehavior) != TRUE\n     && MetatileBehavior_IsUnionRoomWarp(metatileBehavior) != TRUE)\n        return FALSE;\n    return TRUE;",
+      "callsTo": [
+        "MetatileBehavior_IsAquaHideoutWarp",
+        "MetatileBehavior_IsEscalator",
+        "MetatileBehavior_IsLadder",
+        "MetatileBehavior_IsLavaridge1FWarp",
+        "MetatileBehavior_IsLavaridgeB1FWarp",
+        "MetatileBehavior_IsMossdeepGymWarp",
+        "MetatileBehavior_IsMtPyreHole",
+        "MetatileBehavior_IsNonAnimDoor",
+        "MetatileBehavior_IsUnionRoomWarp",
+        "MetatileBehavior_IsWarpDoor"
+      ],
+      "lineCount": 12
+    },
+    "IsArrowWarpMetatileBehavior": {
+      "returnType": "bool8",
+      "signature": "static bool8 IsArrowWarpMetatileBehavior(u16 metatileBehavior, u8 direction)",
+      "paramsRaw": "u16 metatileBehavior, u8 direction",
+      "body": "switch (direction)\n    {\n    case DIR_NORTH:\n        return MetatileBehavior_IsNorthArrowWarp(metatileBehavior);\n    case DIR_SOUTH:\n        return MetatileBehavior_IsSouthArrowWarp(metatileBehavior);\n    case DIR_WEST:\n        return MetatileBehavior_IsWestArrowWarp(metatileBehavior);\n    case DIR_EAST:\n        return MetatileBehavior_IsEastArrowWarp(metatileBehavior);\n    }\n    return FALSE;",
+      "callsTo": [
+        "MetatileBehavior_IsEastArrowWarp",
+        "MetatileBehavior_IsNorthArrowWarp",
+        "MetatileBehavior_IsSouthArrowWarp",
+        "MetatileBehavior_IsWestArrowWarp"
+      ],
+      "lineCount": 12
+    },
+    "GetWarpEventAtMapPosition": {
+      "returnType": "s8",
+      "signature": "static s8 GetWarpEventAtMapPosition(struct MapHeader *mapHeader, struct MapPosition *position)",
+      "paramsRaw": "struct MapHeader *mapHeader, struct MapPosition *position",
+      "body": "return GetWarpEventAtPosition(mapHeader, position->x - MAP_OFFSET, position->y - MAP_OFFSET, position->elevation);",
+      "callsTo": [
+        "GetWarpEventAtPosition"
+      ],
+      "lineCount": 1
+    },
+    "SetupWarp": {
+      "returnType": "void",
+      "signature": "static void SetupWarp(struct MapHeader *unused, s8 warpEventId, struct MapPosition *position)",
+      "paramsRaw": "struct MapHeader *unused, s8 warpEventId, struct MapPosition *position",
+      "body": "const struct WarpEvent *warpEvent;\n\n    u8 trainerHillMapId = GetCurrentTrainerHillMapId();\n\n    if (trainerHillMapId)\n    {\n        if (trainerHillMapId == GetNumFloorsInTrainerHillChallenge())\n        {\n            if (warpEventId == 0)\n                warpEvent = &gMapHeader.events->warps[0];\n            else\n                warpEvent = SetWarpDestinationTrainerHill4F();\n        }\n        else if (trainerHillMapId == TRAINER_HILL_ROOF)\n        {\n            warpEvent = SetWarpDestinationTrainerHillFinalFloor(warpEventId);\n        }\n        else\n        {\n            warpEvent = &gMapHeader.events->warps[warpEventId];\n        }\n    }\n    else\n    {\n        warpEvent = &gMapHeader.events->warps[warpEventId];\n    }\n\n    if (warpEvent->mapNum == MAP_NUM(MAP_DYNAMIC))\n    {\n        SetWarpDestinationToDynamicWarp(warpEvent->warpId);\n    }\n    else\n    {\n        const struct MapHeader *mapHeader;\n\n        SetWarpDestinationToMapWarp(warpEvent->mapGroup, warpEvent->mapNum, warpEvent->warpId);\n        UpdateEscapeWarp(position->x, position->y);\n        mapHeader = Overworld_GetMapHeaderByGroupAndId(warpEvent->mapGroup, warpEvent->mapNum);\n        if (mapHeader->events->warps[warpEvent->warpId].mapNum == MAP_NUM(MAP_DYNAMIC))\n            SetDynamicWarp(mapHeader->events->warps[warpEventId].warpId, gSaveBlock1Ptr->location.mapGroup, gSaveBlock1Ptr->location.mapNum, warpEventId);\n    }",
+      "callsTo": [
+        "GetCurrentTrainerHillMapId",
+        "GetNumFloorsInTrainerHillChallenge",
+        "MAP_NUM",
+        "Overworld_GetMapHeaderByGroupAndId",
+        "SetDynamicWarp",
+        "SetWarpDestinationToDynamicWarp",
+        "SetWarpDestinationToMapWarp",
+        "SetWarpDestinationTrainerHill4F",
+        "SetWarpDestinationTrainerHillFinalFloor",
+        "UpdateEscapeWarp"
+      ],
+      "lineCount": 41
+    },
+    "TryDoorWarp": {
+      "returnType": "bool8",
+      "signature": "static bool8 TryDoorWarp(struct MapPosition *position, u16 metatileBehavior, u8 direction)",
+      "paramsRaw": "struct MapPosition *position, u16 metatileBehavior, u8 direction",
+      "body": "s8 warpEventId;\n\n    if (direction == DIR_NORTH)\n    {\n        if (MetatileBehavior_IsOpenSecretBaseDoor(metatileBehavior) == TRUE)\n        {\n            WarpIntoSecretBase(position, gMapHeader.events);\n            return TRUE;\n        }\n\n        if (MetatileBehavior_IsWarpDoor(metatileBehavior) == TRUE)\n        {\n            warpEventId = GetWarpEventAtMapPosition(&gMapHeader, position);\n            if (warpEventId != WARP_ID_NONE && IsWarpMetatileBehavior(metatileBehavior) == TRUE)\n            {\n                StoreInitialPlayerAvatarState();\n                SetupWarp(&gMapHeader, warpEventId, position);\n                DoDoorWarp();\n                return TRUE;\n            }\n        }\n    }\n    return FALSE;",
+      "callsTo": [
+        "DoDoorWarp",
+        "GetWarpEventAtMapPosition",
+        "IsWarpMetatileBehavior",
+        "MetatileBehavior_IsOpenSecretBaseDoor",
+        "MetatileBehavior_IsWarpDoor",
+        "SetupWarp",
+        "StoreInitialPlayerAvatarState",
+        "WarpIntoSecretBase"
+      ],
+      "lineCount": 23
+    },
+    "GetWarpEventAtPosition": {
+      "returnType": "s8",
+      "signature": "static s8 GetWarpEventAtPosition(struct MapHeader *mapHeader, u16 x, u16 y, u8 elevation)",
+      "paramsRaw": "struct MapHeader *mapHeader, u16 x, u16 y, u8 elevation",
+      "body": "s32 i;\n    const struct WarpEvent *warpEvent = mapHeader->events->warps;\n    u8 warpCount = mapHeader->events->warpCount;\n\n    for (i = 0; i < warpCount; i++, warpEvent++)\n    {\n        if ((u16)warpEvent->x == x && (u16)warpEvent->y == y)\n        {\n            if (warpEvent->elevation == elevation || warpEvent->elevation == ELEVATION_TRANSITION)\n                return i;\n        }\n    }\n    return WARP_ID_NONE;",
+      "callsTo": [],
+      "lineCount": 13
+    },
+    "TryDoDiveWarp": {
+      "returnType": "bool8",
+      "signature": "bool8 TryDoDiveWarp(struct MapPosition *position, u16 metatileBehavior)",
+      "paramsRaw": "struct MapPosition *position, u16 metatileBehavior",
+      "body": "if (gMapHeader.mapType == MAP_TYPE_UNDERWATER && !MetatileBehavior_IsUnableToEmerge(metatileBehavior))\n    {\n        if (SetDiveWarpEmerge(position->x - MAP_OFFSET, position->y - MAP_OFFSET))\n        {\n            StoreInitialPlayerAvatarState();\n            DoDiveWarp();\n            PlaySE(SE_M_DIVE);\n            return TRUE;\n        }\n    }\n    else if (MetatileBehavior_IsDiveable(metatileBehavior) == TRUE)\n    {\n        if (SetDiveWarpDive(position->x - MAP_OFFSET, position->y - MAP_OFFSET))\n        {\n            StoreInitialPlayerAvatarState();\n            DoDiveWarp();\n            PlaySE(SE_M_DIVE);\n            return TRUE;\n        }\n    }\n    return FALSE;",
+      "callsTo": [
+        "DoDiveWarp",
+        "MetatileBehavior_IsDiveable",
+        "MetatileBehavior_IsUnableToEmerge",
+        "PlaySE",
+        "SetDiveWarpDive",
+        "SetDiveWarpEmerge",
+        "StoreInitialPlayerAvatarState"
+      ],
+      "lineCount": 21
+    },
+    "TrySetDiveWarp": {
+      "returnType": "u8",
+      "signature": "u8 TrySetDiveWarp(void)",
+      "paramsRaw": "void",
+      "body": "s16 x, y;\n    u8 metatileBehavior;\n\n    PlayerGetDestCoords(&x, &y);\n    metatileBehavior = MapGridGetMetatileBehaviorAt(x, y);\n    if (gMapHeader.mapType == MAP_TYPE_UNDERWATER && !MetatileBehavior_IsUnableToEmerge(metatileBehavior))\n    {\n        if (SetDiveWarpEmerge(x - MAP_OFFSET, y - MAP_OFFSET) == TRUE)\n            return 1;\n    }\n    else if (MetatileBehavior_IsDiveable(metatileBehavior) == TRUE)\n    {\n        if (SetDiveWarpDive(x - MAP_OFFSET, y - MAP_OFFSET) == TRUE)\n            return 2;\n    }\n    return 0;",
+      "callsTo": [
+        "MapGridGetMetatileBehaviorAt",
+        "MetatileBehavior_IsDiveable",
+        "MetatileBehavior_IsUnableToEmerge",
+        "PlayerGetDestCoords",
+        "SetDiveWarpDive",
+        "SetDiveWarpEmerge"
+      ],
+      "lineCount": 16
+    },
+    "SetCableClubWarp": {
+      "returnType": "int",
+      "signature": "int SetCableClubWarp(void)",
+      "paramsRaw": "void",
+      "body": "struct MapPosition position;\n\n    GetPlayerMovementDirection();   \n    GetPlayerPosition(&position);\n    MapGridGetMetatileBehaviorAt(position.x, position.y);   \n    SetupWarp(&gMapHeader, GetWarpEventAtMapPosition(&gMapHeader, &position), &position);\n    return 0;",
+      "callsTo": [
+        "GetPlayerMovementDirection",
+        "GetPlayerPosition",
+        "GetWarpEventAtMapPosition",
+        "MapGridGetMetatileBehaviorAt",
+        "SetupWarp"
+      ],
+      "lineCount": 7
+    }
+  }
+}

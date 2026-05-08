@@ -1,0 +1,126 @@
+{
+  "srcFile": "src/fldeff_rocksmash.c",
+  "count": 10,
+  "functions": {
+    "CheckObjectGraphicsInFrontOfPlayer": {
+      "returnType": "bool8",
+      "signature": "bool8 CheckObjectGraphicsInFrontOfPlayer(u8 graphicsId)",
+      "paramsRaw": "u8 graphicsId",
+      "body": "u8 objEventId;\n\n    GetXYCoordsOneStepInFrontOfPlayer(&gPlayerFacingPosition.x, &gPlayerFacingPosition.y);\n    gPlayerFacingPosition.elevation = PlayerGetElevation();\n    objEventId = GetObjectEventIdByPosition(gPlayerFacingPosition.x, gPlayerFacingPosition.y, gPlayerFacingPosition.elevation);\n    if (gObjectEvents[objEventId].graphicsId != graphicsId)\n    {\n        return FALSE;\n    }\n    else\n    {\n        gSpecialVar_LastTalked = gObjectEvents[objEventId].localId;\n        return TRUE;\n    }",
+      "callsTo": [
+        "GetObjectEventIdByPosition",
+        "GetXYCoordsOneStepInFrontOfPlayer",
+        "PlayerGetElevation"
+      ],
+      "lineCount": 14
+    },
+    "CreateFieldMoveTask": {
+      "returnType": "u8",
+      "signature": "u8 CreateFieldMoveTask(void)",
+      "paramsRaw": "void",
+      "body": "GetXYCoordsOneStepInFrontOfPlayer(&gPlayerFacingPosition.x, &gPlayerFacingPosition.y);\n    return CreateTask(Task_DoFieldMove_Init, 8);",
+      "callsTo": [
+        "CreateTask",
+        "GetXYCoordsOneStepInFrontOfPlayer"
+      ],
+      "lineCount": 2
+    },
+    "Task_DoFieldMove_Init": {
+      "returnType": "void",
+      "signature": "static void Task_DoFieldMove_Init(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "u8 objEventId;\n\n    LockPlayerFieldControls();\n    gPlayerAvatar.preventStep = TRUE;\n    objEventId = gPlayerAvatar.objectEventId;\n    if (!ObjectEventIsMovementOverridden(&gObjectEvents[objEventId])\n     || ObjectEventClearHeldMovementIfFinished(&gObjectEvents[objEventId]))\n    {\n        if (gMapHeader.mapType == MAP_TYPE_UNDERWATER)\n        {\n             \n            FieldEffectStart(FLDEFF_FIELD_MOVE_SHOW_MON_INIT);\n            gTasks[taskId].func = Task_DoFieldMove_WaitForMon;\n        }\n        else\n        {\n             \n            SetPlayerAvatarFieldMove();\n            ObjectEventSetHeldMovement(&gObjectEvents[objEventId], MOVEMENT_ACTION_START_ANIM_IN_DIRECTION);\n            gTasks[taskId].func = Task_DoFieldMove_ShowMonAfterPose;\n        }\n    }",
+      "callsTo": [
+        "FieldEffectStart",
+        "LockPlayerFieldControls",
+        "ObjectEventClearHeldMovementIfFinished",
+        "ObjectEventIsMovementOverridden",
+        "ObjectEventSetHeldMovement",
+        "SetPlayerAvatarFieldMove"
+      ],
+      "lineCount": 22
+    },
+    "Task_DoFieldMove_ShowMonAfterPose": {
+      "returnType": "void",
+      "signature": "static void Task_DoFieldMove_ShowMonAfterPose(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "if (ObjectEventCheckHeldMovementStatus(&gObjectEvents[gPlayerAvatar.objectEventId]) == TRUE)\n    {\n        FieldEffectStart(FLDEFF_FIELD_MOVE_SHOW_MON_INIT);\n        gTasks[taskId].func = Task_DoFieldMove_WaitForMon;\n    }",
+      "callsTo": [
+        "FieldEffectStart",
+        "ObjectEventCheckHeldMovementStatus"
+      ],
+      "lineCount": 5
+    },
+    "Task_DoFieldMove_WaitForMon": {
+      "returnType": "void",
+      "signature": "static void Task_DoFieldMove_WaitForMon(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "if (!FieldEffectActiveListContains(FLDEFF_FIELD_MOVE_SHOW_MON))\n    {\n        gFieldEffectArguments[1] = GetPlayerFacingDirection();\n        if (gFieldEffectArguments[1] == DIR_SOUTH)\n            gFieldEffectArguments[2] = 0;\n        if (gFieldEffectArguments[1] == DIR_NORTH)\n            gFieldEffectArguments[2] = 1;\n        if (gFieldEffectArguments[1] == DIR_WEST)\n            gFieldEffectArguments[2] = 2;\n        if (gFieldEffectArguments[1] == DIR_EAST)\n            gFieldEffectArguments[2] = 3;\n        ObjectEventSetGraphicsId(&gObjectEvents[gPlayerAvatar.objectEventId], GetPlayerAvatarGraphicsIdByCurrentState());\n        StartSpriteAnim(&gSprites[gPlayerAvatar.spriteId], gFieldEffectArguments[2]);\n        FieldEffectActiveListRemove(FLDEFF_FIELD_MOVE_SHOW_MON);\n        gTasks[taskId].func = Task_DoFieldMove_RunFunc;\n    }",
+      "callsTo": [
+        "FieldEffectActiveListContains",
+        "FieldEffectActiveListRemove",
+        "GetPlayerAvatarGraphicsIdByCurrentState",
+        "GetPlayerFacingDirection",
+        "ObjectEventSetGraphicsId",
+        "StartSpriteAnim"
+      ],
+      "lineCount": 16
+    },
+    "Task_DoFieldMove_RunFunc": {
+      "returnType": "void",
+      "signature": "static void Task_DoFieldMove_RunFunc(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "void (*fieldMoveFunc)(void) = (void (*)(void))(((u16)gTasks[taskId].data[8] << 16) | (u16)gTasks[taskId].data[9]);\n\n    fieldMoveFunc();\n    gPlayerAvatar.preventStep = FALSE;\n    DestroyTask(taskId);",
+      "callsTo": [
+        "DestroyTask"
+      ],
+      "lineCount": 5
+    },
+    "SetUpFieldMove_RockSmash": {
+      "returnType": "bool8",
+      "signature": "bool8 SetUpFieldMove_RockSmash(void)",
+      "paramsRaw": "void",
+      "body": "if (ShouldDoBrailleRegirockEffect())\n    {\n        gSpecialVar_Result = GetCursorSelectionMonId();\n        gFieldCallback2 = FieldCallback_PrepareFadeInFromMenu;\n        gPostMenuFieldCallback = SetUpPuzzleEffectRegirock;\n        return TRUE;\n    }\n    else if (CheckObjectGraphicsInFrontOfPlayer(OBJ_EVENT_GFX_BREAKABLE_ROCK) == TRUE)\n    {\n        gFieldCallback2 = FieldCallback_PrepareFadeInFromMenu;\n        gPostMenuFieldCallback = FieldCallback_RockSmash;\n        return TRUE;\n    }\n    else\n    {\n        return FALSE;\n    }",
+      "callsTo": [
+        "CheckObjectGraphicsInFrontOfPlayer",
+        "GetCursorSelectionMonId",
+        "ShouldDoBrailleRegirockEffect"
+      ],
+      "lineCount": 17
+    },
+    "FieldCallback_RockSmash": {
+      "returnType": "void",
+      "signature": "static void FieldCallback_RockSmash(void)",
+      "paramsRaw": "void",
+      "body": "gFieldEffectArguments[0] = GetCursorSelectionMonId();\n    ScriptContext_SetupScript(EventScript_UseRockSmash);",
+      "callsTo": [
+        "GetCursorSelectionMonId",
+        "ScriptContext_SetupScript"
+      ],
+      "lineCount": 2
+    },
+    "FldEff_UseRockSmash": {
+      "returnType": "bool8",
+      "signature": "bool8 FldEff_UseRockSmash(void)",
+      "paramsRaw": "void",
+      "body": "u8 taskId = CreateFieldMoveTask();\n\n    gTasks[taskId].data[8] = (u32)FieldMove_RockSmash >> 16;\n    gTasks[taskId].data[9] = (u32)FieldMove_RockSmash;\n    IncrementGameStat(GAME_STAT_USED_ROCK_SMASH);\n    return FALSE;",
+      "callsTo": [
+        "CreateFieldMoveTask",
+        "IncrementGameStat"
+      ],
+      "lineCount": 6
+    },
+    "FieldMove_RockSmash": {
+      "returnType": "void",
+      "signature": "static void FieldMove_RockSmash(void)",
+      "paramsRaw": "void",
+      "body": "PlaySE(SE_M_ROCK_THROW);\n    FieldEffectActiveListRemove(FLDEFF_USE_ROCK_SMASH);\n    ScriptContext_Enable();",
+      "callsTo": [
+        "FieldEffectActiveListRemove",
+        "PlaySE",
+        "ScriptContext_Enable"
+      ],
+      "lineCount": 3
+    }
+  }
+}

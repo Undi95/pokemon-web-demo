@@ -1,0 +1,1560 @@
+{
+  "srcFile": "src/battle_factory_screen.c",
+  "count": 118,
+  "functions": {
+    "SpriteCB_Pokeball": {
+      "returnType": "void",
+      "signature": "static void SpriteCB_Pokeball(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "if (sprite->oam.paletteNum == IndexOfSpritePaletteTag(PALTAG_BALL_SELECTED))\n    {\n         \n        if (sprite->animEnded)\n        {\n            if (sprite->data[0] != 0)\n            {\n                sprite->data[0]--;\n            }\n            else if (Random() % 5 == 0)\n            {\n                StartSpriteAnim(sprite, 0);\n                sprite->data[0] = 32;\n            }\n            else\n            {\n                StartSpriteAnim(sprite, 1);\n            }\n        }\n        else\n        {\n            StartSpriteAnimIfDifferent(sprite, 1);\n        }\n    }\n    else\n    {\n         \n        StartSpriteAnimIfDifferent(sprite, 0);\n    }",
+      "callsTo": [
+        "IndexOfSpritePaletteTag",
+        "Random",
+        "StartSpriteAnim",
+        "StartSpriteAnimIfDifferent"
+      ],
+      "lineCount": 29
+    },
+    "CB2_SelectScreen": {
+      "returnType": "void",
+      "signature": "static void CB2_SelectScreen(void)",
+      "paramsRaw": "void",
+      "body": "AnimateSprites();\n    BuildOamBuffer();\n    RunTextPrinters();\n    UpdatePaletteFade();\n    RunTasks();",
+      "callsTo": [
+        "AnimateSprites",
+        "BuildOamBuffer",
+        "RunTasks",
+        "RunTextPrinters",
+        "UpdatePaletteFade"
+      ],
+      "lineCount": 5
+    },
+    "VBlankCB_SelectScreen": {
+      "returnType": "void",
+      "signature": "static void VBlankCB_SelectScreen(void)",
+      "paramsRaw": "void",
+      "body": "LoadOam();\n    ProcessSpriteCopyRequests();\n    TransferPlttBuffer();",
+      "callsTo": [
+        "LoadOam",
+        "ProcessSpriteCopyRequests",
+        "TransferPlttBuffer"
+      ],
+      "lineCount": 3
+    },
+    "DoBattleFactorySelectScreen": {
+      "returnType": "void",
+      "signature": "void DoBattleFactorySelectScreen(void)",
+      "paramsRaw": "void",
+      "body": "sFactorySelectScreen = NULL;\n    SetMainCallback2(CB2_InitSelectScreen);",
+      "callsTo": [
+        "SetMainCallback2"
+      ],
+      "lineCount": 2
+    },
+    "CB2_InitSelectScreen": {
+      "returnType": "void",
+      "signature": "static void CB2_InitSelectScreen(void)",
+      "paramsRaw": "void",
+      "body": "u8 taskId;\n\n    switch (gMain.state)\n    {\n    case 0:\n        TRY_FREE_AND_SET_NULL(sFactorySelectMons);\n        SetHBlankCallback(NULL);\n        SetVBlankCallback(NULL);\n        CpuFill32(0, (void *)VRAM, VRAM_SIZE);\n        ResetBgsAndClearDma3BusyFlags(0);\n        InitBgsFromTemplates(0, sSelect_BgTemplates, ARRAY_COUNT(sSelect_BgTemplates));\n        InitWindows(sSelect_WindowTemplates);\n        DeactivateAllTextPrinters();\n        gMain.state++;\n        break;\n    case 1:\n        sSelectMenuTilesetBuffer = Alloc(sizeof(gFrontierFactoryMenu_Gfx));\n#ifdef BUGFIX\n        sSelectMonPicBgTilesetBuffer = AllocZeroed(sizeof(sMonPicBg_Gfx));\n#else\n        sSelectMonPicBgTilesetBuffer = AllocZeroed(sizeof(gFrontierFactoryMenu_Gfx));  \n#endif\n        sSelectMenuTilemapBuffer = Alloc(BG_SCREEN_SIZE);\n        sSelectMonPicBgTilemapBuffer = AllocZeroed(BG_SCREEN_SIZE);\n        ChangeBgX(0, 0, BG_COORD_SET);\n        ChangeBgY(0, 0, BG_COORD_SET);\n        ChangeBgX(1, 0, BG_COORD_SET);\n        ChangeBgY(1, 0, BG_COORD_SET);\n        ChangeBgX(3, 0, BG_COORD_SET);\n        ChangeBgY(3, 0, BG_COORD_SET);\n        SetGpuReg(REG_OFFSET_BLDCNT, 0);\n        SetGpuReg(REG_OFFSET_BLDALPHA, 0);\n        SetGpuReg(REG_OFFSET_BLDY, 0);\n        SetGpuReg(REG_OFFSET_MOSAIC, 0);\n        SetGpuReg(REG_OFFSET_WIN0H, 0);\n        SetGpuReg(REG_OFFSET_WIN0V, 0);\n        SetGpuReg(REG_OFFSET_WIN1H, 0);\n        SetGpuReg(REG_OFFSET_WIN1V, 0);\n        SetGpuReg(REG_OFFSET_WININ, 0);\n        SetGpuReg(REG_OFFSET_WINOUT, 0);\n        gMain.state++;\n        break;\n    case 2:\n        ResetPaletteFade();\n        ResetSpriteData();\n        ResetTasks();\n        FreeAllSpritePalettes();\n        CpuCopy16(gFrontierFactoryMenu_Gfx, sSelectMenuTilesetBuffer, sizeof(gFrontierFactoryMenu_Gfx));\n        CpuCopy16(sMonPicBg_Gfx, sSelectMonPicBgTilesetBuffer, sizeof(sMonPicBg_Gfx));\n        LoadBgTiles(1, sSelectMenuTilesetBuffer, sizeof(gFrontierFactoryMenu_Gfx), 0);\n        LoadBgTiles(3, sSelectMonPicBgTilesetBuffer, sizeof(sMonPicBg_Gfx), 0);\n        CpuCopy16(gFrontierFactoryMenu_Tilemap, sSelectMenuTilemapBuffer, BG_SCREEN_SIZE);\n        LoadBgTilemap(1, sSelectMenuTilemapBuffer, BG_SCREEN_SIZE, 0);\n        LoadPalette(gFrontierFactoryMenu_Pal, 0, 2 * PLTT_SIZE_4BPP);\n        LoadPalette(sSelectText_Pal, BG_PLTT_ID(PALNUM_TEXT), PLTT_SIZEOF(4));\n        LoadPalette(sSelectText_Pal, BG_PLTT_ID(PALNUM_FADE_TEXT), PLTT_SIZEOF(5));\n#ifdef UBFIX\n        if (sFactorySelectScreen && sFactorySelectScreen->fromSummaryScreen)\n#else\n        if (sFactorySelectScreen->fromSummaryScreen == TRUE)\n#endif\n            gPlttBufferUnfaded[BG_PLTT_ID(PALNUM_FADE_TEXT) + 4] = sFactorySelectScreen->speciesNameColorBackup;\n        LoadPalette(sMonPicBg_Pal, BG_PLTT_ID(2), PLTT_SIZEOF(2));\n        gMain.state++;\n        break;\n    case 3:\n        SetBgTilemapBuffer(3, sSelectMonPicBgTilemapBuffer);\n        CopyToBgTilemapBufferRect(3, sMonPicBg_Tilemap, 11, 4, 8, 8);\n        CopyToBgTilemapBufferRect(3, sMonPicBg_Tilemap,  2, 4, 8, 8);\n        CopyToBgTilemapBufferRect(3, sMonPicBg_Tilemap, 20, 4, 8, 8);\n        CopyBgTilemapBufferToVram(3);\n        gMain.state++;\n        break;\n    case 4:\n        LoadSpritePalettes(sSelect_SpritePalettes);\n        LoadSpriteSheets(sSelect_SpriteSheets);\n        LoadCompressedSpriteSheet(sSelect_BallGfx);\n        ShowBg(0);\n        ShowBg(1);\n        SetVBlankCallback(VBlankCB_SelectScreen);\n        BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);\n        SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_OBJ_ON | DISPCNT_BG0_ON | DISPCNT_BG1_ON | DISPCNT_OBJ_1D_MAP);\n#ifdef UBFIX\n        if (sFactorySelectScreen && sFactorySelectScreen->fromSummaryScreen)\n#else\n        if (sFactorySelectScreen->fromSummaryScreen == TRUE)\n#endif\n        {\n            Select_SetWinRegs(88, 152, 32, 96);\n            ShowBg(3);\n            SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_TGT1_BG3 | BLDCNT_EFFECT_BLEND | BLDCNT_TGT2_BG1 | BLDCNT_TGT2_OBJ);\n            SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(11, 4));\n        }\n        else\n        {\n            HideBg(3);\n        }\n        gMain.state++;\n        break;\n    case 5:\n#ifdef UBFIX\n        if (sFactorySelectScreen && sFactorySelectScreen->fromSummaryScreen)\n#else\n        if (sFactorySelectScreen->fromSummaryScreen == TRUE)\n#endif\n            sFactorySelectScreen->cursorPos = gLastViewedMonIndex;\n        Select_InitMonsData();\n        Select_InitAllSprites();\n        if (sFactorySelectScreen->fromSummaryScreen == TRUE)\n            Select_ReshowMonSprite();\n        gMain.state++;\n        break;\n    case 6:\n        Select_PrintSelectMonString();\n        PutWindowTilemap(SELECT_WIN_INFO);\n        gMain.state++;\n        break;\n    case 7:\n        Select_PrintMonCategory();\n        PutWindowTilemap(SELECT_WIN_MON_CATEGORY);\n        gMain.state++;\n        break;\n    case 8:\n        Select_PrintMonSpecies();\n        PutWindowTilemap(SELECT_WIN_SPECIES);\n        gMain.state++;\n        break;\n    case 9:\n        Select_PrintRentalPkmnString();\n        PutWindowTilemap(SELECT_WIN_TITLE);\n        gMain.state++;\n        break;\n    case 10:\n        sFactorySelectScreen->fadeSpeciesNameTaskId = CreateTask(Select_Task_FadeSpeciesName, 0);\n        if (!sFactorySelectScreen->fromSummaryScreen)\n        {\n            gTasks[sFactorySelectScreen->fadeSpeciesNameTaskId].tState = FADESTATE_INIT;\n            taskId = CreateTask(Select_Task_HandleChooseMons, 0);\n            gTasks[taskId].tState = STATE_CHOOSE_MONS_INIT;\n        }\n        else\n        {\n            gTasks[sFactorySelectScreen->fadeSpeciesNameTaskId].tState = FADESTATE_RUN;\n            sFactorySelectScreen->fadeSpeciesNameActive = FALSE;\n            taskId = CreateTask(Select_Task_HandleMenu, 0);\n            gTasks[taskId].tState = STATE_MENU_RESHOW;\n        }\n        SetMainCallback2(CB2_SelectScreen);\n        break;\n    }",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "Alloc",
+        "AllocZeroed",
+        "BG_PLTT_ID",
+        "BLDALPHA_BLEND",
+        "BeginNormalPaletteFade",
+        "ChangeBgX",
+        "ChangeBgY",
+        "CopyBgTilemapBufferToVram",
+        "CopyToBgTilemapBufferRect",
+        "CpuCopy16",
+        "CpuFill32",
+        "CreateTask",
+        "DeactivateAllTextPrinters",
+        "FreeAllSpritePalettes",
+        "HideBg",
+        "InitBgsFromTemplates",
+        "InitWindows",
+        "LoadBgTilemap",
+        "LoadBgTiles",
+        "LoadCompressedSpriteSheet",
+        "LoadPalette",
+        "LoadSpritePalettes",
+        "LoadSpriteSheets",
+        "PLTT_SIZEOF",
+        "PutWindowTilemap",
+        "ResetBgsAndClearDma3BusyFlags",
+        "ResetPaletteFade",
+        "ResetSpriteData",
+        "ResetTasks",
+        "Select_InitAllSprites",
+        "Select_InitMonsData",
+        "Select_PrintMonCategory",
+        "Select_PrintMonSpecies",
+        "Select_PrintRentalPkmnString",
+        "Select_PrintSelectMonString",
+        "Select_ReshowMonSprite",
+        "Select_SetWinRegs",
+        "SetBgTilemapBuffer",
+        "SetGpuReg",
+        "SetHBlankCallback",
+        "SetMainCallback2",
+        "SetVBlankCallback",
+        "ShowBg",
+        "TRY_FREE_AND_SET_NULL"
+      ],
+      "lineCount": 150
+    },
+    "Select_InitMonsData": {
+      "returnType": "void",
+      "signature": "static void Select_InitMonsData(void)",
+      "paramsRaw": "void",
+      "body": "u8 i;\n\n    if (sFactorySelectScreen != NULL)\n        return;\n\n    sFactorySelectScreen = AllocZeroed(sizeof(*sFactorySelectScreen));\n    sFactorySelectScreen->cursorPos = 0;\n    sFactorySelectScreen->selectingMonsState = 1;\n    sFactorySelectScreen->fromSummaryScreen = FALSE;\n    for (i = 0; i < SELECTABLE_MONS_COUNT; i++)\n        sFactorySelectScreen->mons[i].selectedId = 0;\n\n    if (gSaveBlock2Ptr->frontier.lvlMode != FRONTIER_LVL_TENT)\n        CreateFrontierFactorySelectableMons(0);\n    else\n        CreateSlateportTentSelectableMons(0);",
+      "callsTo": [
+        "AllocZeroed",
+        "CreateFrontierFactorySelectableMons",
+        "CreateSlateportTentSelectableMons"
+      ],
+      "lineCount": 16
+    },
+    "Select_InitAllSprites": {
+      "returnType": "void",
+      "signature": "static void Select_InitAllSprites(void)",
+      "paramsRaw": "void",
+      "body": "u8 i, cursorPos;\n    s16 x;\n\n    for (i = 0; i < SELECTABLE_MONS_COUNT; i++)\n    {\n        sFactorySelectScreen->mons[i].ballSpriteId = CreateSprite(&sSpriteTemplate_Select_Pokeball, (35 * i) + 32, 64, 1);\n        gSprites[sFactorySelectScreen->mons[i].ballSpriteId].data[0] = 0;\n        Select_SetBallSpritePaletteNum(i);\n    }\n    cursorPos = sFactorySelectScreen->cursorPos;\n    x = gSprites[sFactorySelectScreen->mons[cursorPos].ballSpriteId].x;\n    sFactorySelectScreen->cursorSpriteId = CreateSprite(&sSpriteTemplate_Select_Arrow, x, 88, 0);\n    sFactorySelectScreen->menuCursor1SpriteId = CreateSprite(&sSpriteTemplate_Select_MenuHighlightLeft, 176, 112, 0);\n    sFactorySelectScreen->menuCursor2SpriteId = CreateSprite(&sSpriteTemplate_Select_MenuHighlightRight, 176, 144, 0);\n\n    gSprites[sFactorySelectScreen->menuCursor1SpriteId].invisible = TRUE;\n    gSprites[sFactorySelectScreen->menuCursor2SpriteId].invisible = TRUE;\n\n    gSprites[sFactorySelectScreen->menuCursor1SpriteId].centerToCornerVecX = 0;\n    gSprites[sFactorySelectScreen->menuCursor1SpriteId].centerToCornerVecY = 0;\n    gSprites[sFactorySelectScreen->menuCursor2SpriteId].centerToCornerVecX = 0;\n    gSprites[sFactorySelectScreen->menuCursor2SpriteId].centerToCornerVecY = 0;",
+      "callsTo": [
+        "CreateSprite",
+        "Select_SetBallSpritePaletteNum"
+      ],
+      "lineCount": 22
+    },
+    "Select_DestroyAllSprites": {
+      "returnType": "void",
+      "signature": "static void Select_DestroyAllSprites(void)",
+      "paramsRaw": "void",
+      "body": "u8 i;\n\n    for (i = 0; i < SELECTABLE_MONS_COUNT; i++)\n        DestroySprite(&gSprites[sFactorySelectScreen->mons[i].ballSpriteId]);\n\n    DestroySprite(&gSprites[sFactorySelectScreen->cursorSpriteId]);\n    DestroySprite(&gSprites[sFactorySelectScreen->menuCursor1SpriteId]);\n    DestroySprite(&gSprites[sFactorySelectScreen->menuCursor2SpriteId]);",
+      "callsTo": [
+        "DestroySprite"
+      ],
+      "lineCount": 8
+    },
+    "Select_UpdateBallCursorPosition": {
+      "returnType": "void",
+      "signature": "static void Select_UpdateBallCursorPosition(s8 direction)",
+      "paramsRaw": "s8 direction",
+      "body": "u8 cursorPos;\n    if (direction > 0)  \n    {\n        if (sFactorySelectScreen->cursorPos != SELECTABLE_MONS_COUNT - 1)\n            sFactorySelectScreen->cursorPos++;\n        else\n            sFactorySelectScreen->cursorPos = 0;\n    }\n    else  \n    {\n        if (sFactorySelectScreen->cursorPos != 0)\n            sFactorySelectScreen->cursorPos--;\n        else\n            sFactorySelectScreen->cursorPos = SELECTABLE_MONS_COUNT - 1;\n    }\n\n    cursorPos = sFactorySelectScreen->cursorPos;\n    gSprites[sFactorySelectScreen->cursorSpriteId].x = gSprites[sFactorySelectScreen->mons[cursorPos].ballSpriteId].x;",
+      "callsTo": [],
+      "lineCount": 18
+    },
+    "Select_UpdateMenuCursorPosition": {
+      "returnType": "void",
+      "signature": "static void Select_UpdateMenuCursorPosition(s8 direction)",
+      "paramsRaw": "s8 direction",
+      "body": "if (direction > 0)  \n    {\n        if (sFactorySelectScreen->menuCursorPos != ARRAY_COUNT(sSelect_MenuOptionFuncs) - 1)\n            sFactorySelectScreen->menuCursorPos++;\n        else\n            sFactorySelectScreen->menuCursorPos = 0;\n    }\n    else  \n    {\n        if (sFactorySelectScreen->menuCursorPos != 0)\n            sFactorySelectScreen->menuCursorPos--;\n        else\n            sFactorySelectScreen->menuCursorPos = ARRAY_COUNT(sSelect_MenuOptionFuncs) - 1;\n    }\n\n    gSprites[sFactorySelectScreen->menuCursor1SpriteId].y = (sFactorySelectScreen->menuCursorPos * 16) + 112;\n    gSprites[sFactorySelectScreen->menuCursor2SpriteId].y = (sFactorySelectScreen->menuCursorPos * 16) + 112;",
+      "callsTo": [
+        "ARRAY_COUNT"
+      ],
+      "lineCount": 17
+    },
+    "Select_UpdateYesNoCursorPosition": {
+      "returnType": "void",
+      "signature": "static void Select_UpdateYesNoCursorPosition(s8 direction)",
+      "paramsRaw": "s8 direction",
+      "body": "if (direction > 0)  \n    {\n        if (sFactorySelectScreen->yesNoCursorPos != 1)\n            sFactorySelectScreen->yesNoCursorPos++;\n        else\n            sFactorySelectScreen->yesNoCursorPos = 0;\n    }\n    else  \n    {\n        if (sFactorySelectScreen->yesNoCursorPos != 0)\n            sFactorySelectScreen->yesNoCursorPos--;\n        else\n            sFactorySelectScreen->yesNoCursorPos = 1;\n    }\n\n    gSprites[sFactorySelectScreen->menuCursor1SpriteId].y = (sFactorySelectScreen->yesNoCursorPos * 16) + 112;\n    gSprites[sFactorySelectScreen->menuCursor2SpriteId].y = (sFactorySelectScreen->yesNoCursorPos * 16) + 112;",
+      "callsTo": [],
+      "lineCount": 17
+    },
+    "Select_HandleMonSelectionChange": {
+      "returnType": "void",
+      "signature": "static void Select_HandleMonSelectionChange(void)",
+      "paramsRaw": "void",
+      "body": "u8 i, paletteNum;\n    u8 cursorPos = sFactorySelectScreen->cursorPos;\n    if (sFactorySelectScreen->mons[cursorPos].selectedId)  \n    {\n        paletteNum = IndexOfSpritePaletteTag(PALTAG_BALL_GRAY);\n        if (sFactorySelectScreen->selectingMonsState == FRONTIER_PARTY_SIZE\n         && sFactorySelectScreen->mons[cursorPos].selectedId == 1)\n        {\n            for (i = 0; i < SELECTABLE_MONS_COUNT; i++)\n            {\n                if (sFactorySelectScreen->mons[i].selectedId == FRONTIER_PARTY_SIZE - 1)\n                    break;\n            }\n            if (i == SELECTABLE_MONS_COUNT)\n                return;\n            else\n                sFactorySelectScreen->mons[i].selectedId = 1;\n        }\n        sFactorySelectScreen->mons[cursorPos].selectedId = 0;\n        sFactorySelectScreen->selectingMonsState--;\n    }\n    else  \n    {\n        paletteNum = IndexOfSpritePaletteTag(PALTAG_BALL_SELECTED);\n        sFactorySelectScreen->mons[cursorPos].selectedId = sFactorySelectScreen->selectingMonsState;\n        sFactorySelectScreen->selectingMonsState++;\n    }\n\n    gSprites[sFactorySelectScreen->mons[cursorPos].ballSpriteId].oam.paletteNum = paletteNum;",
+      "callsTo": [
+        "IndexOfSpritePaletteTag"
+      ],
+      "lineCount": 29
+    },
+    "Select_SetBallSpritePaletteNum": {
+      "returnType": "void",
+      "signature": "static void Select_SetBallSpritePaletteNum(u8 id)",
+      "paramsRaw": "u8 id",
+      "body": "u8 palNum;\n\n    if (sFactorySelectScreen->mons[id].selectedId)\n        palNum = IndexOfSpritePaletteTag(PALTAG_BALL_SELECTED);\n    else\n        palNum = IndexOfSpritePaletteTag(PALTAG_BALL_GRAY);\n\n    gSprites[sFactorySelectScreen->mons[id].ballSpriteId].oam.paletteNum = palNum;",
+      "callsTo": [
+        "IndexOfSpritePaletteTag"
+      ],
+      "lineCount": 8
+    },
+    "Select_Task_OpenSummaryScreen": {
+      "returnType": "void",
+      "signature": "static void Select_Task_OpenSummaryScreen(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "u8 i;\n    u8 currMonId;\n\n    switch (gTasks[taskId].tState)\n    {\n    case STATE_SUMMARY_FADE:\n        gPlttBufferUnfaded[BG_PLTT_ID(PALNUM_FADE_TEXT) + 4] = gPlttBufferFaded[BG_PLTT_ID(PALNUM_FADE_TEXT) + 4];\n        BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);\n        gTasks[taskId].tState = STATE_SUMMARY_CLEAN;\n        break;\n    case STATE_SUMMARY_CLEAN:\n        if (!gPaletteFade.active)\n        {\n            DestroyTask(sFactorySelectScreen->fadeSpeciesNameTaskId);\n            HideMonPic(sFactorySelectScreen->monPics[1], &sFactorySelectScreen->monPicAnimating);\n            Select_DestroyAllSprites();\n            FREE_AND_SET_NULL(sSelectMenuTilesetBuffer);\n            FREE_AND_SET_NULL(sSelectMonPicBgTilesetBuffer);\n            FREE_AND_SET_NULL(sSelectMenuTilemapBuffer);\n            FREE_AND_SET_NULL(sSelectMonPicBgTilemapBuffer);\n            FreeAllWindowBuffers();\n            gTasks[taskId].tState = STATE_SUMMARY_SHOW;\n        }\n        break;\n    case STATE_SUMMARY_SHOW:\n        sFactorySelectScreen->speciesNameColorBackup = gPlttBufferUnfaded[BG_PLTT_ID(PALNUM_FADE_TEXT) + 4];\n        DestroyTask(taskId);\n        sFactorySelectScreen->fromSummaryScreen = TRUE;\n        currMonId = sFactorySelectScreen->cursorPos;\n        sFactorySelectMons = AllocZeroed(sizeof(struct Pokemon) * SELECTABLE_MONS_COUNT);\n        for (i = 0; i < SELECTABLE_MONS_COUNT; i++)\n            sFactorySelectMons[i] = sFactorySelectScreen->mons[i].monData;\n        ShowPokemonSummaryScreen(SUMMARY_MODE_LOCK_MOVES, sFactorySelectMons, currMonId, SELECTABLE_MONS_COUNT - 1, CB2_InitSelectScreen);\n        break;\n    }",
+      "callsTo": [
+        "AllocZeroed",
+        "BG_PLTT_ID",
+        "BeginNormalPaletteFade",
+        "DestroyTask",
+        "FREE_AND_SET_NULL",
+        "FreeAllWindowBuffers",
+        "HideMonPic",
+        "Select_DestroyAllSprites",
+        "ShowPokemonSummaryScreen"
+      ],
+      "lineCount": 35
+    },
+    "Select_Task_Exit": {
+      "returnType": "void",
+      "signature": "static void Select_Task_Exit(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "if (sFactorySelectScreen->monPicAnimating == TRUE)\n        return;\n\n    switch (gTasks[taskId].tState)\n    {\n    case 0:\n        BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);\n        gTasks[taskId].tState++;\n        break;\n    case 1:\n        if (!UpdatePaletteFade())\n        {\n            Select_CopyMonsToPlayerParty();\n            DestroyTask(sFactorySelectScreen->fadeSpeciesNameTaskId);\n            Select_DestroyAllSprites();\n            FREE_AND_SET_NULL(sSelectMenuTilesetBuffer);\n            FREE_AND_SET_NULL(sSelectMenuTilemapBuffer);\n            FREE_AND_SET_NULL(sSelectMonPicBgTilemapBuffer);\n            FREE_AND_SET_NULL(sFactorySelectScreen);\n            FreeAllWindowBuffers();\n            SetMainCallback2(CB2_ReturnToFieldContinueScript);\n            DestroyTask(taskId);\n        }\n        break;\n    }",
+      "callsTo": [
+        "BeginNormalPaletteFade",
+        "DestroyTask",
+        "FREE_AND_SET_NULL",
+        "FreeAllWindowBuffers",
+        "Select_CopyMonsToPlayerParty",
+        "Select_DestroyAllSprites",
+        "SetMainCallback2",
+        "UpdatePaletteFade"
+      ],
+      "lineCount": 25
+    },
+    "Select_Task_HandleYesNo": {
+      "returnType": "void",
+      "signature": "static void Select_Task_HandleYesNo(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "if (sFactorySelectScreen->monPicAnimating == TRUE)\n        return;\n\n    switch (gTasks[taskId].tState)\n    {\n    case STATE_YESNO_SHOW_MONS:\n        Select_ShowChosenMons();\n        gTasks[taskId].tState = STATE_YESNO_SHOW_OPTIONS;\n        break;\n    case STATE_YESNO_SHOW_OPTIONS:\n        Select_ShowYesNoOptions();\n        gTasks[taskId].tState = STATE_YESNO_HANDLE_INPUT;\n        break;\n    case STATE_YESNO_HANDLE_INPUT:\n        if (JOY_NEW(A_BUTTON))\n        {\n            PlaySE(SE_SELECT);\n            if (sFactorySelectScreen->yesNoCursorPos == 0)\n            {\n                 \n                Select_HideChosenMons();\n                gTasks[taskId].tState = 0;\n                gTasks[taskId].func = Select_Task_Exit;\n            }\n            else\n            {\n                 \n                Select_ErasePopupMenu(SELECT_WIN_YES_NO);\n                Select_DeclineChosenMons();\n                sFactorySelectScreen->fadeSpeciesNameActive = TRUE;\n                gTasks[taskId].tState = STATE_CHOOSE_MONS_HANDLE_INPUT;\n                gTasks[taskId].func = Select_Task_HandleChooseMons;\n            }\n        }\n        else if (JOY_NEW(B_BUTTON))\n        {\n             \n            PlaySE(SE_SELECT);\n            Select_ErasePopupMenu(SELECT_WIN_YES_NO);\n            Select_DeclineChosenMons();\n            sFactorySelectScreen->fadeSpeciesNameActive = TRUE;\n            gTasks[taskId].tState = STATE_CHOOSE_MONS_HANDLE_INPUT;\n            gTasks[taskId].func = Select_Task_HandleChooseMons;\n        }\n        else if (JOY_REPEAT(DPAD_UP))\n        {\n            PlaySE(SE_SELECT);\n            Select_UpdateYesNoCursorPosition(-1);\n        }\n        else if (JOY_REPEAT(DPAD_DOWN))\n        {\n            PlaySE(SE_SELECT);\n            Select_UpdateYesNoCursorPosition(1);\n        }\n        break;\n    }",
+      "callsTo": [
+        "JOY_NEW",
+        "JOY_REPEAT",
+        "PlaySE",
+        "Select_DeclineChosenMons",
+        "Select_ErasePopupMenu",
+        "Select_HideChosenMons",
+        "Select_ShowChosenMons",
+        "Select_ShowYesNoOptions",
+        "Select_UpdateYesNoCursorPosition"
+      ],
+      "lineCount": 56
+    },
+    "Select_Task_HandleMenu": {
+      "returnType": "void",
+      "signature": "static void Select_Task_HandleMenu(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "switch (gTasks[taskId].tState)\n    {\n    case STATE_MENU_INIT:\n        if (!sFactorySelectScreen->fromSummaryScreen)\n            OpenMonPic(&sFactorySelectScreen->monPics[1].bgSpriteId, &sFactorySelectScreen->monPicAnimating, FALSE);\n        gTasks[taskId].tState = STATE_MENU_SHOW_OPTIONS;\n        break;\n    case STATE_MENU_SHOW_OPTIONS:\n        if (sFactorySelectScreen->monPicAnimating != TRUE)\n        {\n            Select_ShowMenuOptions();\n            sFactorySelectScreen->fromSummaryScreen = FALSE;\n            gTasks[taskId].tState = STATE_MENU_HANDLE_INPUT;\n        }\n        break;\n    case STATE_MENU_HANDLE_INPUT:\n        if (JOY_NEW(A_BUTTON))\n        {\n            u8 retVal;\n            PlaySE(SE_SELECT);\n            retVal = Select_RunMenuOptionFunc();\n            if (retVal == SELECT_CONTINUE_CHOOSING)\n            {\n                sFactorySelectScreen->fadeSpeciesNameActive = TRUE;\n                gTasks[taskId].tState = STATE_CHOOSE_MONS_HANDLE_INPUT;\n                gTasks[taskId].func = Select_Task_HandleChooseMons;\n            }\n            else if (retVal == SELECT_CONFIRM_MONS)\n            {\n                gTasks[taskId].tState = STATE_YESNO_SHOW_MONS;\n                gTasks[taskId].func = Select_Task_HandleYesNo;\n            }\n            else if (retVal == SELECT_INVALID_MON)\n            {\n                gTasks[taskId].tState = STATE_CHOOSE_MONS_INVALID;\n                gTasks[taskId].func = Select_Task_HandleChooseMons;\n            }\n            else  \n            {\n                gTasks[taskId].tState = STATE_SUMMARY_FADE;\n                gTasks[taskId].func = Select_Task_OpenSummaryScreen;\n            }\n        }\n        else if (JOY_NEW(B_BUTTON))\n        {\n            PlaySE(SE_SELECT);\n            CloseMonPic(sFactorySelectScreen->monPics[1], &sFactorySelectScreen->monPicAnimating, FALSE);\n            Select_ErasePopupMenu(SELECT_WIN_OPTIONS);\n            sFactorySelectScreen->fadeSpeciesNameActive = TRUE;\n            gTasks[taskId].tState = STATE_CHOOSE_MONS_HANDLE_INPUT;\n            gTasks[taskId].func = Select_Task_HandleChooseMons;\n        }\n        else if (JOY_REPEAT(DPAD_UP))\n        {\n            PlaySE(SE_SELECT);\n            Select_UpdateMenuCursorPosition(-1);\n        }\n        else if (JOY_REPEAT(DPAD_DOWN))\n        {\n            PlaySE(SE_SELECT);\n            Select_UpdateMenuCursorPosition(1);\n        }\n        break;\n    case STATE_MENU_REINIT:\n        if (!gPaletteFade.active)\n        {\n            if (sFactorySelectScreen->fromSummaryScreen == TRUE)\n            {\n                gPlttBufferFaded[BG_PLTT_ID(PALNUM_FADE_TEXT) + 4] = sFactorySelectScreen->speciesNameColorBackup;\n                gPlttBufferUnfaded[BG_PLTT_ID(PALNUM_FADE_TEXT) + 4] = gPlttBufferUnfaded[BG_PLTT_ID(PALNUM_TEXT) + 4];\n            }\n            sFactorySelectScreen->fromSummaryScreen = FALSE;\n            gTasks[taskId].tState = STATE_MENU_HANDLE_INPUT;\n        }\n        break;\n    case STATE_MENU_RESHOW:\n        Select_ShowMenuOptions();\n        gTasks[taskId].tState = STATE_MENU_REINIT;\n        break;\n    }",
+      "callsTo": [
+        "BG_PLTT_ID",
+        "CloseMonPic",
+        "JOY_NEW",
+        "JOY_REPEAT",
+        "OpenMonPic",
+        "PlaySE",
+        "Select_ErasePopupMenu",
+        "Select_RunMenuOptionFunc",
+        "Select_ShowMenuOptions",
+        "Select_UpdateMenuCursorPosition"
+      ],
+      "lineCount": 80
+    },
+    "Select_Task_HandleChooseMons": {
+      "returnType": "void",
+      "signature": "static void Select_Task_HandleChooseMons(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "if (sFactorySelectScreen->monPicAnimating == TRUE)\n        return;\n\n    switch (gTasks[taskId].tState)\n    {\n    case STATE_CHOOSE_MONS_INIT:\n        if (!gPaletteFade.active)\n        {\n            gTasks[taskId].tState = STATE_CHOOSE_MONS_HANDLE_INPUT;\n            sFactorySelectScreen->fadeSpeciesNameActive = TRUE;\n        }\n        break;\n    case STATE_CHOOSE_MONS_HANDLE_INPUT:\n        if (JOY_NEW(A_BUTTON))\n        {\n            PlaySE(SE_SELECT);\n            sFactorySelectScreen->fadeSpeciesNameActive = FALSE;\n            gTasks[taskId].tState = STATE_MENU_INIT;\n            gTasks[taskId].func = Select_Task_HandleMenu;\n        }\n        else if (JOY_REPEAT(DPAD_LEFT))\n        {\n            PlaySE(SE_SELECT);\n            Select_UpdateBallCursorPosition(-1);\n            Select_PrintMonCategory();\n            Select_PrintMonSpecies();\n        }\n        else if (JOY_REPEAT(DPAD_RIGHT))\n        {\n            PlaySE(SE_SELECT);\n            Select_UpdateBallCursorPosition(1);\n            Select_PrintMonCategory();\n            Select_PrintMonSpecies();\n        }\n        break;\n    case STATE_CHOOSE_MONS_INVALID:\n        if (JOY_NEW(A_BUTTON))\n        {\n            PlaySE(SE_SELECT);\n            CloseMonPic(sFactorySelectScreen->monPics[1], &sFactorySelectScreen->monPicAnimating, FALSE);\n            Select_PrintSelectMonString();\n            sFactorySelectScreen->fadeSpeciesNameActive = TRUE;\n            gTasks[taskId].tState = STATE_CHOOSE_MONS_HANDLE_INPUT;\n        }\n        break;\n    }",
+      "callsTo": [
+        "CloseMonPic",
+        "JOY_NEW",
+        "JOY_REPEAT",
+        "PlaySE",
+        "Select_PrintMonCategory",
+        "Select_PrintMonSpecies",
+        "Select_PrintSelectMonString",
+        "Select_UpdateBallCursorPosition"
+      ],
+      "lineCount": 46
+    },
+    "CreateFrontierFactorySelectableMons": {
+      "returnType": "void",
+      "signature": "static void CreateFrontierFactorySelectableMons(u8 firstMonId)",
+      "paramsRaw": "u8 firstMonId",
+      "body": "u8 i, j = 0;\n    u8 ivs = 0;\n    u8 level = 0;\n    u8 friendship = 0;\n    u32 otId = 0;\n    u8 battleMode = VarGet(VAR_FRONTIER_BATTLE_MODE);\n    u8 lvlMode = gSaveBlock2Ptr->frontier.lvlMode;\n    u8 challengeNum = gSaveBlock2Ptr->frontier.factoryWinStreaks[battleMode][lvlMode] / 7;\n    u8 rentalRank = 0;\n\n    gFacilityTrainerMons = gBattleFrontierMons;\n    if (gSaveBlock2Ptr->frontier.lvlMode != FRONTIER_LVL_50)\n        level = FRONTIER_MAX_LEVEL_OPEN;\n    else\n        level = FRONTIER_MAX_LEVEL_50;\n\n    rentalRank = GetNumPastRentalsRank(battleMode, lvlMode);\n    otId = T1_READ_32(gSaveBlock2Ptr->playerTrainerId);\n\n    for (i = 0; i < SELECTABLE_MONS_COUNT; i++)\n    {\n        u16 monId = gSaveBlock2Ptr->frontier.rentalMons[i].monId;\n        sFactorySelectScreen->mons[i + firstMonId].monId = monId;\n        if (i < rentalRank)\n            ivs = GetFactoryMonFixedIV(challengeNum + 1, FALSE);\n        else\n            ivs = GetFactoryMonFixedIV(challengeNum, FALSE);\n        CreateMonWithEVSpreadNatureOTID(&sFactorySelectScreen->mons[i + firstMonId].monData,\n                                             gFacilityTrainerMons[monId].species,\n                                             level,\n                                             gFacilityTrainerMons[monId].nature,\n                                             ivs,\n                                             gFacilityTrainerMons[monId].evSpread,\n                                             otId);\n        friendship = 0;\n        for (j = 0; j < MAX_MON_MOVES; j++)\n            SetMonMoveAvoidReturn(&sFactorySelectScreen->mons[i + firstMonId].monData, gFacilityTrainerMons[monId].moves[j], j);\n        SetMonData(&sFactorySelectScreen->mons[i + firstMonId].monData, MON_DATA_FRIENDSHIP, &friendship);\n        SetMonData(&sFactorySelectScreen->mons[i + firstMonId].monData, MON_DATA_HELD_ITEM, &gBattleFrontierHeldItems[gFacilityTrainerMons[monId].itemTableId]);\n    }",
+      "callsTo": [
+        "CreateMonWithEVSpreadNatureOTID",
+        "GetFactoryMonFixedIV",
+        "GetNumPastRentalsRank",
+        "SetMonData",
+        "SetMonMoveAvoidReturn",
+        "T1_READ_32",
+        "VarGet"
+      ],
+      "lineCount": 40
+    },
+    "CreateSlateportTentSelectableMons": {
+      "returnType": "void",
+      "signature": "static void CreateSlateportTentSelectableMons(u8 firstMonId)",
+      "paramsRaw": "u8 firstMonId",
+      "body": "u8 i, j;\n    u8 ivs = 0;\n    u8 level = TENT_MIN_LEVEL;\n    u8 friendship = 0;\n    u32 otId = 0;\n\n    gFacilityTrainerMons = gSlateportBattleTentMons;\n    otId = T1_READ_32(gSaveBlock2Ptr->playerTrainerId);\n\n    for (i = 0; i < SELECTABLE_MONS_COUNT; i++)\n    {\n        u16 monId = gSaveBlock2Ptr->frontier.rentalMons[i].monId;\n        sFactorySelectScreen->mons[i + firstMonId].monId = monId;\n        CreateMonWithEVSpreadNatureOTID(&sFactorySelectScreen->mons[i + firstMonId].monData,\n                                             gFacilityTrainerMons[monId].species,\n                                             level,\n                                             gFacilityTrainerMons[monId].nature,\n                                             ivs,\n                                             gFacilityTrainerMons[monId].evSpread,\n                                             otId);\n        friendship = 0;\n        for (j = 0; j < MAX_MON_MOVES; j++)\n            SetMonMoveAvoidReturn(&sFactorySelectScreen->mons[i + firstMonId].monData, gFacilityTrainerMons[monId].moves[j], j);\n        SetMonData(&sFactorySelectScreen->mons[i + firstMonId].monData, MON_DATA_FRIENDSHIP, &friendship);\n        SetMonData(&sFactorySelectScreen->mons[i + firstMonId].monData, MON_DATA_HELD_ITEM, &gBattleFrontierHeldItems[gFacilityTrainerMons[monId].itemTableId]);\n    }",
+      "callsTo": [
+        "CreateMonWithEVSpreadNatureOTID",
+        "SetMonData",
+        "SetMonMoveAvoidReturn",
+        "T1_READ_32"
+      ],
+      "lineCount": 26
+    },
+    "Select_CopyMonsToPlayerParty": {
+      "returnType": "void",
+      "signature": "static void Select_CopyMonsToPlayerParty(void)",
+      "paramsRaw": "void",
+      "body": "u8 i, j;\n\n    for (i = 0; i < FRONTIER_PARTY_SIZE; i++)\n    {\n        for (j = 0; j < SELECTABLE_MONS_COUNT; j++)\n        {\n            if (sFactorySelectScreen->mons[j].selectedId == i + 1)\n            {\n                gPlayerParty[i] = sFactorySelectScreen->mons[j].monData;\n                gSaveBlock2Ptr->frontier.rentalMons[i].monId = sFactorySelectScreen->mons[j].monId;\n                gSaveBlock2Ptr->frontier.rentalMons[i].personality = GetMonData(&gPlayerParty[i], MON_DATA_PERSONALITY, NULL);\n                gSaveBlock2Ptr->frontier.rentalMons[i].abilityNum = GetBoxMonData(&gPlayerParty[i].box, MON_DATA_ABILITY_NUM, NULL);\n                gSaveBlock2Ptr->frontier.rentalMons[i].ivs = GetBoxMonData(&gPlayerParty[i].box, MON_DATA_ATK_IV, NULL);\n                break;\n            }\n        }\n    }\n    CalculatePlayerPartyCount();",
+      "callsTo": [
+        "CalculatePlayerPartyCount",
+        "GetBoxMonData",
+        "GetMonData"
+      ],
+      "lineCount": 18
+    },
+    "Select_ShowMenuOptions": {
+      "returnType": "void",
+      "signature": "static void Select_ShowMenuOptions(void)",
+      "paramsRaw": "void",
+      "body": "if (!sFactorySelectScreen->fromSummaryScreen)\n        sFactorySelectScreen->menuCursorPos = 0;\n\n    gSprites[sFactorySelectScreen->menuCursor1SpriteId].x = 176;\n    gSprites[sFactorySelectScreen->menuCursor1SpriteId].y = (sFactorySelectScreen->menuCursorPos * 16) + 112;\n    gSprites[sFactorySelectScreen->menuCursor2SpriteId].x = 208;\n    gSprites[sFactorySelectScreen->menuCursor2SpriteId].y = (sFactorySelectScreen->menuCursorPos * 16) + 112;\n\n    gSprites[sFactorySelectScreen->menuCursor1SpriteId].invisible = FALSE;\n    gSprites[sFactorySelectScreen->menuCursor2SpriteId].invisible = FALSE;\n\n    Select_PrintMenuOptions();",
+      "callsTo": [
+        "Select_PrintMenuOptions"
+      ],
+      "lineCount": 12
+    },
+    "Select_ShowYesNoOptions": {
+      "returnType": "void",
+      "signature": "static void Select_ShowYesNoOptions(void)",
+      "paramsRaw": "void",
+      "body": "sFactorySelectScreen->yesNoCursorPos = 0;\n\n    gSprites[sFactorySelectScreen->menuCursor1SpriteId].x = 176;\n    gSprites[sFactorySelectScreen->menuCursor1SpriteId].y = 112;\n    gSprites[sFactorySelectScreen->menuCursor2SpriteId].x = 208;\n    gSprites[sFactorySelectScreen->menuCursor2SpriteId].y = 112;\n\n    gSprites[sFactorySelectScreen->menuCursor1SpriteId].invisible = FALSE;\n    gSprites[sFactorySelectScreen->menuCursor2SpriteId].invisible = FALSE;\n\n    Select_PrintYesNoOptions();",
+      "callsTo": [
+        "Select_PrintYesNoOptions"
+      ],
+      "lineCount": 11
+    },
+    "Select_ErasePopupMenu": {
+      "returnType": "void",
+      "signature": "static void Select_ErasePopupMenu(u8 windowId)",
+      "paramsRaw": "u8 windowId",
+      "body": "gSprites[sFactorySelectScreen->menuCursor1SpriteId].invisible = TRUE;\n    gSprites[sFactorySelectScreen->menuCursor2SpriteId].invisible = TRUE;\n    FillWindowPixelBuffer(windowId, PIXEL_FILL(0));\n    CopyWindowToVram(windowId, COPYWIN_GFX);\n    ClearWindowTilemap(windowId);",
+      "callsTo": [
+        "ClearWindowTilemap",
+        "CopyWindowToVram",
+        "FillWindowPixelBuffer",
+        "PIXEL_FILL"
+      ],
+      "lineCount": 5
+    },
+    "Select_PrintRentalPkmnString": {
+      "returnType": "void",
+      "signature": "static void Select_PrintRentalPkmnString(void)",
+      "paramsRaw": "void",
+      "body": "FillWindowPixelBuffer(SELECT_WIN_TITLE, PIXEL_FILL(0));\n    AddTextPrinterParameterized(SELECT_WIN_TITLE, FONT_NORMAL, gText_RentalPkmn2, 2, 1, 0, NULL);\n    CopyWindowToVram(SELECT_WIN_TITLE, COPYWIN_FULL);",
+      "callsTo": [
+        "AddTextPrinterParameterized",
+        "CopyWindowToVram",
+        "FillWindowPixelBuffer",
+        "PIXEL_FILL"
+      ],
+      "lineCount": 3
+    },
+    "Select_PrintMonSpecies": {
+      "returnType": "void",
+      "signature": "static void Select_PrintMonSpecies(void)",
+      "paramsRaw": "void",
+      "body": "u16 species;\n    u8 x;\n    u8 monId = sFactorySelectScreen->cursorPos;\n\n    FillWindowPixelBuffer(SELECT_WIN_SPECIES, PIXEL_FILL(0));\n    species = GetMonData(&sFactorySelectScreen->mons[monId].monData, MON_DATA_SPECIES, NULL);\n    StringCopy(gStringVar4, gSpeciesNames[species]);\n    x = GetStringRightAlignXOffset(FONT_NORMAL, gStringVar4, 86);\n    AddTextPrinterParameterized3(SELECT_WIN_SPECIES, FONT_NORMAL, x, 1, sSpeciesNameTextColors, 0, gStringVar4);\n    CopyWindowToVram(SELECT_WIN_SPECIES, COPYWIN_GFX);",
+      "callsTo": [
+        "AddTextPrinterParameterized3",
+        "CopyWindowToVram",
+        "FillWindowPixelBuffer",
+        "GetMonData",
+        "GetStringRightAlignXOffset",
+        "PIXEL_FILL",
+        "StringCopy"
+      ],
+      "lineCount": 10
+    },
+    "Select_PrintSelectMonString": {
+      "returnType": "void",
+      "signature": "static void Select_PrintSelectMonString(void)",
+      "paramsRaw": "void",
+      "body": "const u8 *str = NULL;\n\n    FillWindowPixelBuffer(SELECT_WIN_INFO, PIXEL_FILL(0));\n    if (sFactorySelectScreen->selectingMonsState == 1)\n        str = gText_SelectFirstPkmn;\n    else if (sFactorySelectScreen->selectingMonsState == 2)\n        str = gText_SelectSecondPkmn;\n    else if (sFactorySelectScreen->selectingMonsState == 3)\n        str = gText_SelectThirdPkmn;\n    else\n        str = gText_TheseThreePkmnOkay;\n\n    AddTextPrinterParameterized(SELECT_WIN_INFO, FONT_NORMAL, str, 2, 5, 0, NULL);\n    CopyWindowToVram(SELECT_WIN_INFO, COPYWIN_GFX);",
+      "callsTo": [
+        "AddTextPrinterParameterized",
+        "CopyWindowToVram",
+        "FillWindowPixelBuffer",
+        "PIXEL_FILL"
+      ],
+      "lineCount": 14
+    },
+    "Select_PrintCantSelectSameMon": {
+      "returnType": "void",
+      "signature": "static void Select_PrintCantSelectSameMon(void)",
+      "paramsRaw": "void",
+      "body": "FillWindowPixelBuffer(SELECT_WIN_INFO, PIXEL_FILL(0));\n    AddTextPrinterParameterized(SELECT_WIN_INFO, FONT_NORMAL, gText_CantSelectSamePkmn, 2, 5, 0, NULL);\n    CopyWindowToVram(SELECT_WIN_INFO, COPYWIN_GFX);",
+      "callsTo": [
+        "AddTextPrinterParameterized",
+        "CopyWindowToVram",
+        "FillWindowPixelBuffer",
+        "PIXEL_FILL"
+      ],
+      "lineCount": 3
+    },
+    "Select_PrintMenuOptions": {
+      "returnType": "void",
+      "signature": "static void Select_PrintMenuOptions(void)",
+      "paramsRaw": "void",
+      "body": "u8 selectedId = sFactorySelectScreen->mons[sFactorySelectScreen->cursorPos].selectedId;\n\n    PutWindowTilemap(SELECT_WIN_OPTIONS);\n    FillWindowPixelBuffer(SELECT_WIN_OPTIONS, PIXEL_FILL(0));\n    AddTextPrinterParameterized3(SELECT_WIN_OPTIONS, FONT_NORMAL, 7, 1, sMenuOptionTextColors, 0, gText_Summary);\n    if (selectedId != 0)\n        AddTextPrinterParameterized3(SELECT_WIN_OPTIONS, FONT_NORMAL, 7, 17, sMenuOptionTextColors, 0, gText_Deselect);\n    else\n        AddTextPrinterParameterized3(SELECT_WIN_OPTIONS, FONT_NORMAL, 7, 17, sMenuOptionTextColors, 0, gText_Rent);\n\n    AddTextPrinterParameterized3(SELECT_WIN_OPTIONS, FONT_NORMAL, 7, 33, sMenuOptionTextColors, 0, gText_Others2);\n    CopyWindowToVram(SELECT_WIN_OPTIONS, COPYWIN_FULL);",
+      "callsTo": [
+        "AddTextPrinterParameterized3",
+        "CopyWindowToVram",
+        "FillWindowPixelBuffer",
+        "PIXEL_FILL",
+        "PutWindowTilemap"
+      ],
+      "lineCount": 12
+    },
+    "Select_PrintYesNoOptions": {
+      "returnType": "void",
+      "signature": "static void Select_PrintYesNoOptions(void)",
+      "paramsRaw": "void",
+      "body": "PutWindowTilemap(SELECT_WIN_YES_NO);\n    FillWindowPixelBuffer(SELECT_WIN_YES_NO, PIXEL_FILL(0));\n    AddTextPrinterParameterized3(SELECT_WIN_YES_NO, FONT_NORMAL, 7, 1, sMenuOptionTextColors, 0, gText_Yes2);\n    AddTextPrinterParameterized3(SELECT_WIN_YES_NO, FONT_NORMAL, 7, 17, sMenuOptionTextColors, 0, gText_No2);\n    CopyWindowToVram(SELECT_WIN_YES_NO, COPYWIN_FULL);",
+      "callsTo": [
+        "AddTextPrinterParameterized3",
+        "CopyWindowToVram",
+        "FillWindowPixelBuffer",
+        "PIXEL_FILL",
+        "PutWindowTilemap"
+      ],
+      "lineCount": 5
+    },
+    "Select_RunMenuOptionFunc": {
+      "returnType": "u8",
+      "signature": "static u8 Select_RunMenuOptionFunc(void)",
+      "paramsRaw": "void",
+      "body": "gFactorySelect_CurrentOptionFunc = sSelect_MenuOptionFuncs[sFactorySelectScreen->menuCursorPos];\n    return gFactorySelect_CurrentOptionFunc();",
+      "callsTo": [],
+      "lineCount": 2
+    },
+    "Select_OptionRentDeselect": {
+      "returnType": "u8",
+      "signature": "static u8 Select_OptionRentDeselect(void)",
+      "paramsRaw": "void",
+      "body": "u8 selectedId = sFactorySelectScreen->mons[sFactorySelectScreen->cursorPos].selectedId;\n    u16 monId  = sFactorySelectScreen->mons[sFactorySelectScreen->cursorPos].monId;\n    if (selectedId == 0 && !Select_AreSpeciesValid(monId))\n    {\n        Select_PrintCantSelectSameMon();\n        Select_ErasePopupMenu(SELECT_WIN_OPTIONS);\n        return SELECT_INVALID_MON;\n    }\n    else\n    {\n        CloseMonPic(sFactorySelectScreen->monPics[1], &sFactorySelectScreen->monPicAnimating, FALSE);\n        Select_HandleMonSelectionChange();\n        Select_PrintSelectMonString();\n        Select_ErasePopupMenu(SELECT_WIN_OPTIONS);\n        if (sFactorySelectScreen->selectingMonsState > FRONTIER_PARTY_SIZE)\n            return SELECT_CONFIRM_MONS;\n        else\n            return SELECT_CONTINUE_CHOOSING;\n    }",
+      "callsTo": [
+        "CloseMonPic",
+        "Select_AreSpeciesValid",
+        "Select_ErasePopupMenu",
+        "Select_HandleMonSelectionChange",
+        "Select_PrintCantSelectSameMon",
+        "Select_PrintSelectMonString"
+      ],
+      "lineCount": 19
+    },
+    "Select_DeclineChosenMons": {
+      "returnType": "u8",
+      "signature": "static u8 Select_DeclineChosenMons(void)",
+      "paramsRaw": "void",
+      "body": "Select_HideChosenMons();\n    Select_HandleMonSelectionChange();\n    Select_PrintSelectMonString();\n    Select_ErasePopupMenu(SELECT_WIN_OPTIONS);\n    if (sFactorySelectScreen->selectingMonsState > FRONTIER_PARTY_SIZE)\n        return 2;\n    else\n        return 1;",
+      "callsTo": [
+        "Select_ErasePopupMenu",
+        "Select_HandleMonSelectionChange",
+        "Select_HideChosenMons",
+        "Select_PrintSelectMonString"
+      ],
+      "lineCount": 8
+    },
+    "Select_OptionSummary": {
+      "returnType": "u8",
+      "signature": "static u8 Select_OptionSummary(void)",
+      "paramsRaw": "void",
+      "body": "return SELECT_SUMMARY;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "Select_OptionOthers": {
+      "returnType": "u8",
+      "signature": "static u8 Select_OptionOthers(void)",
+      "paramsRaw": "void",
+      "body": "CloseMonPic(sFactorySelectScreen->monPics[1], &sFactorySelectScreen->monPicAnimating, FALSE);\n    Select_ErasePopupMenu(SELECT_WIN_OPTIONS);\n    return SELECT_CONTINUE_CHOOSING;",
+      "callsTo": [
+        "CloseMonPic",
+        "Select_ErasePopupMenu"
+      ],
+      "lineCount": 3
+    },
+    "Select_PrintMonCategory": {
+      "returnType": "void",
+      "signature": "static void Select_PrintMonCategory(void)",
+      "paramsRaw": "void",
+      "body": "u16 species;\n    u8 text[30];\n    u8 x;\n    u8 monId = sFactorySelectScreen->cursorPos;\n    if (monId < SELECTABLE_MONS_COUNT)\n    {\n        PutWindowTilemap(SELECT_WIN_MON_CATEGORY);\n        FillWindowPixelBuffer(SELECT_WIN_MON_CATEGORY, PIXEL_FILL(0));\n        species = GetMonData(&sFactorySelectScreen->mons[monId].monData, MON_DATA_SPECIES, NULL);\n        CopyMonCategoryText(SpeciesToNationalPokedexNum(species), text);\n        x = GetStringRightAlignXOffset(FONT_NORMAL, text, 118);\n        AddTextPrinterParameterized(SELECT_WIN_MON_CATEGORY, FONT_NORMAL, text, x, 1, 0, NULL);\n        CopyWindowToVram(SELECT_WIN_MON_CATEGORY, COPYWIN_GFX);\n    }",
+      "callsTo": [
+        "AddTextPrinterParameterized",
+        "CopyMonCategoryText",
+        "CopyWindowToVram",
+        "FillWindowPixelBuffer",
+        "GetMonData",
+        "GetStringRightAlignXOffset",
+        "PIXEL_FILL",
+        "PutWindowTilemap",
+        "SpeciesToNationalPokedexNum"
+      ],
+      "lineCount": 14
+    },
+    "Select_CreateMonSprite": {
+      "returnType": "void",
+      "signature": "static void Select_CreateMonSprite(void)",
+      "paramsRaw": "void",
+      "body": "u8 monId = sFactorySelectScreen->cursorPos;\n    struct Pokemon *mon = &sFactorySelectScreen->mons[monId].monData;\n    u16 species = GetMonData(mon, MON_DATA_SPECIES, NULL);\n    u32 personality = GetMonData(mon, MON_DATA_PERSONALITY, NULL);\n    u32 otId = GetMonData(mon, MON_DATA_OT_ID, NULL);\n\n    sFactorySelectScreen->monPics[1].monSpriteId = CreateMonPicSprite_HandleDeoxys(species, otId, personality, TRUE, 88, 32, 15, TAG_NONE);\n    gSprites[sFactorySelectScreen->monPics[1].monSpriteId].centerToCornerVecX = 0;\n    gSprites[sFactorySelectScreen->monPics[1].monSpriteId].centerToCornerVecY = 0;\n\n    sFactorySelectScreen->monPicAnimating = FALSE;",
+      "callsTo": [
+        "CreateMonPicSprite_HandleDeoxys",
+        "GetMonData"
+      ],
+      "lineCount": 11
+    },
+    "Select_SetMonPicAnimating": {
+      "returnType": "void",
+      "signature": "static void Select_SetMonPicAnimating(bool8 animating)",
+      "paramsRaw": "bool8 animating",
+      "body": "sFactorySelectScreen->monPicAnimating = animating;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "Select_ReshowMonSprite": {
+      "returnType": "void",
+      "signature": "static void Select_ReshowMonSprite(void)",
+      "paramsRaw": "void",
+      "body": "struct Pokemon *mon;\n    u16 species;\n    u32 personality, otId;\n\n    sFactorySelectScreen->monPics[1].bgSpriteId = CreateSprite(&sSpriteTemplate_Select_MonPicBgAnim, 120, 64, 1);\n    StartSpriteAffineAnim(&gSprites[sFactorySelectScreen->monPics[1].bgSpriteId], 2);\n\n    mon = &sFactorySelectScreen->mons[sFactorySelectScreen->cursorPos].monData;\n    species = GetMonData(mon, MON_DATA_SPECIES, NULL);\n    personality = GetMonData(mon, MON_DATA_PERSONALITY, NULL);\n    otId = GetMonData(mon, MON_DATA_OT_ID, NULL);\n\n    sFactorySelectScreen->monPics[1].monSpriteId = CreateMonPicSprite_HandleDeoxys(species, otId, personality, TRUE, 88, 32, 15, TAG_NONE);\n    gSprites[sFactorySelectScreen->monPics[1].monSpriteId].centerToCornerVecX = 0;\n    gSprites[sFactorySelectScreen->monPics[1].monSpriteId].centerToCornerVecY = 0;\n\n    gSprites[sFactorySelectScreen->monPics[1].bgSpriteId].invisible = TRUE;",
+      "callsTo": [
+        "CreateMonPicSprite_HandleDeoxys",
+        "CreateSprite",
+        "GetMonData",
+        "StartSpriteAffineAnim"
+      ],
+      "lineCount": 17
+    },
+    "Select_CreateChosenMonsSprites": {
+      "returnType": "void",
+      "signature": "static void Select_CreateChosenMonsSprites(void)",
+      "paramsRaw": "void",
+      "body": "u8 i, j;\n\n    for (i = 0; i < FRONTIER_PARTY_SIZE; i++)\n    {\n        for (j = 0; j < SELECTABLE_MONS_COUNT; j++)\n        {\n            if (sFactorySelectScreen->mons[j].selectedId == i + 1)\n            {\n                struct Pokemon *mon = &sFactorySelectScreen->mons[j].monData;\n                u16 species = GetMonData(mon, MON_DATA_SPECIES, NULL);\n                u32 personality = GetMonData(mon, MON_DATA_PERSONALITY, NULL);\n                u32 otId = GetMonData(mon, MON_DATA_OT_ID, NULL);\n\n                sFactorySelectScreen->monPics[i].monSpriteId = CreateMonPicSprite_HandleDeoxys(species, otId, personality, TRUE, (i * 72) + 16, 32, i + 13, TAG_NONE);\n                gSprites[sFactorySelectScreen->monPics[i].monSpriteId].centerToCornerVecX = 0;\n                gSprites[sFactorySelectScreen->monPics[i].monSpriteId].centerToCornerVecY = 0;\n                break;\n            }\n        }\n    }\n    sFactorySelectScreen->monPicAnimating = FALSE;",
+      "callsTo": [
+        "CreateMonPicSprite_HandleDeoxys",
+        "GetMonData"
+      ],
+      "lineCount": 21
+    },
+    "SpriteCB_OpenChosenMonPics": {
+      "returnType": "void",
+      "signature": "static void SpriteCB_OpenChosenMonPics(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "u8 taskId;\n\n     \n    if (sprite->affineAnimEnded\n        && gSprites[sFactorySelectScreen->monPics[0].bgSpriteId].affineAnimEnded\n        && gSprites[sFactorySelectScreen->monPics[2].bgSpriteId].affineAnimEnded)\n    {\n        sprite->invisible = TRUE;\n        gSprites[sFactorySelectScreen->monPics[0].bgSpriteId].invisible = TRUE;\n        gSprites[sFactorySelectScreen->monPics[2].bgSpriteId].invisible = TRUE;\n\n        taskId = CreateTask(Select_Task_OpenChosenMonPics, 1);\n        gTasks[taskId].func(taskId);\n\n        sprite->callback = SpriteCallbackDummy;\n    }",
+      "callsTo": [
+        "CreateTask"
+      ],
+      "lineCount": 16
+    },
+    "SpriteCB_CloseChosenMonPics": {
+      "returnType": "void",
+      "signature": "static void SpriteCB_CloseChosenMonPics(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "if (sprite->affineAnimEnded\n        && gSprites[sFactorySelectScreen->monPics[0].bgSpriteId].affineAnimEnded\n        && gSprites[sFactorySelectScreen->monPics[2].bgSpriteId].affineAnimEnded)\n    {\n        FreeOamMatrix(sprite->oam.matrixNum);\n        FreeOamMatrix(gSprites[sFactorySelectScreen->monPics[0].bgSpriteId].oam.matrixNum);\n        FreeOamMatrix(gSprites[sFactorySelectScreen->monPics[2].bgSpriteId].oam.matrixNum);\n\n        sFactorySelectScreen->monPicAnimating = FALSE;\n\n        DestroySprite(&gSprites[sFactorySelectScreen->monPics[0].bgSpriteId]);\n        DestroySprite(&gSprites[sFactorySelectScreen->monPics[2].bgSpriteId]);\n        DestroySprite(sprite);\n    }",
+      "callsTo": [
+        "DestroySprite",
+        "FreeOamMatrix"
+      ],
+      "lineCount": 14
+    },
+    "Select_Task_OpenChosenMonPics": {
+      "returnType": "void",
+      "signature": "static void Select_Task_OpenChosenMonPics(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "struct Task *task = &gTasks[taskId];\n    switch (task->tState)\n    {\n    case 0:\n        task->tWinLeft = 16;\n        task->tWinRight = DISPLAY_WIDTH - 16;\n        task->tWinTop = 64;\n        task->tWinBottom = 65;\n        SetGpuRegBits(REG_OFFSET_DISPCNT, DISPCNT_WIN0_ON);\n        SetGpuReg(REG_OFFSET_WIN0H, WIN_RANGE(task->tWinLeft, task->tWinRight));\n        SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(task->tWinTop, task->tWinBottom));\n        SetGpuReg(REG_OFFSET_WININ, WININ_WIN0_BG_ALL | WININ_WIN0_CLR | WININ_WIN0_OBJ);\n        SetGpuReg(REG_OFFSET_WINOUT, WINOUT_WIN01_BG0 | WINOUT_WIN01_BG1 | WINOUT_WIN01_BG2 | WINOUT_WIN01_CLR | WINOUT_WIN01_OBJ);\n        break;\n    case 1:\n        ShowBg(3);\n        SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_TGT1_BG3 | BLDCNT_EFFECT_BLEND | BLDCNT_TGT2_BG1 | BLDCNT_TGT2_OBJ);\n        SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(11, 4));\n        break;\n    case 2:\n        task->tWinTop -= 4;\n        task->tWinBottom += 4;\n        if (task->tWinTop <= 32 || task->tWinBottom >= 96)\n        {\n            task->tWinTop = 32;\n            task->tWinBottom = 96;\n            ClearGpuRegBits(REG_OFFSET_DISPCNT, DISPCNT_WIN0_ON);\n        }\n        SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(task->tWinTop, task->tWinBottom));\n        if (task->tWinTop != 32)\n            return;\n        break;\n    default:\n        DestroyTask(taskId);\n        Select_CreateChosenMonsSprites();\n        return;\n    }\n    task->tState++;",
+      "callsTo": [
+        "BLDALPHA_BLEND",
+        "ClearGpuRegBits",
+        "DestroyTask",
+        "Select_CreateChosenMonsSprites",
+        "SetGpuReg",
+        "SetGpuRegBits",
+        "ShowBg",
+        "WIN_RANGE"
+      ],
+      "lineCount": 38
+    },
+    "Select_Task_CloseChosenMonPics": {
+      "returnType": "void",
+      "signature": "static void Select_Task_CloseChosenMonPics(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "struct Task *task = &gTasks[taskId];\n    switch (task->tState)\n    {\n    case 0:\n        task->tWinLeft = 16;\n        task->tWinRight = DISPLAY_WIDTH - 16;\n        task->tWinTop = 32;\n        task->tWinBottom = 96;\n        SetGpuRegBits(REG_OFFSET_DISPCNT, DISPCNT_WIN0_ON);\n        SetGpuReg(REG_OFFSET_WIN0H, WIN_RANGE(task->tWinLeft, task->tWinRight));\n        SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(task->tWinTop, task->tWinBottom));\n        SetGpuReg(REG_OFFSET_WININ, WININ_WIN0_BG_ALL | WININ_WIN0_CLR | WININ_WIN0_OBJ);\n        SetGpuReg(REG_OFFSET_WINOUT, WINOUT_WIN01_BG0 | WINOUT_WIN01_BG1 | WINOUT_WIN01_BG2 | WINOUT_WIN01_CLR | WINOUT_WIN01_OBJ);\n        task->tState++;\n        break;\n    case 1:\n        task->tWinTop += 4;\n        task->tWinBottom -= 4;\n        if (task->tWinTop >= 64 || task->tWinBottom <= 65)\n        {\n            task->tWinTop = 64;\n            task->tWinBottom = 65;\n        }\n        SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(task->tWinTop, task->tWinBottom));\n        if (task->tWinTop == 64)\n            task->tState++;\n        break;\n    default:\n        HideBg(3);\n        gSprites[sFactorySelectScreen->monPics[1].bgSpriteId].invisible = FALSE;\n        gSprites[sFactorySelectScreen->monPics[1].bgSpriteId].callback = SpriteCB_CloseChosenMonPics;\n        gSprites[sFactorySelectScreen->monPics[0].bgSpriteId].invisible = FALSE;\n        gSprites[sFactorySelectScreen->monPics[0].bgSpriteId].callback = SpriteCallbackDummy;\n        gSprites[sFactorySelectScreen->monPics[2].bgSpriteId].invisible = FALSE;\n        gSprites[sFactorySelectScreen->monPics[2].bgSpriteId].callback = SpriteCallbackDummy;\n        StartSpriteAffineAnim(&gSprites[sFactorySelectScreen->monPics[1].bgSpriteId], 1);\n        StartSpriteAffineAnim(&gSprites[sFactorySelectScreen->monPics[0].bgSpriteId], 1);\n        StartSpriteAffineAnim(&gSprites[sFactorySelectScreen->monPics[2].bgSpriteId], 1);\n        ClearGpuRegBits(REG_OFFSET_DISPCNT, DISPCNT_WIN0_ON);\n        DestroyTask(taskId);\n        break;\n    }",
+      "callsTo": [
+        "ClearGpuRegBits",
+        "DestroyTask",
+        "HideBg",
+        "SetGpuReg",
+        "SetGpuRegBits",
+        "StartSpriteAffineAnim",
+        "WIN_RANGE"
+      ],
+      "lineCount": 42
+    },
+    "Select_ShowChosenMons": {
+      "returnType": "void",
+      "signature": "static void Select_ShowChosenMons(void)",
+      "paramsRaw": "void",
+      "body": "sFactorySelectScreen->monPics[1].bgSpriteId = CreateSprite(&sSpriteTemplate_Select_MonPicBgAnim, 120, 64, 1);\n    sFactorySelectScreen->monPics[0].bgSpriteId = CreateSprite(&sSpriteTemplate_Select_MonPicBgAnim,  44, 64, 1);\n    sFactorySelectScreen->monPics[2].bgSpriteId = CreateSprite(&sSpriteTemplate_Select_MonPicBgAnim, 196, 64, 1);\n\n    gSprites[sFactorySelectScreen->monPics[1].bgSpriteId].callback = SpriteCB_OpenChosenMonPics;\n    gSprites[sFactorySelectScreen->monPics[0].bgSpriteId].callback = SpriteCallbackDummy;\n    gSprites[sFactorySelectScreen->monPics[2].bgSpriteId].callback = SpriteCallbackDummy;\n\n    sFactorySelectScreen->monPicAnimating = TRUE;",
+      "callsTo": [
+        "CreateSprite"
+      ],
+      "lineCount": 9
+    },
+    "Select_HideChosenMons": {
+      "returnType": "void",
+      "signature": "static void Select_HideChosenMons(void)",
+      "paramsRaw": "void",
+      "body": "u8 taskId;\n\n    FreeAndDestroyMonPicSprite(sFactorySelectScreen->monPics[0].monSpriteId);\n    FreeAndDestroyMonPicSprite(sFactorySelectScreen->monPics[1].monSpriteId);\n    FreeAndDestroyMonPicSprite(sFactorySelectScreen->monPics[2].monSpriteId);\n\n    taskId = CreateTask(Select_Task_CloseChosenMonPics, 1);\n    gTasks[taskId].func(taskId);\n\n    sFactorySelectScreen->monPicAnimating = TRUE;",
+      "callsTo": [
+        "CreateTask",
+        "FreeAndDestroyMonPicSprite"
+      ],
+      "lineCount": 10
+    },
+    "Select_SetWinRegs": {
+      "returnType": "void",
+      "signature": "static void Select_SetWinRegs(s16 mWin0H, s16 nWin0H, s16 mWin0V, s16 nWin0V)",
+      "paramsRaw": "s16 mWin0H, s16 nWin0H, s16 mWin0V, s16 nWin0V",
+      "body": "SetGpuRegBits(REG_OFFSET_DISPCNT, DISPCNT_WIN0_ON);\n    SetGpuReg(REG_OFFSET_WIN0H, WIN_RANGE(mWin0H, nWin0H));\n    SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(mWin0V, nWin0V));\n    SetGpuReg(REG_OFFSET_WININ, WININ_WIN0_BG_ALL | WININ_WIN0_CLR | WININ_WIN0_OBJ);\n    SetGpuReg(REG_OFFSET_WINOUT, WINOUT_WIN01_BG0 | WINOUT_WIN01_BG1 | WINOUT_WIN01_BG2 | WINOUT_WIN01_CLR | WINOUT_WIN01_OBJ);",
+      "callsTo": [
+        "SetGpuReg",
+        "SetGpuRegBits",
+        "WIN_RANGE"
+      ],
+      "lineCount": 5
+    },
+    "Select_AreSpeciesValid": {
+      "returnType": "bool32",
+      "signature": "static bool32 Select_AreSpeciesValid(u16 monId)",
+      "paramsRaw": "u16 monId",
+      "body": "u8 i, j;\n    u32 species = gFacilityTrainerMons[monId].species;\n    u8 selectState = sFactorySelectScreen->selectingMonsState;\n\n    for (i = 1; i < selectState; i++)\n    {\n        for (j = 0; j < SELECTABLE_MONS_COUNT; j++)\n        {\n            if (sFactorySelectScreen->mons[j].selectedId == i)\n            {\n                if (gFacilityTrainerMons[sFactorySelectScreen->mons[j].monId].species == species)\n                    return FALSE;\n\n                break;\n            }\n        }\n    }\n    return TRUE;",
+      "callsTo": [],
+      "lineCount": 18
+    },
+    "Select_Task_FadeSpeciesName": {
+      "returnType": "void",
+      "signature": "static void Select_Task_FadeSpeciesName(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "switch (gTasks[taskId].tState)\n    {\n    case FADESTATE_INIT:\n        sFactorySelectScreen->fadeSpeciesNameCoeffDelay = 0;\n        sFactorySelectScreen->fadeSpeciesNameCoeff = 0;\n        sFactorySelectScreen->fadeSpeciesNameFadeOut = TRUE;\n        gTasks[taskId].tState = FADESTATE_RUN;\n        break;\n    case FADESTATE_RUN:\n        if (sFactorySelectScreen->fadeSpeciesNameActive)\n        {\n            if (sFactorySelectScreen->faceSpeciesNameDelay)\n            {\n                gTasks[taskId].tState = FADESTATE_DELAY;\n            }\n            else\n            {\n                sFactorySelectScreen->fadeSpeciesNameCoeffDelay++;\n                if (sFactorySelectScreen->fadeSpeciesNameCoeffDelay > 6)\n                {\n                    sFactorySelectScreen->fadeSpeciesNameCoeffDelay = 0;\n                    if (!sFactorySelectScreen->fadeSpeciesNameFadeOut)\n                        sFactorySelectScreen->fadeSpeciesNameCoeff--;\n                    else\n                        sFactorySelectScreen->fadeSpeciesNameCoeff++;\n                }\n                BlendPalettes(1 << PALNUM_FADE_TEXT, sFactorySelectScreen->fadeSpeciesNameCoeff, 0);\n                if (sFactorySelectScreen->fadeSpeciesNameCoeff > 5)\n                {\n                    sFactorySelectScreen->fadeSpeciesNameFadeOut = FALSE;\n                }\n                else if (sFactorySelectScreen->fadeSpeciesNameCoeff == 0)\n                {\n                    gTasks[taskId].tState = FADESTATE_DELAY;\n                    sFactorySelectScreen->fadeSpeciesNameFadeOut = TRUE;\n                }\n            }\n        }\n        break;\n    case FADESTATE_DELAY:\n        if (sFactorySelectScreen->faceSpeciesNameDelay > 14)\n        {\n            sFactorySelectScreen->faceSpeciesNameDelay = 0;\n            gTasks[taskId].tState = FADESTATE_RUN;\n        }\n        else\n        {\n            sFactorySelectScreen->faceSpeciesNameDelay++;\n        }\n        break;\n    }",
+      "callsTo": [
+        "BlendPalettes"
+      ],
+      "lineCount": 51
+    },
+    "Swap_CB2": {
+      "returnType": "void",
+      "signature": "static void Swap_CB2(void)",
+      "paramsRaw": "void",
+      "body": "AnimateSprites();\n    BuildOamBuffer();\n    RunTextPrinters();\n    UpdatePaletteFade();\n    RunTasks();",
+      "callsTo": [
+        "AnimateSprites",
+        "BuildOamBuffer",
+        "RunTasks",
+        "RunTextPrinters",
+        "UpdatePaletteFade"
+      ],
+      "lineCount": 5
+    },
+    "Swap_VblankCb": {
+      "returnType": "void",
+      "signature": "static void Swap_VblankCb(void)",
+      "paramsRaw": "void",
+      "body": "LoadOam();\n    ProcessSpriteCopyRequests();\n    TransferPlttBuffer();",
+      "callsTo": [
+        "LoadOam",
+        "ProcessSpriteCopyRequests",
+        "TransferPlttBuffer"
+      ],
+      "lineCount": 3
+    },
+    "CopySwappedMonData": {
+      "returnType": "void",
+      "signature": "static void CopySwappedMonData(void)",
+      "paramsRaw": "void",
+      "body": "u8 friendship;\n\n    gPlayerParty[sFactorySwapScreen->playerMonId] = gEnemyParty[sFactorySwapScreen->enemyMonId];\n    friendship = 0;\n    SetMonData(&gPlayerParty[sFactorySwapScreen->playerMonId], MON_DATA_FRIENDSHIP, &friendship);\n    gSaveBlock2Ptr->frontier.rentalMons[sFactorySwapScreen->playerMonId].monId = gSaveBlock2Ptr->frontier.rentalMons[sFactorySwapScreen->enemyMonId + FRONTIER_PARTY_SIZE].monId;\n    gSaveBlock2Ptr->frontier.rentalMons[sFactorySwapScreen->playerMonId].ivs = gSaveBlock2Ptr->frontier.rentalMons[sFactorySwapScreen->enemyMonId + FRONTIER_PARTY_SIZE].ivs;\n    gSaveBlock2Ptr->frontier.rentalMons[sFactorySwapScreen->playerMonId].personality = GetMonData(&gEnemyParty[sFactorySwapScreen->enemyMonId], MON_DATA_PERSONALITY, NULL);\n    gSaveBlock2Ptr->frontier.rentalMons[sFactorySwapScreen->playerMonId].abilityNum = GetBoxMonData(&gEnemyParty[sFactorySwapScreen->enemyMonId].box, MON_DATA_ABILITY_NUM, NULL);",
+      "callsTo": [
+        "GetBoxMonData",
+        "GetMonData",
+        "SetMonData"
+      ],
+      "lineCount": 9
+    },
+    "Swap_Task_OpenSummaryScreen": {
+      "returnType": "void",
+      "signature": "static void Swap_Task_OpenSummaryScreen(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "switch (gTasks[taskId].tState)\n    {\n    case STATE_SUMMARY_FADE:\n        BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);\n        gTasks[taskId].tState = STATE_SUMMARY_CLEAN;\n        break;\n    case STATE_SUMMARY_CLEAN:\n        if (!gPaletteFade.active)\n        {\n            DestroyTask(sFactorySwapScreen->fadeSpeciesNameTaskId);\n            HideMonPic(sFactorySwapScreen->monPic, &sFactorySwapScreen->monPicAnimating);\n            Swap_DestroyAllSprites();\n            FREE_AND_SET_NULL(sSwapMenuTilesetBuffer);\n            FREE_AND_SET_NULL(sSwapMonPicBgTilesetBuffer);\n            FREE_AND_SET_NULL(sSwapMenuTilemapBuffer);\n            FREE_AND_SET_NULL(sSwapMonPicBgTilemapBuffer);\n            FreeAllWindowBuffers();\n            gTasks[taskId].tState = STATE_SUMMARY_SHOW;\n        }\n        break;\n    case STATE_SUMMARY_SHOW:\n        DestroyTask(taskId);\n        sFactorySwapScreen->fromSummaryScreen = TRUE;\n        sFactorySwapScreen->speciesNameColorBackup = gPlttBufferUnfaded[BG_PLTT_ID(PALNUM_TEXT) + 4];\n        ShowPokemonSummaryScreen(SUMMARY_MODE_NORMAL, gPlayerParty, sFactorySwapScreen->cursorPos, FRONTIER_PARTY_SIZE - 1, CB2_InitSwapScreen);\n        break;\n    }",
+      "callsTo": [
+        "BG_PLTT_ID",
+        "BeginNormalPaletteFade",
+        "DestroyTask",
+        "FREE_AND_SET_NULL",
+        "FreeAllWindowBuffers",
+        "HideMonPic",
+        "ShowPokemonSummaryScreen",
+        "Swap_DestroyAllSprites"
+      ],
+      "lineCount": 27
+    },
+    "Swap_Task_Exit": {
+      "returnType": "void",
+      "signature": "static void Swap_Task_Exit(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "if (sFactorySwapScreen->monPicAnimating == TRUE)\n        return;\n\n    switch (gTasks[taskId].tState)\n    {\n    case 0:\n         \n         \n        if (sFactorySwapScreen->monSwapped == TRUE)\n        {\n            gTasks[taskId].tState++;\n            gSpecialVar_Result = FALSE;\n        }\n        else\n        {\n            gTasks[taskId].tState = 2;\n            gSpecialVar_Result = TRUE;\n        }\n        break;\n    case 1:\n        if (sFactorySwapScreen->monSwapped == TRUE)\n        {\n            sFactorySwapScreen->enemyMonId = sFactorySwapScreen->cursorPos;\n            CopySwappedMonData();\n        }\n        gTasks[taskId].tState++;\n        break;\n    case 2:\n        BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);\n        gTasks[taskId].tState++;\n        break;\n    case 3:\n        if (!UpdatePaletteFade())\n        {\n            DestroyTask(sFactorySwapScreen->fadeSpeciesNameTaskId);\n            Swap_DestroyAllSprites();\n            FREE_AND_SET_NULL(sSwapMenuTilesetBuffer);\n            FREE_AND_SET_NULL(sSwapMonPicBgTilesetBuffer);\n            FREE_AND_SET_NULL(sSwapMenuTilemapBuffer);\n            FREE_AND_SET_NULL(sSwapMonPicBgTilemapBuffer);\n            FREE_AND_SET_NULL(sFactorySwapScreen);\n            FreeAllWindowBuffers();\n            SetMainCallback2(CB2_ReturnToFieldContinueScript);\n            DestroyTask(taskId);\n        }\n        break;\n    }",
+      "callsTo": [
+        "BeginNormalPaletteFade",
+        "CopySwappedMonData",
+        "DestroyTask",
+        "FREE_AND_SET_NULL",
+        "FreeAllWindowBuffers",
+        "SetMainCallback2",
+        "Swap_DestroyAllSprites",
+        "UpdatePaletteFade"
+      ],
+      "lineCount": 47
+    },
+    "Swap_Task_HandleYesNo": {
+      "returnType": "void",
+      "signature": "static void Swap_Task_HandleYesNo(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "u16 loPtr, hiPtr;\n\n    if (sFactorySwapScreen->monPicAnimating == TRUE)\n        return;\n\n    switch (gTasks[taskId].tState)\n    {\n    case STATE_YESNO_SHOW:\n        Swap_ShowYesNoOptions();\n        gTasks[taskId].tState = STATE_YESNO_HANDLE_INPUT;\n        break;\n    case STATE_YESNO_HANDLE_INPUT:\n        if (JOY_NEW(A_BUTTON))\n        {\n            PlaySE(SE_SELECT);\n            if (sFactorySwapScreen->yesNoCursorPos == 0)\n            {\n                 \n                gTasks[taskId].tSaidYes = TRUE;\n                hiPtr = gTasks[taskId].tFollowUpTaskPtrHi;\n                loPtr = gTasks[taskId].tFollowUpTaskPtrLo;\n                gTasks[taskId].func = (void *)((hiPtr << 16) | loPtr);\n            }\n            else\n            {\n                 \n                gTasks[taskId].tSaidYes = FALSE;\n                Swap_ErasePopupMenu(SWAP_WIN_YES_NO);\n                hiPtr = gTasks[taskId].tFollowUpTaskPtrHi;\n                loPtr = gTasks[taskId].tFollowUpTaskPtrLo;\n                gTasks[taskId].func = (void *)((hiPtr << 16) | loPtr);\n            }\n        }\n        else if (JOY_NEW(B_BUTTON))\n        {\n            PlaySE(SE_SELECT);\n            gTasks[taskId].tSaidYes = FALSE;\n            Swap_ErasePopupMenu(SWAP_WIN_YES_NO);\n            hiPtr = gTasks[taskId].tFollowUpTaskPtrHi;\n            loPtr = gTasks[taskId].tFollowUpTaskPtrLo;\n            gTasks[taskId].func = (void *)((hiPtr << 16) | loPtr);\n        }\n        else if (JOY_REPEAT(DPAD_UP))\n        {\n            PlaySE(SE_SELECT);\n            Swap_UpdateYesNoCursorPosition(-1);\n        }\n        else if (JOY_REPEAT(DPAD_DOWN))\n        {\n            PlaySE(SE_SELECT);\n            Swap_UpdateYesNoCursorPosition(1);\n        }\n        break;\n    }",
+      "callsTo": [
+        "JOY_NEW",
+        "JOY_REPEAT",
+        "PlaySE",
+        "Swap_ErasePopupMenu",
+        "Swap_ShowYesNoOptions",
+        "Swap_UpdateYesNoCursorPosition"
+      ],
+      "lineCount": 54
+    },
+    "Swap_HandleQuitSwappingResponse": {
+      "returnType": "void",
+      "signature": "static void Swap_HandleQuitSwappingResponse(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "if (gTasks[taskId].tSaidYes == TRUE)\n    {\n        gTasks[taskId].tState = 0;\n        gTasks[taskId].func = Swap_Task_Exit;\n    }\n    else\n    {\n        gTasks[taskId].tState = 0;\n        gTasks[taskId].tFollowUpTaskPtrHi = (u32)(Swap_Task_HandleChooseMons) >> 16;\n        gTasks[taskId].tFollowUpTaskPtrLo = (u32)(Swap_Task_HandleChooseMons);\n        gTasks[taskId].tFollowUpTaskState = STATE_CHOOSE_MONS_HANDLE_INPUT;\n        gTasks[taskId].func = Swap_Task_ScreenInfoTransitionIn;\n    }",
+      "callsTo": [],
+      "lineCount": 13
+    },
+    "Swap_AskQuitSwapping": {
+      "returnType": "void",
+      "signature": "static void Swap_AskQuitSwapping(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "if (gTasks[taskId].tState == 0)\n    {\n        Swap_PrintOnInfoWindow(gText_QuitSwapping);\n        sFactorySwapScreen->monSwapped = FALSE;\n        gTasks[taskId].tState = STATE_YESNO_SHOW;\n        gTasks[taskId].tFollowUpTaskPtrHi = (u32)(Swap_HandleQuitSwappingResponse) >> 16;\n        gTasks[taskId].tFollowUpTaskPtrLo = (u32)(Swap_HandleQuitSwappingResponse);\n        gTasks[taskId].func = Swap_Task_HandleYesNo;\n    }",
+      "callsTo": [
+        "Swap_PrintOnInfoWindow"
+      ],
+      "lineCount": 9
+    },
+    "Swap_HandleAcceptMonResponse": {
+      "returnType": "void",
+      "signature": "static void Swap_HandleAcceptMonResponse(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "CloseMonPic(sFactorySwapScreen->monPic, &sFactorySwapScreen->monPicAnimating, TRUE);\n    if (gTasks[taskId].tSaidYes == TRUE)\n    {\n        gTasks[taskId].tState = 0;\n        gTasks[taskId].func = Swap_Task_Exit;\n    }\n    else\n    {\n        gTasks[taskId].tState = 0;\n        gTasks[taskId].tFollowUpTaskPtrHi = (u32)(Swap_Task_HandleChooseMons) >> 16;\n        gTasks[taskId].tFollowUpTaskPtrLo = (u32)(Swap_Task_HandleChooseMons);\n        gTasks[taskId].tFollowUpTaskState = STATE_CHOOSE_MONS_HANDLE_INPUT;\n        gTasks[taskId].func = Swap_Task_ScreenInfoTransitionIn;\n    }",
+      "callsTo": [
+        "CloseMonPic"
+      ],
+      "lineCount": 14
+    },
+    "Swap_AskAcceptMon": {
+      "returnType": "void",
+      "signature": "static void Swap_AskAcceptMon(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "if (gTasks[taskId].tState == 0)\n    {\n        OpenMonPic(&sFactorySwapScreen->monPic.bgSpriteId, &sFactorySwapScreen->monPicAnimating, TRUE);\n        Swap_PrintOnInfoWindow(gText_AcceptThisPkmn);\n        sFactorySwapScreen->monSwapped = TRUE;\n        gTasks[taskId].tState = STATE_YESNO_SHOW;\n        gTasks[taskId].tFollowUpTaskPtrHi = (u32)(Swap_HandleAcceptMonResponse) >> 16;\n        gTasks[taskId].tFollowUpTaskPtrLo = (u32)(Swap_HandleAcceptMonResponse);\n        gTasks[taskId].func = Swap_Task_HandleYesNo;\n    }",
+      "callsTo": [
+        "OpenMonPic",
+        "Swap_PrintOnInfoWindow"
+      ],
+      "lineCount": 10
+    },
+    "Swap_Task_HandleMenu": {
+      "returnType": "void",
+      "signature": "static void Swap_Task_HandleMenu(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "switch (gTasks[taskId].tState)\n    {\n    case STATE_MENU_INIT:\n        if (!sFactorySwapScreen->fromSummaryScreen)\n            OpenMonPic(&sFactorySwapScreen->monPic.bgSpriteId, &sFactorySwapScreen->monPicAnimating, TRUE);\n        gTasks[taskId].tState = STATE_MENU_SHOW_OPTIONS;\n        break;\n    case STATE_MENU_SHOW_OPTIONS:\n        if (sFactorySwapScreen->monPicAnimating != TRUE)\n        {\n            Swap_ShowMenuOptions();\n            gTasks[taskId].tState = STATE_MENU_HANDLE_INPUT;\n        }\n        break;\n    case STATE_MENU_HANDLE_INPUT:\n        if (sFactorySwapScreen->monPicAnimating != TRUE)\n        {\n            if (JOY_NEW(A_BUTTON))\n            {\n                PlaySE(SE_SELECT);\n                Swap_RunMenuOptionFunc(taskId);\n            }\n            else if (JOY_NEW(B_BUTTON))\n            {\n                PlaySE(SE_SELECT);\n                CloseMonPic(sFactorySwapScreen->monPic, &sFactorySwapScreen->monPicAnimating, TRUE);\n                Swap_ErasePopupMenu(SWAP_WIN_OPTIONS);\n                gTasks[taskId].tState = 0;\n                gTasks[taskId].tFollowUpTaskPtrHi = (u32)(Swap_Task_HandleChooseMons) >> 16;\n                gTasks[taskId].tFollowUpTaskPtrLo = (u32)(Swap_Task_HandleChooseMons);\n                gTasks[taskId].tFollowUpTaskState = STATE_CHOOSE_MONS_HANDLE_INPUT;\n                gTasks[taskId].func = Swap_Task_ScreenInfoTransitionIn;\n            }\n            else if (JOY_REPEAT(DPAD_UP))\n            {\n                Swap_UpdateMenuCursorPosition(-1);\n            }\n            else if (JOY_REPEAT(DPAD_DOWN))\n            {\n                Swap_UpdateMenuCursorPosition(1);\n            }\n        }\n        break;\n    }",
+      "callsTo": [
+        "CloseMonPic",
+        "JOY_NEW",
+        "JOY_REPEAT",
+        "OpenMonPic",
+        "PlaySE",
+        "Swap_ErasePopupMenu",
+        "Swap_RunMenuOptionFunc",
+        "Swap_ShowMenuOptions",
+        "Swap_UpdateMenuCursorPosition"
+      ],
+      "lineCount": 44
+    },
+    "Swap_Task_HandleChooseMons": {
+      "returnType": "void",
+      "signature": "static void Swap_Task_HandleChooseMons(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "switch (gTasks[taskId].tState)\n    {\n    case STATE_CHOOSE_MONS_INIT:\n        if (!gPaletteFade.active)\n        {\n            sFactorySwapScreen->fadeSpeciesNameActive = TRUE;\n            gTasks[taskId].tState = STATE_CHOOSE_MONS_HANDLE_INPUT;\n        }\n        break;\n    case STATE_CHOOSE_MONS_HANDLE_INPUT:\n        if (JOY_NEW(A_BUTTON))\n        {\n             \n            PlaySE(SE_SELECT);\n            sFactorySwapScreen->fadeSpeciesNameActive = FALSE;\n            Swap_PrintMonSpeciesAtFade();\n            Swap_EraseSpeciesWindow();\n            Swap_RunActionFunc(taskId);\n        }\n        else if (JOY_NEW(B_BUTTON))\n        {\n             \n            PlaySE(SE_SELECT);\n            sFactorySwapScreen->fadeSpeciesNameActive = FALSE;\n            Swap_PrintMonSpeciesAtFade();\n            Swap_EraseSpeciesWindow();\n            gTasks[taskId].tFollowUpTaskPtrHi = (u32)(Swap_AskQuitSwapping) >> 16;\n            gTasks[taskId].tFollowUpTaskPtrLo = (u32)(Swap_AskQuitSwapping);\n            gTasks[taskId].tState = 0;\n            gTasks[taskId].tFollowUpTaskState = 0;\n            gTasks[taskId].func = Swap_Task_ScreenInfoTransitionOut;\n        }\n        else if (JOY_REPEAT(DPAD_LEFT))\n        {\n            Swap_UpdateBallCursorPosition(-1);\n            Swap_PrintMonCategory();\n            Swap_PrintMonSpecies();\n        }\n        else if (JOY_REPEAT(DPAD_RIGHT))\n        {\n            Swap_UpdateBallCursorPosition(1);\n            Swap_PrintMonCategory();\n            Swap_PrintMonSpecies();\n        }\n        else if (JOY_REPEAT(DPAD_DOWN))\n        {\n            Swap_UpdateActionCursorPosition(1);\n            Swap_PrintMonCategory();\n            Swap_PrintMonSpecies();\n        }\n        else if (JOY_REPEAT(DPAD_UP))\n        {\n            Swap_UpdateActionCursorPosition(-1);\n            Swap_PrintMonCategory();\n            Swap_PrintMonSpecies();\n        }\n        break;\n    }",
+      "callsTo": [
+        "JOY_NEW",
+        "JOY_REPEAT",
+        "PlaySE",
+        "Swap_EraseSpeciesWindow",
+        "Swap_PrintMonCategory",
+        "Swap_PrintMonSpecies",
+        "Swap_PrintMonSpeciesAtFade",
+        "Swap_RunActionFunc",
+        "Swap_UpdateActionCursorPosition",
+        "Swap_UpdateBallCursorPosition"
+      ],
+      "lineCount": 58
+    },
+    "Swap_Task_FadeSpeciesName": {
+      "returnType": "void",
+      "signature": "static void Swap_Task_FadeSpeciesName(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "switch (gTasks[taskId].tState)\n    {\n    case FADESTATE_INIT:\n        sFactorySwapScreen->fadeSpeciesNameCoeffDelay = 0;\n        sFactorySwapScreen->fadeSpeciesNameCoeff = 0;\n        sFactorySwapScreen->fadeSpeciesNameFadeOut = TRUE;\n        gTasks[taskId].tState = FADESTATE_RUN;\n        break;\n    case FADESTATE_RUN:\n        if (sFactorySwapScreen->fadeSpeciesNameActive)\n        {\n            if (sFactorySwapScreen->faceSpeciesNameDelay)\n            {\n                gTasks[taskId].tState = FADESTATE_DELAY;\n            }\n            else\n            {\n                sFactorySwapScreen->fadeSpeciesNameCoeffDelay++;\n                if (sFactorySwapScreen->fadeSpeciesNameCoeffDelay > 6)\n                {\n                    sFactorySwapScreen->fadeSpeciesNameCoeffDelay = 0;\n                    if (!sFactorySwapScreen->fadeSpeciesNameFadeOut)\n                        sFactorySwapScreen->fadeSpeciesNameCoeff--;\n                    else\n                        sFactorySwapScreen->fadeSpeciesNameCoeff++;\n                }\n                BlendPalettes(1 << PALNUM_FADE_TEXT, sFactorySwapScreen->fadeSpeciesNameCoeff, 0);\n                if (sFactorySwapScreen->fadeSpeciesNameCoeff > 5)\n                {\n                    sFactorySwapScreen->fadeSpeciesNameFadeOut = FALSE;\n                }\n                else if (sFactorySwapScreen->fadeSpeciesNameCoeff == 0)\n                {\n                    gTasks[taskId].tState = FADESTATE_DELAY;\n                    sFactorySwapScreen->fadeSpeciesNameFadeOut = TRUE;\n                }\n            }\n        }\n        break;\n    case FADESTATE_DELAY:\n        if (sFactorySwapScreen->faceSpeciesNameDelay > 14)\n        {\n            sFactorySwapScreen->faceSpeciesNameDelay = 0;\n            gTasks[taskId].tState = FADESTATE_RUN;\n        }\n        else\n        {\n            sFactorySwapScreen->faceSpeciesNameDelay++;\n        }\n        break;\n    }",
+      "callsTo": [
+        "BlendPalettes"
+      ],
+      "lineCount": 51
+    },
+    "Swap_Task_FadeOutSpeciesName": {
+      "returnType": "void",
+      "signature": "static void Swap_Task_FadeOutSpeciesName(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "switch (gTasks[taskId].tState)\n    {\n    case 0:\n        sFactorySwapScreen->fadeSpeciesNameCoeffDelay = 0;\n        gTasks[taskId].tFadeOutFinished = FALSE;\n        gTasks[taskId].tState++;\n        break;\n    case 1:\n        LoadPalette(&gPlttBufferUnfaded[BG_PLTT_ID(PALNUM_TEXT)], BG_PLTT_ID(PALNUM_FADE_TEXT), PLTT_SIZEOF(5));\n        gTasks[taskId].tState++;\n        break;\n    case 2:\n        if (sFactorySwapScreen->fadeSpeciesNameCoeff > 15)\n        {\n            gTasks[taskId].tFadeOutFinished = TRUE;\n            gTasks[taskId].tState++;\n        }\n        sFactorySwapScreen->fadeSpeciesNameCoeffDelay++;\n        if (sFactorySwapScreen->fadeSpeciesNameCoeffDelay > 3)\n        {\n            sFactorySwapScreen->fadeSpeciesNameCoeffDelay = 0;\n            gPlttBufferUnfaded[BG_PLTT_ID(PALNUM_TEXT) + 4] = gPlttBufferFaded[BG_PLTT_ID(PALNUM_FADE_TEXT) + 4];\n            sFactorySwapScreen->fadeSpeciesNameCoeff++;\n        }\n        BlendPalettes(1 << PALNUM_FADE_TEXT, sFactorySwapScreen->fadeSpeciesNameCoeff, 0);\n        break;\n    }",
+      "callsTo": [
+        "BG_PLTT_ID",
+        "BlendPalettes",
+        "LoadPalette",
+        "PLTT_SIZEOF"
+      ],
+      "lineCount": 27
+    },
+    "Swap_Task_SlideCycleBalls": {
+      "returnType": "void",
+      "signature": "static void Swap_Task_SlideCycleBalls(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "s8 i;\n    u8 lastX;\n    bool8 finished;\n\n    switch (gTasks[taskId].tState)\n    {\n    case 0:\n        gTasks[taskId].tBallCycled(0) = FALSE;\n        gTasks[taskId].tBallCycled(1) = FALSE;\n        gTasks[taskId].tBallCycled(2) = FALSE;\n        gTasks[taskId].tState = 1;\n        break;\n    case 1:\n        lastX = 0;\n        for (i = FRONTIER_PARTY_SIZE - 1; i >= 0; i--)\n        {\n            if (i != FRONTIER_PARTY_SIZE - 1)\n            {\n                u8 posX = lastX - gSprites[sFactorySwapScreen->ballSpriteIds[i]].x;\n                if (posX == 16 || gTasks[taskId].tBallCycled(i + 1) == TRUE)\n                {\n                    lastX = gSprites[sFactorySwapScreen->ballSpriteIds[i]].x;\n                    gSprites[sFactorySwapScreen->ballSpriteIds[i]].x += 10;\n                }\n                else if (posX > 16)\n                {\n                    gSprites[sFactorySwapScreen->ballSpriteIds[i]].x = gSprites[sFactorySwapScreen->ballSpriteIds[i + 1]].x - 48;\n                }\n            }\n            else\n            {\n                lastX = gSprites[sFactorySwapScreen->ballSpriteIds[i]].x;\n                gSprites[sFactorySwapScreen->ballSpriteIds[i]].x += 10;\n            }\n\n            if (gTasks[taskId].tBallCycled(i) == TRUE)\n            {\n                 \n                if (gSprites[sFactorySwapScreen->ballSpriteIds[i]].x > (i * 48) + 72)\n                {\n                     \n                    gSprites[sFactorySwapScreen->ballSpriteIds[i]].x = (i * 48) + 72;\n                    finished = TRUE;\n                }\n                else if (gSprites[sFactorySwapScreen->ballSpriteIds[i]].x == (i * 48) + 72)\n                {\n                    finished = TRUE;\n                }\n                else\n                {\n                    finished = FALSE;\n                }\n            }\n            else\n            {\n                finished = FALSE;\n            }\n\n            if (gSprites[sFactorySwapScreen->ballSpriteIds[i]].x - 16 > DISPLAY_WIDTH)\n            {\n                 \n                lastX = gSprites[sFactorySwapScreen->ballSpriteIds[i]].x;\n                gSprites[sFactorySwapScreen->ballSpriteIds[i]].x = -16;\n                if (sFactorySwapScreen->inEnemyScreen == TRUE)\n                    gSprites[sFactorySwapScreen->ballSpriteIds[i]].oam.paletteNum = IndexOfSpritePaletteTag(PALTAG_BALL_SELECTED);\n                else\n                    gSprites[sFactorySwapScreen->ballSpriteIds[i]].oam.paletteNum = IndexOfSpritePaletteTag(PALTAG_BALL_GRAY);\n\n                gTasks[taskId].tBallCycled(i) = TRUE;\n            }\n        }\n        if (finished == TRUE)\n            DestroyTask(taskId);\n        break;\n    }",
+      "callsTo": [
+        "DestroyTask",
+        "IndexOfSpritePaletteTag"
+      ],
+      "lineCount": 75
+    },
+    "Swap_Task_SlideButtonOnOffScreen": {
+      "returnType": "void",
+      "signature": "static void Swap_Task_SlideButtonOnOffScreen(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "u8 i, j;\n    s32 posX = 0;\n    s8 deltaX = gTasks[taskId].tXIncrement;\n    bool8 sliding;\n    s16 currPosX;\n    u8 prevTaskId;\n\n    if (gTasks[taskId].tSlidingOn == TRUE)\n        deltaX *= -1;\n\n    switch (gTasks[taskId].tState)\n    {\n    case SLIDE_BUTTON_PKMN:\n        currPosX = gSprites[sFactorySwapScreen->pkmnForSwapButtonSpriteIds[0][0]].x;\n        if (!gTasks[taskId].tSlidingOn)\n        {\n             \n            if (currPosX + deltaX < DISPLAY_WIDTH)\n            {\n                sliding = TRUE;\n            }\n            else\n            {\n                sliding = FALSE;\n                posX = DISPLAY_WIDTH;\n            }\n        }\n        else\n        {\n             \n            if (currPosX + deltaX > 160)\n            {\n                sliding = TRUE;\n            }\n            else\n            {\n                sliding = FALSE;\n                posX = 160;\n            }\n        }\n\n        if (sliding == TRUE)\n        {\n             \n            for (i = 0; i < ARRAY_COUNT(sFactorySwapScreen->pkmnForSwapButtonSpriteIds[0]); i++)\n            {\n                for (j = 0; j < ARRAY_COUNT(sFactorySwapScreen->pkmnForSwapButtonSpriteIds); j++)\n                    gSprites[sFactorySwapScreen->pkmnForSwapButtonSpriteIds[j][i]].x += deltaX;\n            }\n        }\n        else\n        {\n             \n            for (j = 0; j < ARRAY_COUNT(sFactorySwapScreen->pkmnForSwapButtonSpriteIds); j++)\n            {\n                gSprites[sFactorySwapScreen->pkmnForSwapButtonSpriteIds[j][0]].x = posX;\n                gSprites[sFactorySwapScreen->pkmnForSwapButtonSpriteIds[j][1]].x = posX + 16;\n                gSprites[sFactorySwapScreen->pkmnForSwapButtonSpriteIds[j][2]].x = posX + 48;\n            }\n            prevTaskId = gTasks[taskId].tTaskId;\n            gTasks[prevTaskId].tSlideFinishedPkmn = TRUE;\n            DestroyTask(taskId);\n        }\n        break;\n    case SLIDE_BUTTON_CANCEL:\n        currPosX = gSprites[sFactorySwapScreen->cancelButtonSpriteIds[0][0]].x;\n        if (!gTasks[taskId].tSlidingOn)\n        {\n             \n            if (currPosX + deltaX < DISPLAY_WIDTH)\n            {\n                sliding = TRUE;\n            }\n            else\n            {\n                sliding = FALSE;\n                posX = DISPLAY_WIDTH;\n            }\n        }\n        else\n        {\n             \n            if (currPosX + deltaX > 192)\n            {\n                sliding = TRUE;\n            }\n            else\n            {\n                sliding = FALSE;\n                posX = 192;\n            }\n        }\n\n        if (sliding == TRUE)\n        {\n             \n            for (i = 0; i < ARRAY_COUNT(sFactorySwapScreen->cancelButtonSpriteIds); i++)\n            {\n                for (j = 0; j < ARRAY_COUNT(sFactorySwapScreen->cancelButtonSpriteIds[0]); j++)\n                    gSprites[sFactorySwapScreen->cancelButtonSpriteIds[j][i]].x += deltaX;\n            }\n        }\n        else\n        {\n             \n            for (j = 0; j < ARRAY_COUNT(sFactorySwapScreen->cancelButtonSpriteIds); j++)\n            {\n                gSprites[sFactorySwapScreen->cancelButtonSpriteIds[j][0]].x = posX;\n                gSprites[sFactorySwapScreen->cancelButtonSpriteIds[j][1]].x = posX + 16;\n            }\n            prevTaskId = gTasks[taskId].tTaskId;\n            gTasks[prevTaskId].tSlideFinishedCancel = TRUE;\n            DestroyTask(taskId);\n        }\n        break;\n    }",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "DestroyTask"
+      ],
+      "lineCount": 116
+    },
+    "Swap_Task_ScreenInfoTransitionOut": {
+      "returnType": "void",
+      "signature": "static void Swap_Task_ScreenInfoTransitionOut(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "u8 slideTaskId;\n    u16 hiPtr, loPtr;\n\n    switch (gTasks[taskId].tState)\n    {\n    case 0:\n        LoadPalette(sSwapText_Pal, BG_PLTT_ID(PALNUM_FADE_TEXT), sizeof(sSwapText_Pal));\n        Swap_PrintActionStrings();\n        PutWindowTilemap(SWAP_WIN_ACTION_FADE);\n        gTasks[taskId].tState++;\n        break;\n    case 1:\n        Swap_ErasePopupMenu(SWAP_WIN_OPTIONS);\n        gTasks[taskId].tState++;\n        break;\n    case 2:\n        BeginNormalPaletteFade(1 << PALNUM_FADE_TEXT, 0, 0, 16, sPokeballGray_Pal[37]);\n        gTasks[taskId].tState++;\n        break;\n    case 3:\n        if (!gPaletteFade.active)\n        {\n            FillWindowPixelBuffer(SWAP_WIN_ACTION_FADE, PIXEL_FILL(0));\n            CopyWindowToVram(SWAP_WIN_ACTION_FADE, COPYWIN_GFX);\n            if (sFactorySwapScreen->inEnemyScreen == TRUE)\n            {\n                 \n                slideTaskId = CreateTask(Swap_Task_SlideButtonOnOffScreen, 0);\n                gTasks[taskId].tSlideFinishedPkmn = FALSE;\n                gTasks[slideTaskId].tTaskId = taskId;\n                gTasks[slideTaskId].tState = SLIDE_BUTTON_PKMN;\n                gTasks[slideTaskId].tSlidingOn = FALSE;\n                gTasks[slideTaskId].tXIncrement = 6;\n                gTasks[taskId].tSecondSlideDelay = 5;\n                gTasks[taskId].tState++;\n            }\n            else\n            {\n                 \n                slideTaskId = CreateTask(Swap_Task_SlideButtonOnOffScreen, 0);\n                gTasks[taskId].tSlideFinishedPkmn = TRUE;\n                gTasks[taskId].tSlideFinishedCancel = FALSE;\n                gTasks[slideTaskId].tTaskId = taskId;\n                gTasks[slideTaskId].tState = SLIDE_BUTTON_CANCEL;\n                gTasks[slideTaskId].tSlidingOn = FALSE;\n                gTasks[slideTaskId].tXIncrement = 6;\n                gTasks[taskId].tState += 2;\n            }\n        }\n        break;\n    case 4:\n         \n        if (gTasks[taskId].tSecondSlideDelay == 0)\n        {\n            slideTaskId = CreateTask(Swap_Task_SlideButtonOnOffScreen, 0);\n            gTasks[taskId].tSlideFinishedCancel = FALSE;\n            gTasks[slideTaskId].tTaskId = taskId;\n            gTasks[slideTaskId].tState = SLIDE_BUTTON_CANCEL;\n            gTasks[slideTaskId].tSlidingOn = FALSE;\n            gTasks[slideTaskId].tXIncrement = 6;\n            gTasks[taskId].tState++;\n        }\n        else\n        {\n            gTasks[taskId].tSecondSlideDelay--;\n        }\n        break;\n    case 5:\n        if (gTasks[taskId].tSlideFinishedPkmn == TRUE\n         && gTasks[taskId].tSlideFinishedCancel == TRUE)\n        {\n            gTasks[taskId].tState = gTasks[taskId].tFollowUpTaskState;\n            hiPtr = gTasks[taskId].tFollowUpTaskPtrHi;\n            loPtr = gTasks[taskId].tFollowUpTaskPtrLo;\n            gTasks[taskId].func = (void *)((hiPtr << 16) | (loPtr));\n        }\n        break;\n    }",
+      "callsTo": [
+        "BG_PLTT_ID",
+        "BeginNormalPaletteFade",
+        "CopyWindowToVram",
+        "CreateTask",
+        "FillWindowPixelBuffer",
+        "LoadPalette",
+        "PIXEL_FILL",
+        "PutWindowTilemap",
+        "Swap_ErasePopupMenu",
+        "Swap_PrintActionStrings"
+      ],
+      "lineCount": 78
+    },
+    "Swap_Task_ScreenInfoTransitionIn": {
+      "returnType": "void",
+      "signature": "static void Swap_Task_ScreenInfoTransitionIn(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "u8 slideTaskId;\n    u16 hiPtr, loPtr;\n    if (sFactorySwapScreen->monPicAnimating == TRUE)\n        return;\n\n    switch (gTasks[taskId].tState)\n    {\n    case 0:\n        if (sFactorySwapScreen->inEnemyScreen == TRUE)\n        {\n             \n            slideTaskId = CreateTask(Swap_Task_SlideButtonOnOffScreen, 0);\n            gTasks[taskId].tSlideFinishedPkmn = FALSE;\n            gTasks[slideTaskId].tTaskId = taskId;\n            gTasks[slideTaskId].tState = SLIDE_BUTTON_PKMN;\n            gTasks[slideTaskId].tSlidingOn = TRUE;\n            gTasks[slideTaskId].tXIncrement = 6;\n            gTasks[taskId].tSecondSlideDelay = 10;\n            gTasks[taskId].tState++;\n        }\n        else\n        {\n             \n            slideTaskId = CreateTask(Swap_Task_SlideButtonOnOffScreen, 0);\n            gTasks[taskId].tSlideFinishedPkmn = TRUE;\n            gTasks[taskId].tSlideFinishedCancel = FALSE;\n            gTasks[slideTaskId].tTaskId = taskId;\n            gTasks[slideTaskId].tState = SLIDE_BUTTON_CANCEL;\n            gTasks[slideTaskId].tSlidingOn = TRUE;\n            gTasks[slideTaskId].tXIncrement = 6;\n            gTasks[taskId].tState += 2;\n        }\n        break;\n    case 1:\n         \n        if (gTasks[taskId].tSecondSlideDelay == 0)\n        {\n            slideTaskId = CreateTask(Swap_Task_SlideButtonOnOffScreen, 0);\n            gTasks[taskId].tSlideFinishedCancel = FALSE;\n            gTasks[slideTaskId].tTaskId = taskId;\n            gTasks[slideTaskId].tState = SLIDE_BUTTON_CANCEL;\n            gTasks[slideTaskId].tSlidingOn = TRUE;\n            gTasks[slideTaskId].tXIncrement = 6;\n            gTasks[taskId].tState++;\n        }\n        else\n        {\n            gTasks[taskId].tSecondSlideDelay--;\n        }\n        break;\n    case 2:\n        if (gTasks[taskId].tSlideFinishedPkmn == TRUE\n         && gTasks[taskId].tSlideFinishedCancel == TRUE)\n        {\n            gPlttBufferFaded[BG_PLTT_ID(PALNUM_FADE_TEXT) + 2] = sPokeballGray_Pal[37];\n            Swap_PrintActionStrings();\n            PutWindowTilemap(SWAP_WIN_ACTION_FADE);\n            gTasks[taskId].tState++;\n        }\n        break;\n    case 3:\n        BeginNormalPaletteFade(1 << PALNUM_FADE_TEXT, 0, 16, 0, sPokeballGray_Pal[37]);\n        gTasks[taskId].tState++;\n        break;\n    case 4:\n        if (!gPaletteFade.active)\n        {\n            Swap_PrintOneActionString(0);\n            gTasks[taskId].tState++;\n        }\n        break;\n    case 5:\n        Swap_PrintOneActionString(1);\n        PutWindowTilemap(SWAP_WIN_OPTIONS);\n        gTasks[taskId].tState++;\n        break;\n    case 6:\n        FillWindowPixelBuffer(SWAP_WIN_ACTION_FADE, PIXEL_FILL(0));\n        CopyWindowToVram(SWAP_WIN_ACTION_FADE, COPYWIN_GFX);\n        gTasks[taskId].tState++;\n        break;\n    case 7:\n        if (!sFactorySwapScreen->inEnemyScreen)\n            Swap_PrintOnInfoWindow(gText_SelectPkmnToSwap);\n        else\n            Swap_PrintOnInfoWindow(gText_SelectPkmnToAccept);\n        if (sFactorySwapScreen->cursorPos < FRONTIER_PARTY_SIZE)\n            gSprites[sFactorySwapScreen->cursorSpriteId].invisible = FALSE;\n        Swap_PrintMonCategory();\n        gTasks[taskId].tState++;\n        break;\n    case 8:\n        Swap_PrintMonSpeciesForTransition();\n        Swap_EraseSpeciesAtFadeWindow();\n        sFactorySwapScreen->fadeSpeciesNameActive = TRUE;\n        gTasks[taskId].tState = gTasks[taskId].tFollowUpTaskState;\n        hiPtr = gTasks[taskId].tFollowUpTaskPtrHi;\n        loPtr = gTasks[taskId].tFollowUpTaskPtrLo;\n        gTasks[taskId].func = (void *)((hiPtr << 16) | (loPtr));\n        break;\n    }",
+      "callsTo": [
+        "BG_PLTT_ID",
+        "BeginNormalPaletteFade",
+        "CopyWindowToVram",
+        "CreateTask",
+        "FillWindowPixelBuffer",
+        "PIXEL_FILL",
+        "PutWindowTilemap",
+        "Swap_EraseSpeciesAtFadeWindow",
+        "Swap_PrintActionStrings",
+        "Swap_PrintMonCategory",
+        "Swap_PrintMonSpeciesForTransition",
+        "Swap_PrintOnInfoWindow",
+        "Swap_PrintOneActionString"
+      ],
+      "lineCount": 101
+    },
+    "Swap_Task_SwitchPartyScreen": {
+      "returnType": "void",
+      "signature": "static void Swap_Task_SwitchPartyScreen(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "u8 i;\n    if (sFactorySwapScreen->monPicAnimating == TRUE)\n        return;\n\n    switch (gTasks[taskId].tState)\n    {\n    case 0:\n        Swap_PrintMonSpeciesForTransition();\n        gTasks[taskId].tState++;\n        break;\n    case 1:\n        Swap_EraseSpeciesAtFadeWindow();\n        gSprites[sFactorySwapScreen->cursorSpriteId].invisible = TRUE;\n        gTasks[taskId].tState++;\n        break;\n    case 2:\n        CreateTask(Swap_Task_SlideCycleBalls, 0);\n        gTasks[sFactorySwapScreen->fadeSpeciesNameTaskId].func = Swap_Task_FadeOutSpeciesName;\n        gTasks[taskId].tState++;\n        break;\n    case 3:\n        if (!FuncIsActiveTask(Swap_Task_SlideCycleBalls)\n         && gTasks[sFactorySwapScreen->fadeSpeciesNameTaskId].tFadeOutFinished == TRUE)\n        {\n            Swap_EraseSpeciesWindow();\n            if (!sFactorySwapScreen->inEnemyScreen)\n            {\n                Swap_InitActions(SWAP_ENEMY_SCREEN);\n            }\n            else\n            {\n                Swap_InitActions(SWAP_PLAYER_SCREEN);\n\n                 \n                for (i = 0; i < ARRAY_COUNT(sFactorySwapScreen->pkmnForSwapButtonSpriteIds[0]); i++)\n                    gSprites[sFactorySwapScreen->pkmnForSwapButtonSpriteIds[1][i]].invisible = TRUE;\n            }\n            gSprites[sFactorySwapScreen->cursorSpriteId].x = gSprites[sFactorySwapScreen->ballSpriteIds[sFactorySwapScreen->cursorPos]].x;\n            gTasks[sFactorySwapScreen->fadeSpeciesNameTaskId].func = Swap_Task_FadeSpeciesName;\n            sFactorySwapScreen->fadeSpeciesNameCoeffDelay = 0;\n            sFactorySwapScreen->fadeSpeciesNameCoeff = 6;\n            sFactorySwapScreen->fadeSpeciesNameFadeOut = FALSE;\n            gTasks[sFactorySwapScreen->fadeSpeciesNameTaskId].tState = FADESTATE_RUN;\n            gTasks[taskId].tState++;\n        }\n        break;\n    case 4:\n        gTasks[taskId].tState = 0;\n        gTasks[taskId].tFollowUpTaskPtrHi = (u32)(Swap_Task_HandleChooseMons) >> 16;\n        gTasks[taskId].tFollowUpTaskPtrLo = (u32)(Swap_Task_HandleChooseMons);\n        gTasks[taskId].tFollowUpTaskState = STATE_CHOOSE_MONS_HANDLE_INPUT;\n        gTasks[taskId].func = Swap_Task_ScreenInfoTransitionIn;\n        break;\n    }",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "CreateTask",
+        "FuncIsActiveTask",
+        "Swap_EraseSpeciesAtFadeWindow",
+        "Swap_EraseSpeciesWindow",
+        "Swap_InitActions",
+        "Swap_PrintMonSpeciesForTransition"
+      ],
+      "lineCount": 54
+    },
+    "Swap_InitStruct": {
+      "returnType": "void",
+      "signature": "static void Swap_InitStruct(void)",
+      "paramsRaw": "void",
+      "body": "if (sFactorySwapScreen == NULL)\n    {\n        sFactorySwapScreen = AllocZeroed(sizeof(*sFactorySwapScreen));\n        sFactorySwapScreen->cursorPos = 0;\n        sFactorySwapScreen->monPicAnimating = FALSE;\n        sFactorySwapScreen->fromSummaryScreen = FALSE;\n    }",
+      "callsTo": [
+        "AllocZeroed"
+      ],
+      "lineCount": 7
+    },
+    "DoBattleFactorySwapScreen": {
+      "returnType": "void",
+      "signature": "void DoBattleFactorySwapScreen(void)",
+      "paramsRaw": "void",
+      "body": "sFactorySwapScreen = NULL;\n    SetMainCallback2(CB2_InitSwapScreen);",
+      "callsTo": [
+        "SetMainCallback2"
+      ],
+      "lineCount": 2
+    },
+    "CB2_InitSwapScreen": {
+      "returnType": "void",
+      "signature": "static void CB2_InitSwapScreen(void)",
+      "paramsRaw": "void",
+      "body": "u8 taskId;\n\n    switch (gMain.state)\n    {\n    case 0:\n        SetHBlankCallback(NULL);\n        SetVBlankCallback(NULL);\n        CpuFill32(0, (void *)VRAM, VRAM_SIZE);\n        ResetBgsAndClearDma3BusyFlags(0);\n        InitBgsFromTemplates(0, sSwap_BgTemplates, ARRAY_COUNT(sSwap_BgTemplates));\n        InitWindows(sSwap_WindowTemplates);\n        DeactivateAllTextPrinters();\n        gMain.state++;\n        break;\n    case 1:\n        sSwapMenuTilesetBuffer = Alloc(sizeof(gFrontierFactoryMenu_Gfx));\n#ifdef BUGFIX\n        sSwapMonPicBgTilesetBuffer = AllocZeroed(sizeof(sMonPicBg_Gfx));\n#else\n        sSwapMonPicBgTilesetBuffer = AllocZeroed(sizeof(gFrontierFactoryMenu_Gfx));  \n#endif\n        sSwapMenuTilemapBuffer = Alloc(BG_SCREEN_SIZE);\n        sSwapMonPicBgTilemapBuffer = AllocZeroed(BG_SCREEN_SIZE);\n        ChangeBgX(0, 0, BG_COORD_SET);\n        ChangeBgY(0, 0, BG_COORD_SET);\n        ChangeBgX(1, 0, BG_COORD_SET);\n        ChangeBgY(1, 0, BG_COORD_SET);\n        ChangeBgX(2, 0, BG_COORD_SET);\n        ChangeBgY(2, 0, BG_COORD_SET);\n        ChangeBgX(3, 0, BG_COORD_SET);\n        ChangeBgY(3, 0, BG_COORD_SET);\n        SetGpuReg(REG_OFFSET_BLDY, 0);\n        SetGpuReg(REG_OFFSET_MOSAIC, 0);\n        SetGpuReg(REG_OFFSET_WIN0H, 0);\n        SetGpuReg(REG_OFFSET_WIN0V, 0);\n        SetGpuReg(REG_OFFSET_WIN1H, 0);\n        SetGpuReg(REG_OFFSET_WIN1V, 0);\n        SetGpuReg(REG_OFFSET_WININ, 0);\n        SetGpuReg(REG_OFFSET_WINOUT, 0);\n        gMain.state++;\n        break;\n    case 2:\n        ResetPaletteFade();\n        ResetSpriteData();\n        ResetTasks();\n        FreeAllSpritePalettes();\n        ResetAllPicSprites();\n        CpuCopy16(gFrontierFactoryMenu_Gfx, sSwapMenuTilesetBuffer, sizeof(gFrontierFactoryMenu_Gfx));\n        CpuCopy16(sMonPicBg_Gfx, sSwapMonPicBgTilesetBuffer, sizeof(sMonPicBg_Gfx));\n        LoadBgTiles(1, sSwapMenuTilesetBuffer, sizeof(gFrontierFactoryMenu_Gfx), 0);\n        LoadBgTiles(3, sSwapMonPicBgTilesetBuffer, sizeof(sMonPicBg_Gfx), 0);\n        CpuCopy16(gFrontierFactoryMenu_Tilemap, sSwapMenuTilemapBuffer, BG_SCREEN_SIZE);\n        LoadBgTilemap(1, sSwapMenuTilemapBuffer, BG_SCREEN_SIZE, 0);\n        LoadPalette(gFrontierFactoryMenu_Pal, 0, 2 * PLTT_SIZE_4BPP);\n        LoadPalette(sSwapText_Pal, BG_PLTT_ID(PALNUM_TEXT), sizeof(sSwapText_Pal));\n        LoadPalette(sSwapText_Pal, BG_PLTT_ID(PALNUM_FADE_TEXT), sizeof(sSwapText_Pal));\n        LoadPalette(sMonPicBg_Pal, BG_PLTT_ID(2), PLTT_SIZEOF(2));\n        gMain.state++;\n        break;\n    case 3:\n        SetBgTilemapBuffer(3, sSwapMonPicBgTilemapBuffer);\n        CopyToBgTilemapBufferRect(3, sMonPicBg_Tilemap, 11, 4, 8, 8);\n        CopyBgTilemapBufferToVram(3);\n        gMain.state++;\n        break;\n    case 4:\n        LoadSpritePalettes(sSwap_SpritePalettes);\n        LoadSpriteSheets(sSwap_SpriteSheets);\n        LoadCompressedSpriteSheet(sSwap_BallGfx);\n        SetVBlankCallback(Swap_VblankCb);\n        gMain.state++;\n        break;\n    case 5:\n#ifdef UBFIX\n        if (sFactorySwapScreen && sFactorySwapScreen->fromSummaryScreen)\n#else\n        if (sFactorySwapScreen->fromSummaryScreen == TRUE)\n#endif\n            sFactorySwapScreen->cursorPos = gLastViewedMonIndex;\n        gMain.state++;\n        break;\n    case 6:\n        Swap_InitStruct();\n        Swap_InitAllSprites();\n        if (sFactorySwapScreen->fromSummaryScreen == TRUE)\n            Swap_ShowSummaryMonSprite();\n        Swap_InitActions(SWAP_PLAYER_SCREEN);\n        gMain.state++;\n        break;\n    case 7:\n        Swap_PrintOnInfoWindow(gText_SelectPkmnToSwap);\n        PutWindowTilemap(SWAP_WIN_INFO);\n        gMain.state++;\n        break;\n    case 8:\n        Swap_PrintMonCategory();\n        PutWindowTilemap(SWAP_WIN_MON_CATEGORY);\n        gMain.state++;\n        break;\n    case 9:\n        if (!sFactorySwapScreen->fromSummaryScreen)\n            Swap_PrintMonSpecies();\n        PutWindowTilemap(SWAP_WIN_SPECIES);\n        gMain.state++;\n        break;\n    case 10:\n        Swap_PrintPkmnSwap();\n        PutWindowTilemap(SWAP_WIN_TITLE);\n        gMain.state++;\n        break;\n    case 11:\n        gMain.state++;\n        break;\n    case 12:\n        if (sFactorySwapScreen->fromSummaryScreen)\n            Swap_PrintMonSpeciesAtFade();\n        gMain.state++;\n        break;\n    case 13:\n        Swap_PrintActionStrings2();\n        PutWindowTilemap(SWAP_WIN_OPTIONS);\n        gMain.state++;\n        break;\n    case 14:\n        BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);\n        SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_OBJ_ON | DISPCNT_OBJ_1D_MAP);\n        ShowBg(0);\n        ShowBg(1);\n        ShowBg(2);\n        if (sFactorySwapScreen->fromSummaryScreen == TRUE)\n        {\n            ShowBg(3);\n            SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_TGT1_BG3 | BLDCNT_EFFECT_BLEND | BLDCNT_TGT2_BG1 | BLDCNT_TGT2_OBJ);\n            SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(11, 4));\n        }\n        else\n        {\n            HideBg(3);\n        }\n        gMain.state++;\n        break;\n    case 15:\n        sFactorySwapScreen->fadeSpeciesNameTaskId = CreateTask(Swap_Task_FadeSpeciesName, 0);\n        if (!sFactorySwapScreen->fromSummaryScreen)\n        {\n            gTasks[sFactorySwapScreen->fadeSpeciesNameTaskId].tState = FADESTATE_INIT;\n            taskId = CreateTask(Swap_Task_HandleChooseMons, 0);\n            gTasks[taskId].tState = STATE_CHOOSE_MONS_INIT;\n        }\n        else\n        {\n            Swap_EraseActionFadeWindow();\n            gTasks[sFactorySwapScreen->fadeSpeciesNameTaskId].tState = FADESTATE_RUN;\n            sFactorySwapScreen->fadeSpeciesNameActive = FALSE;\n            taskId = CreateTask(Swap_Task_HandleMenu, 0);\n            gTasks[taskId].tState = STATE_MENU_INIT;\n        }\n        SetMainCallback2(Swap_CB2);\n        break;\n    }",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "Alloc",
+        "AllocZeroed",
+        "BG_PLTT_ID",
+        "BLDALPHA_BLEND",
+        "BeginNormalPaletteFade",
+        "ChangeBgX",
+        "ChangeBgY",
+        "CopyBgTilemapBufferToVram",
+        "CopyToBgTilemapBufferRect",
+        "CpuCopy16",
+        "CpuFill32",
+        "CreateTask",
+        "DeactivateAllTextPrinters",
+        "FreeAllSpritePalettes",
+        "HideBg",
+        "InitBgsFromTemplates",
+        "InitWindows",
+        "LoadBgTilemap",
+        "LoadBgTiles",
+        "LoadCompressedSpriteSheet",
+        "LoadPalette",
+        "LoadSpritePalettes",
+        "LoadSpriteSheets",
+        "PLTT_SIZEOF",
+        "PutWindowTilemap",
+        "ResetAllPicSprites",
+        "ResetBgsAndClearDma3BusyFlags",
+        "ResetPaletteFade",
+        "ResetSpriteData",
+        "ResetTasks",
+        "SetBgTilemapBuffer",
+        "SetGpuReg",
+        "SetHBlankCallback",
+        "SetMainCallback2",
+        "SetVBlankCallback",
+        "ShowBg",
+        "Swap_EraseActionFadeWindow",
+        "Swap_InitActions",
+        "Swap_InitAllSprites",
+        "Swap_InitStruct",
+        "Swap_PrintActionStrings2",
+        "Swap_PrintMonCategory",
+        "Swap_PrintMonSpecies",
+        "Swap_PrintMonSpeciesAtFade",
+        "Swap_PrintOnInfoWindow",
+        "Swap_PrintPkmnSwap",
+        "Swap_ShowSummaryMonSprite"
+      ],
+      "lineCount": 160
+    },
+    "Swap_InitAllSprites": {
+      "returnType": "void",
+      "signature": "static void Swap_InitAllSprites(void)",
+      "paramsRaw": "void",
+      "body": "u8 i;\n    u8 x;\n    struct SpriteTemplate spriteTemplate;\n\n    spriteTemplate = sSpriteTemplate_Swap_Pokeball;\n    spriteTemplate.paletteTag = PALTAG_BALL_SELECTED;\n\n    for (i = 0; i < FRONTIER_PARTY_SIZE; i++)\n    {\n        sFactorySwapScreen->ballSpriteIds[i] = CreateSprite(&spriteTemplate, (48 * i) + 72, 64, 1);\n        gSprites[sFactorySwapScreen->ballSpriteIds[i]].data[0] = 0;\n    }\n    sFactorySwapScreen->cursorSpriteId = CreateSprite(&sSpriteTemplate_Swap_Arrow, gSprites[sFactorySwapScreen->ballSpriteIds[sFactorySwapScreen->cursorPos]].x, 88, 0);\n    sFactorySwapScreen->menuCursor1SpriteId = CreateSprite(&sSpriteTemplate_Swap_MenuHighlightLeft, 176, 112, 0);\n    sFactorySwapScreen->menuCursor2SpriteId = CreateSprite(&sSpriteTemplate_Swap_MenuHighlightRight, 176, 144, 0);\n    gSprites[sFactorySwapScreen->menuCursor1SpriteId].invisible = TRUE;\n    gSprites[sFactorySwapScreen->menuCursor2SpriteId].invisible = TRUE;\n    gSprites[sFactorySwapScreen->menuCursor1SpriteId].centerToCornerVecX = 0;\n    gSprites[sFactorySwapScreen->menuCursor1SpriteId].centerToCornerVecY = 0;\n    gSprites[sFactorySwapScreen->menuCursor2SpriteId].centerToCornerVecX = 0;\n    gSprites[sFactorySwapScreen->menuCursor2SpriteId].centerToCornerVecY = 0;\n\n    if (sFactorySwapScreen->fromSummaryScreen == TRUE)\n        x = DISPLAY_WIDTH;\n    else\n        x = DISPLAY_WIDTH - 48;\n\n     \n     \n     \n    spriteTemplate = sSpriteTemplate_Swap_Arrow;\n    spriteTemplate.tileTag = GFXTAG_ACTION_BOX_LEFT;\n    sFactorySwapScreen->pkmnForSwapButtonSpriteIds[0][0] = CreateSprite(&spriteTemplate, DISPLAY_WIDTH, 120, 10);\n\n    spriteTemplate = sSpriteTemplate_Swap_MenuHighlightLeft;\n    spriteTemplate.tileTag = GFXTAG_ACTION_BOX_RIGHT;\n    sFactorySwapScreen->pkmnForSwapButtonSpriteIds[0][1] = CreateSprite(&spriteTemplate, DISPLAY_WIDTH + 16, 120, 10);\n    sFactorySwapScreen->pkmnForSwapButtonSpriteIds[0][2] = CreateSprite(&spriteTemplate, DISPLAY_WIDTH + 48, 120, 10);\n\n    spriteTemplate = sSpriteTemplate_Swap_Arrow;\n    spriteTemplate.tileTag = GFXTAG_ACTION_HIGHLIGHT_LEFT;\n    sFactorySwapScreen->pkmnForSwapButtonSpriteIds[1][0] = CreateSprite(&spriteTemplate, DISPLAY_WIDTH, 120, 1);\n\n    spriteTemplate = sSpriteTemplate_Swap_MenuHighlightLeft;\n    spriteTemplate.tileTag = GFXTAG_ACTION_HIGHLIGHT_MIDDLE;\n    sFactorySwapScreen->pkmnForSwapButtonSpriteIds[1][1] = CreateSprite(&spriteTemplate, DISPLAY_WIDTH + 16, 120, 1);\n    spriteTemplate.tileTag = GFXTAG_ACTION_HIGHLIGHT_RIGHT;\n    sFactorySwapScreen->pkmnForSwapButtonSpriteIds[1][2] = CreateSprite(&spriteTemplate, DISPLAY_WIDTH + 48, 120, 1);\n\n    spriteTemplate = sSpriteTemplate_Swap_Arrow;\n    spriteTemplate.tileTag = GFXTAG_ACTION_BOX_LEFT;\n    sFactorySwapScreen->cancelButtonSpriteIds[0][0] = CreateSprite(&spriteTemplate, x, 144, 10);\n\n    spriteTemplate = sSpriteTemplate_Swap_MenuHighlightLeft;\n    spriteTemplate.tileTag = GFXTAG_ACTION_BOX_RIGHT;\n    sFactorySwapScreen->cancelButtonSpriteIds[0][1] = CreateSprite(&spriteTemplate, x + 16, 144, 10);\n\n    spriteTemplate = sSpriteTemplate_Swap_Arrow;\n    spriteTemplate.tileTag = GFXTAG_ACTION_HIGHLIGHT_LEFT;\n    sFactorySwapScreen->cancelButtonSpriteIds[1][0] = CreateSprite(&spriteTemplate, x, 144, 1);\n\n    spriteTemplate = sSpriteTemplate_Swap_MenuHighlightLeft;\n    spriteTemplate.tileTag = GFXTAG_ACTION_HIGHLIGHT_RIGHT;\n    sFactorySwapScreen->cancelButtonSpriteIds[1][1] = CreateSprite(&spriteTemplate, x + 16, 144, 1);\n\n    for (i = 0; i < 2; i++)\n    {\n        gSprites[sFactorySwapScreen->pkmnForSwapButtonSpriteIds[i][0]].centerToCornerVecX = 0;\n        gSprites[sFactorySwapScreen->pkmnForSwapButtonSpriteIds[i][0]].centerToCornerVecY = 0;\n        gSprites[sFactorySwapScreen->pkmnForSwapButtonSpriteIds[i][1]].centerToCornerVecX = 0;\n        gSprites[sFactorySwapScreen->pkmnForSwapButtonSpriteIds[i][1]].centerToCornerVecY = 0;\n        gSprites[sFactorySwapScreen->pkmnForSwapButtonSpriteIds[i][2]].centerToCornerVecX = 0;\n        gSprites[sFactorySwapScreen->pkmnForSwapButtonSpriteIds[i][2]].centerToCornerVecY = 0;\n        gSprites[sFactorySwapScreen->cancelButtonSpriteIds[i][0]].centerToCornerVecX = 0;\n        gSprites[sFactorySwapScreen->cancelButtonSpriteIds[i][0]].centerToCornerVecY = 0;\n        gSprites[sFactorySwapScreen->cancelButtonSpriteIds[i][1]].centerToCornerVecX = 0;\n        gSprites[sFactorySwapScreen->cancelButtonSpriteIds[i][1]].centerToCornerVecY = 0;\n\n        gSprites[sFactorySwapScreen->pkmnForSwapButtonSpriteIds[i][0]].invisible = TRUE;\n        gSprites[sFactorySwapScreen->pkmnForSwapButtonSpriteIds[i][1]].invisible = TRUE;\n        gSprites[sFactorySwapScreen->pkmnForSwapButtonSpriteIds[i][2]].invisible = TRUE;\n        gSprites[sFactorySwapScreen->cancelButtonSpriteIds[i][0]].invisible = TRUE;\n        gSprites[sFactorySwapScreen->cancelButtonSpriteIds[i][1]].invisible = TRUE;\n    }\n\n    gSprites[sFactorySwapScreen->cancelButtonSpriteIds[0][0]].invisible = FALSE;\n    gSprites[sFactorySwapScreen->cancelButtonSpriteIds[0][1]].invisible = FALSE;\n    gSprites[sFactorySwapScreen->pkmnForSwapButtonSpriteIds[0][0]].invisible = FALSE;\n    gSprites[sFactorySwapScreen->pkmnForSwapButtonSpriteIds[0][1]].invisible = FALSE;\n    gSprites[sFactorySwapScreen->pkmnForSwapButtonSpriteIds[0][2]].invisible = FALSE;",
+      "callsTo": [
+        "CreateSprite"
+      ],
+      "lineCount": 90
+    },
+    "Swap_DestroyAllSprites": {
+      "returnType": "void",
+      "signature": "static void Swap_DestroyAllSprites(void)",
+      "paramsRaw": "void",
+      "body": "u8 i, j;\n\n    for (i = 0; i < FRONTIER_PARTY_SIZE; i++)\n        DestroySprite(&gSprites[sFactorySwapScreen->ballSpriteIds[i]]);\n    DestroySprite(&gSprites[sFactorySwapScreen->cursorSpriteId]);\n    DestroySprite(&gSprites[sFactorySwapScreen->menuCursor1SpriteId]);\n    DestroySprite(&gSprites[sFactorySwapScreen->menuCursor2SpriteId]);\n    for (i = 0; i < ARRAY_COUNT(sFactorySwapScreen->pkmnForSwapButtonSpriteIds); i++)\n    {\n        for (j = 0; j < ARRAY_COUNT(sFactorySwapScreen->pkmnForSwapButtonSpriteIds[0]); j++)\n            DestroySprite(&gSprites[sFactorySwapScreen->pkmnForSwapButtonSpriteIds[i][j]]);\n    }\n    for (i = 0; i < ARRAY_COUNT(sFactorySwapScreen->cancelButtonSpriteIds); i++)\n    {\n        for (j = 0; j < ARRAY_COUNT(sFactorySwapScreen->cancelButtonSpriteIds[0]); j++)\n            DestroySprite(&gSprites[sFactorySwapScreen->cancelButtonSpriteIds[i][j]]);\n    }",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "DestroySprite"
+      ],
+      "lineCount": 17
+    },
+    "Swap_HandleActionCursorChange": {
+      "returnType": "void",
+      "signature": "static void Swap_HandleActionCursorChange(u8 cursorId)",
+      "paramsRaw": "u8 cursorId",
+      "body": "if (cursorId < FRONTIER_PARTY_SIZE)\n    {\n         \n        gSprites[sFactorySwapScreen->cursorSpriteId].invisible = FALSE;\n        Swap_HideActionButtonHighlights();\n        gSprites[sFactorySwapScreen->cursorSpriteId].x = gSprites[sFactorySwapScreen->ballSpriteIds[cursorId]].x;\n    }\n    else\n    {\n         \n        gSprites[sFactorySwapScreen->cursorSpriteId].invisible = TRUE;\n        Swap_HighlightActionButton(sFactorySwapScreen->actionsData[cursorId].id);\n    }",
+      "callsTo": [
+        "Swap_HideActionButtonHighlights",
+        "Swap_HighlightActionButton"
+      ],
+      "lineCount": 13
+    },
+    "Swap_UpdateBallCursorPosition": {
+      "returnType": "void",
+      "signature": "static void Swap_UpdateBallCursorPosition(s8 direction)",
+      "paramsRaw": "s8 direction",
+      "body": "u8 cursorPos;\n    PlaySE(SE_SELECT);\n    if (direction > 0)  \n    {\n        if (sFactorySwapScreen->cursorPos + 1 != sFactorySwapScreen->actionsCount)\n            sFactorySwapScreen->cursorPos++;\n        else\n            sFactorySwapScreen->cursorPos = 0;\n    }\n    else  \n    {\n        if (sFactorySwapScreen->cursorPos != 0)\n            sFactorySwapScreen->cursorPos--;\n        else\n            sFactorySwapScreen->cursorPos = sFactorySwapScreen->actionsCount - 1;\n    }\n\n    cursorPos = sFactorySwapScreen->cursorPos;\n    Swap_HandleActionCursorChange(cursorPos);",
+      "callsTo": [
+        "PlaySE",
+        "Swap_HandleActionCursorChange"
+      ],
+      "lineCount": 19
+    },
+    "Swap_UpdateActionCursorPosition": {
+      "returnType": "void",
+      "signature": "static void Swap_UpdateActionCursorPosition(s8 direction)",
+      "paramsRaw": "s8 direction",
+      "body": "u8 cursorPos;\n    PlaySE(SE_SELECT);\n    if (direction > 0)  \n    {\n        if (sFactorySwapScreen->cursorPos < FRONTIER_PARTY_SIZE)\n            sFactorySwapScreen->cursorPos = FRONTIER_PARTY_SIZE;\n        else if (sFactorySwapScreen->cursorPos + 1 != sFactorySwapScreen->actionsCount)\n            sFactorySwapScreen->cursorPos++;\n        else\n            sFactorySwapScreen->cursorPos = 0;\n    }\n    else  \n    {\n        if (sFactorySwapScreen->cursorPos < FRONTIER_PARTY_SIZE)\n            sFactorySwapScreen->cursorPos = sFactorySwapScreen->actionsCount - 1;\n        else if (sFactorySwapScreen->cursorPos != 0)\n            sFactorySwapScreen->cursorPos--;\n        else\n            sFactorySwapScreen->cursorPos = sFactorySwapScreen->actionsCount - 1;\n    }\n\n    cursorPos = sFactorySwapScreen->cursorPos;\n    Swap_HandleActionCursorChange(cursorPos);",
+      "callsTo": [
+        "PlaySE",
+        "Swap_HandleActionCursorChange"
+      ],
+      "lineCount": 23
+    },
+    "Swap_UpdateYesNoCursorPosition": {
+      "returnType": "void",
+      "signature": "static void Swap_UpdateYesNoCursorPosition(s8 direction)",
+      "paramsRaw": "s8 direction",
+      "body": "if (direction > 0)  \n    {\n        if (sFactorySwapScreen->yesNoCursorPos != 1)\n            sFactorySwapScreen->yesNoCursorPos++;\n        else\n            sFactorySwapScreen->yesNoCursorPos = 0;\n    }\n    else  \n    {\n        if (sFactorySwapScreen->yesNoCursorPos != 0)\n            sFactorySwapScreen->yesNoCursorPos--;\n        else\n            sFactorySwapScreen->yesNoCursorPos = 1;\n    }\n\n    gSprites[sFactorySwapScreen->menuCursor1SpriteId].y = (sFactorySwapScreen->yesNoCursorPos * 16) + 112;\n    gSprites[sFactorySwapScreen->menuCursor2SpriteId].y = (sFactorySwapScreen->yesNoCursorPos * 16) + 112;",
+      "callsTo": [],
+      "lineCount": 17
+    },
+    "Swap_UpdateMenuCursorPosition": {
+      "returnType": "void",
+      "signature": "static void Swap_UpdateMenuCursorPosition(s8 direction)",
+      "paramsRaw": "s8 direction",
+      "body": "PlaySE(SE_SELECT);\n    if (direction > 0)  \n    {\n        if (sFactorySwapScreen->menuCursorPos != ARRAY_COUNT(sSwap_MenuOptionFuncs) - 1)\n            sFactorySwapScreen->menuCursorPos++;\n        else\n            sFactorySwapScreen->menuCursorPos = 0;\n    }\n    else  \n    {\n        if (sFactorySwapScreen->menuCursorPos != 0)\n            sFactorySwapScreen->menuCursorPos--;\n        else\n            sFactorySwapScreen->menuCursorPos = ARRAY_COUNT(sSwap_MenuOptionFuncs) - 1;\n    }\n\n    gSprites[sFactorySwapScreen->menuCursor1SpriteId].y = (sFactorySwapScreen->menuCursorPos * 16) + 112;\n    gSprites[sFactorySwapScreen->menuCursor2SpriteId].y = (sFactorySwapScreen->menuCursorPos * 16) + 112;",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "PlaySE"
+      ],
+      "lineCount": 18
+    },
+    "Swap_HighlightActionButton": {
+      "returnType": "void",
+      "signature": "static void Swap_HighlightActionButton(u8 actionId)",
+      "paramsRaw": "u8 actionId",
+      "body": "u8 i;\n\n    for (i = 0; i < ARRAY_COUNT(sFactorySwapScreen->pkmnForSwapButtonSpriteIds[0]); i++)\n    {\n        if (actionId == SWAPACTION_PKMN_FOR_SWAP)\n        {\n             \n            gSprites[sFactorySwapScreen->pkmnForSwapButtonSpriteIds[1][i]].invisible = FALSE;\n\n             \n            if (i < ARRAY_COUNT(sFactorySwapScreen->cancelButtonSpriteIds[0]))\n                gSprites[sFactorySwapScreen->cancelButtonSpriteIds[1][i]].invisible = TRUE;\n        }\n        else if (actionId == SWAPACTION_CANCEL)\n        {\n             \n            if (i < ARRAY_COUNT(sFactorySwapScreen->cancelButtonSpriteIds[0]))\n                gSprites[sFactorySwapScreen->cancelButtonSpriteIds[1][i]].invisible = FALSE;\n\n             \n            gSprites[sFactorySwapScreen->pkmnForSwapButtonSpriteIds[1][i]].invisible = TRUE;\n        }\n    }",
+      "callsTo": [
+        "ARRAY_COUNT"
+      ],
+      "lineCount": 23
+    },
+    "Swap_HideActionButtonHighlights": {
+      "returnType": "void",
+      "signature": "static void Swap_HideActionButtonHighlights(void)",
+      "paramsRaw": "void",
+      "body": "u8 i;\n\n    for (i = 0; i < ARRAY_COUNT(sFactorySwapScreen->pkmnForSwapButtonSpriteIds[0]); i++)\n    {\n         \n        gSprites[sFactorySwapScreen->pkmnForSwapButtonSpriteIds[1][i]].invisible = TRUE;\n\n         \n        if (i < ARRAY_COUNT(sFactorySwapScreen->cancelButtonSpriteIds[0]))\n            gSprites[sFactorySwapScreen->cancelButtonSpriteIds[1][i]].invisible = TRUE;\n    }",
+      "callsTo": [
+        "ARRAY_COUNT"
+      ],
+      "lineCount": 11
+    },
+    "Swap_ShowMenuOptions": {
+      "returnType": "void",
+      "signature": "static void Swap_ShowMenuOptions(void)",
+      "paramsRaw": "void",
+      "body": "if (sFactorySwapScreen->fromSummaryScreen == TRUE)\n        sFactorySwapScreen->fromSummaryScreen = FALSE;\n    else\n        sFactorySwapScreen->menuCursorPos = 0;\n\n    gSprites[sFactorySwapScreen->menuCursor1SpriteId].x = 176;\n    gSprites[sFactorySwapScreen->menuCursor1SpriteId].y = (sFactorySwapScreen->menuCursorPos * 16) + 112;\n    gSprites[sFactorySwapScreen->menuCursor2SpriteId].x = 208;\n    gSprites[sFactorySwapScreen->menuCursor2SpriteId].y = (sFactorySwapScreen->menuCursorPos * 16) + 112;\n\n    gSprites[sFactorySwapScreen->menuCursor1SpriteId].invisible = FALSE;\n    gSprites[sFactorySwapScreen->menuCursor2SpriteId].invisible = FALSE;\n\n    Swap_PrintMenuOptions();",
+      "callsTo": [
+        "Swap_PrintMenuOptions"
+      ],
+      "lineCount": 14
+    },
+    "Swap_ShowYesNoOptions": {
+      "returnType": "void",
+      "signature": "static void Swap_ShowYesNoOptions(void)",
+      "paramsRaw": "void",
+      "body": "sFactorySwapScreen->yesNoCursorPos = 0;\n\n    gSprites[sFactorySwapScreen->menuCursor1SpriteId].x = 176;\n    gSprites[sFactorySwapScreen->menuCursor1SpriteId].y = 112;\n    gSprites[sFactorySwapScreen->menuCursor2SpriteId].x = 208;\n    gSprites[sFactorySwapScreen->menuCursor2SpriteId].y = 112;\n\n    gSprites[sFactorySwapScreen->menuCursor1SpriteId].invisible = FALSE;\n    gSprites[sFactorySwapScreen->menuCursor2SpriteId].invisible = FALSE;\n\n    Swap_PrintYesNoOptions();",
+      "callsTo": [
+        "Swap_PrintYesNoOptions"
+      ],
+      "lineCount": 11
+    },
+    "Swap_ErasePopupMenu": {
+      "returnType": "void",
+      "signature": "static void Swap_ErasePopupMenu(u8 windowId)",
+      "paramsRaw": "u8 windowId",
+      "body": "gSprites[sFactorySwapScreen->menuCursor1SpriteId].invisible = TRUE;\n    gSprites[sFactorySwapScreen->menuCursor2SpriteId].invisible = TRUE;\n    FillWindowPixelBuffer(windowId, PIXEL_FILL(0));\n    CopyWindowToVram(windowId, COPYWIN_GFX);\n    ClearWindowTilemap(windowId);",
+      "callsTo": [
+        "ClearWindowTilemap",
+        "CopyWindowToVram",
+        "FillWindowPixelBuffer",
+        "PIXEL_FILL"
+      ],
+      "lineCount": 5
+    },
+    "Swap_EraseSpeciesWindow": {
+      "returnType": "void",
+      "signature": "static void Swap_EraseSpeciesWindow(void)",
+      "paramsRaw": "void",
+      "body": "PutWindowTilemap(SWAP_WIN_SPECIES);\n    FillWindowPixelBuffer(SWAP_WIN_SPECIES, PIXEL_FILL(0));\n    CopyWindowToVram(SWAP_WIN_SPECIES, COPYWIN_GFX);",
+      "callsTo": [
+        "CopyWindowToVram",
+        "FillWindowPixelBuffer",
+        "PIXEL_FILL",
+        "PutWindowTilemap"
+      ],
+      "lineCount": 3
+    },
+    "Swap_EraseSpeciesAtFadeWindow": {
+      "returnType": "void",
+      "signature": "static void Swap_EraseSpeciesAtFadeWindow(void)",
+      "paramsRaw": "void",
+      "body": "PutWindowTilemap(SWAP_WIN_SPECIES_AT_FADE);\n    FillWindowPixelBuffer(SWAP_WIN_SPECIES_AT_FADE, PIXEL_FILL(0));\n    CopyWindowToVram(SWAP_WIN_SPECIES_AT_FADE, COPYWIN_GFX);",
+      "callsTo": [
+        "CopyWindowToVram",
+        "FillWindowPixelBuffer",
+        "PIXEL_FILL",
+        "PutWindowTilemap"
+      ],
+      "lineCount": 3
+    },
+    "Swap_EraseActionFadeWindow": {
+      "returnType": "void",
+      "signature": "static void Swap_EraseActionFadeWindow(void)",
+      "paramsRaw": "void",
+      "body": "Swap_EraseSpeciesWindow();\n    PutWindowTilemap(SWAP_WIN_ACTION_FADE);\n    FillWindowPixelBuffer(SWAP_WIN_ACTION_FADE, PIXEL_FILL(0));\n    CopyWindowToVram(SWAP_WIN_ACTION_FADE, COPYWIN_GFX);",
+      "callsTo": [
+        "CopyWindowToVram",
+        "FillWindowPixelBuffer",
+        "PIXEL_FILL",
+        "PutWindowTilemap",
+        "Swap_EraseSpeciesWindow"
+      ],
+      "lineCount": 4
+    },
+    "Swap_PrintPkmnSwap": {
+      "returnType": "void",
+      "signature": "static void Swap_PrintPkmnSwap(void)",
+      "paramsRaw": "void",
+      "body": "FillWindowPixelBuffer(SWAP_WIN_TITLE, PIXEL_FILL(1));\n    AddTextPrinterParameterized(SWAP_WIN_TITLE, FONT_NORMAL, gText_PkmnSwap, 2, 1, 0, NULL);\n    CopyWindowToVram(SWAP_WIN_TITLE, COPYWIN_FULL);",
+      "callsTo": [
+        "AddTextPrinterParameterized",
+        "CopyWindowToVram",
+        "FillWindowPixelBuffer",
+        "PIXEL_FILL"
+      ],
+      "lineCount": 3
+    },
+    "Swap_PrintMonSpecies": {
+      "returnType": "void",
+      "signature": "static void Swap_PrintMonSpecies(void)",
+      "paramsRaw": "void",
+      "body": "u16 species;\n    u8 x;\n\n    FillWindowPixelBuffer(SWAP_WIN_SPECIES, PIXEL_FILL(0));\n    if (sFactorySwapScreen->cursorPos >= FRONTIER_PARTY_SIZE)\n    {\n        CopyWindowToVram(SWAP_WIN_SPECIES, COPYWIN_GFX);\n    }\n    else\n    {\n        u8 monId = sFactorySwapScreen->cursorPos;\n        if (!sFactorySwapScreen->inEnemyScreen)\n            species = GetMonData(&gPlayerParty[monId], MON_DATA_SPECIES, NULL);\n        else\n            species = GetMonData(&gEnemyParty[monId], MON_DATA_SPECIES, NULL);\n        StringCopy(gStringVar4, gSpeciesNames[species]);\n        x = GetStringRightAlignXOffset(FONT_NORMAL, gStringVar4, 86);\n        AddTextPrinterParameterized3(SWAP_WIN_SPECIES, FONT_NORMAL, x, 1, sSwapSpeciesNameTextColors, 0, gStringVar4);\n        CopyWindowToVram(SWAP_WIN_SPECIES, COPYWIN_FULL);\n    }",
+      "callsTo": [
+        "AddTextPrinterParameterized3",
+        "CopyWindowToVram",
+        "FillWindowPixelBuffer",
+        "GetMonData",
+        "GetStringRightAlignXOffset",
+        "PIXEL_FILL",
+        "StringCopy"
+      ],
+      "lineCount": 20
+    },
+    "Swap_PrintOnInfoWindow": {
+      "returnType": "void",
+      "signature": "static void Swap_PrintOnInfoWindow(const u8 *str)",
+      "paramsRaw": "const u8 *str",
+      "body": "FillWindowPixelBuffer(SWAP_WIN_INFO, PIXEL_FILL(0));\n    AddTextPrinterParameterized(SWAP_WIN_INFO, FONT_NORMAL, str, 2, 5, 0, NULL);\n    CopyWindowToVram(SWAP_WIN_INFO, COPYWIN_GFX);",
+      "callsTo": [
+        "AddTextPrinterParameterized",
+        "CopyWindowToVram",
+        "FillWindowPixelBuffer",
+        "PIXEL_FILL"
+      ],
+      "lineCount": 3
+    },
+    "Swap_PrintMenuOptions": {
+      "returnType": "void",
+      "signature": "static void Swap_PrintMenuOptions(void)",
+      "paramsRaw": "void",
+      "body": "PutWindowTilemap(SWAP_WIN_OPTIONS);\n    FillWindowPixelBuffer(SWAP_WIN_OPTIONS, PIXEL_FILL(0));\n    AddTextPrinterParameterized3(SWAP_WIN_OPTIONS, FONT_NORMAL, 15,  1, sSwapMenuOptionsTextColors, 0, gText_Summary2);\n    AddTextPrinterParameterized3(SWAP_WIN_OPTIONS, FONT_NORMAL, 15, 17, sSwapMenuOptionsTextColors, 0, gText_Swap);\n    AddTextPrinterParameterized3(SWAP_WIN_OPTIONS, FONT_NORMAL, 15, 33, sSwapMenuOptionsTextColors, 0, gText_Rechoose);\n    CopyWindowToVram(SWAP_WIN_OPTIONS, COPYWIN_FULL);",
+      "callsTo": [
+        "AddTextPrinterParameterized3",
+        "CopyWindowToVram",
+        "FillWindowPixelBuffer",
+        "PIXEL_FILL",
+        "PutWindowTilemap"
+      ],
+      "lineCount": 6
+    },
+    "Swap_PrintYesNoOptions": {
+      "returnType": "void",
+      "signature": "static void Swap_PrintYesNoOptions(void)",
+      "paramsRaw": "void",
+      "body": "PutWindowTilemap(SWAP_WIN_YES_NO);\n    FillWindowPixelBuffer(SWAP_WIN_YES_NO, PIXEL_FILL(0));\n    AddTextPrinterParameterized3(SWAP_WIN_YES_NO, FONT_NORMAL, 7, 1,  sSwapMenuOptionsTextColors, 0, gText_Yes3);\n    AddTextPrinterParameterized3(SWAP_WIN_YES_NO, FONT_NORMAL, 7, 17, sSwapMenuOptionsTextColors, 0, gText_No3);\n    CopyWindowToVram(SWAP_WIN_YES_NO, COPYWIN_FULL);",
+      "callsTo": [
+        "AddTextPrinterParameterized3",
+        "CopyWindowToVram",
+        "FillWindowPixelBuffer",
+        "PIXEL_FILL",
+        "PutWindowTilemap"
+      ],
+      "lineCount": 5
+    },
+    "Swap_PrintActionString": {
+      "returnType": "void",
+      "signature": "static void Swap_PrintActionString(const u8 *str, u32 y, u32 windowId)",
+      "paramsRaw": "const u8 *str, u32 y, u32 windowId",
+      "body": "s32 x = GetStringRightAlignXOffset(FONT_SMALL, str, 70);\n    AddTextPrinterParameterized3(windowId, FONT_SMALL, x, y, sSwapMenuOptionsTextColors, 0, str);",
+      "callsTo": [
+        "AddTextPrinterParameterized3",
+        "GetStringRightAlignXOffset"
+      ],
+      "lineCount": 2
+    },
+    "Swap_PrintActionStrings": {
+      "returnType": "void",
+      "signature": "static void Swap_PrintActionStrings(void)",
+      "paramsRaw": "void",
+      "body": "FillWindowPixelBuffer(SWAP_WIN_ACTION_FADE, PIXEL_FILL(0));\n    switch (sFactorySwapScreen->inEnemyScreen)\n    {\n    case TRUE:\n        Swap_PrintActionString(gText_PkmnForSwap, 0, SWAP_WIN_ACTION_FADE);\n    case FALSE:\n        Swap_PrintActionString(gText_Cancel3, 24, SWAP_WIN_ACTION_FADE);\n        break;\n    }\n    CopyWindowToVram(SWAP_WIN_ACTION_FADE, COPYWIN_FULL);",
+      "callsTo": [
+        "CopyWindowToVram",
+        "FillWindowPixelBuffer",
+        "PIXEL_FILL",
+        "Swap_PrintActionString"
+      ],
+      "lineCount": 10
+    },
+    "Swap_PrintActionStrings2": {
+      "returnType": "void",
+      "signature": "static void Swap_PrintActionStrings2(void)",
+      "paramsRaw": "void",
+      "body": "FillWindowPixelBuffer(SWAP_WIN_OPTIONS, PIXEL_FILL(0));\n    switch (sFactorySwapScreen->inEnemyScreen)\n    {\n    case TRUE:\n        Swap_PrintActionString(gText_PkmnForSwap, 8, SWAP_WIN_OPTIONS);\n    case FALSE:\n        Swap_PrintActionString(gText_Cancel3, 32, SWAP_WIN_OPTIONS);\n        break;\n    }\n    CopyWindowToVram(SWAP_WIN_OPTIONS, COPYWIN_FULL);",
+      "callsTo": [
+        "CopyWindowToVram",
+        "FillWindowPixelBuffer",
+        "PIXEL_FILL",
+        "Swap_PrintActionString"
+      ],
+      "lineCount": 10
+    },
+    "Swap_PrintOneActionString": {
+      "returnType": "void",
+      "signature": "static void Swap_PrintOneActionString(u8 which)",
+      "paramsRaw": "u8 which",
+      "body": "switch (which)\n    {\n    case 0:\n        if (sFactorySwapScreen->inEnemyScreen == TRUE)\n            Swap_PrintActionString(gText_PkmnForSwap, 8, SWAP_WIN_OPTIONS);\n        break;\n    case 1:\n        Swap_PrintActionString(gText_Cancel3, 32, SWAP_WIN_OPTIONS);\n        break;\n    }\n    CopyWindowToVram(SWAP_WIN_OPTIONS, COPYWIN_FULL);",
+      "callsTo": [
+        "CopyWindowToVram",
+        "Swap_PrintActionString"
+      ],
+      "lineCount": 11
+    },
+    "Swap_PrintMonSpeciesAtFade": {
+      "returnType": "void",
+      "signature": "static void Swap_PrintMonSpeciesAtFade(void)",
+      "paramsRaw": "void",
+      "body": "u16 species;\n    u8 x;\n    u16 pal[5];\n\n    CpuCopy16(sSwapText_Pal, pal, 8);\n    if (!sFactorySwapScreen->fromSummaryScreen)\n        pal[4] = gPlttBufferFaded[BG_PLTT_ID(PALNUM_FADE_TEXT) + 4];\n    else\n        pal[4] = sFactorySwapScreen->speciesNameColorBackup;\n    LoadPalette(pal, BG_PLTT_ID(PALNUM_TEXT), sizeof(sSwapText_Pal));\n\n    PutWindowTilemap(SWAP_WIN_SPECIES_AT_FADE);\n    FillWindowPixelBuffer(SWAP_WIN_SPECIES_AT_FADE, PIXEL_FILL(0));\n    if (sFactorySwapScreen->cursorPos >= FRONTIER_PARTY_SIZE)\n    {\n        CopyWindowToVram(SWAP_WIN_SPECIES_AT_FADE, COPYWIN_FULL);\n    }\n    else\n    {\n        u8 monId = sFactorySwapScreen->cursorPos;\n        if (!sFactorySwapScreen->inEnemyScreen)\n            species = GetMonData(&gPlayerParty[monId], MON_DATA_SPECIES, NULL);\n        else\n            species = GetMonData(&gEnemyParty[monId], MON_DATA_SPECIES, NULL);\n        StringCopy(gStringVar4, gSpeciesNames[species]);\n        x = GetStringRightAlignXOffset(FONT_NORMAL, gStringVar4, 86);\n        AddTextPrinterParameterized3(SWAP_WIN_SPECIES_AT_FADE, FONT_NORMAL, x, 1, sSwapSpeciesNameTextColors, 0, gStringVar4);\n        CopyWindowToVram(SWAP_WIN_SPECIES_AT_FADE, COPYWIN_FULL);\n    }",
+      "callsTo": [
+        "AddTextPrinterParameterized3",
+        "BG_PLTT_ID",
+        "CopyWindowToVram",
+        "CpuCopy16",
+        "FillWindowPixelBuffer",
+        "GetMonData",
+        "GetStringRightAlignXOffset",
+        "LoadPalette",
+        "PIXEL_FILL",
+        "PutWindowTilemap",
+        "StringCopy"
+      ],
+      "lineCount": 29
+    },
+    "Swap_PrintMonSpeciesForTransition": {
+      "returnType": "void",
+      "signature": "static void Swap_PrintMonSpeciesForTransition(void)",
+      "paramsRaw": "void",
+      "body": "u16 species;\n    u8 x;\n\n    LoadPalette(sSwapText_Pal, BG_PLTT_ID(PALNUM_FADE_TEXT), sizeof(sSwapText_Pal));\n    CpuCopy16(&gPlttBufferUnfaded[BG_PLTT_ID(PALNUM_TEXT)], &gPlttBufferFaded[BG_PLTT_ID(PALNUM_FADE_TEXT)], PLTT_SIZEOF(5));\n\n    if (sFactorySwapScreen->cursorPos >= FRONTIER_PARTY_SIZE)\n    {\n        CopyWindowToVram(SWAP_WIN_SPECIES, COPYWIN_GFX);\n    }\n    else\n    {\n        u8 monId = sFactorySwapScreen->cursorPos;\n        if (!sFactorySwapScreen->inEnemyScreen)\n            species = GetMonData(&gPlayerParty[monId], MON_DATA_SPECIES, NULL);\n        else\n            species = GetMonData(&gEnemyParty[monId], MON_DATA_SPECIES, NULL);\n        StringCopy(gStringVar4, gSpeciesNames[species]);\n        x = GetStringRightAlignXOffset(FONT_NORMAL, gStringVar4, 86);\n        AddTextPrinterParameterized3(SWAP_WIN_SPECIES, FONT_NORMAL, x, 1, sSwapSpeciesNameTextColors, 0, gStringVar4);\n        CopyWindowToVram(SWAP_WIN_SPECIES, COPYWIN_FULL);\n    }",
+      "callsTo": [
+        "AddTextPrinterParameterized3",
+        "BG_PLTT_ID",
+        "CopyWindowToVram",
+        "CpuCopy16",
+        "GetMonData",
+        "GetStringRightAlignXOffset",
+        "LoadPalette",
+        "PLTT_SIZEOF",
+        "StringCopy"
+      ],
+      "lineCount": 22
+    },
+    "Swap_PrintMonCategory": {
+      "returnType": "void",
+      "signature": "static void Swap_PrintMonCategory(void)",
+      "paramsRaw": "void",
+      "body": "u16 species;\n    u8 text[30];\n    u8 x;\n    u8 monId = sFactorySwapScreen->cursorPos;\n\n    FillWindowPixelBuffer(SWAP_WIN_MON_CATEGORY, PIXEL_FILL(0));\n    if (monId >= FRONTIER_PARTY_SIZE)\n    {\n        CopyWindowToVram(SWAP_WIN_MON_CATEGORY, COPYWIN_GFX);\n    }\n    else\n    {\n        PutWindowTilemap(SWAP_WIN_MON_CATEGORY);\n        if (!sFactorySwapScreen->inEnemyScreen)\n            species = GetMonData(&gPlayerParty[monId], MON_DATA_SPECIES, NULL);\n        else\n            species = GetMonData(&gEnemyParty[monId], MON_DATA_SPECIES, NULL);\n        CopyMonCategoryText(SpeciesToNationalPokedexNum(species), text);\n        x = GetStringRightAlignXOffset(FONT_NORMAL, text, 118);\n        AddTextPrinterParameterized(SWAP_WIN_MON_CATEGORY, FONT_NORMAL, text, x, 1, 0, NULL);\n        CopyWindowToVram(SWAP_WIN_MON_CATEGORY, COPYWIN_GFX);\n    }",
+      "callsTo": [
+        "AddTextPrinterParameterized",
+        "CopyMonCategoryText",
+        "CopyWindowToVram",
+        "FillWindowPixelBuffer",
+        "GetMonData",
+        "GetStringRightAlignXOffset",
+        "PIXEL_FILL",
+        "PutWindowTilemap",
+        "SpeciesToNationalPokedexNum"
+      ],
+      "lineCount": 22
+    },
+    "Swap_InitActions": {
+      "returnType": "void",
+      "signature": "static void Swap_InitActions(u8 id)",
+      "paramsRaw": "u8 id",
+      "body": "if (sFactorySwapScreen->fromSummaryScreen != TRUE)\n    {\n        switch (id)\n        {\n        case SWAP_PLAYER_SCREEN:\n            sFactorySwapScreen->inEnemyScreen = FALSE;\n            sFactorySwapScreen->cursorPos = 0;\n            sFactorySwapScreen->actionsCount = ARRAY_COUNT(sSwap_PlayerScreenActions);\n            sFactorySwapScreen->actionsData = sSwap_PlayerScreenActions;\n            break;\n        case SWAP_ENEMY_SCREEN:\n            sFactorySwapScreen->inEnemyScreen = TRUE;\n            sFactorySwapScreen->cursorPos = 0;\n            sFactorySwapScreen->actionsCount = ARRAY_COUNT(sSwap_EnemyScreenActions);\n            sFactorySwapScreen->actionsData = sSwap_EnemyScreenActions;\n            break;\n        }\n    }",
+      "callsTo": [
+        "ARRAY_COUNT"
+      ],
+      "lineCount": 18
+    },
+    "Swap_RunMenuOptionFunc": {
+      "returnType": "void",
+      "signature": "static void Swap_RunMenuOptionFunc(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "sSwap_CurrentOptionFunc = sSwap_MenuOptionFuncs[sFactorySwapScreen->menuCursorPos];\n    sSwap_CurrentOptionFunc(taskId);",
+      "callsTo": [],
+      "lineCount": 2
+    },
+    "Swap_OptionSwap": {
+      "returnType": "void",
+      "signature": "static void Swap_OptionSwap(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "CloseMonPic(sFactorySwapScreen->monPic, &sFactorySwapScreen->monPicAnimating, TRUE);\n    sFactorySwapScreen->playerMonId = sFactorySwapScreen->cursorPos;\n    Swap_ErasePopupMenu(SWAP_WIN_OPTIONS);\n    gTasks[taskId].tState = 0;\n    gTasks[taskId].func = Swap_Task_SwitchPartyScreen;",
+      "callsTo": [
+        "CloseMonPic",
+        "Swap_ErasePopupMenu"
+      ],
+      "lineCount": 5
+    },
+    "Swap_OptionSummary": {
+      "returnType": "void",
+      "signature": "static void Swap_OptionSummary(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "gTasks[taskId].tState = STATE_SUMMARY_FADE;\n    gTasks[taskId].func = Swap_Task_OpenSummaryScreen;",
+      "callsTo": [],
+      "lineCount": 2
+    },
+    "Swap_OptionRechoose": {
+      "returnType": "void",
+      "signature": "static void Swap_OptionRechoose(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "CloseMonPic(sFactorySwapScreen->monPic, &sFactorySwapScreen->monPicAnimating, TRUE);\n    Swap_ErasePopupMenu(SWAP_WIN_OPTIONS);\n    gTasks[taskId].tState = 0;\n    gTasks[taskId].tFollowUpTaskPtrHi = (u32)(Swap_Task_HandleChooseMons) >> 16;\n    gTasks[taskId].tFollowUpTaskPtrLo = (u32)(Swap_Task_HandleChooseMons);\n    gTasks[taskId].tFollowUpTaskState = STATE_CHOOSE_MONS_HANDLE_INPUT;\n    gTasks[taskId].func = Swap_Task_ScreenInfoTransitionIn;",
+      "callsTo": [
+        "CloseMonPic",
+        "Swap_ErasePopupMenu"
+      ],
+      "lineCount": 7
+    },
+    "Swap_RunActionFunc": {
+      "returnType": "void",
+      "signature": "static void Swap_RunActionFunc(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "sSwap_CurrentOptionFunc = sFactorySwapScreen->actionsData[sFactorySwapScreen->cursorPos].func;\n    sSwap_CurrentOptionFunc(taskId);",
+      "callsTo": [],
+      "lineCount": 2
+    },
+    "Swap_ActionCancel": {
+      "returnType": "void",
+      "signature": "static void Swap_ActionCancel(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "gTasks[taskId].tFollowUpTaskPtrHi = (u32)(Swap_AskQuitSwapping) >> 16;\n    gTasks[taskId].tFollowUpTaskPtrLo = (u32)(Swap_AskQuitSwapping);\n    gTasks[taskId].tState = 0;\n    gTasks[taskId].tFollowUpTaskState = 0;\n    gTasks[taskId].func = Swap_Task_ScreenInfoTransitionOut;",
+      "callsTo": [],
+      "lineCount": 5
+    },
+    "Swap_ActionPkmnForSwap": {
+      "returnType": "void",
+      "signature": "static void Swap_ActionPkmnForSwap(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "gTasks[taskId].tFollowUpTaskPtrHi = (u32)(Swap_Task_SwitchPartyScreen) >> 16;\n    gTasks[taskId].tFollowUpTaskPtrLo = (u32)(Swap_Task_SwitchPartyScreen);\n    gTasks[taskId].tFollowUpTaskState = 0;\n    gTasks[taskId].tState = 0;\n    gTasks[taskId].func = Swap_Task_ScreenInfoTransitionOut;",
+      "callsTo": [],
+      "lineCount": 5
+    },
+    "Swap_ActionMon": {
+      "returnType": "void",
+      "signature": "static void Swap_ActionMon(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "if (!sFactorySwapScreen->inEnemyScreen)\n    {\n        gTasks[taskId].tFollowUpTaskPtrHi = (u32)(Swap_Task_HandleMenu) >> 16;\n        gTasks[taskId].tFollowUpTaskPtrLo = (u32)(Swap_Task_HandleMenu);\n        gTasks[taskId].tFollowUpTaskState = STATE_MENU_INIT;\n    }\n    else if (Swap_AlreadyHasSameSpecies(sFactorySwapScreen->cursorPos) == TRUE)\n    {\n        OpenMonPic(&sFactorySwapScreen->monPic.bgSpriteId, &sFactorySwapScreen->monPicAnimating, TRUE);\n        gTasks[taskId].tState = 0;\n        gTasks[taskId].tFollowUpTaskState = STATE_CHOOSE_MONS_HANDLE_INPUT;\n        gTasks[taskId].func = Swap_TaskCantHaveSameMons;\n        return;\n    }\n    else\n    {\n        gTasks[taskId].tFollowUpTaskPtrHi = (u32)(Swap_AskAcceptMon) >> 16;\n        gTasks[taskId].tFollowUpTaskPtrLo = (u32)(Swap_AskAcceptMon);\n        gTasks[taskId].tFollowUpTaskState = 0;\n    }\n    gTasks[taskId].tState = 0;\n    gTasks[taskId].func = Swap_Task_ScreenInfoTransitionOut;",
+      "callsTo": [
+        "OpenMonPic",
+        "Swap_AlreadyHasSameSpecies"
+      ],
+      "lineCount": 22
+    },
+    "OpenMonPic": {
+      "returnType": "void",
+      "signature": "static void OpenMonPic(u8 *spriteId, bool8 *animating, bool8 swapScreen)",
+      "paramsRaw": "u8 *spriteId, bool8 *animating, bool8 swapScreen",
+      "body": "*spriteId = CreateSprite(&sSpriteTemplate_Swap_MonPicBgAnim, 120, 64, 1);\n    gSprites[*spriteId].callback = SpriteCB_OpenMonPic;\n    gSprites[*spriteId].sIsSwapScreen = swapScreen;\n    *animating = TRUE;",
+      "callsTo": [
+        "CreateSprite"
+      ],
+      "lineCount": 4
+    },
+    "Swap_ShowSummaryMonSprite": {
+      "returnType": "void",
+      "signature": "static void Swap_ShowSummaryMonSprite(void)",
+      "paramsRaw": "void",
+      "body": "struct Pokemon *mon;\n    u16 species;\n    u32 personality, otId;\n\n    sFactorySwapScreen->monPic.bgSpriteId = CreateSprite(&sSpriteTemplate_Swap_MonPicBgAnim, 120, 64, 1);\n    StartSpriteAffineAnim(&gSprites[sFactorySwapScreen->monPic.bgSpriteId], 2);\n\n    mon = &gPlayerParty[sFactorySwapScreen->cursorPos];\n    species = GetMonData(mon, MON_DATA_SPECIES, NULL);\n    personality = GetMonData(mon, MON_DATA_PERSONALITY, NULL);\n    otId = GetMonData(mon, MON_DATA_OT_ID, NULL);\n\n#ifdef BUGFIX\n    sFactorySwapScreen->monPic.monSpriteId = CreateMonPicSprite_HandleDeoxys(species, otId, personality, TRUE, 88, 32, 15, TAG_NONE);\n#else\n    sFactorySwapScreen->monPic.monSpriteId = CreateMonPicSprite_HandleDeoxys(species, personality, otId, TRUE, 88, 32, 15, TAG_NONE);\n#endif\n    gSprites[sFactorySwapScreen->monPic.monSpriteId].centerToCornerVecX = 0;\n    gSprites[sFactorySwapScreen->monPic.monSpriteId].centerToCornerVecY = 0;\n\n    gSprites[sFactorySwapScreen->monPic.bgSpriteId].invisible = TRUE;",
+      "callsTo": [
+        "CreateMonPicSprite_HandleDeoxys",
+        "CreateSprite",
+        "GetMonData",
+        "StartSpriteAffineAnim"
+      ],
+      "lineCount": 21
+    },
+    "CloseMonPic": {
+      "returnType": "void",
+      "signature": "static void CloseMonPic(struct FactoryMonPic pic, bool8 *animating, bool8 swapScreen)",
+      "paramsRaw": "struct FactoryMonPic pic, bool8 *animating, bool8 swapScreen",
+      "body": "u8 taskId;\n\n    FreeAndDestroyMonPicSprite(pic.monSpriteId);\n    taskId = CreateTask(Task_CloseMonPic, 1);\n    gTasks[taskId].tIsSwapScreen = swapScreen;\n    gTasks[taskId].tSpriteId = pic.bgSpriteId;\n    gTasks[taskId].func(taskId);\n    *animating = TRUE;",
+      "callsTo": [
+        "CreateTask",
+        "FreeAndDestroyMonPicSprite"
+      ],
+      "lineCount": 8
+    },
+    "HideMonPic": {
+      "returnType": "void",
+      "signature": "static void HideMonPic(struct FactoryMonPic pic, bool8 *animating)",
+      "paramsRaw": "struct FactoryMonPic pic, bool8 *animating",
+      "body": "FreeAndDestroyMonPicSprite(pic.monSpriteId);\n    FreeOamMatrix(gSprites[pic.bgSpriteId].oam.matrixNum);\n    DestroySprite(&gSprites[pic.bgSpriteId]);\n    *animating = FALSE;",
+      "callsTo": [
+        "DestroySprite",
+        "FreeAndDestroyMonPicSprite",
+        "FreeOamMatrix"
+      ],
+      "lineCount": 4
+    },
+    "Swap_TaskCantHaveSameMons": {
+      "returnType": "void",
+      "signature": "static void Swap_TaskCantHaveSameMons(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "if (sFactorySwapScreen->monPicAnimating == TRUE)\n        return;\n\n    switch (gTasks[taskId].tState)\n    {\n    case 0:\n        Swap_PrintOnInfoWindow(gText_SamePkmnInPartyAlready);\n        sFactorySwapScreen->monSwapped = FALSE;\n        gTasks[taskId].tState++;\n        break;\n    case 1:\n        if (JOY_NEW(A_BUTTON) || JOY_NEW(B_BUTTON))\n        {\n            PlaySE(SE_SELECT);\n            CloseMonPic(sFactorySwapScreen->monPic, &sFactorySwapScreen->monPicAnimating, TRUE);\n            gTasks[taskId].tState++;\n        }\n        break;\n    case 2:\n        if (sFactorySwapScreen->monPicAnimating != TRUE)\n        {\n            FillWindowPixelBuffer(SWAP_WIN_ACTION_FADE, PIXEL_FILL(0));\n            CopyWindowToVram(SWAP_WIN_ACTION_FADE, COPYWIN_GFX);\n            gTasks[taskId].tState++;\n        }\n        break;\n    case 3:\n        Swap_PrintOnInfoWindow(gText_SelectPkmnToAccept);\n        gTasks[taskId].tState++;\n        break;\n    case 4:\n        Swap_PrintMonSpeciesForTransition();\n        Swap_EraseSpeciesAtFadeWindow();\n        sFactorySwapScreen->fadeSpeciesNameActive = TRUE;\n        gTasks[taskId].tState = gTasks[taskId].tFollowUpTaskState;\n        gTasks[taskId].func = Swap_Task_HandleChooseMons;\n        break;\n    }",
+      "callsTo": [
+        "CloseMonPic",
+        "CopyWindowToVram",
+        "FillWindowPixelBuffer",
+        "JOY_NEW",
+        "PIXEL_FILL",
+        "PlaySE",
+        "Swap_EraseSpeciesAtFadeWindow",
+        "Swap_PrintMonSpeciesForTransition",
+        "Swap_PrintOnInfoWindow"
+      ],
+      "lineCount": 38
+    },
+    "Swap_AlreadyHasSameSpecies": {
+      "returnType": "bool8",
+      "signature": "static bool8 Swap_AlreadyHasSameSpecies(u8 monId)",
+      "paramsRaw": "u8 monId",
+      "body": "u8 i;\n    u16 species = GetMonData(&gEnemyParty[monId], MON_DATA_SPECIES, NULL);\n\n    for (i = 0; i < FRONTIER_PARTY_SIZE; i++)\n    {\n        if (i != sFactorySwapScreen->playerMonId && (u16)(GetMonData(&gPlayerParty[i], MON_DATA_SPECIES, NULL)) == species)\n            return TRUE;\n    }\n    return FALSE;",
+      "callsTo": [
+        "GetMonData"
+      ],
+      "lineCount": 9
+    },
+    "SpriteCB_OpenMonPic": {
+      "returnType": "void",
+      "signature": "static void SpriteCB_OpenMonPic(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "u8 taskId;\n\n    if (sprite->affineAnimEnded)\n    {\n        sprite->invisible = TRUE;\n        taskId = CreateTask(Task_OpenMonPic, 1);\n        gTasks[taskId].tIsSwapScreen = sprite->sIsSwapScreen;\n        gTasks[taskId].func(taskId);\n        sprite->callback = SpriteCallbackDummy;\n    }",
+      "callsTo": [
+        "CreateTask"
+      ],
+      "lineCount": 10
+    },
+    "SpriteCB_CloseMonPic": {
+      "returnType": "void",
+      "signature": "static void SpriteCB_CloseMonPic(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "if (sprite->affineAnimEnded)\n    {\n        FreeOamMatrix(sprite->oam.matrixNum);\n        if (sprite->sIsSwapScreen == TRUE)\n            sFactorySwapScreen->monPicAnimating = FALSE;\n        else\n            Select_SetMonPicAnimating(FALSE);\n        DestroySprite(sprite);\n    }",
+      "callsTo": [
+        "DestroySprite",
+        "FreeOamMatrix",
+        "Select_SetMonPicAnimating"
+      ],
+      "lineCount": 9
+    },
+    "Task_OpenMonPic": {
+      "returnType": "void",
+      "signature": "static void Task_OpenMonPic(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "struct Task *task = &gTasks[taskId];\n    switch (task->tState)\n    {\n    case 0:\n         \n        task->tWinLeft = 88;\n        task->tWinRight = DISPLAY_WIDTH - 88;\n        task->tWinTop = 64;\n        task->tWinBottom = 65;\n        SetGpuRegBits(REG_OFFSET_DISPCNT, DISPCNT_WIN0_ON);\n        SetGpuReg(REG_OFFSET_WIN0H, WIN_RANGE(task->tWinLeft, task->tWinRight));\n        SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(task->tWinTop, task->tWinBottom));\n        SetGpuReg(REG_OFFSET_WININ, WININ_WIN0_BG_ALL | WININ_WIN0_CLR | WININ_WIN0_OBJ);\n        SetGpuReg(REG_OFFSET_WINOUT, WINOUT_WIN01_BG0 | WINOUT_WIN01_BG1 | WINOUT_WIN01_BG2 | WINOUT_WIN01_CLR | WINOUT_WIN01_OBJ);\n        break;\n    case 1:\n         \n        ShowBg(3);\n        SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_TGT1_BG3 | BLDCNT_EFFECT_BLEND | BLDCNT_TGT2_BG1 | BLDCNT_TGT2_OBJ);\n        SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(11, 4));\n        break;\n    case 2:\n         \n        task->tWinTop -= 4;\n        task->tWinBottom += 4;\n        if (task->tWinTop <= 32 || task->tWinBottom >= 96)\n        {\n            task->tWinTop = 32;\n            task->tWinBottom = 96;\n        }\n        SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(task->tWinTop, task->tWinBottom));\n        if (task->tWinTop != 32)\n            return;\n        break;\n    default:\n        DestroyTask(taskId);\n         \n        if (gTasks[taskId].tIsSwapScreen == TRUE)\n            Swap_CreateMonSprite();\n        else\n            Select_CreateMonSprite();\n        return;\n    }\n    task->tState++;",
+      "callsTo": [
+        "BLDALPHA_BLEND",
+        "DestroyTask",
+        "Select_CreateMonSprite",
+        "SetGpuReg",
+        "SetGpuRegBits",
+        "ShowBg",
+        "Swap_CreateMonSprite",
+        "WIN_RANGE"
+      ],
+      "lineCount": 44
+    },
+    "Task_CloseMonPic": {
+      "returnType": "void",
+      "signature": "static void Task_CloseMonPic(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "struct Task *task = &gTasks[taskId];\n    switch (task->tState)\n    {\n    case 0:\n         \n        task->tWinLeft = 88;\n        task->tWinRight = DISPLAY_WIDTH - 88;\n        task->tWinTop = 32;\n        task->tWinBottom = 96;\n        SetGpuRegBits(REG_OFFSET_DISPCNT, DISPCNT_WIN0_ON);\n        SetGpuReg(REG_OFFSET_WIN0H, WIN_RANGE(task->tWinLeft, task->tWinRight));\n        SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(task->tWinTop, task->tWinBottom));\n        SetGpuReg(REG_OFFSET_WININ, WININ_WIN0_BG_ALL | WININ_WIN0_CLR | WININ_WIN0_OBJ);\n        SetGpuReg(REG_OFFSET_WINOUT, WINOUT_WIN01_BG0 | WINOUT_WIN01_BG1 | WINOUT_WIN01_BG2 | WINOUT_WIN01_CLR | WINOUT_WIN01_OBJ);\n        task->tState++;\n        break;\n    case 1:\n         \n        task->tWinTop += 4;\n        task->tWinBottom -= 4;\n        if (task->tWinTop >= 64 || task->tWinBottom <= 65)\n        {\n            task->tWinTop = 64;\n            task->tWinBottom = 65;\n        }\n        SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(task->tWinTop, task->tWinBottom));\n        if (task->tWinTop == 64)\n            task->tState++;\n        break;\n    default:\n         \n        HideBg(3);\n        gSprites[task->tSpriteId].sIsSwapScreen = task->tIsSwapScreen;\n        gSprites[task->tSpriteId].invisible = FALSE;\n        gSprites[task->tSpriteId].callback = SpriteCB_CloseMonPic;\n        StartSpriteAffineAnim(&gSprites[task->tSpriteId], 1);\n        ClearGpuRegBits(REG_OFFSET_DISPCNT, DISPCNT_WIN0_ON);\n        DestroyTask(taskId);\n        break;\n    }",
+      "callsTo": [
+        "ClearGpuRegBits",
+        "DestroyTask",
+        "HideBg",
+        "SetGpuReg",
+        "SetGpuRegBits",
+        "StartSpriteAffineAnim",
+        "WIN_RANGE"
+      ],
+      "lineCount": 40
+    },
+    "Swap_CreateMonSprite": {
+      "returnType": "void",
+      "signature": "static void Swap_CreateMonSprite(void)",
+      "paramsRaw": "void",
+      "body": "struct Pokemon *mon;\n    u16 species;\n    u32 personality, otId;\n\n    if (!sFactorySwapScreen->inEnemyScreen)\n        mon = &gPlayerParty[sFactorySwapScreen->cursorPos];\n    else\n        mon = &gEnemyParty[sFactorySwapScreen->cursorPos];\n\n    species = GetMonData(mon, MON_DATA_SPECIES, NULL);\n    personality = GetMonData(mon, MON_DATA_PERSONALITY, NULL);\n    otId = GetMonData(mon, MON_DATA_OT_ID, NULL);\n\n    sFactorySwapScreen->monPic.monSpriteId = CreateMonPicSprite_HandleDeoxys(species, otId, personality, TRUE, 88, 32, 15, TAG_NONE);\n    gSprites[sFactorySwapScreen->monPic.monSpriteId].centerToCornerVecX = 0;\n    gSprites[sFactorySwapScreen->monPic.monSpriteId].centerToCornerVecY = 0;\n\n    sFactorySwapScreen->monPicAnimating = FALSE;",
+      "callsTo": [
+        "CreateMonPicSprite_HandleDeoxys",
+        "GetMonData"
+      ],
+      "lineCount": 18
+    }
+  }
+}

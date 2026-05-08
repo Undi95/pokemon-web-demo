@@ -1,0 +1,2159 @@
+{
+  "srcFile": "src/field_specials.c",
+  "count": 191,
+  "functions": {
+    "Special_ShowDiploma": {
+      "returnType": "void",
+      "signature": "void Special_ShowDiploma(void)",
+      "paramsRaw": "void",
+      "body": "SetMainCallback2(CB2_ShowDiploma);\n    LockPlayerFieldControls();",
+      "callsTo": [
+        "LockPlayerFieldControls",
+        "SetMainCallback2"
+      ],
+      "lineCount": 2
+    },
+    "Special_ViewWallClock": {
+      "returnType": "void",
+      "signature": "void Special_ViewWallClock(void)",
+      "paramsRaw": "void",
+      "body": "gMain.savedCallback = CB2_ReturnToField;\n    SetMainCallback2(CB2_ViewWallClock);\n    LockPlayerFieldControls();",
+      "callsTo": [
+        "LockPlayerFieldControls",
+        "SetMainCallback2"
+      ],
+      "lineCount": 3
+    },
+    "ResetCyclingRoadChallengeData": {
+      "returnType": "void",
+      "signature": "void ResetCyclingRoadChallengeData(void)",
+      "paramsRaw": "void",
+      "body": "gBikeCyclingChallenge = FALSE;\n    gBikeCollisions = 0;\n    sBikeCyclingTimer = 0;",
+      "callsTo": [],
+      "lineCount": 3
+    },
+    "Special_BeginCyclingRoadChallenge": {
+      "returnType": "void",
+      "signature": "void Special_BeginCyclingRoadChallenge(void)",
+      "paramsRaw": "void",
+      "body": "gBikeCyclingChallenge = TRUE;\n    gBikeCollisions = 0;\n    sBikeCyclingTimer = gMain.vblankCounter1;",
+      "callsTo": [],
+      "lineCount": 3
+    },
+    "GetPlayerAvatarBike": {
+      "returnType": "u16",
+      "signature": "u16 GetPlayerAvatarBike(void)",
+      "paramsRaw": "void",
+      "body": "if (TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_ACRO_BIKE))\n        return 1;\n    if (TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_MACH_BIKE))\n        return 2;\n    return 0;",
+      "callsTo": [
+        "TestPlayerAvatarFlags"
+      ],
+      "lineCount": 5
+    },
+    "DetermineCyclingRoadResults": {
+      "returnType": "void",
+      "signature": "static void DetermineCyclingRoadResults(u32 numFrames, u8 numBikeCollisions)",
+      "paramsRaw": "u32 numFrames, u8 numBikeCollisions",
+      "body": "u8 result;\n\n    if (numBikeCollisions < 100)\n    {\n        ConvertIntToDecimalStringN(gStringVar1, numBikeCollisions, STR_CONV_MODE_LEFT_ALIGN, 2);\n        StringAppend(gStringVar1, gText_SpaceTimes);\n    }\n    else\n    {\n        StringCopy(gStringVar1, gText_99TimesPlus);\n    }\n\n    if (numFrames < 3600)\n    {\n        ConvertIntToDecimalStringN(gStringVar2, numFrames / 60, STR_CONV_MODE_RIGHT_ALIGN, 2);\n        gStringVar2[2] = CHAR_DEC_SEPARATOR;\n        ConvertIntToDecimalStringN(&gStringVar2[3], ((numFrames % 60) * 100) / 60, STR_CONV_MODE_LEADING_ZEROS, 2);\n        StringAppend(gStringVar2, gText_SpaceSeconds);\n    }\n    else\n    {\n        StringCopy(gStringVar2, gText_1MinutePlus);\n    }\n\n    result = 0;\n    if (numBikeCollisions == 0)\n        result = 5;\n    else if (numBikeCollisions < 4)\n        result = 4;\n    else if (numBikeCollisions < 10)\n        result = 3;\n    else if (numBikeCollisions < 20)\n        result = 2;\n    else if (numBikeCollisions < 100)\n        result = 1;\n\n    if (numFrames / 60 <= 10)\n        result += 5;\n    else if (numFrames / 60 <= 15)\n        result += 4;\n    else if (numFrames / 60 <= 20)\n        result += 3;\n    else if (numFrames / 60 <= 40)\n        result += 2;\n    else if (numFrames / 60 < 60)\n        result += 1;\n\n    gSpecialVar_Result = result;",
+      "callsTo": [
+        "ConvertIntToDecimalStringN",
+        "StringAppend",
+        "StringCopy"
+      ],
+      "lineCount": 48
+    },
+    "FinishCyclingRoadChallenge": {
+      "returnType": "void",
+      "signature": "void FinishCyclingRoadChallenge(void)",
+      "paramsRaw": "void",
+      "body": "const u32 numFrames = gMain.vblankCounter1 - sBikeCyclingTimer;\n\n    DetermineCyclingRoadResults(numFrames, gBikeCollisions);\n    RecordCyclingRoadResults(numFrames, gBikeCollisions);",
+      "callsTo": [
+        "DetermineCyclingRoadResults",
+        "RecordCyclingRoadResults"
+      ],
+      "lineCount": 4
+    },
+    "RecordCyclingRoadResults": {
+      "returnType": "void",
+      "signature": "static void RecordCyclingRoadResults(u32 numFrames, u8 numBikeCollisions)",
+      "paramsRaw": "u32 numFrames, u8 numBikeCollisions",
+      "body": "u16 low = VarGet(VAR_CYCLING_ROAD_RECORD_TIME_L);\n    u16 high = VarGet(VAR_CYCLING_ROAD_RECORD_TIME_H);\n    u32 framesRecord = low + (high << 16);\n\n    if (framesRecord > numFrames || framesRecord == 0)\n    {\n        VarSet(VAR_CYCLING_ROAD_RECORD_TIME_L, numFrames);\n        VarSet(VAR_CYCLING_ROAD_RECORD_TIME_H, numFrames >> 16);\n        VarSet(VAR_CYCLING_ROAD_RECORD_COLLISIONS, numBikeCollisions);\n    }",
+      "callsTo": [
+        "VarGet",
+        "VarSet"
+      ],
+      "lineCount": 10
+    },
+    "GetRecordedCyclingRoadResults": {
+      "returnType": "u16",
+      "signature": "u16 GetRecordedCyclingRoadResults(void)",
+      "paramsRaw": "void",
+      "body": "u16 low = VarGet(VAR_CYCLING_ROAD_RECORD_TIME_L);\n    u16 high = VarGet(VAR_CYCLING_ROAD_RECORD_TIME_H);\n    u32 framesRecord = low + (high << 16);\n\n    if (framesRecord == 0)\n        return FALSE;\n\n    DetermineCyclingRoadResults(framesRecord, VarGet(VAR_CYCLING_ROAD_RECORD_COLLISIONS));\n    return TRUE;",
+      "callsTo": [
+        "DetermineCyclingRoadResults",
+        "VarGet"
+      ],
+      "lineCount": 9
+    },
+    "UpdateCyclingRoadState": {
+      "returnType": "void",
+      "signature": "void UpdateCyclingRoadState(void)",
+      "paramsRaw": "void",
+      "body": "if (gLastUsedWarp.mapNum == MAP_NUM(MAP_ROUTE110_SEASIDE_CYCLING_ROAD_NORTH_ENTRANCE) && gLastUsedWarp.mapGroup == MAP_GROUP(MAP_ROUTE110_SEASIDE_CYCLING_ROAD_NORTH_ENTRANCE))\n        return;\n\n    if (VarGet(VAR_CYCLING_CHALLENGE_STATE) == 2 || VarGet(VAR_CYCLING_CHALLENGE_STATE) == 3)\n    {\n        VarSet(VAR_CYCLING_CHALLENGE_STATE, 0);\n        Overworld_SetSavedMusic(MUS_DUMMY);\n    }",
+      "callsTo": [
+        "MAP_GROUP",
+        "MAP_NUM",
+        "Overworld_SetSavedMusic",
+        "VarGet",
+        "VarSet"
+      ],
+      "lineCount": 8
+    },
+    "SetSSTidalFlag": {
+      "returnType": "void",
+      "signature": "void SetSSTidalFlag(void)",
+      "paramsRaw": "void",
+      "body": "FlagSet(FLAG_SYS_CRUISE_MODE);\n    *GetVarPointer(VAR_CRUISE_STEP_COUNT) = 0;",
+      "callsTo": [
+        "FlagSet",
+        "GetVarPointer"
+      ],
+      "lineCount": 2
+    },
+    "ResetSSTidalFlag": {
+      "returnType": "void",
+      "signature": "void ResetSSTidalFlag(void)",
+      "paramsRaw": "void",
+      "body": "FlagClear(FLAG_SYS_CRUISE_MODE);",
+      "callsTo": [
+        "FlagClear"
+      ],
+      "lineCount": 1
+    },
+    "CountSSTidalStep": {
+      "returnType": "bool32",
+      "signature": "bool32 CountSSTidalStep(u16 delta)",
+      "paramsRaw": "u16 delta",
+      "body": "if (!FlagGet(FLAG_SYS_CRUISE_MODE) || (*GetVarPointer(VAR_CRUISE_STEP_COUNT) += delta) < SS_TIDAL_MAX_STEPS)\n        return FALSE;\n\n    return TRUE;",
+      "callsTo": [
+        "FlagGet",
+        "GetVarPointer"
+      ],
+      "lineCount": 4
+    },
+    "GetSSTidalLocation": {
+      "returnType": "u8",
+      "signature": "u8 GetSSTidalLocation(s8 *mapGroup, s8 *mapNum, s16 *x, s16 *y)",
+      "paramsRaw": "s8 *mapGroup, s8 *mapNum, s16 *x, s16 *y",
+      "body": "u16 *varCruiseStepCount = GetVarPointer(VAR_CRUISE_STEP_COUNT);\n    switch (*GetVarPointer(VAR_SS_TIDAL_STATE))\n    {\n    case SS_TIDAL_BOARD_SLATEPORT:\n    case SS_TIDAL_LAND_SLATEPORT:\n        return SS_TIDAL_LOCATION_SLATEPORT;\n    case SS_TIDAL_HALFWAY_LILYCOVE:\n    case SS_TIDAL_EXIT_CURRENTS_RIGHT:\n        return SS_TIDAL_LOCATION_ROUTE131;\n    case SS_TIDAL_LAND_LILYCOVE:\n    case SS_TIDAL_BOARD_LILYCOVE:\n        return SS_TIDAL_LOCATION_LILYCOVE;\n    case SS_TIDAL_DEPART_LILYCOVE:\n    case SS_TIDAL_EXIT_CURRENTS_LEFT:\n        return SS_TIDAL_LOCATION_ROUTE124;\n    case SS_TIDAL_DEPART_SLATEPORT:\n        if (*varCruiseStepCount < 60)\n        {\n            *mapNum = MAP_NUM(MAP_ROUTE134);\n            *x = *varCruiseStepCount + 19;\n        }\n        else if (*varCruiseStepCount < 140)\n        {\n            *mapNum = MAP_NUM(MAP_ROUTE133);\n            *x = *varCruiseStepCount - 60;\n        }\n        else\n        {\n            *mapNum = MAP_NUM(MAP_ROUTE132);\n            *x = *varCruiseStepCount - 140;\n        }\n        break;\n    case SS_TIDAL_HALFWAY_SLATEPORT:\n        if (*varCruiseStepCount < 66)\n        {\n            *mapNum = MAP_NUM(MAP_ROUTE132);\n            *x = 65 - *varCruiseStepCount;\n        }\n        else if (*varCruiseStepCount < 146)\n        {\n            *mapNum = MAP_NUM(MAP_ROUTE133);\n            *x = 145 - *varCruiseStepCount;\n        }\n        else\n        {\n            *mapNum = MAP_NUM(MAP_ROUTE134);\n            *x = 224 - *varCruiseStepCount;\n        }\n        break;\n    }\n    *mapGroup = MAP_GROUP(MAP_ROUTE132);\n    *y = 20;\n    return SS_TIDAL_LOCATION_CURRENTS;",
+      "callsTo": [
+        "GetVarPointer",
+        "MAP_GROUP",
+        "MAP_NUM"
+      ],
+      "lineCount": 53
+    },
+    "ShouldDoWallyCall": {
+      "returnType": "bool32",
+      "signature": "bool32 ShouldDoWallyCall(void)",
+      "paramsRaw": "void",
+      "body": "if (FlagGet(FLAG_ENABLE_FIRST_WALLY_POKENAV_CALL))\n    {\n        switch (gMapHeader.mapType)\n        {\n        case MAP_TYPE_TOWN:\n        case MAP_TYPE_CITY:\n        case MAP_TYPE_ROUTE:\n        case MAP_TYPE_OCEAN_ROUTE:\n            if (++(*GetVarPointer(VAR_WALLY_CALL_STEP_COUNTER)) < 250)\n                return FALSE;\n            break;\n        default:\n            return FALSE;\n        }\n    }\n    else\n    {\n        return FALSE;\n    }\n\n    return TRUE;",
+      "callsTo": [
+        "FlagGet",
+        "GetVarPointer"
+      ],
+      "lineCount": 21
+    },
+    "ShouldDoScottFortreeCall": {
+      "returnType": "bool32",
+      "signature": "bool32 ShouldDoScottFortreeCall(void)",
+      "paramsRaw": "void",
+      "body": "if (FlagGet(FLAG_SCOTT_CALL_FORTREE_GYM))\n    {\n        switch (gMapHeader.mapType)\n        {\n        case MAP_TYPE_TOWN:\n        case MAP_TYPE_CITY:\n        case MAP_TYPE_ROUTE:\n        case MAP_TYPE_OCEAN_ROUTE:\n            if (++(*GetVarPointer(VAR_SCOTT_FORTREE_CALL_STEP_COUNTER)) < 10)\n                return FALSE;\n            break;\n        default:\n            return FALSE;\n        }\n    }\n    else\n    {\n        return FALSE;\n    }\n\n    return TRUE;",
+      "callsTo": [
+        "FlagGet",
+        "GetVarPointer"
+      ],
+      "lineCount": 21
+    },
+    "ShouldDoScottBattleFrontierCall": {
+      "returnType": "bool32",
+      "signature": "bool32 ShouldDoScottBattleFrontierCall(void)",
+      "paramsRaw": "void",
+      "body": "if (FlagGet(FLAG_SCOTT_CALL_BATTLE_FRONTIER))\n    {\n        switch (gMapHeader.mapType)\n        {\n        case MAP_TYPE_TOWN:\n        case MAP_TYPE_CITY:\n        case MAP_TYPE_ROUTE:\n        case MAP_TYPE_OCEAN_ROUTE:\n            if (++(*GetVarPointer(VAR_SCOTT_BF_CALL_STEP_COUNTER)) < 10)\n                return FALSE;\n            break;\n        default:\n            return FALSE;\n        }\n    }\n    else\n    {\n        return FALSE;\n    }\n\n    return TRUE;",
+      "callsTo": [
+        "FlagGet",
+        "GetVarPointer"
+      ],
+      "lineCount": 21
+    },
+    "ShouldDoRoxanneCall": {
+      "returnType": "bool32",
+      "signature": "bool32 ShouldDoRoxanneCall(void)",
+      "paramsRaw": "void",
+      "body": "if (FlagGet(FLAG_ENABLE_ROXANNE_FIRST_CALL))\n    {\n        switch (gMapHeader.mapType)\n        {\n        case MAP_TYPE_TOWN:\n        case MAP_TYPE_CITY:\n        case MAP_TYPE_ROUTE:\n        case MAP_TYPE_OCEAN_ROUTE:\n            if (++(*GetVarPointer(VAR_ROXANNE_CALL_STEP_COUNTER)) < 250)\n                return FALSE;\n            break;\n        default:\n            return FALSE;\n        }\n    }\n    else\n    {\n        return FALSE;\n    }\n\n    return TRUE;",
+      "callsTo": [
+        "FlagGet",
+        "GetVarPointer"
+      ],
+      "lineCount": 21
+    },
+    "ShouldDoRivalRayquazaCall": {
+      "returnType": "bool32",
+      "signature": "bool32 ShouldDoRivalRayquazaCall(void)",
+      "paramsRaw": "void",
+      "body": "if (FlagGet(FLAG_DEFEATED_MAGMA_SPACE_CENTER))\n    {\n        switch (gMapHeader.mapType)\n        {\n        case MAP_TYPE_TOWN:\n        case MAP_TYPE_CITY:\n        case MAP_TYPE_ROUTE:\n        case MAP_TYPE_OCEAN_ROUTE:\n            if (++(*GetVarPointer(VAR_RIVAL_RAYQUAZA_CALL_STEP_COUNTER)) < 250)\n                return FALSE;\n            break;\n        default:\n            return FALSE;\n        }\n    }\n    else\n    {\n        return FALSE;\n    }\n\n    return TRUE;",
+      "callsTo": [
+        "FlagGet",
+        "GetVarPointer"
+      ],
+      "lineCount": 21
+    },
+    "GetLinkPartnerNames": {
+      "returnType": "u8",
+      "signature": "u8 GetLinkPartnerNames(void)",
+      "paramsRaw": "void",
+      "body": "u8 i;\n    u8 j = 0;\n    u8 myLinkPlayerNumber = GetMultiplayerId();\n    u8 nLinkPlayers = GetLinkPlayerCount();\n    for (i = 0; i < nLinkPlayers; i++)\n    {\n        if (myLinkPlayerNumber != i)\n        {\n            StringCopy(gTVStringVarPtrs[j], gLinkPlayers[i].name);\n            j++;\n        }\n    }\n    return nLinkPlayers;",
+      "callsTo": [
+        "GetLinkPlayerCount",
+        "GetMultiplayerId",
+        "StringCopy"
+      ],
+      "lineCount": 13
+    },
+    "SpawnLinkPartnerObjectEvent": {
+      "returnType": "void",
+      "signature": "void SpawnLinkPartnerObjectEvent(void)",
+      "paramsRaw": "void",
+      "body": "u8 j = 0;\n    s16 x = 0;\n    s16 y = 0;\n    u8 movementTypes[] = {\n        MOVEMENT_TYPE_FACE_UP,\n        MOVEMENT_TYPE_FACE_LEFT,\n        MOVEMENT_TYPE_FACE_DOWN,\n        MOVEMENT_TYPE_FACE_RIGHT\n    };\n    s8 coordOffsets[][2] = {\n        { 0,  1},\n        { 1,  0},\n        { 0, -1},\n        {-1,  0}\n    };\n    u8 myLinkPlayerNumber;\n    u8 playerFacingDirection;\n    u8 linkSpriteId;\n    u8 i;\n\n    myLinkPlayerNumber = GetMultiplayerId();\n    playerFacingDirection = GetPlayerFacingDirection();\n    switch (playerFacingDirection)\n    {\n    case DIR_WEST:\n        j = 2;\n        x = gSaveBlock1Ptr->pos.x - 1;\n        y = gSaveBlock1Ptr->pos.y;\n        break;\n    case DIR_NORTH:\n        j = 1;\n        x = gSaveBlock1Ptr->pos.x;\n        y = gSaveBlock1Ptr->pos.y - 1;\n        break;\n    case DIR_EAST:\n        x = gSaveBlock1Ptr->pos.x + 1;\n        y = gSaveBlock1Ptr->pos.y;\n        break;\n    case DIR_SOUTH:\n        j = 3;\n        x = gSaveBlock1Ptr->pos.x;\n        y = gSaveBlock1Ptr->pos.y + 1;\n    }\n    for (i = 0; i < gSpecialVar_0x8004; i++)\n    {\n        if (myLinkPlayerNumber != i)\n        {\n            switch ((u8)gLinkPlayers[i].version)\n            {\n            case VERSION_RUBY:\n            case VERSION_SAPPHIRE:\n                if (gLinkPlayers[i].gender == 0)\n                    linkSpriteId = OBJ_EVENT_GFX_LINK_RS_BRENDAN;\n                else\n                    linkSpriteId = OBJ_EVENT_GFX_LINK_RS_MAY;\n                break;\n            case VERSION_EMERALD:\n                if (gLinkPlayers[i].gender == 0)\n                    linkSpriteId = OBJ_EVENT_GFX_RIVAL_BRENDAN_NORMAL;\n                else\n                    linkSpriteId = OBJ_EVENT_GFX_RIVAL_MAY_NORMAL;\n                break;\n            default:\n                if (gLinkPlayers[i].gender == 0)\n                    linkSpriteId = OBJ_EVENT_GFX_RIVAL_BRENDAN_NORMAL;\n                else\n                    linkSpriteId = OBJ_EVENT_GFX_RIVAL_MAY_NORMAL;\n                break;\n            }\n            SpawnSpecialObjectEventParameterized(linkSpriteId, movementTypes[j], LOCALID_BERRY_BLENDER_PLAYER_END - i, coordOffsets[j][0] + x + MAP_OFFSET, coordOffsets[j][1] + y + MAP_OFFSET, 0);\n            LoadLinkPartnerObjectEventSpritePalette(linkSpriteId, LOCALID_BERRY_BLENDER_PLAYER_END - i, i);\n            j++;\n            if (j == MAX_LINK_PLAYERS)\n                j = 0;\n        }\n    }",
+      "callsTo": [
+        "GetMultiplayerId",
+        "GetPlayerFacingDirection",
+        "LoadLinkPartnerObjectEventSpritePalette",
+        "SpawnSpecialObjectEventParameterized"
+      ],
+      "lineCount": 76
+    },
+    "LoadLinkPartnerObjectEventSpritePalette": {
+      "returnType": "void",
+      "signature": "static void LoadLinkPartnerObjectEventSpritePalette(u8 graphicsId, u8 localEventId, u8 paletteNum)",
+      "paramsRaw": "u8 graphicsId, u8 localEventId, u8 paletteNum",
+      "body": "u8 adjustedPaletteNum;\n     \n    adjustedPaletteNum = paletteNum + 6;\n    if (graphicsId == OBJ_EVENT_GFX_LINK_RS_BRENDAN ||\n        graphicsId == OBJ_EVENT_GFX_LINK_RS_MAY ||\n        graphicsId == OBJ_EVENT_GFX_RIVAL_BRENDAN_NORMAL ||\n        graphicsId == OBJ_EVENT_GFX_RIVAL_MAY_NORMAL)\n    {\n        u8 obj = GetObjectEventIdByLocalIdAndMap(localEventId, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup);\n        if (obj != OBJECT_EVENTS_COUNT)\n        {\n            u8 spriteId = gObjectEvents[obj].spriteId;\n            struct Sprite *sprite = &gSprites[spriteId];\n            sprite->oam.paletteNum = adjustedPaletteNum;\n\n            switch (graphicsId)\n            {\n            case OBJ_EVENT_GFX_LINK_RS_BRENDAN:\n                LoadPalette(gObjectEventPal_RubySapphireBrendan, OBJ_PLTT_ID(adjustedPaletteNum), PLTT_SIZE_4BPP);\n                break;\n            case OBJ_EVENT_GFX_LINK_RS_MAY:\n                LoadPalette(gObjectEventPal_RubySapphireMay, OBJ_PLTT_ID(adjustedPaletteNum), PLTT_SIZE_4BPP);\n                break;\n            case OBJ_EVENT_GFX_RIVAL_BRENDAN_NORMAL:\n                LoadPalette(gObjectEventPal_Brendan, OBJ_PLTT_ID(adjustedPaletteNum), PLTT_SIZE_4BPP);\n                break;\n            case OBJ_EVENT_GFX_RIVAL_MAY_NORMAL:\n                LoadPalette(gObjectEventPal_May, OBJ_PLTT_ID(adjustedPaletteNum), PLTT_SIZE_4BPP);\n                break;\n            }\n        }\n    }",
+      "callsTo": [
+        "GetObjectEventIdByLocalIdAndMap",
+        "LoadPalette",
+        "OBJ_PLTT_ID"
+      ],
+      "lineCount": 32
+    },
+    "MauvilleGymPressSwitch": {
+      "returnType": "void",
+      "signature": "void MauvilleGymPressSwitch(void)",
+      "paramsRaw": "void",
+      "body": "u8 i;\n    for (i = 0; i < ARRAY_COUNT(sMauvilleGymSwitchCoords); i++)\n    {\n        if (i == gSpecialVar_0x8004)\n            MapGridSetMetatileIdAt(sMauvilleGymSwitchCoords[i].x, sMauvilleGymSwitchCoords[i].y, METATILE_MauvilleGym_PressedSwitch);\n        else\n            MapGridSetMetatileIdAt(sMauvilleGymSwitchCoords[i].x, sMauvilleGymSwitchCoords[i].y, METATILE_MauvilleGym_RaisedSwitch);\n    }",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "MapGridSetMetatileIdAt"
+      ],
+      "lineCount": 8
+    },
+    "MauvilleGymSetDefaultBarriers": {
+      "returnType": "void",
+      "signature": "void MauvilleGymSetDefaultBarriers(void)",
+      "paramsRaw": "void",
+      "body": "int x, y;\n     \n    for (y = 5 + MAP_OFFSET; y < 17 + MAP_OFFSET; y++)\n    {\n        for (x = 0 + MAP_OFFSET; x < 9 + MAP_OFFSET; x++)\n        {\n            switch (MapGridGetMetatileIdAt(x, y))\n            {\n            case METATILE_MauvilleGym_GreenBeamH1_On:\n                MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_GreenBeamH1_Off);\n                break;\n            case METATILE_MauvilleGym_GreenBeamH2_On:\n                MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_GreenBeamH2_Off);\n                break;\n            case METATILE_MauvilleGym_GreenBeamH3_On:\n                MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_GreenBeamH3_Off);\n                break;\n            case METATILE_MauvilleGym_GreenBeamH4_On:\n                MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_GreenBeamH4_Off);\n                break;\n            case METATILE_MauvilleGym_GreenBeamH1_Off:\n                MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_GreenBeamH1_On);\n                break;\n            case METATILE_MauvilleGym_GreenBeamH2_Off:\n                MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_GreenBeamH2_On);\n                break;\n            case METATILE_MauvilleGym_GreenBeamH3_Off:\n                MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_GreenBeamH3_On | MAPGRID_IMPASSABLE);\n                break;\n            case METATILE_MauvilleGym_GreenBeamH4_Off:\n                MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_GreenBeamH4_On | MAPGRID_IMPASSABLE);\n                break;\n            case METATILE_MauvilleGym_RedBeamH1_On:\n                MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_RedBeamH1_Off);\n                break;\n            case METATILE_MauvilleGym_RedBeamH2_On:\n                MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_RedBeamH2_Off);\n                break;\n            case METATILE_MauvilleGym_RedBeamH3_On:\n                MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_RedBeamH3_Off);\n                break;\n            case METATILE_MauvilleGym_RedBeamH4_On:\n                MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_RedBeamH4_Off);\n                break;\n            case METATILE_MauvilleGym_RedBeamH1_Off:\n                MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_RedBeamH1_On);\n                break;\n            case METATILE_MauvilleGym_RedBeamH2_Off:\n                MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_RedBeamH2_On);\n                break;\n            case METATILE_MauvilleGym_RedBeamH3_Off:\n                MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_RedBeamH3_On | MAPGRID_IMPASSABLE);\n                break;\n            case METATILE_MauvilleGym_RedBeamH4_Off:\n                MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_RedBeamH4_On | MAPGRID_IMPASSABLE);\n                break;\n            case METATILE_MauvilleGym_GreenBeamV1_On:\n                MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_PoleBottom_On | MAPGRID_IMPASSABLE);\n                break;\n            case METATILE_MauvilleGym_GreenBeamV2_On:\n                MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_FloorTile);\n                break;\n            case METATILE_MauvilleGym_RedBeamV1_On:\n                MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_PoleBottom_Off | MAPGRID_IMPASSABLE);\n                break;\n            case METATILE_MauvilleGym_RedBeamV2_On:\n                MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_FloorTile);\n                break;\n            case METATILE_MauvilleGym_PoleBottom_On:\n                MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_GreenBeamV1_On | MAPGRID_IMPASSABLE);\n                break;\n            case METATILE_MauvilleGym_FloorTile:\n                if (MapGridGetMetatileIdAt(x, y - 1) == METATILE_MauvilleGym_GreenBeamV1_On)\n                    MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_GreenBeamV2_On | MAPGRID_IMPASSABLE);\n                else\n                    MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_RedBeamV2_On | MAPGRID_IMPASSABLE);\n                break;\n            case METATILE_MauvilleGym_PoleBottom_Off:\n                MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_RedBeamV1_On | MAPGRID_IMPASSABLE);\n                break;\n            case METATILE_MauvilleGym_PoleTop_Off:\n                MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_PoleTop_On | MAPGRID_IMPASSABLE);\n                break;\n            case METATILE_MauvilleGym_PoleTop_On:\n                MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_PoleTop_Off);\n                break;\n            }\n        }\n    }",
+      "callsTo": [
+        "MapGridGetMetatileIdAt",
+        "MapGridSetMetatileIdAt"
+      ],
+      "lineCount": 89
+    },
+    "MauvilleGymDeactivatePuzzle": {
+      "returnType": "void",
+      "signature": "void MauvilleGymDeactivatePuzzle(void)",
+      "paramsRaw": "void",
+      "body": "int i, x, y;\n    const struct UCoords8 *switchCoords = sMauvilleGymSwitchCoords;\n    for (i = ARRAY_COUNT(sMauvilleGymSwitchCoords) - 1; i >= 0; i--)\n    {\n        MapGridSetMetatileIdAt(switchCoords->x, switchCoords->y, METATILE_MauvilleGym_PressedSwitch);\n        switchCoords++;\n    }\n    for (y = 5 + MAP_OFFSET; y < 17 + MAP_OFFSET; y++)\n    {\n        for (x = 0 + MAP_OFFSET; x < 9 + MAP_OFFSET; x++)\n        {\n            switch (MapGridGetMetatileIdAt(x, y))\n            {\n            case METATILE_MauvilleGym_GreenBeamH1_On:\n                MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_GreenBeamH1_Off);\n                break;\n            case METATILE_MauvilleGym_GreenBeamH2_On:\n                MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_GreenBeamH2_Off);\n                break;\n            case METATILE_MauvilleGym_GreenBeamH3_On:\n                MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_GreenBeamH3_Off);\n                break;\n            case METATILE_MauvilleGym_GreenBeamH4_On:\n                MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_GreenBeamH4_Off);\n                break;\n            case METATILE_MauvilleGym_RedBeamH1_On:\n                MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_RedBeamH1_Off);\n                break;\n            case METATILE_MauvilleGym_RedBeamH2_On:\n                MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_RedBeamH2_Off);\n                break;\n            case METATILE_MauvilleGym_RedBeamH3_On:\n                MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_RedBeamH3_Off);\n                break;\n            case METATILE_MauvilleGym_RedBeamH4_On:\n                MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_RedBeamH4_Off);\n                break;\n            case METATILE_MauvilleGym_GreenBeamV1_On:\n                MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_PoleBottom_On | MAPGRID_IMPASSABLE);\n                break;\n            case METATILE_MauvilleGym_RedBeamV1_On:\n                MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_PoleBottom_Off | MAPGRID_IMPASSABLE);\n                break;\n            case METATILE_MauvilleGym_GreenBeamV2_On:\n            case METATILE_MauvilleGym_RedBeamV2_On:\n                MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_FloorTile);\n                break;\n            case METATILE_MauvilleGym_PoleTop_On:\n                MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_PoleTop_Off);\n                break;\n            }\n        }\n    }",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "MapGridGetMetatileIdAt",
+        "MapGridSetMetatileIdAt"
+      ],
+      "lineCount": 53
+    },
+    "PetalburgGymSlideOpenRoomDoors": {
+      "returnType": "void",
+      "signature": "void PetalburgGymSlideOpenRoomDoors(void)",
+      "paramsRaw": "void",
+      "body": "sSlidingDoorNextFrameCounter = 0;\n    sSlidingDoorFrame = 0;\n    PlaySE(SE_UNLOCK);\n    CreateTask(Task_PetalburgGymSlideOpenRoomDoors, 8);",
+      "callsTo": [
+        "CreateTask",
+        "PlaySE"
+      ],
+      "lineCount": 4
+    },
+    "Task_PetalburgGymSlideOpenRoomDoors": {
+      "returnType": "void",
+      "signature": "static void Task_PetalburgGymSlideOpenRoomDoors(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "if (sSlidingDoorNextFrameDelay[sSlidingDoorFrame] == sSlidingDoorNextFrameCounter)\n    {\n        PetalburgGymSetDoorMetatiles(gSpecialVar_0x8004, sPetalburgGymSlidingDoorMetatiles[sSlidingDoorFrame]);\n        sSlidingDoorNextFrameCounter = 0;\n        if ((++sSlidingDoorFrame) == ARRAY_COUNT(sPetalburgGymSlidingDoorMetatiles))\n        {\n            DestroyTask(taskId);\n            ScriptContext_Enable();\n        }\n    }\n    else\n    {\n        sSlidingDoorNextFrameCounter++;\n    }",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "DestroyTask",
+        "PetalburgGymSetDoorMetatiles",
+        "ScriptContext_Enable"
+      ],
+      "lineCount": 14
+    },
+    "PetalburgGymSetDoorMetatiles": {
+      "returnType": "void",
+      "signature": "static void PetalburgGymSetDoorMetatiles(u8 roomNumber, u16 metatileId)",
+      "paramsRaw": "u8 roomNumber, u16 metatileId",
+      "body": "u16 doorCoordsX[4];\n    u16 doorCoordsY[4];\n    u8 i;\n    u8 nDoors = 0;\n    switch (roomNumber)\n    {\n    case 1:\n        nDoors = 2;\n        doorCoordsX[0] = 1;\n        doorCoordsX[1] = 7;\n        doorCoordsY[0] = 104;\n        doorCoordsY[1] = 104;\n        break;\n    case 2:\n        nDoors = 2;\n        doorCoordsX[0] = 1;\n        doorCoordsX[1] = 7;\n        doorCoordsY[0] = 78;\n        doorCoordsY[1] = 78;\n        break;\n    case 3:\n        nDoors = 2;\n        doorCoordsX[0] = 1;\n        doorCoordsX[1] = 7;\n        doorCoordsY[0] = 91;\n        doorCoordsY[1] = 91;\n        break;\n    case 4:\n        nDoors = 1;\n        doorCoordsX[0] = 7;\n        doorCoordsY[0] = 39;\n        break;\n    case 5:\n        nDoors = 2;\n        doorCoordsX[0] = 1;\n        doorCoordsX[1] = 7;\n        doorCoordsY[0] = 52;\n        doorCoordsY[1] = 52;\n        break;\n    case 6:\n        nDoors = 1;\n        doorCoordsX[0] = 1;\n        doorCoordsY[0] = 65;\n        break;\n    case 7:\n        nDoors = 1;\n        doorCoordsX[0] = 7;\n        doorCoordsY[0] = 13;\n        break;\n    case 8:\n        nDoors = 1;\n        doorCoordsX[0] = 1;\n        doorCoordsY[0] = 26;\n        break;\n    }\n    for (i = 0; i < nDoors; i++)\n    {\n        MapGridSetMetatileIdAt(doorCoordsX[i] + MAP_OFFSET, doorCoordsY[i] + MAP_OFFSET, metatileId | MAPGRID_IMPASSABLE);\n        MapGridSetMetatileIdAt(doorCoordsX[i] + MAP_OFFSET, doorCoordsY[i] + MAP_OFFSET + 1, (metatileId + METATILE_ROW_WIDTH) | MAPGRID_IMPASSABLE);\n    }\n    DrawWholeMapView();",
+      "callsTo": [
+        "DrawWholeMapView",
+        "MapGridSetMetatileIdAt"
+      ],
+      "lineCount": 61
+    },
+    "PetalburgGymUnlockRoomDoors": {
+      "returnType": "void",
+      "signature": "void PetalburgGymUnlockRoomDoors(void)",
+      "paramsRaw": "void",
+      "body": "PetalburgGymSetDoorMetatiles(gSpecialVar_0x8004, sPetalburgGymSlidingDoorMetatiles[4]);",
+      "callsTo": [
+        "PetalburgGymSetDoorMetatiles"
+      ],
+      "lineCount": 1
+    },
+    "ShowFieldMessageStringVar4": {
+      "returnType": "void",
+      "signature": "void ShowFieldMessageStringVar4(void)",
+      "paramsRaw": "void",
+      "body": "ShowFieldMessage(gStringVar4);",
+      "callsTo": [
+        "ShowFieldMessage"
+      ],
+      "lineCount": 1
+    },
+    "StorePlayerCoordsInVars": {
+      "returnType": "void",
+      "signature": "void StorePlayerCoordsInVars(void)",
+      "paramsRaw": "void",
+      "body": "gSpecialVar_0x8004 = gSaveBlock1Ptr->pos.x;\n    gSpecialVar_0x8005 = gSaveBlock1Ptr->pos.y;",
+      "callsTo": [],
+      "lineCount": 2
+    },
+    "GetPlayerTrainerIdOnesDigit": {
+      "returnType": "u8",
+      "signature": "u8 GetPlayerTrainerIdOnesDigit(void)",
+      "paramsRaw": "void",
+      "body": "return (u16)((gSaveBlock2Ptr->playerTrainerId[1] << 8) | gSaveBlock2Ptr->playerTrainerId[0]) % 10;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "GetPlayerBigGuyGirlString": {
+      "returnType": "void",
+      "signature": "void GetPlayerBigGuyGirlString(void)",
+      "paramsRaw": "void",
+      "body": "if (gSaveBlock2Ptr->playerGender == MALE)\n        StringCopy(gStringVar1, gText_BigGuy);\n    else\n        StringCopy(gStringVar1, gText_BigGirl);",
+      "callsTo": [
+        "StringCopy"
+      ],
+      "lineCount": 4
+    },
+    "GetRivalSonDaughterString": {
+      "returnType": "void",
+      "signature": "void GetRivalSonDaughterString(void)",
+      "paramsRaw": "void",
+      "body": "if (gSaveBlock2Ptr->playerGender == MALE)\n        StringCopy(gStringVar1, gText_Daughter);\n    else\n        StringCopy(gStringVar1, gText_Son);",
+      "callsTo": [
+        "StringCopy"
+      ],
+      "lineCount": 4
+    },
+    "GetBattleOutcome": {
+      "returnType": "u8",
+      "signature": "u8 GetBattleOutcome(void)",
+      "paramsRaw": "void",
+      "body": "return gBattleOutcome;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "CableCarWarp": {
+      "returnType": "void",
+      "signature": "void CableCarWarp(void)",
+      "paramsRaw": "void",
+      "body": "if (gSpecialVar_0x8004 != 0)\n        SetWarpDestination(MAP_GROUP(MAP_ROUTE112_CABLE_CAR_STATION), MAP_NUM(MAP_ROUTE112_CABLE_CAR_STATION), WARP_ID_NONE, 6, 4);\n    else\n        SetWarpDestination(MAP_GROUP(MAP_MT_CHIMNEY_CABLE_CAR_STATION), MAP_NUM(MAP_MT_CHIMNEY_CABLE_CAR_STATION), WARP_ID_NONE, 6, 4);",
+      "callsTo": [
+        "MAP_GROUP",
+        "MAP_NUM",
+        "SetWarpDestination"
+      ],
+      "lineCount": 4
+    },
+    "SetHiddenItemFlag": {
+      "returnType": "void",
+      "signature": "void SetHiddenItemFlag(void)",
+      "paramsRaw": "void",
+      "body": "FlagSet(gSpecialVar_0x8004);",
+      "callsTo": [
+        "FlagSet"
+      ],
+      "lineCount": 1
+    },
+    "GetWeekCount": {
+      "returnType": "u16",
+      "signature": "u16 GetWeekCount(void)",
+      "paramsRaw": "void",
+      "body": "u16 weekCount = gLocalTime.days / 7;\n    if (weekCount > 9999)\n        weekCount = 9999;\n\n    return weekCount;",
+      "callsTo": [],
+      "lineCount": 5
+    },
+    "GetLeadMonFriendshipScore": {
+      "returnType": "u8",
+      "signature": "u8 GetLeadMonFriendshipScore(void)",
+      "paramsRaw": "void",
+      "body": "struct Pokemon *pokemon = &gPlayerParty[GetLeadMonIndex()];\n    if (GetMonData(pokemon, MON_DATA_FRIENDSHIP) == MAX_FRIENDSHIP)\n        return FRIENDSHIP_MAX;\n    if (GetMonData(pokemon, MON_DATA_FRIENDSHIP) >= 200)\n        return FRIENDSHIP_200_TO_254;\n    if (GetMonData(pokemon, MON_DATA_FRIENDSHIP) >= 150)\n        return FRIENDSHIP_150_TO_199;\n    if (GetMonData(pokemon, MON_DATA_FRIENDSHIP) >= 100)\n        return FRIENDSHIP_100_TO_149;\n    if (GetMonData(pokemon, MON_DATA_FRIENDSHIP) >= 50)\n        return FRIENDSHIP_50_TO_99;\n    if (GetMonData(pokemon, MON_DATA_FRIENDSHIP) >= 1)\n        return FRIENDSHIP_1_TO_49;\n\n    return FRIENDSHIP_NONE;",
+      "callsTo": [
+        "GetLeadMonIndex",
+        "GetMonData"
+      ],
+      "lineCount": 15
+    },
+    "CB2_FieldShowRegionMap": {
+      "returnType": "void",
+      "signature": "static void CB2_FieldShowRegionMap(void)",
+      "paramsRaw": "void",
+      "body": "FieldInitRegionMap(CB2_ReturnToFieldContinueScriptPlayMapMusic);",
+      "callsTo": [
+        "FieldInitRegionMap"
+      ],
+      "lineCount": 1
+    },
+    "FieldShowRegionMap": {
+      "returnType": "void",
+      "signature": "void FieldShowRegionMap(void)",
+      "paramsRaw": "void",
+      "body": "SetMainCallback2(CB2_FieldShowRegionMap);",
+      "callsTo": [
+        "SetMainCallback2"
+      ],
+      "lineCount": 1
+    },
+    "DoPCTurnOnEffect": {
+      "returnType": "void",
+      "signature": "void DoPCTurnOnEffect(void)",
+      "paramsRaw": "void",
+      "body": "if (FuncIsActiveTask(Task_PCTurnOnEffect) != TRUE)\n    {\n        u8 taskId = CreateTask(Task_PCTurnOnEffect, 8);\n        gTasks[taskId].tPaused = FALSE;\n        gTasks[taskId].tTaskId = taskId;\n        gTasks[taskId].tFlickerCount = 0;\n        gTasks[taskId].tTimer = 0;\n        gTasks[taskId].tIsScreenOn = FALSE;\n    }",
+      "callsTo": [
+        "CreateTask",
+        "FuncIsActiveTask"
+      ],
+      "lineCount": 9
+    },
+    "Task_PCTurnOnEffect": {
+      "returnType": "void",
+      "signature": "static void Task_PCTurnOnEffect(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "struct Task *task = &gTasks[taskId];\n    if (!task->tPaused)\n        PCTurnOnEffect(task);",
+      "callsTo": [
+        "PCTurnOnEffect"
+      ],
+      "lineCount": 3
+    },
+    "PCTurnOnEffect": {
+      "returnType": "void",
+      "signature": "static void PCTurnOnEffect(struct Task *task)",
+      "paramsRaw": "struct Task *task",
+      "body": "u8 playerDirection;\n    s8 dx = 0;\n    s8 dy = 0;\n    if (task->tTimer == 6)\n    {\n        task->tTimer = 0;\n\n         \n        playerDirection = GetPlayerFacingDirection();\n        switch (playerDirection)\n        {\n        case DIR_NORTH:\n            dx = 0;\n            dy = -1;\n            break;\n        case DIR_WEST:\n            dx = -1;\n            dy = -1;\n            break;\n        case DIR_EAST:\n            dx = 1;\n            dy = -1;\n            break;\n        }\n\n         \n        PCTurnOnEffect_SetMetatile(task->tIsScreenOn, dx, dy);\n        DrawWholeMapView();\n\n         \n         \n        task->tIsScreenOn ^= 1;\n        if (++task->tFlickerCount == 5)\n            DestroyTask(task->tTaskId);\n    }\n    task->tTimer++;",
+      "callsTo": [
+        "DestroyTask",
+        "DrawWholeMapView",
+        "GetPlayerFacingDirection",
+        "PCTurnOnEffect_SetMetatile"
+      ],
+      "lineCount": 36
+    },
+    "PCTurnOnEffect_SetMetatile": {
+      "returnType": "void",
+      "signature": "static void PCTurnOnEffect_SetMetatile(s16 isScreenOn, s8 dx, s8 dy)",
+      "paramsRaw": "s16 isScreenOn, s8 dx, s8 dy",
+      "body": "u16 metatileId = 0;\n    if (isScreenOn)\n    {\n         \n        if (gSpecialVar_0x8004 == PC_LOCATION_OTHER)\n            metatileId = METATILE_Building_PC_Off;\n        else if (gSpecialVar_0x8004 == PC_LOCATION_BRENDANS_HOUSE)\n            metatileId = METATILE_BrendansMaysHouse_BrendanPC_Off;\n        else if (gSpecialVar_0x8004 == PC_LOCATION_MAYS_HOUSE)\n            metatileId = METATILE_BrendansMaysHouse_MayPC_Off;\n    }\n    else\n    {\n         \n        if (gSpecialVar_0x8004 == PC_LOCATION_OTHER)\n            metatileId = METATILE_Building_PC_On;\n        else if (gSpecialVar_0x8004 == PC_LOCATION_BRENDANS_HOUSE)\n            metatileId = METATILE_BrendansMaysHouse_BrendanPC_On;\n        else if (gSpecialVar_0x8004 == PC_LOCATION_MAYS_HOUSE)\n            metatileId = METATILE_BrendansMaysHouse_MayPC_On;\n    }\n    MapGridSetMetatileIdAt(gSaveBlock1Ptr->pos.x + dx + MAP_OFFSET, gSaveBlock1Ptr->pos.y + dy + MAP_OFFSET, metatileId | MAPGRID_IMPASSABLE);",
+      "callsTo": [
+        "MapGridSetMetatileIdAt"
+      ],
+      "lineCount": 22
+    },
+    "DoPCTurnOffEffect": {
+      "returnType": "void",
+      "signature": "void DoPCTurnOffEffect(void)",
+      "paramsRaw": "void",
+      "body": "PCTurnOffEffect();",
+      "callsTo": [
+        "PCTurnOffEffect"
+      ],
+      "lineCount": 1
+    },
+    "PCTurnOffEffect": {
+      "returnType": "void",
+      "signature": "static void PCTurnOffEffect(void)",
+      "paramsRaw": "void",
+      "body": "s8 dx = 0;\n    s8 dy = 0;\n    u16 metatileId = 0;\n\n     \n    u8 playerDirection = GetPlayerFacingDirection();\n    switch (playerDirection)\n    {\n    case DIR_NORTH:\n        dx = 0;\n        dy = -1;\n        break;\n    case DIR_WEST:\n        dx = -1;\n        dy = -1;\n        break;\n    case DIR_EAST:\n        dx = 1;\n        dy = -1;\n        break;\n    }\n\n    if (gSpecialVar_0x8004 == PC_LOCATION_OTHER)\n        metatileId = METATILE_Building_PC_Off;\n    else if (gSpecialVar_0x8004 == PC_LOCATION_BRENDANS_HOUSE)\n        metatileId = METATILE_BrendansMaysHouse_BrendanPC_Off;\n    else if (gSpecialVar_0x8004 == PC_LOCATION_MAYS_HOUSE)\n        metatileId = METATILE_BrendansMaysHouse_MayPC_Off;\n\n    MapGridSetMetatileIdAt(gSaveBlock1Ptr->pos.x + dx + MAP_OFFSET, gSaveBlock1Ptr->pos.y + dy + MAP_OFFSET, metatileId | MAPGRID_IMPASSABLE);\n    DrawWholeMapView();",
+      "callsTo": [
+        "DrawWholeMapView",
+        "GetPlayerFacingDirection",
+        "MapGridSetMetatileIdAt"
+      ],
+      "lineCount": 31
+    },
+    "DoLotteryCornerComputerEffect": {
+      "returnType": "void",
+      "signature": "void DoLotteryCornerComputerEffect(void)",
+      "paramsRaw": "void",
+      "body": "if (FuncIsActiveTask(Task_LotteryCornerComputerEffect) != TRUE)\n    {\n        u8 taskId = CreateTask(Task_LotteryCornerComputerEffect, 8);\n        gTasks[taskId].tPaused = FALSE;\n        gTasks[taskId].tTaskId = taskId;\n        gTasks[taskId].tFlickerCount = 0;\n        gTasks[taskId].tTimer = 0;\n        gTasks[taskId].tIsScreenOn = FALSE;\n    }",
+      "callsTo": [
+        "CreateTask",
+        "FuncIsActiveTask"
+      ],
+      "lineCount": 9
+    },
+    "Task_LotteryCornerComputerEffect": {
+      "returnType": "void",
+      "signature": "static void Task_LotteryCornerComputerEffect(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "struct Task *task = &gTasks[taskId];\n    if (!task->tPaused)\n        LotteryCornerComputerEffect(task);",
+      "callsTo": [
+        "LotteryCornerComputerEffect"
+      ],
+      "lineCount": 3
+    },
+    "LotteryCornerComputerEffect": {
+      "returnType": "void",
+      "signature": "static void LotteryCornerComputerEffect(struct Task *task)",
+      "paramsRaw": "struct Task *task",
+      "body": "if (task->tTimer == 6)\n    {\n        task->tTimer = 0;\n        if (task->tIsScreenOn)\n        {\n             \n            MapGridSetMetatileIdAt(11 + MAP_OFFSET, 1 + MAP_OFFSET, METATILE_Shop_Laptop1_Normal | MAPGRID_IMPASSABLE);\n            MapGridSetMetatileIdAt(11 + MAP_OFFSET, 2 + MAP_OFFSET, METATILE_Shop_Laptop2_Normal | MAPGRID_IMPASSABLE);\n        }\n        else\n        {\n             \n            MapGridSetMetatileIdAt(11 + MAP_OFFSET, 1 + MAP_OFFSET, METATILE_Shop_Laptop1_Flash | MAPGRID_IMPASSABLE);\n            MapGridSetMetatileIdAt(11 + MAP_OFFSET, 2 + MAP_OFFSET, METATILE_Shop_Laptop2_Flash | MAPGRID_IMPASSABLE);\n        }\n        DrawWholeMapView();\n\n         \n         \n        task->tIsScreenOn ^= 1;\n        if (++task->tFlickerCount == 5)\n            DestroyTask(task->tTaskId);\n    }\n    task->tTimer++;",
+      "callsTo": [
+        "DestroyTask",
+        "DrawWholeMapView",
+        "MapGridSetMetatileIdAt"
+      ],
+      "lineCount": 24
+    },
+    "EndLotteryCornerComputerEffect": {
+      "returnType": "void",
+      "signature": "void EndLotteryCornerComputerEffect(void)",
+      "paramsRaw": "void",
+      "body": "MapGridSetMetatileIdAt(11 + MAP_OFFSET, 1 + MAP_OFFSET, METATILE_Shop_Laptop1_Normal | MAPGRID_IMPASSABLE);\n    MapGridSetMetatileIdAt(11 + MAP_OFFSET, 2 + MAP_OFFSET, METATILE_Shop_Laptop2_Normal | MAPGRID_IMPASSABLE);\n    DrawWholeMapView();",
+      "callsTo": [
+        "DrawWholeMapView",
+        "MapGridSetMetatileIdAt"
+      ],
+      "lineCount": 3
+    },
+    "SetTrickHouseNuggetFlag": {
+      "returnType": "void",
+      "signature": "void SetTrickHouseNuggetFlag(void)",
+      "paramsRaw": "void",
+      "body": "u16 *specVar = &gSpecialVar_0x8004;\n    u16 flag = FLAG_HIDDEN_ITEM_TRICK_HOUSE_NUGGET;\n    *specVar = flag;\n    FlagSet(flag);",
+      "callsTo": [
+        "FlagSet"
+      ],
+      "lineCount": 4
+    },
+    "ResetTrickHouseNuggetFlag": {
+      "returnType": "void",
+      "signature": "void ResetTrickHouseNuggetFlag(void)",
+      "paramsRaw": "void",
+      "body": "u16 *specVar = &gSpecialVar_0x8004;\n    u16 flag = FLAG_HIDDEN_ITEM_TRICK_HOUSE_NUGGET;\n    *specVar = flag;\n    FlagClear(flag);",
+      "callsTo": [
+        "FlagClear"
+      ],
+      "lineCount": 4
+    },
+    "CheckLeadMonCool": {
+      "returnType": "bool8",
+      "signature": "bool8 CheckLeadMonCool(void)",
+      "paramsRaw": "void",
+      "body": "if (GetMonData(&gPlayerParty[GetLeadMonIndex()], MON_DATA_COOL) < 200)\n        return FALSE;\n\n    return TRUE;",
+      "callsTo": [
+        "GetLeadMonIndex",
+        "GetMonData"
+      ],
+      "lineCount": 4
+    },
+    "CheckLeadMonBeauty": {
+      "returnType": "bool8",
+      "signature": "bool8 CheckLeadMonBeauty(void)",
+      "paramsRaw": "void",
+      "body": "if (GetMonData(&gPlayerParty[GetLeadMonIndex()], MON_DATA_BEAUTY) < 200)\n        return FALSE;\n\n    return TRUE;",
+      "callsTo": [
+        "GetLeadMonIndex",
+        "GetMonData"
+      ],
+      "lineCount": 4
+    },
+    "CheckLeadMonCute": {
+      "returnType": "bool8",
+      "signature": "bool8 CheckLeadMonCute(void)",
+      "paramsRaw": "void",
+      "body": "if (GetMonData(&gPlayerParty[GetLeadMonIndex()], MON_DATA_CUTE) < 200)\n        return FALSE;\n\n    return TRUE;",
+      "callsTo": [
+        "GetLeadMonIndex",
+        "GetMonData"
+      ],
+      "lineCount": 4
+    },
+    "CheckLeadMonSmart": {
+      "returnType": "bool8",
+      "signature": "bool8 CheckLeadMonSmart(void)",
+      "paramsRaw": "void",
+      "body": "if (GetMonData(&gPlayerParty[GetLeadMonIndex()], MON_DATA_SMART) < 200)\n        return FALSE;\n\n    return TRUE;",
+      "callsTo": [
+        "GetLeadMonIndex",
+        "GetMonData"
+      ],
+      "lineCount": 4
+    },
+    "CheckLeadMonTough": {
+      "returnType": "bool8",
+      "signature": "bool8 CheckLeadMonTough(void)",
+      "paramsRaw": "void",
+      "body": "if (GetMonData(&gPlayerParty[GetLeadMonIndex()], MON_DATA_TOUGH) < 200)\n        return FALSE;\n\n    return TRUE;",
+      "callsTo": [
+        "GetLeadMonIndex",
+        "GetMonData"
+      ],
+      "lineCount": 4
+    },
+    "IsGrassTypeInParty": {
+      "returnType": "void",
+      "signature": "void IsGrassTypeInParty(void)",
+      "paramsRaw": "void",
+      "body": "u8 i;\n    u16 species;\n    struct Pokemon *pokemon;\n    for (i = 0; i < PARTY_SIZE; i++)\n    {\n        pokemon = &gPlayerParty[i];\n        if (GetMonData(pokemon, MON_DATA_SANITY_HAS_SPECIES) && !GetMonData(pokemon, MON_DATA_IS_EGG))\n        {\n            species = GetMonData(pokemon, MON_DATA_SPECIES);\n            if (gSpeciesInfo[species].types[0] == TYPE_GRASS || gSpeciesInfo[species].types[1] == TYPE_GRASS)\n            {\n                gSpecialVar_Result = TRUE;\n                return;\n            }\n        }\n    }\n    gSpecialVar_Result = FALSE;",
+      "callsTo": [
+        "GetMonData"
+      ],
+      "lineCount": 17
+    },
+    "SpawnCameraObject": {
+      "returnType": "void",
+      "signature": "void SpawnCameraObject(void)",
+      "paramsRaw": "void",
+      "body": "u8 obj = SpawnSpecialObjectEventParameterized(OBJ_EVENT_GFX_BOY_1,\n                                                  MOVEMENT_TYPE_FACE_DOWN,\n                                                  LOCALID_CAMERA,\n                                                  gSaveBlock1Ptr->pos.x + MAP_OFFSET,\n                                                  gSaveBlock1Ptr->pos.y + MAP_OFFSET,\n                                                  ELEVATION_DEFAULT);\n    gObjectEvents[obj].invisible = TRUE;\n    CameraObjectSetFollowedSpriteId(gObjectEvents[obj].spriteId);",
+      "callsTo": [
+        "CameraObjectSetFollowedSpriteId",
+        "SpawnSpecialObjectEventParameterized"
+      ],
+      "lineCount": 8
+    },
+    "RemoveCameraObject": {
+      "returnType": "void",
+      "signature": "void RemoveCameraObject(void)",
+      "paramsRaw": "void",
+      "body": "CameraObjectSetFollowedSpriteId(GetPlayerAvatarSpriteId());\n    RemoveObjectEventByLocalIdAndMap(LOCALID_CAMERA, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup);",
+      "callsTo": [
+        "CameraObjectSetFollowedSpriteId",
+        "GetPlayerAvatarSpriteId",
+        "RemoveObjectEventByLocalIdAndMap"
+      ],
+      "lineCount": 2
+    },
+    "GetPokeblockNameByMonNature": {
+      "returnType": "u8",
+      "signature": "u8 GetPokeblockNameByMonNature(void)",
+      "paramsRaw": "void",
+      "body": "return CopyMonFavoritePokeblockName(GetNature(&gPlayerParty[GetLeadMonIndex()]), gStringVar1);",
+      "callsTo": [
+        "CopyMonFavoritePokeblockName",
+        "GetLeadMonIndex",
+        "GetNature"
+      ],
+      "lineCount": 1
+    },
+    "GetSecretBaseNearbyMapName": {
+      "returnType": "void",
+      "signature": "void GetSecretBaseNearbyMapName(void)",
+      "paramsRaw": "void",
+      "body": "GetMapName(gStringVar1, VarGet(VAR_SECRET_BASE_MAP), 0);",
+      "callsTo": [
+        "GetMapName",
+        "VarGet"
+      ],
+      "lineCount": 1
+    },
+    "GetBattleTowerSinglesStreak": {
+      "returnType": "u16",
+      "signature": "u16 GetBattleTowerSinglesStreak(void)",
+      "paramsRaw": "void",
+      "body": "return GetGameStat(GAME_STAT_BATTLE_TOWER_SINGLES_STREAK);",
+      "callsTo": [
+        "GetGameStat"
+      ],
+      "lineCount": 1
+    },
+    "BufferEReaderTrainerName": {
+      "returnType": "void",
+      "signature": "void BufferEReaderTrainerName(void)",
+      "paramsRaw": "void",
+      "body": "GetEreaderTrainerName(gStringVar1);",
+      "callsTo": [
+        "GetEreaderTrainerName"
+      ],
+      "lineCount": 1
+    },
+    "GetSlotMachineId": {
+      "returnType": "u16",
+      "signature": "u16 GetSlotMachineId(void)",
+      "paramsRaw": "void",
+      "body": "static const u8 sSlotMachineRandomSeeds[SLOT_MACHINE_COUNT] = {12, 2, 4, 5, 1, 8, 7, 11, 3, 10, 9, 6};\n    static const u8 sSlotMachineIds[SLOT_MACHINE_COUNT] = {\n        SLOT_MACHINE_UNLUCKIEST,\n        SLOT_MACHINE_UNLUCKIER,\n        SLOT_MACHINE_UNLUCKIER,\n        SLOT_MACHINE_UNLUCKY,\n        SLOT_MACHINE_UNLUCKY,\n        SLOT_MACHINE_UNLUCKY,\n        SLOT_MACHINE_LUCKY,\n        SLOT_MACHINE_LUCKY,\n        SLOT_MACHINE_LUCKY,\n        SLOT_MACHINE_LUCKIER,\n        SLOT_MACHINE_LUCKIER,\n        SLOT_MACHINE_LUCKIEST\n    };\n    static const u8 sSlotMachineServiceDayIds[SLOT_MACHINE_COUNT] = {\n        SLOT_MACHINE_LUCKY,\n        SLOT_MACHINE_LUCKY,\n        SLOT_MACHINE_LUCKY,\n        SLOT_MACHINE_LUCKY,\n        SLOT_MACHINE_LUCKY,\n        SLOT_MACHINE_LUCKY,\n        SLOT_MACHINE_LUCKIER,\n        SLOT_MACHINE_LUCKIER,\n        SLOT_MACHINE_LUCKIER,\n        SLOT_MACHINE_LUCKIER,\n        SLOT_MACHINE_LUCKIEST,\n        SLOT_MACHINE_LUCKIEST\n    };\n\n    u32 rnd = gSaveBlock1Ptr->dewfordTrends[0].trendiness + gSaveBlock1Ptr->dewfordTrends[0].rand + sSlotMachineRandomSeeds[gSpecialVar_0x8004];\n    if (IsPokeNewsActive(POKENEWS_GAME_CORNER))\n        return sSlotMachineServiceDayIds[rnd % SLOT_MACHINE_COUNT];\n\n    return sSlotMachineIds[rnd % SLOT_MACHINE_COUNT];",
+      "callsTo": [
+        "IsPokeNewsActive"
+      ],
+      "lineCount": 35
+    },
+    "FoundAbandonedShipRoom1Key": {
+      "returnType": "bool8",
+      "signature": "bool8 FoundAbandonedShipRoom1Key(void)",
+      "paramsRaw": "void",
+      "body": "u16 *specVar = &gSpecialVar_0x8004;\n    u16 flag = FLAG_HIDDEN_ITEM_ABANDONED_SHIP_RM_1_KEY;\n    *specVar = flag;\n    if (!FlagGet(flag))\n        return FALSE;\n\n    return TRUE;",
+      "callsTo": [
+        "FlagGet"
+      ],
+      "lineCount": 7
+    },
+    "FoundAbandonedShipRoom2Key": {
+      "returnType": "bool8",
+      "signature": "bool8 FoundAbandonedShipRoom2Key(void)",
+      "paramsRaw": "void",
+      "body": "u16 *specVar = &gSpecialVar_0x8004;\n    u16 flag = FLAG_HIDDEN_ITEM_ABANDONED_SHIP_RM_2_KEY;\n    *specVar = flag;\n    if (!FlagGet(flag))\n        return FALSE;\n\n    return TRUE;",
+      "callsTo": [
+        "FlagGet"
+      ],
+      "lineCount": 7
+    },
+    "FoundAbandonedShipRoom4Key": {
+      "returnType": "bool8",
+      "signature": "bool8 FoundAbandonedShipRoom4Key(void)",
+      "paramsRaw": "void",
+      "body": "u16 *specVar = &gSpecialVar_0x8004;\n    u16 flag = FLAG_HIDDEN_ITEM_ABANDONED_SHIP_RM_4_KEY;\n    *specVar = flag;\n    if (!FlagGet(flag))\n        return FALSE;\n\n    return TRUE;",
+      "callsTo": [
+        "FlagGet"
+      ],
+      "lineCount": 7
+    },
+    "FoundAbandonedShipRoom6Key": {
+      "returnType": "bool8",
+      "signature": "bool8 FoundAbandonedShipRoom6Key(void)",
+      "paramsRaw": "void",
+      "body": "u16 *specVar = &gSpecialVar_0x8004;\n    u16 flag = FLAG_HIDDEN_ITEM_ABANDONED_SHIP_RM_6_KEY;\n    *specVar = flag;\n    if (!FlagGet(flag))\n        return FALSE;\n\n    return TRUE;",
+      "callsTo": [
+        "FlagGet"
+      ],
+      "lineCount": 7
+    },
+    "LeadMonHasEffortRibbon": {
+      "returnType": "bool8",
+      "signature": "bool8 LeadMonHasEffortRibbon(void)",
+      "paramsRaw": "void",
+      "body": "return GetMonData(&gPlayerParty[GetLeadMonIndex()], MON_DATA_EFFORT_RIBBON, NULL);",
+      "callsTo": [
+        "GetLeadMonIndex",
+        "GetMonData"
+      ],
+      "lineCount": 1
+    },
+    "GiveLeadMonEffortRibbon": {
+      "returnType": "void",
+      "signature": "void GiveLeadMonEffortRibbon(void)",
+      "paramsRaw": "void",
+      "body": "bool8 ribbonSet;\n    struct Pokemon *leadMon;\n    IncrementGameStat(GAME_STAT_RECEIVED_RIBBONS);\n    FlagSet(FLAG_SYS_RIBBON_GET);\n    ribbonSet = TRUE;\n    leadMon = &gPlayerParty[GetLeadMonIndex()];\n    SetMonData(leadMon, MON_DATA_EFFORT_RIBBON, &ribbonSet);\n    if (GetRibbonCount(leadMon) > NUM_CUTIES_RIBBONS)\n        TryPutSpotTheCutiesOnAir(leadMon, MON_DATA_EFFORT_RIBBON);",
+      "callsTo": [
+        "FlagSet",
+        "GetLeadMonIndex",
+        "GetRibbonCount",
+        "IncrementGameStat",
+        "SetMonData",
+        "TryPutSpotTheCutiesOnAir"
+      ],
+      "lineCount": 9
+    },
+    "Special_AreLeadMonEVsMaxedOut": {
+      "returnType": "bool8",
+      "signature": "bool8 Special_AreLeadMonEVsMaxedOut(void)",
+      "paramsRaw": "void",
+      "body": "if (GetMonEVCount(&gPlayerParty[GetLeadMonIndex()]) >= MAX_TOTAL_EVS)\n        return TRUE;\n\n    return FALSE;",
+      "callsTo": [
+        "GetLeadMonIndex",
+        "GetMonEVCount"
+      ],
+      "lineCount": 4
+    },
+    "TryUpdateRusturfTunnelState": {
+      "returnType": "u8",
+      "signature": "u8 TryUpdateRusturfTunnelState(void)",
+      "paramsRaw": "void",
+      "body": "if (!FlagGet(FLAG_RUSTURF_TUNNEL_OPENED)\n        && gSaveBlock1Ptr->location.mapGroup == MAP_GROUP(MAP_RUSTURF_TUNNEL)\n        && gSaveBlock1Ptr->location.mapNum == MAP_NUM(MAP_RUSTURF_TUNNEL))\n    {\n        if (FlagGet(FLAG_HIDE_RUSTURF_TUNNEL_ROCK_1))\n        {\n            VarSet(VAR_RUSTURF_TUNNEL_STATE, 4);\n            return TRUE;\n        }\n        else if (FlagGet(FLAG_HIDE_RUSTURF_TUNNEL_ROCK_2))\n        {\n            VarSet(VAR_RUSTURF_TUNNEL_STATE, 5);\n            return TRUE;\n        }\n    }\n    return FALSE;",
+      "callsTo": [
+        "FlagGet",
+        "MAP_GROUP",
+        "MAP_NUM",
+        "VarSet"
+      ],
+      "lineCount": 16
+    },
+    "SetShoalItemFlag": {
+      "returnType": "void",
+      "signature": "void SetShoalItemFlag(u16 unused)",
+      "paramsRaw": "u16 unused",
+      "body": "FlagSet(FLAG_SYS_SHOAL_ITEM);",
+      "callsTo": [
+        "FlagSet"
+      ],
+      "lineCount": 1
+    },
+    "LoadWallyZigzagoon": {
+      "returnType": "void",
+      "signature": "void LoadWallyZigzagoon(void)",
+      "paramsRaw": "void",
+      "body": "u16 monData;\n    CreateMon(&gPlayerParty[0], SPECIES_ZIGZAGOON, 7, USE_RANDOM_IVS, FALSE, 0, OT_ID_PLAYER_ID, 0);\n    monData = TRUE;\n    SetMonData(&gPlayerParty[0], MON_DATA_ABILITY_NUM, &monData);\n    monData = MOVE_TACKLE;\n    SetMonData(&gPlayerParty[0], MON_DATA_MOVE1, &monData);\n    monData = MOVE_NONE;\n    SetMonData(&gPlayerParty[0], MON_DATA_MOVE2, &monData);\n    SetMonData(&gPlayerParty[0], MON_DATA_MOVE3, &monData);\n    SetMonData(&gPlayerParty[0], MON_DATA_MOVE4, &monData);",
+      "callsTo": [
+        "CreateMon",
+        "SetMonData"
+      ],
+      "lineCount": 10
+    },
+    "IsStarterInParty": {
+      "returnType": "bool8",
+      "signature": "bool8 IsStarterInParty(void)",
+      "paramsRaw": "void",
+      "body": "u8 i;\n    u16 starter = GetStarterPokemon(VarGet(VAR_STARTER_MON));\n    u8 partyCount = CalculatePlayerPartyCount();\n    for (i = 0; i < partyCount; i++)\n    {\n        if (GetMonData(&gPlayerParty[i], MON_DATA_SPECIES_OR_EGG, NULL) == starter)\n            return TRUE;\n    }\n    return FALSE;",
+      "callsTo": [
+        "CalculatePlayerPartyCount",
+        "GetMonData",
+        "GetStarterPokemon",
+        "VarGet"
+      ],
+      "lineCount": 9
+    },
+    "ScriptCheckFreePokemonStorageSpace": {
+      "returnType": "bool8",
+      "signature": "bool8 ScriptCheckFreePokemonStorageSpace(void)",
+      "paramsRaw": "void",
+      "body": "return CheckFreePokemonStorageSpace();",
+      "callsTo": [
+        "CheckFreePokemonStorageSpace"
+      ],
+      "lineCount": 1
+    },
+    "IsPokerusInParty": {
+      "returnType": "bool8",
+      "signature": "bool8 IsPokerusInParty(void)",
+      "paramsRaw": "void",
+      "body": "if (!CheckPartyPokerus(gPlayerParty, (1 << PARTY_SIZE) - 1))\n        return FALSE;\n\n    return TRUE;",
+      "callsTo": [
+        "CheckPartyPokerus"
+      ],
+      "lineCount": 4
+    },
+    "ShakeCamera": {
+      "returnType": "void",
+      "signature": "void ShakeCamera(void)",
+      "paramsRaw": "void",
+      "body": "u8 taskId = CreateTask(Task_ShakeCamera, 9);\n    gTasks[taskId].tHorizontalPan = gSpecialVar_0x8005;\n    gTasks[taskId].tDelayCounter = 0;\n    gTasks[taskId].tNumShakes = gSpecialVar_0x8006;\n    gTasks[taskId].tDelay = gSpecialVar_0x8007;\n    gTasks[taskId].tVerticalPan = gSpecialVar_0x8004;\n    SetCameraPanningCallback(NULL);\n    PlaySE(SE_M_STRENGTH);",
+      "callsTo": [
+        "CreateTask",
+        "PlaySE",
+        "SetCameraPanningCallback"
+      ],
+      "lineCount": 8
+    },
+    "Task_ShakeCamera": {
+      "returnType": "void",
+      "signature": "static void Task_ShakeCamera(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "s16 *data = gTasks[taskId].data;\n\n    tDelayCounter++;\n    if (tDelayCounter % tDelay == 0)\n    {\n        tDelayCounter = 0;\n        tNumShakes--;\n        tHorizontalPan = -tHorizontalPan;\n        tVerticalPan = -tVerticalPan;\n        SetCameraPanning(tHorizontalPan, tVerticalPan);\n        if (tNumShakes == 0)\n        {\n            StopCameraShake(taskId);\n            InstallCameraPanAheadCallback();\n        }\n    }",
+      "callsTo": [
+        "InstallCameraPanAheadCallback",
+        "SetCameraPanning",
+        "StopCameraShake"
+      ],
+      "lineCount": 16
+    },
+    "StopCameraShake": {
+      "returnType": "void",
+      "signature": "static void StopCameraShake(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "DestroyTask(taskId);\n    ScriptContext_Enable();",
+      "callsTo": [
+        "DestroyTask",
+        "ScriptContext_Enable"
+      ],
+      "lineCount": 2
+    },
+    "FoundBlackGlasses": {
+      "returnType": "bool8",
+      "signature": "bool8 FoundBlackGlasses(void)",
+      "paramsRaw": "void",
+      "body": "return FlagGet(FLAG_HIDDEN_ITEM_ROUTE_116_BLACK_GLASSES);",
+      "callsTo": [
+        "FlagGet"
+      ],
+      "lineCount": 1
+    },
+    "SetRoute119Weather": {
+      "returnType": "void",
+      "signature": "void SetRoute119Weather(void)",
+      "paramsRaw": "void",
+      "body": "if (IsMapTypeOutdoors(GetLastUsedWarpMapType()) != TRUE)\n        SetSavedWeather(WEATHER_ROUTE119_CYCLE);",
+      "callsTo": [
+        "GetLastUsedWarpMapType",
+        "IsMapTypeOutdoors",
+        "SetSavedWeather"
+      ],
+      "lineCount": 2
+    },
+    "SetRoute123Weather": {
+      "returnType": "void",
+      "signature": "void SetRoute123Weather(void)",
+      "paramsRaw": "void",
+      "body": "if (IsMapTypeOutdoors(GetLastUsedWarpMapType()) != TRUE)\n        SetSavedWeather(WEATHER_ROUTE123_CYCLE);",
+      "callsTo": [
+        "GetLastUsedWarpMapType",
+        "IsMapTypeOutdoors",
+        "SetSavedWeather"
+      ],
+      "lineCount": 2
+    },
+    "GetLeadMonIndex": {
+      "returnType": "u8",
+      "signature": "u8 GetLeadMonIndex(void)",
+      "paramsRaw": "void",
+      "body": "u8 i;\n    u8 partyCount = CalculatePlayerPartyCount();\n    for (i = 0; i < partyCount; i++)\n    {\n        if (GetMonData(&gPlayerParty[i], MON_DATA_SPECIES_OR_EGG, NULL) != SPECIES_EGG\n         && GetMonData(&gPlayerParty[i], MON_DATA_SPECIES_OR_EGG, NULL) != SPECIES_NONE)\n            return i;\n    }\n    return 0;",
+      "callsTo": [
+        "CalculatePlayerPartyCount",
+        "GetMonData"
+      ],
+      "lineCount": 9
+    },
+    "ScriptGetPartyMonSpecies": {
+      "returnType": "u16",
+      "signature": "u16 ScriptGetPartyMonSpecies(void)",
+      "paramsRaw": "void",
+      "body": "return GetMonData(&gPlayerParty[gSpecialVar_0x8004], MON_DATA_SPECIES_OR_EGG, NULL);",
+      "callsTo": [
+        "GetMonData"
+      ],
+      "lineCount": 1
+    },
+    "TryInitBattleTowerAwardManObjectEvent": {
+      "returnType": "void",
+      "signature": "void TryInitBattleTowerAwardManObjectEvent(void)",
+      "paramsRaw": "void",
+      "body": "",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "GetDaysUntilPacifidlogTMAvailable": {
+      "returnType": "u16",
+      "signature": "u16 GetDaysUntilPacifidlogTMAvailable(void)",
+      "paramsRaw": "void",
+      "body": "u16 tmReceivedDay = VarGet(VAR_PACIFIDLOG_TM_RECEIVED_DAY);\n    if (gLocalTime.days - tmReceivedDay >= 7)\n        return 0;\n    else if (gLocalTime.days < 0)\n        return 8;\n\n    return 7 - (gLocalTime.days - tmReceivedDay);",
+      "callsTo": [
+        "VarGet"
+      ],
+      "lineCount": 7
+    },
+    "SetPacifidlogTMReceivedDay": {
+      "returnType": "u16",
+      "signature": "u16 SetPacifidlogTMReceivedDay(void)",
+      "paramsRaw": "void",
+      "body": "VarSet(VAR_PACIFIDLOG_TM_RECEIVED_DAY, gLocalTime.days);\n    return gLocalTime.days;",
+      "callsTo": [
+        "VarSet"
+      ],
+      "lineCount": 2
+    },
+    "MonOTNameNotPlayer": {
+      "returnType": "bool8",
+      "signature": "bool8 MonOTNameNotPlayer(void)",
+      "paramsRaw": "void",
+      "body": "if (GetMonData(&gPlayerParty[gSpecialVar_0x8004], MON_DATA_LANGUAGE) != GAME_LANGUAGE)\n        return TRUE;\n\n    GetMonData(&gPlayerParty[gSpecialVar_0x8004], MON_DATA_OT_NAME, gStringVar1);\n\n    if (!StringCompare(gSaveBlock2Ptr->playerName, gStringVar1))\n        return FALSE;\n\n    return TRUE;",
+      "callsTo": [
+        "GetMonData",
+        "StringCompare"
+      ],
+      "lineCount": 9
+    },
+    "BufferLottoTicketNumber": {
+      "returnType": "void",
+      "signature": "void BufferLottoTicketNumber(void)",
+      "paramsRaw": "void",
+      "body": "if (gSpecialVar_Result >= 10000)\n    {\n        ConvertIntToDecimalString(0, gSpecialVar_Result);\n    }\n    else if (gSpecialVar_Result >= 1000)\n    {\n        gStringVar1[0] = CHAR_0;\n        ConvertIntToDecimalStringN(gStringVar1 + 1, gSpecialVar_Result, STR_CONV_MODE_LEFT_ALIGN, CountDigits(gSpecialVar_Result));\n    }\n    else if (gSpecialVar_Result >= 100)\n    {\n        gStringVar1[0] = CHAR_0;\n        gStringVar1[1] = CHAR_0;\n        ConvertIntToDecimalStringN(gStringVar1 + 2, gSpecialVar_Result, STR_CONV_MODE_LEFT_ALIGN, CountDigits(gSpecialVar_Result));\n    }\n    else if (gSpecialVar_Result >= 10)\n    {\n        gStringVar1[0] = CHAR_0;\n        gStringVar1[1] = CHAR_0;\n        gStringVar1[2] = CHAR_0;\n        ConvertIntToDecimalStringN(gStringVar1 + 3, gSpecialVar_Result, STR_CONV_MODE_LEFT_ALIGN, CountDigits(gSpecialVar_Result));\n    }\n    else\n    {\n        gStringVar1[0] = CHAR_0;\n        gStringVar1[1] = CHAR_0;\n        gStringVar1[2] = CHAR_0;\n        gStringVar1[3] = CHAR_0;\n        ConvertIntToDecimalStringN(gStringVar1 + 4, gSpecialVar_Result, STR_CONV_MODE_LEFT_ALIGN, CountDigits(gSpecialVar_Result));\n    }",
+      "callsTo": [
+        "ConvertIntToDecimalString",
+        "ConvertIntToDecimalStringN",
+        "CountDigits"
+      ],
+      "lineCount": 30
+    },
+    "GetMysteryGiftCardStat": {
+      "returnType": "u16",
+      "signature": "u16 GetMysteryGiftCardStat(void)",
+      "paramsRaw": "void",
+      "body": "switch (gSpecialVar_Result)\n    {\n    case GET_NUM_STAMPS:\n        return MysteryGift_GetCardStat(CARD_STAT_NUM_STAMPS);\n    case GET_MAX_STAMPS:\n        return MysteryGift_GetCardStat(CARD_STAT_MAX_STAMPS);\n    case GET_CARD_BATTLES_WON:\n        return MysteryGift_GetCardStat(CARD_STAT_BATTLES_WON);\n    case GET_CARD_BATTLES_LOST:  \n        return MysteryGift_GetCardStat(CARD_STAT_BATTLES_LOST);\n    case GET_CARD_NUM_TRADES:  \n        return MysteryGift_GetCardStat(CARD_STAT_NUM_TRADES);\n    default:\n        return 0;\n    }",
+      "callsTo": [
+        "MysteryGift_GetCardStat"
+      ],
+      "lineCount": 15
+    },
+    "BufferTMHMMoveName": {
+      "returnType": "bool8",
+      "signature": "bool8 BufferTMHMMoveName(void)",
+      "paramsRaw": "void",
+      "body": "if (gSpecialVar_0x8004 >= ITEM_TM01 && gSpecialVar_0x8004 <= ITEM_HM08)\n    {\n        StringCopy(gStringVar2, gMoveNames[ItemIdToBattleMoveId(gSpecialVar_0x8004)]);\n        return TRUE;\n    }\n\n    return FALSE;",
+      "callsTo": [
+        "ItemIdToBattleMoveId",
+        "StringCopy"
+      ],
+      "lineCount": 7
+    },
+    "IsBadEggInParty": {
+      "returnType": "bool8",
+      "signature": "bool8 IsBadEggInParty(void)",
+      "paramsRaw": "void",
+      "body": "u8 partyCount = CalculatePlayerPartyCount();\n    u8 i;\n\n    for (i = 0; i < partyCount; i++)\n    {\n        if (GetMonData(&gPlayerParty[i], MON_DATA_SANITY_IS_BAD_EGG) == TRUE)\n            return TRUE;\n    }\n\n    return FALSE;",
+      "callsTo": [
+        "CalculatePlayerPartyCount",
+        "GetMonData"
+      ],
+      "lineCount": 10
+    },
+    "InMultiPartnerRoom": {
+      "returnType": "bool8",
+      "signature": "bool8 InMultiPartnerRoom(void)",
+      "paramsRaw": "void",
+      "body": "if (gSaveBlock1Ptr->location.mapGroup == MAP_GROUP(MAP_BATTLE_FRONTIER_BATTLE_TOWER_MULTI_PARTNER_ROOM)\n        && gSaveBlock1Ptr->location.mapNum == MAP_NUM(MAP_BATTLE_FRONTIER_BATTLE_TOWER_MULTI_PARTNER_ROOM) &&\n        VarGet(VAR_FRONTIER_BATTLE_MODE) == FRONTIER_MODE_MULTIS)\n        return TRUE;\n    return FALSE;",
+      "callsTo": [
+        "MAP_GROUP",
+        "MAP_NUM",
+        "VarGet"
+      ],
+      "lineCount": 5
+    },
+    "OffsetCameraForBattle": {
+      "returnType": "void",
+      "signature": "void OffsetCameraForBattle(void)",
+      "paramsRaw": "void",
+      "body": "SetCameraPanningCallback(NULL);\n    SetCameraPanning(8, 0);",
+      "callsTo": [
+        "SetCameraPanning",
+        "SetCameraPanningCallback"
+      ],
+      "lineCount": 2
+    },
+    "SetDeptStoreFloor": {
+      "returnType": "void",
+      "signature": "void SetDeptStoreFloor(void)",
+      "paramsRaw": "void",
+      "body": "u8 deptStoreFloor;\n    switch (gSaveBlock1Ptr->dynamicWarp.mapNum)\n    {\n    case MAP_NUM(MAP_LILYCOVE_CITY_DEPARTMENT_STORE_1F):\n        deptStoreFloor = DEPT_STORE_FLOORNUM_1F;\n        break;\n    case MAP_NUM(MAP_LILYCOVE_CITY_DEPARTMENT_STORE_2F):\n        deptStoreFloor = DEPT_STORE_FLOORNUM_2F;\n        break;\n    case MAP_NUM(MAP_LILYCOVE_CITY_DEPARTMENT_STORE_3F):\n        deptStoreFloor = DEPT_STORE_FLOORNUM_3F;\n        break;\n    case MAP_NUM(MAP_LILYCOVE_CITY_DEPARTMENT_STORE_4F):\n        deptStoreFloor = DEPT_STORE_FLOORNUM_4F;\n        break;\n    case MAP_NUM(MAP_LILYCOVE_CITY_DEPARTMENT_STORE_5F):\n        deptStoreFloor = DEPT_STORE_FLOORNUM_5F;\n        break;\n    case MAP_NUM(MAP_LILYCOVE_CITY_DEPARTMENT_STORE_ROOFTOP):\n        deptStoreFloor = DEPT_STORE_FLOORNUM_ROOFTOP;\n        break;\n    default:\n        deptStoreFloor = DEPT_STORE_FLOORNUM_1F;\n        break;\n    }\n    VarSet(VAR_DEPT_STORE_FLOOR, deptStoreFloor);",
+      "callsTo": [
+        "MAP_NUM",
+        "VarSet"
+      ],
+      "lineCount": 26
+    },
+    "GetDeptStoreDefaultFloorChoice": {
+      "returnType": "u16",
+      "signature": "u16 GetDeptStoreDefaultFloorChoice(void)",
+      "paramsRaw": "void",
+      "body": "sLilycoveDeptStore_NeverRead = 0;\n    sLilycoveDeptStore_DefaultFloorChoice = 0;\n\n    if (gSaveBlock1Ptr->dynamicWarp.mapGroup == MAP_GROUP(MAP_LILYCOVE_CITY_DEPARTMENT_STORE_1F))\n    {\n        switch (gSaveBlock1Ptr->dynamicWarp.mapNum)\n        {\n        case MAP_NUM(MAP_LILYCOVE_CITY_DEPARTMENT_STORE_5F):\n            sLilycoveDeptStore_NeverRead = 0;\n            sLilycoveDeptStore_DefaultFloorChoice = 0;\n            break;\n        case MAP_NUM(MAP_LILYCOVE_CITY_DEPARTMENT_STORE_4F):\n            sLilycoveDeptStore_NeverRead = 0;\n            sLilycoveDeptStore_DefaultFloorChoice = 1;\n            break;\n        case MAP_NUM(MAP_LILYCOVE_CITY_DEPARTMENT_STORE_3F):\n            sLilycoveDeptStore_NeverRead = 0;\n            sLilycoveDeptStore_DefaultFloorChoice = 2;\n            break;\n        case MAP_NUM(MAP_LILYCOVE_CITY_DEPARTMENT_STORE_2F):\n            sLilycoveDeptStore_NeverRead = 0;\n            sLilycoveDeptStore_DefaultFloorChoice = 3;\n            break;\n        case MAP_NUM(MAP_LILYCOVE_CITY_DEPARTMENT_STORE_1F):\n            sLilycoveDeptStore_NeverRead = 0;\n            sLilycoveDeptStore_DefaultFloorChoice = 4;\n            break;\n        }\n    }\n\n    return sLilycoveDeptStore_DefaultFloorChoice;",
+      "callsTo": [
+        "MAP_GROUP",
+        "MAP_NUM"
+      ],
+      "lineCount": 31
+    },
+    "MoveElevator": {
+      "returnType": "void",
+      "signature": "void MoveElevator(void)",
+      "paramsRaw": "void",
+      "body": "static const u8 sElevatorTripLength[MAX_ELEVATOR_TRIP] = { 8, 16, 24, 32, 38, 46, 52, 56, 57 };\n\n    s16 *data = gTasks[CreateTask(Task_MoveElevator, 9)].data;\n    u16 floorDelta;\n\n    tTimer = 0;\n    tMoveCounter = 0;\n    tVerticalPan = 1;\n\n    if (gSpecialVar_0x8005 > gSpecialVar_0x8006)\n    {\n        floorDelta = gSpecialVar_0x8005 - gSpecialVar_0x8006;\n        tDescending = TRUE;\n    }\n    else\n    {\n        floorDelta = gSpecialVar_0x8006 - gSpecialVar_0x8005;\n        tDescending = FALSE;\n    }\n\n    if (floorDelta > MAX_ELEVATOR_TRIP - 1)\n        floorDelta = MAX_ELEVATOR_TRIP - 1;\n\n    tTotalMoves = sElevatorTripLength[floorDelta];\n\n    SetCameraPanningCallback(NULL);\n    MoveElevatorWindowLights(floorDelta, tDescending);\n    PlaySE(SE_ELEVATOR);",
+      "callsTo": [
+        "CreateTask",
+        "MoveElevatorWindowLights",
+        "PlaySE",
+        "SetCameraPanningCallback"
+      ],
+      "lineCount": 28
+    },
+    "Task_MoveElevator": {
+      "returnType": "void",
+      "signature": "static void Task_MoveElevator(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "s16 *data = gTasks[taskId].data;\n    tTimer++;\n    if (tTimer % 3 == 0)\n    {\n        tTimer = 0;\n        tMoveCounter++;\n        tVerticalPan = -tVerticalPan;\n        SetCameraPanning(0, tVerticalPan);\n\n        if (tMoveCounter == tTotalMoves)\n        {\n             \n            PlaySE(SE_DING_DONG);\n            DestroyTask(taskId);\n            ScriptContext_Enable();\n            InstallCameraPanAheadCallback();\n        }\n    }",
+      "callsTo": [
+        "DestroyTask",
+        "InstallCameraPanAheadCallback",
+        "PlaySE",
+        "ScriptContext_Enable",
+        "SetCameraPanning"
+      ],
+      "lineCount": 18
+    },
+    "ShowDeptStoreElevatorFloorSelect": {
+      "returnType": "void",
+      "signature": "void ShowDeptStoreElevatorFloorSelect(void)",
+      "paramsRaw": "void",
+      "body": "int xPos;\n\n    sTutorMoveAndElevatorWindowId = AddWindow(&sWindowTemplate_ElevatorFloor);\n    SetStandardWindowBorderStyle(sTutorMoveAndElevatorWindowId, FALSE);\n\n    xPos = GetStringCenterAlignXOffset(FONT_NORMAL, gText_ElevatorNowOn, 64);\n    AddTextPrinterParameterized(sTutorMoveAndElevatorWindowId, FONT_NORMAL, gText_ElevatorNowOn, xPos, 1, TEXT_SKIP_DRAW, NULL);\n\n    xPos = GetStringCenterAlignXOffset(FONT_NORMAL, sDeptStoreFloorNames[gSpecialVar_0x8005], 64);\n    AddTextPrinterParameterized(sTutorMoveAndElevatorWindowId, FONT_NORMAL, sDeptStoreFloorNames[gSpecialVar_0x8005], xPos, 17, TEXT_SKIP_DRAW, NULL);\n\n    PutWindowTilemap(sTutorMoveAndElevatorWindowId);\n    CopyWindowToVram(sTutorMoveAndElevatorWindowId, COPYWIN_FULL);",
+      "callsTo": [
+        "AddTextPrinterParameterized",
+        "AddWindow",
+        "CopyWindowToVram",
+        "GetStringCenterAlignXOffset",
+        "PutWindowTilemap",
+        "SetStandardWindowBorderStyle"
+      ],
+      "lineCount": 13
+    },
+    "CloseDeptStoreElevatorWindow": {
+      "returnType": "void",
+      "signature": "void CloseDeptStoreElevatorWindow(void)",
+      "paramsRaw": "void",
+      "body": "ClearStdWindowAndFrameToTransparent(sTutorMoveAndElevatorWindowId, TRUE);\n    RemoveWindow(sTutorMoveAndElevatorWindowId);",
+      "callsTo": [
+        "ClearStdWindowAndFrameToTransparent",
+        "RemoveWindow"
+      ],
+      "lineCount": 2
+    },
+    "MoveElevatorWindowLights": {
+      "returnType": "void",
+      "signature": "static void MoveElevatorWindowLights(u16 floorDelta, bool8 descending)",
+      "paramsRaw": "u16 floorDelta, bool8 descending",
+      "body": "static const u8 sElevatorLightCycles[MAX_ELEVATOR_TRIP] = { 3, 6, 9, 12, 15, 18, 21, 24, 27 };\n\n    if (FuncIsActiveTask(Task_MoveElevatorWindowLights) != TRUE)\n    {\n        u8 taskId = CreateTask(Task_MoveElevatorWindowLights, 8);\n        gTasks[taskId].tMoveCounter = 0;\n        gTasks[taskId].tTimer = 0;\n        gTasks[taskId].tDescending = descending;\n        gTasks[taskId].tTotalMoves = sElevatorLightCycles[floorDelta];\n    }",
+      "callsTo": [
+        "CreateTask",
+        "FuncIsActiveTask"
+      ],
+      "lineCount": 10
+    },
+    "Task_MoveElevatorWindowLights": {
+      "returnType": "void",
+      "signature": "static void Task_MoveElevatorWindowLights(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "u8 x, y;\n    s16 *data = gTasks[taskId].data;\n\n    if (tTimer == 6)\n    {\n        tMoveCounter++;\n\n        if (!tDescending)\n        {\n             \n            for (y = 0; y < ELEVATOR_WINDOW_HEIGHT; y++)\n            {\n                for (x = 0; x < ELEVATOR_WINDOW_WIDTH; x++)\n                    MapGridSetMetatileIdAt(x + MAP_OFFSET + 1, y + MAP_OFFSET, sElevatorWindowTiles_Ascending[y][tMoveCounter % ELEVATOR_LIGHT_STAGES] | MAPGRID_IMPASSABLE);\n            }\n        }\n        else\n        {\n             \n            for (y = 0; y < ELEVATOR_WINDOW_HEIGHT; y++)\n            {\n                for (x = 0; x < ELEVATOR_WINDOW_WIDTH; x++)\n                    MapGridSetMetatileIdAt(x + MAP_OFFSET + 1, y + MAP_OFFSET, sElevatorWindowTiles_Descending[y][tMoveCounter % ELEVATOR_LIGHT_STAGES] | MAPGRID_IMPASSABLE);\n            }\n        }\n        DrawWholeMapView();\n        tTimer = 0;\n        if (tMoveCounter == tTotalMoves)\n            DestroyTask(taskId);\n    }\n    tTimer++;",
+      "callsTo": [
+        "DestroyTask",
+        "DrawWholeMapView",
+        "MapGridSetMetatileIdAt"
+      ],
+      "lineCount": 31
+    },
+    "BufferVarsForIVRater": {
+      "returnType": "void",
+      "signature": "void BufferVarsForIVRater(void)",
+      "paramsRaw": "void",
+      "body": "u8 i;\n    u32 ivStorage[NUM_STATS];\n\n    ivStorage[STAT_HP] = GetMonData(&gPlayerParty[gSpecialVar_0x8004], MON_DATA_HP_IV);\n    ivStorage[STAT_ATK] = GetMonData(&gPlayerParty[gSpecialVar_0x8004], MON_DATA_ATK_IV);\n    ivStorage[STAT_DEF] = GetMonData(&gPlayerParty[gSpecialVar_0x8004], MON_DATA_DEF_IV);\n    ivStorage[STAT_SPEED] = GetMonData(&gPlayerParty[gSpecialVar_0x8004], MON_DATA_SPEED_IV);\n    ivStorage[STAT_SPATK] = GetMonData(&gPlayerParty[gSpecialVar_0x8004], MON_DATA_SPATK_IV);\n    ivStorage[STAT_SPDEF] = GetMonData(&gPlayerParty[gSpecialVar_0x8004], MON_DATA_SPDEF_IV);\n\n    gSpecialVar_0x8005 = 0;\n\n    for (i = 0; i < NUM_STATS; i++)\n        gSpecialVar_0x8005 += ivStorage[i];\n\n    gSpecialVar_0x8006 = 0;\n    gSpecialVar_0x8007 = ivStorage[STAT_HP];\n\n    for (i = 1; i < NUM_STATS; i++)\n    {\n        if (ivStorage[gSpecialVar_0x8006] < ivStorage[i])\n        {\n            gSpecialVar_0x8006 = i;\n            gSpecialVar_0x8007 = ivStorage[i];\n        }\n        else if (ivStorage[gSpecialVar_0x8006] == ivStorage[i])\n        {\n            u16 randomNumber = Random();\n            if (randomNumber & 1)\n            {\n                gSpecialVar_0x8006 = i;\n                gSpecialVar_0x8007 = ivStorage[i];\n            }\n        }\n    }",
+      "callsTo": [
+        "GetMonData",
+        "Random"
+      ],
+      "lineCount": 35
+    },
+    "UsedPokemonCenterWarp": {
+      "returnType": "bool8",
+      "signature": "bool8 UsedPokemonCenterWarp(void)",
+      "paramsRaw": "void",
+      "body": "static const u16 sPokemonCenters[] =\n    {\n        MAP_OLDALE_TOWN_POKEMON_CENTER_1F,\n        MAP_DEWFORD_TOWN_POKEMON_CENTER_1F,\n        MAP_LAVARIDGE_TOWN_POKEMON_CENTER_1F,\n        MAP_FALLARBOR_TOWN_POKEMON_CENTER_1F,\n        MAP_VERDANTURF_TOWN_POKEMON_CENTER_1F,\n        MAP_PACIFIDLOG_TOWN_POKEMON_CENTER_1F,\n        MAP_PETALBURG_CITY_POKEMON_CENTER_1F,\n        MAP_SLATEPORT_CITY_POKEMON_CENTER_1F,\n        MAP_MAUVILLE_CITY_POKEMON_CENTER_1F,\n        MAP_RUSTBORO_CITY_POKEMON_CENTER_1F,\n        MAP_FORTREE_CITY_POKEMON_CENTER_1F,\n        MAP_LILYCOVE_CITY_POKEMON_CENTER_1F,\n        MAP_MOSSDEEP_CITY_POKEMON_CENTER_1F,\n        MAP_SOOTOPOLIS_CITY_POKEMON_CENTER_1F,\n        MAP_EVER_GRANDE_CITY_POKEMON_CENTER_1F,\n        MAP_EVER_GRANDE_CITY_POKEMON_LEAGUE_1F,\n        MAP_BATTLE_FRONTIER_POKEMON_CENTER_1F,\n        MAP_UNION_ROOM,\n        MAP_UNDEFINED\n    };\n\n    int i;\n    u16 map = (gLastUsedWarp.mapGroup << 8) + gLastUsedWarp.mapNum;\n\n    for (i = 0; sPokemonCenters[i] != MAP_UNDEFINED; i++)\n    {\n        if (sPokemonCenters[i] == map)\n            return TRUE;\n    }\n\n    return FALSE;",
+      "callsTo": [],
+      "lineCount": 33
+    },
+    "PlayerNotAtTrainerHillEntrance": {
+      "returnType": "bool32",
+      "signature": "bool32 PlayerNotAtTrainerHillEntrance(void)",
+      "paramsRaw": "void",
+      "body": "if (gSaveBlock1Ptr->location.mapGroup == MAP_GROUP(MAP_TRAINER_HILL_ENTRANCE) && gSaveBlock1Ptr->location.mapNum == MAP_NUM(MAP_TRAINER_HILL_ENTRANCE))\n        return FALSE;\n\n    return TRUE;",
+      "callsTo": [
+        "MAP_GROUP",
+        "MAP_NUM"
+      ],
+      "lineCount": 4
+    },
+    "UpdateFrontierManiac": {
+      "returnType": "void",
+      "signature": "void UpdateFrontierManiac(u16 daysSince)",
+      "paramsRaw": "u16 daysSince",
+      "body": "u16 *var = GetVarPointer(VAR_FRONTIER_MANIAC_FACILITY);\n    *var += daysSince;\n    *var %= FRONTIER_MANIAC_FACILITY_COUNT;",
+      "callsTo": [
+        "GetVarPointer"
+      ],
+      "lineCount": 3
+    },
+    "ShowFrontierManiacMessage": {
+      "returnType": "void",
+      "signature": "void ShowFrontierManiacMessage(void)",
+      "paramsRaw": "void",
+      "body": "static const u8 *const sFrontierManiacMessages[][FRONTIER_MANIAC_MESSAGE_COUNT] =\n    {\n        [FRONTIER_MANIAC_TOWER_SINGLES] =\n        {\n            BattleFrontier_Lounge2_Text_SalonMaidenIsThere,\n            BattleFrontier_Lounge2_Text_SalonMaidenSilverMons,\n            BattleFrontier_Lounge2_Text_SalonMaidenGoldMons\n        },\n        [FRONTIER_MANIAC_TOWER_DOUBLES] =\n        {\n            BattleFrontier_Lounge2_Text_DoubleBattleAdvice1,\n            BattleFrontier_Lounge2_Text_DoubleBattleAdvice2,\n            BattleFrontier_Lounge2_Text_DoubleBattleAdvice3\n        },\n        [FRONTIER_MANIAC_TOWER_MULTIS] =\n        {\n            BattleFrontier_Lounge2_Text_MultiBattleAdvice,\n            BattleFrontier_Lounge2_Text_MultiBattleAdvice,\n            BattleFrontier_Lounge2_Text_MultiBattleAdvice\n        },\n        [FRONTIER_MANIAC_TOWER_LINK] =\n        {\n            BattleFrontier_Lounge2_Text_LinkMultiBattleAdvice,\n            BattleFrontier_Lounge2_Text_LinkMultiBattleAdvice,\n            BattleFrontier_Lounge2_Text_LinkMultiBattleAdvice\n        },\n        [FRONTIER_MANIAC_DOME] =\n        {\n            BattleFrontier_Lounge2_Text_DomeAceIsThere,\n            BattleFrontier_Lounge2_Text_DomeAceSilverMons,\n            BattleFrontier_Lounge2_Text_DomeAceGoldMons\n        },\n        [FRONTIER_MANIAC_FACTORY] =\n        {\n            BattleFrontier_Lounge2_Text_FactoryHeadIsThere,\n            BattleFrontier_Lounge2_Text_FactoryHeadSilverMons,\n            BattleFrontier_Lounge2_Text_FactoryHeadGoldMons\n        },\n        [FRONTIER_MANIAC_PALACE] =\n        {\n            BattleFrontier_Lounge2_Text_PalaceMavenIsThere,\n            BattleFrontier_Lounge2_Text_PalaceMavenSilverMons,\n            BattleFrontier_Lounge2_Text_PalaceMavenGoldMons\n        },\n        [FRONTIER_MANIAC_ARENA] =\n        {\n            BattleFrontier_Lounge2_Text_ArenaTycoonIsThere,\n            BattleFrontier_Lounge2_Text_ArenaTycoonSilverMons,\n            BattleFrontier_Lounge2_Text_ArenaTycoonGoldMons\n        },\n        [FRONTIER_MANIAC_PIKE] =\n        {\n            BattleFrontier_Lounge2_Text_PikeQueenIsThere,\n            BattleFrontier_Lounge2_Text_PikeQueenSilverMons,\n            BattleFrontier_Lounge2_Text_PikeQueenGoldMons\n        },\n        [FRONTIER_MANIAC_PYRAMID] =\n        {\n            BattleFrontier_Lounge2_Text_PyramidKingIsThere,\n            BattleFrontier_Lounge2_Text_PyramidKingSilverMons,\n            BattleFrontier_Lounge2_Text_PyramidKingGoldMons\n        },\n    };\n\n    static const u8 sFrontierManiacStreakThresholds[][FRONTIER_MANIAC_MESSAGE_COUNT - 1] =\n    {\n        [FRONTIER_MANIAC_TOWER_SINGLES] = { 21, 56 },\n        [FRONTIER_MANIAC_TOWER_DOUBLES] = { 21, 35 },\n        [FRONTIER_MANIAC_TOWER_MULTIS]  = { 255, 255 },\n        [FRONTIER_MANIAC_TOWER_LINK]    = { 255, 255 },\n        [FRONTIER_MANIAC_DOME]          = { 2, 4 },\n        [FRONTIER_MANIAC_FACTORY]       = { 7, 21 },\n        [FRONTIER_MANIAC_PALACE]        = { 7, 21 },\n        [FRONTIER_MANIAC_ARENA]         = { 14, 28 },\n        [FRONTIER_MANIAC_PIKE]          = { 13, 112 },  \n        [FRONTIER_MANIAC_PYRAMID]       = { 7, 56 }\n    };\n\n    u8 i;\n    u16 winStreak = 0;\n    u16 facility = VarGet(VAR_FRONTIER_MANIAC_FACILITY);\n\n    switch (facility)\n    {\n    case FRONTIER_MANIAC_TOWER_SINGLES:\n    case FRONTIER_MANIAC_TOWER_DOUBLES:\n    case FRONTIER_MANIAC_TOWER_MULTIS:\n    case FRONTIER_MANIAC_TOWER_LINK:\n        if (gSaveBlock2Ptr->frontier.towerWinStreaks[facility][FRONTIER_LVL_50]\n            >= gSaveBlock2Ptr->frontier.towerWinStreaks[facility][FRONTIER_LVL_OPEN])\n            winStreak = gSaveBlock2Ptr->frontier.towerWinStreaks[facility][FRONTIER_LVL_50];\n        else\n            winStreak = gSaveBlock2Ptr->frontier.towerWinStreaks[facility][FRONTIER_LVL_OPEN];\n        break;\n    case FRONTIER_MANIAC_DOME:\n        if (gSaveBlock2Ptr->frontier.domeWinStreaks[FRONTIER_MODE_SINGLES][FRONTIER_LVL_50]\n            >= gSaveBlock2Ptr->frontier.domeWinStreaks[FRONTIER_MODE_SINGLES][FRONTIER_LVL_OPEN])\n            winStreak = gSaveBlock2Ptr->frontier.domeWinStreaks[FRONTIER_MODE_SINGLES][FRONTIER_LVL_50];\n        else\n            winStreak = gSaveBlock2Ptr->frontier.domeWinStreaks[FRONTIER_MODE_SINGLES][FRONTIER_LVL_OPEN];\n        break;\n    case FRONTIER_MANIAC_FACTORY:\n        if (gSaveBlock2Ptr->frontier.factoryWinStreaks[FRONTIER_MODE_SINGLES][FRONTIER_LVL_50]\n            >= gSaveBlock2Ptr->frontier.factoryWinStreaks[FRONTIER_MODE_SINGLES][FRONTIER_LVL_OPEN])\n            winStreak = gSaveBlock2Ptr->frontier.factoryWinStreaks[FRONTIER_MODE_SINGLES][FRONTIER_LVL_50];\n        else\n            winStreak = gSaveBlock2Ptr->frontier.factoryWinStreaks[FRONTIER_MODE_SINGLES][FRONTIER_LVL_OPEN];\n        break;\n    case FRONTIER_MANIAC_PALACE:\n        if (gSaveBlock2Ptr->frontier.palaceWinStreaks[FRONTIER_MODE_SINGLES][FRONTIER_LVL_50]\n            >= gSaveBlock2Ptr->frontier.palaceWinStreaks[FRONTIER_MODE_SINGLES][FRONTIER_LVL_OPEN])\n            winStreak = gSaveBlock2Ptr->frontier.palaceWinStreaks[FRONTIER_MODE_SINGLES][FRONTIER_LVL_50];\n        else\n            winStreak = gSaveBlock2Ptr->frontier.palaceWinStreaks[FRONTIER_MODE_SINGLES][FRONTIER_LVL_OPEN];\n        break;\n    case FRONTIER_MANIAC_ARENA:\n        if (gSaveBlock2Ptr->frontier.arenaWinStreaks[FRONTIER_LVL_50]\n            >= gSaveBlock2Ptr->frontier.arenaWinStreaks[FRONTIER_LVL_OPEN])\n            winStreak = gSaveBlock2Ptr->frontier.arenaWinStreaks[FRONTIER_LVL_50];\n        else\n            winStreak = gSaveBlock2Ptr->frontier.arenaWinStreaks[FRONTIER_LVL_OPEN];\n        break;\n    case FRONTIER_MANIAC_PIKE:\n        if (gSaveBlock2Ptr->frontier.pikeWinStreaks[FRONTIER_LVL_50]\n            >= gSaveBlock2Ptr->frontier.pikeWinStreaks[FRONTIER_LVL_OPEN])\n            winStreak = gSaveBlock2Ptr->frontier.pikeWinStreaks[FRONTIER_LVL_50];\n        else\n            winStreak = gSaveBlock2Ptr->frontier.pikeWinStreaks[FRONTIER_LVL_OPEN];\n        break;\n    case FRONTIER_MANIAC_PYRAMID:\n        if (gSaveBlock2Ptr->frontier.pyramidWinStreaks[FRONTIER_LVL_50]\n            >= gSaveBlock2Ptr->frontier.pyramidWinStreaks[FRONTIER_LVL_OPEN])\n            winStreak = gSaveBlock2Ptr->frontier.pyramidWinStreaks[FRONTIER_LVL_50];\n        else\n            winStreak = gSaveBlock2Ptr->frontier.pyramidWinStreaks[FRONTIER_LVL_OPEN];\n        break;\n    }\n\n    for (i = 0; i < FRONTIER_MANIAC_MESSAGE_COUNT - 1 && sFrontierManiacStreakThresholds[facility][i] < winStreak; i++);\n\n    ShowFieldMessage(sFrontierManiacMessages[facility][i]);",
+      "callsTo": [
+        "ShowFieldMessage",
+        "VarGet"
+      ],
+      "lineCount": 141
+    },
+    "BufferBattleTowerElevatorFloors": {
+      "returnType": "void",
+      "signature": "void BufferBattleTowerElevatorFloors(void)",
+      "paramsRaw": "void",
+      "body": "static const u16 sBattleTowerStreakThresholds[] = {\n        7, 14, 21, 28, 35, 49, 63, 77, 91, 0\n    };\n\n    u8 i;\n    u16 battleMode = VarGet(VAR_FRONTIER_BATTLE_MODE);\n    u8 lvlMode = gSaveBlock2Ptr->frontier.lvlMode;\n\n    if (battleMode == FRONTIER_MODE_LINK_MULTIS)  \n    {\n        gSpecialVar_0x8005 = 4;\n        gSpecialVar_0x8006 = 5;\n        return;\n    }\n\n    if (battleMode == FRONTIER_MODE_MULTIS && !FlagGet(FLAG_CHOSEN_MULTI_BATTLE_NPC_PARTNER))\n    {\n        gSpecialVar_0x8005 = 5;\n        gSpecialVar_0x8006 = 4;\n        return;\n    }\n\n    for (i = 0; i < ARRAY_COUNT(sBattleTowerStreakThresholds) - 1; i++)\n    {\n        if (sBattleTowerStreakThresholds[i] > gSaveBlock2Ptr->frontier.towerWinStreaks[battleMode][lvlMode])\n        {\n            gSpecialVar_0x8005 = 4;\n            gSpecialVar_0x8006 = i + 5;\n            return;\n        }\n    }\n\n    gSpecialVar_0x8005 = 4;\n    gSpecialVar_0x8006 = 12;",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "FlagGet",
+        "VarGet"
+      ],
+      "lineCount": 34
+    },
+    "ShowScrollableMultichoice": {
+      "returnType": "void",
+      "signature": "void ShowScrollableMultichoice(void)",
+      "paramsRaw": "void",
+      "body": "u8 taskId = CreateTask(Task_ShowScrollableMultichoice, 8);\n    struct Task *task = &gTasks[taskId];\n    task->tScrollMultiId = gSpecialVar_0x8004;\n\n    switch (gSpecialVar_0x8004)\n    {\n    case SCROLL_MULTI_NONE:\n        task->tMaxItemsOnScreen = 1;\n        task->tNumItems = 1;\n        task->tLeft = 1;\n        task->tTop = 1;\n        task->tWidth = 1;\n        task->tHeight = 1;\n        task->tKeepOpenAfterSelect = FALSE;\n        task->tTaskId = taskId;\n        break;\n    case SCROLL_MULTI_GLASS_WORKSHOP_VENDOR:\n        task->tMaxItemsOnScreen = MAX_SCROLL_MULTI_ON_SCREEN - 1;\n        task->tNumItems = 8;\n        task->tLeft = 1;\n        task->tTop = 1;\n        task->tWidth = 9;\n        task->tHeight = 10;\n        task->tKeepOpenAfterSelect = FALSE;\n        task->tTaskId = taskId;\n        break;\n    case SCROLL_MULTI_POKEMON_FAN_CLUB_RATER:\n        task->tMaxItemsOnScreen = MAX_SCROLL_MULTI_ON_SCREEN;\n        task->tNumItems = 12;\n        task->tLeft = 1;\n        task->tTop = 1;\n        task->tWidth = 7;\n        task->tHeight = 12;\n        task->tKeepOpenAfterSelect = FALSE;\n        task->tTaskId = taskId;\n        break;\n    case SCROLL_MULTI_BF_EXCHANGE_CORNER_DECOR_VENDOR_1:\n        task->tMaxItemsOnScreen = MAX_SCROLL_MULTI_ON_SCREEN;\n        task->tNumItems = 11;\n        task->tLeft = 14;\n        task->tTop = 1;\n        task->tWidth = 15;\n        task->tHeight = 12;\n        task->tKeepOpenAfterSelect = FALSE;\n        task->tTaskId = taskId;\n        break;\n    case SCROLL_MULTI_BF_EXCHANGE_CORNER_DECOR_VENDOR_2:\n        task->tMaxItemsOnScreen = MAX_SCROLL_MULTI_ON_SCREEN;\n        task->tNumItems = 6;\n        task->tLeft = 14;\n        task->tTop = 1;\n        task->tWidth = 15;\n        task->tHeight = 12;\n        task->tKeepOpenAfterSelect = FALSE;\n        task->tTaskId = taskId;\n        break;\n    case SCROLL_MULTI_BF_EXCHANGE_CORNER_VITAMIN_VENDOR:\n        task->tMaxItemsOnScreen = MAX_SCROLL_MULTI_ON_SCREEN;\n        task->tNumItems = 7;\n        task->tLeft = 14;\n        task->tTop = 1;\n        task->tWidth = 15;\n        task->tHeight = 12;\n        task->tKeepOpenAfterSelect = FALSE;\n        task->tTaskId = taskId;\n        break;\n    case SCROLL_MULTI_BF_EXCHANGE_CORNER_HOLD_ITEM_VENDOR:\n        task->tMaxItemsOnScreen = MAX_SCROLL_MULTI_ON_SCREEN;\n        task->tNumItems = 10;\n        task->tLeft = 14;\n        task->tTop = 1;\n        task->tWidth = 15;\n        task->tHeight = 12;\n        task->tKeepOpenAfterSelect = FALSE;\n        task->tTaskId = taskId;\n        break;\n    case SCROLL_MULTI_BERRY_POWDER_VENDOR:\n        task->tMaxItemsOnScreen = MAX_SCROLL_MULTI_ON_SCREEN;\n        task->tNumItems = 12;\n        task->tLeft = 15;\n        task->tTop = 1;\n        task->tWidth = 14;\n        task->tHeight = 12;\n        task->tKeepOpenAfterSelect = FALSE;\n        task->tTaskId = taskId;\n        break;\n    case SCROLL_MULTI_BF_RECEPTIONIST:\n        task->tMaxItemsOnScreen = MAX_SCROLL_MULTI_ON_SCREEN;\n        task->tNumItems = 10;\n        task->tLeft = 17;\n        task->tTop = 1;\n        task->tWidth = 11;\n        task->tHeight = 12;\n        task->tKeepOpenAfterSelect = FALSE;\n        task->tTaskId = taskId;\n        break;\n    case SCROLL_MULTI_BF_MOVE_TUTOR_1:\n    case SCROLL_MULTI_BF_MOVE_TUTOR_2:\n        task->tMaxItemsOnScreen = MAX_SCROLL_MULTI_ON_SCREEN;\n        task->tNumItems = 11;\n        task->tLeft = 15;\n        task->tTop = 1;\n        task->tWidth = 14;\n        task->tHeight = 12;\n        task->tKeepOpenAfterSelect = FALSE;\n        task->tTaskId = taskId;\n        break;\n    case SCROLL_MULTI_SS_TIDAL_DESTINATION:\n        task->tMaxItemsOnScreen = MAX_SCROLL_MULTI_ON_SCREEN;\n        task->tNumItems = 7;\n        task->tLeft = 19;\n        task->tTop = 1;\n        task->tWidth = 10;\n        task->tHeight = 12;\n        task->tKeepOpenAfterSelect = FALSE;\n        task->tTaskId = taskId;\n        break;\n    case SCROLL_MULTI_BATTLE_TENT_RULES:\n        task->tMaxItemsOnScreen = MAX_SCROLL_MULTI_ON_SCREEN;\n        task->tNumItems = 7;\n        task->tLeft = 17;\n        task->tTop = 1;\n        task->tWidth = 12;\n        task->tHeight = 12;\n        task->tKeepOpenAfterSelect = FALSE;\n        task->tTaskId = taskId;\n        break;\n    default:\n        gSpecialVar_Result = MULTI_B_PRESSED;\n        DestroyTask(taskId);\n        break;\n    }",
+      "callsTo": [
+        "CreateTask",
+        "DestroyTask"
+      ],
+      "lineCount": 132
+    },
+    "Task_ShowScrollableMultichoice": {
+      "returnType": "void",
+      "signature": "static void Task_ShowScrollableMultichoice(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "u32 width;\n    u8 i, windowId;\n    struct WindowTemplate template;\n    struct Task *task = &gTasks[taskId];\n\n    LockPlayerFieldControls();\n    sScrollableMultichoice_ScrollOffset = 0;\n    sScrollableMultichoice_ItemSpriteId = MAX_SPRITES;\n    FillFrontierExchangeCornerWindowAndItemIcon(task->tScrollMultiId, 0);\n    ShowBattleFrontierTutorWindow(task->tScrollMultiId, 0);\n    sScrollableMultichoice_ListMenuItem = AllocZeroed(task->tNumItems * sizeof(struct ListMenuItem));\n    sFrontierExchangeCorner_NeverRead = 0;\n    InitScrollableMultichoice();\n\n    for (width = 0, i = 0; i < task->tNumItems; i++)\n    {\n        const u8 *text = sScrollableMultichoiceOptions[gSpecialVar_0x8004][i];\n        sScrollableMultichoice_ListMenuItem[i].name = text;\n        sScrollableMultichoice_ListMenuItem[i].id = i;\n        width = DisplayTextAndGetWidth(text, width);\n    }\n\n    task->tWidth = ConvertPixelWidthToTileWidth(width);\n\n    if (task->tLeft + task->tWidth > MAX_MULTICHOICE_WIDTH + 1)\n    {\n        int adjustedLeft = MAX_MULTICHOICE_WIDTH + 1 - task->tWidth;\n        if (adjustedLeft < 0)\n            task->tLeft = 0;\n        else\n            task->tLeft = adjustedLeft;\n    }\n\n    template = CreateWindowTemplate(0, task->tLeft, task->tTop, task->tWidth, task->tHeight, 0xF, 0x64);\n    windowId = AddWindow(&template);\n    task->tWindowId = windowId;\n    SetStandardWindowBorderStyle(windowId, FALSE);\n\n    gScrollableMultichoice_ListMenuTemplate.totalItems = task->tNumItems;\n    gScrollableMultichoice_ListMenuTemplate.maxShowed = task->tMaxItemsOnScreen;\n    gScrollableMultichoice_ListMenuTemplate.windowId = task->tWindowId;\n\n    ScrollableMultichoice_UpdateScrollArrows(taskId);\n    task->tListTaskId = ListMenuInit(&gScrollableMultichoice_ListMenuTemplate, task->tScrollOffset, task->tSelectedRow);\n    ScheduleBgCopyTilemapToVram(0);\n    gTasks[taskId].func = ScrollableMultichoice_ProcessInput;",
+      "callsTo": [
+        "AddWindow",
+        "AllocZeroed",
+        "ConvertPixelWidthToTileWidth",
+        "CreateWindowTemplate",
+        "DisplayTextAndGetWidth",
+        "FillFrontierExchangeCornerWindowAndItemIcon",
+        "InitScrollableMultichoice",
+        "ListMenuInit",
+        "LockPlayerFieldControls",
+        "ScheduleBgCopyTilemapToVram",
+        "ScrollableMultichoice_UpdateScrollArrows",
+        "SetStandardWindowBorderStyle",
+        "ShowBattleFrontierTutorWindow"
+      ],
+      "lineCount": 46
+    },
+    "InitScrollableMultichoice": {
+      "returnType": "void",
+      "signature": "static void InitScrollableMultichoice(void)",
+      "paramsRaw": "void",
+      "body": "gScrollableMultichoice_ListMenuTemplate.items = sScrollableMultichoice_ListMenuItem;\n    gScrollableMultichoice_ListMenuTemplate.moveCursorFunc = ScrollableMultichoice_MoveCursor;\n    gScrollableMultichoice_ListMenuTemplate.itemPrintFunc = NULL;\n    gScrollableMultichoice_ListMenuTemplate.totalItems = 1;\n    gScrollableMultichoice_ListMenuTemplate.maxShowed = 1;\n    gScrollableMultichoice_ListMenuTemplate.windowId = 0;\n    gScrollableMultichoice_ListMenuTemplate.header_X = 0;\n    gScrollableMultichoice_ListMenuTemplate.item_X = 8;\n    gScrollableMultichoice_ListMenuTemplate.cursor_X = 0;\n    gScrollableMultichoice_ListMenuTemplate.upText_Y = 1;\n    gScrollableMultichoice_ListMenuTemplate.cursorPal = 2;\n    gScrollableMultichoice_ListMenuTemplate.fillValue = 1;\n    gScrollableMultichoice_ListMenuTemplate.cursorShadowPal = 3;\n    gScrollableMultichoice_ListMenuTemplate.lettersSpacing = 0;\n    gScrollableMultichoice_ListMenuTemplate.itemVerticalPadding = 0;\n    gScrollableMultichoice_ListMenuTemplate.scrollMultiple = LIST_NO_MULTIPLE_SCROLL;\n    gScrollableMultichoice_ListMenuTemplate.fontId = FONT_NORMAL;\n    gScrollableMultichoice_ListMenuTemplate.cursorKind = CURSOR_BLACK_ARROW;",
+      "callsTo": [],
+      "lineCount": 18
+    },
+    "ScrollableMultichoice_MoveCursor": {
+      "returnType": "void",
+      "signature": "static void ScrollableMultichoice_MoveCursor(s32 itemIndex, bool8 onInit, struct ListMenu *list)",
+      "paramsRaw": "s32 itemIndex, bool8 onInit, struct ListMenu *list",
+      "body": "u8 taskId;\n    PlaySE(SE_SELECT);\n    taskId = FindTaskIdByFunc(ScrollableMultichoice_ProcessInput);\n    if (taskId != TASK_NONE)\n    {\n        u16 selection;\n        struct Task *task = &gTasks[taskId];\n        ListMenuGetScrollAndRow(task->tListTaskId, &selection, NULL);\n        sScrollableMultichoice_ScrollOffset = selection;\n        ListMenuGetCurrentItemArrayId(task->tListTaskId, &selection);\n        HideFrontierExchangeCornerItemIcon(task->tScrollMultiId, sFrontierExchangeCorner_NeverRead);\n        FillFrontierExchangeCornerWindowAndItemIcon(task->tScrollMultiId, selection);\n        ShowBattleFrontierTutorMoveDescription(task->tScrollMultiId, selection);\n        sFrontierExchangeCorner_NeverRead = selection;\n    }",
+      "callsTo": [
+        "FillFrontierExchangeCornerWindowAndItemIcon",
+        "FindTaskIdByFunc",
+        "HideFrontierExchangeCornerItemIcon",
+        "ListMenuGetCurrentItemArrayId",
+        "ListMenuGetScrollAndRow",
+        "PlaySE",
+        "ShowBattleFrontierTutorMoveDescription"
+      ],
+      "lineCount": 15
+    },
+    "ScrollableMultichoice_ProcessInput": {
+      "returnType": "void",
+      "signature": "static void ScrollableMultichoice_ProcessInput(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "struct Task *task = &gTasks[taskId];\n    s32 input = ListMenu_ProcessInput(task->tListTaskId);\n\n    switch (input)\n    {\n    case LIST_NOTHING_CHOSEN:\n        break;\n    case LIST_CANCEL:\n        gSpecialVar_Result = MULTI_B_PRESSED;\n        PlaySE(SE_SELECT);\n        CloseScrollableMultichoice(taskId);\n        break;\n    default:\n        gSpecialVar_Result = input;\n        PlaySE(SE_SELECT);\n        if (!task->tKeepOpenAfterSelect)\n        {\n            CloseScrollableMultichoice(taskId);\n        }\n        else if (input == task->tNumItems - 1)\n        {\n             \n            CloseScrollableMultichoice(taskId);\n        }\n        else\n        {\n             \n            ScrollableMultichoice_RemoveScrollArrows(taskId);\n            task->func = Task_ScrollableMultichoice_WaitReturnToList;\n            ScriptContext_Enable();\n        }\n        break;\n    }",
+      "callsTo": [
+        "CloseScrollableMultichoice",
+        "ListMenu_ProcessInput",
+        "PlaySE",
+        "ScriptContext_Enable",
+        "ScrollableMultichoice_RemoveScrollArrows"
+      ],
+      "lineCount": 33
+    },
+    "CloseScrollableMultichoice": {
+      "returnType": "void",
+      "signature": "static void CloseScrollableMultichoice(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "u16 selection;\n    struct Task *task = &gTasks[taskId];\n    ListMenuGetCurrentItemArrayId(task->tListTaskId, &selection);\n    HideFrontierExchangeCornerItemIcon(task->tScrollMultiId, selection);\n    ScrollableMultichoice_RemoveScrollArrows(taskId);\n    DestroyListMenuTask(task->tListTaskId, NULL, NULL);\n    Free(sScrollableMultichoice_ListMenuItem);\n    ClearStdWindowAndFrameToTransparent(task->tWindowId, TRUE);\n    FillWindowPixelBuffer(task->tWindowId, PIXEL_FILL(0));\n    CopyWindowToVram(task->tWindowId, COPYWIN_GFX);\n    RemoveWindow(task->tWindowId);\n    DestroyTask(taskId);\n    ScriptContext_Enable();",
+      "callsTo": [
+        "ClearStdWindowAndFrameToTransparent",
+        "CopyWindowToVram",
+        "DestroyListMenuTask",
+        "DestroyTask",
+        "FillWindowPixelBuffer",
+        "Free",
+        "HideFrontierExchangeCornerItemIcon",
+        "ListMenuGetCurrentItemArrayId",
+        "PIXEL_FILL",
+        "RemoveWindow",
+        "ScriptContext_Enable",
+        "ScrollableMultichoice_RemoveScrollArrows"
+      ],
+      "lineCount": 13
+    },
+    "Task_ScrollableMultichoice_WaitReturnToList": {
+      "returnType": "void",
+      "signature": "static void Task_ScrollableMultichoice_WaitReturnToList(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "switch (gTasks[taskId].tKeepOpenAfterSelect)\n    {\n    case 1:\n    default:\n        break;\n    case 2:\n        gTasks[taskId].tKeepOpenAfterSelect = 1;\n        gTasks[taskId].func = Task_ScrollableMultichoice_ReturnToList;\n        break;\n    }",
+      "callsTo": [],
+      "lineCount": 10
+    },
+    "ScrollableMultichoice_TryReturnToList": {
+      "returnType": "void",
+      "signature": "void ScrollableMultichoice_TryReturnToList(void)",
+      "paramsRaw": "void",
+      "body": "u8 taskId = FindTaskIdByFunc(Task_ScrollableMultichoice_WaitReturnToList);\n    if (taskId == TASK_NONE)\n        ScriptContext_Enable();\n    else\n        gTasks[taskId].tKeepOpenAfterSelect++;",
+      "callsTo": [
+        "FindTaskIdByFunc",
+        "ScriptContext_Enable"
+      ],
+      "lineCount": 5
+    },
+    "Task_ScrollableMultichoice_ReturnToList": {
+      "returnType": "void",
+      "signature": "static void Task_ScrollableMultichoice_ReturnToList(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "LockPlayerFieldControls();\n    ScrollableMultichoice_UpdateScrollArrows(taskId);\n    gTasks[taskId].func = ScrollableMultichoice_ProcessInput;",
+      "callsTo": [
+        "LockPlayerFieldControls",
+        "ScrollableMultichoice_UpdateScrollArrows"
+      ],
+      "lineCount": 3
+    },
+    "ScrollableMultichoice_UpdateScrollArrows": {
+      "returnType": "void",
+      "signature": "static void ScrollableMultichoice_UpdateScrollArrows(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "static const struct ScrollArrowsTemplate sScrollableMultichoice_ScrollArrowsTemplate = {\n        .firstArrowType = SCROLL_ARROW_UP,\n        .firstX = 0,\n        .firstY = 0,\n        .secondArrowType = SCROLL_ARROW_DOWN,\n        .secondX = 0,\n        .secondY = 0,\n        .fullyUpThreshold = 0,\n        .fullyDownThreshold = 0,\n        .tileTag = GFXTAG_MULTICHOICE_SCROLL_ARROWS,\n        .palTag = PALTAG_MULTICHOICE_SCROLL_ARROWS,\n        .palNum = 0\n    };\n\n    struct Task *task = &gTasks[taskId];\n    struct ScrollArrowsTemplate template = sScrollableMultichoice_ScrollArrowsTemplate;\n    if (task->tMaxItemsOnScreen != task->tNumItems)\n    {\n        template.firstX = (task->tWidth / 2) * 8 + 12 + (task->tLeft - 1) * 8;\n        template.firstY = 8;\n        template.secondX = (task->tWidth / 2) * 8 + 12 + (task->tLeft - 1) * 8;\n        template.secondY = task->tHeight * 8 + 10;\n        template.fullyUpThreshold = 0;\n        template.fullyDownThreshold = task->tNumItems - task->tMaxItemsOnScreen;\n        task->tScrollArrowId = AddScrollIndicatorArrowPair(&template, &sScrollableMultichoice_ScrollOffset);\n    }",
+      "callsTo": [
+        "AddScrollIndicatorArrowPair"
+      ],
+      "lineCount": 26
+    },
+    "ScrollableMultichoice_RemoveScrollArrows": {
+      "returnType": "void",
+      "signature": "static void ScrollableMultichoice_RemoveScrollArrows(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "struct Task *task = &gTasks[taskId];\n    if (task->tMaxItemsOnScreen != task->tNumItems)\n        RemoveScrollIndicatorArrowPair(task->tScrollArrowId);",
+      "callsTo": [
+        "RemoveScrollIndicatorArrowPair"
+      ],
+      "lineCount": 3
+    },
+    "ShowGlassWorkshopMenu": {
+      "returnType": "void",
+      "signature": "void ShowGlassWorkshopMenu(void)",
+      "paramsRaw": "void",
+      "body": "",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "SetBattleTowerLinkPlayerGfx": {
+      "returnType": "void",
+      "signature": "void SetBattleTowerLinkPlayerGfx(void)",
+      "paramsRaw": "void",
+      "body": "u8 i;\n    for (i = 0; i < 2; i++)\n    {\n        if (gLinkPlayers[i].gender == MALE)\n            VarSet(VAR_OBJ_GFX_ID_F - i, OBJ_EVENT_GFX_BRENDAN_NORMAL);\n        else\n            VarSet(VAR_OBJ_GFX_ID_F - i, OBJ_EVENT_GFX_RIVAL_MAY_NORMAL);\n    }",
+      "callsTo": [
+        "VarSet"
+      ],
+      "lineCount": 8
+    },
+    "ShowNatureGirlMessage": {
+      "returnType": "void",
+      "signature": "void ShowNatureGirlMessage(void)",
+      "paramsRaw": "void",
+      "body": "static const u8 *const sNatureGirlMessages[NUM_NATURES] = {\n        [NATURE_HARDY]   = BattleFrontier_Lounge5_Text_NatureGirlHardy,\n        [NATURE_LONELY]  = BattleFrontier_Lounge5_Text_NatureGirlLonely,\n        [NATURE_BRAVE]   = BattleFrontier_Lounge5_Text_NatureGirlBrave,\n        [NATURE_ADAMANT] = BattleFrontier_Lounge5_Text_NatureGirlAdamant,\n        [NATURE_NAUGHTY] = BattleFrontier_Lounge5_Text_NatureGirlNaughty,\n        [NATURE_BOLD]    = BattleFrontier_Lounge5_Text_NatureGirlBold,\n        [NATURE_DOCILE]  = BattleFrontier_Lounge5_Text_NatureGirlDocileNaiveQuietQuirky,\n        [NATURE_RELAXED] = BattleFrontier_Lounge5_Text_NatureGirlRelaxed,\n        [NATURE_IMPISH]  = BattleFrontier_Lounge5_Text_NatureGirlImpish,\n        [NATURE_LAX]     = BattleFrontier_Lounge5_Text_NatureGirlLax,\n        [NATURE_TIMID]   = BattleFrontier_Lounge5_Text_NatureGirlTimid,\n        [NATURE_HASTY]   = BattleFrontier_Lounge5_Text_NatureGirlHasty,\n        [NATURE_SERIOUS] = BattleFrontier_Lounge5_Text_NatureGirlSerious,\n        [NATURE_JOLLY]   = BattleFrontier_Lounge5_Text_NatureGirlJolly,\n        [NATURE_NAIVE]   = BattleFrontier_Lounge5_Text_NatureGirlDocileNaiveQuietQuirky,\n        [NATURE_MODEST]  = BattleFrontier_Lounge5_Text_NatureGirlModest,\n        [NATURE_MILD]    = BattleFrontier_Lounge5_Text_NatureGirlMild,\n        [NATURE_QUIET]   = BattleFrontier_Lounge5_Text_NatureGirlDocileNaiveQuietQuirky,\n        [NATURE_BASHFUL] = BattleFrontier_Lounge5_Text_NatureGirlBashful,\n        [NATURE_RASH]    = BattleFrontier_Lounge5_Text_NatureGirlRash,\n        [NATURE_CALM]    = BattleFrontier_Lounge5_Text_NatureGirlCalm,\n        [NATURE_GENTLE]  = BattleFrontier_Lounge5_Text_NatureGirlGentle,\n        [NATURE_SASSY]   = BattleFrontier_Lounge5_Text_NatureGirlSassy,\n        [NATURE_CAREFUL] = BattleFrontier_Lounge5_Text_NatureGirlCareful,\n        [NATURE_QUIRKY]  = BattleFrontier_Lounge5_Text_NatureGirlDocileNaiveQuietQuirky,\n    };\n\n    u8 nature;\n\n    if (gSpecialVar_0x8004 >= PARTY_SIZE)\n        gSpecialVar_0x8004 = 0;\n\n    nature = GetNature(&gPlayerParty[gSpecialVar_0x8004]);\n    ShowFieldMessage(sNatureGirlMessages[nature]);",
+      "callsTo": [
+        "GetNature",
+        "ShowFieldMessage"
+      ],
+      "lineCount": 35
+    },
+    "UpdateFrontierGambler": {
+      "returnType": "void",
+      "signature": "void UpdateFrontierGambler(u16 daysSince)",
+      "paramsRaw": "u16 daysSince",
+      "body": "u16 *var = GetVarPointer(VAR_FRONTIER_GAMBLER_CHALLENGE);\n    *var += daysSince;\n    *var %= FRONTIER_GAMBLER_CHALLENGE_COUNT;",
+      "callsTo": [
+        "GetVarPointer"
+      ],
+      "lineCount": 3
+    },
+    "ShowFrontierGamblerLookingMessage": {
+      "returnType": "void",
+      "signature": "void ShowFrontierGamblerLookingMessage(void)",
+      "paramsRaw": "void",
+      "body": "static const u8 *const sFrontierGamblerLookingMessages[] =\n    {\n        BattleFrontier_Lounge3_Text_ChallengeBattleTowerSingle,\n        BattleFrontier_Lounge3_Text_ChallengeBattleTowerDouble,\n        BattleFrontier_Lounge3_Text_ChallengeBattleTowerMulti,\n        BattleFrontier_Lounge3_Text_ChallengeBattleDomeSingle,\n        BattleFrontier_Lounge3_Text_ChallengeBattleDomeDouble,\n        BattleFrontier_Lounge3_Text_ChallengeBattleFactorySingle,\n        BattleFrontier_Lounge3_Text_ChallengeBattleFactoryDouble,\n        BattleFrontier_Lounge3_Text_ChallengeBattlePalaceSingle,\n        BattleFrontier_Lounge3_Text_ChallengeBattlePalaceDouble,\n        BattleFrontier_Lounge3_Text_ChallengeBattleArena,\n        BattleFrontier_Lounge3_Text_ChallengeBattlePike,\n        BattleFrontier_Lounge3_Text_ChallengeBattlePyramid,\n    };\n\n    u16 challenge = VarGet(VAR_FRONTIER_GAMBLER_CHALLENGE);\n    ShowFieldMessage(sFrontierGamblerLookingMessages[challenge]);\n    VarSet(VAR_FRONTIER_GAMBLER_SET_CHALLENGE, challenge);",
+      "callsTo": [
+        "ShowFieldMessage",
+        "VarGet",
+        "VarSet"
+      ],
+      "lineCount": 19
+    },
+    "ShowFrontierGamblerGoMessage": {
+      "returnType": "void",
+      "signature": "void ShowFrontierGamblerGoMessage(void)",
+      "paramsRaw": "void",
+      "body": "static const u8 *const sFrontierGamblerGoMessages[] =\n    {\n        BattleFrontier_Lounge3_Text_GetToBattleTowerSingle,\n        BattleFrontier_Lounge3_Text_GetToBattleTowerDouble,\n        BattleFrontier_Lounge3_Text_GetToBattleTowerMulti,\n        BattleFrontier_Lounge3_Text_GetToBattleDomeSingle,\n        BattleFrontier_Lounge3_Text_GetToBattleDomeDouble,\n        BattleFrontier_Lounge3_Text_GetToBattleFactorySingle,\n        BattleFrontier_Lounge3_Text_GetToBattleFactoryDouble,\n        BattleFrontier_Lounge3_Text_GetToBattlePalaceSingle,\n        BattleFrontier_Lounge3_Text_GetToBattlePalaceDouble,\n        BattleFrontier_Lounge3_Text_GetToBattleArena,\n        BattleFrontier_Lounge3_Text_GetToBattlePike,\n        BattleFrontier_Lounge3_Text_GetToBattlePyramid,\n    };\n\n    ShowFieldMessage(sFrontierGamblerGoMessages[VarGet(VAR_FRONTIER_GAMBLER_SET_CHALLENGE)]);",
+      "callsTo": [
+        "ShowFieldMessage",
+        "VarGet"
+      ],
+      "lineCount": 17
+    },
+    "FrontierGamblerSetWonOrLost": {
+      "returnType": "void",
+      "signature": "void FrontierGamblerSetWonOrLost(bool8 won)",
+      "paramsRaw": "bool8 won",
+      "body": "static const u16 sFrontierChallenges[] =\n    {\n        FRONTIER_CHALLENGE(FRONTIER_FACILITY_TOWER,   FRONTIER_MODE_SINGLES),\n        FRONTIER_CHALLENGE(FRONTIER_FACILITY_TOWER,   FRONTIER_MODE_DOUBLES),\n        FRONTIER_CHALLENGE(FRONTIER_FACILITY_TOWER,   FRONTIER_MODE_MULTIS),\n        FRONTIER_CHALLENGE(FRONTIER_FACILITY_DOME,    FRONTIER_MODE_SINGLES),\n        FRONTIER_CHALLENGE(FRONTIER_FACILITY_DOME,    FRONTIER_MODE_DOUBLES),\n        FRONTIER_CHALLENGE(FRONTIER_FACILITY_FACTORY, FRONTIER_MODE_SINGLES),\n        FRONTIER_CHALLENGE(FRONTIER_FACILITY_FACTORY, FRONTIER_MODE_DOUBLES),\n        FRONTIER_CHALLENGE(FRONTIER_FACILITY_PALACE,  FRONTIER_MODE_SINGLES),\n        FRONTIER_CHALLENGE(FRONTIER_FACILITY_PALACE,  FRONTIER_MODE_DOUBLES),\n        FRONTIER_CHALLENGE(FRONTIER_FACILITY_ARENA,   FRONTIER_MODE_SINGLES),\n        FRONTIER_CHALLENGE(FRONTIER_FACILITY_PIKE,    FRONTIER_MODE_SINGLES),\n        FRONTIER_CHALLENGE(FRONTIER_FACILITY_PYRAMID, FRONTIER_MODE_SINGLES)\n    };\n\n    u16 battleMode = VarGet(VAR_FRONTIER_BATTLE_MODE);\n    u16 challenge = VarGet(VAR_FRONTIER_GAMBLER_SET_CHALLENGE);\n    u16 frontierFacilityId = VarGet(VAR_FRONTIER_FACILITY);\n\n    if (VarGet(VAR_FRONTIER_GAMBLER_STATE) == FRONTIER_GAMBLER_PLACED_BET)\n    {\n        if (sFrontierChallenges[challenge] ==  FRONTIER_CHALLENGE(frontierFacilityId, battleMode))\n        {\n            if (won)\n                VarSet(VAR_FRONTIER_GAMBLER_STATE, FRONTIER_GAMBLER_WON);\n            else\n                VarSet(VAR_FRONTIER_GAMBLER_STATE, FRONTIER_GAMBLER_LOST);\n        }\n    }",
+      "callsTo": [
+        "FRONTIER_CHALLENGE",
+        "VarGet",
+        "VarSet"
+      ],
+      "lineCount": 30
+    },
+    "UpdateBattlePointsWindow": {
+      "returnType": "void",
+      "signature": "void UpdateBattlePointsWindow(void)",
+      "paramsRaw": "void",
+      "body": "u8 string[32];\n    u32 x;\n    StringCopy(ConvertIntToDecimalStringN(string, gSaveBlock2Ptr->frontier.battlePoints, STR_CONV_MODE_RIGHT_ALIGN, 4), gText_BP);\n    x = GetStringRightAlignXOffset(FONT_NORMAL, string, 48);\n    AddTextPrinterParameterized(sBattlePointsWindowId, FONT_NORMAL, string, x, 1, 0, NULL);",
+      "callsTo": [
+        "AddTextPrinterParameterized",
+        "ConvertIntToDecimalStringN",
+        "GetStringRightAlignXOffset",
+        "StringCopy"
+      ],
+      "lineCount": 5
+    },
+    "ShowBattlePointsWindow": {
+      "returnType": "void",
+      "signature": "void ShowBattlePointsWindow(void)",
+      "paramsRaw": "void",
+      "body": "static const struct WindowTemplate sBattlePoints_WindowTemplate =\n    {\n        .bg = 0,\n        .tilemapLeft = 1,\n        .tilemapTop = 1,\n        .width = 6,\n        .height = 2,\n        .paletteNum = 15,\n        .baseBlock = 8,\n    };\n\n    sBattlePointsWindowId = AddWindow(&sBattlePoints_WindowTemplate);\n    SetStandardWindowBorderStyle(sBattlePointsWindowId, FALSE);\n    UpdateBattlePointsWindow();\n    CopyWindowToVram(sBattlePointsWindowId, COPYWIN_GFX);",
+      "callsTo": [
+        "AddWindow",
+        "CopyWindowToVram",
+        "SetStandardWindowBorderStyle",
+        "UpdateBattlePointsWindow"
+      ],
+      "lineCount": 15
+    },
+    "CloseBattlePointsWindow": {
+      "returnType": "void",
+      "signature": "void CloseBattlePointsWindow(void)",
+      "paramsRaw": "void",
+      "body": "ClearStdWindowAndFrameToTransparent(sBattlePointsWindowId, TRUE);\n    RemoveWindow(sBattlePointsWindowId);",
+      "callsTo": [
+        "ClearStdWindowAndFrameToTransparent",
+        "RemoveWindow"
+      ],
+      "lineCount": 2
+    },
+    "TakeFrontierBattlePoints": {
+      "returnType": "void",
+      "signature": "void TakeFrontierBattlePoints(void)",
+      "paramsRaw": "void",
+      "body": "if (gSaveBlock2Ptr->frontier.battlePoints < gSpecialVar_0x8004)\n        gSaveBlock2Ptr->frontier.battlePoints = 0;\n    else\n        gSaveBlock2Ptr->frontier.battlePoints -= gSpecialVar_0x8004;",
+      "callsTo": [],
+      "lineCount": 4
+    },
+    "GiveFrontierBattlePoints": {
+      "returnType": "void",
+      "signature": "void GiveFrontierBattlePoints(void)",
+      "paramsRaw": "void",
+      "body": "if (gSaveBlock2Ptr->frontier.battlePoints + gSpecialVar_0x8004 > MAX_BATTLE_FRONTIER_POINTS)\n        gSaveBlock2Ptr->frontier.battlePoints = MAX_BATTLE_FRONTIER_POINTS;\n    else\n        gSaveBlock2Ptr->frontier.battlePoints = gSaveBlock2Ptr->frontier.battlePoints + gSpecialVar_0x8004;",
+      "callsTo": [],
+      "lineCount": 4
+    },
+    "GetFrontierBattlePoints": {
+      "returnType": "u16",
+      "signature": "u16 GetFrontierBattlePoints(void)",
+      "paramsRaw": "void",
+      "body": "return gSaveBlock2Ptr->frontier.battlePoints;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "ShowFrontierExchangeCornerItemIconWindow": {
+      "returnType": "void",
+      "signature": "void ShowFrontierExchangeCornerItemIconWindow(void)",
+      "paramsRaw": "void",
+      "body": "static const struct WindowTemplate sFrontierExchangeCorner_ItemIconWindowTemplate =\n    {\n        .bg = 0,\n        .tilemapLeft = 2,\n        .tilemapTop = 9,\n        .width = 4,\n        .height = 4,\n        .paletteNum = 15,\n        .baseBlock = 20,\n    };\n\n    sFrontierExchangeCorner_ItemIconWindowId = AddWindow(&sFrontierExchangeCorner_ItemIconWindowTemplate);\n    SetStandardWindowBorderStyle(sFrontierExchangeCorner_ItemIconWindowId, FALSE);\n    CopyWindowToVram(sFrontierExchangeCorner_ItemIconWindowId, COPYWIN_GFX);",
+      "callsTo": [
+        "AddWindow",
+        "CopyWindowToVram",
+        "SetStandardWindowBorderStyle"
+      ],
+      "lineCount": 14
+    },
+    "CloseFrontierExchangeCornerItemIconWindow": {
+      "returnType": "void",
+      "signature": "void CloseFrontierExchangeCornerItemIconWindow(void)",
+      "paramsRaw": "void",
+      "body": "ClearStdWindowAndFrameToTransparent(sFrontierExchangeCorner_ItemIconWindowId, TRUE);\n    RemoveWindow(sFrontierExchangeCorner_ItemIconWindowId);",
+      "callsTo": [
+        "ClearStdWindowAndFrameToTransparent",
+        "RemoveWindow"
+      ],
+      "lineCount": 2
+    },
+    "FillFrontierExchangeCornerWindowAndItemIcon": {
+      "returnType": "void",
+      "signature": "static void FillFrontierExchangeCornerWindowAndItemIcon(u16 menu, u16 selection)",
+      "paramsRaw": "u16 menu, u16 selection",
+      "body": "#include \"data/battle_frontier/battle_frontier_exchange_corner.h\"\n\n    if (menu >= SCROLL_MULTI_BF_EXCHANGE_CORNER_DECOR_VENDOR_1 && menu <= SCROLL_MULTI_BF_EXCHANGE_CORNER_HOLD_ITEM_VENDOR)\n    {\n        FillWindowPixelRect(0, PIXEL_FILL(1), 0, 0, 216, 32);\n        switch (menu)\n        {\n        case SCROLL_MULTI_BF_EXCHANGE_CORNER_DECOR_VENDOR_1:\n            AddTextPrinterParameterized2(0, FONT_NORMAL, sFrontierExchangeCorner_Decor1Descriptions[selection], 0, NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);\n            if (sFrontierExchangeCorner_Decor1[selection] == ITEM_LIST_END)\n            {\n                ShowFrontierExchangeCornerItemIcon(sFrontierExchangeCorner_Decor1[selection]);\n            }\n            else\n            {\n                FreeSpriteTilesByTag(TAG_ITEM_ICON);\n                FreeSpritePaletteByTag(TAG_ITEM_ICON);\n                sScrollableMultichoice_ItemSpriteId = AddDecorationIconObject(sFrontierExchangeCorner_Decor1[selection], 33, 88, 0, TAG_ITEM_ICON, TAG_ITEM_ICON);\n            }\n            break;\n        case SCROLL_MULTI_BF_EXCHANGE_CORNER_DECOR_VENDOR_2:\n            AddTextPrinterParameterized2(0, FONT_NORMAL, sFrontierExchangeCorner_Decor2Descriptions[selection], 0, NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);\n            if (sFrontierExchangeCorner_Decor2[selection] == ITEM_LIST_END)\n            {\n                ShowFrontierExchangeCornerItemIcon(sFrontierExchangeCorner_Decor2[selection]);\n            }\n            else\n            {\n                FreeSpriteTilesByTag(TAG_ITEM_ICON);\n                FreeSpritePaletteByTag(TAG_ITEM_ICON);\n                sScrollableMultichoice_ItemSpriteId = AddDecorationIconObject(sFrontierExchangeCorner_Decor2[selection], 33, 88, 0, TAG_ITEM_ICON, TAG_ITEM_ICON);\n            }\n            break;\n        case SCROLL_MULTI_BF_EXCHANGE_CORNER_VITAMIN_VENDOR:\n            AddTextPrinterParameterized2(0, FONT_NORMAL, sFrontierExchangeCorner_VitaminsDescriptions[selection], 0, NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);\n            ShowFrontierExchangeCornerItemIcon(sFrontierExchangeCorner_Vitamins[selection]);\n            break;\n        case SCROLL_MULTI_BF_EXCHANGE_CORNER_HOLD_ITEM_VENDOR:\n            AddTextPrinterParameterized2(0, FONT_NORMAL, sFrontierExchangeCorner_HoldItemsDescriptions[selection], 0, NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);\n            ShowFrontierExchangeCornerItemIcon(sFrontierExchangeCorner_HoldItems[selection]);\n            break;\n        }\n    }",
+      "callsTo": [
+        "AddDecorationIconObject",
+        "AddTextPrinterParameterized2",
+        "FillWindowPixelRect",
+        "FreeSpritePaletteByTag",
+        "FreeSpriteTilesByTag",
+        "PIXEL_FILL",
+        "ShowFrontierExchangeCornerItemIcon"
+      ],
+      "lineCount": 43
+    },
+    "ShowFrontierExchangeCornerItemIcon": {
+      "returnType": "void",
+      "signature": "static void ShowFrontierExchangeCornerItemIcon(u16 item)",
+      "paramsRaw": "u16 item",
+      "body": "FreeSpriteTilesByTag(TAG_ITEM_ICON);\n    FreeSpritePaletteByTag(TAG_ITEM_ICON);\n    sScrollableMultichoice_ItemSpriteId = AddItemIconSprite(TAG_ITEM_ICON, TAG_ITEM_ICON, item);\n\n    if (sScrollableMultichoice_ItemSpriteId != MAX_SPRITES)\n    {\n        gSprites[sScrollableMultichoice_ItemSpriteId].oam.priority = 0;\n        gSprites[sScrollableMultichoice_ItemSpriteId].x = 36;\n        gSprites[sScrollableMultichoice_ItemSpriteId].y = 92;\n    }",
+      "callsTo": [
+        "AddItemIconSprite",
+        "FreeSpritePaletteByTag",
+        "FreeSpriteTilesByTag"
+      ],
+      "lineCount": 10
+    },
+    "HideFrontierExchangeCornerItemIcon": {
+      "returnType": "void",
+      "signature": "static void HideFrontierExchangeCornerItemIcon(u16 menu, u16 unused)",
+      "paramsRaw": "u16 menu, u16 unused",
+      "body": "if (sScrollableMultichoice_ItemSpriteId != MAX_SPRITES)\n    {\n        switch (menu)\n        {\n        case SCROLL_MULTI_BF_EXCHANGE_CORNER_DECOR_VENDOR_1:\n        case SCROLL_MULTI_BF_EXCHANGE_CORNER_DECOR_VENDOR_2:\n        case SCROLL_MULTI_BF_EXCHANGE_CORNER_VITAMIN_VENDOR:\n        case SCROLL_MULTI_BF_EXCHANGE_CORNER_HOLD_ITEM_VENDOR:\n            DestroySpriteAndFreeResources(&gSprites[sScrollableMultichoice_ItemSpriteId]);\n            break;\n        }\n        sScrollableMultichoice_ItemSpriteId = MAX_SPRITES;\n    }",
+      "callsTo": [
+        "DestroySpriteAndFreeResources"
+      ],
+      "lineCount": 13
+    },
+    "BufferBattleFrontierTutorMoveName": {
+      "returnType": "void",
+      "signature": "void BufferBattleFrontierTutorMoveName(void)",
+      "paramsRaw": "void",
+      "body": "if (gSpecialVar_0x8005 != 0)\n        StringCopy(gStringVar1, gMoveNames[sBattleFrontier_TutorMoves2[gSpecialVar_0x8004]]);\n    else\n        StringCopy(gStringVar1, gMoveNames[sBattleFrontier_TutorMoves1[gSpecialVar_0x8004]]);",
+      "callsTo": [
+        "StringCopy"
+      ],
+      "lineCount": 4
+    },
+    "ShowBattleFrontierTutorWindow": {
+      "returnType": "void",
+      "signature": "static void ShowBattleFrontierTutorWindow(u8 menu, u16 selection)",
+      "paramsRaw": "u8 menu, u16 selection",
+      "body": "static const struct WindowTemplate sBattleFrontierTutor_WindowTemplate =\n    {\n        .bg = 0,\n        .tilemapLeft = 1,\n        .tilemapTop = 7,\n        .width = 12,\n        .height = 6,\n        .paletteNum = 15,\n        .baseBlock = 28,\n    };\n\n    if (menu == SCROLL_MULTI_BF_MOVE_TUTOR_1 || menu == SCROLL_MULTI_BF_MOVE_TUTOR_2)\n    {\n        if (gSpecialVar_0x8006 == 0)\n        {\n            sTutorMoveAndElevatorWindowId = AddWindow(&sBattleFrontierTutor_WindowTemplate);\n            SetStandardWindowBorderStyle(sTutorMoveAndElevatorWindowId, FALSE);\n        }\n        ShowBattleFrontierTutorMoveDescription(menu, selection);\n    }",
+      "callsTo": [
+        "AddWindow",
+        "SetStandardWindowBorderStyle",
+        "ShowBattleFrontierTutorMoveDescription"
+      ],
+      "lineCount": 20
+    },
+    "ShowBattleFrontierTutorMoveDescription": {
+      "returnType": "void",
+      "signature": "static void ShowBattleFrontierTutorMoveDescription(u8 menu, u16 selection)",
+      "paramsRaw": "u8 menu, u16 selection",
+      "body": "static const u8 *const sBattleFrontier_TutorMoveDescriptions1[] =\n    {\n        BattleFrontier_Lounge7_Text_SoftboiledDesc,\n        BattleFrontier_Lounge7_Text_SeismicTossDesc,\n        BattleFrontier_Lounge7_Text_DreamEaterDesc,\n        BattleFrontier_Lounge7_Text_MegaPunchDesc,\n        BattleFrontier_Lounge7_Text_MegaKickDesc,\n        BattleFrontier_Lounge7_Text_BodySlamDesc,\n        BattleFrontier_Lounge7_Text_RockSlideDesc,\n        BattleFrontier_Lounge7_Text_CounterDesc,\n        BattleFrontier_Lounge7_Text_ThunderWaveDesc,\n        BattleFrontier_Lounge7_Text_SwordsDanceDesc,\n        gText_Exit,\n    };\n\n    static const u8 *const sBattleFrontier_TutorMoveDescriptions2[] =\n    {\n        BattleFrontier_Lounge7_Text_DefenseCurlDesc,\n        BattleFrontier_Lounge7_Text_SnoreDesc,\n        BattleFrontier_Lounge7_Text_MudSlapDesc,\n        BattleFrontier_Lounge7_Text_SwiftDesc,\n        BattleFrontier_Lounge7_Text_IcyWindDesc,\n        BattleFrontier_Lounge7_Text_EndureDesc,\n        BattleFrontier_Lounge7_Text_PsychUpDesc,\n        BattleFrontier_Lounge7_Text_IcePunchDesc,\n        BattleFrontier_Lounge7_Text_ThunderPunchDesc,\n        BattleFrontier_Lounge7_Text_FirePunchDesc,\n        gText_Exit,\n    };\n\n    if (menu == SCROLL_MULTI_BF_MOVE_TUTOR_1 || menu == SCROLL_MULTI_BF_MOVE_TUTOR_2)\n    {\n        FillWindowPixelRect(sTutorMoveAndElevatorWindowId, PIXEL_FILL(1), 0, 0, 96, 48);\n        if (menu == SCROLL_MULTI_BF_MOVE_TUTOR_2)\n            AddTextPrinterParameterized(sTutorMoveAndElevatorWindowId, FONT_NORMAL, sBattleFrontier_TutorMoveDescriptions2[selection], 0, 1, 0, NULL);\n        else\n            AddTextPrinterParameterized(sTutorMoveAndElevatorWindowId, FONT_NORMAL, sBattleFrontier_TutorMoveDescriptions1[selection], 0, 1, 0, NULL);\n    }",
+      "callsTo": [
+        "AddTextPrinterParameterized",
+        "FillWindowPixelRect",
+        "PIXEL_FILL"
+      ],
+      "lineCount": 38
+    },
+    "CloseBattleFrontierTutorWindow": {
+      "returnType": "void",
+      "signature": "void CloseBattleFrontierTutorWindow(void)",
+      "paramsRaw": "void",
+      "body": "ClearStdWindowAndFrameToTransparent(sTutorMoveAndElevatorWindowId, TRUE);\n    RemoveWindow(sTutorMoveAndElevatorWindowId);",
+      "callsTo": [
+        "ClearStdWindowAndFrameToTransparent",
+        "RemoveWindow"
+      ],
+      "lineCount": 2
+    },
+    "ScrollableMultichoice_RedrawPersistentMenu": {
+      "returnType": "void",
+      "signature": "void ScrollableMultichoice_RedrawPersistentMenu(void)",
+      "paramsRaw": "void",
+      "body": "u16 scrollOffset, selectedRow;\n    u8 i;\n    u8 taskId = FindTaskIdByFunc(Task_ScrollableMultichoice_WaitReturnToList);\n    if (taskId != TASK_NONE)\n    {\n        struct Task *task = &gTasks[taskId];\n        ListMenuGetScrollAndRow(task->tListTaskId, &scrollOffset, &selectedRow);\n        SetStandardWindowBorderStyle(task->tWindowId, FALSE);\n\n        for (i = 0; i < MAX_SCROLL_MULTI_ON_SCREEN; i++)\n            AddTextPrinterParameterized5(task->tWindowId, FONT_NORMAL, sScrollableMultichoiceOptions[gSpecialVar_0x8004][scrollOffset + i], 10, i * 16, TEXT_SKIP_DRAW, NULL, 0, 0);\n\n        AddTextPrinterParameterized(task->tWindowId, FONT_NORMAL, gText_SelectorArrow, 0, selectedRow * 16, TEXT_SKIP_DRAW, NULL);\n        PutWindowTilemap(task->tWindowId);\n        CopyWindowToVram(task->tWindowId, COPYWIN_FULL);\n    }",
+      "callsTo": [
+        "AddTextPrinterParameterized",
+        "AddTextPrinterParameterized5",
+        "CopyWindowToVram",
+        "FindTaskIdByFunc",
+        "ListMenuGetScrollAndRow",
+        "PutWindowTilemap",
+        "SetStandardWindowBorderStyle"
+      ],
+      "lineCount": 16
+    },
+    "GetBattleFrontierTutorMoveIndex": {
+      "returnType": "void",
+      "signature": "void GetBattleFrontierTutorMoveIndex(void)",
+      "paramsRaw": "void",
+      "body": "u8 i;\n    u16 moveTutor = 0;\n    u16 moveIndex = 0;\n    gSpecialVar_0x8005 = 0;\n\n    moveTutor = VarGet(VAR_TEMP_FRONTIER_TUTOR_ID);\n    moveIndex = VarGet(VAR_TEMP_FRONTIER_TUTOR_SELECTION);\n\n    if (moveTutor != 0)\n    {\n        i = 0;\n        do\n        {\n            if (gTutorMoves[i] == sBattleFrontier_TutorMoves2[moveIndex])\n            {\n                gSpecialVar_0x8005 = i;\n                break;\n            }\n            i++;\n        } while (i < TUTOR_MOVE_COUNT);\n    }\n    else\n    {\n        i = 0;\n        do\n        {\n            if (gTutorMoves[i] == sBattleFrontier_TutorMoves1[moveIndex])\n            {\n                gSpecialVar_0x8005 = i;\n                break;\n            }\n            i++;\n        } while (i < TUTOR_MOVE_COUNT);\n    }",
+      "callsTo": [
+        "VarGet"
+      ],
+      "lineCount": 34
+    },
+    "ScrollableMultichoice_ClosePersistentMenu": {
+      "returnType": "void",
+      "signature": "void ScrollableMultichoice_ClosePersistentMenu(void)",
+      "paramsRaw": "void",
+      "body": "u8 taskId = FindTaskIdByFunc(Task_ScrollableMultichoice_WaitReturnToList);\n    if (taskId != TASK_NONE)\n    {\n        struct Task *task = &gTasks[taskId];\n        DestroyListMenuTask(task->tListTaskId, NULL, NULL);\n        Free(sScrollableMultichoice_ListMenuItem);\n        ClearStdWindowAndFrameToTransparent(task->tWindowId, TRUE);\n        FillWindowPixelBuffer(task->tWindowId, PIXEL_FILL(0));\n        ClearWindowTilemap(task->tWindowId);\n        CopyWindowToVram(task->tWindowId, COPYWIN_GFX);\n        RemoveWindow(task->tWindowId);\n        DestroyTask(taskId);\n    }",
+      "callsTo": [
+        "ClearStdWindowAndFrameToTransparent",
+        "ClearWindowTilemap",
+        "CopyWindowToVram",
+        "DestroyListMenuTask",
+        "DestroyTask",
+        "FillWindowPixelBuffer",
+        "FindTaskIdByFunc",
+        "Free",
+        "PIXEL_FILL",
+        "RemoveWindow"
+      ],
+      "lineCount": 13
+    },
+    "DoDeoxysRockInteraction": {
+      "returnType": "void",
+      "signature": "void DoDeoxysRockInteraction(void)",
+      "paramsRaw": "void",
+      "body": "CreateTask(Task_DeoxysRockInteraction, 8);",
+      "callsTo": [
+        "CreateTask"
+      ],
+      "lineCount": 1
+    },
+    "Task_DeoxysRockInteraction": {
+      "returnType": "void",
+      "signature": "static void Task_DeoxysRockInteraction(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "static const u8 sStoneMaxStepCounts[DEOXYS_ROCK_LEVELS - 1] = { 4, 8, 8, 8, 4, 4, 4, 6, 3, 3 };\n\n    if (FlagGet(FLAG_DEOXYS_ROCK_COMPLETE) == TRUE)\n    {\n        gSpecialVar_Result = DEOXYS_ROCK_COMPLETE;\n        ScriptContext_Enable();\n        DestroyTask(taskId);\n    }\n    else\n    {\n        u16 rockLevel = VarGet(VAR_DEOXYS_ROCK_LEVEL);\n        u16 stepCount = VarGet(VAR_DEOXYS_ROCK_STEP_COUNT);\n\n        VarSet(VAR_DEOXYS_ROCK_STEP_COUNT, 0);\n        if (rockLevel != 0 && sStoneMaxStepCounts[rockLevel - 1] < stepCount)\n        {\n             \n            ChangeDeoxysRockLevel(0);\n            VarSet(VAR_DEOXYS_ROCK_LEVEL, 0);\n            gSpecialVar_Result = DEOXYS_ROCK_FAILED;\n            DestroyTask(taskId);\n        }\n        else if (rockLevel == DEOXYS_ROCK_LEVELS - 1)\n        {\n            FlagSet(FLAG_DEOXYS_ROCK_COMPLETE);\n            gSpecialVar_Result = DEOXYS_ROCK_SOLVED;\n            ScriptContext_Enable();\n            DestroyTask(taskId);\n        }\n        else\n        {\n            rockLevel++;\n            ChangeDeoxysRockLevel(rockLevel);\n            VarSet(VAR_DEOXYS_ROCK_LEVEL, rockLevel);\n            gSpecialVar_Result = DEOXYS_ROCK_PROGRESSED;\n            DestroyTask(taskId);\n        }\n    }",
+      "callsTo": [
+        "ChangeDeoxysRockLevel",
+        "DestroyTask",
+        "FlagGet",
+        "FlagSet",
+        "ScriptContext_Enable",
+        "VarGet",
+        "VarSet"
+      ],
+      "lineCount": 38
+    },
+    "ChangeDeoxysRockLevel": {
+      "returnType": "void",
+      "signature": "static void ChangeDeoxysRockLevel(u8 rockLevel)",
+      "paramsRaw": "u8 rockLevel",
+      "body": "u8 objectEventId;\n    LoadPalette(&sDeoxysRockPalettes[rockLevel], OBJ_PLTT_ID(ROCK_PAL_ID), PLTT_SIZEOF(4));\n    TryGetObjectEventIdByLocalIdAndMap(LOCALID_BIRTH_ISLAND_EXTERIOR_ROCK, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup, &objectEventId);\n\n    if (rockLevel == 0)\n        PlaySE(SE_M_CONFUSE_RAY);  \n    else\n        PlaySE(SE_RG_DEOXYS_MOVE);  \n\n    CreateTask(WaitForDeoxysRockMovement, 8);\n    gFieldEffectArguments[0] = LOCALID_BIRTH_ISLAND_EXTERIOR_ROCK;\n    gFieldEffectArguments[1] = MAP_NUM(MAP_BIRTH_ISLAND_EXTERIOR);\n    gFieldEffectArguments[2] = MAP_GROUP(MAP_BIRTH_ISLAND_EXTERIOR);\n    gFieldEffectArguments[3] = sDeoxysRockCoords[rockLevel][0];\n    gFieldEffectArguments[4] = sDeoxysRockCoords[rockLevel][1];\n\n     \n     \n    if (rockLevel == 0)\n        gFieldEffectArguments[5] = 60;\n    else\n        gFieldEffectArguments[5] = 5;\n\n    FieldEffectStart(FLDEFF_MOVE_DEOXYS_ROCK);\n    SetObjEventTemplateCoords(LOCALID_BIRTH_ISLAND_EXTERIOR_ROCK, sDeoxysRockCoords[rockLevel][0], sDeoxysRockCoords[rockLevel][1]);",
+      "callsTo": [
+        "CreateTask",
+        "FieldEffectStart",
+        "LoadPalette",
+        "MAP_GROUP",
+        "MAP_NUM",
+        "OBJ_PLTT_ID",
+        "PLTT_SIZEOF",
+        "PlaySE",
+        "SetObjEventTemplateCoords",
+        "TryGetObjectEventIdByLocalIdAndMap"
+      ],
+      "lineCount": 25
+    },
+    "WaitForDeoxysRockMovement": {
+      "returnType": "void",
+      "signature": "static void WaitForDeoxysRockMovement(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "if (FieldEffectActiveListContains(FLDEFF_MOVE_DEOXYS_ROCK) == FALSE)\n    {\n        ScriptContext_Enable();\n        DestroyTask(taskId);\n    }",
+      "callsTo": [
+        "DestroyTask",
+        "FieldEffectActiveListContains",
+        "ScriptContext_Enable"
+      ],
+      "lineCount": 5
+    },
+    "IncrementBirthIslandRockStepCount": {
+      "returnType": "void",
+      "signature": "void IncrementBirthIslandRockStepCount(void)",
+      "paramsRaw": "void",
+      "body": "u16 stepCount = VarGet(VAR_DEOXYS_ROCK_STEP_COUNT);\n    if (gSaveBlock1Ptr->location.mapNum == MAP_NUM(MAP_BIRTH_ISLAND_EXTERIOR) && gSaveBlock1Ptr->location.mapGroup == MAP_GROUP(MAP_BIRTH_ISLAND_EXTERIOR))\n    {\n        if (++stepCount > 99)\n            VarSet(VAR_DEOXYS_ROCK_STEP_COUNT, 0);\n        else\n            VarSet(VAR_DEOXYS_ROCK_STEP_COUNT, stepCount);\n    }",
+      "callsTo": [
+        "MAP_GROUP",
+        "MAP_NUM",
+        "VarGet",
+        "VarSet"
+      ],
+      "lineCount": 8
+    },
+    "SetDeoxysRockPalette": {
+      "returnType": "void",
+      "signature": "void SetDeoxysRockPalette(void)",
+      "paramsRaw": "void",
+      "body": "LoadPalette(&sDeoxysRockPalettes[(u8)VarGet(VAR_DEOXYS_ROCK_LEVEL)], OBJ_PLTT_ID(ROCK_PAL_ID), PLTT_SIZEOF(4));\n    BlendPalettes(1 << (ROCK_PAL_ID + 16), 16, 0);",
+      "callsTo": [
+        "BlendPalettes",
+        "LoadPalette",
+        "OBJ_PLTT_ID",
+        "PLTT_SIZEOF",
+        "VarGet"
+      ],
+      "lineCount": 2
+    },
+    "SetPCBoxToSendMon": {
+      "returnType": "void",
+      "signature": "void SetPCBoxToSendMon(u8 boxId)",
+      "paramsRaw": "u8 boxId",
+      "body": "sPCBoxToSendMon = boxId;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "GetPCBoxToSendMon": {
+      "returnType": "u16",
+      "signature": "u16 GetPCBoxToSendMon(void)",
+      "paramsRaw": "void",
+      "body": "return sPCBoxToSendMon;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "ShouldShowBoxWasFullMessage": {
+      "returnType": "bool8",
+      "signature": "bool8 ShouldShowBoxWasFullMessage(void)",
+      "paramsRaw": "void",
+      "body": "if (!FlagGet(FLAG_SHOWN_BOX_WAS_FULL_MESSAGE))\n    {\n        if (StorageGetCurrentBox() != VarGet(VAR_PC_BOX_TO_SEND_MON))\n        {\n            FlagSet(FLAG_SHOWN_BOX_WAS_FULL_MESSAGE);\n            return TRUE;\n        }\n    }\n    return FALSE;",
+      "callsTo": [
+        "FlagGet",
+        "FlagSet",
+        "StorageGetCurrentBox",
+        "VarGet"
+      ],
+      "lineCount": 9
+    },
+    "IsDestinationBoxFull": {
+      "returnType": "bool8",
+      "signature": "bool8 IsDestinationBoxFull(void)",
+      "paramsRaw": "void",
+      "body": "int box;\n    int i;\n    SetPCBoxToSendMon(VarGet(VAR_PC_BOX_TO_SEND_MON));\n    box = StorageGetCurrentBox();\n    do\n    {\n        for (i = 0; i < IN_BOX_COUNT; i++)\n        {\n            if (GetBoxMonData(GetBoxedMonPtr(box, i), MON_DATA_SPECIES, 0) == SPECIES_NONE)\n            {\n                if (GetPCBoxToSendMon() != box)\n                    FlagClear(FLAG_SHOWN_BOX_WAS_FULL_MESSAGE);\n                VarSet(VAR_PC_BOX_TO_SEND_MON, box);\n                return ShouldShowBoxWasFullMessage();\n            }\n        }\n\n        if (++box == TOTAL_BOXES_COUNT)\n            box = 0;\n    } while (box != StorageGetCurrentBox());\n    return FALSE;",
+      "callsTo": [
+        "FlagClear",
+        "GetBoxMonData",
+        "GetBoxedMonPtr",
+        "GetPCBoxToSendMon",
+        "SetPCBoxToSendMon",
+        "ShouldShowBoxWasFullMessage",
+        "StorageGetCurrentBox",
+        "VarGet",
+        "VarSet"
+      ],
+      "lineCount": 21
+    },
+    "CreateAbnormalWeatherEvent": {
+      "returnType": "void",
+      "signature": "void CreateAbnormalWeatherEvent(void)",
+      "paramsRaw": "void",
+      "body": "u16 randomValue = Random();\n    VarSet(VAR_ABNORMAL_WEATHER_STEP_COUNTER, 0);\n\n    if (FlagGet(FLAG_DEFEATED_KYOGRE) == TRUE)\n    {\n        VarSet(VAR_ABNORMAL_WEATHER_LOCATION, (randomValue % TERRA_CAVE_LOCATIONS) + TERRA_CAVE_LOCATIONS_START);\n    }\n    else if (FlagGet(FLAG_DEFEATED_GROUDON) == TRUE)\n    {\n        VarSet(VAR_ABNORMAL_WEATHER_LOCATION, (randomValue % MARINE_CAVE_LOCATIONS) + MARINE_CAVE_LOCATIONS_START);\n    }\n    else if ((randomValue & 1) == 0)\n    {\n        randomValue = Random();\n        VarSet(VAR_ABNORMAL_WEATHER_LOCATION, (randomValue % TERRA_CAVE_LOCATIONS) + TERRA_CAVE_LOCATIONS_START);\n    }\n    else\n    {\n        randomValue = Random();\n        VarSet(VAR_ABNORMAL_WEATHER_LOCATION, (randomValue % MARINE_CAVE_LOCATIONS) + MARINE_CAVE_LOCATIONS_START);\n    }",
+      "callsTo": [
+        "FlagGet",
+        "Random",
+        "VarSet"
+      ],
+      "lineCount": 21
+    },
+    "GetAbnormalWeatherMapNameAndType": {
+      "returnType": "bool32",
+      "signature": "bool32 GetAbnormalWeatherMapNameAndType(void)",
+      "paramsRaw": "void",
+      "body": "static const u8 sAbnormalWeatherMapNumbers[] = {\n        MAP_NUM(MAP_ROUTE114),\n        MAP_NUM(MAP_ROUTE114),\n        MAP_NUM(MAP_ROUTE115),\n        MAP_NUM(MAP_ROUTE115),\n        MAP_NUM(MAP_ROUTE116),\n        MAP_NUM(MAP_ROUTE116),\n        MAP_NUM(MAP_ROUTE118),\n        MAP_NUM(MAP_ROUTE118),\n        MAP_NUM(MAP_ROUTE105),\n        MAP_NUM(MAP_ROUTE105),\n        MAP_NUM(MAP_ROUTE125),\n        MAP_NUM(MAP_ROUTE125),\n        MAP_NUM(MAP_ROUTE127),\n        MAP_NUM(MAP_ROUTE127),\n        MAP_NUM(MAP_ROUTE129),\n        MAP_NUM(MAP_ROUTE129)\n    };\n\n    u16 abnormalWeather = VarGet(VAR_ABNORMAL_WEATHER_LOCATION);\n\n    GetMapName(gStringVar1, sAbnormalWeatherMapNumbers[abnormalWeather - 1], 0);\n\n    if (abnormalWeather < MARINE_CAVE_LOCATIONS_START)\n        return FALSE;\n    else\n        return TRUE;",
+      "callsTo": [
+        "GetMapName",
+        "MAP_NUM",
+        "VarGet"
+      ],
+      "lineCount": 27
+    },
+    "AbnormalWeatherHasExpired": {
+      "returnType": "bool8",
+      "signature": "bool8 AbnormalWeatherHasExpired(void)",
+      "paramsRaw": "void",
+      "body": "static const u8 sAbnormalWeatherMapNumbers[] =\n    {\n        MAP_NUM(MAP_ROUTE114),\n        MAP_NUM(MAP_ROUTE114),\n        MAP_NUM(MAP_ROUTE115),\n        MAP_NUM(MAP_ROUTE115),\n        MAP_NUM(MAP_ROUTE116),\n        MAP_NUM(MAP_ROUTE116),\n        MAP_NUM(MAP_ROUTE118),\n        MAP_NUM(MAP_ROUTE118),\n        MAP_NUM(MAP_ROUTE105),\n        MAP_NUM(MAP_ROUTE105),\n        MAP_NUM(MAP_ROUTE125),\n        MAP_NUM(MAP_ROUTE125),\n        MAP_NUM(MAP_ROUTE127),\n        MAP_NUM(MAP_ROUTE127),\n        MAP_NUM(MAP_ROUTE129),\n        MAP_NUM(MAP_ROUTE129)\n    };\n\n    u16 steps = VarGet(VAR_ABNORMAL_WEATHER_STEP_COUNTER);\n    u16 abnormalWeather = VarGet(VAR_ABNORMAL_WEATHER_LOCATION);\n\n    if (abnormalWeather == ABNORMAL_WEATHER_NONE)\n        return FALSE;\n\n    if (++steps > 999)\n    {\n        VarSet(VAR_ABNORMAL_WEATHER_STEP_COUNTER, 0);\n        if (gSaveBlock1Ptr->location.mapGroup == MAP_GROUP(MAP_UNDERWATER_MARINE_CAVE))\n        {\n            switch (gSaveBlock1Ptr->location.mapNum)\n            {\n            case MAP_NUM(MAP_UNDERWATER_MARINE_CAVE):\n            case MAP_NUM(MAP_MARINE_CAVE_ENTRANCE):\n            case MAP_NUM(MAP_MARINE_CAVE_END):\n            case MAP_NUM(MAP_TERRA_CAVE_ENTRANCE):\n            case MAP_NUM(MAP_TERRA_CAVE_END):\n                VarSet(VAR_SHOULD_END_ABNORMAL_WEATHER, 1);\n                return FALSE;\n            default:\n                break;\n            }\n        }\n\n        if (gSaveBlock1Ptr->location.mapGroup == MAP_GROUP(MAP_UNDERWATER_ROUTE127))\n        {\n            switch (gSaveBlock1Ptr->location.mapNum)\n            {\n            case MAP_NUM(MAP_UNDERWATER_ROUTE127):\n            case MAP_NUM(MAP_UNDERWATER_ROUTE129):\n            case MAP_NUM(MAP_UNDERWATER_ROUTE105):\n            case MAP_NUM(MAP_UNDERWATER_ROUTE125):\n                VarSet(VAR_SHOULD_END_ABNORMAL_WEATHER, 1);\n                return FALSE;\n            default:\n                break;\n            }\n        }\n\n        if (gSaveBlock1Ptr->location.mapNum == sAbnormalWeatherMapNumbers[abnormalWeather - 1] &&\n            gSaveBlock1Ptr->location.mapGroup == 0)\n        {\n            return TRUE;\n        }\n        else\n        {\n            VarSet(VAR_ABNORMAL_WEATHER_LOCATION, ABNORMAL_WEATHER_NONE);\n            return FALSE;\n        }\n    }\n    else\n    {\n        VarSet(VAR_ABNORMAL_WEATHER_STEP_COUNTER, steps);\n        return FALSE;\n    }",
+      "callsTo": [
+        "MAP_GROUP",
+        "MAP_NUM",
+        "VarGet",
+        "VarSet"
+      ],
+      "lineCount": 76
+    },
+    "Unused_SetWeatherSunny": {
+      "returnType": "void",
+      "signature": "void Unused_SetWeatherSunny(void)",
+      "paramsRaw": "void",
+      "body": "SetCurrentAndNextWeather(WEATHER_SUNNY);",
+      "callsTo": [
+        "SetCurrentAndNextWeather"
+      ],
+      "lineCount": 1
+    },
+    "GetMartEmployeeObjectEventId": {
+      "returnType": "u32",
+      "signature": "u32 GetMartEmployeeObjectEventId(void)",
+      "paramsRaw": "void",
+      "body": "static const u8 sPokeMarts[][3] =\n    {\n        { MAP_GROUP(MAP_OLDALE_TOWN_MART),     MAP_NUM(MAP_OLDALE_TOWN_MART),     LOCALID_OLDALE_MART_CLERK },\n        { MAP_GROUP(MAP_LAVARIDGE_TOWN_MART),  MAP_NUM(MAP_LAVARIDGE_TOWN_MART),  LOCALID_LAVARIDGE_MART_CLERK },\n        { MAP_GROUP(MAP_FALLARBOR_TOWN_MART),  MAP_NUM(MAP_FALLARBOR_TOWN_MART),  LOCALID_FALLARBOR_MART_CLERK },\n        { MAP_GROUP(MAP_VERDANTURF_TOWN_MART), MAP_NUM(MAP_VERDANTURF_TOWN_MART), LOCALID_VERDANTURF_MART_CLERK },\n        { MAP_GROUP(MAP_PETALBURG_CITY_MART),  MAP_NUM(MAP_PETALBURG_CITY_MART),  LOCALID_PETALBURG_MART_CLERK },\n        { MAP_GROUP(MAP_SLATEPORT_CITY_MART),  MAP_NUM(MAP_SLATEPORT_CITY_MART),  LOCALID_SLATEPORT_MART_CLERK },\n        { MAP_GROUP(MAP_MAUVILLE_CITY_MART),   MAP_NUM(MAP_MAUVILLE_CITY_MART),   LOCALID_MAUVILLE_MART_CLERK },\n        { MAP_GROUP(MAP_RUSTBORO_CITY_MART),   MAP_NUM(MAP_RUSTBORO_CITY_MART),   LOCALID_RUSTBORO_MART_CLERK },\n        { MAP_GROUP(MAP_FORTREE_CITY_MART),    MAP_NUM(MAP_FORTREE_CITY_MART),    LOCALID_FORTREE_MART_CLERK },\n        { MAP_GROUP(MAP_MOSSDEEP_CITY_MART),   MAP_NUM(MAP_MOSSDEEP_CITY_MART),   LOCALID_MOSSDEEP_MART_CLERK },\n        { MAP_GROUP(MAP_SOOTOPOLIS_CITY_MART), MAP_NUM(MAP_SOOTOPOLIS_CITY_MART), LOCALID_SOOTOPOLIS_MART_CLERK },\n        { MAP_GROUP(MAP_BATTLE_FRONTIER_MART), MAP_NUM(MAP_BATTLE_FRONTIER_MART), LOCALID_FRONTIER_MART_CLERK },\n    };\n\n    u8 i;\n    for (i = 0; i < ARRAY_COUNT(sPokeMarts); i++)\n    {\n        if (gSaveBlock1Ptr->location.mapGroup == sPokeMarts[i][0])\n        {\n            if (gSaveBlock1Ptr->location.mapNum == sPokeMarts[i][1])\n                return sPokeMarts[i][2];\n        }\n    }\n    return 1;",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "MAP_GROUP",
+        "MAP_NUM"
+      ],
+      "lineCount": 26
+    },
+    "IsTrainerRegistered": {
+      "returnType": "bool32",
+      "signature": "bool32 IsTrainerRegistered(void)",
+      "paramsRaw": "void",
+      "body": "int index = GetRematchIdxByTrainerIdx(gSpecialVar_0x8004);\n    if (index >= 0)\n    {\n        if (FlagGet(TRAINER_REGISTERED_FLAGS_START + index) == TRUE)\n            return TRUE;\n    }\n    return FALSE;",
+      "callsTo": [
+        "FlagGet",
+        "GetRematchIdxByTrainerIdx"
+      ],
+      "lineCount": 7
+    },
+    "ShouldDistributeEonTicket": {
+      "returnType": "bool32",
+      "signature": "bool32 ShouldDistributeEonTicket(void)",
+      "paramsRaw": "void",
+      "body": "if (!VarGet(VAR_DISTRIBUTE_EON_TICKET))\n        return FALSE;\n\n    return TRUE;",
+      "callsTo": [
+        "VarGet"
+      ],
+      "lineCount": 4
+    },
+    "BattleTowerReconnectLink": {
+      "returnType": "void",
+      "signature": "void BattleTowerReconnectLink(void)",
+      "paramsRaw": "void",
+      "body": "sBattleTowerMultiBattleTypeFlags = gBattleTypeFlags;\n    gBattleTypeFlags = 0;\n\n    if (!gReceivedRemoteLinkPlayers)\n        CreateTask(Task_ReconnectWithLinkPlayers, 5);",
+      "callsTo": [
+        "CreateTask"
+      ],
+      "lineCount": 5
+    },
+    "LinkRetireStatusWithBattleTowerPartner": {
+      "returnType": "void",
+      "signature": "void LinkRetireStatusWithBattleTowerPartner(void)",
+      "paramsRaw": "void",
+      "body": "CreateTask(Task_LinkRetireStatusWithBattleTowerPartner, 5);",
+      "callsTo": [
+        "CreateTask"
+      ],
+      "lineCount": 1
+    },
+    "Task_LinkRetireStatusWithBattleTowerPartner": {
+      "returnType": "void",
+      "signature": "static void Task_LinkRetireStatusWithBattleTowerPartner(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "switch (gTasks[taskId].tState)\n    {\n    case 0:\n        if (!FuncIsActiveTask(Task_ReconnectWithLinkPlayers))\n            gTasks[taskId].tState++;\n        break;\n    case 1:\n        if (IsLinkTaskFinished() == TRUE)\n        {\n            if (GetMultiplayerId() == 0)\n            {\n                 \n                gTasks[taskId].tState++;\n            }\n            else\n            {\n                 \n                 \n                SendBlock(BitmaskAllOtherLinkPlayers(), &gSpecialVar_0x8004, sizeof(gSpecialVar_0x8004));\n                gTasks[taskId].tState++;\n            }\n        }\n        break;\n    case 2:\n        if (GetBlockReceivedStatus() & 2)\n        {\n            if (GetMultiplayerId() == 0)\n            {\n                 \n                 \n                gSpecialVar_0x8005 = gBlockRecvBuffer[1][0];\n                ResetBlockReceivedFlag(1);\n\n                if (gSpecialVar_0x8004 == BATTLE_TOWER_LINK_RETIRE\n                 && gSpecialVar_0x8005 == BATTLE_TOWER_LINK_RETIRE)\n                    gSpecialVar_Result = BATTLE_TOWER_LINKSTAT_BOTH_RETIRE;\n                else if (gSpecialVar_0x8004 == BATTLE_TOWER_LINK_CONTINUE\n                      && gSpecialVar_0x8005 == BATTLE_TOWER_LINK_RETIRE)\n                    gSpecialVar_Result = BATTLE_TOWER_LINKSTAT_MEMBER_RETIRE;\n                else if (gSpecialVar_0x8004 == BATTLE_TOWER_LINK_RETIRE\n                      && gSpecialVar_0x8005 == BATTLE_TOWER_LINK_CONTINUE)\n                    gSpecialVar_Result = BATTLE_TOWER_LINKSTAT_LEADER_RETIRE;\n                else\n                    gSpecialVar_Result = BATTLE_TOWER_LINKSTAT_CONTINUE;\n            }\n            gTasks[taskId].tState++;\n        }\n        break;\n    case 3:\n        if (IsLinkTaskFinished() == TRUE)\n        {\n            if (GetMultiplayerId() != 0)\n            {\n                 \n                gTasks[taskId].tState++;\n            }\n            else\n            {\n                 \n                SendBlock(BitmaskAllOtherLinkPlayers(), &gSpecialVar_Result, sizeof(gSpecialVar_Result));\n                gTasks[taskId].tState++;\n            }\n        }\n        break;\n    case 4:\n        if (GetBlockReceivedStatus() & 1)\n        {\n            if (GetMultiplayerId() != 0)\n            {\n                 \n                gSpecialVar_Result = gBlockRecvBuffer[0][0];\n                ResetBlockReceivedFlag(0);\n                gTasks[taskId].tState++;\n            }\n            else\n            {\n                gTasks[taskId].tState++;\n            }\n        }\n        break;\n    case 5:\n         \n        if (GetMultiplayerId() == 0)\n        {\n            if (gSpecialVar_Result == BATTLE_TOWER_LINKSTAT_MEMBER_RETIRE)\n                ShowFieldAutoScrollMessage(gText_YourPartnerHasRetired);\n        }\n        else\n        {\n            if (gSpecialVar_Result == BATTLE_TOWER_LINKSTAT_LEADER_RETIRE)\n                ShowFieldAutoScrollMessage(gText_YourPartnerHasRetired);\n        }\n        gTasks[taskId].tState++;\n        break;\n    case 6:\n        if (!IsTextPrinterActive(0))\n            gTasks[taskId].tState++;\n        break;\n    case 7:\n        if (IsLinkTaskFinished() == TRUE)\n        {\n            SetLinkStandbyCallback();\n            gTasks[taskId].tState++;\n        }\n        break;\n    case 8:\n        if (IsLinkTaskFinished() == TRUE)\n            gTasks[taskId].tState++;\n        break;\n    case 9:\n        if (gWirelessCommType == 0)\n            SetCloseLinkCallback();\n\n        gBattleTypeFlags = sBattleTowerMultiBattleTypeFlags;\n        ScriptContext_Enable();\n        DestroyTask(taskId);\n        break;\n    }",
+      "callsTo": [
+        "BitmaskAllOtherLinkPlayers",
+        "DestroyTask",
+        "FuncIsActiveTask",
+        "GetBlockReceivedStatus",
+        "GetMultiplayerId",
+        "IsLinkTaskFinished",
+        "IsTextPrinterActive",
+        "ResetBlockReceivedFlag",
+        "ScriptContext_Enable",
+        "SendBlock",
+        "SetCloseLinkCallback",
+        "SetLinkStandbyCallback",
+        "ShowFieldAutoScrollMessage"
+      ],
+      "lineCount": 118
+    },
+    "Script_DoRayquazaScene": {
+      "returnType": "void",
+      "signature": "void Script_DoRayquazaScene(void)",
+      "paramsRaw": "void",
+      "body": "if (!gSpecialVar_0x8004)\n    {\n         \n        DoRayquazaScene(0, TRUE, CB2_ReturnToFieldContinueScriptPlayMapMusic);\n    }\n    else\n    {\n         \n        DoRayquazaScene(1, FALSE, CB2_ReturnToFieldContinueScriptPlayMapMusic);\n    }",
+      "callsTo": [
+        "DoRayquazaScene"
+      ],
+      "lineCount": 10
+    },
+    "LoopWingFlapSE": {
+      "returnType": "void",
+      "signature": "void LoopWingFlapSE(void)",
+      "paramsRaw": "void",
+      "body": "CreateTask(Task_LoopWingFlapSE, 8);\n    PlaySE(SE_M_WING_ATTACK);",
+      "callsTo": [
+        "CreateTask",
+        "PlaySE"
+      ],
+      "lineCount": 2
+    },
+    "Task_LoopWingFlapSE": {
+      "returnType": "void",
+      "signature": "static void Task_LoopWingFlapSE(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "s16 *data = gTasks[taskId].data;\n\n    delay++;\n    if (delay == gSpecialVar_0x8005)\n    {\n        playCount++;\n        delay = 0;\n        PlaySE(SE_M_WING_ATTACK);\n    }\n\n    if (playCount == gSpecialVar_0x8004 - 1)\n        DestroyTask(taskId);",
+      "callsTo": [
+        "DestroyTask",
+        "PlaySE"
+      ],
+      "lineCount": 12
+    },
+    "CloseBattlePikeCurtain": {
+      "returnType": "void",
+      "signature": "void CloseBattlePikeCurtain(void)",
+      "paramsRaw": "void",
+      "body": "u8 taskId = CreateTask(Task_CloseBattlePikeCurtain, 8);\n    gTasks[taskId].tFrameTimer[0] = 4;\n    gTasks[taskId].tFrameTimer[1] = 4;\n    gTasks[taskId].tFrameTimer[2] = 4;\n    gTasks[taskId].tCurrentFrame = 0;",
+      "callsTo": [
+        "CreateTask"
+      ],
+      "lineCount": 5
+    },
+    "Task_CloseBattlePikeCurtain": {
+      "returnType": "void",
+      "signature": "static void Task_CloseBattlePikeCurtain(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "u8 x, y;\n    s16 *data = gTasks[taskId].data;\n\n    tFrameTimer[tCurrentFrame]--;\n    if (tFrameTimer[tCurrentFrame] == 0)\n    {\n        for (y = 0; y < CURTAIN_HEIGHT; y++)\n        {\n            for (x = 0; x < CURTAIN_WIDTH; x++)\n            {\n                MapGridSetMetatileIdAt(gSaveBlock1Ptr->pos.x + x + MAP_OFFSET - 1,\n                                       gSaveBlock1Ptr->pos.y + y + MAP_OFFSET - 3,\n                                       (x + METATILE_BattlePike_CurtainFrames_Start) + (y * METATILE_ROW_WIDTH) + (tCurrentFrame * CURTAIN_HEIGHT * METATILE_ROW_WIDTH));\n            }\n        }\n        DrawWholeMapView();\n        tCurrentFrame++;\n        if (tCurrentFrame == 3)\n        {\n            DestroyTask(taskId);\n            ScriptContext_Enable();\n        }\n    }",
+      "callsTo": [
+        "DestroyTask",
+        "DrawWholeMapView",
+        "MapGridSetMetatileIdAt",
+        "ScriptContext_Enable"
+      ],
+      "lineCount": 23
+    },
+    "GetBattlePyramidHint": {
+      "returnType": "void",
+      "signature": "void GetBattlePyramidHint(void)",
+      "paramsRaw": "void",
+      "body": "gSpecialVar_Result = gSpecialVar_0x8004 / FRONTIER_STAGES_PER_CHALLENGE;\n    gSpecialVar_Result -= (gSpecialVar_Result / TOTAL_PYRAMID_ROUNDS) * TOTAL_PYRAMID_ROUNDS;",
+      "callsTo": [],
+      "lineCount": 2
+    },
+    "ResetHealLocationFromDewford": {
+      "returnType": "void",
+      "signature": "void ResetHealLocationFromDewford(void)",
+      "paramsRaw": "void",
+      "body": "if (gSaveBlock1Ptr->lastHealLocation.mapGroup == MAP_GROUP(MAP_DEWFORD_TOWN) && gSaveBlock1Ptr->lastHealLocation.mapNum == MAP_NUM(MAP_DEWFORD_TOWN))\n        SetLastHealLocationWarp(HEAL_LOCATION_PETALBURG_CITY);",
+      "callsTo": [
+        "MAP_GROUP",
+        "MAP_NUM",
+        "SetLastHealLocationWarp"
+      ],
+      "lineCount": 2
+    },
+    "InPokemonCenter": {
+      "returnType": "bool8",
+      "signature": "bool8 InPokemonCenter(void)",
+      "paramsRaw": "void",
+      "body": "static const u16 sPokemonCenters[] =\n    {\n        MAP_OLDALE_TOWN_POKEMON_CENTER_1F,\n        MAP_DEWFORD_TOWN_POKEMON_CENTER_1F,\n        MAP_LAVARIDGE_TOWN_POKEMON_CENTER_1F,\n        MAP_FALLARBOR_TOWN_POKEMON_CENTER_1F,\n        MAP_VERDANTURF_TOWN_POKEMON_CENTER_1F,\n        MAP_PACIFIDLOG_TOWN_POKEMON_CENTER_1F,\n        MAP_PETALBURG_CITY_POKEMON_CENTER_1F,\n        MAP_SLATEPORT_CITY_POKEMON_CENTER_1F,\n        MAP_MAUVILLE_CITY_POKEMON_CENTER_1F,\n        MAP_RUSTBORO_CITY_POKEMON_CENTER_1F,\n        MAP_FORTREE_CITY_POKEMON_CENTER_1F,\n        MAP_LILYCOVE_CITY_POKEMON_CENTER_1F,\n        MAP_MOSSDEEP_CITY_POKEMON_CENTER_1F,\n        MAP_SOOTOPOLIS_CITY_POKEMON_CENTER_1F,\n        MAP_EVER_GRANDE_CITY_POKEMON_CENTER_1F,\n        MAP_EVER_GRANDE_CITY_POKEMON_LEAGUE_1F,\n        MAP_BATTLE_FRONTIER_POKEMON_CENTER_1F,\n        MAP_BATTLE_COLOSSEUM_2P,\n        MAP_TRADE_CENTER,\n        MAP_RECORD_CORNER,\n        MAP_BATTLE_COLOSSEUM_4P,\n        MAP_UNDEFINED\n    };\n\n    int i;\n    u16 map = (gSaveBlock1Ptr->location.mapGroup << 8) + gSaveBlock1Ptr->location.mapNum;\n\n    for (i = 0; sPokemonCenters[i] != MAP_UNDEFINED; i++)\n    {\n        if (sPokemonCenters[i] == map)\n            return TRUE;\n    }\n    return FALSE;",
+      "callsTo": [],
+      "lineCount": 35
+    },
+    "ResetFanClub": {
+      "returnType": "void",
+      "signature": "void ResetFanClub(void)",
+      "paramsRaw": "void",
+      "body": "gSaveBlock1Ptr->vars[VAR_FANCLUB_FAN_COUNTER - VARS_START] = 0;\n    gSaveBlock1Ptr->vars[VAR_FANCLUB_LOSE_FAN_TIMER - VARS_START] = 0;",
+      "callsTo": [],
+      "lineCount": 2
+    },
+    "TryLoseFansFromPlayTimeAfterLinkBattle": {
+      "returnType": "void",
+      "signature": "void TryLoseFansFromPlayTimeAfterLinkBattle(void)",
+      "paramsRaw": "void",
+      "body": "if (DidPlayerGetFirstFans())\n    {\n        TryLoseFansFromPlayTime();\n        gSaveBlock1Ptr->vars[VAR_FANCLUB_LOSE_FAN_TIMER - VARS_START] = gSaveBlock2Ptr->playTimeHours;\n    }",
+      "callsTo": [
+        "DidPlayerGetFirstFans",
+        "TryLoseFansFromPlayTime"
+      ],
+      "lineCount": 5
+    },
+    "UpdateTrainerFanClubGameClear": {
+      "returnType": "void",
+      "signature": "void UpdateTrainerFanClubGameClear(void)",
+      "paramsRaw": "void",
+      "body": "if (!GET_TRAINER_FAN_CLUB_FLAG(FANCLUB_GOT_FIRST_FANS))\n    {\n        SetPlayerGotFirstFans();\n        SetInitialFansOfPlayer();\n        gSaveBlock1Ptr->vars[VAR_FANCLUB_LOSE_FAN_TIMER - VARS_START] = gSaveBlock2Ptr->playTimeHours;\n        FlagClear(FLAG_HIDE_FANCLUB_OLD_LADY);\n        FlagClear(FLAG_HIDE_FANCLUB_BOY);\n        FlagClear(FLAG_HIDE_FANCLUB_LITTLE_BOY);\n        FlagClear(FLAG_HIDE_FANCLUB_LADY);\n        FlagClear(FLAG_HIDE_LILYCOVE_FAN_CLUB_INTERVIEWER);\n        VarSet(VAR_LILYCOVE_FAN_CLUB_STATE, 1);\n    }",
+      "callsTo": [
+        "FlagClear",
+        "GET_TRAINER_FAN_CLUB_FLAG",
+        "SetInitialFansOfPlayer",
+        "SetPlayerGotFirstFans",
+        "VarSet"
+      ],
+      "lineCount": 12
+    },
+    "TryGainNewFanFromCounter": {
+      "returnType": "u8",
+      "signature": "u8 TryGainNewFanFromCounter(u8 incrementId)",
+      "paramsRaw": "u8 incrementId",
+      "body": "static const u8 sCounterIncrements[] =\n    {\n        [FANCOUNTER_DEFEATED_DRAKE]    = 2,\n        [FANCOUNTER_BATTLED_AT_BASE]   = 1,\n        [FANCOUNTER_FINISHED_CONTEST]  = 2,\n        [FANCOUNTER_USED_BATTLE_TOWER] = 1\n    };\n\n    if (VarGet(VAR_LILYCOVE_FAN_CLUB_STATE) == 2)\n    {\n        if (GET_TRAINER_FAN_CLUB_COUNTER + sCounterIncrements[incrementId] > 19)\n        {\n            if (GetNumFansOfPlayerInTrainerFanClub() < 3)\n            {\n                PlayerGainRandomTrainerFan();\n                CLEAR_TRAINER_FAN_CLUB_COUNTER;\n            }\n            else\n            {\n                SET_TRAINER_FAN_CLUB_COUNTER(20);\n            }\n        }\n        else\n        {\n            INCR_TRAINER_FAN_CLUB_COUNTER(sCounterIncrements[incrementId]);\n        }\n    }\n\n    return GET_TRAINER_FAN_CLUB_COUNTER;",
+      "callsTo": [
+        "GetNumFansOfPlayerInTrainerFanClub",
+        "INCR_TRAINER_FAN_CLUB_COUNTER",
+        "PlayerGainRandomTrainerFan",
+        "SET_TRAINER_FAN_CLUB_COUNTER",
+        "VarGet"
+      ],
+      "lineCount": 29
+    },
+    "PlayerGainRandomTrainerFan": {
+      "returnType": "u16",
+      "signature": "static u16 PlayerGainRandomTrainerFan(void)",
+      "paramsRaw": "void",
+      "body": "static const u8 sFanClubMemberIds[NUM_TRAINER_FAN_CLUB_MEMBERS] =\n    {\n        FANCLUB_MEMBER1,\n        FANCLUB_MEMBER2,\n        FANCLUB_MEMBER3,\n        FANCLUB_MEMBER4,\n        FANCLUB_MEMBER5,\n        FANCLUB_MEMBER6,\n        FANCLUB_MEMBER7,\n        FANCLUB_MEMBER8\n    };\n\n    u8 i;\n    u8 idx = 0;\n\n    for (i = 0; i < ARRAY_COUNT(sFanClubMemberIds); i++)\n    {\n        if (!GET_TRAINER_FAN_CLUB_FLAG(sFanClubMemberIds[i]))\n        {\n            idx = i;\n            if (Random() & 1)\n            {\n                SET_TRAINER_FAN_CLUB_FLAG(sFanClubMemberIds[idx]);\n                return idx;\n            }\n        }\n    }\n    SET_TRAINER_FAN_CLUB_FLAG(sFanClubMemberIds[idx]);\n    return idx;",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "GET_TRAINER_FAN_CLUB_FLAG",
+        "Random",
+        "SET_TRAINER_FAN_CLUB_FLAG"
+      ],
+      "lineCount": 29
+    },
+    "PlayerLoseRandomTrainerFan": {
+      "returnType": "u16",
+      "signature": "static u16 PlayerLoseRandomTrainerFan(void)",
+      "paramsRaw": "void",
+      "body": "static const u8 sFanClubMemberIds[NUM_TRAINER_FAN_CLUB_MEMBERS] =\n    {\n        FANCLUB_MEMBER1,\n        FANCLUB_MEMBER6,\n        FANCLUB_MEMBER7,\n        FANCLUB_MEMBER4,\n        FANCLUB_MEMBER3,\n        FANCLUB_MEMBER5,\n        FANCLUB_MEMBER8,\n        FANCLUB_MEMBER2\n    };\n\n    u8 i;\n    u8 idx = 0;\n\n    if (GetNumFansOfPlayerInTrainerFanClub() == 1)\n        return 0;\n\n    for (i = 0; i < ARRAY_COUNT(sFanClubMemberIds); i++)\n    {\n        if (GET_TRAINER_FAN_CLUB_FLAG(sFanClubMemberIds[i]))\n        {\n            idx = i;\n            if (Random() & 1)\n            {\n                FLIP_TRAINER_FAN_CLUB_FLAG(sFanClubMemberIds[idx]);\n                return idx;\n            }\n        }\n    }\n\n    if (GET_TRAINER_FAN_CLUB_FLAG(sFanClubMemberIds[idx]))\n        FLIP_TRAINER_FAN_CLUB_FLAG(sFanClubMemberIds[idx]);\n\n    return idx;",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "FLIP_TRAINER_FAN_CLUB_FLAG",
+        "GET_TRAINER_FAN_CLUB_FLAG",
+        "GetNumFansOfPlayerInTrainerFanClub",
+        "Random"
+      ],
+      "lineCount": 35
+    },
+    "GetNumFansOfPlayerInTrainerFanClub": {
+      "returnType": "u16",
+      "signature": "u16 GetNumFansOfPlayerInTrainerFanClub(void)",
+      "paramsRaw": "void",
+      "body": "u8 i;\n    u8 numFans = 0;\n\n    for (i = 0; i < NUM_TRAINER_FAN_CLUB_MEMBERS; i++)\n    {\n        if (GET_TRAINER_FAN_CLUB_FLAG(i + FANCLUB_MEMBER1))\n            numFans++;\n    }\n\n    return numFans;",
+      "callsTo": [
+        "GET_TRAINER_FAN_CLUB_FLAG"
+      ],
+      "lineCount": 10
+    },
+    "TryLoseFansFromPlayTime": {
+      "returnType": "void",
+      "signature": "void TryLoseFansFromPlayTime(void)",
+      "paramsRaw": "void",
+      "body": "u8 i = 0;\n    if (gSaveBlock2Ptr->playTimeHours < 999)\n    {\n        while (TRUE)\n        {\n            if (GetNumFansOfPlayerInTrainerFanClub() < 5)\n            {\n                gSaveBlock1Ptr->vars[VAR_FANCLUB_LOSE_FAN_TIMER - VARS_START] = gSaveBlock2Ptr->playTimeHours;\n                break;\n            }\n            else if (i == NUM_TRAINER_FAN_CLUB_MEMBERS)\n            {\n                break;\n            }\n            else if (gSaveBlock2Ptr->playTimeHours - gSaveBlock1Ptr->vars[VAR_FANCLUB_LOSE_FAN_TIMER - VARS_START] < 12)\n            {\n                return;\n            }\n            PlayerLoseRandomTrainerFan();\n            gSaveBlock1Ptr->vars[VAR_FANCLUB_LOSE_FAN_TIMER - VARS_START] += 12;\n            i++;\n        }\n    }",
+      "callsTo": [
+        "GetNumFansOfPlayerInTrainerFanClub",
+        "PlayerLoseRandomTrainerFan"
+      ],
+      "lineCount": 23
+    },
+    "IsFanClubMemberFanOfPlayer": {
+      "returnType": "bool8",
+      "signature": "bool8 IsFanClubMemberFanOfPlayer(void)",
+      "paramsRaw": "void",
+      "body": "return GET_TRAINER_FAN_CLUB_FLAG(gSpecialVar_0x8004);",
+      "callsTo": [
+        "GET_TRAINER_FAN_CLUB_FLAG"
+      ],
+      "lineCount": 1
+    },
+    "SetInitialFansOfPlayer": {
+      "returnType": "void",
+      "signature": "static void SetInitialFansOfPlayer(void)",
+      "paramsRaw": "void",
+      "body": "SET_TRAINER_FAN_CLUB_FLAG(FANCLUB_MEMBER6);\n    SET_TRAINER_FAN_CLUB_FLAG(FANCLUB_MEMBER1);\n    SET_TRAINER_FAN_CLUB_FLAG(FANCLUB_MEMBER3);",
+      "callsTo": [
+        "SET_TRAINER_FAN_CLUB_FLAG"
+      ],
+      "lineCount": 3
+    },
+    "BufferFanClubTrainerName": {
+      "returnType": "void",
+      "signature": "void BufferFanClubTrainerName(void)",
+      "paramsRaw": "void",
+      "body": "u8 whichLinkTrainer = 0;\n    u8 whichNPCTrainer = 0;\n    switch (gSpecialVar_0x8004)\n    {\n    case FANCLUB_MEMBER1:\n        break;\n    case FANCLUB_MEMBER2:\n        break;\n    case FANCLUB_MEMBER3:\n        whichLinkTrainer = 0;\n        whichNPCTrainer = 3;\n        break;\n    case FANCLUB_MEMBER4:\n        whichLinkTrainer = 0;\n        whichNPCTrainer = 1;\n        break;\n    case FANCLUB_MEMBER5:\n        whichLinkTrainer = 1;\n        whichNPCTrainer = 0;\n        break;\n    case FANCLUB_MEMBER6:\n        whichLinkTrainer = 0;\n        whichNPCTrainer = 4;\n        break;\n    case FANCLUB_MEMBER7:\n        whichLinkTrainer = 1;\n        whichNPCTrainer = 5;\n        break;\n    case FANCLUB_MEMBER8:\n        break;\n    }\n    BufferFanClubTrainerName_(&gSaveBlock1Ptr->linkBattleRecords, whichLinkTrainer, whichNPCTrainer);",
+      "callsTo": [
+        "BufferFanClubTrainerName_"
+      ],
+      "lineCount": 32
+    },
+    "BufferFanClubTrainerName_": {
+      "returnType": "void",
+      "signature": "static void BufferFanClubTrainerName_(struct LinkBattleRecords *linkRecords, u8 whichLinkTrainer, u8 whichNPCTrainer)",
+      "paramsRaw": "struct LinkBattleRecords *linkRecords, u8 whichLinkTrainer, u8 whichNPCTrainer",
+      "body": "struct LinkBattleRecord *record = &linkRecords->entries[whichLinkTrainer];\n    if (record->name[0] == EOS)\n    {\n        switch (whichNPCTrainer)\n        {\n        case 0:\n            StringCopy(gStringVar1, gText_Wallace);\n            break;\n        case 1:\n            StringCopy(gStringVar1, gText_Steven);\n            break;\n        case 2:\n            StringCopy(gStringVar1, gText_Brawly);\n            break;\n        case 3:\n            StringCopy(gStringVar1, gText_Winona);\n            break;\n        case 4:\n            StringCopy(gStringVar1, gText_Phoebe);\n            break;\n        case 5:\n            StringCopy(gStringVar1, gText_Glacia);\n            break;\n        default:\n            StringCopy(gStringVar1, gText_Wallace);\n            break;\n        }\n    }\n    else\n    {\n        StringCopyN(gStringVar1, record->name, PLAYER_NAME_LENGTH);\n        gStringVar1[PLAYER_NAME_LENGTH] = EOS;\n        ConvertInternationalString(gStringVar1, linkRecords->languages[whichLinkTrainer]);\n    }",
+      "callsTo": [
+        "ConvertInternationalString",
+        "StringCopy",
+        "StringCopyN"
+      ],
+      "lineCount": 34
+    },
+    "UpdateTrainerFansAfterLinkBattle": {
+      "returnType": "void",
+      "signature": "void UpdateTrainerFansAfterLinkBattle(void)",
+      "paramsRaw": "void",
+      "body": "if (VarGet(VAR_LILYCOVE_FAN_CLUB_STATE) == 2)\n    {\n        TryLoseFansFromPlayTimeAfterLinkBattle();\n        if (gBattleOutcome == B_OUTCOME_WON)\n            PlayerGainRandomTrainerFan();\n        else\n            PlayerLoseRandomTrainerFan();\n    }",
+      "callsTo": [
+        "PlayerGainRandomTrainerFan",
+        "PlayerLoseRandomTrainerFan",
+        "TryLoseFansFromPlayTimeAfterLinkBattle",
+        "VarGet"
+      ],
+      "lineCount": 8
+    },
+    "DidPlayerGetFirstFans": {
+      "returnType": "bool8",
+      "signature": "static bool8 DidPlayerGetFirstFans(void)",
+      "paramsRaw": "void",
+      "body": "return GET_TRAINER_FAN_CLUB_FLAG(FANCLUB_GOT_FIRST_FANS);",
+      "callsTo": [
+        "GET_TRAINER_FAN_CLUB_FLAG"
+      ],
+      "lineCount": 1
+    },
+    "SetPlayerGotFirstFans": {
+      "returnType": "void",
+      "signature": "void SetPlayerGotFirstFans(void)",
+      "paramsRaw": "void",
+      "body": "SET_TRAINER_FAN_CLUB_FLAG(FANCLUB_GOT_FIRST_FANS);",
+      "callsTo": [
+        "SET_TRAINER_FAN_CLUB_FLAG"
+      ],
+      "lineCount": 1
+    },
+    "Script_TryGainNewFanFromCounter": {
+      "returnType": "u8",
+      "signature": "u8 Script_TryGainNewFanFromCounter(void)",
+      "paramsRaw": "void",
+      "body": "return TryGainNewFanFromCounter(gSpecialVar_0x8004);",
+      "callsTo": [
+        "TryGainNewFanFromCounter"
+      ],
+      "lineCount": 1
+    }
+  }
+}

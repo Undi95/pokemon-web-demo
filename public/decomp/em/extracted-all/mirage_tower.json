@@ -1,0 +1,345 @@
+{
+  "srcFile": "src/mirage_tower.c",
+  "count": 27,
+  "functions": {
+    "IsMirageTowerVisible": {
+      "returnType": "bool8",
+      "signature": "bool8 IsMirageTowerVisible(void)",
+      "paramsRaw": "void",
+      "body": "if (!(gSaveBlock1Ptr->location.mapGroup == MAP_GROUP(MAP_ROUTE111) && gSaveBlock1Ptr->location.mapNum == MAP_NUM(MAP_ROUTE111)))\n        return FALSE;\n    return FlagGet(FLAG_MIRAGE_TOWER_VISIBLE);",
+      "callsTo": [
+        "FlagGet",
+        "MAP_GROUP",
+        "MAP_NUM"
+      ],
+      "lineCount": 3
+    },
+    "UpdateMirageTowerPulseBlend": {
+      "returnType": "void",
+      "signature": "static void UpdateMirageTowerPulseBlend(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "UpdatePulseBlend(&sMirageTowerPulseBlend->pulseBlend);",
+      "callsTo": [
+        "UpdatePulseBlend"
+      ],
+      "lineCount": 1
+    },
+    "ClearMirageTowerPulseBlend": {
+      "returnType": "void",
+      "signature": "void ClearMirageTowerPulseBlend(void)",
+      "paramsRaw": "void",
+      "body": "sMirageTowerPulseBlend = NULL;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "TryStartMirageTowerPulseBlendEffect": {
+      "returnType": "void",
+      "signature": "void TryStartMirageTowerPulseBlendEffect(void)",
+      "paramsRaw": "void",
+      "body": "if (sMirageTowerPulseBlend)\n    {\n        sMirageTowerPulseBlend = NULL;\n        return;\n    }\n\n    if (gSaveBlock1Ptr->location.mapGroup != MAP_GROUP(MAP_ROUTE111)\n     || gSaveBlock1Ptr->location.mapNum != MAP_NUM(MAP_ROUTE111)\n     || !FlagGet(FLAG_MIRAGE_TOWER_VISIBLE))\n        return;\n\n    sMirageTowerPulseBlend = AllocZeroed(sizeof(*sMirageTowerPulseBlend));\n    InitPulseBlend(&sMirageTowerPulseBlend->pulseBlend);\n    InitPulseBlendPaletteSettings(&sMirageTowerPulseBlend->pulseBlend, &gMirageTowerPulseBlendSettings);\n    MarkUsedPulseBlendPalettes(&sMirageTowerPulseBlend->pulseBlend, 0x1, TRUE);\n    sMirageTowerPulseBlend->taskId = CreateTask(UpdateMirageTowerPulseBlend, 0xFF);",
+      "callsTo": [
+        "AllocZeroed",
+        "CreateTask",
+        "FlagGet",
+        "InitPulseBlend",
+        "InitPulseBlendPaletteSettings",
+        "MAP_GROUP",
+        "MAP_NUM",
+        "MarkUsedPulseBlendPalettes"
+      ],
+      "lineCount": 16
+    },
+    "ClearMirageTowerPulseBlendEffect": {
+      "returnType": "void",
+      "signature": "void ClearMirageTowerPulseBlendEffect(void)",
+      "paramsRaw": "void",
+      "body": "if (gSaveBlock1Ptr->location.mapGroup != MAP_GROUP(MAP_ROUTE111)\n     || gSaveBlock1Ptr->location.mapNum   != MAP_NUM(MAP_ROUTE111)\n     || !FlagGet(FLAG_MIRAGE_TOWER_VISIBLE)\n     || sMirageTowerPulseBlend == NULL)\n        return;\n\n    if (FuncIsActiveTask(UpdateMirageTowerPulseBlend))\n        DestroyTask(sMirageTowerPulseBlend->taskId);\n\n    UnmarkUsedPulseBlendPalettes(&sMirageTowerPulseBlend->pulseBlend, 0x1, TRUE);\n    UnloadUsedPulseBlendPalettes(&sMirageTowerPulseBlend->pulseBlend, 0x1, TRUE);\n    FREE_AND_SET_NULL(sMirageTowerPulseBlend);",
+      "callsTo": [
+        "DestroyTask",
+        "FREE_AND_SET_NULL",
+        "FlagGet",
+        "FuncIsActiveTask",
+        "MAP_GROUP",
+        "MAP_NUM",
+        "UnloadUsedPulseBlendPalettes",
+        "UnmarkUsedPulseBlendPalettes"
+      ],
+      "lineCount": 12
+    },
+    "SetMirageTowerVisibility": {
+      "returnType": "void",
+      "signature": "void SetMirageTowerVisibility(void)",
+      "paramsRaw": "void",
+      "body": "u16 rand;\n    bool8 visible;\n\n    if (VarGet(VAR_MIRAGE_TOWER_STATE))\n    {\n         \n        FlagClear(FLAG_MIRAGE_TOWER_VISIBLE);\n        return;\n    }\n\n    rand = Random();\n    visible = rand & 1;\n    if (FlagGet(FLAG_FORCE_MIRAGE_TOWER_VISIBLE) == TRUE)\n        visible = TRUE;\n\n    if (visible)\n    {\n        FlagSet(FLAG_MIRAGE_TOWER_VISIBLE);\n        TryStartMirageTowerPulseBlendEffect();\n        return;\n    }\n\n    FlagClear(FLAG_MIRAGE_TOWER_VISIBLE);",
+      "callsTo": [
+        "FlagClear",
+        "FlagGet",
+        "FlagSet",
+        "Random",
+        "TryStartMirageTowerPulseBlendEffect",
+        "VarGet"
+      ],
+      "lineCount": 23
+    },
+    "StartPlayerDescendMirageTower": {
+      "returnType": "void",
+      "signature": "void StartPlayerDescendMirageTower(void)",
+      "paramsRaw": "void",
+      "body": "CreateTask(PlayerDescendMirageTower, 8);",
+      "callsTo": [
+        "CreateTask"
+      ],
+      "lineCount": 1
+    },
+    "PlayerDescendMirageTower": {
+      "returnType": "void",
+      "signature": "static void PlayerDescendMirageTower(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "u8 objectEventId;\n    struct ObjectEvent *fallingPlayer;\n    struct ObjectEvent *player;\n\n    TryGetObjectEventIdByLocalIdAndMap(LOCALID_ROUTE111_PLAYER_FALLING, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup, &objectEventId);\n    fallingPlayer = &gObjectEvents[objectEventId];\n    gSprites[fallingPlayer->spriteId].y2 += 4;\n    player = &gObjectEvents[gPlayerAvatar.objectEventId];\n    if ((gSprites[fallingPlayer->spriteId].y + gSprites[fallingPlayer->spriteId].y2) >=\n        (gSprites[player->spriteId].y + gSprites[player->spriteId].y2))\n    {\n        DestroyTask(taskId);\n        ScriptContext_Enable();\n    }",
+      "callsTo": [
+        "DestroyTask",
+        "ScriptContext_Enable",
+        "TryGetObjectEventIdByLocalIdAndMap"
+      ],
+      "lineCount": 14
+    },
+    "StartScreenShake": {
+      "returnType": "void",
+      "signature": "static void StartScreenShake(u8 yShakeOffset, u8 xShakeOffset, u8 numShakes, u8 shakeDelay)",
+      "paramsRaw": "u8 yShakeOffset, u8 xShakeOffset, u8 numShakes, u8 shakeDelay",
+      "body": "u8 taskId = CreateTask(DoScreenShake, 9);\n    gTasks[taskId].tXShakeOffset = xShakeOffset;\n    gTasks[taskId].tTimer = 0;\n    gTasks[taskId].tNumShakes = numShakes;\n    gTasks[taskId].tShakeDelay = shakeDelay;\n    gTasks[taskId].tYShakeOffset = yShakeOffset;\n    SetCameraPanningCallback(NULL);\n    PlaySE(SE_M_STRENGTH);",
+      "callsTo": [
+        "CreateTask",
+        "PlaySE",
+        "SetCameraPanningCallback"
+      ],
+      "lineCount": 8
+    },
+    "DoScreenShake": {
+      "returnType": "void",
+      "signature": "static void DoScreenShake(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "s16 *data;\n\n    data = gTasks[taskId].data;\n    tTimer++;\n    if (tTimer % tShakeDelay == 0)\n    {\n        tTimer = 0;\n        tNumShakes--;\n        tXShakeOffset = -tXShakeOffset;\n        tYShakeOffset = -tYShakeOffset;\n        SetCameraPanning(tXShakeOffset, tYShakeOffset);\n        if (tNumShakes == 0)\n        {\n            IncrementCeilingCrumbleFinishedCount();\n            DestroyTask(taskId);\n            InstallCameraPanAheadCallback();\n        }\n    }",
+      "callsTo": [
+        "DestroyTask",
+        "IncrementCeilingCrumbleFinishedCount",
+        "InstallCameraPanAheadCallback",
+        "SetCameraPanning"
+      ],
+      "lineCount": 18
+    },
+    "IncrementCeilingCrumbleFinishedCount": {
+      "returnType": "void",
+      "signature": "static void IncrementCeilingCrumbleFinishedCount(void)",
+      "paramsRaw": "void",
+      "body": "u8 taskId = FindTaskIdByFunc(WaitCeilingCrumble);\n    if (taskId != TASK_NONE)\n        gTasks[taskId].data[0]++;",
+      "callsTo": [
+        "FindTaskIdByFunc"
+      ],
+      "lineCount": 3
+    },
+    "DoMirageTowerCeilingCrumble": {
+      "returnType": "void",
+      "signature": "void DoMirageTowerCeilingCrumble(void)",
+      "paramsRaw": "void",
+      "body": "LoadSpriteSheets(sCeilingCrumbleSpriteSheets);\n    CreateCeilingCrumbleSprites();\n    CreateTask(WaitCeilingCrumble, 8);\n    StartScreenShake(2, 1, 16, 3);",
+      "callsTo": [
+        "CreateCeilingCrumbleSprites",
+        "CreateTask",
+        "LoadSpriteSheets",
+        "StartScreenShake"
+      ],
+      "lineCount": 4
+    },
+    "WaitCeilingCrumble": {
+      "returnType": "void",
+      "signature": "static void WaitCeilingCrumble(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "u16 *data = (u16*)gTasks[taskId].data;\n    data[1]++;\n     \n    if (data[1] == 1000 || data[0] == 17)\n        gTasks[taskId].func = FinishCeilingCrumbleTask;",
+      "callsTo": [],
+      "lineCount": 5
+    },
+    "FinishCeilingCrumbleTask": {
+      "returnType": "void",
+      "signature": "static void FinishCeilingCrumbleTask(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "FreeSpriteTilesByTag(TAG_CEILING_CRUMBLE);\n    DestroyTask(taskId);\n    ScriptContext_Enable();",
+      "callsTo": [
+        "DestroyTask",
+        "FreeSpriteTilesByTag",
+        "ScriptContext_Enable"
+      ],
+      "lineCount": 3
+    },
+    "CreateCeilingCrumbleSprites": {
+      "returnType": "void",
+      "signature": "static void CreateCeilingCrumbleSprites(void)",
+      "paramsRaw": "void",
+      "body": "u8 i;\n    u8 spriteId;\n\n    for (i = 0; i < ARRAY_COUNT(sCeilingCrumblePositions); i++)\n    {\n        spriteId = CreateSprite(&sSpriteTemplate_CeilingCrumbleLarge, sCeilingCrumblePositions[i][0] + 120, sCeilingCrumblePositions[i][1], 8);\n        gSprites[spriteId].oam.priority = 0;\n         \n         \n         \n        gSprites[spriteId].oam.paletteNum = PALSLOT_PLAYER;\n        gSprites[spriteId].sIndex = i;\n    }\n    for (i = 0; i < ARRAY_COUNT(sCeilingCrumblePositions); i++)\n    {\n        spriteId = CreateSprite(&sSpriteTemplate_CeilingCrumbleSmall, sCeilingCrumblePositions[i][0] + 115, sCeilingCrumblePositions[i][1] - 3, 8);\n        gSprites[spriteId].oam.priority = 0;\n        gSprites[spriteId].oam.paletteNum = PALSLOT_PLAYER;\n        gSprites[spriteId].sIndex = i;\n    }",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "CreateSprite"
+      ],
+      "lineCount": 20
+    },
+    "SpriteCB_CeilingCrumble": {
+      "returnType": "void",
+      "signature": "static void SpriteCB_CeilingCrumble(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "sprite->sYOffset += 2;\n    sprite->y2 = sprite->sYOffset / 2;\n    if ((sprite->y + sprite->y2) >  sCeilingCrumblePositions[sprite->sIndex][2])\n    {\n        DestroySprite(sprite);\n        IncrementCeilingCrumbleFinishedCount();\n    }",
+      "callsTo": [
+        "DestroySprite",
+        "IncrementCeilingCrumbleFinishedCount"
+      ],
+      "lineCount": 7
+    },
+    "SetInvisibleMirageTowerMetatiles": {
+      "returnType": "void",
+      "signature": "static void SetInvisibleMirageTowerMetatiles(void)",
+      "paramsRaw": "void",
+      "body": "u8 i;\n    for (i = 0; i < ARRAY_COUNT(sInvisibleMirageTowerMetatiles); i++)\n        MapGridSetMetatileIdAt(sInvisibleMirageTowerMetatiles[i].x + MAP_OFFSET,\n                               sInvisibleMirageTowerMetatiles[i].y + MAP_OFFSET,\n                               sInvisibleMirageTowerMetatiles[i].metatileId);\n    DrawWholeMapView();",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "DrawWholeMapView",
+        "MapGridSetMetatileIdAt"
+      ],
+      "lineCount": 6
+    },
+    "StartMirageTowerDisintegration": {
+      "returnType": "void",
+      "signature": "void StartMirageTowerDisintegration(void)",
+      "paramsRaw": "void",
+      "body": "CreateTask(DoMirageTowerDisintegration, 9);",
+      "callsTo": [
+        "CreateTask"
+      ],
+      "lineCount": 1
+    },
+    "StartMirageTowerShake": {
+      "returnType": "void",
+      "signature": "void StartMirageTowerShake(void)",
+      "paramsRaw": "void",
+      "body": "CreateTask(InitMirageTowerShake, 9);",
+      "callsTo": [
+        "CreateTask"
+      ],
+      "lineCount": 1
+    },
+    "StartMirageTowerFossilFallAndSink": {
+      "returnType": "void",
+      "signature": "void StartMirageTowerFossilFallAndSink(void)",
+      "paramsRaw": "void",
+      "body": "CreateTask(Task_FossilFallAndSink, 9);",
+      "callsTo": [
+        "CreateTask"
+      ],
+      "lineCount": 1
+    },
+    "SetBgShakeOffsets": {
+      "returnType": "void",
+      "signature": "static void SetBgShakeOffsets(void)",
+      "paramsRaw": "void",
+      "body": "SetGpuReg(REG_OFFSET_BG0HOFS, sBgShakeOffsets->bgHOFS);\n    SetGpuReg(REG_OFFSET_BG0VOFS, sBgShakeOffsets->bgVOFS);",
+      "callsTo": [
+        "SetGpuReg"
+      ],
+      "lineCount": 2
+    },
+    "UpdateBgShake": {
+      "returnType": "void",
+      "signature": "static void UpdateBgShake(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "if (!gTasks[taskId].data[0])\n    {\n        sBgShakeOffsets->bgHOFS = -sBgShakeOffsets->bgHOFS;\n        gTasks[taskId].data[0] = 2;\n        SetBgShakeOffsets();\n    }\n    else\n    {\n        gTasks[taskId].data[0]--;\n    }",
+      "callsTo": [
+        "SetBgShakeOffsets"
+      ],
+      "lineCount": 10
+    },
+    "InitMirageTowerShake": {
+      "returnType": "void",
+      "signature": "static void InitMirageTowerShake(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "u8 zero;\n\n    switch (gTasks[taskId].tState)\n    {\n    case 0:\n        FreeAllWindowBuffers();\n        SetBgAttribute(0, BG_ATTR_PRIORITY, 2);\n        gTasks[taskId].tState++;\n        break;\n    case 1:\n        sMirageTowerGfxBuffer = (u8 *)AllocZeroed(MIRAGE_TOWER_GFX_LENGTH);\n        sMirageTowerTilemapBuffer = (u8 *)AllocZeroed(BG_SCREEN_SIZE);\n        ChangeBgX(0, 0, BG_COORD_SET);\n        ChangeBgY(0, 0, BG_COORD_SET);\n        gTasks[taskId].tState++;\n        break;\n    case 2:\n        CpuSet(sBlankTile_Gfx, sMirageTowerGfxBuffer, MIRAGE_TOWER_GFX_LENGTH / 2);\n        LoadBgTiles(0, sMirageTowerGfxBuffer, MIRAGE_TOWER_GFX_LENGTH, 0);\n        gTasks[taskId].tState++;\n        break;\n    case 3:\n        SetBgTilemapBuffer(0, sMirageTowerTilemapBuffer);\n        CopyToBgTilemapBufferRect_ChangePalette(0, &sMirageTowerTilemap, 12, 29, 6, 12, 17);\n        CopyBgTilemapBufferToVram(0);\n        gTasks[taskId].tState++;\n        break;\n    case 4:\n        ShowBg(0);\n        gTasks[taskId].tState++;\n        break;\n    case 5:\n        SetInvisibleMirageTowerMetatiles();\n        gTasks[taskId].tState++;\n        break;\n    case 6:\n        sBgShakeOffsets = Alloc(sizeof(*sBgShakeOffsets));\n        zero = 0;\n        sBgShakeOffsets->bgHOFS = 2;\n        sBgShakeOffsets->bgVOFS = zero;\n        CreateTask(UpdateBgShake, 10);\n        DestroyTask(taskId);\n        ScriptContext_Enable();\n        break;\n    }",
+      "callsTo": [
+        "Alloc",
+        "AllocZeroed",
+        "ChangeBgX",
+        "ChangeBgY",
+        "CopyBgTilemapBufferToVram",
+        "CopyToBgTilemapBufferRect_ChangePalette",
+        "CpuSet",
+        "CreateTask",
+        "DestroyTask",
+        "FreeAllWindowBuffers",
+        "LoadBgTiles",
+        "ScriptContext_Enable",
+        "SetBgAttribute",
+        "SetBgTilemapBuffer",
+        "SetInvisibleMirageTowerMetatiles",
+        "ShowBg"
+      ],
+      "lineCount": 45
+    },
+    "DoMirageTowerDisintegration": {
+      "returnType": "void",
+      "signature": "static void DoMirageTowerDisintegration(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "u8 bgShakeTaskId, j;\n    u16 i;\n    u8 index;\n\n    switch (gTasks[taskId].tState)\n    {\n    case 1:\n        sFallingTower = AllocZeroed(OUTER_BUFFER_LENGTH * sizeof(struct FallAnim_Tower));\n        break;\n    case 3:\n        if (gTasks[taskId].data[3] <= (OUTER_BUFFER_LENGTH - 1))\n        {\n            if (gTasks[taskId].data[1] > 1)\n            {\n                 \n                index = gTasks[taskId].data[3];\n                sFallingTower[index].disintegrateRand = Alloc(INNER_BUFFER_LENGTH);\n                for (i = 0; i <= (INNER_BUFFER_LENGTH - 1); i++)\n                    sFallingTower[index].disintegrateRand[i] = i;\n\n                 \n                for (i = 0; i <= (INNER_BUFFER_LENGTH - 1); i++)\n                {\n                    u16 rand1, rand2, temp;\n                    rand1 = Random() % INNER_BUFFER_LENGTH;\n                    rand2 = Random() % INNER_BUFFER_LENGTH;\n                    SWAP(sFallingTower[index].disintegrateRand[rand2], sFallingTower[index].disintegrateRand[rand1], temp);\n                }\n                if (gTasks[taskId].data[3] <= (OUTER_BUFFER_LENGTH - 1))\n                    gTasks[taskId].data[3]++;\n                gTasks[taskId].data[1] = 0;\n            }\n            gTasks[taskId].data[1]++;\n        }\n        index = gTasks[taskId].data[3];\n        for (i = (u8)(gTasks[taskId].data[2]); i < index; i++)\n        {\n            for (j = 0; j < 1; j++)\n            {\n                UpdateDisintegrationEffect(sMirageTowerGfxBuffer,\n                            (OUTER_BUFFER_LENGTH - 1 - i) * INNER_BUFFER_LENGTH + sFallingTower[i].disintegrateRand[sFallingTower[i].disintegrateIdx++],\n                            0, INNER_BUFFER_LENGTH, 1);\n            }\n            if (sFallingTower[i].disintegrateIdx > (INNER_BUFFER_LENGTH - 1))\n            {\n                FREE_AND_SET_NULL(sFallingTower[i].disintegrateRand);\n                gTasks[taskId].data[2]++;\n                if ((i % 2) == 1)\n                    sBgShakeOffsets->bgVOFS--;\n            }\n        }\n        LoadBgTiles(0, sMirageTowerGfxBuffer, MIRAGE_TOWER_GFX_LENGTH, 0);\n        if (sFallingTower[OUTER_BUFFER_LENGTH - 1].disintegrateIdx > INNER_BUFFER_LENGTH - 1)\n            break;\n        return;\n    case 4:\n        UnsetBgTilemapBuffer(0);\n        bgShakeTaskId = FindTaskIdByFunc(UpdateBgShake);\n        if (bgShakeTaskId != TASK_NONE)\n            DestroyTask(bgShakeTaskId);\n        sBgShakeOffsets->bgVOFS = sBgShakeOffsets->bgHOFS = 0;\n        SetBgShakeOffsets();\n        break;\n    case 5:\n        FREE_AND_SET_NULL(sBgShakeOffsets);\n        FREE_AND_SET_NULL(sFallingTower);\n        FREE_AND_SET_NULL(sMirageTowerGfxBuffer);\n        FREE_AND_SET_NULL(sMirageTowerTilemapBuffer);\n        break;\n    case 6:\n        SetGpuRegBits(REG_OFFSET_BG2CNT, BGCNT_PRIORITY(2));\n        SetGpuRegBits(REG_OFFSET_BG0CNT, BGCNT_PRIORITY(0));\n        SetBgAttribute(0, BG_ATTR_PRIORITY, 0);\n        InitStandardTextBoxWindows();\n        break;\n    case 7:\n        ShowBg(0);\n        break;\n    case 8:\n        DestroyTask(taskId);\n        ScriptContext_Enable();\n        break;\n    }\n    gTasks[taskId].tState++;",
+      "callsTo": [
+        "Alloc",
+        "AllocZeroed",
+        "BGCNT_PRIORITY",
+        "DestroyTask",
+        "FREE_AND_SET_NULL",
+        "FindTaskIdByFunc",
+        "InitStandardTextBoxWindows",
+        "LoadBgTiles",
+        "Random",
+        "SWAP",
+        "ScriptContext_Enable",
+        "SetBgAttribute",
+        "SetBgShakeOffsets",
+        "SetGpuRegBits",
+        "ShowBg",
+        "UnsetBgTilemapBuffer",
+        "UpdateDisintegrationEffect"
+      ],
+      "lineCount": 84
+    },
+    "Task_FossilFallAndSink": {
+      "returnType": "void",
+      "signature": "static void Task_FossilFallAndSink(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "u16 i;\n    u8 *buffer;\n\n    switch (gTasks[taskId].tState)\n    {\n    case 1:\n        sFallingFossil = AllocZeroed(sizeof(*sFallingFossil));\n        sFallingFossil->frameImageTiles = AllocZeroed(sizeof(sFossil_Gfx));\n        sFallingFossil->frameImage = AllocZeroed(sizeof(*sFallingFossil->frameImage));\n        sFallingFossil->disintegrateRand = AllocZeroed(FOSSIL_DISINTEGRATE_LENGTH * sizeof(u16));\n        sFallingFossil->disintegrateIdx = 0;\n        break;\n    case 2:\n        buffer = sFallingFossil->frameImageTiles;\n        for (i = 0; i < sizeof(sFossil_Gfx); i++, buffer++)\n            *buffer = sFossil_Gfx[i];\n        break;\n    case 3:\n        sFallingFossil->frameImage->data = sFallingFossil->frameImageTiles;\n        sFallingFossil->frameImage->size = sizeof(sFossil_Gfx);\n        break;\n    case 4:\n        {\n            struct SpriteTemplate fossilTemplate = sSpriteTemplate_FallingFossil;\n            fossilTemplate.images = sFallingFossil->frameImage;\n            sFallingFossil->spriteId = CreateSprite(&fossilTemplate, 128, -16, 1);\n            gSprites[sFallingFossil->spriteId].centerToCornerVecX = 0;\n            gSprites[sFallingFossil->spriteId].data[0] = gSprites[sFallingFossil->spriteId].x;\n            gSprites[sFallingFossil->spriteId].data[1] = 1;\n        }\n    case 5:\n         \n        for (i = 0; i < FOSSIL_DISINTEGRATE_LENGTH; i++)\n            sFallingFossil->disintegrateRand[i] = i;\n        break;\n    case 6:\n         \n        for (i = 0; i < FOSSIL_DISINTEGRATE_LENGTH * sizeof(u16); i++)\n        {\n            u16 rand1, rand2, temp;\n            rand1 = Random() % FOSSIL_DISINTEGRATE_LENGTH;\n            rand2 = Random() % FOSSIL_DISINTEGRATE_LENGTH;\n            SWAP(sFallingFossil->disintegrateRand[rand2], sFallingFossil->disintegrateRand[rand1], temp);\n        }\n        gSprites[sFallingFossil->spriteId].callback = SpriteCB_FallingFossil;\n        break;\n    case 7:\n         \n        if (gSprites[sFallingFossil->spriteId].callback != SpriteCallbackDummy)\n            return;\n        DestroySprite(&gSprites[sFallingFossil->spriteId]);\n        FREE_AND_SET_NULL(sFallingFossil->disintegrateRand);;\n        FREE_AND_SET_NULL(sFallingFossil->frameImage);\n        FREE_AND_SET_NULL(sFallingFossil->frameImageTiles);\n        FREE_AND_SET_NULL(sFallingFossil);\n        break;\n    case 8:\n        ScriptContext_Enable();\n        break;\n    }\n    gTasks[taskId].tState++;",
+      "callsTo": [
+        "AllocZeroed",
+        "CreateSprite",
+        "DestroySprite",
+        "FREE_AND_SET_NULL",
+        "Random",
+        "SWAP",
+        "ScriptContext_Enable"
+      ],
+      "lineCount": 61
+    },
+    "SpriteCB_FallingFossil": {
+      "returnType": "void",
+      "signature": "static void SpriteCB_FallingFossil(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "if (sFallingFossil->disintegrateIdx >= FOSSIL_DISINTEGRATE_LENGTH)\n    {\n         \n        sprite->callback = SpriteCallbackDummy;\n    }\n    else if (sprite->y >= 96)\n    {\n         \n        u8 i;\n        for (i = 0; i < 2; i++)\n            UpdateDisintegrationEffect(sFallingFossil->frameImageTiles, sFallingFossil->disintegrateRand[sFallingFossil->disintegrateIdx++], 0, 16, 0);\n\n        StartSpriteAnim(sprite, 0);\n    }\n    else\n    {\n         \n        sprite->y++;\n    }",
+      "callsTo": [
+        "StartSpriteAnim",
+        "UpdateDisintegrationEffect"
+      ],
+      "lineCount": 19
+    },
+    "UpdateDisintegrationEffect": {
+      "returnType": "void",
+      "signature": "static void UpdateDisintegrationEffect(u8 *tiles, u16 randId, u8 c, u8 size, u8 offset)",
+      "paramsRaw": "u8 *tiles, u16 randId, u8 c, u8 size, u8 offset",
+      "body": "u8 heightTiles, height, widthTiles, width;\n    u16 var, baseOffset;\n    u8 col, row;\n    u8 flag, tileMask;\n\n    height = randId / size;\n    sDebug_DisintegrationData[0] = height;\n\n    width = randId % size;\n    sDebug_DisintegrationData[1] = width;\n\n    row = height & 7;\n    col = width & 7;\n    sDebug_DisintegrationData[2] = height & 7;\n    sDebug_DisintegrationData[3] = width & 7;\n\n    widthTiles = width / 8;\n    heightTiles = height / 8;\n    sDebug_DisintegrationData[4] = width / 8;\n    sDebug_DisintegrationData[5] = height / 8;\n\n    var = (size / 8) * (heightTiles * 64) + (widthTiles * 64);\n    sDebug_DisintegrationData[6] = var;\n\n    baseOffset = var + ((row * 8) + col);\n    baseOffset /= 2;\n    sDebug_DisintegrationData[7] = var + ((row * 8) + col);\n\n    flag = ((randId % 2) ^ 1);\n    tileMask = (c << (flag << 2)) | 15 << (((flag ^ 1) << 2));\n    tiles[baseOffset + (offset * 32)] &= tileMask;",
+      "callsTo": [],
+      "lineCount": 31
+    }
+  }
+}

@@ -1,0 +1,401 @@
+{
+  "srcFile": "src/evolution_graphics.c",
+  "count": 37,
+  "functions": {
+    "SpriteCB_Sparkle_Dummy": {
+      "returnType": "void",
+      "signature": "static void SpriteCB_Sparkle_Dummy(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "SetEvoSparklesMatrices": {
+      "returnType": "void",
+      "signature": "static void SetEvoSparklesMatrices(void)",
+      "paramsRaw": "void",
+      "body": "u16 i;\n    for (i = 0; i < ARRAY_COUNT(sEvoSparkleMatrices); i++)\n        SetOamMatrix(20 + i, sEvoSparkleMatrices[i], 0, 0, sEvoSparkleMatrices[i]);",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "SetOamMatrix"
+      ],
+      "lineCount": 3
+    },
+    "SpriteCB_Sparkle_SpiralUpward": {
+      "returnType": "void",
+      "signature": "static void SpriteCB_Sparkle_SpiralUpward(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "if (sprite->y > 8)\n    {\n        u8 matrixNum;\n\n        sprite->y = 88 - (sprite->sTimer * sprite->sTimer) / 80;\n        sprite->y2 = Sin((u8)sprite->sTrigIdx, sprite->sAmplitude) / 4;\n        sprite->x2 = Cos((u8)sprite->sTrigIdx, sprite->sAmplitude);\n        sprite->sTrigIdx += 4;\n        if (sprite->sTimer & 1)\n            sprite->sAmplitude--;\n        sprite->sTimer++;\n        if (sprite->y2 > 0)\n            sprite->subpriority = 1;\n        else\n            sprite->subpriority = 20;\n        matrixNum = sprite->sAmplitude / 4 + 20;\n        if (matrixNum > 31)\n            matrixNum = 31;\n        sprite->oam.matrixNum = matrixNum;\n    }\n    else\n    {\n        DestroySprite(sprite);\n    }",
+      "callsTo": [
+        "Cos",
+        "DestroySprite",
+        "Sin"
+      ],
+      "lineCount": 24
+    },
+    "CreateSparkle_SpiralUpward": {
+      "returnType": "void",
+      "signature": "static void CreateSparkle_SpiralUpward(u8 trigIdx)",
+      "paramsRaw": "u8 trigIdx",
+      "body": "u8 spriteId = CreateSprite(&sEvoSparkleSpriteTemplate, DISPLAY_WIDTH / 2, 88, 0);\n    if (spriteId != MAX_SPRITES)\n    {\n        gSprites[spriteId].sAmplitude = 48;\n        gSprites[spriteId].sTrigIdx = trigIdx;\n        gSprites[spriteId].sTimer = 0;\n        gSprites[spriteId].oam.affineMode = ST_OAM_AFFINE_NORMAL;\n        gSprites[spriteId].oam.matrixNum = 31;\n        gSprites[spriteId].callback = SpriteCB_Sparkle_SpiralUpward;\n    }",
+      "callsTo": [
+        "CreateSprite"
+      ],
+      "lineCount": 10
+    },
+    "SpriteCB_Sparkle_ArcDown": {
+      "returnType": "void",
+      "signature": "static void SpriteCB_Sparkle_ArcDown(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "if (sprite->y < 88)\n    {\n        sprite->y = 8 + (sprite->sTimer * sprite->sTimer) / 5;\n        sprite->y2 = Sin((u8)sprite->sTrigIdx, sprite->sAmplitude) / 4;\n        sprite->x2 = Cos((u8)sprite->sTrigIdx, sprite->sAmplitude);\n        sprite->sAmplitude = 8 + Sin((u8)(sprite->sTimer * 4), 40);\n        sprite->sTimer++;\n    }\n    else\n    {\n        DestroySprite(sprite);\n    }",
+      "callsTo": [
+        "Cos",
+        "DestroySprite",
+        "Sin"
+      ],
+      "lineCount": 12
+    },
+    "CreateSparkle_ArcDown": {
+      "returnType": "void",
+      "signature": "static void CreateSparkle_ArcDown(u8 trigIdx)",
+      "paramsRaw": "u8 trigIdx",
+      "body": "u8 spriteId = CreateSprite(&sEvoSparkleSpriteTemplate, DISPLAY_WIDTH / 2, 8, 0);\n    if (spriteId != MAX_SPRITES)\n    {\n        gSprites[spriteId].sAmplitude = 8;\n        gSprites[spriteId].sTrigIdx = trigIdx;\n        gSprites[spriteId].sTimer = 0;\n        gSprites[spriteId].oam.affineMode = ST_OAM_AFFINE_NORMAL;\n        gSprites[spriteId].oam.matrixNum = 25;\n        gSprites[spriteId].subpriority = 1;\n        gSprites[spriteId].callback = SpriteCB_Sparkle_ArcDown;\n    }",
+      "callsTo": [
+        "CreateSprite"
+      ],
+      "lineCount": 11
+    },
+    "SpriteCB_Sparkle_CircleInward": {
+      "returnType": "void",
+      "signature": "static void SpriteCB_Sparkle_CircleInward(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "if (sprite->sAmplitude > 8)\n    {\n        sprite->y2 = Sin((u8)sprite->sTrigIdx, sprite->sAmplitude);\n        sprite->x2 = Cos((u8)sprite->sTrigIdx, sprite->sAmplitude);\n        sprite->sAmplitude -= sprite->sSpeed;\n        sprite->sTrigIdx += 4;\n    }\n    else\n    {\n        DestroySprite(sprite);\n    }",
+      "callsTo": [
+        "Cos",
+        "DestroySprite",
+        "Sin"
+      ],
+      "lineCount": 11
+    },
+    "CreateSparkle_CircleInward": {
+      "returnType": "void",
+      "signature": "static void CreateSparkle_CircleInward(u8 trigIdx, u8 speed)",
+      "paramsRaw": "u8 trigIdx, u8 speed",
+      "body": "u8 spriteId = CreateSprite(&sEvoSparkleSpriteTemplate, DISPLAY_WIDTH / 2, 56, 0);\n    if (spriteId != MAX_SPRITES)\n    {\n        gSprites[spriteId].sSpeed = speed;\n        gSprites[spriteId].sAmplitude = 120;\n        gSprites[spriteId].sTrigIdx = trigIdx;\n        gSprites[spriteId].sTimer = 0;\n        gSprites[spriteId].oam.affineMode = ST_OAM_AFFINE_NORMAL;\n        gSprites[spriteId].oam.matrixNum = 31;\n        gSprites[spriteId].subpriority = 1;\n        gSprites[spriteId].callback = SpriteCB_Sparkle_CircleInward;\n    }",
+      "callsTo": [
+        "CreateSprite"
+      ],
+      "lineCount": 12
+    },
+    "SpriteCB_Sparkle_Spray": {
+      "returnType": "void",
+      "signature": "static void SpriteCB_Sparkle_Spray(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "if (!(sprite->sTimer & 3))\n        sprite->y++;\n    if (sprite->sTrigIdx < 128)\n    {\n        u8 matrixNum;\n\n        sprite->y2 = -Sin((u8)sprite->sTrigIdx, sprite->sAmplitude);\n        sprite->x = (DISPLAY_WIDTH / 2) + (sprite->sSpeed * sprite->sTimer) / 3;\n        sprite->sTrigIdx++;\n        matrixNum = 31 - (sprite->sTrigIdx * 12 / 128);\n        if (sprite->sTrigIdx > 64)\n        {\n            sprite->subpriority = 1;\n        }\n        else\n        {\n            sprite->invisible = FALSE;\n            sprite->subpriority = 20;\n            if (sprite->sTrigIdx > 112 && sprite->sTrigIdx & 1)\n                sprite->invisible = TRUE;\n        }\n        if (matrixNum < 20)\n            matrixNum = 20;\n        sprite->oam.matrixNum = matrixNum;\n        sprite->sTimer++;\n    }\n    else\n    {\n        DestroySprite(sprite);\n    }",
+      "callsTo": [
+        "DestroySprite",
+        "Sin"
+      ],
+      "lineCount": 30
+    },
+    "CreateSparkle_Spray": {
+      "returnType": "void",
+      "signature": "static void CreateSparkle_Spray(u8 id)",
+      "paramsRaw": "u8 id",
+      "body": "u8 spriteId = CreateSprite(&sEvoSparkleSpriteTemplate, DISPLAY_WIDTH / 2, 56, 0);\n    if (spriteId != MAX_SPRITES)\n    {\n        gSprites[spriteId].sSpeed = 3 - (Random() % 7);\n        gSprites[spriteId].sAmplitude = 48 + (Random() & 0x3F);\n        gSprites[spriteId].sTimer = 0;\n        gSprites[spriteId].oam.affineMode = ST_OAM_AFFINE_NORMAL;\n        gSprites[spriteId].oam.matrixNum = 31;\n        gSprites[spriteId].subpriority = 20;\n        gSprites[spriteId].callback = SpriteCB_Sparkle_Spray;\n    }",
+      "callsTo": [
+        "CreateSprite",
+        "Random"
+      ],
+      "lineCount": 11
+    },
+    "LoadEvoSparkleSpriteAndPal": {
+      "returnType": "void",
+      "signature": "void LoadEvoSparkleSpriteAndPal(void)",
+      "paramsRaw": "void",
+      "body": "LoadCompressedSpriteSheetUsingHeap(&sEvoSparkleSpriteSheets[0]);\n    LoadSpritePalettes(sEvoSparkleSpritePals);",
+      "callsTo": [
+        "LoadCompressedSpriteSheetUsingHeap",
+        "LoadSpritePalettes"
+      ],
+      "lineCount": 2
+    },
+    "EvolutionSparkles_SpiralUpward": {
+      "returnType": "u8",
+      "signature": "u8 EvolutionSparkles_SpiralUpward(u16 palNum)",
+      "paramsRaw": "u16 palNum",
+      "body": "u8 taskId = CreateTask(Task_Sparkles_SpiralUpward_Init, 0);\n    gTasks[taskId].tPalNum = palNum;\n    return taskId;",
+      "callsTo": [
+        "CreateTask"
+      ],
+      "lineCount": 3
+    },
+    "Task_Sparkles_SpiralUpward_Init": {
+      "returnType": "void",
+      "signature": "static void Task_Sparkles_SpiralUpward_Init(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "SetEvoSparklesMatrices();\n    gTasks[taskId].tTimer = 0;\n    BeginNormalPaletteFade(3 << gTasks[taskId].tPalNum, 0xA, 0, 0x10, RGB_WHITE);\n    gTasks[taskId].func = Task_Sparkles_SpiralUpward;\n    PlaySE(SE_M_MEGA_KICK);",
+      "callsTo": [
+        "BeginNormalPaletteFade",
+        "PlaySE",
+        "SetEvoSparklesMatrices"
+      ],
+      "lineCount": 5
+    },
+    "Task_Sparkles_SpiralUpward": {
+      "returnType": "void",
+      "signature": "static void Task_Sparkles_SpiralUpward(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "if (gTasks[taskId].tTimer < 64)\n    {\n        if (!(gTasks[taskId].tTimer & 7))\n        {\n            u8 i;\n            for (i = 0; i < 4; i++)\n                CreateSparkle_SpiralUpward((gTasks[taskId].tTimer & 120) * 2 + i * 64);\n        }\n        gTasks[taskId].tTimer++;\n    }\n    else\n    {\n        gTasks[taskId].tTimer = 96;\n        gTasks[taskId].func = Task_Sparkles_SpiralUpward_End;\n    }",
+      "callsTo": [
+        "CreateSparkle_SpiralUpward"
+      ],
+      "lineCount": 15
+    },
+    "Task_Sparkles_SpiralUpward_End": {
+      "returnType": "void",
+      "signature": "static void Task_Sparkles_SpiralUpward_End(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "if (gTasks[taskId].tTimer != 0)\n        gTasks[taskId].tTimer--;\n    else\n        DestroyTask(taskId);",
+      "callsTo": [
+        "DestroyTask"
+      ],
+      "lineCount": 4
+    },
+    "EvolutionSparkles_ArcDown": {
+      "returnType": "u8",
+      "signature": "u8 EvolutionSparkles_ArcDown(void)",
+      "paramsRaw": "void",
+      "body": "return CreateTask(Task_Sparkles_ArcDown_Init, 0);",
+      "callsTo": [
+        "CreateTask"
+      ],
+      "lineCount": 1
+    },
+    "Task_Sparkles_ArcDown_Init": {
+      "returnType": "void",
+      "signature": "static void Task_Sparkles_ArcDown_Init(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "SetEvoSparklesMatrices();\n    gTasks[taskId].tTimer = 0;\n    gTasks[taskId].func = Task_Sparkles_ArcDown;\n    PlaySE(SE_M_BUBBLE_BEAM2);",
+      "callsTo": [
+        "PlaySE",
+        "SetEvoSparklesMatrices"
+      ],
+      "lineCount": 4
+    },
+    "Task_Sparkles_ArcDown": {
+      "returnType": "void",
+      "signature": "static void Task_Sparkles_ArcDown(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "if (gTasks[taskId].tTimer < 96)\n    {\n        if (gTasks[taskId].tTimer < 6)\n        {\n            u8 i;\n            for (i = 0; i < 9; i++)\n                CreateSparkle_ArcDown(i * 16);\n        }\n        gTasks[taskId].tTimer++;\n    }\n    else\n    {\n        gTasks[taskId].func = Task_Sparkles_ArcDown_End;\n    }",
+      "callsTo": [
+        "CreateSparkle_ArcDown"
+      ],
+      "lineCount": 14
+    },
+    "Task_Sparkles_ArcDown_End": {
+      "returnType": "void",
+      "signature": "static void Task_Sparkles_ArcDown_End(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "DestroyTask(taskId);",
+      "callsTo": [
+        "DestroyTask"
+      ],
+      "lineCount": 1
+    },
+    "EvolutionSparkles_CircleInward": {
+      "returnType": "u8",
+      "signature": "u8 EvolutionSparkles_CircleInward(void)",
+      "paramsRaw": "void",
+      "body": "return CreateTask(Task_Sparkles_CircleInward_Init, 0);",
+      "callsTo": [
+        "CreateTask"
+      ],
+      "lineCount": 1
+    },
+    "Task_Sparkles_CircleInward_Init": {
+      "returnType": "void",
+      "signature": "static void Task_Sparkles_CircleInward_Init(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "SetEvoSparklesMatrices();\n    gTasks[taskId].tTimer = 0;\n    gTasks[taskId].func = Task_Sparkles_CircleInward;\n    PlaySE(SE_SHINY);",
+      "callsTo": [
+        "PlaySE",
+        "SetEvoSparklesMatrices"
+      ],
+      "lineCount": 4
+    },
+    "Task_Sparkles_CircleInward": {
+      "returnType": "void",
+      "signature": "static void Task_Sparkles_CircleInward(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "if (gTasks[taskId].tTimer < 48)\n    {\n        if (gTasks[taskId].tTimer == 0)\n        {\n            u8 i;\n            for (i = 0; i < 16; i++)\n                CreateSparkle_CircleInward(i * 16, 4);\n        }\n        if (gTasks[taskId].tTimer == 32)\n        {\n            u8 i;\n            for (i = 0; i < 16; i++)\n                CreateSparkle_CircleInward(i * 16, 8);\n        }\n        gTasks[taskId].tTimer++;\n    }\n    else\n    {\n        gTasks[taskId].func = Task_Sparkles_CircleInward_End;\n    }",
+      "callsTo": [
+        "CreateSparkle_CircleInward"
+      ],
+      "lineCount": 20
+    },
+    "Task_Sparkles_CircleInward_End": {
+      "returnType": "void",
+      "signature": "static void Task_Sparkles_CircleInward_End(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "DestroyTask(taskId);",
+      "callsTo": [
+        "DestroyTask"
+      ],
+      "lineCount": 1
+    },
+    "EvolutionSparkles_SprayAndFlash": {
+      "returnType": "u8",
+      "signature": "u8 EvolutionSparkles_SprayAndFlash(u16 species)",
+      "paramsRaw": "u16 species",
+      "body": "u8 taskId = CreateTask(Task_Sparkles_SprayAndFlash_Init, 0);\n    gTasks[taskId].tSpecies = species;\n    return taskId;",
+      "callsTo": [
+        "CreateTask"
+      ],
+      "lineCount": 3
+    },
+    "Task_Sparkles_SprayAndFlash_Init": {
+      "returnType": "void",
+      "signature": "static void Task_Sparkles_SprayAndFlash_Init(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "SetEvoSparklesMatrices();\n    gTasks[taskId].tTimer = 0;\n    CpuCopy16(&gPlttBufferFaded[BG_PLTT_ID(2)], &gPlttBufferUnfaded[BG_PLTT_ID(2)], 3 * PLTT_SIZE_4BPP);\n    BeginNormalPaletteFade(0xFFF9041C, 0, 0, 0x10, RGB_WHITE);  \n    gTasks[taskId].func = Task_Sparkles_SprayAndFlash;\n    PlaySE(SE_M_PETAL_DANCE);",
+      "callsTo": [
+        "BG_PLTT_ID",
+        "BeginNormalPaletteFade",
+        "CpuCopy16",
+        "PlaySE",
+        "SetEvoSparklesMatrices"
+      ],
+      "lineCount": 6
+    },
+    "Task_Sparkles_SprayAndFlash": {
+      "returnType": "void",
+      "signature": "static void Task_Sparkles_SprayAndFlash(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "if (gTasks[taskId].tTimer < 128)\n    {\n        u8 i;\n        switch (gTasks[taskId].tTimer)\n        {\n        default:\n            if (gTasks[taskId].tTimer < 50)\n                CreateSparkle_Spray(Random() & 7);\n            break;\n        case 0:\n            for (i = 0; i < 8; i++)\n                CreateSparkle_Spray(i);\n            break;\n        case 32:\n            BeginNormalPaletteFade(0xFFFF041C, 0x10, 0x10, 0, RGB_WHITE);  \n            break;\n        }\n        gTasks[taskId].tTimer++;\n    }\n    else\n    {\n        gTasks[taskId].func = Task_Sparkles_SprayAndFlash_End;\n    }",
+      "callsTo": [
+        "BeginNormalPaletteFade",
+        "CreateSparkle_Spray",
+        "Random"
+      ],
+      "lineCount": 23
+    },
+    "Task_Sparkles_SprayAndFlash_End": {
+      "returnType": "void",
+      "signature": "static void Task_Sparkles_SprayAndFlash_End(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "if (!gPaletteFade.active)\n        DestroyTask(taskId);",
+      "callsTo": [
+        "DestroyTask"
+      ],
+      "lineCount": 2
+    },
+    "EvolutionSparkles_SprayAndFlash_Trade": {
+      "returnType": "u8",
+      "signature": "u8 EvolutionSparkles_SprayAndFlash_Trade(u16 species)",
+      "paramsRaw": "u16 species",
+      "body": "u8 taskId = CreateTask(Task_Sparkles_SprayAndFlashTrade_Init, 0);\n    gTasks[taskId].tSpecies = species;\n    return taskId;",
+      "callsTo": [
+        "CreateTask"
+      ],
+      "lineCount": 3
+    },
+    "Task_Sparkles_SprayAndFlashTrade_Init": {
+      "returnType": "void",
+      "signature": "static void Task_Sparkles_SprayAndFlashTrade_Init(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "SetEvoSparklesMatrices();\n    gTasks[taskId].tTimer = 0;\n    CpuCopy16(&gPlttBufferFaded[BG_PLTT_ID(2)], &gPlttBufferUnfaded[BG_PLTT_ID(2)], 3 * PLTT_SIZE_4BPP);\n    BeginNormalPaletteFade(0xFFF90400, 0, 0, 0x10, RGB_WHITE);  \n    gTasks[taskId].func = Task_Sparkles_SprayAndFlashTrade;\n    PlaySE(SE_M_PETAL_DANCE);",
+      "callsTo": [
+        "BG_PLTT_ID",
+        "BeginNormalPaletteFade",
+        "CpuCopy16",
+        "PlaySE",
+        "SetEvoSparklesMatrices"
+      ],
+      "lineCount": 6
+    },
+    "Task_Sparkles_SprayAndFlashTrade": {
+      "returnType": "void",
+      "signature": "static void Task_Sparkles_SprayAndFlashTrade(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "if (gTasks[taskId].tTimer < 128)\n    {\n        u8 i;\n        switch (gTasks[taskId].tTimer)\n        {\n        default:\n            if (gTasks[taskId].tTimer < 50)\n                CreateSparkle_Spray(Random() & 7);\n            break;\n        case 0:\n            for (i = 0; i < 8; i++)\n                CreateSparkle_Spray(i);\n            break;\n        case 32:\n            BeginNormalPaletteFade(0xFFFF0400, 0x10, 0x10, 0, RGB_WHITE);  \n            break;\n        }\n        gTasks[taskId].tTimer++;\n    }\n    else\n    {\n        gTasks[taskId].func = Task_Sparkles_SprayAndFlash_End;\n    }",
+      "callsTo": [
+        "BeginNormalPaletteFade",
+        "CreateSparkle_Spray",
+        "Random"
+      ],
+      "lineCount": 23
+    },
+    "SpriteCB_EvolutionMonSprite": {
+      "returnType": "void",
+      "signature": "static void SpriteCB_EvolutionMonSprite(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "CycleEvolutionMonSprite": {
+      "returnType": "u8",
+      "signature": "u8 CycleEvolutionMonSprite(u8 preEvoSpriteId, u8 postEvoSpriteId)",
+      "paramsRaw": "u8 preEvoSpriteId, u8 postEvoSpriteId",
+      "body": "u16 i;\n    u16 monPalette[16];\n    u8 taskId;\n    s32 toDiv;\n\n    for (i = 0; i < ARRAY_COUNT(monPalette); i++)\n        monPalette[i] = RGB_WHITE;\n\n    taskId = CreateTask(Task_CycleEvolutionMonSprite_Init, 0);\n    gTasks[taskId].tPreEvoSpriteId = preEvoSpriteId;\n    gTasks[taskId].tPostEvoSpriteId = postEvoSpriteId;\n    gTasks[taskId].tPreEvoScale = MON_MAX_SCALE;\n    gTasks[taskId].tPostEvoScale = MON_MIN_SCALE;\n\n    toDiv = 65536;\n    SetOamMatrix(MATRIX_PRE_EVO, MON_MAX_SCALE, 0, 0, MON_MAX_SCALE);\n    SetOamMatrix(MATRIX_POST_EVO, toDiv / gTasks[taskId].tPostEvoScale, 0, 0, toDiv / gTasks[taskId].tPostEvoScale);\n\n    gSprites[preEvoSpriteId].callback = SpriteCB_EvolutionMonSprite;\n    gSprites[preEvoSpriteId].oam.affineMode = ST_OAM_AFFINE_NORMAL;\n    gSprites[preEvoSpriteId].oam.matrixNum = MATRIX_PRE_EVO;\n    gSprites[preEvoSpriteId].invisible = FALSE;\n    CpuSet(monPalette, &gPlttBufferFaded[OBJ_PLTT_ID(gSprites[preEvoSpriteId].oam.paletteNum)], 16);\n\n    gSprites[postEvoSpriteId].callback = SpriteCB_EvolutionMonSprite;\n    gSprites[postEvoSpriteId].oam.affineMode = ST_OAM_AFFINE_NORMAL;\n    gSprites[postEvoSpriteId].oam.matrixNum = MATRIX_POST_EVO;\n    gSprites[postEvoSpriteId].invisible = FALSE;\n    CpuSet(monPalette, &gPlttBufferFaded[OBJ_PLTT_ID(gSprites[postEvoSpriteId].oam.paletteNum)], 16);\n\n    gTasks[taskId].tEvoStopped = FALSE;\n    return taskId;",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "CpuSet",
+        "CreateTask",
+        "OBJ_PLTT_ID",
+        "SetOamMatrix"
+      ],
+      "lineCount": 32
+    },
+    "Task_CycleEvolutionMonSprite_Init": {
+      "returnType": "void",
+      "signature": "static void Task_CycleEvolutionMonSprite_Init(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "gTasks[taskId].tShowingPostEvo = FALSE;\n    gTasks[taskId].tScaleSpeed = 8;\n    gTasks[taskId].func = Task_CycleEvolutionMonSprite_TryEnd;",
+      "callsTo": [],
+      "lineCount": 3
+    },
+    "Task_CycleEvolutionMonSprite_TryEnd": {
+      "returnType": "void",
+      "signature": "static void Task_CycleEvolutionMonSprite_TryEnd(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "if (gTasks[taskId].tEvoStopped)\n    {\n        EndOnPreEvoMon(taskId);\n    }\n    else if (gTasks[taskId].tScaleSpeed == 128)\n    {\n        EndOnPostEvoMon(taskId);\n    }\n    else\n    {\n        gTasks[taskId].tScaleSpeed += 2;\n        gTasks[taskId].tShowingPostEvo ^= 1;\n        gTasks[taskId].func = Task_CycleEvolutionMonSprite_UpdateSize;\n    }",
+      "callsTo": [
+        "EndOnPostEvoMon",
+        "EndOnPreEvoMon"
+      ],
+      "lineCount": 14
+    },
+    "Task_CycleEvolutionMonSprite_UpdateSize": {
+      "returnType": "void",
+      "signature": "static void Task_CycleEvolutionMonSprite_UpdateSize(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "if (gTasks[taskId].tEvoStopped)\n    {\n        gTasks[taskId].func = EndOnPreEvoMon;\n    }\n    else\n    {\n        u16 oamMatrixArg;\n        u8 numSpritesFinished = 0;\n        if (!gTasks[taskId].tShowingPostEvo)\n        {\n             \n            if (gTasks[taskId].tPreEvoScale < MON_MAX_SCALE - gTasks[taskId].tScaleSpeed)\n            {\n                gTasks[taskId].tPreEvoScale += gTasks[taskId].tScaleSpeed;\n            }\n            else\n            {\n                gTasks[taskId].tPreEvoScale = MON_MAX_SCALE;\n                numSpritesFinished++;\n            }\n\n             \n            if (gTasks[taskId].tPostEvoScale > MON_MIN_SCALE + gTasks[taskId].tScaleSpeed)\n            {\n                gTasks[taskId].tPostEvoScale  -= gTasks[taskId].tScaleSpeed;\n            }\n            else\n            {\n                gTasks[taskId].tPostEvoScale = MON_MIN_SCALE;\n                numSpritesFinished++;\n            }\n        }\n        else\n        {\n             \n            if (gTasks[taskId].tPostEvoScale < MON_MAX_SCALE - gTasks[taskId].tScaleSpeed)\n            {\n                gTasks[taskId].tPostEvoScale += gTasks[taskId].tScaleSpeed;\n            }\n            else\n            {\n                gTasks[taskId].tPostEvoScale = MON_MAX_SCALE;\n                numSpritesFinished++;\n            }\n\n             \n            if (gTasks[taskId].tPreEvoScale > MON_MIN_SCALE + gTasks[taskId].tScaleSpeed)\n            {\n                gTasks[taskId].tPreEvoScale  -= gTasks[taskId].tScaleSpeed;\n            }\n            else\n            {\n                gTasks[taskId].tPreEvoScale = MON_MIN_SCALE;\n                numSpritesFinished++;\n            }\n        }\n\n         \n        oamMatrixArg = 65536 / gTasks[taskId].tPreEvoScale;\n        SetOamMatrix(MATRIX_PRE_EVO, oamMatrixArg, 0, 0, oamMatrixArg);\n\n         \n        oamMatrixArg = 65536 / gTasks[taskId].tPostEvoScale;\n        SetOamMatrix(MATRIX_POST_EVO, oamMatrixArg, 0, 0, oamMatrixArg);\n\n         \n        if (numSpritesFinished == 2)\n            gTasks[taskId].func = Task_CycleEvolutionMonSprite_TryEnd;\n    }",
+      "callsTo": [
+        "SetOamMatrix"
+      ],
+      "lineCount": 69
+    },
+    "EndOnPostEvoMon": {
+      "returnType": "void",
+      "signature": "static void EndOnPostEvoMon(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "gSprites[gTasks[taskId].tPreEvoSpriteId].oam.affineMode = ST_OAM_AFFINE_OFF;\n    gSprites[gTasks[taskId].tPreEvoSpriteId].oam.matrixNum = 0;\n    gSprites[gTasks[taskId].tPreEvoSpriteId].invisible = TRUE;\n\n    gSprites[gTasks[taskId].tPostEvoSpriteId].oam.affineMode = ST_OAM_AFFINE_OFF;\n    gSprites[gTasks[taskId].tPostEvoSpriteId].oam.matrixNum = 0;\n    gSprites[gTasks[taskId].tPostEvoSpriteId].invisible = FALSE;\n\n    DestroyTask(taskId);",
+      "callsTo": [
+        "DestroyTask"
+      ],
+      "lineCount": 9
+    },
+    "EndOnPreEvoMon": {
+      "returnType": "void",
+      "signature": "static void EndOnPreEvoMon(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "gSprites[gTasks[taskId].tPreEvoSpriteId].oam.affineMode = ST_OAM_AFFINE_OFF;\n    gSprites[gTasks[taskId].tPreEvoSpriteId].oam.matrixNum = 0;\n    gSprites[gTasks[taskId].tPreEvoSpriteId].invisible = FALSE;\n\n    gSprites[gTasks[taskId].tPostEvoSpriteId].oam.affineMode = ST_OAM_AFFINE_OFF;\n    gSprites[gTasks[taskId].tPostEvoSpriteId].oam.matrixNum = 0;\n    gSprites[gTasks[taskId].tPostEvoSpriteId].invisible = TRUE;\n\n    DestroyTask(taskId);",
+      "callsTo": [
+        "DestroyTask"
+      ],
+      "lineCount": 9
+    }
+  }
+}

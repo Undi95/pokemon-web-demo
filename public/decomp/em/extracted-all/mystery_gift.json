@@ -1,0 +1,412 @@
+{
+  "srcFile": "src/mystery_gift.c",
+  "count": 40,
+  "functions": {
+    "ClearMysteryGift": {
+      "returnType": "void",
+      "signature": "void ClearMysteryGift(void)",
+      "paramsRaw": "void",
+      "body": "CpuFill32(0, &gSaveBlock1Ptr->mysteryGift, sizeof(gSaveBlock1Ptr->mysteryGift));\n    ClearSavedWonderNewsMetadata();  \n    InitQuestionnaireWords();",
+      "callsTo": [
+        "ClearSavedWonderNewsMetadata",
+        "CpuFill32",
+        "InitQuestionnaireWords"
+      ],
+      "lineCount": 3
+    },
+    "ClearSavedWonderNewsAndRelated": {
+      "returnType": "void",
+      "signature": "void ClearSavedWonderNewsAndRelated(void)",
+      "paramsRaw": "void",
+      "body": "ClearSavedWonderNews();",
+      "callsTo": [
+        "ClearSavedWonderNews"
+      ],
+      "lineCount": 1
+    },
+    "SaveWonderNews": {
+      "returnType": "bool32",
+      "signature": "bool32 SaveWonderNews(const struct WonderNews *news)",
+      "paramsRaw": "const struct WonderNews *news",
+      "body": "if (!ValidateWonderNews(news))\n        return FALSE;\n\n    ClearSavedWonderNews();\n    gSaveBlock1Ptr->mysteryGift.news = *news;\n    gSaveBlock1Ptr->mysteryGift.newsCrc = CALC_CRC(gSaveBlock1Ptr->mysteryGift.news);\n    return TRUE;",
+      "callsTo": [
+        "CALC_CRC",
+        "ClearSavedWonderNews",
+        "ValidateWonderNews"
+      ],
+      "lineCount": 7
+    },
+    "ValidateSavedWonderNews": {
+      "returnType": "bool32",
+      "signature": "bool32 ValidateSavedWonderNews(void)",
+      "paramsRaw": "void",
+      "body": "if (CALC_CRC(gSaveBlock1Ptr->mysteryGift.news) != gSaveBlock1Ptr->mysteryGift.newsCrc)\n        return FALSE;\n    if (!ValidateWonderNews(&gSaveBlock1Ptr->mysteryGift.news))\n        return FALSE;\n\n    return TRUE;",
+      "callsTo": [
+        "CALC_CRC",
+        "ValidateWonderNews"
+      ],
+      "lineCount": 6
+    },
+    "ValidateWonderNews": {
+      "returnType": "bool32",
+      "signature": "static bool32 ValidateWonderNews(const struct WonderNews *news)",
+      "paramsRaw": "const struct WonderNews *news",
+      "body": "if (news->id == 0)\n        return FALSE;\n\n    return TRUE;",
+      "callsTo": [],
+      "lineCount": 4
+    },
+    "IsSendingSavedWonderNewsAllowed": {
+      "returnType": "bool32",
+      "signature": "bool32 IsSendingSavedWonderNewsAllowed(void)",
+      "paramsRaw": "void",
+      "body": "const struct WonderNews *news = &gSaveBlock1Ptr->mysteryGift.news;\n    if (news->sendType == SEND_TYPE_DISALLOWED)\n        return FALSE;\n\n    return TRUE;",
+      "callsTo": [],
+      "lineCount": 5
+    },
+    "ClearSavedWonderNews": {
+      "returnType": "void",
+      "signature": "static void ClearSavedWonderNews(void)",
+      "paramsRaw": "void",
+      "body": "CpuFill32(0, GetSavedWonderNews(), sizeof(gSaveBlock1Ptr->mysteryGift.news));\n    gSaveBlock1Ptr->mysteryGift.newsCrc = 0;",
+      "callsTo": [
+        "CpuFill32",
+        "GetSavedWonderNews"
+      ],
+      "lineCount": 2
+    },
+    "ClearSavedWonderNewsMetadata": {
+      "returnType": "void",
+      "signature": "static void ClearSavedWonderNewsMetadata(void)",
+      "paramsRaw": "void",
+      "body": "CpuFill32(0, GetSavedWonderNewsMetadata(), sizeof(gSaveBlock1Ptr->mysteryGift.newsMetadata));\n    WonderNews_Reset();",
+      "callsTo": [
+        "CpuFill32",
+        "GetSavedWonderNewsMetadata",
+        "WonderNews_Reset"
+      ],
+      "lineCount": 2
+    },
+    "IsWonderNewsSameAsSaved": {
+      "returnType": "bool32",
+      "signature": "bool32 IsWonderNewsSameAsSaved(const u8 *news)",
+      "paramsRaw": "const u8 *news",
+      "body": "const u8 *savedNews = (const u8 *)&gSaveBlock1Ptr->mysteryGift.news;\n    u32 i;\n    if (!ValidateSavedWonderNews())\n        return FALSE;\n\n    for (i = 0; i < sizeof(gSaveBlock1Ptr->mysteryGift.news); i++)\n    {\n        if (savedNews[i] != news[i])\n            return FALSE;\n    }\n\n    return TRUE;",
+      "callsTo": [
+        "ValidateSavedWonderNews"
+      ],
+      "lineCount": 12
+    },
+    "ClearSavedWonderCardAndRelated": {
+      "returnType": "void",
+      "signature": "void ClearSavedWonderCardAndRelated(void)",
+      "paramsRaw": "void",
+      "body": "ClearSavedWonderCard();\n    ClearSavedWonderCardMetadata();\n    ClearSavedTrainerIds();\n    ClearRamScript();\n    ClearMysteryGiftFlags();\n    ClearMysteryGiftVars();\n    ClearEReaderTrainer(&gSaveBlock2Ptr->frontier.ereaderTrainer);",
+      "callsTo": [
+        "ClearEReaderTrainer",
+        "ClearMysteryGiftFlags",
+        "ClearMysteryGiftVars",
+        "ClearRamScript",
+        "ClearSavedTrainerIds",
+        "ClearSavedWonderCard",
+        "ClearSavedWonderCardMetadata"
+      ],
+      "lineCount": 7
+    },
+    "SaveWonderCard": {
+      "returnType": "bool32",
+      "signature": "bool32 SaveWonderCard(const struct WonderCard *card)",
+      "paramsRaw": "const struct WonderCard *card",
+      "body": "struct WonderCardMetadata *metadata;\n    if (!ValidateWonderCard(card))\n        return FALSE;\n\n    ClearSavedWonderCardAndRelated();\n    memcpy(&gSaveBlock1Ptr->mysteryGift.card, card, sizeof(struct WonderCard));\n    gSaveBlock1Ptr->mysteryGift.cardCrc = CALC_CRC(gSaveBlock1Ptr->mysteryGift.card);\n    metadata = &gSaveBlock1Ptr->mysteryGift.cardMetadata;\n    metadata->iconSpecies = (&gSaveBlock1Ptr->mysteryGift.card)->iconSpecies;\n    return TRUE;",
+      "callsTo": [
+        "CALC_CRC",
+        "ClearSavedWonderCardAndRelated",
+        "ValidateWonderCard"
+      ],
+      "lineCount": 10
+    },
+    "ValidateSavedWonderCard": {
+      "returnType": "bool32",
+      "signature": "bool32 ValidateSavedWonderCard(void)",
+      "paramsRaw": "void",
+      "body": "if (gSaveBlock1Ptr->mysteryGift.cardCrc != CALC_CRC(gSaveBlock1Ptr->mysteryGift.card))\n        return FALSE;\n    if (!ValidateWonderCard(&gSaveBlock1Ptr->mysteryGift.card))\n        return FALSE;\n    if (!ValidateSavedRamScript())\n        return FALSE;\n\n    return TRUE;",
+      "callsTo": [
+        "CALC_CRC",
+        "ValidateSavedRamScript",
+        "ValidateWonderCard"
+      ],
+      "lineCount": 8
+    },
+    "ValidateWonderCard": {
+      "returnType": "bool32",
+      "signature": "static bool32 ValidateWonderCard(const struct WonderCard *card)",
+      "paramsRaw": "const struct WonderCard *card",
+      "body": "if (card->flagId == 0)\n        return FALSE;\n    if (card->type >= CARD_TYPE_COUNT)\n        return FALSE;\n    if (!(card->sendType == SEND_TYPE_DISALLOWED\n       || card->sendType == SEND_TYPE_ALLOWED\n       || card->sendType == SEND_TYPE_ALLOWED_ALWAYS))\n        return FALSE;\n    if (card->bgType >= NUM_WONDER_BGS)\n        return FALSE;\n    if (card->maxStamps > MAX_STAMP_CARD_STAMPS)\n        return FALSE;\n\n    return TRUE;",
+      "callsTo": [],
+      "lineCount": 14
+    },
+    "IsSendingSavedWonderCardAllowed": {
+      "returnType": "bool32",
+      "signature": "bool32 IsSendingSavedWonderCardAllowed(void)",
+      "paramsRaw": "void",
+      "body": "const struct WonderCard *card = &gSaveBlock1Ptr->mysteryGift.card;\n    if (card->sendType == SEND_TYPE_DISALLOWED)\n        return FALSE;\n\n    return TRUE;",
+      "callsTo": [],
+      "lineCount": 5
+    },
+    "ClearSavedWonderCard": {
+      "returnType": "void",
+      "signature": "static void ClearSavedWonderCard(void)",
+      "paramsRaw": "void",
+      "body": "CpuFill32(0, &gSaveBlock1Ptr->mysteryGift.card, sizeof(gSaveBlock1Ptr->mysteryGift.card));\n    gSaveBlock1Ptr->mysteryGift.cardCrc = 0;",
+      "callsTo": [
+        "CpuFill32"
+      ],
+      "lineCount": 2
+    },
+    "ClearSavedWonderCardMetadata": {
+      "returnType": "void",
+      "signature": "static void ClearSavedWonderCardMetadata(void)",
+      "paramsRaw": "void",
+      "body": "CpuFill32(0, GetSavedWonderCardMetadata(), sizeof(gSaveBlock1Ptr->mysteryGift.cardMetadata));\n    gSaveBlock1Ptr->mysteryGift.cardMetadataCrc = 0;",
+      "callsTo": [
+        "CpuFill32",
+        "GetSavedWonderCardMetadata"
+      ],
+      "lineCount": 2
+    },
+    "GetWonderCardFlagID": {
+      "returnType": "u16",
+      "signature": "u16 GetWonderCardFlagID(void)",
+      "paramsRaw": "void",
+      "body": "if (ValidateSavedWonderCard())\n        return gSaveBlock1Ptr->mysteryGift.card.flagId;\n\n    return 0;",
+      "callsTo": [
+        "ValidateSavedWonderCard"
+      ],
+      "lineCount": 4
+    },
+    "DisableWonderCardSending": {
+      "returnType": "void",
+      "signature": "void DisableWonderCardSending(struct WonderCard *card)",
+      "paramsRaw": "struct WonderCard *card",
+      "body": "if (card->sendType == SEND_TYPE_ALLOWED)\n        card->sendType = SEND_TYPE_DISALLOWED;",
+      "callsTo": [],
+      "lineCount": 2
+    },
+    "IsWonderCardFlagIDInValidRange": {
+      "returnType": "bool32",
+      "signature": "static bool32 IsWonderCardFlagIDInValidRange(u16 flagId)",
+      "paramsRaw": "u16 flagId",
+      "body": "if (flagId >= WONDER_CARD_FLAG_OFFSET && flagId < WONDER_CARD_FLAG_OFFSET + NUM_WONDER_CARD_FLAGS)\n        return TRUE;\n\n    return FALSE;",
+      "callsTo": [],
+      "lineCount": 4
+    },
+    "IsSavedWonderCardGiftNotReceived": {
+      "returnType": "bool32",
+      "signature": "bool32 IsSavedWonderCardGiftNotReceived(void)",
+      "paramsRaw": "void",
+      "body": "u16 value = GetWonderCardFlagID();\n    if (!IsWonderCardFlagIDInValidRange(value))\n        return FALSE;\n\n     \n    if (FlagGet(sReceivedGiftFlags[value - WONDER_CARD_FLAG_OFFSET]) == TRUE)\n        return FALSE;\n\n    return TRUE;",
+      "callsTo": [
+        "FlagGet",
+        "GetWonderCardFlagID",
+        "IsWonderCardFlagIDInValidRange"
+      ],
+      "lineCount": 9
+    },
+    "GetNumStampsInMetadata": {
+      "returnType": "int",
+      "signature": "static int GetNumStampsInMetadata(const struct WonderCardMetadata *data, int size)",
+      "paramsRaw": "const struct WonderCardMetadata *data, int size",
+      "body": "int numStamps = 0;\n    int i;\n    for (i = 0; i < size; i++)\n    {\n        if (data->stampData[STAMP_ID][i] && data->stampData[STAMP_SPECIES][i] != SPECIES_NONE)\n            numStamps++;\n    }\n\n    return numStamps;",
+      "callsTo": [],
+      "lineCount": 9
+    },
+    "IsStampInMetadata": {
+      "returnType": "bool32",
+      "signature": "static bool32 IsStampInMetadata(const struct WonderCardMetadata *metadata, const u16 *stamp, int maxStamps)",
+      "paramsRaw": "const struct WonderCardMetadata *metadata, const u16 *stamp, int maxStamps",
+      "body": "int i;\n    for (i = 0; i < maxStamps; i++)\n    {\n        if (metadata->stampData[STAMP_ID][i] == stamp[STAMP_ID])\n            return TRUE;\n        if (metadata->stampData[STAMP_SPECIES][i] == stamp[STAMP_SPECIES])\n            return TRUE;\n    }\n\n    return FALSE;",
+      "callsTo": [],
+      "lineCount": 10
+    },
+    "ValidateStamp": {
+      "returnType": "bool32",
+      "signature": "static bool32 ValidateStamp(const u16 *stamp)",
+      "paramsRaw": "const u16 *stamp",
+      "body": "if (stamp[STAMP_ID] == 0)\n        return FALSE;\n    if (stamp[STAMP_SPECIES] == SPECIES_NONE)\n        return FALSE;\n    if (stamp[STAMP_SPECIES] >= NUM_SPECIES)\n        return FALSE;\n    return TRUE;",
+      "callsTo": [],
+      "lineCount": 7
+    },
+    "GetNumStampsInSavedCard": {
+      "returnType": "int",
+      "signature": "static int GetNumStampsInSavedCard(void)",
+      "paramsRaw": "void",
+      "body": "struct WonderCard *card;\n    if (!ValidateSavedWonderCard())\n        return 0;\n\n    card = &gSaveBlock1Ptr->mysteryGift.card;\n    if (card->type != CARD_TYPE_STAMP)\n        return 0;\n\n    return GetNumStampsInMetadata(&gSaveBlock1Ptr->mysteryGift.cardMetadata, card->maxStamps);",
+      "callsTo": [
+        "GetNumStampsInMetadata",
+        "ValidateSavedWonderCard"
+      ],
+      "lineCount": 9
+    },
+    "MysteryGift_TrySaveStamp": {
+      "returnType": "bool32",
+      "signature": "bool32 MysteryGift_TrySaveStamp(const u16 *stamp)",
+      "paramsRaw": "const u16 *stamp",
+      "body": "struct WonderCard *card = &gSaveBlock1Ptr->mysteryGift.card;\n    int maxStamps = card->maxStamps;\n    int i;\n    if (!ValidateStamp(stamp))\n        return FALSE;\n\n    if (IsStampInMetadata(&gSaveBlock1Ptr->mysteryGift.cardMetadata, stamp, maxStamps))\n        return FALSE;\n\n    for (i = 0; i < maxStamps; i++)\n    {\n        if (gSaveBlock1Ptr->mysteryGift.cardMetadata.stampData[STAMP_ID][i] == 0\n         && gSaveBlock1Ptr->mysteryGift.cardMetadata.stampData[STAMP_SPECIES][i] == SPECIES_NONE)\n        {\n            gSaveBlock1Ptr->mysteryGift.cardMetadata.stampData[STAMP_ID][i] = stamp[STAMP_ID];\n            gSaveBlock1Ptr->mysteryGift.cardMetadata.stampData[STAMP_SPECIES][i] = stamp[STAMP_SPECIES];\n            return TRUE;\n        }\n    }\n\n    return FALSE;",
+      "callsTo": [
+        "IsStampInMetadata",
+        "ValidateStamp"
+      ],
+      "lineCount": 21
+    },
+    "MysteryGift_LoadLinkGameData": {
+      "returnType": "void",
+      "signature": "void MysteryGift_LoadLinkGameData(struct MysteryGiftLinkGameData *data, bool32 isWonderNews)",
+      "paramsRaw": "struct MysteryGiftLinkGameData *data, bool32 isWonderNews",
+      "body": "int i;\n    CpuFill32(0, data, sizeof(*data));\n    data->validationVar = GAME_DATA_VALID_VAR;\n    data->validationFlag1 = 1;\n    data->validationFlag2 = 1;\n\n    if (isWonderNews)\n    {\n         \n         \n        data->validationGiftType1 = GAME_DATA_VALID_GIFT_TYPE_1 | 1;\n        data->validationGiftType2 = GAME_DATA_VALID_GIFT_TYPE_2 | 1;\n    }\n    else  \n    {\n        data->validationGiftType1 = GAME_DATA_VALID_GIFT_TYPE_1;\n        data->validationGiftType2 = GAME_DATA_VALID_GIFT_TYPE_2;\n    }\n\n    if (ValidateSavedWonderCard())\n    {\n        data->flagId = GetSavedWonderCard()->flagId;\n        data->cardMetadata = *GetSavedWonderCardMetadata();\n        data->maxStamps = GetSavedWonderCard()->maxStamps;\n    }\n    else\n    {\n        data->flagId = 0;\n    }\n\n    for (i = 0; i < NUM_QUESTIONNAIRE_WORDS; i++)\n        data->questionnaireWords[i] = gSaveBlock1Ptr->mysteryGift.questionnaireWords[i];\n\n    CopyTrainerId(data->playerTrainerId, gSaveBlock2Ptr->playerTrainerId);\n    StringCopy(data->playerName, gSaveBlock2Ptr->playerName);\n    for (i = 0; i < EASY_CHAT_BATTLE_WORDS_COUNT; i++)\n        data->easyChatProfile[i] = gSaveBlock1Ptr->easyChatProfile[i];\n\n    memcpy(data->romHeaderGameCode, RomHeaderGameCode, GAME_CODE_LENGTH);\n    data->romHeaderSoftwareVersion = RomHeaderSoftwareVersion;",
+      "callsTo": [
+        "CopyTrainerId",
+        "CpuFill32",
+        "GetSavedWonderCard",
+        "GetSavedWonderCardMetadata",
+        "StringCopy",
+        "ValidateSavedWonderCard"
+      ],
+      "lineCount": 40
+    },
+    "MysteryGift_ValidateLinkGameData": {
+      "returnType": "bool32",
+      "signature": "bool32 MysteryGift_ValidateLinkGameData(const struct MysteryGiftLinkGameData *data, bool32 isWonderNews)",
+      "paramsRaw": "const struct MysteryGiftLinkGameData *data, bool32 isWonderNews",
+      "body": "if (data->validationVar != GAME_DATA_VALID_VAR)\n        return FALSE;\n\n    if (!(data->validationFlag1 & 1))\n        return FALSE;\n\n    if (!(data->validationFlag2 & 1))\n        return FALSE;\n\n    if (!isWonderNews)\n    {\n        if (!(data->validationGiftType1 & GAME_DATA_VALID_GIFT_TYPE_1))\n            return FALSE;\n\n        if (!(data->validationGiftType2 & (GAME_DATA_VALID_GIFT_TYPE_2 | 0x180)))\n            return FALSE;\n    }\n\n    return TRUE;",
+      "callsTo": [],
+      "lineCount": 19
+    },
+    "MysteryGift_CompareCardFlags": {
+      "returnType": "u32",
+      "signature": "u32 MysteryGift_CompareCardFlags(const u16 *flagId, const struct MysteryGiftLinkGameData *data, const void *unused)",
+      "paramsRaw": "const u16 *flagId, const struct MysteryGiftLinkGameData *data, const void *unused",
+      "body": "if (data->flagId == 0)\n        return HAS_NO_CARD;\n\n     \n    if (*flagId == data->flagId)\n        return HAS_SAME_CARD;\n\n     \n    return HAS_DIFF_CARD;",
+      "callsTo": [],
+      "lineCount": 9
+    },
+    "MysteryGift_CheckStamps": {
+      "returnType": "u32",
+      "signature": "u32 MysteryGift_CheckStamps(const u16 *stamp, const struct MysteryGiftLinkGameData *data, const void *unused)",
+      "paramsRaw": "const u16 *stamp, const struct MysteryGiftLinkGameData *data, const void *unused",
+      "body": "int stampsMissing = data->maxStamps - GetNumStampsInMetadata(&data->cardMetadata, data->maxStamps);\n\n     \n    if (stampsMissing == 0)\n        return 1;\n\n     \n    if (IsStampInMetadata(&data->cardMetadata, stamp, data->maxStamps))\n        return 3;\n\n     \n    if (stampsMissing == 1)\n        return 4;\n\n     \n    return 2;",
+      "callsTo": [
+        "GetNumStampsInMetadata",
+        "IsStampInMetadata"
+      ],
+      "lineCount": 16
+    },
+    "MysteryGift_DoesQuestionnaireMatch": {
+      "returnType": "bool32",
+      "signature": "bool32 MysteryGift_DoesQuestionnaireMatch(const struct MysteryGiftLinkGameData *data, const u16 *words)",
+      "paramsRaw": "const struct MysteryGiftLinkGameData *data, const u16 *words",
+      "body": "int i;\n    for (i = 0; i < NUM_QUESTIONNAIRE_WORDS; i++)\n    {\n        if (data->questionnaireWords[i] != words[i])\n            return FALSE;\n    }\n\n    return TRUE;",
+      "callsTo": [],
+      "lineCount": 8
+    },
+    "GetNumStampsInLinkData": {
+      "returnType": "int",
+      "signature": "static int GetNumStampsInLinkData(const struct MysteryGiftLinkGameData *data)",
+      "paramsRaw": "const struct MysteryGiftLinkGameData *data",
+      "body": "return GetNumStampsInMetadata(&data->cardMetadata, data->maxStamps);",
+      "callsTo": [
+        "GetNumStampsInMetadata"
+      ],
+      "lineCount": 1
+    },
+    "MysteryGift_GetCardStatFromLinkData": {
+      "returnType": "u16",
+      "signature": "u16 MysteryGift_GetCardStatFromLinkData(const struct MysteryGiftLinkGameData *data, u32 stat)",
+      "paramsRaw": "const struct MysteryGiftLinkGameData *data, u32 stat",
+      "body": "switch (stat)\n    {\n    case CARD_STAT_BATTLES_WON:\n        return data->cardMetadata.battlesWon;\n    case CARD_STAT_BATTLES_LOST:\n        return data->cardMetadata.battlesLost;\n    case CARD_STAT_NUM_TRADES:\n        return data->cardMetadata.numTrades;\n    case CARD_STAT_NUM_STAMPS:\n        return GetNumStampsInLinkData(data);\n    case CARD_STAT_MAX_STAMPS:\n        return data->maxStamps;\n    default:\n        AGB_ASSERT(0);\n        return 0;\n    }",
+      "callsTo": [
+        "AGB_ASSERT",
+        "GetNumStampsInLinkData"
+      ],
+      "lineCount": 16
+    },
+    "IncrementCardStat": {
+      "returnType": "void",
+      "signature": "static void IncrementCardStat(u32 statType)",
+      "paramsRaw": "u32 statType",
+      "body": "struct WonderCard *card = &gSaveBlock1Ptr->mysteryGift.card;\n    if (card->type == CARD_TYPE_LINK_STAT)\n    {\n        u16 *stat = NULL;\n        switch (statType)\n        {\n        case CARD_STAT_BATTLES_WON:\n            stat = &gSaveBlock1Ptr->mysteryGift.cardMetadata.battlesWon;\n            break;\n        case CARD_STAT_BATTLES_LOST:\n            stat = &gSaveBlock1Ptr->mysteryGift.cardMetadata.battlesLost;\n            break;\n        case CARD_STAT_NUM_TRADES:\n            stat = &gSaveBlock1Ptr->mysteryGift.cardMetadata.numTrades;\n            break;\n        case CARD_STAT_NUM_STAMPS:  \n        case CARD_STAT_MAX_STAMPS:  \n            break;\n        }\n\n        if (stat == NULL)\n        {\n            AGB_ASSERT(0);\n        }\n        else if (++(*stat) > MAX_WONDER_CARD_STAT)\n        {\n            *stat = MAX_WONDER_CARD_STAT;\n        }\n    }",
+      "callsTo": [
+        "AGB_ASSERT"
+      ],
+      "lineCount": 29
+    },
+    "MysteryGift_GetCardStat": {
+      "returnType": "u16",
+      "signature": "u16 MysteryGift_GetCardStat(u32 stat)",
+      "paramsRaw": "u32 stat",
+      "body": "switch (stat)\n    {\n    case CARD_STAT_BATTLES_WON:\n    {\n        struct WonderCard *card = &gSaveBlock1Ptr->mysteryGift.card;\n        if (card->type == CARD_TYPE_LINK_STAT)\n        {\n            struct WonderCardMetadata *metadata = &gSaveBlock1Ptr->mysteryGift.cardMetadata;\n            return metadata->battlesWon;\n        }\n        break;\n    }\n    case CARD_STAT_BATTLES_LOST:\n    {\n        struct WonderCard *card = &gSaveBlock1Ptr->mysteryGift.card;\n        if (card->type == CARD_TYPE_LINK_STAT)\n        {\n            struct WonderCardMetadata *metadata = &gSaveBlock1Ptr->mysteryGift.cardMetadata;\n            return metadata->battlesLost;\n        }\n        break;\n    }\n    case CARD_STAT_NUM_TRADES:\n    {\n        struct WonderCard *card = &gSaveBlock1Ptr->mysteryGift.card;\n        if (card->type == CARD_TYPE_LINK_STAT)\n        {\n            struct WonderCardMetadata *metadata = &gSaveBlock1Ptr->mysteryGift.cardMetadata;\n            return metadata->numTrades;\n        }\n        break;\n    }\n    case CARD_STAT_NUM_STAMPS:\n    {\n        struct WonderCard *card = &gSaveBlock1Ptr->mysteryGift.card;\n        if (card->type == CARD_TYPE_STAMP)\n            return GetNumStampsInSavedCard();\n        break;\n    }\n    case CARD_STAT_MAX_STAMPS:\n    {\n        struct WonderCard *card = &gSaveBlock1Ptr->mysteryGift.card;\n        if (card->type == CARD_TYPE_STAMP)\n            return card->maxStamps;\n        break;\n    }\n    }\n\n    AGB_ASSERT(0);\n    return 0;",
+      "callsTo": [
+        "AGB_ASSERT",
+        "GetNumStampsInSavedCard"
+      ],
+      "lineCount": 50
+    },
+    "MysteryGift_DisableStats": {
+      "returnType": "void",
+      "signature": "void MysteryGift_DisableStats(void)",
+      "paramsRaw": "void",
+      "body": "sStatsEnabled = FALSE;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "MysteryGift_TryEnableStatsByFlagId": {
+      "returnType": "bool32",
+      "signature": "bool32 MysteryGift_TryEnableStatsByFlagId(u16 flagId)",
+      "paramsRaw": "u16 flagId",
+      "body": "sStatsEnabled = FALSE;\n    if (flagId == 0)\n        return FALSE;\n\n    if (!ValidateSavedWonderCard())\n        return FALSE;\n\n    if (gSaveBlock1Ptr->mysteryGift.card.flagId != flagId)\n        return FALSE;\n\n    sStatsEnabled = TRUE;\n    return TRUE;",
+      "callsTo": [
+        "ValidateSavedWonderCard"
+      ],
+      "lineCount": 12
+    },
+    "MysteryGift_TryIncrementStat": {
+      "returnType": "void",
+      "signature": "void MysteryGift_TryIncrementStat(u32 stat, u32 trainerId)",
+      "paramsRaw": "u32 stat, u32 trainerId",
+      "body": "if (sStatsEnabled)\n    {\n        switch (stat)\n        {\n        case CARD_STAT_NUM_TRADES:\n            IncrementCardStatForNewTrainer(CARD_STAT_NUM_TRADES,\n                                            trainerId,\n                                            gSaveBlock1Ptr->mysteryGift.trainerIds[1],\n                                            ARRAY_COUNT(gSaveBlock1Ptr->mysteryGift.trainerIds[1]));\n            break;\n        case CARD_STAT_BATTLES_WON:\n            IncrementCardStatForNewTrainer(CARD_STAT_BATTLES_WON,\n                                            trainerId,\n                                            gSaveBlock1Ptr->mysteryGift.trainerIds[0],\n                                            ARRAY_COUNT(gSaveBlock1Ptr->mysteryGift.trainerIds[0]));\n            break;\n        case CARD_STAT_BATTLES_LOST:\n            IncrementCardStatForNewTrainer(CARD_STAT_BATTLES_LOST,\n                                            trainerId,\n                                            gSaveBlock1Ptr->mysteryGift.trainerIds[0],\n                                            ARRAY_COUNT(gSaveBlock1Ptr->mysteryGift.trainerIds[0]));\n            break;\n        default:\n            AGB_ASSERT(0);\n            break;\n        }\n    }",
+      "callsTo": [
+        "AGB_ASSERT",
+        "ARRAY_COUNT",
+        "IncrementCardStatForNewTrainer"
+      ],
+      "lineCount": 27
+    },
+    "ClearSavedTrainerIds": {
+      "returnType": "void",
+      "signature": "static void ClearSavedTrainerIds(void)",
+      "paramsRaw": "void",
+      "body": "CpuFill32(0, gSaveBlock1Ptr->mysteryGift.trainerIds, sizeof(gSaveBlock1Ptr->mysteryGift.trainerIds));",
+      "callsTo": [
+        "CpuFill32"
+      ],
+      "lineCount": 1
+    },
+    "RecordTrainerId": {
+      "returnType": "bool32",
+      "signature": "static bool32 RecordTrainerId(u32 trainerId, u32 *trainerIds, int size)",
+      "paramsRaw": "u32 trainerId, u32 *trainerIds, int size",
+      "body": "int i, j;\n\n    for (i = 0; i < size; i++)\n    {\n        if (trainerIds[i] == trainerId)\n            break;\n    }\n\n    if (i == size)\n    {\n         \n        for (j = size - 1; j > 0; j--)\n            trainerIds[j] = trainerIds[j - 1];\n\n        trainerIds[0] = trainerId;\n        return TRUE;\n    }\n    else\n    {\n         \n        for (j = i; j > 0; j--)\n            trainerIds[j] = trainerIds[j - 1];\n\n        trainerIds[0] = trainerId;\n        return FALSE;\n    }",
+      "callsTo": [],
+      "lineCount": 26
+    },
+    "IncrementCardStatForNewTrainer": {
+      "returnType": "void",
+      "signature": "static void IncrementCardStatForNewTrainer(u32 stat, u32 trainerId, u32 *trainerIds, int size)",
+      "paramsRaw": "u32 stat, u32 trainerId, u32 *trainerIds, int size",
+      "body": "if (RecordTrainerId(trainerId, trainerIds, size))\n        IncrementCardStat(stat);",
+      "callsTo": [
+        "IncrementCardStat",
+        "RecordTrainerId"
+      ],
+      "lineCount": 2
+    }
+  }
+}

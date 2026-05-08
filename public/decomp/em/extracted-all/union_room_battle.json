@@ -1,0 +1,102 @@
+{
+  "srcFile": "src/union_room_battle.c",
+  "count": 5,
+  "functions": {
+    "CB2_SetUpPartiesAndStartBattle": {
+      "returnType": "void",
+      "signature": "static void CB2_SetUpPartiesAndStartBattle(void)",
+      "paramsRaw": "void",
+      "body": "s32 i;\n    StartUnionRoomBattle(BATTLE_TYPE_LINK | BATTLE_TYPE_TRAINER);\n    for (i = 0; i < UNION_ROOM_PARTY_SIZE; i++)\n    {\n        gEnemyParty[i] = gPlayerParty[gSelectedOrderFromParty[i] - 1];\n    }\n    for (i = 0; i < PARTY_SIZE; i++)\n    {\n        ZeroMonData(&gPlayerParty[i]);\n    }\n    for (i = 0; i < UNION_ROOM_PARTY_SIZE; i++)\n    {\n        gPlayerParty[i] = gEnemyParty[i];\n    }\n    IncrementGameStat(GAME_STAT_NUM_UNION_ROOM_BATTLES);\n    CalculatePlayerPartyCount();\n    gTrainerBattleOpponent_A = TRAINER_UNION_ROOM;\n    SetMainCallback2(CB2_InitBattle);",
+      "callsTo": [
+        "CalculatePlayerPartyCount",
+        "IncrementGameStat",
+        "SetMainCallback2",
+        "StartUnionRoomBattle",
+        "ZeroMonData"
+      ],
+      "lineCount": 18
+    },
+    "AddTextPrinterForUnionRoomBattle": {
+      "returnType": "void",
+      "signature": "static void AddTextPrinterForUnionRoomBattle(u8 windowId, const u8 *str, u8 x, u8 y, s32 speed)",
+      "paramsRaw": "u8 windowId, const u8 *str, u8 x, u8 y, s32 speed",
+      "body": "s32 letterSpacing = 0;\n    s32 lineSpacing = 1;\n    FillWindowPixelBuffer(windowId, (sTextColors[0] << 4) | sTextColors[0]);\n    AddTextPrinterParameterized4(windowId, FONT_NORMAL, x, y, letterSpacing, lineSpacing, sTextColors, speed, str);",
+      "callsTo": [
+        "AddTextPrinterParameterized4",
+        "FillWindowPixelBuffer"
+      ],
+      "lineCount": 4
+    },
+    "PrintUnionRoomBattleMessage": {
+      "returnType": "bool32",
+      "signature": "static bool32 PrintUnionRoomBattleMessage(s16 *state, const u8 *str, s32 speed)",
+      "paramsRaw": "s16 *state, const u8 *str, s32 speed",
+      "body": "switch (*state)\n    {\n    case 0:\n        DrawTextBorderOuter(0, 0x001, 0xD);\n        AddTextPrinterForUnionRoomBattle(0, str, 0, 1, speed);\n        PutWindowTilemap(0);\n        CopyWindowToVram(0, COPYWIN_FULL);\n        (*state)++;\n        break;\n    case 1:\n        if (!IsTextPrinterActive(0))\n        {\n            *state = 0;\n            return TRUE;\n        }\n        break;\n    }\n    return FALSE;",
+      "callsTo": [
+        "AddTextPrinterForUnionRoomBattle",
+        "CopyWindowToVram",
+        "DrawTextBorderOuter",
+        "IsTextPrinterActive",
+        "PutWindowTilemap"
+      ],
+      "lineCount": 18
+    },
+    "VBlankCB_UnionRoomBattle": {
+      "returnType": "void",
+      "signature": "static void VBlankCB_UnionRoomBattle(void)",
+      "paramsRaw": "void",
+      "body": "LoadOam();\n    ProcessSpriteCopyRequests();\n    TransferPlttBuffer();",
+      "callsTo": [
+        "LoadOam",
+        "ProcessSpriteCopyRequests",
+        "TransferPlttBuffer"
+      ],
+      "lineCount": 3
+    },
+    "CB2_UnionRoomBattle": {
+      "returnType": "void",
+      "signature": "void CB2_UnionRoomBattle(void)",
+      "paramsRaw": "void",
+      "body": "switch (gMain.state)\n    {\n    case 0:\n        SetGpuReg(REG_OFFSET_DISPCNT, 0x0000);\n        sBattle = AllocZeroed(sizeof(struct UnionRoomBattle));\n        ResetSpriteData();\n        FreeAllSpritePalettes();\n        ResetTasks();\n        ResetBgsAndClearDma3BusyFlags(0);\n        InitBgsFromTemplates(0, sBgTemplates, ARRAY_COUNT(sBgTemplates));\n        ResetTempTileDataBuffers();\n        if (!InitWindows(sWindowTemplates))\n            return;\n        DeactivateAllTextPrinters();\n        ClearWindowTilemap(0);\n        FillWindowPixelBuffer(0, PIXEL_FILL(0));\n        FillWindowPixelBuffer(0, PIXEL_FILL(1));\n        FillBgTilemapBufferRect(0, 0, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT, 0xF);\n        LoadUserWindowBorderGfx(0, 1, BG_PLTT_ID(13));\n        LoadUserWindowBorderGfx_(0, 1, BG_PLTT_ID(13));\n        Menu_LoadStdPal();\n        SetVBlankCallback(VBlankCB_UnionRoomBattle);\n        gMain.state++;\n        break;\n    case 1:\n        if (PrintUnionRoomBattleMessage(&sBattle->textState, gText_CommStandbyAwaitingOtherPlayer, 0))\n        {\n            gMain.state++;\n        }\n        break;\n    case 2:\n        BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);\n        ShowBg(0);\n        gMain.state++;\n        break;\n    case 3:\n        if (!UpdatePaletteFade())\n        {\n            memset(gBlockSendBuffer, 0, 0x20);\n            if (gSelectedOrderFromParty[0] == -gSelectedOrderFromParty[1])\n            {\n                gBlockSendBuffer[0] = ACTIVITY_DECLINE | IN_UNION_ROOM;\n            }\n            else\n            {\n                gBlockSendBuffer[0] = ACTIVITY_ACCEPT | IN_UNION_ROOM;\n            }\n            SendBlock(0, gBlockSendBuffer, 0x20);\n            gMain.state++;\n        }\n        break;\n    case 4:\n        if (GetBlockReceivedStatus() == 3)\n        {\n            if (gBlockRecvBuffer[0][0] == (ACTIVITY_ACCEPT | IN_UNION_ROOM)\n             && gBlockRecvBuffer[1][0] == (ACTIVITY_ACCEPT | IN_UNION_ROOM))\n            {\n                BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);\n                gMain.state = 50;\n            }\n            else\n            {\n                SetCloseLinkCallback();\n                if (gBlockRecvBuffer[GetMultiplayerId()][0] == (ACTIVITY_DECLINE | IN_UNION_ROOM))\n                {\n                    gMain.state = 6;\n                }\n                else\n                {\n                    gMain.state = 8;\n                }\n            }\n            ResetBlockReceivedFlags();\n        }\n        break;\n    case 50:\n        if (!UpdatePaletteFade())\n        {\n            SetLinkStandbyCallback();\n            gMain.state++;\n        }\n        break;\n    case 51:\n        if (IsLinkTaskFinished())\n        {\n            SetMainCallback2(CB2_SetUpPartiesAndStartBattle);\n        }\n        break;\n    case 6:\n        if (!gReceivedRemoteLinkPlayers)\n        {\n            gMain.state++;\n        }\n        break;\n    case 7:\n        if (PrintUnionRoomBattleMessage(&sBattle->textState, gText_RefusedBattle, 1))\n        {\n            SetMainCallback2(CB2_ReturnToField);\n        }\n        break;\n    case 8:\n        if (!gReceivedRemoteLinkPlayers)\n        {\n            gMain.state++;\n        }\n        break;\n    case 9:\n        if (PrintUnionRoomBattleMessage(&sBattle->textState, gText_BattleWasRefused, 1))\n        {\n            SetMainCallback2(CB2_ReturnToField);\n        }\n        break;\n    }\n    RunTasks();\n    RunTextPrinters();\n    AnimateSprites();\n    BuildOamBuffer();\n    UpdatePaletteFade();",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "AllocZeroed",
+        "AnimateSprites",
+        "BG_PLTT_ID",
+        "BeginNormalPaletteFade",
+        "BuildOamBuffer",
+        "ClearWindowTilemap",
+        "DeactivateAllTextPrinters",
+        "FillBgTilemapBufferRect",
+        "FillWindowPixelBuffer",
+        "FreeAllSpritePalettes",
+        "GetBlockReceivedStatus",
+        "GetMultiplayerId",
+        "InitBgsFromTemplates",
+        "InitWindows",
+        "IsLinkTaskFinished",
+        "LoadUserWindowBorderGfx",
+        "LoadUserWindowBorderGfx_",
+        "Menu_LoadStdPal",
+        "PIXEL_FILL",
+        "PrintUnionRoomBattleMessage",
+        "ResetBgsAndClearDma3BusyFlags",
+        "ResetBlockReceivedFlags",
+        "ResetSpriteData",
+        "ResetTasks",
+        "ResetTempTileDataBuffers",
+        "RunTasks",
+        "RunTextPrinters",
+        "SendBlock",
+        "SetCloseLinkCallback",
+        "SetGpuReg",
+        "SetLinkStandbyCallback",
+        "SetMainCallback2",
+        "SetVBlankCallback",
+        "ShowBg",
+        "UpdatePaletteFade"
+      ],
+      "lineCount": 118
+    }
+  }
+}

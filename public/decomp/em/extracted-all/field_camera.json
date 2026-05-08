@@ -1,0 +1,281 @@
+{
+  "srcFile": "src/field_camera.c",
+  "count": 28,
+  "functions": {
+    "ResetCameraOffset": {
+      "returnType": "void",
+      "signature": "static void ResetCameraOffset(struct FieldCameraOffset *cameraOffset)",
+      "paramsRaw": "struct FieldCameraOffset *cameraOffset",
+      "body": "cameraOffset->xTileOffset = 0;\n    cameraOffset->yTileOffset = 0;\n    cameraOffset->xPixelOffset = 0;\n    cameraOffset->yPixelOffset = 0;\n    cameraOffset->copyBGToVRAM = TRUE;",
+      "callsTo": [],
+      "lineCount": 5
+    },
+    "AddCameraTileOffset": {
+      "returnType": "void",
+      "signature": "static void AddCameraTileOffset(struct FieldCameraOffset *cameraOffset, u32 xOffset, u32 yOffset)",
+      "paramsRaw": "struct FieldCameraOffset *cameraOffset, u32 xOffset, u32 yOffset",
+      "body": "cameraOffset->xTileOffset += xOffset;\n    cameraOffset->xTileOffset %= 32;\n    cameraOffset->yTileOffset += yOffset;\n    cameraOffset->yTileOffset %= 32;",
+      "callsTo": [],
+      "lineCount": 4
+    },
+    "AddCameraPixelOffset": {
+      "returnType": "void",
+      "signature": "static void AddCameraPixelOffset(struct FieldCameraOffset *cameraOffset, u32 xOffset, u32 yOffset)",
+      "paramsRaw": "struct FieldCameraOffset *cameraOffset, u32 xOffset, u32 yOffset",
+      "body": "cameraOffset->xPixelOffset += xOffset;\n    cameraOffset->yPixelOffset += yOffset;",
+      "callsTo": [],
+      "lineCount": 2
+    },
+    "ResetFieldCamera": {
+      "returnType": "void",
+      "signature": "void ResetFieldCamera(void)",
+      "paramsRaw": "void",
+      "body": "ResetCameraOffset(&sFieldCameraOffset);",
+      "callsTo": [
+        "ResetCameraOffset"
+      ],
+      "lineCount": 1
+    },
+    "FieldUpdateBgTilemapScroll": {
+      "returnType": "void",
+      "signature": "void FieldUpdateBgTilemapScroll(void)",
+      "paramsRaw": "void",
+      "body": "u32 r4, r5;\n    r5 = sFieldCameraOffset.xPixelOffset + sHorizontalCameraPan;\n    r4 = sVerticalCameraPan + sFieldCameraOffset.yPixelOffset + 8;\n\n    SetGpuReg(REG_OFFSET_BG1HOFS, r5);\n    SetGpuReg(REG_OFFSET_BG1VOFS, r4);\n    SetGpuReg(REG_OFFSET_BG2HOFS, r5);\n    SetGpuReg(REG_OFFSET_BG2VOFS, r4);\n    SetGpuReg(REG_OFFSET_BG3HOFS, r5);\n    SetGpuReg(REG_OFFSET_BG3VOFS, r4);",
+      "callsTo": [
+        "SetGpuReg"
+      ],
+      "lineCount": 10
+    },
+    "GetCameraOffsetWithPan": {
+      "returnType": "void",
+      "signature": "void GetCameraOffsetWithPan(s16 *x, s16 *y)",
+      "paramsRaw": "s16 *x, s16 *y",
+      "body": "*x = sFieldCameraOffset.xPixelOffset + sHorizontalCameraPan;\n    *y = sFieldCameraOffset.yPixelOffset + sVerticalCameraPan + 8;",
+      "callsTo": [],
+      "lineCount": 2
+    },
+    "DrawWholeMapView": {
+      "returnType": "void",
+      "signature": "void DrawWholeMapView(void)",
+      "paramsRaw": "void",
+      "body": "DrawWholeMapViewInternal(gSaveBlock1Ptr->pos.x, gSaveBlock1Ptr->pos.y, gMapHeader.mapLayout);\n    sFieldCameraOffset.copyBGToVRAM = TRUE;",
+      "callsTo": [
+        "DrawWholeMapViewInternal"
+      ],
+      "lineCount": 2
+    },
+    "DrawWholeMapViewInternal": {
+      "returnType": "void",
+      "signature": "static void DrawWholeMapViewInternal(int x, int y, const struct MapLayout *mapLayout)",
+      "paramsRaw": "int x, int y, const struct MapLayout *mapLayout",
+      "body": "u8 i;\n    u8 j;\n    u32 r6;\n    u8 temp;\n\n    for (i = 0; i < 32; i += 2)\n    {\n        temp = sFieldCameraOffset.yTileOffset + i;\n        if (temp >= 32)\n            temp -= 32;\n        r6 = temp * 32;\n        for (j = 0; j < 32; j += 2)\n        {\n            temp = sFieldCameraOffset.xTileOffset + j;\n            if (temp >= 32)\n                temp -= 32;\n            DrawMetatileAt(mapLayout, r6 + temp, x + j / 2, y + i / 2);\n        }\n    }",
+      "callsTo": [
+        "DrawMetatileAt"
+      ],
+      "lineCount": 19
+    },
+    "RedrawMapSlicesForCameraUpdate": {
+      "returnType": "void",
+      "signature": "static void RedrawMapSlicesForCameraUpdate(struct FieldCameraOffset *cameraOffset, int x, int y)",
+      "paramsRaw": "struct FieldCameraOffset *cameraOffset, int x, int y",
+      "body": "const struct MapLayout *mapLayout = gMapHeader.mapLayout;\n\n    if (x > 0)\n        RedrawMapSliceWest(cameraOffset, mapLayout);\n    if (x < 0)\n        RedrawMapSliceEast(cameraOffset, mapLayout);\n    if (y > 0)\n        RedrawMapSliceNorth(cameraOffset, mapLayout);\n    if (y < 0)\n        RedrawMapSliceSouth(cameraOffset, mapLayout);\n    cameraOffset->copyBGToVRAM = TRUE;",
+      "callsTo": [
+        "RedrawMapSliceEast",
+        "RedrawMapSliceNorth",
+        "RedrawMapSliceSouth",
+        "RedrawMapSliceWest"
+      ],
+      "lineCount": 11
+    },
+    "RedrawMapSliceNorth": {
+      "returnType": "void",
+      "signature": "static void RedrawMapSliceNorth(struct FieldCameraOffset *cameraOffset, const struct MapLayout *mapLayout)",
+      "paramsRaw": "struct FieldCameraOffset *cameraOffset, const struct MapLayout *mapLayout",
+      "body": "u8 i;\n    u8 temp;\n    u32 r7;\n\n    temp = cameraOffset->yTileOffset + 28;\n    if (temp >= 32)\n        temp -= 32;\n    r7 = temp * 32;\n    for (i = 0; i < 32; i += 2)\n    {\n        temp = cameraOffset->xTileOffset + i;\n        if (temp >= 32)\n            temp -= 32;\n        DrawMetatileAt(mapLayout, r7 + temp, gSaveBlock1Ptr->pos.x + i / 2, gSaveBlock1Ptr->pos.y + 14);\n    }",
+      "callsTo": [
+        "DrawMetatileAt"
+      ],
+      "lineCount": 15
+    },
+    "RedrawMapSliceSouth": {
+      "returnType": "void",
+      "signature": "static void RedrawMapSliceSouth(struct FieldCameraOffset *cameraOffset, const struct MapLayout *mapLayout)",
+      "paramsRaw": "struct FieldCameraOffset *cameraOffset, const struct MapLayout *mapLayout",
+      "body": "u8 i;\n    u8 temp;\n    u32 r7 = cameraOffset->yTileOffset * 32;\n\n    for (i = 0; i < 32; i += 2)\n    {\n        temp = cameraOffset->xTileOffset + i;\n        if (temp >= 32)\n            temp -= 32;\n        DrawMetatileAt(mapLayout, r7 + temp, gSaveBlock1Ptr->pos.x + i / 2, gSaveBlock1Ptr->pos.y);\n    }",
+      "callsTo": [
+        "DrawMetatileAt"
+      ],
+      "lineCount": 11
+    },
+    "RedrawMapSliceEast": {
+      "returnType": "void",
+      "signature": "static void RedrawMapSliceEast(struct FieldCameraOffset *cameraOffset, const struct MapLayout *mapLayout)",
+      "paramsRaw": "struct FieldCameraOffset *cameraOffset, const struct MapLayout *mapLayout",
+      "body": "u8 i;\n    u8 temp;\n    u32 r6 = cameraOffset->xTileOffset;\n\n    for (i = 0; i < 32; i += 2)\n    {\n        temp = cameraOffset->yTileOffset + i;\n        if (temp >= 32)\n            temp -= 32;\n        DrawMetatileAt(mapLayout, temp * 32 + r6, gSaveBlock1Ptr->pos.x, gSaveBlock1Ptr->pos.y + i / 2);\n    }",
+      "callsTo": [
+        "DrawMetatileAt"
+      ],
+      "lineCount": 11
+    },
+    "RedrawMapSliceWest": {
+      "returnType": "void",
+      "signature": "static void RedrawMapSliceWest(struct FieldCameraOffset *cameraOffset, const struct MapLayout *mapLayout)",
+      "paramsRaw": "struct FieldCameraOffset *cameraOffset, const struct MapLayout *mapLayout",
+      "body": "u8 i;\n    u8 temp;\n    u8 r5 = cameraOffset->xTileOffset + 28;\n\n    if (r5 >= 32)\n        r5 -= 32;\n    for (i = 0; i < 32; i += 2)\n    {\n        temp = cameraOffset->yTileOffset + i;\n        if (temp >= 32)\n            temp -= 32;\n        DrawMetatileAt(mapLayout, temp * 32 + r5, gSaveBlock1Ptr->pos.x + 14, gSaveBlock1Ptr->pos.y + i / 2);\n    }",
+      "callsTo": [
+        "DrawMetatileAt"
+      ],
+      "lineCount": 13
+    },
+    "CurrentMapDrawMetatileAt": {
+      "returnType": "void",
+      "signature": "void CurrentMapDrawMetatileAt(int x, int y)",
+      "paramsRaw": "int x, int y",
+      "body": "int offset = MapPosToBgTilemapOffset(&sFieldCameraOffset, x, y);\n\n    if (offset >= 0)\n    {\n        DrawMetatileAt(gMapHeader.mapLayout, offset, x, y);\n        sFieldCameraOffset.copyBGToVRAM = TRUE;\n    }",
+      "callsTo": [
+        "DrawMetatileAt",
+        "MapPosToBgTilemapOffset"
+      ],
+      "lineCount": 7
+    },
+    "DrawDoorMetatileAt": {
+      "returnType": "void",
+      "signature": "void DrawDoorMetatileAt(int x, int y, u16 *tiles)",
+      "paramsRaw": "int x, int y, u16 *tiles",
+      "body": "int offset = MapPosToBgTilemapOffset(&sFieldCameraOffset, x, y);\n\n    if (offset >= 0)\n    {\n        DrawMetatile(METATILE_LAYER_TYPE_COVERED, tiles, offset);\n        sFieldCameraOffset.copyBGToVRAM = TRUE;\n    }",
+      "callsTo": [
+        "DrawMetatile",
+        "MapPosToBgTilemapOffset"
+      ],
+      "lineCount": 7
+    },
+    "DrawMetatileAt": {
+      "returnType": "void",
+      "signature": "static void DrawMetatileAt(const struct MapLayout *mapLayout, u16 offset, int x, int y)",
+      "paramsRaw": "const struct MapLayout *mapLayout, u16 offset, int x, int y",
+      "body": "u16 metatileId = MapGridGetMetatileIdAt(x, y);\n    const u16 *metatiles;\n\n    if (metatileId > NUM_METATILES_TOTAL)\n        metatileId = 0;\n    if (metatileId < NUM_METATILES_IN_PRIMARY)\n    {\n        metatiles = mapLayout->primaryTileset->metatiles;\n    }\n    else\n    {\n        metatiles = mapLayout->secondaryTileset->metatiles;\n        metatileId -= NUM_METATILES_IN_PRIMARY;\n    }\n    DrawMetatile(MapGridGetMetatileLayerTypeAt(x, y), metatiles + metatileId * NUM_TILES_PER_METATILE, offset);",
+      "callsTo": [
+        "DrawMetatile",
+        "MapGridGetMetatileIdAt",
+        "MapGridGetMetatileLayerTypeAt"
+      ],
+      "lineCount": 15
+    },
+    "DrawMetatile": {
+      "returnType": "void",
+      "signature": "static void DrawMetatile(s32 metatileLayerType, const u16 *tiles, u16 offset)",
+      "paramsRaw": "s32 metatileLayerType, const u16 *tiles, u16 offset",
+      "body": "switch (metatileLayerType)\n    {\n    case METATILE_LAYER_TYPE_SPLIT:\n         \n        gOverworldTilemapBuffer_Bg3[offset] = tiles[0];\n        gOverworldTilemapBuffer_Bg3[offset + 1] = tiles[1];\n        gOverworldTilemapBuffer_Bg3[offset + 0x20] = tiles[2];\n        gOverworldTilemapBuffer_Bg3[offset + 0x21] = tiles[3];\n\n         \n        gOverworldTilemapBuffer_Bg2[offset] = 0;\n        gOverworldTilemapBuffer_Bg2[offset + 1] = 0;\n        gOverworldTilemapBuffer_Bg2[offset + 0x20] = 0;\n        gOverworldTilemapBuffer_Bg2[offset + 0x21] = 0;\n\n         \n        gOverworldTilemapBuffer_Bg1[offset] = tiles[4];\n        gOverworldTilemapBuffer_Bg1[offset + 1] = tiles[5];\n        gOverworldTilemapBuffer_Bg1[offset + 0x20] = tiles[6];\n        gOverworldTilemapBuffer_Bg1[offset + 0x21] = tiles[7];\n        break;\n    case METATILE_LAYER_TYPE_COVERED:\n         \n        gOverworldTilemapBuffer_Bg3[offset] = tiles[0];\n        gOverworldTilemapBuffer_Bg3[offset + 1] = tiles[1];\n        gOverworldTilemapBuffer_Bg3[offset + 0x20] = tiles[2];\n        gOverworldTilemapBuffer_Bg3[offset + 0x21] = tiles[3];\n\n         \n        gOverworldTilemapBuffer_Bg2[offset] = tiles[4];\n        gOverworldTilemapBuffer_Bg2[offset + 1] = tiles[5];\n        gOverworldTilemapBuffer_Bg2[offset + 0x20] = tiles[6];\n        gOverworldTilemapBuffer_Bg2[offset + 0x21] = tiles[7];\n\n         \n        gOverworldTilemapBuffer_Bg1[offset] = 0;\n        gOverworldTilemapBuffer_Bg1[offset + 1] = 0;\n        gOverworldTilemapBuffer_Bg1[offset + 0x20] = 0;\n        gOverworldTilemapBuffer_Bg1[offset + 0x21] = 0;\n        break;\n    case METATILE_LAYER_TYPE_NORMAL:\n         \n        gOverworldTilemapBuffer_Bg3[offset] = 0x3014;\n        gOverworldTilemapBuffer_Bg3[offset + 1] = 0x3014;\n        gOverworldTilemapBuffer_Bg3[offset + 0x20] = 0x3014;\n        gOverworldTilemapBuffer_Bg3[offset + 0x21] = 0x3014;\n\n         \n        gOverworldTilemapBuffer_Bg2[offset] = tiles[0];\n        gOverworldTilemapBuffer_Bg2[offset + 1] = tiles[1];\n        gOverworldTilemapBuffer_Bg2[offset + 0x20] = tiles[2];\n        gOverworldTilemapBuffer_Bg2[offset + 0x21] = tiles[3];\n\n         \n        gOverworldTilemapBuffer_Bg1[offset] = tiles[4];\n        gOverworldTilemapBuffer_Bg1[offset + 1] = tiles[5];\n        gOverworldTilemapBuffer_Bg1[offset + 0x20] = tiles[6];\n        gOverworldTilemapBuffer_Bg1[offset + 0x21] = tiles[7];\n        break;\n    }\n    ScheduleBgCopyTilemapToVram(1);\n    ScheduleBgCopyTilemapToVram(2);\n    ScheduleBgCopyTilemapToVram(3);",
+      "callsTo": [
+        "ScheduleBgCopyTilemapToVram"
+      ],
+      "lineCount": 63
+    },
+    "MapPosToBgTilemapOffset": {
+      "returnType": "s32",
+      "signature": "static s32 MapPosToBgTilemapOffset(struct FieldCameraOffset *cameraOffset, s32 x, s32 y)",
+      "paramsRaw": "struct FieldCameraOffset *cameraOffset, s32 x, s32 y",
+      "body": "x -= gSaveBlock1Ptr->pos.x;\n    x *= 2;\n    if (x >= 32 || x < 0)\n        return -1;\n    x = x + cameraOffset->xTileOffset;\n    if (x >= 32)\n        x -= 32;\n\n    y = (y - gSaveBlock1Ptr->pos.y) * 2;\n    if (y >= 32 || y < 0)\n        return -1;\n    y = y + cameraOffset->yTileOffset;\n    if (y >= 32)\n        y -= 32;\n\n    return y * 32 + x;",
+      "callsTo": [],
+      "lineCount": 16
+    },
+    "CameraUpdateCallback": {
+      "returnType": "void",
+      "signature": "static void CameraUpdateCallback(struct CameraObject *fieldCamera)",
+      "paramsRaw": "struct CameraObject *fieldCamera",
+      "body": "if (fieldCamera->spriteId != 0)\n    {\n        fieldCamera->movementSpeedX = gSprites[fieldCamera->spriteId].sCamera_MoveX;\n        fieldCamera->movementSpeedY = gSprites[fieldCamera->spriteId].sCamera_MoveY;\n    }",
+      "callsTo": [],
+      "lineCount": 5
+    },
+    "ResetCameraUpdateInfo": {
+      "returnType": "void",
+      "signature": "void ResetCameraUpdateInfo(void)",
+      "paramsRaw": "void",
+      "body": "gFieldCamera.movementSpeedX = 0;\n    gFieldCamera.movementSpeedY = 0;\n    gFieldCamera.x = 0;\n    gFieldCamera.y = 0;\n    gFieldCamera.spriteId = 0;\n    gFieldCamera.callback = NULL;",
+      "callsTo": [],
+      "lineCount": 6
+    },
+    "InitCameraUpdateCallback": {
+      "returnType": "u32",
+      "signature": "u32 InitCameraUpdateCallback(u8 trackedSpriteId)",
+      "paramsRaw": "u8 trackedSpriteId",
+      "body": "if (gFieldCamera.spriteId != 0)\n        DestroySprite(&gSprites[gFieldCamera.spriteId]);\n    gFieldCamera.spriteId = AddCameraObject(trackedSpriteId);\n    gFieldCamera.callback = CameraUpdateCallback;\n    return 0;",
+      "callsTo": [
+        "AddCameraObject",
+        "DestroySprite"
+      ],
+      "lineCount": 5
+    },
+    "CameraUpdate": {
+      "returnType": "void",
+      "signature": "void CameraUpdate(void)",
+      "paramsRaw": "void",
+      "body": "int deltaX;\n    int deltaY;\n    int curMovementOffsetY;\n    int curMovementOffsetX;\n    int movementSpeedX;\n    int movementSpeedY;\n\n    if (gFieldCamera.callback != NULL)\n        gFieldCamera.callback(&gFieldCamera);\n    movementSpeedX = gFieldCamera.movementSpeedX;\n    movementSpeedY = gFieldCamera.movementSpeedY;\n    deltaX = 0;\n    deltaY = 0;\n    curMovementOffsetX = gFieldCamera.x;\n    curMovementOffsetY = gFieldCamera.y;\n\n\n    if (curMovementOffsetX == 0 && movementSpeedX != 0)\n    {\n        if (movementSpeedX > 0)\n            deltaX = 1;\n        else\n            deltaX = -1;\n    }\n    if (curMovementOffsetY == 0 && movementSpeedY != 0)\n    {\n        if (movementSpeedY > 0)\n            deltaY = 1;\n        else\n            deltaY = -1;\n    }\n    if (curMovementOffsetX != 0 && curMovementOffsetX == -movementSpeedX)\n    {\n        if (movementSpeedX > 0)\n            deltaX = 1;\n        else\n            deltaX = -1;\n    }\n    if (curMovementOffsetY != 0 && curMovementOffsetY == -movementSpeedY)\n    {\n        if (movementSpeedY > 0)\n            deltaX = 1;\n        else\n            deltaX = -1;\n    }\n\n    gFieldCamera.x += movementSpeedX;\n    gFieldCamera.x %= 16;\n    gFieldCamera.y += movementSpeedY;\n    gFieldCamera.y %= 16;\n\n    if (deltaX != 0 || deltaY != 0)\n    {\n        CameraMove(deltaX, deltaY);\n        UpdateObjectEventsForCameraUpdate(deltaX, deltaY);\n        RotatingGatePuzzleCameraUpdate(deltaX, deltaY);\n        SetBerryTreesSeen();\n        AddCameraTileOffset(&sFieldCameraOffset, deltaX * 2, deltaY * 2);\n        RedrawMapSlicesForCameraUpdate(&sFieldCameraOffset, deltaX * 2, deltaY * 2);\n    }\n\n    AddCameraPixelOffset(&sFieldCameraOffset, movementSpeedX, movementSpeedY);\n    gTotalCameraPixelOffsetX -= movementSpeedX;\n    gTotalCameraPixelOffsetY -= movementSpeedY;",
+      "callsTo": [
+        "AddCameraPixelOffset",
+        "AddCameraTileOffset",
+        "CameraMove",
+        "RedrawMapSlicesForCameraUpdate",
+        "RotatingGatePuzzleCameraUpdate",
+        "SetBerryTreesSeen",
+        "UpdateObjectEventsForCameraUpdate"
+      ],
+      "lineCount": 64
+    },
+    "MoveCameraAndRedrawMap": {
+      "returnType": "void",
+      "signature": "void MoveCameraAndRedrawMap(int deltaX, int deltaY)",
+      "paramsRaw": "int deltaX, int deltaY",
+      "body": "CameraMove(deltaX, deltaY);\n    UpdateObjectEventsForCameraUpdate(deltaX, deltaY);\n    DrawWholeMapView();\n    gTotalCameraPixelOffsetX -= deltaX * 16;\n    gTotalCameraPixelOffsetY -= deltaY * 16;",
+      "callsTo": [
+        "CameraMove",
+        "DrawWholeMapView",
+        "UpdateObjectEventsForCameraUpdate"
+      ],
+      "lineCount": 5
+    },
+    "SetCameraPanningCallback": {
+      "returnType": "void",
+      "signature": "void SetCameraPanningCallback(void (*callback)(void))",
+      "paramsRaw": "void (*callback)(void)",
+      "body": "sFieldCameraPanningCallback = callback;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "SetCameraPanning": {
+      "returnType": "void",
+      "signature": "void SetCameraPanning(s16 horizontal, s16 vertical)",
+      "paramsRaw": "s16 horizontal, s16 vertical",
+      "body": "sHorizontalCameraPan = horizontal;\n    sVerticalCameraPan = vertical + 32;",
+      "callsTo": [],
+      "lineCount": 2
+    },
+    "InstallCameraPanAheadCallback": {
+      "returnType": "void",
+      "signature": "void InstallCameraPanAheadCallback(void)",
+      "paramsRaw": "void",
+      "body": "sFieldCameraPanningCallback = CameraPanningCB_PanAhead;\n    sBikeCameraPanFlag = FALSE;\n    sHorizontalCameraPan = 0;\n    sVerticalCameraPan = 32;",
+      "callsTo": [],
+      "lineCount": 4
+    },
+    "UpdateCameraPanning": {
+      "returnType": "void",
+      "signature": "void UpdateCameraPanning(void)",
+      "paramsRaw": "void",
+      "body": "if (sFieldCameraPanningCallback != NULL)\n        sFieldCameraPanningCallback();\n     \n    gSpriteCoordOffsetX = gTotalCameraPixelOffsetX - sHorizontalCameraPan;\n    gSpriteCoordOffsetY = gTotalCameraPixelOffsetY - sVerticalCameraPan - 8;",
+      "callsTo": [],
+      "lineCount": 5
+    },
+    "CameraPanningCB_PanAhead": {
+      "returnType": "void",
+      "signature": "static void CameraPanningCB_PanAhead(void)",
+      "paramsRaw": "void",
+      "body": "u8 var;\n\n    if (gUnusedBikeCameraAheadPanback == FALSE)\n    {\n        InstallCameraPanAheadCallback();\n    }\n    else\n    {\n         \n        if (gPlayerAvatar.tileTransitionState == T_TILE_TRANSITION)\n        {\n            sBikeCameraPanFlag ^= 1;\n            if (sBikeCameraPanFlag == FALSE)\n                return;\n        }\n        else\n        {\n            sBikeCameraPanFlag = FALSE;\n        }\n\n        var = GetPlayerMovementDirection();\n        if (var == 2)\n        {\n            if (sVerticalCameraPan > -8)\n                sVerticalCameraPan -= 2;\n        }\n        else if (var == 1)\n        {\n            if (sVerticalCameraPan < 72)\n                sVerticalCameraPan += 2;\n        }\n        else if (sVerticalCameraPan < 32)\n        {\n            sVerticalCameraPan += 2;\n        }\n        else if (sVerticalCameraPan > 32)\n        {\n            sVerticalCameraPan -= 2;\n        }\n    }",
+      "callsTo": [
+        "GetPlayerMovementDirection",
+        "InstallCameraPanAheadCallback"
+      ],
+      "lineCount": 40
+    }
+  }
+}

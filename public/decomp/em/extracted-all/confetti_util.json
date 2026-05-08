@@ -1,0 +1,83 @@
+{
+  "srcFile": "src/confetti_util.c",
+  "count": 8,
+  "functions": {
+    "ConfettiUtil_Init": {
+      "returnType": "bool32",
+      "signature": "bool32 ConfettiUtil_Init(u8 count)",
+      "paramsRaw": "u8 count",
+      "body": "u8 i = 0;\n\n    if (count == 0)\n        return FALSE;\n    if (count > 64)\n        count = 64;\n\n    sWork = AllocZeroed(sizeof(*sWork));\n    if (sWork == NULL)\n        return FALSE;\n    sWork->array = AllocZeroed(count * sizeof(struct ConfettiUtil));\n    if (sWork->array == NULL)\n    {\n        FREE_AND_SET_NULL(sWork);\n        return FALSE;\n    }\n\n    sWork->count = count;\n    for (i = 0; i < count; i++)\n    {\n        memcpy(&sWork->array[i].oam, &gDummyOamData, sizeof(struct OamData));\n        sWork->array[i].dummied = TRUE;\n    }\n\n    return TRUE;",
+      "callsTo": [
+        "AllocZeroed",
+        "FREE_AND_SET_NULL"
+      ],
+      "lineCount": 25
+    },
+    "ConfettiUtil_Free": {
+      "returnType": "bool32",
+      "signature": "bool32 ConfettiUtil_Free(void)",
+      "paramsRaw": "void",
+      "body": "u8 i = 0;\n\n    if (sWork == NULL)\n        return FALSE;\n\n    for (i = 0; i < sWork->count; i++)\n        memcpy(&gMain.oamBuffer[i + 64], &gDummyOamData, sizeof(struct OamData));\n\n    memset(sWork->array, 0, sWork->count * sizeof(struct ConfettiUtil));\n    FREE_AND_SET_NULL(sWork->array);\n    memset(sWork, 0, sizeof(*sWork));\n    FREE_AND_SET_NULL(sWork);\n\n    return TRUE;",
+      "callsTo": [
+        "FREE_AND_SET_NULL"
+      ],
+      "lineCount": 14
+    },
+    "ConfettiUtil_Update": {
+      "returnType": "bool32",
+      "signature": "bool32 ConfettiUtil_Update(void)",
+      "paramsRaw": "void",
+      "body": "u8 i = 0;\n\n    if (sWork == NULL || sWork->array == NULL)\n        return FALSE;\n\n    for (i = 0; i < sWork->count; i++)\n    {\n        if (sWork->array[i].active && sWork->array[i].allowUpdates)\n        {\n            if (sWork->array[i].callback != NULL)\n                sWork->array[i].callback(&sWork->array[i]);\n\n            if (sWork->array[i].dummied)\n            {\n                memcpy(&gMain.oamBuffer[i + 64], &gDummyOamData, sizeof(struct OamData));\n            }\n            else\n            {\n                sWork->array[i].oam.y = sWork->array[i].y + sWork->array[i].yDelta;\n                sWork->array[i].oam.x = sWork->array[i].x + sWork->array[i].xDelta;\n                sWork->array[i].oam.priority = sWork->array[i].priority;\n                sWork->array[i].oam.tileNum = sWork->array[i].tileNum;\n                memcpy(&gMain.oamBuffer[i + 64], &sWork->array[i], sizeof(struct OamData));\n            }\n        }\n    }\n\n    return TRUE;",
+      "callsTo": [],
+      "lineCount": 28
+    },
+    "SetAnimAndTileNum": {
+      "returnType": "bool32",
+      "signature": "static bool32 SetAnimAndTileNum(struct ConfettiUtil *structPtr, u8 animNum)",
+      "paramsRaw": "struct ConfettiUtil *structPtr, u8 animNum",
+      "body": "u16 tileStart;\n\n    if (structPtr == NULL)\n        return FALSE;\n\n    tileStart = GetSpriteTileStartByTag(structPtr->tileTag);\n    if (tileStart == 0xFFFF)\n        return FALSE;\n\n    structPtr->animNum = animNum;\n    structPtr->tileNum = (GetTilesPerImage(structPtr->oam.shape, structPtr->oam.size) * animNum) + tileStart;\n    return TRUE;",
+      "callsTo": [
+        "GetSpriteTileStartByTag",
+        "GetTilesPerImage"
+      ],
+      "lineCount": 12
+    },
+    "ConfettiUtil_SetCallback": {
+      "returnType": "u8",
+      "signature": "u8 ConfettiUtil_SetCallback(u8 id, void (*func)(struct ConfettiUtil *))",
+      "paramsRaw": "u8 id, void (*func)(struct ConfettiUtil *)",
+      "body": "if (sWork == NULL || id >= sWork->count)\n        return 0xFF;\n    else if (!sWork->array[id].active)\n        return 0xFF;\n\n    sWork->array[id].callback = func;\n    return id;",
+      "callsTo": [],
+      "lineCount": 7
+    },
+    "ConfettiUtil_SetData": {
+      "returnType": "u8",
+      "signature": "u8 ConfettiUtil_SetData(u8 id, u8 dataArrayId, s16 dataValue)",
+      "paramsRaw": "u8 id, u8 dataArrayId, s16 dataValue",
+      "body": "if (sWork == NULL || id >= sWork->count)\n        return 0xFF;\n    else if (!sWork->array[id].active || dataArrayId > ARRAY_COUNT(sWork->array[id].data) - 1)  \n        return 0xFF;\n\n    sWork->array[id].data[dataArrayId] = dataValue;\n    return id;",
+      "callsTo": [
+        "ARRAY_COUNT"
+      ],
+      "lineCount": 7
+    },
+    "ConfettiUtil_AddNew": {
+      "returnType": "u8",
+      "signature": "u8 ConfettiUtil_AddNew(const struct OamData *oam, u16 tileTag, u16 palTag, s16 x, s16 y, u8 animNum, u8 priority)",
+      "paramsRaw": "const struct OamData *oam, u16 tileTag, u16 palTag, s16 x, s16 y, u8 animNum, u8 priority",
+      "body": "struct ConfettiUtil *structPtr = NULL;\n    u8 i;\n\n    if (sWork == NULL || oam == NULL)\n        return 0xFF;\n\n    for (i = 0; i < sWork->count; i++)\n    {\n        if (!sWork->array[i].active)\n        {\n            structPtr = &sWork->array[i];\n            memset(structPtr, 0, sizeof(*structPtr));\n            structPtr->id = i;\n            structPtr->active = TRUE;\n            structPtr->allowUpdates = TRUE;\n            break;\n        }\n    }\n\n    if (structPtr == NULL)\n        return 0xFF;\n\n    memcpy(&structPtr->oam, oam, sizeof(*oam));\n    structPtr->tileTag = tileTag;\n    structPtr->palTag = palTag;\n    structPtr->x = x;\n    structPtr->y = y;\n    structPtr->oam.paletteNum = IndexOfSpritePaletteTag(palTag);\n    if (priority < 4)\n    {\n        structPtr->priority = priority;\n        structPtr->oam.priority = priority;\n    }\n    SetAnimAndTileNum(structPtr, animNum);\n\n    return structPtr->id;",
+      "callsTo": [
+        "IndexOfSpritePaletteTag",
+        "SetAnimAndTileNum"
+      ],
+      "lineCount": 36
+    },
+    "ConfettiUtil_Remove": {
+      "returnType": "u8",
+      "signature": "u8 ConfettiUtil_Remove(u8 id)",
+      "paramsRaw": "u8 id",
+      "body": "if (sWork == NULL || !sWork->array[id].active)\n        return 0xFF;\n\n    memset(&sWork->array[id], 0, sizeof(struct ConfettiUtil));\n    sWork->array[id].oam.y = DISPLAY_HEIGHT;\n    sWork->array[id].oam.x = DISPLAY_WIDTH;\n    sWork->array[id].dummied = TRUE;\n    memcpy(&gMain.oamBuffer[id + 64], &gDummyOamData, sizeof(struct OamData));\n    return id;",
+      "callsTo": [],
+      "lineCount": 9
+    }
+  }
+}

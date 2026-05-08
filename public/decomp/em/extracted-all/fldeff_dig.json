@@ -1,0 +1,53 @@
+{
+  "srcFile": "src/fldeff_dig.c",
+  "count": 4,
+  "functions": {
+    "SetUpFieldMove_Dig": {
+      "returnType": "bool8",
+      "signature": "bool8 SetUpFieldMove_Dig(void)",
+      "paramsRaw": "void",
+      "body": "if (CanUseDigOrEscapeRopeOnCurMap() == TRUE)\n    {\n        gFieldCallback2 = FieldCallback_PrepareFadeInFromMenu;\n        gPostMenuFieldCallback = FieldCallback_Dig;\n        return TRUE;\n    }\n    else\n    {\n        return FALSE;\n    }",
+      "callsTo": [
+        "CanUseDigOrEscapeRopeOnCurMap"
+      ],
+      "lineCount": 10
+    },
+    "FieldCallback_Dig": {
+      "returnType": "void",
+      "signature": "static void FieldCallback_Dig(void)",
+      "paramsRaw": "void",
+      "body": "Overworld_ResetStateAfterDigEscRope();\n    FieldEffectStart(FLDEFF_USE_DIG);\n    gFieldEffectArguments[0] = GetCursorSelectionMonId();",
+      "callsTo": [
+        "FieldEffectStart",
+        "GetCursorSelectionMonId",
+        "Overworld_ResetStateAfterDigEscRope"
+      ],
+      "lineCount": 3
+    },
+    "FldEff_UseDig": {
+      "returnType": "bool8",
+      "signature": "bool8 FldEff_UseDig(void)",
+      "paramsRaw": "void",
+      "body": "u8 taskId = CreateFieldMoveTask();\n\n    gTasks[taskId].data[8] = (u32)StartDigFieldEffect >> 16;\n    gTasks[taskId].data[9] = (u32)StartDigFieldEffect;\n    if (!ShouldDoBrailleDigEffect())\n        SetPlayerAvatarTransitionFlags(PLAYER_AVATAR_FLAG_ON_FOOT);\n    return FALSE;",
+      "callsTo": [
+        "CreateFieldMoveTask",
+        "SetPlayerAvatarTransitionFlags",
+        "ShouldDoBrailleDigEffect"
+      ],
+      "lineCount": 7
+    },
+    "StartDigFieldEffect": {
+      "returnType": "void",
+      "signature": "static void StartDigFieldEffect(void)",
+      "paramsRaw": "void",
+      "body": "u8 taskId;\n\n    FieldEffectActiveListRemove(FLDEFF_USE_DIG);\n    if (ShouldDoBrailleDigEffect())\n    {\n        DoBrailleDigEffect();\n    }\n    else\n    {\n        taskId = CreateTask(Task_UseDigEscapeRopeOnField, 8);\n        gTasks[taskId].data[0] = 0;\n    }",
+      "callsTo": [
+        "CreateTask",
+        "DoBrailleDigEffect",
+        "FieldEffectActiveListRemove",
+        "ShouldDoBrailleDigEffect"
+      ],
+      "lineCount": 12
+    }
+  }
+}

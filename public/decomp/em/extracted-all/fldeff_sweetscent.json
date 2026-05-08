@@ -1,0 +1,80 @@
+{
+  "srcFile": "src/fldeff_sweetscent.c",
+  "count": 6,
+  "functions": {
+    "SetUpFieldMove_SweetScent": {
+      "returnType": "bool8",
+      "signature": "bool8 SetUpFieldMove_SweetScent(void)",
+      "paramsRaw": "void",
+      "body": "gFieldCallback2 = FieldCallback_PrepareFadeInFromMenu;\n    gPostMenuFieldCallback = FieldCallback_SweetScent;\n    return TRUE;",
+      "callsTo": [],
+      "lineCount": 3
+    },
+    "FieldCallback_SweetScent": {
+      "returnType": "void",
+      "signature": "static void FieldCallback_SweetScent(void)",
+      "paramsRaw": "void",
+      "body": "FieldEffectStart(FLDEFF_SWEET_SCENT);\n    gFieldEffectArguments[0] = GetCursorSelectionMonId();",
+      "callsTo": [
+        "FieldEffectStart",
+        "GetCursorSelectionMonId"
+      ],
+      "lineCount": 2
+    },
+    "FldEff_SweetScent": {
+      "returnType": "bool8",
+      "signature": "bool8 FldEff_SweetScent(void)",
+      "paramsRaw": "void",
+      "body": "u8 taskId;\n\n    SetWeatherScreenFadeOut();\n    taskId = CreateFieldMoveTask();\n    gTasks[taskId].data[8] = (u32)StartSweetScentFieldEffect >> 16;\n    gTasks[taskId].data[9] = (u32)StartSweetScentFieldEffect;\n    return FALSE;",
+      "callsTo": [
+        "CreateFieldMoveTask",
+        "SetWeatherScreenFadeOut"
+      ],
+      "lineCount": 7
+    },
+    "StartSweetScentFieldEffect": {
+      "returnType": "void",
+      "signature": "static void StartSweetScentFieldEffect(void)",
+      "paramsRaw": "void",
+      "body": "u8 taskId;\n\n    PlaySE(SE_M_SWEET_SCENT);\n    CpuFastCopy(gPlttBufferUnfaded, gPaletteDecompressionBuffer, PLTT_SIZE);\n    CpuFastCopy(gPlttBufferFaded, gPlttBufferUnfaded, PLTT_SIZE);\n    BeginNormalPaletteFade(~(1 << (gSprites[GetPlayerAvatarSpriteId()].oam.paletteNum + 16)), 4, 0, 8, RGB_RED);\n    taskId = CreateTask(TrySweetScentEncounter, 0);\n    gTasks[taskId].data[0] = 0;\n    FieldEffectActiveListRemove(FLDEFF_SWEET_SCENT);",
+      "callsTo": [
+        "BeginNormalPaletteFade",
+        "CpuFastCopy",
+        "CreateTask",
+        "FieldEffectActiveListRemove",
+        "GetPlayerAvatarSpriteId",
+        "PlaySE"
+      ],
+      "lineCount": 9
+    },
+    "TrySweetScentEncounter": {
+      "returnType": "void",
+      "signature": "static void TrySweetScentEncounter(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "if (!gPaletteFade.active)\n    {\n        ClearMirageTowerPulseBlendEffect();\n        BlendPalettes(0x00000040, 8, RGB_RED);\n        if (gTasks[taskId].data[0] == 64)\n        {\n            gTasks[taskId].data[0] = 0;\n            if (SweetScentWildEncounter() == TRUE)\n            {\n                DestroyTask(taskId);\n            }\n            else\n            {\n                gTasks[taskId].func = FailSweetScentEncounter;\n                BeginNormalPaletteFade(~(1 << (gSprites[GetPlayerAvatarSpriteId()].oam.paletteNum + 16)), 4, 8, 0, RGB_RED);\n                TryStartMirageTowerPulseBlendEffect();\n            }\n        }\n        else\n        {\n            gTasks[taskId].data[0]++;\n        }\n    }",
+      "callsTo": [
+        "BeginNormalPaletteFade",
+        "BlendPalettes",
+        "ClearMirageTowerPulseBlendEffect",
+        "DestroyTask",
+        "GetPlayerAvatarSpriteId",
+        "SweetScentWildEncounter",
+        "TryStartMirageTowerPulseBlendEffect"
+      ],
+      "lineCount": 23
+    },
+    "FailSweetScentEncounter": {
+      "returnType": "void",
+      "signature": "static void FailSweetScentEncounter(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "if (!gPaletteFade.active)\n    {\n        CpuFastCopy(gPaletteDecompressionBuffer, gPlttBufferUnfaded, PLTT_SIZE);\n        SetWeatherPalStateIdle();\n        ScriptContext_SetupScript(EventScript_FailSweetScent);\n        DestroyTask(taskId);\n    }",
+      "callsTo": [
+        "CpuFastCopy",
+        "DestroyTask",
+        "ScriptContext_SetupScript",
+        "SetWeatherPalStateIdle"
+      ],
+      "lineCount": 7
+    }
+  }
+}

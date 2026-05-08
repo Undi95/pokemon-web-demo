@@ -1,0 +1,51 @@
+{
+  "srcFile": "src/dma3_manager.c",
+  "count": 5,
+  "functions": {
+    "ClearDma3Requests": {
+      "returnType": "void",
+      "signature": "void ClearDma3Requests(void)",
+      "paramsRaw": "void",
+      "body": "int i;\n\n    sDma3ManagerLocked = TRUE;\n    sDma3RequestCursor = 0;\n\n    for (i = 0; i < MAX_DMA_REQUESTS; i++)\n    {\n        sDma3Requests[i].size = 0;\n        sDma3Requests[i].src = NULL;\n        sDma3Requests[i].dest = NULL;\n    }\n\n    sDma3ManagerLocked = FALSE;",
+      "callsTo": [],
+      "lineCount": 13
+    },
+    "ProcessDma3Requests": {
+      "returnType": "void",
+      "signature": "void ProcessDma3Requests(void)",
+      "paramsRaw": "void",
+      "body": "u16 bytesTransferred;\n\n    if (sDma3ManagerLocked)\n        return;\n\n    bytesTransferred = 0;\n\n     \n    while (sDma3Requests[sDma3RequestCursor].size != 0)\n    {\n        bytesTransferred += sDma3Requests[sDma3RequestCursor].size;\n\n        if (bytesTransferred > 40 * 1024)\n            return;  \n        if (*(u8 *)REG_ADDR_VCOUNT > 224)\n            return;  \n\n        switch (sDma3Requests[sDma3RequestCursor].mode)\n        {\n        case DMA_REQUEST_COPY32:  \n            Dma3CopyLarge32_(sDma3Requests[sDma3RequestCursor].src,\n                             sDma3Requests[sDma3RequestCursor].dest,\n                             sDma3Requests[sDma3RequestCursor].size);\n            break;\n        case DMA_REQUEST_FILL32:  \n            Dma3FillLarge32_(sDma3Requests[sDma3RequestCursor].value,\n                             sDma3Requests[sDma3RequestCursor].dest,\n                             sDma3Requests[sDma3RequestCursor].size);\n            break;\n        case DMA_REQUEST_COPY16:     \n            Dma3CopyLarge16_(sDma3Requests[sDma3RequestCursor].src,\n                             sDma3Requests[sDma3RequestCursor].dest,\n                             sDma3Requests[sDma3RequestCursor].size);\n            break;\n        case DMA_REQUEST_FILL16:  \n            Dma3FillLarge16_(sDma3Requests[sDma3RequestCursor].value,\n                             sDma3Requests[sDma3RequestCursor].dest,\n                             sDma3Requests[sDma3RequestCursor].size);\n            break;\n        }\n\n         \n        sDma3Requests[sDma3RequestCursor].src = NULL;\n        sDma3Requests[sDma3RequestCursor].dest = NULL;\n        sDma3Requests[sDma3RequestCursor].size = 0;\n        sDma3Requests[sDma3RequestCursor].mode = 0;\n        sDma3Requests[sDma3RequestCursor].value = 0;\n        sDma3RequestCursor++;\n\n        if (sDma3RequestCursor >= MAX_DMA_REQUESTS)  \n            sDma3RequestCursor = 0;\n    }",
+      "callsTo": [
+        "Dma3CopyLarge16_",
+        "Dma3CopyLarge32_",
+        "Dma3FillLarge16_",
+        "Dma3FillLarge32_"
+      ],
+      "lineCount": 52
+    },
+    "RequestDma3Copy": {
+      "returnType": "s16",
+      "signature": "s16 RequestDma3Copy(const void *src, void *dest, u16 size, u8 mode)",
+      "paramsRaw": "const void *src, void *dest, u16 size, u8 mode",
+      "body": "int cursor;\n    int i = 0;\n\n    sDma3ManagerLocked = TRUE;\n    cursor = sDma3RequestCursor;\n\n    while (i < MAX_DMA_REQUESTS)\n    {\n        if (sDma3Requests[cursor].size == 0)  \n        {\n            sDma3Requests[cursor].src = src;\n            sDma3Requests[cursor].dest = dest;\n            sDma3Requests[cursor].size = size;\n\n            if (mode == 1)\n                sDma3Requests[cursor].mode = DMA_REQUEST_COPY32;\n            else\n                sDma3Requests[cursor].mode = DMA_REQUEST_COPY16;\n\n            sDma3ManagerLocked = FALSE;\n            return cursor;\n        }\n        if (++cursor >= MAX_DMA_REQUESTS)  \n            cursor = 0;\n        i++;\n    }\n    sDma3ManagerLocked = FALSE;\n    return -1;",
+      "callsTo": [],
+      "lineCount": 28
+    },
+    "RequestDma3Fill": {
+      "returnType": "s16",
+      "signature": "s16 RequestDma3Fill(s32 value, void *dest, u16 size, u8 mode)",
+      "paramsRaw": "s32 value, void *dest, u16 size, u8 mode",
+      "body": "int cursor;\n    int i = 0;\n\n    cursor = sDma3RequestCursor;\n    sDma3ManagerLocked = TRUE;\n\n    while (i < MAX_DMA_REQUESTS)\n    {\n        if (sDma3Requests[cursor].size == 0)  \n        {\n            sDma3Requests[cursor].dest = dest;\n            sDma3Requests[cursor].size = size;\n            sDma3Requests[cursor].mode = mode;\n            sDma3Requests[cursor].value = value;\n\n            if(mode == 1)\n                sDma3Requests[cursor].mode = DMA_REQUEST_FILL32;\n            else\n                sDma3Requests[cursor].mode = DMA_REQUEST_FILL16;\n\n            sDma3ManagerLocked = FALSE;\n            return cursor;\n        }\n        if (++cursor >= MAX_DMA_REQUESTS)  \n            cursor = 0;\n        i++;\n    }\n    sDma3ManagerLocked = FALSE;\n    return -1;",
+      "callsTo": [],
+      "lineCount": 29
+    },
+    "CheckForSpaceForDma3Request": {
+      "returnType": "s16",
+      "signature": "s16 CheckForSpaceForDma3Request(s16 index)",
+      "paramsRaw": "s16 index",
+      "body": "int i = 0;\n\n    if (index == -1)   \n    {\n        while (i < MAX_DMA_REQUESTS)\n        {\n            if (sDma3Requests[i].size != 0)\n                return -1;\n            i++;\n        }\n        return 0;\n    }\n    else   \n    {\n        if (sDma3Requests[index].size != 0)\n            return -1;\n        return 0;\n    }",
+      "callsTo": [],
+      "lineCount": 18
+    }
+  }
+}

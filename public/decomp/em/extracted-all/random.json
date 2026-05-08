@@ -1,0 +1,42 @@
+{
+  "srcFile": "src/random.c",
+  "count": 4,
+  "functions": {
+    "Random": {
+      "returnType": "u16",
+      "signature": "u16 Random(void)",
+      "paramsRaw": "void",
+      "body": "gRngValue = ISO_RANDOMIZE1(gRngValue);\n    sRandCount++;\n    return gRngValue >> 16;",
+      "callsTo": [
+        "ISO_RANDOMIZE1"
+      ],
+      "lineCount": 3
+    },
+    "SeedRng": {
+      "returnType": "void",
+      "signature": "void SeedRng(u16 seed)",
+      "paramsRaw": "u16 seed",
+      "body": "gRngValue = seed;\n    sUnknown = 0;",
+      "callsTo": [],
+      "lineCount": 2
+    },
+    "SeedRng2": {
+      "returnType": "void",
+      "signature": "void SeedRng2(u16 seed)",
+      "paramsRaw": "u16 seed",
+      "body": "gRng2Value = seed;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "Random2": {
+      "returnType": "u16",
+      "signature": "u16 Random2(void)",
+      "paramsRaw": "void",
+      "body": "gRng2Value = ISO_RANDOMIZE1(gRng2Value);\n    return gRng2Value >> 16;",
+      "callsTo": [
+        "ISO_RANDOMIZE1"
+      ],
+      "lineCount": 2
+    }
+  }
+}

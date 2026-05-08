@@ -1,0 +1,700 @@
+{
+  "srcFile": "src/fldeff_misc.c",
+  "count": 62,
+  "functions": {
+    "ComputerScreenOpenEffect": {
+      "returnType": "void",
+      "signature": "void ComputerScreenOpenEffect(u16 increment, u16 unused, u8 priority)",
+      "paramsRaw": "u16 increment, u16 unused, u8 priority",
+      "body": "CreateComputerScreenEffectTask(Task_ComputerScreenOpenEffect, increment, unused, priority);",
+      "callsTo": [
+        "CreateComputerScreenEffectTask"
+      ],
+      "lineCount": 1
+    },
+    "ComputerScreenCloseEffect": {
+      "returnType": "void",
+      "signature": "void ComputerScreenCloseEffect(u16 increment, u16 unused, u8 priority)",
+      "paramsRaw": "u16 increment, u16 unused, u8 priority",
+      "body": "CreateComputerScreenEffectTask(Task_ComputerScreenCloseEffect, increment, unused, priority);",
+      "callsTo": [
+        "CreateComputerScreenEffectTask"
+      ],
+      "lineCount": 1
+    },
+    "IsComputerScreenOpenEffectActive": {
+      "returnType": "bool8",
+      "signature": "bool8 IsComputerScreenOpenEffectActive(void)",
+      "paramsRaw": "void",
+      "body": "return FuncIsActiveTask(Task_ComputerScreenOpenEffect);",
+      "callsTo": [
+        "FuncIsActiveTask"
+      ],
+      "lineCount": 1
+    },
+    "IsComputerScreenCloseEffectActive": {
+      "returnType": "bool8",
+      "signature": "bool8 IsComputerScreenCloseEffectActive(void)",
+      "paramsRaw": "void",
+      "body": "return FuncIsActiveTask(Task_ComputerScreenCloseEffect);",
+      "callsTo": [
+        "FuncIsActiveTask"
+      ],
+      "lineCount": 1
+    },
+    "CreateComputerScreenEffectTask": {
+      "returnType": "void",
+      "signature": "static void CreateComputerScreenEffectTask(TaskFunc func, u16 increment, u16 unused, u8 priority)",
+      "paramsRaw": "TaskFunc func, u16 increment, u16 unused, u8 priority",
+      "body": "u8 taskId = CreateTask(func, priority);\n\n    gTasks[taskId].tState = 0;\n    gTasks[taskId].tHorzIncrement = increment == 0 ? 16 : increment;\n    gTasks[taskId].tVertIncrement = increment == 0 ? 20 : increment;\n    gTasks[taskId].func(taskId);",
+      "callsTo": [
+        "CreateTask"
+      ],
+      "lineCount": 6
+    },
+    "Task_ComputerScreenOpenEffect": {
+      "returnType": "void",
+      "signature": "static void Task_ComputerScreenOpenEffect(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "struct Task *task = &gTasks[taskId];\n\n    switch (task->tState)\n    {\n    case 0:\n        task->tWinLeft = DISPLAY_WIDTH / 2;\n        task->tWinRight = DISPLAY_WIDTH / 2;\n        task->tWinTop = DISPLAY_HEIGHT / 2;\n        task->tWinBottom = DISPLAY_HEIGHT / 2 + 1;\n\n        SetGpuRegBits(REG_OFFSET_DISPCNT, DISPCNT_WIN0_ON);\n        SetGpuReg(REG_OFFSET_WIN0H, WIN_RANGE(task->tWinLeft, task->tWinRight));\n        SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(task->tWinTop, task->tWinBottom));\n        SetGpuReg(REG_OFFSET_WININ, WININ_WIN0_BG_ALL | WININ_WIN0_OBJ | WININ_WIN0_CLR);\n        SetGpuReg(REG_OFFSET_WINOUT, 0);\n\n        break;\n    case 1:\n        task->tBlendCnt = GetGpuReg(REG_OFFSET_BLDCNT);\n        task->tBlendY = GetGpuReg(REG_OFFSET_BLDY);\n\n        SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_TGT1_ALL | BLDCNT_EFFECT_LIGHTEN);\n        SetGpuReg(REG_OFFSET_BLDY, 16);\n\n        break;\n    case 2:\n        task->tWinLeft -= task->tHorzIncrement;\n        task->tWinRight += task->tHorzIncrement;\n\n        if (task->tWinLeft < 1 || task->tWinRight > DISPLAY_WIDTH - 1)\n        {\n            task->tWinLeft = 0;\n            task->tWinRight = DISPLAY_WIDTH;\n            SetGpuReg(REG_OFFSET_BLDY, 0);\n            SetGpuReg(REG_OFFSET_BLDCNT, task->tBlendCnt);\n            BlendPalettes(PALETTES_ALL, 0, 0);\n            gPlttBufferFaded[0] = 0;\n        }\n        SetGpuReg(REG_OFFSET_WIN0H, WIN_RANGE(task->tWinLeft, task->tWinRight));\n\n        if (task->tWinLeft != 0)\n            return;\n        break;\n    case 3:\n        task->tWinTop -= task->tVertIncrement;\n        task->tWinBottom += task->tVertIncrement;\n\n        if (task->tWinTop < 1 || task->tWinBottom > DISPLAY_HEIGHT - 1)\n        {\n            task->tWinTop = 0;\n            task->tWinBottom = DISPLAY_HEIGHT;\n            ClearGpuRegBits(REG_OFFSET_DISPCNT, DISPCNT_WIN0_ON);\n        }\n        SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(task->tWinTop, task->tWinBottom));\n\n        if (task->tWinTop != 0)\n            return;\n        break;\n    default:\n        SetGpuReg(REG_OFFSET_BLDCNT, task->tBlendCnt);\n        DestroyTask(taskId);\n        return;\n    }\n    task->tState++;",
+      "callsTo": [
+        "BlendPalettes",
+        "ClearGpuRegBits",
+        "DestroyTask",
+        "GetGpuReg",
+        "SetGpuReg",
+        "SetGpuRegBits",
+        "WIN_RANGE"
+      ],
+      "lineCount": 64
+    },
+    "Task_ComputerScreenCloseEffect": {
+      "returnType": "void",
+      "signature": "static void Task_ComputerScreenCloseEffect(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "struct Task *task = &gTasks[taskId];\n\n    switch (task->tState)\n    {\n    case 0:\n        gPlttBufferFaded[0] = 0;\n        break;\n    case 1:\n        task->tWinLeft = 0;\n        task->tWinRight = DISPLAY_WIDTH;\n        task->tWinTop = 0;\n        task->tWinBottom = DISPLAY_HEIGHT;\n\n        SetGpuRegBits(REG_OFFSET_DISPCNT, DISPCNT_WIN0_ON);\n        SetGpuReg(REG_OFFSET_WIN0H, WIN_RANGE(task->tWinLeft, task->tWinRight));\n        SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(task->tWinTop, task->tWinBottom));\n        SetGpuReg(REG_OFFSET_WININ, WININ_WIN0_BG_ALL | WININ_WIN0_OBJ | WININ_WIN0_CLR);\n        SetGpuReg(REG_OFFSET_WINOUT, 0);\n        break;\n    case 2:\n        task->tWinTop += task->tVertIncrement;\n        task->tWinBottom -= task->tVertIncrement;\n\n        if (task->tWinTop >= DISPLAY_HEIGHT / 2 || task->tWinBottom <= DISPLAY_HEIGHT / 2 + 1)\n        {\n            task->tWinTop = DISPLAY_HEIGHT / 2;\n            task->tWinBottom = DISPLAY_HEIGHT / 2 + 1;\n            SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_TGT1_ALL | BLDCNT_EFFECT_LIGHTEN);\n            SetGpuReg(REG_OFFSET_BLDY, 16);\n        }\n        SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(task->tWinTop, task->tWinBottom));\n\n        if (task->tWinTop != DISPLAY_HEIGHT / 2)\n            return;\n        break;\n    case 3:\n        task->tWinLeft += task->tHorzIncrement;\n        task->tWinRight -= task->tHorzIncrement;\n\n        if (task->tWinLeft >= DISPLAY_WIDTH / 2 || task->tWinRight <= DISPLAY_WIDTH / 2)\n        {\n            task->tWinLeft = DISPLAY_WIDTH / 2;\n            task->tWinRight = DISPLAY_WIDTH / 2;\n            BlendPalettes(PALETTES_ALL, 16, 0);\n            gPlttBufferFaded[0] = 0;\n        }\n        SetGpuReg(REG_OFFSET_WIN0H, WIN_RANGE(task->tWinLeft, task->tWinRight));\n\n        if (task->tWinLeft != DISPLAY_WIDTH / 2)\n            return;\n        break;\n    default:\n        ClearGpuRegBits(REG_OFFSET_DISPCNT, DISPCNT_WIN0_ON);\n        SetGpuReg(REG_OFFSET_BLDY, 0);\n        SetGpuReg(REG_OFFSET_BLDCNT, 0);\n        DestroyTask(taskId);\n        return;\n    }\n    task->tState++;",
+      "callsTo": [
+        "BlendPalettes",
+        "ClearGpuRegBits",
+        "DestroyTask",
+        "SetGpuReg",
+        "SetGpuRegBits",
+        "WIN_RANGE"
+      ],
+      "lineCount": 59
+    },
+    "SetCurrentSecretBase": {
+      "returnType": "void",
+      "signature": "static void SetCurrentSecretBase(void)",
+      "paramsRaw": "void",
+      "body": "SetCurSecretBaseIdFromPosition(&gPlayerFacingPosition, gMapHeader.events);\n    TrySetCurSecretBaseIndex();",
+      "callsTo": [
+        "SetCurSecretBaseIdFromPosition",
+        "TrySetCurSecretBaseIndex"
+      ],
+      "lineCount": 2
+    },
+    "AdjustSecretPowerSpritePixelOffsets": {
+      "returnType": "void",
+      "signature": "static void AdjustSecretPowerSpritePixelOffsets(void)",
+      "paramsRaw": "void",
+      "body": "if (gPlayerAvatar.flags & (PLAYER_AVATAR_FLAG_MACH_BIKE | PLAYER_AVATAR_FLAG_ACRO_BIKE))\n    {\n        switch (gFieldEffectArguments[1])\n        {\n        case DIR_SOUTH:\n            gFieldEffectArguments[5] = 16;\n            gFieldEffectArguments[6] = 40;\n            break;\n        case DIR_NORTH:\n            gFieldEffectArguments[5] = 16;\n            gFieldEffectArguments[6] = 8;\n            break;\n        case DIR_WEST:\n            gFieldEffectArguments[5] = -8;\n            gFieldEffectArguments[6] = 24;\n            break;\n        case DIR_EAST:\n            gFieldEffectArguments[5] = 24;\n            gFieldEffectArguments[6] = 24;\n            break;\n        }\n    }\n    else\n    {\n        switch (gFieldEffectArguments[1])\n        {\n        case DIR_SOUTH:\n            gFieldEffectArguments[5] = 8;\n            gFieldEffectArguments[6] = 40;\n            break;\n        case DIR_NORTH:\n            gFieldEffectArguments[5] = 8;\n            gFieldEffectArguments[6] = 8;\n            break;\n        case DIR_WEST:\n            gFieldEffectArguments[5] = -8;\n            gFieldEffectArguments[6] = 24;\n            break;\n        case DIR_EAST:\n            gFieldEffectArguments[5] = 24;\n            gFieldEffectArguments[6] = 24;\n            break;\n        }\n    }",
+      "callsTo": [],
+      "lineCount": 44
+    },
+    "SetUpFieldMove_SecretPower": {
+      "returnType": "bool8",
+      "signature": "bool8 SetUpFieldMove_SecretPower(void)",
+      "paramsRaw": "void",
+      "body": "u8 mb;\n\n    CheckPlayerHasSecretBase();\n\n    if (gSpecialVar_Result == 1 || GetPlayerFacingDirection() != DIR_NORTH)\n        return FALSE;\n\n    GetXYCoordsOneStepInFrontOfPlayer(&gPlayerFacingPosition.x, &gPlayerFacingPosition.y);\n    mb = MapGridGetMetatileBehaviorAt(gPlayerFacingPosition.x, gPlayerFacingPosition.y);\n\n    if (MetatileBehavior_IsSecretBaseCave(mb) == TRUE)\n    {\n        SetCurrentSecretBase();\n        gFieldCallback2 = FieldCallback_PrepareFadeInFromMenu;\n        gPostMenuFieldCallback = FieldCallback_SecretBaseCave;\n        return TRUE;\n    }\n\n    if (MetatileBehavior_IsSecretBaseTree(mb) == TRUE)\n    {\n        SetCurrentSecretBase();\n        gFieldCallback2 = FieldCallback_PrepareFadeInFromMenu;\n        gPostMenuFieldCallback = FieldCallback_SecretBaseTree;\n        return TRUE;\n    }\n\n    if (MetatileBehavior_IsSecretBaseShrub(mb) == TRUE)\n    {\n        SetCurrentSecretBase();\n        gFieldCallback2 = FieldCallback_PrepareFadeInFromMenu;\n        gPostMenuFieldCallback = FieldCallback_SecretBaseShrub;\n        return TRUE;\n    }\n\n    return FALSE;",
+      "callsTo": [
+        "CheckPlayerHasSecretBase",
+        "GetPlayerFacingDirection",
+        "GetXYCoordsOneStepInFrontOfPlayer",
+        "MapGridGetMetatileBehaviorAt",
+        "MetatileBehavior_IsSecretBaseCave",
+        "MetatileBehavior_IsSecretBaseShrub",
+        "MetatileBehavior_IsSecretBaseTree",
+        "SetCurrentSecretBase"
+      ],
+      "lineCount": 35
+    },
+    "FieldCallback_SecretBaseCave": {
+      "returnType": "void",
+      "signature": "static void FieldCallback_SecretBaseCave(void)",
+      "paramsRaw": "void",
+      "body": "gFieldEffectArguments[0] = GetCursorSelectionMonId();\n    ScriptContext_SetupScript(SecretBase_EventScript_CaveUseSecretPower);",
+      "callsTo": [
+        "GetCursorSelectionMonId",
+        "ScriptContext_SetupScript"
+      ],
+      "lineCount": 2
+    },
+    "FldEff_UseSecretPowerCave": {
+      "returnType": "bool8",
+      "signature": "bool8 FldEff_UseSecretPowerCave(void)",
+      "paramsRaw": "void",
+      "body": "u8 taskId = CreateFieldMoveTask();\n\n    gTasks[taskId].data[8] = (u32)StartSecretBaseCaveFieldEffect >> 16;\n    gTasks[taskId].data[9] = (u32)StartSecretBaseCaveFieldEffect;\n\n    return FALSE;",
+      "callsTo": [
+        "CreateFieldMoveTask"
+      ],
+      "lineCount": 6
+    },
+    "StartSecretBaseCaveFieldEffect": {
+      "returnType": "void",
+      "signature": "static void StartSecretBaseCaveFieldEffect(void)",
+      "paramsRaw": "void",
+      "body": "FieldEffectActiveListRemove(FLDEFF_USE_SECRET_POWER_CAVE);\n    FieldEffectStart(FLDEFF_SECRET_POWER_CAVE);",
+      "callsTo": [
+        "FieldEffectActiveListRemove",
+        "FieldEffectStart"
+      ],
+      "lineCount": 2
+    },
+    "FldEff_SecretPowerCave": {
+      "returnType": "bool8",
+      "signature": "bool8 FldEff_SecretPowerCave(void)",
+      "paramsRaw": "void",
+      "body": "AdjustSecretPowerSpritePixelOffsets();\n    CreateSprite(&sSpriteTemplate_SecretPowerCave,\n                 gSprites[gPlayerAvatar.spriteId].oam.x + gFieldEffectArguments[5],\n                 gSprites[gPlayerAvatar.spriteId].oam.y + gFieldEffectArguments[6],\n                 148);\n    return FALSE;",
+      "callsTo": [
+        "AdjustSecretPowerSpritePixelOffsets",
+        "CreateSprite"
+      ],
+      "lineCount": 6
+    },
+    "SpriteCB_CaveEntranceInit": {
+      "returnType": "void",
+      "signature": "static void SpriteCB_CaveEntranceInit(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "PlaySE(SE_M_ROCK_THROW);\n\n    sprite->data[0] = 0;\n    sprite->callback = SpriteCB_CaveEntranceOpen;",
+      "callsTo": [
+        "PlaySE"
+      ],
+      "lineCount": 4
+    },
+    "SpriteCB_CaveEntranceOpen": {
+      "returnType": "void",
+      "signature": "static void SpriteCB_CaveEntranceOpen(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "if (sprite->data[0] < 40)\n    {\n        if (++sprite->data[0] == 20)\n            ToggleSecretBaseEntranceMetatile();\n    }\n    else\n    {\n        sprite->data[0] = 0;\n        sprite->callback = SpriteCB_CaveEntranceEnd;\n    }",
+      "callsTo": [
+        "ToggleSecretBaseEntranceMetatile"
+      ],
+      "lineCount": 10
+    },
+    "SpriteCB_CaveEntranceEnd": {
+      "returnType": "void",
+      "signature": "static void SpriteCB_CaveEntranceEnd(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "FieldEffectStop(sprite, FLDEFF_SECRET_POWER_CAVE);\n    ScriptContext_Enable();",
+      "callsTo": [
+        "FieldEffectStop",
+        "ScriptContext_Enable"
+      ],
+      "lineCount": 2
+    },
+    "FieldCallback_SecretBaseTree": {
+      "returnType": "void",
+      "signature": "static void FieldCallback_SecretBaseTree(void)",
+      "paramsRaw": "void",
+      "body": "gFieldEffectArguments[0] = GetCursorSelectionMonId();\n    ScriptContext_SetupScript(SecretBase_EventScript_TreeUseSecretPower);",
+      "callsTo": [
+        "GetCursorSelectionMonId",
+        "ScriptContext_SetupScript"
+      ],
+      "lineCount": 2
+    },
+    "FldEff_UseSecretPowerTree": {
+      "returnType": "bool8",
+      "signature": "bool8 FldEff_UseSecretPowerTree(void)",
+      "paramsRaw": "void",
+      "body": "u8 taskId = CreateFieldMoveTask();\n\n    gTasks[taskId].data[8] = (u32)StartSecretBaseTreeFieldEffect >> 16;\n    gTasks[taskId].data[9] = (u32)StartSecretBaseTreeFieldEffect;\n\n    return FALSE;",
+      "callsTo": [
+        "CreateFieldMoveTask"
+      ],
+      "lineCount": 6
+    },
+    "StartSecretBaseTreeFieldEffect": {
+      "returnType": "void",
+      "signature": "static void StartSecretBaseTreeFieldEffect(void)",
+      "paramsRaw": "void",
+      "body": "FieldEffectActiveListRemove(FLDEFF_USE_SECRET_POWER_TREE);\n    FieldEffectStart(FLDEFF_SECRET_POWER_TREE);",
+      "callsTo": [
+        "FieldEffectActiveListRemove",
+        "FieldEffectStart"
+      ],
+      "lineCount": 2
+    },
+    "FldEff_SecretPowerTree": {
+      "returnType": "bool8",
+      "signature": "bool8 FldEff_SecretPowerTree(void)",
+      "paramsRaw": "void",
+      "body": "s16 mb = MapGridGetMetatileBehaviorAt(gPlayerFacingPosition.x, gPlayerFacingPosition.y) & 0xFFF;\n\n    if (mb == MB_SECRET_BASE_SPOT_TREE_LEFT)\n        gFieldEffectArguments[7] = 0;\n\n    if (mb == MB_SECRET_BASE_SPOT_TREE_RIGHT)\n        gFieldEffectArguments[7] = 2;\n\n    AdjustSecretPowerSpritePixelOffsets();\n\n    CreateSprite(&sSpriteTemplate_SecretPowerTree,\n                 gSprites[gPlayerAvatar.spriteId].oam.x + gFieldEffectArguments[5],\n                 gSprites[gPlayerAvatar.spriteId].oam.y + gFieldEffectArguments[6],\n                 148);\n\n    if (gFieldEffectArguments[7] == 1 || gFieldEffectArguments[7] == 3)\n        ToggleSecretBaseEntranceMetatile();\n\n    return FALSE;",
+      "callsTo": [
+        "AdjustSecretPowerSpritePixelOffsets",
+        "CreateSprite",
+        "MapGridGetMetatileBehaviorAt",
+        "ToggleSecretBaseEntranceMetatile"
+      ],
+      "lineCount": 19
+    },
+    "SpriteCB_TreeEntranceInit": {
+      "returnType": "void",
+      "signature": "static void SpriteCB_TreeEntranceInit(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "PlaySE(SE_M_SCRATCH);\n\n    sprite->animNum = gFieldEffectArguments[7];\n    sprite->data[0] = 0;\n    sprite->callback = SpriteCB_TreeEntranceOpen;",
+      "callsTo": [
+        "PlaySE"
+      ],
+      "lineCount": 5
+    },
+    "SpriteCB_TreeEntranceOpen": {
+      "returnType": "void",
+      "signature": "static void SpriteCB_TreeEntranceOpen(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "sprite->data[0]++;\n\n    if (sprite->data[0] >= 40)\n    {\n        if (gFieldEffectArguments[7] == 0 || gFieldEffectArguments[7] == 2)\n            ToggleSecretBaseEntranceMetatile();\n\n        sprite->data[0] = 0;\n        sprite->callback = SpriteCB_TreeEntranceEnd;\n    }",
+      "callsTo": [
+        "ToggleSecretBaseEntranceMetatile"
+      ],
+      "lineCount": 10
+    },
+    "SpriteCB_TreeEntranceEnd": {
+      "returnType": "void",
+      "signature": "static void SpriteCB_TreeEntranceEnd(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "FieldEffectStop(sprite, FLDEFF_SECRET_POWER_TREE);\n    ScriptContext_Enable();",
+      "callsTo": [
+        "FieldEffectStop",
+        "ScriptContext_Enable"
+      ],
+      "lineCount": 2
+    },
+    "FieldCallback_SecretBaseShrub": {
+      "returnType": "void",
+      "signature": "static void FieldCallback_SecretBaseShrub(void)",
+      "paramsRaw": "void",
+      "body": "gFieldEffectArguments[0] = GetCursorSelectionMonId();\n    ScriptContext_SetupScript(SecretBase_EventScript_ShrubUseSecretPower);",
+      "callsTo": [
+        "GetCursorSelectionMonId",
+        "ScriptContext_SetupScript"
+      ],
+      "lineCount": 2
+    },
+    "FldEff_UseSecretPowerShrub": {
+      "returnType": "bool8",
+      "signature": "bool8 FldEff_UseSecretPowerShrub(void)",
+      "paramsRaw": "void",
+      "body": "u8 taskId = CreateFieldMoveTask();\n\n    gTasks[taskId].data[8] = (u32)StartSecretBaseShrubFieldEffect >> 16;\n    gTasks[taskId].data[9] = (u32)StartSecretBaseShrubFieldEffect;\n\n    return FALSE;",
+      "callsTo": [
+        "CreateFieldMoveTask"
+      ],
+      "lineCount": 6
+    },
+    "StartSecretBaseShrubFieldEffect": {
+      "returnType": "void",
+      "signature": "static void StartSecretBaseShrubFieldEffect(void)",
+      "paramsRaw": "void",
+      "body": "FieldEffectActiveListRemove(FLDEFF_USE_SECRET_POWER_SHRUB);\n    FieldEffectStart(FLDEFF_SECRET_POWER_SHRUB);",
+      "callsTo": [
+        "FieldEffectActiveListRemove",
+        "FieldEffectStart"
+      ],
+      "lineCount": 2
+    },
+    "FldEff_SecretPowerShrub": {
+      "returnType": "bool8",
+      "signature": "bool8 FldEff_SecretPowerShrub(void)",
+      "paramsRaw": "void",
+      "body": "AdjustSecretPowerSpritePixelOffsets();\n\n    CreateSprite(&sSpriteTemplate_SecretPowerShrub,\n                 gSprites[gPlayerAvatar.spriteId].oam.x + gFieldEffectArguments[5],\n                 gSprites[gPlayerAvatar.spriteId].oam.y + gFieldEffectArguments[6],\n                 148);\n\n    return FALSE;",
+      "callsTo": [
+        "AdjustSecretPowerSpritePixelOffsets",
+        "CreateSprite"
+      ],
+      "lineCount": 8
+    },
+    "SpriteCB_ShrubEntranceInit": {
+      "returnType": "void",
+      "signature": "static void SpriteCB_ShrubEntranceInit(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "PlaySE(SE_M_POISON_POWDER);\n\n    sprite->data[0] = 0;\n    sprite->callback = SpriteCB_ShrubEntranceOpen;",
+      "callsTo": [
+        "PlaySE"
+      ],
+      "lineCount": 4
+    },
+    "SpriteCB_ShrubEntranceOpen": {
+      "returnType": "void",
+      "signature": "static void SpriteCB_ShrubEntranceOpen(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "if (sprite->data[0] < 40)\n    {\n        sprite->data[0]++;\n\n        if (sprite->data[0] == 20)\n            ToggleSecretBaseEntranceMetatile();\n    }\n    else\n    {\n        sprite->data[0] = 0;\n        sprite->callback = SpriteCB_ShrubEntranceEnd;\n    }",
+      "callsTo": [
+        "ToggleSecretBaseEntranceMetatile"
+      ],
+      "lineCount": 12
+    },
+    "SpriteCB_ShrubEntranceEnd": {
+      "returnType": "void",
+      "signature": "static void SpriteCB_ShrubEntranceEnd(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "FieldEffectStop(sprite, FLDEFF_SECRET_POWER_SHRUB);\n    ScriptContext_Enable();",
+      "callsTo": [
+        "FieldEffectStop",
+        "ScriptContext_Enable"
+      ],
+      "lineCount": 2
+    },
+    "FldEff_SecretBasePCTurnOn": {
+      "returnType": "bool8",
+      "signature": "bool8 FldEff_SecretBasePCTurnOn(void)",
+      "paramsRaw": "void",
+      "body": "s16 x, y;\n    u8 taskId;\n\n    GetXYCoordsOneStepInFrontOfPlayer(&x, &y);\n\n    taskId = CreateTask(Task_SecretBasePCTurnOn, 0);\n    gTasks[taskId].tX = x;\n    gTasks[taskId].tY = y;\n    gTasks[taskId].tState = 0;\n\n    return FALSE;",
+      "callsTo": [
+        "CreateTask",
+        "GetXYCoordsOneStepInFrontOfPlayer"
+      ],
+      "lineCount": 11
+    },
+    "Task_SecretBasePCTurnOn": {
+      "returnType": "void",
+      "signature": "static void Task_SecretBasePCTurnOn(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "s16 *data = gTasks[taskId].data;\n\n    switch (tState)\n    {\n    case 4:\n    case 12:\n        MapGridSetMetatileIdAt(tX, tY, METATILE_SecretBase_PC_On);\n        CurrentMapDrawMetatileAt(tX, tY);\n        break;\n    case 8:\n    case 16:\n        MapGridSetMetatileIdAt(tX, tY, METATILE_SecretBase_PC);\n        CurrentMapDrawMetatileAt(tX, tY);\n        break;\n    case 20:\n        MapGridSetMetatileIdAt(tX, tY, METATILE_SecretBase_PC_On);\n        CurrentMapDrawMetatileAt(tX, tY);\n        FieldEffectActiveListRemove(FLDEFF_PCTURN_ON);\n        ScriptContext_Enable();\n        DestroyTask(taskId);\n        return;\n    }\n\n    tState++;",
+      "callsTo": [
+        "CurrentMapDrawMetatileAt",
+        "DestroyTask",
+        "FieldEffectActiveListRemove",
+        "MapGridSetMetatileIdAt",
+        "ScriptContext_Enable"
+      ],
+      "lineCount": 24
+    },
+    "DoSecretBasePCTurnOffEffect": {
+      "returnType": "void",
+      "signature": "void DoSecretBasePCTurnOffEffect(void)",
+      "paramsRaw": "void",
+      "body": "s16 x, y;\n\n    GetXYCoordsOneStepInFrontOfPlayer(&x, &y);\n    PlaySE(SE_PC_OFF);\n\n    if (!VarGet(VAR_CURRENT_SECRET_BASE))\n        MapGridSetMetatileIdAt(x, y, METATILE_SecretBase_PC | MAPGRID_IMPASSABLE);\n    else\n        MapGridSetMetatileIdAt(x, y, METATILE_SecretBase_RegisterPC | MAPGRID_IMPASSABLE);\n\n    CurrentMapDrawMetatileAt(x, y);",
+      "callsTo": [
+        "CurrentMapDrawMetatileAt",
+        "GetXYCoordsOneStepInFrontOfPlayer",
+        "MapGridSetMetatileIdAt",
+        "PlaySE",
+        "VarGet"
+      ],
+      "lineCount": 11
+    },
+    "PopSecretBaseBalloon": {
+      "returnType": "void",
+      "signature": "void PopSecretBaseBalloon(s16 metatileId, s16 x, s16 y)",
+      "paramsRaw": "s16 metatileId, s16 x, s16 y",
+      "body": "u8 taskId = CreateTask(Task_PopSecretBaseBalloon, 0);\n\n    gTasks[taskId].data[0] = metatileId;\n    gTasks[taskId].data[1] = x;\n    gTasks[taskId].data[2] = y;\n    gTasks[taskId].data[3] = 0;\n    gTasks[taskId].data[4] = 1;",
+      "callsTo": [
+        "CreateTask"
+      ],
+      "lineCount": 7
+    },
+    "Task_PopSecretBaseBalloon": {
+      "returnType": "void",
+      "signature": "static void Task_PopSecretBaseBalloon(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "s16 *data = gTasks[taskId].data;\n\n    if (data[3] == 6)\n        data[3] = 0;\n    else\n        data[3]++;\n\n    if (data[3] == 0)\n    {\n        if (data[4] == 2)\n            DoBalloonSoundEffect(data[0]);\n\n        MapGridSetMetatileIdAt(data[1], data[2], data[0] + data[4]);\n        CurrentMapDrawMetatileAt(data[1], data[2]);\n\n        if (data[4] == 3)\n            DestroyTask(taskId);\n        else\n            data[4]++;\n    }",
+      "callsTo": [
+        "CurrentMapDrawMetatileAt",
+        "DestroyTask",
+        "DoBalloonSoundEffect",
+        "MapGridSetMetatileIdAt"
+      ],
+      "lineCount": 20
+    },
+    "DoBalloonSoundEffect": {
+      "returnType": "void",
+      "signature": "static void DoBalloonSoundEffect(s16 metatileId)",
+      "paramsRaw": "s16 metatileId",
+      "body": "switch (metatileId)\n    {\n    case METATILE_SecretBase_RedBalloon:\n        PlaySE(SE_BALLOON_RED);\n        break;\n    case METATILE_SecretBase_BlueBalloon:\n        PlaySE(SE_BALLOON_BLUE);\n        break;\n    case METATILE_SecretBase_YellowBalloon:\n        PlaySE(SE_BALLOON_YELLOW);\n        break;\n    case METATILE_SecretBase_MudBall:\n        PlaySE(SE_MUD_BALL);\n        break;\n    }",
+      "callsTo": [
+        "PlaySE"
+      ],
+      "lineCount": 15
+    },
+    "FldEff_Nop47": {
+      "returnType": "bool8",
+      "signature": "bool8 FldEff_Nop47(void)",
+      "paramsRaw": "void",
+      "body": "return FALSE;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "FldEff_Nop48": {
+      "returnType": "bool8",
+      "signature": "bool8 FldEff_Nop48(void)",
+      "paramsRaw": "void",
+      "body": "return FALSE;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "DoSecretBaseBreakableDoorEffect": {
+      "returnType": "void",
+      "signature": "static void DoSecretBaseBreakableDoorEffect(s16 x, s16 y)",
+      "paramsRaw": "s16 x, s16 y",
+      "body": "PlaySE(SE_BREAKABLE_DOOR);\n    MapGridSetMetatileIdAt(x, y, METATILE_SecretBase_BreakableDoor_BottomOpen);\n    MapGridSetMetatileIdAt(x, y - 1, METATILE_SecretBase_BreakableDoor_TopOpen);\n    CurrentMapDrawMetatileAt(x, y);\n    CurrentMapDrawMetatileAt(x, y - 1);",
+      "callsTo": [
+        "CurrentMapDrawMetatileAt",
+        "MapGridSetMetatileIdAt",
+        "PlaySE"
+      ],
+      "lineCount": 5
+    },
+    "Task_ShatterSecretBaseBreakableDoor": {
+      "returnType": "void",
+      "signature": "static void Task_ShatterSecretBaseBreakableDoor(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "if (gTasks[taskId].data[0] == 7)\n    {\n        DoSecretBaseBreakableDoorEffect(gTasks[taskId].data[1], gTasks[taskId].data[2]);\n        DestroyTask(taskId);\n    }\n    else\n    {\n        gTasks[taskId].data[0]++;\n    }",
+      "callsTo": [
+        "DestroyTask",
+        "DoSecretBaseBreakableDoorEffect"
+      ],
+      "lineCount": 9
+    },
+    "ShatterSecretBaseBreakableDoor": {
+      "returnType": "void",
+      "signature": "void ShatterSecretBaseBreakableDoor(s16 x, s16 y)",
+      "paramsRaw": "s16 x, s16 y",
+      "body": "u8 dir = GetPlayerFacingDirection();\n\n    if (dir == DIR_SOUTH)\n    {\n        DoSecretBaseBreakableDoorEffect(x, y);\n    }\n    else if (dir == DIR_NORTH)\n    {\n        u8 taskId = CreateTask(Task_ShatterSecretBaseBreakableDoor, 5);\n        gTasks[taskId].data[0] = 0;\n        gTasks[taskId].data[1] = x;\n        gTasks[taskId].data[2] = y;\n    }",
+      "callsTo": [
+        "CreateTask",
+        "DoSecretBaseBreakableDoorEffect",
+        "GetPlayerFacingDirection"
+      ],
+      "lineCount": 13
+    },
+    "Task_SecretBaseMusicNoteMatSound": {
+      "returnType": "void",
+      "signature": "static void Task_SecretBaseMusicNoteMatSound(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "if (gTasks[taskId].data[1] == 7)\n    {\n        switch (gTasks[taskId].tMetatileID)\n        {\n        case METATILE_SecretBase_NoteMat_C_Low:\n            PlaySE(SE_NOTE_C);\n            break;\n        case METATILE_SecretBase_NoteMat_D:\n            PlaySE(SE_NOTE_D);\n            break;\n        case METATILE_SecretBase_NoteMat_E:\n            PlaySE(SE_NOTE_E);\n            break;\n        case METATILE_SecretBase_NoteMat_F:\n            PlaySE(SE_NOTE_F);\n            break;\n        case METATILE_SecretBase_NoteMat_G:\n            PlaySE(SE_NOTE_G);\n            break;\n        case METATILE_SecretBase_NoteMat_A:\n            PlaySE(SE_NOTE_A);\n            break;\n        case METATILE_SecretBase_NoteMat_B:\n            PlaySE(SE_NOTE_B);\n            break;\n        case METATILE_SecretBase_NoteMat_C_High:\n            PlaySE(SE_NOTE_C_HIGH);\n            break;\n        }\n\n        DestroyTask(taskId);\n    }\n    else\n    {\n        gTasks[taskId].data[1]++;\n    }",
+      "callsTo": [
+        "DestroyTask",
+        "PlaySE"
+      ],
+      "lineCount": 36
+    },
+    "PlaySecretBaseMusicNoteMatSound": {
+      "returnType": "void",
+      "signature": "void PlaySecretBaseMusicNoteMatSound(s16 metatileId)",
+      "paramsRaw": "s16 metatileId",
+      "body": "u8 taskId = CreateTask(Task_SecretBaseMusicNoteMatSound, 5);\n\n    gTasks[taskId].tMetatileID = metatileId;\n    gTasks[taskId].data[1] = 0;",
+      "callsTo": [
+        "CreateTask"
+      ],
+      "lineCount": 4
+    },
+    "SpriteCB_GlitterMatSparkle": {
+      "returnType": "void",
+      "signature": "static void SpriteCB_GlitterMatSparkle(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "sprite->data[0]++;\n\n    if (sprite->data[0] == 8)\n        PlaySE(SE_M_HEAL_BELL);\n\n    if (sprite->data[0] >= 32)\n        DestroySprite(sprite);",
+      "callsTo": [
+        "DestroySprite",
+        "PlaySE"
+      ],
+      "lineCount": 7
+    },
+    "DoSecretBaseGlitterMatSparkle": {
+      "returnType": "void",
+      "signature": "void DoSecretBaseGlitterMatSparkle(void)",
+      "paramsRaw": "void",
+      "body": "s16 x = gObjectEvents[gPlayerAvatar.objectEventId].currentCoords.x;\n    s16 y = gObjectEvents[gPlayerAvatar.objectEventId].currentCoords.y;\n    u8 spriteId;\n\n    SetSpritePosToOffsetMapCoords(&x, &y, 8, 4);\n\n    spriteId = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[FLDEFFOBJ_SPARKLE], x, y, 0);\n    if (spriteId != MAX_SPRITES)\n    {\n        gSprites[spriteId].coordOffsetEnabled = TRUE;\n        gSprites[spriteId].oam.priority = 1;\n        gSprites[spriteId].oam.paletteNum = 5;\n        gSprites[spriteId].callback = SpriteCB_GlitterMatSparkle;\n        gSprites[spriteId].data[0] = 0;\n    }",
+      "callsTo": [
+        "CreateSpriteAtEnd",
+        "SetSpritePosToOffsetMapCoords"
+      ],
+      "lineCount": 15
+    },
+    "FldEff_SandPillar": {
+      "returnType": "bool8",
+      "signature": "bool8 FldEff_SandPillar(void)",
+      "paramsRaw": "void",
+      "body": "s16 x, y;\n\n    LockPlayerFieldControls();\n    GetXYCoordsOneStepInFrontOfPlayer(&x, &y);\n\n    gFieldEffectArguments[5] = x;\n    gFieldEffectArguments[6] = y;\n\n    switch (GetPlayerFacingDirection())\n    {\n    case DIR_SOUTH:\n        CreateSprite(&sSpriteTemplate_SandPillar,\n                     gSprites[gPlayerAvatar.spriteId].oam.x + 8,\n                     gSprites[gPlayerAvatar.spriteId].oam.y + 32,\n                     0);\n\n        break;\n\n    case DIR_NORTH:\n        CreateSprite(&sSpriteTemplate_SandPillar,\n                     gSprites[gPlayerAvatar.spriteId].oam.x + 8,\n                     gSprites[gPlayerAvatar.spriteId].oam.y,\n                     148);\n\n        break;\n\n    case DIR_WEST:\n        CreateSprite(&sSpriteTemplate_SandPillar,\n                     gSprites[gPlayerAvatar.spriteId].oam.x - 8,\n                     gSprites[gPlayerAvatar.spriteId].oam.y + 16,\n                     148);\n\n        break;\n\n    case DIR_EAST:\n        CreateSprite(&sSpriteTemplate_SandPillar,\n                     gSprites[gPlayerAvatar.spriteId].oam.x + 24,\n                     gSprites[gPlayerAvatar.spriteId].oam.y + 16,\n                     148);\n\n        break;\n    }\n\n    return FALSE;",
+      "callsTo": [
+        "CreateSprite",
+        "GetPlayerFacingDirection",
+        "GetXYCoordsOneStepInFrontOfPlayer",
+        "LockPlayerFieldControls"
+      ],
+      "lineCount": 44
+    },
+    "SpriteCB_SandPillar_BreakTop": {
+      "returnType": "void",
+      "signature": "static void SpriteCB_SandPillar_BreakTop(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "PlaySE(SE_M_ROCK_THROW);\n\n    if (MapGridGetMetatileIdAt(gFieldEffectArguments[5], gFieldEffectArguments[6] - 1) == METATILE_SecretBase_SandOrnament_TopWall)\n        MapGridSetMetatileIdAt(gFieldEffectArguments[5], gFieldEffectArguments[6] - 1, METATILE_SecretBase_Wall_TopMid | MAPGRID_IMPASSABLE);\n    else\n        MapGridSetMetatileIdAt(gFieldEffectArguments[5], gFieldEffectArguments[6] - 1, METATILE_SecretBase_SandOrnament_BrokenTop);\n\n    MapGridSetMetatileIdAt(gFieldEffectArguments[5], gFieldEffectArguments[6], METATILE_SecretBase_Ground);\n    CurrentMapDrawMetatileAt(gFieldEffectArguments[5], gFieldEffectArguments[6] - 1);\n    CurrentMapDrawMetatileAt(gFieldEffectArguments[5], gFieldEffectArguments[6]);\n\n    sprite->data[0] = 0;\n    sprite->callback = SpriteCB_SandPillar_BreakBase;",
+      "callsTo": [
+        "CurrentMapDrawMetatileAt",
+        "MapGridGetMetatileIdAt",
+        "MapGridSetMetatileIdAt",
+        "PlaySE"
+      ],
+      "lineCount": 13
+    },
+    "SpriteCB_SandPillar_BreakBase": {
+      "returnType": "void",
+      "signature": "static void SpriteCB_SandPillar_BreakBase(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "if (sprite->data[0] < 18)\n    {\n        sprite->data[0]++;\n    }\n    else\n    {\n        MapGridSetMetatileIdAt(gFieldEffectArguments[5], gFieldEffectArguments[6], METATILE_SecretBase_SandOrnament_BrokenBase | MAPGRID_IMPASSABLE);\n        CurrentMapDrawMetatileAt(gFieldEffectArguments[5], gFieldEffectArguments[6]);\n        sprite->data[0] = 0;\n        sprite->callback = SpriteCB_SandPillar_End;\n    }",
+      "callsTo": [
+        "CurrentMapDrawMetatileAt",
+        "MapGridSetMetatileIdAt"
+      ],
+      "lineCount": 11
+    },
+    "SpriteCB_SandPillar_End": {
+      "returnType": "void",
+      "signature": "static void SpriteCB_SandPillar_End(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "FieldEffectStop(sprite, FLDEFF_SAND_PILLAR);\n    ScriptContext_Enable();",
+      "callsTo": [
+        "FieldEffectStop",
+        "ScriptContext_Enable"
+      ],
+      "lineCount": 2
+    },
+    "InteractWithShieldOrTVDecoration": {
+      "returnType": "void",
+      "signature": "void InteractWithShieldOrTVDecoration(void)",
+      "paramsRaw": "void",
+      "body": "s16 x, y;\n    s32 metatileId;\n\n    GetXYCoordsOneStepInFrontOfPlayer(&x, &y);\n\n    metatileId = MapGridGetMetatileIdAt(x, y);\n\n    switch (metatileId)\n    {\n    case METATILE_SecretBase_GoldShield_Base1:\n        ConvertIntToDecimalStringN(gStringVar1, 100, STR_CONV_MODE_LEFT_ALIGN, 3);\n        StringCopy(gStringVar2, gText_Gold);\n\n        gSpecialVar_Result = 0;\n\n        if (!VarGet(VAR_CURRENT_SECRET_BASE))\n            return;\n\n        VarSet(VAR_SECRET_BASE_LOW_TV_FLAGS, VarGet(VAR_SECRET_BASE_LOW_TV_FLAGS) | SECRET_BASE_USED_GOLD_SHIELD);\n        break;\n    case METATILE_SecretBase_SilverShield_Base1:\n        ConvertIntToDecimalStringN(gStringVar1, 50, STR_CONV_MODE_LEFT_ALIGN, 2);\n        StringCopy(gStringVar2, gText_Silver);\n\n        gSpecialVar_Result = 0;\n\n        if (!VarGet(VAR_CURRENT_SECRET_BASE))\n            return;\n\n        VarSet(VAR_SECRET_BASE_LOW_TV_FLAGS, VarGet(VAR_SECRET_BASE_LOW_TV_FLAGS) | SECRET_BASE_USED_SILVER_SHIELD);\n        break;\n    case METATILE_SecretBase_TV:\n        gSpecialVar_Result = 1;\n\n        if (!VarGet(VAR_CURRENT_SECRET_BASE))\n            return;\n\n        VarSet(VAR_SECRET_BASE_LOW_TV_FLAGS, VarGet(VAR_SECRET_BASE_LOW_TV_FLAGS) | SECRET_BASE_USED_TV);\n        break;\n    case METATILE_SecretBase_RoundTV:\n        gSpecialVar_Result = 2;\n\n        if (!VarGet(VAR_CURRENT_SECRET_BASE))\n            return;\n\n        VarSet(VAR_SECRET_BASE_LOW_TV_FLAGS, VarGet(VAR_SECRET_BASE_LOW_TV_FLAGS) | SECRET_BASE_USED_TV);\n        break;\n    case METATILE_SecretBase_CuteTV:\n        gSpecialVar_Result = 3;\n\n        if (!VarGet(VAR_CURRENT_SECRET_BASE))\n            return;\n\n        VarSet(VAR_SECRET_BASE_LOW_TV_FLAGS, VarGet(VAR_SECRET_BASE_LOW_TV_FLAGS) | SECRET_BASE_USED_TV);\n        break;\n    }",
+      "callsTo": [
+        "ConvertIntToDecimalStringN",
+        "GetXYCoordsOneStepInFrontOfPlayer",
+        "MapGridGetMetatileIdAt",
+        "StringCopy",
+        "VarGet",
+        "VarSet"
+      ],
+      "lineCount": 56
+    },
+    "IsLargeBreakableDecoration": {
+      "returnType": "bool8",
+      "signature": "bool8 IsLargeBreakableDecoration(u16 metatileId, bool8 checkBase)",
+      "paramsRaw": "u16 metatileId, bool8 checkBase",
+      "body": "if (!CurMapIsSecretBase())\n        return FALSE;\n\n    if (!checkBase)\n    {\n        if (metatileId == METATILE_SecretBase_SandOrnament_Top || metatileId == METATILE_SecretBase_SandOrnament_TopWall)\n            return TRUE;\n        if (metatileId == METATILE_SecretBase_BreakableDoor_TopClosed)\n            return TRUE;\n    }\n    else\n    {\n        if (metatileId == METATILE_SecretBase_SandOrnament_Base1)\n            return TRUE;\n        if (metatileId == METATILE_SecretBase_BreakableDoor_BottomClosed)\n            return TRUE;\n    }\n\n    return FALSE;",
+      "callsTo": [
+        "CurMapIsSecretBase"
+      ],
+      "lineCount": 19
+    },
+    "Task_FieldPoisonEffect": {
+      "returnType": "void",
+      "signature": "static void Task_FieldPoisonEffect(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "s16 *data = gTasks[taskId].data;\n\n    switch (tState)\n    {\n    case 0:\n        tMosaic += 2;\n        if (tMosaic > 8)\n            tState++;\n        break;\n    case 1:\n        tMosaic -= 2;\n        if (tMosaic == 0)\n            tState++;\n        break;\n    case 2:\n        DestroyTask(taskId);\n        return;\n    }\n    SetGpuReg(REG_OFFSET_MOSAIC, (tMosaic << 4) | tMosaic);",
+      "callsTo": [
+        "DestroyTask",
+        "SetGpuReg"
+      ],
+      "lineCount": 19
+    },
+    "FldEffPoison_Start": {
+      "returnType": "void",
+      "signature": "void FldEffPoison_Start(void)",
+      "paramsRaw": "void",
+      "body": "PlaySE(SE_FIELD_POISON);\n    CreateTask(Task_FieldPoisonEffect, 80);",
+      "callsTo": [
+        "CreateTask",
+        "PlaySE"
+      ],
+      "lineCount": 2
+    },
+    "FldEffPoison_IsActive": {
+      "returnType": "bool32",
+      "signature": "bool32 FldEffPoison_IsActive(void)",
+      "paramsRaw": "void",
+      "body": "return FuncIsActiveTask(Task_FieldPoisonEffect);",
+      "callsTo": [
+        "FuncIsActiveTask"
+      ],
+      "lineCount": 1
+    },
+    "Task_WateringBerryTreeAnim": {
+      "returnType": "void",
+      "signature": "static void Task_WateringBerryTreeAnim(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "gTasks[taskId].func = Task_WateringBerryTreeAnim_Start;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "Task_WateringBerryTreeAnim_Start": {
+      "returnType": "void",
+      "signature": "static void Task_WateringBerryTreeAnim_Start(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "struct ObjectEvent *playerObjEvent = &gObjectEvents[gPlayerAvatar.objectEventId];\n\n    if (!ObjectEventIsMovementOverridden(playerObjEvent)\n        || ObjectEventClearHeldMovementIfFinished(playerObjEvent))\n    {\n         \n        SetPlayerAvatarWatering(GetPlayerFacingDirection());\n        ObjectEventSetHeldMovement(playerObjEvent, GetWalkInPlaceNormalMovementAction(GetPlayerFacingDirection()));\n        gTasks[taskId].func = Task_WateringBerryTreeAnim_Continue;\n    }",
+      "callsTo": [
+        "GetPlayerFacingDirection",
+        "GetWalkInPlaceNormalMovementAction",
+        "ObjectEventClearHeldMovementIfFinished",
+        "ObjectEventIsMovementOverridden",
+        "ObjectEventSetHeldMovement",
+        "SetPlayerAvatarWatering"
+      ],
+      "lineCount": 10
+    },
+    "Task_WateringBerryTreeAnim_Continue": {
+      "returnType": "void",
+      "signature": "static void Task_WateringBerryTreeAnim_Continue(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "struct ObjectEvent *playerObjEvent = &gObjectEvents[gPlayerAvatar.objectEventId];\n\n    if (ObjectEventClearHeldMovementIfFinished(playerObjEvent))\n    {\n        s16 value = gTasks[taskId].data[1]++;\n\n         \n        if (value < 10)\n            ObjectEventSetHeldMovement(playerObjEvent, GetWalkInPlaceNormalMovementAction(GetPlayerFacingDirection()));\n        else\n            gTasks[taskId].func = Task_WateringBerryTreeAnim_End;\n    }",
+      "callsTo": [
+        "GetPlayerFacingDirection",
+        "GetWalkInPlaceNormalMovementAction",
+        "ObjectEventClearHeldMovementIfFinished",
+        "ObjectEventSetHeldMovement"
+      ],
+      "lineCount": 12
+    },
+    "Task_WateringBerryTreeAnim_End": {
+      "returnType": "void",
+      "signature": "static void Task_WateringBerryTreeAnim_End(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "SetPlayerAvatarTransitionFlags(GetPlayerAvatarFlags());\n    DestroyTask(taskId);\n    ScriptContext_Enable();",
+      "callsTo": [
+        "DestroyTask",
+        "GetPlayerAvatarFlags",
+        "ScriptContext_Enable",
+        "SetPlayerAvatarTransitionFlags"
+      ],
+      "lineCount": 3
+    },
+    "DoWateringBerryTreeAnim": {
+      "returnType": "void",
+      "signature": "void DoWateringBerryTreeAnim(void)",
+      "paramsRaw": "void",
+      "body": "CreateTask(Task_WateringBerryTreeAnim, 80);",
+      "callsTo": [
+        "CreateTask"
+      ],
+      "lineCount": 1
+    },
+    "CreateRecordMixingLights": {
+      "returnType": "u8",
+      "signature": "u8 CreateRecordMixingLights(void)",
+      "paramsRaw": "void",
+      "body": "u8 spriteId;\n\n    LoadSpritePalette(&sSpritePalette_RecordMixLights);\n\n    spriteId = CreateSprite(&sSpriteTemplate_RecordMixLights, 0, 0, 82);\n\n    if (spriteId == MAX_SPRITES)\n    {\n        return MAX_SPRITES;\n    }\n    else\n    {\n        struct Sprite *sprite = &gSprites[spriteId];\n        GetMapCoordsFromSpritePos(16, 13, &sprite->x, &sprite->y);\n        sprite->coordOffsetEnabled = TRUE;\n        sprite->x += 16;\n        sprite->y += 2;\n    }\n    return spriteId;",
+      "callsTo": [
+        "CreateSprite",
+        "GetMapCoordsFromSpritePos",
+        "LoadSpritePalette"
+      ],
+      "lineCount": 19
+    },
+    "DestroyRecordMixingLights": {
+      "returnType": "void",
+      "signature": "void DestroyRecordMixingLights(void)",
+      "paramsRaw": "void",
+      "body": "int i;\n\n    for (i = 0; i < MAX_SPRITES; i++)\n    {\n        if (gSprites[i].template == &sSpriteTemplate_RecordMixLights)\n        {\n            FreeSpritePalette(&gSprites[i]);\n            DestroySprite(&gSprites[i]);\n        }\n    }",
+      "callsTo": [
+        "DestroySprite",
+        "FreeSpritePalette"
+      ],
+      "lineCount": 10
+    }
+  }
+}

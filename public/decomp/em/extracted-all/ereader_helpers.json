@@ -1,0 +1,273 @@
+{
+  "srcFile": "src/ereader_helpers.c",
+  "count": 26,
+  "functions": {
+    "GetTrainerHillUnkVal": {
+      "returnType": "u8",
+      "signature": "static u8 GetTrainerHillUnkVal(void)",
+      "paramsRaw": "void",
+      "body": "return (gSaveBlock1Ptr->trainerHill.unused + 1) % 256;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "ValidateTrainerChecksum": {
+      "returnType": "bool32",
+      "signature": "static bool32 ValidateTrainerChecksum(struct EReaderTrainerHillTrainer *hillTrainer)",
+      "paramsRaw": "struct EReaderTrainerHillTrainer *hillTrainer",
+      "body": "int checksum = CalcByteArraySum((u8 *)hillTrainer, offsetof(typeof(*hillTrainer), checksum));\n    if (checksum != hillTrainer->checksum)\n        return FALSE;\n\n    return TRUE;",
+      "callsTo": [
+        "CalcByteArraySum"
+      ],
+      "lineCount": 5
+    },
+    "ValidateTrainerHillData": {
+      "returnType": "bool8",
+      "signature": "bool8 ValidateTrainerHillData(struct EReaderTrainerHillSet *hillSet)",
+      "paramsRaw": "struct EReaderTrainerHillSet *hillSet",
+      "body": "u32 i;\n    u32 checksum;\n    int numTrainers = hillSet->numTrainers;\n\n     \n    if (numTrainers < 1 || numTrainers > NUM_TRAINER_HILL_TRAINERS)\n        return FALSE;\n\n     \n    for (i = 0; i < numTrainers; i++)\n    {\n        if (!ValidateTrainerChecksum(&hillSet->trainers[i]))\n            return FALSE;\n    }\n\n     \n    checksum = CalcByteArraySum((u8 *)hillSet->trainers, numTrainers * sizeof(struct EReaderTrainerHillTrainer));\n    if (checksum != hillSet->checksum)\n        return FALSE;\n\n    return TRUE;",
+      "callsTo": [
+        "CalcByteArraySum",
+        "ValidateTrainerChecksum"
+      ],
+      "lineCount": 21
+    },
+    "ValidateTrainerHillChecksum": {
+      "returnType": "bool32",
+      "signature": "static bool32 ValidateTrainerHillChecksum(struct EReaderTrainerHillSet *hillSet)",
+      "paramsRaw": "struct EReaderTrainerHillSet *hillSet",
+      "body": "u32 checksum;\n    int numTrainers = hillSet->numTrainers;\n    if (numTrainers < 1 || numTrainers > NUM_TRAINER_HILL_TRAINERS)\n        return FALSE;\n\n    checksum = CalcByteArraySum((u8 *)hillSet->trainers, sizeof(struct EReaderTrainerHillSet) - offsetof(struct EReaderTrainerHillSet, trainers));\n    if (checksum != hillSet->checksum)\n        return FALSE;\n\n    return TRUE;",
+      "callsTo": [
+        "CalcByteArraySum"
+      ],
+      "lineCount": 10
+    },
+    "TryWriteTrainerHill_Internal": {
+      "returnType": "bool32",
+      "signature": "static bool32 TryWriteTrainerHill_Internal(struct EReaderTrainerHillSet *hillSet, struct TrainerHillChallenge *challenge)",
+      "paramsRaw": "struct EReaderTrainerHillSet *hillSet, struct TrainerHillChallenge *challenge",
+      "body": "int i;\n\n    AGB_ASSERT_EX(hillSet->dummy == 0, \"cereader_tool.c\", 450);\n    AGB_ASSERT_EX(hillSet->id == 0, \"cereader_tool.c\", 452);\n\n    memset(challenge, 0, SECTOR_SIZE);\n    challenge->numTrainers = hillSet->numTrainers;\n    challenge->unused1 = GetTrainerHillUnkVal();\n    challenge->numFloors = (hillSet->numTrainers + 1) / HILL_TRAINERS_PER_FLOOR;\n\n    for (i = 0; i < hillSet->numTrainers; i++)\n    {\n        if (!(i & 1))\n        {\n            challenge->floors[i / HILL_TRAINERS_PER_FLOOR].trainerNum1 = hillSet->trainers[i].trainerNum;\n            challenge->floors[i / HILL_TRAINERS_PER_FLOOR].map = hillSet->trainers[i].map;\n            challenge->floors[i / HILL_TRAINERS_PER_FLOOR].trainers[0] = hillSet->trainers[i].trainer;\n        }\n        else\n        {\n            challenge->floors[i / HILL_TRAINERS_PER_FLOOR].trainerNum2 = hillSet->trainers[i].trainerNum;\n            challenge->floors[i / HILL_TRAINERS_PER_FLOOR].trainers[1] = hillSet->trainers[i].trainer;\n        }\n    }\n\n    if (i & 1)\n    {\n        challenge->floors[i / HILL_TRAINERS_PER_FLOOR].trainers[1] = sTrainerHillTrainerTemplates_JP[i / HILL_TRAINERS_PER_FLOOR];\n    }\n\n    challenge->checksum = CalcByteArraySum((u8 *)challenge->floors, NUM_TRAINER_HILL_FLOORS * sizeof(struct TrainerHillFloor));\n    if (TryWriteSpecialSaveSector(SECTOR_ID_TRAINER_HILL, (u8 *)challenge) != SAVE_STATUS_OK)\n        return FALSE;\n\n    return TRUE;",
+      "callsTo": [
+        "AGB_ASSERT_EX",
+        "CalcByteArraySum",
+        "GetTrainerHillUnkVal",
+        "TryWriteSpecialSaveSector"
+      ],
+      "lineCount": 35
+    },
+    "TryWriteTrainerHill": {
+      "returnType": "bool32",
+      "signature": "bool32 TryWriteTrainerHill(struct EReaderTrainerHillSet *hillSet)",
+      "paramsRaw": "struct EReaderTrainerHillSet *hillSet",
+      "body": "void *buffer = AllocZeroed(SECTOR_SIZE);\n    bool32 result = TryWriteTrainerHill_Internal(hillSet, buffer);\n    Free(buffer);\n    return result;",
+      "callsTo": [
+        "AllocZeroed",
+        "Free",
+        "TryWriteTrainerHill_Internal"
+      ],
+      "lineCount": 4
+    },
+    "TryReadTrainerHill_Internal": {
+      "returnType": "bool32",
+      "signature": "static bool32 TryReadTrainerHill_Internal(struct EReaderTrainerHillSet *dest, u8 *buffer)",
+      "paramsRaw": "struct EReaderTrainerHillSet *dest, u8 *buffer",
+      "body": "if (TryReadSpecialSaveSector(SECTOR_ID_TRAINER_HILL, buffer) != SAVE_STATUS_OK)\n        return FALSE;\n\n    memcpy(dest, buffer, sizeof(struct EReaderTrainerHillSet));\n    if (!ValidateTrainerHillChecksum(dest))\n        return FALSE;\n\n    return TRUE;",
+      "callsTo": [
+        "TryReadSpecialSaveSector",
+        "ValidateTrainerHillChecksum"
+      ],
+      "lineCount": 8
+    },
+    "TryReadTrainerHill": {
+      "returnType": "bool32",
+      "signature": "static bool32 TryReadTrainerHill(struct EReaderTrainerHillSet *hillSet)",
+      "paramsRaw": "struct EReaderTrainerHillSet *hillSet",
+      "body": "u8 *buffer = AllocZeroed(SECTOR_SIZE);\n    bool32 result = TryReadTrainerHill_Internal(hillSet, buffer);\n    Free(buffer);\n    return result;",
+      "callsTo": [
+        "AllocZeroed",
+        "Free",
+        "TryReadTrainerHill_Internal"
+      ],
+      "lineCount": 4
+    },
+    "ReadTrainerHillAndValidate": {
+      "returnType": "bool32",
+      "signature": "bool32 ReadTrainerHillAndValidate(void)",
+      "paramsRaw": "void",
+      "body": "struct EReaderTrainerHillSet *hillSet = AllocZeroed(SECTOR_SIZE);\n    bool32 result = TryReadTrainerHill(hillSet);\n    Free(hillSet);\n    return result;",
+      "callsTo": [
+        "AllocZeroed",
+        "Free",
+        "TryReadTrainerHill"
+      ],
+      "lineCount": 4
+    },
+    "EReader_Send": {
+      "returnType": "int",
+      "signature": "int EReader_Send(int size, const void *src)",
+      "paramsRaw": "int size, const void *src",
+      "body": "int result;\n    int sendStatus;\n\n    EReaderHelper_SaveRegsState();\n    while (1)\n    {\n        GetKeyInput();\n        if (sJoyNew & B_BUTTON)\n            gShouldAdvanceLinkState = 2;\n\n        sendStatus = EReaderHandleTransfer(1, size, src, NULL);\n        sSendRecvStatus = sendStatus;\n        if ((sSendRecvStatus & EREADER_XFER_MASK) == 0 && sSendRecvStatus & EREADER_CHECKSUM_OK_MASK)\n        {\n            result = 0;\n            break;\n        }\n        else if (sSendRecvStatus & EREADER_CANCEL_KEY_MASK)\n        {\n            result = 1;\n            break;\n        }\n        else if (sSendRecvStatus & EREADER_CANCEL_TIMEOUT_MASK)\n        {\n            result = 2;\n            break;\n        }\n        else\n        {\n            gShouldAdvanceLinkState = 0;\n            VBlankIntrWait();\n        }\n    }\n\n    CpuFill32(0, &sSendRecvMgr, sizeof(sSendRecvMgr));\n    EReaderHelper_RestoreRegsState();\n    return result;",
+      "callsTo": [
+        "CpuFill32",
+        "EReaderHandleTransfer",
+        "EReaderHelper_RestoreRegsState",
+        "EReaderHelper_SaveRegsState",
+        "GetKeyInput",
+        "VBlankIntrWait"
+      ],
+      "lineCount": 37
+    },
+    "EReader_Recv": {
+      "returnType": "int",
+      "signature": "int EReader_Recv(void *dest)",
+      "paramsRaw": "void *dest",
+      "body": "int result;\n    int recvStatus;\n\n    EReaderHelper_SaveRegsState();\n    while (1)\n    {\n        GetKeyInput();\n        if (sJoyNew & B_BUTTON)\n            gShouldAdvanceLinkState = 2;\n\n        recvStatus = EReaderHandleTransfer(0, 0, NULL, dest);\n        sSendRecvStatus = recvStatus;\n        if ((sSendRecvStatus & EREADER_XFER_MASK) == 0 && sSendRecvStatus & EREADER_CHECKSUM_OK_MASK)\n        {\n            result = 0;\n            break;\n        }\n        else if (sSendRecvStatus & EREADER_CANCEL_KEY_MASK)\n        {\n            result = 1;\n            break;\n        }\n        else if (sSendRecvStatus & EREADER_CANCEL_TIMEOUT_MASK)\n        {\n            result = 2;\n            break;\n        }\n        else\n        {\n            gShouldAdvanceLinkState = 0;\n            VBlankIntrWait();\n        }\n    }\n\n    CpuFill32(0, &sSendRecvMgr, sizeof(sSendRecvMgr));\n    EReaderHelper_RestoreRegsState();\n    return result;",
+      "callsTo": [
+        "CpuFill32",
+        "EReaderHandleTransfer",
+        "EReaderHelper_RestoreRegsState",
+        "EReaderHelper_SaveRegsState",
+        "GetKeyInput",
+        "VBlankIntrWait"
+      ],
+      "lineCount": 37
+    },
+    "CloseSerial": {
+      "returnType": "void",
+      "signature": "static void CloseSerial(void)",
+      "paramsRaw": "void",
+      "body": "REG_IME = 0;\n    REG_IE &= ~(INTR_FLAG_TIMER3 | INTR_FLAG_SERIAL);\n    REG_IME = 1;\n    REG_SIOCNT = 0;\n    REG_TM3CNT_H = 0;\n    REG_IF = INTR_FLAG_TIMER3 | INTR_FLAG_SERIAL;",
+      "callsTo": [],
+      "lineCount": 6
+    },
+    "OpenSerialMulti": {
+      "returnType": "void",
+      "signature": "static void OpenSerialMulti(void)",
+      "paramsRaw": "void",
+      "body": "REG_IME = 0;\n    REG_IE &= ~(INTR_FLAG_TIMER3 | INTR_FLAG_SERIAL);\n    REG_IME = 1;\n    REG_RCNT = 0;\n    REG_SIOCNT = SIO_MULTI_MODE;\n    REG_SIOCNT |= SIO_INTR_ENABLE | SIO_115200_BPS;\n    REG_IME = 0;\n    REG_IE |= INTR_FLAG_SERIAL;\n    REG_IME = 1;\n\n    if (sSendRecvMgr.state == 0)\n        CpuFill32(0, &sSendRecvMgr, sizeof(sSendRecvMgr));",
+      "callsTo": [
+        "CpuFill32"
+      ],
+      "lineCount": 12
+    },
+    "OpenSerial32": {
+      "returnType": "void",
+      "signature": "static void OpenSerial32(void)",
+      "paramsRaw": "void",
+      "body": "REG_RCNT = 0;\n    REG_SIOCNT = SIO_32BIT_MODE | SIO_INTR_ENABLE;\n    REG_SIOCNT |= SIO_MULTI_SD;\n    gShouldAdvanceLinkState = 0;\n    sCounter1 = 0;\n    sCounter2 = 0;",
+      "callsTo": [],
+      "lineCount": 6
+    },
+    "EReaderHandleTransfer": {
+      "returnType": "int",
+      "signature": "int EReaderHandleTransfer(u8 mode, size_t size, const void *data, void *recvBuffer)",
+      "paramsRaw": "u8 mode, size_t size, const void *data, void *recvBuffer",
+      "body": "switch (sSendRecvMgr.state)\n    {\n    case EREADER_XFR_STATE_INIT:\n        OpenSerialMulti();\n        sSendRecvMgr.xferState = EREADER_XFER_EXE;\n        sSendRecvMgr.state = EREADER_XFR_STATE_HANDSHAKE;\n        break;\n    case EREADER_XFR_STATE_HANDSHAKE:\n        if (DetermineSendRecvState(mode))\n            EnableSio();\n\n        if (gShouldAdvanceLinkState == 2)\n        {\n            sSendRecvMgr.cancellationReason = EREADER_CANCEL_KEY;\n            sSendRecvMgr.state = EREADER_XFR_STATE_DONE;\n        }\n        break;\n    case EREADER_XFR_STATE_START:\n        OpenSerial32();\n        SetUpTransferManager(size, data, recvBuffer);\n        sSendRecvMgr.state = EREADER_XFR_STATE_TRANSFER;\n         \n    case EREADER_XFR_STATE_TRANSFER:\n        if (gShouldAdvanceLinkState == 2)\n        {\n            sSendRecvMgr.cancellationReason = EREADER_CANCEL_KEY;\n            sSendRecvMgr.state = EREADER_XFR_STATE_DONE;\n        }\n        else\n        {\n            sCounter1++;\n            sCounter2++;\n            if (!sSendRecvMgr.isParent && sCounter2 > 60)\n            {\n                sSendRecvMgr.cancellationReason = EREADER_CANCEL_TIMEOUT;\n                sSendRecvMgr.state = EREADER_XFR_STATE_DONE;\n            }\n\n            if (sSendRecvMgr.xferState != EREADER_XFER_CHK)\n            {\n                if (sSendRecvMgr.isParent && sCounter1 > 2)\n                {\n                    EnableSio();\n                    sSendRecvMgr.xferState = EREADER_XFER_CHK;\n                }\n                else\n                {\n                    EnableSio();\n                    sSendRecvMgr.xferState = EREADER_XFER_CHK;\n                }\n            }\n        }\n        break;\n    case EREADER_XFR_STATE_TRANSFER_DONE:\n        OpenSerialMulti();\n        sSendRecvMgr.state = EREADER_XFR_STATE_CHECKSUM;\n        break;\n    case EREADER_XFR_STATE_CHECKSUM:\n        if (sSendRecvMgr.isParent == TRUE && sCounter1 > 2)\n            EnableSio();\n\n        if (++sCounter1 > 60)\n        {\n            sSendRecvMgr.cancellationReason = EREADER_CANCEL_TIMEOUT;\n            sSendRecvMgr.state = EREADER_XFR_STATE_DONE;\n        }\n        break;\n    case EREADER_XFR_STATE_DONE:\n        if (sSendRecvMgr.xferState)\n        {\n            CloseSerial();\n            sSendRecvMgr.xferState = 0;\n        }\n        break;\n    }\n\n    return (sSendRecvMgr.xferState << EREADER_XFER_SHIFT)\n         | (sSendRecvMgr.cancellationReason << EREADER_CANCEL_SHIFT)\n         | (sSendRecvMgr.checksumResult << EREADER_CHECKSUM_SHIFT);",
+      "callsTo": [
+        "CloseSerial",
+        "DetermineSendRecvState",
+        "EnableSio",
+        "OpenSerial32",
+        "OpenSerialMulti",
+        "SetUpTransferManager"
+      ],
+      "lineCount": 79
+    },
+    "DetermineSendRecvState": {
+      "returnType": "u16",
+      "signature": "static u16 DetermineSendRecvState(u8 mode)",
+      "paramsRaw": "u8 mode",
+      "body": "bool16 resp;\n    if ((*(vu32 *)REG_ADDR_SIOCNT & (SIO_MULTI_SI | SIO_MULTI_SD)) == SIO_MULTI_SD && mode)\n        resp = sSendRecvMgr.isParent = TRUE;\n    else\n        resp = sSendRecvMgr.isParent = FALSE;\n    return resp;",
+      "callsTo": [],
+      "lineCount": 6
+    },
+    "SetUpTransferManager": {
+      "returnType": "void",
+      "signature": "static void SetUpTransferManager(size_t size, const void *data, void *recvBuffer)",
+      "paramsRaw": "size_t size, const void *data, void *recvBuffer",
+      "body": "if (sSendRecvMgr.isParent)\n    {\n        REG_SIOCNT |= SIO_38400_BPS;\n        sSendRecvMgr.data = (void *)data;\n        REG_SIODATA32 = size;\n        sSendRecvMgr.size = size / 4 + 1;\n        StartTm3();\n    }\n    else\n    {\n        REG_SIOCNT = REG_SIOCNT;\n        sSendRecvMgr.data = recvBuffer;\n    }",
+      "callsTo": [
+        "StartTm3"
+      ],
+      "lineCount": 13
+    },
+    "StartTm3": {
+      "returnType": "void",
+      "signature": "static void StartTm3(void)",
+      "paramsRaw": "void",
+      "body": "REG_TM3CNT_L = -601;\n    REG_TM3CNT_H = TIMER_INTR_ENABLE;\n    REG_IME = 0;\n    REG_IE |= INTR_FLAG_TIMER3;\n    REG_IME = 1;",
+      "callsTo": [],
+      "lineCount": 5
+    },
+    "EReaderHelper_Timer3Callback": {
+      "returnType": "void",
+      "signature": "void EReaderHelper_Timer3Callback(void)",
+      "paramsRaw": "void",
+      "body": "DisableTm3();\n    EnableSio();",
+      "callsTo": [
+        "DisableTm3",
+        "EnableSio"
+      ],
+      "lineCount": 2
+    },
+    "EReaderHelper_SerialCallback": {
+      "returnType": "void",
+      "signature": "void EReaderHelper_SerialCallback(void)",
+      "paramsRaw": "void",
+      "body": "u16 i, cnt1, cnt2;\n    u32 recv32;\n    u16 recv[4];\n\n    switch (sSendRecvMgr.state)\n    {\n    case EREADER_XFR_STATE_HANDSHAKE:\n        REG_SIOMLT_SEND = EREADER_HANDSHAKE;\n        *(u64 *)recv = REG_SIOMLT_RECV;\n        for (i = 0, cnt1 = 0, cnt2 = 0; i < 4; i++)\n        {\n            if (recv[i] == EREADER_HANDSHAKE)\n                cnt1++;\n            else if (recv[i] != 0xFFFF)\n                cnt2++;\n        }\n\n        if (cnt1 == 2 && cnt2 == 0)\n            sSendRecvMgr.state = 2;\n        break;\n    case EREADER_XFR_STATE_TRANSFER:\n        recv32 = REG_SIODATA32;\n         \n        if (!sSendRecvMgr.cursor && !sSendRecvMgr.isParent)\n            sSendRecvMgr.size = recv32 / 4 + 1;\n\n        if (sSendRecvMgr.isParent == TRUE)\n        {\n             \n            if (sSendRecvMgr.cursor < sSendRecvMgr.size)\n            {\n                REG_SIODATA32 = sSendRecvMgr.data[sSendRecvMgr.cursor];\n                sSendRecvMgr.checksum += sSendRecvMgr.data[sSendRecvMgr.cursor];\n            }\n            else\n            {\n                REG_SIODATA32 = sSendRecvMgr.checksum;\n            }\n        }\n        else\n        {\n             \n            if (sSendRecvMgr.cursor > 0 && sSendRecvMgr.cursor < sSendRecvMgr.size + 1)\n            {\n                sSendRecvMgr.data[sSendRecvMgr.cursor - 1] = recv32;\n                sSendRecvMgr.checksum += recv32;\n            }\n            else if (sSendRecvMgr.cursor)\n            {\n                if (sSendRecvMgr.checksum == recv32)\n                    sSendRecvMgr.checksumResult = EREADER_CHECKSUM_OK;\n                else\n                    sSendRecvMgr.checksumResult = EREADER_CHECKSUM_ERR;\n            }\n\n            sCounter2 = 0;\n        }\n\n        if (++sSendRecvMgr.cursor < sSendRecvMgr.size + 2)\n        {\n            if (sSendRecvMgr.isParent)\n                REG_TM3CNT_H |= TIMER_ENABLE;\n            else\n                EnableSio();\n        }\n        else\n        {\n            sSendRecvMgr.state = EREADER_XFR_STATE_TRANSFER_DONE;\n            sCounter1 = 0;\n        }\n        break;\n    case EREADER_XFR_STATE_CHECKSUM:\n        if (!sSendRecvMgr.isParent)\n            REG_SIOMLT_SEND = sSendRecvMgr.checksumResult;\n\n        *(vu64 *)recv = REG_SIOMLT_RECV;\n        if (recv[1] == EREADER_CHECKSUM_OK || recv[1] == EREADER_CHECKSUM_ERR)\n        {\n            if (sSendRecvMgr.isParent == TRUE)\n                sSendRecvMgr.checksumResult = recv[1];  \n\n            sSendRecvMgr.state = EREADER_XFR_STATE_DONE;\n        }\n        break;\n    }",
+      "callsTo": [
+        "EnableSio"
+      ],
+      "lineCount": 85
+    },
+    "EnableSio": {
+      "returnType": "void",
+      "signature": "static void EnableSio(void)",
+      "paramsRaw": "void",
+      "body": "REG_SIOCNT |= SIO_ENABLE;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "DisableTm3": {
+      "returnType": "void",
+      "signature": "static void DisableTm3(void)",
+      "paramsRaw": "void",
+      "body": "REG_TM3CNT_H &= ~TIMER_ENABLE;\n    REG_TM3CNT_L = 0xFDA7;",
+      "callsTo": [],
+      "lineCount": 2
+    },
+    "GetKeyInput": {
+      "returnType": "void",
+      "signature": "static void GetKeyInput(void)",
+      "paramsRaw": "void",
+      "body": "int rawKeys = REG_KEYINPUT ^ KEYS_MASK;\n    sJoyNew = rawKeys & ~sJoyNewOrRepeated;\n    sJoyNewOrRepeated = rawKeys;",
+      "callsTo": [],
+      "lineCount": 3
+    },
+    "EReaderHelper_SaveRegsState": {
+      "returnType": "void",
+      "signature": "void EReaderHelper_SaveRegsState(void)",
+      "paramsRaw": "void",
+      "body": "sSavedIme = REG_IME;\n    sSavedIe = REG_IE;\n    sSavedTm3Cnt = REG_TM3CNT_H;\n    sSavedSioCnt = REG_SIOCNT;\n    sSavedRCnt = REG_RCNT;",
+      "callsTo": [],
+      "lineCount": 5
+    },
+    "EReaderHelper_RestoreRegsState": {
+      "returnType": "void",
+      "signature": "void EReaderHelper_RestoreRegsState(void)",
+      "paramsRaw": "void",
+      "body": "REG_IME = sSavedIme;\n    REG_IE = sSavedIe;\n    REG_TM3CNT_H = sSavedTm3Cnt;\n    REG_SIOCNT = sSavedSioCnt;\n    REG_RCNT = sSavedRCnt;",
+      "callsTo": [],
+      "lineCount": 5
+    },
+    "EReaderHelper_ClearSendRecvMgr": {
+      "returnType": "void",
+      "signature": "void EReaderHelper_ClearSendRecvMgr(void)",
+      "paramsRaw": "void",
+      "body": "CpuFill32(0, &sSendRecvMgr, sizeof(sSendRecvMgr));",
+      "callsTo": [
+        "CpuFill32"
+      ],
+      "lineCount": 1
+    }
+  }
+}

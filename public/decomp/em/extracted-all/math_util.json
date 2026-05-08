@@ -1,0 +1,78 @@
+{
+  "srcFile": "src/math_util.c",
+  "count": 9,
+  "functions": {
+    "MathUtil_Mul16": {
+      "returnType": "s16",
+      "signature": "s16 MathUtil_Mul16(s16 x, s16 y)",
+      "paramsRaw": "s16 x, s16 y",
+      "body": "s32 result;\n\n    result = x;\n    result *= y;\n    result /= 256;\n    return result;",
+      "callsTo": [],
+      "lineCount": 6
+    },
+    "MathUtil_Mul16Shift": {
+      "returnType": "s16",
+      "signature": "s16 MathUtil_Mul16Shift(u8 s, s16 x, s16 y)",
+      "paramsRaw": "u8 s, s16 x, s16 y",
+      "body": "s32 result;\n\n    result = x;\n    result *= y;\n    result /= (1 << s);\n    return result;",
+      "callsTo": [],
+      "lineCount": 6
+    },
+    "MathUtil_Mul32": {
+      "returnType": "s32",
+      "signature": "s32 MathUtil_Mul32(s32 x, s32 y)",
+      "paramsRaw": "s32 x, s32 y",
+      "body": "s64 result;\n\n    result = x;\n    result *= y;\n    result /= 256;\n    return result;",
+      "callsTo": [],
+      "lineCount": 6
+    },
+    "MathUtil_Div16": {
+      "returnType": "s16",
+      "signature": "s16 MathUtil_Div16(s16 x, s16 y)",
+      "paramsRaw": "s16 x, s16 y",
+      "body": "if (y == 0)\n    {\n        return 0;\n    }\n    return (x << 8) / y;",
+      "callsTo": [],
+      "lineCount": 5
+    },
+    "MathUtil_Div16Shift": {
+      "returnType": "s16",
+      "signature": "s16 MathUtil_Div16Shift(u8 s, s16 x, s16 y)",
+      "paramsRaw": "u8 s, s16 x, s16 y",
+      "body": "if (y == 0)\n    {\n        return 0;\n    }\n    return (x << s) / y;",
+      "callsTo": [],
+      "lineCount": 5
+    },
+    "MathUtil_Div32": {
+      "returnType": "s32",
+      "signature": "s32 MathUtil_Div32(s32 x, s32 y)",
+      "paramsRaw": "s32 x, s32 y",
+      "body": "s64 _x;\n\n    if (y == 0)\n    {\n        return 0;\n    }\n    _x = x;\n    _x *= 256;\n    return _x / y;",
+      "callsTo": [],
+      "lineCount": 9
+    },
+    "MathUtil_Inv16": {
+      "returnType": "s16",
+      "signature": "s16 MathUtil_Inv16(s16 y)",
+      "paramsRaw": "s16 y",
+      "body": "s32 x;\n\n    x = 0x10000;\n    return x / y;",
+      "callsTo": [],
+      "lineCount": 4
+    },
+    "MathUtil_Inv16Shift": {
+      "returnType": "s16",
+      "signature": "s16 MathUtil_Inv16Shift(u8 s, s16 y)",
+      "paramsRaw": "u8 s, s16 y",
+      "body": "s32 x;\n\n    x = 0x100 << s;\n    return x / y;",
+      "callsTo": [],
+      "lineCount": 4
+    },
+    "MathUtil_Inv32": {
+      "returnType": "s32",
+      "signature": "s32 MathUtil_Inv32(s32 y)",
+      "paramsRaw": "s32 y",
+      "body": "s64 x;\n\n    x = 0x10000;\n    return x / y;",
+      "callsTo": [],
+      "lineCount": 4
+    }
+  }
+}

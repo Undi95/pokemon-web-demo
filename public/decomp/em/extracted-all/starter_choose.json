@@ -1,0 +1,251 @@
+{
+  "srcFile": "src/starter_choose.c",
+  "count": 18,
+  "functions": {
+    "GetStarterPokemon": {
+      "returnType": "u16",
+      "signature": "u16 GetStarterPokemon(u16 chosenStarterId)",
+      "paramsRaw": "u16 chosenStarterId",
+      "body": "if (chosenStarterId > STARTER_MON_COUNT)\n        chosenStarterId = 0;\n    return sStarterMon[chosenStarterId];",
+      "callsTo": [],
+      "lineCount": 3
+    },
+    "VblankCB_StarterChoose": {
+      "returnType": "void",
+      "signature": "static void VblankCB_StarterChoose(void)",
+      "paramsRaw": "void",
+      "body": "LoadOam();\n    ProcessSpriteCopyRequests();\n    TransferPlttBuffer();",
+      "callsTo": [
+        "LoadOam",
+        "ProcessSpriteCopyRequests",
+        "TransferPlttBuffer"
+      ],
+      "lineCount": 3
+    },
+    "CB2_ChooseStarter": {
+      "returnType": "void",
+      "signature": "void CB2_ChooseStarter(void)",
+      "paramsRaw": "void",
+      "body": "u8 taskId;\n    u8 spriteId;\n\n    SetVBlankCallback(NULL);\n\n    SetGpuReg(REG_OFFSET_DISPCNT, 0);\n    SetGpuReg(REG_OFFSET_BG3CNT, 0);\n    SetGpuReg(REG_OFFSET_BG2CNT, 0);\n    SetGpuReg(REG_OFFSET_BG1CNT, 0);\n    SetGpuReg(REG_OFFSET_BG0CNT, 0);\n\n    ChangeBgX(0, 0, BG_COORD_SET);\n    ChangeBgY(0, 0, BG_COORD_SET);\n    ChangeBgX(1, 0, BG_COORD_SET);\n    ChangeBgY(1, 0, BG_COORD_SET);\n    ChangeBgX(2, 0, BG_COORD_SET);\n    ChangeBgY(2, 0, BG_COORD_SET);\n    ChangeBgX(3, 0, BG_COORD_SET);\n    ChangeBgY(3, 0, BG_COORD_SET);\n\n    DmaFill16(3, 0, VRAM, VRAM_SIZE);\n    DmaFill32(3, 0, OAM, OAM_SIZE);\n    DmaFill16(3, 0, PLTT, PLTT_SIZE);\n\n    LZ77UnCompVram(gBirchBagGrass_Gfx, (void *)VRAM);\n    LZ77UnCompVram(gBirchBagTilemap, (void *)(BG_SCREEN_ADDR(6)));\n    LZ77UnCompVram(gBirchGrassTilemap, (void *)(BG_SCREEN_ADDR(7)));\n\n    ResetBgsAndClearDma3BusyFlags(0);\n    InitBgsFromTemplates(0, sBgTemplates, ARRAY_COUNT(sBgTemplates));\n    InitWindows(sWindowTemplates);\n\n    DeactivateAllTextPrinters();\n    LoadUserWindowBorderGfx(0, 0x2A8, BG_PLTT_ID(13));\n    ClearScheduledBgCopiesToVram();\n    ScanlineEffect_Stop();\n    ResetTasks();\n    ResetSpriteData();\n    ResetPaletteFade();\n    FreeAllSpritePalettes();\n    ResetAllPicSprites();\n\n    LoadPalette(GetOverworldTextboxPalettePtr(), BG_PLTT_ID(14), PLTT_SIZE_4BPP);\n    LoadPalette(gBirchBagGrass_Pal, BG_PLTT_ID(0), sizeof(gBirchBagGrass_Pal));\n    LoadCompressedSpriteSheet(&sSpriteSheet_PokeballSelect[0]);\n    LoadCompressedSpriteSheet(&sSpriteSheet_StarterCircle[0]);\n    LoadSpritePalettes(sSpritePalettes_StarterChoose);\n    BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_BLACK);\n\n    EnableInterrupts(DISPSTAT_VBLANK);\n    SetVBlankCallback(VblankCB_StarterChoose);\n    SetMainCallback2(CB2_StarterChoose);\n\n    SetGpuReg(REG_OFFSET_WININ, WININ_WIN0_BG_ALL | WININ_WIN0_OBJ | WININ_WIN0_CLR);\n    SetGpuReg(REG_OFFSET_WINOUT, WINOUT_WIN01_BG_ALL | WINOUT_WIN01_OBJ);\n    SetGpuReg(REG_OFFSET_WIN0H, 0);\n    SetGpuReg(REG_OFFSET_WIN0V, 0);\n    SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_TGT1_BG1 | BLDCNT_TGT1_BG2 | BLDCNT_TGT1_BG3 | BLDCNT_TGT1_OBJ | BLDCNT_TGT1_BD | BLDCNT_EFFECT_DARKEN);\n    SetGpuReg(REG_OFFSET_BLDALPHA, 0);\n    SetGpuReg(REG_OFFSET_BLDY, 7);\n    SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_WIN0_ON | DISPCNT_OBJ_ON | DISPCNT_OBJ_1D_MAP);\n\n    ShowBg(0);\n    ShowBg(2);\n    ShowBg(3);\n\n    taskId = CreateTask(Task_StarterChoose, 0);\n    gTasks[taskId].tStarterSelection = 1;\n\n     \n    spriteId = CreateSprite(&sSpriteTemplate_Hand, 120, 56, 2);\n    gSprites[spriteId].data[0] = taskId;\n\n     \n    spriteId = CreateSprite(&sSpriteTemplate_Pokeball, sPokeballCoords[0][0], sPokeballCoords[0][1], 2);\n    gSprites[spriteId].sTaskId = taskId;\n    gSprites[spriteId].sBallId = 0;\n\n    spriteId = CreateSprite(&sSpriteTemplate_Pokeball, sPokeballCoords[1][0], sPokeballCoords[1][1], 2);\n    gSprites[spriteId].sTaskId = taskId;\n    gSprites[spriteId].sBallId = 1;\n\n    spriteId = CreateSprite(&sSpriteTemplate_Pokeball, sPokeballCoords[2][0], sPokeballCoords[2][1], 2);\n    gSprites[spriteId].sTaskId = taskId;\n    gSprites[spriteId].sBallId = 2;\n\n    sStarterLabelWindowId = WINDOW_NONE;",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "BG_PLTT_ID",
+        "BG_SCREEN_ADDR",
+        "BeginNormalPaletteFade",
+        "ChangeBgX",
+        "ChangeBgY",
+        "ClearScheduledBgCopiesToVram",
+        "CreateSprite",
+        "CreateTask",
+        "DeactivateAllTextPrinters",
+        "DmaFill16",
+        "DmaFill32",
+        "EnableInterrupts",
+        "FreeAllSpritePalettes",
+        "GetOverworldTextboxPalettePtr",
+        "InitBgsFromTemplates",
+        "InitWindows",
+        "LZ77UnCompVram",
+        "LoadCompressedSpriteSheet",
+        "LoadPalette",
+        "LoadSpritePalettes",
+        "LoadUserWindowBorderGfx",
+        "ResetAllPicSprites",
+        "ResetBgsAndClearDma3BusyFlags",
+        "ResetPaletteFade",
+        "ResetSpriteData",
+        "ResetTasks",
+        "ScanlineEffect_Stop",
+        "SetGpuReg",
+        "SetMainCallback2",
+        "SetVBlankCallback",
+        "ShowBg"
+      ],
+      "lineCount": 87
+    },
+    "CB2_StarterChoose": {
+      "returnType": "void",
+      "signature": "static void CB2_StarterChoose(void)",
+      "paramsRaw": "void",
+      "body": "RunTasks();\n    AnimateSprites();\n    BuildOamBuffer();\n    DoScheduledBgTilemapCopiesToVram();\n    UpdatePaletteFade();",
+      "callsTo": [
+        "AnimateSprites",
+        "BuildOamBuffer",
+        "DoScheduledBgTilemapCopiesToVram",
+        "RunTasks",
+        "UpdatePaletteFade"
+      ],
+      "lineCount": 5
+    },
+    "Task_StarterChoose": {
+      "returnType": "void",
+      "signature": "static void Task_StarterChoose(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "CreateStarterPokemonLabel(gTasks[taskId].tStarterSelection);\n    DrawStdFrameWithCustomTileAndPalette(0, FALSE, 0x2A8, 0xD);\n    AddTextPrinterParameterized(0, FONT_NORMAL, gText_BirchInTrouble, 0, 1, 0, NULL);\n    PutWindowTilemap(0);\n    ScheduleBgCopyTilemapToVram(0);\n    gTasks[taskId].func = Task_HandleStarterChooseInput;",
+      "callsTo": [
+        "AddTextPrinterParameterized",
+        "CreateStarterPokemonLabel",
+        "DrawStdFrameWithCustomTileAndPalette",
+        "PutWindowTilemap",
+        "ScheduleBgCopyTilemapToVram"
+      ],
+      "lineCount": 6
+    },
+    "Task_HandleStarterChooseInput": {
+      "returnType": "void",
+      "signature": "static void Task_HandleStarterChooseInput(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "u8 selection = gTasks[taskId].tStarterSelection;\n\n    if (JOY_NEW(A_BUTTON))\n    {\n        u8 spriteId;\n\n        ClearStarterLabel();\n\n         \n        spriteId = CreateSprite(&sSpriteTemplate_StarterCircle, sPokeballCoords[selection][0], sPokeballCoords[selection][1], 1);\n        gTasks[taskId].tCircleSpriteId = spriteId;\n\n         \n        spriteId = CreatePokemonFrontSprite(GetStarterPokemon(gTasks[taskId].tStarterSelection), sPokeballCoords[selection][0], sPokeballCoords[selection][1]);\n        gSprites[spriteId].affineAnims = &sAffineAnims_StarterPokemon;\n        gSprites[spriteId].callback = SpriteCB_StarterPokemon;\n\n        gTasks[taskId].tPkmnSpriteId = spriteId;\n        gTasks[taskId].func = Task_WaitForStarterSprite;\n    }\n    else if (JOY_NEW(DPAD_LEFT) && selection > 0)\n    {\n        gTasks[taskId].tStarterSelection--;\n        gTasks[taskId].func = Task_MoveStarterChooseCursor;\n    }\n    else if (JOY_NEW(DPAD_RIGHT) && selection < STARTER_MON_COUNT - 1)\n    {\n        gTasks[taskId].tStarterSelection++;\n        gTasks[taskId].func = Task_MoveStarterChooseCursor;\n    }",
+      "callsTo": [
+        "ClearStarterLabel",
+        "CreatePokemonFrontSprite",
+        "CreateSprite",
+        "GetStarterPokemon",
+        "JOY_NEW"
+      ],
+      "lineCount": 30
+    },
+    "Task_WaitForStarterSprite": {
+      "returnType": "void",
+      "signature": "static void Task_WaitForStarterSprite(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "if (gSprites[gTasks[taskId].tCircleSpriteId].affineAnimEnded &&\n        gSprites[gTasks[taskId].tCircleSpriteId].x == STARTER_PKMN_POS_X &&\n        gSprites[gTasks[taskId].tCircleSpriteId].y == STARTER_PKMN_POS_Y)\n    {\n        gTasks[taskId].func = Task_AskConfirmStarter;\n    }",
+      "callsTo": [],
+      "lineCount": 6
+    },
+    "Task_AskConfirmStarter": {
+      "returnType": "void",
+      "signature": "static void Task_AskConfirmStarter(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "PlayCry_Normal(GetStarterPokemon(gTasks[taskId].tStarterSelection), 0);\n    FillWindowPixelBuffer(0, PIXEL_FILL(1));\n    AddTextPrinterParameterized(0, FONT_NORMAL, gText_ConfirmStarterChoice, 0, 1, 0, NULL);\n    ScheduleBgCopyTilemapToVram(0);\n    CreateYesNoMenu(&sWindowTemplate_ConfirmStarter, 0x2A8, 0xD, 0);\n    gTasks[taskId].func = Task_HandleConfirmStarterInput;",
+      "callsTo": [
+        "AddTextPrinterParameterized",
+        "CreateYesNoMenu",
+        "FillWindowPixelBuffer",
+        "GetStarterPokemon",
+        "PIXEL_FILL",
+        "PlayCry_Normal",
+        "ScheduleBgCopyTilemapToVram"
+      ],
+      "lineCount": 6
+    },
+    "Task_HandleConfirmStarterInput": {
+      "returnType": "void",
+      "signature": "static void Task_HandleConfirmStarterInput(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "u8 spriteId;\n\n    switch (Menu_ProcessInputNoWrapClearOnChoose())\n    {\n    case 0:   \n         \n        gSpecialVar_Result = gTasks[taskId].tStarterSelection;\n        ResetAllPicSprites();\n        SetMainCallback2(gMain.savedCallback);\n        break;\n    case 1:   \n    case MENU_B_PRESSED:\n        PlaySE(SE_SELECT);\n        spriteId = gTasks[taskId].tPkmnSpriteId;\n        FreeOamMatrix(gSprites[spriteId].oam.matrixNum);\n        FreeAndDestroyMonPicSprite(spriteId);\n\n        spriteId = gTasks[taskId].tCircleSpriteId;\n        FreeOamMatrix(gSprites[spriteId].oam.matrixNum);\n        DestroySprite(&gSprites[spriteId]);\n        gTasks[taskId].func = Task_DeclineStarter;\n        break;\n    }",
+      "callsTo": [
+        "DestroySprite",
+        "FreeAndDestroyMonPicSprite",
+        "FreeOamMatrix",
+        "Menu_ProcessInputNoWrapClearOnChoose",
+        "PlaySE",
+        "ResetAllPicSprites",
+        "SetMainCallback2"
+      ],
+      "lineCount": 23
+    },
+    "Task_DeclineStarter": {
+      "returnType": "void",
+      "signature": "static void Task_DeclineStarter(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "gTasks[taskId].func = Task_StarterChoose;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "CreateStarterPokemonLabel": {
+      "returnType": "void",
+      "signature": "static void CreateStarterPokemonLabel(u8 selection)",
+      "paramsRaw": "u8 selection",
+      "body": "u8 categoryText[32];\n    struct WindowTemplate winTemplate;\n    const u8 *speciesName;\n    s32 width;\n    u8 labelLeft, labelRight, labelTop, labelBottom;\n\n    u16 species = GetStarterPokemon(selection);\n    CopyMonCategoryText(SpeciesToNationalPokedexNum(species), categoryText);\n    speciesName = gSpeciesNames[species];\n\n    winTemplate = sWindowTemplate_StarterLabel;\n    winTemplate.tilemapLeft = sStarterLabelCoords[selection][0];\n    winTemplate.tilemapTop = sStarterLabelCoords[selection][1];\n\n    sStarterLabelWindowId = AddWindow(&winTemplate);\n    FillWindowPixelBuffer(sStarterLabelWindowId, PIXEL_FILL(0));\n\n     \n\n    width = GetStringCenterAlignXOffset(FONT_NORMAL, speciesName, 0x68);\n    AddTextPrinterParameterized3(sStarterLabelWindowId, FONT_NORMAL, width, 1, sTextColors, 0, speciesName);\n\n    width = GetStringCenterAlignXOffset(FONT_NARROW, categoryText, 0x68);\n    AddTextPrinterParameterized3(sStarterLabelWindowId, FONT_NARROW, width, 17, sTextColors, 0, categoryText);\n\n    PutWindowTilemap(sStarterLabelWindowId);\n    ScheduleBgCopyTilemapToVram(0);\n\n    labelLeft = sStarterLabelCoords[selection][0] * 8 - 4;\n    labelRight = (sStarterLabelCoords[selection][0] + 13) * 8 + 4;\n    labelTop = sStarterLabelCoords[selection][1] * 8;\n    labelBottom = (sStarterLabelCoords[selection][1] + 4) * 8;\n    SetGpuReg(REG_OFFSET_WIN0H, WIN_RANGE(labelLeft, labelRight));\n    SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(labelTop, labelBottom));",
+      "callsTo": [
+        "AddTextPrinterParameterized3",
+        "AddWindow",
+        "CopyMonCategoryText",
+        "FillWindowPixelBuffer",
+        "GetStarterPokemon",
+        "GetStringCenterAlignXOffset",
+        "PIXEL_FILL",
+        "PutWindowTilemap",
+        "ScheduleBgCopyTilemapToVram",
+        "SetGpuReg",
+        "SpeciesToNationalPokedexNum",
+        "WIN_RANGE"
+      ],
+      "lineCount": 34
+    },
+    "ClearStarterLabel": {
+      "returnType": "void",
+      "signature": "static void ClearStarterLabel(void)",
+      "paramsRaw": "void",
+      "body": "FillWindowPixelBuffer(sStarterLabelWindowId, PIXEL_FILL(0));\n    ClearWindowTilemap(sStarterLabelWindowId);\n    RemoveWindow(sStarterLabelWindowId);\n    sStarterLabelWindowId = WINDOW_NONE;\n    SetGpuReg(REG_OFFSET_WIN0H, 0);\n    SetGpuReg(REG_OFFSET_WIN0V, 0);\n    ScheduleBgCopyTilemapToVram(0);",
+      "callsTo": [
+        "ClearWindowTilemap",
+        "FillWindowPixelBuffer",
+        "PIXEL_FILL",
+        "RemoveWindow",
+        "ScheduleBgCopyTilemapToVram",
+        "SetGpuReg"
+      ],
+      "lineCount": 7
+    },
+    "Task_MoveStarterChooseCursor": {
+      "returnType": "void",
+      "signature": "static void Task_MoveStarterChooseCursor(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "ClearStarterLabel();\n    gTasks[taskId].func = Task_CreateStarterLabel;",
+      "callsTo": [
+        "ClearStarterLabel"
+      ],
+      "lineCount": 2
+    },
+    "Task_CreateStarterLabel": {
+      "returnType": "void",
+      "signature": "static void Task_CreateStarterLabel(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "CreateStarterPokemonLabel(gTasks[taskId].tStarterSelection);\n    gTasks[taskId].func = Task_HandleStarterChooseInput;",
+      "callsTo": [
+        "CreateStarterPokemonLabel"
+      ],
+      "lineCount": 2
+    },
+    "CreatePokemonFrontSprite": {
+      "returnType": "u8",
+      "signature": "static u8 CreatePokemonFrontSprite(u16 species, u8 x, u8 y)",
+      "paramsRaw": "u16 species, u8 x, u8 y",
+      "body": "u8 spriteId;\n\n    spriteId = CreateMonPicSprite_Affine(species, SHINY_ODDS, 0, MON_PIC_AFFINE_FRONT, x, y, 14, TAG_NONE);\n    gSprites[spriteId].oam.priority = 0;\n    return spriteId;",
+      "callsTo": [
+        "CreateMonPicSprite_Affine"
+      ],
+      "lineCount": 5
+    },
+    "SpriteCB_SelectionHand": {
+      "returnType": "void",
+      "signature": "static void SpriteCB_SelectionHand(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "sprite->x = sCursorCoords[gTasks[sprite->data[0]].tStarterSelection][0];\n    sprite->y = sCursorCoords[gTasks[sprite->data[0]].tStarterSelection][1];\n    sprite->y2 = Sin(sprite->data[1], 8);\n    sprite->data[1] = (u8)(sprite->data[1]) + 4;",
+      "callsTo": [
+        "Sin"
+      ],
+      "lineCount": 4
+    },
+    "SpriteCB_Pokeball": {
+      "returnType": "void",
+      "signature": "static void SpriteCB_Pokeball(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "if (gTasks[sprite->sTaskId].tStarterSelection == sprite->sBallId)\n        StartSpriteAnimIfDifferent(sprite, 1);\n    else\n        StartSpriteAnimIfDifferent(sprite, 0);",
+      "callsTo": [
+        "StartSpriteAnimIfDifferent"
+      ],
+      "lineCount": 4
+    },
+    "SpriteCB_StarterPokemon": {
+      "returnType": "void",
+      "signature": "static void SpriteCB_StarterPokemon(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "if (sprite->x > STARTER_PKMN_POS_X)\n        sprite->x -= 4;\n    if (sprite->x < STARTER_PKMN_POS_X)\n        sprite->x += 4;\n    if (sprite->y > STARTER_PKMN_POS_Y)\n        sprite->y -= 2;\n    if (sprite->y < STARTER_PKMN_POS_Y)\n        sprite->y += 2;",
+      "callsTo": [],
+      "lineCount": 8
+    }
+  }
+}

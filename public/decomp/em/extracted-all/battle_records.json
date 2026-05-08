@@ -1,0 +1,384 @@
+{
+  "srcFile": "src/battle_records.c",
+  "count": 31,
+  "functions": {
+    "ClearLinkBattleRecord": {
+      "returnType": "void",
+      "signature": "static void ClearLinkBattleRecord(struct LinkBattleRecord *record)",
+      "paramsRaw": "struct LinkBattleRecord *record",
+      "body": "CpuFill16(0, record, sizeof(struct LinkBattleRecord));\n    record->name[0] = EOS;\n    record->trainerId = 0;\n    record->wins = 0;\n    record->losses = 0;\n    record->draws = 0;",
+      "callsTo": [
+        "CpuFill16"
+      ],
+      "lineCount": 6
+    },
+    "ClearLinkBattleRecords": {
+      "returnType": "void",
+      "signature": "static void ClearLinkBattleRecords(struct LinkBattleRecord *records)",
+      "paramsRaw": "struct LinkBattleRecord *records",
+      "body": "s32 i;\n    for (i = 0; i < LINK_B_RECORDS_COUNT; i++)\n    {\n        ClearLinkBattleRecord(records + i);\n    }\n    SetGameStat(GAME_STAT_LINK_BATTLE_WINS, 0);\n    SetGameStat(GAME_STAT_LINK_BATTLE_LOSSES, 0);\n    SetGameStat(GAME_STAT_LINK_BATTLE_DRAWS, 0);",
+      "callsTo": [
+        "ClearLinkBattleRecord",
+        "SetGameStat"
+      ],
+      "lineCount": 8
+    },
+    "GetLinkBattleRecordTotalBattles": {
+      "returnType": "s32",
+      "signature": "static s32 GetLinkBattleRecordTotalBattles(struct LinkBattleRecord *record)",
+      "paramsRaw": "struct LinkBattleRecord *record",
+      "body": "return record->wins + record->losses + record->draws;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "FindLinkBattleRecord": {
+      "returnType": "s32",
+      "signature": "static s32 FindLinkBattleRecord(struct LinkBattleRecord *records, const u8 *name, u16 trainerId)",
+      "paramsRaw": "struct LinkBattleRecord *records, const u8 *name, u16 trainerId",
+      "body": "s32 i;\n\n    for (i = 0; i < LINK_B_RECORDS_COUNT; i++)\n    {\n        if (!StringCompareN(records[i].name, name, PLAYER_NAME_LENGTH) && records[i].trainerId == trainerId)\n            return i;\n    }\n\n    return LINK_B_RECORDS_COUNT;",
+      "callsTo": [
+        "StringCompareN"
+      ],
+      "lineCount": 9
+    },
+    "SortLinkBattleRecords": {
+      "returnType": "void",
+      "signature": "static void SortLinkBattleRecords(struct LinkBattleRecords *records)",
+      "paramsRaw": "struct LinkBattleRecords *records",
+      "body": "s32 i, j;\n\n    for (i = LINK_B_RECORDS_COUNT - 1; i > 0; i--)\n    {\n        for (j = i - 1; j >= 0; j--)\n        {\n            s32 totalBattlesI = GetLinkBattleRecordTotalBattles(&records->entries[i]);\n            s32 totalBattlesJ = GetLinkBattleRecordTotalBattles(&records->entries[j]);\n\n            if (totalBattlesI > totalBattlesJ)\n            {\n                struct LinkBattleRecord temp1;\n                u8 temp2;\n\n                temp1 = records->entries[i];\n                records->entries[i] = records->entries[j];\n                records->entries[j] = temp1;\n\n                temp2 = records->languages[i];\n                records->languages[i] = records->languages[j];\n                records->languages[j] = temp2;\n            }\n        }\n    }",
+      "callsTo": [
+        "GetLinkBattleRecordTotalBattles"
+      ],
+      "lineCount": 24
+    },
+    "UpdateLinkBattleRecord": {
+      "returnType": "void",
+      "signature": "static void UpdateLinkBattleRecord(struct LinkBattleRecord *record, s32 battleOutcome)",
+      "paramsRaw": "struct LinkBattleRecord *record, s32 battleOutcome",
+      "body": "switch (battleOutcome)\n    {\n    case B_OUTCOME_WON:\n        record->wins++;\n        if (record->wins > 9999)\n            record->wins = 9999;\n        break;\n    case B_OUTCOME_LOST:\n        record->losses++;\n        if (record->losses > 9999)\n            record->losses = 9999;\n        break;\n    case B_OUTCOME_DREW:\n        record->draws++;\n        if (record->draws > 9999)\n            record->draws = 9999;\n        break;\n    }",
+      "callsTo": [],
+      "lineCount": 18
+    },
+    "UpdateLinkBattleGameStats": {
+      "returnType": "void",
+      "signature": "static void UpdateLinkBattleGameStats(s32 battleOutcome)",
+      "paramsRaw": "s32 battleOutcome",
+      "body": "u8 stat;\n\n    switch (battleOutcome)\n    {\n    case B_OUTCOME_WON:\n        stat = GAME_STAT_LINK_BATTLE_WINS;\n        break;\n    case B_OUTCOME_LOST:\n        stat = GAME_STAT_LINK_BATTLE_LOSSES;\n        break;\n    case B_OUTCOME_DREW:\n        stat = GAME_STAT_LINK_BATTLE_DRAWS;\n        break;\n    default:\n        return;\n    }\n\n    if (GetGameStat(stat) < 9999)\n        IncrementGameStat(stat);",
+      "callsTo": [
+        "GetGameStat",
+        "IncrementGameStat"
+      ],
+      "lineCount": 19
+    },
+    "UpdateLinkBattleRecords": {
+      "returnType": "void",
+      "signature": "static void UpdateLinkBattleRecords(struct LinkBattleRecords *records, const u8 *name, u16 trainerId, s32 battleOutcome, u8 battler)",
+      "paramsRaw": "struct LinkBattleRecords *records, const u8 *name, u16 trainerId, s32 battleOutcome, u8 battler",
+      "body": "s32 index;\n\n    UpdateLinkBattleGameStats(battleOutcome);\n    SortLinkBattleRecords(records);\n    index = FindLinkBattleRecord(records->entries, name, trainerId);\n    if (index == LINK_B_RECORDS_COUNT)\n    {\n        index = LINK_B_RECORDS_COUNT - 1;\n        ClearLinkBattleRecord(&records->entries[index]);\n        StringCopyN(records->entries[index].name, name, PLAYER_NAME_LENGTH);\n        records->entries[index].trainerId = trainerId;\n        records->languages[index] = gLinkPlayers[battler].language;\n    }\n    UpdateLinkBattleRecord(&records->entries[index], battleOutcome);\n    SortLinkBattleRecords(records);",
+      "callsTo": [
+        "ClearLinkBattleRecord",
+        "FindLinkBattleRecord",
+        "SortLinkBattleRecords",
+        "StringCopyN",
+        "UpdateLinkBattleGameStats",
+        "UpdateLinkBattleRecord"
+      ],
+      "lineCount": 15
+    },
+    "ClearPlayerLinkBattleRecords": {
+      "returnType": "void",
+      "signature": "void ClearPlayerLinkBattleRecords(void)",
+      "paramsRaw": "void",
+      "body": "ClearLinkBattleRecords(gSaveBlock1Ptr->linkBattleRecords.entries);",
+      "callsTo": [
+        "ClearLinkBattleRecords"
+      ],
+      "lineCount": 1
+    },
+    "IncTrainerCardWins": {
+      "returnType": "void",
+      "signature": "static void IncTrainerCardWins(s32 battler)",
+      "paramsRaw": "s32 battler",
+      "body": "u16 *wins = &gTrainerCards[battler].linkBattleWins;\n    (*wins)++;\n    if (*wins > 9999)\n        *wins = 9999;",
+      "callsTo": [],
+      "lineCount": 4
+    },
+    "IncTrainerCardLosses": {
+      "returnType": "void",
+      "signature": "static void IncTrainerCardLosses(s32 battler)",
+      "paramsRaw": "s32 battler",
+      "body": "u16 *losses = &gTrainerCards[battler].linkBattleLosses;\n    (*losses)++;\n    if (*losses > 9999)\n        *losses = 9999;",
+      "callsTo": [],
+      "lineCount": 4
+    },
+    "UpdateTrainerCardWinsLosses": {
+      "returnType": "void",
+      "signature": "static void UpdateTrainerCardWinsLosses(s32 battler)",
+      "paramsRaw": "s32 battler",
+      "body": "switch (gBattleOutcome)\n    {\n    case B_OUTCOME_WON:\n        IncTrainerCardWins(BATTLE_OPPOSITE(battler));\n        IncTrainerCardLosses(battler);\n        break;\n    case B_OUTCOME_LOST:\n        IncTrainerCardLosses(BATTLE_OPPOSITE(battler));\n        IncTrainerCardWins(battler);\n        break;\n    }",
+      "callsTo": [
+        "BATTLE_OPPOSITE",
+        "IncTrainerCardLosses",
+        "IncTrainerCardWins"
+      ],
+      "lineCount": 11
+    },
+    "UpdatePlayerLinkBattleRecords": {
+      "returnType": "void",
+      "signature": "void UpdatePlayerLinkBattleRecords(s32 battler)",
+      "paramsRaw": "s32 battler",
+      "body": "if (InUnionRoom() != TRUE)\n    {\n        UpdateTrainerCardWinsLosses(battler);\n        UpdateLinkBattleRecords(\n            &gSaveBlock1Ptr->linkBattleRecords,\n            gTrainerCards[battler].playerName,\n            gTrainerCards[battler].trainerId,\n            gBattleOutcome,\n            battler);\n    }",
+      "callsTo": [
+        "InUnionRoom",
+        "UpdateLinkBattleRecords",
+        "UpdateTrainerCardWinsLosses"
+      ],
+      "lineCount": 10
+    },
+    "PrintLinkBattleWinsLossesDraws": {
+      "returnType": "void",
+      "signature": "static void PrintLinkBattleWinsLossesDraws(struct LinkBattleRecord *records)",
+      "paramsRaw": "struct LinkBattleRecord *records",
+      "body": "s32 x;\n\n    ConvertIntToDecimalStringN(gStringVar1, GetGameStat(GAME_STAT_LINK_BATTLE_WINS), STR_CONV_MODE_LEFT_ALIGN, 4);\n    ConvertIntToDecimalStringN(gStringVar2, GetGameStat(GAME_STAT_LINK_BATTLE_LOSSES), STR_CONV_MODE_LEFT_ALIGN, 4);\n    ConvertIntToDecimalStringN(gStringVar3, GetGameStat(GAME_STAT_LINK_BATTLE_DRAWS), STR_CONV_MODE_LEFT_ALIGN, 4);\n    StringExpandPlaceholders(gStringVar4, gText_TotalRecordWLD);\n\n    x = GetStringCenterAlignXOffset(FONT_NORMAL, gStringVar4, 0xD0);\n    AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gStringVar4, x, 0x11, 0, NULL);",
+      "callsTo": [
+        "AddTextPrinterParameterized",
+        "ConvertIntToDecimalStringN",
+        "GetGameStat",
+        "GetStringCenterAlignXOffset",
+        "StringExpandPlaceholders"
+      ],
+      "lineCount": 9
+    },
+    "PrintLinkBattleRecord": {
+      "returnType": "void",
+      "signature": "static void PrintLinkBattleRecord(struct LinkBattleRecord *record, u8 y, s32 language)",
+      "paramsRaw": "struct LinkBattleRecord *record, u8 y, s32 language",
+      "body": "if (record->wins == 0 && record->losses == 0 && record->draws == 0)\n    {\n         \n        AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, sText_DashesNoPlayer,   8, (y * 8) + 1, 0, NULL);\n        AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, sText_DashesNoScore,  80, (y * 8) + 1, 0, NULL);\n        AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, sText_DashesNoScore, 128, (y * 8) + 1, 0, NULL);\n        AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, sText_DashesNoScore, 176, (y * 8) + 1, 0, NULL);\n    }\n    else\n    {\n        StringFillWithTerminator(gStringVar1, 8);\n        StringCopyN(gStringVar1, record->name, 7);\n        ConvertInternationalString(gStringVar1, language);\n\n        AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gStringVar1, 8, (y * 8) + 1, 0, NULL);\n\n        ConvertIntToDecimalStringN(gStringVar1, record->wins, STR_CONV_MODE_RIGHT_ALIGN, 4);\n        AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gStringVar1,  80, (y * 8) + 1, 0, NULL);\n\n        ConvertIntToDecimalStringN(gStringVar1, record->losses, STR_CONV_MODE_RIGHT_ALIGN, 4);\n        AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gStringVar1, 128, (y * 8) + 1, 0, NULL);\n\n        ConvertIntToDecimalStringN(gStringVar1, record->draws, STR_CONV_MODE_RIGHT_ALIGN, 4);\n        AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gStringVar1, 176, (y * 8) + 1, 0, NULL);\n    }",
+      "callsTo": [
+        "AddTextPrinterParameterized",
+        "ConvertIntToDecimalStringN",
+        "ConvertInternationalString",
+        "StringCopyN",
+        "StringFillWithTerminator"
+      ],
+      "lineCount": 25
+    },
+    "ShowLinkBattleRecords": {
+      "returnType": "void",
+      "signature": "void ShowLinkBattleRecords(void)",
+      "paramsRaw": "void",
+      "body": "s32 i, x;\n\n    gRecordsWindowId = AddWindow(&sLinkBattleRecordsWindow);\n    DrawStdWindowFrame(gRecordsWindowId, FALSE);\n    FillWindowPixelBuffer(gRecordsWindowId, PIXEL_FILL(1));\n    StringExpandPlaceholders(gStringVar4, gText_PlayersBattleResults);\n\n    x = GetStringCenterAlignXOffset(FONT_NORMAL, gStringVar4, 208);\n    AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gStringVar4, x, 1, 0, NULL);\n    PrintLinkBattleWinsLossesDraws(gSaveBlock1Ptr->linkBattleRecords.entries);\n\n    StringExpandPlaceholders(gStringVar4, gText_WinLoseDraw);\n    AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gStringVar4, 0, 41, 0, NULL);\n\n    for (i = 0; i < LINK_B_RECORDS_COUNT; i++)\n    {\n        PrintLinkBattleRecord(&gSaveBlock1Ptr->linkBattleRecords.entries[i], 7 + (i * 2), gSaveBlock1Ptr->linkBattleRecords.languages[i]);\n    }\n\n    PutWindowTilemap(gRecordsWindowId);\n    CopyWindowToVram(gRecordsWindowId, COPYWIN_FULL);",
+      "callsTo": [
+        "AddTextPrinterParameterized",
+        "AddWindow",
+        "CopyWindowToVram",
+        "DrawStdWindowFrame",
+        "FillWindowPixelBuffer",
+        "GetStringCenterAlignXOffset",
+        "PIXEL_FILL",
+        "PrintLinkBattleRecord",
+        "PrintLinkBattleWinsLossesDraws",
+        "PutWindowTilemap",
+        "StringExpandPlaceholders"
+      ],
+      "lineCount": 21
+    },
+    "RemoveRecordsWindow": {
+      "returnType": "void",
+      "signature": "void RemoveRecordsWindow(void)",
+      "paramsRaw": "void",
+      "body": "ClearStdWindowAndFrame(gRecordsWindowId, FALSE);\n    RemoveWindow(gRecordsWindowId);",
+      "callsTo": [
+        "ClearStdWindowAndFrame",
+        "RemoveWindow"
+      ],
+      "lineCount": 2
+    },
+    "Task_TrainerHillWaitForPaletteFade": {
+      "returnType": "void",
+      "signature": "static void Task_TrainerHillWaitForPaletteFade(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "if (!gPaletteFade.active)\n        gTasks[taskId].func = Task_CloseTrainerHillRecordsOnButton;",
+      "callsTo": [],
+      "lineCount": 2
+    },
+    "Task_CloseTrainerHillRecordsOnButton": {
+      "returnType": "void",
+      "signature": "static void Task_CloseTrainerHillRecordsOnButton(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "struct Task *task = &gTasks[taskId];\n\n    if (JOY_NEW(A_BUTTON) || JOY_NEW(B_BUTTON))\n    {\n        PlaySE(SE_SELECT);\n        task->func = Task_BeginPaletteFade;\n    }",
+      "callsTo": [
+        "JOY_NEW",
+        "PlaySE"
+      ],
+      "lineCount": 7
+    },
+    "Task_BeginPaletteFade": {
+      "returnType": "void",
+      "signature": "static void Task_BeginPaletteFade(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);\n    gTasks[taskId].func = Task_ExitTrainerHillRecords;",
+      "callsTo": [
+        "BeginNormalPaletteFade"
+      ],
+      "lineCount": 2
+    },
+    "Task_ExitTrainerHillRecords": {
+      "returnType": "void",
+      "signature": "static void Task_ExitTrainerHillRecords(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "if (!gPaletteFade.active)\n    {\n        SetMainCallback2(CB2_ReturnToFieldContinueScriptPlayMapMusic);\n        Free(sTilemapBuffer);\n        RemoveTrainerHillRecordsWindow(0);\n        FreeAllWindowBuffers();\n        DestroyTask(taskId);\n    }",
+      "callsTo": [
+        "DestroyTask",
+        "Free",
+        "FreeAllWindowBuffers",
+        "RemoveTrainerHillRecordsWindow",
+        "SetMainCallback2"
+      ],
+      "lineCount": 8
+    },
+    "RemoveTrainerHillRecordsWindow": {
+      "returnType": "void",
+      "signature": "static void RemoveTrainerHillRecordsWindow(u8 windowId)",
+      "paramsRaw": "u8 windowId",
+      "body": "FillWindowPixelBuffer(windowId, PIXEL_FILL(0));\n    ClearWindowTilemap(windowId);\n    CopyWindowToVram(windowId, COPYWIN_GFX);\n    RemoveWindow(windowId);",
+      "callsTo": [
+        "ClearWindowTilemap",
+        "CopyWindowToVram",
+        "FillWindowPixelBuffer",
+        "PIXEL_FILL",
+        "RemoveWindow"
+      ],
+      "lineCount": 4
+    },
+    "ClearVramOamPlttRegs": {
+      "returnType": "void",
+      "signature": "static void ClearVramOamPlttRegs(void)",
+      "paramsRaw": "void",
+      "body": "DmaClearLarge16(3, (void *)(VRAM), VRAM_SIZE, 0x1000);\n    DmaClear32(3, OAM, OAM_SIZE);\n    DmaClear16(3, PLTT, PLTT_SIZE);\n\n    SetGpuReg(REG_OFFSET_DISPCNT, 0);\n    SetGpuReg(REG_OFFSET_BG0CNT, 0);\n    SetGpuReg(REG_OFFSET_BG0HOFS, 0);\n    SetGpuReg(REG_OFFSET_BG0VOFS, 0);\n    SetGpuReg(REG_OFFSET_BG1CNT, 0);\n    SetGpuReg(REG_OFFSET_BG1HOFS, 0);\n    SetGpuReg(REG_OFFSET_BG1VOFS, 0);\n    SetGpuReg(REG_OFFSET_BG2CNT, 0);\n    SetGpuReg(REG_OFFSET_BG2HOFS, 0);\n    SetGpuReg(REG_OFFSET_BG2VOFS, 0);\n    SetGpuReg(REG_OFFSET_BG3CNT, 0);\n    SetGpuReg(REG_OFFSET_BG3HOFS, 0);\n    SetGpuReg(REG_OFFSET_BG3VOFS, 0);\n    SetGpuReg(REG_OFFSET_WIN0H, 0);\n    SetGpuReg(REG_OFFSET_WIN0V, 0);\n    SetGpuReg(REG_OFFSET_WININ, 0);\n    SetGpuReg(REG_OFFSET_WINOUT, 0);\n    SetGpuReg(REG_OFFSET_BLDCNT, 0);\n    SetGpuReg(REG_OFFSET_BLDALPHA, 0);\n    SetGpuReg(REG_OFFSET_BLDY, 0);",
+      "callsTo": [
+        "DmaClear16",
+        "DmaClear32",
+        "DmaClearLarge16",
+        "SetGpuReg"
+      ],
+      "lineCount": 24
+    },
+    "ClearTasksAndGraphicalStructs": {
+      "returnType": "void",
+      "signature": "static void ClearTasksAndGraphicalStructs(void)",
+      "paramsRaw": "void",
+      "body": "ScanlineEffect_Stop();\n    ResetTasks();\n    ResetSpriteData();\n    ResetPaletteFade();\n    FreeAllSpritePalettes();",
+      "callsTo": [
+        "FreeAllSpritePalettes",
+        "ResetPaletteFade",
+        "ResetSpriteData",
+        "ResetTasks",
+        "ScanlineEffect_Stop"
+      ],
+      "lineCount": 5
+    },
+    "ResetBgCoordinates": {
+      "returnType": "void",
+      "signature": "static void ResetBgCoordinates(void)",
+      "paramsRaw": "void",
+      "body": "ChangeBgX(0, 0, BG_COORD_SET);\n    ChangeBgY(0, 0, BG_COORD_SET);\n    ChangeBgX(1, 0, BG_COORD_SET);\n    ChangeBgY(1, 0, BG_COORD_SET);\n    ChangeBgX(2, 0, BG_COORD_SET);\n    ChangeBgY(2, 0, BG_COORD_SET);\n    ChangeBgX(3, 0, BG_COORD_SET);\n    ChangeBgY(3, 0, BG_COORD_SET);",
+      "callsTo": [
+        "ChangeBgX",
+        "ChangeBgY"
+      ],
+      "lineCount": 8
+    },
+    "SetDispcntReg": {
+      "returnType": "void",
+      "signature": "static void SetDispcntReg(void)",
+      "paramsRaw": "void",
+      "body": "SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_BG0_ON | DISPCNT_BG3_ON | DISPCNT_OBJ_1D_MAP);",
+      "callsTo": [
+        "SetGpuReg"
+      ],
+      "lineCount": 1
+    },
+    "LoadTrainerHillRecordsWindowGfx": {
+      "returnType": "void",
+      "signature": "static void LoadTrainerHillRecordsWindowGfx(u8 bgId)",
+      "paramsRaw": "u8 bgId",
+      "body": "LoadBgTiles(bgId, sTrainerHillWindowTileset, sizeof(sTrainerHillWindowTileset), 0);\n    CopyToBgTilemapBufferRect(bgId, sTrainerHillWindowTilemap, 0, 0, 0x20, 0x20);\n    LoadPalette(sTrainerHillWindowPalette, BG_PLTT_ID(0), sizeof(sTrainerHillWindowPalette));",
+      "callsTo": [
+        "BG_PLTT_ID",
+        "CopyToBgTilemapBufferRect",
+        "LoadBgTiles",
+        "LoadPalette"
+      ],
+      "lineCount": 3
+    },
+    "VblankCB_TrainerHillRecords": {
+      "returnType": "void",
+      "signature": "static void VblankCB_TrainerHillRecords(void)",
+      "paramsRaw": "void",
+      "body": "LoadOam();\n    ProcessSpriteCopyRequests();\n    TransferPlttBuffer();",
+      "callsTo": [
+        "LoadOam",
+        "ProcessSpriteCopyRequests",
+        "TransferPlttBuffer"
+      ],
+      "lineCount": 3
+    },
+    "MainCB2_TrainerHillRecords": {
+      "returnType": "void",
+      "signature": "static void MainCB2_TrainerHillRecords(void)",
+      "paramsRaw": "void",
+      "body": "RunTasks();\n    AnimateSprites();\n    BuildOamBuffer();\n    UpdatePaletteFade();",
+      "callsTo": [
+        "AnimateSprites",
+        "BuildOamBuffer",
+        "RunTasks",
+        "UpdatePaletteFade"
+      ],
+      "lineCount": 4
+    },
+    "ShowTrainerHillRecords": {
+      "returnType": "void",
+      "signature": "void ShowTrainerHillRecords(void)",
+      "paramsRaw": "void",
+      "body": "SetVBlankCallback(NULL);\n    SetMainCallback2(CB2_ShowTrainerHillRecords);",
+      "callsTo": [
+        "SetMainCallback2",
+        "SetVBlankCallback"
+      ],
+      "lineCount": 2
+    },
+    "CB2_ShowTrainerHillRecords": {
+      "returnType": "void",
+      "signature": "static void CB2_ShowTrainerHillRecords(void)",
+      "paramsRaw": "void",
+      "body": "switch (gMain.state)\n    {\n    case 0:\n        SetVBlankCallback(NULL);\n        ClearVramOamPlttRegs();\n        gMain.state++;\n        break;\n    case 1:\n        ClearTasksAndGraphicalStructs();\n        gMain.state++;\n        break;\n    case 2:\n        sTilemapBuffer = AllocZeroed(BG_SCREEN_SIZE);\n        ResetBgsAndClearDma3BusyFlags(0);\n        InitBgsFromTemplates(0, sTrainerHillRecordsBgTemplates, ARRAY_COUNT(sTrainerHillRecordsBgTemplates));\n        SetBgTilemapBuffer(3, sTilemapBuffer);\n        ResetBgCoordinates();\n        gMain.state++;\n        break;\n    case 3:\n        LoadTrainerHillRecordsWindowGfx(3);\n        LoadPalette(GetTextWindowPalette(0), BG_PLTT_ID(15), PLTT_SIZE_4BPP);\n        gMain.state++;\n        break;\n    case 4:\n        if (IsDma3ManagerBusyWithBgCopy() != TRUE)\n        {\n            ShowBg(0);\n            ShowBg(3);\n            CopyBgTilemapBufferToVram(3);\n            gMain.state++;\n        }\n        break;\n    case 5:\n        InitWindows(sTrainerHillRecordsWindowTemplates);\n        DeactivateAllTextPrinters();\n        gMain.state++;\n        break;\n    case 6:\n        BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_BLACK);\n        gMain.state++;\n        break;\n    case 7:\n        SetDispcntReg();\n        SetVBlankCallback(VblankCB_TrainerHillRecords);\n        PrintOnTrainerHillRecordsWindow();\n        CreateTask(Task_TrainerHillWaitForPaletteFade, 8);\n        SetMainCallback2(MainCB2_TrainerHillRecords);\n        gMain.state = 0;\n        break;\n    }",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "AllocZeroed",
+        "BG_PLTT_ID",
+        "BeginNormalPaletteFade",
+        "ClearTasksAndGraphicalStructs",
+        "ClearVramOamPlttRegs",
+        "CopyBgTilemapBufferToVram",
+        "CreateTask",
+        "DeactivateAllTextPrinters",
+        "GetTextWindowPalette",
+        "InitBgsFromTemplates",
+        "InitWindows",
+        "IsDma3ManagerBusyWithBgCopy",
+        "LoadPalette",
+        "LoadTrainerHillRecordsWindowGfx",
+        "PrintOnTrainerHillRecordsWindow",
+        "ResetBgCoordinates",
+        "ResetBgsAndClearDma3BusyFlags",
+        "SetBgTilemapBuffer",
+        "SetDispcntReg",
+        "SetMainCallback2",
+        "SetVBlankCallback",
+        "ShowBg"
+      ],
+      "lineCount": 51
+    }
+  }
+}

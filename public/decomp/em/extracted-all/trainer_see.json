@@ -1,0 +1,413 @@
+{
+  "srcFile": "src/trainer_see.c",
+  "count": 36,
+  "functions": {
+    "CheckForTrainersWantingBattle": {
+      "returnType": "bool8",
+      "signature": "bool8 CheckForTrainersWantingBattle(void)",
+      "paramsRaw": "void",
+      "body": "u8 i;\n\n    gNoOfApproachingTrainers = 0;\n    gApproachingTrainerId = 0;\n\n    for (i = 0; i < OBJECT_EVENTS_COUNT; i++)\n    {\n        u8 numTrainers;\n\n        if (!gObjectEvents[i].active)\n            continue;\n        if (gObjectEvents[i].trainerType != TRAINER_TYPE_NORMAL && gObjectEvents[i].trainerType != TRAINER_TYPE_BURIED)\n            continue;\n\n        numTrainers = CheckTrainer(i);\n        if (numTrainers == 2)\n            break;\n\n        if (numTrainers == 0)\n            continue;\n\n        if (gNoOfApproachingTrainers > 1)\n            break;\n        if (GetMonsStateToDoubles_2() != PLAYER_HAS_TWO_USABLE_MONS)  \n            break;\n    }\n\n    if (gNoOfApproachingTrainers == 1)\n    {\n        ResetTrainerOpponentIds();\n        ConfigureAndSetUpOneTrainerBattle(gApproachingTrainers[gNoOfApproachingTrainers - 1].objectEventId,\n                                          gApproachingTrainers[gNoOfApproachingTrainers - 1].trainerScriptPtr);\n        gTrainerApproachedPlayer = TRUE;\n        return TRUE;\n    }\n    else if (gNoOfApproachingTrainers == 2)\n    {\n        ResetTrainerOpponentIds();\n        for (i = 0; i < gNoOfApproachingTrainers; i++, gApproachingTrainerId++)\n        {\n            ConfigureTwoTrainersBattle(gApproachingTrainers[i].objectEventId,\n                                       gApproachingTrainers[i].trainerScriptPtr);\n        }\n        SetUpTwoTrainersBattle();\n        gApproachingTrainerId = 0;\n        gTrainerApproachedPlayer = TRUE;\n        return TRUE;\n    }\n    else\n    {\n        gTrainerApproachedPlayer = FALSE;\n        return FALSE;\n    }",
+      "callsTo": [
+        "CheckTrainer",
+        "ConfigureAndSetUpOneTrainerBattle",
+        "ConfigureTwoTrainersBattle",
+        "GetMonsStateToDoubles_2",
+        "ResetTrainerOpponentIds",
+        "SetUpTwoTrainersBattle"
+      ],
+      "lineCount": 53
+    },
+    "CheckTrainer": {
+      "returnType": "u8",
+      "signature": "static u8 CheckTrainer(u8 objectEventId)",
+      "paramsRaw": "u8 objectEventId",
+      "body": "const u8 *scriptPtr;\n    u8 numTrainers = 1;\n    u8 approachDistance;\n\n    if (InTrainerHill() == TRUE)\n        scriptPtr = GetTrainerHillTrainerScript();\n    else\n        scriptPtr = GetObjectEventScriptPointerByObjectEventId(objectEventId);\n\n    if (CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE)\n    {\n        if (GetBattlePyramidTrainerFlag(objectEventId))\n            return 0;\n    }\n    else if (InTrainerHill() == TRUE)\n    {\n        if (GetHillTrainerFlag(objectEventId))\n            return 0;\n    }\n    else\n    {\n        if (GetTrainerFlagFromScriptPointer(scriptPtr))\n            return 0;\n    }\n\n    approachDistance = GetTrainerApproachDistance(&gObjectEvents[objectEventId]);\n\n    if (approachDistance != 0)\n    {\n        if (scriptPtr[1] == TRAINER_BATTLE_DOUBLE\n            || scriptPtr[1] == TRAINER_BATTLE_REMATCH_DOUBLE\n            || scriptPtr[1] == TRAINER_BATTLE_CONTINUE_SCRIPT_DOUBLE)\n        {\n            if (GetMonsStateToDoubles_2() != PLAYER_HAS_TWO_USABLE_MONS)\n                return 0;\n\n            numTrainers = 2;\n        }\n\n        gApproachingTrainers[gNoOfApproachingTrainers].objectEventId = objectEventId;\n        gApproachingTrainers[gNoOfApproachingTrainers].trainerScriptPtr = scriptPtr;\n        gApproachingTrainers[gNoOfApproachingTrainers].radius = approachDistance;\n        InitTrainerApproachTask(&gObjectEvents[objectEventId], approachDistance - 1);\n        gNoOfApproachingTrainers++;\n\n        return numTrainers;\n    }\n\n    return 0;",
+      "callsTo": [
+        "CurrentBattlePyramidLocation",
+        "GetBattlePyramidTrainerFlag",
+        "GetHillTrainerFlag",
+        "GetMonsStateToDoubles_2",
+        "GetObjectEventScriptPointerByObjectEventId",
+        "GetTrainerApproachDistance",
+        "GetTrainerFlagFromScriptPointer",
+        "GetTrainerHillTrainerScript",
+        "InTrainerHill",
+        "InitTrainerApproachTask"
+      ],
+      "lineCount": 49
+    },
+    "GetTrainerApproachDistance": {
+      "returnType": "u8",
+      "signature": "static u8 GetTrainerApproachDistance(struct ObjectEvent *trainerObj)",
+      "paramsRaw": "struct ObjectEvent *trainerObj",
+      "body": "s16 x, y;\n    u8 i;\n    u8 approachDistance;\n\n    PlayerGetDestCoords(&x, &y);\n    if (trainerObj->trainerType == TRAINER_TYPE_NORMAL)   \n    {\n        approachDistance = sDirectionalApproachDistanceFuncs[trainerObj->facingDirection - 1](trainerObj, trainerObj->trainerRange_berryTreeId, x, y);\n        return CheckPathBetweenTrainerAndPlayer(trainerObj, approachDistance, trainerObj->facingDirection);\n    }\n    else  \n    {\n        for (i = 0; i < ARRAY_COUNT(sDirectionalApproachDistanceFuncs); i++)\n        {\n            approachDistance = sDirectionalApproachDistanceFuncs[i](trainerObj, trainerObj->trainerRange_berryTreeId, x, y);\n            if (CheckPathBetweenTrainerAndPlayer(trainerObj, approachDistance, i + 1))  \n                return approachDistance;\n        }\n    }\n\n    return 0;",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "CheckPathBetweenTrainerAndPlayer",
+        "PlayerGetDestCoords"
+      ],
+      "lineCount": 21
+    },
+    "GetTrainerApproachDistanceSouth": {
+      "returnType": "u8",
+      "signature": "static u8 GetTrainerApproachDistanceSouth(struct ObjectEvent *trainerObj, s16 range, s16 x, s16 y)",
+      "paramsRaw": "struct ObjectEvent *trainerObj, s16 range, s16 x, s16 y",
+      "body": "if (trainerObj->currentCoords.x == x\n     && y > trainerObj->currentCoords.y\n     && y <= trainerObj->currentCoords.y + range)\n        return (y - trainerObj->currentCoords.y);\n    else\n        return 0;",
+      "callsTo": [],
+      "lineCount": 6
+    },
+    "GetTrainerApproachDistanceNorth": {
+      "returnType": "u8",
+      "signature": "static u8 GetTrainerApproachDistanceNorth(struct ObjectEvent *trainerObj, s16 range, s16 x, s16 y)",
+      "paramsRaw": "struct ObjectEvent *trainerObj, s16 range, s16 x, s16 y",
+      "body": "if (trainerObj->currentCoords.x == x\n     && y < trainerObj->currentCoords.y\n     && y >= trainerObj->currentCoords.y - range)\n        return (trainerObj->currentCoords.y - y);\n    else\n        return 0;",
+      "callsTo": [],
+      "lineCount": 6
+    },
+    "GetTrainerApproachDistanceWest": {
+      "returnType": "u8",
+      "signature": "static u8 GetTrainerApproachDistanceWest(struct ObjectEvent *trainerObj, s16 range, s16 x, s16 y)",
+      "paramsRaw": "struct ObjectEvent *trainerObj, s16 range, s16 x, s16 y",
+      "body": "if (trainerObj->currentCoords.y == y\n     && x < trainerObj->currentCoords.x\n     && x >= trainerObj->currentCoords.x - range)\n        return (trainerObj->currentCoords.x - x);\n    else\n        return 0;",
+      "callsTo": [],
+      "lineCount": 6
+    },
+    "GetTrainerApproachDistanceEast": {
+      "returnType": "u8",
+      "signature": "static u8 GetTrainerApproachDistanceEast(struct ObjectEvent *trainerObj, s16 range, s16 x, s16 y)",
+      "paramsRaw": "struct ObjectEvent *trainerObj, s16 range, s16 x, s16 y",
+      "body": "if (trainerObj->currentCoords.y == y\n     && x > trainerObj->currentCoords.x\n     && x <= trainerObj->currentCoords.x + range)\n        return (x - trainerObj->currentCoords.x);\n    else\n        return 0;",
+      "callsTo": [],
+      "lineCount": 6
+    },
+    "CheckPathBetweenTrainerAndPlayer": {
+      "returnType": "u8",
+      "signature": "static u8 CheckPathBetweenTrainerAndPlayer(struct ObjectEvent *trainerObj, u8 approachDistance, u8 direction)",
+      "paramsRaw": "struct ObjectEvent *trainerObj, u8 approachDistance, u8 direction",
+      "body": "s16 x, y;\n    u8 rangeX, rangeY;\n    u8 i;\n    u8 collision;\n\n    if (approachDistance == 0)\n        return 0;\n\n    x = trainerObj->currentCoords.x;\n    y = trainerObj->currentCoords.y;\n\n    MoveCoords(direction, &x, &y);\n    for (i = 0; i < approachDistance - 1; i++, MoveCoords(direction, &x, &y))\n    {\n         \n        collision = GetCollisionFlagsAtCoords(trainerObj, x, y, direction);\n        if (collision != 0 && (collision & ~(1 << (COLLISION_OUTSIDE_RANGE - 1))))\n            return 0;\n    }\n\n    rangeX = trainerObj->range.rangeX;\n    rangeY = trainerObj->range.rangeY;\n    trainerObj->range.rangeX = 0;\n    trainerObj->range.rangeY = 0;\n\n    collision = GetCollisionAtCoords(trainerObj, x, y, direction);\n\n    trainerObj->range.rangeX = rangeX;\n    trainerObj->range.rangeY = rangeY;\n    if (collision == COLLISION_OBJECT_EVENT)\n        return approachDistance;\n\n    return 0;",
+      "callsTo": [
+        "GetCollisionAtCoords",
+        "GetCollisionFlagsAtCoords",
+        "MoveCoords"
+      ],
+      "lineCount": 33
+    },
+    "InitTrainerApproachTask": {
+      "returnType": "void",
+      "signature": "static void InitTrainerApproachTask(struct ObjectEvent *trainerObj, u8 range)",
+      "paramsRaw": "struct ObjectEvent *trainerObj, u8 range",
+      "body": "struct Task *task;\n\n    gApproachingTrainers[gNoOfApproachingTrainers].taskId = CreateTask(Task_RunTrainerSeeFuncList, 0x50);\n    task = &gTasks[gApproachingTrainers[gNoOfApproachingTrainers].taskId];\n    task->tTrainerRange = range;\n    task->tTrainerObjectEventId = gApproachingTrainers[gNoOfApproachingTrainers].objectEventId;",
+      "callsTo": [
+        "CreateTask"
+      ],
+      "lineCount": 6
+    },
+    "StartTrainerApproach": {
+      "returnType": "void",
+      "signature": "static void StartTrainerApproach(TaskFunc followupFunc)",
+      "paramsRaw": "TaskFunc followupFunc",
+      "body": "u8 taskId;\n    TaskFunc taskFunc;\n\n    if (gApproachingTrainerId == 0)\n        taskId = gApproachingTrainers[0].taskId;\n    else\n        taskId = gApproachingTrainers[1].taskId;\n\n    taskFunc = Task_RunTrainerSeeFuncList;\n    SetTaskFuncWithFollowupFunc(taskId, taskFunc, followupFunc);\n    gTasks[taskId].tFuncId = TRSEE_EXCLAMATION;\n    taskFunc(taskId);",
+      "callsTo": [
+        "SetTaskFuncWithFollowupFunc"
+      ],
+      "lineCount": 12
+    },
+    "Task_RunTrainerSeeFuncList": {
+      "returnType": "void",
+      "signature": "static void Task_RunTrainerSeeFuncList(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "struct Task *task = &gTasks[taskId];\n    struct ObjectEvent *trainerObj = &gObjectEvents[task->tTrainerObjectEventId];\n\n    if (!trainerObj->active)\n    {\n        SwitchTaskToFollowupFunc(taskId);\n    }\n    else\n    {\n        while (sTrainerSeeFuncList[task->tFuncId](taskId, task, trainerObj));\n    }",
+      "callsTo": [
+        "SwitchTaskToFollowupFunc"
+      ],
+      "lineCount": 11
+    },
+    "TrainerSeeIdle": {
+      "returnType": "bool8",
+      "signature": "static bool8 TrainerSeeIdle(u8 taskId, struct Task *task, struct ObjectEvent *trainerObj)",
+      "paramsRaw": "u8 taskId, struct Task *task, struct ObjectEvent *trainerObj",
+      "body": "return FALSE;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "TrainerExclamationMark": {
+      "returnType": "bool8",
+      "signature": "static bool8 TrainerExclamationMark(u8 taskId, struct Task *task, struct ObjectEvent *trainerObj)",
+      "paramsRaw": "u8 taskId, struct Task *task, struct ObjectEvent *trainerObj",
+      "body": "u8 direction;\n\n    ObjectEventGetLocalIdAndMap(trainerObj, &gFieldEffectArguments[0], &gFieldEffectArguments[1], &gFieldEffectArguments[2]);\n    FieldEffectStart(FLDEFF_EXCLAMATION_MARK_ICON);\n    direction = GetFaceDirectionMovementAction(trainerObj->facingDirection);\n    ObjectEventSetHeldMovement(trainerObj, direction);\n    task->tFuncId++;  \n    return TRUE;",
+      "callsTo": [
+        "FieldEffectStart",
+        "GetFaceDirectionMovementAction",
+        "ObjectEventGetLocalIdAndMap",
+        "ObjectEventSetHeldMovement"
+      ],
+      "lineCount": 8
+    },
+    "WaitTrainerExclamationMark": {
+      "returnType": "bool8",
+      "signature": "static bool8 WaitTrainerExclamationMark(u8 taskId, struct Task *task, struct ObjectEvent *trainerObj)",
+      "paramsRaw": "u8 taskId, struct Task *task, struct ObjectEvent *trainerObj",
+      "body": "if (FieldEffectActiveListContains(FLDEFF_EXCLAMATION_MARK_ICON))\n    {\n        return FALSE;\n    }\n    else\n    {\n        task->tFuncId++;  \n        if (trainerObj->movementType == MOVEMENT_TYPE_TREE_DISGUISE || trainerObj->movementType == MOVEMENT_TYPE_MOUNTAIN_DISGUISE)\n            task->tFuncId = TRSEE_REVEAL_DISGUISE;\n        if (trainerObj->movementType == MOVEMENT_TYPE_BURIED)\n            task->tFuncId = TRSEE_REVEAL_BURIED;\n        return TRUE;\n    }",
+      "callsTo": [
+        "FieldEffectActiveListContains"
+      ],
+      "lineCount": 13
+    },
+    "TrainerMoveToPlayer": {
+      "returnType": "bool8",
+      "signature": "static bool8 TrainerMoveToPlayer(u8 taskId, struct Task *task, struct ObjectEvent *trainerObj)",
+      "paramsRaw": "u8 taskId, struct Task *task, struct ObjectEvent *trainerObj",
+      "body": "if (!ObjectEventIsMovementOverridden(trainerObj) || ObjectEventClearHeldMovementIfFinished(trainerObj))\n    {\n        if (task->tTrainerRange)\n        {\n            ObjectEventSetHeldMovement(trainerObj, GetWalkNormalMovementAction(trainerObj->facingDirection));\n            task->tTrainerRange--;\n        }\n        else\n        {\n            ObjectEventSetHeldMovement(trainerObj, MOVEMENT_ACTION_FACE_PLAYER);\n            task->tFuncId++;  \n        }\n    }\n    return FALSE;",
+      "callsTo": [
+        "GetWalkNormalMovementAction",
+        "ObjectEventClearHeldMovementIfFinished",
+        "ObjectEventIsMovementOverridden",
+        "ObjectEventSetHeldMovement"
+      ],
+      "lineCount": 14
+    },
+    "PlayerFaceApproachingTrainer": {
+      "returnType": "bool8",
+      "signature": "static bool8 PlayerFaceApproachingTrainer(u8 taskId, struct Task *task, struct ObjectEvent *trainerObj)",
+      "paramsRaw": "u8 taskId, struct Task *task, struct ObjectEvent *trainerObj",
+      "body": "struct ObjectEvent *playerObj;\n\n    if (ObjectEventIsMovementOverridden(trainerObj) && !ObjectEventClearHeldMovementIfFinished(trainerObj))\n        return FALSE;\n\n     \n    SetTrainerMovementType(trainerObj, GetTrainerFacingDirectionMovementType(trainerObj->facingDirection));\n    TryOverrideTemplateCoordsForObjectEvent(trainerObj, GetTrainerFacingDirectionMovementType(trainerObj->facingDirection));\n    OverrideTemplateCoordsForObjectEvent(trainerObj);\n\n    playerObj = &gObjectEvents[gPlayerAvatar.objectEventId];\n    if (ObjectEventIsMovementOverridden(playerObj) && !ObjectEventClearHeldMovementIfFinished(playerObj))\n        return FALSE;\n\n    CancelPlayerForcedMovement();\n    ObjectEventSetHeldMovement(&gObjectEvents[gPlayerAvatar.objectEventId], GetFaceDirectionMovementAction(GetOppositeDirection(trainerObj->facingDirection)));\n    task->tFuncId++;  \n    return FALSE;",
+      "callsTo": [
+        "CancelPlayerForcedMovement",
+        "GetFaceDirectionMovementAction",
+        "GetOppositeDirection",
+        "GetTrainerFacingDirectionMovementType",
+        "ObjectEventClearHeldMovementIfFinished",
+        "ObjectEventIsMovementOverridden",
+        "ObjectEventSetHeldMovement",
+        "OverrideTemplateCoordsForObjectEvent",
+        "SetTrainerMovementType",
+        "TryOverrideTemplateCoordsForObjectEvent"
+      ],
+      "lineCount": 18
+    },
+    "WaitPlayerFaceApproachingTrainer": {
+      "returnType": "bool8",
+      "signature": "static bool8 WaitPlayerFaceApproachingTrainer(u8 taskId, struct Task *task, struct ObjectEvent *trainerObj)",
+      "paramsRaw": "u8 taskId, struct Task *task, struct ObjectEvent *trainerObj",
+      "body": "struct ObjectEvent *playerObj = &gObjectEvents[gPlayerAvatar.objectEventId];\n\n    if (!ObjectEventIsMovementOverridden(playerObj)\n     || ObjectEventClearHeldMovementIfFinished(playerObj))\n        SwitchTaskToFollowupFunc(taskId);\n    return FALSE;",
+      "callsTo": [
+        "ObjectEventClearHeldMovementIfFinished",
+        "ObjectEventIsMovementOverridden",
+        "SwitchTaskToFollowupFunc"
+      ],
+      "lineCount": 6
+    },
+    "RevealDisguisedTrainer": {
+      "returnType": "bool8",
+      "signature": "static bool8 RevealDisguisedTrainer(u8 taskId, struct Task *task, struct ObjectEvent *trainerObj)",
+      "paramsRaw": "u8 taskId, struct Task *task, struct ObjectEvent *trainerObj",
+      "body": "if (!ObjectEventIsMovementOverridden(trainerObj)\n     || ObjectEventClearHeldMovementIfFinished(trainerObj))\n    {\n        ObjectEventSetHeldMovement(trainerObj, MOVEMENT_ACTION_REVEAL_TRAINER);\n        task->tFuncId++;  \n    }\n    return FALSE;",
+      "callsTo": [
+        "ObjectEventClearHeldMovementIfFinished",
+        "ObjectEventIsMovementOverridden",
+        "ObjectEventSetHeldMovement"
+      ],
+      "lineCount": 7
+    },
+    "WaitRevealDisguisedTrainer": {
+      "returnType": "bool8",
+      "signature": "static bool8 WaitRevealDisguisedTrainer(u8 taskId, struct Task *task, struct ObjectEvent *trainerObj)",
+      "paramsRaw": "u8 taskId, struct Task *task, struct ObjectEvent *trainerObj",
+      "body": "if (ObjectEventClearHeldMovementIfFinished(trainerObj))\n        task->tFuncId = TRSEE_MOVE_TO_PLAYER;\n\n    return FALSE;",
+      "callsTo": [
+        "ObjectEventClearHeldMovementIfFinished"
+      ],
+      "lineCount": 4
+    },
+    "RevealBuriedTrainer": {
+      "returnType": "bool8",
+      "signature": "static bool8 RevealBuriedTrainer(u8 taskId, struct Task *task, struct ObjectEvent *trainerObj)",
+      "paramsRaw": "u8 taskId, struct Task *task, struct ObjectEvent *trainerObj",
+      "body": "if (!ObjectEventIsMovementOverridden(trainerObj)\n     || ObjectEventClearHeldMovementIfFinished(trainerObj))\n    {\n        ObjectEventSetHeldMovement(trainerObj, MOVEMENT_ACTION_FACE_PLAYER);\n        task->tFuncId++;\n    }\n    return FALSE;",
+      "callsTo": [
+        "ObjectEventClearHeldMovementIfFinished",
+        "ObjectEventIsMovementOverridden",
+        "ObjectEventSetHeldMovement"
+      ],
+      "lineCount": 7
+    },
+    "PopOutOfAshBuriedTrainer": {
+      "returnType": "bool8",
+      "signature": "static bool8 PopOutOfAshBuriedTrainer(u8 taskId, struct Task *task, struct ObjectEvent *trainerObj)",
+      "paramsRaw": "u8 taskId, struct Task *task, struct ObjectEvent *trainerObj",
+      "body": "if (ObjectEventCheckHeldMovementStatus(trainerObj))\n    {\n        gFieldEffectArguments[0] = trainerObj->currentCoords.x;\n        gFieldEffectArguments[1] = trainerObj->currentCoords.y;\n        gFieldEffectArguments[2] = gSprites[trainerObj->spriteId].subpriority - 1;\n        gFieldEffectArguments[3] = 2;\n        task->tOutOfAshSpriteId = FieldEffectStart(FLDEFF_ASH_PUFF);\n        task->tFuncId++;\n    }\n    return FALSE;",
+      "callsTo": [
+        "FieldEffectStart",
+        "ObjectEventCheckHeldMovementStatus"
+      ],
+      "lineCount": 10
+    },
+    "JumpInPlaceBuriedTrainer": {
+      "returnType": "bool8",
+      "signature": "static bool8 JumpInPlaceBuriedTrainer(u8 taskId, struct Task *task, struct ObjectEvent *trainerObj)",
+      "paramsRaw": "u8 taskId, struct Task *task, struct ObjectEvent *trainerObj",
+      "body": "struct Sprite *sprite;\n\n    if (gSprites[task->tOutOfAshSpriteId].animCmdIndex == 2)\n    {\n        trainerObj->fixedPriority = 0;\n        trainerObj->triggerGroundEffectsOnMove = TRUE;\n\n        sprite = &gSprites[trainerObj->spriteId];\n        sprite->oam.priority = 2;\n        ObjectEventClearHeldMovementIfFinished(trainerObj);\n        ObjectEventSetHeldMovement(trainerObj, GetJumpInPlaceMovementAction(trainerObj->facingDirection));\n        task->tFuncId++;\n    }\n\n    return FALSE;",
+      "callsTo": [
+        "GetJumpInPlaceMovementAction",
+        "ObjectEventClearHeldMovementIfFinished",
+        "ObjectEventSetHeldMovement"
+      ],
+      "lineCount": 15
+    },
+    "WaitRevealBuriedTrainer": {
+      "returnType": "bool8",
+      "signature": "static bool8 WaitRevealBuriedTrainer(u8 taskId, struct Task *task, struct ObjectEvent *trainerObj)",
+      "paramsRaw": "u8 taskId, struct Task *task, struct ObjectEvent *trainerObj",
+      "body": "if (!FieldEffectActiveListContains(FLDEFF_ASH_PUFF))\n        task->tFuncId = TRSEE_MOVE_TO_PLAYER;\n\n    return FALSE;",
+      "callsTo": [
+        "FieldEffectActiveListContains"
+      ],
+      "lineCount": 4
+    },
+    "Task_SetBuriedTrainerMovement": {
+      "returnType": "void",
+      "signature": "static void Task_SetBuriedTrainerMovement(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "struct Task *task = &gTasks[taskId];\n    struct ObjectEvent *objEvent;\n\n    LoadWordFromTwoHalfwords((u16*) &task->tObjEvent, (u32 *)&objEvent);\n    if (!task->data[7])\n    {\n        ObjectEventClearHeldMovement(objEvent);\n        task->data[7]++;\n    }\n    sTrainerSeeFuncList2[task->tFuncId](taskId, task, objEvent);\n    if (task->tFuncId == ((int)ARRAY_COUNT(sTrainerSeeFuncList2) - 1) && !FieldEffectActiveListContains(FLDEFF_ASH_PUFF))\n    {\n        SetTrainerMovementType(objEvent, GetTrainerFacingDirectionMovementType(objEvent->facingDirection));\n        TryOverrideTemplateCoordsForObjectEvent(objEvent, GetTrainerFacingDirectionMovementType(objEvent->facingDirection));\n        DestroyTask(taskId);\n    }\n    else\n    {\n        objEvent->heldMovementFinished = 0;\n    }",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "DestroyTask",
+        "FieldEffectActiveListContains",
+        "GetTrainerFacingDirectionMovementType",
+        "LoadWordFromTwoHalfwords",
+        "ObjectEventClearHeldMovement",
+        "SetTrainerMovementType",
+        "TryOverrideTemplateCoordsForObjectEvent"
+      ],
+      "lineCount": 20
+    },
+    "SetBuriedTrainerMovement": {
+      "returnType": "void",
+      "signature": "void SetBuriedTrainerMovement(struct ObjectEvent *objEvent)",
+      "paramsRaw": "struct ObjectEvent *objEvent",
+      "body": "StoreWordInTwoHalfwords((u16*) &gTasks[CreateTask(Task_SetBuriedTrainerMovement, 0)].tObjEvent, (u32)objEvent);",
+      "callsTo": [
+        "CreateTask",
+        "StoreWordInTwoHalfwords"
+      ],
+      "lineCount": 1
+    },
+    "DoTrainerApproach": {
+      "returnType": "void",
+      "signature": "void DoTrainerApproach(void)",
+      "paramsRaw": "void",
+      "body": "StartTrainerApproach(Task_EndTrainerApproach);",
+      "callsTo": [
+        "StartTrainerApproach"
+      ],
+      "lineCount": 1
+    },
+    "Task_EndTrainerApproach": {
+      "returnType": "void",
+      "signature": "static void Task_EndTrainerApproach(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "DestroyTask(taskId);\n    ScriptContext_Enable();",
+      "callsTo": [
+        "DestroyTask",
+        "ScriptContext_Enable"
+      ],
+      "lineCount": 2
+    },
+    "TryPrepareSecondApproachingTrainer": {
+      "returnType": "void",
+      "signature": "void TryPrepareSecondApproachingTrainer(void)",
+      "paramsRaw": "void",
+      "body": "if (gNoOfApproachingTrainers == 2)\n    {\n        if (gApproachingTrainerId == 0)\n        {\n            gApproachingTrainerId++;\n            gSpecialVar_Result = TRUE;\n            UnfreezeObjectEvents();\n            FreezeObjectEventsExceptOne(gApproachingTrainers[1].objectEventId);\n        }\n        else\n        {\n            gApproachingTrainerId = 0;\n            gSpecialVar_Result = FALSE;\n        }\n    }\n    else\n    {\n        gSpecialVar_Result = FALSE;\n    }",
+      "callsTo": [
+        "FreezeObjectEventsExceptOne",
+        "UnfreezeObjectEvents"
+      ],
+      "lineCount": 19
+    },
+    "FldEff_ExclamationMarkIcon": {
+      "returnType": "u8",
+      "signature": "u8 FldEff_ExclamationMarkIcon(void)",
+      "paramsRaw": "void",
+      "body": "u8 spriteId = CreateSpriteAtEnd(&sSpriteTemplate_ExclamationQuestionMark, 0, 0, 0x53);\n\n    if (spriteId != MAX_SPRITES)\n        SetIconSpriteData(&gSprites[spriteId], FLDEFF_EXCLAMATION_MARK_ICON, 0);\n\n    return 0;",
+      "callsTo": [
+        "CreateSpriteAtEnd",
+        "SetIconSpriteData"
+      ],
+      "lineCount": 6
+    },
+    "FldEff_QuestionMarkIcon": {
+      "returnType": "u8",
+      "signature": "u8 FldEff_QuestionMarkIcon(void)",
+      "paramsRaw": "void",
+      "body": "u8 spriteId = CreateSpriteAtEnd(&sSpriteTemplate_ExclamationQuestionMark, 0, 0, 0x52);\n\n    if (spriteId != MAX_SPRITES)\n        SetIconSpriteData(&gSprites[spriteId], FLDEFF_QUESTION_MARK_ICON, 1);\n\n    return 0;",
+      "callsTo": [
+        "CreateSpriteAtEnd",
+        "SetIconSpriteData"
+      ],
+      "lineCount": 6
+    },
+    "FldEff_HeartIcon": {
+      "returnType": "u8",
+      "signature": "u8 FldEff_HeartIcon(void)",
+      "paramsRaw": "void",
+      "body": "u8 spriteId = CreateSpriteAtEnd(&sSpriteTemplate_HeartIcon, 0, 0, 0x52);\n\n    if (spriteId != MAX_SPRITES)\n    {\n        struct Sprite *sprite = &gSprites[spriteId];\n\n        SetIconSpriteData(sprite, FLDEFF_HEART_ICON, 0);\n        sprite->oam.paletteNum = 2;\n    }\n\n    return 0;",
+      "callsTo": [
+        "CreateSpriteAtEnd",
+        "SetIconSpriteData"
+      ],
+      "lineCount": 11
+    },
+    "SetIconSpriteData": {
+      "returnType": "void",
+      "signature": "static void SetIconSpriteData(struct Sprite *sprite, u16 fldEffId, u8 spriteAnimNum)",
+      "paramsRaw": "struct Sprite *sprite, u16 fldEffId, u8 spriteAnimNum",
+      "body": "sprite->oam.priority = 1;\n    sprite->coordOffsetEnabled = 1;\n\n    sprite->sLocalId = gFieldEffectArguments[0];\n    sprite->sMapNum = gFieldEffectArguments[1];\n    sprite->sMapGroup = gFieldEffectArguments[2];\n    sprite->sYVelocity = -5;\n    sprite->sFldEffId = fldEffId;\n\n    StartSpriteAnim(sprite, spriteAnimNum);",
+      "callsTo": [
+        "StartSpriteAnim"
+      ],
+      "lineCount": 10
+    },
+    "SpriteCB_TrainerIcons": {
+      "returnType": "void",
+      "signature": "static void SpriteCB_TrainerIcons(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "u8 objEventId;\n\n    if (TryGetObjectEventIdByLocalIdAndMap(sprite->sLocalId, sprite->sMapNum, sprite->sMapGroup, &objEventId)\n     || sprite->animEnded)\n    {\n        FieldEffectStop(sprite, sprite->sFldEffId);\n    }\n    else\n    {\n        struct Sprite *objEventSprite = &gSprites[gObjectEvents[objEventId].spriteId];\n        sprite->sYOffset += sprite->sYVelocity;\n        sprite->x = objEventSprite->x;\n        sprite->y = objEventSprite->y - 16;\n        sprite->x2 = objEventSprite->x2;\n        sprite->y2 = objEventSprite->y2 + sprite->sYOffset;\n        if (sprite->sYOffset)\n            sprite->sYVelocity++;\n        else\n            sprite->sYVelocity = 0;\n    }",
+      "callsTo": [
+        "FieldEffectStop",
+        "TryGetObjectEventIdByLocalIdAndMap"
+      ],
+      "lineCount": 20
+    },
+    "GetCurrentApproachingTrainerObjectEventId": {
+      "returnType": "u8",
+      "signature": "u8 GetCurrentApproachingTrainerObjectEventId(void)",
+      "paramsRaw": "void",
+      "body": "if (gApproachingTrainerId == 0)\n        return gApproachingTrainers[0].objectEventId;\n    else\n        return gApproachingTrainers[1].objectEventId;",
+      "callsTo": [],
+      "lineCount": 4
+    },
+    "GetChosenApproachingTrainerObjectEventId": {
+      "returnType": "u8",
+      "signature": "u8 GetChosenApproachingTrainerObjectEventId(u8 arrayId)",
+      "paramsRaw": "u8 arrayId",
+      "body": "if (arrayId >= ARRAY_COUNT(gApproachingTrainers))\n        return 0;\n    else if (arrayId == 0)\n        return gApproachingTrainers[0].objectEventId;\n    else\n        return gApproachingTrainers[1].objectEventId;",
+      "callsTo": [
+        "ARRAY_COUNT"
+      ],
+      "lineCount": 6
+    },
+    "PlayerFaceTrainerAfterBattle": {
+      "returnType": "void",
+      "signature": "void PlayerFaceTrainerAfterBattle(void)",
+      "paramsRaw": "void",
+      "body": "struct ObjectEvent *objEvent;\n\n    if (gTrainerApproachedPlayer == TRUE)\n    {\n        objEvent = &gObjectEvents[gApproachingTrainers[gWhichTrainerToFaceAfterBattle].objectEventId];\n        gPostBattleMovementScript[0] = GetFaceDirectionMovementAction(GetOppositeDirection(objEvent->facingDirection));\n        gPostBattleMovementScript[1] = MOVEMENT_ACTION_STEP_END;\n        ScriptMovement_StartObjectMovementScript(LOCALID_PLAYER, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup, gPostBattleMovementScript);\n    }\n    else\n    {\n        objEvent = &gObjectEvents[gPlayerAvatar.objectEventId];\n        gPostBattleMovementScript[0] = GetFaceDirectionMovementAction(objEvent->facingDirection);\n        gPostBattleMovementScript[1] = MOVEMENT_ACTION_STEP_END;\n        ScriptMovement_StartObjectMovementScript(LOCALID_PLAYER, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup, gPostBattleMovementScript);\n    }\n\n    SetMovingNpcId(LOCALID_PLAYER);",
+      "callsTo": [
+        "GetFaceDirectionMovementAction",
+        "GetOppositeDirection",
+        "ScriptMovement_StartObjectMovementScript",
+        "SetMovingNpcId"
+      ],
+      "lineCount": 18
+    }
+  }
+}

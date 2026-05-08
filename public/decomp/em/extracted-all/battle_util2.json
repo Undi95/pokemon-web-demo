@@ -1,0 +1,68 @@
+{
+  "srcFile": "src/battle_util2.c",
+  "count": 5,
+  "functions": {
+    "AllocateBattleResources": {
+      "returnType": "void",
+      "signature": "void AllocateBattleResources(void)",
+      "paramsRaw": "void",
+      "body": "if (gBattleResources != NULL) {\n         \n         \n    }\n\n    if (gBattleTypeFlags & BATTLE_TYPE_TRAINER_HILL)\n        InitTrainerHillBattleStruct();\n\n    gBattleStruct = AllocZeroed(sizeof(*gBattleStruct));\n\n    gBattleResources = AllocZeroed(sizeof(*gBattleResources));\n    gBattleResources->secretBase = AllocZeroed(sizeof(*gBattleResources->secretBase));\n    gBattleResources->flags = AllocZeroed(sizeof(*gBattleResources->flags));\n    gBattleResources->battleScriptsStack = AllocZeroed(sizeof(*gBattleResources->battleScriptsStack));\n    gBattleResources->battleCallbackStack = AllocZeroed(sizeof(*gBattleResources->battleCallbackStack));\n    gBattleResources->beforeLvlUp = AllocZeroed(sizeof(*gBattleResources->beforeLvlUp));\n    gBattleResources->ai = AllocZeroed(sizeof(*gBattleResources->ai));\n    gBattleResources->battleHistory = AllocZeroed(sizeof(*gBattleResources->battleHistory));\n    gBattleResources->AI_ScriptsStack = AllocZeroed(sizeof(*gBattleResources->AI_ScriptsStack));\n\n    gLinkBattleSendBuffer = AllocZeroed(BATTLE_BUFFER_LINK_SIZE);\n    gLinkBattleRecvBuffer = AllocZeroed(BATTLE_BUFFER_LINK_SIZE);\n\n    gBattleAnimBgTileBuffer = AllocZeroed(0x2000);\n    gBattleAnimBgTilemapBuffer = AllocZeroed(0x1000);\n\n    if (gBattleTypeFlags & BATTLE_TYPE_SECRET_BASE)\n    {\n        u16 currSecretBaseId = VarGet(VAR_CURRENT_SECRET_BASE);\n        CreateSecretBaseEnemyParty(&gSaveBlock1Ptr->secretBases[currSecretBaseId]);\n    }",
+      "callsTo": [
+        "AllocZeroed",
+        "CreateSecretBaseEnemyParty",
+        "InitTrainerHillBattleStruct",
+        "VarGet"
+      ],
+      "lineCount": 31
+    },
+    "FreeBattleResources": {
+      "returnType": "void",
+      "signature": "void FreeBattleResources(void)",
+      "paramsRaw": "void",
+      "body": "if (gBattleTypeFlags & BATTLE_TYPE_TRAINER_HILL)\n        FreeTrainerHillBattleStruct();\n\n    if (gBattleResources != NULL)\n    {\n        FREE_AND_SET_NULL(gBattleStruct);\n\n        FREE_AND_SET_NULL(gBattleResources->secretBase);\n        FREE_AND_SET_NULL(gBattleResources->flags);\n        FREE_AND_SET_NULL(gBattleResources->battleScriptsStack);\n        FREE_AND_SET_NULL(gBattleResources->battleCallbackStack);\n        FREE_AND_SET_NULL(gBattleResources->beforeLvlUp);\n        FREE_AND_SET_NULL(gBattleResources->ai);\n        FREE_AND_SET_NULL(gBattleResources->battleHistory);\n        FREE_AND_SET_NULL(gBattleResources->AI_ScriptsStack);\n        FREE_AND_SET_NULL(gBattleResources);\n\n        FREE_AND_SET_NULL(gLinkBattleSendBuffer);\n        FREE_AND_SET_NULL(gLinkBattleRecvBuffer);\n\n        FREE_AND_SET_NULL(gBattleAnimBgTileBuffer);\n        FREE_AND_SET_NULL(gBattleAnimBgTilemapBuffer);\n    }",
+      "callsTo": [
+        "FREE_AND_SET_NULL",
+        "FreeTrainerHillBattleStruct"
+      ],
+      "lineCount": 23
+    },
+    "AdjustFriendshipOnBattleFaint": {
+      "returnType": "void",
+      "signature": "void AdjustFriendshipOnBattleFaint(u8 battler)",
+      "paramsRaw": "u8 battler",
+      "body": "u8 opposingBattlerId;\n\n    if (gBattleTypeFlags & BATTLE_TYPE_DOUBLE)\n    {\n        u8 opposingBattlerId2;\n\n        opposingBattlerId = GetBattlerAtPosition(B_POSITION_OPPONENT_LEFT);\n        opposingBattlerId2 = GetBattlerAtPosition(B_POSITION_OPPONENT_RIGHT);\n\n        if (gBattleMons[opposingBattlerId2].level > gBattleMons[opposingBattlerId].level)\n            opposingBattlerId = opposingBattlerId2;\n    }\n    else\n    {\n        opposingBattlerId = GetBattlerAtPosition(B_POSITION_OPPONENT_LEFT);\n    }\n\n    if (gBattleMons[opposingBattlerId].level > gBattleMons[battler].level)\n    {\n        if (gBattleMons[opposingBattlerId].level - gBattleMons[battler].level > 29)\n            AdjustFriendship(&gPlayerParty[gBattlerPartyIndexes[battler]], FRIENDSHIP_EVENT_FAINT_LARGE);\n        else\n            AdjustFriendship(&gPlayerParty[gBattlerPartyIndexes[battler]], FRIENDSHIP_EVENT_FAINT_SMALL);\n    }\n    else\n    {\n        AdjustFriendship(&gPlayerParty[gBattlerPartyIndexes[battler]], FRIENDSHIP_EVENT_FAINT_SMALL);\n    }",
+      "callsTo": [
+        "AdjustFriendship",
+        "GetBattlerAtPosition"
+      ],
+      "lineCount": 28
+    },
+    "SwitchPartyOrderInGameMulti": {
+      "returnType": "void",
+      "signature": "void SwitchPartyOrderInGameMulti(u8 battler, u8 arg1)",
+      "paramsRaw": "u8 battler, u8 arg1",
+      "body": "if (GetBattlerSide(battler) != B_SIDE_OPPONENT)\n    {\n        s32 i;\n        for (i = 0; i < (int)ARRAY_COUNT(gBattlePartyCurrentOrder); i++)\n            gBattlePartyCurrentOrder[i] = *(i + (u8 *)(gBattleStruct->battlerPartyOrders));\n\n        SwitchPartyMonSlots(GetPartyIdFromBattlePartyId(gBattlerPartyIndexes[battler]), GetPartyIdFromBattlePartyId(arg1));\n\n        for (i = 0; i < (int)ARRAY_COUNT(gBattlePartyCurrentOrder); i++)\n            *(i + (u8 *)(gBattleStruct->battlerPartyOrders)) = gBattlePartyCurrentOrder[i];\n    }",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "GetBattlerSide",
+        "GetPartyIdFromBattlePartyId",
+        "SwitchPartyMonSlots"
+      ],
+      "lineCount": 11
+    },
+    "BattlePalace_TryEscapeStatus": {
+      "returnType": "u32",
+      "signature": "u32 BattlePalace_TryEscapeStatus(u8 battler)",
+      "paramsRaw": "u8 battler",
+      "body": "u32 effect = 0;\n\n    do\n    {\n        switch (gBattleCommunication[MULTIUSE_STATE])\n        {\n        case 0:\n            if (gBattleMons[battler].status1 & STATUS1_SLEEP)\n            {\n                if (UproarWakeUpCheck(battler))\n                {\n                     \n                    gBattleMons[battler].status1 &= ~(STATUS1_SLEEP);\n                    gBattleMons[battler].status2 &= ~(STATUS2_NIGHTMARE);\n                    BattleScriptPushCursor();\n                    gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_WOKE_UP_UPROAR;\n                    gBattlescriptCurrInstr = BattleScript_MoveUsedWokeUp;\n                    effect = 2;\n                }\n                else\n                {\n                    u32 toSub;\n\n                    if (gBattleMons[battler].ability == ABILITY_EARLY_BIRD)\n                        toSub = 2;\n                    else\n                        toSub = 1;\n\n                     \n                    if ((gBattleMons[battler].status1 & STATUS1_SLEEP) < toSub)\n                        gBattleMons[battler].status1 &= ~(STATUS1_SLEEP);\n                    else\n                        gBattleMons[battler].status1 -= toSub;\n\n                    if (gBattleMons[battler].status1 & STATUS1_SLEEP)\n                    {\n                         \n                        gBattlescriptCurrInstr = BattleScript_MoveUsedIsAsleep;\n                        effect = 2;\n                    }\n                    else\n                    {\n                         \n                        gBattleMons[battler].status2 &= ~(STATUS2_NIGHTMARE);\n                        BattleScriptPushCursor();\n                        gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_WOKE_UP;\n                        gBattlescriptCurrInstr = BattleScript_MoveUsedWokeUp;\n                        effect = 2;\n                    }\n                }\n            }\n            gBattleCommunication[MULTIUSE_STATE]++;\n            break;\n        case 1:\n            if (gBattleMons[battler].status1 & STATUS1_FREEZE)\n            {\n                if (Random() % 5 != 0)\n                {\n                     \n                    gBattlescriptCurrInstr = BattleScript_MoveUsedIsFrozen;\n                }\n                else\n                {\n                     \n                    gBattleMons[battler].status1 &= ~(STATUS1_FREEZE);\n                    BattleScriptPushCursor();\n                    gBattlescriptCurrInstr = BattleScript_MoveUsedUnfroze;\n                    gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_DEFROSTED;\n                }\n                effect = 2;\n            }\n            gBattleCommunication[MULTIUSE_STATE]++;\n            break;\n        case 2:\n            break;\n        }\n         \n    } while (gBattleCommunication[MULTIUSE_STATE] != 2 && effect == 0);\n\n    if (effect == 2)\n    {\n        gActiveBattler = battler;\n        BtlController_EmitSetMonData(B_COMM_TO_CONTROLLER, REQUEST_STATUS_BATTLE, 0, 4, &gBattleMons[gActiveBattler].status1);\n        MarkBattlerForControllerExec(gActiveBattler);\n    }\n\n    return effect;",
+      "callsTo": [
+        "BattleScriptPushCursor",
+        "BtlController_EmitSetMonData",
+        "MarkBattlerForControllerExec",
+        "Random",
+        "UproarWakeUpCheck"
+      ],
+      "lineCount": 87
+    }
+  }
+}

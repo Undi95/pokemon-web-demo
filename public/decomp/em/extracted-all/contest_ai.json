@@ -1,0 +1,1485 @@
+{
+  "srcFile": "src/contest_ai.c",
+  "count": 142,
+  "functions": {
+    "ContestAI_ResetAI": {
+      "returnType": "void",
+      "signature": "void ContestAI_ResetAI(u8 contestantAI)",
+      "paramsRaw": "u8 contestantAI",
+      "body": "int i;\n    memset(&eContestAI, 0, sizeof(struct ContestAIInfo));\n\n    for (i = 0; i < MAX_MON_MOVES; i++)\n        eContestAI.moveScores[i] = 100;\n\n    eContestAI.contestantId = contestantAI;\n    eContestAI.stackSize = 0;\n    eContestAI.aiFlags = gContestMons[eContestAI.contestantId].aiFlags;",
+      "callsTo": [],
+      "lineCount": 9
+    },
+    "ContestAI_GetActionToUse": {
+      "returnType": "u8",
+      "signature": "u8 ContestAI_GetActionToUse(void)",
+      "paramsRaw": "void",
+      "body": "while (eContestAI.aiFlags != 0)\n    {\n        if (eContestAI.aiFlags & 1)\n        {\n            eContestAI.aiState = CONTESTAI_SETTING_UP;\n            ContestAI_DoAIProcessing();\n        }\n        eContestAI.aiFlags >>= 1;\n        eContestAI.currentAIFlag++;\n        eContestAI.nextMoveIndex = 0;\n    }\n\n    while (1)\n    {\n         \n         \n        u8 moveIndex = MOD(Random(), MAX_MON_MOVES);\n        u8 score = eContestAI.moveScores[moveIndex];\n        int i;\n        for (i = 0; i < MAX_MON_MOVES; i++)\n        {\n            if (score < eContestAI.moveScores[i])\n                break;\n        }\n        if (i == MAX_MON_MOVES)\n            return moveIndex;\n    }",
+      "callsTo": [
+        "ContestAI_DoAIProcessing",
+        "MOD",
+        "Random"
+      ],
+      "lineCount": 27
+    },
+    "ContestAI_DoAIProcessing": {
+      "returnType": "void",
+      "signature": "static void ContestAI_DoAIProcessing(void)",
+      "paramsRaw": "void",
+      "body": "while (eContestAI.aiState != CONTESTAI_FINISHED)\n    {\n        switch(eContestAI.aiState)\n        {\n            case CONTESTAI_DO_NOT_PROCESS:\n                break;\n            case CONTESTAI_SETTING_UP:\n                gAIScriptPtr = gContestAI_ScriptsTable[eContestAI.currentAIFlag];\n\n                if (gContestMons[eContestAI.contestantId].moves[eContestAI.nextMoveIndex] == MOVE_NONE)\n                    eContestAI.nextMove = MOVE_NONE;  \n                else\n                    eContestAI.nextMove = gContestMons[eContestAI.contestantId].moves[eContestAI.nextMoveIndex];\n                eContestAI.aiState++;\n                break;\n            case CONTESTAI_PROCESSING:\n                if (eContestAI.nextMove != MOVE_NONE)\n                {\n                    sContestAICmdTable[*gAIScriptPtr]();  \n                }\n                else\n                {\n                    eContestAI.moveScores[eContestAI.nextMoveIndex] = 0;  \n                    eContestAI.aiAction |= AI_ACTION_DONE;\n                }\n                if (eContestAI.aiAction & AI_ACTION_DONE)\n                {\n                    eContestAI.nextMoveIndex++;\n                    if (eContestAI.nextMoveIndex < MAX_MON_MOVES)\n                        eContestAI.aiState = 0;\n                    else\n                         \n                        eContestAI.aiState++;\n                    eContestAI.aiAction &= ~AI_ACTION_DONE;\n                }\n                break;\n        }\n    }",
+      "callsTo": [],
+      "lineCount": 38
+    },
+    "GetContestantIdByTurn": {
+      "returnType": "u8",
+      "signature": "static u8 GetContestantIdByTurn(u8 turn)",
+      "paramsRaw": "u8 turn",
+      "body": "int i;\n\n    for (i = 0; i < CONTESTANT_COUNT; i++)\n        if (eContestAppealResults.turnOrder[i] == turn)\n            break;\n\n    return i;",
+      "callsTo": [],
+      "lineCount": 7
+    },
+    "ContestAICmd_score": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_score(void)",
+      "paramsRaw": "void",
+      "body": "s16 score = eContestAI.moveScores[eContestAI.nextMoveIndex] + (s8)gAIScriptPtr[1];\n\n    if (score > 255)\n        score = 255;\n    else if (score < 0)\n        score = 0;\n\n    eContestAI.moveScores[eContestAI.nextMoveIndex] = score;\n\n    gAIScriptPtr += 2;",
+      "callsTo": [],
+      "lineCount": 10
+    },
+    "ContestAICmd_get_appeal_num": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_get_appeal_num(void)",
+      "paramsRaw": "void",
+      "body": "eContestAI.scriptResult = eContest.appealNumber;\n    gAIScriptPtr += 1;",
+      "callsTo": [],
+      "lineCount": 2
+    },
+    "ContestAICmd_if_appeal_num_less_than": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_appeal_num_less_than(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_appeal_num();\n\n    if (eContestAI.scriptResult < gAIScriptPtr[0])\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);\n    else\n        gAIScriptPtr += 5;",
+      "callsTo": [
+        "ContestAICmd_get_appeal_num",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_appeal_num_more_than": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_appeal_num_more_than(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_appeal_num();\n\n    if (eContestAI.scriptResult > gAIScriptPtr[0])\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);\n    else\n        gAIScriptPtr += 5;",
+      "callsTo": [
+        "ContestAICmd_get_appeal_num",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_appeal_num_eq": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_appeal_num_eq(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_appeal_num();\n\n    if (eContestAI.scriptResult == gAIScriptPtr[0])\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);\n    else\n        gAIScriptPtr += 5;",
+      "callsTo": [
+        "ContestAICmd_get_appeal_num",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_appeal_num_not_eq": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_appeal_num_not_eq(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_appeal_num();\n\n    if (eContestAI.scriptResult != gAIScriptPtr[0])\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);\n    else\n        gAIScriptPtr += 5;",
+      "callsTo": [
+        "ContestAICmd_get_appeal_num",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_get_excitement": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_get_excitement(void)",
+      "paramsRaw": "void",
+      "body": "eContestAI.scriptResult = eContest.applauseLevel;\n    gAIScriptPtr += 1;",
+      "callsTo": [],
+      "lineCount": 2
+    },
+    "ContestAICmd_if_excitement_less_than": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_excitement_less_than(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_excitement();\n\n    if (eContestAI.scriptResult < gAIScriptPtr[0])\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);\n    else\n        gAIScriptPtr += 5;",
+      "callsTo": [
+        "ContestAICmd_get_excitement",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_excitement_more_than": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_excitement_more_than(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_excitement();\n\n    if (eContestAI.scriptResult > gAIScriptPtr[0])\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);\n    else\n        gAIScriptPtr += 5;",
+      "callsTo": [
+        "ContestAICmd_get_excitement",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_excitement_eq": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_excitement_eq(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_excitement();\n\n    if (eContestAI.scriptResult == gAIScriptPtr[0])\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);\n    else\n        gAIScriptPtr += 5;",
+      "callsTo": [
+        "ContestAICmd_get_excitement",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_excitement_not_eq": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_excitement_not_eq(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_excitement();\n\n    if (eContestAI.scriptResult != gAIScriptPtr[0])\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);\n    else\n        gAIScriptPtr += 5;",
+      "callsTo": [
+        "ContestAICmd_get_excitement",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_get_user_order": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_get_user_order(void)",
+      "paramsRaw": "void",
+      "body": "eContestAI.scriptResult = eContestAppealResults.turnOrder[eContestAI.contestantId];\n    gAIScriptPtr += 1;",
+      "callsTo": [],
+      "lineCount": 2
+    },
+    "ContestAICmd_if_user_order_less_than": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_user_order_less_than(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_user_order();\n\n    if (eContestAI.scriptResult < gAIScriptPtr[0])\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);\n    else\n        gAIScriptPtr += 5;",
+      "callsTo": [
+        "ContestAICmd_get_user_order",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_user_order_more_than": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_user_order_more_than(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_user_order();\n\n    if (eContestAI.scriptResult > gAIScriptPtr[0])\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);\n    else\n        gAIScriptPtr += 5;",
+      "callsTo": [
+        "ContestAICmd_get_user_order",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_user_order_eq": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_user_order_eq(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_user_order();\n\n    if (eContestAI.scriptResult == gAIScriptPtr[0])\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);\n    else\n        gAIScriptPtr += 5;",
+      "callsTo": [
+        "ContestAICmd_get_user_order",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_user_order_not_eq": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_user_order_not_eq(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_user_order();\n\n    if (eContestAI.scriptResult != gAIScriptPtr[0])\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);\n    else\n        gAIScriptPtr += 5;",
+      "callsTo": [
+        "ContestAICmd_get_user_order",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_get_user_condition": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_get_user_condition(void)",
+      "paramsRaw": "void",
+      "body": "eContestAI.scriptResult = eContestantStatus[eContestAI.contestantId].condition / 10;\n    gAIScriptPtr += 1;",
+      "callsTo": [],
+      "lineCount": 2
+    },
+    "ContestAICmd_if_user_condition_less_than": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_user_condition_less_than(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_user_condition();\n\n    if (eContestAI.scriptResult < gAIScriptPtr[0])\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);\n    else\n        gAIScriptPtr += 5;",
+      "callsTo": [
+        "ContestAICmd_get_user_condition",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_user_condition_more_than": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_user_condition_more_than(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_user_condition();\n\n    if (eContestAI.scriptResult > gAIScriptPtr[0])\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);\n    else\n        gAIScriptPtr += 5;",
+      "callsTo": [
+        "ContestAICmd_get_user_condition",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_user_condition_eq": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_user_condition_eq(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_user_condition();\n\n    if (eContestAI.scriptResult == gAIScriptPtr[0])\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);\n    else\n        gAIScriptPtr += 5;",
+      "callsTo": [
+        "ContestAICmd_get_user_condition",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_user_condition_not_eq": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_user_condition_not_eq(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_user_condition();\n\n    if (eContestAI.scriptResult != gAIScriptPtr[0])\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);\n    else\n        gAIScriptPtr += 5;",
+      "callsTo": [
+        "ContestAICmd_get_user_condition",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_get_points": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_get_points(void)",
+      "paramsRaw": "void",
+      "body": "eContestAI.scriptResult = eContestantStatus[eContestAI.contestantId].pointTotal;\n    gAIScriptPtr += 1;",
+      "callsTo": [],
+      "lineCount": 2
+    },
+    "ContestAICmd_if_points_less_than": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_points_less_than(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_points();\n\n    if (eContestAI.scriptResult < (s16)T1_READ_16(gAIScriptPtr + 0))\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 2);\n    else\n        gAIScriptPtr += 6;",
+      "callsTo": [
+        "ContestAICmd_get_points",
+        "T1_READ_16",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_points_more_than": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_points_more_than(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_points();\n\n    if (eContestAI.scriptResult > (s16)T1_READ_16(gAIScriptPtr + 0))\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 2);\n    else\n        gAIScriptPtr += 6;",
+      "callsTo": [
+        "ContestAICmd_get_points",
+        "T1_READ_16",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_points_eq": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_points_eq(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_points();\n\n    if (eContestAI.scriptResult == (s16)T1_READ_16(gAIScriptPtr + 0))\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 2);\n    else\n        gAIScriptPtr += 6;",
+      "callsTo": [
+        "ContestAICmd_get_points",
+        "T1_READ_16",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_points_not_eq": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_points_not_eq(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_points();\n\n    if (eContestAI.scriptResult != (s16)T1_READ_16(gAIScriptPtr + 0))\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 2);\n    else\n        gAIScriptPtr += 6;",
+      "callsTo": [
+        "ContestAICmd_get_points",
+        "T1_READ_16",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_get_preliminary_points": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_get_preliminary_points(void)",
+      "paramsRaw": "void",
+      "body": "eContestAI.scriptResult = gContestMonRound1Points[eContestAI.contestantId];\n    gAIScriptPtr += 1;",
+      "callsTo": [],
+      "lineCount": 2
+    },
+    "ContestAICmd_if_preliminary_points_less_than": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_preliminary_points_less_than(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_preliminary_points();\n\n    if (eContestAI.scriptResult < (s16)T1_READ_16(gAIScriptPtr + 0))\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 2);\n    else\n        gAIScriptPtr += 6;",
+      "callsTo": [
+        "ContestAICmd_get_preliminary_points",
+        "T1_READ_16",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_preliminary_points_more_than": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_preliminary_points_more_than(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_preliminary_points();\n\n    if (eContestAI.scriptResult > (s16)T1_READ_16(gAIScriptPtr + 0))\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 2);\n    else\n        gAIScriptPtr += 6;",
+      "callsTo": [
+        "ContestAICmd_get_preliminary_points",
+        "T1_READ_16",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_preliminary_points_eq": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_preliminary_points_eq(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_preliminary_points();\n\n    if (eContestAI.scriptResult == (s16)T1_READ_16(gAIScriptPtr + 0))\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 2);\n    else\n        gAIScriptPtr += 6;",
+      "callsTo": [
+        "ContestAICmd_get_preliminary_points",
+        "T1_READ_16",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_preliminary_points_not_eq": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_preliminary_points_not_eq(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_preliminary_points();\n\n    if (eContestAI.scriptResult != (s16)T1_READ_16(gAIScriptPtr + 0))\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 2);\n    else\n        gAIScriptPtr += 6;",
+      "callsTo": [
+        "ContestAICmd_get_preliminary_points",
+        "T1_READ_16",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_get_contest_type": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_get_contest_type(void)",
+      "paramsRaw": "void",
+      "body": "eContestAI.scriptResult = gSpecialVar_ContestCategory;\n    gAIScriptPtr += 1;",
+      "callsTo": [],
+      "lineCount": 2
+    },
+    "ContestAICmd_if_contest_type_eq": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_contest_type_eq(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_contest_type();\n\n    if (eContestAI.scriptResult == gAIScriptPtr[0])\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);\n    else\n        gAIScriptPtr += 5;",
+      "callsTo": [
+        "ContestAICmd_get_contest_type",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_contest_type_not_eq": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_contest_type_not_eq(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_contest_type();\n\n    if (eContestAI.scriptResult != gAIScriptPtr[0])\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);\n    else\n        gAIScriptPtr += 5;",
+      "callsTo": [
+        "ContestAICmd_get_contest_type",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_get_move_excitement": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_get_move_excitement(void)",
+      "paramsRaw": "void",
+      "body": "eContestAI.scriptResult = Contest_GetMoveExcitement(gContestMons[eContestAI.contestantId].moves[eContestAI.nextMoveIndex]);\n    gAIScriptPtr += 1;",
+      "callsTo": [
+        "Contest_GetMoveExcitement"
+      ],
+      "lineCount": 2
+    },
+    "ContestAICmd_if_move_excitement_less_than": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_move_excitement_less_than(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_move_excitement();\n\n    if (eContestAI.scriptResult < (s8)gAIScriptPtr[0])\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);\n    else\n        gAIScriptPtr += 5;",
+      "callsTo": [
+        "ContestAICmd_get_move_excitement",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_move_excitement_more_than": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_move_excitement_more_than(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_move_excitement();\n\n    if (eContestAI.scriptResult > (s8)gAIScriptPtr[0])\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);\n    else\n        gAIScriptPtr += 5;",
+      "callsTo": [
+        "ContestAICmd_get_move_excitement",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_move_excitement_eq": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_move_excitement_eq(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_move_excitement();\n\n    if (eContestAI.scriptResult == (s8)gAIScriptPtr[0])\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);\n    else\n        gAIScriptPtr += 5;",
+      "callsTo": [
+        "ContestAICmd_get_move_excitement",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_move_excitement_not_eq": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_move_excitement_not_eq(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_move_excitement();\n\n    if (eContestAI.scriptResult != (s8)gAIScriptPtr[0])\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);\n    else\n        gAIScriptPtr += 5;",
+      "callsTo": [
+        "ContestAICmd_get_move_excitement",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_get_move_effect": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_get_move_effect(void)",
+      "paramsRaw": "void",
+      "body": "u16 move = gContestMons[eContestAI.contestantId].moves[eContestAI.nextMoveIndex];\n\n    eContestAI.scriptResult = gContestMoves[move].effect;\n    gAIScriptPtr += 1;",
+      "callsTo": [],
+      "lineCount": 4
+    },
+    "ContestAICmd_if_move_effect_eq": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_move_effect_eq(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_move_effect();\n\n    if (eContestAI.scriptResult == gAIScriptPtr[0])\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);\n    else\n        gAIScriptPtr += 5;",
+      "callsTo": [
+        "ContestAICmd_get_move_effect",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_move_effect_not_eq": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_move_effect_not_eq(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_move_effect();\n\n    if (eContestAI.scriptResult != gAIScriptPtr[0])\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);\n    else\n        gAIScriptPtr += 5;",
+      "callsTo": [
+        "ContestAICmd_get_move_effect",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_get_move_effect_type": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_get_move_effect_type(void)",
+      "paramsRaw": "void",
+      "body": "u16 move = gContestMons[eContestAI.contestantId].moves[eContestAI.nextMoveIndex];\n\n    eContestAI.scriptResult = gContestEffects[gContestMoves[move].effect].effectType;\n    gAIScriptPtr += 1;",
+      "callsTo": [],
+      "lineCount": 4
+    },
+    "ContestAICmd_if_move_effect_type_eq": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_move_effect_type_eq(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_move_effect_type();\n\n    if (eContestAI.scriptResult == gAIScriptPtr[0])\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);\n    else\n        gAIScriptPtr += 5;",
+      "callsTo": [
+        "ContestAICmd_get_move_effect_type",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_move_effect_type_not_eq": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_move_effect_type_not_eq(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_move_effect_type();\n\n    if (eContestAI.scriptResult != gAIScriptPtr[0])\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);\n    else\n        gAIScriptPtr += 5;",
+      "callsTo": [
+        "ContestAICmd_get_move_effect_type",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_check_most_appealing_move": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_check_most_appealing_move(void)",
+      "paramsRaw": "void",
+      "body": "int i;\n    u16 move = gContestMons[eContestAI.contestantId].moves[eContestAI.nextMoveIndex];\n    u8 appeal = gContestEffects[gContestMoves[move].effect].appeal;\n\n    for (i = 0; i < MAX_MON_MOVES; i++)\n    {\n        u16 newMove = gContestMons[eContestAI.contestantId].moves[i];\n        if (newMove != 0 && appeal < gContestEffects[gContestMoves[newMove].effect].appeal)\n            break;\n    }\n\n    if (i == MAX_MON_MOVES)\n        eContestAI.scriptResult = TRUE;\n    else\n        eContestAI.scriptResult = FALSE;\n\n    gAIScriptPtr += 1;",
+      "callsTo": [],
+      "lineCount": 17
+    },
+    "ContestAICmd_if_most_appealing_move": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_most_appealing_move(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_check_most_appealing_move();\n\n    if (eContestAI.scriptResult != FALSE)\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 0);\n    else\n        gAIScriptPtr += 4;",
+      "callsTo": [
+        "ContestAICmd_check_most_appealing_move",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_check_most_jamming_move": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_check_most_jamming_move(void)",
+      "paramsRaw": "void",
+      "body": "int i;\n    u16 move = gContestMons[eContestAI.contestantId].moves[eContestAI.nextMoveIndex];\n    u8 jam = gContestEffects[gContestMoves[move].effect].jam;\n\n    for (i = 0; i < MAX_MON_MOVES; i++)\n    {\n        u16 newMove = gContestMons[eContestAI.contestantId].moves[i];\n        if (newMove != MOVE_NONE && jam < gContestEffects[gContestMoves[newMove].effect].jam)\n            break;\n    }\n\n    if (i == MAX_MON_MOVES)\n        eContestAI.scriptResult = TRUE;\n    else\n        eContestAI.scriptResult = FALSE;\n\n    gAIScriptPtr += 1;",
+      "callsTo": [],
+      "lineCount": 17
+    },
+    "ContestAICmd_if_most_jamming_move": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_most_jamming_move(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_check_most_jamming_move();\n\n    if (eContestAI.scriptResult != FALSE)\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);\n    else\n        gAIScriptPtr += 5;",
+      "callsTo": [
+        "ContestAICmd_check_most_jamming_move",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_get_num_move_hearts": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_get_num_move_hearts(void)",
+      "paramsRaw": "void",
+      "body": "u16 move = gContestMons[eContestAI.contestantId].moves[eContestAI.nextMoveIndex];\n\n    eContestAI.scriptResult = gContestEffects[gContestMoves[move].effect].appeal / 10;\n    gAIScriptPtr += 1;",
+      "callsTo": [],
+      "lineCount": 4
+    },
+    "ContestAICmd_if_num_move_hearts_less_than": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_num_move_hearts_less_than(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_num_move_hearts();\n\n    if (eContestAI.scriptResult < gAIScriptPtr[0])\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);\n    else\n        gAIScriptPtr += 5;",
+      "callsTo": [
+        "ContestAICmd_get_num_move_hearts",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_num_move_hearts_more_than": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_num_move_hearts_more_than(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_num_move_hearts();\n\n    if (eContestAI.scriptResult > gAIScriptPtr[0])\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);\n    else\n        gAIScriptPtr += 5;",
+      "callsTo": [
+        "ContestAICmd_get_num_move_hearts",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_num_move_hearts_eq": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_num_move_hearts_eq(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_num_move_hearts();\n\n    if (eContestAI.scriptResult == gAIScriptPtr[0])\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);\n    else\n        gAIScriptPtr += 5;",
+      "callsTo": [
+        "ContestAICmd_get_num_move_hearts",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_num_move_hearts_not_eq": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_num_move_hearts_not_eq(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_num_move_hearts();\n\n    if (eContestAI.scriptResult != gAIScriptPtr[0])\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);\n    else\n        gAIScriptPtr += 5;",
+      "callsTo": [
+        "ContestAICmd_get_num_move_hearts",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_get_num_move_jam_hearts": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_get_num_move_jam_hearts(void)",
+      "paramsRaw": "void",
+      "body": "u16 move = gContestMons[eContestAI.contestantId].moves[eContestAI.nextMoveIndex];\n\n    eContestAI.scriptResult = gContestEffects[gContestMoves[move].effect].jam / 10;\n    gAIScriptPtr += 1;",
+      "callsTo": [],
+      "lineCount": 4
+    },
+    "ContestAICmd_if_num_move_jam_hearts_less_than": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_num_move_jam_hearts_less_than(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_num_move_jam_hearts();\n\n    if (eContestAI.scriptResult < gAIScriptPtr[0])\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);\n    else\n        gAIScriptPtr += 5;",
+      "callsTo": [
+        "ContestAICmd_get_num_move_jam_hearts",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_num_move_jam_hearts_more_than": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_num_move_jam_hearts_more_than(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_num_move_jam_hearts();\n\n    if (eContestAI.scriptResult > gAIScriptPtr[0])\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);\n    else\n        gAIScriptPtr += 5;",
+      "callsTo": [
+        "ContestAICmd_get_num_move_jam_hearts",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_num_move_jam_hearts_eq": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_num_move_jam_hearts_eq(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_num_move_jam_hearts();\n\n    if (eContestAI.scriptResult == gAIScriptPtr[0])\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);\n    else\n        gAIScriptPtr += 5;",
+      "callsTo": [
+        "ContestAICmd_get_num_move_jam_hearts",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_num_move_jam_hearts_not_eq": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_num_move_jam_hearts_not_eq(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_num_move_jam_hearts();\n\n    if (eContestAI.scriptResult != gAIScriptPtr[0])\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);\n    else\n        gAIScriptPtr += 5;",
+      "callsTo": [
+        "ContestAICmd_get_num_move_jam_hearts",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_get_move_used_count": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_get_move_used_count(void)",
+      "paramsRaw": "void",
+      "body": "s16 result;\n    u16 move = gContestMons[eContestAI.contestantId].moves[eContestAI.nextMoveIndex];\n\n    if (move != eContestantStatus[eContestAI.contestantId].prevMove)\n        result = 0;  \n    else\n        result = eContestantStatus[eContestAI.contestantId].moveRepeatCount + 1;\n\n    eContestAI.scriptResult = result;\n    gAIScriptPtr += 1;",
+      "callsTo": [],
+      "lineCount": 10
+    },
+    "ContestAICmd_if_most_used_count_less_than": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_most_used_count_less_than(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_move_used_count();\n\n    if (eContestAI.scriptResult < gAIScriptPtr[0])\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);\n    else\n        gAIScriptPtr += 5;",
+      "callsTo": [
+        "ContestAICmd_get_move_used_count",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_most_used_count_more_than": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_most_used_count_more_than(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_move_used_count();\n\n    if (eContestAI.scriptResult > gAIScriptPtr[0])\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);\n    else\n        gAIScriptPtr += 5;",
+      "callsTo": [
+        "ContestAICmd_get_move_used_count",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_most_used_count_eq": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_most_used_count_eq(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_move_used_count();\n\n    if (eContestAI.scriptResult == gAIScriptPtr[0])\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);\n    else\n        gAIScriptPtr += 5;",
+      "callsTo": [
+        "ContestAICmd_get_move_used_count",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_most_used_count_not_eq": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_most_used_count_not_eq(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_move_used_count();\n\n    if (eContestAI.scriptResult != gAIScriptPtr[0])\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);\n    else\n        gAIScriptPtr += 5;",
+      "callsTo": [
+        "ContestAICmd_get_move_used_count",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_check_combo_starter": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_check_combo_starter(void)",
+      "paramsRaw": "void",
+      "body": "u8 result = 0;\n    int i;\n    u16 move = gContestMons[eContestAI.contestantId].moves[eContestAI.nextMoveIndex];\n\n    for (i = 0; i < MAX_MON_MOVES; i++)\n    {\n        if (gContestMons[eContestAI.contestantId].moves[i])\n        {\n            result = AreMovesContestCombo(move, gContestMons[eContestAI.contestantId].moves[i]);\n            if (result)\n            {\n                result = 1;\n                break;\n            }\n        }\n    }\n\n    if (result)\n        result = 1;\n\n    eContestAI.scriptResult = result;\n    gAIScriptPtr += 1;",
+      "callsTo": [
+        "AreMovesContestCombo"
+      ],
+      "lineCount": 22
+    },
+    "ContestAICmd_if_combo_starter": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_combo_starter(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_check_combo_starter();\n\n    if (eContestAI.scriptResult)\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 0);\n    else\n        gAIScriptPtr += 4;",
+      "callsTo": [
+        "ContestAICmd_check_combo_starter",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_not_combo_starter": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_not_combo_starter(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_check_combo_starter();\n\n    if (!eContestAI.scriptResult)\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 0);\n    else\n        gAIScriptPtr += 4;",
+      "callsTo": [
+        "ContestAICmd_check_combo_starter",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_check_combo_finisher": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_check_combo_finisher(void)",
+      "paramsRaw": "void",
+      "body": "u8 result = 0;\n    int i;\n    u16 move = gContestMons[eContestAI.contestantId].moves[eContestAI.nextMoveIndex];\n\n    for (i = 0; i < MAX_MON_MOVES; i++)\n    {\n        if (gContestMons[eContestAI.contestantId].moves[i])\n        {\n            result = AreMovesContestCombo(gContestMons[eContestAI.contestantId].moves[i], move);\n            if (result)\n            {\n                result = 1;\n                break;\n            }\n        }\n    }\n\n    if (result)\n        result = 1;\n\n    eContestAI.scriptResult = result;\n    gAIScriptPtr += 1;",
+      "callsTo": [
+        "AreMovesContestCombo"
+      ],
+      "lineCount": 22
+    },
+    "ContestAICmd_if_combo_finisher": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_combo_finisher(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_check_combo_finisher();\n\n    if (eContestAI.scriptResult)\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 0);\n    else\n        gAIScriptPtr += 4;",
+      "callsTo": [
+        "ContestAICmd_check_combo_finisher",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_not_combo_finisher": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_not_combo_finisher(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_check_combo_finisher();\n\n    if (!eContestAI.scriptResult)\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 0);\n    else\n        gAIScriptPtr += 4;",
+      "callsTo": [
+        "ContestAICmd_check_combo_finisher",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_check_would_finish_combo": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_check_would_finish_combo(void)",
+      "paramsRaw": "void",
+      "body": "u8 result = 0;\n    u16 move = gContestMons[eContestAI.contestantId].moves[eContestAI.nextMoveIndex];\n\n    if (eContestantStatus[eContestAI.contestantId].prevMove)\n        result = AreMovesContestCombo(eContestantStatus[eContestAI.contestantId].prevMove, move);\n\n    if (result)\n        result = 1;\n\n    eContestAI.scriptResult = result;\n    gAIScriptPtr += 1;",
+      "callsTo": [
+        "AreMovesContestCombo"
+      ],
+      "lineCount": 11
+    },
+    "ContestAICmd_if_would_finish_combo": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_would_finish_combo(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_check_would_finish_combo();\n\n    if (eContestAI.scriptResult)\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 0);\n    else\n        gAIScriptPtr += 4;",
+      "callsTo": [
+        "ContestAICmd_check_would_finish_combo",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_would_not_finish_combo": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_would_not_finish_combo(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_check_would_finish_combo();\n\n    if (!eContestAI.scriptResult)\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 0);\n    else\n        gAIScriptPtr += 4;",
+      "callsTo": [
+        "ContestAICmd_check_would_finish_combo",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_get_condition": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_get_condition(void)",
+      "paramsRaw": "void",
+      "body": "u8 contestant = GetContestantIdByTurn(gAIScriptPtr[1]);\n\n    eContestAI.scriptResult = eContestantStatus[contestant].condition / 10;\n    gAIScriptPtr += 2;",
+      "callsTo": [
+        "GetContestantIdByTurn"
+      ],
+      "lineCount": 4
+    },
+    "ContestAICmd_if_condition_less_than": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_condition_less_than(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_condition();\n\n    if (eContestAI.scriptResult < gAIScriptPtr[0])\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);\n    else\n        gAIScriptPtr += 5;",
+      "callsTo": [
+        "ContestAICmd_get_condition",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_condition_more_than": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_condition_more_than(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_condition();\n\n    if (eContestAI.scriptResult > gAIScriptPtr[0])\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);\n    else\n        gAIScriptPtr += 5;",
+      "callsTo": [
+        "ContestAICmd_get_condition",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_condition_eq": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_condition_eq(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_condition();\n\n    if (eContestAI.scriptResult == gAIScriptPtr[0])\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);\n    else\n        gAIScriptPtr += 5;",
+      "callsTo": [
+        "ContestAICmd_get_condition",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_condition_not_eq": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_condition_not_eq(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_condition();\n\n    if (eContestAI.scriptResult != gAIScriptPtr[0])\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);\n    else\n        gAIScriptPtr += 5;",
+      "callsTo": [
+        "ContestAICmd_get_condition",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_get_used_combo_starter": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_get_used_combo_starter(void)",
+      "paramsRaw": "void",
+      "body": "u16 result = FALSE;\n    u8 contestant = GetContestantIdByTurn(gAIScriptPtr[1]);\n\n    if (IsContestantAllowedToCombo(contestant))\n        result = gContestMoves[eContestantStatus[contestant].prevMove].comboStarterId ? TRUE : FALSE;\n\n    eContestAI.scriptResult = result;\n    gAIScriptPtr += 2;",
+      "callsTo": [
+        "GetContestantIdByTurn",
+        "IsContestantAllowedToCombo"
+      ],
+      "lineCount": 8
+    },
+    "ContestAICmd_if_used_combo_starter_less_than": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_used_combo_starter_less_than(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_used_combo_starter();\n\n    if (eContestAI.scriptResult < gAIScriptPtr[0])\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);\n    else\n        gAIScriptPtr += 5;",
+      "callsTo": [
+        "ContestAICmd_get_used_combo_starter",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_used_combo_starter_more_than": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_used_combo_starter_more_than(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_used_combo_starter();\n\n    if (eContestAI.scriptResult > gAIScriptPtr[0])\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);\n    else\n        gAIScriptPtr += 5;",
+      "callsTo": [
+        "ContestAICmd_get_used_combo_starter",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_used_combo_starter_eq": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_used_combo_starter_eq(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_used_combo_starter();\n\n    if (eContestAI.scriptResult == gAIScriptPtr[0])\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);\n    else\n        gAIScriptPtr += 5;",
+      "callsTo": [
+        "ContestAICmd_get_used_combo_starter",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_used_combo_starter_not_eq": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_used_combo_starter_not_eq(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_used_combo_starter();\n\n    if (eContestAI.scriptResult != gAIScriptPtr[0])\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);\n    else\n        gAIScriptPtr += 5;",
+      "callsTo": [
+        "ContestAICmd_get_used_combo_starter",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_check_can_participate": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_check_can_participate(void)",
+      "paramsRaw": "void",
+      "body": "if (Contest_IsMonsTurnDisabled(GetContestantIdByTurn(gAIScriptPtr[1])))\n        eContestAI.scriptResult = FALSE;\n    else\n        eContestAI.scriptResult = TRUE;\n\n    gAIScriptPtr += 2;",
+      "callsTo": [
+        "Contest_IsMonsTurnDisabled",
+        "GetContestantIdByTurn"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_can_participate": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_can_participate(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_check_can_participate();\n\n    if (eContestAI.scriptResult)\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 0);\n    else\n        gAIScriptPtr += 4;",
+      "callsTo": [
+        "ContestAICmd_check_can_participate",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_cannot_participate": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_cannot_participate(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_check_can_participate();\n\n    if (!eContestAI.scriptResult)\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 0);\n    else\n        gAIScriptPtr += 4;",
+      "callsTo": [
+        "ContestAICmd_check_can_participate",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_get_completed_combo": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_get_completed_combo(void)",
+      "paramsRaw": "void",
+      "body": "u8 contestant = GetContestantIdByTurn(gAIScriptPtr[1]);\n\n    eContestAI.scriptResult = eContestantStatus[contestant].completedComboFlag;\n    gAIScriptPtr += 2;",
+      "callsTo": [
+        "GetContestantIdByTurn"
+      ],
+      "lineCount": 4
+    },
+    "ContestAICmd_if_completed_combo": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_completed_combo(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_completed_combo();\n\n    if (eContestAI.scriptResult)\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 0);\n    else\n        gAIScriptPtr += 4;",
+      "callsTo": [
+        "ContestAICmd_get_completed_combo",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_not_completed_combo": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_not_completed_combo(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_completed_combo();\n\n    if (!eContestAI.scriptResult)\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 0);\n    else\n        gAIScriptPtr += 4;",
+      "callsTo": [
+        "ContestAICmd_get_completed_combo",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_get_points_diff": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_get_points_diff(void)",
+      "paramsRaw": "void",
+      "body": "u8 contestant = GetContestantIdByTurn(gAIScriptPtr[1]);\n\n    eContestAI.scriptResult = eContestantStatus[contestant].pointTotal - eContestantStatus[eContestAI.contestantId].pointTotal;\n    gAIScriptPtr += 2;",
+      "callsTo": [
+        "GetContestantIdByTurn"
+      ],
+      "lineCount": 4
+    },
+    "ContestAICmd_if_points_more_than_mon": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_points_more_than_mon(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_points_diff();\n\n    if (eContestAI.scriptResult < 0)\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 0);\n    else\n        gAIScriptPtr += 4;",
+      "callsTo": [
+        "ContestAICmd_get_points_diff",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_points_less_than_mon": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_points_less_than_mon(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_points_diff();\n\n    if (eContestAI.scriptResult > 0)\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 0);\n    else\n        gAIScriptPtr += 4;",
+      "callsTo": [
+        "ContestAICmd_get_points_diff",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_points_eq_mon": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_points_eq_mon(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_points_diff();\n\n    if (eContestAI.scriptResult == 0)\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 0);\n    else\n        gAIScriptPtr += 4;",
+      "callsTo": [
+        "ContestAICmd_get_points_diff",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_points_not_eq_mon": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_points_not_eq_mon(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_points_diff();\n\n    if (eContestAI.scriptResult != 0)\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 0);\n    else\n        gAIScriptPtr += 4;",
+      "callsTo": [
+        "ContestAICmd_get_points_diff",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_get_preliminary_points_diff": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_get_preliminary_points_diff(void)",
+      "paramsRaw": "void",
+      "body": "u8 contestant = GetContestantIdByTurn(gAIScriptPtr[1]);\n\n    eContestAI.scriptResult = gContestMonRound1Points[contestant] - gContestMonRound1Points[eContestAI.contestantId];\n    gAIScriptPtr += 2;",
+      "callsTo": [
+        "GetContestantIdByTurn"
+      ],
+      "lineCount": 4
+    },
+    "ContestAICmd_if_preliminary_points_more_than_mon": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_preliminary_points_more_than_mon(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_preliminary_points_diff();\n\n    if (eContestAI.scriptResult < 0)\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 0);\n    else\n        gAIScriptPtr += 4;",
+      "callsTo": [
+        "ContestAICmd_get_preliminary_points_diff",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_preliminary_points_less_than_mon": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_preliminary_points_less_than_mon(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_preliminary_points_diff();\n\n    if (eContestAI.scriptResult > 0)\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 0);\n    else\n        gAIScriptPtr += 4;",
+      "callsTo": [
+        "ContestAICmd_get_preliminary_points_diff",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_preliminary_points_eq_mon": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_preliminary_points_eq_mon(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_preliminary_points_diff();\n\n    if (eContestAI.scriptResult == 0)\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 0);\n    else\n        gAIScriptPtr += 4;",
+      "callsTo": [
+        "ContestAICmd_get_preliminary_points_diff",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_preliminary_points_not_eq_mon": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_preliminary_points_not_eq_mon(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_preliminary_points_diff();\n\n    if (eContestAI.scriptResult != 0)\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 0);\n    else\n        gAIScriptPtr += 4;",
+      "callsTo": [
+        "ContestAICmd_get_preliminary_points_diff",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_get_used_moves_effect": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_get_used_moves_effect(void)",
+      "paramsRaw": "void",
+      "body": "u8 contestant = GetContestantIdByTurn(gAIScriptPtr[1]);\n    u8 round = gAIScriptPtr[2];\n    u16 move = eContest.moveHistory[round][contestant];\n\n    eContestAI.scriptResult = gContestMoves[move].effect;\n    gAIScriptPtr += 3;",
+      "callsTo": [
+        "GetContestantIdByTurn"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_used_moves_effect_less_than": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_used_moves_effect_less_than(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_used_moves_effect();\n\n    if (eContestAI.scriptResult < gAIScriptPtr[0])\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);\n    else\n        gAIScriptPtr += 5;",
+      "callsTo": [
+        "ContestAICmd_get_used_moves_effect",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_used_moves_effect_more_than": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_used_moves_effect_more_than(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_used_moves_effect();\n\n    if (eContestAI.scriptResult > gAIScriptPtr[0])\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);\n    else\n        gAIScriptPtr += 5;",
+      "callsTo": [
+        "ContestAICmd_get_used_moves_effect",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_used_moves_effect_eq": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_used_moves_effect_eq(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_used_moves_effect();\n\n    if (eContestAI.scriptResult == gAIScriptPtr[0])\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);\n    else\n        gAIScriptPtr += 5;",
+      "callsTo": [
+        "ContestAICmd_get_used_moves_effect",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_used_moves_effect_not_eq": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_used_moves_effect_not_eq(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_used_moves_effect();\n\n    if (eContestAI.scriptResult != gAIScriptPtr[0])\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);\n    else\n        gAIScriptPtr += 5;",
+      "callsTo": [
+        "ContestAICmd_get_used_moves_effect",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_get_used_moves_excitement": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_get_used_moves_excitement(void)",
+      "paramsRaw": "void",
+      "body": "u8 contestant = GetContestantIdByTurn(gAIScriptPtr[1]);\n    u8 round = gAIScriptPtr[2];\n    s8 result = eContest.excitementHistory[round][contestant];\n\n    eContestAI.scriptResult = result;\n    gAIScriptPtr += 3;",
+      "callsTo": [
+        "GetContestantIdByTurn"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_used_moves_excitement_less_than": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_used_moves_excitement_less_than(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_used_moves_excitement();\n\n    if (eContestAI.scriptResult < gAIScriptPtr[0])\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);\n    else\n        gAIScriptPtr += 5;",
+      "callsTo": [
+        "ContestAICmd_get_used_moves_excitement",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_used_moves_excitement_more_than": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_used_moves_excitement_more_than(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_used_moves_excitement();\n\n    if (eContestAI.scriptResult > gAIScriptPtr[0])\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);\n    else\n        gAIScriptPtr += 5;",
+      "callsTo": [
+        "ContestAICmd_get_used_moves_excitement",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_used_moves_excitement_eq": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_used_moves_excitement_eq(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_used_moves_excitement();\n\n    if (eContestAI.scriptResult == gAIScriptPtr[0])\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);\n    else\n        gAIScriptPtr += 5;",
+      "callsTo": [
+        "ContestAICmd_get_used_moves_excitement",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_used_moves_excitement_not_eq": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_used_moves_excitement_not_eq(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_used_moves_excitement();\n\n    if (eContestAI.scriptResult != gAIScriptPtr[0])\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);\n    else\n        gAIScriptPtr += 5;",
+      "callsTo": [
+        "ContestAICmd_get_used_moves_excitement",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_get_used_moves_effect_type": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_get_used_moves_effect_type(void)",
+      "paramsRaw": "void",
+      "body": "u8 contestant = GetContestantIdByTurn(gAIScriptPtr[1]);\n    u8 round = gAIScriptPtr[2];\n    u16 move = eContest.moveHistory[round][contestant];\n\n    eContestAI.scriptResult = gContestEffects[gContestMoves[move].effect].effectType;\n    gAIScriptPtr += 3;",
+      "callsTo": [
+        "GetContestantIdByTurn"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_used_moves_effect_type_eq": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_used_moves_effect_type_eq(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_used_moves_effect_type();\n\n    if (eContestAI.scriptResult == gAIScriptPtr[0])\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);\n    else\n        gAIScriptPtr += 5;",
+      "callsTo": [
+        "ContestAICmd_get_used_moves_effect_type",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_used_moves_effect_type_not_eq": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_used_moves_effect_type_not_eq(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_get_used_moves_effect_type();\n\n    if (eContestAI.scriptResult != gAIScriptPtr[0])\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);\n    else\n        gAIScriptPtr += 5;",
+      "callsTo": [
+        "ContestAICmd_get_used_moves_effect_type",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_save_result": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_save_result(void)",
+      "paramsRaw": "void",
+      "body": "eContestAI.vars[gAIScriptPtr[1]] = eContestAI.scriptResult;\n    gAIScriptPtr += 2;",
+      "callsTo": [],
+      "lineCount": 2
+    },
+    "ContestAICmd_setvar": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_setvar(void)",
+      "paramsRaw": "void",
+      "body": "eContestAI.vars[gAIScriptPtr[1]] = T1_READ_16(gAIScriptPtr + 2);\n    gAIScriptPtr += 4;",
+      "callsTo": [
+        "T1_READ_16"
+      ],
+      "lineCount": 2
+    },
+    "ContestAICmd_add": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_add(void)",
+      "paramsRaw": "void",
+      "body": "eContestAI.vars[gAIScriptPtr[1]] += ((s8)gAIScriptPtr[2] | gAIScriptPtr[3] << 8);\n    gAIScriptPtr += 4;",
+      "callsTo": [],
+      "lineCount": 2
+    },
+    "ContestAICmd_addvar": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_addvar(void)",
+      "paramsRaw": "void",
+      "body": "eContestAI.vars[gAIScriptPtr[1]] += eContestAI.vars[gAIScriptPtr[2]];\n    gAIScriptPtr += 3;",
+      "callsTo": [],
+      "lineCount": 2
+    },
+    "ContestAICmd_addvar_duplicate": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_addvar_duplicate(void)",
+      "paramsRaw": "void",
+      "body": "eContestAI.vars[gAIScriptPtr[1]] += eContestAI.vars[gAIScriptPtr[2]];\n    gAIScriptPtr += 3;",
+      "callsTo": [],
+      "lineCount": 2
+    },
+    "ContestAICmd_if_less_than": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_less_than(void)",
+      "paramsRaw": "void",
+      "body": "if (eContestAI.vars[gAIScriptPtr[1]] < T1_READ_16(gAIScriptPtr + 2))\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 4);\n    else\n        gAIScriptPtr += 8;",
+      "callsTo": [
+        "T1_READ_16",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 4
+    },
+    "ContestAICmd_if_greater_than": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_greater_than(void)",
+      "paramsRaw": "void",
+      "body": "if (eContestAI.vars[gAIScriptPtr[1]] > T1_READ_16(gAIScriptPtr + 2))\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 4);\n    else\n        gAIScriptPtr += 8;",
+      "callsTo": [
+        "T1_READ_16",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 4
+    },
+    "ContestAICmd_if_eq": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_eq(void)",
+      "paramsRaw": "void",
+      "body": "if (eContestAI.vars[gAIScriptPtr[1]] == T1_READ_16(gAIScriptPtr + 2))\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 4);\n    else\n        gAIScriptPtr += 8;",
+      "callsTo": [
+        "T1_READ_16",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 4
+    },
+    "ContestAICmd_if_not_eq": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_not_eq(void)",
+      "paramsRaw": "void",
+      "body": "if (eContestAI.vars[gAIScriptPtr[1]] != T1_READ_16(gAIScriptPtr + 2))\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 4);\n    else\n        gAIScriptPtr += 8;",
+      "callsTo": [
+        "T1_READ_16",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 4
+    },
+    "ContestAICmd_if_less_than_var": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_less_than_var(void)",
+      "paramsRaw": "void",
+      "body": "if (eContestAI.vars[gAIScriptPtr[1]] < (eContestAI.vars[gAIScriptPtr[2]]))\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 3);\n    else\n        gAIScriptPtr += 7;",
+      "callsTo": [
+        "T1_READ_PTR"
+      ],
+      "lineCount": 4
+    },
+    "ContestAICmd_if_greater_than_var": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_greater_than_var(void)",
+      "paramsRaw": "void",
+      "body": "if (eContestAI.vars[gAIScriptPtr[1]] > (eContestAI.vars[gAIScriptPtr[2]]))\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 3);\n    else\n        gAIScriptPtr += 7;",
+      "callsTo": [
+        "T1_READ_PTR"
+      ],
+      "lineCount": 4
+    },
+    "ContestAICmd_if_eq_var": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_eq_var(void)",
+      "paramsRaw": "void",
+      "body": "if (eContestAI.vars[gAIScriptPtr[1]] == (eContestAI.vars[gAIScriptPtr[2]]))\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 3);\n    else\n        gAIScriptPtr += 7;",
+      "callsTo": [
+        "T1_READ_PTR"
+      ],
+      "lineCount": 4
+    },
+    "ContestAICmd_if_not_eq_var": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_not_eq_var(void)",
+      "paramsRaw": "void",
+      "body": "if (eContestAI.vars[gAIScriptPtr[1]] != (eContestAI.vars[gAIScriptPtr[2]]))\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 3);\n    else\n        gAIScriptPtr += 7;",
+      "callsTo": [
+        "T1_READ_PTR"
+      ],
+      "lineCount": 4
+    },
+    "ContestAICmd_if_random_less_than": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_random_less_than(void)",
+      "paramsRaw": "void",
+      "body": "#ifndef UBFIX\n    if ((Random() & 0xFF) < eContestAI.vars[gAIScriptPtr[1]])\n#else\n    if ((Random() & 0xFF) < gAIScriptPtr[1])\n#endif\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 2);\n    else\n        gAIScriptPtr += 6;",
+      "callsTo": [
+        "Random",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 8
+    },
+    "ContestAICmd_if_random_greater_than": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_random_greater_than(void)",
+      "paramsRaw": "void",
+      "body": "#ifndef UBFIX\n    if (((Random()) & 0xFF) > eContestAI.vars[gAIScriptPtr[1]])\n#else\n    if (((Random()) & 0xFF) > gAIScriptPtr[1])\n#endif\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 2);\n    else\n        gAIScriptPtr += 6;",
+      "callsTo": [
+        "Random",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 8
+    },
+    "ContestAICmd_goto": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_goto(void)",
+      "paramsRaw": "void",
+      "body": "gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);",
+      "callsTo": [
+        "T1_READ_PTR"
+      ],
+      "lineCount": 1
+    },
+    "ContestAICmd_call": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_call(void)",
+      "paramsRaw": "void",
+      "body": "AIStackPushVar(gAIScriptPtr + 5);\n    gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);",
+      "callsTo": [
+        "AIStackPushVar",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 2
+    },
+    "ContestAICmd_end": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_end(void)",
+      "paramsRaw": "void",
+      "body": "if (!AIStackPop())\n        eContestAI.aiAction |= AI_ACTION_DONE;",
+      "callsTo": [
+        "AIStackPop"
+      ],
+      "lineCount": 2
+    },
+    "AIStackPushVar": {
+      "returnType": "void",
+      "signature": "static void AIStackPushVar(const u8 *ptr)",
+      "paramsRaw": "const u8 *ptr",
+      "body": "eContestAI.stack[eContestAI.stackSize++] = ptr;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "AIStackPop": {
+      "returnType": "bool8",
+      "signature": "static bool8 AIStackPop(void)",
+      "paramsRaw": "void",
+      "body": "if (eContestAI.stackSize != 0)\n    {\n        --eContestAI.stackSize;\n        gAIScriptPtr = eContestAI.stack[eContestAI.stackSize];\n        return TRUE;\n    }\n    else\n    {\n        return FALSE;\n    }",
+      "callsTo": [],
+      "lineCount": 10
+    },
+    "ContestAICmd_check_user_has_exciting_move": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_check_user_has_exciting_move(void)",
+      "paramsRaw": "void",
+      "body": "int result = 0;\n    int i;\n\n    for (i = 0; i < MAX_MON_MOVES; i++)\n    {\n        if (gContestMons[eContestAI.contestantId].moves[i])\n        {\n            if (Contest_GetMoveExcitement(gContestMons[eContestAI.contestantId].moves[i]) == 1)\n            {\n                result = 1;\n                break;\n            }\n        }\n    }\n\n    eContestAI.scriptResult = result;\n    gAIScriptPtr += 1;",
+      "callsTo": [
+        "Contest_GetMoveExcitement"
+      ],
+      "lineCount": 17
+    },
+    "ContestAICmd_if_user_has_exciting_move": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_user_has_exciting_move(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_check_user_has_exciting_move();\n\n    if (eContestAI.scriptResult)\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 0);\n    else\n        gAIScriptPtr += 4;",
+      "callsTo": [
+        "ContestAICmd_check_user_has_exciting_move",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_user_doesnt_have_exciting_move": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_user_doesnt_have_exciting_move(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_check_user_has_exciting_move();\n\n    if (!eContestAI.scriptResult)\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 0);\n    else\n        gAIScriptPtr += 4;",
+      "callsTo": [
+        "ContestAICmd_check_user_has_exciting_move",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_check_user_has_move": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_check_user_has_move(void)",
+      "paramsRaw": "void",
+      "body": "int hasMove = FALSE;\n    int i;\n    u16 targetMove = T1_READ_16(gAIScriptPtr + 1);\n\n    for (i = 0; i < MAX_MON_MOVES; i++)\n    {\n        #ifdef BUGFIX\n        u16 move = gContestMoves[gContestMons[eContestAI.contestantId].moves[i]].effect;\n        #else\n        u16 move = gContestMons[eContestAI.contestantId].moves[i];\n        #endif\n\n        if (move == targetMove)\n        {\n            hasMove = TRUE;\n            break;\n        }\n    }\n\n    eContestAI.scriptResult = hasMove;\n    gAIScriptPtr += 3;",
+      "callsTo": [
+        "T1_READ_16"
+      ],
+      "lineCount": 21
+    },
+    "ContestAICmd_if_user_has_move": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_user_has_move(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_check_user_has_move();\n\n    if (eContestAI.scriptResult)\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 0);\n    else\n        gAIScriptPtr += 4;",
+      "callsTo": [
+        "ContestAICmd_check_user_has_move",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    },
+    "ContestAICmd_if_user_doesnt_have_move": {
+      "returnType": "void",
+      "signature": "static void ContestAICmd_if_user_doesnt_have_move(void)",
+      "paramsRaw": "void",
+      "body": "ContestAICmd_check_user_has_move();\n\n    if (!eContestAI.scriptResult)\n        gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 0);\n    else\n        gAIScriptPtr += 4;",
+      "callsTo": [
+        "ContestAICmd_check_user_has_move",
+        "T1_READ_PTR"
+      ],
+      "lineCount": 6
+    }
+  }
+}

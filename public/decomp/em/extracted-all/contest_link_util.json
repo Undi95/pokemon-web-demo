@@ -1,0 +1,157 @@
+{
+  "srcFile": "src/contest_link_util.c",
+  "count": 12,
+  "functions": {
+    "Task_LinkContest_StartCommunicationEm": {
+      "returnType": "void",
+      "signature": "void Task_LinkContest_StartCommunicationEm(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "int gameCleared;\n\n    switch (gTasks[taskId].tCategory)\n    {\n    case CONTEST_CATEGORY_COOL:\n        gHighestRibbonRank = GetMonData(&gPlayerParty[gContestMonPartyIndex], MON_DATA_COOL_RIBBON);\n        break;\n    case CONTEST_CATEGORY_BEAUTY:\n        gHighestRibbonRank = GetMonData(&gPlayerParty[gContestMonPartyIndex], MON_DATA_BEAUTY_RIBBON);\n        break;\n    case CONTEST_CATEGORY_CUTE:\n        gHighestRibbonRank = GetMonData(&gPlayerParty[gContestMonPartyIndex], MON_DATA_CUTE_RIBBON);\n        break;\n    case CONTEST_CATEGORY_SMART:\n        gHighestRibbonRank = GetMonData(&gPlayerParty[gContestMonPartyIndex], MON_DATA_SMART_RIBBON);\n        break;\n    case CONTEST_CATEGORY_TOUGH:\n    default:\n        gHighestRibbonRank = GetMonData(&gPlayerParty[gContestMonPartyIndex], MON_DATA_TOUGH_RIBBON);\n        break;\n    }\n\n    gContestMons[gContestPlayerMonIndex].highestRank = gHighestRibbonRank;\n    gameCleared = FlagGet(FLAG_SYS_GAME_CLEAR) > 0;\n    gContestMons[gContestPlayerMonIndex].gameCleared = gameCleared;\n    SetTaskFuncWithFollowupFunc(taskId, Task_LinkContest_CommunicateMonsEm, Task_LinkContest_StartCommunicateRngEm);",
+      "callsTo": [
+        "FlagGet",
+        "GetMonData",
+        "SetTaskFuncWithFollowupFunc"
+      ],
+      "lineCount": 26
+    },
+    "Task_LinkContest_StartCommunicateRngEm": {
+      "returnType": "void",
+      "signature": "static void Task_LinkContest_StartCommunicateRngEm(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "SetTaskFuncWithFollowupFunc(taskId, Task_LinkContest_CommunicateRngEm, Task_LinkContest_StartCommunicateLeaderIdsEm);",
+      "callsTo": [
+        "SetTaskFuncWithFollowupFunc"
+      ],
+      "lineCount": 1
+    },
+    "Task_LinkContest_StartCommunicateLeaderIdsEm": {
+      "returnType": "void",
+      "signature": "static void Task_LinkContest_StartCommunicateLeaderIdsEm(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "SetTaskFuncWithFollowupFunc(taskId, Task_LinkContest_CommunicateLeaderIdsEm, Task_LinkContest_StartCommunicateCategoryEm);",
+      "callsTo": [
+        "SetTaskFuncWithFollowupFunc"
+      ],
+      "lineCount": 1
+    },
+    "Task_LinkContest_StartCommunicateCategoryEm": {
+      "returnType": "void",
+      "signature": "static void Task_LinkContest_StartCommunicateCategoryEm(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "SetTaskFuncWithFollowupFunc(taskId, Task_LinkContest_CommunicateCategoryEm, Task_LinkContest_SetUpContestEm);",
+      "callsTo": [
+        "SetTaskFuncWithFollowupFunc"
+      ],
+      "lineCount": 1
+    },
+    "Task_LinkContest_SetUpContestEm": {
+      "returnType": "void",
+      "signature": "static void Task_LinkContest_SetUpContestEm(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "u8 i;\n    u8 rank;\n    int gameCleared;\n    u8 categories[CONTESTANT_COUNT];\n    u8 leaderIds[CONTESTANT_COUNT];\n\n    memset(categories, 0, sizeof(categories));\n    memset(leaderIds, 0, sizeof(leaderIds));\n\n    for (i = 0; i < gNumLinkContestPlayers; i++)\n        categories[i] = gTasks[taskId].data[i + 1];\n\n     \n    for (i = 0; i < gNumLinkContestPlayers && categories[0] == categories[i]; i++)\n        ;\n\n    if (i == gNumLinkContestPlayers)\n        gSpecialVar_0x8004 = FALSE;  \n    else\n        gSpecialVar_0x8004 = TRUE;  \n\n    for (i = 0; i < gNumLinkContestPlayers; i++)\n        leaderIds[i] = gTasks[taskId].data[i + 5];\n\n     \n    if (gNumLinkContestPlayers != CONTESTANT_COUNT && GetMultiplayerId() == 0)\n    {\n        rank = gContestMons[0].highestRank;\n        for (i = 1; i < gNumLinkContestPlayers; i++)\n        {\n            if (rank < gContestMons[i].highestRank)\n                rank = gContestMons[i].highestRank;\n        }\n\n        if (rank)\n            rank--;\n\n        gameCleared = TRUE;\n        for (i = 0; i < gNumLinkContestPlayers; i++)\n        {\n            if (!gContestMons[i].gameCleared)\n            {\n                gameCleared = FALSE;\n                break;\n            }\n        }\n\n        SetLinkAIContestants(categories[0], rank, gameCleared);\n    }\n\n     \n    gContestLinkLeaderIndex = LinkContest_GetLeaderIndex(leaderIds);\n\n    if (gNumLinkContestPlayers < CONTESTANT_COUNT)\n        SetTaskFuncWithFollowupFunc(taskId, Task_LinkContest_CommunicateAIMonsEm, Task_LinkContest_CalculateRound1Em);\n    else\n        gTasks[taskId].func = Task_LinkContest_CalculateRound1Em;",
+      "callsTo": [
+        "GetMultiplayerId",
+        "LinkContest_GetLeaderIndex",
+        "SetLinkAIContestants",
+        "SetTaskFuncWithFollowupFunc"
+      ],
+      "lineCount": 57
+    },
+    "Task_LinkContest_CalculateRound1Em": {
+      "returnType": "void",
+      "signature": "static void Task_LinkContest_CalculateRound1Em(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "CalculateRound1Points(gSpecialVar_ContestCategory);\n    SetTaskFuncWithFollowupFunc(taskId, Task_LinkContest_CommunicateRound1Points, Task_LinkContest_CalculateTurnOrderEm);",
+      "callsTo": [
+        "CalculateRound1Points",
+        "SetTaskFuncWithFollowupFunc"
+      ],
+      "lineCount": 2
+    },
+    "Task_LinkContest_CalculateTurnOrderEm": {
+      "returnType": "void",
+      "signature": "static void Task_LinkContest_CalculateTurnOrderEm(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "SortContestants(FALSE);\n    SetTaskFuncWithFollowupFunc(taskId, Task_LinkContest_CommunicateTurnOrder, Task_LinkContest_FinalizeConnection);",
+      "callsTo": [
+        "SetTaskFuncWithFollowupFunc",
+        "SortContestants"
+      ],
+      "lineCount": 2
+    },
+    "Task_LinkContest_CommunicateMonsEm": {
+      "returnType": "void",
+      "signature": "static void Task_LinkContest_CommunicateMonsEm(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "int i;\n\n    if (!LinkContest_TryLinkStandby(&gTasks[taskId].data[12]))\n        return;\n\n    switch (gTasks[taskId].data[0])\n    {\n    default:\n        gTasks[taskId].data[0] = 0;\n        gTasks[taskId].data[12] = 0;\n        SwitchTaskToFollowupFunc(taskId);\n        break;\n    case 0:\n        if (IsLinkTaskFinished())\n        {\n            if (LinkContest_SendBlock(&gContestMons[gContestPlayerMonIndex], sizeof(struct ContestPokemon)) == 1)\n                gTasks[taskId].data[0]++;\n        }\n        break;\n    case 1:\n        if (LinkContest_GetBlockReceivedFromAllPlayers())\n        {\n            for (i = 0; i < gNumLinkContestPlayers; i++)\n            {\n                memcpy(&gContestMons[i], gBlockRecvBuffer[i], sizeof(struct ContestPokemon));\n                StripPlayerAndMonNamesForLinkContest(&gContestMons[i], gLinkPlayers[i].language);\n            }\n\n            gTasks[taskId].data[0]++;\n        }\n        break;\n    }",
+      "callsTo": [
+        "IsLinkTaskFinished",
+        "LinkContest_GetBlockReceivedFromAllPlayers",
+        "LinkContest_SendBlock",
+        "LinkContest_TryLinkStandby",
+        "StripPlayerAndMonNamesForLinkContest",
+        "SwitchTaskToFollowupFunc"
+      ],
+      "lineCount": 32
+    },
+    "Task_LinkContest_CommunicateRngEm": {
+      "returnType": "void",
+      "signature": "static void Task_LinkContest_CommunicateRngEm(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "if (!LinkContest_TryLinkStandby(&gTasks[taskId].data[12]))\n        return;\n\n    switch (gTasks[taskId].data[0])\n    {\n    default:\n        gTasks[taskId].data[0] = 0;\n        gTasks[taskId].data[12] = 0;\n        SwitchTaskToFollowupFunc(taskId);\n        break;\n    case 0:\n        if (GetMultiplayerId() == 0)\n        {\n             \n            if (!IsLinkTaskFinished())\n                return;\n\n            if (LinkContest_SendBlock(&gRngValue, sizeof(gRngValue)) == 1)\n                gTasks[taskId].data[0]++;\n        }\n        else\n        {\n             \n            gTasks[taskId].data[0]++;\n        }\n        break;\n    case 1:\n         \n        if (LinkContest_GetBlockReceived(0))\n        {\n            memcpy(&gRngValue, gBlockRecvBuffer[0], sizeof(gRngValue));\n            memcpy(&gContestRngValue, gBlockRecvBuffer[0], sizeof(gContestRngValue));\n            gTasks[taskId].data[0]++;\n        }\n        break;\n    }",
+      "callsTo": [
+        "GetMultiplayerId",
+        "IsLinkTaskFinished",
+        "LinkContest_GetBlockReceived",
+        "LinkContest_SendBlock",
+        "LinkContest_TryLinkStandby",
+        "SwitchTaskToFollowupFunc"
+      ],
+      "lineCount": 36
+    },
+    "Task_LinkContest_CommunicateLeaderIdsEm": {
+      "returnType": "void",
+      "signature": "static void Task_LinkContest_CommunicateLeaderIdsEm(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "int i;\n    u16 data[CONTESTANT_COUNT];\n    u16 leaderId;\n\n    if (!LinkContest_TryLinkStandby(&gTasks[taskId].data[12]))\n        return;\n\n    switch (gTasks[taskId].data[0])\n    {\n    default:\n        gTasks[taskId].data[0] = 0;\n        gTasks[taskId].data[12] = 0;\n        SwitchTaskToFollowupFunc(taskId);\n        break;\n    case 0:\n        if (IsLinkTaskFinished())\n        {\n            leaderId = 0x6E;\n            if (LinkContest_SendBlock(&leaderId, sizeof(leaderId)) == 1)\n                gTasks[taskId].data[0]++;\n        }\n        break;\n    case 1:\n        if (LinkContest_GetBlockReceivedFromAllPlayers())\n        {\n            for (i = 0; i < gNumLinkContestPlayers; i++)\n            {\n                data[i] = gBlockRecvBuffer[i][0];\n                gTasks[taskId].data[i + 5] = data[i];\n            }\n\n            gTasks[taskId].data[0]++;\n        }\n        break;\n    }",
+      "callsTo": [
+        "IsLinkTaskFinished",
+        "LinkContest_GetBlockReceivedFromAllPlayers",
+        "LinkContest_SendBlock",
+        "LinkContest_TryLinkStandby",
+        "SwitchTaskToFollowupFunc"
+      ],
+      "lineCount": 35
+    },
+    "Task_LinkContest_CommunicateCategoryEm": {
+      "returnType": "void",
+      "signature": "static void Task_LinkContest_CommunicateCategoryEm(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "int i;\n    u16 data[CONTESTANT_COUNT];\n    u16 category;\n\n    if (!LinkContest_TryLinkStandby(&gTasks[taskId].data[12]))\n        return;\n\n    switch (gTasks[taskId].data[0])\n    {\n    default:\n        gTasks[taskId].data[0] = 0;\n        gTasks[taskId].data[12] = 0;\n        SwitchTaskToFollowupFunc(taskId);\n        break;\n    case 0:\n        if (IsLinkTaskFinished())\n        {\n            category = gTasks[taskId].tCategory;\n            if (LinkContest_SendBlock(&category, sizeof(category)) == 1)\n                gTasks[taskId].data[0]++;\n        }\n        break;\n    case 1:\n        if (LinkContest_GetBlockReceivedFromAllPlayers())\n        {\n            for (i = 0; i < gNumLinkContestPlayers; i++)\n            {\n                data[i] = gBlockRecvBuffer[i][0];\n                gTasks[taskId].data[i + 1] = data[i];\n            }\n\n            gTasks[taskId].data[0]++;\n        }\n        break;\n    }",
+      "callsTo": [
+        "IsLinkTaskFinished",
+        "LinkContest_GetBlockReceivedFromAllPlayers",
+        "LinkContest_SendBlock",
+        "LinkContest_TryLinkStandby",
+        "SwitchTaskToFollowupFunc"
+      ],
+      "lineCount": 35
+    },
+    "Task_LinkContest_CommunicateAIMonsEm": {
+      "returnType": "void",
+      "signature": "static void Task_LinkContest_CommunicateAIMonsEm(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "int i;\n\n    if (!LinkContest_TryLinkStandby(&gTasks[taskId].data[12]))\n        return;\n\n    switch (gTasks[taskId].data[0])\n    {\n    default:\n        gTasks[taskId].data[0] = 0;\n        gTasks[taskId].data[12] = 0;\n        SwitchTaskToFollowupFunc(taskId);\n        break;\n    case 0:\n        if (GetMultiplayerId() == 0)\n        {\n            if (!IsLinkTaskFinished())\n                return;\n\n            if (LinkContest_SendBlock(&gContestMons[gNumLinkContestPlayers], (CONTESTANT_COUNT - gNumLinkContestPlayers) * sizeof(struct ContestPokemon)) == 1)\n                gTasks[taskId].data[0]++;\n        }\n        else\n        {\n            gTasks[taskId].data[0]++;\n        }\n        break;\n    case 1:\n        if (LinkContest_GetBlockReceived(0))\n        {\n            memcpy(&gContestMons[gNumLinkContestPlayers], gBlockRecvBuffer[0], (CONTESTANT_COUNT - gNumLinkContestPlayers) * sizeof(struct ContestPokemon));\n            for (i = gNumLinkContestPlayers; i < CONTESTANT_COUNT; i++)\n                StripPlayerAndMonNamesForLinkContest(&gContestMons[i], gLinkPlayers[0].language);\n\n            gTasks[taskId].data[0]++;\n        }\n        break;\n    }",
+      "callsTo": [
+        "GetMultiplayerId",
+        "IsLinkTaskFinished",
+        "LinkContest_GetBlockReceived",
+        "LinkContest_SendBlock",
+        "LinkContest_TryLinkStandby",
+        "StripPlayerAndMonNamesForLinkContest",
+        "SwitchTaskToFollowupFunc"
+      ],
+      "lineCount": 37
+    }
+  }
+}

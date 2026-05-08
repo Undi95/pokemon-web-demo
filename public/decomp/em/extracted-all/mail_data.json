@@ -1,0 +1,116 @@
+{
+  "srcFile": "src/mail_data.c",
+  "count": 11,
+  "functions": {
+    "ClearAllMail": {
+      "returnType": "void",
+      "signature": "void ClearAllMail(void)",
+      "paramsRaw": "void",
+      "body": "u8 i;\n\n    for (i = 0; i < MAIL_COUNT; i++)\n        ClearMail(&gSaveBlock1Ptr->mail[i]);",
+      "callsTo": [
+        "ClearMail"
+      ],
+      "lineCount": 4
+    },
+    "ClearMail": {
+      "returnType": "void",
+      "signature": "void ClearMail(struct Mail *mail)",
+      "paramsRaw": "struct Mail *mail",
+      "body": "s32 i;\n\n    for (i = 0; i < MAIL_WORDS_COUNT; i++)\n        mail->words[i] = EC_EMPTY_WORD;\n\n    for (i = 0; i < PLAYER_NAME_LENGTH + 1; i++)\n        mail->playerName[i] = EOS;\n\n    for (i = 0; i < TRAINER_ID_LENGTH; i++)\n        mail->trainerId[i] = 0;\n\n    mail->species = SPECIES_BULBASAUR;\n    mail->itemId = ITEM_NONE;",
+      "callsTo": [],
+      "lineCount": 13
+    },
+    "MonHasMail": {
+      "returnType": "bool8",
+      "signature": "bool8 MonHasMail(struct Pokemon *mon)",
+      "paramsRaw": "struct Pokemon *mon",
+      "body": "u16 heldItem = GetMonData(mon, MON_DATA_HELD_ITEM);\n    if (ItemIsMail(heldItem) && GetMonData(mon, MON_DATA_MAIL) != MAIL_NONE)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [
+        "GetMonData",
+        "ItemIsMail"
+      ],
+      "lineCount": 5
+    },
+    "GiveMailToMonByItemId": {
+      "returnType": "u8",
+      "signature": "u8 GiveMailToMonByItemId(struct Pokemon *mon, u16 itemId)",
+      "paramsRaw": "struct Pokemon *mon, u16 itemId",
+      "body": "u8 heldItem[2];\n    u8 id, i;\n    u16 species;\n    u32 personality;\n\n    heldItem[0] = itemId;\n    heldItem[1] = itemId >> 8;\n\n    for (id = 0; id < PARTY_SIZE; id++)\n    {\n        if (gSaveBlock1Ptr->mail[id].itemId == ITEM_NONE)\n        {\n            for (i = 0; i < MAIL_WORDS_COUNT; i++)\n                gSaveBlock1Ptr->mail[id].words[i] = EC_EMPTY_WORD;\n\n            for (i = 0; i < PLAYER_NAME_LENGTH; i++)\n                gSaveBlock1Ptr->mail[id].playerName[i] = gSaveBlock2Ptr->playerName[i];\n            gSaveBlock1Ptr->mail[id].playerName[i] = EOS;\n            PadNameString(gSaveBlock1Ptr->mail[id].playerName, CHAR_SPACE);\n\n            for (i = 0; i < TRAINER_ID_LENGTH; i++)\n                gSaveBlock1Ptr->mail[id].trainerId[i] = gSaveBlock2Ptr->playerTrainerId[i];\n\n            species = GetBoxMonData(&mon->box, MON_DATA_SPECIES);\n            personality = GetBoxMonData(&mon->box, MON_DATA_PERSONALITY);\n            gSaveBlock1Ptr->mail[id].species = SpeciesToMailSpecies(species, personality);\n            gSaveBlock1Ptr->mail[id].itemId = itemId;\n            SetMonData(mon, MON_DATA_MAIL, &id);\n            SetMonData(mon, MON_DATA_HELD_ITEM, heldItem);\n            return id;\n        }\n    }\n\n    return MAIL_NONE;",
+      "callsTo": [
+        "GetBoxMonData",
+        "PadNameString",
+        "SetMonData",
+        "SpeciesToMailSpecies"
+      ],
+      "lineCount": 34
+    },
+    "SpeciesToMailSpecies": {
+      "returnType": "u16",
+      "signature": "u16 SpeciesToMailSpecies(u16 species, u32 personality)",
+      "paramsRaw": "u16 species, u32 personality",
+      "body": "if (species == SPECIES_UNOWN)\n    {\n        u32 species = GetUnownLetterByPersonality(personality) + UNOWN_OFFSET;\n        return species;\n    }\n\n    return species;",
+      "callsTo": [
+        "GetUnownLetterByPersonality"
+      ],
+      "lineCount": 7
+    },
+    "MailSpeciesToSpecies": {
+      "returnType": "u16",
+      "signature": "u16 MailSpeciesToSpecies(u16 mailSpecies, u16 *buffer)",
+      "paramsRaw": "u16 mailSpecies, u16 *buffer",
+      "body": "u16 result;\n\n    if (mailSpecies >= UNOWN_OFFSET && mailSpecies < UNOWN_OFFSET + NUM_UNOWN_FORMS)\n    {\n        result = SPECIES_UNOWN;\n        *buffer = mailSpecies - UNOWN_OFFSET;\n    }\n    else\n    {\n        result = mailSpecies;\n    }\n\n    return result;",
+      "callsTo": [],
+      "lineCount": 13
+    },
+    "GiveMailToMon": {
+      "returnType": "u8",
+      "signature": "u8 GiveMailToMon(struct Pokemon *mon, struct Mail *mail)",
+      "paramsRaw": "struct Pokemon *mon, struct Mail *mail",
+      "body": "u8 heldItem[2];\n    u16 itemId = mail->itemId;\n    u8 mailId = GiveMailToMonByItemId(mon, itemId);\n\n    if (mailId == MAIL_NONE)\n        return MAIL_NONE;\n\n    gSaveBlock1Ptr->mail[mailId] = *mail;\n\n    SetMonData(mon, MON_DATA_MAIL, &mailId);\n\n    heldItem[0] = itemId;\n    heldItem[1] = itemId >> 8;\n\n    SetMonData(mon, MON_DATA_HELD_ITEM, heldItem);\n\n    return mailId;",
+      "callsTo": [
+        "GiveMailToMonByItemId",
+        "SetMonData"
+      ],
+      "lineCount": 17
+    },
+    "TakeMailFromMon": {
+      "returnType": "void",
+      "signature": "void TakeMailFromMon(struct Pokemon *mon)",
+      "paramsRaw": "struct Pokemon *mon",
+      "body": "u8 heldItem[2];\n    u8 mailId;\n\n    if (MonHasMail(mon))\n    {\n        mailId = GetMonData(mon, MON_DATA_MAIL);\n        gSaveBlock1Ptr->mail[mailId].itemId = ITEM_NONE;\n        mailId = MAIL_NONE;\n        heldItem[0] = ITEM_NONE;\n        heldItem[1] = ITEM_NONE << 8;\n        SetMonData(mon, MON_DATA_MAIL, &mailId);\n        SetMonData(mon, MON_DATA_HELD_ITEM, heldItem);\n    }",
+      "callsTo": [
+        "GetMonData",
+        "MonHasMail",
+        "SetMonData"
+      ],
+      "lineCount": 13
+    },
+    "ClearMailItemId": {
+      "returnType": "void",
+      "signature": "void ClearMailItemId(u8 mailId)",
+      "paramsRaw": "u8 mailId",
+      "body": "gSaveBlock1Ptr->mail[mailId].itemId = ITEM_NONE;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "TakeMailFromMonAndSave": {
+      "returnType": "u8",
+      "signature": "u8 TakeMailFromMonAndSave(struct Pokemon *mon)",
+      "paramsRaw": "struct Pokemon *mon",
+      "body": "u8 i;\n    u8 newHeldItem[2];\n    u8 newMailId;\n\n    newHeldItem[0] = ITEM_NONE;\n    newHeldItem[1] = ITEM_NONE << 8;\n    newMailId = MAIL_NONE;\n\n    for (i = PARTY_SIZE; i < MAIL_COUNT; i++)\n    {\n        if (gSaveBlock1Ptr->mail[i].itemId == ITEM_NONE)\n        {\n            memcpy(&gSaveBlock1Ptr->mail[i], &gSaveBlock1Ptr->mail[GetMonData(mon, MON_DATA_MAIL)], sizeof(struct Mail));\n            gSaveBlock1Ptr->mail[GetMonData(mon, MON_DATA_MAIL)].itemId = ITEM_NONE;\n            SetMonData(mon, MON_DATA_MAIL, &newMailId);\n            SetMonData(mon, MON_DATA_HELD_ITEM, newHeldItem);\n            return i;\n        }\n    }\n\n     \n    return MAIL_NONE;",
+      "callsTo": [
+        "GetMonData",
+        "SetMonData"
+      ],
+      "lineCount": 22
+    },
+    "ItemIsMail": {
+      "returnType": "bool8",
+      "signature": "bool8 ItemIsMail(u16 itemId)",
+      "paramsRaw": "u16 itemId",
+      "body": "switch (itemId)\n    {\n    case ITEM_ORANGE_MAIL:\n    case ITEM_HARBOR_MAIL:\n    case ITEM_GLITTER_MAIL:\n    case ITEM_MECH_MAIL:\n    case ITEM_WOOD_MAIL:\n    case ITEM_WAVE_MAIL:\n    case ITEM_BEAD_MAIL:\n    case ITEM_SHADOW_MAIL:\n    case ITEM_TROPIC_MAIL:\n    case ITEM_DREAM_MAIL:\n    case ITEM_FAB_MAIL:\n    case ITEM_RETRO_MAIL:\n        return TRUE;\n    default:\n        return FALSE;\n    }",
+      "callsTo": [],
+      "lineCount": 18
+    }
+  }
+}

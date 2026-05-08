@@ -1,0 +1,29 @@
+{
+  "srcFile": "src/birch_pc.c",
+  "count": 2,
+  "functions": {
+    "ScriptGetPokedexInfo": {
+      "returnType": "bool16",
+      "signature": "bool16 ScriptGetPokedexInfo(void)",
+      "paramsRaw": "void",
+      "body": "if (gSpecialVar_0x8004 == 0)  \n    {\n        gSpecialVar_0x8005 = GetHoennPokedexCount(FLAG_GET_SEEN);\n        gSpecialVar_0x8006 = GetHoennPokedexCount(FLAG_GET_CAUGHT);\n    }\n    else\n    {\n        gSpecialVar_0x8005 = GetNationalPokedexCount(FLAG_GET_SEEN);\n        gSpecialVar_0x8006 = GetNationalPokedexCount(FLAG_GET_CAUGHT);\n    }\n\n    return IsNationalPokedexEnabled();",
+      "callsTo": [
+        "GetHoennPokedexCount",
+        "GetNationalPokedexCount",
+        "IsNationalPokedexEnabled"
+      ],
+      "lineCount": 12
+    },
+    "ShowPokedexRatingMessage": {
+      "returnType": "void",
+      "signature": "void ShowPokedexRatingMessage(void)",
+      "paramsRaw": "void",
+      "body": "ShowFieldMessage(GetPokedexRatingText(gSpecialVar_0x8004));",
+      "callsTo": [
+        "GetPokedexRatingText",
+        "ShowFieldMessage"
+      ],
+      "lineCount": 1
+    }
+  }
+}

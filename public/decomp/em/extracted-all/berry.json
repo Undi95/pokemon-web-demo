@@ -1,0 +1,361 @@
+{
+  "srcFile": "src/berry.c",
+  "count": 34,
+  "functions": {
+    "ClearEnigmaBerries": {
+      "returnType": "void",
+      "signature": "void ClearEnigmaBerries(void)",
+      "paramsRaw": "void",
+      "body": "CpuFill16(0, &gSaveBlock1Ptr->enigmaBerry, sizeof(gSaveBlock1Ptr->enigmaBerry));",
+      "callsTo": [
+        "CpuFill16"
+      ],
+      "lineCount": 1
+    },
+    "SetEnigmaBerry": {
+      "returnType": "void",
+      "signature": "void SetEnigmaBerry(u8 *src)",
+      "paramsRaw": "u8 *src",
+      "body": "u32 i;\n    u8 *dest = (u8 *)&gSaveBlock1Ptr->enigmaBerry;\n\n    for (i = 0; i < sizeof(gSaveBlock1Ptr->enigmaBerry); i++)\n        dest[i] = src[i];",
+      "callsTo": [],
+      "lineCount": 5
+    },
+    "GetEnigmaBerryChecksum": {
+      "returnType": "u32",
+      "signature": "static u32 GetEnigmaBerryChecksum(struct EnigmaBerry *enigmaBerry)",
+      "paramsRaw": "struct EnigmaBerry *enigmaBerry",
+      "body": "u32 i;\n    u32 checksum;\n    u8 *dest;\n\n    dest = (u8 *)enigmaBerry;\n    checksum = 0;\n    for (i = 0; i < sizeof(gSaveBlock1Ptr->enigmaBerry) - sizeof(gSaveBlock1Ptr->enigmaBerry.checksum); i++)\n        checksum += dest[i];\n\n    return checksum;",
+      "callsTo": [],
+      "lineCount": 10
+    },
+    "IsEnigmaBerryValid": {
+      "returnType": "bool32",
+      "signature": "bool32 IsEnigmaBerryValid(void)",
+      "paramsRaw": "void",
+      "body": "if (!gSaveBlock1Ptr->enigmaBerry.berry.stageDuration)\n        return FALSE;\n    if (!gSaveBlock1Ptr->enigmaBerry.berry.maxYield)\n        return FALSE;\n    if (GetEnigmaBerryChecksum(&gSaveBlock1Ptr->enigmaBerry) != gSaveBlock1Ptr->enigmaBerry.checksum)\n        return FALSE;\n    return TRUE;",
+      "callsTo": [
+        "GetEnigmaBerryChecksum"
+      ],
+      "lineCount": 7
+    },
+    "ObjectEventInteractionWaterBerryTree": {
+      "returnType": "bool32",
+      "signature": "bool32 ObjectEventInteractionWaterBerryTree(void)",
+      "paramsRaw": "void",
+      "body": "struct BerryTree *tree = GetBerryTreeInfo(GetObjectEventBerryTreeId(gSelectedObjectEvent));\n\n    switch (tree->stage)\n    {\n    case BERRY_STAGE_PLANTED:\n        tree->watered1 = TRUE;\n        break;\n    case BERRY_STAGE_SPROUTED:\n        tree->watered2 = TRUE;\n        break;\n    case BERRY_STAGE_TALLER:\n        tree->watered3 = TRUE;\n        break;\n    case BERRY_STAGE_FLOWERING:\n        tree->watered4 = TRUE;\n        break;\n    default:\n        return FALSE;\n    }\n    return TRUE;",
+      "callsTo": [
+        "GetBerryTreeInfo",
+        "GetObjectEventBerryTreeId"
+      ],
+      "lineCount": 20
+    },
+    "IsPlayerFacingEmptyBerryTreePatch": {
+      "returnType": "bool8",
+      "signature": "bool8 IsPlayerFacingEmptyBerryTreePatch(void)",
+      "paramsRaw": "void",
+      "body": "if (GetObjectEventScriptPointerPlayerFacing() == BerryTreeScript\n     && GetStageByBerryTreeId(GetObjectEventBerryTreeId(gSelectedObjectEvent)) == BERRY_STAGE_NO_BERRY)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [
+        "GetObjectEventBerryTreeId",
+        "GetObjectEventScriptPointerPlayerFacing",
+        "GetStageByBerryTreeId"
+      ],
+      "lineCount": 5
+    },
+    "TryToWaterBerryTree": {
+      "returnType": "bool8",
+      "signature": "bool8 TryToWaterBerryTree(void)",
+      "paramsRaw": "void",
+      "body": "if (GetObjectEventScriptPointerPlayerFacing() != BerryTreeScript)\n        return FALSE;\n    else\n        return ObjectEventInteractionWaterBerryTree();",
+      "callsTo": [
+        "GetObjectEventScriptPointerPlayerFacing",
+        "ObjectEventInteractionWaterBerryTree"
+      ],
+      "lineCount": 4
+    },
+    "ClearBerryTrees": {
+      "returnType": "void",
+      "signature": "void ClearBerryTrees(void)",
+      "paramsRaw": "void",
+      "body": "int i;\n\n    for (i = 0; i < BERRY_TREES_COUNT; i++)\n        gSaveBlock1Ptr->berryTrees[i] = gBlankBerryTree;",
+      "callsTo": [],
+      "lineCount": 4
+    },
+    "BerryTreeGrow": {
+      "returnType": "bool32",
+      "signature": "static bool32 BerryTreeGrow(struct BerryTree *tree)",
+      "paramsRaw": "struct BerryTree *tree",
+      "body": "if (tree->stopGrowth)\n        return FALSE;\n\n    switch (tree->stage)\n    {\n    case BERRY_STAGE_NO_BERRY:\n        return FALSE;\n    case BERRY_STAGE_FLOWERING:\n        tree->berryYield = CalcBerryYield(tree);\n    case BERRY_STAGE_PLANTED:\n    case BERRY_STAGE_SPROUTED:\n    case BERRY_STAGE_TALLER:\n        tree->stage++;\n        break;\n    case BERRY_STAGE_BERRIES:\n        tree->watered1 = 0;\n        tree->watered2 = 0;\n        tree->watered3 = 0;\n        tree->watered4 = 0;\n        tree->berryYield = 0;\n        tree->stage = BERRY_STAGE_SPROUTED;\n        if (++tree->regrowthCount == 10)\n            *tree = gBlankBerryTree;\n        break;\n    }\n    return TRUE;",
+      "callsTo": [
+        "CalcBerryYield"
+      ],
+      "lineCount": 26
+    },
+    "BerryTreeTimeUpdate": {
+      "returnType": "void",
+      "signature": "void BerryTreeTimeUpdate(s32 minutes)",
+      "paramsRaw": "s32 minutes",
+      "body": "int i;\n    struct BerryTree *tree;\n\n    for (i = 0; i < BERRY_TREES_COUNT; i++)\n    {\n        tree = &gSaveBlock1Ptr->berryTrees[i];\n\n        if (tree->berry && tree->stage && !tree->stopGrowth)\n        {\n            if (minutes >= GetStageDurationByBerryType(tree->berry) * 71)\n            {\n                *tree = gBlankBerryTree;\n            }\n            else\n            {\n                s32 time = minutes;\n\n                while (time != 0)\n                {\n                    if (tree->minutesUntilNextStage > time)\n                    {\n                        tree->minutesUntilNextStage -= time;\n                        break;\n                    }\n                    time -= tree->minutesUntilNextStage;\n                    tree->minutesUntilNextStage = GetStageDurationByBerryType(tree->berry);\n                    if (!BerryTreeGrow(tree))\n                        break;\n                    if (tree->stage == BERRY_STAGE_BERRIES)\n                        tree->minutesUntilNextStage *= 4;\n                }\n            }\n        }\n    }",
+      "callsTo": [
+        "BerryTreeGrow",
+        "GetStageDurationByBerryType"
+      ],
+      "lineCount": 34
+    },
+    "PlantBerryTree": {
+      "returnType": "void",
+      "signature": "void PlantBerryTree(u8 id, u8 berry, u8 stage, bool8 allowGrowth)",
+      "paramsRaw": "u8 id, u8 berry, u8 stage, bool8 allowGrowth",
+      "body": "struct BerryTree *tree = GetBerryTreeInfo(id);\n\n    *tree = gBlankBerryTree;\n    tree->berry = berry;\n    tree->minutesUntilNextStage = GetStageDurationByBerryType(berry);\n    tree->stage = stage;\n    if (stage == BERRY_STAGE_BERRIES)\n    {\n        tree->berryYield = CalcBerryYield(tree);\n        tree->minutesUntilNextStage *= 4;\n    }\n\n     \n     \n    if (!allowGrowth)\n        tree->stopGrowth = TRUE;",
+      "callsTo": [
+        "CalcBerryYield",
+        "GetBerryTreeInfo",
+        "GetStageDurationByBerryType"
+      ],
+      "lineCount": 16
+    },
+    "RemoveBerryTree": {
+      "returnType": "void",
+      "signature": "void RemoveBerryTree(u8 id)",
+      "paramsRaw": "u8 id",
+      "body": "gSaveBlock1Ptr->berryTrees[id] = gBlankBerryTree;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "GetBerryTypeByBerryTreeId": {
+      "returnType": "u8",
+      "signature": "u8 GetBerryTypeByBerryTreeId(u8 id)",
+      "paramsRaw": "u8 id",
+      "body": "return gSaveBlock1Ptr->berryTrees[id].berry;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "GetStageByBerryTreeId": {
+      "returnType": "u8",
+      "signature": "u8 GetStageByBerryTreeId(u8 id)",
+      "paramsRaw": "u8 id",
+      "body": "return gSaveBlock1Ptr->berryTrees[id].stage;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "ItemIdToBerryType": {
+      "returnType": "u8",
+      "signature": "u8 ItemIdToBerryType(u16 item)",
+      "paramsRaw": "u16 item",
+      "body": "u16 berry = item - FIRST_BERRY_INDEX;\n\n    if (berry > LAST_BERRY_INDEX - FIRST_BERRY_INDEX)\n        return ITEM_TO_BERRY(FIRST_BERRY_INDEX);\n    else\n        return ITEM_TO_BERRY(item);",
+      "callsTo": [
+        "ITEM_TO_BERRY"
+      ],
+      "lineCount": 6
+    },
+    "BerryTypeToItemId": {
+      "returnType": "u16",
+      "signature": "static u16 BerryTypeToItemId(u16 berry)",
+      "paramsRaw": "u16 berry",
+      "body": "u16 item = berry - 1;\n\n    if (item > LAST_BERRY_INDEX - FIRST_BERRY_INDEX)\n        return FIRST_BERRY_INDEX;\n    else\n        return berry + FIRST_BERRY_INDEX - 1;",
+      "callsTo": [],
+      "lineCount": 6
+    },
+    "GetBerryNameByBerryType": {
+      "returnType": "void",
+      "signature": "void GetBerryNameByBerryType(u8 berry, u8 *string)",
+      "paramsRaw": "u8 berry, u8 *string",
+      "body": "memcpy(string, GetBerryInfo(berry)->name, BERRY_NAME_LENGTH);\n    string[BERRY_NAME_LENGTH] = EOS;",
+      "callsTo": [
+        "GetBerryInfo"
+      ],
+      "lineCount": 2
+    },
+    "GetBerryCountStringByBerryType": {
+      "returnType": "void",
+      "signature": "void GetBerryCountStringByBerryType(u8 berry, u8 *dest, u32 berryCount)",
+      "paramsRaw": "u8 berry, u8 *dest, u32 berryCount",
+      "body": "GetBerryCountString(dest, GetBerryInfo(berry)->name, berryCount);",
+      "callsTo": [
+        "GetBerryCountString",
+        "GetBerryInfo"
+      ],
+      "lineCount": 1
+    },
+    "AllowBerryTreeGrowth": {
+      "returnType": "void",
+      "signature": "void AllowBerryTreeGrowth(u8 id)",
+      "paramsRaw": "u8 id",
+      "body": "GetBerryTreeInfo(id)->stopGrowth = FALSE;",
+      "callsTo": [
+        "GetBerryTreeInfo"
+      ],
+      "lineCount": 1
+    },
+    "BerryTreeGetNumStagesWatered": {
+      "returnType": "u8",
+      "signature": "static u8 BerryTreeGetNumStagesWatered(struct BerryTree *tree)",
+      "paramsRaw": "struct BerryTree *tree",
+      "body": "u8 count = 0;\n\n    if (tree->watered1)\n        count++;\n    if (tree->watered2)\n        count++;\n    if (tree->watered3)\n        count++;\n    if (tree->watered4)\n        count++;\n    return count;",
+      "callsTo": [],
+      "lineCount": 11
+    },
+    "GetNumStagesWateredByBerryTreeId": {
+      "returnType": "u8",
+      "signature": "static u8 GetNumStagesWateredByBerryTreeId(u8 id)",
+      "paramsRaw": "u8 id",
+      "body": "return BerryTreeGetNumStagesWatered(GetBerryTreeInfo(id));",
+      "callsTo": [
+        "BerryTreeGetNumStagesWatered",
+        "GetBerryTreeInfo"
+      ],
+      "lineCount": 1
+    },
+    "CalcBerryYieldInternal": {
+      "returnType": "u8",
+      "signature": "static u8 CalcBerryYieldInternal(u16 max, u16 min, u8 water)",
+      "paramsRaw": "u16 max, u16 min, u8 water",
+      "body": "u32 randMin;\n    u32 randMax;\n    u32 rand;\n    u32 extraYield;\n\n    if (water == 0)\n        return min;\n    else\n    {\n        randMin = (max - min) * (water - 1);\n        randMax = (max - min) * (water);\n        rand = randMin + Random() % (randMax - randMin + 1);\n\n         \n        if ((rand % NUM_WATER_STAGES) >= NUM_WATER_STAGES / 2)\n            extraYield = rand / NUM_WATER_STAGES + 1;\n        else\n            extraYield = rand / NUM_WATER_STAGES;\n        return extraYield + min;\n    }",
+      "callsTo": [
+        "Random"
+      ],
+      "lineCount": 20
+    },
+    "CalcBerryYield": {
+      "returnType": "u8",
+      "signature": "static u8 CalcBerryYield(struct BerryTree *tree)",
+      "paramsRaw": "struct BerryTree *tree",
+      "body": "const struct Berry *berry = GetBerryInfo(tree->berry);\n    u8 min = berry->minYield;\n    u8 max = berry->maxYield;\n\n    return CalcBerryYieldInternal(max, min, BerryTreeGetNumStagesWatered(tree));",
+      "callsTo": [
+        "BerryTreeGetNumStagesWatered",
+        "CalcBerryYieldInternal",
+        "GetBerryInfo"
+      ],
+      "lineCount": 5
+    },
+    "GetBerryCountByBerryTreeId": {
+      "returnType": "u8",
+      "signature": "static u8 GetBerryCountByBerryTreeId(u8 id)",
+      "paramsRaw": "u8 id",
+      "body": "return gSaveBlock1Ptr->berryTrees[id].berryYield;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "GetStageDurationByBerryType": {
+      "returnType": "u16",
+      "signature": "static u16 GetStageDurationByBerryType(u8 berry)",
+      "paramsRaw": "u8 berry",
+      "body": "return GetBerryInfo(berry)->stageDuration * 60;",
+      "callsTo": [
+        "GetBerryInfo"
+      ],
+      "lineCount": 1
+    },
+    "ObjectEventInteractionGetBerryTreeData": {
+      "returnType": "void",
+      "signature": "void ObjectEventInteractionGetBerryTreeData(void)",
+      "paramsRaw": "void",
+      "body": "u8 id;\n    u8 berry;\n    u8 localId;\n    u8 group;\n    u8 num;\n\n    id = GetObjectEventBerryTreeId(gSelectedObjectEvent);\n    berry = GetBerryTypeByBerryTreeId(id);\n    AllowBerryTreeGrowth(id);\n    localId = gSpecialVar_LastTalked;\n    num = gSaveBlock1Ptr->location.mapNum;\n    group = gSaveBlock1Ptr->location.mapGroup;\n    if (IsBerryTreeSparkling(localId, num, group))\n        gSpecialVar_0x8004 = BERRY_STAGE_SPARKLING;\n    else\n        gSpecialVar_0x8004 = GetStageByBerryTreeId(id);\n    gSpecialVar_0x8005 = GetNumStagesWateredByBerryTreeId(id);\n    gSpecialVar_0x8006 = GetBerryCountByBerryTreeId(id);\n    GetBerryCountStringByBerryType(berry, gStringVar1, gSpecialVar_0x8006);",
+      "callsTo": [
+        "AllowBerryTreeGrowth",
+        "GetBerryCountByBerryTreeId",
+        "GetBerryCountStringByBerryType",
+        "GetBerryTypeByBerryTreeId",
+        "GetNumStagesWateredByBerryTreeId",
+        "GetObjectEventBerryTreeId",
+        "GetStageByBerryTreeId",
+        "IsBerryTreeSparkling"
+      ],
+      "lineCount": 19
+    },
+    "ObjectEventInteractionGetBerryName": {
+      "returnType": "void",
+      "signature": "void ObjectEventInteractionGetBerryName(void)",
+      "paramsRaw": "void",
+      "body": "u8 berryType = GetBerryTypeByBerryTreeId(GetObjectEventBerryTreeId(gSelectedObjectEvent));\n    GetBerryNameByBerryType(berryType, gStringVar1);",
+      "callsTo": [
+        "GetBerryNameByBerryType",
+        "GetBerryTypeByBerryTreeId",
+        "GetObjectEventBerryTreeId"
+      ],
+      "lineCount": 2
+    },
+    "ObjectEventInteractionGetBerryCountString": {
+      "returnType": "void",
+      "signature": "void ObjectEventInteractionGetBerryCountString(void)",
+      "paramsRaw": "void",
+      "body": "u8 treeId = GetObjectEventBerryTreeId(gSelectedObjectEvent);\n    u8 berry = GetBerryTypeByBerryTreeId(treeId);\n    u8 count = GetBerryCountByBerryTreeId(treeId);\n    GetBerryCountStringByBerryType(berry, gStringVar1, count);",
+      "callsTo": [
+        "GetBerryCountByBerryTreeId",
+        "GetBerryCountStringByBerryType",
+        "GetBerryTypeByBerryTreeId",
+        "GetObjectEventBerryTreeId"
+      ],
+      "lineCount": 4
+    },
+    "Bag_ChooseBerry": {
+      "returnType": "void",
+      "signature": "void Bag_ChooseBerry(void)",
+      "paramsRaw": "void",
+      "body": "SetMainCallback2(CB2_ChooseBerry);",
+      "callsTo": [
+        "SetMainCallback2"
+      ],
+      "lineCount": 1
+    },
+    "ObjectEventInteractionPlantBerryTree": {
+      "returnType": "void",
+      "signature": "void ObjectEventInteractionPlantBerryTree(void)",
+      "paramsRaw": "void",
+      "body": "u8 berry = ItemIdToBerryType(gSpecialVar_ItemId);\n\n    PlantBerryTree(GetObjectEventBerryTreeId(gSelectedObjectEvent), berry, BERRY_STAGE_PLANTED, TRUE);\n    ObjectEventInteractionGetBerryTreeData();",
+      "callsTo": [
+        "GetObjectEventBerryTreeId",
+        "ItemIdToBerryType",
+        "ObjectEventInteractionGetBerryTreeData",
+        "PlantBerryTree"
+      ],
+      "lineCount": 4
+    },
+    "ObjectEventInteractionPickBerryTree": {
+      "returnType": "void",
+      "signature": "void ObjectEventInteractionPickBerryTree(void)",
+      "paramsRaw": "void",
+      "body": "u8 id = GetObjectEventBerryTreeId(gSelectedObjectEvent);\n    u8 berry = GetBerryTypeByBerryTreeId(id);\n\n    gSpecialVar_0x8004 = AddBagItem(BerryTypeToItemId(berry), GetBerryCountByBerryTreeId(id));",
+      "callsTo": [
+        "AddBagItem",
+        "BerryTypeToItemId",
+        "GetBerryCountByBerryTreeId",
+        "GetBerryTypeByBerryTreeId",
+        "GetObjectEventBerryTreeId"
+      ],
+      "lineCount": 4
+    },
+    "ObjectEventInteractionRemoveBerryTree": {
+      "returnType": "void",
+      "signature": "void ObjectEventInteractionRemoveBerryTree(void)",
+      "paramsRaw": "void",
+      "body": "RemoveBerryTree(GetObjectEventBerryTreeId(gSelectedObjectEvent));\n    SetBerryTreeJustPicked(gSpecialVar_LastTalked, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup);",
+      "callsTo": [
+        "GetObjectEventBerryTreeId",
+        "RemoveBerryTree",
+        "SetBerryTreeJustPicked"
+      ],
+      "lineCount": 2
+    },
+    "PlayerHasBerries": {
+      "returnType": "bool8",
+      "signature": "bool8 PlayerHasBerries(void)",
+      "paramsRaw": "void",
+      "body": "return IsBagPocketNonEmpty(POCKET_BERRIES);",
+      "callsTo": [
+        "IsBagPocketNonEmpty"
+      ],
+      "lineCount": 1
+    },
+    "SetBerryTreesSeen": {
+      "returnType": "void",
+      "signature": "void SetBerryTreesSeen(void)",
+      "paramsRaw": "void",
+      "body": "s16 cam_left;\n    s16 cam_top;\n    s16 left;\n    s16 top;\n    s16 right;\n    s16 bottom;\n    int i;\n\n    GetCameraCoords(&cam_left, &cam_top);\n    left = cam_left;\n    top = cam_top + 3;\n    right = cam_left + 14;\n    bottom = top + 8;\n    for (i = 0; i < OBJECT_EVENTS_COUNT; i++)\n    {\n        if (gObjectEvents[i].active && gObjectEvents[i].movementType == MOVEMENT_TYPE_BERRY_TREE_GROWTH)\n        {\n            cam_left = gObjectEvents[i].currentCoords.x;\n            cam_top = gObjectEvents[i].currentCoords.y;\n            if (left <= cam_left && cam_left <= right && top <= cam_top && cam_top <= bottom)\n                AllowBerryTreeGrowth(gObjectEvents[i].trainerRange_berryTreeId);\n        }\n    }",
+      "callsTo": [
+        "AllowBerryTreeGrowth",
+        "GetCameraCoords"
+      ],
+      "lineCount": 23
+    }
+  }
+}

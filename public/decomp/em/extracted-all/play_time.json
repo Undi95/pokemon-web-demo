@@ -1,0 +1,50 @@
+{
+  "srcFile": "src/play_time.c",
+  "count": 5,
+  "functions": {
+    "PlayTimeCounter_Reset": {
+      "returnType": "void",
+      "signature": "void PlayTimeCounter_Reset(void)",
+      "paramsRaw": "void",
+      "body": "sPlayTimeCounterState = STOPPED;\n\n    gSaveBlock2Ptr->playTimeHours = 0;\n    gSaveBlock2Ptr->playTimeMinutes = 0;\n    gSaveBlock2Ptr->playTimeSeconds = 0;\n    gSaveBlock2Ptr->playTimeVBlanks = 0;",
+      "callsTo": [],
+      "lineCount": 6
+    },
+    "PlayTimeCounter_Start": {
+      "returnType": "void",
+      "signature": "void PlayTimeCounter_Start(void)",
+      "paramsRaw": "void",
+      "body": "sPlayTimeCounterState = RUNNING;\n\n    if (gSaveBlock2Ptr->playTimeHours > 999)\n        PlayTimeCounter_SetToMax();",
+      "callsTo": [
+        "PlayTimeCounter_SetToMax"
+      ],
+      "lineCount": 4
+    },
+    "PlayTimeCounter_Stop": {
+      "returnType": "void",
+      "signature": "void PlayTimeCounter_Stop(void)",
+      "paramsRaw": "void",
+      "body": "sPlayTimeCounterState = STOPPED;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "PlayTimeCounter_Update": {
+      "returnType": "void",
+      "signature": "void PlayTimeCounter_Update(void)",
+      "paramsRaw": "void",
+      "body": "if (sPlayTimeCounterState != RUNNING)\n        return;\n\n    gSaveBlock2Ptr->playTimeVBlanks++;\n\n    if (gSaveBlock2Ptr->playTimeVBlanks < 60)\n        return;\n\n    gSaveBlock2Ptr->playTimeVBlanks = 0;\n    gSaveBlock2Ptr->playTimeSeconds++;\n\n    if (gSaveBlock2Ptr->playTimeSeconds < 60)\n        return;\n\n    gSaveBlock2Ptr->playTimeSeconds = 0;\n    gSaveBlock2Ptr->playTimeMinutes++;\n\n    if (gSaveBlock2Ptr->playTimeMinutes < 60)\n        return;\n\n    gSaveBlock2Ptr->playTimeMinutes = 0;\n    gSaveBlock2Ptr->playTimeHours++;\n\n    if (gSaveBlock2Ptr->playTimeHours > 999)\n        PlayTimeCounter_SetToMax();",
+      "callsTo": [
+        "PlayTimeCounter_SetToMax"
+      ],
+      "lineCount": 25
+    },
+    "PlayTimeCounter_SetToMax": {
+      "returnType": "void",
+      "signature": "void PlayTimeCounter_SetToMax(void)",
+      "paramsRaw": "void",
+      "body": "sPlayTimeCounterState = MAXED_OUT;\n\n    gSaveBlock2Ptr->playTimeHours = 999;\n    gSaveBlock2Ptr->playTimeMinutes = 59;\n    gSaveBlock2Ptr->playTimeSeconds = 59;\n    gSaveBlock2Ptr->playTimeVBlanks = 59;",
+      "callsTo": [],
+      "lineCount": 6
+    }
+  }
+}

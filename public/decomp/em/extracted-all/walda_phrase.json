@@ -1,0 +1,162 @@
+{
+  "srcFile": "src/walda_phrase.c",
+  "count": 14,
+  "functions": {
+    "TryBufferWaldaPhrase": {
+      "returnType": "u16",
+      "signature": "u16 TryBufferWaldaPhrase(void)",
+      "paramsRaw": "void",
+      "body": "if (IsWaldaPhraseEmpty())\n        return FALSE;\n\n    StringCopy(gStringVar1, GetWaldaPhrasePtr());\n    return TRUE;",
+      "callsTo": [
+        "GetWaldaPhrasePtr",
+        "IsWaldaPhraseEmpty",
+        "StringCopy"
+      ],
+      "lineCount": 5
+    },
+    "DoWaldaNamingScreen": {
+      "returnType": "void",
+      "signature": "void DoWaldaNamingScreen(void)",
+      "paramsRaw": "void",
+      "body": "StringCopy(gStringVar2, GetWaldaPhrasePtr());\n    DoNamingScreen(NAMING_SCREEN_WALDA, gStringVar2, 0, 0, 0, CB2_HandleGivenWaldaPhrase);",
+      "callsTo": [
+        "DoNamingScreen",
+        "GetWaldaPhrasePtr",
+        "StringCopy"
+      ],
+      "lineCount": 2
+    },
+    "CB2_HandleGivenWaldaPhrase": {
+      "returnType": "void",
+      "signature": "static void CB2_HandleGivenWaldaPhrase(void)",
+      "paramsRaw": "void",
+      "body": "gSpecialVar_0x8004 = GetWaldaPhraseInputCase(gStringVar2);\n\n    switch (gSpecialVar_0x8004)\n    {\n    case PHRASE_EMPTY:\n         \n         \n        if (IsWaldaPhraseEmpty())\n            SetWaldaPhrase(gText_Peekaboo);\n        else\n            gSpecialVar_0x8004 = PHRASE_NO_CHANGE;\n        break;\n    case PHRASE_CHANGED:\n        SetWaldaPhrase(gStringVar2);\n        break;\n    case PHRASE_NO_CHANGE:\n        break;\n    }\n\n    StringCopy(gStringVar1, GetWaldaPhrasePtr());\n    gFieldCallback = FieldCB_ContinueScriptHandleMusic;\n    SetMainCallback2(CB2_ReturnToField);",
+      "callsTo": [
+        "GetWaldaPhraseInputCase",
+        "GetWaldaPhrasePtr",
+        "IsWaldaPhraseEmpty",
+        "SetMainCallback2",
+        "SetWaldaPhrase",
+        "StringCopy"
+      ],
+      "lineCount": 22
+    },
+    "GetWaldaPhraseInputCase": {
+      "returnType": "u32",
+      "signature": "static u32 GetWaldaPhraseInputCase(u8 *inputPtr)",
+      "paramsRaw": "u8 *inputPtr",
+      "body": "if (inputPtr[0] == EOS)\n        return PHRASE_EMPTY;\n\n     \n    if (StringCompare(inputPtr, GetWaldaPhrasePtr()) == 0)\n        return PHRASE_NO_CHANGE;\n\n     \n    return PHRASE_CHANGED;",
+      "callsTo": [
+        "GetWaldaPhrasePtr",
+        "StringCompare"
+      ],
+      "lineCount": 9
+    },
+    "TryGetWallpaperWithWaldaPhrase": {
+      "returnType": "u16",
+      "signature": "u16 TryGetWallpaperWithWaldaPhrase(void)",
+      "paramsRaw": "void",
+      "body": "u16 backgroundClr, foregroundClr;\n    u8 patternId, iconId;\n    u16 trainerId = GetTrainerId(gSaveBlock2Ptr->playerTrainerId);\n    gSpecialVar_Result = TryCalculateWallpaper(&backgroundClr, &foregroundClr, &iconId, &patternId, trainerId, GetWaldaPhrasePtr());\n\n    if (gSpecialVar_Result)\n    {\n        SetWaldaWallpaperPatternId(patternId);\n        SetWaldaWallpaperIconId(iconId);\n        SetWaldaWallpaperColors(backgroundClr, foregroundClr);\n    }\n\n    SetWaldaWallpaperLockedOrUnlocked(gSpecialVar_Result);\n    return (bool8)gSpecialVar_Result;",
+      "callsTo": [
+        "GetTrainerId",
+        "GetWaldaPhrasePtr",
+        "SetWaldaWallpaperColors",
+        "SetWaldaWallpaperIconId",
+        "SetWaldaWallpaperLockedOrUnlocked",
+        "SetWaldaWallpaperPatternId",
+        "TryCalculateWallpaper"
+      ],
+      "lineCount": 14
+    },
+    "GetLetterTableId": {
+      "returnType": "u8",
+      "signature": "static u8 GetLetterTableId(u8 letter)",
+      "paramsRaw": "u8 letter",
+      "body": "s32 i;\n\n    for (i = 0; i < ARRAY_COUNT(sWaldaLettersTable); i++)\n    {\n        if (sWaldaLettersTable[i] == letter)\n            return i;\n    }\n\n    return ARRAY_COUNT(sWaldaLettersTable);",
+      "callsTo": [
+        "ARRAY_COUNT"
+      ],
+      "lineCount": 9
+    },
+    "TryCalculateWallpaper": {
+      "returnType": "bool32",
+      "signature": "static bool32 TryCalculateWallpaper(u16 *backgroundClr, u16 *foregroundClr, u8 *iconId, u8 *patternId, u16 trainerId, u8 *phrase)",
+      "paramsRaw": "u16 *backgroundClr, u16 *foregroundClr, u8 *iconId, u8 *patternId, u16 trainerId, u8 *phrase",
+      "body": "s32 i;\n    ALIGNED(2) u8 data[NUM_WALLPAPER_DATA_BYTES];\n    u8 charsByTableId[WALDA_PHRASE_LENGTH];\n    u16 *ptr;\n\n     \n    if (StringLength(phrase) != WALDA_PHRASE_LENGTH)\n        return FALSE;\n\n     \n    for (i = 0; i < WALDA_PHRASE_LENGTH; i++)\n    {\n        charsByTableId[i] = GetLetterTableId(phrase[i]);\n        if (charsByTableId[i] == ARRAY_COUNT(sWaldaLettersTable))\n            return FALSE;\n    }\n\n     \n     \n     \n     \n    for (i = 0; i < WALDA_PHRASE_LENGTH - 1; i++)\n        SetWallpaperDataFromLetter(data, charsByTableId, BITS_PER_LETTER * i, TO_BIT_OFFSET(i), BITS_PER_LETTER);\n\n     \n    SetWallpaperDataFromLetter(data, charsByTableId, BITS_PER_LETTER * (WALDA_PHRASE_LENGTH - 1), TO_BIT_OFFSET(WALDA_PHRASE_LENGTH - 1), 2);\n\n     \n     \n    if (GetWallpaperDataBits(data, 0, 3) != GetWallpaperDataBits(charsByTableId, TO_BIT_OFFSET(WALDA_PHRASE_LENGTH - 1) + 2, 3))\n        return FALSE;\n\n     \n    RotateWallpaperDataLeft(data, NUM_WALLPAPER_DATA_BYTES,     21);\n    RotateWallpaperDataLeft(data, NUM_WALLPAPER_DATA_BYTES - 1, KEY & 0xF);\n    MaskWallpaperData(data, NUM_WALLPAPER_DATA_BYTES - 1, KEY >> 4);\n\n     \n    if (TID_CHECK_HI != (BG_COLOR_LO ^ FG_COLOR_LO ^ ICON_ID ^ (trainerId >> 8)))\n        return FALSE;\n    if (TID_CHECK_LO != (BG_COLOR_HI ^ FG_COLOR_HI ^ PATTERN_ID ^ (trainerId & 0xFF)))\n        return FALSE;\n\n     \n    ptr = (u16 *) &BG_COLOR_LO;\n    *backgroundClr = *ptr;\n\n    ptr = (u16 *) &FG_COLOR_LO;\n    *foregroundClr = *ptr;\n\n    *iconId = ICON_ID;\n    *patternId = PATTERN_ID;\n\n    return TRUE;",
+      "callsTo": [
+        "ALIGNED",
+        "ARRAY_COUNT",
+        "GetLetterTableId",
+        "GetWallpaperDataBits",
+        "MaskWallpaperData",
+        "RotateWallpaperDataLeft",
+        "SetWallpaperDataFromLetter",
+        "StringLength",
+        "TO_BIT_OFFSET"
+      ],
+      "lineCount": 54
+    },
+    "RotateWallpaperDataLeft": {
+      "returnType": "void",
+      "signature": "static void RotateWallpaperDataLeft(u8 *data, s32 size, s32 numShifts)",
+      "paramsRaw": "u8 *data, s32 size, s32 numShifts",
+      "body": "s32 i, j;\n    u8 temp1, temp2;\n\n    for (i = numShifts - 1; i != -1; i--)\n    {\n        temp1 = (data[0] & (1 << 7)) >> 7;\n\n        for (j = size - 1; j >= 0; j--)\n        {\n            temp2 = (data[j] & (1 << 7)) >> 7;\n            data[j] <<= 1;\n            data[j] |= temp1;\n            temp1 = temp2;\n        }\n    }",
+      "callsTo": [],
+      "lineCount": 15
+    },
+    "MaskWallpaperData": {
+      "returnType": "void",
+      "signature": "static void MaskWallpaperData(u8 *data, u32 size, u8 mask)",
+      "paramsRaw": "u8 *data, u32 size, u8 mask",
+      "body": "u32 i;\n\n    mask |= (mask << 4);\n\n    for (i = 0; i < size; i++)\n        data[i] ^= mask;",
+      "callsTo": [],
+      "lineCount": 6
+    },
+    "GetWallpaperDataBit": {
+      "returnType": "bool8",
+      "signature": "static bool8 GetWallpaperDataBit(u8 *data, u32 bitNum)",
+      "paramsRaw": "u8 *data, u32 bitNum",
+      "body": "u32 i = bitNum / 8;\n    u32 flag = (1 << 7) >> (bitNum % 8);\n\n    return (data[i] & flag) != 0;",
+      "callsTo": [],
+      "lineCount": 4
+    },
+    "SetWallpaperDataBit": {
+      "returnType": "void",
+      "signature": "static void SetWallpaperDataBit(u8 *data, u32 bitNum)",
+      "paramsRaw": "u8 *data, u32 bitNum",
+      "body": "u32 i = bitNum / 8;\n    u8 flag = (1 << 7) >> (bitNum % 8);\n\n    data[i] |= flag;",
+      "callsTo": [],
+      "lineCount": 4
+    },
+    "ClearWallpaperDataBit": {
+      "returnType": "void",
+      "signature": "static void ClearWallpaperDataBit(u8 *data, u32 bitNum)",
+      "paramsRaw": "u8 *data, u32 bitNum",
+      "body": "u32 i = bitNum / 8;\n    u8 mask = ~((1 << 7) >> (bitNum % 8));\n\n    data[i] &= mask;",
+      "callsTo": [],
+      "lineCount": 4
+    },
+    "SetWallpaperDataFromLetter": {
+      "returnType": "void",
+      "signature": "static void SetWallpaperDataFromLetter(u8 *data, u8 *letterTableIds, u32 setOffset, u32 getOffset, u32 numBits)",
+      "paramsRaw": "u8 *data, u8 *letterTableIds, u32 setOffset, u32 getOffset, u32 numBits",
+      "body": "u32 i;\n\n    for (i = 0; i < numBits; i++)\n    {\n        if (GetWallpaperDataBit(letterTableIds, getOffset + i))\n            SetWallpaperDataBit(data, setOffset + i);\n        else\n            ClearWallpaperDataBit(data, setOffset + i);\n    }",
+      "callsTo": [
+        "ClearWallpaperDataBit",
+        "GetWallpaperDataBit",
+        "SetWallpaperDataBit"
+      ],
+      "lineCount": 9
+    },
+    "GetWallpaperDataBits": {
+      "returnType": "u32",
+      "signature": "static u32 GetWallpaperDataBits(u8 *data, u32 offset, u32 numBits)",
+      "paramsRaw": "u8 *data, u32 offset, u32 numBits",
+      "body": "u32 bits, i;\n\n    for (bits = 0, i = 0; i < numBits; i++)\n    {\n        bits <<= 1;\n        bits |= GetWallpaperDataBit(data, offset + i);\n    }\n\n    return bits;",
+      "callsTo": [
+        "GetWallpaperDataBit"
+      ],
+      "lineCount": 9
+    }
+  }
+}

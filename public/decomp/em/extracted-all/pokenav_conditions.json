@@ -1,0 +1,293 @@
+{
+  "srcFile": "src/pokenav_conditions.c",
+  "count": 25,
+  "functions": {
+    "PokenavCallback_Init_ConditionGraph_Party": {
+      "returnType": "bool32",
+      "signature": "bool32 PokenavCallback_Init_ConditionGraph_Party(void)",
+      "paramsRaw": "void",
+      "body": "struct Pokenav_ConditionMenu *menu = AllocSubstruct(POKENAV_SUBSTRUCT_CONDITION_GRAPH_MENU, sizeof(struct Pokenav_ConditionMenu));\n\n    if (menu == NULL)\n        return FALSE;\n\n    ConditionGraph_Init(&menu->graph);\n    InitPartyConditionListParameters();\n    gKeyRepeatStartDelay = 20;\n    menu->callback = HandleConditionMenuInput;\n    return TRUE;",
+      "callsTo": [
+        "AllocSubstruct",
+        "ConditionGraph_Init",
+        "InitPartyConditionListParameters"
+      ],
+      "lineCount": 10
+    },
+    "PokenavCallback_Init_ConditionGraph_Search": {
+      "returnType": "bool32",
+      "signature": "bool32 PokenavCallback_Init_ConditionGraph_Search(void)",
+      "paramsRaw": "void",
+      "body": "struct Pokenav_ConditionMenu *menu = AllocSubstruct(POKENAV_SUBSTRUCT_CONDITION_GRAPH_MENU, sizeof(struct Pokenav_ConditionMenu));\n\n    if (menu == NULL)\n        return FALSE;\n\n    ConditionGraph_Init(&menu->graph);\n    InitSearchResultsConditionList();\n    gKeyRepeatStartDelay = 20;\n    menu->callback = HandleConditionMenuInput;\n    return TRUE;",
+      "callsTo": [
+        "AllocSubstruct",
+        "ConditionGraph_Init",
+        "InitSearchResultsConditionList"
+      ],
+      "lineCount": 10
+    },
+    "GetConditionGraphMenuCallback": {
+      "returnType": "u32",
+      "signature": "u32 GetConditionGraphMenuCallback(void)",
+      "paramsRaw": "void",
+      "body": "struct Pokenav_ConditionMenu *menu = GetSubstructPtr(POKENAV_SUBSTRUCT_CONDITION_GRAPH_MENU);\n\n    return menu->callback(menu);",
+      "callsTo": [
+        "GetSubstructPtr"
+      ],
+      "lineCount": 3
+    },
+    "HandleConditionMenuInput": {
+      "returnType": "u32",
+      "signature": "static u32 HandleConditionMenuInput(struct Pokenav_ConditionMenu *menu)",
+      "paramsRaw": "struct Pokenav_ConditionMenu *menu",
+      "body": "struct PokenavMonList *monListPtr = GetSubstructPtr(POKENAV_SUBSTRUCT_MON_LIST);\n    u32 ret = ConditionGraphHandleDpadInput(menu);\n\n    if (ret == CONDITION_FUNC_NONE)\n    {\n        if (JOY_NEW(B_BUTTON))\n        {\n            PlaySE(SE_SELECT);\n            menu->callback = GetConditionReturnCallback;\n            ret = CONDITION_FUNC_RETURN;\n        }\n        else if (JOY_NEW(A_BUTTON))\n        {\n            if (!menu->inSearchMode)\n            {\n                 \n                if (monListPtr->currIndex == monListPtr->listCount - 1)\n                {\n                     \n                    PlaySE(SE_SELECT);\n                    menu->callback = GetConditionReturnCallback;\n                    ret = CONDITION_FUNC_RETURN;\n                }\n            }\n            else\n            {\n                 \n                PlaySE(SE_SELECT);\n                ret = CONDITION_FUNC_ADD_MARKINGS;\n                menu->callback = OpenMarkingsMenu;\n            }\n        }\n    }\n\n    return ret;",
+      "callsTo": [
+        "ConditionGraphHandleDpadInput",
+        "GetSubstructPtr",
+        "JOY_NEW",
+        "PlaySE"
+      ],
+      "lineCount": 35
+    },
+    "OpenMarkingsMenu": {
+      "returnType": "u32",
+      "signature": "static u32 OpenMarkingsMenu(struct Pokenav_ConditionMenu *menu)",
+      "paramsRaw": "struct Pokenav_ConditionMenu *menu",
+      "body": "struct PokenavMonList *monListPtr;\n    u8 markings;\n    u32 ret = CONDITION_FUNC_NONE, boxId, monId;\n\n    if (!HandleMonMarkingsMenuInput())\n    {\n        menu->monMarks[menu->loadId] = GetMonMarkingsData();\n        monListPtr = GetSubstructPtr(POKENAV_SUBSTRUCT_MON_LIST);\n        boxId = monListPtr->monData[monListPtr->currIndex].boxId;\n        monId = monListPtr->monData[monListPtr->currIndex].monId;\n        markings = menu->monMarks[menu->loadId];\n\n        if (boxId == TOTAL_BOXES_COUNT)\n            SetMonData(&gPlayerParty[monId], MON_DATA_MARKINGS, &markings);\n        else\n            SetBoxMonDataAt(boxId, monId, MON_DATA_MARKINGS, &markings);\n\n        menu->callback = HandleConditionMenuInput;\n        ret = CONDITION_FUNC_CLOSE_MARKINGS;\n    }\n\n    return ret;",
+      "callsTo": [
+        "GetMonMarkingsData",
+        "GetSubstructPtr",
+        "HandleMonMarkingsMenuInput",
+        "SetBoxMonDataAt",
+        "SetMonData"
+      ],
+      "lineCount": 22
+    },
+    "GetConditionReturnCallback": {
+      "returnType": "u32",
+      "signature": "static u32 GetConditionReturnCallback(struct Pokenav_ConditionMenu *menu)",
+      "paramsRaw": "struct Pokenav_ConditionMenu *menu",
+      "body": "if (!menu->inSearchMode)\n        return POKENAV_CONDITION_MENU;\n    else\n        return POKENAV_RETURN_CONDITION_SEARCH;",
+      "callsTo": [],
+      "lineCount": 4
+    },
+    "FreeConditionGraphMenuSubstruct1": {
+      "returnType": "void",
+      "signature": "void FreeConditionGraphMenuSubstruct1(void)",
+      "paramsRaw": "void",
+      "body": "struct Pokenav_ConditionMenu *menu = GetSubstructPtr(POKENAV_SUBSTRUCT_CONDITION_GRAPH_MENU);\n    if (!menu->inSearchMode)\n        FreePokenavSubstruct(POKENAV_SUBSTRUCT_MON_LIST);\n\n    FreePokenavSubstruct(POKENAV_SUBSTRUCT_CONDITION_GRAPH_MENU);",
+      "callsTo": [
+        "FreePokenavSubstruct",
+        "GetSubstructPtr"
+      ],
+      "lineCount": 5
+    },
+    "ConditionGraphHandleDpadInput": {
+      "returnType": "u8",
+      "signature": "static u8 ConditionGraphHandleDpadInput(struct Pokenav_ConditionMenu *menu)",
+      "paramsRaw": "struct Pokenav_ConditionMenu *menu",
+      "body": "struct PokenavMonList *monListPtr = GetSubstructPtr(POKENAV_SUBSTRUCT_MON_LIST);\n    u8 ret = CONDITION_FUNC_NONE;\n\n    if (JOY_HELD(DPAD_UP))\n    {\n         \n        if (!menu->inSearchMode || monListPtr->currIndex != 0)\n        {\n            PlaySE(SE_SELECT);\n            ret = SwitchConditionSummaryIndex(TRUE);\n        }\n    }\n    else if (JOY_HELD(DPAD_DOWN))\n    {\n         \n        if (!menu->inSearchMode || monListPtr->currIndex < monListPtr->listCount - 1)\n        {\n            PlaySE(SE_SELECT);\n            ret = SwitchConditionSummaryIndex(FALSE);\n        }\n    }\n\n    return ret;",
+      "callsTo": [
+        "GetSubstructPtr",
+        "JOY_HELD",
+        "PlaySE",
+        "SwitchConditionSummaryIndex"
+      ],
+      "lineCount": 23
+    },
+    "SwitchConditionSummaryIndex": {
+      "returnType": "u8",
+      "signature": "static u8 SwitchConditionSummaryIndex(u8 moveUp)",
+      "paramsRaw": "u8 moveUp",
+      "body": "u16 newLoadId;\n    bool8 wasNotLastMon, isNotLastMon;\n    struct Pokenav_ConditionMenu *menu = GetSubstructPtr(POKENAV_SUBSTRUCT_CONDITION_GRAPH_MENU);\n    struct PokenavMonList *monListPtr = GetSubstructPtr(POKENAV_SUBSTRUCT_MON_LIST);\n\n    newLoadId = (moveUp) ? menu->nextLoadIdUp : menu->nextLoadIdDown;\n    ConditionGraph_SetNewPositions(&menu->graph, menu->graph.savedPositions[menu->loadId], menu->graph.savedPositions[newLoadId]);\n    wasNotLastMon = (monListPtr->currIndex != (IsConditionMenuSearchMode() ? monListPtr->listCount : monListPtr->listCount - 1));\n    if (moveUp)\n    {\n        menu->nextLoadIdUp = menu->nextLoadIdDown;\n        menu->nextLoadIdDown = menu->loadId;\n        menu->loadId = newLoadId;\n        menu->toLoadId = menu->nextLoadIdUp;\n\n        monListPtr->currIndex = (monListPtr->currIndex == 0) ? monListPtr->listCount - 1 : monListPtr->currIndex - 1;\n        menu->toLoadListIndex = (monListPtr->currIndex != 0) ? monListPtr->currIndex - 1 : monListPtr->listCount - 1;\n    }\n    else\n    {\n        menu->nextLoadIdDown = menu->nextLoadIdUp;\n        menu->nextLoadIdUp = menu->loadId;\n        menu->loadId = newLoadId;\n        menu->toLoadId = menu->nextLoadIdDown;\n\n        monListPtr->currIndex = (monListPtr->currIndex < monListPtr->listCount - 1) ? monListPtr->currIndex + 1 : 0;\n        menu->toLoadListIndex = (monListPtr->currIndex < monListPtr->listCount - 1) ? monListPtr->currIndex + 1 : 0;\n    }\n\n    isNotLastMon = (monListPtr->currIndex != (IsConditionMenuSearchMode() ? monListPtr->listCount : monListPtr->listCount - 1));\n\n    if (!wasNotLastMon)\n        return CONDITION_FUNC_NO_TRANSITION;\n    else if (!isNotLastMon)\n        return CONDITION_FUNC_SLIDE_MON_OUT;\n    else\n        return CONDITION_FUNC_SLIDE_MON_IN;",
+      "callsTo": [
+        "ConditionGraph_SetNewPositions",
+        "GetSubstructPtr",
+        "IsConditionMenuSearchMode"
+      ],
+      "lineCount": 37
+    },
+    "LoadConditionGraphMenuGfx": {
+      "returnType": "bool32",
+      "signature": "bool32 LoadConditionGraphMenuGfx(void)",
+      "paramsRaw": "void",
+      "body": "s32 var;\n    struct Pokenav_ConditionMenu *menu = GetSubstructPtr(POKENAV_SUBSTRUCT_CONDITION_GRAPH_MENU);\n    struct PokenavMonList *monListPtr = GetSubstructPtr(POKENAV_SUBSTRUCT_MON_LIST);\n\n    switch (menu->state)\n    {\n    case 0:\n        CopyMonNameGenderLocation(monListPtr->currIndex, 0);\n        break;\n    case 1:\n        GetMonConditionGraphData(monListPtr->currIndex, 0);\n        break;\n    case 2:\n        ConditionGraphDrawMonPic(monListPtr->currIndex, 0);\n        break;\n    case 3:\n        if (monListPtr->listCount == 1)\n        {\n            menu->loadId = 0;\n            menu->nextLoadIdDown = 0;\n            menu->nextLoadIdUp = 0;\n            menu->state = 0;\n            return TRUE;\n        }\n        else\n        {\n            menu->loadId = 0;\n            menu->nextLoadIdDown = 1;\n            menu->nextLoadIdUp = 2;\n        }\n        break;\n     \n    case 4:\n        var = monListPtr->currIndex + 1;\n        if (var >= monListPtr->listCount)\n            var = 0;\n        CopyMonNameGenderLocation(var, 1);\n        break;\n    case 5:\n        var = monListPtr->currIndex + 1;\n        if (var >= monListPtr->listCount)\n            var = 0;\n        GetMonConditionGraphData(var, 1);\n        break;\n    case 6:\n        var = monListPtr->currIndex + 1;\n        if (var >= monListPtr->listCount)\n            var = 0;\n        ConditionGraphDrawMonPic(var, 1);\n        break;\n    case 7:\n        CopyMonNameGenderLocation((monListPtr->currIndex - 1 >= 0) ? monListPtr->currIndex - 1 : monListPtr->listCount - 1, 2);\n        break;\n    case 8:\n        GetMonConditionGraphData((monListPtr->currIndex - 1 >= 0) ? monListPtr->currIndex - 1 : monListPtr->listCount - 1, 2);\n        break;\n    case 9:\n        ConditionGraphDrawMonPic((monListPtr->currIndex - 1 >= 0) ? monListPtr->currIndex - 1 : monListPtr->listCount - 1, 2);\n        menu->state = 0;\n        return TRUE;\n    }\n\n    menu->state++;\n    return FALSE;",
+      "callsTo": [
+        "ConditionGraphDrawMonPic",
+        "CopyMonNameGenderLocation",
+        "GetMonConditionGraphData",
+        "GetSubstructPtr"
+      ],
+      "lineCount": 64
+    },
+    "LoadNextConditionMenuMonData": {
+      "returnType": "bool32",
+      "signature": "bool32 LoadNextConditionMenuMonData(u8 mode)",
+      "paramsRaw": "u8 mode",
+      "body": "struct Pokenav_ConditionMenu *menu = GetSubstructPtr(POKENAV_SUBSTRUCT_CONDITION_GRAPH_MENU);\n\n    switch (mode)\n    {\n    case CONDITION_LOAD_MON_INFO:\n        CopyMonNameGenderLocation(menu->toLoadListIndex, menu->toLoadId);\n        break;\n    case CONDITION_LOAD_GRAPH:\n        GetMonConditionGraphData(menu->toLoadListIndex, menu->toLoadId);\n        break;\n    case CONDITION_LOAD_MON_PIC:\n        ConditionGraphDrawMonPic(menu->toLoadListIndex, menu->toLoadId);\n        return TRUE;\n    }\n\n    return FALSE;",
+      "callsTo": [
+        "ConditionGraphDrawMonPic",
+        "CopyMonNameGenderLocation",
+        "GetMonConditionGraphData",
+        "GetSubstructPtr"
+      ],
+      "lineCount": 16
+    },
+    "CopyMonNameGenderLocation": {
+      "returnType": "void",
+      "signature": "static void CopyMonNameGenderLocation(s16 listId, u8 loadId)",
+      "paramsRaw": "s16 listId, u8 loadId",
+      "body": "u16 boxId, i;\n    struct Pokenav_ConditionMenu *menu = GetSubstructPtr(POKENAV_SUBSTRUCT_CONDITION_GRAPH_MENU);\n    struct PokenavMonList *monListPtr = GetSubstructPtr(POKENAV_SUBSTRUCT_MON_LIST);\n\n    if (listId != (IsConditionMenuSearchMode() ? monListPtr->listCount : monListPtr->listCount - 1))\n    {\n        CopyConditionMonNameGender(menu->nameText[loadId], listId, FALSE);\n        boxId = monListPtr->monData[listId].boxId;\n        menu->locationText[loadId][0] = EXT_CTRL_CODE_BEGIN;\n        menu->locationText[loadId][1] = EXT_CTRL_CODE_COLOR_HIGHLIGHT_SHADOW;\n        menu->locationText[loadId][2] = TEXT_COLOR_BLUE;\n        menu->locationText[loadId][3] = TEXT_COLOR_TRANSPARENT;\n        menu->locationText[loadId][4] = TEXT_COLOR_LIGHT_BLUE;\n        if (boxId == TOTAL_BOXES_COUNT)\n            CopyStringLeftAlignedToConditionData(&menu->locationText[loadId][5], gText_InParty, BOX_NAME_LENGTH);\n        else\n            CopyStringLeftAlignedToConditionData(&menu->locationText[loadId][5], GetBoxNamePtr(boxId), BOX_NAME_LENGTH);\n    }\n    else\n    {\n        for (i = 0; i < POKEMON_NAME_LENGTH + 2; i++)\n            menu->nameText[loadId][i] = CHAR_SPACE;\n        menu->nameText[loadId][i] = EOS;\n\n        for (i = 0; i < BOX_NAME_LENGTH; i++)\n            menu->locationText[loadId][i] = CHAR_SPACE;\n        menu->locationText[loadId][i] = EOS;\n    }",
+      "callsTo": [
+        "CopyConditionMonNameGender",
+        "CopyStringLeftAlignedToConditionData",
+        "GetBoxNamePtr",
+        "GetSubstructPtr",
+        "IsConditionMenuSearchMode"
+      ],
+      "lineCount": 28
+    },
+    "InitPartyConditionListParameters": {
+      "returnType": "void",
+      "signature": "static void InitPartyConditionListParameters(void)",
+      "paramsRaw": "void",
+      "body": "u16 i, count;\n    struct Pokenav_ConditionMenu *menu = GetSubstructPtr(POKENAV_SUBSTRUCT_CONDITION_GRAPH_MENU);\n    struct PokenavMonList *monListPtr = AllocSubstruct(POKENAV_SUBSTRUCT_MON_LIST, sizeof(struct PokenavMonList));\n\n    menu->inSearchMode = FALSE;\n    for (i = 0, count = 0; i < CalculatePlayerPartyCount(); i++)\n    {\n        if (!GetMonData(&gPlayerParty[i], MON_DATA_IS_EGG))\n        {\n            monListPtr->monData[count].boxId = TOTAL_BOXES_COUNT;\n            monListPtr->monData[count].monId = i;\n            monListPtr->monData[count].data = 0;\n            count++;\n        }\n    }\n\n    monListPtr->monData[count].boxId = 0;\n    monListPtr->monData[count].monId = 0;\n    monListPtr->monData[count].data = 0;\n    monListPtr->currIndex = 0;\n    monListPtr->listCount = count + 1;\n    menu->state = 0;",
+      "callsTo": [
+        "AllocSubstruct",
+        "CalculatePlayerPartyCount",
+        "GetMonData",
+        "GetSubstructPtr"
+      ],
+      "lineCount": 22
+    },
+    "InitSearchResultsConditionList": {
+      "returnType": "void",
+      "signature": "static void InitSearchResultsConditionList(void)",
+      "paramsRaw": "void",
+      "body": "struct Pokenav_ConditionMenu *menu = GetSubstructPtr(POKENAV_SUBSTRUCT_CONDITION_GRAPH_MENU);\n    menu->inSearchMode = TRUE;\n    menu->state = 0;",
+      "callsTo": [
+        "GetSubstructPtr"
+      ],
+      "lineCount": 3
+    },
+    "GetMonConditionGraphData": {
+      "returnType": "void",
+      "signature": "static void GetMonConditionGraphData(s16 listId, u8 loadId)",
+      "paramsRaw": "s16 listId, u8 loadId",
+      "body": "u16 boxId, monId, i;\n    struct Pokenav_ConditionMenu *menu = GetSubstructPtr(POKENAV_SUBSTRUCT_CONDITION_GRAPH_MENU);\n    struct PokenavMonList *monListPtr = GetSubstructPtr(POKENAV_SUBSTRUCT_MON_LIST);\n\n    if (listId != (IsConditionMenuSearchMode() ? monListPtr->listCount : monListPtr->listCount - 1))\n    {\n        boxId = monListPtr->monData[listId].boxId;\n        monId = monListPtr->monData[listId].monId;\n        menu->graph.conditions[loadId][CONDITION_COOL] = GetBoxOrPartyMonData(boxId, monId, MON_DATA_COOL, NULL);\n        menu->graph.conditions[loadId][CONDITION_TOUGH] = GetBoxOrPartyMonData(boxId, monId, MON_DATA_TOUGH, NULL);\n        menu->graph.conditions[loadId][CONDITION_SMART] = GetBoxOrPartyMonData(boxId, monId, MON_DATA_SMART, NULL);\n        menu->graph.conditions[loadId][CONDITION_CUTE] = GetBoxOrPartyMonData(boxId, monId, MON_DATA_CUTE, NULL);\n        menu->graph.conditions[loadId][CONDITION_BEAUTY] = GetBoxOrPartyMonData(boxId, monId, MON_DATA_BEAUTY, NULL);\n        menu->numSparkles[loadId] = GET_NUM_CONDITION_SPARKLES(GetBoxOrPartyMonData(boxId, monId, MON_DATA_SHEEN, NULL));\n        menu->monMarks[loadId] = GetBoxOrPartyMonData(boxId, monId, MON_DATA_MARKINGS, NULL);\n        ConditionGraph_CalcPositions(menu->graph.conditions[loadId], menu->graph.savedPositions[loadId]);\n    }\n    else\n    {\n         \n        for (i = 0; i < CONDITION_COUNT; i++)\n        {\n            menu->graph.conditions[loadId][i] = 0;\n            menu->graph.savedPositions[loadId][i].x = CONDITION_GRAPH_CENTER_X;\n            menu->graph.savedPositions[loadId][i].y = CONDITION_GRAPH_CENTER_Y;\n        }\n    }",
+      "callsTo": [
+        "ConditionGraph_CalcPositions",
+        "GET_NUM_CONDITION_SPARKLES",
+        "GetBoxOrPartyMonData",
+        "GetSubstructPtr",
+        "IsConditionMenuSearchMode"
+      ],
+      "lineCount": 27
+    },
+    "ConditionGraphDrawMonPic": {
+      "returnType": "void",
+      "signature": "static void ConditionGraphDrawMonPic(s16 listId, u8 loadId)",
+      "paramsRaw": "s16 listId, u8 loadId",
+      "body": "u16 boxId, monId, species;\n    u32 personality, tid;\n    struct Pokenav_ConditionMenu *menu = GetSubstructPtr(POKENAV_SUBSTRUCT_CONDITION_GRAPH_MENU);\n    struct PokenavMonList *monListPtr = GetSubstructPtr(POKENAV_SUBSTRUCT_MON_LIST);\n\n    if (listId == (IsConditionMenuSearchMode() ? monListPtr->listCount : monListPtr->listCount - 1))\n        return;\n\n    boxId = monListPtr->monData[listId].boxId;\n    monId = monListPtr->monData[listId].monId;\n    species = GetBoxOrPartyMonData(boxId, monId, MON_DATA_SPECIES_OR_EGG, NULL);\n    tid = GetBoxOrPartyMonData(boxId, monId, MON_DATA_OT_ID, NULL);\n    personality = GetBoxOrPartyMonData(boxId, monId, MON_DATA_PERSONALITY, NULL);\n    LoadSpecialPokePic(&gMonFrontPicTable[species], menu->monPicGfx[loadId], species, personality, TRUE);\n    LZ77UnCompWram(GetMonSpritePalFromSpeciesAndPersonality(species, tid, personality), menu->monPal[loadId]);",
+      "callsTo": [
+        "GetBoxOrPartyMonData",
+        "GetMonSpritePalFromSpeciesAndPersonality",
+        "GetSubstructPtr",
+        "IsConditionMenuSearchMode",
+        "LZ77UnCompWram",
+        "LoadSpecialPokePic"
+      ],
+      "lineCount": 15
+    },
+    "GetMonListCount": {
+      "returnType": "u16",
+      "signature": "u16 GetMonListCount(void)",
+      "paramsRaw": "void",
+      "body": "struct PokenavMonList *monListPtr = GetSubstructPtr(POKENAV_SUBSTRUCT_MON_LIST);\n    return monListPtr->listCount;",
+      "callsTo": [
+        "GetSubstructPtr"
+      ],
+      "lineCount": 2
+    },
+    "GetConditionGraphCurrentListIndex": {
+      "returnType": "u16",
+      "signature": "u16 GetConditionGraphCurrentListIndex(void)",
+      "paramsRaw": "void",
+      "body": "struct PokenavMonList *monListPtr = GetSubstructPtr(POKENAV_SUBSTRUCT_MON_LIST);\n    return monListPtr->currIndex;",
+      "callsTo": [
+        "GetSubstructPtr"
+      ],
+      "lineCount": 2
+    },
+    "GetConditionGraphMenuCurrentLoadIndex": {
+      "returnType": "u8",
+      "signature": "u8 GetConditionGraphMenuCurrentLoadIndex(void)",
+      "paramsRaw": "void",
+      "body": "struct Pokenav_ConditionMenu *menu = GetSubstructPtr(POKENAV_SUBSTRUCT_CONDITION_GRAPH_MENU);\n    return menu->loadId;",
+      "callsTo": [
+        "GetSubstructPtr"
+      ],
+      "lineCount": 2
+    },
+    "GetConditionGraphMenuToLoadListIndex": {
+      "returnType": "u8",
+      "signature": "u8 GetConditionGraphMenuToLoadListIndex(void)",
+      "paramsRaw": "void",
+      "body": "struct Pokenav_ConditionMenu *menu = GetSubstructPtr(POKENAV_SUBSTRUCT_CONDITION_GRAPH_MENU);\n    return menu->toLoadListIndex;",
+      "callsTo": [
+        "GetSubstructPtr"
+      ],
+      "lineCount": 2
+    },
+    "GetConditionGraphMenuToLoadId": {
+      "returnType": "u8",
+      "signature": "u8 GetConditionGraphMenuToLoadId(void)",
+      "paramsRaw": "void",
+      "body": "struct Pokenav_ConditionMenu *menu = GetSubstructPtr(POKENAV_SUBSTRUCT_CONDITION_GRAPH_MENU);\n    return menu->toLoadId;",
+      "callsTo": [
+        "GetSubstructPtr"
+      ],
+      "lineCount": 2
+    },
+    "GetConditionMonDataBuffer": {
+      "returnType": "u16",
+      "signature": "u16 GetConditionMonDataBuffer(void)",
+      "paramsRaw": "void",
+      "body": "struct PokenavMonList *monListPtr = GetSubstructPtr(POKENAV_SUBSTRUCT_MON_LIST);\n    return monListPtr->monData[monListPtr->currIndex].data;",
+      "callsTo": [
+        "GetSubstructPtr"
+      ],
+      "lineCount": 2
+    },
+    "IsConditionMenuSearchMode": {
+      "returnType": "bool32",
+      "signature": "bool32 IsConditionMenuSearchMode(void)",
+      "paramsRaw": "void",
+      "body": "struct Pokenav_ConditionMenu *menu = GetSubstructPtr(POKENAV_SUBSTRUCT_CONDITION_GRAPH_MENU);\n    if (menu->inSearchMode == TRUE)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [
+        "GetSubstructPtr"
+      ],
+      "lineCount": 5
+    },
+    "TryGetMonMarkId": {
+      "returnType": "u8",
+      "signature": "u8 TryGetMonMarkId(void)",
+      "paramsRaw": "void",
+      "body": "struct Pokenav_ConditionMenu *menu = GetSubstructPtr(POKENAV_SUBSTRUCT_CONDITION_GRAPH_MENU);\n    if (menu->inSearchMode == TRUE)\n        return menu->monMarks[menu->loadId];\n    else\n        return 0;",
+      "callsTo": [
+        "GetSubstructPtr"
+      ],
+      "lineCount": 5
+    },
+    "GetNumConditionMonSparkles": {
+      "returnType": "u8",
+      "signature": "u8 GetNumConditionMonSparkles(void)",
+      "paramsRaw": "void",
+      "body": "struct Pokenav_ConditionMenu *menu = GetSubstructPtr(POKENAV_SUBSTRUCT_CONDITION_GRAPH_MENU);\n    return menu->numSparkles[menu->loadId];",
+      "callsTo": [
+        "GetSubstructPtr"
+      ],
+      "lineCount": 2
+    }
+  }
+}

@@ -1,0 +1,130 @@
+{
+  "srcFile": "src/gpu_regs.c",
+  "count": 12,
+  "functions": {
+    "InitGpuRegManager": {
+      "returnType": "void",
+      "signature": "void InitGpuRegManager(void)",
+      "paramsRaw": "void",
+      "body": "s32 i;\n\n    for (i = 0; i < GPU_REG_BUF_SIZE; i++)\n    {\n        sGpuRegBuffer[i] = 0;\n        sGpuRegWaitingList[i] = EMPTY_SLOT;\n    }\n\n    sGpuRegBufferLocked = FALSE;\n    sShouldSyncRegIE = FALSE;\n    sRegIE = 0;",
+      "callsTo": [],
+      "lineCount": 11
+    },
+    "CopyBufferedValueToGpuReg": {
+      "returnType": "void",
+      "signature": "static void CopyBufferedValueToGpuReg(u8 regOffset)",
+      "paramsRaw": "u8 regOffset",
+      "body": "if (regOffset == REG_OFFSET_DISPSTAT)\n    {\n        REG_DISPSTAT &= ~(DISPSTAT_HBLANK_INTR | DISPSTAT_VBLANK_INTR);\n        REG_DISPSTAT |= GPU_REG_BUF(REG_OFFSET_DISPSTAT);\n    }\n    else\n    {\n        GPU_REG(regOffset) = GPU_REG_BUF(regOffset);\n    }",
+      "callsTo": [
+        "GPU_REG",
+        "GPU_REG_BUF"
+      ],
+      "lineCount": 9
+    },
+    "CopyBufferedValuesToGpuRegs": {
+      "returnType": "void",
+      "signature": "void CopyBufferedValuesToGpuRegs(void)",
+      "paramsRaw": "void",
+      "body": "if (!sGpuRegBufferLocked)\n    {\n        s32 i;\n\n        for (i = 0; i < GPU_REG_BUF_SIZE; i++)\n        {\n            u8 regOffset = sGpuRegWaitingList[i];\n            if (regOffset == EMPTY_SLOT)\n                return;\n            CopyBufferedValueToGpuReg(regOffset);\n            sGpuRegWaitingList[i] = EMPTY_SLOT;\n        }\n    }",
+      "callsTo": [
+        "CopyBufferedValueToGpuReg"
+      ],
+      "lineCount": 13
+    },
+    "SetGpuReg": {
+      "returnType": "void",
+      "signature": "void SetGpuReg(u8 regOffset, u16 value)",
+      "paramsRaw": "u8 regOffset, u16 value",
+      "body": "if (regOffset < GPU_REG_BUF_SIZE)\n    {\n        u16 vcount;\n\n        GPU_REG_BUF(regOffset) = value;\n        vcount = REG_VCOUNT & 0xFF;\n\n        if ((vcount >= 161 && vcount <= 225) || (REG_DISPCNT & DISPCNT_FORCED_BLANK))\n        {\n            CopyBufferedValueToGpuReg(regOffset);\n        }\n        else\n        {\n            s32 i;\n\n            sGpuRegBufferLocked = TRUE;\n\n            for (i = 0; i < GPU_REG_BUF_SIZE && sGpuRegWaitingList[i] != EMPTY_SLOT; i++)\n            {\n                if (sGpuRegWaitingList[i] == regOffset)\n                {\n                    sGpuRegBufferLocked = FALSE;\n                    return;\n                }\n            }\n\n            sGpuRegWaitingList[i] = regOffset;\n            sGpuRegBufferLocked = FALSE;\n        }\n    }",
+      "callsTo": [
+        "CopyBufferedValueToGpuReg",
+        "GPU_REG_BUF"
+      ],
+      "lineCount": 30
+    },
+    "SetGpuReg_ForcedBlank": {
+      "returnType": "void",
+      "signature": "void SetGpuReg_ForcedBlank(u8 regOffset, u16 value)",
+      "paramsRaw": "u8 regOffset, u16 value",
+      "body": "if (regOffset < GPU_REG_BUF_SIZE)\n    {\n        GPU_REG_BUF(regOffset) = value;\n\n        if (REG_DISPCNT & DISPCNT_FORCED_BLANK)\n        {\n            CopyBufferedValueToGpuReg(regOffset);\n        }\n        else\n        {\n            s32 i;\n\n            sGpuRegBufferLocked = TRUE;\n\n            for (i = 0; i < GPU_REG_BUF_SIZE && sGpuRegWaitingList[i] != EMPTY_SLOT; i++)\n            {\n                if (sGpuRegWaitingList[i] == regOffset)\n                {\n                    sGpuRegBufferLocked = FALSE;\n                    return;\n                }\n            }\n\n            sGpuRegWaitingList[i] = regOffset;\n            sGpuRegBufferLocked = FALSE;\n        }\n    }",
+      "callsTo": [
+        "CopyBufferedValueToGpuReg",
+        "GPU_REG_BUF"
+      ],
+      "lineCount": 27
+    },
+    "GetGpuReg": {
+      "returnType": "u16",
+      "signature": "u16 GetGpuReg(u8 regOffset)",
+      "paramsRaw": "u8 regOffset",
+      "body": "if (regOffset == REG_OFFSET_DISPSTAT)\n        return REG_DISPSTAT;\n\n    if (regOffset == REG_OFFSET_VCOUNT)\n        return REG_VCOUNT;\n\n    return GPU_REG_BUF(regOffset);",
+      "callsTo": [
+        "GPU_REG_BUF"
+      ],
+      "lineCount": 7
+    },
+    "SetGpuRegBits": {
+      "returnType": "void",
+      "signature": "void SetGpuRegBits(u8 regOffset, u16 mask)",
+      "paramsRaw": "u8 regOffset, u16 mask",
+      "body": "u16 regValue = GPU_REG_BUF(regOffset);\n    SetGpuReg(regOffset, regValue | mask);",
+      "callsTo": [
+        "GPU_REG_BUF",
+        "SetGpuReg"
+      ],
+      "lineCount": 2
+    },
+    "ClearGpuRegBits": {
+      "returnType": "void",
+      "signature": "void ClearGpuRegBits(u8 regOffset, u16 mask)",
+      "paramsRaw": "u8 regOffset, u16 mask",
+      "body": "u16 regValue = GPU_REG_BUF(regOffset);\n    SetGpuReg(regOffset, regValue & ~mask);",
+      "callsTo": [
+        "GPU_REG_BUF",
+        "SetGpuReg"
+      ],
+      "lineCount": 2
+    },
+    "SyncRegIE": {
+      "returnType": "void",
+      "signature": "static void SyncRegIE(void)",
+      "paramsRaw": "void",
+      "body": "if (sShouldSyncRegIE)\n    {\n        u16 temp = REG_IME;\n        REG_IME = 0;\n        REG_IE = sRegIE;\n        REG_IME = temp;\n        sShouldSyncRegIE = FALSE;\n    }",
+      "callsTo": [],
+      "lineCount": 8
+    },
+    "EnableInterrupts": {
+      "returnType": "void",
+      "signature": "void EnableInterrupts(u16 mask)",
+      "paramsRaw": "u16 mask",
+      "body": "sRegIE |= mask;\n    sShouldSyncRegIE = TRUE;\n    SyncRegIE();\n    UpdateRegDispstatIntrBits(sRegIE);",
+      "callsTo": [
+        "SyncRegIE",
+        "UpdateRegDispstatIntrBits"
+      ],
+      "lineCount": 4
+    },
+    "DisableInterrupts": {
+      "returnType": "void",
+      "signature": "void DisableInterrupts(u16 mask)",
+      "paramsRaw": "u16 mask",
+      "body": "sRegIE &= ~mask;\n    sShouldSyncRegIE = TRUE;\n    SyncRegIE();\n    UpdateRegDispstatIntrBits(sRegIE);",
+      "callsTo": [
+        "SyncRegIE",
+        "UpdateRegDispstatIntrBits"
+      ],
+      "lineCount": 4
+    },
+    "UpdateRegDispstatIntrBits": {
+      "returnType": "void",
+      "signature": "static void UpdateRegDispstatIntrBits(u16 regIE)",
+      "paramsRaw": "u16 regIE",
+      "body": "u16 oldValue = GetGpuReg(REG_OFFSET_DISPSTAT) & (DISPSTAT_HBLANK_INTR | DISPSTAT_VBLANK_INTR);\n    u16 newValue = 0;\n\n    if (regIE & INTR_FLAG_VBLANK)\n        newValue |= DISPSTAT_VBLANK_INTR;\n\n    if (regIE & INTR_FLAG_HBLANK)\n        newValue |= DISPSTAT_HBLANK_INTR;\n\n    if (oldValue != newValue)\n        SetGpuReg(REG_OFFSET_DISPSTAT, newValue);",
+      "callsTo": [
+        "GetGpuReg",
+        "SetGpuReg"
+      ],
+      "lineCount": 11
+    }
+  }
+}

@@ -1,0 +1,121 @@
+{
+  "srcFile": "src/battle_palace.c",
+  "count": 11,
+  "functions": {
+    "CallBattlePalaceFunction": {
+      "returnType": "void",
+      "signature": "void CallBattlePalaceFunction(void)",
+      "paramsRaw": "void",
+      "body": "sBattlePalaceFunctions[gSpecialVar_0x8004]();",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "InitPalaceChallenge": {
+      "returnType": "void",
+      "signature": "static void InitPalaceChallenge(void)",
+      "paramsRaw": "void",
+      "body": "u32 lvlMode = gSaveBlock2Ptr->frontier.lvlMode;\n    u32 battleMode = VarGet(VAR_FRONTIER_BATTLE_MODE);\n\n    gSaveBlock2Ptr->frontier.challengeStatus = 0;\n    gSaveBlock2Ptr->frontier.curChallengeBattleNum = 0;\n    gSaveBlock2Ptr->frontier.challengePaused = FALSE;\n    gSaveBlock2Ptr->frontier.disableRecordBattle = FALSE;\n    if (!(gSaveBlock2Ptr->frontier.winStreakActiveFlags & sWinStreakFlags[battleMode][lvlMode]))\n        gSaveBlock2Ptr->frontier.palaceWinStreaks[battleMode][lvlMode] = 0;\n\n    SetDynamicWarp(0, gSaveBlock1Ptr->location.mapGroup, gSaveBlock1Ptr->location.mapNum, WARP_ID_NONE);\n    gTrainerBattleOpponent_A = 0;",
+      "callsTo": [
+        "SetDynamicWarp",
+        "VarGet"
+      ],
+      "lineCount": 12
+    },
+    "GetPalaceData": {
+      "returnType": "void",
+      "signature": "static void GetPalaceData(void)",
+      "paramsRaw": "void",
+      "body": "u32 lvlMode = gSaveBlock2Ptr->frontier.lvlMode;\n    u32 battleMode = VarGet(VAR_FRONTIER_BATTLE_MODE);\n\n    switch (gSpecialVar_0x8005)\n    {\n    case PALACE_DATA_PRIZE:\n        gSpecialVar_Result = gSaveBlock2Ptr->frontier.palacePrize;\n        break;\n    case PALACE_DATA_WIN_STREAK:\n        gSpecialVar_Result = gSaveBlock2Ptr->frontier.palaceWinStreaks[battleMode][lvlMode];\n        break;\n    case PALACE_DATA_WIN_STREAK_ACTIVE:\n        gSpecialVar_Result = ((gSaveBlock2Ptr->frontier.winStreakActiveFlags & sWinStreakFlags[battleMode][lvlMode]) != 0);\n        break;\n    }",
+      "callsTo": [
+        "VarGet"
+      ],
+      "lineCount": 15
+    },
+    "SetPalaceData": {
+      "returnType": "void",
+      "signature": "static void SetPalaceData(void)",
+      "paramsRaw": "void",
+      "body": "u32 lvlMode = gSaveBlock2Ptr->frontier.lvlMode;\n    u32 battleMode = VarGet(VAR_FRONTIER_BATTLE_MODE);\n\n    switch (gSpecialVar_0x8005)\n    {\n    case PALACE_DATA_PRIZE:\n        gSaveBlock2Ptr->frontier.palacePrize = gSpecialVar_0x8006;\n        break;\n    case PALACE_DATA_WIN_STREAK:\n        gSaveBlock2Ptr->frontier.palaceWinStreaks[battleMode][lvlMode] = gSpecialVar_0x8006;\n        break;\n    case PALACE_DATA_WIN_STREAK_ACTIVE:\n        if (gSpecialVar_0x8006)\n            gSaveBlock2Ptr->frontier.winStreakActiveFlags |= sWinStreakFlags[battleMode][lvlMode];\n        else\n            gSaveBlock2Ptr->frontier.winStreakActiveFlags &= sWinStreakMasks[battleMode][lvlMode];\n        break;\n    }",
+      "callsTo": [
+        "VarGet"
+      ],
+      "lineCount": 18
+    },
+    "GetPalaceCommentId": {
+      "returnType": "void",
+      "signature": "static void GetPalaceCommentId(void)",
+      "paramsRaw": "void",
+      "body": "u32 battleMode = VarGet(VAR_FRONTIER_BATTLE_MODE);\n    u32 lvlMode = gSaveBlock2Ptr->frontier.lvlMode;\n\n    if (gSaveBlock2Ptr->frontier.palaceWinStreaks[battleMode][lvlMode] < 50)\n        gSpecialVar_Result = Random() % 3;\n    else if (gSaveBlock2Ptr->frontier.palaceWinStreaks[battleMode][lvlMode] < 99)\n        gSpecialVar_Result = 3;\n    else\n        gSpecialVar_Result = 4;",
+      "callsTo": [
+        "Random",
+        "VarGet"
+      ],
+      "lineCount": 9
+    },
+    "SetPalaceOpponent": {
+      "returnType": "void",
+      "signature": "static void SetPalaceOpponent(void)",
+      "paramsRaw": "void",
+      "body": "gTrainerBattleOpponent_A = 5 *(Random() % 255) / 64u;\n    SetBattleFacilityTrainerGfxId(gTrainerBattleOpponent_A, 0);",
+      "callsTo": [
+        "Random",
+        "SetBattleFacilityTrainerGfxId"
+      ],
+      "lineCount": 2
+    },
+    "BufferOpponentIntroSpeech": {
+      "returnType": "void",
+      "signature": "static void BufferOpponentIntroSpeech(void)",
+      "paramsRaw": "void",
+      "body": "if (gTrainerBattleOpponent_A < FRONTIER_TRAINERS_COUNT)\n        FrontierSpeechToString(gFacilityTrainers[gTrainerBattleOpponent_A].speechBefore);",
+      "callsTo": [
+        "FrontierSpeechToString"
+      ],
+      "lineCount": 2
+    },
+    "IncrementPalaceStreak": {
+      "returnType": "void",
+      "signature": "static void IncrementPalaceStreak(void)",
+      "paramsRaw": "void",
+      "body": "u8 lvlMode = gSaveBlock2Ptr->frontier.lvlMode;\n    u8 battleMode = VarGet(VAR_FRONTIER_BATTLE_MODE);\n\n    if (gSaveBlock2Ptr->frontier.palaceWinStreaks[battleMode][lvlMode] < MAX_STREAK)\n    {\n        gSaveBlock2Ptr->frontier.palaceWinStreaks[battleMode][lvlMode]++;\n\n         \n        if (gSaveBlock2Ptr->frontier.palaceWinStreaks[battleMode][(lvlMode > gSaveBlock2Ptr->frontier.palaceRecordWinStreaks[battleMode][lvlMode]) ? 1 : 0])\n            gSaveBlock2Ptr->frontier.palaceRecordWinStreaks[battleMode][lvlMode] = gSaveBlock2Ptr->frontier.palaceWinStreaks[battleMode][lvlMode];\n    }",
+      "callsTo": [
+        "VarGet"
+      ],
+      "lineCount": 11
+    },
+    "SavePalaceChallenge": {
+      "returnType": "void",
+      "signature": "static void SavePalaceChallenge(void)",
+      "paramsRaw": "void",
+      "body": "gSaveBlock2Ptr->frontier.challengeStatus = gSpecialVar_0x8005;\n    VarSet(VAR_TEMP_CHALLENGE_STATUS, 0);\n    gSaveBlock2Ptr->frontier.challengePaused = TRUE;\n    SaveGameFrontier();",
+      "callsTo": [
+        "SaveGameFrontier",
+        "VarSet"
+      ],
+      "lineCount": 4
+    },
+    "SetRandomPalacePrize": {
+      "returnType": "void",
+      "signature": "static void SetRandomPalacePrize(void)",
+      "paramsRaw": "void",
+      "body": "u32 battleMode = VarGet(VAR_FRONTIER_BATTLE_MODE);\n    u32 lvlMode = gSaveBlock2Ptr->frontier.lvlMode;\n\n    if (gSaveBlock2Ptr->frontier.palaceWinStreaks[battleMode][lvlMode] > 41)\n        gSaveBlock2Ptr->frontier.palacePrize = sBattlePalaceLatePrizes[Random() % ARRAY_COUNT(sBattlePalaceLatePrizes)];\n    else\n        gSaveBlock2Ptr->frontier.palacePrize = sBattlePalaceEarlyPrizes[Random() % ARRAY_COUNT(sBattlePalaceEarlyPrizes)];",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "Random",
+        "VarGet"
+      ],
+      "lineCount": 7
+    },
+    "GivePalacePrize": {
+      "returnType": "void",
+      "signature": "static void GivePalacePrize(void)",
+      "paramsRaw": "void",
+      "body": "if (AddBagItem(gSaveBlock2Ptr->frontier.palacePrize, 1) == TRUE)\n    {\n        CopyItemName(gSaveBlock2Ptr->frontier.palacePrize, gStringVar1);\n        gSaveBlock2Ptr->frontier.palacePrize = 0;\n        gSpecialVar_Result = TRUE;\n    }\n    else\n    {\n        gSpecialVar_Result = FALSE;\n    }",
+      "callsTo": [
+        "AddBagItem",
+        "CopyItemName"
+      ],
+      "lineCount": 10
+    }
+  }
+}

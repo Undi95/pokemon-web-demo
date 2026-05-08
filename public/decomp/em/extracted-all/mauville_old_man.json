@@ -1,0 +1,573 @@
+{
+  "srcFile": "src/mauville_old_man.c",
+  "count": 54,
+  "functions": {
+    "SetupBard": {
+      "returnType": "void",
+      "signature": "static void SetupBard(void)",
+      "paramsRaw": "void",
+      "body": "u16 i;\n    struct MauvilleManBard *bard = &gSaveBlock1Ptr->oldMan.bard;\n\n    bard->id = MAUVILLE_MAN_BARD;\n    bard->hasChangedSong = FALSE;\n    bard->language = gGameLanguage;\n    for (i = 0; i < NUM_BARD_SONG_WORDS; i++)\n        bard->songLyrics[i] = sDefaultBardSongLyrics[i];",
+      "callsTo": [],
+      "lineCount": 8
+    },
+    "SetupHipster": {
+      "returnType": "void",
+      "signature": "static void SetupHipster(void)",
+      "paramsRaw": "void",
+      "body": "struct MauvilleManHipster *hipster = &gSaveBlock1Ptr->oldMan.hipster;\n\n    hipster->id = MAUVILLE_MAN_HIPSTER;\n    hipster->taughtWord = FALSE;\n    hipster->language = gGameLanguage;",
+      "callsTo": [],
+      "lineCount": 5
+    },
+    "SetupStoryteller": {
+      "returnType": "void",
+      "signature": "static void SetupStoryteller(void)",
+      "paramsRaw": "void",
+      "body": "StorytellerSetup();",
+      "callsTo": [
+        "StorytellerSetup"
+      ],
+      "lineCount": 1
+    },
+    "SetupGiddy": {
+      "returnType": "void",
+      "signature": "static void SetupGiddy(void)",
+      "paramsRaw": "void",
+      "body": "struct MauvilleManGiddy *giddy = &gSaveBlock1Ptr->oldMan.giddy;\n\n    giddy->id = MAUVILLE_MAN_GIDDY;\n    giddy->taleCounter = 0;\n    giddy->language = gGameLanguage;",
+      "callsTo": [],
+      "lineCount": 5
+    },
+    "SetupTrader": {
+      "returnType": "void",
+      "signature": "static void SetupTrader(void)",
+      "paramsRaw": "void",
+      "body": "TraderSetup();",
+      "callsTo": [
+        "TraderSetup"
+      ],
+      "lineCount": 1
+    },
+    "SetMauvilleOldMan": {
+      "returnType": "void",
+      "signature": "void SetMauvilleOldMan(void)",
+      "paramsRaw": "void",
+      "body": "u16 trainerId = (gSaveBlock2Ptr->playerTrainerId[1] << 8) | gSaveBlock2Ptr->playerTrainerId[0];\n\n\n     \n    switch ((trainerId % 10) / 2)\n    {\n    case MAUVILLE_MAN_BARD:\n        SetupBard();\n        break;\n    case MAUVILLE_MAN_HIPSTER:\n        SetupHipster();\n        break;\n    case MAUVILLE_MAN_TRADER:\n        SetupTrader();\n        break;\n    case MAUVILLE_MAN_STORYTELLER:\n        SetupStoryteller();\n        break;\n    case MAUVILLE_MAN_GIDDY:\n        SetupGiddy();\n        break;\n    }\n    SetMauvilleOldManObjEventGfx();",
+      "callsTo": [
+        "SetMauvilleOldManObjEventGfx",
+        "SetupBard",
+        "SetupGiddy",
+        "SetupHipster",
+        "SetupStoryteller",
+        "SetupTrader"
+      ],
+      "lineCount": 23
+    },
+    "GetCurrentMauvilleOldMan": {
+      "returnType": "u8",
+      "signature": "u8 GetCurrentMauvilleOldMan(void)",
+      "paramsRaw": "void",
+      "body": "return gSaveBlock1Ptr->oldMan.common.id;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "Script_GetCurrentMauvilleMan": {
+      "returnType": "void",
+      "signature": "void Script_GetCurrentMauvilleMan(void)",
+      "paramsRaw": "void",
+      "body": "gSpecialVar_Result = GetCurrentMauvilleOldMan();",
+      "callsTo": [
+        "GetCurrentMauvilleOldMan"
+      ],
+      "lineCount": 1
+    },
+    "HasBardSongBeenChanged": {
+      "returnType": "void",
+      "signature": "void HasBardSongBeenChanged(void)",
+      "paramsRaw": "void",
+      "body": "gSpecialVar_Result = (&gSaveBlock1Ptr->oldMan.bard)->hasChangedSong;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "SaveBardSongLyrics": {
+      "returnType": "void",
+      "signature": "void SaveBardSongLyrics(void)",
+      "paramsRaw": "void",
+      "body": "u16 i;\n    struct MauvilleManBard *bard = &gSaveBlock1Ptr->oldMan.bard;\n\n    StringCopy(bard->playerName, gSaveBlock2Ptr->playerName);\n\n    for (i = 0; i < TRAINER_ID_LENGTH; i++)\n        bard->playerTrainerId[i] = gSaveBlock2Ptr->playerTrainerId[i];\n\n    for (i = 0; i < NUM_BARD_SONG_WORDS; i++)\n        bard->songLyrics[i] = bard->newSongLyrics[i];\n\n    bard->hasChangedSong = TRUE;",
+      "callsTo": [
+        "StringCopy"
+      ],
+      "lineCount": 12
+    },
+    "PrepareSongText": {
+      "returnType": "void",
+      "signature": "static void PrepareSongText(void)",
+      "paramsRaw": "void",
+      "body": "struct MauvilleManBard *bard = &gSaveBlock1Ptr->oldMan.bard;\n    u16 *lyrics = !gSpecialVar_0x8004 ? bard->songLyrics : bard->newSongLyrics;\n    u8 *wordEnd = gStringVar4;\n    u8 *str = wordEnd;\n    u16 paragraphNum;\n\n     \n     \n     \n     \n     \n     \n    for (paragraphNum = 0; paragraphNum < 2; paragraphNum++)\n    {\n         \n        wordEnd = CopyEasyChatWord(wordEnd, *(lyrics++));\n        while (wordEnd != str)\n        {\n            if (*str == CHAR_SPACE)\n                *str = CHAR_BARD_WORD_DELIMIT;\n            str++;\n        }\n\n        str++;\n        *(wordEnd++) = CHAR_SPACE;\n\n         \n        wordEnd = CopyEasyChatWord(wordEnd, *(lyrics++));\n        while (wordEnd != str)\n        {\n            if (*str == CHAR_SPACE)\n                *str = CHAR_BARD_WORD_DELIMIT;\n            str++;\n        }\n\n        str++;\n        *(wordEnd++) = CHAR_NEWLINE;\n\n         \n        wordEnd = CopyEasyChatWord(wordEnd, *(lyrics++));\n        while (wordEnd != str)\n        {\n            if (*str == CHAR_SPACE)\n                *str = CHAR_BARD_WORD_DELIMIT;\n            str++;\n        }\n\n        if (paragraphNum == 0)\n        {\n             \n             \n            *(wordEnd++) = EXT_CTRL_CODE_BEGIN;\n            *(wordEnd++) = EXT_CTRL_CODE_FILL_WINDOW;\n        }\n    }",
+      "callsTo": [
+        "CopyEasyChatWord"
+      ],
+      "lineCount": 55
+    },
+    "PlayBardSong": {
+      "returnType": "void",
+      "signature": "void PlayBardSong(void)",
+      "paramsRaw": "void",
+      "body": "StartBardSong(gSpecialVar_0x8004);\n    ScriptContext_Stop();",
+      "callsTo": [
+        "ScriptContext_Stop",
+        "StartBardSong"
+      ],
+      "lineCount": 2
+    },
+    "HasHipsterTaughtWord": {
+      "returnType": "void",
+      "signature": "void HasHipsterTaughtWord(void)",
+      "paramsRaw": "void",
+      "body": "gSpecialVar_Result = (&gSaveBlock1Ptr->oldMan.hipster)->taughtWord;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "SetHipsterTaughtWord": {
+      "returnType": "void",
+      "signature": "void SetHipsterTaughtWord(void)",
+      "paramsRaw": "void",
+      "body": "(&gSaveBlock1Ptr->oldMan.hipster)->taughtWord = TRUE;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "HipsterTryTeachWord": {
+      "returnType": "void",
+      "signature": "void HipsterTryTeachWord(void)",
+      "paramsRaw": "void",
+      "body": "u16 word = UnlockRandomTrendySaying();\n\n    if (word == EC_EMPTY_WORD)\n    {\n         \n        gSpecialVar_Result = FALSE;\n    }\n    else\n    {\n        CopyEasyChatWord(gStringVar1, word);\n        gSpecialVar_Result = TRUE;\n    }",
+      "callsTo": [
+        "CopyEasyChatWord",
+        "UnlockRandomTrendySaying"
+      ],
+      "lineCount": 12
+    },
+    "GiddyShouldTellAnotherTale": {
+      "returnType": "void",
+      "signature": "void GiddyShouldTellAnotherTale(void)",
+      "paramsRaw": "void",
+      "body": "struct MauvilleManGiddy *giddy = &gSaveBlock1Ptr->oldMan.giddy;\n\n    if (giddy->taleCounter == GIDDY_MAX_TALES)\n    {\n        gSpecialVar_Result = FALSE;\n        giddy->taleCounter = 0;\n    }\n    else\n    {\n        gSpecialVar_Result = TRUE;\n    }",
+      "callsTo": [],
+      "lineCount": 11
+    },
+    "GenerateGiddyLine": {
+      "returnType": "void",
+      "signature": "void GenerateGiddyLine(void)",
+      "paramsRaw": "void",
+      "body": "struct MauvilleManGiddy *giddy = &gSaveBlock1Ptr->oldMan.giddy;\n\n    if (giddy->taleCounter == 0)\n        InitGiddyTaleList();\n\n     \n     \n     \n    if (giddy->randomWords[giddy->taleCounter] != EC_EMPTY_WORD)\n    {\n        u8 *stringPtr;\n        u32 adjective = Random();\n        adjective %= ARRAY_COUNT(sGiddyAdjectives);\n\n        stringPtr = CopyEasyChatWord(gStringVar4, giddy->randomWords[giddy->taleCounter]);\n        stringPtr = StringCopy(stringPtr, GiddyText_Is);\n        stringPtr = StringCopy(stringPtr, sGiddyAdjectives[adjective]);\n        StringCopy(stringPtr, GiddyText_DontYouAgree);\n    }\n    else\n    {\n        StringCopy(gStringVar4, sGiddyQuestions[giddy->questionList[giddy->questionNum++]]);\n    }\n\n     \n    if (!(Random() % 10))\n        giddy->taleCounter = GIDDY_MAX_TALES;\n    else\n        giddy->taleCounter++;\n\n    gSpecialVar_Result = TRUE;",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "CopyEasyChatWord",
+        "InitGiddyTaleList",
+        "Random",
+        "StringCopy"
+      ],
+      "lineCount": 31
+    },
+    "InitGiddyTaleList": {
+      "returnType": "void",
+      "signature": "static void InitGiddyTaleList(void)",
+      "paramsRaw": "void",
+      "body": "struct MauvilleManGiddy *giddy = &gSaveBlock1Ptr->oldMan.giddy;\n    u16 wordGroupsAndCount[][2] = {\n        {EC_GROUP_POKEMON,   0},\n        {EC_GROUP_LIFESTYLE, 0},\n        {EC_GROUP_HOBBIES,   0},\n        {EC_GROUP_MOVE_1,    0},\n        {EC_GROUP_MOVE_2,    0},\n        {EC_GROUP_POKEMON_NATIONAL, 0}\n    };\n    u16 i;\n    u16 totalWords;\n    u16 temp;\n    u16 var;  \n\n     \n    for (i = 0; i < GIDDY_MAX_QUESTIONS; i++)\n        giddy->questionList[i] = i;\n    for (i = 0; i < GIDDY_MAX_QUESTIONS; i++)\n    {\n        var = Random() % (i + 1);\n        SWAP(giddy->questionList[i], giddy->questionList[var], temp);\n    }\n\n     \n    totalWords = 0;\n    for (i = 0; i < ARRAY_COUNT(wordGroupsAndCount); i++)\n    {\n        wordGroupsAndCount[i][1] = EasyChat_GetNumWordsInGroup(wordGroupsAndCount[i][0]);\n        totalWords += wordGroupsAndCount[i][1];\n    }\n\n    giddy->questionNum = 0;\n    temp = 0;\n    for (i = 0; i < GIDDY_MAX_TALES; i++)\n    {\n        var = Random() % 10;\n        if (var < 3 && temp < GIDDY_MAX_QUESTIONS)\n        {\n             \n             \n             \n            giddy->randomWords[i] = EC_EMPTY_WORD;\n            temp++;\n        }\n        else\n        {\n             \n             \n            s16 randWord = Random() % totalWords;\n            for (var = 0; i < ARRAY_COUNT(wordGroupsAndCount); var++)\n                if ((randWord -= wordGroupsAndCount[var][1]) <= 0)\n                    break;\n            if (var == ARRAY_COUNT(wordGroupsAndCount))\n                var = 0;\n\n             \n            giddy->randomWords[i] = GetRandomEasyChatWordFromUnlockedGroup(wordGroupsAndCount[var][0]);\n        }\n    }",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "EasyChat_GetNumWordsInGroup",
+        "GetRandomEasyChatWordFromUnlockedGroup",
+        "Random",
+        "SWAP"
+      ],
+      "lineCount": 59
+    },
+    "ResetBardFlag": {
+      "returnType": "void",
+      "signature": "static void ResetBardFlag(void)",
+      "paramsRaw": "void",
+      "body": "(&gSaveBlock1Ptr->oldMan.bard)->hasChangedSong = FALSE;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "ResetHipsterFlag": {
+      "returnType": "void",
+      "signature": "static void ResetHipsterFlag(void)",
+      "paramsRaw": "void",
+      "body": "(&gSaveBlock1Ptr->oldMan.hipster)->taughtWord = FALSE;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "ResetTraderFlag": {
+      "returnType": "void",
+      "signature": "static void ResetTraderFlag(void)",
+      "paramsRaw": "void",
+      "body": "Trader_ResetFlag();",
+      "callsTo": [
+        "Trader_ResetFlag"
+      ],
+      "lineCount": 1
+    },
+    "ResetStorytellerFlag": {
+      "returnType": "void",
+      "signature": "static void ResetStorytellerFlag(void)",
+      "paramsRaw": "void",
+      "body": "Storyteller_ResetFlag();",
+      "callsTo": [
+        "Storyteller_ResetFlag"
+      ],
+      "lineCount": 1
+    },
+    "ResetMauvilleOldManFlag": {
+      "returnType": "void",
+      "signature": "void ResetMauvilleOldManFlag(void)",
+      "paramsRaw": "void",
+      "body": "switch (GetCurrentMauvilleOldMan())\n    {\n    case MAUVILLE_MAN_BARD:\n        ResetBardFlag();\n        break;\n    case MAUVILLE_MAN_HIPSTER:\n        ResetHipsterFlag();\n        break;\n    case MAUVILLE_MAN_STORYTELLER:\n        ResetStorytellerFlag();\n        break;\n    case MAUVILLE_MAN_TRADER:\n        ResetTraderFlag();\n        break;\n    case MAUVILLE_MAN_GIDDY:\n        break;\n    }\n    SetMauvilleOldManObjEventGfx();",
+      "callsTo": [
+        "GetCurrentMauvilleOldMan",
+        "ResetBardFlag",
+        "ResetHipsterFlag",
+        "ResetStorytellerFlag",
+        "ResetTraderFlag",
+        "SetMauvilleOldManObjEventGfx"
+      ],
+      "lineCount": 18
+    },
+    "StartBardSong": {
+      "returnType": "void",
+      "signature": "static void StartBardSong(bool8 useNewSongLyrics)",
+      "paramsRaw": "bool8 useNewSongLyrics",
+      "body": "u8 taskId = CreateTask(Task_BardSong, 80);\n\n    gTasks[taskId].tUseNewSongLyrics = useNewSongLyrics;",
+      "callsTo": [
+        "CreateTask"
+      ],
+      "lineCount": 3
+    },
+    "EnableTextPrinters": {
+      "returnType": "void",
+      "signature": "static void EnableTextPrinters(void)",
+      "paramsRaw": "void",
+      "body": "gDisableTextPrinters = FALSE;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "DisableTextPrinters": {
+      "returnType": "void",
+      "signature": "static void DisableTextPrinters(struct TextPrinterTemplate *printer, u16 renderCmd)",
+      "paramsRaw": "struct TextPrinterTemplate *printer, u16 renderCmd",
+      "body": "gDisableTextPrinters = TRUE;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "DrawSongTextWindow": {
+      "returnType": "void",
+      "signature": "static void DrawSongTextWindow(const u8 *str)",
+      "paramsRaw": "const u8 *str",
+      "body": "DrawDialogueFrame(0, FALSE);\n    AddTextPrinterParameterized(0, FONT_NORMAL, str, 0, 1, 1, DisableTextPrinters);\n    gDisableTextPrinters = TRUE;\n    CopyWindowToVram(0, COPYWIN_FULL);",
+      "callsTo": [
+        "AddTextPrinterParameterized",
+        "CopyWindowToVram",
+        "DrawDialogueFrame"
+      ],
+      "lineCount": 4
+    },
+    "BardSing": {
+      "returnType": "void",
+      "signature": "static void BardSing(struct Task *task, struct BardSong *song)",
+      "paramsRaw": "struct Task *task, struct BardSong *song",
+      "body": "switch (task->tState)\n    {\n    case BARD_STATE_INIT:\n    {\n        struct MauvilleManBard *bard = &gSaveBlock1Ptr->oldMan.bard;\n        u16 *lyrics;\n        s32 i;\n\n         \n        if (!gSpecialVar_0x8004)\n            lyrics = bard->songLyrics;\n        else\n            lyrics = bard->newSongLyrics;\n\n        for (i = 0; i < NUM_BARD_SONG_WORDS; i++)\n            song->lyrics[i] = lyrics[i];\n\n        song->lyricsIndex = 0;\n    }\n        break;\n    case BARD_STATE_WAIT_BGM:\n        break;\n    case BARD_STATE_GET_WORD:\n    {\n        u16 easyChatWord = song->lyrics[song->lyricsIndex];\n        song->soundTemplates = GetWordSoundTemplates(easyChatWord);\n        CalcWordSounds(song, WORD_TO_PITCH_TABLE_INDEX(easyChatWord));\n        song->lyricsIndex++;\n        if (song->soundTemplates[0].songId != PHONEME_ID_NONE)\n        {\n             \n            song->state = SOUND_STATE_START;\n        }\n        else\n        {\n             \n            song->state = SOUND_STATE_END;\n            song->timer = 2;\n        }\n        break;\n    }\n    case BARD_STATE_HANDLE_WORD:\n    case BARD_STATE_WAIT_WORD:\n    {\n        const struct BardSoundTemplate *template = &song->soundTemplates[song->soundIndex];\n\n        switch (song->state)\n        {\n        case SOUND_STATE_START:\n            song->timer = song->sounds[song->soundIndex].length;\n            if (template->songId < NUM_PHONEME_SONGS)\n            {\n                 \n                 \n                 \n                 \n                u8 phonemeTripletId = template->songId / 3;\n                m4aSongNumStart((FIRST_PHONEME_SONG + 1) + phonemeTripletId * 3);\n            }\n            song->state = SOUND_STATE_SET_BASE;\n            song->timer--;\n            break;\n        case SOUND_STATE_SET_BASE:\n            song->state = SOUND_STATE_PLAY;\n            if (template->songId < NUM_PHONEME_SONGS)\n            {\n                 \n                 \n                song->volume = BARD_SONG_BASE_VOLUME + template->volume * 16;\n                m4aMPlayVolumeControl(&gMPlayInfo_SE2, TRACKS_ALL, song->volume);\n\n                 \n                song->pitch = BARD_SONG_BASE_PITCH + song->sounds[song->soundIndex].pitch;\n                m4aMPlayPitchControl(&gMPlayInfo_SE2, TRACKS_ALL, song->pitch);\n            }\n            break;\n        case SOUND_STATE_PLAY:\n             \n            if (song->voiceInflection > 10)\n                song->volume -= 2;\n            if (song->voiceInflection & 1)\n                song->pitch += 64;\n            else\n                song->pitch -= 64;\n            m4aMPlayVolumeControl(&gMPlayInfo_SE2, TRACKS_ALL, song->volume);\n            m4aMPlayPitchControl(&gMPlayInfo_SE2, TRACKS_ALL, song->pitch);\n            song->voiceInflection++;\n\n            song->timer--;\n            if (song->timer == 0)\n            {\n                if (++song->soundIndex != MAX_BARD_SOUNDS_PER_WORD && song->soundTemplates[song->soundIndex].songId != PHONEME_ID_NONE)\n                {\n                     \n                    song->state = SOUND_STATE_START;\n                }\n                else\n                {\n                     \n                    song->state = SOUND_STATE_END;\n                    song->timer = 2;\n                }\n            }\n            break;\n        case SOUND_STATE_END:\n             \n            if (--song->timer == 0)\n            {\n                m4aMPlayStop(&gMPlayInfo_SE2);\n                song->state = SOUND_STATE_WAIT;  \n            }\n            break;\n        }\n    }\n    break;\n    case BARD_STATE_PAUSE:\n        break;\n    }",
+      "callsTo": [
+        "CalcWordSounds",
+        "GetWordSoundTemplates",
+        "WORD_TO_PITCH_TABLE_INDEX"
+      ],
+      "lineCount": 118
+    },
+    "Task_BardSong": {
+      "returnType": "void",
+      "signature": "static void Task_BardSong(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "struct Task *task = &gTasks[taskId];\n\n    BardSing(task, &gBardSong);\n\n    switch (task->tState)\n    {\n    case BARD_STATE_INIT:\n        PrepareSongText();\n        DrawSongTextWindow(gStringVar4);\n        task->tWordState = 0;\n        task->tDelay = 0;\n        task->tCharIndex = 0;\n        task->tLyricsIndex = 0;\n        FadeOutBGMTemporarily(4);\n        task->tState = BARD_STATE_WAIT_BGM;\n        break;\n    case BARD_STATE_WAIT_BGM:\n        if (IsBGMPausedOrStopped())\n            task->tState = BARD_STATE_GET_WORD;\n        break;\n    case BARD_STATE_GET_WORD:\n    {\n        struct MauvilleManBard *bard = &gSaveBlock1Ptr->oldMan.bard;\n        u8 *str = &gStringVar4[task->tCharIndex];\n        u16 wordLen = 0;\n\n         \n        while (*str != CHAR_SPACE\n            && *str != CHAR_NEWLINE\n            && *str != EXT_CTRL_CODE_BEGIN\n            && *str != EOS)\n        {\n            str++;\n            wordLen++;\n        }\n\n         \n        if (!task->tUseNewSongLyrics)\n            sUnusedPitchTableIndex = WORD_TO_PITCH_TABLE_INDEX(bard->songLyrics[task->tLyricsIndex]);\n        else\n            sUnusedPitchTableIndex = WORD_TO_PITCH_TABLE_INDEX(bard->newSongLyrics[task->tLyricsIndex]);\n\n        gBardSong.length /= wordLen;\n        if (gBardSong.length <= 0)\n            gBardSong.length = 1;\n\n        task->tLyricsIndex++;\n\n        if (task->tDelay == 0)\n        {\n            task->tState = BARD_STATE_HANDLE_WORD;\n            task->tWordState = 0;\n        }\n        else\n        {\n            task->tState = BARD_STATE_PAUSE;\n            task->tWordState = 0;\n        }\n    }\n        break;\n    case BARD_STATE_PAUSE:\n         \n        if (task->tDelay == 0)\n            task->tState = BARD_STATE_HANDLE_WORD;\n        else\n            task->tDelay--;\n        break;\n    case BARD_STATE_HANDLE_WORD:\n        if (gStringVar4[task->tCharIndex] == EOS)\n        {\n             \n            FadeInBGM(6);\n            m4aMPlayFadeOutTemporarily(&gMPlayInfo_SE2, 2);\n            ScriptContext_Enable();\n            DestroyTask(taskId);\n        }\n        else if (gStringVar4[task->tCharIndex] == CHAR_SPACE)\n        {\n             \n            EnableTextPrinters();\n            task->tCharIndex++;\n            task->tState = BARD_STATE_GET_WORD;\n            task->tDelay = 0;\n        }\n        else if (gStringVar4[task->tCharIndex] == CHAR_NEWLINE)\n        {\n             \n            task->tCharIndex++;\n            task->tState = BARD_STATE_GET_WORD;\n            task->tDelay = 0;\n        }\n        else if (gStringVar4[task->tCharIndex] == EXT_CTRL_CODE_BEGIN)\n        {\n             \n             \n             \n            task->tCharIndex += 2;   \n            task->tState = BARD_STATE_GET_WORD;\n            task->tDelay = 8;\n        }\n        else if (gStringVar4[task->tCharIndex] == CHAR_BARD_WORD_DELIMIT)\n        {\n             \n            gStringVar4[task->tCharIndex] = CHAR_SPACE;\n            EnableTextPrinters();\n            task->tCharIndex++;\n            task->tDelay = 0;\n        }\n        else\n        {\n             \n            switch (task->tWordState)\n            {\n            case 0:\n                EnableTextPrinters();\n                task->tWordState++;\n                break;\n            case 1:\n                task->tWordState++;\n                break;\n            case 2:\n                task->tCharIndex++;\n                task->tWordState = 0;\n                task->tDelay = gBardSong.length;\n                task->tState = BARD_STATE_WAIT_WORD;\n                break;\n            }\n        }\n        break;\n    case BARD_STATE_WAIT_WORD:\n         \n         \n        task->tDelay--;\n        if (task->tDelay == 0)\n            task->tState = BARD_STATE_HANDLE_WORD;\n        break;\n    }\n    RunTextPrintersAndIsPrinter0Active();",
+      "callsTo": [
+        "BardSing",
+        "DestroyTask",
+        "DrawSongTextWindow",
+        "EnableTextPrinters",
+        "FadeInBGM",
+        "FadeOutBGMTemporarily",
+        "IsBGMPausedOrStopped",
+        "PrepareSongText",
+        "RunTextPrintersAndIsPrinter0Active",
+        "ScriptContext_Enable",
+        "WORD_TO_PITCH_TABLE_INDEX"
+      ],
+      "lineCount": 138
+    },
+    "SetMauvilleOldManObjEventGfx": {
+      "returnType": "void",
+      "signature": "void SetMauvilleOldManObjEventGfx(void)",
+      "paramsRaw": "void",
+      "body": "VarSet(VAR_OBJ_GFX_ID_0, OBJ_EVENT_GFX_BARD);",
+      "callsTo": [
+        "VarSet"
+      ],
+      "lineCount": 1
+    },
+    "SanitizeMauvilleOldManForRuby": {
+      "returnType": "void",
+      "signature": "void SanitizeMauvilleOldManForRuby(union OldMan *oldMan)",
+      "paramsRaw": "union OldMan *oldMan",
+      "body": "s32 i;\n    u8 playerName[PLAYER_NAME_LENGTH + 1];\n\n    switch (oldMan->common.id)\n    {\n    case MAUVILLE_MAN_TRADER:\n    {\n        struct MauvilleOldManTrader *trader = &oldMan->trader;\n        for (i = 0; i < NUM_TRADER_ITEMS; i++)\n        {\n            if (trader->language[i] == LANGUAGE_JAPANESE)\n                ConvertInternationalString(trader->playerNames[i], LANGUAGE_JAPANESE);\n        }\n        break;\n    }\n    case MAUVILLE_MAN_STORYTELLER:\n    {\n        struct MauvilleManStoryteller *storyteller = &oldMan->storyteller;\n        for (i = 0; i < NUM_STORYTELLER_TALES; i++)\n        {\n            if (storyteller->gameStatIDs[i] != 0)\n            {\n                memcpy(playerName, storyteller->trainerNames[i], PLAYER_NAME_LENGTH);\n                playerName[PLAYER_NAME_LENGTH] = EOS;\n                if (IsStringJapanese(playerName))\n                {\n                    memset(playerName, CHAR_SPACE, PLAYER_NAME_LENGTH + 1);\n                    StringCopy(playerName, gText_Friend);\n                    memcpy(storyteller->trainerNames[i], playerName, PLAYER_NAME_LENGTH);\n                    storyteller->language[i] = GAME_LANGUAGE;\n                }\n            }\n        }\n        break;\n    }\n    }",
+      "callsTo": [
+        "ConvertInternationalString",
+        "IsStringJapanese",
+        "StringCopy"
+      ],
+      "lineCount": 36
+    },
+    "SanitizeReceivedEmeraldOldMan": {
+      "returnType": "void",
+      "signature": "void SanitizeReceivedEmeraldOldMan(union OldMan *oldMan, u32 version, u32 language)",
+      "paramsRaw": "union OldMan *oldMan, u32 version, u32 language",
+      "body": "u8 playerName[PLAYER_NAME_LENGTH + 1];\n    s32 i;\n    if (oldMan->common.id == MAUVILLE_MAN_STORYTELLER && language == LANGUAGE_JAPANESE)\n    {\n        struct MauvilleManStoryteller *storyteller = &oldMan->storyteller;\n\n        for (i = 0; i < NUM_STORYTELLER_TALES; i++)\n        {\n            if (storyteller->gameStatIDs[i] != 0)\n            {\n                memcpy(playerName, storyteller->trainerNames[i], PLAYER_NAME_LENGTH);\n                playerName[PLAYER_NAME_LENGTH] = EOS;\n                if (IsStringJapanese(playerName))\n                    storyteller->language[i] = LANGUAGE_JAPANESE;\n                else\n                    storyteller->language[i] = GAME_LANGUAGE;\n            }\n        }\n    }",
+      "callsTo": [
+        "IsStringJapanese"
+      ],
+      "lineCount": 19
+    },
+    "SanitizeReceivedRubyOldMan": {
+      "returnType": "void",
+      "signature": "void SanitizeReceivedRubyOldMan(union OldMan *oldMan, u32 version, u32 language)",
+      "paramsRaw": "union OldMan *oldMan, u32 version, u32 language",
+      "body": "bool32 isRuby = (version == VERSION_SAPPHIRE || version == VERSION_RUBY);\n\n    switch (oldMan->common.id)\n    {\n    case MAUVILLE_MAN_TRADER:\n    {\n        struct MauvilleOldManTrader *trader = &oldMan->trader;\n        s32 i;\n\n        if (isRuby)\n        {\n            for (i = 0; i < NUM_TRADER_ITEMS; i++)\n            {\n                u8 *str = trader->playerNames[i];\n                if (str[0] == EXT_CTRL_CODE_BEGIN && str[1] == EXT_CTRL_CODE_JPN)\n                {\n                    StripExtCtrlCodes(str);\n                    trader->language[i] = LANGUAGE_JAPANESE;\n                }\n                else\n                {\n                    trader->language[i] = language;\n                }\n            }\n        }\n        else\n        {\n            for (i = 0; i < NUM_TRADER_ITEMS; i++)\n            {\n                if (trader->language[i] == LANGUAGE_JAPANESE)\n                {\n                    StripExtCtrlCodes(trader->playerNames[i]);\n                }\n            }\n        }\n    }\n    break;\n    case MAUVILLE_MAN_STORYTELLER:\n    {\n\n        struct MauvilleManStoryteller *storyteller = &oldMan->storyteller;\n        s32 i;\n\n        if (isRuby)\n        {\n            for (i = 0; i < NUM_STORYTELLER_TALES; i++)\n            {\n                if (storyteller->gameStatIDs[i] != 0)\n                    storyteller->language[i] = language;\n            }\n        }\n    }\n    break;\n    case MAUVILLE_MAN_BARD:\n    {\n        struct MauvilleManBard *bard = &oldMan->bard;\n\n        if (isRuby)\n        {\n            bard->language = language;\n        }\n    }\n    break;\n    case MAUVILLE_MAN_HIPSTER:\n    {\n        struct MauvilleManHipster *hipster = &oldMan->hipster;\n\n        if (isRuby)\n        {\n            hipster->language = language;\n        }\n    }\n    break;\n    case MAUVILLE_MAN_GIDDY:\n    {\n        struct MauvilleManGiddy *giddy = &oldMan->giddy;\n\n        if (isRuby)\n        {\n            giddy->language = language;\n        }\n    }\n    break;\n    }",
+      "callsTo": [
+        "StripExtCtrlCodes"
+      ],
+      "lineCount": 84
+    },
+    "StorytellerSetup": {
+      "returnType": "void",
+      "signature": "static void StorytellerSetup(void)",
+      "paramsRaw": "void",
+      "body": "s32 i;\n    sStorytellerPtr = &gSaveBlock1Ptr->oldMan.storyteller;\n\n    sStorytellerPtr->id = MAUVILLE_MAN_STORYTELLER;\n    sStorytellerPtr->alreadyRecorded = FALSE;\n    for (i = 0; i < NUM_STORYTELLER_TALES; i++)\n    {\n        sStorytellerPtr->gameStatIDs[i] = 0;\n        sStorytellerPtr->trainerNames[0][i] = EOS;   \n    }",
+      "callsTo": [],
+      "lineCount": 10
+    },
+    "Storyteller_ResetFlag": {
+      "returnType": "void",
+      "signature": "static void Storyteller_ResetFlag(void)",
+      "paramsRaw": "void",
+      "body": "sStorytellerPtr = &gSaveBlock1Ptr->oldMan.storyteller;\n\n    sStorytellerPtr->id = MAUVILLE_MAN_STORYTELLER;\n    sStorytellerPtr->alreadyRecorded = FALSE;",
+      "callsTo": [],
+      "lineCount": 4
+    },
+    "StorytellerGetGameStat": {
+      "returnType": "u32",
+      "signature": "static u32 StorytellerGetGameStat(u8 stat)",
+      "paramsRaw": "u8 stat",
+      "body": "if (stat == 50)\n        stat = GAME_STAT_SAVED_GAME;\n    return GetGameStat(stat);",
+      "callsTo": [
+        "GetGameStat"
+      ],
+      "lineCount": 3
+    },
+    "GetFreeStorySlot": {
+      "returnType": "u8",
+      "signature": "static u8 GetFreeStorySlot(void)",
+      "paramsRaw": "void",
+      "body": "u8 i;\n\n    for (i = 0; i < NUM_STORYTELLER_TALES; i++)\n    {\n        if (sStorytellerPtr->gameStatIDs[i] == 0)\n            break;\n    }\n    return i;",
+      "callsTo": [],
+      "lineCount": 8
+    },
+    "StorytellerGetRecordedTrainerStat": {
+      "returnType": "u32",
+      "signature": "static u32 StorytellerGetRecordedTrainerStat(u32 trainer)",
+      "paramsRaw": "u32 trainer",
+      "body": "u8 *ptr = sStorytellerPtr->statValues[trainer];\n\n    return ptr[0] | (ptr[1] << 8) | (ptr[2] << 16) | (ptr[3] << 24);",
+      "callsTo": [],
+      "lineCount": 3
+    },
+    "StorytellerSetRecordedTrainerStat": {
+      "returnType": "void",
+      "signature": "static void StorytellerSetRecordedTrainerStat(u32 trainer, u32 val)",
+      "paramsRaw": "u32 trainer, u32 val",
+      "body": "u8 *ptr = sStorytellerPtr->statValues[trainer];\n\n    ptr[0] = val;\n    ptr[1] = val >> 8;\n    ptr[2] = val >> 16;\n    ptr[3] = val >> 24;",
+      "callsTo": [],
+      "lineCount": 6
+    },
+    "HasTrainerStatIncreased": {
+      "returnType": "bool32",
+      "signature": "static bool32 HasTrainerStatIncreased(u32 trainer)",
+      "paramsRaw": "u32 trainer",
+      "body": "if (StorytellerGetGameStat(sStorytellerPtr->gameStatIDs[trainer]) > StorytellerGetRecordedTrainerStat(trainer))\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [
+        "StorytellerGetGameStat",
+        "StorytellerGetRecordedTrainerStat"
+      ],
+      "lineCount": 4
+    },
+    "GetStoryByStattellerPlayerName": {
+      "returnType": "void",
+      "signature": "static void GetStoryByStattellerPlayerName(u32 player, void *dst)",
+      "paramsRaw": "u32 player, void *dst",
+      "body": "u8 *name = sStorytellerPtr->trainerNames[player];\n\n    memset(dst, EOS, PLAYER_NAME_LENGTH + 1);\n    memcpy(dst, name, PLAYER_NAME_LENGTH);",
+      "callsTo": [],
+      "lineCount": 4
+    },
+    "StorytellerSetPlayerName": {
+      "returnType": "void",
+      "signature": "static void StorytellerSetPlayerName(u32 player, const u8 *src)",
+      "paramsRaw": "u32 player, const u8 *src",
+      "body": "u8 *name = sStorytellerPtr->trainerNames[player];\n    memset(name, EOS, PLAYER_NAME_LENGTH);\n    memcpy(name, src, PLAYER_NAME_LENGTH);",
+      "callsTo": [],
+      "lineCount": 3
+    },
+    "StorytellerRecordNewStat": {
+      "returnType": "void",
+      "signature": "static void StorytellerRecordNewStat(u32 player, u32 stat)",
+      "paramsRaw": "u32 player, u32 stat",
+      "body": "sStorytellerPtr->gameStatIDs[player] = stat;\n    StorytellerSetPlayerName(player, gSaveBlock2Ptr->playerName);\n    StorytellerSetRecordedTrainerStat(player, StorytellerGetGameStat(stat));\n    ConvertIntToDecimalStringN(gStringVar1, StorytellerGetGameStat(stat), STR_CONV_MODE_LEFT_ALIGN, 10);\n    StringCopy(gStringVar2, GetStoryActionByStat(stat));\n    sStorytellerPtr->language[player] = gGameLanguage;",
+      "callsTo": [
+        "ConvertIntToDecimalStringN",
+        "GetStoryActionByStat",
+        "StorytellerGetGameStat",
+        "StorytellerSetPlayerName",
+        "StorytellerSetRecordedTrainerStat",
+        "StringCopy"
+      ],
+      "lineCount": 6
+    },
+    "ScrambleStatList": {
+      "returnType": "void",
+      "signature": "static void ScrambleStatList(u8 *arr, s32 count)",
+      "paramsRaw": "u8 *arr, s32 count",
+      "body": "s32 i;\n\n    for (i = 0; i < count; i++)\n        arr[i] = i;\n    for (i = 0; i < count; i++)\n    {\n        u32 a = Random() % count;\n        u32 b = Random() % count;\n        u8 temp;\n        SWAP(arr[a], arr[b], temp);\n    }",
+      "callsTo": [
+        "Random",
+        "SWAP"
+      ],
+      "lineCount": 11
+    },
+    "StorytellerInitializeRandomStat": {
+      "returnType": "bool8",
+      "signature": "static bool8 StorytellerInitializeRandomStat(void)",
+      "paramsRaw": "void",
+      "body": "u8 storyIds[sNumStories];\n    s32 i, j;\n\n    ScrambleStatList(storyIds, sNumStories);\n    for (i = 0; i < sNumStories; i++)\n    {\n        u8 stat = sStorytellerStories[storyIds[i]].stat;\n        u8 minVal = sStorytellerStories[storyIds[i]].minVal;\n\n        for (j = 0; j < NUM_STORYTELLER_TALES; j++)\n        {\n            if (sStorytellerPtr->gameStatIDs[j] == stat)\n                break;\n        }\n        if (j == NUM_STORYTELLER_TALES && StorytellerGetGameStat(stat) >= minVal)\n        {\n            sStorytellerPtr->alreadyRecorded = TRUE;\n            if (GetFreeStorySlot() == NUM_STORYTELLER_TALES)\n                StorytellerRecordNewStat(sSelectedStory, stat);\n            else\n                StorytellerRecordNewStat(GetFreeStorySlot(), stat);\n            return TRUE;\n        }\n    }\n    return FALSE;",
+      "callsTo": [
+        "GetFreeStorySlot",
+        "ScrambleStatList",
+        "StorytellerGetGameStat",
+        "StorytellerRecordNewStat"
+      ],
+      "lineCount": 25
+    },
+    "StorytellerDisplayStory": {
+      "returnType": "void",
+      "signature": "static void StorytellerDisplayStory(u32 player)",
+      "paramsRaw": "u32 player",
+      "body": "u8 stat = sStorytellerPtr->gameStatIDs[player];\n\n    ConvertIntToDecimalStringN(gStringVar1, StorytellerGetRecordedTrainerStat(player), STR_CONV_MODE_LEFT_ALIGN, 10);\n    StringCopy(gStringVar2, GetStoryActionByStat(stat));\n    GetStoryByStattellerPlayerName(player, gStringVar3);\n    ConvertInternationalString(gStringVar3, sStorytellerPtr->language[player]);\n    ShowFieldMessage(GetStoryTextByStat(stat));",
+      "callsTo": [
+        "ConvertIntToDecimalStringN",
+        "ConvertInternationalString",
+        "GetStoryActionByStat",
+        "GetStoryByStattellerPlayerName",
+        "GetStoryTextByStat",
+        "ShowFieldMessage",
+        "StorytellerGetRecordedTrainerStat",
+        "StringCopy"
+      ],
+      "lineCount": 7
+    },
+    "PrintStoryList": {
+      "returnType": "void",
+      "signature": "static void PrintStoryList(void)",
+      "paramsRaw": "void",
+      "body": "s32 i;\n    s32 width = GetStringWidth(FONT_NORMAL, gText_Exit, 0);\n    for (i = 0; i < NUM_STORYTELLER_TALES; i++)\n    {\n        s32 curWidth;\n        u16 gameStatID = sStorytellerPtr->gameStatIDs[i];\n\n        if (gameStatID == 0)\n            break;\n        curWidth = GetStringWidth(FONT_NORMAL, GetStoryTitleByStat(gameStatID), 0);\n        if (curWidth > width)\n            width = curWidth;\n    }\n    sStorytellerWindowId = CreateWindowFromRect(0, 0, ConvertPixelWidthToTileWidth(width), GetFreeStorySlot() * 2 + 2);\n    SetStandardWindowBorderStyle(sStorytellerWindowId, FALSE);\n    for (i = 0; i < NUM_STORYTELLER_TALES; i++)\n    {\n        u16 gameStatID = sStorytellerPtr->gameStatIDs[i];\n        if (gameStatID == 0)\n            break;\n        AddTextPrinterParameterized(sStorytellerWindowId, FONT_NORMAL, GetStoryTitleByStat(gameStatID), 8, 16 * i + 1, TEXT_SKIP_DRAW, NULL);\n    }\n    AddTextPrinterParameterized(sStorytellerWindowId, FONT_NORMAL, gText_Exit, 8, 16 * i + 1, TEXT_SKIP_DRAW, NULL);\n    InitMenuInUpperLeftCornerNormal(sStorytellerWindowId, GetFreeStorySlot() + 1, 0);\n    CopyWindowToVram(sStorytellerWindowId, COPYWIN_FULL);",
+      "callsTo": [
+        "AddTextPrinterParameterized",
+        "ConvertPixelWidthToTileWidth",
+        "CopyWindowToVram",
+        "CreateWindowFromRect",
+        "GetFreeStorySlot",
+        "GetStoryTitleByStat",
+        "GetStringWidth",
+        "InitMenuInUpperLeftCornerNormal",
+        "SetStandardWindowBorderStyle"
+      ],
+      "lineCount": 25
+    },
+    "Task_StoryListMenu": {
+      "returnType": "void",
+      "signature": "static void Task_StoryListMenu(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "struct Task *task = &gTasks[taskId];\n    s32 selection;\n\n    switch (task->data[0])\n    {\n    case 0:\n        PrintStoryList();\n        task->data[0]++;\n        break;\n    case 1:\n        selection = Menu_ProcessInput();\n        if (selection == MENU_NOTHING_CHOSEN)\n            break;\n        if (selection == MENU_B_PRESSED || selection == GetFreeStorySlot())\n        {\n            gSpecialVar_Result = 0;\n        }\n        else\n        {\n            gSpecialVar_Result = 1;\n            sSelectedStory = selection;\n        }\n        ClearToTransparentAndRemoveWindow(sStorytellerWindowId);\n        DestroyTask(taskId);\n        ScriptContext_Enable();\n        break;\n    }",
+      "callsTo": [
+        "ClearToTransparentAndRemoveWindow",
+        "DestroyTask",
+        "GetFreeStorySlot",
+        "Menu_ProcessInput",
+        "PrintStoryList",
+        "ScriptContext_Enable"
+      ],
+      "lineCount": 27
+    },
+    "StorytellerStoryListMenu": {
+      "returnType": "void",
+      "signature": "void StorytellerStoryListMenu(void)",
+      "paramsRaw": "void",
+      "body": "CreateTask(Task_StoryListMenu, 80);",
+      "callsTo": [
+        "CreateTask"
+      ],
+      "lineCount": 1
+    },
+    "Script_StorytellerDisplayStory": {
+      "returnType": "void",
+      "signature": "void Script_StorytellerDisplayStory(void)",
+      "paramsRaw": "void",
+      "body": "StorytellerDisplayStory(sSelectedStory);",
+      "callsTo": [
+        "StorytellerDisplayStory"
+      ],
+      "lineCount": 1
+    },
+    "StorytellerGetFreeStorySlot": {
+      "returnType": "u8",
+      "signature": "u8 StorytellerGetFreeStorySlot(void)",
+      "paramsRaw": "void",
+      "body": "sStorytellerPtr = &gSaveBlock1Ptr->oldMan.storyteller;\n    return GetFreeStorySlot();",
+      "callsTo": [
+        "GetFreeStorySlot"
+      ],
+      "lineCount": 2
+    },
+    "StorytellerUpdateStat": {
+      "returnType": "bool8",
+      "signature": "bool8 StorytellerUpdateStat(void)",
+      "paramsRaw": "void",
+      "body": "u8 stat;\n    sStorytellerPtr = &gSaveBlock1Ptr->oldMan.storyteller;\n    stat = sStorytellerPtr->gameStatIDs[sSelectedStory];\n\n    if (HasTrainerStatIncreased(sSelectedStory) == TRUE)\n    {\n        StorytellerRecordNewStat(sSelectedStory, stat);\n        return TRUE;\n    }\n    return FALSE;",
+      "callsTo": [
+        "HasTrainerStatIncreased",
+        "StorytellerRecordNewStat"
+      ],
+      "lineCount": 10
+    },
+    "HasStorytellerAlreadyRecorded": {
+      "returnType": "bool8",
+      "signature": "bool8 HasStorytellerAlreadyRecorded(void)",
+      "paramsRaw": "void",
+      "body": "sStorytellerPtr = &gSaveBlock1Ptr->oldMan.storyteller;\n\n    if (sStorytellerPtr->alreadyRecorded == FALSE)\n        return FALSE;\n    else\n        return TRUE;",
+      "callsTo": [],
+      "lineCount": 6
+    },
+    "Script_StorytellerInitializeRandomStat": {
+      "returnType": "bool8",
+      "signature": "bool8 Script_StorytellerInitializeRandomStat(void)",
+      "paramsRaw": "void",
+      "body": "sStorytellerPtr = &gSaveBlock1Ptr->oldMan.storyteller;\n    return StorytellerInitializeRandomStat();",
+      "callsTo": [
+        "StorytellerInitializeRandomStat"
+      ],
+      "lineCount": 2
+    }
+  }
+}

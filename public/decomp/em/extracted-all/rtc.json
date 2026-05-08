@@ -1,0 +1,222 @@
+{
+  "srcFile": "src/rtc.c",
+  "count": 21,
+  "functions": {
+    "RtcDisableInterrupts": {
+      "returnType": "void",
+      "signature": "void RtcDisableInterrupts(void)",
+      "paramsRaw": "void",
+      "body": "sSavedIme = REG_IME;\n    REG_IME = 0;",
+      "callsTo": [],
+      "lineCount": 2
+    },
+    "RtcRestoreInterrupts": {
+      "returnType": "void",
+      "signature": "void RtcRestoreInterrupts(void)",
+      "paramsRaw": "void",
+      "body": "REG_IME = sSavedIme;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "ConvertBcdToBinary": {
+      "returnType": "u32",
+      "signature": "u32 ConvertBcdToBinary(u8 bcd)",
+      "paramsRaw": "u8 bcd",
+      "body": "if (bcd > 0x9F)\n        return 0xFF;\n\n    if ((bcd & 0xF) <= 9)\n        return (10 * ((bcd >> 4) & 0xF)) + (bcd & 0xF);\n    else\n        return 0xFF;",
+      "callsTo": [],
+      "lineCount": 7
+    },
+    "IsLeapYear": {
+      "returnType": "bool8",
+      "signature": "bool8 IsLeapYear(u32 year)",
+      "paramsRaw": "u32 year",
+      "body": "if ((year % 4 == 0 && year % 100 != 0) || (year % 400 == 0))\n        return TRUE;\n\n    return FALSE;",
+      "callsTo": [],
+      "lineCount": 4
+    },
+    "ConvertDateToDayCount": {
+      "returnType": "u16",
+      "signature": "u16 ConvertDateToDayCount(u8 year, u8 month, u8 day)",
+      "paramsRaw": "u8 year, u8 month, u8 day",
+      "body": "s32 i;\n    u16 dayCount = 0;\n\n    for (i = year - 1; i >= 0; i--)\n    {\n        dayCount += 365;\n\n        if (IsLeapYear(i) == TRUE)\n            dayCount++;\n    }\n\n    for (i = 0; i < month - 1; i++)\n        dayCount += sNumDaysInMonths[i];\n\n    if (month > MONTH_FEB && IsLeapYear(year) == TRUE)\n        dayCount++;\n\n    dayCount += day;\n\n    return dayCount;",
+      "callsTo": [
+        "IsLeapYear"
+      ],
+      "lineCount": 20
+    },
+    "RtcGetDayCount": {
+      "returnType": "u16",
+      "signature": "u16 RtcGetDayCount(struct SiiRtcInfo *rtc)",
+      "paramsRaw": "struct SiiRtcInfo *rtc",
+      "body": "u8 year = ConvertBcdToBinary(rtc->year);\n    u8 month = ConvertBcdToBinary(rtc->month);\n    u8 day = ConvertBcdToBinary(rtc->day);\n    return ConvertDateToDayCount(year, month, day);",
+      "callsTo": [
+        "ConvertBcdToBinary",
+        "ConvertDateToDayCount"
+      ],
+      "lineCount": 4
+    },
+    "RtcInit": {
+      "returnType": "void",
+      "signature": "void RtcInit(void)",
+      "paramsRaw": "void",
+      "body": "sErrorStatus = 0;\n\n    RtcDisableInterrupts();\n    SiiRtcUnprotect();\n    sProbeResult = SiiRtcProbe();\n    RtcRestoreInterrupts();\n\n    if ((sProbeResult & 0xF) != 1)\n    {\n        sErrorStatus = RTC_INIT_ERROR;\n        return;\n    }\n\n    if (sProbeResult & 0xF0)\n        sErrorStatus = RTC_INIT_WARNING;\n    else\n        sErrorStatus = 0;\n\n    RtcGetRawInfo(&sRtc);\n    sErrorStatus = RtcCheckInfo(&sRtc);",
+      "callsTo": [
+        "RtcCheckInfo",
+        "RtcDisableInterrupts",
+        "RtcGetRawInfo",
+        "RtcRestoreInterrupts",
+        "SiiRtcProbe",
+        "SiiRtcUnprotect"
+      ],
+      "lineCount": 20
+    },
+    "RtcGetErrorStatus": {
+      "returnType": "u16",
+      "signature": "u16 RtcGetErrorStatus(void)",
+      "paramsRaw": "void",
+      "body": "return sErrorStatus;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "RtcGetInfo": {
+      "returnType": "void",
+      "signature": "void RtcGetInfo(struct SiiRtcInfo *rtc)",
+      "paramsRaw": "struct SiiRtcInfo *rtc",
+      "body": "if (sErrorStatus & RTC_ERR_FLAG_MASK)\n        *rtc = sRtcDummy;\n    else\n        RtcGetRawInfo(rtc);",
+      "callsTo": [
+        "RtcGetRawInfo"
+      ],
+      "lineCount": 4
+    },
+    "RtcGetDateTime": {
+      "returnType": "void",
+      "signature": "void RtcGetDateTime(struct SiiRtcInfo *rtc)",
+      "paramsRaw": "struct SiiRtcInfo *rtc",
+      "body": "RtcDisableInterrupts();\n    SiiRtcGetDateTime(rtc);\n    RtcRestoreInterrupts();",
+      "callsTo": [
+        "RtcDisableInterrupts",
+        "RtcRestoreInterrupts",
+        "SiiRtcGetDateTime"
+      ],
+      "lineCount": 3
+    },
+    "RtcGetStatus": {
+      "returnType": "void",
+      "signature": "void RtcGetStatus(struct SiiRtcInfo *rtc)",
+      "paramsRaw": "struct SiiRtcInfo *rtc",
+      "body": "RtcDisableInterrupts();\n    SiiRtcGetStatus(rtc);\n    RtcRestoreInterrupts();",
+      "callsTo": [
+        "RtcDisableInterrupts",
+        "RtcRestoreInterrupts",
+        "SiiRtcGetStatus"
+      ],
+      "lineCount": 3
+    },
+    "RtcGetRawInfo": {
+      "returnType": "void",
+      "signature": "void RtcGetRawInfo(struct SiiRtcInfo *rtc)",
+      "paramsRaw": "struct SiiRtcInfo *rtc",
+      "body": "RtcGetStatus(rtc);\n    RtcGetDateTime(rtc);",
+      "callsTo": [
+        "RtcGetDateTime",
+        "RtcGetStatus"
+      ],
+      "lineCount": 2
+    },
+    "RtcCheckInfo": {
+      "returnType": "u16",
+      "signature": "u16 RtcCheckInfo(struct SiiRtcInfo *rtc)",
+      "paramsRaw": "struct SiiRtcInfo *rtc",
+      "body": "u16 errorFlags = 0;\n    s32 year;\n    s32 month;\n    s32 value;\n\n    if (rtc->status & SIIRTCINFO_POWER)\n        errorFlags |= RTC_ERR_POWER_FAILURE;\n\n    if (!(rtc->status & SIIRTCINFO_24HOUR))\n        errorFlags |= RTC_ERR_12HOUR_CLOCK;\n\n    year = ConvertBcdToBinary(rtc->year);\n\n    if (year == 0xFF)\n        errorFlags |= RTC_ERR_INVALID_YEAR;\n\n    month = ConvertBcdToBinary(rtc->month);\n\n    if (month == 0xFF || month == 0 || month > MONTH_COUNT)\n        errorFlags |= RTC_ERR_INVALID_MONTH;\n\n    value = ConvertBcdToBinary(rtc->day);\n\n    if (value == 0xFF)\n        errorFlags |= RTC_ERR_INVALID_DAY;\n\n    if (month == MONTH_FEB)\n    {\n        if (value > IsLeapYear(year) + sNumDaysInMonths[month - 1])\n            errorFlags |= RTC_ERR_INVALID_DAY;\n    }\n    else\n    {\n        if (value > sNumDaysInMonths[month - 1])\n            errorFlags |= RTC_ERR_INVALID_DAY;\n    }\n\n    value = ConvertBcdToBinary(rtc->hour);\n\n    if (value > HOURS_PER_DAY)\n        errorFlags |= RTC_ERR_INVALID_HOUR;\n\n    value = ConvertBcdToBinary(rtc->minute);\n\n    if (value > MINUTES_PER_HOUR)\n        errorFlags |= RTC_ERR_INVALID_MINUTE;\n\n    value = ConvertBcdToBinary(rtc->second);\n\n    if (value > SECONDS_PER_MINUTE)\n        errorFlags |= RTC_ERR_INVALID_SECOND;\n\n    return errorFlags;",
+      "callsTo": [
+        "ConvertBcdToBinary",
+        "IsLeapYear"
+      ],
+      "lineCount": 53
+    },
+    "RtcReset": {
+      "returnType": "void",
+      "signature": "void RtcReset(void)",
+      "paramsRaw": "void",
+      "body": "RtcDisableInterrupts();\n    SiiRtcReset();\n    RtcRestoreInterrupts();",
+      "callsTo": [
+        "RtcDisableInterrupts",
+        "RtcRestoreInterrupts",
+        "SiiRtcReset"
+      ],
+      "lineCount": 3
+    },
+    "RtcCalcTimeDifference": {
+      "returnType": "void",
+      "signature": "void RtcCalcTimeDifference(struct SiiRtcInfo *rtc, struct Time *result, struct Time *t)",
+      "paramsRaw": "struct SiiRtcInfo *rtc, struct Time *result, struct Time *t",
+      "body": "u16 days = RtcGetDayCount(rtc);\n    result->seconds = ConvertBcdToBinary(rtc->second) - t->seconds;\n    result->minutes = ConvertBcdToBinary(rtc->minute) - t->minutes;\n    result->hours = ConvertBcdToBinary(rtc->hour) - t->hours;\n    result->days = days - t->days;\n\n    if (result->seconds < 0)\n    {\n        result->seconds += SECONDS_PER_MINUTE;\n        --result->minutes;\n    }\n\n    if (result->minutes < 0)\n    {\n        result->minutes += MINUTES_PER_HOUR;\n        --result->hours;\n    }\n\n    if (result->hours < 0)\n    {\n        result->hours += HOURS_PER_DAY;\n        --result->days;\n    }",
+      "callsTo": [
+        "ConvertBcdToBinary",
+        "RtcGetDayCount"
+      ],
+      "lineCount": 23
+    },
+    "RtcCalcLocalTime": {
+      "returnType": "void",
+      "signature": "void RtcCalcLocalTime(void)",
+      "paramsRaw": "void",
+      "body": "RtcGetInfo(&sRtc);\n    RtcCalcTimeDifference(&sRtc, &gLocalTime, &gSaveBlock2Ptr->localTimeOffset);",
+      "callsTo": [
+        "RtcCalcTimeDifference",
+        "RtcGetInfo"
+      ],
+      "lineCount": 2
+    },
+    "RtcInitLocalTimeOffset": {
+      "returnType": "void",
+      "signature": "void RtcInitLocalTimeOffset(s32 hour, s32 minute)",
+      "paramsRaw": "s32 hour, s32 minute",
+      "body": "RtcCalcLocalTimeOffset(0, hour, minute, 0);",
+      "callsTo": [
+        "RtcCalcLocalTimeOffset"
+      ],
+      "lineCount": 1
+    },
+    "RtcCalcLocalTimeOffset": {
+      "returnType": "void",
+      "signature": "void RtcCalcLocalTimeOffset(s32 days, s32 hours, s32 minutes, s32 seconds)",
+      "paramsRaw": "s32 days, s32 hours, s32 minutes, s32 seconds",
+      "body": "gLocalTime.days = days;\n    gLocalTime.hours = hours;\n    gLocalTime.minutes = minutes;\n    gLocalTime.seconds = seconds;\n    RtcGetInfo(&sRtc);\n    RtcCalcTimeDifference(&sRtc, &gSaveBlock2Ptr->localTimeOffset, &gLocalTime);",
+      "callsTo": [
+        "RtcCalcTimeDifference",
+        "RtcGetInfo"
+      ],
+      "lineCount": 6
+    },
+    "CalcTimeDifference": {
+      "returnType": "void",
+      "signature": "void CalcTimeDifference(struct Time *result, struct Time *t1, struct Time *t2)",
+      "paramsRaw": "struct Time *result, struct Time *t1, struct Time *t2",
+      "body": "result->seconds = t2->seconds - t1->seconds;\n    result->minutes = t2->minutes - t1->minutes;\n    result->hours = t2->hours - t1->hours;\n    result->days = t2->days - t1->days;\n\n    if (result->seconds < 0)\n    {\n        result->seconds += SECONDS_PER_MINUTE;\n        --result->minutes;\n    }\n\n    if (result->minutes < 0)\n    {\n        result->minutes += MINUTES_PER_HOUR;\n        --result->hours;\n    }\n\n    if (result->hours < 0)\n    {\n        result->hours += HOURS_PER_DAY;\n        --result->days;\n    }",
+      "callsTo": [],
+      "lineCount": 22
+    },
+    "RtcGetMinuteCount": {
+      "returnType": "u32",
+      "signature": "u32 RtcGetMinuteCount(void)",
+      "paramsRaw": "void",
+      "body": "RtcGetInfo(&sRtc);\n    return (HOURS_PER_DAY * MINUTES_PER_HOUR) * RtcGetDayCount(&sRtc) + MINUTES_PER_HOUR * sRtc.hour + sRtc.minute;",
+      "callsTo": [
+        "RtcGetDayCount",
+        "RtcGetInfo"
+      ],
+      "lineCount": 2
+    },
+    "RtcGetLocalDayCount": {
+      "returnType": "u32",
+      "signature": "u32 RtcGetLocalDayCount(void)",
+      "paramsRaw": "void",
+      "body": "return RtcGetDayCount(&sRtc);",
+      "callsTo": [
+        "RtcGetDayCount"
+      ],
+      "lineCount": 1
+    }
+  }
+}

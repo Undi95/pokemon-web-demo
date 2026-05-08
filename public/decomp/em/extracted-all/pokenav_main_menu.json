@@ -1,0 +1,524 @@
+{
+  "srcFile": "src/pokenav_main_menu.c",
+  "count": 44,
+  "functions": {
+    "InitPokenavMainMenu": {
+      "returnType": "bool32",
+      "signature": "bool32 InitPokenavMainMenu(void)",
+      "paramsRaw": "void",
+      "body": "struct Pokenav_MainMenu *menu;\n\n    menu = AllocSubstruct(POKENAV_SUBSTRUCT_MAIN_MENU, sizeof(struct Pokenav_MainMenu));\n    if (menu == NULL)\n        return FALSE;\n\n    ResetSpriteData();\n    FreeAllSpritePalettes();\n    menu->currentTaskId = CreateLoopedTask(LoopedTask_InitPokenavMenu, 1);\n    return TRUE;",
+      "callsTo": [
+        "AllocSubstruct",
+        "CreateLoopedTask",
+        "FreeAllSpritePalettes",
+        "ResetSpriteData"
+      ],
+      "lineCount": 10
+    },
+    "PokenavMainMenuLoopedTaskIsActive": {
+      "returnType": "u32",
+      "signature": "u32 PokenavMainMenuLoopedTaskIsActive(void)",
+      "paramsRaw": "void",
+      "body": "struct Pokenav_MainMenu *menu = GetSubstructPtr(POKENAV_SUBSTRUCT_MAIN_MENU);\n    return IsLoopedTaskActive(menu->currentTaskId);",
+      "callsTo": [
+        "GetSubstructPtr",
+        "IsLoopedTaskActive"
+      ],
+      "lineCount": 2
+    },
+    "ShutdownPokenav": {
+      "returnType": "void",
+      "signature": "void ShutdownPokenav(void)",
+      "paramsRaw": "void",
+      "body": "PlaySE(SE_POKENAV_OFF);\n    ResetBldCnt_();\n    BeginNormalPaletteFade(PALETTES_ALL, -1, 0, 16, RGB_BLACK);",
+      "callsTo": [
+        "BeginNormalPaletteFade",
+        "PlaySE",
+        "ResetBldCnt_"
+      ],
+      "lineCount": 3
+    },
+    "WaitForPokenavShutdownFade": {
+      "returnType": "bool32",
+      "signature": "bool32 WaitForPokenavShutdownFade(void)",
+      "paramsRaw": "void",
+      "body": "if (!gPaletteFade.active)\n    {\n        FreeMenuHandlerSubstruct2();\n        CleanupPokenavMainMenuResources();\n        FreeAllWindowBuffers();\n        return FALSE;\n    }\n\n    return TRUE;",
+      "callsTo": [
+        "CleanupPokenavMainMenuResources",
+        "FreeAllWindowBuffers",
+        "FreeMenuHandlerSubstruct2"
+      ],
+      "lineCount": 9
+    },
+    "LoopedTask_InitPokenavMenu": {
+      "returnType": "u32",
+      "signature": "static u32 LoopedTask_InitPokenavMenu(s32 state)",
+      "paramsRaw": "s32 state",
+      "body": "struct Pokenav_MainMenu *menu;\n\n    switch (state)\n    {\n    case 0:\n        SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_OBJ_ON | DISPCNT_OBJ_1D_MAP);\n        FreeAllWindowBuffers();\n        ResetBgsAndClearDma3BusyFlags(0);\n        InitBgsFromTemplates(0, gPokenavMainMenuBgTemplates, ARRAY_COUNT(gPokenavMainMenuBgTemplates));\n        ResetBgPositions();\n        ResetTempTileDataBuffers();\n        return LT_INC_AND_CONTINUE;\n    case 1:\n        menu = GetSubstructPtr(POKENAV_SUBSTRUCT_MAIN_MENU);\n        DecompressAndCopyTileDataToVram(0, &gPokenavHeader_Gfx, 0, 0, 0);\n        SetBgTilemapBuffer(0, menu->tilemapBuffer);\n        CopyToBgTilemapBuffer(0, &gPokenavHeader_Tilemap, 0, 0);\n        CopyPaletteIntoBufferUnfaded(gPokenavHeader_Pal, BG_PLTT_ID(0), PLTT_SIZE_4BPP);\n        CopyBgTilemapBufferToVram(0);\n        return LT_INC_AND_PAUSE;\n    case 2:\n        if (FreeTempTileDataBuffersIfPossible())\n            return LT_PAUSE;\n\n        InitHelpBar();\n        return LT_INC_AND_PAUSE;\n    case 3:\n        if (IsDma3ManagerBusyWithBgCopy())\n            return LT_PAUSE;\n\n        InitPokenavMainMenuResources();\n        CreateLeftHeaderSprites();\n        ShowBg(0);\n        return LT_FINISH;\n    default:\n        return LT_FINISH;\n    }",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "BG_PLTT_ID",
+        "CopyBgTilemapBufferToVram",
+        "CopyPaletteIntoBufferUnfaded",
+        "CopyToBgTilemapBuffer",
+        "CreateLeftHeaderSprites",
+        "DecompressAndCopyTileDataToVram",
+        "FreeAllWindowBuffers",
+        "FreeTempTileDataBuffersIfPossible",
+        "GetSubstructPtr",
+        "InitBgsFromTemplates",
+        "InitHelpBar",
+        "InitPokenavMainMenuResources",
+        "IsDma3ManagerBusyWithBgCopy",
+        "ResetBgPositions",
+        "ResetBgsAndClearDma3BusyFlags",
+        "ResetTempTileDataBuffers",
+        "SetBgTilemapBuffer",
+        "SetGpuReg",
+        "ShowBg"
+      ],
+      "lineCount": 37
+    },
+    "SetActiveMenuLoopTasks": {
+      "returnType": "void",
+      "signature": "void SetActiveMenuLoopTasks(void *createLoopTask, void *isLoopTaskActive)",
+      "paramsRaw": "void *createLoopTask, void *isLoopTaskActive",
+      "body": "struct Pokenav_MainMenu *menu = GetSubstructPtr(POKENAV_SUBSTRUCT_MAIN_MENU);\n    menu->loopTask = createLoopTask;\n    menu->isLoopTaskActiveFunc = isLoopTaskActive;\n    menu->unused = 0;",
+      "callsTo": [
+        "GetSubstructPtr"
+      ],
+      "lineCount": 4
+    },
+    "RunMainMenuLoopedTask": {
+      "returnType": "void",
+      "signature": "void RunMainMenuLoopedTask(u32 state)",
+      "paramsRaw": "u32 state",
+      "body": "struct Pokenav_MainMenu *menu = GetSubstructPtr(POKENAV_SUBSTRUCT_MAIN_MENU);\n    menu->unused = 0;\n    menu->loopTask(state);",
+      "callsTo": [
+        "GetSubstructPtr"
+      ],
+      "lineCount": 3
+    },
+    "IsActiveMenuLoopTaskActive": {
+      "returnType": "u32",
+      "signature": "u32 IsActiveMenuLoopTaskActive(void)",
+      "paramsRaw": "void",
+      "body": "struct Pokenav_MainMenu *menu = GetSubstructPtr(POKENAV_SUBSTRUCT_MAIN_MENU);\n    return menu->isLoopTaskActiveFunc();",
+      "callsTo": [
+        "GetSubstructPtr"
+      ],
+      "lineCount": 2
+    },
+    "SlideMenuHeaderUp": {
+      "returnType": "void",
+      "signature": "void SlideMenuHeaderUp(void)",
+      "paramsRaw": "void",
+      "body": "struct Pokenav_MainMenu *menu = GetSubstructPtr(POKENAV_SUBSTRUCT_MAIN_MENU);\n    menu->currentTaskId = CreateLoopedTask(LoopedTask_SlideMenuHeaderUp, 4);",
+      "callsTo": [
+        "CreateLoopedTask",
+        "GetSubstructPtr"
+      ],
+      "lineCount": 2
+    },
+    "SlideMenuHeaderDown": {
+      "returnType": "void",
+      "signature": "void SlideMenuHeaderDown(void)",
+      "paramsRaw": "void",
+      "body": "struct Pokenav_MainMenu *menu = GetSubstructPtr(POKENAV_SUBSTRUCT_MAIN_MENU);\n    menu->currentTaskId = CreateLoopedTask(LoopedTask_SlideMenuHeaderDown, 4);",
+      "callsTo": [
+        "CreateLoopedTask",
+        "GetSubstructPtr"
+      ],
+      "lineCount": 2
+    },
+    "MainMenuLoopedTaskIsBusy": {
+      "returnType": "bool32",
+      "signature": "bool32 MainMenuLoopedTaskIsBusy(void)",
+      "paramsRaw": "void",
+      "body": "struct Pokenav_MainMenu *menu = GetSubstructPtr(POKENAV_SUBSTRUCT_MAIN_MENU);\n    return IsLoopedTaskActive(menu->currentTaskId);",
+      "callsTo": [
+        "GetSubstructPtr",
+        "IsLoopedTaskActive"
+      ],
+      "lineCount": 2
+    },
+    "LoopedTask_SlideMenuHeaderUp": {
+      "returnType": "u32",
+      "signature": "static u32 LoopedTask_SlideMenuHeaderUp(s32 state)",
+      "paramsRaw": "s32 state",
+      "body": "switch (state)\n    {\n    default:\n        return LT_FINISH;\n    case 1:\n        return LT_INC_AND_PAUSE;\n    case 0:\n        return LT_INC_AND_PAUSE;\n    case 2:\n        if (ChangeBgY(0, 384, BG_COORD_ADD) >= 0x2000u)\n        {\n            ChangeBgY(0, 0x2000, BG_COORD_SET);\n            return LT_FINISH;\n        }\n\n        return LT_PAUSE;\n    }",
+      "callsTo": [
+        "ChangeBgY"
+      ],
+      "lineCount": 17
+    },
+    "LoopedTask_SlideMenuHeaderDown": {
+      "returnType": "u32",
+      "signature": "static u32 LoopedTask_SlideMenuHeaderDown(s32 state)",
+      "paramsRaw": "s32 state",
+      "body": "if (ChangeBgY(0, 384, BG_COORD_SUB) <= 0)\n    {\n        ChangeBgY(0, 0, BG_COORD_SET);\n        return LT_FINISH;\n    }\n    return LT_PAUSE;",
+      "callsTo": [
+        "ChangeBgY"
+      ],
+      "lineCount": 6
+    },
+    "CopyPaletteIntoBufferUnfaded": {
+      "returnType": "void",
+      "signature": "void CopyPaletteIntoBufferUnfaded(const u16 *palette, u32 bufferOffset, u32 size)",
+      "paramsRaw": "const u16 *palette, u32 bufferOffset, u32 size",
+      "body": "CpuCopy16(palette, &gPlttBufferUnfaded[bufferOffset], size);",
+      "callsTo": [
+        "CpuCopy16"
+      ],
+      "lineCount": 1
+    },
+    "Pokenav_AllocAndLoadPalettes": {
+      "returnType": "void",
+      "signature": "void Pokenav_AllocAndLoadPalettes(const struct SpritePalette *palettes)",
+      "paramsRaw": "const struct SpritePalette *palettes",
+      "body": "const struct SpritePalette *current;\n    u32 index;\n\n    for (current = palettes; current->data != NULL; current++)\n    {\n        index = AllocSpritePalette(current->tag);\n        if (index == 0xFF)\n        {\n            break;\n        }\n        else\n        {\n            index = OBJ_PLTT_ID(index);\n            CopyPaletteIntoBufferUnfaded(current->data, index, PLTT_SIZE_4BPP);\n        }\n    }",
+      "callsTo": [
+        "AllocSpritePalette",
+        "CopyPaletteIntoBufferUnfaded",
+        "OBJ_PLTT_ID"
+      ],
+      "lineCount": 16
+    },
+    "PokenavFillPalette": {
+      "returnType": "void",
+      "signature": "void PokenavFillPalette(u32 palIndex, u16 fillValue)",
+      "paramsRaw": "u32 palIndex, u16 fillValue",
+      "body": "CpuFill16(fillValue, &gPlttBufferFaded[OBJ_PLTT_ID(palIndex)], PLTT_SIZE_4BPP);",
+      "callsTo": [
+        "CpuFill16",
+        "OBJ_PLTT_ID"
+      ],
+      "lineCount": 1
+    },
+    "PokenavCopyPalette": {
+      "returnType": "void",
+      "signature": "void PokenavCopyPalette(const u16 *src, const u16 *dest, int size, int a3, int a4, u16 *palette)",
+      "paramsRaw": "const u16 *src, const u16 *dest, int size, int a3, int a4, u16 *palette",
+      "body": "if (a4 == 0)\n    {\n        CpuCopy16(src, palette, size * 2);\n    }\n    else if (a4 >= a3)\n    {\n        CpuCopy16(dest, palette, size * 2);\n    }\n    else\n    {\n        int r, g, b;\n        int r1, g1, b1;\n        while (size--)\n        {\n            r = GET_R(*src);\n            g = GET_G(*src);\n            b = GET_B(*src);\n\n            r1 = ((((GET_R(*dest) << 8) - (r << 8)) / a3) * a4) >> 8;\n            g1 = ((((GET_G(*dest) << 8) - (g << 8)) / a3) * a4) >> 8;\n            b1 = ((((GET_B(*dest) << 8) - (b << 8)) / a3) * a4) >> 8;\n\n            r = (r + r1) & 0x1F;  \n            g = (g + g1) & 0x1F;\n            b = (b + b1) & 0x1F;\n\n            *palette = RGB2(r, g, b);\n\n            src++, dest++;\n            palette++;\n        }\n    }",
+      "callsTo": [
+        "CpuCopy16",
+        "GET_B",
+        "GET_G",
+        "GET_R",
+        "RGB2"
+      ],
+      "lineCount": 32
+    },
+    "PokenavFadeScreen": {
+      "returnType": "void",
+      "signature": "void PokenavFadeScreen(s32 fadeType)",
+      "paramsRaw": "s32 fadeType",
+      "body": "struct Pokenav_MainMenu *menu = GetSubstructPtr(POKENAV_SUBSTRUCT_MAIN_MENU);\n\n    switch (fadeType)\n    {\n    case POKENAV_FADE_TO_BLACK:\n        BeginNormalPaletteFade(menu->palettes, -2, 0, 16, RGB_BLACK);\n        break;\n    case POKENAV_FADE_FROM_BLACK:\n        BeginNormalPaletteFade(menu->palettes, -2, 16, 0, RGB_BLACK);\n        break;\n    case POKENAV_FADE_TO_BLACK_ALL:\n        BeginNormalPaletteFade(PALETTES_ALL, -2, 0, 16, RGB_BLACK);\n        break;\n    case POKENAV_FADE_FROM_BLACK_ALL:\n        BeginNormalPaletteFade(PALETTES_ALL, -2, 16, 0, RGB_BLACK);\n        break;\n    }",
+      "callsTo": [
+        "BeginNormalPaletteFade",
+        "GetSubstructPtr"
+      ],
+      "lineCount": 17
+    },
+    "IsPaletteFadeActive": {
+      "returnType": "bool32",
+      "signature": "bool32 IsPaletteFadeActive(void)",
+      "paramsRaw": "void",
+      "body": "return gPaletteFade.active;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "FadeToBlackExceptPrimary": {
+      "returnType": "void",
+      "signature": "void FadeToBlackExceptPrimary(void)",
+      "paramsRaw": "void",
+      "body": "BlendPalettes(PALETTES_ALL & ~(1 << 16 | 1), 16, RGB_BLACK);",
+      "callsTo": [
+        "BlendPalettes"
+      ],
+      "lineCount": 1
+    },
+    "InitBgTemplates": {
+      "returnType": "void",
+      "signature": "void InitBgTemplates(const struct BgTemplate *templates, int count)",
+      "paramsRaw": "const struct BgTemplate *templates, int count",
+      "body": "int i;\n\n    for (i = 0; i < count; i++)\n        InitBgFromTemplate(templates++);",
+      "callsTo": [
+        "InitBgFromTemplate"
+      ],
+      "lineCount": 4
+    },
+    "InitHelpBar": {
+      "returnType": "void",
+      "signature": "static void InitHelpBar(void)",
+      "paramsRaw": "void",
+      "body": "struct Pokenav_MainMenu *menu = GetSubstructPtr(POKENAV_SUBSTRUCT_MAIN_MENU);\n\n    InitWindows(&sHelpBarWindowTemplate[0]);\n    menu->helpBarWindowId = 0;\n    DrawHelpBar(menu->helpBarWindowId);\n    PutWindowTilemap(menu->helpBarWindowId);\n    CopyWindowToVram(menu->helpBarWindowId, COPYWIN_FULL);",
+      "callsTo": [
+        "CopyWindowToVram",
+        "DrawHelpBar",
+        "GetSubstructPtr",
+        "InitWindows",
+        "PutWindowTilemap"
+      ],
+      "lineCount": 7
+    },
+    "PrintHelpBarText": {
+      "returnType": "void",
+      "signature": "void PrintHelpBarText(u32 textId)",
+      "paramsRaw": "u32 textId",
+      "body": "struct Pokenav_MainMenu *menu = GetSubstructPtr(POKENAV_SUBSTRUCT_MAIN_MENU);\n\n    DrawHelpBar(menu->helpBarWindowId);\n    AddTextPrinterParameterized3(menu->helpBarWindowId, FONT_NORMAL, 0, 1, sHelpBarTextColors, 0, sHelpBarTexts[textId]);",
+      "callsTo": [
+        "AddTextPrinterParameterized3",
+        "DrawHelpBar",
+        "GetSubstructPtr"
+      ],
+      "lineCount": 4
+    },
+    "WaitForHelpBar": {
+      "returnType": "bool32",
+      "signature": "bool32 WaitForHelpBar(void)",
+      "paramsRaw": "void",
+      "body": "return IsDma3ManagerBusyWithBgCopy();",
+      "callsTo": [
+        "IsDma3ManagerBusyWithBgCopy"
+      ],
+      "lineCount": 1
+    },
+    "DrawHelpBar": {
+      "returnType": "void",
+      "signature": "static void DrawHelpBar(u32 windowId)",
+      "paramsRaw": "u32 windowId",
+      "body": "FillWindowPixelBuffer(windowId, PIXEL_FILL(4));\n    FillWindowPixelRect(windowId, PIXEL_FILL(5), 0, 0, 0x80, 1);",
+      "callsTo": [
+        "FillWindowPixelBuffer",
+        "FillWindowPixelRect",
+        "PIXEL_FILL"
+      ],
+      "lineCount": 2
+    },
+    "InitPokenavMainMenuResources": {
+      "returnType": "void",
+      "signature": "static void InitPokenavMainMenuResources(void)",
+      "paramsRaw": "void",
+      "body": "s32 i;\n    u8 spriteId;\n    struct Pokenav_MainMenu *menu = GetSubstructPtr(POKENAV_SUBSTRUCT_MAIN_MENU);\n\n    for (i = 0; i < ARRAY_COUNT(sSpinningPokenavSpriteSheet); i++)\n        LoadCompressedSpriteSheet(&sSpinningPokenavSpriteSheet[i]);\n\n    Pokenav_AllocAndLoadPalettes(sSpinningNavgearPalettes);\n    menu->palettes = ~1 & ~(0x10000 << IndexOfSpritePaletteTag(0));\n    spriteId = CreateSprite(&sSpinningPokenavSpriteTemplate, 220, 12, 0);\n    menu->spinningPokenav = &gSprites[spriteId];",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "CreateSprite",
+        "GetSubstructPtr",
+        "IndexOfSpritePaletteTag",
+        "LoadCompressedSpriteSheet",
+        "Pokenav_AllocAndLoadPalettes"
+      ],
+      "lineCount": 11
+    },
+    "CleanupPokenavMainMenuResources": {
+      "returnType": "void",
+      "signature": "static void CleanupPokenavMainMenuResources(void)",
+      "paramsRaw": "void",
+      "body": "struct Pokenav_MainMenu *menu = GetSubstructPtr(POKENAV_SUBSTRUCT_MAIN_MENU);\n\n    DestroySprite(menu->spinningPokenav);\n    FreeSpriteTilesByTag(0);\n    FreeSpritePaletteByTag(0);",
+      "callsTo": [
+        "DestroySprite",
+        "FreeSpritePaletteByTag",
+        "FreeSpriteTilesByTag",
+        "GetSubstructPtr"
+      ],
+      "lineCount": 5
+    },
+    "SpriteCB_SpinningPokenav": {
+      "returnType": "void",
+      "signature": "static void SpriteCB_SpinningPokenav(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "sprite->y2 = (GetBgY(0) / 256u) * -1;",
+      "callsTo": [
+        "GetBgY"
+      ],
+      "lineCount": 1
+    },
+    "HideSpinningPokenavSprite": {
+      "returnType": "void",
+      "signature": "void HideSpinningPokenavSprite(void)",
+      "paramsRaw": "void",
+      "body": "struct Pokenav_MainMenu *menu = GetSubstructPtr(POKENAV_SUBSTRUCT_MAIN_MENU);\n\n     \n    menu->spinningPokenav->x = 220;\n    menu->spinningPokenav->y = 12;\n    menu->spinningPokenav->callback = SpriteCB_SpinningPokenav;\n    menu->spinningPokenav->invisible = FALSE;\n    menu->spinningPokenav->oam.priority = 0;\n    menu->spinningPokenav->subpriority = 0;",
+      "callsTo": [
+        "GetSubstructPtr"
+      ],
+      "lineCount": 9
+    },
+    "CreateLeftHeaderSprites": {
+      "returnType": "void",
+      "signature": "static void CreateLeftHeaderSprites(void)",
+      "paramsRaw": "void",
+      "body": "s32 i, spriteId;\n    struct Pokenav_MainMenu *menu = GetSubstructPtr(POKENAV_SUBSTRUCT_MAIN_MENU);\n\n    LoadCompressedSpriteSheet(&sMenuLeftHeaderSpriteSheet);\n    AllocSpritePalette(1);\n    AllocSpritePalette(2);\n    for (i = 0; i < (s32)ARRAY_COUNT(menu->leftHeaderSprites); i++)\n    {\n         \n        spriteId = CreateSprite(&sLeftHeaderSpriteTemplate, 0, 0, 1);\n        menu->leftHeaderSprites[i] = &gSprites[spriteId];\n        menu->leftHeaderSprites[i]->invisible = TRUE;\n        menu->leftHeaderSprites[i]->x2 = i * 64;\n\n         \n        spriteId = CreateSprite(&sSubmenuLeftHeaderSpriteTemplate, 0, 0, 2);\n        menu->submenuLeftHeaderSprites[i] = &gSprites[spriteId];\n        menu->submenuLeftHeaderSprites[i]->invisible = TRUE;\n        menu->submenuLeftHeaderSprites[i]->x2 = i * 32;\n        menu->submenuLeftHeaderSprites[i]->y2 = 18;\n        menu->submenuLeftHeaderSprites[i]->oam.tileNum += (i * 8) + 64;\n    }",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "AllocSpritePalette",
+        "CreateSprite",
+        "GetSubstructPtr",
+        "LoadCompressedSpriteSheet"
+      ],
+      "lineCount": 22
+    },
+    "LoadLeftHeaderGfxForIndex": {
+      "returnType": "void",
+      "signature": "void LoadLeftHeaderGfxForIndex(u32 menuGfxId)",
+      "paramsRaw": "u32 menuGfxId",
+      "body": "if (menuGfxId < POKENAV_GFX_SUBMENUS_START)\n        LoadLeftHeaderGfxForMenu(menuGfxId);\n    else\n        LoadLeftHeaderGfxForSubMenu(menuGfxId - POKENAV_GFX_SUBMENUS_START);",
+      "callsTo": [
+        "LoadLeftHeaderGfxForMenu",
+        "LoadLeftHeaderGfxForSubMenu"
+      ],
+      "lineCount": 4
+    },
+    "UpdateRegionMapRightHeaderTiles": {
+      "returnType": "void",
+      "signature": "void UpdateRegionMapRightHeaderTiles(u32 menuGfxId)",
+      "paramsRaw": "u32 menuGfxId",
+      "body": "struct Pokenav_MainMenu *menu = GetSubstructPtr(POKENAV_SUBSTRUCT_MAIN_MENU);\n\n    if (menuGfxId == POKENAV_GFX_MAP_MENU_ZOOMED_OUT)\n        menu->leftHeaderSprites[1]->oam.tileNum = GetSpriteTileStartByTag(2) + 32;\n    else\n        menu->leftHeaderSprites[1]->oam.tileNum = GetSpriteTileStartByTag(2) + 64;",
+      "callsTo": [
+        "GetSpriteTileStartByTag",
+        "GetSubstructPtr"
+      ],
+      "lineCount": 6
+    },
+    "LoadLeftHeaderGfxForMenu": {
+      "returnType": "void",
+      "signature": "static void LoadLeftHeaderGfxForMenu(u32 menuGfxId)",
+      "paramsRaw": "u32 menuGfxId",
+      "body": "struct Pokenav_MainMenu *menu;\n    u32 size, tag;\n\n    if (menuGfxId >= POKENAV_GFX_SUBMENUS_START)\n        return;\n\n    menu = GetSubstructPtr(POKENAV_SUBSTRUCT_MAIN_MENU);\n    tag = sMenuLeftHeaderSpriteSheets[menuGfxId].tag;\n    size = GetDecompressedDataSize(sMenuLeftHeaderSpriteSheets[menuGfxId].data);\n    LoadPalette(&gPokenavLeftHeader_Pal[tag * 16], OBJ_PLTT_ID(IndexOfSpritePaletteTag(1)), PLTT_SIZE_4BPP);\n    LZ77UnCompWram(sMenuLeftHeaderSpriteSheets[menuGfxId].data, gDecompressionBuffer);\n    RequestDma3Copy(gDecompressionBuffer, (void *)OBJ_VRAM0 + (GetSpriteTileStartByTag(2) * 32), size, 1);\n    menu->leftHeaderSprites[1]->oam.tileNum = GetSpriteTileStartByTag(2) + sMenuLeftHeaderSpriteSheets[menuGfxId].size;\n\n    menu->leftHeaderSprites[1]->x2 = 64;",
+      "callsTo": [
+        "GetDecompressedDataSize",
+        "GetSpriteTileStartByTag",
+        "GetSubstructPtr",
+        "IndexOfSpritePaletteTag",
+        "LZ77UnCompWram",
+        "LoadPalette",
+        "OBJ_PLTT_ID",
+        "RequestDma3Copy"
+      ],
+      "lineCount": 15
+    },
+    "LoadLeftHeaderGfxForSubMenu": {
+      "returnType": "void",
+      "signature": "static void LoadLeftHeaderGfxForSubMenu(u32 menuGfxId)",
+      "paramsRaw": "u32 menuGfxId",
+      "body": "u32 size, tag;\n\n    if (menuGfxId >= POKENAV_GFX_MENUS_END - POKENAV_GFX_SUBMENUS_START)\n        return;\n\n    tag = sPokenavSubMenuLeftHeaderSpriteSheets[menuGfxId].tag;\n    size = GetDecompressedDataSize(sPokenavSubMenuLeftHeaderSpriteSheets[menuGfxId].data);\n    LoadPalette(&gPokenavLeftHeader_Pal[tag * 16], OBJ_PLTT_ID(IndexOfSpritePaletteTag(2)), PLTT_SIZE_4BPP);\n    LZ77UnCompWram(sPokenavSubMenuLeftHeaderSpriteSheets[menuGfxId].data, &gDecompressionBuffer[0x1000]);\n    RequestDma3Copy(&gDecompressionBuffer[0x1000], (void *)OBJ_VRAM0 + 0x800 + (GetSpriteTileStartByTag(2) * 32), size, 1);",
+      "callsTo": [
+        "GetDecompressedDataSize",
+        "GetSpriteTileStartByTag",
+        "IndexOfSpritePaletteTag",
+        "LZ77UnCompWram",
+        "LoadPalette",
+        "OBJ_PLTT_ID",
+        "RequestDma3Copy"
+      ],
+      "lineCount": 10
+    },
+    "ShowLeftHeaderGfx": {
+      "returnType": "void",
+      "signature": "void ShowLeftHeaderGfx(u32 menuGfxId, bool32 isMain, bool32 isOnRightSide)",
+      "paramsRaw": "u32 menuGfxId, bool32 isMain, bool32 isOnRightSide",
+      "body": "u32 tileTop;\n\n    if (!isMain)\n        tileTop = 0x30;\n    else\n        tileTop = 0x10;\n\n    if (menuGfxId < POKENAV_GFX_SUBMENUS_START)\n        ShowLeftHeaderSprites(tileTop, isOnRightSide);\n    else\n        ShowLeftHeaderSubmenuSprites(tileTop, isOnRightSide);",
+      "callsTo": [
+        "ShowLeftHeaderSprites",
+        "ShowLeftHeaderSubmenuSprites"
+      ],
+      "lineCount": 11
+    },
+    "HideMainOrSubMenuLeftHeader": {
+      "returnType": "void",
+      "signature": "void HideMainOrSubMenuLeftHeader(u32 id, bool32 onRightSide)",
+      "paramsRaw": "u32 id, bool32 onRightSide",
+      "body": "if (id < POKENAV_GFX_PARTY_MENU)\n        HideLeftHeaderSprites(onRightSide);\n    else\n        HideLeftHeaderSubmenuSprites(onRightSide);",
+      "callsTo": [
+        "HideLeftHeaderSprites",
+        "HideLeftHeaderSubmenuSprites"
+      ],
+      "lineCount": 4
+    },
+    "SetLeftHeaderSpritesInvisibility": {
+      "returnType": "void",
+      "signature": "void SetLeftHeaderSpritesInvisibility(void)",
+      "paramsRaw": "void",
+      "body": "s32 i;\n    struct Pokenav_MainMenu *menu = GetSubstructPtr(POKENAV_SUBSTRUCT_MAIN_MENU);\n\n    for (i = 0; i < (s32)ARRAY_COUNT(menu->leftHeaderSprites); i++)\n    {\n        menu->leftHeaderSprites[i]->invisible = TRUE;\n        menu->submenuLeftHeaderSprites[i]->invisible = TRUE;\n    }",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "GetSubstructPtr"
+      ],
+      "lineCount": 8
+    },
+    "AreLeftHeaderSpritesMoving": {
+      "returnType": "bool32",
+      "signature": "bool32 AreLeftHeaderSpritesMoving(void)",
+      "paramsRaw": "void",
+      "body": "struct Pokenav_MainMenu *menu = GetSubstructPtr(POKENAV_SUBSTRUCT_MAIN_MENU);\n\n    if (menu->leftHeaderSprites[0]->callback == SpriteCallbackDummy && menu->submenuLeftHeaderSprites[0]->callback == SpriteCallbackDummy)\n        return FALSE;\n    else\n        return TRUE;",
+      "callsTo": [
+        "GetSubstructPtr"
+      ],
+      "lineCount": 6
+    },
+    "ShowLeftHeaderSprites": {
+      "returnType": "void",
+      "signature": "static void ShowLeftHeaderSprites(u32 startY, bool32 isOnRightSide)",
+      "paramsRaw": "u32 startY, bool32 isOnRightSide",
+      "body": "s32 start, end, i;\n    struct Pokenav_MainMenu *menu = GetSubstructPtr(POKENAV_SUBSTRUCT_MAIN_MENU);\n\n    if (!isOnRightSide)\n        start = -96, end = 32;\n    else\n        start = 256, end = 144;  \n\n    for (i = 0; i < (s32)ARRAY_COUNT(menu->leftHeaderSprites); i++)\n    {\n        menu->leftHeaderSprites[i]->y = startY;\n        MoveLeftHeader(menu->leftHeaderSprites[i], start, end, 12);\n    }",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "GetSubstructPtr",
+        "MoveLeftHeader"
+      ],
+      "lineCount": 13
+    },
+    "ShowLeftHeaderSubmenuSprites": {
+      "returnType": "void",
+      "signature": "static void ShowLeftHeaderSubmenuSprites(u32 startY, bool32 isOnRightSide)",
+      "paramsRaw": "u32 startY, bool32 isOnRightSide",
+      "body": "s32 start, end, i;\n    struct Pokenav_MainMenu *menu = GetSubstructPtr(POKENAV_SUBSTRUCT_MAIN_MENU);\n\n    if (!isOnRightSide)\n        start = -96, end = 16;\n    else\n        start = 256, end = 192;\n\n    for (i = 0; i < (s32)ARRAY_COUNT(menu->submenuLeftHeaderSprites); i++)\n    {\n        menu->submenuLeftHeaderSprites[i]->y = startY;\n        MoveLeftHeader(menu->submenuLeftHeaderSprites[i], start, end, 12);\n    }",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "GetSubstructPtr",
+        "MoveLeftHeader"
+      ],
+      "lineCount": 13
+    },
+    "HideLeftHeaderSprites": {
+      "returnType": "void",
+      "signature": "static void HideLeftHeaderSprites(bool32 isOnRightSide)",
+      "paramsRaw": "bool32 isOnRightSide",
+      "body": "s32 start, end, i;\n    struct Pokenav_MainMenu *menu = GetSubstructPtr(POKENAV_SUBSTRUCT_MAIN_MENU);\n\n    if (!isOnRightSide)\n        start = 32, end = -96;\n    else\n        start = 192, end = 256;\n\n    for (i = 0; i < (s32)ARRAY_COUNT(menu->leftHeaderSprites); i++)\n    {\n        MoveLeftHeader(menu->leftHeaderSprites[i], start, end, 12);\n    }",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "GetSubstructPtr",
+        "MoveLeftHeader"
+      ],
+      "lineCount": 12
+    },
+    "HideLeftHeaderSubmenuSprites": {
+      "returnType": "void",
+      "signature": "static void HideLeftHeaderSubmenuSprites(bool32 isOnRightSide)",
+      "paramsRaw": "bool32 isOnRightSide",
+      "body": "s32 start, end, i;\n    struct Pokenav_MainMenu *menu = GetSubstructPtr(POKENAV_SUBSTRUCT_MAIN_MENU);\n\n    if (!isOnRightSide)\n        start = 16, end = -96;\n    else\n        start = 192, end = 256;\n\n    for (i = 0; i < (s32)ARRAY_COUNT(menu->submenuLeftHeaderSprites); i++)\n    {\n        MoveLeftHeader(menu->submenuLeftHeaderSprites[i], start, end, 12);\n    }",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "GetSubstructPtr",
+        "MoveLeftHeader"
+      ],
+      "lineCount": 12
+    },
+    "MoveLeftHeader": {
+      "returnType": "void",
+      "signature": "static void MoveLeftHeader(struct Sprite *sprite, s32 startX, s32 endX, s32 duration)",
+      "paramsRaw": "struct Sprite *sprite, s32 startX, s32 endX, s32 duration",
+      "body": "sprite->x = startX;\n    sprite->data[0] = startX * 16;\n    sprite->data[1] = (endX - startX) * 16 / duration;\n    sprite->data[2] = duration;\n    sprite->data[7] = endX;\n    sprite->callback = SpriteCB_MoveLeftHeader;",
+      "callsTo": [],
+      "lineCount": 6
+    },
+    "SpriteCB_MoveLeftHeader": {
+      "returnType": "void",
+      "signature": "static void SpriteCB_MoveLeftHeader(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "if (sprite->data[2] != 0)\n    {\n        sprite->data[2]--;\n        sprite->data[0] += sprite->data[1];\n        sprite->x = sprite->data[0] >> 4;\n        if (sprite->x < -16 || sprite->x > 256)\n            sprite->invisible = TRUE;\n        else\n            sprite->invisible = FALSE;\n    }\n    else\n    {\n        sprite->x = sprite->data[7];\n        sprite->callback = SpriteCallbackDummy;\n    }",
+      "callsTo": [],
+      "lineCount": 15
+    }
+  }
+}

@@ -1,0 +1,1847 @@
+{
+  "srcFile": "src/field_player_avatar.c",
+  "count": 165,
+  "functions": {
+    "MovementType_Player": {
+      "returnType": "void",
+      "signature": "void MovementType_Player(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "UpdateObjectEventCurrentMovement(&gObjectEvents[sprite->data[0]], sprite, (bool8 (*)(struct ObjectEvent *, struct Sprite *))ObjectEventCB2_NoMovement2);",
+      "callsTo": [
+        "UpdateObjectEventCurrentMovement"
+      ],
+      "lineCount": 1
+    },
+    "ObjectEventCB2_NoMovement2": {
+      "returnType": "u8",
+      "signature": "static u8 ObjectEventCB2_NoMovement2(void)",
+      "paramsRaw": "void",
+      "body": "return 0;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "PlayerStep": {
+      "returnType": "void",
+      "signature": "void PlayerStep(u8 direction, u16 newKeys, u16 heldKeys)",
+      "paramsRaw": "u8 direction, u16 newKeys, u16 heldKeys",
+      "body": "struct ObjectEvent *playerObjEvent = &gObjectEvents[gPlayerAvatar.objectEventId];\n\n    HideShowWarpArrow(playerObjEvent);\n    if (gPlayerAvatar.preventStep == FALSE)\n    {\n        Bike_TryAcroBikeHistoryUpdate(newKeys, heldKeys);\n        if (TryInterruptObjectEventSpecialAnim(playerObjEvent, direction) == 0)\n        {\n            npc_clear_strange_bits(playerObjEvent);\n            DoPlayerAvatarTransition();\n            if (TryDoMetatileBehaviorForcedMovement() == 0)\n            {\n                MovePlayerAvatarUsingKeypadInput(direction, newKeys, heldKeys);\n                PlayerAllowForcedMovementIfMovingSameDirection();\n            }\n        }\n    }",
+      "callsTo": [
+        "Bike_TryAcroBikeHistoryUpdate",
+        "DoPlayerAvatarTransition",
+        "HideShowWarpArrow",
+        "MovePlayerAvatarUsingKeypadInput",
+        "PlayerAllowForcedMovementIfMovingSameDirection",
+        "TryDoMetatileBehaviorForcedMovement",
+        "TryInterruptObjectEventSpecialAnim"
+      ],
+      "lineCount": 17
+    },
+    "TryInterruptObjectEventSpecialAnim": {
+      "returnType": "bool8",
+      "signature": "static bool8 TryInterruptObjectEventSpecialAnim(struct ObjectEvent *playerObjEvent, u8 direction)",
+      "paramsRaw": "struct ObjectEvent *playerObjEvent, u8 direction",
+      "body": "if (ObjectEventIsMovementOverridden(playerObjEvent)\n     && !ObjectEventClearHeldMovementIfFinished(playerObjEvent))\n    {\n        u8 heldMovementActionId = ObjectEventGetHeldMovementActionId(playerObjEvent);\n        if (heldMovementActionId > MOVEMENT_ACTION_WALK_FAST_RIGHT && heldMovementActionId < MOVEMENT_ACTION_WALK_IN_PLACE_NORMAL_DOWN)\n        {\n            if (direction == DIR_NONE)\n            {\n                return TRUE;\n            }\n\n            if (playerObjEvent->movementDirection != direction)\n            {\n                ObjectEventClearHeldMovement(playerObjEvent);\n                return FALSE;\n            }\n\n            if (CheckForPlayerAvatarStaticCollision(direction) == COLLISION_NONE)\n            {\n                ObjectEventClearHeldMovement(playerObjEvent);\n                return FALSE;\n            }\n        }\n\n        return TRUE;\n    }\n\n    return FALSE;",
+      "callsTo": [
+        "CheckForPlayerAvatarStaticCollision",
+        "ObjectEventClearHeldMovement",
+        "ObjectEventClearHeldMovementIfFinished",
+        "ObjectEventGetHeldMovementActionId",
+        "ObjectEventIsMovementOverridden"
+      ],
+      "lineCount": 28
+    },
+    "npc_clear_strange_bits": {
+      "returnType": "void",
+      "signature": "static void npc_clear_strange_bits(struct ObjectEvent *objEvent)",
+      "paramsRaw": "struct ObjectEvent *objEvent",
+      "body": "objEvent->inanimate = FALSE;\n    objEvent->disableAnim = FALSE;\n    objEvent->facingDirectionLocked = FALSE;\n    gPlayerAvatar.flags &= ~PLAYER_AVATAR_FLAG_DASH;",
+      "callsTo": [],
+      "lineCount": 4
+    },
+    "MovePlayerAvatarUsingKeypadInput": {
+      "returnType": "void",
+      "signature": "static void MovePlayerAvatarUsingKeypadInput(u8 direction, u16 newKeys, u16 heldKeys)",
+      "paramsRaw": "u8 direction, u16 newKeys, u16 heldKeys",
+      "body": "if (gPlayerAvatar.flags & (PLAYER_AVATAR_FLAG_MACH_BIKE | PLAYER_AVATAR_FLAG_ACRO_BIKE))\n        MovePlayerOnBike(direction, newKeys, heldKeys);\n    else\n        MovePlayerNotOnBike(direction, heldKeys);",
+      "callsTo": [
+        "MovePlayerNotOnBike",
+        "MovePlayerOnBike"
+      ],
+      "lineCount": 4
+    },
+    "PlayerAllowForcedMovementIfMovingSameDirection": {
+      "returnType": "void",
+      "signature": "static void PlayerAllowForcedMovementIfMovingSameDirection(void)",
+      "paramsRaw": "void",
+      "body": "if (gPlayerAvatar.runningState == MOVING)\n        gPlayerAvatar.flags &= ~PLAYER_AVATAR_FLAG_CONTROLLABLE;",
+      "callsTo": [],
+      "lineCount": 2
+    },
+    "TryDoMetatileBehaviorForcedMovement": {
+      "returnType": "bool8",
+      "signature": "static bool8 TryDoMetatileBehaviorForcedMovement(void)",
+      "paramsRaw": "void",
+      "body": "return sForcedMovementFuncs[GetForcedMovementByMetatileBehavior()]();",
+      "callsTo": [
+        "GetForcedMovementByMetatileBehavior"
+      ],
+      "lineCount": 1
+    },
+    "GetForcedMovementByMetatileBehavior": {
+      "returnType": "u8",
+      "signature": "static u8 GetForcedMovementByMetatileBehavior(void)",
+      "paramsRaw": "void",
+      "body": "u8 i;\n\n    if (!(gPlayerAvatar.flags & PLAYER_AVATAR_FLAG_CONTROLLABLE))\n    {\n        u8 metatileBehavior = gObjectEvents[gPlayerAvatar.objectEventId].currentMetatileBehavior;\n\n        for (i = 0; i < NUM_FORCED_MOVEMENTS; i++)\n        {\n            if (sForcedMovementTestFuncs[i](metatileBehavior))\n                return i + 1;\n        }\n    }\n    return 0;",
+      "callsTo": [],
+      "lineCount": 13
+    },
+    "ForcedMovement_None": {
+      "returnType": "bool8",
+      "signature": "static bool8 ForcedMovement_None(void)",
+      "paramsRaw": "void",
+      "body": "if (gPlayerAvatar.flags & PLAYER_AVATAR_FLAG_FORCED_MOVE)\n    {\n        struct ObjectEvent *playerObjEvent = &gObjectEvents[gPlayerAvatar.objectEventId];\n\n        playerObjEvent->facingDirectionLocked = FALSE;\n        playerObjEvent->enableAnim = TRUE;\n        SetObjectEventDirection(playerObjEvent, playerObjEvent->facingDirection);\n        gPlayerAvatar.flags &= ~PLAYER_AVATAR_FLAG_FORCED_MOVE;\n    }\n    return FALSE;",
+      "callsTo": [
+        "SetObjectEventDirection"
+      ],
+      "lineCount": 10
+    },
+    "DoForcedMovement": {
+      "returnType": "bool8",
+      "signature": "static bool8 DoForcedMovement(u8 direction, void (*moveFunc)(u8))",
+      "paramsRaw": "u8 direction, void (*moveFunc)(u8)",
+      "body": "struct PlayerAvatar *playerAvatar = &gPlayerAvatar;\n    u8 collision = CheckForPlayerAvatarCollision(direction);\n\n    playerAvatar->flags |= PLAYER_AVATAR_FLAG_FORCED_MOVE;\n    if (collision)\n    {\n        ForcedMovement_None();\n        if (collision < COLLISION_STOP_SURFING)\n        {\n            return FALSE;\n        }\n        else\n        {\n            if (collision == COLLISION_LEDGE_JUMP)\n                PlayerJumpLedge(direction);\n            playerAvatar->flags |= PLAYER_AVATAR_FLAG_FORCED_MOVE;\n            playerAvatar->runningState = MOVING;\n            return TRUE;\n        }\n    }\n    else\n    {\n        playerAvatar->runningState = MOVING;\n        moveFunc(direction);\n        return TRUE;\n    }",
+      "callsTo": [
+        "CheckForPlayerAvatarCollision",
+        "ForcedMovement_None",
+        "PlayerJumpLedge"
+      ],
+      "lineCount": 26
+    },
+    "DoForcedMovementInCurrentDirection": {
+      "returnType": "bool8",
+      "signature": "static bool8 DoForcedMovementInCurrentDirection(void (*moveFunc)(u8))",
+      "paramsRaw": "void (*moveFunc)(u8)",
+      "body": "struct ObjectEvent *playerObjEvent = &gObjectEvents[gPlayerAvatar.objectEventId];\n\n    playerObjEvent->disableAnim = TRUE;\n    return DoForcedMovement(playerObjEvent->movementDirection, moveFunc);",
+      "callsTo": [
+        "DoForcedMovement"
+      ],
+      "lineCount": 4
+    },
+    "ForcedMovement_Slip": {
+      "returnType": "bool8",
+      "signature": "static bool8 ForcedMovement_Slip(void)",
+      "paramsRaw": "void",
+      "body": "return DoForcedMovementInCurrentDirection(PlayerWalkFast);",
+      "callsTo": [
+        "DoForcedMovementInCurrentDirection"
+      ],
+      "lineCount": 1
+    },
+    "ForcedMovement_WalkSouth": {
+      "returnType": "bool8",
+      "signature": "static bool8 ForcedMovement_WalkSouth(void)",
+      "paramsRaw": "void",
+      "body": "return DoForcedMovement(DIR_SOUTH, PlayerWalkNormal);",
+      "callsTo": [
+        "DoForcedMovement"
+      ],
+      "lineCount": 1
+    },
+    "ForcedMovement_WalkNorth": {
+      "returnType": "bool8",
+      "signature": "static bool8 ForcedMovement_WalkNorth(void)",
+      "paramsRaw": "void",
+      "body": "return DoForcedMovement(DIR_NORTH, PlayerWalkNormal);",
+      "callsTo": [
+        "DoForcedMovement"
+      ],
+      "lineCount": 1
+    },
+    "ForcedMovement_WalkWest": {
+      "returnType": "bool8",
+      "signature": "static bool8 ForcedMovement_WalkWest(void)",
+      "paramsRaw": "void",
+      "body": "return DoForcedMovement(DIR_WEST, PlayerWalkNormal);",
+      "callsTo": [
+        "DoForcedMovement"
+      ],
+      "lineCount": 1
+    },
+    "ForcedMovement_WalkEast": {
+      "returnType": "bool8",
+      "signature": "static bool8 ForcedMovement_WalkEast(void)",
+      "paramsRaw": "void",
+      "body": "return DoForcedMovement(DIR_EAST, PlayerWalkNormal);",
+      "callsTo": [
+        "DoForcedMovement"
+      ],
+      "lineCount": 1
+    },
+    "ForcedMovement_PushedSouthByCurrent": {
+      "returnType": "bool8",
+      "signature": "static bool8 ForcedMovement_PushedSouthByCurrent(void)",
+      "paramsRaw": "void",
+      "body": "return DoForcedMovement(DIR_SOUTH, PlayerRideWaterCurrent);",
+      "callsTo": [
+        "DoForcedMovement"
+      ],
+      "lineCount": 1
+    },
+    "ForcedMovement_PushedNorthByCurrent": {
+      "returnType": "bool8",
+      "signature": "static bool8 ForcedMovement_PushedNorthByCurrent(void)",
+      "paramsRaw": "void",
+      "body": "return DoForcedMovement(DIR_NORTH, PlayerRideWaterCurrent);",
+      "callsTo": [
+        "DoForcedMovement"
+      ],
+      "lineCount": 1
+    },
+    "ForcedMovement_PushedWestByCurrent": {
+      "returnType": "bool8",
+      "signature": "static bool8 ForcedMovement_PushedWestByCurrent(void)",
+      "paramsRaw": "void",
+      "body": "return DoForcedMovement(DIR_WEST, PlayerRideWaterCurrent);",
+      "callsTo": [
+        "DoForcedMovement"
+      ],
+      "lineCount": 1
+    },
+    "ForcedMovement_PushedEastByCurrent": {
+      "returnType": "bool8",
+      "signature": "static bool8 ForcedMovement_PushedEastByCurrent(void)",
+      "paramsRaw": "void",
+      "body": "return DoForcedMovement(DIR_EAST, PlayerRideWaterCurrent);",
+      "callsTo": [
+        "DoForcedMovement"
+      ],
+      "lineCount": 1
+    },
+    "ForcedMovement_Slide": {
+      "returnType": "bool8",
+      "signature": "static bool8 ForcedMovement_Slide(u8 direction, void (*moveFunc)(u8))",
+      "paramsRaw": "u8 direction, void (*moveFunc)(u8)",
+      "body": "struct ObjectEvent *playerObjEvent = &gObjectEvents[gPlayerAvatar.objectEventId];\n\n    playerObjEvent->disableAnim = TRUE;\n    playerObjEvent->facingDirectionLocked = TRUE;\n    return DoForcedMovement(direction, moveFunc);",
+      "callsTo": [
+        "DoForcedMovement"
+      ],
+      "lineCount": 5
+    },
+    "ForcedMovement_SlideSouth": {
+      "returnType": "bool8",
+      "signature": "static bool8 ForcedMovement_SlideSouth(void)",
+      "paramsRaw": "void",
+      "body": "return ForcedMovement_Slide(DIR_SOUTH, PlayerWalkFast);",
+      "callsTo": [
+        "ForcedMovement_Slide"
+      ],
+      "lineCount": 1
+    },
+    "ForcedMovement_SlideNorth": {
+      "returnType": "bool8",
+      "signature": "static bool8 ForcedMovement_SlideNorth(void)",
+      "paramsRaw": "void",
+      "body": "return ForcedMovement_Slide(DIR_NORTH, PlayerWalkFast);",
+      "callsTo": [
+        "ForcedMovement_Slide"
+      ],
+      "lineCount": 1
+    },
+    "ForcedMovement_SlideWest": {
+      "returnType": "bool8",
+      "signature": "static bool8 ForcedMovement_SlideWest(void)",
+      "paramsRaw": "void",
+      "body": "return ForcedMovement_Slide(DIR_WEST, PlayerWalkFast);",
+      "callsTo": [
+        "ForcedMovement_Slide"
+      ],
+      "lineCount": 1
+    },
+    "ForcedMovement_SlideEast": {
+      "returnType": "bool8",
+      "signature": "static bool8 ForcedMovement_SlideEast(void)",
+      "paramsRaw": "void",
+      "body": "return ForcedMovement_Slide(DIR_EAST, PlayerWalkFast);",
+      "callsTo": [
+        "ForcedMovement_Slide"
+      ],
+      "lineCount": 1
+    },
+    "ForcedMovement_MatJump": {
+      "returnType": "bool8",
+      "signature": "static bool8 ForcedMovement_MatJump(void)",
+      "paramsRaw": "void",
+      "body": "DoPlayerMatJump();\n    return TRUE;",
+      "callsTo": [
+        "DoPlayerMatJump"
+      ],
+      "lineCount": 2
+    },
+    "ForcedMovement_MatSpin": {
+      "returnType": "bool8",
+      "signature": "static bool8 ForcedMovement_MatSpin(void)",
+      "paramsRaw": "void",
+      "body": "DoPlayerMatSpin();\n    return TRUE;",
+      "callsTo": [
+        "DoPlayerMatSpin"
+      ],
+      "lineCount": 2
+    },
+    "ForcedMovement_MuddySlope": {
+      "returnType": "bool8",
+      "signature": "static bool8 ForcedMovement_MuddySlope(void)",
+      "paramsRaw": "void",
+      "body": "struct ObjectEvent *playerObjEvent = &gObjectEvents[gPlayerAvatar.objectEventId];\n\n    if (playerObjEvent->movementDirection != DIR_NORTH || GetPlayerSpeed() < PLAYER_SPEED_FASTEST)\n    {\n        Bike_UpdateBikeCounterSpeed(0);\n        playerObjEvent->facingDirectionLocked = TRUE;\n        return DoForcedMovement(DIR_SOUTH, PlayerWalkFast);\n    }\n    else\n    {\n        return FALSE;\n    }",
+      "callsTo": [
+        "Bike_UpdateBikeCounterSpeed",
+        "DoForcedMovement",
+        "GetPlayerSpeed"
+      ],
+      "lineCount": 12
+    },
+    "MovePlayerNotOnBike": {
+      "returnType": "void",
+      "signature": "static void MovePlayerNotOnBike(u8 direction, u16 heldKeys)",
+      "paramsRaw": "u8 direction, u16 heldKeys",
+      "body": "sPlayerNotOnBikeFuncs[CheckMovementInputNotOnBike(direction)](direction, heldKeys);",
+      "callsTo": [
+        "CheckMovementInputNotOnBike"
+      ],
+      "lineCount": 1
+    },
+    "CheckMovementInputNotOnBike": {
+      "returnType": "u8",
+      "signature": "static u8 CheckMovementInputNotOnBike(u8 direction)",
+      "paramsRaw": "u8 direction",
+      "body": "if (direction == DIR_NONE)\n        return gPlayerAvatar.runningState = NOT_MOVING;\n    else if (direction != GetPlayerMovementDirection() && gPlayerAvatar.runningState != MOVING)\n        return gPlayerAvatar.runningState = TURN_DIRECTION;\n    else\n        return gPlayerAvatar.runningState = MOVING;",
+      "callsTo": [
+        "GetPlayerMovementDirection"
+      ],
+      "lineCount": 6
+    },
+    "PlayerNotOnBikeNotMoving": {
+      "returnType": "void",
+      "signature": "static void PlayerNotOnBikeNotMoving(u8 direction, u16 heldKeys)",
+      "paramsRaw": "u8 direction, u16 heldKeys",
+      "body": "PlayerFaceDirection(GetPlayerFacingDirection());",
+      "callsTo": [
+        "GetPlayerFacingDirection",
+        "PlayerFaceDirection"
+      ],
+      "lineCount": 1
+    },
+    "PlayerNotOnBikeTurningInPlace": {
+      "returnType": "void",
+      "signature": "static void PlayerNotOnBikeTurningInPlace(u8 direction, u16 heldKeys)",
+      "paramsRaw": "u8 direction, u16 heldKeys",
+      "body": "PlayerTurnInPlace(direction);",
+      "callsTo": [
+        "PlayerTurnInPlace"
+      ],
+      "lineCount": 1
+    },
+    "PlayerNotOnBikeMoving": {
+      "returnType": "void",
+      "signature": "static void PlayerNotOnBikeMoving(u8 direction, u16 heldKeys)",
+      "paramsRaw": "u8 direction, u16 heldKeys",
+      "body": "u8 collision = CheckForPlayerAvatarCollision(direction);\n\n    if (collision)\n    {\n        if (collision == COLLISION_LEDGE_JUMP)\n        {\n            PlayerJumpLedge(direction);\n            return;\n        }\n        else if (collision == COLLISION_OBJECT_EVENT && IsPlayerCollidingWithFarawayIslandMew(direction))\n        {\n            PlayerNotOnBikeCollideWithFarawayIslandMew(direction);\n            return;\n        }\n        else\n        {\n             \n            u8 adjustedCollision = collision - COLLISION_STOP_SURFING;\n            if (adjustedCollision > 3)\n                PlayerNotOnBikeCollide(direction);\n            return;\n        }\n    }\n\n    if (gPlayerAvatar.flags & PLAYER_AVATAR_FLAG_SURFING)\n    {\n         \n        PlayerWalkFast(direction);\n        return;\n    }\n\n    if (!(gPlayerAvatar.flags & PLAYER_AVATAR_FLAG_UNDERWATER) && (heldKeys & B_BUTTON) && FlagGet(FLAG_SYS_B_DASH)\n     && IsRunningDisallowed(gObjectEvents[gPlayerAvatar.objectEventId].currentMetatileBehavior) == 0)\n    {\n        PlayerRun(direction);\n        gPlayerAvatar.flags |= PLAYER_AVATAR_FLAG_DASH;\n        return;\n    }\n    else\n    {\n        PlayerWalkNormal(direction);\n    }",
+      "callsTo": [
+        "CheckForPlayerAvatarCollision",
+        "FlagGet",
+        "IsPlayerCollidingWithFarawayIslandMew",
+        "IsRunningDisallowed",
+        "PlayerJumpLedge",
+        "PlayerNotOnBikeCollide",
+        "PlayerNotOnBikeCollideWithFarawayIslandMew",
+        "PlayerRun",
+        "PlayerWalkFast",
+        "PlayerWalkNormal"
+      ],
+      "lineCount": 42
+    },
+    "CheckForPlayerAvatarCollision": {
+      "returnType": "u8",
+      "signature": "static u8 CheckForPlayerAvatarCollision(u8 direction)",
+      "paramsRaw": "u8 direction",
+      "body": "s16 x, y;\n    struct ObjectEvent *playerObjEvent = &gObjectEvents[gPlayerAvatar.objectEventId];\n\n    x = playerObjEvent->currentCoords.x;\n    y = playerObjEvent->currentCoords.y;\n    MoveCoords(direction, &x, &y);\n    return CheckForObjectEventCollision(playerObjEvent, x, y, direction, MapGridGetMetatileBehaviorAt(x, y));",
+      "callsTo": [
+        "CheckForObjectEventCollision",
+        "MapGridGetMetatileBehaviorAt",
+        "MoveCoords"
+      ],
+      "lineCount": 7
+    },
+    "CheckForPlayerAvatarStaticCollision": {
+      "returnType": "u8",
+      "signature": "static u8 CheckForPlayerAvatarStaticCollision(u8 direction)",
+      "paramsRaw": "u8 direction",
+      "body": "s16 x, y;\n    struct ObjectEvent *playerObjEvent = &gObjectEvents[gPlayerAvatar.objectEventId];\n\n    x = playerObjEvent->currentCoords.x;\n    y = playerObjEvent->currentCoords.y;\n    MoveCoords(direction, &x, &y);\n    return CheckForObjectEventStaticCollision(playerObjEvent, x, y, direction, MapGridGetMetatileBehaviorAt(x, y));",
+      "callsTo": [
+        "CheckForObjectEventStaticCollision",
+        "MapGridGetMetatileBehaviorAt",
+        "MoveCoords"
+      ],
+      "lineCount": 7
+    },
+    "CheckForObjectEventCollision": {
+      "returnType": "u8",
+      "signature": "u8 CheckForObjectEventCollision(struct ObjectEvent *objectEvent, s16 x, s16 y, u8 direction, u8 metatileBehavior)",
+      "paramsRaw": "struct ObjectEvent *objectEvent, s16 x, s16 y, u8 direction, u8 metatileBehavior",
+      "body": "u8 collision = GetCollisionAtCoords(objectEvent, x, y, direction);\n    if (collision == COLLISION_ELEVATION_MISMATCH && CanStopSurfing(x, y, direction))\n        return COLLISION_STOP_SURFING;\n\n    if (ShouldJumpLedge(x, y, direction))\n    {\n        IncrementGameStat(GAME_STAT_JUMPED_DOWN_LEDGES);\n        return COLLISION_LEDGE_JUMP;\n    }\n    if (collision == COLLISION_OBJECT_EVENT && TryPushBoulder(x, y, direction))\n        return COLLISION_PUSHED_BOULDER;\n\n    if (collision == COLLISION_NONE)\n    {\n        if (CheckForRotatingGatePuzzleCollision(direction, x, y))\n            return COLLISION_ROTATING_GATE;\n        CheckAcroBikeCollision(x, y, metatileBehavior, &collision);\n    }\n    return collision;",
+      "callsTo": [
+        "CanStopSurfing",
+        "CheckAcroBikeCollision",
+        "CheckForRotatingGatePuzzleCollision",
+        "GetCollisionAtCoords",
+        "IncrementGameStat",
+        "ShouldJumpLedge",
+        "TryPushBoulder"
+      ],
+      "lineCount": 19
+    },
+    "CheckForObjectEventStaticCollision": {
+      "returnType": "u8",
+      "signature": "static u8 CheckForObjectEventStaticCollision(struct ObjectEvent *objectEvent, s16 x, s16 y, u8 direction, u8 metatileBehavior)",
+      "paramsRaw": "struct ObjectEvent *objectEvent, s16 x, s16 y, u8 direction, u8 metatileBehavior",
+      "body": "u8 collision = GetCollisionAtCoords(objectEvent, x, y, direction);\n\n    if (collision == COLLISION_NONE)\n    {\n        if (CheckForRotatingGatePuzzleCollisionWithoutAnimation(direction, x, y))\n            return COLLISION_ROTATING_GATE;\n        CheckAcroBikeCollision(x, y, metatileBehavior, &collision);\n    }\n    return collision;",
+      "callsTo": [
+        "CheckAcroBikeCollision",
+        "CheckForRotatingGatePuzzleCollisionWithoutAnimation",
+        "GetCollisionAtCoords"
+      ],
+      "lineCount": 9
+    },
+    "CanStopSurfing": {
+      "returnType": "bool8",
+      "signature": "static bool8 CanStopSurfing(s16 x, s16 y, u8 direction)",
+      "paramsRaw": "s16 x, s16 y, u8 direction",
+      "body": "if ((gPlayerAvatar.flags & PLAYER_AVATAR_FLAG_SURFING)\n     && MapGridGetElevationAt(x, y) == ELEVATION_DEFAULT\n     && GetObjectEventIdByPosition(x, y, ELEVATION_DEFAULT) == OBJECT_EVENTS_COUNT)\n    {\n        CreateStopSurfingTask(direction);\n        return TRUE;\n    }\n    else\n    {\n        return FALSE;\n    }",
+      "callsTo": [
+        "CreateStopSurfingTask",
+        "GetObjectEventIdByPosition",
+        "MapGridGetElevationAt"
+      ],
+      "lineCount": 11
+    },
+    "ShouldJumpLedge": {
+      "returnType": "bool8",
+      "signature": "static bool8 ShouldJumpLedge(s16 x, s16 y, u8 direction)",
+      "paramsRaw": "s16 x, s16 y, u8 direction",
+      "body": "if (GetLedgeJumpDirection(x, y, direction) != DIR_NONE)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [
+        "GetLedgeJumpDirection"
+      ],
+      "lineCount": 4
+    },
+    "TryPushBoulder": {
+      "returnType": "bool8",
+      "signature": "static bool8 TryPushBoulder(s16 x, s16 y, u8 direction)",
+      "paramsRaw": "s16 x, s16 y, u8 direction",
+      "body": "if (FlagGet(FLAG_SYS_USE_STRENGTH))\n    {\n        u8 objectEventId = GetObjectEventIdByXY(x, y);\n\n        if (objectEventId != OBJECT_EVENTS_COUNT && gObjectEvents[objectEventId].graphicsId == OBJ_EVENT_GFX_PUSHABLE_BOULDER)\n        {\n            x = gObjectEvents[objectEventId].currentCoords.x;\n            y = gObjectEvents[objectEventId].currentCoords.y;\n            MoveCoords(direction, &x, &y);\n            if (GetCollisionAtCoords(&gObjectEvents[objectEventId], x, y, direction) == COLLISION_NONE\n             && MetatileBehavior_IsNonAnimDoor(MapGridGetMetatileBehaviorAt(x, y)) == FALSE)\n            {\n                StartStrengthAnim(objectEventId, direction);\n                return TRUE;\n            }\n        }\n    }\n    return FALSE;",
+      "callsTo": [
+        "FlagGet",
+        "GetCollisionAtCoords",
+        "GetObjectEventIdByXY",
+        "MapGridGetMetatileBehaviorAt",
+        "MetatileBehavior_IsNonAnimDoor",
+        "MoveCoords",
+        "StartStrengthAnim"
+      ],
+      "lineCount": 18
+    },
+    "CheckAcroBikeCollision": {
+      "returnType": "void",
+      "signature": "static void CheckAcroBikeCollision(s16 x, s16 y, u8 metatileBehavior, u8 *collision)",
+      "paramsRaw": "s16 x, s16 y, u8 metatileBehavior, u8 *collision",
+      "body": "u8 i;\n\n    for (i = 0; i < NUM_ACRO_BIKE_COLLISIONS; i++)\n    {\n        if (sAcroBikeTrickMetatiles[i](metatileBehavior))\n        {\n            *collision = sAcroBikeTrickCollisionTypes[i];\n            return;\n        }\n    }",
+      "callsTo": [],
+      "lineCount": 10
+    },
+    "IsPlayerCollidingWithFarawayIslandMew": {
+      "returnType": "bool8",
+      "signature": "bool8 IsPlayerCollidingWithFarawayIslandMew(u8 direction)",
+      "paramsRaw": "u8 direction",
+      "body": "u8 mewObjectId;\n    struct ObjectEvent *object;\n    s16 playerX;\n    s16 playerY;\n    s16 mewPrevX;\n\n    object = &gObjectEvents[gPlayerAvatar.objectEventId];\n    playerX = object->currentCoords.x;\n    playerY = object->currentCoords.y;\n\n    MoveCoords(direction, &playerX, &playerY);\n    mewObjectId = GetObjectEventIdByLocalIdAndMap(LOCALID_FARAWAY_ISLAND_MEW, MAP_NUM(MAP_FARAWAY_ISLAND_INTERIOR), MAP_GROUP(MAP_FARAWAY_ISLAND_INTERIOR));\n    if (mewObjectId == OBJECT_EVENTS_COUNT)\n        return FALSE;\n\n    object = &gObjectEvents[mewObjectId];\n    mewPrevX = object->previousCoords.x;\n\n    if (mewPrevX == playerX)\n    {\n        if (object->previousCoords.y != playerY\n            || object->currentCoords.x != mewPrevX\n            || object->currentCoords.y != object->previousCoords.y)\n        {\n            if (object->previousCoords.x == playerX &&\n                object->previousCoords.y == playerY)\n                return TRUE;\n        }\n    }\n    return FALSE;",
+      "callsTo": [
+        "GetObjectEventIdByLocalIdAndMap",
+        "MAP_GROUP",
+        "MAP_NUM",
+        "MoveCoords"
+      ],
+      "lineCount": 30
+    },
+    "SetPlayerAvatarTransitionFlags": {
+      "returnType": "void",
+      "signature": "void SetPlayerAvatarTransitionFlags(u16 transitionFlags)",
+      "paramsRaw": "u16 transitionFlags",
+      "body": "gPlayerAvatar.transitionFlags |= transitionFlags;\n    DoPlayerAvatarTransition();",
+      "callsTo": [
+        "DoPlayerAvatarTransition"
+      ],
+      "lineCount": 2
+    },
+    "DoPlayerAvatarTransition": {
+      "returnType": "void",
+      "signature": "static void DoPlayerAvatarTransition(void)",
+      "paramsRaw": "void",
+      "body": "u8 i;\n    u8 flags = gPlayerAvatar.transitionFlags;\n\n    if (flags != 0)\n    {\n        for (i = 0; i < ARRAY_COUNT(sPlayerAvatarTransitionFuncs); i++, flags >>= 1)\n        {\n            if (flags & 1)\n                sPlayerAvatarTransitionFuncs[i](&gObjectEvents[gPlayerAvatar.objectEventId]);\n        }\n        gPlayerAvatar.transitionFlags = 0;\n    }",
+      "callsTo": [
+        "ARRAY_COUNT"
+      ],
+      "lineCount": 12
+    },
+    "PlayerAvatarTransition_Dummy": {
+      "returnType": "void",
+      "signature": "static void PlayerAvatarTransition_Dummy(struct ObjectEvent *objEvent)",
+      "paramsRaw": "struct ObjectEvent *objEvent",
+      "body": "",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "PlayerAvatarTransition_Normal": {
+      "returnType": "void",
+      "signature": "static void PlayerAvatarTransition_Normal(struct ObjectEvent *objEvent)",
+      "paramsRaw": "struct ObjectEvent *objEvent",
+      "body": "ObjectEventSetGraphicsId(objEvent, GetPlayerAvatarGraphicsIdByStateId(PLAYER_AVATAR_STATE_NORMAL));\n    ObjectEventTurn(objEvent, objEvent->movementDirection);\n    SetPlayerAvatarStateMask(PLAYER_AVATAR_FLAG_ON_FOOT);",
+      "callsTo": [
+        "GetPlayerAvatarGraphicsIdByStateId",
+        "ObjectEventSetGraphicsId",
+        "ObjectEventTurn",
+        "SetPlayerAvatarStateMask"
+      ],
+      "lineCount": 3
+    },
+    "PlayerAvatarTransition_MachBike": {
+      "returnType": "void",
+      "signature": "static void PlayerAvatarTransition_MachBike(struct ObjectEvent *objEvent)",
+      "paramsRaw": "struct ObjectEvent *objEvent",
+      "body": "ObjectEventSetGraphicsId(objEvent, GetPlayerAvatarGraphicsIdByStateId(PLAYER_AVATAR_STATE_MACH_BIKE));\n    ObjectEventTurn(objEvent, objEvent->movementDirection);\n    SetPlayerAvatarStateMask(PLAYER_AVATAR_FLAG_MACH_BIKE);\n    BikeClearState(0, 0);",
+      "callsTo": [
+        "BikeClearState",
+        "GetPlayerAvatarGraphicsIdByStateId",
+        "ObjectEventSetGraphicsId",
+        "ObjectEventTurn",
+        "SetPlayerAvatarStateMask"
+      ],
+      "lineCount": 4
+    },
+    "PlayerAvatarTransition_AcroBike": {
+      "returnType": "void",
+      "signature": "static void PlayerAvatarTransition_AcroBike(struct ObjectEvent *objEvent)",
+      "paramsRaw": "struct ObjectEvent *objEvent",
+      "body": "ObjectEventSetGraphicsId(objEvent, GetPlayerAvatarGraphicsIdByStateId(PLAYER_AVATAR_STATE_ACRO_BIKE));\n    ObjectEventTurn(objEvent, objEvent->movementDirection);\n    SetPlayerAvatarStateMask(PLAYER_AVATAR_FLAG_ACRO_BIKE);\n    BikeClearState(0, 0);\n    Bike_HandleBumpySlopeJump();",
+      "callsTo": [
+        "BikeClearState",
+        "Bike_HandleBumpySlopeJump",
+        "GetPlayerAvatarGraphicsIdByStateId",
+        "ObjectEventSetGraphicsId",
+        "ObjectEventTurn",
+        "SetPlayerAvatarStateMask"
+      ],
+      "lineCount": 5
+    },
+    "PlayerAvatarTransition_Surfing": {
+      "returnType": "void",
+      "signature": "static void PlayerAvatarTransition_Surfing(struct ObjectEvent *objEvent)",
+      "paramsRaw": "struct ObjectEvent *objEvent",
+      "body": "u8 spriteId;\n\n    ObjectEventSetGraphicsId(objEvent, GetPlayerAvatarGraphicsIdByStateId(PLAYER_AVATAR_STATE_SURFING));\n    ObjectEventTurn(objEvent, objEvent->movementDirection);\n    SetPlayerAvatarStateMask(PLAYER_AVATAR_FLAG_SURFING);\n    gFieldEffectArguments[0] = objEvent->currentCoords.x;\n    gFieldEffectArguments[1] = objEvent->currentCoords.y;\n    gFieldEffectArguments[2] = gPlayerAvatar.objectEventId;\n    spriteId = FieldEffectStart(FLDEFF_SURF_BLOB);\n    objEvent->fieldEffectSpriteId = spriteId;\n    SetSurfBlob_BobState(spriteId, BOB_PLAYER_AND_MON);",
+      "callsTo": [
+        "FieldEffectStart",
+        "GetPlayerAvatarGraphicsIdByStateId",
+        "ObjectEventSetGraphicsId",
+        "ObjectEventTurn",
+        "SetPlayerAvatarStateMask",
+        "SetSurfBlob_BobState"
+      ],
+      "lineCount": 11
+    },
+    "PlayerAvatarTransition_Underwater": {
+      "returnType": "void",
+      "signature": "static void PlayerAvatarTransition_Underwater(struct ObjectEvent *objEvent)",
+      "paramsRaw": "struct ObjectEvent *objEvent",
+      "body": "ObjectEventSetGraphicsId(objEvent, GetPlayerAvatarGraphicsIdByStateId(PLAYER_AVATAR_STATE_UNDERWATER));\n    ObjectEventTurn(objEvent, objEvent->movementDirection);\n    SetPlayerAvatarStateMask(PLAYER_AVATAR_FLAG_UNDERWATER);\n    objEvent->fieldEffectSpriteId = StartUnderwaterSurfBlobBobbing(objEvent->spriteId);",
+      "callsTo": [
+        "GetPlayerAvatarGraphicsIdByStateId",
+        "ObjectEventSetGraphicsId",
+        "ObjectEventTurn",
+        "SetPlayerAvatarStateMask",
+        "StartUnderwaterSurfBlobBobbing"
+      ],
+      "lineCount": 4
+    },
+    "PlayerAvatarTransition_ReturnToField": {
+      "returnType": "void",
+      "signature": "static void PlayerAvatarTransition_ReturnToField(struct ObjectEvent *objEvent)",
+      "paramsRaw": "struct ObjectEvent *objEvent",
+      "body": "gPlayerAvatar.flags |= PLAYER_AVATAR_FLAG_CONTROLLABLE;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "UpdatePlayerAvatarTransitionState": {
+      "returnType": "void",
+      "signature": "void UpdatePlayerAvatarTransitionState(void)",
+      "paramsRaw": "void",
+      "body": "gPlayerAvatar.tileTransitionState = T_NOT_MOVING;\n    if (PlayerIsAnimActive())\n    {\n        if (!PlayerCheckIfAnimFinishedOrInactive())\n        {\n            if (!PlayerAnimIsMultiFrameStationary())\n                gPlayerAvatar.tileTransitionState = T_TILE_TRANSITION;\n        }\n        else\n        {\n            if (!PlayerAnimIsMultiFrameStationaryAndStateNotTurning())\n                gPlayerAvatar.tileTransitionState = T_TILE_CENTER;\n        }\n    }",
+      "callsTo": [
+        "PlayerAnimIsMultiFrameStationary",
+        "PlayerAnimIsMultiFrameStationaryAndStateNotTurning",
+        "PlayerCheckIfAnimFinishedOrInactive",
+        "PlayerIsAnimActive"
+      ],
+      "lineCount": 14
+    },
+    "PlayerAnimIsMultiFrameStationary": {
+      "returnType": "bool8",
+      "signature": "static bool8 PlayerAnimIsMultiFrameStationary(void)",
+      "paramsRaw": "void",
+      "body": "u8 movementActionId = gObjectEvents[gPlayerAvatar.objectEventId].movementActionId;\n\n    if (movementActionId <= MOVEMENT_ACTION_FACE_RIGHT\n     || (movementActionId >= MOVEMENT_ACTION_DELAY_1 && movementActionId <= MOVEMENT_ACTION_DELAY_16)\n     || (movementActionId >= MOVEMENT_ACTION_WALK_IN_PLACE_SLOW_DOWN && movementActionId <= MOVEMENT_ACTION_WALK_IN_PLACE_FASTER_RIGHT)\n     || (movementActionId >= MOVEMENT_ACTION_ACRO_WHEELIE_FACE_DOWN && movementActionId <= MOVEMENT_ACTION_ACRO_END_WHEELIE_FACE_RIGHT)\n     || (movementActionId >= MOVEMENT_ACTION_ACRO_WHEELIE_IN_PLACE_DOWN && movementActionId <= MOVEMENT_ACTION_ACRO_WHEELIE_IN_PLACE_RIGHT))\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "lineCount": 10
+    },
+    "PlayerAnimIsMultiFrameStationaryAndStateNotTurning": {
+      "returnType": "bool8",
+      "signature": "static bool8 PlayerAnimIsMultiFrameStationaryAndStateNotTurning(void)",
+      "paramsRaw": "void",
+      "body": "if (PlayerAnimIsMultiFrameStationary() && gPlayerAvatar.runningState != TURN_DIRECTION)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [
+        "PlayerAnimIsMultiFrameStationary"
+      ],
+      "lineCount": 4
+    },
+    "PlayerIsAnimActive": {
+      "returnType": "bool8",
+      "signature": "static bool8 PlayerIsAnimActive(void)",
+      "paramsRaw": "void",
+      "body": "return ObjectEventIsMovementOverridden(&gObjectEvents[gPlayerAvatar.objectEventId]);",
+      "callsTo": [
+        "ObjectEventIsMovementOverridden"
+      ],
+      "lineCount": 1
+    },
+    "PlayerCheckIfAnimFinishedOrInactive": {
+      "returnType": "bool8",
+      "signature": "static bool8 PlayerCheckIfAnimFinishedOrInactive(void)",
+      "paramsRaw": "void",
+      "body": "return ObjectEventCheckHeldMovementStatus(&gObjectEvents[gPlayerAvatar.objectEventId]);",
+      "callsTo": [
+        "ObjectEventCheckHeldMovementStatus"
+      ],
+      "lineCount": 1
+    },
+    "PlayerSetCopyableMovement": {
+      "returnType": "void",
+      "signature": "static void PlayerSetCopyableMovement(u8 movement)",
+      "paramsRaw": "u8 movement",
+      "body": "gObjectEvents[gPlayerAvatar.objectEventId].playerCopyableMovement = movement;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "PlayerGetCopyableMovement": {
+      "returnType": "u8",
+      "signature": "u8 PlayerGetCopyableMovement(void)",
+      "paramsRaw": "void",
+      "body": "return gObjectEvents[gPlayerAvatar.objectEventId].playerCopyableMovement;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "PlayerForceSetHeldMovement": {
+      "returnType": "void",
+      "signature": "static void PlayerForceSetHeldMovement(u8 movementActionId)",
+      "paramsRaw": "u8 movementActionId",
+      "body": "ObjectEventForceSetHeldMovement(&gObjectEvents[gPlayerAvatar.objectEventId], movementActionId);",
+      "callsTo": [
+        "ObjectEventForceSetHeldMovement"
+      ],
+      "lineCount": 1
+    },
+    "PlayerSetAnimId": {
+      "returnType": "void",
+      "signature": "void PlayerSetAnimId(u8 movementActionId, u8 copyableMovement)",
+      "paramsRaw": "u8 movementActionId, u8 copyableMovement",
+      "body": "if (!PlayerIsAnimActive())\n    {\n        PlayerSetCopyableMovement(copyableMovement);\n        ObjectEventSetHeldMovement(&gObjectEvents[gPlayerAvatar.objectEventId], movementActionId);\n    }",
+      "callsTo": [
+        "ObjectEventSetHeldMovement",
+        "PlayerIsAnimActive",
+        "PlayerSetCopyableMovement"
+      ],
+      "lineCount": 5
+    },
+    "PlayerWalkNormal": {
+      "returnType": "void",
+      "signature": "void PlayerWalkNormal(u8 direction)",
+      "paramsRaw": "u8 direction",
+      "body": "PlayerSetAnimId(GetWalkNormalMovementAction(direction), COPY_MOVE_WALK);",
+      "callsTo": [
+        "GetWalkNormalMovementAction",
+        "PlayerSetAnimId"
+      ],
+      "lineCount": 1
+    },
+    "PlayerWalkFast": {
+      "returnType": "void",
+      "signature": "void PlayerWalkFast(u8 direction)",
+      "paramsRaw": "u8 direction",
+      "body": "PlayerSetAnimId(GetWalkFastMovementAction(direction), COPY_MOVE_WALK);",
+      "callsTo": [
+        "GetWalkFastMovementAction",
+        "PlayerSetAnimId"
+      ],
+      "lineCount": 1
+    },
+    "PlayerRideWaterCurrent": {
+      "returnType": "void",
+      "signature": "void PlayerRideWaterCurrent(u8 direction)",
+      "paramsRaw": "u8 direction",
+      "body": "PlayerSetAnimId(GetRideWaterCurrentMovementAction(direction), COPY_MOVE_WALK);",
+      "callsTo": [
+        "GetRideWaterCurrentMovementAction",
+        "PlayerSetAnimId"
+      ],
+      "lineCount": 1
+    },
+    "PlayerWalkFaster": {
+      "returnType": "void",
+      "signature": "void PlayerWalkFaster(u8 direction)",
+      "paramsRaw": "u8 direction",
+      "body": "PlayerSetAnimId(GetWalkFasterMovementAction(direction), COPY_MOVE_WALK);",
+      "callsTo": [
+        "GetWalkFasterMovementAction",
+        "PlayerSetAnimId"
+      ],
+      "lineCount": 1
+    },
+    "PlayerRun": {
+      "returnType": "void",
+      "signature": "static void PlayerRun(u8 direction)",
+      "paramsRaw": "u8 direction",
+      "body": "PlayerSetAnimId(GetPlayerRunMovementAction(direction), COPY_MOVE_WALK);",
+      "callsTo": [
+        "GetPlayerRunMovementAction",
+        "PlayerSetAnimId"
+      ],
+      "lineCount": 1
+    },
+    "PlayerOnBikeCollide": {
+      "returnType": "void",
+      "signature": "void PlayerOnBikeCollide(u8 direction)",
+      "paramsRaw": "u8 direction",
+      "body": "PlayCollisionSoundIfNotFacingWarp(direction);\n    PlayerSetAnimId(GetWalkInPlaceNormalMovementAction(direction), COPY_MOVE_WALK);",
+      "callsTo": [
+        "GetWalkInPlaceNormalMovementAction",
+        "PlayCollisionSoundIfNotFacingWarp",
+        "PlayerSetAnimId"
+      ],
+      "lineCount": 2
+    },
+    "PlayerOnBikeCollideWithFarawayIslandMew": {
+      "returnType": "void",
+      "signature": "void PlayerOnBikeCollideWithFarawayIslandMew(u8 direction)",
+      "paramsRaw": "u8 direction",
+      "body": "PlayerSetAnimId(GetWalkInPlaceNormalMovementAction(direction), COPY_MOVE_WALK);",
+      "callsTo": [
+        "GetWalkInPlaceNormalMovementAction",
+        "PlayerSetAnimId"
+      ],
+      "lineCount": 1
+    },
+    "PlayerNotOnBikeCollide": {
+      "returnType": "void",
+      "signature": "static void PlayerNotOnBikeCollide(u8 direction)",
+      "paramsRaw": "u8 direction",
+      "body": "PlayCollisionSoundIfNotFacingWarp(direction);\n    PlayerSetAnimId(GetWalkInPlaceSlowMovementAction(direction), COPY_MOVE_WALK);",
+      "callsTo": [
+        "GetWalkInPlaceSlowMovementAction",
+        "PlayCollisionSoundIfNotFacingWarp",
+        "PlayerSetAnimId"
+      ],
+      "lineCount": 2
+    },
+    "PlayerNotOnBikeCollideWithFarawayIslandMew": {
+      "returnType": "void",
+      "signature": "static void PlayerNotOnBikeCollideWithFarawayIslandMew(u8 direction)",
+      "paramsRaw": "u8 direction",
+      "body": "PlayerSetAnimId(GetWalkInPlaceSlowMovementAction(direction), COPY_MOVE_WALK);",
+      "callsTo": [
+        "GetWalkInPlaceSlowMovementAction",
+        "PlayerSetAnimId"
+      ],
+      "lineCount": 1
+    },
+    "PlayerFaceDirection": {
+      "returnType": "void",
+      "signature": "void PlayerFaceDirection(u8 direction)",
+      "paramsRaw": "u8 direction",
+      "body": "PlayerSetAnimId(GetFaceDirectionMovementAction(direction), COPY_MOVE_FACE);",
+      "callsTo": [
+        "GetFaceDirectionMovementAction",
+        "PlayerSetAnimId"
+      ],
+      "lineCount": 1
+    },
+    "PlayerTurnInPlace": {
+      "returnType": "void",
+      "signature": "void PlayerTurnInPlace(u8 direction)",
+      "paramsRaw": "u8 direction",
+      "body": "PlayerSetAnimId(GetWalkInPlaceFastMovementAction(direction), COPY_MOVE_FACE);",
+      "callsTo": [
+        "GetWalkInPlaceFastMovementAction",
+        "PlayerSetAnimId"
+      ],
+      "lineCount": 1
+    },
+    "PlayerJumpLedge": {
+      "returnType": "void",
+      "signature": "void PlayerJumpLedge(u8 direction)",
+      "paramsRaw": "u8 direction",
+      "body": "PlaySE(SE_LEDGE);\n    PlayerSetAnimId(GetJump2MovementAction(direction), COPY_MOVE_JUMP2);",
+      "callsTo": [
+        "GetJump2MovementAction",
+        "PlaySE",
+        "PlayerSetAnimId"
+      ],
+      "lineCount": 2
+    },
+    "PlayerFreeze": {
+      "returnType": "void",
+      "signature": "void PlayerFreeze(void)",
+      "paramsRaw": "void",
+      "body": "if (gPlayerAvatar.tileTransitionState == T_TILE_CENTER || gPlayerAvatar.tileTransitionState == T_NOT_MOVING)\n    {\n        if (IsPlayerNotUsingAcroBikeOnBumpySlope())\n            PlayerForceSetHeldMovement(GetFaceDirectionMovementAction(gObjectEvents[gPlayerAvatar.objectEventId].facingDirection));\n    }",
+      "callsTo": [
+        "GetFaceDirectionMovementAction",
+        "IsPlayerNotUsingAcroBikeOnBumpySlope",
+        "PlayerForceSetHeldMovement"
+      ],
+      "lineCount": 5
+    },
+    "PlayerIdleWheelie": {
+      "returnType": "void",
+      "signature": "void PlayerIdleWheelie(u8 direction)",
+      "paramsRaw": "u8 direction",
+      "body": "PlayerSetAnimId(GetAcroWheelieFaceDirectionMovementAction(direction), COPY_MOVE_FACE);",
+      "callsTo": [
+        "GetAcroWheelieFaceDirectionMovementAction",
+        "PlayerSetAnimId"
+      ],
+      "lineCount": 1
+    },
+    "PlayerStartWheelie": {
+      "returnType": "void",
+      "signature": "void PlayerStartWheelie(u8 direction)",
+      "paramsRaw": "u8 direction",
+      "body": "PlayerSetAnimId(GetAcroPopWheelieFaceDirectionMovementAction(direction), COPY_MOVE_FACE);",
+      "callsTo": [
+        "GetAcroPopWheelieFaceDirectionMovementAction",
+        "PlayerSetAnimId"
+      ],
+      "lineCount": 1
+    },
+    "PlayerEndWheelie": {
+      "returnType": "void",
+      "signature": "void PlayerEndWheelie(u8 direction)",
+      "paramsRaw": "u8 direction",
+      "body": "PlayerSetAnimId(GetAcroEndWheelieFaceDirectionMovementAction(direction), COPY_MOVE_FACE);",
+      "callsTo": [
+        "GetAcroEndWheelieFaceDirectionMovementAction",
+        "PlayerSetAnimId"
+      ],
+      "lineCount": 1
+    },
+    "PlayerStandingHoppingWheelie": {
+      "returnType": "void",
+      "signature": "void PlayerStandingHoppingWheelie(u8 direction)",
+      "paramsRaw": "u8 direction",
+      "body": "PlaySE(SE_BIKE_HOP);\n    PlayerSetAnimId(GetAcroWheelieHopFaceDirectionMovementAction(direction), COPY_MOVE_FACE);",
+      "callsTo": [
+        "GetAcroWheelieHopFaceDirectionMovementAction",
+        "PlaySE",
+        "PlayerSetAnimId"
+      ],
+      "lineCount": 2
+    },
+    "PlayerMovingHoppingWheelie": {
+      "returnType": "void",
+      "signature": "void PlayerMovingHoppingWheelie(u8 direction)",
+      "paramsRaw": "u8 direction",
+      "body": "PlaySE(SE_BIKE_HOP);\n    PlayerSetAnimId(GetAcroWheelieHopDirectionMovementAction(direction), COPY_MOVE_WALK);",
+      "callsTo": [
+        "GetAcroWheelieHopDirectionMovementAction",
+        "PlaySE",
+        "PlayerSetAnimId"
+      ],
+      "lineCount": 2
+    },
+    "PlayerLedgeHoppingWheelie": {
+      "returnType": "void",
+      "signature": "void PlayerLedgeHoppingWheelie(u8 direction)",
+      "paramsRaw": "u8 direction",
+      "body": "PlaySE(SE_BIKE_HOP);\n    PlayerSetAnimId(GetAcroWheelieJumpDirectionMovementAction(direction), COPY_MOVE_JUMP2);",
+      "callsTo": [
+        "GetAcroWheelieJumpDirectionMovementAction",
+        "PlaySE",
+        "PlayerSetAnimId"
+      ],
+      "lineCount": 2
+    },
+    "PlayerAcroTurnJump": {
+      "returnType": "void",
+      "signature": "void PlayerAcroTurnJump(u8 direction)",
+      "paramsRaw": "u8 direction",
+      "body": "PlaySE(SE_BIKE_HOP);\n    PlayerSetAnimId(GetJumpInPlaceTurnAroundMovementAction(direction), COPY_MOVE_FACE);",
+      "callsTo": [
+        "GetJumpInPlaceTurnAroundMovementAction",
+        "PlaySE",
+        "PlayerSetAnimId"
+      ],
+      "lineCount": 2
+    },
+    "PlayerWheelieInPlace": {
+      "returnType": "void",
+      "signature": "void PlayerWheelieInPlace(u8 direction)",
+      "paramsRaw": "u8 direction",
+      "body": "PlaySE(SE_WALL_HIT);\n    PlayerSetAnimId(GetAcroWheelieInPlaceDirectionMovementAction(direction), COPY_MOVE_WALK);",
+      "callsTo": [
+        "GetAcroWheelieInPlaceDirectionMovementAction",
+        "PlaySE",
+        "PlayerSetAnimId"
+      ],
+      "lineCount": 2
+    },
+    "PlayerPopWheelieWhileMoving": {
+      "returnType": "void",
+      "signature": "void PlayerPopWheelieWhileMoving(u8 direction)",
+      "paramsRaw": "u8 direction",
+      "body": "PlayerSetAnimId(GetAcroPopWheelieMoveDirectionMovementAction(direction), COPY_MOVE_WALK);",
+      "callsTo": [
+        "GetAcroPopWheelieMoveDirectionMovementAction",
+        "PlayerSetAnimId"
+      ],
+      "lineCount": 1
+    },
+    "PlayerWheelieMove": {
+      "returnType": "void",
+      "signature": "void PlayerWheelieMove(u8 direction)",
+      "paramsRaw": "u8 direction",
+      "body": "PlayerSetAnimId(GetAcroWheelieMoveDirectionMovementAction(direction), COPY_MOVE_WALK);",
+      "callsTo": [
+        "GetAcroWheelieMoveDirectionMovementAction",
+        "PlayerSetAnimId"
+      ],
+      "lineCount": 1
+    },
+    "PlayerEndWheelieWhileMoving": {
+      "returnType": "void",
+      "signature": "void PlayerEndWheelieWhileMoving(u8 direction)",
+      "paramsRaw": "u8 direction",
+      "body": "PlayerSetAnimId(GetAcroEndWheelieMoveDirectionMovementAction(direction), COPY_MOVE_WALK);",
+      "callsTo": [
+        "GetAcroEndWheelieMoveDirectionMovementAction",
+        "PlayerSetAnimId"
+      ],
+      "lineCount": 1
+    },
+    "PlayCollisionSoundIfNotFacingWarp": {
+      "returnType": "void",
+      "signature": "static void PlayCollisionSoundIfNotFacingWarp(u8 direction)",
+      "paramsRaw": "u8 direction",
+      "body": "s16 x, y;\n    u8 metatileBehavior = gObjectEvents[gPlayerAvatar.objectEventId].currentMetatileBehavior;\n\n    if (!sArrowWarpMetatileBehaviorChecks[direction - 1](metatileBehavior))\n    {\n         \n        if (direction == DIR_NORTH)\n        {\n            PlayerGetDestCoords(&x, &y);\n            MoveCoords(direction, &x, &y);\n            if (MetatileBehavior_IsWarpDoor(MapGridGetMetatileBehaviorAt(x, y)))\n                return;\n        }\n        PlaySE(SE_WALL_HIT);\n    }",
+      "callsTo": [
+        "MapGridGetMetatileBehaviorAt",
+        "MetatileBehavior_IsWarpDoor",
+        "MoveCoords",
+        "PlaySE",
+        "PlayerGetDestCoords"
+      ],
+      "lineCount": 15
+    },
+    "GetXYCoordsOneStepInFrontOfPlayer": {
+      "returnType": "void",
+      "signature": "void GetXYCoordsOneStepInFrontOfPlayer(s16 *x, s16 *y)",
+      "paramsRaw": "s16 *x, s16 *y",
+      "body": "*x = gObjectEvents[gPlayerAvatar.objectEventId].currentCoords.x;\n    *y = gObjectEvents[gPlayerAvatar.objectEventId].currentCoords.y;\n    MoveCoords(GetPlayerFacingDirection(), x, y);",
+      "callsTo": [
+        "GetPlayerFacingDirection",
+        "MoveCoords"
+      ],
+      "lineCount": 3
+    },
+    "PlayerGetDestCoords": {
+      "returnType": "void",
+      "signature": "void PlayerGetDestCoords(s16 *x, s16 *y)",
+      "paramsRaw": "s16 *x, s16 *y",
+      "body": "*x = gObjectEvents[gPlayerAvatar.objectEventId].currentCoords.x;\n    *y = gObjectEvents[gPlayerAvatar.objectEventId].currentCoords.y;",
+      "callsTo": [],
+      "lineCount": 2
+    },
+    "player_get_pos_including_state_based_drift": {
+      "returnType": "u8",
+      "signature": "u8 player_get_pos_including_state_based_drift(s16 *x, s16 *y)",
+      "paramsRaw": "s16 *x, s16 *y",
+      "body": "struct ObjectEvent *object = &gObjectEvents[gPlayerAvatar.objectEventId];\n\n    if (object->heldMovementActive && !object->heldMovementFinished && !gSprites[object->spriteId].data[2])\n    {\n        *x = object->currentCoords.x;\n        *y = object->currentCoords.y;\n\n        switch (object->movementActionId)\n        {\n        case MOVEMENT_ACTION_WALK_NORMAL_DOWN:\n        case MOVEMENT_ACTION_PLAYER_RUN_DOWN:\n            (*y)++;\n            return TRUE;\n        case MOVEMENT_ACTION_WALK_NORMAL_UP:\n        case MOVEMENT_ACTION_PLAYER_RUN_UP:\n            (*y)--;\n            return TRUE;\n        case MOVEMENT_ACTION_WALK_NORMAL_LEFT:\n        case MOVEMENT_ACTION_PLAYER_RUN_LEFT:\n            (*x)--;\n            return TRUE;\n        case MOVEMENT_ACTION_WALK_NORMAL_RIGHT:\n        case MOVEMENT_ACTION_PLAYER_RUN_RIGHT:\n            (*x)++;\n            return TRUE;\n        }\n    }\n\n    *x = -1;\n    *y = -1;\n    return FALSE;",
+      "callsTo": [],
+      "lineCount": 31
+    },
+    "GetPlayerFacingDirection": {
+      "returnType": "u8",
+      "signature": "u8 GetPlayerFacingDirection(void)",
+      "paramsRaw": "void",
+      "body": "return gObjectEvents[gPlayerAvatar.objectEventId].facingDirection;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "GetPlayerMovementDirection": {
+      "returnType": "u8",
+      "signature": "u8 GetPlayerMovementDirection(void)",
+      "paramsRaw": "void",
+      "body": "return gObjectEvents[gPlayerAvatar.objectEventId].movementDirection;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "PlayerGetElevation": {
+      "returnType": "u8",
+      "signature": "u8 PlayerGetElevation(void)",
+      "paramsRaw": "void",
+      "body": "return gObjectEvents[gPlayerAvatar.objectEventId].previousElevation;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "MovePlayerToMapCoords": {
+      "returnType": "void",
+      "signature": "void MovePlayerToMapCoords(s16 x, s16 y)",
+      "paramsRaw": "s16 x, s16 y",
+      "body": "MoveObjectEventToMapCoords(&gObjectEvents[gPlayerAvatar.objectEventId], x, y);",
+      "callsTo": [
+        "MoveObjectEventToMapCoords"
+      ],
+      "lineCount": 1
+    },
+    "TestPlayerAvatarFlags": {
+      "returnType": "u8",
+      "signature": "u8 TestPlayerAvatarFlags(u8 flag)",
+      "paramsRaw": "u8 flag",
+      "body": "return gPlayerAvatar.flags & flag;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "GetPlayerAvatarFlags": {
+      "returnType": "u8",
+      "signature": "u8 GetPlayerAvatarFlags(void)",
+      "paramsRaw": "void",
+      "body": "return gPlayerAvatar.flags;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "GetPlayerAvatarSpriteId": {
+      "returnType": "u8",
+      "signature": "u8 GetPlayerAvatarSpriteId(void)",
+      "paramsRaw": "void",
+      "body": "return gPlayerAvatar.spriteId;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "CancelPlayerForcedMovement": {
+      "returnType": "void",
+      "signature": "void CancelPlayerForcedMovement(void)",
+      "paramsRaw": "void",
+      "body": "ForcedMovement_None();",
+      "callsTo": [
+        "ForcedMovement_None"
+      ],
+      "lineCount": 1
+    },
+    "StopPlayerAvatar": {
+      "returnType": "void",
+      "signature": "void StopPlayerAvatar(void)",
+      "paramsRaw": "void",
+      "body": "struct ObjectEvent *playerObjEvent = &gObjectEvents[gPlayerAvatar.objectEventId];\n\n    npc_clear_strange_bits(playerObjEvent);\n    SetObjectEventDirection(playerObjEvent, playerObjEvent->facingDirection);\n    if (TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_MACH_BIKE | PLAYER_AVATAR_FLAG_ACRO_BIKE))\n    {\n        Bike_HandleBumpySlopeJump();\n        Bike_UpdateBikeCounterSpeed(0);\n    }",
+      "callsTo": [
+        "Bike_HandleBumpySlopeJump",
+        "Bike_UpdateBikeCounterSpeed",
+        "SetObjectEventDirection",
+        "TestPlayerAvatarFlags"
+      ],
+      "lineCount": 9
+    },
+    "GetRivalAvatarGraphicsIdByStateIdAndGender": {
+      "returnType": "u8",
+      "signature": "u8 GetRivalAvatarGraphicsIdByStateIdAndGender(u8 state, u8 gender)",
+      "paramsRaw": "u8 state, u8 gender",
+      "body": "return sRivalAvatarGfxIds[state][gender];",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "GetPlayerAvatarGraphicsIdByStateIdAndGender": {
+      "returnType": "u8",
+      "signature": "u8 GetPlayerAvatarGraphicsIdByStateIdAndGender(u8 state, u8 gender)",
+      "paramsRaw": "u8 state, u8 gender",
+      "body": "return sPlayerAvatarGfxIds[state][gender];",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "GetFRLGAvatarGraphicsIdByGender": {
+      "returnType": "u8",
+      "signature": "u8 GetFRLGAvatarGraphicsIdByGender(u8 gender)",
+      "paramsRaw": "u8 gender",
+      "body": "return sFRLGAvatarGfxIds[gender];",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "GetRSAvatarGraphicsIdByGender": {
+      "returnType": "u8",
+      "signature": "u8 GetRSAvatarGraphicsIdByGender(u8 gender)",
+      "paramsRaw": "u8 gender",
+      "body": "return sRSAvatarGfxIds[gender];",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "GetPlayerAvatarGraphicsIdByStateId": {
+      "returnType": "u8",
+      "signature": "u8 GetPlayerAvatarGraphicsIdByStateId(u8 state)",
+      "paramsRaw": "u8 state",
+      "body": "return GetPlayerAvatarGraphicsIdByStateIdAndGender(state, gPlayerAvatar.gender);",
+      "callsTo": [
+        "GetPlayerAvatarGraphicsIdByStateIdAndGender"
+      ],
+      "lineCount": 1
+    },
+    "unref_GetRivalAvatarGenderByGraphicsId": {
+      "returnType": "u8",
+      "signature": "u8 unref_GetRivalAvatarGenderByGraphicsId(u8 gfxId)",
+      "paramsRaw": "u8 gfxId",
+      "body": "switch (gfxId)\n    {\n    case OBJ_EVENT_GFX_RIVAL_MAY_NORMAL:\n    case OBJ_EVENT_GFX_RIVAL_MAY_MACH_BIKE:\n    case OBJ_EVENT_GFX_RIVAL_MAY_ACRO_BIKE:\n    case OBJ_EVENT_GFX_RIVAL_MAY_SURFING:\n    case OBJ_EVENT_GFX_RIVAL_MAY_FIELD_MOVE:\n    case OBJ_EVENT_GFX_MAY_UNDERWATER:\n    case OBJ_EVENT_GFX_MAY_FISHING:\n    case OBJ_EVENT_GFX_MAY_WATERING:\n        return FEMALE;\n    default:\n        return MALE;\n    }",
+      "callsTo": [],
+      "lineCount": 14
+    },
+    "GetPlayerAvatarGenderByGraphicsId": {
+      "returnType": "u8",
+      "signature": "u8 GetPlayerAvatarGenderByGraphicsId(u8 gfxId)",
+      "paramsRaw": "u8 gfxId",
+      "body": "switch (gfxId)\n    {\n    case OBJ_EVENT_GFX_MAY_NORMAL:\n    case OBJ_EVENT_GFX_MAY_MACH_BIKE:\n    case OBJ_EVENT_GFX_MAY_ACRO_BIKE:\n    case OBJ_EVENT_GFX_MAY_SURFING:\n    case OBJ_EVENT_GFX_MAY_FIELD_MOVE:\n    case OBJ_EVENT_GFX_MAY_UNDERWATER:\n    case OBJ_EVENT_GFX_MAY_FISHING:\n    case OBJ_EVENT_GFX_MAY_WATERING:\n        return FEMALE;\n    default:\n        return MALE;\n    }",
+      "callsTo": [],
+      "lineCount": 14
+    },
+    "PartyHasMonWithSurf": {
+      "returnType": "bool8",
+      "signature": "bool8 PartyHasMonWithSurf(void)",
+      "paramsRaw": "void",
+      "body": "u8 i;\n\n    if (!TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_SURFING))\n    {\n        for (i = 0; i < PARTY_SIZE; i++)\n        {\n            if (GetMonData(&gPlayerParty[i], MON_DATA_SPECIES) == SPECIES_NONE)\n                break;\n            if (MonKnowsMove(&gPlayerParty[i], MOVE_SURF))\n                return TRUE;\n        }\n    }\n    return FALSE;",
+      "callsTo": [
+        "GetMonData",
+        "MonKnowsMove",
+        "TestPlayerAvatarFlags"
+      ],
+      "lineCount": 13
+    },
+    "IsPlayerSurfingNorth": {
+      "returnType": "bool8",
+      "signature": "bool8 IsPlayerSurfingNorth(void)",
+      "paramsRaw": "void",
+      "body": "if (GetPlayerMovementDirection() == DIR_NORTH && TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_SURFING))\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [
+        "GetPlayerMovementDirection",
+        "TestPlayerAvatarFlags"
+      ],
+      "lineCount": 4
+    },
+    "IsPlayerFacingSurfableFishableWater": {
+      "returnType": "bool8",
+      "signature": "bool8 IsPlayerFacingSurfableFishableWater(void)",
+      "paramsRaw": "void",
+      "body": "struct ObjectEvent *playerObjEvent = &gObjectEvents[gPlayerAvatar.objectEventId];\n    s16 x = playerObjEvent->currentCoords.x;\n    s16 y = playerObjEvent->currentCoords.y;\n\n    MoveCoords(playerObjEvent->facingDirection, &x, &y);\n    if (GetCollisionAtCoords(playerObjEvent, x, y, playerObjEvent->facingDirection) == COLLISION_ELEVATION_MISMATCH\n     && PlayerGetElevation() == ELEVATION_DEFAULT\n     && MetatileBehavior_IsSurfableFishableWater(MapGridGetMetatileBehaviorAt(x, y)))\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [
+        "GetCollisionAtCoords",
+        "MapGridGetMetatileBehaviorAt",
+        "MetatileBehavior_IsSurfableFishableWater",
+        "MoveCoords",
+        "PlayerGetElevation"
+      ],
+      "lineCount": 11
+    },
+    "ClearPlayerAvatarInfo": {
+      "returnType": "void",
+      "signature": "void ClearPlayerAvatarInfo(void)",
+      "paramsRaw": "void",
+      "body": "memset(&gPlayerAvatar, 0, sizeof(struct PlayerAvatar));",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "SetPlayerAvatarStateMask": {
+      "returnType": "void",
+      "signature": "void SetPlayerAvatarStateMask(u8 flags)",
+      "paramsRaw": "u8 flags",
+      "body": "gPlayerAvatar.flags &= (PLAYER_AVATAR_FLAG_DASH | PLAYER_AVATAR_FLAG_FORCED_MOVE | PLAYER_AVATAR_FLAG_CONTROLLABLE);\n    gPlayerAvatar.flags |= flags;",
+      "callsTo": [],
+      "lineCount": 2
+    },
+    "GetPlayerAvatarStateTransitionByGraphicsId": {
+      "returnType": "u8",
+      "signature": "static u8 GetPlayerAvatarStateTransitionByGraphicsId(u8 graphicsId, u8 gender)",
+      "paramsRaw": "u8 graphicsId, u8 gender",
+      "body": "u8 i;\n\n    for (i = 0; i < ARRAY_COUNT(sPlayerAvatarGfxToStateFlag[0]); i++)\n    {\n        if (sPlayerAvatarGfxToStateFlag[gender][i].graphicsId == graphicsId)\n            return sPlayerAvatarGfxToStateFlag[gender][i].playerFlag;\n    }\n    return PLAYER_AVATAR_FLAG_ON_FOOT;",
+      "callsTo": [
+        "ARRAY_COUNT"
+      ],
+      "lineCount": 8
+    },
+    "GetPlayerAvatarGraphicsIdByCurrentState": {
+      "returnType": "u8",
+      "signature": "u8 GetPlayerAvatarGraphicsIdByCurrentState(void)",
+      "paramsRaw": "void",
+      "body": "u8 i;\n    u8 flags = gPlayerAvatar.flags;\n\n    for (i = 0; i < ARRAY_COUNT(sPlayerAvatarGfxToStateFlag[0]); i++)\n    {\n        if (sPlayerAvatarGfxToStateFlag[gPlayerAvatar.gender][i].playerFlag & flags)\n            return sPlayerAvatarGfxToStateFlag[gPlayerAvatar.gender][i].graphicsId;\n    }\n    return 0;",
+      "callsTo": [
+        "ARRAY_COUNT"
+      ],
+      "lineCount": 9
+    },
+    "SetPlayerAvatarExtraStateTransition": {
+      "returnType": "void",
+      "signature": "void SetPlayerAvatarExtraStateTransition(u8 graphicsId, u8 transitionFlag)",
+      "paramsRaw": "u8 graphicsId, u8 transitionFlag",
+      "body": "u8 stateFlag = GetPlayerAvatarStateTransitionByGraphicsId(graphicsId, gPlayerAvatar.gender);\n\n    gPlayerAvatar.transitionFlags |= stateFlag | transitionFlag;\n    DoPlayerAvatarTransition();",
+      "callsTo": [
+        "DoPlayerAvatarTransition",
+        "GetPlayerAvatarStateTransitionByGraphicsId"
+      ],
+      "lineCount": 4
+    },
+    "InitPlayerAvatar": {
+      "returnType": "void",
+      "signature": "void InitPlayerAvatar(s16 x, s16 y, u8 direction, u8 gender)",
+      "paramsRaw": "s16 x, s16 y, u8 direction, u8 gender",
+      "body": "struct ObjectEventTemplate playerObjEventTemplate;\n    u8 objectEventId;\n    struct ObjectEvent *objectEvent;\n\n    playerObjEventTemplate.localId = LOCALID_PLAYER;\n    playerObjEventTemplate.graphicsId = GetPlayerAvatarGraphicsIdByStateIdAndGender(PLAYER_AVATAR_STATE_NORMAL, gender);\n    playerObjEventTemplate.x = x - MAP_OFFSET;\n    playerObjEventTemplate.y = y - MAP_OFFSET;\n    playerObjEventTemplate.elevation = ELEVATION_TRANSITION;\n    playerObjEventTemplate.movementType = MOVEMENT_TYPE_PLAYER;\n    playerObjEventTemplate.movementRangeX = 0;\n    playerObjEventTemplate.movementRangeY = 0;\n    playerObjEventTemplate.trainerType = TRAINER_TYPE_NONE;\n    playerObjEventTemplate.trainerRange_berryTreeId = 0;\n    playerObjEventTemplate.script = NULL;\n    playerObjEventTemplate.flagId = 0;\n    objectEventId = SpawnSpecialObjectEvent(&playerObjEventTemplate);\n    objectEvent = &gObjectEvents[objectEventId];\n    objectEvent->isPlayer = TRUE;\n    objectEvent->warpArrowSpriteId = CreateWarpArrowSprite();\n    ObjectEventTurn(objectEvent, direction);\n    ClearPlayerAvatarInfo();\n    gPlayerAvatar.runningState = NOT_MOVING;\n    gPlayerAvatar.tileTransitionState = T_NOT_MOVING;\n    gPlayerAvatar.objectEventId = objectEventId;\n    gPlayerAvatar.spriteId = objectEvent->spriteId;\n    gPlayerAvatar.gender = gender;\n    SetPlayerAvatarStateMask(PLAYER_AVATAR_FLAG_CONTROLLABLE | PLAYER_AVATAR_FLAG_ON_FOOT);",
+      "callsTo": [
+        "ClearPlayerAvatarInfo",
+        "CreateWarpArrowSprite",
+        "GetPlayerAvatarGraphicsIdByStateIdAndGender",
+        "ObjectEventTurn",
+        "SetPlayerAvatarStateMask",
+        "SpawnSpecialObjectEvent"
+      ],
+      "lineCount": 28
+    },
+    "SetPlayerInvisibility": {
+      "returnType": "void",
+      "signature": "void SetPlayerInvisibility(bool8 invisible)",
+      "paramsRaw": "bool8 invisible",
+      "body": "gObjectEvents[gPlayerAvatar.objectEventId].invisible = invisible;\n    if (TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_SURFING))\n        gSprites[gObjectEvents[gPlayerAvatar.objectEventId].fieldEffectSpriteId].invisible = invisible;",
+      "callsTo": [
+        "TestPlayerAvatarFlags"
+      ],
+      "lineCount": 3
+    },
+    "SetPlayerAvatarFieldMove": {
+      "returnType": "void",
+      "signature": "void SetPlayerAvatarFieldMove(void)",
+      "paramsRaw": "void",
+      "body": "ObjectEventSetGraphicsId(&gObjectEvents[gPlayerAvatar.objectEventId], GetPlayerAvatarGraphicsIdByStateId(PLAYER_AVATAR_STATE_FIELD_MOVE));\n    StartSpriteAnim(&gSprites[gPlayerAvatar.spriteId], ANIM_FIELD_MOVE);",
+      "callsTo": [
+        "GetPlayerAvatarGraphicsIdByStateId",
+        "ObjectEventSetGraphicsId",
+        "StartSpriteAnim"
+      ],
+      "lineCount": 2
+    },
+    "SetPlayerAvatarFishing": {
+      "returnType": "void",
+      "signature": "static void SetPlayerAvatarFishing(u8 direction)",
+      "paramsRaw": "u8 direction",
+      "body": "ObjectEventSetGraphicsId(&gObjectEvents[gPlayerAvatar.objectEventId], GetPlayerAvatarGraphicsIdByStateId(PLAYER_AVATAR_STATE_FISHING));\n    StartSpriteAnim(&gSprites[gPlayerAvatar.spriteId], GetFishingDirectionAnimNum(direction));",
+      "callsTo": [
+        "GetFishingDirectionAnimNum",
+        "GetPlayerAvatarGraphicsIdByStateId",
+        "ObjectEventSetGraphicsId",
+        "StartSpriteAnim"
+      ],
+      "lineCount": 2
+    },
+    "PlayerUseAcroBikeOnBumpySlope": {
+      "returnType": "void",
+      "signature": "void PlayerUseAcroBikeOnBumpySlope(u8 direction)",
+      "paramsRaw": "u8 direction",
+      "body": "ObjectEventSetGraphicsId(&gObjectEvents[gPlayerAvatar.objectEventId], GetPlayerAvatarGraphicsIdByStateId(PLAYER_AVATAR_STATE_ACRO_BIKE));\n    StartSpriteAnim(&gSprites[gPlayerAvatar.spriteId], GetAcroWheelieDirectionAnimNum(direction));\n    SeekSpriteAnim(&gSprites[gPlayerAvatar.spriteId], 1);",
+      "callsTo": [
+        "GetAcroWheelieDirectionAnimNum",
+        "GetPlayerAvatarGraphicsIdByStateId",
+        "ObjectEventSetGraphicsId",
+        "SeekSpriteAnim",
+        "StartSpriteAnim"
+      ],
+      "lineCount": 3
+    },
+    "SetPlayerAvatarWatering": {
+      "returnType": "void",
+      "signature": "void SetPlayerAvatarWatering(u8 direction)",
+      "paramsRaw": "u8 direction",
+      "body": "ObjectEventSetGraphicsId(&gObjectEvents[gPlayerAvatar.objectEventId], GetPlayerAvatarGraphicsIdByStateId(PLAYER_AVATAR_STATE_WATERING));\n    StartSpriteAnim(&gSprites[gPlayerAvatar.spriteId], GetFaceDirectionAnimNum(direction));",
+      "callsTo": [
+        "GetFaceDirectionAnimNum",
+        "GetPlayerAvatarGraphicsIdByStateId",
+        "ObjectEventSetGraphicsId",
+        "StartSpriteAnim"
+      ],
+      "lineCount": 2
+    },
+    "HideShowWarpArrow": {
+      "returnType": "void",
+      "signature": "static void HideShowWarpArrow(struct ObjectEvent *objectEvent)",
+      "paramsRaw": "struct ObjectEvent *objectEvent",
+      "body": "s16 x;\n    s16 y;\n    u8 direction;\n    u8 metatileBehavior = objectEvent->currentMetatileBehavior;\n\n    for (x = 0, direction = DIR_SOUTH; x < 4; x++, direction++)\n    {\n        if (sArrowWarpMetatileBehaviorChecks2[x](metatileBehavior) && direction == objectEvent->movementDirection)\n        {\n             \n            x = objectEvent->currentCoords.x;\n            y = objectEvent->currentCoords.y;\n            MoveCoords(direction, &x, &y);\n            ShowWarpArrowSprite(objectEvent->warpArrowSpriteId, direction, x, y);\n            return;\n        }\n    }\n    SetSpriteInvisible(objectEvent->warpArrowSpriteId);",
+      "callsTo": [
+        "MoveCoords",
+        "SetSpriteInvisible",
+        "ShowWarpArrowSprite"
+      ],
+      "lineCount": 18
+    },
+    "StartStrengthAnim": {
+      "returnType": "void",
+      "signature": "static void StartStrengthAnim(u8 objectEventId, u8 direction)",
+      "paramsRaw": "u8 objectEventId, u8 direction",
+      "body": "u8 taskId = CreateTask(Task_PushBoulder, 0xFF);\n\n    gTasks[taskId].tBoulderObjId = objectEventId;\n    gTasks[taskId].tDirection = direction;\n    Task_PushBoulder(taskId);",
+      "callsTo": [
+        "CreateTask",
+        "Task_PushBoulder"
+      ],
+      "lineCount": 5
+    },
+    "Task_PushBoulder": {
+      "returnType": "void",
+      "signature": "static void Task_PushBoulder(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "while (sPushBoulderFuncs[gTasks[taskId].tState](&gTasks[taskId],\n                                                     &gObjectEvents[gPlayerAvatar.objectEventId],\n                                                     &gObjectEvents[gTasks[taskId].tBoulderObjId]))\n        ;",
+      "callsTo": [],
+      "lineCount": 4
+    },
+    "PushBoulder_Start": {
+      "returnType": "bool8",
+      "signature": "static bool8 PushBoulder_Start(struct Task *task, struct ObjectEvent *player, struct ObjectEvent *boulder)",
+      "paramsRaw": "struct Task *task, struct ObjectEvent *player, struct ObjectEvent *boulder",
+      "body": "LockPlayerFieldControls();\n    gPlayerAvatar.preventStep = TRUE;\n    task->tState++;\n    return FALSE;",
+      "callsTo": [
+        "LockPlayerFieldControls"
+      ],
+      "lineCount": 4
+    },
+    "PushBoulder_Move": {
+      "returnType": "bool8",
+      "signature": "static bool8 PushBoulder_Move(struct Task *task, struct ObjectEvent *player, struct ObjectEvent *boulder)",
+      "paramsRaw": "struct Task *task, struct ObjectEvent *player, struct ObjectEvent *boulder",
+      "body": "if (ObjectEventIsHeldMovementActive(player))\n        ObjectEventClearHeldMovementIfFinished(player);\n\n    if (ObjectEventIsHeldMovementActive(boulder))\n        ObjectEventClearHeldMovementIfFinished(boulder);\n\n    if (!ObjectEventIsMovementOverridden(player)\n     && !ObjectEventIsMovementOverridden(boulder))\n    {\n        ObjectEventClearHeldMovementIfFinished(player);\n        ObjectEventClearHeldMovementIfFinished(boulder);\n        ObjectEventSetHeldMovement(player, GetWalkInPlaceNormalMovementAction((u8)task->tDirection));\n        ObjectEventSetHeldMovement(boulder, GetWalkSlowMovementAction((u8)task->tDirection));\n        gFieldEffectArguments[0] = boulder->currentCoords.x;\n        gFieldEffectArguments[1] = boulder->currentCoords.y;\n        gFieldEffectArguments[2] = boulder->previousElevation;\n        gFieldEffectArguments[3] = gSprites[boulder->spriteId].oam.priority;\n        FieldEffectStart(FLDEFF_DUST);\n        PlaySE(SE_M_STRENGTH);\n        task->tState++;\n    }\n    return FALSE;",
+      "callsTo": [
+        "FieldEffectStart",
+        "GetWalkInPlaceNormalMovementAction",
+        "GetWalkSlowMovementAction",
+        "ObjectEventClearHeldMovementIfFinished",
+        "ObjectEventIsHeldMovementActive",
+        "ObjectEventIsMovementOverridden",
+        "ObjectEventSetHeldMovement",
+        "PlaySE"
+      ],
+      "lineCount": 22
+    },
+    "PushBoulder_End": {
+      "returnType": "bool8",
+      "signature": "static bool8 PushBoulder_End(struct Task *task, struct ObjectEvent *player, struct ObjectEvent *boulder)",
+      "paramsRaw": "struct Task *task, struct ObjectEvent *player, struct ObjectEvent *boulder",
+      "body": "if (ObjectEventCheckHeldMovementStatus(player)\n     && ObjectEventCheckHeldMovementStatus(boulder))\n    {\n        ObjectEventClearHeldMovementIfFinished(player);\n        ObjectEventClearHeldMovementIfFinished(boulder);\n        gPlayerAvatar.preventStep = FALSE;\n        UnlockPlayerFieldControls();\n        DestroyTask(FindTaskIdByFunc(Task_PushBoulder));\n    }\n    return FALSE;",
+      "callsTo": [
+        "DestroyTask",
+        "FindTaskIdByFunc",
+        "ObjectEventCheckHeldMovementStatus",
+        "ObjectEventClearHeldMovementIfFinished",
+        "UnlockPlayerFieldControls"
+      ],
+      "lineCount": 10
+    },
+    "DoPlayerMatJump": {
+      "returnType": "void",
+      "signature": "static void DoPlayerMatJump(void)",
+      "paramsRaw": "void",
+      "body": "DoPlayerAvatarSecretBaseMatJump(CreateTask(DoPlayerAvatarSecretBaseMatJump, 0xFF));",
+      "callsTo": [
+        "CreateTask",
+        "DoPlayerAvatarSecretBaseMatJump"
+      ],
+      "lineCount": 1
+    },
+    "DoPlayerAvatarSecretBaseMatJump": {
+      "returnType": "void",
+      "signature": "static void DoPlayerAvatarSecretBaseMatJump(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "while (sPlayerAvatarSecretBaseMatJump[gTasks[taskId].data[0]](&gTasks[taskId], &gObjectEvents[gPlayerAvatar.objectEventId]))\n        ;",
+      "callsTo": [],
+      "lineCount": 2
+    },
+    "PlayerAvatar_DoSecretBaseMatJump": {
+      "returnType": "u8",
+      "signature": "static u8 PlayerAvatar_DoSecretBaseMatJump(struct Task *task, struct ObjectEvent *objectEvent)",
+      "paramsRaw": "struct Task *task, struct ObjectEvent *objectEvent",
+      "body": "gPlayerAvatar.preventStep = TRUE;\n    if (ObjectEventClearHeldMovementIfFinished(objectEvent))\n    {\n        PlaySE(SE_LEDGE);\n        ObjectEventSetHeldMovement(objectEvent, GetJumpInPlaceMovementAction(objectEvent->facingDirection));\n        task->data[1]++;\n        if (task->data[1] > 1)\n        {\n            gPlayerAvatar.preventStep = FALSE;\n            gPlayerAvatar.transitionFlags |= PLAYER_AVATAR_FLAG_CONTROLLABLE;\n            DestroyTask(FindTaskIdByFunc(DoPlayerAvatarSecretBaseMatJump));\n        }\n    }\n    return FALSE;",
+      "callsTo": [
+        "DestroyTask",
+        "FindTaskIdByFunc",
+        "GetJumpInPlaceMovementAction",
+        "ObjectEventClearHeldMovementIfFinished",
+        "ObjectEventSetHeldMovement",
+        "PlaySE"
+      ],
+      "lineCount": 14
+    },
+    "DoPlayerMatSpin": {
+      "returnType": "void",
+      "signature": "static void DoPlayerMatSpin(void)",
+      "paramsRaw": "void",
+      "body": "u8 taskId = CreateTask(PlayerAvatar_DoSecretBaseMatSpin, 0xFF);\n\n    PlayerAvatar_DoSecretBaseMatSpin(taskId);",
+      "callsTo": [
+        "CreateTask",
+        "PlayerAvatar_DoSecretBaseMatSpin"
+      ],
+      "lineCount": 3
+    },
+    "PlayerAvatar_DoSecretBaseMatSpin": {
+      "returnType": "void",
+      "signature": "static void PlayerAvatar_DoSecretBaseMatSpin(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "while (sPlayerAvatarSecretBaseMatSpin[gTasks[taskId].data[0]](&gTasks[taskId], &gObjectEvents[gPlayerAvatar.objectEventId]))\n        ;",
+      "callsTo": [],
+      "lineCount": 2
+    },
+    "PlayerAvatar_SecretBaseMatSpinStep0": {
+      "returnType": "bool8",
+      "signature": "static bool8 PlayerAvatar_SecretBaseMatSpinStep0(struct Task *task, struct ObjectEvent *objectEvent)",
+      "paramsRaw": "struct Task *task, struct ObjectEvent *objectEvent",
+      "body": "task->data[0]++;\n    task->data[1] = objectEvent->movementDirection;\n    gPlayerAvatar.preventStep = TRUE;\n    LockPlayerFieldControls();\n    PlaySE(SE_WARP_IN);\n    return TRUE;",
+      "callsTo": [
+        "LockPlayerFieldControls",
+        "PlaySE"
+      ],
+      "lineCount": 6
+    },
+    "PlayerAvatar_SecretBaseMatSpinStep1": {
+      "returnType": "bool8",
+      "signature": "static bool8 PlayerAvatar_SecretBaseMatSpinStep1(struct Task *task, struct ObjectEvent *objectEvent)",
+      "paramsRaw": "struct Task *task, struct ObjectEvent *objectEvent",
+      "body": "u8 directions[] = {DIR_WEST, DIR_EAST, DIR_NORTH, DIR_SOUTH};\n\n    if (ObjectEventClearHeldMovementIfFinished(objectEvent))\n    {\n        u8 direction;\n\n        ObjectEventSetHeldMovement(objectEvent, GetFaceDirectionMovementAction(direction = directions[objectEvent->movementDirection - 1]));\n        if (direction == (u8)task->data[1])\n            task->data[2]++;\n        task->data[0]++;\n        if (task->data[2] > 3 && direction == GetOppositeDirection(task->data[1]))\n            task->data[0]++;\n    }\n    return FALSE;",
+      "callsTo": [
+        "GetFaceDirectionMovementAction",
+        "GetOppositeDirection",
+        "ObjectEventClearHeldMovementIfFinished",
+        "ObjectEventSetHeldMovement"
+      ],
+      "lineCount": 14
+    },
+    "PlayerAvatar_SecretBaseMatSpinStep2": {
+      "returnType": "bool8",
+      "signature": "static bool8 PlayerAvatar_SecretBaseMatSpinStep2(struct Task *task, struct ObjectEvent *objectEvent)",
+      "paramsRaw": "struct Task *task, struct ObjectEvent *objectEvent",
+      "body": "const u8 actions[] = {\n        MOVEMENT_ACTION_DELAY_1,\n        MOVEMENT_ACTION_DELAY_1,\n        MOVEMENT_ACTION_DELAY_2,\n        MOVEMENT_ACTION_DELAY_4,\n        MOVEMENT_ACTION_DELAY_8,\n    };\n\n    if (ObjectEventClearHeldMovementIfFinished(objectEvent))\n    {\n        ObjectEventSetHeldMovement(objectEvent, actions[task->data[2]]);\n        task->data[0] = 1;\n    }\n    return FALSE;",
+      "callsTo": [
+        "ObjectEventClearHeldMovementIfFinished",
+        "ObjectEventSetHeldMovement"
+      ],
+      "lineCount": 14
+    },
+    "PlayerAvatar_SecretBaseMatSpinStep3": {
+      "returnType": "bool8",
+      "signature": "static bool8 PlayerAvatar_SecretBaseMatSpinStep3(struct Task *task, struct ObjectEvent *objectEvent)",
+      "paramsRaw": "struct Task *task, struct ObjectEvent *objectEvent",
+      "body": "if (ObjectEventClearHeldMovementIfFinished(objectEvent))\n    {\n        ObjectEventSetHeldMovement(objectEvent, GetWalkSlowMovementAction(GetOppositeDirection(task->data[1])));\n        UnlockPlayerFieldControls();\n        gPlayerAvatar.preventStep = FALSE;\n        DestroyTask(FindTaskIdByFunc(PlayerAvatar_DoSecretBaseMatSpin));\n    }\n    return FALSE;",
+      "callsTo": [
+        "DestroyTask",
+        "FindTaskIdByFunc",
+        "GetOppositeDirection",
+        "GetWalkSlowMovementAction",
+        "ObjectEventClearHeldMovementIfFinished",
+        "ObjectEventSetHeldMovement",
+        "UnlockPlayerFieldControls"
+      ],
+      "lineCount": 8
+    },
+    "CreateStopSurfingTask": {
+      "returnType": "void",
+      "signature": "static void CreateStopSurfingTask(u8 direction)",
+      "paramsRaw": "u8 direction",
+      "body": "u8 taskId;\n\n    LockPlayerFieldControls();\n    Overworld_ClearSavedMusic();\n    Overworld_ChangeMusicToDefault();\n    gPlayerAvatar.flags &= ~PLAYER_AVATAR_FLAG_SURFING;\n    gPlayerAvatar.flags |= PLAYER_AVATAR_FLAG_ON_FOOT;\n    gPlayerAvatar.preventStep = TRUE;\n    taskId = CreateTask(Task_StopSurfingInit, 0xFF);\n    gTasks[taskId].data[0] = direction;\n    Task_StopSurfingInit(taskId);",
+      "callsTo": [
+        "CreateTask",
+        "LockPlayerFieldControls",
+        "Overworld_ChangeMusicToDefault",
+        "Overworld_ClearSavedMusic",
+        "Task_StopSurfingInit"
+      ],
+      "lineCount": 11
+    },
+    "Task_StopSurfingInit": {
+      "returnType": "void",
+      "signature": "static void Task_StopSurfingInit(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "struct ObjectEvent *playerObjEvent = &gObjectEvents[gPlayerAvatar.objectEventId];\n\n    if (ObjectEventIsMovementOverridden(playerObjEvent))\n    {\n        if (!ObjectEventClearHeldMovementIfFinished(playerObjEvent))\n            return;\n    }\n    SetSurfBlob_BobState(playerObjEvent->fieldEffectSpriteId, BOB_JUST_MON);\n    ObjectEventSetHeldMovement(playerObjEvent, GetJumpSpecialMovementAction((u8)gTasks[taskId].data[0]));\n    gTasks[taskId].func = Task_WaitStopSurfing;",
+      "callsTo": [
+        "GetJumpSpecialMovementAction",
+        "ObjectEventClearHeldMovementIfFinished",
+        "ObjectEventIsMovementOverridden",
+        "ObjectEventSetHeldMovement",
+        "SetSurfBlob_BobState"
+      ],
+      "lineCount": 10
+    },
+    "Task_WaitStopSurfing": {
+      "returnType": "void",
+      "signature": "static void Task_WaitStopSurfing(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "struct ObjectEvent *playerObjEvent = &gObjectEvents[gPlayerAvatar.objectEventId];\n\n    if (ObjectEventClearHeldMovementIfFinished(playerObjEvent))\n    {\n        ObjectEventSetGraphicsId(playerObjEvent, GetPlayerAvatarGraphicsIdByStateId(PLAYER_AVATAR_STATE_NORMAL));\n        ObjectEventSetHeldMovement(playerObjEvent, GetFaceDirectionMovementAction(playerObjEvent->facingDirection));\n        gPlayerAvatar.preventStep = FALSE;\n        UnlockPlayerFieldControls();\n        DestroySprite(&gSprites[playerObjEvent->fieldEffectSpriteId]);\n#ifdef BUGFIX\n         \n        playerObjEvent->triggerGroundEffectsOnMove = TRUE;\n#endif\n        DestroyTask(taskId);\n    }",
+      "callsTo": [
+        "DestroySprite",
+        "DestroyTask",
+        "GetFaceDirectionMovementAction",
+        "GetPlayerAvatarGraphicsIdByStateId",
+        "ObjectEventClearHeldMovementIfFinished",
+        "ObjectEventSetGraphicsId",
+        "ObjectEventSetHeldMovement",
+        "UnlockPlayerFieldControls"
+      ],
+      "lineCount": 15
+    },
+    "StartFishing": {
+      "returnType": "void",
+      "signature": "void StartFishing(u8 rod)",
+      "paramsRaw": "u8 rod",
+      "body": "u8 taskId = CreateTask(Task_Fishing, 0xFF);\n\n    gTasks[taskId].tFishingRod = rod;\n    Task_Fishing(taskId);",
+      "callsTo": [
+        "CreateTask",
+        "Task_Fishing"
+      ],
+      "lineCount": 4
+    },
+    "Task_Fishing": {
+      "returnType": "void",
+      "signature": "static void Task_Fishing(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "while (sFishingStateFuncs[gTasks[taskId].tStep](&gTasks[taskId]))\n        ;",
+      "callsTo": [],
+      "lineCount": 2
+    },
+    "Fishing_Init": {
+      "returnType": "bool8",
+      "signature": "static bool8 Fishing_Init(struct Task *task)",
+      "paramsRaw": "struct Task *task",
+      "body": "LockPlayerFieldControls();\n    gPlayerAvatar.preventStep = TRUE;\n    task->tStep++;\n    return FALSE;",
+      "callsTo": [
+        "LockPlayerFieldControls"
+      ],
+      "lineCount": 4
+    },
+    "Fishing_GetRodOut": {
+      "returnType": "bool8",
+      "signature": "static bool8 Fishing_GetRodOut(struct Task *task)",
+      "paramsRaw": "struct Task *task",
+      "body": "struct ObjectEvent *playerObjEvent;\n    const s16 minRounds1[] = {\n        [OLD_ROD]   = 1,\n        [GOOD_ROD]  = 1,\n        [SUPER_ROD] = 1\n    };\n    const s16 minRounds2[] = {\n        [OLD_ROD]   = 1,\n        [GOOD_ROD]  = 3,\n        [SUPER_ROD] = 6\n    };\n\n    task->tRoundsPlayed = 0;\n    task->tMinRoundsRequired = minRounds1[task->tFishingRod] + (Random() % minRounds2[task->tFishingRod]);\n    task->tPlayerGfxId = gObjectEvents[gPlayerAvatar.objectEventId].graphicsId;\n    playerObjEvent = &gObjectEvents[gPlayerAvatar.objectEventId];\n    ObjectEventClearHeldMovementIfActive(playerObjEvent);\n    playerObjEvent->enableAnim = TRUE;\n    SetPlayerAvatarFishing(playerObjEvent->facingDirection);\n    task->tStep++;\n    return FALSE;",
+      "callsTo": [
+        "ObjectEventClearHeldMovementIfActive",
+        "Random",
+        "SetPlayerAvatarFishing"
+      ],
+      "lineCount": 21
+    },
+    "Fishing_WaitBeforeDots": {
+      "returnType": "bool8",
+      "signature": "static bool8 Fishing_WaitBeforeDots(struct Task *task)",
+      "paramsRaw": "struct Task *task",
+      "body": "AlignFishingAnimationFrames();\n\n     \n    task->tFrameCounter++;\n    if (task->tFrameCounter >= 60)\n        task->tStep++;\n    return FALSE;",
+      "callsTo": [
+        "AlignFishingAnimationFrames"
+      ],
+      "lineCount": 7
+    },
+    "Fishing_InitDots": {
+      "returnType": "bool8",
+      "signature": "static bool8 Fishing_InitDots(struct Task *task)",
+      "paramsRaw": "struct Task *task",
+      "body": "u32 randVal;\n\n    LoadMessageBoxAndFrameGfx(0, TRUE);\n    task->tStep++;\n    task->tFrameCounter = 0;\n    task->tNumDots = 0;\n    randVal = Random();\n    randVal %= 10;\n    task->tDotsRequired = randVal + 1;\n    if (task->tRoundsPlayed == 0)\n        task->tDotsRequired = randVal + 4;\n    if (task->tDotsRequired >= 10)\n        task->tDotsRequired = 10;\n    return TRUE;",
+      "callsTo": [
+        "LoadMessageBoxAndFrameGfx",
+        "Random"
+      ],
+      "lineCount": 14
+    },
+    "Fishing_ShowDots": {
+      "returnType": "bool8",
+      "signature": "static bool8 Fishing_ShowDots(struct Task *task)",
+      "paramsRaw": "struct Task *task",
+      "body": "const u8 dot[] = _(\"·\");\n\n    AlignFishingAnimationFrames();\n    task->tFrameCounter++;\n    if (JOY_NEW(A_BUTTON))\n    {\n        task->tStep = FISHING_NO_BITE;\n        if (task->tRoundsPlayed != 0)\n            task->tStep = FISHING_GOT_AWAY;\n        return TRUE;\n    }\n    else\n    {\n        if (task->tFrameCounter >= 20)\n        {\n            task->tFrameCounter = 0;\n            if (task->tNumDots >= task->tDotsRequired)\n            {\n                task->tStep++;\n                if (task->tRoundsPlayed != 0)\n                    task->tStep++;\n                task->tRoundsPlayed++;\n            }\n            else\n            {\n                AddTextPrinterParameterized(0, FONT_NORMAL, dot, task->tNumDots * 8, 1, 0, NULL);\n                task->tNumDots++;\n            }\n        }\n        return FALSE;\n    }",
+      "callsTo": [
+        "AddTextPrinterParameterized",
+        "AlignFishingAnimationFrames",
+        "JOY_NEW"
+      ],
+      "lineCount": 31
+    },
+    "Fishing_CheckForBite": {
+      "returnType": "bool8",
+      "signature": "static bool8 Fishing_CheckForBite(struct Task *task)",
+      "paramsRaw": "struct Task *task",
+      "body": "bool8 bite;\n\n    AlignFishingAnimationFrames();\n    task->tStep++;\n    bite = FALSE;\n\n    if (!DoesCurrentMapHaveFishingMons())\n    {\n        task->tStep = FISHING_NO_BITE;\n    }\n    else\n    {\n        if (!GetMonData(&gPlayerParty[0], MON_DATA_SANITY_IS_EGG))\n        {\n            u8 ability = GetMonAbility(&gPlayerParty[0]);\n            if (ability == ABILITY_SUCTION_CUPS || ability  == ABILITY_STICKY_HOLD)\n            {\n                if (Random() % 100 > 14)\n                    bite = TRUE;\n            }\n        }\n\n        if (!bite)\n        {\n            if (Random() & 1)\n                task->tStep = FISHING_NO_BITE;\n            else\n                bite = TRUE;\n        }\n\n        if (bite == TRUE)\n            StartSpriteAnim(&gSprites[gPlayerAvatar.spriteId], GetFishingBiteDirectionAnimNum(GetPlayerFacingDirection()));\n    }\n    return TRUE;",
+      "callsTo": [
+        "AlignFishingAnimationFrames",
+        "DoesCurrentMapHaveFishingMons",
+        "GetFishingBiteDirectionAnimNum",
+        "GetMonAbility",
+        "GetMonData",
+        "GetPlayerFacingDirection",
+        "Random",
+        "StartSpriteAnim"
+      ],
+      "lineCount": 34
+    },
+    "Fishing_GotBite": {
+      "returnType": "bool8",
+      "signature": "static bool8 Fishing_GotBite(struct Task *task)",
+      "paramsRaw": "struct Task *task",
+      "body": "AlignFishingAnimationFrames();\n    AddTextPrinterParameterized(0, FONT_NORMAL, gText_OhABite, 0, 17, 0, NULL);\n    task->tStep++;\n    task->tFrameCounter = 0;\n    return FALSE;",
+      "callsTo": [
+        "AddTextPrinterParameterized",
+        "AlignFishingAnimationFrames"
+      ],
+      "lineCount": 5
+    },
+    "Fishing_WaitForA": {
+      "returnType": "bool8",
+      "signature": "static bool8 Fishing_WaitForA(struct Task *task)",
+      "paramsRaw": "struct Task *task",
+      "body": "const s16 reelTimeouts[3] = {\n        [OLD_ROD]   = 36,\n        [GOOD_ROD]  = 33,\n        [SUPER_ROD] = 30\n    };\n\n    AlignFishingAnimationFrames();\n    task->tFrameCounter++;\n    if (task->tFrameCounter >= reelTimeouts[task->tFishingRod])\n        task->tStep = FISHING_GOT_AWAY;\n    else if (JOY_NEW(A_BUTTON))\n        task->tStep++;\n    return FALSE;",
+      "callsTo": [
+        "AlignFishingAnimationFrames",
+        "JOY_NEW"
+      ],
+      "lineCount": 13
+    },
+    "Fishing_CheckMoreDots": {
+      "returnType": "bool8",
+      "signature": "static bool8 Fishing_CheckMoreDots(struct Task *task)",
+      "paramsRaw": "struct Task *task",
+      "body": "const s16 moreDotsChance[][2] =\n    {\n        [OLD_ROD]   = {0, 0},\n        [GOOD_ROD]  = {40, 10},\n        [SUPER_ROD] = {70, 30}\n    };\n\n    AlignFishingAnimationFrames();\n    task->tStep++;\n    if (task->tRoundsPlayed < task->tMinRoundsRequired)\n    {\n        task->tStep = FISHING_START_ROUND;\n    }\n    else if (task->tRoundsPlayed < 2)\n    {\n         \n        s16 probability = Random() % 100;\n\n        if (moreDotsChance[task->tFishingRod][task->tRoundsPlayed] > probability)\n            task->tStep = FISHING_START_ROUND;\n    }\n    return FALSE;",
+      "callsTo": [
+        "AlignFishingAnimationFrames",
+        "Random"
+      ],
+      "lineCount": 22
+    },
+    "Fishing_MonOnHook": {
+      "returnType": "bool8",
+      "signature": "static bool8 Fishing_MonOnHook(struct Task *task)",
+      "paramsRaw": "struct Task *task",
+      "body": "AlignFishingAnimationFrames();\n    FillWindowPixelBuffer(0, PIXEL_FILL(1));\n    AddTextPrinterParameterized2(0, FONT_NORMAL, gText_PokemonOnHook, 1, 0, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);\n    task->tStep++;\n    task->tFrameCounter = 0;\n    return FALSE;",
+      "callsTo": [
+        "AddTextPrinterParameterized2",
+        "AlignFishingAnimationFrames",
+        "FillWindowPixelBuffer",
+        "PIXEL_FILL"
+      ],
+      "lineCount": 6
+    },
+    "Fishing_StartEncounter": {
+      "returnType": "bool8",
+      "signature": "static bool8 Fishing_StartEncounter(struct Task *task)",
+      "paramsRaw": "struct Task *task",
+      "body": "if (task->tFrameCounter == 0)\n        AlignFishingAnimationFrames();\n\n    RunTextPrinters();\n\n    if (task->tFrameCounter == 0)\n    {\n        if (!IsTextPrinterActive(0))\n        {\n            struct ObjectEvent *playerObjEvent = &gObjectEvents[gPlayerAvatar.objectEventId];\n\n            ObjectEventSetGraphicsId(playerObjEvent, task->tPlayerGfxId);\n            ObjectEventTurn(playerObjEvent, playerObjEvent->movementDirection);\n            if (gPlayerAvatar.flags & PLAYER_AVATAR_FLAG_SURFING)\n                SetSurfBlob_PlayerOffset(gObjectEvents[gPlayerAvatar.objectEventId].fieldEffectSpriteId, FALSE, 0);\n            gSprites[gPlayerAvatar.spriteId].x2 = 0;\n            gSprites[gPlayerAvatar.spriteId].y2 = 0;\n            ClearDialogWindowAndFrame(0, TRUE);\n            task->tFrameCounter++;\n            return FALSE;\n        }\n    }\n\n    if (task->tFrameCounter != 0)\n    {\n        gPlayerAvatar.preventStep = FALSE;\n        UnlockPlayerFieldControls();\n        FishingWildEncounter(task->tFishingRod);\n        RecordFishingAttemptForTV(TRUE);\n        DestroyTask(FindTaskIdByFunc(Task_Fishing));\n    }\n    return FALSE;",
+      "callsTo": [
+        "AlignFishingAnimationFrames",
+        "ClearDialogWindowAndFrame",
+        "DestroyTask",
+        "FindTaskIdByFunc",
+        "FishingWildEncounter",
+        "IsTextPrinterActive",
+        "ObjectEventSetGraphicsId",
+        "ObjectEventTurn",
+        "RecordFishingAttemptForTV",
+        "RunTextPrinters",
+        "SetSurfBlob_PlayerOffset",
+        "UnlockPlayerFieldControls"
+      ],
+      "lineCount": 32
+    },
+    "Fishing_NotEvenNibble": {
+      "returnType": "bool8",
+      "signature": "static bool8 Fishing_NotEvenNibble(struct Task *task)",
+      "paramsRaw": "struct Task *task",
+      "body": "AlignFishingAnimationFrames();\n    StartSpriteAnim(&gSprites[gPlayerAvatar.spriteId], GetFishingNoCatchDirectionAnimNum(GetPlayerFacingDirection()));\n    FillWindowPixelBuffer(0, PIXEL_FILL(1));\n    AddTextPrinterParameterized2(0, FONT_NORMAL, gText_NotEvenANibble, 1, 0, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);\n    task->tStep = FISHING_SHOW_RESULT;\n    return TRUE;",
+      "callsTo": [
+        "AddTextPrinterParameterized2",
+        "AlignFishingAnimationFrames",
+        "FillWindowPixelBuffer",
+        "GetFishingNoCatchDirectionAnimNum",
+        "GetPlayerFacingDirection",
+        "PIXEL_FILL",
+        "StartSpriteAnim"
+      ],
+      "lineCount": 6
+    },
+    "Fishing_GotAway": {
+      "returnType": "bool8",
+      "signature": "static bool8 Fishing_GotAway(struct Task *task)",
+      "paramsRaw": "struct Task *task",
+      "body": "AlignFishingAnimationFrames();\n    StartSpriteAnim(&gSprites[gPlayerAvatar.spriteId], GetFishingNoCatchDirectionAnimNum(GetPlayerFacingDirection()));\n    FillWindowPixelBuffer(0, PIXEL_FILL(1));\n    AddTextPrinterParameterized2(0, FONT_NORMAL, gText_ItGotAway, 1, 0, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);\n    task->tStep++;\n    return TRUE;",
+      "callsTo": [
+        "AddTextPrinterParameterized2",
+        "AlignFishingAnimationFrames",
+        "FillWindowPixelBuffer",
+        "GetFishingNoCatchDirectionAnimNum",
+        "GetPlayerFacingDirection",
+        "PIXEL_FILL",
+        "StartSpriteAnim"
+      ],
+      "lineCount": 6
+    },
+    "Fishing_NoMon": {
+      "returnType": "bool8",
+      "signature": "static bool8 Fishing_NoMon(struct Task *task)",
+      "paramsRaw": "struct Task *task",
+      "body": "AlignFishingAnimationFrames();\n    task->tStep++;\n    return FALSE;",
+      "callsTo": [
+        "AlignFishingAnimationFrames"
+      ],
+      "lineCount": 3
+    },
+    "Fishing_PutRodAway": {
+      "returnType": "bool8",
+      "signature": "static bool8 Fishing_PutRodAway(struct Task *task)",
+      "paramsRaw": "struct Task *task",
+      "body": "AlignFishingAnimationFrames();\n    if (gSprites[gPlayerAvatar.spriteId].animEnded)\n    {\n        struct ObjectEvent *playerObjEvent = &gObjectEvents[gPlayerAvatar.objectEventId];\n\n        ObjectEventSetGraphicsId(playerObjEvent, task->tPlayerGfxId);\n        ObjectEventTurn(playerObjEvent, playerObjEvent->movementDirection);\n        if (gPlayerAvatar.flags & PLAYER_AVATAR_FLAG_SURFING)\n            SetSurfBlob_PlayerOffset(gObjectEvents[gPlayerAvatar.objectEventId].fieldEffectSpriteId, FALSE, 0);\n        gSprites[gPlayerAvatar.spriteId].x2 = 0;\n        gSprites[gPlayerAvatar.spriteId].y2 = 0;\n        task->tStep++;\n    }\n    return FALSE;",
+      "callsTo": [
+        "AlignFishingAnimationFrames",
+        "ObjectEventSetGraphicsId",
+        "ObjectEventTurn",
+        "SetSurfBlob_PlayerOffset"
+      ],
+      "lineCount": 14
+    },
+    "Fishing_EndNoMon": {
+      "returnType": "bool8",
+      "signature": "static bool8 Fishing_EndNoMon(struct Task *task)",
+      "paramsRaw": "struct Task *task",
+      "body": "RunTextPrinters();\n    if (!IsTextPrinterActive(0))\n    {\n        gPlayerAvatar.preventStep = FALSE;\n        UnlockPlayerFieldControls();\n        UnfreezeObjectEvents();\n        ClearDialogWindowAndFrame(0, TRUE);\n        RecordFishingAttemptForTV(FALSE);\n        DestroyTask(FindTaskIdByFunc(Task_Fishing));\n    }\n    return FALSE;",
+      "callsTo": [
+        "ClearDialogWindowAndFrame",
+        "DestroyTask",
+        "FindTaskIdByFunc",
+        "IsTextPrinterActive",
+        "RecordFishingAttemptForTV",
+        "RunTextPrinters",
+        "UnfreezeObjectEvents",
+        "UnlockPlayerFieldControls"
+      ],
+      "lineCount": 11
+    },
+    "AlignFishingAnimationFrames": {
+      "returnType": "void",
+      "signature": "static void AlignFishingAnimationFrames(void)",
+      "paramsRaw": "void",
+      "body": "struct Sprite *playerSprite = &gSprites[gPlayerAvatar.spriteId];\n    u8 animCmdIndex;\n    u8 animType;\n\n    AnimateSprite(playerSprite);\n    playerSprite->x2 = 0;\n    playerSprite->y2 = 0;\n    animCmdIndex = playerSprite->animCmdIndex;\n    if (playerSprite->anims[playerSprite->animNum][animCmdIndex].type == -1)\n    {\n        animCmdIndex--;\n    }\n    else\n    {\n        playerSprite->animDelayCounter++;\n        if (playerSprite->anims[playerSprite->animNum][animCmdIndex].type == -1)\n            animCmdIndex--;\n    }\n    animType = playerSprite->anims[playerSprite->animNum][animCmdIndex].type;\n    if (animType == 1 || animType == 2 || animType == 3)\n    {\n        playerSprite->x2 = 8;\n        if (GetPlayerFacingDirection() == 3)\n            playerSprite->x2 = -8;\n    }\n    if (animType == 5)\n        playerSprite->y2 = -8;\n    if (animType == 10 || animType == 11)\n        playerSprite->y2 = 8;\n    if (gPlayerAvatar.flags & PLAYER_AVATAR_FLAG_SURFING)\n        SetSurfBlob_PlayerOffset(gObjectEvents[gPlayerAvatar.objectEventId].fieldEffectSpriteId, TRUE, playerSprite->y2);",
+      "callsTo": [
+        "AnimateSprite",
+        "GetPlayerFacingDirection",
+        "SetSurfBlob_PlayerOffset"
+      ],
+      "lineCount": 31
+    },
+    "SetSpinStartFacingDir": {
+      "returnType": "void",
+      "signature": "void SetSpinStartFacingDir(u8 direction)",
+      "paramsRaw": "u8 direction",
+      "body": "sSpinStartFacingDir = direction;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "GetSpinStartFacingDir": {
+      "returnType": "u8",
+      "signature": "static u8 GetSpinStartFacingDir(void)",
+      "paramsRaw": "void",
+      "body": "if (sSpinStartFacingDir == DIR_NONE)\n        return DIR_SOUTH;\n\n    return sSpinStartFacingDir;",
+      "callsTo": [],
+      "lineCount": 4
+    },
+    "Task_DoPlayerSpinExit": {
+      "returnType": "void",
+      "signature": "static void Task_DoPlayerSpinExit(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "struct ObjectEvent *object = &gObjectEvents[gPlayerAvatar.objectEventId];\n    struct Sprite *sprite = &gSprites[object->spriteId];\n    s16 *data = gTasks[taskId].data;\n\n    switch (tState)\n    {\n        case 0:  \n            if (!ObjectEventClearHeldMovementIfFinished(object))\n                return;\n\n            SetSpinStartFacingDir(object->facingDirection);\n            tSpinDelayTimer = 0;\n            tSpeed = 1;\n            tCurY = (u16)(sprite->y + sprite->y2) << 4;\n            sprite->y2 = 0;\n            CameraObjectFreeze();\n            object->fixedPriority = TRUE;\n            sprite->oam.priority = 0;\n            sprite->subpriority = 0;\n            sprite->subspriteMode = SUBSPRITES_OFF;\n            tState++;\n        case 1:  \n            TrySpinPlayerForWarp(object, &tSpinDelayTimer);\n\n             \n            tCurY -= tSpeed;\n            tSpeed += 3;\n            sprite->y = tCurY >> 4;\n\n             \n            if (sprite->y + (s16)gTotalCameraPixelOffsetY < -32)\n                tState++;\n            break;\n        case 2:\n            DestroyTask(taskId);\n            break;\n    }",
+      "callsTo": [
+        "CameraObjectFreeze",
+        "DestroyTask",
+        "ObjectEventClearHeldMovementIfFinished",
+        "SetSpinStartFacingDir",
+        "TrySpinPlayerForWarp"
+      ],
+      "lineCount": 37
+    },
+    "DoPlayerSpinEntrance": {
+      "returnType": "void",
+      "signature": "void DoPlayerSpinEntrance(void)",
+      "paramsRaw": "void",
+      "body": "Task_DoPlayerSpinEntrance(CreateTask(Task_DoPlayerSpinEntrance, 0));",
+      "callsTo": [
+        "CreateTask",
+        "Task_DoPlayerSpinEntrance"
+      ],
+      "lineCount": 1
+    },
+    "IsPlayerSpinEntranceActive": {
+      "returnType": "bool32",
+      "signature": "bool32 IsPlayerSpinEntranceActive(void)",
+      "paramsRaw": "void",
+      "body": "return FuncIsActiveTask(Task_DoPlayerSpinEntrance);",
+      "callsTo": [
+        "FuncIsActiveTask"
+      ],
+      "lineCount": 1
+    },
+    "DoPlayerSpinExit": {
+      "returnType": "void",
+      "signature": "void DoPlayerSpinExit(void)",
+      "paramsRaw": "void",
+      "body": "Task_DoPlayerSpinExit(CreateTask(Task_DoPlayerSpinExit, 0));",
+      "callsTo": [
+        "CreateTask",
+        "Task_DoPlayerSpinExit"
+      ],
+      "lineCount": 1
+    },
+    "IsPlayerSpinExitActive": {
+      "returnType": "bool32",
+      "signature": "bool32 IsPlayerSpinExitActive(void)",
+      "paramsRaw": "void",
+      "body": "return FuncIsActiveTask(Task_DoPlayerSpinExit);",
+      "callsTo": [
+        "FuncIsActiveTask"
+      ],
+      "lineCount": 1
+    },
+    "Task_DoPlayerSpinEntrance": {
+      "returnType": "void",
+      "signature": "static void Task_DoPlayerSpinEntrance(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "struct ObjectEvent *object = &gObjectEvents[gPlayerAvatar.objectEventId];\n    struct Sprite *sprite = &gSprites[object->spriteId];\n    s16 *data = gTasks[taskId].data;\n\n    switch (tState)\n    {\n        case 0:\n             \n             \n             \n            tStartDir = GetSpinStartFacingDir();\n            ObjectEventForceSetHeldMovement(object, GetFaceDirectionMovementAction(sSpinDirections[tStartDir]));\n            tSpinDelayTimer = 0;\n            tSpeed = 116;\n            tDestY = sprite->y;\n            tPriority = sprite->oam.priority;\n            tSubpriority = sprite->subpriority;\n            tCurY = -((u16)sprite->y2 + 32) * 16;\n            sprite->y2 = 0;\n            CameraObjectFreeze();\n            object->fixedPriority = TRUE;\n            sprite->oam.priority = 1;\n            sprite->subpriority = 0;\n            sprite->subspriteMode = SUBSPRITES_OFF;\n            tState++;\n        case 1:  \n            TrySpinPlayerForWarp(object, &tSpinDelayTimer);\n\n             \n            tCurY += tSpeed;\n            tSpeed -= 3;\n            if (tSpeed < 4)\n                tSpeed = 4;\n            sprite->y = tCurY >> 4;\n\n             \n            if (sprite->y >= tDestY)\n            {\n                sprite->y = tDestY;\n                tGroundTimer = 0;\n                tState++;\n            }\n            break;\n        case 2:  \n            TrySpinPlayerForWarp(object, &tSpinDelayTimer);\n            if (++tGroundTimer > 8)\n                tState++;\n            break;\n        case 3:  \n            if (tStartDir == TrySpinPlayerForWarp(object, &tSpinDelayTimer))\n            {\n                object->fixedPriority = 0;\n                sprite->oam.priority = tPriority;\n                sprite->subpriority = tSubpriority;\n                CameraObjectReset();\n                DestroyTask(taskId);\n            }\n            break;\n    }",
+      "callsTo": [
+        "CameraObjectFreeze",
+        "CameraObjectReset",
+        "DestroyTask",
+        "GetFaceDirectionMovementAction",
+        "GetSpinStartFacingDir",
+        "ObjectEventForceSetHeldMovement",
+        "TrySpinPlayerForWarp"
+      ],
+      "lineCount": 59
+    },
+    "TrySpinPlayerForWarp": {
+      "returnType": "u8",
+      "signature": "static u8 TrySpinPlayerForWarp(struct ObjectEvent *object, s16 *delayTimer)",
+      "paramsRaw": "struct ObjectEvent *object, s16 *delayTimer",
+      "body": "if (*delayTimer < 8 && ++(*delayTimer) < 8)\n        return object->facingDirection;\n\n    if (!ObjectEventCheckHeldMovementStatus(object))\n        return object->facingDirection;\n\n    ObjectEventForceSetHeldMovement(object, GetFaceDirectionMovementAction(sSpinDirections[object->facingDirection]));\n    *delayTimer = 0;\n    return sSpinDirections[object->facingDirection];",
+      "callsTo": [
+        "GetFaceDirectionMovementAction",
+        "ObjectEventCheckHeldMovementStatus",
+        "ObjectEventForceSetHeldMovement"
+      ],
+      "lineCount": 9
+    }
+  }
+}

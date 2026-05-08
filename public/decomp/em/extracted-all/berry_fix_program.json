@@ -1,0 +1,109 @@
+{
+  "srcFile": "src/berry_fix_program.c",
+  "count": 6,
+  "functions": {
+    "CB2_InitBerryFixProgram": {
+      "returnType": "void",
+      "signature": "void CB2_InitBerryFixProgram(void)",
+      "paramsRaw": "void",
+      "body": "DisableInterrupts(0xFFFF);  \n    EnableInterrupts(INTR_FLAG_VBLANK);\n    m4aSoundVSyncOff();\n    SetVBlankCallback(NULL);\n    ResetSpriteData();\n    ResetTasks();\n    ScanlineEffect_Stop();\n    SetGpuReg(REG_OFFSET_DISPCNT, 0);\n    sBerryFix = AllocZeroed(sizeof(*sBerryFix));\n    sBerryFix->state = MAINSTATE_INIT;\n    sBerryFix->curScene = SCENE_NONE;\n    SetMainCallback2(BerryFix_Main);",
+      "callsTo": [
+        "AllocZeroed",
+        "DisableInterrupts",
+        "EnableInterrupts",
+        "ResetSpriteData",
+        "ResetTasks",
+        "ScanlineEffect_Stop",
+        "SetGpuReg",
+        "SetMainCallback2",
+        "SetVBlankCallback"
+      ],
+      "lineCount": 12
+    },
+    "BerryFix_Main": {
+      "returnType": "void",
+      "signature": "static void BerryFix_Main(void)",
+      "paramsRaw": "void",
+      "body": "switch (sBerryFix->state)\n    {\n        case MAINSTATE_INIT:\n            BerryFix_GpuSet();\n            sBerryFix->state = MAINSTATE_BEGIN;\n            break;\n        case MAINSTATE_BEGIN:\n            if (TryScene(SCENE_BEGIN) && (JOY_NEW(A_BUTTON)))\n                sBerryFix->state = MAINSTATE_CONNECT;\n            break;\n        case MAINSTATE_CONNECT:\n            if (TryScene(SCENE_ENSURE_CONNECT) && (JOY_NEW(A_BUTTON)))\n                sBerryFix->state = MAINSTATE_INIT_MULTIBOOT;\n            break;\n        case MAINSTATE_INIT_MULTIBOOT:\n            if (TryScene(SCENE_TURN_OFF_POWER))\n            {\n                sBerryFix->mb.masterp = gMultiBootProgram_BerryGlitchFix_Start;\n                sBerryFix->mb.server_type = 0;\n                MultiBootInit(&sBerryFix->mb);\n                sBerryFix->timer = 0;\n                sBerryFix->state = MAINSTATE_MULTIBOOT;\n            }\n            break;\n        case MAINSTATE_MULTIBOOT:\n            MultiBootMain(&sBerryFix->mb);\n            if (sBerryFix->mb.probe_count != 0 || (!(sBerryFix->mb.response_bit & 2) || !(sBerryFix->mb.client_bit & 2)))\n            {\n                sBerryFix->timer = 0;\n            }\n            else if (++sBerryFix->timer > 180)\n            {\n                MultiBootStartMaster(&sBerryFix->mb,\n                                     gMultiBootProgram_BerryGlitchFix_Start + ROM_HEADER_SIZE,\n                                     (u32)(gMultiBootProgram_BerryGlitchFix_End - (gMultiBootProgram_BerryGlitchFix_Start + ROM_HEADER_SIZE)),\n                                     4,\n                                     1);\n                sBerryFix->state = MAINSTATE_TRANSMIT;\n            }\n            break;\n        case MAINSTATE_TRANSMIT:\n            if (TryScene(SCENE_TRANSMITTING))\n            {\n                MultiBootMain(&sBerryFix->mb);\n\n                if (MultiBootCheckComplete(&sBerryFix->mb))\n                    sBerryFix->state = MAINSTATE_EXIT;\n                else if (!(sBerryFix->mb.client_bit & 2))\n                    sBerryFix->state = MAINSTATE_FAILED;\n            }\n            break;\n        case MAINSTATE_EXIT:\n            if (TryScene(SCENE_FOLLOW_INSTRUCT) && JOY_NEW(A_BUTTON))\n                DoSoftReset();\n            break;\n        case MAINSTATE_FAILED:\n            if (TryScene(SCENE_TRANSMIT_FAILED) && JOY_NEW(A_BUTTON))\n                sBerryFix->state = MAINSTATE_BEGIN;\n            break;\n    }",
+      "callsTo": [
+        "BerryFix_GpuSet",
+        "DoSoftReset",
+        "JOY_NEW",
+        "MultiBootCheckComplete",
+        "MultiBootInit",
+        "MultiBootMain",
+        "MultiBootStartMaster",
+        "TryScene"
+      ],
+      "lineCount": 60
+    },
+    "BerryFix_GpuSet": {
+      "returnType": "void",
+      "signature": "static void BerryFix_GpuSet(void)",
+      "paramsRaw": "void",
+      "body": "s32 width, left;\n\n    SetGpuReg(REG_OFFSET_BG0CNT, 0);\n    SetGpuReg(REG_OFFSET_BG1CNT, 0);\n    SetGpuReg(REG_OFFSET_BG0HOFS, 0);\n    SetGpuReg(REG_OFFSET_BG0VOFS, 0);\n    SetGpuReg(REG_OFFSET_BG1HOFS, 0);\n    SetGpuReg(REG_OFFSET_BG1VOFS, 0);\n    SetGpuReg(REG_OFFSET_BLDCNT, 0);\n\n    DmaFill32(3, 0, VRAM, VRAM_SIZE);\n    DmaFill32(3, 0, OAM, OAM_SIZE);\n    DmaFill32(3, 0, PLTT, PLTT_SIZE);\n    ResetBgsAndClearDma3BusyFlags(0);\n\n    InitBgsFromTemplates(0, sBerryFixBgTemplates, ARRAY_COUNT(sBerryFixBgTemplates));\n    ChangeBgX(0, 0, BG_COORD_SET);\n    ChangeBgY(0, 0, BG_COORD_SET);\n    ChangeBgX(1, 0, BG_COORD_SET);\n    ChangeBgY(1, 0, BG_COORD_SET);\n    InitWindows(sBerryFixWindowTemplates);\n    DeactivateAllTextPrinters();\n\n    DmaCopy32(3, sText_Pal, BG_PLTT + PLTT_OFFSET_4BPP(15), sizeof(sText_Pal));\n    SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_OBJ_1D_MAP);\n    FillWindowPixelBuffer(WIN_GAME_NAMES, PIXEL_FILL(0));\n    FillWindowPixelBuffer(WIN_TURN_OFF_TITLE, PIXEL_FILL(0));\n    FillWindowPixelBuffer(WIN_TITLE, PIXEL_FILL(10));\n\n    width = GetStringWidth(FONT_SMALL, sText_Emerald, 0);\n    left = (120 - width) / 2;\n    AddTextPrinterParameterized3(WIN_GAME_NAMES, FONT_SMALL, left, 3, sGameTitleTextColors, TEXT_SKIP_DRAW, sText_Emerald);\n\n    width = GetStringWidth(FONT_SMALL, sText_RubySapphire, 0);\n    left = (120 - width) / 2 + 120;\n    AddTextPrinterParameterized3(WIN_GAME_NAMES, FONT_SMALL, left, 3, sGameTitleTextColors, TEXT_SKIP_DRAW, sText_RubySapphire);\n\n    width = GetStringWidth(FONT_SMALL, sText_RubySapphire, 0);\n    left = (112 - width) / 2;\n    AddTextPrinterParameterized3(WIN_TURN_OFF_TITLE, FONT_SMALL, left, 0, sGameTitleTextColors, TEXT_SKIP_DRAW, sText_RubySapphire);\n\n    width = GetStringWidth(FONT_NORMAL, sText_BerryProgramUpdate, 0);\n    left = (208 - width) / 2;\n    AddTextPrinterParameterized3(WIN_TITLE, FONT_NORMAL, left, 2, sBerryProgramTextColors, TEXT_SKIP_DRAW, sText_BerryProgramUpdate);\n\n    CopyWindowToVram(WIN_GAME_NAMES, COPYWIN_GFX);\n    CopyWindowToVram(WIN_TURN_OFF_TITLE, COPYWIN_GFX);\n    CopyWindowToVram(WIN_TITLE, COPYWIN_GFX);",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "AddTextPrinterParameterized3",
+        "ChangeBgX",
+        "ChangeBgY",
+        "CopyWindowToVram",
+        "DeactivateAllTextPrinters",
+        "DmaCopy32",
+        "DmaFill32",
+        "FillWindowPixelBuffer",
+        "GetStringWidth",
+        "InitBgsFromTemplates",
+        "InitWindows",
+        "PIXEL_FILL",
+        "PLTT_OFFSET_4BPP",
+        "ResetBgsAndClearDma3BusyFlags",
+        "SetGpuReg"
+      ],
+      "lineCount": 48
+    },
+    "BerryFix_TrySetScene": {
+      "returnType": "int",
+      "signature": "static int BerryFix_TrySetScene(int scene)",
+      "paramsRaw": "int scene",
+      "body": "if (sBerryFix->curScene == scene)\n        return scene;\n\n    if (sBerryFix->curScene == SCENE_NONE)\n    {\n        BerryFix_SetScene(scene);\n        sBerryFix->curScene = scene;\n    }\n    else\n    {\n        BerryFix_HideScene();\n        sBerryFix->curScene = SCENE_NONE;\n    }\n    return sBerryFix->curScene;",
+      "callsTo": [
+        "BerryFix_HideScene",
+        "BerryFix_SetScene"
+      ],
+      "lineCount": 14
+    },
+    "BerryFix_SetScene": {
+      "returnType": "void",
+      "signature": "static void BerryFix_SetScene(int scene)",
+      "paramsRaw": "int scene",
+      "body": "FillBgTilemapBufferRect_Palette0(0, 0, 0, 0, 32, 32);\n    FillWindowPixelBuffer(WIN_MSG_BODY, PIXEL_FILL(10));\n    AddTextPrinterParameterized3(WIN_MSG_BODY, FONT_NORMAL, 0, 0, sBerryProgramTextColors, TEXT_SKIP_DRAW, sBerryProgramTexts[scene]);\n    PutWindowTilemap(WIN_MSG_BODY);\n    CopyWindowToVram(WIN_MSG_BODY, COPYWIN_GFX);\n    switch (scene)\n    {\n    case SCENE_ENSURE_CONNECT:\n    case SCENE_TRANSMITTING:\n    case SCENE_FOLLOW_INSTRUCT:\n    case SCENE_TRANSMIT_FAILED:\n        PutWindowTilemap(WIN_GAME_NAMES);\n        break;\n    case SCENE_TURN_OFF_POWER:\n        PutWindowTilemap(WIN_TURN_OFF_TITLE);\n        break;\n    case SCENE_BEGIN:\n        PutWindowTilemap(WIN_TITLE);\n        break;\n    }\n    CopyBgTilemapBufferToVram(0);\n    LZ77UnCompVram(sBerryFixGraphics[scene].gfx, (void *)BG_CHAR_ADDR(1));\n    LZ77UnCompVram(sBerryFixGraphics[scene].tilemap, (void *)BG_SCREEN_ADDR(31));\n     \n     \n    CpuCopy32(sBerryFixGraphics[scene].palette, (void *)BG_PLTT, PLTT_SIZEOF(128));\n    ShowBg(0);\n    ShowBg(1);",
+      "callsTo": [
+        "AddTextPrinterParameterized3",
+        "BG_CHAR_ADDR",
+        "BG_SCREEN_ADDR",
+        "CopyBgTilemapBufferToVram",
+        "CopyWindowToVram",
+        "CpuCopy32",
+        "FillBgTilemapBufferRect_Palette0",
+        "FillWindowPixelBuffer",
+        "LZ77UnCompVram",
+        "PIXEL_FILL",
+        "PLTT_SIZEOF",
+        "PutWindowTilemap",
+        "ShowBg"
+      ],
+      "lineCount": 28
+    },
+    "BerryFix_HideScene": {
+      "returnType": "void",
+      "signature": "static void BerryFix_HideScene(void)",
+      "paramsRaw": "void",
+      "body": "HideBg(0);\n    HideBg(1);",
+      "callsTo": [
+        "HideBg"
+      ],
+      "lineCount": 2
+    }
+  }
+}

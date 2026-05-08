@@ -1,0 +1,261 @@
+{
+  "srcFile": "src/reset_rtc_screen.c",
+  "count": 19,
+  "functions": {
+    "SpriteCB_Cursor_UpOrRight": {
+      "returnType": "void",
+      "signature": "static void SpriteCB_Cursor_UpOrRight(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "int state = gTasks[sprite->sTaskId].tSelection;\n    if (state != sprite->sState)\n    {\n        sprite->sState = state;\n        switch (state)\n        {\n        case SELECTION_DAYS:\n            sprite->invisible = FALSE;\n            sprite->animNum = ARROW_UP;\n            sprite->animDelayCounter = 0;\n            sprite->x = 56;  \n            sprite->y = 68;\n            break;\n        case SELECTION_HOURS:\n            sprite->invisible = FALSE;\n            sprite->animNum = ARROW_UP;\n            sprite->animDelayCounter = 0;\n            sprite->x = 92;  \n            sprite->y = 68;\n            break;\n        case SELECTION_MINS:\n            sprite->invisible = FALSE;\n            sprite->animNum = ARROW_UP;\n            sprite->animDelayCounter = 0;\n            sprite->x = 107;  \n            sprite->y = 68;\n            break;\n        case SELECTION_SECS:\n            sprite->invisible = FALSE;\n            sprite->animNum = ARROW_UP;\n            sprite->animDelayCounter = 0;\n            sprite->x = 122;  \n            sprite->y = 68;\n            break;\n        case SELECTION_CONFIRM:\n            sprite->invisible = FALSE;\n            sprite->animNum = ARROW_RIGHT;\n            sprite->animDelayCounter = 0;\n            sprite->x = 153;\n            sprite->y = 80;\n            break;\n        case SELECTION_NONE:\n            DestroySprite(sprite);\n            break;\n        }\n    }",
+      "callsTo": [
+        "DestroySprite"
+      ],
+      "lineCount": 46
+    },
+    "SpriteCB_Cursor_Down": {
+      "returnType": "void",
+      "signature": "static void SpriteCB_Cursor_Down(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "int state = gTasks[sprite->sTaskId].tSelection;\n    if (state != sprite->sState)\n    {\n        sprite->sState = state;\n        switch (state)\n        {\n        case SELECTION_DAYS:\n            sprite->invisible = FALSE;\n            sprite->animNum = ARROW_DOWN;\n            sprite->animDelayCounter = 0;\n            sprite->x = 56;  \n            sprite->y = 92;\n            break;\n        case SELECTION_HOURS:\n            sprite->invisible = FALSE;\n            sprite->animNum = ARROW_DOWN;\n            sprite->animDelayCounter = 0;\n            sprite->x = 92;  \n            sprite->y = 92;\n            break;\n        case SELECTION_MINS:\n            sprite->invisible = FALSE;\n            sprite->animNum = ARROW_DOWN;\n            sprite->animDelayCounter = 0;\n            sprite->x = 107;  \n            sprite->y = 92;\n            break;\n        case SELECTION_SECS:\n            sprite->invisible = FALSE;\n            sprite->animNum = ARROW_DOWN;\n            sprite->animDelayCounter = 0;\n            sprite->x = 122;  \n            sprite->y = 92;\n            break;\n        case SELECTION_CONFIRM:\n             \n             \n            sprite->invisible = TRUE;\n            break;\n        case SELECTION_NONE:\n            DestroySprite(sprite);\n            break;\n        }\n    }",
+      "callsTo": [
+        "DestroySprite"
+      ],
+      "lineCount": 44
+    },
+    "CreateCursor": {
+      "returnType": "void",
+      "signature": "static void CreateCursor(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "u32 spriteId;\n\n    LoadSpritePalette(&sSpritePalette_Arrow);\n\n    spriteId = CreateSpriteAtEnd(&sSpriteTemplate_Arrow, 56, 68, 0);  \n    gSprites[spriteId].callback = SpriteCB_Cursor_UpOrRight;\n    gSprites[spriteId].sTaskId = taskId;\n    gSprites[spriteId].sState = -1;\n\n    spriteId = CreateSpriteAtEnd(&sSpriteTemplate_Arrow, 56, 68, 0);  \n    gSprites[spriteId].callback = SpriteCB_Cursor_Down;\n    gSprites[spriteId].sTaskId = taskId;\n    gSprites[spriteId].sState = -1;",
+      "callsTo": [
+        "CreateSpriteAtEnd",
+        "LoadSpritePalette"
+      ],
+      "lineCount": 13
+    },
+    "FreeCursorPalette": {
+      "returnType": "void",
+      "signature": "static void FreeCursorPalette(void)",
+      "paramsRaw": "void",
+      "body": "FreeSpritePaletteByTag(sSpritePalette_Arrow.tag);",
+      "callsTo": [
+        "FreeSpritePaletteByTag"
+      ],
+      "lineCount": 1
+    },
+    "HideChooseTimeWindow": {
+      "returnType": "void",
+      "signature": "static void HideChooseTimeWindow(u8 windowId)",
+      "paramsRaw": "u8 windowId",
+      "body": "ClearStdWindowAndFrameToTransparent(windowId, FALSE);\n    RemoveWindow(windowId);\n    ScheduleBgCopyTilemapToVram(0);",
+      "callsTo": [
+        "ClearStdWindowAndFrameToTransparent",
+        "RemoveWindow",
+        "ScheduleBgCopyTilemapToVram"
+      ],
+      "lineCount": 3
+    },
+    "PrintTime": {
+      "returnType": "void",
+      "signature": "static void PrintTime(u8 windowId, u8 x, u8 y, u16 days, u8 hours, u8 minutes, u8 seconds)",
+      "paramsRaw": "u8 windowId, u8 x, u8 y, u16 days, u8 hours, u8 minutes, u8 seconds",
+      "body": "u8 *dest = gStringVar4;\n\n     \n    ConvertIntToDecimalStringN(gStringVar1, days, STR_CONV_MODE_RIGHT_ALIGN, 4);\n    dest = StringCopy(dest, gStringVar1);\n    dest = StringCopy(dest, gText_Day);\n\n     \n    ConvertIntToDecimalStringN(gStringVar1, hours, STR_CONV_MODE_RIGHT_ALIGN, 3);\n    dest = StringCopy(dest, gStringVar1);\n    dest = StringCopy(dest, gText_Colon3);\n\n     \n    ConvertIntToDecimalStringN(gStringVar1, minutes, STR_CONV_MODE_LEADING_ZEROS, 2);\n    dest = StringCopy(dest, gStringVar1);\n    dest = StringCopy(dest, gText_Colon3);\n\n     \n    ConvertIntToDecimalStringN(gStringVar1, seconds, STR_CONV_MODE_LEADING_ZEROS, 2);\n    dest = StringCopy(dest, gStringVar1);\n\n    AddTextPrinterParameterized(windowId, FONT_NORMAL, gStringVar4, x, y, TEXT_SKIP_DRAW, NULL);",
+      "callsTo": [
+        "AddTextPrinterParameterized",
+        "ConvertIntToDecimalStringN",
+        "StringCopy"
+      ],
+      "lineCount": 22
+    },
+    "ShowChooseTimeWindow": {
+      "returnType": "void",
+      "signature": "static void ShowChooseTimeWindow(u8 windowId, u16 days, u8 hours, u8 minutes, u8 seconds)",
+      "paramsRaw": "u8 windowId, u16 days, u8 hours, u8 minutes, u8 seconds",
+      "body": "DrawStdFrameWithCustomTileAndPalette(windowId, FALSE, 0x214, 0xE);\n    PrintTime(windowId, 0, 1, days, hours, minutes, seconds);\n    AddTextPrinterParameterized(windowId, FONT_NORMAL, gText_Confirm2, 126, 1, 0, NULL);\n    ScheduleBgCopyTilemapToVram(0);",
+      "callsTo": [
+        "AddTextPrinterParameterized",
+        "DrawStdFrameWithCustomTileAndPalette",
+        "PrintTime",
+        "ScheduleBgCopyTilemapToVram"
+      ],
+      "lineCount": 4
+    },
+    "MoveTimeUpDown": {
+      "returnType": "bool32",
+      "signature": "static bool32 MoveTimeUpDown(s16 *val, int minVal, int maxVal, u16 keys)",
+      "paramsRaw": "s16 *val, int minVal, int maxVal, u16 keys",
+      "body": "if (keys & DPAD_DOWN)\n    {\n        *val -= 1;\n        if (*val < minVal)\n            *val = maxVal;\n    }\n    else if (keys & DPAD_UP)\n    {\n        *val += 1;\n        if (*val > maxVal)\n            *val = minVal;\n    }\n    else if (keys & DPAD_LEFT)\n    {\n        *val -= 10;\n        if (*val < minVal)\n            *val = maxVal;\n    }\n    else if (keys & DPAD_RIGHT)\n    {\n        *val += 10;\n        if (*val > maxVal)\n            *val = minVal;\n    }\n    else\n    {\n        return FALSE;\n    }\n\n    return TRUE;",
+      "callsTo": [],
+      "lineCount": 30
+    },
+    "Task_ResetRtc_SetFinished": {
+      "returnType": "void",
+      "signature": "static void Task_ResetRtc_SetFinished(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "gTasks[taskId].tFinished = TRUE;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "Task_ResetRtc_Exit": {
+      "returnType": "void",
+      "signature": "static void Task_ResetRtc_Exit(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "s16 *data = gTasks[taskId].data;\n\n    HideChooseTimeWindow(tWindowId);\n    FreeCursorPalette();\n    gTasks[taskId].func = Task_ResetRtc_SetFinished;",
+      "callsTo": [
+        "FreeCursorPalette",
+        "HideChooseTimeWindow"
+      ],
+      "lineCount": 5
+    },
+    "Task_ResetRtc_HandleInput": {
+      "returnType": "void",
+      "signature": "static void Task_ResetRtc_HandleInput(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "s16 *data = gTasks[taskId].data;\n    u8 selection = tSelection;\n    const struct ResetRtcInputMap *selectionInfo = &sInputMap[selection - 1];\n\n    if (JOY_NEW(B_BUTTON))\n    {\n        gTasks[taskId].func = Task_ResetRtc_Exit;\n        tSetTime = FALSE;\n        tSelection = SELECTION_NONE;\n        PlaySE(SE_SELECT);\n        return;\n    }\n\n    if (JOY_NEW(DPAD_RIGHT))\n    {\n        if (selectionInfo->right)\n        {\n            tSelection = selectionInfo->right;\n            PlaySE(SE_SELECT);\n            return;\n        }\n    }\n\n    if (JOY_NEW(DPAD_LEFT))\n    {\n        if (selectionInfo->left)\n        {\n            tSelection = selectionInfo->left;\n            PlaySE(SE_SELECT);\n            return;\n        }\n    }\n\n    if (selection == SELECTION_CONFIRM)\n    {\n        if (JOY_NEW(A_BUTTON))\n        {\n            gLocalTime.days = tDays;\n            gLocalTime.hours = tHours;\n            gLocalTime.minutes = tMinutes;\n            gLocalTime.seconds = tSeconds;\n            PlaySE(SE_SELECT);\n            gTasks[taskId].func = Task_ResetRtc_Exit;\n            tSetTime = TRUE;\n            tSelection = SELECTION_NONE;\n        }\n    }\n    else if (MoveTimeUpDown(&data[selectionInfo->dataIndex], selectionInfo->minVal, selectionInfo->maxVal, JOY_REPEAT(DPAD_UP | DPAD_DOWN)))\n    {\n        PlaySE(SE_SELECT);\n        PrintTime(tWindowId, 0, 1, tDays, tHours, tMinutes, tSeconds);\n        CopyWindowToVram(tWindowId, COPYWIN_GFX);\n    }",
+      "callsTo": [
+        "CopyWindowToVram",
+        "JOY_NEW",
+        "JOY_REPEAT",
+        "MoveTimeUpDown",
+        "PlaySE",
+        "PrintTime"
+      ],
+      "lineCount": 53
+    },
+    "Task_ResetRtc_Init": {
+      "returnType": "void",
+      "signature": "static void Task_ResetRtc_Init(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "s16 *data = gTasks[taskId].data;\n    tFinished = FALSE;\n    tDays = gLocalTime.days;\n    tHours = gLocalTime.hours;\n    tMinutes = gLocalTime.minutes;\n    tSeconds = gLocalTime.seconds;\n    tWindowId = AddWindow(&sInputTimeWindow);\n    ShowChooseTimeWindow(tWindowId, tDays, tHours, tMinutes, tSeconds);\n    CreateCursor(taskId);\n    tSelection = SELECTION_HOURS;\n    gTasks[taskId].func = Task_ResetRtc_HandleInput;",
+      "callsTo": [
+        "AddWindow",
+        "CreateCursor",
+        "ShowChooseTimeWindow"
+      ],
+      "lineCount": 11
+    },
+    "CB2_InitResetRtcScreen": {
+      "returnType": "void",
+      "signature": "void CB2_InitResetRtcScreen(void)",
+      "paramsRaw": "void",
+      "body": "SetGpuReg(REG_OFFSET_DISPCNT, 0);\n    SetVBlankCallback(NULL);\n    DmaClear16(3, PLTT, PLTT_SIZE);\n    DmaFillLarge16(3, 0, (u8 *)VRAM, VRAM_SIZE, 0x1000);\n    ResetOamRange(0, 128);\n    LoadOam();\n    ScanlineEffect_Stop();\n    ScanlineEffect_Clear();\n    ResetSpriteData();\n    ResetTasks();\n    ResetPaletteFade();\n    InitResetRtcScreenBgAndWindows();\n    SetVBlankCallback(VBlankCB);\n    SetMainCallback2(CB2_ResetRtcScreen);\n    CreateTask(Task_ResetRtcScreen, 80);",
+      "callsTo": [
+        "CreateTask",
+        "DmaClear16",
+        "DmaFillLarge16",
+        "InitResetRtcScreenBgAndWindows",
+        "LoadOam",
+        "ResetOamRange",
+        "ResetPaletteFade",
+        "ResetSpriteData",
+        "ResetTasks",
+        "ScanlineEffect_Clear",
+        "ScanlineEffect_Stop",
+        "SetGpuReg",
+        "SetMainCallback2",
+        "SetVBlankCallback"
+      ],
+      "lineCount": 15
+    },
+    "InitResetRtcScreenBgAndWindows": {
+      "returnType": "void",
+      "signature": "static void InitResetRtcScreenBgAndWindows(void)",
+      "paramsRaw": "void",
+      "body": "ClearScheduledBgCopiesToVram();\n    ResetBgsAndClearDma3BusyFlags(0);\n    InitBgsFromTemplates(0, sBgTemplates, ARRAY_COUNT(sBgTemplates));\n    ScheduleBgCopyTilemapToVram(0);\n    SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_OBJ_ON | DISPCNT_OBJ_1D_MAP);\n    ShowBg(0);\n    InitWindows(sWindowTemplates);\n    DeactivateAllTextPrinters();\n    LoadMessageBoxAndBorderGfx();",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "ClearScheduledBgCopiesToVram",
+        "DeactivateAllTextPrinters",
+        "InitBgsFromTemplates",
+        "InitWindows",
+        "LoadMessageBoxAndBorderGfx",
+        "ResetBgsAndClearDma3BusyFlags",
+        "ScheduleBgCopyTilemapToVram",
+        "SetGpuReg",
+        "ShowBg"
+      ],
+      "lineCount": 9
+    },
+    "CB2_ResetRtcScreen": {
+      "returnType": "void",
+      "signature": "static void CB2_ResetRtcScreen(void)",
+      "paramsRaw": "void",
+      "body": "RunTasks();\n    AnimateSprites();\n    BuildOamBuffer();\n    DoScheduledBgTilemapCopiesToVram();\n    UpdatePaletteFade();",
+      "callsTo": [
+        "AnimateSprites",
+        "BuildOamBuffer",
+        "DoScheduledBgTilemapCopiesToVram",
+        "RunTasks",
+        "UpdatePaletteFade"
+      ],
+      "lineCount": 5
+    },
+    "VBlankCB": {
+      "returnType": "void",
+      "signature": "static void VBlankCB(void)",
+      "paramsRaw": "void",
+      "body": "ProcessSpriteCopyRequests();\n    LoadOam();\n    TransferPlttBuffer();",
+      "callsTo": [
+        "LoadOam",
+        "ProcessSpriteCopyRequests",
+        "TransferPlttBuffer"
+      ],
+      "lineCount": 3
+    },
+    "ShowMessage": {
+      "returnType": "void",
+      "signature": "static void ShowMessage(const u8 *str)",
+      "paramsRaw": "const u8 *str",
+      "body": "DrawDialogFrameWithCustomTileAndPalette(WIN_MSG, FALSE, 0x200, 0xF);\n    AddTextPrinterParameterized(WIN_MSG, FONT_NORMAL, str, 0, 1, 0, NULL);\n    ScheduleBgCopyTilemapToVram(0);",
+      "callsTo": [
+        "AddTextPrinterParameterized",
+        "DrawDialogFrameWithCustomTileAndPalette",
+        "ScheduleBgCopyTilemapToVram"
+      ],
+      "lineCount": 3
+    },
+    "Task_ShowResetRtcPrompt": {
+      "returnType": "void",
+      "signature": "static void Task_ShowResetRtcPrompt(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "s16 *data = gTasks[taskId].data;\n\n    switch (tState)\n    {\n    case 0:\n        DrawStdFrameWithCustomTileAndPalette(WIN_TIME, FALSE, 0x214, 0xE);\n\n        AddTextPrinterParameterized(WIN_TIME, FONT_NORMAL, gText_PresentTime, 0, 1, TEXT_SKIP_DRAW, 0);\n        PrintTime(\n            WIN_TIME,\n            0,\n            17,\n            gLocalTime.days,\n            gLocalTime.hours,\n            gLocalTime.minutes,\n            gLocalTime.seconds);\n\n        AddTextPrinterParameterized(WIN_TIME, FONT_NORMAL, gText_PreviousTime, 0, 33, TEXT_SKIP_DRAW, 0);\n        PrintTime(\n            WIN_TIME,\n            0,\n            49,\n            gSaveBlock2Ptr->lastBerryTreeUpdate.days,\n            gSaveBlock2Ptr->lastBerryTreeUpdate.hours,\n            gSaveBlock2Ptr->lastBerryTreeUpdate.minutes,\n            gSaveBlock2Ptr->lastBerryTreeUpdate.seconds);\n\n        ShowMessage(gText_ResetRTCConfirmCancel);\n        CopyWindowToVram(WIN_TIME, COPYWIN_GFX);\n        ScheduleBgCopyTilemapToVram(0);\n        tState++;\n    case 1:\n        if (JOY_NEW(B_BUTTON))\n        {\n             \n            DestroyTask(taskId);\n            DoSoftReset();\n        }\n        else if (JOY_NEW(A_BUTTON))\n        {\n             \n            PlaySE(SE_SELECT);\n            DestroyTask(taskId);\n        }\n        break;\n    }",
+      "callsTo": [
+        "AddTextPrinterParameterized",
+        "CopyWindowToVram",
+        "DestroyTask",
+        "DoSoftReset",
+        "DrawStdFrameWithCustomTileAndPalette",
+        "JOY_NEW",
+        "PlaySE",
+        "PrintTime",
+        "ScheduleBgCopyTilemapToVram",
+        "ShowMessage"
+      ],
+      "lineCount": 46
+    },
+    "Task_ResetRtcScreen": {
+      "returnType": "void",
+      "signature": "static void Task_ResetRtcScreen(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "s16 *data = gTasks[taskId].data;\n\n    switch (tState)\n    {\n    case MAINSTATE_FADE_IN:\n        BeginNormalPaletteFade(PALETTES_ALL, 1, 0x10, 0, RGB_WHITEALPHA);\n        tState = MAINSTATE_CHECK_SAVE;\n        break;\n    case MAINSTATE_CHECK_SAVE:\n        if (!gPaletteFade.active)\n        {\n            if (gSaveFileStatus == SAVE_STATUS_EMPTY\n             || gSaveFileStatus == SAVE_STATUS_CORRUPT)\n            {\n                ShowMessage(gText_NoSaveFileCantSetTime);\n                tState = MAINSTATE_WAIT_EXIT;\n            }\n            else\n            {\n                RtcCalcLocalTime();\n                tSubTaskId = CreateTask(Task_ShowResetRtcPrompt, 80);\n                tState = MAINSTATE_START_SET_TIME;\n            }\n        }\n        break;\n    case MAINSTATE_START_SET_TIME:\n         \n        if (gTasks[tSubTaskId].isActive != TRUE)\n        {\n            ClearStdWindowAndFrameToTransparent(WIN_TIME, FALSE);\n            ShowMessage(gText_PleaseResetTime);\n            gLocalTime = gSaveBlock2Ptr->lastBerryTreeUpdate;\n            tSubTaskId = CreateTask(Task_ResetRtc_Init, 80);\n            tState = MAINSTATE_WAIT_SET_TIME;\n        }\n        break;\n    case MAINSTATE_WAIT_SET_TIME:\n        if (gTasks[tSubTaskId].tFinished)\n        {\n            if (!gTasks[tSubTaskId].tSetTime)\n            {\n                 \n                DestroyTask(tSubTaskId);\n                tState = MAINSTATE_START_SET_TIME;\n            }\n            else\n            {\n                 \n                DestroyTask(tSubTaskId);\n                RtcReset();\n                RtcCalcLocalTimeOffset(\n                    gLocalTime.days,\n                    gLocalTime.hours,\n                    gLocalTime.minutes,\n                    gLocalTime.seconds);\n                gSaveBlock2Ptr->lastBerryTreeUpdate = gLocalTime;\n                VarSet(VAR_DAYS, gLocalTime.days);\n                DisableResetRTC();\n                ShowMessage(gText_ClockHasBeenReset);\n                tState = MAINSTATE_SAVE;\n            }\n        }\n        break;\n    case MAINSTATE_SAVE:\n        if (TrySavingData(SAVE_NORMAL) == SAVE_STATUS_OK)\n        {\n            ShowMessage(gText_SaveCompleted);\n            PlaySE(SE_DING_DONG);\n        }\n        else\n        {\n            ShowMessage(gText_SaveFailed);\n            PlaySE(SE_BOO);\n        }\n        tState = MAINSTATE_WAIT_EXIT;\n         \n    case MAINSTATE_WAIT_EXIT:\n        if (JOY_NEW(A_BUTTON))\n        {\n            BeginNormalPaletteFade(PALETTES_ALL, 1, 0, 0x10, RGB_WHITEALPHA);\n            tState = MAINSTATE_EXIT;\n             \n        }\n        else\n        {\n            break;\n        }\n    case MAINSTATE_EXIT:\n        if (!gPaletteFade.active)\n        {\n            DestroyTask(taskId);\n            FreeAllWindowBuffers();\n            DoSoftReset();\n        }\n    }",
+      "callsTo": [
+        "BeginNormalPaletteFade",
+        "ClearStdWindowAndFrameToTransparent",
+        "CreateTask",
+        "DestroyTask",
+        "DisableResetRTC",
+        "DoSoftReset",
+        "FreeAllWindowBuffers",
+        "JOY_NEW",
+        "PlaySE",
+        "RtcCalcLocalTime",
+        "RtcCalcLocalTimeOffset",
+        "RtcReset",
+        "ShowMessage",
+        "TrySavingData",
+        "VarSet"
+      ],
+      "lineCount": 95
+    }
+  }
+}

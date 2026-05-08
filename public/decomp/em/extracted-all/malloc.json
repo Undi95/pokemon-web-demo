@@ -1,0 +1,80 @@
+{
+  "srcFile": "src/malloc.c",
+  "count": 8,
+  "functions": {
+    "PutMemBlockHeader": {
+      "returnType": "void",
+      "signature": "void PutMemBlockHeader(void *block, struct MemBlock *prev, struct MemBlock *next, u32 size)",
+      "paramsRaw": "void *block, struct MemBlock *prev, struct MemBlock *next, u32 size",
+      "body": "struct MemBlock *header = (struct MemBlock *)block;\n\n    header->flag = FALSE;\n    header->magic = MALLOC_SYSTEM_ID;\n    header->size = size;\n    header->prev = prev;\n    header->next = next;",
+      "callsTo": [],
+      "lineCount": 7
+    },
+    "PutFirstMemBlockHeader": {
+      "returnType": "void",
+      "signature": "void PutFirstMemBlockHeader(void *block, u32 size)",
+      "paramsRaw": "void *block, u32 size",
+      "body": "PutMemBlockHeader(block, (struct MemBlock *)block, (struct MemBlock *)block, size - sizeof(struct MemBlock));",
+      "callsTo": [
+        "PutMemBlockHeader"
+      ],
+      "lineCount": 1
+    },
+    "FreeInternal": {
+      "returnType": "void",
+      "signature": "void FreeInternal(void *heapStart, void *pointer)",
+      "paramsRaw": "void *heapStart, void *pointer",
+      "body": "if (pointer)\n    {\n        struct MemBlock *head = (struct MemBlock *)heapStart;\n        struct MemBlock *block = (struct MemBlock *)((u8 *)pointer - sizeof(struct MemBlock));\n        block->flag = FALSE;\n\n         \n         \n        if (block->next != head)\n        {\n            if (!block->next->flag)\n            {\n                block->size += sizeof(struct MemBlock) + block->next->size;\n                block->next->magic = 0;\n                block->next = block->next->next;\n                if (block->next != head)\n                    block->next->prev = block;\n            }\n        }\n\n         \n         \n        if (block != head)\n        {\n            if (!block->prev->flag)\n            {\n                block->prev->next = block->next;\n\n                if (block->next != head)\n                    block->next->prev = block->prev;\n\n                block->magic = 0;\n                block->prev->size += sizeof(struct MemBlock) + block->size;\n            }\n        }\n    }",
+      "callsTo": [],
+      "lineCount": 36
+    },
+    "CheckMemBlockInternal": {
+      "returnType": "bool32",
+      "signature": "bool32 CheckMemBlockInternal(void *heapStart, void *pointer)",
+      "paramsRaw": "void *heapStart, void *pointer",
+      "body": "struct MemBlock *head = (struct MemBlock *)heapStart;\n    struct MemBlock *block = (struct MemBlock *)((u8 *)pointer - sizeof(struct MemBlock));\n\n    if (block->magic != MALLOC_SYSTEM_ID)\n        return FALSE;\n\n    if (block->next->magic != MALLOC_SYSTEM_ID)\n        return FALSE;\n\n    if (block->next != head && block->next->prev != block)\n        return FALSE;\n\n    if (block->prev->magic != MALLOC_SYSTEM_ID)\n        return FALSE;\n\n    if (block->prev != head && block->prev->next != block)\n        return FALSE;\n\n    if (block->next != head && block->next != (struct MemBlock *)(block->data + block->size))\n        return FALSE;\n\n    return TRUE;",
+      "callsTo": [],
+      "lineCount": 22
+    },
+    "InitHeap": {
+      "returnType": "void",
+      "signature": "void InitHeap(void *heapStart, u32 heapSize)",
+      "paramsRaw": "void *heapStart, u32 heapSize",
+      "body": "sHeapStart = heapStart;\n    sHeapSize = heapSize;\n    PutFirstMemBlockHeader(heapStart, heapSize);",
+      "callsTo": [
+        "PutFirstMemBlockHeader"
+      ],
+      "lineCount": 3
+    },
+    "Free": {
+      "returnType": "void",
+      "signature": "void Free(void *pointer)",
+      "paramsRaw": "void *pointer",
+      "body": "FreeInternal(sHeapStart, pointer);",
+      "callsTo": [
+        "FreeInternal"
+      ],
+      "lineCount": 1
+    },
+    "CheckMemBlock": {
+      "returnType": "bool32",
+      "signature": "bool32 CheckMemBlock(void *pointer)",
+      "paramsRaw": "void *pointer",
+      "body": "return CheckMemBlockInternal(sHeapStart, pointer);",
+      "callsTo": [
+        "CheckMemBlockInternal"
+      ],
+      "lineCount": 1
+    },
+    "CheckHeap": {
+      "returnType": "bool32",
+      "signature": "bool32 CheckHeap()",
+      "paramsRaw": "",
+      "body": "struct MemBlock *pos = (struct MemBlock *)sHeapStart;\n\n    do {\n        if (!CheckMemBlockInternal(sHeapStart, pos->data))\n            return FALSE;\n        pos = pos->next;\n    } while (pos != (struct MemBlock *)sHeapStart);\n\n    return TRUE;",
+      "callsTo": [
+        "CheckMemBlockInternal"
+      ],
+      "lineCount": 9
+    }
+  }
+}

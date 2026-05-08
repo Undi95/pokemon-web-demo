@@ -1,0 +1,534 @@
+{
+  "srcFile": "src/fieldmap.c",
+  "count": 50,
+  "functions": {
+    "InitMap": {
+      "returnType": "void",
+      "signature": "void InitMap(void)",
+      "paramsRaw": "void",
+      "body": "InitMapLayoutData(&gMapHeader);\n    SetOccupiedSecretBaseEntranceMetatiles(gMapHeader.events);\n    RunOnLoadMapScript();",
+      "callsTo": [
+        "InitMapLayoutData",
+        "RunOnLoadMapScript",
+        "SetOccupiedSecretBaseEntranceMetatiles"
+      ],
+      "lineCount": 3
+    },
+    "InitMapFromSavedGame": {
+      "returnType": "void",
+      "signature": "void InitMapFromSavedGame(void)",
+      "paramsRaw": "void",
+      "body": "InitMapLayoutData(&gMapHeader);\n    InitSecretBaseAppearance(FALSE);\n    SetOccupiedSecretBaseEntranceMetatiles(gMapHeader.events);\n    LoadSavedMapView();\n    RunOnLoadMapScript();\n    UpdateTVScreensOnMap(gBackupMapLayout.width, gBackupMapLayout.height);",
+      "callsTo": [
+        "InitMapLayoutData",
+        "InitSecretBaseAppearance",
+        "LoadSavedMapView",
+        "RunOnLoadMapScript",
+        "SetOccupiedSecretBaseEntranceMetatiles",
+        "UpdateTVScreensOnMap"
+      ],
+      "lineCount": 6
+    },
+    "InitBattlePyramidMap": {
+      "returnType": "void",
+      "signature": "void InitBattlePyramidMap(bool8 setPlayerPosition)",
+      "paramsRaw": "bool8 setPlayerPosition",
+      "body": "CpuFastFill16(MAPGRID_UNDEFINED, sBackupMapData, sizeof(sBackupMapData));\n    GenerateBattlePyramidFloorLayout(sBackupMapData, setPlayerPosition);",
+      "callsTo": [
+        "CpuFastFill16",
+        "GenerateBattlePyramidFloorLayout"
+      ],
+      "lineCount": 2
+    },
+    "InitTrainerHillMap": {
+      "returnType": "void",
+      "signature": "void InitTrainerHillMap(void)",
+      "paramsRaw": "void",
+      "body": "CpuFastFill16(MAPGRID_UNDEFINED, sBackupMapData, sizeof(sBackupMapData));\n    GenerateTrainerHillFloorLayout(sBackupMapData);",
+      "callsTo": [
+        "CpuFastFill16",
+        "GenerateTrainerHillFloorLayout"
+      ],
+      "lineCount": 2
+    },
+    "InitMapLayoutData": {
+      "returnType": "void",
+      "signature": "static void InitMapLayoutData(struct MapHeader *mapHeader)",
+      "paramsRaw": "struct MapHeader *mapHeader",
+      "body": "struct MapLayout const *mapLayout;\n    int width;\n    int height;\n    mapLayout = mapHeader->mapLayout;\n    CpuFastFill16(MAPGRID_UNDEFINED, sBackupMapData, sizeof(sBackupMapData));\n    gBackupMapLayout.map = sBackupMapData;\n    width = mapLayout->width + MAP_OFFSET_W;\n    gBackupMapLayout.width = width;\n    height = mapLayout->height + MAP_OFFSET_H;\n    gBackupMapLayout.height = height;\n    if (width * height <= MAX_MAP_DATA_SIZE)\n    {\n        InitBackupMapLayoutData(mapLayout->map, mapLayout->width, mapLayout->height);\n        InitBackupMapLayoutConnections(mapHeader);\n    }",
+      "callsTo": [
+        "CpuFastFill16",
+        "InitBackupMapLayoutConnections",
+        "InitBackupMapLayoutData"
+      ],
+      "lineCount": 15
+    },
+    "InitBackupMapLayoutData": {
+      "returnType": "void",
+      "signature": "static void InitBackupMapLayoutData(const u16 *map, u16 width, u16 height)",
+      "paramsRaw": "const u16 *map, u16 width, u16 height",
+      "body": "u16 *dest;\n    int y;\n    dest = gBackupMapLayout.map;\n    dest += gBackupMapLayout.width * 7 + MAP_OFFSET;\n    for (y = 0; y < height; y++)\n    {\n        CpuCopy16(map, dest, width * 2);\n        dest += width + MAP_OFFSET_W;\n        map += width;\n    }",
+      "callsTo": [
+        "CpuCopy16"
+      ],
+      "lineCount": 10
+    },
+    "InitBackupMapLayoutConnections": {
+      "returnType": "void",
+      "signature": "static void InitBackupMapLayoutConnections(struct MapHeader *mapHeader)",
+      "paramsRaw": "struct MapHeader *mapHeader",
+      "body": "int count;\n    const struct MapConnection *connection;\n    int i;\n\n    if (mapHeader->connections)\n    {\n        count = mapHeader->connections->count;\n        connection = mapHeader->connections->connections;\n        sMapConnectionFlags = sDummyConnectionFlags;\n        for (i = 0; i < count; i++, connection++)\n        {\n            struct MapHeader const *cMap = GetMapHeaderFromConnection(connection);\n            u32 offset = connection->offset;\n            switch (connection->direction)\n            {\n            case CONNECTION_SOUTH:\n                FillSouthConnection(mapHeader, cMap, offset);\n                sMapConnectionFlags.south = TRUE;\n                break;\n            case CONNECTION_NORTH:\n                FillNorthConnection(mapHeader, cMap, offset);\n                sMapConnectionFlags.north = TRUE;\n                break;\n            case CONNECTION_WEST:\n                FillWestConnection(mapHeader, cMap, offset);\n                sMapConnectionFlags.west = TRUE;\n                break;\n            case CONNECTION_EAST:\n                FillEastConnection(mapHeader, cMap, offset);\n                sMapConnectionFlags.east = TRUE;\n                break;\n            }\n        }\n    }",
+      "callsTo": [
+        "FillEastConnection",
+        "FillNorthConnection",
+        "FillSouthConnection",
+        "FillWestConnection",
+        "GetMapHeaderFromConnection"
+      ],
+      "lineCount": 34
+    },
+    "FillConnection": {
+      "returnType": "void",
+      "signature": "static void FillConnection(int x, int y, struct MapHeader const *connectedMapHeader, int x2, int y2, int width, int height)",
+      "paramsRaw": "int x, int y, struct MapHeader const *connectedMapHeader, int x2, int y2, int width, int height",
+      "body": "int i;\n    const u16 *src;\n    u16 *dest;\n    int mapWidth;\n\n    mapWidth = connectedMapHeader->mapLayout->width;\n    src = &connectedMapHeader->mapLayout->map[mapWidth * y2 + x2];\n    dest = &gBackupMapLayout.map[gBackupMapLayout.width * y + x];\n\n    for (i = 0; i < height; i++)\n    {\n        CpuCopy16(src, dest, width * 2);\n        dest += gBackupMapLayout.width;\n        src += mapWidth;\n    }",
+      "callsTo": [
+        "CpuCopy16"
+      ],
+      "lineCount": 15
+    },
+    "FillSouthConnection": {
+      "returnType": "void",
+      "signature": "static void FillSouthConnection(struct MapHeader const *mapHeader, struct MapHeader const *connectedMapHeader, s32 offset)",
+      "paramsRaw": "struct MapHeader const *mapHeader, struct MapHeader const *connectedMapHeader, s32 offset",
+      "body": "int x, y;\n    int x2;\n    int width;\n    int cWidth;\n\n    if (connectedMapHeader)\n    {\n        cWidth = connectedMapHeader->mapLayout->width;\n        x = offset + MAP_OFFSET;\n        y = mapHeader->mapLayout->height + MAP_OFFSET;\n        if (x < 0)\n        {\n            x2 = -x;\n            x += cWidth;\n            if (x < gBackupMapLayout.width)\n                width = x;\n            else\n                width = gBackupMapLayout.width;\n            x = 0;\n        }\n        else\n        {\n            x2 = 0;\n            if (x + cWidth < gBackupMapLayout.width)\n                width = cWidth;\n            else\n                width = gBackupMapLayout.width - x;\n        }\n\n        FillConnection(\n            x, y,\n            connectedMapHeader,\n            x2,   0,\n            width,   MAP_OFFSET);\n    }",
+      "callsTo": [
+        "FillConnection"
+      ],
+      "lineCount": 35
+    },
+    "FillNorthConnection": {
+      "returnType": "void",
+      "signature": "static void FillNorthConnection(struct MapHeader const *mapHeader, struct MapHeader const *connectedMapHeader, s32 offset)",
+      "paramsRaw": "struct MapHeader const *mapHeader, struct MapHeader const *connectedMapHeader, s32 offset",
+      "body": "int x;\n    int x2, y2;\n    int width;\n    int cWidth, cHeight;\n\n    if (connectedMapHeader)\n    {\n        cWidth = connectedMapHeader->mapLayout->width;\n        cHeight = connectedMapHeader->mapLayout->height;\n        x = offset + MAP_OFFSET;\n        y2 = cHeight - MAP_OFFSET;\n        if (x < 0)\n        {\n            x2 = -x;\n            x += cWidth;\n            if (x < gBackupMapLayout.width)\n                width = x;\n            else\n                width = gBackupMapLayout.width;\n            x = 0;\n        }\n        else\n        {\n            x2 = 0;\n            if (x + cWidth < gBackupMapLayout.width)\n                width = cWidth;\n            else\n                width = gBackupMapLayout.width - x;\n        }\n\n        FillConnection(\n            x,   0,\n            connectedMapHeader,\n            x2, y2,\n            width,   MAP_OFFSET);\n\n    }",
+      "callsTo": [
+        "FillConnection"
+      ],
+      "lineCount": 37
+    },
+    "FillWestConnection": {
+      "returnType": "void",
+      "signature": "static void FillWestConnection(struct MapHeader const *mapHeader, struct MapHeader const *connectedMapHeader, s32 offset)",
+      "paramsRaw": "struct MapHeader const *mapHeader, struct MapHeader const *connectedMapHeader, s32 offset",
+      "body": "int y;\n    int x2, y2;\n    int height;\n    int cWidth, cHeight;\n    if (connectedMapHeader)\n    {\n        cWidth = connectedMapHeader->mapLayout->width;\n        cHeight = connectedMapHeader->mapLayout->height;\n        y = offset + MAP_OFFSET;\n        x2 = cWidth - MAP_OFFSET;\n        if (y < 0)\n        {\n            y2 = -y;\n            if (y + cHeight < gBackupMapLayout.height)\n                height = y + cHeight;\n            else\n                height = gBackupMapLayout.height;\n            y = 0;\n        }\n        else\n        {\n            y2 = 0;\n            if (y + cHeight < gBackupMapLayout.height)\n                height = cHeight;\n            else\n                height = gBackupMapLayout.height - y;\n        }\n\n        FillConnection(\n              0, y,\n            connectedMapHeader,\n            x2, y2,\n              MAP_OFFSET, height);\n    }",
+      "callsTo": [
+        "FillConnection"
+      ],
+      "lineCount": 34
+    },
+    "FillEastConnection": {
+      "returnType": "void",
+      "signature": "static void FillEastConnection(struct MapHeader const *mapHeader, struct MapHeader const *connectedMapHeader, s32 offset)",
+      "paramsRaw": "struct MapHeader const *mapHeader, struct MapHeader const *connectedMapHeader, s32 offset",
+      "body": "int x, y;\n    int y2;\n    int height;\n    int cHeight;\n    if (connectedMapHeader)\n    {\n        cHeight = connectedMapHeader->mapLayout->height;\n        x = mapHeader->mapLayout->width + MAP_OFFSET;\n        y = offset + MAP_OFFSET;\n        if (y < 0)\n        {\n            y2 = -y;\n            if (y + cHeight < gBackupMapLayout.height)\n                height = y + cHeight;\n            else\n                height = gBackupMapLayout.height;\n            y = 0;\n        }\n        else\n        {\n            y2 = 0;\n            if (y + cHeight < gBackupMapLayout.height)\n                height = cHeight;\n            else\n                height = gBackupMapLayout.height - y;\n        }\n\n        FillConnection(\n            x, y,\n            connectedMapHeader,\n              0, y2,\n              MAP_OFFSET + 1, height);\n    }",
+      "callsTo": [
+        "FillConnection"
+      ],
+      "lineCount": 33
+    },
+    "MapGridGetElevationAt": {
+      "returnType": "u8",
+      "signature": "u8 MapGridGetElevationAt(int x, int y)",
+      "paramsRaw": "int x, int y",
+      "body": "u16 block = GetMapGridBlockAt(x, y);\n\n    if (block == MAPGRID_UNDEFINED)\n        return 0;\n\n    return UNPACK_ELEVATION(block);",
+      "callsTo": [
+        "GetMapGridBlockAt",
+        "UNPACK_ELEVATION"
+      ],
+      "lineCount": 6
+    },
+    "MapGridGetCollisionAt": {
+      "returnType": "u8",
+      "signature": "u8 MapGridGetCollisionAt(int x, int y)",
+      "paramsRaw": "int x, int y",
+      "body": "u16 block = GetMapGridBlockAt(x, y);\n\n    if (block == MAPGRID_UNDEFINED)\n        return TRUE;\n\n    return UNPACK_COLLISION(block);",
+      "callsTo": [
+        "GetMapGridBlockAt",
+        "UNPACK_COLLISION"
+      ],
+      "lineCount": 6
+    },
+    "MapGridGetMetatileIdAt": {
+      "returnType": "u32",
+      "signature": "u32 MapGridGetMetatileIdAt(int x, int y)",
+      "paramsRaw": "int x, int y",
+      "body": "u16 block = GetMapGridBlockAt(x, y);\n\n    if (block == MAPGRID_UNDEFINED)\n        return UNPACK_METATILE(GetBorderBlockAt(x, y));\n\n    return UNPACK_METATILE(block);",
+      "callsTo": [
+        "GetBorderBlockAt",
+        "GetMapGridBlockAt",
+        "UNPACK_METATILE"
+      ],
+      "lineCount": 6
+    },
+    "MapGridGetMetatileBehaviorAt": {
+      "returnType": "u32",
+      "signature": "u32 MapGridGetMetatileBehaviorAt(int x, int y)",
+      "paramsRaw": "int x, int y",
+      "body": "u16 metatile = MapGridGetMetatileIdAt(x, y);\n    return UNPACK_BEHAVIOR(GetMetatileAttributesById(metatile));",
+      "callsTo": [
+        "GetMetatileAttributesById",
+        "MapGridGetMetatileIdAt",
+        "UNPACK_BEHAVIOR"
+      ],
+      "lineCount": 2
+    },
+    "MapGridGetMetatileLayerTypeAt": {
+      "returnType": "u8",
+      "signature": "u8 MapGridGetMetatileLayerTypeAt(int x, int y)",
+      "paramsRaw": "int x, int y",
+      "body": "u16 metatile = MapGridGetMetatileIdAt(x, y);\n    return UNPACK_LAYER_TYPE(GetMetatileAttributesById(metatile));",
+      "callsTo": [
+        "GetMetatileAttributesById",
+        "MapGridGetMetatileIdAt",
+        "UNPACK_LAYER_TYPE"
+      ],
+      "lineCount": 2
+    },
+    "MapGridSetMetatileIdAt": {
+      "returnType": "void",
+      "signature": "void MapGridSetMetatileIdAt(int x, int y, u16 metatile)",
+      "paramsRaw": "int x, int y, u16 metatile",
+      "body": "int i;\n    if (AreCoordsWithinMapGridBounds(x, y))\n    {\n        i = x + y * gBackupMapLayout.width;\n\n         \n        gBackupMapLayout.map[i] = (gBackupMapLayout.map[i] & MAPGRID_ELEVATION_MASK) | (metatile & ~MAPGRID_ELEVATION_MASK);\n    }",
+      "callsTo": [
+        "AreCoordsWithinMapGridBounds"
+      ],
+      "lineCount": 8
+    },
+    "MapGridSetMetatileEntryAt": {
+      "returnType": "void",
+      "signature": "void MapGridSetMetatileEntryAt(int x, int y, u16 metatile)",
+      "paramsRaw": "int x, int y, u16 metatile",
+      "body": "int i;\n    if (AreCoordsWithinMapGridBounds(x, y))\n    {\n        i = x + gBackupMapLayout.width * y;\n        gBackupMapLayout.map[i] = metatile;\n    }",
+      "callsTo": [
+        "AreCoordsWithinMapGridBounds"
+      ],
+      "lineCount": 6
+    },
+    "GetMetatileAttributesById": {
+      "returnType": "u16",
+      "signature": "u16 GetMetatileAttributesById(u16 metatile)",
+      "paramsRaw": "u16 metatile",
+      "body": "const u16 *attributes;\n    if (metatile < NUM_METATILES_IN_PRIMARY)\n    {\n        attributes = gMapHeader.mapLayout->primaryTileset->metatileAttributes;\n        return attributes[metatile];\n    }\n    else if (metatile < NUM_METATILES_TOTAL)\n    {\n        attributes = gMapHeader.mapLayout->secondaryTileset->metatileAttributes;\n        return attributes[metatile - NUM_METATILES_IN_PRIMARY];\n    }\n    else\n    {\n        return MB_INVALID;\n    }",
+      "callsTo": [],
+      "lineCount": 15
+    },
+    "SaveMapView": {
+      "returnType": "void",
+      "signature": "void SaveMapView(void)",
+      "paramsRaw": "void",
+      "body": "int i, j;\n    int x, y;\n    u16 *mapView;\n    int width;\n    mapView = gSaveBlock1Ptr->mapView;\n    width = gBackupMapLayout.width;\n    x = gSaveBlock1Ptr->pos.x;\n    y = gSaveBlock1Ptr->pos.y;\n    for (i = y; i < y + MAP_OFFSET_H; i++)\n    {\n        for (j = x; j < x + MAP_OFFSET_W; j++)\n            *mapView++ = sBackupMapData[width * i + j];\n    }",
+      "callsTo": [],
+      "lineCount": 13
+    },
+    "SavedMapViewIsEmpty": {
+      "returnType": "bool32",
+      "signature": "static bool32 SavedMapViewIsEmpty(void)",
+      "paramsRaw": "void",
+      "body": "u16 i;\n    u32 marker = 0;\n\n#ifndef UBFIX\n     \n    for (i = 0; i < 0x200; i++)\n        marker |= gSaveBlock1Ptr->mapView[i];\n#else\n     \n    for (i = 0; i < ARRAY_COUNT(gSaveBlock1Ptr->mapView); i++)\n        marker |= gSaveBlock1Ptr->mapView[i];\n#endif\n\n\n    if (marker == 0)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [
+        "ARRAY_COUNT"
+      ],
+      "lineCount": 18
+    },
+    "ClearSavedMapView": {
+      "returnType": "void",
+      "signature": "static void ClearSavedMapView(void)",
+      "paramsRaw": "void",
+      "body": "CpuFill16(0, gSaveBlock1Ptr->mapView, sizeof(gSaveBlock1Ptr->mapView));",
+      "callsTo": [
+        "CpuFill16"
+      ],
+      "lineCount": 1
+    },
+    "LoadSavedMapView": {
+      "returnType": "void",
+      "signature": "static void LoadSavedMapView(void)",
+      "paramsRaw": "void",
+      "body": "u8 yMode;\n    int i, j;\n    int x, y;\n    u16 *mapView;\n    int width;\n    mapView = gSaveBlock1Ptr->mapView;\n    if (!SavedMapViewIsEmpty())\n    {\n        width = gBackupMapLayout.width;\n        x = gSaveBlock1Ptr->pos.x;\n        y = gSaveBlock1Ptr->pos.y;\n        for (i = y; i < y + MAP_OFFSET_H; i++)\n        {\n            if (i == y && i != 0)\n                yMode = 0;\n            else if (i == y + MAP_OFFSET_H - 1 && i != gMapHeader.mapLayout->height - 1)\n                yMode = 1;\n            else\n                yMode = 0xFF;\n\n            for (j = x; j < x + MAP_OFFSET_W; j++)\n            {\n                if (!SkipCopyingMetatileFromSavedMap(&sBackupMapData[j + width * i], width, yMode))\n                    sBackupMapData[j + width * i] = *mapView;\n                mapView++;\n            }\n        }\n        for (j = x; j < x + MAP_OFFSET_W; j++)\n        {\n            if (y != 0)\n                FixLongGrassMetatilesWindowTop(j, y - 1);\n            if (i < gMapHeader.mapLayout->height - 1)\n                FixLongGrassMetatilesWindowBottom(j, y + MAP_OFFSET_H - 1);\n        }\n        ClearSavedMapView();\n    }",
+      "callsTo": [
+        "ClearSavedMapView",
+        "FixLongGrassMetatilesWindowBottom",
+        "FixLongGrassMetatilesWindowTop",
+        "SavedMapViewIsEmpty",
+        "SkipCopyingMetatileFromSavedMap"
+      ],
+      "lineCount": 36
+    },
+    "MoveMapViewToBackup": {
+      "returnType": "void",
+      "signature": "static void MoveMapViewToBackup(u8 direction)",
+      "paramsRaw": "u8 direction",
+      "body": "int width;\n    u16 *mapView;\n    int x0, y0;\n    int x2, y2;\n    u16 *src, *dest;\n    int srci, desti;\n    int r9, r8;\n    int x, y;\n    int i, j;\n    mapView = gSaveBlock1Ptr->mapView;\n    width = gBackupMapLayout.width;\n    r9 = 0;\n    r8 = 0;\n    x0 = gSaveBlock1Ptr->pos.x;\n    y0 = gSaveBlock1Ptr->pos.y;\n    x2 = MAP_OFFSET_W;\n    y2 = MAP_OFFSET_H;\n    switch (direction)\n    {\n    case CONNECTION_NORTH:\n        y0 += 1;\n        y2 = MAP_OFFSET_H - 1;\n        break;\n    case CONNECTION_SOUTH:\n        r8 = 1;\n        y2 = MAP_OFFSET_H - 1;\n        break;\n    case CONNECTION_WEST:\n        x0 += 1;\n        x2 = MAP_OFFSET_W - 1;\n        break;\n    case CONNECTION_EAST:\n        r9 = 1;\n        x2 = MAP_OFFSET_W - 1;\n        break;\n    }\n    for (y = 0; y < y2; y++)\n    {\n        i = 0;\n        j = 0;\n        for (x = 0; x < x2; x++)\n        {\n            desti = width * (y + y0);\n            srci = (y + r8) * MAP_OFFSET_W + r9;\n            src = &mapView[srci + i];\n            dest = &sBackupMapData[x0 + desti + j];\n            *dest = *src;\n            i++;\n            j++;\n        }\n    }\n    ClearSavedMapView();",
+      "callsTo": [
+        "ClearSavedMapView"
+      ],
+      "lineCount": 52
+    },
+    "GetMapBorderIdAt": {
+      "returnType": "int",
+      "signature": "int GetMapBorderIdAt(int x, int y)",
+      "paramsRaw": "int x, int y",
+      "body": "if (GetMapGridBlockAt(x, y) == MAPGRID_UNDEFINED)\n        return CONNECTION_INVALID;\n\n    if (x >= (gBackupMapLayout.width - (MAP_OFFSET + 1)))\n    {\n        if (!sMapConnectionFlags.east)\n            return CONNECTION_INVALID;\n\n        return CONNECTION_EAST;\n    }\n    else if (x < MAP_OFFSET)\n    {\n        if (!sMapConnectionFlags.west)\n            return CONNECTION_INVALID;\n\n        return CONNECTION_WEST;\n    }\n    else if (y >= (gBackupMapLayout.height - MAP_OFFSET))\n    {\n        if (!sMapConnectionFlags.south)\n            return CONNECTION_INVALID;\n\n        return CONNECTION_SOUTH;\n    }\n    else if (y < MAP_OFFSET)\n    {\n        if (!sMapConnectionFlags.north)\n            return CONNECTION_INVALID;\n\n        return CONNECTION_NORTH;\n    }\n    else\n    {\n        return CONNECTION_NONE;\n    }",
+      "callsTo": [
+        "GetMapGridBlockAt"
+      ],
+      "lineCount": 35
+    },
+    "GetPostCameraMoveMapBorderId": {
+      "returnType": "int",
+      "signature": "int GetPostCameraMoveMapBorderId(int x, int y)",
+      "paramsRaw": "int x, int y",
+      "body": "return GetMapBorderIdAt(gSaveBlock1Ptr->pos.x + MAP_OFFSET + x, gSaveBlock1Ptr->pos.y + MAP_OFFSET + y);",
+      "callsTo": [
+        "GetMapBorderIdAt"
+      ],
+      "lineCount": 1
+    },
+    "CanCameraMoveInDirection": {
+      "returnType": "bool32",
+      "signature": "bool32 CanCameraMoveInDirection(int direction)",
+      "paramsRaw": "int direction",
+      "body": "int x, y;\n    x = gSaveBlock1Ptr->pos.x + MAP_OFFSET + gDirectionToVectors[direction].x;\n    y = gSaveBlock1Ptr->pos.y + MAP_OFFSET + gDirectionToVectors[direction].y;\n\n    if (GetMapBorderIdAt(x, y) == CONNECTION_INVALID)\n        return FALSE;\n\n    return TRUE;",
+      "callsTo": [
+        "GetMapBorderIdAt"
+      ],
+      "lineCount": 8
+    },
+    "SetPositionFromConnection": {
+      "returnType": "void",
+      "signature": "static void SetPositionFromConnection(const struct MapConnection *connection, int direction, int x, int y)",
+      "paramsRaw": "const struct MapConnection *connection, int direction, int x, int y",
+      "body": "struct MapHeader const *mapHeader;\n    mapHeader = GetMapHeaderFromConnection(connection);\n    switch (direction)\n    {\n    case CONNECTION_EAST:\n        gSaveBlock1Ptr->pos.x = -x;\n        gSaveBlock1Ptr->pos.y -= connection->offset;\n        break;\n    case CONNECTION_WEST:\n        gSaveBlock1Ptr->pos.x = mapHeader->mapLayout->width;\n        gSaveBlock1Ptr->pos.y -= connection->offset;\n        break;\n    case CONNECTION_SOUTH:\n        gSaveBlock1Ptr->pos.x -= connection->offset;\n        gSaveBlock1Ptr->pos.y = -y;\n        break;\n    case CONNECTION_NORTH:\n        gSaveBlock1Ptr->pos.x -= connection->offset;\n        gSaveBlock1Ptr->pos.y = mapHeader->mapLayout->height;\n        break;\n    }",
+      "callsTo": [
+        "GetMapHeaderFromConnection"
+      ],
+      "lineCount": 21
+    },
+    "CameraMove": {
+      "returnType": "bool8",
+      "signature": "bool8 CameraMove(int x, int y)",
+      "paramsRaw": "int x, int y",
+      "body": "int direction;\n    const struct MapConnection *connection;\n    int old_x, old_y;\n    gCamera.active = FALSE;\n    direction = GetPostCameraMoveMapBorderId(x, y);\n    if (direction == CONNECTION_NONE || direction == CONNECTION_INVALID)\n    {\n        gSaveBlock1Ptr->pos.x += x;\n        gSaveBlock1Ptr->pos.y += y;\n    }\n    else\n    {\n        SaveMapView();\n        ClearMirageTowerPulseBlendEffect();\n        old_x = gSaveBlock1Ptr->pos.x;\n        old_y = gSaveBlock1Ptr->pos.y;\n        connection = GetIncomingConnection(direction, gSaveBlock1Ptr->pos.x, gSaveBlock1Ptr->pos.y);\n        SetPositionFromConnection(connection, direction, x, y);\n        LoadMapFromCameraTransition(connection->mapGroup, connection->mapNum);\n        gCamera.active = TRUE;\n        gCamera.x = old_x - gSaveBlock1Ptr->pos.x;\n        gCamera.y = old_y - gSaveBlock1Ptr->pos.y;\n        gSaveBlock1Ptr->pos.x += x;\n        gSaveBlock1Ptr->pos.y += y;\n        MoveMapViewToBackup(direction);\n    }\n    return gCamera.active;",
+      "callsTo": [
+        "ClearMirageTowerPulseBlendEffect",
+        "GetIncomingConnection",
+        "GetPostCameraMoveMapBorderId",
+        "LoadMapFromCameraTransition",
+        "MoveMapViewToBackup",
+        "SaveMapView",
+        "SetPositionFromConnection"
+      ],
+      "lineCount": 27
+    },
+    "IsPosInIncomingConnectingMap": {
+      "returnType": "bool8",
+      "signature": "static bool8 IsPosInIncomingConnectingMap(u8 direction, int x, int y, const struct MapConnection *connection)",
+      "paramsRaw": "u8 direction, int x, int y, const struct MapConnection *connection",
+      "body": "struct MapHeader const *mapHeader;\n    mapHeader = GetMapHeaderFromConnection(connection);\n    switch (direction)\n    {\n    case CONNECTION_SOUTH:\n    case CONNECTION_NORTH:\n        return IsCoordInIncomingConnectingMap(x, gMapHeader.mapLayout->width, mapHeader->mapLayout->width, connection->offset);\n    case CONNECTION_WEST:\n    case CONNECTION_EAST:\n        return IsCoordInIncomingConnectingMap(y, gMapHeader.mapLayout->height, mapHeader->mapLayout->height, connection->offset);\n    }\n    return FALSE;",
+      "callsTo": [
+        "GetMapHeaderFromConnection",
+        "IsCoordInIncomingConnectingMap"
+      ],
+      "lineCount": 12
+    },
+    "IsCoordInIncomingConnectingMap": {
+      "returnType": "bool8",
+      "signature": "static bool8 IsCoordInIncomingConnectingMap(int coord, int srcMax, int destMax, int offset)",
+      "paramsRaw": "int coord, int srcMax, int destMax, int offset",
+      "body": "int offset2;\n    offset2 = offset;\n\n    if (offset2 < 0)\n        offset2 = 0;\n\n    if (destMax + offset < srcMax)\n        srcMax = destMax + offset;\n\n    if (offset2 <= coord && coord <= srcMax)\n        return TRUE;\n\n    return FALSE;",
+      "callsTo": [],
+      "lineCount": 13
+    },
+    "IsCoordInConnectingMap": {
+      "returnType": "int",
+      "signature": "static int IsCoordInConnectingMap(int coord, int max)",
+      "paramsRaw": "int coord, int max",
+      "body": "if (coord >= 0 && coord < max)\n        return TRUE;\n\n    return FALSE;",
+      "callsTo": [],
+      "lineCount": 4
+    },
+    "IsPosInConnectingMap": {
+      "returnType": "int",
+      "signature": "static int IsPosInConnectingMap(const struct MapConnection *connection, int x, int y)",
+      "paramsRaw": "const struct MapConnection *connection, int x, int y",
+      "body": "struct MapHeader const *mapHeader;\n    mapHeader = GetMapHeaderFromConnection(connection);\n    switch (connection->direction)\n    {\n    case CONNECTION_SOUTH:\n    case CONNECTION_NORTH:\n        return IsCoordInConnectingMap(x - connection->offset, mapHeader->mapLayout->width);\n    case CONNECTION_WEST:\n    case CONNECTION_EAST:\n        return IsCoordInConnectingMap(y - connection->offset, mapHeader->mapLayout->height);\n    }\n    return FALSE;",
+      "callsTo": [
+        "GetMapHeaderFromConnection",
+        "IsCoordInConnectingMap"
+      ],
+      "lineCount": 12
+    },
+    "SetCameraFocusCoords": {
+      "returnType": "void",
+      "signature": "void SetCameraFocusCoords(u16 x, u16 y)",
+      "paramsRaw": "u16 x, u16 y",
+      "body": "gSaveBlock1Ptr->pos.x = x - MAP_OFFSET;\n    gSaveBlock1Ptr->pos.y = y - MAP_OFFSET;",
+      "callsTo": [],
+      "lineCount": 2
+    },
+    "GetCameraFocusCoords": {
+      "returnType": "void",
+      "signature": "void GetCameraFocusCoords(u16 *x, u16 *y)",
+      "paramsRaw": "u16 *x, u16 *y",
+      "body": "*x = gSaveBlock1Ptr->pos.x + MAP_OFFSET;\n    *y = gSaveBlock1Ptr->pos.y + MAP_OFFSET;",
+      "callsTo": [],
+      "lineCount": 2
+    },
+    "GetCameraCoords": {
+      "returnType": "void",
+      "signature": "void GetCameraCoords(u16 *x, u16 *y)",
+      "paramsRaw": "u16 *x, u16 *y",
+      "body": "*x = gSaveBlock1Ptr->pos.x;\n    *y = gSaveBlock1Ptr->pos.y;",
+      "callsTo": [],
+      "lineCount": 2
+    },
+    "MapGridSetMetatileImpassabilityAt": {
+      "returnType": "void",
+      "signature": "void MapGridSetMetatileImpassabilityAt(int x, int y, bool32 impassable)",
+      "paramsRaw": "int x, int y, bool32 impassable",
+      "body": "if (AreCoordsWithinMapGridBounds(x, y))\n    {\n        if (impassable)\n            gBackupMapLayout.map[x + gBackupMapLayout.width * y] |= MAPGRID_COLLISION_MASK;\n        else\n            gBackupMapLayout.map[x + gBackupMapLayout.width * y] &= ~MAPGRID_COLLISION_MASK;\n    }",
+      "callsTo": [
+        "AreCoordsWithinMapGridBounds"
+      ],
+      "lineCount": 7
+    },
+    "SkipCopyingMetatileFromSavedMap": {
+      "returnType": "bool8",
+      "signature": "static bool8 SkipCopyingMetatileFromSavedMap(u16 *mapBlock, u16 mapWidth, u8 yMode)",
+      "paramsRaw": "u16 *mapBlock, u16 mapWidth, u8 yMode",
+      "body": "if (yMode == 0xFF)\n        return FALSE;\n\n    if (yMode == 0)\n        mapBlock -= mapWidth;\n    else\n        mapBlock += mapWidth;\n\n    if (IsLargeBreakableDecoration(UNPACK_METATILE(*mapBlock), yMode) == TRUE)\n        return TRUE;\n    return FALSE;",
+      "callsTo": [
+        "IsLargeBreakableDecoration",
+        "UNPACK_METATILE"
+      ],
+      "lineCount": 11
+    },
+    "CopyTilesetToVram": {
+      "returnType": "void",
+      "signature": "static void CopyTilesetToVram(struct Tileset const *tileset, u16 numTiles, u16 offset)",
+      "paramsRaw": "struct Tileset const *tileset, u16 numTiles, u16 offset",
+      "body": "if (tileset)\n    {\n        if (!tileset->isCompressed)\n            LoadBgTiles(2, tileset->tiles, numTiles * 32, offset);\n        else\n            DecompressAndCopyTileDataToVram(2, tileset->tiles, numTiles * 32, offset, 0);\n    }",
+      "callsTo": [
+        "DecompressAndCopyTileDataToVram",
+        "LoadBgTiles"
+      ],
+      "lineCount": 7
+    },
+    "CopyTilesetToVramUsingHeap": {
+      "returnType": "void",
+      "signature": "static void CopyTilesetToVramUsingHeap(struct Tileset const *tileset, u16 numTiles, u16 offset)",
+      "paramsRaw": "struct Tileset const *tileset, u16 numTiles, u16 offset",
+      "body": "if (tileset)\n    {\n        if (!tileset->isCompressed)\n            LoadBgTiles(2, tileset->tiles, numTiles * 32, offset);\n        else\n            DecompressAndLoadBgGfxUsingHeap(2, tileset->tiles, numTiles * 32, offset, 0);\n    }",
+      "callsTo": [
+        "DecompressAndLoadBgGfxUsingHeap",
+        "LoadBgTiles"
+      ],
+      "lineCount": 7
+    },
+    "ApplyGlobalTintToPaletteEntries": {
+      "returnType": "void",
+      "signature": "static void ApplyGlobalTintToPaletteEntries(u16 offset, u16 size)",
+      "paramsRaw": "u16 offset, u16 size",
+      "body": "",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "LoadTilesetPalette": {
+      "returnType": "void",
+      "signature": "static void LoadTilesetPalette(struct Tileset const *tileset, u16 destOffset, u16 size)",
+      "paramsRaw": "struct Tileset const *tileset, u16 destOffset, u16 size",
+      "body": "u16 black = RGB_BLACK;\n\n    if (tileset)\n    {\n        if (tileset->isSecondary == FALSE)\n        {\n            LoadPalette(&black, destOffset, PLTT_SIZEOF(1));\n            LoadPalette(tileset->palettes[0] + 1, destOffset + 1, size - PLTT_SIZEOF(1));\n            ApplyGlobalTintToPaletteEntries(destOffset + 1, (size - PLTT_SIZEOF(1)) >> 1);\n        }\n        else if (tileset->isSecondary == TRUE)\n        {\n            LoadPalette(tileset->palettes[NUM_PALS_IN_PRIMARY], destOffset, size);\n            ApplyGlobalTintToPaletteEntries(destOffset, size >> 1);\n        }\n        else\n        {\n            LoadCompressedPalette((const u32 *)tileset->palettes, destOffset, size);\n            ApplyGlobalTintToPaletteEntries(destOffset, size >> 1);\n        }\n    }",
+      "callsTo": [
+        "ApplyGlobalTintToPaletteEntries",
+        "LoadCompressedPalette",
+        "LoadPalette",
+        "PLTT_SIZEOF"
+      ],
+      "lineCount": 21
+    },
+    "CopyPrimaryTilesetToVram": {
+      "returnType": "void",
+      "signature": "void CopyPrimaryTilesetToVram(struct MapLayout const *mapLayout)",
+      "paramsRaw": "struct MapLayout const *mapLayout",
+      "body": "CopyTilesetToVram(mapLayout->primaryTileset, NUM_TILES_IN_PRIMARY, 0);",
+      "callsTo": [
+        "CopyTilesetToVram"
+      ],
+      "lineCount": 1
+    },
+    "CopySecondaryTilesetToVram": {
+      "returnType": "void",
+      "signature": "void CopySecondaryTilesetToVram(struct MapLayout const *mapLayout)",
+      "paramsRaw": "struct MapLayout const *mapLayout",
+      "body": "CopyTilesetToVram(mapLayout->secondaryTileset, NUM_TILES_TOTAL - NUM_TILES_IN_PRIMARY, NUM_TILES_IN_PRIMARY);",
+      "callsTo": [
+        "CopyTilesetToVram"
+      ],
+      "lineCount": 1
+    },
+    "CopySecondaryTilesetToVramUsingHeap": {
+      "returnType": "void",
+      "signature": "void CopySecondaryTilesetToVramUsingHeap(struct MapLayout const *mapLayout)",
+      "paramsRaw": "struct MapLayout const *mapLayout",
+      "body": "CopyTilesetToVramUsingHeap(mapLayout->secondaryTileset, NUM_TILES_TOTAL - NUM_TILES_IN_PRIMARY, NUM_TILES_IN_PRIMARY);",
+      "callsTo": [
+        "CopyTilesetToVramUsingHeap"
+      ],
+      "lineCount": 1
+    },
+    "LoadPrimaryTilesetPalette": {
+      "returnType": "void",
+      "signature": "static void LoadPrimaryTilesetPalette(struct MapLayout const *mapLayout)",
+      "paramsRaw": "struct MapLayout const *mapLayout",
+      "body": "LoadTilesetPalette(mapLayout->primaryTileset, BG_PLTT_ID(0), NUM_PALS_IN_PRIMARY * PLTT_SIZE_4BPP);",
+      "callsTo": [
+        "BG_PLTT_ID",
+        "LoadTilesetPalette"
+      ],
+      "lineCount": 1
+    },
+    "LoadSecondaryTilesetPalette": {
+      "returnType": "void",
+      "signature": "void LoadSecondaryTilesetPalette(struct MapLayout const *mapLayout)",
+      "paramsRaw": "struct MapLayout const *mapLayout",
+      "body": "LoadTilesetPalette(mapLayout->secondaryTileset, BG_PLTT_ID(NUM_PALS_IN_PRIMARY), (NUM_PALS_TOTAL - NUM_PALS_IN_PRIMARY) * PLTT_SIZE_4BPP);",
+      "callsTo": [
+        "BG_PLTT_ID",
+        "LoadTilesetPalette"
+      ],
+      "lineCount": 1
+    },
+    "CopyMapTilesetsToVram": {
+      "returnType": "void",
+      "signature": "void CopyMapTilesetsToVram(struct MapLayout const *mapLayout)",
+      "paramsRaw": "struct MapLayout const *mapLayout",
+      "body": "if (mapLayout)\n    {\n        CopyTilesetToVramUsingHeap(mapLayout->primaryTileset, NUM_TILES_IN_PRIMARY, 0);\n        CopyTilesetToVramUsingHeap(mapLayout->secondaryTileset, NUM_TILES_TOTAL - NUM_TILES_IN_PRIMARY, NUM_TILES_IN_PRIMARY);\n    }",
+      "callsTo": [
+        "CopyTilesetToVramUsingHeap"
+      ],
+      "lineCount": 5
+    },
+    "LoadMapTilesetPalettes": {
+      "returnType": "void",
+      "signature": "void LoadMapTilesetPalettes(struct MapLayout const *mapLayout)",
+      "paramsRaw": "struct MapLayout const *mapLayout",
+      "body": "if (mapLayout)\n    {\n        LoadPrimaryTilesetPalette(mapLayout);\n        LoadSecondaryTilesetPalette(mapLayout);\n    }",
+      "callsTo": [
+        "LoadPrimaryTilesetPalette",
+        "LoadSecondaryTilesetPalette"
+      ],
+      "lineCount": 5
+    }
+  }
+}

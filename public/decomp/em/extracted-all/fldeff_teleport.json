@@ -1,0 +1,50 @@
+{
+  "srcFile": "src/fldeff_teleport.c",
+  "count": 4,
+  "functions": {
+    "SetUpFieldMove_Teleport": {
+      "returnType": "bool8",
+      "signature": "bool8 SetUpFieldMove_Teleport(void)",
+      "paramsRaw": "void",
+      "body": "if (Overworld_MapTypeAllowsTeleportAndFly(gMapHeader.mapType) == TRUE)\n    {\n        gFieldCallback2 = FieldCallback_PrepareFadeInFromMenu;\n        gPostMenuFieldCallback = FieldCallback_Teleport;\n        return TRUE;\n    }\n    return FALSE;",
+      "callsTo": [
+        "Overworld_MapTypeAllowsTeleportAndFly"
+      ],
+      "lineCount": 7
+    },
+    "FieldCallback_Teleport": {
+      "returnType": "void",
+      "signature": "static void FieldCallback_Teleport(void)",
+      "paramsRaw": "void",
+      "body": "Overworld_ResetStateAfterTeleport();\n    FieldEffectStart(FLDEFF_USE_TELEPORT);\n    gFieldEffectArguments[0] = (u32)GetCursorSelectionMonId();",
+      "callsTo": [
+        "FieldEffectStart",
+        "GetCursorSelectionMonId",
+        "Overworld_ResetStateAfterTeleport"
+      ],
+      "lineCount": 3
+    },
+    "FldEff_UseTeleport": {
+      "returnType": "bool8",
+      "signature": "bool8 FldEff_UseTeleport(void)",
+      "paramsRaw": "void",
+      "body": "u8 taskId = CreateFieldMoveTask();\n    gTasks[taskId].data[8] = (u32)StartTeleportFieldEffect >> 16;\n    gTasks[taskId].data[9] = (u32)StartTeleportFieldEffect;\n    SetPlayerAvatarTransitionFlags(PLAYER_AVATAR_FLAG_ON_FOOT);\n    return FALSE;",
+      "callsTo": [
+        "CreateFieldMoveTask",
+        "SetPlayerAvatarTransitionFlags"
+      ],
+      "lineCount": 5
+    },
+    "StartTeleportFieldEffect": {
+      "returnType": "void",
+      "signature": "static void StartTeleportFieldEffect(void)",
+      "paramsRaw": "void",
+      "body": "FieldEffectActiveListRemove(FLDEFF_USE_TELEPORT);\n    FldEff_TeleportWarpOut();",
+      "callsTo": [
+        "FieldEffectActiveListRemove",
+        "FldEff_TeleportWarpOut"
+      ],
+      "lineCount": 2
+    }
+  }
+}

@@ -1,0 +1,739 @@
+{
+  "srcFile": "src/pokenav_menu_handler_gfx.c",
+  "count": 56,
+  "functions": {
+    "AreAnyTrainerRematchesNearby": {
+      "returnType": "bool32",
+      "signature": "static bool32 AreAnyTrainerRematchesNearby(void)",
+      "paramsRaw": "void",
+      "body": "s32 i;\n\n    for (i = 0; i < REMATCH_TABLE_ENTRIES; i++)\n    {\n        if (GetMatchTableMapSectionId(i) == gMapHeader.regionMapSectionId\n            && IsRematchEntryRegistered(i)\n            && gSaveBlock1Ptr->trainerRematches[i])\n            return TRUE;\n    }\n\n    return FALSE;",
+      "callsTo": [
+        "GetMatchTableMapSectionId",
+        "IsRematchEntryRegistered"
+      ],
+      "lineCount": 11
+    },
+    "OpenPokenavMenuInitial": {
+      "returnType": "bool32",
+      "signature": "bool32 OpenPokenavMenuInitial(void)",
+      "paramsRaw": "void",
+      "body": "struct Pokenav_MenuGfx *gfx = OpenPokenavMenu();\n\n    if (gfx == NULL)\n        return FALSE;\n\n    gfx->pokenavAlreadyOpen = FALSE;\n    return TRUE;",
+      "callsTo": [
+        "OpenPokenavMenu"
+      ],
+      "lineCount": 7
+    },
+    "OpenPokenavMenuNotInitial": {
+      "returnType": "bool32",
+      "signature": "bool32 OpenPokenavMenuNotInitial(void)",
+      "paramsRaw": "void",
+      "body": "struct Pokenav_MenuGfx *gfx = OpenPokenavMenu();\n\n    if (gfx == NULL)\n        return FALSE;\n\n    gfx->pokenavAlreadyOpen = TRUE;\n    return TRUE;",
+      "callsTo": [
+        "OpenPokenavMenu"
+      ],
+      "lineCount": 7
+    },
+    "OpenPokenavMenu": {
+      "returnType": "struct Pokenav_MenuGfx *",
+      "signature": "static struct Pokenav_MenuGfx * OpenPokenavMenu(void)",
+      "paramsRaw": "void",
+      "body": "struct Pokenav_MenuGfx *gfx = AllocSubstruct(POKENAV_SUBSTRUCT_MENU_GFX, sizeof(struct Pokenav_MenuGfx));\n\n    if (gfx != NULL)\n    {\n        gfx->numIconsBlending = 0;\n        gfx->loopedTaskId = CreateLoopedTask(LoopedTask_OpenMenu, 1);\n        gfx->isTaskActiveCB = GetCurrentLoopedTaskActive;\n    }\n\n    return gfx;",
+      "callsTo": [
+        "AllocSubstruct",
+        "CreateLoopedTask"
+      ],
+      "lineCount": 10
+    },
+    "CreateMenuHandlerLoopedTask": {
+      "returnType": "void",
+      "signature": "void CreateMenuHandlerLoopedTask(s32 ltIdx)",
+      "paramsRaw": "s32 ltIdx",
+      "body": "struct Pokenav_MenuGfx *gfx = GetSubstructPtr(POKENAV_SUBSTRUCT_MENU_GFX);\n    gfx->loopedTaskId = CreateLoopedTask(sMenuHandlerLoopTaskFuncs[ltIdx], 1);\n    gfx->isTaskActiveCB = GetCurrentLoopedTaskActive;",
+      "callsTo": [
+        "CreateLoopedTask",
+        "GetSubstructPtr"
+      ],
+      "lineCount": 3
+    },
+    "IsMenuHandlerLoopedTaskActive": {
+      "returnType": "bool32",
+      "signature": "bool32 IsMenuHandlerLoopedTaskActive(void)",
+      "paramsRaw": "void",
+      "body": "struct Pokenav_MenuGfx *gfx = GetSubstructPtr(POKENAV_SUBSTRUCT_MENU_GFX);\n    return gfx->isTaskActiveCB();",
+      "callsTo": [
+        "GetSubstructPtr"
+      ],
+      "lineCount": 2
+    },
+    "FreeMenuHandlerSubstruct2": {
+      "returnType": "void",
+      "signature": "void FreeMenuHandlerSubstruct2(void)",
+      "paramsRaw": "void",
+      "body": "struct Pokenav_MenuGfx *gfx = GetSubstructPtr(POKENAV_SUBSTRUCT_MENU_GFX);\n\n    DestroyMovingDotsBgTask();\n    RemoveWindow(gfx->optionDescWindowId);\n    FreeAndDestroyMainMenuSprites();\n    DestroyMenuOptionGlowTask();\n    FreePokenavSubstruct(POKENAV_SUBSTRUCT_MENU_GFX);",
+      "callsTo": [
+        "DestroyMenuOptionGlowTask",
+        "DestroyMovingDotsBgTask",
+        "FreeAndDestroyMainMenuSprites",
+        "FreePokenavSubstruct",
+        "GetSubstructPtr",
+        "RemoveWindow"
+      ],
+      "lineCount": 7
+    },
+    "GetCurrentLoopedTaskActive": {
+      "returnType": "bool32",
+      "signature": "static bool32 GetCurrentLoopedTaskActive(void)",
+      "paramsRaw": "void",
+      "body": "struct Pokenav_MenuGfx *gfx = GetSubstructPtr(POKENAV_SUBSTRUCT_MENU_GFX);\n\n    return IsLoopedTaskActive(gfx->loopedTaskId);",
+      "callsTo": [
+        "GetSubstructPtr",
+        "IsLoopedTaskActive"
+      ],
+      "lineCount": 3
+    },
+    "LoopedTask_OpenMenu": {
+      "returnType": "u32",
+      "signature": "static u32 LoopedTask_OpenMenu(s32 state)",
+      "paramsRaw": "s32 state",
+      "body": "struct Pokenav_MenuGfx *gfx = GetSubstructPtr(POKENAV_SUBSTRUCT_MENU_GFX);\n\n    switch (state)\n    {\n    case 0:\n        InitBgTemplates(sPokenavMainMenuBgTemplates, ARRAY_COUNT(sPokenavMainMenuBgTemplates));\n        DecompressAndCopyTileDataToVram(1, gPokenavMessageBox_Gfx, 0, 0, 0);\n        SetBgTilemapBuffer(1, gfx->bg1TilemapBuffer);\n        CopyToBgTilemapBuffer(1, gPokenavMessageBox_Tilemap, 0, 0);\n        CopyBgTilemapBufferToVram(1);\n        CopyPaletteIntoBufferUnfaded(gPokenavMessageBox_Pal, BG_PLTT_ID(1), PLTT_SIZE_4BPP);\n        ChangeBgX(1, 0, BG_COORD_SET);\n        ChangeBgY(1, 0, BG_COORD_SET);\n        ChangeBgX(2, 0, BG_COORD_SET);\n        ChangeBgY(2, 0, BG_COORD_SET);\n        ChangeBgX(3, 0, BG_COORD_SET);\n        ChangeBgY(3, 0, BG_COORD_SET);\n        return LT_INC_AND_PAUSE;\n    case 1:\n        if (FreeTempTileDataBuffersIfPossible())\n            return LT_PAUSE;\n        DecompressAndCopyTileDataToVram(2, sPokenavDeviceBgTiles, 0, 0, 0);\n        DecompressAndCopyTileDataToVram(2, sPokenavDeviceBgTilemap, 0, 0, 1);\n        CopyPaletteIntoBufferUnfaded(sPokenavDeviceBgPal, BG_PLTT_ID(2), sizeof(sPokenavDeviceBgPal));\n        return LT_INC_AND_PAUSE;\n    case 2:\n        if (FreeTempTileDataBuffersIfPossible())\n            return LT_PAUSE;\n        DecompressAndCopyTileDataToVram(3, sPokenavBgDotsTiles, 0, 0, 0);\n        DecompressAndCopyTileDataToVram(3, sPokenavBgDotsTilemap, 0, 0, 1);\n        CopyPaletteIntoBufferUnfaded(sPokenavBgDotsPal, BG_PLTT_ID(3), sizeof(sPokenavBgDotsPal));\n        if (GetPokenavMenuType() == POKENAV_MENU_TYPE_CONDITION || GetPokenavMenuType() == POKENAV_MENU_TYPE_CONDITION_SEARCH)\n            ChangeBgDotsColorToPurple();\n        return LT_INC_AND_PAUSE;\n    case 3:\n        if (FreeTempTileDataBuffersIfPossible())\n            return LT_PAUSE;\n        AddOptionDescriptionWindow();\n        CreateMovingBgDotsTask();\n        return LT_INC_AND_CONTINUE;\n    case 4:\n        LoadPokenavOptionPalettes();\n        return LT_INC_AND_CONTINUE;\n    case 5:\n        PrintCurrentOptionDescription();\n        CreateMenuOptionSprites();\n        CreateMatchCallBlueLightSprite();\n        DrawCurrentMenuOptionLabels();\n        return LT_INC_AND_PAUSE;\n    case 6:\n        if (IsDma3ManagerBusyWithBgCopy_())\n            return LT_PAUSE;\n        return LT_INC_AND_CONTINUE;\n    case 7:\n        ShowBg(1);\n        ShowBg(2);\n        ShowBg(3);\n        if (gfx->pokenavAlreadyOpen)\n        {\n            PokenavFadeScreen(POKENAV_FADE_FROM_BLACK);\n        }\n        else\n        {\n            PlaySE(SE_POKENAV_ON);\n            PokenavFadeScreen(POKENAV_FADE_FROM_BLACK_ALL);\n        }\n        switch (GetPokenavMenuType())\n        {\n        case POKENAV_MENU_TYPE_CONDITION_SEARCH:\n            LoadLeftHeaderGfxForIndex(7);\n             \n        case POKENAV_MENU_TYPE_CONDITION:\n            LoadLeftHeaderGfxForIndex(1);\n            break;\n        default:\n            LoadLeftHeaderGfxForIndex(0);\n            break;\n        }\n        return LT_INC_AND_PAUSE;\n    case 8:\n        if (IsPaletteFadeActive())\n            return LT_PAUSE;\n        switch (GetPokenavMenuType())\n        {\n        case POKENAV_MENU_TYPE_CONDITION_SEARCH:\n            ShowLeftHeaderGfx(7, FALSE, FALSE);\n             \n        case POKENAV_MENU_TYPE_CONDITION:\n            ShowLeftHeaderGfx(1, FALSE, FALSE);\n            break;\n        default:\n            ShowLeftHeaderGfx(0, FALSE, FALSE);\n            break;\n        }\n        StartOptionAnimations_Enter();\n        SetupPokenavMenuScanlineEffects();\n        return LT_INC_AND_CONTINUE;\n    case 9:\n        if (AreMenuOptionSpritesMoving())\n            return LT_PAUSE;\n        if (AreLeftHeaderSpritesMoving())\n            return LT_PAUSE;\n        break;\n    }\n    return LT_FINISH;",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "AddOptionDescriptionWindow",
+        "AreLeftHeaderSpritesMoving",
+        "AreMenuOptionSpritesMoving",
+        "BG_PLTT_ID",
+        "ChangeBgDotsColorToPurple",
+        "ChangeBgX",
+        "ChangeBgY",
+        "CopyBgTilemapBufferToVram",
+        "CopyPaletteIntoBufferUnfaded",
+        "CopyToBgTilemapBuffer",
+        "CreateMatchCallBlueLightSprite",
+        "CreateMenuOptionSprites",
+        "CreateMovingBgDotsTask",
+        "DecompressAndCopyTileDataToVram",
+        "DrawCurrentMenuOptionLabels",
+        "FreeTempTileDataBuffersIfPossible",
+        "GetPokenavMenuType",
+        "GetSubstructPtr",
+        "InitBgTemplates",
+        "IsDma3ManagerBusyWithBgCopy_",
+        "IsPaletteFadeActive",
+        "LoadLeftHeaderGfxForIndex",
+        "LoadPokenavOptionPalettes",
+        "PlaySE",
+        "PokenavFadeScreen",
+        "PrintCurrentOptionDescription",
+        "SetBgTilemapBuffer",
+        "SetupPokenavMenuScanlineEffects",
+        "ShowBg",
+        "ShowLeftHeaderGfx",
+        "StartOptionAnimations_Enter"
+      ],
+      "lineCount": 105
+    },
+    "LoopedTask_MoveMenuCursor": {
+      "returnType": "u32",
+      "signature": "static u32 LoopedTask_MoveMenuCursor(s32 state)",
+      "paramsRaw": "s32 state",
+      "body": "switch (state)\n    {\n    case 0:\n        SetMenuOptionGlow();\n        StartOptionAnimations_CursorMoved();\n        PrintCurrentOptionDescription();\n        PlaySE(SE_SELECT);\n        return LT_INC_AND_PAUSE;\n    case 1:\n        if (AreMenuOptionSpritesMoving())\n            return LT_PAUSE;\n        if (IsDma3ManagerBusyWithBgCopy_())\n            return LT_PAUSE;\n        break;\n    }\n    return LT_FINISH;",
+      "callsTo": [
+        "AreMenuOptionSpritesMoving",
+        "IsDma3ManagerBusyWithBgCopy_",
+        "PlaySE",
+        "PrintCurrentOptionDescription",
+        "SetMenuOptionGlow",
+        "StartOptionAnimations_CursorMoved"
+      ],
+      "lineCount": 16
+    },
+    "LoopedTask_OpenConditionMenu": {
+      "returnType": "u32",
+      "signature": "static u32 LoopedTask_OpenConditionMenu(s32 state)",
+      "paramsRaw": "s32 state",
+      "body": "switch (state)\n    {\n    case 0:\n        ResetBldCnt();\n        StartOptionAnimations_Exit();\n        HideMainOrSubMenuLeftHeader(POKENAV_GFX_MAIN_MENU, FALSE);\n        PlaySE(SE_SELECT);\n        return LT_INC_AND_PAUSE;\n    case 1:\n        if (AreMenuOptionSpritesMoving())\n            return LT_PAUSE;\n        if (AreLeftHeaderSpritesMoving())\n            return LT_PAUSE;\n        DrawCurrentMenuOptionLabels();\n        LoadLeftHeaderGfxForIndex(1);\n        return LT_INC_AND_PAUSE;\n    case 2:\n        StartOptionAnimations_Enter();\n        ShowLeftHeaderGfx(1, FALSE, FALSE);\n        CreateBgDotPurplePalTask();\n        PrintCurrentOptionDescription();\n        return LT_INC_AND_PAUSE;\n    case 3:\n        if (AreMenuOptionSpritesMoving())\n            return LT_PAUSE;\n        if (AreLeftHeaderSpritesMoving())\n            return LT_PAUSE;\n        if (IsTaskActive_UpdateBgDotsPalette())\n            return LT_PAUSE;\n        if (IsDma3ManagerBusyWithBgCopy_())\n            return LT_PAUSE;\n        InitMenuOptionGlow();\n        break;\n    }\n    return LT_FINISH;",
+      "callsTo": [
+        "AreLeftHeaderSpritesMoving",
+        "AreMenuOptionSpritesMoving",
+        "CreateBgDotPurplePalTask",
+        "DrawCurrentMenuOptionLabels",
+        "HideMainOrSubMenuLeftHeader",
+        "InitMenuOptionGlow",
+        "IsDma3ManagerBusyWithBgCopy_",
+        "IsTaskActive_UpdateBgDotsPalette",
+        "LoadLeftHeaderGfxForIndex",
+        "PlaySE",
+        "PrintCurrentOptionDescription",
+        "ResetBldCnt",
+        "ShowLeftHeaderGfx",
+        "StartOptionAnimations_Enter",
+        "StartOptionAnimations_Exit"
+      ],
+      "lineCount": 35
+    },
+    "LoopedTask_ReturnToMainMenu": {
+      "returnType": "u32",
+      "signature": "static u32 LoopedTask_ReturnToMainMenu(s32 state)",
+      "paramsRaw": "s32 state",
+      "body": "switch (state)\n    {\n    case 0:\n        ResetBldCnt();\n        StartOptionAnimations_Exit();\n        HideMainOrSubMenuLeftHeader(POKENAV_GFX_CONDITION_MENU, FALSE);\n        return LT_INC_AND_PAUSE;\n    case 1:\n        if (AreMenuOptionSpritesMoving())\n            return LT_PAUSE;\n        if (AreLeftHeaderSpritesMoving())\n            return LT_PAUSE;\n        DrawCurrentMenuOptionLabels();\n        LoadLeftHeaderGfxForIndex(0);\n        return LT_INC_AND_PAUSE;\n    case 2:\n        StartOptionAnimations_Enter();\n        ShowLeftHeaderGfx(0, FALSE, FALSE);\n        CreateBgDotLightBluePalTask();\n        PrintCurrentOptionDescription();\n        return LT_INC_AND_PAUSE;\n    case 3:\n        if (AreMenuOptionSpritesMoving())\n            return LT_PAUSE;\n        if (AreLeftHeaderSpritesMoving())\n            return LT_PAUSE;\n        if (IsTaskActive_UpdateBgDotsPalette())\n            return LT_PAUSE;\n        if (IsDma3ManagerBusyWithBgCopy_())\n            return LT_PAUSE;\n        InitMenuOptionGlow();\n        break;\n    }\n    return LT_FINISH;",
+      "callsTo": [
+        "AreLeftHeaderSpritesMoving",
+        "AreMenuOptionSpritesMoving",
+        "CreateBgDotLightBluePalTask",
+        "DrawCurrentMenuOptionLabels",
+        "HideMainOrSubMenuLeftHeader",
+        "InitMenuOptionGlow",
+        "IsDma3ManagerBusyWithBgCopy_",
+        "IsTaskActive_UpdateBgDotsPalette",
+        "LoadLeftHeaderGfxForIndex",
+        "PrintCurrentOptionDescription",
+        "ResetBldCnt",
+        "ShowLeftHeaderGfx",
+        "StartOptionAnimations_Enter",
+        "StartOptionAnimations_Exit"
+      ],
+      "lineCount": 34
+    },
+    "LoopedTask_OpenConditionSearchMenu": {
+      "returnType": "u32",
+      "signature": "static u32 LoopedTask_OpenConditionSearchMenu(s32 state)",
+      "paramsRaw": "s32 state",
+      "body": "switch (state)\n    {\n    case 0:\n        ResetBldCnt();\n        StartOptionAnimations_Exit();\n        PlaySE(SE_SELECT);\n        return LT_INC_AND_PAUSE;\n    case 1:\n        if (AreMenuOptionSpritesMoving())\n            return LT_PAUSE;\n        LoadLeftHeaderGfxForIndex(7);\n        DrawCurrentMenuOptionLabels();\n        return LT_INC_AND_PAUSE;\n    case 2:\n        StartOptionAnimations_Enter();\n        ShowLeftHeaderGfx(7, FALSE, FALSE);\n        PrintCurrentOptionDescription();\n        return LT_INC_AND_PAUSE;\n    case 3:\n        if (AreMenuOptionSpritesMoving())\n            return LT_PAUSE;\n        if (AreLeftHeaderSpritesMoving())\n            return LT_PAUSE;\n        if (IsTaskActive_UpdateBgDotsPalette())\n            return LT_PAUSE;\n        InitMenuOptionGlow();\n        break;\n    }\n    return LT_FINISH;",
+      "callsTo": [
+        "AreLeftHeaderSpritesMoving",
+        "AreMenuOptionSpritesMoving",
+        "DrawCurrentMenuOptionLabels",
+        "InitMenuOptionGlow",
+        "IsTaskActive_UpdateBgDotsPalette",
+        "LoadLeftHeaderGfxForIndex",
+        "PlaySE",
+        "PrintCurrentOptionDescription",
+        "ResetBldCnt",
+        "ShowLeftHeaderGfx",
+        "StartOptionAnimations_Enter",
+        "StartOptionAnimations_Exit"
+      ],
+      "lineCount": 29
+    },
+    "LoopedTask_ReturnToConditionMenu": {
+      "returnType": "u32",
+      "signature": "static u32 LoopedTask_ReturnToConditionMenu(s32 state)",
+      "paramsRaw": "s32 state",
+      "body": "switch (state)\n    {\n    case 0:\n        ResetBldCnt();\n        StartOptionAnimations_Exit();\n        HideMainOrSubMenuLeftHeader(POKENAV_GFX_SEARCH_MENU, FALSE);\n        return LT_INC_AND_PAUSE;\n    case 1:\n        if (AreMenuOptionSpritesMoving())\n            return LT_PAUSE;\n        if (AreLeftHeaderSpritesMoving())\n            return LT_PAUSE;\n        DrawCurrentMenuOptionLabels();\n        return LT_INC_AND_PAUSE;\n    case 2:\n        StartOptionAnimations_Enter();\n        PrintCurrentOptionDescription();\n        return LT_INC_AND_PAUSE;\n    case 3:\n        if (AreMenuOptionSpritesMoving())\n            return LT_PAUSE;\n        if (IsTaskActive_UpdateBgDotsPalette())\n            return LT_PAUSE;\n        InitMenuOptionGlow();\n        break;\n    }\n    return LT_FINISH;",
+      "callsTo": [
+        "AreLeftHeaderSpritesMoving",
+        "AreMenuOptionSpritesMoving",
+        "DrawCurrentMenuOptionLabels",
+        "HideMainOrSubMenuLeftHeader",
+        "InitMenuOptionGlow",
+        "IsTaskActive_UpdateBgDotsPalette",
+        "PrintCurrentOptionDescription",
+        "ResetBldCnt",
+        "StartOptionAnimations_Enter",
+        "StartOptionAnimations_Exit"
+      ],
+      "lineCount": 27
+    },
+    "LoopedTask_SelectRibbonsNoWinners": {
+      "returnType": "u32",
+      "signature": "static u32 LoopedTask_SelectRibbonsNoWinners(s32 state)",
+      "paramsRaw": "s32 state",
+      "body": "switch (state)\n    {\n    case 0:\n        PlaySE(SE_FAILURE);\n        PrintNoRibbonWinners();\n        return LT_INC_AND_PAUSE;\n    case 1:\n        if (IsDma3ManagerBusyWithBgCopy())\n            return LT_PAUSE;\n        break;\n    }\n    return LT_FINISH;",
+      "callsTo": [
+        "IsDma3ManagerBusyWithBgCopy",
+        "PlaySE",
+        "PrintNoRibbonWinners"
+      ],
+      "lineCount": 12
+    },
+    "LoopedTask_ReShowDescription": {
+      "returnType": "u32",
+      "signature": "static u32 LoopedTask_ReShowDescription(s32 state)",
+      "paramsRaw": "s32 state",
+      "body": "switch (state)\n    {\n    case 0:\n        PlaySE(SE_SELECT);\n        PrintCurrentOptionDescription();\n        return LT_INC_AND_PAUSE;\n    case 1:\n        if (IsDma3ManagerBusyWithBgCopy())\n            return LT_PAUSE;\n        break;\n    }\n    return LT_FINISH;",
+      "callsTo": [
+        "IsDma3ManagerBusyWithBgCopy",
+        "PlaySE",
+        "PrintCurrentOptionDescription"
+      ],
+      "lineCount": 12
+    },
+    "LoopedTask_OpenPokenavFeature": {
+      "returnType": "u32",
+      "signature": "static u32 LoopedTask_OpenPokenavFeature(s32 state)",
+      "paramsRaw": "s32 state",
+      "body": "switch (state)\n    {\n    case 0:\n        PrintHelpBarText(GetHelpBarTextId());\n        return LT_INC_AND_PAUSE;\n    case 1:\n        if (WaitForHelpBar())\n            return LT_PAUSE;\n        SlideMenuHeaderUp();\n        ResetBldCnt();\n        StartOptionAnimations_Exit();\n        switch (GetPokenavMenuType())\n        {\n        case POKENAV_MENU_TYPE_CONDITION_SEARCH:\n            HideMainOrSubMenuLeftHeader(POKENAV_GFX_SEARCH_MENU, FALSE);\n             \n        case POKENAV_MENU_TYPE_CONDITION:\n            HideMainOrSubMenuLeftHeader(POKENAV_GFX_CONDITION_MENU, FALSE);\n            break;\n        default:\n            HideMainOrSubMenuLeftHeader(POKENAV_GFX_MAIN_MENU, FALSE);\n            break;\n        }\n        PlaySE(SE_SELECT);\n        return LT_INC_AND_PAUSE;\n    case 2:\n        if (AreMenuOptionSpritesMoving())\n            return LT_PAUSE;\n        if (AreLeftHeaderSpritesMoving())\n            return LT_PAUSE;\n        PokenavFadeScreen(POKENAV_FADE_TO_BLACK);\n        return LT_INC_AND_PAUSE;\n    case 3:\n        if (IsPaletteFadeActive())\n            return LT_PAUSE;\n        break;\n    }\n    return LT_FINISH;",
+      "callsTo": [
+        "AreLeftHeaderSpritesMoving",
+        "AreMenuOptionSpritesMoving",
+        "GetHelpBarTextId",
+        "GetPokenavMenuType",
+        "HideMainOrSubMenuLeftHeader",
+        "IsPaletteFadeActive",
+        "PlaySE",
+        "PokenavFadeScreen",
+        "PrintHelpBarText",
+        "ResetBldCnt",
+        "SlideMenuHeaderUp",
+        "StartOptionAnimations_Exit",
+        "WaitForHelpBar"
+      ],
+      "lineCount": 38
+    },
+    "LoadPokenavOptionPalettes": {
+      "returnType": "void",
+      "signature": "static void LoadPokenavOptionPalettes(void)",
+      "paramsRaw": "void",
+      "body": "s32 i;\n\n    for (i = 0; i < ARRAY_COUNT(sPokenavOptionsSpriteSheets); i++)\n        LoadCompressedSpriteSheet(&sPokenavOptionsSpriteSheets[i]);\n    Pokenav_AllocAndLoadPalettes(sPokenavOptionsSpritePalettes);",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "LoadCompressedSpriteSheet",
+        "Pokenav_AllocAndLoadPalettes"
+      ],
+      "lineCount": 5
+    },
+    "FreeAndDestroyMainMenuSprites": {
+      "returnType": "void",
+      "signature": "static void FreeAndDestroyMainMenuSprites(void)",
+      "paramsRaw": "void",
+      "body": "FreeSpriteTilesByTag(GFXTAG_OPTIONS);\n    FreeSpriteTilesByTag(GFXTAG_BLUE_LIGHT);\n    FreeSpritePaletteByTag(PALTAG_OPTIONS_DEFAULT);\n    FreeSpritePaletteByTag(PALTAG_OPTIONS_BLUE);\n    FreeSpritePaletteByTag(PALTAG_OPTIONS_PINK);\n    FreeSpritePaletteByTag(PALTAG_OPTIONS_BEIGE);\n    FreeSpritePaletteByTag(PALTAG_OPTIONS_RED);\n    FreeSpritePaletteByTag(PALTAG_BLUE_LIGHT);\n    DestroyMenuOptionSprites();\n    DestroyRematchBlueLightSprite();",
+      "callsTo": [
+        "DestroyMenuOptionSprites",
+        "DestroyRematchBlueLightSprite",
+        "FreeSpritePaletteByTag",
+        "FreeSpriteTilesByTag"
+      ],
+      "lineCount": 10
+    },
+    "CreateMenuOptionSprites": {
+      "returnType": "void",
+      "signature": "static void CreateMenuOptionSprites(void)",
+      "paramsRaw": "void",
+      "body": "s32 i, j;\n    struct Pokenav_MenuGfx *gfx = GetSubstructPtr(POKENAV_SUBSTRUCT_MENU_GFX);\n\n    for (i = 0; i < MAX_POKENAV_MENUITEMS; i++)\n    {\n        for (j = 0; j < NUM_OPTION_SUBSPRITES; j++)\n        {\n            u8 spriteId = CreateSprite(&sMenuOptionSpriteTemplate, 0x8c, 20 * i + 40, 3);\n            gfx->iconSprites[i][j] = &gSprites[spriteId];\n            gSprites[spriteId].x2 = 32 * j;\n        }\n    }",
+      "callsTo": [
+        "CreateSprite",
+        "GetSubstructPtr"
+      ],
+      "lineCount": 12
+    },
+    "DestroyMenuOptionSprites": {
+      "returnType": "void",
+      "signature": "static void DestroyMenuOptionSprites(void)",
+      "paramsRaw": "void",
+      "body": "s32 i, j;\n    struct Pokenav_MenuGfx *gfx = GetSubstructPtr(POKENAV_SUBSTRUCT_MENU_GFX);\n\n    for (i = 0; i < MAX_POKENAV_MENUITEMS; i++)\n    {\n        for (j = 0; j < NUM_OPTION_SUBSPRITES; j++)\n        {\n            FreeSpriteOamMatrix(gfx->iconSprites[i][j]);\n            DestroySprite(gfx->iconSprites[i][j]);\n        }\n    }",
+      "callsTo": [
+        "DestroySprite",
+        "FreeSpriteOamMatrix",
+        "GetSubstructPtr"
+      ],
+      "lineCount": 11
+    },
+    "DrawCurrentMenuOptionLabels": {
+      "returnType": "void",
+      "signature": "static void DrawCurrentMenuOptionLabels(void)",
+      "paramsRaw": "void",
+      "body": "s32 menuType = GetPokenavMenuType();\n    DrawOptionLabelGfx(sPokenavMenuOptionLabelGfx[menuType].gfx, sPokenavMenuOptionLabelGfx[menuType].yStart, sPokenavMenuOptionLabelGfx[menuType].deltaY);",
+      "callsTo": [
+        "DrawOptionLabelGfx",
+        "GetPokenavMenuType"
+      ],
+      "lineCount": 2
+    },
+    "DrawOptionLabelGfx": {
+      "returnType": "void",
+      "signature": "static void DrawOptionLabelGfx(const u16 *const *optionGfx, s32 yPos, s32 deltaY)",
+      "paramsRaw": "const u16 *const *optionGfx, s32 yPos, s32 deltaY",
+      "body": "s32 i, j;\n    struct Pokenav_MenuGfx *gfx = GetSubstructPtr(POKENAV_SUBSTRUCT_MENU_GFX);\n    s32 baseTile = GetSpriteTileStartByTag(GFXTAG_OPTIONS);\n\n    for (i = 0; i < MAX_POKENAV_MENUITEMS; i++)\n    {\n        if (*optionGfx != NULL)\n        {\n            for (j = 0; j < NUM_OPTION_SUBSPRITES; j++)\n            {\n                gfx->iconSprites[i][j]->oam.tileNum = (*optionGfx)[0] + baseTile + 8 * j;\n                gfx->iconSprites[i][j]->oam.paletteNum = IndexOfSpritePaletteTag((*optionGfx)[1] + PALTAG_OPTIONS_START);\n                gfx->iconSprites[i][j]->invisible = TRUE;\n                gfx->iconSprites[i][j]->y = yPos;\n                gfx->iconSprites[i][j]->x = OPTION_DEFAULT_X;\n                gfx->iconSprites[i][j]->x2 = 32 * j;\n            }\n            gfx->iconVisible[i] = TRUE;\n        }\n        else\n        {\n            for (j = 0; j < NUM_OPTION_SUBSPRITES; j++)\n                gfx->iconSprites[i][j]->invisible = TRUE;\n\n            gfx->iconVisible[i] = FALSE;\n        }\n        optionGfx++;\n        yPos += deltaY;\n    }",
+      "callsTo": [
+        "GetSpriteTileStartByTag",
+        "GetSubstructPtr",
+        "IndexOfSpritePaletteTag"
+      ],
+      "lineCount": 29
+    },
+    "StartOptionAnimations_Enter": {
+      "returnType": "void",
+      "signature": "static void StartOptionAnimations_Enter(void)",
+      "paramsRaw": "void",
+      "body": "s32 i;\n    struct Pokenav_MenuGfx *gfx = GetSubstructPtr(POKENAV_SUBSTRUCT_MENU_GFX);\n    s32 cursorPos = GetPokenavCursorPos();\n    s32 iconCount = 0;\n    s32 x;\n\n    for (i = 0; i < MAX_POKENAV_MENUITEMS; i++)\n    {\n        if (gfx->iconVisible[i])\n        {\n            if (iconCount++ == cursorPos)\n            {\n                x = OPTION_SELECTED_X;\n                gfx->cursorPos = i;\n            }\n            else\n            {\n                 \n                x = OPTION_DEFAULT_X;\n            }\n\n             \n            StartOptionSlide(gfx->iconSprites[i], OPTION_EXIT_X, x, 12);\n            SetOptionInvisibility(gfx->iconSprites[i], FALSE);\n        }\n        else\n        {\n            SetOptionInvisibility(gfx->iconSprites[i], TRUE);\n        }\n    }",
+      "callsTo": [
+        "GetPokenavCursorPos",
+        "GetSubstructPtr",
+        "SetOptionInvisibility",
+        "StartOptionSlide"
+      ],
+      "lineCount": 30
+    },
+    "StartOptionAnimations_CursorMoved": {
+      "returnType": "void",
+      "signature": "static void StartOptionAnimations_CursorMoved(void)",
+      "paramsRaw": "void",
+      "body": "s32 i;\n    struct Pokenav_MenuGfx *gfx = GetSubstructPtr(POKENAV_SUBSTRUCT_MENU_GFX);\n    s32 prevPos = GetPokenavCursorPos();\n    s32 newPos;\n\n     \n    for (i = 0, newPos = 0; i < MAX_POKENAV_MENUITEMS; i++)\n    {\n        if (gfx->iconVisible[i])\n        {\n            if (newPos == prevPos)\n            {\n                newPos = i;\n                break;\n            }\n            newPos++;\n        }\n    }\n\n     \n     \n    StartOptionSlide(gfx->iconSprites[gfx->cursorPos], OPTION_SELECTED_X, OPTION_DEFAULT_X, 4);\n    StartOptionSlide(gfx->iconSprites[newPos], OPTION_DEFAULT_X, OPTION_SELECTED_X, 4);\n    gfx->cursorPos = newPos;",
+      "callsTo": [
+        "GetPokenavCursorPos",
+        "GetSubstructPtr",
+        "StartOptionSlide"
+      ],
+      "lineCount": 24
+    },
+    "StartOptionAnimations_Exit": {
+      "returnType": "void",
+      "signature": "static void StartOptionAnimations_Exit(void)",
+      "paramsRaw": "void",
+      "body": "s32 i;\n    struct Pokenav_MenuGfx *gfx = GetSubstructPtr(POKENAV_SUBSTRUCT_MENU_GFX);\n\n    for (i = 0; i < MAX_POKENAV_MENUITEMS; i++)\n    {\n        if (gfx->iconVisible[i])\n        {\n             \n             \n            if (gfx->cursorPos != i)\n                StartOptionSlide(gfx->iconSprites[i], OPTION_DEFAULT_X, OPTION_EXIT_X, 8);\n            else\n                StartOptionZoom(gfx->iconSprites[i]);\n        }\n    }",
+      "callsTo": [
+        "GetSubstructPtr",
+        "StartOptionSlide",
+        "StartOptionZoom"
+      ],
+      "lineCount": 15
+    },
+    "AreMenuOptionSpritesMoving": {
+      "returnType": "bool32",
+      "signature": "static bool32 AreMenuOptionSpritesMoving(void)",
+      "paramsRaw": "void",
+      "body": "s32 i;\n    struct Pokenav_MenuGfx *gfx = GetSubstructPtr(POKENAV_SUBSTRUCT_MENU_GFX);\n\n    for (i = 0; i < MAX_POKENAV_MENUITEMS; i++)\n    {\n        if (gfx->iconSprites[i][0]->callback != SpriteCallbackDummy)\n            return TRUE;\n    }\n\n    if (gfx->numIconsBlending != 0)\n        return TRUE;\n\n    return FALSE;",
+      "callsTo": [
+        "GetSubstructPtr"
+      ],
+      "lineCount": 13
+    },
+    "StartOptionSlide": {
+      "returnType": "void",
+      "signature": "static void StartOptionSlide(struct Sprite **sprites, s32 startX, s32 endX, s32 time)",
+      "paramsRaw": "struct Sprite **sprites, s32 startX, s32 endX, s32 time",
+      "body": "s32 i;\n\n    for (i = 0; i < NUM_OPTION_SUBSPRITES; i++)\n    {\n        (*sprites)->x = startX;\n        (*sprites)->sSlideTime = time;\n        (*sprites)->sSlideAccel = 16 * (endX - startX) / time;\n        (*sprites)->sSlideSpeed = 16 * startX;\n        (*sprites)->sSlideEndX = endX;\n        (*sprites)->callback = SpriteCB_OptionSlide;\n        sprites++;\n    }",
+      "callsTo": [],
+      "lineCount": 12
+    },
+    "StartOptionZoom": {
+      "returnType": "void",
+      "signature": "static void StartOptionZoom(struct Sprite **sprites)",
+      "paramsRaw": "struct Sprite **sprites",
+      "body": "s32 i;\n    struct Pokenav_MenuGfx *gfx = GetSubstructPtr(POKENAV_SUBSTRUCT_MENU_GFX);\n    u8 taskId;\n\n    for (i = 0; i < NUM_OPTION_SUBSPRITES; i++)\n    {\n        (*sprites)->oam.objMode = ST_OAM_OBJ_BLEND;\n        (*sprites)->oam.affineMode = ST_OAM_AFFINE_DOUBLE;\n        (*sprites)->callback = SpriteCB_OptionZoom;\n        (*sprites)->sZoomDelay = 8;\n        (*sprites)->sZoomSetAffine = FALSE;\n        (*sprites)->sZoomSubspriteId = i;\n        InitSpriteAffineAnim(sprites[0]);\n        StartSpriteAffineAnim(sprites[0], 0);\n        sprites++;\n    }\n\n    SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(16, 0));\n    taskId = CreateTask(Task_OptionBlend, 3);\n    gTasks[taskId].tBlendDelay = 8;\n    gfx->numIconsBlending++;",
+      "callsTo": [
+        "BLDALPHA_BLEND",
+        "CreateTask",
+        "GetSubstructPtr",
+        "InitSpriteAffineAnim",
+        "SetGpuReg",
+        "StartSpriteAffineAnim"
+      ],
+      "lineCount": 21
+    },
+    "SetOptionInvisibility": {
+      "returnType": "void",
+      "signature": "static void SetOptionInvisibility(struct Sprite **sprites, bool32 invisible)",
+      "paramsRaw": "struct Sprite **sprites, bool32 invisible",
+      "body": "s32 i;\n\n    for (i = 0; i < NUM_OPTION_SUBSPRITES; i++)\n    {\n        (*sprites)->invisible = invisible;\n        sprites++;\n    }",
+      "callsTo": [],
+      "lineCount": 7
+    },
+    "SpriteCB_OptionSlide": {
+      "returnType": "void",
+      "signature": "static void SpriteCB_OptionSlide(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "sprite->sSlideTime--;\n    if (sprite->sSlideTime != -1)\n    {\n        sprite->sSlideSpeed += sprite->sSlideAccel;\n        sprite->x = sprite->sSlideSpeed >> 4;\n    }\n    else\n    {\n        sprite->x = sprite->sSlideEndX;\n        sprite->callback = SpriteCallbackDummy;\n    }",
+      "callsTo": [],
+      "lineCount": 11
+    },
+    "SpriteCB_OptionZoom": {
+      "returnType": "void",
+      "signature": "static void SpriteCB_OptionZoom(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "s32 temp;\n    s32 x;\n    if (sprite->sZoomDelay == 0)\n    {\n        if (!sprite->sZoomSetAffine)\n        {\n            StartSpriteAffineAnim(sprite, 1);\n            sprite->sZoomSetAffine++;\n            sprite->sZoomSpeed = 0x100;\n            sprite->x += sprite->x2;\n            sprite->x2 = 0;\n        }\n        else\n        {\n            sprite->sZoomSpeed += 16;\n            temp = sprite->sZoomSpeed;\n            x = temp >> 3;\n            x = (x - 32) / 2;\n\n             \n            switch (sprite->sZoomSubspriteId)\n            {\n            case 0:\n                sprite->x2 = -x * 3;\n                break;\n            case 1:\n                sprite->x2 = -x;\n                break;\n            case 2:\n                sprite->x2 = x;\n                break;\n            case 3:\n                sprite->x2 = x * 3;\n                break;\n            }\n            if (sprite->affineAnimEnded)\n            {\n                sprite->invisible = TRUE;\n                FreeOamMatrix(sprite->oam.matrixNum);\n                CalcCenterToCornerVec(sprite, sprite->oam.shape, sprite->oam.size, ST_OAM_AFFINE_OFF);\n                sprite->oam.affineMode = ST_OAM_AFFINE_OFF;\n                sprite->oam.objMode = ST_OAM_OBJ_NORMAL;\n                sprite->callback = SpriteCallbackDummy;\n            }\n        }\n    }\n    else\n    {\n        sprite->sZoomDelay--;\n    }",
+      "callsTo": [
+        "CalcCenterToCornerVec",
+        "FreeOamMatrix",
+        "StartSpriteAffineAnim"
+      ],
+      "lineCount": 50
+    },
+    "Task_OptionBlend": {
+      "returnType": "void",
+      "signature": "static void Task_OptionBlend(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "s16 *data = gTasks[taskId].data;\n\n    if (tBlendDelay == 0)\n    {\n        switch (tBlendState)\n        {\n        case 0:\n            tBlendTarget1 = 16;\n            tBlendTarget2 = 0;\n            SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_EFFECT_NONE | BLDCNT_TGT2_ALL);\n            SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(16, 0));\n            tBlendState++;\n            break;\n        case 1:\n            if (tBlendCounter & 1)\n            {\n                tBlendTarget1 -= 3;\n                if (tBlendTarget1 < 0)\n                    tBlendTarget1 = 0;\n            }\n            else\n            {\n                tBlendTarget2 += 3;\n                if (tBlendTarget2 > 16)\n                    tBlendTarget2 = 16;\n            }\n            SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(tBlendTarget1, tBlendTarget2));\n            tBlendCounter++;\n            if (tBlendCounter == 12)\n            {\n                ((struct Pokenav_MenuGfx *)GetSubstructPtr(POKENAV_SUBSTRUCT_MENU_GFX))->numIconsBlending--;\n                SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(0, 16));\n                DestroyTask(taskId);\n            }\n            break;\n        }\n    }\n    else\n    {\n        tBlendDelay--;\n    }",
+      "callsTo": [
+        "BLDALPHA_BLEND",
+        "DestroyTask",
+        "GetSubstructPtr",
+        "SetGpuReg"
+      ],
+      "lineCount": 41
+    },
+    "CreateMatchCallBlueLightSprite": {
+      "returnType": "void",
+      "signature": "static void CreateMatchCallBlueLightSprite(void)",
+      "paramsRaw": "void",
+      "body": "struct Pokenav_MenuGfx *gfx = GetSubstructPtr(POKENAV_SUBSTRUCT_MENU_GFX);\n    u8 spriteId = CreateSprite(&sMatchCallBlueLightSpriteTemplate, 0x10, 0x60, 4);\n    gfx->blueLightSprite = &gSprites[spriteId];\n    if (AreAnyTrainerRematchesNearby())\n        gfx->blueLightSprite->callback = SpriteCB_BlinkingBlueLight;\n    else\n        gfx->blueLightSprite->invisible = TRUE;",
+      "callsTo": [
+        "AreAnyTrainerRematchesNearby",
+        "CreateSprite",
+        "GetSubstructPtr"
+      ],
+      "lineCount": 7
+    },
+    "DestroyRematchBlueLightSprite": {
+      "returnType": "void",
+      "signature": "static void DestroyRematchBlueLightSprite(void)",
+      "paramsRaw": "void",
+      "body": "struct Pokenav_MenuGfx *gfx = GetSubstructPtr(POKENAV_SUBSTRUCT_MENU_GFX);\n    DestroySprite(gfx->blueLightSprite);",
+      "callsTo": [
+        "DestroySprite",
+        "GetSubstructPtr"
+      ],
+      "lineCount": 2
+    },
+    "SpriteCB_BlinkingBlueLight": {
+      "returnType": "void",
+      "signature": "static void SpriteCB_BlinkingBlueLight(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "sprite->data[0]++;\n    if (sprite->data[0] > 8)\n    {\n        sprite->data[0] = 0;\n        sprite->invisible ^= 1;\n    }",
+      "callsTo": [],
+      "lineCount": 6
+    },
+    "AddOptionDescriptionWindow": {
+      "returnType": "void",
+      "signature": "static void AddOptionDescriptionWindow(void)",
+      "paramsRaw": "void",
+      "body": "struct Pokenav_MenuGfx *gfx = GetSubstructPtr(POKENAV_SUBSTRUCT_MENU_GFX);\n\n    gfx->optionDescWindowId = AddWindow(&sOptionDescWindowTemplate);\n    PutWindowTilemap(gfx->optionDescWindowId);\n    FillWindowPixelBuffer(gfx->optionDescWindowId, PIXEL_FILL(6));\n    CopyWindowToVram(gfx->optionDescWindowId, COPYWIN_FULL);",
+      "callsTo": [
+        "AddWindow",
+        "CopyWindowToVram",
+        "FillWindowPixelBuffer",
+        "GetSubstructPtr",
+        "PIXEL_FILL",
+        "PutWindowTilemap"
+      ],
+      "lineCount": 6
+    },
+    "PrintCurrentOptionDescription": {
+      "returnType": "void",
+      "signature": "static void PrintCurrentOptionDescription(void)",
+      "paramsRaw": "void",
+      "body": "struct Pokenav_MenuGfx *gfx = GetSubstructPtr(POKENAV_SUBSTRUCT_MENU_GFX);\n    int menuItem = GetCurrentMenuItemId();\n    const u8 *desc = sPageDescriptions[menuItem];\n    u32 width = GetStringWidth(FONT_NORMAL, desc, -1);\n    FillWindowPixelBuffer(gfx->optionDescWindowId, PIXEL_FILL(6));\n    AddTextPrinterParameterized3(gfx->optionDescWindowId, FONT_NORMAL, (192 - width) / 2, 1, sOptionDescTextColors, 0, desc);",
+      "callsTo": [
+        "AddTextPrinterParameterized3",
+        "FillWindowPixelBuffer",
+        "GetCurrentMenuItemId",
+        "GetStringWidth",
+        "GetSubstructPtr",
+        "PIXEL_FILL"
+      ],
+      "lineCount": 6
+    },
+    "PrintNoRibbonWinners": {
+      "returnType": "void",
+      "signature": "static void PrintNoRibbonWinners(void)",
+      "paramsRaw": "void",
+      "body": "struct Pokenav_MenuGfx *gfx = GetSubstructPtr(POKENAV_SUBSTRUCT_MENU_GFX);\n    const u8 *s = gText_NoRibbonWinners;\n    u32 width = GetStringWidth(FONT_NORMAL, s, -1);\n    FillWindowPixelBuffer(gfx->optionDescWindowId, PIXEL_FILL(6));\n    AddTextPrinterParameterized3(gfx->optionDescWindowId, FONT_NORMAL, (192 - width) / 2, 1, sOptionDescTextColors2, 0, s);",
+      "callsTo": [
+        "AddTextPrinterParameterized3",
+        "FillWindowPixelBuffer",
+        "GetStringWidth",
+        "GetSubstructPtr",
+        "PIXEL_FILL"
+      ],
+      "lineCount": 5
+    },
+    "IsDma3ManagerBusyWithBgCopy_": {
+      "returnType": "bool32",
+      "signature": "static bool32 IsDma3ManagerBusyWithBgCopy_(void)",
+      "paramsRaw": "void",
+      "body": "return IsDma3ManagerBusyWithBgCopy();",
+      "callsTo": [
+        "IsDma3ManagerBusyWithBgCopy"
+      ],
+      "lineCount": 1
+    },
+    "CreateMovingBgDotsTask": {
+      "returnType": "void",
+      "signature": "static void CreateMovingBgDotsTask(void)",
+      "paramsRaw": "void",
+      "body": "struct Pokenav_MenuGfx *gfx = GetSubstructPtr(POKENAV_SUBSTRUCT_MENU_GFX);\n    gfx->bg3ScrollTaskId = CreateTask(Task_MoveBgDots, 2);",
+      "callsTo": [
+        "CreateTask",
+        "GetSubstructPtr"
+      ],
+      "lineCount": 2
+    },
+    "DestroyMovingDotsBgTask": {
+      "returnType": "void",
+      "signature": "static void DestroyMovingDotsBgTask(void)",
+      "paramsRaw": "void",
+      "body": "struct Pokenav_MenuGfx *gfx = GetSubstructPtr(POKENAV_SUBSTRUCT_MENU_GFX);\n    DestroyTask(gfx->bg3ScrollTaskId);",
+      "callsTo": [
+        "DestroyTask",
+        "GetSubstructPtr"
+      ],
+      "lineCount": 2
+    },
+    "Task_MoveBgDots": {
+      "returnType": "void",
+      "signature": "static void Task_MoveBgDots(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "ChangeBgX(3, 0x80, BG_COORD_ADD);",
+      "callsTo": [
+        "ChangeBgX"
+      ],
+      "lineCount": 1
+    },
+    "CreateBgDotPurplePalTask": {
+      "returnType": "void",
+      "signature": "static void CreateBgDotPurplePalTask(void)",
+      "paramsRaw": "void",
+      "body": "u8 taskId = CreateTask(Task_UpdateBgDotsPalette, 3);\n    SetWordTaskArg(taskId, 1, (uintptr_t)(sPokenavBgDotsPal + 1));\n    SetWordTaskArg(taskId, 3, (uintptr_t)(sPokenavBgDotsPal + 7));",
+      "callsTo": [
+        "CreateTask",
+        "SetWordTaskArg"
+      ],
+      "lineCount": 3
+    },
+    "ChangeBgDotsColorToPurple": {
+      "returnType": "void",
+      "signature": "static void ChangeBgDotsColorToPurple(void)",
+      "paramsRaw": "void",
+      "body": "CopyPaletteIntoBufferUnfaded(sPokenavBgDotsPal + 7, BG_PLTT_ID(3) + 1, PLTT_SIZEOF(2));",
+      "callsTo": [
+        "BG_PLTT_ID",
+        "CopyPaletteIntoBufferUnfaded",
+        "PLTT_SIZEOF"
+      ],
+      "lineCount": 1
+    },
+    "CreateBgDotLightBluePalTask": {
+      "returnType": "void",
+      "signature": "static void CreateBgDotLightBluePalTask(void)",
+      "paramsRaw": "void",
+      "body": "u8 taskId = CreateTask(Task_UpdateBgDotsPalette, 3);\n    SetWordTaskArg(taskId, 1, (uintptr_t)(sPokenavBgDotsPal + 7));\n    SetWordTaskArg(taskId, 3, (uintptr_t)(sPokenavBgDotsPal + 1));",
+      "callsTo": [
+        "CreateTask",
+        "SetWordTaskArg"
+      ],
+      "lineCount": 3
+    },
+    "IsTaskActive_UpdateBgDotsPalette": {
+      "returnType": "bool32",
+      "signature": "static bool32 IsTaskActive_UpdateBgDotsPalette(void)",
+      "paramsRaw": "void",
+      "body": "return FuncIsActiveTask(Task_UpdateBgDotsPalette);",
+      "callsTo": [
+        "FuncIsActiveTask"
+      ],
+      "lineCount": 1
+    },
+    "Task_UpdateBgDotsPalette": {
+      "returnType": "void",
+      "signature": "static void Task_UpdateBgDotsPalette(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "u16 sp8[2];\n    s16 *data = gTasks[taskId].data;\n    const u16 *pal1 = (const u16 *)GetWordTaskArg(taskId, 1);\n    const u16 *pal2 = (const u16 *)GetWordTaskArg(taskId, 3);\n\n    PokenavCopyPalette(pal1, pal2, 2, 12, ++data[0], sp8);\n    LoadPalette(sp8, BG_PLTT_ID(3) + 1, PLTT_SIZEOF(2));\n    if (data[0] == 12)\n        DestroyTask(taskId);",
+      "callsTo": [
+        "BG_PLTT_ID",
+        "DestroyTask",
+        "GetWordTaskArg",
+        "LoadPalette",
+        "PLTT_SIZEOF",
+        "PokenavCopyPalette"
+      ],
+      "lineCount": 9
+    },
+    "VBlankCB_PokenavMainMenu": {
+      "returnType": "void",
+      "signature": "static void VBlankCB_PokenavMainMenu(void)",
+      "paramsRaw": "void",
+      "body": "TransferPlttBuffer();\n    LoadOam();\n    ProcessSpriteCopyRequests();\n    ScanlineEffect_InitHBlankDmaTransfer();",
+      "callsTo": [
+        "LoadOam",
+        "ProcessSpriteCopyRequests",
+        "ScanlineEffect_InitHBlankDmaTransfer",
+        "TransferPlttBuffer"
+      ],
+      "lineCount": 4
+    },
+    "SetupPokenavMenuScanlineEffects": {
+      "returnType": "void",
+      "signature": "static void SetupPokenavMenuScanlineEffects(void)",
+      "paramsRaw": "void",
+      "body": "SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_TGT1_OBJ | BLDCNT_EFFECT_LIGHTEN);\n    SetGpuReg(REG_OFFSET_BLDY, 0);\n    SetGpuRegBits(REG_OFFSET_DISPCNT, DISPCNT_WIN0_ON);\n    SetGpuRegBits(REG_OFFSET_WININ, WININ_WIN0_ALL);\n    SetGpuRegBits(REG_OFFSET_WINOUT, WINOUT_WIN01_BG_ALL | WINOUT_WIN01_OBJ);\n#ifdef BUGFIX\n     \n     \n     \n    SetGpuReg(REG_OFFSET_WIN0V, DISPLAY_HEIGHT);\n#else\n    SetGpuRegBits(REG_OFFSET_WIN0V, DISPLAY_HEIGHT);\n#endif\n    ScanlineEffect_Stop();\n    SetMenuOptionGlow();\n    ScanlineEffect_SetParams(sPokenavMainMenuScanlineEffectParams);\n    SetVBlankCallback_(VBlankCB_PokenavMainMenu);\n    CreateTask(Task_CurrentMenuOptionGlow, 3);",
+      "callsTo": [
+        "CreateTask",
+        "ScanlineEffect_SetParams",
+        "ScanlineEffect_Stop",
+        "SetGpuReg",
+        "SetGpuRegBits",
+        "SetMenuOptionGlow",
+        "SetVBlankCallback_"
+      ],
+      "lineCount": 18
+    },
+    "DestroyMenuOptionGlowTask": {
+      "returnType": "void",
+      "signature": "static void DestroyMenuOptionGlowTask(void)",
+      "paramsRaw": "void",
+      "body": "SetGpuReg(REG_OFFSET_BLDCNT, 0);\n    ClearGpuRegBits(REG_OFFSET_DISPCNT, DISPCNT_WIN0_ON);\n    ScanlineEffect_Stop();\n    DestroyTask(FindTaskIdByFunc(Task_CurrentMenuOptionGlow));\n    SetPokenavVBlankCallback();",
+      "callsTo": [
+        "ClearGpuRegBits",
+        "DestroyTask",
+        "FindTaskIdByFunc",
+        "ScanlineEffect_Stop",
+        "SetGpuReg",
+        "SetPokenavVBlankCallback"
+      ],
+      "lineCount": 5
+    },
+    "ResetBldCnt": {
+      "returnType": "void",
+      "signature": "static void ResetBldCnt(void)",
+      "paramsRaw": "void",
+      "body": "SetGpuReg(REG_OFFSET_BLDCNT, 0);",
+      "callsTo": [
+        "SetGpuReg"
+      ],
+      "lineCount": 1
+    },
+    "InitMenuOptionGlow": {
+      "returnType": "void",
+      "signature": "static void InitMenuOptionGlow(void)",
+      "paramsRaw": "void",
+      "body": "SetMenuOptionGlow();\n    SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_TGT1_OBJ | BLDCNT_EFFECT_LIGHTEN);",
+      "callsTo": [
+        "SetGpuReg",
+        "SetMenuOptionGlow"
+      ],
+      "lineCount": 2
+    },
+    "Task_CurrentMenuOptionGlow": {
+      "returnType": "void",
+      "signature": "static void Task_CurrentMenuOptionGlow(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "s16 *data = gTasks[taskId].data;\n    data[0]++;\n    if (data[0] > 0)\n    {\n        data[0] = 0;\n        data[1] += 3;\n        data[1] &= 0x7F;\n        SetGpuReg(REG_OFFSET_BLDY, gSineTable[data[1]] >> 5);\n    }",
+      "callsTo": [
+        "SetGpuReg"
+      ],
+      "lineCount": 9
+    },
+    "SetMenuOptionGlow": {
+      "returnType": "void",
+      "signature": "static void SetMenuOptionGlow(void)",
+      "paramsRaw": "void",
+      "body": "int menuType = GetPokenavMenuType();\n    int cursorPos = GetPokenavCursorPos();\n    int r4 = sPokenavMenuOptionLabelGfx[menuType].deltaY * cursorPos + sPokenavMenuOptionLabelGfx[menuType].yStart - 8;\n    CpuFill16(0, gScanlineEffectRegBuffers[0], DISPLAY_HEIGHT * 2);\n    CpuFill16(0, gScanlineEffectRegBuffers[1], DISPLAY_HEIGHT * 2);\n    CpuFill16(RGB(16, 23, 28), &gScanlineEffectRegBuffers[0][r4], 0x20);\n    CpuFill16(RGB(16, 23, 28), &gScanlineEffectRegBuffers[1][r4], 0x20);",
+      "callsTo": [
+        "CpuFill16",
+        "GetPokenavCursorPos",
+        "GetPokenavMenuType"
+      ],
+      "lineCount": 7
+    },
+    "ResetBldCnt_": {
+      "returnType": "void",
+      "signature": "void ResetBldCnt_(void)",
+      "paramsRaw": "void",
+      "body": "ResetBldCnt();",
+      "callsTo": [
+        "ResetBldCnt"
+      ],
+      "lineCount": 1
+    }
+  }
+}

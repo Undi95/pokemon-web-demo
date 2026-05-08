@@ -1,0 +1,1013 @@
+{
+  "srcFile": "src/field_screen_effect.c",
+  "count": 77,
+  "functions": {
+    "FillPalBufferWhite": {
+      "returnType": "void",
+      "signature": "static void FillPalBufferWhite(void)",
+      "paramsRaw": "void",
+      "body": "CpuFastFill16(RGB_WHITE, gPlttBufferFaded, PLTT_SIZE);",
+      "callsTo": [
+        "CpuFastFill16"
+      ],
+      "lineCount": 1
+    },
+    "FillPalBufferBlack": {
+      "returnType": "void",
+      "signature": "static void FillPalBufferBlack(void)",
+      "paramsRaw": "void",
+      "body": "CpuFastFill16(RGB_BLACK, gPlttBufferFaded, PLTT_SIZE);",
+      "callsTo": [
+        "CpuFastFill16"
+      ],
+      "lineCount": 1
+    },
+    "WarpFadeInScreen": {
+      "returnType": "void",
+      "signature": "void WarpFadeInScreen(void)",
+      "paramsRaw": "void",
+      "body": "u8 previousMapType = GetLastUsedWarpMapType();\n    switch (GetMapPairFadeFromType(previousMapType, GetCurrentMapType()))\n    {\n    case 0:\n        FillPalBufferBlack();\n        FadeScreen(FADE_FROM_BLACK, 0);\n        break;\n    case 1:\n        FillPalBufferWhite();\n        FadeScreen(FADE_FROM_WHITE, 0);\n    }",
+      "callsTo": [
+        "FadeScreen",
+        "FillPalBufferBlack",
+        "FillPalBufferWhite",
+        "GetCurrentMapType",
+        "GetLastUsedWarpMapType",
+        "GetMapPairFadeFromType"
+      ],
+      "lineCount": 11
+    },
+    "FadeInFromWhite": {
+      "returnType": "void",
+      "signature": "void FadeInFromWhite(void)",
+      "paramsRaw": "void",
+      "body": "FillPalBufferWhite();\n    FadeScreen(FADE_FROM_WHITE, 8);",
+      "callsTo": [
+        "FadeScreen",
+        "FillPalBufferWhite"
+      ],
+      "lineCount": 2
+    },
+    "FadeInFromBlack": {
+      "returnType": "void",
+      "signature": "void FadeInFromBlack(void)",
+      "paramsRaw": "void",
+      "body": "FillPalBufferBlack();\n    FadeScreen(FADE_FROM_BLACK, 0);",
+      "callsTo": [
+        "FadeScreen",
+        "FillPalBufferBlack"
+      ],
+      "lineCount": 2
+    },
+    "WarpFadeOutScreen": {
+      "returnType": "void",
+      "signature": "void WarpFadeOutScreen(void)",
+      "paramsRaw": "void",
+      "body": "u8 currentMapType = GetCurrentMapType();\n    switch (GetMapPairFadeToType(currentMapType, GetDestinationWarpMapHeader()->mapType))\n    {\n    case 0:\n        FadeScreen(FADE_TO_BLACK, 0);\n        break;\n    case 1:\n        FadeScreen(FADE_TO_WHITE, 0);\n    }",
+      "callsTo": [
+        "FadeScreen",
+        "GetCurrentMapType",
+        "GetDestinationWarpMapHeader",
+        "GetMapPairFadeToType"
+      ],
+      "lineCount": 9
+    },
+    "SetPlayerVisibility": {
+      "returnType": "void",
+      "signature": "static void SetPlayerVisibility(bool8 visible)",
+      "paramsRaw": "bool8 visible",
+      "body": "SetPlayerInvisibility(!visible);",
+      "callsTo": [
+        "SetPlayerInvisibility"
+      ],
+      "lineCount": 1
+    },
+    "Task_WaitForUnionRoomFade": {
+      "returnType": "void",
+      "signature": "static void Task_WaitForUnionRoomFade(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "if (WaitForWeatherFadeIn() == TRUE)\n        DestroyTask(taskId);",
+      "callsTo": [
+        "DestroyTask",
+        "WaitForWeatherFadeIn"
+      ],
+      "lineCount": 2
+    },
+    "FieldCB_ContinueScriptUnionRoom": {
+      "returnType": "void",
+      "signature": "void FieldCB_ContinueScriptUnionRoom(void)",
+      "paramsRaw": "void",
+      "body": "LockPlayerFieldControls();\n    Overworld_PlaySpecialMapMusic();\n    FadeInFromBlack();\n    CreateTask(Task_WaitForUnionRoomFade, 10);",
+      "callsTo": [
+        "CreateTask",
+        "FadeInFromBlack",
+        "LockPlayerFieldControls",
+        "Overworld_PlaySpecialMapMusic"
+      ],
+      "lineCount": 4
+    },
+    "Task_WaitForFadeAndEnableScriptCtx": {
+      "returnType": "void",
+      "signature": "static void Task_WaitForFadeAndEnableScriptCtx(u8 taskID)",
+      "paramsRaw": "u8 taskID",
+      "body": "if (WaitForWeatherFadeIn() == TRUE)\n    {\n        DestroyTask(taskID);\n        ScriptContext_Enable();\n    }",
+      "callsTo": [
+        "DestroyTask",
+        "ScriptContext_Enable",
+        "WaitForWeatherFadeIn"
+      ],
+      "lineCount": 5
+    },
+    "FieldCB_ContinueScriptHandleMusic": {
+      "returnType": "void",
+      "signature": "void FieldCB_ContinueScriptHandleMusic(void)",
+      "paramsRaw": "void",
+      "body": "LockPlayerFieldControls();\n    Overworld_PlaySpecialMapMusic();\n    FadeInFromBlack();\n    CreateTask(Task_WaitForFadeAndEnableScriptCtx, 10);",
+      "callsTo": [
+        "CreateTask",
+        "FadeInFromBlack",
+        "LockPlayerFieldControls",
+        "Overworld_PlaySpecialMapMusic"
+      ],
+      "lineCount": 4
+    },
+    "FieldCB_ContinueScript": {
+      "returnType": "void",
+      "signature": "void FieldCB_ContinueScript(void)",
+      "paramsRaw": "void",
+      "body": "LockPlayerFieldControls();\n    FadeInFromBlack();\n    CreateTask(Task_WaitForFadeAndEnableScriptCtx, 10);",
+      "callsTo": [
+        "CreateTask",
+        "FadeInFromBlack",
+        "LockPlayerFieldControls"
+      ],
+      "lineCount": 3
+    },
+    "Task_ReturnToFieldCableLink": {
+      "returnType": "void",
+      "signature": "static void Task_ReturnToFieldCableLink(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "struct Task *task = &gTasks[taskId];\n\n    switch (task->tState)\n    {\n    case 0:\n        task->data[1] = CreateTask_ReestablishCableClubLink();\n        task->tState++;\n        break;\n    case 1:\n        if (gTasks[task->data[1]].isActive != TRUE)\n        {\n            WarpFadeInScreen();\n            task->tState++;\n        }\n        break;\n    case 2:\n        if (WaitForWeatherFadeIn() == TRUE)\n        {\n            UnlockPlayerFieldControls();\n            DestroyTask(taskId);\n        }\n        break;\n    }",
+      "callsTo": [
+        "CreateTask_ReestablishCableClubLink",
+        "DestroyTask",
+        "UnlockPlayerFieldControls",
+        "WaitForWeatherFadeIn",
+        "WarpFadeInScreen"
+      ],
+      "lineCount": 23
+    },
+    "FieldCB_ReturnToFieldCableLink": {
+      "returnType": "void",
+      "signature": "void FieldCB_ReturnToFieldCableLink(void)",
+      "paramsRaw": "void",
+      "body": "LockPlayerFieldControls();\n    Overworld_PlaySpecialMapMusic();\n    FillPalBufferBlack();\n    CreateTask(Task_ReturnToFieldCableLink, 10);",
+      "callsTo": [
+        "CreateTask",
+        "FillPalBufferBlack",
+        "LockPlayerFieldControls",
+        "Overworld_PlaySpecialMapMusic"
+      ],
+      "lineCount": 4
+    },
+    "Task_ReturnToFieldWirelessLink": {
+      "returnType": "void",
+      "signature": "static void Task_ReturnToFieldWirelessLink(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "struct Task *task = &gTasks[taskId];\n\n    switch (task->tState)\n    {\n    case 0:\n        SetLinkStandbyCallback();\n        task->tState++;\n        break;\n    case 1:\n        if (!IsLinkTaskFinished())\n        {\n            if (++task->data[1] > 1800)\n                RfuSetErrorParams(F_RFU_ERROR_6 | F_RFU_ERROR_7);\n        }\n        else\n        {\n            WarpFadeInScreen();\n            task->tState++;\n        }\n        break;\n    case 2:\n        if (WaitForWeatherFadeIn() == TRUE)\n        {\n            StartSendingKeysToLink();\n            UnlockPlayerFieldControls();\n            DestroyTask(taskId);\n        }\n        break;\n    }",
+      "callsTo": [
+        "DestroyTask",
+        "IsLinkTaskFinished",
+        "RfuSetErrorParams",
+        "SetLinkStandbyCallback",
+        "StartSendingKeysToLink",
+        "UnlockPlayerFieldControls",
+        "WaitForWeatherFadeIn",
+        "WarpFadeInScreen"
+      ],
+      "lineCount": 29
+    },
+    "Task_ReturnToFieldRecordMixing": {
+      "returnType": "void",
+      "signature": "void Task_ReturnToFieldRecordMixing(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "struct Task *task = &gTasks[taskId];\n\n    switch (task->tState)\n    {\n    case 0:\n        SetLinkStandbyCallback();\n        task->tState++;\n        break;\n    case 1:\n        if (IsLinkTaskFinished())\n            task->tState++;\n        break;\n    case 2:\n        StartSendingKeysToLink();\n        ResetAllMultiplayerState();\n        UnlockPlayerFieldControls();\n        DestroyTask(taskId);\n        break;\n    }",
+      "callsTo": [
+        "DestroyTask",
+        "IsLinkTaskFinished",
+        "ResetAllMultiplayerState",
+        "SetLinkStandbyCallback",
+        "StartSendingKeysToLink",
+        "UnlockPlayerFieldControls"
+      ],
+      "lineCount": 19
+    },
+    "FieldCB_ReturnToFieldWirelessLink": {
+      "returnType": "void",
+      "signature": "void FieldCB_ReturnToFieldWirelessLink(void)",
+      "paramsRaw": "void",
+      "body": "LockPlayerFieldControls();\n    Overworld_PlaySpecialMapMusic();\n    FillPalBufferBlack();\n    CreateTask(Task_ReturnToFieldWirelessLink, 10);",
+      "callsTo": [
+        "CreateTask",
+        "FillPalBufferBlack",
+        "LockPlayerFieldControls",
+        "Overworld_PlaySpecialMapMusic"
+      ],
+      "lineCount": 4
+    },
+    "SetUpWarpExitTask": {
+      "returnType": "void",
+      "signature": "static void SetUpWarpExitTask(void)",
+      "paramsRaw": "void",
+      "body": "s16 x, y;\n    u8 behavior;\n    TaskFunc func;\n\n    PlayerGetDestCoords(&x, &y);\n    behavior = MapGridGetMetatileBehaviorAt(x, y);\n    if (MetatileBehavior_IsDoor(behavior) == TRUE)\n        func = Task_ExitDoor;\n    else if (MetatileBehavior_IsNonAnimDoor(behavior) == TRUE)\n        func = Task_ExitNonAnimDoor;\n    else\n        func = Task_ExitNonDoor;\n    CreateTask(func, 10);",
+      "callsTo": [
+        "CreateTask",
+        "MapGridGetMetatileBehaviorAt",
+        "MetatileBehavior_IsDoor",
+        "MetatileBehavior_IsNonAnimDoor",
+        "PlayerGetDestCoords"
+      ],
+      "lineCount": 13
+    },
+    "FieldCB_DefaultWarpExit": {
+      "returnType": "void",
+      "signature": "void FieldCB_DefaultWarpExit(void)",
+      "paramsRaw": "void",
+      "body": "Overworld_PlaySpecialMapMusic();\n    WarpFadeInScreen();\n    SetUpWarpExitTask();\n    LockPlayerFieldControls();",
+      "callsTo": [
+        "LockPlayerFieldControls",
+        "Overworld_PlaySpecialMapMusic",
+        "SetUpWarpExitTask",
+        "WarpFadeInScreen"
+      ],
+      "lineCount": 4
+    },
+    "FieldCB_WarpExitFadeFromWhite": {
+      "returnType": "void",
+      "signature": "void FieldCB_WarpExitFadeFromWhite(void)",
+      "paramsRaw": "void",
+      "body": "Overworld_PlaySpecialMapMusic();\n    FadeInFromWhite();\n    SetUpWarpExitTask();\n    LockPlayerFieldControls();",
+      "callsTo": [
+        "FadeInFromWhite",
+        "LockPlayerFieldControls",
+        "Overworld_PlaySpecialMapMusic",
+        "SetUpWarpExitTask"
+      ],
+      "lineCount": 4
+    },
+    "FieldCB_WarpExitFadeFromBlack": {
+      "returnType": "void",
+      "signature": "void FieldCB_WarpExitFadeFromBlack(void)",
+      "paramsRaw": "void",
+      "body": "if (!OnTrainerHillEReaderChallengeFloor())  \n        Overworld_PlaySpecialMapMusic();\n    FadeInFromBlack();\n    SetUpWarpExitTask();\n    LockPlayerFieldControls();",
+      "callsTo": [
+        "FadeInFromBlack",
+        "LockPlayerFieldControls",
+        "OnTrainerHillEReaderChallengeFloor",
+        "Overworld_PlaySpecialMapMusic",
+        "SetUpWarpExitTask"
+      ],
+      "lineCount": 5
+    },
+    "FieldCB_SpinEnterWarp": {
+      "returnType": "void",
+      "signature": "static void FieldCB_SpinEnterWarp(void)",
+      "paramsRaw": "void",
+      "body": "Overworld_PlaySpecialMapMusic();\n    WarpFadeInScreen();\n    PlaySE(SE_WARP_OUT);\n    CreateTask(Task_SpinEnterWarp, 10);\n    LockPlayerFieldControls();",
+      "callsTo": [
+        "CreateTask",
+        "LockPlayerFieldControls",
+        "Overworld_PlaySpecialMapMusic",
+        "PlaySE",
+        "WarpFadeInScreen"
+      ],
+      "lineCount": 5
+    },
+    "FieldCB_MossdeepGymWarpExit": {
+      "returnType": "void",
+      "signature": "static void FieldCB_MossdeepGymWarpExit(void)",
+      "paramsRaw": "void",
+      "body": "Overworld_PlaySpecialMapMusic();\n    WarpFadeInScreen();\n    PlaySE(SE_WARP_OUT);\n    CreateTask(Task_ExitNonDoor, 10);\n    LockPlayerFieldControls();\n    SetObjectEventLoadFlag((~SKIP_OBJECT_EVENT_LOAD) & 0xF);",
+      "callsTo": [
+        "CreateTask",
+        "LockPlayerFieldControls",
+        "Overworld_PlaySpecialMapMusic",
+        "PlaySE",
+        "SetObjectEventLoadFlag",
+        "WarpFadeInScreen"
+      ],
+      "lineCount": 6
+    },
+    "Task_ExitDoor": {
+      "returnType": "void",
+      "signature": "static void Task_ExitDoor(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "struct Task *task = &gTasks[taskId];\n    s16 *x = &task->data[2];\n    s16 *y = &task->data[3];\n\n    switch (task->tState)\n    {\n    case 0:\n        SetPlayerVisibility(FALSE);\n        FreezeObjectEvents();\n        PlayerGetDestCoords(x, y);\n        FieldSetDoorOpened(*x, *y);\n        task->tState = 1;\n        break;\n    case 1:\n        if (WaitForWeatherFadeIn())\n        {\n            u8 objEventId;\n            SetPlayerVisibility(TRUE);\n            objEventId = GetObjectEventIdByLocalIdAndMap(LOCALID_PLAYER, 0, 0);\n            ObjectEventSetHeldMovement(&gObjectEvents[objEventId], MOVEMENT_ACTION_WALK_NORMAL_DOWN);\n            task->tState = 2;\n        }\n        break;\n    case 2:\n        if (IsPlayerStandingStill())\n        {\n            u8 objEventId;\n            task->data[1] = FieldAnimateDoorClose(*x, *y);\n            objEventId = GetObjectEventIdByLocalIdAndMap(LOCALID_PLAYER, 0, 0);\n            ObjectEventClearHeldMovementIfFinished(&gObjectEvents[objEventId]);\n            task->tState = 3;\n        }\n        break;\n    case 3:\n        if (task->data[1] < 0 || gTasks[task->data[1]].isActive != TRUE)\n        {\n            UnfreezeObjectEvents();\n            task->tState = 4;\n        }\n        break;\n    case 4:\n        UnlockPlayerFieldControls();\n        DestroyTask(taskId);\n        break;\n    }",
+      "callsTo": [
+        "DestroyTask",
+        "FieldAnimateDoorClose",
+        "FieldSetDoorOpened",
+        "FreezeObjectEvents",
+        "GetObjectEventIdByLocalIdAndMap",
+        "IsPlayerStandingStill",
+        "ObjectEventClearHeldMovementIfFinished",
+        "ObjectEventSetHeldMovement",
+        "PlayerGetDestCoords",
+        "SetPlayerVisibility",
+        "UnfreezeObjectEvents",
+        "UnlockPlayerFieldControls",
+        "WaitForWeatherFadeIn"
+      ],
+      "lineCount": 45
+    },
+    "Task_ExitNonAnimDoor": {
+      "returnType": "void",
+      "signature": "static void Task_ExitNonAnimDoor(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "struct Task *task = &gTasks[taskId];\n    s16 *x = &task->data[2];\n    s16 *y = &task->data[3];\n\n    switch (task->tState)\n    {\n    case 0:\n        SetPlayerVisibility(FALSE);\n        FreezeObjectEvents();\n        PlayerGetDestCoords(x, y);\n        task->tState = 1;\n        break;\n    case 1:\n        if (WaitForWeatherFadeIn())\n        {\n            u8 objEventId;\n            SetPlayerVisibility(TRUE);\n            objEventId = GetObjectEventIdByLocalIdAndMap(LOCALID_PLAYER, 0, 0);\n            ObjectEventSetHeldMovement(&gObjectEvents[objEventId], GetWalkNormalMovementAction(GetPlayerFacingDirection()));\n            task->tState = 2;\n        }\n        break;\n    case 2:\n        if (IsPlayerStandingStill())\n        {\n            UnfreezeObjectEvents();\n            task->tState = 3;\n        }\n        break;\n    case 3:\n        UnlockPlayerFieldControls();\n        DestroyTask(taskId);\n        break;\n    }",
+      "callsTo": [
+        "DestroyTask",
+        "FreezeObjectEvents",
+        "GetObjectEventIdByLocalIdAndMap",
+        "GetPlayerFacingDirection",
+        "GetWalkNormalMovementAction",
+        "IsPlayerStandingStill",
+        "ObjectEventSetHeldMovement",
+        "PlayerGetDestCoords",
+        "SetPlayerVisibility",
+        "UnfreezeObjectEvents",
+        "UnlockPlayerFieldControls",
+        "WaitForWeatherFadeIn"
+      ],
+      "lineCount": 34
+    },
+    "Task_ExitNonDoor": {
+      "returnType": "void",
+      "signature": "static void Task_ExitNonDoor(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "switch (gTasks[taskId].tState)\n    {\n    case 0:\n        FreezeObjectEvents();\n        LockPlayerFieldControls();\n        gTasks[taskId].tState++;\n        break;\n    case 1:\n        if (WaitForWeatherFadeIn())\n        {\n            UnfreezeObjectEvents();\n            UnlockPlayerFieldControls();\n            DestroyTask(taskId);\n        }\n        break;\n    }",
+      "callsTo": [
+        "DestroyTask",
+        "FreezeObjectEvents",
+        "LockPlayerFieldControls",
+        "UnfreezeObjectEvents",
+        "UnlockPlayerFieldControls",
+        "WaitForWeatherFadeIn"
+      ],
+      "lineCount": 16
+    },
+    "Task_WaitForFadeShowStartMenu": {
+      "returnType": "void",
+      "signature": "static void Task_WaitForFadeShowStartMenu(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "if (WaitForWeatherFadeIn() == TRUE)\n    {\n        DestroyTask(taskId);\n        CreateTask(Task_ShowStartMenu, 80);\n    }",
+      "callsTo": [
+        "CreateTask",
+        "DestroyTask",
+        "WaitForWeatherFadeIn"
+      ],
+      "lineCount": 5
+    },
+    "ReturnToFieldOpenStartMenu": {
+      "returnType": "void",
+      "signature": "void ReturnToFieldOpenStartMenu(void)",
+      "paramsRaw": "void",
+      "body": "FadeInFromBlack();\n    CreateTask(Task_WaitForFadeShowStartMenu, 0x50);\n    LockPlayerFieldControls();",
+      "callsTo": [
+        "CreateTask",
+        "FadeInFromBlack",
+        "LockPlayerFieldControls"
+      ],
+      "lineCount": 3
+    },
+    "FieldCB_ReturnToFieldOpenStartMenu": {
+      "returnType": "bool8",
+      "signature": "bool8 FieldCB_ReturnToFieldOpenStartMenu(void)",
+      "paramsRaw": "void",
+      "body": "ShowReturnToFieldStartMenu();\n    return FALSE;",
+      "callsTo": [
+        "ShowReturnToFieldStartMenu"
+      ],
+      "lineCount": 2
+    },
+    "Task_ReturnToFieldNoScript": {
+      "returnType": "void",
+      "signature": "static void Task_ReturnToFieldNoScript(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "if (WaitForWeatherFadeIn() == 1)\n    {\n        UnlockPlayerFieldControls();\n        DestroyTask(taskId);\n        ScriptUnfreezeObjectEvents();\n    }",
+      "callsTo": [
+        "DestroyTask",
+        "ScriptUnfreezeObjectEvents",
+        "UnlockPlayerFieldControls",
+        "WaitForWeatherFadeIn"
+      ],
+      "lineCount": 6
+    },
+    "FieldCB_ReturnToFieldNoScript": {
+      "returnType": "void",
+      "signature": "void FieldCB_ReturnToFieldNoScript(void)",
+      "paramsRaw": "void",
+      "body": "LockPlayerFieldControls();\n    FadeInFromBlack();\n    CreateTask(Task_ReturnToFieldNoScript, 10);",
+      "callsTo": [
+        "CreateTask",
+        "FadeInFromBlack",
+        "LockPlayerFieldControls"
+      ],
+      "lineCount": 3
+    },
+    "FieldCB_ReturnToFieldNoScriptCheckMusic": {
+      "returnType": "void",
+      "signature": "void FieldCB_ReturnToFieldNoScriptCheckMusic(void)",
+      "paramsRaw": "void",
+      "body": "LockPlayerFieldControls();\n    Overworld_PlaySpecialMapMusic();\n    FadeInFromBlack();\n    CreateTask(Task_ReturnToFieldNoScript, 10);",
+      "callsTo": [
+        "CreateTask",
+        "FadeInFromBlack",
+        "LockPlayerFieldControls",
+        "Overworld_PlaySpecialMapMusic"
+      ],
+      "lineCount": 4
+    },
+    "PaletteFadeActive": {
+      "returnType": "bool32",
+      "signature": "static bool32 PaletteFadeActive(void)",
+      "paramsRaw": "void",
+      "body": "return gPaletteFade.active;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "WaitForWeatherFadeIn": {
+      "returnType": "bool32",
+      "signature": "static bool32 WaitForWeatherFadeIn(void)",
+      "paramsRaw": "void",
+      "body": "if (IsWeatherNotFadingIn() == TRUE)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [
+        "IsWeatherNotFadingIn"
+      ],
+      "lineCount": 4
+    },
+    "DoWarp": {
+      "returnType": "void",
+      "signature": "void DoWarp(void)",
+      "paramsRaw": "void",
+      "body": "LockPlayerFieldControls();\n    TryFadeOutOldMapMusic();\n    WarpFadeOutScreen();\n    PlayRainStoppingSoundEffect();\n    PlaySE(SE_EXIT);\n    gFieldCallback = FieldCB_DefaultWarpExit;\n    CreateTask(Task_WarpAndLoadMap, 10);",
+      "callsTo": [
+        "CreateTask",
+        "LockPlayerFieldControls",
+        "PlayRainStoppingSoundEffect",
+        "PlaySE",
+        "TryFadeOutOldMapMusic",
+        "WarpFadeOutScreen"
+      ],
+      "lineCount": 7
+    },
+    "DoDiveWarp": {
+      "returnType": "void",
+      "signature": "void DoDiveWarp(void)",
+      "paramsRaw": "void",
+      "body": "LockPlayerFieldControls();\n    TryFadeOutOldMapMusic();\n    WarpFadeOutScreen();\n    PlayRainStoppingSoundEffect();\n    gFieldCallback = FieldCB_DefaultWarpExit;\n    CreateTask(Task_WarpAndLoadMap, 10);",
+      "callsTo": [
+        "CreateTask",
+        "LockPlayerFieldControls",
+        "PlayRainStoppingSoundEffect",
+        "TryFadeOutOldMapMusic",
+        "WarpFadeOutScreen"
+      ],
+      "lineCount": 6
+    },
+    "DoWhiteFadeWarp": {
+      "returnType": "void",
+      "signature": "void DoWhiteFadeWarp(void)",
+      "paramsRaw": "void",
+      "body": "LockPlayerFieldControls();\n    TryFadeOutOldMapMusic();\n    FadeScreen(FADE_TO_WHITE, 8);\n    PlayRainStoppingSoundEffect();\n    gFieldCallback = FieldCB_WarpExitFadeFromWhite;\n    CreateTask(Task_WarpAndLoadMap, 10);",
+      "callsTo": [
+        "CreateTask",
+        "FadeScreen",
+        "LockPlayerFieldControls",
+        "PlayRainStoppingSoundEffect",
+        "TryFadeOutOldMapMusic"
+      ],
+      "lineCount": 6
+    },
+    "DoDoorWarp": {
+      "returnType": "void",
+      "signature": "void DoDoorWarp(void)",
+      "paramsRaw": "void",
+      "body": "LockPlayerFieldControls();\n    gFieldCallback = FieldCB_DefaultWarpExit;\n    CreateTask(Task_DoDoorWarp, 10);",
+      "callsTo": [
+        "CreateTask",
+        "LockPlayerFieldControls"
+      ],
+      "lineCount": 3
+    },
+    "DoFallWarp": {
+      "returnType": "void",
+      "signature": "void DoFallWarp(void)",
+      "paramsRaw": "void",
+      "body": "DoDiveWarp();\n    gFieldCallback = FieldCB_FallWarpExit;",
+      "callsTo": [
+        "DoDiveWarp"
+      ],
+      "lineCount": 2
+    },
+    "DoEscalatorWarp": {
+      "returnType": "void",
+      "signature": "void DoEscalatorWarp(u8 metatileBehavior)",
+      "paramsRaw": "u8 metatileBehavior",
+      "body": "LockPlayerFieldControls();\n    StartEscalatorWarp(metatileBehavior, 10);",
+      "callsTo": [
+        "LockPlayerFieldControls",
+        "StartEscalatorWarp"
+      ],
+      "lineCount": 2
+    },
+    "DoLavaridgeGymB1FWarp": {
+      "returnType": "void",
+      "signature": "void DoLavaridgeGymB1FWarp(void)",
+      "paramsRaw": "void",
+      "body": "LockPlayerFieldControls();\n    StartLavaridgeGymB1FWarp(10);",
+      "callsTo": [
+        "LockPlayerFieldControls",
+        "StartLavaridgeGymB1FWarp"
+      ],
+      "lineCount": 2
+    },
+    "DoLavaridgeGym1FWarp": {
+      "returnType": "void",
+      "signature": "void DoLavaridgeGym1FWarp(void)",
+      "paramsRaw": "void",
+      "body": "LockPlayerFieldControls();\n    StartLavaridgeGym1FWarp(10);",
+      "callsTo": [
+        "LockPlayerFieldControls",
+        "StartLavaridgeGym1FWarp"
+      ],
+      "lineCount": 2
+    },
+    "DoTeleportTileWarp": {
+      "returnType": "void",
+      "signature": "void DoTeleportTileWarp(void)",
+      "paramsRaw": "void",
+      "body": "LockPlayerFieldControls();\n    TryFadeOutOldMapMusic();\n    WarpFadeOutScreen();\n    PlaySE(SE_WARP_IN);\n    CreateTask(Task_WarpAndLoadMap, 10);\n    gFieldCallback = FieldCB_SpinEnterWarp;",
+      "callsTo": [
+        "CreateTask",
+        "LockPlayerFieldControls",
+        "PlaySE",
+        "TryFadeOutOldMapMusic",
+        "WarpFadeOutScreen"
+      ],
+      "lineCount": 6
+    },
+    "DoMossdeepGymWarp": {
+      "returnType": "void",
+      "signature": "void DoMossdeepGymWarp(void)",
+      "paramsRaw": "void",
+      "body": "SetObjectEventLoadFlag(SKIP_OBJECT_EVENT_LOAD);\n    LockPlayerFieldControls();\n    SaveObjectEvents();\n    TryFadeOutOldMapMusic();\n    WarpFadeOutScreen();\n    PlaySE(SE_WARP_IN);\n    CreateTask(Task_WarpAndLoadMap, 10);\n    gFieldCallback = FieldCB_MossdeepGymWarpExit;",
+      "callsTo": [
+        "CreateTask",
+        "LockPlayerFieldControls",
+        "PlaySE",
+        "SaveObjectEvents",
+        "SetObjectEventLoadFlag",
+        "TryFadeOutOldMapMusic",
+        "WarpFadeOutScreen"
+      ],
+      "lineCount": 8
+    },
+    "DoPortholeWarp": {
+      "returnType": "void",
+      "signature": "void DoPortholeWarp(void)",
+      "paramsRaw": "void",
+      "body": "LockPlayerFieldControls();\n    WarpFadeOutScreen();\n    CreateTask(Task_WarpAndLoadMap, 10);\n    gFieldCallback = FieldCB_ShowPortholeView;",
+      "callsTo": [
+        "CreateTask",
+        "LockPlayerFieldControls",
+        "WarpFadeOutScreen"
+      ],
+      "lineCount": 4
+    },
+    "Task_DoCableClubWarp": {
+      "returnType": "void",
+      "signature": "static void Task_DoCableClubWarp(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "struct Task *task = &gTasks[taskId];\n\n    switch (task->tState)\n    {\n    case 0:\n        LockPlayerFieldControls();\n        task->tState++;\n        break;\n    case 1:\n        if (!PaletteFadeActive() && BGMusicStopped())\n            task->tState++;\n        break;\n    case 2:\n        WarpIntoMap();\n        SetMainCallback2(CB2_ReturnToFieldCableClub);\n        DestroyTask(taskId);\n        break;\n    }",
+      "callsTo": [
+        "BGMusicStopped",
+        "DestroyTask",
+        "LockPlayerFieldControls",
+        "PaletteFadeActive",
+        "SetMainCallback2",
+        "WarpIntoMap"
+      ],
+      "lineCount": 18
+    },
+    "DoCableClubWarp": {
+      "returnType": "void",
+      "signature": "void DoCableClubWarp(void)",
+      "paramsRaw": "void",
+      "body": "LockPlayerFieldControls();\n    TryFadeOutOldMapMusic();\n    WarpFadeOutScreen();\n    PlaySE(SE_EXIT);\n    CreateTask(Task_DoCableClubWarp, 10);",
+      "callsTo": [
+        "CreateTask",
+        "LockPlayerFieldControls",
+        "PlaySE",
+        "TryFadeOutOldMapMusic",
+        "WarpFadeOutScreen"
+      ],
+      "lineCount": 5
+    },
+    "Task_ReturnToWorldFromLinkRoom": {
+      "returnType": "void",
+      "signature": "static void Task_ReturnToWorldFromLinkRoom(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "s16 *data = gTasks[taskId].data;\n\n    switch (tState)\n    {\n    case 0:\n        ClearLinkCallback_2();\n        FadeScreen(FADE_TO_BLACK, 0);\n        TryFadeOutOldMapMusic();\n        PlaySE(SE_EXIT);\n        tState++;\n        break;\n    case 1:\n        if (!PaletteFadeActive() && BGMusicStopped())\n        {\n            SetCloseLinkCallback();\n            tState++;\n        }\n        break;\n    case 2:\n        if (!gReceivedRemoteLinkPlayers)\n        {\n            WarpIntoMap();\n            SetMainCallback2(CB2_LoadMap);\n            DestroyTask(taskId);\n        }\n        break;\n    }",
+      "callsTo": [
+        "BGMusicStopped",
+        "ClearLinkCallback_2",
+        "DestroyTask",
+        "FadeScreen",
+        "PaletteFadeActive",
+        "PlaySE",
+        "SetCloseLinkCallback",
+        "SetMainCallback2",
+        "TryFadeOutOldMapMusic",
+        "WarpIntoMap"
+      ],
+      "lineCount": 27
+    },
+    "ReturnFromLinkRoom": {
+      "returnType": "void",
+      "signature": "void ReturnFromLinkRoom(void)",
+      "paramsRaw": "void",
+      "body": "CreateTask(Task_ReturnToWorldFromLinkRoom, 10);",
+      "callsTo": [
+        "CreateTask"
+      ],
+      "lineCount": 1
+    },
+    "Task_WarpAndLoadMap": {
+      "returnType": "void",
+      "signature": "static void Task_WarpAndLoadMap(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "struct Task *task = &gTasks[taskId];\n\n    switch (task->tState)\n    {\n    case 0:\n        FreezeObjectEvents();\n        LockPlayerFieldControls();\n        task->tState++;\n        break;\n    case 1:\n        if (!PaletteFadeActive())\n        {\n            if (task->data[1] == 0)\n            {\n                ClearMirageTowerPulseBlendEffect();\n                task->data[1] = 1;\n            }\n            if (BGMusicStopped())\n                task->tState++;\n        }\n        break;\n    case 2:\n        WarpIntoMap();\n        SetMainCallback2(CB2_LoadMap);\n        DestroyTask(taskId);\n        break;\n    }",
+      "callsTo": [
+        "BGMusicStopped",
+        "ClearMirageTowerPulseBlendEffect",
+        "DestroyTask",
+        "FreezeObjectEvents",
+        "LockPlayerFieldControls",
+        "PaletteFadeActive",
+        "SetMainCallback2",
+        "WarpIntoMap"
+      ],
+      "lineCount": 27
+    },
+    "Task_DoDoorWarp": {
+      "returnType": "void",
+      "signature": "static void Task_DoDoorWarp(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "struct Task *task = &gTasks[taskId];\n    s16 *x = &task->data[2];\n    s16 *y = &task->data[3];\n\n    switch (task->tState)\n    {\n    case 0:\n        FreezeObjectEvents();\n        PlayerGetDestCoords(x, y);\n        PlaySE(GetDoorSoundEffect(*x, *y - 1));\n        task->data[1] = FieldAnimateDoorOpen(*x, *y - 1);\n        task->tState = 1;\n        break;\n    case 1:\n        if (task->data[1] < 0 || gTasks[task->data[1]].isActive != TRUE)\n        {\n            u8 objEventId;\n            objEventId = GetObjectEventIdByLocalIdAndMap(LOCALID_PLAYER, 0, 0);\n            ObjectEventClearHeldMovementIfActive(&gObjectEvents[objEventId]);\n            objEventId = GetObjectEventIdByLocalIdAndMap(LOCALID_PLAYER, 0, 0);\n            ObjectEventSetHeldMovement(&gObjectEvents[objEventId], MOVEMENT_ACTION_WALK_NORMAL_UP);\n            task->tState = 2;\n        }\n        break;\n    case 2:\n        if (IsPlayerStandingStill())\n        {\n            u8 objEventId;\n            task->data[1] = FieldAnimateDoorClose(*x, *y - 1);\n            objEventId = GetObjectEventIdByLocalIdAndMap(LOCALID_PLAYER, 0, 0);\n            ObjectEventClearHeldMovementIfFinished(&gObjectEvents[objEventId]);\n            SetPlayerVisibility(FALSE);\n            task->tState = 3;\n        }\n        break;\n    case 3:\n        if (task->data[1] < 0 || gTasks[task->data[1]].isActive != TRUE)\n        {\n            task->tState = 4;\n        }\n        break;\n    case 4:\n        TryFadeOutOldMapMusic();\n        WarpFadeOutScreen();\n        PlayRainStoppingSoundEffect();\n        task->tState = 0;\n        task->func = Task_WarpAndLoadMap;\n        break;\n    }",
+      "callsTo": [
+        "FieldAnimateDoorClose",
+        "FieldAnimateDoorOpen",
+        "FreezeObjectEvents",
+        "GetDoorSoundEffect",
+        "GetObjectEventIdByLocalIdAndMap",
+        "IsPlayerStandingStill",
+        "ObjectEventClearHeldMovementIfActive",
+        "ObjectEventClearHeldMovementIfFinished",
+        "ObjectEventSetHeldMovement",
+        "PlayRainStoppingSoundEffect",
+        "PlaySE",
+        "PlayerGetDestCoords",
+        "SetPlayerVisibility",
+        "TryFadeOutOldMapMusic",
+        "WarpFadeOutScreen"
+      ],
+      "lineCount": 49
+    },
+    "Task_DoContestHallWarp": {
+      "returnType": "void",
+      "signature": "static void Task_DoContestHallWarp(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "struct Task *task = &gTasks[taskId];\n\n    switch (task->tState)\n    {\n    case 0:\n        FreezeObjectEvents();\n        LockPlayerFieldControls();\n        task->tState++;\n        break;\n    case 1:\n        if (!PaletteFadeActive() && BGMusicStopped())\n        {\n            task->tState++;\n        }\n        break;\n    case 2:\n        WarpIntoMap();\n        SetMainCallback2(CB2_ReturnToFieldContestHall);\n        DestroyTask(taskId);\n        break;\n    }",
+      "callsTo": [
+        "BGMusicStopped",
+        "DestroyTask",
+        "FreezeObjectEvents",
+        "LockPlayerFieldControls",
+        "PaletteFadeActive",
+        "SetMainCallback2",
+        "WarpIntoMap"
+      ],
+      "lineCount": 21
+    },
+    "DoContestHallWarp": {
+      "returnType": "void",
+      "signature": "void DoContestHallWarp(void)",
+      "paramsRaw": "void",
+      "body": "LockPlayerFieldControls();\n    TryFadeOutOldMapMusic();\n    WarpFadeOutScreen();\n    PlayRainStoppingSoundEffect();\n    PlaySE(SE_EXIT);\n    gFieldCallback = FieldCB_WarpExitFadeFromBlack;\n    CreateTask(Task_DoContestHallWarp, 10);",
+      "callsTo": [
+        "CreateTask",
+        "LockPlayerFieldControls",
+        "PlayRainStoppingSoundEffect",
+        "PlaySE",
+        "TryFadeOutOldMapMusic",
+        "WarpFadeOutScreen"
+      ],
+      "lineCount": 7
+    },
+    "SetFlashScanlineEffectWindowBoundary": {
+      "returnType": "void",
+      "signature": "static void SetFlashScanlineEffectWindowBoundary(u16 *dest, u32 y, s32 left, s32 right)",
+      "paramsRaw": "u16 *dest, u32 y, s32 left, s32 right",
+      "body": "if (y <= 160)\n    {\n        if (left < 0)\n            left = 0;\n        if (left > 255)\n            left = 255;\n        if (right < 0)\n            right = 0;\n        if (right > 255)\n            right = 255;\n        dest[y] = (left << 8) | right;\n    }",
+      "callsTo": [],
+      "lineCount": 12
+    },
+    "SetFlashScanlineEffectWindowBoundaries": {
+      "returnType": "void",
+      "signature": "static void SetFlashScanlineEffectWindowBoundaries(u16 *dest, s32 centerX, s32 centerY, s32 radius)",
+      "paramsRaw": "u16 *dest, s32 centerX, s32 centerY, s32 radius",
+      "body": "s32 r = radius;\n    s32 v2 = radius;\n    s32 v3 = 0;\n    while (r >= v3)\n    {\n        SetFlashScanlineEffectWindowBoundary(dest, centerY - v3, centerX - r, centerX + r);\n        SetFlashScanlineEffectWindowBoundary(dest, centerY + v3, centerX - r, centerX + r);\n        SetFlashScanlineEffectWindowBoundary(dest, centerY - r, centerX - v3, centerX + v3);\n        SetFlashScanlineEffectWindowBoundary(dest, centerY + r, centerX - v3, centerX + v3);\n        v2 -= (v3 * 2) - 1;\n        v3++;\n        if (v2 < 0)\n        {\n            v2 += 2 * (r - 1);\n            r--;\n        }\n    }",
+      "callsTo": [
+        "SetFlashScanlineEffectWindowBoundary"
+      ],
+      "lineCount": 17
+    },
+    "SetOrbFlashScanlineEffectWindowBoundary": {
+      "returnType": "void",
+      "signature": "static void SetOrbFlashScanlineEffectWindowBoundary(u16 *dest, u32 y, s32 left, s32 right)",
+      "paramsRaw": "u16 *dest, u32 y, s32 left, s32 right",
+      "body": "if (y <= 160)\n    {\n        if (left < 0)\n            left = 0;\n        if (left > 240)\n            left = 240;\n        if (right < 0)\n            right = 0;\n        if (right > 240)\n            right = 240;\n        dest[y] = (left << 8) | right;\n    }",
+      "callsTo": [],
+      "lineCount": 12
+    },
+    "SetOrbFlashScanlineEffectWindowBoundaries": {
+      "returnType": "void",
+      "signature": "static void SetOrbFlashScanlineEffectWindowBoundaries(u16 *dest, s32 centerX, s32 centerY, s32 radius)",
+      "paramsRaw": "u16 *dest, s32 centerX, s32 centerY, s32 radius",
+      "body": "s32 r = radius;\n    s32 v2 = radius;\n    s32 v3 = 0;\n    while (r >= v3)\n    {\n        SetOrbFlashScanlineEffectWindowBoundary(dest, centerY - v3, centerX - r, centerX + r);\n        SetOrbFlashScanlineEffectWindowBoundary(dest, centerY + v3, centerX - r, centerX + r);\n        SetOrbFlashScanlineEffectWindowBoundary(dest, centerY - r, centerX - v3, centerX + v3);\n        SetOrbFlashScanlineEffectWindowBoundary(dest, centerY + r, centerX - v3, centerX + v3);\n        v2 -= (v3 * 2) - 1;\n        v3++;\n        if (v2 < 0)\n        {\n            v2 += 2 * (r - 1);\n            r--;\n        }\n    }",
+      "callsTo": [
+        "SetOrbFlashScanlineEffectWindowBoundary"
+      ],
+      "lineCount": 17
+    },
+    "UpdateFlashLevelEffect": {
+      "returnType": "void",
+      "signature": "static void UpdateFlashLevelEffect(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "s16 *data = gTasks[taskId].data;\n\n    switch (tState)\n    {\n    case 0:\n        SetFlashScanlineEffectWindowBoundaries(gScanlineEffectRegBuffers[gScanlineEffect.srcBuffer], tFlashCenterX, tFlashCenterY, tCurFlashRadius);\n        tState = 1;\n        break;\n    case 1:\n        SetFlashScanlineEffectWindowBoundaries(gScanlineEffectRegBuffers[gScanlineEffect.srcBuffer], tFlashCenterX, tFlashCenterY, tCurFlashRadius);\n        tState = 0;\n        tCurFlashRadius += tFlashRadiusDelta;\n        if (tCurFlashRadius > tDestFlashRadius)\n        {\n            if (tClearScanlineEffect == 1)\n            {\n                ScanlineEffect_Stop();\n                tState = 2;\n            }\n            else\n            {\n                DestroyTask(taskId);\n            }\n        }\n        break;\n    case 2:\n        ScanlineEffect_Clear();\n        DestroyTask(taskId);\n        break;\n    }",
+      "callsTo": [
+        "DestroyTask",
+        "ScanlineEffect_Clear",
+        "ScanlineEffect_Stop",
+        "SetFlashScanlineEffectWindowBoundaries"
+      ],
+      "lineCount": 30
+    },
+    "UpdateOrbFlashEffect": {
+      "returnType": "void",
+      "signature": "static void UpdateOrbFlashEffect(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "s16 *data = gTasks[taskId].data;\n\n    switch (tState)\n    {\n    case 0:\n        SetOrbFlashScanlineEffectWindowBoundaries(gScanlineEffectRegBuffers[gScanlineEffect.srcBuffer], tFlashCenterX, tFlashCenterY, tCurFlashRadius);\n        tState = 1;\n        break;\n    case 1:\n        SetOrbFlashScanlineEffectWindowBoundaries(gScanlineEffectRegBuffers[gScanlineEffect.srcBuffer], tFlashCenterX, tFlashCenterY, tCurFlashRadius);\n        tState = 0;\n        tCurFlashRadius += tFlashRadiusDelta;\n        if (tCurFlashRadius > tDestFlashRadius)\n        {\n            if (tClearScanlineEffect == 1)\n            {\n                ScanlineEffect_Stop();\n                tState = 2;\n            }\n            else\n            {\n                DestroyTask(taskId);\n            }\n        }\n        break;\n    case 2:\n        ScanlineEffect_Clear();\n        DestroyTask(taskId);\n        break;\n    }",
+      "callsTo": [
+        "DestroyTask",
+        "ScanlineEffect_Clear",
+        "ScanlineEffect_Stop",
+        "SetOrbFlashScanlineEffectWindowBoundaries"
+      ],
+      "lineCount": 30
+    },
+    "Task_WaitForFlashUpdate": {
+      "returnType": "void",
+      "signature": "static void Task_WaitForFlashUpdate(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "if (!FuncIsActiveTask(UpdateFlashLevelEffect))\n    {\n        ScriptContext_Enable();\n        DestroyTask(taskId);\n    }",
+      "callsTo": [
+        "DestroyTask",
+        "FuncIsActiveTask",
+        "ScriptContext_Enable"
+      ],
+      "lineCount": 5
+    },
+    "StartWaitForFlashUpdate": {
+      "returnType": "void",
+      "signature": "static void StartWaitForFlashUpdate(void)",
+      "paramsRaw": "void",
+      "body": "if (!FuncIsActiveTask(Task_WaitForFlashUpdate))\n        CreateTask(Task_WaitForFlashUpdate, 80);",
+      "callsTo": [
+        "CreateTask",
+        "FuncIsActiveTask"
+      ],
+      "lineCount": 2
+    },
+    "StartUpdateFlashLevelEffect": {
+      "returnType": "u8",
+      "signature": "static u8 StartUpdateFlashLevelEffect(s32 centerX, s32 centerY, s32 initialFlashRadius, s32 destFlashRadius, s32 clearScanlineEffect, u8 delta)",
+      "paramsRaw": "s32 centerX, s32 centerY, s32 initialFlashRadius, s32 destFlashRadius, s32 clearScanlineEffect, u8 delta",
+      "body": "u8 taskId = CreateTask(UpdateFlashLevelEffect, 80);\n    s16 *data = gTasks[taskId].data;\n\n    tCurFlashRadius = initialFlashRadius;\n    tDestFlashRadius = destFlashRadius;\n    tFlashCenterX = centerX;\n    tFlashCenterY = centerY;\n    tClearScanlineEffect = clearScanlineEffect;\n\n    if (initialFlashRadius < destFlashRadius)\n        tFlashRadiusDelta = delta;\n    else\n        tFlashRadiusDelta = -delta;\n\n    return taskId;",
+      "callsTo": [
+        "CreateTask"
+      ],
+      "lineCount": 15
+    },
+    "StartUpdateOrbFlashEffect": {
+      "returnType": "u8",
+      "signature": "static u8 StartUpdateOrbFlashEffect(s32 centerX, s32 centerY, s32 initialFlashRadius, s32 destFlashRadius, s32 clearScanlineEffect, u8 delta)",
+      "paramsRaw": "s32 centerX, s32 centerY, s32 initialFlashRadius, s32 destFlashRadius, s32 clearScanlineEffect, u8 delta",
+      "body": "u8 taskId = CreateTask(UpdateOrbFlashEffect, 80);\n    s16 *data = gTasks[taskId].data;\n\n    tCurFlashRadius = initialFlashRadius;\n    tDestFlashRadius = destFlashRadius;\n    tFlashCenterX = centerX;\n    tFlashCenterY = centerY;\n    tClearScanlineEffect = clearScanlineEffect;\n\n    if (initialFlashRadius < destFlashRadius)\n        tFlashRadiusDelta = delta;\n    else\n        tFlashRadiusDelta = -delta;\n\n    return taskId;",
+      "callsTo": [
+        "CreateTask"
+      ],
+      "lineCount": 15
+    },
+    "AnimateFlash": {
+      "returnType": "void",
+      "signature": "void AnimateFlash(u8 newFlashLevel)",
+      "paramsRaw": "u8 newFlashLevel",
+      "body": "u8 curFlashLevel = GetFlashLevel();\n    bool8 fullBrightness = FALSE;\n    if (newFlashLevel == 0)\n        fullBrightness = TRUE;\n    StartUpdateFlashLevelEffect(DISPLAY_WIDTH / 2, DISPLAY_HEIGHT / 2, sFlashLevelToRadius[curFlashLevel], sFlashLevelToRadius[newFlashLevel], fullBrightness, 1);\n    StartWaitForFlashUpdate();\n    LockPlayerFieldControls();",
+      "callsTo": [
+        "GetFlashLevel",
+        "LockPlayerFieldControls",
+        "StartUpdateFlashLevelEffect",
+        "StartWaitForFlashUpdate"
+      ],
+      "lineCount": 7
+    },
+    "WriteFlashScanlineEffectBuffer": {
+      "returnType": "void",
+      "signature": "void WriteFlashScanlineEffectBuffer(u8 flashLevel)",
+      "paramsRaw": "u8 flashLevel",
+      "body": "if (flashLevel)\n    {\n        SetFlashScanlineEffectWindowBoundaries(&gScanlineEffectRegBuffers[0][0], DISPLAY_WIDTH / 2, DISPLAY_HEIGHT / 2, sFlashLevelToRadius[flashLevel]);\n        CpuFastSet(&gScanlineEffectRegBuffers[0], &gScanlineEffectRegBuffers[1], 480);\n    }",
+      "callsTo": [
+        "CpuFastSet",
+        "SetFlashScanlineEffectWindowBoundaries"
+      ],
+      "lineCount": 5
+    },
+    "WriteBattlePyramidViewScanlineEffectBuffer": {
+      "returnType": "void",
+      "signature": "void WriteBattlePyramidViewScanlineEffectBuffer(void)",
+      "paramsRaw": "void",
+      "body": "SetFlashScanlineEffectWindowBoundaries(&gScanlineEffectRegBuffers[0][0], DISPLAY_WIDTH / 2, DISPLAY_HEIGHT / 2, gSaveBlock2Ptr->frontier.pyramidLightRadius);\n    CpuFastSet(&gScanlineEffectRegBuffers[0], &gScanlineEffectRegBuffers[1], 480);",
+      "callsTo": [
+        "CpuFastSet",
+        "SetFlashScanlineEffectWindowBoundaries"
+      ],
+      "lineCount": 2
+    },
+    "Task_SpinEnterWarp": {
+      "returnType": "void",
+      "signature": "static void Task_SpinEnterWarp(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "switch (gTasks[taskId].tState)\n    {\n    case 0:\n        FreezeObjectEvents();\n        LockPlayerFieldControls();\n        DoPlayerSpinEntrance();\n        gTasks[taskId].tState++;\n        break;\n    case 1:\n        if (WaitForWeatherFadeIn() && IsPlayerSpinEntranceActive() != TRUE)\n        {\n            UnfreezeObjectEvents();\n            UnlockPlayerFieldControls();\n            DestroyTask(taskId);\n        }\n        break;\n    }",
+      "callsTo": [
+        "DestroyTask",
+        "DoPlayerSpinEntrance",
+        "FreezeObjectEvents",
+        "IsPlayerSpinEntranceActive",
+        "LockPlayerFieldControls",
+        "UnfreezeObjectEvents",
+        "UnlockPlayerFieldControls",
+        "WaitForWeatherFadeIn"
+      ],
+      "lineCount": 17
+    },
+    "Task_SpinExitWarp": {
+      "returnType": "void",
+      "signature": "static void Task_SpinExitWarp(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "struct Task *task = &gTasks[taskId];\n\n    switch (task->tState)\n    {\n    case 0:\n        FreezeObjectEvents();\n        LockPlayerFieldControls();\n        PlaySE(SE_WARP_IN);\n        DoPlayerSpinExit();\n        task->tState++;\n        break;\n    case 1:\n        if (!IsPlayerSpinExitActive())\n        {\n            WarpFadeOutScreen();\n            task->tState++;\n        }\n        break;\n    case 2:\n        if (!PaletteFadeActive() && BGMusicStopped())\n            task->tState++;\n        break;\n    case 3:\n        WarpIntoMap();\n        SetMainCallback2(CB2_LoadMap);\n        DestroyTask(taskId);\n        break;\n    }",
+      "callsTo": [
+        "BGMusicStopped",
+        "DestroyTask",
+        "DoPlayerSpinExit",
+        "FreezeObjectEvents",
+        "IsPlayerSpinExitActive",
+        "LockPlayerFieldControls",
+        "PaletteFadeActive",
+        "PlaySE",
+        "SetMainCallback2",
+        "WarpFadeOutScreen",
+        "WarpIntoMap"
+      ],
+      "lineCount": 28
+    },
+    "DoSpinEnterWarp": {
+      "returnType": "void",
+      "signature": "void DoSpinEnterWarp(void)",
+      "paramsRaw": "void",
+      "body": "LockPlayerFieldControls();\n    CreateTask(Task_WarpAndLoadMap, 10);\n    gFieldCallback = FieldCB_SpinEnterWarp;",
+      "callsTo": [
+        "CreateTask",
+        "LockPlayerFieldControls"
+      ],
+      "lineCount": 3
+    },
+    "DoSpinExitWarp": {
+      "returnType": "void",
+      "signature": "void DoSpinExitWarp(void)",
+      "paramsRaw": "void",
+      "body": "LockPlayerFieldControls();\n    gFieldCallback = FieldCB_DefaultWarpExit;\n    CreateTask(Task_SpinExitWarp, 10);",
+      "callsTo": [
+        "CreateTask",
+        "LockPlayerFieldControls"
+      ],
+      "lineCount": 3
+    },
+    "LoadOrbEffectPalette": {
+      "returnType": "void",
+      "signature": "static void LoadOrbEffectPalette(bool8 blueOrb)",
+      "paramsRaw": "bool8 blueOrb",
+      "body": "int i;\n    u16 color[1];\n\n    if (!blueOrb)\n        color[0] = RGB_RED;\n    else\n        color[0] = RGB_BLUE;\n\n    for (i = 0; i < 16; i++)\n        LoadPalette(color, BG_PLTT_ID(15) + i, PLTT_SIZEOF(1));",
+      "callsTo": [
+        "BG_PLTT_ID",
+        "LoadPalette",
+        "PLTT_SIZEOF"
+      ],
+      "lineCount": 10
+    },
+    "UpdateOrbEffectBlend": {
+      "returnType": "bool8",
+      "signature": "static bool8 UpdateOrbEffectBlend(u16 shakeDir)",
+      "paramsRaw": "u16 shakeDir",
+      "body": "u8 lo = REG_BLDALPHA & 0xFF;\n    u8 hi = REG_BLDALPHA >> 8;\n\n    if (shakeDir != 0)\n    {\n        if (lo)\n            lo--;\n    }\n    else\n    {\n        if (hi < 16)\n            hi++;\n    }\n\n    SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(lo, hi));\n\n    if (lo == 0 && hi == 16)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [
+        "BLDALPHA_BLEND",
+        "SetGpuReg"
+      ],
+      "lineCount": 20
+    },
+    "Task_OrbEffect": {
+      "returnType": "void",
+      "signature": "static void Task_OrbEffect(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "s16 *data = gTasks[taskId].data;\n\n    switch (tState)\n    {\n    case 0:\n        tDispCnt = REG_DISPCNT;\n        tBldCnt = REG_BLDCNT;\n        tBldAlpha = REG_BLDALPHA;\n        tWinIn = REG_WININ;\n        tWinOut = REG_WINOUT;\n        ClearGpuRegBits(REG_OFFSET_DISPCNT, DISPCNT_WIN1_ON);\n        SetGpuRegBits(REG_OFFSET_BLDCNT, gOrbEffectBackgroundLayerFlags[0]);\n        SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(12, 7));\n        SetGpuReg(REG_OFFSET_WININ, WININ_WIN0_BG_ALL | WININ_WIN0_OBJ | WININ_WIN0_CLR);\n        SetGpuReg(REG_OFFSET_WINOUT, WINOUT_WIN01_BG1 | WINOUT_WIN01_BG2 | WINOUT_WIN01_BG3 | WINOUT_WIN01_OBJ);\n        SetBgTilemapPalette(0, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT, 0xF);\n        ScheduleBgCopyTilemapToVram(0);\n        SetOrbFlashScanlineEffectWindowBoundaries(&gScanlineEffectRegBuffers[0][0], tCenterX, tCenterY, 1);\n        CpuFastSet(&gScanlineEffectRegBuffers[0], &gScanlineEffectRegBuffers[1], 480);\n        ScanlineEffect_SetParams(sFlashEffectParams);\n        tState = 1;\n        break;\n    case 1:\n        BgDmaFill(0, PIXEL_FILL(1), 0, 1);\n        LoadOrbEffectPalette(tBlueOrb);\n        StartUpdateOrbFlashEffect(tCenterX, tCenterY, 1, 160, 1, 2);\n        tState = 2;\n        break;\n    case 2:\n        if (!FuncIsActiveTask(UpdateOrbFlashEffect))\n        {\n            ScriptContext_Enable();\n            tState = 3;\n        }\n        break;\n    case 3:\n        InstallCameraPanAheadCallback();\n        SetCameraPanningCallback(NULL);\n        tShakeDir = 0;\n        tShakeDelay = 4;\n        tState = 4;\n        break;\n    case 4:\n        if (--tShakeDelay == 0)\n        {\n            s32 panning;\n            tShakeDelay = 4;\n            tShakeDir ^= 1;\n            if (tShakeDir)\n                panning = 4;\n            else\n                panning = -4;\n            SetCameraPanning(0, panning);\n        }\n        break;\n    case 6:\n        InstallCameraPanAheadCallback();\n        tShakeDelay = 8;\n        tState = 7;\n        break;\n    case 7:\n        if (--tShakeDelay == 0)\n        {\n            tShakeDelay = 8;\n            tShakeDir ^= 1;\n            if (UpdateOrbEffectBlend(tShakeDir) == TRUE)\n            {\n                tState = 5;\n                BgDmaFill(0, PIXEL_FILL(0), 0, 1);\n            }\n        }\n        break;\n    case 5:\n        SetGpuReg(REG_OFFSET_WIN0H, 255);\n        SetGpuReg(REG_OFFSET_DISPCNT, tDispCnt);\n        SetGpuReg(REG_OFFSET_BLDCNT, tBldCnt);\n        SetGpuReg(REG_OFFSET_BLDALPHA, tBldAlpha);\n        SetGpuReg(REG_OFFSET_WININ, tWinIn);\n        SetGpuReg(REG_OFFSET_WINOUT, tWinOut);\n        ScriptContext_Enable();\n        DestroyTask(taskId);\n        break;\n    }",
+      "callsTo": [
+        "BLDALPHA_BLEND",
+        "BgDmaFill",
+        "ClearGpuRegBits",
+        "CpuFastSet",
+        "DestroyTask",
+        "FuncIsActiveTask",
+        "InstallCameraPanAheadCallback",
+        "LoadOrbEffectPalette",
+        "PIXEL_FILL",
+        "ScanlineEffect_SetParams",
+        "ScheduleBgCopyTilemapToVram",
+        "ScriptContext_Enable",
+        "SetBgTilemapPalette",
+        "SetCameraPanning",
+        "SetCameraPanningCallback",
+        "SetGpuReg",
+        "SetGpuRegBits",
+        "SetOrbFlashScanlineEffectWindowBoundaries",
+        "StartUpdateOrbFlashEffect",
+        "UpdateOrbEffectBlend"
+      ],
+      "lineCount": 83
+    },
+    "DoOrbEffect": {
+      "returnType": "void",
+      "signature": "void DoOrbEffect(void)",
+      "paramsRaw": "void",
+      "body": "u8 taskId = CreateTask(Task_OrbEffect, 80);\n    s16 *data = gTasks[taskId].data;\n\n    if (gSpecialVar_Result == 0)\n    {\n        tBlueOrb = FALSE;\n        tCenterX = 104;\n    }\n    else if (gSpecialVar_Result == 1)\n    {\n        tBlueOrb = TRUE;\n        tCenterX = 136;\n    }\n    else if (gSpecialVar_Result == 2)\n    {\n        tBlueOrb = FALSE;\n        tCenterX = 120;\n    }\n    else\n    {\n        tBlueOrb = TRUE;\n        tCenterX = 120;\n    }\n\n    tCenterY = 80;",
+      "callsTo": [
+        "CreateTask"
+      ],
+      "lineCount": 25
+    },
+    "FadeOutOrbEffect": {
+      "returnType": "void",
+      "signature": "void FadeOutOrbEffect(void)",
+      "paramsRaw": "void",
+      "body": "u8 taskId = FindTaskIdByFunc(Task_OrbEffect);\n    gTasks[taskId].tState = 6;",
+      "callsTo": [
+        "FindTaskIdByFunc"
+      ],
+      "lineCount": 2
+    },
+    "Script_FadeOutMapMusic": {
+      "returnType": "void",
+      "signature": "void Script_FadeOutMapMusic(void)",
+      "paramsRaw": "void",
+      "body": "Overworld_FadeOutMapMusic();\n    CreateTask(Task_EnableScriptAfterMusicFade, 80);",
+      "callsTo": [
+        "CreateTask",
+        "Overworld_FadeOutMapMusic"
+      ],
+      "lineCount": 2
+    },
+    "Task_EnableScriptAfterMusicFade": {
+      "returnType": "void",
+      "signature": "static void Task_EnableScriptAfterMusicFade(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "if (BGMusicStopped() == TRUE)\n    {\n        DestroyTask(taskId);\n        ScriptContext_Enable();\n    }",
+      "callsTo": [
+        "BGMusicStopped",
+        "DestroyTask",
+        "ScriptContext_Enable"
+      ],
+      "lineCount": 5
+    }
+  }
+}

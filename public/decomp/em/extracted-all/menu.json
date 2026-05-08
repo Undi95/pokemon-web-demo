@@ -1,0 +1,1119 @@
+{
+  "srcFile": "src/menu.c",
+  "count": 100,
+  "functions": {
+    "InitStandardTextBoxWindows": {
+      "returnType": "void",
+      "signature": "void InitStandardTextBoxWindows(void)",
+      "paramsRaw": "void",
+      "body": "InitWindows(sStandardTextBox_WindowTemplates);\n    sStartMenuWindowId = WINDOW_NONE;\n    sMapNamePopupWindowId = WINDOW_NONE;",
+      "callsTo": [
+        "InitWindows"
+      ],
+      "lineCount": 3
+    },
+    "FreeAllOverworldWindowBuffers": {
+      "returnType": "void",
+      "signature": "void FreeAllOverworldWindowBuffers(void)",
+      "paramsRaw": "void",
+      "body": "FreeAllWindowBuffers();",
+      "callsTo": [
+        "FreeAllWindowBuffers"
+      ],
+      "lineCount": 1
+    },
+    "InitTextBoxGfxAndPrinters": {
+      "returnType": "void",
+      "signature": "void InitTextBoxGfxAndPrinters(void)",
+      "paramsRaw": "void",
+      "body": "ChangeBgX(0, 0, BG_COORD_SET);\n    ChangeBgY(0, 0, BG_COORD_SET);\n    DeactivateAllTextPrinters();\n    LoadMessageBoxAndBorderGfx();",
+      "callsTo": [
+        "ChangeBgX",
+        "ChangeBgY",
+        "DeactivateAllTextPrinters",
+        "LoadMessageBoxAndBorderGfx"
+      ],
+      "lineCount": 4
+    },
+    "RunTextPrintersAndIsPrinter0Active": {
+      "returnType": "u16",
+      "signature": "u16 RunTextPrintersAndIsPrinter0Active(void)",
+      "paramsRaw": "void",
+      "body": "RunTextPrinters();\n    return IsTextPrinterActive(0);",
+      "callsTo": [
+        "IsTextPrinterActive",
+        "RunTextPrinters"
+      ],
+      "lineCount": 2
+    },
+    "AddTextPrinterParameterized2": {
+      "returnType": "u16",
+      "signature": "u16 AddTextPrinterParameterized2(u8 windowId, u8 fontId, const u8 *str, u8 speed, void (*callback)(struct TextPrinterTemplate *, u16), u8 fgColor, u8 bgColor, u8 shadowColor)",
+      "paramsRaw": "u8 windowId, u8 fontId, const u8 *str, u8 speed, void (*callback)(struct TextPrinterTemplate *, u16), u8 fgColor, u8 bgColor, u8 shadowColor",
+      "body": "struct TextPrinterTemplate printer;\n\n    printer.currentChar = str;\n    printer.windowId = windowId;\n    printer.fontId = fontId;\n    printer.x = 0;\n    printer.y = 1;\n    printer.currentX = 0;\n    printer.currentY = 1;\n    printer.letterSpacing = 0;\n    printer.lineSpacing = 0;\n    printer.unk = 0;\n    printer.fgColor = fgColor;\n    printer.bgColor = bgColor;\n    printer.shadowColor = shadowColor;\n\n    gTextFlags.useAlternateDownArrow = 0;\n    return AddTextPrinter(&printer, speed, callback);",
+      "callsTo": [
+        "AddTextPrinter"
+      ],
+      "lineCount": 18
+    },
+    "AddTextPrinterForMessage": {
+      "returnType": "void",
+      "signature": "void AddTextPrinterForMessage(bool8 allowSkippingDelayWithButtonPress)",
+      "paramsRaw": "bool8 allowSkippingDelayWithButtonPress",
+      "body": "void (*callback)(struct TextPrinterTemplate *, u16) = NULL;\n    gTextFlags.canABSpeedUpPrint = allowSkippingDelayWithButtonPress;\n    AddTextPrinterParameterized2(0, FONT_NORMAL, gStringVar4, GetPlayerTextSpeedDelay(), callback, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);",
+      "callsTo": [
+        "AddTextPrinterParameterized2",
+        "GetPlayerTextSpeedDelay"
+      ],
+      "lineCount": 3
+    },
+    "AddTextPrinterForMessage_2": {
+      "returnType": "void",
+      "signature": "void AddTextPrinterForMessage_2(bool8 allowSkippingDelayWithButtonPress)",
+      "paramsRaw": "bool8 allowSkippingDelayWithButtonPress",
+      "body": "gTextFlags.canABSpeedUpPrint = allowSkippingDelayWithButtonPress;\n    AddTextPrinterParameterized2(0, FONT_NORMAL, gStringVar4, GetPlayerTextSpeedDelay(), NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);",
+      "callsTo": [
+        "AddTextPrinterParameterized2",
+        "GetPlayerTextSpeedDelay"
+      ],
+      "lineCount": 2
+    },
+    "AddTextPrinterWithCustomSpeedForMessage": {
+      "returnType": "void",
+      "signature": "void AddTextPrinterWithCustomSpeedForMessage(bool8 allowSkippingDelayWithButtonPress, u8 speed)",
+      "paramsRaw": "bool8 allowSkippingDelayWithButtonPress, u8 speed",
+      "body": "gTextFlags.canABSpeedUpPrint = allowSkippingDelayWithButtonPress;\n    AddTextPrinterParameterized2(0, FONT_NORMAL, gStringVar4, speed, NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);",
+      "callsTo": [
+        "AddTextPrinterParameterized2"
+      ],
+      "lineCount": 2
+    },
+    "LoadMessageBoxAndBorderGfx": {
+      "returnType": "void",
+      "signature": "void LoadMessageBoxAndBorderGfx(void)",
+      "paramsRaw": "void",
+      "body": "LoadMessageBoxGfx(0, DLG_WINDOW_BASE_TILE_NUM, BG_PLTT_ID(DLG_WINDOW_PALETTE_NUM));\n    LoadUserWindowBorderGfx(0, STD_WINDOW_BASE_TILE_NUM, BG_PLTT_ID(STD_WINDOW_PALETTE_NUM));",
+      "callsTo": [
+        "BG_PLTT_ID",
+        "LoadMessageBoxGfx",
+        "LoadUserWindowBorderGfx"
+      ],
+      "lineCount": 2
+    },
+    "DrawDialogueFrame": {
+      "returnType": "void",
+      "signature": "void DrawDialogueFrame(u8 windowId, bool8 copyToVram)",
+      "paramsRaw": "u8 windowId, bool8 copyToVram",
+      "body": "CallWindowFunction(windowId, WindowFunc_DrawDialogueFrame);\n    FillWindowPixelBuffer(windowId, PIXEL_FILL(1));\n    PutWindowTilemap(windowId);\n    if (copyToVram == TRUE)\n        CopyWindowToVram(windowId, COPYWIN_FULL);",
+      "callsTo": [
+        "CallWindowFunction",
+        "CopyWindowToVram",
+        "FillWindowPixelBuffer",
+        "PIXEL_FILL",
+        "PutWindowTilemap"
+      ],
+      "lineCount": 5
+    },
+    "DrawStdWindowFrame": {
+      "returnType": "void",
+      "signature": "void DrawStdWindowFrame(u8 windowId, bool8 copyToVram)",
+      "paramsRaw": "u8 windowId, bool8 copyToVram",
+      "body": "CallWindowFunction(windowId, WindowFunc_DrawStandardFrame);\n    FillWindowPixelBuffer(windowId, PIXEL_FILL(1));\n    PutWindowTilemap(windowId);\n    if (copyToVram == TRUE)\n        CopyWindowToVram(windowId, COPYWIN_FULL);",
+      "callsTo": [
+        "CallWindowFunction",
+        "CopyWindowToVram",
+        "FillWindowPixelBuffer",
+        "PIXEL_FILL",
+        "PutWindowTilemap"
+      ],
+      "lineCount": 5
+    },
+    "ClearDialogWindowAndFrame": {
+      "returnType": "void",
+      "signature": "void ClearDialogWindowAndFrame(u8 windowId, bool8 copyToVram)",
+      "paramsRaw": "u8 windowId, bool8 copyToVram",
+      "body": "CallWindowFunction(windowId, WindowFunc_ClearDialogWindowAndFrame);\n    FillWindowPixelBuffer(windowId, PIXEL_FILL(1));\n    ClearWindowTilemap(windowId);\n    if (copyToVram == TRUE)\n        CopyWindowToVram(windowId, COPYWIN_FULL);",
+      "callsTo": [
+        "CallWindowFunction",
+        "ClearWindowTilemap",
+        "CopyWindowToVram",
+        "FillWindowPixelBuffer",
+        "PIXEL_FILL"
+      ],
+      "lineCount": 5
+    },
+    "ClearStdWindowAndFrame": {
+      "returnType": "void",
+      "signature": "void ClearStdWindowAndFrame(u8 windowId, bool8 copyToVram)",
+      "paramsRaw": "u8 windowId, bool8 copyToVram",
+      "body": "CallWindowFunction(windowId, WindowFunc_ClearStdWindowAndFrame);\n    FillWindowPixelBuffer(windowId, PIXEL_FILL(1));\n    ClearWindowTilemap(windowId);\n    if (copyToVram == TRUE)\n        CopyWindowToVram(windowId, COPYWIN_FULL);",
+      "callsTo": [
+        "CallWindowFunction",
+        "ClearWindowTilemap",
+        "CopyWindowToVram",
+        "FillWindowPixelBuffer",
+        "PIXEL_FILL"
+      ],
+      "lineCount": 5
+    },
+    "WindowFunc_DrawStandardFrame": {
+      "returnType": "void",
+      "signature": "static void WindowFunc_DrawStandardFrame(u8 bg, u8 tilemapLeft, u8 tilemapTop, u8 width, u8 height, u8 paletteNum)",
+      "paramsRaw": "u8 bg, u8 tilemapLeft, u8 tilemapTop, u8 width, u8 height, u8 paletteNum",
+      "body": "int i;\n\n    FillBgTilemapBufferRect(bg,\n                            STD_WINDOW_BASE_TILE_NUM + 0,\n                            tilemapLeft - 1,\n                            tilemapTop - 1,\n                            1,\n                            1,\n                            STD_WINDOW_PALETTE_NUM);\n    FillBgTilemapBufferRect(bg,\n                            STD_WINDOW_BASE_TILE_NUM + 1,\n                            tilemapLeft,\n                            tilemapTop - 1,\n                            width,\n                            1,\n                            STD_WINDOW_PALETTE_NUM);\n    FillBgTilemapBufferRect(bg,\n                            STD_WINDOW_BASE_TILE_NUM + 2,\n                            tilemapLeft + width,\n                            tilemapTop - 1,\n                            1,\n                            1,\n                            STD_WINDOW_PALETTE_NUM);\n\n    for (i = tilemapTop; i < tilemapTop + height; i++)\n    {\n        FillBgTilemapBufferRect(bg,\n                                STD_WINDOW_BASE_TILE_NUM + 3,\n                                tilemapLeft - 1,\n                                i,\n                                1,\n                                1,\n                                STD_WINDOW_PALETTE_NUM);\n        FillBgTilemapBufferRect(bg,\n                                STD_WINDOW_BASE_TILE_NUM + 5,\n                                tilemapLeft + width,\n                                i,\n                                1,\n                                1,\n                                STD_WINDOW_PALETTE_NUM);\n    }\n\n    FillBgTilemapBufferRect(bg,\n                            STD_WINDOW_BASE_TILE_NUM + 6,\n                            tilemapLeft - 1,\n                            tilemapTop + height,\n                            1,\n                            1,\n                            STD_WINDOW_PALETTE_NUM);\n    FillBgTilemapBufferRect(bg,\n                            STD_WINDOW_BASE_TILE_NUM + 7,\n                            tilemapLeft,\n                            tilemapTop + height,\n                            width,\n                            1,\n                            STD_WINDOW_PALETTE_NUM);\n    FillBgTilemapBufferRect(bg,\n                            STD_WINDOW_BASE_TILE_NUM + 8,\n                            tilemapLeft + width,\n                            tilemapTop + height,\n                            1,\n                            1,\n                            STD_WINDOW_PALETTE_NUM);",
+      "callsTo": [
+        "FillBgTilemapBufferRect"
+      ],
+      "lineCount": 63
+    },
+    "WindowFunc_DrawDialogueFrame": {
+      "returnType": "void",
+      "signature": "static void WindowFunc_DrawDialogueFrame(u8 bg, u8 tilemapLeft, u8 tilemapTop, u8 width, u8 height, u8 paletteNum)",
+      "paramsRaw": "u8 bg, u8 tilemapLeft, u8 tilemapTop, u8 width, u8 height, u8 paletteNum",
+      "body": "FillBgTilemapBufferRect(bg,\n                            DLG_WINDOW_BASE_TILE_NUM + 1,\n                            tilemapLeft - 2,\n                            tilemapTop - 1,\n                            1,\n                            1,\n                            DLG_WINDOW_PALETTE_NUM);\n    FillBgTilemapBufferRect(bg,\n                            DLG_WINDOW_BASE_TILE_NUM + 3,\n                            tilemapLeft - 1,\n                            tilemapTop - 1,\n                            1,\n                            1,\n                            DLG_WINDOW_PALETTE_NUM);\n    FillBgTilemapBufferRect(bg,\n                            DLG_WINDOW_BASE_TILE_NUM + 4,\n                            tilemapLeft,\n                            tilemapTop - 1,\n                            width - 1,\n                            1,\n                            DLG_WINDOW_PALETTE_NUM);\n    FillBgTilemapBufferRect(bg,\n                            DLG_WINDOW_BASE_TILE_NUM + 5,\n                            tilemapLeft + width - 1,\n                            tilemapTop - 1,\n                            1,\n                            1,\n                            DLG_WINDOW_PALETTE_NUM);\n    FillBgTilemapBufferRect(bg,\n                            DLG_WINDOW_BASE_TILE_NUM + 6,\n                            tilemapLeft + width,\n                            tilemapTop - 1,\n                            1,\n                            1,\n                            DLG_WINDOW_PALETTE_NUM);\n    FillBgTilemapBufferRect(bg,\n                            DLG_WINDOW_BASE_TILE_NUM + 7,\n                            tilemapLeft - 2,\n                            tilemapTop,\n                            1,\n                            5,\n                            DLG_WINDOW_PALETTE_NUM);\n    FillBgTilemapBufferRect(bg,\n                            DLG_WINDOW_BASE_TILE_NUM + 9,\n                            tilemapLeft - 1,\n                            tilemapTop,\n                            width + 1,\n                            5,\n                            DLG_WINDOW_PALETTE_NUM);\n    FillBgTilemapBufferRect(bg,\n                            DLG_WINDOW_BASE_TILE_NUM + 10,\n                            tilemapLeft + width,\n                            tilemapTop,\n                            1,\n                            5,\n                            DLG_WINDOW_PALETTE_NUM);\n    FillBgTilemapBufferRect(bg,\n                            BG_TILE_V_FLIP(DLG_WINDOW_BASE_TILE_NUM + 1),\n                            tilemapLeft - 2,\n                            tilemapTop + height,\n                            1,\n                            1,\n                            DLG_WINDOW_PALETTE_NUM);\n    FillBgTilemapBufferRect(bg,\n                            BG_TILE_V_FLIP(DLG_WINDOW_BASE_TILE_NUM + 3),\n                            tilemapLeft - 1,\n                            tilemapTop + height,\n                            1,\n                            1,\n                            DLG_WINDOW_PALETTE_NUM);\n    FillBgTilemapBufferRect(bg,\n                            BG_TILE_V_FLIP(DLG_WINDOW_BASE_TILE_NUM + 4),\n                            tilemapLeft,\n                            tilemapTop + height,\n                            width - 1,\n                            1,\n                            DLG_WINDOW_PALETTE_NUM);\n    FillBgTilemapBufferRect(bg,\n                            BG_TILE_V_FLIP(DLG_WINDOW_BASE_TILE_NUM + 5),\n                            tilemapLeft + width - 1,\n                            tilemapTop + height,\n                            1,\n                            1,\n                            DLG_WINDOW_PALETTE_NUM);\n    FillBgTilemapBufferRect(bg,\n                            BG_TILE_V_FLIP(DLG_WINDOW_BASE_TILE_NUM + 6),\n                            tilemapLeft + width,\n                            tilemapTop + height,\n                            1,\n                            1,\n                            DLG_WINDOW_PALETTE_NUM);",
+      "callsTo": [
+        "BG_TILE_V_FLIP",
+        "FillBgTilemapBufferRect"
+      ],
+      "lineCount": 91
+    },
+    "WindowFunc_ClearStdWindowAndFrame": {
+      "returnType": "void",
+      "signature": "static void WindowFunc_ClearStdWindowAndFrame(u8 bg, u8 tilemapLeft, u8 tilemapTop, u8 width, u8 height, u8 paletteNum)",
+      "paramsRaw": "u8 bg, u8 tilemapLeft, u8 tilemapTop, u8 width, u8 height, u8 paletteNum",
+      "body": "FillBgTilemapBufferRect(bg, 0, tilemapLeft - 1, tilemapTop - 1, width + 2, height + 2, STD_WINDOW_PALETTE_NUM);",
+      "callsTo": [
+        "FillBgTilemapBufferRect"
+      ],
+      "lineCount": 1
+    },
+    "WindowFunc_ClearDialogWindowAndFrame": {
+      "returnType": "void",
+      "signature": "static void WindowFunc_ClearDialogWindowAndFrame(u8 bg, u8 tilemapLeft, u8 tilemapTop, u8 width, u8 height, u8 paletteNum)",
+      "paramsRaw": "u8 bg, u8 tilemapLeft, u8 tilemapTop, u8 width, u8 height, u8 paletteNum",
+      "body": "FillBgTilemapBufferRect(bg, 0, tilemapLeft - 3, tilemapTop - 1, width + 6, height + 2, STD_WINDOW_PALETTE_NUM);",
+      "callsTo": [
+        "FillBgTilemapBufferRect"
+      ],
+      "lineCount": 1
+    },
+    "SetStandardWindowBorderStyle": {
+      "returnType": "void",
+      "signature": "void SetStandardWindowBorderStyle(u8 windowId, bool8 copyToVram)",
+      "paramsRaw": "u8 windowId, bool8 copyToVram",
+      "body": "DrawStdFrameWithCustomTileAndPalette(windowId, copyToVram, STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM);",
+      "callsTo": [
+        "DrawStdFrameWithCustomTileAndPalette"
+      ],
+      "lineCount": 1
+    },
+    "LoadMessageBoxAndFrameGfx": {
+      "returnType": "void",
+      "signature": "void LoadMessageBoxAndFrameGfx(u8 windowId, bool8 copyToVram)",
+      "paramsRaw": "u8 windowId, bool8 copyToVram",
+      "body": "LoadMessageBoxGfx(windowId, DLG_WINDOW_BASE_TILE_NUM, BG_PLTT_ID(DLG_WINDOW_PALETTE_NUM));\n    DrawDialogFrameWithCustomTileAndPalette(windowId, copyToVram, DLG_WINDOW_BASE_TILE_NUM, DLG_WINDOW_PALETTE_NUM);",
+      "callsTo": [
+        "BG_PLTT_ID",
+        "DrawDialogFrameWithCustomTileAndPalette",
+        "LoadMessageBoxGfx"
+      ],
+      "lineCount": 2
+    },
+    "Menu_LoadStdPal": {
+      "returnType": "void",
+      "signature": "void Menu_LoadStdPal(void)",
+      "paramsRaw": "void",
+      "body": "LoadPalette(gStandardMenuPalette, BG_PLTT_ID(STD_WINDOW_PALETTE_NUM), STD_WINDOW_PALETTE_SIZE);",
+      "callsTo": [
+        "BG_PLTT_ID",
+        "LoadPalette"
+      ],
+      "lineCount": 1
+    },
+    "Menu_LoadStdPalAt": {
+      "returnType": "void",
+      "signature": "void Menu_LoadStdPalAt(u16 offset)",
+      "paramsRaw": "u16 offset",
+      "body": "LoadPalette(gStandardMenuPalette, offset, STD_WINDOW_PALETTE_SIZE);",
+      "callsTo": [
+        "LoadPalette"
+      ],
+      "lineCount": 1
+    },
+    "Menu_GetStdPal": {
+      "returnType": "UNUSED const u16*",
+      "signature": "static UNUSED const u16* Menu_GetStdPal(void)",
+      "paramsRaw": "void",
+      "body": "return gStandardMenuPalette;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "DisplayItemMessageOnField": {
+      "returnType": "void",
+      "signature": "void DisplayItemMessageOnField(u8 taskId, const u8 *string, TaskFunc callback)",
+      "paramsRaw": "u8 taskId, const u8 *string, TaskFunc callback",
+      "body": "LoadMessageBoxAndBorderGfx();\n    DisplayMessageAndContinueTask(taskId, 0, DLG_WINDOW_BASE_TILE_NUM, DLG_WINDOW_PALETTE_NUM, FONT_NORMAL, GetPlayerTextSpeedDelay(), string, callback);\n    CopyWindowToVram(0, COPYWIN_FULL);",
+      "callsTo": [
+        "CopyWindowToVram",
+        "DisplayMessageAndContinueTask",
+        "GetPlayerTextSpeedDelay",
+        "LoadMessageBoxAndBorderGfx"
+      ],
+      "lineCount": 3
+    },
+    "DisplayYesNoMenuDefaultYes": {
+      "returnType": "void",
+      "signature": "void DisplayYesNoMenuDefaultYes(void)",
+      "paramsRaw": "void",
+      "body": "CreateYesNoMenu(&sYesNo_WindowTemplates, STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM, 0);",
+      "callsTo": [
+        "CreateYesNoMenu"
+      ],
+      "lineCount": 1
+    },
+    "DisplayYesNoMenuWithDefault": {
+      "returnType": "void",
+      "signature": "void DisplayYesNoMenuWithDefault(u8 initialCursorPos)",
+      "paramsRaw": "u8 initialCursorPos",
+      "body": "CreateYesNoMenu(&sYesNo_WindowTemplates, STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM, initialCursorPos);",
+      "callsTo": [
+        "CreateYesNoMenu"
+      ],
+      "lineCount": 1
+    },
+    "GetPlayerTextSpeed": {
+      "returnType": "u32",
+      "signature": "u32 GetPlayerTextSpeed(void)",
+      "paramsRaw": "void",
+      "body": "if (gTextFlags.forceMidTextSpeed)\n        return OPTIONS_TEXT_SPEED_MID;\n    return gSaveBlock2Ptr->optionsTextSpeed;",
+      "callsTo": [],
+      "lineCount": 3
+    },
+    "GetPlayerTextSpeedDelay": {
+      "returnType": "u8",
+      "signature": "u8 GetPlayerTextSpeedDelay(void)",
+      "paramsRaw": "void",
+      "body": "u32 speed;\n    if (gSaveBlock2Ptr->optionsTextSpeed > OPTIONS_TEXT_SPEED_FAST)\n        gSaveBlock2Ptr->optionsTextSpeed = OPTIONS_TEXT_SPEED_MID;\n    speed = GetPlayerTextSpeed();\n    return sTextSpeedFrameDelays[speed];",
+      "callsTo": [
+        "GetPlayerTextSpeed"
+      ],
+      "lineCount": 5
+    },
+    "AddStartMenuWindow": {
+      "returnType": "u8",
+      "signature": "u8 AddStartMenuWindow(u8 numActions)",
+      "paramsRaw": "u8 numActions",
+      "body": "if (sStartMenuWindowId == WINDOW_NONE)\n        sStartMenuWindowId = AddWindowParameterized(0, 22, 1, 7, (numActions * 2) + 2, 15, 0x139);\n    return sStartMenuWindowId;",
+      "callsTo": [
+        "AddWindowParameterized"
+      ],
+      "lineCount": 3
+    },
+    "GetStartMenuWindowId": {
+      "returnType": "u8",
+      "signature": "u8 GetStartMenuWindowId(void)",
+      "paramsRaw": "void",
+      "body": "return sStartMenuWindowId;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "RemoveStartMenuWindow": {
+      "returnType": "void",
+      "signature": "void RemoveStartMenuWindow(void)",
+      "paramsRaw": "void",
+      "body": "if (sStartMenuWindowId != WINDOW_NONE)\n    {\n        RemoveWindow(sStartMenuWindowId);\n        sStartMenuWindowId = WINDOW_NONE;\n    }",
+      "callsTo": [
+        "RemoveWindow"
+      ],
+      "lineCount": 5
+    },
+    "AddMapNamePopUpWindow": {
+      "returnType": "u8",
+      "signature": "u8 AddMapNamePopUpWindow(void)",
+      "paramsRaw": "void",
+      "body": "if (sMapNamePopupWindowId == WINDOW_NONE)\n        sMapNamePopupWindowId = AddWindowParameterized(0, 1, 1, 10, 3, 14, 0x107);\n    return sMapNamePopupWindowId;",
+      "callsTo": [
+        "AddWindowParameterized"
+      ],
+      "lineCount": 3
+    },
+    "GetMapNamePopUpWindowId": {
+      "returnType": "u8",
+      "signature": "u8 GetMapNamePopUpWindowId(void)",
+      "paramsRaw": "void",
+      "body": "return sMapNamePopupWindowId;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "RemoveMapNamePopUpWindow": {
+      "returnType": "void",
+      "signature": "void RemoveMapNamePopUpWindow(void)",
+      "paramsRaw": "void",
+      "body": "if (sMapNamePopupWindowId != WINDOW_NONE)\n    {\n        RemoveWindow(sMapNamePopupWindowId);\n        sMapNamePopupWindowId = WINDOW_NONE;\n    }",
+      "callsTo": [
+        "RemoveWindow"
+      ],
+      "lineCount": 5
+    },
+    "AddTextPrinterWithCallbackForMessage": {
+      "returnType": "void",
+      "signature": "void AddTextPrinterWithCallbackForMessage(bool8 canSpeedUp, void (*callback)(struct TextPrinterTemplate *, u16))",
+      "paramsRaw": "bool8 canSpeedUp, void (*callback)(struct TextPrinterTemplate *, u16)",
+      "body": "gTextFlags.canABSpeedUpPrint = canSpeedUp;\n    AddTextPrinterParameterized2(0, FONT_NORMAL, gStringVar4, GetPlayerTextSpeedDelay(), callback, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);",
+      "callsTo": [
+        "AddTextPrinterParameterized2",
+        "GetPlayerTextSpeedDelay"
+      ],
+      "lineCount": 2
+    },
+    "EraseFieldMessageBox": {
+      "returnType": "void",
+      "signature": "void EraseFieldMessageBox(bool8 copyToVram)",
+      "paramsRaw": "bool8 copyToVram",
+      "body": "FillBgTilemapBufferRect(0, 0, 0, 0, 32, 32, 17);\n    if (copyToVram == TRUE)\n        CopyBgTilemapBufferToVram(0);",
+      "callsTo": [
+        "CopyBgTilemapBufferToVram",
+        "FillBgTilemapBufferRect"
+      ],
+      "lineCount": 3
+    },
+    "DrawDialogFrameWithCustomTileAndPalette": {
+      "returnType": "void",
+      "signature": "void DrawDialogFrameWithCustomTileAndPalette(u8 windowId, bool8 copyToVram, u16 tileNum, u8 paletteNum)",
+      "paramsRaw": "u8 windowId, bool8 copyToVram, u16 tileNum, u8 paletteNum",
+      "body": "sTileNum = tileNum;\n    sPaletteNum = paletteNum;\n    CallWindowFunction(windowId, WindowFunc_DrawDialogFrameWithCustomTileAndPalette);\n    FillWindowPixelBuffer(windowId, PIXEL_FILL(1));\n    PutWindowTilemap(windowId);\n    if (copyToVram == TRUE)\n        CopyWindowToVram(windowId, COPYWIN_FULL);",
+      "callsTo": [
+        "CallWindowFunction",
+        "CopyWindowToVram",
+        "FillWindowPixelBuffer",
+        "PIXEL_FILL",
+        "PutWindowTilemap"
+      ],
+      "lineCount": 7
+    },
+    "WindowFunc_DrawDialogFrameWithCustomTileAndPalette": {
+      "returnType": "void",
+      "signature": "static void WindowFunc_DrawDialogFrameWithCustomTileAndPalette(u8 bg, u8 tilemapLeft, u8 tilemapTop, u8 width, u8 height, u8 paletteNum)",
+      "paramsRaw": "u8 bg, u8 tilemapLeft, u8 tilemapTop, u8 width, u8 height, u8 paletteNum",
+      "body": "FillBgTilemapBufferRect(bg,\n                            sTileNum + 1,\n                            tilemapLeft - 2,\n                            tilemapTop - 1,\n                            1,\n                            1,\n                            sPaletteNum);\n    FillBgTilemapBufferRect(bg,\n                            sTileNum + 3,\n                            tilemapLeft - 1,\n                            tilemapTop - 1,\n                            1,\n                            1,\n                            sPaletteNum);\n    FillBgTilemapBufferRect(bg,\n                            sTileNum + 4,\n                            tilemapLeft,\n                            tilemapTop - 1,\n                            width - 1,\n                            1,\n                            sPaletteNum);\n    FillBgTilemapBufferRect(bg,\n                            sTileNum + 5,\n                            tilemapLeft + width - 1,\n                            tilemapTop - 1,\n                            1,\n                            1,\n                            sPaletteNum);\n    FillBgTilemapBufferRect(bg,\n                            sTileNum + 6,\n                            tilemapLeft + width,\n                            tilemapTop - 1,\n                            1,\n                            1,\n                            sPaletteNum);\n    FillBgTilemapBufferRect(bg,\n                            sTileNum + 7,\n                            tilemapLeft - 2,\n                            tilemapTop,\n                            1,\n                            5,\n                            sPaletteNum);\n    FillBgTilemapBufferRect(bg,\n                            sTileNum + 9,\n                            tilemapLeft - 1,\n                            tilemapTop,\n                            width + 1,\n                            5,\n                            sPaletteNum);\n    FillBgTilemapBufferRect(bg,\n                            sTileNum + 10,\n                            tilemapLeft + width,\n                            tilemapTop,\n                            1,\n                            5,\n                            sPaletteNum);\n    FillBgTilemapBufferRect(bg,\n                            BG_TILE_V_FLIP(sTileNum + 1),\n                            tilemapLeft - 2,\n                            tilemapTop + height,\n                            1,\n                            1,\n                            sPaletteNum);\n    FillBgTilemapBufferRect(bg,\n                            BG_TILE_V_FLIP(sTileNum + 3),\n                            tilemapLeft - 1,\n                            tilemapTop + height,\n                            1,\n                            1,\n                            sPaletteNum);\n    FillBgTilemapBufferRect(bg,\n                            BG_TILE_V_FLIP(sTileNum + 4),\n                            tilemapLeft,\n                            tilemapTop + height,\n                            width - 1,\n                            1,\n                            sPaletteNum);\n    FillBgTilemapBufferRect(bg,\n                            BG_TILE_V_FLIP(sTileNum + 5),\n                            tilemapLeft + width - 1,\n                            tilemapTop + height,\n                            1,\n                            1,\n                            sPaletteNum);\n    FillBgTilemapBufferRect(bg,\n                            BG_TILE_V_FLIP(sTileNum + 6),\n                            tilemapLeft + width,\n                            tilemapTop + height,\n                            1,\n                            1,\n                            sPaletteNum);",
+      "callsTo": [
+        "BG_TILE_V_FLIP",
+        "FillBgTilemapBufferRect"
+      ],
+      "lineCount": 91
+    },
+    "ClearDialogWindowAndFrameToTransparent": {
+      "returnType": "void",
+      "signature": "void ClearDialogWindowAndFrameToTransparent(u8 windowId, bool8 copyToVram)",
+      "paramsRaw": "u8 windowId, bool8 copyToVram",
+      "body": "CallWindowFunction(windowId, WindowFunc_ClearDialogWindowAndFrameNullPalette);\n    FillWindowPixelBuffer(windowId, PIXEL_FILL(0));\n    ClearWindowTilemap(windowId);\n    if (copyToVram == TRUE)\n        CopyWindowToVram(windowId, COPYWIN_FULL);",
+      "callsTo": [
+        "CallWindowFunction",
+        "ClearWindowTilemap",
+        "CopyWindowToVram",
+        "FillWindowPixelBuffer",
+        "PIXEL_FILL"
+      ],
+      "lineCount": 5
+    },
+    "WindowFunc_ClearDialogWindowAndFrameNullPalette": {
+      "returnType": "void",
+      "signature": "static void WindowFunc_ClearDialogWindowAndFrameNullPalette(u8 bg, u8 tilemapLeft, u8 tilemapTop, u8 width, u8 height, u8 paletteNum)",
+      "paramsRaw": "u8 bg, u8 tilemapLeft, u8 tilemapTop, u8 width, u8 height, u8 paletteNum",
+      "body": "FillBgTilemapBufferRect(bg, 0, tilemapLeft - 3, tilemapTop - 1, width + 6, height + 2, 0);",
+      "callsTo": [
+        "FillBgTilemapBufferRect"
+      ],
+      "lineCount": 1
+    },
+    "DrawStdFrameWithCustomTileAndPalette": {
+      "returnType": "void",
+      "signature": "void DrawStdFrameWithCustomTileAndPalette(u8 windowId, bool8 copyToVram, u16 baseTileNum, u8 paletteNum)",
+      "paramsRaw": "u8 windowId, bool8 copyToVram, u16 baseTileNum, u8 paletteNum",
+      "body": "sTileNum = baseTileNum;\n    sPaletteNum = paletteNum;\n    CallWindowFunction(windowId, WindowFunc_DrawStdFrameWithCustomTileAndPalette);\n    FillWindowPixelBuffer(windowId, PIXEL_FILL(1));\n    PutWindowTilemap(windowId);\n    if (copyToVram == TRUE)\n        CopyWindowToVram(windowId, COPYWIN_FULL);",
+      "callsTo": [
+        "CallWindowFunction",
+        "CopyWindowToVram",
+        "FillWindowPixelBuffer",
+        "PIXEL_FILL",
+        "PutWindowTilemap"
+      ],
+      "lineCount": 7
+    },
+    "DrawStdFrameWithCustomTile": {
+      "returnType": "void",
+      "signature": "void DrawStdFrameWithCustomTile(u8 windowId, bool8 copyToVram, u16 baseTileNum)",
+      "paramsRaw": "u8 windowId, bool8 copyToVram, u16 baseTileNum",
+      "body": "sTileNum = baseTileNum;\n    sPaletteNum = GetWindowAttribute(windowId, WINDOW_PALETTE_NUM);\n    CallWindowFunction(windowId, WindowFunc_DrawStdFrameWithCustomTileAndPalette);\n    FillWindowPixelBuffer(windowId, PIXEL_FILL(1));\n    PutWindowTilemap(windowId);\n    if (copyToVram == TRUE)\n        CopyWindowToVram(windowId, COPYWIN_FULL);",
+      "callsTo": [
+        "CallWindowFunction",
+        "CopyWindowToVram",
+        "FillWindowPixelBuffer",
+        "GetWindowAttribute",
+        "PIXEL_FILL",
+        "PutWindowTilemap"
+      ],
+      "lineCount": 7
+    },
+    "WindowFunc_DrawStdFrameWithCustomTileAndPalette": {
+      "returnType": "void",
+      "signature": "static void WindowFunc_DrawStdFrameWithCustomTileAndPalette(u8 bg, u8 tilemapLeft, u8 tilemapTop, u8 width, u8 height, u8 paletteNum)",
+      "paramsRaw": "u8 bg, u8 tilemapLeft, u8 tilemapTop, u8 width, u8 height, u8 paletteNum",
+      "body": "FillBgTilemapBufferRect(bg,\n                            sTileNum + 0,\n                            tilemapLeft - 1,\n                            tilemapTop - 1,\n                            1,\n                            1,\n                            sPaletteNum);\n    FillBgTilemapBufferRect(bg,\n                            sTileNum + 1,\n                            tilemapLeft,\n                            tilemapTop - 1,\n                            width,\n                            1,\n                            sPaletteNum);\n    FillBgTilemapBufferRect(bg,\n                            sTileNum + 2,\n                            tilemapLeft + width,\n                            tilemapTop - 1,\n                            1,\n                            1,\n                            sPaletteNum);\n    FillBgTilemapBufferRect(bg,\n                            sTileNum + 3,\n                            tilemapLeft - 1,\n                            tilemapTop,\n                            1,\n                            height,\n                            sPaletteNum);\n    FillBgTilemapBufferRect(bg,\n                            sTileNum + 5,\n                            tilemapLeft + width,\n                            tilemapTop,\n                            1,\n                            height,\n                            sPaletteNum);\n    FillBgTilemapBufferRect(bg,\n                            sTileNum + 6,\n                            tilemapLeft - 1,\n                            tilemapTop + height,\n                            1,\n                            1,\n                            sPaletteNum);\n    FillBgTilemapBufferRect(bg,\n                            sTileNum + 7,\n                            tilemapLeft,\n                            tilemapTop + height,\n                            width,\n                            1,\n                            sPaletteNum);\n    FillBgTilemapBufferRect(bg,\n                            sTileNum + 8,\n                            tilemapLeft + width,\n                            tilemapTop + height,\n                            1,\n                            1,\n                            sPaletteNum);",
+      "callsTo": [
+        "FillBgTilemapBufferRect"
+      ],
+      "lineCount": 56
+    },
+    "ClearStdWindowAndFrameToTransparent": {
+      "returnType": "void",
+      "signature": "void ClearStdWindowAndFrameToTransparent(u8 windowId, bool8 copyToVram)",
+      "paramsRaw": "u8 windowId, bool8 copyToVram",
+      "body": "CallWindowFunction(windowId, WindowFunc_ClearStdWindowAndFrameToTransparent);\n    FillWindowPixelBuffer(windowId, PIXEL_FILL(0));\n    ClearWindowTilemap(windowId);\n    if (copyToVram == TRUE)\n        CopyWindowToVram(windowId, COPYWIN_FULL);",
+      "callsTo": [
+        "CallWindowFunction",
+        "ClearWindowTilemap",
+        "CopyWindowToVram",
+        "FillWindowPixelBuffer",
+        "PIXEL_FILL"
+      ],
+      "lineCount": 5
+    },
+    "WindowFunc_ClearStdWindowAndFrameToTransparent": {
+      "returnType": "void",
+      "signature": "static void WindowFunc_ClearStdWindowAndFrameToTransparent(u8 bg, u8 tilemapLeft, u8 tilemapTop, u8 width, u8 height, u8 paletteNum)",
+      "paramsRaw": "u8 bg, u8 tilemapLeft, u8 tilemapTop, u8 width, u8 height, u8 paletteNum",
+      "body": "FillBgTilemapBufferRect(bg, 0, tilemapLeft - 1, tilemapTop - 1, width + 2, height + 2, 0);",
+      "callsTo": [
+        "FillBgTilemapBufferRect"
+      ],
+      "lineCount": 1
+    },
+    "HofPCTopBar_AddWindow": {
+      "returnType": "u8",
+      "signature": "u8 HofPCTopBar_AddWindow(u8 bg, u8 xPos, u8 yPos, u8 palette, u16 baseTile)",
+      "paramsRaw": "u8 bg, u8 xPos, u8 yPos, u8 palette, u16 baseTile",
+      "body": "struct WindowTemplate window;\n    memset(&window, 0, sizeof(window));\n\n    if (bg > 3)\n        window.bg = 0;\n    else\n        window.bg = bg;\n\n    window.tilemapTop = yPos;\n    window.height = 2;\n    window.tilemapLeft = 30 - xPos;\n    window.width = xPos;\n    window.paletteNum = palette;\n    window.baseBlock = baseTile;\n\n    sHofPCTopBarWindowId = AddWindow(&window);\n\n    if (palette > 15)\n        palette = BG_PLTT_ID(15);\n    else\n        palette = BG_PLTT_ID(palette);\n\n    LoadPalette(sHofPC_TopBar_Pal, palette, sizeof(sHofPC_TopBar_Pal));\n    return sHofPCTopBarWindowId;",
+      "callsTo": [
+        "AddWindow",
+        "BG_PLTT_ID",
+        "LoadPalette"
+      ],
+      "lineCount": 24
+    },
+    "HofPCTopBar_Print": {
+      "returnType": "void",
+      "signature": "void HofPCTopBar_Print(const u8 *string, u8 left, bool8 copyToVram)",
+      "paramsRaw": "const u8 *string, u8 left, bool8 copyToVram",
+      "body": "u16 width = 0;\n\n    if (sHofPCTopBarWindowId != WINDOW_NONE)\n    {\n        PutWindowTilemap(sHofPCTopBarWindowId);\n        FillWindowPixelBuffer(sHofPCTopBarWindowId, PIXEL_FILL(15));\n        width = GetStringWidth(FONT_SMALL, string, 0);\n        AddTextPrinterParameterized3(sHofPCTopBarWindowId,\n                  FONT_SMALL,\n                  236 - (GetWindowAttribute(sHofPCTopBarWindowId, WINDOW_TILEMAP_LEFT) * 8) - left - width,\n                  1,\n                  sTextColors,\n                  0,\n                  string);\n        if (copyToVram)\n            CopyWindowToVram(sHofPCTopBarWindowId, COPYWIN_FULL);\n    }",
+      "callsTo": [
+        "AddTextPrinterParameterized3",
+        "CopyWindowToVram",
+        "FillWindowPixelBuffer",
+        "GetStringWidth",
+        "GetWindowAttribute",
+        "PIXEL_FILL",
+        "PutWindowTilemap"
+      ],
+      "lineCount": 17
+    },
+    "HofPCTopBar_PrintPair": {
+      "returnType": "void",
+      "signature": "void HofPCTopBar_PrintPair(const u8 *string, const u8 *string2, bool8 noBg, u8 left, bool8 copyToVram)",
+      "paramsRaw": "const u8 *string, const u8 *string2, bool8 noBg, u8 left, bool8 copyToVram",
+      "body": "u8 color[3];\n    u16 width = 0;\n\n    if (sHofPCTopBarWindowId != WINDOW_NONE)\n    {\n        if (noBg)\n        {\n            color[0] = TEXT_COLOR_TRANSPARENT;\n            color[1] = TEXT_COLOR_WHITE;\n            color[2] = TEXT_COLOR_DARK_GRAY;\n        }\n        else\n        {\n            color[0] = TEXT_DYNAMIC_COLOR_6;\n            color[1] = TEXT_COLOR_WHITE;\n            color[2] = TEXT_COLOR_DARK_GRAY;\n        }\n        PutWindowTilemap(sHofPCTopBarWindowId);\n        FillWindowPixelBuffer(sHofPCTopBarWindowId, PIXEL_FILL(15));\n        if (string2 != NULL)\n        {\n            width = GetStringWidth(FONT_SMALL, string2, 0);\n            AddTextPrinterParameterized3(sHofPCTopBarWindowId,\n                      FONT_SMALL,\n                      236 - (GetWindowAttribute(sHofPCTopBarWindowId, WINDOW_TILEMAP_LEFT) * 8) - left - width,\n                      1,\n                      color,\n                      0,\n                      string2);\n        }\n        AddTextPrinterParameterized4(sHofPCTopBarWindowId, FONT_NORMAL, 4, 1, 0, 0, color, 0, string);\n        if (copyToVram)\n            CopyWindowToVram(sHofPCTopBarWindowId, COPYWIN_FULL);\n    }",
+      "callsTo": [
+        "AddTextPrinterParameterized3",
+        "AddTextPrinterParameterized4",
+        "CopyWindowToVram",
+        "FillWindowPixelBuffer",
+        "GetStringWidth",
+        "GetWindowAttribute",
+        "PIXEL_FILL",
+        "PutWindowTilemap"
+      ],
+      "lineCount": 34
+    },
+    "HofPCTopBar_RemoveWindow": {
+      "returnType": "void",
+      "signature": "void HofPCTopBar_RemoveWindow(void)",
+      "paramsRaw": "void",
+      "body": "if (sHofPCTopBarWindowId != WINDOW_NONE)\n    {\n        FillWindowPixelBuffer(sHofPCTopBarWindowId, PIXEL_FILL(0));\n        ClearWindowTilemap(sHofPCTopBarWindowId);\n        CopyWindowToVram(sHofPCTopBarWindowId, COPYWIN_FULL);\n        RemoveWindow(sHofPCTopBarWindowId);\n        sHofPCTopBarWindowId = WINDOW_NONE;\n    }",
+      "callsTo": [
+        "ClearWindowTilemap",
+        "CopyWindowToVram",
+        "FillWindowPixelBuffer",
+        "PIXEL_FILL",
+        "RemoveWindow"
+      ],
+      "lineCount": 8
+    },
+    "InitMenu": {
+      "returnType": "u8",
+      "signature": "static u8 InitMenu(u8 windowId, u8 fontId, u8 left, u8 top, u8 cursorHeight, u8 numChoices, u8 initialCursorPos, bool8 muteAPress)",
+      "paramsRaw": "u8 windowId, u8 fontId, u8 left, u8 top, u8 cursorHeight, u8 numChoices, u8 initialCursorPos, bool8 muteAPress",
+      "body": "s32 pos;\n\n    sMenu.left = left;\n    sMenu.top = top;\n    sMenu.minCursorPos = 0;\n    sMenu.maxCursorPos = numChoices - 1;\n    sMenu.windowId = windowId;\n    sMenu.fontId = fontId;\n    sMenu.optionHeight = cursorHeight;\n    sMenu.APressMuted = muteAPress;\n\n    pos = initialCursorPos;\n\n    if (pos < 0 || pos > sMenu.maxCursorPos)\n        sMenu.cursorPos = 0;\n    else\n        sMenu.cursorPos = pos;\n\n    Menu_MoveCursor(0);\n    return sMenu.cursorPos;",
+      "callsTo": [
+        "Menu_MoveCursor"
+      ],
+      "lineCount": 20
+    },
+    "InitMenuNormal": {
+      "returnType": "u8",
+      "signature": "u8 InitMenuNormal(u8 windowId, u8 fontId, u8 left, u8 top, u8 cursorHeight, u8 numChoices, u8 initialCursorPos)",
+      "paramsRaw": "u8 windowId, u8 fontId, u8 left, u8 top, u8 cursorHeight, u8 numChoices, u8 initialCursorPos",
+      "body": "return InitMenu(windowId, fontId, left, top, cursorHeight, numChoices, initialCursorPos, FALSE);",
+      "callsTo": [
+        "InitMenu"
+      ],
+      "lineCount": 1
+    },
+    "RedrawMenuCursor": {
+      "returnType": "void",
+      "signature": "void RedrawMenuCursor(u8 oldPos, u8 newPos)",
+      "paramsRaw": "u8 oldPos, u8 newPos",
+      "body": "u8 width, height;\n\n    width = GetMenuCursorDimensionByFont(sMenu.fontId, 0);\n    height = GetMenuCursorDimensionByFont(sMenu.fontId, 1);\n    FillWindowPixelRect(sMenu.windowId, PIXEL_FILL(1), sMenu.left, sMenu.optionHeight * oldPos + sMenu.top, width, height);\n    AddTextPrinterParameterized(sMenu.windowId, sMenu.fontId, gText_SelectorArrow3, sMenu.left, sMenu.optionHeight * newPos + sMenu.top, 0, 0);",
+      "callsTo": [
+        "AddTextPrinterParameterized",
+        "FillWindowPixelRect",
+        "GetMenuCursorDimensionByFont",
+        "PIXEL_FILL"
+      ],
+      "lineCount": 6
+    },
+    "Menu_MoveCursor": {
+      "returnType": "u8",
+      "signature": "u8 Menu_MoveCursor(s8 cursorDelta)",
+      "paramsRaw": "s8 cursorDelta",
+      "body": "u8 oldPos = sMenu.cursorPos;\n    int newPos = sMenu.cursorPos + cursorDelta;\n\n    if (newPos < sMenu.minCursorPos)\n        sMenu.cursorPos = sMenu.maxCursorPos;\n    else if (newPos > sMenu.maxCursorPos)\n        sMenu.cursorPos = sMenu.minCursorPos;\n    else\n        sMenu.cursorPos += cursorDelta;\n\n    RedrawMenuCursor(oldPos, sMenu.cursorPos);\n    return sMenu.cursorPos;",
+      "callsTo": [
+        "RedrawMenuCursor"
+      ],
+      "lineCount": 12
+    },
+    "Menu_MoveCursorNoWrapAround": {
+      "returnType": "u8",
+      "signature": "u8 Menu_MoveCursorNoWrapAround(s8 cursorDelta)",
+      "paramsRaw": "s8 cursorDelta",
+      "body": "u8 oldPos = sMenu.cursorPos;\n    int newPos = sMenu.cursorPos + cursorDelta;\n\n    if (newPos < sMenu.minCursorPos)\n        sMenu.cursorPos = sMenu.minCursorPos;\n    else if (newPos > sMenu.maxCursorPos)\n        sMenu.cursorPos = sMenu.maxCursorPos;\n    else\n        sMenu.cursorPos += cursorDelta;\n\n    RedrawMenuCursor(oldPos, sMenu.cursorPos);\n    return sMenu.cursorPos;",
+      "callsTo": [
+        "RedrawMenuCursor"
+      ],
+      "lineCount": 12
+    },
+    "Menu_GetCursorPos": {
+      "returnType": "u8",
+      "signature": "u8 Menu_GetCursorPos(void)",
+      "paramsRaw": "void",
+      "body": "return sMenu.cursorPos;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "Menu_ProcessInput": {
+      "returnType": "s8",
+      "signature": "s8 Menu_ProcessInput(void)",
+      "paramsRaw": "void",
+      "body": "if (JOY_NEW(A_BUTTON))\n    {\n        if (!sMenu.APressMuted)\n            PlaySE(SE_SELECT);\n        return sMenu.cursorPos;\n    }\n    else if (JOY_NEW(B_BUTTON))\n    {\n        return MENU_B_PRESSED;\n    }\n    else if (JOY_NEW(DPAD_UP))\n    {\n        PlaySE(SE_SELECT);\n        Menu_MoveCursor(-1);\n        return MENU_NOTHING_CHOSEN;\n    }\n    else if (JOY_NEW(DPAD_DOWN))\n    {\n        PlaySE(SE_SELECT);\n        Menu_MoveCursor(1);\n        return MENU_NOTHING_CHOSEN;\n    }\n\n    return MENU_NOTHING_CHOSEN;",
+      "callsTo": [
+        "JOY_NEW",
+        "Menu_MoveCursor",
+        "PlaySE"
+      ],
+      "lineCount": 24
+    },
+    "Menu_ProcessInputNoWrap": {
+      "returnType": "s8",
+      "signature": "s8 Menu_ProcessInputNoWrap(void)",
+      "paramsRaw": "void",
+      "body": "u8 oldPos = sMenu.cursorPos;\n\n    if (JOY_NEW(A_BUTTON))\n    {\n        if (!sMenu.APressMuted)\n            PlaySE(SE_SELECT);\n        return sMenu.cursorPos;\n    }\n    else if (JOY_NEW(B_BUTTON))\n    {\n        return MENU_B_PRESSED;\n    }\n    else if (JOY_NEW(DPAD_UP))\n    {\n        if (oldPos != Menu_MoveCursorNoWrapAround(-1))\n            PlaySE(SE_SELECT);\n        return MENU_NOTHING_CHOSEN;\n    }\n    else if (JOY_NEW(DPAD_DOWN))\n    {\n        if (oldPos != Menu_MoveCursorNoWrapAround(1))\n            PlaySE(SE_SELECT);\n        return MENU_NOTHING_CHOSEN;\n    }\n\n    return MENU_NOTHING_CHOSEN;",
+      "callsTo": [
+        "JOY_NEW",
+        "Menu_MoveCursorNoWrapAround",
+        "PlaySE"
+      ],
+      "lineCount": 26
+    },
+    "ProcessMenuInput_other": {
+      "returnType": "s8",
+      "signature": "s8 ProcessMenuInput_other(void)",
+      "paramsRaw": "void",
+      "body": "if (JOY_NEW(A_BUTTON))\n    {\n        if (!sMenu.APressMuted)\n            PlaySE(SE_SELECT);\n        return sMenu.cursorPos;\n    }\n    else if (JOY_NEW(B_BUTTON))\n    {\n        return MENU_B_PRESSED;\n    }\n    else if ((JOY_REPEAT(DPAD_ANY)) == DPAD_UP)\n    {\n        PlaySE(SE_SELECT);\n        Menu_MoveCursor(-1);\n        return MENU_NOTHING_CHOSEN;\n    }\n    else if ((JOY_REPEAT(DPAD_ANY)) == DPAD_DOWN)\n    {\n        PlaySE(SE_SELECT);\n        Menu_MoveCursor(1);\n        return MENU_NOTHING_CHOSEN;\n    }\n\n    return MENU_NOTHING_CHOSEN;",
+      "callsTo": [
+        "JOY_NEW",
+        "JOY_REPEAT",
+        "Menu_MoveCursor",
+        "PlaySE"
+      ],
+      "lineCount": 24
+    },
+    "Menu_ProcessInputNoWrapAround_other": {
+      "returnType": "s8",
+      "signature": "s8 Menu_ProcessInputNoWrapAround_other(void)",
+      "paramsRaw": "void",
+      "body": "u8 oldPos = sMenu.cursorPos;\n\n    if (JOY_NEW(A_BUTTON))\n    {\n        if (!sMenu.APressMuted)\n            PlaySE(SE_SELECT);\n        return sMenu.cursorPos;\n    }\n    else if (JOY_NEW(B_BUTTON))\n    {\n        return MENU_B_PRESSED;\n    }\n    else if (JOY_REPEAT(DPAD_ANY) == DPAD_UP)\n    {\n        if (oldPos != Menu_MoveCursorNoWrapAround(-1))\n            PlaySE(SE_SELECT);\n        return MENU_NOTHING_CHOSEN;\n    }\n    else if (JOY_REPEAT(DPAD_ANY) == DPAD_DOWN)\n    {\n        if (oldPos != Menu_MoveCursorNoWrapAround(1))\n            PlaySE(SE_SELECT);\n        return MENU_NOTHING_CHOSEN;\n    }\n\n    return MENU_NOTHING_CHOSEN;",
+      "callsTo": [
+        "JOY_NEW",
+        "JOY_REPEAT",
+        "Menu_MoveCursorNoWrapAround",
+        "PlaySE"
+      ],
+      "lineCount": 26
+    },
+    "PrintMenuActionTextsAtPos": {
+      "returnType": "void",
+      "signature": "void PrintMenuActionTextsAtPos(u8 windowId, u8 fontId, u8 left, u8 top, u8 lineHeight, u8 itemCount, const struct MenuAction *menuActions)",
+      "paramsRaw": "u8 windowId, u8 fontId, u8 left, u8 top, u8 lineHeight, u8 itemCount, const struct MenuAction *menuActions",
+      "body": "u8 i;\n    for (i = 0; i < itemCount; i++)\n        AddTextPrinterParameterized(windowId, fontId, menuActions[i].text, left, (lineHeight * i) + top, TEXT_SKIP_DRAW, NULL);\n    CopyWindowToVram(windowId, COPYWIN_GFX);",
+      "callsTo": [
+        "AddTextPrinterParameterized",
+        "CopyWindowToVram"
+      ],
+      "lineCount": 4
+    },
+    "PrintMenuActionTexts": {
+      "returnType": "void",
+      "signature": "void PrintMenuActionTexts(u8 windowId, u8 fontId, u8 left, u8 top, u8 letterSpacing, u8 lineHeight, u8 itemCount, const struct MenuAction *menuActions, const u8 *actionIds)",
+      "paramsRaw": "u8 windowId, u8 fontId, u8 left, u8 top, u8 letterSpacing, u8 lineHeight, u8 itemCount, const struct MenuAction *menuActions, const u8 *actionIds",
+      "body": "u8 i;\n    struct TextPrinterTemplate printer;\n\n    printer.windowId = windowId;\n    printer.fontId = fontId;\n    printer.fgColor = GetFontAttribute(fontId, FONTATTR_COLOR_FOREGROUND);\n    printer.bgColor = GetFontAttribute(fontId, FONTATTR_COLOR_BACKGROUND);\n    printer.shadowColor = GetFontAttribute(fontId, FONTATTR_COLOR_SHADOW);\n    printer.unk = GetFontAttribute(fontId, FONTATTR_UNKNOWN);\n    printer.letterSpacing = letterSpacing;\n    printer.lineSpacing = GetFontAttribute(fontId, FONTATTR_LINE_SPACING);\n    printer.x = left;\n    printer.currentX = left;\n\n    for (i = 0; i < itemCount; i++)\n    {\n        printer.currentChar = menuActions[actionIds[i]].text;\n        printer.y = (lineHeight * i) + top;\n        printer.currentY = printer.y;\n        AddTextPrinter(&printer, TEXT_SKIP_DRAW, NULL);\n    }\n\n    CopyWindowToVram(windowId, COPYWIN_GFX);",
+      "callsTo": [
+        "AddTextPrinter",
+        "CopyWindowToVram",
+        "GetFontAttribute"
+      ],
+      "lineCount": 23
+    },
+    "SetWindowTemplateFields": {
+      "returnType": "void",
+      "signature": "void SetWindowTemplateFields(struct WindowTemplate *template, u8 bg, u8 left, u8 top, u8 width, u8 height, u8 paletteNum, u16 baseBlock)",
+      "paramsRaw": "struct WindowTemplate *template, u8 bg, u8 left, u8 top, u8 width, u8 height, u8 paletteNum, u16 baseBlock",
+      "body": "template->bg = bg;\n    template->tilemapLeft = left;\n    template->tilemapTop = top;\n    template->width = width;\n    template->height = height;\n    template->paletteNum = paletteNum;\n    template->baseBlock = baseBlock;",
+      "callsTo": [],
+      "lineCount": 7
+    },
+    "CreateWindowTemplate": {
+      "returnType": "struct WindowTemplate",
+      "signature": "struct WindowTemplate CreateWindowTemplate(u8 bg, u8 left, u8 top, u8 width, u8 height, u8 paletteNum, u16 baseBlock)",
+      "paramsRaw": "u8 bg, u8 left, u8 top, u8 width, u8 height, u8 paletteNum, u16 baseBlock",
+      "body": "struct WindowTemplate template;\n    SetWindowTemplateFields(&template, bg, left, top, width, height, paletteNum, baseBlock);\n    return template;",
+      "callsTo": [
+        "SetWindowTemplateFields"
+      ],
+      "lineCount": 3
+    },
+    "AddWindowParameterized": {
+      "returnType": "u16",
+      "signature": "u16 AddWindowParameterized(u8 bg, u8 left, u8 top, u8 width, u8 height, u8 paletteNum, u16 baseBlock)",
+      "paramsRaw": "u8 bg, u8 left, u8 top, u8 width, u8 height, u8 paletteNum, u16 baseBlock",
+      "body": "struct WindowTemplate template;\n    SetWindowTemplateFields(&template, bg, left, top, width, height, paletteNum, baseBlock);\n    return AddWindow(&template);",
+      "callsTo": [
+        "AddWindow",
+        "SetWindowTemplateFields"
+      ],
+      "lineCount": 3
+    },
+    "CreateYesNoMenuAtPos": {
+      "returnType": "void",
+      "signature": "static void CreateYesNoMenuAtPos(const struct WindowTemplate *window, u8 fontId, u8 left, u8 top, u16 baseTileNum, u8 paletteNum, u8 initialCursorPos)",
+      "paramsRaw": "const struct WindowTemplate *window, u8 fontId, u8 left, u8 top, u16 baseTileNum, u8 paletteNum, u8 initialCursorPos",
+      "body": "struct TextPrinterTemplate printer;\n\n    sYesNoWindowId = AddWindow(window);\n    DrawStdFrameWithCustomTileAndPalette(sYesNoWindowId, TRUE, baseTileNum, paletteNum);\n\n    printer.currentChar = gText_YesNo;\n    printer.windowId = sYesNoWindowId;\n    printer.fontId = fontId;\n    printer.x = GetFontAttribute(fontId, FONTATTR_MAX_LETTER_WIDTH) + left;\n    printer.y = top;\n    printer.currentX = printer.x;\n    printer.currentY = printer.y;\n    printer.fgColor = GetFontAttribute(fontId, FONTATTR_COLOR_FOREGROUND);\n    printer.bgColor = GetFontAttribute(fontId, FONTATTR_COLOR_BACKGROUND);\n    printer.shadowColor = GetFontAttribute(fontId, FONTATTR_COLOR_SHADOW);\n    printer.unk = GetFontAttribute(fontId, FONTATTR_UNKNOWN);\n    printer.letterSpacing = GetFontAttribute(fontId, FONTATTR_LETTER_SPACING);\n    printer.lineSpacing = GetFontAttribute(fontId, FONTATTR_LINE_SPACING);\n\n    AddTextPrinter(&printer, TEXT_SKIP_DRAW, NULL);\n\n    InitMenuNormal(sYesNoWindowId, fontId, left, top, GetFontAttribute(fontId, FONTATTR_MAX_LETTER_HEIGHT), 2, initialCursorPos);",
+      "callsTo": [
+        "AddTextPrinter",
+        "AddWindow",
+        "DrawStdFrameWithCustomTileAndPalette",
+        "GetFontAttribute",
+        "InitMenuNormal"
+      ],
+      "lineCount": 22
+    },
+    "Menu_ProcessInputNoWrapClearOnChoose": {
+      "returnType": "s8",
+      "signature": "s8 Menu_ProcessInputNoWrapClearOnChoose(void)",
+      "paramsRaw": "void",
+      "body": "s8 result = Menu_ProcessInputNoWrap();\n    if (result != MENU_NOTHING_CHOSEN)\n        EraseYesNoWindow();\n    return result;",
+      "callsTo": [
+        "EraseYesNoWindow",
+        "Menu_ProcessInputNoWrap"
+      ],
+      "lineCount": 4
+    },
+    "EraseYesNoWindow": {
+      "returnType": "void",
+      "signature": "void EraseYesNoWindow(void)",
+      "paramsRaw": "void",
+      "body": "ClearStdWindowAndFrameToTransparent(sYesNoWindowId, TRUE);\n    RemoveWindow(sYesNoWindowId);",
+      "callsTo": [
+        "ClearStdWindowAndFrameToTransparent",
+        "RemoveWindow"
+      ],
+      "lineCount": 2
+    },
+    "PrintMenuActionGridText": {
+      "returnType": "void",
+      "signature": "static void PrintMenuActionGridText(u8 windowId, u8 fontId, u8 left, u8 top, u8 width, u8 height, u8 columns, u8 rows, const struct MenuAction *menuActions)",
+      "paramsRaw": "u8 windowId, u8 fontId, u8 left, u8 top, u8 width, u8 height, u8 columns, u8 rows, const struct MenuAction *menuActions",
+      "body": "u8 i;\n    u8 j;\n    for (i = 0; i < rows; i++)\n    {\n        for (j = 0; j < columns; j++)\n            AddTextPrinterParameterized(windowId, fontId, menuActions[(i * columns) + j].text, (width * j) + left, (height * i) + top, TEXT_SKIP_DRAW, NULL);\n    }\n    CopyWindowToVram(windowId, COPYWIN_GFX);",
+      "callsTo": [
+        "AddTextPrinterParameterized",
+        "CopyWindowToVram"
+      ],
+      "lineCount": 8
+    },
+    "PrintMenuActionGrid": {
+      "returnType": "void",
+      "signature": "void PrintMenuActionGrid(u8 windowId, u8 fontId, u8 left, u8 top, u8 optionWidth, u8 horizontalCount, u8 verticalCount, const struct MenuAction *menuActions, const u8 *actionIds)",
+      "paramsRaw": "u8 windowId, u8 fontId, u8 left, u8 top, u8 optionWidth, u8 horizontalCount, u8 verticalCount, const struct MenuAction *menuActions, const u8 *actionIds",
+      "body": "u8 i;\n    u8 j;\n    struct TextPrinterTemplate printer;\n\n    printer.windowId = windowId;\n    printer.fontId = fontId;\n    printer.fgColor = GetFontAttribute(fontId, FONTATTR_COLOR_FOREGROUND);\n    printer.bgColor = GetFontAttribute(fontId, FONTATTR_COLOR_BACKGROUND);\n    printer.shadowColor = GetFontAttribute(fontId, FONTATTR_COLOR_SHADOW);\n    printer.unk = GetFontAttribute(fontId, FONTATTR_UNKNOWN);\n    printer.letterSpacing = GetFontAttribute(fontId, FONTATTR_LETTER_SPACING);\n    printer.lineSpacing = GetFontAttribute(fontId, FONTATTR_LINE_SPACING);\n\n    for (i = 0; i < verticalCount; i++)\n    {\n        for (j = 0; j < horizontalCount; j++)\n        {\n            printer.currentChar = menuActions[actionIds[(horizontalCount * i) + j]].text;\n            printer.x = (optionWidth * j) + left;\n            printer.y = (GetFontAttribute(fontId, FONTATTR_MAX_LETTER_HEIGHT) * i) + top;\n            printer.currentX = printer.x;\n            printer.currentY = printer.y;\n            AddTextPrinter(&printer, TEXT_SKIP_DRAW, NULL);\n        }\n    }\n\n    CopyWindowToVram(windowId, COPYWIN_GFX);",
+      "callsTo": [
+        "AddTextPrinter",
+        "CopyWindowToVram",
+        "GetFontAttribute"
+      ],
+      "lineCount": 27
+    },
+    "InitMenuGrid": {
+      "returnType": "u8",
+      "signature": "static u8 InitMenuGrid(u8 windowId, u8 fontId, u8 left, u8 top, u8 optionWidth, u8 optionHeight, u8 columns, u8 rows, u8 numChoices, u8 cursorPos)",
+      "paramsRaw": "u8 windowId, u8 fontId, u8 left, u8 top, u8 optionWidth, u8 optionHeight, u8 columns, u8 rows, u8 numChoices, u8 cursorPos",
+      "body": "s32 pos;\n\n    sMenu.left = left;\n    sMenu.top = top;\n    sMenu.minCursorPos = 0;\n    sMenu.maxCursorPos = numChoices - 1;\n    sMenu.windowId = windowId;\n    sMenu.fontId = fontId;\n    sMenu.optionWidth = optionWidth;\n    sMenu.optionHeight = optionHeight;\n    sMenu.columns = columns;\n    sMenu.rows = rows;\n\n    pos = cursorPos;\n\n    if (pos < 0 || pos > sMenu.maxCursorPos)\n        sMenu.cursorPos = 0;\n    else\n        sMenu.cursorPos = pos;\n\n     \n    ChangeMenuGridCursorPosition(MENU_CURSOR_DELTA_NONE, MENU_CURSOR_DELTA_NONE);\n    return sMenu.cursorPos;",
+      "callsTo": [
+        "ChangeMenuGridCursorPosition"
+      ],
+      "lineCount": 23
+    },
+    "MoveMenuGridCursor": {
+      "returnType": "void",
+      "signature": "static void MoveMenuGridCursor(u8 oldCursorPos, u8 newCursorPos)",
+      "paramsRaw": "u8 oldCursorPos, u8 newCursorPos",
+      "body": "u8 cursorWidth = GetMenuCursorDimensionByFont(sMenu.fontId, 0);\n    u8 cursorHeight = GetMenuCursorDimensionByFont(sMenu.fontId, 1);\n\n    u8 xPos = (oldCursorPos % sMenu.columns) * sMenu.optionWidth + sMenu.left;\n    u8 yPos = (oldCursorPos / sMenu.columns) * sMenu.optionHeight + sMenu.top;\n    FillWindowPixelRect(sMenu.windowId, PIXEL_FILL(1), xPos, yPos, cursorWidth, cursorHeight);\n\n    xPos = (newCursorPos % sMenu.columns) * sMenu.optionWidth + sMenu.left;\n    yPos = (newCursorPos / sMenu.columns) * sMenu.optionHeight + sMenu.top;\n    AddTextPrinterParameterized(sMenu.windowId, sMenu.fontId, gText_SelectorArrow3, xPos, yPos, 0, 0);",
+      "callsTo": [
+        "AddTextPrinterParameterized",
+        "FillWindowPixelRect",
+        "GetMenuCursorDimensionByFont",
+        "PIXEL_FILL"
+      ],
+      "lineCount": 10
+    },
+    "ChangeMenuGridCursorPosition": {
+      "returnType": "u8",
+      "signature": "u8 ChangeMenuGridCursorPosition(s8 deltaX, s8 deltaY)",
+      "paramsRaw": "s8 deltaX, s8 deltaY",
+      "body": "u8 oldPos = sMenu.cursorPos;\n\n    if (deltaX != 0)\n    {\n        if ((sMenu.cursorPos % sMenu.columns) + deltaX < 0)\n            sMenu.cursorPos += sMenu.columns - 1;\n        else if ((sMenu.cursorPos % sMenu.columns) + deltaX >= sMenu.columns)\n            sMenu.cursorPos = (sMenu.cursorPos / sMenu.columns) * sMenu.columns;\n        else\n            sMenu.cursorPos += deltaX;\n    }\n\n    if (deltaY != 0)\n    {\n        if ((sMenu.cursorPos / sMenu.columns) + deltaY < 0)\n            sMenu.cursorPos += sMenu.columns * (sMenu.rows - 1);\n        else if ((sMenu.cursorPos / sMenu.columns) + deltaY >= sMenu.rows)\n            sMenu.cursorPos -= sMenu.columns * (sMenu.rows - 1);\n        else\n            sMenu.cursorPos += (sMenu.columns * deltaY);\n    }\n\n    if (sMenu.cursorPos > sMenu.maxCursorPos)\n    {\n        sMenu.cursorPos = oldPos;\n        return sMenu.cursorPos;\n    }\n    else\n    {\n        MoveMenuGridCursor(oldPos, sMenu.cursorPos);\n        return sMenu.cursorPos;\n    }",
+      "callsTo": [
+        "MoveMenuGridCursor"
+      ],
+      "lineCount": 32
+    },
+    "ChangeGridMenuCursorPosition": {
+      "returnType": "u8",
+      "signature": "u8 ChangeGridMenuCursorPosition(s8 deltaX, s8 deltaY)",
+      "paramsRaw": "s8 deltaX, s8 deltaY",
+      "body": "u8 oldPos = sMenu.cursorPos;\n\n    if (deltaX != 0)\n    {\n        if (((sMenu.cursorPos % sMenu.columns) + deltaX >= 0) &&\n        ((sMenu.cursorPos % sMenu.columns) + deltaX < sMenu.columns))\n        {\n            sMenu.cursorPos += deltaX;\n        }\n    }\n\n    if (deltaY != 0)\n    {\n        if (((sMenu.cursorPos / sMenu.columns) + deltaY >= 0) &&\n        ((sMenu.cursorPos / sMenu.columns) + deltaY < sMenu.rows))\n        {\n            sMenu.cursorPos += (sMenu.columns * deltaY);\n        }\n    }\n\n    if (sMenu.cursorPos > sMenu.maxCursorPos)\n    {\n        sMenu.cursorPos = oldPos;\n        return sMenu.cursorPos;\n    }\n    else\n    {\n        MoveMenuGridCursor(oldPos, sMenu.cursorPos);\n        return sMenu.cursorPos;\n    }",
+      "callsTo": [
+        "MoveMenuGridCursor"
+      ],
+      "lineCount": 30
+    },
+    "Menu_ProcessGridInput": {
+      "returnType": "s8",
+      "signature": "s8 Menu_ProcessGridInput(void)",
+      "paramsRaw": "void",
+      "body": "u8 oldPos = sMenu.cursorPos;\n\n    if (JOY_NEW(A_BUTTON))\n    {\n        PlaySE(SE_SELECT);\n        return sMenu.cursorPos;\n    }\n    else if (JOY_NEW(B_BUTTON))\n    {\n        return MENU_B_PRESSED;\n    }\n    else if (JOY_NEW(DPAD_UP))\n    {\n        if (oldPos != ChangeGridMenuCursorPosition(0, -1))\n            PlaySE(SE_SELECT);\n        return MENU_NOTHING_CHOSEN;\n    }\n    else if (JOY_NEW(DPAD_DOWN))\n    {\n        if (oldPos != ChangeGridMenuCursorPosition(0, 1))\n            PlaySE(SE_SELECT);\n        return MENU_NOTHING_CHOSEN;\n    }\n    else if (JOY_NEW(DPAD_LEFT) || GetLRKeysPressed() == MENU_L_PRESSED)\n    {\n        if (oldPos != ChangeGridMenuCursorPosition(-1, 0))\n            PlaySE(SE_SELECT);\n        return MENU_NOTHING_CHOSEN;\n    }\n    else if (JOY_NEW(DPAD_RIGHT) || GetLRKeysPressed() == MENU_R_PRESSED)\n    {\n        if (oldPos != ChangeGridMenuCursorPosition(1, 0))\n            PlaySE(SE_SELECT);\n        return MENU_NOTHING_CHOSEN;\n    }\n\n    return MENU_NOTHING_CHOSEN;",
+      "callsTo": [
+        "ChangeGridMenuCursorPosition",
+        "GetLRKeysPressed",
+        "JOY_NEW",
+        "PlaySE"
+      ],
+      "lineCount": 37
+    },
+    "InitMenuInUpperLeftCorner": {
+      "returnType": "u8",
+      "signature": "u8 InitMenuInUpperLeftCorner(u8 windowId, u8 itemCount, u8 initialCursorPos, bool8 APressMuted)",
+      "paramsRaw": "u8 windowId, u8 itemCount, u8 initialCursorPos, bool8 APressMuted",
+      "body": "s32 pos;\n\n    sMenu.left = 0;\n    sMenu.top = 1;\n    sMenu.minCursorPos = 0;\n    sMenu.maxCursorPos = itemCount - 1;\n    sMenu.windowId = windowId;\n    sMenu.fontId = FONT_NORMAL;\n    sMenu.optionHeight = 16;\n    sMenu.APressMuted = APressMuted;\n\n    pos = initialCursorPos;\n\n    if (pos < 0 || pos > sMenu.maxCursorPos)\n        sMenu.cursorPos = 0;\n    else\n        sMenu.cursorPos = pos;\n\n    return Menu_MoveCursor(0);",
+      "callsTo": [
+        "Menu_MoveCursor"
+      ],
+      "lineCount": 19
+    },
+    "InitMenuInUpperLeftCornerNormal": {
+      "returnType": "u8",
+      "signature": "u8 InitMenuInUpperLeftCornerNormal(u8 windowId, u8 itemCount, u8 initialCursorPos)",
+      "paramsRaw": "u8 windowId, u8 itemCount, u8 initialCursorPos",
+      "body": "return InitMenuInUpperLeftCorner(windowId, itemCount, initialCursorPos, FALSE);",
+      "callsTo": [
+        "InitMenuInUpperLeftCorner"
+      ],
+      "lineCount": 1
+    },
+    "PrintMenuTable": {
+      "returnType": "void",
+      "signature": "void PrintMenuTable(u8 windowId, u8 itemCount, const struct MenuAction *menuActions)",
+      "paramsRaw": "u8 windowId, u8 itemCount, const struct MenuAction *menuActions",
+      "body": "u32 i;\n\n    for (i = 0; i < itemCount; i++)\n        AddTextPrinterParameterized(windowId, 1, menuActions[i].text, 8, (i * 16) + 1, TEXT_SKIP_DRAW, NULL);\n\n    CopyWindowToVram(windowId, COPYWIN_GFX);",
+      "callsTo": [
+        "AddTextPrinterParameterized",
+        "CopyWindowToVram"
+      ],
+      "lineCount": 6
+    },
+    "PrintMenuActionTextsInUpperLeftCorner": {
+      "returnType": "void",
+      "signature": "void PrintMenuActionTextsInUpperLeftCorner(u8 windowId, u8 itemCount, const struct MenuAction *menuActions, const u8 *actionIds)",
+      "paramsRaw": "u8 windowId, u8 itemCount, const struct MenuAction *menuActions, const u8 *actionIds",
+      "body": "u8 i;\n    struct TextPrinterTemplate printer;\n\n    printer.windowId = windowId;\n    printer.fontId = FONT_NORMAL;\n    printer.fgColor = GetFontAttribute(FONT_NORMAL, FONTATTR_COLOR_FOREGROUND);\n    printer.bgColor = GetFontAttribute(FONT_NORMAL, FONTATTR_COLOR_BACKGROUND);\n    printer.shadowColor = GetFontAttribute(FONT_NORMAL, FONTATTR_COLOR_SHADOW);\n    printer.unk = GetFontAttribute(FONT_NORMAL, FONTATTR_UNKNOWN);\n    printer.letterSpacing = 0;\n    printer.lineSpacing = 0;\n    printer.x = 8;\n    printer.currentX = 8;\n\n    for (i = 0; i < itemCount; i++)\n    {\n        printer.currentChar = menuActions[actionIds[i]].text;\n        printer.y = (i * 16) + 1;\n        printer.currentY = (i * 16) + 1;\n        AddTextPrinter(&printer, TEXT_SKIP_DRAW, NULL);\n    }\n\n    CopyWindowToVram(windowId, COPYWIN_GFX);",
+      "callsTo": [
+        "AddTextPrinter",
+        "CopyWindowToVram",
+        "GetFontAttribute"
+      ],
+      "lineCount": 23
+    },
+    "CreateYesNoMenu": {
+      "returnType": "void",
+      "signature": "void CreateYesNoMenu(const struct WindowTemplate *window, u16 baseTileNum, u8 paletteNum, u8 initialCursorPos)",
+      "paramsRaw": "const struct WindowTemplate *window, u16 baseTileNum, u8 paletteNum, u8 initialCursorPos",
+      "body": "struct TextPrinterTemplate printer;\n\n    sYesNoWindowId = AddWindow(window);\n    DrawStdFrameWithCustomTileAndPalette(sYesNoWindowId, TRUE, baseTileNum, paletteNum);\n\n    printer.currentChar = gText_YesNo;\n    printer.windowId = sYesNoWindowId;\n    printer.fontId = FONT_NORMAL;\n    printer.x = 8;\n    printer.y = 1;\n    printer.currentX = printer.x;\n    printer.currentY = printer.y;\n    printer.fgColor = GetFontAttribute(FONT_NORMAL, FONTATTR_COLOR_FOREGROUND);\n    printer.bgColor = GetFontAttribute(FONT_NORMAL, FONTATTR_COLOR_BACKGROUND);\n    printer.shadowColor = GetFontAttribute(FONT_NORMAL, FONTATTR_COLOR_SHADOW);\n    printer.unk = GetFontAttribute(FONT_NORMAL, FONTATTR_UNKNOWN);\n    printer.letterSpacing = 0;\n    printer.lineSpacing = 0;\n\n    AddTextPrinter(&printer, TEXT_SKIP_DRAW, NULL);\n    InitMenuInUpperLeftCornerNormal(sYesNoWindowId, 2, initialCursorPos);",
+      "callsTo": [
+        "AddTextPrinter",
+        "AddWindow",
+        "DrawStdFrameWithCustomTileAndPalette",
+        "GetFontAttribute",
+        "InitMenuInUpperLeftCornerNormal"
+      ],
+      "lineCount": 21
+    },
+    "PrintMenuGridTable": {
+      "returnType": "void",
+      "signature": "void PrintMenuGridTable(u8 windowId, u8 optionWidth, u8 columns, u8 rows, const struct MenuAction *menuActions)",
+      "paramsRaw": "u8 windowId, u8 optionWidth, u8 columns, u8 rows, const struct MenuAction *menuActions",
+      "body": "u32 i, j;\n\n    for (i = 0; i < rows; i++)\n    {\n        for (j = 0; j < columns; j++)\n            AddTextPrinterParameterized(windowId, 1, menuActions[(i * columns) + j].text, (optionWidth * j) + 8, (i * 16) + 1, TEXT_SKIP_DRAW, NULL);\n    }\n    CopyWindowToVram(windowId, COPYWIN_GFX);",
+      "callsTo": [
+        "AddTextPrinterParameterized",
+        "CopyWindowToVram"
+      ],
+      "lineCount": 8
+    },
+    "InitMenuActionGrid": {
+      "returnType": "u8",
+      "signature": "u8 InitMenuActionGrid(u8 windowId, u8 optionWidth, u8 columns, u8 rows, u8 initialCursorPos)",
+      "paramsRaw": "u8 windowId, u8 optionWidth, u8 columns, u8 rows, u8 initialCursorPos",
+      "body": "s32 pos;\n\n    sMenu.left = 0;\n    sMenu.top = 1;\n    sMenu.minCursorPos = 0;\n    sMenu.maxCursorPos = (columns * rows) - 1;\n    sMenu.windowId = windowId;\n    sMenu.fontId = FONT_NORMAL;\n    sMenu.optionWidth = optionWidth;\n    sMenu.optionHeight = 16;\n    sMenu.columns = columns;\n    sMenu.rows = rows;\n\n    pos = initialCursorPos;\n\n    if (pos < 0 || pos > sMenu.maxCursorPos)\n        sMenu.cursorPos = 0;\n    else\n        sMenu.cursorPos = pos;\n\n     \n    ChangeMenuGridCursorPosition(MENU_CURSOR_DELTA_NONE, MENU_CURSOR_DELTA_NONE);\n    return sMenu.cursorPos;",
+      "callsTo": [
+        "ChangeMenuGridCursorPosition"
+      ],
+      "lineCount": 23
+    },
+    "ClearScheduledBgCopiesToVram": {
+      "returnType": "void",
+      "signature": "void ClearScheduledBgCopiesToVram(void)",
+      "paramsRaw": "void",
+      "body": "memset(sScheduledBgCopiesToVram, 0, sizeof(sScheduledBgCopiesToVram));",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "ScheduleBgCopyTilemapToVram": {
+      "returnType": "void",
+      "signature": "void ScheduleBgCopyTilemapToVram(u8 bgId)",
+      "paramsRaw": "u8 bgId",
+      "body": "sScheduledBgCopiesToVram[bgId] = TRUE;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "DoScheduledBgTilemapCopiesToVram": {
+      "returnType": "void",
+      "signature": "void DoScheduledBgTilemapCopiesToVram(void)",
+      "paramsRaw": "void",
+      "body": "if (sScheduledBgCopiesToVram[0] == TRUE)\n    {\n        CopyBgTilemapBufferToVram(0);\n        sScheduledBgCopiesToVram[0] = FALSE;\n    }\n    if (sScheduledBgCopiesToVram[1] == TRUE)\n    {\n        CopyBgTilemapBufferToVram(1);\n        sScheduledBgCopiesToVram[1] = FALSE;\n    }\n    if (sScheduledBgCopiesToVram[2] == TRUE)\n    {\n        CopyBgTilemapBufferToVram(2);\n        sScheduledBgCopiesToVram[2] = FALSE;\n    }\n    if (sScheduledBgCopiesToVram[3] == TRUE)\n    {\n        CopyBgTilemapBufferToVram(3);\n        sScheduledBgCopiesToVram[3] = FALSE;\n    }",
+      "callsTo": [
+        "CopyBgTilemapBufferToVram"
+      ],
+      "lineCount": 20
+    },
+    "ResetTempTileDataBuffers": {
+      "returnType": "void",
+      "signature": "void ResetTempTileDataBuffers(void)",
+      "paramsRaw": "void",
+      "body": "int i;\n    for (i = 0; i < (int)ARRAY_COUNT(sTempTileDataBuffer); i++)\n        sTempTileDataBuffer[i] = NULL;\n    sTempTileDataBufferIdx = 0;",
+      "callsTo": [
+        "ARRAY_COUNT"
+      ],
+      "lineCount": 4
+    },
+    "FreeTempTileDataBuffersIfPossible": {
+      "returnType": "bool8",
+      "signature": "bool8 FreeTempTileDataBuffersIfPossible(void)",
+      "paramsRaw": "void",
+      "body": "int i;\n\n    if (!IsDma3ManagerBusyWithBgCopy())\n    {\n        if (sTempTileDataBufferIdx)\n        {\n            for (i = 0; i < sTempTileDataBufferIdx; i++)\n                FREE_AND_SET_NULL(sTempTileDataBuffer[i]);\n            sTempTileDataBufferIdx = 0;\n        }\n        return FALSE;\n    }\n    else\n    {\n        return TRUE;\n    }",
+      "callsTo": [
+        "FREE_AND_SET_NULL",
+        "IsDma3ManagerBusyWithBgCopy"
+      ],
+      "lineCount": 16
+    },
+    "DecompressAndLoadBgGfxUsingHeap": {
+      "returnType": "void",
+      "signature": "void DecompressAndLoadBgGfxUsingHeap(u8 bgId, const void *src, u32 size, u16 offset, u8 mode)",
+      "paramsRaw": "u8 bgId, const void *src, u32 size, u16 offset, u8 mode",
+      "body": "u32 sizeOut;\n    void *ptr = malloc_and_decompress(src, &sizeOut);\n    if (!size)\n        size = sizeOut;\n    if (ptr)\n    {\n        u8 taskId = CreateTask(task_free_buf_after_copying_tile_data_to_vram, 0);\n        gTasks[taskId].data[0] = copy_decompressed_tile_data_to_vram(bgId, ptr, size, offset, mode);\n        SetWordTaskArg(taskId, 1, (u32)ptr);\n    }",
+      "callsTo": [
+        "CreateTask",
+        "SetWordTaskArg"
+      ],
+      "lineCount": 10
+    },
+    "task_free_buf_after_copying_tile_data_to_vram": {
+      "returnType": "void",
+      "signature": "void task_free_buf_after_copying_tile_data_to_vram(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "if (!CheckForSpaceForDma3Request(gTasks[taskId].data[0]))\n    {\n        Free((void *)GetWordTaskArg(taskId, 1));\n        DestroyTask(taskId);\n    }",
+      "callsTo": [
+        "CheckForSpaceForDma3Request",
+        "DestroyTask",
+        "Free",
+        "GetWordTaskArg"
+      ],
+      "lineCount": 5
+    },
+    "copy_decompressed_tile_data_to_vram": {
+      "returnType": "u16",
+      "signature": "u16 copy_decompressed_tile_data_to_vram(u8 bgId, const void *src, u16 size, u16 offset, u8 mode)",
+      "paramsRaw": "u8 bgId, const void *src, u16 size, u16 offset, u8 mode",
+      "body": "switch (mode)\n    {\n        case 0:\n            return LoadBgTiles(bgId, src, size, offset);\n        case 1:\n            return LoadBgTilemap(bgId, src, size, offset);\n        default:\n            return -1;\n    }",
+      "callsTo": [
+        "LoadBgTilemap",
+        "LoadBgTiles"
+      ],
+      "lineCount": 9
+    },
+    "SetBgTilemapPalette": {
+      "returnType": "void",
+      "signature": "void SetBgTilemapPalette(u8 bgId, u8 left, u8 top, u8 width, u8 height, u8 palette)",
+      "paramsRaw": "u8 bgId, u8 left, u8 top, u8 width, u8 height, u8 palette",
+      "body": "u8 i;\n    u8 j;\n    u16 *ptr = GetBgTilemapBuffer(bgId);\n\n    for (i = top; i < top + height; i++)\n    {\n        for (j = left; j < left + width; j++)\n        {\n            ptr[(i * 32) + j] = (ptr[(i * 32) + j] & 0xFFF) | (palette << 12);\n        }\n    }",
+      "callsTo": [
+        "GetBgTilemapBuffer"
+      ],
+      "lineCount": 11
+    },
+    "CopyToBufferFromBgTilemap": {
+      "returnType": "void",
+      "signature": "void CopyToBufferFromBgTilemap(u8 bgId, u16 *dest, u8 left, u8 top, u8 width, u8 height)",
+      "paramsRaw": "u8 bgId, u16 *dest, u8 left, u8 top, u8 width, u8 height",
+      "body": "u8 i;\n    u8 j;\n    const u16 *src = GetBgTilemapBuffer(bgId);\n\n    for (i = 0; i < height; i++)\n    {\n        for (j = 0; j < width; j++)\n            dest[(i * width) + j] = src[(i + top) * 32 + j + left];\n    }",
+      "callsTo": [
+        "GetBgTilemapBuffer"
+      ],
+      "lineCount": 9
+    },
+    "AddValToTilemapBuffer": {
+      "returnType": "void",
+      "signature": "void AddValToTilemapBuffer(void *ptr, int delta, int width, int height, bool32 isAffine)",
+      "paramsRaw": "void *ptr, int delta, int width, int height, bool32 isAffine",
+      "body": "int i;\n    int area = width * height;\n    if (isAffine == TRUE)\n    {\n        u8 *as8BPP = ptr;\n        for (i = 0; i < area; i++)\n            as8BPP[i] += delta;\n    }\n    else\n    {\n         \n        u16 *as4BPP = ptr;\n        for (i = 0; i < area; i++)\n            as4BPP[i] = (as4BPP[i] & 0xFC00) | ((as4BPP[i] + delta) & 0x3FF);\n    }",
+      "callsTo": [],
+      "lineCount": 15
+    },
+    "ResetBgPositions": {
+      "returnType": "void",
+      "signature": "void ResetBgPositions(void)",
+      "paramsRaw": "void",
+      "body": "ChangeBgX(0, 0, BG_COORD_SET);\n    ChangeBgX(1, 0, BG_COORD_SET);\n    ChangeBgX(2, 0, BG_COORD_SET);\n    ChangeBgX(3, 0, BG_COORD_SET);\n    ChangeBgY(0, 0, BG_COORD_SET);\n    ChangeBgY(1, 0, BG_COORD_SET);\n    ChangeBgY(2, 0, BG_COORD_SET);\n    ChangeBgY(3, 0, BG_COORD_SET);",
+      "callsTo": [
+        "ChangeBgX",
+        "ChangeBgY"
+      ],
+      "lineCount": 8
+    },
+    "BgDmaFill": {
+      "returnType": "void",
+      "signature": "void BgDmaFill(u32 bg, u8 value, int offset, int size)",
+      "paramsRaw": "u32 bg, u8 value, int offset, int size",
+      "body": "int temp = (!GetBgAttribute(bg, BG_ATTR_PALETTEMODE)) ? 32 : 64;\n    void *addr = (void *)((GetBgAttribute(bg, BG_ATTR_CHARBASEINDEX) * 0x4000) + (GetBgAttribute(bg, BG_ATTR_BASETILE) + offset) * temp);\n    RequestDma3Fill(value << 24 | value << 16 | value << 8 | value, VRAM + addr, size * temp, 1);",
+      "callsTo": [
+        "GetBgAttribute",
+        "RequestDma3Fill"
+      ],
+      "lineCount": 3
+    },
+    "AddTextPrinterParameterized3": {
+      "returnType": "void",
+      "signature": "void AddTextPrinterParameterized3(u8 windowId, u8 fontId, u8 left, u8 top, const u8 *color, s8 speed, const u8 *str)",
+      "paramsRaw": "u8 windowId, u8 fontId, u8 left, u8 top, const u8 *color, s8 speed, const u8 *str",
+      "body": "struct TextPrinterTemplate printer;\n\n    printer.currentChar = str;\n    printer.windowId = windowId;\n    printer.fontId = fontId;\n    printer.x = left;\n    printer.y = top;\n    printer.currentX = printer.x;\n    printer.currentY = printer.y;\n    printer.letterSpacing = GetFontAttribute(fontId, FONTATTR_LETTER_SPACING);\n    printer.lineSpacing = GetFontAttribute(fontId, FONTATTR_LINE_SPACING);\n    printer.unk = 0;\n    printer.fgColor = color[1];\n    printer.bgColor = color[0];\n    printer.shadowColor = color[2];\n\n    AddTextPrinter(&printer, speed, NULL);",
+      "callsTo": [
+        "AddTextPrinter",
+        "GetFontAttribute"
+      ],
+      "lineCount": 17
+    },
+    "AddTextPrinterParameterized4": {
+      "returnType": "void",
+      "signature": "void AddTextPrinterParameterized4(u8 windowId, u8 fontId, u8 left, u8 top, u8 letterSpacing, u8 lineSpacing, const u8 *color, s8 speed, const u8 *str)",
+      "paramsRaw": "u8 windowId, u8 fontId, u8 left, u8 top, u8 letterSpacing, u8 lineSpacing, const u8 *color, s8 speed, const u8 *str",
+      "body": "struct TextPrinterTemplate printer;\n\n    printer.currentChar = str;\n    printer.windowId = windowId;\n    printer.fontId = fontId;\n    printer.x = left;\n    printer.y = top;\n    printer.currentX = printer.x;\n    printer.currentY = printer.y;\n    printer.letterSpacing = letterSpacing;\n    printer.lineSpacing = lineSpacing;\n    printer.unk = 0;\n    printer.fgColor = color[1];\n    printer.bgColor = color[0];\n    printer.shadowColor = color[2];\n\n    AddTextPrinter(&printer, speed, NULL);",
+      "callsTo": [
+        "AddTextPrinter"
+      ],
+      "lineCount": 17
+    },
+    "AddTextPrinterParameterized5": {
+      "returnType": "void",
+      "signature": "void AddTextPrinterParameterized5(u8 windowId, u8 fontId, const u8 *str, u8 left, u8 top, u8 speed, void (*callback)(struct TextPrinterTemplate *, u16), u8 letterSpacing, u8 lineSpacing)",
+      "paramsRaw": "u8 windowId, u8 fontId, const u8 *str, u8 left, u8 top, u8 speed, void (*callback)(struct TextPrinterTemplate *, u16), u8 letterSpacing, u8 lineSpacing",
+      "body": "struct TextPrinterTemplate printer;\n\n    printer.currentChar = str;\n    printer.windowId = windowId;\n    printer.fontId = fontId;\n    printer.x = left;\n    printer.y = top;\n    printer.currentX = left;\n    printer.currentY = top;\n    printer.letterSpacing = letterSpacing;\n    printer.lineSpacing = lineSpacing;\n    printer.unk = 0;\n\n    printer.fgColor = GetFontAttribute(fontId, FONTATTR_COLOR_FOREGROUND);\n    printer.bgColor = GetFontAttribute(fontId, FONTATTR_COLOR_BACKGROUND);\n    printer.shadowColor = GetFontAttribute(fontId, FONTATTR_COLOR_SHADOW);\n\n    AddTextPrinter(&printer, speed, callback);",
+      "callsTo": [
+        "AddTextPrinter",
+        "GetFontAttribute"
+      ],
+      "lineCount": 18
+    },
+    "PrintPlayerNameOnWindow": {
+      "returnType": "void",
+      "signature": "void PrintPlayerNameOnWindow(u8 windowId, const u8 *src, u16 x, u16 y)",
+      "paramsRaw": "u8 windowId, const u8 *src, u16 x, u16 y",
+      "body": "int count = 0;\n    while (gSaveBlock2Ptr->playerName[count] != EOS)\n        count++;\n\n    StringExpandPlaceholders(gStringVar4, src);\n\n    AddTextPrinterParameterized(windowId, 1, gStringVar4, x, y, TEXT_SKIP_DRAW, 0);",
+      "callsTo": [
+        "AddTextPrinterParameterized",
+        "StringExpandPlaceholders"
+      ],
+      "lineCount": 7
+    },
+    "ListMenuLoadStdPalAt": {
+      "returnType": "void",
+      "signature": "void ListMenuLoadStdPalAt(u8 palOffset, u8 palId)",
+      "paramsRaw": "u8 palOffset, u8 palId",
+      "body": "const u16 *palette;\n\n    switch (palId)\n    {\n        case 0:\n        default:\n            palette = gMenuInfoElements1_Pal;\n            break;\n        case 1:\n            palette = gMenuInfoElements2_Pal;\n            break;\n        case 2:\n            palette = gMenuInfoElements3_Pal;\n            break;\n    }\n\n    LoadPalette(palette, palOffset, PLTT_SIZE_4BPP);",
+      "callsTo": [
+        "LoadPalette"
+      ],
+      "lineCount": 17
+    },
+    "BlitMenuInfoIcon": {
+      "returnType": "void",
+      "signature": "void BlitMenuInfoIcon(u8 windowId, u8 iconId, u16 x, u16 y)",
+      "paramsRaw": "u8 windowId, u8 iconId, u16 x, u16 y",
+      "body": "BlitBitmapRectToWindow(windowId, &gMenuInfoElements_Gfx[sMenuInfoIcons[iconId].offset * 32], 0, 0, 128, 128, x, y, sMenuInfoIcons[iconId].width, sMenuInfoIcons[iconId].height);",
+      "callsTo": [
+        "BlitBitmapRectToWindow"
+      ],
+      "lineCount": 1
+    },
+    "BufferSaveMenuText": {
+      "returnType": "void",
+      "signature": "void BufferSaveMenuText(u8 textId, u8 *dest, u8 color)",
+      "paramsRaw": "u8 textId, u8 *dest, u8 color",
+      "body": "s32 curFlag;\n    s32 flagCount;\n    u8 *endOfString;\n    u8 *string = dest;\n\n    *(string++) = EXT_CTRL_CODE_BEGIN;\n    *(string++) = EXT_CTRL_CODE_COLOR;\n    *(string++) = color;\n    *(string++) = EXT_CTRL_CODE_BEGIN;\n    *(string++) = EXT_CTRL_CODE_SHADOW;\n    *(string++) = color + 1;\n\n    switch (textId)\n    {\n        case SAVE_MENU_NAME:\n            StringCopy(string, gSaveBlock2Ptr->playerName);\n            break;\n        case SAVE_MENU_CAUGHT:\n            if (IsNationalPokedexEnabled())\n                string = ConvertIntToDecimalStringN(string, GetNationalPokedexCount(FLAG_GET_CAUGHT), STR_CONV_MODE_LEFT_ALIGN, 3);\n            else\n                string = ConvertIntToDecimalStringN(string, GetHoennPokedexCount(FLAG_GET_CAUGHT), STR_CONV_MODE_LEFT_ALIGN, 3);\n            *string = EOS;\n            break;\n        case SAVE_MENU_PLAY_TIME:\n            string = ConvertIntToDecimalStringN(string, gSaveBlock2Ptr->playTimeHours, STR_CONV_MODE_LEFT_ALIGN, 3);\n            *(string++) = CHAR_COLON;\n            ConvertIntToDecimalStringN(string, gSaveBlock2Ptr->playTimeMinutes, STR_CONV_MODE_LEADING_ZEROS, 2);\n            break;\n        case SAVE_MENU_LOCATION:\n            GetMapNameGeneric(string, gMapHeader.regionMapSectionId);\n            break;\n        case SAVE_MENU_BADGES:\n            for (curFlag = FLAG_BADGE01_GET, flagCount = 0, endOfString = string + 1; curFlag < FLAG_BADGE01_GET + NUM_BADGES; curFlag++)\n            {\n                if (FlagGet(curFlag))\n                    flagCount++;\n            }\n            *string = flagCount + CHAR_0;\n            *endOfString = EOS;\n            break;\n    }",
+      "callsTo": [
+        "ConvertIntToDecimalStringN",
+        "FlagGet",
+        "GetHoennPokedexCount",
+        "GetMapNameGeneric",
+        "GetNationalPokedexCount",
+        "IsNationalPokedexEnabled",
+        "StringCopy"
+      ],
+      "lineCount": 42
+    }
+  }
+}

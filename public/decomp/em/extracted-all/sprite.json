@@ -1,0 +1,1001 @@
+{
+  "srcFile": "src/sprite.c",
+  "count": 102,
+  "functions": {
+    "ResetSpriteData": {
+      "returnType": "void",
+      "signature": "void ResetSpriteData(void)",
+      "paramsRaw": "void",
+      "body": "ResetOamRange(0, 128);\n    ResetAllSprites();\n    ClearSpriteCopyRequests();\n    ResetAffineAnimData();\n    FreeSpriteTileRanges();\n    gOamLimit = 64;\n    gReservedSpriteTileCount = 0;\n    AllocSpriteTiles(0);\n    gSpriteCoordOffsetX = 0;\n    gSpriteCoordOffsetY = 0;",
+      "callsTo": [
+        "AllocSpriteTiles",
+        "ClearSpriteCopyRequests",
+        "FreeSpriteTileRanges",
+        "ResetAffineAnimData",
+        "ResetAllSprites",
+        "ResetOamRange"
+      ],
+      "lineCount": 10
+    },
+    "AnimateSprites": {
+      "returnType": "void",
+      "signature": "void AnimateSprites(void)",
+      "paramsRaw": "void",
+      "body": "u8 i;\n    for (i = 0; i < MAX_SPRITES; i++)\n    {\n        struct Sprite *sprite = &gSprites[i];\n\n        if (sprite->inUse)\n        {\n            sprite->callback(sprite);\n\n            if (sprite->inUse)\n                AnimateSprite(sprite);\n        }\n    }",
+      "callsTo": [
+        "AnimateSprite"
+      ],
+      "lineCount": 13
+    },
+    "BuildOamBuffer": {
+      "returnType": "void",
+      "signature": "void BuildOamBuffer(void)",
+      "paramsRaw": "void",
+      "body": "u8 temp;\n    UpdateOamCoords();\n    BuildSpritePriorities();\n    SortSprites();\n    temp = gMain.oamLoadDisabled;\n    gMain.oamLoadDisabled = TRUE;\n    AddSpritesToOamBuffer();\n    CopyMatricesToOamBuffer();\n    gMain.oamLoadDisabled = temp;\n    sShouldProcessSpriteCopyRequests = TRUE;",
+      "callsTo": [
+        "AddSpritesToOamBuffer",
+        "BuildSpritePriorities",
+        "CopyMatricesToOamBuffer",
+        "SortSprites",
+        "UpdateOamCoords"
+      ],
+      "lineCount": 10
+    },
+    "UpdateOamCoords": {
+      "returnType": "void",
+      "signature": "void UpdateOamCoords(void)",
+      "paramsRaw": "void",
+      "body": "u8 i;\n    for (i = 0; i < MAX_SPRITES; i++)\n    {\n        struct Sprite *sprite = &gSprites[i];\n        if (sprite->inUse && !sprite->invisible)\n        {\n            if (sprite->coordOffsetEnabled)\n            {\n                sprite->oam.x = sprite->x + sprite->x2 + sprite->centerToCornerVecX + gSpriteCoordOffsetX;\n                sprite->oam.y = sprite->y + sprite->y2 + sprite->centerToCornerVecY + gSpriteCoordOffsetY;\n            }\n            else\n            {\n                sprite->oam.x = sprite->x + sprite->x2 + sprite->centerToCornerVecX;\n                sprite->oam.y = sprite->y + sprite->y2 + sprite->centerToCornerVecY;\n            }\n        }\n    }",
+      "callsTo": [],
+      "lineCount": 18
+    },
+    "BuildSpritePriorities": {
+      "returnType": "void",
+      "signature": "void BuildSpritePriorities(void)",
+      "paramsRaw": "void",
+      "body": "u16 i;\n    for (i = 0; i < MAX_SPRITES; i++)\n    {\n        struct Sprite *sprite = &gSprites[i];\n        u16 priority = sprite->subpriority | (sprite->oam.priority << 8);\n        sSpritePriorities[i] = priority;\n    }",
+      "callsTo": [],
+      "lineCount": 7
+    },
+    "SortSprites": {
+      "returnType": "void",
+      "signature": "void SortSprites(void)",
+      "paramsRaw": "void",
+      "body": "u8 i;\n    for (i = 1; i < MAX_SPRITES; i++)\n    {\n        u8 j = i;\n        struct Sprite *sprite1 = &gSprites[sSpriteOrder[i - 1]];\n        struct Sprite *sprite2 = &gSprites[sSpriteOrder[i]];\n        u16 sprite1Priority = sSpritePriorities[sSpriteOrder[i - 1]];\n        u16 sprite2Priority = sSpritePriorities[sSpriteOrder[i]];\n        s16 sprite1Y = sprite1->oam.y;\n        s16 sprite2Y = sprite2->oam.y;\n\n        if (sprite1Y >= DISPLAY_HEIGHT)\n            sprite1Y = sprite1Y - 256;\n\n        if (sprite2Y >= DISPLAY_HEIGHT)\n            sprite2Y = sprite2Y - 256;\n\n        if (sprite1->oam.affineMode == ST_OAM_AFFINE_DOUBLE\n         && sprite1->oam.size == ST_OAM_SIZE_3)\n        {\n            u32 shape = sprite1->oam.shape;\n            if (shape == ST_OAM_SQUARE || shape == ST_OAM_V_RECTANGLE)\n            {\n                if (sprite1Y > 128)\n                    sprite1Y = sprite1Y - 256;\n            }\n        }\n\n        if (sprite2->oam.affineMode == ST_OAM_AFFINE_DOUBLE\n         && sprite2->oam.size == ST_OAM_SIZE_3)\n        {\n            u32 shape = sprite2->oam.shape;\n            if (shape == ST_OAM_SQUARE || shape == ST_OAM_V_RECTANGLE)\n            {\n                if (sprite2Y > 128)\n                    sprite2Y = sprite2Y - 256;\n            }\n        }\n\n        while (j > 0\n            && ((sprite1Priority > sprite2Priority)\n             || (sprite1Priority == sprite2Priority && sprite1Y < sprite2Y)))\n        {\n            u8 temp = sSpriteOrder[j];\n            sSpriteOrder[j] = sSpriteOrder[j - 1];\n            sSpriteOrder[j - 1] = temp;\n\n             \n             \n             \n             \n            j--;\n#ifdef UBFIX\n            if (j == 0)\n                break;\n#endif\n\n            sprite1 = &gSprites[sSpriteOrder[j - 1]];\n            sprite2 = &gSprites[sSpriteOrder[j]];\n            sprite1Priority = sSpritePriorities[sSpriteOrder[j - 1]];\n            sprite2Priority = sSpritePriorities[sSpriteOrder[j]];\n            sprite1Y = sprite1->oam.y;\n            sprite2Y = sprite2->oam.y;\n\n            if (sprite1Y >= DISPLAY_HEIGHT)\n                sprite1Y = sprite1Y - 256;\n\n            if (sprite2Y >= DISPLAY_HEIGHT)\n                sprite2Y = sprite2Y - 256;\n\n            if (sprite1->oam.affineMode == ST_OAM_AFFINE_DOUBLE\n             && sprite1->oam.size == ST_OAM_SIZE_3)\n            {\n                u32 shape = sprite1->oam.shape;\n                if (shape == ST_OAM_SQUARE || shape == ST_OAM_V_RECTANGLE)\n                {\n                    if (sprite1Y > 128)\n                        sprite1Y = sprite1Y - 256;\n                }\n            }\n\n            if (sprite2->oam.affineMode == ST_OAM_AFFINE_DOUBLE\n             && sprite2->oam.size == ST_OAM_SIZE_3)\n            {\n                u32 shape = sprite2->oam.shape;\n                if (shape == ST_OAM_SQUARE || shape == ST_OAM_V_RECTANGLE)\n                {\n                    if (sprite2Y > 128)\n                        sprite2Y = sprite2Y - 256;\n                }\n            }\n        }\n    }",
+      "callsTo": [],
+      "lineCount": 93
+    },
+    "CopyMatricesToOamBuffer": {
+      "returnType": "void",
+      "signature": "void CopyMatricesToOamBuffer(void)",
+      "paramsRaw": "void",
+      "body": "u8 i;\n    for (i = 0; i < OAM_MATRIX_COUNT; i++)\n    {\n        u32 base = 4 * i;\n        gMain.oamBuffer[base + 0].affineParam = gOamMatrices[i].a;\n        gMain.oamBuffer[base + 1].affineParam = gOamMatrices[i].b;\n        gMain.oamBuffer[base + 2].affineParam = gOamMatrices[i].c;\n        gMain.oamBuffer[base + 3].affineParam = gOamMatrices[i].d;\n    }",
+      "callsTo": [],
+      "lineCount": 9
+    },
+    "AddSpritesToOamBuffer": {
+      "returnType": "void",
+      "signature": "void AddSpritesToOamBuffer(void)",
+      "paramsRaw": "void",
+      "body": "u8 i = 0;\n    u8 oamIndex = 0;\n\n    while (i < MAX_SPRITES)\n    {\n        struct Sprite *sprite = &gSprites[sSpriteOrder[i]];\n        if (sprite->inUse && !sprite->invisible && AddSpriteToOamBuffer(sprite, &oamIndex))\n            return;\n        i++;\n    }\n\n    while (oamIndex < gOamLimit)\n    {\n        gMain.oamBuffer[oamIndex] = gDummyOamData;\n        oamIndex++;\n    }",
+      "callsTo": [
+        "AddSpriteToOamBuffer"
+      ],
+      "lineCount": 16
+    },
+    "CreateSprite": {
+      "returnType": "u8",
+      "signature": "u8 CreateSprite(const struct SpriteTemplate *template, s16 x, s16 y, u8 subpriority)",
+      "paramsRaw": "const struct SpriteTemplate *template, s16 x, s16 y, u8 subpriority",
+      "body": "u8 i;\n\n    for (i = 0; i < MAX_SPRITES; i++)\n        if (!gSprites[i].inUse)\n            return CreateSpriteAt(i, template, x, y, subpriority);\n\n    return MAX_SPRITES;",
+      "callsTo": [
+        "CreateSpriteAt"
+      ],
+      "lineCount": 7
+    },
+    "CreateSpriteAtEnd": {
+      "returnType": "u8",
+      "signature": "u8 CreateSpriteAtEnd(const struct SpriteTemplate *template, s16 x, s16 y, u8 subpriority)",
+      "paramsRaw": "const struct SpriteTemplate *template, s16 x, s16 y, u8 subpriority",
+      "body": "s16 i;\n\n    for (i = MAX_SPRITES - 1; i > -1; i--)\n        if (!gSprites[i].inUse)\n            return CreateSpriteAt(i, template, x, y, subpriority);\n\n    return MAX_SPRITES;",
+      "callsTo": [
+        "CreateSpriteAt"
+      ],
+      "lineCount": 7
+    },
+    "CreateInvisibleSprite": {
+      "returnType": "u8",
+      "signature": "u8 CreateInvisibleSprite(void (*callback)(struct Sprite *))",
+      "paramsRaw": "void (*callback)(struct Sprite *)",
+      "body": "u8 index = CreateSprite(&gDummySpriteTemplate, 0, 0, 31);\n\n    if (index == MAX_SPRITES)\n    {\n        return MAX_SPRITES;\n    }\n    else\n    {\n        gSprites[index].invisible = TRUE;\n        gSprites[index].callback = callback;\n        return index;\n    }",
+      "callsTo": [
+        "CreateSprite"
+      ],
+      "lineCount": 12
+    },
+    "CreateSpriteAt": {
+      "returnType": "u8",
+      "signature": "u8 CreateSpriteAt(u8 index, const struct SpriteTemplate *template, s16 x, s16 y, u8 subpriority)",
+      "paramsRaw": "u8 index, const struct SpriteTemplate *template, s16 x, s16 y, u8 subpriority",
+      "body": "struct Sprite *sprite = &gSprites[index];\n\n    ResetSprite(sprite);\n\n    sprite->inUse = TRUE;\n    sprite->animBeginning = TRUE;\n    sprite->affineAnimBeginning = TRUE;\n    sprite->usingSheet = TRUE;\n\n    sprite->subpriority = subpriority;\n    sprite->oam = *template->oam;\n    sprite->anims = template->anims;\n    sprite->affineAnims = template->affineAnims;\n    sprite->template = template;\n    sprite->callback = template->callback;\n    sprite->x = x;\n    sprite->y = y;\n\n    CalcCenterToCornerVec(sprite, sprite->oam.shape, sprite->oam.size, sprite->oam.affineMode);\n\n    if (template->tileTag == TAG_NONE)\n    {\n        s16 tileNum;\n        sprite->images = template->images;\n        tileNum = AllocSpriteTiles((u8)(sprite->images->size / TILE_SIZE_4BPP));\n        if (tileNum == -1)\n        {\n            ResetSprite(sprite);\n            return MAX_SPRITES;\n        }\n        sprite->oam.tileNum = tileNum;\n        sprite->usingSheet = FALSE;\n        sprite->sheetTileStart = 0;\n    }\n    else\n    {\n        sprite->sheetTileStart = GetSpriteTileStartByTag(template->tileTag);\n        SetSpriteSheetFrameTileNum(sprite);\n    }\n\n    if (sprite->oam.affineMode & ST_OAM_AFFINE_ON_MASK)\n        InitSpriteAffineAnim(sprite);\n\n    if (template->paletteTag != TAG_NONE)\n        sprite->oam.paletteNum = IndexOfSpritePaletteTag(template->paletteTag);\n\n    return index;",
+      "callsTo": [
+        "AllocSpriteTiles",
+        "CalcCenterToCornerVec",
+        "GetSpriteTileStartByTag",
+        "IndexOfSpritePaletteTag",
+        "InitSpriteAffineAnim",
+        "ResetSprite",
+        "SetSpriteSheetFrameTileNum"
+      ],
+      "lineCount": 47
+    },
+    "CreateSpriteAndAnimate": {
+      "returnType": "u8",
+      "signature": "u8 CreateSpriteAndAnimate(const struct SpriteTemplate *template, s16 x, s16 y, u8 subpriority)",
+      "paramsRaw": "const struct SpriteTemplate *template, s16 x, s16 y, u8 subpriority",
+      "body": "u8 i;\n\n    for (i = 0; i < MAX_SPRITES; i++)\n    {\n        struct Sprite *sprite = &gSprites[i];\n\n        if (!gSprites[i].inUse)\n        {\n            u8 index = CreateSpriteAt(i, template, x, y, subpriority);\n\n            if (index == MAX_SPRITES)\n                return MAX_SPRITES;\n\n            gSprites[i].callback(sprite);\n\n            if (gSprites[i].inUse)\n                AnimateSprite(sprite);\n\n            return index;\n        }\n    }\n\n    return MAX_SPRITES;",
+      "callsTo": [
+        "AnimateSprite",
+        "CreateSpriteAt"
+      ],
+      "lineCount": 23
+    },
+    "DestroySprite": {
+      "returnType": "void",
+      "signature": "void DestroySprite(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "if (sprite->inUse)\n    {\n        if (!sprite->usingSheet)\n        {\n            u16 i;\n            u16 tileEnd = (sprite->images->size / TILE_SIZE_4BPP) + sprite->oam.tileNum;\n            for (i = sprite->oam.tileNum; i < tileEnd; i++)\n                FREE_SPRITE_TILE(i);\n        }\n        ResetSprite(sprite);\n    }",
+      "callsTo": [
+        "FREE_SPRITE_TILE",
+        "ResetSprite"
+      ],
+      "lineCount": 11
+    },
+    "ResetOamRange": {
+      "returnType": "void",
+      "signature": "void ResetOamRange(u8 start, u8 end)",
+      "paramsRaw": "u8 start, u8 end",
+      "body": "u8 i;\n    for (i = start; i < end; i++)\n        gMain.oamBuffer[i] = *(struct OamData *)&gDummyOamData;",
+      "callsTo": [],
+      "lineCount": 3
+    },
+    "LoadOam": {
+      "returnType": "void",
+      "signature": "void LoadOam(void)",
+      "paramsRaw": "void",
+      "body": "if (!gMain.oamLoadDisabled)\n        CpuCopy32(gMain.oamBuffer, (void *)OAM, sizeof(gMain.oamBuffer));",
+      "callsTo": [
+        "CpuCopy32"
+      ],
+      "lineCount": 2
+    },
+    "ClearSpriteCopyRequests": {
+      "returnType": "void",
+      "signature": "void ClearSpriteCopyRequests(void)",
+      "paramsRaw": "void",
+      "body": "u8 i;\n\n    sShouldProcessSpriteCopyRequests = FALSE;\n    sSpriteCopyRequestCount = 0;\n\n    for (i = 0; i < MAX_SPRITE_COPY_REQUESTS; i++)\n    {\n        sSpriteCopyRequests[i].src = 0;\n        sSpriteCopyRequests[i].dest = 0;\n        sSpriteCopyRequests[i].size = 0;\n    }",
+      "callsTo": [],
+      "lineCount": 11
+    },
+    "ResetOamMatrices": {
+      "returnType": "void",
+      "signature": "void ResetOamMatrices(void)",
+      "paramsRaw": "void",
+      "body": "u8 i;\n    for (i = 0; i < OAM_MATRIX_COUNT; i++)\n    {\n         \n        gOamMatrices[i].a = 0x0100;\n        gOamMatrices[i].b = 0x0000;\n        gOamMatrices[i].c = 0x0000;\n        gOamMatrices[i].d = 0x0100;\n    }",
+      "callsTo": [],
+      "lineCount": 9
+    },
+    "SetOamMatrix": {
+      "returnType": "void",
+      "signature": "void SetOamMatrix(u8 matrixNum, u16 a, u16 b, u16 c, u16 d)",
+      "paramsRaw": "u8 matrixNum, u16 a, u16 b, u16 c, u16 d",
+      "body": "gOamMatrices[matrixNum].a = a;\n    gOamMatrices[matrixNum].b = b;\n    gOamMatrices[matrixNum].c = c;\n    gOamMatrices[matrixNum].d = d;",
+      "callsTo": [],
+      "lineCount": 4
+    },
+    "ResetSprite": {
+      "returnType": "void",
+      "signature": "void ResetSprite(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "*sprite = sDummySprite;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "CalcCenterToCornerVec": {
+      "returnType": "void",
+      "signature": "void CalcCenterToCornerVec(struct Sprite *sprite, u8 shape, u8 size, u8 affineMode)",
+      "paramsRaw": "struct Sprite *sprite, u8 shape, u8 size, u8 affineMode",
+      "body": "u8 x = sCenterToCornerVecTable[shape][size][0];\n    u8 y = sCenterToCornerVecTable[shape][size][1];\n\n    if (affineMode & ST_OAM_AFFINE_DOUBLE_MASK)\n    {\n        x *= 2;\n        y *= 2;\n    }\n\n    sprite->centerToCornerVecX = x;\n    sprite->centerToCornerVecY = y;",
+      "callsTo": [],
+      "lineCount": 11
+    },
+    "AllocSpriteTiles": {
+      "returnType": "s16",
+      "signature": "s16 AllocSpriteTiles(u16 tileCount)",
+      "paramsRaw": "u16 tileCount",
+      "body": "u16 i;\n    s16 start;\n    u16 numTilesFound;\n\n    if (tileCount == 0)\n    {\n         \n        for (i = gReservedSpriteTileCount; i < TOTAL_OBJ_TILE_COUNT; i++)\n            FREE_SPRITE_TILE(i);\n\n        return 0;\n    }\n\n    i = gReservedSpriteTileCount;\n\n    for (;;)\n    {\n        while (SPRITE_TILE_IS_ALLOCATED(i))\n        {\n            i++;\n\n            if (i == TOTAL_OBJ_TILE_COUNT)\n                return -1;\n        }\n\n        start = i;\n        numTilesFound = 1;\n\n        while (numTilesFound != tileCount)\n        {\n            i++;\n\n            if (i == TOTAL_OBJ_TILE_COUNT)\n                return -1;\n\n            if (!SPRITE_TILE_IS_ALLOCATED(i))\n                numTilesFound++;\n            else\n                break;\n        }\n\n        if (numTilesFound == tileCount)\n            break;\n    }\n\n    for (i = start; i < tileCount + start; i++)\n        ALLOC_SPRITE_TILE(i);\n\n    return start;",
+      "callsTo": [
+        "ALLOC_SPRITE_TILE",
+        "FREE_SPRITE_TILE",
+        "SPRITE_TILE_IS_ALLOCATED"
+      ],
+      "lineCount": 49
+    },
+    "SpriteTileAllocBitmapOp": {
+      "returnType": "u8",
+      "signature": "u8 SpriteTileAllocBitmapOp(u16 bit, u8 op)",
+      "paramsRaw": "u16 bit, u8 op",
+      "body": "u8 index = bit / 8;\n    u8 shift = bit % 8;\n    u8 val = bit % 8;\n    u8 retVal = 0;\n\n    if (op == 0)\n    {\n        val = ~(1 << val);\n        sSpriteTileAllocBitmap[index] &= val;\n    }\n    else if (op == 1)\n    {\n        val = (1 << val);\n        sSpriteTileAllocBitmap[index] |= val;\n    }\n    else\n    {\n        retVal = 1 << shift;\n        retVal &= sSpriteTileAllocBitmap[index];\n    }\n\n    return retVal;",
+      "callsTo": [],
+      "lineCount": 22
+    },
+    "SpriteCallbackDummy": {
+      "returnType": "void",
+      "signature": "void SpriteCallbackDummy(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "ProcessSpriteCopyRequests": {
+      "returnType": "void",
+      "signature": "void ProcessSpriteCopyRequests(void)",
+      "paramsRaw": "void",
+      "body": "if (sShouldProcessSpriteCopyRequests)\n    {\n        u8 i = 0;\n\n        while (sSpriteCopyRequestCount > 0)\n        {\n            CpuCopy16(sSpriteCopyRequests[i].src, sSpriteCopyRequests[i].dest, sSpriteCopyRequests[i].size);\n            sSpriteCopyRequestCount--;\n            i++;\n        }\n\n        sShouldProcessSpriteCopyRequests = FALSE;\n    }",
+      "callsTo": [
+        "CpuCopy16"
+      ],
+      "lineCount": 13
+    },
+    "RequestSpriteFrameImageCopy": {
+      "returnType": "void",
+      "signature": "void RequestSpriteFrameImageCopy(u16 index, u16 tileNum, const struct SpriteFrameImage *images)",
+      "paramsRaw": "u16 index, u16 tileNum, const struct SpriteFrameImage *images",
+      "body": "if (sSpriteCopyRequestCount < MAX_SPRITE_COPY_REQUESTS)\n    {\n        sSpriteCopyRequests[sSpriteCopyRequestCount].src = images[index].data;\n        sSpriteCopyRequests[sSpriteCopyRequestCount].dest = (u8 *)OBJ_VRAM0 + TILE_SIZE_4BPP * tileNum;\n        sSpriteCopyRequests[sSpriteCopyRequestCount].size = images[index].size;\n        sSpriteCopyRequestCount++;\n    }",
+      "callsTo": [],
+      "lineCount": 7
+    },
+    "RequestSpriteCopy": {
+      "returnType": "void",
+      "signature": "void RequestSpriteCopy(const u8 *src, u8 *dest, u16 size)",
+      "paramsRaw": "const u8 *src, u8 *dest, u16 size",
+      "body": "if (sSpriteCopyRequestCount < MAX_SPRITE_COPY_REQUESTS)\n    {\n        sSpriteCopyRequests[sSpriteCopyRequestCount].src = src;\n        sSpriteCopyRequests[sSpriteCopyRequestCount].dest = dest;\n        sSpriteCopyRequests[sSpriteCopyRequestCount].size = size;\n        sSpriteCopyRequestCount++;\n    }",
+      "callsTo": [],
+      "lineCount": 7
+    },
+    "CopyFromSprites": {
+      "returnType": "void",
+      "signature": "void CopyFromSprites(u8 *dest)",
+      "paramsRaw": "u8 *dest",
+      "body": "u32 i;\n    u8 *src = (u8 *)gSprites;\n    for (i = 0; i < sizeof(struct Sprite) * MAX_SPRITES; i++)\n    {\n        *dest = *src;\n        dest++;\n        src++;\n    }",
+      "callsTo": [],
+      "lineCount": 8
+    },
+    "CopyToSprites": {
+      "returnType": "void",
+      "signature": "void CopyToSprites(u8 *src)",
+      "paramsRaw": "u8 *src",
+      "body": "u32 i;\n    u8 *dest = (u8 *)gSprites;\n    for (i = 0; i < sizeof(struct Sprite) * MAX_SPRITES; i++)\n    {\n        *dest = *src;\n        src++;\n        dest++;\n    }",
+      "callsTo": [],
+      "lineCount": 8
+    },
+    "ResetAllSprites": {
+      "returnType": "void",
+      "signature": "void ResetAllSprites(void)",
+      "paramsRaw": "void",
+      "body": "u8 i;\n\n    for (i = 0; i < MAX_SPRITES; i++)\n    {\n        ResetSprite(&gSprites[i]);\n        sSpriteOrder[i] = i;\n    }\n\n    ResetSprite(&gSprites[i]);",
+      "callsTo": [
+        "ResetSprite"
+      ],
+      "lineCount": 9
+    },
+    "FreeSpriteTiles": {
+      "returnType": "void",
+      "signature": "void FreeSpriteTiles(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "#ifdef UBFIX\n    if (!sprite || !sprite->template)\n        return;\n#endif\n\n    if (sprite->template->tileTag != TAG_NONE)\n        FreeSpriteTilesByTag(sprite->template->tileTag);",
+      "callsTo": [
+        "FreeSpriteTilesByTag"
+      ],
+      "lineCount": 7
+    },
+    "FreeSpritePalette": {
+      "returnType": "void",
+      "signature": "void FreeSpritePalette(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "#ifdef UBFIX\n    if (!sprite || !sprite->template)\n        return;\n#endif\n\n    FreeSpritePaletteByTag(sprite->template->paletteTag);",
+      "callsTo": [
+        "FreeSpritePaletteByTag"
+      ],
+      "lineCount": 6
+    },
+    "FreeSpriteOamMatrix": {
+      "returnType": "void",
+      "signature": "void FreeSpriteOamMatrix(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "if (sprite->oam.affineMode & ST_OAM_AFFINE_ON_MASK)\n    {\n        FreeOamMatrix(sprite->oam.matrixNum);\n        sprite->oam.affineMode = ST_OAM_AFFINE_OFF;\n    }",
+      "callsTo": [
+        "FreeOamMatrix"
+      ],
+      "lineCount": 5
+    },
+    "DestroySpriteAndFreeResources": {
+      "returnType": "void",
+      "signature": "void DestroySpriteAndFreeResources(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "FreeSpriteTiles(sprite);\n    FreeSpritePalette(sprite);\n    FreeSpriteOamMatrix(sprite);\n    DestroySprite(sprite);",
+      "callsTo": [
+        "DestroySprite",
+        "FreeSpriteOamMatrix",
+        "FreeSpritePalette",
+        "FreeSpriteTiles"
+      ],
+      "lineCount": 4
+    },
+    "AnimateSprite": {
+      "returnType": "void",
+      "signature": "void AnimateSprite(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "sAnimFuncs[sprite->animBeginning](sprite);\n\n    if (!gAffineAnimsDisabled)\n        sAffineAnimFuncs[sprite->affineAnimBeginning](sprite);",
+      "callsTo": [],
+      "lineCount": 4
+    },
+    "BeginAnim": {
+      "returnType": "void",
+      "signature": "void BeginAnim(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "s16 imageValue;\n    u8 duration;\n    u8 hFlip;\n    u8 vFlip;\n\n    sprite->animCmdIndex = 0;\n    sprite->animEnded = FALSE;\n    sprite->animLoopCounter = 0;\n    imageValue = sprite->anims[sprite->animNum][sprite->animCmdIndex].frame.imageValue;\n\n    if (imageValue != -1)\n    {\n        sprite->animBeginning = FALSE;\n        duration = sprite->anims[sprite->animNum][sprite->animCmdIndex].frame.duration;\n        hFlip = sprite->anims[sprite->animNum][sprite->animCmdIndex].frame.hFlip;\n        vFlip = sprite->anims[sprite->animNum][sprite->animCmdIndex].frame.vFlip;\n\n        if (duration)\n            duration--;\n\n        sprite->animDelayCounter = duration;\n\n        if (!(sprite->oam.affineMode & ST_OAM_AFFINE_ON_MASK))\n            SetSpriteOamFlipBits(sprite, hFlip, vFlip);\n\n        if (sprite->usingSheet)\n            sprite->oam.tileNum = sprite->sheetTileStart + imageValue;\n        else\n            RequestSpriteFrameImageCopy(imageValue, sprite->oam.tileNum, sprite->images);\n    }",
+      "callsTo": [
+        "RequestSpriteFrameImageCopy",
+        "SetSpriteOamFlipBits"
+      ],
+      "lineCount": 30
+    },
+    "ContinueAnim": {
+      "returnType": "void",
+      "signature": "void ContinueAnim(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "if (sprite->animDelayCounter)\n    {\n        u8 hFlip;\n        u8 vFlip;\n        DecrementAnimDelayCounter(sprite);\n        hFlip = sprite->anims[sprite->animNum][sprite->animCmdIndex].frame.hFlip;\n        vFlip = sprite->anims[sprite->animNum][sprite->animCmdIndex].frame.vFlip;\n        if (!(sprite->oam.affineMode & ST_OAM_AFFINE_ON_MASK))\n            SetSpriteOamFlipBits(sprite, hFlip, vFlip);\n    }\n    else if (!sprite->animPaused)\n    {\n        s16 type;\n        s16 funcIndex;\n        sprite->animCmdIndex++;\n        type = sprite->anims[sprite->animNum][sprite->animCmdIndex].type;\n        funcIndex = 3;\n        if (type < 0)\n            funcIndex = type + 3;\n        sAnimCmdFuncs[funcIndex](sprite);\n    }",
+      "callsTo": [
+        "DecrementAnimDelayCounter",
+        "SetSpriteOamFlipBits"
+      ],
+      "lineCount": 21
+    },
+    "AnimCmd_frame": {
+      "returnType": "void",
+      "signature": "void AnimCmd_frame(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "s16 imageValue;\n    u8 duration;\n    u8 hFlip;\n    u8 vFlip;\n\n    imageValue = sprite->anims[sprite->animNum][sprite->animCmdIndex].frame.imageValue;\n    duration = sprite->anims[sprite->animNum][sprite->animCmdIndex].frame.duration;\n    hFlip = sprite->anims[sprite->animNum][sprite->animCmdIndex].frame.hFlip;\n    vFlip = sprite->anims[sprite->animNum][sprite->animCmdIndex].frame.vFlip;\n\n    if (duration)\n        duration--;\n\n    sprite->animDelayCounter = duration;\n\n    if (!(sprite->oam.affineMode & ST_OAM_AFFINE_ON_MASK))\n        SetSpriteOamFlipBits(sprite, hFlip, vFlip);\n\n    if (sprite->usingSheet)\n        sprite->oam.tileNum = sprite->sheetTileStart + imageValue;\n    else\n        RequestSpriteFrameImageCopy(imageValue, sprite->oam.tileNum, sprite->images);",
+      "callsTo": [
+        "RequestSpriteFrameImageCopy",
+        "SetSpriteOamFlipBits"
+      ],
+      "lineCount": 22
+    },
+    "AnimCmd_end": {
+      "returnType": "void",
+      "signature": "void AnimCmd_end(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "sprite->animCmdIndex--;\n    sprite->animEnded = TRUE;",
+      "callsTo": [],
+      "lineCount": 2
+    },
+    "AnimCmd_jump": {
+      "returnType": "void",
+      "signature": "void AnimCmd_jump(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "s16 imageValue;\n    u8 duration;\n    u8 hFlip;\n    u8 vFlip;\n\n    sprite->animCmdIndex = sprite->anims[sprite->animNum][sprite->animCmdIndex].jump.target;\n\n    imageValue = sprite->anims[sprite->animNum][sprite->animCmdIndex].frame.imageValue;\n    duration = sprite->anims[sprite->animNum][sprite->animCmdIndex].frame.duration;\n    hFlip = sprite->anims[sprite->animNum][sprite->animCmdIndex].frame.hFlip;\n    vFlip = sprite->anims[sprite->animNum][sprite->animCmdIndex].frame.vFlip;\n\n    if (duration)\n        duration--;\n\n    sprite->animDelayCounter = duration;\n\n    if (!(sprite->oam.affineMode & ST_OAM_AFFINE_ON_MASK))\n        SetSpriteOamFlipBits(sprite, hFlip, vFlip);\n\n    if (sprite->usingSheet)\n        sprite->oam.tileNum = sprite->sheetTileStart + imageValue;\n    else\n        RequestSpriteFrameImageCopy(imageValue, sprite->oam.tileNum, sprite->images);",
+      "callsTo": [
+        "RequestSpriteFrameImageCopy",
+        "SetSpriteOamFlipBits"
+      ],
+      "lineCount": 24
+    },
+    "AnimCmd_loop": {
+      "returnType": "void",
+      "signature": "void AnimCmd_loop(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "if (sprite->animLoopCounter)\n        ContinueAnimLoop(sprite);\n    else\n        BeginAnimLoop(sprite);",
+      "callsTo": [
+        "BeginAnimLoop",
+        "ContinueAnimLoop"
+      ],
+      "lineCount": 4
+    },
+    "BeginAnimLoop": {
+      "returnType": "void",
+      "signature": "void BeginAnimLoop(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "sprite->animLoopCounter = sprite->anims[sprite->animNum][sprite->animCmdIndex].loop.count;\n    JumpToTopOfAnimLoop(sprite);\n    ContinueAnim(sprite);",
+      "callsTo": [
+        "ContinueAnim",
+        "JumpToTopOfAnimLoop"
+      ],
+      "lineCount": 3
+    },
+    "ContinueAnimLoop": {
+      "returnType": "void",
+      "signature": "void ContinueAnimLoop(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "sprite->animLoopCounter--;\n    JumpToTopOfAnimLoop(sprite);\n    ContinueAnim(sprite);",
+      "callsTo": [
+        "ContinueAnim",
+        "JumpToTopOfAnimLoop"
+      ],
+      "lineCount": 3
+    },
+    "JumpToTopOfAnimLoop": {
+      "returnType": "void",
+      "signature": "void JumpToTopOfAnimLoop(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "if (sprite->animLoopCounter)\n    {\n        sprite->animCmdIndex--;\n\n        while (sprite->anims[sprite->animNum][sprite->animCmdIndex - 1].type != -3)\n        {\n            if (sprite->animCmdIndex == 0)\n                break;\n            sprite->animCmdIndex--;\n        }\n\n        sprite->animCmdIndex--;\n    }",
+      "callsTo": [],
+      "lineCount": 13
+    },
+    "BeginAffineAnim": {
+      "returnType": "void",
+      "signature": "void BeginAffineAnim(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "if ((sprite->oam.affineMode & ST_OAM_AFFINE_ON_MASK) && sprite->affineAnims[0][0].type != 32767)\n    {\n        struct AffineAnimFrameCmd frameCmd;\n        u8 matrixNum = GetSpriteMatrixNum(sprite);\n        AffineAnimStateRestartAnim(matrixNum);\n        GetAffineAnimFrame(matrixNum, sprite, &frameCmd);\n        sprite->affineAnimBeginning = FALSE;\n        sprite->affineAnimEnded = FALSE;\n        ApplyAffineAnimFrame(matrixNum, &frameCmd);\n        sAffineAnimStates[matrixNum].delayCounter = frameCmd.duration;\n        if (sprite->anchored)\n            UpdateSpriteMatrixAnchorPos(sprite, sprite->sAnchorX, sprite->sAnchorY);\n    }",
+      "callsTo": [
+        "AffineAnimStateRestartAnim",
+        "ApplyAffineAnimFrame",
+        "GetAffineAnimFrame",
+        "GetSpriteMatrixNum",
+        "UpdateSpriteMatrixAnchorPos"
+      ],
+      "lineCount": 13
+    },
+    "ContinueAffineAnim": {
+      "returnType": "void",
+      "signature": "void ContinueAffineAnim(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "if (sprite->oam.affineMode & ST_OAM_AFFINE_ON_MASK)\n    {\n        u8 matrixNum = GetSpriteMatrixNum(sprite);\n\n        if (sAffineAnimStates[matrixNum].delayCounter)\n        {\n            AffineAnimDelay(matrixNum, sprite);\n        }\n        else if (sprite->affineAnimPaused)\n        {\n            return;\n        }\n        else\n        {\n            s16 type;\n            s16 funcIndex;\n            sAffineAnimStates[matrixNum].animCmdIndex++;\n            type = sprite->affineAnims[sAffineAnimStates[matrixNum].animNum][sAffineAnimStates[matrixNum].animCmdIndex].type;\n            funcIndex = 3;\n            if (type >= 32765)\n                funcIndex = type - 32765;\n            sAffineAnimCmdFuncs[funcIndex](matrixNum, sprite);\n        }\n        if (sprite->anchored)\n            UpdateSpriteMatrixAnchorPos(sprite, sprite->sAnchorX, sprite->sAnchorY);\n    }",
+      "callsTo": [
+        "AffineAnimDelay",
+        "GetSpriteMatrixNum",
+        "UpdateSpriteMatrixAnchorPos"
+      ],
+      "lineCount": 26
+    },
+    "AffineAnimDelay": {
+      "returnType": "void",
+      "signature": "void AffineAnimDelay(u8 matrixNum, struct Sprite *sprite)",
+      "paramsRaw": "u8 matrixNum, struct Sprite *sprite",
+      "body": "if (!DecrementAffineAnimDelayCounter(sprite, matrixNum))\n    {\n        struct AffineAnimFrameCmd frameCmd;\n        GetAffineAnimFrame(matrixNum, sprite, &frameCmd);\n        ApplyAffineAnimFrameRelativeAndUpdateMatrix(matrixNum, &frameCmd);\n    }",
+      "callsTo": [
+        "ApplyAffineAnimFrameRelativeAndUpdateMatrix",
+        "DecrementAffineAnimDelayCounter",
+        "GetAffineAnimFrame"
+      ],
+      "lineCount": 6
+    },
+    "AffineAnimCmd_loop": {
+      "returnType": "void",
+      "signature": "void AffineAnimCmd_loop(u8 matrixNum, struct Sprite *sprite)",
+      "paramsRaw": "u8 matrixNum, struct Sprite *sprite",
+      "body": "if (sAffineAnimStates[matrixNum].loopCounter)\n        ContinueAffineAnimLoop(matrixNum, sprite);\n    else\n        BeginAffineAnimLoop(matrixNum, sprite);",
+      "callsTo": [
+        "BeginAffineAnimLoop",
+        "ContinueAffineAnimLoop"
+      ],
+      "lineCount": 4
+    },
+    "BeginAffineAnimLoop": {
+      "returnType": "void",
+      "signature": "void BeginAffineAnimLoop(u8 matrixNum, struct Sprite *sprite)",
+      "paramsRaw": "u8 matrixNum, struct Sprite *sprite",
+      "body": "sAffineAnimStates[matrixNum].loopCounter = sprite->affineAnims[sAffineAnimStates[matrixNum].animNum][sAffineAnimStates[matrixNum].animCmdIndex].loop.count;\n    JumpToTopOfAffineAnimLoop(matrixNum, sprite);\n    ContinueAffineAnim(sprite);",
+      "callsTo": [
+        "ContinueAffineAnim",
+        "JumpToTopOfAffineAnimLoop"
+      ],
+      "lineCount": 3
+    },
+    "ContinueAffineAnimLoop": {
+      "returnType": "void",
+      "signature": "void ContinueAffineAnimLoop(u8 matrixNum, struct Sprite *sprite)",
+      "paramsRaw": "u8 matrixNum, struct Sprite *sprite",
+      "body": "sAffineAnimStates[matrixNum].loopCounter--;\n    JumpToTopOfAffineAnimLoop(matrixNum, sprite);\n    ContinueAffineAnim(sprite);",
+      "callsTo": [
+        "ContinueAffineAnim",
+        "JumpToTopOfAffineAnimLoop"
+      ],
+      "lineCount": 3
+    },
+    "JumpToTopOfAffineAnimLoop": {
+      "returnType": "void",
+      "signature": "void JumpToTopOfAffineAnimLoop(u8 matrixNum, struct Sprite *sprite)",
+      "paramsRaw": "u8 matrixNum, struct Sprite *sprite",
+      "body": "if (sAffineAnimStates[matrixNum].loopCounter)\n    {\n        sAffineAnimStates[matrixNum].animCmdIndex--;\n\n        while (sprite->affineAnims[sAffineAnimStates[matrixNum].animNum][sAffineAnimStates[matrixNum].animCmdIndex - 1].type != 32765)\n        {\n            if (sAffineAnimStates[matrixNum].animCmdIndex == 0)\n                break;\n            sAffineAnimStates[matrixNum].animCmdIndex--;\n        }\n\n        sAffineAnimStates[matrixNum].animCmdIndex--;\n    }",
+      "callsTo": [],
+      "lineCount": 13
+    },
+    "AffineAnimCmd_jump": {
+      "returnType": "void",
+      "signature": "void AffineAnimCmd_jump(u8 matrixNum, struct Sprite *sprite)",
+      "paramsRaw": "u8 matrixNum, struct Sprite *sprite",
+      "body": "struct AffineAnimFrameCmd frameCmd;\n    sAffineAnimStates[matrixNum].animCmdIndex = sprite->affineAnims[sAffineAnimStates[matrixNum].animNum][sAffineAnimStates[matrixNum].animCmdIndex].jump.target;\n    GetAffineAnimFrame(matrixNum, sprite, &frameCmd);\n    ApplyAffineAnimFrame(matrixNum, &frameCmd);\n    sAffineAnimStates[matrixNum].delayCounter = frameCmd.duration;",
+      "callsTo": [
+        "ApplyAffineAnimFrame",
+        "GetAffineAnimFrame"
+      ],
+      "lineCount": 5
+    },
+    "AffineAnimCmd_end": {
+      "returnType": "void",
+      "signature": "void AffineAnimCmd_end(u8 matrixNum, struct Sprite *sprite)",
+      "paramsRaw": "u8 matrixNum, struct Sprite *sprite",
+      "body": "struct AffineAnimFrameCmd dummyFrameCmd = {0};\n    sprite->affineAnimEnded = TRUE;\n    sAffineAnimStates[matrixNum].animCmdIndex--;\n    ApplyAffineAnimFrameRelativeAndUpdateMatrix(matrixNum, &dummyFrameCmd);",
+      "callsTo": [
+        "ApplyAffineAnimFrameRelativeAndUpdateMatrix"
+      ],
+      "lineCount": 4
+    },
+    "AffineAnimCmd_frame": {
+      "returnType": "void",
+      "signature": "void AffineAnimCmd_frame(u8 matrixNum, struct Sprite *sprite)",
+      "paramsRaw": "u8 matrixNum, struct Sprite *sprite",
+      "body": "struct AffineAnimFrameCmd frameCmd;\n    GetAffineAnimFrame(matrixNum, sprite, &frameCmd);\n    ApplyAffineAnimFrame(matrixNum, &frameCmd);\n    sAffineAnimStates[matrixNum].delayCounter = frameCmd.duration;",
+      "callsTo": [
+        "ApplyAffineAnimFrame",
+        "GetAffineAnimFrame"
+      ],
+      "lineCount": 4
+    },
+    "CopyOamMatrix": {
+      "returnType": "void",
+      "signature": "void CopyOamMatrix(u8 destMatrixIndex, struct OamMatrix *srcMatrix)",
+      "paramsRaw": "u8 destMatrixIndex, struct OamMatrix *srcMatrix",
+      "body": "gOamMatrices[destMatrixIndex].a = srcMatrix->a;\n    gOamMatrices[destMatrixIndex].b = srcMatrix->b;\n    gOamMatrices[destMatrixIndex].c = srcMatrix->c;\n    gOamMatrices[destMatrixIndex].d = srcMatrix->d;",
+      "callsTo": [],
+      "lineCount": 4
+    },
+    "GetSpriteMatrixNum": {
+      "returnType": "u8",
+      "signature": "u8 GetSpriteMatrixNum(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "u8 matrixNum = 0;\n    if (sprite->oam.affineMode & ST_OAM_AFFINE_ON_MASK)\n        matrixNum = sprite->oam.matrixNum;\n    return matrixNum;",
+      "callsTo": [],
+      "lineCount": 4
+    },
+    "SetSpriteMatrixAnchor": {
+      "returnType": "void",
+      "signature": "void SetSpriteMatrixAnchor(struct Sprite *sprite, s16 x, s16 y)",
+      "paramsRaw": "struct Sprite *sprite, s16 x, s16 y",
+      "body": "sprite->sAnchorX = x;\n    sprite->sAnchorY = y;\n    sprite->anchored = TRUE;",
+      "callsTo": [],
+      "lineCount": 3
+    },
+    "GetAnchorCoord": {
+      "returnType": "s32",
+      "signature": "static s32 GetAnchorCoord(s32 a0, s32 a1, s32 coord)",
+      "paramsRaw": "s32 a0, s32 a1, s32 coord",
+      "body": "s32 subResult, var1;\n\n    subResult = a1 - a0;\n    if (subResult < 0)\n        var1 = -(subResult) >> 9;\n    else\n        var1 = -(subResult >> 9);\n    return coord - ((u32)(coord * a1) / (u32)(a0) + var1);",
+      "callsTo": [],
+      "lineCount": 8
+    },
+    "UpdateSpriteMatrixAnchorPos": {
+      "returnType": "void",
+      "signature": "static void UpdateSpriteMatrixAnchorPos(struct Sprite *sprite, s32 x, s32 y)",
+      "paramsRaw": "struct Sprite *sprite, s32 x, s32 y",
+      "body": "s32 dimension, var1, var2;\n\n    u32 matrixNum = sprite->oam.matrixNum;\n    if (x != NO_ANCHOR)\n    {\n        dimension = sOamDimensions32[sprite->oam.shape][sprite->oam.size].width;\n        var1 = dimension << 8;\n        var2 = (dimension << 16) / gOamMatrices[matrixNum].a;\n        sprite->x2 = GetAnchorCoord(var1, var2, x);\n    }\n    if (y != NO_ANCHOR)\n    {\n        dimension = sOamDimensions32[sprite->oam.shape][sprite->oam.size].height;\n        var1 = dimension << 8;\n        var2 = (dimension << 16) / gOamMatrices[matrixNum].d;\n        sprite->y2 = GetAnchorCoord(var1, var2, y);\n    }",
+      "callsTo": [
+        "GetAnchorCoord"
+      ],
+      "lineCount": 17
+    },
+    "SetSpriteOamFlipBits": {
+      "returnType": "void",
+      "signature": "void SetSpriteOamFlipBits(struct Sprite *sprite, u8 hFlip, u8 vFlip)",
+      "paramsRaw": "struct Sprite *sprite, u8 hFlip, u8 vFlip",
+      "body": "sprite->oam.matrixNum &= 0x7;\n    sprite->oam.matrixNum |= (((hFlip ^ sprite->hFlip) & 1) << 3);\n    sprite->oam.matrixNum |= (((vFlip ^ sprite->vFlip) & 1) << 4);",
+      "callsTo": [],
+      "lineCount": 3
+    },
+    "AffineAnimStateRestartAnim": {
+      "returnType": "void",
+      "signature": "void AffineAnimStateRestartAnim(u8 matrixNum)",
+      "paramsRaw": "u8 matrixNum",
+      "body": "sAffineAnimStates[matrixNum].animCmdIndex = 0;\n    sAffineAnimStates[matrixNum].delayCounter = 0;\n    sAffineAnimStates[matrixNum].loopCounter = 0;",
+      "callsTo": [],
+      "lineCount": 3
+    },
+    "AffineAnimStateStartAnim": {
+      "returnType": "void",
+      "signature": "void AffineAnimStateStartAnim(u8 matrixNum, u8 animNum)",
+      "paramsRaw": "u8 matrixNum, u8 animNum",
+      "body": "sAffineAnimStates[matrixNum].animNum = animNum;\n    sAffineAnimStates[matrixNum].animCmdIndex = 0;\n    sAffineAnimStates[matrixNum].delayCounter = 0;\n    sAffineAnimStates[matrixNum].loopCounter = 0;\n    sAffineAnimStates[matrixNum].xScale = 0x0100;\n    sAffineAnimStates[matrixNum].yScale = 0x0100;\n    sAffineAnimStates[matrixNum].rotation = 0;",
+      "callsTo": [],
+      "lineCount": 7
+    },
+    "AffineAnimStateReset": {
+      "returnType": "void",
+      "signature": "void AffineAnimStateReset(u8 matrixNum)",
+      "paramsRaw": "u8 matrixNum",
+      "body": "sAffineAnimStates[matrixNum].animNum = 0;\n    sAffineAnimStates[matrixNum].animCmdIndex = 0;\n    sAffineAnimStates[matrixNum].delayCounter = 0;\n    sAffineAnimStates[matrixNum].loopCounter = 0;\n    sAffineAnimStates[matrixNum].xScale = 0x0100;\n    sAffineAnimStates[matrixNum].yScale = 0x0100;\n    sAffineAnimStates[matrixNum].rotation = 0;",
+      "callsTo": [],
+      "lineCount": 7
+    },
+    "ApplyAffineAnimFrameAbsolute": {
+      "returnType": "void",
+      "signature": "void ApplyAffineAnimFrameAbsolute(u8 matrixNum, struct AffineAnimFrameCmd *frameCmd)",
+      "paramsRaw": "u8 matrixNum, struct AffineAnimFrameCmd *frameCmd",
+      "body": "sAffineAnimStates[matrixNum].xScale = frameCmd->xScale;\n    sAffineAnimStates[matrixNum].yScale = frameCmd->yScale;\n    sAffineAnimStates[matrixNum].rotation = frameCmd->rotation << 8;",
+      "callsTo": [],
+      "lineCount": 3
+    },
+    "DecrementAnimDelayCounter": {
+      "returnType": "void",
+      "signature": "void DecrementAnimDelayCounter(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "if (!sprite->animPaused)\n        sprite->animDelayCounter--;",
+      "callsTo": [],
+      "lineCount": 2
+    },
+    "DecrementAffineAnimDelayCounter": {
+      "returnType": "bool8",
+      "signature": "bool8 DecrementAffineAnimDelayCounter(struct Sprite *sprite, u8 matrixNum)",
+      "paramsRaw": "struct Sprite *sprite, u8 matrixNum",
+      "body": "if (!sprite->affineAnimPaused)\n        --sAffineAnimStates[matrixNum].delayCounter;\n    return sprite->affineAnimPaused;",
+      "callsTo": [],
+      "lineCount": 3
+    },
+    "ApplyAffineAnimFrameRelativeAndUpdateMatrix": {
+      "returnType": "void",
+      "signature": "void ApplyAffineAnimFrameRelativeAndUpdateMatrix(u8 matrixNum, struct AffineAnimFrameCmd *frameCmd)",
+      "paramsRaw": "u8 matrixNum, struct AffineAnimFrameCmd *frameCmd",
+      "body": "struct ObjAffineSrcData srcData;\n    struct OamMatrix matrix;\n    sAffineAnimStates[matrixNum].xScale += frameCmd->xScale;\n    sAffineAnimStates[matrixNum].yScale += frameCmd->yScale;\n    sAffineAnimStates[matrixNum].rotation = (sAffineAnimStates[matrixNum].rotation + (frameCmd->rotation << 8)) & ~0xFF;\n    srcData.xScale = ConvertScaleParam(sAffineAnimStates[matrixNum].xScale);\n    srcData.yScale = ConvertScaleParam(sAffineAnimStates[matrixNum].yScale);\n    srcData.rotation = sAffineAnimStates[matrixNum].rotation;\n    ObjAffineSet(&srcData, &matrix, 1, 2);\n    CopyOamMatrix(matrixNum, &matrix);",
+      "callsTo": [
+        "ConvertScaleParam",
+        "CopyOamMatrix",
+        "ObjAffineSet"
+      ],
+      "lineCount": 10
+    },
+    "ConvertScaleParam": {
+      "returnType": "s16",
+      "signature": "s16 ConvertScaleParam(s16 scale)",
+      "paramsRaw": "s16 scale",
+      "body": "s32 val = 0x10000;\n    return SAFE_DIV(val, scale);",
+      "callsTo": [
+        "SAFE_DIV"
+      ],
+      "lineCount": 2
+    },
+    "GetAffineAnimFrame": {
+      "returnType": "void",
+      "signature": "void GetAffineAnimFrame(u8 matrixNum, struct Sprite *sprite, struct AffineAnimFrameCmd *frameCmd)",
+      "paramsRaw": "u8 matrixNum, struct Sprite *sprite, struct AffineAnimFrameCmd *frameCmd",
+      "body": "frameCmd->xScale = sprite->affineAnims[sAffineAnimStates[matrixNum].animNum][sAffineAnimStates[matrixNum].animCmdIndex].frame.xScale;\n    frameCmd->yScale = sprite->affineAnims[sAffineAnimStates[matrixNum].animNum][sAffineAnimStates[matrixNum].animCmdIndex].frame.yScale;\n    frameCmd->rotation = sprite->affineAnims[sAffineAnimStates[matrixNum].animNum][sAffineAnimStates[matrixNum].animCmdIndex].frame.rotation;\n    frameCmd->duration = sprite->affineAnims[sAffineAnimStates[matrixNum].animNum][sAffineAnimStates[matrixNum].animCmdIndex].frame.duration;",
+      "callsTo": [],
+      "lineCount": 4
+    },
+    "ApplyAffineAnimFrame": {
+      "returnType": "void",
+      "signature": "void ApplyAffineAnimFrame(u8 matrixNum, struct AffineAnimFrameCmd *frameCmd)",
+      "paramsRaw": "u8 matrixNum, struct AffineAnimFrameCmd *frameCmd",
+      "body": "struct AffineAnimFrameCmd dummyFrameCmd = {0};\n\n    if (frameCmd->duration)\n    {\n        frameCmd->duration--;\n        ApplyAffineAnimFrameRelativeAndUpdateMatrix(matrixNum, frameCmd);\n    }\n    else\n    {\n        ApplyAffineAnimFrameAbsolute(matrixNum, frameCmd);\n        ApplyAffineAnimFrameRelativeAndUpdateMatrix(matrixNum, &dummyFrameCmd);\n    }",
+      "callsTo": [
+        "ApplyAffineAnimFrameAbsolute",
+        "ApplyAffineAnimFrameRelativeAndUpdateMatrix"
+      ],
+      "lineCount": 12
+    },
+    "StartSpriteAnim": {
+      "returnType": "void",
+      "signature": "void StartSpriteAnim(struct Sprite *sprite, u8 animNum)",
+      "paramsRaw": "struct Sprite *sprite, u8 animNum",
+      "body": "sprite->animNum = animNum;\n    sprite->animBeginning = TRUE;\n    sprite->animEnded = FALSE;",
+      "callsTo": [],
+      "lineCount": 3
+    },
+    "StartSpriteAnimIfDifferent": {
+      "returnType": "void",
+      "signature": "void StartSpriteAnimIfDifferent(struct Sprite *sprite, u8 animNum)",
+      "paramsRaw": "struct Sprite *sprite, u8 animNum",
+      "body": "if (sprite->animNum != animNum)\n        StartSpriteAnim(sprite, animNum);",
+      "callsTo": [
+        "StartSpriteAnim"
+      ],
+      "lineCount": 2
+    },
+    "SeekSpriteAnim": {
+      "returnType": "void",
+      "signature": "void SeekSpriteAnim(struct Sprite *sprite, u8 animCmdIndex)",
+      "paramsRaw": "struct Sprite *sprite, u8 animCmdIndex",
+      "body": "u8 temp = sprite->animPaused;\n    sprite->animCmdIndex = animCmdIndex - 1;\n    sprite->animDelayCounter = 0;\n    sprite->animBeginning = FALSE;\n    sprite->animEnded = FALSE;\n    sprite->animPaused = FALSE;\n    ContinueAnim(sprite);\n    if (sprite->animDelayCounter)\n        sprite->animDelayCounter++;\n    sprite->animPaused = temp;",
+      "callsTo": [
+        "ContinueAnim"
+      ],
+      "lineCount": 10
+    },
+    "StartSpriteAffineAnim": {
+      "returnType": "void",
+      "signature": "void StartSpriteAffineAnim(struct Sprite *sprite, u8 animNum)",
+      "paramsRaw": "struct Sprite *sprite, u8 animNum",
+      "body": "u8 matrixNum = GetSpriteMatrixNum(sprite);\n    AffineAnimStateStartAnim(matrixNum, animNum);\n    sprite->affineAnimBeginning = TRUE;\n    sprite->affineAnimEnded = FALSE;",
+      "callsTo": [
+        "AffineAnimStateStartAnim",
+        "GetSpriteMatrixNum"
+      ],
+      "lineCount": 4
+    },
+    "StartSpriteAffineAnimIfDifferent": {
+      "returnType": "void",
+      "signature": "void StartSpriteAffineAnimIfDifferent(struct Sprite *sprite, u8 animNum)",
+      "paramsRaw": "struct Sprite *sprite, u8 animNum",
+      "body": "u8 matrixNum = GetSpriteMatrixNum(sprite);\n    if (sAffineAnimStates[matrixNum].animNum != animNum)\n        StartSpriteAffineAnim(sprite, animNum);",
+      "callsTo": [
+        "GetSpriteMatrixNum",
+        "StartSpriteAffineAnim"
+      ],
+      "lineCount": 3
+    },
+    "ChangeSpriteAffineAnim": {
+      "returnType": "void",
+      "signature": "void ChangeSpriteAffineAnim(struct Sprite *sprite, u8 animNum)",
+      "paramsRaw": "struct Sprite *sprite, u8 animNum",
+      "body": "u8 matrixNum = GetSpriteMatrixNum(sprite);\n    sAffineAnimStates[matrixNum].animNum = animNum;\n    sprite->affineAnimBeginning = TRUE;\n    sprite->affineAnimEnded = FALSE;",
+      "callsTo": [
+        "GetSpriteMatrixNum"
+      ],
+      "lineCount": 4
+    },
+    "ChangeSpriteAffineAnimIfDifferent": {
+      "returnType": "void",
+      "signature": "void ChangeSpriteAffineAnimIfDifferent(struct Sprite *sprite, u8 animNum)",
+      "paramsRaw": "struct Sprite *sprite, u8 animNum",
+      "body": "u8 matrixNum = GetSpriteMatrixNum(sprite);\n    if (sAffineAnimStates[matrixNum].animNum != animNum)\n        ChangeSpriteAffineAnim(sprite, animNum);",
+      "callsTo": [
+        "ChangeSpriteAffineAnim",
+        "GetSpriteMatrixNum"
+      ],
+      "lineCount": 3
+    },
+    "SetSpriteSheetFrameTileNum": {
+      "returnType": "void",
+      "signature": "void SetSpriteSheetFrameTileNum(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "if (sprite->usingSheet)\n    {\n        s16 tileOffset = sprite->anims[sprite->animNum][sprite->animCmdIndex].frame.imageValue;\n        if (tileOffset < 0)\n            tileOffset = 0;\n        sprite->oam.tileNum = sprite->sheetTileStart + tileOffset;\n    }",
+      "callsTo": [],
+      "lineCount": 7
+    },
+    "ResetAffineAnimData": {
+      "returnType": "void",
+      "signature": "void ResetAffineAnimData(void)",
+      "paramsRaw": "void",
+      "body": "u8 i;\n\n    gAffineAnimsDisabled = FALSE;\n    gOamMatrixAllocBitmap = 0;\n\n    ResetOamMatrices();\n\n    for (i = 0; i < OAM_MATRIX_COUNT; i++)\n        AffineAnimStateReset(i);",
+      "callsTo": [
+        "AffineAnimStateReset",
+        "ResetOamMatrices"
+      ],
+      "lineCount": 9
+    },
+    "AllocOamMatrix": {
+      "returnType": "u8",
+      "signature": "u8 AllocOamMatrix(void)",
+      "paramsRaw": "void",
+      "body": "u8 i = 0;\n    u32 bit = 1;\n    u32 bitmap = gOamMatrixAllocBitmap;\n\n    while (i < OAM_MATRIX_COUNT)\n    {\n        if (!(bitmap & bit))\n        {\n            gOamMatrixAllocBitmap |= bit;\n            return i;\n        }\n\n        i++;\n        bit <<= 1;\n    }\n\n    return 0xFF;",
+      "callsTo": [],
+      "lineCount": 17
+    },
+    "FreeOamMatrix": {
+      "returnType": "void",
+      "signature": "void FreeOamMatrix(u8 matrixNum)",
+      "paramsRaw": "u8 matrixNum",
+      "body": "u8 i = 0;\n    u32 bit = 1;\n\n    while (i < matrixNum)\n    {\n        i++;\n        bit <<= 1;\n    }\n\n    gOamMatrixAllocBitmap &= ~bit;\n    SetOamMatrix(matrixNum, 0x100, 0, 0, 0x100);",
+      "callsTo": [
+        "SetOamMatrix"
+      ],
+      "lineCount": 11
+    },
+    "InitSpriteAffineAnim": {
+      "returnType": "void",
+      "signature": "void InitSpriteAffineAnim(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "u8 matrixNum = AllocOamMatrix();\n    if (matrixNum != 0xFF)\n    {\n        CalcCenterToCornerVec(sprite, sprite->oam.shape, sprite->oam.size, sprite->oam.affineMode);\n        sprite->oam.matrixNum = matrixNum;\n        sprite->affineAnimBeginning = TRUE;\n        AffineAnimStateReset(matrixNum);\n    }",
+      "callsTo": [
+        "AffineAnimStateReset",
+        "AllocOamMatrix",
+        "CalcCenterToCornerVec"
+      ],
+      "lineCount": 8
+    },
+    "SetOamMatrixRotationScaling": {
+      "returnType": "void",
+      "signature": "void SetOamMatrixRotationScaling(u8 matrixNum, s16 xScale, s16 yScale, u16 rotation)",
+      "paramsRaw": "u8 matrixNum, s16 xScale, s16 yScale, u16 rotation",
+      "body": "struct ObjAffineSrcData srcData;\n    struct OamMatrix matrix;\n    srcData.xScale = ConvertScaleParam(xScale);\n    srcData.yScale = ConvertScaleParam(yScale);\n    srcData.rotation = rotation;\n    ObjAffineSet(&srcData, &matrix, 1, 2);\n    CopyOamMatrix(matrixNum, &matrix);",
+      "callsTo": [
+        "ConvertScaleParam",
+        "CopyOamMatrix",
+        "ObjAffineSet"
+      ],
+      "lineCount": 7
+    },
+    "LoadSpriteSheet": {
+      "returnType": "u16",
+      "signature": "u16 LoadSpriteSheet(const struct SpriteSheet *sheet)",
+      "paramsRaw": "const struct SpriteSheet *sheet",
+      "body": "s16 tileStart = AllocSpriteTiles(sheet->size / TILE_SIZE_4BPP);\n\n    if (tileStart < 0)\n    {\n        return 0;\n    }\n    else\n    {\n        AllocSpriteTileRange(sheet->tag, (u16)tileStart, sheet->size / TILE_SIZE_4BPP);\n        CpuCopy16(sheet->data, (u8 *)OBJ_VRAM0 + TILE_SIZE_4BPP * tileStart, sheet->size);\n        return (u16)tileStart;\n    }",
+      "callsTo": [
+        "AllocSpriteTileRange",
+        "AllocSpriteTiles",
+        "CpuCopy16"
+      ],
+      "lineCount": 12
+    },
+    "LoadSpriteSheets": {
+      "returnType": "void",
+      "signature": "void LoadSpriteSheets(const struct SpriteSheet *sheets)",
+      "paramsRaw": "const struct SpriteSheet *sheets",
+      "body": "u8 i;\n    for (i = 0; sheets[i].data != NULL; i++)\n        LoadSpriteSheet(&sheets[i]);",
+      "callsTo": [
+        "LoadSpriteSheet"
+      ],
+      "lineCount": 3
+    },
+    "FreeSpriteTilesByTag": {
+      "returnType": "void",
+      "signature": "void FreeSpriteTilesByTag(u16 tag)",
+      "paramsRaw": "u16 tag",
+      "body": "u8 index = IndexOfSpriteTileTag(tag);\n    if (index != 0xFF)\n    {\n        u16 i;\n        u16 *rangeStarts;\n        u16 *rangeCounts;\n        u16 start;\n        u16 count;\n        rangeStarts = sSpriteTileRanges;\n        start = rangeStarts[index * 2];\n        rangeCounts = sSpriteTileRanges + 1;\n        count = rangeCounts[index * 2];\n\n        for (i = start; i < start + count; i++)\n            FREE_SPRITE_TILE(i);\n\n        sSpriteTileRangeTags[index] = TAG_NONE;\n    }",
+      "callsTo": [
+        "FREE_SPRITE_TILE",
+        "IndexOfSpriteTileTag"
+      ],
+      "lineCount": 18
+    },
+    "FreeSpriteTileRanges": {
+      "returnType": "void",
+      "signature": "void FreeSpriteTileRanges(void)",
+      "paramsRaw": "void",
+      "body": "u8 i;\n\n    for (i = 0; i < MAX_SPRITES; i++)\n    {\n        sSpriteTileRangeTags[i] = TAG_NONE;\n        SET_SPRITE_TILE_RANGE(i, 0, 0);\n    }",
+      "callsTo": [
+        "SET_SPRITE_TILE_RANGE"
+      ],
+      "lineCount": 7
+    },
+    "GetSpriteTileStartByTag": {
+      "returnType": "u16",
+      "signature": "u16 GetSpriteTileStartByTag(u16 tag)",
+      "paramsRaw": "u16 tag",
+      "body": "u8 index = IndexOfSpriteTileTag(tag);\n    if (index == 0xFF)\n        return 0xFFFF;\n    return sSpriteTileRanges[index * 2];",
+      "callsTo": [
+        "IndexOfSpriteTileTag"
+      ],
+      "lineCount": 4
+    },
+    "IndexOfSpriteTileTag": {
+      "returnType": "u8",
+      "signature": "u8 IndexOfSpriteTileTag(u16 tag)",
+      "paramsRaw": "u16 tag",
+      "body": "u8 i;\n\n    for (i = 0; i < MAX_SPRITES; i++)\n        if (sSpriteTileRangeTags[i] == tag)\n            return i;\n\n    return 0xFF;",
+      "callsTo": [],
+      "lineCount": 7
+    },
+    "GetSpriteTileTagByTileStart": {
+      "returnType": "u16",
+      "signature": "u16 GetSpriteTileTagByTileStart(u16 start)",
+      "paramsRaw": "u16 start",
+      "body": "u8 i;\n\n    for (i = 0; i < MAX_SPRITES; i++)\n    {\n        if (sSpriteTileRangeTags[i] != TAG_NONE && sSpriteTileRanges[i * 2] == start)\n            return sSpriteTileRangeTags[i];\n    }\n\n    return TAG_NONE;",
+      "callsTo": [],
+      "lineCount": 9
+    },
+    "AllocSpriteTileRange": {
+      "returnType": "void",
+      "signature": "void AllocSpriteTileRange(u16 tag, u16 start, u16 count)",
+      "paramsRaw": "u16 tag, u16 start, u16 count",
+      "body": "u8 freeIndex = IndexOfSpriteTileTag(TAG_NONE);\n    sSpriteTileRangeTags[freeIndex] = tag;\n    SET_SPRITE_TILE_RANGE(freeIndex, start, count);",
+      "callsTo": [
+        "IndexOfSpriteTileTag",
+        "SET_SPRITE_TILE_RANGE"
+      ],
+      "lineCount": 3
+    },
+    "FreeAllSpritePalettes": {
+      "returnType": "void",
+      "signature": "void FreeAllSpritePalettes(void)",
+      "paramsRaw": "void",
+      "body": "u8 i;\n    gReservedSpritePaletteCount = 0;\n    for (i = 0; i < 16; i++)\n        sSpritePaletteTags[i] = TAG_NONE;",
+      "callsTo": [],
+      "lineCount": 4
+    },
+    "LoadSpritePalette": {
+      "returnType": "u8",
+      "signature": "u8 LoadSpritePalette(const struct SpritePalette *palette)",
+      "paramsRaw": "const struct SpritePalette *palette",
+      "body": "u8 index = IndexOfSpritePaletteTag(palette->tag);\n\n    if (index != 0xFF)\n        return index;\n\n    index = IndexOfSpritePaletteTag(TAG_NONE);\n\n    if (index == 0xFF)\n    {\n        return 0xFF;\n    }\n    else\n    {\n        sSpritePaletteTags[index] = palette->tag;\n        DoLoadSpritePalette(palette->data, PLTT_ID(index));\n        return index;\n    }",
+      "callsTo": [
+        "DoLoadSpritePalette",
+        "IndexOfSpritePaletteTag",
+        "PLTT_ID"
+      ],
+      "lineCount": 17
+    },
+    "LoadSpritePalettes": {
+      "returnType": "void",
+      "signature": "void LoadSpritePalettes(const struct SpritePalette *palettes)",
+      "paramsRaw": "const struct SpritePalette *palettes",
+      "body": "u8 i;\n    for (i = 0; palettes[i].data != NULL; i++)\n        if (LoadSpritePalette(&palettes[i]) == 0xFF)\n            break;",
+      "callsTo": [
+        "LoadSpritePalette"
+      ],
+      "lineCount": 4
+    },
+    "DoLoadSpritePalette": {
+      "returnType": "void",
+      "signature": "void DoLoadSpritePalette(const u16 *src, u16 paletteOffset)",
+      "paramsRaw": "const u16 *src, u16 paletteOffset",
+      "body": "LoadPalette(src, OBJ_PLTT_OFFSET + paletteOffset, PLTT_SIZE_4BPP);",
+      "callsTo": [
+        "LoadPalette"
+      ],
+      "lineCount": 1
+    },
+    "AllocSpritePalette": {
+      "returnType": "u8",
+      "signature": "u8 AllocSpritePalette(u16 tag)",
+      "paramsRaw": "u16 tag",
+      "body": "u8 index = IndexOfSpritePaletteTag(TAG_NONE);\n    if (index == 0xFF)\n    {\n        return 0xFF;\n    }\n    else\n    {\n        sSpritePaletteTags[index] = tag;\n        return index;\n    }",
+      "callsTo": [
+        "IndexOfSpritePaletteTag"
+      ],
+      "lineCount": 10
+    },
+    "IndexOfSpritePaletteTag": {
+      "returnType": "u8",
+      "signature": "u8 IndexOfSpritePaletteTag(u16 tag)",
+      "paramsRaw": "u16 tag",
+      "body": "u8 i;\n    for (i = gReservedSpritePaletteCount; i < 16; i++)\n        if (sSpritePaletteTags[i] == tag)\n            return i;\n\n    return 0xFF;",
+      "callsTo": [],
+      "lineCount": 6
+    },
+    "GetSpritePaletteTagByPaletteNum": {
+      "returnType": "u16",
+      "signature": "u16 GetSpritePaletteTagByPaletteNum(u8 paletteNum)",
+      "paramsRaw": "u8 paletteNum",
+      "body": "return sSpritePaletteTags[paletteNum];",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "FreeSpritePaletteByTag": {
+      "returnType": "void",
+      "signature": "void FreeSpritePaletteByTag(u16 tag)",
+      "paramsRaw": "u16 tag",
+      "body": "u8 index = IndexOfSpritePaletteTag(tag);\n    if (index != 0xFF)\n        sSpritePaletteTags[index] = TAG_NONE;",
+      "callsTo": [
+        "IndexOfSpritePaletteTag"
+      ],
+      "lineCount": 3
+    },
+    "SetSubspriteTables": {
+      "returnType": "void",
+      "signature": "void SetSubspriteTables(struct Sprite *sprite, const struct SubspriteTable *subspriteTables)",
+      "paramsRaw": "struct Sprite *sprite, const struct SubspriteTable *subspriteTables",
+      "body": "sprite->subspriteTables = subspriteTables;\n    sprite->subspriteTableNum = 0;\n    sprite->subspriteMode = SUBSPRITES_ON;",
+      "callsTo": [],
+      "lineCount": 3
+    },
+    "AddSpriteToOamBuffer": {
+      "returnType": "bool8",
+      "signature": "bool8 AddSpriteToOamBuffer(struct Sprite *sprite, u8 *oamIndex)",
+      "paramsRaw": "struct Sprite *sprite, u8 *oamIndex",
+      "body": "if (*oamIndex >= gOamLimit)\n        return 1;\n\n    if (!sprite->subspriteTables || sprite->subspriteMode == SUBSPRITES_OFF)\n    {\n        gMain.oamBuffer[*oamIndex] = sprite->oam;\n        (*oamIndex)++;\n        return 0;\n    }\n    else\n    {\n        return AddSubspritesToOamBuffer(sprite, &gMain.oamBuffer[*oamIndex], oamIndex);\n    }",
+      "callsTo": [
+        "AddSubspritesToOamBuffer"
+      ],
+      "lineCount": 13
+    },
+    "AddSubspritesToOamBuffer": {
+      "returnType": "bool8",
+      "signature": "bool8 AddSubspritesToOamBuffer(struct Sprite *sprite, struct OamData *destOam, u8 *oamIndex)",
+      "paramsRaw": "struct Sprite *sprite, struct OamData *destOam, u8 *oamIndex",
+      "body": "const struct SubspriteTable *subspriteTable;\n    struct OamData *oam;\n\n    if (*oamIndex >= gOamLimit)\n        return 1;\n\n    subspriteTable = &sprite->subspriteTables[sprite->subspriteTableNum];\n    oam = &sprite->oam;\n\n    if (!subspriteTable || !subspriteTable->subsprites)\n    {\n        *destOam = *oam;\n        (*oamIndex)++;\n        return 0;\n    }\n    else\n    {\n        u16 tileNum;\n        u16 baseX;\n        u16 baseY;\n        u8 subspriteCount;\n        u8 hFlip;\n        u8 vFlip;\n        u8 i;\n\n        tileNum = oam->tileNum;\n        subspriteCount = subspriteTable->subspriteCount;\n        hFlip = ((s32)oam->matrixNum >> 3) & 1;\n        vFlip = ((s32)oam->matrixNum >> 4) & 1;\n        baseX = oam->x - sprite->centerToCornerVecX;\n        baseY = oam->y - sprite->centerToCornerVecY;\n\n        for (i = 0; i < subspriteCount; i++, (*oamIndex)++)\n        {\n            u16 x;\n            u16 y;\n\n            if (*oamIndex >= gOamLimit)\n                return 1;\n\n            x = subspriteTable->subsprites[i].x;\n            y = subspriteTable->subsprites[i].y;\n\n            if (hFlip)\n            {\n                s8 width = sOamDimensions[subspriteTable->subsprites[i].shape][subspriteTable->subsprites[i].size].width;\n                s16 right = x;\n                right += width;\n                x = right;\n                x = ~x + 1;\n            }\n\n            if (vFlip)\n            {\n                s8 height = sOamDimensions[subspriteTable->subsprites[i].shape][subspriteTable->subsprites[i].size].height;\n                s16 bottom = y;\n                bottom += height;\n                y = bottom;\n                y = ~y + 1;\n            }\n\n            destOam[i] = *oam;\n            destOam[i].shape = subspriteTable->subsprites[i].shape;\n            destOam[i].size = subspriteTable->subsprites[i].size;\n            destOam[i].x = (s16)baseX + (s16)x;\n            destOam[i].y = baseY + y;\n            destOam[i].tileNum = tileNum + subspriteTable->subsprites[i].tileOffset;\n\n            if (sprite->subspriteMode != SUBSPRITES_IGNORE_PRIORITY)\n                destOam[i].priority = subspriteTable->subsprites[i].priority;\n        }\n    }\n\n    return 0;",
+      "callsTo": [],
+      "lineCount": 74
+    }
+  }
+}

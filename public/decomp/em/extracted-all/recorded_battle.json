@@ -1,0 +1,393 @@
+{
+  "srcFile": "src/recorded_battle.c",
+  "count": 40,
+  "functions": {
+    "RecordedBattle_Init": {
+      "returnType": "void",
+      "signature": "void RecordedBattle_Init(u8 mode)",
+      "paramsRaw": "u8 mode",
+      "body": "s32 i, j;\n\n    sRecordMode = mode;\n    sIsPlaybackFinished = FALSE;\n\n    for (i = 0; i < MAX_BATTLERS_COUNT; i++)\n    {\n        sBattlerRecordSizes[i] = 0;\n        sBattlerPrevRecordSizes[i] = 0;\n        sBattlerSavedRecordSizes[i] = 0;\n\n        if (mode == B_RECORD_MODE_RECORDING)\n        {\n            for (j = 0; j < BATTLER_RECORD_SIZE; j++)\n                sBattleRecords[i][j] = 0xFF;\n            sBattleFlags = gBattleTypeFlags;\n            sAI_Scripts = gBattleResources->ai->aiFlags;\n        }\n    }",
+      "callsTo": [],
+      "lineCount": 19
+    },
+    "RecordedBattle_SetTrainerInfo": {
+      "returnType": "void",
+      "signature": "void RecordedBattle_SetTrainerInfo(void)",
+      "paramsRaw": "void",
+      "body": "s32 i, j;\n\n    if (sRecordMode == B_RECORD_MODE_RECORDING)\n    {\n        gRecordedBattleRngSeed = gRngValue;\n        sFrontierFacility = VarGet(VAR_FRONTIER_FACILITY);\n        sFrontierBrainSymbol = GetFronterBrainSymbol();\n    }\n    else if (sRecordMode == B_RECORD_MODE_PLAYBACK)\n    {\n        gRngValue = gRecordedBattleRngSeed;\n    }\n\n    if (gBattleTypeFlags & BATTLE_TYPE_LINK)\n    {\n         \n        u8 linkPlayersCount;\n        u8 text[30];\n\n        gRecordedBattleMultiplayerId = GetMultiplayerId();\n        linkPlayersCount = GetLinkPlayerCount();\n\n        for (i = 0; i < MAX_LINK_PLAYERS; i++)\n        {\n            sPlayers[i].trainerId = gLinkPlayers[i].trainerId;\n            sPlayers[i].gender = gLinkPlayers[i].gender;\n            sPlayers[i].battler = gLinkPlayers[i].id;\n            sPlayers[i].language = gLinkPlayers[i].language;\n\n             \n            if (i < linkPlayersCount)\n            {\n                StringCopy(text, gLinkPlayers[i].name);\n                StripExtCtrlCodes(text);\n                StringCopy(sPlayers[i].name, text);\n            }\n            else\n            {\n                for (j = 0; j < PLAYER_NAME_LENGTH + 1; j++)\n                    sPlayers[i].name[j] = gLinkPlayers[i].name[j];\n            }\n        }\n    }\n    else\n    {\n         \n        sPlayers[0].trainerId = (gSaveBlock2Ptr->playerTrainerId[0])\n                              | (gSaveBlock2Ptr->playerTrainerId[1] << 8)\n                              | (gSaveBlock2Ptr->playerTrainerId[2] << 16)\n                              | (gSaveBlock2Ptr->playerTrainerId[3] << 24);\n\n        sPlayers[0].gender = gSaveBlock2Ptr->playerGender;\n        sPlayers[0].battler = 0;\n        sPlayers[0].language = gGameLanguage;\n\n        for (i = 0; i < PLAYER_NAME_LENGTH + 1; i++)\n            sPlayers[0].name[i] = gSaveBlock2Ptr->playerName[i];\n    }",
+      "callsTo": [
+        "GetFronterBrainSymbol",
+        "GetLinkPlayerCount",
+        "GetMultiplayerId",
+        "StringCopy",
+        "StripExtCtrlCodes",
+        "VarGet"
+      ],
+      "lineCount": 58
+    },
+    "RecordedBattle_SetBattlerAction": {
+      "returnType": "void",
+      "signature": "void RecordedBattle_SetBattlerAction(u8 battler, u8 action)",
+      "paramsRaw": "u8 battler, u8 action",
+      "body": "if (sBattlerRecordSizes[battler] < BATTLER_RECORD_SIZE && sRecordMode != B_RECORD_MODE_PLAYBACK)\n        sBattleRecords[battler][sBattlerRecordSizes[battler]++] = action;",
+      "callsTo": [],
+      "lineCount": 2
+    },
+    "RecordedBattle_ClearBattlerAction": {
+      "returnType": "void",
+      "signature": "void RecordedBattle_ClearBattlerAction(u8 battler, u8 bytesToClear)",
+      "paramsRaw": "u8 battler, u8 bytesToClear",
+      "body": "s32 i;\n\n    for (i = 0; i < bytesToClear; i++)\n    {\n        sBattlerRecordSizes[battler]--;\n        sBattleRecords[battler][sBattlerRecordSizes[battler]] = 0xFF;\n        if (sBattlerRecordSizes[battler] == 0)\n            break;\n    }",
+      "callsTo": [],
+      "lineCount": 9
+    },
+    "RecordedBattle_GetBattlerAction": {
+      "returnType": "u8",
+      "signature": "u8 RecordedBattle_GetBattlerAction(u8 battler)",
+      "paramsRaw": "u8 battler",
+      "body": "if (sBattlerRecordSizes[battler] >= BATTLER_RECORD_SIZE || sBattleRecords[battler][sBattlerRecordSizes[battler]] == 0xFF)\n    {\n        gSpecialVar_Result = gBattleOutcome = B_OUTCOME_PLAYER_TELEPORTED;  \n        ResetPaletteFadeControl();\n        BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);\n        SetMainCallback2(CB2_QuitRecordedBattle);\n        return B_ACTION_NONE;\n    }\n    else\n    {\n        return sBattleRecords[battler][sBattlerRecordSizes[battler]++];\n    }",
+      "callsTo": [
+        "BeginNormalPaletteFade",
+        "ResetPaletteFadeControl",
+        "SetMainCallback2"
+      ],
+      "lineCount": 12
+    },
+    "RecordedBattle_BufferNewBattlerData": {
+      "returnType": "u8",
+      "signature": "u8 RecordedBattle_BufferNewBattlerData(u8 *dst)",
+      "paramsRaw": "u8 *dst",
+      "body": "u8 i, j;\n    u8 idx = 0;\n\n    for (i = 0; i < MAX_BATTLERS_COUNT; i++)\n    {\n        if (sBattlerRecordSizes[i] != sBattlerPrevRecordSizes[i])\n        {\n            dst[idx++] = i;\n            dst[idx++] = sBattlerRecordSizes[i] - sBattlerPrevRecordSizes[i];\n\n            for (j = 0; j < sBattlerRecordSizes[i] - sBattlerPrevRecordSizes[i]; j++)\n                dst[idx++] = sBattleRecords[i][sBattlerPrevRecordSizes[i] + j];\n\n            sBattlerPrevRecordSizes[i] = sBattlerRecordSizes[i];\n        }\n    }\n\n    return idx;",
+      "callsTo": [],
+      "lineCount": 18
+    },
+    "RecordedBattle_RecordAllBattlerData": {
+      "returnType": "void",
+      "signature": "void RecordedBattle_RecordAllBattlerData(u8 *src)",
+      "paramsRaw": "u8 *src",
+      "body": "s32 i;\n    u8 idx = 2;\n    u8 size;\n\n    if (!(gBattleTypeFlags & BATTLE_TYPE_LINK))\n        return;\n\n    for (i = 0; i < GetLinkPlayerCount(); i++)\n    {\n        if ((gLinkPlayers[i].version & 0xFF) != VERSION_EMERALD)\n            return;\n    }\n\n    if (!(gBattleTypeFlags & BATTLE_TYPE_IS_MASTER))\n    {\n        for (size = *src; size != 0;)\n        {\n            u8 battler = GetNextRecordedDataByte(src, &idx, &size);\n            u8 numActions = GetNextRecordedDataByte(src, &idx, &size);\n\n            for (i = 0; i < numActions; i++)\n                sBattleRecords[battler][sBattlerSavedRecordSizes[battler]++] = GetNextRecordedDataByte(src, &idx, &size);\n        }\n    }",
+      "callsTo": [
+        "GetLinkPlayerCount",
+        "GetNextRecordedDataByte"
+      ],
+      "lineCount": 24
+    },
+    "GetNextRecordedDataByte": {
+      "returnType": "u8",
+      "signature": "static u8 GetNextRecordedDataByte(u8 *data, u8 *idx, u8 *size)",
+      "paramsRaw": "u8 *data, u8 *idx, u8 *size",
+      "body": "(*size)--;\n    return data[(*idx)++];",
+      "callsTo": [],
+      "lineCount": 2
+    },
+    "CanCopyRecordedBattleSaveData": {
+      "returnType": "bool32",
+      "signature": "bool32 CanCopyRecordedBattleSaveData(void)",
+      "paramsRaw": "void",
+      "body": "struct RecordedBattleSave *dst = AllocZeroed(sizeof(struct RecordedBattleSave));\n    bool32 ret = CopyRecordedBattleFromSave(dst);\n    Free(dst);\n    return ret;",
+      "callsTo": [
+        "AllocZeroed",
+        "CopyRecordedBattleFromSave",
+        "Free"
+      ],
+      "lineCount": 4
+    },
+    "IsRecordedBattleSaveValid": {
+      "returnType": "bool32",
+      "signature": "static bool32 IsRecordedBattleSaveValid(struct RecordedBattleSave *save)",
+      "paramsRaw": "struct RecordedBattleSave *save",
+      "body": "if (save->battleFlags == 0)\n        return FALSE;\n    if (save->battleFlags & BATTLE_TYPE_RECORDED_INVALID)\n        return FALSE;\n    if (CalcByteArraySum((void *)(save), sizeof(*save) - 4) != save->checksum)\n        return FALSE;\n\n    return TRUE;",
+      "callsTo": [
+        "CalcByteArraySum"
+      ],
+      "lineCount": 8
+    },
+    "RecordedBattleToSave": {
+      "returnType": "bool32",
+      "signature": "static bool32 RecordedBattleToSave(struct RecordedBattleSave *battleSave, struct RecordedBattleSave *saveSector)",
+      "paramsRaw": "struct RecordedBattleSave *battleSave, struct RecordedBattleSave *saveSector",
+      "body": "memset(saveSector, 0, SECTOR_SIZE);\n    memcpy(saveSector, battleSave, sizeof(*battleSave));\n\n    saveSector->checksum = CalcByteArraySum((void *)(saveSector), sizeof(*saveSector) - 4);\n\n    if (TryWriteSpecialSaveSector(SECTOR_ID_RECORDED_BATTLE, (void *)(saveSector)) != SAVE_STATUS_OK)\n        return FALSE;\n    else\n        return TRUE;",
+      "callsTo": [
+        "CalcByteArraySum",
+        "TryWriteSpecialSaveSector"
+      ],
+      "lineCount": 9
+    },
+    "MoveRecordedBattleToSaveData": {
+      "returnType": "bool32",
+      "signature": "bool32 MoveRecordedBattleToSaveData(void)",
+      "paramsRaw": "void",
+      "body": "s32 i, j;\n    bool32 ret;\n    struct RecordedBattleSave *battleSave, *savSection;\n    u8 saveAttempts;\n\n    saveAttempts = 0;\n    battleSave = AllocZeroed(sizeof(struct RecordedBattleSave));\n    savSection = AllocZeroed(SECTOR_SIZE);\n\n    for (i = 0; i < PARTY_SIZE; i++)\n    {\n        battleSave->playerParty[i] = sSavedPlayerParty[i];\n        battleSave->opponentParty[i] = sSavedOpponentParty[i];\n    }\n\n    for (i = 0; i < MAX_LINK_PLAYERS; i++)\n    {\n        for (j = 0; j < PLAYER_NAME_LENGTH + 1; j++)\n            battleSave->playersName[i][j] = sPlayers[i].name[j];\n        battleSave->playersGender[i] = sPlayers[i].gender;\n        battleSave->playersLanguage[i] = sPlayers[i].language;\n        battleSave->playersBattlers[i] = sPlayers[i].battler;\n        battleSave->playersTrainerId[i] = sPlayers[i].trainerId;\n    }\n\n    battleSave->rngSeed = gRecordedBattleRngSeed;\n\n    if (sBattleFlags & BATTLE_TYPE_LINK)\n    {\n        battleSave->battleFlags = (sBattleFlags & ~(BATTLE_TYPE_LINK | BATTLE_TYPE_LINK_IN_BATTLE)) | BATTLE_TYPE_RECORDED_LINK;\n\n         \n         \n         \n        if (sBattleFlags & BATTLE_TYPE_IS_MASTER)\n        {\n            battleSave->battleFlags |= BATTLE_TYPE_RECORDED_IS_MASTER;\n        }\n        else if (sBattleFlags & BATTLE_TYPE_MULTI)\n        {\n            switch (sPlayers[0].battler)\n            {\n            case 0:\n            case 2:\n                if (!(sPlayers[gRecordedBattleMultiplayerId].battler & 1))\n                    battleSave->battleFlags |= BATTLE_TYPE_RECORDED_IS_MASTER;\n                break;\n            case 1:\n            case 3:\n                if ((sPlayers[gRecordedBattleMultiplayerId].battler & 1))\n                    battleSave->battleFlags |= BATTLE_TYPE_RECORDED_IS_MASTER;\n                break;\n            }\n        }\n    }\n    else\n    {\n        battleSave->battleFlags = sBattleFlags;\n    }\n\n    battleSave->opponentA = gTrainerBattleOpponent_A;\n    battleSave->opponentB = gTrainerBattleOpponent_B;\n    battleSave->partnerId = gPartnerTrainerId;\n    battleSave->multiplayerId = gRecordedBattleMultiplayerId;\n    battleSave->lvlMode = gSaveBlock2Ptr->frontier.lvlMode;\n    battleSave->frontierFacility = sFrontierFacility;\n    battleSave->frontierBrainSymbol = sFrontierBrainSymbol;\n    battleSave->battleScene = gSaveBlock2Ptr->optionsBattleSceneOff;\n    battleSave->textSpeed = gSaveBlock2Ptr->optionsTextSpeed;\n    battleSave->AI_scripts = sAI_Scripts;\n\n    if (gTrainerBattleOpponent_A >= TRAINER_RECORD_MIXING_FRIEND && gTrainerBattleOpponent_A < TRAINER_RECORD_MIXING_APPRENTICE)\n    {\n        for (i = 0; i < PLAYER_NAME_LENGTH + 1; i++)\n            battleSave->recordMixFriendName[i] = gSaveBlock2Ptr->frontier.towerRecords[gTrainerBattleOpponent_A - TRAINER_RECORD_MIXING_FRIEND].name[i];\n        battleSave->recordMixFriendClass = gSaveBlock2Ptr->frontier.towerRecords[gTrainerBattleOpponent_A - TRAINER_RECORD_MIXING_FRIEND].facilityClass;\n\n        if (sBattleOutcome == B_OUTCOME_WON)\n        {\n            for (i = 0; i < EASY_CHAT_BATTLE_WORDS_COUNT; i++)\n                battleSave->easyChatSpeech[i] = gSaveBlock2Ptr->frontier.towerRecords[gTrainerBattleOpponent_A - TRAINER_RECORD_MIXING_FRIEND].speechLost[i];\n        }\n        else\n        {\n            for (i = 0; i < EASY_CHAT_BATTLE_WORDS_COUNT; i++)\n                battleSave->easyChatSpeech[i] = gSaveBlock2Ptr->frontier.towerRecords[gTrainerBattleOpponent_A - TRAINER_RECORD_MIXING_FRIEND].speechWon[i];\n        }\n        battleSave->recordMixFriendLanguage = gSaveBlock2Ptr->frontier.towerRecords[gTrainerBattleOpponent_A - TRAINER_RECORD_MIXING_FRIEND].language;\n    }\n    else if (gTrainerBattleOpponent_B >= TRAINER_RECORD_MIXING_FRIEND && gTrainerBattleOpponent_B < TRAINER_RECORD_MIXING_APPRENTICE)\n    {\n        for (i = 0; i < PLAYER_NAME_LENGTH + 1; i++)\n            battleSave->recordMixFriendName[i] = gSaveBlock2Ptr->frontier.towerRecords[gTrainerBattleOpponent_B - TRAINER_RECORD_MIXING_FRIEND].name[i];\n        battleSave->recordMixFriendClass = gSaveBlock2Ptr->frontier.towerRecords[gTrainerBattleOpponent_B - TRAINER_RECORD_MIXING_FRIEND].facilityClass;\n\n        if (sBattleOutcome == B_OUTCOME_WON)\n        {\n            for (i = 0; i < EASY_CHAT_BATTLE_WORDS_COUNT; i++)\n                battleSave->easyChatSpeech[i] = gSaveBlock2Ptr->frontier.towerRecords[gTrainerBattleOpponent_B - TRAINER_RECORD_MIXING_FRIEND].speechLost[i];\n        }\n        else\n        {\n            for (i = 0; i < EASY_CHAT_BATTLE_WORDS_COUNT; i++)\n                battleSave->easyChatSpeech[i] = gSaveBlock2Ptr->frontier.towerRecords[gTrainerBattleOpponent_B - TRAINER_RECORD_MIXING_FRIEND].speechWon[i];\n        }\n        battleSave->recordMixFriendLanguage = gSaveBlock2Ptr->frontier.towerRecords[gTrainerBattleOpponent_B - TRAINER_RECORD_MIXING_FRIEND].language;\n    }\n    else if (gPartnerTrainerId >= TRAINER_RECORD_MIXING_FRIEND && gPartnerTrainerId < TRAINER_RECORD_MIXING_APPRENTICE)\n    {\n        for (i = 0; i < PLAYER_NAME_LENGTH + 1; i++)\n            battleSave->recordMixFriendName[i] = gSaveBlock2Ptr->frontier.towerRecords[gPartnerTrainerId - TRAINER_RECORD_MIXING_FRIEND].name[i];\n        battleSave->recordMixFriendClass = gSaveBlock2Ptr->frontier.towerRecords[gPartnerTrainerId - TRAINER_RECORD_MIXING_FRIEND].facilityClass;\n\n        battleSave->recordMixFriendLanguage = gSaveBlock2Ptr->frontier.towerRecords[gPartnerTrainerId - TRAINER_RECORD_MIXING_FRIEND].language;\n    }\n\n    if (gTrainerBattleOpponent_A >= TRAINER_RECORD_MIXING_APPRENTICE)\n    {\n        battleSave->apprenticeId = gSaveBlock2Ptr->apprentices[gTrainerBattleOpponent_A - TRAINER_RECORD_MIXING_APPRENTICE].id;\n        for (i = 0; i < EASY_CHAT_BATTLE_WORDS_COUNT; i++)\n            battleSave->easyChatSpeech[i] = gSaveBlock2Ptr->apprentices[gTrainerBattleOpponent_A - TRAINER_RECORD_MIXING_APPRENTICE].speechWon[i];\n        battleSave->apprenticeLanguage = gSaveBlock2Ptr->apprentices[gTrainerBattleOpponent_A - TRAINER_RECORD_MIXING_APPRENTICE].language;\n    }\n    else if (gTrainerBattleOpponent_B >= TRAINER_RECORD_MIXING_APPRENTICE)\n    {\n        battleSave->apprenticeId = gSaveBlock2Ptr->apprentices[gTrainerBattleOpponent_B - TRAINER_RECORD_MIXING_APPRENTICE].id;\n        for (i = 0; i < EASY_CHAT_BATTLE_WORDS_COUNT; i++)\n            battleSave->easyChatSpeech[i] = gSaveBlock2Ptr->apprentices[gTrainerBattleOpponent_B - TRAINER_RECORD_MIXING_APPRENTICE].speechWon[i];\n        battleSave->apprenticeLanguage = gSaveBlock2Ptr->apprentices[gTrainerBattleOpponent_B - TRAINER_RECORD_MIXING_APPRENTICE].language;\n    }\n    else if (gPartnerTrainerId >= TRAINER_RECORD_MIXING_APPRENTICE)\n    {\n        battleSave->apprenticeId = gSaveBlock2Ptr->apprentices[gPartnerTrainerId - TRAINER_RECORD_MIXING_APPRENTICE].id;\n\n        battleSave->apprenticeLanguage = gSaveBlock2Ptr->apprentices[gPartnerTrainerId - TRAINER_RECORD_MIXING_APPRENTICE].language;\n    }\n\n    for (i = 0; i < MAX_BATTLERS_COUNT; i++)\n        for (j = 0; j < BATTLER_RECORD_SIZE; j++)\n            battleSave->battleRecord[i][j] = sBattleRecords[i][j];\n\n    while (1)\n    {\n        ret = RecordedBattleToSave(battleSave, savSection);\n        if (ret == TRUE)\n            break;\n        saveAttempts++;\n        if (saveAttempts >= 3)\n            break;\n    }\n\n    Free(battleSave);\n    Free(savSection);\n    return ret;",
+      "callsTo": [
+        "AllocZeroed",
+        "Free",
+        "RecordedBattleToSave"
+      ],
+      "lineCount": 154
+    },
+    "TryCopyRecordedBattleSaveData": {
+      "returnType": "bool32",
+      "signature": "static bool32 TryCopyRecordedBattleSaveData(struct RecordedBattleSave *dst, struct SaveSector *saveBuffer)",
+      "paramsRaw": "struct RecordedBattleSave *dst, struct SaveSector *saveBuffer",
+      "body": "if (TryReadSpecialSaveSector(SECTOR_ID_RECORDED_BATTLE, (void *)(saveBuffer)) != SAVE_STATUS_OK)\n        return FALSE;\n\n    memcpy(dst, saveBuffer, sizeof(struct RecordedBattleSave));\n\n    if (!IsRecordedBattleSaveValid(dst))\n        return FALSE;\n\n    return TRUE;",
+      "callsTo": [
+        "IsRecordedBattleSaveValid",
+        "TryReadSpecialSaveSector"
+      ],
+      "lineCount": 9
+    },
+    "CopyRecordedBattleFromSave": {
+      "returnType": "bool32",
+      "signature": "static bool32 CopyRecordedBattleFromSave(struct RecordedBattleSave *dst)",
+      "paramsRaw": "struct RecordedBattleSave *dst",
+      "body": "struct SaveSector *savBuffer = AllocZeroed(SECTOR_SIZE);\n    bool32 ret = TryCopyRecordedBattleSaveData(dst, savBuffer);\n    Free(savBuffer);\n\n    return ret;",
+      "callsTo": [
+        "AllocZeroed",
+        "Free",
+        "TryCopyRecordedBattleSaveData"
+      ],
+      "lineCount": 5
+    },
+    "CB2_RecordedBattleEnd": {
+      "returnType": "void",
+      "signature": "static void CB2_RecordedBattleEnd(void)",
+      "paramsRaw": "void",
+      "body": "gSaveBlock2Ptr->frontier.lvlMode = sLvlMode;\n    gBattleOutcome = 0;\n    gBattleTypeFlags = 0;\n    gTrainerBattleOpponent_A = 0;\n    gTrainerBattleOpponent_B = 0;\n    gPartnerTrainerId = 0;\n\n    RecordedBattle_RestoreSavedParties();\n    SetMainCallback2(sCallback2_AfterRecordedBattle);",
+      "callsTo": [
+        "RecordedBattle_RestoreSavedParties",
+        "SetMainCallback2"
+      ],
+      "lineCount": 9
+    },
+    "Task_StartAfterCountdown": {
+      "returnType": "void",
+      "signature": "static void Task_StartAfterCountdown(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "if (--gTasks[taskId].tFramesToWait == 0)\n    {\n        gMain.savedCallback = CB2_RecordedBattleEnd;\n        SetMainCallback2(CB2_InitBattle);\n        DestroyTask(taskId);\n    }",
+      "callsTo": [
+        "DestroyTask",
+        "SetMainCallback2"
+      ],
+      "lineCount": 6
+    },
+    "SetVariablesForRecordedBattle": {
+      "returnType": "void",
+      "signature": "static void SetVariablesForRecordedBattle(struct RecordedBattleSave *src)",
+      "paramsRaw": "struct RecordedBattleSave *src",
+      "body": "bool8 var;\n    s32 i, j;\n\n    ZeroPlayerPartyMons();\n    ZeroEnemyPartyMons();\n\n    for (i = 0; i < PARTY_SIZE; i++)\n    {\n        gPlayerParty[i] = src->playerParty[i];\n        gEnemyParty[i] = src->opponentParty[i];\n    }\n\n    for (i = 0; i < MAX_LINK_PLAYERS; i++)\n    {\n        for (var = FALSE, j = 0; j < PLAYER_NAME_LENGTH + 1; j++)\n        {\n            gLinkPlayers[i].name[j] = src->playersName[i][j];\n            if (src->playersName[i][j] == EOS)\n                var = TRUE;\n        }\n        gLinkPlayers[i].gender = src->playersGender[i];\n        gLinkPlayers[i].language = src->playersLanguage[i];\n        gLinkPlayers[i].id = src->playersBattlers[i];\n        gLinkPlayers[i].trainerId = src->playersTrainerId[i];\n\n        if (var)\n            ConvertInternationalString(gLinkPlayers[i].name, gLinkPlayers[i].language);\n    }\n\n    gRecordedBattleRngSeed = src->rngSeed;\n    gBattleTypeFlags = src->battleFlags | BATTLE_TYPE_RECORDED;\n    gTrainerBattleOpponent_A = src->opponentA;\n    gTrainerBattleOpponent_B = src->opponentB;\n    gPartnerTrainerId = src->partnerId;\n    gRecordedBattleMultiplayerId = src->multiplayerId;\n    sLvlMode = gSaveBlock2Ptr->frontier.lvlMode;\n    sFrontierFacility = src->frontierFacility;\n    sFrontierBrainSymbol = src->frontierBrainSymbol;\n    sBattleScene = src->battleScene;\n    sTextSpeed = src->textSpeed;\n    sAI_Scripts = src->AI_scripts;\n\n    for (i = 0; i < PLAYER_NAME_LENGTH + 1; i++)\n        sRecordMixFriendName[i] = src->recordMixFriendName[i];\n\n    sRecordMixFriendClass = src->recordMixFriendClass;\n    sApprenticeId = src->apprenticeId;\n    sRecordMixFriendLanguage = src->recordMixFriendLanguage;\n    sApprenticeLanguage = src->apprenticeLanguage;\n\n    for (i = 0; i < EASY_CHAT_BATTLE_WORDS_COUNT; i++)\n        sEasyChatSpeech[i] = src->easyChatSpeech[i];\n\n    gSaveBlock2Ptr->frontier.lvlMode = src->lvlMode;\n\n    for (i = 0; i < MAX_BATTLERS_COUNT; i++)\n        for (j = 0; j < BATTLER_RECORD_SIZE; j++)\n            sBattleRecords[i][j] = src->battleRecord[i][j];",
+      "callsTo": [
+        "ConvertInternationalString",
+        "ZeroEnemyPartyMons",
+        "ZeroPlayerPartyMons"
+      ],
+      "lineCount": 58
+    },
+    "PlayRecordedBattle": {
+      "returnType": "void",
+      "signature": "void PlayRecordedBattle(void (*CB2_After)(void))",
+      "paramsRaw": "void (*CB2_After)(void)",
+      "body": "struct RecordedBattleSave *battleSave = AllocZeroed(sizeof(struct RecordedBattleSave));\n    if (CopyRecordedBattleFromSave(battleSave) == TRUE)\n    {\n        u8 taskId;\n\n        RecordedBattle_SaveParties();\n        SetVariablesForRecordedBattle(battleSave);\n\n        taskId = CreateTask(Task_StartAfterCountdown, 1);\n        gTasks[taskId].tFramesToWait = 128;\n\n        sCallback2_AfterRecordedBattle = CB2_After;\n        PlayMapChosenOrBattleBGM(FALSE);\n        SetMainCallback2(CB2_RecordedBattle);\n    }\n    Free(battleSave);",
+      "callsTo": [
+        "AllocZeroed",
+        "CopyRecordedBattleFromSave",
+        "CreateTask",
+        "Free",
+        "PlayMapChosenOrBattleBGM",
+        "RecordedBattle_SaveParties",
+        "SetMainCallback2",
+        "SetVariablesForRecordedBattle"
+      ],
+      "lineCount": 16
+    },
+    "CB2_RecordedBattle": {
+      "returnType": "void",
+      "signature": "static void CB2_RecordedBattle(void)",
+      "paramsRaw": "void",
+      "body": "AnimateSprites();\n    BuildOamBuffer();\n    RunTasks();",
+      "callsTo": [
+        "AnimateSprites",
+        "BuildOamBuffer",
+        "RunTasks"
+      ],
+      "lineCount": 3
+    },
+    "GetRecordedBattleFrontierFacility": {
+      "returnType": "u8",
+      "signature": "u8 GetRecordedBattleFrontierFacility(void)",
+      "paramsRaw": "void",
+      "body": "return sFrontierFacility;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "GetRecordedBattleFronterBrainSymbol": {
+      "returnType": "u8",
+      "signature": "u8 GetRecordedBattleFronterBrainSymbol(void)",
+      "paramsRaw": "void",
+      "body": "return sFrontierBrainSymbol;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "RecordedBattle_SaveParties": {
+      "returnType": "void",
+      "signature": "void RecordedBattle_SaveParties(void)",
+      "paramsRaw": "void",
+      "body": "s32 i;\n\n    for (i = 0; i < PARTY_SIZE; i++)\n    {\n        sSavedPlayerParty[i] = gPlayerParty[i];\n        sSavedOpponentParty[i] = gEnemyParty[i];\n    }",
+      "callsTo": [],
+      "lineCount": 7
+    },
+    "RecordedBattle_RestoreSavedParties": {
+      "returnType": "void",
+      "signature": "static void RecordedBattle_RestoreSavedParties(void)",
+      "paramsRaw": "void",
+      "body": "s32 i;\n\n    for (i = 0; i < PARTY_SIZE; i++)\n    {\n        gPlayerParty[i] = sSavedPlayerParty[i];\n        gEnemyParty[i] = sSavedOpponentParty[i];\n    }",
+      "callsTo": [],
+      "lineCount": 7
+    },
+    "GetActiveBattlerLinkPlayerGender": {
+      "returnType": "u8",
+      "signature": "u8 GetActiveBattlerLinkPlayerGender(void)",
+      "paramsRaw": "void",
+      "body": "s32 i;\n\n    for (i = 0; i < MAX_LINK_PLAYERS; i++)\n    {\n        if (gLinkPlayers[i].id == gActiveBattler)\n            break;\n    }\n\n    if (i != MAX_LINK_PLAYERS)\n        return gLinkPlayers[i].gender;\n\n    return 0;",
+      "callsTo": [],
+      "lineCount": 12
+    },
+    "RecordedBattle_ClearFrontierPassFlag": {
+      "returnType": "void",
+      "signature": "void RecordedBattle_ClearFrontierPassFlag(void)",
+      "paramsRaw": "void",
+      "body": "sFrontierPassFlag = 0;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "RecordedBattle_SetFrontierPassFlagFromHword": {
+      "returnType": "void",
+      "signature": "void RecordedBattle_SetFrontierPassFlagFromHword(u16 flags)",
+      "paramsRaw": "u16 flags",
+      "body": "sFrontierPassFlag |= (flags & (1 << 15)) >> 15;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "RecordedBattle_GetFrontierPassFlag": {
+      "returnType": "u8",
+      "signature": "u8 RecordedBattle_GetFrontierPassFlag(void)",
+      "paramsRaw": "void",
+      "body": "return sFrontierPassFlag;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "GetBattleSceneInRecordedBattle": {
+      "returnType": "u8",
+      "signature": "u8 GetBattleSceneInRecordedBattle(void)",
+      "paramsRaw": "void",
+      "body": "return sBattleScene;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "GetTextSpeedInRecordedBattle": {
+      "returnType": "u8",
+      "signature": "u8 GetTextSpeedInRecordedBattle(void)",
+      "paramsRaw": "void",
+      "body": "return sTextSpeed;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "RecordedBattle_CopyBattlerMoves": {
+      "returnType": "void",
+      "signature": "void RecordedBattle_CopyBattlerMoves(void)",
+      "paramsRaw": "void",
+      "body": "s32 i;\n\n    if (GetBattlerSide(gActiveBattler) == B_SIDE_OPPONENT)\n        return;\n    if (gBattleTypeFlags & (BATTLE_TYPE_LINK | BATTLE_TYPE_RECORDED_LINK))\n        return;\n    if (sRecordMode == B_RECORD_MODE_PLAYBACK)\n        return;\n\n    for (i = 0; i < MAX_MON_MOVES; i++)\n        sPlayerMonMoves[gActiveBattler / 2][i] = gBattleMons[gActiveBattler].moves[i];",
+      "callsTo": [
+        "GetBattlerSide"
+      ],
+      "lineCount": 11
+    },
+    "RecordedBattle_CheckMovesetChanges": {
+      "returnType": "void",
+      "signature": "void RecordedBattle_CheckMovesetChanges(u8 mode)",
+      "paramsRaw": "u8 mode",
+      "body": "s32 battler, j, k;\n\n    if (gBattleTypeFlags & (BATTLE_TYPE_LINK | BATTLE_TYPE_RECORDED_LINK))\n        return;\n\n    for (battler = 0; battler < gBattlersCount; battler++)\n    {\n         \n        if (GetBattlerSide(battler) != B_SIDE_OPPONENT)\n        {\n            if (mode == B_RECORD_MODE_RECORDING)\n            {\n                 \n                for (j = 0; j < MAX_MON_MOVES; j++)\n                {\n                    if (gBattleMons[battler].moves[j] != sPlayerMonMoves[battler / 2][j])\n                        break;\n                }\n                if (j != MAX_MON_MOVES)\n                {\n                     \n                    RecordedBattle_SetBattlerAction(battler, ACTION_MOVE_CHANGE);\n                    for (j = 0; j < MAX_MON_MOVES; j++)\n                    {\n                        for (k = 0; k < MAX_MON_MOVES; k++)\n                        {\n                            if (gBattleMons[battler].moves[j] == sPlayerMonMoves[battler / 2][k])\n                            {\n                                RecordedBattle_SetBattlerAction(battler, k);\n                                break;\n                            }\n                        }\n                    }\n                }\n            }\n            else  \n            {\n                if (sBattleRecords[battler][sBattlerRecordSizes[battler]] == ACTION_MOVE_CHANGE)\n                {\n                    u8 ppBonuses[MAX_MON_MOVES];\n                    u8 moveSlots[MAX_MON_MOVES];\n                    u8 mimickedMoveSlots[MAX_MON_MOVES];\n                    struct ChooseMoveStruct movePp;\n                    u8 ppBonusSet;\n\n                     \n                     \n                    RecordedBattle_GetBattlerAction(battler);\n\n                    for (j = 0; j < MAX_MON_MOVES; j++)\n                        ppBonuses[j] = ((gBattleMons[battler].ppBonuses & (3 << (j << 1))) >> (j << 1));\n\n                    for (j = 0; j < MAX_MON_MOVES; j++)\n                    {\n                        moveSlots[j] = RecordedBattle_GetBattlerAction(battler);\n                        movePp.moves[j] = gBattleMons[battler].moves[moveSlots[j]];\n                        movePp.currentPp[j] = gBattleMons[battler].pp[moveSlots[j]];\n                        movePp.maxPp[j] = ppBonuses[moveSlots[j]];\n                        mimickedMoveSlots[j] = (gDisableStructs[battler].mimickedMoves & gBitTable[j]) >> j;\n                    }\n                    for (j = 0; j < MAX_MON_MOVES; j++)\n                    {\n                        gBattleMons[battler].moves[j] = movePp.moves[j];\n                        gBattleMons[battler].pp[j] = movePp.currentPp[j];\n                    }\n                    gBattleMons[battler].ppBonuses = 0;\n                    gDisableStructs[battler].mimickedMoves = 0;\n                    for (j = 0; j < MAX_MON_MOVES; j++)\n                    {\n                        gBattleMons[battler].ppBonuses |= movePp.maxPp[j] << (j << 1);\n                        gDisableStructs[battler].mimickedMoves |= mimickedMoveSlots[j] << j;\n                    }\n\n                    if (!(gBattleMons[battler].status2 & STATUS2_TRANSFORMED))\n                    {\n                        for (j = 0; j < MAX_MON_MOVES; j++)\n                            ppBonuses[j] = (GetMonData(&gPlayerParty[gBattlerPartyIndexes[battler]], MON_DATA_PP_BONUSES, NULL) & ((3 << (j << 1)))) >> (j << 1);\n\n                        for (j = 0; j < MAX_MON_MOVES; j++)\n                        {\n                            movePp.moves[j] = GetMonData(&gPlayerParty[gBattlerPartyIndexes[battler]], MON_DATA_MOVE1 + moveSlots[j], NULL);\n                            movePp.currentPp[j] = GetMonData(&gPlayerParty[gBattlerPartyIndexes[battler]], MON_DATA_PP1 + moveSlots[j], NULL);\n                            movePp.maxPp[j] = ppBonuses[moveSlots[j]];\n                        }\n                        for (j = 0; j < MAX_MON_MOVES; j++)\n                        {\n                            SetMonData(&gPlayerParty[gBattlerPartyIndexes[battler]], MON_DATA_MOVE1 + j, &movePp.moves[j]);\n                            SetMonData(&gPlayerParty[gBattlerPartyIndexes[battler]], MON_DATA_PP1 + j, &movePp.currentPp[j]);\n                        }\n                        ppBonusSet = 0;\n                        for (j = 0; j < MAX_MON_MOVES; j++)\n                            ppBonusSet |= movePp.maxPp[j] << (j << 1);\n\n                        SetMonData(&gPlayerParty[gBattlerPartyIndexes[battler]], MON_DATA_PP_BONUSES, &ppBonusSet);\n                    }\n                    gChosenMoveByBattler[battler] = gBattleMons[battler].moves[*(gBattleStruct->chosenMovePositions + battler)];\n                }\n            }\n        }\n    }",
+      "callsTo": [
+        "GetBattlerSide",
+        "GetMonData",
+        "RecordedBattle_GetBattlerAction",
+        "RecordedBattle_SetBattlerAction",
+        "SetMonData"
+      ],
+      "lineCount": 100
+    },
+    "GetAiScriptsInRecordedBattle": {
+      "returnType": "u32",
+      "signature": "u32 GetAiScriptsInRecordedBattle(void)",
+      "paramsRaw": "void",
+      "body": "return sAI_Scripts;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "RecordedBattle_SetPlaybackFinished": {
+      "returnType": "void",
+      "signature": "void RecordedBattle_SetPlaybackFinished(void)",
+      "paramsRaw": "void",
+      "body": "sIsPlaybackFinished = TRUE;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "RecordedBattle_CanStopPlayback": {
+      "returnType": "bool8",
+      "signature": "bool8 RecordedBattle_CanStopPlayback(void)",
+      "paramsRaw": "void",
+      "body": "return (sIsPlaybackFinished == FALSE);",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "GetRecordedBattleRecordMixFriendName": {
+      "returnType": "void",
+      "signature": "void GetRecordedBattleRecordMixFriendName(u8 *dst)",
+      "paramsRaw": "u8 *dst",
+      "body": "s32 i;\n\n    for (i = 0; i < PLAYER_NAME_LENGTH + 1; i++)\n        dst[i] = sRecordMixFriendName[i];\n    dst[PLAYER_NAME_LENGTH] = EOS;\n    ConvertInternationalString(dst, sRecordMixFriendLanguage);",
+      "callsTo": [
+        "ConvertInternationalString"
+      ],
+      "lineCount": 6
+    },
+    "GetRecordedBattleRecordMixFriendClass": {
+      "returnType": "u8",
+      "signature": "u8 GetRecordedBattleRecordMixFriendClass(void)",
+      "paramsRaw": "void",
+      "body": "return sRecordMixFriendClass;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "GetRecordedBattleApprenticeId": {
+      "returnType": "u8",
+      "signature": "u8 GetRecordedBattleApprenticeId(void)",
+      "paramsRaw": "void",
+      "body": "return sApprenticeId;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "GetRecordedBattleRecordMixFriendLanguage": {
+      "returnType": "u8",
+      "signature": "u8 GetRecordedBattleRecordMixFriendLanguage(void)",
+      "paramsRaw": "void",
+      "body": "return sRecordMixFriendLanguage;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "GetRecordedBattleApprenticeLanguage": {
+      "returnType": "u8",
+      "signature": "u8 GetRecordedBattleApprenticeLanguage(void)",
+      "paramsRaw": "void",
+      "body": "return sApprenticeLanguage;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "RecordedBattle_SaveBattleOutcome": {
+      "returnType": "void",
+      "signature": "void RecordedBattle_SaveBattleOutcome(void)",
+      "paramsRaw": "void",
+      "body": "sBattleOutcome = gBattleOutcome;",
+      "callsTo": [],
+      "lineCount": 1
+    }
+  }
+}

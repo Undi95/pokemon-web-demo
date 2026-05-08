@@ -1,0 +1,50 @@
+{
+  "srcFile": "src/fldeff_strength.c",
+  "count": 4,
+  "functions": {
+    "SetUpFieldMove_Strength": {
+      "returnType": "bool8",
+      "signature": "bool8 SetUpFieldMove_Strength(void)",
+      "paramsRaw": "void",
+      "body": "if (CheckObjectGraphicsInFrontOfPlayer(OBJ_EVENT_GFX_PUSHABLE_BOULDER) == TRUE)\n    {\n        gSpecialVar_Result = GetCursorSelectionMonId();\n        gFieldCallback2 = FieldCallback_PrepareFadeInFromMenu;\n        gPostMenuFieldCallback = FieldCallback_Strength;\n        return TRUE;\n    }\n    return FALSE;",
+      "callsTo": [
+        "CheckObjectGraphicsInFrontOfPlayer",
+        "GetCursorSelectionMonId"
+      ],
+      "lineCount": 8
+    },
+    "FieldCallback_Strength": {
+      "returnType": "void",
+      "signature": "static void FieldCallback_Strength(void)",
+      "paramsRaw": "void",
+      "body": "gFieldEffectArguments[0] = GetCursorSelectionMonId();\n    ScriptContext_SetupScript(EventScript_UseStrength);",
+      "callsTo": [
+        "GetCursorSelectionMonId",
+        "ScriptContext_SetupScript"
+      ],
+      "lineCount": 2
+    },
+    "FldEff_UseStrength": {
+      "returnType": "bool8",
+      "signature": "bool8 FldEff_UseStrength(void)",
+      "paramsRaw": "void",
+      "body": "u8 taskId = CreateFieldMoveTask();\n    gTasks[taskId].data[8] = (u32)StartStrengthFieldEffect >> 16;\n    gTasks[taskId].data[9] = (u32)StartStrengthFieldEffect;\n    GetMonNickname(&gPlayerParty[gFieldEffectArguments[0]], gStringVar1);\n    return FALSE;",
+      "callsTo": [
+        "CreateFieldMoveTask",
+        "GetMonNickname"
+      ],
+      "lineCount": 5
+    },
+    "StartStrengthFieldEffect": {
+      "returnType": "void",
+      "signature": "static void StartStrengthFieldEffect(void)",
+      "paramsRaw": "void",
+      "body": "FieldEffectActiveListRemove(FLDEFF_USE_STRENGTH);\n    ScriptContext_Enable();",
+      "callsTo": [
+        "FieldEffectActiveListRemove",
+        "ScriptContext_Enable"
+      ],
+      "lineCount": 2
+    }
+  }
+}

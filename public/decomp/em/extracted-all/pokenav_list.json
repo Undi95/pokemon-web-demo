@@ -1,0 +1,549 @@
+{
+  "srcFile": "src/pokenav_list.c",
+  "count": 46,
+  "functions": {
+    "CreatePokenavList": {
+      "returnType": "bool32",
+      "signature": "bool32 CreatePokenavList(const struct BgTemplate *bgTemplate, struct PokenavListTemplate *listTemplate, s32 tileOffset)",
+      "paramsRaw": "const struct BgTemplate *bgTemplate, struct PokenavListTemplate *listTemplate, s32 tileOffset",
+      "body": "struct PokenavList *list = AllocSubstruct(POKENAV_SUBSTRUCT_LIST, sizeof(struct PokenavList));\n    if (list == NULL)\n        return FALSE;\n\n    InitPokenavListWindowState(&list->windowState, listTemplate);\n    if (!CopyPokenavListMenuTemplate(&list->sub, bgTemplate, listTemplate, tileOffset))\n        return FALSE;\n\n    CreateLoopedTask(LoopedTask_CreatePokenavList, 6);\n    return TRUE;",
+      "callsTo": [
+        "AllocSubstruct",
+        "CopyPokenavListMenuTemplate",
+        "CreateLoopedTask",
+        "InitPokenavListWindowState"
+      ],
+      "lineCount": 10
+    },
+    "IsCreatePokenavListTaskActive": {
+      "returnType": "bool32",
+      "signature": "bool32 IsCreatePokenavListTaskActive(void)",
+      "paramsRaw": "void",
+      "body": "return FuncIsActiveLoopedTask(LoopedTask_CreatePokenavList);",
+      "callsTo": [
+        "FuncIsActiveLoopedTask"
+      ],
+      "lineCount": 1
+    },
+    "DestroyPokenavList": {
+      "returnType": "void",
+      "signature": "void DestroyPokenavList(void)",
+      "paramsRaw": "void",
+      "body": "struct PokenavList *list = GetSubstructPtr(POKENAV_SUBSTRUCT_LIST);\n    DestroyListArrows(&list->sub);\n    RemoveWindow(list->sub.listWindow.windowId);\n    FreePokenavSubstruct(POKENAV_SUBSTRUCT_LIST);",
+      "callsTo": [
+        "DestroyListArrows",
+        "FreePokenavSubstruct",
+        "GetSubstructPtr",
+        "RemoveWindow"
+      ],
+      "lineCount": 4
+    },
+    "LoopedTask_CreatePokenavList": {
+      "returnType": "u32",
+      "signature": "static u32 LoopedTask_CreatePokenavList(s32 state)",
+      "paramsRaw": "s32 state",
+      "body": "struct PokenavList *list;\n\n    if (IsDma3ManagerBusyWithBgCopy())\n        return LT_PAUSE;\n\n    list = GetSubstructPtr(POKENAV_SUBSTRUCT_LIST);\n\n    switch (state)\n    {\n    case 0:\n        InitPokenavListBg(list);\n        return LT_INC_AND_PAUSE;\n    case 1:\n        InitPokenavListWindow(&list->sub.listWindow);\n        return LT_INC_AND_PAUSE;\n    case 2:\n        InitListItems(&list->windowState, &list->sub);\n        return LT_INC_AND_PAUSE;\n    case 3:\n        if (IsPrintListItemsTaskActive())\n        {\n            return LT_PAUSE;\n        }\n        else\n        {\n            LoadListArrowGfx();\n            return LT_INC_AND_CONTINUE;\n        }\n    case 4:\n        CreateListArrowSprites(&list->windowState, &list->sub);\n        return LT_FINISH;\n    default:\n        return LT_FINISH;\n    }",
+      "callsTo": [
+        "CreateListArrowSprites",
+        "GetSubstructPtr",
+        "InitListItems",
+        "InitPokenavListBg",
+        "InitPokenavListWindow",
+        "IsDma3ManagerBusyWithBgCopy",
+        "IsPrintListItemsTaskActive",
+        "LoadListArrowGfx"
+      ],
+      "lineCount": 34
+    },
+    "InitPokenavListBg": {
+      "returnType": "void",
+      "signature": "static void InitPokenavListBg(struct PokenavList *list)",
+      "paramsRaw": "struct PokenavList *list",
+      "body": "u16 tileNum = (list->sub.listWindow.fillValue << 12) | list->sub.listWindow.tileOffset;\n    BgDmaFill(list->sub.listWindow.bg, PIXEL_FILL(1), list->sub.listWindow.tileOffset, 1);\n    BgDmaFill(list->sub.listWindow.bg, PIXEL_FILL(4), list->sub.listWindow.tileOffset + 1, 1);\n    SetBgTilemapBuffer(list->sub.listWindow.bg, list->tilemapBuffer);\n    FillBgTilemapBufferRect_Palette0(list->sub.listWindow.bg, tileNum, 0, 0, 32, 32);\n    ChangeBgY(list->sub.listWindow.bg, 0, BG_COORD_SET);\n    ChangeBgX(list->sub.listWindow.bg, 0, BG_COORD_SET);\n    ChangeBgY(list->sub.listWindow.bg, list->sub.listWindow.y << 11, BG_COORD_SUB);\n    CopyBgTilemapBufferToVram(list->sub.listWindow.bg);",
+      "callsTo": [
+        "BgDmaFill",
+        "ChangeBgX",
+        "ChangeBgY",
+        "CopyBgTilemapBufferToVram",
+        "FillBgTilemapBufferRect_Palette0",
+        "PIXEL_FILL",
+        "SetBgTilemapBuffer"
+      ],
+      "lineCount": 9
+    },
+    "InitPokenavListWindow": {
+      "returnType": "void",
+      "signature": "static void InitPokenavListWindow(struct PokenavListMenuWindow *listWindow)",
+      "paramsRaw": "struct PokenavListMenuWindow *listWindow",
+      "body": "FillWindowPixelBuffer(listWindow->windowId, PIXEL_FILL(1));\n    PutWindowTilemap(listWindow->windowId);\n    CopyWindowToVram(listWindow->windowId, COPYWIN_MAP);",
+      "callsTo": [
+        "CopyWindowToVram",
+        "FillWindowPixelBuffer",
+        "PIXEL_FILL",
+        "PutWindowTilemap"
+      ],
+      "lineCount": 3
+    },
+    "InitListItems": {
+      "returnType": "void",
+      "signature": "static void InitListItems(struct PokenavListWindowState *windowState, struct PokenavListSub *subPtr)",
+      "paramsRaw": "struct PokenavListWindowState *windowState, struct PokenavListSub *subPtr",
+      "body": "s32 numToPrint = windowState->listLength - windowState->windowTopIndex;\n    if (numToPrint > windowState->entriesOnscreen)\n        numToPrint = windowState->entriesOnscreen;\n\n    PrintListItems(windowState->listPtr, windowState->windowTopIndex, numToPrint, windowState->listItemSize, 0, subPtr);",
+      "callsTo": [
+        "PrintListItems"
+      ],
+      "lineCount": 5
+    },
+    "PrintListItems": {
+      "returnType": "void",
+      "signature": "static void PrintListItems(void *listPtr, u32 topIndex, u32 numItems, u32 itemSize, u32 printStart, struct PokenavListSub *list)",
+      "paramsRaw": "void *listPtr, u32 topIndex, u32 numItems, u32 itemSize, u32 printStart, struct PokenavListSub *list",
+      "body": "if (numItems == 0)\n        return;\n\n    list->listPtr = listPtr + topIndex * itemSize;\n    list->itemSize = itemSize;\n    list->listWindow.numPrinted = 0;\n    list->listWindow.numToPrint = numItems;\n    list->printIndex = topIndex;\n    list->printStart = printStart;\n    CreateLoopedTask(LoopedTask_PrintListItems, 5);",
+      "callsTo": [
+        "CreateLoopedTask"
+      ],
+      "lineCount": 10
+    },
+    "IsPrintListItemsTaskActive": {
+      "returnType": "bool32",
+      "signature": "static bool32 IsPrintListItemsTaskActive(void)",
+      "paramsRaw": "void",
+      "body": "return FuncIsActiveLoopedTask(LoopedTask_PrintListItems);",
+      "callsTo": [
+        "FuncIsActiveLoopedTask"
+      ],
+      "lineCount": 1
+    },
+    "LoopedTask_PrintListItems": {
+      "returnType": "u32",
+      "signature": "static u32 LoopedTask_PrintListItems(s32 state)",
+      "paramsRaw": "s32 state",
+      "body": "u32 row;\n    struct PokenavListSub *listSub = GetSubstructPtr(POKENAV_SUBSTRUCT_LIST);\n\n    switch (state)\n    {\n    case 0:\n        row = (listSub->listWindow.unkA + listSub->listWindow.numPrinted + listSub->printStart) & 0xF;\n        listSub->bufferItemFunc(listSub->listPtr, listSub->itemTextBuffer);\n        if (listSub->iconDrawFunc != NULL)\n            listSub->iconDrawFunc(listSub->listWindow.windowId, listSub->printIndex, row);\n\n         \n        AddTextPrinterParameterized(listSub->listWindow.windowId, listSub->listWindow.fontId, listSub->itemTextBuffer, 10, (row << 4) + 1, TEXT_SKIP_DRAW, NULL);\n        if (++listSub->listWindow.numPrinted >= listSub->listWindow.numToPrint)\n        {\n             \n             \n            if (listSub->iconDrawFunc != NULL)\n                CopyWindowToVram(listSub->listWindow.windowId, COPYWIN_FULL);\n            else\n                CopyWindowToVram(listSub->listWindow.windowId, COPYWIN_GFX);\n            return LT_INC_AND_PAUSE;\n        }\n        else\n        {\n            listSub->listPtr += listSub->itemSize;\n            listSub->printIndex++;\n            return LT_CONTINUE;\n        }\n    case 1:\n        if (IsDma3ManagerBusyWithBgCopy())\n            return LT_PAUSE;\n        return LT_FINISH;\n    }\n    return LT_FINISH;",
+      "callsTo": [
+        "AddTextPrinterParameterized",
+        "CopyWindowToVram",
+        "GetSubstructPtr",
+        "IsDma3ManagerBusyWithBgCopy"
+      ],
+      "lineCount": 35
+    },
+    "ShouldShowUpArrow": {
+      "returnType": "bool32",
+      "signature": "static bool32 ShouldShowUpArrow(void)",
+      "paramsRaw": "void",
+      "body": "struct PokenavList *list = GetSubstructPtr(POKENAV_SUBSTRUCT_LIST);\n\n    return (list->windowState.windowTopIndex != 0);",
+      "callsTo": [
+        "GetSubstructPtr"
+      ],
+      "lineCount": 3
+    },
+    "ShouldShowDownArrow": {
+      "returnType": "bool32",
+      "signature": "static bool32 ShouldShowDownArrow(void)",
+      "paramsRaw": "void",
+      "body": "struct PokenavList *list = GetSubstructPtr(POKENAV_SUBSTRUCT_LIST);\n    struct PokenavListWindowState *windowState = &list->windowState;\n\n    return (windowState->windowTopIndex + windowState->entriesOnscreen < windowState->listLength);",
+      "callsTo": [
+        "GetSubstructPtr"
+      ],
+      "lineCount": 4
+    },
+    "MoveListWindow": {
+      "returnType": "void",
+      "signature": "static void MoveListWindow(s32 delta, bool32 printItems)",
+      "paramsRaw": "s32 delta, bool32 printItems",
+      "body": "struct PokenavList *list = GetSubstructPtr(POKENAV_SUBSTRUCT_LIST);\n    struct PokenavListWindowState *windowState = &list->windowState;\n\n    if (delta < 0)\n    {\n        if (windowState->windowTopIndex + delta < 0)\n            delta = -1 * windowState->windowTopIndex;\n        if (printItems)\n            PrintListItems(windowState->listPtr, windowState->windowTopIndex + delta, delta * -1, windowState->listItemSize, delta, &list->sub);\n    }\n    else if (printItems)\n    {\n        s32 index = sMoveWindowDownIndex = windowState->windowTopIndex + windowState->entriesOnscreen;\n        if (index + delta >= windowState->listLength)\n            delta = windowState->listLength - index;\n\n        PrintListItems(windowState->listPtr, index, delta, windowState->listItemSize, windowState->entriesOnscreen, &list->sub);\n    }\n\n    CreateMoveListWindowTask(delta, &list->sub);\n    windowState->windowTopIndex += delta;",
+      "callsTo": [
+        "CreateMoveListWindowTask",
+        "GetSubstructPtr",
+        "PrintListItems"
+      ],
+      "lineCount": 21
+    },
+    "CreateMoveListWindowTask": {
+      "returnType": "void",
+      "signature": "static void CreateMoveListWindowTask(s32 delta, struct PokenavListSub *list)",
+      "paramsRaw": "s32 delta, struct PokenavListSub *list",
+      "body": "list->startBgY = GetBgY(list->listWindow.bg);\n    list->endBgY = list->startBgY + (delta << 12);\n    if (delta > 0)\n        list->bgMoveType = BG_COORD_ADD;\n    else\n        list->bgMoveType = BG_COORD_SUB;\n    list->moveDelta = delta;\n    list->loopedTaskId = CreateLoopedTask(LoopedTask_MoveListWindow, 6);",
+      "callsTo": [
+        "CreateLoopedTask",
+        "GetBgY"
+      ],
+      "lineCount": 8
+    },
+    "LoopedTask_MoveListWindow": {
+      "returnType": "u32",
+      "signature": "static u32 LoopedTask_MoveListWindow(s32 state)",
+      "paramsRaw": "s32 state",
+      "body": "s32 oldY, newY;\n    bool32 finished;\n    struct PokenavList *list = GetSubstructPtr(POKENAV_SUBSTRUCT_LIST);\n    struct PokenavListSub *subPtr = &list->sub;\n\n    switch (state)\n    {\n    case 0:\n        if (!IsPrintListItemsTaskActive())\n            return LT_INC_AND_CONTINUE;\n        return LT_PAUSE;\n    case 1:\n        finished = FALSE;\n        oldY = GetBgY(subPtr->listWindow.bg);\n        newY = ChangeBgY(subPtr->listWindow.bg, 0x1000, subPtr->bgMoveType);\n        if (subPtr->bgMoveType == BG_COORD_SUB)\n        {\n            if ((oldY > subPtr->endBgY || oldY <= subPtr->startBgY) && newY <= subPtr->endBgY)\n                finished = TRUE;\n        }\n        else  \n        {\n            if ((oldY < subPtr->endBgY || oldY >= subPtr->startBgY) && newY >= subPtr->endBgY)\n                finished = TRUE;\n        }\n\n        if (finished)\n        {\n            subPtr->listWindow.unkA = (subPtr->listWindow.unkA + subPtr->moveDelta) & 0xF;\n            ChangeBgY(subPtr->listWindow.bg, subPtr->endBgY, BG_COORD_SET);\n            return LT_FINISH;\n        }\n        return LT_PAUSE;\n    }\n    return LT_FINISH;",
+      "callsTo": [
+        "ChangeBgY",
+        "GetBgY",
+        "GetSubstructPtr",
+        "IsPrintListItemsTaskActive"
+      ],
+      "lineCount": 35
+    },
+    "PokenavList_IsMoveWindowTaskActive": {
+      "returnType": "bool32",
+      "signature": "bool32 PokenavList_IsMoveWindowTaskActive(void)",
+      "paramsRaw": "void",
+      "body": "struct PokenavList *list = GetSubstructPtr(POKENAV_SUBSTRUCT_LIST);\n    return IsLoopedTaskActive(list->sub.loopedTaskId);",
+      "callsTo": [
+        "GetSubstructPtr",
+        "IsLoopedTaskActive"
+      ],
+      "lineCount": 2
+    },
+    "PokenavList_MoveCursorUp": {
+      "returnType": "int",
+      "signature": "int PokenavList_MoveCursorUp(void)",
+      "paramsRaw": "void",
+      "body": "struct PokenavListWindowState *windowState = GetPokenavListWindowState();\n\n    if (windowState->selectedIndexOffset != 0)\n    {\n        windowState->selectedIndexOffset--;\n        return 1;\n    }\n    if (ShouldShowUpArrow())\n    {\n        MoveListWindow(-1, TRUE);\n        return 2;\n    }\n    return 0;",
+      "callsTo": [
+        "GetPokenavListWindowState",
+        "MoveListWindow",
+        "ShouldShowUpArrow"
+      ],
+      "lineCount": 13
+    },
+    "PokenavList_MoveCursorDown": {
+      "returnType": "int",
+      "signature": "int PokenavList_MoveCursorDown(void)",
+      "paramsRaw": "void",
+      "body": "struct PokenavListWindowState *windowState = GetPokenavListWindowState();\n\n    if (windowState->windowTopIndex + windowState->selectedIndexOffset >= windowState->listLength - 1)\n        return 0;\n    if (windowState->selectedIndexOffset < windowState->entriesOnscreen - 1)\n    {\n        windowState->selectedIndexOffset++;\n        return 1;\n    }\n    if (ShouldShowDownArrow())\n    {\n        MoveListWindow(1, TRUE);\n        return 2;\n    }\n    return 0;",
+      "callsTo": [
+        "GetPokenavListWindowState",
+        "MoveListWindow",
+        "ShouldShowDownArrow"
+      ],
+      "lineCount": 15
+    },
+    "PokenavList_PageUp": {
+      "returnType": "int",
+      "signature": "int PokenavList_PageUp(void)",
+      "paramsRaw": "void",
+      "body": "s32 scroll;\n    struct PokenavListWindowState *windowState = GetPokenavListWindowState();\n\n    if (ShouldShowUpArrow())\n    {\n        if (windowState->windowTopIndex >= windowState->entriesOnscreen)\n            scroll = windowState->entriesOnscreen;\n        else\n            scroll = windowState->windowTopIndex;\n        MoveListWindow(scroll * -1, TRUE);\n        return 2;\n    }\n    else if (windowState->selectedIndexOffset != 0)\n    {\n        windowState->selectedIndexOffset = 0;\n        return 1;\n    }\n    return 0;",
+      "callsTo": [
+        "GetPokenavListWindowState",
+        "MoveListWindow",
+        "ShouldShowUpArrow"
+      ],
+      "lineCount": 18
+    },
+    "PokenavList_PageDown": {
+      "returnType": "int",
+      "signature": "int PokenavList_PageDown(void)",
+      "paramsRaw": "void",
+      "body": "struct PokenavListWindowState *windowState = GetPokenavListWindowState();\n\n    if (ShouldShowDownArrow())\n    {\n        s32 windowBottomIndex = windowState->windowTopIndex + windowState->entriesOnscreen;\n        s32 scroll = windowState->entriesOffscreen - windowState->windowTopIndex;\n\n        if (windowBottomIndex <= windowState->entriesOffscreen)\n            scroll = windowState->entriesOnscreen;\n        MoveListWindow(scroll, TRUE);\n        return 2;\n    }\n    else\n    {\n        s32 cursor, lastVisibleIndex;\n        if (windowState->listLength >= windowState->entriesOnscreen)\n        {\n            cursor = windowState->selectedIndexOffset;\n            lastVisibleIndex = windowState->entriesOnscreen;\n        }\n        else\n        {\n            cursor = windowState->selectedIndexOffset;\n            lastVisibleIndex = windowState->listLength;\n        }\n        lastVisibleIndex -= 1;\n        if (cursor >= lastVisibleIndex)\n            return 0;\n\n        windowState->selectedIndexOffset = lastVisibleIndex;\n        return 1;\n    }",
+      "callsTo": [
+        "GetPokenavListWindowState",
+        "MoveListWindow",
+        "ShouldShowDownArrow"
+      ],
+      "lineCount": 32
+    },
+    "PokenavList_GetSelectedIndex": {
+      "returnType": "u32",
+      "signature": "u32 PokenavList_GetSelectedIndex(void)",
+      "paramsRaw": "void",
+      "body": "struct PokenavListWindowState *windowState = GetPokenavListWindowState();\n\n    return windowState->windowTopIndex + windowState->selectedIndexOffset;",
+      "callsTo": [
+        "GetPokenavListWindowState"
+      ],
+      "lineCount": 3
+    },
+    "PokenavList_GetTopIndex": {
+      "returnType": "u32",
+      "signature": "u32 PokenavList_GetTopIndex(void)",
+      "paramsRaw": "void",
+      "body": "struct PokenavListWindowState *windowState = GetPokenavListWindowState();\n\n    return windowState->windowTopIndex;",
+      "callsTo": [
+        "GetPokenavListWindowState"
+      ],
+      "lineCount": 3
+    },
+    "PokenavList_EraseListForCheckPage": {
+      "returnType": "void",
+      "signature": "void PokenavList_EraseListForCheckPage(void)",
+      "paramsRaw": "void",
+      "body": "struct PokenavList *list = GetSubstructPtr(POKENAV_SUBSTRUCT_LIST);\n    list->eraseIndex = 0;\n    list->loopedTaskId = CreateLoopedTask(LoopedTask_EraseListForCheckPage, 6);",
+      "callsTo": [
+        "CreateLoopedTask",
+        "GetSubstructPtr"
+      ],
+      "lineCount": 3
+    },
+    "PrintCheckPageInfo": {
+      "returnType": "void",
+      "signature": "void PrintCheckPageInfo(s16 delta)",
+      "paramsRaw": "s16 delta",
+      "body": "struct PokenavList *list = GetSubstructPtr(POKENAV_SUBSTRUCT_LIST);\n    list->windowState.windowTopIndex += delta;\n    list->eraseIndex = 0;\n    list->loopedTaskId = CreateLoopedTask(LoopedTask_PrintCheckPageInfo, 6);",
+      "callsTo": [
+        "CreateLoopedTask",
+        "GetSubstructPtr"
+      ],
+      "lineCount": 4
+    },
+    "PokenavList_ReshowListFromCheckPage": {
+      "returnType": "void",
+      "signature": "void PokenavList_ReshowListFromCheckPage(void)",
+      "paramsRaw": "void",
+      "body": "struct PokenavList *list = GetSubstructPtr(POKENAV_SUBSTRUCT_LIST);\n    list->eraseIndex = 0;\n    list->loopedTaskId = CreateLoopedTask(LoopedTask_ReshowListFromCheckPage, 6);",
+      "callsTo": [
+        "CreateLoopedTask",
+        "GetSubstructPtr"
+      ],
+      "lineCount": 3
+    },
+    "PokenavList_IsTaskActive": {
+      "returnType": "bool32",
+      "signature": "bool32 PokenavList_IsTaskActive(void)",
+      "paramsRaw": "void",
+      "body": "struct PokenavList *list = GetSubstructPtr(POKENAV_SUBSTRUCT_LIST);\n    return IsLoopedTaskActive(list->loopedTaskId);",
+      "callsTo": [
+        "GetSubstructPtr",
+        "IsLoopedTaskActive"
+      ],
+      "lineCount": 2
+    },
+    "PokenavList_DrawCurrentItemIcon": {
+      "returnType": "void",
+      "signature": "void PokenavList_DrawCurrentItemIcon(void)",
+      "paramsRaw": "void",
+      "body": "struct PokenavList *list = GetSubstructPtr(POKENAV_SUBSTRUCT_LIST);\n    struct PokenavListWindowState *windowState = &list->windowState;\n    list->sub.iconDrawFunc(list->sub.listWindow.windowId, windowState->windowTopIndex + windowState->selectedIndexOffset, (list->sub.listWindow.unkA + windowState->selectedIndexOffset) & 0xF);\n    CopyWindowToVram(list->sub.listWindow.windowId, COPYWIN_MAP);",
+      "callsTo": [
+        "CopyWindowToVram",
+        "GetSubstructPtr"
+      ],
+      "lineCount": 4
+    },
+    "LoopedTask_EraseListForCheckPage": {
+      "returnType": "u32",
+      "signature": "static u32 LoopedTask_EraseListForCheckPage(s32 state)",
+      "paramsRaw": "s32 state",
+      "body": "struct PokenavList *list = GetSubstructPtr(POKENAV_SUBSTRUCT_LIST);\n\n    switch (state)\n    {\n    case 0:\n        ToggleListArrows(&list->sub, TRUE);\n         \n    case 1:\n        if (list->eraseIndex != list->windowState.selectedIndexOffset)\n            EraseListEntry(&list->sub.listWindow, list->eraseIndex, 1);\n\n        list->eraseIndex++;\n        return LT_INC_AND_PAUSE;\n    case 2:\n        if (!IsDma3ManagerBusyWithBgCopy())\n        {\n            if (list->eraseIndex != list->windowState.entriesOnscreen)\n                return LT_SET_STATE(1);\n            if (list->windowState.selectedIndexOffset != 0)\n                EraseListEntry(&list->sub.listWindow, list->eraseIndex, list->windowState.selectedIndexOffset);\n\n            return LT_INC_AND_PAUSE;\n        }\n        return LT_PAUSE;\n    case 3:\n        if (!IsDma3ManagerBusyWithBgCopy())\n        {\n            if (list->windowState.selectedIndexOffset != 0)\n            {\n                MoveListWindow(list->windowState.selectedIndexOffset, FALSE);\n                return LT_INC_AND_PAUSE;\n            }\n            return LT_FINISH;\n        }\n        return LT_PAUSE;\n    case 4:\n         if (PokenavList_IsMoveWindowTaskActive())\n            return LT_PAUSE;\n\n        list->windowState.selectedIndexOffset = 0;\n        return LT_FINISH;\n    }\n    return LT_FINISH;",
+      "callsTo": [
+        "EraseListEntry",
+        "GetSubstructPtr",
+        "IsDma3ManagerBusyWithBgCopy",
+        "LT_SET_STATE",
+        "MoveListWindow",
+        "PokenavList_IsMoveWindowTaskActive",
+        "ToggleListArrows"
+      ],
+      "lineCount": 43
+    },
+    "LoopedTask_PrintCheckPageInfo": {
+      "returnType": "u32",
+      "signature": "static u32 LoopedTask_PrintCheckPageInfo(s32 state)",
+      "paramsRaw": "s32 state",
+      "body": "struct PokenavList *list = GetSubstructPtr(POKENAV_SUBSTRUCT_LIST);\n    if (IsDma3ManagerBusyWithBgCopy())\n        return LT_PAUSE;\n\n    switch (state)\n    {\n    case 0:\n        PrintCheckPageTrainerName(&list->windowState, &list->sub);\n        break;\n    case 1:\n        PrintMatchCallFieldNames(&list->sub, 0);\n        break;\n    case 2:\n        PrintMatchCallFlavorText(&list->windowState, &list->sub, CHECK_PAGE_STRATEGY);\n        break;\n    case 3:\n        PrintMatchCallFieldNames(&list->sub, 1);\n        break;\n    case 4:\n        PrintMatchCallFlavorText(&list->windowState, &list->sub, CHECK_PAGE_POKEMON);\n        break;\n    case 5:\n        PrintMatchCallFieldNames(&list->sub, 2);\n        break;\n    case 6:\n        PrintMatchCallFlavorText(&list->windowState, &list->sub, CHECK_PAGE_INTRO_1);\n        break;\n    case 7:\n        PrintMatchCallFlavorText(&list->windowState, &list->sub, CHECK_PAGE_INTRO_2);\n        break;\n    default:\n        return LT_FINISH;\n    }\n    return LT_INC_AND_PAUSE;",
+      "callsTo": [
+        "GetSubstructPtr",
+        "IsDma3ManagerBusyWithBgCopy",
+        "PrintCheckPageTrainerName",
+        "PrintMatchCallFieldNames",
+        "PrintMatchCallFlavorText"
+      ],
+      "lineCount": 34
+    },
+    "LoopedTask_ReshowListFromCheckPage": {
+      "returnType": "u32",
+      "signature": "static u32 LoopedTask_ReshowListFromCheckPage(s32 state)",
+      "paramsRaw": "s32 state",
+      "body": "struct PokenavList *list;\n    struct PokenavListWindowState *windowState;\n    struct PokenavListSub *subPtr;\n    s32 r5, *ptr;\n\n    if (IsDma3ManagerBusyWithBgCopy())\n        return LT_PAUSE;\n\n    list = GetSubstructPtr(POKENAV_SUBSTRUCT_LIST);\n    windowState = &list->windowState;\n    subPtr = &list->sub;\n\n    switch (state)\n    {\n    case 0:\n         \n         \n        PrintMatchCallListTrainerName(windowState, subPtr);\n        return LT_INC_AND_PAUSE;\n    case 1:\n        ptr = &list->eraseIndex;\n        if (++(*ptr) < list->windowState.entriesOnscreen)\n        {\n            EraseListEntry(&subPtr->listWindow, *ptr, 1);\n            return LT_PAUSE;\n        }\n\n        *ptr = 0;\n        if (windowState->listLength <= windowState->entriesOnscreen)\n        {\n            if (windowState->windowTopIndex != 0)\n            {\n                s32 r4 = windowState->windowTopIndex;\n                r5 = -r4;\n                EraseListEntry(&subPtr->listWindow, r5, r4);\n                windowState->selectedIndexOffset = r4;\n                *ptr = r5;\n                return LT_INC_AND_PAUSE;\n            }\n        }\n        else\n        {\n            if (windowState->windowTopIndex + windowState->entriesOnscreen > windowState->listLength)\n            {\n                s32 r4 = windowState->windowTopIndex + windowState->entriesOnscreen - windowState->listLength;\n                r5 = -r4;\n                EraseListEntry(&subPtr->listWindow, r5, r4);\n                windowState->selectedIndexOffset = r4;\n                *ptr = r5;\n                return LT_INC_AND_PAUSE;\n            }\n        }\n        return LT_SET_STATE(4);\n    case 2:\n        MoveListWindow(list->eraseIndex, FALSE);\n        return LT_INC_AND_PAUSE;\n    case 3:\n        if (!PokenavList_IsMoveWindowTaskActive())\n        {\n            list->eraseIndex = 0;\n            return LT_INC_AND_CONTINUE;\n        }\n        return LT_PAUSE;\n    case 4:\n        PrintListItems(windowState->listPtr, windowState->windowTopIndex + list->eraseIndex, 1, windowState->listItemSize, list->eraseIndex, &list->sub);\n        return LT_INC_AND_PAUSE;\n    case 5:\n        if (IsPrintListItemsTaskActive())\n            return LT_PAUSE;\n        if (++list->eraseIndex >= windowState->listLength || list->eraseIndex >= windowState->entriesOnscreen)\n            return LT_INC_AND_CONTINUE;\n        return LT_SET_STATE(4);\n    case 6:\n        ToggleListArrows(subPtr, FALSE);\n        return LT_FINISH;\n    }\n\n    return LT_FINISH;",
+      "callsTo": [
+        "EraseListEntry",
+        "GetSubstructPtr",
+        "IsDma3ManagerBusyWithBgCopy",
+        "IsPrintListItemsTaskActive",
+        "LT_SET_STATE",
+        "MoveListWindow",
+        "PokenavList_IsMoveWindowTaskActive",
+        "PrintListItems",
+        "PrintMatchCallListTrainerName",
+        "ToggleListArrows"
+      ],
+      "lineCount": 78
+    },
+    "EraseListEntry": {
+      "returnType": "void",
+      "signature": "static void EraseListEntry(struct PokenavListMenuWindow *listWindow, s32 offset, s32 entries)",
+      "paramsRaw": "struct PokenavListMenuWindow *listWindow, s32 offset, s32 entries",
+      "body": "u8 *tileData = (u8 *)GetWindowAttribute(listWindow->windowId, WINDOW_TILE_DATA);\n    u32 width = listWindow->width * 64;\n\n    offset = (listWindow->unkA + offset) & 0xF;\n    if (offset + entries <= 16)\n    {\n        CpuFastFill8(PIXEL_FILL(1), tileData + offset * width, entries * width);\n        CopyWindowToVram(listWindow->windowId, COPYWIN_GFX);\n    }\n    else\n    {\n        u32 v3 = 16 - offset;\n        u32 v4 = entries - v3;\n\n        CpuFastFill8(PIXEL_FILL(1), tileData + offset * width, v3 * width);\n        CpuFastFill8(PIXEL_FILL(1), tileData, v4 * width);\n        CopyWindowToVram(listWindow->windowId, COPYWIN_GFX);\n    }\n\n    for (entries--; entries != -1; offset = (offset + 1) & 0xF, entries--)\n        ClearRematchPokeballIcon(listWindow->windowId, offset);\n\n    CopyWindowToVram(listWindow->windowId, COPYWIN_MAP);",
+      "callsTo": [
+        "ClearRematchPokeballIcon",
+        "CopyWindowToVram",
+        "CpuFastFill8",
+        "GetWindowAttribute",
+        "PIXEL_FILL"
+      ],
+      "lineCount": 23
+    },
+    "SetListMarginTile": {
+      "returnType": "void",
+      "signature": "static void SetListMarginTile(struct PokenavListMenuWindow *listWindow, bool32 draw)",
+      "paramsRaw": "struct PokenavListMenuWindow *listWindow, bool32 draw",
+      "body": "u16 var;\n    u16 *tilemapBuffer = (u16 *)GetBgTilemapBuffer(GetWindowAttribute(listWindow->windowId, WINDOW_BG));\n    tilemapBuffer += (listWindow->unkA << 6) + listWindow->x - 1;\n\n    if (draw)\n        var = (listWindow->fillValue << 12) | (listWindow->tileOffset + 1);\n    else\n        var = (listWindow->fillValue << 12) | (listWindow->tileOffset);\n\n    tilemapBuffer[0] = var;\n    tilemapBuffer[0x20] = var;",
+      "callsTo": [
+        "GetBgTilemapBuffer",
+        "GetWindowAttribute"
+      ],
+      "lineCount": 11
+    },
+    "PrintCheckPageTrainerName": {
+      "returnType": "void",
+      "signature": "static void PrintCheckPageTrainerName(struct PokenavListWindowState *state, struct PokenavListSub *list)",
+      "paramsRaw": "struct PokenavListWindowState *state, struct PokenavListSub *list",
+      "body": "u8 colors[3] = {TEXT_COLOR_TRANSPARENT, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_LIGHT_RED};\n\n    list->bufferItemFunc(state->listPtr + state->listItemSize * state->windowTopIndex, list->itemTextBuffer);\n    list->iconDrawFunc(list->listWindow.windowId, state->windowTopIndex, list->listWindow.unkA);\n    FillWindowPixelRect(list->listWindow.windowId, PIXEL_FILL(4), 0, list->listWindow.unkA * 16, list->listWindow.width * 8, 16);\n     \n    AddTextPrinterParameterized3(list->listWindow.windowId, list->listWindow.fontId, 10, (list->listWindow.unkA * 16) + 1, colors, TEXT_SKIP_DRAW, list->itemTextBuffer);\n    SetListMarginTile(&list->listWindow, TRUE);\n    CopyWindowRectToVram(list->listWindow.windowId, COPYWIN_FULL, 0, list->listWindow.unkA * 2, list->listWindow.width, 2);",
+      "callsTo": [
+        "AddTextPrinterParameterized3",
+        "CopyWindowRectToVram",
+        "FillWindowPixelRect",
+        "PIXEL_FILL",
+        "SetListMarginTile"
+      ],
+      "lineCount": 9
+    },
+    "PrintMatchCallListTrainerName": {
+      "returnType": "void",
+      "signature": "static void PrintMatchCallListTrainerName(struct PokenavListWindowState *state, struct PokenavListSub *list)",
+      "paramsRaw": "struct PokenavListWindowState *state, struct PokenavListSub *list",
+      "body": "list->bufferItemFunc(state->listPtr + state->listItemSize * state->windowTopIndex, list->itemTextBuffer);\n    FillWindowPixelRect(list->listWindow.windowId, PIXEL_FILL(1), 0, list->listWindow.unkA * 16, list->listWindow.width * 8, 16);\n     \n    AddTextPrinterParameterized(list->listWindow.windowId, list->listWindow.fontId, list->itemTextBuffer, 10, list->listWindow.unkA * 16 + 1, TEXT_SKIP_DRAW, NULL);\n    SetListMarginTile(&list->listWindow, FALSE);\n    CopyWindowToVram(list->listWindow.windowId, COPYWIN_FULL);",
+      "callsTo": [
+        "AddTextPrinterParameterized",
+        "CopyWindowToVram",
+        "FillWindowPixelRect",
+        "PIXEL_FILL",
+        "SetListMarginTile"
+      ],
+      "lineCount": 6
+    },
+    "PrintMatchCallFieldNames": {
+      "returnType": "void",
+      "signature": "static void PrintMatchCallFieldNames(struct PokenavListSub *list, u32 fieldId)",
+      "paramsRaw": "struct PokenavListSub *list, u32 fieldId",
+      "body": "const u8 *fieldNames[] = {\n        gText_PokenavMatchCall_Strategy,\n        gText_PokenavMatchCall_TrainerPokemon,\n        gText_PokenavMatchCall_SelfIntroduction\n    };\n    u8 colors[3] = {TEXT_COLOR_WHITE, TEXT_COLOR_RED, TEXT_COLOR_LIGHT_RED};\n    u32 top = (list->listWindow.unkA + 1 + (fieldId * 2)) & 0xF;\n\n    FillWindowPixelRect(list->listWindow.windowId, PIXEL_FILL(1), 0, top << 4, list->listWindow.width, 16);\n     \n    AddTextPrinterParameterized3(list->listWindow.windowId, FONT_NARROW, 4, (top << 4) + 1, colors, TEXT_SKIP_DRAW, fieldNames[fieldId]);\n    CopyWindowRectToVram(list->listWindow.windowId, COPYWIN_GFX, 0, top << 1, list->listWindow.width, 2);",
+      "callsTo": [
+        "AddTextPrinterParameterized3",
+        "CopyWindowRectToVram",
+        "FillWindowPixelRect",
+        "PIXEL_FILL"
+      ],
+      "lineCount": 12
+    },
+    "PrintMatchCallFlavorText": {
+      "returnType": "void",
+      "signature": "static void PrintMatchCallFlavorText(struct PokenavListWindowState *windowState, struct PokenavListSub *list, u32 checkPageEntry)",
+      "paramsRaw": "struct PokenavListWindowState *windowState, struct PokenavListSub *list, u32 checkPageEntry",
+      "body": "static const u8 lineOffsets[CHECK_PAGE_ENTRY_COUNT] = {\n        [CHECK_PAGE_STRATEGY] = 2,\n        [CHECK_PAGE_POKEMON]  = 4,\n        [CHECK_PAGE_INTRO_1]  = 6,\n        [CHECK_PAGE_INTRO_2]  = 7\n    };\n\n    u32 r6 = (list->listWindow.unkA + lineOffsets[checkPageEntry]) & 0xF;\n    const u8 *str = GetMatchCallFlavorText(windowState->windowTopIndex, checkPageEntry);\n\n    if (str != NULL)\n    {\n        FillWindowTilesByRow(list->listWindow.windowId, 1, r6 * 2, list->listWindow.width - 1, 2);\n         \n        AddTextPrinterParameterized(list->listWindow.windowId, FONT_NARROW, str, 4, (r6 << 4) + 1, TEXT_SKIP_DRAW, NULL);\n        CopyWindowRectToVram(list->listWindow.windowId, COPYWIN_GFX, 0, r6 * 2, list->listWindow.width, 2);\n    }",
+      "callsTo": [
+        "AddTextPrinterParameterized",
+        "CopyWindowRectToVram",
+        "FillWindowTilesByRow",
+        "GetMatchCallFlavorText"
+      ],
+      "lineCount": 17
+    },
+    "LoadListArrowGfx": {
+      "returnType": "void",
+      "signature": "static void LoadListArrowGfx(void)",
+      "paramsRaw": "void",
+      "body": "u32 i;\n    const struct CompressedSpriteSheet *ptr;\n\n    for (i = 0, ptr = sListArrowSpriteSheets; i < ARRAY_COUNT(sListArrowSpriteSheets); ptr++, i++)\n        LoadCompressedSpriteSheet(ptr);\n\n    Pokenav_AllocAndLoadPalettes(sListArrowPalettes);",
+      "callsTo": [
+        "ARRAY_COUNT",
+        "LoadCompressedSpriteSheet",
+        "Pokenav_AllocAndLoadPalettes"
+      ],
+      "lineCount": 7
+    },
+    "CreateListArrowSprites": {
+      "returnType": "void",
+      "signature": "static void CreateListArrowSprites(struct PokenavListWindowState *windowState, struct PokenavListSub *list)",
+      "paramsRaw": "struct PokenavListWindowState *windowState, struct PokenavListSub *list",
+      "body": "u32 spriteId;\n    s16 x;\n\n     \n    spriteId = CreateSprite(&sSpriteTemplate_RightArrow, list->listWindow.x * 8 + 5, (list->listWindow.y + 1) * 8, 7);\n    list->rightArrow = &gSprites[spriteId];\n\n    x = list->listWindow.x * 8 + (list->listWindow.width - 1) * 4;\n    spriteId = CreateSprite(&sSpriteTemplate_UpDownArrow, x, list->listWindow.y * 8 + windowState->entriesOnscreen * 16, 7);\n    list->downArrow = &gSprites[spriteId];\n    list->downArrow->oam.tileNum += 2;\n    list->downArrow->callback = SpriteCB_DownArrow;\n\n    spriteId = CreateSprite(&sSpriteTemplate_UpDownArrow, x, list->listWindow.y * 8, 7);\n    list->upArrow = &gSprites[spriteId];\n    list->upArrow->oam.tileNum += 4;\n    list->upArrow->callback = SpriteCB_UpArrow;",
+      "callsTo": [
+        "CreateSprite"
+      ],
+      "lineCount": 17
+    },
+    "DestroyListArrows": {
+      "returnType": "void",
+      "signature": "static void DestroyListArrows(struct PokenavListSub *list)",
+      "paramsRaw": "struct PokenavListSub *list",
+      "body": "DestroySprite(list->rightArrow);\n    DestroySprite(list->upArrow);\n    DestroySprite(list->downArrow);\n    FreeSpriteTilesByTag(GFXTAG_ARROW);\n    FreeSpritePaletteByTag(PALTAG_ARROW);",
+      "callsTo": [
+        "DestroySprite",
+        "FreeSpritePaletteByTag",
+        "FreeSpriteTilesByTag"
+      ],
+      "lineCount": 5
+    },
+    "ToggleListArrows": {
+      "returnType": "void",
+      "signature": "static void ToggleListArrows(struct PokenavListSub *list, bool32 invisible)",
+      "paramsRaw": "struct PokenavListSub *list, bool32 invisible",
+      "body": "if (invisible)\n    {\n        list->rightArrow->callback = SpriteCallbackDummy;\n        list->upArrow->callback = SpriteCallbackDummy;\n        list->downArrow->callback = SpriteCallbackDummy;\n    }\n    else\n    {\n        list->rightArrow->callback = SpriteCB_RightArrow;\n        list->upArrow->callback = SpriteCB_UpArrow;\n        list->downArrow->callback = SpriteCB_DownArrow;\n    }\n    list->rightArrow->invisible = invisible;\n    list->upArrow->invisible = invisible;\n    list->downArrow->invisible = invisible;",
+      "callsTo": [],
+      "lineCount": 15
+    },
+    "SpriteCB_RightArrow": {
+      "returnType": "void",
+      "signature": "static void SpriteCB_RightArrow(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "struct PokenavList *list = GetSubstructPtr(POKENAV_SUBSTRUCT_LIST);\n    sprite->y2 = list->windowState.selectedIndexOffset << 4;",
+      "callsTo": [
+        "GetSubstructPtr"
+      ],
+      "lineCount": 2
+    },
+    "SpriteCB_DownArrow": {
+      "returnType": "void",
+      "signature": "static void SpriteCB_DownArrow(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "if (!sprite->sInvisible && ShouldShowDownArrow())\n        sprite->invisible = FALSE;\n    else\n        sprite->invisible = TRUE;\n\n    if (++sprite->sTimer > 3)\n    {\n        s16 offset;\n\n        sprite->sTimer = 0;\n        offset = (sprite->sOffset + 1) & 7;\n        sprite->sOffset = offset;\n        sprite->y2 = offset;\n    }",
+      "callsTo": [
+        "ShouldShowDownArrow"
+      ],
+      "lineCount": 14
+    },
+    "SpriteCB_UpArrow": {
+      "returnType": "void",
+      "signature": "static void SpriteCB_UpArrow(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "if (!sprite->sInvisible && ShouldShowUpArrow())\n        sprite->invisible = FALSE;\n    else\n        sprite->invisible = TRUE;\n\n    if (++sprite->sTimer > 3)\n    {\n        s16 offset;\n\n        sprite->sTimer = 0;\n        offset = (sprite->sOffset + 1) & 7;\n        sprite->sOffset = offset;\n        sprite->y2 = -1 * offset;\n    }",
+      "callsTo": [
+        "ShouldShowUpArrow"
+      ],
+      "lineCount": 14
+    },
+    "PokenavList_ToggleVerticalArrows": {
+      "returnType": "void",
+      "signature": "void PokenavList_ToggleVerticalArrows(bool32 invisible)",
+      "paramsRaw": "bool32 invisible",
+      "body": "struct PokenavList *list = GetSubstructPtr(POKENAV_SUBSTRUCT_LIST);\n    list->sub.upArrow->sInvisible = invisible;\n    list->sub.downArrow->sInvisible = invisible;",
+      "callsTo": [
+        "GetSubstructPtr"
+      ],
+      "lineCount": 3
+    },
+    "InitPokenavListWindowState": {
+      "returnType": "void",
+      "signature": "static void InitPokenavListWindowState(struct PokenavListWindowState *dst, struct PokenavListTemplate *template)",
+      "paramsRaw": "struct PokenavListWindowState *dst, struct PokenavListTemplate *template",
+      "body": "dst->listPtr = template->list;\n    dst->windowTopIndex = template->startIndex;\n    dst->listLength = template->count;\n    dst->listItemSize = template->itemSize;\n    dst->entriesOnscreen = template->maxShowed;\n    if (dst->entriesOnscreen >= dst->listLength)\n    {\n        dst->windowTopIndex = 0;\n        dst->entriesOffscreen = 0;\n        dst->selectedIndexOffset = template->startIndex;\n    }\n    else\n    {\n        dst->entriesOffscreen = dst->listLength - dst->entriesOnscreen;\n        if (dst->windowTopIndex + dst->entriesOnscreen > dst->listLength)\n        {\n            dst->selectedIndexOffset = dst->windowTopIndex + dst->entriesOnscreen - dst->listLength;\n            dst->windowTopIndex = template->startIndex - dst->selectedIndexOffset;\n        }\n        else\n        {\n            dst->selectedIndexOffset = 0;\n        }\n    }",
+      "callsTo": [],
+      "lineCount": 24
+    },
+    "CopyPokenavListMenuTemplate": {
+      "returnType": "bool32",
+      "signature": "static bool32 CopyPokenavListMenuTemplate(struct PokenavListSub *dest, const struct BgTemplate *bgTemplate, struct PokenavListTemplate *template, s32 tileOffset)",
+      "paramsRaw": "struct PokenavListSub *dest, const struct BgTemplate *bgTemplate, struct PokenavListTemplate *template, s32 tileOffset",
+      "body": "struct WindowTemplate window;\n\n    dest->listWindow.bg = bgTemplate->bg;\n    dest->listWindow.tileOffset = tileOffset;\n    dest->bufferItemFunc = template->bufferItemFunc;\n    dest->iconDrawFunc = template->iconDrawFunc;\n    dest->listWindow.fillValue = template->fillValue;\n    dest->listWindow.x = template->item_X;\n    dest->listWindow.y = template->listTop;\n    dest->listWindow.width = template->windowWidth;\n    dest->listWindow.fontId = template->fontId;\n\n    window.bg = bgTemplate->bg;\n    window.tilemapLeft = template->item_X;\n    window.tilemapTop = 0;\n    window.width = template->windowWidth;\n    window.height = 32;\n    window.paletteNum = template->fillValue;\n    window.baseBlock = tileOffset + 2;\n\n    dest->listWindow.windowId = AddWindow(&window);\n    if (dest->listWindow.windowId == WINDOW_NONE)\n        return FALSE;\n\n    dest->listWindow.unkA = 0;\n    dest->rightArrow = NULL;\n    dest->upArrow = NULL;\n    dest->downArrow = NULL;\n    return 1;",
+      "callsTo": [
+        "AddWindow"
+      ],
+      "lineCount": 29
+    }
+  }
+}

@@ -1,0 +1,459 @@
+{
+  "srcFile": "src/battle_anim_ghost.c",
+  "count": 37,
+  "functions": {
+    "AnimConfuseRayBallBounce": {
+      "returnType": "void",
+      "signature": "static void AnimConfuseRayBallBounce(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "InitSpritePosToAnimAttacker(sprite, TRUE);\n    sprite->data[0] = gBattleAnimArgs[2];\n    sprite->data[1] = sprite->x;\n    sprite->data[2] = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_X_2);\n    sprite->data[3] = sprite->y;\n    sprite->data[4] = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_Y_PIC_OFFSET);\n    InitAnimLinearTranslationWithSpeed(sprite);\n    sprite->callback = AnimConfuseRayBallBounce_Step1;\n    sprite->data[6] = 16;\n    SetGpuReg(REG_OFFSET_BLDCNT, (BLDCNT_EFFECT_BLEND | BLDCNT_TGT2_ALL));\n    SetGpuReg(REG_OFFSET_BLDALPHA, sprite->data[6]);",
+      "callsTo": [
+        "GetBattlerSpriteCoord",
+        "InitAnimLinearTranslationWithSpeed",
+        "InitSpritePosToAnimAttacker",
+        "SetGpuReg"
+      ],
+      "lineCount": 11
+    },
+    "AnimConfuseRayBallBounce_Step1": {
+      "returnType": "void",
+      "signature": "static void AnimConfuseRayBallBounce_Step1(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "s16 r0;\n    s16 r2;\n    UpdateConfuseRayBallBlend(sprite);\n    if (AnimTranslateLinear(sprite))\n    {\n        sprite->callback = AnimConfuseRayBallBounce_Step2;\n        return;\n    }\n\n    sprite->x2 += Sin(sprite->data[5], 10);\n    sprite->y2 += Cos(sprite->data[5], 15);\n    r2 = sprite->data[5];\n    sprite->data[5] = (sprite->data[5] + 5) & 0xFF;\n    r0 = sprite->data[5];\n    if (r2 != 0 && r2 <= 196)\n        return;\n    if (r0 <= 0)\n        return;\n    PlaySE12WithPanning(SE_M_CONFUSE_RAY, gAnimCustomPanning);",
+      "callsTo": [
+        "AnimTranslateLinear",
+        "Cos",
+        "PlaySE12WithPanning",
+        "Sin",
+        "UpdateConfuseRayBallBlend"
+      ],
+      "lineCount": 19
+    },
+    "AnimConfuseRayBallBounce_Step2": {
+      "returnType": "void",
+      "signature": "static void AnimConfuseRayBallBounce_Step2(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "s16 r2;\n    s16 r0;\n    sprite->data[0] = 1;\n    AnimTranslateLinear(sprite);\n    sprite->x2 += Sin(sprite->data[5], 10);\n    sprite->y2 += Cos(sprite->data[5], 15);\n\n    r2 = sprite->data[5];\n    sprite->data[5] = (sprite->data[5] + 5) & 0xFF;\n    r0 = sprite->data[5];\n\n    if (r2 == 0 || r2 > 196)\n    {\n        if (r0 > 0)\n            PlaySE(SE_M_CONFUSE_RAY);\n    }\n\n    if (sprite->data[6] == 0)\n    {\n        sprite->invisible = TRUE;\n        sprite->callback = DestroyAnimSpriteAndDisableBlend;\n    }\n    else\n    {\n        UpdateConfuseRayBallBlend(sprite);\n    }",
+      "callsTo": [
+        "AnimTranslateLinear",
+        "Cos",
+        "PlaySE",
+        "Sin",
+        "UpdateConfuseRayBallBlend"
+      ],
+      "lineCount": 26
+    },
+    "UpdateConfuseRayBallBlend": {
+      "returnType": "void",
+      "signature": "static void UpdateConfuseRayBallBlend(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "if (sprite->data[6] > 0xFF)\n    {\n        if (++sprite->data[6] == 0x10d)\n            sprite->data[6] = 0;\n        return;\n    }\n\n    if ((sprite->data[7]++ & 0xFF) == 0)\n    {\n        sprite->data[7] &= 0xff00;\n        if ((sprite->data[7] & 0x100) != 0)\n            sprite->data[6]++;\n        else\n            sprite->data[6]--;\n\n        SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(sprite->data[6], 16 - sprite->data[6]));\n        if (sprite->data[6] == 0 || sprite->data[6] == 16)\n            sprite->data[7] ^= 0x100;\n        if (sprite->data[6] == 0)\n            sprite->data[6] = 0x100;\n    }",
+      "callsTo": [
+        "BLDALPHA_BLEND",
+        "SetGpuReg"
+      ],
+      "lineCount": 21
+    },
+    "AnimConfuseRayBallSpiral": {
+      "returnType": "void",
+      "signature": "static void AnimConfuseRayBallSpiral(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "InitSpritePosToAnimTarget(sprite, TRUE);\n    sprite->callback = AnimConfuseRayBallSpiral_Step;\n    sprite->callback(sprite);",
+      "callsTo": [
+        "InitSpritePosToAnimTarget"
+      ],
+      "lineCount": 3
+    },
+    "AnimConfuseRayBallSpiral_Step": {
+      "returnType": "void",
+      "signature": "static void AnimConfuseRayBallSpiral_Step(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "u16 temp1;\n    sprite->x2 = Sin(sprite->data[0], 32);\n    sprite->y2 = Cos(sprite->data[0], 8);\n    temp1 = sprite->data[0] - 65;\n    if (temp1 <= 130)\n        sprite->oam.priority = 2;\n    else\n        sprite->oam.priority = 1;\n    sprite->data[0] = (sprite->data[0] + 19) & 0xFF;\n    sprite->data[2] += 80;\n    sprite->y2 += sprite->data[2] >> 8;\n    sprite->data[7] += 1;\n    if (sprite->data[7] == 61)\n        DestroyAnimSprite(sprite);",
+      "callsTo": [
+        "Cos",
+        "DestroyAnimSprite",
+        "Sin"
+      ],
+      "lineCount": 14
+    },
+    "AnimTask_NightShadeClone": {
+      "returnType": "void",
+      "signature": "void AnimTask_NightShadeClone(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "u8 spriteId;\n    SetGpuReg(REG_OFFSET_BLDCNT, (BLDCNT_EFFECT_BLEND | BLDCNT_TGT2_ALL));\n    SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(0, 0x10));\n    spriteId = GetAnimBattlerSpriteId(ANIM_ATTACKER);\n    PrepareBattlerSpriteForRotScale(spriteId, ST_OAM_OBJ_BLEND);\n    SetSpriteRotScale(spriteId, 128, 128, 0);\n    gSprites[spriteId].invisible = FALSE;\n    gTasks[taskId].data[0] = 128;\n    gTasks[taskId].data[1] = *gBattleAnimArgs;\n    gTasks[taskId].data[2] = 0;\n    gTasks[taskId].data[3] = 16;\n    gTasks[taskId].func = AnimTask_NightShadeClone_Step1;",
+      "callsTo": [
+        "BLDALPHA_BLEND",
+        "GetAnimBattlerSpriteId",
+        "PrepareBattlerSpriteForRotScale",
+        "SetGpuReg",
+        "SetSpriteRotScale"
+      ],
+      "lineCount": 12
+    },
+    "AnimTask_NightShadeClone_Step1": {
+      "returnType": "void",
+      "signature": "static void AnimTask_NightShadeClone_Step1(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "gTasks[taskId].data[10] += 1;\n    if (gTasks[taskId].data[10] == 3)\n    {\n        gTasks[taskId].data[10] = 0;\n        gTasks[taskId].data[2] += 1;\n        gTasks[taskId].data[3] -= 1;\n        SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(gTasks[taskId].data[2], gTasks[taskId].data[3]));\n        if (gTasks[taskId].data[2] != 9)\n            return;\n\n        gTasks[taskId].func = AnimTask_NightShadeClone_Step2;\n    }",
+      "callsTo": [
+        "BLDALPHA_BLEND",
+        "SetGpuReg"
+      ],
+      "lineCount": 12
+    },
+    "AnimTask_NightShadeClone_Step2": {
+      "returnType": "void",
+      "signature": "static void AnimTask_NightShadeClone_Step2(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "u8 spriteId;\n    if (gTasks[taskId].data[1] > 0)\n    {\n        gTasks[taskId].data[1] -= 1;\n        return;\n    }\n\n    spriteId = GetAnimBattlerSpriteId(ANIM_ATTACKER);\n    gTasks[taskId].data[0] += 8;\n    if (gTasks[taskId].data[0] <= 0xFF)\n    {\n        SetSpriteRotScale(spriteId, gTasks[taskId].data[0], gTasks[taskId].data[0], 0);\n    }\n    else\n    {\n        ResetSpriteRotScale(spriteId);\n        DestroyAnimVisualTask(taskId);\n        SetGpuReg(REG_OFFSET_BLDCNT, 0);\n        SetGpuReg(REG_OFFSET_BLDALPHA, 0);\n    }",
+      "callsTo": [
+        "DestroyAnimVisualTask",
+        "GetAnimBattlerSpriteId",
+        "ResetSpriteRotScale",
+        "SetGpuReg",
+        "SetSpriteRotScale"
+      ],
+      "lineCount": 20
+    },
+    "AnimShadowBall": {
+      "returnType": "void",
+      "signature": "static void AnimShadowBall(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "s16 oldPosX = sprite->x;\n    s16 oldPosY = sprite->y;\n\n    sprite->x = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_X_2);\n    sprite->y = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_Y_PIC_OFFSET);\n    sprite->data[0] = 0;\n    sprite->data[1] = gBattleAnimArgs[0];\n    sprite->data[2] = gBattleAnimArgs[1];\n    sprite->data[3] = gBattleAnimArgs[2];\n    sprite->data[4] = sprite->x << 4;\n    sprite->data[5] = sprite->y << 4;\n    sprite->data[6] = ((oldPosX - sprite->x) << 4) / (gBattleAnimArgs[0] << 1);\n    sprite->data[7] = ((oldPosY - sprite->y) << 4) / (gBattleAnimArgs[0] << 1);\n    sprite->callback = AnimShadowBall_Step;",
+      "callsTo": [
+        "GetBattlerSpriteCoord"
+      ],
+      "lineCount": 14
+    },
+    "AnimShadowBall_Step": {
+      "returnType": "void",
+      "signature": "static void AnimShadowBall_Step(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "switch (sprite->data[0])\n    {\n    case 0:\n        sprite->data[4] += sprite->data[6];\n        sprite->data[5] += sprite->data[7];\n        sprite->x = sprite->data[4] >> 4;\n        sprite->y = sprite->data[5] >> 4;\n        sprite->data[1] -= 1;\n        if (sprite->data[1] > 0)\n            break;\n        sprite->data[0] += 1;\n        break;\n    case 1:\n        sprite->data[2] -= 1;\n        if (sprite->data[2] > 0)\n            break;\n        sprite->data[1] = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_X_2);\n        sprite->data[2] = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_Y_PIC_OFFSET);\n        sprite->data[4] = sprite->x << 4;\n        sprite->data[5] = sprite->y << 4;\n        sprite->data[6] = ((sprite->data[1] - sprite->x) << 4) / sprite->data[3];\n        sprite->data[7] = ((sprite->data[2] - sprite->y) << 4) / sprite->data[3];\n        sprite->data[0] += 1;\n        break;\n    case 2:\n        sprite->data[4] += sprite->data[6];\n        sprite->data[5] += sprite->data[7];\n        sprite->x = sprite->data[4] >> 4;\n        sprite->y = sprite->data[5] >> 4;\n        sprite->data[3] -= 1;\n        if (sprite->data[3] > 0)\n            break;\n        sprite->x = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_X_2);\n        sprite->y = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_Y_PIC_OFFSET);\n        sprite->data[0] += 1;\n        break;\n    case 3:\n        DestroySpriteAndMatrix(sprite);\n        break;\n    }",
+      "callsTo": [
+        "DestroySpriteAndMatrix",
+        "GetBattlerSpriteCoord"
+      ],
+      "lineCount": 40
+    },
+    "AnimLick": {
+      "returnType": "void",
+      "signature": "static void AnimLick(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "InitSpritePosToAnimTarget(sprite, TRUE);\n    sprite->callback = AnimLick_Step;",
+      "callsTo": [
+        "InitSpritePosToAnimTarget"
+      ],
+      "lineCount": 2
+    },
+    "AnimLick_Step": {
+      "returnType": "void",
+      "signature": "static void AnimLick_Step(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "bool8 r5 = FALSE;\n    bool8 r6 = FALSE;\n\n    if (sprite->animEnded)\n    {\n        if (!sprite->invisible)\n            sprite->invisible = TRUE;\n\n        switch (sprite->data[0])\n        {\n        default:\n            r6 = TRUE;\n            break;\n        case 0:\n            if (sprite->data[1] == 2)\n                r5 = TRUE;\n            break;\n        case 1:\n            if (sprite->data[1] == 4)\n                r5 = TRUE;\n            break;\n        }\n\n        if (r5)\n        {\n            sprite->invisible ^= 1;\n            sprite->data[2]++;\n            sprite->data[1] = 0;\n            if (sprite->data[2] == 5)\n            {\n                sprite->data[2] = 0;\n                sprite->data[0]++;\n            }\n        }\n        else if (r6)\n        {\n            DestroyAnimSprite(sprite);\n        }\n        else\n        {\n            sprite->data[1]++;\n        }\n    }",
+      "callsTo": [
+        "DestroyAnimSprite"
+      ],
+      "lineCount": 43
+    },
+    "AnimTask_NightmareClone": {
+      "returnType": "void",
+      "signature": "void AnimTask_NightmareClone(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "struct Task *task;\n\n    task = &gTasks[taskId];\n    task->data[0] = CloneBattlerSpriteWithBlend(ANIM_TARGET);\n    if (task->data[0] < 0)\n    {\n        DestroyAnimVisualTask(taskId);\n        return;\n    }\n    task->data[1] = 0;\n    task->data[2] = 15;\n    task->data[3] = 2;\n    task->data[4] = 0;\n    SetGpuReg(REG_OFFSET_BLDCNT, (BLDCNT_EFFECT_BLEND | BLDCNT_TGT2_ALL));\n    SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(task->data[2], task->data[3]));\n    gSprites[task->data[0]].data[0] = 80;\n    if (GetBattlerSide(gBattleAnimTarget) == B_SIDE_PLAYER)\n    {\n        gSprites[task->data[0]].data[1] = -144;\n        gSprites[task->data[0]].data[2] = 112;\n    }\n    else\n    {\n        gSprites[task->data[0]].data[1] = 144;\n        gSprites[task->data[0]].data[2] = -112;\n    }\n    gSprites[task->data[0]].data[3] = 0;\n    gSprites[task->data[0]].data[4] = 0;\n    StoreSpriteCallbackInData6(&gSprites[task->data[0]], SpriteCallbackDummy);\n    gSprites[task->data[0]].callback = TranslateSpriteLinearFixedPoint;\n    task->func = AnimTask_NightmareClone_Step;",
+      "callsTo": [
+        "BLDALPHA_BLEND",
+        "CloneBattlerSpriteWithBlend",
+        "DestroyAnimVisualTask",
+        "GetBattlerSide",
+        "SetGpuReg",
+        "StoreSpriteCallbackInData6"
+      ],
+      "lineCount": 31
+    },
+    "AnimTask_NightmareClone_Step": {
+      "returnType": "void",
+      "signature": "static void AnimTask_NightmareClone_Step(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "struct Task *task;\n\n    task = &gTasks[taskId];\n    switch (task->data[4])\n    {\n    case 0:\n        task->data[1] += 1;\n        task->data[5] = task->data[1] & 3;\n        if (task->data[5] == 1)\n            if (task->data[2] > 0)\n                task->data[2] -= 1;\n        if (task->data[5] == 3)\n            if (task->data[3] <= 15)\n                task->data[3] += 1;\n        SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(task->data[2], task->data[3]));\n        if (task->data[3] != 16 || task->data[2] != 0)\n            break;\n        if (task->data[1] <= 80)\n            break;\n        DestroySpriteWithActiveSheet(&gSprites[task->data[0]]);\n        task->data[4] = 1;\n        break;\n    case 1:\n        if (++task->data[6] <= 1)\n            break;\n        SetGpuReg(REG_OFFSET_BLDCNT, 0);\n        SetGpuReg(REG_OFFSET_BLDALPHA, 0);\n        task->data[4] += 1;\n        break;\n    case 2:\n        DestroyAnimVisualTask(taskId);\n        break;\n    }",
+      "callsTo": [
+        "BLDALPHA_BLEND",
+        "DestroyAnimVisualTask",
+        "DestroySpriteWithActiveSheet",
+        "SetGpuReg"
+      ],
+      "lineCount": 33
+    },
+    "AnimTask_SpiteTargetShadow": {
+      "returnType": "void",
+      "signature": "void AnimTask_SpiteTargetShadow(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "struct Task *task;\n\n    task = &gTasks[taskId];\n    task->data[15] = 0;\n    task->func = AnimTask_SpiteTargetShadow_Step1;\n    task->func(taskId);",
+      "callsTo": [],
+      "lineCount": 6
+    },
+    "AnimTask_SpiteTargetShadow_Step1": {
+      "returnType": "void",
+      "signature": "static void AnimTask_SpiteTargetShadow_Step1(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "s16 startLine;\n    struct Task *task = &gTasks[taskId];\n    u8 position = GetBattlerSpriteBGPriorityRank(gBattleAnimTarget);\n\n    switch (task->data[15])\n    {\n    case 0:\n        task->data[14] = AllocSpritePalette(ANIM_TAG_BENT_SPOON);\n        if (task->data[14] == 0xFF || task->data[14] == 0xF)\n        {\n            DestroyAnimVisualTask(taskId);\n        }\n        else\n        {\n            task->data[0] = CloneBattlerSpriteWithBlend(ANIM_TARGET);\n            if (task->data[0] < 0)\n            {\n                FreeSpritePaletteByTag(ANIM_TAG_BENT_SPOON);\n                DestroyAnimVisualTask(taskId);\n            }\n            else\n            {\n                s16 mask2;\n                gSprites[task->data[0]].oam.paletteNum = task->data[14];\n                gSprites[task->data[0]].oam.objMode = ST_OAM_OBJ_NORMAL;\n                gSprites[task->data[0]].oam.priority = 3;\n                gSprites[task->data[0]].invisible = (gBattleSpritesDataPtr->battlerData[gBattleAnimTarget].invisible);\n                task->data[1] = 0;\n                task->data[2] = 0;\n                task->data[3] = 16;\n                task->data[13] = GetAnimBattlerSpriteId(ANIM_TARGET);\n                task->data[4] = OBJ_PLTT_ID2(gSprites[task->data[13]].oam.paletteNum);\n                if (position == 1)\n                {\n                    u16 mask = DISPCNT_BG1_ON;\n                    mask2 = mask;\n                }\n                else\n                {\n                    u16 mask = DISPCNT_BG2_ON;\n                    mask2 = mask;\n                }\n                ClearGpuRegBits(REG_OFFSET_DISPCNT, mask2);\n                task->data[15]++;\n            }\n        }\n        break;\n    case 1:\n        task->data[14] = OBJ_PLTT_ID2(task->data[14]);\n        CpuCopy32(&gPlttBufferUnfaded[task->data[4]], &gPlttBufferFaded[task->data[14]], PLTT_SIZE_4BPP);\n        BlendPalette(task->data[4], 16, 10, RGB(13, 0, 15));\n        task->data[15]++;\n        break;\n    case 2:\n        startLine = gSprites[task->data[13]].y + gSprites[task->data[13]].y2 - 32;\n        if (startLine < 0)\n            startLine = 0;\n\n        if (position == 1)\n            task->data[10] = ScanlineEffect_InitWave(startLine, startLine + 64, 2, 6, 0, SCANLINE_EFFECT_REG_BG1HOFS, TRUE);\n        else\n            task->data[10] = ScanlineEffect_InitWave(startLine, startLine + 64, 2, 6, 0, SCANLINE_EFFECT_REG_BG2HOFS, TRUE);\n\n        task->data[15]++;\n        break;\n    case 3:\n        if (position == 1)\n            SetGpuReg(REG_OFFSET_BLDCNT, (BLDCNT_EFFECT_BLEND | BLDCNT_TGT2_ALL | BLDCNT_TGT1_BG1));\n        else\n            SetGpuReg(REG_OFFSET_BLDCNT, (BLDCNT_EFFECT_BLEND | BLDCNT_TGT2_ALL | BLDCNT_TGT1_BG2));\n\n        SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(0, 0x10));\n        task->data[15]++;\n        break;\n    case 4:\n        if (position == 1)\n            SetGpuRegBits(REG_OFFSET_DISPCNT, DISPCNT_BG1_ON);\n        else\n            SetGpuRegBits(REG_OFFSET_DISPCNT, DISPCNT_BG2_ON);\n\n        task->func = AnimTask_SpiteTargetShadow_Step2;\n        task->data[15]++;\n        break;\n    default:\n        task->data[15]++;\n        break;\n    }",
+      "callsTo": [
+        "AllocSpritePalette",
+        "BLDALPHA_BLEND",
+        "BlendPalette",
+        "ClearGpuRegBits",
+        "CloneBattlerSpriteWithBlend",
+        "CpuCopy32",
+        "DestroyAnimVisualTask",
+        "FreeSpritePaletteByTag",
+        "GetAnimBattlerSpriteId",
+        "GetBattlerSpriteBGPriorityRank",
+        "OBJ_PLTT_ID2",
+        "ScanlineEffect_InitWave",
+        "SetGpuReg",
+        "SetGpuRegBits"
+      ],
+      "lineCount": 87
+    },
+    "AnimTask_SpiteTargetShadow_Step2": {
+      "returnType": "void",
+      "signature": "static void AnimTask_SpiteTargetShadow_Step2(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "struct Task *task = &gTasks[taskId];\n    task->data[1]++;\n    task->data[5] = task->data[1] & 1;\n    if (task->data[5] == 0)\n        task->data[2] = gSineTable[task->data[1]] / 18;\n\n    if (task->data[5] == 1)\n        task->data[3] = 16 - (gSineTable[task->data[1]] / 18);\n\n    SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(task->data[2], task->data[3]));\n    if (task->data[1] == 128)\n    {\n        task->data[15] = 0;\n        task->func = AnimTask_SpiteTargetShadow_Step3;\n        task->func(taskId);\n    }",
+      "callsTo": [
+        "BLDALPHA_BLEND",
+        "SetGpuReg"
+      ],
+      "lineCount": 16
+    },
+    "AnimTask_SpiteTargetShadow_Step3": {
+      "returnType": "void",
+      "signature": "static void AnimTask_SpiteTargetShadow_Step3(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "struct Task *task = &gTasks[taskId];\n    u8 rank = GetBattlerSpriteBGPriorityRank(gBattleAnimTarget);\n\n    switch (task->data[15])\n    {\n    case 0:\n        gScanlineEffect.state = 3;\n        task->data[14] = GetAnimBattlerSpriteId(ANIM_TARGET);\n        if (rank == 1)\n            ClearGpuRegBits(REG_OFFSET_DISPCNT, DISPCNT_BG1_ON);\n        else\n            ClearGpuRegBits(REG_OFFSET_DISPCNT, DISPCNT_BG2_ON);\n        break;\n    case 1:\n        BlendPalette(task->data[4], 16, 0, RGB(13, 0, 15));\n        break;\n    case 2:\n        gSprites[task->data[14]].invisible = TRUE;\n        DestroySpriteWithActiveSheet(&gSprites[task->data[0]]);\n        FreeSpritePaletteByTag(ANIM_TAG_BENT_SPOON);\n        SetGpuReg(REG_OFFSET_BLDCNT, 0);\n        SetGpuReg(REG_OFFSET_BLDALPHA, 0);\n        if (rank == 1)\n            SetGpuRegBits(REG_OFFSET_DISPCNT, DISPCNT_BG1_ON);\n        else\n            SetGpuRegBits(REG_OFFSET_DISPCNT, DISPCNT_BG2_ON);\n\n        DestroyAnimVisualTask(taskId);\n        break;\n    }\n\n    task->data[15]++;",
+      "callsTo": [
+        "BlendPalette",
+        "ClearGpuRegBits",
+        "DestroyAnimVisualTask",
+        "DestroySpriteWithActiveSheet",
+        "FreeSpritePaletteByTag",
+        "GetAnimBattlerSpriteId",
+        "GetBattlerSpriteBGPriorityRank",
+        "SetGpuReg",
+        "SetGpuRegBits"
+      ],
+      "lineCount": 32
+    },
+    "AnimDestinyBondWhiteShadow": {
+      "returnType": "void",
+      "signature": "static void AnimDestinyBondWhiteShadow(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "s16 battler1X, battler1Y;\n    s16 battler2X, battler2Y;\n    s16 yDiff;\n\n    if (gBattleAnimArgs[0] == 0)\n    {\n        battler1X = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_X);\n        battler1Y = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_Y) + 28;\n        battler2X = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_X);\n        battler2Y = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_Y) + 28;\n    }\n    else\n    {\n        battler1X = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_X);\n        battler1Y = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_Y) + 28;\n        battler2X = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_X);\n        battler2Y = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_Y) + 28;\n    }\n\n    yDiff = battler2Y - battler1Y;\n    sprite->data[0] = battler1X * 16;\n    sprite->data[1] = battler1Y * 16;\n    sprite->data[2] = ((battler2X - battler1X) * 16) / gBattleAnimArgs[1];\n    sprite->data[3] = (yDiff * 16) / gBattleAnimArgs[1];\n    sprite->data[4] = gBattleAnimArgs[1];\n    sprite->data[5] = battler2X;\n    sprite->data[6] = battler2Y;\n    sprite->data[7] = sprite->data[4] / 2;\n    sprite->oam.priority = 2;\n    sprite->x = battler1X;\n    sprite->y = battler1Y;\n    sprite->callback = AnimDestinyBondWhiteShadow_Step;\n    sprite->invisible = TRUE;",
+      "callsTo": [
+        "GetBattlerSpriteCoord"
+      ],
+      "lineCount": 33
+    },
+    "AnimDestinyBondWhiteShadow_Step": {
+      "returnType": "void",
+      "signature": "static void AnimDestinyBondWhiteShadow_Step(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "if (sprite->data[4])\n    {\n        sprite->data[0] += sprite->data[2];\n        sprite->data[1] += sprite->data[3];\n        sprite->x = sprite->data[0] >> 4;\n        sprite->y = sprite->data[1] >> 4;\n        if (--sprite->data[4] == 0)\n            sprite->data[0] = 0;\n    }",
+      "callsTo": [],
+      "lineCount": 9
+    },
+    "AnimTask_DestinyBondWhiteShadow": {
+      "returnType": "void",
+      "signature": "void AnimTask_DestinyBondWhiteShadow(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "struct Task *task;\n    s16 battler;\n    u8 spriteId;\n    s16 baseX, baseY;\n    s16 x, y;\n\n    task = &gTasks[taskId];\n    SetGpuReg(REG_OFFSET_BLDCNT, (BLDCNT_EFFECT_BLEND | BLDCNT_TGT2_ALL));\n    SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(0, 0x10));\n    task->data[5] = 0;\n    task->data[6] = 0;\n    task->data[7] = 0;\n    task->data[8] = 0;\n    task->data[9] = 16;\n    task->data[10] = gBattleAnimArgs[0];\n\n    baseX = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_X_2);\n    baseY = GetBattlerSpriteCoordAttr(gBattleAnimAttacker, BATTLER_COORD_ATTR_BOTTOM);\n    if (!IsContest())\n    {\n        for (battler = 0; battler < MAX_BATTLERS_COUNT; battler++)\n        {\n            if (battler != gBattleAnimAttacker\n             && battler != BATTLE_PARTNER(gBattleAnimAttacker)\n             && IsBattlerSpriteVisible(battler))\n            {\n                spriteId = CreateSprite(&gDestinyBondWhiteShadowSpriteTemplate, baseX, baseY, 55);\n                if (spriteId != MAX_SPRITES)\n                {\n                    x = GetBattlerSpriteCoord(battler, BATTLER_COORD_X_2);\n                    y = GetBattlerSpriteCoordAttr(battler, BATTLER_COORD_ATTR_BOTTOM);\n                    gSprites[spriteId].data[0] = baseX << 4;\n                    gSprites[spriteId].data[1] = baseY << 4;\n                    gSprites[spriteId].data[2] = ((x - baseX) << 4) / gBattleAnimArgs[1];\n                    gSprites[spriteId].data[3] = ((y - baseY) << 4) / gBattleAnimArgs[1];\n                    gSprites[spriteId].data[4] = gBattleAnimArgs[1];\n                    gSprites[spriteId].data[5] = x;\n                    gSprites[spriteId].data[6] = y;\n                    gSprites[spriteId].callback = AnimDestinyBondWhiteShadow_Step;\n\n                    task->data[task->data[12] + 13] = spriteId;\n                    task->data[12]++;\n                }\n            }\n        }\n    }\n    else\n    {\n        spriteId = CreateSprite(&gDestinyBondWhiteShadowSpriteTemplate, baseX, baseY, 55);\n        if (spriteId != MAX_SPRITES)\n        {\n            x = 48;\n            y = 40;\n            gSprites[spriteId].data[0] = baseX << 4;\n            gSprites[spriteId].data[1] = baseY << 4;\n            gSprites[spriteId].data[2] = ((x - baseX) << 4) / gBattleAnimArgs[1];\n            gSprites[spriteId].data[3] = ((y - baseY) << 4) / gBattleAnimArgs[1];\n            gSprites[spriteId].data[4] = gBattleAnimArgs[1];\n            gSprites[spriteId].data[5] = x;\n            gSprites[spriteId].data[6] = y;\n            gSprites[spriteId].callback = AnimDestinyBondWhiteShadow_Step;\n\n            task->data[13] = spriteId;\n            task->data[12] = 1;\n        }\n    }\n\n    task->func = AnimTask_DestinyBondWhiteShadow_Step;",
+      "callsTo": [
+        "BATTLE_PARTNER",
+        "BLDALPHA_BLEND",
+        "CreateSprite",
+        "GetBattlerSpriteCoord",
+        "GetBattlerSpriteCoordAttr",
+        "IsBattlerSpriteVisible",
+        "IsContest",
+        "SetGpuReg"
+      ],
+      "lineCount": 68
+    },
+    "AnimTask_DestinyBondWhiteShadow_Step": {
+      "returnType": "void",
+      "signature": "static void AnimTask_DestinyBondWhiteShadow_Step(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "u16 i;\n    struct Task *task = &gTasks[taskId];\n\n    switch (task->data[0])\n    {\n    case 0:\n        if (task->data[6] == 0)\n        {\n            if (++task->data[5] > 1)\n            {\n                task->data[5] = 0;\n                task->data[7]++;\n                if (task->data[7] & 1)\n                {\n                    if (task->data[8] < 16)\n                        task->data[8]++;\n                }\n                else\n                {\n                    if (task->data[9])\n                        task->data[9]--;\n                }\n\n                SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(task->data[8], task->data[9]));\n                if (task->data[7] >= 24)\n                {\n                    task->data[7] = 0;\n                    task->data[6] = 1;\n                }\n            }\n        }\n\n        if (task->data[10])\n            task->data[10]--;\n        else if (task->data[6])\n            task->data[0]++;\n        break;\n    case 1:\n        if (++task->data[5] > 1)\n        {\n            task->data[5] = 0;\n            task->data[7]++;\n            if (task->data[7] & 1)\n            {\n                if (task->data[8])\n                    task->data[8]--;\n            }\n            else\n            {\n                if (task->data[9] < 16)\n                    task->data[9]++;\n            }\n\n            SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(task->data[8], task->data[9]));\n            if (task->data[8] == 0 && task->data[9] == 16)\n            {\n                for (i = 0; i < task->data[12]; i++)\n                    DestroySprite(&gSprites[task->data[i + 13]]);\n\n                task->data[0]++;\n            }\n        }\n        break;\n    case 2:\n        if (++task->data[5] > 0)\n            task->data[0]++;\n        break;\n    case 3:\n        SetGpuReg(REG_OFFSET_BLDCNT, 0);\n        SetGpuReg(REG_OFFSET_BLDALPHA, 0);\n        DestroyAnimVisualTask(taskId);\n        break;\n    }",
+      "callsTo": [
+        "BLDALPHA_BLEND",
+        "DestroyAnimVisualTask",
+        "DestroySprite",
+        "SetGpuReg"
+      ],
+      "lineCount": 73
+    },
+    "AnimTask_CurseStretchingBlackBg": {
+      "returnType": "void",
+      "signature": "void AnimTask_CurseStretchingBlackBg(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "s16 startX, startY;\n    s16 leftDistance, topDistance, bottomDistance, rightDistance;\n\n    gBattle_WIN0H = 0;\n    gBattle_WIN0V = 0;\n    SetGpuReg(REG_OFFSET_WININ, ((WININ_WIN0_BG_ALL | WININ_WIN0_OBJ | WININ_WIN0_CLR) |\n                                    (WININ_WIN1_BG_ALL | WININ_WIN1_OBJ | WININ_WIN1_CLR)));\n    SetGpuReg(REG_OFFSET_WINOUT, ((WINOUT_WIN01_BG_ALL | WINOUT_WIN01_OBJ) |\n                                    (WINOUT_WINOBJ_BG_ALL | WINOUT_WINOBJ_OBJ | WINOUT_WINOBJ_CLR)));\n    SetGpuReg(REG_OFFSET_BLDCNT, (BLDCNT_TGT1_BG3 | BLDCNT_EFFECT_DARKEN));\n    SetGpuReg(REG_OFFSET_BLDY, 16);\n\n    if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER || IsContest())\n        startX = 40;\n    else\n        startX = 200;\n\n    gBattle_WIN0H = WIN_RANGE(startX, startX);\n    startY = 40;\n    gBattle_WIN0V = WIN_RANGE(startY, startY);\n\n    leftDistance = startX;\n    rightDistance = DISPLAY_WIDTH - startX;\n    topDistance = startY;\n    bottomDistance = 72;\n    gTasks[taskId].data[1] = leftDistance;\n    gTasks[taskId].data[2] = rightDistance;\n    gTasks[taskId].data[3] = topDistance;\n    gTasks[taskId].data[4] = bottomDistance;\n    gTasks[taskId].data[5] = startX;\n    gTasks[taskId].data[6] = startY;\n    gTasks[taskId].func = AnimTask_CurseStretchingBlackBg_Step1;",
+      "callsTo": [
+        "GetBattlerSide",
+        "IsContest",
+        "SetGpuReg",
+        "WIN_RANGE"
+      ],
+      "lineCount": 32
+    },
+    "AnimTask_CurseStretchingBlackBg_Step1": {
+      "returnType": "void",
+      "signature": "static void AnimTask_CurseStretchingBlackBg_Step1(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "s16 step;\n    s16 leftDistance, rightDistance, topDistance, bottomDistance;\n    s16 startX, startY;\n    u16 left, right, top, bottom;\n    u16 selectedPalettes;\n\n    step = gTasks[taskId].data[0];\n    gTasks[taskId].data[0]++;\n    leftDistance = gTasks[taskId].data[1];\n    rightDistance = gTasks[taskId].data[2];\n    topDistance = gTasks[taskId].data[3];\n    bottomDistance = gTasks[taskId].data[4];\n    startX = gTasks[taskId].data[5];\n    startY = gTasks[taskId].data[6];\n\n    if (step < 16)\n    {\n        left   = startX - (leftDistance   * 0.0625) * step;\n        right  = startX + (rightDistance  * 0.0625) * step;\n        top    = startY - (topDistance    * 0.0625) * step;\n        bottom = startY + (bottomDistance * 0.0625) * step;\n    }\n    else\n    {\n        left = 0;\n        right = DISPLAY_WIDTH;\n        top = 0;\n        bottom = 112;\n        selectedPalettes = GetBattlePalettesMask(TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE);\n        BeginNormalPaletteFade(selectedPalettes, 0, 16, 16, RGB_BLACK);\n        gTasks[taskId].func = AnimTask_CurseStretchingBlackBg_Step2;\n    }\n\n    gBattle_WIN0H = WIN_RANGE(left, right);\n    gBattle_WIN0V = WIN_RANGE(top, bottom);",
+      "callsTo": [
+        "BeginNormalPaletteFade",
+        "GetBattlePalettesMask",
+        "WIN_RANGE"
+      ],
+      "lineCount": 35
+    },
+    "AnimTask_CurseStretchingBlackBg_Step2": {
+      "returnType": "void",
+      "signature": "static void AnimTask_CurseStretchingBlackBg_Step2(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "if (!gPaletteFade.active)\n    {\n        gBattle_WIN0H = 0;\n        gBattle_WIN0V = 0;\n        SetGpuReg(REG_OFFSET_WININ, ((WININ_WIN0_BG_ALL | WININ_WIN0_OBJ | WININ_WIN0_CLR) |\n                                        (WININ_WIN1_BG_ALL | WININ_WIN1_OBJ | WININ_WIN1_CLR)));\n        SetGpuReg(REG_OFFSET_WINOUT, ((WINOUT_WIN01_BG_ALL | WINOUT_WIN01_OBJ | WINOUT_WIN01_CLR) |\n                                        (WINOUT_WINOBJ_BG_ALL | WINOUT_WINOBJ_OBJ | WINOUT_WINOBJ_CLR)));\n        SetGpuReg(REG_OFFSET_BLDCNT, 0);\n        SetGpuReg(REG_OFFSET_BLDY, 0);\n        DestroyAnimVisualTask(taskId);\n    }",
+      "callsTo": [
+        "DestroyAnimVisualTask",
+        "SetGpuReg"
+      ],
+      "lineCount": 12
+    },
+    "AnimCurseNail": {
+      "returnType": "void",
+      "signature": "static void AnimCurseNail(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "s16 xDelta;\n    s16 xDelta2;\n\n    InitSpritePosToAnimAttacker(sprite, TRUE);\n    if (GetBattlerSide(gBattleAnimAttacker) == B_SIDE_PLAYER)\n    {\n        xDelta = 24;\n        xDelta2 = -2;\n        sprite->oam.matrixNum = ST_OAM_HFLIP;\n    }\n    else\n    {\n        xDelta = -24;\n        xDelta2 = 2;\n    }\n\n    sprite->x += xDelta;\n    sprite->data[1] = xDelta2;\n    sprite->data[0] = 60;\n    sprite->callback = AnimCurseNail_Step1;",
+      "callsTo": [
+        "GetBattlerSide",
+        "InitSpritePosToAnimAttacker"
+      ],
+      "lineCount": 20
+    },
+    "AnimCurseNail_Step1": {
+      "returnType": "void",
+      "signature": "static void AnimCurseNail_Step1(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "u16 var0;\n\n    if (sprite->data[0] > 0)\n    {\n        sprite->data[0]--;\n    }\n    else\n    {\n        sprite->x2 += sprite->data[1];\n        var0 = sprite->x2 + 7;\n        if (var0 > 14)\n        {\n            sprite->x += sprite->x2;\n            sprite->x2 = 0;\n            sprite->oam.tileNum += 8;\n            if (++sprite->data[2] == 3)\n            {\n                sprite->data[0] = 30;\n                sprite->callback = WaitAnimForDuration;\n                StoreSpriteCallbackInData6(sprite, AnimCurseNail_Step2);\n            }\n            else\n            {\n                sprite->data[0] = 40;\n            }\n        }\n    }",
+      "callsTo": [
+        "StoreSpriteCallbackInData6"
+      ],
+      "lineCount": 27
+    },
+    "AnimCurseNail_Step2": {
+      "returnType": "void",
+      "signature": "static void AnimCurseNail_Step2(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "if (sprite->data[0] == 0)\n    {\n        SetGpuReg(REG_OFFSET_BLDCNT, (BLDCNT_EFFECT_BLEND | BLDCNT_TGT2_ALL));\n        SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(16, 0));\n        sprite->data[0]++;\n        sprite->data[1] = 0;\n        sprite->data[2] = 0;\n    }\n    else if (sprite->data[1] < 2)\n    {\n        sprite->data[1]++;\n    }\n    else\n    {\n        sprite->data[1] = 0;\n        sprite->data[2]++;\n        SetGpuReg(REG_OFFSET_BLDALPHA, (16 - sprite->data[2]) | (sprite->data[2] << 8));\n        if (sprite->data[2] == 16)\n        {\n            sprite->invisible = TRUE;\n            sprite->callback = AnimCurseNail_End;\n        }\n    }",
+      "callsTo": [
+        "BLDALPHA_BLEND",
+        "SetGpuReg"
+      ],
+      "lineCount": 23
+    },
+    "AnimCurseNail_End": {
+      "returnType": "void",
+      "signature": "static void AnimCurseNail_End(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "SetGpuReg(REG_OFFSET_BLDCNT, 0);\n    SetGpuReg(REG_OFFSET_BLDALPHA, 0);\n    gBattle_WIN0H = 0;\n    gBattle_WIN0V = 0;\n    DestroyAnimSprite(sprite);",
+      "callsTo": [
+        "DestroyAnimSprite",
+        "SetGpuReg"
+      ],
+      "lineCount": 5
+    },
+    "AnimGhostStatusSprite": {
+      "returnType": "void",
+      "signature": "static void AnimGhostStatusSprite(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "u16 coeffB;\n    u16 coeffA;\n\n    sprite->x2 = Sin(sprite->data[0], 12);\n    if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)\n        sprite->x2 = -sprite->x2;\n\n    sprite->data[0] = (sprite->data[0] + 6) & 0xFF;\n    sprite->data[1] += 0x100;\n    sprite->y2 = -(sprite->data[1] >> 8);\n\n    sprite->data[7]++;\n    if (sprite->data[7] == 1)\n    {\n        sprite->data[6] = 0x050B;\n        SetGpuReg(REG_OFFSET_BLDCNT, (BLDCNT_EFFECT_BLEND | BLDCNT_TGT2_ALL));\n        SetGpuReg(REG_OFFSET_BLDALPHA, sprite->data[6]);\n    }\n    else if (sprite->data[7] > 30)\n    {\n        sprite->data[2]++;\n        coeffB = sprite->data[6] >> 8;\n        coeffA = sprite->data[6] & 0xFF;\n\n        if (++coeffB > 16)\n            coeffB = 16;\n        --coeffA;\n        if ((s16)coeffA < 0)\n            coeffA = 0;\n\n        SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(coeffA, coeffB));\n        sprite->data[6] = BLDALPHA_BLEND(coeffA, coeffB);\n        if (coeffB == 16 && coeffA == 0)\n        {\n            sprite->invisible = TRUE;\n            sprite->callback = AnimGhostStatusSprite_Step;\n        }\n    }",
+      "callsTo": [
+        "BLDALPHA_BLEND",
+        "GetBattlerSide",
+        "SetGpuReg",
+        "Sin"
+      ],
+      "lineCount": 38
+    },
+    "AnimGhostStatusSprite_Step": {
+      "returnType": "void",
+      "signature": "static void AnimGhostStatusSprite_Step(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "SetGpuReg(REG_OFFSET_BLDCNT, 0);\n    SetGpuReg(REG_OFFSET_BLDALPHA, 0);\n    DestroyAnimSprite(sprite);",
+      "callsTo": [
+        "DestroyAnimSprite",
+        "SetGpuReg"
+      ],
+      "lineCount": 3
+    },
+    "AnimTask_GrudgeFlames": {
+      "returnType": "void",
+      "signature": "void AnimTask_GrudgeFlames(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "struct Task *task = &gTasks[taskId];\n\n    task->data[0] = 0;\n    task->data[1] = 16;\n    task->data[9] = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_X_2);\n    task->data[10] = GetBattlerYCoordWithElevation(gBattleAnimAttacker);\n    task->data[11] = (GetBattlerSpriteCoordAttr(gBattleAnimAttacker, BATTLER_COORD_ATTR_WIDTH) / 2) + 8;\n    task->data[7] = 0;\n    task->data[5] = GetBattlerSpriteBGPriority(gBattleAnimAttacker);\n    task->data[6] = GetBattlerSpriteSubpriority(gBattleAnimAttacker) - 2;\n    task->data[3] = 0;\n    task->data[4] = 16;\n    SetGpuReg(REG_OFFSET_BLDCNT, (BLDCNT_EFFECT_BLEND | BLDCNT_TGT2_ALL));\n    SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(0, 0x10));\n    task->data[8] = 0;\n    task->func = AnimTask_GrudgeFlames_Step;",
+      "callsTo": [
+        "BLDALPHA_BLEND",
+        "GetBattlerSpriteBGPriority",
+        "GetBattlerSpriteCoord",
+        "GetBattlerSpriteCoordAttr",
+        "GetBattlerSpriteSubpriority",
+        "GetBattlerYCoordWithElevation",
+        "SetGpuReg"
+      ],
+      "lineCount": 16
+    },
+    "AnimTask_GrudgeFlames_Step": {
+      "returnType": "void",
+      "signature": "static void AnimTask_GrudgeFlames_Step(u8 taskId)",
+      "paramsRaw": "u8 taskId",
+      "body": "u16 i;\n    u8 spriteId;\n    struct Task *task = &gTasks[taskId];\n\n    switch (task->data[0])\n    {\n    case 0:\n        for (i = 0; i < 6; i++)\n        {\n            spriteId = CreateSprite(&gGrudgeFlameSpriteTemplate, task->data[9], task->data[10], task->data[6]);\n            if (spriteId != MAX_SPRITES)\n            {\n                gSprites[spriteId].data[0] = taskId;\n                gSprites[spriteId].data[1] = GetBattlerSide(gBattleAnimAttacker) == B_SIDE_PLAYER;\n\n                gSprites[spriteId].data[2] = (i * 42) & 0xFF;\n                gSprites[spriteId].data[3] = task->data[11];\n                gSprites[spriteId].data[5] = i * 6;\n                task->data[7]++;\n            }\n        }\n\n        task->data[0]++;\n        break;\n    case 1:\n        if (++task->data[1] & 1)\n        {\n            if (task->data[3] < 14)\n                task->data[3]++;\n        }\n        else\n        {\n            if (task->data[4] > 4)\n                task->data[4]--;\n        }\n\n        if (task->data[3] == 14 && task->data[4] == 4)\n        {\n            task->data[1] = 0;\n            task->data[0]++;\n        }\n\n        SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(task->data[3], task->data[4]));\n        break;\n    case 2:\n        if (++task->data[1] > 30)\n        {\n            task->data[1] = 0;\n            task->data[0]++;\n        }\n        break;\n    case 3:\n        if (++task->data[1] & 1)\n        {\n            if (task->data[3] > 0)\n                task->data[3]--;\n        }\n        else\n        {\n            if (task->data[4] < 16)\n                task->data[4]++;\n        }\n\n        if (task->data[3] == 0 && task->data[4] == 16)\n        {\n            task->data[8] = 1;\n            task->data[0]++;\n        }\n\n        SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(task->data[3], task->data[4]));\n        break;\n    case 4:\n        if (task->data[7] == 0)\n            task->data[0]++;\n        break;\n    case 5:\n        SetGpuReg(REG_OFFSET_BLDCNT, 0);\n        SetGpuReg(REG_OFFSET_BLDALPHA, 0);\n        DestroyAnimVisualTask(taskId);\n        break;\n    }",
+      "callsTo": [
+        "BLDALPHA_BLEND",
+        "CreateSprite",
+        "DestroyAnimVisualTask",
+        "GetBattlerSide",
+        "SetGpuReg"
+      ],
+      "lineCount": 81
+    },
+    "AnimGrudgeFlame": {
+      "returnType": "void",
+      "signature": "static void AnimGrudgeFlame(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "u16 index;\n\n    if (sprite->data[1] == 0)\n        sprite->data[2] += 2;\n    else\n        sprite->data[2] -= 2;\n\n    sprite->data[2] &= 0xFF;\n    sprite->x2 = Sin(sprite->data[2], sprite->data[3]);\n\n    index = sprite->data[2] - 65;\n    if (index < 127)\n        sprite->oam.priority = gTasks[sprite->data[0]].data[5] + 1;\n    else\n        sprite->oam.priority = gTasks[sprite->data[0]].data[5];\n\n    sprite->data[5]++;\n    sprite->data[6] = (sprite->data[5] * 8) & 0xFF;\n    sprite->y2 = Sin(sprite->data[6], 7);\n    if (gTasks[sprite->data[0]].data[8])\n    {\n        gTasks[sprite->data[0]].data[7]--;\n        DestroySprite(sprite);\n    }",
+      "callsTo": [
+        "DestroySprite",
+        "Sin"
+      ],
+      "lineCount": 24
+    },
+    "AnimMonMoveCircular": {
+      "returnType": "void",
+      "signature": "static void AnimMonMoveCircular(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "sprite->invisible = TRUE;\n    sprite->data[5] = gBattlerSpriteIds[gBattleAnimAttacker];\n    sprite->data[0] = 128;\n    sprite->data[1] = 10;\n    sprite->data[2] = gBattleAnimArgs[0];\n    sprite->data[3] = gBattleAnimArgs[1];\n    sprite->callback = AnimMonMoveCircular_Step;\n\n    gSprites[sprite->data[5]].y += 8;",
+      "callsTo": [],
+      "lineCount": 9
+    },
+    "AnimMonMoveCircular_Step": {
+      "returnType": "void",
+      "signature": "static void AnimMonMoveCircular_Step(struct Sprite *sprite)",
+      "paramsRaw": "struct Sprite *sprite",
+      "body": "if (sprite->data[3])\n    {\n        sprite->data[3]--;\n        gSprites[sprite->data[5]].x2 = Sin(sprite->data[0], sprite->data[1]);\n        gSprites[sprite->data[5]].y2 = Cos(sprite->data[0], sprite->data[1]);\n        sprite->data[0] += sprite->data[2];\n        if (sprite->data[0] > 255)\n            sprite->data[0] -= 256;\n    }\n    else\n    {\n        gSprites[sprite->data[5]].x2 = 0;\n        gSprites[sprite->data[5]].y2 = 0;\n        gSprites[sprite->data[5]].y -= 8;\n        sprite->callback = DestroySpriteAndMatrix;\n    }",
+      "callsTo": [
+        "Cos",
+        "Sin"
+      ],
+      "lineCount": 16
+    }
+  }
+}

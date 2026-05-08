@@ -1,0 +1,136 @@
+{
+  "srcFile": "src/pokemon_size_record.c",
+  "count": 12,
+  "functions": {
+    "GetMonSizeHash": {
+      "returnType": "u32",
+      "signature": "static u32 GetMonSizeHash(struct Pokemon *pkmn)",
+      "paramsRaw": "struct Pokemon *pkmn",
+      "body": "u16 personality = GetMonData(pkmn, MON_DATA_PERSONALITY);\n    u16 hpIV = GetMonData(pkmn, MON_DATA_HP_IV) & 0xF;\n    u16 attackIV = GetMonData(pkmn, MON_DATA_ATK_IV) & 0xF;\n    u16 defenseIV = GetMonData(pkmn, MON_DATA_DEF_IV) & 0xF;\n    u16 speedIV = GetMonData(pkmn, MON_DATA_SPEED_IV) & 0xF;\n    u16 spAtkIV = GetMonData(pkmn, MON_DATA_SPATK_IV) & 0xF;\n    u16 spDefIV = GetMonData(pkmn, MON_DATA_SPDEF_IV) & 0xF;\n    u32 hibyte = ((attackIV ^ defenseIV) * hpIV) ^ (personality & 0xFF);\n    u32 lobyte = ((spAtkIV ^ spDefIV) * speedIV) ^ (personality >> 8);\n\n    return (hibyte << 8) + lobyte;",
+      "callsTo": [
+        "GetMonData"
+      ],
+      "lineCount": 11
+    },
+    "TranslateBigMonSizeTableIndex": {
+      "returnType": "u8",
+      "signature": "static u8 TranslateBigMonSizeTableIndex(u16 a)",
+      "paramsRaw": "u16 a",
+      "body": "u8 i;\n\n    for (i = 1; i < 15; i++)\n    {\n        if (a < sBigMonSizeTable[i].unk4)\n            return i - 1;\n    }\n    return i;",
+      "callsTo": [],
+      "lineCount": 8
+    },
+    "GetMonSize": {
+      "returnType": "u32",
+      "signature": "static u32 GetMonSize(u16 species, u16 b)",
+      "paramsRaw": "u16 species, u16 b",
+      "body": "u64 unk2;\n    u64 unk4;\n    u64 unk0;\n    u32 height;\n    u32 var;\n\n    height = GetPokedexHeightWeight(SpeciesToNationalPokedexNum(species), 0);\n    var = TranslateBigMonSizeTableIndex(b);\n    unk0 = sBigMonSizeTable[var].unk0;\n    unk2 = sBigMonSizeTable[var].unk2;\n    unk4 = sBigMonSizeTable[var].unk4;\n    unk0 += (b - unk4) / unk2;\n    return height * unk0 / 10;",
+      "callsTo": [
+        "GetPokedexHeightWeight",
+        "SpeciesToNationalPokedexNum",
+        "TranslateBigMonSizeTableIndex"
+      ],
+      "lineCount": 13
+    },
+    "FormatMonSizeRecord": {
+      "returnType": "void",
+      "signature": "static void FormatMonSizeRecord(u8 *string, u32 size)",
+      "paramsRaw": "u8 *string, u32 size",
+      "body": "#ifdef UNITS_IMPERIAL\n     \n    size = (f64)(size * 10) / (CM_PER_INCH * 10);\n#endif\n\n    string = ConvertIntToDecimalStringN(string, size / 10, STR_CONV_MODE_LEFT_ALIGN, 8);\n    string = StringAppend(string, gText_DecimalPoint);\n    ConvertIntToDecimalStringN(string, size % 10, STR_CONV_MODE_LEFT_ALIGN, 1);",
+      "callsTo": [
+        "ConvertIntToDecimalStringN",
+        "StringAppend"
+      ],
+      "lineCount": 8
+    },
+    "CompareMonSize": {
+      "returnType": "u8",
+      "signature": "static u8 CompareMonSize(u16 species, u16 *sizeRecord)",
+      "paramsRaw": "u16 species, u16 *sizeRecord",
+      "body": "if (gSpecialVar_Result == PARTY_NOTHING_CHOSEN)\n    {\n        return COMPARE_SIZE_NONE;\n    }\n    else\n    {\n        struct Pokemon *pkmn = &gPlayerParty[gSpecialVar_Result];\n\n        if (GetMonData(pkmn, MON_DATA_IS_EGG) == TRUE || GetMonData(pkmn, MON_DATA_SPECIES) != species)\n        {\n            return COMPARE_SIZE_INCORRECT_SPECIES;\n        }\n        else\n        {\n            u32 oldSize;\n            u32 newSize;\n            u16 sizeParams;\n\n            *(&sizeParams) = GetMonSizeHash(pkmn);\n            newSize = GetMonSize(species, sizeParams);\n            oldSize = GetMonSize(species, *sizeRecord);\n            FormatMonSizeRecord(gStringVar2, newSize);\n            if (newSize <= oldSize)\n            {\n                return COMPARE_SIZE_SMALLER;\n            }\n            else\n            {\n                *sizeRecord = sizeParams;\n                return COMPARE_SIZE_LARGER;\n            }\n        }\n    }",
+      "callsTo": [
+        "FormatMonSizeRecord",
+        "GetMonData",
+        "GetMonSize",
+        "GetMonSizeHash"
+      ],
+      "lineCount": 33
+    },
+    "GetMonSizeRecordInfo": {
+      "returnType": "void",
+      "signature": "static void GetMonSizeRecordInfo(u16 species, u16 *sizeRecord)",
+      "paramsRaw": "u16 species, u16 *sizeRecord",
+      "body": "u32 size = GetMonSize(species, *sizeRecord);\n\n    FormatMonSizeRecord(gStringVar3, size);\n    StringCopy(gStringVar1, gSpeciesNames[species]);\n    if (*sizeRecord == DEFAULT_MAX_SIZE)\n        StringCopy(gStringVar2, gText_Marco);\n    else\n        StringCopy(gStringVar2, gSaveBlock2Ptr->playerName);",
+      "callsTo": [
+        "FormatMonSizeRecord",
+        "GetMonSize",
+        "StringCopy"
+      ],
+      "lineCount": 8
+    },
+    "InitSeedotSizeRecord": {
+      "returnType": "void",
+      "signature": "void InitSeedotSizeRecord(void)",
+      "paramsRaw": "void",
+      "body": "VarSet(VAR_SEEDOT_SIZE_RECORD, DEFAULT_MAX_SIZE);",
+      "callsTo": [
+        "VarSet"
+      ],
+      "lineCount": 1
+    },
+    "GetSeedotSizeRecordInfo": {
+      "returnType": "void",
+      "signature": "void GetSeedotSizeRecordInfo(void)",
+      "paramsRaw": "void",
+      "body": "u16 *sizeRecord = GetVarPointer(VAR_SEEDOT_SIZE_RECORD);\n\n    GetMonSizeRecordInfo(SPECIES_SEEDOT, sizeRecord);",
+      "callsTo": [
+        "GetMonSizeRecordInfo",
+        "GetVarPointer"
+      ],
+      "lineCount": 3
+    },
+    "CompareSeedotSize": {
+      "returnType": "void",
+      "signature": "void CompareSeedotSize(void)",
+      "paramsRaw": "void",
+      "body": "u16 *sizeRecord = GetVarPointer(VAR_SEEDOT_SIZE_RECORD);\n\n    gSpecialVar_Result = CompareMonSize(SPECIES_SEEDOT, sizeRecord);",
+      "callsTo": [
+        "CompareMonSize",
+        "GetVarPointer"
+      ],
+      "lineCount": 3
+    },
+    "InitLotadSizeRecord": {
+      "returnType": "void",
+      "signature": "void InitLotadSizeRecord(void)",
+      "paramsRaw": "void",
+      "body": "VarSet(VAR_LOTAD_SIZE_RECORD, DEFAULT_MAX_SIZE);",
+      "callsTo": [
+        "VarSet"
+      ],
+      "lineCount": 1
+    },
+    "GetLotadSizeRecordInfo": {
+      "returnType": "void",
+      "signature": "void GetLotadSizeRecordInfo(void)",
+      "paramsRaw": "void",
+      "body": "u16 *sizeRecord = GetVarPointer(VAR_LOTAD_SIZE_RECORD);\n\n    GetMonSizeRecordInfo(SPECIES_LOTAD, sizeRecord);",
+      "callsTo": [
+        "GetMonSizeRecordInfo",
+        "GetVarPointer"
+      ],
+      "lineCount": 3
+    },
+    "CompareLotadSize": {
+      "returnType": "void",
+      "signature": "void CompareLotadSize(void)",
+      "paramsRaw": "void",
+      "body": "u16 *sizeRecord = GetVarPointer(VAR_LOTAD_SIZE_RECORD);\n\n    gSpecialVar_Result = CompareMonSize(SPECIES_LOTAD, sizeRecord);",
+      "callsTo": [
+        "CompareMonSize",
+        "GetVarPointer"
+      ],
+      "lineCount": 3
+    }
+  }
+}

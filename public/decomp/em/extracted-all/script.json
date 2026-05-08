@@ -1,0 +1,336 @@
+{
+  "srcFile": "src/script.c",
+  "count": 34,
+  "functions": {
+    "InitScriptContext": {
+      "returnType": "void",
+      "signature": "void InitScriptContext(struct ScriptContext *ctx, void *cmdTable, void *cmdTableEnd)",
+      "paramsRaw": "struct ScriptContext *ctx, void *cmdTable, void *cmdTableEnd",
+      "body": "s32 i;\n\n    ctx->mode = SCRIPT_MODE_STOPPED;\n    ctx->scriptPtr = NULL;\n    ctx->stackDepth = 0;\n    ctx->nativePtr = NULL;\n    ctx->cmdTable = cmdTable;\n    ctx->cmdTableEnd = cmdTableEnd;\n\n    for (i = 0; i < (int)ARRAY_COUNT(ctx->data); i++)\n        ctx->data[i] = 0;\n\n    for (i = 0; i < (int)ARRAY_COUNT(ctx->stack); i++)\n        ctx->stack[i] = NULL;",
+      "callsTo": [
+        "ARRAY_COUNT"
+      ],
+      "lineCount": 14
+    },
+    "SetupBytecodeScript": {
+      "returnType": "u8",
+      "signature": "u8 SetupBytecodeScript(struct ScriptContext *ctx, const u8 *ptr)",
+      "paramsRaw": "struct ScriptContext *ctx, const u8 *ptr",
+      "body": "ctx->scriptPtr = ptr;\n    ctx->mode = SCRIPT_MODE_BYTECODE;\n    return 1;",
+      "callsTo": [],
+      "lineCount": 3
+    },
+    "SetupNativeScript": {
+      "returnType": "void",
+      "signature": "void SetupNativeScript(struct ScriptContext *ctx, bool8 (*ptr)(void))",
+      "paramsRaw": "struct ScriptContext *ctx, bool8 (*ptr)(void)",
+      "body": "ctx->mode = SCRIPT_MODE_NATIVE;\n    ctx->nativePtr = ptr;",
+      "callsTo": [],
+      "lineCount": 2
+    },
+    "StopScript": {
+      "returnType": "void",
+      "signature": "void StopScript(struct ScriptContext *ctx)",
+      "paramsRaw": "struct ScriptContext *ctx",
+      "body": "ctx->mode = SCRIPT_MODE_STOPPED;\n    ctx->scriptPtr = NULL;",
+      "callsTo": [],
+      "lineCount": 2
+    },
+    "RunScriptCommand": {
+      "returnType": "bool8",
+      "signature": "bool8 RunScriptCommand(struct ScriptContext *ctx)",
+      "paramsRaw": "struct ScriptContext *ctx",
+      "body": "if (ctx->mode == SCRIPT_MODE_STOPPED)\n        return FALSE;\n\n    switch (ctx->mode)\n    {\n    case SCRIPT_MODE_STOPPED:\n        return FALSE;\n    case SCRIPT_MODE_NATIVE:\n         \n         \n        if (ctx->nativePtr)\n        {\n            if (ctx->nativePtr() == TRUE)\n                ctx->mode = SCRIPT_MODE_BYTECODE;\n            return TRUE;\n        }\n        ctx->mode = SCRIPT_MODE_BYTECODE;\n         \n    case SCRIPT_MODE_BYTECODE:\n        while (1)\n        {\n            u8 cmdCode;\n            ScrCmdFunc *func;\n\n            if (!ctx->scriptPtr)\n            {\n                ctx->mode = SCRIPT_MODE_STOPPED;\n                return FALSE;\n            }\n\n            if (ctx->scriptPtr == gNullScriptPtr)\n            {\n                while (1)\n                    asm(\"svc 2\");  \n            }\n\n            cmdCode = *(ctx->scriptPtr);\n            ctx->scriptPtr++;\n            func = &ctx->cmdTable[cmdCode];\n\n            if (func >= ctx->cmdTableEnd)\n            {\n                ctx->mode = SCRIPT_MODE_STOPPED;\n                return FALSE;\n            }\n\n            if ((*func)(ctx) == TRUE)\n                return TRUE;\n        }\n    }\n\n    return TRUE;",
+      "callsTo": [],
+      "lineCount": 52
+    },
+    "ScriptPush": {
+      "returnType": "bool8",
+      "signature": "static bool8 ScriptPush(struct ScriptContext *ctx, const u8 *ptr)",
+      "paramsRaw": "struct ScriptContext *ctx, const u8 *ptr",
+      "body": "if (ctx->stackDepth + 1 >= (int)ARRAY_COUNT(ctx->stack))\n    {\n        return TRUE;\n    }\n    else\n    {\n        ctx->stack[ctx->stackDepth] = ptr;\n        ctx->stackDepth++;\n        return FALSE;\n    }",
+      "callsTo": [
+        "ARRAY_COUNT"
+      ],
+      "lineCount": 10
+    },
+    "ScriptJump": {
+      "returnType": "void",
+      "signature": "void ScriptJump(struct ScriptContext *ctx, const u8 *ptr)",
+      "paramsRaw": "struct ScriptContext *ctx, const u8 *ptr",
+      "body": "ctx->scriptPtr = ptr;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "ScriptCall": {
+      "returnType": "void",
+      "signature": "void ScriptCall(struct ScriptContext *ctx, const u8 *ptr)",
+      "paramsRaw": "struct ScriptContext *ctx, const u8 *ptr",
+      "body": "ScriptPush(ctx, ctx->scriptPtr);\n    ctx->scriptPtr = ptr;",
+      "callsTo": [
+        "ScriptPush"
+      ],
+      "lineCount": 2
+    },
+    "ScriptReturn": {
+      "returnType": "void",
+      "signature": "void ScriptReturn(struct ScriptContext *ctx)",
+      "paramsRaw": "struct ScriptContext *ctx",
+      "body": "ctx->scriptPtr = ScriptPop(ctx);",
+      "callsTo": [
+        "ScriptPop"
+      ],
+      "lineCount": 1
+    },
+    "ScriptReadHalfword": {
+      "returnType": "u16",
+      "signature": "u16 ScriptReadHalfword(struct ScriptContext *ctx)",
+      "paramsRaw": "struct ScriptContext *ctx",
+      "body": "u16 value = *(ctx->scriptPtr++);\n    value |= *(ctx->scriptPtr++) << 8;\n    return value;",
+      "callsTo": [],
+      "lineCount": 3
+    },
+    "ScriptReadWord": {
+      "returnType": "u32",
+      "signature": "u32 ScriptReadWord(struct ScriptContext *ctx)",
+      "paramsRaw": "struct ScriptContext *ctx",
+      "body": "u32 value0 = *(ctx->scriptPtr++);\n    u32 value1 = *(ctx->scriptPtr++);\n    u32 value2 = *(ctx->scriptPtr++);\n    u32 value3 = *(ctx->scriptPtr++);\n    return (((((value3 << 8) + value2) << 8) + value1) << 8) + value0;",
+      "callsTo": [],
+      "lineCount": 5
+    },
+    "LockPlayerFieldControls": {
+      "returnType": "void",
+      "signature": "void LockPlayerFieldControls(void)",
+      "paramsRaw": "void",
+      "body": "sLockFieldControls = TRUE;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "UnlockPlayerFieldControls": {
+      "returnType": "void",
+      "signature": "void UnlockPlayerFieldControls(void)",
+      "paramsRaw": "void",
+      "body": "sLockFieldControls = FALSE;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "ArePlayerFieldControlsLocked": {
+      "returnType": "bool8",
+      "signature": "bool8 ArePlayerFieldControlsLocked(void)",
+      "paramsRaw": "void",
+      "body": "return sLockFieldControls;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "ScriptContext_IsEnabled": {
+      "returnType": "bool8",
+      "signature": "bool8 ScriptContext_IsEnabled(void)",
+      "paramsRaw": "void",
+      "body": "if (sGlobalScriptContextStatus == CONTEXT_RUNNING)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "lineCount": 4
+    },
+    "ScriptContext_Init": {
+      "returnType": "void",
+      "signature": "void ScriptContext_Init(void)",
+      "paramsRaw": "void",
+      "body": "InitScriptContext(&sGlobalScriptContext, gScriptCmdTable, gScriptCmdTableEnd);\n    sGlobalScriptContextStatus = CONTEXT_SHUTDOWN;",
+      "callsTo": [
+        "InitScriptContext"
+      ],
+      "lineCount": 2
+    },
+    "ScriptContext_RunScript": {
+      "returnType": "bool8",
+      "signature": "bool8 ScriptContext_RunScript(void)",
+      "paramsRaw": "void",
+      "body": "if (sGlobalScriptContextStatus == CONTEXT_SHUTDOWN)\n        return FALSE;\n\n    if (sGlobalScriptContextStatus == CONTEXT_WAITING)\n        return FALSE;\n\n    LockPlayerFieldControls();\n\n    if (!RunScriptCommand(&sGlobalScriptContext))\n    {\n        sGlobalScriptContextStatus = CONTEXT_SHUTDOWN;\n        UnlockPlayerFieldControls();\n        return FALSE;\n    }\n\n    return TRUE;",
+      "callsTo": [
+        "LockPlayerFieldControls",
+        "RunScriptCommand",
+        "UnlockPlayerFieldControls"
+      ],
+      "lineCount": 16
+    },
+    "ScriptContext_SetupScript": {
+      "returnType": "void",
+      "signature": "void ScriptContext_SetupScript(const u8 *ptr)",
+      "paramsRaw": "const u8 *ptr",
+      "body": "InitScriptContext(&sGlobalScriptContext, gScriptCmdTable, gScriptCmdTableEnd);\n    SetupBytecodeScript(&sGlobalScriptContext, ptr);\n    LockPlayerFieldControls();\n    sGlobalScriptContextStatus = CONTEXT_RUNNING;",
+      "callsTo": [
+        "InitScriptContext",
+        "LockPlayerFieldControls",
+        "SetupBytecodeScript"
+      ],
+      "lineCount": 4
+    },
+    "ScriptContext_Stop": {
+      "returnType": "void",
+      "signature": "void ScriptContext_Stop(void)",
+      "paramsRaw": "void",
+      "body": "sGlobalScriptContextStatus = CONTEXT_WAITING;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "ScriptContext_Enable": {
+      "returnType": "void",
+      "signature": "void ScriptContext_Enable(void)",
+      "paramsRaw": "void",
+      "body": "sGlobalScriptContextStatus = CONTEXT_RUNNING;\n    LockPlayerFieldControls();",
+      "callsTo": [
+        "LockPlayerFieldControls"
+      ],
+      "lineCount": 2
+    },
+    "RunScriptImmediately": {
+      "returnType": "void",
+      "signature": "void RunScriptImmediately(const u8 *ptr)",
+      "paramsRaw": "const u8 *ptr",
+      "body": "InitScriptContext(&sImmediateScriptContext, gScriptCmdTable, gScriptCmdTableEnd);\n    SetupBytecodeScript(&sImmediateScriptContext, ptr);\n    while (RunScriptCommand(&sImmediateScriptContext) == TRUE);",
+      "callsTo": [
+        "InitScriptContext",
+        "RunScriptCommand",
+        "SetupBytecodeScript"
+      ],
+      "lineCount": 3
+    },
+    "MapHeaderRunScriptType": {
+      "returnType": "void",
+      "signature": "void MapHeaderRunScriptType(u8 tag)",
+      "paramsRaw": "u8 tag",
+      "body": "u8 *ptr = MapHeaderGetScriptTable(tag);\n    if (ptr)\n        RunScriptImmediately(ptr);",
+      "callsTo": [
+        "MapHeaderGetScriptTable",
+        "RunScriptImmediately"
+      ],
+      "lineCount": 3
+    },
+    "RunOnLoadMapScript": {
+      "returnType": "void",
+      "signature": "void RunOnLoadMapScript(void)",
+      "paramsRaw": "void",
+      "body": "MapHeaderRunScriptType(MAP_SCRIPT_ON_LOAD);",
+      "callsTo": [
+        "MapHeaderRunScriptType"
+      ],
+      "lineCount": 1
+    },
+    "RunOnTransitionMapScript": {
+      "returnType": "void",
+      "signature": "void RunOnTransitionMapScript(void)",
+      "paramsRaw": "void",
+      "body": "MapHeaderRunScriptType(MAP_SCRIPT_ON_TRANSITION);",
+      "callsTo": [
+        "MapHeaderRunScriptType"
+      ],
+      "lineCount": 1
+    },
+    "RunOnResumeMapScript": {
+      "returnType": "void",
+      "signature": "void RunOnResumeMapScript(void)",
+      "paramsRaw": "void",
+      "body": "MapHeaderRunScriptType(MAP_SCRIPT_ON_RESUME);",
+      "callsTo": [
+        "MapHeaderRunScriptType"
+      ],
+      "lineCount": 1
+    },
+    "RunOnReturnToFieldMapScript": {
+      "returnType": "void",
+      "signature": "void RunOnReturnToFieldMapScript(void)",
+      "paramsRaw": "void",
+      "body": "MapHeaderRunScriptType(MAP_SCRIPT_ON_RETURN_TO_FIELD);",
+      "callsTo": [
+        "MapHeaderRunScriptType"
+      ],
+      "lineCount": 1
+    },
+    "RunOnDiveWarpMapScript": {
+      "returnType": "void",
+      "signature": "void RunOnDiveWarpMapScript(void)",
+      "paramsRaw": "void",
+      "body": "MapHeaderRunScriptType(MAP_SCRIPT_ON_DIVE_WARP);",
+      "callsTo": [
+        "MapHeaderRunScriptType"
+      ],
+      "lineCount": 1
+    },
+    "TryRunOnFrameMapScript": {
+      "returnType": "bool8",
+      "signature": "bool8 TryRunOnFrameMapScript(void)",
+      "paramsRaw": "void",
+      "body": "u8 *ptr = MapHeaderCheckScriptTable(MAP_SCRIPT_ON_FRAME_TABLE);\n\n    if (!ptr)\n        return FALSE;\n\n    ScriptContext_SetupScript(ptr);\n    return TRUE;",
+      "callsTo": [
+        "MapHeaderCheckScriptTable",
+        "ScriptContext_SetupScript"
+      ],
+      "lineCount": 7
+    },
+    "TryRunOnWarpIntoMapScript": {
+      "returnType": "void",
+      "signature": "void TryRunOnWarpIntoMapScript(void)",
+      "paramsRaw": "void",
+      "body": "u8 *ptr = MapHeaderCheckScriptTable(MAP_SCRIPT_ON_WARP_INTO_MAP_TABLE);\n    if (ptr)\n        RunScriptImmediately(ptr);",
+      "callsTo": [
+        "MapHeaderCheckScriptTable",
+        "RunScriptImmediately"
+      ],
+      "lineCount": 3
+    },
+    "CalculateRamScriptChecksum": {
+      "returnType": "u32",
+      "signature": "u32 CalculateRamScriptChecksum(void)",
+      "paramsRaw": "void",
+      "body": "return CalcCRC16WithTable((u8 *)(&gSaveBlock1Ptr->ramScript.data), sizeof(gSaveBlock1Ptr->ramScript.data));",
+      "callsTo": [
+        "CalcCRC16WithTable"
+      ],
+      "lineCount": 1
+    },
+    "ClearRamScript": {
+      "returnType": "void",
+      "signature": "void ClearRamScript(void)",
+      "paramsRaw": "void",
+      "body": "CpuFill32(0, &gSaveBlock1Ptr->ramScript, sizeof(struct RamScript));",
+      "callsTo": [
+        "CpuFill32"
+      ],
+      "lineCount": 1
+    },
+    "InitRamScript": {
+      "returnType": "bool8",
+      "signature": "bool8 InitRamScript(const u8 *script, u16 scriptSize, u8 mapGroup, u8 mapNum, u8 localId)",
+      "paramsRaw": "const u8 *script, u16 scriptSize, u8 mapGroup, u8 mapNum, u8 localId",
+      "body": "struct RamScriptData *scriptData = &gSaveBlock1Ptr->ramScript.data;\n\n    ClearRamScript();\n\n    if (scriptSize > sizeof(scriptData->script))\n        return FALSE;\n\n    scriptData->magic = RAM_SCRIPT_MAGIC;\n    scriptData->mapGroup = mapGroup;\n    scriptData->mapNum = mapNum;\n    scriptData->localId = localId;\n    memcpy(scriptData->script, script, scriptSize);\n    gSaveBlock1Ptr->ramScript.checksum = CalculateRamScriptChecksum();\n    return TRUE;",
+      "callsTo": [
+        "CalculateRamScriptChecksum",
+        "ClearRamScript"
+      ],
+      "lineCount": 14
+    },
+    "ValidateSavedRamScript": {
+      "returnType": "bool32",
+      "signature": "bool32 ValidateSavedRamScript(void)",
+      "paramsRaw": "void",
+      "body": "struct RamScriptData *scriptData = &gSaveBlock1Ptr->ramScript.data;\n    if (scriptData->magic != RAM_SCRIPT_MAGIC)\n        return FALSE;\n    if (scriptData->mapGroup != MAP_GROUP(MAP_UNDEFINED))\n        return FALSE;\n    if (scriptData->mapNum != MAP_NUM(MAP_UNDEFINED))\n        return FALSE;\n    if (scriptData->localId != NO_OBJECT)\n        return FALSE;\n    if (CalculateRamScriptChecksum() != gSaveBlock1Ptr->ramScript.checksum)\n        return FALSE;\n    return TRUE;",
+      "callsTo": [
+        "CalculateRamScriptChecksum",
+        "MAP_GROUP",
+        "MAP_NUM"
+      ],
+      "lineCount": 12
+    },
+    "InitRamScript_NoObjectEvent": {
+      "returnType": "void",
+      "signature": "void InitRamScript_NoObjectEvent(u8 *script, u16 scriptSize)",
+      "paramsRaw": "u8 *script, u16 scriptSize",
+      "body": "if (scriptSize > sizeof(gSaveBlock1Ptr->ramScript.data.script))\n        scriptSize = sizeof(gSaveBlock1Ptr->ramScript.data.script);\n    InitRamScript(script, scriptSize, MAP_GROUP(MAP_UNDEFINED), MAP_NUM(MAP_UNDEFINED), NO_OBJECT);",
+      "callsTo": [
+        "InitRamScript",
+        "MAP_GROUP",
+        "MAP_NUM"
+      ],
+      "lineCount": 3
+    }
+  }
+}

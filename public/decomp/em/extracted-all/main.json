@@ -1,0 +1,305 @@
+{
+  "srcFile": "src/main.c",
+  "count": 29,
+  "functions": {
+    "AgbMain": {
+      "returnType": "void",
+      "signature": "void AgbMain(void)",
+      "paramsRaw": "void",
+      "body": "#if !MODERN\n    RegisterRamReset(RESET_ALL);\n#endif  \n    *(vu16 *)BG_PLTT = RGB_WHITE;  \n    InitGpuRegManager();\n    REG_WAITCNT = WAITCNT_PREFETCH_ENABLE | WAITCNT_WS0_S_1 | WAITCNT_WS0_N_3;\n    InitKeys();\n    InitIntrHandlers();\n    m4aSoundInit();\n    EnableVCountIntrAtLine150();\n    InitRFU();\n    RtcInit();\n    CheckForFlashMemory();\n    InitMainCallbacks();\n    InitMapMusic();\n#ifdef BUGFIX\n    SeedRngWithRtc();  \n#endif\n    ClearDma3Requests();\n    ResetBgs();\n    SetDefaultFontsPointer();\n    InitHeap(gHeap, HEAP_SIZE);\n\n    gSoftResetDisabled = FALSE;\n\n    if (gFlashMemoryPresent != TRUE)\n        SetMainCallback2(NULL);\n\n    gLinkTransferringData = FALSE;\n    sUnusedVar = 0xFC0;\n\n    for (;;)\n    {\n        ReadKeys();\n\n        if (gSoftResetDisabled == FALSE\n         && JOY_HELD_RAW(A_BUTTON)\n         && JOY_HELD_RAW(B_START_SELECT) == B_START_SELECT)\n        {\n            rfu_REQ_stopMode();\n            rfu_waitREQComplete();\n            DoSoftReset();\n        }\n\n        if (Overworld_SendKeysToLinkIsRunning() == TRUE)\n        {\n            gLinkTransferringData = TRUE;\n            UpdateLinkAndCallCallbacks();\n            gLinkTransferringData = FALSE;\n        }\n        else\n        {\n            gLinkTransferringData = FALSE;\n            UpdateLinkAndCallCallbacks();\n\n            if (Overworld_RecvKeysFromLinkIsRunning() == TRUE)\n            {\n                gMain.newKeys = 0;\n                ClearSpriteCopyRequests();\n                gLinkTransferringData = TRUE;\n                UpdateLinkAndCallCallbacks();\n                gLinkTransferringData = FALSE;\n            }\n        }\n\n        PlayTimeCounter_Update();\n        MapMusicMain();\n        WaitForVBlank();\n    }",
+      "callsTo": [
+        "CheckForFlashMemory",
+        "ClearDma3Requests",
+        "ClearSpriteCopyRequests",
+        "DoSoftReset",
+        "EnableVCountIntrAtLine150",
+        "InitGpuRegManager",
+        "InitHeap",
+        "InitIntrHandlers",
+        "InitKeys",
+        "InitMainCallbacks",
+        "InitMapMusic",
+        "InitRFU",
+        "JOY_HELD_RAW",
+        "MapMusicMain",
+        "Overworld_RecvKeysFromLinkIsRunning",
+        "Overworld_SendKeysToLinkIsRunning",
+        "PlayTimeCounter_Update",
+        "ReadKeys",
+        "RegisterRamReset",
+        "ResetBgs",
+        "RtcInit",
+        "SeedRngWithRtc",
+        "SetDefaultFontsPointer",
+        "SetMainCallback2",
+        "UpdateLinkAndCallCallbacks",
+        "WaitForVBlank"
+      ],
+      "lineCount": 69
+    },
+    "UpdateLinkAndCallCallbacks": {
+      "returnType": "void",
+      "signature": "static void UpdateLinkAndCallCallbacks(void)",
+      "paramsRaw": "void",
+      "body": "if (!HandleLinkConnection())\n        CallCallbacks();",
+      "callsTo": [
+        "CallCallbacks",
+        "HandleLinkConnection"
+      ],
+      "lineCount": 2
+    },
+    "InitMainCallbacks": {
+      "returnType": "void",
+      "signature": "static void InitMainCallbacks(void)",
+      "paramsRaw": "void",
+      "body": "gMain.vblankCounter1 = 0;\n    gTrainerHillVBlankCounter = NULL;\n    gMain.vblankCounter2 = 0;\n    gMain.callback1 = NULL;\n    SetMainCallback2(CB2_InitCopyrightScreenAfterBootup);\n    gSaveBlock2Ptr = &gSaveblock2.block;\n    gPokemonStoragePtr = &gPokemonStorage.block;",
+      "callsTo": [
+        "SetMainCallback2"
+      ],
+      "lineCount": 7
+    },
+    "CallCallbacks": {
+      "returnType": "void",
+      "signature": "static void CallCallbacks(void)",
+      "paramsRaw": "void",
+      "body": "if (gMain.callback1)\n        gMain.callback1();\n\n    if (gMain.callback2)\n        gMain.callback2();",
+      "callsTo": [],
+      "lineCount": 5
+    },
+    "SetMainCallback2": {
+      "returnType": "void",
+      "signature": "void SetMainCallback2(MainCallback callback)",
+      "paramsRaw": "MainCallback callback",
+      "body": "gMain.callback2 = callback;\n    gMain.state = 0;",
+      "callsTo": [],
+      "lineCount": 2
+    },
+    "StartTimer1": {
+      "returnType": "void",
+      "signature": "void StartTimer1(void)",
+      "paramsRaw": "void",
+      "body": "REG_TM1CNT_H = 0x80;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "SeedRngAndSetTrainerId": {
+      "returnType": "void",
+      "signature": "void SeedRngAndSetTrainerId(void)",
+      "paramsRaw": "void",
+      "body": "u16 val = REG_TM1CNT_L;\n    SeedRng(val);\n    REG_TM1CNT_H = 0;\n    sTrainerId = val;",
+      "callsTo": [
+        "SeedRng"
+      ],
+      "lineCount": 4
+    },
+    "GetGeneratedTrainerIdLower": {
+      "returnType": "u16",
+      "signature": "u16 GetGeneratedTrainerIdLower(void)",
+      "paramsRaw": "void",
+      "body": "return sTrainerId;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "EnableVCountIntrAtLine150": {
+      "returnType": "void",
+      "signature": "void EnableVCountIntrAtLine150(void)",
+      "paramsRaw": "void",
+      "body": "u16 gpuReg = (GetGpuReg(REG_OFFSET_DISPSTAT) & 0xFF) | (150 << 8);\n    SetGpuReg(REG_OFFSET_DISPSTAT, gpuReg | DISPSTAT_VCOUNT_INTR);\n    EnableInterrupts(INTR_FLAG_VCOUNT);",
+      "callsTo": [
+        "EnableInterrupts",
+        "GetGpuReg",
+        "SetGpuReg"
+      ],
+      "lineCount": 3
+    },
+    "SeedRngWithRtc": {
+      "returnType": "void",
+      "signature": "static void SeedRngWithRtc(void)",
+      "paramsRaw": "void",
+      "body": "u32 seed = RtcGetMinuteCount();\n    seed = (seed >> 16) ^ (seed & 0xFFFF);\n    SeedRng(seed);",
+      "callsTo": [
+        "RtcGetMinuteCount",
+        "SeedRng"
+      ],
+      "lineCount": 3
+    },
+    "InitKeys": {
+      "returnType": "void",
+      "signature": "void InitKeys(void)",
+      "paramsRaw": "void",
+      "body": "gKeyRepeatContinueDelay = 5;\n    gKeyRepeatStartDelay = 40;\n\n    gMain.heldKeys = 0;\n    gMain.newKeys = 0;\n    gMain.newAndRepeatedKeys = 0;\n    gMain.heldKeysRaw = 0;\n    gMain.newKeysRaw = 0;",
+      "callsTo": [],
+      "lineCount": 8
+    },
+    "ReadKeys": {
+      "returnType": "void",
+      "signature": "static void ReadKeys(void)",
+      "paramsRaw": "void",
+      "body": "u16 keyInput = REG_KEYINPUT ^ KEYS_MASK;\n    gMain.newKeysRaw = keyInput & ~gMain.heldKeysRaw;\n    gMain.newKeys = gMain.newKeysRaw;\n    gMain.newAndRepeatedKeys = gMain.newKeysRaw;\n\n     \n     \n     \n\n    if (keyInput != 0 && gMain.heldKeys == keyInput)\n    {\n        gMain.keyRepeatCounter--;\n\n        if (gMain.keyRepeatCounter == 0)\n        {\n            gMain.newAndRepeatedKeys = keyInput;\n            gMain.keyRepeatCounter = gKeyRepeatContinueDelay;\n        }\n    }\n    else\n    {\n         \n        gMain.keyRepeatCounter = gKeyRepeatStartDelay;\n    }\n\n    gMain.heldKeysRaw = keyInput;\n    gMain.heldKeys = gMain.heldKeysRaw;\n\n     \n    if (gSaveBlock2Ptr->optionsButtonMode == OPTIONS_BUTTON_MODE_L_EQUALS_A)\n    {\n        if (JOY_NEW(L_BUTTON))\n            gMain.newKeys |= A_BUTTON;\n\n        if (JOY_HELD(L_BUTTON))\n            gMain.heldKeys |= A_BUTTON;\n    }\n\n    if (JOY_NEW(gMain.watchedKeysMask))\n        gMain.watchedKeysPressed = TRUE;",
+      "callsTo": [
+        "JOY_HELD",
+        "JOY_NEW"
+      ],
+      "lineCount": 40
+    },
+    "InitIntrHandlers": {
+      "returnType": "void",
+      "signature": "void InitIntrHandlers(void)",
+      "paramsRaw": "void",
+      "body": "int i;\n\n    for (i = 0; i < INTR_COUNT; i++)\n        gIntrTable[i] = gIntrTableTemplate[i];\n\n    DmaCopy32(3, IntrMain, IntrMain_Buffer, sizeof(IntrMain_Buffer));\n\n    INTR_VECTOR = IntrMain_Buffer;\n\n    SetVBlankCallback(NULL);\n    SetHBlankCallback(NULL);\n    SetSerialCallback(NULL);\n\n    REG_IME = 1;\n\n    EnableInterrupts(INTR_FLAG_VBLANK);",
+      "callsTo": [
+        "DmaCopy32",
+        "EnableInterrupts",
+        "SetHBlankCallback",
+        "SetSerialCallback",
+        "SetVBlankCallback"
+      ],
+      "lineCount": 16
+    },
+    "SetVBlankCallback": {
+      "returnType": "void",
+      "signature": "void SetVBlankCallback(IntrCallback callback)",
+      "paramsRaw": "IntrCallback callback",
+      "body": "gMain.vblankCallback = callback;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "SetHBlankCallback": {
+      "returnType": "void",
+      "signature": "void SetHBlankCallback(IntrCallback callback)",
+      "paramsRaw": "IntrCallback callback",
+      "body": "gMain.hblankCallback = callback;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "SetVCountCallback": {
+      "returnType": "void",
+      "signature": "void SetVCountCallback(IntrCallback callback)",
+      "paramsRaw": "IntrCallback callback",
+      "body": "gMain.vcountCallback = callback;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "RestoreSerialTimer3IntrHandlers": {
+      "returnType": "void",
+      "signature": "void RestoreSerialTimer3IntrHandlers(void)",
+      "paramsRaw": "void",
+      "body": "gIntrTable[1] = SerialIntr;\n    gIntrTable[2] = Timer3Intr;",
+      "callsTo": [],
+      "lineCount": 2
+    },
+    "SetSerialCallback": {
+      "returnType": "void",
+      "signature": "void SetSerialCallback(IntrCallback callback)",
+      "paramsRaw": "IntrCallback callback",
+      "body": "gMain.serialCallback = callback;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "VBlankIntr": {
+      "returnType": "void",
+      "signature": "static void VBlankIntr(void)",
+      "paramsRaw": "void",
+      "body": "if (gWirelessCommType != 0)\n        RfuVSync();\n    else if (gLinkVSyncDisabled == FALSE)\n        LinkVSync();\n\n    gMain.vblankCounter1++;\n\n    if (gTrainerHillVBlankCounter && *gTrainerHillVBlankCounter < 0xFFFFFFFF)\n        (*gTrainerHillVBlankCounter)++;\n\n    if (gMain.vblankCallback)\n        gMain.vblankCallback();\n\n    gMain.vblankCounter2++;\n\n    CopyBufferedValuesToGpuRegs();\n    ProcessDma3Requests();\n\n    gPcmDmaCounter = gSoundInfo.pcmDmaCounter;\n\n    m4aSoundMain();\n    TryReceiveLinkBattleData();\n\n    if (!gMain.inBattle || !(gBattleTypeFlags & (BATTLE_TYPE_LINK | BATTLE_TYPE_FRONTIER | BATTLE_TYPE_RECORDED)))\n        Random();\n\n    UpdateWirelessStatusIndicatorSprite();\n\n    INTR_CHECK |= INTR_FLAG_VBLANK;\n    gMain.intrCheck |= INTR_FLAG_VBLANK;",
+      "callsTo": [
+        "CopyBufferedValuesToGpuRegs",
+        "LinkVSync",
+        "ProcessDma3Requests",
+        "Random",
+        "RfuVSync",
+        "TryReceiveLinkBattleData",
+        "UpdateWirelessStatusIndicatorSprite"
+      ],
+      "lineCount": 30
+    },
+    "InitFlashTimer": {
+      "returnType": "void",
+      "signature": "void InitFlashTimer(void)",
+      "paramsRaw": "void",
+      "body": "SetFlashTimerIntr(2, gIntrTable + 0x7);",
+      "callsTo": [
+        "SetFlashTimerIntr"
+      ],
+      "lineCount": 1
+    },
+    "HBlankIntr": {
+      "returnType": "void",
+      "signature": "static void HBlankIntr(void)",
+      "paramsRaw": "void",
+      "body": "if (gMain.hblankCallback)\n        gMain.hblankCallback();\n\n    INTR_CHECK |= INTR_FLAG_HBLANK;\n    gMain.intrCheck |= INTR_FLAG_HBLANK;",
+      "callsTo": [],
+      "lineCount": 5
+    },
+    "VCountIntr": {
+      "returnType": "void",
+      "signature": "static void VCountIntr(void)",
+      "paramsRaw": "void",
+      "body": "if (gMain.vcountCallback)\n        gMain.vcountCallback();\n\n    m4aSoundVSync();\n    INTR_CHECK |= INTR_FLAG_VCOUNT;\n    gMain.intrCheck |= INTR_FLAG_VCOUNT;",
+      "callsTo": [],
+      "lineCount": 6
+    },
+    "SerialIntr": {
+      "returnType": "void",
+      "signature": "static void SerialIntr(void)",
+      "paramsRaw": "void",
+      "body": "if (gMain.serialCallback)\n        gMain.serialCallback();\n\n    INTR_CHECK |= INTR_FLAG_SERIAL;\n    gMain.intrCheck |= INTR_FLAG_SERIAL;",
+      "callsTo": [],
+      "lineCount": 5
+    },
+    "IntrDummy": {
+      "returnType": "void",
+      "signature": "static void IntrDummy(void)",
+      "paramsRaw": "void",
+      "body": "",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "WaitForVBlank": {
+      "returnType": "void",
+      "signature": "static void WaitForVBlank(void)",
+      "paramsRaw": "void",
+      "body": "gMain.intrCheck &= ~INTR_FLAG_VBLANK;\n\n    while (!(gMain.intrCheck & INTR_FLAG_VBLANK))\n        ;",
+      "callsTo": [],
+      "lineCount": 4
+    },
+    "SetTrainerHillVBlankCounter": {
+      "returnType": "void",
+      "signature": "void SetTrainerHillVBlankCounter(u32 *counter)",
+      "paramsRaw": "u32 *counter",
+      "body": "gTrainerHillVBlankCounter = counter;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "ClearTrainerHillVBlankCounter": {
+      "returnType": "void",
+      "signature": "void ClearTrainerHillVBlankCounter(void)",
+      "paramsRaw": "void",
+      "body": "gTrainerHillVBlankCounter = NULL;",
+      "callsTo": [],
+      "lineCount": 1
+    },
+    "DoSoftReset": {
+      "returnType": "void",
+      "signature": "void DoSoftReset(void)",
+      "paramsRaw": "void",
+      "body": "REG_IME = 0;\n    m4aSoundVSyncOff();\n    ScanlineEffect_Stop();\n    DmaStop(1);\n    DmaStop(2);\n    DmaStop(3);\n    SiiRtcProtect();\n    SoftReset(RESET_ALL);",
+      "callsTo": [
+        "DmaStop",
+        "ScanlineEffect_Stop",
+        "SiiRtcProtect",
+        "SoftReset"
+      ],
+      "lineCount": 8
+    },
+    "ClearPokemonCrySongs": {
+      "returnType": "void",
+      "signature": "void ClearPokemonCrySongs(void)",
+      "paramsRaw": "void",
+      "body": "CpuFill16(0, gPokemonCrySongs, MAX_POKEMON_CRIES * sizeof(struct PokemonCrySong));",
+      "callsTo": [
+        "CpuFill16"
+      ],
+      "lineCount": 1
+    }
+  }
+}
