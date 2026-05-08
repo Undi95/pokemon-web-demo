@@ -49,6 +49,7 @@ import {
   ComputeConnectionDestPos,
   TransitionToConnection,
   MoveMapViewToBackup,
+  setRedrawWholeMapViewHook,
 } from './map-loader';
 import { gPlayerAvatar } from './player-avatar';
 import type { MapConnection } from './map-loader';
@@ -668,3 +669,11 @@ export function IsBgRedrawPending(): boolean {
 export function ClearBgRedrawPending(): void {
   sFieldCameraOffset.copyBGToVRAM = false;
 }
+
+// Phase 4.10 fix bug 1 : register hook map-loader → on connections refilled
+// après async prefetch, redraw full map view + flush BG. Sinon les borders
+// reste vide visually même si sBackupMapData a été refilled.
+setRedrawWholeMapViewHook(() => {
+  if (!gMapHeader) return;
+  DrawWholeMapView(_camPos.x, _camPos.y, gMapHeader.mapLayout);
+});

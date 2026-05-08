@@ -582,7 +582,21 @@ export async function loadMapHeader(mapId: string): Promise<MapHeader> {
  *  Phase 4.8 : prefetch les map headers de toutes les connexions (depth 1)
  *  pour que `InitBackupMapLayoutConnections` (= sync) puisse les lire dans le
  *  cache. Sans ce prefetch, les border tiles seraient MAPGRID_UNDEFINED →
- *  visuel cassé + collision wall au lieu de peek vers la map adjacente. */
+ *  visuel cassé + collision wall au lieu de peek vers la map adjacente.
+ *
+ *  Phase 4.10 fix bug 1 (= "connections disparaissent au hasard") : extend
+ *  prefetch à DEPTH 2 (= connections of connections). Critique car
+ *  TransitionToConnection est SYNC : il appelle InitBackupMapLayoutConnections
+ *  immédiatement après le swap, donc les connections de la NEW map doivent
+ *  être déjà cached AU MOMENT du swap pour que les borders se remplissent.
+ *
+ *  Sans depth 2 : cross-border vers Route 101 → InitMap appelle FillN avec
+ *  Oldale, qui n'est pas cached → warning + border laissé à MAPGRID_UNDEFINED
+ *  → bord nord de Route 101 visuel cassé jusqu'au prochain re-init.
+ *
+ *  Avec depth 2 : Bourg → prefetch depth 1 (= Route 101) + depth 2 (= Oldale,
+ *  via Route 101's connections). Quand on cross vers Route 101, FillS(Bourg)
+ *  + FillN(Oldale) tous deux succès. */
 export async function loadMapByName(mapId: string): Promise<MapHeader> {
   const header = await loadMapHeader(mapId);
 
@@ -592,7 +606,7 @@ export async function loadMapByName(mapId: string): Promise<MapHeader> {
   // si la connection map n'existe pas, on log warning + skip cette connexion
   // dans Fill*Connection).
   if (header.connections.length > 0) {
-    await Promise.all(
+    const depth1Headers = await Promise.all(
       header.connections
         .filter(c => c.direction >= CONNECTION_SOUTH && c.direction <= CONNECTION_EAST)
         .map(c => loadMapHeader(c.destMap).catch((e: unknown) => {
@@ -600,6 +614,30 @@ export async function loadMapByName(mapId: string): Promise<MapHeader> {
           return null;
         })),
     );
+
+    // Phase 4.10 fix bug 1 : depth 2 prefetch. Pour chaque connection depth-1
+    // chargée, prefetch SES connections (= les maps qu'on atteindra au prochain
+    // cross-border). Ça évite que `TransitionToConnection.InitMap` voie ces
+    // maps comme "not cached" → FillX skipped → bord du nouvelle map cassé.
+    const depth2Targets = new Set<string>();
+    for (const h of depth1Headers) {
+      if (!h) continue;
+      for (const c of h.connections) {
+        if (c.direction >= CONNECTION_SOUTH && c.direction <= CONNECTION_EAST) {
+          // Skip self-reference (= back to current map, déjà cached).
+          if (c.destMap === header.id) continue;
+          depth2Targets.add(c.destMap);
+        }
+      }
+    }
+    if (depth2Targets.size > 0) {
+      await Promise.all(
+        [...depth2Targets].map(destMap => loadMapHeader(destMap).catch((e: unknown) => {
+          console.warn(`[map-loader] failed to prefetch depth-2 connection ${destMap}:`, e);
+          return null;
+        })),
+      );
+    }
   }
 
   gMapHeader = header;
@@ -617,6 +655,15 @@ export async function loadMapByName(mapId: string): Promise<MapHeader> {
 let _runOnLoadMapScriptHook: (() => void) | null = null;
 export function setOnLoadMapScriptHook(fn: () => void): void {
   _runOnLoadMapScriptHook = fn;
+}
+
+/** Phase 4.10 hook registry : pour declencher un BG redraw après que
+ *  `InitBackupMapLayoutConnections` ait été re-run (= TransitionToConnection
+ *  retry async quand connections étaient pas cached). Hook setté par scene/
+ *  field-camera (= circular import évité). */
+let _redrawWholeMapViewHook: (() => void) | null = null;
+export function setRedrawWholeMapViewHook(fn: () => void): void {
+  _redrawWholeMapViewHook = fn;
 }
 
 /** 1:1 décomp `InitMap()` (fieldmap.c:71-76).
@@ -1013,9 +1060,34 @@ export function TransitionToConnection(connection: MapConnection): boolean {
   // mais on n'appelle que le secondary ici donc need explicit re-set.
   setSecondaryTilesetAnimCallback(cMap.mapLayout.secondaryTileset?.name ?? '');
 
+  // Phase 4.10 fix bug 1 (= "connections disparaissent au hasard") :
+  // Detect si certaines connections de cMap manquent du cache (= prefetch
+  // pas fini). Si oui, fire async prefetch + RETRY InitBackupMapLayoutConnections
+  // une fois les maps loaded → fills any missed border. Sans ça, si depth-2
+  // prefetch n'a pas eu le temps de finir (= user cross border 2 fois rapide),
+  // les borders restent MAPGRID_UNDEFINED → visuel cassé.
+  const missingConns = cMap.connections.filter(c =>
+    c.direction >= CONNECTION_SOUTH && c.direction <= CONNECTION_EAST
+    && !mapHeaderCache.has(c.destMap),
+  );
+
   // Trigger background prefetch des connections de cMap (= depth+1 pour seamless
   // next hop). Si déjà en cache, no-op rapide.
-  void prefetchConnections(cMap);
+  if (missingConns.length > 0) {
+    console.warn(`[map-loader] TransitionToConnection: ${missingConns.length} connection(s) not cached (= ${missingConns.map(c => c.destMap).join(', ')}), will retry post-load`);
+    void prefetchConnections(cMap).then(() => {
+      // Après async load done, vérifier que cMap est TOUJOURS la map active
+      // (= user n'a pas cross une autre border entretemps). Si oui, refill
+      // les borders + force redraw via hook (= circular import évité).
+      if (gMapHeader === cMap) {
+        console.log(`[map-loader] connection prefetch done, refilling borders + redraw`);
+        InitBackupMapLayoutConnections(cMap);
+        if (_redrawWholeMapViewHook) _redrawWholeMapViewHook();
+      }
+    });
+  } else {
+    void prefetchConnections(cMap);
+  }
 
   return true;
 }
@@ -1133,7 +1205,12 @@ export function MoveMapViewToBackup(direction: number, posX: number, posY: numbe
  *  Async, fire-and-forget. Errors silencieuses (= warning logged). */
 async function prefetchConnections(header: MapHeader): Promise<void> {
   if (!header.connections || header.connections.length === 0) return;
-  await Promise.all(
+  // Phase 4.10 fix bug 1 : depth-2 prefetch. Charge depth 1 (= immediate
+  // connections of `header`) puis depth 2 (= connections de chacune). Ça
+  // garantit qu'au prochain cross-border depuis cette map, les connections
+  // de la new map sont déjà cached → InitBackupMapLayoutConnections fills
+  // proprement (= pas de border MAPGRID_UNDEFINED).
+  const depth1 = await Promise.all(
     header.connections
       .filter(c => c.direction >= CONNECTION_SOUTH && c.direction <= CONNECTION_EAST)
       .map(c => loadMapHeader(c.destMap).catch((e: unknown) => {
@@ -1141,6 +1218,25 @@ async function prefetchConnections(header: MapHeader): Promise<void> {
         return null;
       })),
   );
+  // Depth 2 prefetch (parallel pour tous les targets, dedup via Set).
+  const depth2 = new Set<string>();
+  for (const h of depth1) {
+    if (!h) continue;
+    for (const c of h.connections) {
+      if (c.direction >= CONNECTION_SOUTH && c.direction <= CONNECTION_EAST
+          && c.destMap !== header.id) {
+        depth2.add(c.destMap);
+      }
+    }
+  }
+  if (depth2.size > 0) {
+    await Promise.all(
+      [...depth2].map(d => loadMapHeader(d).catch((e: unknown) => {
+        console.warn(`[map-loader] prefetchConnections depth-2 failed for ${d}:`, e);
+        return null;
+      })),
+    );
+  }
 }
 
 /** Sync helper : copy secondary tileset to VRAM only. Used by

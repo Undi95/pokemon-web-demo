@@ -999,13 +999,58 @@ export function TrySpawnObjectEvents(rt: DecompRuntime): void {
 
 // ─── Update sprite positions + frame each frame ────────────────────────────
 
-/** Update sprite.x/y selon worldX/Y + camera scroll, ET sprite frame selon
- *  facingDirection courante. Appelé chaque frame depuis MainCB2_Overworld
- *  APRÈS TickObjectEventMovements. */
+/** Update sprite.x/y depuis currentCoords + sub-tile camera offset + walk
+ *  interpolation, ET sprite frame selon facingDirection courante. Appelé chaque
+ *  frame depuis MainCB2_Overworld APRÈS TickObjectEventMovements.
+ *
+ *  Phase 4.10 fix bug 2 (= "PNJ pas sur le cadrillage") : recompute sprite.x/y
+ *  CHAQUE FRAME depuis currentCoords logical pos + camera state, plutôt que via
+ *  worldX/Y stored at spawn. Le worldX stored accumulait drift parce que :
+ *    1. À chaque step, pixelOffsetX décrémente speedX par frame. Pour walk continu
+ *       (= step suivante démarre au même frame que step end) : -16 par tile.
+ *    2. Pour walk + STOP (= speed=0 à frame 15 du step end car keypad sees no
+ *       input) : -15 par tile (= 1 px short).
+ *    3. Le PLAYER's sprite.x est FIXED à 120 (= SCREEN_CENTER), donc player
+ *       n'est pas affecté par ce drift. Mais NPC sprite.x = worldX + offX
+ *       reflète offX → diverge du player.
+ *
+ *  Solution : ignorer le worldX stored et recomputer SCREEN_X depuis currentCoords
+ *  + cam.x diff (= toujours integer multiple of 16 pour static state). Sub-tile
+ *  walk slide via walkFramesLeft pour NPC en cours de walk. Sub-tile player
+ *  scroll via offX % 16 (= current step's sub-pixel only, déjà reflété dans
+ *  cam.x logical position pour les tiles complètes).
+ *
+ *  1:1 décomp BuildOamBuffer (sprite.c:347-355) avec coordOffsetEnabled=TRUE :
+ *    oam.x = sprite.x + sprite.x2 + centerToCornerVecX + gSpriteCoordOffsetX
+ *  Notre impl applique l'équivalent en direct sur sprite.x ici. */
 export function UpdateObjectEvents(rt: DecompRuntime): void {
-  const cam = GetCameraTopLeftCoords();
+  // Phase 4.10 fix bug 2 : utiliser gPlayerAvatar.x/y (= LOGICAL pos, updates
+  // au step END) plutôt que _camPos.x/y (= cam, updates au step START via
+  // CameraMove). cam.x est "ahead" de 1 tile pendant un walk après le boundary
+  // cross frame 0, créant un visual jump de 16 px pour les NPCs si on utilise
+  // cam directly.
+  //
+  // Player.x reste la "rooted" position du player visuel (= où le player
+  // visualiserait si il s'arrêtait maintenant). Computer NPC positions
+  // relativement à player.x donne smooth interpolation pendant les walks.
+  //
+  // Static state : player.x = cam.x (= same value), no diff.
+  // Mid-step : player.x = pre-step (= rooted), cam.x = post-step (= ahead).
+  const playerLogicalX = gPlayerAvatar.x;
+  const playerLogicalY = gPlayerAvatar.y;
   const offX = gTotalCamera.pixelOffsetX;
   const offY = gTotalCamera.pixelOffsetY;
+  const bgVofsBaseline = GetBgVofsBaseline();
+
+  // Sub-tile camera offset (= player mid-step contribution). offX accumule -16
+  // par east tile + sub-tile during step. Pour extraire le sub-tile only :
+  //   `offX % 16` (signed JS modulo). JS modulo : -97 % 16 = -1, -96 % 16 = 0.
+  // Pour static state aux multiples de 16, subOff = 0. Pour mid-step east, subOff = -1..-15.
+  const subOffX = offX % 16;
+  const subOffY = offY % 16;
+
+  // Bounds check via cam (= more conservative since cam.x is "ahead" during walks).
+  const cam = GetCameraTopLeftCoords();
 
   for (const npc of gObjectEvents) {
     if (!npc.active || npc.spriteId < 0) continue;
@@ -1014,23 +1059,39 @@ export function UpdateObjectEvents(rt: DecompRuntime): void {
 
     const npcGBackupCol = npc.currentCoordsX + MAP_OFFSET;
     const npcGBackupRow = npc.currentCoordsY + MAP_OFFSET;
-    const viewCol = npcGBackupCol - cam.x;
-    const viewRow = npcGBackupRow - cam.y;
-    if (viewCol < -2 || viewCol > 17 || viewRow < -2 || viewRow > 13) {
+    // Bounds check : use cam (= post-step coord) for visibility cull.
+    const camViewCol = npcGBackupCol - cam.x;
+    const camViewRow = npcGBackupRow - cam.y;
+    if (camViewCol < -2 || camViewCol > 17 || camViewRow < -2 || camViewRow > 13) {
       sprite.invisible = true;
       continue;
     }
     sprite.invisible = false;
 
-    // Restored worldX/Y formula (= sub-tile tracking via offY tick per frame).
-    // 1:1 décomp `gSpriteCoordOffsetY = -gTotalCameraPixelOffsetY - sVerticalCameraPan - 8`
-    // (field_camera.c:462). Compense BG_VOFS = yPixelOffset + 8 + sVerticalCameraPan
-    // pour aligner sprite avec BG. GetBgVofsBaseline() = 8 + sVerticalCameraPan.
-    sprite.x = npc.worldX + offX;
-    sprite.y = npc.worldY + offY - GetBgVofsBaseline();
-    void cam;
-    void npcGBackupCol;
-    void npcGBackupRow;
+    // Base position computed from PLAYER.X (= rooted, lags cam.x during walks).
+    // viewCol = (NPC.gBackup - player.x) - 0 = NPC.x + 7 - player.x.
+    // For static NPC at same col as player : viewCol = 7 → baseX = 120.
+    const viewColPlayer = npcGBackupCol - playerLogicalX;
+    const viewRowPlayer = npcGBackupRow - playerLogicalY;
+    let baseX = viewColPlayer * 16 + 8;
+    let baseY = viewRowPlayer * 16;
+
+    // Sub-tile walk interpolation : NPC en cours de walk slide depuis previous
+    // (= SOURCE) vers current (= TARGET) sur 16 frames. À walkFramesLeft = 16
+    // (= start of walk), sprite is at SOURCE position = baseX - dxWalk*16.
+    // À walkFramesLeft = 0 (= end of walk), sprite at TARGET = baseX.
+    if (npc.walkFramesLeft > 0 && npc.walkDirection !== DIR_NONE) {
+      const dxWalk = DIR_TO_DX[npc.walkDirection] ?? 0;
+      const dyWalk = DIR_TO_DY[npc.walkDirection] ?? 0;
+      baseX -= npc.walkFramesLeft * dxWalk;
+      baseY -= npc.walkFramesLeft * dyWalk;
+    }
+
+    // Add player mid-step sub-tile offset (= NPC slides as player walks
+    // mid-tile). For static state where offX is exact multiple of 16,
+    // subOffX = 0 → no shift.
+    sprite.x = baseX + subOffX;
+    sprite.y = baseY + subOffY - bgVofsBaseline;
 
     // Update sprite frame chaque frame (= keeps tile + flipH en sync avec
     // facingDirection, important pour interact qui change facing instantané).
