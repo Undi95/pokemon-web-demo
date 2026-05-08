@@ -30,7 +30,7 @@ import {
   gMapHeader,
   MapGridGetCollisionAt,
 } from './map-loader';
-import { GetCameraTopLeftCoords, gTotalCamera, gCamera, gFieldCamera } from './field-camera';
+import { GetCameraTopLeftCoords, gTotalCamera, gCamera, gFieldCamera, GetBgVofsBaseline } from './field-camera';
 import { gPlayerAvatar } from './player-avatar';
 import {
   DIR_NONE, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST,
@@ -877,21 +877,17 @@ function _spawnSingleNpcFromTemplate(
   // orchestrator au tile boundary frame 0 où gFieldCamera.y = ±1 post-update)
   // dérivent de 16 px sur le reste du step (= drift "1 case trop bas/haut").
   //
-  // Notre conv : cam.y = playerLogical.y + 2 vs décomp pos.y = playerLogical.y.
-  // Adapt : utiliser gPlayerAvatar.x/y comme pos. cam.x reste = playerLogical.x
-  // (= coïncidence MAP_OFFSET=viewColOffset=7).
+  // Notre conv (post-refactor) : cam.x/y = playerLogical (= 1:1 décomp pos).
   let dx = -gTotalCamera.pixelOffsetX - gFieldCamera.x;
   let dy = -gTotalCamera.pixelOffsetY - gFieldCamera.y;
   if (gFieldCamera.x > 0) dx += 16;
   if (gFieldCamera.x < 0) dx -= 16;
   if (gFieldCamera.y > 0) dy += 16;
   if (gFieldCamera.y < 0) dy -= 16;
-  // npcGBackup - playerLogical = template + MAP_OFFSET - playerLogical
-  //                            = (npcGBackupCol - cam.x) for X (cam.x = playerLogical.x)
-  //                            = (npcGBackupRow - (cam.y - 2)) for Y (cam.y = playerLogical.y + 2)
-  // Pour Y : (npcGBackupRow - cam.y + 2)*16 = (template.y + 7 - playerLogical.y - 2)*16 = (template.y - playerLogical.y + 5)*16.
-  // Décomp : (mapY - pos.y)*16 = (template.y + 7 - playerLogical.y)*16. Diff : -32 px (= 2 metatiles).
-  // Notre player rendu à view row 5, décomp à view row 7. Diff = -32 px. Préservé via -8 BG VOFS comp + différent baseline. Math confirm sortie identique pour NPCs.
+  // 1:1 décomp `(mapX - pos.x) << 4 + dx` (event_object_movement.c:4801).
+  // mapX = NPC's gBackup-frame coord. pos.x = LOGICAL.x player (= cam.x).
+  // (npcGBackupCol - cam.x) = (template.x + 7 - LOGICAL.x_player) = "cols from view top-left".
+  // Player drawn at view (7, 7) avec BG_VOFS = 40 → screen y centered.
   npc.worldX = (npcGBackupCol - cam.x) * 16 + 8 + dx;
   npc.worldY = (npcGBackupRow - cam.y) * 16 + dy;
   npc.movementStep = 0;
@@ -1024,13 +1020,11 @@ export function UpdateObjectEvents(rt: DecompRuntime): void {
     sprite.invisible = false;
 
     // Restored worldX/Y formula (= sub-tile tracking via offY tick per frame).
-    // Notre fix précédent "sprite.y direct from cam.y" cassait le sub-tile
-    // tracking → NPCs glissent off-grid quand player walk mid-step. Reverted.
-    //
-    // -8 : 1:1 décomp `gSpriteCoordOffsetY = ... - 8` (field_camera.c:462) =
-    // compense BG VOFS=+8.
+    // 1:1 décomp `gSpriteCoordOffsetY = -gTotalCameraPixelOffsetY - sVerticalCameraPan - 8`
+    // (field_camera.c:462). Compense BG_VOFS = yPixelOffset + 8 + sVerticalCameraPan
+    // pour aligner sprite avec BG. GetBgVofsBaseline() = 8 + sVerticalCameraPan.
     sprite.x = npc.worldX + offX;
-    sprite.y = npc.worldY + offY - 8;
+    sprite.y = npc.worldY + offY - GetBgVofsBaseline();
     void cam;
     void npcGBackupCol;
     void npcGBackupRow;
@@ -1131,18 +1125,18 @@ _registerUpdateObjectEventsForCameraUpdate((rt, dx, dy) => {
  *  NPC.coords en gBackup (= template + MAP_OFFSET). La comparaison mixed-frame
  *  donne en LOGICAL : NPC.template ∈ [pos.x - 9, pos.x + 10] × [pos.y - 7, pos.y + 9].
  *
- *  Notre impl : NPC.coords = template (LOGICAL pur). _camPos.x = pos.x (=
- *  coïncidence MAP_OFFSET=7=viewColOffset). _camPos.y = pos.y + 2.
+ *  Notre impl post-refactor : NPC.coords = template (LOGICAL pur). _camPos.x/y =
+ *  pos.x/y (= 1:1 décomp gSaveBlock1Ptr->pos en LOGICAL).
  *  Équivalent bounds en LOGICAL :
  *    left = cam.x - 9, right = cam.x + 10.
- *    top = (cam.y - 2) - 7 = cam.y - 9, bottom = (cam.y - 2) + 9 = cam.y + 7. */
+ *    top = cam.y - 7, bottom = cam.y + 9. */
 export function RemoveObjectEventsOutsideView(rt: DecompRuntime): void {
   if (!gMapHeader) return;
   const cam = GetCameraTopLeftCoords();
   const left = cam.x - 9;
   const right = cam.x + 10;
-  const top = cam.y - 9;
-  const bottom = cam.y + 7;
+  const top = cam.y - 7;
+  const bottom = cam.y + 9;
 
   for (const npc of gObjectEvents) {
     if (!npc.active || npc.spriteId < 0) continue;

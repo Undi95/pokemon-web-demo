@@ -84,7 +84,12 @@ const sFieldCameraOffset: FieldCameraOffset = {
 /** 1:1 décomp `static s16 sHorizontalCameraPan` (field_camera.c:37). Pan utilisé
  *  pour les effets de pan (= bike/zoom). 0 par défaut. */
 let sHorizontalCameraPan = 0;
-let sVerticalCameraPan = 0;
+/** 1:1 décomp `sVerticalCameraPan = 32` après `InstallCameraPanAheadCallback`
+ *  (field_camera.c:453, called par ResumeMap overworld.c:2139). Default 32 =
+ *  visible window shifts down 2 metatiles → player rendered at view row 7
+ *  (= 1:1 décomp), evite OOB writes en RedrawMapSlice* aux derniers rows de map.
+ *  Avec le +8 dans FieldUpdateBgTilemapScroll, BG_VOFS = yPixelOffset + 40. */
+let sVerticalCameraPan = 32;
 
 /** 1:1 décomp `COMMON_DATA u16 gTotalCameraPixelOffsetX/Y` (field_camera.c:43-44).
  *  Tracking du déplacement total pour positionner les sprites overworld
@@ -452,12 +457,12 @@ function CameraMove(deltaX: number, deltaY: number): boolean {
   // MAP_OFFSET + x, pos.y + MAP_OFFSET + y)`. Décomp's `pos` est en LOGICAL
   // coords donc `pos + MAP_OFFSET` = playerGBackup. + delta = post-step.
   //
-  // Notre conv : _camPos = playerLogical + (0, 2) en gBackup frame.
-  //   playerGBackupX = _camPos.x + 7 (= MAP_OFFSET coïncidence avec viewCol 7)
-  //   playerGBackupY = _camPos.y + 5 (= viewRowOffset)
-  //   post-step playerGBackup{X,Y} = _camPos + (7, 5) + delta.
+  // Notre conv : _camPos = playerLogical (= 1:1 décomp gSaveBlock1Ptr->pos).
+  //   playerGBackupX = _camPos.x + MAP_OFFSET (= 7)
+  //   playerGBackupY = _camPos.y + MAP_OFFSET (= 7)
+  //   post-step playerGBackup{X,Y} = _camPos + (7, 7) + delta.
   const predictedPlayerGBX = _camPos.x + 7 + deltaX;
-  const predictedPlayerGBY = _camPos.y + 5 + deltaY;
+  const predictedPlayerGBY = _camPos.y + 7 + deltaY;
   const direction = GetMapBorderIdAt(predictedPlayerGBX, predictedPlayerGBY);
 
   // CONNECTION_NONE (0) ou CONNECTION_INVALID (0xFF) : pas de border cross.
@@ -468,7 +473,7 @@ function CameraMove(deltaX: number, deltaY: number): boolean {
   }
 
   // Border crossed : find la connexion correspondante.
-  const connection = GetIncomingConnection(direction, _camPos.x, _camPos.y - 2);
+  const connection = GetIncomingConnection(direction, _camPos.x, _camPos.y);
   if (!connection) {
     _camPos.x += deltaX;
     _camPos.y += deltaY;
@@ -488,11 +493,11 @@ function CameraMove(deltaX: number, deltaY: number): boolean {
   //   pos.x += x; pos.y += y;
   //   MoveMapViewToBackup(direction);
   //
-  // Notre conv : gPlayerAvatar.x/y = LOGICAL pos. _camPos.x/y = (pos.x, pos.y+2).
-  SaveMapView(_camPos.x, _camPos.y - 2);
+  // Notre conv : gPlayerAvatar.x/y = LOGICAL pos. _camPos.x/y = LOGICAL (= 1:1 décomp).
+  SaveMapView(_camPos.x, _camPos.y);
 
   const oldX = _camPos.x;
-  const oldY = _camPos.y - 2;
+  const oldY = _camPos.y;
 
   // SetPositionFromConnection : compute pre-step pos in new map.
   // ComputeConnectionDestPos retourne maintenant TOUJOURS pre-step (= 1:1 fix).
@@ -519,9 +524,9 @@ function CameraMove(deltaX: number, deltaY: number): boolean {
   // step end fera le +delta naturellement.
   // → Ne fait PAS `gPlayerAvatar.x/y += delta` ici comme décomp.
 
-  // _camPos = post-step + 2 (= notre conv anticipe view row 5).
+  // _camPos = post-step (= 1:1 décomp pos.y after `pos.y += y` at fieldmap.c:674).
   _camPos.x = preStepNewX + deltaX;
-  _camPos.y = preStepNewY + deltaY + 2;
+  _camPos.y = preStepNewY + deltaY;
 
   // MoveMapViewToBackup avec post-step pos (= 1:1 décomp).
   MoveMapViewToBackup(direction, preStepNewX + deltaX, preStepNewY + deltaY);
@@ -534,7 +539,7 @@ function CameraMove(deltaX: number, deltaY: number): boolean {
     direction,
     connection,
     oldCamX: oldX,
-    oldCamY: oldY + 2,
+    oldCamY: oldY,
     deltaX,
     deltaY,
   };
@@ -640,6 +645,14 @@ export function SetCameraPanning(horizontal: number, vertical: number): void {
 
 export function GetCameraOffsetState(): Readonly<FieldCameraOffset> {
   return sFieldCameraOffset;
+}
+
+/** Retourne le baseline BG_VOFS (= sVerticalCameraPan + 8) sans yPixelOffset.
+ *  Utile pour sprite engines qui doivent compenser BG_VOFS pour aligner sprites
+ *  sur BG (= screen_y_sprite = world_y_sprite - BG_VOFS_baseline + offY scroll).
+ *  1:1 décomp `gSpriteCoordOffsetY` proxy. */
+export function GetBgVofsBaseline(): number {
+  return sVerticalCameraPan + 8;
 }
 
 /** Force le redraw de toute la map view au prochain flush. Utile pour reset

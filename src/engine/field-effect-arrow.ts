@@ -30,7 +30,7 @@ import type { DecompRuntime } from './decomp-runtime';
 import { loadTileBin } from './gba/png-loader';
 import { MapGridGetMetatileBehaviorAt, MAP_OFFSET } from './map-loader';
 import { MoveCoords, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST } from './direction-coords';
-import { GetCameraTopLeftCoords, gTotalCamera } from './field-camera';
+import { GetCameraTopLeftCoords, gTotalCamera, GetBgVofsBaseline } from './field-camera';
 import { ENUM_MB_0 as MB } from './decomp-data/auto/include/constants/metatile_behaviors-data';
 
 // ─── Asset paths ────────────────────────────────────────────────────────────
@@ -254,7 +254,9 @@ function showWarpArrowSprite(rt: DecompRuntime, direction: number, mapX: number,
     const internalCol = mapX + MAP_OFFSET;
     const internalRow = mapY + MAP_OFFSET;
     state.worldX = (internalCol - cam.x) * 16 + 8;
-    state.worldY = (internalRow - cam.y) * 16;
+    // Subtract sVerticalCameraPan via GetBgVofsBaseline()-8 (= sVerticalCameraPan)
+    // pour compenser BG_VOFS additionnel post-refactor cam convention 1:1 décomp.
+    state.worldY = (internalRow - cam.y) * 16 - (GetBgVofsBaseline() - 8);
     state.offsetXAtShow = gTotalCamera.pixelOffsetX;
     state.offsetYAtShow = gTotalCamera.pixelOffsetY;
     rt.setSpriteInvisible(state.spriteId, false);

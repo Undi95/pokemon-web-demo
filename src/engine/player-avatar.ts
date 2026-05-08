@@ -288,28 +288,15 @@ export async function InitPlayerAvatar(
   // ⚠️ cfg.x/y passés à CreateSpriteAtOam = sprite CENTER (= 1:1 décomp
   // convention sprite engine). syncSpritesToOam applique centerToCornerVec
   // (= -8, -16 pour 16×32) chaque frame → final OAM x = center.x - 8,
-  // OAM y = center.y - 16. Pour sprite top à screen y = 64 (= row 4),
-  // sprite center y = 64 + 16 = 80.
+  // OAM y = center.y - 16.
   //
-  // Position : player visible à view (col 7, row 5) :
-  //   Sprite top à screen y 64 (= top of row 4)
-  //   Sprite bottom à screen y 96 (= bottom of row 5 = boundary row 6)
-  //   Feet visuellement sur view row 5 (= player position metatile)
-  //
-  // Center coords : x = view col 7 * 16 + 8 (= mid-metatile horiz) = 120
-  //                 y = view row 4 * 16 + 16 (= for OAM top at row 4) = 80
-  // 1:1 décomp BG VOFS = +8 + sprite engine `gSpriteCoordOffsetY = ... - 8`.
-  //
-  // GBA hardware : BG VOFS=8 → BG content rendered at screen y = world_y - 8.
-  // Donc BG row 5 (world y 80-95) apparaît à screen y 72-87 (= shifted UP by 8).
-  // Pour que sprite reste aligné avec BG : sprite center y doit aussi descendre
-  // de 8 px relative au "naive" (= 80 - 8 = 72).
-  //
-  // Audit Opus 2.5 + correction signe : sprite center y = 72 (= -8 from naive
-  // 80, pas +8 comme initial fix bug). Sprite top y = 56, feet à y=87 (= row 5
-  // bottom du BG visuel après BG VOFS).
-  const SCREEN_CENTER_X = 7 * 16 + 8;        // = 120
-  const SCREEN_CENTER_Y = 4 * 16 + 16 - 8;   // = 72 (= 80 - 8 BG VOFS comp)
+  // 1:1 décomp convention : player drawn at view (7, 7) (= MAP_OFFSET, MAP_OFFSET).
+  // BG_VOFS = sVerticalCameraPan + yPixelOffset + 8 = 32 + 0 + 8 = 40.
+  // Player tile (= view row 7) world y = 7 * 16 = 112. Screen y = 112 - 40 = 72.
+  // Sprite top at screen y = 72 (= matches old convention's visible position).
+  // Sprite center y = 72 + 16 = 88.
+  const SCREEN_CENTER_X = 7 * 16 + 8;        // = 120 (view col 7 + mid-tile)
+  const SCREEN_CENTER_Y = 6 * 16 + 16 - 40;  // = 72 (view row 7 top - BG_VOFS=40)
   const initialFrame = SPRITE_FRAMES[direction as keyof typeof SPRITE_FRAMES];
 
   const result = rt.CreateSpriteAtOam({
@@ -333,14 +320,11 @@ export async function InitPlayerAvatar(
     rt.gba.oam[result.oamIndex].flipH = initialFrame.hFlip;
   }
 
-  // Set camera focus = player position. Pour player au view (7, 5) :
-  //   gBackupMapLayout topmost drawn = mapY - 5 (view rows above feet) + MAP_OFFSET (7)
-  //                                 = mapY + 2
-  //   gBackupMapLayout leftmost drawn = mapX - 7 (view cols left of player) + MAP_OFFSET
-  //                                  = mapX (= 0 nett offset car player at view col 7
-  //                                    avec MAP_OFFSET=7)
-  // Sans ce +2 vertical, player visible at view row 7 → camera Y de 2 rows trop haut.
-  SetCameraTopLeftCoords(mapX, mapY + 2);
+  // Set camera focus = player position. 1:1 décomp `gSaveBlock1Ptr->pos = (mapX, mapY)`
+  // en LOGICAL coords. Player drawn at view (7, 7) (= MAP_OFFSET, MAP_OFFSET) avec
+  // BG_VOFS=40 (= sVerticalCameraPan=32 + 8) → visible window starts at metatile row 2.5,
+  // player visible at row 4.5 (= centered). 1:1 décomp.
+  SetCameraTopLeftCoords(mapX, mapY);
 }
 
 // ─── Direction → (dx, dy) helpers depuis direction-coords (= source unique) ─

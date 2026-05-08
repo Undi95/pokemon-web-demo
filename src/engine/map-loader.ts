@@ -930,8 +930,8 @@ export function GetIncomingConnection(direction: number, x: number, y: number): 
 export function ComputeConnectionDestPos(
   connection: MapConnection,
   direction: number,
-  curPosX: number,  // OLD player logical x (= aligned avec décomp pos.x via convention coïncidence)
-  curPosY: number,  // OLD player logical y - 2 (= via _camPos.y = playerLogical + 2)
+  curPosX: number,  // OLD player logical x (= 1:1 décomp pos.x)
+  curPosY: number,  // OLD player logical y (= 1:1 décomp pos.y, post-refactor)
 ): { camX: number; camY: number } {
   const cMap = mapHeaderCache.get(connection.destMap);
   if (!cMap) return { camX: curPosX, camY: curPosY };
@@ -1044,8 +1044,8 @@ const _savedMapView = new Uint16Array(0x100);
  *  area + 2 rows top/bottom buffer + 0 col buffer) vers _savedMapView.
  *
  *  Décomp utilise `gSaveBlock1Ptr->pos.x/y` (= player logical coords). Nos
- *  conventions : pos.x = `_camPos.x` (coïncidence viewColOffset = MAP_OFFSET = 7),
- *  pos.y = `_camPos.y - 2`. On passe explicit car pas de gSaveBlock1Ptr global. */
+ *  conventions post-refactor : pos.x = `_camPos.x` et pos.y = `_camPos.y`
+ *  (= 1:1 décomp). On passe explicit car pas de gSaveBlock1Ptr global. */
 export function SaveMapView(posX: number, posY: number): void {
   const mapView = _savedMapView;
   const width = gBackupMapLayout.width;
