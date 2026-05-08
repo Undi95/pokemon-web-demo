@@ -204,18 +204,52 @@ export function flushDirtyWindows(): void {
   }
 }
 
+/** 1:1 décomp `BlitBitmapToWindow(windowId, src, x, y, w, h)` (window.c).
+ *
+ *  Décomp : copy un bitmap 4bpp tile-arranged (= GBA charData format) dans
+ *  le window pixel buffer à position (x, y) sur dimensions (w, h).
+ *
+ *  Notre pixelBuffer = 1 byte/pixel (= idx 0-15 dans la palette) au lieu de
+ *  packed 4bpp. Conversion : pour chaque pixel source, unpack le nibble depuis
+ *  charData (= 32 bytes/tile, row-major dans la grille de tiles).
+ *
+ *  @param src  4bpp tile-arranged char data (= sortie de loadIndexedPngStrict).
+ *              Layout : tiles 8×8 row-major, dans chaque tile 32 bytes layout
+ *              row-major 4×8 bytes, low nibble = pixel gauche.
+ *  @param srcWidthPx  Width du bitmap source en pixels (= pour calculer tileX). */
 export function BlitBitmapToWindow(
   windowId: number,
-  _src: unknown,
-  _x: number,
-  _y: number,
-  _w: number,
-  _h: number,
+  src: Uint8Array,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  srcWidthPx?: number,
 ): void {
-  // TODO: implémenter si nécessaire pour d'autres scènes
   const gw = gWindows.find((w) => w.id === windowId);
   if (!gw) return;
-  gw.win.needsFlush = true;
+  const win = gw.win;
+  // Default srcWidthPx = blit width (= source = exactly w×h, source-relative coords).
+  const srcW = srcWidthPx ?? w;
+  const srcWidthTiles = srcW / 8;
+  for (let py = 0; py < h; py++) {
+    const dstY = y + py;
+    if (dstY < 0 || dstY >= win.heightPx) continue;
+    const tileY = (py / 8) | 0;
+    const yInTile = py & 7;
+    for (let px = 0; px < w; px++) {
+      const dstX = x + px;
+      if (dstX < 0 || dstX >= win.widthPx) continue;
+      const tileX = (px / 8) | 0;
+      const xInTile = px & 7;
+      const tileIdx = tileY * srcWidthTiles + tileX;
+      const byteIdx = tileIdx * 32 + yInTile * 4 + (xInTile >> 1);
+      const nibbleShift = (xInTile & 1) * 4;
+      const pixel = (src[byteIdx] >> nibbleShift) & 0xF;
+      win.pixelBuffer[dstY * win.widthPx + dstX] = pixel;
+    }
+  }
+  win.needsFlush = true;
 }
 
 export function FillWindowPixelRect(

@@ -2,37 +2,62 @@
  * map-name-popup.ts — 1:1 décomp `src/map_name_popup.c`.
  *
  * Source de vérité (1:1 décomp) :
- *   - `src/map_name_popup.c` (= ShowMapNamePopup, Task_MapNamePopUpWindow)
+ *   - `src/map_name_popup.c` (= ShowMapNamePopup, Task_MapNamePopUpWindow,
+ *     LoadMapNamePopUpWindowBg, DrawMapNamePopUpFrame)
+ *   - `src/menu.c:521` (= AddMapNamePopUpWindow template)
  *   - `src/overworld.c:824` (= ShowMapNamePopup() appelé fin LoadMapFromCameraTransition)
  *
  * Comportement 1:1 décomp :
  *   - Au cross-border / map load (= si mapsec différent), affiche un popup en
- *     haut de l'écran avec le nom de la map (= "BOURG-EN-VOL").
+ *     haut-gauche de l'écran avec le nom de la map + theme (= wood/marble/etc.).
  *   - Anim : SLIDE_IN (~20 frames) → WAIT (= 120 frames) → SLIDE_OUT (~20 frames).
  *   - Total durée ~160 frames = ~2.7 secondes à 60fps.
  *   - Skip si le mapsec n'a pas changé (= cross-border vers même région).
  *
- * Phase 4.9 first cut :
- *   - Skip les graphics theme spécifiques (= wood/marble/stone PNGs pas extraits).
- *   - Utilise un simple text rendering via gba-window-system + gba-text-system.
- *   - Slide via REG_OFFSET_BG0VOFS (= 1:1 décomp BG0VOFS scrolling).
- *   - Map name = lookup dans map-names-fr.json (= MAPSEC → "NOM").
+ * Theme system 1:1 décomp :
+ *   - `sMapSectionToThemeId[]` = mapsec → theme (= 6 themes : WOOD, MARBLE,
+ *     STONE, BRICK, UNDERWATER, STONE2).
+ *   - Chaque theme a `<theme>_outline.png` = 30 tiles frame border (chargés à
+ *     BG VRAM offset 0x21D) + `<theme>.gbapal` palette à BG_PLTT_ID(14).
+ *   - DrawMapNamePopUpFrame place les tiles dans le tilemap BG0 autour de la
+ *     fenêtre (12 top + 6 sides + 12 bottom = 30 tiles).
  *
- * À étendre Phase 5+ :
- *   - Theme graphics (= sMapPopUp_Table[][960] PNG par theme).
- *   - sMapSectionToThemeId table (= choix theme selon mapsec).
- *   - Battle Frontier Pyramid floor strings.
+ * Phase 4.9 : skip le `BlitBitmapToWindow` background fill (= texture wallpaper
+ *  inside window). Window stays plain white. Frame border + palette = fonctionnel.
  */
 
 import { getRuntime } from './decomp-globals';
 import { REG_OFFSET_BG0VOFS } from './decomp-runtime';
 import { gMapHeader } from './map-loader';
 import type { DecompTask } from './decomp-runtime';
+import {
+  AddWindow, RemoveWindow, FillWindowPixelBuffer, CopyWindowToVram,
+  ClearStdWindowAndFrame, FillBgTilemapBufferRect, PutWindowTilemap,
+  BlitBitmapToWindow,
+} from './gba-window-system';
+import { AddTextPrinterParameterized3 } from './gba-text-system';
+import { LoadBgTiles } from './decomp-globals';
+import { LoadPalette } from './decomp-globals';
+import { loadIndexedPngStrict } from './gba/png-loader';
 
-// ─── 1:1 décomp constants (map_name_popup.c:222-229) ────────────────────────
+// ─── 1:1 décomp constants (map_name_popup.c:212-229, menu.c:521-526) ────────
 
 const POPUP_OFFSCREEN_Y = 40;
 const POPUP_SLIDE_SPEED = 2;
+const POPUP_PALETTE_NUM = 14;        // 1:1 décomp menu.c:524
+const POPUP_PALETTE_FLAT_IDX = 14 * 16;  // = BG_PLTT_ID(14)
+
+// 1:1 décomp tile constants (= map_name_popup.c:371-380)
+const TILE_TOP_EDGE_START = 0x21D;
+const TILE_TOP_EDGE_END   = 0x228;  // top edge spans 12 tiles (= 0x21D..0x228)
+const TILE_LEFT_EDGE_TOP  = 0x229;
+const TILE_RIGHT_EDGE_TOP = 0x22A;
+const TILE_LEFT_EDGE_MID  = 0x22B;
+const TILE_RIGHT_EDGE_MID = 0x22C;
+const TILE_LEFT_EDGE_BOT  = 0x22D;
+const TILE_RIGHT_EDGE_BOT = 0x22E;
+const TILE_BOT_EDGE_START = 0x22F;
+const TILE_BOT_EDGE_END   = 0x23A;  // bot edge spans 12 tiles
 
 // 1:1 décomp data slots (= map_name_popup.c:225-229)
 const T_STATE          = 0;
@@ -49,16 +74,105 @@ const STATE_ERASE     = 4;
 const STATE_END       = 5;
 const STATE_PRINT     = 6;
 
+// ─── Theme types + mapping (1:1 décomp map_name_popup.c:21-180) ─────────────
+
+type PopupTheme = 'wood' | 'marble' | 'stone' | 'brick' | 'underwater' | 'stone2';
+
+/** 1:1 décomp `sMapSectionToThemeId[]` (map_name_popup.c:75-180).
+ *  Mapping mapsec name → theme. Default si mapsec pas listé : WOOD. */
+const MAPSEC_TO_THEME: Record<string, PopupTheme> = {
+  // Towns (= MAPPOPUP_THEME_WOOD)
+  MAPSEC_LITTLEROOT_TOWN: 'wood',
+  MAPSEC_OLDALE_TOWN: 'wood',
+  MAPSEC_DEWFORD_TOWN: 'wood',
+  MAPSEC_LAVARIDGE_TOWN: 'wood',
+  MAPSEC_FALLARBOR_TOWN: 'wood',
+  MAPSEC_VERDANTURF_TOWN: 'wood',
+  MAPSEC_PACIFIDLOG_TOWN: 'wood',
+  // Cities (= MAPPOPUP_THEME_BRICK / MARBLE)
+  MAPSEC_PETALBURG_CITY: 'brick',
+  MAPSEC_SLATEPORT_CITY: 'marble',
+  MAPSEC_MAUVILLE_CITY: 'marble',
+  MAPSEC_RUSTBORO_CITY: 'marble',
+  MAPSEC_FORTREE_CITY: 'brick',
+  MAPSEC_LILYCOVE_CITY: 'marble',
+  MAPSEC_MOSSDEEP_CITY: 'brick',
+  MAPSEC_SOOTOPOLIS_CITY: 'marble',
+  MAPSEC_EVER_GRANDE_CITY: 'brick',
+  // Routes wood-themed (= 1:1 décomp routes 101..104, 110-123, 132+ etc.)
+  MAPSEC_ROUTE_101: 'wood', MAPSEC_ROUTE_102: 'wood', MAPSEC_ROUTE_103: 'wood',
+  MAPSEC_ROUTE_104: 'wood', MAPSEC_ROUTE_110: 'wood', MAPSEC_ROUTE_111: 'wood',
+  MAPSEC_ROUTE_112: 'wood', MAPSEC_ROUTE_113: 'wood', MAPSEC_ROUTE_114: 'wood',
+  MAPSEC_ROUTE_115: 'wood', MAPSEC_ROUTE_116: 'wood', MAPSEC_ROUTE_117: 'wood',
+  MAPSEC_ROUTE_118: 'wood', MAPSEC_ROUTE_119: 'wood', MAPSEC_ROUTE_120: 'wood',
+  MAPSEC_ROUTE_121: 'wood', MAPSEC_ROUTE_123: 'wood',
+  // Routes underwater-themed
+  MAPSEC_ROUTE_105: 'underwater', MAPSEC_ROUTE_106: 'underwater',
+  MAPSEC_ROUTE_107: 'underwater', MAPSEC_ROUTE_108: 'underwater',
+  MAPSEC_ROUTE_109: 'underwater', MAPSEC_ROUTE_122: 'underwater',
+  MAPSEC_ROUTE_124: 'underwater', MAPSEC_ROUTE_125: 'underwater',
+  MAPSEC_ROUTE_126: 'underwater', MAPSEC_ROUTE_127: 'underwater',
+  MAPSEC_ROUTE_128: 'underwater', MAPSEC_ROUTE_129: 'underwater',
+  MAPSEC_ROUTE_130: 'underwater', MAPSEC_ROUTE_131: 'underwater',
+  MAPSEC_ROUTE_132: 'underwater', MAPSEC_ROUTE_133: 'underwater',
+  MAPSEC_ROUTE_134: 'underwater',
+  // Underwater locations (= MAPPOPUP_THEME_STONE2)
+  MAPSEC_UNDERWATER_124: 'stone2', MAPSEC_UNDERWATER_126: 'stone2',
+  MAPSEC_UNDERWATER_127: 'stone2', MAPSEC_UNDERWATER_128: 'stone2',
+  MAPSEC_UNDERWATER_SOOTOPOLIS: 'stone2',
+  // Caves / mountains (= STONE)
+  MAPSEC_GRANITE_CAVE: 'stone', MAPSEC_MT_CHIMNEY: 'stone',
+  MAPSEC_RUSTURF_TUNNEL: 'stone', MAPSEC_METEOR_FALLS: 'stone',
+  MAPSEC_MT_PYRE: 'stone', MAPSEC_AQUA_HIDEOUT_OLD: 'stone',
+  MAPSEC_SHOAL_CAVE: 'stone', MAPSEC_SEAFLOOR_CAVERN: 'stone',
+  MAPSEC_VICTORY_ROAD: 'stone', MAPSEC_CAVE_OF_ORIGIN: 'stone',
+  MAPSEC_FIERY_PATH: 'stone', MAPSEC_SEALED_CHAMBER: 'stone',
+  MAPSEC_SCORCHED_SLAB: 'stone', MAPSEC_ISLAND_CAVE: 'stone',
+  MAPSEC_DESERT_RUINS: 'stone', MAPSEC_ANCIENT_TOMB: 'stone',
+  MAPSEC_SKY_PILLAR: 'stone', MAPSEC_SECRET_BASE: 'stone',
+  // Special (= MARBLE)
+  MAPSEC_BATTLE_FRONTIER: 'marble',
+  // Misc wood
+  MAPSEC_PETALBURG_WOODS: 'wood', MAPSEC_ABANDONED_SHIP: 'wood',
+  MAPSEC_SAFARI_ZONE: 'wood', MAPSEC_MIRAGE_ISLAND: 'wood',
+  MAPSEC_SOUTHERN_ISLAND: 'wood', MAPSEC_INSIDE_OF_TRUCK: 'wood',
+  MAPSEC_NEW_MAUVILLE: 'marble',
+};
+
+function getThemeForMapsec(mapsec: string): PopupTheme {
+  return MAPSEC_TO_THEME[mapsec] ?? 'wood';  // default WOOD si pas listé
+}
+
 // ─── Module state ──────────────────────────────────────────────────────────
 
 let _sPopupTaskId = -1;
-/** 1:1 décomp `sLastMapSectionId` (overworld.c). Tracking pour skip popup si
- *  même mapsec que le précédent (= cross-border into same region area). */
 let _sLastMapSectionId = '';
-/** Map mapsec → name FR cache (= async loaded au boot). */
 let _mapNamesFr: Record<string, string> | null = null;
+let _popupWindowId = -1;
 
-/** Preload map-names-fr.json. À call au boot avant ShowMapNamePopup. */
+/** Cache des themes loadés (= outline tiles + palette + bg fill). Lazy-load. */
+type LoadedTheme = {
+  /** outline tiles (= frame border, uploaded à BG VRAM 0x21D). */
+  outlineTiles: Uint8Array;
+  /** bg fill tiles (= textured wallpaper, blitted dans window pixelBuffer). */
+  bgFillTiles: Uint8Array;
+  /** palette 16 colors (= loaded à BG_PLTT_ID(14)). */
+  palette: Uint16Array;
+};
+const _themeCache: Partial<Record<PopupTheme, LoadedTheme>> = {};
+
+const POPUP_WINDOW_TEMPLATE = {
+  bg: 0,
+  tilemapLeft: 1,
+  tilemapTop: 1,
+  width: 10,
+  height: 3,
+  paletteNum: POPUP_PALETTE_NUM,
+  baseBlock: 0x107,
+} as const;
+
+// ─── Async loaders ─────────────────────────────────────────────────────────
+
 export async function preloadMapNames(): Promise<void> {
   if (_mapNamesFr) return;
   try {
@@ -68,53 +182,58 @@ export async function preloadMapNames(): Promise<void> {
     console.warn('[map-name-popup] failed to load map-names-fr.json:', e);
     _mapNamesFr = {};
   }
+  // Preload tous les 6 themes en parallèle (= évite le miss de theme au 1er
+  // popup, le map name FR seul ne fait pas tout). Cache via _themeCache.
+  await Promise.all([
+    loadTheme('wood'), loadTheme('marble'), loadTheme('stone'),
+    loadTheme('brick'), loadTheme('underwater'), loadTheme('stone2'),
+  ]);
 }
 
-/** Get FR name for mapsec id (= e.g. "MAPSEC_LITTLEROOT_TOWN" → "BOURG-EN-VOL").
- *  Fallback to mapsec id if not found. */
 function getMapName(mapsecId: string): string {
   return _mapNamesFr?.[mapsecId] ?? mapsecId;
 }
 
-// ─── 1:1 décomp ShowMapNamePopup (map_name_popup.c:231-252) ─────────────────
+/** Load un theme : outline tiles + bg fill tiles + palette. Cached. */
+async function loadTheme(theme: PopupTheme): Promise<LoadedTheme | null> {
+  const cached = _themeCache[theme];
+  if (cached) return cached;
+  try {
+    const [outlinePng, bgFillPng] = await Promise.all([
+      loadIndexedPngStrict(`/decomp/em/map_popup/${theme}_outline.png`, 4),
+      loadIndexedPngStrict(`/decomp/em/map_popup/${theme}.png`, 4),
+    ]);
+    // Décomp : outline PNG fournit les frame tiles + la palette (= sMapPopUp_PaletteTable
+    // est extrait du `_outline.png.gbapal` via INCGFX_U16). bg PNG fournit le fill.
+    const loaded: LoadedTheme = {
+      outlineTiles: outlinePng.charData,
+      bgFillTiles: bgFillPng.charData,
+      palette: outlinePng.palette,
+    };
+    _themeCache[theme] = loaded;
+    return loaded;
+  } catch (e) {
+    console.warn(`[map-name-popup] failed to load theme '${theme}':`, e);
+    return null;
+  }
+}
 
-/** 1:1 décomp `ShowMapNamePopup(void)` (map_name_popup.c:231).
- *
- *  ```c
- *  void ShowMapNamePopup(void) {
- *      if (FlagGet(FLAG_HIDE_MAP_NAME_POPUP) != TRUE) {
- *          if (!FuncIsActiveTask(Task_MapNamePopUpWindow)) {
- *              sPopupTaskId = CreateTask(Task_MapNamePopUpWindow, 90);
- *              SetGpuReg(REG_OFFSET_BG0VOFS, POPUP_OFFSCREEN_Y);
- *              gTasks[sPopupTaskId].tState = STATE_PRINT;
- *              gTasks[sPopupTaskId].tYOffset = POPUP_OFFSCREEN_Y;
- *          } else {
- *              // Hurry old popup offscreen so new one can appear.
- *              if (gTasks[sPopupTaskId].tState != STATE_SLIDE_OUT)
- *                  gTasks[sPopupTaskId].tState = STATE_SLIDE_OUT;
- *              gTasks[sPopupTaskId].tIncomingPopUp = TRUE;
- *          }
- *      }
- *  }
- *  ```
- *
- *  Phase 4.9 : skip si mapsec inchangé (= 1:1 décomp condition implicite via
- *  sLastMapSectionId qu'on track ici plutôt que dans overworld.c). */
+// ─── ShowMapNamePopup (1:1 décomp map_name_popup.c:231-252) ─────────────────
+
 export function ShowMapNamePopup(): void {
   if (!gMapHeader) return;
   const mapsec = gMapHeader.regionMapSectionId;
-  // 1:1 décomp : skip si même mapsec (= overworld.c:822-824 condition
-  // `regionMapSectionId != sLastMapSectionId`).
   if (mapsec === _sLastMapSectionId) return;
   _sLastMapSectionId = mapsec;
 
-  // TODO Phase 5 : check FlagGet(FLAG_HIDE_MAP_NAME_POPUP).
+  // Pre-load theme async (= used quand SLIDE_IN start ~30 frames plus tard).
+  const theme = getThemeForMapsec(mapsec);
+  void loadTheme(theme);
 
   const rt = getRuntime();
   const tasks = rt.gTasks;
   const existingTask = _sPopupTaskId >= 0 ? tasks.get(_sPopupTaskId) : null;
   if (existingTask && existingTask.func === Task_MapNamePopUpWindow) {
-    // Existing popup → hurry offscreen for incoming.
     if (existingTask.data[T_STATE] !== STATE_SLIDE_OUT) {
       existingTask.data[T_STATE] = STATE_SLIDE_OUT;
     }
@@ -122,7 +241,6 @@ export function ShowMapNamePopup(): void {
     return;
   }
 
-  // New popup.
   _sPopupTaskId = rt.CreateTask(Task_MapNamePopUpWindow, 90);
   rt.SetGpuReg(REG_OFFSET_BG0VOFS, POPUP_OFFSCREEN_Y);
   const task = tasks.get(_sPopupTaskId);
@@ -134,13 +252,12 @@ export function ShowMapNamePopup(): void {
   task.data[T_INCOMING_POPUP] = 0;
 }
 
-// ─── 1:1 décomp Task_MapNamePopUpWindow (map_name_popup.c:254-317) ──────────
+// ─── Task state machine (1:1 décomp Task_MapNamePopUpWindow:254-317) ────────
 
 function Task_MapNamePopUpWindow(task: DecompTask): void {
   const rt = getRuntime();
   switch (task.data[T_STATE]) {
     case STATE_PRINT:
-      // 1:1 décomp : wait 30 frames before render+slide_in.
       task.data[T_PRINT_TIMER]++;
       if (task.data[T_PRINT_TIMER] > 30) {
         task.data[T_STATE] = STATE_SLIDE_IN;
@@ -168,7 +285,6 @@ function Task_MapNamePopUpWindow(task: DecompTask): void {
       if (task.data[T_Y_OFFSET] >= POPUP_OFFSCREEN_Y) {
         task.data[T_Y_OFFSET] = POPUP_OFFSCREEN_Y;
         if (task.data[T_INCOMING_POPUP]) {
-          // Re-loop pour next popup.
           task.data[T_STATE] = STATE_PRINT;
           task.data[T_PRINT_TIMER] = 0;
           task.data[T_INCOMING_POPUP] = 0;
@@ -179,8 +295,6 @@ function Task_MapNamePopUpWindow(task: DecompTask): void {
       }
       break;
     case STATE_ERASE:
-      // 1:1 décomp : ClearStdWindowAndFrame(GetMapNamePopUpWindowId(), TRUE).
-      // Phase 4.9 first cut : pas de window à clear (= simple console log).
       task.data[T_STATE] = STATE_END;
       break;
     case STATE_END:
@@ -190,32 +304,91 @@ function Task_MapNamePopUpWindow(task: DecompTask): void {
   rt.SetGpuReg(REG_OFFSET_BG0VOFS, task.data[T_Y_OFFSET]);
 }
 
-// ─── ShowMapNamePopUpWindow + Hide (= map_name_popup.c:319-368) ─────────────
+// ─── Show/Hide window (1:1 décomp map_name_popup.c:319-368) ─────────────────
 
-/** 1:1 décomp `ShowMapNamePopUpWindow` (map_name_popup.c:335).
- *  Phase 4.9 first cut : log seulement (= popup visuel TBD avec gba-window-system).
- *  Le user verra "BOURG-EN-VOL" dans la console au cross-border + le BG0VOFS
- *  slide visuel (= la BG0 layer existante slide, mais sans popup graphic dessus
- *  car pas de window créée). */
+/** 1:1 décomp `DrawMapNamePopUpFrame(bg, x, y, deltaX, deltaY, _)` (map_name_popup.c:382-401).
+ *  Place 12 top + 6 sides + 12 bot = 30 tiles autour du window. Tile indices
+ *  référencent les outline tiles uploadées à 0x21D dans BG VRAM. */
+function DrawMapNamePopUpFrame(bg: number, x: number, y: number, deltaX: number, deltaY: number): void {
+  // Top edge — 12 tiles.
+  for (let i = 0; i < 1 + TILE_TOP_EDGE_END - TILE_TOP_EDGE_START; i++) {
+    FillBgTilemapBufferRect(bg, TILE_TOP_EDGE_START + i, i - 1 + x, y - 1, 1, 1, POPUP_PALETTE_NUM);
+  }
+  // Sides.
+  FillBgTilemapBufferRect(bg, TILE_LEFT_EDGE_TOP,  x - 1,           y,     1, 1, POPUP_PALETTE_NUM);
+  FillBgTilemapBufferRect(bg, TILE_RIGHT_EDGE_TOP, deltaX + x,      y,     1, 1, POPUP_PALETTE_NUM);
+  FillBgTilemapBufferRect(bg, TILE_LEFT_EDGE_MID,  x - 1,           y + 1, 1, 1, POPUP_PALETTE_NUM);
+  FillBgTilemapBufferRect(bg, TILE_RIGHT_EDGE_MID, deltaX + x,      y + 1, 1, 1, POPUP_PALETTE_NUM);
+  FillBgTilemapBufferRect(bg, TILE_LEFT_EDGE_BOT,  x - 1,           y + 2, 1, 1, POPUP_PALETTE_NUM);
+  FillBgTilemapBufferRect(bg, TILE_RIGHT_EDGE_BOT, deltaX + x,      y + 2, 1, 1, POPUP_PALETTE_NUM);
+  // Bot edge — 12 tiles.
+  for (let i = 0; i < 1 + TILE_BOT_EDGE_END - TILE_BOT_EDGE_START; i++) {
+    FillBgTilemapBufferRect(bg, TILE_BOT_EDGE_START + i, i - 1 + x, y + deltaY, 1, 1, POPUP_PALETTE_NUM);
+  }
+}
+
+/** 1:1 décomp `LoadMapNamePopUpWindowBg` (map_name_popup.c:403-426).
+ *  Load outline tiles to BG VRAM at 0x21D + DrawMapNamePopUpFrame + theme palette. */
+function LoadMapNamePopUpWindowBg(theme: PopupTheme, windowId: number): void {
+  void windowId;
+  const loaded = _themeCache[theme];
+  if (!loaded) {
+    console.warn(`[map-name-popup] theme '${theme}' not loaded yet, skipping bg`);
+    return;
+  }
+  // 1:1 décomp : LoadBgTiles(bg, sMapPopUp_OutlineTable[themeId], 0x400, 0x21D).
+  // 0x400 bytes = 32 tiles slots (= PNG actually has 30 tiles = 960 bytes).
+  const tilesToLoad = Math.min(loaded.outlineTiles.length, 0x400);
+  LoadBgTiles(POPUP_WINDOW_TEMPLATE.bg, loaded.outlineTiles, tilesToLoad, 0x21D);
+  // 1:1 décomp DrawMapNamePopUpFrame(bg, x=1, y=1, deltaX=10, deltaY=3).
+  DrawMapNamePopUpFrame(POPUP_WINDOW_TEMPLATE.bg, POPUP_WINDOW_TEMPLATE.tilemapLeft,
+    POPUP_WINDOW_TEMPLATE.tilemapTop, POPUP_WINDOW_TEMPLATE.width, POPUP_WINDOW_TEMPLATE.height);
+  // 1:1 décomp : LoadPalette(palette, BG_PLTT_ID(14), sizeof(palette)).
+  LoadPalette(loaded.palette, POPUP_PALETTE_FLAT_IDX, loaded.palette.length * 2);
+}
+
 function ShowMapNamePopUpWindow(): void {
   if (!gMapHeader) return;
   const mapName = getMapName(gMapHeader.regionMapSectionId);
-  console.log(`[map-name-popup] ${gMapHeader.regionMapSectionId} → "${mapName}"`);
-  // TODO Phase 5 : create window, render text via AddTextPrinterParameterized,
-  // load theme graphics via DrawMapNamePopUpFrame.
+  const theme = getThemeForMapsec(gMapHeader.regionMapSectionId);
+  console.log(`[map-name-popup] ${gMapHeader.regionMapSectionId} → "${mapName}" theme=${theme}`);
+
+  if (_popupWindowId < 0) {
+    _popupWindowId = AddWindow(POPUP_WINDOW_TEMPLATE);
+  }
+  // 1:1 décomp `LoadMapNamePopUpWindowBg` : load theme outline + frame + palette.
+  LoadMapNamePopUpWindowBg(theme, _popupWindowId);
+  PutWindowTilemap(_popupWindowId);
+  // 1:1 décomp `BlitBitmapToWindow(popupWindowId, sMapPopUp_Table[themeId], 0, 0, 80, 24)`.
+  // Blit le bg fill texture (= wood pattern, marble pattern, etc.) dans le pixel
+  // buffer du window. PNG est 80×24 = exactement la taille de la window content area.
+  const themeData = _themeCache[theme];
+  if (themeData) {
+    BlitBitmapToWindow(_popupWindowId, themeData.bgFillTiles, 0, 0, 80, 24, 80);
+  }
+  // Render text centré PAR-DESSUS le bg fill.
+  // 1:1 décomp `mapDisplayHeader[2] = TEXT_COLOR_TRANSPARENT` (map_name_popup.c:366)
+  // → bgColor=0 = skip BOX_FILL pixels = préserve le wood pattern derrière.
+  const approxTextWidth = mapName.length * 6;
+  const centerX = Math.max(0, Math.floor((80 - approxTextWidth) / 2));
+  AddTextPrinterParameterized3(_popupWindowId, 0 /* FONT_NORMAL */,
+    centerX, 3, [0 /* TEXT_COLOR_TRANSPARENT */, 2, 3], 255 /* TEXT_SKIP_DRAW */, mapName);
+  CopyWindowToVram(_popupWindowId, 3 /* COPYWIN_FULL */);
 }
 
-/** 1:1 décomp `HideMapNamePopUpWindow` (map_name_popup.c:319-333). */
 export function HideMapNamePopUpWindow(): void {
   if (_sPopupTaskId < 0) return;
   const rt = getRuntime();
-  // 1:1 décomp : SetGpuReg_ForcedBlank(REG_OFFSET_BG0VOFS, 0) + DestroyTask.
+  if (_popupWindowId >= 0) {
+    ClearStdWindowAndFrame(_popupWindowId, true);
+    RemoveWindow(_popupWindowId);
+    _popupWindowId = -1;
+  }
   rt.SetGpuReg(REG_OFFSET_BG0VOFS, 0);
   rt.gTasks.delete(_sPopupTaskId);
   _sPopupTaskId = -1;
 }
 
-/** Reset state (= utile en dev pour re-afficher le popup au même mapsec). */
 export function _resetMapNamePopupState(): void {
   _sLastMapSectionId = '';
   HideMapNamePopUpWindow();

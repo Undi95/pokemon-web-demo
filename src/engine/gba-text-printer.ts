@@ -297,10 +297,19 @@ export function blitGlyphToWindow(
       const srcIdx = glyphPixels[py * GLYPH_W + px];
       let mappedIdx: number;
       switch (srcIdx) {
-        case 1: mappedIdx = fgColor; break;
-        case 2: mappedIdx = shadowColor; break;
-        case 3: mappedIdx = bgColor; break;     // BOX_FILL = matche bgColor
-        default: continue;                       // idx 0 BG = transparent (skip)
+        case 1:
+          if (fgColor === 0) continue;        // TEXT_COLOR_TRANSPARENT = skip
+          mappedIdx = fgColor;
+          break;
+        case 2:
+          if (shadowColor === 0) continue;    // TEXT_COLOR_TRANSPARENT = skip
+          mappedIdx = shadowColor;
+          break;
+        case 3:
+          if (bgColor === 0) continue;        // TEXT_COLOR_TRANSPARENT = skip
+          mappedIdx = bgColor;                // BOX_FILL = matche bgColor
+          break;
+        default: continue;                     // idx 0 BG = transparent (skip)
       }
       w.pixelBuffer[rowStart + colX] = mappedIdx & 0x0F;
     }
