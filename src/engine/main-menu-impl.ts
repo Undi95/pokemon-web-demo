@@ -85,7 +85,7 @@ import {
   gSaveBlock2Ptr,
 } from './gba-menu-system';
 import { CreateWindowTemplate, FillWindowPixelBuffer, FillWindowPixelRect, PutWindowTilemap, CopyWindowToVram, ClearStdWindowAndFrame } from './gba-window-system';
-import { AddTextPrinterParameterized3, GetStringRightAlignXOffset } from './gba-text-system';
+import { AddTextPrinterParameterized3, GetStringRightAlignXOffset, sTextColor_MenuInfo } from './gba-text-system';
 import { getString } from './gba-strings';
 import { FlagGet } from './script-vars';
 
@@ -364,9 +364,13 @@ export function MainMenu_FormatSavegameText(): void {
   const playTimeHours = Number(sb2.playTimeHours ?? 0);
   const playTimeMinutes = Number(sb2.playTimeMinutes ?? 0);
 
-  // 1:1 décomp sTextColor_MenuInfo = {TEXT_DYNAMIC_COLOR_1, TEXT_COLOR_WHITE, TEXT_DYNAMIC_COLOR_3}.
-  // En decoded numeric : [bgColor=1, fgColor=2, shadowColor=3] — std white-on-shadow.
-  const colorMenuInfo: readonly number[] = [1, 2, 3];
+  // 1:1 décomp main_menu.c:411 sTextColor_MenuInfo = [TEXT_DYNAMIC_COLOR_1=0xA,
+  // TEXT_COLOR_WHITE=0x1, TEXT_DYNAMIC_COLOR_3=0xC] = [10, 1, 12]. Imported
+  // depuis gba-text-system (= source unique). NE JAMAIS approximer [1,2,3] ←
+  // était mon bug : palette[15*16+1] est chargée dynamiquement avec BLUE par
+  // le cursor highlight, donc bg derrière le texte rendait BLEU au lieu du
+  // white attendu.
+  const colorMenuInfo = sTextColor_MenuInfo as unknown as readonly number[];
   const FONT_NORMAL = 1;
   const TEXT_SKIP_DRAW = 255;
   const WIN_CONTINUE = 2;

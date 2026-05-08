@@ -469,3 +469,10 @@ export function StringExpandPlaceholders(_dest: string, src: string): string {
 // décomp ; toujours utiliser les indices que le code dynamic load remplit.
 export const sTextColor_Headers = [10, 11, 12] as const; // [bg=DYNAMIC_1, fg=DYNAMIC_2, shadow=DYNAMIC_3]
 (globalThis as Record<string, unknown>).sTextColor_Headers = sTextColor_Headers;
+
+// 1:1 décomp main_menu.c:411 sTextColor_MenuInfo = [TEXT_DYNAMIC_COLOR_1=0xA, TEXT_COLOR_WHITE=0x1, TEXT_DYNAMIC_COLOR_3=0xC]
+// = [10, 1, 12]. Différence avec Headers : fg = TEXT_COLOR_WHITE (= idx 1, pas
+// dynamic) — donne du texte blanc sur bg dynamique. Utilisé par les sub-info
+// du Continue window (= JOUEUR / DUREE JEU / POKéDEX / BADGES values).
+export const sTextColor_MenuInfo = [10, 1, 12] as const;
+(globalThis as Record<string, unknown>).sTextColor_MenuInfo = sTextColor_MenuInfo;
