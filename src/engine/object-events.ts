@@ -317,6 +317,18 @@ export function resetObjectEventAllocations(): void {
   for (const npc of gObjectEvents) {
     npc.active = false;
     npc.spriteId = -1;
+    // 1:1 décomp : reset visualOffsetX/Y (= sprite.x2/y2) sinon les NPCs de
+    // la nouvelle map héritent des offsets des truck boxes (= bug session 123 :
+    // Mère décalée d'1 pixel sur grid car visualOffsetX hérité de Box1).
+    npc.visualOffsetX = 0;
+    npc.visualOffsetY = 0;
+    // Reset autres flags qui peuvent leak entre maps.
+    npc.invisible = false;
+    npc.frozen = false;
+    npc.useSubsprites = false;
+    npc.walkFramesLeft = 0;
+    npc.movementStep = 0;
+    npc.movementDelay = 0;
   }
 }
 
