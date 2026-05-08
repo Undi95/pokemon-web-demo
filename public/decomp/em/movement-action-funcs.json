@@ -1,0 +1,929 @@
+{
+  "generatedAt": "2026-05-08",
+  "source": "src/data/object_events/movement_action_func_tables.h",
+  "masterCount": 158,
+  "tableCount": 158,
+  "master": {
+    "MOVEMENT_ACTION_FACE_DOWN": "FaceDown",
+    "MOVEMENT_ACTION_FACE_UP": "FaceUp",
+    "MOVEMENT_ACTION_FACE_LEFT": "FaceLeft",
+    "MOVEMENT_ACTION_FACE_RIGHT": "FaceRight",
+    "MOVEMENT_ACTION_WALK_SLOW_DOWN": "WalkSlowDown",
+    "MOVEMENT_ACTION_WALK_SLOW_UP": "WalkSlowUp",
+    "MOVEMENT_ACTION_WALK_SLOW_LEFT": "WalkSlowLeft",
+    "MOVEMENT_ACTION_WALK_SLOW_RIGHT": "WalkSlowRight",
+    "MOVEMENT_ACTION_WALK_NORMAL_DOWN": "WalkNormalDown",
+    "MOVEMENT_ACTION_WALK_NORMAL_UP": "WalkNormalUp",
+    "MOVEMENT_ACTION_WALK_NORMAL_LEFT": "WalkNormalLeft",
+    "MOVEMENT_ACTION_WALK_NORMAL_RIGHT": "WalkNormalRight",
+    "MOVEMENT_ACTION_JUMP_2_DOWN": "Jump2Down",
+    "MOVEMENT_ACTION_JUMP_2_UP": "Jump2Up",
+    "MOVEMENT_ACTION_JUMP_2_LEFT": "Jump2Left",
+    "MOVEMENT_ACTION_JUMP_2_RIGHT": "Jump2Right",
+    "MOVEMENT_ACTION_DELAY_1": "Delay1",
+    "MOVEMENT_ACTION_DELAY_2": "Delay2",
+    "MOVEMENT_ACTION_DELAY_4": "Delay4",
+    "MOVEMENT_ACTION_DELAY_8": "Delay8",
+    "MOVEMENT_ACTION_DELAY_16": "Delay16",
+    "MOVEMENT_ACTION_WALK_FAST_DOWN": "WalkFastDown",
+    "MOVEMENT_ACTION_WALK_FAST_UP": "WalkFastUp",
+    "MOVEMENT_ACTION_WALK_FAST_LEFT": "WalkFastLeft",
+    "MOVEMENT_ACTION_WALK_FAST_RIGHT": "WalkFastRight",
+    "MOVEMENT_ACTION_WALK_IN_PLACE_SLOW_DOWN": "WalkInPlaceSlowDown",
+    "MOVEMENT_ACTION_WALK_IN_PLACE_SLOW_UP": "WalkInPlaceSlowUp",
+    "MOVEMENT_ACTION_WALK_IN_PLACE_SLOW_LEFT": "WalkInPlaceSlowLeft",
+    "MOVEMENT_ACTION_WALK_IN_PLACE_SLOW_RIGHT": "WalkInPlaceSlowRight",
+    "MOVEMENT_ACTION_WALK_IN_PLACE_NORMAL_DOWN": "WalkInPlaceNormalDown",
+    "MOVEMENT_ACTION_WALK_IN_PLACE_NORMAL_UP": "WalkInPlaceNormalUp",
+    "MOVEMENT_ACTION_WALK_IN_PLACE_NORMAL_LEFT": "WalkInPlaceNormalLeft",
+    "MOVEMENT_ACTION_WALK_IN_PLACE_NORMAL_RIGHT": "WalkInPlaceNormalRight",
+    "MOVEMENT_ACTION_WALK_IN_PLACE_FAST_DOWN": "WalkInPlaceFastDown",
+    "MOVEMENT_ACTION_WALK_IN_PLACE_FAST_UP": "WalkInPlaceFastUp",
+    "MOVEMENT_ACTION_WALK_IN_PLACE_FAST_LEFT": "WalkInPlaceFastLeft",
+    "MOVEMENT_ACTION_WALK_IN_PLACE_FAST_RIGHT": "WalkInPlaceFastRight",
+    "MOVEMENT_ACTION_WALK_IN_PLACE_FASTER_DOWN": "WalkInPlaceFasterDown",
+    "MOVEMENT_ACTION_WALK_IN_PLACE_FASTER_UP": "WalkInPlaceFasterUp",
+    "MOVEMENT_ACTION_WALK_IN_PLACE_FASTER_LEFT": "WalkInPlaceFasterLeft",
+    "MOVEMENT_ACTION_WALK_IN_PLACE_FASTER_RIGHT": "WalkInPlaceFasterRight",
+    "MOVEMENT_ACTION_RIDE_WATER_CURRENT_DOWN": "RideWaterCurrentDown",
+    "MOVEMENT_ACTION_RIDE_WATER_CURRENT_UP": "RideWaterCurrentUp",
+    "MOVEMENT_ACTION_RIDE_WATER_CURRENT_LEFT": "RideWaterCurrentLeft",
+    "MOVEMENT_ACTION_RIDE_WATER_CURRENT_RIGHT": "RideWaterCurrentRight",
+    "MOVEMENT_ACTION_WALK_FASTER_DOWN": "WalkFasterDown",
+    "MOVEMENT_ACTION_WALK_FASTER_UP": "WalkFasterUp",
+    "MOVEMENT_ACTION_WALK_FASTER_LEFT": "WalkFasterLeft",
+    "MOVEMENT_ACTION_WALK_FASTER_RIGHT": "WalkFasterRight",
+    "MOVEMENT_ACTION_SLIDE_DOWN": "SlideDown",
+    "MOVEMENT_ACTION_SLIDE_UP": "SlideUp",
+    "MOVEMENT_ACTION_SLIDE_LEFT": "SlideLeft",
+    "MOVEMENT_ACTION_SLIDE_RIGHT": "SlideRight",
+    "MOVEMENT_ACTION_PLAYER_RUN_DOWN": "PlayerRunDown",
+    "MOVEMENT_ACTION_PLAYER_RUN_UP": "PlayerRunUp",
+    "MOVEMENT_ACTION_PLAYER_RUN_LEFT": "PlayerRunLeft",
+    "MOVEMENT_ACTION_PLAYER_RUN_RIGHT": "PlayerRunRight",
+    "MOVEMENT_ACTION_START_ANIM_IN_DIRECTION": "StartAnimInDirection",
+    "MOVEMENT_ACTION_JUMP_SPECIAL_DOWN": "JumpSpecialDown",
+    "MOVEMENT_ACTION_JUMP_SPECIAL_UP": "JumpSpecialUp",
+    "MOVEMENT_ACTION_JUMP_SPECIAL_LEFT": "JumpSpecialLeft",
+    "MOVEMENT_ACTION_JUMP_SPECIAL_RIGHT": "JumpSpecialRight",
+    "MOVEMENT_ACTION_FACE_PLAYER": "FacePlayer",
+    "MOVEMENT_ACTION_FACE_AWAY_PLAYER": "FaceAwayPlayer",
+    "MOVEMENT_ACTION_LOCK_FACING_DIRECTION": "LockFacingDirection",
+    "MOVEMENT_ACTION_UNLOCK_FACING_DIRECTION": "UnlockFacingDirection",
+    "MOVEMENT_ACTION_JUMP_DOWN": "JumpDown",
+    "MOVEMENT_ACTION_JUMP_UP": "JumpUp",
+    "MOVEMENT_ACTION_JUMP_LEFT": "JumpLeft",
+    "MOVEMENT_ACTION_JUMP_RIGHT": "JumpRight",
+    "MOVEMENT_ACTION_JUMP_IN_PLACE_DOWN": "JumpInPlaceDown",
+    "MOVEMENT_ACTION_JUMP_IN_PLACE_UP": "JumpInPlaceUp",
+    "MOVEMENT_ACTION_JUMP_IN_PLACE_LEFT": "JumpInPlaceLeft",
+    "MOVEMENT_ACTION_JUMP_IN_PLACE_RIGHT": "JumpInPlaceRight",
+    "MOVEMENT_ACTION_JUMP_IN_PLACE_DOWN_UP": "JumpInPlaceDownUp",
+    "MOVEMENT_ACTION_JUMP_IN_PLACE_UP_DOWN": "JumpInPlaceUpDown",
+    "MOVEMENT_ACTION_JUMP_IN_PLACE_LEFT_RIGHT": "JumpInPlaceLeftRight",
+    "MOVEMENT_ACTION_JUMP_IN_PLACE_RIGHT_LEFT": "JumpInPlaceRightLeft",
+    "MOVEMENT_ACTION_FACE_ORIGINAL_DIRECTION": "FaceOriginalDirection",
+    "MOVEMENT_ACTION_NURSE_JOY_BOW_DOWN": "NurseJoyBowDown",
+    "MOVEMENT_ACTION_ENABLE_JUMP_LANDING_GROUND_EFFECT": "EnableJumpLandingGroundEffect",
+    "MOVEMENT_ACTION_DISABLE_JUMP_LANDING_GROUND_EFFECT": "DisableJumpLandingGroundEffect",
+    "MOVEMENT_ACTION_DISABLE_ANIMATION": "DisableAnimation",
+    "MOVEMENT_ACTION_RESTORE_ANIMATION": "RestoreAnimation",
+    "MOVEMENT_ACTION_SET_INVISIBLE": "SetInvisible",
+    "MOVEMENT_ACTION_SET_VISIBLE": "SetVisible",
+    "MOVEMENT_ACTION_EMOTE_EXCLAMATION_MARK": "EmoteExclamationMark",
+    "MOVEMENT_ACTION_EMOTE_QUESTION_MARK": "EmoteQuestionMark",
+    "MOVEMENT_ACTION_EMOTE_HEART": "EmoteHeart",
+    "MOVEMENT_ACTION_REVEAL_TRAINER": "RevealTrainer",
+    "MOVEMENT_ACTION_ROCK_SMASH_BREAK": "RockSmashBreak",
+    "MOVEMENT_ACTION_CUT_TREE": "CutTree",
+    "MOVEMENT_ACTION_SET_FIXED_PRIORITY": "SetFixedPriority",
+    "MOVEMENT_ACTION_CLEAR_FIXED_PRIORITY": "ClearFixedPriority",
+    "MOVEMENT_ACTION_INIT_AFFINE_ANIM": "InitAffineAnim",
+    "MOVEMENT_ACTION_CLEAR_AFFINE_ANIM": "ClearAffineAnim",
+    "MOVEMENT_ACTION_HIDE_REFLECTION": "HideReflection",
+    "MOVEMENT_ACTION_SHOW_REFLECTION": "ShowReflection",
+    "MOVEMENT_ACTION_WALK_DOWN_START_AFFINE": "WalkDownStartAffine",
+    "MOVEMENT_ACTION_WALK_DOWN_AFFINE": "WalkDownAffine",
+    "MOVEMENT_ACTION_ACRO_WHEELIE_FACE_DOWN": "AcroWheelieFaceDown",
+    "MOVEMENT_ACTION_ACRO_WHEELIE_FACE_UP": "AcroWheelieFaceUp",
+    "MOVEMENT_ACTION_ACRO_WHEELIE_FACE_LEFT": "AcroWheelieFaceLeft",
+    "MOVEMENT_ACTION_ACRO_WHEELIE_FACE_RIGHT": "AcroWheelieFaceRight",
+    "MOVEMENT_ACTION_ACRO_POP_WHEELIE_DOWN": "AcroPopWheelieDown",
+    "MOVEMENT_ACTION_ACRO_POP_WHEELIE_UP": "AcroPopWheelieUp",
+    "MOVEMENT_ACTION_ACRO_POP_WHEELIE_LEFT": "AcroPopWheelieLeft",
+    "MOVEMENT_ACTION_ACRO_POP_WHEELIE_RIGHT": "AcroPopWheelieRight",
+    "MOVEMENT_ACTION_ACRO_END_WHEELIE_FACE_DOWN": "AcroEndWheelieFaceDown",
+    "MOVEMENT_ACTION_ACRO_END_WHEELIE_FACE_UP": "AcroEndWheelieFaceUp",
+    "MOVEMENT_ACTION_ACRO_END_WHEELIE_FACE_LEFT": "AcroEndWheelieFaceLeft",
+    "MOVEMENT_ACTION_ACRO_END_WHEELIE_FACE_RIGHT": "AcroEndWheelieFaceRight",
+    "MOVEMENT_ACTION_ACRO_WHEELIE_HOP_FACE_DOWN": "AcroWheelieHopFaceDown",
+    "MOVEMENT_ACTION_ACRO_WHEELIE_HOP_FACE_UP": "AcroWheelieHopFaceUp",
+    "MOVEMENT_ACTION_ACRO_WHEELIE_HOP_FACE_LEFT": "AcroWheelieHopFaceLeft",
+    "MOVEMENT_ACTION_ACRO_WHEELIE_HOP_FACE_RIGHT": "AcroWheelieHopFaceRight",
+    "MOVEMENT_ACTION_ACRO_WHEELIE_HOP_DOWN": "AcroWheelieHopDown",
+    "MOVEMENT_ACTION_ACRO_WHEELIE_HOP_UP": "AcroWheelieHopUp",
+    "MOVEMENT_ACTION_ACRO_WHEELIE_HOP_LEFT": "AcroWheelieHopLeft",
+    "MOVEMENT_ACTION_ACRO_WHEELIE_HOP_RIGHT": "AcroWheelieHopRight",
+    "MOVEMENT_ACTION_ACRO_WHEELIE_JUMP_DOWN": "AcroWheelieJumpDown",
+    "MOVEMENT_ACTION_ACRO_WHEELIE_JUMP_UP": "AcroWheelieJumpUp",
+    "MOVEMENT_ACTION_ACRO_WHEELIE_JUMP_LEFT": "AcroWheelieJumpLeft",
+    "MOVEMENT_ACTION_ACRO_WHEELIE_JUMP_RIGHT": "AcroWheelieJumpRight",
+    "MOVEMENT_ACTION_ACRO_WHEELIE_IN_PLACE_DOWN": "AcroWheelieInPlaceDown",
+    "MOVEMENT_ACTION_ACRO_WHEELIE_IN_PLACE_UP": "AcroWheelieInPlaceUp",
+    "MOVEMENT_ACTION_ACRO_WHEELIE_IN_PLACE_LEFT": "AcroWheelieInPlaceLeft",
+    "MOVEMENT_ACTION_ACRO_WHEELIE_IN_PLACE_RIGHT": "AcroWheelieInPlaceRight",
+    "MOVEMENT_ACTION_ACRO_POP_WHEELIE_MOVE_DOWN": "AcroPopWheelieMoveDown",
+    "MOVEMENT_ACTION_ACRO_POP_WHEELIE_MOVE_UP": "AcroPopWheelieMoveUp",
+    "MOVEMENT_ACTION_ACRO_POP_WHEELIE_MOVE_LEFT": "AcroPopWheelieMoveLeft",
+    "MOVEMENT_ACTION_ACRO_POP_WHEELIE_MOVE_RIGHT": "AcroPopWheelieMoveRight",
+    "MOVEMENT_ACTION_ACRO_WHEELIE_MOVE_DOWN": "AcroWheelieMoveDown",
+    "MOVEMENT_ACTION_ACRO_WHEELIE_MOVE_UP": "AcroWheelieMoveUp",
+    "MOVEMENT_ACTION_ACRO_WHEELIE_MOVE_LEFT": "AcroWheelieMoveLeft",
+    "MOVEMENT_ACTION_ACRO_WHEELIE_MOVE_RIGHT": "AcroWheelieMoveRight",
+    "MOVEMENT_ACTION_ACRO_END_WHEELIE_MOVE_DOWN": "AcroEndWheelieMoveDown",
+    "MOVEMENT_ACTION_ACRO_END_WHEELIE_MOVE_UP": "AcroEndWheelieMoveUp",
+    "MOVEMENT_ACTION_ACRO_END_WHEELIE_MOVE_LEFT": "AcroEndWheelieMoveLeft",
+    "MOVEMENT_ACTION_ACRO_END_WHEELIE_MOVE_RIGHT": "AcroEndWheelieMoveRight",
+    "MOVEMENT_ACTION_WALK_NORMAL_DIAGONAL_UP_LEFT": "WalkNormalDiagonalUpLeft",
+    "MOVEMENT_ACTION_WALK_NORMAL_DIAGONAL_UP_RIGHT": "WalkNormalDiagonalUpRight",
+    "MOVEMENT_ACTION_WALK_NORMAL_DIAGONAL_DOWN_LEFT": "WalkNormalDiagonalDownLeft",
+    "MOVEMENT_ACTION_WALK_NORMAL_DIAGONAL_DOWN_RIGHT": "WalkNormalDiagonalDownRight",
+    "MOVEMENT_ACTION_WALK_SLOW_DIAGONAL_UP_LEFT": "WalkSlowDiagonalUpLeft",
+    "MOVEMENT_ACTION_WALK_SLOW_DIAGONAL_UP_RIGHT": "WalkSlowDiagonalUpRight",
+    "MOVEMENT_ACTION_WALK_SLOW_DIAGONAL_DOWN_LEFT": "WalkSlowDiagonalDownLeft",
+    "MOVEMENT_ACTION_WALK_SLOW_DIAGONAL_DOWN_RIGHT": "WalkSlowDiagonalDownRight",
+    "MOVEMENT_ACTION_LOCK_ANIM": "LockAnim",
+    "MOVEMENT_ACTION_UNLOCK_ANIM": "UnlockAnim",
+    "MOVEMENT_ACTION_WALK_LEFT_AFFINE": "WalkLeftAffine",
+    "MOVEMENT_ACTION_WALK_RIGHT_AFFINE": "WalkRightAffine",
+    "MOVEMENT_ACTION_LEVITATE": "Levitate",
+    "MOVEMENT_ACTION_STOP_LEVITATE": "StopLevitate",
+    "MOVEMENT_ACTION_STOP_LEVITATE_AT_TOP": "StopLevitateAtTop",
+    "MOVEMENT_ACTION_FIGURE_8": "Figure8",
+    "MOVEMENT_ACTION_FLY_UP": "FlyUp",
+    "MOVEMENT_ACTION_FLY_DOWN": "FlyDown"
+  },
+  "tables": {
+    "FaceDown": [
+      "MovementAction_FaceDown_Step0",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "FaceUp": [
+      "MovementAction_FaceUp_Step0",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "FaceLeft": [
+      "MovementAction_FaceLeft_Step0",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "FaceRight": [
+      "MovementAction_FaceRight_Step0",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "WalkSlowDiagonalUpLeft": [
+      "MovementAction_WalkSlowDiagonalUpLeft_Step0",
+      "MovementAction_WalkSlowDiagonalUpLeft_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "WalkSlowDiagonalUpRight": [
+      "MovementAction_WalkSlowDiagonalUpRight_Step0",
+      "MovementAction_WalkSlowDiagonalUpRight_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "WalkSlowDiagonalDownLeft": [
+      "MovementAction_WalkSlowDiagonalDownLeft_Step0",
+      "MovementAction_WalkSlowDiagonalDownLeft_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "WalkSlowDiagonalDownRight": [
+      "MovementAction_WalkSlowDiagonalDownRight_Step0",
+      "MovementAction_WalkSlowDiagonalDownRight_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "WalkSlowDown": [
+      "MovementAction_WalkSlowDown_Step0",
+      "MovementAction_WalkSlowDown_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "WalkSlowUp": [
+      "MovementAction_WalkSlowUp_Step0",
+      "MovementAction_WalkSlowUp_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "WalkSlowLeft": [
+      "MovementAction_WalkSlowLeft_Step0",
+      "MovementAction_WalkSlowLeft_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "WalkSlowRight": [
+      "MovementAction_WalkSlowRight_Step0",
+      "MovementAction_WalkSlowRight_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "WalkNormalDiagonalUpLeft": [
+      "MovementAction_WalkNormalDiagonalUpLeft_Step0",
+      "MovementAction_WalkNormalDiagonalUpLeft_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "WalkNormalDiagonalUpRight": [
+      "MovementAction_WalkNormalDiagonalUpRight_Step0",
+      "MovementAction_WalkNormalDiagonalUpRight_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "WalkNormalDiagonalDownLeft": [
+      "MovementAction_WalkNormalDiagonalDownLeft_Step0",
+      "MovementAction_WalkNormalDiagonalDownLeft_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "WalkNormalDiagonalDownRight": [
+      "MovementAction_WalkNormalDiagonalDownRight_Step0",
+      "MovementAction_WalkNormalDiagonalDownRight_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "WalkNormalDown": [
+      "MovementAction_WalkNormalDown_Step0",
+      "MovementAction_WalkNormalDown_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "WalkNormalUp": [
+      "MovementAction_WalkNormalUp_Step0",
+      "MovementAction_WalkNormalUp_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "WalkNormalLeft": [
+      "MovementAction_WalkNormalLeft_Step0",
+      "MovementAction_WalkNormalLeft_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "WalkNormalRight": [
+      "MovementAction_WalkNormalRight_Step0",
+      "MovementAction_WalkNormalRight_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "Jump2Down": [
+      "MovementAction_Jump2Down_Step0",
+      "MovementAction_Jump2Down_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "Jump2Up": [
+      "MovementAction_Jump2Up_Step0",
+      "MovementAction_Jump2Up_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "Jump2Left": [
+      "MovementAction_Jump2Left_Step0",
+      "MovementAction_Jump2Left_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "Jump2Right": [
+      "MovementAction_Jump2Right_Step0",
+      "MovementAction_Jump2Right_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "Delay1": [
+      "MovementAction_Delay1_Step0",
+      "MovementAction_Delay_Step1",
+      "MovementAction_Finish"
+    ],
+    "Delay2": [
+      "MovementAction_Delay2_Step0",
+      "MovementAction_Delay_Step1",
+      "MovementAction_Finish"
+    ],
+    "Delay4": [
+      "MovementAction_Delay4_Step0",
+      "MovementAction_Delay_Step1",
+      "MovementAction_Finish"
+    ],
+    "Delay8": [
+      "MovementAction_Delay8_Step0",
+      "MovementAction_Delay_Step1",
+      "MovementAction_Finish"
+    ],
+    "Delay16": [
+      "MovementAction_Delay16_Step0",
+      "MovementAction_Delay_Step1",
+      "MovementAction_Finish"
+    ],
+    "WalkFastDown": [
+      "MovementAction_WalkFastDown_Step0",
+      "MovementAction_WalkFastDown_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "WalkFastUp": [
+      "MovementAction_WalkFastUp_Step0",
+      "MovementAction_WalkFastUp_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "WalkFastLeft": [
+      "MovementAction_WalkFastLeft_Step0",
+      "MovementAction_WalkFastLeft_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "WalkFastRight": [
+      "MovementAction_WalkFastRight_Step0",
+      "MovementAction_WalkFastRight_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "WalkInPlaceSlowDown": [
+      "MovementAction_WalkInPlaceSlowDown_Step0",
+      "MovementAction_WalkInPlaceSlow_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "WalkInPlaceSlowUp": [
+      "MovementAction_WalkInPlaceSlowUp_Step0",
+      "MovementAction_WalkInPlaceSlow_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "WalkInPlaceSlowLeft": [
+      "MovementAction_WalkInPlaceSlowLeft_Step0",
+      "MovementAction_WalkInPlaceSlow_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "WalkInPlaceSlowRight": [
+      "MovementAction_WalkInPlaceSlowRight_Step0",
+      "MovementAction_WalkInPlaceSlow_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "WalkInPlaceNormalDown": [
+      "MovementAction_WalkInPlaceNormalDown_Step0",
+      "MovementAction_WalkInPlace_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "WalkInPlaceNormalUp": [
+      "MovementAction_WalkInPlaceNormalUp_Step0",
+      "MovementAction_WalkInPlace_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "WalkInPlaceNormalLeft": [
+      "MovementAction_WalkInPlaceNormalLeft_Step0",
+      "MovementAction_WalkInPlace_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "WalkInPlaceNormalRight": [
+      "MovementAction_WalkInPlaceNormalRight_Step0",
+      "MovementAction_WalkInPlace_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "WalkInPlaceFastDown": [
+      "MovementAction_WalkInPlaceFastDown_Step0",
+      "MovementAction_WalkInPlace_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "WalkInPlaceFastUp": [
+      "MovementAction_WalkInPlaceFastUp_Step0",
+      "MovementAction_WalkInPlace_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "WalkInPlaceFastLeft": [
+      "MovementAction_WalkInPlaceFastLeft_Step0",
+      "MovementAction_WalkInPlace_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "WalkInPlaceFastRight": [
+      "MovementAction_WalkInPlaceFastRight_Step0",
+      "MovementAction_WalkInPlace_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "WalkInPlaceFasterDown": [
+      "MovementAction_WalkInPlaceFasterDown_Step0",
+      "MovementAction_WalkInPlace_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "WalkInPlaceFasterUp": [
+      "MovementAction_WalkInPlaceFasterUp_Step0",
+      "MovementAction_WalkInPlace_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "WalkInPlaceFasterLeft": [
+      "MovementAction_WalkInPlaceFasterLeft_Step0",
+      "MovementAction_WalkInPlace_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "WalkInPlaceFasterRight": [
+      "MovementAction_WalkInPlaceFasterRight_Step0",
+      "MovementAction_WalkInPlace_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "RideWaterCurrentDown": [
+      "MovementAction_RideWaterCurrentDown_Step0",
+      "MovementAction_RideWaterCurrentDown_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "RideWaterCurrentUp": [
+      "MovementAction_RideWaterCurrentUp_Step0",
+      "MovementAction_RideWaterCurrentUp_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "RideWaterCurrentLeft": [
+      "MovementAction_RideWaterCurrentLeft_Step0",
+      "MovementAction_RideWaterCurrentLeft_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "RideWaterCurrentRight": [
+      "MovementAction_RideWaterCurrentRight_Step0",
+      "MovementAction_RideWaterCurrentRight_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "WalkFasterDown": [
+      "MovementAction_WalkFasterDown_Step0",
+      "MovementAction_WalkFasterDown_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "WalkFasterUp": [
+      "MovementAction_WalkFasterUp_Step0",
+      "MovementAction_WalkFasterUp_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "WalkFasterLeft": [
+      "MovementAction_WalkFasterLeft_Step0",
+      "MovementAction_WalkFasterLeft_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "WalkFasterRight": [
+      "MovementAction_WalkFasterRight_Step0",
+      "MovementAction_WalkFasterRight_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "SlideDown": [
+      "MovementAction_SlideDown_Step0",
+      "MovementAction_SlideDown_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "SlideUp": [
+      "MovementAction_SlideUp_Step0",
+      "MovementAction_SlideUp_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "SlideLeft": [
+      "MovementAction_SlideLeft_Step0",
+      "MovementAction_SlideLeft_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "SlideRight": [
+      "MovementAction_SlideRight_Step0",
+      "MovementAction_SlideRight_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "PlayerRunDown": [
+      "MovementAction_PlayerRunDown_Step0",
+      "MovementAction_PlayerRunDown_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "PlayerRunUp": [
+      "MovementAction_PlayerRunUp_Step0",
+      "MovementAction_PlayerRunUp_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "PlayerRunLeft": [
+      "MovementAction_PlayerRunLeft_Step0",
+      "MovementAction_PlayerRunLeft_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "PlayerRunRight": [
+      "MovementAction_PlayerRunRight_Step0",
+      "MovementAction_PlayerRunRight_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "StartAnimInDirection": [
+      "MovementAction_StartAnimInDirection_Step0",
+      "MovementAction_WaitSpriteAnim",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "JumpSpecialDown": [
+      "MovementAction_JumpSpecialDown_Step0",
+      "MovementAction_JumpSpecialDown_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "JumpSpecialUp": [
+      "MovementAction_JumpSpecialUp_Step0",
+      "MovementAction_JumpSpecialUp_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "JumpSpecialLeft": [
+      "MovementAction_JumpSpecialLeft_Step0",
+      "MovementAction_JumpSpecialLeft_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "JumpSpecialRight": [
+      "MovementAction_JumpSpecialRight_Step0",
+      "MovementAction_JumpSpecialRight_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "FacePlayer": [
+      "MovementAction_FacePlayer_Step0",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "FaceAwayPlayer": [
+      "MovementAction_FaceAwayPlayer_Step0",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "LockFacingDirection": [
+      "MovementAction_LockFacingDirection_Step0",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "UnlockFacingDirection": [
+      "MovementAction_UnlockFacingDirection_Step0",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "JumpDown": [
+      "MovementAction_JumpDown_Step0",
+      "MovementAction_JumpDown_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "JumpUp": [
+      "MovementAction_JumpUp_Step0",
+      "MovementAction_JumpUp_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "JumpLeft": [
+      "MovementAction_JumpLeft_Step0",
+      "MovementAction_JumpLeft_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "JumpRight": [
+      "MovementAction_JumpRight_Step0",
+      "MovementAction_JumpRight_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "JumpInPlaceDown": [
+      "MovementAction_JumpInPlaceDown_Step0",
+      "MovementAction_JumpInPlaceDown_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "JumpInPlaceUp": [
+      "MovementAction_JumpInPlaceUp_Step0",
+      "MovementAction_JumpInPlaceUp_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "JumpInPlaceLeft": [
+      "MovementAction_JumpInPlaceLeft_Step0",
+      "MovementAction_JumpInPlaceLeft_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "JumpInPlaceRight": [
+      "MovementAction_JumpInPlaceRight_Step0",
+      "MovementAction_JumpInPlaceRight_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "JumpInPlaceDownUp": [
+      "MovementAction_JumpInPlaceDownUp_Step0",
+      "MovementAction_JumpInPlaceDownUp_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "JumpInPlaceUpDown": [
+      "MovementAction_JumpInPlaceUpDown_Step0",
+      "MovementAction_JumpInPlaceUpDown_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "JumpInPlaceLeftRight": [
+      "MovementAction_JumpInPlaceLeftRight_Step0",
+      "MovementAction_JumpInPlaceLeftRight_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "JumpInPlaceRightLeft": [
+      "MovementAction_JumpInPlaceRightLeft_Step0",
+      "MovementAction_JumpInPlaceRightLeft_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "FaceOriginalDirection": [
+      "MovementAction_FaceOriginalDirection_Step0",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "NurseJoyBowDown": [
+      "MovementAction_NurseJoyBowDown_Step0",
+      "MovementAction_WaitSpriteAnim",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "EnableJumpLandingGroundEffect": [
+      "MovementAction_EnableJumpLandingGroundEffect_Step0",
+      "MovementAction_Finish"
+    ],
+    "DisableJumpLandingGroundEffect": [
+      "MovementAction_DisableJumpLandingGroundEffect_Step0",
+      "MovementAction_Finish"
+    ],
+    "DisableAnimation": [
+      "MovementAction_DisableAnimation_Step0",
+      "MovementAction_Finish"
+    ],
+    "RestoreAnimation": [
+      "MovementAction_RestoreAnimation_Step0",
+      "MovementAction_Finish"
+    ],
+    "SetInvisible": [
+      "MovementAction_SetInvisible_Step0",
+      "MovementAction_Finish"
+    ],
+    "SetVisible": [
+      "MovementAction_SetVisible_Step0",
+      "MovementAction_Finish"
+    ],
+    "EmoteExclamationMark": [
+      "MovementAction_EmoteExclamationMark_Step0",
+      "MovementAction_Finish"
+    ],
+    "EmoteQuestionMark": [
+      "MovementAction_EmoteQuestionMark_Step0",
+      "MovementAction_Finish"
+    ],
+    "EmoteHeart": [
+      "MovementAction_EmoteHeart_Step0",
+      "MovementAction_Finish"
+    ],
+    "RevealTrainer": [
+      "MovementAction_RevealTrainer_Step0",
+      "MovementAction_RevealTrainer_Step1",
+      "MovementAction_Finish"
+    ],
+    "RockSmashBreak": [
+      "MovementAction_RockSmashBreak_Step0",
+      "MovementAction_RockSmashBreak_Step1",
+      "MovementAction_RockSmashBreak_Step2",
+      "MovementAction_Finish"
+    ],
+    "CutTree": [
+      "MovementAction_CutTree_Step0",
+      "MovementAction_CutTree_Step1",
+      "MovementAction_CutTree_Step2",
+      "MovementAction_Finish"
+    ],
+    "SetFixedPriority": [
+      "MovementAction_SetFixedPriority_Step0",
+      "MovementAction_Finish"
+    ],
+    "ClearFixedPriority": [
+      "MovementAction_ClearFixedPriority_Step0",
+      "MovementAction_Finish"
+    ],
+    "InitAffineAnim": [
+      "MovementAction_InitAffineAnim_Step0",
+      "MovementAction_Finish"
+    ],
+    "ClearAffineAnim": [
+      "MovementAction_ClearAffineAnim_Step0",
+      "MovementAction_Finish"
+    ],
+    "HideReflection": [
+      "MovementAction_HideReflection_Step0",
+      "MovementAction_Finish"
+    ],
+    "ShowReflection": [
+      "MovementAction_ShowReflection_Step0",
+      "MovementAction_Finish"
+    ],
+    "WalkDownStartAffine": [
+      "MovementAction_WalkDownStartAffine_Step0",
+      "MovementAction_WalkDownStartAffine_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "WalkDownAffine": [
+      "MovementAction_WalkDownAffine_Step0",
+      "MovementAction_WalkDownAffine_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "WalkLeftAffine": [
+      "MovementAction_WalkLeftAffine_Step0",
+      "MovementAction_WalkLeftAffine_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "WalkRightAffine": [
+      "MovementAction_WalkRightAffine_Step0",
+      "MovementAction_WalkRightAffine_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "AcroWheelieFaceDown": [
+      "MovementAction_AcroWheelieFaceDown_Step0",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "AcroWheelieFaceUp": [
+      "MovementAction_AcroWheelieFaceUp_Step0",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "AcroWheelieFaceLeft": [
+      "MovementAction_AcroWheelieFaceLeft_Step0",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "AcroWheelieFaceRight": [
+      "MovementAction_AcroWheelieFaceRight_Step0",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "AcroPopWheelieDown": [
+      "MovementAction_AcroPopWheelieDown_Step0",
+      "MovementAction_WaitSpriteAnim",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "AcroPopWheelieUp": [
+      "MovementAction_AcroPopWheelieUp_Step0",
+      "MovementAction_WaitSpriteAnim",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "AcroPopWheelieLeft": [
+      "MovementAction_AcroPopWheelieLeft_Step0",
+      "MovementAction_WaitSpriteAnim",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "AcroPopWheelieRight": [
+      "MovementAction_AcroPopWheelieRight_Step0",
+      "MovementAction_WaitSpriteAnim",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "AcroEndWheelieFaceDown": [
+      "MovementAction_AcroEndWheelieFaceDown_Step0",
+      "MovementAction_WaitSpriteAnim",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "AcroEndWheelieFaceUp": [
+      "MovementAction_AcroEndWheelieFaceUp_Step0",
+      "MovementAction_WaitSpriteAnim",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "AcroEndWheelieFaceLeft": [
+      "MovementAction_AcroEndWheelieFaceLeft_Step0",
+      "MovementAction_WaitSpriteAnim",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "AcroEndWheelieFaceRight": [
+      "MovementAction_AcroEndWheelieFaceRight_Step0",
+      "MovementAction_WaitSpriteAnim",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "AcroUnusedAcroActionDown": [
+      "MovementAction_UnusedAcroActionDown_Step0",
+      "MovementAction_WaitSpriteAnim",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "AcroUnusedAcroActionUp": [
+      "MovementAction_UnusedAcroActionUp_Step0",
+      "MovementAction_WaitSpriteAnim",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "AcroUnusedAcroActionLeft": [
+      "MovementAction_UnusedAcroActionLeft_Step0",
+      "MovementAction_WaitSpriteAnim",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "AcroUnusedAcroActionRight": [
+      "MovementAction_UnusedAcroActionRight_Step0",
+      "MovementAction_WaitSpriteAnim",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "Figure8": [
+      "MovementAction_Figure8_Step0",
+      "MovementAction_Figure8_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "AcroWheelieHopFaceDown": [
+      "MovementAction_AcroWheelieHopFaceDown_Step0",
+      "MovementAction_AcroWheelieHopFaceDown_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "AcroWheelieHopFaceUp": [
+      "MovementAction_AcroWheelieHopFaceUp_Step0",
+      "MovementAction_AcroWheelieHopFaceUp_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "AcroWheelieHopFaceLeft": [
+      "MovementAction_AcroWheelieHopFaceLeft_Step0",
+      "MovementAction_AcroWheelieHopFaceLeft_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "AcroWheelieHopFaceRight": [
+      "MovementAction_AcroWheelieHopFaceRight_Step0",
+      "MovementAction_AcroWheelieHopFaceRight_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "AcroWheelieHopDown": [
+      "MovementAction_AcroWheelieHopDown_Step0",
+      "MovementAction_AcroWheelieHopDown_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "AcroWheelieHopUp": [
+      "MovementAction_AcroWheelieHopUp_Step0",
+      "MovementAction_AcroWheelieHopUp_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "AcroWheelieHopLeft": [
+      "MovementAction_AcroWheelieHopLeft_Step0",
+      "MovementAction_AcroWheelieHopLeft_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "AcroWheelieHopRight": [
+      "MovementAction_AcroWheelieHopRight_Step0",
+      "MovementAction_AcroWheelieHopRight_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "AcroWheelieJumpDown": [
+      "MovementAction_AcroWheelieJumpDown_Step0",
+      "MovementAction_AcroWheelieJumpDown_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "AcroWheelieJumpUp": [
+      "MovementAction_AcroWheelieJumpUp_Step0",
+      "MovementAction_AcroWheelieJumpUp_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "AcroWheelieJumpLeft": [
+      "MovementAction_AcroWheelieJumpLeft_Step0",
+      "MovementAction_AcroWheelieJumpLeft_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "AcroWheelieJumpRight": [
+      "MovementAction_AcroWheelieJumpRight_Step0",
+      "MovementAction_AcroWheelieJumpRight_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "AcroWheelieInPlaceDown": [
+      "MovementAction_AcroWheelieInPlaceDown_Step0",
+      "MovementAction_WalkInPlace_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "AcroWheelieInPlaceUp": [
+      "MovementAction_AcroWheelieInPlaceUp_Step0",
+      "MovementAction_WalkInPlace_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "AcroWheelieInPlaceLeft": [
+      "MovementAction_AcroWheelieInPlaceLeft_Step0",
+      "MovementAction_WalkInPlace_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "AcroWheelieInPlaceRight": [
+      "MovementAction_AcroWheelieInPlaceRight_Step0",
+      "MovementAction_WalkInPlace_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "AcroPopWheelieMoveDown": [
+      "MovementAction_AcroPopWheelieMoveDown_Step0",
+      "MovementAction_AcroPopWheelieMoveDown_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "AcroPopWheelieMoveUp": [
+      "MovementAction_AcroPopWheelieMoveUp_Step0",
+      "MovementAction_AcroPopWheelieMoveUp_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "AcroPopWheelieMoveLeft": [
+      "MovementAction_AcroPopWheelieMoveLeft_Step0",
+      "MovementAction_AcroPopWheelieMoveLeft_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "AcroPopWheelieMoveRight": [
+      "MovementAction_AcroPopWheelieMoveRight_Step0",
+      "MovementAction_AcroPopWheelieMoveRight_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "AcroWheelieMoveDown": [
+      "MovementAction_AcroWheelieMoveDown_Step0",
+      "MovementAction_AcroWheelieMoveDown_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "AcroWheelieMoveUp": [
+      "MovementAction_AcroWheelieMoveUp_Step0",
+      "MovementAction_AcroWheelieMoveUp_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "AcroWheelieMoveLeft": [
+      "MovementAction_AcroWheelieMoveLeft_Step0",
+      "MovementAction_AcroWheelieMoveLeft_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "AcroWheelieMoveRight": [
+      "MovementAction_AcroWheelieMoveRight_Step0",
+      "MovementAction_AcroWheelieMoveRight_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "AcroEndWheelieMoveDown": [
+      "MovementAction_AcroEndWheelieMoveDown_Step0",
+      "MovementAction_AcroEndWheelieMoveDown_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "AcroEndWheelieMoveUp": [
+      "MovementAction_AcroEndWheelieMoveUp_Step0",
+      "MovementAction_AcroEndWheelieMoveUp_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "AcroEndWheelieMoveLeft": [
+      "MovementAction_AcroEndWheelieMoveLeft_Step0",
+      "MovementAction_AcroEndWheelieMoveLeft_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "AcroEndWheelieMoveRight": [
+      "MovementAction_AcroEndWheelieMoveRight_Step0",
+      "MovementAction_AcroEndWheelieMoveRight_Step1",
+      "MovementAction_PauseSpriteAnim"
+    ],
+    "Levitate": [
+      "MovementAction_Levitate_Step0",
+      "MovementAction_Finish"
+    ],
+    "StopLevitate": [
+      "MovementAction_StopLevitate_Step0",
+      "MovementAction_Finish"
+    ],
+    "StopLevitateAtTop": [
+      "MovementAction_StopLevitateAtTop_Step0",
+      "MovementAction_Finish"
+    ]
+  }
+}
