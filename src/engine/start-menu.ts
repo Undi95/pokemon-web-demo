@@ -59,6 +59,11 @@ import * as Songs from './decomp-data/auto/include/constants/songs-data';
 import { gameState } from './game-state';
 import { bagContents } from './bag';
 import { HideMapNamePopUpWindow } from './map-name-popup';
+import { GetStringRightAlignXOffset } from './gba-text-system';
+import { gMapHeader } from './map-loader';
+import { getMapNameFr } from '../data/map-names-fr';
+import { gSaveBlock2Ptr } from './gba-menu-system';
+import { FlagGet } from './script-vars';
 
 // ─── Types + state ───────────────────────────────────────────────────────────
 
@@ -223,9 +228,118 @@ function playerCardAction(): boolean {
   );
 }
 
-/** SAUVER action : confirm dialog + Yes/No + save + success message. */
+/** 1:1 décomp start_menu.c:1332-1393 ShowSaveInfoWindow.
+ *
+ *  Window template 1:1 décomp start_menu.c:226-234 sSaveInfoWindowTemplate :
+ *    bg=0, tilemapLeft=1, tilemapTop=1, width=14, height=10, paletteNum=15, baseBlock=8.
+ *    height -= 2 si FLAG_SYS_POKEDEX_GET pas set.
+ *
+ *  Layout :
+ *    - Region name (= "BOURG-EN-VOL") at y=1 — TEXT_COLOR_GREEN
+ *    - JOUEUR + name (right-aligned x=0x70) at y=17 — color RED si Female, BLUE si Male
+ *    - BADGES + count (right-aligned x=0x70) at y=33 — color RED/BLUE
+ *    - POKéDEX + count (right-aligned x=0x70) at y=49 — only si FLAG_SYS_POKEDEX_GET
+ *    - DUREE JEU + HH:MM (right-aligned x=0x70) at y=49/65 — color RED/BLUE
+ *
+ *  TEXT_DYNAMIC_COLOR enum (= 1:1 décomp characters.h) :
+ *    TEXT_COLOR_GREEN = 6, TEXT_COLOR_BLUE = 8, TEXT_COLOR_RED = 4. */
+let sSaveInfoWindowId = -1;
+
+function _showSaveInfoWindow(): void {
+  const hasDex = FlagGet('FLAG_SYS_POKEDEX_GET');
+  // 1:1 décomp : height -= 2 si pas de dex.
+  const height = hasDex ? 10 : 8;
+  const tmpl: WindowTemplate = {
+    bg: 0, tilemapLeft: 1, tilemapTop: 1, width: 14, height,
+    paletteNum: 15, baseBlock: 8,
+  };
+  sSaveInfoWindowId = AddWindow(tmpl);
+  // 1:1 décomp DrawStdWindowFrame avec STD_WINDOW_BASE_TILE_NUM=0x214, palette=14.
+  LoadUserWindowBorderGfx(0, STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM * 16);
+  DrawStdFrameWithCustomTileAndPalette(sSaveInfoWindowId, true, STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM);
+
+  const sb2 = gSaveBlock2Ptr as Record<string, unknown>;
+  const playerName = String(sb2.playerName ?? 'PLAYER');
+  const isFemale = (sb2.playerGender ?? 0) === 1;
+  // 1:1 décomp : RED si Female, BLUE si Male.
+  const TEXT_COLOR_RED = 4;
+  const TEXT_COLOR_BLUE = 8;
+  const TEXT_COLOR_GREEN = 6;
+  const colorPlayer = isFemale ? TEXT_COLOR_RED : TEXT_COLOR_BLUE;
+  // colorArray = [bgColor, fgColor, shadowColor]. fgColor = colorPlayer (= dynamique).
+  const colorMain: readonly number[] = [1, colorPlayer, 3];
+  const colorRegion: readonly number[] = [1, TEXT_COLOR_GREEN, 3];
+
+  const FONT_NORMAL = 1;
+  const TEXT_SKIP_DRAW = 255;
+
+  // Region name — y=1.
+  const regionName = getMapNameFr(gMapHeader?.regionMapSectionId);
+  AddTextPrinterParameterized3(sSaveInfoWindowId, FONT_NORMAL, 0, 1, colorRegion, TEXT_SKIP_DRAW, regionName);
+
+  // JOUEUR + name — y=17.
+  let yOffset = 17;
+  AddTextPrinterParameterized3(sSaveInfoWindowId, FONT_NORMAL, 0, yOffset, colorMain, TEXT_SKIP_DRAW, 'JOUEUR');
+  AddTextPrinterParameterized3(
+    sSaveInfoWindowId, FONT_NORMAL,
+    GetStringRightAlignXOffset(playerName, 0x70), yOffset,
+    colorMain, TEXT_SKIP_DRAW, playerName,
+  );
+
+  // BADGES + count — y=33.
+  yOffset += 16;
+  AddTextPrinterParameterized3(sSaveInfoWindowId, FONT_NORMAL, 0, yOffset, colorMain, TEXT_SKIP_DRAW, 'BADGES');
+  let badgeCount = 0;
+  for (const fname of ['FLAG_BADGE01_GET','FLAG_BADGE02_GET','FLAG_BADGE03_GET','FLAG_BADGE04_GET',
+                        'FLAG_BADGE05_GET','FLAG_BADGE06_GET','FLAG_BADGE07_GET','FLAG_BADGE08_GET']) {
+    if (FlagGet(fname)) badgeCount++;
+  }
+  const badgeStr = String(badgeCount);
+  AddTextPrinterParameterized3(
+    sSaveInfoWindowId, FONT_NORMAL,
+    GetStringRightAlignXOffset(badgeStr, 0x70), yOffset,
+    colorMain, TEXT_SKIP_DRAW, badgeStr,
+  );
+
+  // POKéDEX + count — y=49 (only if FLAG_SYS_POKEDEX_GET).
+  if (hasDex) {
+    yOffset += 16;
+    AddTextPrinterParameterized3(sSaveInfoWindowId, FONT_NORMAL, 0, yOffset, colorMain, TEXT_SKIP_DRAW, 'POKéDEX');
+    // TODO Phase 4+ : implement real dex count via dex flags. Pour l'instant : 0.
+    const dexStr = '0';
+    AddTextPrinterParameterized3(
+      sSaveInfoWindowId, FONT_NORMAL,
+      GetStringRightAlignXOffset(dexStr, 0x70), yOffset,
+      colorMain, TEXT_SKIP_DRAW, dexStr,
+    );
+  }
+
+  // DUREE JEU + HH:MM — y=49 (no dex) ou 65 (with dex).
+  yOffset += 16;
+  AddTextPrinterParameterized3(sSaveInfoWindowId, FONT_NORMAL, 0, yOffset, colorMain, TEXT_SKIP_DRAW, 'DUREE JEU');
+  const hours = Number(sb2.playTimeHours ?? 0);
+  const minutes = Number(sb2.playTimeMinutes ?? 0);
+  const timeStr = `${hours}:${String(minutes).padStart(2, '0')}`;
+  AddTextPrinterParameterized3(
+    sSaveInfoWindowId, FONT_NORMAL,
+    GetStringRightAlignXOffset(timeStr, 0x70), yOffset,
+    colorMain, TEXT_SKIP_DRAW, timeStr,
+  );
+}
+
+function _removeSaveInfoWindow(): void {
+  if (sSaveInfoWindowId < 0) return;
+  ClearStdWindowAndFrame(sSaveInfoWindowId, true);
+  RemoveWindow(sSaveInfoWindowId);
+  sSaveInfoWindowId = -1;
+}
+
+/** SAUVER action : 1:1 décomp start_menu.c:982 — ShowSaveInfoWindow + dialog
+ *  "Voulez-vous sauvegarder la partie?" + Yes/No menu. */
 function saveAction(): boolean {
-  ShowFieldMessage('Voulez-vous sauvegarder?$');
+  _showSaveInfoWindow();
+  // 1:1 décomp gText_BattleTowerLinkSavePrompt = "Voulez-vous sauvegarder la partie?"
+  ShowFieldMessage('Voulez-vous sauvegarder la partie?$');
   sSubState = 'save_confirm';
   return false;
 }
@@ -319,6 +433,8 @@ export function CloseStartMenu(): void {
     ClearStdWindowAndFrame(ynId, true);
     RemoveWindow(ynId);
   }
+  // Cleanup SaveInfoWindow si encore ouverte (= safety net).
+  _removeSaveInfoWindow();
   // Cleanup any open dialog.
   if (!IsFieldMessageBoxHidden()) HideFieldMessageBox();
   UnlockPlayerFieldControls();
@@ -460,7 +576,8 @@ function _tickSaveYesNo(): void {
     ShowFieldMessage(`${gameState.playerName} a sauvegardé\nla partie!$`);
     sSubState = 'save_done';
   } else {
-    // NON ou B → cancel, retour menu.
+    // NON ou B → cancel, retour menu. 1:1 décomp HideSaveInfoWindow.
+    _removeSaveInfoWindow();
     HideFieldMessageBox();
     sSubState = 'menu';
     _redrawMenu();
@@ -471,6 +588,8 @@ function _tickSaveDone(newKeys: number): void {
   const dialogDone = GetFieldMessageBoxMode() === FIELD_MESSAGE_BOX_HIDDEN;
   if (!dialogDone) return;
   if (newKeys & (A_BUTTON | B_BUTTON)) {
+    // 1:1 décomp HideSaveInfoWindow + close menu.
+    _removeSaveInfoWindow();
     HideFieldMessageBox();
     // 1:1 décomp : after save success, close start menu (= retour gameplay).
     CloseStartMenu();

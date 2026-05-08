@@ -406,7 +406,13 @@ export class GameScene extends Phaser.Scene {
 
   /** Sync Birch state (playerName, gender) vers gameState + start TestOverworldScene.
    *  - mode 'newgame' : Clear gameState.map → truck cinematic spawn.
-   *  - mode 'continue' : Keep saved gameState.map → spawn at saved location. */
+   *  - mode 'continue' : Keep saved gameState.map → spawn at saved location.
+   *
+   *  1:1 décomp : main_menu.c:Task_NewGameBirchSpeech_Cleanup attend que la
+   *  fade Birch soit terminée (`!gPaletteFade.active`) avant de switch CB2.
+   *  Notre TS doit pareil sinon le scene.start coupe la fade Birch en cours.
+   *  Bug fix session 122 : avant on faisait scene.start synchronement → la
+   *  fade Birch était brutalement remplacée par TestOverworldScene visible. */
   private async transitionToOverworld(mode: 'newgame' | 'continue'): Promise<void> {
     this.overworldTransitionStarted = true;
     console.log(`[GameScene] CB2_${mode === 'continue' ? 'ContinueSavedGame' : 'NewGame'} detected → TestOverworldScene (${mode})`);
@@ -422,6 +428,21 @@ export class GameScene extends Phaser.Scene {
     // 'continue' : gameState.map est déjà set (= chargé par LoadGameSave au app boot).
     gameState.save();
     console.log(`[GameScene] synced : name='${gameState.playerName}' gender='${gameState.gender}' map=${JSON.stringify(gameState.map)}`);
+
+    // 1:1 décomp Cleanup : attend la fin de la fade Birch (= screen passe BG
+    // black + OBJ white → tout black puis silence). Démarre une fade out vers
+    // black explicite si pas encore active, puis poll until !active.
+    // Sans ça → la transition Birch est coupée brutalement → effet "snap".
+    if (!this.rt.gPaletteFade.active) {
+      this.rt.BeginNormalPaletteFade('PALETTES_ALL', 0, 0, 16, 'RGB_BLACK');
+    }
+    // Wait fade complete (= ~16 frames @ deltaY=2 = 32 frames real). Cap à 60 frames safety.
+    let waitFrames = 0;
+    while (this.rt.gPaletteFade.active && waitFrames < 60) {
+      await new Promise<void>((resolve) => setTimeout(resolve, 16));  // ~1 frame at 60fps
+      waitFrames++;
+    }
+    console.log(`[GameScene] fade complete after ${waitFrames} frames → starting TestOverworldScene`);
     this.scene.start('TestOverworldScene');
   }
 

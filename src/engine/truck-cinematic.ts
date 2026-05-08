@@ -66,12 +66,15 @@ export function ExecuteTruckSequence(rt: DecompRuntime): void {
   if (gMapHeader) DrawWholeMapView(gPlayerAvatar.x, gPlayerAvatar.y, gMapHeader.mapLayout);
   // 1:1 décomp : Lock player input pendant toute la cinematic.
   LockPlayerFieldControls();
-  // 1:1 décomp : `CpuFastFill(0, gPlttBufferFaded, PLTT_SIZE)` (= screen black).
-  // Skip pour démo : on garde le screen visible — coût visuel mineur (= pas de
-  // fade in surprise mais le wobble + sons restent fidèles).
+  // 1:1 décomp `field_special_scene.c:267 CpuFastFill(0, gPlttBufferFaded, PLTT_SIZE)` :
+  // fill all faded palette colors to 0 (= screen instantly black). Notre équivalent :
+  // BeginNormalPaletteFade target startY=16 endY=16 (= stays at fully faded black).
+  // Le state 1 de Task_HandleTruckSequence fait FadeInFromBlack ~150 frames après
+  // SE_TRUCK_MOVE → matches le pattern décomp.
+  rt.BeginNormalPaletteFade('PALETTES_ALL', 0, 16, 16, 'RGB_BLACK');
   // Capture rt par closure (= 1:1 pattern auto-callbacks `(t) => Task_X(t, rt)`).
   rt.CreateTask((task: DecompTask) => Task_HandleTruckSequence(task, rt), 0xA);
-  console.log('[truck-cinematic] ExecuteTruckSequence : controls locked + task started');
+  console.log('[truck-cinematic] ExecuteTruckSequence : black palette fill + task started');
 }
 
 /** 1:1 décomp `Task_HandleTruckSequence` (field_special_scene.c:189-258).
@@ -92,6 +95,11 @@ const Task_HandleTruckSequence = function (task: DecompTask, rt: DecompRuntime):
     case 1:
       // Truck est en mouvement : wobble vertical 1px sin(t).
       // Durée : 150 frames (= 1:1 décomp).
+      // 1:1 décomp Task_HandleTruckSequence:210 FadeInFromBlack au tick 1 du state 1.
+      if (data[1] === 0) {
+        // BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK) = fade in.
+        rt.BeginNormalPaletteFade('PALETTES_ALL', 0, 16, 0, 'RGB_BLACK');
+      }
       data[1]++;
       {
         const t = data[1];

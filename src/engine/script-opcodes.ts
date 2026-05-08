@@ -112,10 +112,20 @@ registerOpcode('call', (ctx, args) => {
 
 // ─── Conditional branches ────────────────────────────────────────────────────
 
-/** `goto_if_eq A, B, label` — A et B peuvent être var noms ou immediates. */
+/** `goto_if_eq A, B, label` — A et B peuvent être var noms, immediates, OU
+ *  constantes nommées (MALE/FEMALE/LOCALID_X/etc.).
+ *
+ *  1:1 décomp event_data.c:VarGet : retourne le var value si id < SPECIAL_VARS,
+ *  sinon retourne id (= immediate constants are passed-through). Notre VarGet
+ *  TS ne gérait que VAR_* + nombres → 'MALE'/'FEMALE' returned 0 → bug critique
+ *  où `goto_if_eq VAR_RESULT, FEMALE` ne branchait jamais (= la cause racine
+ *  du "j'arrive toujours côté Brendan" si user pick May).
+ *
+ *  Fix : utiliser parseValue qui résout MALE/FEMALE/LOCALID_X/VAR_*-noms/numbers.
+ *  Pattern shared avec call_if_X. */
 registerOpcode('goto_if_eq', (ctx, args) => {
-  const a = VarGet(args[0]);
-  const b = VarGet(args[1]);
+  const a = parseValue(args[0]);
+  const b = parseValue(args[1]);
   if (a === b) {
     const label = args[2];
     const target = getScript(label);
@@ -125,8 +135,8 @@ registerOpcode('goto_if_eq', (ctx, args) => {
 });
 
 registerOpcode('goto_if_ne', (ctx, args) => {
-  const a = VarGet(args[0]);
-  const b = VarGet(args[1]);
+  const a = parseValue(args[0]);
+  const b = parseValue(args[1]);
   if (a !== b) {
     const label = args[2];
     const target = getScript(label);
@@ -136,7 +146,7 @@ registerOpcode('goto_if_ne', (ctx, args) => {
 });
 
 registerOpcode('goto_if_lt', (ctx, args) => {
-  if (VarGet(args[0]) < VarGet(args[1])) {
+  if (parseValue(args[0]) < parseValue(args[1])) {
     const target = getScript(args[2]);
     if (target) ScriptJump(ctx, target);
   }
@@ -144,7 +154,7 @@ registerOpcode('goto_if_lt', (ctx, args) => {
 });
 
 registerOpcode('goto_if_gt', (ctx, args) => {
-  if (VarGet(args[0]) > VarGet(args[1])) {
+  if (parseValue(args[0]) > parseValue(args[1])) {
     const target = getScript(args[2]);
     if (target) ScriptJump(ctx, target);
   }
@@ -172,7 +182,7 @@ registerOpcode('goto_if_unset', (ctx, args) => {
 });
 
 registerOpcode('call_if_eq', (ctx, args) => {
-  if (VarGet(args[0]) === VarGet(args[1])) {
+  if (parseValue(args[0]) === parseValue(args[1])) {
     const target = getScript(args[2]);
     if (target) ScriptCall(ctx, target);
   }
@@ -180,7 +190,7 @@ registerOpcode('call_if_eq', (ctx, args) => {
 });
 
 registerOpcode('call_if_ne', (ctx, args) => {
-  if (VarGet(args[0]) !== VarGet(args[1])) {
+  if (parseValue(args[0]) !== parseValue(args[1])) {
     const target = getScript(args[2]);
     if (target) ScriptCall(ctx, target);
   }
@@ -208,7 +218,7 @@ registerOpcode('call_if_unset', (ctx, args) => {
 // `call_if_lt VAR_LITTLEROOT_INTRO_STATE, 6, ...` (BrendansHouse_1F_OnLoad).
 
 registerOpcode('goto_if_le', (ctx, args) => {
-  if (VarGet(args[0]) <= VarGet(args[1])) {
+  if (parseValue(args[0]) <= parseValue(args[1])) {
     const target = getScript(args[2]);
     if (target) ScriptJump(ctx, target);
   }
@@ -216,7 +226,7 @@ registerOpcode('goto_if_le', (ctx, args) => {
 });
 
 registerOpcode('goto_if_ge', (ctx, args) => {
-  if (VarGet(args[0]) >= VarGet(args[1])) {
+  if (parseValue(args[0]) >= parseValue(args[1])) {
     const target = getScript(args[2]);
     if (target) ScriptJump(ctx, target);
   }
@@ -224,7 +234,7 @@ registerOpcode('goto_if_ge', (ctx, args) => {
 });
 
 registerOpcode('call_if_lt', (ctx, args) => {
-  if (VarGet(args[0]) < VarGet(args[1])) {
+  if (parseValue(args[0]) < parseValue(args[1])) {
     const target = getScript(args[2]);
     if (target) ScriptCall(ctx, target);
   }
@@ -232,7 +242,7 @@ registerOpcode('call_if_lt', (ctx, args) => {
 });
 
 registerOpcode('call_if_gt', (ctx, args) => {
-  if (VarGet(args[0]) > VarGet(args[1])) {
+  if (parseValue(args[0]) > parseValue(args[1])) {
     const target = getScript(args[2]);
     if (target) ScriptCall(ctx, target);
   }
@@ -240,7 +250,7 @@ registerOpcode('call_if_gt', (ctx, args) => {
 });
 
 registerOpcode('call_if_le', (ctx, args) => {
-  if (VarGet(args[0]) <= VarGet(args[1])) {
+  if (parseValue(args[0]) <= parseValue(args[1])) {
     const target = getScript(args[2]);
     if (target) ScriptCall(ctx, target);
   }
@@ -248,7 +258,7 @@ registerOpcode('call_if_le', (ctx, args) => {
 });
 
 registerOpcode('call_if_ge', (ctx, args) => {
-  if (VarGet(args[0]) >= VarGet(args[1])) {
+  if (parseValue(args[0]) >= parseValue(args[1])) {
     const target = getScript(args[2]);
     if (target) ScriptCall(ctx, target);
   }
@@ -352,7 +362,8 @@ registerOpcode('switch', (_ctx, args) => {
 
 registerOpcode('case', (ctx, args) => {
   // compare VAR_0x8000, args[0] + goto_if_eq args[1]
-  const condition = VarGet(args[0]);
+  // 1:1 décomp : args[0] peut être MALE/FEMALE/numbers/VAR_X (= parseValue).
+  const condition = parseValue(args[0]);
   const scratch = VarGet('VAR_0x8000');
   if (scratch === condition) {
     const target = getScript(args[1]);
@@ -380,8 +391,10 @@ registerOpcode('checkflag', (ctx, args) => {
 });
 
 registerOpcode('compare', (ctx, args) => {
-  const a = VarGet(args[0]);
-  const b = VarGet(args[1]);
+  // 1:1 décomp : args peuvent être var noms, immediates, ou constantes
+  // (MALE/FEMALE/LOCALID_X). parseValue les résout tous (= comme dans goto_if_*).
+  const a = parseValue(args[0]);
+  const b = parseValue(args[1]);
   ctx.comparisonResult = Compare(a, b);
   return false;
 });
