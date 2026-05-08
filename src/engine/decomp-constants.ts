@@ -84,6 +84,25 @@ export function resolveDecompConstant(name: string): number | undefined {
   return _constantsTable[name];
 }
 
+/** Reverse lookup avec filtre prefix : value → name. Plusieurs namespaces ont
+ *  des collisions (= ITEM_NONE = MOVE_NONE = SPECIES_NONE = 0), donc le prefix
+ *  est obligatoire. Returns undefined si pas trouvé.
+ *
+ *  Use case principal : OBJ_EVENT_GFX_VAR_N résolution. Les rival NPCs ont
+ *  graphics_id="OBJ_EVENT_GFX_VAR_0". Au spawn, on lit VAR_OBJ_GFX_ID_0 (=
+ *  e.g. 105 = OBJ_EVENT_GFX_RIVAL_MAY_NORMAL) puis reverse lookup pour avoir
+ *  la string "OBJ_EVENT_GFX_RIVAL_MAY_NORMAL" qui indexe le catalog graphics.
+ *
+ *  ```ts
+ *  reverseDecompConstant(105, 'OBJ_EVENT_GFX_') // → 'OBJ_EVENT_GFX_RIVAL_MAY_NORMAL'
+ *  ``` */
+export function reverseDecompConstant(value: number, prefix: string): string | undefined {
+  for (const [name, v] of Object.entries(_constantsTable)) {
+    if (v === value && name.startsWith(prefix)) return name;
+  }
+  return undefined;
+}
+
 /** Total constants loaded — utile pour debug + sanity check. */
 export const _constantsCount = Object.keys(_constantsTable).length;
 

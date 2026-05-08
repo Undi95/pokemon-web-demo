@@ -537,24 +537,19 @@ export class TestOverworldScene extends Phaser.Scene {
     FieldUpdateBgTilemapScroll(this.rt);
     this.rt.gPlttBufferFaded.flushTo();
 
-    // Phase 4.4.a : spawn NPCs. Phase 4.6 : destroy old NPC sprites first.
+    // Phase 4.4.a : destroy old NPC sprites first (= 1:1 décomp ResetObjectEvents).
     destroyAllNpcSprites(this.rt);
     resetObjectEventAllocations();
     // Phase 4.10 : reset movement queues au map switch (= old map's queues
     // pourraient référencer des NPCs de l'ancienne map).
     resetMovementQueues();
-    await SpawnObjectEventsOnMap(this.rt);
-
-    // Sync NPC sprite OAM positions IMMÉDIATEMENT après spawn. Sans ça, les
-    // NPCs créés via CreateSpriteAtOam(x:0, y:0) restent en (0, 0) à l'écran
-    // jusqu'à ce que MainCB2_Overworld tick UpdateObjectEvents (= warpInProgress
-    // false en Phase 5). Le user voit donc tous les NPCs flash en haut-gauche
-    // pendant 1-2 frames avant fade in. Sync explicite ici fixe le flash.
-    UpdateObjectEvents(this.rt);
 
     // Phase 4.5 : preload font + scripts (fonts cached, scripts re-fetched).
     // Le scriptsBaseName est dérivé de header.mapScripts (= e.g.
     // 'LittlerootTown_BrendansHouse_1F_MapScripts' → strip `_MapScripts`).
+    // CRITICAL : doit run AVANT spawn NPCs car OnTransition update VAR_OBJ_GFX_ID_*
+    // qui sont read par spawn pour résoudre OBJ_EVENT_GFX_VAR_N (= rival NPC
+    // sprite genre opposé).
     const scriptsBaseName = header.mapScripts.replace(/_MapScripts$/, '');
     await Promise.all([
       preloadFontData(),
@@ -567,21 +562,31 @@ export class TestOverworldScene extends Phaser.Scene {
     ]);
     installDexDevtools();  // dev.dex.* accessible en console
 
-    // Phase 4.10 : run OnTransition map_script (= 1:1 décomp `RunOnTransitionMapScript`,
-    // appelé après spawn NPCs + scripts chargés). Place les NPCs selon plot
-    // state (= setobjectxyperm + setobjectmovementtype dans MoveMomToX scripts).
-    // Doit run APRÈS loadMapScripts pour avoir le _scriptsByLabel populé.
+    // 1:1 décomp `RunOnTransitionMapScript` (overworld.c:807,860). Appelé
+    // dans LoadMapFromWarp AVANT InitMap → AVANT TrySpawnObjectEvents. Set
+    // les vars (= VAR_OBJ_GFX_ID_*, FLAG_VISITED_*, VAR_LITTLEROOT_TOWN_STATE)
+    // qui sont READ par les spawn templates (= OBJ_EVENT_GFX_VAR_0 résout
+    // via VAR_OBJ_GFX_ID_0). REORDER session 123 : avant on faisait spawn
+    // PUIS OnTransition → rival NPC spawnait avec gfxId=0 (= invalid) →
+    // skipped silencieusement → rival jamais visible.
     RunOnTransitionMapScript();
 
+    // Phase 4.4.a : spawn NPCs après que vars soient set par OnTransition.
+    await SpawnObjectEventsOnMap(this.rt);
+
+    // Sync NPC sprite OAM positions IMMÉDIATEMENT après spawn. Sans ça, les
+    // NPCs créés via CreateSpriteAtOam(x:0, y:0) restent en (0, 0) à l'écran
+    // jusqu'à ce que MainCB2_Overworld tick UpdateObjectEvents (= warpInProgress
+    // false en Phase 5). Le user voit donc tous les NPCs flash en haut-gauche
+    // pendant 1-2 frames avant fade in. Sync explicite ici fixe le flash.
+    UpdateObjectEvents(this.rt);
+
     // 1:1 décomp `TryRunOnWarpIntoMapScript()` (= overworld.c:2160 dans
-    // `InitObjectEventsLocal` → après TrySpawnObjectEvents). Run le table
+    // `InitObjectEventsLocal` → APRÈS TrySpawnObjectEvents). Run le table
     // `MAP_SCRIPT_ON_WARP_INTO_MAP_TABLE` qui contient des entries `map_script_2
     // VAR, value, scriptLabel`. Used par e.g. LittlerootTown_OnWarp pour
     // positionner Rival/Birch lors du DexUpgrade event, ou
     // BrendansHouse_2F_OnWarp pour décorations chambre 2F (audit Littleroot A2).
-    // OnTransition → OnWarpInto ordering : OnTransition update les vars (e.g.
-    // VAR_LITTLEROOT_TOWN_STATE), OnWarpInto lit les vars pour position NPCs
-    // → must run dans cet ordre 1:1 décomp.
     TryRunOnWarpIntoMapScript();
 
     // Phase 4.7 : warp arrow sprite (= 1:1 décomp `CreateWarpArrowSprite`).

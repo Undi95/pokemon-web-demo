@@ -39,6 +39,9 @@ import {
 import { _registerGObjectEvents, _registerNpcHelpers, _registerUpdateObjectEventsForCameraUpdate } from './field-globals';
 import { FlagGet } from './script-vars';
 import { Random } from './random';
+// Pour OBJ_EVENT_GFX_VAR_N resolution au spawn (= rival NPC sprite genre opposé).
+import { reverseDecompConstant as _reverseDecompConstant } from './decomp-constants';
+import { gameState as _gameState } from './game-state';
 
 const BASE = '/decomp/em';
 
@@ -101,7 +104,11 @@ async function loadNpcPng(path: string): Promise<LoadedPng> {
 
 /** Pre-load PARALLEL toutes les PNGs des NPCs templates de mapHeader.
  *  Resolved quand tous les loads done (ou ont silencieusement failed).
- *  Idempotent : si déjà cached, no-op rapide. */
+ *  Idempotent : si déjà cached, no-op rapide.
+ *
+ *  Phase 3 session 123 : résout OBJ_EVENT_GFX_VAR_N → réelle gfx via
+ *  VAR_OBJ_GFX_ID_N (= rival NPC sprite genre opposé). Sans ça, le PNG du
+ *  rival n'était jamais préchargé → spawn returns false → rival invisible. */
 export async function preloadNpcGraphicsForMap(mapHeader: MapHeader): Promise<void> {
   const templates = mapHeader.events?.objectEvents ?? [];
   if (templates.length === 0) return;
@@ -109,7 +116,18 @@ export async function preloadNpcGraphicsForMap(mapHeader: MapHeader): Promise<vo
   const paths = new Set<string>();
   for (const template of templates) {
     if (!template.graphicsIdRaw) continue;
-    const graphics = catalog[template.graphicsIdRaw];
+    let key = template.graphicsIdRaw;
+    // Résolution OBJ_EVENT_GFX_VAR_N → vraie gfx (= 1:1 décomp logic).
+    const varMatch = key.match(/^OBJ_EVENT_GFX_VAR_(\d+)$/);
+    if (varMatch) {
+      const n = Number(varMatch[1]);
+      const gfxIdValue = _gameState.getVar(`VAR_OBJ_GFX_ID_${n}`);
+      if (gfxIdValue !== 0) {
+        const resolved = _reverseDecompConstant(gfxIdValue, 'OBJ_EVENT_GFX_');
+        if (resolved) key = resolved;
+      }
+    }
+    const graphics = catalog[key];
     if (!graphics) continue;
     // Phase 4.10 : allow 48×48 (= truck) en plus du standard 16×32.
     const is48x48 = graphics.frameWidth === 48 && graphics.frameHeight === 48;
@@ -853,7 +871,32 @@ function _spawnSingleNpcFromTemplate(
   catalog: Record<string, GraphicsInfo>,
 ): boolean {
   if (!template.graphicsIdRaw) return false;
-  const graphicsKey = template.graphicsIdRaw;
+  let graphicsKey = template.graphicsIdRaw;
+  // 1:1 décomp `event_object_movement.c:820` :
+  //   if (graphicsId >= OBJ_EVENT_GFX_VARS)
+  //     graphicsId = VarGetObjectEventGraphicsId(graphicsId - OBJ_EVENT_GFX_VARS);
+  // OBJ_EVENT_GFX_VAR_N (N=0..7) = placeholder graphics_id qui se résout à
+  // runtime via VAR_OBJ_GFX_ID_N. Used par les NPCs rival (= sprite genre
+  // opposé) + Wally + autres NPCs dynamiques.
+  const varMatch = graphicsKey.match(/^OBJ_EVENT_GFX_VAR_(\d+)$/);
+  if (varMatch) {
+    const n = Number(varMatch[1]);
+    const varName = `VAR_OBJ_GFX_ID_${n}`;
+    const gfxIdValue = _gameState.getVar(varName);
+    if (gfxIdValue !== 0) {
+      const resolved = _reverseDecompConstant(gfxIdValue, 'OBJ_EVENT_GFX_');
+      if (resolved) {
+        graphicsKey = resolved;
+      } else {
+        console.warn(`[object-events] OBJ_EVENT_GFX_VAR_${n} resolved to ${gfxIdValue} but no matching OBJ_EVENT_GFX_ const found, skip`);
+        return false;
+      }
+    } else {
+      // VAR_OBJ_GFX_ID_N = 0 (= pas encore set par script). Ne pas spawn —
+      // décomp ferait pareil (= sprite blank/invisible).
+      return false;
+    }
+  }
   const graphics = catalog[graphicsKey];
   if (!graphics) return false;
   // 1:1 décomp `TrySpawnObjectEvents` (event_object_movement.c:1670) :
