@@ -1260,7 +1260,12 @@ export function UpdateObjectEvents(rt: DecompRuntime): void {
       sprite.invisible = true;
       continue;
     }
-    sprite.invisible = false;
+    // 1:1 décomp : on respecte le `npc.invisible` flag set par script
+    // (= `set_invisible` movement action, `hideobject` opcode, etc.).
+    // Avant : `sprite.invisible = false` forcé chaque frame → écrasait
+    // set_invisible → user feedback session 123 "le sprite de la mère
+    // ne disparait pas sur la porte" pendant LittlerootTown_Movement_MomEnterHouse.
+    sprite.invisible = npc.invisible;
 
     // 1:1 décomp : sprite.x_NPC stays at spawn-time computed value + walk
     // increments via tick state machine. Per-frame coordOffsetEnabled adds
