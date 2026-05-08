@@ -92,6 +92,8 @@ const config: Phaser.Types.Core.GameConfig = {
     const params = new URLSearchParams(window.location.search);
     // ?nointro → preset Test/Male/sac+flag (cf. boot-mode.ts).
     const noIntro = params.has('nointro');
+    // ?truck → dev shortcut pour tester la cinematic intro (= reset save + truck).
+    const truckTest = params.has('truck');
     // Save existante (= em_save_v1 avec map field set) → skip title screen
     // et launch directement TestOverworldScene en mode resume. 1:1 user spec
     // session 117 : "Si boot normale : save fait, sexe choisi, nom OK. On lance."
@@ -103,7 +105,7 @@ const config: Phaser.Types.Core.GameConfig = {
         hasResumableSave = !!(parsed && parsed.playerName && parsed.map && parsed.map.name);
       }
     } catch { /* localStorage may be disabled — fallback to title */ }
-    const skipTitle = noIntro || hasResumableSave;
+    const skipTitle = noIntro || truckTest || hasResumableSave;
     return skipTitle
       ? [TestOverworldScene, TestGbaScene, GameScene, BirchRuntimeScene, OverworldScene]
       : [TestGbaScene, GameScene, BirchRuntimeScene, TestOverworldScene, OverworldScene];

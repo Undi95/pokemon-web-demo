@@ -67,6 +67,15 @@ export function hasNoIntroParam(): boolean {
   } catch { return false; }
 }
 
+/** Lit `?truck` depuis l'URL courante (= dev shortcut pour tester la cinematic). */
+export function hasTruckParam(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    const url = new URL(window.location.href);
+    return url.searchParams.has('truck');
+  } catch { return false; }
+}
+
 /**
  * Applique le preset `?nointro` :
  *   - Reset save complète.
@@ -105,8 +114,9 @@ function applyNoIntroPreset(): void {
  *
  * Ordre de priorité :
  *   1. `?nointro` URL param → preset + spawn Bourg-en-Vol devant maison Brendan.
- *   2. Save existante avec `map` field → resume saved position.
- *   3. Default → new game truck cinematic.
+ *   2. `?truck` URL param → dev shortcut : reset save + truck cinematic spawn.
+ *   3. Save existante avec `map` field → resume saved position.
+ *   4. Default → new game truck cinematic.
  */
 export function decideBootMode(): BootSpawn {
   if (hasNoIntroParam()) {
@@ -115,6 +125,16 @@ export function decideBootMode(): BootSpawn {
     // Bourg-en-Vol fait sortir le joueur à (5, 8) facing SOUTH ; on spawn à
     // (5, 9) pour être déjà sous le porche, libre de marcher).
     return { mapId: 'MAP_LITTLEROOT_TOWN', x: 5, y: 9, facing: DIR_SOUTH, mode: 'nointro' };
+  }
+
+  if (hasTruckParam()) {
+    // Dev shortcut : reset save + spawn truck pour tester la cinematic intro.
+    gameState.reset();
+    NewGameInit();
+    gameState.setDynamicWarp('MAP_LITTLEROOT_TOWN', 3, 10);
+    gameState.save();
+    console.log('[boot-mode] ?truck shortcut : save reset + truck spawn pour test cinematic');
+    return { mapId: 'MAP_INSIDE_OF_TRUCK', x: 1, y: 2, facing: DIR_EAST, mode: 'newgame' };
   }
 
   // Tentative de resume from save.

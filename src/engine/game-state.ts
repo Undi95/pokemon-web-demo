@@ -194,6 +194,11 @@ class GameState {
     catch { return false; }
   }
 
+  /** Exposé pour debug : retourne TOUS les flags actifs (= keys). */
+  getAllFlagNames(): string[] { return Object.keys(this.data.flags); }
+  /** Exposé pour debug : retourne TOUTES les vars (key → value). */
+  getAllVars(): Record<string, number> { return { ...this.data.vars }; }
+
   /** Heal HP + PP de tous les Pokémon (Centre Pokémon, special HealPlayerParty). */
   healAllParty() {
     for (const m of this.data.party) {
