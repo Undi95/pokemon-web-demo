@@ -108,6 +108,17 @@ import {
   UpdateTallGrassEffects,
   DestroyAllTallGrassEffects,
 } from '../engine/field-effect-grass';
+import {
+  preloadJumpDustEffect,
+  UpdateJumpDustEffects,
+  DestroyAllJumpDustEffects,
+} from '../engine/field-effect-jump-dust';
+import {
+  preloadShadowEffect,
+  CreateShadowSprite,
+  UpdateShadowSprite,
+  DestroyShadowSprite,
+} from '../engine/field-effect-shadow';
 import { PlaySE } from '../engine/decomp-globals';
 import {
   SE_EXIT,
@@ -332,6 +343,10 @@ export class TestOverworldScene extends Phaser.Scene {
         // UpdateTallGrassFieldEffect) : tick anim + position tracking + auto
         // destroy après cycle.
         UpdateTallGrassEffects(rt);
+        UpdateJumpDustEffects(rt);
+        // 1:1 décomp UpdateShadowFieldEffect : shadow copie player sprite x
+        // mais reste à y baseline (= no jump arc) → ground-locked effet 3D.
+        UpdateShadowSprite(rt, gPlayerAvatar.spriteId);
         // 1:1 décomp `ScheduleBgCopyTilemapToVram` pattern : flush VRAM
         // SEULEMENT quand BG buffer modifié (= copyBGToVRAM flag). Évite
         // 18432 entries × 2 bytes copy par frame quand rien ne bouge.
@@ -481,6 +496,13 @@ export class TestOverworldScene extends Phaser.Scene {
     // Phase 4.10 : preload tall grass effect assets + cleanup pool.
     DestroyAllTallGrassEffects(this.rt);
     await preloadTallGrassEffect(this.rt);
+    DestroyAllJumpDustEffects(this.rt);
+    await preloadJumpDustEffect(this.rt);
+    // 1:1 décomp `FldEff_Shadow` : shadow spawn DYNAMIQUEMENT pendant ledge
+    // jump (= InitJumpRegular → DoShadowFieldEffect, destroyed au jump end via
+    // hasShadow=FALSE). Pas de spawn permanent au boot — preload assets only.
+    DestroyShadowSprite(this.rt);
+    await preloadShadowEffect(this.rt);
     InitFieldMessageBox();
     ScriptContext_Init();
 

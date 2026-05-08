@@ -41,6 +41,8 @@ import {
 } from './map-loader';
 import { MB_TALL_GRASS } from './tilemap-loader';
 import { SpawnTallGrassEffect } from './field-effect-grass';
+import { SpawnJumpLandingDust } from './field-effect-jump-dust';
+import { CreateShadowSprite, DestroyShadowSprite } from './field-effect-shadow';
 import {
   gFieldCamera,
   SetCameraTopLeftCoords,
@@ -762,6 +764,13 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
         gPlayerAvatar.x = nx2;
         gPlayerAvatar.y = ny2;
         _pendingLedgeJump = false;
+        // 1:1 décomp `GroundEffect_JumpLandingDust` (event_object_movement.c:7997) :
+        // spawn dust cloud à la position d'atterrissage.
+        SpawnJumpLandingDust(rt, gPlayerAvatar.x, gPlayerAvatar.y);
+        // 1:1 décomp `MovementAction_Jump2Down_Step1:5535` : `objectEvent->hasShadow
+        // = FALSE` au jump end → UpdateShadowFieldEffect détruit le sprite.
+        // Notre impl : destroy direct.
+        DestroyShadowSprite(rt);
       }
       gPlayerAvatar.tileTransitionState = T_NOT_MOVING;
       gPlayerAvatar.stepDirection = DIR_NONE;
@@ -926,6 +935,10 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
       gPlayerAvatar.jumpFramesLeft = 32;  // = sJumpY_High curve over 32 frames
       gPlayerAvatar.stepDirection = inputDir;
       _pendingLedgeJump = true;  // = step end appliquera 2nd moveCoords (= 2 tiles)
+      // 1:1 décomp `InitJumpRegular` → `DoShadowFieldEffect` (event_object_movement.c:5450) :
+      // spawn shadow sous player AU START du jump. Shadow tracks player x,y mais
+      // sans le jumpYOffset → reste au sol pendant l'arc visuel.
+      CreateShadowSprite(rt);
       const jumpSpeed = dirToCameraSpeed(inputDir);
       // Speed × 2 pour 2 tiles en 32 frames (= 1 tile per 16 frames standard).
       gFieldCamera.movementSpeedX = jumpSpeed.x * WALK_SPEED_PX_PER_FRAME;
