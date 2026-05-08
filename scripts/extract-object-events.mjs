@@ -129,13 +129,24 @@ for (const [gfxId, infoName] of gfxIdToInfo) {
   // (= depuis .width/.height struct, pas depuis INCGFX -mwidth/-mheight).
   // Ex : truck PNG 48×48 = 1 frame inanimate. Sans cette détection, l'extractor
   // assumait mwidth=2/mheight=4 (= défauts INCGFX) → frameWidth=16, faux.
+  //
+  // GOTCHA : ne PAS substituer naïvement size→frame pour les sprites animés
+  // (overworld_frame). Beaucoup de NPCs ont .width/.height = taille DISPLAY
+  // au runtime (= 16×32 standard) MAIS frame size = 16×32 par mwidth/mheight,
+  // donc le résultat est identique. Pour les sprites SPECIAL (= taille
+  // non-standard comme truck 48×48), on doit utiliser size.
+  //
+  // Heuristique : appliquer size→frame UNIQUEMENT si :
+  //   1. macro === 'obj_frame_tiles' (= single frame, pas d'anim).
+  //   2. ET size.width/height differs de pic.mwidth*8/mheight*8 (= sinon = no-op).
+  // Sinon : keep INCGFX defaults pour ne pas casser les NPCs anim standard.
   const isSingleFrame = macro === 'obj_frame_tiles';
-  const frameWidth = isSingleFrame
-    ? (size?.width ?? pic.mwidth * 8)
-    : pic.mwidth * 8;
-  const frameHeight = isSingleFrame
-    ? (size?.height ?? pic.mheight * 8)
-    : pic.mheight * 8;
+  const incgfxWidth = pic.mwidth * 8;
+  const incgfxHeight = pic.mheight * 8;
+  const sizeDifferent = size && (size.width !== incgfxWidth || size.height !== incgfxHeight);
+  const useSize = isSingleFrame && sizeDifferent;
+  const frameWidth = useSize ? size.width : incgfxWidth;
+  const frameHeight = useSize ? size.height : incgfxHeight;
   result[gfxId] = {
     png: rel,
     frameWidth,

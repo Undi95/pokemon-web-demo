@@ -113,7 +113,8 @@ export async function preloadNpcGraphicsForMap(mapHeader: MapHeader): Promise<vo
     // Phase 4.10 : allow 48×48 (= truck) en plus du standard 16×32.
     const is48x48 = graphics.frameWidth === 48 && graphics.frameHeight === 48;
     const is16x32 = graphics.frameWidth === 16 && graphics.frameHeight === 32;
-    if (!is48x48 && !is16x32) continue;
+    const is16x16 = graphics.frameWidth === 16 && graphics.frameHeight === 16;
+    if (!is48x48 && !is16x32 && !is16x16) continue;
     if (graphics.displayWidth !== graphics.frameWidth || graphics.displayHeight !== graphics.frameHeight) continue;
     paths.add(`${BASE}/${graphics.png}`);
   }
@@ -857,15 +858,14 @@ function _spawnSingleNpcFromTemplate(
   if (template.flagId && template.flagId !== '0' && FlagGet(template.flagId)) {
     return false;
   }
-  // Phase 4.10 : 48×48 truck rendering 1:1 décomp via subsprite tables.
-  // Le décomp utilise sOamTable_48x48 = 12 subsprites (6 rows × 32×8+16×8 each)
-  // pour afficher un sprite 48×48 logique en multi-OAM (= GBA hardware n'a pas
-  // de single OAM 48×48, max single = 64×64). Notre engine reuse l'infra
-  // existante `SetSubspriteTables` (decomp-globals.ts:1795) qui alloue child
-  // OAMs + sync chaque frame.
+  // Phase 4.10 : support multi-tailles NPC :
+  //   - 16×32 standard people sprites (= overworld_frame anim 9 frames).
+  //   - 16×16 inanimate (= moving box, berry tree, egg, etc.).
+  //   - 48×48 truck (= subsprites 12 OAMs).
   const is48x48 = graphics.frameWidth === 48 && graphics.frameHeight === 48;
   const is16x32 = graphics.frameWidth === 16 && graphics.frameHeight === 32;
-  if (!is48x48 && !is16x32) return false;
+  const is16x16 = graphics.frameWidth === 16 && graphics.frameHeight === 16;
+  if (!is48x48 && !is16x32 && !is16x16) return false;
   if (graphics.displayWidth !== graphics.frameWidth || graphics.displayHeight !== graphics.frameHeight) return false;
 
   // 1:1 décomp `GetAvailableObjectEventId` (event_object_movement.c:1263) :
@@ -909,6 +909,11 @@ function _spawnSingleNpcFromTemplate(
     // tileOffsets 0, 4, 6, 10, ... 34). PNG layout : 6×6 tiles row-major.
     // Just copy the 36 tiles directly into OBJ VRAM at objTileBase.
     rt.gba.objVram.set(png.charData.subarray(0, 36 * 32), objTileBase * 32);
+  } else if (is16x16) {
+    // 16×16 inanimate (= moving box, berry, egg). 4 tiles row-major.
+    // Single frame, sequential layout dans le PNG.
+    const numTiles = png.widthTiles * png.heightTiles;
+    rt.gba.objVram.set(png.charData.subarray(0, numTiles * 32), objTileBase * 32);
   } else {
     const numFrames = (png.widthTiles * png.heightTiles) / TILES_PER_FRAME_16x32;
     const reordered = pngTo1dObjLayout(png.charData, numFrames, png.widthTiles, 16, 32);
@@ -1014,6 +1019,26 @@ function _spawnSingleNpcFromTemplate(
     // ..., 34. Le primary OAM est hidden — les child OAMs rendent le 48×48.
     SetSubspriteTables(npc.spriteId, sOamTable_48x48);
     npc.useSubsprites = true;
+  } else if (is16x16) {
+    // 16×16 inanimate (= moving box, berry, egg, etc.) : single OAM shape=0
+    // size=1 (= 16×16). Pas de frame anim (= 1 frame seul, useSubsprites=false
+    // = updateNpcSpriteFrame skip via la même logique que les subsprites
+    // puisque cfg.face * 8 ne matche pas notre tile layout 16×16).
+    npc.useSubsprites = true; // hack : skip updateNpcSpriteFrame (= pas de
+                               // frame layout 16×32) en réutilisant le flag.
+    const result = rt.CreateSpriteAtOam({
+      tileId: objTileBase,
+      paletteBank,
+      x: 0, y: 0,
+      shape: 0 /* square */, size: 1 /* 16×16 */,
+      priority: 2,
+      paletteMode: 0,
+      affineMode: 0,
+    });
+    npc.spriteId = result.spriteId;
+    const sprite = rt.gSprites.get(npc.spriteId);
+    if (sprite) sprite.tileBase = objTileBase;
+    rt.gba.oam[result.oamIndex].flipH = false;
   } else {
     npc.useSubsprites = false;
     const cfg = NPC_SPRITE_FRAMES[npc.facingDirection] ?? NPC_SPRITE_FRAMES[DIR_SOUTH];
