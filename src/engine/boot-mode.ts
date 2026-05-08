@@ -163,7 +163,13 @@ export function decideBootMode(): BootSpawn {
   if (hasTruckParam()) {
     // Dev shortcut : reset save + spawn truck pour tester la cinematic intro.
     gameState.reset();
-    NewGameInit();
+    // Default identity : "PLAYER" / MALE (= 1:1 décomp placeholder pre-Birch).
+    // Sans nom set, dialog "MAMAN: , on est là, chouchou!" affiche {PLAYER} vide.
+    // En vrai flow, Birch speech naming overwrite ces defaults — mais ?truck
+    // skip Birch donc on doit fournir un nom valide.
+    gameState.playerName = 'PLAYER';
+    gameState.gender = 'MALE';
+    NewGameInit();  // = trainerId set par InitPlayerTrainerId (= u32 random)
     gameState.setDynamicWarp('MAP_LITTLEROOT_TOWN', 3, 10);
     gameState.save();
     console.log('[boot-mode] ?truck shortcut : save reset + truck spawn pour test cinematic');

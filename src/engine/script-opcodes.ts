@@ -1067,14 +1067,81 @@ registerOpcode('hideplayer', (_ctx) => {
 
 // ─── Doors (= 1:1 décomp ScrCmd_opendoor etc.) ──────────────────────────────
 //
-// MVP : no-op visuel (= door anim). Le warpsilent qui suit dans les scripts
-// cinematic gère la transition logique. Phase suivante : wire les FieldAnimateDoor
-// existing functions (field-door.ts) pour proper visual.
+// 1:1 décomp scrcmd.c:ScrCmd_opendoor :
+//   x = VarGet(ScriptReadHalfword(ctx));
+//   y = VarGet(ScriptReadHalfword(ctx));
+//   PlaySE(GetDoorSoundEffect(x, y));
+//   FieldAnimateDoorOpen(x, y);   ← starts anim (= 16 frames)
+//   return FALSE;  (= continue script immédiatement)
+//
+// `waitdooranim` ensuite halt le script jusqu'à anim fin via SetupNativeScript
+// + IsDoorAnimationStopped (= `_doorAnimActive` polled).
+//
+// Avant : tous les opcodes étaient no-op → la porte ne s'ouvrait JAMAIS
+// pendant la cinematic GoInsideWithMom (= mom + player walk into closed
+// door visually) ; LittlerootTown_EventScript_StepOffTruckMale.
 
-registerOpcode('opendoor', (_ctx, _args) => false);
-registerOpcode('closedoor', (_ctx, _args) => false);
-registerOpcode('waitdooranim', (_ctx) => false);
-registerOpcode('setdooropen', (_ctx, _args) => false);
+let _doorAnimActive = false;
+
+registerOpcode('opendoor', (_ctx, args) => {
+  const x = parseValue(args[0]);
+  const y = parseValue(args[1]);
+  void (async () => {
+    try {
+      const fdoor = await import('./field-door');
+      const seId = fdoor.GetDoorSoundEffect(x, y);
+      PlaySE(seId);
+      _doorAnimActive = true;
+      await fdoor.FieldAnimateDoorOpen(x, y);
+      _doorAnimActive = false;
+    } catch (e) {
+      console.warn('[opcode opendoor] failed', e);
+      _doorAnimActive = false;
+    }
+  })();
+  return false;
+});
+
+registerOpcode('closedoor', (_ctx, args) => {
+  const x = parseValue(args[0]);
+  const y = parseValue(args[1]);
+  void (async () => {
+    try {
+      const fdoor = await import('./field-door');
+      _doorAnimActive = true;
+      await fdoor.FieldAnimateDoorClose(x, y);
+      _doorAnimActive = false;
+    } catch (e) {
+      console.warn('[opcode closedoor] failed', e);
+      _doorAnimActive = false;
+    }
+  })();
+  return false;
+});
+
+registerOpcode('waitdooranim', (ctx) => {
+  // 1:1 décomp ScrCmd_waitdooranim : SetupNativeScript(IsDoorAnimationStopped).
+  // On poll _doorAnimActive jusqu'à false (= anim terminée). Si aucune anim
+  // n'a été démarrée par opendoor/closedoor (= behavior pas MB_ANIMATED_DOOR
+  // donc no-op), _doorAnimActive reste false → continue immédiatement.
+  const tick = (): boolean => !_doorAnimActive;
+  SetupNativeScript(ctx, tick);
+  return true;
+});
+
+registerOpcode('setdooropen', (_ctx, args) => {
+  const x = parseValue(args[0]);
+  const y = parseValue(args[1]);
+  // 1:1 décomp `FieldSetDoorOpened(x, y)` = instant draw open frame, no SE.
+  void (async () => {
+    try {
+      const fdoor = await import('./field-door');
+      await fdoor.FieldSetDoorOpened(x, y);
+    } catch (e) { console.warn('[opcode setdooropen] failed', e); }
+  })();
+  return false;
+});
+
 registerOpcode('setdoorclosed', (_ctx, _args) => false);
 
 // 1:1 décomp scrcmd.c:ScrCmd_fadescreen (lignes 626-631) :

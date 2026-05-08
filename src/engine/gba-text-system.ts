@@ -443,9 +443,13 @@ export function StringExpandPlaceholders(_dest: string, src: string): string {
       | { playerName?: string } | undefined;
     playerName = sb2?.playerName;
   }
-  if (playerName && playerName !== 'PLAYER') {
-    result = result.replace(/\{PLAYER\}/g, playerName);
-  }
+  // 1:1 décomp `StringCopy(dest, gSaveBlock2Ptr->playerName)` : substitute
+  // toujours (= si playerName empty, le décomp pousse aussi vide). Avant on
+  // skipped si playerName === 'PLAYER' → résultat "MAMAN: Alors, ?" car le
+  // text printer strippait silencieusement les `{PLAYER}` non-substitués.
+  // Maintenant on substitute toujours, en utilisant 'PLAYER' (= placeholder
+  // défaut décomp pre-Birch-naming) ou fallback.
+  result = result.replace(/\{PLAYER\}/g, playerName || 'PLAYER');
 
   // {RIVAL} = nom du rival (si gender female → BRENDAN, else MAY) — TODO Phase E.
   result = result.replace(/\{RIVAL\}/g, 'RIVAL');
