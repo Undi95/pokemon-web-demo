@@ -44,7 +44,7 @@ export const NUM_SAVE_SLOTS = 2;
 export const SAVE_STATUS_EMPTY = 0;
 export const SAVE_STATUS_OK = 1;
 export const SAVE_STATUS_CORRUPT = 2;
-export const SAVE_STATUS_NO_FLASH = 3;
+export const SAVE_STATUS_NO_FLASH = 4;
 export const SAVE_STATUS_ERROR = 0xFF;
 
 // ─── Storage keys ────────────────────────────────────────────────────────────
