@@ -1,0 +1,815 @@
+{
+  "category": "metatile",
+  "count": 133,
+  "functions": {
+    "MetatileBehavior_IsATile": {
+      "signature": "bool8 MetatileBehavior_IsATile(u8 metatileBehavior)",
+      "body": "return TRUE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsEncounterTile": {
+      "signature": "bool8 MetatileBehavior_IsEncounterTile(u8 metatileBehavior)",
+      "body": "if ((sTileBitAttributes[metatileBehavior] & TILE_FLAG_HAS_ENCOUNTERS))\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsJumpEast": {
+      "signature": "bool8 MetatileBehavior_IsJumpEast(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_JUMP_EAST)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsJumpWest": {
+      "signature": "bool8 MetatileBehavior_IsJumpWest(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_JUMP_WEST)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsJumpNorth": {
+      "signature": "bool8 MetatileBehavior_IsJumpNorth(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_JUMP_NORTH)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsJumpSouth": {
+      "signature": "bool8 MetatileBehavior_IsJumpSouth(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_JUMP_SOUTH)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsPokeGrass": {
+      "signature": "bool8 MetatileBehavior_IsPokeGrass(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_TALL_GRASS || metatileBehavior == MB_LONG_GRASS)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsSandOrDeepSand": {
+      "signature": "bool8 MetatileBehavior_IsSandOrDeepSand(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_SAND || metatileBehavior == MB_DEEP_SAND)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsDeepSand": {
+      "signature": "bool8 MetatileBehavior_IsDeepSand(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_DEEP_SAND)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsReflective": {
+      "signature": "bool8 MetatileBehavior_IsReflective(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_POND_WATER\n     || metatileBehavior == MB_PUDDLE\n     || metatileBehavior == MB_UNUSED_SOOTOPOLIS_DEEP_WATER_2\n     || metatileBehavior == MB_ICE\n     || metatileBehavior == MB_SOOTOPOLIS_DEEP_WATER\n     || metatileBehavior == MB_REFLECTION_UNDER_BRIDGE)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsIce": {
+      "signature": "bool8 MetatileBehavior_IsIce(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_ICE)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsWarpDoor": {
+      "signature": "bool8 MetatileBehavior_IsWarpDoor(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_ANIMATED_DOOR)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsDoor": {
+      "signature": "bool8 MetatileBehavior_IsDoor(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_PETALBURG_GYM_DOOR\n     || metatileBehavior == MB_ANIMATED_DOOR)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsEscalator": {
+      "signature": "bool8 MetatileBehavior_IsEscalator(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_UP_ESCALATOR\n     || metatileBehavior == MB_DOWN_ESCALATOR)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsLadder": {
+      "signature": "bool8 MetatileBehavior_IsLadder(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_LADDER)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsNonAnimDoor": {
+      "signature": "bool8 MetatileBehavior_IsNonAnimDoor(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_NON_ANIMATED_DOOR\n     || metatileBehavior == MB_WATER_DOOR\n     || metatileBehavior == MB_DEEP_SOUTH_WARP)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsDeepSouthWarp": {
+      "signature": "bool8 MetatileBehavior_IsDeepSouthWarp(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_DEEP_SOUTH_WARP)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsSurfableWaterOrUnderwater": {
+      "signature": "bool8 MetatileBehavior_IsSurfableWaterOrUnderwater(u8 metatileBehavior)",
+      "body": "if ((sTileBitAttributes[metatileBehavior] & TILE_FLAG_SURFABLE))\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsEastArrowWarp": {
+      "signature": "bool8 MetatileBehavior_IsEastArrowWarp(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_EAST_ARROW_WARP)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsWestArrowWarp": {
+      "signature": "bool8 MetatileBehavior_IsWestArrowWarp(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_WEST_ARROW_WARP)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsNorthArrowWarp": {
+      "signature": "bool8 MetatileBehavior_IsNorthArrowWarp(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_NORTH_ARROW_WARP\n     || metatileBehavior == MB_STAIRS_OUTSIDE_ABANDONED_SHIP)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsSouthArrowWarp": {
+      "signature": "bool8 MetatileBehavior_IsSouthArrowWarp(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_SOUTH_ARROW_WARP\n     || metatileBehavior == MB_WATER_SOUTH_ARROW_WARP\n     || metatileBehavior == MB_SHOAL_CAVE_ENTRANCE)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsForcedMovementTile": {
+      "signature": "bool8 MetatileBehavior_IsForcedMovementTile(u8 metatileBehavior)",
+      "body": "if ((metatileBehavior >= MB_WALK_EAST && metatileBehavior <= MB_TRICK_HOUSE_PUZZLE_8_FLOOR)\n     || (metatileBehavior >= MB_EASTWARD_CURRENT && metatileBehavior <= MB_SOUTHWARD_CURRENT)\n     || metatileBehavior == MB_MUDDY_SLOPE\n     || metatileBehavior == MB_CRACKED_FLOOR\n     || metatileBehavior == MB_WATERFALL\n     || metatileBehavior == MB_ICE\n     || metatileBehavior == MB_SECRET_BASE_JUMP_MAT\n     || metatileBehavior == MB_SECRET_BASE_SPIN_MAT)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsIce_2": {
+      "signature": "bool8 MetatileBehavior_IsIce_2(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_ICE)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsTrickHouseSlipperyFloor": {
+      "signature": "bool8 MetatileBehavior_IsTrickHouseSlipperyFloor(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_TRICK_HOUSE_PUZZLE_8_FLOOR)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsWalkNorth": {
+      "signature": "bool8 MetatileBehavior_IsWalkNorth(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_WALK_NORTH)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsWalkSouth": {
+      "signature": "bool8 MetatileBehavior_IsWalkSouth(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_WALK_SOUTH)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsWalkWest": {
+      "signature": "bool8 MetatileBehavior_IsWalkWest(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_WALK_WEST)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsWalkEast": {
+      "signature": "bool8 MetatileBehavior_IsWalkEast(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_WALK_EAST)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsNorthwardCurrent": {
+      "signature": "bool8 MetatileBehavior_IsNorthwardCurrent(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_NORTHWARD_CURRENT)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsSouthwardCurrent": {
+      "signature": "bool8 MetatileBehavior_IsSouthwardCurrent(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_SOUTHWARD_CURRENT)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsWestwardCurrent": {
+      "signature": "bool8 MetatileBehavior_IsWestwardCurrent(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_WESTWARD_CURRENT)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsEastwardCurrent": {
+      "signature": "bool8 MetatileBehavior_IsEastwardCurrent(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_EASTWARD_CURRENT)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsSlideNorth": {
+      "signature": "bool8 MetatileBehavior_IsSlideNorth(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_SLIDE_NORTH)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsSlideSouth": {
+      "signature": "bool8 MetatileBehavior_IsSlideSouth(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_SLIDE_SOUTH)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsSlideWest": {
+      "signature": "bool8 MetatileBehavior_IsSlideWest(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_SLIDE_WEST)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsSlideEast": {
+      "signature": "bool8 MetatileBehavior_IsSlideEast(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_SLIDE_EAST)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsCounter": {
+      "signature": "bool8 MetatileBehavior_IsCounter(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_COUNTER)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsPC": {
+      "signature": "bool8 MetatileBehavior_IsPC(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_PC)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsCableBoxResults1": {
+      "signature": "bool8 MetatileBehavior_IsCableBoxResults1(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_CABLE_BOX_RESULTS_1)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsOpenSecretBaseDoor": {
+      "signature": "bool8 MetatileBehavior_IsOpenSecretBaseDoor(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_SECRET_BASE_SPOT_RED_CAVE_OPEN\n     || metatileBehavior == MB_SECRET_BASE_SPOT_BROWN_CAVE_OPEN\n     || metatileBehavior == MB_SECRET_BASE_SPOT_YELLOW_CAVE_OPEN\n     || metatileBehavior == MB_SECRET_BASE_SPOT_TREE_LEFT_OPEN\n     || metatileBehavior == MB_SECRET_BASE_SPOT_SHRUB_OPEN\n     || metatileBehavior == MB_SECRET_BASE_SPOT_BLUE_CAVE_OPEN\n     || metatileBehavior == MB_SECRET_BASE_SPOT_TREE_RIGHT_OPEN)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsSecretBaseCave": {
+      "signature": "bool8 MetatileBehavior_IsSecretBaseCave(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_SECRET_BASE_SPOT_RED_CAVE\n     || metatileBehavior == MB_SECRET_BASE_SPOT_BROWN_CAVE\n     || metatileBehavior == MB_SECRET_BASE_SPOT_YELLOW_CAVE\n     || metatileBehavior == MB_SECRET_BASE_SPOT_BLUE_CAVE)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsSecretBaseTree": {
+      "signature": "bool8 MetatileBehavior_IsSecretBaseTree(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_SECRET_BASE_SPOT_TREE_LEFT\n     || metatileBehavior == MB_SECRET_BASE_SPOT_TREE_RIGHT)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsSecretBaseShrub": {
+      "signature": "bool8 MetatileBehavior_IsSecretBaseShrub(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_SECRET_BASE_SPOT_SHRUB)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsSecretBasePC": {
+      "signature": "bool8 MetatileBehavior_IsSecretBasePC(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_SECRET_BASE_PC)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsRecordMixingSecretBasePC": {
+      "signature": "bool8 MetatileBehavior_IsRecordMixingSecretBasePC(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_SECRET_BASE_REGISTER_PC)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsSecretBaseScenery1": {
+      "signature": "bool8 MetatileBehavior_IsSecretBaseScenery1(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_SECRET_BASE_SCENERY)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsSecretBaseTrainerSpot": {
+      "signature": "bool8 MetatileBehavior_IsSecretBaseTrainerSpot(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_SECRET_BASE_TRAINER_SPOT)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsSecretBaseImpassable": {
+      "signature": "bool8 MetatileBehavior_IsSecretBaseImpassable(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_SECRET_BASE_IMPASSABLE)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsSecretBaseDecorationBase": {
+      "signature": "bool8 MetatileBehavior_IsSecretBaseDecorationBase(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_SECRET_BASE_DECORATION_BASE)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsSecretBasePoster": {
+      "signature": "bool8 MetatileBehavior_IsSecretBasePoster(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_SECRET_BASE_POSTER)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsNormal": {
+      "signature": "bool8 MetatileBehavior_IsNormal(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_NORMAL)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsSecretBaseNorthWall": {
+      "signature": "bool8 MetatileBehavior_IsSecretBaseNorthWall(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_SECRET_BASE_NORTH_WALL)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsSecretBaseScenery2": {
+      "signature": "bool8 MetatileBehavior_IsSecretBaseScenery2(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_SECRET_BASE_SCENERY)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsSecretBaseHole": {
+      "signature": "bool8 MetatileBehavior_IsSecretBaseHole(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_SECRET_BASE_HOLE)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsSecretBaseBalloon": {
+      "signature": "bool8 MetatileBehavior_IsSecretBaseBalloon(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_SECRET_BASE_BALLOON)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsSecretBaseBreakableDoor": {
+      "signature": "bool8 MetatileBehavior_IsSecretBaseBreakableDoor(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_SECRET_BASE_BREAKABLE_DOOR)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsSecretBaseSoundMat": {
+      "signature": "bool8 MetatileBehavior_IsSecretBaseSoundMat(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_SECRET_BASE_SOUND_MAT)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsSecretBaseGlitterMat": {
+      "signature": "bool8 MetatileBehavior_IsSecretBaseGlitterMat(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_SECRET_BASE_GLITTER_MAT)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsSecretBaseSandOrnament": {
+      "signature": "bool8 MetatileBehavior_IsSecretBaseSandOrnament(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_SECRET_BASE_SAND_ORNAMENT)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsSecretBaseShieldOrToyTV": {
+      "signature": "bool8 MetatileBehavior_IsSecretBaseShieldOrToyTV(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_SECRET_BASE_TV_SHIELD)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsPlayerRoomPCOn": {
+      "signature": "bool8 MetatileBehavior_IsPlayerRoomPCOn(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_PLAYER_ROOM_PC_ON)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsPuddle": {
+      "signature": "bool8 MetatileBehavior_IsPuddle(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_PUDDLE)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsTallGrass": {
+      "signature": "bool8 MetatileBehavior_IsTallGrass(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_TALL_GRASS)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsLongGrass": {
+      "signature": "bool8 MetatileBehavior_IsLongGrass(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_LONG_GRASS)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsBerryTreeSoil": {
+      "signature": "bool8 MetatileBehavior_IsBerryTreeSoil(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_BERRY_TREE_SOIL)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsAshGrass": {
+      "signature": "bool8 MetatileBehavior_IsAshGrass(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_ASHGRASS)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsFootprints": {
+      "signature": "bool8 MetatileBehavior_IsFootprints(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_FOOTPRINTS)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsBridgeOverWater": {
+      "signature": "bool8 MetatileBehavior_IsBridgeOverWater(u8 metatileBehavior)",
+      "body": "if ((metatileBehavior == MB_BRIDGE_OVER_OCEAN\n      || metatileBehavior == MB_BRIDGE_OVER_POND_LOW\n      || metatileBehavior == MB_BRIDGE_OVER_POND_MED\n      || metatileBehavior == MB_BRIDGE_OVER_POND_HIGH)\n      || (metatileBehavior == MB_BRIDGE_OVER_POND_HIGH_EDGE_1\n       || metatileBehavior == MB_BRIDGE_OVER_POND_HIGH_EDGE_2\n       || metatileBehavior == MB_UNUSED_BRIDGE\n       || metatileBehavior == MB_BIKE_BRIDGE_OVER_BARRIER))\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsBridgeOverWaterNoEdge": {
+      "signature": "bool8 MetatileBehavior_IsBridgeOverWaterNoEdge(u8 metatileBehavior)",
+      "body": "if (metatileBehavior >= MB_BRIDGE_OVER_OCEAN\n     && metatileBehavior <= MB_BRIDGE_OVER_POND_HIGH)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsLandWildEncounter": {
+      "signature": "bool8 MetatileBehavior_IsLandWildEncounter(u8 metatileBehavior)",
+      "body": "if (MetatileBehavior_IsSurfableWaterOrUnderwater(metatileBehavior) == FALSE\n     && MetatileBehavior_IsEncounterTile(metatileBehavior) == TRUE)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [
+        "MetatileBehavior_IsEncounterTile",
+        "MetatileBehavior_IsSurfableWaterOrUnderwater"
+      ],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsWaterWildEncounter": {
+      "signature": "bool8 MetatileBehavior_IsWaterWildEncounter(u8 metatileBehavior)",
+      "body": "if (MetatileBehavior_IsSurfableWaterOrUnderwater(metatileBehavior) == TRUE\n     && MetatileBehavior_IsEncounterTile(metatileBehavior) == TRUE)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [
+        "MetatileBehavior_IsEncounterTile",
+        "MetatileBehavior_IsSurfableWaterOrUnderwater"
+      ],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsIndoorEncounter": {
+      "signature": "bool8 MetatileBehavior_IsIndoorEncounter(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_INDOOR_ENCOUNTER)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsMountain": {
+      "signature": "bool8 MetatileBehavior_IsMountain(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_MOUNTAIN_TOP)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsDiveable": {
+      "signature": "bool8 MetatileBehavior_IsDiveable(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_INTERIOR_DEEP_WATER\n     || metatileBehavior == MB_DEEP_WATER\n     || metatileBehavior == MB_SOOTOPOLIS_DEEP_WATER)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsUnableToEmerge": {
+      "signature": "bool8 MetatileBehavior_IsUnableToEmerge(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_NO_SURFACING\n     || metatileBehavior == MB_SEAWEED_NO_SURFACING\n     #ifdef BUGFIX\n     || metatileBehavior == MB_WATER_DOOR\n     #endif\n     )\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsShallowFlowingWater": {
+      "signature": "bool8 MetatileBehavior_IsShallowFlowingWater(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_SHALLOW_WATER\n     || metatileBehavior == MB_STAIRS_OUTSIDE_ABANDONED_SHIP\n     || metatileBehavior == MB_SHOAL_CAVE_ENTRANCE)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsThinIce": {
+      "signature": "bool8 MetatileBehavior_IsThinIce(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_THIN_ICE)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsCrackedIce": {
+      "signature": "bool8 MetatileBehavior_IsCrackedIce(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_CRACKED_ICE)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsDeepOrOceanWater": {
+      "signature": "bool8 MetatileBehavior_IsDeepOrOceanWater(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_OCEAN_WATER\n     || metatileBehavior == MB_INTERIOR_DEEP_WATER\n     || metatileBehavior == MB_DEEP_WATER)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsSurfableAndNotWaterfall": {
+      "signature": "bool8 MetatileBehavior_IsSurfableAndNotWaterfall(u8 metatileBehavior)",
+      "body": "if (MetatileBehavior_IsSurfableWaterOrUnderwater(metatileBehavior)\n     && MetatileBehavior_IsWaterfall(metatileBehavior) == FALSE)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [
+        "MetatileBehavior_IsSurfableWaterOrUnderwater",
+        "MetatileBehavior_IsWaterfall"
+      ],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsEastBlocked": {
+      "signature": "bool8 MetatileBehavior_IsEastBlocked(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_IMPASSABLE_EAST\n     || metatileBehavior == MB_IMPASSABLE_NORTHEAST\n     || metatileBehavior == MB_IMPASSABLE_SOUTHEAST\n     || metatileBehavior == MB_IMPASSABLE_WEST_AND_EAST\n     || metatileBehavior == MB_SECRET_BASE_BREAKABLE_DOOR)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsWestBlocked": {
+      "signature": "bool8 MetatileBehavior_IsWestBlocked(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_IMPASSABLE_WEST\n     || metatileBehavior == MB_IMPASSABLE_NORTHWEST\n     || metatileBehavior == MB_IMPASSABLE_SOUTHWEST\n     || metatileBehavior == MB_IMPASSABLE_WEST_AND_EAST\n     || metatileBehavior == MB_SECRET_BASE_BREAKABLE_DOOR)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsNorthBlocked": {
+      "signature": "bool8 MetatileBehavior_IsNorthBlocked(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_IMPASSABLE_NORTH\n     || metatileBehavior == MB_IMPASSABLE_NORTHEAST\n     || metatileBehavior == MB_IMPASSABLE_NORTHWEST\n     || metatileBehavior == MB_IMPASSABLE_SOUTH_AND_NORTH)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsSouthBlocked": {
+      "signature": "bool8 MetatileBehavior_IsSouthBlocked(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_IMPASSABLE_SOUTH\n     || metatileBehavior == MB_IMPASSABLE_SOUTHEAST\n     || metatileBehavior == MB_IMPASSABLE_SOUTHWEST\n     || metatileBehavior == MB_IMPASSABLE_SOUTH_AND_NORTH)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsShortGrass": {
+      "signature": "bool8 MetatileBehavior_IsShortGrass(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_SHORT_GRASS)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsHotSprings": {
+      "signature": "bool8 MetatileBehavior_IsHotSprings(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_HOT_SPRINGS)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsWaterfall": {
+      "signature": "bool8 MetatileBehavior_IsWaterfall(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_WATERFALL)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsFortreeBridge": {
+      "signature": "bool8 MetatileBehavior_IsFortreeBridge(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_FORTREE_BRIDGE)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsPacifidlogVerticalLogTop": {
+      "signature": "bool8 MetatileBehavior_IsPacifidlogVerticalLogTop(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_PACIFIDLOG_VERTICAL_LOG_TOP)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsPacifidlogVerticalLogBottom": {
+      "signature": "bool8 MetatileBehavior_IsPacifidlogVerticalLogBottom(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_PACIFIDLOG_VERTICAL_LOG_BOTTOM)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsPacifidlogHorizontalLogLeft": {
+      "signature": "bool8 MetatileBehavior_IsPacifidlogHorizontalLogLeft(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_PACIFIDLOG_HORIZONTAL_LOG_LEFT)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsPacifidlogHorizontalLogRight": {
+      "signature": "bool8 MetatileBehavior_IsPacifidlogHorizontalLogRight(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_PACIFIDLOG_HORIZONTAL_LOG_RIGHT)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsPacifidlogLog": {
+      "signature": "bool8 MetatileBehavior_IsPacifidlogLog(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_PACIFIDLOG_VERTICAL_LOG_TOP\n     || metatileBehavior == MB_PACIFIDLOG_VERTICAL_LOG_BOTTOM\n     || metatileBehavior == MB_PACIFIDLOG_HORIZONTAL_LOG_LEFT\n     || metatileBehavior == MB_PACIFIDLOG_HORIZONTAL_LOG_RIGHT)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsTrickHousePuzzleDoor": {
+      "signature": "bool8 MetatileBehavior_IsTrickHousePuzzleDoor(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_TRICK_HOUSE_PUZZLE_DOOR)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsRegionMap": {
+      "signature": "bool8 MetatileBehavior_IsRegionMap(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_REGION_MAP)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsClosedSootopolisDoor": {
+      "signature": "bool8 MetatileBehavior_IsClosedSootopolisDoor(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_CLOSED_SOOTOPOLIS_DOOR)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsSkyPillarClosedDoor": {
+      "signature": "bool8 MetatileBehavior_IsSkyPillarClosedDoor(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_SKY_PILLAR_CLOSED_DOOR)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsRoulette": {
+      "signature": "bool8 MetatileBehavior_IsRoulette(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_ROULETTE)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsPokeblockFeeder": {
+      "signature": "bool8 MetatileBehavior_IsPokeblockFeeder(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_POKEBLOCK_FEEDER)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsSecretBaseJumpMat": {
+      "signature": "bool8 MetatileBehavior_IsSecretBaseJumpMat(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_SECRET_BASE_JUMP_MAT)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsSecretBaseSpinMat": {
+      "signature": "bool8 MetatileBehavior_IsSecretBaseSpinMat(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_SECRET_BASE_SPIN_MAT)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsLavaridgeB1FWarp": {
+      "signature": "bool8 MetatileBehavior_IsLavaridgeB1FWarp(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_LAVARIDGE_GYM_B1F_WARP)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsLavaridge1FWarp": {
+      "signature": "bool8 MetatileBehavior_IsLavaridge1FWarp(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_LAVARIDGE_GYM_1F_WARP)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsAquaHideoutWarp": {
+      "signature": "bool8 MetatileBehavior_IsAquaHideoutWarp(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_AQUA_HIDEOUT_WARP)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsUnionRoomWarp": {
+      "signature": "bool8 MetatileBehavior_IsUnionRoomWarp(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_BRIDGE_OVER_OCEAN)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsMossdeepGymWarp": {
+      "signature": "bool8 MetatileBehavior_IsMossdeepGymWarp(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_MOSSDEEP_GYM_WARP)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsSurfableFishableWater": {
+      "signature": "bool8 MetatileBehavior_IsSurfableFishableWater(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_POND_WATER\n     || metatileBehavior == MB_OCEAN_WATER\n     || metatileBehavior == MB_INTERIOR_DEEP_WATER\n     || metatileBehavior == MB_DEEP_WATER\n     || metatileBehavior == MB_SOOTOPOLIS_DEEP_WATER\n     || (metatileBehavior == MB_EASTWARD_CURRENT\n      || metatileBehavior == MB_WESTWARD_CURRENT\n      || metatileBehavior == MB_NORTHWARD_CURRENT\n      || metatileBehavior == MB_SOUTHWARD_CURRENT))\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsMtPyreHole": {
+      "signature": "bool8 MetatileBehavior_IsMtPyreHole(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_MT_PYRE_HOLE)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsCrackedFloorHole": {
+      "signature": "bool8 MetatileBehavior_IsCrackedFloorHole(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_CRACKED_FLOOR_HOLE)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsCrackedFloor": {
+      "signature": "bool8 MetatileBehavior_IsCrackedFloor(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_CRACKED_FLOOR)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsMuddySlope": {
+      "signature": "bool8 MetatileBehavior_IsMuddySlope(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_MUDDY_SLOPE)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsBumpySlope": {
+      "signature": "bool8 MetatileBehavior_IsBumpySlope(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_BUMPY_SLOPE)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsIsolatedVerticalRail": {
+      "signature": "bool8 MetatileBehavior_IsIsolatedVerticalRail(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_ISOLATED_VERTICAL_RAIL)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsIsolatedHorizontalRail": {
+      "signature": "bool8 MetatileBehavior_IsIsolatedHorizontalRail(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_ISOLATED_HORIZONTAL_RAIL)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsVerticalRail": {
+      "signature": "bool8 MetatileBehavior_IsVerticalRail(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_VERTICAL_RAIL)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsHorizontalRail": {
+      "signature": "bool8 MetatileBehavior_IsHorizontalRail(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_HORIZONTAL_RAIL)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsSeaweed": {
+      "signature": "bool8 MetatileBehavior_IsSeaweed(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_SEAWEED || metatileBehavior == MB_SEAWEED_NO_SURFACING)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsRunningDisallowed": {
+      "signature": "bool8 MetatileBehavior_IsRunningDisallowed(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_NO_RUNNING\n     || metatileBehavior == MB_LONG_GRASS\n     || metatileBehavior == MB_HOT_SPRINGS\n     || MetatileBehavior_IsPacifidlogLog(metatileBehavior) != FALSE)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [
+        "MetatileBehavior_IsPacifidlogLog"
+      ],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsCuttableGrass": {
+      "signature": "bool8 MetatileBehavior_IsCuttableGrass(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_TALL_GRASS\n     || metatileBehavior == MB_LONG_GRASS\n     || metatileBehavior == MB_ASHGRASS\n     || metatileBehavior == MB_LONG_GRASS_SOUTH_EDGE)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsRunningShoesManual": {
+      "signature": "bool8 MetatileBehavior_IsRunningShoesManual(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_RUNNING_SHOES_INSTRUCTION)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsPictureBookShelf": {
+      "signature": "bool8 MetatileBehavior_IsPictureBookShelf(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_PICTURE_BOOK_SHELF)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsBookShelf": {
+      "signature": "bool8 MetatileBehavior_IsBookShelf(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_BOOKSHELF)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsPokeCenterBookShelf": {
+      "signature": "bool8 MetatileBehavior_IsPokeCenterBookShelf(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_POKEMON_CENTER_BOOKSHELF)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsVase": {
+      "signature": "bool8 MetatileBehavior_IsVase(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_VASE)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsTrashCan": {
+      "signature": "bool8 MetatileBehavior_IsTrashCan(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_TRASH_CAN)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsShopShelf": {
+      "signature": "bool8 MetatileBehavior_IsShopShelf(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_SHOP_SHELF)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsBlueprint": {
+      "signature": "bool8 MetatileBehavior_IsBlueprint(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_BLUEPRINT)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsBattlePyramidWarp": {
+      "signature": "bool8 MetatileBehavior_IsBattlePyramidWarp(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_BATTLE_PYRAMID_WARP)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsQuestionnaire": {
+      "signature": "bool8 MetatileBehavior_IsQuestionnaire(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_QUESTIONNAIRE)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsLongGrass_Duplicate": {
+      "signature": "bool8 MetatileBehavior_IsLongGrass_Duplicate(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_LONG_GRASS)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsLongGrassSouthEdge": {
+      "signature": "bool8 MetatileBehavior_IsLongGrassSouthEdge(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_LONG_GRASS_SOUTH_EDGE)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    },
+    "MetatileBehavior_IsTrainerHillTimer": {
+      "signature": "bool8 MetatileBehavior_IsTrainerHillTimer(u8 metatileBehavior)",
+      "body": "if (metatileBehavior == MB_TRAINER_HILL_TIMER)\n        return TRUE;\n    else\n        return FALSE;",
+      "callsTo": [],
+      "srcFile": "src/metatile_behavior.c"
+    }
+  }
+}

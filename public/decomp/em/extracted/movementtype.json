@@ -1,0 +1,198 @@
+{
+  "category": "movementtype",
+  "count": 24,
+  "functions": {
+    "MovementType_WalkSequenceUpRightLeftDown_Step1": {
+      "signature": "u8 MovementType_WalkSequenceUpRightLeftDown_Step1(struct ObjectEvent *objectEvent, struct Sprite *sprite)",
+      "body": "u8 directions[sizeof(gUpRightLeftDownDirections)];\n    memcpy(directions, gUpRightLeftDownDirections, sizeof(gUpRightLeftDownDirections));\n    if (objectEvent->directionSequenceIndex == 2 && objectEvent->initialCoords.x == objectEvent->currentCoords.x)\n        objectEvent->directionSequenceIndex = 3;\n\n    return MoveNextDirectionInSequence(objectEvent, sprite, directions);",
+      "callsTo": [
+        "MoveNextDirectionInSequence"
+      ],
+      "srcFile": "src/event_object_movement.c"
+    },
+    "MovementType_WalkSequenceRightLeftDownUp_Step1": {
+      "signature": "u8 MovementType_WalkSequenceRightLeftDownUp_Step1(struct ObjectEvent *objectEvent, struct Sprite *sprite)",
+      "body": "u8 directions[sizeof(gRightLeftDownUpDirections)];\n    memcpy(directions, gRightLeftDownUpDirections, sizeof(gRightLeftDownUpDirections));\n    if (objectEvent->directionSequenceIndex == 1 && objectEvent->initialCoords.x == objectEvent->currentCoords.x)\n        objectEvent->directionSequenceIndex = 2;\n\n    return MoveNextDirectionInSequence(objectEvent, sprite, directions);",
+      "callsTo": [
+        "MoveNextDirectionInSequence"
+      ],
+      "srcFile": "src/event_object_movement.c"
+    },
+    "MovementType_WalkSequenceDownUpRightLeft_Step1": {
+      "signature": "u8 MovementType_WalkSequenceDownUpRightLeft_Step1(struct ObjectEvent *objectEvent, struct Sprite *sprite)",
+      "body": "u8 directions[sizeof(gDownUpRightLeftDirections)];\n    memcpy(directions, gDownUpRightLeftDirections, sizeof(gDownUpRightLeftDirections));\n    if (objectEvent->directionSequenceIndex == 1 && objectEvent->initialCoords.y == objectEvent->currentCoords.y)\n        objectEvent->directionSequenceIndex = 2;\n\n    return MoveNextDirectionInSequence(objectEvent, sprite, directions);",
+      "callsTo": [
+        "MoveNextDirectionInSequence"
+      ],
+      "srcFile": "src/event_object_movement.c"
+    },
+    "MovementType_WalkSequenceLeftDownUpRight_Step1": {
+      "signature": "u8 MovementType_WalkSequenceLeftDownUpRight_Step1(struct ObjectEvent *objectEvent, struct Sprite *sprite)",
+      "body": "u8 directions[sizeof(gLeftDownUpRightDirections)];\n    memcpy(directions, gLeftDownUpRightDirections, sizeof(gLeftDownUpRightDirections));\n    if (objectEvent->directionSequenceIndex == 2 && objectEvent->initialCoords.y == objectEvent->currentCoords.y)\n        objectEvent->directionSequenceIndex = 3;\n\n    return MoveNextDirectionInSequence(objectEvent, sprite, directions);",
+      "callsTo": [
+        "MoveNextDirectionInSequence"
+      ],
+      "srcFile": "src/event_object_movement.c"
+    },
+    "MovementType_WalkSequenceUpLeftRightDown_Step1": {
+      "signature": "u8 MovementType_WalkSequenceUpLeftRightDown_Step1(struct ObjectEvent *objectEvent, struct Sprite *sprite)",
+      "body": "u8 directions[sizeof(gUpLeftRightDownDirections)];\n    memcpy(directions, gUpLeftRightDownDirections, sizeof(gUpLeftRightDownDirections));\n    if (objectEvent->directionSequenceIndex == 2 && objectEvent->initialCoords.x == objectEvent->currentCoords.x)\n        objectEvent->directionSequenceIndex = 3;\n\n    return MoveNextDirectionInSequence(objectEvent, sprite, directions);",
+      "callsTo": [
+        "MoveNextDirectionInSequence"
+      ],
+      "srcFile": "src/event_object_movement.c"
+    },
+    "MovementType_WalkSequenceLeftRightDownUp_Step1": {
+      "signature": "u8 MovementType_WalkSequenceLeftRightDownUp_Step1(struct ObjectEvent *objectEvent, struct Sprite *sprite)",
+      "body": "u8 directions[sizeof(gLeftRightDownUpDirections)];\n    memcpy(directions, gLeftRightDownUpDirections, sizeof(gLeftRightDownUpDirections));\n    if (objectEvent->directionSequenceIndex == 1 && objectEvent->initialCoords.x == objectEvent->currentCoords.x)\n        objectEvent->directionSequenceIndex = 2;\n\n    return MoveNextDirectionInSequence(objectEvent, sprite, directions);",
+      "callsTo": [
+        "MoveNextDirectionInSequence"
+      ],
+      "srcFile": "src/event_object_movement.c"
+    },
+    "MovementType_WalkSequenceDownUpLeftRight_Step1": {
+      "signature": "u8 MovementType_WalkSequenceDownUpLeftRight_Step1(struct ObjectEvent *objectEvent, struct Sprite *sprite)",
+      "body": "u8 directions[sizeof(gStandardDirections)];\n    memcpy(directions, gStandardDirections, sizeof(gStandardDirections));\n    if (objectEvent->directionSequenceIndex == 1 && objectEvent->initialCoords.y == objectEvent->currentCoords.y)\n        objectEvent->directionSequenceIndex = 2;\n\n    return MoveNextDirectionInSequence(objectEvent, sprite, directions);",
+      "callsTo": [
+        "MoveNextDirectionInSequence"
+      ],
+      "srcFile": "src/event_object_movement.c"
+    },
+    "MovementType_WalkSequenceRightDownUpLeft_Step1": {
+      "signature": "u8 MovementType_WalkSequenceRightDownUpLeft_Step1(struct ObjectEvent *objectEvent, struct Sprite *sprite)",
+      "body": "u8 directions[sizeof(gRightDownUpLeftDirections)];\n    memcpy(directions, gRightDownUpLeftDirections, sizeof(gRightDownUpLeftDirections));\n    if (objectEvent->directionSequenceIndex == 2 && objectEvent->initialCoords.y == objectEvent->currentCoords.y)\n        objectEvent->directionSequenceIndex = 3;\n\n    return MoveNextDirectionInSequence(objectEvent, sprite, directions);",
+      "callsTo": [
+        "MoveNextDirectionInSequence"
+      ],
+      "srcFile": "src/event_object_movement.c"
+    },
+    "MovementType_WalkSequenceLeftUpDownRight_Step1": {
+      "signature": "u8 MovementType_WalkSequenceLeftUpDownRight_Step1(struct ObjectEvent *objectEvent, struct Sprite *sprite)",
+      "body": "u8 directions[sizeof(gLeftUpDownRightDirections)];\n    memcpy(directions, gLeftUpDownRightDirections, sizeof(gLeftUpDownRightDirections));\n    if (objectEvent->directionSequenceIndex == 2 && objectEvent->initialCoords.y == objectEvent->currentCoords.y)\n        objectEvent->directionSequenceIndex = 3;\n\n    return MoveNextDirectionInSequence(objectEvent, sprite, directions);",
+      "callsTo": [
+        "MoveNextDirectionInSequence"
+      ],
+      "srcFile": "src/event_object_movement.c"
+    },
+    "MovementType_WalkSequenceUpDownRightLeft_Step1": {
+      "signature": "u8 MovementType_WalkSequenceUpDownRightLeft_Step1(struct ObjectEvent *objectEvent, struct Sprite *sprite)",
+      "body": "u8 directions[sizeof(gUpDownRightLeftDirections)];\n    memcpy(directions, gUpDownRightLeftDirections, sizeof(gUpDownRightLeftDirections));\n    if (objectEvent->directionSequenceIndex == 1 && objectEvent->initialCoords.y == objectEvent->currentCoords.y)\n        objectEvent->directionSequenceIndex = 2;\n\n    return MoveNextDirectionInSequence(objectEvent, sprite, directions);",
+      "callsTo": [
+        "MoveNextDirectionInSequence"
+      ],
+      "srcFile": "src/event_object_movement.c"
+    },
+    "MovementType_WalkSequenceRightLeftUpDown_Step1": {
+      "signature": "u8 MovementType_WalkSequenceRightLeftUpDown_Step1(struct ObjectEvent *objectEvent, struct Sprite *sprite)",
+      "body": "u8 directions[sizeof(gRightLeftUpDownDirections)];\n    memcpy(directions, gRightLeftUpDownDirections, sizeof(gRightLeftUpDownDirections));\n    if (objectEvent->directionSequenceIndex == 1 && objectEvent->initialCoords.x == objectEvent->currentCoords.x)\n        objectEvent->directionSequenceIndex = 2;\n\n    return MoveNextDirectionInSequence(objectEvent, sprite, directions);",
+      "callsTo": [
+        "MoveNextDirectionInSequence"
+      ],
+      "srcFile": "src/event_object_movement.c"
+    },
+    "MovementType_WalkSequenceDownRightLeftUp_Step1": {
+      "signature": "u8 MovementType_WalkSequenceDownRightLeftUp_Step1(struct ObjectEvent *objectEvent, struct Sprite *sprite)",
+      "body": "u8 directions[sizeof(gDownRightLeftUpDirections)];\n    memcpy(directions, gDownRightLeftUpDirections, sizeof(gDownRightLeftUpDirections));\n    if (objectEvent->directionSequenceIndex == 2 && objectEvent->initialCoords.x == objectEvent->currentCoords.x)\n        objectEvent->directionSequenceIndex = 3;\n\n    return MoveNextDirectionInSequence(objectEvent, sprite, directions);",
+      "callsTo": [
+        "MoveNextDirectionInSequence"
+      ],
+      "srcFile": "src/event_object_movement.c"
+    },
+    "MovementType_WalkSequenceRightUpDownLeft_Step1": {
+      "signature": "u8 MovementType_WalkSequenceRightUpDownLeft_Step1(struct ObjectEvent *objectEvent, struct Sprite *sprite)",
+      "body": "u8 directions[sizeof(gRightUpDownLeftDirections)];\n    memcpy(directions, gRightUpDownLeftDirections, sizeof(gRightUpDownLeftDirections));\n    if (objectEvent->directionSequenceIndex == 2 && objectEvent->initialCoords.y == objectEvent->currentCoords.y)\n        objectEvent->directionSequenceIndex = 3;\n\n    return MoveNextDirectionInSequence(objectEvent, sprite, directions);",
+      "callsTo": [
+        "MoveNextDirectionInSequence"
+      ],
+      "srcFile": "src/event_object_movement.c"
+    },
+    "MovementType_WalkSequenceUpDownLeftRight_Step1": {
+      "signature": "u8 MovementType_WalkSequenceUpDownLeftRight_Step1(struct ObjectEvent *objectEvent, struct Sprite *sprite)",
+      "body": "u8 directions[sizeof(gUpDownLeftRightDirections)];\n    memcpy(directions, gUpDownLeftRightDirections, sizeof(gUpDownLeftRightDirections));\n    if (objectEvent->directionSequenceIndex == 1 && objectEvent->initialCoords.y == objectEvent->currentCoords.y)\n        objectEvent->directionSequenceIndex = 2;\n\n    return MoveNextDirectionInSequence(objectEvent, sprite, directions);",
+      "callsTo": [
+        "MoveNextDirectionInSequence"
+      ],
+      "srcFile": "src/event_object_movement.c"
+    },
+    "MovementType_WalkSequenceLeftRightUpDown_Step1": {
+      "signature": "u8 MovementType_WalkSequenceLeftRightUpDown_Step1(struct ObjectEvent *objectEvent, struct Sprite *sprite)",
+      "body": "u8 directions[sizeof(gLeftRightUpDownDirections)];\n    memcpy(directions, gLeftRightUpDownDirections, sizeof(gLeftRightUpDownDirections));\n    if (objectEvent->directionSequenceIndex == 1 && objectEvent->initialCoords.x == objectEvent->currentCoords.x)\n        objectEvent->directionSequenceIndex = 2;\n\n    return MoveNextDirectionInSequence(objectEvent, sprite, directions);",
+      "callsTo": [
+        "MoveNextDirectionInSequence"
+      ],
+      "srcFile": "src/event_object_movement.c"
+    },
+    "MovementType_WalkSequenceDownLeftRightUp_Step1": {
+      "signature": "u8 MovementType_WalkSequenceDownLeftRightUp_Step1(struct ObjectEvent *objectEvent, struct Sprite *sprite)",
+      "body": "u8 directions[sizeof(gDownLeftRightUpDirections)];\n    memcpy(directions, gDownLeftRightUpDirections, sizeof(gDownLeftRightUpDirections));\n    if (objectEvent->directionSequenceIndex == 2 && objectEvent->initialCoords.x == objectEvent->currentCoords.x)\n        objectEvent->directionSequenceIndex = 3;\n\n    return MoveNextDirectionInSequence(objectEvent, sprite, directions);",
+      "callsTo": [
+        "MoveNextDirectionInSequence"
+      ],
+      "srcFile": "src/event_object_movement.c"
+    },
+    "MovementType_WalkSequenceUpLeftDownRight_Step1": {
+      "signature": "u8 MovementType_WalkSequenceUpLeftDownRight_Step1(struct ObjectEvent *objectEvent, struct Sprite *sprite)",
+      "body": "u8 directions[sizeof(gUpLeftDownRightDirections)];\n    memcpy(directions, gUpLeftDownRightDirections, sizeof(gUpLeftDownRightDirections));\n    if (objectEvent->directionSequenceIndex == 2 && objectEvent->initialCoords.y == objectEvent->currentCoords.y)\n        objectEvent->directionSequenceIndex = 3;\n\n    return MoveNextDirectionInSequence(objectEvent, sprite, directions);",
+      "callsTo": [
+        "MoveNextDirectionInSequence"
+      ],
+      "srcFile": "src/event_object_movement.c"
+    },
+    "MovementType_WalkSequenceDownRightUpLeft_Step1": {
+      "signature": "u8 MovementType_WalkSequenceDownRightUpLeft_Step1(struct ObjectEvent *objectEvent, struct Sprite *sprite)",
+      "body": "u8 directions[sizeof(gDownRightUpLeftDirections)];\n    memcpy(directions, gDownRightUpLeftDirections, sizeof(gDownRightUpLeftDirections));\n    if (objectEvent->directionSequenceIndex == 2 && objectEvent->initialCoords.y == objectEvent->currentCoords.y)\n        objectEvent->directionSequenceIndex = 3;\n\n    return MoveNextDirectionInSequence(objectEvent, sprite, directions);",
+      "callsTo": [
+        "MoveNextDirectionInSequence"
+      ],
+      "srcFile": "src/event_object_movement.c"
+    },
+    "MovementType_WalkSequenceLeftDownRightUp_Step1": {
+      "signature": "u8 MovementType_WalkSequenceLeftDownRightUp_Step1(struct ObjectEvent *objectEvent, struct Sprite *sprite)",
+      "body": "u8 directions[sizeof(gLeftDownRightUpDirections)];\n    memcpy(directions, gLeftDownRightUpDirections, sizeof(gLeftDownRightUpDirections));\n    if (objectEvent->directionSequenceIndex == 2 && objectEvent->initialCoords.x == objectEvent->currentCoords.x)\n        objectEvent->directionSequenceIndex = 3;\n\n    return MoveNextDirectionInSequence(objectEvent, sprite, directions);",
+      "callsTo": [
+        "MoveNextDirectionInSequence"
+      ],
+      "srcFile": "src/event_object_movement.c"
+    },
+    "MovementType_WalkSequenceRightUpLeftDown_Step1": {
+      "signature": "u8 MovementType_WalkSequenceRightUpLeftDown_Step1(struct ObjectEvent *objectEvent, struct Sprite *sprite)",
+      "body": "u8 directions[sizeof(gRightUpLeftDownDirections)];\n    memcpy(directions, gRightUpLeftDownDirections, sizeof(gRightUpLeftDownDirections));\n    if (objectEvent->directionSequenceIndex == 2 && objectEvent->initialCoords.x == objectEvent->currentCoords.x)\n        objectEvent->directionSequenceIndex = 3;\n\n    return MoveNextDirectionInSequence(objectEvent, sprite, directions);",
+      "callsTo": [
+        "MoveNextDirectionInSequence"
+      ],
+      "srcFile": "src/event_object_movement.c"
+    },
+    "MovementType_WalkSequenceUpRightDownLeft_Step1": {
+      "signature": "u8 MovementType_WalkSequenceUpRightDownLeft_Step1(struct ObjectEvent *objectEvent, struct Sprite *sprite)",
+      "body": "u8 directions[sizeof(gUpRightDownLeftDirections)];\n    memcpy(directions, gUpRightDownLeftDirections, sizeof(gUpRightDownLeftDirections));\n    if (objectEvent->directionSequenceIndex == 2 && objectEvent->initialCoords.y == objectEvent->currentCoords.y)\n        objectEvent->directionSequenceIndex = 3;\n\n    return MoveNextDirectionInSequence(objectEvent, sprite, directions);",
+      "callsTo": [
+        "MoveNextDirectionInSequence"
+      ],
+      "srcFile": "src/event_object_movement.c"
+    },
+    "MovementType_WalkSequenceDownLeftUpRight_Step1": {
+      "signature": "u8 MovementType_WalkSequenceDownLeftUpRight_Step1(struct ObjectEvent *objectEvent, struct Sprite *sprite)",
+      "body": "u8 directions[sizeof(gDownLeftUpRightDirections)];\n    memcpy(directions, gDownLeftUpRightDirections, sizeof(gDownLeftUpRightDirections));\n    if (objectEvent->directionSequenceIndex == 2 && objectEvent->initialCoords.y == objectEvent->currentCoords.y)\n        objectEvent->directionSequenceIndex = 3;\n\n    return MoveNextDirectionInSequence(objectEvent, sprite, directions);",
+      "callsTo": [
+        "MoveNextDirectionInSequence"
+      ],
+      "srcFile": "src/event_object_movement.c"
+    },
+    "MovementType_WalkSequenceLeftUpRightDown_Step1": {
+      "signature": "u8 MovementType_WalkSequenceLeftUpRightDown_Step1(struct ObjectEvent *objectEvent, struct Sprite *sprite)",
+      "body": "u8 directions[sizeof(gLeftUpRightDownDirections)];\n    memcpy(directions, gLeftUpRightDownDirections, sizeof(gLeftUpRightDownDirections));\n    if (objectEvent->directionSequenceIndex == 2 && objectEvent->initialCoords.x == objectEvent->currentCoords.x)\n        objectEvent->directionSequenceIndex = 3;\n\n    return MoveNextDirectionInSequence(objectEvent, sprite, directions);",
+      "callsTo": [
+        "MoveNextDirectionInSequence"
+      ],
+      "srcFile": "src/event_object_movement.c"
+    },
+    "MovementType_WalkSequenceRightDownLeftUp_Step1": {
+      "signature": "u8 MovementType_WalkSequenceRightDownLeftUp_Step1(struct ObjectEvent *objectEvent, struct Sprite *sprite)",
+      "body": "u8 directions[sizeof(gRightDownLeftUpDirections)];\n    memcpy(directions, gRightDownLeftUpDirections, sizeof(gRightDownLeftUpDirections));\n    if (objectEvent->directionSequenceIndex == 2 && objectEvent->initialCoords.x == objectEvent->currentCoords.x)\n        objectEvent->directionSequenceIndex = 3;\n\n    return MoveNextDirectionInSequence(objectEvent, sprite, directions);",
+      "callsTo": [
+        "MoveNextDirectionInSequence"
+      ],
+      "srcFile": "src/event_object_movement.c"
+    }
+  }
+}
