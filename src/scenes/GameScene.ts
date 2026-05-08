@@ -30,6 +30,7 @@ import { GAME_W, GAME_H } from '../main';
 import { Gba } from '../engine/gba/gba';
 import { GbaPhaserBridge } from '../engine/gba/phaser-bridge';
 import { DecompRuntime, type CB2Callback } from '../engine/decomp-runtime';
+import { CB2_NewGame } from '../engine/decomp-data/auto/src/overworld-callbacks-auto';
 import { setGlobalRuntime, resetObjAllocations, lz77Trace, assetCache } from '../engine/decomp-globals';
 import { preloadFontData } from '../engine/gba-text-system';
 import { exposeGbaGlobals } from '../engine/gba-global-scope';
@@ -368,6 +369,10 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  /** Phase 4.10 : transition flag. Set true au 1er tick où callback2 === CB2_NewGame
+   *  (= post-Birch cleanup). Empêche la transition de double-fire. */
+  private overworldTransitionStarted = false;
+
   update(_: number, deltaMs: number) {
     if (!this.rt) return;
     // Optim : skip bridge.tick si pas de frame logique avancée. Cf
@@ -386,6 +391,29 @@ export class GameScene extends Phaser.Scene {
         console.error('[GameScene.update] bridge.tick THREW:', e);
       }
     }
+    // Phase 4.10 : detect post-Birch CB2_NewGame → transition vers TestOverworldScene.
+    // 1:1 décomp Task_NewGameBirchSpeech_Cleanup fait `SetMainCallback2(CB2_NewGame)`
+    // après FreeAllWindowBuffers. Au lieu de run le placeholder welcome, on
+    // démarre l'overworld scene (= truck cinematic).
+    if (!this.overworldTransitionStarted && this.rt.gMain.callback2 === CB2_NewGame) {
+      void this.transitionToOverworld();
+    }
+  }
+
+  /** Sync Birch state (playerName, gender) vers gameState + start TestOverworldScene. */
+  private async transitionToOverworld(): Promise<void> {
+    this.overworldTransitionStarted = true;
+    console.log('[GameScene] CB2_NewGame detected → transitioning to TestOverworldScene');
+    const { gSaveBlock2Ptr } = await import('../engine/gba-menu-system');
+    const { gameState } = await import('../engine/game-state');
+    const sb2 = gSaveBlock2Ptr as { playerName?: string; playerGender?: number };
+    if (sb2.playerName) gameState.playerName = sb2.playerName;
+    gameState.gender = sb2.playerGender === 1 ? 'FEMALE' : 'MALE';
+    // Clear gameState.map pour forcer truck cinematic flow.
+    gameState.map = undefined;
+    gameState.save();
+    console.log(`[GameScene] synced gameState : name='${gameState.playerName}' gender='${gameState.gender}'`);
+    this.scene.start('TestOverworldScene');
   }
 
   // Input handlers : voir src/engine/input-handler.ts (= shared entre toutes

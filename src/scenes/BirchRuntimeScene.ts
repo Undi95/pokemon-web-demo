@@ -60,6 +60,7 @@ import {
   SpriteCB_Null,
   CB2_MainMenu,
 } from '../engine/decomp-data/auto/src/main_menu-callbacks-auto';
+import { CB2_NewGame } from '../engine/decomp-data/auto/src/overworld-callbacks-auto';
 import {
   REG_OFFSET_DISPCNT,
   DISPCNT_OBJ_ON, DISPCNT_OBJ_1D_MAP,
@@ -206,6 +207,11 @@ export class BirchRuntimeScene extends Phaser.Scene {
     }
   }
 
+  /** Phase 4.10 : transition flag. Set true au 1er tick où callback2 === CB2_NewGame
+   *  (= post-Birch cleanup task fire). Empêche la transition de double-fire si
+   *  Phaser update() est appelé plusieurs frames avant scene.start prend effet. */
+  private overworldTransitionStarted = false;
+
   update(_: number, deltaMs: number): void {
     if (!this.rt || !this.booted) return;
     // Optim : skip bridge.tick si pas de frame logique avancée (= update
@@ -224,6 +230,51 @@ export class BirchRuntimeScene extends Phaser.Scene {
         console.error('[BirchRuntime.update] bridge.tick THREW:', e);
       }
     }
+    // Phase 4.10 : detect post-Birch CB2_NewGame → transition vers TestOverworldScene.
+    // 1:1 décomp Task_NewGameBirchSpeech_Cleanup fait `SetMainCallback2(CB2_NewGame)`
+    // après FreeAllWindowBuffers. Notre BirchRuntimeScene watch ce callback et
+    // déclenche la scene transition au lieu de run le placeholder welcome.
+    if (!this.overworldTransitionStarted && this.rt.gMain.callback2 === CB2_NewGame) {
+      this.transitionToOverworld();
+    }
+  }
+
+  /** Sync Birch state (playerName, gender) vers gameState + start TestOverworldScene.
+   *  TestOverworldScene boot dispatcher détecte la save existante (= post-Birch :
+   *  playerName set par naming screen, map pas encore set) et fall through au
+   *  truck cinematic flow puisque map est manquant. */
+  private async transitionToOverworld(): Promise<void> {
+    this.overworldTransitionStarted = true;
+    console.log('[BirchRuntime] CB2_NewGame detected → transitioning to TestOverworldScene');
+
+    // Sync gSaveBlock2Ptr → gameState (= playerName + gender choisis à la naming
+    // screen + Birch dialog "Garçon ou Fille?").
+    const { gSaveBlock2Ptr } = await import('../engine/gba-menu-system');
+    const { gameState } = await import('../engine/game-state');
+    const sb2 = gSaveBlock2Ptr as { playerName?: string; playerGender?: number };
+    if (sb2.playerName) {
+      gameState.playerName = sb2.playerName;
+    }
+    gameState.gender = sb2.playerGender === 1 ? 'FEMALE' : 'MALE';
+    console.log(`[BirchRuntime] synced gameState : name='${gameState.playerName}' gender='${gameState.gender}'`);
+
+    // Clear gameState.map pour forcer le truck cinematic flow (= 1:1 décomp
+    // WarpToTruck post-Birch). Sans ce clear, si une save précédente a un
+    // `map` field set, decideBootMode triggers le resume mode qui spawn à la
+    // saved position au lieu du truck.
+    gameState.map = undefined;
+    // Persist le playerName/gender + map cleared (= au cas où user F5 avant le
+    // truck warp final, on garde les Birch-set fields).
+    gameState.save();
+
+    // Start overworld scene. decideBootMode :
+    //   - Pas de ?nointro / ?truck.
+    //   - hasPersistedSave true MAIS gameState.map === undefined → resume skip.
+    //   - Default → NewGameInit + setDynamicWarp Bourg + spawn MAP_INSIDE_OF_TRUCK.
+    //
+    // TestOverworldScene's PlayBGM call dans loadAndInitMap override le BGM Birch
+    // automatiquement (= 1:1 décomp Overworld_PlaySpecialMapMusic).
+    this.scene.start('TestOverworldScene');
   }
 
   // Note : input handling moved to src/engine/input-handler.ts (= shared
