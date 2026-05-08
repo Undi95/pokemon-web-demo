@@ -407,21 +407,53 @@ registerOpcode('checkplayergender', (_ctx, _args) => {
 
 // ─── Lock / Release / FacePlayer ─────────────────────────────────────────────
 
-registerOpcode('lock', (_ctx) => {
-  // 1:1 décomp ScrCmd_lock : freeze le NPC sélectionné + waitForPlayer.
+/** 1:1 décomp `IsFreezePlayerFinished` (event_object_movement.c) :
+ *  retourne TRUE quand le player a fini son current step (= safe to msgbox).
+ *  Sans cette wait, un msgbox peut interrompre un walk mid-step → glitch
+ *  visuel + désync facingDirection.
+ *
+ *  Fix Audit BIG section 2.3 : avant, `lock`/`lockall` retournaient false sans
+ *  wait → script peut afficher dialog avant que le step end snap les coords. */
+function _isPlayerStepFinished(): boolean {
+  return gPlayerAvatar.stepFramesLeft <= 0
+      && gPlayerAvatar.collideFramesLeft <= 0
+      && gPlayerAvatar.turnFramesLeft <= 0
+      && gPlayerAvatar.jumpFramesLeft <= 0
+      && gPlayerAvatar.forceMovement === 0;  // DIR_NONE
+}
+
+registerOpcode('lock', (ctx) => {
+  // 1:1 décomp `ScrCmd_lock` (scrcmd.c:1217-1237) :
+  //   FreezeObjects_WaitForPlayerAndSelected();
+  //   SetupNativeScript(ctx, IsFreezeSelectedObjectAndPlayerFinished);
+  // Freeze tous les NPCs sauf player + selected NPC. Player + selected sont
+  // freeze APRÈS leur step courant termine.
   const npc = getSelectedNpc();
-  if (npc) npc.frozen = true;
-  // Player input lock via LockPlayerFieldControls (= déjà fait par
-  // ScriptContext_SetupScript). lock opcode s'assure juste que c'est set.
-  return false;
+  // Freeze immediately tous sauf player/selected.
+  for (const n of gObjectEvents) {
+    if (n.active && n !== npc) n.frozen = true;
+  }
+  // Wait pour player step end. Le selected NPC était déjà frozen ou en step ;
+  // on freeze le selected aussi à la fin du wait.
+  SetupNativeScript(ctx, () => {
+    if (!_isPlayerStepFinished()) return false;
+    // Player step done : freeze player + selected NPC, return true (= resume script).
+    if (npc) npc.frozen = true;
+    return true;
+  });
+  return true;  // tells script-runtime to wait
 });
 
-registerOpcode('lockall', (_ctx) => {
-  // 1:1 décomp : freeze tous les NPCs.
+registerOpcode('lockall', (ctx) => {
+  // 1:1 décomp `ScrCmd_lockall` (scrcmd.c:1199-1213) :
+  //   FreezeObjects_WaitForPlayer();
+  //   SetupNativeScript(ctx, IsFreezePlayerFinished);
+  // Freeze tous les NPCs immediately. Player est freeze APRÈS son step courant.
   for (const npc of gObjectEvents) {
     if (npc.active) npc.frozen = true;
   }
-  return false;
+  SetupNativeScript(ctx, () => _isPlayerStepFinished());
+  return true;
 });
 
 registerOpcode('release', (_ctx) => {
