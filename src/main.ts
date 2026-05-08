@@ -50,6 +50,8 @@ if (typeof window !== 'undefined') {
 // HAS_SAVED_GAME vs HAS_NO_SAVED_GAME au menu screen.
 import { LoadGameSave } from './engine/save-system';
 import { SetSaveFileStatus } from './engine/gba-menu-system';
+// Side-effect import : pose window.rng debug helpers (= dev console access).
+import './engine/random';
 const _saveLoadStatus = LoadGameSave();
 SetSaveFileStatus(_saveLoadStatus);
 console.log(`[main] LoadGameSave at boot → status=${_saveLoadStatus}`);
