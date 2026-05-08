@@ -257,24 +257,41 @@ function _tickAction(action: string, target: MovementTarget, frame: number, rt: 
 
   // face_player : 1:1 décomp `MovementAction_FacePlayer_Step0` — calcule la
   // direction relative depuis le NPC vers le player et set la facing.
-  if (action === 'face_player') {
+  if (action === 'face_player' || action === 'face_away_player') {
     if (target.npc) {
       const dx = gPlayerAvatar.x - target.npc.currentCoordsX;
       const dy = gPlayerAvatar.y - target.npc.currentCoordsY;
-      // Priorité sur l'axe le plus grand (= 1:1 décomp behavior).
       let dir = DIR_SOUTH;
       if (Math.abs(dx) > Math.abs(dy)) {
         dir = dx > 0 ? DIR_EAST : DIR_WEST;
       } else {
         dir = dy > 0 ? DIR_SOUTH : DIR_NORTH;
       }
+      // face_away_player : opposite direction.
+      if (action === 'face_away_player') {
+        const oppositeDir: Record<number, number> = {
+          [DIR_NORTH]: DIR_SOUTH, [DIR_SOUTH]: DIR_NORTH,
+          [DIR_EAST]: DIR_WEST,   [DIR_WEST]: DIR_EAST,
+        };
+        dir = oppositeDir[dir] ?? dir;
+      }
       _setFacing(target, dir);
     }
     return true;
   }
-  // face_originally_facing_direction : revert à template.movementType-based facing.
-  // MVP : no-op (= NPC garde sa current facing).
-  if (action === 'face_originally_facing_direction') return true;
+  // face_originally_facing_direction / face_original_direction : revert à
+  // template.movementType-based facing. MVP : no-op (= NPC garde current).
+  if (action === 'face_originally_facing_direction' || action === 'face_original_direction') {
+    return true;
+  }
+  // emote_X : afficher un emoticon (= ! ? love etc) au-dessus du NPC. MVP no-op.
+  // 1:1 décomp : crée un FieldEffect ATTENTION_MARK / EXCLAMATION_MARK / etc.
+  // qui spawn un sprite emoji au-dessus du NPC pendant ~1 seconde.
+  if (action === 'emote_exclamation_mark' || action === 'emote_question_mark' ||
+      action === 'emote_heart' || action === 'emote_x' || action === 'emote_double_exclamation' ||
+      action === 'emote_happy') {
+    return true;  // TODO Phase E : real emote spawn.
+  }
   if (action === 'set_invisible') { _setInvisible(target, true, rt); return true; }
   if (action === 'set_visible')   { _setInvisible(target, false, rt); return true; }
   if (action === 'lock_facing_direction')   { return true; /* TODO future : flag */ }
