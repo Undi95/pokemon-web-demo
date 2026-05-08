@@ -609,21 +609,38 @@ function tryInteractWithFacingNPC(): void {
     Array<{ active: boolean; currentCoordsX: number; currentCoordsY: number;
             graphicsId: string; movementType: string; localId: number;
             walkFramesLeft: number; scriptLabel?: string }> | undefined;
-  if (!gObjectEvents) return;
-  for (let i = 0; i < gObjectEvents.length; i++) {
-    const npc = gObjectEvents[i];
-    if (!npc.active) continue;
-    if (npc.walkFramesLeft > 0) continue;  // skip mid-walk (= cell non stable)
-    if (npc.currentCoordsX === tx && npc.currentCoordsY === ty) {
-      gSelectedObjectEvent.index = i;
-      gSpecialVar.LastTalked = npc.localId;
-      const scriptLabel = npc.scriptLabel;
-      if (!scriptLabel) {
-        console.log(`[player-avatar] interact ${npc.graphicsId} (localId=${npc.localId}) — no script label`);
+  if (gObjectEvents) {
+    for (let i = 0; i < gObjectEvents.length; i++) {
+      const npc = gObjectEvents[i];
+      if (!npc.active) continue;
+      if (npc.walkFramesLeft > 0) continue;  // skip mid-walk (= cell non stable)
+      if (npc.currentCoordsX === tx && npc.currentCoordsY === ty) {
+        gSelectedObjectEvent.index = i;
+        gSpecialVar.LastTalked = npc.localId;
+        const scriptLabel = npc.scriptLabel;
+        if (!scriptLabel) {
+          console.log(`[player-avatar] interact ${npc.graphicsId} (localId=${npc.localId}) — no script label`);
+          return;
+        }
+        console.log(`[player-avatar] interact ${npc.graphicsId} (localId=${npc.localId}) → script '${scriptLabel}'`);
+        ScriptContext_SetupScript(scriptLabel);
         return;
       }
-      console.log(`[player-avatar] interact ${npc.graphicsId} (localId=${npc.localId}) → script '${scriptLabel}'`);
-      ScriptContext_SetupScript(scriptLabel);
+    }
+  }
+  // 1:1 décomp `field_control_avatar.c:GetBackgroundEventScriptAtPosition`
+  // (line 923-941). Si pas d'NPC interaction, check bg_events sign à la
+  // facing position. Used par e.g. signs / posters / boxes textbox in truck.
+  const gMapHeader = (globalThis as Record<string, unknown>).gMapHeader as
+    { events?: { bgEvents?: Array<{ x: number; y: number; kind: string; script: string }> } } | undefined;
+  const bgEvents = gMapHeader?.events?.bgEvents;
+  if (bgEvents) {
+    for (const bg of bgEvents) {
+      if (bg.x !== tx || bg.y !== ty) continue;
+      if (bg.kind !== 'sign' && bg.kind !== 'hidden_item') continue;
+      if (!bg.script) continue;
+      console.log(`[player-avatar] interact bg_event '${bg.kind}' at (${tx},${ty}) → script '${bg.script}'`);
+      ScriptContext_SetupScript(bg.script);
       return;
     }
   }
