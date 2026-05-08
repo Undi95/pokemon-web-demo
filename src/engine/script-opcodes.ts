@@ -519,24 +519,47 @@ registerOpcode('msgbox', (ctx, args) => {
     return false;
   }
 
+  // 1:1 décomp `data/scripts/std_msgbox.inc` semantics :
+  //   MSGBOX_NPC      → lock + faceplayer + message + waitbuttonpress + release
+  //   MSGBOX_SIGN     → lockall + message + waitbuttonpress + releaseall
+  //   MSGBOX_DEFAULT  → message + waitbuttonpress + return (NO lock, NO facing)
+  //   MSGBOX_AUTOCLOSE→ message + waitbuttonpress + closemessage
+  //   MSGBOX_YESNO    → message + yesnobox
+  // Bug fixed session 124 (= Audit Opus A.2) : avant cette dispatch, on
+  // appliquait `npc.frozen=true + facingDirection=OPPOSITE_DIR[player]` à
+  // TOUT non-SIGN msgbox, y compris MSGBOX_DEFAULT. Conséquence : Mom dialog
+  // "C'est joli ici, non?" (= MSGBOX_DEFAULT) flippait Mom de NORTH (= set par
+  // OnTransition setobjectmovementtype FACE_UP) vers SOUTH (= OPPOSITE_DIR
+  // player.facing=NORTH). La répétition `MoveMomToDoor/Stairs/TV → msgbox`
+  // dans le flow stomppait sur facing à chaque dialog → user voyait Mom face
+  // DOWN au lieu de UP/WEST.
   const isSign = type === 'MSGBOX_SIGN';
+  const isNpc = type === 'MSGBOX_NPC';
   const isYesNo = type === 'MSGBOX_YESNO';
+  const isAutoclose = type === 'MSGBOX_AUTOCLOSE';
+  // MSGBOX_DEFAULT : juste afficher le message, pas de lock/face.
+  // (= cf. std_msgbox.inc Std_MsgboxDefault).
+
   let state = 0;
 
   const tick = (): boolean => {
     switch (state) {
       case 0: {
-        // Lock + face player.
+        // Lock + face NPC selon msgbox type.
         if (isSign) {
+          // 1:1 décomp Std_MsgboxSign : lockall (= freeze TOUS les NPCs).
           for (const n of gObjectEvents) if (n.active) n.frozen = true;
-        } else {
+        } else if (isNpc) {
+          // 1:1 décomp Std_MsgboxNPC : lock (= freeze the SELECTED NPC) + faceplayer.
+          // faceplayer = NPC tourne vers player (= opposite direction du player.facing).
           const npc = getSelectedNpc();
           if (npc) {
             npc.frozen = true;
             npc.facingDirection = OPPOSITE_DIR[gPlayerAvatar.facing] ?? DIR_SOUTH;
           }
         }
-        // Show message.
+        // MSGBOX_DEFAULT / MSGBOX_AUTOCLOSE / MSGBOX_YESNO : pas de lock/face.
+        // 1:1 décomp Std_MsgboxDefault : juste `message + waitbuttonpress + return`.
         ShowFieldMessage(rawText);
         state = 1;
         return false;
@@ -554,14 +577,19 @@ registerOpcode('msgbox', (ctx, args) => {
         if (isAOrBNewlyPressed()) {
           // SE_SELECT = 5 (= 1:1 décomp constants/songs.h).
           void import('./decomp-globals').then(({ PlaySE }) => PlaySE(5));
-          // Release : close dialog + unfreeze NPC(s).
+          // Autoclose: close + release. Sinon (NPC/SIGN/DEFAULT) : juste close.
           HideFieldMessageBox();
+          // Release frozen NPCs UNIQUEMENT pour les types qui les avaient lock.
           if (isSign) {
             for (const n of gObjectEvents) if (n.active) n.frozen = false;
-          } else {
+          } else if (isNpc) {
             const npc = getSelectedNpc();
             if (npc) npc.frozen = false;
           }
+          // MSGBOX_DEFAULT : pas de lock à release. NB: si le script appelait
+          // explicitement `lockall` avant le msgbox (= comme dans
+          // EnterHouseMovingIn), c'est `releaseall` qui doit unfreeze, pas msgbox.
+          void isAutoclose;  // future: AUTOCLOSE pourrait avoir comportement différent
           return true;  // resume bytecode
         }
         return false;
@@ -587,7 +615,7 @@ registerOpcode('msgbox', (ctx, args) => {
           ClearStdWindowAndFrame(wid, true);
           RemoveWindow(wid);
         }
-        // Release dialog + NPC.
+        // Release dialog + NPC (= MSGBOX_YESNO behavior 1:1 décomp).
         HideFieldMessageBox();
         const npc = getSelectedNpc();
         if (npc) npc.frozen = false;

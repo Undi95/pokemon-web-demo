@@ -151,10 +151,17 @@ const Task_HandleTruckSequence = function (task: DecompTask, rt: DecompRuntime):
     case 1:
       // Truck rolling : Task_Truck1 logic = camera Y bob via bobTimer + box bouncing.
       // Durée : 150 frames. À fin → FadeInFromBlack + state 2.
+      // 1:1 décomp ordering (field_special_scene.c:89-108 Task_Truck1) :
+      //   yBox1 = GetTruckBoxYMovement(tTimer + 30) * 4   ← PRE-increment tTimer
+      //   SetObjectEventSpritePosByLocalIdAndMap(...)
+      //   ...
+      //   if (++tTimer == 30000) tTimer = 0;              ← POST-increment
+      //   cameraYpan = GetTruckCameraBobbingY(tTimer);    ← POST-increment value
+      // Donc box bouncing = pre, camera Y = post (= +1 frame offset).
+      _applyBoxBouncing(data[2], 0);                       // PRE-increment
+      data[2]++;                                            // ++tTimer
       data[1]++;
-      data[2]++;  // bobTimer
-      SetCameraPanning(0, GetTruckCameraBobbingY(data[2]));
-      _applyBoxBouncing(data[2], 0);
+      SetCameraPanning(0, GetTruckCameraBobbingY(data[2]));// POST-increment
       if (data[1] === 150) {
         // 1:1 décomp : FadeInFromBlack (= fade screen FROM black TO color).
         rt.BeginNormalPaletteFade('PALETTES_ALL', 0, 16, 0, 'RGB_BLACK');
@@ -164,27 +171,38 @@ const Task_HandleTruckSequence = function (task: DecompTask, rt: DecompRuntime):
       break;
     case 2:
       // Continue Task_Truck1 logic. Wait until !gPaletteFade.active && tTimer > 300.
+      // Same PRE/POST increment ordering que state 1 (= 1:1 décomp Task_Truck1).
+      _applyBoxBouncing(data[2], 0);                       // PRE-increment
+      data[2]++;
       data[1]++;
-      data[2]++;  // bobTimer
-      SetCameraPanning(0, GetTruckCameraBobbingY(data[2]));
-      _applyBoxBouncing(data[2], 0);
+      SetCameraPanning(0, GetTruckCameraBobbingY(data[2]));// POST-increment
       if (!rt.gPaletteFade.active && data[1] > 300) {
         // 1:1 décomp : DestroyTask(Task_Truck1) → CreateTask(Task_Truck2)
-        // → PlaySE(SE_TRUCK_STOP) → tState=3.
+        //   → PlaySE(SE_TRUCK_STOP) → tState=3.
+        // CRITIQUE : décomp Task_Truck2 est une NEW task allouée fresh →
+        //   `tTimerVertical = 0`. Notre impl partage `data[2]` → si on ne
+        //   reset pas, on entre en state 3 avec data[2]≈450 → la phase de
+        //   GetTruckBoxYMovement / GetTruckCameraBobbingY est complètement
+        //   différente vs ROM (= bug user A.3 box positioning).
         data[1] = 0;
+        data[2] = 0;  // ← FIX : reset bobTimer (= mimic fresh Task_Truck2)
         data[0] = 3;
         data[3] = 0;  // reset horizontal step
         // Stop le SE_TRUCK_MOVE explicit pour que SE_TRUCK_STOP soit séquentiel.
         stopPrerenderedSE('se1');
         stopPrerenderedSE('se2');
         PlaySE(SE_TRUCK_STOP);
-        console.log('[truck-cinematic] state 2→3 : SE_TRUCK_STOP played (MOVE stopped)');
+        console.log('[truck-cinematic] state 2→3 : SE_TRUCK_STOP played (MOVE stopped, bobTimer reset 1:1 décomp)');
       }
       break;
     case 3:
       // Task_Truck2 → Task_Truck3 logic : iter sTruckCamera_HorizontalTable
       // every 6 frames. data[1] = step timer (= 0..5), data[3] = move step index.
       // Camera Y bob continue jusqu'à table[step] === 2 (= Task_Truck3 swap).
+      // 1:1 décomp Task_Truck2 (field_special_scene.c:116-150) ordering :
+      //   ++tTimerHorizontal; ++tTimerVertical;  ← PRE-increment des deux
+      //   ... yBox = GetTruckBoxYMovement(tTimerVertical + 30) * 4 ; ...
+      // Donc icic box & camera utilisent même valeur (= post-increment).
       data[1]++;
       data[2]++;
       if (data[1] > 5) {

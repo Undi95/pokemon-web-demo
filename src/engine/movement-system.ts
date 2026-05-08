@@ -322,11 +322,14 @@ function _tickAction(action: string, target: MovementTarget, frame: number, rt: 
   if (action === 'walk_fast_left')  return _tickWalk(target, DIR_WEST,  frame, 8, 2);
   if (action === 'walk_fast_right') return _tickWalk(target, DIR_EAST,  frame, 8, 2);
 
-  // ─── Walk faster (= 8 frames at 2 px/frame, alias of walk_fast for now) ──
-  if (action === 'walk_faster_down')  return _tickWalk(target, DIR_SOUTH, frame, 8, 2);
-  if (action === 'walk_faster_up')    return _tickWalk(target, DIR_NORTH, frame, 8, 2);
-  if (action === 'walk_faster_left')  return _tickWalk(target, DIR_WEST,  frame, 8, 2);
-  if (action === 'walk_faster_right') return _tickWalk(target, DIR_EAST,  frame, 8, 2);
+  // ─── Walk faster (= 1:1 décomp `MOVE_SPEED_FASTER` = 4 frames × 4px/frame) ─
+  // Avant : 8 frames × 2 px = 16 px (= alias de walk_fast). Bug : 2× plus lent
+  // que la ROM. Décomp `event_object_movement.c:8274-8278 sStep4Funcs` use 4
+  // frames @ 4px = 16px en 4 frames. Per Audit Opus BIG section 2.1.
+  if (action === 'walk_faster_down')  return _tickWalk(target, DIR_SOUTH, frame, 4, 4);
+  if (action === 'walk_faster_up')    return _tickWalk(target, DIR_NORTH, frame, 4, 4);
+  if (action === 'walk_faster_left')  return _tickWalk(target, DIR_WEST,  frame, 4, 4);
+  if (action === 'walk_faster_right') return _tickWalk(target, DIR_EAST,  frame, 4, 4);
 
   // ─── Walk in place (= face anim sans bouger, durations variées) ──────────
   if (action.startsWith('walk_in_place_')) {
@@ -469,11 +472,15 @@ function _tickWalkInPlace(action: string, target: MovementTarget, frame: number)
   else if (action.endsWith('_left'))  dir = DIR_WEST;
   else if (action.endsWith('_right')) dir = DIR_EAST;
 
-  // Faster = 8 frames, fast = 16, normal = 32, slow = 64. (1:1 décomp speeds.)
-  let duration = 32;
-  if (action.includes('faster_')) duration = 8;
-  else if (action.includes('fast_')) duration = 16;
-  else if (action.includes('slow_')) duration = 64;
+  // 1:1 décomp `event_object_movement.c:5732-5826 InitMoveInPlace` :
+  // walk_in_place_normal = 16 frames, slow = 32, fast = 8, faster = 4.
+  // Bug fix session 124 (= Audit Opus BIG section 2.1) : avant ce fix les
+  // durations étaient 2× trop longues (32, 64, 16, 8) → toute scripted
+  // face-anim 2× plus lente que la ROM.
+  let duration = 16;
+  if (action.includes('faster_')) duration = 4;
+  else if (action.includes('fast_')) duration = 8;
+  else if (action.includes('slow_')) duration = 32;
 
   if (frame === 0) {
     _setFacing(target, dir);

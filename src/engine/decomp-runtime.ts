@@ -878,18 +878,33 @@ export class DecompRuntime {
     return { byteSize: png.charData.length };
   }
 
-  /** 1:1 décomp LoadPalette(src, paletteFlatIdx, sizeBytes).
-   *  flatIdx : index dans gPlttBuffer (0-511). 0-255 = BG, 256-511 = OBJ.
-   *  (= la même convention que `LoadPalette` dans decomp-globals.ts.) */
+  /** 1:1 décomp `LoadPalette(src, paletteFlatIdx, sizeBytes)` (palette.c:91-95).
+   *
+   *  flatIdx : index flat dans gPlttBuffer (0-511). 0-255 = BG, 256-511 = OBJ.
+   *
+   *  ⚠️ CRITIQUE — Bug session 124 fix : avant ce fix on écrivait DIRECTEMENT à
+   *  `gba.palette.loadBgRange` (= bypass complet de gPlttBufferFaded ET du
+   *  gate `bufferTransferDisabled`). Conséquence : tout sprite/tileset asset
+   *  loader qui call LoadPaletteBg/Obj pendant un warp window leaked NEW colors
+   *  à PaletteBanks → palette flash visible avant fade-in (= user A.1).
+   *  Fix 1:1 décomp : écrire à `gPlttBufferFaded` (+ Unfaded) ; le `Transfer
+   *  PlttBuffer()` au prochain VBlank flush la palette en respectant le gate. */
   LoadPaletteBg(palette: Uint16Array, flatIdx: number): void {
-    this.gba.palette.loadBgRange(flatIdx, palette);
+    for (let i = 0; i < palette.length; i++) {
+      this.gPlttBufferFaded.set(flatIdx + i, palette[i]);
+      this.gPlttBufferUnfaded.set(flatIdx + i, palette[i]);
+    }
   }
 
   LoadPaletteObj(palette: Uint16Array, flatIdx: number): void {
     // flatIdx peut être un OBJ_PLTT_ID() (= 256+n*16) ou un idx OBJ-relative (0-255).
-    // gba.palette.loadObjRange attend 0-255 → soustraire 256 si nécessaire.
-    const objIdx = flatIdx >= 256 ? flatIdx - 256 : flatIdx;
-    this.gba.palette.loadObjRange(objIdx, palette);
+    // gPlttBufferFaded layout : 0-255 = BG, 256-511 = OBJ. Si flatIdx < 256, c'est
+    // un index OBJ-relatif → ajouter 256.
+    const flatBase = flatIdx >= 256 ? flatIdx : 256 + flatIdx;
+    for (let i = 0; i < palette.length; i++) {
+      this.gPlttBufferFaded.set(flatBase + i, palette[i]);
+      this.gPlttBufferUnfaded.set(flatBase + i, palette[i]);
+    }
   }
 
   /** Charge .pal file depuis URL puis charge dans BG palette. */
