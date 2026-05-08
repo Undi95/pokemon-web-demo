@@ -466,18 +466,19 @@ function updateSpriteFrame(rt: DecompRuntime): void {
   const jumpY = gPlayerAvatar.jumpFramesLeft > 0
     ? getJumpYOffset(32 - gPlayerAvatar.jumpFramesLeft)
     : 0;
-  // sprite.y stocké au CENTER. SCREEN_CENTER_Y est la baseline (= 72), apply
-  // jumpY offset additif. syncSpritesToOam applique centerToCornerVec auto.
+  // sprite.y stocké au CENTER (= 72 baseline + jumpY).
   // 1:1 décomp : sprite render utilise `gSpriteCoordOffsetX/Y` qui inclut le
   // camera pan (= SetCameraPanning). Pendant le truck cinematic, le BG shake
   // via cameraPan → sprite player doit shake AUSSI pour que le joueur reste
   // visuellement "dans le camion qui bouge" (= 1:1 décomp behavior).
   // User feedback session 123 : "Le sprite du joueur ne suis pas la fluctuation
   // du camion".
+  // Constants inline (= SCREEN_CENTER_X/Y déclarés en local de InitPlayerAvatar
+  // au-dessous, pas accessibles ici). 7*16+8=120, 6*16+16-40=72.
   const panX = GetCameraPanX();
   const panY = GetCameraPanY();
-  sprite.x = SCREEN_CENTER_X + panX;
-  sprite.y = (6 * 16 + 16 - 40) + jumpY + panY;  // 72 + jumpY + panY
+  sprite.x = 120 + panX;
+  sprite.y = 72 + jumpY + panY;
 }
 
 // ─── Collision check ────────────────────────────────────────────────────────
