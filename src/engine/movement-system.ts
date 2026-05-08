@@ -205,6 +205,23 @@ function _resolveTarget(key: string): MovementTarget | null {
  *  For multi-frame actions (= walk, jump), the frame counter is checked against
  *  the action's duration. */
 function _tickAction(action: string, target: MovementTarget, frame: number, rt: DecompRuntime): boolean {
+  // Phase 4.10 bug fix : reset gFieldCamera.movementSpeedX/Y au DÉBUT de chaque
+  // action pour éviter le "plane à droite à l'infini" bug.
+  //
+  // Symptôme : après `jump_right` (ou n'importe quelle action de mouvement),
+  // sa dernière frame set speedX = dx (= 1 px/frame). On laisse comme ça pour
+  // que CameraUpdate consomme le dernier décrément. Mais le frame d'après, la
+  // queue avance à `delay_16` qui ne touche PAS speedX → CameraUpdate continue
+  // à drainer 1 px/frame pendant 48 frames = 48 px de drift.
+  //
+  // Fix : reset speedX/Y = 0 au frame=0 de chaque action. Les actions de
+  // mouvement (jump/walk) re-setteront speedX dans le même tick juste après,
+  // donc le reset n'a effet QUE sur les actions stationnaires (delay, face, etc).
+  if (frame === 0 && target.isPlayer) {
+    gFieldCamera.movementSpeedX = 0;
+    gFieldCamera.movementSpeedY = 0;
+  }
+
   // ─── Instant actions (= 1 frame each) ────────────────────────────────────
   if (action === 'step_end') {
     // Queue terminator. Done immediately.
