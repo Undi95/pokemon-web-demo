@@ -311,6 +311,12 @@ export function destroyAllNpcSprites(rt: { gSprites: Map<number, { oamIndex: num
       npc.spriteId = -1;
     }
   }
+  // Phase 4.10 fix critique : cleanup child OAMs des NPCs subsprite-driven
+  // (= truck 48×48). Sans ce cleanup, les 12 child OAMs du truck persistent
+  // au map switch → on voit le truck en haut-droite à la sortie OU à l'intérieur
+  // de la nouvelle map (= bug session 119).
+  // 1:1 décomp `RemoveAllObjectEventsOAM` + `FreeAllSpritePalettes` au map exit.
+  clearAllSubspriteTables();
 }
 
 // ─── PNG → OBJ 1D layout helper ─────────────────────────────────────────────
@@ -365,7 +371,7 @@ const TILES_PER_FRAME_16x32 = 8;
 //     32×8 → shape=1 (wide) size=1
 //     16×8 → shape=1 (wide) size=0
 import type { NamingSubsprite } from './decomp-globals';
-import { SetSubspriteTables, syncSubspriteOam } from './decomp-globals';
+import { SetSubspriteTables, syncSubspriteOam, clearAllSubspriteTables } from './decomp-globals';
 
 export const sOamTable_48x48: ReadonlyArray<NamingSubsprite> = [
   { x: -24, y: -24, shape: 1, size: 1, tileOffset:  0, priority: 2 }, // 32×8 row 0 left
