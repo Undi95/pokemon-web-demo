@@ -88,9 +88,23 @@ const config: Phaser.Types.Core.GameConfig = {
   //     à chaque refresh).
   // Les autres scènes restent dispo via game.scene.start() dans la chain.
   scene: (() => {
-    const skipIntro = typeof window !== 'undefined'
-      && new URLSearchParams(window.location.search).has('nointro');
-    return skipIntro
+    if (typeof window === 'undefined') return [TestGbaScene];
+    const params = new URLSearchParams(window.location.search);
+    // ?nointro → preset Test/Male/sac+flag (cf. boot-mode.ts).
+    const noIntro = params.has('nointro');
+    // Save existante (= em_save_v1 avec map field set) → skip title screen
+    // et launch directement TestOverworldScene en mode resume. 1:1 user spec
+    // session 117 : "Si boot normale : save fait, sexe choisi, nom OK. On lance."
+    let hasResumableSave = false;
+    try {
+      const raw = localStorage.getItem('em_save_v1');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        hasResumableSave = !!(parsed && parsed.playerName && parsed.map && parsed.map.name);
+      }
+    } catch { /* localStorage may be disabled — fallback to title */ }
+    const skipTitle = noIntro || hasResumableSave;
+    return skipTitle
       ? [TestOverworldScene, TestGbaScene, GameScene, BirchRuntimeScene, OverworldScene]
       : [TestGbaScene, GameScene, BirchRuntimeScene, TestOverworldScene, OverworldScene];
   })(),
