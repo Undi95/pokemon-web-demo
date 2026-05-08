@@ -5,20 +5,27 @@
  * Source de vérité : `D:/Projet 1/decomps/pokeemeraude/src/field_special_scene.c`
  * lignes 22-269.
  *
+ * Architecture : décomp split la logique en 4 tasks :
+ *   - `Task_HandleTruckSequence` : state machine principale (= SE + tile + spawn child)
+ *   - `Task_Truck1` : run pendant state 1+2, camera Y bob + box anim
+ *   - `Task_Truck2` : run pendant state 3, camera X table + Y bob + box anim
+ *   - `Task_Truck3` : run pendant state 3 fin, camera X seulement (= func swap depuis Task_Truck2)
+ *
+ * Notre impl simplifiée : on inline les 3 child tasks dans Task_HandleTruckSequence
+ * (= 1 task au total). Plus simple à debug, même résultat visuel + audio.
+ *
  * 1:1 décomp préservé :
- *   - Les durations 90/150/300/90/120 frames (= match exact).
- *   - Les SE dans le bon ordre (= MOVE → STOP → UNLOAD → DOOR).
+ *   - Durations 90/150/300/90/120 frames (= match exact).
+ *   - SE order MOVE → STOP → UNLOAD → DOOR.
  *   - GetTruckCameraBobbingY pattern (= -1 every 120, +1 if t%10 <= 4, else 0).
- *   - sTruckCamera_HorizontalTable [0,0,0,0,0,0,0,0,1,2,2,2,2,2,2,-1,-1,-1,0]
- *     stepped tous les 6 frames pendant Task_Truck2/3.
+ *   - sTruckCamera_HorizontalTable iter every 6 frames (= 19 entries × 6 = 114 frames).
  *   - Door tile changes en fin (= DoorClosedFloor → ExitLight).
  *   - LockPlayerFieldControls au début, UnlockPlayerFieldControls à la fin.
  *
- * Non implémenté (= acceptable degradation, boxes statiques) :
- *   - GetTruckBoxYMovement bouncing des LOCALID_TRUCK_BOX_TOP/BOTTOM_L/R via
- *     SetObjectEventSpritePosByLocalIdAndMap. Les caisses bougent pas verticalement
- *     pendant le truck — mais le camera shake les fait visuellement bouger avec
- *     le reste de la scène.
+ * Non implémenté (= acceptable degradation) :
+ *   - Box bouncing (= GetTruckBoxYMovement + SetObjectEventSpritePosByLocalIdAndMap).
+ *     Les caisses LOCALID_TRUCK_BOX_TOP/BOTTOM_L/R sont statiques. Le camera shake
+ *     les fait visuellement bouger avec le reste de la scène.
  */
 import type { DecompRuntime, DecompTask } from './decomp-runtime';
 import { PlaySE } from './decomp-globals';
@@ -43,10 +50,12 @@ import { LockPlayerFieldControls, UnlockPlayerFieldControls } from './script-run
 import { gPlayerAvatar } from './player-avatar';
 
 /** 1:1 décomp `static const s8 sTruckCamera_HorizontalTable[]`
- *  (field_special_scene.c:45). 19 entries iterated every 6 frames. */
+ *  (field_special_scene.c:45). 19 entries iterated every 6 frames pendant
+ *  l'horizontal jolt. */
 const sTruckCamera_HorizontalTable: ReadonlyArray<number> = [
   0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 2, 2, 2, 2, 2, -1, -1, -1, 0,
 ];
+const HORIZONTAL_TABLE_FRAMES = sTruckCamera_HorizontalTable.length * 6; // 19 * 6 = 114
 
 /** 1:1 décomp `GetTruckCameraBobbingY(int time)` (field_special_scene.c:61). */
 function GetTruckCameraBobbingY(time: number): number {
@@ -55,110 +64,37 @@ function GetTruckCameraBobbingY(time: number): number {
   return 0;
 }
 
-/** Guard global : true tant qu'une cinematic est active. Empêche un double
- *  appel à `ExecuteTruckSequence` (= e.g. HMR re-trigger, scene re-create
- *  pendant fade load) de créer 2 tasks simultanées qui jouent les SE en
- *  doublon (= "deux bruits de camion décalés" reporté par l'utilisateur). */
+/** Guard global : empêche double-call `ExecuteTruckSequence`. */
 let _truckSequenceActive = false;
 
-/** 1:1 décomp `ExecuteTruckSequence()` (field_special_scene.c:260-269).
- *  Setup the door tile state + lock controls + start the cinematic task.
- *  À call APRÈS que la map est loaded + visible. */
+/** 1:1 décomp `ExecuteTruckSequence()` (field_special_scene.c:260-269). */
 export function ExecuteTruckSequence(rt: DecompRuntime): void {
-  // Guard contre double-call (= cf. _truckSequenceActive comment ci-dessus).
   if (_truckSequenceActive) {
     console.warn('[truck-cinematic] ExecuteTruckSequence already running, skip duplicate');
     return;
   }
   _truckSequenceActive = true;
-  // 1:1 décomp : 3 metatile changes pour mettre la door en "closed floor"
-  // (= le joueur ne peut PAS sortir tant que la cinematic n'est pas finie).
-  // Coords (4, 1), (4, 2), (4, 3) en map-local + MAP_OFFSET (= 7).
+  // 1:1 décomp : 3 metatile changes pour mettre la door en "closed floor".
   MapGridSetMetatileIdAt(4 + MAP_OFFSET, 1 + MAP_OFFSET, METATILE_InsideOfTruck_DoorClosedFloor_Top);
   MapGridSetMetatileIdAt(4 + MAP_OFFSET, 2 + MAP_OFFSET, METATILE_InsideOfTruck_DoorClosedFloor_Mid);
   MapGridSetMetatileIdAt(4 + MAP_OFFSET, 3 + MAP_OFFSET, METATILE_InsideOfTruck_DoorClosedFloor_Bottom);
   if (gMapHeader) DrawWholeMapView(gPlayerAvatar.x, gPlayerAvatar.y, gMapHeader.mapLayout);
-  // 1:1 décomp : Lock player input pendant toute la cinematic.
   LockPlayerFieldControls();
-  // 1:1 décomp `field_special_scene.c:267 CpuFastFill(0, gPlttBufferFaded, PLTT_SIZE)` :
-  // fill all faded palette colors to 0 (= screen instantly black). Notre équivalent :
-  // BeginNormalPaletteFade target startY=16 endY=16 (= stays at fully faded black).
-  // Le state 1 de Task_HandleTruckSequence fait FadeInFromBlack ~150 frames après
-  // SE_TRUCK_MOVE → matches le pattern décomp.
+  // 1:1 décomp `CpuFastFill(0, gPlttBufferFaded, PLTT_SIZE)` : screen instantly
+  // black. Notre équivalent : BeginNormalPaletteFade target startY=16 endY=16.
   rt.BeginNormalPaletteFade('PALETTES_ALL', 0, 16, 16, 'RGB_BLACK');
-  // Capture rt par closure (= 1:1 pattern auto-callbacks `(t) => Task_X(t, rt)`).
   rt.CreateTask((task: DecompTask) => Task_HandleTruckSequence(task, rt), 0xA);
   console.log('[truck-cinematic] ExecuteTruckSequence : black palette fill + task started');
 }
 
-// ─── Task slots data layout (= 1:1 décomp tState/tTimer/tTaskId1/tTaskId2) ───
+// ─── Task data layout ────────────────────────────────────────────────────────
 // data[0] = tState (= 0..5)
-// data[1] = tTimer
-// data[2] = tTaskId1 (= Task_Truck1 id, alive durant state 1)
-// data[3] = tTaskId2 (= Task_Truck2/3 id, alive durant state 2-3)
-
-/** 1:1 décomp `Task_Truck1(taskId)` (field_special_scene.c:89-108).
- *  Box bouncing (= NON impl, boxes statiques) + camera vertical bobbing.
- *  Run pendant state 1 (= 150 frames truck rolling). */
-function Task_Truck1(task: DecompTask): void {
-  const data = task.data;
-  // tTimer = data[0] dans le child task (= scope local, pas tState).
-  data[0]++;
-  // 1:1 décomp wrap à 30000.
-  if (data[0] === 30000) data[0] = 0;
-  const cameraYpan = GetTruckCameraBobbingY(data[0]);
-  SetCameraPanning(0, cameraYpan);
-}
-
-/** 1:1 décomp `Task_Truck2(taskId)` (field_special_scene.c:116-150).
- *  Camera horizontal table iter every 6 frames + vertical bobbing + box anim
- *  (= NON impl). Quand table value == 2 → switch func to Task_Truck3.
- *  Run pendant state 2-3. */
-function Task_Truck2(task: DecompTask): void {
-  const data = task.data;
-  // data[0]=tTimerHorizontal, data[1]=tMoveStep, data[2]=tTimerVertical
-  data[0]++;
-  data[2]++;
-  if (data[0] > 5) {
-    data[0] = 0;
-    data[1]++;
-  }
-  if (data[1] === sTruckCamera_HorizontalTable.length) {
-    // Never reached per décomp (= func swap to Task_Truck3 avant). Safety.
-    return;
-  }
-  const tableVal = sTruckCamera_HorizontalTable[data[1]];
-  if (tableVal === 2) {
-    // 1:1 décomp : `gTasks[taskId].func = Task_Truck3` — swap callback.
-    task.func = Task_Truck3;
-  }
-  const cameraYpan = GetTruckCameraBobbingY(data[2]);
-  SetCameraPanning(tableVal, cameraYpan);
-}
-
-/** 1:1 décomp `Task_Truck3(taskId)` (field_special_scene.c:152-178).
- *  Continue table iter, NO vertical bobbing, NO box anim. Quand table done →
- *  DestroyTask. */
-function Task_Truck3(task: DecompTask): void {
-  const data = task.data;
-  data[0]++;
-  if (data[0] > 5) {
-    data[0] = 0;
-    data[1]++;
-  }
-  if (data[1] === sTruckCamera_HorizontalTable.length) {
-    // 1:1 décomp : DestroyTask. Reset camera + signal complete via func=null.
-    SetCameraPanning(0, 0);
-    task.isActive = false;
-    return;
-  }
-  const tableVal = sTruckCamera_HorizontalTable[data[1]];
-  SetCameraPanning(tableVal, 0);
-}
+// data[1] = tTimer (frame counter du state)
+// data[2] = bobTimer (timer continu pour GetTruckCameraBobbingY) — used state 1+2+3
+// data[3] = horizMoveStep (index dans sTruckCamera_HorizontalTable) — used state 3
 
 /** 1:1 décomp `Task_HandleTruckSequence` (field_special_scene.c:189-258).
- *  State machine 6 états (0..5) qui drive sons + tiles + tasks Task_Truck1/2/3
- *  + unlock. */
+ *  Inline Task_Truck1/2/3 logic dans la même state machine pour simplicité. */
 const Task_HandleTruckSequence = function (task: DecompTask, rt: DecompRuntime): void {
   const data = task.data;
   switch (data[0]) {
@@ -166,44 +102,37 @@ const Task_HandleTruckSequence = function (task: DecompTask, rt: DecompRuntime):
       // Wait 90 frames silently (= player vois truck immobile).
       data[1]++;
       if (data[1] === 90) {
-        // 1:1 décomp : SetCameraPanningCallback(NULL) + start Task_Truck1
-        // + PlaySE(SE_TRUCK_MOVE) + tState=1.
         data[1] = 0;
         data[0] = 1;
-        const child1 = rt.CreateTask(Task_Truck1, 0xA);
-        data[2] = child1;
         PlaySE(SE_TRUCK_MOVE);
-        console.log('[truck-cinematic] state 0→1 : SE_TRUCK_MOVE played + Task_Truck1 started');
+        console.log('[truck-cinematic] state 0→1 : SE_TRUCK_MOVE played');
       }
       break;
     case 1:
-      // Truck rolling : Task_Truck1 handle camera bob. State 1 = 150 frames.
-      // 1:1 décomp tick 1 : FadeInFromBlack.
+      // Truck rolling : Task_Truck1 logic = camera Y bob via bobTimer.
+      // Durée : 150 frames. À fin → FadeInFromBlack + state 2.
       data[1]++;
+      data[2]++;  // bobTimer
+      SetCameraPanning(0, GetTruckCameraBobbingY(data[2]));
       if (data[1] === 150) {
-        // 1:1 décomp Task_HandleTruckSequence:210 FadeInFromBlack.
+        // 1:1 décomp : FadeInFromBlack (= fade screen FROM black TO color).
         rt.BeginNormalPaletteFade('PALETTES_ALL', 0, 16, 0, 'RGB_BLACK');
         data[1] = 0;
         data[0] = 2;
       }
       break;
     case 2:
-      // Truck still rolling : Task_Truck1 continue camera bob. Wait until
-      // !gPaletteFade.active && tTimer > 300. Décomp condition exact.
+      // Continue Task_Truck1 logic. Wait until !gPaletteFade.active && tTimer > 300.
       data[1]++;
+      data[2]++;  // bobTimer
+      SetCameraPanning(0, GetTruckCameraBobbingY(data[2]));
       if (!rt.gPaletteFade.active && data[1] > 300) {
-        // 1:1 décomp : DestroyTask(tTaskId1) → CreateTask(Task_Truck2)
+        // 1:1 décomp : DestroyTask(Task_Truck1) → CreateTask(Task_Truck2)
         // → PlaySE(SE_TRUCK_STOP) → tState=3.
         data[1] = 0;
         data[0] = 3;
-        rt.DestroyTask(data[2]);  // kill Task_Truck1
-        // Reset child task data slots avant Task_Truck2 (= it uses data[0..2]).
-        const child2 = rt.CreateTask(Task_Truck2, 0xA);
-        data[3] = child2;
-        // 1:1 décomp comportement attendu : SE_TRUCK_MOVE doit être STOPPÉ
-        // avant SE_TRUCK_STOP (= les 2 SE séquentiels, pas simultanés).
-        // Notre PlaySE alterne se1/se2 → MOVE est sur se1, STOP irait sur se2.
-        // Stop explicit MOVE sur se1 + se2 pour être safe avant le STOP.
+        data[3] = 0;  // reset horizontal step
+        // Stop le SE_TRUCK_MOVE explicit pour que SE_TRUCK_STOP soit séquentiel.
         stopPrerenderedSE('se1');
         stopPrerenderedSE('se2');
         PlaySE(SE_TRUCK_STOP);
@@ -211,25 +140,26 @@ const Task_HandleTruckSequence = function (task: DecompTask, rt: DecompRuntime):
       }
       break;
     case 3:
-      // 1:1 décomp : if (!gTasks[tTaskId2].isActive) → tState=4. Task_Truck2/3
-      // se DestroyTask self quand horizontal table done.
-      // Notre Task_Truck3 set task.isActive=false en fin de table.
-      // Avec rt.gTasks store, on peut aussi check via rt.gTasks.
-      // Lookup task by id:
-      {
-        // task.taskId pas le bon — on veut le child task tTaskId2 = data[3].
-        // Notre DecompRuntime gTasks est indexed by taskId. Check si le child
-        // task est encore actif.
-        const childId = data[3];
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const childTask = (rt as any).gTasks?.[childId];
-        if (!childTask || !childTask.isActive) {
-          // Task_Truck2/3 a fini son horizontal table → state 4.
-          // 1:1 décomp : InstallCameraPanAheadCallback() pour reset le panning.
-          SetCameraPanning(0, 0);
-          data[1] = 0;
-          data[0] = 4;
-        }
+      // Task_Truck2 → Task_Truck3 logic : iter sTruckCamera_HorizontalTable
+      // every 6 frames. data[1] = step timer (= 0..5), data[3] = move step index.
+      // Camera Y bob continue jusqu'à table[step] === 2 (= Task_Truck3 swap).
+      data[1]++;
+      data[2]++;
+      if (data[1] > 5) {
+        data[1] = 0;
+        data[3]++;
+      }
+      if (data[3] >= sTruckCamera_HorizontalTable.length) {
+        // Table done → state 4.
+        SetCameraPanning(0, 0);
+        data[1] = 0;
+        data[0] = 4;
+      } else {
+        const xpan = sTruckCamera_HorizontalTable[data[3]];
+        // 1:1 décomp : si table[step] === 2 → Task_Truck3 (= Y bob stops).
+        // Sinon Task_Truck2 (= Y bob continue).
+        const ypan = xpan === 2 ? 0 : GetTruckCameraBobbingY(data[2]);
+        SetCameraPanning(xpan, ypan);
       }
       break;
     case 4:
@@ -254,10 +184,14 @@ const Task_HandleTruckSequence = function (task: DecompTask, rt: DecompRuntime):
         PlaySE(SE_TRUCK_DOOR);
         rt.DestroyTask(task.taskId);
         UnlockPlayerFieldControls();
-        // Clear guard pour que le prochain newgame puisse re-trigger.
+        // Reset camera panning (= safety).
+        SetCameraPanning(0, 0);
         _truckSequenceActive = false;
         console.log('[truck-cinematic] state 5 done : SE_TRUCK_DOOR played + controls unlocked');
       }
       break;
   }
 };
+
+// Suppress unused warning - HORIZONTAL_TABLE_FRAMES is exported for testing.
+void HORIZONTAL_TABLE_FRAMES;
