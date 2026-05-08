@@ -214,6 +214,12 @@ export interface ObjectEvent {
   /** 1:1 décomp `directionSequenceIndex`. WALK_BACK_AND_FORTH : 0 = forward,
    *  1 = backward. ROTATE_* : index dans la sequence rotation. */
   directionSeqIdx: number;
+  /** 1:1 décomp `sprite.x2 / sprite.y2` (= secondary OAM offsets, additionnels
+   *  à sprite.x/y). Used par `SetObjectEventSpritePosByLocalIdAndMap` pour
+   *  bouger un sprite hors-grid (= e.g. truck box bouncing pendant cinematic).
+   *  Default 0 = sprite à sa position normale. */
+  visualOffsetX: number;
+  visualOffsetY: number;
 }
 
 export const gObjectEvents: ObjectEvent[] = Array.from({ length: OBJECT_EVENTS_COUNT }, () => ({
@@ -247,6 +253,8 @@ export const gObjectEvents: ObjectEvent[] = Array.from({ length: OBJECT_EVENTS_C
   movementRangeY: 0,
   directionSeqIdx: 0,
   useSubsprites: false,
+  visualOffsetX: 0,
+  visualOffsetY: 0,
 }));
 
 // ─── Coord shift helpers 1:1 décomp event_object_movement.c ─────────────────
@@ -1273,14 +1281,42 @@ export function UpdateObjectEvents(rt: DecompRuntime): void {
     // Pendant truck cinematic : SetCameraPanning shake le BG. Pour que les
     // NPCs (= boxes truck) shake AVEC le BG, on add aussi le camera pan.
     // 1:1 décomp `gSpriteCoordOffsetX/Y` qui inclut camera pan.
+    // visualOffsetX/Y = 1:1 décomp `sprite.x2/y2` (= used par truck box
+    // bouncing via SetObjectEventSpritePosByLocalIdAndMap).
     const panX = _getCameraPanX();
     const panY = _getCameraPanY();
-    sprite.x = npc.worldX + offX + panX;
-    sprite.y = npc.worldY + offY - bgVofsBaseline + panY;
+    sprite.x = npc.worldX + offX + panX + npc.visualOffsetX;
+    sprite.y = npc.worldY + offY - bgVofsBaseline + panY + npc.visualOffsetY;
 
     // Update sprite frame chaque frame (= keeps tile + flipH en sync avec
     // facingDirection, important pour interact qui change facing instantané).
     updateNpcSpriteFrame(rt, npc);
+  }
+}
+
+/** 1:1 décomp `SetObjectEventSpritePosByLocalIdAndMap` (field_camera.c).
+ *  ```c
+ *  void SetObjectEventSpritePosByLocalIdAndMap(u8 localId, u8 mapNum, u8 mapGroup, s16 x, s16 y) {
+ *      u8 objId = GetObjectEventIdByLocalIdAndMap(localId, mapNum, mapGroup);
+ *      if (objId != OBJECT_EVENTS_COUNT) {
+ *          gSprites[gObjectEvents[objId].spriteId].x2 = x;
+ *          gSprites[gObjectEvents[objId].spriteId].y2 = y;
+ *      }
+ *  }
+ *  ```
+ *  Used par Task_Truck1/2 pour box bouncing. Trouve le NPC par localIdRaw
+ *  + set ses visualOffsetX/Y (= notre équivalent de sprite.x2/y2). */
+export function SetObjectEventSpritePosByLocalIdAndMap(
+  localIdRaw: string,
+  x: number,
+  y: number,
+): void {
+  for (const npc of gObjectEvents) {
+    if (npc.active && npc.localIdRaw === localIdRaw) {
+      npc.visualOffsetX = x;
+      npc.visualOffsetY = y;
+      return;
+    }
   }
 }
 

@@ -48,6 +48,7 @@ import { MAP_OFFSET, MapGridSetMetatileIdAt, gMapHeader } from './map-loader';
 import { DrawWholeMapView, SetCameraPanning } from './field-camera';
 import { LockPlayerFieldControls, UnlockPlayerFieldControls } from './script-runtime';
 import { gPlayerAvatar } from './player-avatar';
+import { SetObjectEventSpritePosByLocalIdAndMap } from './object-events';
 
 /** 1:1 décomp `static const s8 sTruckCamera_HorizontalTable[]`
  *  (field_special_scene.c:45). 19 entries iterated every 6 frames pendant
@@ -62,6 +63,45 @@ function GetTruckCameraBobbingY(time: number): number {
   if (time % 120 === 0) return -1;
   if (time % 10 <= 4) return 1;
   return 0;
+}
+
+/** 1:1 décomp `GetTruckBoxYMovement(int time)` (field_special_scene.c:79).
+ *  Returns -1 quand box doit jump (= every 180 frames at offset 60), 0 sinon.
+ *  Multiplied par scale factor (4, 2, 4) pour les 3 boxes. */
+function GetTruckBoxYMovement(time: number): number {
+  if ((time + 120) % 180 === 0) return -1;
+  return 0;
+}
+
+/** 1:1 décomp box X/Y offsets (field_special_scene.c:27-34) :
+ *  les 3 boxes ont des spawn screen offsets pour qu'elles paraissent
+ *  pas parfaitement empilées. */
+const BOX1_X_OFFSET = 3;   // LOCALID_TRUCK_BOX_TOP
+const BOX1_Y_OFFSET = 3;
+const BOX2_X_OFFSET = 0;   // LOCALID_TRUCK_BOX_BOTTOM_L
+const BOX2_Y_OFFSET = -3;
+const BOX3_X_OFFSET = -3;  // LOCALID_TRUCK_BOX_BOTTOM_R
+const BOX3_Y_OFFSET = 0;
+
+/** Apply box bouncing 1:1 décomp `Task_Truck1` (field_special_scene.c:89-108).
+ *  Box1/3 multiplier 4, box2 multiplier 2 (= box2 jumps lower). Box1 timer
+ *  shifted +30 (= jumps earlier que box2/3). */
+function _applyBoxBouncing(time: number, cameraXpan: number): void {
+  const yBox1 = GetTruckBoxYMovement(time + 30) * 4;
+  SetObjectEventSpritePosByLocalIdAndMap('LOCALID_TRUCK_BOX_TOP',      BOX1_X_OFFSET - cameraXpan, BOX1_Y_OFFSET + yBox1);
+  const yBox2 = GetTruckBoxYMovement(time) * 2;
+  SetObjectEventSpritePosByLocalIdAndMap('LOCALID_TRUCK_BOX_BOTTOM_L', BOX2_X_OFFSET - cameraXpan, BOX2_Y_OFFSET + yBox2);
+  const yBox3 = GetTruckBoxYMovement(time) * 4;
+  SetObjectEventSpritePosByLocalIdAndMap('LOCALID_TRUCK_BOX_BOTTOM_R', BOX3_X_OFFSET - cameraXpan, BOX3_Y_OFFSET + yBox3);
+}
+
+/** Reset box visual offsets à leurs spawn-time defaults (= post-cinematic).
+ *  1:1 décomp implicit via Task_Truck3 finale qui appelle SetObjectEventSpritePos
+ *  avec yBox=0. */
+function _resetBoxOffsets(): void {
+  SetObjectEventSpritePosByLocalIdAndMap('LOCALID_TRUCK_BOX_TOP',      BOX1_X_OFFSET, BOX1_Y_OFFSET);
+  SetObjectEventSpritePosByLocalIdAndMap('LOCALID_TRUCK_BOX_BOTTOM_L', BOX2_X_OFFSET, BOX2_Y_OFFSET);
+  SetObjectEventSpritePosByLocalIdAndMap('LOCALID_TRUCK_BOX_BOTTOM_R', BOX3_X_OFFSET, BOX3_Y_OFFSET);
 }
 
 /** Guard global : empêche double-call `ExecuteTruckSequence`. */
@@ -109,11 +149,12 @@ const Task_HandleTruckSequence = function (task: DecompTask, rt: DecompRuntime):
       }
       break;
     case 1:
-      // Truck rolling : Task_Truck1 logic = camera Y bob via bobTimer.
+      // Truck rolling : Task_Truck1 logic = camera Y bob via bobTimer + box bouncing.
       // Durée : 150 frames. À fin → FadeInFromBlack + state 2.
       data[1]++;
       data[2]++;  // bobTimer
       SetCameraPanning(0, GetTruckCameraBobbingY(data[2]));
+      _applyBoxBouncing(data[2], 0);
       if (data[1] === 150) {
         // 1:1 décomp : FadeInFromBlack (= fade screen FROM black TO color).
         rt.BeginNormalPaletteFade('PALETTES_ALL', 0, 16, 0, 'RGB_BLACK');
@@ -126,6 +167,7 @@ const Task_HandleTruckSequence = function (task: DecompTask, rt: DecompRuntime):
       data[1]++;
       data[2]++;  // bobTimer
       SetCameraPanning(0, GetTruckCameraBobbingY(data[2]));
+      _applyBoxBouncing(data[2], 0);
       if (!rt.gPaletteFade.active && data[1] > 300) {
         // 1:1 décomp : DestroyTask(Task_Truck1) → CreateTask(Task_Truck2)
         // → PlaySE(SE_TRUCK_STOP) → tState=3.
@@ -152,14 +194,22 @@ const Task_HandleTruckSequence = function (task: DecompTask, rt: DecompRuntime):
       if (data[3] >= sTruckCamera_HorizontalTable.length) {
         // Table done → state 4.
         SetCameraPanning(0, 0);
+        // 1:1 décomp : reset box visual offsets vers spawn (post-shake settle).
+        _resetBoxOffsets();
         data[1] = 0;
         data[0] = 4;
       } else {
         const xpan = sTruckCamera_HorizontalTable[data[3]];
         // 1:1 décomp : si table[step] === 2 → Task_Truck3 (= Y bob stops).
-        // Sinon Task_Truck2 (= Y bob continue).
-        const ypan = xpan === 2 ? 0 : GetTruckCameraBobbingY(data[2]);
-        SetCameraPanning(xpan, ypan);
+        // Sinon Task_Truck2 (= Y bob continue + box bouncing).
+        if (xpan === 2) {
+          // Task_Truck3 : X seulement, no Y bob, no box bouncing.
+          SetCameraPanning(xpan, 0);
+        } else {
+          // Task_Truck2 : X + Y bob + box bouncing.
+          SetCameraPanning(xpan, GetTruckCameraBobbingY(data[2]));
+          _applyBoxBouncing(data[2], xpan);
+        }
       }
       break;
     case 4:
