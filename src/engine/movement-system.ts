@@ -188,11 +188,34 @@ interface MovementTarget {
 }
 
 function _resolveTarget(key: string): MovementTarget | null {
-  if (key === 'PLAYER') return { isPlayer: true };
-  // Find NPC by localIdRaw match.
+  if (key === 'PLAYER' || key === 'LOCALID_PLAYER' || key === '255') return { isPlayer: true };
+  // 1:1 décomp : si VAR_*, lire la value (= un number qui matche localId).
+  if (key.startsWith('VAR_')) {
+    // Lazy import via globalThis pour éviter circular deps.
+    const gameState = (globalThis as Record<string, unknown>).gameState as
+      { getVar?: (v: string) => number } | undefined;
+    if (gameState?.getVar) {
+      const n = gameState.getVar(key);
+      // 255 = LOCALID_PLAYER (= 1:1 décomp).
+      if (n === 255) return { isPlayer: true };
+      // Match by localId number.
+      for (const npc of gObjectEvents) {
+        if (npc.active && npc.localId === n) return { isPlayer: false, npc };
+      }
+    }
+    return null;
+  }
+  // Find NPC by localIdRaw match (= LOCALID_X string).
   for (const npc of gObjectEvents) {
     if (!npc.active) continue;
     if (npc.localIdRaw === key) return { isPlayer: false, npc };
+  }
+  // Fallback : match by numeric localId si key est un nombre.
+  const n = parseInt(key, 10);
+  if (!Number.isNaN(n)) {
+    for (const npc of gObjectEvents) {
+      if (npc.active && npc.localId === n) return { isPlayer: false, npc };
+    }
   }
   return null;
 }

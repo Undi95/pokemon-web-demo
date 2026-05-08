@@ -546,9 +546,18 @@ registerOpcode('waitfanfare', (_ctx) => {
 // ─── Object events utility opcodes ───────────────────────────────────────────
 
 /** Helper : match NPC par localIdRaw (= string, ex 'LOCALID_PLAYERS_HOUSE_1F_MOM').
- *  Si l'arg est un nombre dans le décomp ROM, parseInt fallback. */
+ *  Supporte aussi VAR_X (= lit la value, match par localId number) et
+ *  numeric arg (= match par localId number). */
 function _findNpcByLocalId(arg: string): typeof gObjectEvents[number] | null {
   if (!arg) return null;
+  // 1:1 décomp : si VAR_*, lire la value (= un number qui matche localId).
+  if (arg.startsWith('VAR_')) {
+    const n = VarGet(arg);
+    for (const npc of gObjectEvents) {
+      if (npc.active && npc.localId === n) return npc;
+    }
+    return null;
+  }
   // Match par localIdRaw (= string) en priorité.
   for (const npc of gObjectEvents) {
     if (npc.active && npc.localIdRaw === arg) return npc;
@@ -857,15 +866,32 @@ registerOpcode('checkitemspace', (_ctx) => {
 
 // ─── Helpers privés ──────────────────────────────────────────────────────────
 
-/** Parse un arg comme nombre. Si ressemble à un VAR / constante, return 0
- *  (= les constantes symboliques type FLAG_X, MAP_X devraient être traitées
- *  par les opcodes qui les utilisent, pas ici). */
+/** Parse un arg comme nombre. Si VAR_*, lit la value courante. Si LOCALID_X,
+ *  résout via les templates de la map courante. Si MALE/FEMALE/autres
+ *  constantes connues, retourne le numeric value 1:1 décomp.
+ *  Pour les constantes inconnues, return 0 (= safe default). */
 function parseValue(arg: string | undefined): number {
   if (!arg) return 0;
   if (/^-?\d+$/.test(arg)) return parseInt(arg, 10);
   if (/^0x[0-9a-fA-F]+$/.test(arg)) return parseInt(arg, 16);
-  // Si VAR_*, lit la value courante. Si autre constante symbolique, return 0.
   if (arg.startsWith('VAR_')) return VarGet(arg);
+  // 1:1 décomp constants : MALE = 0, FEMALE = 1 (= include/constants/global.h).
+  if (arg === 'MALE') return MALE_GENDER;
+  if (arg === 'FEMALE') return FEMALE_GENDER;
+  // 1:1 décomp LOCALID_X : look up index dans les templates de la map courante.
+  // LOCALID_PLAYER = 255, LOCALID_NONE = 0, LOCALID_CAMERA = 127.
+  if (arg === 'LOCALID_PLAYER') return 255;
+  if (arg === 'LOCALID_NONE') return 0;
+  if (arg === 'LOCALID_CAMERA') return 127;
+  if (arg.startsWith('LOCALID_')) {
+    const gMapHeader = (globalThis as Record<string, unknown>).gMapHeader as
+      { events?: { objectEvents?: ObjectEventTemplate[] } } | undefined;
+    const templates = gMapHeader?.events?.objectEvents ?? [];
+    const idx = templates.findIndex(t => t.localIdRaw === arg);
+    if (idx >= 0) return idx + 1;  // 1-based, matches localId assigned au load.
+    console.warn(`[parseValue] LOCALID '${arg}' not found in map templates`);
+    return 0;
+  }
   return 0;
 }
 

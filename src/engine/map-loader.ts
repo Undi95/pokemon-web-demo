@@ -513,7 +513,10 @@ export async function loadMapHeader(mapId: string): Promise<MapHeader> {
 
   // Build events (= localId auto-assigné en index si non fourni).
   const objectEvents: ObjectEventTemplate[] = (json.object_events ?? []).map((e, i) => ({
-    localId: e.local_id ? 0 /* resolved at runtime via constants */ : i + 1,
+    // 1:1 décomp : localId = index dans le array (1-based, 0 = LOCALID_NONE).
+    // Les constants LOCALID_X (= e.local_id) résolvent à cet index au compile-time
+    // dans le décomp. On l'assigne ici uniformly (= peu importe si localIdRaw set).
+    localId: i + 1,
     localIdRaw: e.local_id ?? '',
     graphicsId: parseGraphicsId(e.graphics_id),
     graphicsIdRaw: e.graphics_id,
