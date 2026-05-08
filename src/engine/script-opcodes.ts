@@ -24,6 +24,8 @@ import {
 import {
   applyMovement, isAllMovementsDone, isMovementDone,
 } from './movement-system';
+import { PlaySE } from './decomp-globals';
+import * as Songs from './decomp-data/auto/include/constants/songs-data';
 import {
   gObjectEvents, type ObjectEvent,
 } from './object-events';
@@ -511,7 +513,15 @@ registerOpcode('specialvar', (_ctx, args) => {
 });
 
 registerOpcode('playse', (_ctx, args) => {
-  console.log(`[opcode playse] '${args[0]}' (audio TBD)`);
+  // 1:1 décomp `ScrCmd_playse` (scrcmd.c) : PlaySE avec le SE constant string.
+  // On lookup l'ID dans songs-data (= e.g. SE_LEDGE → 22).
+  const seName = args[0] ?? '';
+  const seId = (Songs as unknown as Record<string, number>)[seName];
+  if (typeof seId === 'number') {
+    PlaySE(seId);
+  } else {
+    console.warn(`[opcode playse] unknown SE '${seName}'`);
+  }
   return false;
 });
 

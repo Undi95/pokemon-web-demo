@@ -30,6 +30,7 @@
 
 import type { DecompRuntime } from './decomp-runtime';
 import { gPlayerAvatar } from './player-avatar';
+import { SpawnJumpLandingDust } from './field-effect-jump-dust';
 import { gObjectEvents, type ObjectEvent } from './object-events';
 import {
   DIR_NONE, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST,
@@ -488,11 +489,16 @@ function _tickJump(target: MovementTarget, dir: number, frame: number, distance:
         gPlayerAvatar.x = nx2;
         gPlayerAvatar.y = ny2;
       }
+      // 1:1 décomp `GroundEffect_JumpLandingDust` (event_object_movement.c).
+      // Spawn dust cloud à landing position si on a un rt.
+      if (_activeRt) SpawnJumpLandingDust(_activeRt, gPlayerAvatar.x, gPlayerAvatar.y);
     } else if (target.npc) {
       target.npc.previousCoordsX = target.npc.currentCoordsX;
       target.npc.previousCoordsY = target.npc.currentCoordsY;
       target.npc.walkFramesLeft = 0;
       target.npc.walkDirection = DIR_NONE;
+      // Dust at NPC landing position.
+      if (_activeRt) SpawnJumpLandingDust(_activeRt, target.npc.currentCoordsX, target.npc.currentCoordsY);
     }
     return true;
   }
