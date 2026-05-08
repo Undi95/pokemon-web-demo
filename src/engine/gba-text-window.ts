@@ -15,8 +15,9 @@
  * Asset paths : `/decomp/em/ui/text_window/{N}.png` (= PNG indexed avec PLTE).
  */
 
-import { assetCache, getAsset } from './decomp-globals';
+import { assetCache, getAsset, getRuntime, LoadBgTiles } from './decomp-globals';
 import { loadIndexedPngStrict } from './gba/png-loader';
+import { gameState } from './game-state';
 
 /** 1:1 décomp text_window.c WINDOW_FRAMES_COUNT. */
 export const WINDOW_FRAMES_COUNT = 20;
@@ -39,6 +40,36 @@ export function GetWindowFrameTilesPal(idx: number): { tiles: Uint8Array; pal: U
   const pal = (getAsset(palKey) as Uint16Array | undefined) ?? new Uint16Array(16);
   return { tiles, pal };
 }
+
+/** 1:1 décomp `text_window.c:LoadWindowGfx(windowId, frameId, destOffset, palOffset)` :
+ *    LoadBgTiles(bgLayer, sWindowFrames[frameId].tiles, 0x120, destOffset);
+ *    LoadPalette(sWindowFrames[frameId].pal, palOffset, PLTT_SIZE_4BPP);
+ *
+ *  Charge les 9 tiles 4bpp (= 0x120 bytes) du frame N dans BG VRAM à destOffset
+ *  + écrit les 16 colors du frame palette dans gPlttBufferFaded à palOffset. */
+export function LoadWindowGfx(bg: number, frameId: number, destOffset: number, palOffset: number): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  const { tiles, pal } = GetWindowFrameTilesPal(frameId);
+  LoadBgTiles(bg, tiles, 0x120, destOffset);
+  for (let i = 0; i < Math.min(16, pal.length); i++) {
+    rt.gPlttBufferUnfaded.set(palOffset + i, pal[i]);
+    rt.gPlttBufferFaded.set(palOffset + i, pal[i]);
+  }
+}
+
+/** 1:1 décomp `text_window.c:LoadUserWindowBorderGfx(windowId, destOffset, palOffset)` :
+ *    LoadWindowGfx(windowId, gSaveBlock2Ptr->optionsWindowFrameType, destOffset, palOffset);
+ *
+ *  Utilise le frame style sélectionné par le user dans le menu OPTIONS
+ *  (= gameState.options.windowFrameType, default 0). */
+export function LoadUserWindowBorderGfx(bg: number, destOffset: number, palOffset: number): void {
+  const frameId = gameState.options.windowFrameType ?? 0;
+  LoadWindowGfx(bg, frameId, destOffset, palOffset);
+}
+
+/** Alias 1:1 décomp `LoadUserWindowBorderGfx_` (= same as without underscore). */
+export const LoadUserWindowBorderGfx_ = LoadUserWindowBorderGfx;
 
 /** Pré-charge les 20 frame styles + leurs palettes dans assetCache.
  *  À call au boot (= avant que la moindre scène appelle GetWindowFrameTilesPal).

@@ -135,6 +135,7 @@ import {
   TickFieldMessageBox,
   preloadStandardMenuPalette,
 } from '../engine/field-message-box';
+import { TickStartMenu } from '../engine/start-menu';
 import { preloadFontData } from '../engine/gba-text-system';
 import { preloadTextWindowFrames } from '../engine/gba-text-window';
 import { PlayBGM, FillPalBufferBlack } from '../engine/decomp-globals';
@@ -350,6 +351,11 @@ export class TestOverworldScene extends Phaser.Scene {
         TryRunOnFrameMapScript();
         // Phase 4.5 : tick field message box state machine.
         TickFieldMessageBox();
+        // Phase 4.10 : tick start menu state machine. Si START button pressé
+        // hors script + dialog, ouvre le menu. Si menu ouvert, drive l'input
+        // (navigation/selection/close). LockPlayerFieldControls assure que
+        // PlayerStep skip son input quand menu ouvert.
+        TickStartMenu();
         PlayerStep(rt.gMain.heldKeys, rt.gMain.newKeys, rt);
         // Phase 4.10 : tick script-driven movements AVANT CameraUpdate. Le tick
         // set gFieldCamera.movementSpeedX/Y que CameraUpdate lit ce même frame
@@ -589,11 +595,10 @@ export class TestOverworldScene extends Phaser.Scene {
       ShowMapNamePopup();
     }
 
-    // Phase 4.10 : persiste position courante dans gameState (= save) pour permettre
-    // le boot 'resume' la prochaine session. 1:1 décomp `gSaveBlock1Ptr->location`
-    // updated par CB2_OverworldBasic + Overworld_SaveLastMapInfo.
+    // Phase 4.10 : update gameState.map IN-MEMORY (pas de save auto). Le user
+    // doit explicitement save via le Start Menu → SAUVEG. (= 1:1 décomp où
+    // l'overworld n'auto-save pas, c'est le menu Save qui appelle TrySavingData).
     gameState.map = { name: mapId, x: sx, y: sy, facing: spawnDir };
-    gameState.save();
 
     return header;
   }

@@ -190,7 +190,6 @@ export function AddBagItem(itemKey: string, count: number): boolean {
   }
 
   if (remaining > 0) return false; // No more slots, bag full
-  gameState.save();
   return true;
 }
 
@@ -211,7 +210,6 @@ export function RemoveBagItem(itemKey: string, count: number): boolean {
       if (slot.quantity === 0) slot.itemKey = '';
     }
   }
-  gameState.save();
   return true;
 }
 
@@ -223,7 +221,6 @@ export function ClearBag(): void {
   gameState.bag.tmHm = empty.tmHm;
   gameState.bag.berries = empty.berries;
   gameState.bag.keyItems = empty.keyItems;
-  gameState.save();
 }
 
 /** Debug helper : list non-empty slots across all pockets. */
