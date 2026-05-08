@@ -43,6 +43,7 @@ import {
   gPlayerAvatar, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST,
 } from './player-avatar';
 import { getRuntime } from './decomp-globals';
+import { resolveDecompConstant } from './decomp-constants';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -1313,6 +1314,12 @@ function parseValue(arg: string | undefined): number {
     console.warn(`[parseValue] LOCALID '${arg}' not found in map templates`);
     return 0;
   }
+  // 1:1 décomp constants lookup (= OBJ_EVENT_GFX_*, ITEM_*, MOVE_*, SPECIES_*,
+  // TRAINER_*, FLAG_* numeric ID etc.). Cf. decomp-constants.ts pour list des
+  // namespaces couverts. Sans ça, setvar VAR_OBJ_GFX_ID_0, OBJ_EVENT_GFX_RIVAL_*
+  // stockait 0 → rival NPC sprite wrong (= toujours Brendan = 0).
+  const constValue = resolveDecompConstant(arg);
+  if (constValue !== undefined) return constValue;
   return 0;
 }
 
