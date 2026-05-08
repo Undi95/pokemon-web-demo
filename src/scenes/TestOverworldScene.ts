@@ -842,8 +842,9 @@ export class TestOverworldScene extends Phaser.Scene {
       FieldUpdateBgTilemapScroll(this.rt);
 
       if (exitKind === 'door') {
-        // 1:1 décomp `Task_ExitDoor` (field_screen_effect.c:317).
-        // Door tile = player spawn position (= player on door après warp).
+        // 1:1 décomp `Task_ExitDoor` (field_screen_effect.c:317-340) :
+        // case 1 : ObjectEventSetHeldMovement(WALK_NORMAL_DOWN). Doors always
+        // exit DOWN (= player came IN from below, exits OUT toward south).
         // Note : FieldSetDoorOpened déjà appelé en Pre-Phase 4 (= 1:1 case 0).
         const doorX = gPlayerAvatar.x;
         const doorY = gPlayerAvatar.y;
@@ -854,10 +855,18 @@ export class TestOverworldScene extends Phaser.Scene {
         // case 2-3 : FieldAnimateDoorClose à la door position originale.
         await FieldAnimateDoorClose(doorX, doorY);
       } else if (exitKind === 'non_anim') {
-        // 1:1 décomp `Task_ExitNonAnimDoor` (field_screen_effect.c:366) :
-        // case 1 : SetPlayerVisibility(TRUE) + walk-down auto (= 1 step DOWN), no door anim.
+        // 1:1 décomp `Task_ExitNonAnimDoor` (field_screen_effect.c:366-402) :
+        //   case 1 : ObjectEventSetHeldMovement(GetWalkNormalMovementAction(
+        //                                          GetPlayerFacingDirection()));
+        // = walk dans la direction du PLAYER.FACING préservé (pas DIR_SOUTH
+        // hardcoded). Couvre les stairs : monter (= face NORTH → walk UP)
+        // et descendre (= face SOUTH → walk DOWN), ainsi que les autres
+        // tiles MB_NON_ANIMATED_DOOR / MB_WATER_DOOR / MB_DEEP_SOUTH_WARP.
+        // Bug fix session 124 : avant on forçait DIR_SOUTH → walk UP des
+        // escaliers ne s'animait pas (= player figé en haut des escaliers
+        // au lieu de marcher d'1 step dans la direction qu'il regardait).
         SetPlayerVisibility(this.rt, true);
-        gPlayerAvatar.forceMovement = DIR_SOUTH;
+        gPlayerAvatar.forceMovement = gPlayerAvatar.facing;
         await this.waitForForcedWalkComplete();
       }
       // exitKind === 'none' (= MB_LADDER, MB_*_ARROW_WARP, etc.) :
