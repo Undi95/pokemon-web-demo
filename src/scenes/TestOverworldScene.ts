@@ -320,6 +320,16 @@ export class TestOverworldScene extends Phaser.Scene {
       // warning : Phase 4.5+ pour wirer ces triggers proprement avec un état
       // de jeu valide (= post-intro).
 
+      // Phase 4.10 : si on spawn dans le camion via le NewGame flow (= 1:1
+      // décomp `gFieldCallback = ExecuteTruckSequence` dans CB2_NewGame), on
+      // démarre la cinematic du camion (= sons SE_TRUCK_MOVE/STOP/UNLOAD/DOOR
+      // + camera wobble + door tile open). Lock player controls le temps que
+      // le task soit terminé. Cf. truck-cinematic.ts pour les détails 1:1.
+      if (boot.mode === 'newgame' && boot.mapId === 'MAP_INSIDE_OF_TRUCK') {
+        const { ExecuteTruckSequence } = await import('../engine/truck-cinematic');
+        ExecuteTruckSequence(this.rt);
+      }
+
       // 13. Register MainCB2_Overworld (= per-frame callback) qui drive
       //     PlayerStep + CameraUpdate à FIXED 60Hz via rt.tickFixed.
       //     Critique pour timing 1:1 GBA : si on l'appelait dans update()

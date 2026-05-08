@@ -1000,6 +1000,16 @@ export function InitMainMenu(returningFromOptionsMenu: boolean): void {
   rt.SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_WIN0_ON | DISPCNT_OBJ_ON | DISPCNT_OBJ_1D_MAP);
   ShowBg(0);
   HideBg(1);
+  // Diagnostic : log gSaveFileStatus juste avant que Task_MainMenuCheckSaveFile
+  // le lise (= devrait être 1 = SAVE_STATUS_OK si une save existe).
+  // Lecture via 2 paths : (a) import direct gba-menu-system, (b) globalThis
+  // (utilisé par les auto-callbacks). Les 2 doivent matcher.
+  try {
+    // Eviter cycle d'import : lecture via globalThis (= via defineProperty
+    // getter installé par gba-menu-system au load).
+    const viaGlobal = (globalThis as { gSaveFileStatus?: number }).gSaveFileStatus;
+    console.log(`[main-menu-impl] InitMainMenu : globalThis.gSaveFileStatus=${viaGlobal} (= 1 → Continue, 0 → New Game only)`);
+  } catch { /* ignore */ }
   rt.CreateTask((t) => Task_MainMenuCheckSaveFile(t, rt), 0);
 }
 

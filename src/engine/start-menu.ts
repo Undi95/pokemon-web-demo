@@ -57,6 +57,7 @@ import { PlaySE, getRuntime } from './decomp-globals';
 import * as Songs from './decomp-data/auto/include/constants/songs-data';
 import { gameState } from './game-state';
 import { bagContents } from './bag';
+import { HideMapNamePopUpWindow } from './map-name-popup';
 
 // ─── Types + state ───────────────────────────────────────────────────────────
 
@@ -91,30 +92,43 @@ const START_BUTTON = 0x08;
 const DPAD_UP = 0x40;
 const DPAD_DOWN = 0x80;
 
-const STD_FRAME_PALETTE_NUM = 13;
-const STD_FRAME_BASE_TILE = 0x10A;
+// 1:1 décomp menu.c:25-27 :
+//   #define STD_WINDOW_PALETTE_NUM 14   ← border palette (cadre du menu)
+//   #define STD_WINDOW_BASE_TILE_NUM 0x214 ← VRAM base tile pour les 16 tuiles du cadre
+// La palette 14 est chargée par LoadUserWindowBorderGfx (= styled selon
+// gSaveBlock2Ptr->optionsWindowFrameType, défaut option = 0).
+//
+//   #define DLG_WINDOW_PALETTE_NUM 15   ← palette des window pixel buffers
+// Les windowTemplate.paletteNum = 15 fait que le text printer rend en couleurs
+// std (= white bg index 1, black text index 2, gray shadow 3) sur palette 15.
+//
+// Bug fix session 122 : on utilisait 13 partout, ce qui matchait la palette
+// du HUD overworld (= sprite player) → menu rendait avec les couleurs character.
+const STD_WINDOW_PALETTE_NUM = 14;
+const STD_WINDOW_BASE_TILE_NUM = 0x214;
+const DLG_WINDOW_PALETTE_NUM  = 15;
 
-// Window template Yes/No save dialog : positionné juste au-dessus du dialog box
-// pour ne pas overlap. 1:1 décomp menu.c sYesNoWindowTemplate (5×4 tiles).
+// Window template Yes/No save dialog : 1:1 décomp menu.c:98-107 sYesNo_WindowTemplates.
 const YESNO_WINDOW_TEMPLATE: WindowTemplate = {
   bg: 0,
-  tilemapLeft: 22,        // top-right area (= leaves space for dialog at bottom)
-  tilemapTop: 8,
+  tilemapLeft: 21,
+  tilemapTop: 9,
   width: 5,
   height: 4,
-  paletteNum: STD_FRAME_PALETTE_NUM,
-  baseBlock: 0x250,        // après start menu pixel buffer (~0x200..0x246)
+  paletteNum: DLG_WINDOW_PALETTE_NUM,
+  baseBlock: 0x125,        // 1:1 décomp menu.c:106
 };
 
+// 1:1 décomp menu.c:493 `AddWindowParameterized(0, 22, 1, 7, (numActions*2)+2, 15, 0x139)`.
 function buildStartMenuTemplate(numItems: number): WindowTemplate {
   return {
     bg: 0,
     tilemapLeft: 22,
     tilemapTop: 1,
     width: 7,
-    height: numItems * 2,
-    paletteNum: STD_FRAME_PALETTE_NUM,
-    baseBlock: 0x200,
+    height: numItems * 2 + 2,  // 1:1 décomp : +2 pour top/bottom border row
+    paletteNum: DLG_WINDOW_PALETTE_NUM,
+    baseBlock: 0x139,           // 1:1 décomp : pixel buffer baseBlock (avant 0x214 std frame)
   };
 }
 
@@ -215,10 +229,20 @@ function saveAction(): boolean {
   return false;
 }
 
-/** OPTIONS action : placeholder (= option-menu-impl exists in code mais
- *  scene-specific main_menu, pas wired pour overworld start menu). */
+/** OPTIONS action : inline cycling menu pour text speed (= option la plus
+ *  demandée pour la démo). Cycle SLOW → MID → FAST → SLOW à chaque pression A.
+ *  Les autres options (sound/buttonMode/etc.) restent accessibles via le
+ *  MainMenu OPTIONS (= depuis le title screen au boot).
+ *  Les options sont SHARED avec le MainMenu (= bug fix session 122 :
+ *  gSaveBlock2Ptr delegate vers GetSaveBlock2() du save-system). */
 function optionsAction(): boolean {
-  return showMessageThenReturn('Les OPTIONS ne sont pas\nencore disponibles ici.');
+  const cur = gameState.options.textSpeed ?? 1;
+  const next = (cur + 1) % 3;  // SLOW=0, MID=1, FAST=2
+  gameState.setOptions({ textSpeed: next });
+  const labels = ['LENT', 'MOY', 'RAPIDE'];
+  return showMessageThenReturn(
+    `VITESSE TEXTE : ${labels[next]}\n(Autres options dans le\nmenu principal au boot)`,
+  );
 }
 
 // ─── Build items list ────────────────────────────────────────────────────────
@@ -243,14 +267,22 @@ export function IsStartMenuOpen(): boolean {
 
 export function OpenStartMenu(): void {
   if (sIsOpen) return;
+  // Bug fix session 122 : si le map-name popup est encore visible (= player
+  // a appuyé Start dans la fenêtre de 2.7s du popup), on doit le dismiss
+  // AVANT d'ouvrir le start menu. Sinon les frame tiles 0x21D..0x223 du
+  // popup et de notre std frame (0x214..0x223) overlap → glitch visuel.
+  // 1:1 décomp pattern : start_menu.c attend que le popup soit terminé
+  // (= via gFieldStateFlags ou ScriptContext locked), ici on force juste
+  // l'unload du popup avant ouverture.
+  HideMapNamePopUpWindow();
   sItems = buildItems();
   sCursorPos = 0;
   sSubState = 'menu';
   const tmpl = buildStartMenuTemplate(sItems.length);
   sWindowId = AddWindow(tmpl);
-  // 1:1 décomp `LoadUserWindowBorderGfx_(0, baseTile, BG_PLTT_ID(13))`.
-  LoadUserWindowBorderGfx(0, STD_FRAME_BASE_TILE, STD_FRAME_PALETTE_NUM * 16);
-  DrawStdFrameWithCustomTileAndPalette(sWindowId, true, STD_FRAME_BASE_TILE, STD_FRAME_PALETTE_NUM);
+  // 1:1 décomp `LoadUserWindowBorderGfx_(0, STD_WINDOW_BASE_TILE_NUM, BG_PLTT_ID(STD_WINDOW_PALETTE_NUM=14))`.
+  LoadUserWindowBorderGfx(0, STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM * 16);
+  DrawStdFrameWithCustomTileAndPalette(sWindowId, true, STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM);
   for (let i = 0; i < sItems.length; i++) {
     AddTextPrinterParameterized3(
       sWindowId, 1 /* FONT_NORMAL */,
@@ -288,8 +320,8 @@ export function CloseStartMenu(): void {
 
 function _redrawMenu(): void {
   if (sWindowId < 0) return;
-  LoadUserWindowBorderGfx(0, STD_FRAME_BASE_TILE, STD_FRAME_PALETTE_NUM * 16);
-  DrawStdFrameWithCustomTileAndPalette(sWindowId, true, STD_FRAME_BASE_TILE, STD_FRAME_PALETTE_NUM);
+  LoadUserWindowBorderGfx(0, STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM * 16);
+  DrawStdFrameWithCustomTileAndPalette(sWindowId, true, STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM);
   for (let i = 0; i < sItems.length; i++) {
     AddTextPrinterParameterized3(
       sWindowId, 1 /* FONT_NORMAL */,
@@ -394,7 +426,7 @@ function _tickSaveConfirm(newKeys: number): void {
   if (!dialogDone) return;
   // Spawn Yes/No menu si pas encore fait.
   if (GetYesNoWindowId() < 0) {
-    CreateYesNoMenu(YESNO_WINDOW_TEMPLATE, STD_FRAME_BASE_TILE, STD_FRAME_PALETTE_NUM, 0);
+    CreateYesNoMenu(YESNO_WINDOW_TEMPLATE, STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM, 0);
     sSubState = 'save_yesno';
     return;
   }

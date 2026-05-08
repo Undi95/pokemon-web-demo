@@ -88,7 +88,12 @@ const symbolsToExpose: Record<string, unknown> = {
   FadeOutBGM: dg.FadeOutBGM,
   gSaveBlock1Ptr: dg.gSaveBlock1Ptr,
   gSaveBlock2Ptr: dg.gSaveBlock2Ptr,
-  gSaveFileStatus: dg.gSaveFileStatus,
+  // gSaveFileStatus : volontairement OMIS du snapshot. gba-menu-system installe
+  // un Object.defineProperty getter/setter sur globalThis qui reste live (=
+  // SetSaveFileStatus modifie la `let gSaveFileStatus` interne, le getter
+  // retourne la valeur courante). Si on la mettait ici, exposeGbaGlobals()
+  // écraserait le getter par la valeur 0 figée au module-load → MainMenu lit
+  // toujours SAVE_STATUS_EMPTY → pas de Continue après save.
 
   // Input
   JOY_NEW: dg.JOY_NEW,

@@ -231,62 +231,97 @@ export function PlayBGM(songNum: number): void {
 // un Proxy qui auto-persist toute écriture vers localStorage. Charge depuis
 // localStorage au boot (= options préservées au refresh).
 
-const SAVEBLOCK2_LSKEY = 'pokemon-web-demo:saveBlock2';
+// Bug fix session 122 : auparavant `gSaveBlock2Ptr` avait sa propre store
+// localStorage `pokemon-web-demo:saveBlock2` séparée du save-system. Résultat :
+// MainMenu Options écrivait dans gSaveBlock2Ptr → l'overworld lisait depuis
+// GetSaveBlock2() (save-system) → options non partagées.
+//
+// 1:1 décomp : il n'y a qu'UN SEUL gSaveBlock2Ptr (= &gSaveblock2.block en
+// EWRAM). On l'aligne en faisant le Proxy delegate vers `GetSaveBlock2()`
+// du save-system. Toute écriture mute le SaveBlock2 partagé en mémoire.
+//
+// Persistance : le save-system écrit le slot complet quand TrySavingData()
+// est appelé (= via SAUVER menu). Pour les options, on persiste aussi en
+// auto à chaque écriture (= 1:1 décomp comportement attendu : les options
+// changent dans le menu Options sont préservées même sans save explicit).
+//
+// Pas de cycle d'import : save-system ne dépend PAS de gba-menu-system
+// (vérifié via grep). On peut donc importer GetSaveBlock2 statiquement.
+import { GetSaveBlock2 as _GetSaveBlock2, TrySavingData as _TrySavingData, HasValidSave as _HasValidSave } from './save-system';
 
-const _saveBlock2Defaults: Record<string, unknown> = {
-  playerGender: 0,
-  playerName: 'PLAYER',
-  // Options (= 1:1 décomp save_data.c init values)
-  optionsTextSpeed: 1,        // OPTIONS_TEXT_SPEED_MID
-  optionsBattleSceneOff: 0,   // OPTIONS_BATTLE_SCENE_ON
-  optionsBattleStyle: 0,      // OPTIONS_BATTLE_STYLE_SHIFT
-  optionsSound: 0,            // OPTIONS_SOUND_MONO
-  optionsButtonMode: 0,       // OPTIONS_BUTTON_MODE_NORMAL
-  optionsWindowFrameType: 0,  // frame 1 (= classic blue rounded)
-};
+const LEGACY_SAVEBLOCK2_LSKEY = 'pokemon-web-demo:saveBlock2';
 
-/** Charge depuis localStorage si dispo, sinon defaults. */
-function _loadSaveBlock2(): Record<string, unknown> {
-  const obj = { ..._saveBlock2Defaults };
+/** Migrate legacy `pokemon-web-demo:saveBlock2` localStorage → save-system SaveBlock2.
+ *  Une seule fois au boot. Préserve les options déjà set dans MainMenu legacy. */
+function _migrateLegacySaveBlock2(): void {
   try {
-    const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(SAVEBLOCK2_LSKEY) : null;
-    if (raw) {
-      const parsed = JSON.parse(raw) as Record<string, unknown>;
-      Object.assign(obj, parsed);
+    if (typeof localStorage === 'undefined') return;
+    const raw = localStorage.getItem(LEGACY_SAVEBLOCK2_LSKEY);
+    if (!raw) return;
+    const legacy = JSON.parse(raw) as Record<string, unknown>;
+    const sb2 = _GetSaveBlock2() as unknown as Record<string, unknown>;
+    // Migrer les options + identité player (= seules valeurs intéressantes).
+    const fields = [
+      'optionsTextSpeed', 'optionsBattleSceneOff', 'optionsBattleStyle',
+      'optionsSound', 'optionsButtonMode', 'optionsWindowFrameType',
+      'playerName', 'playerGender',
+    ];
+    let migrated = false;
+    for (const k of fields) {
+      if (legacy[k] !== undefined && sb2[k] !== legacy[k]) {
+        sb2[k] = legacy[k];
+        migrated = true;
+      }
     }
+    if (migrated && _HasValidSave()) {
+      _TrySavingData();
+      console.log('[gSaveBlock2Ptr] migrated legacy localStorage options → SaveBlock2');
+    } else if (migrated) {
+      console.log('[gSaveBlock2Ptr] migrated legacy localStorage options → SaveBlock2 in-memory (no save yet)');
+    }
+    localStorage.removeItem(LEGACY_SAVEBLOCK2_LSKEY);
   } catch (e) {
-    console.warn('[gSaveBlock2Ptr] failed to load from localStorage:', e);
+    console.warn('[gSaveBlock2Ptr] legacy migration failed:', e);
   }
-  return obj;
 }
+_migrateLegacySaveBlock2();
 
-const _saveBlock2Storage: Record<string, unknown> = _loadSaveBlock2();
-
-/** Persist le storage actuel vers localStorage. */
+/** Persist auto les options au save-system (= au prochain TrySavingData).
+ *  Pour ne pas perdre les options modifiées au refresh, on appelle TrySavingData
+ *  après chaque write (debounce micro-task pour éviter spam si plusieurs sets
+ *  consécutifs dans le même tick). */
+let _persistTimer: ReturnType<typeof setTimeout> | null = null;
 function _persistSaveBlock2(): void {
-  try {
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem(SAVEBLOCK2_LSKEY, JSON.stringify(_saveBlock2Storage));
-    }
-  } catch (e) {
-    console.warn('[gSaveBlock2Ptr] failed to persist to localStorage:', e);
-  }
+  if (_persistTimer != null) return;
+  _persistTimer = setTimeout(() => {
+    _persistTimer = null;
+    // Ne save que si une save existe déjà (= post-NewGame). Sinon laisse le
+    // SaveBlock2 en mémoire seulement — le prochain TrySavingData (= via
+    // SAUVER menu ou NewGame) le persistera.
+    if (_HasValidSave()) _TrySavingData();
+  }, 0);
 }
 
 export const gSaveBlock1Ptr = {} as any;
 
-/** 1:1 décomp `gSaveBlock2Ptr` — Proxy auto-persistent vers localStorage.
- *  Toute écriture (e.g. `gSaveBlock2Ptr.optionsTextSpeed = 2` dans
- *  Task_OptionMenuSave) écrit immédiatement dans localStorage → préserve les
- *  options au refresh. */
-export const gSaveBlock2Ptr: any = new Proxy(_saveBlock2Storage, {
-  get(target, prop: string | symbol) {
-    return target[prop as string];
+/** 1:1 décomp `gSaveBlock2Ptr` — delegates to save-system's SaveBlock2.
+ *  Lecture : redirige vers le SaveBlock2 partagé en mémoire (= 1:1 décomp pointer).
+ *  Écriture : mute le SaveBlock2 + queue auto-persist via TrySavingData. */
+export const gSaveBlock2Ptr: any = new Proxy({} as Record<string, unknown>, {
+  get(_target, prop: string | symbol): unknown {
+    return (_GetSaveBlock2() as unknown as Record<string, unknown>)[prop as string];
   },
-  set(target, prop: string | symbol, value: unknown) {
-    target[prop as string] = value;
+  set(_target, prop: string | symbol, value: unknown): boolean {
+    (_GetSaveBlock2() as unknown as Record<string, unknown>)[prop as string] = value;
     _persistSaveBlock2();
     return true;
+  },
+  ownKeys(_target): ArrayLike<string | symbol> {
+    return Object.keys(_GetSaveBlock2() as unknown as Record<string, unknown>);
+  },
+  getOwnPropertyDescriptor(_target, prop: string | symbol): PropertyDescriptor | undefined {
+    const v = (_GetSaveBlock2() as unknown as Record<string, unknown>)[prop as string];
+    return v === undefined ? undefined : { enumerable: true, configurable: true, value: v, writable: true };
   },
 });
 
@@ -294,6 +329,7 @@ export let gSaveFileStatus = 0; // SAVE_STATUS_EMPTY
 
 export function SetSaveFileStatus(status: number): void {
   gSaveFileStatus = status;
+  console.log(`[gba-menu-system] SetSaveFileStatus(${status}) → gSaveFileStatus=${gSaveFileStatus}`);
 }
 
 // ─── Options helpers (= 1:1 décomp text.c + sound.c + main.c key remap) ────
