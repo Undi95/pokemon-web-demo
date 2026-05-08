@@ -1403,16 +1403,25 @@ function LoadTilesetPalette(tileset: Tileset | null, destOffset: number, size: n
     // Notre version simplifiée : flatten palettes[0..NUM_PALS_IN_PRIMARY-1] et
     // skip first color (= replaced by black).
     const flat = flattenPaletteBanks(tileset.palettes, 0, NUM_PALS_IN_PRIMARY);
-    // size - PLTT_SIZEOF_1 = bytes restantes = (NUM_PALS_IN_PRIMARY * 16 - 1) * 2
-    const restEntries = (size - PLTT_SIZEOF_1) / 2;
+    // size - PLTT_SIZEOF_1 = bytes restantes = (NUM_PALS_IN_PRIMARY * 16 - 1) * 2.
+    // 1:1 décomp bound check (Audit BIG section 2.7) : si la map n'utilise pas
+    // tous les banks (= tileset.palettes.length < NUM_PALS_IN_PRIMARY), `flat`
+    // contient des banks zéro à la fin. Sans cap, on écraserait des entries
+    // valides du précédent map avec des zéros → tile color stomping.
+    // → Cap restEntries à la vraie taille du flat (= numBanks*16 - 1 skipFirst).
+    const flatMaxEntries = Math.max(0, flat.length - 1);
+    const restEntries = Math.min((size - PLTT_SIZEOF_1) / 2, flatMaxEntries);
     LoadPalette(flat.subarray(1, 1 + restEntries), destOffset + 1, restEntries * 2);
   } else {
     // Secondary : load palettes[NUM_PALS_IN_PRIMARY=6]..jusqu'à size.
     // Décomp : `LoadPalette(tileset->palettes[NUM_PALS_IN_PRIMARY], destOffset, size);`
     // C'est un cast pointer → 16 u16 par bank, on flatten palettes[6..12] = 7 banks.
     const flat = flattenPaletteBanks(tileset.palettes, NUM_PALS_IN_PRIMARY, NUM_PALS_TOTAL);
-    const numEntries = size / 2;
-    LoadPalette(flat.subarray(0, numEntries), destOffset, size);
+    // 1:1 décomp bound check (Audit BIG section 2.7) : cap numEntries à
+    // tileset.palettes available banks pour éviter d'écrire des zéros par-dessus
+    // entries valides.
+    const numEntries = Math.min(size / 2, flat.length);
+    LoadPalette(flat.subarray(0, numEntries), destOffset, numEntries * 2);
   }
   // ApplyGlobalTintToPaletteEntries (FRLG-only, no-op pour Emerald).
 }
