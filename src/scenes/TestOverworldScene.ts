@@ -535,7 +535,12 @@ export class TestOverworldScene extends Phaser.Scene {
     DrawWholeMapView(cam.x, cam.y, header.mapLayout);
     flushOverworldTilemaps(this.rt);
     FieldUpdateBgTilemapScroll(this.rt);
-    this.rt.gPlttBufferFaded.flushTo();
+    // ⚠️ NE PAS faire `gPlttBufferFaded.flushTo()` ici (= ancien code).
+    // LoadMapTilesetPalettes a écrit les NEW colors dans gPlttBufferFaded ; un
+    // flushTo ici les pousse à PaletteBanks → screen flash visible AVANT le
+    // FillPalBufferBlack de Phase 4. 1:1 décomp = palette transfer gated par
+    // gPaletteFade.bufferTransferDisabled (= set TRUE par executeWarp Phase 3
+    // start, FALSE après FillPalBufferBlack en Phase 4).
 
     // Phase 4.4.a : destroy old NPC sprites first (= 1:1 décomp ResetObjectEvents).
     destroyAllNpcSprites(this.rt);
@@ -762,6 +767,14 @@ export class TestOverworldScene extends Phaser.Scene {
         destY = coords.y;
         destDir = coords.facing;  // 1:1 décomp : facing carries over
       }
+      // ⚠️ 1:1 décomp gate : `gPaletteFade.bufferTransferDisabled = TRUE` pendant
+      // le load. Sans ça, l'auto-flushTo VBlank pousse les NEW colors écrites par
+      // LoadMapTilesetPalettes (dans gPlttBufferFaded) à PaletteBanks → screen
+      // flash visible BEFORE FillPalBufferBlack (= 1 frame ancien BG / new BG
+      // partial visible pendant warp truck → Littleroot, bug session 124).
+      // 1:1 décomp pattern utilisé par battle_pyramid_bag, berry_crush, contest, etc.
+      // pendant les loads où on veut prevent palette flash.
+      this.rt.gPaletteFade.bufferTransferDisabled = true;
       const destHeader = await this.loadAndInitMap(destMapId, destX, destY, destDir);
       console.log(`[executeWarp] loaded ${destHeader.id}, player at (${destX},${destY}) facing=${destDir}`);
 
@@ -805,6 +818,10 @@ export class TestOverworldScene extends Phaser.Scene {
       // LoadMapTilesetPalettes). Sans ça, écran montre 1 frame full-color avant
       // que le fade in commence à blender vers BLACK → flash visible.
       this.rt.gPlttBufferFaded.flushTo();
+      // 1:1 décomp gate release : maintenant que PaletteBanks contient BLACK
+      // (= FillPalBufferBlack + flushTo), on rouvre l'auto-flushTo VBlank pour
+      // que le fade-in tick (= UpdatePaletteFade) push les couleurs interpolées.
+      this.rt.gPaletteFade.bufferTransferDisabled = false;
       this.rt.BeginNormalPaletteFade('PALETTES_ALL', 0, 16, 0, 'RGB_BLACK');
       await this.waitForFadeComplete();
 
@@ -860,6 +877,9 @@ export class TestOverworldScene extends Phaser.Scene {
       // et SetPlayerVisibility(true), on reset visible TRUE pour pas laisser sprite
       // invisible bloqué.
       SetPlayerVisibility(this.rt, true);
+      // Safety : si exception entre Phase 3 et Phase 4, bufferTransferDisabled
+      // pourrait rester true → palette gel permanent. Reset systématique.
+      this.rt.gPaletteFade.bufferTransferDisabled = false;
       console.log('[executeWarp] DONE');
     }
   }

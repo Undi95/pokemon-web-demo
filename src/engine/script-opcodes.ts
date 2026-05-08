@@ -922,6 +922,25 @@ registerOpcode('setobjectmovementtype', (_ctx, args) => {
   if (npc) {
     npc.movementType = movementType;
     npc.movementStep = 0;
+    // 1:1 décomp : update facingDirection en sync avec movement type pour que
+    // FACE_UP/DOWN/LEFT/RIGHT applique son facing IMMÉDIATEMENT, même quand
+    // le NPC est `frozen` (= lockall) et ne tick pas son movement handler.
+    // Sans cette sync : Mom OnTransition `setobjectmovementtype FACE_UP`
+    // garde son ancien facing (= SOUTH par défaut spawn) → user voit Mom
+    // facing DOWN au lieu de UP pendant le dialog "C'est joli ici, non?".
+    if (movementType) {
+      const m = movementType.toUpperCase();
+      let newFacing = 0;
+      if (m.endsWith('_FACE_UP') || m === 'MOVEMENT_TYPE_FACE_UP') newFacing = 2;       // DIR_NORTH
+      else if (m.endsWith('_FACE_DOWN') || m === 'MOVEMENT_TYPE_FACE_DOWN') newFacing = 1; // DIR_SOUTH
+      else if (m.endsWith('_FACE_LEFT') || m === 'MOVEMENT_TYPE_FACE_LEFT') newFacing = 3; // DIR_WEST
+      else if (m.endsWith('_FACE_RIGHT') || m === 'MOVEMENT_TYPE_FACE_RIGHT') newFacing = 4; // DIR_EAST
+      else if (m.includes('WALK_IN_PLACE_DOWN')) newFacing = 1;
+      else if (m.includes('WALK_IN_PLACE_UP')) newFacing = 2;
+      else if (m.includes('WALK_IN_PLACE_LEFT')) newFacing = 3;
+      else if (m.includes('WALK_IN_PLACE_RIGHT')) newFacing = 4;
+      if (newFacing > 0) npc.facingDirection = newFacing;
+    }
   }
   return false;
 });
