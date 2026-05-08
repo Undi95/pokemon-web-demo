@@ -100,6 +100,11 @@ async function loadBuffer(songName: string): Promise<AudioBuffer> {
  * Play un noise SE pré-rendu sur le slot donné. One-shot (pas de loop).
  * Mono-cut : kill le précédent SE actif sur le slot avant de scheduler le nouveau.
  */
+// Debug verbose : enable via `globalThis.__SE_DEBUG = true` (= dev console).
+// Off par défaut pour réduire bruit logs (chaque SE = 3 logs minimum).
+const SE_DEBUG = (): boolean =>
+  Boolean((globalThis as { __SE_DEBUG?: boolean }).__SE_DEBUG);
+
 export async function playPrerenderedSE(
   songName: string,
   slot: SlotKind,
@@ -107,20 +112,20 @@ export async function playPrerenderedSE(
 ): Promise<void> {
   const ctx = getAudioContext();
   const t0 = ctx.currentTime;
-  console.log(`[SE-DEBUG] play ${songName} slot=${slot} ctxState=${ctx.state} ctxTime=${t0.toFixed(3)} ctxSR=${ctx.sampleRate}`);
+  if (SE_DEBUG()) console.log(`[SE-DEBUG] play ${songName} slot=${slot} ctxState=${ctx.state} ctxTime=${t0.toFixed(3)} ctxSR=${ctx.sampleRate}`);
   if (ctx.state === 'suspended') {
-    console.log(`[SE-DEBUG]   ctx was suspended, awaiting resume...`);
+    if (SE_DEBUG()) console.log(`[SE-DEBUG]   ctx was suspended, awaiting resume...`);
     try { await ctx.resume(); } catch { /* ignore */ }
-    console.log(`[SE-DEBUG]   resumed, state=${ctx.state}`);
+    if (SE_DEBUG()) console.log(`[SE-DEBUG]   resumed, state=${ctx.state}`);
   }
   const tBeforeBuf = ctx.currentTime;
   const buf = await loadBuffer(songName);
   const tAfterBuf = ctx.currentTime;
-  console.log(`[SE-DEBUG]   buffer: ${buf.duration.toFixed(2)}s ${buf.numberOfChannels}ch @ ${buf.sampleRate}Hz, fetch+decode took ${((tAfterBuf - tBeforeBuf) * 1000).toFixed(1)}ms`);
+  if (SE_DEBUG()) console.log(`[SE-DEBUG]   buffer: ${buf.duration.toFixed(2)}s ${buf.numberOfChannels}ch @ ${buf.sampleRate}Hz, fetch+decode took ${((tAfterBuf - tBeforeBuf) * 1000).toFixed(1)}ms`);
 
   const activeBefore = (_slotActive[slot] || []).length;
   stopPrerenderedSE(slot);
-  if (activeBefore > 0) console.log(`[SE-DEBUG]   mono-cut: stopped ${activeBefore} previous source(s) on slot ${slot}`);
+  if (SE_DEBUG() && activeBefore > 0) console.log(`[SE-DEBUG]   mono-cut: stopped ${activeBefore} previous source(s) on slot ${slot}`);
 
   const source = ctx.createBufferSource();
   source.buffer = buf;
@@ -133,7 +138,7 @@ export async function playPrerenderedSE(
   gainNode.connect(getMasterGain());
   const tStart = ctx.currentTime;
   source.start();
-  console.log(`[SE-DEBUG]   source.start() called at ctxTime=${tStart.toFixed(3)} (delta from t0=${((tStart - t0) * 1000).toFixed(1)}ms)`);
+  if (SE_DEBUG()) console.log(`[SE-DEBUG]   source.start() called at ctxTime=${tStart.toFixed(3)} (delta from t0=${((tStart - t0) * 1000).toFixed(1)}ms)`);
 
   if (!_slotActive[slot]) _slotActive[slot] = [];
   _slotActive[slot]!.push(source);

@@ -53,10 +53,22 @@ import { DrawWholeMapView, SetCameraPanning } from './field-camera';
 import { LockPlayerFieldControls, UnlockPlayerFieldControls } from './script-runtime';
 import { gPlayerAvatar } from './player-avatar';
 
+/** Guard global : true tant qu'une cinematic est active. Empêche un double
+ *  appel à `ExecuteTruckSequence` (= e.g. HMR re-trigger, scene re-create
+ *  pendant fade load) de créer 2 tasks simultanées qui jouent les SE en
+ *  doublon (= "deux bruits de camion décalés" reporté par l'utilisateur). */
+let _truckSequenceActive = false;
+
 /** 1:1 décomp `ExecuteTruckSequence()` (field_special_scene.c:260-269).
  *  Setup the door tile state + lock controls + start the cinematic task.
  *  À call APRÈS que la map est loaded + visible. */
 export function ExecuteTruckSequence(rt: DecompRuntime): void {
+  // Guard contre double-call (= cf. _truckSequenceActive comment ci-dessus).
+  if (_truckSequenceActive) {
+    console.warn('[truck-cinematic] ExecuteTruckSequence already running, skip duplicate');
+    return;
+  }
+  _truckSequenceActive = true;
   // 1:1 décomp : 3 metatile changes pour mettre la door en "closed floor"
   // (= le joueur ne peut PAS sortir tant que la cinematic n'est pas finie).
   // Coords (4, 1), (4, 2), (4, 3) en map-local + MAP_OFFSET (= 7).
@@ -162,6 +174,9 @@ const Task_HandleTruckSequence = function (task: DecompTask, rt: DecompRuntime):
         PlaySE(SE_TRUCK_DOOR);
         rt.DestroyTask(task.taskId);
         UnlockPlayerFieldControls();
+        // Clear guard pour que le prochain newgame puisse re-trigger (= multiple
+        // sessions dans la même page lifecycle = e.g. dev reload).
+        _truckSequenceActive = false;
         console.log('[truck-cinematic] state 5 done : SE_TRUCK_DOOR played + controls unlocked');
       }
       break;

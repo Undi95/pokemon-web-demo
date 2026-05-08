@@ -130,9 +130,15 @@ export interface EngineDevtoolsOptions {
 /** Configure les devtools sur `globalThis.dev`. À call depuis scene.create() de
  *  toute scène basée sur DecompRuntime. */
 export function installEngineDevtools(rt: DecompRuntime, opts: EngineDevtoolsOptions = {}): void {
-  // RESET (pas merge ?? {}) — chaque scene re-install ses tools sur son propre rt.
+  // MERGE (pas RESET) — chaque scene re-install ses tools sur son propre rt
+  // mais on PRÉSERVE les extensions installées en side-effect (= dev.audit
+  // depuis dev-audit-tools.ts, dev.dex, etc.). Avant : `dev = {}` wipeait
+  // window.dev.audit à chaque scene boot → audit tools indisponibles.
+  // 1:1 décomp parallel : pas applicable, c'est notre infra. Mais 1:1 impl
+  // doit être 100% testable → audit tools doivent survivre.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const dev = (globalThis as any).dev = {} as Record<string, unknown>;
+  const w = globalThis as any;
+  const dev = (w.dev ??= {}) as Record<string, unknown>;
 
   dev._rt = rt;
   dev._scene = opts.sceneName ?? '(unknown)';

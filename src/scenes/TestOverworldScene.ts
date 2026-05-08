@@ -87,6 +87,7 @@ import {
   UnlockPlayerFieldControls,
   RunOnTransitionMapScript,
   TryRunOnFrameMapScript,
+  TryRunOnWarpIntoMapScript,
 } from '../engine/script-runtime';
 import {
   getPendingWarp,
@@ -571,6 +572,17 @@ export class TestOverworldScene extends Phaser.Scene {
     // state (= setobjectxyperm + setobjectmovementtype dans MoveMomToX scripts).
     // Doit run APRÈS loadMapScripts pour avoir le _scriptsByLabel populé.
     RunOnTransitionMapScript();
+
+    // 1:1 décomp `TryRunOnWarpIntoMapScript()` (= overworld.c:2160 dans
+    // `InitObjectEventsLocal` → après TrySpawnObjectEvents). Run le table
+    // `MAP_SCRIPT_ON_WARP_INTO_MAP_TABLE` qui contient des entries `map_script_2
+    // VAR, value, scriptLabel`. Used par e.g. LittlerootTown_OnWarp pour
+    // positionner Rival/Birch lors du DexUpgrade event, ou
+    // BrendansHouse_2F_OnWarp pour décorations chambre 2F (audit Littleroot A2).
+    // OnTransition → OnWarpInto ordering : OnTransition update les vars (e.g.
+    // VAR_LITTLEROOT_TOWN_STATE), OnWarpInto lit les vars pour position NPCs
+    // → must run dans cet ordre 1:1 décomp.
+    TryRunOnWarpIntoMapScript();
 
     // Phase 4.7 : warp arrow sprite (= 1:1 décomp `CreateWarpArrowSprite`).
     // Re-create at each map load (= ancien sprite cleanup automatique en interne).

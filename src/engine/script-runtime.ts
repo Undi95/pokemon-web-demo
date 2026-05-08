@@ -540,6 +540,44 @@ export function TryRunOnFrameMapScript(): boolean {
   return false;
 }
 
+/** 1:1 décomp `TryRunOnWarpIntoMapScript()` (script.c:364).
+ *  Run le script `MAP_SCRIPT_ON_WARP_INTO_MAP_TABLE` SI le var match.
+ *  Comme OnFrame mais utilise `RunScriptImmediately` (= sync, no waits — typically
+ *  setobjectxy / setflag pour positionner NPCs). À call APRÈS spawn NPCs.
+ *
+ *  Audit Littleroot A2 : ce dispatcher manquait → BrendansHouse_2F_OnWarp jamais
+ *  fire → décorations chambre 2F absentes. Idem pour LittlerootTown_OnWarp qui
+ *  set Rival/Birch positions pour DexUpgrade scene.
+ *
+ *  Note importante : sGlobalScriptContextStatus check skip l'exécution si un
+ *  script tourne déjà — typique au warp arrival, sGlobalScriptContext est
+ *  freshly setup. Ce check protège des call superflus. */
+export function TryRunOnWarpIntoMapScript(): boolean {
+  // 1:1 décomp : NE check PAS le script status — RunScriptImmediately est sync,
+  // ne va pas conflicter. Mais notre RunScriptImmediately appelle ctx pas global.
+  const gMapHeader = (globalThis as Record<string, unknown>).gMapHeader as
+    { mapScripts?: string } | undefined;
+  if (!gMapHeader?.mapScripts) return false;
+  const tableLabel = findMapScriptLabel(gMapHeader.mapScripts, 'MAP_SCRIPT_ON_WARP_INTO_MAP_TABLE');
+  if (!tableLabel) return false;
+  const opcodes = _scriptsByLabel.get(tableLabel);
+  if (!opcodes) return false;
+  // Iter map_script_2 entries comme MapHeaderCheckScriptTable (script.c:299).
+  for (const op of opcodes) {
+    if (op.name !== 'map_script_2') continue;
+    const [varName, valueTok, scriptLabel] = op.args;
+    if (!varName || !valueTok || !scriptLabel) continue;
+    const expected = /^-?\d+$/.test(valueTok) ? Number(valueTok) : 0;
+    if (VarGet(varName) === expected) {
+      console.log(`[script-runtime] OnWarpIntoMap match : ${varName}=${expected} → ${scriptLabel}`);
+      // 1:1 décomp `RunScriptImmediately(ptr)` — sync run, no waits.
+      RunScriptImmediately(scriptLabel);
+      return true;
+    }
+  }
+  return false;
+}
+
 /** Coord trigger : check si player est sur une coord_event qui match VAR.
  *  À call chaque step end depuis PlayerStep. 1:1 décomp `TryRunCoordEventScript`
  *  (field_control_avatar.c) qui iterate gMapHeader.events.coordEvents et trigger
