@@ -29,6 +29,9 @@ import * as Songs from './decomp-data/auto/include/constants/songs-data';
 import {
   gObjectEvents, type ObjectEvent,
 } from './object-events';
+import type { ObjectEventTemplate } from './map-loader';
+import { gameState } from './game-state';
+import { setPendingWarp } from './warp-system';
 import {
   gPlayerAvatar, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST,
 } from './player-avatar';
@@ -621,6 +624,115 @@ registerOpcode('waitmovement', (ctx, args) => {
 // les scripts exécutables. Les ignorer si rencontrés pendant une exécution.
 registerOpcode('map_script', () => false);
 registerOpcode('map_script_2', () => false);
+
+// ─── Object event manipulation (= 1:1 décomp ScrCmd_addobject etc.) ─────────
+
+registerOpcode('addobject', (_ctx, args) => {
+  // 1:1 décomp `ScrCmd_addobject` : ClearFlag(template.flagId) + spawn NPC.
+  const localIdRaw = args[0] ?? '';
+  const gMapHeader = (globalThis as Record<string, unknown>).gMapHeader as
+    { events?: { objectEvents?: ObjectEventTemplate[] } } | undefined;
+  const tpl = gMapHeader?.events?.objectEvents?.find(t => t.localIdRaw === localIdRaw);
+  if (tpl?.flagId) FlagClear(tpl.flagId);
+  // Trigger spawn next frame via TrySpawnObjectEvents (= bounds check + spawn).
+  // Player_avatar already calls this per-tile-cross. Force one immediate call.
+  void localIdRaw;
+  return false;
+});
+
+registerOpcode('removeobject', (_ctx, args) => {
+  // 1:1 décomp `ScrCmd_removeobject` : SetFlag(flagId) + remove sprite.
+  const localIdRaw = args[0] ?? '';
+  const gMapHeader = (globalThis as Record<string, unknown>).gMapHeader as
+    { events?: { objectEvents?: ObjectEventTemplate[] } } | undefined;
+  const tpl = gMapHeader?.events?.objectEvents?.find(t => t.localIdRaw === localIdRaw);
+  if (tpl?.flagId) FlagSet(tpl.flagId);
+  // Find active NPC + mark inactive.
+  const npc = gObjectEvents.find(n => n.active && n.localIdRaw === localIdRaw);
+  if (npc) npc.active = false;
+  return false;
+});
+
+registerOpcode('hideobject', (_ctx, args) => {
+  // 1:1 décomp `ScrCmd_setobjectinvisibility` : just hide sprite via flag.
+  const localIdRaw = args[0] ?? '';
+  const npc = gObjectEvents.find(n => n.active && n.localIdRaw === localIdRaw);
+  if (npc) npc.invisible = true;
+  return false;
+});
+
+registerOpcode('showobject', (_ctx, args) => {
+  const localIdRaw = args[0] ?? '';
+  const npc = gObjectEvents.find(n => n.active && n.localIdRaw === localIdRaw);
+  if (npc) npc.invisible = false;
+  return false;
+});
+
+registerOpcode('hideplayer', (_ctx) => {
+  // Hide player sprite (= used during cinematic warp).
+  const rt = getRuntime();
+  if (rt && (globalThis as Record<string, unknown>).gPlayerAvatar) {
+    const pa = (globalThis as Record<string, unknown>).gPlayerAvatar as { spriteId?: number };
+    if (pa.spriteId !== undefined && pa.spriteId >= 0) {
+      const s = rt.gSprites.get(pa.spriteId);
+      if (s) s.invisible = true;
+    }
+  }
+  return false;
+});
+
+// ─── Doors (= 1:1 décomp ScrCmd_opendoor etc.) ──────────────────────────────
+//
+// MVP : no-op visuel (= door anim). Le warpsilent qui suit dans les scripts
+// cinematic gère la transition logique. Phase suivante : wire les FieldAnimateDoor
+// existing functions (field-door.ts) pour proper visual.
+
+registerOpcode('opendoor', (_ctx, _args) => false);
+registerOpcode('closedoor', (_ctx, _args) => false);
+registerOpcode('waitdooranim', (_ctx) => false);
+registerOpcode('setdooropen', (_ctx, _args) => false);
+registerOpcode('setdoorclosed', (_ctx, _args) => false);
+
+// ─── Warp opcodes ──────────────────────────────────────────────────────────
+
+registerOpcode('warpsilent', (_ctx, args) => {
+  // 1:1 décomp `ScrCmd_warpsilent` : warp instantané sans fade.
+  // args : [destMap, warpId, x, y]
+  const [destMap, _warpId, xStr, yStr] = args;
+  const x = parseInt(xStr ?? '0', 10);
+  const y = parseInt(yStr ?? '0', 10);
+  // Setup pending warp via warp-system. Scene's MainCB2 picks it up.
+  setPendingWarp({ destMap, x, y, elevation: 0, warpId: 0 }, 'step');
+  console.log(`[opcode warpsilent] ${destMap} (${x},${y})`);
+  void _warpId;
+  return false;
+});
+
+registerOpcode('warp', (_ctx, args) => {
+  const [destMap, _warpId, xStr, yStr] = args;
+  const x = parseInt(xStr ?? '0', 10);
+  const y = parseInt(yStr ?? '0', 10);
+  setPendingWarp({ destMap, x, y, elevation: 0, warpId: 0 }, 'step');
+  console.log(`[opcode warp] ${destMap} (${x},${y})`);
+  void _warpId;
+  return false;
+});
+
+// ─── Setrespawn (= MVP no-op) ────────────────────────────────────────────────
+
+registerOpcode('setrespawn', (_ctx, _args) => false);
+
+// ─── Setdynamicwarp + sync gameState ───────────────────────────────────────
+
+registerOpcode('setdynamicwarp', (_ctx, args) => {
+  const [destMap, xStr, yStr] = args;
+  const x = parseInt(xStr ?? '0', 10);
+  const y = parseInt(yStr ?? '0', 10);
+  // Set via gameState (= used by executeWarp MAP_DYNAMIC resolution).
+  gameState.setDynamicWarp(destMap, x, y);
+  console.log(`[opcode setdynamicwarp] ${destMap} (${x},${y})`);
+  return false;
+});
 
 // ─── Helpers privés ──────────────────────────────────────────────────────────
 

@@ -76,6 +76,7 @@ import {
   preloadNpcGraphicsForMap,
 } from '../engine/object-events';
 import { tickMovementQueues, resetMovementQueues } from '../engine/movement-system';
+import { NewGameInit } from '../engine/new-game-flags';
 import { installInputHandlers, setHeldKeysOverride } from '../engine/input-handler';
 import { installEngineDevtools } from '../engine/engine-devtools';
 import {
@@ -297,6 +298,12 @@ export class TestOverworldScene extends Phaser.Scene {
       // Set dynamicWarp directly à Bourg (3, 10) — quand on arrive à Bourg, le
       // cinematic StepOffTruck devrait tourner. Si pas wiré, le user peut walker
       // librement sur Bourg (= map propre, NPCs visibles).
+      // Phase 4.10 : init flags d'une nouvelle partie 1:1 décomp
+      // `EventScript_ResetAllMapFlags`. Set 159 FLAG_HIDE_* pour cacher les
+      // NPCs d'événements pas encore déclenchés (= rivale Bourg, Birch lab,
+      // Birch Route 101 cinematic, Brendan/May rival house, etc.). Sans ça,
+      // tous ces NPCs sont visibles au boot, brise le scenario.
+      NewGameInit();
       gameState.setDynamicWarp('MAP_LITTLEROOT_TOWN', 3, 10);
       const header = await this.loadAndInitMap('MAP_INSIDE_OF_TRUCK', 1, 2, DIR_EAST);
 
@@ -687,6 +694,15 @@ export class TestOverworldScene extends Phaser.Scene {
         destY = dw.y;
         destDir = gPlayerAvatar.facing;  // preserve facing
         console.log(`[executeWarp] MAP_DYNAMIC → ${destMapId} (${destX}, ${destY})`);
+      } else if (warp.x !== 0 || warp.y !== 0) {
+        // Phase 4.10 : warp avec coordonnées explicites (= warpsilent depuis
+        // script, ou warp custom). Use warp.x/y directly au lieu de
+        // getPlayerCoordsFromWarp (= warpId index lookup).
+        await loadMapByName(destMapId);  // ensure prefetch
+        destX = warp.x;
+        destY = warp.y;
+        destDir = gPlayerAvatar.facing;
+        console.log(`[executeWarp] explicit coords → ${destMapId} (${destX}, ${destY})`);
       } else {
         const destPreheader = await loadMapByName(destMapId);
         const coords = getPlayerCoordsFromWarp(destPreheader, warp.warpId);

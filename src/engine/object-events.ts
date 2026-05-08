@@ -37,6 +37,7 @@ import {
   DIR_TO_DX, DIR_TO_DY, OPPOSITE_DIR,
 } from './direction-coords';
 import { _registerGObjectEvents, _registerNpcHelpers, _registerUpdateObjectEventsForCameraUpdate } from './field-globals';
+import { FlagGet } from './script-vars';
 
 const BASE = '/decomp/em';
 
@@ -798,6 +799,17 @@ function _spawnSingleNpcFromTemplate(
   const graphicsKey = template.graphicsIdRaw;
   const graphics = catalog[graphicsKey];
   if (!graphics) return false;
+  // 1:1 décomp `TrySpawnObjectEvents` (event_object_movement.c:1670) :
+  //   if (... && !FlagGet(template->flagId)) TrySpawnObjectEventTemplate(...)
+  // → un NPC avec un flag set est CACHÉ. Ex : FLAG_HIDE_LITTLEROOT_TOWN_BIRCH
+  // empêche Birch d'apparaitre tant qu'il est hidden par scénario.
+  // template.flagId == "0" ou "" → no flag (= always show).
+  if (template.flagId && template.flagId !== '0' && FlagGet(template.flagId)) {
+    return false;
+  }
+  // Truck : graphics 48x48 (subspriteable). Pas de subsprites yet → skip pour
+  // l'instant. Phase suivante : add subsprite support.
+  // TODO : truck visible via subsprites (= 9 OAM tiles).
   if (graphics.frameWidth !== 16 || graphics.frameHeight !== 32) return false;
   if (graphics.displayWidth !== graphics.frameWidth || graphics.displayHeight !== graphics.frameHeight) return false;
 
