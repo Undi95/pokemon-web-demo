@@ -81,6 +81,7 @@ import {
   IsWirelessAdapterConnected,
   CreateYesNoMenu,
   Menu_ProcessInputNoWrapClearOnChoose,
+  Menu_ProcessInputNoWrap,
   InitMenuInUpperLeftCornerNormal,
   gSaveBlock2Ptr,
 } from './gba-menu-system';
@@ -574,14 +575,18 @@ export function NewGameBirchSpeech_ShowGenderMenu(): void {
 }
 
 /** 1:1 décomp main_menu.c:2102 NewGameBirchSpeech_ProcessGenderMenuInput.
- *  Retourne 0=GARÇON, 1=FILLE, -1=B pressed (cancel). */
+ *  Retourne 0=GARÇON, 1=FILLE, -1=B pressed (no-op for Birch), -2=still processing.
+ *
+ *  Bug fix session 122 : avant on appelait Menu_ProcessInputNoWrapClearOnChoose
+ *  qui efface le YesNo window sur A/B → mais le gender menu N'EST PAS un YesNo
+ *  window. EraseYesNoWindow effaçait random state + B press faisait freeze le
+ *  jeu (menu disparaissait + tâche Birch attendait selection).
+ *  1:1 décomp utilise Menu_ProcessInputNoWrap (= sans clear) — le caller
+ *  Task_ChooseGender ignore B (= switch ne match pas), reste dans le task.
+ *  Cursor cleanup est géré par notre _processMenuInput core sur A/B (ne touche
+ *  plus au window). */
 export function NewGameBirchSpeech_ProcessGenderMenuInput(): number {
-  // 1:1 décomp ligne 2104 — return Menu_ProcessInputNoWrap().
-  // Notre helper Menu_ProcessInputNoWrapClearOnChoose retourne :
-  //  - menuCursorPos (0/1) si A_BUTTON
-  //  - -1 si B_BUTTON
-  //  - -2 si still processing (≠ décomp qui retourne MENU_NOTHING_CHOSEN=-2 pareil)
-  return Menu_ProcessInputNoWrapClearOnChoose();
+  return Menu_ProcessInputNoWrap();
 }
 
 // 1:1 décomp main_menu.c:461-505 sMalePresetNames / sFemalePresetNames.

@@ -47,22 +47,34 @@ export const B_BUTTON = 0x02;
 export const DPAD_UP = 0x40;
 export const DPAD_DOWN = 0x80;
 
-// ─── Menu_ProcessInputNoWrapClearOnChoose + helpers ──────────────────────────
+// ─── Menu_ProcessInputNoWrap + variants ─────────────────────────────────────
+//
+// 1:1 décomp menu.c:
+//   Menu_ProcessInputNoWrap()                  → returns selection, no cleanup
+//   Menu_ProcessInputNoWrapClearOnChoose()     → returns selection + EraseYesNoWindow
+//
+// Différence critique : ProcessInputNoWrap (sans Clear) NE TOUCHE PAS au
+// window. Caller décide quand cleanup. Utilisé par NewGameBirchSpeech_
+// ProcessGenderMenuInput où le menu gender doit RESTER visible même si
+// user press B (= no cancel from gender selection 1:1 décomp). Avant on
+// avait QUE la variante Clear → B press effaçait le gender menu → freeze.
 
-export function Menu_ProcessInputNoWrapClearOnChoose(): number {
+/** Internal core : process newKeys, update cursor, return selection.
+ *  Param `eraseOnSelect` : si true, call EraseYesNoWindow on A/B (= Clear variant). */
+function _processMenuInput(eraseOnSelect: boolean): number {
   if (!menuActive) return -1;
   const newKeys = getRuntime()?.gMain.newKeys ?? 0;
 
   if (newKeys & A_BUTTON) {
     menuActive = false;
     clearMenuCursor();
-    EraseYesNoWindow();  // 1:1 décomp menu.c:1219 (= clear + remove window)
+    if (eraseOnSelect) EraseYesNoWindow();
     return menuCursorPos;
   }
   if (newKeys & B_BUTTON) {
     menuActive = false;
     clearMenuCursor();
-    EraseYesNoWindow();  // 1:1 décomp menu.c:1219
+    if (eraseOnSelect) EraseYesNoWindow();
     return -1; // MENU_B_PRESSED
   }
   if (newKeys & DPAD_UP) {
@@ -83,6 +95,17 @@ export function Menu_ProcessInputNoWrapClearOnChoose(): number {
     }
   }
   return -2; // still processing
+}
+
+/** 1:1 décomp menu.c:Menu_ProcessInputNoWrap — same as ClearOnChoose but
+ *  WITHOUT auto-erase of YesNo window. Caller is responsible for cleanup.
+ *  Used for menus that should persist after selection (= gender menu Birch). */
+export function Menu_ProcessInputNoWrap(): number {
+  return _processMenuInput(false);
+}
+
+export function Menu_ProcessInputNoWrapClearOnChoose(): number {
+  return _processMenuInput(true);
 }
 
 /** 1:1 décomp src/menu.c:945 Menu_PrintCursor (FONT_NORMAL, gText_SelectorArrow3="▶").
