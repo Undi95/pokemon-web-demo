@@ -34,6 +34,7 @@
  */
 import type { DecompRuntime, DecompTask } from './decomp-runtime';
 import { PlaySE } from './decomp-globals';
+import { stopPrerenderedSE } from './m4a/se-noise-prerendered';
 import {
   SE_TRUCK_MOVE,
   SE_TRUCK_STOP,
@@ -134,8 +135,16 @@ const Task_HandleTruckSequence = function (task: DecompTask, rt: DecompRuntime):
       if (data[1] > 300) {
         data[1] = 0;
         data[0] = 3;
+        // 1:1 décomp comportement attendu : SE_TRUCK_MOVE (= "camion qui roule")
+        // doit être STOPPÉ avant SE_TRUCK_STOP (= "camion qui s'arrête") pour
+        // que les 2 SE soient SÉQUENTIELS, pas simultanés. Notre PlaySE
+        // alterne se1/se2 → MOVE est sur se1, STOP irait sur se2 (= simultané).
+        // User feedback session 123 : "le 2ème décalé, doivent se suivre".
+        // Stop explicit MOVE sur se1 + se2 pour être safe avant le STOP.
+        stopPrerenderedSE('se1');
+        stopPrerenderedSE('se2');
         PlaySE(SE_TRUCK_STOP);
-        console.log('[truck-cinematic] state 2→3 : SE_TRUCK_STOP played');
+        console.log('[truck-cinematic] state 2→3 : SE_TRUCK_STOP played (MOVE stopped)');
       }
       break;
     case 3:
