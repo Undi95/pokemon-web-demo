@@ -608,13 +608,40 @@ const sFemalePresetNames = [
 /** 1:1 décomp main_menu.c:2107 NewGameBirchSpeech_SetDefaultPlayerName(nameId).
  *  Set gSaveBlock2Ptr.playerName depuis sMalePresetNames[nameId] ou
  *  sFemalePresetNames[nameId] selon le gender.
- *  Phase E Step 5 : real impl. */
+ *
+ *  Bug fix session 122 : l'auto file (main_menu-callbacks-auto.ts:77) déclare
+ *  `NUM_PRESET_NAMES = _UNDEFINED = 0` (= macro non-résolue par le transpileur),
+ *  donc `Math.random() % 0 = NaN` arrive ici comme nameId. Si invalide,
+ *  utiliser `Random() % 20` 1:1 décomp (= NUM_PRESET_NAMES réel = 20).
+ *
+ *  Aussi 1:1 décomp : le décomp utilise `Random()` (= seed=0 reproductible),
+ *  pas Math.random(). On override le rng ici aussi pour 1:1 fidélité. */
 export function NewGameBirchSpeech_SetDefaultPlayerName(nameId: number): void {
+  // 1:1 décomp NUM_PRESET_NAMES = 20.
+  const NUM_PRESET_NAMES = 20;
+  let validIdx = nameId;
+  if (!Number.isInteger(validIdx) || validIdx < 0 || validIdx >= NUM_PRESET_NAMES) {
+    // Fallback : Random() % 20 (= 1:1 décomp main_menu.c:1604).
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    void import('./random').then(({ Random }) => {
+      validIdx = Random() % NUM_PRESET_NAMES;
+      _applyPresetName(validIdx);
+    });
+    // Apply temporary fallback synchronously to avoid empty playerName
+    // pendant que l'async import résout (= deterministic seed=0 → idx 0).
+    validIdx = 0;
+  }
+  _applyPresetName(validIdx);
+}
+
+function _applyPresetName(nameId: number): void {
   const MALE = 0;
   const presetSymbol = gSaveBlock2Ptr.playerGender === MALE
-    ? sMalePresetNames[nameId % 20]
-    : sFemalePresetNames[nameId % 20];
+    ? sMalePresetNames[nameId]
+    : sFemalePresetNames[nameId];
+  if (!presetSymbol) return;
   const name = getString(presetSymbol);
+  if (name.startsWith('[MISSING:')) return;  // safety, ne jamais set un missing
   gSaveBlock2Ptr.playerName = name;
 }
 

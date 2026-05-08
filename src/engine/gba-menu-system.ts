@@ -16,7 +16,7 @@
  *   - gSaveFileStatus mutable global
  */
 import { getRuntime, m4aSongNumStart, PlaySE } from './decomp-globals';
-import { AddWindow, DrawStdFrameWithCustomTileAndPalette, FillWindowPixelRect, CopyWindowToVram, type WindowTemplate } from './gba-window-system';
+import { AddWindow, DrawStdFrameWithCustomTileAndPalette, FillWindowPixelRect, CopyWindowToVram, ClearStdWindowAndFrame, RemoveWindow, type WindowTemplate } from './gba-window-system';
 import { AddTextPrinterParameterized3 } from './gba-text-system';
 import { getString } from './gba-strings';
 
@@ -121,13 +121,14 @@ function clearMenuCursor(): void {
  *  et le retirer du registry. Sans ça → OUI/NON reste visible après choix. */
 function EraseYesNoWindow(): void {
   if (sYesNoWindowId < 0) return;
-  // ClearStdWindowAndFrameToTransparent : fill pixels avec idx 0 (= transparent)
-  // + clear tilemap entries (= AddWindow utilise un baseBlock spécifique).
-  void import('./gba-window-system').then(({ ClearStdWindowAndFrame, RemoveWindow }) => {
-    ClearStdWindowAndFrame(sYesNoWindowId, true);
-    RemoveWindow(sYesNoWindowId);
-    sYesNoWindowId = -1;
-  });
+  // 1:1 décomp src/menu.c:1219 ClearStdWindowAndFrameToTransparent :
+  // fill pixels avec idx 0 (= transparent) + clear tilemap entries.
+  // Bug fix session 122 : précédemment async via dynamic import → cleanup
+  // happens 1+ frame APRÈS Menu_ProcessInputNoWrapClearOnChoose return → trace
+  // noire visible sur l'écran. Fix : import statique (= synchrone).
+  ClearStdWindowAndFrame(sYesNoWindowId, true);
+  RemoveWindow(sYesNoWindowId);
+  sYesNoWindowId = -1;
 }
 
 export function Menu_GetCursorPos(): number {

@@ -520,7 +520,13 @@ export class TestOverworldScene extends Phaser.Scene {
     const sy = spawnY >= 0 ? spawnY : Math.floor(header.mapLayout.height / 2);
     // Phase 4.6 : destroy player sprite avant re-init pour éviter leak OAM.
     DestroyPlayerAvatar(this.rt);
-    await InitPlayerAvatar(sx, sy, spawnDir, 'MALE', this.rt);
+    // Bug fix session 122 : 'MALE' était hardcodé → joueur toujours Brendan
+    // même si user avait choisi May/Female dans Birch speech. Lit gameState.gender
+    // (= source unique : sync depuis gSaveBlock2Ptr.playerGender via Birch flow
+    // OR depuis save reload). 1:1 décomp field_player_avatar.c qui lit
+    // `gSaveBlock2Ptr->playerGender` pour piquer le sprite asset (= Brendan ou May).
+    const playerGender = gameState.gender ?? 'MALE';
+    await InitPlayerAvatar(sx, sy, spawnDir, playerGender, this.rt);
 
     // 1:1 décomp `DrawWholeMapView` (field_camera.c).
     clearOverworldTilemaps();
