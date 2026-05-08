@@ -60,10 +60,12 @@ import {
   DIR_NONE,
   DIR_NORTH,
   DIR_SOUTH,
+  DIR_EAST,
   NOT_MOVING,
   T_NOT_MOVING,
   gPlayerAvatar,
 } from '../engine/player-avatar';
+import { gameState } from '../engine/game-state';
 import {
   SpawnObjectEventsOnMap,
   UpdateObjectEvents,
@@ -269,9 +271,17 @@ export class TestOverworldScene extends Phaser.Scene {
 
       // 3-12 : load + init map (= 1:1 décomp `CB2_LoadMap` flow). Helper
       //         réutilisé par executeWarp pour les map switches.
-      // Spawn position du boot : centre de Bourg-en-Vol (= défaut testing).
-      // Phase 4.7+ : remplacer par save game last known location.
-      const header = await this.loadAndInitMap('MAP_LITTLEROOT_TOWN', -1, -1, DIR_SOUTH);
+      //
+      // Phase 4.10 démo finale Chunk 1 : spawn dans le camion 1:1 décomp
+      // `WarpToTruck` (new_game.c:127) qui place le joueur dans MAP_INSIDE_OF_TRUCK.
+      // Pour le demo MVP : MAP_DYNAMIC sortie directe vers Brendan's House 1F
+      // (= 1:1 décomp setdynamicwarp dans InsideOfTruck_EventScript_SetIntroFlagsMale,
+      // sauf qu'on skip la cinématique d'arrivée à Bourg-en-Vol pour l'instant).
+      // Spawn coords (1, 2) = côté ouest du camion 5×5, le joueur marche east et
+      // déclenche le coord trigger à (3, 2) qui setdynamicwarp + warps vers (4, 2).
+      // Truncation MVP : on skip Bourg intermediate, warp direct vers la maison.
+      gameState.setDynamicWarp('MAP_LITTLEROOT_TOWN_BRENDANS_HOUSE_1F', 8, 8);
+      const header = await this.loadAndInitMap('MAP_INSIDE_OF_TRUCK', 1, 2, DIR_EAST);
 
       // 1:1 décomp `SetVBlankCallback(VBlankCB_Overworld)`. Le simple fait
       // d'avoir un vblankCallback set fait que tickFixed.runOneFrame call
@@ -615,12 +625,36 @@ export class TestOverworldScene extends Phaser.Scene {
       // Notre version : preserve gPlayerAvatar.facing courant (= depuis la
       // source map). Le walk-down auto override facing au step start. Pour les
       // warps non-door (= ladder/arrow/teleport), on preserve aussi.
-      const destPreheader = await loadMapByName(warp.destMap);
-      const coords = getPlayerCoordsFromWarp(destPreheader, warp.warpId);
-      const destX = coords.x;
-      const destY = coords.y;
-      const destDir = coords.facing;  // 1:1 décomp : facing carries over
-      const destHeader = await this.loadAndInitMap(warp.destMap, destX, destY, destDir);
+      //
+      // Phase 4.10 Chunk 1 : MAP_DYNAMIC + WARP_ID_DYNAMIC = destination
+      // résolue via gameState.dynamicWarp (= 1:1 décomp gSaveBlock1Ptr->dynamicWarp).
+      // Set par `setdynamicwarp` opcode dans les scripts (e.g. truck →
+      // setdynamicwarp MAP_LITTLEROOT_TOWN, 3, 10) ou directement par notre
+      // boot init pour le démo.
+      let destMapId = warp.destMap;
+      let destX: number;
+      let destY: number;
+      let destDir: number;
+      if (destMapId === 'MAP_DYNAMIC') {
+        const dw = gameState.dynamicWarp;
+        if (!dw) {
+          console.error('[executeWarp] MAP_DYNAMIC sans dynamicWarp set, abort');
+          this.warpInProgress = false;
+          return;
+        }
+        destMapId = dw.mapId;
+        destX = dw.x;
+        destY = dw.y;
+        destDir = gPlayerAvatar.facing;  // preserve facing
+        console.log(`[executeWarp] MAP_DYNAMIC → ${destMapId} (${destX}, ${destY})`);
+      } else {
+        const destPreheader = await loadMapByName(destMapId);
+        const coords = getPlayerCoordsFromWarp(destPreheader, warp.warpId);
+        destX = coords.x;
+        destY = coords.y;
+        destDir = coords.facing;  // 1:1 décomp : facing carries over
+      }
+      const destHeader = await this.loadAndInitMap(destMapId, destX, destY, destDir);
       console.log(`[executeWarp] loaded ${destHeader.id}, player at (${destX},${destY}) facing=${destDir}`);
 
       // ─── Pre-Phase 4 : determine exit task kind + setup pre-fade-in state ──
