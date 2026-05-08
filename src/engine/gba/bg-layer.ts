@@ -226,8 +226,11 @@ export function renderBgAffineScanline(
     // (loadAffineTilemapBin a expandé). Lit le low byte (high = 0 garanti).
     const tileId = tilemap[mapIdx] & 0xFF;
 
-    // Décode tile 8bpp (cache)
-    const cacheKey = `aff_${tileId}`;
+    // Décode tile 8bpp (cache).
+    // Affine tiles are u8 ; encode "affine" namespace via high bit (= 1<<16)
+    // pour ne pas collide avec le cache des tiles régulières du même cache
+    // numeric. TileCache.key type = number.
+    const cacheKey = tileId | (1 << 16);
     let tilePixels = tileCache.get(cacheKey);
     if (!tilePixels) {
       tilePixels = decodeTile8bpp(vram256, tileId, false, false);

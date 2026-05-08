@@ -15,6 +15,7 @@
  */
 
 import type { PokemonInstance } from './pokemon';
+import { type Bag, emptyBag, migrateBag } from './bag';
 
 const STORAGE_KEY = 'em_save_v1';
 
@@ -46,7 +47,7 @@ interface SaveData {
   objectPositions: Record<string, Record<string, { x: number; y: number }>>;
   playerName: string;
   gender: 'MALE' | 'FEMALE';
-  map?: { name: string; x: number; y: number };
+  map?: { name: string; x: number; y: number; facing?: number };
   /** Spawn dynamique défini par `setdynamicwarp` (utilisé pour le tout 1er spawn de la partie) */
   dynamicWarp?: { mapId: string; x: number; y: number };
   /** Heal location définie par `setrespawn` (où on revient après un blackout) */
@@ -56,6 +57,8 @@ interface SaveData {
   takenItemBalls?: string[];
   /** Options menu (text speed, sound, frame, etc). */
   options?: PokemonOptions;
+  /** Bag (= 5 pockets ItemSlot[] 1:1 décomp `gBagPockets`). Cf. `bag.ts`. */
+  bag?: Bag;
   created: number;
 }
 
@@ -65,6 +68,7 @@ function emptySave(): SaveData {
     playerName: 'UNDI', gender: 'MALE',
     party: [],
     options: { ...DEFAULT_OPTIONS },
+    bag: emptyBag(),
     created: Date.now()
   };
 }
@@ -88,6 +92,7 @@ class GameState {
         objectPositions: parsed.objectPositions ?? {},
         party: parsed.party ?? [],
         options: { ...empty.options!, ...(parsed.options ?? {}) },
+        bag: migrateBag(parsed.bag),
       };
       return true;
     } catch { return false; }
@@ -174,6 +179,19 @@ class GameState {
   getTextSpeedFrameDelay(): number {
     const idx = Math.max(0, Math.min(2, this.options.textSpeed));
     return TEXT_SPEED_FRAME_DELAYS[idx];
+  }
+
+  // ===== Bag =====
+  // 1:1 décomp `gBagPockets` (item.h). Cf. `bag.ts` pour AddBagItem etc.
+  get bag(): Bag {
+    if (!this.data.bag) this.data.bag = emptyBag();
+    return this.data.bag;
+  }
+
+  /** True si une save existe en localStorage (= savefile présent, peu importe son contenu). */
+  hasPersistedSave(): boolean {
+    try { return !!localStorage.getItem(STORAGE_KEY); }
+    catch { return false; }
   }
 
   /** Heal HP + PP de tous les Pokémon (Centre Pokémon, special HealPlayerParty). */

@@ -32,6 +32,7 @@ import {
 import type { ObjectEventTemplate } from './map-loader';
 import { gameState } from './game-state';
 import { setPendingWarp } from './warp-system';
+import { AddBagItem, RemoveBagItem, CheckBagHasItem } from './bag';
 import {
   gPlayerAvatar, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST,
 } from './player-avatar';
@@ -731,6 +732,57 @@ registerOpcode('setdynamicwarp', (_ctx, args) => {
   // Set via gameState (= used by executeWarp MAP_DYNAMIC resolution).
   gameState.setDynamicWarp(destMap, x, y);
   console.log(`[opcode setdynamicwarp] ${destMap} (${x},${y})`);
+  return false;
+});
+
+// ─── Bag opcodes (= 1:1 décomp ScrCmd_additem etc.) ─────────────────────────
+
+/** Helper : resolve un arg "VAR_X" ou "ITEM_Y" ou number en numeric quantity. */
+function resolveCount(arg: string): number {
+  if (!arg) return 1;
+  // Si VAR_*, lire la valeur. Sinon parseInt.
+  if (arg.startsWith('VAR_') || arg.startsWith('0x80')) {
+    return gameState.getVar(arg);
+  }
+  const n = parseInt(arg, 10);
+  return Number.isNaN(n) ? 1 : n;
+}
+
+/** 1:1 décomp `ScrCmd_additem` (scrcmd.c:487).
+ *   `additem ITEMID, QUANTITY` → AddBagItem + set gSpecialVar_Result. */
+registerOpcode('additem', (_ctx, args) => {
+  const itemKey = args[0] ?? '';
+  const count = resolveCount(args[1] ?? '1');
+  const ok = AddBagItem(itemKey, count);
+  // 1:1 décomp : gSpecialVar_Result = AddBagItem(...). On set VAR_RESULT.
+  gameState.setVar('VAR_RESULT', ok ? 1 : 0);
+  console.log(`[opcode additem] ${itemKey} x${count} → ${ok ? 'ok' : 'FAILED (bag full?)'}`);
+  return false;
+});
+
+/** 1:1 décomp `ScrCmd_removeitem` (scrcmd.c:496). */
+registerOpcode('removeitem', (_ctx, args) => {
+  const itemKey = args[0] ?? '';
+  const count = resolveCount(args[1] ?? '1');
+  const ok = RemoveBagItem(itemKey, count);
+  gameState.setVar('VAR_RESULT', ok ? 1 : 0);
+  console.log(`[opcode removeitem] ${itemKey} x${count} → ${ok ? 'ok' : 'FAILED (not enough)'}`);
+  return false;
+});
+
+/** 1:1 décomp `ScrCmd_checkitem` (scrcmd.c:514) : true si bag has au moins count. */
+registerOpcode('checkitem', (_ctx, args) => {
+  const itemKey = args[0] ?? '';
+  const count = resolveCount(args[1] ?? '1');
+  gameState.setVar('VAR_RESULT', CheckBagHasItem(itemKey, count) ? 1 : 0);
+  return false;
+});
+
+/** 1:1 décomp `ScrCmd_checkitemspace` (scrcmd.c:505).
+ *   MVP : on retourne toujours true (= bag rarely full en démo).
+ *   À améliorer : implémenter `CheckBagHasSpace` 1:1 item.c. */
+registerOpcode('checkitemspace', (_ctx) => {
+  gameState.setVar('VAR_RESULT', 1);
   return false;
 });
 

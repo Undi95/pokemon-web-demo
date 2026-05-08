@@ -76,7 +76,7 @@ import {
   preloadNpcGraphicsForMap,
 } from '../engine/object-events';
 import { tickMovementQueues, resetMovementQueues } from '../engine/movement-system';
-import { NewGameInit } from '../engine/new-game-flags';
+import { decideBootMode, preloadBootData } from '../engine/boot-mode';
 import { installInputHandlers, setHeldKeysOverride } from '../engine/input-handler';
 import { installEngineDevtools } from '../engine/engine-devtools';
 import {
@@ -294,18 +294,17 @@ export class TestOverworldScene extends Phaser.Scene {
       //   - applymovement Mom MomApproachPlayerAtTruck (= maman descend)
       //   - warpsilent MAP_LITTLEROOT_TOWN_BRENDANS_HOUSE_1F, 8, 8
       //
-      // Pour l'instant on n'a pas le full script engine pour OnFrame map_script_2.
-      // Set dynamicWarp directly à Bourg (3, 10) — quand on arrive à Bourg, le
-      // cinematic StepOffTruck devrait tourner. Si pas wiré, le user peut walker
-      // librement sur Bourg (= map propre, NPCs visibles).
-      // Phase 4.10 : init flags d'une nouvelle partie 1:1 décomp
-      // `EventScript_ResetAllMapFlags`. Set 159 FLAG_HIDE_* pour cacher les
-      // NPCs d'événements pas encore déclenchés (= rivale Bourg, Birch lab,
-      // Birch Route 101 cinematic, Brendan/May rival house, etc.). Sans ça,
-      // tous ces NPCs sont visibles au boot, brise le scenario.
-      NewGameInit();
-      gameState.setDynamicWarp('MAP_LITTLEROOT_TOWN', 3, 10);
-      const header = await this.loadAndInitMap('MAP_INSIDE_OF_TRUCK', 1, 2, DIR_EAST);
+      // Phase 4.10 démo : dispatcher boot mode (= save / ?nointro / new game).
+      // Cf. boot-mode.ts pour le détail :
+      //   - `?nointro` URL param → preset Test/Male/sac+flags + spawn Bourg.
+      //   - localStorage save existante → resume from saved map+coords.
+      //   - Default → new game cinematic (= NewGameInit + truck à 1:1 WarpToTruck).
+      // Pre-load items.json AVANT decideBootMode (= AddBagItem dans le preset
+      // ?nointro lookup .pocket via getItem(itemKey) qui dépend de cette table).
+      await preloadBootData();
+      const boot = decideBootMode();
+      console.log(`[TestOverworld] boot mode = ${boot.mode} → ${boot.mapId} (${boot.x}, ${boot.y})`);
+      const header = await this.loadAndInitMap(boot.mapId, boot.x, boot.y, boot.facing);
 
       // 1:1 décomp `SetVBlankCallback(VBlankCB_Overworld)`. Le simple fait
       // d'avoir un vblankCallback set fait que tickFixed.runOneFrame call
@@ -589,6 +588,12 @@ export class TestOverworldScene extends Phaser.Scene {
     if (header.showMapName) {
       ShowMapNamePopup();
     }
+
+    // Phase 4.10 : persiste position courante dans gameState (= save) pour permettre
+    // le boot 'resume' la prochaine session. 1:1 décomp `gSaveBlock1Ptr->location`
+    // updated par CB2_OverworldBasic + Overworld_SaveLastMapInfo.
+    gameState.map = { name: mapId, x: sx, y: sy, facing: spawnDir };
+    gameState.save();
 
     return header;
   }

@@ -502,9 +502,8 @@ _registerNpcHelpers(
 function tickLookAround(rt: DecompRuntime, npc: ObjectEvent, allowedDirections: ReadonlyArray<number>): void {
   switch (npc.movementStep) {
     case 0:
-      npc.movementStep = 1;
-      // fallthrough
     case 1:
+      // 1:1 décomp : step 0 → step 1 instantané, puis pickRandomDelay + step 3.
       npc.movementDelay = pickRandomDelay();
       npc.movementStep = 3;
       break;
@@ -527,9 +526,8 @@ function tickLookAround(rt: DecompRuntime, npc: ObjectEvent, allowedDirections: 
 function tickWanderAround(rt: DecompRuntime, npc: ObjectEvent, allowedDirections: ReadonlyArray<number>): void {
   switch (npc.movementStep) {
     case 0:
-      npc.movementStep = 1;
-      // fallthrough
     case 1:
+      // 1:1 décomp : step 0 → step 1 instantané, puis pickRandomDelay + step 3.
       npc.movementDelay = pickRandomDelay();
       npc.movementStep = 3;
       break;
@@ -601,10 +599,8 @@ const NEXT_DIR_CCW: Record<number, number> = {
 function tickRotate(rt: DecompRuntime, npc: ObjectEvent, clockwise: boolean): void {
   switch (npc.movementStep) {
     case 0:
-      npc.movementStep = 1;
-      // fallthrough
     case 1:
-      // Face direction (instantaneous in our impl).
+      // 1:1 décomp : step 0 → step 1 instantané, puis SetMovementDelay 48 + step 2.
       npc.movementDelay = 48;  // 1:1 décomp SetMovementDelay(sprite, 48)
       npc.movementStep = 2;
       break;
@@ -631,18 +627,15 @@ function tickRotate(rt: DecompRuntime, npc: ObjectEvent, clockwise: boolean): vo
  *  NPC walk 1 metatile in initial dir, then back to initialCoords, repeat.
  *  Si collision (= bord ou wall), turn around et walk autre côté. */
 function tickWalkBackAndForth(rt: DecompRuntime, npc: ObjectEvent, primaryDir: number): void {
+  // 1:1 décomp : step 0 → step 1 → step 2 fall-through inline. On merge en
+  // appelant la logique step 1 (= set dir+facing) avant case 2 si on entre
+  // depuis step <=1, puis on tombe en case 2 logique.
+  if (npc.movementStep <= 1) {
+    const dir = npc.directionSeqIdx === 0 ? primaryDir : (OPPOSITE_DIR[primaryDir] ?? primaryDir);
+    npc.facingDirection = dir;
+    npc.movementStep = 2;
+  }
   switch (npc.movementStep) {
-    case 0:
-      npc.movementStep = 1;
-      // fallthrough
-    case 1: {
-      // Determine direction : primaryDir si seq=0, opposite si seq=1.
-      const dir = npc.directionSeqIdx === 0 ? primaryDir : (OPPOSITE_DIR[primaryDir] ?? primaryDir);
-      npc.facingDirection = dir;
-      npc.movementStep = 2;
-      // fallthrough
-    }
-    // eslint-disable-next-line no-fallthrough
     case 2: {
       // Check collision in walk direction.
       // 1:1 décomp : si returned to initialCoords avec seq=1, reset seq=0.
