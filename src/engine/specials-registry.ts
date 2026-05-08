@@ -27,34 +27,102 @@
  */
 
 import { registerSpecial } from './script-opcodes';
+import { gameState } from './game-state';
+import { setStringVar } from './string-buffers';
 
 // ─── Phase 4.9 stubs minimaux (= early-game specials) ──────────────────────
 
 /** 1:1 décomp `GetPlayerBigGuyGirlString` (string_util.c).
- *  Set un string buffer player gender → "BIG GUY" / "GIRL" pour expand
- *  dans dialogues. Stub : no-op (= dialogue placeholder reste tel quel). */
+ *  Set sStringVar1 = "GRAND" (MALE) ou "GRANDE" (FEMALE) pour expand le
+ *  placeholder {STR_VAR_1} dans dialogues type "Hum, salut, GRAND/GRANDE !".
+ *  Used par e.g. LittlerootTown_Text_CanYouGoSeeWhatsHappening (= Twin NPC). */
 registerSpecial('GetPlayerBigGuyGirlString', () => {
-  // TODO Phase 4.10 : set sStringVar1 = "BIG GUY" / "GIRL" via gender check.
+  const stringVar = gameState.gender === 'MALE' ? 'GRAND' : 'GRANDE';
+  // 1:1 décomp : StringCopy(gStringVar1, gText_BigGuy/gText_BigGirl).
+  // Notre version : stocke dans gameState pour expand par dialogue-box.ts.
+  setStringVar(1, stringVar);
 });
 
-/** 1:1 décomp `BufferBigGuyOrBigGirlString` similar. */
+/** 1:1 décomp `BufferBigGuyOrBigGirlString` (string_util.c). Same que
+ *  `GetPlayerBigGuyGirlString` mais pour expand dans un autre context. */
 registerSpecial('BufferBigGuyOrBigGirlString', () => {
-  // TODO Phase 4.10
+  const stringVar = gameState.gender === 'MALE' ? 'GRAND' : 'GRANDE';
+  setStringVar(1, stringVar);
 });
 
-/** 1:1 décomp `HealPlayerParty` (party_menu.c).
- *  Restore HP/PP de tous les Pokemon du joueur + réveille les KO. Used par les
- *  Pokemon Center NPCs + après défaite trainer. Stub no-op (= pas encore de
- *  party state à manipuler). */
+/** 1:1 décomp `HealPlayerParty` (party_menu.c:7144) :
+ *  ```c
+ *  void HealPlayerParty(void) {
+ *      u8 i, j;
+ *      for (i = 0; i < gPlayerPartyCount; i++) {
+ *          u8 ppBonuses = GetMonData(&gPlayerParty[i], MON_DATA_PP_BONUSES);
+ *          u16 hp = GetMonData(&gPlayerParty[i], MON_DATA_MAX_HP);
+ *          SetMonData(&gPlayerParty[i], MON_DATA_HP, &hp);
+ *          // Restore PP
+ *          ...
+ *          SetMonData(&gPlayerParty[i], MON_DATA_STATUS, &arg);
+ *      }
+ *  }
+ *  ```
+ *  Restore HP/PP de tous les Pokemon du joueur + clear status. Used par
+ *  Pokemon Center NPCs + après défaite trainer + après ChooseStarter battle. */
 registerSpecial('HealPlayerParty', () => {
-  // TODO Phase 5+ : iter gPlayerParty, set HP=maxHP, status=0.
+  for (const mon of gameState.party) {
+    if (!mon) continue;
+    mon.currentHp = mon.maxHp;
+    mon.status = null;
+    // Restore PP de chaque move (= 1:1 décomp PpBonuses non implémenté pour
+    // MVP, on restore à pp_max sans calcul bonus PP).
+    for (const mv of mon.moves) {
+      mv.pp = mv.ppMax;
+    }
+  }
+  console.log(`[special HealPlayerParty] healed ${gameState.party.length} mons`);
 });
 
-/** 1:1 décomp `ChooseStarter` (script_pokemon_util.c).
- *  Fire l'intro cinematic Birch starter selection. Stub no-op pour
- *  Phase 4.9 (= player skip-spawn directly). */
+/** 1:1 décomp `ChooseStarter` (battle_setup.c:911) :
+ *  ```c
+ *  void ChooseStarter(void) {
+ *      SetMainCallback2(CB2_ChooseStarter);  // UI 3 pokeballs
+ *      gMain.savedCallback = CB2_GiveStarter; // post-UI : give mon + battle
+ *  }
+ *  ```
+ *  Notre impl Phase 3.2 minimum : auto-pick TREECKO (= idx 0) + give level 5
+ *  + set VAR_RESULT/VAR_STARTER_MON. La cinematic UI starter selection sera
+ *  Phase 5 (= besoin Phaser scene 3 pokeballs + transition). Le combat
+ *  tutorial vs Poochyena est aussi Phase 5 (= BattleScene).
+ *
+ *  IMPORTANT : la script Route 101 fait `special ChooseStarter` SANS
+ *  `waitstate` derrière, donc le décomp utilise SetMainCallback2 pour halt
+ *  l'overworld (= pas le script). Notre special étant sync, la flow continue
+ *  immédiatement → applymovement Birch + dialog. C'est OK pour MVP, plus
+ *  rapide en démo (= skip UI). User feedback Phase 5+ pourrait vouloir l'UI. */
 registerSpecial('ChooseStarter', () => {
-  // TODO Phase 5+ : trigger starter selection cinematic + give Pokemon.
+  // 1:1 décomp `CB2_GiveStarter` (battle_setup.c:917) :
+  //   *GetVarPointer(VAR_STARTER_MON) = gSpecialVar_Result;
+  //   starterMon = GetStarterPokemon(gSpecialVar_Result);
+  //   ScriptGiveMon(starterMon, 5, ITEM_NONE, 0, 0, 0);
+  //   PlayBattleBGM();
+  //   SetMainCallback2(CB2_StartFirstBattle);
+  //   BattleTransition_Start(B_TRANSITION_BLUR);
+  //
+  // Pour MVP : auto-pick idx 0 (= TREECKO). Donne level 5 à la party.
+  // Skip transition battle = Phase 5.
+  void (async () => {
+    try {
+      const idx = 0;  // TREECKO (idx 1 = TORCHIC, 2 = MUDKIP)
+      const speciesEnum = ['SPECIES_TREECKO', 'SPECIES_TORCHIC', 'SPECIES_MUDKIP'][idx];
+      const { createPokemonInstance } = await import('./pokemon');
+      const { gameState } = await import('./game-state');
+      const starter = createPokemonInstance(speciesEnum, 5);
+      gameState.addToParty(starter);
+      gameState.setVar('VAR_RESULT', idx);
+      gameState.setVar('VAR_STARTER_MON', idx);
+      console.log(`[special ChooseStarter] auto-pick ${speciesEnum} (idx=${idx}) → party size=${gameState.partySize}`);
+    } catch (e) {
+      console.warn('[special ChooseStarter] failed', e);
+    }
+  })();
 });
 
 /** 1:1 décomp `BedroomPC` (mail.c).
@@ -70,10 +138,10 @@ registerSpecial('GetBattleOutcome', () => {
   return 1;  // BATTLE_OUTCOME_WIN
 });
 
-/** 1:1 décomp `CalculatePlayerPartyCount` (pokemon_util.c).
- *  Returns gPlayerPartyCount. Stub return 0 (= no party yet). */
+/** 1:1 décomp `CalculatePlayerPartyCount` (pokemon_util.c:CalculatePlayerPartyCount).
+ *  Returns gPlayerPartyCount (= number of party slots filled, 0..6). */
 registerSpecial('CalculatePlayerPartyCount', () => {
-  return 0;
+  return gameState.partySize;
 });
 
 /** 1:1 décomp `ShouldTryRematchBattle` (rematch_setup.c).
