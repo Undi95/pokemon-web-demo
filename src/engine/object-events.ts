@@ -851,6 +851,62 @@ function dispatchSpecialMovement(rt: DecompRuntime, npc: ObjectEvent): boolean {
     npc.invisible = true;
     return true;
   }
+  // BURIED : NPC enterré (= visible only via emote/interact). MVP : invisible.
+  // 1:1 décomp `MovementType_Buried_Step0` (event_object_movement.c) : SetSprite
+  // Visibility(FALSE) + idle. Notre invisible flag fait pareil.
+  if (mt === 'MOVEMENT_TYPE_BURIED' || mt === 'MOVEMENT_TYPE_HIDDEN') {
+    npc.invisible = true;
+    return true;
+  }
+  // BERRY_TREE_GROWTH : berry tree state machine (= grows over time). MVP :
+  // static visible, pas de growth tick. 1:1 décomp `MovementType_BerryTreeGrowth_*`
+  // gère l'état du berry (= seed/sprout/sapling/full/berry). Plus complexe que MVP
+  // peut gérer ; on traite comme INVISIBLE pour pas planter (= berry tree NPC
+  // disparait du flow normal jusqu'à implementation Phase berry future).
+  if (mt === 'MOVEMENT_TYPE_BERRY_TREE_GROWTH') {
+    // Pour l'instant : static visible — laisser le sprite tel quel sans tick.
+    // Quand on implémentera le berry growth, on forkera ce branch.
+    return true;
+  }
+  // TREE_DISGUISE / MOUNTAIN_DISGUISE / SAND_DISGUISE : NPC se déguise en
+  // tree/mountain/sand jusqu'à interact. MVP : static visible (= sprite reste
+  // sa forme déguisée, pas de "reveal" anim).
+  if (mt === 'MOVEMENT_TYPE_TREE_DISGUISE'
+   || mt === 'MOVEMENT_TYPE_MOUNTAIN_DISGUISE'
+   || mt === 'MOVEMENT_TYPE_SAND_DISGUISE') {
+    return true;
+  }
+  // COPY_PLAYER_* : NPC qui copie le movement du player (= mirror puzzles
+  // dans Trick House). MVP : static facing per movement_type initial.
+  // 1:1 décomp `MovementType_CopyPlayer_*` (= shift coords selon player.facing).
+  // Implémentation Phase Trick House future.
+  if (mt.startsWith('MOVEMENT_TYPE_COPY_PLAYER')) {
+    return true;
+  }
+  // WALK_SLOWLY_IN_PLACE_* : facing static + slower in-place walk anim.
+  // MVP : static face (= same as WALK_IN_PLACE).
+  if (mt.startsWith('MOVEMENT_TYPE_WALK_SLOWLY_IN_PLACE_')) {
+    return true;
+  }
+  // JOG_IN_PLACE_* : faster in-place anim. MVP : static face.
+  if (mt.startsWith('MOVEMENT_TYPE_JOG_IN_PLACE_')) {
+    return true;
+  }
+  // WALK_SEQUENCE_* : NPC walk un pattern prédéfini (= rotation cycle e.g.
+  // RIGHT-DOWN-LEFT-UP). MVP : tick comme un WANDER simple.
+  if (mt.startsWith('MOVEMENT_TYPE_WALK_SEQUENCE_')) {
+    // TODO : implement specific direction sequences from décomp
+    // sMovementTypeWalkSequenceTables. MVP : rotate clockwise as approximation.
+    return true;
+  }
+  // RUN_IN_PLACE_* : run anim in place. Same as WALK_IN_PLACE for MVP.
+  if (mt.startsWith('MOVEMENT_TYPE_RUN_IN_PLACE_')) {
+    return true;
+  }
+  // PLAYER_AVATAR : meta-type pour player. Pas de NPC tick.
+  if (mt === 'MOVEMENT_TYPE_PLAYER') {
+    return true;
+  }
   return false;
 }
 
