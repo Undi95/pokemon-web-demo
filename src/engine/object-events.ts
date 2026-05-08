@@ -129,11 +129,13 @@ export async function preloadNpcGraphicsForMap(mapHeader: MapHeader): Promise<vo
     }
     const graphics = catalog[key];
     if (!graphics) continue;
-    // Phase 4.10 : allow 48×48 (= truck) en plus du standard 16×32.
+    // Phase 4.10 : allow 48×48 (= truck), 32×32 (= Vigoroth) en plus du
+    // standard 16×32.
     const is48x48 = graphics.frameWidth === 48 && graphics.frameHeight === 48;
+    const is32x32 = graphics.frameWidth === 32 && graphics.frameHeight === 32;
     const is16x32 = graphics.frameWidth === 16 && graphics.frameHeight === 32;
     const is16x16 = graphics.frameWidth === 16 && graphics.frameHeight === 16;
-    if (!is48x48 && !is16x32 && !is16x16) continue;
+    if (!is48x48 && !is32x32 && !is16x32 && !is16x16) continue;
     if (graphics.displayWidth !== graphics.frameWidth || graphics.displayHeight !== graphics.frameHeight) continue;
     paths.add(`${BASE}/${graphics.png}`);
   }
@@ -910,11 +912,15 @@ function _spawnSingleNpcFromTemplate(
   // Phase 4.10 : support multi-tailles NPC :
   //   - 16×32 standard people sprites (= overworld_frame anim 9 frames).
   //   - 16×16 inanimate (= moving box, berry tree, egg, etc.).
+  //   - 32×32 large Pokemon (= Vigoroth_Carrying_Box déménageurs, Latios, etc.).
   //   - 48×48 truck (= subsprites 12 OAMs).
+  // Session 123 : 32×32 ajouté car Vigoroth déménageurs étaient skip silencieusement
+  // → "il manque les déménageurs (gros sprite Pokémon NPC)" dans BrendansHouse_1F.
   const is48x48 = graphics.frameWidth === 48 && graphics.frameHeight === 48;
+  const is32x32 = graphics.frameWidth === 32 && graphics.frameHeight === 32;
   const is16x32 = graphics.frameWidth === 16 && graphics.frameHeight === 32;
   const is16x16 = graphics.frameWidth === 16 && graphics.frameHeight === 16;
-  if (!is48x48 && !is16x32 && !is16x16) return false;
+  if (!is48x48 && !is32x32 && !is16x32 && !is16x16) return false;
   if (graphics.displayWidth !== graphics.frameWidth || graphics.displayHeight !== graphics.frameHeight) return false;
 
   // 1:1 décomp `GetAvailableObjectEventId` (event_object_movement.c:1263) :
@@ -958,6 +964,12 @@ function _spawnSingleNpcFromTemplate(
     // tileOffsets 0, 4, 6, 10, ... 34). PNG layout : 6×6 tiles row-major.
     // Just copy the 36 tiles directly into OBJ VRAM at objTileBase.
     rt.gba.objVram.set(png.charData.subarray(0, 36 * 32), objTileBase * 32);
+  } else if (is32x32) {
+    // 32×32 large Pokemon (= Vigoroth déménageurs, etc.). 16 tiles per frame.
+    // Pour MVP : load le 1er frame seul (= facing down classic). Anim multi-
+    // frame possible plus tard via 1d-obj layout reorder.
+    const numTiles = 16;  // 32×32 = 16 tiles 8×8
+    rt.gba.objVram.set(png.charData.subarray(0, numTiles * 32), objTileBase * 32);
   } else if (is16x16) {
     // 16×16 inanimate (= moving box, berry, egg). 4 tiles row-major.
     // Single frame, sequential layout dans le PNG.
@@ -1080,6 +1092,24 @@ function _spawnSingleNpcFromTemplate(
       paletteBank,
       x: 0, y: 0,
       shape: 0 /* square */, size: 1 /* 16×16 */,
+      priority: 2,
+      paletteMode: 0,
+      affineMode: 0,
+    });
+    npc.spriteId = result.spriteId;
+    const sprite = rt.gSprites.get(npc.spriteId);
+    if (sprite) sprite.tileBase = objTileBase;
+    rt.gba.oam[result.oamIndex].flipH = false;
+  } else if (is32x32) {
+    // 32×32 large Pokemon (= Vigoroth déménageurs). Single OAM shape=0 size=2
+    // (= 32×32). Skip updateNpcSpriteFrame via useSubsprites hack (= pas de
+    // frame layout 16×32).
+    npc.useSubsprites = true;
+    const result = rt.CreateSpriteAtOam({
+      tileId: objTileBase,
+      paletteBank,
+      x: 0, y: 0,
+      shape: 0 /* square */, size: 2 /* 32×32 */,
       priority: 2,
       paletteMode: 0,
       affineMode: 0,
