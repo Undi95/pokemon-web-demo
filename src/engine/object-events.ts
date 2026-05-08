@@ -967,6 +967,19 @@ export async function SpawnObjectEventsOnMap(rt: DecompRuntime): Promise<void> {
   }
 }
 
+/** 1:1 décomp `TrySpawnObjectEvent(u8 localId, u8 mapNum, u8 mapGroup)`
+ *  (event_object_movement.c). Spawn UN seul NPC par localId — appelé par
+ *  ScrCmd_addobject après ClearFlag. Ne fait pas de bounds check (= le script
+ *  est responsable de spawn dans des positions logiques). */
+export function TrySpawnObjectEvent(localIdRaw: string, rt: DecompRuntime): boolean {
+  if (!gMapHeader) return false;
+  const templates = gMapHeader.events?.objectEvents ?? [];
+  const tpl = templates.find(t => t.localIdRaw === localIdRaw);
+  if (!tpl) return false;
+  if (!_graphicsCatalog) return false;
+  return _spawnSingleNpcFromTemplate(tpl, gMapHeader.id, rt, _graphicsCatalog);
+}
+
 /** 1:1 décomp `TrySpawnObjectEvents(s16 cameraX, s16 cameraY)`
  *  (event_object_movement.c:1645-1675). Per-frame ou per-boundary-cross :
  *  iterate tous les NPC templates de la map, spawn ceux dans bounds qui

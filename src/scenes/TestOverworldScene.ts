@@ -699,10 +699,14 @@ export class TestOverworldScene extends Phaser.Scene {
         destY = dw.y;
         destDir = gPlayerAvatar.facing;  // preserve facing
         console.log(`[executeWarp] MAP_DYNAMIC → ${destMapId} (${destX}, ${destY})`);
-      } else if (warp.x !== 0 || warp.y !== 0) {
+      } else if (warp.x >= 0 && warp.y >= 0) {
         // Phase 4.10 : warp avec coordonnées explicites (= warpsilent depuis
-        // script, ou warp custom). Use warp.x/y directly au lieu de
-        // getPlayerCoordsFromWarp (= warpId index lookup).
+        // script form 2-args coord-pair, e.g. `warpsilent MAP, 8, 8`).
+        // 1:1 décomp `SetPlayerCoordsFromWarp` (overworld.c:603) :
+        //   if (warpId >= 0 && warpId < warpCount) → use warps[warpId]
+        //   else if (x >= 0 && y >= 0) → use those coords
+        // Notre warpsilent opcode peut set x=-1, y=-1 pour "no explicit coords"
+        // (= use warpId lookup ci-dessous via getPlayerCoordsFromWarp).
         await loadMapByName(destMapId);  // ensure prefetch
         destX = warp.x;
         destY = warp.y;

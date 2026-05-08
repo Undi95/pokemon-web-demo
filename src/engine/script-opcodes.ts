@@ -27,7 +27,7 @@ import {
 import { PlaySE } from './decomp-globals';
 import * as Songs from './decomp-data/auto/include/constants/songs-data';
 import {
-  gObjectEvents, type ObjectEvent,
+  gObjectEvents, type ObjectEvent, TrySpawnObjectEvent,
 } from './object-events';
 import type { ObjectEventTemplate } from './map-loader';
 import { gameState } from './game-state';
@@ -629,15 +629,22 @@ registerOpcode('map_script_2', () => false);
 // ─── Object event manipulation (= 1:1 décomp ScrCmd_addobject etc.) ─────────
 
 registerOpcode('addobject', (_ctx, args) => {
-  // 1:1 décomp `ScrCmd_addobject` : ClearFlag(template.flagId) + spawn NPC.
+  // 1:1 décomp `ScrCmd_addobject` (scrcmd.c) :
+  //   TrySpawnObjectEvent(localId, mapNum, mapGroup)
+  // qui ClearFlag + spawn directement le NPC. Sans le spawn immédiat, le NPC
+  // attendrait le prochain tile cross pour apparaitre — mais pendant un script
+  // lockall le player ne bouge pas → NPC jamais visible.
   const localIdRaw = args[0] ?? '';
   const gMapHeader = (globalThis as Record<string, unknown>).gMapHeader as
     { events?: { objectEvents?: ObjectEventTemplate[] } } | undefined;
   const tpl = gMapHeader?.events?.objectEvents?.find(t => t.localIdRaw === localIdRaw);
   if (tpl?.flagId) FlagClear(tpl.flagId);
-  // Trigger spawn next frame via TrySpawnObjectEvents (= bounds check + spawn).
-  // Player_avatar already calls this per-tile-cross. Force one immediate call.
-  void localIdRaw;
+  // Spawn immédiat (= 1:1 décomp behavior).
+  const rt = getRuntime();
+  if (rt) {
+    const ok = TrySpawnObjectEvent(localIdRaw, rt);
+    console.log(`[opcode addobject] ${localIdRaw} → ${ok ? 'spawned' : 'failed'}`);
+  }
   return false;
 });
 
@@ -696,26 +703,56 @@ registerOpcode('setdoorclosed', (_ctx, _args) => false);
 
 // ─── Warp opcodes ──────────────────────────────────────────────────────────
 
+/**
+ * Parse les args de warpsilent/warp selon la macro `formatwarp` (asm/macros/event.inc:425).
+ *
+ * 4 formes possibles (= nombre d'args APRÈS le map name) :
+ *   - 0 arg     : warpId=NONE, x=-1, y=-1 (= use coords par default ?)
+ *   - 1 arg     : warpId=arg, x=-1, y=-1 (= warpId-based warp standard)
+ *   - 2 args    : warpId=NONE, x=arg0, y=arg1 (= coords-based warp explicit)
+ *   - 3 args    : warpId=arg0, x=arg1, y=arg2 (= rare, warp sort out)
+ *
+ * NB : args[0] est destMap. Donc args.length-1 = nombre d'args formatwarp.
+ */
+function parseWarpArgs(args: string[]): { destMap: string; warpId: number; x: number; y: number } {
+  const destMap = args[0] ?? '';
+  const rest = args.slice(1);
+  const WARP_ID_NONE = -1;
+  let warpId: number, x: number, y: number;
+  if (rest.length === 0) {
+    warpId = WARP_ID_NONE; x = -1; y = -1;
+  } else if (rest.length === 1) {
+    warpId = parseInt(rest[0] ?? '0', 10); x = -1; y = -1;
+  } else if (rest.length === 2) {
+    // Coord pair : warpId=NONE, x=arg0, y=arg1.
+    warpId = WARP_ID_NONE;
+    x = parseInt(rest[0] ?? '0', 10);
+    y = parseInt(rest[1] ?? '0', 10);
+  } else {
+    warpId = parseInt(rest[0] ?? '0', 10);
+    x = parseInt(rest[1] ?? '0', 10);
+    y = parseInt(rest[2] ?? '0', 10);
+  }
+  return { destMap, warpId, x, y };
+}
+
 registerOpcode('warpsilent', (_ctx, args) => {
   // 1:1 décomp `ScrCmd_warpsilent` : warp instantané sans fade.
-  // args : [destMap, warpId, x, y]
-  const [destMap, _warpId, xStr, yStr] = args;
-  const x = parseInt(xStr ?? '0', 10);
-  const y = parseInt(yStr ?? '0', 10);
+  const { destMap, warpId, x, y } = parseWarpArgs(args);
   // Setup pending warp via warp-system. Scene's MainCB2 picks it up.
-  setPendingWarp({ destMap, x, y, elevation: 0, warpId: 0 }, 'step');
-  console.log(`[opcode warpsilent] ${destMap} (${x},${y})`);
-  void _warpId;
+  // Note : on passe warpId = (warpId >= 0 ? warpId : 0) car notre warp-system
+  // n'a pas encore le concept WARP_ID_NONE. La logique executeWarp prend les
+  // coords explicites (x, y) en priorité quand x !== 0 || y !== 0, sinon use
+  // le warpId pour lookup dans gMapHeader.events.warps[].
+  setPendingWarp({ destMap, x, y, elevation: 0, warpId: warpId >= 0 ? warpId : 0 }, 'step');
+  console.log(`[opcode warpsilent] ${destMap} warpId=${warpId} coords=(${x},${y})`);
   return false;
 });
 
 registerOpcode('warp', (_ctx, args) => {
-  const [destMap, _warpId, xStr, yStr] = args;
-  const x = parseInt(xStr ?? '0', 10);
-  const y = parseInt(yStr ?? '0', 10);
-  setPendingWarp({ destMap, x, y, elevation: 0, warpId: 0 }, 'step');
-  console.log(`[opcode warp] ${destMap} (${x},${y})`);
-  void _warpId;
+  const { destMap, warpId, x, y } = parseWarpArgs(args);
+  setPendingWarp({ destMap, x, y, elevation: 0, warpId: warpId >= 0 ? warpId : 0 }, 'step');
+  console.log(`[opcode warp] ${destMap} warpId=${warpId} coords=(${x},${y})`);
   return false;
 });
 
