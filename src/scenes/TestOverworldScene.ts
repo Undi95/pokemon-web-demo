@@ -136,6 +136,7 @@ import {
   preloadStandardMenuPalette,
 } from '../engine/field-message-box';
 import { TickStartMenu } from '../engine/start-menu';
+import { syncSubspriteOam } from '../engine/object-events';
 import { preloadFontData } from '../engine/gba-text-system';
 import { preloadTextWindowFrames } from '../engine/gba-text-window';
 import { PlayBGM, FillPalBufferBlack } from '../engine/decomp-globals';
@@ -380,6 +381,10 @@ export class TestOverworldScene extends Phaser.Scene {
         TickObjectEventMovements(rt);
         // Phase 4.4.a : update sprite positions des NPCs selon camera scroll.
         UpdateObjectEvents(rt);
+        // Phase 4.10 : sync child OAMs des NPCs subsprite-driven (= truck 48×48)
+        // sur la position du sprite parent. 1:1 décomp BuildOamBuffer subsprite path.
+        // À call APRÈS UpdateObjectEvents qui set sprite.x/y des parents.
+        syncSubspriteOam();
         // Phase 4.9 audit fix : `RemoveObjectEventsOutsideView` + `TrySpawn
         // ObjectEvents` sont MAINTENANT appelés depuis `UpdateObjectEventsFor
         // CameraUpdate` orchestrator dans `CameraUpdate` au tile boundary

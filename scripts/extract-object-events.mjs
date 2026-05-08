@@ -50,7 +50,9 @@ const picToFile = new Map();
 }
 console.log(`[extract-obj-events] ${picToFile.size} pics indexed`);
 
-// --- 2. sPicTable_XXX → first pic name ---
+// --- 2. sPicTable_XXX → first pic name + macro type ---
+// macro = 'overworld_frame' (= multi-frame, mwidth/mheight per frame depuis pic INCGFX)
+//       | 'obj_frame_tiles' (= single frame, taille = full PNG depuis .width/.height struct).
 const picTableToPic = new Map();
 {
   const text = readFileSync(join(dataDir, 'object_event_pic_tables.h'), 'utf8');
@@ -59,11 +61,11 @@ const picTableToPic = new Map();
   //     ...
   // };
   // Deux macros utilisées : overworld_frame(pic, w, h, idx) et obj_frame_tiles(pic).
-  const re = /(?:static\s+)?const\s+struct\s+SpriteFrameImage\s+(\w+)\s*\[\]\s*=\s*\{[^}]*?(?:overworld_frame|obj_frame_tiles)\s*\(\s*(\w+)\s*[,)]/g;
+  const re = /(?:static\s+)?const\s+struct\s+SpriteFrameImage\s+(\w+)\s*\[\]\s*=\s*\{[^}]*?(overworld_frame|obj_frame_tiles)\s*\(\s*(\w+)\s*[,)]/g;
   let m;
   while ((m = re.exec(text)) !== null) {
-    const [, tableName, picName] = m;
-    picTableToPic.set(tableName, picName);
+    const [, tableName, macro, picName] = m;
+    picTableToPic.set(tableName, { picName, macro });
   }
 }
 console.log(`[extract-obj-events] ${picTableToPic.size} pic tables indexed`);
@@ -113,8 +115,9 @@ const unresolved = [];
 for (const [gfxId, infoName] of gfxIdToInfo) {
   const tableName = gfxInfoToTable.get(infoName);
   if (!tableName) { unresolved.push(`${gfxId}: missing info for ${infoName}`); continue; }
-  const picName = picTableToPic.get(tableName);
-  if (!picName) { unresolved.push(`${gfxId}: missing pic for table ${tableName}`); continue; }
+  const tableEntry = picTableToPic.get(tableName);
+  if (!tableEntry) { unresolved.push(`${gfxId}: missing pic for table ${tableName}`); continue; }
+  const { picName, macro } = tableEntry;
   const pic = picToFile.get(picName);
   if (!pic) { unresolved.push(`${gfxId}: missing PNG for pic ${picName}`); continue; }
 
@@ -122,12 +125,23 @@ for (const [gfxId, infoName] of gfxIdToInfo) {
   // extracted asset layout (public/decomp/em/object_events/...).
   const rel = pic.pngPath.replace(/^graphics\/object_events\/pics\//, 'object_events/');
   const size = gfxInfoToSize.get(infoName);
+  // 1:1 décomp `obj_frame_tiles(pic)` macro = single frame, taille = full PNG
+  // (= depuis .width/.height struct, pas depuis INCGFX -mwidth/-mheight).
+  // Ex : truck PNG 48×48 = 1 frame inanimate. Sans cette détection, l'extractor
+  // assumait mwidth=2/mheight=4 (= défauts INCGFX) → frameWidth=16, faux.
+  const isSingleFrame = macro === 'obj_frame_tiles';
+  const frameWidth = isSingleFrame
+    ? (size?.width ?? pic.mwidth * 8)
+    : pic.mwidth * 8;
+  const frameHeight = isSingleFrame
+    ? (size?.height ?? pic.mheight * 8)
+    : pic.mheight * 8;
   result[gfxId] = {
     png: rel,
-    frameWidth: pic.mwidth * 8,
-    frameHeight: pic.mheight * 8,
-    displayWidth: size?.width ?? pic.mwidth * 8,
-    displayHeight: size?.height ?? pic.mheight * 8
+    frameWidth,
+    frameHeight,
+    displayWidth: size?.width ?? frameWidth,
+    displayHeight: size?.height ?? frameHeight
   };
   resolved++;
 }

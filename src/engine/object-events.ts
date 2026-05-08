@@ -110,7 +110,10 @@ export async function preloadNpcGraphicsForMap(mapHeader: MapHeader): Promise<vo
     if (!template.graphicsIdRaw) continue;
     const graphics = catalog[template.graphicsIdRaw];
     if (!graphics) continue;
-    if (graphics.frameWidth !== 16 || graphics.frameHeight !== 32) continue;
+    // Phase 4.10 : allow 48×48 (= truck) en plus du standard 16×32.
+    const is48x48 = graphics.frameWidth === 48 && graphics.frameHeight === 48;
+    const is16x32 = graphics.frameWidth === 16 && graphics.frameHeight === 32;
+    if (!is48x48 && !is16x32) continue;
     if (graphics.displayWidth !== graphics.frameWidth || graphics.displayHeight !== graphics.frameHeight) continue;
     paths.add(`${BASE}/${graphics.png}`);
   }
@@ -160,6 +163,11 @@ export interface ObjectEvent {
   paletteBank: number;
   worldX: number;
   worldY: number;
+  /** Phase 4.10 : true si le NPC utilise un subsprite table (= 48×48 truck etc).
+   *  Quand true, updateNpcSpriteFrame skip son tileId calculation (= 16×32
+   *  frame layout invalide pour un sprite multi-OAM). syncSubspriteOam refresh
+   *  les child OAMs chaque frame depuis sprite.tileBase + sub.tileOffset. */
+  useSubsprites: boolean;
   movementStep: number;
   movementDelay: number;
   walkFramesLeft: number;
@@ -216,6 +224,7 @@ export const gObjectEvents: ObjectEvent[] = Array.from({ length: OBJECT_EVENTS_C
   movementRangeX: 0,
   movementRangeY: 0,
   directionSeqIdx: 0,
+  useSubsprites: false,
 }));
 
 // ─── Coord shift helpers 1:1 décomp event_object_movement.c ─────────────────
@@ -337,6 +346,44 @@ const NPC_SPRITE_FRAMES: Record<number, { face: number; walk1: number; walk2: nu
 };
 
 const TILES_PER_FRAME_16x32 = 8;
+
+// ─── Subsprite tables (= 1:1 décomp `src/data/object_events/object_event_subsprites.h`) ──
+//
+// Pour les NPCs > 16×32 (= truck 48×48, vigoroth carrying box, etc.), le décomp
+// utilise un système de subsprites : un sprite logique unique avec N OAMs
+// child positionnés relativement au center du parent. Sans ça, on ne pourrait
+// pas rendre 48×48 (= pas une OAM size hardware single).
+//
+// `sOamTable_48x48` (object_event_subsprites.h:228) : 12 subsprites couvrant
+// 6 rows × 8 px = 48 px height. Chaque row : 32×8 left (4 tiles) + 16×8 right
+// (2 tiles) = 6 tiles per row × 6 rows = 36 tiles total. Used by truck.
+//
+// Format NamingSubsprite (= compatible avec SetSubspriteTables in decomp-globals) :
+//   { x, y, shape, size, tileOffset, priority }
+//   - shape : 0=square, 1=wide (w>h), 2=tall (h>w)
+//   - size : 0..3 selon dimensions (cf. oamShapeSizeFromWH)
+//     32×8 → shape=1 (wide) size=1
+//     16×8 → shape=1 (wide) size=0
+import type { NamingSubsprite } from './decomp-globals';
+import { SetSubspriteTables, syncSubspriteOam } from './decomp-globals';
+
+export const sOamTable_48x48: ReadonlyArray<NamingSubsprite> = [
+  { x: -24, y: -24, shape: 1, size: 1, tileOffset:  0, priority: 2 }, // 32×8 row 0 left
+  { x:   8, y: -24, shape: 1, size: 0, tileOffset:  4, priority: 2 }, // 16×8 row 0 right
+  { x: -24, y: -16, shape: 1, size: 1, tileOffset:  6, priority: 2 }, // 32×8 row 1 left
+  { x:   8, y: -16, shape: 1, size: 0, tileOffset: 10, priority: 2 }, // 16×8 row 1 right
+  { x: -24, y:  -8, shape: 1, size: 1, tileOffset: 12, priority: 2 }, // 32×8 row 2 left
+  { x:   8, y:  -8, shape: 1, size: 0, tileOffset: 16, priority: 2 }, // 16×8 row 2 right
+  { x: -24, y:   0, shape: 1, size: 1, tileOffset: 18, priority: 2 }, // 32×8 row 3 left
+  { x:   8, y:   0, shape: 1, size: 0, tileOffset: 22, priority: 2 }, // 16×8 row 3 right
+  { x: -24, y:   8, shape: 1, size: 1, tileOffset: 24, priority: 2 }, // 32×8 row 4 left
+  { x:   8, y:   8, shape: 1, size: 0, tileOffset: 28, priority: 2 }, // 16×8 row 4 right
+  { x: -24, y:  16, shape: 1, size: 1, tileOffset: 30, priority: 2 }, // 32×8 row 5 left
+  { x:   8, y:  16, shape: 1, size: 0, tileOffset: 34, priority: 2 }, // 16×8 row 5 right
+];
+
+// Re-export pour autres modules (e.g. TestOverworldScene qui call syncSubspriteOam).
+export { syncSubspriteOam };
 
 // ─── Movement type → initial facing direction ──────────────────────────────
 
@@ -465,6 +512,10 @@ export function UnfreezeAllNpcs(): void {
  *  call this après interact pour forcer face-toward-player visible immédiatement). */
 function updateNpcSpriteFrame(rt: DecompRuntime, npc: ObjectEvent): void {
   if (npc.spriteId < 0) return;
+  // Phase 4.10 : NPCs subsprite-driven (= truck) skip le frame update car leur
+  // tile layout n'est pas un grid 16×32 frame. Le rendu visuel passe par
+  // syncSubspriteOam qui refresh les child OAMs depuis sprite.tileBase + offsets.
+  if (npc.useSubsprites) return;
   const sprite = rt.gSprites.get(npc.spriteId);
   if (!sprite) return;
   const oam = rt.gba.oam[sprite.oamIndex];
@@ -800,10 +851,15 @@ function _spawnSingleNpcFromTemplate(
   if (template.flagId && template.flagId !== '0' && FlagGet(template.flagId)) {
     return false;
   }
-  // Truck : graphics 48x48 (subspriteable). Pas de subsprites yet → skip pour
-  // l'instant. Phase suivante : add subsprite support.
-  // TODO : truck visible via subsprites (= 9 OAM tiles).
-  if (graphics.frameWidth !== 16 || graphics.frameHeight !== 32) return false;
+  // Phase 4.10 : 48×48 truck rendering 1:1 décomp via subsprite tables.
+  // Le décomp utilise sOamTable_48x48 = 12 subsprites (6 rows × 32×8+16×8 each)
+  // pour afficher un sprite 48×48 logique en multi-OAM (= GBA hardware n'a pas
+  // de single OAM 48×48, max single = 64×64). Notre engine reuse l'infra
+  // existante `SetSubspriteTables` (decomp-globals.ts:1795) qui alloue child
+  // OAMs + sync chaque frame.
+  const is48x48 = graphics.frameWidth === 48 && graphics.frameHeight === 48;
+  const is16x32 = graphics.frameWidth === 16 && graphics.frameHeight === 32;
+  if (!is48x48 && !is16x32) return false;
   if (graphics.displayWidth !== graphics.frameWidth || graphics.displayHeight !== graphics.frameHeight) return false;
 
   // 1:1 décomp `GetAvailableObjectEventId` (event_object_movement.c:1263) :
@@ -842,9 +898,16 @@ function _spawnSingleNpcFromTemplate(
     paletteBank = _nextNpcPaletteBank++;
   }
 
-  const numFrames = (png.widthTiles * png.heightTiles) / TILES_PER_FRAME_16x32;
-  const reordered = pngTo1dObjLayout(png.charData, numFrames, png.widthTiles, 16, 32);
-  rt.gba.objVram.set(reordered, objTileBase * 32);
+  if (is48x48) {
+    // 48×48 truck : 36 tiles row-major sequential (= matches sOamTable_48x48
+    // tileOffsets 0, 4, 6, 10, ... 34). PNG layout : 6×6 tiles row-major.
+    // Just copy the 36 tiles directly into OBJ VRAM at objTileBase.
+    rt.gba.objVram.set(png.charData.subarray(0, 36 * 32), objTileBase * 32);
+  } else {
+    const numFrames = (png.widthTiles * png.heightTiles) / TILES_PER_FRAME_16x32;
+    const reordered = pngTo1dObjLayout(png.charData, numFrames, png.widthTiles, 16, 32);
+    rt.gba.objVram.set(reordered, objTileBase * 32);
+  }
   const paletteSlot = 256 + paletteBank * 16;
   for (let i = 0; i < Math.min(16, png.palette.length); i++) {
     rt.gPlttBufferFaded.set(paletteSlot + i, png.palette[i]);
@@ -922,20 +985,46 @@ function _spawnSingleNpcFromTemplate(
   }
   npc.directionSeqIdx = 0;
 
-  const cfg = NPC_SPRITE_FRAMES[npc.facingDirection] ?? NPC_SPRITE_FRAMES[DIR_SOUTH];
-  const result = rt.CreateSpriteAtOam({
-    tileId: objTileBase + cfg.face * TILES_PER_FRAME_16x32,
-    paletteBank,
-    x: 0, y: 0,
-    shape: 2, size: 2,
-    priority: 2,
-    paletteMode: 0,
-    affineMode: 0,
-  });
-  npc.spriteId = result.spriteId;
-  const sprite = rt.gSprites.get(npc.spriteId);
-  if (sprite) sprite.hFlip = cfg.hFlip;
-  rt.gba.oam[result.oamIndex].flipH = cfg.hFlip;
+  if (is48x48) {
+    // Primary sprite = placeholder logique pour le subsprite system. shape=2
+    // size=2 (= 16×32) hidden après SetSubspriteTables. tileBase = objTileBase
+    // utilisé par syncSubspriteOam pour calculer child tileId = tileBase +
+    // sub.tileOffset.
+    const result = rt.CreateSpriteAtOam({
+      tileId: objTileBase,
+      paletteBank,
+      x: 0, y: 0,
+      shape: 2, size: 2,
+      priority: 2,
+      paletteMode: 0,
+      affineMode: 0,
+    });
+    npc.spriteId = result.spriteId;
+    const sprite = rt.gSprites.get(npc.spriteId);
+    if (sprite) sprite.tileBase = objTileBase;
+    rt.gba.oam[result.oamIndex].flipH = false;
+    // 1:1 décomp `SetSubspriteTables(sprite, sOamTables_48x48)` : alloue 12
+    // child OAMs avec offsets (-24, -24), ..., (8, 16) et tileOffsets 0, 4,
+    // ..., 34. Le primary OAM est hidden — les child OAMs rendent le 48×48.
+    SetSubspriteTables(npc.spriteId, sOamTable_48x48);
+    npc.useSubsprites = true;
+  } else {
+    npc.useSubsprites = false;
+    const cfg = NPC_SPRITE_FRAMES[npc.facingDirection] ?? NPC_SPRITE_FRAMES[DIR_SOUTH];
+    const result = rt.CreateSpriteAtOam({
+      tileId: objTileBase + cfg.face * TILES_PER_FRAME_16x32,
+      paletteBank,
+      x: 0, y: 0,
+      shape: 2, size: 2,
+      priority: 2,
+      paletteMode: 0,
+      affineMode: 0,
+    });
+    npc.spriteId = result.spriteId;
+    const sprite = rt.gSprites.get(npc.spriteId);
+    if (sprite) sprite.hFlip = cfg.hFlip;
+    rt.gba.oam[result.oamIndex].flipH = cfg.hFlip;
+  }
 
   console.log(`[object-events] spawn slot=${slot} ${graphicsKey} mt=${npc.movementType} at (${npc.currentCoordsX}, ${npc.currentCoordsY})`);
   return true;
