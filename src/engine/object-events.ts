@@ -30,7 +30,7 @@ import {
   gMapHeader,
   MapGridGetCollisionAt,
 } from './map-loader';
-import { GetCameraTopLeftCoords, gTotalCamera, gCamera, gFieldCamera, GetBgVofsBaseline } from './field-camera';
+import { GetCameraTopLeftCoords, gTotalCamera, gCamera, gFieldCamera, GetBgVofsBaseline, GetCameraPanX as _getCameraPanX, GetCameraPanY as _getCameraPanY } from './field-camera';
 import { gPlayerAvatar } from './player-avatar';
 import {
   DIR_NONE, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST,
@@ -1270,8 +1270,13 @@ export function UpdateObjectEvents(rt: DecompRuntime): void {
     // 1:1 décomp : sprite.x_NPC stays at spawn-time computed value + walk
     // increments via tick state machine. Per-frame coordOffsetEnabled adds
     // pixelOffsetX. Net effect : NPCs slide with BG as player walks.
-    sprite.x = npc.worldX + offX;
-    sprite.y = npc.worldY + offY - bgVofsBaseline;
+    // Pendant truck cinematic : SetCameraPanning shake le BG. Pour que les
+    // NPCs (= boxes truck) shake AVEC le BG, on add aussi le camera pan.
+    // 1:1 décomp `gSpriteCoordOffsetX/Y` qui inclut camera pan.
+    const panX = _getCameraPanX();
+    const panY = _getCameraPanY();
+    sprite.x = npc.worldX + offX + panX;
+    sprite.y = npc.worldY + offY - bgVofsBaseline + panY;
 
     // Update sprite frame chaque frame (= keeps tile + flipH en sync avec
     // facingDirection, important pour interact qui change facing instantané).

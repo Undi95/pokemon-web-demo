@@ -642,6 +642,13 @@ export function SetCameraPanning(horizontal: number, vertical: number): void {
   sVerticalCameraPan = vertical + 32;
 }
 
+/** Accessors pour camera pan offset (= used par sprite render to make player +
+ *  NPCs shake WITH the camera during truck cinematic etc.). 1:1 décomp :
+ *  les sprites lisent `gSpriteCoordOffsetX/Y` qui = camera pan + total camera
+ *  pixel offset. Notre simplification : juste expose le pan ici. */
+export function GetCameraPanX(): number { return sHorizontalCameraPan; }
+export function GetCameraPanY(): number { return sVerticalCameraPan - 32; }
+
 // ─── Public state accessors (pour debug + intégration TestOverworldScene) ───
 
 export function GetCameraOffsetState(): Readonly<FieldCameraOffset> {

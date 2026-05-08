@@ -47,6 +47,8 @@ import {
   gFieldCamera,
   SetCameraTopLeftCoords,
   GetCameraTopLeftCoords,
+  GetCameraPanX,
+  GetCameraPanY,
 } from './field-camera';
 import {
   ArePlayerFieldControlsLocked,
@@ -466,7 +468,16 @@ function updateSpriteFrame(rt: DecompRuntime): void {
     : 0;
   // sprite.y stocké au CENTER. SCREEN_CENTER_Y est la baseline (= 72), apply
   // jumpY offset additif. syncSpritesToOam applique centerToCornerVec auto.
-  sprite.y = (6 * 16 + 16 - 40) + jumpY;  // 72 + jumpY
+  // 1:1 décomp : sprite render utilise `gSpriteCoordOffsetX/Y` qui inclut le
+  // camera pan (= SetCameraPanning). Pendant le truck cinematic, le BG shake
+  // via cameraPan → sprite player doit shake AUSSI pour que le joueur reste
+  // visuellement "dans le camion qui bouge" (= 1:1 décomp behavior).
+  // User feedback session 123 : "Le sprite du joueur ne suis pas la fluctuation
+  // du camion".
+  const panX = GetCameraPanX();
+  const panY = GetCameraPanY();
+  sprite.x = SCREEN_CENTER_X + panX;
+  sprite.y = (6 * 16 + 16 - 40) + jumpY + panY;  // 72 + jumpY + panY
 }
 
 // ─── Collision check ────────────────────────────────────────────────────────
