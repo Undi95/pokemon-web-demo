@@ -1,35 +1,35 @@
 /**
- * État global de partie : flags + variables + persistance localStorage.
+ * game-state.ts — État global de partie + bridge vers save-system 1:1 décomp.
  *
- * Les flags et vars viennent de `flags-vars.json` (775 flags + 185 vars
- * extraits par `extract-flags-vars.mjs`). Par défaut tous à 0 / non-set,
- * modifiés par les scripts de map.
+ * Phase 4.10 refactor (= user request session 121 "vrai système de save 1:1") :
+ *   - Données stockées dans SaveBlock1 + SaveBlock2 (= 1:1 décomp global.h).
+ *   - Persistence via save-system.ts (= sectors + checksum + slot alternation).
+ *   - L'API publique `gameState.flags / vars / bag / playerName / etc.` reste
+ *     stable pour tout le code existant — chaque accessor délègue aux blocks.
  *
- * API minimale (cf. script-runner.ts pour les ops) :
- *   gameState.setFlag('FLAG_X')
- *   gameState.clearFlag('FLAG_X')
- *   gameState.hasFlag('FLAG_X')
- *   gameState.setVar('VAR_X', value)
- *   gameState.getVar('VAR_X') // 0 si jamais set
- *   gameState.save() / load() / reset()
+ * Ancien storage `em_save_v1` (= JSON ad-hoc) migré automatiquement par
+ * save-system au 1er load.
  */
 
 import type { PokemonInstance } from './pokemon';
-import { type Bag, emptyBag, migrateBag } from './bag';
-
-const STORAGE_KEY = 'em_save_v1';
+import { type Bag, emptyBag } from './bag';
+import {
+  GetSaveBlock1, GetSaveBlock2, LoadGameSave, TrySavingData,
+  ResetSaveBlocks, HasValidSave,
+  SAVE_STATUS_OK,
+} from './save-system';
 
 /**
- * Options menu state — 1:1 décomp `gSaveBlock2Ptr->options*` (cf. include/global.h
- * SaveBlock2 + src/option_menu.c). Valeurs par défaut depuis new_game.c.
+ * Options menu state — 1:1 décomp `gSaveBlock2Ptr->options*`. Backed par
+ * SaveBlock2 fields directement.
  */
 export interface PokemonOptions {
-  textSpeed: number;       // 0=SLOW, 1=MID, 2=FAST (OPTIONS_TEXT_SPEED_*). Default MID.
-  battleSceneOff: number;  // 0=ON (anims), 1=OFF (skip). Default 0.
-  battleStyle: number;     // 0=SHIFT, 1=SET. Default 0.
-  sound: number;           // 0=MONO, 1=STEREO. Default 0.
-  buttonMode: number;      // 0=NORMAL, 1=LR, 2=L_EQUALS_A. Default 0.
-  windowFrameType: number; // 0-19 → frame text_window/{N+1}.png. Default 0.
+  textSpeed: number;
+  battleSceneOff: number;
+  battleStyle: number;
+  sound: number;
+  buttonMode: number;
+  windowFrameType: number;
 }
 
 export const DEFAULT_OPTIONS: PokemonOptions = {
@@ -40,187 +40,205 @@ export const DEFAULT_OPTIONS: PokemonOptions = {
 /** Frames per char selon textSpeed (cf. menu.c:77 sTextSpeedFrameDelays). */
 export const TEXT_SPEED_FRAME_DELAYS = [8, 4, 1] as const;
 
-interface SaveData {
-  flags: Record<string, true>;
-  vars: Record<string, number>;
-  /** Positions permanentes d'NPCs définies via setobjectxyperm (par mapName → localId → {x,y}) */
-  objectPositions: Record<string, Record<string, { x: number; y: number }>>;
-  playerName: string;
-  gender: 'MALE' | 'FEMALE';
-  map?: { name: string; x: number; y: number; facing?: number };
-  /** Spawn dynamique défini par `setdynamicwarp` (utilisé pour le tout 1er spawn de la partie) */
-  dynamicWarp?: { mapId: string; x: number; y: number };
-  /** Heal location définie par `setrespawn` (où on revient après un blackout) */
-  respawn?: string;
-  party: PokemonInstance[];
-  /** Item balls déjà ramassées (script labels). Persisté pour ne pas réapparaître. */
-  takenItemBalls?: string[];
-  /** Options menu (text speed, sound, frame, etc). */
-  options?: PokemonOptions;
-  /** Bag (= 5 pockets ItemSlot[] 1:1 décomp `gBagPockets`). Cf. `bag.ts`. */
-  bag?: Bag;
-  created: number;
-}
-
-function emptySave(): SaveData {
-  return {
-    flags: {}, vars: {}, objectPositions: {},
-    playerName: 'UNDI', gender: 'MALE',
-    party: [],
-    options: { ...DEFAULT_OPTIONS },
-    bag: emptyBag(),
-    created: Date.now()
-  };
-}
-
 class GameState {
-  private data: SaveData = emptySave();
-
   load(): boolean {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return false;
-      const parsed = JSON.parse(raw) as Partial<SaveData>;
-      // Migration : merge avec emptySave pour garantir tous les champs présents
-      // (saves antérieures peuvent manquer `options`, `takenItemBalls`, etc.)
-      const empty = emptySave();
-      this.data = {
-        ...empty,
-        ...parsed,
-        flags: parsed.flags ?? {},
-        vars: parsed.vars ?? {},
-        objectPositions: parsed.objectPositions ?? {},
-        party: parsed.party ?? [],
-        options: { ...empty.options!, ...(parsed.options ?? {}) },
-        bag: migrateBag(parsed.bag),
-      };
-      return true;
-    } catch { return false; }
+    const status = LoadGameSave();
+    return status === SAVE_STATUS_OK;
   }
 
-  save() {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(this.data)); }
-    catch (e) { console.warn('save failed', e); }
+  save(): void {
+    TrySavingData();
   }
 
-  reset() { this.data = emptySave(); }
-
-  setFlag(name: string) { this.data.flags[name] = true; }
-  clearFlag(name: string) { delete this.data.flags[name]; }
-  hasFlag(name: string): boolean { return !!this.data.flags[name]; }
-
-  // Item balls : tracking persistant des pokeballs au sol déjà ramassées
-  get takenItemBalls(): { has: (label: string) => boolean; add: (label: string) => void } {
-    if (!this.data.takenItemBalls) this.data.takenItemBalls = [];
-    const arr = this.data.takenItemBalls;
-    return {
-      has: (label) => arr.includes(label),
-      add: (label) => { if (!arr.includes(label)) { arr.push(label); this.save(); } },
-    };
+  reset(): void {
+    ResetSaveBlocks();
   }
 
-  setVar(name: string, value: number) { this.data.vars[name] = value; }
-  getVar(name: string): number { return this.data.vars[name] ?? 0; }
-
-  setObjectXY(mapName: string, localId: string, x: number, y: number) {
-    if (!this.data.objectPositions[mapName]) this.data.objectPositions[mapName] = {};
-    this.data.objectPositions[mapName][localId] = { x, y };
+  // ===== Flags ========================================================
+  setFlag(name: string): void {
+    GetSaveBlock1().flags[name] = true;
   }
-  getObjectXY(mapName: string, localId: string): { x: number; y: number } | undefined {
-    return this.data.objectPositions[mapName]?.[localId];
+  clearFlag(name: string): void {
+    delete GetSaveBlock1().flags[name];
   }
-
-  get playerName() { return this.data.playerName; }
-  set playerName(v: string) { this.data.playerName = v; }
-  get gender() { return this.data.gender; }
-  set gender(v: 'MALE' | 'FEMALE') { this.data.gender = v; }
-  get map() { return this.data.map; }
-  set map(v: SaveData['map']) { this.data.map = v; }
-
-  /**
-   * Reset minimal : gender + name. AUCUN flag/var hardcodé : tout l'init
-   * (flags d'introduction, dynamic warp, respawn) vient de
-   * `runNewGameInit()` qui exécute les vrais scripts du décomp.
-   */
-  resetForNewGame(gender: 'MALE' | 'FEMALE', playerName: string) {
-    this.reset();
-    this.data.gender = gender;
-    this.data.playerName = playerName;
-    this.save();
+  hasFlag(name: string): boolean {
+    return !!GetSaveBlock1().flags[name];
   }
 
-  setDynamicWarp(mapId: string, x: number, y: number) {
-    this.data.dynamicWarp = { mapId, x, y };
+  // ===== Vars =========================================================
+  setVar(name: string, value: number): void {
+    GetSaveBlock1().vars[name] = value & 0xFFFF;
   }
-  get dynamicWarp() { return this.data.dynamicWarp; }
-  setRespawn(loc: string) { this.data.respawn = loc; }
-  get respawn() { return this.data.respawn; }
+  getVar(name: string): number {
+    return GetSaveBlock1().vars[name] ?? 0;
+  }
 
-  // ===== Party management =====
-  get party(): PokemonInstance[] { return this.data.party; }
-  get partySize(): number { return this.data.party.length; }
-  get lead(): PokemonInstance | undefined { return this.data.party[0]; }
+  // ===== Player identity ==============================================
+  get playerName(): string { return GetSaveBlock2().playerName ?? 'UNDI'; }
+  set playerName(v: string) { GetSaveBlock2().playerName = v; }
+  get gender(): 'MALE' | 'FEMALE' {
+    return GetSaveBlock2().playerGender === 1 ? 'FEMALE' : 'MALE';
+  }
+  set gender(v: 'MALE' | 'FEMALE') {
+    GetSaveBlock2().playerGender = v === 'FEMALE' ? 1 : 0;
+  }
+
+  // ===== Position / map ===============================================
+  /** Position courante. Cf. SaveBlock1.pos + location. */
+  get map(): { name: string; x: number; y: number; facing?: number } | undefined {
+    const block1 = GetSaveBlock1();
+    // continueGameWarp est l'équivalent décomp de "saved map".
+    const w = block1.continueGameWarp;
+    if (w.warpId === -1 && w.x === -1 && w.y === -1) return undefined;
+    // Map name n'est pas stocké directement — on stocke un mapId externe.
+    const mapId = (block1 as { __mapId?: string }).__mapId;
+    if (!mapId) return undefined;
+    return { name: mapId, x: w.x, y: w.y, facing: (block1 as { __facing?: number }).__facing };
+  }
+  set map(v: { name: string; x: number; y: number; facing?: number } | undefined) {
+    const block1 = GetSaveBlock1();
+    if (!v) {
+      // Clear → set warp invalide pour signal "no saved map".
+      block1.continueGameWarp = { mapGroup: -1, mapNum: -1, warpId: -1, x: -1, y: -1 };
+      delete (block1 as { __mapId?: string }).__mapId;
+      delete (block1 as { __facing?: number }).__facing;
+      return;
+    }
+    block1.continueGameWarp = { mapGroup: 0, mapNum: 0, warpId: 0, x: v.x, y: v.y };
+    block1.pos = { x: v.x, y: v.y };
+    (block1 as { __mapId?: string }).__mapId = v.name;
+    (block1 as { __facing?: number }).__facing = v.facing;
+  }
+
+  // ===== Dynamic warp + respawn =======================================
+  setDynamicWarp(mapId: string, x: number, y: number): void {
+    const block1 = GetSaveBlock1();
+    block1.dynamicWarp = { mapGroup: 0, mapNum: 0, warpId: -1, x, y };
+    (block1 as { __dynamicWarpMapId?: string }).__dynamicWarpMapId = mapId;
+  }
+  get dynamicWarp(): { mapId: string; x: number; y: number } | undefined {
+    const block1 = GetSaveBlock1();
+    const w = block1.dynamicWarp;
+    const mapId = (block1 as { __dynamicWarpMapId?: string }).__dynamicWarpMapId;
+    if (!mapId) return undefined;
+    return { mapId, x: w.x, y: w.y };
+  }
+  setRespawn(loc: string): void {
+    GetSaveBlock1().respawnLocation = loc;
+  }
+  get respawn(): string | undefined {
+    return GetSaveBlock1().respawnLocation;
+  }
+
+  // ===== Party ========================================================
+  get party(): PokemonInstance[] {
+    return GetSaveBlock1().playerParty;
+  }
+  get partySize(): number {
+    return GetSaveBlock1().playerParty.length;
+  }
+  get lead(): PokemonInstance | undefined {
+    return GetSaveBlock1().playerParty[0];
+  }
   addToParty(mon: PokemonInstance): boolean {
-    if (this.data.party.length >= 6) return false;
-    this.data.party.push(mon);
+    const party = GetSaveBlock1().playerParty;
+    if (party.length >= 6) return false;
+    party.push(mon);
+    GetSaveBlock1().playerPartyCount = party.length;
     return true;
   }
-  // ===== Options =====
-  // Persistées dans la save mais aussi readables sans save loaded (default).
+
+  // ===== Bag ==========================================================
+  get bag(): Bag {
+    return GetSaveBlock1().bag;
+  }
+
+  // ===== Options ======================================================
   get options(): PokemonOptions {
-    if (!this.data.options) this.data.options = { ...DEFAULT_OPTIONS };
-    return this.data.options;
+    const b2 = GetSaveBlock2();
+    return {
+      textSpeed: b2.optionsTextSpeed,
+      battleSceneOff: b2.optionsBattleSceneOff,
+      battleStyle: b2.optionsBattleStyle,
+      sound: b2.optionsSound,
+      buttonMode: b2.optionsButtonMode,
+      windowFrameType: b2.optionsWindowFrameType,
+    };
   }
-  setOptions(opts: Partial<PokemonOptions>) {
-    this.data.options = { ...this.options, ...opts };
-    this.save();
+  setOptions(opts: Partial<PokemonOptions>): void {
+    const b2 = GetSaveBlock2();
+    if (opts.textSpeed !== undefined) b2.optionsTextSpeed = opts.textSpeed;
+    if (opts.battleSceneOff !== undefined) b2.optionsBattleSceneOff = opts.battleSceneOff;
+    if (opts.battleStyle !== undefined) b2.optionsBattleStyle = opts.battleStyle;
+    if (opts.sound !== undefined) b2.optionsSound = opts.sound;
+    if (opts.buttonMode !== undefined) b2.optionsButtonMode = opts.buttonMode;
+    if (opts.windowFrameType !== undefined) b2.optionsWindowFrameType = opts.windowFrameType;
   }
-  /** Frames de delay entre chars selon textSpeed (1:1 menu.c:77). */
   getTextSpeedFrameDelay(): number {
     const idx = Math.max(0, Math.min(2, this.options.textSpeed));
     return TEXT_SPEED_FRAME_DELAYS[idx];
   }
 
-  // ===== Bag =====
-  // 1:1 décomp `gBagPockets` (item.h). Cf. `bag.ts` pour AddBagItem etc.
-  get bag(): Bag {
-    if (!this.data.bag) this.data.bag = emptyBag();
-    return this.data.bag;
+  // ===== Object positions (= setobjectxyperm overlay) ================
+  setObjectXY(mapName: string, localId: string, x: number, y: number): void {
+    const block1 = GetSaveBlock1() as { __objectPositions?: Record<string, Record<string, { x: number; y: number }>> };
+    if (!block1.__objectPositions) block1.__objectPositions = {};
+    if (!block1.__objectPositions[mapName]) block1.__objectPositions[mapName] = {};
+    block1.__objectPositions[mapName][localId] = { x, y };
+  }
+  getObjectXY(mapName: string, localId: string): { x: number; y: number } | undefined {
+    const block1 = GetSaveBlock1() as { __objectPositions?: Record<string, Record<string, { x: number; y: number }>> };
+    return block1.__objectPositions?.[mapName]?.[localId];
   }
 
-  /** True si une save existe en localStorage (= savefile présent, peu importe son contenu). */
-  hasPersistedSave(): boolean {
-    try { return !!localStorage.getItem(STORAGE_KEY); }
-    catch { return false; }
+  // ===== Item balls already taken =====================================
+  get takenItemBalls(): { has: (label: string) => boolean; add: (label: string) => void } {
+    const block1 = GetSaveBlock1() as { __takenItemBalls?: string[] };
+    if (!block1.__takenItemBalls) block1.__takenItemBalls = [];
+    const arr = block1.__takenItemBalls;
+    return {
+      has: (label) => arr.includes(label),
+      add: (label) => { if (!arr.includes(label)) arr.push(label); },
+    };
   }
 
-  /** Exposé pour debug : retourne TOUS les flags actifs (= keys). */
-  getAllFlagNames(): string[] { return Object.keys(this.data.flags); }
-  /** Exposé pour debug : retourne TOUTES les vars (key → value). */
-  getAllVars(): Record<string, number> { return { ...this.data.vars }; }
+  // ===== Reset for new game ===========================================
+  resetForNewGame(gender: 'MALE' | 'FEMALE', playerName: string): void {
+    this.reset();
+    this.gender = gender;
+    this.playerName = playerName;
+    this.save();
+  }
 
-  /** Heal HP + PP de tous les Pokémon (Centre Pokémon, special HealPlayerParty). */
-  healAllParty() {
-    for (const m of this.data.party) {
+  // ===== Heal =========================================================
+  healAllParty(): void {
+    for (const m of GetSaveBlock1().playerParty) {
       m.currentHp = m.maxHp;
       m.status = null;
       for (const mv of m.moves) mv.pp = mv.ppMax;
     }
+  }
+
+  // ===== Save existence check =========================================
+  hasPersistedSave(): boolean {
+    return HasValidSave();
+  }
+
+  // ===== Debug helpers ================================================
+  getAllFlagNames(): string[] {
+    return Object.keys(GetSaveBlock1().flags);
+  }
+  getAllVars(): Record<string, number> {
+    return { ...GetSaveBlock1().vars };
   }
 }
 
 export const gameState = new GameState();
 
 // ===== Debug helpers exposés en window pour console =====
-// Usage : ouvrir la console F12, taper `gameState.party` ou `cheat.skipIntro()`
-// pour débloquer la sortie de Littleroot sans avoir à passer par Birch's Lab.
-// import { createPokemonInstance } from './pokemon'; // TODO: restore when pokemon.ts available
 if (typeof window !== 'undefined') {
   (window as unknown as { gameState: GameState }).gameState = gameState;
   (window as unknown as { cheat: Record<string, unknown> }).cheat = {
-    /** Avance l'intro pour permettre de sortir de Bourg-en-Vol vers Route 101.
-     *  Set les vars et flags clés que les scripts décomp checkent pour autoriser
-     *  la sortie. */
     skipIntro: () => {
       gameState.setVar('VAR_LITTLEROOT_INTRO_STATE', 6);
       gameState.setVar('VAR_LITTLEROOT_TOWN_STATE', 4);
@@ -231,31 +249,12 @@ if (typeof window !== 'undefined') {
       gameState.setFlag('FLAG_RESCUED_BIRCH');
       gameState.setFlag('FLAG_SET_WALL_CLOCK');
       gameState.save();
-      console.log('[cheat] Intro skipped — sortie de Littleroot débloquée. Recharge la map (sortir/rentrer de la maison).');
+      console.log('[cheat] Intro skipped');
     },
-    /** Donne un Pokémon arbitraire (via SPECIES_X enum). */
-    giveMon: (speciesEnum: string, level = 5) => {
-      // const m = createPokemonInstance(speciesEnum, level);
-      // const ok = gameState.addToParty(m);
-      // console.log(ok ? `[cheat] ${m.speciesNameFr} lv${level} ajouté` : '[cheat] Party pleine');
-      // return m;
-      console.log('[cheat] giveMon disabled — pokemon.ts not available');
-      return null;
-    },
-    /** Heal complet de la party. */
     heal: () => { gameState.healAllParty(); console.log('[cheat] Party healed'); },
-    /** Reset complet de la save (debug : repartir de zéro). */
-    resetSave: () => { gameState.reset(); gameState.save(); console.log('[cheat] Save reset — recharge la page'); },
-    /** Inspection du WorldRenderer (current map + adjacents loaded). */
-    world: () => {
-      const w = (window as unknown as { __overworldWorld?: { currentMapName: string; loaded: Map<string, { mapName: string; worldOffsetX: number; worldOffsetY: number }> } }).__overworldWorld;
-      if (!w) return '[cheat] WorldRenderer pas init (overworld pas encore loaded)';
-      return {
-        current: w.currentMapName,
-        loaded: Array.from(w.loaded.values()).map(i => ({
-          name: i.mapName, offX: i.worldOffsetX, offY: i.worldOffsetY,
-        })),
-      };
-    },
+    resetSave: () => { gameState.reset(); gameState.save(); console.log('[cheat] Save reset'); },
   };
 }
+
+// Helper exposed for empty bag (= used by save-blocks emptySaveBlock1).
+export { emptyBag };

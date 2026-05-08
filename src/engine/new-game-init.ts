@@ -50,7 +50,7 @@ export async function runNewGameInit(allScripts: ParsedScripts, gender: 'MALE' |
   }
 
   console.log(`[new-game-init] init OK pour ${gender}`,
-    'flags=', Object.keys(gameState['data']?.flags ?? {}).length,
+    'flags=', gameState.getAllFlagNames().length,
     'dynamicWarp=', gameState.dynamicWarp,
     'party=', gameState.partySize);
 }

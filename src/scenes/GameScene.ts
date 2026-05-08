@@ -30,7 +30,7 @@ import { GAME_W, GAME_H } from '../main';
 import { Gba } from '../engine/gba/gba';
 import { GbaPhaserBridge } from '../engine/gba/phaser-bridge';
 import { DecompRuntime, type CB2Callback } from '../engine/decomp-runtime';
-import { CB2_NewGame } from '../engine/decomp-data/auto/src/overworld-callbacks-auto';
+import { CB2_NewGame, CB2_ContinueSavedGame } from '../engine/decomp-data/auto/src/overworld-callbacks-auto';
 import { setGlobalRuntime, resetObjAllocations, lz77Trace, assetCache } from '../engine/decomp-globals';
 import { preloadFontData } from '../engine/gba-text-system';
 import { exposeGbaGlobals } from '../engine/gba-global-scope';
@@ -391,28 +391,37 @@ export class GameScene extends Phaser.Scene {
         console.error('[GameScene.update] bridge.tick THREW:', e);
       }
     }
-    // Phase 4.10 : detect post-Birch CB2_NewGame → transition vers TestOverworldScene.
-    // 1:1 décomp Task_NewGameBirchSpeech_Cleanup fait `SetMainCallback2(CB2_NewGame)`
-    // après FreeAllWindowBuffers. Au lieu de run le placeholder welcome, on
-    // démarre l'overworld scene (= truck cinematic).
-    if (!this.overworldTransitionStarted && this.rt.gMain.callback2 === CB2_NewGame) {
-      void this.transitionToOverworld();
+    // Phase 4.10 : detect post-MainMenu CB2 transitions → start TestOverworldScene.
+    // 2 cases handled :
+    //   - CB2_NewGame : post-Birch (= NEW_GAME action) → truck cinematic.
+    //   - CB2_ContinueSavedGame : Continue action → load + spawn saved map.
+    if (!this.overworldTransitionStarted) {
+      if (this.rt.gMain.callback2 === CB2_NewGame) {
+        void this.transitionToOverworld('newgame');
+      } else if (this.rt.gMain.callback2 === CB2_ContinueSavedGame) {
+        void this.transitionToOverworld('continue');
+      }
     }
   }
 
-  /** Sync Birch state (playerName, gender) vers gameState + start TestOverworldScene. */
-  private async transitionToOverworld(): Promise<void> {
+  /** Sync Birch state (playerName, gender) vers gameState + start TestOverworldScene.
+   *  - mode 'newgame' : Clear gameState.map → truck cinematic spawn.
+   *  - mode 'continue' : Keep saved gameState.map → spawn at saved location. */
+  private async transitionToOverworld(mode: 'newgame' | 'continue'): Promise<void> {
     this.overworldTransitionStarted = true;
-    console.log('[GameScene] CB2_NewGame detected → transitioning to TestOverworldScene');
+    console.log(`[GameScene] CB2_${mode === 'continue' ? 'ContinueSavedGame' : 'NewGame'} detected → TestOverworldScene (${mode})`);
     const { gSaveBlock2Ptr } = await import('../engine/gba-menu-system');
     const { gameState } = await import('../engine/game-state');
     const sb2 = gSaveBlock2Ptr as { playerName?: string; playerGender?: number };
     if (sb2.playerName) gameState.playerName = sb2.playerName;
     gameState.gender = sb2.playerGender === 1 ? 'FEMALE' : 'MALE';
-    // Clear gameState.map pour forcer truck cinematic flow.
-    gameState.map = undefined;
+    if (mode === 'newgame') {
+      // Force truck cinematic via decideBootMode default path.
+      gameState.map = undefined;
+    }
+    // 'continue' : gameState.map est déjà set (= chargé par LoadGameSave au app boot).
     gameState.save();
-    console.log(`[GameScene] synced gameState : name='${gameState.playerName}' gender='${gameState.gender}'`);
+    console.log(`[GameScene] synced : name='${gameState.playerName}' gender='${gameState.gender}' map=${JSON.stringify(gameState.map)}`);
     this.scene.start('TestOverworldScene');
   }
 

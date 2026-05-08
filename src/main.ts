@@ -45,6 +45,15 @@ if (typeof window !== 'undefined') {
   }
 }
 
+// 1:1 décomp main.c `LoadGameSave` au boot AVANT que MainMenu se launch.
+// Set `gSaveFileStatus` pour que `Task_MainMenuCheckSaveFile` puisse choisir
+// HAS_SAVED_GAME vs HAS_NO_SAVED_GAME au menu screen.
+import { LoadGameSave } from './engine/save-system';
+import { SetSaveFileStatus } from './engine/gba-menu-system';
+const _saveLoadStatus = LoadGameSave();
+SetSaveFileStatus(_saveLoadStatus);
+console.log(`[main] LoadGameSave at boot → status=${_saveLoadStatus}`);
+
 export const TILE_SIZE = 16;
 // Résolution NATIVE Pokemon Émeraude GBA = 240×160 px = 15×10 tiles de 16 px.
 // Le décomp utilise des coords pixel exactes (textbox à x=16, y=120, etc.) qui
@@ -90,19 +99,22 @@ const config: Phaser.Types.Core.GameConfig = {
   scene: (() => {
     if (typeof window === 'undefined') return [TestGbaScene];
     const params = new URLSearchParams(window.location.search);
-    // ?nointro → preset Test/Male/sac+flag (cf. boot-mode.ts).
+    // ?nointro → preset Test/Male/sac+flag (cf. boot-mode.ts) — DEV ONLY.
     const noIntro = params.has('nointro');
-    // ?truck → dev shortcut pour tester la cinematic intro (= reset save + truck).
+    // ?truck → dev shortcut pour tester la cinematic intro (= reset save + truck) — DEV ONLY.
     const truckTest = params.has('truck');
-    // Save existante (= em_save_v1 avec map field set) → skip title screen
-    // et launch directement TestOverworldScene en mode resume. 1:1 user spec
-    // session 117 : "Si boot normale : save fait, sexe choisi, nom OK. On lance."
-    let hasResumableSave = false;
+    // Phase 4.10 user request session 121 : NE PLUS auto-skip title sur save
+    // existante. L'intro joue toujours, l'utilisateur choisit "Continuer" dans
+    // le MainMenu pour charger sa save (= 1:1 décomp Pokémon classique flow).
+    // Le save load lui-même est fait au boot par LoadGameSave (cf. main.ts).
+    const hasResumableSave = false;
     try {
+      // Legacy compat (= ancienne save v1) — pas utilisé pour skipTitle mais
+      // on évite de foutre en l'air si la migration v1→v2 a déjà eu lieu.
       const raw = localStorage.getItem('em_save_v1');
       if (raw) {
         const parsed = JSON.parse(raw);
-        hasResumableSave = !!(parsed && parsed.playerName && parsed.map && parsed.map.name);
+        void (!!(parsed && parsed.playerName && parsed.map && parsed.map.name));
       }
     } catch { /* localStorage may be disabled — fallback to title */ }
     const skipTitle = noIntro || truckTest || hasResumableSave;
