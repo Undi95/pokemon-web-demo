@@ -119,6 +119,9 @@ import { PlayBGM, FillPalBufferBlack } from '../engine/decomp-globals';
 import * as Songs from '../engine/decomp-data/auto/include/constants/songs-data';
 // Side-effect import : registers Phase 4.5 opcode handlers.
 import '../engine/script-opcodes';
+// Side-effect import : registers gSpecials[] stubs (1:1 décomp scrcmd ScrCmd_special).
+import '../engine/specials-registry';
+import { ShowMapNamePopup, preloadMapNames } from '../engine/map-name-popup';
 import {
   InitTilesetAnimations,
   UpdateTilesetAnimations,
@@ -456,6 +459,7 @@ export class TestOverworldScene extends Phaser.Scene {
       preloadStandardMenuPalette(),
       loadMapScripts(scriptsBaseName),
       preloadDoorTiles(),  // Phase 4.7 : door anims rendering
+      preloadMapNames(),   // Phase 4.9 : map-names-fr.json pour ShowMapNamePopup
     ]);
 
     // Phase 4.7 : warp arrow sprite (= 1:1 décomp `CreateWarpArrowSprite`).
@@ -485,6 +489,12 @@ export class TestOverworldScene extends Phaser.Scene {
     // Palettes a écrit les NEW colors, color[0] = black via LoadTilesetPalette
     // black-fill). 1:1 décomp `InitOverworldGraphicsRegisters` (overworld.c:2096).
     this.rt.SetGpuReg(REG_OFFSET_DISPCNT, dispcntSaved);
+
+    // 1:1 décomp `ShowMapNamePopup()` (overworld.c:1947 LoadMapInStepsLocal case 11).
+    // Boot + warp : afficher le nom de la map.
+    if (header.showMapName) {
+      ShowMapNamePopup();
+    }
 
     return header;
   }
@@ -729,6 +739,13 @@ export class TestOverworldScene extends Phaser.Scene {
       console.log(`[connection] PlayBGM(${newHeader.music} = ${songId})`);
       PlayBGM(songId);
       _currentMapBgmId = songId;
+    }
+
+    // 1:1 décomp `ShowMapNamePopup()` (overworld.c:822-824 fin LoadMapFromCameraTransition).
+    // Skip si même mapsec (= e.g. cross-border vers même région). Internally
+    // condition checked via _sLastMapSectionId tracking.
+    if (newHeader.showMapName) {
+      ShowMapNamePopup();
     }
 
     // Status text.

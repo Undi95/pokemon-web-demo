@@ -452,24 +452,58 @@ registerOpcode('waitstate', (_ctx) => {
 // et à mesure. Special inconnu → log warning + continue (= 1:1 décomp ferait
 // un crash car function pointer invalide).
 
-const _specialHandlers: Record<string, () => void> = {};
+/** 1:1 décomp `gSpecials[]` table (data/specials.inc, 527 entries).
+ *  Décomp : array de function pointers indexés par SPECIAL_xxx. Notre version
+ *  string-keyed pour matcher les script JSON pré-extraits. */
+type SpecialHandler = () => number | void;
+const _specialHandlers: Record<string, SpecialHandler> = {};
 
-/** Register un special handler. À call par les modules qui implémentent un
- *  special spécifique (= ex. battle module register `HealPlayerParty`). */
-export function registerSpecial(name: string, handler: () => void): void {
+/** Register un special handler. Le handler peut return un u16 qui est stored
+ *  par opcode `specialvar` dans une variable. À call par les modules qui
+ *  implémentent un special spécifique (= battle module → `HealPlayerParty`). */
+export function registerSpecial(name: string, handler: SpecialHandler): void {
   _specialHandlers[name] = handler;
 }
 
-registerOpcode('special', (_ctx, args) => {
-  const name = args[0] as string;
+/** Internal : invoke un special handler. Returns 0 si pas registered + log
+ *  warning. Utilisé par opcodes `special` et `specialvar`. */
+function _invokeSpecial(name: string): number {
   const handler = _specialHandlers[name];
-  if (handler) {
-    handler();
-  } else {
-    // Audit Opus : log avec context pour wirer les specials manquants au
-    // fur et à mesure. Phase 4.7+ : wire battle/heal/etc.
-    console.log(`[opcode special] '${name}' not registered yet — Phase 4.7+ wire`);
+  if (!handler) {
+    // Log les specials manquants pour wire au fur et à mesure.
+    console.log(`[opcode special] '${name}' not registered yet — wire dans specials-registry.ts`);
+    return 0;
   }
+  return handler() ?? 0;
+}
+
+/** 1:1 décomp `ScrCmd_special` (scrcmd.c:118-124).
+ *  ```c
+ *  bool8 ScrCmd_special(struct ScriptContext *ctx) {
+ *      u16 index = ScriptReadHalfword(ctx);
+ *      gSpecials[index]();
+ *      return FALSE;
+ *  }
+ *  ``` */
+registerOpcode('special', (_ctx, args) => {
+  _invokeSpecial(args[0] as string);
+  return false;
+});
+
+/** 1:1 décomp `ScrCmd_specialvar` (scrcmd.c:126-132).
+ *  ```c
+ *  bool8 ScrCmd_specialvar(struct ScriptContext *ctx) {
+ *      u16 *var = GetVarPointer(ScriptReadHalfword(ctx));
+ *      *var = gSpecials[ScriptReadHalfword(ctx)]();
+ *      return FALSE;
+ *  }
+ *  ```
+ *  Format args : args[0] = varId (= "VAR_RESULT" etc.), args[1] = special name. */
+registerOpcode('specialvar', (_ctx, args) => {
+  const varId = args[0] as string;
+  const specialName = args[1] as string;
+  const result = _invokeSpecial(specialName);
+  VarSet(varId, result);
   return false;
 });
 

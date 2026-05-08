@@ -490,6 +490,38 @@ function checkPlayerCollision(direction: number): number {
   return COLLISION_NONE;
 }
 
+/** 1:1 décomp `PlayCollisionSoundIfNotFacingWarp(direction)` (field_player_avatar.c:1098-1115).
+ *
+ *  ```c
+ *  if (!sArrowWarpMetatileBehaviorChecks[direction-1](metatileBehavior))
+ *  {
+ *      if (direction == DIR_NORTH && IsWarpDoor(targetBehavior)) return;
+ *      PlaySE(SE_WALL_HIT);
+ *  }
+ *  ```
+ *
+ *  Skip SE_WALL_HIT si :
+ *    - Player on un ARROW_WARP tile matching la direction (= bump est en réalité
+ *      un warp arrow trigger, pas une vraie collision avec mur).
+ *    - OR direction = NORTH et target tile = MB_ANIMATED_DOOR (= push UP sur
+ *      door, le door anim handle le SE).
+ *
+ *  @param direction DIR_SOUTH/NORTH/WEST/EAST */
+function PlayCollisionSoundIfNotFacingWarp(direction: number): void {
+  const playerBehavior = MapGridGetMetatileBehaviorAt(
+    gPlayerAvatar.x + MAP_OFFSET, gPlayerAvatar.y + MAP_OFFSET);
+  // 1:1 décomp `sArrowWarpMetatileBehaviorChecks[direction-1]` (field_player_avatar.c:226).
+  // Si player on arrow warp matching direction → no SE (= warp will trigger).
+  if (isArrowWarpMetatileBehavior(playerBehavior, direction)) return;
+  // 1:1 décomp : check warp door au north uniquement.
+  if (direction === DIR_NORTH) {
+    const { x: dx, y: dy } = moveCoords(direction, gPlayerAvatar.x, gPlayerAvatar.y);
+    const targetBehavior = MapGridGetMetatileBehaviorAt(dx + MAP_OFFSET, dy + MAP_OFFSET);
+    if (getWarpKindFor(targetBehavior) === 'door') return;
+  }
+  PlaySE(SE_WALL_HIT);
+}
+
 /** 1:1 décomp `ShouldJumpLedge(x, y, direction)` (field_player_avatar.c:727).
  *  Returns TRUE si le tile target = MB_JUMP_X et direction = X (= ledge drop).
  *  Helper public pour PlayerNotOnBikeMoving qui check ShouldJumpLedge AVANT
@@ -639,7 +671,9 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
         const collision = checkPlayerCollision(inputDir);
         if (collision !== 0) {
           // Re-trigger : SE + new 32 frames + flip walkAnimAlt.
-          PlaySE(SE_WALL_HIT);
+          // 1:1 décomp `PlayerNotOnBikeCollide` (field_player_avatar.c:994) call
+          // `PlayCollisionSoundIfNotFacingWarp` qui skip SE si arrow warp / door.
+          PlayCollisionSoundIfNotFacingWarp(inputDir);
           gPlayerAvatar.collideFramesLeft = 32;
           gPlayerAvatar.walkAnimAlt = (gPlayerAvatar.walkAnimAlt ^ 1) as 0 | 1;
           updateSpriteFrame(rt);
@@ -861,13 +895,14 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
 
     // 1:1 décomp `PlayerNotOnBikeCollide` (field_player_avatar.c:994) :
     //   1. PlayCollisionSoundIfNotFacingWarp(direction) → PlaySE(SE_WALL_HIT)
-    //      sauf si direction face une warp door.
+    //      sauf si direction face une warp door OU player sur arrow warp.
     //   2. PlayerSetAnimId(GetWalkInPlaceSlowMovementAction) → 32-frame slow
     //      walk-in-place anim (= "bump" visual avec sprite alternance ralentie).
     //
     // Position physique inchangée (= player reste sur sa cellule). Le user voit
-    // sprite jolt vers le mur puis reset, et entend SE_WALL_HIT à chaque cycle.
-    PlaySE(SE_WALL_HIT);
+    // sprite jolt vers le mur puis reset, et entend SE_WALL_HIT à chaque cycle
+    // (sauf si arrow warp / door où no SE = comportement 1:1 décomp).
+    PlayCollisionSoundIfNotFacingWarp(inputDir);
     gPlayerAvatar.runningState = NOT_MOVING;
     gPlayerAvatar.collideFramesLeft = 32;
     updateSpriteFrame(rt);
