@@ -371,6 +371,19 @@ function _setFacing(target: MovementTarget, dir: number): void {
     gPlayerAvatar.facing = dir;
   } else if (target.npc) {
     target.npc.facingDirection = dir;
+    // 1:1 décomp Audit BIG #2.2 fix : pour les NPCs en MOVEMENT_TYPE_LOOK_AROUND,
+    // WANDER_AROUND, etc., le movementStep peut être à 4 (= "pick random
+    // direction" prochain tick). Si on set facing ici (= via face_player ou autre
+    // movement action) puis le NPC unfreeze, tickLookAround.case 4 écraserait
+    // le facing avec un random direction immédiatement.
+    // Fix : reset movementStep à 1 + reset movementDelay (= "wait full delay
+    // before next random") pour que le facing soit respecté ≥1 cycle complet.
+    // 1:1 décomp `FaceDirection` (event_object_movement.c:5048) appelle aussi
+    // `ShiftStillObjectEventCoords` qui resync les coords + step machinery.
+    if (target.npc.movementStep === 4) {
+      target.npc.movementStep = 1;
+      target.npc.movementDelay = 0;  // recompute delay au prochain step 0/1
+    }
   }
 }
 
