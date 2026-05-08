@@ -82,6 +82,13 @@ class GameState {
   set gender(v: 'MALE' | 'FEMALE') {
     GetSaveBlock2().playerGender = v === 'FEMALE' ? 1 : 0;
   }
+  /** 1:1 décomp `gSaveBlock2Ptr->playerTrainerId` (= u32 trainer ID).
+   *  Set par `InitPlayerTrainerId()` au new game (= Random()<<16 | sTrainerId).
+   *  Read par CheckPokemonOwnership / Pokemon nickname display / battle UI. */
+  get trainerId(): number { return GetSaveBlock2().playerTrainerId ?? 0; }
+  setTrainerId(value: number): void {
+    GetSaveBlock2().playerTrainerId = value >>> 0;
+  }
 
   // ===== Position / map ===============================================
   /** Position courante. Cf. SaveBlock1.pos + location. */

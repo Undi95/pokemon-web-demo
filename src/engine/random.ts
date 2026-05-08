@@ -88,6 +88,41 @@ export function SeedRng2(seed: number): void {
   gRng2Value = seed & 0xFFFF;
 }
 
+// ─── SeedRngAndSetTrainerId + GetGeneratedTrainerIdLower (= main.c:201,209) ──
+
+/** 1:1 décomp `static u16 sTrainerId` (main.c). Set par SeedRngAndSetTrainerId
+ *  via REG_TM1CNT_L (= timer 1 lower count). On simule avec une lecture du
+ *  performance counter (= ms since boot, scaled to u16). 1:1 GBA aurait
+ *  utilisé un hardware register déterministe par boot timing. */
+let sTrainerId = 0;
+
+/** 1:1 décomp `void SeedRngAndSetTrainerId(void)` (main.c:201).
+ *  ```c
+ *  void SeedRngAndSetTrainerId(void) {
+ *      u16 val = REG_TM1CNT_L;
+ *      SeedRng(val);
+ *      REG_TM1CNT_H = 0;
+ *      sTrainerId = val;
+ *  }
+ *  ```
+ *  Notre version : utilise `Date.now() & 0xFFFF` comme entropy source au lieu
+ *  de REG_TM1CNT_L (= timer 1 hardware). Effet identique : seed RNG + store
+ *  trainerId lower 16 bits. Appelé une fois au boot du jeu (= avant title
+ *  screen) pour que la 1ère save ait un trainerId déterministe par run. */
+export function SeedRngAndSetTrainerId(): void {
+  // 1:1 décomp : val = REG_TM1CNT_L (= u16 hardware timer). Notre équivalent :
+  // ms sub-second (= 0..999) shifted to 0..0xFFFF range.
+  const val = Date.now() & 0xFFFF;
+  SeedRng(val);
+  sTrainerId = val;
+  console.log(`[random] SeedRngAndSetTrainerId : sTrainerId=${val}, gRngValue seeded`);
+}
+
+/** 1:1 décomp `u16 GetGeneratedTrainerIdLower(void)` (main.c:209). */
+export function GetGeneratedTrainerIdLower(): number {
+  return sTrainerId;
+}
+
 // ─── Debug + tests helpers (= ne pas utiliser en gameplay) ──────────────────
 
 /** Lit gRngValue courant (= debug). Ne PAS utiliser pour décision gameplay. */

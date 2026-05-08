@@ -13,6 +13,7 @@ import { Dex } from '@pkmn/dex';
 import {
   getSpeciesId, getMoveId, getSpeciesNameFr, getMoveNameFr,
 } from './data-tables';
+import { Random } from './random';
 
 /** Convertit `SPECIES_TREECKO` → `treecko` (id format @pkmn/dex). */
 export function speciesEnumToDexId(speciesEnum: string): string {
@@ -54,7 +55,39 @@ export interface PokemonInstance {
 }
 
 const ZERO_STATS: StatSpread = { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 };
-const PERFECT_IVS: StatSpread = { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 };
+
+/** 1:1 décomp `CreateBoxMon` (pokemon.c) : IVs computed from 2 Random() calls.
+ *  Chaque Random() = u16 → 3 slices de 5-bit = 3 IVs. Total 2 Random()s = 6 IVs.
+ *
+ *  Décomp pseudocode :
+ *    value = Random();
+ *    iv = value & 0x1F;            (HP_IV)
+ *    iv = (value >> 5) & 0x1F;     (ATK_IV)
+ *    iv = (value >> 10) & 0x1F;    (DEF_IV)
+ *    value = Random();
+ *    iv = value & 0x1F;            (SPEED_IV)
+ *    iv = (value >> 5) & 0x1F;     (SPATK_IV)
+ *    iv = (value >> 10) & 0x1F;    (SPDEF_IV)
+ *
+ *  Notre struct StatSpread = hp/atk/def/spa/spd/spe (= notation Smogon).
+ *  Mapping decomp -> notre struct :
+ *    decomp HP    -> our hp
+ *    decomp ATK   -> our atk
+ *    decomp DEF   -> our def
+ *    decomp SPEED -> our spe   (4eme decomp, 6eme notre struct)
+ *    decomp SPATK -> our spa   (5eme decomp, 4eme notre struct)
+ *    decomp SPDEF -> our spd   (6eme decomp, 5eme notre struct) */
+function randomIVs(): StatSpread {
+  const v1 = Random();
+  const hp  =  v1        & 0x1F;
+  const atk = (v1 >>  5) & 0x1F;
+  const def = (v1 >> 10) & 0x1F;
+  const v2 = Random();
+  const spe =  v2        & 0x1F;  // decomp SPEED
+  const spa = (v2 >>  5) & 0x1F;  // decomp SPATK
+  const spd = (v2 >> 10) & 0x1F;  // decomp SPDEF
+  return { hp, atk, def, spa, spd, spe };
+}
 
 /** Formule HP Gen 3 : ((2*base + iv + ev/4) * level / 100) + level + 10 */
 function calcHp(base: number, iv: number, ev: number, level: number): number {
@@ -102,7 +135,7 @@ export function createPokemonInstance(speciesEnum: string, level: number, opts?:
   const species = Dex.species.get(dexId);
   const speciesName = species.name;
   const speciesNameFr = getSpeciesNameFr(speciesEnum);
-  const ivs = opts?.ivs ?? PERFECT_IVS;
+  const ivs = opts?.ivs ?? randomIVs();
   const evs = opts?.evs ?? ZERO_STATS;
   const baseHp = species.baseStats?.hp ?? 50;
   const maxHp = calcHp(baseHp, ivs.hp, evs.hp, level);

@@ -19,6 +19,8 @@
  */
 
 import { FlagSet } from './script-vars';
+import { Random, GetGeneratedTrainerIdLower } from './random';
+import { gameState } from './game-state';
 
 /** 1:1 décomp `EventScript_ResetAllMapFlags` (data/scripts/new_game.inc:178).
  *  159 flags à SET au démarrage d'une nouvelle partie. */
@@ -189,5 +191,16 @@ export function NewGameInit(): void {
   for (const flagId of NEW_GAME_HIDE_FLAGS) {
     FlagSet(flagId);
   }
+  // 1:1 décomp `InitPlayerTrainerId()` (new_game.c:84) appelé depuis
+  // `NewGameInitData()` (= line 164). Build un u32 trainerId :
+  //   trainerId = (Random() << 16) | GetGeneratedTrainerIdLower()
+  // Sans ça, playerTrainerId reste à 0 → tous les NPCs/Pokémon "ours" ont le
+  // même trainer ID = 0, breaks les checks Pokemon flags (= "trade vs caught").
+  // SYNC (pas async) car gameState.save() peut être appelé immédiatement
+  // après NewGameInit (= boot-mode.ts ?truck preset → reset+NewGameInit+save)
+  // → trainerId doit être persisté dans la save SaveBlock2.
+  const trainerId = ((Random() << 16) | GetGeneratedTrainerIdLower()) >>> 0;
+  gameState.setTrainerId(trainerId);
+  console.log(`[new-game-flags] InitPlayerTrainerId : trainerId=0x${trainerId.toString(16).padStart(8, '0')}`);
   console.log(`[new-game-flags] set ${NEW_GAME_HIDE_FLAGS.length} hide flags (= EventScript_ResetAllMapFlags)`);
 }

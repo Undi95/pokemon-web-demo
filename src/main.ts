@@ -51,13 +51,21 @@ if (typeof window !== 'undefined') {
 import { LoadGameSave } from './engine/save-system';
 import { SetSaveFileStatus } from './engine/gba-menu-system';
 // Side-effect import : pose window.rng debug helpers (= dev console access).
-import './engine/random';
+import { SeedRngAndSetTrainerId } from './engine/random';
 // Side-effect import : pose window.dev.audit.* helpers (= state inspection,
 // asset cache, save slots, tile preview, audit reports). Cf. dev-audit-tools.ts.
 import './engine/dev-audit-tools';
 const _saveLoadStatus = LoadGameSave();
 SetSaveFileStatus(_saveLoadStatus);
 console.log(`[main] LoadGameSave at boot → status=${_saveLoadStatus}`);
+
+// 1:1 décomp `SeedRngAndSetTrainerId()` (main.c:201). Appelée au boot très
+// early dans `Init()` (= main loop init). Seed gRngValue + store sTrainerId
+// pour que `InitPlayerTrainerId()` au new game ait un base déterministe par
+// run. Sans ça, `(Random() << 16) | sTrainerId` ferait playerTrainerId = 0
+// pour la 1ère save de chaque session = trainer ID identique = bugs Pokemon
+// ownership checks.
+SeedRngAndSetTrainerId();
 
 export const TILE_SIZE = 16;
 // Résolution NATIVE Pokemon Émeraude GBA = 240×160 px = 15×10 tiles de 16 px.
