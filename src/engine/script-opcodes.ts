@@ -32,8 +32,13 @@ import {
 import type { ObjectEventTemplate } from './map-loader';
 import { gameState } from './game-state';
 import { setPendingWarp, getPendingWarp } from './warp-system';
-import { gMapHeader } from './map-loader';
+import { gMapHeader, MapGridSetMetatileIdAt, MAP_OFFSET, MAPGRID_IMPASSABLE } from './map-loader';
 import { AddBagItem, RemoveBagItem, CheckBagHasItem } from './bag';
+import {
+  CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose, GetYesNoWindowId,
+} from './gba-menu-system';
+import type { WindowTemplate } from './gba-window-system';
+import { ClearStdWindowAndFrame, RemoveWindow } from './gba-window-system';
 import {
   gPlayerAvatar, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST,
 } from './player-avatar';
@@ -198,6 +203,58 @@ registerOpcode('call_if_unset', (ctx, args) => {
   return false;
 });
 
+// 1:1 décomp scrcmd.c ScrCmd_callstdif / ScrCmd_gotostdif via cond comparators.
+// _le / _ge complètent _lt / _gt + _eq / _ne déjà implémentés. Usage typique :
+// `call_if_lt VAR_LITTLEROOT_INTRO_STATE, 6, ...` (BrendansHouse_1F_OnLoad).
+
+registerOpcode('goto_if_le', (ctx, args) => {
+  if (VarGet(args[0]) <= VarGet(args[1])) {
+    const target = getScript(args[2]);
+    if (target) ScriptJump(ctx, target);
+  }
+  return false;
+});
+
+registerOpcode('goto_if_ge', (ctx, args) => {
+  if (VarGet(args[0]) >= VarGet(args[1])) {
+    const target = getScript(args[2]);
+    if (target) ScriptJump(ctx, target);
+  }
+  return false;
+});
+
+registerOpcode('call_if_lt', (ctx, args) => {
+  if (VarGet(args[0]) < VarGet(args[1])) {
+    const target = getScript(args[2]);
+    if (target) ScriptCall(ctx, target);
+  }
+  return false;
+});
+
+registerOpcode('call_if_gt', (ctx, args) => {
+  if (VarGet(args[0]) > VarGet(args[1])) {
+    const target = getScript(args[2]);
+    if (target) ScriptCall(ctx, target);
+  }
+  return false;
+});
+
+registerOpcode('call_if_le', (ctx, args) => {
+  if (VarGet(args[0]) <= VarGet(args[1])) {
+    const target = getScript(args[2]);
+    if (target) ScriptCall(ctx, target);
+  }
+  return false;
+});
+
+registerOpcode('call_if_ge', (ctx, args) => {
+  if (VarGet(args[0]) >= VarGet(args[1])) {
+    const target = getScript(args[2]);
+    if (target) ScriptCall(ctx, target);
+  }
+  return false;
+});
+
 // ─── Variables / flags ───────────────────────────────────────────────────────
 
 registerOpcode('setvar', (_ctx, args) => {
@@ -217,6 +274,90 @@ registerOpcode('subvar', (_ctx, args) => {
 
 registerOpcode('copyvar', (_ctx, args) => {
   VarSet(args[0], VarGet(args[1]));
+  return false;
+});
+
+// 1:1 décomp asm/macros/event.inc:730-823 — trainerbattle macros.
+// Notre extracteur garde les macros user-level non-expandées (= trainerbattle_*
+// arrivent dans les JSON tels quels, pas en `trainerbattle TYPE, ...`).
+//
+// Stub Phase 2 : log + continue (= BattleScene Phaser à venir Phase 5). Set
+// VAR_RESULT = 1 (= victoire pour démo) afin que les scripts post-bataille
+// (= rival defeated dialog) continuent leur flow.
+//
+// 6 variants couvrent ~600 usages combinés :
+//   trainerbattle TYPE, trainer, localId, ptr1[, ptr2[, ptr3[, ptr4]]]
+//   trainerbattle_single trainer, intro, lose [, event_script [, music]]
+//   trainerbattle_double trainer, intro, lose, not_enough_text [, event_script [, music]]
+//   trainerbattle_rematch trainer, intro, lose
+//   trainerbattle_rematch_double trainer, intro, lose, not_enough_text
+//   trainerbattle_no_intro trainer, lose_text  →  TRAINER_BATTLE_SINGLE_NO_INTRO_TEXT
+function _stubTrainerBattle(trainerArg: string): void {
+  console.log(`[trainerbattle stub] ${trainerArg} — BattleScene pas encore implémentée (Phase 5), set VAR_RESULT=1 (= win) pour continuer`);
+  gSpecialVar.Result = 1;
+  // Marqueur "défeated" persistant (= proxy de FLAG_TRAINER_X_DEFEATED).
+  gameState.setFlag(`__defeated_${trainerArg}`);
+}
+
+registerOpcode('trainerbattle', (_ctx, args) => {
+  // args = [type, trainer, localId, ptr1, ...]
+  _stubTrainerBattle(args[1] ?? '');
+  return false;
+});
+
+registerOpcode('trainerbattle_single', (_ctx, args) => {
+  _stubTrainerBattle(args[0] ?? '');
+  return false;
+});
+
+registerOpcode('trainerbattle_double', (_ctx, args) => {
+  _stubTrainerBattle(args[0] ?? '');
+  return false;
+});
+
+registerOpcode('trainerbattle_rematch', (_ctx, args) => {
+  _stubTrainerBattle(args[0] ?? '');
+  return false;
+});
+
+registerOpcode('trainerbattle_rematch_double', (_ctx, args) => {
+  _stubTrainerBattle(args[0] ?? '');
+  return false;
+});
+
+registerOpcode('trainerbattle_no_intro', (_ctx, args) => {
+  _stubTrainerBattle(args[0] ?? '');
+  return false;
+});
+
+// 1:1 décomp asm/macros/event.inc:1914-1921 :
+//
+//   .macro switch var
+//     copyvar VAR_0x8000, \var
+//   .endm
+//
+//   .macro case condition, dest
+//     compare VAR_0x8000, \condition
+//     goto_if_eq \dest
+//   .endm
+//
+// Notre extracteur garde les macros user-level (= switch/case) non-expandées.
+// 337 usages `switch` + 1278 `case` (= biggest opcode gap). Bloquer `switch` =
+// rival dispatch Route103 ne fonctionne pas (= match starter type).
+registerOpcode('switch', (_ctx, args) => {
+  // copyvar VAR_0x8000, args[0]
+  VarSet('VAR_0x8000', VarGet(args[0]));
+  return false;
+});
+
+registerOpcode('case', (ctx, args) => {
+  // compare VAR_0x8000, args[0] + goto_if_eq args[1]
+  const condition = VarGet(args[0]);
+  const scratch = VarGet('VAR_0x8000');
+  if (scratch === condition) {
+    const target = getScript(args[1]);
+    if (target) ScriptJump(ctx, target);
+  }
   return false;
 });
 
@@ -346,12 +487,12 @@ registerOpcode('closemessage', (_ctx) => {
 
 /** msgbox = composite macro : équivalent à `loadword 0, text` + `callstd N`.
  *  Notre version : run la sequence complète inline (= équivalent fonctionnel
- *  des std scripts MSGBOX_NPC, MSGBOX_DEFAULT, MSGBOX_SIGN).
+ *  des std scripts MSGBOX_NPC, MSGBOX_DEFAULT, MSGBOX_SIGN, MSGBOX_YESNO).
  *
  *  MSGBOX_NPC      = 2 → lock + faceplayer + message + waitmessage + waitbuttonpress + release
  *  MSGBOX_SIGN     = 3 → lockall + message + waitmessage + waitbuttonpress + releaseall
  *  MSGBOX_DEFAULT  = 4 → idem MSGBOX_NPC (= avec ou sans faceplayer selon variantes)
- *  MSGBOX_YESNO    = 5 → not implemented yet (= besoin yes/no menu)
+ *  MSGBOX_YESNO    = 5 → message + waitmessage + spawn yesnobox + wait selection
  *  MSGBOX_AUTOCLOSE= 6 → message + waitmessage + waitbuttonpress + closemessage
  *
  *  Implémenté via SetupNativeScript : state machine polling chaque frame. */
@@ -365,6 +506,7 @@ registerOpcode('msgbox', (ctx, args) => {
   }
 
   const isSign = type === 'MSGBOX_SIGN';
+  const isYesNo = type === 'MSGBOX_YESNO';
   let state = 0;
 
   const tick = (): boolean => {
@@ -388,7 +530,7 @@ registerOpcode('msgbox', (ctx, args) => {
       case 1: {
         // Wait for message done.
         if (IsFieldMessageBoxHidden()) {
-          state = 2;
+          state = isYesNo ? 3 : 2;  // YesNo : skip waitbuttonpress, spawn menu directement.
         }
         return false;
       }
@@ -410,7 +552,122 @@ registerOpcode('msgbox', (ctx, args) => {
         }
         return false;
       }
+      case 3: {
+        // MSGBOX_YESNO : spawn YesNo menu (= 1:1 décomp std_msgbox_yesno script
+        // qui call yesnobox + waitstate). Position 1:1 décomp menu.c:98-107
+        // sYesNo_WindowTemplates : tilemapLeft=21, tilemapTop=9.
+        _spawnYesNoMenu(21, 9);
+        state = 4;
+        return false;
+      }
+      case 4: {
+        // Wait yesnobox selection. Menu_ProcessInputNoWrapClearOnChoose returns
+        // 0 (OUI), 1 (NON), -1 (B = NON), or -2 (no choice yet).
+        const result = Menu_ProcessInputNoWrapClearOnChoose();
+        if (result === -2) return false;
+        const yesNoResult = result === 0 ? 0 : 1;
+        gSpecialVar.Result = yesNoResult;
+        // Cleanup yesno window.
+        const wid = GetYesNoWindowId();
+        if (wid >= 0) {
+          ClearStdWindowAndFrame(wid, true);
+          RemoveWindow(wid);
+        }
+        // Release dialog + NPC.
+        HideFieldMessageBox();
+        const npc = getSelectedNpc();
+        if (npc) npc.frozen = false;
+        return true;
+      }
     }
+    return true;
+  };
+  SetupNativeScript(ctx, tick);
+  return true;
+});
+
+// 1:1 décomp scrcmd.c:1353-1370 ScrCmd_multichoice(left, top, multichoiceId, ignoreBPress) :
+//   ScriptMenu_Multichoice(left, top, multichoiceId, ignoreBPress) → TRUE
+//   ScriptContext_Stop ; user picks → VAR_RESULT = cursor pos (0..N-1) or
+//   MULTI_B_PRESSED (0x7F) si B pressé et !ignoreBPress.
+//
+// Phase 2 STUB : sMultichoiceLists data table pas encore portée (= ~50 lists,
+// gros boulot). Pour débloquer les scripts qui l'utilisent (= 117 usages dont
+// starter selection Route101 indirectement via ChooseStarter), on retourne
+// VAR_RESULT = 0 (= 1ère option par défaut). Real impl Phase 4+.
+//
+// Variantes : multichoicedefault (= same + initial cursor pos), multichoicegrid
+// (= 2D grid layout).
+function _stubMultichoice(multichoiceId: string): void {
+  console.log(`[multichoice stub] id=${multichoiceId} — sMultichoiceLists data pas encore portée, set VAR_RESULT=0 (= 1st option)`);
+  gSpecialVar.Result = 0;
+}
+
+registerOpcode('multichoice', (_ctx, args) => {
+  // args = [left, top, multichoiceId, ignoreBPress]
+  _stubMultichoice(args[2] ?? '');
+  return false;
+});
+
+registerOpcode('multichoicedefault', (_ctx, args) => {
+  // args = [left, top, multichoiceId, defaultChoice, ignoreBPress]
+  _stubMultichoice(args[2] ?? '');
+  // Honors default cursor position.
+  gSpecialVar.Result = parseValue(args[3] ?? '0');
+  return false;
+});
+
+registerOpcode('multichoicegrid', (_ctx, args) => {
+  // args = [left, top, multichoiceId, perRow, ignoreBPress]
+  _stubMultichoice(args[2] ?? '');
+  return false;
+});
+
+// 1:1 décomp scrcmd.c:1337-1351 ScrCmd_yesnobox(left, top) :
+//   ScriptMenu_YesNo(left, top) → returns TRUE → ScriptContext_Stop
+//   Wait until Menu_ProcessInputNoWrapClearOnChoose returns choice :
+//     0 (OUI) → VAR_RESULT = 0
+//     1 (NON) → VAR_RESULT = 1
+//     -1 (B_PRESSED) → VAR_RESULT = 1 (= NON, 1:1 décomp menu.c)
+//
+// Window template 1:1 décomp menu.c:98-107 sYesNo_WindowTemplates :
+//   { bg: 0, tilemapLeft: ?, tilemapTop: ?, width: 5, height: 4,
+//     paletteNum: 15, baseBlock: 0x125 }
+function _spawnYesNoMenu(left: number, top: number): void {
+  // 1:1 décomp menu.c:1623 CreateYesNoMenu(window, baseTileNum, paletteNum, initialCursorPos).
+  // STD_WINDOW_BASE_TILE_NUM=0x214, STD_WINDOW_PALETTE_NUM=14 (= cf. menu.c:25-27).
+  const tmpl: WindowTemplate = {
+    bg: 0,
+    tilemapLeft: left,
+    tilemapTop: top,
+    width: 5,
+    height: 4,
+    paletteNum: 15,    // DLG_WINDOW_PALETTE_NUM
+    baseBlock: 0x125,
+  };
+  CreateYesNoMenu(tmpl, 0x214, 14, 0);
+}
+
+registerOpcode('yesnobox', (ctx, args) => {
+  const left = parseValue(args[0]);
+  const top = parseValue(args[1]);
+  _spawnYesNoMenu(left, top);
+  let menuActive = true;
+  const tick = (): boolean => {
+    if (!menuActive) return true;
+    const result = Menu_ProcessInputNoWrapClearOnChoose();
+    if (result === -2 /* MENU_NOTHING_CHOSEN */) return false;
+    // 1:1 décomp menu.c : -1 (B pressed) treated as NON = 1.
+    const yesNoResult = result === 0 ? 0 : 1;
+    gSpecialVar.Result = yesNoResult;
+    // Cleanup yesno window (= 1:1 décomp EraseYesNoWindow déjà fait par
+    // Menu_ProcessInputNoWrapClearOnChoose en interne).
+    const wid = GetYesNoWindowId();
+    if (wid >= 0) {
+      ClearStdWindowAndFrame(wid, true);
+      RemoveWindow(wid);
+    }
+    menuActive = false;
     return true;
   };
   SetupNativeScript(ctx, tick);
@@ -805,6 +1062,93 @@ registerOpcode('closedoor', (_ctx, _args) => false);
 registerOpcode('waitdooranim', (_ctx) => false);
 registerOpcode('setdooropen', (_ctx, _args) => false);
 registerOpcode('setdoorclosed', (_ctx, _args) => false);
+
+// 1:1 décomp scrcmd.c:ScrCmd_fadescreen (lignes 626-631) :
+//   FadeScreen(mode, 0); SetupNativeScript(ctx, IsPaletteNotActive);
+//
+// Modes 1:1 décomp constants/field_weather.h :
+//   FADE_FROM_BLACK = 0  →  startY=0x10, endY=0, color=BLACK
+//   FADE_TO_BLACK   = 1  →  startY=0, endY=0x10, color=BLACK
+//   FADE_FROM_WHITE = 2  →  startY=0x10, endY=0, color=WHITE
+//   FADE_TO_WHITE   = 3  →  startY=0, endY=0x10, color=WHITE
+//
+// Notre BeginNormalPaletteFade prend (palettes, delay, startY, endY, color).
+// 70 usages (= cinematic Birch bag, warps, etc.).
+const FADE_MODE_FROM_BLACK = 0;
+const FADE_MODE_TO_BLACK = 1;
+const FADE_MODE_FROM_WHITE = 2;
+const FADE_MODE_TO_WHITE = 3;
+
+function _resolveFadeMode(arg: string): number {
+  if (arg === 'FADE_FROM_BLACK') return FADE_MODE_FROM_BLACK;
+  if (arg === 'FADE_TO_BLACK') return FADE_MODE_TO_BLACK;
+  if (arg === 'FADE_FROM_WHITE') return FADE_MODE_FROM_WHITE;
+  if (arg === 'FADE_TO_WHITE') return FADE_MODE_TO_WHITE;
+  return parseValue(arg);
+}
+
+function _doFadeScreen(mode: number, _delay: number): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  // 1:1 décomp palette.c : start/end/color selon mode.
+  const isToBlack = mode === FADE_MODE_TO_BLACK;
+  const isToWhite = mode === FADE_MODE_TO_WHITE;
+  const isFromBlack = mode === FADE_MODE_FROM_BLACK;
+  const isFromWhite = mode === FADE_MODE_FROM_WHITE;
+  const startY = (isFromBlack || isFromWhite) ? 0x10 : 0;
+  const endY = (isToBlack || isToWhite) ? 0x10 : 0;
+  const color = (isToWhite || isFromWhite) ? 'RGB_WHITEALPHA' : 'RGB_BLACK';
+  rt.BeginNormalPaletteFade('PALETTES_ALL', 0, startY, endY, color);
+}
+
+registerOpcode('fadescreen', (ctx, args) => {
+  const mode = _resolveFadeMode(args[0]);
+  _doFadeScreen(mode, 0);
+  // 1:1 décomp : SetupNativeScript(ctx, IsPaletteNotActive) — attend que le fade
+  // soit terminé avant de continuer.
+  const rt = getRuntime();
+  SetupNativeScript(ctx, () => !rt?.gPaletteFade.active);
+  return true;
+});
+
+registerOpcode('fadescreenspeed', (ctx, args) => {
+  const mode = _resolveFadeMode(args[0]);
+  const speed = parseValue(args[1]);
+  _doFadeScreen(mode, speed);
+  const rt = getRuntime();
+  SetupNativeScript(ctx, () => !rt?.gPaletteFade.active);
+  return true;
+});
+
+registerOpcode('fadescreenswapbuffers', (ctx, args) => {
+  // 1:1 décomp scrcmd.c:643 — variante qui swap gPlttBufferUnfaded ↔
+  // gPaletteDecompressionBuffer avant fade. Pour l'instant : same as fadescreen.
+  const mode = _resolveFadeMode(args[0]);
+  _doFadeScreen(mode, 0);
+  const rt = getRuntime();
+  SetupNativeScript(ctx, () => !rt?.gPaletteFade.active);
+  return true;
+});
+
+// 1:1 décomp scrcmd.c:ScrCmd_setmetatile (lignes 2034-2048).
+//   x += MAP_OFFSET ; y += MAP_OFFSET ;
+//   if (!isImpassable) MapGridSetMetatileIdAt(x, y, metatileId)
+//   else MapGridSetMetatileIdAt(x, y, metatileId | MAPGRID_IMPASSABLE)
+//
+// Args : x, y, metatileId, isImpassable. Tous peuvent être var noms ou immediates.
+// 595 usages dans les scripts (= portes dynamiques, escaliers, hidden items, etc.).
+registerOpcode('setmetatile', (_ctx, args) => {
+  const x = VarGet(args[0]) + MAP_OFFSET;
+  const y = VarGet(args[1]) + MAP_OFFSET;
+  const metatileId = VarGet(args[2]);
+  const isImpassable = VarGet(args[3]);
+  if (!isImpassable) {
+    MapGridSetMetatileIdAt(x, y, metatileId);
+  } else {
+    MapGridSetMetatileIdAt(x, y, metatileId | MAPGRID_IMPASSABLE);
+  }
+  return false;
+});
 
 // ─── Warp opcodes ──────────────────────────────────────────────────────────
 

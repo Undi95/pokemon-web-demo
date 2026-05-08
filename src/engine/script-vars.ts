@@ -43,11 +43,23 @@ export function VarSet(varId: string, value: number): void {
  *  Si arg est un nombre (= immediate), return le nombre directement (= utilisé
  *  par compare opcodes qui prennent var ou immediate).
  *  Pour les constantes connues (MALE/FEMALE/etc) qui ne sont pas des var
- *  symboliques, return 0 (= vérifie via gameState qui retourne 0 par défaut). */
+ *  symboliques, return 0 (= vérifie via gameState qui retourne 0 par défaut).
+ *
+ *  1:1 décomp `event_data.c:GetVarPointer` : pour les SPECIAL_VARS (= id >=
+ *  0x8000), lookup dans `gSpecialVars[]` table. VAR_FACING (= 0x800C) = pointe
+ *  vers `gSpecialVar_Facing` set par field_control_avatar.c:282,305 quand le
+ *  player trigger un script (= direction du player à ce moment). */
 export function VarGet(varId: string): number {
   // Si l'arg ressemble à un nombre / hex, le return tel quel (= immediate).
   if (/^-?\d+$/.test(varId)) return parseInt(varId, 10) & 0xFFFF;
   if (/^0x[0-9a-fA-F]+$/.test(varId)) return parseInt(varId, 16) & 0xFFFF;
+  // Special vars resolved at runtime (= 1:1 décomp gSpecialVars[]).
+  if (varId === 'VAR_FACING') {
+    // 1:1 décomp event_data.c gSpecialVar_Facing pointer dans gSpecialVars[].
+    // gPlayerAvatar exposé sur globalThis par player-avatar.ts (= évite cycle).
+    const pa = (globalThis as { gPlayerAvatar?: { facing: number } }).gPlayerAvatar;
+    return pa?.facing ?? 0;
+  }
   return gameState.getVar(varId);
 }
 
