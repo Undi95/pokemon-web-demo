@@ -130,6 +130,10 @@ export interface MapLayout {
 /** 1:1 décomp `struct ObjectEventTemplate` (global.fieldmap.h:92-110). */
 export interface ObjectEventTemplate {
   localId: number;
+  /** Raw local_id from JSON (e.g. 'LOCALID_LITTLEROOT_MOM'). Empty string if no
+   *  local_id specified in source map JSON. Used by movement-system pour résoudre
+   *  applymovement LOCALID_X args vers le bon ObjectEvent. */
+  localIdRaw: string;
   graphicsId: number;  // résolu depuis OBJ_EVENT_GFX_* string
   graphicsIdRaw: string;
   kind: number;        // = 0 (OBJ_KIND_NORMAL)
@@ -510,6 +514,7 @@ export async function loadMapHeader(mapId: string): Promise<MapHeader> {
   // Build events (= localId auto-assigné en index si non fourni).
   const objectEvents: ObjectEventTemplate[] = (json.object_events ?? []).map((e, i) => ({
     localId: e.local_id ? 0 /* resolved at runtime via constants */ : i + 1,
+    localIdRaw: e.local_id ?? '',
     graphicsId: parseGraphicsId(e.graphics_id),
     graphicsIdRaw: e.graphics_id,
     kind: 0,

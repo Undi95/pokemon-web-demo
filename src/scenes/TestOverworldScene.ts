@@ -75,6 +75,7 @@ import {
   UpdateObjectEventsForCameraUpdate,
   preloadNpcGraphicsForMap,
 } from '../engine/object-events';
+import { tickMovementQueues, resetMovementQueues } from '../engine/movement-system';
 import { installInputHandlers, setHeldKeysOverride } from '../engine/input-handler';
 import { installEngineDevtools } from '../engine/engine-devtools';
 import {
@@ -337,6 +338,11 @@ export class TestOverworldScene extends Phaser.Scene {
         // Phase 4.5 : tick field message box state machine.
         TickFieldMessageBox();
         PlayerStep(rt.gMain.heldKeys, rt.gMain.newKeys, rt);
+        // Phase 4.10 : tick script-driven movements AVANT CameraUpdate. Le tick
+        // set gFieldCamera.movementSpeedX/Y que CameraUpdate lit ce même frame
+        // pour décrémenter pixelOffsetX/Y. Si l'ordre est inversé, on perd 1 px
+        // de décrément par action (= drift visuel).
+        tickMovementQueues(rt);
         CameraUpdate();
         // Phase 4.8 : check seamless cross-border transition signalé par
         // CameraMove. 1:1 décomp `LoadMapFromCameraTransition` flow : NO fade,
@@ -348,6 +354,10 @@ export class TestOverworldScene extends Phaser.Scene {
           self.handleConnectionTransition(pendingConn);
         }
         // Phase 4.4.c : tick NPC movement state machine (LOOK_AROUND / WANDER).
+        // NB : tickMovementQueues a déjà run avant CameraUpdate. Pour les NPCs
+        // en script-driven movement, leur walkFramesLeft non-zéro empêche le
+        // wander state machine de tick (= cf. tickWanderAround case 6 ne fait
+        // rien si walkFramesLeft est déjà géré par movement-system).
         TickObjectEventMovements(rt);
         // Phase 4.4.a : update sprite positions des NPCs selon camera scroll.
         UpdateObjectEvents(rt);
@@ -489,6 +499,9 @@ export class TestOverworldScene extends Phaser.Scene {
     // Phase 4.4.a : spawn NPCs. Phase 4.6 : destroy old NPC sprites first.
     destroyAllNpcSprites(this.rt);
     resetObjectEventAllocations();
+    // Phase 4.10 : reset movement queues au map switch (= old map's queues
+    // pourraient référencer des NPCs de l'ancienne map).
+    resetMovementQueues();
     await SpawnObjectEventsOnMap(this.rt);
 
     // Sync NPC sprite OAM positions IMMÉDIATEMENT après spawn. Sans ça, les

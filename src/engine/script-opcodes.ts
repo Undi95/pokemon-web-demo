@@ -22,6 +22,9 @@ import {
   ShowFieldMessage, IsFieldMessageBoxHidden, HideFieldMessageBox,
 } from './field-message-box';
 import {
+  applyMovement, isAllMovementsDone, isMovementDone,
+} from './movement-system';
+import {
   gObjectEvents, type ObjectEvent,
 } from './object-events';
 import {
@@ -573,17 +576,34 @@ registerOpcode('setobjectmovementtype', (_ctx, args) => {
   return false;
 });
 
-// ─── Movement (= Phase 4.5+, MVP no-op) ──────────────────────────────────────
+// ─── Movement (= Phase 4.10 wired vers movement-system) ─────────────────────
 
 registerOpcode('applymovement', (_ctx, args) => {
-  console.log(`[opcode applymovement] localId=${args[0]} movement=${args[1]} (Phase 4.5+ TBD)`);
-  return false;
+  // 1:1 décomp `ScrCmd_applymovement` (scrcmd.c) : enqueue movement actions
+  // pour l'object event ciblé (= localId arg). Movement label arg est résolu
+  // via le movement label resolver setté par script-runtime.
+  const localId = args[0] ?? '';
+  const movementLabel = args[1] ?? '';
+  if (!localId || !movementLabel) {
+    console.warn(`[opcode applymovement] bad args : ${args.join(',')}`);
+    return false;
+  }
+  applyMovement(localId, movementLabel);
+  return false;  // Continue script tick — waitmovement bloque si nécessaire.
 });
 
-registerOpcode('waitmovement', (_ctx, _args) => {
-  // Pour MVP : suppose que applymovement est instant. Phase 4.5+ wirera
-  // un vrai mécanisme avec ScriptMovement_*.
-  return false;
+registerOpcode('waitmovement', (ctx, args) => {
+  // 1:1 décomp `ScrCmd_waitmovement` (scrcmd.c) : SetupNativeScript callback
+  // qui returns TRUE quand movements done → script resume.
+  //   waitmovement 0 = wait pour TOUTES les queues actives.
+  //   waitmovement LOCALID_X = wait pour cette queue specific.
+  const target = args[0] ?? '0';
+  if (target === '0' || target === '') {
+    SetupNativeScript(ctx, isAllMovementsDone);
+  } else {
+    SetupNativeScript(ctx, () => isMovementDone(target));
+  }
+  return true;  // pause script ; SetupNativeScript reprendra quand done.
 });
 
 // ─── Map scripts triggers (= map_script + map_script_2) ──────────────────────

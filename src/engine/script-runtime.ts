@@ -178,6 +178,12 @@ export function getMovement(label: string): string[] | undefined {
   return _movementsByLabel.get(label);
 }
 
+// Phase 4.10 : register movement label resolver vers movement-system.
+// Hook au chargement de ce module (= side-effect import side dans
+// TestOverworldScene → script-opcodes → movement-system).
+import { setMovementLabelResolver } from './movement-system';
+setMovementLabelResolver((label: string) => _movementsByLabel.get(label) ?? null);
+
 // ─── Lock / Unlock 1:1 décomp ────────────────────────────────────────────────
 
 export function LockPlayerFieldControls(): void {

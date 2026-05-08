@@ -132,6 +132,10 @@ export interface ObjectEvent {
   graphicsId: string;
   movementType: string;
   localId: number;
+  /** Raw local_id from JSON (e.g. 'LOCALID_LITTLEROOT_MOM'). Empty if no
+   *  local_id specified. Used par movement-system pour résoudre applymovement
+   *  LOCALID_X. */
+  localIdRaw: string;
   /** 1:1 décomp `objectEvent->mapNum + mapGroup`. Identifie de quelle map ce
    *  NPC est originaire (= permet dedup quand on cross-border : NPCs old map
    *  conservés, new map's NPCs spawnés à côté). Phase 4.8 connections.
@@ -188,6 +192,7 @@ export const gObjectEvents: ObjectEvent[] = Array.from({ length: OBJECT_EVENTS_C
   graphicsId: '',
   movementType: '',
   localId: 0,
+  localIdRaw: '',
   mapId: '',
   scriptLabel: '',
   currentCoordsX: 0,
@@ -849,6 +854,7 @@ function _spawnSingleNpcFromTemplate(
   npc.graphicsId = graphicsKey;
   npc.movementType = template.movementTypeRaw ?? '';
   npc.localId = template.localId;
+  npc.localIdRaw = template.localIdRaw;  // Phase 4.10 : pour movement-system applymovement.
   npc.mapId = currentMapId;  // Phase 4.8 : track map of origin pour dedup cross-border.
   npc.scriptLabel = template.script ?? '';
   // 1:1 décomp `InitObjectEventStateFromTemplate` (event_object_movement.c:1309) :
