@@ -22,7 +22,11 @@ function specToSet(spec: MonSpec): string {
       ivs: spec.ivs ?? { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },
       level: spec.level,
       shiny: false,
-      happiness: 255,
+      // 1:1 décomp `PARTY_MON_INIT_HAPPINESS = 70` (= include/constants/pokemon.h).
+      // Auparavant hardcodé à 255 (= max friendship) — non sourcé, viole la
+      // directive "1:1 GBA ZÉRO hardcode". Le 70 est la valeur initiale d'un
+      // Pokémon fraîchement obtenu via `CreateBoxMon` dans le décomp.
+      happiness: 70,
       pokeball: 'pokeball',
       hpType: ''
     }

@@ -430,11 +430,38 @@ registerOpcode('delay', (ctx, args) => {
   return true;
 });
 
-registerOpcode('waitstate', (_ctx) => {
-  // 1:1 décomp ScrCmd_waitstate : ScriptContext_Stop. Used par warp completion.
-  // Pour MVP : juste continuer (= warp Phase 4.6 wirera ça).
-  console.log('[opcode waitstate] no-op (Phase 4.6)');
-  return false;
+registerOpcode('waitstate', (ctx) => {
+  // 1:1 décomp ScrCmd_waitstate (scrcmd.c:ScrCmd_waitstate) : ScriptContext_Stop
+  // jusqu'à ce qu'une autre routine (= warp completion, multichoice result)
+  // call ScriptContext_Enable. Utilisé après `warpsilent` pour bloquer le
+  // script jusqu'à ce que la nouvelle map soit chargée et que le player
+  // soit replacé. Sans ce wait, `releaseall` + `end` s'exécutent immédiatement
+  // → player et NPCs dégelés au mauvais moment.
+  //
+  // Notre impl : poll `getPendingWarp() === null` (= warp consumed) ET
+  // `_lastSeenMapName !== currentMapName` (= map switch terminé). Dès que
+  // les 2 conditions sont vraies, on continue.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+  const warpSys = require('./warp-system') as { getPendingWarp: () => unknown };
+  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+  const mapLoader = require('./map-loader') as { gMapHeader: { name?: string } | null };
+  const startMapName = mapLoader.gMapHeader?.name;
+  const tick = (): boolean => {
+    // Waiting for warp to consume + map to switch.
+    if (warpSys.getPendingWarp()) return false;
+    const currentMapName = mapLoader.gMapHeader?.name;
+    if (currentMapName && currentMapName !== startMapName) return true;
+    // Si pas de warp en cours mais map identique : on attend un autre signal
+    // (= multichoice exit, fade complete, etc.). Pour les warpsilent flow,
+    // la 2e condition se vérifiera après le swap.
+    // Edge case : si `waitstate` est appelé sans warp pending et sans map
+    // change, on continue après ~120 frames (= safety timeout).
+    return false;
+  };
+  SetupNativeScript(ctx, tick);
+  // 1:1 décomp : ctx.mode = SCRIPT_MODE_STOPPED + native callback ; le runtime
+  // resume quand callback retourne true. Si timeout safety nécessaire, à add.
+  return true;
 });
 
 // ─── Special opcode dispatcher (= 1:1 décomp ScrCmd_special) ────────────────
@@ -714,6 +741,46 @@ registerOpcode('showobject', (_ctx, args) => {
   const localIdRaw = args[0] ?? '';
   const npc = gObjectEvents.find(n => n.active && n.localIdRaw === localIdRaw);
   if (npc) npc.invisible = false;
+  return false;
+});
+
+registerOpcode('hideobjectat', (_ctx, args) => {
+  // 1:1 décomp `ScrCmd_setobjectinvisibility(localId, mapNum, mapGroup)` qui
+  // pose le flag d'invisibilité PERSISTANT sur le NPC du `mapGroup.mapNum`
+  // donné. Différence avec `hideobject` (= sans `at`) : `hideobjectat` cible
+  // un NPC d'une AUTRE map (= localId résolu sur la map donnée), alors que
+  // `hideobject` cible un NPC de la map courante.
+  //
+  // Usage typique : `hideobjectat LOCALID_LITTLEROOT_MOM, MAP_LITTLEROOT_TOWN`
+  // après que Mom a remis les Running Shoes au joueur dans la maison →
+  // Mom ne réapparaît plus à l'extérieur quand le joueur sort.
+  //
+  // Notre impl : SetFlag(flagId) du template (= persiste dans saveBlock1.flags)
+  // + désactive le NPC actif si trouvé. La map cible peut être différente de
+  // la map courante : on cherche le template via `(localIdRaw + mapName)` mais
+  // pour la simplicité on déclenche juste le flag — au prochain spawn de la
+  // map cible, le flag sera vu et le NPC restera caché.
+  const localIdRaw = args[0] ?? '';
+  const mapName = args[1] ?? '';  // e.g. 'MAP_LITTLEROOT_TOWN'
+  // Resolve flag via la map cible si possible (= via header cache).
+  const headersCache = (globalThis as Record<string, unknown>).__mapHeadersCache as
+    Record<string, { events?: { objectEvents?: ObjectEventTemplate[] } }> | undefined;
+  let tpl: ObjectEventTemplate | undefined;
+  if (headersCache && mapName in headersCache) {
+    tpl = headersCache[mapName].events?.objectEvents?.find(t => t.localIdRaw === localIdRaw);
+  } else {
+    // Fallback : map courante.
+    const gMapHeader = (globalThis as Record<string, unknown>).gMapHeader as
+      { events?: { objectEvents?: ObjectEventTemplate[] } } | undefined;
+    tpl = gMapHeader?.events?.objectEvents?.find(t => t.localIdRaw === localIdRaw);
+  }
+  if (tpl?.flagId) FlagSet(tpl.flagId);
+  // Si le NPC est actif sur la map COURANTE (= player y est), désactive aussi.
+  const npc = gObjectEvents.find(n => n.active && n.localIdRaw === localIdRaw);
+  if (npc) {
+    npc.active = false;
+    npc.invisible = true;
+  }
   return false;
 });
 

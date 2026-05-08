@@ -338,8 +338,98 @@ export function HighlightSelectedMainMenuItem(
 
 // ─── Misc main menu stubs ────────────────────────────────────────────────────
 
+/** 1:1 décomp `MainMenu_FormatSavegameText` (main_menu.c:2132-2138) +
+ *  4 sous-fonctions (Player/Time/Pokedex/Badges). Affiche le contenu de la
+ *  fenêtre Continue (= window 2) avec :
+ *
+ *    [JOUEUR  Brendan]   [DUREE JEU  12h45]
+ *    [POKéDEX  XX]       [BADGES  X]
+ *
+ *  Layout 1:1 décomp :
+ *    - Player label (x=0, y=17) + name right-aligned vers x=100
+ *    - Time label (x=0x6C=108, y=17) + HH:MM right-aligned vers x=0xD0=208
+ *    - Pokedex label (x=0, y=33) + count right-aligned vers x=100
+ *      (only si FLAG_SYS_POKEDEX_GET)
+ *    - Badges label (x=0x6C=108, y=33) + count right-aligned vers x=0xD0=208
+ *
+ *  Strings FR (= strings.c:1363-1366) : "JOUEUR", "DUREE JEU", "POKéDEX", "BADGES".
+ *  NUM_BADGES = 8 (FLAG_BADGE01..08). */
 export function MainMenu_FormatSavegameText(): void {
-  // TODO Phase D : formater le texte de la sauvegarde (player name, badges, play time)
+  // Lazy require pour éviter cycle au module load.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+  const { gSaveBlock2Ptr } = require('./gba-menu-system') as { gSaveBlock2Ptr: Record<string, unknown> };
+  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+  const { FlagGet } = require('./script-vars') as { FlagGet: (name: string) => boolean };
+  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+  const textSys = require('./gba-text-system') as { GetStringRightAlignXOffset: (str: string, rightX: number) => number };
+
+  const sb2 = gSaveBlock2Ptr;
+  const playerName = String(sb2.playerName ?? '???');
+  const playTimeHours = Number(sb2.playTimeHours ?? 0);
+  const playTimeMinutes = Number(sb2.playTimeMinutes ?? 0);
+
+  // 1:1 décomp sTextColor_MenuInfo = {TEXT_DYNAMIC_COLOR_1, TEXT_COLOR_WHITE, TEXT_DYNAMIC_COLOR_3}.
+  // En decoded numeric : [bgColor=1, fgColor=2, shadowColor=3] — std white-on-shadow.
+  const colorMenuInfo: readonly number[] = [1, 2, 3];
+  const FONT_NORMAL = 1;
+  const TEXT_SKIP_DRAW = 255;
+  const WIN_CONTINUE = 2;
+
+  // (1) Player line — JOUEUR <nom>
+  // Label at x=0, name right-aligned vers x=100.
+  AddTextPrinterParameterized3(WIN_CONTINUE, FONT_NORMAL, 0, 17, colorMenuInfo, TEXT_SKIP_DRAW, 'JOUEUR');
+  AddTextPrinterParameterized3(
+    WIN_CONTINUE, FONT_NORMAL,
+    textSys.GetStringRightAlignXOffset(playerName, 100), 17,
+    colorMenuInfo, TEXT_SKIP_DRAW, playerName,
+  );
+
+  // (2) Time line — DUREE JEU HH:MM
+  // Label at x=0x6C=108, time right-aligned vers x=0xD0=208.
+  // Format : `<H>:<MM>` (= 1:1 décomp ConvertIntToDecimalStringN with 0xF0 separator = ":").
+  const timeStr = `${playTimeHours}:${String(playTimeMinutes).padStart(2, '0')}`;
+  AddTextPrinterParameterized3(WIN_CONTINUE, FONT_NORMAL, 0x6C, 17, colorMenuInfo, TEXT_SKIP_DRAW, 'DUREE JEU');
+  AddTextPrinterParameterized3(
+    WIN_CONTINUE, FONT_NORMAL,
+    textSys.GetStringRightAlignXOffset(timeStr, 0xD0), 17,
+    colorMenuInfo, TEXT_SKIP_DRAW, timeStr,
+  );
+
+  // (3) Pokedex line (conditional sur FLAG_SYS_POKEDEX_GET)
+  if (FlagGet('FLAG_SYS_POKEDEX_GET')) {
+    const dexCount = _countCaughtPokedexFlags(FlagGet);
+    const dexStr = String(dexCount);
+    AddTextPrinterParameterized3(WIN_CONTINUE, FONT_NORMAL, 0, 33, colorMenuInfo, TEXT_SKIP_DRAW, 'POKéDEX');
+    AddTextPrinterParameterized3(
+      WIN_CONTINUE, FONT_NORMAL,
+      textSys.GetStringRightAlignXOffset(dexStr, 100), 33,
+      colorMenuInfo, TEXT_SKIP_DRAW, dexStr,
+    );
+  }
+
+  // (4) Badges line — BADGES X
+  // 1:1 décomp : `for (i = FLAG_BADGE01_GET; i < FLAG_BADGE01_GET + NUM_BADGES; i++) if (FlagGet(i)) badgeCount++`.
+  const badgeFlagNames = ['FLAG_BADGE01_GET','FLAG_BADGE02_GET','FLAG_BADGE03_GET','FLAG_BADGE04_GET',
+                          'FLAG_BADGE05_GET','FLAG_BADGE06_GET','FLAG_BADGE07_GET','FLAG_BADGE08_GET'];
+  let badgeCount = 0;
+  for (const fname of badgeFlagNames) if (FlagGet(fname)) badgeCount++;
+  const badgeStr = String(badgeCount);
+  AddTextPrinterParameterized3(WIN_CONTINUE, FONT_NORMAL, 0x6C, 33, colorMenuInfo, TEXT_SKIP_DRAW, 'BADGES');
+  AddTextPrinterParameterized3(
+    WIN_CONTINUE, FONT_NORMAL,
+    textSys.GetStringRightAlignXOffset(badgeStr, 0xD0), 33,
+    colorMenuInfo, TEXT_SKIP_DRAW, badgeStr,
+  );
+}
+
+/** Compte les Pokémon attrapés dans le pokedex via les flags FLAG_SYS_DEX_FLAGS_X.
+ *  1:1 décomp `GetHoennPokedexCount(FLAG_GET_CAUGHT)` / `GetNationalPokedexCount`.
+ *  Implémentation simplifiée : itère les flags `FLAG_SYS_POKEDEX_FLAG_<id>` set. */
+function _countCaughtPokedexFlags(flagGet: (name: string) => boolean): number {
+  // Pour une démo Phase 1 : on retourne 0 (= pokedex pas encore implémenté).
+  // TODO Phase 4+ : itérer sur les NUM_SPECIES flags caught/seen.
+  void flagGet;
+  return 0;
 }
 
 /** 1:1 décomp main_menu.c:2121-2130 CreateMainMenuErrorWindow.

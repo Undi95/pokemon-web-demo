@@ -119,6 +119,25 @@ function applyNoIntroPreset(): void {
   gameState.setVar('VAR_LITTLEROOT_INTRO_STATE', 6);
   gameState.setVar('VAR_LITTLEROOT_TOWN_STATE', 4);
   gameState.setFlag('FLAG_SET_WALL_CLOCK');
+  // 1:1 décomp `InsideOfTruck_EventScript_SetIntroFlagsMale` (scripts.inc:28-29) :
+  // pose les flags HIDE_*_TRUCK pour que les sprites du camion ne soient pas
+  // visibles dans Bourg-en-Vol après l'intro. Sans ces flags, les 2 trucks
+  // (Brendan et May) apparaissent visibles sur la map → décor cassé.
+  // Le preset ?nointro bypass le coord trigger qui set normalement ces flags.
+  gameState.setFlag('FLAG_HIDE_LITTLEROOT_TOWN_BRENDANS_HOUSE_TRUCK');
+  gameState.setFlag('FLAG_HIDE_LITTLEROOT_TOWN_MAYS_HOUSE_TRUCK');
+  // Setrespawn 1:1 décomp (= pas implémenté en TS mais on store la cible).
+  // Genre-dependent : Male → Brendan 2F, Female → May 2F.
+  if (gameState.gender === 'FEMALE') {
+    gameState.setVar('VAR_LITTLEROOT_INTRO_STATE', 6);
+    // Hide Brendan-side NPCs (= rival mom + family chez le rival).
+    gameState.setFlag('FLAG_HIDE_LITTLEROOT_TOWN_BRENDANS_HOUSE_MOM');
+    gameState.setFlag('FLAG_HIDE_LITTLEROOT_TOWN_BRENDANS_HOUSE_RIVAL_MOM');
+  } else {
+    // Hide May-side NPCs (= rival mom).
+    gameState.setFlag('FLAG_HIDE_LITTLEROOT_TOWN_MAYS_HOUSE_MOM');
+    gameState.setFlag('FLAG_HIDE_LITTLEROOT_TOWN_MAYS_HOUSE_RIVAL_MOM');
+  }
   gameState.save();
   console.log(`[boot-mode] ?nointro preset : name='${gameState.playerName}' gender='${gameState.gender}' INTRO_STATE=6`);
 }

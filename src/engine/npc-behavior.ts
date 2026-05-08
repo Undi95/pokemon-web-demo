@@ -13,6 +13,7 @@
 import Phaser from 'phaser';
 import { runMovement, type MovementSprite } from './movement';
 import { setIdleFrame, type Facing } from './character-anims';
+import { Random } from './random';
 
 /** État runtime par NPC (lazy-init). */
 export interface NpcBehaviorState {
@@ -42,8 +43,9 @@ export function getInitialFacing(movementType: string): Facing {
 
 const FACINGS: Facing[] = ['down', 'up', 'left', 'right'];
 
-/** Pick random element. */
-function pick<T>(arr: T[]): T { return arr[Math.floor(Math.random() * arr.length)]; }
+/** Pick random element. 1:1 décomp `Random() % count` (pas Math.random()) pour
+ *  préserver le déterminisme du seed=0. */
+function pick<T>(arr: T[]): T { return arr[Random() % arr.length]; }
 
 // Délais réels du décomp (event_object_movement.c:709-711) — frames @ 60fps.
 // `sMovementDelaysMedium[] = {32, 64, 96, 128}` pour wander/look around.

@@ -38,6 +38,7 @@ import {
 } from './direction-coords';
 import { _registerGObjectEvents, _registerNpcHelpers, _registerUpdateObjectEventsForCameraUpdate } from './field-globals';
 import { FlagGet } from './script-vars';
+import { Random } from './random';
 
 const BASE = '/decomp/em';
 
@@ -408,11 +409,16 @@ function movementTypeToInitialFacing(movementType: string): number {
 // script-opcodes.
 
 function pickRandomDirection(allowed: ReadonlyArray<number> = gStandardDirections): number {
-  return allowed[Math.floor(Math.random() * allowed.length)];
+  // 1:1 décomp `event_object_movement.c:GetRandomDirection` qui fait
+  // `Random() % count` sur la table sDirections. Auparavant Math.random() = bug
+  // RNG (= séquence non-reproductible, viole le déterminisme du seed=0).
+  return allowed[Random() % allowed.length];
 }
 
 function pickRandomDelay(): number {
-  return sMovementDelaysMedium[Math.floor(Math.random() * sMovementDelaysMedium.length)];
+  // 1:1 décomp `event_object_movement.c:GetRandomMovementDelay` qui fait
+  // `sMovementDelaysMedium[Random() % ARRAY_COUNT(sMovementDelaysMedium)]`.
+  return sMovementDelaysMedium[Random() % sMovementDelaysMedium.length];
 }
 
 /** Check si target tile occupé par player.

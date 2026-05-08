@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { TILE_SIZE, GAME_W, GAME_H } from '../main';
+import { Random } from '../engine/random';
 import { registerTransparentSpriteSheet } from '../util/sprite-transparency';
 import { setIdleFrame, playSingleStep, type Facing } from '../engine/character-anims';
 import { buildTilemap, buildBorderTileSprite, isDoorWarp, isInstantStepWarp, isArrowWarp, getArrowWarpDirection, MB_NORMAL, type LoadedTilemap } from '../engine/tilemap-loader';
@@ -952,7 +953,10 @@ export class OverworldScene extends Phaser.Scene {
         // Initial delay aléatoire (jitter pour pas que tous les NPCs tickent en même temps).
         // Borné par sMovementDelaysMedium du décomp (533-2133ms).
         state = {
-          nextActionAt: now + 533 + Math.floor(Math.random() * 1600),
+          // 1:1 décomp `event_object_movement.c:GetRandomMovementDelay` qui
+          // utilise Random() depuis le RNG seedé. Auparavant Math.random() = bug.
+          // Borné par sMovementDelaysMedium du décomp (533-2133ms).
+          nextActionAt: now + 533 + (Random() % 1600),
           isRunning: false,
           homeX: (npc as any).tile?.x ?? npc.raw.x,
           homeY: (npc as any).tile?.y ?? npc.raw.y,
