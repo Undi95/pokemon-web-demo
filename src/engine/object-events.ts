@@ -1287,18 +1287,16 @@ export function UpdateObjectEvents(rt: DecompRuntime): void {
     // ne disparait pas sur la porte" pendant LittlerootTown_Movement_MomEnterHouse.
     sprite.invisible = npc.invisible;
 
-    // 1:1 décomp : sprite.x_NPC stays at spawn-time computed value + walk
-    // increments via tick state machine. Per-frame coordOffsetEnabled adds
-    // pixelOffsetX. Net effect : NPCs slide with BG as player walks.
-    // Pendant truck cinematic : SetCameraPanning shake le BG. Pour que les
-    // NPCs (= boxes truck) shake AVEC le BG, on add aussi le camera pan.
-    // 1:1 décomp `gSpriteCoordOffsetX/Y` qui inclut camera pan.
+    // 1:1 décomp `gSpriteCoordOffsetX/Y` (field_camera.c:461-462) :
+    //   gSpriteCoordOffsetX = gTotalCameraPixelOffsetX - sHorizontalCameraPan;
+    //   gSpriteCoordOffsetY = gTotalCameraPixelOffsetY - sVerticalCameraPan - 8;
+    // Sprite shift INVERSE du camera pan (= 1:1 décomp behavior).
     // visualOffsetX/Y = 1:1 décomp `sprite.x2/y2` (= used par truck box
     // bouncing via SetObjectEventSpritePosByLocalIdAndMap).
     const panX = _getCameraPanX();
     const panY = _getCameraPanY();
-    sprite.x = npc.worldX + offX + panX + npc.visualOffsetX;
-    sprite.y = npc.worldY + offY - bgVofsBaseline + panY + npc.visualOffsetY;
+    sprite.x = npc.worldX + offX - panX + npc.visualOffsetX;
+    sprite.y = npc.worldY + offY - bgVofsBaseline - panY + npc.visualOffsetY;
 
     // Update sprite frame chaque frame (= keeps tile + flipH en sync avec
     // facingDirection, important pour interact qui change facing instantané).
