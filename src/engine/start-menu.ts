@@ -39,6 +39,7 @@
 import {
   AddWindow, RemoveWindow, DrawStdFrameWithCustomTileAndPalette,
   ClearStdWindowAndFrame,
+  LoadMessageBoxGfx, DLG_WINDOW_BASE_TILE_NUM,
   type WindowTemplate,
 } from './gba-window-system';
 import { LoadUserWindowBorderGfx } from './gba-text-window';
@@ -280,7 +281,15 @@ export function OpenStartMenu(): void {
   sSubState = 'menu';
   const tmpl = buildStartMenuTemplate(sItems.length);
   sWindowId = AddWindow(tmpl);
-  // 1:1 décomp `LoadUserWindowBorderGfx_(0, STD_WINDOW_BASE_TILE_NUM, BG_PLTT_ID(STD_WINDOW_PALETTE_NUM=14))`.
+  // 1:1 décomp `LoadMessageBoxAndBorderGfx()` (menu.c:210-214) qui charge :
+  //   LoadMessageBoxGfx(0, DLG_WINDOW_BASE_TILE_NUM, BG_PLTT_ID(DLG_WINDOW_PALETTE_NUM=15))
+  //   LoadUserWindowBorderGfx_(0, STD_WINDOW_BASE_TILE_NUM, BG_PLTT_ID(STD_WINDOW_PALETTE_NUM=14))
+  // Sans LoadMessageBoxGfx, palette 15 reste à 0 → window pixel buffer (= text bg
+  // via fillWindowPixelBuffer(0x11) = idx 1) rend en NOIR au lieu de blanc.
+  // Sans LoadUserWindowBorderGfx, palette 14 reste avec données stale d'autres
+  // chargements (= e.g. message_box d'un dialog précédent → red/orange leak dans
+  // les frame tiles).
+  LoadMessageBoxGfx(0, DLG_WINDOW_BASE_TILE_NUM, DLG_WINDOW_PALETTE_NUM * 16);
   LoadUserWindowBorderGfx(0, STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM * 16);
   DrawStdFrameWithCustomTileAndPalette(sWindowId, true, STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM);
   for (let i = 0; i < sItems.length; i++) {
@@ -320,6 +329,9 @@ export function CloseStartMenu(): void {
 
 function _redrawMenu(): void {
   if (sWindowId < 0) return;
+  // Re-load les 2 palettes 1:1 décomp `LoadMessageBoxAndBorderGfx` au cas où
+  // un dialog post-action aurait écrasé palette 14/15 (= e.g. après save_done).
+  LoadMessageBoxGfx(0, DLG_WINDOW_BASE_TILE_NUM, DLG_WINDOW_PALETTE_NUM * 16);
   LoadUserWindowBorderGfx(0, STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM * 16);
   DrawStdFrameWithCustomTileAndPalette(sWindowId, true, STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM);
   for (let i = 0; i < sItems.length; i++) {
