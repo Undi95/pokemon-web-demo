@@ -102,6 +102,7 @@ export {
   PLTT_SIZE_4BPP, PLTT_SIZE_8BPP, PLTT_SIZEOF,
   BG_TILE_H_FLIP, BG_TILE_V_FLIP,
   GET_TRUE_SPRITE_INDEX, ANIM_SPRITES_START,
+  WIN_RANGE,
 } from './decomp-helpers';
 
 // ─── Constants utilisées par intro-callbacks-auto sans être importées ─────────

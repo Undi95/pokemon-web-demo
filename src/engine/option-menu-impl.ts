@@ -467,6 +467,19 @@ function GetStringWidthDecomp(_fontId: number, str: unknown, _letterSpacing: num
   return GetStringWidth(text);
 }
 
+/** GetStringRightAlignXOffset — wrapper signature 1:1 décomp text.c :
+ *
+ *    u32 GetStringRightAlignXOffset(u8 fontId, const u8 *str, u16 totalWidth)
+ *
+ *  Notre foundation `GetStringRightAlignXOffset(text, rightX)` ne prend que
+ *  la string + la largeur cible. */
+function GetStringRightAlignXOffsetDecomp(_fontId: number, str: unknown, totalWidth: number): number {
+  const text = typeof str === 'string' ? str
+    : Array.isArray(str) ? String.fromCharCode(...(str as number[]).filter(c => c !== 0xFF))
+    : String(str ?? '');
+  return GetStringRightAlignXOffset(text, totalWidth);
+}
+
 // ─── Globals exposure (auto file uses globalThis scope) ─────────────────────
 
 const _globals: Record<string, unknown> = {
@@ -552,7 +565,7 @@ const _runtimeHelpers: Record<string, unknown> = {
   AnimateSprites, BuildOamBuffer, RunTasks,
   TransferPlttBuffer, ProcessSpriteCopyRequests, LoadOam,
   SetPokemonCryStereo,
-  GetStringRightAlignXOffset,
+  GetStringRightAlignXOffset: GetStringRightAlignXOffsetDecomp,
 };
 for (const [k, v] of Object.entries(_runtimeHelpers)) {
   if (typeof (globalThis as Record<string, unknown>)[k] === 'undefined') {
