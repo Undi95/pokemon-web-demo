@@ -481,6 +481,11 @@ export const SPRITE_ANIM_TABLES = {
   "sPokemonLogoShineAnimTable": {"anims":["sPokemonLogoShineAnimSequence"]},
   "sVersionBannerLeftAnimTable": {"anims":["sVersionBannerLeftAnimSequence"]},
   "sVersionBannerRightAnimTable": {"anims":["sVersionBannerRightAnimSequence"]},
+  // HOTFIX 2026-05-09 : extractor n'attrape pas ce designated initializer C
+  // (= [NUM_PRESS_START_FRAMES] = ...) → table missing → `StartSpriteAnim(spriteId, i)`
+  // pour i=0..4 lookup undefined → all 5 sprites show tile 0 → "APPUYEZ SUR START"
+  // tiled. Source 1:1 décomp src/title_screen.c:271-284.
+  "sStartCopyrightBannerAnimTable": {"anims":["sAnim_PressStart_0","sAnim_PressStart_1","sAnim_PressStart_2","sAnim_PressStart_3","sAnim_PressStart_4","sAnim_Copyright_0","sAnim_Copyright_1","sAnim_Copyright_2","sAnim_Copyright_3","sAnim_Copyright_4"]},
 } as const;
 
 export const SPRITE_AFFINE_ANIMS = {
