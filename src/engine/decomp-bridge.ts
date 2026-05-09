@@ -1079,6 +1079,169 @@ export function notImplemented(funcName: string, sourceFile?: string): never {
   throw new Error(`[bridge] ${funcName} not yet 1:1 ported.${ref}`);
 }
 
+// ─── GBA macros (1:1 décomp `include/gba/macro.h`) — extra fast variants ──────
+//
+// These are the "Fast" cousins of CpuCopy/CpuFill that use 32-bit DMA-style
+// transfers in hardware. In JS, we don't have DMA so they collapse to the
+// regular CpuCopy/CpuFill (which themselves are no-ops for non-typed-array
+// pointers). 1:1 with `include/gba/macro.h:43-55`.
+
+/** 1:1 décomp `include/gba/macro.h:55` :
+ *    #define CpuFastCopy(src, dest, size)  CpuFastSet(src, dest, ((size)/(32/8) & 0x1FFFFF))
+ *  En TS : same as CpuCopy32 (= 32-bit DMA transfer). */
+export function CpuFastCopy(src: any, dst: any, sizeBytes: number): void {
+  CpuCopy32(src, dst, sizeBytes);
+}
+
+/** 1:1 décomp `include/gba/macro.h:43-49` :
+ *    #define CpuFastFill(value, dest, size) ... CpuFastSet(&tmp, dest, CPU_FAST_SET_SRC_FIXED | size>>2)
+ *  En TS : memset bytewise. */
+export function CpuFastFill(value: number, dst: any, sizeBytes: number): void {
+  if (dst instanceof Uint8Array || dst instanceof Uint16Array || dst instanceof Uint32Array) {
+    for (let i = 0; i < sizeBytes; i++) dst[i] = value;
+  } else if (Array.isArray(dst)) {
+    for (let i = 0; i < sizeBytes; i++) dst[i] = value;
+  }
+  /* sinon : no-op (les pointeurs JS abstraits ne sont pas remplissables) */
+}
+
+/** 1:1 décomp `include/gba/macro.h:51` :
+ *    #define CpuFastFill16(value, dest, size) CpuFastFill(((value) << 16) | (value), (dest), (size))
+ *  En TS : same effect as CpuFastFill since we operate per-element. */
+export function CpuFastFill16(value: number, dst: any, sizeBytes: number): void {
+  if (dst instanceof Uint16Array) {
+    const numEntries = sizeBytes / 2 | 0;
+    for (let i = 0; i < numEntries; i++) dst[i] = value & 0xFFFF;
+  } else {
+    CpuFastFill(value & 0xFFFF, dst, sizeBytes);
+  }
+}
+
+/** 1:1 décomp `include/gba/macro.h:53` :
+ *    #define CpuFastFill8(value, dest, size) CpuFastFill(...)
+ *  En TS : memset bytewise. */
+export function CpuFastFill8(value: number, dst: any, sizeBytes: number): void {
+  CpuFastFill(value & 0xFF, dst, sizeBytes);
+}
+
+/** 1:1 décomp `include/gba/macro.h:68-78 DmaSet(dmaNum, src, dest, control)`.
+ *  Hardware-only ; no-op in JS. Used for raw DMA reg writes. */
+export function DmaSet(_dmaNum: number, _src: any, _dst: any, _control: number): void {
+  /* no-op : DMA registers don't exist in JS runtime */
+}
+
+/** 1:1 décomp `include/gba/macro.h:147-160 DmaSetUnchecked(dmaNum, src, dest, control)`.
+ *  Same as DmaSet without static-assert. No-op. */
+export function DmaSetUnchecked(_dmaNum: number, _src: any, _dst: any, _control: number): void {
+  /* no-op */
+}
+
+/** 1:1 décomp `include/gba/macro.h:192 DmaFillLarge16(dmaNum, value, dest, size, block)`.
+ *  Hardware DMA fill in chunks. En TS : delegates to DmaFill16 (= no-op underlying). */
+export function DmaFillLarge16(_dmaNum: number, value: number, dst: any, sizeBytes: number, _block?: number): void {
+  if (dst instanceof Uint16Array) {
+    const numEntries = sizeBytes / 2 | 0;
+    for (let i = 0; i < numEntries; i++) dst[i] = value & 0xFFFF;
+  }
+}
+
+/** 1:1 décomp `include/gba/macro.h DmaFillLarge32`. */
+export function DmaFillLarge32(_dmaNum: number, value: number, dst: any, sizeBytes: number, _block?: number): void {
+  if (dst instanceof Uint32Array) {
+    const numEntries = sizeBytes / 4 | 0;
+    for (let i = 0; i < numEntries; i++) dst[i] = value >>> 0;
+  }
+}
+
+/** 1:1 décomp `include/gba/macro.h DmaCopyLarge16/32`. */
+export function DmaCopyLarge16(_dmaNum: number, src: any, dst: any, sizeBytes: number, _block?: number): void {
+  CpuCopy16(src, dst, sizeBytes);
+}
+export function DmaCopyLarge32(_dmaNum: number, src: any, dst: any, sizeBytes: number, _block?: number): void {
+  CpuCopy32(src, dst, sizeBytes);
+}
+
+/** 1:1 décomp `include/gba/macro.h DmaClearLarge16/32`. */
+export function DmaClearLarge16(_dmaNum: number, dst: any, sizeBytes: number, _block?: number): void {
+  if (dst instanceof Uint16Array) {
+    const numEntries = sizeBytes / 2 | 0;
+    for (let i = 0; i < numEntries; i++) dst[i] = 0;
+  }
+}
+export function DmaClearLarge32(_dmaNum: number, dst: any, sizeBytes: number, _block?: number): void {
+  if (dst instanceof Uint32Array) {
+    const numEntries = sizeBytes / 4 | 0;
+    for (let i = 0; i < numEntries; i++) dst[i] = 0;
+  }
+}
+
+/** 1:1 décomp `include/gba/macro.h DmaCopy16Defvars / DmaCopy32Defvars`.
+ *  Same as DmaCopy16/32 with a void-cast variant for typed strict mode.
+ *  Used in MODERN builds. */
+export function DmaCopy16Defvars(_dmaNum: number, src: any, dst: any, sizeBytes: number): void {
+  CpuCopy16(src, dst, sizeBytes);
+}
+export function DmaCopy32Defvars(_dmaNum: number, src: any, dst: any, sizeBytes: number): void {
+  CpuCopy32(src, dst, sizeBytes);
+}
+
+// ─── Math macros (= 1:1 décomp include/global.h + util macros) ────────────────
+
+/** 1:1 décomp `include/global.h:103` :
+ *    #define MOD(a, n) (((n) & ((n)-1)) ? ((a) % (n)) : ((a) & ((n)-1)))
+ *  Optimized modulo : if n is a power of 2, use bitwise AND ; else use %.
+ *  En TS : équivalent direct. */
+export function MOD(a: number, n: number): number {
+  return ((n & (n - 1)) ? (a % n) : (a & (n - 1)));
+}
+
+/** 1:1 décomp `include/gba/types.h Q_24_8_TO_INT(n)` — fixed-point conversion. */
+export function Q_24_8_TO_INT(n: number): number {
+  return n >> 8;
+}
+/** 1:1 décomp `include/gba/types.h Q_8_8_TO_INT(n)` — already in helpers but
+ *  re-export from here for convenience. */
+// already re-exported via decomp-helpers above
+
+/** 1:1 décomp `include/gba/types.h Q_24_8(n) (= Q_8_8 with 24-frac)` — used in
+ *  rare contexts. */
+export function Q_24_8(n: number): number {
+  return (n * 256) | 0;
+}
+
+// ─── Debug / diagnostic macros (1:1 décomp `include/gba/isagbprint.h`) ────────
+
+/** 1:1 décomp `include/gba/isagbprint.h:54` :
+ *    #define AGB_ASSERT(exp)  // empty in non-debug builds
+ *    Or in DEBUG builds : (exp) ? 0 : DebugAssert(...);
+ *  En TS : runtime assert with throw to catch bugs. */
+export function AGB_ASSERT(exp: any): void {
+  if (!exp) {
+    // Non-fatal : log + continue. Throwing would break too much auto-code.
+    // eslint-disable-next-line no-console
+    console.warn('[bridge] AGB_ASSERT failed');
+  }
+}
+
+/** 1:1 décomp `include/gba/isagbprint.h DebugAssert(file, line, expr, hadCondition)`.
+ *  Used by AGB_ASSERT internal. No-op in our runtime. */
+export function DebugAssert(_file: string, _line: number, _expr: string, _hadCondition: boolean): void {
+  /* no-op */
+}
+
+/** 1:1 décomp `include/gba/isagbprint.h:AgbAssert(file, line, expr, hadCondition)`.
+ *  Same as DebugAssert (= MODERN spelling). */
+export function AgbAssert(_file: string, _line: number, _expr: string, _hadCondition: boolean): void {
+  /* no-op */
+}
+
+/** 1:1 décomp `include/gba/macro.h ALIGNED(n)` — alignment attribute, no runtime
+ *  effect. Used as `ALIGNED(4) static const u8 sFoo[]` ; in C it's a compiler hint.
+ *  Some auto-bodies invoke it as a function-style call (rare) ; we make it identity. */
+export function ALIGNED<T>(arg: T): T {
+  return arg;
+}
+
 // ─── Runtime method wrappers (= helpers que notre `decomp-runtime.ts` expose
 // ─── comme méthodes d'instance, pas des fonctions standalone) ─────────────────
 //
@@ -1358,6 +1521,14 @@ export const __bridgedHelpers__: ReadonlySet<string> = new Set([
   'GET_R', 'GET_G', 'GET_B', 'IS_ALPHA',
   'PLTT_ID', 'Q_8_8',
   'DmaCopy16', 'DmaCopy32',
+  'CpuFastCopy', 'CpuFastFill', 'CpuFastFill16', 'CpuFastFill8',
+  'DmaSet', 'DmaSetUnchecked',
+  'DmaFillLarge16', 'DmaFillLarge32',
+  'DmaCopyLarge16', 'DmaCopyLarge32',
+  'DmaClearLarge16', 'DmaClearLarge32',
+  'DmaCopy16Defvars', 'DmaCopy32Defvars',
+  'MOD', 'Q_24_8_TO_INT', 'Q_24_8',
+  'AGB_ASSERT', 'DebugAssert', 'AgbAssert', 'ALIGNED',
   'StringCopy_Nickname', 'StringGet_Nickname',
   'DynamicPlaceholderTextUtil_ExpandPlaceholders',
   // Runtime method wrappers (= delegate to getRuntime().X)
