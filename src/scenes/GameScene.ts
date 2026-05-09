@@ -426,15 +426,26 @@ export class GameScene extends Phaser.Scene {
     console.log(`[GameScene] CB2_${mode === 'continue' ? 'ContinueSavedGame' : 'NewGame'} detected → TestOverworldScene (${mode})`);
     const { gSaveBlock2Ptr } = await import('../engine/gba-menu-system');
     const { gameState } = await import('../engine/game-state');
-    const sb2 = gSaveBlock2Ptr as { playerName?: string; playerGender?: number };
-    if (sb2.playerName) gameState.playerName = sb2.playerName;
-    gameState.gender = sb2.playerGender === 1 ? 'FEMALE' : 'MALE';
-    if (mode === 'newgame') {
+    if (mode === 'continue') {
+      // ⚠️ CRITICAL : LOAD la save AVANT de toucher gameState. Sinon
+      // gameState est en état initial vide (= block1.flags={}, vars={}, etc.)
+      // et tout `gameState.save()` plus loin OVERWRITERAIT la save existante
+      // avec ce vide. Bug réel observé 2026-05-10 : counter passait de 23 à 1
+      // au CONTINUE → resume cinematique replay parce que vars/flags perdus.
+      const ok = gameState.load();
+      console.log(`[GameScene continue] gameState.load() → ${ok}, map=${JSON.stringify(gameState.map)}`);
+    } else {
+      // 'newgame' : Birch speech a déjà set name/gender dans gSaveBlock2Ptr
+      // via auto code. Sync vers gameState pour TestOverworldScene boot.
+      const sb2 = gSaveBlock2Ptr as { playerName?: string; playerGender?: number };
+      if (sb2.playerName) gameState.playerName = sb2.playerName;
+      gameState.gender = sb2.playerGender === 1 ? 'FEMALE' : 'MALE';
       // Force truck cinematic via decideBootMode default path.
       gameState.map = undefined;
+      // Save le new state (= name/gender de Birch). Pas de risque overwrite
+      // car c'est explicitement une nouvelle partie.
+      gameState.save();
     }
-    // 'continue' : gameState.map est déjà set (= chargé par LoadGameSave au app boot).
-    gameState.save();
     console.log(`[GameScene] synced : name='${gameState.playerName}' gender='${gameState.gender}' map=${JSON.stringify(gameState.map)}`);
 
     // 1:1 décomp Cleanup : attend la fin de la fade Birch (= screen passe BG
