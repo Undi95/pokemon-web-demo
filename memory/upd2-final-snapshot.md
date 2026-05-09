@@ -1,12 +1,12 @@
-# Branch upd2 — Final snapshot (overnight session)
+# Branch upd2 — Final snapshot (overnight session, iteration 6 update)
 
-Date : 2026-05-09 ~05h35
+Date : 2026-05-09 ~05h55
 
 ## TL;DR
 
-**29 commits sur upd2 cette nuit.** Build clean, game runs.
+**35 commits sur upd2 cette nuit.** Build clean, game runs.
 
-### Big wins
+### Big wins (cumulé jusqu'à iter6)
 
 | Item | Status |
 |---|---|
@@ -15,8 +15,37 @@ Date : 2026-05-09 ~05h35
 | ChooseStarter UI | ✅ visible 1:1 sprites + dialog + Pokemon front |
 | Wild battle | ✅ Birch tutorial fonctionnel |
 | Trainer battle | ✅ Rival via trainerbattle opcodes |
-| 8 new specials | ✅ WallClock, Diploma, etc. stubs |
+| Specials registered | ✅ **46** (= +34 cette nuit) |
+| Opcodes registered | ✅ **~167** (= +25 iter6, audit-driven) |
+| Audit tool | ✅ `scripts/audit-missing-opcodes.mjs` |
 | Memory docs | ✅ 5 files briefing user |
+
+### Iteration 6 highlights (commit `493b3cee`)
+
+- Created `scripts/audit-missing-opcodes.mjs` qui cross-référence les 470
+  fichiers `public/decomp/em/scripts/*.json` extraits avec les opcodes
+  registered dans `script-opcodes.ts`. Tally :
+  - Total opcodes registered : 142 (avant iter6) → 167 (après)
+  - Total opcodes utilisés dans scripts : 982
+  - Missing opcodes (pseudo-ops filtrés) : 790
+  - **Top missing avant iter6** : playsewithpan (1746x), waitforvisualfinish
+    (1474x — battle-only), loadspritegfx (1146x — battle), waitse (342x),
+    finditem (332x), register_matchcall (152x).
+  - **Battle-script opcodes** (attackstring, ppreduce, attackcanceler,
+    accuracycheck, etc.) belong to a SEPARATE dispatcher — not field-script.
+    Will be addressed in Phase 5.8 ou Phase 6.
+- Added 25 field-only opcode stubs (= safe `false` returns or simple
+  globals tracking). Most-impact :
+  - `playsewithpan` / `loopsewithpan` / `waitse` / `waitplaysewithpan` →
+    aliases to existing playse, stereo pan ignored
+  - `register_matchcall` → tracks `globalThis.__matchCallTrainers` Set
+  - `settrainerflag` / `cleartrainerflag` / `checktrainerflag` → tracks
+    `globalThis.__defeatedTrainers` Set
+  - `pause` → SetupNativeScript with frame countdown (1:1 décomp delay)
+  - `random` → `Math.random()` into VAR_RESULT
+  - `endall` / `end2` → proper StopScript()
+  - braille variants, messageautoscroll, finditem, pokemart, etc. → safe
+    skip stubs avec log de TODO
 
 ### Live test commands
 
@@ -42,9 +71,15 @@ await dev.battle.startTrainer('TRAINER_BRENDAN_ROUTE_103_TORCHIC')
 window.dev.bridge.report().then(console.log)
 ```
 
-## Commit log (= 29 commits)
+## Commit log (= 35 commits)
 
 ```
+493b3cee Phase 5.7+ iter6 — audit-driven field opcode stubs (+25 opcodes)
+27bc6013 Phase 5.7+ — 22 additional specials stubs (PC effects, Pokedex, Roamer, HM checks)
+23a84a41 Phase 5.7+ — 40+ misc opcode stubs (incrementgamestat, playmoncry, giveitem, buffer*, doweather...)
+21e32cc6 Phase 5.7+ — 6 audio opcodes (playbgm, savebgm, fadedefaultbgm, fadenewbgm, fadeoutbgm, fadeinbgm)
+d002806b Phase 5.7-fix — eagerly load trainer-battle-flow for dev.battle.startTrainer
+96c8a28f Memory — final snapshot updated avec Phase 5.5e+ (29 commits)
 f33be59d Phase 5.5e+ — additional specials stubs (WallClock, Diploma, etc.)
 fb272086 Phase 5.5d-bis — Pokemon front sprite spawn on confirm
 9123e777 Phase 5.7 — Trainer battle via battle-flow extension
@@ -142,6 +177,49 @@ memory/upd2-troubleshooting.md    # maintenance guide
 memory/upd2-final-snapshot.md     # this file
 ```
 
+## Iter6 audit findings (= roadmap data)
+
+Le top des opcodes manquants est dominé par les opcodes de battle scripts
+(= `attackstring`, `attackanimation`, `ppreduce`, etc.). Ces opcodes
+appartiennent à un **dispatcher séparé** (`battle_script_commands.c` dans
+le décomp). Notre `script-runtime.ts` actuel ne dispatche que les
+**field scripts** (`scrcmd.c`).
+
+Pour activer les battle scripts (= damage formula riche, animations
+attaques, status effects...), il faudra créer un nouveau module
+`battle-script-runtime.ts` qui parse + dispatche `gBattleScriptingCommandsTable[]`
+extracted from `data/battle_scripts_1.s`. C'est Phase 6.
+
+### Battle script opcodes manquants (top 30 par usage)
+
+```
+   270  attackstring        — display attack message
+   266  ppreduce            — reduce PP after move use
+   260  attackcanceler      — check protect/snatch/etc
+   224  if_equal            — battle-script branching
+   198  simple_palette_blend — battle anim
+   184  attackanimation     — play move animation
+   184  waitanimation       — wait for animation
+   132  if_hp_more_than     — branch on HP
+   132  accuracycheck       — accuracy roll
+   116  if_stat_level_more_than — stat stage check
+   116  setmoveeffect       — schedule secondary effect
+   ... etc.
+```
+
+### Field script opcodes restants (Phase 5.9)
+
+Quelques champ specifics encore manquants (mais peu utilisés) :
+
+```
+    96  fadetobg                — fade map → backdrop bg
+    72  pokemartlistend         — end of pokemart list
+    66  copyobjectxytoperm      — persist NPC pos
+    52  if_status2              — battle status check
+    34  copyobjectxytoperm      — alt name
+   ... etc.
+```
+
 ## Phase 5.8+ roadmap (= future work)
 
 ### Phase 5.8 (= polish battle)
@@ -195,6 +273,20 @@ Le jeu progresse vers la complétion :
 - ✅ ChooseStarter (= cette nuit)
 - ✅ Tutorial battle (= cette nuit)
 - ✅ Rival battle (= cette nuit)
+- ✅ Field opcode coverage (= 167/982 unique opcodes, audit visible)
+- 🔲 Battle script runtime (= Phase 6, separate dispatcher)
 - 🔲 Visit gyms (= future)
 - 🔲 Pokedex (= future)
 - 🔲 Hall of Fame (= future)
+
+## Workflow audit-driven (= reproducible pour itérations futures)
+
+```bash
+node scripts/audit-missing-opcodes.mjs | head -40
+```
+
+Output = top missing opcodes par usage. Ajoute un stub pour chacun
+dans `src/engine/script-opcodes.ts` (= 1:1 décomp `scrcmd.c` reference,
+fallback to no-op or simple state mutation). Le but : zero `[script-runtime]
+opcode '...' not implemented` warnings dans la console quand le user joue
+une zone normale.
