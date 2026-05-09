@@ -6,6 +6,7 @@
       "returnType": "bool32",
       "signature": "static bool32 IsPlayerStandingStill(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gPlayerAvatar.tileTransitionState == T_TILE_CENTER || gPlayerAvatar.tileTransitionState == T_NOT_MOVING)\n        return TRUE;\n    else\n        return FALSE;",
       "callsTo": [],
       "lineCount": 4
@@ -14,6 +15,16 @@
       "returnType": "u8",
       "signature": "static u8 GetUnionRoomPlayerGraphicsId(u32 gender, u32 id)",
       "paramsRaw": "u32 gender, u32 id",
+      "paramsList": [
+        {
+          "name": "gender",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "id",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "return sUnionRoomObjGfxIds[gender][id % NUM_UNION_ROOM_CLASSES];",
       "callsTo": [],
       "lineCount": 1
@@ -22,6 +33,24 @@
       "returnType": "void",
       "signature": "static void GetUnionRoomPlayerCoords(u32 leaderId, u32 memberId, s32 *x, s32 *y)",
       "paramsRaw": "u32 leaderId, u32 memberId, s32 *x, s32 *y",
+      "paramsList": [
+        {
+          "name": "leaderId",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "memberId",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "x",
+          "typeRaw": "s32 *"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s32 *"
+        }
+      ],
       "body": "*x = sUnionRoomPlayerCoords[leaderId][0] + sUnionRoomGroupOffsets[memberId][0] + MAP_OFFSET;\n    *y = sUnionRoomPlayerCoords[leaderId][1] + sUnionRoomGroupOffsets[memberId][1] + MAP_OFFSET;",
       "callsTo": [],
       "lineCount": 2
@@ -30,6 +59,24 @@
       "returnType": "bool32",
       "signature": "static bool32 IsUnionRoomPlayerAt(u32 leaderId, u32 memberId, s32 x, s32 y)",
       "paramsRaw": "u32 leaderId, u32 memberId, s32 x, s32 y",
+      "paramsList": [
+        {
+          "name": "leaderId",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "memberId",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "x",
+          "typeRaw": "s32"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s32"
+        }
+      ],
       "body": "if ((sUnionRoomPlayerCoords[leaderId][0] + sUnionRoomGroupOffsets[memberId][0] + MAP_OFFSET == x)\n    &&  (sUnionRoomPlayerCoords[leaderId][1] + sUnionRoomGroupOffsets[memberId][1] + MAP_OFFSET == y))\n        return TRUE;\n    else\n        return FALSE;",
       "callsTo": [],
       "lineCount": 5
@@ -38,6 +85,12 @@
       "returnType": "bool32",
       "signature": "static bool32 IsUnionRoomPlayerHidden(u32 player_idx)",
       "paramsRaw": "u32 player_idx",
+      "paramsList": [
+        {
+          "name": "player_idx",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "return FlagGet(FLAG_HIDE_UNION_ROOM_PLAYER_1 + player_idx);",
       "callsTo": [
         "FlagGet"
@@ -48,6 +101,12 @@
       "returnType": "void",
       "signature": "static void HideUnionRoomPlayer(u32 player_idx)",
       "paramsRaw": "u32 player_idx",
+      "paramsList": [
+        {
+          "name": "player_idx",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "FlagSet(FLAG_HIDE_UNION_ROOM_PLAYER_1 + player_idx);",
       "callsTo": [
         "FlagSet"
@@ -58,6 +117,12 @@
       "returnType": "void",
       "signature": "static void ShowUnionRoomPlayer(u32 player_idx)",
       "paramsRaw": "u32 player_idx",
+      "paramsList": [
+        {
+          "name": "player_idx",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "FlagClear(FLAG_HIDE_UNION_ROOM_PLAYER_1 + player_idx);",
       "callsTo": [
         "FlagClear"
@@ -68,6 +133,16 @@
       "returnType": "void",
       "signature": "static void SetUnionRoomPlayerGfx(u32 leaderId, u32 gfxId)",
       "paramsRaw": "u32 leaderId, u32 gfxId",
+      "paramsList": [
+        {
+          "name": "leaderId",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "gfxId",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "VarSet(VAR_OBJ_GFX_ID_0 + leaderId, gfxId);",
       "callsTo": [
         "VarSet"
@@ -78,6 +153,12 @@
       "returnType": "void",
       "signature": "static void CreateUnionRoomPlayerObjectEvent(u32 leaderId)",
       "paramsRaw": "u32 leaderId",
+      "paramsList": [
+        {
+          "name": "leaderId",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "TrySpawnObjectEvent(sUnionRoomLocalIds[leaderId], gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup);",
       "callsTo": [
         "TrySpawnObjectEvent"
@@ -88,6 +169,12 @@
       "returnType": "void",
       "signature": "static void RemoveUnionRoomPlayerObjectEvent(u32 leaderId)",
       "paramsRaw": "u32 leaderId",
+      "paramsList": [
+        {
+          "name": "leaderId",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "RemoveObjectEventByLocalIdAndMap(sUnionRoomLocalIds[leaderId], gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup);",
       "callsTo": [
         "RemoveObjectEventByLocalIdAndMap"
@@ -98,6 +185,16 @@
       "returnType": "bool32",
       "signature": "static bool32 SetUnionRoomPlayerEnterExitMovement(u32 leaderId, const u8 *movement)",
       "paramsRaw": "u32 leaderId, const u8 *movement",
+      "paramsList": [
+        {
+          "name": "leaderId",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "movement",
+          "typeRaw": "const u8 *"
+        }
+      ],
       "body": "u8 objectId;\n    struct ObjectEvent *object;\n    if (TryGetObjectEventIdByLocalIdAndMap(sUnionRoomLocalIds[leaderId], gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup, &objectId))\n        return FALSE;\n    object = &gObjectEvents[objectId];\n    if (ObjectEventIsMovementOverridden(object))\n        return FALSE;\n    if (ObjectEventSetHeldMovement(object, *movement))\n        return FALSE;\n    return TRUE;",
       "callsTo": [
         "ObjectEventIsMovementOverridden",
@@ -110,6 +207,12 @@
       "returnType": "bool32",
       "signature": "static bool32 TryReleaseUnionRoomPlayerObjectEvent(u32 leaderId)",
       "paramsRaw": "u32 leaderId",
+      "paramsList": [
+        {
+          "name": "leaderId",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "u8 objectId;\n    struct ObjectEvent *object;\n    if (TryGetObjectEventIdByLocalIdAndMap(sUnionRoomLocalIds[leaderId], gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup, &objectId))\n        return TRUE;\n\n    object = &gObjectEvents[objectId];\n    if (!ObjectEventClearHeldMovementIfFinished(object))\n        return FALSE;\n\n    if (!ArePlayerFieldControlsLocked())\n        UnfreezeObjectEvent(object);\n    else\n        FreezeObjectEvent(object);\n    return TRUE;",
       "callsTo": [
         "ArePlayerFieldControlsLocked",
@@ -124,6 +227,12 @@
       "returnType": "u8",
       "signature": "u8 InitUnionRoomPlayerObjects(struct UnionRoomObject *players)",
       "paramsRaw": "struct UnionRoomObject *players",
+      "paramsList": [
+        {
+          "name": "players",
+          "typeRaw": "struct UnionRoomObject *"
+        }
+      ],
       "body": "s32 i;\n\n    sUnionObjRefreshTimer = 0;\n    sUnionObjWork = players;\n    for (i = 0; i < MAX_UNION_ROOM_LEADERS; i++)\n    {\n        players[i].state = 0;\n        players[i].gfxId = 0;\n        players[i].animState = 0;\n        players[i].schedAnim = UNION_ROOM_SPAWN_NONE;\n    }\n    return CreateTask_AnimateUnionRoomPlayers();",
       "callsTo": [
         "CreateTask_AnimateUnionRoomPlayers"
@@ -134,6 +243,20 @@
       "returnType": "bool32",
       "signature": "static bool32 AnimateUnionRoomPlayerDespawn(s8 *state, u32 leaderId, struct UnionRoomObject *object)",
       "paramsRaw": "s8 *state, u32 leaderId, struct UnionRoomObject *object",
+      "paramsList": [
+        {
+          "name": "state",
+          "typeRaw": "s8 *"
+        },
+        {
+          "name": "leaderId",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "object",
+          "typeRaw": "struct UnionRoomObject *"
+        }
+      ],
       "body": "switch (*state)\n    {\n    case 0:\n        if (SetUnionRoomPlayerEnterExitMovement(leaderId, sMovement_UnionPlayerExit) == TRUE)\n        {\n            HideUnionRoomPlayer(leaderId);\n            (*state)++;\n        }\n        break;\n    case 1:\n        if (TryReleaseUnionRoomPlayerObjectEvent(leaderId))\n        {\n            RemoveUnionRoomPlayerObjectEvent(leaderId);\n            HideUnionRoomPlayer(leaderId);\n            *state = 0;\n            return TRUE;\n        }\n        break;\n    }\n    return FALSE;",
       "callsTo": [
         "HideUnionRoomPlayer",
@@ -147,6 +270,20 @@
       "returnType": "bool32",
       "signature": "static bool32 AnimateUnionRoomPlayerSpawn(s8 *state, u32 leaderId, struct UnionRoomObject *object)",
       "paramsRaw": "s8 *state, u32 leaderId, struct UnionRoomObject *object",
+      "paramsList": [
+        {
+          "name": "state",
+          "typeRaw": "s8 *"
+        },
+        {
+          "name": "leaderId",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "object",
+          "typeRaw": "struct UnionRoomObject *"
+        }
+      ],
       "body": "s16 x, y;\n\n    switch (*state)\n    {\n    case 0:\n        if (!IsPlayerStandingStill())\n            break;\n        PlayerGetDestCoords(&x, &y);\n        if (IsUnionRoomPlayerAt(leaderId, 0, x, y) == TRUE)\n            break;\n        player_get_pos_including_state_based_drift(&x, &y);\n        if (IsUnionRoomPlayerAt(leaderId, 0, x, y) == TRUE)\n            break;\n        SetUnionRoomPlayerGfx(leaderId, object->gfxId);\n        CreateUnionRoomPlayerObjectEvent(leaderId);\n        ShowUnionRoomPlayer(leaderId);\n        (*state)++;\n         \n    case 3:  \n        if (SetUnionRoomPlayerEnterExitMovement(leaderId, sMovement_UnionPlayerEnter) == TRUE)\n            (*state)++;\n        break;\n    case 2:\n        if (TryReleaseUnionRoomPlayerObjectEvent(leaderId))\n        {\n            *state = 0;\n            return TRUE;\n        }\n        break;\n    }\n    return FALSE;",
       "callsTo": [
         "CreateUnionRoomPlayerObjectEvent",
@@ -164,6 +301,20 @@
       "returnType": "bool32",
       "signature": "static bool32 SpawnGroupLeader(u32 leaderId, u32 gender, u32 id)",
       "paramsRaw": "u32 leaderId, u32 gender, u32 id",
+      "paramsList": [
+        {
+          "name": "leaderId",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "gender",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "id",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "struct UnionRoomObject *object = &sUnionObjWork[leaderId];\n    object->schedAnim = UNION_ROOM_SPAWN_IN;\n    object->gfxId = GetUnionRoomPlayerGraphicsId(gender, id);\n\n    if (object->state == 0)\n        return TRUE;\n    else\n        return FALSE;",
       "callsTo": [
         "GetUnionRoomPlayerGraphicsId"
@@ -174,6 +325,12 @@
       "returnType": "bool32",
       "signature": "static bool32 DespawnGroupLeader(u32 leaderId)",
       "paramsRaw": "u32 leaderId",
+      "paramsList": [
+        {
+          "name": "leaderId",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "struct UnionRoomObject *object = &sUnionObjWork[leaderId];\n    object->schedAnim = UNION_ROOM_SPAWN_OUT;\n\n    if (object->state == 1)\n        return TRUE;\n    else\n        return FALSE;",
       "callsTo": [],
       "lineCount": 7
@@ -182,6 +339,16 @@
       "returnType": "void",
       "signature": "static void AnimateUnionRoomPlayer(u32 leaderId, struct UnionRoomObject *object)",
       "paramsRaw": "u32 leaderId, struct UnionRoomObject *object",
+      "paramsList": [
+        {
+          "name": "leaderId",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "object",
+          "typeRaw": "struct UnionRoomObject *"
+        }
+      ],
       "body": "switch (object->state)\n    {\n    case 0:\n        if (object->schedAnim == UNION_ROOM_SPAWN_IN)\n        {\n            object->state = 2;\n            object->animState = 0;\n        }\n        else\n        {\n            break;\n        }\n         \n    case 2:\n        if (!IsUnionRoomPlayerInvisible(leaderId, 0) && object->schedAnim == UNION_ROOM_SPAWN_OUT)\n        {\n            object->state = 0;\n            object->animState = 0;\n            RemoveUnionRoomPlayerObjectEvent(leaderId);\n            HideUnionRoomPlayer(leaderId);\n        }\n        else if (AnimateUnionRoomPlayerSpawn(&object->animState, leaderId, object) == TRUE)\n        {\n            object->state = 1;\n        }\n        break;\n    case 1:\n         \n        if (object->schedAnim == UNION_ROOM_SPAWN_OUT)\n        {\n            object->state = 3;\n            object->animState = 0;\n        }\n        else\n        {\n            break;\n        }\n         \n    case 3:\n        if (AnimateUnionRoomPlayerDespawn(&object->animState, leaderId, object) == 1)\n            object->state = 0;\n        break;\n    }\n    object->schedAnim = UNION_ROOM_SPAWN_NONE;",
       "callsTo": [
         "AnimateUnionRoomPlayerDespawn",
@@ -196,6 +363,12 @@
       "returnType": "void",
       "signature": "static void Task_AnimateUnionRoomPlayers(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s32 i;\n    for (i = 0; i < MAX_UNION_ROOM_LEADERS; i++)\n        AnimateUnionRoomPlayer(i, &sUnionObjWork[i]);",
       "callsTo": [
         "AnimateUnionRoomPlayer"
@@ -206,6 +379,7 @@
       "returnType": "u8",
       "signature": "static u8 CreateTask_AnimateUnionRoomPlayers(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (FuncIsActiveTask(Task_AnimateUnionRoomPlayers) == TRUE)\n        return NUM_TASKS;\n    else\n        return CreateTask(Task_AnimateUnionRoomPlayers, 5);",
       "callsTo": [
         "CreateTask",
@@ -217,6 +391,7 @@
       "returnType": "void",
       "signature": "static void DestroyTask_AnimateUnionRoomPlayers(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 taskId = FindTaskIdByFunc(Task_AnimateUnionRoomPlayers);\n    if (taskId < NUM_TASKS)\n        DestroyTask(taskId);",
       "callsTo": [
         "DestroyTask",
@@ -228,6 +403,7 @@
       "returnType": "void",
       "signature": "void DestroyUnionRoomPlayerObjects(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s32 i;\n    for (i = 0; i < MAX_UNION_ROOM_LEADERS; i++)\n    {\n        if (!IsUnionRoomPlayerHidden(i))\n        {\n            RemoveUnionRoomPlayerObjectEvent(i);\n            HideUnionRoomPlayer(i);\n        }\n    }\n    sUnionObjWork = NULL;\n    DestroyTask_AnimateUnionRoomPlayers();",
       "callsTo": [
         "DestroyTask_AnimateUnionRoomPlayers",
@@ -241,6 +417,16 @@
       "returnType": "void",
       "signature": "void CreateUnionRoomPlayerSprites(u8 *spriteIds, s32 leaderId)",
       "paramsRaw": "u8 *spriteIds, s32 leaderId",
+      "paramsList": [
+        {
+          "name": "spriteIds",
+          "typeRaw": "u8 *"
+        },
+        {
+          "name": "leaderId",
+          "typeRaw": "s32"
+        }
+      ],
       "body": "s32 memberId;\n    for (memberId = 0; memberId < MAX_RFU_PLAYERS; memberId++)\n    {\n        s32 id = UR_PLAYER_SPRITE_ID(leaderId, memberId);\n        spriteIds[id] = CreateVirtualObject(OBJ_EVENT_GFX_MAN_4,\n                                           id - UR_SPRITE_START_ID,\n                                           sUnionRoomPlayerCoords[leaderId][0] + sUnionRoomGroupOffsets[memberId][0],\n                                           sUnionRoomPlayerCoords[leaderId][1] + sUnionRoomGroupOffsets[memberId][1],\n                                           3, 1);\n        SetVirtualObjectInvisibility(id - UR_SPRITE_START_ID, TRUE);\n    }",
       "callsTo": [
         "CreateVirtualObject",
@@ -253,6 +439,12 @@
       "returnType": "void",
       "signature": "void DestroyUnionRoomPlayerSprites(u8 *spriteIds)",
       "paramsRaw": "u8 *spriteIds",
+      "paramsList": [
+        {
+          "name": "spriteIds",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "s32 i;\n    for (i = 0; i < NUM_UNION_ROOM_SPRITES; i++)\n        DestroySprite(&gSprites[spriteIds[i]]);",
       "callsTo": [
         "DestroySprite"
@@ -263,6 +455,7 @@
       "returnType": "void",
       "signature": "void SetTilesAroundUnionRoomPlayersPassable(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s32 i, memberId, x, y;\n    for (i = 0; i < MAX_UNION_ROOM_LEADERS; i++)\n    {\n        for (memberId = 0; memberId < MAX_RFU_PLAYERS; memberId++)\n        {\n            GetUnionRoomPlayerCoords(i, memberId, &x, &y);\n            MapGridSetMetatileImpassabilityAt(x, y, FALSE);\n        }\n    }",
       "callsTo": [
         "GetUnionRoomPlayerCoords",
@@ -274,6 +467,20 @@
       "returnType": "u8",
       "signature": "static u8 GetNewFacingDirectionForUnionRoomPlayer(u32 memberId, u32 leaderId, struct RfuGameData *gameData)",
       "paramsRaw": "u32 memberId, u32 leaderId, struct RfuGameData *gameData",
+      "paramsList": [
+        {
+          "name": "memberId",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "leaderId",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "gameData",
+          "typeRaw": "struct RfuGameData *"
+        }
+      ],
       "body": "if (memberId)  \n        return sMemberFacingDirections[memberId];\n    else if (gameData->activity == (ACTIVITY_CHAT | IN_UNION_ROOM))\n        return DIR_SOUTH;\n    else\n        return DIR_EAST;",
       "callsTo": [],
       "lineCount": 6
@@ -282,6 +489,16 @@
       "returnType": "bool32",
       "signature": "static bool32 IsUnionRoomPlayerInvisible(u32 leaderId, u32 memberId)",
       "paramsRaw": "u32 leaderId, u32 memberId",
+      "paramsList": [
+        {
+          "name": "leaderId",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "memberId",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "return IsVirtualObjectInvisible(UR_PLAYER_SPRITE_ID(leaderId, memberId) - UR_SPRITE_START_ID);",
       "callsTo": [
         "IsVirtualObjectInvisible",
@@ -293,6 +510,24 @@
       "returnType": "void",
       "signature": "static void SpawnGroupMember(u32 leaderId, u32 memberId, u8 graphicsId, struct RfuGameData *gameData)",
       "paramsRaw": "u32 leaderId, u32 memberId, u8 graphicsId, struct RfuGameData *gameData",
+      "paramsList": [
+        {
+          "name": "leaderId",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "memberId",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "graphicsId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "gameData",
+          "typeRaw": "struct RfuGameData *"
+        }
+      ],
       "body": "s32 x, y;\n    s32 id = UR_PLAYER_SPRITE_ID(leaderId, memberId);\n    if (IsUnionRoomPlayerInvisible(leaderId, memberId) == TRUE)\n    {\n        SetVirtualObjectInvisibility(id - UR_SPRITE_START_ID, FALSE);\n        SetVirtualObjectSpriteAnim(id - UR_SPRITE_START_ID, UNION_ROOM_SPAWN_IN);\n    }\n    SetVirtualObjectGraphics(id - UR_SPRITE_START_ID, graphicsId);\n    SetUnionRoomObjectFacingDirection(memberId, leaderId, GetNewFacingDirectionForUnionRoomPlayer(memberId, leaderId, gameData));\n    GetUnionRoomPlayerCoords(leaderId, memberId, &x, &y);\n    MapGridSetMetatileImpassabilityAt(x, y, TRUE);",
       "callsTo": [
         "GetNewFacingDirectionForUnionRoomPlayer",
@@ -311,6 +546,16 @@
       "returnType": "void",
       "signature": "static void DespawnGroupMember(u32 leaderId, u32 memberId)",
       "paramsRaw": "u32 leaderId, u32 memberId",
+      "paramsList": [
+        {
+          "name": "leaderId",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "memberId",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "s32 x, y;\n    SetVirtualObjectSpriteAnim(UR_PLAYER_SPRITE_ID(leaderId, memberId) - UR_SPRITE_START_ID, UNION_ROOM_SPAWN_OUT);\n    GetUnionRoomPlayerCoords(leaderId, memberId, &x, &y);\n    MapGridSetMetatileImpassabilityAt(x, y, FALSE);",
       "callsTo": [
         "GetUnionRoomPlayerCoords",
@@ -324,6 +569,16 @@
       "returnType": "void",
       "signature": "static void AssembleGroup(u32 leaderId, struct RfuGameData *gameData)",
       "paramsRaw": "u32 leaderId, struct RfuGameData *gameData",
+      "paramsList": [
+        {
+          "name": "leaderId",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "gameData",
+          "typeRaw": "struct RfuGameData *"
+        }
+      ],
       "body": "s16 x, y, x2, y2;\n    s32 i;\n\n    PlayerGetDestCoords(&x, &y);\n    player_get_pos_including_state_based_drift(&x2, &y2);\n    if (IsVirtualObjectInvisible(UR_PLAYER_SPRITE_ID(leaderId, 0) - UR_SPRITE_START_ID) == TRUE)\n    {\n        if (IsUnionRoomPlayerAt(leaderId, 0, x, y) == TRUE || IsUnionRoomPlayerAt(leaderId, 0, x2, y2) == TRUE)\n            return;\n        SpawnGroupMember(leaderId, 0, GetUnionRoomPlayerGraphicsId(gameData->playerGender, gameData->compatibility.playerTrainerId[0]), gameData);\n    }\n    for (i = 1; i < MAX_RFU_PLAYERS; i++)\n    {\n        if (gameData->partnerInfo[i - 1] == 0)\n        {\n            DespawnGroupMember(leaderId, i);\n        }\n        else if (IsUnionRoomPlayerAt(leaderId, i, x, y) == FALSE && IsUnionRoomPlayerAt(leaderId, i, x2, y2) == FALSE)\n        {\n            SpawnGroupMember(leaderId, i, GetUnionRoomPlayerGraphicsId((gameData->partnerInfo[i - 1] >> PINFO_GENDER_SHIFT) & 1,\n                                                                        gameData->partnerInfo[i - 1] & PINFO_TID_MASK),\n                                                                        gameData);\n        }\n    }",
       "callsTo": [
         "DespawnGroupMember",
@@ -340,6 +595,16 @@
       "returnType": "void",
       "signature": "static void SpawnGroupLeaderAndMembers(u32 leaderId, struct RfuGameData *gameData)",
       "paramsRaw": "u32 leaderId, struct RfuGameData *gameData",
+      "paramsList": [
+        {
+          "name": "leaderId",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "gameData",
+          "typeRaw": "struct RfuGameData *"
+        }
+      ],
       "body": "u32 i;\n    switch (gameData->activity)\n    {\n    case ACTIVITY_NONE | IN_UNION_ROOM:\n    case ACTIVITY_PLYRTALK | IN_UNION_ROOM:\n        SpawnGroupLeader(leaderId, gameData->playerGender, gameData->compatibility.playerTrainerId[0]);\n        for (i = 0; i < MAX_RFU_PLAYERS; i++)\n            DespawnGroupMember(leaderId, i);\n        break;\n    case ACTIVITY_BATTLE_SINGLE | IN_UNION_ROOM:\n    case ACTIVITY_TRADE | IN_UNION_ROOM:\n    case ACTIVITY_CHAT | IN_UNION_ROOM:\n    case ACTIVITY_CARD | IN_UNION_ROOM:\n    case ACTIVITY_ACCEPT | IN_UNION_ROOM:\n    case ACTIVITY_DECLINE | IN_UNION_ROOM:\n    case ACTIVITY_NPCTALK | IN_UNION_ROOM:\n        DespawnGroupLeader(leaderId);\n        AssembleGroup(leaderId, gameData);\n        break;\n    }",
       "callsTo": [
         "AssembleGroup",
@@ -353,6 +618,16 @@
       "returnType": "void",
       "signature": "static void DespawnGroupLeaderAndMembers(u32 leaderId, struct RfuGameData *gameData)",
       "paramsRaw": "u32 leaderId, struct RfuGameData *gameData",
+      "paramsList": [
+        {
+          "name": "leaderId",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "gameData",
+          "typeRaw": "struct RfuGameData *"
+        }
+      ],
       "body": "s32 i;\n    DespawnGroupLeader(leaderId);\n    for (i = 0; i < MAX_RFU_PLAYERS; i++)\n        DespawnGroupMember(leaderId, i);",
       "callsTo": [
         "DespawnGroupLeader",
@@ -364,6 +639,12 @@
       "returnType": "void",
       "signature": "static void UpdateUnionRoomPlayerSprites(struct WirelessLink_URoom *uroom)",
       "paramsRaw": "struct WirelessLink_URoom *uroom",
+      "paramsList": [
+        {
+          "name": "uroom",
+          "typeRaw": "struct WirelessLink_URoom *"
+        }
+      ],
       "body": "s32 i;\n    struct RfuPlayer *leaders;\n    sUnionObjRefreshTimer = 0;\n    for (i = 0, leaders = uroom->playerList->players; i < MAX_UNION_ROOM_LEADERS; i++)\n    {\n        if (leaders[i].groupScheduledAnim == UNION_ROOM_SPAWN_IN)\n            SpawnGroupLeaderAndMembers(i, &leaders[i].rfu.data);\n        else if (leaders[i].groupScheduledAnim == UNION_ROOM_SPAWN_OUT)\n            DespawnGroupLeaderAndMembers(i, &leaders[i].rfu.data);\n    }",
       "callsTo": [
         "DespawnGroupLeaderAndMembers",
@@ -375,6 +656,12 @@
       "returnType": "void",
       "signature": "void ScheduleUnionRoomPlayerRefresh(struct WirelessLink_URoom *uroom)",
       "paramsRaw": "struct WirelessLink_URoom *uroom",
+      "paramsList": [
+        {
+          "name": "uroom",
+          "typeRaw": "struct WirelessLink_URoom *"
+        }
+      ],
       "body": "sUnionObjRefreshTimer = 300;",
       "callsTo": [],
       "lineCount": 1
@@ -383,6 +670,12 @@
       "returnType": "void",
       "signature": "void HandleUnionRoomPlayerRefresh(struct WirelessLink_URoom *uroom)",
       "paramsRaw": "struct WirelessLink_URoom *uroom",
+      "paramsList": [
+        {
+          "name": "uroom",
+          "typeRaw": "struct WirelessLink_URoom *"
+        }
+      ],
       "body": "if (++sUnionObjRefreshTimer > 300)\n        UpdateUnionRoomPlayerSprites(uroom);",
       "callsTo": [
         "UpdateUnionRoomPlayerSprites"
@@ -393,6 +686,24 @@
       "returnType": "bool32",
       "signature": "bool32 TryInteractWithUnionRoomMember(struct RfuPlayerList *list, s16 *memberIdPtr, s16 *leaderIdPtr, u8 *spriteIds)",
       "paramsRaw": "struct RfuPlayerList *list, s16 *memberIdPtr, s16 *leaderIdPtr, u8 *spriteIds",
+      "paramsList": [
+        {
+          "name": "list",
+          "typeRaw": "struct RfuPlayerList *"
+        },
+        {
+          "name": "memberIdPtr",
+          "typeRaw": "s16 *"
+        },
+        {
+          "name": "leaderIdPtr",
+          "typeRaw": "s16 *"
+        },
+        {
+          "name": "spriteIds",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "s16 x, y;\n    s32 i, memberId;\n    struct RfuPlayer *leaders;\n    if (!IsPlayerStandingStill())\n        return FALSE;\n\n    GetXYCoordsOneStepInFrontOfPlayer(&x, &y);\n    for (i = 0, leaders = list->players; i < MAX_UNION_ROOM_LEADERS; i++)\n    {\n        for (memberId = 0; memberId < MAX_RFU_PLAYERS; memberId++)\n        {\n            s32 id = UR_PLAYER_SPRITE_ID(i, memberId);\n\n             \n            if (x != sUnionRoomPlayerCoords[i][0] + sUnionRoomGroupOffsets[memberId][0] + 7)\n                continue;\n            if (y != sUnionRoomPlayerCoords[i][1] + sUnionRoomGroupOffsets[memberId][1] + 7)\n                continue;\n\n             \n            if (IsVirtualObjectInvisible(id - UR_SPRITE_START_ID))\n                continue;\n            if (IsVirtualObjectAnimating(id - UR_SPRITE_START_ID))\n                continue;\n            if (leaders[i].groupScheduledAnim != UNION_ROOM_SPAWN_IN)\n                continue;\n\n             \n            SetUnionRoomObjectFacingDirection(memberId, i, sOppositeFacingDirection[GetPlayerFacingDirection()]);\n            *memberIdPtr = memberId;\n            *leaderIdPtr = i;\n            return TRUE;\n        }\n    }\n    return FALSE;",
       "callsTo": [
         "GetPlayerFacingDirection",
@@ -409,6 +720,20 @@
       "returnType": "void",
       "signature": "static void SetUnionRoomObjectFacingDirection(s32 memberId, s32 leaderId, u8 newDirection)",
       "paramsRaw": "s32 memberId, s32 leaderId, u8 newDirection",
+      "paramsList": [
+        {
+          "name": "memberId",
+          "typeRaw": "s32"
+        },
+        {
+          "name": "leaderId",
+          "typeRaw": "s32"
+        },
+        {
+          "name": "newDirection",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "TurnVirtualObject(MAX_RFU_PLAYERS * leaderId - UR_SPRITE_START_ID + memberId, newDirection);",
       "callsTo": [
         "TurnVirtualObject"
@@ -419,6 +744,20 @@
       "returnType": "void",
       "signature": "void UpdateUnionRoomMemberFacing(u32 memberId, u32 leaderId, struct RfuPlayerList *list)",
       "paramsRaw": "u32 memberId, u32 leaderId, struct RfuPlayerList *list",
+      "paramsList": [
+        {
+          "name": "memberId",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "leaderId",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "list",
+          "typeRaw": "struct RfuPlayerList *"
+        }
+      ],
       "body": "return SetUnionRoomObjectFacingDirection(memberId, leaderId, GetNewFacingDirectionForUnionRoomPlayer(memberId, leaderId, &list->players[leaderId].rfu.data));",
       "callsTo": [
         "GetNewFacingDirectionForUnionRoomPlayer",

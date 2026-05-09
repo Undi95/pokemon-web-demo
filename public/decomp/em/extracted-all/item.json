@@ -6,6 +6,12 @@
       "returnType": "u16",
       "signature": "static u16 GetBagItemQuantity(u16 *quantity)",
       "paramsRaw": "u16 *quantity",
+      "paramsList": [
+        {
+          "name": "quantity",
+          "typeRaw": "u16 *"
+        }
+      ],
       "body": "return gSaveBlock2Ptr->encryptionKey ^ *quantity;",
       "callsTo": [],
       "lineCount": 1
@@ -14,6 +20,16 @@
       "returnType": "void",
       "signature": "static void SetBagItemQuantity(u16 *quantity, u16 newValue)",
       "paramsRaw": "u16 *quantity, u16 newValue",
+      "paramsList": [
+        {
+          "name": "quantity",
+          "typeRaw": "u16 *"
+        },
+        {
+          "name": "newValue",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "*quantity =  newValue ^ gSaveBlock2Ptr->encryptionKey;",
       "callsTo": [],
       "lineCount": 1
@@ -22,6 +38,12 @@
       "returnType": "u16",
       "signature": "static u16 GetPCItemQuantity(u16 *quantity)",
       "paramsRaw": "u16 *quantity",
+      "paramsList": [
+        {
+          "name": "quantity",
+          "typeRaw": "u16 *"
+        }
+      ],
       "body": "return *quantity;",
       "callsTo": [],
       "lineCount": 1
@@ -30,6 +52,16 @@
       "returnType": "void",
       "signature": "static void SetPCItemQuantity(u16 *quantity, u16 newValue)",
       "paramsRaw": "u16 *quantity, u16 newValue",
+      "paramsList": [
+        {
+          "name": "quantity",
+          "typeRaw": "u16 *"
+        },
+        {
+          "name": "newValue",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "*quantity = newValue;",
       "callsTo": [],
       "lineCount": 1
@@ -38,6 +70,12 @@
       "returnType": "void",
       "signature": "void ApplyNewEncryptionKeyToBagItems(u32 newKey)",
       "paramsRaw": "u32 newKey",
+      "paramsList": [
+        {
+          "name": "newKey",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "u32 pocket, item;\n    for (pocket = 0; pocket < POCKETS_COUNT; pocket++)\n    {\n        for (item = 0; item < gBagPockets[pocket].capacity; item++)\n            ApplyNewEncryptionKeyToHword(&(gBagPockets[pocket].itemSlots[item].quantity), newKey);\n    }",
       "callsTo": [
         "ApplyNewEncryptionKeyToHword"
@@ -48,6 +86,12 @@
       "returnType": "void",
       "signature": "void ApplyNewEncryptionKeyToBagItems_(u32 newKey)",
       "paramsRaw": "u32 newKey",
+      "paramsList": [
+        {
+          "name": "newKey",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "ApplyNewEncryptionKeyToBagItems(newKey);",
       "callsTo": [
         "ApplyNewEncryptionKeyToBagItems"
@@ -58,6 +102,7 @@
       "returnType": "void",
       "signature": "void SetBagItemsPointers(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gBagPockets[ITEMS_POCKET].itemSlots = gSaveBlock1Ptr->bagPocket_Items;\n    gBagPockets[ITEMS_POCKET].capacity = BAG_ITEMS_COUNT;\n\n    gBagPockets[KEYITEMS_POCKET].itemSlots = gSaveBlock1Ptr->bagPocket_KeyItems;\n    gBagPockets[KEYITEMS_POCKET].capacity = BAG_KEYITEMS_COUNT;\n\n    gBagPockets[BALLS_POCKET].itemSlots = gSaveBlock1Ptr->bagPocket_PokeBalls;\n    gBagPockets[BALLS_POCKET].capacity = BAG_POKEBALLS_COUNT;\n\n    gBagPockets[TMHM_POCKET].itemSlots = gSaveBlock1Ptr->bagPocket_TMHM;\n    gBagPockets[TMHM_POCKET].capacity = BAG_TMHM_COUNT;\n\n    gBagPockets[BERRIES_POCKET].itemSlots = gSaveBlock1Ptr->bagPocket_Berries;\n    gBagPockets[BERRIES_POCKET].capacity = BAG_BERRIES_COUNT;",
       "callsTo": [],
       "lineCount": 14
@@ -66,6 +111,16 @@
       "returnType": "void",
       "signature": "void CopyItemName(u16 itemId, u8 *dst)",
       "paramsRaw": "u16 itemId, u8 *dst",
+      "paramsList": [
+        {
+          "name": "itemId",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "dst",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "StringCopy(dst, GetItemName(itemId));",
       "callsTo": [
         "GetItemName",
@@ -77,6 +132,20 @@
       "returnType": "void",
       "signature": "void CopyItemNameHandlePlural(u16 itemId, u8 *dst, u32 quantity)",
       "paramsRaw": "u16 itemId, u8 *dst, u32 quantity",
+      "paramsList": [
+        {
+          "name": "itemId",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "dst",
+          "typeRaw": "u8 *"
+        },
+        {
+          "name": "quantity",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "if (itemId == ITEM_POKE_BALL)\n    {\n        if (quantity < 2)\n            StringCopy(dst, GetItemName(ITEM_POKE_BALL));\n        else\n            StringCopy(dst, gText_PokeBalls);\n    }\n    else\n    {\n        if (itemId >= FIRST_BERRY_INDEX && itemId <= LAST_BERRY_INDEX)\n            GetBerryCountString(dst, gBerries[itemId - FIRST_BERRY_INDEX].name, quantity);\n        else\n            StringCopy(dst, GetItemName(itemId));\n    }",
       "callsTo": [
         "GetBerryCountString",
@@ -89,6 +158,20 @@
       "returnType": "void",
       "signature": "void GetBerryCountString(u8 *dst, const u8 *berryName, u32 quantity)",
       "paramsRaw": "u8 *dst, const u8 *berryName, u32 quantity",
+      "paramsList": [
+        {
+          "name": "dst",
+          "typeRaw": "u8 *"
+        },
+        {
+          "name": "berryName",
+          "typeRaw": "const u8 *"
+        },
+        {
+          "name": "quantity",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "const u8 *berryString;\n    u8 *txtPtr;\n\n    if (quantity < 2)\n        berryString = gText_Berry;\n    else\n        berryString = gText_Berries;\n\n    txtPtr = StringCopy(dst, berryString);\n    *txtPtr = CHAR_SPACE;\n    StringCopy(txtPtr + 1, berryName);",
       "callsTo": [
         "StringCopy"
@@ -99,6 +182,12 @@
       "returnType": "bool8",
       "signature": "bool8 IsBagPocketNonEmpty(u8 pocket)",
       "paramsRaw": "u8 pocket",
+      "paramsList": [
+        {
+          "name": "pocket",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 i;\n\n    for (i = 0; i < gBagPockets[pocket - 1].capacity; i++)\n    {\n        if (gBagPockets[pocket - 1].itemSlots[i].itemId != 0)\n            return TRUE;\n    }\n    return FALSE;",
       "callsTo": [],
       "lineCount": 8
@@ -107,6 +196,16 @@
       "returnType": "bool8",
       "signature": "bool8 CheckBagHasItem(u16 itemId, u16 count)",
       "paramsRaw": "u16 itemId, u16 count",
+      "paramsList": [
+        {
+          "name": "itemId",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "count",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "u8 i;\n    u8 pocket;\n\n    if (GetItemPocket(itemId) == 0)\n        return FALSE;\n    if (CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE || FlagGet(FLAG_STORING_ITEMS_IN_PYRAMID_BAG) == TRUE)\n        return CheckPyramidBagHasItem(itemId, count);\n    pocket = GetItemPocket(itemId) - 1;\n     \n    for (i = 0; i < gBagPockets[pocket].capacity; i++)\n    {\n        if (gBagPockets[pocket].itemSlots[i].itemId == itemId)\n        {\n            u16 quantity;\n             \n            quantity = GetBagItemQuantity(&gBagPockets[pocket].itemSlots[i].quantity);\n            if (quantity >= count)\n                return TRUE;\n            count -= quantity;\n             \n            if (count == 0)\n                return TRUE;\n        }\n    }\n    return FALSE;",
       "callsTo": [
         "CheckPyramidBagHasItem",
@@ -121,6 +220,7 @@
       "returnType": "bool8",
       "signature": "bool8 HasAtLeastOneBerry(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 i;\n\n    for (i = FIRST_BERRY_INDEX; i < ITEM_BRIGHT_POWDER; i++)\n    {\n        if (CheckBagHasItem(i, 1) == TRUE)\n        {\n            gSpecialVar_Result = TRUE;\n            return TRUE;\n        }\n    }\n    gSpecialVar_Result = FALSE;\n    return FALSE;",
       "callsTo": [
         "CheckBagHasItem"
@@ -131,6 +231,16 @@
       "returnType": "bool8",
       "signature": "bool8 CheckBagHasSpace(u16 itemId, u16 count)",
       "paramsRaw": "u16 itemId, u16 count",
+      "paramsList": [
+        {
+          "name": "itemId",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "count",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "u8 i;\n    u8 pocket;\n    u16 slotCapacity;\n    u16 ownedCount;\n\n    if (GetItemPocket(itemId) == POCKET_NONE)\n        return FALSE;\n\n    if (CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE || FlagGet(FLAG_STORING_ITEMS_IN_PYRAMID_BAG) == TRUE)\n    {\n        return CheckPyramidBagHasSpace(itemId, count);\n    }\n\n    pocket = GetItemPocket(itemId) - 1;\n    if (pocket != BERRIES_POCKET)\n        slotCapacity = MAX_BAG_ITEM_CAPACITY;\n    else\n        slotCapacity = MAX_BERRY_CAPACITY;\n\n     \n    for (i = 0; i < gBagPockets[pocket].capacity; i++)\n    {\n        if (gBagPockets[pocket].itemSlots[i].itemId == itemId)\n        {\n            ownedCount = GetBagItemQuantity(&gBagPockets[pocket].itemSlots[i].quantity);\n            if (ownedCount + count <= slotCapacity)\n                return TRUE;\n            if (pocket == TMHM_POCKET || pocket == BERRIES_POCKET)\n                return FALSE;\n            count -= (slotCapacity - ownedCount);\n            if (count == 0)\n                break;  \n        }\n    }\n\n     \n    if (count > 0)\n    {\n        for (i = 0; i < gBagPockets[pocket].capacity; i++)\n        {\n            if (gBagPockets[pocket].itemSlots[i].itemId == 0)\n            {\n                if (count > slotCapacity)\n                {\n                    if (pocket == TMHM_POCKET || pocket == BERRIES_POCKET)\n                        return FALSE;\n                    count -= slotCapacity;\n                }\n                else\n                {\n                    count = 0;  \n                    break;\n                }\n            }\n        }\n        if (count > 0)\n            return FALSE;  \n    }\n\n    return TRUE;",
       "callsTo": [
         "CheckPyramidBagHasSpace",
@@ -145,6 +255,16 @@
       "returnType": "bool8",
       "signature": "bool8 AddBagItem(u16 itemId, u16 count)",
       "paramsRaw": "u16 itemId, u16 count",
+      "paramsList": [
+        {
+          "name": "itemId",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "count",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "u8 i;\n\n    if (GetItemPocket(itemId) == POCKET_NONE)\n        return FALSE;\n\n     \n    if (CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE || FlagGet(FLAG_STORING_ITEMS_IN_PYRAMID_BAG) == TRUE)\n    {\n        return AddPyramidBagItem(itemId, count);\n    }\n    else\n    {\n        struct BagPocket *itemPocket;\n        struct ItemSlot *newItems;\n        u16 slotCapacity;\n        u16 ownedCount;\n        u8 pocket = GetItemPocket(itemId) - 1;\n\n        itemPocket = &gBagPockets[pocket];\n        newItems = AllocZeroed(itemPocket->capacity * sizeof(struct ItemSlot));\n        memcpy(newItems, itemPocket->itemSlots, itemPocket->capacity * sizeof(struct ItemSlot));\n\n        if (pocket != BERRIES_POCKET)\n            slotCapacity = MAX_BAG_ITEM_CAPACITY;\n        else\n            slotCapacity = MAX_BERRY_CAPACITY;\n\n        for (i = 0; i < itemPocket->capacity; i++)\n        {\n            if (newItems[i].itemId == itemId)\n            {\n                ownedCount = GetBagItemQuantity(&newItems[i].quantity);\n                 \n                if (ownedCount + count <= slotCapacity)\n                {\n                     \n                    SetBagItemQuantity(&newItems[i].quantity, ownedCount + count);\n                    memcpy(itemPocket->itemSlots, newItems, itemPocket->capacity * sizeof(struct ItemSlot));\n                    Free(newItems);\n                    return TRUE;\n                }\n                else\n                {\n                     \n                    if (pocket == TMHM_POCKET || pocket == BERRIES_POCKET)\n                    {\n                        Free(newItems);\n                        return FALSE;\n                    }\n                    else\n                    {\n                        count -= slotCapacity - ownedCount;\n                        SetBagItemQuantity(&newItems[i].quantity, slotCapacity);\n                         \n                        if (count == 0)\n                        {\n                            break;\n                        }\n                    }\n                }\n            }\n        }\n\n         \n        if (count > 0)\n        {\n             \n            for (i = 0; i < itemPocket->capacity; i++)\n            {\n                if (newItems[i].itemId == ITEM_NONE)\n                {\n                    newItems[i].itemId = itemId;\n                    if (count > slotCapacity)\n                    {\n                         \n                        if (pocket == TMHM_POCKET || pocket == BERRIES_POCKET)\n                        {\n                            Free(newItems);\n                            return FALSE;\n                        }\n                        count -= slotCapacity;\n                        SetBagItemQuantity(&newItems[i].quantity, slotCapacity);\n                    }\n                    else\n                    {\n                         \n                        SetBagItemQuantity(&newItems[i].quantity, count);\n                        count = 0;\n                        break;\n                    }\n                }\n            }\n\n            if (count > 0)\n            {\n                Free(newItems);\n                return FALSE;\n            }\n        }\n        memcpy(itemPocket->itemSlots, newItems, itemPocket->capacity * sizeof(struct ItemSlot));\n        Free(newItems);\n        return TRUE;\n    }",
       "callsTo": [
         "AddPyramidBagItem",
@@ -162,6 +282,16 @@
       "returnType": "bool8",
       "signature": "bool8 RemoveBagItem(u16 itemId, u16 count)",
       "paramsRaw": "u16 itemId, u16 count",
+      "paramsList": [
+        {
+          "name": "itemId",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "count",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "u8 i;\n    u16 totalQuantity = 0;\n\n    if (GetItemPocket(itemId) == POCKET_NONE || itemId == ITEM_NONE)\n        return FALSE;\n\n     \n    if (CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE || FlagGet(FLAG_STORING_ITEMS_IN_PYRAMID_BAG) == TRUE)\n    {\n        return RemovePyramidBagItem(itemId, count);\n    }\n    else\n    {\n        u8 pocket;\n        u8 var;\n        u16 ownedCount;\n        struct BagPocket *itemPocket;\n\n        pocket = GetItemPocket(itemId) - 1;\n        itemPocket = &gBagPockets[pocket];\n\n        for (i = 0; i < itemPocket->capacity; i++)\n        {\n            if (itemPocket->itemSlots[i].itemId == itemId)\n                totalQuantity += GetBagItemQuantity(&itemPocket->itemSlots[i].quantity);\n        }\n\n        if (totalQuantity < count)\n            return FALSE;    \n\n        if (CurMapIsSecretBase() == TRUE)\n        {\n            VarSet(VAR_SECRET_BASE_LOW_TV_FLAGS, VarGet(VAR_SECRET_BASE_LOW_TV_FLAGS) | SECRET_BASE_USED_BAG);\n            VarSet(VAR_SECRET_BASE_LAST_ITEM_USED, itemId);\n        }\n\n        var = GetItemListPosition(pocket);\n        if (itemPocket->capacity > var\n         && itemPocket->itemSlots[var].itemId == itemId)\n        {\n            ownedCount = GetBagItemQuantity(&itemPocket->itemSlots[var].quantity);\n            if (ownedCount >= count)\n            {\n                SetBagItemQuantity(&itemPocket->itemSlots[var].quantity, ownedCount - count);\n                count = 0;\n            }\n            else\n            {\n                count -= ownedCount;\n                SetBagItemQuantity(&itemPocket->itemSlots[var].quantity, 0);\n            }\n\n            if (GetBagItemQuantity(&itemPocket->itemSlots[var].quantity) == 0)\n                itemPocket->itemSlots[var].itemId = ITEM_NONE;\n\n            if (count == 0)\n                return TRUE;\n        }\n\n        for (i = 0; i < itemPocket->capacity; i++)\n        {\n            if (itemPocket->itemSlots[i].itemId == itemId)\n            {\n                ownedCount = GetBagItemQuantity(&itemPocket->itemSlots[i].quantity);\n                if (ownedCount >= count)\n                {\n                    SetBagItemQuantity(&itemPocket->itemSlots[i].quantity, ownedCount - count);\n                    count = 0;\n                }\n                else\n                {\n                    count -= ownedCount;\n                    SetBagItemQuantity(&itemPocket->itemSlots[i].quantity, 0);\n                }\n\n                if (GetBagItemQuantity(&itemPocket->itemSlots[i].quantity) == 0)\n                    itemPocket->itemSlots[i].itemId = ITEM_NONE;\n\n                if (count == 0)\n                    return TRUE;\n            }\n        }\n        return TRUE;\n    }",
       "callsTo": [
         "CurMapIsSecretBase",
@@ -181,6 +311,12 @@
       "returnType": "u8",
       "signature": "u8 GetPocketByItemId(u16 itemId)",
       "paramsRaw": "u16 itemId",
+      "paramsList": [
+        {
+          "name": "itemId",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "return GetItemPocket(itemId);",
       "callsTo": [
         "GetItemPocket"
@@ -191,6 +327,16 @@
       "returnType": "void",
       "signature": "void ClearItemSlots(struct ItemSlot *itemSlots, u8 itemCount)",
       "paramsRaw": "struct ItemSlot *itemSlots, u8 itemCount",
+      "paramsList": [
+        {
+          "name": "itemSlots",
+          "typeRaw": "struct ItemSlot *"
+        },
+        {
+          "name": "itemCount",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u16 i;\n\n    for (i = 0; i < itemCount; i++)\n    {\n        itemSlots[i].itemId = ITEM_NONE;\n        SetBagItemQuantity(&itemSlots[i].quantity, 0);\n    }",
       "callsTo": [
         "SetBagItemQuantity"
@@ -201,6 +347,7 @@
       "returnType": "s32",
       "signature": "static s32 FindFreePCItemSlot(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s8 i;\n\n    for (i = 0; i < PC_ITEMS_COUNT; i++)\n    {\n        if (gSaveBlock1Ptr->pcItems[i].itemId == ITEM_NONE)\n            return i;\n    }\n    return -1;",
       "callsTo": [],
       "lineCount": 8
@@ -209,6 +356,7 @@
       "returnType": "u8",
       "signature": "u8 CountUsedPCItemSlots(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 usedSlots = 0;\n    u8 i;\n\n    for (i = 0; i < PC_ITEMS_COUNT; i++)\n    {\n        if (gSaveBlock1Ptr->pcItems[i].itemId != ITEM_NONE)\n            usedSlots++;\n    }\n    return usedSlots;",
       "callsTo": [],
       "lineCount": 9
@@ -217,6 +365,16 @@
       "returnType": "bool8",
       "signature": "bool8 CheckPCHasItem(u16 itemId, u16 count)",
       "paramsRaw": "u16 itemId, u16 count",
+      "paramsList": [
+        {
+          "name": "itemId",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "count",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "u8 i;\n\n    for (i = 0; i < PC_ITEMS_COUNT; i++)\n    {\n        if (gSaveBlock1Ptr->pcItems[i].itemId == itemId && GetPCItemQuantity(&gSaveBlock1Ptr->pcItems[i].quantity) >= count)\n            return TRUE;\n    }\n    return FALSE;",
       "callsTo": [
         "GetPCItemQuantity"
@@ -227,6 +385,16 @@
       "returnType": "bool8",
       "signature": "bool8 AddPCItem(u16 itemId, u16 count)",
       "paramsRaw": "u16 itemId, u16 count",
+      "paramsList": [
+        {
+          "name": "itemId",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "count",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "u8 i;\n    s8 freeSlot;\n    u16 ownedCount;\n    struct ItemSlot *newItems;\n\n     \n    newItems = AllocZeroed(sizeof(gSaveBlock1Ptr->pcItems));\n    memcpy(newItems, gSaveBlock1Ptr->pcItems, sizeof(gSaveBlock1Ptr->pcItems));\n\n     \n    for (i = 0; i < PC_ITEMS_COUNT; i++)\n    {\n        if (newItems[i].itemId == itemId)\n        {\n            ownedCount = GetPCItemQuantity(&newItems[i].quantity);\n            if (ownedCount + count <= MAX_PC_ITEM_CAPACITY)\n            {\n                SetPCItemQuantity(&newItems[i].quantity, ownedCount + count);\n                memcpy(gSaveBlock1Ptr->pcItems, newItems, sizeof(gSaveBlock1Ptr->pcItems));\n                Free(newItems);\n                return TRUE;\n            }\n            count += ownedCount - MAX_PC_ITEM_CAPACITY;\n            SetPCItemQuantity(&newItems[i].quantity, MAX_PC_ITEM_CAPACITY);\n            if (count == 0)\n            {\n                memcpy(gSaveBlock1Ptr->pcItems, newItems, sizeof(gSaveBlock1Ptr->pcItems));\n                Free(newItems);\n                return TRUE;\n            }\n        }\n    }\n\n     \n    if (count > 0)\n    {\n        freeSlot = FindFreePCItemSlot();\n        if (freeSlot == -1)\n        {\n            Free(newItems);\n            return FALSE;\n        }\n        else\n        {\n            newItems[freeSlot].itemId = itemId;\n            SetPCItemQuantity(&newItems[freeSlot].quantity, count);\n        }\n    }\n\n     \n    memcpy(gSaveBlock1Ptr->pcItems, newItems, sizeof(gSaveBlock1Ptr->pcItems));\n    Free(newItems);\n    return TRUE;",
       "callsTo": [
         "AllocZeroed",
@@ -241,6 +409,16 @@
       "returnType": "void",
       "signature": "void RemovePCItem(u8 index, u16 count)",
       "paramsRaw": "u8 index, u16 count",
+      "paramsList": [
+        {
+          "name": "index",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "count",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "gSaveBlock1Ptr->pcItems[index].quantity -= count;\n    if (gSaveBlock1Ptr->pcItems[index].quantity == 0)\n    {\n        gSaveBlock1Ptr->pcItems[index].itemId = ITEM_NONE;\n        CompactPCItems();\n    }",
       "callsTo": [
         "CompactPCItems"
@@ -251,6 +429,7 @@
       "returnType": "void",
       "signature": "void CompactPCItems(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 i;\n    u16 j;\n\n    for (i = 0; i < PC_ITEMS_COUNT - 1; i++)\n    {\n        for (j = i + 1; j < PC_ITEMS_COUNT; j++)\n        {\n            if (gSaveBlock1Ptr->pcItems[i].itemId == 0)\n            {\n                struct ItemSlot temp = gSaveBlock1Ptr->pcItems[i];\n                gSaveBlock1Ptr->pcItems[i] = gSaveBlock1Ptr->pcItems[j];\n                gSaveBlock1Ptr->pcItems[j] = temp;\n            }\n        }\n    }",
       "callsTo": [],
       "lineCount": 15
@@ -259,6 +438,7 @@
       "returnType": "void",
       "signature": "void SwapRegisteredBike(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (gSaveBlock1Ptr->registeredItem)\n    {\n    case ITEM_MACH_BIKE:\n        gSaveBlock1Ptr->registeredItem = ITEM_ACRO_BIKE;\n        break;\n    case ITEM_ACRO_BIKE:\n        gSaveBlock1Ptr->registeredItem = ITEM_MACH_BIKE;\n        break;\n    }",
       "callsTo": [],
       "lineCount": 9
@@ -267,6 +447,16 @@
       "returnType": "u16",
       "signature": "u16 BagGetItemIdByPocketPosition(u8 pocketId, u16 pocketPos)",
       "paramsRaw": "u8 pocketId, u16 pocketPos",
+      "paramsList": [
+        {
+          "name": "pocketId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "pocketPos",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "return gBagPockets[pocketId - 1].itemSlots[pocketPos].itemId;",
       "callsTo": [],
       "lineCount": 1
@@ -275,6 +465,16 @@
       "returnType": "u16",
       "signature": "u16 BagGetQuantityByPocketPosition(u8 pocketId, u16 pocketPos)",
       "paramsRaw": "u8 pocketId, u16 pocketPos",
+      "paramsList": [
+        {
+          "name": "pocketId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "pocketPos",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "return GetBagItemQuantity(&gBagPockets[pocketId - 1].itemSlots[pocketPos].quantity);",
       "callsTo": [
         "GetBagItemQuantity"
@@ -285,6 +485,16 @@
       "returnType": "void",
       "signature": "static void SwapItemSlots(struct ItemSlot *a, struct ItemSlot *b)",
       "paramsRaw": "struct ItemSlot *a, struct ItemSlot *b",
+      "paramsList": [
+        {
+          "name": "a",
+          "typeRaw": "struct ItemSlot *"
+        },
+        {
+          "name": "b",
+          "typeRaw": "struct ItemSlot *"
+        }
+      ],
       "body": "struct ItemSlot temp;\n    SWAP(*a, *b, temp);",
       "callsTo": [
         "SWAP"
@@ -295,6 +505,12 @@
       "returnType": "void",
       "signature": "void CompactItemsInBagPocket(struct BagPocket *bagPocket)",
       "paramsRaw": "struct BagPocket *bagPocket",
+      "paramsList": [
+        {
+          "name": "bagPocket",
+          "typeRaw": "struct BagPocket *"
+        }
+      ],
       "body": "u16 i, j;\n\n    for (i = 0; i < bagPocket->capacity - 1; i++)\n    {\n        for (j = i + 1; j < bagPocket->capacity; j++)\n        {\n            if (GetBagItemQuantity(&bagPocket->itemSlots[i].quantity) == 0)\n                SwapItemSlots(&bagPocket->itemSlots[i], &bagPocket->itemSlots[j]);\n        }\n    }",
       "callsTo": [
         "GetBagItemQuantity",
@@ -306,6 +522,12 @@
       "returnType": "void",
       "signature": "void SortBerriesOrTMHMs(struct BagPocket *bagPocket)",
       "paramsRaw": "struct BagPocket *bagPocket",
+      "paramsList": [
+        {
+          "name": "bagPocket",
+          "typeRaw": "struct BagPocket *"
+        }
+      ],
       "body": "u16 i, j;\n\n    for (i = 0; i < bagPocket->capacity - 1; i++)\n    {\n        for (j = i + 1; j < bagPocket->capacity; j++)\n        {\n            if (GetBagItemQuantity(&bagPocket->itemSlots[i].quantity) != 0)\n            {\n                if (GetBagItemQuantity(&bagPocket->itemSlots[j].quantity) == 0)\n                    continue;\n                if (bagPocket->itemSlots[i].itemId <= bagPocket->itemSlots[j].itemId)\n                    continue;\n            }\n            SwapItemSlots(&bagPocket->itemSlots[i], &bagPocket->itemSlots[j]);\n        }\n    }",
       "callsTo": [
         "GetBagItemQuantity",
@@ -317,6 +539,20 @@
       "returnType": "void",
       "signature": "void MoveItemSlotInList(struct ItemSlot *itemSlots_, u32 from, u32 to_)",
       "paramsRaw": "struct ItemSlot *itemSlots_, u32 from, u32 to_",
+      "paramsList": [
+        {
+          "name": "itemSlots_",
+          "typeRaw": "struct ItemSlot *"
+        },
+        {
+          "name": "from",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "to_",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "struct ItemSlot *itemSlots = itemSlots_;\n    u32 to = to_;\n\n    if (from != to)\n    {\n        s16 i, count;\n        struct ItemSlot firstSlot = itemSlots[from];\n\n        if (to > from)\n        {\n            to--;\n            for (i = from, count = to; i < count; i++)\n                itemSlots[i] = itemSlots[i + 1];\n        }\n        else\n        {\n            for (i = from, count = to; i > count; i--)\n                itemSlots[i] = itemSlots[i - 1];\n        }\n        itemSlots[to] = firstSlot;\n    }",
       "callsTo": [],
       "lineCount": 21
@@ -325,6 +561,7 @@
       "returnType": "void",
       "signature": "void ClearBag(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 i;\n\n    for (i = 0; i < POCKETS_COUNT; i++)\n    {\n        ClearItemSlots(gBagPockets[i].itemSlots, gBagPockets[i].capacity);\n    }",
       "callsTo": [
         "ClearItemSlots"
@@ -335,6 +572,12 @@
       "returnType": "u16",
       "signature": "u16 CountTotalItemQuantityInBag(u16 itemId)",
       "paramsRaw": "u16 itemId",
+      "paramsList": [
+        {
+          "name": "itemId",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "u16 i;\n    u16 ownedCount = 0;\n    struct BagPocket *bagPocket = &gBagPockets[GetItemPocket(itemId) - 1];\n\n    for (i = 0; i < bagPocket->capacity; i++)\n    {\n        if (bagPocket->itemSlots[i].itemId == itemId)\n            ownedCount += GetBagItemQuantity(&bagPocket->itemSlots[i].quantity);\n    }\n\n    return ownedCount;",
       "callsTo": [
         "GetBagItemQuantity",
@@ -346,6 +589,16 @@
       "returnType": "bool8",
       "signature": "static bool8 CheckPyramidBagHasItem(u16 itemId, u16 count)",
       "paramsRaw": "u16 itemId, u16 count",
+      "paramsList": [
+        {
+          "name": "itemId",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "count",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "u8 i;\n    u16 *items = gSaveBlock2Ptr->frontier.pyramidBag.itemId[gSaveBlock2Ptr->frontier.lvlMode];\n    u8 *quantities = gSaveBlock2Ptr->frontier.pyramidBag.quantity[gSaveBlock2Ptr->frontier.lvlMode];\n\n    for (i = 0; i < PYRAMID_BAG_ITEMS_COUNT; i++)\n    {\n        if (items[i] == itemId)\n        {\n            if (quantities[i] >= count)\n                return TRUE;\n\n            count -= quantities[i];\n            if (count == 0)\n                return TRUE;\n        }\n    }\n\n    return FALSE;",
       "callsTo": [],
       "lineCount": 18
@@ -354,6 +607,16 @@
       "returnType": "bool8",
       "signature": "static bool8 CheckPyramidBagHasSpace(u16 itemId, u16 count)",
       "paramsRaw": "u16 itemId, u16 count",
+      "paramsList": [
+        {
+          "name": "itemId",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "count",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "u8 i;\n    u16 *items = gSaveBlock2Ptr->frontier.pyramidBag.itemId[gSaveBlock2Ptr->frontier.lvlMode];\n    u8 *quantities = gSaveBlock2Ptr->frontier.pyramidBag.quantity[gSaveBlock2Ptr->frontier.lvlMode];\n\n    for (i = 0; i < PYRAMID_BAG_ITEMS_COUNT; i++)\n    {\n        if (items[i] == itemId || items[i] == ITEM_NONE)\n        {\n            if (quantities[i] + count <= MAX_BAG_ITEM_CAPACITY)\n                return TRUE;\n\n            count = (quantities[i] + count) - MAX_BAG_ITEM_CAPACITY;\n            if (count == 0)\n                return TRUE;\n        }\n    }\n\n    return FALSE;",
       "callsTo": [],
       "lineCount": 18
@@ -362,6 +625,16 @@
       "returnType": "bool8",
       "signature": "bool8 AddPyramidBagItem(u16 itemId, u16 count)",
       "paramsRaw": "u16 itemId, u16 count",
+      "paramsList": [
+        {
+          "name": "itemId",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "count",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "u16 i;\n\n    u16 *items = gSaveBlock2Ptr->frontier.pyramidBag.itemId[gSaveBlock2Ptr->frontier.lvlMode];\n    u8 *quantities = gSaveBlock2Ptr->frontier.pyramidBag.quantity[gSaveBlock2Ptr->frontier.lvlMode];\n\n    u16 *newItems = Alloc(PYRAMID_BAG_ITEMS_COUNT * sizeof(*newItems));\n    u8 *newQuantities = Alloc(PYRAMID_BAG_ITEMS_COUNT * sizeof(*newQuantities));\n\n    memcpy(newItems, items, PYRAMID_BAG_ITEMS_COUNT * sizeof(*newItems));\n    memcpy(newQuantities, quantities, PYRAMID_BAG_ITEMS_COUNT * sizeof(*newQuantities));\n\n    for (i = 0; i < PYRAMID_BAG_ITEMS_COUNT; i++)\n    {\n        if (newItems[i] == itemId && newQuantities[i] < MAX_BAG_ITEM_CAPACITY)\n        {\n            newQuantities[i] += count;\n            if (newQuantities[i] > MAX_BAG_ITEM_CAPACITY)\n            {\n                count = newQuantities[i] - MAX_BAG_ITEM_CAPACITY;\n                newQuantities[i] = MAX_BAG_ITEM_CAPACITY;\n            }\n            else\n            {\n                count = 0;\n            }\n\n            if (count == 0)\n                break;\n        }\n    }\n\n    if (count > 0)\n    {\n        for (i = 0; i < PYRAMID_BAG_ITEMS_COUNT; i++)\n        {\n            if (newItems[i] == ITEM_NONE)\n            {\n                newItems[i] = itemId;\n                newQuantities[i] = count;\n                if (newQuantities[i] > MAX_BAG_ITEM_CAPACITY)\n                {\n                    count = newQuantities[i] - MAX_BAG_ITEM_CAPACITY;\n                    newQuantities[i] = MAX_BAG_ITEM_CAPACITY;\n                }\n                else\n                {\n                    count = 0;\n                }\n\n                if (count == 0)\n                    break;\n            }\n        }\n    }\n\n    if (count == 0)\n    {\n        memcpy(items, newItems, PYRAMID_BAG_ITEMS_COUNT * sizeof(*items));\n        memcpy(quantities, newQuantities, PYRAMID_BAG_ITEMS_COUNT * sizeof(*quantities));\n        Free(newItems);\n        Free(newQuantities);\n        return TRUE;\n    }\n    else\n    {\n        Free(newItems);\n        Free(newQuantities);\n        return FALSE;\n    }",
       "callsTo": [
         "Alloc",
@@ -373,6 +646,16 @@
       "returnType": "bool8",
       "signature": "bool8 RemovePyramidBagItem(u16 itemId, u16 count)",
       "paramsRaw": "u16 itemId, u16 count",
+      "paramsList": [
+        {
+          "name": "itemId",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "count",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "u16 i;\n\n    u16 *items = gSaveBlock2Ptr->frontier.pyramidBag.itemId[gSaveBlock2Ptr->frontier.lvlMode];\n    u8 *quantities = gSaveBlock2Ptr->frontier.pyramidBag.quantity[gSaveBlock2Ptr->frontier.lvlMode];\n\n    i = gPyramidBagMenuState.cursorPosition + gPyramidBagMenuState.scrollPosition;\n    if (items[i] == itemId && quantities[i] >= count)\n    {\n        quantities[i] -= count;\n        if (quantities[i] == 0)\n            items[i] = ITEM_NONE;\n        return TRUE;\n    }\n    else\n    {\n        u16 *newItems = Alloc(PYRAMID_BAG_ITEMS_COUNT * sizeof(*newItems));\n        u8 *newQuantities = Alloc(PYRAMID_BAG_ITEMS_COUNT * sizeof(*newQuantities));\n\n        memcpy(newItems, items, PYRAMID_BAG_ITEMS_COUNT * sizeof(*newItems));\n        memcpy(newQuantities, quantities, PYRAMID_BAG_ITEMS_COUNT * sizeof(*newQuantities));\n\n        for (i = 0; i < PYRAMID_BAG_ITEMS_COUNT; i++)\n        {\n            if (newItems[i] == itemId)\n            {\n                if (newQuantities[i] >= count)\n                {\n                    newQuantities[i] -= count;\n                    count = 0;\n                    if (newQuantities[i] == 0)\n                        newItems[i] = ITEM_NONE;\n                }\n                else\n                {\n                    count -= newQuantities[i];\n                    newQuantities[i] = 0;\n                    newItems[i] = ITEM_NONE;\n                }\n\n                if (count == 0)\n                    break;\n            }\n        }\n\n        if (count == 0)\n        {\n            memcpy(items, newItems, PYRAMID_BAG_ITEMS_COUNT * sizeof(*items));\n            memcpy(quantities, newQuantities, PYRAMID_BAG_ITEMS_COUNT * sizeof(*quantities));\n            Free(newItems);\n            Free(newQuantities);\n            return TRUE;\n        }\n        else\n        {\n            Free(newItems);\n            Free(newQuantities);\n            return FALSE;\n        }\n    }",
       "callsTo": [
         "Alloc",
@@ -384,6 +667,12 @@
       "returnType": "u16",
       "signature": "static u16 SanitizeItemId(u16 itemId)",
       "paramsRaw": "u16 itemId",
+      "paramsList": [
+        {
+          "name": "itemId",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "if (itemId >= ITEMS_COUNT)\n        return ITEM_NONE;\n    else\n        return itemId;",
       "callsTo": [],
       "lineCount": 4
@@ -392,6 +681,12 @@
       "returnType": "u16",
       "signature": "u16 GetItemId(u16 itemId)",
       "paramsRaw": "u16 itemId",
+      "paramsList": [
+        {
+          "name": "itemId",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "return gItems[SanitizeItemId(itemId)].itemId;",
       "callsTo": [
         "SanitizeItemId"
@@ -402,6 +697,12 @@
       "returnType": "u16",
       "signature": "u16 GetItemPrice(u16 itemId)",
       "paramsRaw": "u16 itemId",
+      "paramsList": [
+        {
+          "name": "itemId",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "return gItems[SanitizeItemId(itemId)].price;",
       "callsTo": [
         "SanitizeItemId"
@@ -412,6 +713,12 @@
       "returnType": "u8",
       "signature": "u8 GetItemHoldEffect(u16 itemId)",
       "paramsRaw": "u16 itemId",
+      "paramsList": [
+        {
+          "name": "itemId",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "return gItems[SanitizeItemId(itemId)].holdEffect;",
       "callsTo": [
         "SanitizeItemId"
@@ -422,6 +729,12 @@
       "returnType": "u8",
       "signature": "u8 GetItemHoldEffectParam(u16 itemId)",
       "paramsRaw": "u16 itemId",
+      "paramsList": [
+        {
+          "name": "itemId",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "return gItems[SanitizeItemId(itemId)].holdEffectParam;",
       "callsTo": [
         "SanitizeItemId"
@@ -432,6 +745,12 @@
       "returnType": "u8",
       "signature": "u8 GetItemImportance(u16 itemId)",
       "paramsRaw": "u16 itemId",
+      "paramsList": [
+        {
+          "name": "itemId",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "return gItems[SanitizeItemId(itemId)].importance;",
       "callsTo": [
         "SanitizeItemId"
@@ -442,6 +761,12 @@
       "returnType": "u8",
       "signature": "u8 GetItemRegistrability(u16 itemId)",
       "paramsRaw": "u16 itemId",
+      "paramsList": [
+        {
+          "name": "itemId",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "return gItems[SanitizeItemId(itemId)].registrability;",
       "callsTo": [
         "SanitizeItemId"
@@ -452,6 +777,12 @@
       "returnType": "u8",
       "signature": "u8 GetItemPocket(u16 itemId)",
       "paramsRaw": "u16 itemId",
+      "paramsList": [
+        {
+          "name": "itemId",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "return gItems[SanitizeItemId(itemId)].pocket;",
       "callsTo": [
         "SanitizeItemId"
@@ -462,6 +793,12 @@
       "returnType": "u8",
       "signature": "u8 GetItemType(u16 itemId)",
       "paramsRaw": "u16 itemId",
+      "paramsList": [
+        {
+          "name": "itemId",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "return gItems[SanitizeItemId(itemId)].type;",
       "callsTo": [
         "SanitizeItemId"
@@ -472,6 +809,12 @@
       "returnType": "ItemUseFunc",
       "signature": "ItemUseFunc GetItemFieldFunc(u16 itemId)",
       "paramsRaw": "u16 itemId",
+      "paramsList": [
+        {
+          "name": "itemId",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "return gItems[SanitizeItemId(itemId)].fieldUseFunc;",
       "callsTo": [
         "SanitizeItemId"
@@ -482,6 +825,12 @@
       "returnType": "u8",
       "signature": "u8 GetItemBattleUsage(u16 itemId)",
       "paramsRaw": "u16 itemId",
+      "paramsList": [
+        {
+          "name": "itemId",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "return gItems[SanitizeItemId(itemId)].battleUsage;",
       "callsTo": [
         "SanitizeItemId"
@@ -492,6 +841,12 @@
       "returnType": "ItemUseFunc",
       "signature": "ItemUseFunc GetItemBattleFunc(u16 itemId)",
       "paramsRaw": "u16 itemId",
+      "paramsList": [
+        {
+          "name": "itemId",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "return gItems[SanitizeItemId(itemId)].battleUseFunc;",
       "callsTo": [
         "SanitizeItemId"
@@ -502,6 +857,12 @@
       "returnType": "u8",
       "signature": "u8 GetItemSecondaryId(u16 itemId)",
       "paramsRaw": "u16 itemId",
+      "paramsList": [
+        {
+          "name": "itemId",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "return gItems[SanitizeItemId(itemId)].secondaryId;",
       "callsTo": [
         "SanitizeItemId"

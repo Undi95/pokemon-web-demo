@@ -6,6 +6,24 @@
       "returnType": "bool8",
       "signature": "bool8 ScriptMenu_Multichoice(u8 left, u8 top, u8 multichoiceId, bool8 ignoreBPress)",
       "paramsRaw": "u8 left, u8 top, u8 multichoiceId, bool8 ignoreBPress",
+      "paramsList": [
+        {
+          "name": "left",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "top",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "multichoiceId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "ignoreBPress",
+          "typeRaw": "bool8"
+        }
+      ],
       "body": "if (FuncIsActiveTask(Task_HandleMultichoiceInput) == TRUE)\n    {\n        return FALSE;\n    }\n    else\n    {\n        gSpecialVar_Result = 0xFF;\n        DrawMultichoiceMenu(left, top, multichoiceId, ignoreBPress, 0);\n        return TRUE;\n    }",
       "callsTo": [
         "DrawMultichoiceMenu",
@@ -17,6 +35,28 @@
       "returnType": "bool8",
       "signature": "bool8 ScriptMenu_MultichoiceWithDefault(u8 left, u8 top, u8 multichoiceId, bool8 ignoreBPress, u8 defaultChoice)",
       "paramsRaw": "u8 left, u8 top, u8 multichoiceId, bool8 ignoreBPress, u8 defaultChoice",
+      "paramsList": [
+        {
+          "name": "left",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "top",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "multichoiceId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "ignoreBPress",
+          "typeRaw": "bool8"
+        },
+        {
+          "name": "defaultChoice",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (FuncIsActiveTask(Task_HandleMultichoiceInput) == TRUE)\n    {\n        return FALSE;\n    }\n    else\n    {\n        gSpecialVar_Result = 0xFF;\n        DrawMultichoiceMenu(left, top, multichoiceId, ignoreBPress, defaultChoice);\n        return TRUE;\n    }",
       "callsTo": [
         "DrawMultichoiceMenu",
@@ -28,6 +68,28 @@
       "returnType": "void",
       "signature": "static void DrawMultichoiceMenu(u8 left, u8 top, u8 multichoiceId, bool8 ignoreBPress, u8 cursorPos)",
       "paramsRaw": "u8 left, u8 top, u8 multichoiceId, bool8 ignoreBPress, u8 cursorPos",
+      "paramsList": [
+        {
+          "name": "left",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "top",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "multichoiceId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "ignoreBPress",
+          "typeRaw": "bool8"
+        },
+        {
+          "name": "cursorPos",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "int i;\n    u8 windowId;\n    u8 count = sMultichoiceLists[multichoiceId].count;\n    const struct MenuAction *actions = sMultichoiceLists[multichoiceId].list;\n    int width = 0;\n    u8 newWidth;\n\n    for (i = 0; i < count; i++)\n    {\n        width = DisplayTextAndGetWidth(actions[i].text, width);\n    }\n\n    newWidth = ConvertPixelWidthToTileWidth(width);\n    left = ScriptMenu_AdjustLeftCoordFromWidth(left, newWidth);\n    windowId = CreateWindowFromRect(left, top, newWidth, count * 2);\n    SetStandardWindowBorderStyle(windowId, FALSE);\n    PrintMenuTable(windowId, count, actions);\n    InitMenuInUpperLeftCornerNormal(windowId, count, cursorPos);\n    ScheduleBgCopyTilemapToVram(0);\n    InitMultichoiceCheckWrap(ignoreBPress, count, windowId, multichoiceId);",
       "callsTo": [
         "ConvertPixelWidthToTileWidth",
@@ -46,6 +108,24 @@
       "returnType": "void",
       "signature": "static void InitMultichoiceCheckWrap(bool8 ignoreBPress, u8 count, u8 windowId, u8 multichoiceId)",
       "paramsRaw": "bool8 ignoreBPress, u8 count, u8 windowId, u8 multichoiceId",
+      "paramsList": [
+        {
+          "name": "ignoreBPress",
+          "typeRaw": "bool8"
+        },
+        {
+          "name": "count",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "windowId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "multichoiceId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 i;\n    u8 taskId;\n    sProcessInputDelay = 2;\n\n    for (i = 0; i < ARRAY_COUNT(sLinkServicesMultichoiceIds); i++)\n    {\n        if (sLinkServicesMultichoiceIds[i] == multichoiceId)\n        {\n            sProcessInputDelay = 12;\n        }\n    }\n\n    taskId = CreateTask(Task_HandleMultichoiceInput, 80);\n\n    gTasks[taskId].tIgnoreBPress = ignoreBPress;\n\n    if (count > 3)\n        gTasks[taskId].tDoWrap = TRUE;\n    else\n        gTasks[taskId].tDoWrap = FALSE;\n\n    gTasks[taskId].tWindowId = windowId;\n    gTasks[taskId].tMultichoiceId = multichoiceId;\n\n    DrawLinkServicesMultichoiceMenu(multichoiceId);",
       "callsTo": [
         "ARRAY_COUNT",
@@ -58,6 +138,12 @@
       "returnType": "void",
       "signature": "static void Task_HandleMultichoiceInput(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s8 selection;\n    s16 *data = gTasks[taskId].data;\n\n    if (!gPaletteFade.active)\n    {\n        if (sProcessInputDelay)\n        {\n            sProcessInputDelay--;\n        }\n        else\n        {\n            if (!tDoWrap)\n                selection = Menu_ProcessInputNoWrap();\n            else\n                selection = Menu_ProcessInput();\n\n            if (JOY_NEW(DPAD_UP | DPAD_DOWN))\n            {\n                DrawLinkServicesMultichoiceMenu(tMultichoiceId);\n            }\n\n            if (selection != MENU_NOTHING_CHOSEN)\n            {\n                if (selection == MENU_B_PRESSED)\n                {\n                    if (tIgnoreBPress)\n                        return;\n                    PlaySE(SE_SELECT);\n                    gSpecialVar_Result = MULTI_B_PRESSED;\n                }\n                else\n                {\n                    gSpecialVar_Result = selection;\n                }\n                ClearToTransparentAndRemoveWindow(tWindowId);\n                DestroyTask(taskId);\n                ScriptContext_Enable();\n            }\n        }\n    }",
       "callsTo": [
         "ClearToTransparentAndRemoveWindow",
@@ -75,6 +161,16 @@
       "returnType": "bool8",
       "signature": "bool8 ScriptMenu_YesNo(u8 left, u8 top)",
       "paramsRaw": "u8 left, u8 top",
+      "paramsList": [
+        {
+          "name": "left",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "top",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 taskId;\n\n    if (FuncIsActiveTask(Task_HandleYesNoInput) == TRUE)\n    {\n        return FALSE;\n    }\n    else\n    {\n        gSpecialVar_Result = 0xFF;\n        DisplayYesNoMenuDefaultYes();\n        taskId = CreateTask(Task_HandleYesNoInput, 0x50);\n        return TRUE;\n    }",
       "callsTo": [
         "CreateTask",
@@ -87,6 +183,7 @@
       "returnType": "bool8",
       "signature": "bool8 IsScriptActive(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gSpecialVar_Result == 0xFF)\n        return FALSE;\n    else\n        return TRUE;",
       "callsTo": [],
       "lineCount": 4
@@ -95,6 +192,12 @@
       "returnType": "void",
       "signature": "static void Task_HandleYesNoInput(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (gTasks[taskId].tRight < 5)\n    {\n        gTasks[taskId].tRight++;\n        return;\n    }\n\n    switch (Menu_ProcessInputNoWrapClearOnChoose())\n    {\n    case MENU_NOTHING_CHOSEN:\n        return;\n    case MENU_B_PRESSED:\n    case 1:\n        PlaySE(SE_SELECT);\n        gSpecialVar_Result = 0;\n        break;\n    case 0:\n        gSpecialVar_Result = 1;\n        break;\n    }\n\n    DestroyTask(taskId);\n    ScriptContext_Enable();",
       "callsTo": [
         "DestroyTask",
@@ -108,6 +211,28 @@
       "returnType": "bool8",
       "signature": "bool8 ScriptMenu_MultichoiceGrid(u8 left, u8 top, u8 multichoiceId, bool8 ignoreBPress, u8 columnCount)",
       "paramsRaw": "u8 left, u8 top, u8 multichoiceId, bool8 ignoreBPress, u8 columnCount",
+      "paramsList": [
+        {
+          "name": "left",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "top",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "multichoiceId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "ignoreBPress",
+          "typeRaw": "bool8"
+        },
+        {
+          "name": "columnCount",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (FuncIsActiveTask(Task_HandleMultichoiceGridInput) == TRUE)\n    {\n        return FALSE;\n    }\n    else\n    {\n        u8 taskId;\n        u8 rowCount, newWidth;\n        int i, width;\n\n        gSpecialVar_Result = 0xFF;\n        width = 0;\n\n        for (i = 0; i < sMultichoiceLists[multichoiceId].count; i++)\n        {\n            width = DisplayTextAndGetWidth(sMultichoiceLists[multichoiceId].list[i].text, width);\n        }\n\n        newWidth = ConvertPixelWidthToTileWidth(width);\n\n        left = ScriptMenu_AdjustLeftCoordFromWidth(left, columnCount * newWidth);\n        rowCount = sMultichoiceLists[multichoiceId].count / columnCount;\n\n        taskId = CreateTask(Task_HandleMultichoiceGridInput, 80);\n\n        gTasks[taskId].tIgnoreBPress = ignoreBPress;\n        gTasks[taskId].tWindowId = CreateWindowFromRect(left, top, columnCount * newWidth, rowCount * 2);\n        SetStandardWindowBorderStyle(gTasks[taskId].tWindowId, FALSE);\n        PrintMenuGridTable(gTasks[taskId].tWindowId, newWidth * 8, columnCount, rowCount, sMultichoiceLists[multichoiceId].list);\n        InitMenuActionGrid(gTasks[taskId].tWindowId, newWidth * 8, columnCount, rowCount, 0);\n        CopyWindowToVram(gTasks[taskId].tWindowId, COPYWIN_FULL);\n        return TRUE;\n    }",
       "callsTo": [
         "ConvertPixelWidthToTileWidth",
@@ -127,6 +252,12 @@
       "returnType": "void",
       "signature": "static void Task_HandleMultichoiceGridInput(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data = gTasks[taskId].data;\n    s8 selection = Menu_ProcessGridInput();\n\n    switch (selection)\n    {\n    case MENU_NOTHING_CHOSEN:\n        return;\n    case MENU_B_PRESSED:\n        if (tIgnoreBPress)\n            return;\n        PlaySE(SE_SELECT);\n        gSpecialVar_Result = MULTI_B_PRESSED;\n        break;\n    default:\n        gSpecialVar_Result = selection;\n        break;\n    }\n\n    ClearToTransparentAndRemoveWindow(tWindowId);\n    DestroyTask(taskId);\n    ScriptContext_Enable();",
       "callsTo": [
         "ClearToTransparentAndRemoveWindow",
@@ -141,6 +272,7 @@
       "returnType": "bool16",
       "signature": "bool16 ScriptMenu_CreatePCMultichoice(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (FuncIsActiveTask(Task_HandleMultichoiceInput) == TRUE)\n    {\n        return FALSE;\n    }\n    else\n    {\n        gSpecialVar_Result = 0xFF;\n        CreatePCMultichoice();\n        return TRUE;\n    }",
       "callsTo": [
         "CreatePCMultichoice",
@@ -152,6 +284,7 @@
       "returnType": "void",
       "signature": "static void CreatePCMultichoice(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 x = 8;\n    u32 pixelWidth = 0;\n    u8 width;\n    u8 numChoices;\n    u8 windowId;\n    int i;\n\n    for (i = 0; i < ARRAY_COUNT(sPCNameStrings); i++)\n    {\n        pixelWidth = DisplayTextAndGetWidth(sPCNameStrings[i], pixelWidth);\n    }\n\n    if (FlagGet(FLAG_SYS_GAME_CLEAR))\n    {\n        pixelWidth = DisplayTextAndGetWidth(gText_HallOfFame, pixelWidth);\n    }\n\n    width = ConvertPixelWidthToTileWidth(pixelWidth);\n\n     \n    if (FlagGet(FLAG_SYS_GAME_CLEAR))\n    {\n        numChoices = 4;\n        windowId = CreateWindowFromRect(0, 0, width, 8);\n        SetStandardWindowBorderStyle(windowId, FALSE);\n        AddTextPrinterParameterized(windowId, FONT_NORMAL, gText_HallOfFame, x, 33, TEXT_SKIP_DRAW, NULL);\n        AddTextPrinterParameterized(windowId, FONT_NORMAL, gText_LogOff, x, 49, TEXT_SKIP_DRAW, NULL);\n    }\n    else\n    {\n        numChoices = 3;\n        windowId = CreateWindowFromRect(0, 0, width, 6);\n        SetStandardWindowBorderStyle(windowId, FALSE);\n        AddTextPrinterParameterized(windowId, FONT_NORMAL, gText_LogOff, x, 33, TEXT_SKIP_DRAW, NULL);\n    }\n\n     \n    if (FlagGet(FLAG_SYS_PC_LANETTE))\n        AddTextPrinterParameterized(windowId, FONT_NORMAL, gText_LanettesPC, x, 1, TEXT_SKIP_DRAW, NULL);\n    else\n        AddTextPrinterParameterized(windowId, FONT_NORMAL, gText_SomeonesPC, x, 1, TEXT_SKIP_DRAW, NULL);\n\n    StringExpandPlaceholders(gStringVar4, gText_PlayersPC);\n    PrintPlayerNameOnWindow(windowId, gStringVar4, x, 17);\n    InitMenuInUpperLeftCornerNormal(windowId, numChoices, 0);\n    CopyWindowToVram(windowId, COPYWIN_FULL);\n    InitMultichoiceCheckWrap(FALSE, numChoices, windowId, MULTI_PC);",
       "callsTo": [
         "ARRAY_COUNT",
@@ -173,6 +306,7 @@
       "returnType": "void",
       "signature": "void ScriptMenu_DisplayPCStartupPrompt(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "LoadMessageBoxAndFrameGfx(0, TRUE);\n    AddTextPrinterParameterized2(0, FONT_NORMAL, gText_WhichPCShouldBeAccessed, 0, NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);",
       "callsTo": [
         "AddTextPrinterParameterized2",
@@ -184,6 +318,7 @@
       "returnType": "bool8",
       "signature": "bool8 ScriptMenu_CreateLilycoveSSTidalMultichoice(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (FuncIsActiveTask(Task_HandleMultichoiceInput) == TRUE)\n    {\n        return FALSE;\n    }\n    else\n    {\n        gSpecialVar_Result = 0xFF;\n        CreateLilycoveSSTidalMultichoice();\n        return TRUE;\n    }",
       "callsTo": [
         "CreateLilycoveSSTidalMultichoice",
@@ -195,6 +330,7 @@
       "returnType": "void",
       "signature": "static void CreateLilycoveSSTidalMultichoice(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 selectionCount = 0;\n    u8 count;\n    u32 pixelWidth;\n    u8 width;\n    u8 windowId;\n    u8 i;\n    u32 j;\n\n    for (i = 0; i < SSTIDAL_SELECTION_COUNT; i++)\n    {\n        sLilycoveSSTidalSelections[i] = 0xFF;\n    }\n\n    GetFontAttribute(FONT_NORMAL, FONTATTR_MAX_LETTER_WIDTH);\n\n    if (gSpecialVar_0x8004 == 0)\n    {\n        sLilycoveSSTidalSelections[selectionCount] = SSTIDAL_SELECTION_SLATEPORT;\n        selectionCount++;\n\n        if (FlagGet(FLAG_MET_SCOTT_ON_SS_TIDAL) == TRUE)\n        {\n            sLilycoveSSTidalSelections[selectionCount] = SSTIDAL_SELECTION_BATTLE_FRONTIER;\n            selectionCount++;\n        }\n    }\n\n    if (CheckBagHasItem(ITEM_EON_TICKET, 1) == TRUE && FlagGet(FLAG_ENABLE_SHIP_SOUTHERN_ISLAND) == TRUE)\n    {\n        if (gSpecialVar_0x8004 == 0)\n        {\n            sLilycoveSSTidalSelections[selectionCount] = SSTIDAL_SELECTION_SOUTHERN_ISLAND;\n            selectionCount++;\n        }\n\n        if (gSpecialVar_0x8004 == 1 && FlagGet(FLAG_SHOWN_EON_TICKET) == FALSE)\n        {\n            sLilycoveSSTidalSelections[selectionCount] = SSTIDAL_SELECTION_SOUTHERN_ISLAND;\n            selectionCount++;\n            FlagSet(FLAG_SHOWN_EON_TICKET);\n        }\n    }\n\n    if (CheckBagHasItem(ITEM_MYSTIC_TICKET, 1) == TRUE && FlagGet(FLAG_ENABLE_SHIP_NAVEL_ROCK) == TRUE)\n    {\n        if (gSpecialVar_0x8004 == 0)\n        {\n            sLilycoveSSTidalSelections[selectionCount] = SSTIDAL_SELECTION_NAVEL_ROCK;\n            selectionCount++;\n        }\n\n        if (gSpecialVar_0x8004 == 1 && FlagGet(FLAG_SHOWN_MYSTIC_TICKET) == FALSE)\n        {\n            sLilycoveSSTidalSelections[selectionCount] = SSTIDAL_SELECTION_NAVEL_ROCK;\n            selectionCount++;\n            FlagSet(FLAG_SHOWN_MYSTIC_TICKET);\n        }\n    }\n\n    if (CheckBagHasItem(ITEM_AURORA_TICKET, 1) == TRUE && FlagGet(FLAG_ENABLE_SHIP_BIRTH_ISLAND) == TRUE)\n    {\n        if (gSpecialVar_0x8004 == 0)\n        {\n            sLilycoveSSTidalSelections[selectionCount] = SSTIDAL_SELECTION_BIRTH_ISLAND;\n            selectionCount++;\n        }\n\n        if (gSpecialVar_0x8004 == 1 && FlagGet(FLAG_SHOWN_AURORA_TICKET) == FALSE)\n        {\n            sLilycoveSSTidalSelections[selectionCount] = SSTIDAL_SELECTION_BIRTH_ISLAND;\n            selectionCount++;\n            FlagSet(FLAG_SHOWN_AURORA_TICKET);\n        }\n    }\n\n    if (CheckBagHasItem(ITEM_OLD_SEA_MAP, 1) == TRUE && FlagGet(FLAG_ENABLE_SHIP_FARAWAY_ISLAND) == TRUE)\n    {\n        if (gSpecialVar_0x8004 == 0)\n        {\n            sLilycoveSSTidalSelections[selectionCount] = SSTIDAL_SELECTION_FARAWAY_ISLAND;\n            selectionCount++;\n        }\n\n        if (gSpecialVar_0x8004 == 1 && FlagGet(FLAG_SHOWN_OLD_SEA_MAP) == FALSE)\n        {\n            sLilycoveSSTidalSelections[selectionCount] = SSTIDAL_SELECTION_FARAWAY_ISLAND;\n            selectionCount++;\n            FlagSet(FLAG_SHOWN_OLD_SEA_MAP);\n        }\n    }\n\n    sLilycoveSSTidalSelections[selectionCount] = SSTIDAL_SELECTION_EXIT;\n    selectionCount++;\n\n    if (gSpecialVar_0x8004 == 0 && FlagGet(FLAG_MET_SCOTT_ON_SS_TIDAL) == TRUE)\n    {\n        count = selectionCount;\n    }\n\n    count = selectionCount;\n    if (count == SSTIDAL_SELECTION_COUNT)\n    {\n        gSpecialVar_0x8004 = SCROLL_MULTI_SS_TIDAL_DESTINATION;\n        ShowScrollableMultichoice();\n    }\n    else\n    {\n        pixelWidth = 0;\n\n        for (j = 0; j < SSTIDAL_SELECTION_COUNT; j++)\n        {\n            u8 selection = sLilycoveSSTidalSelections[j];\n            if (selection != 0xFF)\n            {\n                pixelWidth = DisplayTextAndGetWidth(sLilycoveSSTidalDestinations[selection], pixelWidth);\n            }\n        }\n\n        width = ConvertPixelWidthToTileWidth(pixelWidth);\n        windowId = CreateWindowFromRect(MAX_MULTICHOICE_WIDTH - width, (6 - count) * 2, width, count * 2);\n        SetStandardWindowBorderStyle(windowId, FALSE);\n\n        for (selectionCount = 0, i = 0; i < SSTIDAL_SELECTION_COUNT; i++)\n        {\n            if (sLilycoveSSTidalSelections[i] != 0xFF)\n            {\n                AddTextPrinterParameterized(windowId, FONT_NORMAL, sLilycoveSSTidalDestinations[sLilycoveSSTidalSelections[i]], 8, selectionCount * 16 + 1, TEXT_SKIP_DRAW, NULL);\n                selectionCount++;\n            }\n        }\n\n        InitMenuInUpperLeftCornerNormal(windowId, count, count - 1);\n        CopyWindowToVram(windowId, COPYWIN_FULL);\n        InitMultichoiceCheckWrap(FALSE, count, windowId, MULTI_SSTIDAL_LILYCOVE);\n    }",
       "callsTo": [
         "AddTextPrinterParameterized",
@@ -217,6 +353,7 @@
       "returnType": "void",
       "signature": "void GetLilycoveSSTidalSelection(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gSpecialVar_Result != MULTI_B_PRESSED)\n    {\n        gSpecialVar_Result = sLilycoveSSTidalSelections[gSpecialVar_Result];\n    }",
       "callsTo": [],
       "lineCount": 4
@@ -225,6 +362,12 @@
       "returnType": "void",
       "signature": "static void Task_PokemonPicWindow(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "struct Task *task = &gTasks[taskId];\n\n    switch (task->tState)\n    {\n    case 0:\n        task->tState++;\n        break;\n    case 1:\n         \n        break;\n    case 2:\n        FreeResourcesAndDestroySprite(&gSprites[task->tMonSpriteId], task->tMonSpriteId);\n        task->tState++;\n        break;\n    case 3:\n        ClearToTransparentAndRemoveWindow(task->tWindowId);\n        DestroyTask(taskId);\n        break;\n    }",
       "callsTo": [
         "ClearToTransparentAndRemoveWindow",
@@ -237,6 +380,20 @@
       "returnType": "bool8",
       "signature": "bool8 ScriptMenu_ShowPokemonPic(u16 species, u8 x, u8 y)",
       "paramsRaw": "u16 species, u8 x, u8 y",
+      "paramsList": [
+        {
+          "name": "species",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "x",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "y",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 taskId;\n    u8 spriteId;\n\n    if (FindTaskIdByFunc(Task_PokemonPicWindow) != TASK_NONE)\n    {\n        return FALSE;\n    }\n    else\n    {\n        spriteId = CreateMonSprite_PicBox(species, x * 8 + 40, y * 8 + 40, 0);\n        taskId = CreateTask(Task_PokemonPicWindow, 0x50);\n        gTasks[taskId].tWindowId = CreateWindowFromRect(x, y, 8, 8);\n        gTasks[taskId].tState = 0;\n        gTasks[taskId].tMonSpecies = species;\n        gTasks[taskId].tMonSpriteId = spriteId;\n        gSprites[spriteId].callback = SpriteCallbackDummy;\n        gSprites[spriteId].oam.priority = 0;\n        SetStandardWindowBorderStyle(gTasks[taskId].tWindowId, TRUE);\n        ScheduleBgCopyTilemapToVram(0);\n        return TRUE;\n    }",
       "callsTo": [
         "CreateMonSprite_PicBox",
@@ -252,6 +409,7 @@
       "returnType": "bool8",
       "signature": "static bool8 IsPicboxClosed(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (FindTaskIdByFunc(Task_PokemonPicWindow) == TASK_NONE)\n        return TRUE;\n    else\n        return FALSE;",
       "callsTo": [
         "FindTaskIdByFunc"
@@ -262,6 +420,24 @@
       "returnType": "u8",
       "signature": "u8 CreateWindowFromRect(u8 x, u8 y, u8 width, u8 height)",
       "paramsRaw": "u8 x, u8 y, u8 width, u8 height",
+      "paramsList": [
+        {
+          "name": "x",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "y",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "width",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "height",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "struct WindowTemplate template = CreateWindowTemplate(0, x + 1, y + 1, width, height, 15, 100);\n    u8 windowId = AddWindow(&template);\n    PutWindowTilemap(windowId);\n    return windowId;",
       "callsTo": [
         "AddWindow",
@@ -274,6 +450,12 @@
       "returnType": "void",
       "signature": "void ClearToTransparentAndRemoveWindow(u8 windowId)",
       "paramsRaw": "u8 windowId",
+      "paramsList": [
+        {
+          "name": "windowId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "ClearStdWindowAndFrameToTransparent(windowId, TRUE);\n    RemoveWindow(windowId);",
       "callsTo": [
         "ClearStdWindowAndFrameToTransparent",
@@ -285,6 +467,12 @@
       "returnType": "void",
       "signature": "static void DrawLinkServicesMultichoiceMenu(u8 multichoiceId)",
       "paramsRaw": "u8 multichoiceId",
+      "paramsList": [
+        {
+          "name": "multichoiceId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "switch (multichoiceId)\n    {\n    case MULTI_WIRELESS_NO_BERRY:\n        FillWindowPixelBuffer(0, PIXEL_FILL(1));\n        AddTextPrinterParameterized2(0, FONT_NORMAL, sWirelessOptionsNoBerryCrush[Menu_GetCursorPos()], 0, NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);\n        break;\n    case MULTI_CABLE_CLUB_WITH_RECORD_MIX:\n        FillWindowPixelBuffer(0, PIXEL_FILL(1));\n        AddTextPrinterParameterized2(0, FONT_NORMAL, sCableClubOptions_WithRecordMix[Menu_GetCursorPos()], 0, NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);\n        break;\n    case MULTI_WIRELESS_NO_RECORD:\n        FillWindowPixelBuffer(0, PIXEL_FILL(1));\n        AddTextPrinterParameterized2(0, FONT_NORMAL, sWirelessOptions_NoRecordMix[Menu_GetCursorPos()], 0, NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);\n        break;\n    case MULTI_WIRELESS_ALL_SERVICES:\n        FillWindowPixelBuffer(0, PIXEL_FILL(1));\n        AddTextPrinterParameterized2(0, FONT_NORMAL, sWirelessOptions_AllServices[Menu_GetCursorPos()], 0, NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);\n        break;\n    case MULTI_WIRELESS_NO_RECORD_BERRY:\n        FillWindowPixelBuffer(0, PIXEL_FILL(1));\n        AddTextPrinterParameterized2(0, FONT_NORMAL, sWirelessOptions_NoRecordMixBerryCrush[Menu_GetCursorPos()], 0, NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);\n        break;\n    case MULTI_CABLE_CLUB_NO_RECORD_MIX:\n        FillWindowPixelBuffer(0, PIXEL_FILL(1));\n        AddTextPrinterParameterized2(0, FONT_NORMAL, sCableClubOptions_NoRecordMix[Menu_GetCursorPos()], 0, NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);\n        break;\n    }",
       "callsTo": [
         "AddTextPrinterParameterized2",
@@ -298,6 +486,7 @@
       "returnType": "bool16",
       "signature": "bool16 ScriptMenu_CreateStartMenuForPokenavTutorial(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (FuncIsActiveTask(Task_HandleMultichoiceInput) == TRUE)\n    {\n        return FALSE;\n    }\n    else\n    {\n        gSpecialVar_Result = 0xFF;\n        CreateStartMenuForPokenavTutorial();\n        return TRUE;\n    }",
       "callsTo": [
         "CreateStartMenuForPokenavTutorial",
@@ -309,6 +498,7 @@
       "returnType": "void",
       "signature": "static void CreateStartMenuForPokenavTutorial(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 windowId = CreateWindowFromRect(21, 0, 7, 18);\n    SetStandardWindowBorderStyle(windowId, FALSE);\n    AddTextPrinterParameterized(windowId, FONT_NORMAL, gText_MenuOptionPokedex, 8, 9, TEXT_SKIP_DRAW, NULL);\n    AddTextPrinterParameterized(windowId, FONT_NORMAL, gText_MenuOptionPokemon, 8, 25, TEXT_SKIP_DRAW, NULL);\n    AddTextPrinterParameterized(windowId, FONT_NORMAL, gText_MenuOptionBag, 8, 41, TEXT_SKIP_DRAW, NULL);\n    AddTextPrinterParameterized(windowId, FONT_NORMAL, gText_MenuOptionPokenav, 8, 57, TEXT_SKIP_DRAW, NULL);\n    AddTextPrinterParameterized(windowId, FONT_NORMAL, gSaveBlock2Ptr->playerName, 8, 73, TEXT_SKIP_DRAW, NULL);\n    AddTextPrinterParameterized(windowId, FONT_NORMAL, gText_MenuOptionSave, 8, 89, TEXT_SKIP_DRAW, NULL);\n    AddTextPrinterParameterized(windowId, FONT_NORMAL, gText_MenuOptionOption, 8, 105, TEXT_SKIP_DRAW, NULL);\n    AddTextPrinterParameterized(windowId, FONT_NORMAL, gText_MenuOptionExit, 8, 121, TEXT_SKIP_DRAW, NULL);\n    InitMenuNormal(windowId, FONT_NORMAL, 0, 9, 16, ARRAY_COUNT(MultichoiceList_ForcedStartMenu), 0);\n    InitMultichoiceNoWrap(FALSE, ARRAY_COUNT(MultichoiceList_ForcedStartMenu), windowId, MULTI_FORCED_START_MENU);\n    CopyWindowToVram(windowId, COPYWIN_FULL);",
       "callsTo": [
         "ARRAY_COUNT",
@@ -325,6 +515,24 @@
       "returnType": "void",
       "signature": "static void InitMultichoiceNoWrap(bool8 ignoreBPress, u8 unusedCount, u8 windowId, u8 multichoiceId)",
       "paramsRaw": "bool8 ignoreBPress, u8 unusedCount, u8 windowId, u8 multichoiceId",
+      "paramsList": [
+        {
+          "name": "ignoreBPress",
+          "typeRaw": "bool8"
+        },
+        {
+          "name": "unusedCount",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "windowId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "multichoiceId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 taskId;\n    sProcessInputDelay = 2;\n    taskId = CreateTask(Task_HandleMultichoiceInput, 80);\n    gTasks[taskId].tIgnoreBPress = ignoreBPress;\n    gTasks[taskId].tDoWrap = 0;\n    gTasks[taskId].tWindowId = windowId;\n    gTasks[taskId].tMultichoiceId = multichoiceId;",
       "callsTo": [
         "CreateTask"
@@ -335,6 +543,12 @@
       "returnType": "int",
       "signature": "static int DisplayTextAndGetWidthInternal(const u8 *str)",
       "paramsRaw": "const u8 *str",
+      "paramsList": [
+        {
+          "name": "str",
+          "typeRaw": "const u8 *"
+        }
+      ],
       "body": "u8 temp[64];\n    StringExpandPlaceholders(temp, str);\n    return GetStringWidth(FONT_NORMAL, temp, 0);",
       "callsTo": [
         "GetStringWidth",
@@ -346,6 +560,16 @@
       "returnType": "int",
       "signature": "int DisplayTextAndGetWidth(const u8 *str, int prevWidth)",
       "paramsRaw": "const u8 *str, int prevWidth",
+      "paramsList": [
+        {
+          "name": "str",
+          "typeRaw": "const u8 *"
+        },
+        {
+          "name": "prevWidth",
+          "typeRaw": "int"
+        }
+      ],
       "body": "int width = DisplayTextAndGetWidthInternal(str);\n    if (width < prevWidth)\n    {\n        width = prevWidth;\n    }\n    return width;",
       "callsTo": [
         "DisplayTextAndGetWidthInternal"
@@ -356,6 +580,12 @@
       "returnType": "int",
       "signature": "int ConvertPixelWidthToTileWidth(int width)",
       "paramsRaw": "int width",
+      "paramsList": [
+        {
+          "name": "width",
+          "typeRaw": "int"
+        }
+      ],
       "body": "return (((width + 9) / 8) + 1) > MAX_MULTICHOICE_WIDTH ? MAX_MULTICHOICE_WIDTH : (((width + 9) / 8) + 1);",
       "callsTo": [],
       "lineCount": 1
@@ -364,6 +594,16 @@
       "returnType": "int",
       "signature": "int ScriptMenu_AdjustLeftCoordFromWidth(int left, int width)",
       "paramsRaw": "int left, int width",
+      "paramsList": [
+        {
+          "name": "left",
+          "typeRaw": "int"
+        },
+        {
+          "name": "width",
+          "typeRaw": "int"
+        }
+      ],
       "body": "int adjustedLeft = left;\n\n    if (left + width > MAX_MULTICHOICE_WIDTH)\n    {\n        if (MAX_MULTICHOICE_WIDTH - width < 0)\n        {\n            adjustedLeft = 0;\n        }\n        else\n        {\n            adjustedLeft = MAX_MULTICHOICE_WIDTH - width;\n        }\n    }\n\n    return adjustedLeft;",
       "callsTo": [],
       "lineCount": 15

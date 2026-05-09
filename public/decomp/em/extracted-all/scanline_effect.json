@@ -6,6 +6,7 @@
       "returnType": "void",
       "signature": "void ScanlineEffect_Stop(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gScanlineEffect.state = 0;\n    DmaStop(0);\n    if (gScanlineEffect.waveTaskId != TASK_NONE)\n    {\n        DestroyTask(gScanlineEffect.waveTaskId);\n        gScanlineEffect.waveTaskId = TASK_NONE;\n    }",
       "callsTo": [
         "DestroyTask",
@@ -17,6 +18,7 @@
       "returnType": "void",
       "signature": "void ScanlineEffect_Clear(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "CpuFill16(0, gScanlineEffectRegBuffers, sizeof(gScanlineEffectRegBuffers));\n    gScanlineEffect.dmaSrcBuffers[0] = NULL;\n    gScanlineEffect.dmaSrcBuffers[1] = NULL;\n    gScanlineEffect.dmaDest = NULL;\n    gScanlineEffect.dmaControl = 0;\n    gScanlineEffect.srcBuffer = 0;\n    gScanlineEffect.state = 0;\n    gScanlineEffect.unused16 = 0;\n    gScanlineEffect.unused17 = 0;\n    gScanlineEffect.waveTaskId = TASK_NONE;",
       "callsTo": [
         "CpuFill16"
@@ -27,6 +29,12 @@
       "returnType": "void",
       "signature": "void ScanlineEffect_SetParams(struct ScanlineEffectParams params)",
       "paramsRaw": "struct ScanlineEffectParams params",
+      "paramsList": [
+        {
+          "name": "params",
+          "typeRaw": "struct ScanlineEffectParams"
+        }
+      ],
       "body": "if (params.dmaControl == SCANLINE_EFFECT_DMACNT_16BIT)   \n    {\n         \n         \n        gScanlineEffect.dmaSrcBuffers[0] = (u16 *)gScanlineEffectRegBuffers[0] + 1;\n        gScanlineEffect.dmaSrcBuffers[1] = (u16 *)gScanlineEffectRegBuffers[1] + 1;\n        gScanlineEffect.setFirstScanlineReg = CopyValue16Bit;\n    }\n    else   \n    {\n         \n         \n        gScanlineEffect.dmaSrcBuffers[0] = (u32 *)gScanlineEffectRegBuffers[0] + 1;\n        gScanlineEffect.dmaSrcBuffers[1] = (u32 *)gScanlineEffectRegBuffers[1] + 1;\n        gScanlineEffect.setFirstScanlineReg = CopyValue32Bit;\n    }\n\n    gScanlineEffect.dmaControl = params.dmaControl;\n    gScanlineEffect.dmaDest    = params.dmaDest;\n    gScanlineEffect.state      = params.initState;\n    gScanlineEffect.unused16   = params.unused9;\n    gScanlineEffect.unused17   = params.unused9;",
       "callsTo": [],
       "lineCount": 22
@@ -35,6 +43,7 @@
       "returnType": "void",
       "signature": "void ScanlineEffect_InitHBlankDmaTransfer(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gScanlineEffect.state == 0)\n    {\n        return;\n    }\n    else if (gScanlineEffect.state == 3)\n    {\n        gScanlineEffect.state = 0;\n        DmaStop(0);\n        sShouldStopWaveTask = TRUE;\n    }\n    else\n    {\n        DmaStop(0);\n         \n         \n         \n        DmaSet(0, gScanlineEffect.dmaSrcBuffers[gScanlineEffect.srcBuffer], gScanlineEffect.dmaDest, gScanlineEffect.dmaControl);\n         \n        gScanlineEffect.setFirstScanlineReg();\n         \n        gScanlineEffect.srcBuffer ^= 1;\n    }",
       "callsTo": [
         "DmaSet",
@@ -46,6 +55,7 @@
       "returnType": "void",
       "signature": "static void CopyValue16Bit(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "vu16 *dest = (vu16 *)gScanlineEffect.dmaDest;\n    vu16 *src = (vu16 *)&gScanlineEffectRegBuffers[gScanlineEffect.srcBuffer];\n\n    *dest = *src;",
       "callsTo": [],
       "lineCount": 4
@@ -54,6 +64,7 @@
       "returnType": "void",
       "signature": "static void CopyValue32Bit(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "vu32 *dest = (vu32 *)gScanlineEffect.dmaDest;\n    vu32 *src = (vu32 *)&gScanlineEffectRegBuffers[gScanlineEffect.srcBuffer];\n\n    *dest = *src;",
       "callsTo": [],
       "lineCount": 4
@@ -62,6 +73,12 @@
       "returnType": "void",
       "signature": "static void TaskFunc_UpdateWavePerFrame(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "int value = 0;\n    int i;\n    int offset;\n\n    if (sShouldStopWaveTask)\n    {\n        DestroyTask(taskId);\n        gScanlineEffect.waveTaskId = TASK_NONE;\n    }\n    else\n    {\n        if (gTasks[taskId].tApplyBattleBgOffsets)\n        {\n            switch (gTasks[taskId].tRegOffset)\n            {\n            case SCANLINE_EFFECT_REG_BG0HOFS:\n                value = gBattle_BG0_X;\n                break;\n            case SCANLINE_EFFECT_REG_BG0VOFS:\n                value = gBattle_BG0_Y;\n                break;\n            case SCANLINE_EFFECT_REG_BG1HOFS:\n                value = gBattle_BG1_X;\n                break;\n            case SCANLINE_EFFECT_REG_BG1VOFS:\n                value = gBattle_BG1_Y;\n                break;\n            case SCANLINE_EFFECT_REG_BG2HOFS:\n                value = gBattle_BG2_X;\n                break;\n            case SCANLINE_EFFECT_REG_BG2VOFS:\n                value = gBattle_BG2_Y;\n                break;\n            case SCANLINE_EFFECT_REG_BG3HOFS:\n                value = gBattle_BG3_X;\n                break;\n            case SCANLINE_EFFECT_REG_BG3VOFS:\n                value = gBattle_BG3_Y;\n                break;\n            }\n        }\n        if (gTasks[taskId].tFramesUntilMove != 0)\n        {\n            gTasks[taskId].tFramesUntilMove--;\n            offset = gTasks[taskId].tSrcBufferOffset + 320;\n            for (i = gTasks[taskId].tStartLine; i < gTasks[taskId].tEndLine; i++)\n            {\n                gScanlineEffectRegBuffers[gScanlineEffect.srcBuffer][i] = gScanlineEffectRegBuffers[0][offset] + value;\n                offset++;\n            }\n        }\n        else\n        {\n            gTasks[taskId].tFramesUntilMove = gTasks[taskId].tDelayInterval;\n            offset = gTasks[taskId].tSrcBufferOffset + 320;\n            for (i = gTasks[taskId].tStartLine; i < gTasks[taskId].tEndLine; i++)\n            {\n                gScanlineEffectRegBuffers[gScanlineEffect.srcBuffer][i] = gScanlineEffectRegBuffers[0][offset] + value;\n                offset++;\n            }\n\n             \n            gTasks[taskId].tSrcBufferOffset++;\n            if (gTasks[taskId].tSrcBufferOffset == gTasks[taskId].tWaveLength)\n                gTasks[taskId].tSrcBufferOffset = 0;\n        }\n    }",
       "callsTo": [
         "DestroyTask"
@@ -72,6 +89,24 @@
       "returnType": "void",
       "signature": "static void GenerateWave(u16 *buffer, u8 frequency, u8 amplitude, u8 unused)",
       "paramsRaw": "u16 *buffer, u8 frequency, u8 amplitude, u8 unused",
+      "paramsList": [
+        {
+          "name": "buffer",
+          "typeRaw": "u16 *"
+        },
+        {
+          "name": "frequency",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "amplitude",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "unused",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u16 i = 0;\n    u8 theta = 0;\n\n    while (i < 256)\n    {\n        buffer[i] = (gSineTable[theta] * amplitude) / 256;\n        theta += frequency;\n        i++;\n    }",
       "callsTo": [],
       "lineCount": 9
@@ -80,6 +115,36 @@
       "returnType": "u8",
       "signature": "u8 ScanlineEffect_InitWave(u8 startLine, u8 endLine, u8 frequency, u8 amplitude, u8 delayInterval, u8 regOffset, bool8 applyBattleBgOffsets)",
       "paramsRaw": "u8 startLine, u8 endLine, u8 frequency, u8 amplitude, u8 delayInterval, u8 regOffset, bool8 applyBattleBgOffsets",
+      "paramsList": [
+        {
+          "name": "startLine",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "endLine",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "frequency",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "amplitude",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "delayInterval",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "regOffset",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "applyBattleBgOffsets",
+          "typeRaw": "bool8"
+        }
+      ],
       "body": "int i;\n    int offset;\n    struct ScanlineEffectParams params;\n    u8 taskId;\n\n    ScanlineEffect_Clear();\n\n    params.dmaDest = (void *)(REG_ADDR_BG0HOFS + regOffset);\n    params.dmaControl = SCANLINE_EFFECT_DMACNT_16BIT;\n    params.initState = 1;\n    params.unused9 = 0;\n    ScanlineEffect_SetParams(params);\n\n    taskId = CreateTask(TaskFunc_UpdateWavePerFrame, 0);\n\n    gTasks[taskId].tStartLine            = startLine;\n    gTasks[taskId].tEndLine              = endLine;\n    gTasks[taskId].tWaveLength           = 256 / frequency;\n    gTasks[taskId].tSrcBufferOffset      = 0;\n    gTasks[taskId].tFramesUntilMove      = delayInterval;\n    gTasks[taskId].tDelayInterval        = delayInterval;\n    gTasks[taskId].tRegOffset            = regOffset;\n    gTasks[taskId].tApplyBattleBgOffsets = applyBattleBgOffsets;\n\n    gScanlineEffect.waveTaskId = taskId;\n    sShouldStopWaveTask = FALSE;\n\n    GenerateWave(&gScanlineEffectRegBuffers[0][320], frequency, amplitude, endLine - startLine);\n\n    offset = 320;\n    for (i = startLine; i < endLine; i++)\n    {\n        gScanlineEffectRegBuffers[0][i] = gScanlineEffectRegBuffers[0][offset];\n        gScanlineEffectRegBuffers[1][i] = gScanlineEffectRegBuffers[0][offset];\n        offset++;\n    }\n\n    return taskId;",
       "callsTo": [
         "CreateTask",

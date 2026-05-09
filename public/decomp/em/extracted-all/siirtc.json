@@ -6,6 +6,7 @@
       "returnType": "void",
       "signature": "void SiiRtcUnprotect(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "EnableGpioPortRead();\n    sLocked = FALSE;",
       "callsTo": [
         "EnableGpioPortRead"
@@ -16,6 +17,7 @@
       "returnType": "void",
       "signature": "void SiiRtcProtect(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "DisableGpioPortRead();\n    sLocked = TRUE;",
       "callsTo": [
         "DisableGpioPortRead"
@@ -26,6 +28,7 @@
       "returnType": "u8",
       "signature": "u8 SiiRtcProbe(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 errorCode;\n    struct SiiRtcInfo rtc;\n\n    if (!SiiRtcGetStatus(&rtc))\n        return 0;\n\n    errorCode = 0;\n\n#ifdef BUGFIX\n    if (!(rtc.status & SIIRTCINFO_24HOUR) || (rtc.status & SIIRTCINFO_POWER))\n#else\n    if ((rtc.status & (SIIRTCINFO_POWER | SIIRTCINFO_24HOUR)) == SIIRTCINFO_POWER\n     || (rtc.status & (SIIRTCINFO_POWER | SIIRTCINFO_24HOUR)) == 0)\n#endif\n    {\n         \n\n         \n         \n         \n         \n\n        if (!SiiRtcReset())\n            return 0;\n\n        errorCode++;\n    }\n\n    SiiRtcGetTime(&rtc);\n\n    if (rtc.second & TEST_MODE)\n    {\n         \n\n        if (!SiiRtcReset())\n            return (errorCode << 4) & 0xF0;\n\n        errorCode++;\n    }\n\n    return (errorCode << 4) | 1;",
       "callsTo": [
         "SiiRtcGetStatus",
@@ -38,6 +41,7 @@
       "returnType": "bool8",
       "signature": "bool8 SiiRtcReset(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "bool8 result;\n    struct SiiRtcInfo rtc;\n\n    if (sLocked == TRUE)\n        return FALSE;\n\n    sLocked = TRUE;\n\n    GPIO_PORT_DATA = SCK_HI;\n    GPIO_PORT_DATA = SCK_HI | CS_HI;\n\n    GPIO_PORT_DIRECTION = DIR_ALL_OUT;\n\n    WriteCommand(CMD_RESET | WR);\n\n    GPIO_PORT_DATA = SCK_HI;\n    GPIO_PORT_DATA = SCK_HI;\n\n    sLocked = FALSE;\n\n    rtc.status = SIIRTCINFO_24HOUR;\n\n    result = SiiRtcSetStatus(&rtc);\n\n    return result;",
       "callsTo": [
         "SiiRtcSetStatus",
@@ -49,6 +53,12 @@
       "returnType": "bool8",
       "signature": "bool8 SiiRtcGetStatus(struct SiiRtcInfo *rtc)",
       "paramsRaw": "struct SiiRtcInfo *rtc",
+      "paramsList": [
+        {
+          "name": "rtc",
+          "typeRaw": "struct SiiRtcInfo *"
+        }
+      ],
       "body": "u8 statusData;\n\n    if (sLocked == TRUE)\n        return FALSE;\n\n    sLocked = TRUE;\n\n    GPIO_PORT_DATA = SCK_HI;\n    GPIO_PORT_DATA = SCK_HI | CS_HI;\n\n    GPIO_PORT_DIRECTION = DIR_ALL_OUT;\n\n    WriteCommand(CMD_STATUS | RD);\n\n    GPIO_PORT_DIRECTION = DIR_0_OUT | DIR_1_IN | DIR_2_OUT;\n\n    statusData = ReadData();\n\n    rtc->status = (statusData & (STATUS_POWER | STATUS_24HOUR))\n                | ((statusData & STATUS_INTAE) >> 3)\n                | ((statusData & STATUS_INTME) >> 2)\n                | ((statusData & STATUS_INTFE) >> 1);\n\n    GPIO_PORT_DATA = SCK_HI;\n    GPIO_PORT_DATA = SCK_HI;\n\n    sLocked = FALSE;\n\n    return TRUE;",
       "callsTo": [
         "ReadData",
@@ -60,6 +70,12 @@
       "returnType": "bool8",
       "signature": "bool8 SiiRtcSetStatus(struct SiiRtcInfo *rtc)",
       "paramsRaw": "struct SiiRtcInfo *rtc",
+      "paramsList": [
+        {
+          "name": "rtc",
+          "typeRaw": "struct SiiRtcInfo *"
+        }
+      ],
       "body": "u8 statusData;\n\n    if (sLocked == TRUE)\n        return FALSE;\n\n    sLocked = TRUE;\n\n    GPIO_PORT_DATA = SCK_HI;\n    GPIO_PORT_DATA = SCK_HI | CS_HI;\n\n    statusData = STATUS_24HOUR\n               | ((rtc->status & SIIRTCINFO_INTAE) << 3)\n               | ((rtc->status & SIIRTCINFO_INTME) << 2)\n               | ((rtc->status & SIIRTCINFO_INTFE) << 1);\n\n    GPIO_PORT_DIRECTION = DIR_ALL_OUT;\n\n    WriteCommand(CMD_STATUS | WR);\n\n    WriteData(statusData);\n\n    GPIO_PORT_DATA = SCK_HI;\n    GPIO_PORT_DATA = SCK_HI;\n\n    sLocked = FALSE;\n\n    return TRUE;",
       "callsTo": [
         "WriteCommand",
@@ -71,6 +87,12 @@
       "returnType": "bool8",
       "signature": "bool8 SiiRtcGetDateTime(struct SiiRtcInfo *rtc)",
       "paramsRaw": "struct SiiRtcInfo *rtc",
+      "paramsList": [
+        {
+          "name": "rtc",
+          "typeRaw": "struct SiiRtcInfo *"
+        }
+      ],
       "body": "u8 i;\n\n    if (sLocked == TRUE)\n        return FALSE;\n\n    sLocked = TRUE;\n\n    GPIO_PORT_DATA = SCK_HI;\n    GPIO_PORT_DATA = SCK_HI | CS_HI;\n\n    GPIO_PORT_DIRECTION = DIR_ALL_OUT;\n\n    WriteCommand(CMD_DATETIME | RD);\n\n    GPIO_PORT_DIRECTION = DIR_0_OUT | DIR_1_IN | DIR_2_OUT;\n\n    for (i = 0; i < DATETIME_BUF_LEN; i++)\n        DATETIME_BUF(rtc, i) = ReadData();\n\n    INFO_BUF(rtc, OFFSET_HOUR) &= 0x7F;\n\n    GPIO_PORT_DATA = SCK_HI;\n    GPIO_PORT_DATA = SCK_HI;\n\n    sLocked = FALSE;\n\n    return TRUE;",
       "callsTo": [
         "DATETIME_BUF",
@@ -84,6 +106,12 @@
       "returnType": "bool8",
       "signature": "bool8 SiiRtcSetDateTime(struct SiiRtcInfo *rtc)",
       "paramsRaw": "struct SiiRtcInfo *rtc",
+      "paramsList": [
+        {
+          "name": "rtc",
+          "typeRaw": "struct SiiRtcInfo *"
+        }
+      ],
       "body": "u8 i;\n\n    if (sLocked == TRUE)\n        return FALSE;\n\n    sLocked = TRUE;\n\n    GPIO_PORT_DATA = SCK_HI;\n    GPIO_PORT_DATA = SCK_HI | CS_HI;\n\n    GPIO_PORT_DIRECTION = DIR_ALL_OUT;\n\n    WriteCommand(CMD_DATETIME | WR);\n\n    for (i = 0; i < DATETIME_BUF_LEN; i++)\n        WriteData(DATETIME_BUF(rtc, i));\n\n    GPIO_PORT_DATA = SCK_HI;\n    GPIO_PORT_DATA = SCK_HI;\n\n    sLocked = FALSE;\n\n    return TRUE;",
       "callsTo": [
         "DATETIME_BUF",
@@ -96,6 +124,12 @@
       "returnType": "bool8",
       "signature": "bool8 SiiRtcGetTime(struct SiiRtcInfo *rtc)",
       "paramsRaw": "struct SiiRtcInfo *rtc",
+      "paramsList": [
+        {
+          "name": "rtc",
+          "typeRaw": "struct SiiRtcInfo *"
+        }
+      ],
       "body": "u8 i;\n\n    if (sLocked == TRUE)\n        return FALSE;\n\n    sLocked = TRUE;\n\n    GPIO_PORT_DATA = SCK_HI;\n    GPIO_PORT_DATA = SCK_HI | CS_HI;\n\n    GPIO_PORT_DIRECTION = DIR_ALL_OUT;\n\n    WriteCommand(CMD_TIME | RD);\n\n    GPIO_PORT_DIRECTION = DIR_0_OUT | DIR_1_IN | DIR_2_OUT;\n\n    for (i = 0; i < TIME_BUF_LEN; i++)\n        TIME_BUF(rtc, i) = ReadData();\n\n    INFO_BUF(rtc, OFFSET_HOUR) &= 0x7F;\n\n    GPIO_PORT_DATA = SCK_HI;\n    GPIO_PORT_DATA = SCK_HI;\n\n    sLocked = FALSE;\n\n    return TRUE;",
       "callsTo": [
         "INFO_BUF",
@@ -109,6 +143,12 @@
       "returnType": "bool8",
       "signature": "bool8 SiiRtcSetTime(struct SiiRtcInfo *rtc)",
       "paramsRaw": "struct SiiRtcInfo *rtc",
+      "paramsList": [
+        {
+          "name": "rtc",
+          "typeRaw": "struct SiiRtcInfo *"
+        }
+      ],
       "body": "u8 i;\n\n    if (sLocked == TRUE)\n        return FALSE;\n\n    sLocked = TRUE;\n\n    GPIO_PORT_DATA = SCK_HI;\n    GPIO_PORT_DATA = SCK_HI | CS_HI;\n\n    GPIO_PORT_DIRECTION = DIR_ALL_OUT;\n\n    WriteCommand(CMD_TIME | WR);\n\n    for (i = 0; i < TIME_BUF_LEN; i++)\n        WriteData(TIME_BUF(rtc, i));\n\n    GPIO_PORT_DATA = SCK_HI;\n    GPIO_PORT_DATA = SCK_HI;\n\n    sLocked = FALSE;\n\n    return TRUE;",
       "callsTo": [
         "TIME_BUF",
@@ -121,6 +161,12 @@
       "returnType": "int",
       "signature": "static int WriteCommand(u8 value)",
       "paramsRaw": "u8 value",
+      "paramsList": [
+        {
+          "name": "value",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 i;\n    u8 temp;\n\n    for (i = 0; i < 8; i++)\n    {\n        temp = ((value >> (7 - i)) & 1);\n        GPIO_PORT_DATA = (temp << 1) | CS_HI;\n        GPIO_PORT_DATA = (temp << 1) | CS_HI;\n        GPIO_PORT_DATA = (temp << 1) | CS_HI;\n        GPIO_PORT_DATA = (temp << 1) | SCK_HI | CS_HI;\n    }\n\n     \n     \n#ifdef UBFIX\n    return 0;\n#endif",
       "callsTo": [],
       "lineCount": 17
@@ -129,6 +175,12 @@
       "returnType": "int",
       "signature": "static int WriteData(u8 value)",
       "paramsRaw": "u8 value",
+      "paramsList": [
+        {
+          "name": "value",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 i;\n    u8 temp;\n\n    for (i = 0; i < 8; i++)\n    {\n        temp = ((value >> i) & 1);\n        GPIO_PORT_DATA = (temp << 1) | CS_HI;\n        GPIO_PORT_DATA = (temp << 1) | CS_HI;\n        GPIO_PORT_DATA = (temp << 1) | CS_HI;\n        GPIO_PORT_DATA = (temp << 1) | SCK_HI | CS_HI;\n    }\n\n     \n     \n#ifdef UBFIX\n    return 0;\n#endif",
       "callsTo": [],
       "lineCount": 17
@@ -137,6 +189,7 @@
       "returnType": "u8",
       "signature": "static u8 ReadData()",
       "paramsRaw": "",
+      "paramsList": [],
       "body": "u8 i;\n    u8 temp;\n    u8 value;\n\n#ifdef UBFIX\n    value = 0;\n#endif\n\n    for (i = 0; i < 8; i++)\n    {\n        GPIO_PORT_DATA = CS_HI;\n        GPIO_PORT_DATA = CS_HI;\n        GPIO_PORT_DATA = CS_HI;\n        GPIO_PORT_DATA = CS_HI;\n        GPIO_PORT_DATA = CS_HI;\n        GPIO_PORT_DATA = SCK_HI | CS_HI;\n\n        temp = ((GPIO_PORT_DATA & SIO_HI) >> 1);\n        value = (value >> 1) | (temp << 7);\n    }\n\n    return value;",
       "callsTo": [],
       "lineCount": 22
@@ -145,6 +198,7 @@
       "returnType": "void",
       "signature": "static void EnableGpioPortRead()",
       "paramsRaw": "",
+      "paramsList": [],
       "body": "GPIO_PORT_READ_ENABLE = TRUE;",
       "callsTo": [],
       "lineCount": 1
@@ -153,6 +207,7 @@
       "returnType": "void",
       "signature": "static void DisableGpioPortRead()",
       "paramsRaw": "",
+      "paramsList": [],
       "body": "GPIO_PORT_READ_ENABLE = FALSE;",
       "callsTo": [],
       "lineCount": 1

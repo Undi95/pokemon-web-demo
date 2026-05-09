@@ -6,6 +6,7 @@
       "returnType": "void",
       "signature": "void ClearRoamerData(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "memset(ROAMER, 0, sizeof(*ROAMER));\n    ROAMER->species = SPECIES_LATIAS;",
       "callsTo": [],
       "lineCount": 2
@@ -14,6 +15,7 @@
       "returnType": "void",
       "signature": "void ClearRoamerLocationData(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n\n    for (i = 0; i < ARRAY_COUNT(sLocationHistory); i++)\n    {\n        sLocationHistory[i][MAP_GRP] = 0;\n        sLocationHistory[i][MAP_NUM] = 0;\n    }\n\n    sRoamerLocation[MAP_GRP] = 0;\n    sRoamerLocation[MAP_NUM] = 0;",
       "callsTo": [
         "ARRAY_COUNT"
@@ -24,6 +26,12 @@
       "returnType": "void",
       "signature": "static void CreateInitialRoamerMon(bool16 createLatios)",
       "paramsRaw": "bool16 createLatios",
+      "paramsList": [
+        {
+          "name": "createLatios",
+          "typeRaw": "bool16"
+        }
+      ],
       "body": "if (!createLatios)\n        ROAMER->species = SPECIES_LATIAS;\n    else\n        ROAMER->species = SPECIES_LATIOS;\n\n    CreateMon(&gEnemyParty[0], ROAMER->species, 40, USE_RANDOM_IVS, FALSE, 0, OT_ID_PLAYER_ID, 0);\n    ROAMER->level = 40;\n    ROAMER->status = 0;\n    ROAMER->active = TRUE;\n    ROAMER->ivs = GetMonData(&gEnemyParty[0], MON_DATA_IVS);\n    ROAMER->personality = GetMonData(&gEnemyParty[0], MON_DATA_PERSONALITY);\n    ROAMER->hp = GetMonData(&gEnemyParty[0], MON_DATA_MAX_HP);\n    ROAMER->cool = GetMonData(&gEnemyParty[0], MON_DATA_COOL);\n    ROAMER->beauty = GetMonData(&gEnemyParty[0], MON_DATA_BEAUTY);\n    ROAMER->cute = GetMonData(&gEnemyParty[0], MON_DATA_CUTE);\n    ROAMER->smart = GetMonData(&gEnemyParty[0], MON_DATA_SMART);\n    ROAMER->tough = GetMonData(&gEnemyParty[0], MON_DATA_TOUGH);\n    sRoamerLocation[MAP_GRP] = ROAMER_MAP_GROUP;\n    sRoamerLocation[MAP_NUM] = sRoamerLocations[Random() % NUM_LOCATION_SETS][0];",
       "callsTo": [
         "CreateMon",
@@ -36,6 +44,7 @@
       "returnType": "void",
       "signature": "void InitRoamer(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ClearRoamerData();\n    ClearRoamerLocationData();\n    CreateInitialRoamerMon(gSpecialVar_0x8004);",
       "callsTo": [
         "ClearRoamerData",
@@ -48,6 +57,7 @@
       "returnType": "void",
       "signature": "void UpdateLocationHistoryForRoamer(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sLocationHistory[2][MAP_GRP] = sLocationHistory[1][MAP_GRP];\n    sLocationHistory[2][MAP_NUM] = sLocationHistory[1][MAP_NUM];\n\n    sLocationHistory[1][MAP_GRP] = sLocationHistory[0][MAP_GRP];\n    sLocationHistory[1][MAP_NUM] = sLocationHistory[0][MAP_NUM];\n\n    sLocationHistory[0][MAP_GRP] = gSaveBlock1Ptr->location.mapGroup;\n    sLocationHistory[0][MAP_NUM] = gSaveBlock1Ptr->location.mapNum;",
       "callsTo": [],
       "lineCount": 8
@@ -56,6 +66,7 @@
       "returnType": "void",
       "signature": "void RoamerMoveToOtherLocationSet(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 mapNum = 0;\n\n    if (!ROAMER->active)\n        return;\n\n    sRoamerLocation[MAP_GRP] = ROAMER_MAP_GROUP;\n\n     \n     \n    while (1)\n    {\n        mapNum = sRoamerLocations[Random() % NUM_LOCATION_SETS][0];\n        if (sRoamerLocation[MAP_NUM] != mapNum)\n        {\n            sRoamerLocation[MAP_NUM] = mapNum;\n            return;\n        }\n    }",
       "callsTo": [
         "Random"
@@ -66,6 +77,7 @@
       "returnType": "void",
       "signature": "void RoamerMove(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 locSet = 0;\n\n    if ((Random() % 16) == 0)\n    {\n        RoamerMoveToOtherLocationSet();\n    }\n    else\n    {\n        if (!ROAMER->active)\n            return;\n\n        while (locSet < NUM_LOCATION_SETS)\n        {\n             \n            if (sRoamerLocation[MAP_NUM] == sRoamerLocations[locSet][0])\n            {\n                u8 mapNum;\n                while (1)\n                {\n                     \n                     \n                    mapNum = sRoamerLocations[locSet][(Random() % (NUM_LOCATIONS_PER_SET - 1)) + 1];\n                    if (!(sLocationHistory[2][MAP_GRP] == ROAMER_MAP_GROUP\n                       && sLocationHistory[2][MAP_NUM] == mapNum)\n                       && mapNum != MAP_NUM(MAP_UNDEFINED))\n                        break;\n                }\n                sRoamerLocation[MAP_NUM] = mapNum;\n                return;\n            }\n            locSet++;\n        }\n    }",
       "callsTo": [
         "MAP_NUM",
@@ -78,6 +90,16 @@
       "returnType": "bool8",
       "signature": "bool8 IsRoamerAt(u8 mapGroup, u8 mapNum)",
       "paramsRaw": "u8 mapGroup, u8 mapNum",
+      "paramsList": [
+        {
+          "name": "mapGroup",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "mapNum",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (ROAMER->active && mapGroup == sRoamerLocation[MAP_GRP] && mapNum == sRoamerLocation[MAP_NUM])\n        return TRUE;\n    else\n        return FALSE;",
       "callsTo": [],
       "lineCount": 4
@@ -86,6 +108,7 @@
       "returnType": "void",
       "signature": "void CreateRoamerMonInstance(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u32 status;\n    struct Pokemon *mon = &gEnemyParty[0];\n    ZeroEnemyPartyMons();\n    CreateMonWithIVsPersonality(mon, ROAMER->species, ROAMER->level, ROAMER->ivs, ROAMER->personality);\n \n \n#ifdef BUGFIX\n    status = ROAMER->status;\n    SetMonData(mon, MON_DATA_STATUS, &status);\n#else\n    SetMonData(mon, MON_DATA_STATUS, &ROAMER->status);\n#endif\n    SetMonData(mon, MON_DATA_HP, &ROAMER->hp);\n    SetMonData(mon, MON_DATA_COOL, &ROAMER->cool);\n    SetMonData(mon, MON_DATA_BEAUTY, &ROAMER->beauty);\n    SetMonData(mon, MON_DATA_CUTE, &ROAMER->cute);\n    SetMonData(mon, MON_DATA_SMART, &ROAMER->smart);\n    SetMonData(mon, MON_DATA_TOUGH, &ROAMER->tough);",
       "callsTo": [
         "CreateMonWithIVsPersonality",
@@ -98,6 +121,7 @@
       "returnType": "bool8",
       "signature": "bool8 TryStartRoamerEncounter(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (IsRoamerAt(gSaveBlock1Ptr->location.mapGroup, gSaveBlock1Ptr->location.mapNum) == TRUE && (Random() % 4) == 0)\n    {\n        CreateRoamerMonInstance();\n        return TRUE;\n    }\n    else\n    {\n        return FALSE;\n    }",
       "callsTo": [
         "CreateRoamerMonInstance",
@@ -110,6 +134,12 @@
       "returnType": "void",
       "signature": "void UpdateRoamerHPStatus(struct Pokemon *mon)",
       "paramsRaw": "struct Pokemon *mon",
+      "paramsList": [
+        {
+          "name": "mon",
+          "typeRaw": "struct Pokemon *"
+        }
+      ],
       "body": "ROAMER->hp = GetMonData(mon, MON_DATA_HP);\n    ROAMER->status = GetMonData(mon, MON_DATA_STATUS);\n\n    RoamerMoveToOtherLocationSet();",
       "callsTo": [
         "GetMonData",
@@ -121,6 +151,7 @@
       "returnType": "void",
       "signature": "void SetRoamerInactive(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ROAMER->active = FALSE;",
       "callsTo": [],
       "lineCount": 1
@@ -129,6 +160,16 @@
       "returnType": "void",
       "signature": "void GetRoamerLocation(u8 *mapGroup, u8 *mapNum)",
       "paramsRaw": "u8 *mapGroup, u8 *mapNum",
+      "paramsList": [
+        {
+          "name": "mapGroup",
+          "typeRaw": "u8 *"
+        },
+        {
+          "name": "mapNum",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "*mapGroup = sRoamerLocation[MAP_GRP];\n    *mapNum = sRoamerLocation[MAP_NUM];",
       "callsTo": [],
       "lineCount": 2

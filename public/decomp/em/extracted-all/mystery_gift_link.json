@@ -6,6 +6,12 @@
       "returnType": "u32",
       "signature": "u32 MysteryGiftLink_Recv(struct MysteryGiftLink *link)",
       "paramsRaw": "struct MysteryGiftLink *link",
+      "paramsList": [
+        {
+          "name": "link",
+          "typeRaw": "struct MysteryGiftLink *"
+        }
+      ],
       "body": "return link->recvFunc(link);",
       "callsTo": [],
       "lineCount": 1
@@ -14,6 +20,12 @@
       "returnType": "u32",
       "signature": "u32 MysteryGiftLink_Send(struct MysteryGiftLink *link)",
       "paramsRaw": "struct MysteryGiftLink *link",
+      "paramsList": [
+        {
+          "name": "link",
+          "typeRaw": "struct MysteryGiftLink *"
+        }
+      ],
       "body": "return link->sendFunc(link);",
       "callsTo": [],
       "lineCount": 1
@@ -22,6 +34,20 @@
       "returnType": "void",
       "signature": "void MysteryGiftLink_Init(struct MysteryGiftLink *link, u32 sendPlayerId, u32 recvPlayerId)",
       "paramsRaw": "struct MysteryGiftLink *link, u32 sendPlayerId, u32 recvPlayerId",
+      "paramsList": [
+        {
+          "name": "link",
+          "typeRaw": "struct MysteryGiftLink *"
+        },
+        {
+          "name": "sendPlayerId",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "recvPlayerId",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "link->sendPlayerId = sendPlayerId;\n    link->recvPlayerId = recvPlayerId;\n    link->state = 0;\n    link->sendCRC = 0;\n    link->sendSize = 0;\n    link->sendCounter = 0;\n    link->recvCRC = 0;\n    link->recvSize = 0;\n    link->recvCounter = 0;\n    link->sendBuffer = NULL;\n    link->recvBuffer = NULL;\n    link->sendFunc = MGL_Send;\n    link->recvFunc = MGL_Receive;",
       "callsTo": [],
       "lineCount": 13
@@ -30,6 +56,24 @@
       "returnType": "void",
       "signature": "void MysteryGiftLink_InitSend(struct MysteryGiftLink *link, u32 ident, const void *src, u32 size)",
       "paramsRaw": "struct MysteryGiftLink *link, u32 ident, const void *src, u32 size",
+      "paramsList": [
+        {
+          "name": "link",
+          "typeRaw": "struct MysteryGiftLink *"
+        },
+        {
+          "name": "ident",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "src",
+          "typeRaw": "const void *"
+        },
+        {
+          "name": "size",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "link->state = 0;\n    link->sendIdent = ident;\n    link->sendCounter = 0;\n    link->sendCRC = 0;\n    if (size != 0)\n        link->sendSize = size;\n    else\n        link->sendSize = MG_LINK_BUFFER_SIZE;\n    link->sendBuffer = src;",
       "callsTo": [],
       "lineCount": 9
@@ -38,6 +82,20 @@
       "returnType": "void",
       "signature": "void MysteryGiftLink_InitRecv(struct MysteryGiftLink *link, u32 ident, void *dest)",
       "paramsRaw": "struct MysteryGiftLink *link, u32 ident, void *dest",
+      "paramsList": [
+        {
+          "name": "link",
+          "typeRaw": "struct MysteryGiftLink *"
+        },
+        {
+          "name": "ident",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "dest",
+          "typeRaw": "void *"
+        }
+      ],
       "body": "link->state = 0;\n    link->recvIdent = ident;\n    link->recvCounter = 0;\n    link->recvCRC = 0;\n    link->recvSize = 0;\n    link->recvBuffer = dest;",
       "callsTo": [],
       "lineCount": 6
@@ -46,6 +104,20 @@
       "returnType": "void",
       "signature": "static void MGL_ReceiveBlock(u32 playerId, void *dest, size_t size)",
       "paramsRaw": "u32 playerId, void *dest, size_t size",
+      "paramsList": [
+        {
+          "name": "playerId",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "dest",
+          "typeRaw": "void *"
+        },
+        {
+          "name": "size",
+          "typeRaw": "size_t"
+        }
+      ],
       "body": "memcpy(dest, gBlockRecvBuffer[playerId], size);",
       "callsTo": [],
       "lineCount": 1
@@ -54,6 +126,12 @@
       "returnType": "bool32",
       "signature": "static bool32 MGL_HasReceived(u32 playerId)",
       "paramsRaw": "u32 playerId",
+      "paramsList": [
+        {
+          "name": "playerId",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "if ((GetBlockReceivedStatus() >> playerId) & 1)\n        return TRUE;\n    else\n        return FALSE;",
       "callsTo": [
         "GetBlockReceivedStatus"
@@ -64,6 +142,12 @@
       "returnType": "void",
       "signature": "static void MGL_ResetReceived(u32 playerId)",
       "paramsRaw": "u32 playerId",
+      "paramsList": [
+        {
+          "name": "playerId",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "ResetBlockReceivedFlag(playerId);",
       "callsTo": [
         "ResetBlockReceivedFlag"
@@ -74,6 +158,12 @@
       "returnType": "bool32",
       "signature": "static bool32 MGL_Receive(struct MysteryGiftLink *link)",
       "paramsRaw": "struct MysteryGiftLink *link",
+      "paramsList": [
+        {
+          "name": "link",
+          "typeRaw": "struct MysteryGiftLink *"
+        }
+      ],
       "body": "struct SendRecvHeader header;\n\n    switch (link->state)\n    {\n    case 0:\n        if (MGL_HasReceived(link->recvPlayerId))\n        {\n            MGL_ReceiveBlock(link->recvPlayerId, &header, sizeof(header));\n            link->recvSize = header.size;\n            link->recvCRC = header.crc;\n            if (link->recvSize > MG_LINK_BUFFER_SIZE)\n            {\n                LinkRfu_FatalError();\n                return FALSE;\n            }\n            else if (link->recvIdent != header.ident)\n            {\n                LinkRfu_FatalError();\n                return FALSE;\n            }\n            else\n            {\n                link->recvCounter = 0;\n                MGL_ResetReceived(link->recvPlayerId);\n                link->state++;\n            }\n        }\n        break;\n    case 1:\n        if (MGL_HasReceived(link->recvPlayerId))\n        {\n            size_t blocksize = link->recvCounter * 252;\n            if (link->recvSize - blocksize <= 252)\n            {\n                MGL_ReceiveBlock(link->recvPlayerId, link->recvBuffer + blocksize, link->recvSize - blocksize);\n                link->recvCounter++;\n                link->state++;\n            }\n            else\n            {\n                MGL_ReceiveBlock(link->recvPlayerId, link->recvBuffer + blocksize, 252);\n                link->recvCounter++;\n            }\n            MGL_ResetReceived(link->recvPlayerId);\n        }\n        break;\n    case 2:\n        if (CalcCRC16WithTable(link->recvBuffer, link->recvSize) != link->recvCRC)\n        {\n            LinkRfu_FatalError();\n            return FALSE;\n        }\n        else\n        {\n            link->state = 0;\n            return TRUE;\n        }\n        break;\n    }\n\n    return FALSE;",
       "callsTo": [
         "CalcCRC16WithTable",
@@ -88,6 +178,12 @@
       "returnType": "bool32",
       "signature": "static bool32 MGL_Send(struct MysteryGiftLink *link)",
       "paramsRaw": "struct MysteryGiftLink *link",
+      "paramsList": [
+        {
+          "name": "link",
+          "typeRaw": "struct MysteryGiftLink *"
+        }
+      ],
       "body": "struct SendRecvHeader header;\n\n    switch (link->state)\n    {\n    case 0:\n        if (IsLinkTaskFinished())\n        {\n            header.ident = link->sendIdent;\n            header.size = link->sendSize;\n            header.crc = CalcCRC16WithTable(link->sendBuffer, link->sendSize);\n            link->sendCRC = header.crc;\n            link->sendCounter = 0;\n            SendBlock(0, &header, sizeof(header));\n            link->state++;\n        }\n        break;\n    case 1:\n        if (IsLinkTaskFinished())\n        {\n            if (MGL_HasReceived(link->sendPlayerId))\n            {\n                size_t blocksize;\n                MGL_ResetReceived(link->sendPlayerId);\n                blocksize = 252 * link->sendCounter;\n                if (link->sendSize - blocksize <= 252)\n                {\n                    SendBlock(0, link->sendBuffer + blocksize, link->sendSize - blocksize);\n                    link->sendCounter++;\n                    link->state++;\n                }\n                else\n                {\n                    SendBlock(0, link->sendBuffer + blocksize, 252);\n                    link->sendCounter++;\n                }\n            }\n        }\n        break;\n    case 2:\n        if (IsLinkTaskFinished())\n        {\n            if (CalcCRC16WithTable(link->sendBuffer, link->sendSize) != link->sendCRC)\n                LinkRfu_FatalError();\n            else\n                link->state++;\n        }\n        break;\n    case 3:\n        if (MGL_HasReceived(link->sendPlayerId))\n        {\n            MGL_ResetReceived(link->sendPlayerId);\n            link->state = 0;\n            return TRUE;\n        }\n        break;\n    }\n\n    return FALSE;",
       "callsTo": [
         "CalcCRC16WithTable",

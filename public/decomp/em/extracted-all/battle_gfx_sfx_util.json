@@ -6,6 +6,7 @@
       "returnType": "void",
       "signature": "void AllocateBattleSpritesData(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gBattleSpritesDataPtr = AllocZeroed(sizeof(struct BattleSpriteData));\n    gBattleSpritesDataPtr->battlerData = AllocZeroed(sizeof(struct BattleSpriteInfo) * MAX_BATTLERS_COUNT);\n    gBattleSpritesDataPtr->healthBoxesData = AllocZeroed(sizeof(struct BattleHealthboxInfo) * MAX_BATTLERS_COUNT);\n    gBattleSpritesDataPtr->animationData = AllocZeroed(sizeof(struct BattleAnimationInfo));\n    gBattleSpritesDataPtr->battleBars = AllocZeroed(sizeof(struct BattleBarInfo) * MAX_BATTLERS_COUNT);",
       "callsTo": [
         "AllocZeroed"
@@ -16,6 +17,7 @@
       "returnType": "void",
       "signature": "void FreeBattleSpritesData(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gBattleSpritesDataPtr == NULL)\n        return;\n\n    FREE_AND_SET_NULL(gBattleSpritesDataPtr->battleBars);\n    FREE_AND_SET_NULL(gBattleSpritesDataPtr->animationData);\n    FREE_AND_SET_NULL(gBattleSpritesDataPtr->healthBoxesData);\n    FREE_AND_SET_NULL(gBattleSpritesDataPtr->battlerData);\n    FREE_AND_SET_NULL(gBattleSpritesDataPtr);",
       "callsTo": [
         "FREE_AND_SET_NULL"
@@ -26,6 +28,7 @@
       "returnType": "u16",
       "signature": "u16 ChooseMoveAndTargetInBattlePalace(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s32 i, var1, var2;\n    s32 chosenMoveId = -1;\n    struct ChooseMoveStruct *moveInfo = (struct ChooseMoveStruct *)(&gBattleBufferA[gActiveBattler][4]);\n    u8 unusableMovesBits = CheckMoveLimitations(gActiveBattler, 0, MOVE_LIMITATIONS_ALL);\n    s32 percent = Random() % 100;\n\n     \n     \n    #define maxGroupNum var1\n    #define minGroupNum var2\n    #define selectedGroup percent\n    #define selectedMoves var2\n    #define moveTarget var1\n    #define numMovesPerGroup var1\n    #define numMultipleMoveGroups var2\n    #define randSelectGroup var2\n\n     \n     \n    i = (gBattleStruct->palaceFlags & gBitTable[gActiveBattler]) ? 2 : 0;\n    minGroupNum = i;\n\n    maxGroupNum = i + 2;  \n\n     \n     \n     \n     \n    for (; i < maxGroupNum; i++)\n    {\n        if (gBattlePalaceNatureToMoveGroupLikelihood[GetNatureFromPersonality(gBattleMons[gActiveBattler].personality)][i] > percent)\n            break;\n    }\n    selectedGroup = i - minGroupNum;\n    if (i == maxGroupNum)\n        selectedGroup = PALACE_MOVE_GROUP_SUPPORT;\n\n     \n    for (selectedMoves = 0, i = 0; i < MAX_MON_MOVES; i++)\n    {\n        if (moveInfo->moves[i] == MOVE_NONE)\n            break;\n        if (selectedGroup == GetBattlePalaceMoveGroup(moveInfo->moves[i]) && moveInfo->currentPp[i] != 0)\n            selectedMoves |= gBitTable[i];\n    }\n\n     \n    if (selectedMoves != 0)\n    {\n         \n         \n        gBattleStruct->palaceFlags &= (1 << MAX_BATTLERS_COUNT) - 1;\n        gBattleStruct->palaceFlags |= (selectedMoves << MAX_BATTLERS_COUNT);\n        BattleAI_SetupAIData(selectedMoves);\n        chosenMoveId = BattleAI_ChooseMoveOrAction();\n    }\n\n     \n     \n     \n    if (chosenMoveId == -1)\n    {\n        if (unusableMovesBits != ALL_MOVES_MASK)\n        {\n            numMovesPerGroup = 0, numMultipleMoveGroups = 0;\n\n            for (i = 0; i < MAX_MON_MOVES; i++)\n            {\n                 \n                 \n                if (GetBattlePalaceMoveGroup(moveInfo->moves[i]) == PALACE_MOVE_GROUP_ATTACK && !(gBitTable[i] & unusableMovesBits))\n                    numMovesPerGroup += (1 << 0);\n                if (GetBattlePalaceMoveGroup(moveInfo->moves[i]) == PALACE_MOVE_GROUP_DEFENSE && !(gBitTable[i] & unusableMovesBits))\n                    numMovesPerGroup += (1 << 4);\n                if (GetBattlePalaceMoveGroup(moveInfo->moves[i]) == PALACE_MOVE_GROUP_SUPPORT && !(gBitTable[i] & unusableMovesBits))\n                    numMovesPerGroup += (1 << 8);\n            }\n\n             \n             \n             \n             \n             \n             \n            if ((numMovesPerGroup & 0xF) >= 2)\n                numMultipleMoveGroups++;\n            if ((numMovesPerGroup & (0xF << 4)) >= (2 << 4))\n                numMultipleMoveGroups++;\n#ifdef BUGFIX\n            if ((numMovesPerGroup & (0xF << 8)) >= (2 << 8))\n#else\n            if ((numMovesPerGroup & (0xF << 4)) >= (2 << 8))\n#endif\n                numMultipleMoveGroups++;\n\n\n             \n             \n             \n             \n             \n             \n            if (numMultipleMoveGroups > 1 || numMultipleMoveGroups == 0)\n            {\n                do\n                {\n                    i = Random() % MAX_MON_MOVES;\n                    if (!(gBitTable[i] & unusableMovesBits))\n                        chosenMoveId = i;\n                } while (chosenMoveId == -1);\n            }\n            else\n            {\n                 \n                 \n\n                 \n                 \n                 \n                if ((numMovesPerGroup & 0xF) >= 2)\n                    randSelectGroup = PALACE_MOVE_GROUP_ATTACK;\n                if ((numMovesPerGroup & (0xF << 4)) >= (2 << 4))\n                    randSelectGroup = PALACE_MOVE_GROUP_DEFENSE;\n#ifdef BUGFIX\n                if ((numMovesPerGroup & (0xF << 8)) >= (2 << 8))\n#else\n                if ((numMovesPerGroup & (0xF << 4)) >= (2 << 8))\n#endif\n                    randSelectGroup = PALACE_MOVE_GROUP_SUPPORT;\n\n                do\n                {\n                    i = Random() % MAX_MON_MOVES;\n                    if (!(gBitTable[i] & unusableMovesBits) && randSelectGroup == GetBattlePalaceMoveGroup(moveInfo->moves[i]))\n                        chosenMoveId = i;\n                } while (chosenMoveId == -1);\n            }\n\n             \n             \n            if (Random() % 100 >= 50)\n            {\n                gProtectStructs[gActiveBattler].palaceUnableToUseMove = TRUE;\n                return 0;\n            }\n        }\n        else\n        {\n             \n            gProtectStructs[gActiveBattler].palaceUnableToUseMove = TRUE;\n            return 0;\n        }\n    }\n\n    if (moveInfo->moves[chosenMoveId] == MOVE_CURSE)\n    {\n        if (moveInfo->monTypes[0] != TYPE_GHOST && moveInfo->monTypes[1] != TYPE_GHOST)\n            moveTarget = MOVE_TARGET_USER;\n        else\n            moveTarget = MOVE_TARGET_SELECTED;\n    }\n    else\n    {\n        moveTarget = gBattleMoves[moveInfo->moves[chosenMoveId]].target;\n    }\n\n    if (moveTarget & MOVE_TARGET_USER)\n        chosenMoveId |= (gActiveBattler << 8);\n    else if (moveTarget == MOVE_TARGET_SELECTED)\n        chosenMoveId |= GetBattlePalaceTarget();\n    else\n        chosenMoveId |= (GetBattlerAtPosition(BATTLE_OPPOSITE(GET_BATTLER_SIDE(gActiveBattler))) << 8);\n\n    return chosenMoveId;",
       "callsTo": [
         "BATTLE_OPPOSITE",
@@ -45,6 +48,12 @@
       "returnType": "u8",
       "signature": "static u8 GetBattlePalaceMoveGroup(u16 move)",
       "paramsRaw": "u16 move",
+      "paramsList": [
+        {
+          "name": "move",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "switch (gBattleMoves[move].target)\n    {\n    case MOVE_TARGET_SELECTED:\n    case MOVE_TARGET_USER_OR_SELECTED:\n    case MOVE_TARGET_RANDOM:\n    case MOVE_TARGET_BOTH:\n    case MOVE_TARGET_FOES_AND_ALLY:\n        if (gBattleMoves[move].power == 0)\n            return PALACE_MOVE_GROUP_SUPPORT;\n        else\n            return PALACE_MOVE_GROUP_ATTACK;\n        break;\n    case MOVE_TARGET_DEPENDS:\n    case MOVE_TARGET_OPPONENTS_FIELD:\n        return PALACE_MOVE_GROUP_SUPPORT;\n    case MOVE_TARGET_USER:\n        return PALACE_MOVE_GROUP_DEFENSE;\n    default:\n        return PALACE_MOVE_GROUP_ATTACK;\n    }",
       "callsTo": [],
       "lineCount": 20
@@ -53,6 +62,7 @@
       "returnType": "u16",
       "signature": "static u16 GetBattlePalaceTarget(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gBattleTypeFlags & BATTLE_TYPE_DOUBLE)\n    {\n        u8 opposing1, opposing2;\n\n        if (GetBattlerSide(gActiveBattler) == B_SIDE_PLAYER)\n        {\n            opposing1 = GetBattlerAtPosition(B_POSITION_OPPONENT_LEFT);\n            opposing2 = GetBattlerAtPosition(B_POSITION_OPPONENT_RIGHT);\n        }\n        else\n        {\n            opposing1 = GetBattlerAtPosition(B_POSITION_PLAYER_LEFT);\n            opposing2 = GetBattlerAtPosition(B_POSITION_PLAYER_RIGHT);\n        }\n\n        if (gBattleMons[opposing1].hp == gBattleMons[opposing2].hp)\n            return (BATTLE_OPPOSITE(gActiveBattler & BIT_SIDE) + (Random() & 2)) << 8;\n\n        switch (gBattlePalaceNatureToMoveTarget[GetNatureFromPersonality(gBattleMons[gActiveBattler].personality)])\n        {\n        case PALACE_TARGET_STRONGER:\n            if (gBattleMons[opposing1].hp > gBattleMons[opposing2].hp)\n                return opposing1 << 8;\n            else\n                return opposing2 << 8;\n        case PALACE_TARGET_WEAKER:\n            if (gBattleMons[opposing1].hp < gBattleMons[opposing2].hp)\n                return opposing1 << 8;\n            else\n                return opposing2 << 8;\n        case PALACE_TARGET_RANDOM:\n            return (BATTLE_OPPOSITE(gActiveBattler & BIT_SIDE) + (Random() & 2)) << 8;\n        }\n    }\n\n    return BATTLE_OPPOSITE(gActiveBattler) << 8;",
       "callsTo": [
         "BATTLE_OPPOSITE",
@@ -67,6 +77,12 @@
       "returnType": "void",
       "signature": "void SpriteCB_WaitForBattlerBallReleaseAnim(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "u8 spriteId = sprite->data[1];\n\n    if (!gSprites[spriteId].affineAnimEnded)\n        return;\n    if (gSprites[spriteId].invisible)\n        return;\n\n    if (gSprites[spriteId].animPaused)\n    {\n        gSprites[spriteId].animPaused = 0;\n    }\n    else\n    {\n        if (gSprites[spriteId].animEnded)\n            sprite->callback = SpriteCallbackDummy;\n    }",
       "callsTo": [],
       "lineCount": 16
@@ -75,6 +91,12 @@
       "returnType": "void",
       "signature": "void SpriteCB_TrainerSlideIn(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (!(gIntroSlideFlags & 1))\n    {\n        sprite->x2 += sprite->sSpeedX;\n        if (sprite->x2 == 0)\n        {\n            if (sprite->y2 != 0)\n                sprite->callback = SpriteCB_TrainerSlideVertical;\n            else\n                sprite->callback = SpriteCallbackDummy;\n        }\n    }",
       "callsTo": [],
       "lineCount": 11
@@ -83,6 +105,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_TrainerSlideVertical(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "sprite->y2 -= 2;\n    if (sprite->y2 == 0)\n        sprite->callback = SpriteCallbackDummy;",
       "callsTo": [],
       "lineCount": 3
@@ -91,6 +119,16 @@
       "returnType": "void",
       "signature": "void InitAndLaunchChosenStatusAnimation(bool8 isStatus2, u32 status)",
       "paramsRaw": "bool8 isStatus2, u32 status",
+      "paramsList": [
+        {
+          "name": "isStatus2",
+          "typeRaw": "bool8"
+        },
+        {
+          "name": "status",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "gBattleSpritesDataPtr->healthBoxesData[gActiveBattler].statusAnimActive = 1;\n    if (!isStatus2)\n    {\n        if (status == STATUS1_FREEZE)\n            LaunchStatusAnimation(gActiveBattler, B_ANIM_STATUS_FRZ);\n        else if (status == STATUS1_POISON || status & STATUS1_TOXIC_POISON)\n            LaunchStatusAnimation(gActiveBattler, B_ANIM_STATUS_PSN);\n        else if (status == STATUS1_BURN)\n            LaunchStatusAnimation(gActiveBattler, B_ANIM_STATUS_BRN);\n        else if (status & STATUS1_SLEEP)\n            LaunchStatusAnimation(gActiveBattler, B_ANIM_STATUS_SLP);\n        else if (status == STATUS1_PARALYSIS)\n            LaunchStatusAnimation(gActiveBattler, B_ANIM_STATUS_PRZ);\n        else  \n            gBattleSpritesDataPtr->healthBoxesData[gActiveBattler].statusAnimActive = 0;\n    }\n    else\n    {\n        if (status & STATUS2_INFATUATION)\n            LaunchStatusAnimation(gActiveBattler, B_ANIM_STATUS_INFATUATION);\n        else if (status & STATUS2_CONFUSION)\n            LaunchStatusAnimation(gActiveBattler, B_ANIM_STATUS_CONFUSION);\n        else if (status & STATUS2_CURSED)\n            LaunchStatusAnimation(gActiveBattler, B_ANIM_STATUS_CURSED);\n        else if (status & STATUS2_NIGHTMARE)\n            LaunchStatusAnimation(gActiveBattler, B_ANIM_STATUS_NIGHTMARE);\n        else if (status & STATUS2_WRAPPED)\n            LaunchStatusAnimation(gActiveBattler, B_ANIM_STATUS_WRAPPED);  \n        else  \n            gBattleSpritesDataPtr->healthBoxesData[gActiveBattler].statusAnimActive = 0;\n    }",
       "callsTo": [
         "LaunchStatusAnimation"
@@ -101,6 +139,28 @@
       "returnType": "bool8",
       "signature": "bool8 TryHandleLaunchBattleTableAnimation(u8 activeBattler, u8 atkBattler, u8 defBattler, u8 tableId, u16 argument)",
       "paramsRaw": "u8 activeBattler, u8 atkBattler, u8 defBattler, u8 tableId, u16 argument",
+      "paramsList": [
+        {
+          "name": "activeBattler",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "atkBattler",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "defBattler",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "tableId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "argument",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "u8 taskId;\n\n    if (tableId == B_ANIM_CASTFORM_CHANGE && (argument & CASTFORM_SUBSTITUTE))\n    {\n         \n        gBattleMonForms[activeBattler] = (argument & ~CASTFORM_SUBSTITUTE);\n        return TRUE;\n    }\n    if (gBattleSpritesDataPtr->battlerData[activeBattler].behindSubstitute\n        && !ShouldAnimBeDoneRegardlessOfSubstitute(tableId))\n    {\n        return TRUE;\n    }\n    if (gBattleSpritesDataPtr->battlerData[activeBattler].behindSubstitute\n        && tableId == B_ANIM_SUBSTITUTE_FADE\n        && gSprites[gBattlerSpriteIds[activeBattler]].invisible)\n    {\n        LoadBattleMonGfxAndAnimate(activeBattler, TRUE, gBattlerSpriteIds[activeBattler]);\n        ClearBehindSubstituteBit(activeBattler);\n        return TRUE;\n    }\n\n    gBattleAnimAttacker = atkBattler;\n    gBattleAnimTarget = defBattler;\n    gBattleSpritesDataPtr->animationData->animArg = argument;\n    LaunchBattleAnimation(gBattleAnims_General, tableId, FALSE);\n    taskId = CreateTask(Task_ClearBitWhenBattleTableAnimDone, 10);\n    gTasks[taskId].tBattlerId = activeBattler;\n    gBattleSpritesDataPtr->healthBoxesData[gTasks[taskId].tBattlerId].animFromTableActive = 1;\n\n    return FALSE;",
       "callsTo": [
         "ClearBehindSubstituteBit",
@@ -115,6 +175,12 @@
       "returnType": "void",
       "signature": "static void Task_ClearBitWhenBattleTableAnimDone(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "gAnimScriptCallback();\n    if (!gAnimScriptActive)\n    {\n        gBattleSpritesDataPtr->healthBoxesData[gTasks[taskId].tBattlerId].animFromTableActive = 0;\n        DestroyTask(taskId);\n    }",
       "callsTo": [
         "DestroyTask"
@@ -125,6 +191,12 @@
       "returnType": "bool8",
       "signature": "static bool8 ShouldAnimBeDoneRegardlessOfSubstitute(u8 animId)",
       "paramsRaw": "u8 animId",
+      "paramsList": [
+        {
+          "name": "animId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "switch (animId)\n    {\n    case B_ANIM_SUBSTITUTE_FADE:\n    case B_ANIM_RAIN_CONTINUES:\n    case B_ANIM_SUN_CONTINUES:\n    case B_ANIM_SANDSTORM_CONTINUES:\n    case B_ANIM_HAIL_CONTINUES:\n    case B_ANIM_SNATCH_MOVE:\n        return TRUE;\n    default:\n        return FALSE;\n    }",
       "callsTo": [],
       "lineCount": 12
@@ -133,6 +205,24 @@
       "returnType": "void",
       "signature": "void InitAndLaunchSpecialAnimation(u8 activeBattler, u8 atkBattler, u8 defBattler, u8 tableId)",
       "paramsRaw": "u8 activeBattler, u8 atkBattler, u8 defBattler, u8 tableId",
+      "paramsList": [
+        {
+          "name": "activeBattler",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "atkBattler",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "defBattler",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "tableId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 taskId;\n\n    gBattleAnimAttacker = atkBattler;\n    gBattleAnimTarget = defBattler;\n    LaunchBattleAnimation(gBattleAnims_Special, tableId, FALSE);\n    taskId = CreateTask(Task_ClearBitWhenSpecialAnimDone, 10);\n    gTasks[taskId].tBattlerId = activeBattler;\n    gBattleSpritesDataPtr->healthBoxesData[gTasks[taskId].tBattlerId].specialAnimActive = 1;",
       "callsTo": [
         "CreateTask",
@@ -144,6 +234,12 @@
       "returnType": "void",
       "signature": "static void Task_ClearBitWhenSpecialAnimDone(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "gAnimScriptCallback();\n    if (!gAnimScriptActive)\n    {\n        gBattleSpritesDataPtr->healthBoxesData[gTasks[taskId].tBattlerId].specialAnimActive = 0;\n        DestroyTask(taskId);\n    }",
       "callsTo": [
         "DestroyTask"
@@ -154,6 +250,16 @@
       "returnType": "bool8",
       "signature": "bool8 IsMoveWithoutAnimation(u16 move, u8 animationTurn)",
       "paramsRaw": "u16 move, u8 animationTurn",
+      "paramsList": [
+        {
+          "name": "move",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "animationTurn",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "return FALSE;",
       "callsTo": [],
       "lineCount": 1
@@ -162,6 +268,12 @@
       "returnType": "bool8",
       "signature": "bool8 IsBattleSEPlaying(u8 battler)",
       "paramsRaw": "u8 battler",
+      "paramsList": [
+        {
+          "name": "battler",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 zero = 0;\n\n    if (IsSEPlaying())\n    {\n        gBattleSpritesDataPtr->healthBoxesData[battler].soundTimer++;\n        if (gBattleSpritesDataPtr->healthBoxesData[gActiveBattler].soundTimer < 30)\n            return TRUE;\n\n        m4aMPlayStop(&gMPlayInfo_SE1);\n        m4aMPlayStop(&gMPlayInfo_SE2);\n    }\n    if (zero == 0)\n    {\n        gBattleSpritesDataPtr->healthBoxesData[battler].soundTimer = 0;\n        return FALSE;\n    }\n\n     \n    return TRUE;",
       "callsTo": [
         "IsSEPlaying"
@@ -172,6 +284,16 @@
       "returnType": "void",
       "signature": "void BattleLoadOpponentMonSpriteGfx(struct Pokemon *mon, u8 battler)",
       "paramsRaw": "struct Pokemon *mon, u8 battler",
+      "paramsList": [
+        {
+          "name": "mon",
+          "typeRaw": "struct Pokemon *"
+        },
+        {
+          "name": "battler",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u32 monsPersonality, currentPersonality, otId;\n    u16 species;\n    u8 position;\n    u16 paletteOffset;\n    const void *lzPaletteData;\n\n    monsPersonality = GetMonData(mon, MON_DATA_PERSONALITY);\n\n    if (gBattleSpritesDataPtr->battlerData[battler].transformSpecies == SPECIES_NONE)\n    {\n        species = GetMonData(mon, MON_DATA_SPECIES);\n        currentPersonality = monsPersonality;\n    }\n    else\n    {\n        species = gBattleSpritesDataPtr->battlerData[battler].transformSpecies;\n        currentPersonality = gTransformedPersonalities[battler];\n    }\n\n    otId = GetMonData(mon, MON_DATA_OT_ID);\n    position = GetBattlerPosition(battler);\n    HandleLoadSpecialPokePic_DontHandleDeoxys(&gMonFrontPicTable[species],\n                                              gMonSpritesGfxPtr->sprites.ptr[position],\n                                              species, currentPersonality);\n\n    paletteOffset = OBJ_PLTT_ID(battler);\n\n    if (gBattleSpritesDataPtr->battlerData[battler].transformSpecies == SPECIES_NONE)\n        lzPaletteData = GetMonFrontSpritePal(mon);\n    else\n        lzPaletteData = GetMonSpritePalFromSpeciesAndPersonality(species, otId, monsPersonality);\n\n    LZDecompressWram(lzPaletteData, gDecompressionBuffer);\n    LoadPalette(gDecompressionBuffer, paletteOffset, PLTT_SIZE_4BPP);\n    LoadPalette(gDecompressionBuffer, BG_PLTT_ID(8) + BG_PLTT_ID(battler), PLTT_SIZE_4BPP);\n\n    if (species == SPECIES_CASTFORM)\n    {\n        paletteOffset = OBJ_PLTT_ID(battler);\n        LZDecompressWram(lzPaletteData, gBattleStruct->castformPalette);\n        LoadPalette(gBattleStruct->castformPalette[gBattleMonForms[battler]], paletteOffset, PLTT_SIZE_4BPP);\n    }\n\n     \n    if (gBattleSpritesDataPtr->battlerData[battler].transformSpecies != SPECIES_NONE)\n    {\n        BlendPalette(paletteOffset, 16, 6, RGB_WHITE);\n        CpuCopy32(&gPlttBufferFaded[paletteOffset], &gPlttBufferUnfaded[paletteOffset], PLTT_SIZEOF(16));\n    }",
       "callsTo": [
         "BG_PLTT_ID",
@@ -193,6 +315,16 @@
       "returnType": "void",
       "signature": "void BattleLoadPlayerMonSpriteGfx(struct Pokemon *mon, u8 battler)",
       "paramsRaw": "struct Pokemon *mon, u8 battler",
+      "paramsList": [
+        {
+          "name": "mon",
+          "typeRaw": "struct Pokemon *"
+        },
+        {
+          "name": "battler",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u32 monsPersonality, currentPersonality, otId;\n    u16 species;\n    u8 position;\n    u16 paletteOffset;\n    const void *lzPaletteData;\n\n    monsPersonality = GetMonData(mon, MON_DATA_PERSONALITY);\n\n    if (gBattleSpritesDataPtr->battlerData[battler].transformSpecies == SPECIES_NONE)\n    {\n        species = GetMonData(mon, MON_DATA_SPECIES);\n        currentPersonality = monsPersonality;\n    }\n    else\n    {\n        species = gBattleSpritesDataPtr->battlerData[battler].transformSpecies;\n        currentPersonality = gTransformedPersonalities[battler];\n    }\n\n    otId = GetMonData(mon, MON_DATA_OT_ID);\n    position = GetBattlerPosition(battler);\n\n    if (ShouldIgnoreDeoxysForm(1, battler) == TRUE || gBattleSpritesDataPtr->battlerData[battler].transformSpecies != SPECIES_NONE)\n    {\n        HandleLoadSpecialPokePic_DontHandleDeoxys(&gMonBackPicTable[species],\n                                                  gMonSpritesGfxPtr->sprites.ptr[position],\n                                                  species, currentPersonality);\n    }\n    else\n    {\n        HandleLoadSpecialPokePic(&gMonBackPicTable[species],\n                                gMonSpritesGfxPtr->sprites.ptr[position],\n                                species, currentPersonality);\n    }\n\n    paletteOffset = OBJ_PLTT_ID(battler);\n\n    if (gBattleSpritesDataPtr->battlerData[battler].transformSpecies == SPECIES_NONE)\n        lzPaletteData = GetMonFrontSpritePal(mon);\n    else\n        lzPaletteData = GetMonSpritePalFromSpeciesAndPersonality(species, otId, monsPersonality);\n\n    LZDecompressWram(lzPaletteData, gDecompressionBuffer);\n    LoadPalette(gDecompressionBuffer, paletteOffset, PLTT_SIZE_4BPP);\n    LoadPalette(gDecompressionBuffer, BG_PLTT_ID(8) + BG_PLTT_ID(battler), PLTT_SIZE_4BPP);\n\n    if (species == SPECIES_CASTFORM)\n    {\n        paletteOffset = OBJ_PLTT_ID(battler);\n        LZDecompressWram(lzPaletteData, gBattleStruct->castformPalette);\n        LoadPalette(gBattleStruct->castformPalette[gBattleMonForms[battler]], paletteOffset, PLTT_SIZE_4BPP);\n    }\n\n     \n    if (gBattleSpritesDataPtr->battlerData[battler].transformSpecies != SPECIES_NONE)\n    {\n        BlendPalette(paletteOffset, 16, 6, RGB_WHITE);\n        CpuCopy32(&gPlttBufferFaded[paletteOffset], &gPlttBufferUnfaded[paletteOffset], PLTT_SIZEOF(16));\n    }",
       "callsTo": [
         "BG_PLTT_ID",
@@ -216,6 +348,12 @@
       "returnType": "void",
       "signature": "void BattleGfxSfxDummy2(u16 species)",
       "paramsRaw": "u16 species",
+      "paramsList": [
+        {
+          "name": "species",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "",
       "callsTo": [],
       "lineCount": 1
@@ -224,6 +362,16 @@
       "returnType": "void",
       "signature": "void DecompressTrainerFrontPic(u16 frontPicId, u8 battler)",
       "paramsRaw": "u16 frontPicId, u8 battler",
+      "paramsList": [
+        {
+          "name": "frontPicId",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "battler",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 position = GetBattlerPosition(battler);\n    DecompressPicFromTable_2(&gTrainerFrontPicTable[frontPicId],\n                             gMonSpritesGfxPtr->sprites.ptr[position],\n                             SPECIES_NONE);\n    LoadCompressedSpritePalette(&gTrainerFrontPicPaletteTable[frontPicId]);",
       "callsTo": [
         "DecompressPicFromTable_2",
@@ -236,6 +384,16 @@
       "returnType": "void",
       "signature": "void DecompressTrainerBackPic(u16 backPicId, u8 battler)",
       "paramsRaw": "u16 backPicId, u8 battler",
+      "paramsList": [
+        {
+          "name": "backPicId",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "battler",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 position = GetBattlerPosition(battler);\n#ifdef BUGFIX\n    CpuCopy32(gTrainerBackPicTable[backPicId].data, gMonSpritesGfxPtr->sprites.ptr[position], gTrainerBackPicTable[backPicId].size);\n#else\n     \n     \n     \n     \n    DecompressPicFromTable_2(&gTrainerBackPicTable[backPicId],\n                             gMonSpritesGfxPtr->sprites.ptr[position],\n                             SPECIES_NONE);\n#endif\n    LoadCompressedPalette(gTrainerBackPicPaletteTable[backPicId].data,\n                          OBJ_PLTT_ID(battler), PLTT_SIZE_4BPP);",
       "callsTo": [
         "CpuCopy32",
@@ -250,6 +408,12 @@
       "returnType": "void",
       "signature": "void BattleGfxSfxDummy3(u8 gender)",
       "paramsRaw": "u8 gender",
+      "paramsList": [
+        {
+          "name": "gender",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "",
       "callsTo": [],
       "lineCount": 1
@@ -258,6 +422,12 @@
       "returnType": "void",
       "signature": "void FreeTrainerFrontPicPalette(u16 frontPicId)",
       "paramsRaw": "u16 frontPicId",
+      "paramsList": [
+        {
+          "name": "frontPicId",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "FreeSpritePaletteByTag(gTrainerFrontPicPaletteTable[frontPicId].tag);",
       "callsTo": [
         "FreeSpritePaletteByTag"
@@ -268,6 +438,7 @@
       "returnType": "void",
       "signature": "void BattleLoadAllHealthBoxesGfxAtOnce(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 numberOfBattlers = 0;\n    u8 i;\n\n    LoadSpritePalette(&sSpritePalettes_HealthBoxHealthBar[0]);\n    LoadSpritePalette(&sSpritePalettes_HealthBoxHealthBar[1]);\n    if (!IsDoubleBattle())\n    {\n        LoadCompressedSpriteSheet(&sSpriteSheet_SinglesPlayerHealthbox);\n        LoadCompressedSpriteSheet(&sSpriteSheet_SinglesOpponentHealthbox);\n        numberOfBattlers = 2;\n    }\n    else\n    {\n        LoadCompressedSpriteSheet(&sSpriteSheets_DoublesPlayerHealthbox[0]);\n        LoadCompressedSpriteSheet(&sSpriteSheets_DoublesPlayerHealthbox[1]);\n        LoadCompressedSpriteSheet(&sSpriteSheets_DoublesOpponentHealthbox[0]);\n        LoadCompressedSpriteSheet(&sSpriteSheets_DoublesOpponentHealthbox[1]);\n        numberOfBattlers = MAX_BATTLERS_COUNT;\n    }\n    for (i = 0; i < numberOfBattlers; i++)\n        LoadCompressedSpriteSheet(&sSpriteSheets_HealthBar[gBattlerPositions[i]]);",
       "callsTo": [
         "IsDoubleBattle",
@@ -280,6 +451,12 @@
       "returnType": "bool8",
       "signature": "bool8 BattleLoadAllHealthBoxesGfx(u8 state)",
       "paramsRaw": "u8 state",
+      "paramsList": [
+        {
+          "name": "state",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "bool8 retVal = FALSE;\n\n    if (state != 0)\n    {\n        if (state == 1)\n        {\n            LoadSpritePalette(&sSpritePalettes_HealthBoxHealthBar[0]);\n            LoadSpritePalette(&sSpritePalettes_HealthBoxHealthBar[1]);\n        }\n        else if (!IsDoubleBattle())\n        {\n            if (state == 2)\n            {\n                if (gBattleTypeFlags & BATTLE_TYPE_SAFARI)\n                    LoadCompressedSpriteSheet(&sSpriteSheet_SafariHealthbox);\n                else\n                    LoadCompressedSpriteSheet(&sSpriteSheet_SinglesPlayerHealthbox);\n            }\n            else if (state == 3)\n            {\n                LoadCompressedSpriteSheet(&sSpriteSheet_SinglesOpponentHealthbox);\n            }\n            else if (state == 4)\n            {\n                LoadCompressedSpriteSheet(&sSpriteSheets_HealthBar[gBattlerPositions[B_BATTLER_0]]);\n            }\n            else if (state == 5)\n            {\n                LoadCompressedSpriteSheet(&sSpriteSheets_HealthBar[gBattlerPositions[B_BATTLER_1]]);\n            }\n            else\n            {\n                retVal = TRUE;\n            }\n        }\n        else\n        {\n            if (state == 2)\n                LoadCompressedSpriteSheet(&sSpriteSheets_DoublesPlayerHealthbox[0]);\n            else if (state == 3)\n                LoadCompressedSpriteSheet(&sSpriteSheets_DoublesPlayerHealthbox[1]);\n            else if (state == 4)\n                LoadCompressedSpriteSheet(&sSpriteSheets_DoublesOpponentHealthbox[0]);\n            else if (state == 5)\n                LoadCompressedSpriteSheet(&sSpriteSheets_DoublesOpponentHealthbox[1]);\n            else if (state == 6)\n                LoadCompressedSpriteSheet(&sSpriteSheets_HealthBar[gBattlerPositions[B_BATTLER_0]]);\n            else if (state == 7)\n                LoadCompressedSpriteSheet(&sSpriteSheets_HealthBar[gBattlerPositions[B_BATTLER_1]]);\n            else if (state == 8)\n                LoadCompressedSpriteSheet(&sSpriteSheets_HealthBar[gBattlerPositions[B_BATTLER_2]]);\n            else if (state == 9)\n                LoadCompressedSpriteSheet(&sSpriteSheets_HealthBar[gBattlerPositions[B_BATTLER_3]]);\n            else\n                retVal = TRUE;\n        }\n    }\n\n    return retVal;",
       "callsTo": [
         "IsDoubleBattle",
@@ -292,6 +469,12 @@
       "returnType": "void",
       "signature": "void LoadBattleBarGfx(u8 unused)",
       "paramsRaw": "u8 unused",
+      "paramsList": [
+        {
+          "name": "unused",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "LZDecompressWram(gBattleInterfaceGfx_BattleBar, gMonSpritesGfxPtr->barFontGfx);",
       "callsTo": [
         "LZDecompressWram"
@@ -302,6 +485,16 @@
       "returnType": "bool8",
       "signature": "bool8 BattleInitAllSprites(u8 *state1, u8 *battler)",
       "paramsRaw": "u8 *state1, u8 *battler",
+      "paramsList": [
+        {
+          "name": "state1",
+          "typeRaw": "u8 *"
+        },
+        {
+          "name": "battler",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "bool8 retVal = FALSE;\n\n    switch (*state1)\n    {\n    case 0:\n        ClearSpritesBattlerHealthboxAnimData();\n        (*state1)++;\n        break;\n    case 1:\n        if (!BattleLoadAllHealthBoxesGfx(*battler))\n        {\n            (*battler)++;\n        }\n        else\n        {\n            *battler = 0;\n            (*state1)++;\n        }\n        break;\n    case 2:\n        (*state1)++;\n        break;\n    case 3:\n        if ((gBattleTypeFlags & BATTLE_TYPE_SAFARI) && *battler == 0)\n            gHealthboxSpriteIds[*battler] = CreateSafariPlayerHealthboxSprites();\n        else\n            gHealthboxSpriteIds[*battler] = CreateBattlerHealthboxSprites(*battler);\n\n        (*battler)++;\n        if (*battler == gBattlersCount)\n        {\n            *battler = 0;\n            (*state1)++;\n        }\n        break;\n    case 4:\n        InitBattlerHealthboxCoords(*battler);\n        if (gBattlerPositions[*battler] <= B_POSITION_OPPONENT_LEFT)\n            DummyBattleInterfaceFunc(gHealthboxSpriteIds[*battler], FALSE);\n        else\n            DummyBattleInterfaceFunc(gHealthboxSpriteIds[*battler], TRUE);\n\n        (*battler)++;\n        if (*battler == gBattlersCount)\n        {\n            *battler = 0;\n            (*state1)++;\n        }\n        break;\n    case 5:\n        if (GetBattlerSide(*battler) == B_SIDE_PLAYER)\n        {\n            if (!(gBattleTypeFlags & BATTLE_TYPE_SAFARI))\n                UpdateHealthboxAttribute(gHealthboxSpriteIds[*battler], &gPlayerParty[gBattlerPartyIndexes[*battler]], HEALTHBOX_ALL);\n        }\n        else\n        {\n            UpdateHealthboxAttribute(gHealthboxSpriteIds[*battler], &gEnemyParty[gBattlerPartyIndexes[*battler]], HEALTHBOX_ALL);\n        }\n        SetHealthboxSpriteInvisible(gHealthboxSpriteIds[*battler]);\n        (*battler)++;\n        if (*battler == gBattlersCount)\n        {\n            *battler = 0;\n            (*state1)++;\n        }\n        break;\n    case 6:\n        LoadAndCreateEnemyShadowSprites();\n        BufferBattlePartyCurrentOrder();\n        retVal = TRUE;\n        break;\n    }\n\n    return retVal;",
       "callsTo": [
         "BattleLoadAllHealthBoxesGfx",
@@ -322,6 +515,7 @@
       "returnType": "void",
       "signature": "void ClearSpritesHealthboxAnimData(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "memset(gBattleSpritesDataPtr->healthBoxesData, 0, sizeof(struct BattleHealthboxInfo) * MAX_BATTLERS_COUNT);\n    memset(gBattleSpritesDataPtr->animationData, 0, sizeof(struct BattleAnimationInfo));",
       "callsTo": [],
       "lineCount": 2
@@ -330,6 +524,7 @@
       "returnType": "void",
       "signature": "static void ClearSpritesBattlerHealthboxAnimData(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ClearSpritesHealthboxAnimData();\n    memset(gBattleSpritesDataPtr->battlerData, 0, sizeof(struct BattleSpriteInfo) * MAX_BATTLERS_COUNT);",
       "callsTo": [
         "ClearSpritesHealthboxAnimData"
@@ -340,6 +535,7 @@
       "returnType": "void",
       "signature": "void CopyAllBattleSpritesInvisibilities(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s32 i;\n\n    for (i = 0; i < gBattlersCount; i++)\n        gBattleSpritesDataPtr->battlerData[i].invisible = gSprites[gBattlerSpriteIds[i]].invisible;",
       "callsTo": [],
       "lineCount": 4
@@ -348,6 +544,12 @@
       "returnType": "void",
       "signature": "void CopyBattleSpriteInvisibility(u8 battler)",
       "paramsRaw": "u8 battler",
+      "paramsList": [
+        {
+          "name": "battler",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "gBattleSpritesDataPtr->battlerData[battler].invisible = gSprites[gBattlerSpriteIds[battler]].invisible;",
       "callsTo": [],
       "lineCount": 1
@@ -356,6 +558,20 @@
       "returnType": "void",
       "signature": "void HandleSpeciesGfxDataChange(u8 battlerAtk, u8 battlerDef, bool8 castform)",
       "paramsRaw": "u8 battlerAtk, u8 battlerDef, bool8 castform",
+      "paramsList": [
+        {
+          "name": "battlerAtk",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "battlerDef",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "castform",
+          "typeRaw": "bool8"
+        }
+      ],
       "body": "u16 paletteOffset;\n    u32 personalityValue;\n    u32 otId;\n    u8 position;\n    const u32 *lzPaletteData;\n\n    if (castform)\n    {\n        StartSpriteAnim(&gSprites[gBattlerSpriteIds[battlerAtk]], gBattleSpritesDataPtr->animationData->animArg);\n        paletteOffset = OBJ_PLTT_ID(battlerAtk);\n        LoadPalette(gBattleStruct->castformPalette[gBattleSpritesDataPtr->animationData->animArg], paletteOffset, PLTT_SIZE_4BPP);\n        gBattleMonForms[battlerAtk] = gBattleSpritesDataPtr->animationData->animArg;\n        if (gBattleSpritesDataPtr->battlerData[battlerAtk].transformSpecies != SPECIES_NONE)\n        {\n            BlendPalette(paletteOffset, 16, 6, RGB_WHITE);\n            CpuCopy32(&gPlttBufferFaded[paletteOffset], &gPlttBufferUnfaded[paletteOffset], PLTT_SIZEOF(16));\n        }\n        gSprites[gBattlerSpriteIds[battlerAtk]].y = GetBattlerSpriteDefault_Y(battlerAtk);\n    }\n    else\n    {\n        const void *src;\n        void *dst;\n        u16 targetSpecies;\n\n        if (IsContest())\n        {\n            position = B_POSITION_PLAYER_LEFT;\n            targetSpecies = gContestResources->moveAnim->targetSpecies;\n            personalityValue = gContestResources->moveAnim->personality;\n            otId = gContestResources->moveAnim->otId;\n\n            HandleLoadSpecialPokePic_DontHandleDeoxys(&gMonBackPicTable[targetSpecies],\n                                                      gMonSpritesGfxPtr->sprites.ptr[position],\n                                                      targetSpecies,\n                                                      gContestResources->moveAnim->targetPersonality);\n        }\n        else\n        {\n            position = GetBattlerPosition(battlerAtk);\n\n            if (GetBattlerSide(battlerDef) == B_SIDE_OPPONENT)\n                targetSpecies = GetMonData(&gEnemyParty[gBattlerPartyIndexes[battlerDef]], MON_DATA_SPECIES);\n            else\n                targetSpecies = GetMonData(&gPlayerParty[gBattlerPartyIndexes[battlerDef]], MON_DATA_SPECIES);\n\n            if (GetBattlerSide(battlerAtk) == B_SIDE_PLAYER)\n            {\n                personalityValue = GetMonData(&gPlayerParty[gBattlerPartyIndexes[battlerAtk]], MON_DATA_PERSONALITY);\n                otId = GetMonData(&gPlayerParty[gBattlerPartyIndexes[battlerAtk]], MON_DATA_OT_ID);\n\n                HandleLoadSpecialPokePic_DontHandleDeoxys(&gMonBackPicTable[targetSpecies],\n                                                          gMonSpritesGfxPtr->sprites.ptr[position],\n                                                          targetSpecies,\n                                                          gTransformedPersonalities[battlerAtk]);\n            }\n            else\n            {\n                personalityValue = GetMonData(&gEnemyParty[gBattlerPartyIndexes[battlerAtk]], MON_DATA_PERSONALITY);\n                otId = GetMonData(&gEnemyParty[gBattlerPartyIndexes[battlerAtk]], MON_DATA_OT_ID);\n\n                HandleLoadSpecialPokePic_DontHandleDeoxys(&gMonFrontPicTable[targetSpecies],\n                                                          gMonSpritesGfxPtr->sprites.ptr[position],\n                                                          targetSpecies,\n                                                          gTransformedPersonalities[battlerAtk]);\n            }\n        }\n\n        src = gMonSpritesGfxPtr->sprites.ptr[position];\n        dst = (void *)(OBJ_VRAM0 + gSprites[gBattlerSpriteIds[battlerAtk]].oam.tileNum * 32);\n        DmaCopy32(3, src, dst, MON_PIC_SIZE);\n        paletteOffset = OBJ_PLTT_ID(battlerAtk);\n        lzPaletteData = GetMonSpritePalFromSpeciesAndPersonality(targetSpecies, otId, personalityValue);\n        LZDecompressWram(lzPaletteData, gDecompressionBuffer);\n        LoadPalette(gDecompressionBuffer, paletteOffset, PLTT_SIZE_4BPP);\n\n        if (targetSpecies == SPECIES_CASTFORM)\n        {\n            gSprites[gBattlerSpriteIds[battlerAtk]].anims = gMonFrontAnimsPtrTable[targetSpecies];\n            LZDecompressWram(lzPaletteData, gBattleStruct->castformPalette);\n            LoadPalette(gBattleStruct->castformPalette[gBattleMonForms[battlerDef]], paletteOffset, PLTT_SIZE_4BPP);\n        }\n\n        BlendPalette(paletteOffset, 16, 6, RGB_WHITE);\n        CpuCopy32(&gPlttBufferFaded[paletteOffset], &gPlttBufferUnfaded[paletteOffset], PLTT_SIZEOF(16));\n\n        if (!IsContest())\n        {\n            gBattleSpritesDataPtr->battlerData[battlerAtk].transformSpecies = targetSpecies;\n            gBattleMonForms[battlerAtk] = gBattleMonForms[battlerDef];\n        }\n\n        gSprites[gBattlerSpriteIds[battlerAtk]].y = GetBattlerSpriteDefault_Y(battlerAtk);\n        StartSpriteAnim(&gSprites[gBattlerSpriteIds[battlerAtk]], gBattleMonForms[battlerAtk]);\n    }",
       "callsTo": [
         "BlendPalette",
@@ -380,6 +596,16 @@
       "returnType": "void",
       "signature": "void BattleLoadSubstituteOrMonSpriteGfx(u8 battler, bool8 loadMonSprite)",
       "paramsRaw": "u8 battler, bool8 loadMonSprite",
+      "paramsList": [
+        {
+          "name": "battler",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "loadMonSprite",
+          "typeRaw": "bool8"
+        }
+      ],
       "body": "s32 i, position, palOffset;\n\n    if (!loadMonSprite)\n    {\n        if (IsContest())\n            position = B_POSITION_PLAYER_LEFT;\n        else\n            position = GetBattlerPosition(battler);\n\n        if (IsContest())\n            LZDecompressVram(gSubstituteDollBackGfx, gMonSpritesGfxPtr->sprites.ptr[position]);\n        else if (GetBattlerSide(battler) != B_SIDE_PLAYER)\n            LZDecompressVram(gSubstituteDollFrontGfx, gMonSpritesGfxPtr->sprites.ptr[position]);\n        else\n            LZDecompressVram(gSubstituteDollBackGfx, gMonSpritesGfxPtr->sprites.ptr[position]);\n\n        for (i = 1; i < 4; i++)\n        {\n            Dma3CopyLarge32_(gMonSpritesGfxPtr->sprites.ptr[position], &gMonSpritesGfxPtr->sprites.byte[position][MON_PIC_SIZE * i], MON_PIC_SIZE);\n        }\n\n        palOffset = OBJ_PLTT_ID(battler);\n        LoadCompressedPalette(gSubstituteDollPal, palOffset, PLTT_SIZE_4BPP);\n    }\n    else\n    {\n        if (!IsContest())\n        {\n            if (GetBattlerSide(battler) != B_SIDE_PLAYER)\n                BattleLoadOpponentMonSpriteGfx(&gEnemyParty[gBattlerPartyIndexes[battler]], battler);\n            else\n                BattleLoadPlayerMonSpriteGfx(&gPlayerParty[gBattlerPartyIndexes[battler]], battler);\n        }\n    }",
       "callsTo": [
         "BattleLoadOpponentMonSpriteGfx",
@@ -398,6 +624,20 @@
       "returnType": "void",
       "signature": "void LoadBattleMonGfxAndAnimate(u8 battler, bool8 loadMonSprite, u8 spriteId)",
       "paramsRaw": "u8 battler, bool8 loadMonSprite, u8 spriteId",
+      "paramsList": [
+        {
+          "name": "battler",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "loadMonSprite",
+          "typeRaw": "bool8"
+        },
+        {
+          "name": "spriteId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "BattleLoadSubstituteOrMonSpriteGfx(battler, loadMonSprite);\n    StartSpriteAnim(&gSprites[spriteId], gBattleMonForms[battler]);\n\n    if (!loadMonSprite)\n        gSprites[spriteId].y = GetSubstituteSpriteDefault_Y(battler);\n    else\n        gSprites[spriteId].y = GetBattlerSpriteDefault_Y(battler);",
       "callsTo": [
         "BattleLoadSubstituteOrMonSpriteGfx",
@@ -411,6 +651,16 @@
       "returnType": "void",
       "signature": "void TrySetBehindSubstituteSpriteBit(u8 battler, u16 move)",
       "paramsRaw": "u8 battler, u16 move",
+      "paramsList": [
+        {
+          "name": "battler",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "move",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "if (move == MOVE_SUBSTITUTE)\n        gBattleSpritesDataPtr->battlerData[battler].behindSubstitute = 1;",
       "callsTo": [],
       "lineCount": 2
@@ -419,6 +669,12 @@
       "returnType": "void",
       "signature": "void ClearBehindSubstituteBit(u8 battler)",
       "paramsRaw": "u8 battler",
+      "paramsList": [
+        {
+          "name": "battler",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "gBattleSpritesDataPtr->battlerData[battler].behindSubstitute = 0;",
       "callsTo": [],
       "lineCount": 1
@@ -427,6 +683,16 @@
       "returnType": "void",
       "signature": "void HandleLowHpMusicChange(struct Pokemon *mon, u8 battler)",
       "paramsRaw": "struct Pokemon *mon, u8 battler",
+      "paramsList": [
+        {
+          "name": "mon",
+          "typeRaw": "struct Pokemon *"
+        },
+        {
+          "name": "battler",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u16 hp = GetMonData(mon, MON_DATA_HP);\n    u16 maxHP = GetMonData(mon, MON_DATA_MAX_HP);\n\n    if (GetHPBarLevel(hp, maxHP) == HP_BAR_RED)\n    {\n        if (!gBattleSpritesDataPtr->battlerData[battler].lowHpSong)\n        {\n            if (!gBattleSpritesDataPtr->battlerData[BATTLE_PARTNER(battler)].lowHpSong)\n                PlaySE(SE_LOW_HEALTH);\n            gBattleSpritesDataPtr->battlerData[battler].lowHpSong = 1;\n        }\n    }\n    else\n    {\n        gBattleSpritesDataPtr->battlerData[battler].lowHpSong = 0;\n        if (!IsDoubleBattle())\n        {\n            m4aSongNumStop(SE_LOW_HEALTH);\n            return;\n        }\n        if (IsDoubleBattle() && !gBattleSpritesDataPtr->battlerData[BATTLE_PARTNER(battler)].lowHpSong)\n        {\n            m4aSongNumStop(SE_LOW_HEALTH);\n            return;\n        }\n    }",
       "callsTo": [
         "BATTLE_PARTNER",
@@ -441,6 +707,7 @@
       "returnType": "void",
       "signature": "void BattleStopLowHpSound(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 playerBattler = GetBattlerAtPosition(B_POSITION_PLAYER_LEFT);\n\n    gBattleSpritesDataPtr->battlerData[playerBattler].lowHpSong = 0;\n    if (IsDoubleBattle())\n        gBattleSpritesDataPtr->battlerData[BATTLE_PARTNER(playerBattler)].lowHpSong = 0;\n\n    m4aSongNumStop(SE_LOW_HEALTH);",
       "callsTo": [
         "BATTLE_PARTNER",
@@ -453,6 +720,12 @@
       "returnType": "u8",
       "signature": "u8 GetMonHPBarLevel(struct Pokemon *mon)",
       "paramsRaw": "struct Pokemon *mon",
+      "paramsList": [
+        {
+          "name": "mon",
+          "typeRaw": "struct Pokemon *"
+        }
+      ],
       "body": "u16 hp = GetMonData(mon, MON_DATA_HP);\n    u16 maxHP = GetMonData(mon, MON_DATA_MAX_HP);\n\n    return GetHPBarLevel(hp, maxHP);",
       "callsTo": [
         "GetHPBarLevel",
@@ -464,6 +737,7 @@
       "returnType": "void",
       "signature": "void HandleBattleLowHpMusicChange(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gMain.inBattle)\n    {\n        u8 playerBattler1 = GetBattlerAtPosition(B_POSITION_PLAYER_LEFT);\n        u8 playerBattler2 = GetBattlerAtPosition(B_POSITION_PLAYER_RIGHT);\n        u8 battler1PartyId = GetPartyIdFromBattlePartyId(gBattlerPartyIndexes[playerBattler1]);\n        u8 battler2PartyId = GetPartyIdFromBattlePartyId(gBattlerPartyIndexes[playerBattler2]);\n\n        if (GetMonData(&gPlayerParty[battler1PartyId], MON_DATA_HP) != 0)\n            HandleLowHpMusicChange(&gPlayerParty[battler1PartyId], playerBattler1);\n        if (IsDoubleBattle() && GetMonData(&gPlayerParty[battler2PartyId], MON_DATA_HP) != 0)\n            HandleLowHpMusicChange(&gPlayerParty[battler2PartyId], playerBattler2);\n    }",
       "callsTo": [
         "GetBattlerAtPosition",
@@ -478,6 +752,12 @@
       "returnType": "void",
       "signature": "void SetBattlerSpriteAffineMode(u8 affineMode)",
       "paramsRaw": "u8 affineMode",
+      "paramsList": [
+        {
+          "name": "affineMode",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s32 i;\n\n    for (i = 0; i < gBattlersCount; i++)\n    {\n        if (IsBattlerSpritePresent(i))\n        {\n            gSprites[gBattlerSpriteIds[i]].oam.affineMode = affineMode;\n            if (affineMode == ST_OAM_AFFINE_OFF)\n            {\n                gBattleSpritesDataPtr->healthBoxesData[i].matrixNum = gSprites[gBattlerSpriteIds[i]].oam.matrixNum;\n                gSprites[gBattlerSpriteIds[i]].oam.matrixNum = 0;\n            }\n            else\n            {\n                gSprites[gBattlerSpriteIds[i]].oam.matrixNum = gBattleSpritesDataPtr->healthBoxesData[i].matrixNum;\n            }\n        }\n    }",
       "callsTo": [
         "IsBattlerSpritePresent"
@@ -488,6 +768,7 @@
       "returnType": "void",
       "signature": "void LoadAndCreateEnemyShadowSprites(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 battler;\n\n    LoadCompressedSpriteSheet(&gSpriteSheet_EnemyShadow);\n\n    battler = GetBattlerAtPosition(B_POSITION_OPPONENT_LEFT);\n    gBattleSpritesDataPtr->healthBoxesData[battler].shadowSpriteId = CreateSprite(&gSpriteTemplate_EnemyShadow,\n                                                                                    GetBattlerSpriteCoord(battler, BATTLER_COORD_X),\n                                                                                    GetBattlerSpriteCoord(battler, BATTLER_COORD_Y) + 29,\n                                                                                    0xC8);\n    gSprites[gBattleSpritesDataPtr->healthBoxesData[battler].shadowSpriteId].data[0] = battler;\n\n    if (IsDoubleBattle())\n    {\n        battler = GetBattlerAtPosition(B_POSITION_OPPONENT_RIGHT);\n        gBattleSpritesDataPtr->healthBoxesData[battler].shadowSpriteId = CreateSprite(&gSpriteTemplate_EnemyShadow,\n                                                                                        GetBattlerSpriteCoord(battler, BATTLER_COORD_X),\n                                                                                        GetBattlerSpriteCoord(battler, BATTLER_COORD_Y) + 29,\n                                                                                        0xC8);\n        gSprites[gBattleSpritesDataPtr->healthBoxesData[battler].shadowSpriteId].data[0] = battler;\n    }",
       "callsTo": [
         "CreateSprite",
@@ -502,6 +783,12 @@
       "returnType": "void",
       "signature": "void SpriteCB_EnemyShadow(struct Sprite *shadowSprite)",
       "paramsRaw": "struct Sprite *shadowSprite",
+      "paramsList": [
+        {
+          "name": "shadowSprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "bool8 invisible = FALSE;\n    u8 battler = shadowSprite->tBattlerId;\n    struct Sprite *battlerSprite = &gSprites[gBattlerSpriteIds[battler]];\n\n    if (!battlerSprite->inUse || !IsBattlerSpritePresent(battler))\n    {\n        shadowSprite->callback = SpriteCB_SetInvisible;\n        return;\n    }\n    if (gAnimScriptActive || battlerSprite->invisible)\n        invisible = TRUE;\n    else if (gBattleSpritesDataPtr->battlerData[battler].transformSpecies != SPECIES_NONE\n             && gEnemyMonElevation[gBattleSpritesDataPtr->battlerData[battler].transformSpecies] == 0)\n        invisible = TRUE;\n\n    if (gBattleSpritesDataPtr->battlerData[battler].behindSubstitute)\n        invisible = TRUE;\n\n    shadowSprite->x = battlerSprite->x;\n    shadowSprite->x2 = battlerSprite->x2;\n    shadowSprite->invisible = invisible;",
       "callsTo": [
         "IsBattlerSpritePresent"
@@ -512,6 +799,12 @@
       "returnType": "void",
       "signature": "void SpriteCB_SetInvisible(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "sprite->invisible = TRUE;",
       "callsTo": [],
       "lineCount": 1
@@ -520,6 +813,16 @@
       "returnType": "void",
       "signature": "void SetBattlerShadowSpriteCallback(u8 battler, u16 species)",
       "paramsRaw": "u8 battler, u16 species",
+      "paramsList": [
+        {
+          "name": "battler",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "species",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "if (GetBattlerSide(battler) == B_SIDE_PLAYER)\n        return;\n\n    if (gBattleSpritesDataPtr->battlerData[battler].transformSpecies != SPECIES_NONE)\n        species = gBattleSpritesDataPtr->battlerData[battler].transformSpecies;\n\n    if (gEnemyMonElevation[species] != 0)\n        gSprites[gBattleSpritesDataPtr->healthBoxesData[battler].shadowSpriteId].callback = SpriteCB_EnemyShadow;\n    else\n        gSprites[gBattleSpritesDataPtr->healthBoxesData[battler].shadowSpriteId].callback = SpriteCB_SetInvisible;",
       "callsTo": [
         "GetBattlerSide"
@@ -530,6 +833,12 @@
       "returnType": "void",
       "signature": "void HideBattlerShadowSprite(u8 battler)",
       "paramsRaw": "u8 battler",
+      "paramsList": [
+        {
+          "name": "battler",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "gSprites[gBattleSpritesDataPtr->healthBoxesData[battler].shadowSpriteId].callback = SpriteCB_SetInvisible;",
       "callsTo": [],
       "lineCount": 1
@@ -538,6 +847,7 @@
       "returnType": "void",
       "signature": "void FillAroundBattleWindows(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 *vramPtr = (u16 *)(VRAM + 0x240);\n    s32 i;\n    s32 j;\n\n    for (i = 0; i < 9; i++)\n    {\n        for (j = 0; j < 16; j++)\n        {\n            if (!(*vramPtr & 0xF000))\n                *vramPtr |= 0xF000;\n            if (!(*vramPtr & 0x0F00))\n                *vramPtr |= 0x0F00;\n            if (!(*vramPtr & 0x00F0))\n                *vramPtr |= 0x00F0;\n            if (!(*vramPtr & 0x000F))\n                *vramPtr |= 0x000F;\n            vramPtr++;\n        }\n    }",
       "callsTo": [],
       "lineCount": 19
@@ -546,6 +856,16 @@
       "returnType": "void",
       "signature": "void ClearTemporarySpeciesSpriteData(u8 battler, bool8 dontClearSubstitute)",
       "paramsRaw": "u8 battler, bool8 dontClearSubstitute",
+      "paramsList": [
+        {
+          "name": "battler",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "dontClearSubstitute",
+          "typeRaw": "bool8"
+        }
+      ],
       "body": "gBattleSpritesDataPtr->battlerData[battler].transformSpecies = SPECIES_NONE;\n    gBattleMonForms[battler] = 0;\n    if (!dontClearSubstitute)\n        ClearBehindSubstituteBit(battler);",
       "callsTo": [
         "ClearBehindSubstituteBit"
@@ -556,6 +876,7 @@
       "returnType": "void",
       "signature": "void AllocateMonSpritesGfx(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i = 0, j;\n\n    gMonSpritesGfxPtr = NULL;\n    gMonSpritesGfxPtr = AllocZeroed(sizeof(*gMonSpritesGfxPtr));\n    gMonSpritesGfxPtr->firstDecompressed = AllocZeroed(MON_PIC_SIZE * 4 * MAX_BATTLERS_COUNT);\n\n    for (i = 0; i < MAX_BATTLERS_COUNT; i++)\n    {\n        gMonSpritesGfxPtr->sprites.ptr[i] = gMonSpritesGfxPtr->firstDecompressed + (i * MON_PIC_SIZE * 4);\n        *(gMonSpritesGfxPtr->templates + i) = gBattlerSpriteTemplates[i];\n\n        for (j = 0; j < 4; j++)\n        {\n            gMonSpritesGfxPtr->frameImages[i][j].data = gMonSpritesGfxPtr->sprites.ptr[i] + (j * MON_PIC_SIZE);\n            gMonSpritesGfxPtr->frameImages[i][j].size = MON_PIC_SIZE;\n        }\n\n        gMonSpritesGfxPtr->templates[i].images = gMonSpritesGfxPtr->frameImages[i];\n    }\n\n    gMonSpritesGfxPtr->barFontGfx = AllocZeroed(0x1000);",
       "callsTo": [
         "AllocZeroed"
@@ -566,6 +887,7 @@
       "returnType": "void",
       "signature": "void FreeMonSpritesGfx(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gMonSpritesGfxPtr == NULL)\n        return;\n\n    TRY_FREE_AND_SET_NULL(gMonSpritesGfxPtr->buffer);\n    TRY_FREE_AND_SET_NULL(gMonSpritesGfxPtr->unusedPtr);\n    FREE_AND_SET_NULL(gMonSpritesGfxPtr->barFontGfx);\n    FREE_AND_SET_NULL(gMonSpritesGfxPtr->firstDecompressed);\n    gMonSpritesGfxPtr->sprites.ptr[B_POSITION_PLAYER_LEFT] = NULL;\n    gMonSpritesGfxPtr->sprites.ptr[B_POSITION_OPPONENT_LEFT] = NULL;\n    gMonSpritesGfxPtr->sprites.ptr[B_POSITION_PLAYER_RIGHT] = NULL;\n    gMonSpritesGfxPtr->sprites.ptr[B_POSITION_OPPONENT_RIGHT] = NULL;\n    FREE_AND_SET_NULL(gMonSpritesGfxPtr);",
       "callsTo": [
         "FREE_AND_SET_NULL",
@@ -577,6 +899,12 @@
       "returnType": "bool32",
       "signature": "bool32 ShouldPlayNormalMonCry(struct Pokemon *mon)",
       "paramsRaw": "struct Pokemon *mon",
+      "paramsList": [
+        {
+          "name": "mon",
+          "typeRaw": "struct Pokemon *"
+        }
+      ],
       "body": "s16 hp, maxHP;\n    s32 barLevel;\n\n    if (GetMonData(mon, MON_DATA_STATUS) & (STATUS1_ANY | STATUS1_TOXIC_COUNTER))\n        return FALSE;\n\n    hp = GetMonData(mon, MON_DATA_HP);\n    maxHP = GetMonData(mon, MON_DATA_MAX_HP);\n\n    barLevel = GetHPBarLevel(hp, maxHP);\n    if (barLevel <= HP_BAR_YELLOW)\n        return FALSE;\n\n    return TRUE;",
       "callsTo": [
         "GetHPBarLevel",

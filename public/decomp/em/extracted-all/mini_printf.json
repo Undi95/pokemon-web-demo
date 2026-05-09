@@ -6,6 +6,12 @@
       "returnType": "char",
       "signature": "static inline char mini_pchar_decode(char encoded)",
       "paramsRaw": "char encoded",
+      "paramsList": [
+        {
+          "name": "encoded",
+          "typeRaw": "char"
+        }
+      ],
       "body": "char ret = '?';\n    if (encoded >= CHAR_a && encoded <= CHAR_z)\n        ret = encoded-(CHAR_a-'a');  \n    else if (encoded >= CHAR_A && encoded <= CHAR_Z)\n        ret = encoded-(CHAR_A-'A');  \n    else if (encoded >= CHAR_0 && encoded <= CHAR_9)\n        ret = encoded-(CHAR_0-'0');  \n    else if (encoded == CHAR_SPACE)\n        ret = ' ';  \n    else if (encoded == CHAR_EXCL_MARK)\n        ret = '!';  \n    else if (encoded == CHAR_QUESTION_MARK)\n        ret = '?';  \n    else if (encoded == CHAR_PERIOD)\n        ret = '.';  \n    else if (encoded == CHAR_DBL_QUOTE_LEFT || encoded == CHAR_DBL_QUOTE_RIGHT)\n        ret = '\"';  \n    else if (encoded == CHAR_SGL_QUOTE_LEFT || encoded == CHAR_SGL_QUOTE_RIGHT)\n        ret = '\\'';  \n    else if (encoded == CHAR_CURRENCY)\n        ret = '$';  \n    else if (encoded == CHAR_COMMA)\n        ret = ',';  \n    else if (encoded == CHAR_MULT_SIGN)\n        ret = '#';  \n    else if (encoded == CHAR_SLASH)\n        ret = '/';  \n    else if (encoded == CHAR_LESS_THAN)\n        ret = '<';  \n    else if (encoded == CHAR_GREATER_THAN)\n        ret = '>';  \n    else if (encoded == CHAR_PERCENT)\n        ret = '%';  \n    else if (encoded == CHAR_LEFT_PAREN)\n        ret = '(';  \n    else if (encoded == CHAR_RIGHT_PAREN)\n        ret = ')';  \n    else if (encoded == CHAR_HYPHEN)\n        ret = '-';  \n    return ret;",
       "callsTo": [],
       "lineCount": 40
@@ -14,6 +20,20 @@
       "returnType": "s32",
       "signature": "static s32 _putsAscii(char *s, s32 len, void *buf)",
       "paramsRaw": "char *s, s32 len, void *buf",
+      "paramsList": [
+        {
+          "name": "s",
+          "typeRaw": "char *"
+        },
+        {
+          "name": "len",
+          "typeRaw": "s32"
+        },
+        {
+          "name": "buf",
+          "typeRaw": "void *"
+        }
+      ],
       "body": "char *p0;\n    s32 i;\n    struct mini_buff *b;\n\n    if (!buf)\n        return len;\n\n    b = buf;\n    p0 = b->buffer;\n\n     \n    for (i = 0; i < len; i++)\n    {\n        if(b->pbuffer == b->buffer + b->buffer_len - 1)\n        {\n            break;\n        }\n        *(b->pbuffer ++) = s[i];\n    }\n    *(b->pbuffer) = 0;\n    return b->pbuffer - p0;",
       "callsTo": [],
       "lineCount": 21
@@ -22,6 +42,20 @@
       "returnType": "s32",
       "signature": "static s32 _putsEncoded(char *s, s32 len, void *buf)",
       "paramsRaw": "char *s, s32 len, void *buf",
+      "paramsList": [
+        {
+          "name": "s",
+          "typeRaw": "char *"
+        },
+        {
+          "name": "len",
+          "typeRaw": "s32"
+        },
+        {
+          "name": "buf",
+          "typeRaw": "void *"
+        }
+      ],
       "body": "char *p0;\n    s32 i;\n    struct mini_buff *b;\n\n    if (!buf)\n        return len;\n\n    b = buf;\n    p0 = b->buffer;\n\n     \n    for (i = 0; i < len; i++)\n    {\n        if(b->pbuffer == b->buffer + b->buffer_len - 1)\n        {\n            break;\n        }\n        if (s[i] == CHAR_NEWLINE)\n        {\n            *(b->pbuffer ++) = '\\\\';\n            *(b->pbuffer ++) = 'n';\n        }\n        else if (s[i] == CHAR_PROMPT_SCROLL)\n        {\n            *(b->pbuffer ++) = '\\\\';\n            *(b->pbuffer ++) = 'l';\n        }\n        else if (s[i] == CHAR_PROMPT_CLEAR)\n        {\n            *(b->pbuffer ++) = '\\\\';\n            *(b->pbuffer ++) = 'p';\n        }\n        else if (s[i] == CHAR_ELLIPSIS)\n        {\n            *(b->pbuffer ++) = '.';\n            *(b->pbuffer ++) = '.';\n            *(b->pbuffer ++) = '.';\n        }\n        else\n        {\n            *(b->pbuffer ++) = mini_pchar_decode(s[i]);\n        }\n    }\n    *(b->pbuffer) = 0;\n    return b->pbuffer - p0;",
       "callsTo": [],
       "lineCount": 45
@@ -30,6 +64,12 @@
       "returnType": "s32",
       "signature": "static s32 mini_strlen(const char *s)",
       "paramsRaw": "const char *s",
+      "paramsList": [
+        {
+          "name": "s",
+          "typeRaw": "const char *"
+        }
+      ],
       "body": "s32 len = 0;\n    while (s[len] != '\\0') len++;\n    return len;",
       "callsTo": [],
       "lineCount": 3
@@ -38,6 +78,28 @@
       "returnType": "s32",
       "signature": "static s32 mini_itoa(s32 value, u32 radix, s32 uppercase, bool32 unsig, char *buffer)",
       "paramsRaw": "s32 value, u32 radix, s32 uppercase, bool32 unsig, char *buffer",
+      "paramsList": [
+        {
+          "name": "value",
+          "typeRaw": "s32"
+        },
+        {
+          "name": "radix",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "uppercase",
+          "typeRaw": "s32"
+        },
+        {
+          "name": "unsig",
+          "typeRaw": "bool32"
+        },
+        {
+          "name": "buffer",
+          "typeRaw": "char *"
+        }
+      ],
       "body": "char *pbuffer = buffer;\n    s32 negative = 0;\n    s32 i, len;\n\n     \n    if (radix > 16)\n        return 0;\n\n    if (value < 0 && !unsig)\n    {\n        negative = 1;\n        value = -value;\n    }\n\n     \n    do\n    {\n        s32 digit = value % radix;\n        *(pbuffer++) = (digit < 10 ? '0' + digit : (uppercase ? 'A' : 'a') + digit - 10);\n        value /= radix;\n    } while (value > 0);\n\n    if (negative)\n        *(pbuffer++) = '-';\n\n    *(pbuffer) = '\\0';\n\n     \n    len = (pbuffer - buffer);\n    for (i = 0; i < len / 2; i++)\n    {\n        char j = buffer[i];\n        buffer[i] = buffer[len-i-1];\n        buffer[len-i-1] = j;\n    }\n\n    return len;",
       "callsTo": [],
       "lineCount": 37
@@ -46,6 +108,16 @@
       "returnType": "s32",
       "signature": "static s32 mini_itoa_bin(u32 value, char *buffer)",
       "paramsRaw": "u32 value, char *buffer",
+      "paramsList": [
+        {
+          "name": "value",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "buffer",
+          "typeRaw": "char *"
+        }
+      ],
       "body": "char *pbuffer = buffer;\n    s32 i, len;\n\n     \n    do\n    {\n        *(pbuffer++) = '0' + (value & 1);\n        value /= 2;   \n    } while (value > 0);\n\n    *(pbuffer) = '\\0';\n\n     \n    len = (pbuffer - buffer);\n    for (i = 0; i < len / 2; i++)\n    {\n        char j = buffer[i];\n        buffer[i] = buffer[len-i-1];\n        buffer[len-i-1] = j;\n    }\n\n    return len;",
       "callsTo": [],
       "lineCount": 22
@@ -54,6 +126,28 @@
       "returnType": "s32",
       "signature": "static s32 mini_pad(char *ptr, s32 len, char pad_char, s32 pad_to, char *buffer)",
       "paramsRaw": "char *ptr, s32 len, char pad_char, s32 pad_to, char *buffer",
+      "paramsList": [
+        {
+          "name": "ptr",
+          "typeRaw": "char *"
+        },
+        {
+          "name": "len",
+          "typeRaw": "s32"
+        },
+        {
+          "name": "pad_char",
+          "typeRaw": "char"
+        },
+        {
+          "name": "pad_to",
+          "typeRaw": "s32"
+        },
+        {
+          "name": "buffer",
+          "typeRaw": "char *"
+        }
+      ],
       "body": "s32 i;\n    bool32 overflow = FALSE;\n    char *pbuffer = buffer;\n    if(pad_to == 0)\n        pad_to = len;\n    if (len > pad_to)\n    {\n        len = pad_to;\n        overflow = TRUE;\n    }\n    for(i = pad_to - len; i > 0; i --)\n    {\n        *(pbuffer++) = pad_char;\n    }\n    for(i = len; i > 0; i --)\n    {\n        *(pbuffer++) = *(ptr++);\n    }\n    len = pbuffer - buffer;\n    if(overflow)\n    {\n        for (i = 0; i < 3 && pbuffer > buffer; i ++)\n        {\n            *(pbuffer-- - 1) = '*';\n        }\n    }\n    return len;",
       "callsTo": [],
       "lineCount": 27
@@ -62,6 +156,24 @@
       "returnType": "s32",
       "signature": "s32 mini_vsnprintf(char *buffer, u32 buffer_len, const char *fmt, va_list va)",
       "paramsRaw": "char *buffer, u32 buffer_len, const char *fmt, va_list va",
+      "paramsList": [
+        {
+          "name": "buffer",
+          "typeRaw": "char *"
+        },
+        {
+          "name": "buffer_len",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "fmt",
+          "typeRaw": "const char *"
+        },
+        {
+          "name": "va",
+          "typeRaw": "va_list"
+        }
+      ],
       "body": "struct mini_buff b;\n    s32 n;\n    b.buffer = buffer;\n    b.pbuffer = buffer;\n    b.buffer_len = buffer_len;\n    if (buffer_len == 0)\n        buffer = NULL;\n    n = mini_vpprintf((buffer != NULL) ? &b : NULL, fmt, va);\n    if (buffer == NULL)\n        return n;\n    return b.pbuffer - b.buffer;",
       "callsTo": [],
       "lineCount": 11
@@ -70,6 +182,20 @@
       "returnType": "s32",
       "signature": "s32 mini_vpprintf(void *buf, const char *fmt, va_list va)",
       "paramsRaw": "void *buf, const char *fmt, va_list va",
+      "paramsList": [
+        {
+          "name": "buf",
+          "typeRaw": "void *"
+        },
+        {
+          "name": "fmt",
+          "typeRaw": "const char *"
+        },
+        {
+          "name": "va",
+          "typeRaw": "va_list"
+        }
+      ],
       "body": "char bf[24];\n    char bf2[24];\n    char ch;\n    s32 n;\n    n = 0;\n    while ((ch=*(fmt++)))\n    {\n        s32 len;\n        if (ch != '%')\n        {\n            len = 1;\n            len = _putsAscii(&ch, len, buf);\n        }\n        else\n        {\n            char pad_char = ' ';\n            s32 pad_to = 0;\n            char l = 0;\n            char *ptr;\n\n            ch=*(fmt++);\n\n             \n            if (ch == '0')\n                pad_char = '0';\n            while (ch >= '0' && ch <= '9')\n            {\n                pad_to = pad_to * 10 + (ch - '0');\n                ch= *(fmt++);\n            }\n            if(pad_to > (s32) sizeof(bf))\n            {\n                pad_to = sizeof(bf);\n            }\n            if (ch == 'l')\n            {\n                l = 1;\n                ch=*(fmt++);\n            }\n\n            switch (ch)\n            {\n                case 0:\n                    goto end;\n                case 'u':\n                case 'd':\n                    if(l)\n                    {\n                        len = mini_itoa(va_arg(va, u32), 10, 0, (ch=='u'), bf2);\n                    }\n                    else\n                    {\n                        if(ch == 'u')\n                        {\n                            len = mini_itoa((u32) va_arg(va, u32), 10, 0, 1, bf2);\n                        }\n                        else\n                        {\n                            len = mini_itoa((s32) va_arg(va, s32), 10, 0, 0, bf2);\n                        }\n                    }\n                    len = mini_pad(bf2, len, pad_char, pad_to, bf);\n                    len = _putsAscii(bf, len, buf);\n                    break;\n\n                case 'x':\n                case 'X':\n                    if(l)\n                    {\n                        len = mini_itoa(va_arg(va, u32), 16, (ch=='X'), 1, bf2);\n                    }\n                    else\n                    {\n                        len = mini_itoa((u32) va_arg(va, u32), 16, (ch=='X'), 1, bf2);\n                    }\n                    len = mini_pad(bf2, len, pad_char, pad_to, bf);\n                    len = _putsAscii(bf, len, buf);\n                    break;\n                case 'b':\n                    len = mini_itoa_bin(va_arg(va, u32), bf2);\n                    len = mini_pad(bf2, len, pad_char, pad_to, bf);\n                    len = _putsAscii(bf, len, buf);\n                    break;\n                case 'c' :\n                    ch = (char)(va_arg(va, s32));\n                    len = mini_pad(&ch, 1, pad_char, pad_to, bf);\n                    len = _putsAscii(bf, len, buf);\n                    break;\n\n                case 's' :\n                    ptr = va_arg(va, char*);\n                    len = mini_strlen(ptr);\n                    if (pad_to > 0)\n                    {\n                        len = mini_pad(ptr, len, pad_char, pad_to, bf);\n                        len = _putsAscii(bf, len, buf);\n                    }\n                    else\n                    {\n                        len = _putsAscii(ptr, len, buf);\n                    }\n                    break;\n                case 'S' :  \n                    ptr = va_arg(va, char*);\n                    len = StringLength((u8*)ptr);\n                    if (pad_to > 0)\n                    {\n                        len = mini_pad(ptr, len, pad_char, pad_to, bf);\n                        len = _putsEncoded(bf, len, buf);\n                    }\n                    else\n                    {\n                        len = _putsEncoded(ptr, len, buf);\n                    }\n                    break;\n                default:\n                    len = 1;\n                    len = _putsAscii(&ch, len, buf);\n                    break;\n            }\n        }\n        n = n + len;\n    }\nend:\n    return n;",
       "callsTo": [
         "StringLength",

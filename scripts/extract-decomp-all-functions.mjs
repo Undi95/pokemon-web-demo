@@ -61,6 +61,63 @@ function extractCallsTo(body) {
   return [...calls].sort();
 }
 
+// Parse a C parameter list and return [{ name, typeRaw }, ...].
+// Examples :
+//   "void"                                       → []
+//   ""                                           → []
+//   "u8 a, u16 b"                                → [{name:'a',typeRaw:'u8'},{name:'b',typeRaw:'u16'}]
+//   "struct ObjectEvent *objectEvent"            → [{name:'objectEvent',typeRaw:'struct ObjectEvent *'}]
+//   "u8 **script, u32 *val"                      → [{name:'script',typeRaw:'u8 **'},{name:'val',typeRaw:'u32 *'}]
+//   "void (*callback)(struct Sprite *)"          → [{name:'callback',typeRaw:'fnptr'}]  (function pointer)
+//   "u16 graphicsId, u16 movementType, struct SpriteTemplate *spriteTemplate"
+function parseParams(paramsRaw) {
+  const trimmed = (paramsRaw || '').trim();
+  if (!trimmed || trimmed === 'void') return [];
+  // Split on commas, but only at top level (= respect parens).
+  const parts = [];
+  let depth = 0;
+  let buf = '';
+  for (const ch of trimmed) {
+    if (ch === '(' || ch === '[') depth++;
+    else if (ch === ')' || ch === ']') depth--;
+    if (ch === ',' && depth === 0) {
+      parts.push(buf.trim());
+      buf = '';
+    } else {
+      buf += ch;
+    }
+  }
+  if (buf.trim()) parts.push(buf.trim());
+
+  const out = [];
+  for (const p of parts) {
+    // Function pointer : `void (*callback)(struct Sprite *)` or `bool8 (*func)(void)`.
+    const fnPtr = p.match(/^[^(]+\(\s*\*\s*([A-Za-z_]\w*)\s*\)\s*\(/);
+    if (fnPtr) {
+      out.push({ name: fnPtr[1], typeRaw: 'fnptr' });
+      continue;
+    }
+    // Array param : `u8 arr[10]` or `u8 arr[]`.
+    const arrM = p.match(/([A-Za-z_]\w*)\s*\[[^\]]*\]\s*$/);
+    if (arrM) {
+      out.push({ name: arrM[1], typeRaw: p.slice(0, p.lastIndexOf(arrM[1])).trim() + '[]' });
+      continue;
+    }
+    // Standard : extract last identifier as name, the rest is type.
+    // Strip trailing `*` from name region.
+    const stdM = p.match(/([A-Za-z_]\w*)\s*$/);
+    if (stdM) {
+      const name = stdM[1];
+      const typeRaw = p.slice(0, p.lastIndexOf(name)).trim();
+      // If typeRaw is empty, it's just a name without type → treat it as `any`.
+      out.push({ name, typeRaw: typeRaw || 'any' });
+    } else {
+      // Fallback for empty / weird : skip.
+    }
+  }
+  return out;
+}
+
 // ─── Universal function regex ────────────────────────────────────────────────
 //
 // Capture top-level C function definitions in `src/*.c` files :
@@ -159,6 +216,7 @@ function extractFunctionsFromFile(fpath) {
       returnType,
       signature,
       paramsRaw,
+      paramsList: parseParams(paramsRaw),
       body,
       callsTo: extractCallsTo(body),
       lineCount: body.split('\n').length,

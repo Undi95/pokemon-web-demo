@@ -6,6 +6,7 @@
       "returnType": "bool32",
       "signature": "bool32 GetSafariZoneFlag(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return FlagGet(FLAG_SYS_SAFARI_MODE);",
       "callsTo": [
         "FlagGet"
@@ -16,6 +17,7 @@
       "returnType": "void",
       "signature": "void SetSafariZoneFlag(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "FlagSet(FLAG_SYS_SAFARI_MODE);",
       "callsTo": [
         "FlagSet"
@@ -26,6 +28,7 @@
       "returnType": "void",
       "signature": "void ResetSafariZoneFlag(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "FlagClear(FLAG_SYS_SAFARI_MODE);",
       "callsTo": [
         "FlagClear"
@@ -36,6 +39,7 @@
       "returnType": "void",
       "signature": "void EnterSafariMode(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "IncrementGameStat(GAME_STAT_ENTERED_SAFARI_ZONE);\n    SetSafariZoneFlag();\n    ClearAllPokeblockFeeders();\n    gNumSafariBalls = 30;\n    sSafariZoneStepCounter = 500;\n    sSafariZoneCaughtMons = 0;\n    sSafariZonePkblkUses = 0;",
       "callsTo": [
         "ClearAllPokeblockFeeders",
@@ -48,6 +52,7 @@
       "returnType": "void",
       "signature": "void ExitSafariMode(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "TryPutSafariFanClubOnAir(sSafariZoneCaughtMons, sSafariZonePkblkUses);\n    ResetSafariZoneFlag();\n    ClearAllPokeblockFeeders();\n    gNumSafariBalls = 0;\n    sSafariZoneStepCounter = 0;",
       "callsTo": [
         "ClearAllPokeblockFeeders",
@@ -60,6 +65,7 @@
       "returnType": "bool8",
       "signature": "bool8 SafariZoneTakeStep(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (GetSafariZoneFlag() == FALSE)\n    {\n        return FALSE;\n    }\n\n    DecrementFeederStepCounters();\n    sSafariZoneStepCounter--;\n    if (sSafariZoneStepCounter == 0)\n    {\n        ScriptContext_SetupScript(SafariZone_EventScript_TimesUp);\n        return TRUE;\n    }\n    return FALSE;",
       "callsTo": [
         "DecrementFeederStepCounters",
@@ -72,6 +78,7 @@
       "returnType": "void",
       "signature": "void SafariZoneRetirePrompt(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ScriptContext_SetupScript(SafariZone_EventScript_RetirePrompt);",
       "callsTo": [
         "ScriptContext_SetupScript"
@@ -82,6 +89,7 @@
       "returnType": "void",
       "signature": "void CB2_EndSafariBattle(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sSafariZonePkblkUses += gBattleResults.pokeblockThrows;\n    if (gBattleOutcome == B_OUTCOME_CAUGHT)\n        sSafariZoneCaughtMons++;\n    if (gNumSafariBalls != 0)\n    {\n        SetMainCallback2(CB2_ReturnToField);\n    }\n    else if (gBattleOutcome == B_OUTCOME_NO_SAFARI_BALLS)\n    {\n        RunScriptImmediately(SafariZone_EventScript_OutOfBallsMidBattle);\n        WarpIntoMap();\n        gFieldCallback = FieldCB_ReturnToFieldNoScriptCheckMusic;\n        SetMainCallback2(CB2_LoadMap);\n    }\n    else if (gBattleOutcome == B_OUTCOME_CAUGHT)\n    {\n        ScriptContext_SetupScript(SafariZone_EventScript_OutOfBalls);\n        ScriptContext_Stop();\n        SetMainCallback2(CB2_ReturnToFieldContinueScriptPlayMapMusic);\n    }",
       "callsTo": [
         "RunScriptImmediately",
@@ -96,6 +104,12 @@
       "returnType": "void",
       "signature": "static void ClearPokeblockFeeder(u8 index)",
       "paramsRaw": "u8 index",
+      "paramsList": [
+        {
+          "name": "index",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "memset(&sPokeblockFeeders[index], 0, sizeof(struct PokeblockFeeder));",
       "callsTo": [],
       "lineCount": 1
@@ -104,6 +118,7 @@
       "returnType": "void",
       "signature": "static void ClearAllPokeblockFeeders(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "memset(sPokeblockFeeders, 0, sizeof(sPokeblockFeeders));",
       "callsTo": [],
       "lineCount": 1
@@ -112,6 +127,7 @@
       "returnType": "void",
       "signature": "void GetPokeblockFeederInFront(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s16 x, y;\n    u16 i;\n\n    GetXYCoordsOneStepInFrontOfPlayer(&x, &y);\n\n    for (i = 0; i < NUM_POKEBLOCK_FEEDERS; i++)\n    {\n        if (gSaveBlock1Ptr->location.mapNum == sPokeblockFeeders[i].mapNum\n         && sPokeblockFeeders[i].x == x\n         && sPokeblockFeeders[i].y == y)\n        {\n            gSpecialVar_Result = i;\n            StringCopy(gStringVar1, gPokeblockNames[sPokeblockFeeders[i].pokeblock.color]);\n            return;\n        }\n    }\n\n    gSpecialVar_Result = -1;",
       "callsTo": [
         "GetXYCoordsOneStepInFrontOfPlayer",
@@ -123,6 +139,7 @@
       "returnType": "void",
       "signature": "void GetPokeblockFeederWithinRange(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s16 x, y;\n    u16 i;\n\n    PlayerGetDestCoords(&x, &y);\n\n    for (i = 0; i < NUM_POKEBLOCK_FEEDERS; i++)\n    {\n        if (gSaveBlock1Ptr->location.mapNum == sPokeblockFeeders[i].mapNum)\n        {\n             \n            x -= sPokeblockFeeders[i].x;\n            y -= sPokeblockFeeders[i].y;\n            if (x < 0)\n                x *= -1;\n            if (y < 0)\n                y *= -1;\n            if ((x + y) <= 5)\n            {\n                gSpecialVar_Result = i;\n                return;\n            }\n        }\n    }\n\n    gSpecialVar_Result = -1;",
       "callsTo": [
         "PlayerGetDestCoords"
@@ -133,6 +150,12 @@
       "returnType": "void",
       "signature": "void SafariZoneActivatePokeblockFeeder(u8 pkblId)",
       "paramsRaw": "u8 pkblId",
+      "paramsList": [
+        {
+          "name": "pkblId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 x, y;\n    u8 i;\n\n    for (i = 0; i < NUM_POKEBLOCK_FEEDERS; i++)\n    {\n         \n        if (sPokeblockFeeders[i].mapNum == 0\n         && sPokeblockFeeders[i].x == 0\n         && sPokeblockFeeders[i].y == 0)\n        {\n             \n            GetXYCoordsOneStepInFrontOfPlayer(&x, &y);\n            sPokeblockFeeders[i].mapNum = gSaveBlock1Ptr->location.mapNum;\n            sPokeblockFeeders[i].pokeblock = gSaveBlock1Ptr->pokeblocks[pkblId];\n            sPokeblockFeeders[i].stepCounter = 100;\n            sPokeblockFeeders[i].x = x;\n            sPokeblockFeeders[i].y = y;\n            break;\n        }\n    }",
       "callsTo": [
         "GetXYCoordsOneStepInFrontOfPlayer"
@@ -143,6 +166,7 @@
       "returnType": "void",
       "signature": "static void DecrementFeederStepCounters(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n\n    for (i = 0; i < NUM_POKEBLOCK_FEEDERS; i++)\n    {\n        if (sPokeblockFeeders[i].stepCounter != 0)\n        {\n            sPokeblockFeeders[i].stepCounter--;\n            if (sPokeblockFeeders[i].stepCounter == 0)\n                ClearPokeblockFeeder(i);\n        }\n    }",
       "callsTo": [
         "ClearPokeblockFeeder"
@@ -153,6 +177,7 @@
       "returnType": "bool8",
       "signature": "bool8 GetInFrontFeederPokeblockAndSteps(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "GetPokeblockFeederInFront();\n\n    if (gSpecialVar_Result == 0xFFFF)\n    {\n        return FALSE;\n    }\n\n    ConvertIntToDecimalStringN(gStringVar2,\n        sPokeblockFeeders[gSpecialVar_Result].stepCounter,\n        STR_CONV_MODE_LEADING_ZEROS, 3);\n\n    return TRUE;",
       "callsTo": [
         "ConvertIntToDecimalStringN",

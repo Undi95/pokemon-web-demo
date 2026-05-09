@@ -6,6 +6,7 @@
       "returnType": "void",
       "signature": "static void CB2_Roulette(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "RunTasks();\n    AnimateSprites();\n    BuildOamBuffer();\n    if (sRoulette->flashUtil.enabled)\n        RouletteFlash_Run(&sRoulette->flashUtil);",
       "callsTo": [
         "AnimateSprites",
@@ -19,6 +20,7 @@
       "returnType": "void",
       "signature": "static void VBlankCB_Roulette(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "LoadOam();\n    ProcessSpriteCopyRequests();\n    TransferPlttBuffer();\n    UpdateWheelPosition();\n    SetGpuReg(REG_OFFSET_BG1HOFS, 0x200 - sRoulette->gridX);\n\n    if (sRoulette->shroomishShadowTimer)\n        SetGpuReg(REG_OFFSET_BLDALPHA, sRoulette->shroomishShadowAlpha);\n\n    if (sRoulette->updateGridHighlight)\n    {\n        DmaCopy16(3, &sRoulette->tilemapBuffers[2][0xE0], (void *)BG_SCREEN_ADDR(4) + 0x1C0, 0x340);\n        sRoulette->updateGridHighlight = FALSE;\n    }\n    switch (sRoulette->selectionRectDrawState)\n    {\n    case SELECT_STATE_DRAW:\n        SetBgAttribute(0, BG_ATTR_CHARBASEINDEX, 0);\n        ShowBg(0);\n        DmaCopy16(3, &sRoulette->tilemapBuffers[0][0xE0], (void *)BG_SCREEN_ADDR(31) + 0x1C0, 0x340);\n        sRoulette->selectionRectDrawState = SELECT_STATE_UPDATE;\n        break;\n    case SELECT_STATE_UPDATE:\n        DmaCopy16(3, &sRoulette->tilemapBuffers[0][0xE0], (void *)BG_SCREEN_ADDR(31) + 0x1C0, 0x340);\n        break;\n    case SELECT_STATE_ERASE:\n        SetBgAttribute(0, BG_ATTR_CHARBASEINDEX, 2);\n        ShowBg(0);\n        DmaFill16(3, 0, (void *)BG_SCREEN_ADDR(31) + 0x1C0, 0x340);\n        sRoulette->selectionRectDrawState = SELECT_STATE_WAIT;\n    case SELECT_STATE_WAIT:\n        break;\n    }",
       "callsTo": [
         "BG_SCREEN_ADDR",
@@ -38,6 +40,7 @@
       "returnType": "void",
       "signature": "static void InitRouletteBgAndWindows(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u32 size = 0;\n\n    sRoulette = AllocZeroed(sizeof(*sRoulette));\n    ResetBgsAndClearDma3BusyFlags(0);\n    InitBgsFromTemplates(1, sBgTemplates, ARRAY_COUNT(sBgTemplates));\n    SetBgTilemapBuffer(0, sRoulette->tilemapBuffers[0]);\n    SetBgTilemapBuffer(1, sRoulette->tilemapBuffers[2]);\n    SetBgTilemapBuffer(2, sRoulette->tilemapBuffers[6]);\n    InitWindows(sWindowTemplates);\n    InitTextBoxGfxAndPrinters();\n    sTextWindowId = 0;\n    sRoulette->gridTilemap = malloc_and_decompress(sGrid_Tilemap, &size);",
       "callsTo": [
         "ARRAY_COUNT",
@@ -54,6 +57,7 @@
       "returnType": "void",
       "signature": "static void FreeRoulette(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "FREE_AND_SET_NULL(sRoulette->gridTilemap);\n    FreeAllWindowBuffers();\n    UnsetBgTilemapBuffer(0);\n    UnsetBgTilemapBuffer(1);\n    UnsetBgTilemapBuffer(2);\n    ResetBgsAndClearDma3BusyFlags(0);\n    memset(sRoulette, 0, sizeof(*sRoulette));\n    FREE_AND_SET_NULL(sRoulette);",
       "callsTo": [
         "FREE_AND_SET_NULL",
@@ -67,6 +71,7 @@
       "returnType": "void",
       "signature": "static void InitRouletteTableData(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n    u16 bgColors[3] = {RGB(24, 4, 10), RGB(10, 19, 6), RGB(24, 4, 10)};  \n\n    sRoulette->tableId = (gSpecialVar_0x8004 & 1);\n\n    if (gSpecialVar_0x8004 & ROULETTE_SPECIAL_RATE)\n        sRoulette->isSpecialRate = TRUE;\n\n    sRoulette->wheelSpeed = sRouletteTables[sRoulette->tableId].wheelSpeed;\n    sRoulette->wheelDelay = sRouletteTables[sRoulette->tableId].wheelDelay;\n    sRoulette->minBet = sTableMinBets[sRoulette->tableId + sRoulette->isSpecialRate * 2];\n    sRoulette->unk1 = 1;\n\n     \n    if (sRoulette->minBet == 1)\n        gPlttBufferUnfaded[BG_PLTT_ID(0)] = gPlttBufferUnfaded[BG_PLTT_ID(5) + 1] = gPlttBufferFaded[BG_PLTT_ID(0)] = gPlttBufferFaded[BG_PLTT_ID(5) + 1] = bgColors[0];\n    else\n        gPlttBufferUnfaded[BG_PLTT_ID(0)] = gPlttBufferUnfaded[BG_PLTT_ID(5) + 1] = gPlttBufferFaded[BG_PLTT_ID(0)] = gPlttBufferFaded[BG_PLTT_ID(5) + 1] = bgColors[1];\n\n    RouletteFlash_Reset(&sRoulette->flashUtil);\n\n     \n     \n    for (i = 0; i < NUM_ROULETTE_SLOTS + 1; i++)\n    {\n        RouletteFlash_Add(&sRoulette->flashUtil, i, &sFlashData_Colors[i]);\n    }\n\n    for (i = 0; i < PARTY_SIZE; i++)\n    {\n        switch (GetMonData(&gPlayerParty[i], MON_DATA_SPECIES_OR_EGG))\n        {\n        case SPECIES_SHROOMISH:\n            sRoulette->partySpeciesFlags |= HAS_SHROOMISH;\n            break;\n        case SPECIES_TAILLOW:\n            sRoulette->partySpeciesFlags |= HAS_TAILLOW;\n            break;\n        }\n    }\n    RtcCalcLocalTime();",
       "callsTo": [
         "BG_PLTT_ID",
@@ -81,6 +86,7 @@
       "returnType": "void",
       "signature": "static void CB2_LoadRoulette(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 taskId;\n\n    switch (gMain.state)\n    {\n    case 0:\n        SetVBlankCallback(NULL);\n        ScanlineEffect_Stop();\n        SetVBlankHBlankCallbacksToNull();\n        ResetVramOamAndBgCntRegs();\n        ResetAllBgsCoordinates();\n        break;\n    case 1:\n        InitRouletteBgAndWindows();\n        DeactivateAllTextPrinters();\n        SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_EFFECT_NONE |\n                                     BLDCNT_TGT2_BG2 |\n                                     BLDCNT_TGT2_BD);\n        SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(10, 6));\n        break;\n    case 2:\n        ResetPaletteFade();\n        ResetSpriteData();\n        ResetTasks();\n        ResetTempTileDataBuffers();\n        break;\n    case 3:\n        LoadPalette(&sWheel_Pal, BG_PLTT_ID(0), 14 * PLTT_SIZE_4BPP);\n        DecompressAndCopyTileDataToVram(1, gRouletteMenu_Gfx, 0, 0, 0);\n        DecompressAndCopyTileDataToVram(2, gRouletteWheel_Gfx, 0, 0, 0);\n        break;\n    case 4:\n        if (FreeTempTileDataBuffersIfPossible())\n            return;\n\n        InitRouletteTableData();\n        CopyToBgTilemapBuffer(2, sWheel_Tilemap, 0, 0);\n        break;\n    case 5:\n        LoadOrFreeMiscSpritePalettesAndSheets(FALSE);\n        CreateWheelBallSprites();\n        CreateWheelCenterSprite();\n        CreateInterfaceSprites();\n        CreateGridSprites();\n        CreateGridBallSprites();\n        CreateWheelIconSprites();\n        break;\n    case 6:\n        AnimateSprites();\n        BuildOamBuffer();\n        SetCreditDigits(GetCoins());\n        SetBallCounterNumLeft(BALLS_PER_ROUND);\n        SetMultiplierSprite(SELECTION_NONE);\n        DrawGridBackground(SELECTION_NONE);\n        DrawStdWindowFrame(sTextWindowId, FALSE);\n        AddTextPrinterParameterized(sTextWindowId, FONT_NORMAL, Roulette_Text_ControlsInstruction, 0, 1, TEXT_SKIP_DRAW, NULL);\n        CopyWindowToVram(sTextWindowId, COPYWIN_FULL);\n        gSpriteCoordOffsetX = -60;\n        gSpriteCoordOffsetY = 0;\n        break;\n    case 7:\n        SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_MODE_0 |\n                                      DISPCNT_OBJ_1D_MAP |\n                                      DISPCNT_OBJ_ON);\n        CopyBgTilemapBufferToVram(1);\n        CopyBgTilemapBufferToVram(2);\n        ShowBg(0);\n        ShowBg(1);\n        ShowBg(2);\n        break;\n    case 8:\n        EnableInterrupts(INTR_FLAG_VBLANK);\n        SetVBlankCallback(VBlankCB_Roulette);\n        BeginHardwarePaletteFade(0xFF, 0, 16, 0, 1);\n        taskId = sRoulette->playTaskId = CreateTask(Task_StartPlaying, 0);\n        gTasks[taskId].tBallNum = BALLS_PER_ROUND;\n        gTasks[taskId].tCoins = GetCoins();\n        AlertTVThatPlayerPlayedRoulette(GetCoins());\n        sRoulette->spinTaskId = CreateTask(Task_SpinWheel, 1);\n        SetMainCallback2(CB2_Roulette);\n        return;\n    }\n    gMain.state++;",
       "callsTo": [
         "AddTextPrinterParameterized",
@@ -133,6 +139,12 @@
       "returnType": "void",
       "signature": "static void Task_SpinWheel(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 sin;\n    s16 cos;\n\n    if (sRoulette->wheelDelayTimer++ == sRoulette->wheelDelay)\n    {\n        sRoulette->wheelDelayTimer = 0;\n        if ((sRoulette->wheelAngle -= sRoulette->wheelSpeed) < 0)\n            sRoulette->wheelAngle = 360 - sRoulette->wheelSpeed;\n    }\n    sin = Sin2(sRoulette->wheelAngle);\n    cos = Cos2(sRoulette->wheelAngle);\n    sin = sin / 16;\n    sRoulette->wheelRotation.a = sRoulette->wheelRotation.d = cos / 16;\n    sRoulette->wheelRotation.b =  sin;\n    sRoulette->wheelRotation.c = -sin;",
       "callsTo": [
         "Cos2",
@@ -144,6 +156,12 @@
       "returnType": "void",
       "signature": "static void Task_StartPlaying(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (UpdatePaletteFade() == 0)\n    {\n        SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_EFFECT_NONE |\n                                     BLDCNT_TGT2_BG2 |\n                                     BLDCNT_TGT2_BD);\n        SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(8, 8));\n        gTasks[taskId].tBallNum = 0;\n        ResetBallDataForNewSpin(taskId);\n        ResetHits();\n        HideWheelBalls();\n        DrawGridBackground(SELECTION_NONE);\n        SetBallCounterNumLeft(BALLS_PER_ROUND);\n        StartTaskAfterDelayOrInput(taskId, Task_ContinuePlaying, NO_DELAY, A_BUTTON | B_BUTTON);\n    }",
       "callsTo": [
         "BLDALPHA_BLEND",
@@ -162,6 +180,12 @@
       "returnType": "void",
       "signature": "static void Task_AskKeepPlaying(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "DisplayYesNoMenuDefaultYes();\n    DrawStdWindowFrame(sTextWindowId, FALSE);\n    AddTextPrinterParameterized(sTextWindowId, FONT_NORMAL, Roulette_Text_KeepPlaying, 0, 1, TEXT_SKIP_DRAW, 0);\n    CopyWindowToVram(sTextWindowId, COPYWIN_FULL);\n    DoYesNoFuncWithChoice(taskId, &sYesNoTable_KeepPlaying);",
       "callsTo": [
         "AddTextPrinterParameterized",
@@ -176,6 +200,12 @@
       "returnType": "void",
       "signature": "static void Task_ContinuePlaying(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "ClearStdWindowAndFrame(0, TRUE);\n    gTasks[taskId].func = Task_SelectFirstEmptySquare;",
       "callsTo": [
         "ClearStdWindowAndFrame"
@@ -186,6 +216,12 @@
       "returnType": "void",
       "signature": "static void Task_StopPlaying(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "DestroyTask(sRoulette->spinTaskId);\n    ExitRoulette(taskId);",
       "callsTo": [
         "DestroyTask",
@@ -197,6 +233,12 @@
       "returnType": "void",
       "signature": "static void UpdateGridSelectionRect(u8 selectionId)",
       "paramsRaw": "u8 selectionId",
+      "paramsList": [
+        {
+          "name": "selectionId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 temp0, temp1;\n    switch (selectionId)\n    {\n    case SELECTION_NONE:\n        FillTilemapRect(&sRoulette->tilemapBuffers[0][0], 0, 14, 7, 16, 13);\n        break;\n    case COL_WYNAUT:\n    case COL_AZURILL:\n    case COL_SKITTY:\n    case COL_MAKUHITA:\n        temp0 = (selectionId * 3 + 14);\n        FillTilemapRect(&sRoulette->tilemapBuffers[0][0], 0, 14, 7, 16, 13);\n        SetTilemapRect(&sRoulette->tilemapBuffers[0][0], &sRoulette->gridTilemap[281], temp0, 7, 3, 13);\n        break;\n    case ROW_ORANGE:\n    case ROW_GREEN:\n    case ROW_PURPLE:\n        temp1 = ((selectionId - 1) / 5 * 3 + 10);\n        FillTilemapRect(&sRoulette->tilemapBuffers[0][0], 0, 14, 7, 16, 13);\n        SetTilemapRect(&sRoulette->tilemapBuffers[0][0], &sRoulette->gridTilemap[320], 14, temp1, 16, 3);\n        break;\n     \n    default:\n        temp0 = GET_COL(selectionId) * 3 + 14;\n        temp1 = ((selectionId - 1) / 5 * 3 + 7);\n        FillTilemapRect(&sRoulette->tilemapBuffers[0][0], 0, 14, 7, 16, 13);\n        SetTilemapRect(&sRoulette->tilemapBuffers[0][0], &sRoulette->gridTilemap[272], temp0, temp1, 3, 3);\n        break;\n    }",
       "callsTo": [
         "FillTilemapRect",
@@ -209,6 +251,12 @@
       "returnType": "void",
       "signature": "static void UpdateGridSelection(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "SetMultiplierSprite(gTasks[taskId].tSelectionId);\n    UpdateGridSelectionRect(gTasks[taskId].tSelectionId);",
       "callsTo": [
         "SetMultiplierSprite",
@@ -220,6 +268,12 @@
       "returnType": "void",
       "signature": "static void Task_StartHandleBetGridInput(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "sRoulette->selectionRectDrawState = SELECT_STATE_DRAW;\n    UpdateGridSelectionRect(gTasks[taskId].tSelectionId);\n    sRoulette->wheelDelay = 2;\n    sRoulette->wheelDelayTimer = 0;\n    gTasks[taskId].func = Task_HandleBetGridInput;",
       "callsTo": [
         "UpdateGridSelectionRect"
@@ -230,6 +284,12 @@
       "returnType": "void",
       "signature": "static void Task_SelectFirstEmptySquare(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 i;\n\n    if (sRoulette->hitFlags & F_ORANGE_ROW)\n    {\n         \n        for (i = SQU_GREEN_WYNAUT; i < SQU_GREEN_MAKUHITA; i++)\n        {\n            if (!(sRoulette->hitFlags & sGridSelections[i].flag))\n                break;\n        }\n    }\n    else\n    {\n         \n         \n        for (i = SQU_ORANGE_WYNAUT; i <= SQU_ORANGE_MAKUHITA; i++)  \n        {\n            if (!(sRoulette->hitFlags & sGridSelections[i].flag))\n                break;\n        }\n    }\n    gTasks[taskId].tSelectionId = i;\n    ResetBallDataForNewSpin(taskId);\n    DrawGridBackground(gTasks[taskId].tSelectionId);\n    SetMultiplierSprite(gTasks[taskId].tSelectionId);\n    FlashSelectionOnWheel(gTasks[taskId].tSelectionId);\n    gTasks[taskId].data[1] = 0;\n    gTasks[taskId].func = Task_StartHandleBetGridInput;",
       "callsTo": [
         "DrawGridBackground",
@@ -243,6 +303,16 @@
       "returnType": "bool8",
       "signature": "static bool8 CanMoveSelectionInDir(s16 *selectionId, u8 dir)",
       "paramsRaw": "s16 *selectionId, u8 dir",
+      "paramsList": [
+        {
+          "name": "selectionId",
+          "typeRaw": "s16 *"
+        },
+        {
+          "name": "dir",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s8 temp1 = 0;\n    s8 temp = 0;\n    s8 moveOffsets[4] = {-5, 5, -1, 1};\n    s8 originalSelection = *selectionId;\n\n    switch (dir)\n    {\n    case 0:  \n    case 1:  \n        temp1 = GET_COL(*selectionId);\n        temp = temp1 + ROW_PURPLE;\n        if (temp1 == SELECTION_NONE)\n            temp1 = 5;\n        break;\n    case 2:  \n    case 3:  \n        temp1 = GET_ROW(*selectionId);\n        temp = temp1 + COL_MAKUHITA;\n        if (temp1 == SELECTION_NONE)\n            temp1 = 1;\n        break;\n    }\n\n    *selectionId += moveOffsets[dir];\n\n    if (*selectionId < temp1)\n        *selectionId = temp;\n\n    if (*selectionId > temp)\n        *selectionId = temp1;\n\n    if (*selectionId != originalSelection)\n        return TRUE;\n\n    return FALSE;",
       "callsTo": [
         "GET_COL",
@@ -254,6 +324,12 @@
       "returnType": "void",
       "signature": "static void ProcessBetGridInput(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 headerOffset = 0;\n    bool8 dirPressed = FALSE;\n    if ((!(JOY_NEW(DPAD_UP))    || ((dirPressed = TRUE) && CanMoveSelectionInDir(&gTasks[taskId].tSelectionId, 0)))\n     && (!(JOY_NEW(DPAD_DOWN))  || ((dirPressed = TRUE) && CanMoveSelectionInDir(&gTasks[taskId].tSelectionId, 1)))\n     && (!(JOY_NEW(DPAD_LEFT))  || ((dirPressed = TRUE) && CanMoveSelectionInDir(&gTasks[taskId].tSelectionId, 2)))\n     && (!(JOY_NEW(DPAD_RIGHT)) || ((dirPressed = TRUE) && CanMoveSelectionInDir(&gTasks[taskId].tSelectionId, 3)))\n     && (dirPressed))\n    {\n        u8 i;\n        DrawGridBackground(gTasks[taskId].tSelectionId);\n        UpdateGridSelection(taskId);\n        gTasks[taskId].data[1] = 0;\n        PlaySE(SE_SELECT);\n        RouletteFlash_Stop(&sRoulette->flashUtil, 0xFFFF);\n        sRoulette->flashUtil.palettes[FLASH_ICON].available = sRoulette->flashUtil.palettes[FLASH_ICON_2].available = sRoulette->flashUtil.palettes[FLASH_ICON_3].available = FALSE;\n        FlashSelectionOnWheel(gTasks[taskId].tSelectionId);\n\n         \n        for (i = 0; i < NUM_BOARD_POKES; i++)\n        {\n            gSprites[sRoulette->spriteIds[i + SPR_POKE_HEADERS]].oam.tileNum =\n            gSprites[sRoulette->spriteIds[i + SPR_POKE_HEADERS]].sheetTileStart\n            + (*gSprites[sRoulette->spriteIds[i + SPR_POKE_HEADERS]].anims)->type;\n        }\n         \n        if ((u16)(gTasks[taskId].tSelectionId - 1) < COL_MAKUHITA && !(sRoulette->hitFlags & sGridSelections[gTasks[taskId].tSelectionId].flag))\n        {\n            headerOffset = gTasks[taskId].tSelectionId - 1;\n            gSprites[sRoulette->spriteIds[headerOffset + SPR_POKE_HEADERS]].oam.tileNum =\n            gSprites[sRoulette->spriteIds[headerOffset + SPR_POKE_HEADERS]].sheetTileStart\n            + (*gSprites[sRoulette->spriteIds[headerOffset + SPR_POKE_HEADERS]].anims + 1)->type;\n        }\n    }",
       "callsTo": [
         "CanMoveSelectionInDir",
@@ -270,6 +346,12 @@
       "returnType": "void",
       "signature": "static void Task_StartSpin(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "IncrementDailyRouletteUses();\n    sRoulette->selectionRectDrawState = SELECT_STATE_ERASE;\n    if (sRoulette->minBet == 1)\n        sRoulette->wheelDelay = 1;\n    else\n        sRoulette->wheelDelay = 0;\n    sRoulette->wheelDelayTimer = 0;\n    gTasks[taskId].data[1] = 32;\n    gTasks[taskId].func = Task_SlideGridOffscreen;",
       "callsTo": [
         "IncrementDailyRouletteUses"
@@ -280,6 +362,12 @@
       "returnType": "void",
       "signature": "static void Task_PlaceBet(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "sRoulette->betSelection[sRoulette->curBallNum] = gTasks[taskId].tSelectionId;\n    gTasks[taskId].tMultiplier = GetMultiplier(sRoulette->betSelection[sRoulette->curBallNum]);\n    SetMultiplierSprite(sRoulette->betSelection[sRoulette->curBallNum]);\n    if ((gTasks[taskId].tCoins -= sRoulette->minBet) < 0)\n        gTasks[taskId].tCoins = 0;\n    SetCreditDigits(gTasks[taskId].tCoins);\n    gTasks[taskId].func = Task_StartSpin;",
       "callsTo": [
         "GetMultiplier",
@@ -292,6 +380,12 @@
       "returnType": "void",
       "signature": "static void Task_HandleBetGridInput(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "ProcessBetGridInput(taskId);\n\n     \n    switch (gTasks[taskId].data[1])\n    {\n    case 0:\n        UpdateGridSelectionRect(gTasks[taskId].tSelectionId);\n        gTasks[taskId].data[1]++;\n        break;\n    case 30:\n        UpdateGridSelectionRect(SELECTION_NONE);\n        gTasks[taskId].data[1]++;\n        break;\n    case 59:\n        gTasks[taskId].data[1] = 0;\n        break;\n    default:\n        gTasks[taskId].data[1]++;\n    }\n\n    if (JOY_NEW(A_BUTTON))\n    {\n        if (sRoulette->hitFlags & sGridSelections[gTasks[taskId].tSelectionId].flag)\n        {\n             \n            PlaySE(SE_BOO);\n        }\n        else\n        {\n            m4aSongNumStart(SE_SHOP);\n            gTasks[taskId].func = Task_PlaceBet;\n        }\n    }",
       "callsTo": [
         "JOY_NEW",
@@ -305,6 +399,12 @@
       "returnType": "void",
       "signature": "static void Task_SlideGridOffscreen(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (gTasks[taskId].data[1]-- > 0)\n    {\n         \n        if (gTasks[taskId].data[1] > 2)\n            gSpriteCoordOffsetX += 2;\n\n         \n        if ((sRoulette->gridX += 4) == 104)\n            gSprites[sRoulette->spriteIds[SPR_MULTIPLIER]].callback = &SpriteCallbackDummy;\n    }\n    else\n    {\n        ShowHideGridIcons(TRUE, -1);\n        ShowHideGridBalls(TRUE, -1);\n        gTasks[taskId].func = Task_InitBallRoll;\n        gTasks[taskId].data[1] = 0;\n    }",
       "callsTo": [
         "ShowHideGridBalls",
@@ -316,6 +416,16 @@
       "returnType": "u8",
       "signature": "static u8 GetRandomForBallTravelDistance(u16 ballNum, u16 rand)",
       "paramsRaw": "u16 ballNum, u16 rand",
+      "paramsList": [
+        {
+          "name": "ballNum",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "rand",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "switch (sRoulette->partySpeciesFlags)\n    {\n    case HAS_SHROOMISH:\n    case HAS_TAILLOW:\n         \n        if (gLocalTime.hours > 3 && gLocalTime.hours < 10)\n        {\n            if (ballNum < BALLS_PER_ROUND * 2 || (rand & 1))\n                return sRouletteTables[sRoulette->tableId].randDistanceLow / 2;\n            else\n                return 1;\n        }\n        else if (!(rand & 3))\n        {\n            return sRouletteTables[sRoulette->tableId].randDistanceLow / 2;\n        }\n        else\n        {\n            return sRouletteTables[sRoulette->tableId].randDistanceLow;\n        }\n        break;\n    case HAS_SHROOMISH | HAS_TAILLOW:\n         \n        if (gLocalTime.hours > 3 && gLocalTime.hours < 11)\n        {\n            if (ballNum < BALLS_PER_ROUND || (rand & 1))\n                return sRouletteTables[sRoulette->tableId].randDistanceLow / 2;\n            else\n                return 1;\n        }\n        else if ((rand & 1) && ballNum > BALLS_PER_ROUND)\n        {\n            return sRouletteTables[sRoulette->tableId].randDistanceLow / 4;\n        }\n        else\n        {\n            return sRouletteTables[sRoulette->tableId].randDistanceLow / 2;\n        }\n        break;\n    case 0:\n    default:\n         \n        if (gLocalTime.hours > 3 && gLocalTime.hours < 10)\n        {\n            if (!(rand & 3))\n                return 1;\n            else\n                return sRouletteTables[sRoulette->tableId].randDistanceLow / 2;\n        }\n        else if (!(rand & 3))\n        {\n            if (ballNum > BALLS_PER_ROUND * 2)\n                return sRouletteTables[sRoulette->tableId].randDistanceLow / 2;\n            else\n                return sRouletteTables[sRoulette->tableId].randDistanceLow;\n        }\n        else if (rand & (1 << 15))\n        {\n            if (ballNum > BALLS_PER_ROUND * 2)\n                return sRouletteTables[sRoulette->tableId].randDistanceLow;\n            else\n                return sRouletteTables[sRoulette->tableId].randDistanceHigh;\n        }\n        else\n        {\n            return sRouletteTables[sRoulette->tableId].randDistanceHigh * 2;\n        }\n        break;\n    }",
       "callsTo": [],
       "lineCount": 69
@@ -324,6 +434,12 @@
       "returnType": "void",
       "signature": "static void Task_InitBallRoll(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 randTravelMod;\n    s8 randTravelDist;\n    s8 startAngleId;\n    u16 travelDist = 0;\n    u16 rand;\n    u16 randmod;\n    u16 startAngles[4] = {0, 180, 90, 270};  \n\n    rand = Random();\n    randmod = rand % 100;\n    sRoulette->curBallSpriteId = gTasks[taskId].tBallNum;\n     \n    sRoulette->ballState = sRoulette->hitSlot = sRoulette->stuckHitSlot = 0;\n    randTravelMod = GetRandomForBallTravelDistance(gTasks[taskId].tTotalBallNum, rand);\n    randTravelDist = (rand % randTravelMod) - (randTravelMod / 2);\n\n    if (gLocalTime.hours < 13)\n        startAngleId = 0;\n    else\n        startAngleId = 1;\n\n    if (randmod < 80)\n        startAngleId *= 2;\n    else\n        startAngleId = (1 - startAngleId) * 2;\n\n    sRoulette->ballTravelDist = travelDist = sRouletteTables[sRoulette->tableId].baseTravelDist + randTravelDist;\n\n    travelDist = S16TOPOSFLOAT(travelDist) / 5.0f;\n    sRoulette->ballTravelDistFast = travelDist * 3;\n    sRoulette->ballTravelDistSlow = sRoulette->ballTravelDistMed = travelDist;\n\n    sRoulette->ballAngle = S16TOPOSFLOAT(startAngles[(rand & 1) + startAngleId]);\n    sRoulette->ballAngleSpeed = S16TOPOSFLOAT(sRouletteTables[sRoulette->tableId].ballSpeed);\n    sRoulette->ballAngleAccel = ((sRoulette->ballAngleSpeed * 0.5f) - sRoulette->ballAngleSpeed) / S16TOPOSFLOAT(sRoulette->ballTravelDistFast);\n    sRoulette->ballDistToCenter = 68.0f;\n    sRoulette->ballFallAccel = 0.0f;\n    sRoulette->ballFallSpeed = -(8.0f / S16TOPOSFLOAT(sRoulette->ballTravelDistFast));\n    sRoulette->varA0 = 36.0f;\n    gTasks[taskId].func = Task_RollBall;",
       "callsTo": [
         "GetRandomForBallTravelDistance",
@@ -336,6 +452,12 @@
       "returnType": "void",
       "signature": "static void Task_RollBall(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "sRoulette->ballRolling = TRUE;\n    sRoulette->ball = &gSprites[sRoulette->spriteIds[sRoulette->curBallSpriteId]];\n    sRoulette->ball->callback = SpriteCB_RollBall_Start;\n    gTasks[taskId].tBallNum++;\n    gTasks[taskId].tTotalBallNum++;\n    SetBallCounterNumLeft(BALLS_PER_ROUND - gTasks[taskId].tBallNum);\n    m4aSongNumStart(SE_ROULETTE_BALL);\n    gTasks[taskId].func = Task_RecordBallHit;",
       "callsTo": [
         "SetBallCounterNumLeft"
@@ -346,6 +468,12 @@
       "returnType": "void",
       "signature": "static void Task_RecordBallHit(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (sRoulette->ballState != BALL_STATE_ROLLING)\n    {\n         \n        if (sRoulette->ballStuck)\n        {\n            if (sRoulette->ballUnstuck)\n            {\n                sRoulette->ballUnstuck = FALSE;\n                sRoulette->ballStuck = FALSE;\n            }\n        }\n        else\n        {\n            if (gTasks[taskId].data[1] == 0)\n            {\n                bool8 won = IsHitInBetSelection(RecordHit(taskId, sRoulette->hitSlot), sRoulette->betSelection[sRoulette->curBallNum]);\n                gTasks[taskId].tWonBet = won;\n                if (won == TRUE)\n                    RouletteFlash_Enable(&sRoulette->flashUtil, F_FLASH_OUTER_EDGES);\n            }\n            if (gTasks[taskId].data[1] <= 60)\n            {\n                if (JOY_NEW(A_BUTTON))\n                    gTasks[taskId].data[1] = 60;\n                gTasks[taskId].data[1]++;\n            }\n            else\n            {\n                DrawGridBackground(sRoulette->betSelection[sRoulette->curBallNum]);\n                ShowHideGridIcons(FALSE, gTasks[taskId].tWinningSquare);\n                ShowHideGridBalls(FALSE, gTasks[taskId].tBallNum - 1);\n                gTasks[taskId].data[1] = 32;\n                gTasks[taskId].func = Task_SlideGridOnscreen;\n            }\n        }\n    }",
       "callsTo": [
         "DrawGridBackground",
@@ -362,6 +490,12 @@
       "returnType": "void",
       "signature": "static void Task_SlideGridOnscreen(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (gTasks[taskId].data[1]-- > 0)\n    {\n         \n        if (gTasks[taskId].data[1] > 2)\n            gSpriteCoordOffsetX -= 2;\n\n         \n        if ((sRoulette->gridX -= 4) == 104)\n            gSprites[sRoulette->spriteIds[SPR_MULTIPLIER]].callback = SpriteCB_GridSquare;\n    }\n    else\n    {\n        ShowHideWinSlotCursor(gTasks[taskId].tWinningSquare);\n        if (gTasks[taskId].tWonBet == TRUE)\n            gTasks[taskId].data[1] = 121;\n        else\n            gTasks[taskId].data[1] = 61;\n        gTasks[taskId].func = Task_FlashBallOnWinningSquare;\n    }",
       "callsTo": [
         "ShowHideWinSlotCursor"
@@ -372,6 +506,12 @@
       "returnType": "void",
       "signature": "static void Task_FlashBallOnWinningSquare(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (gTasks[taskId].data[1]-- > 1)\n    {\n        switch (gTasks[taskId].data[1] % 16)\n        {\n        case 8:\n             \n            ShowHideGridIcons(FALSE, -1);\n            ShowHideGridBalls(FALSE, -1);\n            break;\n        case 0:\n             \n            ShowHideGridIcons(FALSE, gTasks[taskId].tWinningSquare);\n            ShowHideGridBalls(FALSE, gTasks[taskId].tBallNum - 1);\n            break;\n        }\n    }\n    else\n    {\n        StartTaskAfterDelayOrInput(taskId, Task_PrintSpinResult, 30, 0);\n    }",
       "callsTo": [
         "ShowHideGridBalls",
@@ -384,6 +524,12 @@
       "returnType": "void",
       "signature": "static void Task_TryIncrementWins(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "switch (gTasks[taskId].tWonBet)\n    {\n    case TRUE:\n    case 2:  \n        if (IsFanfareTaskInactive())\n        {\n            u32 wins = GetGameStat(GAME_STAT_CONSECUTIVE_ROULETTE_WINS);\n            if (wins < ++gTasks[taskId].tConsecutiveWins)\n                SetGameStat(GAME_STAT_CONSECUTIVE_ROULETTE_WINS, gTasks[taskId].tConsecutiveWins);\n            StartTaskAfterDelayOrInput(taskId, Task_PrintPayout, NO_DELAY, A_BUTTON | B_BUTTON);\n        }\n        break;\n    case FALSE:\n    default:\n        if (!IsSEPlaying())\n        {\n            gTasks[taskId].tConsecutiveWins = 0;\n            StartTaskAfterDelayOrInput(taskId, Task_EndTurn, NO_DELAY, A_BUTTON | B_BUTTON);\n        }\n        break;\n    }",
       "callsTo": [
         "GetGameStat",
@@ -398,6 +544,12 @@
       "returnType": "void",
       "signature": "static void Task_PrintSpinResult(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "switch (gTasks[taskId].tWonBet)\n    {\n    case TRUE:\n    case 2:  \n        if (gTasks[taskId].tMultiplier == MAX_MULTIPLIER)\n        {\n            PlayFanfare(MUS_SLOTS_JACKPOT);\n            DrawStdWindowFrame(sTextWindowId, FALSE);\n            AddTextPrinterParameterized(sTextWindowId, FONT_NORMAL, Roulette_Text_Jackpot, 0, 1, TEXT_SKIP_DRAW, NULL);\n            CopyWindowToVram(sTextWindowId, COPYWIN_FULL);\n        }\n        else\n        {\n            PlayFanfare(MUS_SLOTS_WIN);\n            DrawStdWindowFrame(sTextWindowId, FALSE);\n            AddTextPrinterParameterized(sTextWindowId, FONT_NORMAL, Roulette_Text_ItsAHit, 0, 1, TEXT_SKIP_DRAW, NULL);\n            CopyWindowToVram(sTextWindowId, COPYWIN_FULL);\n        }\n        break;\n    case FALSE:\n    default:\n        m4aSongNumStart(SE_FAILURE);\n        DrawStdWindowFrame(sTextWindowId, FALSE);\n        AddTextPrinterParameterized(sTextWindowId, FONT_NORMAL, Roulette_Text_NothingDoing, 0, 1, TEXT_SKIP_DRAW, NULL);\n        CopyWindowToVram(sTextWindowId, COPYWIN_FULL);\n        break;\n    }\n    gTasks[taskId].data[1] = 0;\n    gTasks[taskId].func = Task_TryIncrementWins;",
       "callsTo": [
         "AddTextPrinterParameterized",
@@ -411,6 +563,12 @@
       "returnType": "void",
       "signature": "static void Task_GivePayout(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "switch (gTasks[taskId].data[7])\n    {\n    case 0:\n        gTasks[taskId].tCoins++;\n        m4aSongNumStart(SE_PIN);\n        SetCreditDigits(gTasks[taskId].tCoins);\n        if (gTasks[taskId].tCoins >= MAX_COINS)\n        {\n            gTasks[taskId].tPayout = 0;\n        }\n        else\n        {\n            gTasks[taskId].tPayout--;\n            gTasks[taskId].data[7]++;\n        }\n        break;\n    case 3:\n        m4aSongNumStop(SE_PIN);\n        gTasks[taskId].data[7] = 0;\n        break;\n    default:\n        gTasks[taskId].data[7]++;\n        break;\n    }\n    if (gTasks[taskId].tPayout == 0)\n        StartTaskAfterDelayOrInput(taskId, Task_EndTurn, NO_DELAY, A_BUTTON | B_BUTTON);",
       "callsTo": [
         "SetCreditDigits",
@@ -422,6 +580,12 @@
       "returnType": "void",
       "signature": "static void Task_PrintPayout(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "ConvertIntToDecimalStringN(gStringVar1, (sRoulette->minBet * gTasks[taskId].tMultiplier), STR_CONV_MODE_LEFT_ALIGN, 2);\n    StringExpandPlaceholders(gStringVar4, Roulette_Text_YouveWonXCoins);\n    DrawStdWindowFrame(sTextWindowId, FALSE);\n    AddTextPrinterParameterized(sTextWindowId, FONT_NORMAL, gStringVar4, 0, 1, TEXT_SKIP_DRAW, NULL);\n    CopyWindowToVram(sTextWindowId, COPYWIN_FULL);\n    gTasks[taskId].tPayout = (sRoulette->minBet * gTasks[taskId].tMultiplier);\n    gTasks[taskId].data[7] = 0;\n    gTasks[taskId].func = Task_GivePayout;",
       "callsTo": [
         "AddTextPrinterParameterized",
@@ -436,6 +600,12 @@
       "returnType": "void",
       "signature": "static void Task_EndTurn(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "RouletteFlash_Stop(&sRoulette->flashUtil, 0xFFFF);\n    sRoulette->flashUtil.palettes[FLASH_ICON].available = sRoulette->flashUtil.palettes[FLASH_ICON_2].available = sRoulette->flashUtil.palettes[FLASH_ICON_3].available = FALSE;\n    gSprites[sRoulette->spriteIds[SPR_WHEEL_ICONS + sGridSelections[gTasks[taskId].tWinningSquare].spriteIdOffset]].invisible = TRUE;\n    gTasks[taskId].func = Task_TryPrintEndTurnMsg;",
       "callsTo": [
         "RouletteFlash_Stop"
@@ -446,6 +616,12 @@
       "returnType": "void",
       "signature": "static void Task_TryPrintEndTurnMsg(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 i = 0;\n    gTasks[taskId].tSelectionId = i;\n    sRoulette->betSelection[sRoulette->curBallNum] = SELECTION_NONE;\n    DrawGridBackground(SELECTION_NONE);\n    gSprites[sRoulette->spriteIds[SPR_WIN_SLOT_CURSOR]].invisible = TRUE;\n    for (i = 0; i < NUM_BOARD_POKES; i++)\n    {\n        gSprites[sRoulette->spriteIds[i + SPR_POKE_HEADERS]].oam.tileNum =\n            gSprites[sRoulette->spriteIds[i + SPR_POKE_HEADERS]].sheetTileStart\n            + (*gSprites[sRoulette->spriteIds[i + SPR_POKE_HEADERS]].anims)->type;\n    }\n    if (gTasks[taskId].tCoins >= sRoulette->minBet)\n    {\n        if (gTasks[taskId].tBallNum == BALLS_PER_ROUND)\n        {\n             \n            DrawStdWindowFrame(sTextWindowId, FALSE);\n            AddTextPrinterParameterized(sTextWindowId, FONT_NORMAL, Roulette_Text_BoardWillBeCleared, 0, 1, TEXT_SKIP_DRAW, NULL);\n            CopyWindowToVram(sTextWindowId, COPYWIN_FULL);\n            StartTaskAfterDelayOrInput(taskId, Task_ClearBoard, NO_DELAY, A_BUTTON | B_BUTTON);\n        }\n        else if (gTasks[taskId].tCoins == MAX_COINS)\n        {\n             \n            DrawStdWindowFrame(sTextWindowId, FALSE);\n            AddTextPrinterParameterized(sTextWindowId, FONT_NORMAL, Roulette_Text_CoinCaseIsFull, 0, 1, TEXT_SKIP_DRAW, NULL);\n            CopyWindowToVram(sTextWindowId, COPYWIN_FULL);\n            StartTaskAfterDelayOrInput(taskId, Task_AskKeepPlaying, NO_DELAY, A_BUTTON | B_BUTTON);\n        }\n        else\n        {\n             \n            gTasks[taskId].func = Task_AskKeepPlaying;\n        }\n    }\n    else\n    {\n         \n        DrawStdWindowFrame(sTextWindowId, FALSE);\n        AddTextPrinterParameterized(sTextWindowId, FONT_NORMAL, Roulette_Text_NoCoinsLeft, 0, 1, TEXT_SKIP_DRAW, NULL);\n        CopyWindowToVram(sTextWindowId, COPYWIN_FULL);\n        StartTaskAfterDelayOrInput(taskId, Task_StopPlaying, 60, A_BUTTON | B_BUTTON);\n    }",
       "callsTo": [
         "AddTextPrinterParameterized",
@@ -460,6 +636,12 @@
       "returnType": "void",
       "signature": "static void Task_ClearBoard(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 i = 0;\n\n    gTasks[taskId].tBallNum = 0;\n    ResetBallDataForNewSpin(taskId);\n    ResetHits();\n    HideWheelBalls();\n    DrawGridBackground(SELECTION_NONE);\n    SetBallCounterNumLeft(BALLS_PER_ROUND);\n\n    for (i = 0; i < NUM_ROULETTE_SLOTS; i++)\n    {\n        gSprites[sRoulette->spriteIds[i + SPR_WHEEL_ICONS]].invisible = FALSE;\n    }\n\n    if (gTasks[taskId].tCoins == MAX_COINS)\n    {\n        DrawStdWindowFrame(sTextWindowId, FALSE);\n        AddTextPrinterParameterized(sTextWindowId, FONT_NORMAL, Roulette_Text_CoinCaseIsFull, 0, 1, TEXT_SKIP_DRAW, NULL);\n        CopyWindowToVram(sTextWindowId, COPYWIN_FULL);\n        StartTaskAfterDelayOrInput(taskId, Task_AskKeepPlaying, NO_DELAY, A_BUTTON | B_BUTTON);\n    }\n    else\n    {\n        gTasks[taskId].func = Task_AskKeepPlaying;\n    }",
       "callsTo": [
         "AddTextPrinterParameterized",
@@ -478,6 +660,12 @@
       "returnType": "void",
       "signature": "static void ExitRoulette(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "RouletteFlash_Stop(&sRoulette->flashUtil, 0xFFFF);\n    RouletteFlash_Reset(&sRoulette->flashUtil);\n    SetCoins(gTasks[taskId].tCoins);\n    if (GetCoins() < sRoulette->minBet)\n        gSpecialVar_0x8004 = TRUE;\n    else\n        gSpecialVar_0x8004 = FALSE;\n    TryPutFindThatGamerOnAir(GetCoins());\n    BeginHardwarePaletteFade(0xFF, 0, 0, 16, 0);\n    gTasks[taskId].func = Task_ExitRoulette;",
       "callsTo": [
         "BeginHardwarePaletteFade",
@@ -493,6 +681,12 @@
       "returnType": "void",
       "signature": "static void Task_ExitRoulette(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (UpdatePaletteFade() == 0)\n    {\n        SetVBlankCallback(NULL);\n        gSpriteCoordOffsetX = gSpriteCoordOffsetY = 0;\n        ResetVramOamAndBgCntRegs();\n        ResetAllBgsCoordinates();\n        SetGpuReg(REG_OFFSET_BLDCNT, 0);\n        SetGpuReg(REG_OFFSET_BLDALPHA, 0);\n        SetGpuReg(REG_OFFSET_BLDY, 0);\n        FreeAllSpritePalettes();\n        ResetPaletteFade();\n        ResetSpriteData();\n        FreeRoulette();\n        gFieldCallback = FieldCB_ContinueScriptHandleMusic;\n        SetMainCallback2(CB2_ReturnToField);\n        DestroyTask(taskId);\n    }",
       "callsTo": [
         "DestroyTask",
@@ -513,6 +707,12 @@
       "returnType": "void",
       "signature": "static void Task_WaitForNextTask(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (sRoulette->taskWaitDelay == 0 || JOY_NEW(sRoulette->taskWaitKey))\n    {\n        gTasks[taskId].func = sRoulette->nextTask;\n        if (sRoulette->taskWaitKey > 0)\n            PlaySE(SE_SELECT);\n        sRoulette->nextTask = NULL;\n        sRoulette->taskWaitKey = 0;\n        sRoulette->taskWaitDelay = 0;\n    }\n    if (sRoulette->taskWaitDelay != NO_DELAY)\n        sRoulette->taskWaitDelay--;",
       "callsTo": [
         "JOY_NEW",
@@ -524,6 +724,24 @@
       "returnType": "void",
       "signature": "static void StartTaskAfterDelayOrInput(u8 taskId, TaskFunc task, u16 delay, u16 key)",
       "paramsRaw": "u8 taskId, TaskFunc task, u16 delay, u16 key",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "task",
+          "typeRaw": "TaskFunc"
+        },
+        {
+          "name": "delay",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "key",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "sRoulette->prevTask = gTasks[taskId].func;\n    if (task == NULL)\n        task = sRoulette->prevTask;\n    sRoulette->nextTask = task;\n    sRoulette->taskWaitDelay = delay;\n    if (delay == NO_DELAY && key == 0)\n        sRoulette->taskWaitKey = 0xFFFF;\n    else\n        sRoulette->taskWaitKey = key;\n    gTasks[taskId].func = Task_WaitForNextTask;",
       "callsTo": [],
       "lineCount": 10
@@ -532,6 +750,12 @@
       "returnType": "void",
       "signature": "static void ResetBallDataForNewSpin(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 i = 0;\n    sRoulette->unk0 = FALSE;\n    sRoulette->ballRolling = FALSE;\n    sRoulette->ballStuck = FALSE;\n    sRoulette->ballUnstuck = FALSE;\n    sRoulette->useTaillow = FALSE;\n\n    for (i = 0; i < BALLS_PER_ROUND; i++)\n        sRoulette->betSelection[i] = SELECTION_NONE;\n\n    sRoulette->curBallNum = 0;\n    gTasks[taskId].data[1] = 0;",
       "callsTo": [],
       "lineCount": 12
@@ -540,6 +764,7 @@
       "returnType": "void",
       "signature": "static void ResetHits(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n    sRoulette->hitFlags = 0;\n\n    for (i = 0; i < BALLS_PER_ROUND; i++)\n        sRoulette->hitSquares[i] = 0;\n\n    for (i = 0; i < NUM_BOARD_POKES; i++)\n        sRoulette->pokeHits[i] = 0;\n\n    for (i = 0; i < NUM_BOARD_COLORS; i++)\n        sRoulette->colorHits[i] = 0;\n\n    ShowHideGridBalls(TRUE, -1);",
       "callsTo": [
         "ShowHideGridBalls"
@@ -550,6 +775,16 @@
       "returnType": "u8",
       "signature": "static u8 RecordHit(u8 taskId, u8 slotId)",
       "paramsRaw": "u8 taskId, u8 slotId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "slotId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 i, j;\n    u32 columnFlags[NUM_BOARD_POKES] = {\n        F_WYNAUT_COL | F_ORANGE_WYNAUT | F_GREEN_WYNAUT | F_PURPLE_WYNAUT,\n        F_AZURILL_COL | F_ORANGE_AZURILL | F_GREEN_AZURILL | F_PURPLE_AZURILL,\n        F_SKITTY_COL | F_ORANGE_SKITTY | F_GREEN_SKITTY | F_PURPLE_SKITTY,\n        F_MAKUHITA_COL | F_ORANGE_MAKUHITA | F_GREEN_MAKUHITA | F_PURPLE_MAKUHITA\n    };\n    u32 rowFlags[NUM_BOARD_COLORS] = {\n        F_ORANGE_ROW | F_ORANGE_WYNAUT | F_ORANGE_AZURILL | F_ORANGE_SKITTY | F_ORANGE_MAKUHITA,\n        F_GREEN_ROW | F_GREEN_WYNAUT | F_GREEN_AZURILL | F_GREEN_SKITTY | F_GREEN_MAKUHITA,\n        F_PURPLE_ROW | F_PURPLE_WYNAUT | F_PURPLE_AZURILL | F_PURPLE_SKITTY | F_PURPLE_MAKUHITA\n    };\n\n    if (slotId >= NUM_ROULETTE_SLOTS)\n        return 0;\n\n    sRoulette->hitSquares[gTasks[taskId].tBallNum - 1] = sRouletteSlots[slotId].gridSquare;\n    gTasks[taskId].tWinningSquare = sRouletteSlots[slotId].gridSquare;\n    sRoulette->hitFlags |= sRouletteSlots[slotId].flag;\n    for (i = 0; i < NUM_BOARD_POKES; i++)\n    {\n        if (sRouletteSlots[slotId].flag & columnFlags[i])\n            sRoulette->pokeHits[i]++;\n         \n        if (sRoulette->pokeHits[i] >= NUM_BOARD_COLORS)\n            sRoulette->hitFlags |= columnFlags[i];\n    }\n    for (j = 0; j < NUM_BOARD_COLORS; j++)\n    {\n        if (sRouletteSlots[slotId].flag & rowFlags[j])\n            sRoulette->colorHits[j]++;\n         \n        if (sRoulette->colorHits[j] >= NUM_BOARD_POKES)\n            sRoulette->hitFlags |= rowFlags[j];\n    }\n    return sRouletteSlots[slotId].gridSquare;",
       "callsTo": [],
       "lineCount": 36
@@ -558,6 +793,16 @@
       "returnType": "bool8",
       "signature": "static bool8 IsHitInBetSelection(u8 gridSquare, u8 betSelection)",
       "paramsRaw": "u8 gridSquare, u8 betSelection",
+      "paramsList": [
+        {
+          "name": "gridSquare",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "betSelection",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 hit = gridSquare;\n    if (--gridSquare < NUM_GRID_SELECTIONS)\n    {\n        switch (betSelection)\n        {\n        case SELECTION_NONE:\n            return 3;  \n        case COL_WYNAUT:\n        case COL_AZURILL:\n        case COL_SKITTY:\n        case COL_MAKUHITA:\n            if (hit == betSelection + ROW_ORANGE\n             || hit == betSelection + ROW_GREEN\n             || hit == betSelection + ROW_PURPLE)\n                return TRUE;\n            break;\n        case ROW_ORANGE:\n        case ROW_GREEN:\n        case ROW_PURPLE:\n            if (hit >= (betSelection + COL_WYNAUT)\n             && hit <= (betSelection + COL_MAKUHITA))\n                return TRUE;\n            break;\n         \n        default:\n            if (hit == betSelection)\n                return TRUE;\n        }\n    }\n    return FALSE;",
       "callsTo": [],
       "lineCount": 30
@@ -566,6 +811,12 @@
       "returnType": "void",
       "signature": "static void FlashSelectionOnWheel(u8 selectionId)",
       "paramsRaw": "u8 selectionId",
+      "paramsList": [
+        {
+          "name": "selectionId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u16 flashFlags = 0;\n    u8 numSelected;\n    u16 palOffset;\n    u8 i;\n\n    switch (selectionId)\n    {\n    case ROW_ORANGE:\n    case ROW_GREEN:\n    case ROW_PURPLE:\n         \n        for (i = (selectionId + 1); i < (selectionId + 5); i++)\n        {\n            if (!(sRoulette->hitFlags & sGridSelections[i].flag))\n                flashFlags |= sGridSelections[i].flashFlags;\n        }\n        RouletteFlash_Enable(&sRoulette->flashUtil, flashFlags &= ~(F_FLASH_ICON));\n        break;\n    default:\n    {\n         \n        struct RouletteFlashSettings iconFlash[NUM_BOARD_COLORS];\n        memcpy(iconFlash, sFlashData_PokeIcons, sizeof(iconFlash));\n\n        if (selectionId >= COL_WYNAUT && selectionId <= COL_MAKUHITA)\n            numSelected = NUM_BOARD_COLORS;  \n        else\n            numSelected = 1;\n\n        palOffset = GET_ROW_IDX(selectionId);\n        switch (GET_COL(selectionId))\n        {\n         \n         \n        case COL_WYNAUT:\n            palOffset = PLTT_ID(gSprites[sRoulette->spriteIds[SPR_WHEEL_ICON_ORANGE_WYNAUT]].oam.paletteNum);\n            break;\n        case COL_AZURILL:\n            palOffset = PLTT_ID(gSprites[sRoulette->spriteIds[SPR_WHEEL_ICON_GREEN_AZURILL]].oam.paletteNum);\n            break;\n        case COL_SKITTY:\n            palOffset = PLTT_ID(gSprites[sRoulette->spriteIds[SPR_WHEEL_ICON_PURPLE_SKITTY]].oam.paletteNum);\n            break;\n        case COL_MAKUHITA:\n            palOffset = PLTT_ID(gSprites[sRoulette->spriteIds[SPR_WHEEL_ICON_ORANGE_MAKUHITA]].oam.paletteNum);\n            break;\n        }\n        if (numSelected == 1)\n        {\n             \n            if (!(sRoulette->hitFlags & sGridSelections[selectionId].flag))\n            {\n                iconFlash[GET_ROW_IDX(selectionId)].paletteOffset += palOffset;\n                RouletteFlash_Add(&sRoulette->flashUtil, NUM_ROULETTE_SLOTS + 1, &iconFlash[GET_ROW_IDX(selectionId)]);\n            }\n            else\n            {\n                 \n                break;\n            }\n        }\n        else\n        {\n             \n             \n            for (i = 0; i < NUM_BOARD_COLORS; i++)\n            {\n                u8 columnSlotId = i * 5 + selectionId + 5;\n                if (!(sRoulette->hitFlags & sGridSelections[columnSlotId].flag))\n                {\n                    iconFlash[GET_ROW_IDX(columnSlotId)].paletteOffset += palOffset;\n                    RouletteFlash_Add(&sRoulette->flashUtil, i + NUM_ROULETTE_SLOTS + 1, &iconFlash[GET_ROW_IDX(columnSlotId)]);\n                    if (numSelected == 3)\n                        flashFlags = sGridSelections[columnSlotId].flashFlags;\n                    numSelected--;\n                }\n            }\n             \n            if (numSelected != 2)\n                flashFlags = 0;\n        }\n         \n        RouletteFlash_Enable(&sRoulette->flashUtil, flashFlags |= sGridSelections[selectionId].flashFlags);\n        break;\n    }\n    }",
       "callsTo": [
         "GET_COL",
@@ -580,6 +831,12 @@
       "returnType": "void",
       "signature": "static void DrawGridBackground(u8 selectionId)",
       "paramsRaw": "u8 selectionId",
+      "paramsList": [
+        {
+          "name": "selectionId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "vu8 i, j;\n    vu16 x, y;\n    vu8 tilemapOffset;\n    u8 selectionIds[NUM_BOARD_POKES >= NUM_BOARD_COLORS ? NUM_BOARD_POKES + 1 : NUM_BOARD_COLORS + 1];\n    u8 numSquares;\n    sRoulette->updateGridHighlight = TRUE;\n    ShowHideGridIcons(FALSE, 0);\n    SetTilemapRect(sRoulette->tilemapBuffers[2], sRoulette->gridTilemap, 14, 7, 16, 13);\n\n     \n     \n    switch (selectionId)\n    {\n    case SELECTION_NONE:\n        return;\n    case COL_WYNAUT:\n    case COL_AZURILL:\n    case COL_SKITTY:\n    case COL_MAKUHITA:\n        numSquares = NUM_BOARD_COLORS + 1;  \n        for (i = 0; i < numSquares; i++)\n            selectionIds[i] = i * ROW_ORANGE + selectionId;\n        break;\n    case ROW_ORANGE:\n    case ROW_GREEN:\n    case ROW_PURPLE:\n        numSquares = NUM_BOARD_POKES + 1;  \n        for (i = 0; i < numSquares; i++)\n            selectionIds[i] = i + selectionId;\n        break;\n     \n    default:\n        numSquares = 1;\n        selectionIds[0] = selectionId;\n    }\n    for (i = 0; i < numSquares; i++)\n    {\n        tilemapOffset = sGridSelections[selectionIds[i]].tilemapOffset;\n        x = sGridSelections[selectionIds[i]].x;\n\n         \n         \n        for (j = 0; j < 3; j++)\n        {\n            y = (sGridSelections[selectionIds[i]].y + j) * 32;\n            sRoulette->tilemapBuffers[2][x + y + 0] = sRoulette->gridTilemap[(tilemapOffset + j) * 3 + 208 + 0];\n            sRoulette->tilemapBuffers[2][x + y + 1] = sRoulette->gridTilemap[(tilemapOffset + j) * 3 + 208 + 1];\n            sRoulette->tilemapBuffers[2][x + y + 2] = sRoulette->gridTilemap[(tilemapOffset + j) * 3 + 208 + 2];\n        }\n    }",
       "callsTo": [
         "SetTilemapRect",
@@ -591,6 +848,12 @@
       "returnType": "u8",
       "signature": "static u8 GetMultiplier(u8 selectionId)",
       "paramsRaw": "u8 selectionId",
+      "paramsList": [
+        {
+          "name": "selectionId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 multipliers[5] = {0, 3, 4, 6, MAX_MULTIPLIER};\n\n    if (selectionId > NUM_GRID_SELECTIONS)\n        selectionId = 0;\n\n    switch (sGridSelections[selectionId].baseMultiplier)\n    {\n    case NUM_BOARD_COLORS:\n        selectionId = GET_ROW_IDX(selectionId);\n         \n        if (sRoulette->colorHits[selectionId] >= NUM_BOARD_POKES)\n            return 0;\n        return multipliers[sRoulette->colorHits[selectionId] + 1];\n    case NUM_BOARD_POKES:\n        selectionId = GET_COL_IDX(selectionId);\n         \n        if (sRoulette->pokeHits[selectionId] >= NUM_BOARD_COLORS)\n            return 0;\n        return multipliers[sRoulette->pokeHits[selectionId] + 2];\n    case NUM_ROULETTE_SLOTS:\n         \n        if (sRoulette->hitFlags & sGridSelections[selectionId].flag)\n            return 0;\n        return multipliers[ARRAY_COUNT(multipliers) - 1];\n    }\n    return 0;",
       "callsTo": [
         "ARRAY_COUNT",
@@ -603,6 +866,7 @@
       "returnType": "void",
       "signature": "static void UpdateWheelPosition(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s32 bg2x;\n    s32 bg2y;\n    SetGpuReg(REG_OFFSET_BG2PA, sRoulette->wheelRotation.a);\n    SetGpuReg(REG_OFFSET_BG2PB, sRoulette->wheelRotation.b);\n    SetGpuReg(REG_OFFSET_BG2PC, sRoulette->wheelRotation.c);\n    SetGpuReg(REG_OFFSET_BG2PD, sRoulette->wheelRotation.d);\n    bg2x = 0x7400 - sRoulette->wheelRotation.a * (gSpriteCoordOffsetX + 116)\n                - sRoulette->wheelRotation.b * (gSpriteCoordOffsetY + 80);\n    bg2y = 0x5400 - sRoulette->wheelRotation.c * (gSpriteCoordOffsetX + 116)\n                - sRoulette->wheelRotation.d * (gSpriteCoordOffsetY + 80);\n    SetGpuReg(REG_OFFSET_BG2X_L, bg2x);\n    SetGpuReg(REG_OFFSET_BG2X_H, (bg2x & 0x0fff0000) >> 16);\n    SetGpuReg(REG_OFFSET_BG2Y_L, bg2y);\n    SetGpuReg(REG_OFFSET_BG2Y_H, (bg2y & 0x0fff0000) >> 16);",
       "callsTo": [
         "SetGpuReg"
@@ -613,6 +877,12 @@
       "returnType": "void",
       "signature": "static void Task_ShowMinBetYesNo(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "DisplayYesNoMenuDefaultYes();\n    DoYesNoFuncWithChoice(taskId, &sYesNoTable_AcceptMinBet);",
       "callsTo": [
         "DisplayYesNoMenuDefaultYes",
@@ -624,6 +894,12 @@
       "returnType": "void",
       "signature": "static void Task_FadeToRouletteGame(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (!gPaletteFade.active)\n    {\n        SetVBlankCallback(NULL);\n        SetMainCallback2(CB2_LoadRoulette);\n        DestroyTask(taskId);\n    }",
       "callsTo": [
         "DestroyTask",
@@ -636,6 +912,12 @@
       "returnType": "void",
       "signature": "static void Task_AcceptMinBet(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "ClearStdWindowAndFrame(0, TRUE);\n    HideCoinsWindow();\n    FreeAllWindowBuffers();\n    BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);\n    gPaletteFade.delayCounter = gPaletteFade.multipurpose2;\n    UpdatePaletteFade();\n    gTasks[taskId].func = Task_FadeToRouletteGame;",
       "callsTo": [
         "BeginNormalPaletteFade",
@@ -650,6 +932,12 @@
       "returnType": "void",
       "signature": "static void Task_DeclineMinBet(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "ClearStdWindowAndFrame(0, FALSE);\n    HideCoinsWindow();\n    UnlockPlayerFieldControls();\n    DestroyTask(taskId);",
       "callsTo": [
         "ClearStdWindowAndFrame",
@@ -663,6 +951,12 @@
       "returnType": "void",
       "signature": "static void Task_NotEnoughForMinBet(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "gTasks[taskId].data[0]++;\n    if (JOY_NEW(A_BUTTON | B_BUTTON))\n    {\n        gSpecialVar_0x8004 = 1;\n        HideCoinsWindow();\n        ClearStdWindowAndFrame(0, TRUE);\n        UnlockPlayerFieldControls();\n        DestroyTask(taskId);\n    }",
       "callsTo": [
         "ClearStdWindowAndFrame",
@@ -677,6 +971,12 @@
       "returnType": "void",
       "signature": "static void Task_PrintMinBet(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (JOY_NEW(A_BUTTON | B_BUTTON))\n    {\n        u32 minBet = sTableMinBets[GET_MIN_BET_ID(gSpecialVar_0x8004)];\n        ConvertIntToDecimalStringN(gStringVar1, minBet, STR_CONV_MODE_LEADING_ZEROS, 1);\n        StringExpandPlaceholders(gStringVar4, Roulette_Text_PlayMinimumWagerIsX);\n        DrawStdWindowFrame(0, FALSE);\n        AddTextPrinterParameterized(0, FONT_NORMAL, gStringVar4, 0, 1, TEXT_SKIP_DRAW, NULL);\n        CopyWindowToVram(0, COPYWIN_FULL);\n        gTasks[taskId].func = Task_ShowMinBetYesNo;\n    }",
       "callsTo": [
         "AddTextPrinterParameterized",
@@ -693,6 +993,12 @@
       "returnType": "void",
       "signature": "static void Task_PrintRouletteEntryMsg(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s32 minBet;\n    PrintCoinsString(gTasks[taskId].tCoins);\n    minBet = sTableMinBets[GET_MIN_BET_ID(gSpecialVar_0x8004)];\n    ConvertIntToDecimalStringN(gStringVar1, minBet, STR_CONV_MODE_LEADING_ZEROS, 1);\n\n    if (gTasks[taskId].tCoins >= minBet)\n    {\n        if ((gSpecialVar_0x8004 & ROULETTE_SPECIAL_RATE) && (gSpecialVar_0x8004 & 1))\n        {\n             \n            DrawStdWindowFrame(0, FALSE);\n            AddTextPrinterParameterized(0, FONT_NORMAL, Roulette_Text_SpecialRateTable, 0, 1, TEXT_SKIP_DRAW, NULL);\n            CopyWindowToVram(0, COPYWIN_FULL);\n            gTasks[taskId].func = Task_PrintMinBet;\n        }\n        else\n        {\n             \n            StringExpandPlaceholders(gStringVar4, Roulette_Text_PlayMinimumWagerIsX);\n            DrawStdWindowFrame(0, FALSE);\n            AddTextPrinterParameterized(0, FONT_NORMAL, gStringVar4, 0, 1, TEXT_SKIP_DRAW, NULL);\n            CopyWindowToVram(0, COPYWIN_FULL);\n            gTasks[taskId].func = Task_ShowMinBetYesNo;\n        }\n    }\n    else\n    {\n         \n        StringExpandPlaceholders(gStringVar4, Roulette_Text_NotEnoughCoins);\n        DrawStdWindowFrame(0, FALSE);\n        AddTextPrinterParameterized(0, FONT_NORMAL, gStringVar4, 0, 1, TEXT_SKIP_DRAW, NULL);\n        CopyWindowToVram(0, COPYWIN_FULL);\n        gTasks[taskId].func = Task_NotEnoughForMinBet;\n        gTasks[taskId].tCoins = 0;\n        gTasks[taskId].data[0] = 0;\n    }",
       "callsTo": [
         "AddTextPrinterParameterized",
@@ -709,6 +1015,7 @@
       "returnType": "void",
       "signature": "void PlayRoulette(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 taskId;\n    LockPlayerFieldControls();\n    ShowCoinsWindow(GetCoins(), 1, 1);\n    taskId = CreateTask(Task_PrintRouletteEntryMsg, 0);\n    gTasks[taskId].tCoins = GetCoins();",
       "callsTo": [
         "CreateTask",
@@ -722,6 +1029,12 @@
       "returnType": "void",
       "signature": "static void LoadOrFreeMiscSpritePalettesAndSheets(bool8 free)",
       "paramsRaw": "bool8 free",
+      "paramsList": [
+        {
+          "name": "free",
+          "typeRaw": "bool8"
+        }
+      ],
       "body": "if (!free)\n    {\n        FreeAllSpritePalettes();\n        LoadSpritePalettes(sSpritePalettes);\n        LoadCompressedSpriteSheet(&sSpriteSheet_Ball);\n        LoadCompressedSpriteSheet(&sSpriteSheet_ShroomishTaillow);\n        LoadCompressedSpriteSheet(&sSpriteSheet_Shadow);\n    }\n    else\n    {\n         \n        FreeSpriteTilesByTag(GFXTAG_SHADOW);\n        FreeSpriteTilesByTag(GFXTAG_SHROOMISH_TAILLOW);\n        FreeSpriteTilesByTag(GFXTAG_BALL);\n        FreeAllSpritePalettes();\n    }",
       "callsTo": [
         "FreeAllSpritePalettes",
@@ -735,6 +1048,20 @@
       "returnType": "u8",
       "signature": "static u8 CreateWheelIconSprite(const struct SpriteTemplate *template, u8 r1, u16 *angle)",
       "paramsRaw": "const struct SpriteTemplate *template, u8 r1, u16 *angle",
+      "paramsList": [
+        {
+          "name": "template",
+          "typeRaw": "const struct SpriteTemplate *"
+        },
+        {
+          "name": "r1",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "angle",
+          "typeRaw": "u16 *"
+        }
+      ],
       "body": "u16 temp;\n    u8 spriteId = CreateSprite(template, 116, 80, template->oam->y);\n    gSprites[spriteId].data[0] = *angle;\n    gSprites[spriteId].data[1] = r1;\n    gSprites[spriteId].coordOffsetEnabled = TRUE;\n    gSprites[spriteId].animPaused = TRUE;\n    gSprites[spriteId].affineAnimPaused = TRUE;\n    temp = *angle;\n    *angle += DEGREES_PER_SLOT;\n    if (*angle >= 360)\n        *angle = temp - (360 - DEGREES_PER_SLOT);\n    return spriteId;",
       "callsTo": [
         "CreateSprite"
@@ -745,6 +1072,7 @@
       "returnType": "void",
       "signature": "static void CreateGridSprites(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i, j;\n    u8 spriteId;\n    struct SpriteSheet s;\n    LZ77UnCompWram(sSpriteSheet_Headers.data, gDecompressionBuffer);\n    s.data = gDecompressionBuffer;\n    s.size = sSpriteSheet_Headers.size;\n    s.tag  = sSpriteSheet_Headers.tag;\n    LoadSpriteSheet(&s);\n    LZ77UnCompWram(sSpriteSheet_GridIcons.data, gDecompressionBuffer);\n    s.data = gDecompressionBuffer;\n    s.size = sSpriteSheet_GridIcons.size;\n    s.tag  = sSpriteSheet_GridIcons.tag;\n    LoadSpriteSheet(&s);\n    for (i = 0; i < NUM_BOARD_COLORS; i++)\n    {\n        u8 y = i * 24;\n        for (j = 0; j < NUM_BOARD_POKES; j++)\n        {\n            spriteId = sRoulette->spriteIds[(i * NUM_BOARD_POKES) + SPR_GRID_ICONS + j] = CreateSprite(&sSpriteTemplates_GridIcons[j], (j * 24) + 148, y + 92, 30);\n            gSprites[spriteId].animPaused = TRUE;\n            y += 24;\n            if (y >= 72)\n                y = 0;\n        }\n    }\n    for (i = 0; i < ARRAY_COUNT(sSpriteTemplates_PokeHeaders); i++)\n    {\n        spriteId = sRoulette->spriteIds[i + SPR_POKE_HEADERS] = CreateSprite(&sSpriteTemplates_PokeHeaders[i], (i * 24) + 148, 70, 30);\n        gSprites[spriteId].animPaused = TRUE;\n    }\n    for (i = 0; i < ARRAY_COUNT(sSpriteTemplates_ColorHeaders); i++)\n    {\n        spriteId = sRoulette->spriteIds[i + SPR_COLOR_HEADERS] = CreateSprite(&sSpriteTemplates_ColorHeaders[i], 126, (i * 24) + 92, 30);\n        gSprites[spriteId].animPaused = TRUE;\n    }",
       "callsTo": [
         "ARRAY_COUNT",
@@ -758,6 +1086,16 @@
       "returnType": "void",
       "signature": "static void ShowHideGridIcons(bool8 hideAll, u8 hideSquare)",
       "paramsRaw": "bool8 hideAll, u8 hideSquare",
+      "paramsList": [
+        {
+          "name": "hideAll",
+          "typeRaw": "bool8"
+        },
+        {
+          "name": "hideSquare",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 i;\n    switch (hideAll)\n    {\n    case TRUE:\n         \n        for (i = 0; i < NUM_GRID_SELECTIONS; i++)\n        {\n            gSprites[sRoulette->spriteIds[i + SPR_GRID_ICONS]].invisible = TRUE;\n        }\n        break;\n    case FALSE:\n        for (i = 0; i < NUM_ROULETTE_SLOTS; i++)\n        {\n            if (!(sRoulette->hitFlags & sRouletteSlots[i].flag))\n                gSprites[sRoulette->spriteIds[i + SPR_GRID_ICONS]].invisible = FALSE;\n            else if (sRouletteSlots[i].gridSquare != hideSquare)\n                gSprites[sRoulette->spriteIds[i + SPR_GRID_ICONS]].invisible = TRUE;\n            else\n                gSprites[sRoulette->spriteIds[i + SPR_GRID_ICONS]].invisible = FALSE;\n        }\n         \n        for (; i < NUM_GRID_SELECTIONS; i++)\n        {\n            gSprites[sRoulette->spriteIds[i + SPR_GRID_ICONS]].invisible = FALSE;\n        }\n        break;\n    }",
       "callsTo": [],
       "lineCount": 27
@@ -766,6 +1104,7 @@
       "returnType": "void",
       "signature": "static void CreateGridBallSprites(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n    for (i = 0; i < BALLS_PER_ROUND; i++)\n    {\n        sRoulette->spriteIds[i + SPR_GRID_BALLS] = CreateSprite(&sSpriteTemplate_Ball, 116, 20, 10);\n        gSprites[sRoulette->spriteIds[i + SPR_GRID_BALLS]].invisible = TRUE;\n        gSprites[sRoulette->spriteIds[i + SPR_GRID_BALLS]].data[0] = 1;\n        gSprites[sRoulette->spriteIds[i + SPR_GRID_BALLS]].callback = SpriteCB_GridSquare;\n        gSprites[sRoulette->spriteIds[i + SPR_GRID_BALLS]].oam.priority = 1;\n        StartSpriteAnim(&gSprites[sRoulette->spriteIds[i + SPR_GRID_BALLS]], 8);\n    }",
       "callsTo": [
         "CreateSprite",
@@ -777,6 +1116,16 @@
       "returnType": "void",
       "signature": "static void ShowHideGridBalls(bool8 hideAll, u8 hideBallId)",
       "paramsRaw": "bool8 hideAll, u8 hideBallId",
+      "paramsList": [
+        {
+          "name": "hideAll",
+          "typeRaw": "bool8"
+        },
+        {
+          "name": "hideBallId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 i = 0;\n    if (hideAll)\n    {\n        for (; i < BALLS_PER_ROUND; i++)\n        {\n            gSprites[sRoulette->spriteIds[i + SPR_GRID_BALLS]].invisible = TRUE;\n        }\n    }\n    else\n    {\n        for (; i < BALLS_PER_ROUND; i++)\n        {\n            if (!sRoulette->hitSquares[i] || i == hideBallId)\n            {\n                gSprites[sRoulette->spriteIds[i + SPR_GRID_BALLS]].invisible = TRUE;\n            }\n            else\n            {\n                gSprites[sRoulette->spriteIds[i + SPR_GRID_BALLS]].invisible = FALSE;\n                gSprites[sRoulette->spriteIds[i + SPR_GRID_BALLS]].x = (sGridSelections[sRoulette->hitSquares[i]].x + 1) * 8 + 4;\n                gSprites[sRoulette->spriteIds[i + SPR_GRID_BALLS]].y = (sGridSelections[sRoulette->hitSquares[i]].y + 1) * 8 + 3;\n            }\n        }\n    }",
       "callsTo": [],
       "lineCount": 24
@@ -785,6 +1134,12 @@
       "returnType": "void",
       "signature": "static void ShowHideWinSlotCursor(u8 selectionId)",
       "paramsRaw": "u8 selectionId",
+      "paramsList": [
+        {
+          "name": "selectionId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (selectionId == 0)\n    {\n        gSprites[sRoulette->spriteIds[SPR_WIN_SLOT_CURSOR]].invisible = TRUE;\n    }\n    else\n    {\n        gSprites[sRoulette->spriteIds[SPR_WIN_SLOT_CURSOR]].invisible = FALSE;\n        gSprites[sRoulette->spriteIds[SPR_WIN_SLOT_CURSOR]].x = (sGridSelections[selectionId].x + 2) * 8;\n        gSprites[sRoulette->spriteIds[SPR_WIN_SLOT_CURSOR]].y = (sGridSelections[selectionId].y + 2) * 8;\n    }",
       "callsTo": [],
       "lineCount": 10
@@ -793,6 +1148,7 @@
       "returnType": "void",
       "signature": "static void CreateWheelIconSprites(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i, j;\n    u16 angle;\n    struct SpriteSheet s;\n\n    LZ77UnCompWram(sSpriteSheet_WheelIcons.data, gDecompressionBuffer);\n    s.data = gDecompressionBuffer;\n    s.size = sSpriteSheet_WheelIcons.size;\n    s.tag  = sSpriteSheet_WheelIcons.tag;\n    LoadSpriteSheet(&s);\n\n    angle = 15;\n    for (i = 0; i < NUM_BOARD_COLORS; i++)\n    {\n        for (j = 0; j < NUM_BOARD_POKES; j++)\n        {\n            u8 spriteId;\n            spriteId = sRoulette->spriteIds[(i * NUM_BOARD_POKES) + SPR_WHEEL_ICONS + j] = CreateWheelIconSprite(&sSpriteTemplates_WheelIcons[i * NUM_BOARD_POKES + j], 40, &angle);\n            gSprites[spriteId].animPaused = TRUE;\n            gSprites[spriteId].affineAnimPaused = TRUE;\n        }\n    }",
       "callsTo": [
         "CreateWheelIconSprite",
@@ -805,6 +1161,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_WheelIcon(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "s16 cos;\n    s16 sin;\n    u32 matrixNum;\n    s16 angle = sRoulette->wheelAngle + sprite->data[0];\n    if (angle >= 360)\n        angle -= 360;\n    sin = Sin2(angle);\n    cos = Cos2(angle);\n    sprite->x2 =  sin * sprite->data[1] >> 12;\n    sprite->y2 = -cos * sprite->data[1] >> 12;\n    matrixNum = sprite->oam.matrixNum;\n    sin /= 16;\n    gOamMatrices[matrixNum].d = cos /= 16;\n    gOamMatrices[matrixNum].a = cos;\n    gOamMatrices[matrixNum].b = sin;\n    gOamMatrices[matrixNum].c = -sin;",
       "callsTo": [
         "Cos2",
@@ -816,6 +1178,7 @@
       "returnType": "void",
       "signature": "static void CreateInterfaceSprites(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n    for (i = 0; i < ARRAY_COUNT(sSpriteSheets_Interface) - 1; i++)\n    {\n        struct SpriteSheet s;\n        LZ77UnCompWram(sSpriteSheets_Interface[i].data, gDecompressionBuffer);\n        s.data = gDecompressionBuffer;\n        s.size = sSpriteSheets_Interface[i].size;\n        s.tag  = sSpriteSheets_Interface[i].tag;\n        LoadSpriteSheet(&s);\n    }\n    sRoulette->spriteIds[SPR_CREDIT] = CreateSprite(&sSpriteTemplate_Credit, 208, 16, 4);\n    gSprites[sRoulette->spriteIds[SPR_CREDIT]].animPaused = TRUE;\n    for (i = 0; i < MAX_COIN_DIGITS; i++)\n    {\n        sRoulette->spriteIds[i + SPR_CREDIT_DIGITS] = CreateSprite(&sSpriteTemplate_CreditDigit, i * 8 + 196, 24, 0);\n        gSprites[sRoulette->spriteIds[i + SPR_CREDIT_DIGITS]].invisible = TRUE;\n        gSprites[sRoulette->spriteIds[i + SPR_CREDIT_DIGITS]].animPaused = TRUE;\n    }\n    sRoulette->spriteIds[SPR_MULTIPLIER] = CreateSprite(&sSpriteTemplate_Multiplier, 120, 68, 4);\n    gSprites[sRoulette->spriteIds[SPR_MULTIPLIER]].animPaused = TRUE;\n    for (i = 0; i < BALLS_PER_ROUND / 2; i++)\n    {\n         \n        sRoulette->spriteIds[i + SPR_BALL_COUNTER] = CreateSprite(&sSpriteTemplate_BallCounter, i * 16 + 192, 36, 4);\n        gSprites[sRoulette->spriteIds[i + SPR_BALL_COUNTER]].invisible = TRUE;\n        gSprites[sRoulette->spriteIds[i + SPR_BALL_COUNTER]].animPaused = TRUE;\n    }\n    sRoulette->spriteIds[SPR_WIN_SLOT_CURSOR] = CreateSprite(&sSpriteTemplate_Cursor, 152, 96, 9);\n    gSprites[sRoulette->spriteIds[SPR_WIN_SLOT_CURSOR]].oam.priority = 1;\n    gSprites[sRoulette->spriteIds[SPR_WIN_SLOT_CURSOR]].animPaused = TRUE;\n    gSprites[sRoulette->spriteIds[SPR_WIN_SLOT_CURSOR]].invisible = TRUE;",
       "callsTo": [
         "ARRAY_COUNT",
@@ -829,6 +1192,12 @@
       "returnType": "void",
       "signature": "static void SetCreditDigits(u16 num)",
       "paramsRaw": "u16 num",
+      "paramsList": [
+        {
+          "name": "num",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "u8 i;\n    u16 d = 1000;\n    bool8 printZero = FALSE;\n    for (i = 0; i < MAX_COIN_DIGITS; i++)\n    {\n        u8 digit = num / d;\n        gSprites[sRoulette->spriteIds[i + SPR_CREDIT_DIGITS]].invisible = TRUE;\n        if (digit > 0 || printZero || i == MAX_COIN_DIGITS - 1)\n        {\n            gSprites[sRoulette->spriteIds[i + SPR_CREDIT_DIGITS]].invisible = FALSE;\n            gSprites[sRoulette->spriteIds[i + SPR_CREDIT_DIGITS]].oam.tileNum =\n                gSprites[sRoulette->spriteIds[i + SPR_CREDIT_DIGITS]].sheetTileStart\n                + (*gSprites[sRoulette->spriteIds[i + SPR_CREDIT_DIGITS]].anims + digit)->type;\n            printZero = TRUE;\n        }\n        num = num % d;\n        d = d / 10;\n    }",
       "callsTo": [],
       "lineCount": 18
@@ -837,6 +1206,12 @@
       "returnType": "u8",
       "signature": "static u8 GetMultiplierAnimId(u8 selectionId)",
       "paramsRaw": "u8 selectionId",
+      "paramsList": [
+        {
+          "name": "selectionId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 animIds[5] = {0, 1, 2, 3, 4};\n\n    if (selectionId > NUM_GRID_SELECTIONS)\n        selectionId = 0;\n\n    switch (sGridSelections[selectionId].baseMultiplier)\n    {\n    case NUM_BOARD_COLORS:\n        selectionId = GET_ROW_IDX(selectionId);\n        if (sRoulette->colorHits[selectionId] > 3)\n            return 0;\n        return animIds[sRoulette->colorHits[selectionId] + 1];\n    case NUM_BOARD_POKES:\n        selectionId = GET_COL_IDX(selectionId);\n        if (sRoulette->pokeHits[selectionId] > 2)\n            return 0;\n        return animIds[sRoulette->pokeHits[selectionId] + 2];\n    case NUM_ROULETTE_SLOTS:\n        if (sRoulette->hitFlags & sGridSelections[selectionId].flag)\n            return 0;\n        return animIds[4];\n    }\n    return 0;",
       "callsTo": [
         "GET_COL_IDX",
@@ -848,6 +1223,12 @@
       "returnType": "void",
       "signature": "static void SetMultiplierSprite(u8 selectionId)",
       "paramsRaw": "u8 selectionId",
+      "paramsList": [
+        {
+          "name": "selectionId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "struct Sprite *sprite = &gSprites[sRoulette->spriteIds[SPR_MULTIPLIER]];\n    sprite->animCmdIndex = GetMultiplierAnimId(selectionId);\n    sprite->oam.tileNum = sprite->sheetTileStart + (*sprite->anims + sprite->animCmdIndex)->type;",
       "callsTo": [
         "GetMultiplierAnimId"
@@ -858,6 +1239,12 @@
       "returnType": "void",
       "signature": "static void SetBallCounterNumLeft(u8 numBalls)",
       "paramsRaw": "u8 numBalls",
+      "paramsList": [
+        {
+          "name": "numBalls",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 i;\n    u8 t = 0;\n    if (sRoulette->minBet == 1)\n        t = 2;\n    switch (numBalls)\n    {\n    case 6:\n        for (i = 0; i < BALLS_PER_ROUND / 2; i++)\n        {\n            gSprites[sRoulette->spriteIds[i + SPR_BALL_COUNTER]].invisible = FALSE;\n            gSprites[sRoulette->spriteIds[i + SPR_BALL_COUNTER]].oam.tileNum =\n                gSprites[sRoulette->spriteIds[i + SPR_BALL_COUNTER]].sheetTileStart\n                + (*gSprites[sRoulette->spriteIds[i + SPR_BALL_COUNTER]].anims)->type;\n        }\n        break;\n    case 5:\n        gSprites[sRoulette->spriteIds[SPR_BALL_COUNTER_3]].oam.tileNum =\n            gSprites[sRoulette->spriteIds[SPR_BALL_COUNTER_3]].sheetTileStart\n            + (*gSprites[sRoulette->spriteIds[SPR_BALL_COUNTER_3]].anims + t + 1)->type;\n        break;\n    case 4:\n        gSprites[sRoulette->spriteIds[SPR_BALL_COUNTER_3]].oam.tileNum =\n            gSprites[sRoulette->spriteIds[SPR_BALL_COUNTER_3]].sheetTileStart\n            + (*gSprites[sRoulette->spriteIds[SPR_BALL_COUNTER_3]].anims + t + 2)->type;\n        break;\n    case 3:\n        gSprites[sRoulette->spriteIds[SPR_BALL_COUNTER_2]].oam.tileNum =\n            gSprites[sRoulette->spriteIds[SPR_BALL_COUNTER_2]].sheetTileStart\n            + (*gSprites[sRoulette->spriteIds[SPR_BALL_COUNTER_2]].anims + t + 1)->type;\n        break;\n    case 2:\n        gSprites[sRoulette->spriteIds[SPR_BALL_COUNTER_2]].oam.tileNum =\n            gSprites[sRoulette->spriteIds[SPR_BALL_COUNTER_2]].sheetTileStart\n            + (*gSprites[sRoulette->spriteIds[SPR_BALL_COUNTER_2]].anims + t + 2)->type;\n        break;\n    case 1:\n        gSprites[sRoulette->spriteIds[SPR_BALL_COUNTER_1]].oam.tileNum =\n            gSprites[sRoulette->spriteIds[SPR_BALL_COUNTER_1]].sheetTileStart\n            + (*gSprites[sRoulette->spriteIds[SPR_BALL_COUNTER_1]].anims + t + 1)->type;\n        break;\n    case 0:\n    default:\n        for (i = 0; i < BALLS_PER_ROUND / 2; i++)\n        {\n            gSprites[sRoulette->spriteIds[i + SPR_BALL_COUNTER]].oam.tileNum =\n                gSprites[sRoulette->spriteIds[i + SPR_BALL_COUNTER]].sheetTileStart\n                + (*gSprites[sRoulette->spriteIds[i + SPR_BALL_COUNTER]].anims + t + 2)->type;\n        }\n    }",
       "callsTo": [],
       "lineCount": 49
@@ -866,6 +1253,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_GridSquare(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "sprite->x2 = sRoulette->gridX;",
       "callsTo": [],
       "lineCount": 1
@@ -874,6 +1267,7 @@
       "returnType": "void",
       "signature": "static void CreateWheelCenterSprite(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 spriteId;\n    struct SpriteSheet s;\n    LZ77UnCompWram(sSpriteSheet_WheelCenter.data, gDecompressionBuffer);\n    s.data = gDecompressionBuffer;\n    s.size = sSpriteSheet_WheelCenter.size;\n    s.tag = sSpriteSheet_WheelCenter.tag;\n    LoadSpriteSheet(&s);\n     \n     \n    spriteId = CreateSprite(&sSpriteTemplate_WheelCenter, 116, 80, 81);\n    gSprites[spriteId].data[0] = sRoulette->wheelAngle;\n    gSprites[spriteId].data[1] = 0;\n    gSprites[spriteId].animPaused = TRUE;\n    gSprites[spriteId].affineAnimPaused = TRUE;\n    gSprites[spriteId].coordOffsetEnabled = TRUE;",
       "callsTo": [
         "CreateSprite",
@@ -886,6 +1280,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_WheelCenter(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "u32 matrixNum = sprite->oam.matrixNum;\n    struct OamMatrix *matrix = &gOamMatrices[0];\n    matrix[matrixNum].d = sRoulette->wheelRotation.a;\n    matrix[matrixNum].a = sRoulette->wheelRotation.a;\n    matrix[matrixNum].b = sRoulette->wheelRotation.b;\n    matrix[matrixNum].c = sRoulette->wheelRotation.c;",
       "callsTo": [],
       "lineCount": 6
@@ -894,6 +1294,7 @@
       "returnType": "void",
       "signature": "static void CreateWheelBallSprites(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n    for (i = 0; i < BALLS_PER_ROUND; i++)\n    {\n        sRoulette->spriteIds[i] = CreateSprite(&sSpriteTemplate_Ball, 116, 80, 57 - i);\n        if (sRoulette->spriteIds[i] != MAX_SPRITES)\n        {\n            gSprites[sRoulette->spriteIds[i]].invisible = TRUE;\n            gSprites[sRoulette->spriteIds[i]].coordOffsetEnabled = TRUE;\n        }\n    }",
       "callsTo": [
         "CreateSprite"
@@ -904,6 +1305,7 @@
       "returnType": "void",
       "signature": "static void HideWheelBalls(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 spriteId = sRoulette->spriteIds[SPR_WHEEL_BALLS];\n    u8 i;\n    for (i = 0; i < BALLS_PER_ROUND; i++)\n    {\n        u8 j;\n        gSprites[spriteId].invisible = TRUE;\n        gSprites[spriteId].callback = &SpriteCallbackDummy;\n        StartSpriteAnim(&gSprites[spriteId], 0);\n        for (j = 0; j < 8; j++)\n            gSprites[spriteId].data[j] = 0;\n\n        spriteId++;\n    }",
       "callsTo": [
         "StartSpriteAnim"
@@ -914,6 +1316,12 @@
       "returnType": "s16",
       "signature": "static s16 UpdateBallRelativeWheelAngle(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (sRoulette->wheelAngle > sprite->sBallAngle)\n    {\n        sprite->sBallWheelAngle = 360 - sRoulette->wheelAngle + sprite->sBallAngle;\n        if (sprite->sBallWheelAngle >= 360)\n            sprite->sBallWheelAngle -= 360;\n    }\n    else\n    {\n        sprite->sBallWheelAngle = sprite->sBallAngle - sRoulette->wheelAngle;\n    }\n\n    return sprite->sBallWheelAngle;",
       "callsTo": [],
       "lineCount": 12
@@ -922,6 +1330,12 @@
       "returnType": "u8",
       "signature": "static u8 UpdateSlotBelowBall(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "sRoulette->hitSlot = UpdateBallRelativeWheelAngle(sprite) / (f32)DEGREES_PER_SLOT;\n    return sRoulette->hitSlot;",
       "callsTo": [
         "UpdateBallRelativeWheelAngle"
@@ -932,6 +1346,12 @@
       "returnType": "s16",
       "signature": "static s16 GetBallDistanceToSlotMidpoint(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "s16 angleIntoSlot = UpdateBallRelativeWheelAngle(sprite) % DEGREES_PER_SLOT;\n    u16 distanceToMidpoint;\n    if (angleIntoSlot == SLOT_MIDPOINT)\n    {\n         \n        distanceToMidpoint = 0;\n        return sprite->sSlotMidpointDist = distanceToMidpoint;\n    }\n    else if (angleIntoSlot >= SLOT_MIDPOINT)\n    {\n         \n        distanceToMidpoint = (DEGREES_PER_SLOT - 1) + SLOT_MIDPOINT - angleIntoSlot;\n        return sprite->sSlotMidpointDist = distanceToMidpoint;\n    }\n    else\n    {\n         \n        distanceToMidpoint = SLOT_MIDPOINT - angleIntoSlot;\n        return sprite->sSlotMidpointDist = distanceToMidpoint;\n    }",
       "callsTo": [
         "UpdateBallRelativeWheelAngle"
@@ -942,6 +1362,12 @@
       "returnType": "void",
       "signature": "static void UpdateBallPos(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "s16 sin, cos;\n    sRoulette->ballAngleSpeed += sRoulette->ballAngleAccel;\n    sRoulette->ballAngle += sRoulette->ballAngleSpeed;\n\n    if (sRoulette->ballAngle >= 360)\n        sRoulette->ballAngle -= 360.0f;\n    else if (sRoulette->ballAngle < 0.0f)\n        sRoulette->ballAngle += 360.0f;\n\n    sprite->sBallAngle = sRoulette->ballAngle;\n    sRoulette->ballFallSpeed += sRoulette->ballFallAccel;\n    sRoulette->ballDistToCenter += sRoulette->ballFallSpeed;\n    sprite->sBallDistToCenter = sRoulette->ballDistToCenter;\n    sin = Sin2(sprite->sBallAngle);\n    cos = Cos2(sprite->sBallAngle);\n    sprite->x2 =  sin * sprite->sBallDistToCenter >> 12;\n    sprite->y2 = -cos * sprite->sBallDistToCenter >> 12;\n    if (IsSEPlaying())\n    {\n        m4aMPlayPanpotControl(&gMPlayInfo_SE1, TRACKS_ALL, sprite->x2);\n        m4aMPlayPanpotControl(&gMPlayInfo_SE2, TRACKS_ALL, sprite->x2);\n    }",
       "callsTo": [
         "Cos2",
@@ -954,6 +1380,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_BallLandInSlot(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "s16 sin, cos;\n    sprite->sBallAngle = sRoulette->wheelAngle + sprite->sBallWheelAngle;\n    if (sprite->sBallAngle >= 360)\n        sprite->sBallAngle -= 360;\n    sin = Sin2(sprite->sBallAngle);\n    cos = Cos2(sprite->sBallAngle);\n    sprite->x2 =  sin * sprite->sBallDistToCenter >> 12;\n    sprite->y2 = -cos * sprite->sBallDistToCenter >> 12;\n    sprite->y2 += gSpriteCoordOffsetY;",
       "callsTo": [
         "Cos2",
@@ -965,6 +1397,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_UnstickBall_ShroomishBallFall(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "UpdateBallPos(sprite);\n    sprite->data[2]++;\n    if (sprite->sBallDistToCenter < -132 || sprite->sBallDistToCenter > 80)\n        sprite->invisible = TRUE;\n    else\n        sprite->invisible = FALSE;\n\n    if (sprite->data[2] >= DEGREES_PER_SLOT)\n    {\n        if (!sprite->sStuckOnWheelLeft)\n        {\n            if (sRoulette->ballDistToCenter <= sRoulette->varA0 - 2.0f)\n            {\n                LandBall()\n                sRoulette->ballFallAccel = sRoulette->ballFallSpeed = 0.0f;\n                sRoulette->ballAngleSpeed = -1.0f;\n            }\n        }\n        else\n        {\n            if (sRoulette->ballDistToCenter >= sRoulette->varA0 - 2.0f)\n            {\n                LandBall()\n                sRoulette->ballFallAccel = sRoulette->ballFallSpeed = 0.0f;\n                sRoulette->ballAngleSpeed = -1.0f;\n            }\n        }\n    }",
       "callsTo": [
         "LandBall",
@@ -976,6 +1414,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_UnstickBall_Shroomish(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "f32 slotOffset, ballFallDist, ballFallSpeed;\n    UpdateBallPos(sprite);\n\n    switch (sprite->sBallAngle)\n    {\n    case 0:\n        if (sprite->sStuckOnWheelLeft != TRUE)\n        {\n            slotOffset = sprite->data[7];\n            ballFallDist = (slotOffset * sRouletteTables[sRoulette->tableId].randDistanceHigh + (sRouletteTables[sRoulette->tableId].randDistanceLow - 1));\n            ballFallSpeed = (slotOffset / sRouletteTables[sRoulette->tableId].shroomish.fallSlowdown);\n        }\n        else\n        {\n            return;\n        }\n        break;\n    case 180:\n        if (sprite->sStuckOnWheelLeft)\n        {\n            slotOffset = sprite->data[7];\n            ballFallDist = (slotOffset * sRouletteTables[sRoulette->tableId].randDistanceHigh + (sRouletteTables[sRoulette->tableId].randDistanceLow - 1));\n            ballFallSpeed = -(slotOffset / sRouletteTables[sRoulette->tableId].shroomish.fallSlowdown);\n        }\n        else\n        {\n            return;\n        }\n        break;\n    default:\n        return;\n    }\n    sRoulette->varA0 = sRoulette->ballDistToCenter;\n    sRoulette->ballFallSpeed = ballFallSpeed;\n    sRoulette->ballFallAccel = -((ballFallSpeed * 2.0f) / ballFallDist + (2.0f / (ballFallDist * ballFallDist)));\n    sRoulette->ballAngleSpeed = 0.0f;\n    sprite->animPaused = FALSE;\n    sprite->animNum = 0;\n    sprite->animBeginning = TRUE;\n    sprite->animEnded = FALSE;\n    sprite->callback = SpriteCB_UnstickBall_ShroomishBallFall;\n    sprite->data[2] = 0;",
       "callsTo": [
         "UpdateBallPos"
@@ -986,6 +1430,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_UnstickBall_TaillowDrop(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "sprite->y2 = (s16)(sprite->data[2] * 0.05f * sprite->data[2]) - 45;\n    sprite->data[2]++;\n    if (sprite->data[2] >= DEGREES_PER_SLOT && sprite->y2 >= 0)\n    {\n        LandBall()\n        sRoulette->ballUnstuck = TRUE;\n    }",
       "callsTo": [
         "LandBall"
@@ -996,6 +1446,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_UnstickBall_TaillowPickUp(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (sprite->data[2]++ < 45)\n    {\n        sprite->y2--;\n        if (sprite->data[2] == 45)\n        {\n            if (gSprites[sRoulette->spriteIds[SPR_CLEAR_MON]].animCmdIndex == 1)\n                sprite->y2++;\n        }\n    }\n    else\n    {\n        if (sprite->data[2] < sprite->data[7])\n        {\n            if (gSprites[sRoulette->spriteIds[SPR_CLEAR_MON]].animDelayCounter == 0)\n            {\n                if (gSprites[sRoulette->spriteIds[SPR_CLEAR_MON]].animCmdIndex == 1)\n                    sprite->y2++;\n                else\n                    sprite->y2--;\n            }\n        }\n        else\n        {\n            sprite->animPaused = FALSE;\n            sprite->animNum = 1;\n            sprite->animBeginning = TRUE;\n            sprite->animEnded = FALSE;\n            sprite->data[2] = 0;\n            sprite->callback = SpriteCB_UnstickBall_TaillowDrop;\n            m4aSongNumStart(SE_BALL_THROW);\n        }\n    }",
       "callsTo": [],
       "lineCount": 32
@@ -1004,6 +1460,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_UnstickBall_Taillow(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "UpdateBallPos(sprite);\n\n    switch (sprite->sBallAngle)\n    {\n    case 90:\n        if (sprite->sStuckOnWheelLeft != TRUE)\n        {\n            sprite->callback = &SpriteCB_UnstickBall_TaillowPickUp;\n            sprite->data[2] = 0;\n        }\n        break;\n    case 270:\n        if (sprite->sStuckOnWheelLeft)\n        {\n            sprite->callback = &SpriteCB_UnstickBall_TaillowPickUp;\n            sprite->data[2] = 0;\n        }\n        break;\n    }",
       "callsTo": [
         "UpdateBallPos"
@@ -1014,6 +1476,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_UnstickBall(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "UpdateBallPos(sprite);\n    switch (sRoulette->useTaillow)\n    {\n    default:\n    case FALSE:\n        CreateShroomishSprite(sprite);\n        sprite->callback = SpriteCB_UnstickBall_Shroomish;\n        break;\n    case TRUE:\n        CreateTaillowSprite(sprite);\n        sprite->callback = SpriteCB_UnstickBall_Taillow;\n        break;\n    }",
       "callsTo": [
         "CreateShroomishSprite",
@@ -1026,6 +1494,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_RollBall_TryLandAdjacent(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "UpdateBallPos(sprite);\n\n    if (sprite->data[2]-- == 16)\n        sRoulette->ballFallSpeed *= -1.0f;\n\n    if (sprite->data[2] == 0)\n    {\n        if (!sprite->sStillStuck)\n        {\n             \n            LandBall()\n        }\n        else\n        {\n             \n            sprite->animPaused = TRUE;\n            m4aSongNumStart(SE_BALL_BOUNCE_1);\n            SetBallStuck(sprite);\n        }\n    }",
       "callsTo": [
         "LandBall",
@@ -1038,6 +1512,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_RollBall_TryLand(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "UpdateBallPos(sprite);\n    sprite->data[2] = 0;\n    UpdateSlotBelowBall(sprite);\n    if (!(sRouletteSlots[sRoulette->hitSlot].flag & sRoulette->hitFlags))\n    {\n         \n        LandBall()\n    }\n    else\n    {\n         \n        u8 slotId;\n        u32 fallRight;\n        m4aSongNumStart(SE_BALL_BOUNCE_1);\n        fallRight = Random() & 1;\n        if (fallRight)\n        {\n            sRoulette->ballAngleSpeed = 0.0f;\n            sRoulette->stuckHitSlot = slotId = (sRoulette->hitSlot + 1) % NUM_ROULETTE_SLOTS;\n        }\n        else  \n        {\n            f32 temp;\n            sRoulette->ballAngleSpeed = (temp = sRouletteTables[sRoulette->tableId].var1C) * 2.0f;\n            slotId = (sRoulette->hitSlot + NUM_ROULETTE_SLOTS - 1) % NUM_ROULETTE_SLOTS;\n            sRoulette->stuckHitSlot = sRoulette->hitSlot;\n        }\n        if (sRouletteSlots[slotId].flag & sRoulette->hitFlags)\n        {\n             \n            sprite->sStillStuck = TRUE;\n            sprite->data[2] = sRouletteTables[sRoulette->tableId].randDistanceLow;\n        }\n        else\n        {\n            sprite->sStillStuck = FALSE;\n            if (sRoulette->tableId)\n            {\n                sprite->data[2] = sRouletteTables[sRoulette->tableId].randDistanceHigh;\n            }\n            else\n            {\n                sprite->data[2] = sRouletteTables[sRoulette->tableId].randDistanceLow;\n                if (fallRight)\n                    sRoulette->ballAngleSpeed = 0.5f;\n                else\n                    sRoulette->ballAngleSpeed = -1.5f;\n            }\n        }\n        sRoulette->ballFallSpeed = 0.085f;\n        sprite->callback = SpriteCB_RollBall_TryLandAdjacent;\n        sprite->sState = 5;\n    }",
       "callsTo": [
         "LandBall",
@@ -1051,6 +1531,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_RollBall_Slow(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "UpdateBallPos(sprite);\n    if (sRoulette->ballAngleSpeed > 0.5f)\n        return;\n\n    UpdateSlotBelowBall(sprite);\n    if (GetBallDistanceToSlotMidpoint(sprite) == 0)\n    {\n         \n        sRoulette->ballAngleAccel = 0.0f;\n        sRoulette->ballAngleSpeed -= (f32)(sRouletteTables[sRoulette->tableId].wheelSpeed)\n            / (sRouletteTables[sRoulette->tableId].wheelDelay + 1);\n        sprite->sState = 4;\n        sprite->callback = SpriteCB_RollBall_TryLand;\n    }\n    else\n    {\n        if (sRoulette->ballAngleAccel != 0.0f)\n        {\n            if (sRoulette->ballAngleSpeed < 0.0f)\n            {\n                sRoulette->ballAngleAccel = 0.0f;\n                sRoulette->ballAngleSpeed = 0.0f;\n                sRoulette->ballFallSpeed /= 1.2;\n            }\n        }\n    }",
       "callsTo": [
         "GetBallDistanceToSlotMidpoint",
@@ -1063,6 +1549,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_RollBall_Medium(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "UpdateBallPos(sprite);\n    if (sRoulette->ballDistToCenter > 40.0f)\n        return;\n\n    sRoulette->ballFallSpeed = -(4.0f / (f32)(sRoulette->ballTravelDistSlow));\n    sRoulette->ballAngleAccel = -(sRoulette->ballAngleSpeed / (f32)(sRoulette->ballTravelDistSlow));\n    sprite->animNum = 2;\n    sprite->animBeginning = TRUE;\n    sprite->animEnded = FALSE;\n    sprite->sState = 3;\n    sprite->callback = SpriteCB_RollBall_Slow;",
       "callsTo": [
         "UpdateBallPos"
@@ -1073,6 +1565,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_RollBall_Fast(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "UpdateBallPos(sprite);\n    if (sRoulette->ballDistToCenter > 60.0f)\n        return;\n\n    m4aSongNumStartOrChange(SE_ROULETTE_BALL2);\n    sRoulette->ballFallSpeed = -(20.0f / (f32)(sRoulette->ballTravelDistMed));\n    sRoulette->ballAngleAccel = ((1.0f - sRoulette->ballAngleSpeed) / (f32)(sRoulette->ballTravelDistMed));\n    sprite->animNum = 1;\n    sprite->animBeginning = TRUE;\n    sprite->animEnded = FALSE;\n    sprite->sState = 2;\n    sprite->callback = SpriteCB_RollBall_Medium;",
       "callsTo": [
         "UpdateBallPos"
@@ -1083,6 +1581,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_RollBall_Start(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "sprite->sState = 1;\n    sprite->data[2] = 0;\n    UpdateBallPos(sprite);\n    sprite->invisible = FALSE;\n    sprite->callback = SpriteCB_RollBall_Fast;",
       "callsTo": [
         "UpdateBallPos"
@@ -1093,6 +1597,12 @@
       "returnType": "void",
       "signature": "static void CreateShroomishSprite(struct Sprite *ball)",
       "paramsRaw": "struct Sprite *ball",
+      "paramsList": [
+        {
+          "name": "ball",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "u16 t;\n    u8 i;\n    s16 coords[2][2] = {\n        {116, 44},\n        {116, 112}\n    };\n    struct Roulette UNUSED *roulette;\n\n    t = ball->data[7] - 2;\n    roulette = sRoulette;   \n    sRoulette->spriteIds[SPR_CLEAR_MON] = CreateSprite(&sSpriteTemplate_Shroomish, 36, -12, 50);\n    sRoulette->spriteIds[SPR_CLEAR_MON_SHADOW_1] = CreateSprite(&sSpriteTemplate_ShroomishShadow[0], coords[ball->sStuckOnWheelLeft][0], coords[ball->sStuckOnWheelLeft][1], 59);\n    sRoulette->spriteIds[SPR_CLEAR_MON_SHADOW_2] = CreateSprite(&sSpriteTemplate_ShroomishShadow[1], 36, 140, 51);\n    gSprites[sRoulette->spriteIds[SPR_CLEAR_MON_SHADOW_2]].oam.objMode = ST_OAM_OBJ_BLEND;\n    for (i = 0; i < 3; i++)\n    {\n        gSprites[sRoulette->spriteIds[i + SPR_CLEAR_MON]].coordOffsetEnabled = FALSE;\n        gSprites[sRoulette->spriteIds[i + SPR_CLEAR_MON]].invisible = TRUE;\n        gSprites[sRoulette->spriteIds[i + SPR_CLEAR_MON]].animPaused = TRUE;\n        gSprites[sRoulette->spriteIds[i + SPR_CLEAR_MON]].affineAnimPaused = TRUE;\n        gSprites[sRoulette->spriteIds[i + SPR_CLEAR_MON]].sMonSpriteId = sRoulette->spriteIds[SPR_CLEAR_MON];\n        gSprites[sRoulette->spriteIds[i + SPR_CLEAR_MON]].sBallShadowSpriteId = sRoulette->spriteIds[SPR_CLEAR_MON_SHADOW_1];\n        gSprites[sRoulette->spriteIds[i + SPR_CLEAR_MON]].sMonShadowSpriteId = sRoulette->spriteIds[SPR_CLEAR_MON_SHADOW_2];\n        gSprites[sRoulette->spriteIds[i + SPR_CLEAR_MON]].data[2] = t;\n        gSprites[sRoulette->spriteIds[i + SPR_CLEAR_MON]].data[3] = (ball->data[7] * sRouletteTables[sRoulette->tableId].randDistanceHigh) +\n                                                                (sRouletteTables[sRoulette->tableId].randDistanceLow + 0xFFFF);\n    }\n    gSprites[sRoulette->spriteIds[SPR_CLEAR_MON_SHADOW_1]].coordOffsetEnabled = TRUE;\n    sRoulette->ball = ball;",
       "callsTo": [
         "CreateSprite"
@@ -1103,6 +1613,12 @@
       "returnType": "void",
       "signature": "static void CreateTaillowSprite(struct Sprite *ball)",
       "paramsRaw": "struct Sprite *ball",
+      "paramsList": [
+        {
+          "name": "ball",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "u8 i = 0;\n    s16 t;\n    s16 coords[2][2] = {\n        {256, 84},  \n        {-16, 84}   \n    };\n\n    t = ball->data[7] - 2;\n    sRoulette->spriteIds[SPR_CLEAR_MON] = CreateSprite(&sSpriteTemplate_Taillow, coords[ball->sStuckOnWheelLeft][0], coords[ball->sStuckOnWheelLeft][1], 50);\n    StartSpriteAnim(&gSprites[sRoulette->spriteIds[SPR_CLEAR_MON]], ball->sStuckOnWheelLeft);\n    sRoulette->spriteIds[SPR_CLEAR_MON_SHADOW_1] = CreateSprite(&sSpriteTemplate_TaillowShadow, coords[ball->sStuckOnWheelLeft][0], coords[ball->sStuckOnWheelLeft][1], 51);\n    gSprites[sRoulette->spriteIds[SPR_CLEAR_MON_SHADOW_1]].affineAnimPaused = TRUE;\n    gSprites[sRoulette->spriteIds[SPR_CLEAR_MON_SHADOW_1]].animPaused = TRUE;\n    ball->data[7] = (t * sRouletteTables[sRoulette->tableId].randDistanceHigh) + (sRouletteTables[sRoulette->tableId].taillow.baseDropDelay + 45);\n    for (; i < 2; i++)\n    {\n        gSprites[sRoulette->spriteIds[SPR_CLEAR_MON + i]].sMonSpriteId = sRoulette->spriteIds[SPR_CLEAR_MON];\n        gSprites[sRoulette->spriteIds[SPR_CLEAR_MON + i]].sBallShadowSpriteId = sRoulette->spriteIds[SPR_CLEAR_MON_SHADOW_1];\n        gSprites[sRoulette->spriteIds[SPR_CLEAR_MON + i]].sMonShadowSpriteId = sRoulette->spriteIds[SPR_CLEAR_MON_SHADOW_1];\n        gSprites[sRoulette->spriteIds[SPR_CLEAR_MON + i]].data[2] = t;\n        gSprites[sRoulette->spriteIds[SPR_CLEAR_MON + i]].data[3] = ball->data[7] - 45;\n    }\n    sRoulette->ball = ball;",
       "callsTo": [
         "CreateSprite",
@@ -1114,6 +1630,12 @@
       "returnType": "void",
       "signature": "static void SetBallStuck(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "u8 slotId;\n    u16 angle;\n    u8 numCandidates = 0;\n    u8 maxSlotToCheck = 5;\n    u8 betSlotId = 0;\n    u8 i = 0;\n    u8 slotsToSkip;\n    u8 slotCandidates[NUM_ROULETTE_SLOTS - 2] = {};  \n    u16 rand = Random();\n\n    sRoulette->ballState = BALL_STATE_STUCK;\n    sRoulette->ballStuck = TRUE;\n    sRoulette->ballUnstuck = FALSE;\n    sRoulette->hitSlot = 0xFF;\n    sRoulette->ballAngle = sprite->sBallAngle;\n    sRoulette->ballFallSpeed = 0.0f;\n    sRoulette->ballAngleSpeed = sRouletteTables[sRoulette->tableId].var1C;\n\n    angle = (sRoulette->tableId * DEGREES_PER_SLOT + 33) + (1 - sRoulette->useTaillow) * 15;\n\n     \n     \n    for (i = 0; i < 4; i++)\n    {\n        if (angle < sprite->sBallAngle && sprite->sBallAngle <= angle + 90)\n        {\n            sprite->sStuckOnWheelLeft = i / 2;\n            sRoulette->useTaillow = i % 2;\n            break;\n        }\n        if (i == 3)\n        {\n            sprite->sStuckOnWheelLeft = TRUE;\n            sRoulette->useTaillow = TRUE;\n            break;\n        }\n        angle += 90;\n    }\n\n    if (sRoulette->useTaillow)\n    {\n        if (sprite->sStuckOnWheelLeft)\n            PlayCry_Normal(SPECIES_TAILLOW, -63);\n        else\n            PlayCry_Normal(SPECIES_TAILLOW, 63);\n    }\n    else\n    {\n        PlayCry_Normal(SPECIES_SHROOMISH, -63);\n    }\n\n    slotsToSkip = 2;\n    slotId = (sRoulette->stuckHitSlot + 2) % NUM_ROULETTE_SLOTS;\n\n    if (sRoulette->useTaillow == TRUE && sRoulette->tableId == 1)\n        maxSlotToCheck += 6;  \n    else\n        maxSlotToCheck += slotsToSkip;  \n\n     \n    for (i = slotsToSkip; i < maxSlotToCheck; i++)\n    {\n        if (!(sRoulette->hitFlags & sRouletteSlots[slotId].flag))\n        {\n            slotCandidates[numCandidates++] = i;\n            if (betSlotId == 0 && (sRouletteSlots[slotId].flag & sGridSelections[sRoulette->betSelection[sRoulette->curBallNum]].inSelectionFlags))\n                betSlotId = i;\n        }\n        slotId = (slotId + 1) % NUM_ROULETTE_SLOTS;\n    }\n\n     \n     \n    if ((sRoulette->useTaillow + 1) & sRoulette->partySpeciesFlags)\n    {\n         \n         \n         \n        if (betSlotId && (rand % 256) < 192)\n            sprite->data[7] = betSlotId;\n        else\n            sprite->data[7] = slotCandidates[rand % numCandidates];\n    }\n    else\n    {\n        sprite->data[7] = slotCandidates[rand % numCandidates];\n    }\n\n    sprite->callback = SpriteCB_UnstickBall;",
       "callsTo": [
         "PlayCry_Normal",
@@ -1125,6 +1647,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_ShroomishExit(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (sprite->data[1]++ >= sprite->data[3])\n    {\n        sprite->x -= 2;\n        if (sprite->x < -16)\n        {\n            if (!sRoulette->ballUnstuck)\n                sRoulette->ballUnstuck = TRUE;\n            DestroySprite(sprite);\n            sRoulette->shroomishShadowTimer = 0;\n            sRoulette->shroomishShadowAlpha = sShroomishShadowAlphas[0];\n        }\n    }",
       "callsTo": [
         "DestroySprite"
@@ -1135,6 +1663,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_ShroomishShakeScreen(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "int screenShakeIdx;\n    u16 screenShakeOffsets[][4] = {\n        {-1, 0, 1, 0},\n        {-2, 0, 2, 0},\n        {-3, 0, 3, 0},\n    };\n\n    if (sprite->data[1]++ < sprite->data[3])\n    {\n        if (sprite->data[1] & 1)\n        {\n             \n            gSpriteCoordOffsetY = screenShakeOffsets[sprite->data[2] / 2][sprite->data[7]];\n            screenShakeIdx = sprite->data[7] + 1;\n            sprite->data[7] = screenShakeIdx - ((screenShakeIdx / 4) * 4);\n        }\n         \n        sprite->invisible ^= 1;\n    }\n    else\n    {\n        gSpriteCoordOffsetY = 0;\n        gSprites[sRoulette->spriteIds[SPR_CLEAR_MON]].animPaused = FALSE;\n        DestroySprite(sprite);\n    }",
       "callsTo": [
         "DestroySprite"
@@ -1145,6 +1679,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_ShroomishFall(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "f32 timer;\n    sprite->data[1]++;\n    timer = sprite->data[1];\n    sprite->y2 = timer * 0.039f * timer;\n    sRoulette->shroomishShadowAlpha = sShroomishShadowAlphas[(sRoulette->shroomishShadowTimer - 1) / 2];\n    if (sRoulette->shroomishShadowTimer < ARRAY_COUNT(sShroomishShadowAlphas) * 2 - 1)\n        sRoulette->shroomishShadowTimer++;\n    if (sprite->data[1] > 60)\n    {\n        sprite->data[1] = 0;\n        sprite->callback = SpriteCB_ShroomishExit;\n        gSprites[sprite->sMonShadowSpriteId].callback  = SpriteCB_ShroomishExit;\n        gSprites[sprite->sMonShadowSpriteId].data[1] = -2;\n        gSprites[sprite->sBallShadowSpriteId].invisible = FALSE;\n        gSprites[sprite->sBallShadowSpriteId].callback  = SpriteCB_ShroomishShakeScreen;\n        m4aSongNumStart(SE_M_STRENGTH);\n    }",
       "callsTo": [
         "ARRAY_COUNT"
@@ -1155,6 +1695,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_Shroomish(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (sprite->data[7] == 0)\n    {\n         \n         \n        if (!sRoulette->ball->sStuckOnWheelLeft)\n        {\n            if (sRoulette->ball->sBallAngle != sRouletteTables[sRoulette->tableId].shroomish.startAngle)\n                return;\n        }\n        else\n        {\n            if (sRoulette->ball->sBallAngle != sRouletteTables[sRoulette->tableId].shroomish.startAngle + 180)\n                return;\n        }\n\n        sprite->invisible = FALSE;\n        sprite->data[7]++;\n        m4aSongNumStart(SE_FALL);\n        sRoulette->shroomishShadowTimer = 1;\n        sRoulette->shroomishShadowAlpha = sShroomishShadowAlphas[0];\n    }\n    else\n    {\n        sRoulette->shroomishShadowAlpha = sShroomishShadowAlphas[(sRoulette->shroomishShadowTimer - 1) / 2];\n        if (sRoulette->shroomishShadowTimer < 19)\n            sRoulette->shroomishShadowTimer++;\n\n         \n         \n         \n        if (!sRoulette->ball->sStuckOnWheelLeft)\n        {\n            if (sRoulette->ball->sBallAngle != sRouletteTables[sRoulette->tableId].shroomish.dropAngle)\n                return;\n        }\n        else\n        {\n            if (sRoulette->ball->sBallAngle != sRouletteTables[sRoulette->tableId].shroomish.dropAngle + 180)\n                return;\n        }\n\n        gSprites[sprite->sMonSpriteId].callback  = SpriteCB_ShroomishFall;\n        gSprites[sprite->sMonSpriteId].invisible = FALSE;\n        sprite->callback  = &SpriteCallbackDummy;\n        sprite->data[7] = 0;\n    }",
       "callsTo": [],
       "lineCount": 46
@@ -1163,6 +1709,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_TaillowShadow_Flash(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "sprite->invisible ^= 1;",
       "callsTo": [],
       "lineCount": 1
@@ -1171,6 +1723,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_Taillow_FlyAway(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (sprite->y > -16)\n    {\n        sprite->y--;\n    }\n    else\n    {\n        sprite->callback = SpriteCallbackDummy;\n        sprite->invisible = TRUE;\n        sprite->animPaused = TRUE;\n        m4aSongNumStop(SE_TAILLOW_WING_FLAP);\n        DestroySprite(sprite);\n        FreeOamMatrix(gSprites[sRoulette->spriteIds[SPR_CLEAR_MON_SHADOW_1]].oam.matrixNum);\n        DestroySprite(&gSprites[sRoulette->spriteIds[SPR_CLEAR_MON_SHADOW_1]]);\n    }",
       "callsTo": [
         "DestroySprite",
@@ -1182,6 +1740,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_Taillow_PickUpBall(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (sprite->data[1] >= 0)\n    {\n        sprite->data[1]--;\n        sprite->y--;\n        if (sprite->data[1] == 0 && sprite->animCmdIndex == 1)\n            sprite->y2++;\n    }\n    else\n    {\n        if (sprite->data[3] >= 0)\n        {\n            sprite->data[3]--;\n            if (sprite->animDelayCounter == 0)\n            {\n                if (sprite->animCmdIndex == 1)\n                    sprite->y2++;\n                else\n                    sprite->y2--;\n            }\n        }\n        else\n        {\n            m4aSongNumStart(SE_FALL);\n            StartSpriteAnim(sprite, sRoulette->ball->sStuckOnWheelLeft + 4);\n            sprite->callback = SpriteCB_Taillow_FlyAway;\n            gSprites[sprite->sMonShadowSpriteId].affineAnimPaused = FALSE;\n        }\n    }",
       "callsTo": [
         "StartSpriteAnim"
@@ -1192,6 +1756,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_Taillow_FlyIn(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "s8 xMoveOffsets[2] = {-1, 1};\n    s8 yMoveOffsets[][2] = {\n        {2, 0},\n        {2, 0},\n        {2, -1},\n        {2, -1},\n        {2, -1},\n        {2, -1},\n        {2, -2},\n        {2, -2},\n    };\n\n    if (sprite->data[1]-- > 7)\n    {\n        sprite->x += xMoveOffsets[sRoulette->ball->sStuckOnWheelLeft] * 2;\n        if (IsSEPlaying())\n        {\n            s8 pan = -((116 - sprite->x) / 2);\n            m4aMPlayPanpotControl(&gMPlayInfo_SE1, TRACKS_ALL, pan);\n            m4aMPlayPanpotControl(&gMPlayInfo_SE2, TRACKS_ALL, pan);\n        }\n    }\n    else\n    {\n        if (sprite->data[1] >= 0)\n        {\n            sprite->x += xMoveOffsets[sRoulette->ball->sStuckOnWheelLeft] * yMoveOffsets[7 - sprite->data[1]][0];\n            sprite->y += yMoveOffsets[7 - sprite->data[1]][1];\n        }\n        else\n        {\n            m4aSongNumStartOrChange(SE_TAILLOW_WING_FLAP);\n            if (sRoulette->ball->sStuckOnWheelLeft == 0)\n                PlayCry_Normal(SPECIES_TAILLOW, 63);\n            else\n                PlayCry_Normal(SPECIES_TAILLOW, -63);\n            StartSpriteAnim(sprite, sRoulette->ball->sStuckOnWheelLeft + 2);\n            sprite->data[1] = 45;\n            sprite->callback = SpriteCB_Taillow_PickUpBall;\n        }\n    }",
       "callsTo": [
         "IsSEPlaying",
@@ -1204,6 +1774,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_TaillowShadow_FlyIn(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "s8 moveDir[2] = {-1, 1};\n\n    if (sprite->data[1]-- >= 0)\n    {\n        sprite->x += moveDir[sRoulette->ball->sStuckOnWheelLeft] * 2;\n        gSprites[sprite->sMonShadowSpriteId].invisible ^= 1;\n    }\n    else\n    {\n        sprite->callback = SpriteCB_TaillowShadow_Flash;\n    }",
       "callsTo": [],
       "lineCount": 11
@@ -1212,6 +1788,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_Taillow(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (sRoulette->ball->sStuckOnWheelLeft == FALSE)\n    {\n        if (sRoulette->ball->sBallAngle == sRouletteTables[sRoulette->tableId].taillow.rightStartAngle + 90)\n        {\n            gSprites[sprite->sMonShadowSpriteId].data[1] = 52;\n            gSprites[sprite->sMonSpriteId].data[1] = 52;\n        }\n        else\n        {\n            return;\n        }\n    }\n    else\n    {\n        if (sRoulette->ball->sBallAngle == sRouletteTables[sRoulette->tableId].taillow.leftStartAngle + 270)\n        {\n            gSprites[sprite->sMonShadowSpriteId].data[1] = 46;\n            gSprites[sprite->sMonSpriteId].data[1] = 46;\n        }\n        else\n        {\n            return;\n        }\n    }\n    gSprites[sprite->sMonShadowSpriteId].callback = SpriteCB_TaillowShadow_FlyIn;\n    gSprites[sprite->sMonSpriteId].callback = SpriteCB_Taillow_FlyIn;\n    m4aSongNumStart(SE_FALL);",
       "callsTo": [],
       "lineCount": 27

@@ -6,6 +6,12 @@
       "returnType": "void",
       "signature": "void RouletteFlash_Reset(struct RouletteFlashUtil *flash)",
       "paramsRaw": "struct RouletteFlashUtil *flash",
+      "paramsList": [
+        {
+          "name": "flash",
+          "typeRaw": "struct RouletteFlashUtil *"
+        }
+      ],
       "body": "flash->enabled = 0;\n    flash->flags = 0;\n    memset(&flash->palettes, 0, sizeof(flash->palettes));",
       "callsTo": [],
       "lineCount": 3
@@ -14,6 +20,20 @@
       "returnType": "u8",
       "signature": "u8 RouletteFlash_Add(struct RouletteFlashUtil *flash, u8 id, const struct RouletteFlashSettings *settings)",
       "paramsRaw": "struct RouletteFlashUtil *flash, u8 id, const struct RouletteFlashSettings *settings",
+      "paramsList": [
+        {
+          "name": "flash",
+          "typeRaw": "struct RouletteFlashUtil *"
+        },
+        {
+          "name": "id",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "settings",
+          "typeRaw": "const struct RouletteFlashSettings *"
+        }
+      ],
       "body": "if (id >= ARRAY_COUNT(flash->palettes) || flash->palettes[id].available)\n        return 0xFF;\n\n    flash->palettes[id].settings.color = settings->color;\n    flash->palettes[id].settings.paletteOffset = settings->paletteOffset;\n    flash->palettes[id].settings.numColors = settings->numColors;\n    flash->palettes[id].settings.delay = settings->delay;\n    flash->palettes[id].settings.unk6 = settings->unk6;\n    flash->palettes[id].settings.numFadeCycles = settings->numFadeCycles;\n    flash->palettes[id].settings.unk7_5 = settings->unk7_5;\n    flash->palettes[id].settings.colorDeltaDir = settings->colorDeltaDir;\n    flash->palettes[id].state = 0;\n    flash->palettes[id].available = TRUE;\n    flash->palettes[id].fadeCycleCounter = 0;\n    flash->palettes[id].delayCounter = 0;\n    if (flash->palettes[id].settings.colorDeltaDir < 0)\n        flash->palettes[id].colorDelta = -1;\n    else\n        flash->palettes[id].colorDelta = 1;\n\n    return id;",
       "callsTo": [
         "ARRAY_COUNT"
@@ -24,6 +44,12 @@
       "returnType": "u8",
       "signature": "static u8 RouletteFlash_FadePalette(struct RouletteFlashPalette *pal)",
       "paramsRaw": "struct RouletteFlashPalette *pal",
+      "paramsList": [
+        {
+          "name": "pal",
+          "typeRaw": "struct RouletteFlashPalette *"
+        }
+      ],
       "body": "u8 i;\n    u8 returnval;\n\n    for (i = 0; i < pal->settings.numColors; i++)\n    {\n        struct PlttData *faded =   (struct PlttData *)&gPlttBufferFaded[pal->settings.paletteOffset + i];\n        struct PlttData *unfaded = (struct PlttData *)&gPlttBufferUnfaded[pal->settings.paletteOffset + i];\n\n        switch (pal->state)\n        {\n        case 1:\n             \n            if (faded->r + pal->colorDelta >= 0 && faded->r + pal->colorDelta < 32)\n                faded->r += pal->colorDelta;\n            if (faded->g + pal->colorDelta >= 0 && faded->g + pal->colorDelta < 32)\n                faded->g += pal->colorDelta;\n            if (faded->b + pal->colorDelta >= 0 && faded->b + pal->colorDelta < 32)\n                faded->b += pal->colorDelta;\n            break;\n        case 2:\n             \n            if (pal->colorDelta < 0)\n            {\n                if (faded->r + pal->colorDelta >= unfaded->r)\n                    faded->r += pal->colorDelta;\n                if (faded->g + pal->colorDelta >= unfaded->g)\n                    faded->g += pal->colorDelta;\n                if (faded->b + pal->colorDelta >= unfaded->b)\n                    faded->b += pal->colorDelta;\n            }\n            else\n            {\n                if (faded->r + pal->colorDelta <= unfaded->r)\n                    faded->r += pal->colorDelta;\n                if (faded->g + pal->colorDelta <= unfaded->g)\n                    faded->g += pal->colorDelta;\n                if (faded->b + pal->colorDelta <= unfaded->b)\n                    faded->b += pal->colorDelta;\n            }\n            break;\n        }\n    }\n    if ((u32)pal->fadeCycleCounter++ != pal->settings.numFadeCycles)\n    {\n        returnval = 0;\n    }\n    else\n    {\n        pal->fadeCycleCounter = 0;\n        pal->colorDelta *= -1;\n        if (pal->state == 1)\n            pal->state++;\n        else\n            pal->state--;\n        returnval = 1;\n    }\n    return returnval;",
       "callsTo": [],
       "lineCount": 57
@@ -32,6 +58,12 @@
       "returnType": "u8",
       "signature": "static u8 RouletteFlash_FlashPalette(struct RouletteFlashPalette *pal)",
       "paramsRaw": "struct RouletteFlashPalette *pal",
+      "paramsList": [
+        {
+          "name": "pal",
+          "typeRaw": "struct RouletteFlashPalette *"
+        }
+      ],
       "body": "u8 i = 0;\n    switch (pal->state)\n    {\n    case 1:\n         \n        for (; i < pal->settings.numColors; i++)\n            gPlttBufferFaded[pal->settings.paletteOffset + i] = pal->settings.color;\n        pal->state++;\n        break;\n    case 2:\n         \n        for (; i < pal->settings.numColors; i++)\n            gPlttBufferFaded[pal->settings.paletteOffset + i] = gPlttBufferUnfaded[pal->settings.paletteOffset + i];\n        pal->state--;\n        break;\n    }\n    return 1;",
       "callsTo": [],
       "lineCount": 17
@@ -40,6 +72,12 @@
       "returnType": "void",
       "signature": "void RouletteFlash_Run(struct RouletteFlashUtil *flash)",
       "paramsRaw": "struct RouletteFlashUtil *flash",
+      "paramsList": [
+        {
+          "name": "flash",
+          "typeRaw": "struct RouletteFlashUtil *"
+        }
+      ],
       "body": "u8 i = 0;\n\n    if (flash->enabled)\n    {\n        for (i = 0; i < ARRAY_COUNT(flash->palettes); i++)\n        {\n            if ((flash->flags >> i) & 1)\n            {\n                if (--flash->palettes[i].delayCounter == (u8)-1)\n                {\n                    if (flash->palettes[i].settings.color & FLASHUTIL_USE_EXISTING_COLOR)\n                        RouletteFlash_FadePalette(&flash->palettes[i]);\n                    else\n                        RouletteFlash_FlashPalette(&flash->palettes[i]);\n\n                    flash->palettes[i].delayCounter = flash->palettes[i].settings.delay;\n                }\n            }\n        }\n    }",
       "callsTo": [
         "ARRAY_COUNT",
@@ -52,6 +90,16 @@
       "returnType": "void",
       "signature": "void RouletteFlash_Enable(struct RouletteFlashUtil *flash, u16 flags)",
       "paramsRaw": "struct RouletteFlashUtil *flash, u16 flags",
+      "paramsList": [
+        {
+          "name": "flash",
+          "typeRaw": "struct RouletteFlashUtil *"
+        },
+        {
+          "name": "flags",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "u8 i = 0;\n\n    flash->enabled++;\n    for (i = 0; i < ARRAY_COUNT(flash->palettes); i++)\n    {\n        if ((flags >> i) & 1)\n        {\n            if (flash->palettes[i].available)\n            {\n                flash->flags |= 1 << i;\n                flash->palettes[i].state = 1;\n            }\n        }\n    }",
       "callsTo": [
         "ARRAY_COUNT"
@@ -62,6 +110,16 @@
       "returnType": "void",
       "signature": "void RouletteFlash_Stop(struct RouletteFlashUtil *flash, u16 flags)",
       "paramsRaw": "struct RouletteFlashUtil *flash, u16 flags",
+      "paramsList": [
+        {
+          "name": "flash",
+          "typeRaw": "struct RouletteFlashUtil *"
+        },
+        {
+          "name": "flags",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "u8 i;\n\n    for (i = 0; i < ARRAY_COUNT(flash->palettes); i++)\n    {\n        if ((flash->flags >> i) & 1)\n        {\n            if (flash->palettes[i].available)\n            {\n                if ((flags >> i) & 1)\n                {\n                    u32 offset = flash->palettes[i].settings.paletteOffset;\n                    u16 *faded = &gPlttBufferFaded[offset];\n                    u16 *unfaded = &gPlttBufferUnfaded[offset];\n                    memcpy(faded, unfaded, flash->palettes[i].settings.numColors * 2);\n                    flash->palettes[i].state = 0;\n                    flash->palettes[i].fadeCycleCounter = 0;\n                    flash->palettes[i].delayCounter = 0;\n                    if (flash->palettes[i].settings.colorDeltaDir < 0)\n                        flash->palettes[i].colorDelta = -1;\n                    else\n                        flash->palettes[i].colorDelta = 1;\n                }\n            }\n        }\n    }\n\n    if (flags == 0xFFFF)\n    {\n         \n        flash->enabled = 0;\n        flash->flags = 0;\n    }\n    else\n    {\n        flash->flags &= ~flags;\n    }",
       "callsTo": [
         "ARRAY_COUNT"
@@ -72,6 +130,12 @@
       "returnType": "void",
       "signature": "void InitPulseBlend(struct PulseBlend *pulseBlend)",
       "paramsRaw": "struct PulseBlend *pulseBlend",
+      "paramsList": [
+        {
+          "name": "pulseBlend",
+          "typeRaw": "struct PulseBlend *"
+        }
+      ],
       "body": "u8 i = 0;\n    pulseBlend->usedPulseBlendPalettes = 0;\n    memset(&pulseBlend->pulseBlendPalettes, 0, sizeof(pulseBlend->pulseBlendPalettes));\n    for (; i < 16; i++)\n        pulseBlend->pulseBlendPalettes[i].paletteSelector = i;",
       "callsTo": [],
       "lineCount": 5
@@ -80,6 +144,16 @@
       "returnType": "int",
       "signature": "int InitPulseBlendPaletteSettings(struct PulseBlend *pulseBlend, const struct PulseBlendSettings *settings)",
       "paramsRaw": "struct PulseBlend *pulseBlend, const struct PulseBlendSettings *settings",
+      "paramsList": [
+        {
+          "name": "pulseBlend",
+          "typeRaw": "struct PulseBlend *"
+        },
+        {
+          "name": "settings",
+          "typeRaw": "const struct PulseBlendSettings *"
+        }
+      ],
       "body": "u8 i = 0;\n    struct PulseBlendPalette *pulseBlendPalette = NULL;\n\n    if (!pulseBlend->pulseBlendPalettes[0].inUse)\n    {\n        pulseBlendPalette = &pulseBlend->pulseBlendPalettes[0];\n    }\n    else\n    {\n        while (++i < 16)\n        {\n            if (!pulseBlend->pulseBlendPalettes[i].inUse)\n            {\n                pulseBlendPalette = &pulseBlend->pulseBlendPalettes[i];\n                break;\n            }\n        }\n    }\n\n    if (pulseBlendPalette == NULL)\n        return 0xFF;\n\n    pulseBlendPalette->blendCoeff = 0;\n    pulseBlendPalette->fadeDirection = 0;\n    pulseBlendPalette->available = 1;\n    pulseBlendPalette->inUse = 1;\n    pulseBlendPalette->delayCounter = 0;\n    pulseBlendPalette->fadeCycleCounter = 0;\n    memcpy(&pulseBlendPalette->pulseBlendSettings, settings, sizeof(*settings));\n    return i;",
       "callsTo": [],
       "lineCount": 30
@@ -88,6 +162,12 @@
       "returnType": "void",
       "signature": "static void ClearPulseBlendPalettesSettings(struct PulseBlendPalette *pulseBlendPalette)",
       "paramsRaw": "struct PulseBlendPalette *pulseBlendPalette",
+      "paramsList": [
+        {
+          "name": "pulseBlendPalette",
+          "typeRaw": "struct PulseBlendPalette *"
+        }
+      ],
       "body": "u16 i;\n\n    if (!pulseBlendPalette->available && pulseBlendPalette->pulseBlendSettings.restorePaletteOnUnload)\n    {\n        for (i = pulseBlendPalette->pulseBlendSettings.paletteOffset; i < pulseBlendPalette->pulseBlendSettings.paletteOffset + pulseBlendPalette->pulseBlendSettings.numColors; i++)\n            gPlttBufferFaded[i] = gPlttBufferUnfaded[i];\n    }\n\n    memset(&pulseBlendPalette->pulseBlendSettings, 0, sizeof(pulseBlendPalette->pulseBlendSettings));\n    pulseBlendPalette->blendCoeff = 0;\n    pulseBlendPalette->fadeDirection = 0;\n    pulseBlendPalette->unk1_5 = 0;\n    pulseBlendPalette->available = 1;\n    pulseBlendPalette->inUse = 0;\n    pulseBlendPalette->fadeCycleCounter = 0;\n    pulseBlendPalette->delayCounter = 0;",
       "callsTo": [],
       "lineCount": 16
@@ -96,6 +176,20 @@
       "returnType": "void",
       "signature": "void UnloadUsedPulseBlendPalettes(struct PulseBlend *pulseBlend, u16 pulseBlendPaletteSelector, u8 multiSelection)",
       "paramsRaw": "struct PulseBlend *pulseBlend, u16 pulseBlendPaletteSelector, u8 multiSelection",
+      "paramsList": [
+        {
+          "name": "pulseBlend",
+          "typeRaw": "struct PulseBlend *"
+        },
+        {
+          "name": "pulseBlendPaletteSelector",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "multiSelection",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u16 i = 0;\n\n    if (!multiSelection)\n    {\n        ClearPulseBlendPalettesSettings(&pulseBlend->pulseBlendPalettes[pulseBlendPaletteSelector & 0xF]);\n    }\n    else\n    {\n        for (i = 0; i < 16; i++)\n        {\n            if ((pulseBlendPaletteSelector & 1) && pulseBlend->pulseBlendPalettes[i].inUse)\n                ClearPulseBlendPalettesSettings(&pulseBlend->pulseBlendPalettes[i]);\n\n            pulseBlendPaletteSelector >>= 1;\n        }\n    }",
       "callsTo": [
         "ClearPulseBlendPalettesSettings"
@@ -106,6 +200,20 @@
       "returnType": "void",
       "signature": "void MarkUsedPulseBlendPalettes(struct PulseBlend *pulseBlend, u16 pulseBlendPaletteSelector, u8 multiSelection)",
       "paramsRaw": "struct PulseBlend *pulseBlend, u16 pulseBlendPaletteSelector, u8 multiSelection",
+      "paramsList": [
+        {
+          "name": "pulseBlend",
+          "typeRaw": "struct PulseBlend *"
+        },
+        {
+          "name": "pulseBlendPaletteSelector",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "multiSelection",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 i = 0;\n\n    if (!multiSelection)\n    {\n        i = pulseBlendPaletteSelector & 0xF;\n        pulseBlend->pulseBlendPalettes[i].available = 0;\n        pulseBlend->usedPulseBlendPalettes |= 1 << i;\n    }\n    else\n    {\n        for (i = 0; i < 16; i++)\n        {\n            if (!(pulseBlendPaletteSelector & 1) || !pulseBlend->pulseBlendPalettes[i].inUse || !pulseBlend->pulseBlendPalettes[i].available)\n            {\n                pulseBlendPaletteSelector <<= 1;\n            }\n            else\n            {\n                pulseBlend->pulseBlendPalettes[i].available = 0;\n                pulseBlend->usedPulseBlendPalettes |= 1 << i;\n            }\n        }\n    }",
       "callsTo": [],
       "lineCount": 23
@@ -114,6 +222,20 @@
       "returnType": "void",
       "signature": "void UnmarkUsedPulseBlendPalettes(struct PulseBlend *pulseBlend, u16 pulseBlendPaletteSelector, u8 multiSelection)",
       "paramsRaw": "struct PulseBlend *pulseBlend, u16 pulseBlendPaletteSelector, u8 multiSelection",
+      "paramsList": [
+        {
+          "name": "pulseBlend",
+          "typeRaw": "struct PulseBlend *"
+        },
+        {
+          "name": "pulseBlendPaletteSelector",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "multiSelection",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u16 i;\n    struct PulseBlendPalette *pulseBlendPalette;\n    u8 j = 0;\n\n    if (!multiSelection)\n    {\n        pulseBlendPalette = &pulseBlend->pulseBlendPalettes[pulseBlendPaletteSelector & 0xF];\n        if (!pulseBlendPalette->available && pulseBlendPalette->inUse)\n        {\n            if (pulseBlendPalette->pulseBlendSettings.restorePaletteOnUnload)\n            {\n                for (i = pulseBlendPalette->pulseBlendSettings.paletteOffset; i < pulseBlendPalette->pulseBlendSettings.paletteOffset + pulseBlendPalette->pulseBlendSettings.numColors; i++)\n                    gPlttBufferFaded[i] = gPlttBufferUnfaded[i];\n            }\n\n            pulseBlendPalette->available = 1;\n            pulseBlend->usedPulseBlendPalettes &= ~(1 << j);\n        }\n    }\n    else\n    {\n        for (j = 0; j < 16; j++)\n        {\n            pulseBlendPalette = &pulseBlend->pulseBlendPalettes[j];\n            if (!(pulseBlendPaletteSelector & 1) || pulseBlendPalette->available || !pulseBlendPalette->inUse)\n            {\n                pulseBlendPaletteSelector <<= 1;\n            }\n            else\n            {\n                if (pulseBlendPalette->pulseBlendSettings.restorePaletteOnUnload)\n                {\n                    for (i = pulseBlendPalette->pulseBlendSettings.paletteOffset; i < pulseBlendPalette->pulseBlendSettings.paletteOffset + pulseBlendPalette->pulseBlendSettings.numColors; i++)\n                        gPlttBufferFaded[i] = gPlttBufferUnfaded[i];\n                }\n\n                pulseBlendPalette->available = 1;\n                pulseBlend->usedPulseBlendPalettes &= ~(1 << j);\n            }\n        }\n    }",
       "callsTo": [],
       "lineCount": 41
@@ -122,6 +244,12 @@
       "returnType": "void",
       "signature": "void UpdatePulseBlend(struct PulseBlend *pulseBlend)",
       "paramsRaw": "struct PulseBlend *pulseBlend",
+      "paramsList": [
+        {
+          "name": "pulseBlend",
+          "typeRaw": "struct PulseBlend *"
+        }
+      ],
       "body": "struct PulseBlendPalette *pulseBlendPalette;\n    u8 i = 0;\n\n    if (pulseBlend->usedPulseBlendPalettes)\n    {\n        for (i = 0; i < 16; i++)\n        {\n            pulseBlendPalette = &pulseBlend->pulseBlendPalettes[i];\n            if ((!pulseBlendPalette->available && pulseBlendPalette->inUse) && (!gPaletteFade.active || !pulseBlendPalette->pulseBlendSettings.unk7_7))\n            {\n                if (--pulseBlendPalette->delayCounter == 0xFF)\n                {\n                    pulseBlendPalette->delayCounter = pulseBlendPalette->pulseBlendSettings.delay;\n                    BlendPalette(pulseBlendPalette->pulseBlendSettings.paletteOffset, pulseBlendPalette->pulseBlendSettings.numColors, pulseBlendPalette->blendCoeff, pulseBlendPalette->pulseBlendSettings.blendColor);\n                    switch (pulseBlendPalette->pulseBlendSettings.fadeType)\n                    {\n                    case 0:  \n                         \n                         \n                         \n                        if (pulseBlendPalette->blendCoeff++ == pulseBlendPalette->pulseBlendSettings.maxBlendCoeff)\n                        {\n                            pulseBlendPalette->fadeCycleCounter++;\n                            pulseBlendPalette->blendCoeff = 0;\n                        }\n                        break;\n                    case 1:  \n                        if (pulseBlendPalette->fadeDirection)\n                        {\n                            if (--pulseBlendPalette->blendCoeff == 0)\n                            {\n                                pulseBlendPalette->fadeCycleCounter++;\n                                pulseBlendPalette->fadeDirection ^= 1;\n                            }\n                        }\n                        else\n                        {\n                            u8 max = (pulseBlendPalette->pulseBlendSettings.maxBlendCoeff - 1) & 0xF;\n                            if (pulseBlendPalette->blendCoeff++ == max)\n                            {\n                                pulseBlendPalette->fadeCycleCounter++;\n                                pulseBlendPalette->fadeDirection ^= 1;\n                            }\n                        }\n                        break;\n                    case (MODERN ? -2 : 2):  \n                         \n                        if (pulseBlendPalette->fadeDirection)\n                            pulseBlendPalette->blendCoeff = 0;\n                        else\n                            pulseBlendPalette->blendCoeff = pulseBlendPalette->pulseBlendSettings.maxBlendCoeff & 0xF;\n\n                        pulseBlendPalette->fadeDirection ^= 1;\n                        pulseBlendPalette->fadeCycleCounter++;\n                        break;\n                    }\n\n                    if (pulseBlendPalette->pulseBlendSettings.numFadeCycles != 0xFF\n                     && pulseBlendPalette->fadeCycleCounter == pulseBlendPalette->pulseBlendSettings.numFadeCycles)\n                        UnmarkUsedPulseBlendPalettes(pulseBlend, pulseBlendPalette->paletteSelector, FALSE);\n                }\n            }\n        }\n    }",
       "callsTo": [
         "BlendPalette",
@@ -133,6 +261,32 @@
       "returnType": "void",
       "signature": "void FillTilemapRect(u16 *dest, u16 value, u8 left, u8 top, u8 width, u8 height)",
       "paramsRaw": "u16 *dest, u16 value, u8 left, u8 top, u8 width, u8 height",
+      "paramsList": [
+        {
+          "name": "dest",
+          "typeRaw": "u16 *"
+        },
+        {
+          "name": "value",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "left",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "top",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "width",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "height",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u16 *_dest;\n    u8 i;\n    u8 j;\n    i = 0;\n    dest = &dest[top * 32 + left];\n    for (; i < height; i++)\n    {\n        _dest = dest + i * 32;\n        for (j = 0; j < width; j++)\n            *_dest++ = value;\n    }",
       "callsTo": [],
       "lineCount": 11
@@ -141,6 +295,32 @@
       "returnType": "void",
       "signature": "void SetTilemapRect(u16 *dest, u16 *src, u8 left, u8 top, u8 width, u8 height)",
       "paramsRaw": "u16 *dest, u16 *src, u8 left, u8 top, u8 width, u8 height",
+      "paramsList": [
+        {
+          "name": "dest",
+          "typeRaw": "u16 *"
+        },
+        {
+          "name": "src",
+          "typeRaw": "u16 *"
+        },
+        {
+          "name": "left",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "top",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "width",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "height",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u16 *_dest;\n    u16 *_src = src;\n    u8 i;\n    u8 j;\n    i = 0;\n    dest = &dest[top * 32 + left];\n    for (; i < height; i++)\n    {\n        _dest = dest + i * 32;\n        for (j = 0; j < width; j++)\n            *_dest++ = *_src++;\n    }",
       "callsTo": [],
       "lineCount": 12

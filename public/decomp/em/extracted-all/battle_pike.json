@@ -6,6 +6,7 @@
       "returnType": "void",
       "signature": "void CallBattlePikeFunction(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sBattlePikeFunctions[gSpecialVar_0x8004]();",
       "callsTo": [],
       "lineCount": 1
@@ -14,6 +15,7 @@
       "returnType": "void",
       "signature": "static void SetRoomType(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 roomType = GetNextRoomType();\n    sRoomType = roomType;",
       "callsTo": [
         "GetNextRoomType"
@@ -24,6 +26,7 @@
       "returnType": "void",
       "signature": "static void SetupRoomObjectEvents(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "bool32 setObjGfx1, setObjGfx2;\n    u32 objGfx1;\n    u16 objGfx2;\n\n    VarSet(VAR_OBJ_GFX_ID_0, OBJ_EVENT_GFX_LINK_RECEPTIONIST);\n    VarSet(VAR_OBJ_GFX_ID_1, OBJ_EVENT_GFX_DUSCLOPS);\n    setObjGfx1 = TRUE;\n    setObjGfx2 = FALSE;\n    objGfx1 = 0;\n    objGfx2 = 0;\n\n    switch (sRoomType)\n    {\n    case PIKE_ROOM_SINGLE_BATTLE:\n        PrepareOneTrainer(FALSE);\n        setObjGfx1 = FALSE;\n        break;\n    case PIKE_ROOM_HEAL_FULL:\n        objGfx1 = OBJ_EVENT_GFX_LINK_RECEPTIONIST;\n        break;\n    case PIKE_ROOM_NPC:\n        objGfx1 = (u8)(GetNPCRoomGraphicsId());\n        break;\n    case PIKE_ROOM_STATUS:\n        objGfx1 = OBJ_EVENT_GFX_GENTLEMAN;\n        if (sStatusMon == PIKE_STATUSMON_DUSCLOPS)\n            objGfx2 = OBJ_EVENT_GFX_DUSCLOPS;\n        else\n            objGfx2 = OBJ_EVENT_GFX_KIRLIA;\n        setObjGfx2 = TRUE;\n        break;\n    case PIKE_ROOM_HEAL_PART:\n        objGfx1 = OBJ_EVENT_GFX_GENTLEMAN;\n        break;\n    case PIKE_ROOM_WILD_MONS:\n        setObjGfx1 = FALSE;\n        break;\n    case PIKE_ROOM_HARD_BATTLE:\n        PrepareOneTrainer(TRUE);\n        objGfx2 = OBJ_EVENT_GFX_LINK_RECEPTIONIST;\n        setObjGfx1 = FALSE;\n        setObjGfx2 = TRUE;\n        break;\n    case PIKE_ROOM_DOUBLE_BATTLE:\n        PrepareTwoTrainers();\n        setObjGfx1 = FALSE;\n        break;\n    case PIKE_ROOM_BRAIN:\n        SetFrontierBrainObjEventGfx(FRONTIER_FACILITY_PIKE);\n        objGfx2 = OBJ_EVENT_GFX_LINK_RECEPTIONIST;\n        setObjGfx1 = FALSE;\n        setObjGfx2 = TRUE;\n        break;\n    default:\n        return;\n    }\n\n    if (setObjGfx1 == TRUE)\n        VarSet(VAR_OBJ_GFX_ID_0, objGfx1);\n    if (setObjGfx2 == TRUE)\n        VarSet(VAR_OBJ_GFX_ID_1, objGfx2);",
       "callsTo": [
         "GetNPCRoomGraphicsId",
@@ -38,6 +41,7 @@
       "returnType": "void",
       "signature": "static void GetBattlePikeData(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u32 lvlMode = gSaveBlock2Ptr->frontier.lvlMode;\n\n    switch (gSpecialVar_0x8005)\n    {\n    case PIKE_DATA_PRIZE:\n        gSpecialVar_Result = gSaveBlock2Ptr->frontier.pikePrize;\n        break;\n    case PIKE_DATA_WIN_STREAK:\n        gSpecialVar_Result = gSaveBlock2Ptr->frontier.pikeWinStreaks[gSaveBlock2Ptr->frontier.lvlMode];\n        break;\n    case PIKE_DATA_RECORD_STREAK:\n        gSpecialVar_Result = gSaveBlock2Ptr->frontier.pikeRecordStreaks[gSaveBlock2Ptr->frontier.lvlMode];\n        break;\n    case PIKE_DATA_TOTAL_STREAKS:\n        gSpecialVar_Result = gSaveBlock2Ptr->frontier.pikeTotalStreaks[gSaveBlock2Ptr->frontier.lvlMode];\n        break;\n    case PIKE_DATA_WIN_STREAK_ACTIVE:\n        if (lvlMode != FRONTIER_LVL_50)\n            gSpecialVar_Result = gSaveBlock2Ptr->frontier.winStreakActiveFlags & STREAK_PIKE_OPEN;\n        else\n            gSpecialVar_Result = gSaveBlock2Ptr->frontier.winStreakActiveFlags & STREAK_PIKE_50;\n        break;\n    }",
       "callsTo": [],
       "lineCount": 23
@@ -46,6 +50,7 @@
       "returnType": "void",
       "signature": "static void SetBattlePikeData(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u32 lvlMode = gSaveBlock2Ptr->frontier.lvlMode;\n\n    switch (gSpecialVar_0x8005)\n    {\n    case PIKE_DATA_PRIZE:\n        gSaveBlock2Ptr->frontier.pikePrize = gSpecialVar_0x8006;\n        break;\n    case PIKE_DATA_WIN_STREAK:\n        if (gSpecialVar_0x8006 <= MAX_STREAK)\n            gSaveBlock2Ptr->frontier.pikeWinStreaks[gSaveBlock2Ptr->frontier.lvlMode] = gSpecialVar_0x8006;\n        break;\n    case PIKE_DATA_RECORD_STREAK:\n        if (gSpecialVar_0x8006 <= MAX_STREAK && gSaveBlock2Ptr->frontier.pikeRecordStreaks[gSaveBlock2Ptr->frontier.lvlMode] < gSpecialVar_0x8006)\n            gSaveBlock2Ptr->frontier.pikeRecordStreaks[gSaveBlock2Ptr->frontier.lvlMode] = gSpecialVar_0x8006;\n        break;\n    case PIKE_DATA_TOTAL_STREAKS:\n        if (gSpecialVar_0x8006 <= MAX_STREAK)\n            gSaveBlock2Ptr->frontier.pikeTotalStreaks[gSaveBlock2Ptr->frontier.lvlMode] = gSpecialVar_0x8006;\n        break;\n    case PIKE_DATA_WIN_STREAK_ACTIVE:\n        if (lvlMode != FRONTIER_LVL_50)\n        {\n            if (gSpecialVar_0x8006)\n                gSaveBlock2Ptr->frontier.winStreakActiveFlags |= STREAK_PIKE_OPEN;\n            else\n                gSaveBlock2Ptr->frontier.winStreakActiveFlags &= ~(STREAK_PIKE_OPEN);\n        }\n        else\n        {\n            if (gSpecialVar_0x8006)\n                gSaveBlock2Ptr->frontier.winStreakActiveFlags |= STREAK_PIKE_50;\n            else\n                gSaveBlock2Ptr->frontier.winStreakActiveFlags &= ~(STREAK_PIKE_50);\n        }\n        break;\n    }",
       "callsTo": [],
       "lineCount": 36
@@ -54,6 +59,7 @@
       "returnType": "void",
       "signature": "static void IsNextRoomFinal(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gSaveBlock2Ptr->frontier.curChallengeBattleNum > NUM_PIKE_ROOMS)\n        gSpecialVar_Result = TRUE;\n    else\n        gSpecialVar_Result = FALSE;",
       "callsTo": [],
       "lineCount": 4
@@ -62,6 +68,7 @@
       "returnType": "void",
       "signature": "static void GetRoomType(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gSpecialVar_Result = sRoomType;",
       "callsTo": [],
       "lineCount": 1
@@ -70,6 +77,7 @@
       "returnType": "void",
       "signature": "static void SetInWildMonRoom(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sInWildMonRoom = TRUE;",
       "callsTo": [],
       "lineCount": 1
@@ -78,6 +86,7 @@
       "returnType": "void",
       "signature": "static void ClearInWildMonRoom(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sInWildMonRoom = FALSE;",
       "callsTo": [],
       "lineCount": 1
@@ -86,6 +95,7 @@
       "returnType": "void",
       "signature": "static void SavePikeChallenge(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gSaveBlock2Ptr->frontier.challengeStatus = gSpecialVar_0x8005;\n    VarSet(VAR_TEMP_CHALLENGE_STATUS, 0);\n    gSaveBlock2Ptr->frontier.challengePaused = TRUE;\n    SaveMapView();\n    TrySavingData(SAVE_LINK);",
       "callsTo": [
         "SaveMapView",
@@ -98,6 +108,7 @@
       "returnType": "void",
       "signature": "static void PikeDummy1(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "",
       "callsTo": [],
       "lineCount": 1
@@ -106,6 +117,7 @@
       "returnType": "void",
       "signature": "static void PikeDummy2(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "",
       "callsTo": [],
       "lineCount": 1
@@ -114,6 +126,7 @@
       "returnType": "void",
       "signature": "static void GetRoomInflictedStatus(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sStatusFlags)\n    {\n    case STATUS1_FREEZE:\n        gSpecialVar_Result = PIKE_STATUS_FREEZE;\n        break;\n    case STATUS1_BURN:\n        gSpecialVar_Result = PIKE_STATUS_BURN;\n        break;\n    case STATUS1_TOXIC_POISON:\n        gSpecialVar_Result = PIKE_STATUS_TOXIC;\n        break;\n    case STATUS1_PARALYSIS:\n        gSpecialVar_Result = PIKE_STATUS_PARALYSIS;\n        break;\n    case STATUS1_SLEEP:\n        gSpecialVar_Result = PIKE_STATUS_SLEEP;\n        break;\n    }",
       "callsTo": [],
       "lineCount": 18
@@ -122,6 +135,7 @@
       "returnType": "void",
       "signature": "static void GetRoomInflictedStatusMon(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gSpecialVar_Result = sStatusMon;",
       "callsTo": [],
       "lineCount": 1
@@ -130,6 +144,7 @@
       "returnType": "void",
       "signature": "static void HealOneOrTwoMons(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 toHeal = (Random() % 2) + 1;\n    TryHealMons(toHeal);\n    gSpecialVar_Result = toHeal;",
       "callsTo": [
         "Random",
@@ -141,6 +156,7 @@
       "returnType": "void",
       "signature": "static void BufferNPCMessage(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int speechId;\n\n    if (gSaveBlock2Ptr->frontier.curChallengeBattleNum <= 4)\n        speechId = sNPCTable[sNpcId].speechId1;\n    else if (gSaveBlock2Ptr->frontier.curChallengeBattleNum <= 10)\n        speechId = sNPCTable[sNpcId].speechId2;\n    else\n        speechId = sNPCTable[sNpcId].speechId3;\n\n    FrontierSpeechToString(sNPCSpeeches[speechId]);",
       "callsTo": [
         "FrontierSpeechToString"
@@ -151,6 +167,7 @@
       "returnType": "void",
       "signature": "static void StatusInflictionScreenFlash(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "CreateTask(Task_DoStatusInflictionScreenFlash, 2);",
       "callsTo": [
         "CreateTask"
@@ -161,6 +178,12 @@
       "returnType": "void",
       "signature": "static void HealMon(struct Pokemon *mon)",
       "paramsRaw": "struct Pokemon *mon",
+      "paramsList": [
+        {
+          "name": "mon",
+          "typeRaw": "struct Pokemon *"
+        }
+      ],
       "body": "u8 i;\n    u16 hp;\n    u8 ppBonuses;\n    u8 data[4];\n\n    for (i = 0; i < 4; i++)\n        data[i] = 0;\n\n    hp = GetMonData(mon, MON_DATA_MAX_HP);\n    data[0] = hp;\n    data[1] = hp >> 8;\n    SetMonData(mon, MON_DATA_HP, data);\n\n    ppBonuses = GetMonData(mon, MON_DATA_PP_BONUSES);\n    for (i = 0; i < MAX_MON_MOVES; i++)\n    {\n        u16 move = GetMonData(mon, MON_DATA_MOVE1 + i);\n        data[0] = CalculatePPWithBonus(move, ppBonuses, i);\n        SetMonData(mon, MON_DATA_PP1 + i, data);\n    }\n\n    data[0] = 0;\n    data[1] = 0;\n    data[2] = 0;\n    data[3] = 0;\n    SetMonData(mon, MON_DATA_STATUS, data);",
       "callsTo": [
         "CalculatePPWithBonus",
@@ -173,6 +196,16 @@
       "returnType": "bool8",
       "signature": "static bool8 DoesAbilityPreventStatus(struct Pokemon *mon, u32 status)",
       "paramsRaw": "struct Pokemon *mon, u32 status",
+      "paramsList": [
+        {
+          "name": "mon",
+          "typeRaw": "struct Pokemon *"
+        },
+        {
+          "name": "status",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "u8 ability = GetMonAbility(mon);\n    bool8 ret = FALSE;\n\n    switch (status)\n    {\n    case STATUS1_FREEZE:\n        if (ability == ABILITY_MAGMA_ARMOR)\n            ret = TRUE;\n        break;\n    case STATUS1_BURN:\n        if (ability == ABILITY_WATER_VEIL)\n            ret = TRUE;\n        break;\n    case STATUS1_PARALYSIS:\n        if (ability == ABILITY_LIMBER)\n            ret = TRUE;\n        break;\n    case STATUS1_SLEEP:\n        if (ability == ABILITY_INSOMNIA || ability == ABILITY_VITAL_SPIRIT)\n            ret = TRUE;\n        break;\n    case STATUS1_TOXIC_POISON:\n        if (ability == ABILITY_IMMUNITY)\n            ret = TRUE;\n        break;\n    }\n    return ret;",
       "callsTo": [
         "GetMonAbility"
@@ -183,6 +216,16 @@
       "returnType": "bool8",
       "signature": "static bool8 DoesTypePreventStatus(u16 species, u32 status)",
       "paramsRaw": "u16 species, u32 status",
+      "paramsList": [
+        {
+          "name": "species",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "status",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "bool8 ret = FALSE;\n\n    switch (status)\n    {\n    case STATUS1_TOXIC_POISON:\n        if (gSpeciesInfo[species].types[0] == TYPE_STEEL || gSpeciesInfo[species].types[0] == TYPE_POISON\n            || gSpeciesInfo[species].types[1] == TYPE_STEEL || gSpeciesInfo[species].types[1] == TYPE_POISON)\n            ret = TRUE;\n        break;\n    case STATUS1_FREEZE:\n        if (gSpeciesInfo[species].types[0] == TYPE_ICE || gSpeciesInfo[species].types[1] == TYPE_ICE)\n            ret = TRUE;\n        break;\n    case STATUS1_PARALYSIS:\n        if (gSpeciesInfo[species].types[0] == TYPE_GROUND || gSpeciesInfo[species].types[0] == TYPE_ELECTRIC\n            || gSpeciesInfo[species].types[1] == TYPE_GROUND || gSpeciesInfo[species].types[1] == TYPE_ELECTRIC)\n            ret = TRUE;\n        break;\n    case STATUS1_BURN:\n        if (gSpeciesInfo[species].types[0] == TYPE_FIRE || gSpeciesInfo[species].types[1] == TYPE_FIRE)\n            ret = TRUE;\n        break;\n    case STATUS1_SLEEP:\n        break;\n    }\n    return ret;",
       "callsTo": [],
       "lineCount": 26
@@ -191,6 +234,7 @@
       "returnType": "bool8",
       "signature": "static bool8 TryInflictRandomStatus(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 j, i;\n    u8 count;\n    u8 indices[FRONTIER_PARTY_SIZE];\n    u32 status;\n    u16 species;\n    bool8 statusChosen;\n    struct Pokemon *mon;\n\n    for (i = 0; i < FRONTIER_PARTY_SIZE; i++)\n        indices[i] = i;\n    for (j = 0; j < 10; j++)\n    {\n        u8 temp, id;\n\n        i = Random() % FRONTIER_PARTY_SIZE;\n        id = Random() % FRONTIER_PARTY_SIZE;\n        SWAP(indices[i], indices[id], temp);\n    }\n\n    if (gSaveBlock2Ptr->frontier.curChallengeBattleNum <= 4)\n        count = 1;\n    else if (gSaveBlock2Ptr->frontier.curChallengeBattleNum <= 9)\n        count = 2;\n    else\n        count = 3;\n\n    status = 0;\n    do\n    {\n        u8 rand;\n\n        statusChosen = FALSE;\n        rand = Random() % 100;\n\n        if (rand < 35)\n            sStatusFlags = STATUS1_TOXIC_POISON;\n        else if (rand < 60)\n            sStatusFlags = STATUS1_FREEZE;\n        else if (rand < 80)\n            sStatusFlags = STATUS1_PARALYSIS;\n        else if (rand < 90)\n            sStatusFlags = STATUS1_SLEEP;\n        else\n            sStatusFlags = STATUS1_BURN;\n\n        if (status != sStatusFlags)\n        {\n            status = sStatusFlags;\n            j = 0;\n            for (i = 0; i < FRONTIER_PARTY_SIZE; i++)\n            {\n                mon = &gPlayerParty[indices[i]];\n                if (GetAilmentFromStatus(GetMonData(mon, MON_DATA_STATUS)) == AILMENT_NONE\n                    && GetMonData(mon, MON_DATA_HP) != 0)\n                {\n                    j++;\n                    species = GetMonData(mon, MON_DATA_SPECIES);\n                    if (!DoesTypePreventStatus(species, sStatusFlags))\n                    {\n                        statusChosen = TRUE;\n                        break;\n                    }\n                }\n                if (j == count)\n                    break;\n            }\n            if (j == 0)\n                return FALSE;\n        }\n    } while (!statusChosen);\n\n    switch (sStatusFlags)\n    {\n    case STATUS1_FREEZE:\n        sStatusMon = PIKE_STATUSMON_DUSCLOPS;\n        break;\n    case STATUS1_BURN:\n        if (Random() % 2 != 0)\n            sStatusMon = PIKE_STATUSMON_DUSCLOPS;\n        else\n            sStatusMon = PIKE_STATUSMON_KIRLIA;\n        break;\n    case STATUS1_PARALYSIS:\n    case STATUS1_SLEEP:\n    case STATUS1_TOXIC_POISON:\n    default:\n        sStatusMon = PIKE_STATUSMON_KIRLIA;\n        break;\n    }\n\n    j = 0;\n    for (i = 0; i < FRONTIER_PARTY_SIZE; i++)\n    {\n        mon = &gPlayerParty[indices[i]];\n        if (GetAilmentFromStatus(GetMonData(mon, MON_DATA_STATUS)) == AILMENT_NONE\n            && GetMonData(mon, MON_DATA_HP) != 0)\n        {\n            j++;\n            species = GetMonData(mon, MON_DATA_SPECIES);\n            if (!DoesAbilityPreventStatus(mon, sStatusFlags) && !DoesTypePreventStatus(species, sStatusFlags))\n                SetMonData(mon, MON_DATA_STATUS, &sStatusFlags);\n        }\n        if (j == count)\n            break;\n    }\n\n    return TRUE;",
       "callsTo": [
         "DoesAbilityPreventStatus",
@@ -207,6 +251,7 @@
       "returnType": "bool8",
       "signature": "static bool8 AtLeastOneHealthyMon(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n    u8 healthyMonsCount;\n    u8 count;\n\n    if (gSaveBlock2Ptr->frontier.curChallengeBattleNum <= 4)\n        count = 1;\n    else if (gSaveBlock2Ptr->frontier.curChallengeBattleNum <= 9)\n        count = 2;\n    else\n        count = 3;\n\n    healthyMonsCount = 0;\n    for (i = 0; i < FRONTIER_PARTY_SIZE; i++)\n    {\n        struct Pokemon *mon = &gPlayerParty[i];\n        if (GetAilmentFromStatus(GetMonData(mon, MON_DATA_STATUS)) == AILMENT_NONE\n            && GetMonData(mon, MON_DATA_HP) != 0)\n        {\n            healthyMonsCount++;\n        }\n        if (healthyMonsCount == count)\n            break;\n    }\n\n    if (healthyMonsCount == 0)\n        return FALSE;\n    else\n        return TRUE;",
       "callsTo": [
         "GetAilmentFromStatus",
@@ -218,6 +263,7 @@
       "returnType": "u8",
       "signature": "static u8 GetNextRoomType(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "bool8 roomTypesDisabled[NUM_PIKE_ROOM_TYPES - 1];  \n    u8 i;\n    u8 nextRoomType;\n    u8 roomHint;\n    u8 numRoomCandidates;\n    u8 *roomCandidates;\n    u8 id;\n\n    if (gSaveBlock2Ptr->frontier.pikeHintedRoomType == PIKE_ROOM_BRAIN)\n        return gSaveBlock2Ptr->frontier.pikeHintedRoomType;\n\n     \n    if (gSpecialVar_0x8007 == gSaveBlock2Ptr->frontier.pikeHintedRoomIndex)\n    {\n        if (gSaveBlock2Ptr->frontier.pikeHintedRoomType == PIKE_ROOM_STATUS)\n            TryInflictRandomStatus();\n        return gSaveBlock2Ptr->frontier.pikeHintedRoomType;\n    }\n\n    for (i = 0; i < ARRAY_COUNT(roomTypesDisabled); i++)\n        roomTypesDisabled[i] = FALSE;\n\n    numRoomCandidates = NUM_PIKE_ROOM_TYPES - 1;\n\n     \n    roomHint = sRoomTypeHints[gSaveBlock2Ptr->frontier.pikeHintedRoomType];\n    for (i = 0; i < ARRAY_COUNT(roomTypesDisabled); i++)\n    {\n        if (sRoomTypeHints[i] == roomHint)\n        {\n            roomTypesDisabled[i] = TRUE;\n            numRoomCandidates--;\n        }\n    }\n\n     \n    if (roomTypesDisabled[PIKE_ROOM_DOUBLE_BATTLE] != TRUE && !AtLeastTwoAliveMons())\n    {\n        roomTypesDisabled[PIKE_ROOM_DOUBLE_BATTLE] = TRUE;\n        numRoomCandidates--;\n    }\n    if (roomTypesDisabled[PIKE_ROOM_STATUS] != TRUE && !AtLeastOneHealthyMon())\n    {\n        roomTypesDisabled[PIKE_ROOM_STATUS] = TRUE;\n        numRoomCandidates--;\n    }\n\n     \n    if (gSaveBlock2Ptr->frontier.pikeHealingRoomsDisabled)\n    {\n        if (roomTypesDisabled[PIKE_ROOM_HEAL_FULL] != TRUE)\n        {\n            roomTypesDisabled[PIKE_ROOM_HEAL_FULL] = TRUE;\n            numRoomCandidates--;\n        }\n        if (roomTypesDisabled[PIKE_ROOM_HEAL_PART] != TRUE)\n        {\n            roomTypesDisabled[PIKE_ROOM_HEAL_PART] = TRUE;\n            numRoomCandidates--;\n        }\n    }\n\n    roomCandidates = AllocZeroed(numRoomCandidates);\n    id = 0;\n    for (i = 0; i < ARRAY_COUNT(roomTypesDisabled); i++)\n    {\n        if (roomTypesDisabled[i] == FALSE)\n            roomCandidates[id++] = i;\n    }\n\n    nextRoomType = roomCandidates[Random() % numRoomCandidates];\n    Free(roomCandidates);\n    if (nextRoomType == PIKE_ROOM_STATUS)\n        TryInflictRandomStatus();\n\n    return nextRoomType;",
       "callsTo": [
         "ARRAY_COUNT",
@@ -234,6 +280,7 @@
       "returnType": "u16",
       "signature": "static u16 GetNPCRoomGraphicsId(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sNpcId = Random() % ARRAY_COUNT(sNPCTable);\n    return sNPCTable[sNpcId].graphicsId;",
       "callsTo": [
         "ARRAY_COUNT",
@@ -245,6 +292,12 @@
       "returnType": "bool32",
       "signature": "bool32 TryGenerateBattlePikeWildMon(bool8 checkKeenEyeIntimidate)",
       "paramsRaw": "bool8 checkKeenEyeIntimidate",
+      "paramsList": [
+        {
+          "name": "checkKeenEyeIntimidate",
+          "typeRaw": "bool8"
+        }
+      ],
       "body": "s32 i;\n    s32 monLevel;\n    u8 headerId = GetBattlePikeWildMonHeaderId();\n    u32 lvlMode = gSaveBlock2Ptr->frontier.lvlMode;\n    const struct PikeWildMon *const *const wildMons = sWildMons[lvlMode];\n    u32 abilityNum;\n    s32 pikeMonId = GetMonData(&gEnemyParty[0], MON_DATA_SPECIES, NULL);\n    pikeMonId = SpeciesToPikeMonId(pikeMonId);\n\n    if (gSaveBlock2Ptr->frontier.lvlMode != FRONTIER_LVL_50)\n    {\n        monLevel = GetHighestLevelInPlayerParty();\n        if (monLevel < FRONTIER_MIN_LEVEL_OPEN)\n        {\n            monLevel = FRONTIER_MIN_LEVEL_OPEN;\n        }\n        else\n        {\n            monLevel -= wildMons[headerId][pikeMonId].levelDelta;\n            if (monLevel < FRONTIER_MIN_LEVEL_OPEN)\n                monLevel = FRONTIER_MIN_LEVEL_OPEN;\n        }\n    }\n    else\n    {\n        monLevel = FRONTIER_MAX_LEVEL_50 - wildMons[headerId][pikeMonId].levelDelta;\n    }\n\n    if (checkKeenEyeIntimidate == TRUE && !CanEncounterWildMon(monLevel))\n        return FALSE;\n\n    SetMonData(&gEnemyParty[0],\n               MON_DATA_EXP,\n               &gExperienceTables[gSpeciesInfo[wildMons[headerId][pikeMonId].species].growthRate][monLevel]);\n\n    if (gSpeciesInfo[wildMons[headerId][pikeMonId].species].abilities[1])\n        abilityNum = Random() % 2;\n    else\n        abilityNum = 0;\n    SetMonData(&gEnemyParty[0], MON_DATA_ABILITY_NUM, &abilityNum);\n    for (i = 0; i < MAX_MON_MOVES; i++)\n        SetMonMoveSlot(&gEnemyParty[0], wildMons[headerId][pikeMonId].moves[i], i);\n\n    CalculateMonStats(&gEnemyParty[0]);\n    return TRUE;",
       "callsTo": [
         "CalculateMonStats",
@@ -263,6 +316,7 @@
       "returnType": "u8",
       "signature": "u8 GetBattlePikeWildMonHeaderId(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 headerId;\n    u8 lvlMode = gSaveBlock2Ptr->frontier.lvlMode;\n    u16 winStreak = gSaveBlock2Ptr->frontier.pikeWinStreaks[lvlMode];\n\n    if (winStreak <= 20 * NUM_PIKE_ROOMS)\n        headerId = 0;\n    else if (winStreak <= 40 * NUM_PIKE_ROOMS)\n        headerId = 1;\n    else if (winStreak <= 60 * NUM_PIKE_ROOMS)\n        headerId = 2;\n    else\n        headerId = 3;\n\n    return headerId;",
       "callsTo": [],
       "lineCount": 14
@@ -271,6 +325,12 @@
       "returnType": "void",
       "signature": "static void DoStatusInflictionScreenFlash(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "while (sStatusInflictionScreenFlashFuncs[gTasks[taskId].data[0]](&gTasks[taskId]));",
       "callsTo": [],
       "lineCount": 1
@@ -279,6 +339,12 @@
       "returnType": "bool8",
       "signature": "static bool8 StatusInflictionFadeOut(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (task->data[6] == 0 || --task->data[6] == 0)\n    {\n        task->data[6] = task->data[1];\n        task->data[7] += task->data[4];\n        if (task->data[7] > 16)\n            task->data[7] = 16;\n        BlendPalettes(PALETTES_ALL, task->data[7], RGB(11, 11, 11));\n    }\n\n    if (task->data[7] >= 16)\n    {\n        task->data[0]++;\n        task->data[6] = task->data[2];\n    }\n    return FALSE;",
       "callsTo": [
         "BlendPalettes"
@@ -289,6 +355,12 @@
       "returnType": "bool8",
       "signature": "static bool8 StatusInflictionFadeIn(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (task->data[6] == 0 || --task->data[6] == 0)\n    {\n        task->data[6] = task->data[2];\n        task->data[7] -= task->data[5];\n        if (task->data[7] < 0)\n            task->data[7] = 0;\n        BlendPalettes(PALETTES_ALL, task->data[7], RGB(11, 11, 11));\n    }\n\n    if (task->data[7] == 0)\n    {\n        if (--task->data[3] == 0)\n        {\n            DestroyTask(FindTaskIdByFunc(DoStatusInflictionScreenFlash));\n        }\n        else\n        {\n            task->data[6] = task->data[1];\n            task->data[0] = 0;\n        }\n    }\n    return FALSE;",
       "callsTo": [
         "BlendPalettes",
@@ -301,6 +373,28 @@
       "returnType": "void",
       "signature": "static void StartStatusInflictionScreenFlash(s16 fadeOutDelay, s16 fadeInDelay, s16 numFades, s16 fadeOutSpeed, s16 fadeInSpped)",
       "paramsRaw": "s16 fadeOutDelay, s16 fadeInDelay, s16 numFades, s16 fadeOutSpeed, s16 fadeInSpped",
+      "paramsList": [
+        {
+          "name": "fadeOutDelay",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "fadeInDelay",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "numFades",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "fadeOutSpeed",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "fadeInSpped",
+          "typeRaw": "s16"
+        }
+      ],
       "body": "u8 taskId = CreateTask(DoStatusInflictionScreenFlash, 3);\n\n    gTasks[taskId].data[1] = fadeOutDelay;\n    gTasks[taskId].data[2] = fadeInDelay;\n    gTasks[taskId].data[3] = numFades;\n    gTasks[taskId].data[4] = fadeOutSpeed;\n    gTasks[taskId].data[5] = fadeInSpped;\n    gTasks[taskId].data[6] = fadeOutDelay;",
       "callsTo": [
         "CreateTask"
@@ -311,6 +405,7 @@
       "returnType": "bool8",
       "signature": "static bool8 IsStatusInflictionScreenFlashTaskFinished(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (FindTaskIdByFunc(DoStatusInflictionScreenFlash) == TASK_NONE)\n        return TRUE;\n    else\n        return FALSE;",
       "callsTo": [
         "FindTaskIdByFunc"
@@ -321,6 +416,12 @@
       "returnType": "void",
       "signature": "static void Task_DoStatusInflictionScreenFlash(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (gTasks[taskId].data[0] == 0)\n    {\n        gTasks[taskId].data[0]++;\n        StartStatusInflictionScreenFlash(0, 0, 3, 2, 2);\n    }\n    else\n    {\n        if (IsStatusInflictionScreenFlashTaskFinished())\n        {\n            ScriptContext_Enable();\n            DestroyTask(taskId);\n        }\n    }",
       "callsTo": [
         "DestroyTask",
@@ -334,6 +435,12 @@
       "returnType": "void",
       "signature": "static void TryHealMons(u8 healCount)",
       "paramsRaw": "u8 healCount",
+      "paramsList": [
+        {
+          "name": "healCount",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 j, i, k;\n    u8 indices[FRONTIER_PARTY_SIZE];\n\n    if (healCount == 0)\n        return;\n\n    for (i = 0; i < FRONTIER_PARTY_SIZE; i++)\n        indices[i] = i;\n\n     \n     \n     \n    for (k = 0; k < 10; k++)\n    {\n        u8 temp;\n\n        i = Random() % FRONTIER_PARTY_SIZE;\n        j = Random() % FRONTIER_PARTY_SIZE;\n        SWAP(indices[i], indices[j], temp);\n    }\n\n    for (i = 0; i < FRONTIER_PARTY_SIZE; i++)\n    {\n        bool32 canBeHealed = FALSE;\n        struct Pokemon *mon = &gPlayerParty[indices[i]];\n        u16 curr = GetMonData(mon, MON_DATA_HP);\n        u16 max = GetMonData(mon, MON_DATA_MAX_HP);\n        if (curr < max)\n        {\n            canBeHealed = TRUE;\n        }\n        else if (GetAilmentFromStatus(GetMonData(mon, MON_DATA_STATUS)) != AILMENT_NONE)\n        {\n            canBeHealed = TRUE;\n        }\n        else\n        {\n            u8 ppBonuses = GetMonData(mon, MON_DATA_PP_BONUSES);\n            for (j = 0; j < MAX_MON_MOVES; j++)\n            {\n                u16 move = GetMonData(mon, MON_DATA_MOVE1 + j);\n                max = CalculatePPWithBonus(move, ppBonuses, j);\n                curr = GetMonData(mon, MON_DATA_PP1 + j);\n                if (curr < max)\n                {\n                    canBeHealed = TRUE;\n                    break;\n                }\n            }\n        }\n\n        if (canBeHealed == TRUE)\n        {\n            HealMon(&gPlayerParty[indices[i]]);\n            if (--healCount == 0)\n                break;\n        }\n    }",
       "callsTo": [
         "CalculatePPWithBonus",
@@ -349,6 +456,7 @@
       "returnType": "void",
       "signature": "static void GetInBattlePike(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gSpecialVar_Result = InBattlePike();",
       "callsTo": [
         "InBattlePike"
@@ -359,6 +467,7 @@
       "returnType": "bool8",
       "signature": "bool8 InBattlePike(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return gMapHeader.mapLayoutId == LAYOUT_BATTLE_FRONTIER_BATTLE_PIKE_THREE_PATH_ROOM\n        || gMapHeader.mapLayoutId == LAYOUT_BATTLE_FRONTIER_BATTLE_PIKE_ROOM_NORMAL\n        || gMapHeader.mapLayoutId == LAYOUT_BATTLE_FRONTIER_BATTLE_PIKE_ROOM_WILD_MONS\n        || gMapHeader.mapLayoutId == LAYOUT_BATTLE_FRONTIER_BATTLE_PIKE_ROOM_UNUSED;",
       "callsTo": [],
       "lineCount": 4
@@ -367,6 +476,7 @@
       "returnType": "void",
       "signature": "static void SetHintedRoom(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i, count, id;\n    u8 *roomCandidates;\n\n    gSpecialVar_Result = FALSE;\n    if (GetPikeQueenFightType(1))\n    {\n        gSpecialVar_Result = TRUE;\n        gSaveBlock2Ptr->frontier.pikeHintedRoomIndex = Random() % 6;\n        gSaveBlock2Ptr->frontier.pikeHintedRoomType = PIKE_ROOM_BRAIN;\n    }\n    else\n    {\n        gSaveBlock2Ptr->frontier.pikeHintedRoomIndex = Random() % 3;\n        if (gSaveBlock2Ptr->frontier.pikeHealingRoomsDisabled)\n            count = NUM_PIKE_ROOM_TYPES - 3;  \n        else\n            count = NUM_PIKE_ROOM_TYPES - 1;  \n\n        roomCandidates = AllocZeroed(count);\n        for (i = 0, id = 0; i < count; i++)\n        {\n            if (gSaveBlock2Ptr->frontier.pikeHealingRoomsDisabled)\n            {\n                if (i != PIKE_ROOM_HEAL_FULL && i != PIKE_ROOM_HEAL_PART)\n                    roomCandidates[id++] = i;\n            }\n            else\n            {\n                roomCandidates[i] = i;\n            }\n        }\n\n        gSaveBlock2Ptr->frontier.pikeHintedRoomType = roomCandidates[Random() % count];\n        Free(roomCandidates);\n        if (gSaveBlock2Ptr->frontier.pikeHintedRoomType == PIKE_ROOM_STATUS && !AtLeastOneHealthyMon())\n            gSaveBlock2Ptr->frontier.pikeHintedRoomType = PIKE_ROOM_NPC;\n        if (gSaveBlock2Ptr->frontier.pikeHintedRoomType == PIKE_ROOM_DOUBLE_BATTLE && !AtLeastTwoAliveMons())\n            gSaveBlock2Ptr->frontier.pikeHintedRoomType = PIKE_ROOM_NPC;\n    }",
       "callsTo": [
         "AllocZeroed",
@@ -382,6 +492,7 @@
       "returnType": "void",
       "signature": "static void GetHintedRoomIndex(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gSpecialVar_Result = gSaveBlock2Ptr->frontier.pikeHintedRoomIndex;",
       "callsTo": [],
       "lineCount": 1
@@ -390,6 +501,7 @@
       "returnType": "void",
       "signature": "static void GetRoomTypeHint(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gSpecialVar_Result = sRoomTypeHints[gSaveBlock2Ptr->frontier.pikeHintedRoomType];",
       "callsTo": [],
       "lineCount": 1
@@ -398,6 +510,12 @@
       "returnType": "void",
       "signature": "static void PrepareOneTrainer(bool8 difficult)",
       "paramsRaw": "bool8 difficult",
+      "paramsList": [
+        {
+          "name": "difficult",
+          "typeRaw": "bool8"
+        }
+      ],
       "body": "int i;\n    u8 lvlMode;\n    u8 battleNum;\n    u16 challengeNum;\n    u16 trainerId;\n\n    if (!difficult)\n        battleNum = 1;\n    else\n        battleNum = FRONTIER_STAGES_PER_CHALLENGE - 1;\n\n    lvlMode = gSaveBlock2Ptr->frontier.lvlMode;\n    challengeNum = gSaveBlock2Ptr->frontier.pikeWinStreaks[lvlMode] / NUM_PIKE_ROOMS;\n    do\n    {\n        trainerId = GetRandomScaledFrontierTrainerId(challengeNum, battleNum);\n        for (i = 0; i < gSaveBlock2Ptr->frontier.curChallengeBattleNum - 1; i++)\n        {\n            if (gSaveBlock2Ptr->frontier.trainerIds[i] == trainerId)\n                break;\n        }\n    } while (i != gSaveBlock2Ptr->frontier.curChallengeBattleNum - 1);\n\n    gTrainerBattleOpponent_A = trainerId;\n    gFacilityTrainers = gBattleFrontierTrainers;\n    SetBattleFacilityTrainerGfxId(gTrainerBattleOpponent_A, 0);\n    if (gSaveBlock2Ptr->frontier.curChallengeBattleNum < NUM_PIKE_ROOMS)\n        gSaveBlock2Ptr->frontier.trainerIds[gSaveBlock2Ptr->frontier.curChallengeBattleNum - 1] = gTrainerBattleOpponent_A;",
       "callsTo": [
         "GetRandomScaledFrontierTrainerId",
@@ -409,6 +527,7 @@
       "returnType": "void",
       "signature": "static void PrepareTwoTrainers(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int i;\n    u16 trainerId;\n    u8 lvlMode = gSaveBlock2Ptr->frontier.lvlMode;\n    u16 challengeNum = gSaveBlock2Ptr->frontier.pikeWinStreaks[lvlMode] / NUM_PIKE_ROOMS;\n\n    gFacilityTrainers = gBattleFrontierTrainers;\n    do\n    {\n         \n        trainerId = GetRandomScaledFrontierTrainerId(challengeNum, 1);\n        for (i = 0; i < gSaveBlock2Ptr->frontier.curChallengeBattleNum - 1; i++)\n        {\n            if (gSaveBlock2Ptr->frontier.trainerIds[i] == trainerId)\n                break;\n        }\n    } while (i != gSaveBlock2Ptr->frontier.curChallengeBattleNum - 1);\n\n    gTrainerBattleOpponent_A = trainerId;\n    SetBattleFacilityTrainerGfxId(gTrainerBattleOpponent_A, 0);\n    if (gSaveBlock2Ptr->frontier.curChallengeBattleNum <= NUM_PIKE_ROOMS)\n        gSaveBlock2Ptr->frontier.trainerIds[gSaveBlock2Ptr->frontier.curChallengeBattleNum - 1] = gTrainerBattleOpponent_A;\n\n    do\n    {\n         \n        trainerId = GetRandomScaledFrontierTrainerId(challengeNum, 1);\n        for (i = 0; i < gSaveBlock2Ptr->frontier.curChallengeBattleNum; i++)\n        {\n            if (gSaveBlock2Ptr->frontier.trainerIds[i] == trainerId)\n                break;\n        }\n    } while (i != gSaveBlock2Ptr->frontier.curChallengeBattleNum);\n\n    gTrainerBattleOpponent_B = trainerId;\n    SetBattleFacilityTrainerGfxId(gTrainerBattleOpponent_B, 1);\n    if (gSaveBlock2Ptr->frontier.curChallengeBattleNum < NUM_PIKE_ROOMS)\n        gSaveBlock2Ptr->frontier.trainerIds[gSaveBlock2Ptr->frontier.curChallengeBattleNum - 2] = gTrainerBattleOpponent_B;",
       "callsTo": [
         "GetRandomScaledFrontierTrainerId",
@@ -420,6 +539,7 @@
       "returnType": "void",
       "signature": "static void ClearPikeTrainerIds(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n\n    for (i = 0; i < NUM_PIKE_ROOMS; i++)\n        gSaveBlock2Ptr->frontier.trainerIds[i] = 0xFFFF;",
       "callsTo": [],
       "lineCount": 4
@@ -428,6 +548,7 @@
       "returnType": "void",
       "signature": "static void BufferTrainerIntro(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gSpecialVar_0x8005 == 0)\n    {\n        if (gTrainerBattleOpponent_A < FRONTIER_TRAINERS_COUNT)\n            FrontierSpeechToString(gFacilityTrainers[gTrainerBattleOpponent_A].speechBefore);\n    }\n    else if (gSpecialVar_0x8005 == 1)\n    {\n        if (gTrainerBattleOpponent_B < FRONTIER_TRAINERS_COUNT)\n            FrontierSpeechToString(gFacilityTrainers[gTrainerBattleOpponent_B].speechBefore);\n    }",
       "callsTo": [
         "FrontierSpeechToString"
@@ -438,6 +559,7 @@
       "returnType": "bool8",
       "signature": "static bool8 AtLeastTwoAliveMons(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "struct Pokemon *mon;\n    u8 i, countDead;\n\n    mon = &gPlayerParty[0];\n    countDead = 0;\n    for (i = 0; i < FRONTIER_PARTY_SIZE; i++, mon++)\n    {\n        if (GetMonData(mon, MON_DATA_HP) == 0)\n            countDead++;\n    }\n\n    if (countDead >= 2)\n        return FALSE;\n    else\n        return TRUE;",
       "callsTo": [
         "GetMonData"
@@ -448,6 +570,12 @@
       "returnType": "u8",
       "signature": "static u8 GetPikeQueenFightType(u8 nextRoom)",
       "paramsRaw": "u8 nextRoom",
+      "paramsList": [
+        {
+          "name": "nextRoom",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 numPikeSymbols;\n\n    u8 facility = FRONTIER_FACILITY_PIKE;\n    u8 ret = FRONTIER_BRAIN_NOT_READY;\n    u8 lvlMode = gSaveBlock2Ptr->frontier.lvlMode;\n    u16 winStreak = gSaveBlock2Ptr->frontier.pikeWinStreaks[lvlMode];\n    winStreak += nextRoom;\n    numPikeSymbols = GetPlayerSymbolCountForFacility(FRONTIER_FACILITY_PIKE);\n\n    switch (numPikeSymbols)\n    {\n    case 0:\n    case 1:\n        if (winStreak == sFrontierBrainStreakAppearances[facility][numPikeSymbols] - sFrontierBrainStreakAppearances[facility][3])\n            ret = numPikeSymbols + 1;  \n        break;\n    case 2:\n    default:\n        if (winStreak == sFrontierBrainStreakAppearances[facility][0] - sFrontierBrainStreakAppearances[facility][3])\n            ret = FRONTIER_BRAIN_STREAK;\n        else if (winStreak == sFrontierBrainStreakAppearances[facility][1] - sFrontierBrainStreakAppearances[facility][3]\n                 || (winStreak > sFrontierBrainStreakAppearances[facility][1]\n                     && (winStreak - sFrontierBrainStreakAppearances[facility][1] + sFrontierBrainStreakAppearances[facility][3]) % sFrontierBrainStreakAppearances[facility][2] == 0))\n            ret = FRONTIER_BRAIN_STREAK_LONG;\n        break;\n    }\n\n    return ret;",
       "callsTo": [
         "GetPlayerSymbolCountForFacility"
@@ -458,6 +586,7 @@
       "returnType": "void",
       "signature": "static void GetCurrentRoomPikeQueenFightType(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gSpecialVar_Result = GetPikeQueenFightType(0);",
       "callsTo": [
         "GetPikeQueenFightType"
@@ -468,6 +597,7 @@
       "returnType": "void",
       "signature": "static void HealSomeMonsBeforePikeQueen(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 toHealCount = sNumMonsToHealBeforePikeQueen[gSaveBlock2Ptr->frontier.pikeHintedRoomIndex][gSpecialVar_0x8007];\n\n    TryHealMons(toHealCount);\n    gSpecialVar_Result = toHealCount;",
       "callsTo": [
         "TryHealMons"
@@ -478,6 +608,7 @@
       "returnType": "void",
       "signature": "static void SetHealingroomTypesDisabled(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gSaveBlock2Ptr->frontier.pikeHealingRoomsDisabled = gSpecialVar_0x8005;",
       "callsTo": [],
       "lineCount": 1
@@ -486,6 +617,7 @@
       "returnType": "void",
       "signature": "static void IsPartyFullHealed(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i, j;\n\n    gSpecialVar_Result = TRUE;\n    for (i = 0; i < FRONTIER_PARTY_SIZE; i++)\n    {\n        bool32 canBeHealed = FALSE;\n        struct Pokemon *mon = &gPlayerParty[i];\n        u16 curr = GetMonData(mon, MON_DATA_HP);\n        u16 max = GetMonData(mon, MON_DATA_MAX_HP);\n        if (curr >= max && GetAilmentFromStatus(GetMonData(mon, MON_DATA_STATUS)) == AILMENT_NONE)\n        {\n            u8 ppBonuses = GetMonData(mon, MON_DATA_PP_BONUSES);\n            for (j = 0; j < MAX_MON_MOVES; j++)\n            {\n                u16 move = GetMonData(mon, MON_DATA_MOVE1 + j);\n                max = CalculatePPWithBonus(move, ppBonuses, j);\n                curr = GetMonData(mon, MON_DATA_PP1 + j);\n                if (curr < max)\n                {\n                    canBeHealed = TRUE;\n                    break;\n                }\n            }\n        }\n        else\n        {\n            canBeHealed = TRUE;\n        }\n\n        if (canBeHealed == TRUE)\n        {\n            gSpecialVar_Result = FALSE;\n            break;\n        }\n    }",
       "callsTo": [
         "CalculatePPWithBonus",
@@ -498,6 +630,7 @@
       "returnType": "void",
       "signature": "static void SaveMonHeldItems(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n\n    for (i = 0; i < FRONTIER_PARTY_SIZE; i++)\n    {\n        int heldItem = GetMonData(&gSaveBlock1Ptr->playerParty[gSaveBlock2Ptr->frontier.selectedPartyMons[i] - 1],\n                                  MON_DATA_HELD_ITEM);\n        gSaveBlock2Ptr->frontier.pikeHeldItemsBackup[i] = heldItem;\n    }",
       "callsTo": [
         "GetMonData"
@@ -508,6 +641,7 @@
       "returnType": "void",
       "signature": "static void RestoreMonHeldItems(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n\n    for (i = 0; i < FRONTIER_PARTY_SIZE; i++)\n    {\n        SetMonData(&gPlayerParty[gSaveBlock2Ptr->frontier.selectedPartyMons[i] - 1],\n                   MON_DATA_HELD_ITEM,\n                   &gSaveBlock2Ptr->frontier.pikeHeldItemsBackup[i]);\n    }",
       "callsTo": [
         "SetMonData"
@@ -518,6 +652,7 @@
       "returnType": "void",
       "signature": "static void InitPikeChallenge(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 lvlMode = gSaveBlock2Ptr->frontier.lvlMode;\n\n    gSaveBlock2Ptr->frontier.challengeStatus = 0;\n    gSaveBlock2Ptr->frontier.curChallengeBattleNum = 0;\n    gSaveBlock2Ptr->frontier.challengePaused = FALSE;\n    if (!(gSaveBlock2Ptr->frontier.winStreakActiveFlags & sWinStreakFlags[lvlMode]))\n        gSaveBlock2Ptr->frontier.pikeWinStreaks[lvlMode] = 0;\n\n    gTrainerBattleOpponent_A = 0;\n    gBattleOutcome = 0;",
       "callsTo": [],
       "lineCount": 10
@@ -526,6 +661,12 @@
       "returnType": "bool8",
       "signature": "static bool8 CanEncounterWildMon(u8 enemyMonLevel)",
       "paramsRaw": "u8 enemyMonLevel",
+      "paramsList": [
+        {
+          "name": "enemyMonLevel",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (!GetMonData(&gPlayerParty[0], MON_DATA_SANITY_IS_EGG))\n    {\n        u8 monAbility = GetMonAbility(&gPlayerParty[0]);\n        if (monAbility == ABILITY_KEEN_EYE || monAbility == ABILITY_INTIMIDATE)\n        {\n            u8 playerMonLevel = GetMonData(&gPlayerParty[0], MON_DATA_LEVEL);\n            if (playerMonLevel > 5 && enemyMonLevel <= playerMonLevel - 5 && Random() % 2 == 0)\n                return FALSE;\n        }\n    }\n\n    return TRUE;",
       "callsTo": [
         "GetMonAbility",
@@ -538,6 +679,12 @@
       "returnType": "u8",
       "signature": "static u8 SpeciesToPikeMonId(u16 species)",
       "paramsRaw": "u16 species",
+      "paramsList": [
+        {
+          "name": "species",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "u8 ret;\n\n    if (species == SPECIES_SEVIPER)\n        ret = 0;\n    else if (species == SPECIES_MILOTIC)\n        ret = 1;\n    else\n        ret = 2;\n\n    return ret;",
       "callsTo": [],
       "lineCount": 10

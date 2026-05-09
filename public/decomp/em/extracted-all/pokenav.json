@@ -6,6 +6,16 @@
       "returnType": "u32",
       "signature": "u32 CreateLoopedTask(LoopedTask loopedTask, u32 priority)",
       "paramsRaw": "LoopedTask loopedTask, u32 priority",
+      "paramsList": [
+        {
+          "name": "loopedTask",
+          "typeRaw": "LoopedTask"
+        },
+        {
+          "name": "priority",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "u16 taskId;\n\n    if (!IsOverworldLinkActive())\n        taskId = CreateTask(Task_RunLoopedTask, priority);\n    else\n        taskId = CreateTask(Task_RunLoopedTask_LinkMode, priority);\n\n    SetWordTaskArg(taskId, 1, (u32)loopedTask);\n\n    gTasks[taskId].data[3] = gNextLoopedTaskId;\n    return LOOPED_TASK_ID(taskId, gNextLoopedTaskId++);",
       "callsTo": [
         "CreateTask",
@@ -19,6 +29,12 @@
       "returnType": "bool32",
       "signature": "bool32 IsLoopedTaskActive(u32 taskId)",
       "paramsRaw": "u32 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "u32 primaryId = LOOPED_TASK_PRIMARY_ID(taskId);\n    u32 secondaryId = LOOPED_TASK_SECONDARY_ID(taskId);\n\n    if (gTasks[primaryId].isActive\n        && (gTasks[primaryId].func == Task_RunLoopedTask || gTasks[primaryId].func == Task_RunLoopedTask_LinkMode)\n        && gTasks[primaryId].data[3] == secondaryId)\n        return TRUE;\n    else\n        return FALSE;",
       "callsTo": [
         "LOOPED_TASK_PRIMARY_ID",
@@ -30,6 +46,12 @@
       "returnType": "bool32",
       "signature": "bool32 FuncIsActiveLoopedTask(LoopedTask func)",
       "paramsRaw": "LoopedTask func",
+      "paramsList": [
+        {
+          "name": "func",
+          "typeRaw": "LoopedTask"
+        }
+      ],
       "body": "int i;\n    for (i = 0; i < NUM_TASKS; i++)\n    {\n        if (gTasks[i].isActive\n            && (gTasks[i].func == Task_RunLoopedTask || gTasks[i].func == Task_RunLoopedTask_LinkMode)\n            && (LoopedTask)GetWordTaskArg(i, 1) == func)\n            return TRUE;\n    }\n    return FALSE;",
       "callsTo": [
         "GetWordTaskArg"
@@ -40,6 +62,12 @@
       "returnType": "void",
       "signature": "static void Task_RunLoopedTask(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "LoopedTask loopedTask = (LoopedTask)GetWordTaskArg(taskId, 1);\n    s16 *state = &gTasks[taskId].data[0];\n    bool32 exitLoop = FALSE;\n\n    while (!exitLoop)\n    {\n        u32 action = loopedTask(*state);\n        switch (action)\n        {\n        case LT_INC_AND_CONTINUE:\n            (*state)++;\n            break;\n        case LT_INC_AND_PAUSE:\n            (*state)++;\n            return;\n        case LT_FINISH:\n            DestroyTask(taskId);\n            return;\n         \n        default:\n            *state = LOOPED_TASK_DECODE_STATE(action);\n            break;\n        case LT_CONTINUE:\n            break;\n        case LT_PAUSE:\n            return;\n        }\n    }",
       "callsTo": [
         "DestroyTask",
@@ -52,6 +80,12 @@
       "returnType": "void",
       "signature": "static void Task_RunLoopedTask_LinkMode(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "LoopedTask task;\n    s16 *state;\n    u32 action;\n\n    if (Overworld_IsRecvQueueAtMax())\n        return;\n\n    task = (LoopedTask)GetWordTaskArg(taskId, 1);\n    state = &gTasks[taskId].data[0];\n    action = task(*state);\n    switch (action)\n    {\n    case LT_INC_AND_PAUSE:\n    case LT_INC_AND_CONTINUE:\n        (*state)++;\n        break;\n    case LT_FINISH:\n        DestroyTask(taskId);\n        break;\n     \n    default:\n        *state = LOOPED_TASK_DECODE_STATE(action);\n        break;\n    case LT_PAUSE:\n    case LT_CONTINUE:\n        break;\n    }",
       "callsTo": [
         "DestroyTask",
@@ -65,6 +99,7 @@
       "returnType": "void",
       "signature": "void CB2_InitPokeNav(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gPokenavResources = Alloc(sizeof(*gPokenavResources));\n    if (gPokenavResources == NULL)\n    {\n        SetMainCallback2(CB2_ReturnToFieldWithOpenMenu);\n    }\n    else\n    {\n        InitPokenavResources(gPokenavResources);\n        ResetTasks();\n        SetVBlankCallback(NULL);\n        CreateTask(Task_Pokenav, 0);\n        SetMainCallback2(CB2_Pokenav);\n        SetVBlankCallback(VBlankCB_Pokenav);\n    }",
       "callsTo": [
         "Alloc",
@@ -80,6 +115,7 @@
       "returnType": "void",
       "signature": "void OpenPokenavForTutorial(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "SetMainCallback2(CB2_InitPokenavForTutorial);\n    FadeScreen(FADE_TO_BLACK, 0);",
       "callsTo": [
         "FadeScreen",
@@ -91,6 +127,7 @@
       "returnType": "void",
       "signature": "static void CB2_InitPokenavForTutorial(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "UpdatePaletteFade();\n    if (gPaletteFade.active)\n        return;\n\n    gPokenavResources = Alloc(sizeof(*gPokenavResources));\n    if (gPokenavResources == NULL)\n    {\n        SetMainCallback2(CB2_ReturnToFieldContinueScriptPlayMapMusic);\n    }\n    else\n    {\n        InitPokenavResources(gPokenavResources);\n        gPokenavResources->mode = POKENAV_MODE_FORCE_CALL_READY;\n        ResetTasks();\n        ResetSpriteData();\n        FreeAllSpritePalettes();\n        SetVBlankCallback(NULL);\n        CreateTask(Task_Pokenav, 0);\n        SetMainCallback2(CB2_Pokenav);\n        SetVBlankCallback(VBlankCB_Pokenav);\n    }",
       "callsTo": [
         "Alloc",
@@ -109,6 +146,7 @@
       "returnType": "void",
       "signature": "static void FreePokenavResources(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int i;\n\n    for (i = 0; i < POKENAV_SUBSTRUCT_COUNT; i++)\n        FreePokenavSubstruct(i);\n\n    FREE_AND_SET_NULL(gPokenavResources);\n    InitKeys();",
       "callsTo": [
         "FREE_AND_SET_NULL",
@@ -121,6 +159,12 @@
       "returnType": "void",
       "signature": "static void InitPokenavResources(struct PokenavResources *resources)",
       "paramsRaw": "struct PokenavResources *resources",
+      "paramsList": [
+        {
+          "name": "resources",
+          "typeRaw": "struct PokenavResources *"
+        }
+      ],
       "body": "int i;\n\n    for (i = 0; i < POKENAV_SUBSTRUCT_COUNT; i++)\n        resources->substructPtrs[i] = NULL;\n\n    resources->mode = POKENAV_MODE_NORMAL;\n    resources->currentMenuIndex = 0;\n    resources->hasAnyRibbons = AnyMonHasRibbon();\n    resources->currentMenuCb1 = NULL;",
       "callsTo": [
         "AnyMonHasRibbon"
@@ -131,6 +175,7 @@
       "returnType": "bool32",
       "signature": "static bool32 AnyMonHasRibbon(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int i, j;\n\n    for (i = 0; i < PARTY_SIZE; i++)\n    {\n        if (GetMonData(&gPlayerParty[i],  MON_DATA_SANITY_HAS_SPECIES)\n            && !GetMonData(&gPlayerParty[i], MON_DATA_SANITY_IS_EGG)\n            && GetMonData(&gPlayerParty[i], MON_DATA_RIBBON_COUNT) != 0)\n        {\n            return TRUE;\n        }\n    }\n\n    for (j = 0; j < TOTAL_BOXES_COUNT; j++)\n    {\n        for (i = 0; i < IN_BOX_COUNT; i++)\n        {\n            if (CheckBoxMonSanityAt(j, i)\n                && GetBoxMonDataAt(j, i, MON_DATA_RIBBON_COUNT) != 0)\n            {\n                return TRUE;\n            }\n        }\n    }\n\n    return FALSE;",
       "callsTo": [
         "CheckBoxMonSanityAt",
@@ -143,6 +188,7 @@
       "returnType": "void",
       "signature": "static void CB2_Pokenav(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "RunTasks();\n    AnimateSprites();\n    BuildOamBuffer();\n    UpdatePaletteFade();",
       "callsTo": [
         "AnimateSprites",
@@ -156,6 +202,7 @@
       "returnType": "void",
       "signature": "static void VBlankCB_Pokenav(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "TransferPlttBuffer();\n    LoadOam();\n    ProcessSpriteCopyRequests();",
       "callsTo": [
         "LoadOam",
@@ -168,6 +215,12 @@
       "returnType": "void",
       "signature": "static void Task_Pokenav(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u32 menuId;\n    s16 *data = gTasks[taskId].data;\n\n    switch (tState)\n    {\n    case 0:\n        InitPokenavMainMenu();\n        tState = 1;\n        break;\n    case 1:\n         \n        if (PokenavMainMenuLoopedTaskIsActive())\n            break;\n        SetActivePokenavMenu(POKENAV_MAIN_MENU);\n        tState = 4;\n        break;\n    case 2:\n        if (IsActiveMenuLoopTaskActive())\n            break;\n        tState = 3;\n    case 3:\n        menuId = GetCurrentMenuCB();\n        if (menuId == POKENAV_MENU_FUNC_EXIT)\n        {\n            ShutdownPokenav();\n            tState = 5;\n        }\n        else if (menuId >= POKENAV_MENU_IDS_START)\n        {\n            PokenavMenuCallbacks[gPokenavResources->currentMenuIndex].free2();\n            PokenavMenuCallbacks[gPokenavResources->currentMenuIndex].free1();\n            if (SetActivePokenavMenu(menuId))\n            {\n                tState = 4;\n            }\n            else\n            {\n                ShutdownPokenav();\n                tState = 5;\n            }\n        }\n        else if (menuId != 0)\n        {\n            RunMainMenuLoopedTask(menuId);\n            if (IsActiveMenuLoopTaskActive())\n                tState = 2;\n        }\n        break;\n    case 4:\n        if (!IsActiveMenuLoopTaskActive_())\n            tState = 3;\n        break;\n    case 5:\n        if (!WaitForPokenavShutdownFade())\n        {\n            bool32 calledFromScript = (gPokenavResources->mode != POKENAV_MODE_NORMAL);\n\n            FreeMenuHandlerSubstruct1();\n            FreePokenavResources();\n            if (calledFromScript)\n                SetMainCallback2(CB2_ReturnToFieldContinueScriptPlayMapMusic);\n            else\n                SetMainCallback2(CB2_ReturnToFieldWithOpenMenu);\n        }\n        break;\n    }",
       "callsTo": [
         "FreeMenuHandlerSubstruct1",
@@ -189,6 +242,12 @@
       "returnType": "bool32",
       "signature": "static bool32 SetActivePokenavMenu(u32 menuId)",
       "paramsRaw": "u32 menuId",
+      "paramsList": [
+        {
+          "name": "menuId",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "u32 index = menuId - POKENAV_MENU_IDS_START;\n\n    InitKeys_();\n    if (!PokenavMenuCallbacks[index].init())\n        return FALSE;\n    if (!PokenavMenuCallbacks[index].open())\n        return FALSE;\n\n    SetActiveMenuLoopTasks(PokenavMenuCallbacks[index].createLoopTask, PokenavMenuCallbacks[index].isLoopTaskActive);\n    gPokenavResources->currentMenuCb1 = PokenavMenuCallbacks[index].callback;\n    gPokenavResources->currentMenuIndex = index;\n    return TRUE;",
       "callsTo": [
         "InitKeys_",
@@ -200,6 +259,7 @@
       "returnType": "u32",
       "signature": "static u32 IsActiveMenuLoopTaskActive_(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return IsActiveMenuLoopTaskActive();",
       "callsTo": [
         "IsActiveMenuLoopTaskActive"
@@ -210,6 +270,7 @@
       "returnType": "u32",
       "signature": "static u32 GetCurrentMenuCB(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return gPokenavResources->currentMenuCb1();",
       "callsTo": [],
       "lineCount": 1
@@ -218,6 +279,7 @@
       "returnType": "void",
       "signature": "static void InitKeys_(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "InitKeys();",
       "callsTo": [
         "InitKeys"
@@ -228,6 +290,12 @@
       "returnType": "void",
       "signature": "void SetVBlankCallback_(IntrCallback callback)",
       "paramsRaw": "IntrCallback callback",
+      "paramsList": [
+        {
+          "name": "callback",
+          "typeRaw": "IntrCallback"
+        }
+      ],
       "body": "SetVBlankCallback(callback);",
       "callsTo": [
         "SetVBlankCallback"
@@ -238,6 +306,7 @@
       "returnType": "void",
       "signature": "void SetPokenavVBlankCallback(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "SetVBlankCallback(VBlankCB_Pokenav);",
       "callsTo": [
         "SetVBlankCallback"
@@ -248,6 +317,12 @@
       "returnType": "void",
       "signature": "void FreePokenavSubstruct(u32 index)",
       "paramsRaw": "u32 index",
+      "paramsList": [
+        {
+          "name": "index",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "TRY_FREE_AND_SET_NULL(gPokenavResources->substructPtrs[index]);",
       "callsTo": [
         "TRY_FREE_AND_SET_NULL"
@@ -258,6 +333,7 @@
       "returnType": "u32",
       "signature": "u32 GetPokenavMode(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return gPokenavResources->mode;",
       "callsTo": [],
       "lineCount": 1
@@ -266,6 +342,12 @@
       "returnType": "void",
       "signature": "void SetPokenavMode(u16 mode)",
       "paramsRaw": "u16 mode",
+      "paramsList": [
+        {
+          "name": "mode",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "gPokenavResources->mode = mode;",
       "callsTo": [],
       "lineCount": 1
@@ -274,6 +356,12 @@
       "returnType": "void",
       "signature": "void SetSelectedConditionSearch(u32 cursorPos)",
       "paramsRaw": "u32 cursorPos",
+      "paramsList": [
+        {
+          "name": "cursorPos",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "u32 searchId = cursorPos;\n\n    if (searchId > POKENAV_MENUITEM_CONDITION_SEARCH_TOUGH - POKENAV_MENUITEM_CONDITION_SEARCH_COOL)\n        searchId = 0;\n    gPokenavResources->conditionSearchId = searchId;",
       "callsTo": [],
       "lineCount": 5
@@ -282,6 +370,7 @@
       "returnType": "u32",
       "signature": "u32 GetSelectedConditionSearch(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return gPokenavResources->conditionSearchId;",
       "callsTo": [],
       "lineCount": 1
@@ -290,6 +379,7 @@
       "returnType": "bool32",
       "signature": "bool32 CanViewRibbonsMenu(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return gPokenavResources->hasAnyRibbons;",
       "callsTo": [],
       "lineCount": 1

@@ -6,6 +6,12 @@
       "returnType": "bool32",
       "signature": "static bool32 IsMonValidSpecies(struct Pokemon *pokemon)",
       "paramsRaw": "struct Pokemon *pokemon",
+      "paramsList": [
+        {
+          "name": "pokemon",
+          "typeRaw": "struct Pokemon *"
+        }
+      ],
       "body": "u16 species = GetMonData(pokemon, MON_DATA_SPECIES_OR_EGG);\n    if (species == SPECIES_NONE || species == SPECIES_EGG)\n        return FALSE;\n\n    return TRUE;",
       "callsTo": [
         "GetMonData"
@@ -16,6 +22,7 @@
       "returnType": "bool32",
       "signature": "static bool32 AllMonsFainted(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int i;\n    struct Pokemon *pokemon = gPlayerParty;\n\n    for (i = 0; i < PARTY_SIZE; i++, pokemon++)\n    {\n        if (IsMonValidSpecies(pokemon) && GetMonData(pokemon, MON_DATA_HP) != 0)\n            return FALSE;\n    }\n    return TRUE;",
       "callsTo": [
         "GetMonData",
@@ -27,6 +34,12 @@
       "returnType": "void",
       "signature": "static void FaintFromFieldPoison(u8 partyIdx)",
       "paramsRaw": "u8 partyIdx",
+      "paramsList": [
+        {
+          "name": "partyIdx",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "struct Pokemon *pokemon = &gPlayerParty[partyIdx];\n    u32 status = STATUS1_NONE;\n\n    AdjustFriendship(pokemon, FRIENDSHIP_EVENT_FAINT_FIELD_PSN);\n    SetMonData(pokemon, MON_DATA_STATUS, &status);\n    GetMonData(pokemon, MON_DATA_NICKNAME, gStringVar1);\n    StringGet_Nickname(gStringVar1);",
       "callsTo": [
         "AdjustFriendship",
@@ -40,6 +53,12 @@
       "returnType": "bool32",
       "signature": "static bool32 MonFaintedFromPoison(u8 partyIdx)",
       "paramsRaw": "u8 partyIdx",
+      "paramsList": [
+        {
+          "name": "partyIdx",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "struct Pokemon *pokemon = &gPlayerParty[partyIdx];\n    if (IsMonValidSpecies(pokemon) && GetMonData(pokemon, MON_DATA_HP) == 0 && GetAilmentFromStatus(GetMonData(pokemon, MON_DATA_STATUS)) == AILMENT_PSN)\n        return TRUE;\n\n    return FALSE;",
       "callsTo": [
         "GetAilmentFromStatus",
@@ -52,6 +71,12 @@
       "returnType": "void",
       "signature": "static void Task_TryFieldPoisonWhiteOut(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data = gTasks[taskId].data;\n    switch (tState)\n    {\n    case 0:\n        for (; tPartyIdx < PARTY_SIZE; tPartyIdx++)\n        {\n            if (MonFaintedFromPoison(tPartyIdx))\n            {\n                FaintFromFieldPoison(tPartyIdx);\n                ShowFieldMessage(gText_PkmnFainted_FldPsn);\n                tState++;\n                return;\n            }\n        }\n        tState = 2;  \n        break;\n    case 1:\n         \n        if (IsFieldMessageBoxHidden())\n            tState--;\n        break;\n    case 2:\n        if (AllMonsFainted())\n        {\n             \n#ifdef BUGFIX\n            if (CurrentBattlePyramidLocation() || InBattlePike() || InTrainerHillChallenge())\n#else\n            if (CurrentBattlePyramidLocation() | InBattlePike() || InTrainerHillChallenge())\n#endif\n                gSpecialVar_Result = FLDPSN_FRONTIER_WHITEOUT;\n            else\n                gSpecialVar_Result = FLDPSN_WHITEOUT;\n        }\n        else\n        {\n            gSpecialVar_Result = FLDPSN_NO_WHITEOUT;\n        }\n        ScriptContext_Enable();\n        DestroyTask(taskId);\n        break;\n    }",
       "callsTo": [
         "AllMonsFainted",
@@ -71,6 +96,7 @@
       "returnType": "void",
       "signature": "void TryFieldPoisonWhiteOut(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "CreateTask(Task_TryFieldPoisonWhiteOut, 80);\n    ScriptContext_Stop();",
       "callsTo": [
         "CreateTask",
@@ -82,6 +108,7 @@
       "returnType": "s32",
       "signature": "s32 DoPoisonFieldEffect(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int i;\n    u32 hp;\n    struct Pokemon *pokemon = gPlayerParty;\n    u32 numPoisoned = 0;\n    u32 numFainted = 0;\n\n    for (i = 0; i < PARTY_SIZE; i++)\n    {\n        if (GetMonData(pokemon, MON_DATA_SANITY_HAS_SPECIES) && GetAilmentFromStatus(GetMonData(pokemon, MON_DATA_STATUS)) == AILMENT_PSN)\n        {\n             \n            hp = GetMonData(pokemon, MON_DATA_HP);\n            if (hp == 0 || --hp == 0)\n                numFainted++;\n\n            SetMonData(pokemon, MON_DATA_HP, &hp);\n            numPoisoned++;\n        }\n        pokemon++;\n    }\n\n     \n    if (numFainted != 0 || numPoisoned != 0)\n        FldEffPoison_Start();\n\n    if (numFainted != 0)\n        return FLDPSN_FNT;\n\n    if (numPoisoned != 0)\n        return FLDPSN_PSN;\n\n    return FLDPSN_NONE;",
       "callsTo": [
         "FldEffPoison_Start",

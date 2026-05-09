@@ -6,6 +6,7 @@
       "returnType": "bool8",
       "signature": "bool8 ShouldDoBrailleDigEffect(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!FlagGet(FLAG_SYS_BRAILLE_DIG)\n     && (gSaveBlock1Ptr->location.mapGroup == MAP_GROUP(MAP_SEALED_CHAMBER_OUTER_ROOM)\n     && gSaveBlock1Ptr->location.mapNum == MAP_NUM(MAP_SEALED_CHAMBER_OUTER_ROOM)))\n    {\n        if (gSaveBlock1Ptr->pos.x == 10 && gSaveBlock1Ptr->pos.y == 3)\n            return TRUE;\n        if (gSaveBlock1Ptr->pos.x == 9 && gSaveBlock1Ptr->pos.y == 3)\n            return TRUE;\n        if (gSaveBlock1Ptr->pos.x == 11 && gSaveBlock1Ptr->pos.y == 3)\n            return TRUE;\n    }\n\n    return FALSE;",
       "callsTo": [
         "FlagGet",
@@ -18,6 +19,7 @@
       "returnType": "void",
       "signature": "void DoBrailleDigEffect(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "MapGridSetMetatileIdAt( 9 + MAP_OFFSET, 1 + MAP_OFFSET, METATILE_Cave_SealedChamberEntrance_TopLeft);\n    MapGridSetMetatileIdAt(10 + MAP_OFFSET, 1 + MAP_OFFSET, METATILE_Cave_SealedChamberEntrance_TopMid);\n    MapGridSetMetatileIdAt(11 + MAP_OFFSET, 1 + MAP_OFFSET, METATILE_Cave_SealedChamberEntrance_TopRight);\n    MapGridSetMetatileIdAt( 9 + MAP_OFFSET, 2 + MAP_OFFSET, METATILE_Cave_SealedChamberEntrance_BottomLeft | MAPGRID_IMPASSABLE);\n    MapGridSetMetatileIdAt(10 + MAP_OFFSET, 2 + MAP_OFFSET, METATILE_Cave_SealedChamberEntrance_BottomMid);\n    MapGridSetMetatileIdAt(11 + MAP_OFFSET, 2 + MAP_OFFSET, METATILE_Cave_SealedChamberEntrance_BottomRight | MAPGRID_IMPASSABLE);\n    DrawWholeMapView();\n    PlaySE(SE_BANG);\n    FlagSet(FLAG_SYS_BRAILLE_DIG);\n    UnlockPlayerFieldControls();",
       "callsTo": [
         "DrawWholeMapView",
@@ -32,6 +34,7 @@
       "returnType": "bool8",
       "signature": "bool8 CheckRelicanthWailord(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (GetMonData(&gPlayerParty[0], MON_DATA_SPECIES_OR_EGG, 0) == SPECIES_WAILORD)\n    {\n        CalculatePlayerPartyCount();\n         \n        if (GetMonData(&gPlayerParty[gPlayerPartyCount - 1], MON_DATA_SPECIES_OR_EGG, 0) == SPECIES_RELICANTH)\n            return TRUE;\n    }\n    return FALSE;",
       "callsTo": [
         "CalculatePlayerPartyCount",
@@ -43,6 +46,7 @@
       "returnType": "void",
       "signature": "void ShouldDoBrailleRegirockEffectOld(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "",
       "callsTo": [],
       "lineCount": 1
@@ -51,6 +55,7 @@
       "returnType": "void",
       "signature": "void DoSealedChamberShakingEffect_Long(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 taskId = CreateTask(Task_SealedChamberShakingEffect, 9);\n\n    gTasks[taskId].tDelayCounter = 0;\n    gTasks[taskId].tShakeCounter = 0;\n    gTasks[taskId].tVerticalPan = 2;\n    gTasks[taskId].tDelay = 5;\n    gTasks[taskId].tNumShakes = 50;\n    SetCameraPanningCallback(0);",
       "callsTo": [
         "CreateTask",
@@ -62,6 +67,7 @@
       "returnType": "void",
       "signature": "void DoSealedChamberShakingEffect_Short(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 taskId = CreateTask(Task_SealedChamberShakingEffect, 9);\n\n    gTasks[taskId].tDelayCounter = 0;\n    gTasks[taskId].tShakeCounter = 0;\n    gTasks[taskId].tVerticalPan = 3;\n    gTasks[taskId].tDelay = 5;\n    gTasks[taskId].tNumShakes = 2;\n    SetCameraPanningCallback(0);",
       "callsTo": [
         "CreateTask",
@@ -73,6 +79,12 @@
       "returnType": "void",
       "signature": "static void Task_SealedChamberShakingEffect(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "struct Task *task = &gTasks[taskId];\n\n    task->tDelayCounter++;\n    if (task->tDelayCounter % task->tDelay == 0)\n    {\n        task->tDelayCounter = 0;\n        task->tShakeCounter++;\n        task->tVerticalPan = -task->tVerticalPan;\n        SetCameraPanning(0, task->tVerticalPan);\n        if (task->tShakeCounter == task->tNumShakes)\n        {\n            DestroyTask(taskId);\n            ScriptContext_Enable();\n            InstallCameraPanAheadCallback();\n        }\n    }",
       "callsTo": [
         "DestroyTask",
@@ -86,6 +98,7 @@
       "returnType": "bool8",
       "signature": "bool8 ShouldDoBrailleRegirockEffect(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!FlagGet(FLAG_SYS_REGIROCK_PUZZLE_COMPLETED)\n        && gSaveBlock1Ptr->location.mapGroup == MAP_GROUP(MAP_DESERT_RUINS)\n        && gSaveBlock1Ptr->location.mapNum == MAP_NUM(MAP_DESERT_RUINS))\n    {\n        if (gSaveBlock1Ptr->pos.x == 6 && gSaveBlock1Ptr->pos.y == 23)\n        {\n            sIsRegisteelPuzzle = FALSE;\n            return TRUE;\n        }\n        else if (gSaveBlock1Ptr->pos.x == 5 && gSaveBlock1Ptr->pos.y == 23)\n        {\n            sIsRegisteelPuzzle = FALSE;\n            return TRUE;\n        }\n        else if (gSaveBlock1Ptr->pos.x == 7 && gSaveBlock1Ptr->pos.y == 23)\n        {\n            sIsRegisteelPuzzle = FALSE;\n            return TRUE;\n        }\n    }\n\n    return FALSE;",
       "callsTo": [
         "FlagGet",
@@ -98,6 +111,7 @@
       "returnType": "void",
       "signature": "void SetUpPuzzleEffectRegirock(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gFieldEffectArguments[0] = GetCursorSelectionMonId();\n    FieldEffectStart(FLDEFF_USE_TOMB_PUZZLE_EFFECT);",
       "callsTo": [
         "FieldEffectStart",
@@ -109,6 +123,7 @@
       "returnType": "void",
       "signature": "void UseRegirockHm_Callback(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "FieldEffectActiveListRemove(FLDEFF_USE_TOMB_PUZZLE_EFFECT);\n    DoBrailleRegirockEffect();",
       "callsTo": [
         "DoBrailleRegirockEffect",
@@ -120,6 +135,7 @@
       "returnType": "void",
       "signature": "static void DoBrailleRegirockEffect(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "MapGridSetMetatileIdAt(7 + MAP_OFFSET, 19 + MAP_OFFSET, METATILE_Cave_SealedChamberEntrance_TopLeft);\n    MapGridSetMetatileIdAt(8 + MAP_OFFSET, 19 + MAP_OFFSET, METATILE_Cave_SealedChamberEntrance_TopMid);\n    MapGridSetMetatileIdAt(9 + MAP_OFFSET, 19 + MAP_OFFSET, METATILE_Cave_SealedChamberEntrance_TopRight);\n    MapGridSetMetatileIdAt(7 + MAP_OFFSET, 20 + MAP_OFFSET, METATILE_Cave_SealedChamberEntrance_BottomLeft | MAPGRID_IMPASSABLE);\n    MapGridSetMetatileIdAt(8 + MAP_OFFSET, 20 + MAP_OFFSET, METATILE_Cave_SealedChamberEntrance_BottomMid);\n    MapGridSetMetatileIdAt(9 + MAP_OFFSET, 20 + MAP_OFFSET, METATILE_Cave_SealedChamberEntrance_BottomRight | MAPGRID_IMPASSABLE);\n    DrawWholeMapView();\n    PlaySE(SE_BANG);\n    FlagSet(FLAG_SYS_REGIROCK_PUZZLE_COMPLETED);\n    UnlockPlayerFieldControls();",
       "callsTo": [
         "DrawWholeMapView",
@@ -134,6 +150,7 @@
       "returnType": "bool8",
       "signature": "bool8 ShouldDoBrailleRegisteelEffect(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!FlagGet(FLAG_SYS_REGISTEEL_PUZZLE_COMPLETED) && (gSaveBlock1Ptr->location.mapGroup == MAP_GROUP(MAP_ANCIENT_TOMB) && gSaveBlock1Ptr->location.mapNum == MAP_NUM(MAP_ANCIENT_TOMB)))\n    {\n        if (gSaveBlock1Ptr->pos.x == 8 && gSaveBlock1Ptr->pos.y == 25)\n        {\n            sIsRegisteelPuzzle = TRUE;\n            return TRUE;\n        }\n    }\n    return FALSE;",
       "callsTo": [
         "FlagGet",
@@ -146,6 +163,7 @@
       "returnType": "void",
       "signature": "void SetUpPuzzleEffectRegisteel(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gFieldEffectArguments[0] = GetCursorSelectionMonId();\n    FieldEffectStart(FLDEFF_USE_TOMB_PUZZLE_EFFECT);",
       "callsTo": [
         "FieldEffectStart",
@@ -157,6 +175,7 @@
       "returnType": "void",
       "signature": "void UseRegisteelHm_Callback(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "FieldEffectActiveListRemove(FLDEFF_USE_TOMB_PUZZLE_EFFECT);\n    DoBrailleRegisteelEffect();",
       "callsTo": [
         "DoBrailleRegisteelEffect",
@@ -168,6 +187,7 @@
       "returnType": "void",
       "signature": "static void DoBrailleRegisteelEffect(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "MapGridSetMetatileIdAt(7 + MAP_OFFSET, 19 + MAP_OFFSET, METATILE_Cave_SealedChamberEntrance_TopLeft);\n    MapGridSetMetatileIdAt(8 + MAP_OFFSET, 19 + MAP_OFFSET, METATILE_Cave_SealedChamberEntrance_TopMid);\n    MapGridSetMetatileIdAt(9 + MAP_OFFSET, 19 + MAP_OFFSET, METATILE_Cave_SealedChamberEntrance_TopRight);\n    MapGridSetMetatileIdAt(7 + MAP_OFFSET, 20 + MAP_OFFSET, METATILE_Cave_SealedChamberEntrance_BottomLeft | MAPGRID_IMPASSABLE);\n    MapGridSetMetatileIdAt(8 + MAP_OFFSET, 20 + MAP_OFFSET, METATILE_Cave_SealedChamberEntrance_BottomMid);\n    MapGridSetMetatileIdAt(9 + MAP_OFFSET, 20 + MAP_OFFSET, METATILE_Cave_SealedChamberEntrance_BottomRight | MAPGRID_IMPASSABLE);\n    DrawWholeMapView();\n    PlaySE(SE_BANG);\n    FlagSet(FLAG_SYS_REGISTEEL_PUZZLE_COMPLETED);\n    UnlockPlayerFieldControls();",
       "callsTo": [
         "DrawWholeMapView",
@@ -182,6 +202,7 @@
       "returnType": "bool8",
       "signature": "bool8 FldEff_UsePuzzleEffect(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 taskId = CreateFieldMoveTask();\n\n    if (sIsRegisteelPuzzle == TRUE)\n    {\n        gTasks[taskId].data[8] = (u32)UseRegisteelHm_Callback >> 16;\n        gTasks[taskId].data[9] = (u32)UseRegisteelHm_Callback;\n    }\n    else\n    {\n        gTasks[taskId].data[8] = (u32)UseRegirockHm_Callback >> 16;\n        gTasks[taskId].data[9] = (u32)UseRegirockHm_Callback;\n    }\n    return FALSE;",
       "callsTo": [
         "CreateFieldMoveTask"
@@ -192,6 +213,7 @@
       "returnType": "bool8",
       "signature": "bool8 ShouldDoBrailleRegicePuzzle(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n\n    if (gSaveBlock1Ptr->location.mapGroup == MAP_GROUP(MAP_ISLAND_CAVE)\n        && gSaveBlock1Ptr->location.mapNum == MAP_NUM(MAP_ISLAND_CAVE))\n    {\n        if (FlagGet(FLAG_SYS_BRAILLE_REGICE_COMPLETED))\n            return FALSE;\n         \n        if (FlagGet(FLAG_TEMP_REGICE_PUZZLE_STARTED) == FALSE)\n            return FALSE;\n         \n        if (FlagGet(FLAG_TEMP_REGICE_PUZZLE_FAILED) == TRUE)\n            return FALSE;\n\n        for (i = 0; i < ARRAY_COUNT(sRegicePathCoords); i++)\n        {\n            u8 xPos = sRegicePathCoords[i][0];\n            u8 yPos = sRegicePathCoords[i][1];\n            if (gSaveBlock1Ptr->pos.x == xPos && gSaveBlock1Ptr->pos.y == yPos)\n            {\n                 \n                if (i < 16)\n                {\n                    u16 val = VarGet(VAR_REGICE_STEPS_1);\n                    val |= 1 << i;\n                    VarSet(VAR_REGICE_STEPS_1, val);\n                }\n                else if (i < 32)\n                {\n                    u16 val = VarGet(VAR_REGICE_STEPS_2);\n                    val |= 1 << (i - 16);\n                    VarSet(VAR_REGICE_STEPS_2, val);\n                }\n                else\n                {\n                    u16 val = VarGet(VAR_REGICE_STEPS_3);\n                    val |= 1 << (i - 32);\n                    VarSet(VAR_REGICE_STEPS_3, val);\n                }\n\n                 \n                if (VarGet(VAR_REGICE_STEPS_1) != 0xFFFF || VarGet(VAR_REGICE_STEPS_2) != 0xFFFF || VarGet(VAR_REGICE_STEPS_3) != 0xF)\n                    return FALSE;\n\n                 \n                if (gSaveBlock1Ptr->pos.x == 8 && gSaveBlock1Ptr->pos.y == 21)\n                    return TRUE;\n                else\n                    return FALSE;\n            }\n        }\n\n         \n        FlagSet(FLAG_TEMP_REGICE_PUZZLE_FAILED);\n        FlagClear(FLAG_TEMP_REGICE_PUZZLE_STARTED);\n    }\n\n    return FALSE;",
       "callsTo": [
         "ARRAY_COUNT",

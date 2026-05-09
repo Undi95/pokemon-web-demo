@@ -6,6 +6,16 @@
       "returnType": "bool8",
       "signature": "bool8 LoadCryWaveformWindow(struct CryScreenWindow *window, u8 windowId)",
       "paramsRaw": "struct CryScreenWindow *window, u8 windowId",
+      "paramsList": [
+        {
+          "name": "window",
+          "typeRaw": "struct CryScreenWindow *"
+        },
+        {
+          "name": "windowId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 i;\n    u8 finished = FALSE;\n\n    switch (gDexCryScreenState)\n    {\n    case 0:\n        if (!sDexCryScreen)\n        {\n            sDexCryScreen = AllocZeroed(sizeof(*sDexCryScreen));\n            sCryWaveformWindowTiledata = (u8 *)GetWindowAttribute(windowId, WINDOW_TILE_DATA);\n        }\n\n        sDexCryScreen->unk = window->unk0;\n        sDexCryScreen->playStartPos = window->yPos;\n        sDexCryScreen->cryOverrideCountdown = 0;\n        sDexCryScreen->cryRepeatDelay = 0;\n        sDexCryScreen->cryState = 0;\n        sDexCryScreen->waveformPreviousY = WAVEFORM_WINDOW_HEIGHT / 2;\n        sDexCryScreen->playhead = 0;\n        ShiftWaveformOver(windowId, -8 * window->xPos, TRUE);  \n        for (i = 0; i < 224; i++)\n            CopyToWindowPixelBuffer(windowId, sCryScreenBg_Gfx, TILE_SIZE_4BPP, i);\n\n        gDexCryScreenState++;\n        break;\n    case 1:\n        for (i = 0; i < sDexCryScreen->playStartPos * 8; i++)\n            DrawWaveformSegment(i, 0);\n\n        gDexCryScreenState++;\n        break;\n    case 2:\n        DrawWaveformWindow(windowId);\n        LoadPalette(sCryScreenBg_Pal, BG_PLTT_ID(window->paletteNo), PLTT_SIZE_4BPP);\n        finished = TRUE;\n        break;\n    }\n\n    return finished;",
       "callsTo": [
         "AllocZeroed",
@@ -23,6 +33,12 @@
       "returnType": "void",
       "signature": "void UpdateCryWaveformWindow(u8 windowId)",
       "paramsRaw": "u8 windowId",
+      "paramsList": [
+        {
+          "name": "windowId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 waveformIdx;\n\n    DrawWaveformWindow(windowId);\n    AdvancePlayhead(windowId);\n\n     \n    if (sDexCryScreen->cryRepeatDelay)\n        sDexCryScreen->cryRepeatDelay--;\n\n     \n    if (sDexCryScreen->cryOverrideCountdown)\n    {\n        sDexCryScreen->cryOverrideCountdown--;\n        if (!sDexCryScreen->cryOverrideCountdown)\n        {\n            PlayCryScreenCry(sDexCryScreen->species);\n            DrawWaveformFlatline();\n            return;\n        }\n    }\n\n     \n    if (sDexCryScreen->cryState == 0)\n    {\n        DrawWaveformFlatline();\n        return;\n    }\n\n     \n    if (sDexCryScreen->cryState == 1)\n    {\n        BufferCryWaveformSegment();\n    }\n    else if (sDexCryScreen->cryState > 8)\n    {\n         \n        if (!IsCryPlaying())\n        {\n            DrawWaveformFlatline();\n            sDexCryScreen->cryState = 0;\n            return;\n        }\n\n        BufferCryWaveformSegment();\n        sDexCryScreen->cryState = 1;\n    }\n\n     \n    waveformIdx = 2 * (sDexCryScreen->cryState - 1);\n    DrawWaveformSegment(sDexCryScreen->playStartPos * 8 + sDexCryScreen->playhead - 2, sDexCryScreen->cryWaveformBuffer[waveformIdx]);\n    DrawWaveformSegment(sDexCryScreen->playStartPos * 8 + sDexCryScreen->playhead - 1, sDexCryScreen->cryWaveformBuffer[waveformIdx + 1]);\n    sDexCryScreen->cryState++;",
       "callsTo": [
         "AdvancePlayhead",
@@ -39,6 +55,12 @@
       "returnType": "void",
       "signature": "void CryScreenPlayButton(u16 species)",
       "paramsRaw": "u16 species",
+      "paramsList": [
+        {
+          "name": "species",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "if (gMPlayInfo_BGM.status & MUSICPLAYER_STATUS_PAUSE && !sDexCryScreen->cryOverrideCountdown)\n    {\n        if (!sDexCryScreen->cryRepeatDelay)\n        {\n            sDexCryScreen->cryRepeatDelay = 4;\n            if (IsCryPlaying() == TRUE)\n            {\n                StopCry();\n                sDexCryScreen->species = species;\n                sDexCryScreen->cryOverrideCountdown = 2;\n            }\n            else\n            {\n                PlayCryScreenCry(species);\n            }\n        }\n    }",
       "callsTo": [
         "IsCryPlaying",
@@ -51,6 +73,12 @@
       "returnType": "void",
       "signature": "static void PlayCryScreenCry(u16 species)",
       "paramsRaw": "u16 species",
+      "paramsList": [
+        {
+          "name": "species",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "PlayCry_NormalNoDucking(species, 0, CRY_VOLUME_RS, CRY_PRIORITY_NORMAL);\n    sDexCryScreen->cryState = 1;",
       "callsTo": [
         "PlayCry_NormalNoDucking"
@@ -61,6 +89,7 @@
       "returnType": "void",
       "signature": "static void BufferCryWaveformSegment(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n    s8 *baseBuffer;\n    s8 *buffer;\n\n    if (gPcmDmaCounter < 2)\n        baseBuffer = gSoundInfo.pcmBuffer;\n    else\n        baseBuffer = gSoundInfo.pcmBuffer + (gSoundInfo.pcmDmaPeriod + 1 - gPcmDmaCounter) * gSoundInfo.pcmSamplesPerVBlank;\n\n    buffer = baseBuffer + PCM_DMA_BUF_SIZE;\n    for (i = 0; i < ARRAY_COUNT(sDexCryScreen->cryWaveformBuffer); i++)\n        sDexCryScreen->cryWaveformBuffer[i] = buffer[i * 2] * 2;",
       "callsTo": [
         "ARRAY_COUNT"
@@ -71,6 +100,7 @@
       "returnType": "void",
       "signature": "static void DrawWaveformFlatline(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "DrawWaveformSegment(sDexCryScreen->playStartPos * 8 + sDexCryScreen->playhead - 2, 0);\n    DrawWaveformSegment(sDexCryScreen->playStartPos * 8 + sDexCryScreen->playhead - 1, 0);",
       "callsTo": [
         "DrawWaveformSegment"
@@ -81,6 +111,12 @@
       "returnType": "void",
       "signature": "static void AdvancePlayhead(u8 windowId)",
       "paramsRaw": "u8 windowId",
+      "paramsList": [
+        {
+          "name": "windowId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 i;\n    u16 offset;\n\n    ShiftWaveformOver(windowId, sDexCryScreen->playhead, FALSE);\n    sDexCryScreen->playhead += 2;\n    offset = (sDexCryScreen->playhead / 8 + sDexCryScreen->playStartPos + 1) % 32;\n    for (i = 0; i < 7; i++)\n        CopyToWindowPixelBuffer(windowId, sCryScreenBg_Gfx, TILE_SIZE_4BPP, offset + (i * TILE_SIZE_4BPP));",
       "callsTo": [
         "CopyToWindowPixelBuffer",
@@ -92,6 +128,16 @@
       "returnType": "void",
       "signature": "static void DrawWaveformSegment(u8 position, u8 amplitude)",
       "paramsRaw": "u8 position, u8 amplitude",
+      "paramsList": [
+        {
+          "name": "position",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "amplitude",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "#define PLAY_START_POS (position >> 3)\n    #define PLAYHEAD_POS   (position & ((1 << 3) - 1))\n    #define VERT_SLICE     (position & 1)\n\n    u8 currentPointY;\n    u8 nybble;\n    u16 offset;\n    u16 temp;\n    u8 y;\n\n    temp = (amplitude + 127) * 256;\n    y = temp / 1152.0;\n    if (y > WAVEFORM_WINDOW_HEIGHT - 1)\n        y = WAVEFORM_WINDOW_HEIGHT - 1;\n    currentPointY = y;\n    nybble = VERT_SLICE;\n    if (y > sDexCryScreen->waveformPreviousY)\n    {\n         \n        do\n        {\n            offset = sWaveformOffsets[PLAYHEAD_POS][y] + PLAY_START_POS * TILE_SIZE_4BPP;\n            sCryWaveformWindowTiledata[offset] &= sWaveformTileDataNybbleMasks[nybble];\n            sCryWaveformWindowTiledata[offset] |= sWaveformColor[nybble][((y / 3) - 1) & 0x0F];\n            y--;\n        } while (y > sDexCryScreen->waveformPreviousY);\n    }\n    else\n    {\n         \n        do\n        {\n            offset = sWaveformOffsets[PLAYHEAD_POS][y] + PLAY_START_POS * TILE_SIZE_4BPP;\n            sCryWaveformWindowTiledata[offset] &= sWaveformTileDataNybbleMasks[nybble];\n            sCryWaveformWindowTiledata[offset] |= sWaveformColor[nybble][((y / 3) - 1) & 0x0F];\n            y++;\n        } while (y < sDexCryScreen->waveformPreviousY);\n    }\n\n    sDexCryScreen->waveformPreviousY = currentPointY;",
       "callsTo": [
         "PLAYHEAD_POS",
@@ -104,6 +150,12 @@
       "returnType": "void",
       "signature": "static void DrawWaveformWindow(u8 windowId)",
       "paramsRaw": "u8 windowId",
+      "paramsList": [
+        {
+          "name": "windowId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "CopyWindowToVram(windowId, COPYWIN_GFX);",
       "callsTo": [
         "CopyWindowToVram"
@@ -114,6 +166,20 @@
       "returnType": "void",
       "signature": "static void ShiftWaveformOver(u8 windowId, s16 offset, bool8 rsVertical)",
       "paramsRaw": "u8 windowId, s16 offset, bool8 rsVertical",
+      "paramsList": [
+        {
+          "name": "windowId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "offset",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "rsVertical",
+          "typeRaw": "bool8"
+        }
+      ],
       "body": "if (!rsVertical)\n    {\n        u8 bg = GetWindowAttribute(windowId, WINDOW_BG);\n        ChangeBgX(bg, offset << 8, BG_COORD_SET);\n    }",
       "callsTo": [
         "ChangeBgX",
@@ -125,6 +191,16 @@
       "returnType": "bool8",
       "signature": "bool8 LoadCryMeter(struct CryScreenWindow *window, u8 windowId)",
       "paramsRaw": "struct CryScreenWindow *window, u8 windowId",
+      "paramsList": [
+        {
+          "name": "window",
+          "typeRaw": "struct CryScreenWindow *"
+        },
+        {
+          "name": "windowId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "bool8 finished = FALSE;\n\n    switch (gDexCryScreenState)\n    {\n    case 0:\n        if (!sCryMeterNeedle)\n            sCryMeterNeedle = AllocZeroed(sizeof(*sCryMeterNeedle));\n\n         \n        CopyToWindowPixelBuffer(windowId, gCryMeter_Gfx, 0, 0);\n        LoadPalette(gCryMeter_Pal, BG_PLTT_ID(window->paletteNo), PLTT_SIZE_4BPP);\n        gDexCryScreenState++;\n        break;\n    case 1:\n        LoadSpriteSheets(sCryMeterNeedleSpriteSheets);\n        LoadSpritePalettes(sCryMeterNeedleSpritePalettes);\n        sCryMeterNeedle->spriteId = CreateSprite(&sCryMeterNeedleSpriteTemplate, 40 + window->xPos * 8, 56 + window->yPos * 8, 1);\n        sCryMeterNeedle->rotation = MIN_NEEDLE_POS;\n        sCryMeterNeedle->targetRotation = MIN_NEEDLE_POS;\n        sCryMeterNeedle->moveIncrement = 0;\n        finished = TRUE;\n        break;\n    }\n\n    return finished;",
       "callsTo": [
         "AllocZeroed",
@@ -141,6 +217,7 @@
       "returnType": "void",
       "signature": "void FreeCryScreen(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "FreeSpritePaletteByTag(GetSpritePaletteTagByPaletteNum(gSprites[sCryMeterNeedle->spriteId].oam.paletteNum));\n    DestroySprite(gSprites + sCryMeterNeedle->spriteId);\n    FREE_AND_SET_NULL(sDexCryScreen);\n    FREE_AND_SET_NULL(sCryMeterNeedle);",
       "callsTo": [
         "DestroySprite",
@@ -154,6 +231,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_CryMeterNeedle(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "u16 i;\n    s8 peakAmplitude;\n    s16 x;\n    s16 y;\n    struct ObjAffineSrcData affine;\n    struct OamMatrix matrix;\n    u8 amplitude;\n\n    gSprites[sCryMeterNeedle->spriteId].oam.affineMode = ST_OAM_AFFINE_NORMAL;\n    gSprites[sCryMeterNeedle->spriteId].oam.affineParam = 0;\n\n     \n     \n    switch (sDexCryScreen->cryState)\n    {\n    case 0:\n        sCryMeterNeedle->targetRotation = MIN_NEEDLE_POS;\n        if (sCryMeterNeedle->rotation > 0)\n        {\n            if (sCryMeterNeedle->moveIncrement != 1)\n                sCryMeterNeedle->moveIncrement--;\n        }\n        else\n        {\n            sCryMeterNeedle->moveIncrement = NEEDLE_MOVE_INCREMENT;\n        }\n        break;\n    case 2:\n        peakAmplitude = 0;\n        for (i = 0; i < ARRAY_COUNT(sDexCryScreen->cryWaveformBuffer); i++)\n        {\n            if (peakAmplitude < sDexCryScreen->cryWaveformBuffer[i])\n                peakAmplitude = sDexCryScreen->cryWaveformBuffer[i];\n        }\n        SetCryMeterNeedleTarget(peakAmplitude * 208 / 256);\n        break;\n    case 6:\n         \n        amplitude = sDexCryScreen->cryWaveformBuffer[10];\n        SetCryMeterNeedleTarget(amplitude * 208 / 256);\n        break;\n    }\n\n    if (sCryMeterNeedle->rotation == sCryMeterNeedle->targetRotation)\n    {\n         \n    }\n    else if (sCryMeterNeedle->rotation < sCryMeterNeedle->targetRotation)\n    {\n         \n        sCryMeterNeedle->rotation += sCryMeterNeedle->moveIncrement;\n        if (sCryMeterNeedle->rotation > sCryMeterNeedle->targetRotation)\n        {\n            sCryMeterNeedle->rotation = sCryMeterNeedle->targetRotation;\n            sCryMeterNeedle->targetRotation = 0;\n        }\n    }\n    else\n    {\n         \n        sCryMeterNeedle->rotation -= sCryMeterNeedle->moveIncrement;\n        if (sCryMeterNeedle->rotation < sCryMeterNeedle->targetRotation)\n        {\n            sCryMeterNeedle->rotation = sCryMeterNeedle->targetRotation;\n            sCryMeterNeedle->targetRotation = 0;\n        }\n    }\n\n    affine.xScale = 256;\n    affine.yScale = 256;\n    affine.rotation = sCryMeterNeedle->rotation * 256;\n    ObjAffineSet(&affine, &matrix, 1, 2);\n    SetOamMatrix(0, matrix.a, matrix.b, matrix.c, matrix.d);\n    x = gSineTable[((sCryMeterNeedle->rotation + 0x7F) & 0xFF)];\n    y = gSineTable[((sCryMeterNeedle->rotation + 0x7F) & 0xFF) + 64];\n    sprite->x2 = x * 24 / 256;\n    sprite->y2 = y * 24 / 256;",
       "callsTo": [
         "ARRAY_COUNT",
@@ -167,6 +250,12 @@
       "returnType": "void",
       "signature": "static void SetCryMeterNeedleTarget(s8 offset)",
       "paramsRaw": "s8 offset",
+      "paramsList": [
+        {
+          "name": "offset",
+          "typeRaw": "s8"
+        }
+      ],
       "body": "u16 rotation = (MIN_NEEDLE_POS - offset) & 0xFF;\n\n     \n    if (rotation > MIN_NEEDLE_POS && rotation < (u8)MAX_NEEDLE_POS)\n        rotation = (u8)MAX_NEEDLE_POS;\n\n    sCryMeterNeedle->targetRotation = rotation;\n    sCryMeterNeedle->moveIncrement = NEEDLE_MOVE_INCREMENT;",
       "callsTo": [],
       "lineCount": 8

@@ -6,6 +6,12 @@
       "returnType": "u32",
       "signature": "static u32 DecryptBerryPowder(u32 *powder)",
       "paramsRaw": "u32 *powder",
+      "paramsList": [
+        {
+          "name": "powder",
+          "typeRaw": "u32 *"
+        }
+      ],
       "body": "return *powder ^ gSaveBlock2Ptr->encryptionKey;",
       "callsTo": [],
       "lineCount": 1
@@ -14,6 +20,16 @@
       "returnType": "void",
       "signature": "void SetBerryPowder(u32 *powder, u32 amount)",
       "paramsRaw": "u32 *powder, u32 amount",
+      "paramsList": [
+        {
+          "name": "powder",
+          "typeRaw": "u32 *"
+        },
+        {
+          "name": "amount",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "*powder = amount ^ gSaveBlock2Ptr->encryptionKey;",
       "callsTo": [],
       "lineCount": 1
@@ -22,6 +38,12 @@
       "returnType": "void",
       "signature": "void ApplyNewEncryptionKeyToBerryPowder(u32 encryptionKey)",
       "paramsRaw": "u32 encryptionKey",
+      "paramsList": [
+        {
+          "name": "encryptionKey",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "u32 *powder = &gSaveBlock2Ptr->berryCrush.berryPowderAmount;\n    ApplyNewEncryptionKeyToWord(powder, encryptionKey);",
       "callsTo": [
         "ApplyNewEncryptionKeyToWord"
@@ -32,6 +54,12 @@
       "returnType": "bool8",
       "signature": "static bool8 HasEnoughBerryPowder_(u32 cost)",
       "paramsRaw": "u32 cost",
+      "paramsList": [
+        {
+          "name": "cost",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "u32 *powder = &gSaveBlock2Ptr->berryCrush.berryPowderAmount;\n    if (DecryptBerryPowder(powder) < cost)\n        return FALSE;\n    else\n        return TRUE;",
       "callsTo": [
         "DecryptBerryPowder"
@@ -42,6 +70,7 @@
       "returnType": "bool8",
       "signature": "bool8 HasEnoughBerryPowder(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u32 *powder = &gSaveBlock2Ptr->berryCrush.berryPowderAmount;\n    if (DecryptBerryPowder(powder) < gSpecialVar_0x8004)\n        return FALSE;\n    else\n        return TRUE;",
       "callsTo": [
         "DecryptBerryPowder"
@@ -52,6 +81,12 @@
       "returnType": "bool8",
       "signature": "bool8 GiveBerryPowder(u32 amountToAdd)",
       "paramsRaw": "u32 amountToAdd",
+      "paramsList": [
+        {
+          "name": "amountToAdd",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "u32 *powder = &gSaveBlock2Ptr->berryCrush.berryPowderAmount;\n    u32 amount = DecryptBerryPowder(powder) + amountToAdd;\n    if (amount > MAX_BERRY_POWDER)\n    {\n        SetBerryPowder(powder, MAX_BERRY_POWDER);\n        return FALSE;\n    }\n    else\n    {\n        SetBerryPowder(powder, amount);\n        return TRUE;\n    }",
       "callsTo": [
         "DecryptBerryPowder",
@@ -63,6 +98,7 @@
       "returnType": "bool8",
       "signature": "bool8 TakeBerryPowder(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u32 *powder = &gSaveBlock2Ptr->berryCrush.berryPowderAmount;\n    if (!HasEnoughBerryPowder_(gSpecialVar_0x8004))\n        return FALSE;\n\n    SetBerryPowder(powder, DecryptBerryPowder(powder) - gSpecialVar_0x8004);\n    return TRUE;",
       "callsTo": [
         "DecryptBerryPowder",
@@ -75,6 +111,7 @@
       "returnType": "u32",
       "signature": "u32 GetBerryPowder(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u32 *powder = &gSaveBlock2Ptr->berryCrush.berryPowderAmount;\n    return DecryptBerryPowder(powder);",
       "callsTo": [
         "DecryptBerryPowder"
@@ -85,6 +122,28 @@
       "returnType": "void",
       "signature": "static void PrintBerryPowderAmount(u8 windowId, int amount, u8 x, u8 y, u8 speed)",
       "paramsRaw": "u8 windowId, int amount, u8 x, u8 y, u8 speed",
+      "paramsList": [
+        {
+          "name": "windowId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "amount",
+          "typeRaw": "int"
+        },
+        {
+          "name": "x",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "y",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "speed",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "ConvertIntToDecimalStringN(gStringVar1, amount, STR_CONV_MODE_RIGHT_ALIGN, 5);\n    AddTextPrinterParameterized(windowId, FONT_NORMAL, gStringVar1, x, y, speed, NULL);",
       "callsTo": [
         "AddTextPrinterParameterized",
@@ -96,6 +155,24 @@
       "returnType": "void",
       "signature": "static void DrawPlayerPowderAmount(u8 windowId, u16 baseTileOffset, u8 paletteNum, u32 amount)",
       "paramsRaw": "u8 windowId, u16 baseTileOffset, u8 paletteNum, u32 amount",
+      "paramsList": [
+        {
+          "name": "windowId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "baseTileOffset",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "paletteNum",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "amount",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "DrawStdFrameWithCustomTileAndPalette(windowId, FALSE, baseTileOffset, paletteNum);\n    AddTextPrinterParameterized(windowId, FONT_NORMAL, gText_Powder, 0, 1, TEXT_SKIP_DRAW, NULL);\n    PrintBerryPowderAmount(windowId, amount, 26, 17, 0);",
       "callsTo": [
         "AddTextPrinterParameterized",
@@ -108,6 +185,7 @@
       "returnType": "void",
       "signature": "void PrintPlayerBerryPowderAmount(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u32 amount = GetBerryPowder();\n    PrintBerryPowderAmount(sBerryPowderVendorWindowId, amount, 26, 17, 0);",
       "callsTo": [
         "GetBerryPowder",
@@ -119,6 +197,7 @@
       "returnType": "void",
       "signature": "void DisplayBerryPowderVendorMenu(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "struct WindowTemplate template;\n    SetWindowTemplateFields(&template, 0, 1, 1, 7, 4, 15, 0x1C);\n    sBerryPowderVendorWindowId = AddWindow(&template);\n    FillWindowPixelBuffer(sBerryPowderVendorWindowId, PIXEL_FILL(0));\n    PutWindowTilemap(sBerryPowderVendorWindowId);\n    LoadUserWindowBorderGfx_(sBerryPowderVendorWindowId, 0x21D, BG_PLTT_ID(13));\n    DrawPlayerPowderAmount(sBerryPowderVendorWindowId, 0x21D, 13, GetBerryPowder());",
       "callsTo": [
         "AddWindow",
@@ -137,6 +216,7 @@
       "returnType": "void",
       "signature": "void RemoveBerryPowderVendorMenu(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ClearWindowTilemap(sBerryPowderVendorWindowId);\n    ClearStdWindowAndFrameToTransparent(sBerryPowderVendorWindowId, TRUE);\n    RemoveWindow(sBerryPowderVendorWindowId);",
       "callsTo": [
         "ClearStdWindowAndFrameToTransparent",

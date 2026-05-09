@@ -6,6 +6,7 @@
       "returnType": "bool8",
       "signature": "bool8 IsPlayerStandingStill(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gPlayerAvatar.tileTransitionState == T_TILE_TRANSITION)\n        return FALSE;\n    else\n        return TRUE;",
       "callsTo": [],
       "lineCount": 4
@@ -14,6 +15,12 @@
       "returnType": "void",
       "signature": "static void Task_FreezePlayer(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (IsPlayerStandingStill())\n    {\n        PlayerFreeze();\n        DestroyTask(taskId);\n    }",
       "callsTo": [
         "DestroyTask",
@@ -26,6 +33,7 @@
       "returnType": "bool8",
       "signature": "bool8 IsFreezePlayerFinished(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (FuncIsActiveTask(Task_FreezePlayer))\n    {\n        return FALSE;\n    }\n    else\n    {\n        StopPlayerAvatar();\n        return TRUE;\n    }",
       "callsTo": [
         "FuncIsActiveTask",
@@ -37,6 +45,7 @@
       "returnType": "void",
       "signature": "void FreezeObjects_WaitForPlayer(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "FreezeObjectEvents();\n    CreateTask(Task_FreezePlayer, 80);",
       "callsTo": [
         "CreateTask",
@@ -48,6 +57,12 @@
       "returnType": "void",
       "signature": "static void Task_FreezeSelectedObjectAndPlayer(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "struct Task *task = &gTasks[taskId];\n\n    if (!task->tPlayerFrozen && IsPlayerStandingStill() == TRUE)\n    {\n        PlayerFreeze();\n        task->tPlayerFrozen = TRUE;\n    }\n    if (!task->tObjectFrozen && !gObjectEvents[gSelectedObjectEvent].singleMovementActive)\n    {\n        FreezeObjectEvent(&gObjectEvents[gSelectedObjectEvent]);\n        task->tObjectFrozen = TRUE;\n    }\n    if (task->tPlayerFrozen && task->tObjectFrozen)\n        DestroyTask(taskId);",
       "callsTo": [
         "DestroyTask",
@@ -61,6 +76,7 @@
       "returnType": "bool8",
       "signature": "bool8 IsFreezeSelectedObjectAndPlayerFinished(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (FuncIsActiveTask(Task_FreezeSelectedObjectAndPlayer))\n    {\n        return FALSE;\n    }\n    else\n    {\n        StopPlayerAvatar();\n        return TRUE;\n    }",
       "callsTo": [
         "FuncIsActiveTask",
@@ -72,6 +88,7 @@
       "returnType": "void",
       "signature": "void FreezeObjects_WaitForPlayerAndSelected(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 taskId;\n    FreezeObjectEventsExceptOne(gSelectedObjectEvent);\n    taskId = CreateTask(Task_FreezeSelectedObjectAndPlayer, 80);\n    if (!gObjectEvents[gSelectedObjectEvent].singleMovementActive)\n    {\n        FreezeObjectEvent(&gObjectEvents[gSelectedObjectEvent]);\n        gTasks[taskId].tObjectFrozen = TRUE;\n    }",
       "callsTo": [
         "CreateTask",
@@ -84,6 +101,7 @@
       "returnType": "void",
       "signature": "void ScriptUnfreezeObjectEvents(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 playerObjectId = GetObjectEventIdByLocalIdAndMap(LOCALID_PLAYER, 0, 0);\n    ObjectEventClearHeldMovementIfFinished(&gObjectEvents[playerObjectId]);\n    ScriptMovement_UnfreezeObjectEvents();\n    UnfreezeObjectEvents();",
       "callsTo": [
         "GetObjectEventIdByLocalIdAndMap",
@@ -97,6 +115,7 @@
       "returnType": "void",
       "signature": "void UnionRoom_UnlockPlayerAndChatPartner(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 playerObjectId;\n\n    if (gObjectEvents[gSelectedObjectEvent].active)\n        ObjectEventClearHeldMovementIfFinished(&gObjectEvents[gSelectedObjectEvent]);\n    playerObjectId = GetObjectEventIdByLocalIdAndMap(LOCALID_PLAYER, 0, 0);\n    ObjectEventClearHeldMovementIfFinished(&gObjectEvents[playerObjectId]);\n    ScriptMovement_UnfreezeObjectEvents();\n    UnfreezeObjectEvents();",
       "callsTo": [
         "GetObjectEventIdByLocalIdAndMap",
@@ -110,6 +129,7 @@
       "returnType": "void",
       "signature": "void Script_FacePlayer(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ObjectEventFaceOppositeDirection(&gObjectEvents[gSelectedObjectEvent], gSpecialVar_Facing);",
       "callsTo": [
         "ObjectEventFaceOppositeDirection"
@@ -120,6 +140,7 @@
       "returnType": "void",
       "signature": "void Script_ClearHeldMovement(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ObjectEventClearHeldMovementIfActive(&gObjectEvents[gSelectedObjectEvent]);",
       "callsTo": [
         "ObjectEventClearHeldMovementIfActive"
@@ -130,6 +151,12 @@
       "returnType": "void",
       "signature": "static void Task_FreezeObjectAndPlayer(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "struct Task *task = &gTasks[taskId];\n    u8 objectEventId = task->tObjectId;\n\n    if (!task->tPlayerFrozen && IsPlayerStandingStill() == TRUE)\n    {\n        PlayerFreeze();\n        task->tPlayerFrozen = TRUE;\n    }\n    if (!task->tObjectFrozen && !gObjectEvents[objectEventId].singleMovementActive)\n    {\n        FreezeObjectEvent(&gObjectEvents[objectEventId]);\n        task->tObjectFrozen = TRUE;\n    }\n    if (task->tPlayerFrozen && task->tObjectFrozen)\n        DestroyTask(taskId);",
       "callsTo": [
         "DestroyTask",
@@ -143,6 +170,7 @@
       "returnType": "void",
       "signature": "void FreezeForApproachingTrainers(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 trainerObjectId1, trainerObjectId2, taskId;\n    trainerObjectId1 = GetChosenApproachingTrainerObjectEventId(0);\n\n    if (gNoOfApproachingTrainers == 2)\n    {\n         \n        trainerObjectId2 = GetChosenApproachingTrainerObjectEventId(1);\n        FreezeObjectEventsExceptTwo(trainerObjectId1, trainerObjectId2);\n\n         \n        taskId = CreateTask(Task_FreezeObjectAndPlayer, 80);\n        gTasks[taskId].tObjectId = trainerObjectId1;\n        if (!gObjectEvents[trainerObjectId1].singleMovementActive)\n        {\n            FreezeObjectEvent(&gObjectEvents[trainerObjectId1]);\n            gTasks[taskId].tObjectFrozen = TRUE;\n        }\n\n         \n        taskId = CreateTask(Task_FreezeObjectAndPlayer, 81);\n        gTasks[taskId].tObjectId = trainerObjectId2;\n        if (!gObjectEvents[trainerObjectId2].singleMovementActive)\n        {\n            FreezeObjectEvent(&gObjectEvents[trainerObjectId2]);\n            gTasks[taskId].tObjectFrozen = TRUE;\n        }\n    }\n    else\n    {\n        FreezeObjectEventsExceptOne(trainerObjectId1);\n        taskId = CreateTask(Task_FreezeObjectAndPlayer, 80);\n        gTasks[taskId].tObjectId = trainerObjectId1;\n        if (!gObjectEvents[trainerObjectId1].singleMovementActive)\n        {\n            FreezeObjectEvent(&gObjectEvents[trainerObjectId1]);\n            gTasks[taskId].tObjectFrozen = TRUE;\n        }\n    }",
       "callsTo": [
         "CreateTask",
@@ -157,6 +185,7 @@
       "returnType": "bool8",
       "signature": "bool8 IsFreezeObjectAndPlayerFinished(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (FuncIsActiveTask(Task_FreezeObjectAndPlayer))\n    {\n        return FALSE;\n    }\n    else\n    {\n        StopPlayerAvatar();\n        return TRUE;\n    }",
       "callsTo": [
         "FuncIsActiveTask",

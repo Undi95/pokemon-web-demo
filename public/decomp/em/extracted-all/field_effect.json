@@ -6,6 +6,12 @@
       "returnType": "u32",
       "signature": "u32 FieldEffectStart(u8 id)",
       "paramsRaw": "u8 id",
+      "paramsList": [
+        {
+          "name": "id",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 *script;\n    u32 val;\n\n    FieldEffectActiveListAdd(id);\n\n    script = gFieldEffectScriptPointers[id];\n\n    while (gFieldEffectScriptFuncs[*script](&script, &val))\n        ;\n\n    return val;",
       "callsTo": [
         "FieldEffectActiveListAdd"
@@ -16,6 +22,16 @@
       "returnType": "bool8",
       "signature": "bool8 FieldEffectCmd_loadtiles(u8 **script, u32 *val)",
       "paramsRaw": "u8 **script, u32 *val",
+      "paramsList": [
+        {
+          "name": "script",
+          "typeRaw": "u8 **"
+        },
+        {
+          "name": "val",
+          "typeRaw": "u32 *"
+        }
+      ],
       "body": "(*script)++;\n    FieldEffectScript_LoadTiles(script);\n    return TRUE;",
       "callsTo": [
         "FieldEffectScript_LoadTiles"
@@ -26,6 +42,16 @@
       "returnType": "bool8",
       "signature": "bool8 FieldEffectCmd_loadfadedpal(u8 **script, u32 *val)",
       "paramsRaw": "u8 **script, u32 *val",
+      "paramsList": [
+        {
+          "name": "script",
+          "typeRaw": "u8 **"
+        },
+        {
+          "name": "val",
+          "typeRaw": "u32 *"
+        }
+      ],
       "body": "(*script)++;\n    FieldEffectScript_LoadFadedPalette(script);\n    return TRUE;",
       "callsTo": [
         "FieldEffectScript_LoadFadedPalette"
@@ -36,6 +62,16 @@
       "returnType": "bool8",
       "signature": "bool8 FieldEffectCmd_loadpal(u8 **script, u32 *val)",
       "paramsRaw": "u8 **script, u32 *val",
+      "paramsList": [
+        {
+          "name": "script",
+          "typeRaw": "u8 **"
+        },
+        {
+          "name": "val",
+          "typeRaw": "u32 *"
+        }
+      ],
       "body": "(*script)++;\n    FieldEffectScript_LoadPalette(script);\n    return TRUE;",
       "callsTo": [
         "FieldEffectScript_LoadPalette"
@@ -46,6 +82,16 @@
       "returnType": "bool8",
       "signature": "bool8 FieldEffectCmd_callnative(u8 **script, u32 *val)",
       "paramsRaw": "u8 **script, u32 *val",
+      "paramsList": [
+        {
+          "name": "script",
+          "typeRaw": "u8 **"
+        },
+        {
+          "name": "val",
+          "typeRaw": "u32 *"
+        }
+      ],
       "body": "(*script)++;\n    FieldEffectScript_CallNative(script, val);\n    return TRUE;",
       "callsTo": [
         "FieldEffectScript_CallNative"
@@ -56,6 +102,16 @@
       "returnType": "bool8",
       "signature": "bool8 FieldEffectCmd_end(u8 **script, u32 *val)",
       "paramsRaw": "u8 **script, u32 *val",
+      "paramsList": [
+        {
+          "name": "script",
+          "typeRaw": "u8 **"
+        },
+        {
+          "name": "val",
+          "typeRaw": "u32 *"
+        }
+      ],
       "body": "return FALSE;",
       "callsTo": [],
       "lineCount": 1
@@ -64,6 +120,16 @@
       "returnType": "bool8",
       "signature": "bool8 FieldEffectCmd_loadgfx_callnative(u8 **script, u32 *val)",
       "paramsRaw": "u8 **script, u32 *val",
+      "paramsList": [
+        {
+          "name": "script",
+          "typeRaw": "u8 **"
+        },
+        {
+          "name": "val",
+          "typeRaw": "u32 *"
+        }
+      ],
       "body": "(*script)++;\n    FieldEffectScript_LoadTiles(script);\n    FieldEffectScript_LoadFadedPalette(script);\n    FieldEffectScript_CallNative(script, val);\n    return TRUE;",
       "callsTo": [
         "FieldEffectScript_CallNative",
@@ -76,6 +142,16 @@
       "returnType": "bool8",
       "signature": "bool8 FieldEffectCmd_loadtiles_callnative(u8 **script, u32 *val)",
       "paramsRaw": "u8 **script, u32 *val",
+      "paramsList": [
+        {
+          "name": "script",
+          "typeRaw": "u8 **"
+        },
+        {
+          "name": "val",
+          "typeRaw": "u32 *"
+        }
+      ],
       "body": "(*script)++;\n    FieldEffectScript_LoadTiles(script);\n    FieldEffectScript_CallNative(script, val);\n    return TRUE;",
       "callsTo": [
         "FieldEffectScript_CallNative",
@@ -87,6 +163,16 @@
       "returnType": "bool8",
       "signature": "bool8 FieldEffectCmd_loadfadedpal_callnative(u8 **script, u32 *val)",
       "paramsRaw": "u8 **script, u32 *val",
+      "paramsList": [
+        {
+          "name": "script",
+          "typeRaw": "u8 **"
+        },
+        {
+          "name": "val",
+          "typeRaw": "u32 *"
+        }
+      ],
       "body": "(*script)++;\n    FieldEffectScript_LoadFadedPalette(script);\n    FieldEffectScript_CallNative(script, val);\n    return TRUE;",
       "callsTo": [
         "FieldEffectScript_CallNative",
@@ -98,6 +184,12 @@
       "returnType": "u32",
       "signature": "u32 FieldEffectScript_ReadWord(u8 **script)",
       "paramsRaw": "u8 **script",
+      "paramsList": [
+        {
+          "name": "script",
+          "typeRaw": "u8 **"
+        }
+      ],
       "body": "return (*script)[0]\n         + ((*script)[1] << 8)\n         + ((*script)[2] << 16)\n         + ((*script)[3] << 24);",
       "callsTo": [],
       "lineCount": 4
@@ -106,6 +198,12 @@
       "returnType": "void",
       "signature": "void FieldEffectScript_LoadTiles(u8 **script)",
       "paramsRaw": "u8 **script",
+      "paramsList": [
+        {
+          "name": "script",
+          "typeRaw": "u8 **"
+        }
+      ],
       "body": "struct SpriteSheet *sheet = (struct SpriteSheet *)FieldEffectScript_ReadWord(script);\n    if (GetSpriteTileStartByTag(sheet->tag) == 0xFFFF)\n        LoadSpriteSheet(sheet);\n    (*script) += 4;",
       "callsTo": [
         "FieldEffectScript_ReadWord",
@@ -118,6 +216,12 @@
       "returnType": "void",
       "signature": "void FieldEffectScript_LoadFadedPalette(u8 **script)",
       "paramsRaw": "u8 **script",
+      "paramsList": [
+        {
+          "name": "script",
+          "typeRaw": "u8 **"
+        }
+      ],
       "body": "struct SpritePalette *palette = (struct SpritePalette *)FieldEffectScript_ReadWord(script);\n    LoadSpritePalette(palette);\n    UpdateSpritePaletteWithWeather(IndexOfSpritePaletteTag(palette->tag));\n    (*script) += 4;",
       "callsTo": [
         "FieldEffectScript_ReadWord",
@@ -131,6 +235,12 @@
       "returnType": "void",
       "signature": "void FieldEffectScript_LoadPalette(u8 **script)",
       "paramsRaw": "u8 **script",
+      "paramsList": [
+        {
+          "name": "script",
+          "typeRaw": "u8 **"
+        }
+      ],
       "body": "struct SpritePalette *palette = (struct SpritePalette *)FieldEffectScript_ReadWord(script);\n    LoadSpritePalette(palette);\n    (*script) += 4;",
       "callsTo": [
         "FieldEffectScript_ReadWord",
@@ -142,6 +252,16 @@
       "returnType": "void",
       "signature": "void FieldEffectScript_CallNative(u8 **script, u32 *val)",
       "paramsRaw": "u8 **script, u32 *val",
+      "paramsList": [
+        {
+          "name": "script",
+          "typeRaw": "u8 **"
+        },
+        {
+          "name": "val",
+          "typeRaw": "u32 *"
+        }
+      ],
       "body": "u32 (*func)(void) = (u32 (*)(void))FieldEffectScript_ReadWord(script);\n    *val = func();\n    (*script) += 4;",
       "callsTo": [
         "FieldEffectScript_ReadWord"
@@ -152,6 +272,12 @@
       "returnType": "void",
       "signature": "void FieldEffectFreeGraphicsResources(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "u16 sheetTileStart = sprite->sheetTileStart;\n    u32 paletteNum = sprite->oam.paletteNum;\n    DestroySprite(sprite);\n    FieldEffectFreeTilesIfUnused(sheetTileStart);\n    FieldEffectFreePaletteIfUnused(paletteNum);",
       "callsTo": [
         "DestroySprite",
@@ -164,6 +290,16 @@
       "returnType": "void",
       "signature": "void FieldEffectStop(struct Sprite *sprite, u8 id)",
       "paramsRaw": "struct Sprite *sprite, u8 id",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        },
+        {
+          "name": "id",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "FieldEffectFreeGraphicsResources(sprite);\n    FieldEffectActiveListRemove(id);",
       "callsTo": [
         "FieldEffectActiveListRemove",
@@ -175,6 +311,12 @@
       "returnType": "void",
       "signature": "void FieldEffectFreeTilesIfUnused(u16 tileStart)",
       "paramsRaw": "u16 tileStart",
+      "paramsList": [
+        {
+          "name": "tileStart",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "u8 i;\n    u16 tag = GetSpriteTileTagByTileStart(tileStart);\n\n    if (tag != TAG_NONE)\n    {\n        for (i = 0; i < MAX_SPRITES; i++)\n            if (gSprites[i].inUse && gSprites[i].usingSheet && tileStart == gSprites[i].sheetTileStart)\n                return;\n        FreeSpriteTilesByTag(tag);\n    }",
       "callsTo": [
         "FreeSpriteTilesByTag",
@@ -186,6 +328,12 @@
       "returnType": "void",
       "signature": "void FieldEffectFreePaletteIfUnused(u8 paletteNum)",
       "paramsRaw": "u8 paletteNum",
+      "paramsList": [
+        {
+          "name": "paletteNum",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 i;\n    u16 tag = GetSpritePaletteTagByPaletteNum(paletteNum);\n\n    if (tag != TAG_NONE)\n    {\n        for (i = 0; i < MAX_SPRITES; i++)\n            if (gSprites[i].inUse && gSprites[i].oam.paletteNum == paletteNum)\n                return;\n        FreeSpritePaletteByTag(tag);\n    }",
       "callsTo": [
         "FreeSpritePaletteByTag",
@@ -197,6 +345,7 @@
       "returnType": "void",
       "signature": "void FieldEffectActiveListClear(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n    for (i = 0; i < ARRAY_COUNT(sActiveList); i++)\n        sActiveList[i] = 0xFF;",
       "callsTo": [
         "ARRAY_COUNT"
@@ -207,6 +356,12 @@
       "returnType": "void",
       "signature": "void FieldEffectActiveListAdd(u8 id)",
       "paramsRaw": "u8 id",
+      "paramsList": [
+        {
+          "name": "id",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 i;\n    for (i = 0; i < ARRAY_COUNT(sActiveList); i++)\n    {\n        if (sActiveList[i] == 0xFF)\n        {\n            sActiveList[i] = id;\n            return;\n        }\n    }",
       "callsTo": [
         "ARRAY_COUNT"
@@ -217,6 +372,12 @@
       "returnType": "void",
       "signature": "void FieldEffectActiveListRemove(u8 id)",
       "paramsRaw": "u8 id",
+      "paramsList": [
+        {
+          "name": "id",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 i;\n    for (i = 0; i < ARRAY_COUNT(sActiveList); i++)\n    {\n        if (sActiveList[i] == id)\n        {\n            sActiveList[i] = 0xFF;\n            return;\n        }\n    }",
       "callsTo": [
         "ARRAY_COUNT"
@@ -227,6 +388,12 @@
       "returnType": "bool8",
       "signature": "bool8 FieldEffectActiveListContains(u8 id)",
       "paramsRaw": "u8 id",
+      "paramsList": [
+        {
+          "name": "id",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 i;\n    for (i = 0; i < ARRAY_COUNT(sActiveList); i++)\n        if (sActiveList[i] == id)\n            return TRUE;\n    return FALSE;",
       "callsTo": [
         "ARRAY_COUNT"
@@ -237,6 +404,28 @@
       "returnType": "u8",
       "signature": "u8 CreateTrainerSprite(u8 trainerSpriteID, s16 x, s16 y, u8 subpriority, u8 *buffer)",
       "paramsRaw": "u8 trainerSpriteID, s16 x, s16 y, u8 subpriority, u8 *buffer",
+      "paramsList": [
+        {
+          "name": "trainerSpriteID",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "x",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "subpriority",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "buffer",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "struct SpriteTemplate spriteTemplate;\n    LoadCompressedSpritePaletteOverrideBuffer(&gTrainerFrontPicPaletteTable[trainerSpriteID], buffer);\n    LoadCompressedSpriteSheetOverrideBuffer(&gTrainerFrontPicTable[trainerSpriteID], buffer);\n    spriteTemplate.tileTag = gTrainerFrontPicTable[trainerSpriteID].tag;\n    spriteTemplate.paletteTag = gTrainerFrontPicPaletteTable[trainerSpriteID].tag;\n    spriteTemplate.oam = &sOam_64x64;\n    spriteTemplate.anims = gDummySpriteAnimTable;\n    spriteTemplate.images = NULL;\n    spriteTemplate.affineAnims = gDummySpriteAffineAnimTable;\n    spriteTemplate.callback = SpriteCallbackDummy;\n    return CreateSprite(&spriteTemplate, x, y, subpriority);",
       "callsTo": [
         "CreateSprite",
@@ -249,6 +438,20 @@
       "returnType": "u8",
       "signature": "u8 AddNewGameBirchObject(s16 x, s16 y, u8 subpriority)",
       "paramsRaw": "s16 x, s16 y, u8 subpriority",
+      "paramsList": [
+        {
+          "name": "x",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "subpriority",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "LoadSpritePalette(&sSpritePalette_NewGameBirch);\n    return CreateSprite(&sSpriteTemplate_NewGameBirch, x, y, subpriority);",
       "callsTo": [
         "CreateSprite",
@@ -260,6 +463,24 @@
       "returnType": "u8",
       "signature": "u8 CreateMonSprite_PicBox(u16 species, s16 x, s16 y, u8 subpriority)",
       "paramsRaw": "u16 species, s16 x, s16 y, u8 subpriority",
+      "paramsList": [
+        {
+          "name": "species",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "x",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "subpriority",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s32 spriteId = CreateMonPicSprite_HandleDeoxys(species, 0, 0x8000, TRUE, x, y, 0, gMonPaletteTable[species].tag);\n    PreservePaletteInWeather(IndexOfSpritePaletteTag(gMonPaletteTable[species].tag) + 0x10);\n    if (spriteId == 0xFFFF)\n        return MAX_SPRITES;\n    else\n        return spriteId;",
       "callsTo": [
         "CreateMonPicSprite_HandleDeoxys",
@@ -272,6 +493,32 @@
       "returnType": "u8",
       "signature": "u8 CreateMonSprite_FieldMove(u16 species, u32 otId, u32 personality, s16 x, s16 y, u8 subpriority)",
       "paramsRaw": "u16 species, u32 otId, u32 personality, s16 x, s16 y, u8 subpriority",
+      "paramsList": [
+        {
+          "name": "species",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "otId",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "personality",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "x",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "subpriority",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "const struct CompressedSpritePalette *spritePalette = GetMonSpritePalStructFromOtIdPersonality(species, otId, personality);\n    u16 spriteId = CreateMonPicSprite_HandleDeoxys(species, otId, personality, TRUE, x, y, 0, spritePalette->tag);\n    PreservePaletteInWeather(IndexOfSpritePaletteTag(spritePalette->tag) + 0x10);\n    if (spriteId == 0xFFFF)\n        return MAX_SPRITES;\n    else\n        return spriteId;",
       "callsTo": [
         "CreateMonPicSprite_HandleDeoxys",
@@ -285,6 +532,16 @@
       "returnType": "void",
       "signature": "void FreeResourcesAndDestroySprite(struct Sprite *sprite, u8 spriteId)",
       "paramsRaw": "struct Sprite *sprite, u8 spriteId",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        },
+        {
+          "name": "spriteId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "ResetPreservedPalettesInWeather();\n    if (sprite->oam.affineMode != ST_OAM_AFFINE_OFF)\n    {\n        FreeOamMatrix(sprite->oam.matrixNum);\n    }\n    FreeAndDestroyMonPicSprite(spriteId);",
       "callsTo": [
         "FreeAndDestroyMonPicSprite",
@@ -297,6 +554,24 @@
       "returnType": "void",
       "signature": "void MultiplyInvertedPaletteRGBComponents(u16 i, u8 r, u8 g, u8 b)",
       "paramsRaw": "u16 i, u8 r, u8 g, u8 b",
+      "paramsList": [
+        {
+          "name": "i",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "r",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "g",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "b",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "int curRed, curGreen, curBlue;\n    u16 color = gPlttBufferUnfaded[i];\n\n    curRed   = (color & RGB_RED);\n    curGreen = (color & RGB_GREEN) >>  5;\n    curBlue  = (color & RGB_BLUE)  >> 10;\n\n    curRed   += (((0x1F - curRed)   * r) >> 4);\n    curGreen += (((0x1F - curGreen) * g) >> 4);\n    curBlue  += (((0x1F - curBlue)  * b) >> 4);\n\n    color  = curRed;\n    color |= (curGreen <<  5);\n    color |= (curBlue  << 10);\n\n    gPlttBufferFaded[i] = color;",
       "callsTo": [],
       "lineCount": 16
@@ -305,6 +580,24 @@
       "returnType": "void",
       "signature": "void MultiplyPaletteRGBComponents(u16 i, u8 r, u8 g, u8 b)",
       "paramsRaw": "u16 i, u8 r, u8 g, u8 b",
+      "paramsList": [
+        {
+          "name": "i",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "r",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "g",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "b",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "int curRed, curGreen, curBlue;\n    u16 color = gPlttBufferUnfaded[i];\n\n    curRed   = (color & RGB_RED);\n    curGreen = (color & RGB_GREEN) >>  5;\n    curBlue  = (color & RGB_BLUE)  >> 10;\n\n    curRed   -= ((curRed   * r) >> 4);\n    curGreen -= ((curGreen * g) >> 4);\n    curBlue  -= ((curBlue  * b) >> 4);\n\n    color  = curRed;\n    color |= (curGreen <<  5);\n    color |= (curBlue  << 10);\n\n    gPlttBufferFaded[i] = color;",
       "callsTo": [],
       "lineCount": 16
@@ -313,6 +606,7 @@
       "returnType": "bool8",
       "signature": "bool8 FldEff_PokecenterHeal(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 nPokemon;\n    struct Task *task;\n\n    nPokemon = CalculatePlayerPartyCount();\n    task = &gTasks[CreateTask(Task_PokecenterHeal, 0xff)];\n    task->tNumMons = nPokemon;\n    task->tFirstBallX = 93;\n    task->tFirstBallY = 36;\n    task->tMonitorX = 124;\n    task->tMonitorY = 24;\n    return FALSE;",
       "callsTo": [
         "CalculatePlayerPartyCount",
@@ -324,6 +618,12 @@
       "returnType": "void",
       "signature": "static void Task_PokecenterHeal(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "struct Task *task;\n    task = &gTasks[taskId];\n    sPokecenterHealEffectFuncs[task->tState](task);",
       "callsTo": [],
       "lineCount": 3
@@ -332,6 +632,12 @@
       "returnType": "void",
       "signature": "static void PokecenterHealEffect_Init(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "task->tState++;\n    task->tBallSpriteId = CreateGlowingPokeballsEffect(task->tNumMons, task->tFirstBallX, task->tFirstBallY, TRUE);\n    task->tMonitorSpriteId = CreatePokecenterMonitorSprite(task->tMonitorX, task->tMonitorY);",
       "callsTo": [
         "CreateGlowingPokeballsEffect",
@@ -343,6 +649,12 @@
       "returnType": "void",
       "signature": "static void PokecenterHealEffect_WaitForBallPlacement(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (gSprites[task->tBallSpriteId].sState > 1)\n    {\n        gSprites[task->tMonitorSpriteId].sState++;\n        task->tState++;\n    }",
       "callsTo": [],
       "lineCount": 5
@@ -351,6 +663,12 @@
       "returnType": "void",
       "signature": "static void PokecenterHealEffect_WaitForBallFlashing(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (gSprites[task->tBallSpriteId].sState > 4)\n    {\n        task->tState++;\n    }",
       "callsTo": [],
       "lineCount": 4
@@ -359,6 +677,12 @@
       "returnType": "void",
       "signature": "static void PokecenterHealEffect_WaitForSoundAndEnd(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (gSprites[task->tBallSpriteId].sState > 6)\n    {\n        DestroySprite(&gSprites[task->tBallSpriteId]);\n        FieldEffectActiveListRemove(FLDEFF_POKECENTER_HEAL);\n        DestroyTask(FindTaskIdByFunc(Task_PokecenterHeal));\n    }",
       "callsTo": [
         "DestroySprite",
@@ -372,6 +696,7 @@
       "returnType": "bool8",
       "signature": "bool8 FldEff_HallOfFameRecord(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 nPokemon;\n    struct Task *task;\n\n    nPokemon = CalculatePlayerPartyCount();\n    task = &gTasks[CreateTask(Task_HallOfFameRecord, 0xff)];\n    task->tNumMons = nPokemon;\n    task->tFirstBallX = 117;\n    task->tFirstBallY = 52;\n    return FALSE;",
       "callsTo": [
         "CalculatePlayerPartyCount",
@@ -383,6 +708,12 @@
       "returnType": "void",
       "signature": "static void Task_HallOfFameRecord(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "struct Task *task;\n    task = &gTasks[taskId];\n    sHallOfFameRecordEffectFuncs[task->tState](task);",
       "callsTo": [],
       "lineCount": 3
@@ -391,6 +722,12 @@
       "returnType": "void",
       "signature": "static void HallOfFameRecordEffect_Init(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u8 taskId;\n    task->tState++;\n    task->tBallSpriteId = CreateGlowingPokeballsEffect(task->tNumMons, task->tFirstBallX, task->tFirstBallY, FALSE);\n    taskId = FindTaskIdByFunc(Task_HallOfFameRecord);\n    CreateHofMonitorSprite(taskId, 120, 24, FALSE);\n    CreateHofMonitorSprite(taskId, 40, 8, TRUE);\n    CreateHofMonitorSprite(taskId, 72, 8, TRUE);\n    CreateHofMonitorSprite(taskId, 168, 8, TRUE);\n    CreateHofMonitorSprite(taskId, 200, 8, TRUE);",
       "callsTo": [
         "CreateGlowingPokeballsEffect",
@@ -403,6 +740,12 @@
       "returnType": "void",
       "signature": "static void HallOfFameRecordEffect_WaitForBallPlacement(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (gSprites[task->tBallSpriteId].sState > 1)\n    {\n        task->tStartHofFlash++;\n        task->tState++;\n    }",
       "callsTo": [],
       "lineCount": 5
@@ -411,6 +754,12 @@
       "returnType": "void",
       "signature": "static void HallOfFameRecordEffect_WaitForBallFlashing(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (gSprites[task->tBallSpriteId].sState > 4)\n    {\n        task->tState++;\n    }",
       "callsTo": [],
       "lineCount": 4
@@ -419,6 +768,12 @@
       "returnType": "void",
       "signature": "static void HallOfFameRecordEffect_WaitForSoundAndEnd(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (gSprites[task->tBallSpriteId].sState > 6)\n    {\n        DestroySprite(&gSprites[task->tBallSpriteId]);\n        FieldEffectActiveListRemove(FLDEFF_HALL_OF_FAME_RECORD);\n        DestroyTask(FindTaskIdByFunc(Task_HallOfFameRecord));\n    }",
       "callsTo": [
         "DestroySprite",
@@ -432,6 +787,24 @@
       "returnType": "u8",
       "signature": "static u8 CreateGlowingPokeballsEffect(s16 numMons, s16 x, s16 y, bool16 playHealSe)",
       "paramsRaw": "s16 numMons, s16 x, s16 y, bool16 playHealSe",
+      "paramsList": [
+        {
+          "name": "numMons",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "x",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "playHealSe",
+          "typeRaw": "bool16"
+        }
+      ],
       "body": "u8 spriteId;\n    struct Sprite *sprite;\n    spriteId = CreateInvisibleSprite(SpriteCB_PokeballGlowEffect);\n    sprite = &gSprites[spriteId];\n    sprite->x2 = x;\n    sprite->y2 = y;\n    sprite->sPlayHealSe = playHealSe;\n    sprite->sNumMons = numMons;\n    sprite->sSpriteId = spriteId;\n    return spriteId;",
       "callsTo": [
         "CreateInvisibleSprite"
@@ -442,6 +815,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_PokeballGlowEffect(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "sPokeballGlowEffectFuncs[sprite->sState](sprite);",
       "callsTo": [],
       "lineCount": 1
@@ -450,6 +829,12 @@
       "returnType": "void",
       "signature": "static void PokeballGlowEffect_PlaceBalls(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "u8 spriteId;\n    if (sprite->sTimer == 0 || (--sprite->sTimer) == 0)\n    {\n        sprite->sTimer = 25;\n        spriteId = CreateSpriteAtEnd(&sSpriteTemplate_PokeballGlow, sPokeballCoordOffsets[sprite->sCounter].x + sprite->x2, sPokeballCoordOffsets[sprite->sCounter].y + sprite->y2, 0);\n        gSprites[spriteId].oam.priority = 2;\n        gSprites[spriteId].sEffectSpriteId = sprite->sSpriteId;\n        sprite->sCounter++;\n        sprite->sNumMons--;\n        PlaySE(SE_BALL);\n    }\n    if (sprite->sNumMons == 0)\n    {\n        sprite->sTimer = 32;\n        sprite->sState++;\n    }",
       "callsTo": [
         "CreateSpriteAtEnd",
@@ -461,6 +846,12 @@
       "returnType": "void",
       "signature": "static void PokeballGlowEffect_TryPlaySe(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if ((--sprite->sTimer) == 0)\n    {\n        sprite->sState++;\n        sprite->sTimer = 8;\n        sprite->sCounter = 0;\n        sprite->data[3] = 0;\n        if (sprite->sPlayHealSe)\n        {\n            PlayFanfare(MUS_HEAL);\n        }\n    }",
       "callsTo": [
         "PlayFanfare"
@@ -471,6 +862,12 @@
       "returnType": "void",
       "signature": "static void PokeballGlowEffect_Flash1(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "u8 phase;\n    if ((--sprite->sTimer) == 0)\n    {\n        sprite->sTimer = 8;\n        sprite->sCounter++;\n        sprite->sCounter &= 3;\n\n        if (sprite->sCounter == 0)\n            sprite->data[3]++;\n    }\n    phase = (sprite->sCounter + 3) & 3;\n    MultiplyInvertedPaletteRGBComponents(OBJ_PLTT_ID(IndexOfSpritePaletteTag(FLDEFF_PAL_TAG_POKEBALL_GLOW)) + 8, sPokeballGlowReds[phase], sPokeballGlowGreens[phase], sPokeballGlowBlues[phase]);\n    phase = (sprite->sCounter + 2) & 3;\n    MultiplyInvertedPaletteRGBComponents(OBJ_PLTT_ID(IndexOfSpritePaletteTag(FLDEFF_PAL_TAG_POKEBALL_GLOW)) + 6, sPokeballGlowReds[phase], sPokeballGlowGreens[phase], sPokeballGlowBlues[phase]);\n    phase = (sprite->sCounter + 1) & 3;\n    MultiplyInvertedPaletteRGBComponents(OBJ_PLTT_ID(IndexOfSpritePaletteTag(FLDEFF_PAL_TAG_POKEBALL_GLOW)) + 2, sPokeballGlowReds[phase], sPokeballGlowGreens[phase], sPokeballGlowBlues[phase]);\n    phase = sprite->sCounter;\n    MultiplyInvertedPaletteRGBComponents(OBJ_PLTT_ID(IndexOfSpritePaletteTag(FLDEFF_PAL_TAG_POKEBALL_GLOW)) + 5, sPokeballGlowReds[phase], sPokeballGlowGreens[phase], sPokeballGlowBlues[phase]);\n    MultiplyInvertedPaletteRGBComponents(OBJ_PLTT_ID(IndexOfSpritePaletteTag(FLDEFF_PAL_TAG_POKEBALL_GLOW)) + 3, sPokeballGlowReds[phase], sPokeballGlowGreens[phase], sPokeballGlowBlues[phase]);\n    if (sprite->data[3] > 2)\n    {\n        sprite->sState++;\n        sprite->sTimer = 8;\n        sprite->sCounter = 0;\n    }",
       "callsTo": [
         "IndexOfSpritePaletteTag",
@@ -483,6 +880,12 @@
       "returnType": "void",
       "signature": "static void PokeballGlowEffect_Flash2(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "u8 phase;\n    if ((--sprite->sTimer) == 0)\n    {\n        sprite->sTimer = 8;\n        sprite->sCounter++;\n        sprite->sCounter &= 3;\n        if (sprite->sCounter == 3)\n        {\n            sprite->sState++;\n            sprite->sTimer = 30;\n        }\n    }\n    phase = sprite->sCounter;\n    MultiplyInvertedPaletteRGBComponents(OBJ_PLTT_ID(IndexOfSpritePaletteTag(FLDEFF_PAL_TAG_POKEBALL_GLOW)) + 8, sPokeballGlowReds[phase], sPokeballGlowGreens[phase], sPokeballGlowBlues[phase]);\n    MultiplyInvertedPaletteRGBComponents(OBJ_PLTT_ID(IndexOfSpritePaletteTag(FLDEFF_PAL_TAG_POKEBALL_GLOW)) + 6, sPokeballGlowReds[phase], sPokeballGlowGreens[phase], sPokeballGlowBlues[phase]);\n    MultiplyInvertedPaletteRGBComponents(OBJ_PLTT_ID(IndexOfSpritePaletteTag(FLDEFF_PAL_TAG_POKEBALL_GLOW)) + 2, sPokeballGlowReds[phase], sPokeballGlowGreens[phase], sPokeballGlowBlues[phase]);\n    MultiplyInvertedPaletteRGBComponents(OBJ_PLTT_ID(IndexOfSpritePaletteTag(FLDEFF_PAL_TAG_POKEBALL_GLOW)) + 5, sPokeballGlowReds[phase], sPokeballGlowGreens[phase], sPokeballGlowBlues[phase]);\n    MultiplyInvertedPaletteRGBComponents(OBJ_PLTT_ID(IndexOfSpritePaletteTag(FLDEFF_PAL_TAG_POKEBALL_GLOW)) + 3, sPokeballGlowReds[phase], sPokeballGlowGreens[phase], sPokeballGlowBlues[phase]);",
       "callsTo": [
         "IndexOfSpritePaletteTag",
@@ -495,6 +898,12 @@
       "returnType": "void",
       "signature": "static void PokeballGlowEffect_WaitAfterFlash(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if ((--sprite->sTimer) == 0)\n        sprite->sState++;",
       "callsTo": [],
       "lineCount": 2
@@ -503,6 +912,12 @@
       "returnType": "void",
       "signature": "static void PokeballGlowEffect_Dummy(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "sprite->sState++;",
       "callsTo": [],
       "lineCount": 1
@@ -511,6 +926,12 @@
       "returnType": "void",
       "signature": "static void PokeballGlowEffect_WaitForSound(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (sprite->sPlayHealSe == FALSE || IsFanfareTaskInactive())\n    {\n        sprite->sState++;\n    }",
       "callsTo": [
         "IsFanfareTaskInactive"
@@ -521,6 +942,12 @@
       "returnType": "void",
       "signature": "static void PokeballGlowEffect_Idle(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "",
       "callsTo": [],
       "lineCount": 1
@@ -529,6 +956,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_PokeballGlow(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (gSprites[sprite->sEffectSpriteId].sState > 4)\n    {\n        FieldEffectFreeGraphicsResources(sprite);\n    }",
       "callsTo": [
         "FieldEffectFreeGraphicsResources"
@@ -539,6 +972,16 @@
       "returnType": "u8",
       "signature": "static u8 CreatePokecenterMonitorSprite(s16 x, s16 y)",
       "paramsRaw": "s16 x, s16 y",
+      "paramsList": [
+        {
+          "name": "x",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s16"
+        }
+      ],
       "body": "u8 spriteId;\n    struct Sprite *sprite;\n    spriteId = CreateSpriteAtEnd(&sSpriteTemplate_PokecenterMonitor, x, y, 0);\n    sprite = &gSprites[spriteId];\n    sprite->oam.priority = 2;\n    sprite->invisible = TRUE;\n    SetSubspriteTables(sprite, &sSubspriteTable_PokecenterMonitor);\n    return spriteId;",
       "callsTo": [
         "CreateSpriteAtEnd",
@@ -550,6 +993,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_PokecenterMonitor(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (sprite->data[0] != 0)\n    {\n        sprite->data[0] = 0;\n        sprite->invisible = FALSE;\n        StartSpriteAnim(sprite, 1);\n    }\n    if (sprite->animEnded)\n    {\n        FieldEffectFreeGraphicsResources(sprite);\n    }",
       "callsTo": [
         "FieldEffectFreeGraphicsResources",
@@ -561,6 +1010,24 @@
       "returnType": "void",
       "signature": "static void CreateHofMonitorSprite(s16 taskId, s16 x, s16 y, bool8 isSmallMonitor)",
       "paramsRaw": "s16 taskId, s16 x, s16 y, bool8 isSmallMonitor",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "x",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "isSmallMonitor",
+          "typeRaw": "bool8"
+        }
+      ],
       "body": "u8 spriteId;\n    if (!isSmallMonitor)\n    {\n        spriteId = CreateSpriteAtEnd(&sSpriteTemplate_HofMonitorBig, x, y, 0);\n        SetSubspriteTables(&gSprites[spriteId], &sSubspriteTable_HofMonitorBig);\n    }\n    else\n    {\n        spriteId = CreateSpriteAtEnd(&sSpriteTemplate_HofMonitorSmall, x, y, 0);\n    }\n    gSprites[spriteId].invisible = TRUE;\n    gSprites[spriteId].data[0] = taskId;",
       "callsTo": [
         "CreateSpriteAtEnd",
@@ -572,6 +1039,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_HallOfFameMonitor(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (gTasks[sprite->data[0]].tStartHofFlash)\n    {\n        if (sprite->data[1] == 0 || (--sprite->data[1]) == 0)\n        {\n            sprite->data[1] = 16;\n            sprite->invisible ^= 1;\n        }\n        sprite->data[2]++;\n    }\n    if (sprite->data[2] > 127)\n    {\n        FieldEffectFreeGraphicsResources(sprite);\n    }",
       "callsTo": [
         "FieldEffectFreeGraphicsResources"
@@ -582,6 +1055,7 @@
       "returnType": "void",
       "signature": "void ReturnToFieldFromFlyMapSelect(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "SetMainCallback2(CB2_ReturnToField);\n    gFieldCallback = FieldCallback_UseFly;",
       "callsTo": [
         "SetMainCallback2"
@@ -592,6 +1066,7 @@
       "returnType": "void",
       "signature": "static void FieldCallback_UseFly(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "FadeInFromBlack();\n    CreateTask(Task_UseFly, 0);\n    LockPlayerFieldControls();\n    FreezeObjectEvents();\n    gFieldCallback = NULL;",
       "callsTo": [
         "CreateTask",
@@ -605,6 +1080,12 @@
       "returnType": "void",
       "signature": "static void Task_UseFly(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "struct Task *task;\n    task = &gTasks[taskId];\n    if (!task->data[0])\n    {\n        if (!IsWeatherNotFadingIn())\n            return;\n\n        gFieldEffectArguments[0] = GetCursorSelectionMonId();\n        if ((int)gFieldEffectArguments[0] > PARTY_SIZE - 1)\n            gFieldEffectArguments[0] = 0;\n\n        FieldEffectStart(FLDEFF_USE_FLY);\n        task->data[0]++;\n    }\n    if (!FieldEffectActiveListContains(FLDEFF_USE_FLY))\n    {\n        Overworld_ResetStateAfterFly();\n        WarpIntoMap();\n        SetMainCallback2(CB2_LoadMap);\n        gFieldCallback = FieldCallback_FlyIntoMap;\n        DestroyTask(taskId);\n    }",
       "callsTo": [
         "DestroyTask",
@@ -622,6 +1103,7 @@
       "returnType": "void",
       "signature": "static void FieldCallback_FlyIntoMap(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "Overworld_PlaySpecialMapMusic();\n    FadeInFromBlack();\n    CreateTask(Task_FlyIntoMap, 0);\n    gObjectEvents[gPlayerAvatar.objectEventId].invisible = TRUE;\n    if (gPlayerAvatar.flags & PLAYER_AVATAR_FLAG_SURFING)\n    {\n        ObjectEventTurn(&gObjectEvents[gPlayerAvatar.objectEventId], DIR_WEST);\n    }\n    LockPlayerFieldControls();\n    FreezeObjectEvents();\n    gFieldCallback = NULL;",
       "callsTo": [
         "CreateTask",
@@ -637,6 +1119,12 @@
       "returnType": "void",
       "signature": "static void Task_FlyIntoMap(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "struct Task *task;\n    task = &gTasks[taskId];\n    if (task->data[0] == 0)\n    {\n        if (gPaletteFade.active)\n        {\n            return;\n        }\n        FieldEffectStart(FLDEFF_FLY_IN);\n        task->data[0]++;\n    }\n    if (!FieldEffectActiveListContains(FLDEFF_FLY_IN))\n    {\n        UnlockPlayerFieldControls();\n        UnfreezeObjectEvents();\n        DestroyTask(taskId);\n    }",
       "callsTo": [
         "DestroyTask",
@@ -651,6 +1139,7 @@
       "returnType": "void",
       "signature": "void FieldCB_FallWarpExit(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "Overworld_PlaySpecialMapMusic();\n    WarpFadeInScreen();\n    LockPlayerFieldControls();\n    FreezeObjectEvents();\n    CreateTask(Task_FallWarpFieldEffect, 0);\n    gFieldCallback = NULL;",
       "callsTo": [
         "CreateTask",
@@ -665,6 +1154,12 @@
       "returnType": "void",
       "signature": "static void Task_FallWarpFieldEffect(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "struct Task *task;\n    task = &gTasks[taskId];\n    while (sFallWarpFieldEffectFuncs[task->tState](task));",
       "callsTo": [],
       "lineCount": 3
@@ -673,6 +1168,12 @@
       "returnType": "bool8",
       "signature": "static bool8 FallWarpEffect_Init(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "struct ObjectEvent *playerObject;\n    struct Sprite *playerSprite;\n    playerObject = &gObjectEvents[gPlayerAvatar.objectEventId];\n    playerSprite = &gSprites[gPlayerAvatar.spriteId];\n    CameraObjectFreeze();\n    gObjectEvents[gPlayerAvatar.objectEventId].invisible = TRUE;\n    gPlayerAvatar.preventStep = TRUE;\n    ObjectEventSetHeldMovement(playerObject, GetFaceDirectionMovementAction(GetPlayerFacingDirection()));\n    task->tSubsprMode = playerSprite->subspriteMode;\n    playerObject->fixedPriority = 1;\n    playerSprite->oam.priority = 1;\n    playerSprite->subspriteMode = SUBSPRITES_IGNORE_PRIORITY;\n    task->tState++;\n    return TRUE;",
       "callsTo": [
         "CameraObjectFreeze",
@@ -686,6 +1187,12 @@
       "returnType": "bool8",
       "signature": "static bool8 FallWarpEffect_WaitWeather(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (IsWeatherNotFadingIn())\n        task->tState++;\n\n    return FALSE;",
       "callsTo": [
         "IsWeatherNotFadingIn"
@@ -696,6 +1203,12 @@
       "returnType": "bool8",
       "signature": "static bool8 FallWarpEffect_StartFall(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "struct Sprite *sprite;\n    s16 centerToCornerVecY;\n    sprite = &gSprites[gPlayerAvatar.spriteId];\n    centerToCornerVecY = -(sprite->centerToCornerVecY << 1);\n    sprite->y2 = -(sprite->y + sprite->centerToCornerVecY + gSpriteCoordOffsetY + centerToCornerVecY);\n    task->tFallOffset = 1;\n    task->tTotalFall = 0;\n    gObjectEvents[gPlayerAvatar.objectEventId].invisible = FALSE;\n    PlaySE(SE_FALL);\n    task->tState++;\n    return FALSE;",
       "callsTo": [
         "PlaySE"
@@ -706,6 +1219,12 @@
       "returnType": "bool8",
       "signature": "static bool8 FallWarpEffect_Fall(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "struct ObjectEvent *objectEvent;\n    struct Sprite *sprite;\n\n    objectEvent = &gObjectEvents[gPlayerAvatar.objectEventId];\n    sprite = &gSprites[gPlayerAvatar.spriteId];\n    sprite->y2 += task->tFallOffset;\n    if (task->tFallOffset < 8)\n    {\n        task->tTotalFall += task->tFallOffset;\n\n        if (task->tTotalFall & 0xf)\n            task->tFallOffset <<= 1;\n    }\n    if (task->tSetTrigger == FALSE && sprite->y2 >= -16)\n    {\n        task->tSetTrigger++;\n        objectEvent->fixedPriority = 0;\n        sprite->subspriteMode = task->tSubsprMode;\n        objectEvent->triggerGroundEffectsOnMove = 1;\n    }\n    if (sprite->y2 >= 0)\n    {\n        PlaySE(SE_M_STRENGTH);\n        objectEvent->triggerGroundEffectsOnStop = 1;\n        objectEvent->landingJump = 1;\n        sprite->y2 = 0;\n        task->tState++;\n    }\n    return FALSE;",
       "callsTo": [
         "PlaySE"
@@ -716,6 +1235,12 @@
       "returnType": "bool8",
       "signature": "static bool8 FallWarpEffect_Land(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "task->tState++;\n    task->tVertShake = 4;\n    task->tNumShakes = 0;\n    SetCameraPanningCallback(NULL);\n    return TRUE;",
       "callsTo": [
         "SetCameraPanningCallback"
@@ -726,6 +1251,12 @@
       "returnType": "bool8",
       "signature": "static bool8 FallWarpEffect_CameraShake(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "SetCameraPanning(0, task->tVertShake);\n    task->tVertShake = -task->tVertShake;\n    task->tNumShakes++;\n\n    if ((task->tNumShakes & 3) == 0)\n        task->tVertShake >>= 1;\n\n    if (task->tVertShake == 0)\n        task->tState++;\n\n    return FALSE;",
       "callsTo": [
         "SetCameraPanning"
@@ -736,6 +1267,12 @@
       "returnType": "bool8",
       "signature": "static bool8 FallWarpEffect_End(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "gPlayerAvatar.preventStep = FALSE;\n    UnlockPlayerFieldControls();\n    CameraObjectReset();\n    UnfreezeObjectEvents();\n    InstallCameraPanAheadCallback();\n    DestroyTask(FindTaskIdByFunc(Task_FallWarpFieldEffect));\n    return FALSE;",
       "callsTo": [
         "CameraObjectReset",
@@ -751,6 +1288,16 @@
       "returnType": "void",
       "signature": "void StartEscalatorWarp(u8 metatileBehavior, u8 priority)",
       "paramsRaw": "u8 metatileBehavior, u8 priority",
+      "paramsList": [
+        {
+          "name": "metatileBehavior",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "priority",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 taskId;\n    taskId = CreateTask(Task_EscalatorWarpOut, priority);\n    gTasks[taskId].tGoingUp = FALSE;\n    if (metatileBehavior == MB_UP_ESCALATOR)\n    {\n        gTasks[taskId].tGoingUp = TRUE;\n    }",
       "callsTo": [
         "CreateTask"
@@ -761,6 +1308,12 @@
       "returnType": "void",
       "signature": "static void Task_EscalatorWarpOut(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "struct Task *task;\n    task = &gTasks[taskId];\n    while (sEscalatorWarpOutFieldEffectFuncs[task->tState](task));",
       "callsTo": [],
       "lineCount": 3
@@ -769,6 +1322,12 @@
       "returnType": "bool8",
       "signature": "static bool8 EscalatorWarpOut_Init(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "FreezeObjectEvents();\n    CameraObjectFreeze();\n    StartEscalator(task->tGoingUp);\n    task->tState++;\n    return FALSE;",
       "callsTo": [
         "CameraObjectFreeze",
@@ -781,6 +1340,12 @@
       "returnType": "bool8",
       "signature": "static bool8 EscalatorWarpOut_WaitForPlayer(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "struct ObjectEvent *objectEvent;\n    objectEvent = &gObjectEvents[gPlayerAvatar.objectEventId];\n    if (!ObjectEventIsMovementOverridden(objectEvent) || ObjectEventClearHeldMovementIfFinished(objectEvent))\n    {\n        ObjectEventSetHeldMovement(objectEvent, GetFaceDirectionMovementAction(GetPlayerFacingDirection()));\n        task->tState++;\n        task->data[2] = 0;\n        task->data[3] = 0;\n        if ((u8)task->tGoingUp == FALSE)\n        {\n            task->tState = 4;  \n        }\n        PlaySE(SE_ESCALATOR);\n    }\n    return FALSE;",
       "callsTo": [
         "GetFaceDirectionMovementAction",
@@ -796,6 +1361,12 @@
       "returnType": "bool8",
       "signature": "static bool8 EscalatorWarpOut_Up_Ride(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "RideUpEscalatorOut(task);\n    if (task->data[2] > 3)\n    {\n        FadeOutAtEndOfEscalator();\n        task->tState++;\n    }\n    return FALSE;",
       "callsTo": [
         "FadeOutAtEndOfEscalator",
@@ -807,6 +1378,12 @@
       "returnType": "bool8",
       "signature": "static bool8 EscalatorWarpOut_Up_End(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "RideUpEscalatorOut(task);\n    WarpAtEndOfEscalator();\n    return FALSE;",
       "callsTo": [
         "RideUpEscalatorOut",
@@ -818,6 +1395,12 @@
       "returnType": "bool8",
       "signature": "static bool8 EscalatorWarpOut_Down_Ride(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "RideDownEscalatorOut(task);\n    if (task->data[2] > 3)\n    {\n        FadeOutAtEndOfEscalator();\n        task->tState++;\n    }\n    return FALSE;",
       "callsTo": [
         "FadeOutAtEndOfEscalator",
@@ -829,6 +1412,12 @@
       "returnType": "bool8",
       "signature": "static bool8 EscalatorWarpOut_Down_End(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "RideDownEscalatorOut(task);\n    WarpAtEndOfEscalator();\n    return FALSE;",
       "callsTo": [
         "RideDownEscalatorOut",
@@ -840,6 +1429,12 @@
       "returnType": "void",
       "signature": "static void RideUpEscalatorOut(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "struct Sprite *sprite;\n    sprite = &gSprites[gPlayerAvatar.spriteId];\n    sprite->x2 = Cos(0x84, task->data[2]);\n    sprite->y2 = Sin(0x94, task->data[2]);\n    task->data[3]++;\n    if (task->data[3] & 1)\n    {\n        task->data[2]++;\n    }",
       "callsTo": [
         "Cos",
@@ -851,6 +1446,12 @@
       "returnType": "void",
       "signature": "static void RideDownEscalatorOut(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "struct Sprite *sprite;\n    sprite = &gSprites[gPlayerAvatar.spriteId];\n    sprite->x2 = Cos(0x7c, task->data[2]);\n    sprite->y2 = Sin(0x76, task->data[2]);\n    task->data[3]++;\n    if (task->data[3] & 1)\n    {\n        task->data[2]++;\n    }",
       "callsTo": [
         "Cos",
@@ -862,6 +1463,7 @@
       "returnType": "void",
       "signature": "static void FadeOutAtEndOfEscalator(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "TryFadeOutOldMapMusic();\n    WarpFadeOutScreen();",
       "callsTo": [
         "TryFadeOutOldMapMusic",
@@ -873,6 +1475,7 @@
       "returnType": "void",
       "signature": "static void WarpAtEndOfEscalator(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!gPaletteFade.active && BGMusicStopped() == TRUE)\n    {\n        StopEscalator();\n        WarpIntoMap();\n        gFieldCallback = FieldCallback_EscalatorWarpIn;\n        SetMainCallback2(CB2_LoadMap);\n        DestroyTask(FindTaskIdByFunc(Task_EscalatorWarpOut));\n    }",
       "callsTo": [
         "BGMusicStopped",
@@ -888,6 +1491,7 @@
       "returnType": "void",
       "signature": "static void FieldCallback_EscalatorWarpIn(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "Overworld_PlaySpecialMapMusic();\n    WarpFadeInScreen();\n    LockPlayerFieldControls();\n    CreateTask(Task_EscalatorWarpIn, 0);\n    gFieldCallback = NULL;",
       "callsTo": [
         "CreateTask",
@@ -901,6 +1505,12 @@
       "returnType": "void",
       "signature": "static void Task_EscalatorWarpIn(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "struct Task *task;\n    task = &gTasks[taskId];\n    while (sEscalatorWarpInFieldEffectFuncs[task->tState](task));",
       "callsTo": [],
       "lineCount": 3
@@ -909,6 +1519,12 @@
       "returnType": "bool8",
       "signature": "static bool8 EscalatorWarpIn_Init(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "struct ObjectEvent *objectEvent;\n    s16 x;\n    s16 y;\n    u8 behavior;\n    CameraObjectFreeze();\n    objectEvent = &gObjectEvents[gPlayerAvatar.objectEventId];\n    ObjectEventSetHeldMovement(objectEvent, GetFaceDirectionMovementAction(DIR_EAST));\n    PlayerGetDestCoords(&x, &y);\n    behavior = MapGridGetMetatileBehaviorAt(x, y);\n    task->tState++;\n    task->data[1] = 16;\n\n    if (behavior == MB_DOWN_ESCALATOR)\n    {\n         \n        behavior = TRUE;\n        task->tState = 3;  \n    }\n    else  \n    {\n         \n        behavior = FALSE;\n    }\n    StartEscalator(behavior);\n    return TRUE;",
       "callsTo": [
         "CameraObjectFreeze",
@@ -924,6 +1540,12 @@
       "returnType": "bool8",
       "signature": "static bool8 EscalatorWarpIn_Down_Init(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "struct Sprite *sprite;\n    sprite = &gSprites[gPlayerAvatar.spriteId];\n    sprite->x2 = Cos(0x84, task->data[1]);\n    sprite->y2 = Sin(0x94, task->data[1]);\n    task->tState++;\n    return FALSE;",
       "callsTo": [
         "Cos",
@@ -935,6 +1557,12 @@
       "returnType": "bool8",
       "signature": "static bool8 EscalatorWarpIn_Down_Ride(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "struct Sprite *sprite;\n    sprite = &gSprites[gPlayerAvatar.spriteId];\n    sprite->x2 = Cos(0x84, task->data[1]);\n    sprite->y2 = Sin(0x94, task->data[1]);\n    task->data[2]++;\n    if (task->data[2] & 1)\n    {\n        task->data[1]--;\n    }\n    if (task->data[1] == 0)\n    {\n        sprite->x2 = 0;\n        sprite->y2 = 0;\n        task->tState = 5;\n    }\n    return FALSE;",
       "callsTo": [
         "Cos",
@@ -946,6 +1574,12 @@
       "returnType": "bool8",
       "signature": "static bool8 EscalatorWarpIn_Up_Init(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "struct Sprite *sprite;\n    sprite = &gSprites[gPlayerAvatar.spriteId];\n    sprite->x2 = Cos(0x7c, task->data[1]);\n    sprite->y2 = Sin(0x76, task->data[1]);\n    task->tState++;\n    return FALSE;",
       "callsTo": [
         "Cos",
@@ -957,6 +1591,12 @@
       "returnType": "bool8",
       "signature": "static bool8 EscalatorWarpIn_Up_Ride(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "struct Sprite *sprite;\n    sprite = &gSprites[gPlayerAvatar.spriteId];\n    sprite->x2 = Cos(0x7c, task->data[1]);\n    sprite->y2 = Sin(0x76, task->data[1]);\n    task->data[2]++;\n    if (task->data[2] & 1)\n    {\n        task->data[1]--;\n    }\n    if (task->data[1] == 0)\n    {\n        sprite->x2 = 0;\n        sprite->y2 = 0;\n        task->tState++;\n    }\n    return FALSE;",
       "callsTo": [
         "Cos",
@@ -968,6 +1608,12 @@
       "returnType": "bool8",
       "signature": "static bool8 EscalatorWarpIn_WaitForMovement(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (IsEscalatorMoving())\n    {\n        return FALSE;\n    }\n    StopEscalator();\n    task->tState++;\n    return TRUE;",
       "callsTo": [
         "IsEscalatorMoving",
@@ -979,6 +1625,12 @@
       "returnType": "bool8",
       "signature": "static bool8 EscalatorWarpIn_End(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "struct ObjectEvent *objectEvent;\n    objectEvent = &gObjectEvents[gPlayerAvatar.objectEventId];\n    if (ObjectEventClearHeldMovementIfFinished(objectEvent))\n    {\n        CameraObjectReset();\n        UnlockPlayerFieldControls();\n        ObjectEventSetHeldMovement(objectEvent, GetWalkNormalMovementAction(DIR_EAST));\n        DestroyTask(FindTaskIdByFunc(Task_EscalatorWarpIn));\n    }\n    return FALSE;",
       "callsTo": [
         "CameraObjectReset",
@@ -995,6 +1647,7 @@
       "returnType": "bool8",
       "signature": "bool8 FldEff_UseWaterfall(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 taskId;\n    taskId = CreateTask(Task_UseWaterfall, 0xff);\n    gTasks[taskId].tMonId = gFieldEffectArguments[0];\n    Task_UseWaterfall(taskId);\n    return FALSE;",
       "callsTo": [
         "CreateTask",
@@ -1006,6 +1659,12 @@
       "returnType": "void",
       "signature": "static void Task_UseWaterfall(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "while (sWaterfallFieldEffectFuncs[gTasks[taskId].tState](&gTasks[taskId], &gObjectEvents[gPlayerAvatar.objectEventId]));",
       "callsTo": [],
       "lineCount": 1
@@ -1014,6 +1673,16 @@
       "returnType": "bool8",
       "signature": "static bool8 WaterfallFieldEffect_Init(struct Task *task, struct ObjectEvent *objectEvent)",
       "paramsRaw": "struct Task *task, struct ObjectEvent *objectEvent",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        },
+        {
+          "name": "objectEvent",
+          "typeRaw": "struct ObjectEvent *"
+        }
+      ],
       "body": "LockPlayerFieldControls();\n    gPlayerAvatar.preventStep = TRUE;\n    task->tState++;\n    return FALSE;",
       "callsTo": [
         "LockPlayerFieldControls"
@@ -1024,6 +1693,16 @@
       "returnType": "bool8",
       "signature": "static bool8 WaterfallFieldEffect_ShowMon(struct Task *task, struct ObjectEvent *objectEvent)",
       "paramsRaw": "struct Task *task, struct ObjectEvent *objectEvent",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        },
+        {
+          "name": "objectEvent",
+          "typeRaw": "struct ObjectEvent *"
+        }
+      ],
       "body": "LockPlayerFieldControls();\n    if (!ObjectEventIsMovementOverridden(objectEvent))\n    {\n        ObjectEventClearHeldMovementIfFinished(objectEvent);\n        gFieldEffectArguments[0] = task->tMonId;\n        FieldEffectStart(FLDEFF_FIELD_MOVE_SHOW_MON_INIT);\n        task->tState++;\n    }\n    return FALSE;",
       "callsTo": [
         "FieldEffectStart",
@@ -1037,6 +1716,16 @@
       "returnType": "bool8",
       "signature": "static bool8 WaterfallFieldEffect_WaitForShowMon(struct Task *task, struct ObjectEvent *objectEvent)",
       "paramsRaw": "struct Task *task, struct ObjectEvent *objectEvent",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        },
+        {
+          "name": "objectEvent",
+          "typeRaw": "struct ObjectEvent *"
+        }
+      ],
       "body": "if (FieldEffectActiveListContains(FLDEFF_FIELD_MOVE_SHOW_MON))\n    {\n        return FALSE;\n    }\n    task->tState++;\n    return TRUE;",
       "callsTo": [
         "FieldEffectActiveListContains"
@@ -1047,6 +1736,16 @@
       "returnType": "bool8",
       "signature": "static bool8 WaterfallFieldEffect_RideUp(struct Task *task, struct ObjectEvent *objectEvent)",
       "paramsRaw": "struct Task *task, struct ObjectEvent *objectEvent",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        },
+        {
+          "name": "objectEvent",
+          "typeRaw": "struct ObjectEvent *"
+        }
+      ],
       "body": "ObjectEventSetHeldMovement(objectEvent, GetWalkSlowMovementAction(DIR_NORTH));\n    task->tState++;\n    return FALSE;",
       "callsTo": [
         "GetWalkSlowMovementAction",
@@ -1058,6 +1757,16 @@
       "returnType": "bool8",
       "signature": "static bool8 WaterfallFieldEffect_ContinueRideOrEnd(struct Task *task, struct ObjectEvent *objectEvent)",
       "paramsRaw": "struct Task *task, struct ObjectEvent *objectEvent",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        },
+        {
+          "name": "objectEvent",
+          "typeRaw": "struct ObjectEvent *"
+        }
+      ],
       "body": "if (!ObjectEventClearHeldMovementIfFinished(objectEvent))\n        return FALSE;\n\n    if (MetatileBehavior_IsWaterfall(objectEvent->currentMetatileBehavior))\n    {\n         \n        task->tState = 3;\n        return TRUE;\n    }\n\n    UnlockPlayerFieldControls();\n    gPlayerAvatar.preventStep = FALSE;\n    DestroyTask(FindTaskIdByFunc(Task_UseWaterfall));\n    FieldEffectActiveListRemove(FLDEFF_USE_WATERFALL);\n    return FALSE;",
       "callsTo": [
         "DestroyTask",
@@ -1073,6 +1782,7 @@
       "returnType": "bool8",
       "signature": "bool8 FldEff_UseDive(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 taskId;\n    taskId = CreateTask(Task_UseDive, 0xff);\n    gTasks[taskId].data[15] = gFieldEffectArguments[0];\n    gTasks[taskId].data[14] = gFieldEffectArguments[1];\n    Task_UseDive(taskId);\n    return FALSE;",
       "callsTo": [
         "CreateTask",
@@ -1084,6 +1794,12 @@
       "returnType": "void",
       "signature": "void Task_UseDive(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "while (sDiveFieldEffectFuncs[gTasks[taskId].data[0]](&gTasks[taskId]));",
       "callsTo": [],
       "lineCount": 1
@@ -1092,6 +1808,12 @@
       "returnType": "bool8",
       "signature": "static bool8 DiveFieldEffect_Init(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "gPlayerAvatar.preventStep = TRUE;\n    task->data[0]++;\n    return FALSE;",
       "callsTo": [],
       "lineCount": 3
@@ -1100,6 +1822,12 @@
       "returnType": "bool8",
       "signature": "static bool8 DiveFieldEffect_ShowMon(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "LockPlayerFieldControls();\n    gFieldEffectArguments[0] = task->data[15];\n    FieldEffectStart(FLDEFF_FIELD_MOVE_SHOW_MON_INIT);\n    task->data[0]++;\n    return FALSE;",
       "callsTo": [
         "FieldEffectStart",
@@ -1111,6 +1839,12 @@
       "returnType": "bool8",
       "signature": "static bool8 DiveFieldEffect_TryWarp(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "struct MapPosition mapPosition;\n    PlayerGetDestCoords(&mapPosition.x, &mapPosition.y);\n\n     \n    if (!FieldEffectActiveListContains(FLDEFF_FIELD_MOVE_SHOW_MON))\n    {\n        TryDoDiveWarp(&mapPosition, gObjectEvents[gPlayerAvatar.objectEventId].currentMetatileBehavior);\n        DestroyTask(FindTaskIdByFunc(Task_UseDive));\n        FieldEffectActiveListRemove(FLDEFF_USE_DIVE);\n    }\n    return FALSE;",
       "callsTo": [
         "DestroyTask",
@@ -1126,6 +1860,12 @@
       "returnType": "void",
       "signature": "void StartLavaridgeGymB1FWarp(u8 priority)",
       "paramsRaw": "u8 priority",
+      "paramsList": [
+        {
+          "name": "priority",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "CreateTask(Task_LavaridgeGymB1FWarp, priority);",
       "callsTo": [
         "CreateTask"
@@ -1136,6 +1876,12 @@
       "returnType": "void",
       "signature": "static void Task_LavaridgeGymB1FWarp(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "while (sLavaridgeGymB1FWarpEffectFuncs[gTasks[taskId].data[0]](&gTasks[taskId], &gObjectEvents[gPlayerAvatar.objectEventId], &gSprites[gPlayerAvatar.spriteId]));",
       "callsTo": [],
       "lineCount": 1
@@ -1144,6 +1890,20 @@
       "returnType": "bool8",
       "signature": "static bool8 LavaridgeGymB1FWarpEffect_Init(struct Task *task, struct ObjectEvent *objectEvent, struct Sprite *sprite)",
       "paramsRaw": "struct Task *task, struct ObjectEvent *objectEvent, struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        },
+        {
+          "name": "objectEvent",
+          "typeRaw": "struct ObjectEvent *"
+        },
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "FreezeObjectEvents();\n    CameraObjectFreeze();\n    SetCameraPanningCallback(NULL);\n    gPlayerAvatar.preventStep = TRUE;\n    objectEvent->fixedPriority = 1;\n    task->data[1] = 1;\n    task->data[0]++;\n    return TRUE;",
       "callsTo": [
         "CameraObjectFreeze",
@@ -1156,6 +1916,20 @@
       "returnType": "bool8",
       "signature": "static bool8 LavaridgeGymB1FWarpEffect_CameraShake(struct Task *task, struct ObjectEvent *objectEvent, struct Sprite *sprite)",
       "paramsRaw": "struct Task *task, struct ObjectEvent *objectEvent, struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        },
+        {
+          "name": "objectEvent",
+          "typeRaw": "struct ObjectEvent *"
+        },
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "SetCameraPanning(0, task->data[1]);\n    task->data[1] = -task->data[1];\n    task->data[2]++;\n    if (task->data[2] > 7)\n    {\n        task->data[2] = 0;\n        task->data[0]++;\n    }\n    return FALSE;",
       "callsTo": [
         "SetCameraPanning"
@@ -1166,6 +1940,20 @@
       "returnType": "bool8",
       "signature": "static bool8 LavaridgeGymB1FWarpEffect_Launch(struct Task *task, struct ObjectEvent *objectEvent, struct Sprite *sprite)",
       "paramsRaw": "struct Task *task, struct ObjectEvent *objectEvent, struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        },
+        {
+          "name": "objectEvent",
+          "typeRaw": "struct ObjectEvent *"
+        },
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "sprite->y2 = 0;\n    task->data[3] = 1;\n    gFieldEffectArguments[0] = objectEvent->currentCoords.x;\n    gFieldEffectArguments[1] = objectEvent->currentCoords.y;\n    gFieldEffectArguments[2] = sprite->subpriority - 1;\n    gFieldEffectArguments[3] = sprite->oam.priority;\n    FieldEffectStart(FLDEFF_ASH_LAUNCH);\n    PlaySE(SE_M_EXPLOSION);\n    task->data[0]++;\n    return TRUE;",
       "callsTo": [
         "FieldEffectStart",
@@ -1177,6 +1965,20 @@
       "returnType": "bool8",
       "signature": "static bool8 LavaridgeGymB1FWarpEffect_Rise(struct Task *task, struct ObjectEvent *objectEvent, struct Sprite *sprite)",
       "paramsRaw": "struct Task *task, struct ObjectEvent *objectEvent, struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        },
+        {
+          "name": "objectEvent",
+          "typeRaw": "struct ObjectEvent *"
+        },
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "s16 centerToCornerVecY;\n    SetCameraPanning(0, task->data[1]);\n    if (task->data[1] = -task->data[1], ++task->data[2] <= 17)\n    {\n        if (!(task->data[2] & 1) && (task->data[1] <= 3))\n        {\n            task->data[1] <<= 1;\n        }\n    }\n    else if (!(task->data[2] & 4) && (task->data[1] > 0))\n    {\n        task->data[1] >>= 1;\n    }\n    if (task->data[2] > 6)\n    {\n        centerToCornerVecY = -(sprite->centerToCornerVecY << 1);\n        if (sprite->y2 > -(sprite->y + sprite->centerToCornerVecY + gSpriteCoordOffsetY + centerToCornerVecY))\n        {\n            sprite->y2 -= task->data[3];\n            if (task->data[3] <= 7)\n            {\n                task->data[3]++;\n            }\n        }\n        else\n        {\n            task->data[4] = 1;\n        }\n    }\n    if (task->data[5] == 0 && sprite->y2 < -0x10)\n    {\n        task->data[5]++;\n        objectEvent->fixedPriority = 1;\n        sprite->oam.priority = 1;\n        sprite->subspriteMode = SUBSPRITES_IGNORE_PRIORITY;\n    }\n    if (task->data[1] == 0 && task->data[4] != 0)\n    {\n        task->data[0]++;\n    }\n    return FALSE;",
       "callsTo": [
         "SetCameraPanning"
@@ -1187,6 +1989,20 @@
       "returnType": "bool8",
       "signature": "static bool8 LavaridgeGymB1FWarpEffect_FadeOut(struct Task *task, struct ObjectEvent *objectEvent, struct Sprite *sprite)",
       "paramsRaw": "struct Task *task, struct ObjectEvent *objectEvent, struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        },
+        {
+          "name": "objectEvent",
+          "typeRaw": "struct ObjectEvent *"
+        },
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "TryFadeOutOldMapMusic();\n    WarpFadeOutScreen();\n    task->data[0]++;\n    return FALSE;",
       "callsTo": [
         "TryFadeOutOldMapMusic",
@@ -1198,6 +2014,20 @@
       "returnType": "bool8",
       "signature": "static bool8 LavaridgeGymB1FWarpEffect_Warp(struct Task *task, struct ObjectEvent *objectEvent, struct Sprite *sprite)",
       "paramsRaw": "struct Task *task, struct ObjectEvent *objectEvent, struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        },
+        {
+          "name": "objectEvent",
+          "typeRaw": "struct ObjectEvent *"
+        },
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (!gPaletteFade.active && BGMusicStopped() == TRUE)\n    {\n        WarpIntoMap();\n        gFieldCallback = FieldCB_LavaridgeGymB1FWarpExit;\n        SetMainCallback2(CB2_LoadMap);\n        DestroyTask(FindTaskIdByFunc(Task_LavaridgeGymB1FWarp));\n    }\n    return FALSE;",
       "callsTo": [
         "BGMusicStopped",
@@ -1212,6 +2042,7 @@
       "returnType": "void",
       "signature": "static void FieldCB_LavaridgeGymB1FWarpExit(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "Overworld_PlaySpecialMapMusic();\n    WarpFadeInScreen();\n    LockPlayerFieldControls();\n    gFieldCallback = NULL;\n    CreateTask(Task_LavaridgeGymB1FWarpExit, 0);",
       "callsTo": [
         "CreateTask",
@@ -1225,6 +2056,12 @@
       "returnType": "void",
       "signature": "static void Task_LavaridgeGymB1FWarpExit(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "while (sLavaridgeGymB1FWarpExitEffectFuncs[gTasks[taskId].data[0]](&gTasks[taskId], &gObjectEvents[gPlayerAvatar.objectEventId], &gSprites[gPlayerAvatar.spriteId]));",
       "callsTo": [],
       "lineCount": 1
@@ -1233,6 +2070,20 @@
       "returnType": "bool8",
       "signature": "static bool8 LavaridgeGymB1FWarpExitEffect_Init(struct Task *task, struct ObjectEvent *objectEvent, struct Sprite *sprite)",
       "paramsRaw": "struct Task *task, struct ObjectEvent *objectEvent, struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        },
+        {
+          "name": "objectEvent",
+          "typeRaw": "struct ObjectEvent *"
+        },
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "CameraObjectFreeze();\n    FreezeObjectEvents();\n    gPlayerAvatar.preventStep = TRUE;\n    objectEvent->invisible = TRUE;\n    task->data[0]++;\n    return FALSE;",
       "callsTo": [
         "CameraObjectFreeze",
@@ -1244,6 +2095,20 @@
       "returnType": "bool8",
       "signature": "static bool8 LavaridgeGymB1FWarpExitEffect_StartPopOut(struct Task *task, struct ObjectEvent *objectEvent, struct Sprite *sprite)",
       "paramsRaw": "struct Task *task, struct ObjectEvent *objectEvent, struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        },
+        {
+          "name": "objectEvent",
+          "typeRaw": "struct ObjectEvent *"
+        },
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (IsWeatherNotFadingIn())\n    {\n        gFieldEffectArguments[0] = objectEvent->currentCoords.x;\n        gFieldEffectArguments[1] = objectEvent->currentCoords.y;\n        gFieldEffectArguments[2] = sprite->subpriority - 1;\n        gFieldEffectArguments[3] = sprite->oam.priority;\n        task->data[1] = FieldEffectStart(FLDEFF_ASH_PUFF);\n        task->data[0]++;\n    }\n    return FALSE;",
       "callsTo": [
         "FieldEffectStart",
@@ -1255,6 +2120,20 @@
       "returnType": "bool8",
       "signature": "static bool8 LavaridgeGymB1FWarpExitEffect_PopOut(struct Task *task, struct ObjectEvent *objectEvent, struct Sprite *sprite)",
       "paramsRaw": "struct Task *task, struct ObjectEvent *objectEvent, struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        },
+        {
+          "name": "objectEvent",
+          "typeRaw": "struct ObjectEvent *"
+        },
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "sprite = &gSprites[task->data[1]];\n    if (sprite->animCmdIndex > 1)\n    {\n        task->data[0]++;\n        objectEvent->invisible = FALSE;\n        CameraObjectReset();\n        PlaySE(SE_M_DIG);\n        ObjectEventSetHeldMovement(objectEvent, GetJumpMovementAction(DIR_EAST));\n    }\n    return FALSE;",
       "callsTo": [
         "CameraObjectReset",
@@ -1268,6 +2147,20 @@
       "returnType": "bool8",
       "signature": "static bool8 LavaridgeGymB1FWarpExitEffect_End(struct Task *task, struct ObjectEvent *objectEvent, struct Sprite *sprite)",
       "paramsRaw": "struct Task *task, struct ObjectEvent *objectEvent, struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        },
+        {
+          "name": "objectEvent",
+          "typeRaw": "struct ObjectEvent *"
+        },
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (ObjectEventClearHeldMovementIfFinished(objectEvent))\n    {\n        gPlayerAvatar.preventStep = FALSE;\n        UnlockPlayerFieldControls();\n        UnfreezeObjectEvents();\n        DestroyTask(FindTaskIdByFunc(Task_LavaridgeGymB1FWarpExit));\n    }\n    return FALSE;",
       "callsTo": [
         "DestroyTask",
@@ -1282,6 +2175,7 @@
       "returnType": "u8",
       "signature": "u8 FldEff_AshLaunch(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 spriteId;\n    SetSpritePosToOffsetMapCoords((s16 *)&gFieldEffectArguments[0], (s16 *)&gFieldEffectArguments[1], 8, 8);\n    spriteId = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[FLDEFFOBJ_ASH_LAUNCH], gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2]);\n    gSprites[spriteId].oam.priority = gFieldEffectArguments[3];\n    gSprites[spriteId].coordOffsetEnabled = TRUE;\n    return spriteId;",
       "callsTo": [
         "CreateSpriteAtEnd",
@@ -1293,6 +2187,12 @@
       "returnType": "void",
       "signature": "void SpriteCB_AshLaunch(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (sprite->animEnded)\n        FieldEffectStop(sprite, FLDEFF_ASH_LAUNCH);",
       "callsTo": [
         "FieldEffectStop"
@@ -1303,6 +2203,12 @@
       "returnType": "void",
       "signature": "void StartLavaridgeGym1FWarp(u8 priority)",
       "paramsRaw": "u8 priority",
+      "paramsList": [
+        {
+          "name": "priority",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "CreateTask(Task_LavaridgeGym1FWarp, priority);",
       "callsTo": [
         "CreateTask"
@@ -1313,6 +2219,12 @@
       "returnType": "void",
       "signature": "static void Task_LavaridgeGym1FWarp(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "while(sLavaridgeGym1FWarpEffectFuncs[gTasks[taskId].data[0]](&gTasks[taskId], &gObjectEvents[gPlayerAvatar.objectEventId], &gSprites[gPlayerAvatar.spriteId]));",
       "callsTo": [],
       "lineCount": 1
@@ -1321,6 +2233,20 @@
       "returnType": "bool8",
       "signature": "static bool8 LavaridgeGym1FWarpEffect_Init(struct Task *task, struct ObjectEvent *objectEvent, struct Sprite *sprite)",
       "paramsRaw": "struct Task *task, struct ObjectEvent *objectEvent, struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        },
+        {
+          "name": "objectEvent",
+          "typeRaw": "struct ObjectEvent *"
+        },
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "FreezeObjectEvents();\n    CameraObjectFreeze();\n    gPlayerAvatar.preventStep = TRUE;\n    objectEvent->fixedPriority = 1;\n    task->data[0]++;\n    return FALSE;",
       "callsTo": [
         "CameraObjectFreeze",
@@ -1332,6 +2258,20 @@
       "returnType": "bool8",
       "signature": "static bool8 LavaridgeGym1FWarpEffect_AshPuff(struct Task *task, struct ObjectEvent *objectEvent, struct Sprite *sprite)",
       "paramsRaw": "struct Task *task, struct ObjectEvent *objectEvent, struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        },
+        {
+          "name": "objectEvent",
+          "typeRaw": "struct ObjectEvent *"
+        },
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (ObjectEventClearHeldMovementIfFinished(objectEvent))\n    {\n        if (task->data[1] > 3)\n        {\n            gFieldEffectArguments[0] = objectEvent->currentCoords.x;\n            gFieldEffectArguments[1] = objectEvent->currentCoords.y;\n            gFieldEffectArguments[2] = sprite->subpriority - 1;\n            gFieldEffectArguments[3] = sprite->oam.priority;\n            task->data[1] = FieldEffectStart(FLDEFF_ASH_PUFF);\n            task->data[0]++;\n        }\n        else\n        {\n            task->data[1]++;\n            ObjectEventSetHeldMovement(objectEvent, GetWalkInPlaceFasterMovementAction(objectEvent->facingDirection));\n            PlaySE(SE_LAVARIDGE_FALL_WARP);\n        }\n    }\n    return FALSE;",
       "callsTo": [
         "FieldEffectStart",
@@ -1346,6 +2286,20 @@
       "returnType": "bool8",
       "signature": "static bool8 LavaridgeGym1FWarpEffect_Disappear(struct Task *task, struct ObjectEvent *objectEvent, struct Sprite *sprite)",
       "paramsRaw": "struct Task *task, struct ObjectEvent *objectEvent, struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        },
+        {
+          "name": "objectEvent",
+          "typeRaw": "struct ObjectEvent *"
+        },
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (gSprites[task->data[1]].animCmdIndex == 2)\n    {\n        objectEvent->invisible = TRUE;\n        task->data[0]++;\n    }\n    return FALSE;",
       "callsTo": [],
       "lineCount": 6
@@ -1354,6 +2308,20 @@
       "returnType": "bool8",
       "signature": "static bool8 LavaridgeGym1FWarpEffect_FadeOut(struct Task *task, struct ObjectEvent *objectEvent, struct Sprite *sprite)",
       "paramsRaw": "struct Task *task, struct ObjectEvent *objectEvent, struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        },
+        {
+          "name": "objectEvent",
+          "typeRaw": "struct ObjectEvent *"
+        },
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (!FieldEffectActiveListContains(FLDEFF_ASH_PUFF))\n    {\n        TryFadeOutOldMapMusic();\n        WarpFadeOutScreen();\n        task->data[0]++;\n    }\n    return FALSE;",
       "callsTo": [
         "FieldEffectActiveListContains",
@@ -1366,6 +2334,20 @@
       "returnType": "bool8",
       "signature": "static bool8 LavaridgeGym1FWarpEffect_Warp(struct Task *task, struct ObjectEvent *objectEvent, struct Sprite *sprite)",
       "paramsRaw": "struct Task *task, struct ObjectEvent *objectEvent, struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        },
+        {
+          "name": "objectEvent",
+          "typeRaw": "struct ObjectEvent *"
+        },
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (!gPaletteFade.active && BGMusicStopped() == TRUE)\n    {\n        WarpIntoMap();\n        gFieldCallback = FieldCB_FallWarpExit;\n        SetMainCallback2(CB2_LoadMap);\n        DestroyTask(FindTaskIdByFunc(Task_LavaridgeGym1FWarp));\n    }\n    return FALSE;",
       "callsTo": [
         "BGMusicStopped",
@@ -1380,6 +2362,7 @@
       "returnType": "u8",
       "signature": "u8 FldEff_AshPuff(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 spriteId;\n    SetSpritePosToOffsetMapCoords((s16 *)&gFieldEffectArguments[0], (s16 *)&gFieldEffectArguments[1], 8, 8);\n    spriteId = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[FLDEFFOBJ_ASH_PUFF], gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2]);\n    gSprites[spriteId].oam.priority = gFieldEffectArguments[3];\n    gSprites[spriteId].coordOffsetEnabled = TRUE;\n    return spriteId;",
       "callsTo": [
         "CreateSpriteAtEnd",
@@ -1391,6 +2374,12 @@
       "returnType": "void",
       "signature": "void SpriteCB_AshPuff(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (sprite->animEnded)\n        FieldEffectStop(sprite, FLDEFF_ASH_PUFF);",
       "callsTo": [
         "FieldEffectStop"
@@ -1401,6 +2390,7 @@
       "returnType": "void",
       "signature": "void StartEscapeRopeFieldEffect(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "LockPlayerFieldControls();\n    FreezeObjectEvents();\n    CreateTask(Task_EscapeRopeWarpOut, 80);",
       "callsTo": [
         "CreateTask",
@@ -1413,6 +2403,12 @@
       "returnType": "void",
       "signature": "static void Task_EscapeRopeWarpOut(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "sEscapeRopeWarpOutEffectFuncs[gTasks[taskId].tState](&gTasks[taskId]);",
       "callsTo": [],
       "lineCount": 1
@@ -1421,6 +2417,12 @@
       "returnType": "void",
       "signature": "static void EscapeRopeWarpOutEffect_Init(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "task->tState++;\n    task->tTimer = 64;\n    task->tStartDir = GetPlayerFacingDirection();",
       "callsTo": [
         "GetPlayerFacingDirection"
@@ -1431,6 +2433,12 @@
       "returnType": "void",
       "signature": "static void EscapeRopeWarpOutEffect_Spin(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "struct ObjectEvent *objectEvent;\n    u8 spinDirections[5] =  {DIR_SOUTH, DIR_WEST, DIR_EAST, DIR_NORTH, DIR_SOUTH};\n    if (task->tTimer != 0 && (--task->tTimer) == 0)\n    {\n        TryFadeOutOldMapMusic();\n        WarpFadeOutScreen();\n    }\n    objectEvent = &gObjectEvents[gPlayerAvatar.objectEventId];\n    if (!ObjectEventIsMovementOverridden(objectEvent) || ObjectEventClearHeldMovementIfFinished(objectEvent))\n    {\n        if (task->tTimer == 0 && !gPaletteFade.active && BGMusicStopped() == TRUE)\n        {\n            SetObjectEventDirection(objectEvent, task->tStartDir);\n            SetWarpDestinationToEscapeWarp();\n            WarpIntoMap();\n            gFieldCallback = FieldCallback_EscapeRopeWarpIn;\n            SetMainCallback2(CB2_LoadMap);\n            DestroyTask(FindTaskIdByFunc(Task_EscapeRopeWarpOut));\n        }\n        else if (task->tSpinDelay == 0 || (--task->tSpinDelay) == 0)\n        {\n            ObjectEventSetHeldMovement(objectEvent, GetFaceDirectionMovementAction(spinDirections[objectEvent->facingDirection]));\n            if (task->tNumTurns < 12)\n                task->tNumTurns++;\n            task->tSpinDelay = 8 >> (task->tNumTurns >> 2);\n        }\n    }",
       "callsTo": [
         "BGMusicStopped",
@@ -1453,6 +2461,7 @@
       "returnType": "void",
       "signature": "static void FieldCallback_EscapeRopeWarpIn(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "Overworld_PlaySpecialMapMusic();\n    WarpFadeInScreen();\n    LockPlayerFieldControls();\n    FreezeObjectEvents();\n    gFieldCallback = NULL;\n    gObjectEvents[gPlayerAvatar.objectEventId].invisible = TRUE;\n    CreateTask(Task_EscapeRopeWarpIn, 0);",
       "callsTo": [
         "CreateTask",
@@ -1467,6 +2476,12 @@
       "returnType": "void",
       "signature": "static void Task_EscapeRopeWarpIn(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "sEscapeRopeWarpInEffectFuncs[gTasks[taskId].tState](&gTasks[taskId]);",
       "callsTo": [],
       "lineCount": 1
@@ -1475,6 +2490,12 @@
       "returnType": "void",
       "signature": "static void EscapeRopeWarpInEffect_Init(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (IsWeatherNotFadingIn())\n    {\n        task->tState++;\n        task->tStartDir = GetPlayerFacingDirection();\n    }",
       "callsTo": [
         "GetPlayerFacingDirection",
@@ -1486,6 +2507,12 @@
       "returnType": "void",
       "signature": "static void EscapeRopeWarpInEffect_Spin(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u8 spinDirections[5] = {DIR_SOUTH, DIR_WEST, DIR_EAST, DIR_NORTH, DIR_SOUTH};\n    struct ObjectEvent *objectEvent = &gObjectEvents[gPlayerAvatar.objectEventId];\n    if (task->tSpinDelay == 0 || (--task->tSpinDelay) == 0)\n    {\n        if (ObjectEventIsMovementOverridden(objectEvent) && !ObjectEventClearHeldMovementIfFinished(objectEvent))\n        {\n            return;\n        }\n        if (task->tNumTurns >= 32 && task->tStartDir == GetPlayerFacingDirection())\n        {\n            objectEvent->invisible = FALSE;\n            UnlockPlayerFieldControls();\n            UnfreezeObjectEvents();\n            DestroyTask(FindTaskIdByFunc(Task_EscapeRopeWarpIn));\n            return;\n        }\n        ObjectEventSetHeldMovement(objectEvent, GetFaceDirectionMovementAction(spinDirections[objectEvent->facingDirection]));\n        if (task->tNumTurns < 32)\n            task->tNumTurns++;\n        task->tSpinDelay = task->tNumTurns >> 2;\n    }\n    objectEvent->invisible ^= 1;",
       "callsTo": [
         "DestroyTask",
@@ -1504,6 +2531,7 @@
       "returnType": "void",
       "signature": "void FldEff_TeleportWarpOut(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "CreateTask(Task_TeleportWarpOut, 0);",
       "callsTo": [
         "CreateTask"
@@ -1514,6 +2542,12 @@
       "returnType": "void",
       "signature": "static void Task_TeleportWarpOut(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "sTeleportWarpOutFieldEffectFuncs[gTasks[taskId].tState](&gTasks[taskId]);",
       "callsTo": [],
       "lineCount": 1
@@ -1522,6 +2556,12 @@
       "returnType": "void",
       "signature": "static void TeleportWarpOutFieldEffect_Init(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "LockPlayerFieldControls();\n    FreezeObjectEvents();\n    CameraObjectFreeze();\n    task->data[15] = GetPlayerFacingDirection();\n    task->tState++;",
       "callsTo": [
         "CameraObjectFreeze",
@@ -1535,6 +2575,12 @@
       "returnType": "void",
       "signature": "static void TeleportWarpOutFieldEffect_SpinGround(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u8 spinDirections[5] = {DIR_SOUTH, DIR_WEST, DIR_EAST, DIR_NORTH, DIR_SOUTH};\n    struct ObjectEvent *objectEvent = &gObjectEvents[gPlayerAvatar.objectEventId];\n    if (task->data[1] == 0 || (--task->data[1]) == 0)\n    {\n        ObjectEventTurn(objectEvent, spinDirections[objectEvent->facingDirection]);\n        task->data[1] = 8;\n        task->data[2]++;\n    }\n    if (task->data[2] > 7 && task->data[15] == objectEvent->facingDirection)\n    {\n        task->tState++;\n        task->data[1] = 4;\n        task->data[2] = 8;\n        task->data[3] = 1;\n        PlaySE(SE_WARP_IN);\n    }",
       "callsTo": [
         "ObjectEventTurn",
@@ -1546,6 +2592,12 @@
       "returnType": "void",
       "signature": "static void TeleportWarpOutFieldEffect_SpinExit(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u8 spinDirections[5] = {DIR_SOUTH, DIR_WEST, DIR_EAST, DIR_NORTH, DIR_SOUTH};\n    struct ObjectEvent *objectEvent = &gObjectEvents[gPlayerAvatar.objectEventId];\n    struct Sprite *sprite = &gSprites[gPlayerAvatar.spriteId];\n    if ((--task->data[1]) <= 0)\n    {\n        task->data[1] = 4;\n        ObjectEventTurn(objectEvent, spinDirections[objectEvent->facingDirection]);\n    }\n    sprite->y -= task->data[3];\n    task->data[4] += task->data[3];\n    if ((--task->data[2]) <= 0 && (task->data[2] = 4, task->data[3] < 8))\n    {\n        task->data[3] <<= 1;\n    }\n    if (task->data[4] > 8 && (sprite->oam.priority = 1, sprite->subspriteMode != SUBSPRITES_OFF))\n    {\n        sprite->subspriteMode = SUBSPRITES_IGNORE_PRIORITY;\n    }\n    if (task->data[4] >= DISPLAY_HEIGHT + 8)\n    {\n        task->tState++;\n        TryFadeOutOldMapMusic();\n        WarpFadeOutScreen();\n    }",
       "callsTo": [
         "ObjectEventTurn",
@@ -1558,6 +2610,12 @@
       "returnType": "void",
       "signature": "static void TeleportWarpOutFieldEffect_End(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (!gPaletteFade.active)\n    {\n        if (task->data[5] == FALSE)\n        {\n            ClearMirageTowerPulseBlendEffect();\n            task->data[5] = TRUE;\n        }\n\n        if (BGMusicStopped() == TRUE)\n        {\n            SetWarpDestinationToLastHealLocation();\n            WarpIntoMap();\n            SetMainCallback2(CB2_LoadMap);\n            gFieldCallback = FieldCallback_TeleportWarpIn;\n            DestroyTask(FindTaskIdByFunc(Task_TeleportWarpOut));\n        }\n    }",
       "callsTo": [
         "BGMusicStopped",
@@ -1574,6 +2632,7 @@
       "returnType": "void",
       "signature": "static void FieldCallback_TeleportWarpIn(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "Overworld_PlaySpecialMapMusic();\n    WarpFadeInScreen();\n    LockPlayerFieldControls();\n    FreezeObjectEvents();\n    gFieldCallback = NULL;\n    gObjectEvents[gPlayerAvatar.objectEventId].invisible = TRUE;\n    CameraObjectFreeze();\n    CreateTask(Task_TeleportWarpIn, 0);",
       "callsTo": [
         "CameraObjectFreeze",
@@ -1589,6 +2648,12 @@
       "returnType": "void",
       "signature": "static void Task_TeleportWarpIn(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "sTeleportWarpInFieldEffectFuncs[gTasks[taskId].data[0]](&gTasks[taskId]);",
       "callsTo": [],
       "lineCount": 1
@@ -1597,6 +2662,12 @@
       "returnType": "void",
       "signature": "static void TeleportWarpInFieldEffect_Init(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "struct Sprite *sprite;\n    s16 centerToCornerVecY;\n    if (IsWeatherNotFadingIn())\n    {\n        sprite = &gSprites[gPlayerAvatar.spriteId];\n        centerToCornerVecY = -(sprite->centerToCornerVecY << 1);\n        sprite->y2 = -(sprite->y + sprite->centerToCornerVecY + gSpriteCoordOffsetY + centerToCornerVecY);\n        gObjectEvents[gPlayerAvatar.objectEventId].invisible = FALSE;\n        task->data[0]++;\n        task->data[1] = 8;\n        task->data[2] = 1;\n        task->data[14] = sprite->subspriteMode;\n        task->data[15] = GetPlayerFacingDirection();\n        PlaySE(SE_WARP_IN);\n    }",
       "callsTo": [
         "GetPlayerFacingDirection",
@@ -1609,6 +2680,12 @@
       "returnType": "void",
       "signature": "static void TeleportWarpInFieldEffect_SpinEnter(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u8 spinDirections[5] = {DIR_SOUTH, DIR_WEST, DIR_EAST, DIR_NORTH, DIR_SOUTH};\n    struct ObjectEvent *objectEvent = &gObjectEvents[gPlayerAvatar.objectEventId];\n    struct Sprite *sprite = &gSprites[gPlayerAvatar.spriteId];\n    if ((sprite->y2 += task->data[1]) >= -8)\n    {\n        if (task->data[13] == 0)\n        {\n            task->data[13]++;\n            objectEvent->triggerGroundEffectsOnMove = TRUE;\n            sprite->subspriteMode = task->data[14];\n        }\n    }\n    else\n    {\n        sprite->oam.priority = 1;\n        if (sprite->subspriteMode != SUBSPRITES_OFF)\n        {\n            sprite->subspriteMode = SUBSPRITES_IGNORE_PRIORITY;\n        }\n    }\n    if (sprite->y2 >= -0x30 && task->data[1] > 1 && !(sprite->y2 & 1))\n    {\n        task->data[1]--;\n    }\n    if ((--task->data[2]) == 0)\n    {\n        task->data[2] = 4;\n        ObjectEventTurn(objectEvent, spinDirections[objectEvent->facingDirection]);\n    }\n    if (sprite->y2 >= 0)\n    {\n        sprite->y2 = 0;\n        task->data[0]++;\n        task->data[1] = 1;\n        task->data[2] = 0;\n    }",
       "callsTo": [
         "ObjectEventTurn"
@@ -1619,6 +2696,12 @@
       "returnType": "void",
       "signature": "static void TeleportWarpInFieldEffect_SpinGround(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u8 spinDirections[5] = {DIR_SOUTH, DIR_WEST, DIR_EAST, DIR_NORTH, DIR_SOUTH};\n    struct ObjectEvent *objectEvent = &gObjectEvents[gPlayerAvatar.objectEventId];\n    if ((--task->data[1]) == 0)\n    {\n        ObjectEventTurn(objectEvent, spinDirections[objectEvent->facingDirection]);\n        task->data[1] = 8;\n        if ((++task->data[2]) > 4 && task->data[14] == objectEvent->facingDirection)\n        {\n            UnlockPlayerFieldControls();\n            CameraObjectReset();\n            UnfreezeObjectEvents();\n            DestroyTask(FindTaskIdByFunc(Task_TeleportWarpIn));\n        }\n    }",
       "callsTo": [
         "CameraObjectReset",
@@ -1634,6 +2717,7 @@
       "returnType": "bool8",
       "signature": "bool8 FldEff_FieldMoveShowMon(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 taskId;\n    if (IsMapTypeOutdoors(GetCurrentMapType()) == TRUE)\n        taskId = CreateTask(Task_FieldMoveShowMonOutdoors, 0xff);\n    else\n        taskId = CreateTask(Task_FieldMoveShowMonIndoors, 0xff);\n\n    gTasks[taskId].tMonSpriteId = InitFieldMoveMonSprite(gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2]);\n    return FALSE;",
       "callsTo": [
         "CreateTask",
@@ -1647,6 +2731,7 @@
       "returnType": "bool8",
       "signature": "bool8 FldEff_FieldMoveShowMonInit(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "struct Pokemon *pokemon;\n    bool32 noDucking = gFieldEffectArguments[0] & SHOW_MON_CRY_NO_DUCKING;\n    pokemon = &gPlayerParty[(u8)gFieldEffectArguments[0]];\n    gFieldEffectArguments[0] = GetMonData(pokemon, MON_DATA_SPECIES);\n    gFieldEffectArguments[1] = GetMonData(pokemon, MON_DATA_OT_ID);\n    gFieldEffectArguments[2] = GetMonData(pokemon, MON_DATA_PERSONALITY);\n    gFieldEffectArguments[0] |= noDucking;\n    FieldEffectStart(FLDEFF_FIELD_MOVE_SHOW_MON);\n    FieldEffectActiveListRemove(FLDEFF_FIELD_MOVE_SHOW_MON_INIT);\n    return FALSE;",
       "callsTo": [
         "FieldEffectActiveListRemove",
@@ -1659,6 +2744,12 @@
       "returnType": "void",
       "signature": "static void Task_FieldMoveShowMonOutdoors(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "sFieldMoveShowMonOutdoorsEffectFuncs[gTasks[taskId].tState](&gTasks[taskId]);",
       "callsTo": [],
       "lineCount": 1
@@ -1667,6 +2758,12 @@
       "returnType": "void",
       "signature": "static void FieldMoveShowMonOutdoorsEffect_Init(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "task->data[11] = REG_WININ;\n    task->data[12] = REG_WINOUT;\n    StoreWordInTwoHalfwords((u16*) &task->data[13], (u32)gMain.vblankCallback);\n    task->tWinHoriz = WIN_RANGE(DISPLAY_WIDTH, DISPLAY_WIDTH + 1);\n    task->tWinVert = WIN_RANGE(DISPLAY_HEIGHT / 2, DISPLAY_HEIGHT / 2 + 1);\n    task->tWinIn = WININ_WIN0_BG_ALL | WININ_WIN0_OBJ | WININ_WIN0_CLR;\n    task->tWinOut = WINOUT_WIN01_BG1 | WINOUT_WIN01_BG2 | WINOUT_WIN01_BG3 | WINOUT_WIN01_OBJ | WINOUT_WIN01_CLR;\n    SetGpuReg(REG_OFFSET_WIN0H, task->tWinHoriz);\n    SetGpuReg(REG_OFFSET_WIN0V, task->tWinVert);\n    SetGpuReg(REG_OFFSET_WININ, task->tWinIn);\n    SetGpuReg(REG_OFFSET_WINOUT, task->tWinOut);\n    SetVBlankCallback(VBlankCB_FieldMoveShowMonOutdoors);\n    task->tState++;",
       "callsTo": [
         "SetGpuReg",
@@ -1680,6 +2777,12 @@
       "returnType": "void",
       "signature": "static void FieldMoveShowMonOutdoorsEffect_LoadGfx(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u16 offset = ((REG_BG0CNT >> 2) << 14);\n    u16 delta = ((REG_BG0CNT >> 8) << 11);\n    CpuCopy16(sFieldMoveStreaksOutdoors_Gfx, (void *)(VRAM + offset), 0x200);\n    CpuFill32(0, (void *)(VRAM + delta), 0x800);\n    LoadPalette(sFieldMoveStreaksOutdoors_Pal, BG_PLTT_ID(15), sizeof(sFieldMoveStreaksOutdoors_Pal));\n    LoadFieldMoveOutdoorStreaksTilemap(delta);\n    task->tState++;",
       "callsTo": [
         "BG_PLTT_ID",
@@ -1694,6 +2797,12 @@
       "returnType": "void",
       "signature": "static void FieldMoveShowMonOutdoorsEffect_CreateBanner(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "s16 horiz;\n    s16 vertHi;\n    s16 vertLo;\n    task->tBgHoriz -= 16;\n    horiz = ((u16)task->tWinHoriz >> 8);\n    vertHi = ((u16)task->tWinVert >> 8);\n    vertLo = ((u16)task->tWinVert & 0xff);\n    horiz -= 16;\n    vertHi -= 2;\n    vertLo += 2;\n\n    if (horiz < 0)\n        horiz = 0;\n\n    if (vertHi < DISPLAY_HEIGHT / 4)\n        vertHi = DISPLAY_HEIGHT / 4;\n\n    if (vertLo > DISPLAY_WIDTH / 2)\n        vertLo = DISPLAY_WIDTH / 2;\n\n    task->tWinHoriz = (horiz << 8) | (task->tWinHoriz & 0xff);\n    task->tWinVert = (vertHi << 8) | vertLo;\n    if (horiz == 0 && vertHi == DISPLAY_HEIGHT / 4 && vertLo == DISPLAY_WIDTH / 2)\n    {\n        gSprites[task->tMonSpriteId].callback = SpriteCB_FieldMoveMonSlideOnscreen;\n        task->tState++;\n    }",
       "callsTo": [],
       "lineCount": 27
@@ -1702,6 +2811,12 @@
       "returnType": "void",
       "signature": "static void FieldMoveShowMonOutdoorsEffect_WaitForMon(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "task->tBgHoriz -= 16;\n\n    if (gSprites[task->tMonSpriteId].sSlidOffscreen)\n        task->tState++;",
       "callsTo": [],
       "lineCount": 4
@@ -1710,6 +2825,12 @@
       "returnType": "void",
       "signature": "static void FieldMoveShowMonOutdoorsEffect_ShrinkBanner(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "s16 vertHi;\n    s16 vertLo;\n    task->tBgHoriz -= 16;\n    vertHi = (task->tWinVert >> 8);\n    vertLo = (task->tWinVert & 0xFF);\n    vertHi += 6;\n    vertLo -= 6;\n\n    if (vertHi > DISPLAY_HEIGHT / 2)\n        vertHi = DISPLAY_HEIGHT / 2;\n\n    if (vertLo < DISPLAY_HEIGHT / 2 + 1)\n        vertLo = DISPLAY_HEIGHT / 2 + 1;\n\n    task->tWinVert = (vertHi << 8) | vertLo;\n\n    if (vertHi == DISPLAY_HEIGHT / 2 && vertLo == DISPLAY_HEIGHT / 2 + 1)\n        task->tState++;",
       "callsTo": [],
       "lineCount": 18
@@ -1718,6 +2839,12 @@
       "returnType": "void",
       "signature": "static void FieldMoveShowMonOutdoorsEffect_RestoreBg(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u16 bg0cnt = (REG_BG0CNT >> 8) << 11;\n    CpuFill32(0, (void *)VRAM + bg0cnt, 0x800);\n    task->tWinHoriz = DISPLAY_WIDTH + 1;\n    task->tWinVert = DISPLAY_HEIGHT + 1;\n    task->tWinIn = task->data[11];\n    task->tWinOut = task->data[12];\n    task->tState++;",
       "callsTo": [
         "CpuFill32"
@@ -1728,6 +2855,12 @@
       "returnType": "void",
       "signature": "static void FieldMoveShowMonOutdoorsEffect_End(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "IntrCallback callback;\n    LoadWordFromTwoHalfwords((u16 *)&task->data[13], (u32 *)&callback);\n    SetVBlankCallback(callback);\n    InitTextBoxGfxAndPrinters();\n    FreeResourcesAndDestroySprite(&gSprites[task->tMonSpriteId], task->tMonSpriteId);\n    FieldEffectActiveListRemove(FLDEFF_FIELD_MOVE_SHOW_MON);\n    DestroyTask(FindTaskIdByFunc(Task_FieldMoveShowMonOutdoors));",
       "callsTo": [
         "DestroyTask",
@@ -1744,6 +2877,7 @@
       "returnType": "void",
       "signature": "static void VBlankCB_FieldMoveShowMonOutdoors(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "IntrCallback callback;\n    struct Task *task = &gTasks[FindTaskIdByFunc(Task_FieldMoveShowMonOutdoors)];\n    LoadWordFromTwoHalfwords((u16 *)&task->data[13], (u32 *)&callback);\n    callback();\n    SetGpuReg(REG_OFFSET_WIN0H, task->tWinHoriz);\n    SetGpuReg(REG_OFFSET_WIN0V, task->tWinVert);\n    SetGpuReg(REG_OFFSET_WININ, task->tWinIn);\n    SetGpuReg(REG_OFFSET_WINOUT, task->tWinOut);\n    SetGpuReg(REG_OFFSET_BG0HOFS, task->tBgHoriz);\n    SetGpuReg(REG_OFFSET_BG0VOFS, task->tBgVert);",
       "callsTo": [
         "FindTaskIdByFunc",
@@ -1756,6 +2890,12 @@
       "returnType": "void",
       "signature": "static void LoadFieldMoveOutdoorStreaksTilemap(u16 offs)",
       "paramsRaw": "u16 offs",
+      "paramsList": [
+        {
+          "name": "offs",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "u16 i;\n    u16 *dest;\n    dest = (u16 *)(VRAM + ARRAY_COUNT(sFieldMoveStreaksOutdoors_Tilemap) + offs);\n    for (i = 0; i < ARRAY_COUNT(sFieldMoveStreaksOutdoors_Tilemap); i++, dest++)\n    {\n        *dest = sFieldMoveStreaksOutdoors_Tilemap[i] | 0xF000;\n    }",
       "callsTo": [
         "ARRAY_COUNT"
@@ -1766,6 +2906,12 @@
       "returnType": "void",
       "signature": "static void Task_FieldMoveShowMonIndoors(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "sFieldMoveShowMonIndoorsEffectFuncs[gTasks[taskId].tState](&gTasks[taskId]);",
       "callsTo": [],
       "lineCount": 1
@@ -1774,6 +2920,12 @@
       "returnType": "void",
       "signature": "static void FieldMoveShowMonIndoorsEffect_Init(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "SetGpuReg(REG_OFFSET_BG0HOFS, task->tBgHoriz);\n    SetGpuReg(REG_OFFSET_BG0VOFS, task->tBgVert);\n    StoreWordInTwoHalfwords((u16 *)&task->data[13], (u32)gMain.vblankCallback);\n    SetVBlankCallback(VBlankCB_FieldMoveShowMonIndoors);\n    task->tState++;",
       "callsTo": [
         "SetGpuReg",
@@ -1786,6 +2938,12 @@
       "returnType": "void",
       "signature": "static void FieldMoveShowMonIndoorsEffect_LoadGfx(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u16 offset;\n    u16 delta;\n    offset = ((REG_BG0CNT >> 2) << 14);\n    delta = ((REG_BG0CNT >> 8) << 11);\n    task->data[12] = delta;\n    CpuCopy16(sFieldMoveStreaksIndoors_Gfx, (void *)(VRAM + offset), 0x80);\n    CpuFill32(0, (void *)(VRAM + delta), 0x800);\n    LoadPalette(sFieldMoveStreaksIndoors_Pal, BG_PLTT_ID(15), sizeof(sFieldMoveStreaksIndoors_Pal));\n    task->tState++;",
       "callsTo": [
         "BG_PLTT_ID",
@@ -1799,6 +2957,12 @@
       "returnType": "void",
       "signature": "static void FieldMoveShowMonIndoorsEffect_SlideBannerOn(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (SlideIndoorBannerOnscreen(task))\n    {\n        SetGpuReg(REG_OFFSET_WIN1H, WIN_RANGE(0, DISPLAY_WIDTH));\n        SetGpuReg(REG_OFFSET_WIN1V, WIN_RANGE(DISPLAY_HEIGHT / 4, DISPLAY_HEIGHT - DISPLAY_HEIGHT / 4));\n        gSprites[task->tMonSpriteId].callback = SpriteCB_FieldMoveMonSlideOnscreen;\n        task->tState++;\n    }\n    AnimateIndoorShowMonBg(task);",
       "callsTo": [
         "AnimateIndoorShowMonBg",
@@ -1812,6 +2976,12 @@
       "returnType": "void",
       "signature": "static void FieldMoveShowMonIndoorsEffect_WaitForMon(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "AnimateIndoorShowMonBg(task);\n    if (gSprites[task->tMonSpriteId].sSlidOffscreen)\n        task->tState++;",
       "callsTo": [
         "AnimateIndoorShowMonBg"
@@ -1822,6 +2992,12 @@
       "returnType": "void",
       "signature": "static void FieldMoveShowMonIndoorsEffect_RestoreBg(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "AnimateIndoorShowMonBg(task);\n    task->tBgOffsetIdx = task->tBgHoriz & 7;\n    task->tBgOffset = 0;\n    SetGpuReg(REG_OFFSET_WIN1H, WIN_RANGE(0xFF, 0xFF));\n    SetGpuReg(REG_OFFSET_WIN1V, WIN_RANGE(0xFF, 0xFF));\n    task->tState++;",
       "callsTo": [
         "AnimateIndoorShowMonBg",
@@ -1834,6 +3010,12 @@
       "returnType": "void",
       "signature": "static void FieldMoveShowMonIndoorsEffect_SlideBannerOff(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "AnimateIndoorShowMonBg(task);\n    if (SlideIndoorBannerOffscreen(task))\n        task->tState++;",
       "callsTo": [
         "AnimateIndoorShowMonBg",
@@ -1845,6 +3027,12 @@
       "returnType": "void",
       "signature": "static void FieldMoveShowMonIndoorsEffect_End(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "IntrCallback intrCallback;\n    u16 bg0cnt;\n    bg0cnt = (REG_BG0CNT >> 8) << 11;\n    CpuFill32(0, (void *)VRAM + bg0cnt, 0x800);\n    LoadWordFromTwoHalfwords((u16 *)&task->data[13], (u32 *)&intrCallback);\n    SetVBlankCallback(intrCallback);\n    InitTextBoxGfxAndPrinters();\n    FreeResourcesAndDestroySprite(&gSprites[task->tMonSpriteId], task->tMonSpriteId);\n    FieldEffectActiveListRemove(FLDEFF_FIELD_MOVE_SHOW_MON);\n    DestroyTask(FindTaskIdByFunc(Task_FieldMoveShowMonIndoors));",
       "callsTo": [
         "CpuFill32",
@@ -1862,6 +3050,7 @@
       "returnType": "void",
       "signature": "static void VBlankCB_FieldMoveShowMonIndoors(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "IntrCallback intrCallback;\n    struct Task *task;\n    task = &gTasks[FindTaskIdByFunc(Task_FieldMoveShowMonIndoors)];\n    LoadWordFromTwoHalfwords((u16 *)&task->data[13], (u32 *)&intrCallback);\n    intrCallback();\n    SetGpuReg(REG_OFFSET_BG0HOFS, task->tBgHoriz);\n    SetGpuReg(REG_OFFSET_BG0VOFS, task->tBgVert);",
       "callsTo": [
         "FindTaskIdByFunc",
@@ -1874,6 +3063,12 @@
       "returnType": "void",
       "signature": "static void AnimateIndoorShowMonBg(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "task->tBgHoriz -= 16;\n    task->tBgOffsetIdx += 16;",
       "callsTo": [],
       "lineCount": 2
@@ -1882,6 +3077,12 @@
       "returnType": "bool8",
       "signature": "static bool8 SlideIndoorBannerOnscreen(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u16 i;\n    u16 srcOffs;\n    u16 dstOffs;\n    u16 *dest;\n\n    if (task->tBgOffset >= 32)\n        return TRUE;\n\n    dstOffs = (task->tBgOffsetIdx >> 3) & 0x1f;\n    if (dstOffs >= task->tBgOffset)\n    {\n        dstOffs = (32 - dstOffs) & 0x1f;\n        srcOffs = (32 - task->tBgOffset) & 0x1f;\n        dest = (u16 *)(VRAM + 0x140 + (u16)task->data[12]);\n        for (i = 0; i < 10; i++)\n        {\n            dest[dstOffs + i * 32] = sFieldMoveStreaksIndoors_Tilemap[srcOffs + i * 32];\n            dest[dstOffs + i * 32] |= 0xf000;\n\n            dest[((dstOffs + 1) & 0x1f) + i * 32] = sFieldMoveStreaksIndoors_Tilemap[((srcOffs + 1) & 0x1f) + i * 32] | 0xf000;\n            dest[((dstOffs + 1) & 0x1f) + i * 32] |= 0xf000;\n        }\n        task->tBgOffset += 2;\n    }\n    return FALSE;",
       "callsTo": [],
       "lineCount": 25
@@ -1890,6 +3091,12 @@
       "returnType": "bool8",
       "signature": "static bool8 SlideIndoorBannerOffscreen(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u16 i;\n    u16 dstOffs;\n    u16 *dest;\n\n    if (task->tBgOffset >= 32)\n        return TRUE;\n\n    dstOffs = task->tBgOffsetIdx >> 3;\n    if (dstOffs >= task->tBgOffset)\n    {\n        dstOffs = (task->tBgHoriz >> 3) & 0x1f;\n        dest = (u16 *)(VRAM + 0x140 + (u16)task->data[12]);\n        for (i = 0; i < 10; i++)\n        {\n            dest[dstOffs + i * 32] = 0xf000;\n            dest[((dstOffs + 1) & 0x1f) + i * 32] = 0xf000;\n        }\n        task->tBgOffset += 2;\n    }\n    return FALSE;",
       "callsTo": [],
       "lineCount": 20
@@ -1898,6 +3105,20 @@
       "returnType": "u8",
       "signature": "static u8 InitFieldMoveMonSprite(u32 species, u32 otId, u32 personality)",
       "paramsRaw": "u32 species, u32 otId, u32 personality",
+      "paramsList": [
+        {
+          "name": "species",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "otId",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "personality",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "bool16 noDucking;\n    u8 monSprite;\n    struct Sprite *sprite;\n    noDucking = (species & SHOW_MON_CRY_NO_DUCKING) >> 16;\n    species &= ~SHOW_MON_CRY_NO_DUCKING;\n    monSprite = CreateMonSprite_FieldMove(species, otId, personality, 320, 80, 0);\n    sprite = &gSprites[monSprite];\n    sprite->callback = SpriteCallbackDummy;\n    sprite->oam.priority = 0;\n    sprite->sSpecies = species;\n    sprite->data[6] = noDucking;\n    return monSprite;",
       "callsTo": [
         "CreateMonSprite_FieldMove"
@@ -1908,6 +3129,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_FieldMoveMonSlideOnscreen(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if ((sprite->x -= 20) <= DISPLAY_WIDTH / 2)\n    {\n        sprite->x = DISPLAY_WIDTH / 2;\n        sprite->sOnscreenTimer = 30;\n        sprite->callback = SpriteCB_FieldMoveMonWaitAfterCry;\n        if (sprite->data[6])\n            PlayCry_NormalNoDucking(sprite->sSpecies, 0, CRY_VOLUME_RS, CRY_PRIORITY_NORMAL);\n        else\n            PlayCry_Normal(sprite->sSpecies, 0);\n    }",
       "callsTo": [
         "PlayCry_Normal",
@@ -1919,6 +3146,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_FieldMoveMonWaitAfterCry(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if ((--sprite->sOnscreenTimer) == 0)\n        sprite->callback = SpriteCB_FieldMoveMonSlideOffscreen;",
       "callsTo": [],
       "lineCount": 2
@@ -1927,6 +3160,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_FieldMoveMonSlideOffscreen(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (sprite->x < -64)\n        sprite->sSlidOffscreen = TRUE;\n    else\n        sprite->x -= 20;",
       "callsTo": [],
       "lineCount": 4
@@ -1935,6 +3174,7 @@
       "returnType": "u8",
       "signature": "u8 FldEff_UseSurf(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 taskId = CreateTask(Task_SurfFieldEffect, 0xff);\n    gTasks[taskId].tMonId = gFieldEffectArguments[0];\n    Overworld_ClearSavedMusic();\n    Overworld_ChangeMusicTo(MUS_SURF);\n    return FALSE;",
       "callsTo": [
         "CreateTask",
@@ -1947,6 +3187,12 @@
       "returnType": "void",
       "signature": "static void Task_SurfFieldEffect(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "sSurfFieldEffectFuncs[gTasks[taskId].tState](&gTasks[taskId]);",
       "callsTo": [],
       "lineCount": 1
@@ -1955,6 +3201,12 @@
       "returnType": "void",
       "signature": "static void SurfFieldEffect_Init(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "LockPlayerFieldControls();\n    FreezeObjectEvents();\n    gPlayerAvatar.preventStep = TRUE;\n    SetPlayerAvatarStateMask(PLAYER_AVATAR_FLAG_SURFING);\n    PlayerGetDestCoords(&task->tDestX, &task->tDestY);\n    MoveCoords(gObjectEvents[gPlayerAvatar.objectEventId].movementDirection, &task->tDestX, &task->tDestY);\n    task->tState++;",
       "callsTo": [
         "FreezeObjectEvents",
@@ -1969,6 +3221,12 @@
       "returnType": "void",
       "signature": "static void SurfFieldEffect_FieldMovePose(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "struct ObjectEvent *objectEvent;\n    objectEvent = &gObjectEvents[gPlayerAvatar.objectEventId];\n    if (!ObjectEventIsMovementOverridden(objectEvent) || ObjectEventClearHeldMovementIfFinished(objectEvent))\n    {\n        SetPlayerAvatarFieldMove();\n        ObjectEventSetHeldMovement(objectEvent, MOVEMENT_ACTION_START_ANIM_IN_DIRECTION);\n        task->tState++;\n    }",
       "callsTo": [
         "ObjectEventClearHeldMovementIfFinished",
@@ -1982,6 +3240,12 @@
       "returnType": "void",
       "signature": "static void SurfFieldEffect_ShowMon(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "struct ObjectEvent *objectEvent;\n    objectEvent = &gObjectEvents[gPlayerAvatar.objectEventId];\n    if (ObjectEventCheckHeldMovementStatus(objectEvent))\n    {\n        gFieldEffectArguments[0] = task->tMonId | SHOW_MON_CRY_NO_DUCKING;\n        FieldEffectStart(FLDEFF_FIELD_MOVE_SHOW_MON_INIT);\n        task->tState++;\n    }",
       "callsTo": [
         "FieldEffectStart",
@@ -1993,6 +3257,12 @@
       "returnType": "void",
       "signature": "static void SurfFieldEffect_JumpOnSurfBlob(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "struct ObjectEvent *objectEvent;\n    if (!FieldEffectActiveListContains(FLDEFF_FIELD_MOVE_SHOW_MON))\n    {\n        objectEvent = &gObjectEvents[gPlayerAvatar.objectEventId];\n        ObjectEventSetGraphicsId(objectEvent, GetPlayerAvatarGraphicsIdByStateId(PLAYER_AVATAR_STATE_SURFING));\n        ObjectEventClearHeldMovementIfFinished(objectEvent);\n        ObjectEventSetHeldMovement(objectEvent, GetJumpSpecialMovementAction(objectEvent->movementDirection));\n        gFieldEffectArguments[0] = task->tDestX;\n        gFieldEffectArguments[1] = task->tDestY;\n        gFieldEffectArguments[2] = gPlayerAvatar.objectEventId;\n        objectEvent->fieldEffectSpriteId = FieldEffectStart(FLDEFF_SURF_BLOB);\n        task->tState++;\n    }",
       "callsTo": [
         "FieldEffectActiveListContains",
@@ -2009,6 +3279,12 @@
       "returnType": "void",
       "signature": "static void SurfFieldEffect_End(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "struct ObjectEvent *objectEvent;\n    objectEvent = &gObjectEvents[gPlayerAvatar.objectEventId];\n    if (ObjectEventClearHeldMovementIfFinished(objectEvent))\n    {\n        gPlayerAvatar.preventStep = FALSE;\n        gPlayerAvatar.flags &= ~PLAYER_AVATAR_FLAG_CONTROLLABLE;\n        ObjectEventSetHeldMovement(objectEvent, GetFaceDirectionMovementAction(objectEvent->movementDirection));\n        SetSurfBlob_BobState(objectEvent->fieldEffectSpriteId, BOB_PLAYER_AND_MON);\n        UnfreezeObjectEvents();\n        UnlockPlayerFieldControls();\n        FieldEffectActiveListRemove(FLDEFF_USE_SURF);\n        DestroyTask(FindTaskIdByFunc(Task_SurfFieldEffect));\n    }",
       "callsTo": [
         "DestroyTask",
@@ -2027,6 +3303,7 @@
       "returnType": "u8",
       "signature": "u8 FldEff_RayquazaSpotlight(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i, j, k;\n    u8 spriteId = CreateSprite(gFieldEffectObjectTemplatePointers[FLDEFFOBJ_RAYQUAZA], 120, -24, 1);\n    struct Sprite *sprite = &gSprites[spriteId];\n\n    sprite->oam.priority = 1;\n    sprite->oam.paletteNum = 4;\n    sprite->data[0] = 0;\n    sprite->data[1] = 0;\n    sprite->data[2] = 0;\n    sprite->data[3] = -1;\n    sprite->data[4] = sprite->y;\n    sprite->data[5] = 0;\n    SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_TGT1_BG0 | BLDCNT_EFFECT_BLEND | BLDCNT_TGT2_BG1 | BLDCNT_TGT2_BG2 | BLDCNT_TGT2_BG3 | BLDCNT_TGT2_OBJ | BLDCNT_TGT2_BD);\n    SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(14, 14));\n    SetGpuReg(REG_OFFSET_WININ, WININ_WIN0_BG_ALL | WININ_WIN0_OBJ | WININ_WIN0_CLR | WININ_WIN1_BG_ALL | WININ_WIN1_OBJ | WININ_WIN1_CLR);\n    LoadPalette(sSpotlight_Pal, BG_PLTT_ID(12), sizeof(sSpotlight_Pal));\n    SetGpuReg(REG_OFFSET_BG0VOFS, 120);\n    for (i = 3; i < 15; i++)\n    {\n        for (j = 12; j < 18; j++)\n        {\n            ((u16 *)(BG_SCREEN_ADDR(31)))[i * 32 + j] = 0xBFF4 + i * 6 + j + 1;\n        }\n    }\n    for (k = 0; k < 90; k++)\n    {\n        for (i = 0; i < 8; i++)\n        {\n            *(u16 *)(BG_CHAR_ADDR(2) + (k + 1) * 32 + i * 4) = (sSpotlight_Gfx[k * 32 + i * 4 + 1] << 8) + sSpotlight_Gfx[k * 32 + i * 4];\n            *(u16 *)(BG_CHAR_ADDR(2) + (k + 1) * 32 + i * 4 + 2) = (sSpotlight_Gfx[k * 32 + i * 4 + 3] << 8) + sSpotlight_Gfx[k * 32 + i * 4 + 2];\n        }\n    }\n    return spriteId;",
       "callsTo": [
         "BG_CHAR_ADDR",
@@ -2043,6 +3320,7 @@
       "returnType": "u8",
       "signature": "u8 FldEff_NPCFlyOut(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 spriteId = CreateSprite(gFieldEffectObjectTemplatePointers[FLDEFFOBJ_BIRD], 0x78, 0, 1);\n    struct Sprite *sprite = &gSprites[spriteId];\n\n    sprite->oam.paletteNum = 0;\n    sprite->oam.priority = 1;\n    sprite->callback = SpriteCB_NPCFlyOut;\n    sprite->data[1] = gFieldEffectArguments[0];\n    PlaySE(SE_M_FLY);\n    return spriteId;",
       "callsTo": [
         "CreateSprite",
@@ -2054,6 +3332,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_NPCFlyOut(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "struct Sprite *npcSprite;\n\n    sprite->x2 = Cos(sprite->data[2], 0x8c);\n    sprite->y2 = Sin(sprite->data[2], 0x48);\n    sprite->data[2] = (sprite->data[2] + 4) & 0xff;\n    if (sprite->data[0])\n    {\n        npcSprite = &gSprites[sprite->data[1]];\n        npcSprite->coordOffsetEnabled = FALSE;\n        npcSprite->x = sprite->x + sprite->x2;\n        npcSprite->y = sprite->y + sprite->y2 - 8;\n        npcSprite->x2 = 0;\n        npcSprite->y2 = 0;\n    }\n\n    if (sprite->data[2] >= 0x80)\n        FieldEffectStop(sprite, FLDEFF_NPCFLY_OUT);",
       "callsTo": [
         "Cos",
@@ -2066,6 +3350,7 @@
       "returnType": "u8",
       "signature": "u8 FldEff_UseFly(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 taskId = CreateTask(Task_FlyOut, 254);\n    gTasks[taskId].tMonId = gFieldEffectArguments[0];\n    return 0;",
       "callsTo": [
         "CreateTask"
@@ -2076,6 +3361,12 @@
       "returnType": "void",
       "signature": "static void Task_FlyOut(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "sFlyOutFieldEffectFuncs[gTasks[taskId].tState](&gTasks[taskId]);",
       "callsTo": [],
       "lineCount": 1
@@ -2084,6 +3375,12 @@
       "returnType": "void",
       "signature": "static void FlyOutFieldEffect_FieldMovePose(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "struct ObjectEvent *objectEvent = &gObjectEvents[gPlayerAvatar.objectEventId];\n    if (!ObjectEventIsMovementOverridden(objectEvent) || ObjectEventClearHeldMovementIfFinished(objectEvent))\n    {\n        task->tAvatarFlags = gPlayerAvatar.flags;\n        gPlayerAvatar.preventStep = TRUE;\n        SetPlayerAvatarStateMask(PLAYER_AVATAR_FLAG_ON_FOOT);\n        SetPlayerAvatarFieldMove();\n        ObjectEventSetHeldMovement(objectEvent, MOVEMENT_ACTION_START_ANIM_IN_DIRECTION);\n        task->tState++;\n    }",
       "callsTo": [
         "ObjectEventClearHeldMovementIfFinished",
@@ -2098,6 +3395,12 @@
       "returnType": "void",
       "signature": "static void FlyOutFieldEffect_ShowMon(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "struct ObjectEvent *objectEvent = &gObjectEvents[gPlayerAvatar.objectEventId];\n    if (ObjectEventClearHeldMovementIfFinished(objectEvent))\n    {\n        task->tState++;\n        gFieldEffectArguments[0] = task->tMonId;\n        FieldEffectStart(FLDEFF_FIELD_MOVE_SHOW_MON_INIT);\n    }",
       "callsTo": [
         "FieldEffectStart",
@@ -2109,6 +3412,12 @@
       "returnType": "void",
       "signature": "static void FlyOutFieldEffect_BirdLeaveBall(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (!FieldEffectActiveListContains(FLDEFF_FIELD_MOVE_SHOW_MON))\n    {\n        struct ObjectEvent *objectEvent = &gObjectEvents[gPlayerAvatar.objectEventId];\n        if (task->tAvatarFlags & PLAYER_AVATAR_FLAG_SURFING)\n        {\n            SetSurfBlob_BobState(objectEvent->fieldEffectSpriteId, BOB_JUST_MON);\n            SetSurfBlob_DontSyncAnim(objectEvent->fieldEffectSpriteId, FALSE);\n        }\n        task->tBirdSpriteId = CreateFlyBirdSprite();  \n        task->tState++;\n    }",
       "callsTo": [
         "CreateFlyBirdSprite",
@@ -2122,6 +3431,12 @@
       "returnType": "void",
       "signature": "static void FlyOutFieldEffect_WaitBirdLeave(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (GetFlyBirdAnimCompleted(task->tBirdSpriteId))\n    {\n        task->tState++;\n        task->tTimer = 16;\n        SetPlayerAvatarTransitionFlags(PLAYER_AVATAR_FLAG_ON_FOOT);\n        ObjectEventSetHeldMovement(&gObjectEvents[gPlayerAvatar.objectEventId], MOVEMENT_ACTION_FACE_LEFT);\n    }",
       "callsTo": [
         "GetFlyBirdAnimCompleted",
@@ -2134,6 +3449,12 @@
       "returnType": "void",
       "signature": "static void FlyOutFieldEffect_BirdSwoopDown(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "struct ObjectEvent *objectEvent = &gObjectEvents[gPlayerAvatar.objectEventId];\n    if ((task->tTimer == 0 || (--task->tTimer) == 0) && ObjectEventClearHeldMovementIfFinished(objectEvent))\n    {\n        task->tState++;\n        PlaySE(SE_M_FLY);\n        StartFlyBirdSwoopDown(task->tBirdSpriteId);\n    }",
       "callsTo": [
         "ObjectEventClearHeldMovementIfFinished",
@@ -2146,6 +3467,12 @@
       "returnType": "void",
       "signature": "static void FlyOutFieldEffect_JumpOnBird(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if ((++task->tTimer) >= 8)\n    {\n        struct ObjectEvent *objectEvent = &gObjectEvents[gPlayerAvatar.objectEventId];\n        ObjectEventSetGraphicsId(objectEvent, GetPlayerAvatarGraphicsIdByStateId(PLAYER_AVATAR_STATE_SURFING));\n        StartSpriteAnim(&gSprites[objectEvent->spriteId], ANIM_GET_ON_OFF_POKEMON_WEST);\n        objectEvent->inanimate = TRUE;\n        ObjectEventSetHeldMovement(objectEvent, MOVEMENT_ACTION_JUMP_IN_PLACE_LEFT);\n        if (task->tAvatarFlags & PLAYER_AVATAR_FLAG_SURFING)\n        {\n            DestroySprite(&gSprites[objectEvent->fieldEffectSpriteId]);\n        }\n        task->tState++;\n        task->tTimer = 0;\n    }",
       "callsTo": [
         "DestroySprite",
@@ -2160,6 +3487,12 @@
       "returnType": "void",
       "signature": "static void FlyOutFieldEffect_FlyOffWithBird(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if ((++task->tTimer) >= 10)\n    {\n        struct ObjectEvent *objectEvent = &gObjectEvents[gPlayerAvatar.objectEventId];\n        ObjectEventClearHeldMovementIfActive(objectEvent);\n        objectEvent->inanimate = FALSE;\n        objectEvent->hasShadow = FALSE;\n        SetFlyBirdPlayerSpriteId(task->tBirdSpriteId, objectEvent->spriteId);\n        CameraObjectFreeze();\n        task->tState++;\n    }",
       "callsTo": [
         "CameraObjectFreeze",
@@ -2172,6 +3505,12 @@
       "returnType": "void",
       "signature": "static void FlyOutFieldEffect_WaitFlyOff(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (GetFlyBirdAnimCompleted(task->tBirdSpriteId))\n    {\n        WarpFadeOutScreen();\n        task->tState++;\n    }",
       "callsTo": [
         "GetFlyBirdAnimCompleted",
@@ -2183,6 +3522,12 @@
       "returnType": "void",
       "signature": "static void FlyOutFieldEffect_End(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (!gPaletteFade.active)\n    {\n        FieldEffectActiveListRemove(FLDEFF_USE_FLY);\n        DestroyTask(FindTaskIdByFunc(Task_FlyOut));\n    }",
       "callsTo": [
         "DestroyTask",
@@ -2195,6 +3540,7 @@
       "returnType": "u8",
       "signature": "static u8 CreateFlyBirdSprite(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 spriteId;\n    struct Sprite *sprite;\n    spriteId = CreateSprite(gFieldEffectObjectTemplatePointers[FLDEFFOBJ_BIRD], 0xff, 0xb4, 0x1);\n    sprite = &gSprites[spriteId];\n    sprite->oam.paletteNum = 0;\n    sprite->oam.priority = 1;\n    sprite->callback = SpriteCB_FlyBirdLeaveBall;\n    return spriteId;",
       "callsTo": [
         "CreateSprite"
@@ -2205,6 +3551,12 @@
       "returnType": "u8",
       "signature": "static u8 GetFlyBirdAnimCompleted(u8 spriteId)",
       "paramsRaw": "u8 spriteId",
+      "paramsList": [
+        {
+          "name": "spriteId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "return gSprites[spriteId].sAnimCompleted;",
       "callsTo": [],
       "lineCount": 1
@@ -2213,6 +3565,12 @@
       "returnType": "void",
       "signature": "static void StartFlyBirdSwoopDown(u8 spriteId)",
       "paramsRaw": "u8 spriteId",
+      "paramsList": [
+        {
+          "name": "spriteId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "struct Sprite *sprite;\n    sprite = &gSprites[spriteId];\n    sprite->callback = SpriteCB_FlyBirdSwoopDown;\n    sprite->x = DISPLAY_WIDTH / 2;\n    sprite->y = 0;\n    sprite->x2 = 0;\n    sprite->y2 = 0;\n    memset(&sprite->data[0], 0, 8 * sizeof(u16)  );\n    sprite->sPlayerSpriteId = MAX_SPRITES;",
       "callsTo": [],
       "lineCount": 9
@@ -2221,6 +3579,16 @@
       "returnType": "void",
       "signature": "static void SetFlyBirdPlayerSpriteId(u8 birdSpriteId, u8 playerSpriteId)",
       "paramsRaw": "u8 birdSpriteId, u8 playerSpriteId",
+      "paramsList": [
+        {
+          "name": "birdSpriteId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "playerSpriteId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "gSprites[birdSpriteId].sPlayerSpriteId = playerSpriteId;",
       "callsTo": [],
       "lineCount": 1
@@ -2229,6 +3597,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_FlyBirdLeaveBall(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (sprite->sAnimCompleted == FALSE)\n    {\n        if (sprite->data[0] == 0)\n        {\n            sprite->oam.affineMode = ST_OAM_AFFINE_DOUBLE;\n            sprite->affineAnims = sAffineAnims_FlyBird;\n            InitSpriteAffineAnim(sprite);\n            StartSpriteAffineAnim(sprite, 0);\n            sprite->x = 0x76;\n            sprite->y = -0x30;\n            sprite->data[0]++;\n            sprite->data[1] = 0x40;\n            sprite->data[2] = 0x100;\n        }\n        sprite->data[1] += (sprite->data[2] >> 8);\n        sprite->x2 = Cos(sprite->data[1], 0x78);\n        sprite->y2 = Sin(sprite->data[1], 0x78);\n        if (sprite->data[2] < 0x800)\n        {\n            sprite->data[2] += 0x60;\n        }\n        if (sprite->data[1] > 0x81)\n        {\n            sprite->sAnimCompleted++;\n            sprite->oam.affineMode = ST_OAM_AFFINE_OFF;\n            FreeOamMatrix(sprite->oam.matrixNum);\n            CalcCenterToCornerVec(sprite, sprite->oam.shape, sprite->oam.size, ST_OAM_AFFINE_OFF);\n        }\n    }",
       "callsTo": [
         "CalcCenterToCornerVec",
@@ -2244,6 +3618,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_FlyBirdSwoopDown(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "sprite->x2 = Cos(sprite->data[2], 0x8c);\n    sprite->y2 = Sin(sprite->data[2], 0x48);\n    sprite->data[2] = (sprite->data[2] + 4) & 0xff;\n    if (sprite->sPlayerSpriteId != MAX_SPRITES)\n    {\n        struct Sprite *sprite1 = &gSprites[sprite->sPlayerSpriteId];\n        sprite1->coordOffsetEnabled = FALSE;\n        sprite1->x = sprite->x + sprite->x2;\n        sprite1->y = sprite->y + sprite->y2 - 8;\n        sprite1->x2 = 0;\n        sprite1->y2 = 0;\n    }\n    if (sprite->data[2] >= 0x80)\n    {\n        sprite->sAnimCompleted = TRUE;\n    }",
       "callsTo": [
         "Cos",
@@ -2255,6 +3635,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_FlyBirdReturnToBall(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (sprite->sAnimCompleted == FALSE)\n    {\n        if (sprite->data[0] == 0)\n        {\n            sprite->oam.affineMode = ST_OAM_AFFINE_DOUBLE;\n            sprite->affineAnims = sAffineAnims_FlyBird;\n            InitSpriteAffineAnim(sprite);\n            StartSpriteAffineAnim(sprite, 1);\n            sprite->x = 0x5e;\n            sprite->y = -0x20;\n            sprite->data[0]++;\n            sprite->data[1] = 0xf0;\n            sprite->data[2] = 0x800;\n            sprite->data[4] = 0x80;\n        }\n        sprite->data[1] += sprite->data[2] >> 8;\n        sprite->data[3] += sprite->data[2] >> 8;\n        sprite->data[1] &= 0xff;\n        sprite->x2 = Cos(sprite->data[1], 0x20);\n        sprite->y2 = Sin(sprite->data[1], 0x78);\n        if (sprite->data[2] > 0x100)\n        {\n            sprite->data[2] -= sprite->data[4];\n        }\n        if (sprite->data[4] < 0x100)\n        {\n            sprite->data[4] += 24;\n        }\n        if (sprite->data[2] < 0x100)\n        {\n            sprite->data[2] = 0x100;\n        }\n        if (sprite->data[3] >= 60)\n        {\n            sprite->sAnimCompleted++;\n            sprite->oam.affineMode = ST_OAM_AFFINE_OFF;\n            FreeOamMatrix(sprite->oam.matrixNum);\n            sprite->invisible = TRUE;\n        }\n    }",
       "callsTo": [
         "Cos",
@@ -2269,6 +3655,12 @@
       "returnType": "void",
       "signature": "static void StartFlyBirdReturnToBall(u8 spriteId)",
       "paramsRaw": "u8 spriteId",
+      "paramsList": [
+        {
+          "name": "spriteId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "StartFlyBirdSwoopDown(spriteId);  \n    gSprites[spriteId].callback = SpriteCB_FlyBirdReturnToBall;",
       "callsTo": [
         "StartFlyBirdSwoopDown"
@@ -2279,6 +3671,7 @@
       "returnType": "u8",
       "signature": "u8 FldEff_FlyIn(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "CreateTask(Task_FlyIn, 254);\n    return 0;",
       "callsTo": [
         "CreateTask"
@@ -2289,6 +3682,12 @@
       "returnType": "void",
       "signature": "static void Task_FlyIn(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "sFlyInFieldEffectFuncs[gTasks[taskId].tState](&gTasks[taskId]);",
       "callsTo": [],
       "lineCount": 1
@@ -2297,6 +3696,12 @@
       "returnType": "void",
       "signature": "static void FlyInFieldEffect_BirdSwoopDown(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "struct ObjectEvent *objectEvent;\n    objectEvent = &gObjectEvents[gPlayerAvatar.objectEventId];\n    if (!ObjectEventIsMovementOverridden(objectEvent) || ObjectEventClearHeldMovementIfFinished(objectEvent))\n    {\n        task->tState++;\n        task->tTimer = 17;\n        task->tAvatarFlags = gPlayerAvatar.flags;\n        gPlayerAvatar.preventStep = TRUE;\n        SetPlayerAvatarStateMask(PLAYER_AVATAR_FLAG_ON_FOOT);\n        if (task->tAvatarFlags & PLAYER_AVATAR_FLAG_SURFING)\n        {\n            SetSurfBlob_BobState(objectEvent->fieldEffectSpriteId, BOB_NONE);\n        }\n        ObjectEventSetGraphicsId(objectEvent, GetPlayerAvatarGraphicsIdByStateId(PLAYER_AVATAR_STATE_SURFING));\n        CameraObjectFreeze();\n        ObjectEventTurn(objectEvent, DIR_WEST);\n        StartSpriteAnim(&gSprites[objectEvent->spriteId], ANIM_GET_ON_OFF_POKEMON_WEST);\n        objectEvent->invisible = FALSE;\n        task->tBirdSpriteId = CreateFlyBirdSprite();\n        StartFlyBirdSwoopDown(task->tBirdSpriteId);\n        SetFlyBirdPlayerSpriteId(task->tBirdSpriteId, objectEvent->spriteId);\n    }",
       "callsTo": [
         "CameraObjectFreeze",
@@ -2318,6 +3723,12 @@
       "returnType": "void",
       "signature": "static void FlyInFieldEffect_FlyInWithBird(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "struct ObjectEvent *objectEvent;\n    struct Sprite *sprite;\n    if (task->tTimer == 0 || (--task->tTimer) == 0)\n    {\n        objectEvent = &gObjectEvents[gPlayerAvatar.objectEventId];\n        sprite = &gSprites[objectEvent->spriteId];\n        SetFlyBirdPlayerSpriteId(task->tBirdSpriteId, MAX_SPRITES);\n        sprite->x += sprite->x2;\n        sprite->y += sprite->y2;\n        sprite->x2 = 0;\n        sprite->y2 = 0;\n        task->tState++;\n        task->tTimer = 0;\n    }",
       "callsTo": [
         "SetFlyBirdPlayerSpriteId"
@@ -2328,6 +3739,12 @@
       "returnType": "void",
       "signature": "static void FlyInFieldEffect_JumpOffBird(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "s16 sYPositions[18] = {\n        -2,\n        -4,\n        -5,\n        -6,\n        -7,\n        -8,\n        -8,\n        -8,\n        -7,\n        -7,\n        -6,\n        -5,\n        -3,\n        -2,\n        0,\n        2,\n        4,\n        8\n    };\n    struct Sprite *sprite = &gSprites[gPlayerAvatar.spriteId];\n    sprite->y2 = sYPositions[task->tTimer];\n\n    if ((++task->tTimer) >= (int)ARRAY_COUNT(sYPositions))\n        task->tState++;",
       "callsTo": [
         "ARRAY_COUNT"
@@ -2338,6 +3755,12 @@
       "returnType": "void",
       "signature": "static void FlyInFieldEffect_FieldMovePose(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "struct ObjectEvent *objectEvent;\n    struct Sprite *sprite;\n    if (GetFlyBirdAnimCompleted(task->tBirdSpriteId))\n    {\n        objectEvent = &gObjectEvents[gPlayerAvatar.objectEventId];\n        sprite = &gSprites[objectEvent->spriteId];\n        objectEvent->inanimate = FALSE;\n        MoveObjectEventToMapCoords(objectEvent, objectEvent->currentCoords.x, objectEvent->currentCoords.y);\n        sprite->x2 = 0;\n        sprite->y2 = 0;\n        sprite->coordOffsetEnabled = TRUE;\n        SetPlayerAvatarFieldMove();\n        ObjectEventSetHeldMovement(objectEvent, MOVEMENT_ACTION_START_ANIM_IN_DIRECTION);\n        task->tState++;\n    }",
       "callsTo": [
         "GetFlyBirdAnimCompleted",
@@ -2351,6 +3774,12 @@
       "returnType": "void",
       "signature": "static void FlyInFieldEffect_BirdReturnToBall(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (ObjectEventClearHeldMovementIfFinished(&gObjectEvents[gPlayerAvatar.objectEventId]))\n    {\n        task->tState++;\n        StartFlyBirdReturnToBall(task->tBirdSpriteId);\n    }",
       "callsTo": [
         "ObjectEventClearHeldMovementIfFinished",
@@ -2362,6 +3791,12 @@
       "returnType": "void",
       "signature": "static void FlyInFieldEffect_WaitBirdReturn(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (GetFlyBirdAnimCompleted(task->tBirdSpriteId))\n    {\n        DestroySprite(&gSprites[task->tBirdSpriteId]);\n        task->tState++;\n        task->data[1] = 16;\n    }",
       "callsTo": [
         "DestroySprite",
@@ -2373,6 +3808,12 @@
       "returnType": "void",
       "signature": "static void FlyInFieldEffect_End(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u8 state;\n    struct ObjectEvent *objectEvent;\n    if ((--task->data[1]) == 0)\n    {\n        objectEvent = &gObjectEvents[gPlayerAvatar.objectEventId];\n        state = PLAYER_AVATAR_STATE_NORMAL;\n        if (task->tAvatarFlags & PLAYER_AVATAR_FLAG_SURFING)\n        {\n            state = PLAYER_AVATAR_STATE_SURFING;\n            SetSurfBlob_BobState(objectEvent->fieldEffectSpriteId, BOB_PLAYER_AND_MON);\n        }\n        ObjectEventSetGraphicsId(objectEvent, GetPlayerAvatarGraphicsIdByStateId(state));\n        ObjectEventTurn(objectEvent, DIR_SOUTH);\n        gPlayerAvatar.flags = task->tAvatarFlags;\n        gPlayerAvatar.preventStep = FALSE;\n        FieldEffectActiveListRemove(FLDEFF_FLY_IN);\n        DestroyTask(FindTaskIdByFunc(Task_FlyIn));\n    }",
       "callsTo": [
         "DestroyTask",
@@ -2389,6 +3830,7 @@
       "returnType": "bool8",
       "signature": "bool8 FldEff_DestroyDeoxysRock(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 taskId;\n    u8 objectEventId;\n    if (!TryGetObjectEventIdByLocalIdAndMap(gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2], &objectEventId))\n    {\n        taskId = CreateTask(Task_DestroyDeoxysRock, 80);\n        gTasks[taskId].tObjectEventId = objectEventId;\n        gTasks[taskId].tLocalId = gFieldEffectArguments[0];\n        gTasks[taskId].tMapNum = gFieldEffectArguments[1];\n        gTasks[taskId].tMapGroup = gFieldEffectArguments[2];\n    }\n    else\n    {\n        FieldEffectActiveListRemove(FLDEFF_DESTROY_DEOXYS_ROCK);\n    }\n    return FALSE;",
       "callsTo": [
         "CreateTask",
@@ -2401,6 +3843,12 @@
       "returnType": "void",
       "signature": "static void Task_DeoxysRockCameraShake(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data = gTasks[taskId].data;\n    if (tEnding)\n    {\n        if (++tEndDelay > 20)\n        {\n            tEndDelay = 0;\n            if (tShake != 0)\n                tShake--;\n        }\n    }\n    else\n    {\n        tShake = 4;\n    }\n\n    if (++tShakeDelay > 1)\n    {\n        tShakeDelay = 0;\n\n        if (++tShakeUp & 1)\n            SetCameraPanning(0, -tShake);\n        else\n            SetCameraPanning(0, tShake);\n    }\n    UpdateCameraPanning();\n    if (tShake == 0)\n        DestroyTask(taskId);",
       "callsTo": [
         "DestroyTask",
@@ -2413,6 +3861,12 @@
       "returnType": "void",
       "signature": "static void StartEndingDeoxysRockCameraShake(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "gTasks[taskId].tEnding = TRUE;",
       "callsTo": [],
       "lineCount": 1
@@ -2421,6 +3875,12 @@
       "returnType": "void",
       "signature": "static void Task_DestroyDeoxysRock(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data = gTasks[taskId].data;\n    InstallCameraPanAheadCallback();\n    SetCameraPanningCallback(0);\n    sDestroyDeoxysRockEffectFuncs[tState](data, taskId);",
       "callsTo": [
         "InstallCameraPanAheadCallback",
@@ -2432,6 +3892,16 @@
       "returnType": "void",
       "signature": "static void DestroyDeoxysRockEffect_CameraShake(s16 *data, u8 taskId)",
       "paramsRaw": "s16 *data, u8 taskId",
+      "paramsList": [
+        {
+          "name": "data",
+          "typeRaw": "s16 *"
+        },
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 newTaskId = CreateTask(Task_DeoxysRockCameraShake, 90);\n    PlaySE(SE_THUNDER2);\n    tCameraTaskId = newTaskId;\n    tState++;",
       "callsTo": [
         "CreateTask",
@@ -2443,6 +3913,16 @@
       "returnType": "void",
       "signature": "static void DestroyDeoxysRockEffect_RockFragments(s16 *data, u8 taskId)",
       "paramsRaw": "s16 *data, u8 taskId",
+      "paramsList": [
+        {
+          "name": "data",
+          "typeRaw": "s16 *"
+        },
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (++tTimer > 120)\n    {\n        struct Sprite *sprite = &gSprites[gObjectEvents[tObjectEventId].spriteId];\n        gObjectEvents[tObjectEventId].invisible = TRUE;\n        BlendPalettes(PALETTES_BG, 0x10, RGB_WHITE);\n        BeginNormalPaletteFade(PALETTES_BG, 0, 0x10, 0, RGB_WHITE);\n        CreateDeoxysRockFragments(sprite);\n        PlaySE(SE_THUNDER);\n        StartEndingDeoxysRockCameraShake(tCameraTaskId);\n        tTimer = 0;\n        tState++;\n    }",
       "callsTo": [
         "BeginNormalPaletteFade",
@@ -2457,6 +3937,16 @@
       "returnType": "void",
       "signature": "static void DestroyDeoxysRockEffect_WaitAndEnd(s16 *data, u8 taskId)",
       "paramsRaw": "s16 *data, u8 taskId",
+      "paramsList": [
+        {
+          "name": "data",
+          "typeRaw": "s16 *"
+        },
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (!gPaletteFade.active && !FuncIsActiveTask(Task_DeoxysRockCameraShake))\n    {\n        InstallCameraPanAheadCallback();\n        RemoveObjectEventByLocalIdAndMap(tLocalId, tMapNum, tMapGroup);\n        FieldEffectActiveListRemove(FLDEFF_DESTROY_DEOXYS_ROCK);\n        DestroyTask(taskId);\n    }",
       "callsTo": [
         "DestroyTask",
@@ -2471,6 +3961,12 @@
       "returnType": "void",
       "signature": "static void CreateDeoxysRockFragments(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "int i;\n    int xPos = (s16)gTotalCameraPixelOffsetX + sprite->x + sprite->x2;\n    int yPos = (s16)gTotalCameraPixelOffsetY + sprite->y + sprite->y2 - 4;\n\n    for (i = 0; i < 4; i++)\n    {\n        u8 spriteId = CreateSprite(&sSpriteTemplate_DeoxysRockFragment, xPos, yPos, 0);\n        if (spriteId != MAX_SPRITES)\n        {\n            StartSpriteAnim(&gSprites[spriteId], i);\n            gSprites[spriteId].data[0] = i;\n            gSprites[spriteId].oam.paletteNum = sprite->oam.paletteNum;\n        }\n    }",
       "callsTo": [
         "CreateSprite",
@@ -2482,6 +3978,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_DeoxysRockFragment(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "switch (sprite->data[0])\n    {\n    case 0:\n        sprite->x -= 16;\n        sprite->y -= 12;\n        break;\n    case 1:\n        sprite->x += 16;\n        sprite->y -= 12;\n        break;\n    case 2:\n        sprite->x -= 16;\n        sprite->y += 12;\n        break;\n    case 3:\n        sprite->x += 16;\n        sprite->y += 12;\n        break;\n    }\n    if (sprite->x < -4 || sprite->x > DISPLAY_WIDTH + 4 || sprite->y < -4 || sprite->y > DISPLAY_HEIGHT + 4)\n        DestroySprite(sprite);",
       "callsTo": [
         "DestroySprite"
@@ -2492,6 +3994,12 @@
       "returnType": "bool8",
       "signature": "bool8 FldEff_MoveDeoxysRock(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "u8 objectEventId;\n    if (!TryGetObjectEventIdByLocalIdAndMap(gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2], &objectEventId))\n    {\n        struct ObjectEvent *object;\n        int xPos, yPos;\n        u8 taskId;\n        object = &gObjectEvents[objectEventId];\n        xPos = object->currentCoords.x - MAP_OFFSET;\n        yPos = object->currentCoords.y - MAP_OFFSET;\n        xPos = (gFieldEffectArguments[3] - xPos) * 16;\n        yPos = (gFieldEffectArguments[4] - yPos) * 16;\n        ShiftObjectEventCoords(object, gFieldEffectArguments[3] + MAP_OFFSET, gFieldEffectArguments[4] + MAP_OFFSET);\n        taskId = CreateTask(Task_MoveDeoxysRock, 80);\n        gTasks[taskId].tSpriteId = object->spriteId;\n        gTasks[taskId].tTargetX = gSprites[object->spriteId].x + xPos;\n        gTasks[taskId].tTargetY = gSprites[object->spriteId].y + yPos;\n        gTasks[taskId].tMoveSteps = gFieldEffectArguments[5];\n        gTasks[taskId].tObjEventId = objectEventId;\n    }\n    return FALSE;",
       "callsTo": [
         "CreateTask",
@@ -2504,6 +4012,12 @@
       "returnType": "void",
       "signature": "static void Task_MoveDeoxysRock(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data = gTasks[taskId].data;\n    struct Sprite *sprite = &gSprites[tSpriteId];\n    switch (tState)\n    {\n        case 0:\n            tCurX = sprite->x << 4;\n            tCurY = sprite->y << 4;\n            tVelocityX = SAFE_DIV(tTargetX * 16 - tCurX, tMoveSteps);\n            tVelocityY = SAFE_DIV(tTargetY * 16 - tCurY, tMoveSteps);\n            tState++;\n             \n        case 1:\n            if (tMoveSteps != 0)\n            {\n                tMoveSteps--;\n                tCurX += tVelocityX;\n                tCurY += tVelocityY;\n                sprite->x = tCurX >> 4;\n                sprite->y = tCurY >> 4;\n            }\n            else\n            {\n                struct ObjectEvent *object = &gObjectEvents[tObjEventId];\n                sprite->x = tTargetX;\n                sprite->y = tTargetY;\n                ShiftStillObjectEventCoords(object);\n                object->triggerGroundEffectsOnStop = TRUE;\n                FieldEffectActiveListRemove(FLDEFF_MOVE_DEOXYS_ROCK);\n                DestroyTask(taskId);\n            }\n            break;\n    }",
       "callsTo": [
         "DestroyTask",

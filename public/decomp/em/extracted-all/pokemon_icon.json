@@ -6,6 +6,36 @@
       "returnType": "u8",
       "signature": "u8 CreateMonIcon(u16 species, void (*callback)(struct Sprite *), s16 x, s16 y, u8 subpriority, u32 personality, bool32 handleDeoxys)",
       "paramsRaw": "u16 species, void (*callback)(struct Sprite *), s16 x, s16 y, u8 subpriority, u32 personality, bool32 handleDeoxys",
+      "paramsList": [
+        {
+          "name": "species",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "callback",
+          "typeRaw": "fnptr"
+        },
+        {
+          "name": "x",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "subpriority",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "personality",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "handleDeoxys",
+          "typeRaw": "bool32"
+        }
+      ],
       "body": "u8 spriteId;\n    struct MonIconSpriteTemplate iconTemplate =\n    {\n        .oam = &sMonIconOamData,\n        .image = GetMonIconPtr(species, personality, handleDeoxys),\n        .anims = sMonIconAnims,\n        .affineAnims = sMonIconAffineAnims,\n        .callback = callback,\n        .paletteTag = POKE_ICON_BASE_PAL_TAG + gMonIconPaletteIndices[species],\n    };\n\n    if (species > NUM_SPECIES)\n        iconTemplate.paletteTag = POKE_ICON_BASE_PAL_TAG;\n\n    spriteId = CreateMonIconSprite(&iconTemplate, x, y, subpriority);\n\n    UpdateMonIconFrame(&gSprites[spriteId]);\n\n    return spriteId;",
       "callsTo": [
         "CreateMonIconSprite",
@@ -18,6 +48,32 @@
       "returnType": "u8",
       "signature": "u8 CreateMonIconNoPersonality(u16 species, void (*callback)(struct Sprite *), s16 x, s16 y, u8 subpriority, bool32 handleDeoxys)",
       "paramsRaw": "u16 species, void (*callback)(struct Sprite *), s16 x, s16 y, u8 subpriority, bool32 handleDeoxys",
+      "paramsList": [
+        {
+          "name": "species",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "callback",
+          "typeRaw": "fnptr"
+        },
+        {
+          "name": "x",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "subpriority",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "handleDeoxys",
+          "typeRaw": "bool32"
+        }
+      ],
       "body": "u8 spriteId;\n    struct MonIconSpriteTemplate iconTemplate =\n    {\n        .oam = &sMonIconOamData,\n        .image = NULL,\n        .anims = sMonIconAnims,\n        .affineAnims = sMonIconAffineAnims,\n        .callback = callback,\n        .paletteTag = POKE_ICON_BASE_PAL_TAG + gMonIconPaletteIndices[species],\n    };\n\n    iconTemplate.image = GetMonIconTiles(species, handleDeoxys);\n    spriteId = CreateMonIconSprite(&iconTemplate, x, y, subpriority);\n\n    UpdateMonIconFrame(&gSprites[spriteId]);\n\n    return spriteId;",
       "callsTo": [
         "CreateMonIconSprite",
@@ -30,6 +86,16 @@
       "returnType": "u16",
       "signature": "u16 GetIconSpecies(u16 species, u32 personality)",
       "paramsRaw": "u16 species, u32 personality",
+      "paramsList": [
+        {
+          "name": "species",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "personality",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "u16 result;\n\n    if (species == SPECIES_UNOWN)\n    {\n        u16 letter = GetUnownLetterByPersonality(personality);\n        if (letter == 0)\n            letter = SPECIES_UNOWN;\n        else\n            letter += (SPECIES_UNOWN_B - 1);\n        result = letter;\n    }\n    else\n    {\n        if (species > NUM_SPECIES)\n            result = INVALID_ICON_SPECIES;\n        else\n            result = species;\n    }\n\n    return result;",
       "callsTo": [
         "GetUnownLetterByPersonality"
@@ -40,6 +106,12 @@
       "returnType": "u16",
       "signature": "u16 GetUnownLetterByPersonality(u32 personality)",
       "paramsRaw": "u32 personality",
+      "paramsList": [
+        {
+          "name": "personality",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "if (!personality)\n        return 0;\n    else\n        return GET_UNOWN_LETTER(personality);",
       "callsTo": [
         "GET_UNOWN_LETTER"
@@ -50,6 +122,12 @@
       "returnType": "u16",
       "signature": "u16 GetIconSpeciesNoPersonality(u16 species)",
       "paramsRaw": "u16 species",
+      "paramsList": [
+        {
+          "name": "species",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "u16 value;\n\n    if (MailSpeciesToSpecies(species, &value) == SPECIES_UNOWN)\n    {\n        if (value == 0)\n            value += SPECIES_UNOWN;\n        else\n            value += (SPECIES_UNOWN_B - 1);\n        return value;\n    }\n    else\n    {\n        if (species > NUM_SPECIES)\n            species = INVALID_ICON_SPECIES;\n        return GetIconSpecies(species, 0);\n    }",
       "callsTo": [
         "GetIconSpecies",
@@ -61,6 +139,12 @@
       "returnType": "void",
       "signature": "void FreeAndDestroyMonIconSprite(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "FreeAndDestroyMonIconSprite_(sprite);",
       "callsTo": [
         "FreeAndDestroyMonIconSprite_"
@@ -71,6 +155,7 @@
       "returnType": "void",
       "signature": "void LoadMonIconPalettes(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n    for (i = 0; i < ARRAY_COUNT(gMonIconPaletteTable); i++)\n        LoadSpritePalette(&gMonIconPaletteTable[i]);",
       "callsTo": [
         "ARRAY_COUNT",
@@ -82,6 +167,12 @@
       "returnType": "void",
       "signature": "void SafeLoadMonIconPalette(u16 species)",
       "paramsRaw": "u16 species",
+      "paramsList": [
+        {
+          "name": "species",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "u8 palIndex;\n    if (species > NUM_SPECIES)\n        species = INVALID_ICON_SPECIES;\n    palIndex = gMonIconPaletteIndices[species];\n    if (IndexOfSpritePaletteTag(gMonIconPaletteTable[palIndex].tag) == 0xFF)\n        LoadSpritePalette(&gMonIconPaletteTable[palIndex]);",
       "callsTo": [
         "IndexOfSpritePaletteTag",
@@ -93,6 +184,12 @@
       "returnType": "void",
       "signature": "void LoadMonIconPalette(u16 species)",
       "paramsRaw": "u16 species",
+      "paramsList": [
+        {
+          "name": "species",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "u8 palIndex = gMonIconPaletteIndices[species];\n    if (IndexOfSpritePaletteTag(gMonIconPaletteTable[palIndex].tag) == 0xFF)\n        LoadSpritePalette(&gMonIconPaletteTable[palIndex]);",
       "callsTo": [
         "IndexOfSpritePaletteTag",
@@ -104,6 +201,7 @@
       "returnType": "void",
       "signature": "void FreeMonIconPalettes(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n    for (i = 0; i < ARRAY_COUNT(gMonIconPaletteTable); i++)\n        FreeSpritePaletteByTag(gMonIconPaletteTable[i].tag);",
       "callsTo": [
         "ARRAY_COUNT",
@@ -115,6 +213,12 @@
       "returnType": "void",
       "signature": "void SafeFreeMonIconPalette(u16 species)",
       "paramsRaw": "u16 species",
+      "paramsList": [
+        {
+          "name": "species",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "u8 palIndex;\n    if (species > NUM_SPECIES)\n        species = INVALID_ICON_SPECIES;\n    palIndex = gMonIconPaletteIndices[species];\n    FreeSpritePaletteByTag(gMonIconPaletteTable[palIndex].tag);",
       "callsTo": [
         "FreeSpritePaletteByTag"
@@ -125,6 +229,12 @@
       "returnType": "void",
       "signature": "void FreeMonIconPalette(u16 species)",
       "paramsRaw": "u16 species",
+      "paramsList": [
+        {
+          "name": "species",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "u8 palIndex;\n    palIndex = gMonIconPaletteIndices[species];\n    FreeSpritePaletteByTag(gMonIconPaletteTable[palIndex].tag);",
       "callsTo": [
         "FreeSpritePaletteByTag"
@@ -135,6 +245,12 @@
       "returnType": "void",
       "signature": "void SpriteCB_MonIcon(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "UpdateMonIconFrame(sprite);",
       "callsTo": [
         "UpdateMonIconFrame"
@@ -145,6 +261,12 @@
       "returnType": "void",
       "signature": "void TryLoadAllMonIconPalettesAtOffset(u16 offset)",
       "paramsRaw": "u16 offset",
+      "paramsList": [
+        {
+          "name": "offset",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "s32 i;\n     \n    const struct SpritePalette* monIconPalettePtr;\n\n    if (offset <= BG_PLTT_ID(16 - ARRAY_COUNT(gMonIconPaletteTable)))\n    {\n        monIconPalettePtr = gMonIconPaletteTable;\n        for(i = ARRAY_COUNT(gMonIconPaletteTable) - 1; i >= 0; i--)\n        {\n            LoadPalette(monIconPalettePtr->data, offset, 0x20);\n            offset += 0x10;\n            monIconPalettePtr++;\n        }\n    }",
       "callsTo": [
         "ARRAY_COUNT",
@@ -157,6 +279,12 @@
       "returnType": "u8",
       "signature": "u8 GetValidMonIconPalIndex(u16 species)",
       "paramsRaw": "u16 species",
+      "paramsList": [
+        {
+          "name": "species",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "if (species > NUM_SPECIES)\n        species = INVALID_ICON_SPECIES;\n    return gMonIconPaletteIndices[species];",
       "callsTo": [],
       "lineCount": 3
@@ -165,6 +293,12 @@
       "returnType": "u8",
       "signature": "u8 GetMonIconPaletteIndexFromSpecies(u16 species)",
       "paramsRaw": "u16 species",
+      "paramsList": [
+        {
+          "name": "species",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "return gMonIconPaletteIndices[species];",
       "callsTo": [],
       "lineCount": 1
@@ -173,6 +307,12 @@
       "returnType": "u8",
       "signature": "u8 UpdateMonIconFrame(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "u8 result = 0;\n\n    if (sprite->animDelayCounter == 0)\n    {\n        s16 frame = sprite->anims[sprite->animNum][sprite->animCmdIndex].frame.imageValue;\n\n        switch (frame)\n        {\n        case -1:\n            break;\n        case -2:\n            sprite->animCmdIndex = 0;\n            break;\n        default:\n            RequestSpriteCopy(\n                 \n                 \n                 \n                (u8 *)sprite->images + (sSpriteImageSizes[sprite->oam.shape][sprite->oam.size] * frame),\n                (u8 *)(OBJ_VRAM0 + sprite->oam.tileNum * TILE_SIZE_4BPP),\n                sSpriteImageSizes[sprite->oam.shape][sprite->oam.size]);\n            sprite->animDelayCounter = sprite->anims[sprite->animNum][sprite->animCmdIndex].frame.duration & 0xFF;\n            sprite->animCmdIndex++;\n            result = sprite->animCmdIndex;\n            break;\n        }\n    }\n    else\n    {\n        sprite->animDelayCounter--;\n    }\n    return result;",
       "callsTo": [
         "RequestSpriteCopy"
@@ -183,6 +323,24 @@
       "returnType": "u8",
       "signature": "static u8 CreateMonIconSprite(struct MonIconSpriteTemplate *iconTemplate, s16 x, s16 y, u8 subpriority)",
       "paramsRaw": "struct MonIconSpriteTemplate *iconTemplate, s16 x, s16 y, u8 subpriority",
+      "paramsList": [
+        {
+          "name": "iconTemplate",
+          "typeRaw": "struct MonIconSpriteTemplate *"
+        },
+        {
+          "name": "x",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "subpriority",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 spriteId;\n\n    struct SpriteFrameImage image = { NULL, sSpriteImageSizes[iconTemplate->oam->shape][iconTemplate->oam->size] };\n\n    struct SpriteTemplate spriteTemplate =\n    {\n        .tileTag = TAG_NONE,\n        .paletteTag = iconTemplate->paletteTag,\n        .oam = iconTemplate->oam,\n        .anims = iconTemplate->anims,\n        .images = &image,\n        .affineAnims = iconTemplate->affineAnims,\n        .callback = iconTemplate->callback,\n    };\n\n    spriteId = CreateSprite(&spriteTemplate, x, y, subpriority);\n    gSprites[spriteId].animPaused = TRUE;\n    gSprites[spriteId].animBeginning = FALSE;\n    gSprites[spriteId].images = (const struct SpriteFrameImage *)iconTemplate->image;\n    return spriteId;",
       "callsTo": [
         "CreateSprite"
@@ -193,6 +351,12 @@
       "returnType": "void",
       "signature": "static void FreeAndDestroyMonIconSprite_(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "struct SpriteFrameImage image = { NULL, sSpriteImageSizes[sprite->oam.shape][sprite->oam.size] };\n    sprite->images = &image;\n    DestroySprite(sprite);",
       "callsTo": [
         "DestroySprite"
@@ -203,6 +367,16 @@
       "returnType": "void",
       "signature": "void SetPartyHPBarSprite(struct Sprite *sprite, u8 animNum)",
       "paramsRaw": "struct Sprite *sprite, u8 animNum",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        },
+        {
+          "name": "animNum",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "sprite->animNum = animNum;\n    sprite->animDelayCounter = 0;\n    sprite->animCmdIndex = 0;",
       "callsTo": [],
       "lineCount": 3

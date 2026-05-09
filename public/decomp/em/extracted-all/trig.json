@@ -6,6 +6,16 @@
       "returnType": "s16",
       "signature": "s16 Sin(s16 index, s16 amplitude)",
       "paramsRaw": "s16 index, s16 amplitude",
+      "paramsList": [
+        {
+          "name": "index",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "amplitude",
+          "typeRaw": "s16"
+        }
+      ],
       "body": "return (amplitude * gSineTable[index]) >> 8;",
       "callsTo": [],
       "lineCount": 1
@@ -14,6 +24,16 @@
       "returnType": "s16",
       "signature": "s16 Cos(s16 index, s16 amplitude)",
       "paramsRaw": "s16 index, s16 amplitude",
+      "paramsList": [
+        {
+          "name": "index",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "amplitude",
+          "typeRaw": "s16"
+        }
+      ],
       "body": "return (amplitude * gSineTable[index + 64]) >> 8;",
       "callsTo": [],
       "lineCount": 1
@@ -22,6 +42,12 @@
       "returnType": "s16",
       "signature": "s16 Sin2(u16 angle)",
       "paramsRaw": "u16 angle",
+      "paramsList": [
+        {
+          "name": "angle",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "s32 angleMod = angle % 180;\n    s32 negate = ((angle / 180) & 1);\n    s16 value = gSineDegreeTable[angleMod];\n\n    if (negate)\n        return -value;\n    else\n        return value;",
       "callsTo": [],
       "lineCount": 8
@@ -30,6 +56,12 @@
       "returnType": "s16",
       "signature": "s16 Cos2(u16 angle)",
       "paramsRaw": "u16 angle",
+      "paramsList": [
+        {
+          "name": "angle",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "return Sin2(angle + 90);",
       "callsTo": [
         "Sin2"

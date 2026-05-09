@@ -6,6 +6,16 @@
       "returnType": "void",
       "signature": "void GiveGiftRibbonToParty(u8 index, u8 ribbonId)",
       "paramsRaw": "u8 index, u8 ribbonId",
+      "paramsList": [
+        {
+          "name": "index",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "ribbonId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s32 i;\n    bool32 gotRibbon = FALSE;\n    u8 data = 1;\n    u8 array[ARRAY_COUNT(sGiftRibbonsMonDataIds)];\n    memcpy(array, sGiftRibbonsMonDataIds, sizeof(sGiftRibbonsMonDataIds));\n\n    if (index < GIFT_RIBBONS_COUNT && ribbonId <= MAX_GIFT_RIBBON)\n    {\n        gSaveBlock1Ptr->giftRibbons[index] = ribbonId;\n        for (i = 0; i < PARTY_SIZE; i++)\n        {\n            struct Pokemon *mon = &gPlayerParty[i];\n\n            if (GetMonData(mon, MON_DATA_SPECIES) != 0 && GetMonData(mon, MON_DATA_SANITY_IS_EGG) == 0)\n            {\n                SetMonData(mon, array[index], &data);\n                gotRibbon = TRUE;\n            }\n        }\n        if (gotRibbon)\n            FlagSet(FLAG_SYS_RIBBON_GET);\n    }",
       "callsTo": [
         "ARRAY_COUNT",

@@ -6,6 +6,7 @@
       "returnType": "void",
       "signature": "void InitMatchCallCounters(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "RtcCalcLocalTime();\n    sMatchCallState.minutes = GetCurrentTotalMinutes(&gLocalTime) + 10;\n    sMatchCallState.stepCounter = 0;",
       "callsTo": [
         "GetCurrentTotalMinutes",
@@ -17,6 +18,12 @@
       "returnType": "u32",
       "signature": "static u32 GetCurrentTotalMinutes(struct Time *time)",
       "paramsRaw": "struct Time *time",
+      "paramsList": [
+        {
+          "name": "time",
+          "typeRaw": "struct Time *"
+        }
+      ],
       "body": "return time->days * 24 * 60 + time->hours * 60 + time->minutes;",
       "callsTo": [],
       "lineCount": 1
@@ -25,6 +32,7 @@
       "returnType": "bool32",
       "signature": "static bool32 UpdateMatchCallMinutesCounter(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int curMinutes;\n    RtcCalcLocalTime();\n    curMinutes = GetCurrentTotalMinutes(&gLocalTime);\n    if (sMatchCallState.minutes > curMinutes || curMinutes - sMatchCallState.minutes > 9)\n    {\n        sMatchCallState.minutes = curMinutes;\n        return TRUE;\n    }\n\n    return FALSE;",
       "callsTo": [
         "GetCurrentTotalMinutes",
@@ -36,6 +44,7 @@
       "returnType": "bool32",
       "signature": "static bool32 CheckMatchCallChance(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int callChance = 1;\n    if (!GetMonData(&gPlayerParty[0], MON_DATA_SANITY_IS_EGG) && GetMonAbility(&gPlayerParty[0]) == ABILITY_LIGHTNING_ROD)\n        callChance = 2;\n\n    if (Random() % 10 < callChance * 3)\n        return TRUE;\n    else\n        return FALSE;",
       "callsTo": [
         "GetMonAbility",
@@ -48,6 +57,7 @@
       "returnType": "bool32",
       "signature": "static bool32 MapAllowsMatchCall(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!Overworld_MapTypeAllowsTeleportAndFly(gMapHeader.mapType) || gMapHeader.regionMapSectionId == MAPSEC_SAFARI_ZONE)\n        return FALSE;\n\n    if (gMapHeader.regionMapSectionId == MAPSEC_SOOTOPOLIS_CITY\n     && FlagGet(FLAG_HIDE_SOOTOPOLIS_CITY_RAYQUAZA) == TRUE\n     && FlagGet(FLAG_NEVER_SET_0x0DC) == FALSE)\n        return FALSE;\n\n    if (gMapHeader.regionMapSectionId == MAPSEC_MT_CHIMNEY\n     && FlagGet(FLAG_MET_ARCHIE_METEOR_FALLS) == TRUE\n     && FlagGet(FLAG_DEFEATED_EVIL_TEAM_MT_CHIMNEY) == FALSE)\n        return FALSE;\n\n    return TRUE;",
       "callsTo": [
         "FlagGet",
@@ -59,6 +69,7 @@
       "returnType": "bool32",
       "signature": "static bool32 UpdateMatchCallStepCounter(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (++sMatchCallState.stepCounter >= 10)\n    {\n        sMatchCallState.stepCounter = 0;\n        return TRUE;\n    }\n    else\n    {\n        return FALSE;\n    }",
       "callsTo": [],
       "lineCount": 9
@@ -67,6 +78,7 @@
       "returnType": "bool32",
       "signature": "static bool32 SelectMatchCallTrainer(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u32 matchCallId;\n    u32 numRegistered = GetNumRegisteredTrainers();\n    if (numRegistered == 0)\n        return FALSE;\n\n    sMatchCallState.trainerId = GetActiveMatchCallTrainerId(Random() % numRegistered);\n    sMatchCallState.triggeredFromScript = FALSE;\n    if (sMatchCallState.trainerId == REMATCH_TABLE_ENTRIES)\n        return FALSE;\n\n    matchCallId = GetTrainerMatchCallId(sMatchCallState.trainerId);\n    if (GetRematchTrainerLocation(matchCallId) == gMapHeader.regionMapSectionId && !TrainerIsEligibleForRematch(matchCallId))\n        return FALSE;\n\n    return TRUE;",
       "callsTo": [
         "GetActiveMatchCallTrainerId",
@@ -82,6 +94,7 @@
       "returnType": "u32",
       "signature": "static u32 GetNumRegisteredTrainers(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u32 i, count;\n    for (i = 0, count = 0; i < REMATCH_SPECIAL_TRAINER_START; i++)\n    {\n        if (FlagGet(TRAINER_REGISTERED_FLAGS_START + i))\n            count++;\n    }\n\n    return count;",
       "callsTo": [
         "FlagGet"
@@ -92,6 +105,12 @@
       "returnType": "u32",
       "signature": "static u32 GetActiveMatchCallTrainerId(u32 activeMatchCallId)",
       "paramsRaw": "u32 activeMatchCallId",
+      "paramsList": [
+        {
+          "name": "activeMatchCallId",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "u32 i;\n    for (i = 0; i < REMATCH_SPECIAL_TRAINER_START; i++)\n    {\n        if (FlagGet(TRAINER_REGISTERED_FLAGS_START + i))\n        {\n            if (!activeMatchCallId)\n                return gRematchTable[i].trainerIds[0];\n\n            activeMatchCallId--;\n        }\n    }\n\n    return REMATCH_TABLE_ENTRIES;",
       "callsTo": [
         "FlagGet"
@@ -102,6 +121,7 @@
       "returnType": "bool32",
       "signature": "bool32 TryStartMatchCall(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (FlagGet(FLAG_HAS_MATCH_CALL)\n        && UpdateMatchCallStepCounter()\n        && UpdateMatchCallMinutesCounter()\n        && CheckMatchCallChance()\n        && MapAllowsMatchCall()\n        && SelectMatchCallTrainer())\n    {\n        StartMatchCall();\n        return TRUE;\n    }\n\n    return FALSE;",
       "callsTo": [
         "CheckMatchCallChance",
@@ -118,6 +138,12 @@
       "returnType": "void",
       "signature": "void StartMatchCallFromScript(const u8 *message)",
       "paramsRaw": "const u8 *message",
+      "paramsList": [
+        {
+          "name": "message",
+          "typeRaw": "const u8 *"
+        }
+      ],
       "body": "sMatchCallState.triggeredFromScript = TRUE;\n    StartMatchCall();",
       "callsTo": [
         "StartMatchCall"
@@ -128,6 +154,7 @@
       "returnType": "bool32",
       "signature": "bool32 IsMatchCallTaskActive(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return FuncIsActiveTask(ExecuteMatchCall);",
       "callsTo": [
         "FuncIsActiveTask"
@@ -138,6 +165,7 @@
       "returnType": "void",
       "signature": "static void StartMatchCall(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!sMatchCallState.triggeredFromScript)\n    {\n        LockPlayerFieldControls();\n        FreezeObjectEvents();\n        PlayerFreeze();\n        StopPlayerAvatar();\n    }\n\n    PlaySE(SE_POKENAV_CALL);\n    CreateTask(ExecuteMatchCall, 1);",
       "callsTo": [
         "CreateTask",
@@ -153,6 +181,12 @@
       "returnType": "void",
       "signature": "static void ExecuteMatchCall(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data = gTasks[taskId].data;\n    if (sMatchCallTaskFuncs[tState](taskId))\n    {\n        tState++;\n        data[1] = 0;  \n        if ((u16)tState > 7)\n            DestroyTask(taskId);\n    }",
       "callsTo": [
         "DestroyTask"
@@ -163,6 +197,12 @@
       "returnType": "bool32",
       "signature": "static bool32 MatchCall_LoadGfx(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data = gTasks[taskId].data;\n    tWindowId = AddWindow(&sMatchCallTextWindow);\n    if (tWindowId == WINDOW_NONE)\n    {\n        DestroyTask(taskId);\n        return FALSE;\n    }\n\n    if (LoadBgTiles(0, sMatchCallWindow_Gfx, sizeof(sMatchCallWindow_Gfx), TILE_MC_WINDOW) == 0xFFFF)\n    {\n        RemoveWindow(tWindowId);\n        DestroyTask(taskId);\n        return FALSE;\n    }\n\n    if (!DecompressAndCopyTileDataToVram(0, sPokenavIcon_Gfx, 0, TILE_POKENAV_ICON, 0))\n    {\n        RemoveWindow(tWindowId);\n        DestroyTask(taskId);\n        return FALSE;\n    }\n\n    FillWindowPixelBuffer(tWindowId, PIXEL_FILL(8));\n    LoadPalette(sMatchCallWindow_Pal, BG_PLTT_ID(14), sizeof(sMatchCallWindow_Pal));\n    LoadPalette(sPokenavIcon_Pal, BG_PLTT_ID(15), sizeof(sPokenavIcon_Pal));\n    ChangeBgY(0, -0x2000, BG_COORD_SET);\n    return TRUE;",
       "callsTo": [
         "AddWindow",
@@ -182,6 +222,12 @@
       "returnType": "bool32",
       "signature": "static bool32 MatchCall_DrawWindow(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data = gTasks[taskId].data;\n    if (FreeTempTileDataBuffersIfPossible())\n        return FALSE;\n\n    PutWindowTilemap(tWindowId);\n    DrawMatchCallTextBoxBorder_Internal(tWindowId, TILE_MC_WINDOW, 14);\n    WriteSequenceToBgTilemapBuffer(0, (0xF << 12) | TILE_POKENAV_ICON, 1, 15, 4, 4, 17, 1);\n    tIconTaskId = CreateTask(Task_SpinPokenavIcon, 10);\n    CopyWindowToVram(tWindowId, COPYWIN_GFX);\n    CopyBgTilemapBufferToVram(0);\n    return TRUE;",
       "callsTo": [
         "CopyBgTilemapBufferToVram",
@@ -198,6 +244,12 @@
       "returnType": "bool32",
       "signature": "static bool32 MatchCall_ReadyIntro(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data = gTasks[taskId].data;\n    if (!IsDma3ManagerBusyWithBgCopy())\n    {\n         \n        InitMatchCallTextPrinter(tWindowId, sText_PokenavCallEllipsis);\n        return TRUE;\n    }\n\n    return FALSE;",
       "callsTo": [
         "InitMatchCallTextPrinter",
@@ -209,6 +261,12 @@
       "returnType": "bool32",
       "signature": "static bool32 MatchCall_SlideWindowIn(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (ChangeBgY(0, 0x600, BG_COORD_ADD) >= 0)\n    {\n        ChangeBgY(0, 0, BG_COORD_SET);\n        return TRUE;\n    }\n\n    return FALSE;",
       "callsTo": [
         "ChangeBgY"
@@ -219,6 +277,12 @@
       "returnType": "bool32",
       "signature": "static bool32 MatchCall_PrintIntro(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data = gTasks[taskId].data;\n    if (!RunMatchCallTextPrinter(tWindowId))\n    {\n        FillWindowPixelBuffer(tWindowId, PIXEL_FILL(8));\n\n         \n        if (!sMatchCallState.triggeredFromScript)\n            SelectMatchCallMessage(sMatchCallState.trainerId, gStringVar4);\n        InitMatchCallTextPrinter(tWindowId, gStringVar4);\n        return TRUE;\n    }\n\n    return FALSE;",
       "callsTo": [
         "FillWindowPixelBuffer",
@@ -233,6 +297,12 @@
       "returnType": "bool32",
       "signature": "static bool32 MatchCall_PrintMessage(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data = gTasks[taskId].data;\n    if (!RunMatchCallTextPrinter(tWindowId) && !IsSEPlaying() && JOY_NEW(A_BUTTON | B_BUTTON))\n    {\n        FillWindowPixelBuffer(tWindowId, PIXEL_FILL(8));\n        CopyWindowToVram(tWindowId, COPYWIN_GFX);\n        PlaySE(SE_POKENAV_HANG_UP);\n        return TRUE;\n    }\n\n    return FALSE;",
       "callsTo": [
         "CopyWindowToVram",
@@ -249,6 +319,12 @@
       "returnType": "bool32",
       "signature": "static bool32 MatchCall_SlideWindowOut(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data = gTasks[taskId].data;\n    if (ChangeBgY(0, 0x600, BG_COORD_SUB) <= -0x2000)\n    {\n        FillBgTilemapBufferRect_Palette0(0, 0, 0, 14, 30, 6);\n        DestroyTask(tIconTaskId);\n        RemoveWindow(tWindowId);\n        CopyBgTilemapBufferToVram(0);\n        return TRUE;\n    }\n\n    return FALSE;",
       "callsTo": [
         "ChangeBgY",
@@ -263,6 +339,12 @@
       "returnType": "bool32",
       "signature": "static bool32 MatchCall_EndCall(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 playerObjectId;\n    if (!IsDma3ManagerBusyWithBgCopy() && !IsSEPlaying())\n    {\n        ChangeBgY(0, 0, BG_COORD_SET);\n        if (!sMatchCallState.triggeredFromScript)\n        {\n            LoadMessageBoxAndBorderGfx();\n            playerObjectId = GetObjectEventIdByLocalIdAndMap(LOCALID_PLAYER, 0, 0);\n            ObjectEventClearHeldMovementIfFinished(&gObjectEvents[playerObjectId]);\n            ScriptMovement_UnfreezeObjectEvents();\n            UnfreezeObjectEvents();\n            UnlockPlayerFieldControls();\n        }\n\n        return TRUE;\n    }\n\n    return FALSE;",
       "callsTo": [
         "ChangeBgY",
@@ -281,6 +363,20 @@
       "returnType": "void",
       "signature": "static void DrawMatchCallTextBoxBorder_Internal(u32 windowId, u32 tileOffset, u32 paletteId)",
       "paramsRaw": "u32 windowId, u32 tileOffset, u32 paletteId",
+      "paramsList": [
+        {
+          "name": "windowId",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "tileOffset",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "paletteId",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "int bg, x, y, width, height;\n    int tileNum;\n\n    bg = GetWindowAttribute(windowId, WINDOW_BG);\n    x = GetWindowAttribute(windowId, WINDOW_TILEMAP_LEFT);\n    y = GetWindowAttribute(windowId, WINDOW_TILEMAP_TOP);\n    width = GetWindowAttribute(windowId, WINDOW_WIDTH);\n    height = GetWindowAttribute(windowId, WINDOW_HEIGHT);\n    tileNum = tileOffset + GetBgAttribute(bg, BG_ATTR_BASETILE);\n\n    FillBgTilemapBufferRect_Palette0(bg, ((paletteId << 12) & 0xF000) | (tileNum + 0), x - 1, y - 1, 1, 1);\n    FillBgTilemapBufferRect_Palette0(bg, ((paletteId << 12) & 0xF000) | (tileNum + 1), x, y - 1, width, 1);\n    FillBgTilemapBufferRect_Palette0(bg, ((paletteId << 12) & 0xF000) | (tileNum + 2), x + width, y - 1, 1, 1);\n    FillBgTilemapBufferRect_Palette0(bg, ((paletteId << 12) & 0xF000) | (tileNum + 3), x - 1, y, 1, height);\n    FillBgTilemapBufferRect_Palette0(bg, ((paletteId << 12) & 0xF000) | (tileNum + 4), x + width, y, 1, height);\n    FillBgTilemapBufferRect_Palette0(bg, ((paletteId << 12) & 0xF000) | (tileNum + 5), x - 1, y + height, 1, 1);\n    FillBgTilemapBufferRect_Palette0(bg, ((paletteId << 12) & 0xF000) | (tileNum + 6), x, y + height, width, 1);\n    FillBgTilemapBufferRect_Palette0(bg, ((paletteId << 12) & 0xF000) | (tileNum + 7), x + width, y + height, 1, 1);",
       "callsTo": [
         "FillBgTilemapBufferRect_Palette0",
@@ -293,6 +389,16 @@
       "returnType": "void",
       "signature": "static void InitMatchCallTextPrinter(int windowId, const u8 *str)",
       "paramsRaw": "int windowId, const u8 *str",
+      "paramsList": [
+        {
+          "name": "windowId",
+          "typeRaw": "int"
+        },
+        {
+          "name": "str",
+          "typeRaw": "const u8 *"
+        }
+      ],
       "body": "struct TextPrinterTemplate printerTemplate;\n    printerTemplate.currentChar = str;\n    printerTemplate.windowId = windowId;\n    printerTemplate.fontId = FONT_NORMAL;\n    printerTemplate.x = 32;\n    printerTemplate.y = 1;\n    printerTemplate.currentX = 32;\n    printerTemplate.currentY = 1;\n    printerTemplate.letterSpacing = 0;\n    printerTemplate.lineSpacing = 0;\n    printerTemplate.unk = 0;\n    printerTemplate.fgColor = TEXT_DYNAMIC_COLOR_1;\n    printerTemplate.bgColor = TEXT_COLOR_BLUE;\n    printerTemplate.shadowColor = TEXT_DYNAMIC_COLOR_5;\n    gTextFlags.useAlternateDownArrow = FALSE;\n\n    AddTextPrinter(&printerTemplate, GetPlayerTextSpeedDelay(), NULL);",
       "callsTo": [
         "AddTextPrinter",
@@ -304,6 +410,12 @@
       "returnType": "bool32",
       "signature": "static bool32 RunMatchCallTextPrinter(int windowId)",
       "paramsRaw": "int windowId",
+      "paramsList": [
+        {
+          "name": "windowId",
+          "typeRaw": "int"
+        }
+      ],
       "body": "if (JOY_HELD(A_BUTTON))\n        gTextFlags.canABSpeedUpPrint = TRUE;\n    else\n        gTextFlags.canABSpeedUpPrint = FALSE;\n\n    RunTextPrinters();\n    return IsTextPrinterActive(windowId);",
       "callsTo": [
         "IsTextPrinterActive",
@@ -316,6 +428,12 @@
       "returnType": "void",
       "signature": "static void Task_SpinPokenavIcon(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data = gTasks[taskId].data;\n    if (++tTimer > 8)\n    {\n        tTimer = 0;\n        if (++tSpinStage > 7)\n            tSpinStage = 0;\n\n        tTileNum = (tSpinStage * 16) + TILE_POKENAV_ICON;\n        WriteSequenceToBgTilemapBuffer(0, tTileNum | ~0xFFF, 1, 15, 4, 4, 17, 1);\n        CopyBgTilemapBufferToVram(0);\n    }",
       "callsTo": [
         "CopyBgTilemapBufferToVram",
@@ -327,6 +445,12 @@
       "returnType": "bool32",
       "signature": "static bool32 TrainerIsEligibleForRematch(int matchCallId)",
       "paramsRaw": "int matchCallId",
+      "paramsList": [
+        {
+          "name": "matchCallId",
+          "typeRaw": "int"
+        }
+      ],
       "body": "return gSaveBlock1Ptr->trainerRematches[matchCallId] > 0;",
       "callsTo": [],
       "lineCount": 1
@@ -335,6 +459,7 @@
       "returnType": "u32",
       "signature": "static u32 GetNumRematchTrainersFought(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u32 i, count;\n    for (i = 0, count = 0; i < REMATCH_SPECIAL_TRAINER_START; i++)\n    {\n        if (HasTrainerBeenFought(gRematchTable[i].trainerIds[0]))\n            count++;\n    }\n\n    return count;",
       "callsTo": [
         "HasTrainerBeenFought"
@@ -345,6 +470,12 @@
       "returnType": "u32",
       "signature": "static u32 GetNthRematchTrainerFought(int n)",
       "paramsRaw": "int n",
+      "paramsList": [
+        {
+          "name": "n",
+          "typeRaw": "int"
+        }
+      ],
       "body": "u32 i, count;\n\n    for (i = 0, count = 0; i < REMATCH_TABLE_ENTRIES; i++)\n    {\n        if (HasTrainerBeenFought(gRematchTable[i].trainerIds[0]))\n        {\n            if (count == n)\n                return i;\n\n            count++;\n        }\n    }\n\n    return REMATCH_TABLE_ENTRIES;",
       "callsTo": [
         "HasTrainerBeenFought"
@@ -355,6 +486,16 @@
       "returnType": "bool32",
       "signature": "bool32 SelectMatchCallMessage(int trainerId, u8 *str)",
       "paramsRaw": "int trainerId, u8 *str",
+      "paramsList": [
+        {
+          "name": "trainerId",
+          "typeRaw": "int"
+        },
+        {
+          "name": "str",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "u32 matchCallId;\n    const struct MatchCallText *matchCallText;\n    bool32 newRematchRequest = FALSE;\n\n    matchCallId = GetTrainerMatchCallId(trainerId);\n    sBattleFrontierStreakInfo.facilityId = 0;\n\n     \n     \n    if (TrainerIsEligibleForRematch(matchCallId)\n     && GetRematchTrainerLocation(matchCallId) == gMapHeader.regionMapSectionId)\n    {\n        matchCallText = GetSameRouteMatchCallText(matchCallId, str);\n    }\n     \n     \n     \n    else if (ShouldTrainerRequestBattle(matchCallId))\n    {\n        matchCallText = GetDifferentRouteMatchCallText(matchCallId, str);\n        newRematchRequest = TRUE;\n        UpdateRematchIfDefeated(matchCallId);\n    }\n    else if (Random() % 3)\n    {\n         \n        matchCallText = GetBattleMatchCallText(matchCallId, str);\n    }\n    else\n    {\n         \n        matchCallText = GetGeneralMatchCallText(matchCallId, str);\n    }\n\n    BuildMatchCallString(matchCallId, matchCallText, str);\n    return newRematchRequest;",
       "callsTo": [
         "BuildMatchCallString",
@@ -375,6 +516,12 @@
       "returnType": "int",
       "signature": "static int GetTrainerMatchCallId(int trainerId)",
       "paramsRaw": "int trainerId",
+      "paramsList": [
+        {
+          "name": "trainerId",
+          "typeRaw": "int"
+        }
+      ],
       "body": "int i = 0;\n    while (1)\n    {\n        if (sMatchCallTrainers[i].trainerId == trainerId)\n            return i;\n        else\n            i++;\n    }",
       "callsTo": [],
       "lineCount": 8
@@ -383,6 +530,20 @@
       "returnType": "void",
       "signature": "static void BuildMatchCallString(int matchCallId, const struct MatchCallText *matchCallText, u8 *str)",
       "paramsRaw": "int matchCallId, const struct MatchCallText *matchCallText, u8 *str",
+      "paramsList": [
+        {
+          "name": "matchCallId",
+          "typeRaw": "int"
+        },
+        {
+          "name": "matchCallText",
+          "typeRaw": "const struct MatchCallText *"
+        },
+        {
+          "name": "str",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "PopulateMatchCallStringVars(matchCallId, matchCallText->stringVarFuncIds);\n    StringExpandPlaceholders(str, matchCallText->text);",
       "callsTo": [
         "PopulateMatchCallStringVars",
@@ -394,6 +555,16 @@
       "returnType": "void",
       "signature": "static void PopulateMatchCallStringVars(int matchCallId, const s8 *stringVarFuncIds)",
       "paramsRaw": "int matchCallId, const s8 *stringVarFuncIds",
+      "paramsList": [
+        {
+          "name": "matchCallId",
+          "typeRaw": "int"
+        },
+        {
+          "name": "stringVarFuncIds",
+          "typeRaw": "const s8 *"
+        }
+      ],
       "body": "int i;\n    for (i = 0; i < NUM_STRVARS_IN_MSG; i++)\n    {\n        if (stringVarFuncIds[i] >= 0)\n            PopulateMatchCallStringVar(matchCallId, stringVarFuncIds[i], sMatchCallTextStringVars[i]);\n    }",
       "callsTo": [
         "PopulateMatchCallStringVar"
@@ -404,6 +575,20 @@
       "returnType": "void",
       "signature": "static void PopulateMatchCallStringVar(int matchCallId, int funcId, u8 *destStr)",
       "paramsRaw": "int matchCallId, int funcId, u8 *destStr",
+      "paramsList": [
+        {
+          "name": "matchCallId",
+          "typeRaw": "int"
+        },
+        {
+          "name": "funcId",
+          "typeRaw": "int"
+        },
+        {
+          "name": "destStr",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "sPopulateMatchCallStringVarFuncs[funcId](matchCallId, destStr);",
       "callsTo": [],
       "lineCount": 1
@@ -412,6 +597,16 @@
       "returnType": "void",
       "signature": "static void PopulateTrainerName(int matchCallId, u8 *destStr)",
       "paramsRaw": "int matchCallId, u8 *destStr",
+      "paramsList": [
+        {
+          "name": "matchCallId",
+          "typeRaw": "int"
+        },
+        {
+          "name": "destStr",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "u32 i;\n    u16 trainerId = sMatchCallTrainers[matchCallId].trainerId;\n    for (i = 0; i < ARRAY_COUNT(sMultiTrainerMatchCallTexts); i++)\n    {\n        if (sMultiTrainerMatchCallTexts[i].trainerId == trainerId)\n        {\n            StringCopy(destStr, sMultiTrainerMatchCallTexts[i].text);\n            return;\n        }\n    }\n\n    StringCopy(destStr, gTrainers[trainerId].trainerName);",
       "callsTo": [
         "ARRAY_COUNT",
@@ -423,6 +618,16 @@
       "returnType": "void",
       "signature": "static void PopulateMapName(int matchCallId, u8 *destStr)",
       "paramsRaw": "int matchCallId, u8 *destStr",
+      "paramsList": [
+        {
+          "name": "matchCallId",
+          "typeRaw": "int"
+        },
+        {
+          "name": "destStr",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "GetMapName(destStr, GetRematchTrainerLocation(matchCallId), 0);",
       "callsTo": [
         "GetMapName",
@@ -434,6 +639,7 @@
       "returnType": "u8",
       "signature": "static u8 GetLandEncounterSlot(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int rand = Random() % 100;\n    if (rand < 20)\n        return 0;\n    else if (rand >= 20 && rand < 40)\n        return 1;\n    else if (rand >= 40 && rand < 50)\n        return 2;\n    else if (rand >= 50 && rand < 60)\n        return 3;\n    else if (rand >= 60 && rand < 70)\n        return 4;\n    else if (rand >= 70 && rand < 80)\n        return 5;\n    else if (rand >= 80 && rand < 85)\n        return 6;\n    else if (rand >= 85 && rand < 90)\n        return 7;\n    else if (rand >= 90 && rand < 94)\n        return 8;\n    else if (rand >= 94 && rand < 98)\n        return 9;\n    else if (rand >= 98 && rand < 99)\n        return 10;\n    else\n        return 11;",
       "callsTo": [
         "Random"
@@ -444,6 +650,7 @@
       "returnType": "u8",
       "signature": "static u8 GetWaterEncounterSlot(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int rand = Random() % 100;\n    if (rand < 60)\n        return 0;\n    else if (rand >= 60 && rand < 90)\n        return 1;\n    else if (rand >= 90 && rand < 95)\n        return 2;\n    else if (rand >= 95 && rand < 99)\n        return 3;\n    else\n        return 4;",
       "callsTo": [
         "Random"
@@ -454,6 +661,16 @@
       "returnType": "void",
       "signature": "static void PopulateSpeciesFromTrainerLocation(int matchCallId, u8 *destStr)",
       "paramsRaw": "int matchCallId, u8 *destStr",
+      "paramsList": [
+        {
+          "name": "matchCallId",
+          "typeRaw": "int"
+        },
+        {
+          "name": "destStr",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "u16 species[2];\n    int numSpecies;\n    u8 slot;\n    int i = 0;\n\n    if (gWildMonHeaders[i].mapGroup != MAP_GROUP(MAP_UNDEFINED))  \n    {\n        while (gWildMonHeaders[i].mapGroup != MAP_GROUP(MAP_UNDEFINED))\n        {\n            if (gWildMonHeaders[i].mapGroup == gRematchTable[matchCallId].mapGroup\n             && gWildMonHeaders[i].mapNum == gRematchTable[matchCallId].mapNum)\n                break;\n\n            i++;\n        }\n\n        if (gWildMonHeaders[i].mapGroup != MAP_GROUP(MAP_UNDEFINED))\n        {\n            numSpecies = 0;\n            if (gWildMonHeaders[i].landMonsInfo)\n            {\n                slot = GetLandEncounterSlot();\n                species[numSpecies] = gWildMonHeaders[i].landMonsInfo->wildPokemon[slot].species;\n                numSpecies++;\n            }\n\n            if (gWildMonHeaders[i].waterMonsInfo)\n            {\n                slot = GetWaterEncounterSlot();\n                species[numSpecies] = gWildMonHeaders[i].waterMonsInfo->wildPokemon[slot].species;\n                numSpecies++;\n            }\n\n            if (numSpecies)\n            {\n                StringCopy(destStr, gSpeciesNames[species[Random() % numSpecies]]);\n                return;\n            }\n        }\n    }\n\n    destStr[0] = EOS;",
       "callsTo": [
         "GetLandEncounterSlot",
@@ -468,6 +685,16 @@
       "returnType": "void",
       "signature": "static void PopulateSpeciesFromTrainerParty(int matchCallId, u8 *destStr)",
       "paramsRaw": "int matchCallId, u8 *destStr",
+      "paramsList": [
+        {
+          "name": "matchCallId",
+          "typeRaw": "int"
+        },
+        {
+          "name": "destStr",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "u16 trainerId;\n    union TrainerMonPtr party;\n    u8 monId;\n    const u8 *speciesName;\n\n    trainerId = GetLastBeatenRematchTrainerId(sMatchCallTrainers[matchCallId].trainerId);\n    party = gTrainers[trainerId].party;\n    monId = Random() % gTrainers[trainerId].partySize;\n\n    switch (gTrainers[trainerId].partyFlags)\n    {\n    case 0:\n    default:\n        speciesName = gSpeciesNames[party.NoItemDefaultMoves[monId].species];\n        break;\n    case F_TRAINER_PARTY_CUSTOM_MOVESET:\n        speciesName = gSpeciesNames[party.NoItemCustomMoves[monId].species];\n        break;\n    case F_TRAINER_PARTY_HELD_ITEM:\n        speciesName = gSpeciesNames[party.ItemDefaultMoves[monId].species];\n        break;\n    case F_TRAINER_PARTY_CUSTOM_MOVESET | F_TRAINER_PARTY_HELD_ITEM:\n        speciesName = gSpeciesNames[party.ItemCustomMoves[monId].species];\n        break;\n    }\n\n    StringCopy(destStr, speciesName);",
       "callsTo": [
         "GetLastBeatenRematchTrainerId",
@@ -480,6 +707,16 @@
       "returnType": "void",
       "signature": "static void PopulateBattleFrontierFacilityName(int matchCallId, u8 *destStr)",
       "paramsRaw": "int matchCallId, u8 *destStr",
+      "paramsList": [
+        {
+          "name": "matchCallId",
+          "typeRaw": "int"
+        },
+        {
+          "name": "destStr",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "StringCopy(destStr, sBattleFrontierFacilityNames[sBattleFrontierStreakInfo.facilityId]);",
       "callsTo": [
         "StringCopy"
@@ -490,6 +727,16 @@
       "returnType": "void",
       "signature": "static void PopulateBattleFrontierStreak(int matchCallId, u8 *destStr)",
       "paramsRaw": "int matchCallId, u8 *destStr",
+      "paramsList": [
+        {
+          "name": "matchCallId",
+          "typeRaw": "int"
+        },
+        {
+          "name": "destStr",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "int i = 0;\n    int streak = sBattleFrontierStreakInfo.streak;\n    while (streak != 0)\n    {\n        streak /= 10;\n        i++;\n    }\n\n    ConvertIntToDecimalStringN(destStr, sBattleFrontierStreakInfo.streak, STR_CONV_MODE_LEFT_ALIGN, i);",
       "callsTo": [
         "ConvertIntToDecimalStringN"
@@ -500,6 +747,7 @@
       "returnType": "int",
       "signature": "static int GetNumOwnedBadges(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u32 i;\n\n    for (i = 0; i < NUM_BADGES; i++)\n    {\n        if (!FlagGet(sBadgeFlags[i]))\n            break;\n    }\n\n    return i;",
       "callsTo": [
         "FlagGet"
@@ -510,6 +758,12 @@
       "returnType": "bool32",
       "signature": "static bool32 ShouldTrainerRequestBattle(int matchCallId)",
       "paramsRaw": "int matchCallId",
+      "paramsList": [
+        {
+          "name": "matchCallId",
+          "typeRaw": "int"
+        }
+      ],
       "body": "int dayCount;\n    int otId;\n    u16 dewfordRand;\n    int numRematchTrainersFought;\n    int max, rand, n;\n\n    if (GetNumOwnedBadges() < 5)\n        return FALSE;\n\n    dayCount = RtcGetLocalDayCount();\n    otId = GetTrainerId(gSaveBlock2Ptr->playerTrainerId) & 0xFFFF;\n\n    dewfordRand = gSaveBlock1Ptr->dewfordTrends[0].rand;\n    numRematchTrainersFought = GetNumRematchTrainersFought();\n    max = (numRematchTrainersFought * 13) / 10;\n    rand = ((dayCount ^ dewfordRand) + (dewfordRand ^ GetGameStat(GAME_STAT_TRAINER_BATTLES))) ^ otId;\n    n = rand % max;\n    if (n < numRematchTrainersFought)\n    {\n        if (GetNthRematchTrainerFought(n) == matchCallId)\n            return TRUE;\n    }\n\n    return FALSE;",
       "callsTo": [
         "GetGameStat",
@@ -525,6 +779,16 @@
       "returnType": "u16",
       "signature": "static u16 GetFrontierStreakInfo(u16 facilityId, u32 *topicTextId)",
       "paramsRaw": "u16 facilityId, u32 *topicTextId",
+      "paramsList": [
+        {
+          "name": "facilityId",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "topicTextId",
+          "typeRaw": "u32 *"
+        }
+      ],
       "body": "int i;\n    int j;\n    u16 streak = 0;\n\n    switch (facilityId)\n    {\n    case FRONTIER_FACILITY_DOME:\n        for (i = 0; i < (int)ARRAY_COUNT(gSaveBlock2Ptr->frontier.domeRecordWinStreaks); i++)\n        {\n            for (j = 0; j < FRONTIER_LVL_MODE_COUNT; j++)\n            {\n                if (streak < gSaveBlock2Ptr->frontier.domeRecordWinStreaks[i][j])\n                    streak = gSaveBlock2Ptr->frontier.domeRecordWinStreaks[i][j];\n            }\n        }\n        *topicTextId = GEN_TOPIC_B_DOME - 1;\n        break;\n    case MATCH_CALL_PIKE:\n        for (i = 0; i < FRONTIER_LVL_MODE_COUNT; i++)\n        {\n            if (streak < gSaveBlock2Ptr->frontier.pikeRecordStreaks[i])\n                streak = gSaveBlock2Ptr->frontier.pikeRecordStreaks[i];\n        }\n        *topicTextId = GEN_TOPIC_B_PIKE - 1;\n        break;\n    case FRONTIER_FACILITY_TOWER:\n        for (i = 0; i < (int)ARRAY_COUNT(gSaveBlock2Ptr->frontier.towerRecordWinStreaks); i++)\n        {\n            for (j = 0; j < FRONTIER_LVL_MODE_COUNT; j++)\n            {\n                if (streak < gSaveBlock2Ptr->frontier.towerRecordWinStreaks[i][j])\n                    streak = gSaveBlock2Ptr->frontier.towerRecordWinStreaks[i][j];\n            }\n        }\n        *topicTextId = GEN_TOPIC_STREAK_RECORD - 1;\n        break;\n    case FRONTIER_FACILITY_PALACE:\n        for (i = 0; i < (int)ARRAY_COUNT(gSaveBlock2Ptr->frontier.palaceRecordWinStreaks); i++)\n        {\n            for (j = 0; j < FRONTIER_LVL_MODE_COUNT; j++)\n            {\n                if (streak < gSaveBlock2Ptr->frontier.palaceRecordWinStreaks[i][j])\n                    streak = gSaveBlock2Ptr->frontier.palaceRecordWinStreaks[i][j];\n            }\n        }\n        *topicTextId = GEN_TOPIC_STREAK_RECORD - 1;\n        break;\n    case MATCH_CALL_FACTORY:\n        for (i = 0; i < (int)ARRAY_COUNT(gSaveBlock2Ptr->frontier.factoryRecordWinStreaks); i++)\n        {\n            for (j = 0; j < FRONTIER_LVL_MODE_COUNT; j++)\n            {\n                if (streak < gSaveBlock2Ptr->frontier.factoryRecordWinStreaks[i][j])\n                    streak = gSaveBlock2Ptr->frontier.factoryRecordWinStreaks[i][j];\n            }\n        }\n        *topicTextId = GEN_TOPIC_STREAK_RECORD - 1;\n        break;\n    case FRONTIER_FACILITY_ARENA:\n        for (i = 0; i < FRONTIER_LVL_MODE_COUNT; i++)\n        {\n            if (streak < gSaveBlock2Ptr->frontier.arenaRecordStreaks[i])\n                streak = gSaveBlock2Ptr->frontier.arenaRecordStreaks[i];\n        }\n        *topicTextId = GEN_TOPIC_STREAK_RECORD - 1;\n        break;\n    case FRONTIER_FACILITY_PYRAMID:\n        for (i = 0; i < FRONTIER_LVL_MODE_COUNT; i++)\n        {\n            if (streak < gSaveBlock2Ptr->frontier.pyramidRecordStreaks[i])\n                streak = gSaveBlock2Ptr->frontier.pyramidRecordStreaks[i];\n        }\n        *topicTextId = GEN_TOPIC_B_PYRAMID - 1;\n        break;\n    }\n\n    return streak;",
       "callsTo": [
         "ARRAY_COUNT"
@@ -535,6 +799,12 @@
       "returnType": "u8",
       "signature": "static u8 GetPokedexRatingLevel(u16 numSeen)",
       "paramsRaw": "u16 numSeen",
+      "paramsList": [
+        {
+          "name": "numSeen",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "if (numSeen < 10)\n        return 0;\n    if (numSeen < 20)\n        return 1;\n    if (numSeen < 30)\n        return 2;\n    if (numSeen < 40)\n        return 3;\n    if (numSeen < 50)\n        return 4;\n    if (numSeen < 60)\n        return 5;\n    if (numSeen < 70)\n        return 6;\n    if (numSeen < 80)\n        return 7;\n    if (numSeen < 90)\n        return 8;\n    if (numSeen < 100)\n        return 9;\n    if (numSeen < 110)\n        return 10;\n    if (numSeen < 120)\n        return 11;\n    if (numSeen < 130)\n        return 12;\n    if (numSeen < 140)\n        return 13;\n    if (numSeen < 150)\n        return 14;\n    if (numSeen < 160)\n        return 15;\n    if (numSeen < 170)\n        return 16;\n    if (numSeen < 180)\n        return 17;\n    if (numSeen < 190)\n        return 18;\n    if (numSeen < 200)\n        return 19;\n\n    if (GetSetPokedexFlag(SpeciesToNationalPokedexNum(SPECIES_DEOXYS), FLAG_GET_CAUGHT))\n        numSeen--;\n    if (GetSetPokedexFlag(SpeciesToNationalPokedexNum(SPECIES_JIRACHI), FLAG_GET_CAUGHT))\n        numSeen--;\n\n    if (numSeen < 200)\n        return 19;\n    else\n        return 20;",
       "callsTo": [
         "GetSetPokedexFlag",
@@ -546,6 +816,12 @@
       "returnType": "void",
       "signature": "void BufferPokedexRatingForMatchCall(u8 *destStr)",
       "paramsRaw": "u8 *destStr",
+      "paramsList": [
+        {
+          "name": "destStr",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "int numSeen, numCaught;\n    u8 *str;\n    u8 dexRatingLevel;\n\n    u8 *buffer = Alloc(sizeof(gStringVar4));\n    if (!buffer)\n    {\n        destStr[0] = EOS;\n        return;\n    }\n\n    numSeen = GetHoennPokedexCount(FLAG_GET_SEEN);\n    numCaught = GetHoennPokedexCount(FLAG_GET_CAUGHT);\n    ConvertIntToDecimalStringN(gStringVar1, numSeen, STR_CONV_MODE_LEFT_ALIGN, 3);\n    ConvertIntToDecimalStringN(gStringVar2, numCaught, STR_CONV_MODE_LEFT_ALIGN, 3);\n    dexRatingLevel = GetPokedexRatingLevel(numCaught);\n    str = StringCopy(buffer, gBirchDexRatingText_AreYouCurious);\n    *(str++) = CHAR_PROMPT_CLEAR;\n    str = StringCopy(str, gBirchDexRatingText_SoYouveSeenAndCaught);\n    *(str++) = CHAR_PROMPT_CLEAR;\n    StringCopy(str, sBirchDexRatingTexts[dexRatingLevel]);\n    str = StringExpandPlaceholders(destStr, buffer);\n\n    if (IsNationalPokedexEnabled())\n    {\n        *(str++) = CHAR_PROMPT_CLEAR;\n        numSeen = GetNationalPokedexCount(FLAG_GET_SEEN);\n        numCaught = GetNationalPokedexCount(FLAG_GET_CAUGHT);\n        ConvertIntToDecimalStringN(gStringVar1, numSeen, STR_CONV_MODE_LEFT_ALIGN, 3);\n        ConvertIntToDecimalStringN(gStringVar2, numCaught, STR_CONV_MODE_LEFT_ALIGN, 3);\n        StringExpandPlaceholders(str, gBirchDexRatingText_OnANationwideBasis);\n    }\n\n    Free(buffer);",
       "callsTo": [
         "Alloc",
@@ -564,6 +840,20 @@
       "returnType": "void",
       "signature": "void LoadMatchCallWindowGfx(u32 windowId, u32 destOffset, u32 paletteId)",
       "paramsRaw": "u32 windowId, u32 destOffset, u32 paletteId",
+      "paramsList": [
+        {
+          "name": "windowId",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "destOffset",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "paletteId",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "u8 bg = GetWindowAttribute(windowId, WINDOW_BG);\n    LoadBgTiles(bg, sMatchCallWindow_Gfx, 0x100, destOffset);\n    LoadPalette(sMatchCallWindow_Pal, BG_PLTT_ID(paletteId), sizeof(sMatchCallWindow_Pal));",
       "callsTo": [
         "BG_PLTT_ID",
@@ -577,6 +867,20 @@
       "returnType": "void",
       "signature": "void DrawMatchCallTextBoxBorder(u32 windowId, u32 tileOffset, u32 paletteId)",
       "paramsRaw": "u32 windowId, u32 tileOffset, u32 paletteId",
+      "paramsList": [
+        {
+          "name": "windowId",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "tileOffset",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "paletteId",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "DrawMatchCallTextBoxBorder_Internal(windowId, tileOffset, paletteId);",
       "callsTo": [
         "DrawMatchCallTextBoxBorder_Internal"

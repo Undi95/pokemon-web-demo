@@ -6,6 +6,7 @@
       "returnType": "void",
       "signature": "void ReloadSave(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 imeBackup = REG_IME;\n    REG_IME = 0;\n    RegisterRamReset(RESET_EWRAM);\n    ClearGpuRegBits(REG_OFFSET_DISPCNT, DISPCNT_FORCED_BLANK);\n    REG_IME = imeBackup;\n    gMain.inBattle = FALSE;\n    SetSaveBlocksPointers(GetSaveBlocksPointersBaseOffset());\n    ResetMenuAndMonGlobals();\n    Save_ResetSaveCounters();\n    LoadGameSave(SAVE_NORMAL);\n    if (gSaveFileStatus == SAVE_STATUS_EMPTY || gSaveFileStatus == SAVE_STATUS_CORRUPT)\n        Sav2_ClearSetDefault();\n    SetPokemonCryStereo(gSaveBlock2Ptr->optionsSound);\n    InitHeap(gHeap, HEAP_SIZE);\n    SetMainCallback2(CB2_ContinueSavedGame);",
       "callsTo": [
         "ClearGpuRegBits",

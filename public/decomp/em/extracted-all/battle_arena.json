@@ -6,6 +6,7 @@
       "returnType": "void",
       "signature": "void CallBattleArenaFunction(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sArenaFunctions[gSpecialVar_0x8004]();",
       "callsTo": [],
       "lineCount": 1
@@ -14,6 +15,12 @@
       "returnType": "u8",
       "signature": "u8 BattleArena_ShowJudgmentWindow(u8 *state)",
       "paramsRaw": "u8 *state",
+      "paramsList": [
+        {
+          "name": "state",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "int i;\n    u8 result = ARENA_RESULT_RUNNING;\n    switch (*state)\n    {\n    case 0:\n        BeginNormalPaletteFade(0x7FFFFF1C, 4, 0, 8, RGB_BLACK);\n        SetGpuReg(REG_OFFSET_WININ, (WININ_WIN0_ALL & ~WININ_WIN0_BG0) | WININ_WIN1_ALL);\n        LoadCompressedSpriteSheet(sBattleArenaJudgmentSymbolsSpriteSheet);\n        LoadCompressedPalette(gBattleArenaJudgmentSymbolsPalette, OBJ_PLTT_ID(15), PLTT_SIZE_4BPP);\n        gBattle_WIN0H = 0xFF;\n        gBattle_WIN0V = 0x70;\n        (*state)++;\n        break;\n    case 1:\n        if (!gPaletteFade.active)\n        {\n            HandleBattleWindow(5, 0, 24, 13, 0);\n            (*state)++;\n        }\n        break;\n    case 2:\n        if (!IsDma3ManagerBusyWithBgCopy())\n        {\n            gBattleTextBuff1[0] = CHAR_0;\n            gBattleTextBuff1[1] = EOS;\n            gBattleTextBuff2[0] = CHAR_0;\n            gBattleTextBuff2[1] = EOS;\n            BattleStringExpandPlaceholdersToDisplayedString(gText_PlayerMon1Name);\n            BattlePutTextOnWindow(gDisplayedStringBattle, ARENA_WIN_PLAYER_NAME);\n            BattlePutTextOnWindow(gText_Vs, ARENA_WIN_VS);\n            BattleStringExpandPlaceholdersToDisplayedString(gText_OpponentMon1Name);\n            BattlePutTextOnWindow(gDisplayedStringBattle, ARENA_WIN_OPPONENT_NAME);\n            BattlePutTextOnWindow(gText_Mind, ARENA_WIN_MIND);\n            BattlePutTextOnWindow(gText_Skill, ARENA_WIN_SKILL);\n            BattlePutTextOnWindow(gText_Body, ARENA_WIN_BODY);\n            BattleStringExpandPlaceholdersToDisplayedString(gText_Judgment);\n            BattlePutTextOnWindow(gDisplayedStringBattle, ARENA_WIN_JUDGMENT_TITLE);\n            (*state)++;\n        }\n        break;\n    case 3:\n        if (!IsDma3ManagerBusyWithBgCopy())\n        {\n            SetGpuReg(REG_OFFSET_WININ, WININ_WIN0_ALL | WININ_WIN1_ALL);\n\n             \n            for (i = 0; i < 8; i++)\n            {\n                u8 spriteId = CreateSprite(&sSpriteTemplate_JudgmentIcon, 64 + i * 16, 84, 0);\n                StartSpriteAnim(&gSprites[spriteId], ANIM_ICON_LINE);\n            }\n            result = ARENA_RESULT_STEP_DONE;\n            (*state)++;\n        }\n        break;\n    case 4:\n        PlaySE(SE_ARENA_TIMEUP1);\n        ShowJudgmentSprite(80, 40, ARENA_CATEGORY_MIND, B_POSITION_PLAYER_LEFT);\n        ShowJudgmentSprite(160, 40, ARENA_CATEGORY_MIND, B_POSITION_OPPONENT_LEFT);\n        BattleStringExpandPlaceholdersToDisplayedString(gText_Judgment);\n        BattlePutTextOnWindow(gDisplayedStringBattle, ARENA_WIN_JUDGMENT_TITLE);\n        (*state)++;\n        result = ARENA_RESULT_STEP_DONE;\n        break;\n    case 5:\n        PlaySE(SE_ARENA_TIMEUP1);\n        ShowJudgmentSprite(80, 56, ARENA_CATEGORY_SKILL, B_POSITION_PLAYER_LEFT);\n        ShowJudgmentSprite(160, 56, ARENA_CATEGORY_SKILL, B_POSITION_OPPONENT_LEFT);\n        BattleStringExpandPlaceholdersToDisplayedString(gText_Judgment);\n        BattlePutTextOnWindow(gDisplayedStringBattle, ARENA_WIN_JUDGMENT_TITLE);\n        (*state)++;\n        result = ARENA_RESULT_STEP_DONE;\n        break;\n    case 6:\n        PlaySE(SE_ARENA_TIMEUP1);\n        ShowJudgmentSprite(80, 72, ARENA_CATEGORY_BODY, B_POSITION_PLAYER_LEFT);\n        ShowJudgmentSprite(160, 72, ARENA_CATEGORY_BODY, B_POSITION_OPPONENT_LEFT);\n        BattleStringExpandPlaceholdersToDisplayedString(gText_Judgment);\n        BattlePutTextOnWindow(gDisplayedStringBattle, ARENA_WIN_JUDGMENT_TITLE);\n        (*state)++;\n        result = ARENA_RESULT_STEP_DONE;\n        break;\n    case 7:\n        PlaySE(SE_ARENA_TIMEUP2);\n        if (gBattleTextBuff1[0] > gBattleTextBuff2[0])\n        {\n            result = ARENA_RESULT_PLAYER_WON;\n            gBattleScripting.battler = 0;\n        }\n        else if (gBattleTextBuff1[0] < gBattleTextBuff2[0])\n        {\n            result = ARENA_RESULT_PLAYER_LOST;\n            gBattleScripting.battler = 1;\n        }\n        else\n        {\n            result = ARENA_RESULT_TIE;\n        }\n        (*state)++;\n        break;\n    case JUDGMENT_STATE_FINISHED:\n         \n        (*state)++;\n        break;\n    case JUDGMENT_STATE_FINISHED + 1:\n        SetGpuReg(REG_OFFSET_WININ, (WININ_WIN0_ALL & ~WININ_WIN0_BG0) | WININ_WIN1_ALL);\n        HandleBattleWindow(5, 0, 24, 13, WINDOW_CLEAR);\n        CopyBgTilemapBufferToVram(0);\n        m4aMPlayVolumeControl(&gMPlayInfo_BGM, TRACKS_ALL, 256);\n        BeginNormalPaletteFade(0x7FFFFF1C, 4, 8, 0, RGB_BLACK);\n        (*state)++;\n        break;\n    case JUDGMENT_STATE_FINISHED + 2:\n        if (!gPaletteFade.active)\n        {\n            SetGpuReg(REG_OFFSET_WININ, WININ_WIN0_ALL | WININ_WIN1_ALL);\n            FreeSpriteTilesByTag(TAG_JUDGMENT_ICON);\n            result = ARENA_RESULT_STEP_DONE;\n            (*state)++;\n        }\n        break;\n    }\n\n    return result;",
       "callsTo": [
         "BattlePutTextOnWindow",
@@ -38,6 +45,24 @@
       "returnType": "void",
       "signature": "static void ShowJudgmentSprite(u8 x, u8 y, u8 category, u8 battler)",
       "paramsRaw": "u8 x, u8 y, u8 category, u8 battler",
+      "paramsList": [
+        {
+          "name": "x",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "y",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "category",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "battler",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "int animNum = 0;\n    int pointsPlayer = 0;\n    int pointsOpponent = 0;\n    s8 *mindPoints = gBattleStruct->arenaMindPoints;\n    s8 *skillPoints = gBattleStruct->arenaSkillPoints;\n    u16 *hpAtStart = gBattleStruct->arenaStartHp;\n\n    switch (category)\n    {\n    case ARENA_CATEGORY_MIND:\n        pointsPlayer = mindPoints[battler];\n        pointsOpponent = mindPoints[BATTLE_OPPOSITE(battler)];\n        break;\n    case ARENA_CATEGORY_SKILL:\n        pointsPlayer = skillPoints[battler];\n        pointsOpponent = skillPoints[BATTLE_OPPOSITE(battler)];\n        break;\n    case ARENA_CATEGORY_BODY:\n        pointsPlayer = (gBattleMons[battler].hp * 100) / hpAtStart[battler];\n        pointsOpponent = (gBattleMons[BATTLE_OPPOSITE(battler)].hp * 100) / hpAtStart[BATTLE_OPPOSITE(battler)];\n        break;\n    }\n\n    if (pointsPlayer > pointsOpponent)\n    {\n        animNum = ANIM_ICON_CIRCLE;\n         \n        if (battler != 0)\n            gBattleTextBuff2[0] += 2;\n        else\n            gBattleTextBuff1[0] += 2;\n    }\n    else if (pointsPlayer == pointsOpponent)\n    {\n        animNum = ANIM_ICON_TRIANGLE;\n         \n        if (battler != 0)\n            gBattleTextBuff2[0] += 1;\n        else\n            gBattleTextBuff1[0] += 1;\n    }\n    else\n    {\n        animNum = ANIM_ICON_X;\n    }\n\n    pointsPlayer = CreateSprite(&sSpriteTemplate_JudgmentIcon, x, y, 0);\n    StartSpriteAnim(&gSprites[pointsPlayer], animNum);",
       "callsTo": [
         "BATTLE_OPPOSITE",
@@ -50,6 +75,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_JudgmentIcon(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (gBattleCommunication[0] > JUDGMENT_STATE_FINISHED)\n        DestroySprite(sprite);",
       "callsTo": [
         "DestroySprite"
@@ -60,6 +91,7 @@
       "returnType": "void",
       "signature": "void BattleArena_InitPoints(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s8 *mindPoints = gBattleStruct->arenaMindPoints;\n    s8 *skillPoints = gBattleStruct->arenaSkillPoints;\n    u16 *hpAtStart = gBattleStruct->arenaStartHp;\n\n    mindPoints[0] = 0;\n    mindPoints[1] = 0;\n    skillPoints[0] = 0;\n    skillPoints[1] = 0;\n    hpAtStart[0] = gBattleMons[0].hp;\n    hpAtStart[1] = gBattleMons[1].hp;",
       "callsTo": [],
       "lineCount": 10
@@ -68,6 +100,12 @@
       "returnType": "void",
       "signature": "void BattleArena_AddMindPoints(u8 battler)",
       "paramsRaw": "u8 battler",
+      "paramsList": [
+        {
+          "name": "battler",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s8 *mindPoints = gBattleStruct->arenaMindPoints;\n    mindPoints[battler] += sMindRatings[gCurrentMove];",
       "callsTo": [],
       "lineCount": 2
@@ -76,6 +114,12 @@
       "returnType": "void",
       "signature": "void BattleArena_AddSkillPoints(u8 battler)",
       "paramsRaw": "u8 battler",
+      "paramsList": [
+        {
+          "name": "battler",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s8 *skillPoints = gBattleStruct->arenaSkillPoints;\n\n    if (gHitMarker & HITMARKER_OBEYS)\n    {\n        u8 *failedMoveBits = &gBattleStruct->alreadyStatusedMoveAttempt;\n        if (*failedMoveBits & gBitTable[battler])\n        {\n            *failedMoveBits &= ~(gBitTable[battler]);\n            skillPoints[battler] -= 2;\n        }\n        else if (gMoveResultFlags & MOVE_RESULT_NO_EFFECT)\n        {\n            if (!(gMoveResultFlags & MOVE_RESULT_MISSED) || gBattleCommunication[MISS_TYPE] != B_MSG_PROTECTED)\n                skillPoints[battler] -= 2;\n        }\n        else if ((gMoveResultFlags & MOVE_RESULT_SUPER_EFFECTIVE) && (gMoveResultFlags & MOVE_RESULT_NOT_VERY_EFFECTIVE))\n        {\n            skillPoints[battler] += 1;\n        }\n        else if (gMoveResultFlags & MOVE_RESULT_SUPER_EFFECTIVE)\n        {\n            skillPoints[battler] += 2;\n        }\n        else if (gMoveResultFlags & MOVE_RESULT_NOT_VERY_EFFECTIVE)\n        {\n            skillPoints[battler] -= 1;\n        }\n        else if (!gProtectStructs[battler].protected)\n        {\n            skillPoints[battler] += 1;\n        }\n    }",
       "callsTo": [],
       "lineCount": 32
@@ -84,6 +128,16 @@
       "returnType": "void",
       "signature": "void BattleArena_DeductSkillPoints(u8 battler, u16 stringId)",
       "paramsRaw": "u8 battler, u16 stringId",
+      "paramsList": [
+        {
+          "name": "battler",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "stringId",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "s8 *skillPoints = gBattleStruct->arenaSkillPoints;\n\n    switch (stringId)\n    {\n    case STRINGID_PKMNSXMADEYUSELESS:\n    case STRINGID_PKMNSXMADEITINEFFECTIVE:\n    case STRINGID_PKMNSXPREVENTSFLINCHING:\n    case STRINGID_PKMNSXBLOCKSY2:\n    case STRINGID_PKMNSXPREVENTSYLOSS:\n    case STRINGID_PKMNSXMADEYINEFFECTIVE:\n    case STRINGID_PKMNSXPREVENTSBURNS:\n    case STRINGID_PKMNSXBLOCKSY:\n    case STRINGID_PKMNPROTECTEDBY:\n    case STRINGID_PKMNPREVENTSUSAGE:\n    case STRINGID_PKMNRESTOREDHPUSING:\n    case STRINGID_PKMNPREVENTSPARALYSISWITH:\n    case STRINGID_PKMNPREVENTSROMANCEWITH:\n    case STRINGID_PKMNPREVENTSPOISONINGWITH:\n    case STRINGID_PKMNPREVENTSCONFUSIONWITH:\n    case STRINGID_PKMNRAISEDFIREPOWERWITH:\n    case STRINGID_PKMNANCHORSITSELFWITH:\n    case STRINGID_PKMNPREVENTSSTATLOSSWITH:\n    case STRINGID_PKMNSTAYEDAWAKEUSING:\n        skillPoints[battler] -= 3;\n        break;\n    }",
       "callsTo": [],
       "lineCount": 26
@@ -92,6 +146,7 @@
       "returnType": "void",
       "signature": "static void InitArenaChallenge(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "bool32 isCurrent;\n    u32 lvlMode = gSaveBlock2Ptr->frontier.lvlMode;\n\n    gSaveBlock2Ptr->frontier.challengeStatus = 0;\n    gSaveBlock2Ptr->frontier.curChallengeBattleNum = 0;\n    gSaveBlock2Ptr->frontier.challengePaused = FALSE;\n    gSaveBlock2Ptr->frontier.disableRecordBattle = FALSE;\n    if (lvlMode != FRONTIER_LVL_50)\n        isCurrent = gSaveBlock2Ptr->frontier.winStreakActiveFlags & STREAK_ARENA_OPEN;\n    else\n        isCurrent = gSaveBlock2Ptr->frontier.winStreakActiveFlags & STREAK_ARENA_50;\n\n    if (!isCurrent)\n        gSaveBlock2Ptr->frontier.arenaWinStreaks[lvlMode] = 0;\n\n    SetDynamicWarp(0, gSaveBlock1Ptr->location.mapGroup, gSaveBlock1Ptr->location.mapNum, WARP_ID_NONE);\n    gTrainerBattleOpponent_A = 0;",
       "callsTo": [
         "SetDynamicWarp"
@@ -102,6 +157,7 @@
       "returnType": "void",
       "signature": "static void GetArenaData(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u32 lvlMode = gSaveBlock2Ptr->frontier.lvlMode;\n\n    switch (gSpecialVar_0x8005)\n    {\n    case ARENA_DATA_PRIZE:\n        gSpecialVar_Result = gSaveBlock2Ptr->frontier.arenaPrize;\n        break;\n    case ARENA_DATA_WIN_STREAK:\n        gSpecialVar_Result = gSaveBlock2Ptr->frontier.arenaWinStreaks[lvlMode];\n        break;\n    case ARENA_DATA_WIN_STREAK_ACTIVE:\n        if (lvlMode != FRONTIER_LVL_50)\n            gSpecialVar_Result = gSaveBlock2Ptr->frontier.winStreakActiveFlags & STREAK_ARENA_OPEN;\n        else\n            gSpecialVar_Result = gSaveBlock2Ptr->frontier.winStreakActiveFlags & STREAK_ARENA_50;\n        break;\n    }",
       "callsTo": [],
       "lineCount": 17
@@ -110,6 +166,7 @@
       "returnType": "void",
       "signature": "static void SetArenaData(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u32 lvlMode = gSaveBlock2Ptr->frontier.lvlMode;\n\n    switch (gSpecialVar_0x8005)\n    {\n    case ARENA_DATA_PRIZE:\n        gSaveBlock2Ptr->frontier.arenaPrize = gSpecialVar_0x8006;\n        break;\n    case ARENA_DATA_WIN_STREAK:\n        gSaveBlock2Ptr->frontier.arenaWinStreaks[lvlMode] = gSpecialVar_0x8006;\n        break;\n    case ARENA_DATA_WIN_STREAK_ACTIVE:\n        if (lvlMode != FRONTIER_LVL_50)\n        {\n            if (gSpecialVar_0x8006)\n                gSaveBlock2Ptr->frontier.winStreakActiveFlags |= STREAK_ARENA_OPEN;\n            else\n                gSaveBlock2Ptr->frontier.winStreakActiveFlags &= ~(STREAK_ARENA_OPEN);\n        }\n        else\n        {\n            if (gSpecialVar_0x8006)\n                gSaveBlock2Ptr->frontier.winStreakActiveFlags |= STREAK_ARENA_50;\n            else\n                gSaveBlock2Ptr->frontier.winStreakActiveFlags &= ~(STREAK_ARENA_50);\n        }\n        break;\n    }",
       "callsTo": [],
       "lineCount": 27
@@ -118,6 +175,7 @@
       "returnType": "void",
       "signature": "static void SaveArenaChallenge(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gSaveBlock2Ptr->frontier.challengeStatus = gSpecialVar_0x8005;\n    VarSet(VAR_TEMP_CHALLENGE_STATUS, 0);\n    gSaveBlock2Ptr->frontier.challengePaused = TRUE;\n    SaveGameFrontier();",
       "callsTo": [
         "SaveGameFrontier",
@@ -129,6 +187,7 @@
       "returnType": "void",
       "signature": "static void SetArenaPrize(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u32 lvlMode = gSaveBlock2Ptr->frontier.lvlMode;\n\n    if (gSaveBlock2Ptr->frontier.arenaWinStreaks[lvlMode] > 41)\n        gSaveBlock2Ptr->frontier.arenaPrize = sLongStreakPrizeItems[Random() % ARRAY_COUNT(sLongStreakPrizeItems)];\n    else\n        gSaveBlock2Ptr->frontier.arenaPrize = sShortStreakPrizeItems[Random() % ARRAY_COUNT(sShortStreakPrizeItems)];",
       "callsTo": [
         "ARRAY_COUNT",
@@ -140,6 +199,7 @@
       "returnType": "void",
       "signature": "static void GiveArenaPrize(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (AddBagItem(gSaveBlock2Ptr->frontier.arenaPrize, 1) == TRUE)\n    {\n        CopyItemName(gSaveBlock2Ptr->frontier.arenaPrize, gStringVar1);\n        gSaveBlock2Ptr->frontier.arenaPrize = ITEM_NONE;\n        gSpecialVar_Result = TRUE;\n    }\n    else\n    {\n        gSpecialVar_Result = FALSE;\n    }",
       "callsTo": [
         "AddBagItem",
@@ -151,6 +211,7 @@
       "returnType": "void",
       "signature": "static void BufferArenaOpponentName(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "GetFrontierTrainerName(gStringVar1, gTrainerBattleOpponent_A);",
       "callsTo": [
         "GetFrontierTrainerName"
@@ -161,6 +222,7 @@
       "returnType": "void",
       "signature": "void DrawArenaRefereeTextBox(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 width = 27;\n    u8 palNum = 7;\n\n    FillBgTilemapBufferRect(0, 0,    254, 14, 1,  6, palNum);\n    FillBgTilemapBufferRect(0, 0,    32,  14, 1,  6, palNum);\n    FillBgTilemapBufferRect(0, 0x31, 0,   14, 1,  1, palNum);\n    FillBgTilemapBufferRect(0, 0x33, 1,   14, 1,  1, palNum);\n    FillBgTilemapBufferRect(0, 0x34, 2,   14, width, 1, palNum);\n    width++;\n    FillBgTilemapBufferRect(0, 0x35, 28,  14, 1,  1, palNum);\n    FillBgTilemapBufferRect(0, 0x36, 29,  14, 1,  1, palNum);\n    FillBgTilemapBufferRect(0, 0x37, 0,   15, 1,  5, palNum);\n    FillBgTilemapBufferRect(0, 0x39, 1,   15, width, 5, palNum);\n    FillBgTilemapBufferRect(0, 0x3A, 29,  15, 1,  5, palNum);\n    FillBgTilemapBufferRect(0, 0x831, 0,  19, 1,  1, palNum);\n    FillBgTilemapBufferRect(0, 0x833, 1,  19, 1,  1, palNum);\n    FillBgTilemapBufferRect(0, 0x834, 2,  19, width - 2, 1, palNum);\n    FillBgTilemapBufferRect(0, 0x835, 28, 19, 1,  1, palNum);\n    FillBgTilemapBufferRect(0, 0x836, 29, 19, 1,  1, palNum);",
       "callsTo": [
         "FillBgTilemapBufferRect"
@@ -171,6 +233,7 @@
       "returnType": "void",
       "signature": "void EraseArenaRefereeTextBox(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 width;\n    u8 height;\n    u8 palNum = 0;\n\n    FillBgTilemapBufferRect(0, 3, 0, 14, 1, 1, palNum);\n    height = 4;\n    FillBgTilemapBufferRect(0, 4, 1, 14, 1, 1, palNum);\n    width = 27;\n    FillBgTilemapBufferRect(0, 5, 2, 14, width, 1, palNum);\n    FillBgTilemapBufferRect(0, 6, 28, 14, 1, 1, palNum);\n    FillBgTilemapBufferRect(0, 7, 29, 14, 1, 1, palNum);\n    FillBgTilemapBufferRect(0, 8, 0, 15, 1, height, palNum);\n    FillBgTilemapBufferRect(0, 9, 1, 15, 1, height, palNum);\n    FillBgTilemapBufferRect(0, 0xA, 2, 15, width, height, palNum);\n    FillBgTilemapBufferRect(0, 0xB, 28, 15, 1, height, palNum);\n    FillBgTilemapBufferRect(0, 0xC, 29, 15, 1, height, palNum);\n    FillBgTilemapBufferRect(0, 0xD, 0, 19, 1, 1, palNum);\n    FillBgTilemapBufferRect(0, 0xE, 1, 19, 1, 1, palNum);\n    FillBgTilemapBufferRect(0, 0xF, 2, 19, width, 1, palNum);\n    FillBgTilemapBufferRect(0, 0x10, 28, 19, 1, 1, palNum);\n    FillBgTilemapBufferRect(0, 0x11, 29, 19, 1, 1, palNum);",
       "callsTo": [
         "FillBgTilemapBufferRect"

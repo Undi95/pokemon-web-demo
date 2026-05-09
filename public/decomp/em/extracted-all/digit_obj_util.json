@@ -6,6 +6,12 @@
       "returnType": "bool32",
       "signature": "bool32 DigitObjUtil_Init(u32 count)",
       "paramsRaw": "u32 count",
+      "paramsList": [
+        {
+          "name": "count",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "u32 i;\n\n    if (sOamWork != NULL)\n        DigitObjUtil_Free();\n\n    sOamWork = Alloc(sizeof(*sOamWork));\n    if (sOamWork == NULL)\n        return FALSE;\n\n    sOamWork->array = Alloc(sizeof(struct DigitPrinter) * count);\n    if (sOamWork->array == NULL)\n    {\n        Free(sOamWork);\n        return FALSE;\n    }\n\n    sOamWork->count = count;\n    for (i = 0; i < count; i++)\n    {\n        sOamWork->array[i].isActive = FALSE;\n        sOamWork->array[i].firstOamId = 0xFF;\n    }\n\n    return TRUE;",
       "callsTo": [
         "Alloc",
@@ -18,6 +24,7 @@
       "returnType": "void",
       "signature": "void DigitObjUtil_Free(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (sOamWork != NULL)\n    {\n        if (sOamWork->array != NULL)\n        {\n            u32 i;\n\n            for (i = 0; i < sOamWork->count; i++)\n                DigitObjUtil_DeletePrinter(i);\n\n            Free(sOamWork->array);\n        }\n\n        FREE_AND_SET_NULL(sOamWork);\n    }",
       "callsTo": [
         "DigitObjUtil_DeletePrinter",
@@ -30,6 +37,20 @@
       "returnType": "bool32",
       "signature": "bool32 DigitObjUtil_CreatePrinter(u32 id, s32 num, const struct DigitObjUtilTemplate *template)",
       "paramsRaw": "u32 id, s32 num, const struct DigitObjUtilTemplate *template",
+      "paramsList": [
+        {
+          "name": "id",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "num",
+          "typeRaw": "s32"
+        },
+        {
+          "name": "template",
+          "typeRaw": "const struct DigitObjUtilTemplate *"
+        }
+      ],
       "body": "u32 i;\n\n    if (sOamWork == NULL)\n        return FALSE;\n    if (sOamWork->array[id].isActive)\n        return FALSE;\n\n    sOamWork->array[id].firstOamId = GetFirstOamId(template->oamCount);\n    if (sOamWork->array[id].firstOamId == 0xFF)\n        return FALSE;\n\n    sOamWork->array[id].tileStart = GetSpriteTileStartByTag(template->spriteSheet->tag);\n    if (sOamWork->array[id].tileStart == 0xFFFF)\n    {\n        if (template->spriteSheet->size != 0)\n        {\n            sOamWork->array[id].tileStart = LoadSpriteSheet(template->spriteSheet);\n        }\n        else\n        {\n            struct CompressedSpriteSheet compSpriteSheet;\n\n            compSpriteSheet = *(struct CompressedSpriteSheet *)(template->spriteSheet);\n            compSpriteSheet.size = GetDecompressedDataSize(template->spriteSheet->data);\n            sOamWork->array[id].tileStart = LoadCompressedSpriteSheet(&compSpriteSheet);\n        }\n\n        if (sOamWork->array[id].tileStart == 0xFFFF)\n            return FALSE;\n    }\n\n    sOamWork->array[id].palTagIndex = IndexOfSpritePaletteTag(template->spritePal->tag);\n    if (sOamWork->array[id].palTagIndex == 0xFF)\n        sOamWork->array[id].palTagIndex = LoadSpritePalette(template->spritePal);\n\n    sOamWork->array[id].strConvMode = template->strConvMode;\n    sOamWork->array[id].oamCount = template->oamCount;\n    sOamWork->array[id].x = template->x;\n    sOamWork->array[id].y = template->y;\n    sOamWork->array[id].shape = template->shape;\n    sOamWork->array[id].size = template->size;\n    sOamWork->array[id].priority = template->priority;\n    sOamWork->array[id].xDelta = template->xDelta;\n    sOamWork->array[id].tilesPerImage = GetTilesPerImage(template->shape, template->size);\n    sOamWork->array[id].tileTag = template->spriteSheet->tag;\n    sOamWork->array[id].palTag = template->spritePal->tag;\n    sOamWork->array[id].isActive = TRUE;\n\n     \n    sOamWork->array[id].pow10 = 1;\n    for (i = 1; i < template->oamCount; i++)\n        sOamWork->array[id].pow10 *= 10;\n\n    CopyWorkToOam(&sOamWork->array[id]);\n    DigitObjUtil_PrintNumOn(id, num);\n\n    return TRUE;",
       "callsTo": [
         "CopyWorkToOam",
@@ -49,6 +70,12 @@
       "returnType": "void",
       "signature": "static void CopyWorkToOam(struct DigitPrinter *objWork)",
       "paramsRaw": "struct DigitPrinter *objWork",
+      "paramsList": [
+        {
+          "name": "objWork",
+          "typeRaw": "struct DigitPrinter *"
+        }
+      ],
       "body": "u32 i;\n    u32 oamId = objWork->firstOamId;\n    u32 x = objWork->x;\n    u32 oamCount = objWork->oamCount + 1;\n\n    CpuFill16(0, &gMain.oamBuffer[oamId], sizeof(struct OamData) * oamCount);\n    for (i = 0, oamId = objWork->firstOamId; i < oamCount; i++, oamId++)\n    {\n        gMain.oamBuffer[oamId].y = objWork->y;\n        gMain.oamBuffer[oamId].x = x;\n        gMain.oamBuffer[oamId].shape = objWork->shape;\n        gMain.oamBuffer[oamId].size = objWork->size;\n        gMain.oamBuffer[oamId].tileNum = objWork->tileStart;\n        gMain.oamBuffer[oamId].priority = objWork->priority;\n        gMain.oamBuffer[oamId].paletteNum = objWork->palTagIndex;\n\n        x += objWork->xDelta;\n    }\n\n    oamId--;\n    gMain.oamBuffer[oamId].x = objWork->x - objWork->xDelta;\n    gMain.oamBuffer[oamId].affineMode = ST_OAM_AFFINE_ERASE;\n    gMain.oamBuffer[oamId].tileNum = objWork->tileStart + (objWork->tilesPerImage * 10);",
       "callsTo": [
         "CpuFill16"
@@ -59,6 +86,16 @@
       "returnType": "void",
       "signature": "void DigitObjUtil_PrintNumOn(u32 id, s32 num)",
       "paramsRaw": "u32 id, s32 num",
+      "paramsList": [
+        {
+          "name": "id",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "num",
+          "typeRaw": "s32"
+        }
+      ],
       "body": "bool32 sign;\n\n    if (sOamWork == NULL)\n        return;\n    if (!sOamWork->array[id].isActive)\n        return;\n\n    sOamWork->array[id].lastPrinted = num;\n    if (num < 0)\n    {\n        sign = TRUE;\n        num *= -1;\n    }\n    else\n    {\n        sign = FALSE;\n    }\n\n    switch (sOamWork->array[id].strConvMode)\n    {\n    case 0:\n    default:\n        DrawNumObjsLeadingZeros(&sOamWork->array[id], num, sign);\n        break;\n    case 1:\n        DrawNumObjsMinusInFront(&sOamWork->array[id], num, sign);\n        break;\n    case 2:\n        DrawNumObjsMinusInBack(&sOamWork->array[id], num, sign);\n        break;\n    }",
       "callsTo": [
         "DrawNumObjsLeadingZeros",
@@ -71,6 +108,20 @@
       "returnType": "void",
       "signature": "static void DrawNumObjsLeadingZeros(struct DigitPrinter *objWork, s32 num, bool32 sign)",
       "paramsRaw": "struct DigitPrinter *objWork, s32 num, bool32 sign",
+      "paramsList": [
+        {
+          "name": "objWork",
+          "typeRaw": "struct DigitPrinter *"
+        },
+        {
+          "name": "num",
+          "typeRaw": "s32"
+        },
+        {
+          "name": "sign",
+          "typeRaw": "bool32"
+        }
+      ],
       "body": "u32 pow10 = objWork->pow10;\n    u32 oamId = objWork->firstOamId;\n\n    while (pow10 != 0)\n    {\n        u32 digit = num / pow10;\n        num -= (digit * pow10);\n        pow10 /= 10;\n\n        gMain.oamBuffer[oamId].tileNum = (digit * objWork->tilesPerImage) + objWork->tileStart;\n        oamId++;\n    }\n\n    if (sign)\n        gMain.oamBuffer[oamId].affineMode = ST_OAM_AFFINE_OFF;\n    else\n        gMain.oamBuffer[oamId].affineMode = ST_OAM_AFFINE_ERASE;",
       "callsTo": [],
       "lineCount": 17
@@ -79,6 +130,20 @@
       "returnType": "void",
       "signature": "static void DrawNumObjsMinusInFront(struct DigitPrinter *objWork, s32 num, bool32 sign)",
       "paramsRaw": "struct DigitPrinter *objWork, s32 num, bool32 sign",
+      "paramsList": [
+        {
+          "name": "objWork",
+          "typeRaw": "struct DigitPrinter *"
+        },
+        {
+          "name": "num",
+          "typeRaw": "s32"
+        },
+        {
+          "name": "sign",
+          "typeRaw": "bool32"
+        }
+      ],
       "body": "u32 pow10 = objWork->pow10;\n    static int oamId;\n    static int curDigit;\n    static int firstDigit;\n\n    oamId = objWork->firstOamId;\n    curDigit = 0;\n    firstDigit = -1;\n\n    while (pow10 != 0)\n    {\n        u32 digit = num / pow10;\n        num -= (digit * pow10);\n        pow10 /= 10;\n\n        if (digit != 0 || firstDigit != -1 || pow10 == 0)\n        {\n            gMain.oamBuffer[oamId].tileNum = (digit * objWork->tilesPerImage) + objWork->tileStart;\n            gMain.oamBuffer[oamId].affineMode = ST_OAM_AFFINE_OFF;\n\n            if (firstDigit == -1)\n                firstDigit = curDigit;\n        }\n        else\n        {\n            gMain.oamBuffer[oamId].affineMode = ST_OAM_AFFINE_ERASE;\n        }\n\n        oamId++;\n        curDigit++;\n    }\n\n    if (sign)\n    {\n        gMain.oamBuffer[oamId].affineMode = ST_OAM_AFFINE_OFF;\n        gMain.oamBuffer[oamId].x = objWork->x + ((firstDigit - 1) * objWork->xDelta);\n    }\n    else\n    {\n        gMain.oamBuffer[oamId].affineMode = ST_OAM_AFFINE_ERASE;\n    }",
       "callsTo": [],
       "lineCount": 41
@@ -87,6 +152,20 @@
       "returnType": "void",
       "signature": "static void DrawNumObjsMinusInBack(struct DigitPrinter *objWork, s32 num, bool32 sign)",
       "paramsRaw": "struct DigitPrinter *objWork, s32 num, bool32 sign",
+      "paramsList": [
+        {
+          "name": "objWork",
+          "typeRaw": "struct DigitPrinter *"
+        },
+        {
+          "name": "num",
+          "typeRaw": "s32"
+        },
+        {
+          "name": "sign",
+          "typeRaw": "bool32"
+        }
+      ],
       "body": "u32 pow10 = objWork->pow10;\n    u32 oamId = objWork->firstOamId;\n    bool32 printingDigits = FALSE;\n    s32 nsprites = 0;\n\n    while (pow10 != 0)\n    {\n        u32 digit = num / pow10;\n        num -= (digit * pow10);\n        pow10 /= 10;\n\n        if (digit != 0 || printingDigits || pow10 == 0)\n        {\n            printingDigits = TRUE;\n            gMain.oamBuffer[oamId].tileNum = (digit * objWork->tilesPerImage) + objWork->tileStart;\n            gMain.oamBuffer[oamId].affineMode = ST_OAM_AFFINE_OFF;\n\n            oamId++;\n            nsprites++;\n        }\n    }\n\n    while (nsprites < objWork->oamCount)\n    {\n        gMain.oamBuffer[oamId].affineMode = ST_OAM_AFFINE_ERASE;\n        oamId++;\n        nsprites++;\n    }\n\n    if (sign)\n        gMain.oamBuffer[oamId].affineMode = ST_OAM_AFFINE_OFF;\n    else\n        gMain.oamBuffer[oamId].affineMode = ST_OAM_AFFINE_ERASE;",
       "callsTo": [],
       "lineCount": 33
@@ -95,6 +174,12 @@
       "returnType": "void",
       "signature": "void DigitObjUtil_DeletePrinter(u32 id)",
       "paramsRaw": "u32 id",
+      "paramsList": [
+        {
+          "name": "id",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "s32 oamId, oamCount, i;\n\n    if (sOamWork == NULL)\n        return;\n    if (!sOamWork->array[id].isActive)\n        return;\n\n    oamCount = sOamWork->array[id].oamCount + 1;\n    oamId = sOamWork->array[id].firstOamId;\n\n    for (i = 0; i < oamCount; i++, oamId++)\n        gMain.oamBuffer[oamId].affineMode = ST_OAM_AFFINE_ERASE;\n\n    if (!SharesTileWithAnyActive(id))\n        FreeSpriteTilesByTag(sOamWork->array[id].tileTag);\n    if (!SharesPalWithAnyActive(id))\n        FreeSpritePaletteByTag(sOamWork->array[id].palTag);\n\n    sOamWork->array[id].isActive = FALSE;",
       "callsTo": [
         "FreeSpritePaletteByTag",
@@ -108,6 +193,16 @@
       "returnType": "void",
       "signature": "void DigitObjUtil_HideOrShow(u32 id, bool32 hide)",
       "paramsRaw": "u32 id, bool32 hide",
+      "paramsList": [
+        {
+          "name": "id",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "hide",
+          "typeRaw": "bool32"
+        }
+      ],
       "body": "s32 oamId, oamCount, i;\n\n    if (sOamWork == NULL)\n        return;\n    if (!sOamWork->array[id].isActive)\n        return;\n\n    oamCount = sOamWork->array[id].oamCount + 1;\n    oamId = sOamWork->array[id].firstOamId;\n    if (hide)\n    {\n        for (i = 0; i < oamCount; i++, oamId++)\n            gMain.oamBuffer[oamId].affineMode = ST_OAM_AFFINE_ERASE;\n    }\n    else\n    {\n        for (i = 0; i < oamCount; i++, oamId++)\n            gMain.oamBuffer[oamId].affineMode = ST_OAM_AFFINE_OFF;\n\n        DigitObjUtil_PrintNumOn(id, sOamWork->array[id].lastPrinted);\n    }",
       "callsTo": [
         "DigitObjUtil_PrintNumOn"
@@ -118,6 +213,12 @@
       "returnType": "u8",
       "signature": "static u8 GetFirstOamId(u8 oamCount)",
       "paramsRaw": "u8 oamCount",
+      "paramsList": [
+        {
+          "name": "oamCount",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u32 i;\n    u16 firstOamId = 64;\n\n    for (i = 0; i < sOamWork->count; i++)\n    {\n        if (!sOamWork->array[i].isActive)\n        {\n            if (sOamWork->array[i].firstOamId != 0xFF && sOamWork->array[i].oamCount <= oamCount)\n                return sOamWork->array[i].firstOamId;\n        }\n        else\n        {\n            firstOamId += 1 + sOamWork->array[i].oamCount;\n        }\n    }\n\n    if (firstOamId + oamCount + 1 > 128)\n        return 0xFF;\n    else\n        return firstOamId;",
       "callsTo": [],
       "lineCount": 20
@@ -126,6 +227,12 @@
       "returnType": "bool32",
       "signature": "static bool32 SharesTileWithAnyActive(u32 id)",
       "paramsRaw": "u32 id",
+      "paramsList": [
+        {
+          "name": "id",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "u32 i;\n\n    for (i = 0; i < sOamWork->count; i++)\n    {\n        if (sOamWork->array[i].isActive && i != id\n            && sOamWork->array[i].tileTag == sOamWork->array[id].tileTag)\n        {\n            return TRUE;\n        }\n    }\n\n    return FALSE;",
       "callsTo": [],
       "lineCount": 12
@@ -134,6 +241,12 @@
       "returnType": "bool32",
       "signature": "static bool32 SharesPalWithAnyActive(u32 id)",
       "paramsRaw": "u32 id",
+      "paramsList": [
+        {
+          "name": "id",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "u32 i;\n\n    for (i = 0; i < sOamWork->count; i++)\n    {\n        if (sOamWork->array[i].isActive && i != id\n            && sOamWork->array[i].palTag == sOamWork->array[id].palTag)\n        {\n            return TRUE;\n        }\n    }\n\n    return FALSE;",
       "callsTo": [],
       "lineCount": 12
@@ -142,6 +255,16 @@
       "returnType": "u8",
       "signature": "u8 GetTilesPerImage(u32 shape, u32 size)",
       "paramsRaw": "u32 shape, u32 size",
+      "paramsList": [
+        {
+          "name": "shape",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "size",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "return sTilesPerImage[shape][size];",
       "callsTo": [],
       "lineCount": 1

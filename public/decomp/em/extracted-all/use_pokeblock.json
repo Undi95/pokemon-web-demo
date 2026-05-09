@@ -6,6 +6,16 @@
       "returnType": "void",
       "signature": "void ChooseMonToGivePokeblock(struct Pokeblock *pokeblock, void (*callback)(void))",
       "paramsRaw": "struct Pokeblock *pokeblock, void (*callback)(void)",
+      "paramsList": [
+        {
+          "name": "pokeblock",
+          "typeRaw": "struct Pokeblock *"
+        },
+        {
+          "name": "callback",
+          "typeRaw": "fnptr"
+        }
+      ],
       "body": "sMenu = AllocZeroed(sizeof(*sMenu));\n    sInfo = &sMenu->info;\n    sInfo->pokeblock = pokeblock;\n    sInfo->exitCallback = callback;\n    SetUsePokeblockCallback(LoadUsePokeblockMenu);\n    SetMainCallback2(CB2_UsePokeblockMenu);",
       "callsTo": [
         "AllocZeroed",
@@ -18,6 +28,7 @@
       "returnType": "void",
       "signature": "static void CB2_ReturnAndChooseMonToGivePokeblock(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sMenu = AllocZeroed(sizeof(*sMenu));\n    sInfo = &sMenu->info;\n    sInfo->pokeblock = sPokeblock;\n    sInfo->exitCallback = sExitCallback;\n    gPokeblockMonId = GetSelectionIdFromPartyId(gPokeblockMonId);\n    sInfo->monInTopHalf = (gPokeblockMonId <= PARTY_SIZE / 2) ? FALSE : TRUE;\n    SetUsePokeblockCallback(LoadUsePokeblockMenu);\n    SetMainCallback2(CB2_ReturnToUsePokeblockMenu);",
       "callsTo": [
         "AllocZeroed",
@@ -31,6 +42,7 @@
       "returnType": "void",
       "signature": "static void CB2_ReturnToUsePokeblockMenu(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sInfo->callback();\n    AnimateSprites();\n    BuildOamBuffer();\n    UpdatePaletteFade();\n    if (sInfo->callback == ShowUsePokeblockMenu)\n    {\n        sInfo->mainState = 0;\n        SetMainCallback2(CB2_ShowUsePokeblockMenuForResults);\n    }",
       "callsTo": [
         "AnimateSprites",
@@ -44,6 +56,7 @@
       "returnType": "void",
       "signature": "static void CB2_ShowUsePokeblockMenuForResults(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ShowUsePokeblockMenuForResults();\n    AnimateSprites();\n    BuildOamBuffer();\n    UpdatePaletteFade();",
       "callsTo": [
         "AnimateSprites",
@@ -57,6 +70,7 @@
       "returnType": "void",
       "signature": "static void CB2_UsePokeblockMenu(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sInfo->callback();\n    AnimateSprites();\n    BuildOamBuffer();\n    RunTextPrinters();\n    UpdatePaletteFade();",
       "callsTo": [
         "AnimateSprites",
@@ -70,6 +84,7 @@
       "returnType": "void",
       "signature": "static void VBlankCB_UsePokeblockMenu(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "LoadOam();\n    ProcessSpriteCopyRequests();\n    TransferPlttBuffer();\n    ConditionGraph_Draw(&sMenu->graph);\n    ScanlineEffect_InitHBlankDmaTransfer();",
       "callsTo": [
         "ConditionGraph_Draw",
@@ -84,6 +99,12 @@
       "returnType": "void",
       "signature": "static void SetUsePokeblockCallback(void (*func)(void))",
       "paramsRaw": "void (*func)(void)",
+      "paramsList": [
+        {
+          "name": "func",
+          "typeRaw": "fnptr"
+        }
+      ],
       "body": "sInfo->callback = func;\n    sInfo->mainState = 0;",
       "callsTo": [],
       "lineCount": 2
@@ -92,6 +113,7 @@
       "returnType": "void",
       "signature": "static void LoadUsePokeblockMenu(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sInfo->mainState)\n    {\n    case 0:\n        sMenu->curMonSpriteId = SPRITE_NONE;\n        ConditionGraph_Init(&sMenu->graph);\n        sInfo->mainState++;\n        break;\n    case 1:\n        ResetSpriteData();\n        FreeAllSpritePalettes();\n        sInfo->mainState++;\n        break;\n    case 2:\n        SetVBlankCallback(NULL);\n        CpuFill32(0, (void *)(VRAM), VRAM_SIZE);\n        sInfo->mainState++;\n        break;\n    case 3:\n        ResetBgsAndClearDma3BusyFlags(0);\n        InitBgsFromTemplates(0, sBgTemplates, ARRAY_COUNT(sBgTemplates));\n        InitWindows(sWindowTemplates);\n        DeactivateAllTextPrinters();\n        LoadUserWindowBorderGfx(0, 0x97, BG_PLTT_ID(14));\n        sInfo->mainState++;\n        break;\n    case 4:\n        sInfo->mainState++;\n        break;\n    case 5:\n        if (!LoadConditionTitle())\n            sInfo->mainState++;\n        break;\n    case 6:\n        gKeyRepeatStartDelay = 20;\n        LoadPartyInfo();\n        sInfo->mainState++;\n        break;\n    case 7:\n        if (!LoadUsePokeblockMenuGfx())\n            sInfo->mainState++;\n        break;\n    case 8:\n        UpdateMonPic(0);\n        LoadAndCreateSelectionIcons();\n        sInfo->mainState++;\n        break;\n    case 9:\n        if (!MoveConditionMonOnscreen(&sMenu->curMonXOffset))\n            sInfo->mainState++;\n        break;\n    case 10:\n        sInfo->mainState++;\n        break;\n    case 11:\n        ConditionGraph_CalcPositions(sMenu->graph.conditions[0], sMenu->graph.savedPositions[0]);\n        ConditionGraph_InitResetScanline(&sMenu->graph);\n        sInfo->mainState++;\n        break;\n    case 12:\n        if (!ConditionGraph_ResetScanline(&sMenu->graph))\n        {\n            ConditionGraph_SetNewPositions(&sMenu->graph, sMenu->graph.savedPositions[0], sMenu->graph.savedPositions[0]);\n            sInfo->mainState++;\n        }\n        break;\n    case 13:\n        ConditionGraph_Update(&sMenu->graph);\n        sInfo->mainState++;\n        break;\n    case 14:\n        PutWindowTilemap(WIN_NAME);\n        PutWindowTilemap(WIN_NATURE);\n        UpdateMonInfoText(0, TRUE);\n        sInfo->mainState++;\n        break;\n    case 15:\n        SetUsePokeblockCallback(ShowUsePokeblockMenu);\n        break;\n    }",
       "callsTo": [
         "ARRAY_COUNT",
@@ -127,6 +149,7 @@
       "returnType": "void",
       "signature": "static void ShowUsePokeblockMenu(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sInfo->mainState)\n    {\n    case 0:\n        BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);\n        SetVBlankCallback(VBlankCB_UsePokeblockMenu);\n        ShowBg(0);\n        ShowBg(1);\n        ShowBg(3);\n        ShowBg(2);\n        sInfo->mainState++;\n        break;\n    case 1:\n        if (!gPaletteFade.active)\n        {\n            ResetConditionSparkleSprites(sMenu->sparkles);\n            if (sMenu->info.curSelection != sMenu->info.numSelections - 1)\n            {\n                u8 numSparkles = sMenu->numSparkles[sMenu->curLoadId];\n                CreateConditionSparkleSprites(sMenu->sparkles, sMenu->curMonSpriteId, numSparkles);\n            }\n\n            SetUsePokeblockCallback(UsePokeblockMenu);\n        }\n        break;\n    }",
       "callsTo": [
         "BeginNormalPaletteFade",
@@ -142,6 +165,7 @@
       "returnType": "void",
       "signature": "static void UsePokeblockMenu(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "bool8 loading;\n\n    switch (sInfo->mainState)\n    {\n    case STATE_HANDLE_INPUT:\n        if (JOY_HELD(DPAD_UP))\n        {\n            PlaySE(SE_SELECT);\n            UpdateSelection(TRUE);\n            DestroyConditionSparkleSprites(sMenu->sparkles);\n            sInfo->mainState = STATE_UPDATE_SELECTION;\n        }\n        else if (JOY_HELD(DPAD_DOWN))\n        {\n            PlaySE(SE_SELECT);\n            UpdateSelection(FALSE);\n            DestroyConditionSparkleSprites(sMenu->sparkles);\n            sInfo->mainState = STATE_UPDATE_SELECTION;\n        }\n        else if (JOY_NEW(B_BUTTON))\n        {\n            PlaySE(SE_SELECT);\n            sInfo->mainState = STATE_CLOSE;\n        }\n        else if (JOY_NEW(A_BUTTON))\n        {\n            PlaySE(SE_SELECT);\n\n             \n            if (sMenu->info.curSelection == sMenu->info.numSelections - 1)\n                sInfo->mainState = STATE_CLOSE;\n            else\n                sInfo->mainState = STATE_CONFIRM_SELECTION;\n        }\n        break;\n    case STATE_UPDATE_SELECTION:\n        loading = sMenu->info.loadNewSelection();\n        if (!loading)\n            sInfo->mainState = STATE_HANDLE_INPUT;\n        break;\n    case STATE_2:\n        break;\n    case STATE_CLOSE:\n        SetUsePokeblockCallback(CloseUsePokeblockMenu);\n        break;\n    case STATE_4:\n        break;\n    case STATE_CONFIRM_SELECTION:\n        AskUsePokeblock();\n        sInfo->mainState++;\n        break;\n    case STATE_HANDLE_CONFIRMATION:\n        switch (HandleAskUsePokeblockInput())\n        {\n        case 1:  \n        case MENU_B_PRESSED:\n            sInfo->mainState = STATE_HANDLE_INPUT;\n            break;\n        case 0:  \n            if (IsSheenMaxed())\n            {\n                PrintWontEatAnymore();\n                sInfo->mainState = STATE_WAIT_MSG;\n            }\n            else\n            {\n                SetUsePokeblockCallback(FeedPokeblockToMon);\n            }\n            break;\n        }\n        break;\n    case STATE_WAIT_MSG:\n        if (JOY_NEW(A_BUTTON | B_BUTTON))\n        {\n            EraseMenuWindow();\n            sInfo->mainState = STATE_HANDLE_INPUT;\n        }\n        break;\n    }",
       "callsTo": [
         "AskUsePokeblock",
@@ -162,6 +186,7 @@
       "returnType": "void",
       "signature": "static void FeedPokeblockToMon(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sInfo->mainState)\n    {\n    case 0:\n        gPokeblockMonId = GetPartyIdFromSelectionId(sMenu->info.curSelection);\n        sExitCallback = sInfo->exitCallback;\n        sPokeblock = sInfo->pokeblock;\n        BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);\n        sInfo->mainState++;\n        break;\n    case 1:\n        if (!gPaletteFade.active)\n        {\n            SetVBlankCallback(NULL);\n            FREE_AND_SET_NULL(sGraph_Tilemap);\n            FREE_AND_SET_NULL(sGraph_Gfx);\n            FREE_AND_SET_NULL(sMonFrame_TilemapPtr);\n            FREE_AND_SET_NULL(sMenu);\n            FreeAllWindowBuffers();\n            gMain.savedCallback = CB2_ReturnAndChooseMonToGivePokeblock;\n            PreparePokeblockFeedScene();\n        }\n        break;\n    }",
       "callsTo": [
         "BeginNormalPaletteFade",
@@ -177,6 +202,7 @@
       "returnType": "void",
       "signature": "static void ShowUsePokeblockMenuForResults(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "bool8 loading;\n\n    switch (sInfo->mainState)\n    {\n    case 0:\n        if (sMenu->info.curSelection != gPokeblockMonId)\n        {\n            UpdateSelection(sInfo->monInTopHalf);\n            sInfo->mainState++;\n        }\n        else\n        {\n            sInfo->mainState = 3;\n        }\n        break;\n    case 1:\n        loading = sMenu->info.loadNewSelection();\n        if (!loading)\n            sInfo->mainState = 0;\n        break;\n    case 2:\n        break;\n    case 3:\n        BlendPalettes(PALETTES_ALL, 16, RGB_BLACK);\n        sInfo->mainState++;\n        break;\n    case 4:\n        ShowBg(0);\n        ShowBg(1);\n        ShowBg(3);\n        ShowBg(2);\n        sInfo->mainState++;\n        break;\n    case 5:\n        SetVBlankCallback(VBlankCB_UsePokeblockMenu);\n        BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);\n        sInfo->mainState++;\n        break;\n    case 6:\n        if (!gPaletteFade.active)\n        {\n            ResetConditionSparkleSprites(sMenu->sparkles);\n            SetUsePokeblockCallback(ShowPokeblockResults);\n            SetMainCallback2(CB2_UsePokeblockMenu);\n        }\n        break;\n    }",
       "callsTo": [
         "BeginNormalPaletteFade",
@@ -194,6 +220,7 @@
       "returnType": "void",
       "signature": "static void ShowPokeblockResults(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sInfo->mainState)\n    {\n    case 0:\n        sInfo->mon = gPlayerParty;\n        sInfo->mon += sMenu->party[sMenu->info.curSelection].monId;\n        DestroyConditionSparkleSprites(sMenu->sparkles);\n        sInfo->mainState++;\n        break;\n    case 1:\n        if (JOY_NEW(A_BUTTON | B_BUTTON))\n            sInfo->mainState++;\n        break;\n    case 2:\n        CalculateConditionEnhancements();\n        ConditionGraph_CalcPositions(sInfo->conditionsAfterBlock, sMenu->graph.savedPositions[CONDITION_GRAPH_LOAD_MAX - 1]);\n        ConditionGraph_SetNewPositions(&sMenu->graph, sMenu->graph.savedPositions[sMenu->curLoadId], sMenu->graph.savedPositions[CONDITION_GRAPH_LOAD_MAX - 1]);\n        LoadAndCreateUpDownSprites();\n        sInfo->mainState++;\n        break;\n    case 3:\n        if (!ConditionGraph_TryUpdate(&sMenu->graph))\n        {\n            CalculateNumAdditionalSparkles(GetPartyIdFromSelectionId(sMenu->info.curSelection));\n            if (sMenu->info.curSelection != sMenu->info.numSelections - 1)\n            {\n                u8 numSparkles = sMenu->numSparkles[sMenu->curLoadId];\n                CreateConditionSparkleSprites(sMenu->sparkles, sMenu->curMonSpriteId, numSparkles);\n            }\n\n            sInfo->timer = 0;\n            sInfo->mainState++;\n        }\n        break;\n    case 4:\n        if (++sInfo->timer > 16)\n        {\n            PrintFirstEnhancement();\n            sInfo->mainState++;\n        }\n        break;\n    case 5:\n        if (JOY_NEW(A_BUTTON | B_BUTTON) && !TryPrintNextEnhancement())\n        {\n            TryClearPokeblock((u8)gSpecialVar_ItemId);\n            SetUsePokeblockCallback(CloseUsePokeblockMenu);\n        }\n        break;\n    }",
       "callsTo": [
         "CalculateConditionEnhancements",
@@ -217,6 +244,7 @@
       "returnType": "void",
       "signature": "static void CloseUsePokeblockMenu(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n\n    switch (sInfo->mainState)\n    {\n    case 0:\n        BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);\n        sInfo->mainState++;\n        break;\n    case 1:\n        if (!gPaletteFade.active)\n            sInfo->mainState = 2;\n        break;\n    case 2:\n        gScanlineEffect.state = 3;\n        ScanlineEffect_InitHBlankDmaTransfer();\n        sInfo->mainState++;\n        break;\n    case 3:\n        SetMainCallback2(sInfo->exitCallback);\n        FreeConditionSparkles(sMenu->sparkles);\n        for (i = 0; i < ARRAY_COUNT(sMenu->selectionIconSpriteIds); i++)\n            DestroySprite(&gSprites[sMenu->selectionIconSpriteIds[i]]);\n\n        FreeSpriteTilesByTag(TAG_UP_DOWN);\n        FreeSpriteTilesByTag(TAG_CONDITION);\n        FreeSpritePaletteByTag(TAG_UP_DOWN);\n        FreeSpritePaletteByTag(TAG_CONDITION);\n\n        for (i = 0; i < ARRAY_COUNT(sMenu->condition); i++)\n            DestroySprite(sMenu->condition[i]);\n\n        if (sMenu->curMonSpriteId != SPRITE_NONE)\n            DestroySprite(&gSprites[sMenu->curMonSpriteId]);\n\n        SetVBlankCallback(NULL);\n        FREE_AND_SET_NULL(sGraph_Tilemap);\n        FREE_AND_SET_NULL(sGraph_Gfx);\n        FREE_AND_SET_NULL(sMonFrame_TilemapPtr);\n        FREE_AND_SET_NULL(sMenu);\n        FreeAllWindowBuffers();\n        break;\n    }",
       "callsTo": [
         "ARRAY_COUNT",
@@ -237,6 +265,7 @@
       "returnType": "void",
       "signature": "static void AskUsePokeblock(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 stringBuffer[0x40];\n\n    GetMonData(&gPlayerParty[GetPartyIdFromSelectionId(sMenu->info.curSelection)], MON_DATA_NICKNAME, stringBuffer);\n    StringGet_Nickname(stringBuffer);\n    StringAppend(stringBuffer, gText_GetsAPokeBlockQuestion);\n    StringCopy(gStringVar4, stringBuffer);\n    FillWindowPixelBuffer(WIN_TEXT, 17);\n    DrawTextBorderOuter(WIN_TEXT, 151, 14);\n    AddTextPrinterParameterized(WIN_TEXT, FONT_NORMAL, gStringVar4, 0, 1, 0, NULL);\n    PutWindowTilemap(WIN_TEXT);\n    CopyWindowToVram(WIN_TEXT, COPYWIN_FULL);\n    CreateYesNoMenu(&sUsePokeblockYesNoWinTemplate, 151, 14, 0);",
       "callsTo": [
         "AddTextPrinterParameterized",
@@ -257,6 +286,7 @@
       "returnType": "s8",
       "signature": "static s8 HandleAskUsePokeblockInput(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s8 menuItem = Menu_ProcessInputNoWrapClearOnChoose();\n\n    switch (menuItem)\n    {\n    case 0:  \n        break;\n    case MENU_B_PRESSED:\n    case 1:  \n        PlaySE(SE_SELECT);\n        rbox_fill_rectangle(2);\n        ClearWindowTilemap(2);\n        break;\n    }\n\n    return menuItem;",
       "callsTo": [
         "ClearWindowTilemap",
@@ -269,6 +299,7 @@
       "returnType": "void",
       "signature": "static void PrintFirstEnhancement(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "DrawTextBorderOuter(WIN_TEXT, 151, 14);\n    FillWindowPixelBuffer(WIN_TEXT, 17);\n\n    for (sInfo->condition = 0; sInfo->condition < CONDITION_COUNT; sInfo->condition++)\n    {\n        if (sInfo->enhancements[sInfo->condition] != 0)\n            break;\n    }\n\n    if (sInfo->condition < CONDITION_COUNT)\n        BufferEnhancedText(gStringVar4, sInfo->condition, sInfo->enhancements[sInfo->condition]);\n    else\n        BufferEnhancedText(gStringVar4, sInfo->condition, 0);\n\n    PrintMenuWindowText(gStringVar4);\n    PutWindowTilemap(WIN_TEXT);\n    CopyWindowToVram(WIN_TEXT, COPYWIN_FULL);",
       "callsTo": [
         "BufferEnhancedText",
@@ -284,6 +315,7 @@
       "returnType": "bool8",
       "signature": "static bool8 TryPrintNextEnhancement(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "FillWindowPixelBuffer(WIN_TEXT, 17);\n\n    while (1)\n    {\n        sInfo->condition++;\n        if (sInfo->condition < CONDITION_COUNT)\n        {\n            if (sInfo->enhancements[sInfo->condition] != 0)\n                break;\n        }\n        else\n        {\n            sInfo->condition = CONDITION_COUNT;\n            return FALSE;\n        }\n    }\n\n    BufferEnhancedText(gStringVar4, sInfo->condition, sInfo->enhancements[sInfo->condition]);\n    PrintMenuWindowText(gStringVar4);\n    CopyWindowToVram(WIN_TEXT, COPYWIN_GFX);\n\n    return TRUE;",
       "callsTo": [
         "BufferEnhancedText",
@@ -297,6 +329,7 @@
       "returnType": "void",
       "signature": "static void PrintWontEatAnymore(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "FillWindowPixelBuffer(WIN_TEXT, 17);\n    DrawTextBorderOuter(WIN_TEXT, 151, 14);\n    AddTextPrinterParameterized(WIN_TEXT, FONT_NORMAL, gText_WontEatAnymore, 0, 1, 0, NULL);\n    PutWindowTilemap(WIN_TEXT);\n    CopyWindowToVram(WIN_TEXT, COPYWIN_FULL);",
       "callsTo": [
         "AddTextPrinterParameterized",
@@ -311,6 +344,7 @@
       "returnType": "void",
       "signature": "static void EraseMenuWindow(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "rbox_fill_rectangle(WIN_TEXT);\n    ClearWindowTilemap(WIN_TEXT);\n    CopyWindowToVram(WIN_TEXT, COPYWIN_FULL);",
       "callsTo": [
         "ClearWindowTilemap",
@@ -322,6 +356,12 @@
       "returnType": "void",
       "signature": "static void PrintMenuWindowText(const u8 *message)",
       "paramsRaw": "const u8 *message",
+      "paramsList": [
+        {
+          "name": "message",
+          "typeRaw": "const u8 *"
+        }
+      ],
       "body": "AddTextPrinterParameterized(WIN_TEXT, FONT_NORMAL, gStringVar4, 0, 1, 0, NULL);",
       "callsTo": [
         "AddTextPrinterParameterized"
@@ -332,6 +372,20 @@
       "returnType": "void",
       "signature": "static void BufferEnhancedText(u8 *dest, u8 condition, s16 enhancement)",
       "paramsRaw": "u8 *dest, u8 condition, s16 enhancement",
+      "paramsList": [
+        {
+          "name": "dest",
+          "typeRaw": "u8 *"
+        },
+        {
+          "name": "condition",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "enhancement",
+          "typeRaw": "s16"
+        }
+      ],
       "body": "switch (enhancement)\n    {\n    case 1 ... 32767:  \n        enhancement = 0;\n         \n    case -32768 ... -1:  \n        if (enhancement)\n            dest[(u16)enhancement] += 0;  \n        StringCopy(dest, sConditionNames[condition]);\n        StringAppend(dest, gText_WasEnhanced);\n        break;\n    case 0:\n        StringCopy(dest, gText_NothingChanged);\n        break;\n    }",
       "callsTo": [
         "StringAppend",
@@ -343,6 +397,16 @@
       "returnType": "void",
       "signature": "static void GetMonConditions(struct Pokemon *mon, u8 *data)",
       "paramsRaw": "struct Pokemon *mon, u8 *data",
+      "paramsList": [
+        {
+          "name": "mon",
+          "typeRaw": "struct Pokemon *"
+        },
+        {
+          "name": "data",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "u16 i;\n\n    for (i = 0; i < CONDITION_COUNT; i++)\n        data[i] = GetMonData(mon, sConditionToMonData[i]);",
       "callsTo": [
         "GetMonData"
@@ -353,6 +417,16 @@
       "returnType": "void",
       "signature": "static void AddPokeblockToConditions(struct Pokeblock *pokeblock, struct Pokemon *mon)",
       "paramsRaw": "struct Pokeblock *pokeblock, struct Pokemon *mon",
+      "paramsList": [
+        {
+          "name": "pokeblock",
+          "typeRaw": "struct Pokeblock *"
+        },
+        {
+          "name": "mon",
+          "typeRaw": "struct Pokemon *"
+        }
+      ],
       "body": "u16 i;\n    s16 stat;\n    u8 data;\n\n    if (GetMonData(mon, MON_DATA_SHEEN) != MAX_SHEEN)\n    {\n        CalculatePokeblockEffectiveness(pokeblock, mon);\n        for (i = 0; i < CONDITION_COUNT; i++)\n        {\n            data = GetMonData(mon, sConditionToMonData[i]);\n            stat = data +  sInfo->pokeblockStatBoosts[i];\n            if (stat < 0)\n                stat = 0;\n            if (stat > MAX_CONDITION)\n                stat = MAX_CONDITION;\n            data = stat;\n            SetMonData(mon, sConditionToMonData[i], &data);\n        }\n\n        stat = (u8)(GetMonData(mon, MON_DATA_SHEEN)) + pokeblock->feel;\n        if (stat > MAX_SHEEN)\n            stat = MAX_SHEEN;\n\n        data = stat;\n        SetMonData(mon, MON_DATA_SHEEN, &data);\n    }",
       "callsTo": [
         "CalculatePokeblockEffectiveness",
@@ -365,6 +439,7 @@
       "returnType": "void",
       "signature": "static void CalculateConditionEnhancements(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 i;\n    struct Pokemon *mon = gPlayerParty;\n    mon += sMenu->party[sMenu->info.curSelection].monId;\n\n    GetMonConditions(mon, sInfo->conditionsBeforeBlock);\n    AddPokeblockToConditions(sInfo->pokeblock, mon);\n    GetMonConditions(mon, sInfo->conditionsAfterBlock);\n    for (i = 0; i < CONDITION_COUNT; i++)\n        sInfo->enhancements[i] = sInfo->conditionsAfterBlock[i] - sInfo->conditionsBeforeBlock[i];",
       "callsTo": [
         "AddPokeblockToConditions",
@@ -376,6 +451,16 @@
       "returnType": "void",
       "signature": "static void CalculatePokeblockEffectiveness(struct Pokeblock *pokeblock, struct Pokemon *mon)",
       "paramsRaw": "struct Pokeblock *pokeblock, struct Pokemon *mon",
+      "paramsList": [
+        {
+          "name": "pokeblock",
+          "typeRaw": "struct Pokeblock *"
+        },
+        {
+          "name": "mon",
+          "typeRaw": "struct Pokemon *"
+        }
+      ],
       "body": "s8 i, direction, flavor;\n\n    sInfo->pokeblockStatBoosts[CONDITION_COOL] = pokeblock->spicy;\n    sInfo->pokeblockStatBoosts[CONDITION_TOUGH] = pokeblock->sour;\n    sInfo->pokeblockStatBoosts[CONDITION_SMART] = pokeblock->bitter;\n    sInfo->pokeblockStatBoosts[CONDITION_CUTE] = pokeblock->sweet;\n    sInfo->pokeblockStatBoosts[CONDITION_BEAUTY] = pokeblock->dry;\n\n    if (gPokeblockGain > 0)\n        direction = 1;\n    else if (gPokeblockGain < 0)\n        direction = -1;\n    else\n        return;\n\n    for (i = 0; i < CONDITION_COUNT; i++)\n    {\n        s16 amount = sInfo->pokeblockStatBoosts[i];\n        s8 boost = amount / 10;\n\n        if (amount % 10 >= 5)  \n            boost++;\n\n        flavor = GetMonFlavorRelation(mon, sConditionToFlavor[i]);\n        if (flavor == direction)\n            sInfo->pokeblockStatBoosts[i] += boost * flavor;\n    }",
       "callsTo": [
         "GetMonFlavorRelation"
@@ -386,6 +471,7 @@
       "returnType": "bool8",
       "signature": "static bool8 IsSheenMaxed(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (GetBoxOrPartyMonData(sMenu->party[sMenu->info.curSelection].boxId,\n                             sMenu->party[sMenu->info.curSelection].monId,\n                             MON_DATA_SHEEN,\n                             NULL) == MAX_SHEEN)\n        return TRUE;\n    else\n        return FALSE;",
       "callsTo": [
         "GetBoxOrPartyMonData"
@@ -396,6 +482,12 @@
       "returnType": "u8",
       "signature": "static u8 GetPartyIdFromSelectionId(u8 selectionId)",
       "paramsRaw": "u8 selectionId",
+      "paramsList": [
+        {
+          "name": "selectionId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 i;\n\n    for (i = 0; i < PARTY_SIZE; i++)\n    {\n        if (!GetMonData(&gPlayerParty[i], MON_DATA_IS_EGG))\n        {\n            if (selectionId == 0)\n                return i;\n            selectionId--;\n        }\n    }\n\n    return 0;",
       "callsTo": [
         "GetMonData"
@@ -406,6 +498,12 @@
       "returnType": "u8",
       "signature": "static u8 GetSelectionIdFromPartyId(u8 partyId)",
       "paramsRaw": "u8 partyId",
+      "paramsList": [
+        {
+          "name": "partyId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 i, numEggs;\n    for (i = 0, numEggs = 0; i < partyId; i++)\n    {\n        if (GetMonData(&gPlayerParty[i], MON_DATA_IS_EGG))\n            numEggs++;\n    }\n\n    return partyId - numEggs;",
       "callsTo": [
         "GetMonData"
@@ -416,6 +514,7 @@
       "returnType": "void",
       "signature": "static void LoadAndCreateUpDownSprites(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 i, spriteId;  \n\n    LoadSpriteSheet(&sSpriteSheet_UpDown);\n    LoadSpritePalette(&sSpritePalette_UpDown);\n    sInfo->numEnhancements = 0;\n\n    for (i = 0; i < CONDITION_COUNT; i++)\n    {\n        if (sInfo->enhancements[i] != 0)\n        {\n            spriteId = CreateSprite(&sSpriteTemplate_UpDown, sUpDownCoordsOnGraph[i][0], sUpDownCoordsOnGraph[i][1], 0);\n            if (spriteId != MAX_SPRITES)\n            {\n                if (sInfo->enhancements[i] != 0)  \n                    gSprites[spriteId].callback = SpriteCB_UpDown;\n                sInfo->numEnhancements++;\n            }\n        }\n    }",
       "callsTo": [
         "CreateSprite",
@@ -428,6 +527,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_UpDown(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (sprite->tTimer < 6)\n        sprite->y2 -= 2;\n    else if (sprite->tTimer < 12)\n        sprite->y2 += 2;\n\n    if (++sprite->tTimer > 60)\n    {\n        DestroySprite(sprite);\n        sInfo->numEnhancements--;\n    }",
       "callsTo": [
         "DestroySprite"
@@ -438,6 +543,7 @@
       "returnType": "void",
       "signature": "static void LoadPartyInfo(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 i;\n    u16 numMons;\n\n    for (i = 0, numMons = 0; i < CalculatePlayerPartyCount(); i++)\n    {\n        if (!GetMonData(&gPlayerParty[i], MON_DATA_IS_EGG))\n        {\n            sMenu->party[numMons].boxId = TOTAL_BOXES_COUNT;\n            sMenu->party[numMons].monId = i;\n            sMenu->party[numMons].data = 0;\n            numMons++;\n        }\n    }\n\n    sMenu->info.curSelection = 0;\n    sMenu->info.numSelections = numMons + 1;\n    LoadInitialMonInfo();",
       "callsTo": [
         "CalculatePlayerPartyCount",
@@ -450,6 +556,7 @@
       "returnType": "void",
       "signature": "static void LoadInitialMonInfo(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s16 nextSelection, prevSelection;\n\n    LoadMonInfo(sMenu->info.curSelection, 0);\n    sMenu->curLoadId = 0;\n    sMenu->nextLoadId = 1;\n    sMenu->prevLoadId = 2;\n\n    nextSelection = sMenu->info.curSelection + 1;\n    if (nextSelection >= sMenu->info.numSelections)\n        nextSelection = 0;\n\n    prevSelection = sMenu->info.curSelection - 1;\n    if (prevSelection < 0)\n        prevSelection = sMenu->info.numSelections - 1;\n\n    LoadMonInfo(nextSelection, 1);\n    LoadMonInfo(prevSelection, 2);",
       "callsTo": [
         "LoadMonInfo"
@@ -460,6 +567,16 @@
       "returnType": "void",
       "signature": "static void LoadMonInfo(s16 partyId, u8 loadId)",
       "paramsRaw": "s16 partyId, u8 loadId",
+      "paramsList": [
+        {
+          "name": "partyId",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "loadId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 boxId = sMenu->party[partyId].boxId;\n    u8 monId = sMenu->party[partyId].monId;\n    u8 numSelections = sMenu->info.numSelections;\n    bool8 excludesCancel = FALSE;  \n\n    GetConditionMenuMonNameAndLocString(sMenu->locationStrings[loadId], sMenu->monNameStrings[loadId], boxId, monId, partyId, numSelections, excludesCancel);\n    GetConditionMenuMonConditions(&sMenu->graph, sMenu->numSparkles, boxId, monId, partyId, loadId, numSelections, excludesCancel);\n    GetConditionMenuMonGfx(sMenu->partySheets[loadId], sMenu->partyPalettes[loadId], boxId, monId, partyId, numSelections, excludesCancel);",
       "callsTo": [
         "GetConditionMenuMonConditions",
@@ -472,6 +589,12 @@
       "returnType": "void",
       "signature": "static void UpdateMonPic(u8 loadId)",
       "paramsRaw": "u8 loadId",
+      "paramsList": [
+        {
+          "name": "loadId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 spriteId;\n    struct SpriteTemplate spriteTemplate;\n    struct SpriteSheet spriteSheet;\n    struct SpritePalette spritePal;\n\n    if (sMenu->curMonSpriteId == SPRITE_NONE)\n    {\n        LoadConditionMonPicTemplate(&spriteSheet, &spriteTemplate, &spritePal);\n        spriteSheet.data = sMenu->partySheets[loadId];\n        spritePal.data = sMenu->partyPalettes[loadId];\n        sMenu->curMonPalette = LoadSpritePalette(&spritePal);\n        sMenu->curMonSheet = LoadSpriteSheet(&spriteSheet);\n        spriteId = CreateSprite(&spriteTemplate, 38, 104, 0);\n        sMenu->curMonSpriteId = spriteId;\n        if (spriteId == MAX_SPRITES)\n        {\n            FreeSpriteTilesByTag(TAG_CONDITION_MON);\n            FreeSpritePaletteByTag(TAG_CONDITION_MON);\n            sMenu->curMonSpriteId = SPRITE_NONE;\n        }\n        else\n        {\n            sMenu->curMonSpriteId = spriteId;\n            gSprites[sMenu->curMonSpriteId].callback = SpriteCB_MonPic;\n            gSprites[sMenu->curMonSpriteId].y2 -= 34;\n            sMenu->curMonTileStart = (void *)(OBJ_VRAM0 + (sMenu->curMonSheet * 32));\n            sMenu->curMonPalette = OBJ_PLTT_ID(sMenu->curMonPalette);\n        }\n    }\n    else\n    {\n        Dma3CopyLarge16_(sMenu->partySheets[loadId], sMenu->curMonTileStart, MON_PIC_SIZE);\n        LoadPalette(sMenu->partyPalettes[loadId], sMenu->curMonPalette, PLTT_SIZE_4BPP);\n    }",
       "callsTo": [
         "CreateSprite",
@@ -490,6 +613,7 @@
       "returnType": "void",
       "signature": "static void LoadAndCreateSelectionIcons(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 i, spriteId;\n    struct SpriteSheet spriteSheets[4];\n    struct SpriteTemplate spriteTemplate;\n    struct SpritePalette spritePals[3];\n    struct SpriteSheet spriteSheet2;\n    struct SpritePalette spritePal2;\n\n    LoadConditionSelectionIcons(spriteSheets, &spriteTemplate, spritePals);\n    LoadSpriteSheets(spriteSheets);\n    LoadSpritePalettes(spritePals);\n\n     \n    for (i = 0; i < sMenu->info.numSelections - 1; i++)\n    {\n        spriteId = CreateSprite(&spriteTemplate, 226, (i * 20) + 8, 0);\n        if (spriteId != MAX_SPRITES)\n        {\n            sMenu->selectionIconSpriteIds[i] = spriteId;\n            gSprites[spriteId].data[0] = i;\n            gSprites[spriteId].callback = SpriteCB_SelectionIconPokeball;\n        }\n        else\n        {\n            sMenu->selectionIconSpriteIds[i] = -1;\n        }\n    }\n\n     \n    spriteTemplate.tileTag = TAG_CONDITION_BALL_PLACEHOLDER;\n    for (; i < PARTY_SIZE; i++)\n    {\n        spriteId = CreateSprite(&spriteTemplate, 230, (i * 20) + 8, 0);\n        if (spriteId != MAX_SPRITES)\n        {\n            sMenu->selectionIconSpriteIds[i] = spriteId;\n            gSprites[spriteId].oam.size = 0;\n        }\n        else\n        {\n            sMenu->selectionIconSpriteIds[i] = -1;\n        }\n    }\n\n     \n    spriteTemplate.tileTag = TAG_CONDITION_CANCEL;\n    spriteTemplate.callback = SpriteCB_SelectionIconCancel;\n    spriteId = CreateSprite(&spriteTemplate, 222, (i * 20) + 8, 0);\n    if (spriteId != MAX_SPRITES)\n    {\n        sMenu->selectionIconSpriteIds[i] = spriteId;\n        gSprites[spriteId].oam.shape = SPRITE_SHAPE(32x16);\n        gSprites[spriteId].oam.size = SPRITE_SIZE(32x16);\n    }\n    else\n    {\n        sMenu->selectionIconSpriteIds[i] = -1;\n    }\n\n    LoadConditionSparkle(&spriteSheet2, &spritePal2);\n    LoadSpriteSheet(&spriteSheet2);\n    LoadSpritePalette(&spritePal2);",
       "callsTo": [
         "CreateSprite",
@@ -508,6 +632,7 @@
       "returnType": "bool8",
       "signature": "static bool8 LoadUsePokeblockMenuGfx(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sMenu->info.helperState)\n    {\n    case 0:\n        ChangeBgX(0, 0, BG_COORD_SET);\n        ChangeBgY(0, 0, BG_COORD_SET);\n        ChangeBgX(1, 0, BG_COORD_SET);\n        ChangeBgY(1, 0, BG_COORD_SET);\n        ChangeBgX(2, 0, BG_COORD_SET);\n        ChangeBgY(2, 0, BG_COORD_SET);\n        ChangeBgX(3, 0, BG_COORD_SET);\n        ChangeBgY(3, 136 << 6, BG_COORD_SET);\n        SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_OBJ_1D_MAP | DISPCNT_OBJ_ON | DISPCNT_WIN0_ON | DISPCNT_WIN1_ON);\n        SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_TGT1_BG2 | BLDCNT_EFFECT_BLEND | BLDCNT_TGT2_BG1);\n        SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(11, 4));\n        break;\n    case 1:\n        sGraph_Gfx = Alloc(6656);\n        sGraph_Tilemap = Alloc(1280);\n        sMonFrame_TilemapPtr = Alloc(1280);\n        break;\n    case 2:\n        LZ77UnCompVram(sMonFrame_Tilemap, sMonFrame_TilemapPtr);\n        break;\n    case 3:\n        LoadBgTiles(3, sMonFrame_Gfx, 224, 0);\n        break;\n    case 4:\n         LoadBgTilemap(3, sMonFrame_TilemapPtr, 1280, 0);\n        break;\n    case 5:\n        LoadPalette(sMonFrame_Pal, BG_PLTT_ID(13), PLTT_SIZE_4BPP);\n        sMenu->curMonXOffset = -80;\n        break;\n    case 6:\n        LZ77UnCompVram(gUsePokeblockGraph_Gfx, sGraph_Gfx);\n        break;\n    case 7:\n        LZ77UnCompVram(gUsePokeblockGraph_Tilemap, sGraph_Tilemap);\n        LoadPalette(gUsePokeblockGraph_Pal, BG_PLTT_ID(2), PLTT_SIZE_4BPP);\n        break;\n    case 8:\n        LoadBgTiles(1, sGraph_Gfx, 6656, 160 << 2);\n        break;\n    case 9:\n        SetBgTilemapBuffer(1, sGraph_Tilemap);\n        CopyToBgTilemapBufferRect(1, gUsePokeblockNatureWin_Pal, 0, 13, 12, 4);\n        CopyBgTilemapBufferToVram(1);\n        break;\n    case 10:\n        LZ77UnCompVram(sGraphData_Tilemap, sMenu->tilemapBuffer);\n        break;\n    case 11:\n        LoadBgTilemap(2, sMenu->tilemapBuffer, 1280, 0);\n        LoadPalette(gConditionGraphData_Pal, BG_PLTT_ID(3), PLTT_SIZE_4BPP);\n        LoadPalette(gConditionText_Pal, BG_PLTT_ID(15), PLTT_SIZE_4BPP);\n        ConditionGraph_InitWindow(2);\n        break;\n    default:\n        sMenu->info.helperState = 0;\n        return FALSE;\n    }\n\n    sMenu->info.helperState++;\n    return TRUE;",
       "callsTo": [
         "Alloc",
@@ -531,6 +656,16 @@
       "returnType": "void",
       "signature": "static void UpdateMonInfoText(u16 loadId, bool8 firstPrint)",
       "paramsRaw": "u16 loadId, bool8 firstPrint",
+      "paramsList": [
+        {
+          "name": "loadId",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "firstPrint",
+          "typeRaw": "bool8"
+        }
+      ],
       "body": "u8 partyIndex;\n    u8 nature;\n    u8 *str;\n\n    FillWindowPixelBuffer(WIN_NAME, PIXEL_FILL(0));\n    FillWindowPixelBuffer(WIN_NATURE, PIXEL_FILL(0));\n    if (sMenu->info.curSelection != sMenu->info.numSelections - 1)\n    {\n        AddTextPrinterParameterized(WIN_NAME, FONT_NORMAL, sMenu->monNameStrings[loadId], 0, 1, 0, NULL);\n        partyIndex = GetPartyIdFromSelectionId(sMenu->info.curSelection);\n        nature = GetNature(&gPlayerParty[partyIndex]);\n        str = StringCopy(sMenu->info.natureText, gText_NatureSlash);\n        str = StringCopy(str, gNatureNamePointers[nature]);\n        AddTextPrinterParameterized3(WIN_NATURE, FONT_NORMAL, 2, 1, sNatureTextColors, 0, sMenu->info.natureText);\n    }\n\n    if (firstPrint)\n    {\n        CopyWindowToVram(WIN_NAME, COPYWIN_FULL);\n        CopyWindowToVram(WIN_NATURE, COPYWIN_FULL);\n    }\n    else\n    {\n        CopyWindowToVram(WIN_NAME, COPYWIN_GFX);\n        CopyWindowToVram(WIN_NATURE, COPYWIN_GFX);\n    }",
       "callsTo": [
         "AddTextPrinterParameterized",
@@ -548,6 +683,12 @@
       "returnType": "void",
       "signature": "static void UpdateSelection(bool8 up)",
       "paramsRaw": "bool8 up",
+      "paramsList": [
+        {
+          "name": "up",
+          "typeRaw": "bool8"
+        }
+      ],
       "body": "u16 newLoadId;\n    bool32 startedOnMon, endedOnMon;\n\n    if (up)\n        newLoadId = sMenu->prevLoadId;\n    else\n        newLoadId = sMenu->nextLoadId;\n\n    ConditionGraph_SetNewPositions(&sMenu->graph, sMenu->graph.savedPositions[sMenu->curLoadId], sMenu->graph.savedPositions[newLoadId]);\n\n    if (sMenu->info.curSelection == sMenu->info.numSelections - 1)\n        startedOnMon = FALSE;  \n    else\n        startedOnMon = TRUE;\n\n    if (up)\n    {\n        sMenu->prevLoadId = sMenu->nextLoadId;  \n        sMenu->nextLoadId = sMenu->curLoadId;\n        sMenu->curLoadId = newLoadId;\n        sMenu->toLoadId = sMenu->prevLoadId;  \n\n         \n        sMenu->info.curSelection = (sMenu->info.curSelection == 0)\n            ? sMenu->info.numSelections - 1\n            : sMenu->info.curSelection - 1;\n\n        sMenu->toLoadSelection = (sMenu->info.curSelection == 0)\n            ? sMenu->info.numSelections - 1\n            : sMenu->info.curSelection - 1;\n    }\n    else\n    {\n        sMenu->nextLoadId = sMenu->prevLoadId;  \n        sMenu->prevLoadId = sMenu->curLoadId;\n        sMenu->curLoadId = newLoadId;\n        sMenu->toLoadId = sMenu->nextLoadId;  \n\n         \n        sMenu->info.curSelection = (sMenu->info.curSelection < sMenu->info.numSelections - 1)\n            ? sMenu->info.curSelection + 1\n            : 0;\n\n        sMenu->toLoadSelection = (sMenu->info.curSelection < sMenu->info.numSelections - 1)\n            ? sMenu->info.curSelection + 1\n            : 0;\n    }\n\n    if (sMenu->info.curSelection == sMenu->info.numSelections - 1)\n        endedOnMon = FALSE;  \n    else\n        endedOnMon = TRUE;\n\n    DestroyConditionSparkleSprites(sMenu->sparkles);\n\n    if (!startedOnMon)\n        sMenu->info.loadNewSelection = LoadNewSelection_CancelToMon;\n    else if (!endedOnMon)\n        sMenu->info.loadNewSelection = LoadNewSelection_MonToCancel;\n    else\n        sMenu->info.loadNewSelection = LoadNewSelection_MonToMon;",
       "callsTo": [
         "ConditionGraph_SetNewPositions",
@@ -559,6 +700,7 @@
       "returnType": "bool8",
       "signature": "static bool8 LoadNewSelection_CancelToMon(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sMenu->info.helperState)\n    {\n    case 0:\n        UpdateMonPic(sMenu->curLoadId);\n        sMenu->info.helperState++;\n        break;\n    case 1:\n        UpdateMonInfoText(sMenu->curLoadId, FALSE);\n        sMenu->info.helperState++;\n        break;\n    case 2:\n        if (!ConditionMenu_UpdateMonEnter(&sMenu->graph, &sMenu->curMonXOffset))\n        {\n             \n            LoadMonInfo(sMenu->toLoadSelection, sMenu->toLoadId);\n            sMenu->info.helperState++;\n        }\n        break;\n    case 3:\n        ResetConditionSparkleSprites(sMenu->sparkles);\n        if (sMenu->info.curSelection != sMenu->info.numSelections - 1)\n        {\n            u8 numSparkles = sMenu->numSparkles[sMenu->curLoadId];\n            CreateConditionSparkleSprites(sMenu->sparkles, sMenu->curMonSpriteId, numSparkles);\n        }\n\n        sMenu->info.helperState = 0;\n        return FALSE;\n    }\n\n    return TRUE;",
       "callsTo": [
         "ConditionMenu_UpdateMonEnter",
@@ -574,6 +716,7 @@
       "returnType": "bool8",
       "signature": "static bool8 LoadNewSelection_MonToCancel(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sMenu->info.helperState)\n    {\n    case 0:\n        if (!ConditionMenu_UpdateMonExit(&sMenu->graph, &sMenu->curMonXOffset))\n            sMenu->info.helperState++;\n        break;\n    case 1:\n        UpdateMonInfoText(sMenu->curLoadId, FALSE);\n        sMenu->info.helperState++;\n        break;\n    case 2:\n        LoadMonInfo(sMenu->toLoadSelection, sMenu->toLoadId);\n        sMenu->info.helperState++;\n        break;\n    case 3:\n        sMenu->info.helperState = 0;\n        return FALSE;\n    }\n\n    return TRUE;",
       "callsTo": [
         "ConditionMenu_UpdateMonExit",
@@ -586,6 +729,7 @@
       "returnType": "bool8",
       "signature": "static bool8 LoadNewSelection_MonToMon(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sMenu->info.helperState)\n    {\n    case 0:\n        ConditionGraph_TryUpdate(&sMenu->graph);\n        if (!MoveConditionMonOffscreen(&sMenu->curMonXOffset))\n        {\n            UpdateMonPic(sMenu->curLoadId);\n            sMenu->info.helperState++;\n        }\n        break;\n    case 1:\n        UpdateMonInfoText(sMenu->curLoadId, FALSE);\n        sMenu->info.helperState++;\n        break;\n    case 2:\n        if (!ConditionMenu_UpdateMonEnter(&sMenu->graph, &sMenu->curMonXOffset))\n        {\n             \n            LoadMonInfo(sMenu->toLoadSelection, sMenu->toLoadId);\n            sMenu->info.helperState++;\n        }\n        break;\n    case 3:\n        ResetConditionSparkleSprites(sMenu->sparkles);\n        if (sMenu->info.curSelection != sMenu->info.numSelections - 1)\n        {\n            u8 numSparkles = sMenu->numSparkles[sMenu->curLoadId];\n            CreateConditionSparkleSprites(sMenu->sparkles, sMenu->curMonSpriteId, numSparkles);\n        }\n\n        sMenu->info.helperState = 0;\n        return FALSE;\n    }\n\n    return TRUE;",
       "callsTo": [
         "ConditionGraph_TryUpdate",
@@ -603,6 +747,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_MonPic(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "sprite->x = sMenu->curMonXOffset + 38;",
       "callsTo": [],
       "lineCount": 1
@@ -611,6 +761,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_SelectionIconPokeball(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (sprite->data[0] == sMenu->info.curSelection)\n        StartSpriteAnim(sprite, CONDITION_ICON_SELECTED);\n    else\n        StartSpriteAnim(sprite, CONDITION_ICON_UNSELECTED);",
       "callsTo": [
         "StartSpriteAnim"
@@ -621,6 +777,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_SelectionIconCancel(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (sMenu->info.curSelection == sMenu->info.numSelections - 1)\n        sprite->oam.paletteNum = IndexOfSpritePaletteTag(TAG_CONDITION_BALL);\n    else\n        sprite->oam.paletteNum = IndexOfSpritePaletteTag(TAG_CONDITION_CANCEL);",
       "callsTo": [
         "IndexOfSpritePaletteTag"
@@ -631,6 +793,12 @@
       "returnType": "void",
       "signature": "static void CalculateNumAdditionalSparkles(u8 monIndex)",
       "paramsRaw": "u8 monIndex",
+      "paramsList": [
+        {
+          "name": "monIndex",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 sheen = GetMonData(&gPlayerParty[monIndex], MON_DATA_SHEEN);\n    sMenu->numSparkles[sMenu->curLoadId] = GET_NUM_CONDITION_SPARKLES(sheen);",
       "callsTo": [
         "GET_NUM_CONDITION_SPARKLES",
@@ -642,6 +810,7 @@
       "returnType": "void",
       "signature": "static void LoadConditionGfx(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "struct CompressedSpriteSheet spriteSheet;\n    struct SpritePalette spritePalette;\n\n    spritePalette = sSpritePalette_Condition;\n    spriteSheet.data = gUsePokeblockCondition_Gfx;\n    spriteSheet.size = 0x800;\n    spriteSheet.tag = TAG_CONDITION;\n    LoadCompressedSpriteSheet(&spriteSheet);\n    LoadSpritePalette(&spritePalette);",
       "callsTo": [
         "LoadCompressedSpriteSheet",
@@ -653,6 +822,7 @@
       "returnType": "void",
       "signature": "static void CreateConditionSprite(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 i;\n    s16 xDiff, xStart;\n    int yStart = 17;\n    int speed = 8;\n    struct Sprite **sprites = sMenu->condition;\n    const struct SpriteTemplate *template = &sSpriteTemplate_Condition;\n\n    for (i = 0, xDiff = 64, xStart = -96; i < 2; i++)\n    {\n        u8 spriteId = CreateSprite(template, i * xDiff + xStart, yStart, 0);\n        if (spriteId != MAX_SPRITES)\n        {\n            gSprites[spriteId].sSpeed = speed;\n            gSprites[spriteId].sTargetX = (i * xDiff) | 0x20;\n            gSprites[spriteId].data[2] = i;  \n            StartSpriteAnim(&gSprites[spriteId], i);\n            sprites[i] = &gSprites[spriteId];\n        }\n    }",
       "callsTo": [
         "CreateSprite",
@@ -664,6 +834,7 @@
       "returnType": "bool8",
       "signature": "static bool8 LoadConditionTitle(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sMenu->info.helperState)\n    {\n    case 0:\n        LoadConditionGfx();\n        sMenu->info.helperState++;\n        return TRUE;\n    case 1:\n        CreateConditionSprite();\n        sMenu->info.helperState = 0;\n        return FALSE;\n    }\n\n    return FALSE;",
       "callsTo": [
         "CreateConditionSprite",
@@ -675,6 +846,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_Condition(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "s16 prevX = sprite->x;\n\n     \n    sprite->x += sprite->sSpeed;\n\n     \n    if ((prevX <= sprite->sTargetX && sprite->x >= sprite->sTargetX)\n     || (prevX >= sprite->sTargetX && sprite->x <= sprite->sTargetX))\n    {\n         \n        sprite->x = sprite->sTargetX;\n        sprite->callback = SpriteCallbackDummy;\n    }",
       "callsTo": [],
       "lineCount": 13

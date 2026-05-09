@@ -6,6 +6,7 @@
       "returnType": "void",
       "signature": "void InitFieldMessageBox(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sFieldMessageBoxMode = FIELD_MESSAGE_BOX_HIDDEN;\n    gTextFlags.canABSpeedUpPrint = FALSE;\n    gTextFlags.useAlternateDownArrow = FALSE;\n    gTextFlags.autoScroll = FALSE;\n    gTextFlags.forceMidTextSpeed = FALSE;",
       "callsTo": [],
       "lineCount": 5
@@ -14,6 +15,12 @@
       "returnType": "void",
       "signature": "static void Task_DrawFieldMessage(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "struct Task *task = &gTasks[taskId];\n\n    switch (task->tState)\n    {\n        case 0:\n            LoadMessageBoxAndBorderGfx();\n            task->tState++;\n            break;\n        case 1:\n            DrawDialogueFrame(0, TRUE);\n            task->tState++;\n            break;\n        case 2:\n            if (RunTextPrintersAndIsPrinter0Active() != TRUE)\n            {\n                sFieldMessageBoxMode = FIELD_MESSAGE_BOX_HIDDEN;\n                DestroyTask(taskId);\n            }\n    }",
       "callsTo": [
         "DestroyTask",
@@ -27,6 +34,7 @@
       "returnType": "void",
       "signature": "static void CreateTask_DrawFieldMessage(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "CreateTask(Task_DrawFieldMessage, 0x50);",
       "callsTo": [
         "CreateTask"
@@ -37,6 +45,7 @@
       "returnType": "void",
       "signature": "static void DestroyTask_DrawFieldMessage(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 taskId = FindTaskIdByFunc(Task_DrawFieldMessage);\n    if (taskId != TASK_NONE)\n        DestroyTask(taskId);",
       "callsTo": [
         "DestroyTask",
@@ -48,6 +57,12 @@
       "returnType": "bool8",
       "signature": "bool8 ShowFieldMessage(const u8 *str)",
       "paramsRaw": "const u8 *str",
+      "paramsList": [
+        {
+          "name": "str",
+          "typeRaw": "const u8 *"
+        }
+      ],
       "body": "if (sFieldMessageBoxMode != FIELD_MESSAGE_BOX_HIDDEN)\n        return FALSE;\n    ExpandStringAndStartDrawFieldMessage(str, TRUE);\n    sFieldMessageBoxMode = FIELD_MESSAGE_BOX_NORMAL;\n    return TRUE;",
       "callsTo": [
         "ExpandStringAndStartDrawFieldMessage"
@@ -58,6 +73,12 @@
       "returnType": "void",
       "signature": "static void Task_HidePokenavMessageWhenDone(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (!IsMatchCallTaskActive())\n    {\n        sFieldMessageBoxMode = FIELD_MESSAGE_BOX_HIDDEN;\n        DestroyTask(taskId);\n    }",
       "callsTo": [
         "DestroyTask",
@@ -69,6 +90,12 @@
       "returnType": "bool8",
       "signature": "bool8 ShowPokenavFieldMessage(const u8 *str)",
       "paramsRaw": "const u8 *str",
+      "paramsList": [
+        {
+          "name": "str",
+          "typeRaw": "const u8 *"
+        }
+      ],
       "body": "if (sFieldMessageBoxMode != FIELD_MESSAGE_BOX_HIDDEN)\n        return FALSE;\n    StringExpandPlaceholders(gStringVar4, str);\n    CreateTask(Task_HidePokenavMessageWhenDone, 0);\n    StartMatchCallFromScript(str);\n    sFieldMessageBoxMode = FIELD_MESSAGE_BOX_NORMAL;\n    return TRUE;",
       "callsTo": [
         "CreateTask",
@@ -81,6 +108,12 @@
       "returnType": "bool8",
       "signature": "bool8 ShowFieldAutoScrollMessage(const u8 *str)",
       "paramsRaw": "const u8 *str",
+      "paramsList": [
+        {
+          "name": "str",
+          "typeRaw": "const u8 *"
+        }
+      ],
       "body": "if (sFieldMessageBoxMode != FIELD_MESSAGE_BOX_HIDDEN)\n        return FALSE;\n    sFieldMessageBoxMode = FIELD_MESSAGE_BOX_AUTO_SCROLL;\n    ExpandStringAndStartDrawFieldMessage(str, FALSE);\n    return TRUE;",
       "callsTo": [
         "ExpandStringAndStartDrawFieldMessage"
@@ -91,6 +124,7 @@
       "returnType": "bool8",
       "signature": "bool8 ShowFieldMessageFromBuffer(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (sFieldMessageBoxMode != FIELD_MESSAGE_BOX_HIDDEN)\n        return FALSE;\n    sFieldMessageBoxMode = FIELD_MESSAGE_BOX_NORMAL;\n    StartDrawFieldMessage();\n    return TRUE;",
       "callsTo": [
         "StartDrawFieldMessage"
@@ -101,6 +135,16 @@
       "returnType": "void",
       "signature": "static void ExpandStringAndStartDrawFieldMessage(const u8 *str, bool32 allowSkippingDelayWithButtonPress)",
       "paramsRaw": "const u8 *str, bool32 allowSkippingDelayWithButtonPress",
+      "paramsList": [
+        {
+          "name": "str",
+          "typeRaw": "const u8 *"
+        },
+        {
+          "name": "allowSkippingDelayWithButtonPress",
+          "typeRaw": "bool32"
+        }
+      ],
       "body": "StringExpandPlaceholders(gStringVar4, str);\n    AddTextPrinterForMessage(allowSkippingDelayWithButtonPress);\n    CreateTask_DrawFieldMessage();",
       "callsTo": [
         "AddTextPrinterForMessage",
@@ -113,6 +157,7 @@
       "returnType": "void",
       "signature": "static void StartDrawFieldMessage(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "AddTextPrinterForMessage(TRUE);\n    CreateTask_DrawFieldMessage();",
       "callsTo": [
         "AddTextPrinterForMessage",
@@ -124,6 +169,7 @@
       "returnType": "void",
       "signature": "void HideFieldMessageBox(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "DestroyTask_DrawFieldMessage();\n    ClearDialogWindowAndFrame(0, TRUE);\n    sFieldMessageBoxMode = FIELD_MESSAGE_BOX_HIDDEN;",
       "callsTo": [
         "ClearDialogWindowAndFrame",
@@ -135,6 +181,7 @@
       "returnType": "u8",
       "signature": "u8 GetFieldMessageBoxMode(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return sFieldMessageBoxMode;",
       "callsTo": [],
       "lineCount": 1
@@ -143,6 +190,7 @@
       "returnType": "bool8",
       "signature": "bool8 IsFieldMessageBoxHidden(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (sFieldMessageBoxMode == FIELD_MESSAGE_BOX_HIDDEN)\n        return TRUE;\n    return FALSE;",
       "callsTo": [],
       "lineCount": 3
@@ -151,6 +199,7 @@
       "returnType": "void",
       "signature": "void StopFieldMessage(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "DestroyTask_DrawFieldMessage();\n    sFieldMessageBoxMode = FIELD_MESSAGE_BOX_HIDDEN;",
       "callsTo": [
         "DestroyTask_DrawFieldMessage"

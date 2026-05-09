@@ -6,6 +6,7 @@
       "returnType": "u32",
       "signature": "static u32 GetMirageRnd(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u32 hi = VarGet(VAR_MIRAGE_RND_H);\n    u32 lo = VarGet(VAR_MIRAGE_RND_L);\n    return (hi << 16) | lo;",
       "callsTo": [
         "VarGet"
@@ -16,6 +17,12 @@
       "returnType": "void",
       "signature": "static void SetMirageRnd(u32 rnd)",
       "paramsRaw": "u32 rnd",
+      "paramsList": [
+        {
+          "name": "rnd",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "VarSet(VAR_MIRAGE_RND_H, rnd >> 16);\n    VarSet(VAR_MIRAGE_RND_L, rnd);",
       "callsTo": [
         "VarSet"
@@ -26,6 +33,7 @@
       "returnType": "void",
       "signature": "void InitMirageRnd(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "SetMirageRnd((Random() << 16) | Random());",
       "callsTo": [
         "Random",
@@ -37,6 +45,12 @@
       "returnType": "void",
       "signature": "void UpdateMirageRnd(u16 days)",
       "paramsRaw": "u16 days",
+      "paramsList": [
+        {
+          "name": "days",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "s32 rnd = GetMirageRnd();\n    while (days)\n    {\n        rnd = ISO_RANDOMIZE2(rnd);\n        days--;\n    }\n    SetMirageRnd(rnd);",
       "callsTo": [
         "GetMirageRnd",
@@ -49,6 +63,7 @@
       "returnType": "bool8",
       "signature": "bool8 IsMirageIslandPresent(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 rnd = GetMirageRnd() >> 16;\n    int i;\n\n    for (i = 0; i < PARTY_SIZE; i++)\n        if (GetMonData(&gPlayerParty[i], MON_DATA_SPECIES) && (GetMonData(&gPlayerParty[i], MON_DATA_PERSONALITY) & 0xFFFF) == rnd)\n            return TRUE;\n\n    return FALSE;",
       "callsTo": [
         "GetMirageRnd",
@@ -60,6 +75,7 @@
       "returnType": "void",
       "signature": "void UpdateShoalTideFlag(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "static const u8 tide[] =\n    {\n        1,  \n        1,  \n        1,  \n        0,  \n        0,  \n        0,  \n        0,  \n        0,  \n        0,  \n        1,  \n        1,  \n        1,  \n        1,  \n        1,  \n        1,  \n        0,  \n        0,  \n        0,  \n        0,  \n        0,  \n        0,  \n        1,  \n        1,  \n        1,  \n    };\n\n    if (IsMapTypeOutdoors(GetLastUsedWarpMapType()))\n    {\n        RtcCalcLocalTime();\n        if (tide[gLocalTime.hours])\n            FlagSet(FLAG_SYS_SHOAL_TIDE);\n        else\n            FlagClear(FLAG_SYS_SHOAL_TIDE);\n    }",
       "callsTo": [
         "FlagClear",
@@ -74,6 +90,12 @@
       "returnType": "void",
       "signature": "static void Task_WaitWeather(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (IsWeatherChangeComplete())\n    {\n        ScriptContext_Enable();\n        DestroyTask(taskId);\n    }",
       "callsTo": [
         "DestroyTask",
@@ -86,6 +108,7 @@
       "returnType": "void",
       "signature": "void WaitWeather(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "CreateTask(Task_WaitWeather, 80);",
       "callsTo": [
         "CreateTask"
@@ -96,6 +119,7 @@
       "returnType": "void",
       "signature": "void InitBirchState(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "*GetVarPointer(VAR_BIRCH_STATE) = 0;",
       "callsTo": [
         "GetVarPointer"
@@ -106,6 +130,12 @@
       "returnType": "void",
       "signature": "void UpdateBirchState(u16 days)",
       "paramsRaw": "u16 days",
+      "paramsList": [
+        {
+          "name": "days",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "u16 *state = GetVarPointer(VAR_BIRCH_STATE);\n    *state += days;\n    *state %= 7;",
       "callsTo": [
         "GetVarPointer"

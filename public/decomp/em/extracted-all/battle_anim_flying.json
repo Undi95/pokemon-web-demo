@@ -6,6 +6,12 @@
       "returnType": "void",
       "signature": "static void AnimEllipticalGust(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "InitSpritePosToAnimTarget(sprite, FALSE);\n    sprite->y += 20;\n    sprite->data[1] = 191;\n    sprite->callback = AnimEllipticalGust_Step;\n    sprite->callback(sprite);",
       "callsTo": [
         "InitSpritePosToAnimTarget"
@@ -16,6 +22,12 @@
       "returnType": "void",
       "signature": "static void AnimEllipticalGust_Step(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "sprite->x2 = Sin(sprite->data[1], 32);\n    sprite->y2 = Cos(sprite->data[1], 8);\n    sprite->data[1] += 5;\n    sprite->data[1] &= 0xFF;\n    if (++sprite->data[0] == 71)\n        DestroyAnimSprite(sprite);",
       "callsTo": [
         "Cos",
@@ -28,6 +40,12 @@
       "returnType": "void",
       "signature": "void AnimTask_AnimateGustTornadoPalette(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "gTasks[taskId].data[0] = gBattleAnimArgs[1];\n    gTasks[taskId].data[1] = gBattleAnimArgs[0];\n    gTasks[taskId].data[2] = IndexOfSpritePaletteTag(ANIM_TAG_GUST);\n    gTasks[taskId].func = AnimTask_AnimateGustTornadoPalette_Step;",
       "callsTo": [
         "IndexOfSpritePaletteTag"
@@ -38,6 +56,12 @@
       "returnType": "void",
       "signature": "static void AnimTask_AnimateGustTornadoPalette_Step(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 data2;\n    u16 temp;\n    int i, base;\n\n    if (gTasks[taskId].data[10]++ == gTasks[taskId].data[1])\n    {\n        gTasks[taskId].data[10] = 0;\n        data2 = gTasks[taskId].data[2];\n        temp = gPlttBufferFaded[OBJ_PLTT_ID(data2) + 8];\n        i = 7;\n        base = PLTT_ID(data2);\n\n        do\n        {\n            gPlttBufferFaded[base + OBJ_PLTT_OFFSET + 1 + i] = gPlttBufferFaded[base + OBJ_PLTT_OFFSET + i];\n            i--;\n        } while (i > 0);\n\n        gPlttBufferFaded[base + OBJ_PLTT_OFFSET + 1] = temp;\n    }\n\n    if (--gTasks[taskId].data[0] == 0)\n        DestroyAnimVisualTask(taskId);",
       "callsTo": [
         "DestroyAnimVisualTask",
@@ -50,6 +74,12 @@
       "returnType": "void",
       "signature": "static void AnimGustToTarget(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "InitSpritePosToAnimAttacker(sprite, TRUE);\n    if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)\n        gBattleAnimArgs[2] = -gBattleAnimArgs[2];\n\n    sprite->data[0] = gBattleAnimArgs[4];\n    sprite->data[1] = sprite->x;\n    sprite->data[2] = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_X_2) + gBattleAnimArgs[2];\n    sprite->data[3] = sprite->y;\n    sprite->data[4] = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_Y_PIC_OFFSET) + gBattleAnimArgs[3];\n    InitAnimLinearTranslation(sprite);\n    sprite->callback = RunStoredCallbackWhenAffineAnimEnds;\n    StoreSpriteCallbackInData6(sprite, AnimGustToTarget_Step);",
       "callsTo": [
         "GetBattlerSide",
@@ -64,6 +94,12 @@
       "returnType": "void",
       "signature": "static void AnimGustToTarget_Step(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (AnimTranslateLinear(sprite))\n        DestroyAnimSprite(sprite);",
       "callsTo": [
         "AnimTranslateLinear",
@@ -75,6 +111,12 @@
       "returnType": "void",
       "signature": "static void AnimAirWaveCrescent(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)\n    {\n        gBattleAnimArgs[0] = -gBattleAnimArgs[0];\n        gBattleAnimArgs[1] = -gBattleAnimArgs[1];\n        gBattleAnimArgs[2] = -gBattleAnimArgs[2];\n        gBattleAnimArgs[3] = -gBattleAnimArgs[3];\n    }\n\n    if (IsContest())\n    {\n        gBattleAnimArgs[1] = -gBattleAnimArgs[1];\n        gBattleAnimArgs[3] = -gBattleAnimArgs[3];\n    }\n\n    sprite->x = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_X_2);\n    sprite->y = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_Y_PIC_OFFSET);\n    sprite->x += gBattleAnimArgs[0];\n    sprite->y += gBattleAnimArgs[1];\n    sprite->data[0] = gBattleAnimArgs[4];\n\n    if (gBattleAnimArgs[6] == 0)\n    {\n        sprite->data[2] = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_X_2);\n        sprite->data[4] = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_Y_PIC_OFFSET);\n    }\n    else\n    {\n        SetAverageBattlerPositions(gBattleAnimTarget, TRUE, &sprite->data[2], &sprite->data[4]);\n    }\n\n    sprite->data[2] = sprite->data[2] + gBattleAnimArgs[2];\n    sprite->data[4] = sprite->data[4] + gBattleAnimArgs[3];\n    sprite->callback = StartAnimLinearTranslation;\n\n    StoreSpriteCallbackInData6(sprite, DestroyAnimSprite);\n    SeekSpriteAnim(sprite, gBattleAnimArgs[5]);",
       "callsTo": [
         "GetBattlerSide",
@@ -90,6 +132,12 @@
       "returnType": "void",
       "signature": "static void AnimFlyBallUp(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "InitSpritePosToAnimAttacker(sprite, TRUE);\n    sprite->data[0] = gBattleAnimArgs[2];\n    sprite->data[1] = gBattleAnimArgs[3];\n    sprite->callback = AnimFlyBallUp_Step;\n    gSprites[GetAnimBattlerSpriteId(ANIM_ATTACKER)].invisible = TRUE;",
       "callsTo": [
         "GetAnimBattlerSpriteId",
@@ -101,6 +149,12 @@
       "returnType": "void",
       "signature": "static void AnimFlyBallUp_Step(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (sprite->data[0] > 0)\n    {\n        sprite->data[0]--;\n    }\n    else\n    {\n        sprite->data[2] += sprite->data[1];\n        sprite->y2 -= (sprite->data[2] >> 8);\n    }\n\n    if (sprite->y + sprite->y2 < -32)\n        DestroyAnimSprite(sprite);",
       "callsTo": [
         "DestroyAnimSprite"
@@ -111,6 +165,12 @@
       "returnType": "void",
       "signature": "static void AnimFlyBallAttack(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)\n    {\n        sprite->x = DISPLAY_WIDTH + 32;\n        sprite->y = -32;\n        StartSpriteAffineAnim(sprite, 1);\n    }\n    else\n    {\n        sprite->x = -32;\n        sprite->y = -32;\n    }\n\n    sprite->data[0] = gBattleAnimArgs[0];\n    sprite->data[1] = sprite->x;\n    sprite->data[2] = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_X_2);\n    sprite->data[3] = sprite->y;\n    sprite->data[4] = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_Y_PIC_OFFSET);\n\n    InitAnimLinearTranslation(sprite);\n    sprite->callback = AnimFlyBallAttack_Step;",
       "callsTo": [
         "GetBattlerSide",
@@ -124,6 +184,12 @@
       "returnType": "void",
       "signature": "static void AnimFlyBallAttack_Step(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "sprite->data[0] = 1;\n    AnimTranslateLinear(sprite);\n    if (((u16)sprite->data[3] >> 8) > 200)\n    {\n        sprite->x += sprite->x2;\n        sprite->x2 = 0;\n        sprite->data[3] &= 0xFF;\n    }\n\n    if (sprite->x + sprite->x2 < -32\n     || sprite->x + sprite->x2 > DISPLAY_WIDTH + 32\n     || sprite->y + sprite->y2 > DISPLAY_HEIGHT)\n    {\n        gSprites[GetAnimBattlerSpriteId(ANIM_ATTACKER)].invisible = FALSE;\n        DestroyAnimSprite(sprite);\n    }",
       "callsTo": [
         "AnimTranslateLinear",
@@ -136,6 +202,12 @@
       "returnType": "void",
       "signature": "void DestroyAnimSpriteAfterTimer(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (sprite->data[0]-- <= 0)\n    {\n        if (sprite->oam.affineMode & ST_OAM_AFFINE_ON_MASK)\n        {\n            FreeOamMatrix(sprite->oam.matrixNum);\n            sprite->oam.affineMode = ST_OAM_AFFINE_OFF;\n        }\n\n        DestroySprite(sprite);\n        gAnimVisualTaskCount--;\n    }",
       "callsTo": [
         "DestroySprite",
@@ -147,6 +219,12 @@
       "returnType": "void",
       "signature": "static void AnimFallingFeather(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "u8 battler, matrixNum, sinIndex;\n    s16 spriteCoord;\n\n    struct FeatherDanceData *data = (struct FeatherDanceData *)sprite->data;\n\n    if (gBattleAnimArgs[7] & 0x100)\n        battler = gBattleAnimAttacker;\n    else\n        battler = gBattleAnimTarget;\n\n    if (GetBattlerSide(battler) == B_SIDE_PLAYER)\n        gBattleAnimArgs[0] = -gBattleAnimArgs[0];\n\n    sprite->x = GetBattlerSpriteCoord(battler, BATTLER_COORD_ATTR_HEIGHT) + gBattleAnimArgs[0];\n    spriteCoord = GetBattlerSpriteCoord(battler, BATTLER_COORD_ATTR_WIDTH);\n    sprite->y = spriteCoord + gBattleAnimArgs[1];\n\n    data->unk8 = sprite->y << 8;\n    data->unkE_1 = spriteCoord + gBattleAnimArgs[6];\n    data->unk0_0c = 1;\n    data->unk2 = gBattleAnimArgs[2] & 0xFF;\n    data->unkA = (gBattleAnimArgs[2] >> 8) & 0xFF;\n    data->unk4 = gBattleAnimArgs[3];\n    data->unk6 = gBattleAnimArgs[4];\n    *(u16 *)(data->unkC) = gBattleAnimArgs[5];\n\n    if (data->unk2 >= 64 && data->unk2 <= 191)\n    {\n        if (!IsContest())\n            sprite->oam.priority = GetBattlerSpriteBGPriority(battler) + 1;\n        else\n            sprite->oam.priority = GetBattlerSpriteBGPriority(battler);\n\n        data->unkE_0 = 0;\n\n        if (!(data->unk4 & 0x8000))\n        {\n            sprite->hFlip ^= 1;\n            sprite->animNum = sprite->hFlip;\n\n            sprite->animBeginning = 1;\n            sprite->animEnded = 0;\n        }\n    }\n    else\n    {\n        sprite->oam.priority = GetBattlerSpriteBGPriority(battler);\n        data->unkE_0 = 1;\n\n        if (data->unk4 & 0x8000)\n        {\n            sprite->hFlip ^= 1;\n            sprite->animNum = sprite->hFlip;\n\n            sprite->animBeginning = 1;\n            sprite->animEnded = 0;\n        }\n    }\n\n    data->unk0_1 = data->unk2 >> 6;\n    sprite->x2 = (gSineTable[data->unk2] * data->unkC[0]) >> 8;\n    matrixNum = sprite->oam.matrixNum;\n\n    sinIndex = (-sprite->x2 >> 1) + data->unkA;\n    spriteCoord = gSineTable[sinIndex];\n\n    gOamMatrices[matrixNum].a = gOamMatrices[matrixNum].d = gSineTable[sinIndex + 64];\n    gOamMatrices[matrixNum].b = spriteCoord;\n    gOamMatrices[matrixNum].c = -spriteCoord;\n\n    sprite->callback = AnimFallingFeather_Step;",
       "callsTo": [
         "GetBattlerSide",
@@ -160,6 +238,12 @@
       "returnType": "void",
       "signature": "static void AnimFallingFeather_Step(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "u8 matrixNum, sinIndex;\n    s16 sinVal = 0;\n    struct FeatherDanceData *data = (struct FeatherDanceData *)sprite->data;\n    if (data->unk0_0a)\n    {\n        if (data->unk1-- % 256 == 0)\n        {\n            data->unk0_0a = 0;\n            data->unk1 = 0;\n        }\n    }\n    else\n    {\n        switch (data->unk2 / 64)\n        {\n        case 0:\n            if ((u8)data->unk0_1 == 1)  \n            {\n                data->unk0_0d = 1;\n                data->unk0_0a = 1;\n                data->unk1 = 0;\n            }\n            else if ((u8)data->unk0_1 == 3)\n            {\n                data->unk0_0b ^= 1;\n                data->unk0_0a = 1;\n                data->unk1 = 0;\n            }\n            else if (data->unk0_0d)\n            {\n                sprite->hFlip ^= 1;\n                sprite->animNum = sprite->hFlip;\n                sprite->animBeginning = TRUE;\n                sprite->animEnded = FALSE;\n                if (data->unk0_0c)\n                {\n                    if (!IsContest())\n                    {\n                        if (!data->unkE_0)\n                        {\n                            sprite->oam.priority--;\n                            data->unkE_0 ^= 1;\n                        }\n                        else\n                        {\n                            sprite->oam.priority++;\n                            data->unkE_0 ^= 1;\n                        }\n                    }\n                    else\n                    {\n                        if (!data->unkE_0)\n                        {\n                            sprite->subpriority -= 12;\n                            data->unkE_0 ^= 1;\n                        }\n                        else\n                        {\n                            sprite->subpriority += 12;\n                            data->unkE_0 ^= 1;\n                        }\n                    }\n                }\n                data->unk0_0d = 0;\n            }\n            data->unk0_1 = 0;\n            break;\n        case 1:\n            if ((u8)data->unk0_1 == 0)\n            {\n                data->unk0_0d = 1;\n                data->unk0_0a = 1;\n                data->unk1 = 0;\n            }\n            else if ((u8)data->unk0_1 == 2)\n            {\n                data->unk0_0a = 1;\n                data->unk1 = 0;\n            }\n            else if (data->unk0_0d)\n            {\n                sprite->hFlip ^= 1;\n                sprite->animNum = sprite->hFlip;\n                sprite->animBeginning = TRUE;\n                sprite->animEnded = FALSE;\n                if (data->unk0_0c)\n                {\n                    if (!IsContest())\n                    {\n                        if (!data->unkE_0)\n                        {\n                            sprite->oam.priority--;\n                            data->unkE_0 ^= 1;\n                        }\n                        else\n                        {\n                            sprite->oam.priority++;\n                            data->unkE_0 ^= 1;\n                        }\n                    }\n                    else\n                    {\n                        if (!data->unkE_0)\n                        {\n                            sprite->subpriority -= 12;\n                            data->unkE_0 ^= 1;\n                        }\n                        else\n                        {\n                            sprite->subpriority += 12;\n                            data->unkE_0 ^= 1;\n                        }\n                    }\n                }\n                data->unk0_0d = 0;\n            }\n            data->unk0_1 = 1;\n            break;\n        case 2:\n            if ((u8)data->unk0_1 == 3)\n            {\n                data->unk0_0d = 1;\n                data->unk0_0a = 1;\n                data->unk1 = 0;\n            }\n            else if ((u8)data->unk0_1 == 1)\n            {\n                data->unk0_0a = 1;\n                data->unk1 = 0;\n            }\n            else if (data->unk0_0d)\n            {\n                sprite->hFlip ^= 1;\n                sprite->animNum = sprite->hFlip;\n                sprite->animBeginning = TRUE;\n                sprite->animEnded = FALSE;\n                if (data->unk0_0c)\n                {\n                    if (!IsContest())\n                    {\n                        if (!data->unkE_0)\n                        {\n                            sprite->oam.priority--;\n                            data->unkE_0 ^= 1;\n                        }\n                        else\n                        {\n                            sprite->oam.priority++;\n                            data->unkE_0 ^= 1;\n                        }\n                    }\n                    else\n                    {\n                        if (!data->unkE_0)\n                        {\n                            sprite->subpriority -= 12;\n                            data->unkE_0 ^= 1;\n                        }\n                        else\n                        {\n                            sprite->subpriority += 12;\n                            data->unkE_0 ^= 1;\n                        }\n                    }\n                }\n                data->unk0_0d = 0;\n            }\n            data->unk0_1 = 2;\n            break;\n        case 3:\n            if ((u8)data->unk0_1 == 2)\n            {\n                data->unk0_0d = 1;\n            }\n            else if ((u8)data->unk0_1 == 0)\n            {\n                data->unk0_0b ^= 1;\n                data->unk0_0a = 1;\n                data->unk1 = 0;\n            }\n            else if (data->unk0_0d)\n            {\n                sprite->hFlip ^= 1;\n                sprite->animNum = sprite->hFlip;\n                sprite->animBeginning = TRUE;\n                sprite->animEnded = FALSE;\n                if (data->unk0_0c)\n                {\n                    if (!IsContest())\n                    {\n                        if (!data->unkE_0)\n                        {\n                            sprite->oam.priority--;\n                            data->unkE_0 ^= 1;\n                        }\n                        else\n                        {\n                            sprite->oam.priority++;\n                            data->unkE_0 ^= 1;\n                        }\n                    }\n                    else\n                    {\n                        if (!data->unkE_0)\n                        {\n                            sprite->subpriority -= 12;\n                            data->unkE_0 ^= 1;\n                        }\n                        else\n                        {\n                            sprite->subpriority += 12;\n                            data->unkE_0 ^= 1;\n                        }\n                    }\n                }\n                data->unk0_0d = 0;\n            }\n            data->unk0_1 = 3;\n            break;\n        }\n\n        sprite->x2 = ((s32)data->unkC[data->unk0_0b] * gSineTable[data->unk2]) >> 8;\n        matrixNum = sprite->oam.matrixNum;\n\n        sinIndex = (-sprite->x2 >> 1) + data->unkA;\n        sinVal = gSineTable[sinIndex];\n\n        gOamMatrices[matrixNum].a = gOamMatrices[matrixNum].d = gSineTable[sinIndex + 64];\n        gOamMatrices[matrixNum].b = sinVal;\n        gOamMatrices[matrixNum].c = -sinVal;\n\n        data->unk8 += data->unk6;\n        sprite->y = data->unk8 >> 8;\n        if (data->unk4 & 0x8000)\n            data->unk2 = (data->unk2 - (data->unk4 & 0x7FFF)) & 0xFF;\n        else\n            data->unk2 = (data->unk2 + (data->unk4 & 0x7FFF)) & 0xFF;\n\n        if (sprite->y + sprite->y2 >= data->unkE_1)\n        {\n            sprite->data[0] = 0;\n            sprite->callback = DestroyAnimSpriteAfterTimer;\n        }\n    }",
       "callsTo": [
         "IsContest"
@@ -170,6 +254,12 @@
       "returnType": "void",
       "signature": "static void AnimUnusedBubbleThrow(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "sprite->oam.priority = GetBattlerSpriteBGPriority(gBattleAnimTarget);\n    sprite->x = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_X_2);\n    sprite->y = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_Y_PIC_OFFSET);\n    sprite->callback = TranslateAnimSpriteToTargetMonLocation;",
       "callsTo": [
         "GetBattlerSpriteBGPriority",
@@ -181,6 +271,12 @@
       "returnType": "void",
       "signature": "static void AnimWhirlwindLine(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "u16 offset;\n    u8 mult;\n\n    if (gBattleAnimArgs[2] == ANIM_ATTACKER)\n        InitSpritePosToAnimAttacker(sprite, FALSE);\n    else\n        InitSpritePosToAnimTarget(sprite, FALSE);\n\n    if ((gBattleAnimArgs[2] == ANIM_ATTACKER && GetBattlerSide(gBattleAnimAttacker) == B_SIDE_PLAYER)\n        || (gBattleAnimArgs[2] == ANIM_TARGET && GetBattlerSide(gBattleAnimTarget) == B_SIDE_PLAYER))\n    {\n        sprite->x += 8;\n    }\n\n    SeekSpriteAnim(sprite, gBattleAnimArgs[4]);\n    sprite->x -= 32;\n    sprite->data[1] = 0x0ccc;\n\n    offset = gBattleAnimArgs[4];\n    mult = 12;\n    sprite->x2 += mult * offset;\n    sprite->data[0] = offset;\n    sprite->data[7] = gBattleAnimArgs[3];\n    sprite->callback = AnimWhirlwindLine_Step;",
       "callsTo": [
         "GetBattlerSide",
@@ -194,6 +290,12 @@
       "returnType": "void",
       "signature": "static void AnimWhirlwindLine_Step(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "sprite->x2 += sprite->data[1] >> 8;\n\n    if (++sprite->data[0] == 6)\n    {\n        sprite->data[0] = 0;\n        sprite->x2 = 0;\n        StartSpriteAnim(sprite, 0);\n    }\n\n    if (--sprite->data[7] == -1)\n        DestroyAnimSprite(sprite);",
       "callsTo": [
         "DestroyAnimSprite",
@@ -205,6 +307,12 @@
       "returnType": "void",
       "signature": "void AnimTask_DrillPeckHitSplats(u8 task)",
       "paramsRaw": "u8 task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (!(gTasks[task].data[0] % 32))\n    {\n        gAnimVisualTaskCount++;\n\n        gBattleAnimArgs[0] = Sin(gTasks[task].data[0], -13);\n        gBattleAnimArgs[1] = Cos(gTasks[task].data[0], -13);\n        gBattleAnimArgs[2] = 1;\n        gBattleAnimArgs[3] = 3;\n\n        CreateSpriteAndAnimate(&gFlashingHitSplatSpriteTemplate,\n                               GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_X_2),\n                               GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_Y_PIC_OFFSET),\n                               3);\n    }\n\n    gTasks[task].data[0] += 8;\n\n    if (gTasks[task].data[0] > 255)\n        DestroyAnimVisualTask(task);",
       "callsTo": [
         "Cos",
@@ -219,6 +327,12 @@
       "returnType": "void",
       "signature": "static void AnimBounceBallShrink(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "switch (sprite->data[0])\n    {\n    case 0:\n        InitSpritePosToAnimAttacker(sprite, TRUE);\n        gSprites[GetAnimBattlerSpriteId(ANIM_ATTACKER)].invisible = TRUE;\n        ++sprite->data[0];\n        break;\n    case 1:\n        if (sprite->affineAnimEnded)\n            DestroyAnimSprite(sprite);\n        break;\n    }",
       "callsTo": [
         "DestroyAnimSprite",
@@ -231,6 +345,12 @@
       "returnType": "void",
       "signature": "static void AnimBounceBallLand(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "switch (sprite->data[0])\n    {\n    case 0:\n        sprite->y = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_Y);\n        sprite->y2 = -sprite->y - 32;\n        sprite->data[0]++;\n        break;\n    case 1:\n        sprite->y2 += 10;\n        if (sprite->y2 >= 0)\n            ++sprite->data[0];\n        break;\n    case 2:\n        sprite->y2 -= 10;\n        if (sprite->y + sprite->y2 < -32)\n        {\n            gSprites[GetAnimBattlerSpriteId(ANIM_ATTACKER)].invisible = FALSE;\n            DestroyAnimSprite(sprite);\n        }\n        break;\n    }",
       "callsTo": [
         "DestroyAnimSprite",
@@ -243,6 +363,12 @@
       "returnType": "void",
       "signature": "static void AnimDiveBall(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "InitSpritePosToAnimAttacker(sprite, TRUE);\n    sprite->data[0] = gBattleAnimArgs[2];\n    sprite->data[1] = gBattleAnimArgs[3];\n    sprite->callback = AnimDiveBall_Step1;\n    gSprites[GetAnimBattlerSpriteId(ANIM_ATTACKER)].invisible = TRUE;",
       "callsTo": [
         "GetAnimBattlerSpriteId",
@@ -254,6 +380,12 @@
       "returnType": "void",
       "signature": "void AnimDiveBall_Step1(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (sprite->data[0] > 0)\n    {\n        sprite->data[0]--;\n    }\n    else if (sprite->y + sprite->y2 > -32)\n    {\n        sprite->data[2] += sprite->data[1];\n        sprite->y2 -= (sprite->data[2] >> 8);\n    }\n    else\n    {\n        sprite->invisible = TRUE;\n        if (sprite->data[3]++ > 20)\n            sprite->callback = AnimDiveBall_Step2;\n    }",
       "callsTo": [],
       "lineCount": 15
@@ -262,6 +394,12 @@
       "returnType": "void",
       "signature": "static void AnimDiveBall_Step2(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "sprite->y2 += sprite->data[2] >> 8;\n\n    if (sprite->y + sprite->y2 > -32)\n        sprite->invisible = FALSE;\n\n    if (sprite->y2 > 0)\n        DestroyAnimSprite(sprite);",
       "callsTo": [
         "DestroyAnimSprite"
@@ -272,6 +410,12 @@
       "returnType": "void",
       "signature": "static void AnimDiveWaterSplash(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "u32 matrixNum;\n    int t1, t2;\n\n    switch (sprite->data[0])\n    {\n    case 0:\n        if (!gBattleAnimArgs[0])\n        {\n            sprite->x = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_X);\n            sprite->y = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_Y);\n        }\n        else\n        {\n            sprite->x = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_X);\n            sprite->y = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_Y);\n        }\n\n        sprite->data[1] = 0x200;\n\n        TrySetSpriteRotScale(sprite, FALSE, 0x100, sprite->data[1], 0);\n        sprite->data[0]++;\n        break;\n    case 1:\n        if (sprite->data[2] <= 11)\n            sprite->data[1] -= 40;\n        else\n            sprite->data[1] += 40;\n\n        sprite->data[2]++;\n\n        TrySetSpriteRotScale(sprite, FALSE, 0x100, sprite->data[1], 0);\n\n        matrixNum = sprite->oam.matrixNum;\n\n        t1 = 0x3D00;\n        t2 = t1 / gOamMatrices[matrixNum].d + 1;\n\n        if (t2 > 128)\n            t2 = 128;\n\n        t2 = (64 - t2) / 2;\n        sprite->y2 = t2;\n\n        if (sprite->data[2] == 24)\n        {\n            ResetSpriteRotScale_PreserveAffine(sprite);\n            DestroyAnimSprite(sprite);\n        }\n        break;\n    }",
       "callsTo": [
         "DestroyAnimSprite",
@@ -285,6 +429,12 @@
       "returnType": "void",
       "signature": "static void AnimSprayWaterDroplet(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "int v1 = 0x1ff & Random2();\n    int v2 = 0x7f & Random2();\n\n    if (v1 % 2)\n        sprite->data[0] = 736 + v1;\n    else\n        sprite->data[0] = 736 - v1;\n\n    if (v2 % 2)\n        sprite->data[1] = 896 + v2;\n    else\n        sprite->data[1] = 896 - v2;\n\n    sprite->data[2] = gBattleAnimArgs[0];\n\n    if (sprite->data[2])\n        sprite->oam.matrixNum = ST_OAM_HFLIP;\n\n    if (gBattleAnimArgs[1] == 0)\n    {\n        sprite->x = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_X);\n        sprite->y = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_Y) + 32;\n    }\n    else\n    {\n        sprite->x = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_X);\n        sprite->y = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_Y) + 32;\n    }\n\n    sprite->callback = AnimSprayWaterDroplet_Step;",
       "callsTo": [
         "GetBattlerSpriteCoord",
@@ -296,6 +446,12 @@
       "returnType": "void",
       "signature": "static void AnimSprayWaterDroplet_Step(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (sprite->data[2] == 0)\n    {\n        sprite->x2 += sprite->data[0] >> 8;\n        sprite->y2 -= sprite->data[1] >> 8;\n    }\n    else\n    {\n        sprite->x2 -= sprite->data[0] >> 8;\n        sprite->y2 -= sprite->data[1] >> 8;\n    }\n\n    sprite->data[0] = sprite->data[0];\n    sprite->data[1] -= 32;\n\n    if (sprite->data[0] < 0)\n        sprite->data[0] = 0;\n\n    if (++sprite->data[3] == 31)\n        DestroyAnimSprite(sprite);",
       "callsTo": [
         "DestroyAnimSprite"
@@ -306,6 +462,12 @@
       "returnType": "void",
       "signature": "static void AnimUnusedFlashingLight(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "sprite->data[6] = 0;\n    sprite->data[7] = 64;\n    sprite->callback = AnimUnusedFlashingLight_Step;",
       "callsTo": [],
       "lineCount": 3
@@ -314,6 +476,12 @@
       "returnType": "void",
       "signature": "static void AnimUnusedFlashingLight_Step(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "switch (sprite->data[0])\n    {\n    case 0:\n        if (++sprite->data[1] > 8)\n        {\n            sprite->data[1] = 0;\n            sprite->invisible ^= 1;\n            if (++sprite->data[2] > 5 && sprite->invisible)\n                sprite->data[0]++;\n        }\n        break;\n    case 1:\n        DestroyAnimSprite(sprite);\n        break;\n    }",
       "callsTo": [
         "DestroyAnimSprite"
@@ -324,6 +492,12 @@
       "returnType": "void",
       "signature": "static void AnimSkyAttackBird(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "u16 rotation;\n    s16 posx = sprite->x;\n    s16 posy = sprite->y;\n\n    sprite->x = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_X_2);\n    sprite->y = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_Y_PIC_OFFSET);\n\n    sprite->data[4] = sprite->x << 4;\n    sprite->data[5] = sprite->y << 4;\n\n    sprite->data[6] = ((posx - sprite->x) << 4) / 12;\n    sprite->data[7] = ((posy - sprite->y) << 4) / 12;\n\n    rotation = ArcTan2Neg(posx - sprite->x, posy - sprite->y);\n    rotation -= 16384;\n\n    TrySetSpriteRotScale(sprite, TRUE, 0x100, 0x100, rotation);\n\n    sprite->callback = AnimSkyAttackBird_Step;",
       "callsTo": [
         "ArcTan2Neg",
@@ -336,6 +510,12 @@
       "returnType": "void",
       "signature": "void AnimSkyAttackBird_Step(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "sprite->data[4] += sprite->data[6];\n    sprite->data[5] += sprite->data[7];\n\n    sprite->x = sprite->data[4] >> 4;\n    sprite->y = sprite->data[5] >> 4;\n\n    if (sprite->x > DISPLAY_WIDTH + 45 || sprite->x < -45\n     || sprite->y > 157 || sprite->y < -45)\n        DestroySpriteAndMatrix(sprite);",
       "callsTo": [
         "DestroySpriteAndMatrix"

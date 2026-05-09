@@ -6,6 +6,20 @@
       "returnType": "void",
       "signature": "static void SetEscalatorMetatile(u8 taskId, const s16 *metatileIds, u16 metatileMasks)",
       "paramsRaw": "u8 taskId, const s16 *metatileIds, u16 metatileMasks",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "metatileIds",
+          "typeRaw": "const s16 *"
+        },
+        {
+          "name": "metatileMasks",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "s16 x = gTasks[taskId].tPlayerX - 1;\n    s16 y = gTasks[taskId].tPlayerY - 1;\n    s16 transitionStage = gTasks[taskId].tTransitionStage;\n    s16 i;\n    s16 j;\n\n     \n    if (!gTasks[taskId].tGoingUp)\n    {\n        for (i = 0; i < 3; i++)\n        {\n            for (j = 0; j < 3; j++)\n            {\n                s16 metatileId = MapGridGetMetatileIdAt(x + j, y + i);\n\n                if (metatileIds[transitionStage] == metatileId)\n                {\n                    if (transitionStage != LAST_ESCALATOR_STAGE)\n                        MapGridSetMetatileIdAt(x + j, y + i, metatileMasks | metatileIds[transitionStage + 1]);\n                    else\n                        MapGridSetMetatileIdAt(x + j, y + i, metatileMasks | metatileIds[0]);\n                }\n            }\n        }\n    }\n    else\n    {\n        for (i = 0; i < 3; i++)\n        {\n            for (j = 0; j < 3; j++)\n            {\n                s16 metatileId = MapGridGetMetatileIdAt(x + j, y + i);\n\n                if (metatileIds[LAST_ESCALATOR_STAGE - transitionStage] == metatileId)\n                {\n                    if (transitionStage != LAST_ESCALATOR_STAGE)\n                        MapGridSetMetatileIdAt(x + j, y + i, metatileMasks | metatileIds[1 - transitionStage]);\n                    else\n                        MapGridSetMetatileIdAt(x + j, y + i, metatileMasks | metatileIds[LAST_ESCALATOR_STAGE]);\n                }\n            }\n        }\n    }",
       "callsTo": [
         "MapGridGetMetatileIdAt",
@@ -17,6 +31,12 @@
       "returnType": "void",
       "signature": "static void Task_DrawEscalator(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data = gTasks[taskId].data;\n\n    tDrawingEscalator = TRUE;\n\n     \n    switch (tState)\n    {\n        case 0:\n            SetEscalatorMetatile(taskId, sEscalatorMetatiles_1F_0, 0);\n            break;\n        case 1:\n            SetEscalatorMetatile(taskId, sEscalatorMetatiles_1F_1, 0);\n            break;\n        case 2:\n            SetEscalatorMetatile(taskId, sEscalatorMetatiles_1F_2, MAPGRID_IMPASSABLE);\n            break;\n        case 3:\n            SetEscalatorMetatile(taskId, sEscalatorMetatiles_1F_3, 0);\n            break;\n        case 4:\n            SetEscalatorMetatile(taskId, sEscalatorMetatiles_2F_0, MAPGRID_IMPASSABLE);\n            break;\n        case 5:\n            SetEscalatorMetatile(taskId, sEscalatorMetatiles_2F_1, 0);\n            break;\n        case 6:\n            SetEscalatorMetatile(taskId, sEscalatorMetatiles_2F_2, 0);\n            break;\n    }\n\n    tState = (tState + 1) & 7;\n\n     \n    if (tState == 0)\n    {\n        DrawWholeMapView();\n        tTransitionStage = (tTransitionStage + 1) % ESCALATOR_STAGES;\n        tDrawingEscalator = FALSE;\n    }",
       "callsTo": [
         "DrawWholeMapView",
@@ -28,6 +48,12 @@
       "returnType": "u8",
       "signature": "static u8 CreateEscalatorTask(bool16 goingUp)",
       "paramsRaw": "bool16 goingUp",
+      "paramsList": [
+        {
+          "name": "goingUp",
+          "typeRaw": "bool16"
+        }
+      ],
       "body": "u8 taskId = CreateTask(Task_DrawEscalator, 0);\n    s16 *data = gTasks[taskId].data;\n\n    PlayerGetDestCoords(&tPlayerX, &tPlayerY);\n    tState = 0;\n    tTransitionStage = 0;\n    tGoingUp = goingUp;\n    Task_DrawEscalator(taskId);\n    return taskId;",
       "callsTo": [
         "CreateTask",
@@ -40,6 +66,12 @@
       "returnType": "void",
       "signature": "void StartEscalator(bool8 goingUp)",
       "paramsRaw": "bool8 goingUp",
+      "paramsList": [
+        {
+          "name": "goingUp",
+          "typeRaw": "bool8"
+        }
+      ],
       "body": "sEscalatorAnim_TaskId = CreateEscalatorTask(goingUp);",
       "callsTo": [
         "CreateEscalatorTask"
@@ -50,6 +82,7 @@
       "returnType": "void",
       "signature": "void StopEscalator(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "DestroyTask(sEscalatorAnim_TaskId);",
       "callsTo": [
         "DestroyTask"
@@ -60,6 +93,7 @@
       "returnType": "bool8",
       "signature": "bool8 IsEscalatorMoving(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gTasks[sEscalatorAnim_TaskId].tDrawingEscalator == FALSE\n     && gTasks[sEscalatorAnim_TaskId].tTransitionStage == LAST_ESCALATOR_STAGE)\n        return FALSE;\n    else\n        return TRUE;",
       "callsTo": [],
       "lineCount": 5

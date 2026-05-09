@@ -6,6 +6,16 @@
       "returnType": "void",
       "signature": "void StartDodrioBerryPicking(u16 partyId, MainCallback exitCallback)",
       "paramsRaw": "u16 partyId, MainCallback exitCallback",
+      "paramsList": [
+        {
+          "name": "partyId",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "exitCallback",
+          "typeRaw": "MainCallback"
+        }
+      ],
       "body": "sExitingGame = FALSE;\n\n    if (gReceivedRemoteLinkPlayers && (sGame = AllocZeroed(sizeof(*sGame))))\n    {\n        ResetTasksAndSprites();\n        InitDodrioGame(sGame);\n        sGame->exitCallback = exitCallback;\n        sGame->multiplayerId = GetMultiplayerId();\n        sGame->player = sGame->players[sGame->multiplayerId];\n        InitMonInfo(&sGame->monInfo[sGame->multiplayerId], &gPlayerParty[partyId]);\n        CreateTask(Task_StartDodrioGame, 1);\n        SetMainCallback2(CB2_DodrioGame);\n        SetRandomPrize();\n        GetActiveBerryColumns(sGame->numPlayers, &sGame->berryColStart, &sGame->berryColEnd);\n        StopMapMusic();\n        PlayNewMapMusic(MUS_RG_BERRY_PICK);\n    }\n    else\n    {\n         \n        SetMainCallback2(exitCallback);\n        return;\n    }",
       "callsTo": [
         "AllocZeroed",
@@ -26,6 +36,7 @@
       "returnType": "void",
       "signature": "static void ResetTasksAndSprites(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ResetTasks();\n    ResetSpriteData();\n    FreeAllSpritePalettes();",
       "callsTo": [
         "FreeAllSpritePalettes",
@@ -38,6 +49,12 @@
       "returnType": "void",
       "signature": "static void InitDodrioGame(struct DodrioGame *game)",
       "paramsRaw": "struct DodrioGame *game",
+      "paramsList": [
+        {
+          "name": "game",
+          "typeRaw": "struct DodrioGame *"
+        }
+      ],
       "body": "u8 i;\n\n    game->startState = 0;\n    game->state = 0;\n    game->timer = 0;\n    game->funcId = FUNC_INTRO;\n    game->prevFuncId = FUNC_INTRO;\n    game->startGame = FALSE;\n    game->berriesFalling = FALSE;\n    game->countdownEndDelay = 0;\n    game->numGraySquares = 0;\n    game->unused2 = 0;\n    game->allReadyToEnd = FALSE;\n\n    for (i = 0; i < ARRAY_COUNT(game->pickStateQueue); i++)\n        game->pickStateQueue[i] = PICK_NONE;\n\n    for (i = 0; i < MAX_RFU_PLAYERS; i++)\n    {\n        game->inputState[i] = INPUTSTATE_NONE;\n        game->inputDelay[i] = 0;\n        game->berryResults[i][BERRY_BLUE] = 0;\n        game->berryResults[i][BERRY_GREEN] = 0;\n        game->berryResults[i][BERRY_GOLD] = 0;\n        game->berryResults[i][BERRY_MISSED] = 0;\n        game->berryResults[i][BERRY_IN_ROW] = 0;\n        game->playAgainStates[i] = PLAY_AGAIN_NONE;\n        game->readyToEnd[i] = FALSE;\n    }\n\n    for (i = 0; i < NUM_BERRY_COLUMNS; i++)\n    {\n        game->fallTimer[i] = 0;\n        game->newBerryTimer[i] = 0;\n        game->berryState[i] = BERRYSTATE_NONE;\n        game->playersAttemptingPick[i][0] = PLAYER_NONE;\n        game->playersAttemptingPick[i][1] = PLAYER_NONE;\n    }\n\n    game->isLeader = GetMultiplayerId() == 0 ? TRUE : FALSE;\n    game->numPlayers = GetLinkPlayerCount();\n    game->posToPlayerId[0] = GetMultiplayerId();\n    for (i = 1; i < game->numPlayers; i++)\n    {\n        game->posToPlayerId[i] = game->posToPlayerId[i - 1] + 1;\n        if (game->posToPlayerId[i] > game->numPlayers - 1)\n            game->posToPlayerId[i] %= game->numPlayers;\n    }",
       "callsTo": [
         "ARRAY_COUNT",
@@ -50,6 +67,12 @@
       "returnType": "void",
       "signature": "static void Task_StartDodrioGame(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 i, numPlayers;\n\n    switch (sGame->startState)\n    {\n    case 0:\n        SetVBlankCallback(NULL);\n        CreateTask_(Task_CommunicateMonInfo, 4);\n        sGame->startState++;\n        break;\n    case 1:\n        if (!FuncIsActiveTask(Task_CommunicateMonInfo))\n        {\n            InitGameGfx(&sGame->gfx);\n            sGame->startState++;\n        }\n        break;\n    case 2:\n        if (!IsGfxFuncActive())\n        {\n            Rfu_SetLinkStandbyCallback();\n            sGame->startState++;\n        }\n        break;\n    case 3:\n        if (IsLinkTaskFinished())\n        {\n            if (gReceivedRemoteLinkPlayers)\n            {\n                LoadWirelessStatusIndicatorSpriteGfx();\n                CreateWirelessStatusIndicatorSprite(0, 0);\n            }\n            sGame->startState++;\n        }\n        break;\n    case 4:\n        numPlayers = sGame->numPlayers;\n        LoadDodrioGfx();\n        for (i = 0; i < numPlayers; i++)\n            CreateDodrioSprite(&sGame->monInfo[sGame->posToPlayerId[i]], i, sGame->posToPlayerId[i], sGame->numPlayers);\n\n        SetAllDodrioInvisibility(FALSE, sGame->numPlayers);\n        sGame->startState++;\n        break;\n    case 5:\n        LoadBerryGfx();\n        CreateBerrySprites();\n        CreateCloudSprites();\n        CreateStatusBarSprites();\n        sGame->startState++;\n        break;\n    case 6:\n        BlendPalettes(PALETTES_ALL, 0x10, 0x00);\n        BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, 0);\n        SetVBlankCallback(VBlankCB_DodrioGame);\n        sGame->startState++;\n        break;\n    case 7:\n        UpdatePaletteFade();\n        if (!gPaletteFade.active)\n            sGame->startState++;\n        break;\n    default:\n        DestroyTask(taskId);\n        CreateDodrioGameTask(Task_NewGameIntro);\n        break;\n    }",
       "callsTo": [
         "BeginNormalPaletteFade",
@@ -80,6 +103,12 @@
       "returnType": "void",
       "signature": "static void Task_DodrioGame_Leader(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "RecvLinkData_Leader();\n    sLeaderFuncs[sGame->funcId]();\n    if (!sExitingGame)\n        UpdateGame_Leader();\n\n    SendLinkData_Leader();",
       "callsTo": [
         "RecvLinkData_Leader",
@@ -92,6 +121,12 @@
       "returnType": "void",
       "signature": "static void Task_DodrioGame_Member(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "RecvLinkData_Member();\n    sMemberFuncs[sGame->funcId]();\n    if (!sExitingGame)\n        UpdateGame_Member();\n\n    SendLinkData_Member();",
       "callsTo": [
         "RecvLinkData_Member",
@@ -104,6 +139,7 @@
       "returnType": "void",
       "signature": "static void DoGameIntro(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sGame->state)\n    {\n    case 0:\n        StartDodrioIntroAnim(1);\n        SetGfxFuncById(GFXFUNC_SHOW_NAMES);\n        sGame->state++;\n        break;\n    case 1:\n        if (!IsGfxFuncActive())\n            SetGameFunc(FUNC_INIT_COUNTDOWN);\n        break;\n    }",
       "callsTo": [
         "IsGfxFuncActive",
@@ -117,6 +153,7 @@
       "returnType": "void",
       "signature": "static void InitCountdown(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sGame->state)\n    {\n    case 0:\n        InitFirstWaveOfBerries();\n        sGame->state++;\n        break;\n    default:\n        sGame->startCountdown = TRUE;\n        SetGameFunc(FUNC_COUNTDOWN);\n        break;\n    }",
       "callsTo": [
         "InitFirstWaveOfBerries",
@@ -128,6 +165,7 @@
       "returnType": "void",
       "signature": "static void DoCountdown(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sGame->state)\n    {\n    case 0:\n        StartMinigameCountdown(GFXTAG_COUNTDOWN, PALTAG_COUNTDOWN, 120, 80, 0);\n        sGame->state++;\n        break;\n    case 1:\n        Rfu_SetLinkStandbyCallback();\n        sGame->state++;\n        break;\n    case 2:\n        if (IsLinkTaskFinished())\n        {\n            sGame->state++;\n            sGame->countdownEndDelay = 0;\n        }\n        break;\n    case 3:\n        if (!IsMinigameCountdownRunning())\n            sGame->state++;\n        break;\n    case 4:\n        if (++sGame->countdownEndDelay > 5)\n        {\n            Rfu_SetLinkStandbyCallback();\n            sGame->state++;\n        }\n        break;\n    case 5:\n        if (IsLinkTaskFinished())\n            SetGameFunc(FUNC_WAIT_START);\n        break;\n    }",
       "callsTo": [
         "IsLinkTaskFinished",
@@ -142,6 +180,7 @@
       "returnType": "void",
       "signature": "static void WaitGameStart(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sGame->state)\n    {\n    case 0:\n        if (sGame->startGame)\n            SetGameFunc(FUNC_PLAY_GAME);\n        break;\n    }",
       "callsTo": [
         "SetGameFunc"
@@ -152,6 +191,7 @@
       "returnType": "void",
       "signature": "static void PlayGame_Leader(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sGame->state)\n    {\n    case 0:\n        if (sGame->numGraySquares < NUM_STATUS_SQUARES)\n        {\n            if (sGame->inputState[0] == INPUTSTATE_NONE)\n            {\n                if (JOY_NEW(DPAD_UP))\n                {\n                    if (sGame->players[0].comm.pickState == PICK_NONE)\n                    {\n                        sGame->players[0].comm.ateBerry = FALSE;\n                        sGame->players[0].comm.pickState = UpdatePickStateQueue(PICK_MIDDLE);\n                    }\n                }\n                else if (JOY_NEW(DPAD_RIGHT))\n                {\n                    if (sGame->players[0].comm.pickState == PICK_NONE)\n                    {\n                        sGame->players[0].comm.ateBerry = FALSE;\n                        sGame->players[0].comm.pickState = UpdatePickStateQueue(PICK_RIGHT);\n                    }\n                }\n                else if (JOY_NEW(DPAD_LEFT))\n                {\n                    if (sGame->players[0].comm.pickState == PICK_NONE)\n                    {\n                        sGame->players[0].comm.ateBerry = FALSE;\n                        sGame->players[0].comm.pickState = UpdatePickStateQueue(PICK_LEFT);\n                    }\n                }\n                else\n                {\n                    sGame->players[0].comm.pickState = UpdatePickStateQueue(PICK_NONE);\n                }\n            }\n        }\n        else\n        {\n            SetGameFunc(FUNC_WAIT_END_GAME);\n        }\n        UpdateFallingBerries();\n        HandleSound_Leader();\n        break;\n    }",
       "callsTo": [
         "HandleSound_Leader",
@@ -166,6 +206,7 @@
       "returnType": "void",
       "signature": "static void PlayGame_Member(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (sGame->numGraySquares < NUM_STATUS_SQUARES)\n    {\n        if (JOY_NEW(DPAD_UP))\n        {\n            if (sGame->players[sGame->multiplayerId].comm.pickState == PICK_NONE)\n            {\n                sGame->player.comm.pickState = PICK_MIDDLE;\n            }\n        }\n        else if (JOY_NEW(DPAD_RIGHT))\n        {\n            if (sGame->players[sGame->multiplayerId].comm.pickState == PICK_NONE)\n            {\n                sGame->player.comm.pickState = PICK_RIGHT;\n            }\n        }\n        else if (JOY_NEW(DPAD_LEFT))\n        {\n            if (sGame->players[sGame->multiplayerId].comm.pickState == PICK_NONE)\n            {\n                sGame->player.comm.pickState = PICK_LEFT;\n            }\n        }\n        else\n        {\n            sGame->player.comm.pickState = PICK_NONE;\n        }\n    }\n    else\n    {\n        SetGameFunc(FUNC_WAIT_END_GAME);\n    }\n    HandleSound_Member();",
       "callsTo": [
         "HandleSound_Member",
@@ -178,6 +219,7 @@
       "returnType": "void",
       "signature": "static void WaitEndGame_Leader(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n\n    UpdateFallingBerries();\n    HandleSound_Leader();\n    if (ReadyToEndGame_Leader() == TRUE)\n    {\n        SetMaxBerriesPickedInRow();\n        SetGameFunc(FUNC_INIT_RESULTS);\n    }\n    else\n    {\n        sGame->allReadyToEnd = TRUE;\n        for (i = 1; i < sGame->numPlayers; i++)\n        {\n            if (sGame->readyToEnd[i] != TRUE)\n            {\n                sGame->allReadyToEnd = FALSE;\n                break;\n            }\n        }\n    }",
       "callsTo": [
         "HandleSound_Leader",
@@ -192,6 +234,7 @@
       "returnType": "void",
       "signature": "static void WaitEndGame_Member(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "HandleSound_Member();\n    if (ReadyToEndGame_Member() == TRUE)\n        SetGameFunc(FUNC_INIT_RESULTS);",
       "callsTo": [
         "HandleSound_Member",
@@ -204,6 +247,7 @@
       "returnType": "bool32",
       "signature": "static bool32 AllLinkBlocksReceived(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 recvStatus = GetBlockReceivedStatus();\n    u8 playerFlags = GetLinkPlayerCountAsBitFlags();\n    if (recvStatus == playerFlags)\n    {\n        ResetBlockReceivedFlags();\n        return TRUE;\n    }\n    else\n    {\n        return FALSE;\n    }",
       "callsTo": [
         "GetBlockReceivedStatus",
@@ -216,6 +260,7 @@
       "returnType": "void",
       "signature": "static void InitResults_Leader(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sGame->state)\n    {\n    case 0:\n        if (SendBlock(0, sGame->berryResults, sizeof(sGame->berryResults)))\n        {\n            sGame->playersReceived = 0;\n            sGame->state++;\n        }\n        break;\n    case 1:\n        if (IsLinkTaskFinished())\n        {\n            sGame->state++;\n        }\n        break;\n    case 2:\n        if (AllLinkBlocksReceived())\n        {\n            sGame->playersReceived = sGame->numPlayers;\n        }\n        if (sGame->playersReceived >= sGame->numPlayers)\n        {\n            sGame->timer++;\n            sGame->state++;\n        }\n        break;\n    default:\n        if (WaitFanfare(TRUE))\n        {\n            SetGameFunc(FUNC_RESULTS);\n            FadeOutAndPlayNewMapMusic(MUS_RG_VICTORY_WILD, 4);\n        }\n        break;\n    }",
       "callsTo": [
         "AllLinkBlocksReceived",
@@ -231,6 +276,7 @@
       "returnType": "void",
       "signature": "static void InitResults_Member(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n\n    switch (sGame->state)\n    {\n    case 0:\n        if (SendBlock(0, sGame->berryResults[sGame->timer], sizeof(sGame->berryResults)))\n        {\n            sGame->playersReceived = 0;\n            sGame->state++;\n        }\n        break;\n    case 1:\n        if (IsLinkTaskFinished())\n        {\n            sGame->state++;\n        }\n        break;\n    case 2:\n        if (AllLinkBlocksReceived())\n        {\n            for (i = 0; i < sGame->numPlayers; i++)\n            {\n                memcpy(sGame->berryResults, gBlockRecvBuffer, sizeof(sGame->berryResults));\n                sGame->playersReceived = sGame->numPlayers;\n            }\n        }\n        if (sGame->playersReceived >= sGame->numPlayers)\n        {\n            sGame->timer++;\n            sGame->state++;\n        }\n        break;\n    default:\n        if (WaitFanfare(TRUE))\n        {\n            sGame->maxBerriesPickedInRow = sGame->berryResults[sGame->multiplayerId][BERRY_IN_ROW];\n            SetGameFunc(FUNC_RESULTS);\n            FadeOutAndPlayNewMapMusic(MUS_RG_VICTORY_WILD, 4);\n        }\n        break;\n    }",
       "callsTo": [
         "AllLinkBlocksReceived",
@@ -246,6 +292,7 @@
       "returnType": "void",
       "signature": "static void DoResults(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 playAgainState = PLAY_AGAIN_YES;\n    u8 i;\n\n    switch (sGame->state)\n    {\n    case 0:\n        TryUpdateRecords();\n        SetStatusBarInvisibility(TRUE);\n        ResetCloudPos();\n        SetCloudInvisibility(TRUE);\n        SetGfxFuncById(GFXFUNC_SHOW_RESULTS);\n        sGame->state++;\n        break;\n    case 1:\n        if (!IsGfxFuncActive())\n        {\n            SetGfxFuncById(GFXFUNC_MSG_COMM_STANDBY);\n            sGame->state++;\n        }\n        break;\n    case 2:\n        playAgainState = GetPlayAgainState();\n        if (SendBlock(0, &playAgainState, sizeof(playAgainState)))\n            sGame->state++;\n        break;\n    case 3:\n        if (IsLinkTaskFinished())\n        {\n            sGame->state++;\n            sGame->playersReceived = 0;\n        }\n        break;\n    case 4:\n        if (AllLinkBlocksReceived())\n        {\n            for (i = 0; i < sGame->numPlayers; i++)\n            {\n                *(&sGame->playAgainStates[i]) = *(u8 *)gBlockRecvBuffer[i];\n                sGame->playersReceived = sGame->numPlayers;\n            }\n        }\n        if (sGame->playersReceived >= sGame->numPlayers)\n        {\n            if (++sGame->timer >= 120)\n            {\n                SetGfxFuncById(GFXFUNC_ERASE_MSG);\n                sGame->state++;\n            }\n        }\n        break;\n    default:\n        if (!IsGfxFuncActive())\n            SetGameFunc(FUNC_ASK_PLAY_AGAIN);\n        break;\n    }",
       "callsTo": [
         "AllLinkBlocksReceived",
@@ -266,6 +313,7 @@
       "returnType": "void",
       "signature": "static void AskPlayAgain(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 playAgainState;\n    u8 i;\n\n    switch (sGame->state)\n    {\n    case 0:\n        if (GetHighestScore() >= PRIZE_SCORE)\n        {\n            SetGfxFuncById(GFXFUNC_MSG_SAVING);\n        }\n        sGame->state++;\n        break;\n    case 1:\n        if (!IsGfxFuncActive())\n        {\n            SetGfxFuncById(GFXFUNC_MSG_PLAY_AGAIN);\n            sGame->state++;\n        }\n        break;\n    case 2:\n        ResetBerryAndStatusBarSprites();\n        ResetForPlayAgainPrompt();\n        sGame->state++;\n        break;\n    case 3:\n        if ((playAgainState = GetPlayAgainState()) != PLAY_AGAIN_NONE)\n        {\n            sGame->state++;\n        }\n        break;\n    case 4:\n        if (!IsGfxFuncActive())\n        {\n            SetGfxFuncById(GFXFUNC_MSG_COMM_STANDBY);\n            sGame->state++;\n        }\n        break;\n    case 5:\n        playAgainState = GetPlayAgainState();\n        if (SendBlock(0, &playAgainState, sizeof(playAgainState)))\n        {\n            sGame->playersReceived = 0;\n            sGame->state++;\n        }\n        break;\n    case 6:\n        if (IsLinkTaskFinished())\n            sGame->state++;\n        break;\n    case 7:\n        if (AllLinkBlocksReceived())\n        {\n            for (i = 0; i < sGame->numPlayers; i++)\n            {\n                *(&sGame->playAgainStates[i]) = *(u8 *)gBlockRecvBuffer[i];\n                sGame->playersReceived = sGame->numPlayers;\n            }\n        }\n        if (sGame->playersReceived >= sGame->numPlayers)\n        {\n            if (++sGame->timer >= 120)\n            {\n                ResetPickState();\n                SetGfxFuncById(GFXFUNC_ERASE_MSG);\n                sGame->state++;\n            }\n        }\n        else\n        {\n            HandleWaitPlayAgainInput();\n        }\n        break;\n    default:\n        if (!IsGfxFuncActive())\n        {\n            for (i = 0; i < sGame->numPlayers; i++)\n            {\n                if (sGame->playAgainStates[i] == PLAY_AGAIN_NO)\n                {\n                    SetGameFunc(FUNC_END_LINK);\n                    return;\n                }\n            }\n            SetGameFunc(FUNC_RESET_GAME);\n        }\n        break;\n    }",
       "callsTo": [
         "AllLinkBlocksReceived",
@@ -287,6 +335,7 @@
       "returnType": "void",
       "signature": "static void EndLink(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sGame->state)\n    {\n    case 0:\n        SetCloseLinkCallback();\n        SetGfxFuncById(GFXFUNC_MSG_PLAYER_DROPPED);\n        sGame->state++;\n        break;\n    case 1:\n        if (!IsGfxFuncActive())\n            sGame->state++;\n        break;\n    case 2:\n        if (GetPlayAgainState() == PLAY_AGAIN_DROPPED)\n            sGame->state++;\n        break;\n    default:\n        if (gReceivedRemoteLinkPlayers == 0)\n        {\n            SetGameFunc(FUNC_EXIT);\n        }\n        break;\n    }",
       "callsTo": [
         "GetPlayAgainState",
@@ -301,6 +350,7 @@
       "returnType": "void",
       "signature": "static void ExitGame(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sGame->state)\n    {\n    case 0:\n        BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, 0);\n        sGame->state++;\n        break;\n    case 1:\n        UpdatePaletteFade();\n        if (!gPaletteFade.active)\n            sGame->state++;\n        break;\n    case 2:\n        FreeBerrySprites();\n        FreeStatusBar();\n        FreeDodrioSprites(sGame->numPlayers);\n        FreeCloudSprites();\n        sExitingGame = TRUE;\n        SetGfxFuncById(GFXFUNC_STOP);\n        sGame->state++;\n        break;\n    default:\n        if (!IsGfxFuncActive())\n        {\n            SetMainCallback2(sGame->exitCallback);\n            DestroyTask(sGame->taskId);\n            Free(sGame);\n            FreeAllWindowBuffers();\n        }\n        break;\n    }",
       "callsTo": [
         "BeginNormalPaletteFade",
@@ -322,6 +372,7 @@
       "returnType": "void",
       "signature": "static void ResetGame(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sGame->state)\n    {\n    case 0:\n        SetGfxFuncById(GFXFUNC_IDLE);\n        BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, 0);\n        sGame->state++;\n        break;\n    case 1:\n        UpdatePaletteFade();\n        if (!gPaletteFade.active)\n        {\n            sGame->state++;\n        }\n        break;\n    case 2:\n        ChangeBgX(0, 0, BG_COORD_SET);\n        ChangeBgY(0, 0, BG_COORD_SET);\n        ChangeBgX(1, 0, BG_COORD_SET);\n        ChangeBgY(1, 0, BG_COORD_SET);\n        ChangeBgX(2, 0, BG_COORD_SET);\n        ChangeBgY(2, 0, BG_COORD_SET);\n        ChangeBgX(3, 0, BG_COORD_SET);\n        ChangeBgY(3, 0, BG_COORD_SET);\n        sGame->state++;\n        break;\n    case 3:\n        StopMapMusic();\n        sGame->state++;\n        break;\n    case 4:\n        PlayNewMapMusic(MUS_RG_BERRY_PICK);\n        StartCloudMovement();\n        sGame->state++;\n        break;\n    case 5:\n        BlendPalettes(PALETTES_ALL, 16, 0);\n        BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, 0);\n        sGame->state++;\n        break;\n    case 6:\n        UpdatePaletteFade();\n        if (!gPaletteFade.active)\n            sGame->state++;\n        break;\n    default:\n        DestroyTask(sGame->taskId);\n        CreateDodrioGameTask(Task_NewGameIntro);\n        ResetGfxState();\n        InitDodrioGame(sGame);\n        if (gReceivedRemoteLinkPlayers == 0)\n            sGame->numPlayers = 1;\n\n        SetRandomPrize();\n        SetCloudInvisibility(FALSE);\n        break;\n    }",
       "callsTo": [
         "BeginNormalPaletteFade",
@@ -346,6 +397,12 @@
       "returnType": "void",
       "signature": "static void Task_NewGameIntro(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "switch (sGame->state)\n    {\n    case 0:\n        if (SlideTreeBordersOut() == TRUE)\n            sGame->state++;\n        break;\n    case 1:\n        InitStatusBarPos();\n        sGame->state++;\n        break;\n    case 2:\n        if (DoStatusBarIntro() == TRUE)\n            sGame->state++;\n        break;\n    default:\n        if (sGame->isLeader)\n            CreateDodrioGameTask(Task_DodrioGame_Leader);\n        else\n            CreateDodrioGameTask(Task_DodrioGame_Member);\n\n        DestroyTask(taskId);\n        break;\n    }",
       "callsTo": [
         "CreateDodrioGameTask",
@@ -360,6 +417,12 @@
       "returnType": "void",
       "signature": "static void Task_CommunicateMonInfo(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data = gTasks[taskId].data;\n    u8 i;\n\n    switch (tState)\n    {\n    case 0:\n        if (SendBlock(0, &sGame->monInfo[sGame->multiplayerId].isShiny, sizeof(sGame->monInfo[sGame->multiplayerId].isShiny)))\n        {\n            sGame->playersReceived = 0;\n            tState++;\n        }\n        break;\n    case 1:\n        if (IsLinkTaskFinished())\n            tState++;\n        break;\n    case 2:\n        if (AllLinkBlocksReceived())\n        {\n            for (i = 0; i < sGame->numPlayers; i++)\n            {\n                *(u8 *)&sGame->monInfo[i] = *(u8 *)gBlockRecvBuffer[i];\n                sGame->playersReceived = sGame->numPlayers;\n            }\n        }\n        if (sGame->playersReceived >= sGame->numPlayers)\n        {\n            DestroyTask(taskId);\n            SetGfxFuncById(GFXFUNC_ERASE_MSG);\n            sGame->state++;\n        }\n        break;\n    }",
       "callsTo": [
         "AllLinkBlocksReceived",
@@ -374,6 +437,7 @@
       "returnType": "void",
       "signature": "static void RecvLinkData_Gameplay(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n    u8 numPlayers = sGame->numPlayers;\n\n    sGame->players[0].receivedGameStatePacket = RecvPacket_GameState(0,\n                                                  &sGame->players[0],\n                                                  &sGame->players[0].comm,\n                                                  &sGame->players[1].comm,\n                                                  &sGame->players[2].comm,\n                                                  &sGame->players[3].comm,\n                                                  &sGame->players[4].comm,\n                                                  &sGame->numGraySquares,\n                                                  &sGame->berriesFalling,\n                                                  &sGame->allReadyToEnd);\n    sGame->clearRecvCmds = TRUE;\n\n    for (i = 1; i < numPlayers; i++)\n    {\n        if (sGame->inputState[i] == INPUTSTATE_NONE && !RecvPacket_PickState(i, &sGame->players[i].comm.pickState))\n        {\n            sGame->players[i].comm.pickState = PICK_NONE;\n            sGame->clearRecvCmds = FALSE;\n        }\n    }\n    if (++sGame->clearRecvCmdTimer >= 60)\n    {\n        if (sGame->clearRecvCmds)\n        {\n            ClearRecvCommands();\n            sGame->clearRecvCmdTimer = 0;\n        }\n        else if (sGame->clearRecvCmdTimer > 70)\n        {\n            ClearRecvCommands();\n            sGame->clearRecvCmdTimer = 0;\n        }\n    }\n\n    for (i = 0; i < numPlayers; i++)\n    {\n        if (sGame->players[i].comm.pickState != PICK_NONE && sGame->inputState[i] == INPUTSTATE_NONE)\n        {\n            sGame->inputState[i] = INPUTSTATE_TRY_PICK;\n        }\n        switch (sGame->inputState[i])\n        {\n        case INPUTSTATE_NONE:\n        default:\n            break;\n        case INPUTSTATE_TRY_PICK:\n        case INPUTSTATE_PICKED:\n        case INPUTSTATE_ATE_BERRY:\n            if (++sGame->inputDelay[i] >= 6)\n            {\n                sGame->inputDelay[i] = 0;\n                sGame->inputState[i] = INPUTSTATE_NONE;\n                sGame->players[i].comm.pickState = PICK_NONE;\n                sGame->players[i].comm.ateBerry = FALSE;\n                sGame->players[i].comm.missedBerry = FALSE;\n            }\n            break;\n        case INPUTSTATE_BAD_MISS:\n             \n            if (++sGame->inputDelay[i] >= 40)\n            {\n                sGame->inputDelay[i] = 0;\n                sGame->inputState[i] = INPUTSTATE_NONE;\n                sGame->players[i].comm.pickState = PICK_NONE;\n                sGame->players[i].comm.ateBerry = FALSE;\n                sGame->players[i].comm.missedBerry = FALSE;\n            }\n            break;\n        }\n    }",
       "callsTo": [
         "ClearRecvCommands",
@@ -386,6 +450,7 @@
       "returnType": "void",
       "signature": "static void RecvLinkData_ReadyToEnd(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n    u8 numPlayers = sGame->numPlayers;\n\n    sGame->players[0].receivedGameStatePacket = RecvPacket_GameState(0,\n                                                  &sGame->players[0],\n                                                  &sGame->players[0].comm,\n                                                  &sGame->players[1].comm,\n                                                  &sGame->players[2].comm,\n                                                  &sGame->players[3].comm,\n                                                  &sGame->players[4].comm,\n                                                  &sGame->numGraySquares,\n                                                  &sGame->berriesFalling,\n                                                  &sGame->allReadyToEnd);\n    sGame->clearRecvCmds = TRUE;\n\n    for (i = 1; i < numPlayers; i++)\n    {\n        if (RecvPacket_ReadyToEnd(i))\n        {\n            sGame->readyToEnd[i] = TRUE;\n            sGame->clearRecvCmds = FALSE;\n        }\n    }\n    if (++sGame->clearRecvCmdTimer >= 60)\n    {\n        if (sGame->clearRecvCmds)\n        {\n            ClearRecvCommands();\n            sGame->clearRecvCmdTimer = 0;\n        }\n        else if (sGame->clearRecvCmdTimer > 70)\n        {\n            ClearRecvCommands();\n            sGame->clearRecvCmdTimer = 0;\n        }\n    }",
       "callsTo": [
         "ClearRecvCommands",
@@ -398,6 +463,7 @@
       "returnType": "void",
       "signature": "static void RecvLinkData_Leader(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sGame->funcId)\n    {\n    case FUNC_WAIT_START:\n        if (AllPlayersReadyToStart() == TRUE)\n        {\n            ResetReadyToStart();\n            sGame->startGame = TRUE;\n        }\n        break;\n    case FUNC_PLAY_GAME:\n        RecvLinkData_Gameplay();\n        break;\n    case FUNC_WAIT_END_GAME:\n        RecvLinkData_ReadyToEnd();\n        break;\n    }",
       "callsTo": [
         "AllPlayersReadyToStart",
@@ -411,6 +477,7 @@
       "returnType": "void",
       "signature": "static void SendLinkData_Leader(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sGame->funcId)\n    {\n    case FUNC_PLAY_GAME:\n        SendPacket_GameState(&sGame->player,\n                             &sGame->players[0].comm,\n                             &sGame->players[1].comm,\n                             &sGame->players[2].comm,\n                             &sGame->players[3].comm,\n                             &sGame->players[4].comm,\n                             sGame->numGraySquares,\n                             sGame->berriesFalling,\n                             sGame->allReadyToEnd);\n        break;\n    case FUNC_WAIT_END_GAME:\n        SendPacket_GameState(&sGame->player,\n                             &sGame->players[0].comm,\n                             &sGame->players[1].comm,\n                             &sGame->players[2].comm,\n                             &sGame->players[3].comm,\n                             &sGame->players[4].comm,\n                             sGame->numGraySquares,\n                             sGame->berriesFalling,\n                             sGame->allReadyToEnd);\n        break;\n    }",
       "callsTo": [
         "SendPacket_GameState"
@@ -421,6 +488,7 @@
       "returnType": "void",
       "signature": "static void RecvLinkData_Member(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sGame->funcId)\n    {\n    case FUNC_PLAY_GAME:\n        RecvPacket_GameState(sGame->multiplayerId,\n                            &sGame->players[sGame->multiplayerId],\n                            &sGame->players[0].comm,\n                            &sGame->players[1].comm,\n                            &sGame->players[2].comm,\n                            &sGame->players[3].comm,\n                            &sGame->players[4].comm,\n                            &sGame->numGraySquares,\n                            &sGame->berriesFalling,\n                            &sGame->allReadyToEnd);\n        break;\n    case FUNC_WAIT_END_GAME:\n        RecvPacket_GameState(sGame->multiplayerId,\n                            &sGame->players[sGame->multiplayerId],\n                            &sGame->players[0].comm,\n                            &sGame->players[1].comm,\n                            &sGame->players[2].comm,\n                            &sGame->players[3].comm,\n                            &sGame->players[4].comm,\n                            &sGame->numGraySquares,\n                            &sGame->berriesFalling,\n                            &sGame->allReadyToEnd);\n        break;\n    }",
       "callsTo": [
         "RecvPacket_GameState"
@@ -431,6 +499,7 @@
       "returnType": "void",
       "signature": "static void SendLinkData_Member(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sGame->funcId)\n    {\n    case FUNC_WAIT_START:\n        SendPacket_ReadyToStart(TRUE);\n        sGame->startGame = TRUE;\n        break;\n    case FUNC_PLAY_GAME:\n        if (sGame->player.comm.pickState != PICK_NONE)\n        {\n            SendPacket_PickState(sGame->player.comm.pickState);\n        }\n        break;\n    case FUNC_WAIT_END_GAME:\n        if (!sGame->berriesFalling && !sGame->allReadyToEnd)\n            SendPacket_ReadyToEnd(TRUE);\n        break;\n    }",
       "callsTo": [
         "SendPacket_PickState",
@@ -443,6 +512,7 @@
       "returnType": "void",
       "signature": "static void HandleSound_Leader(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (sGame->players[sGame->multiplayerId].comm.pickState == PICK_NONE)\n    {\n        if (!IsSEPlaying())\n            sGame->playingPickSound = FALSE;\n    }\n    else if (sGame->players[sGame->multiplayerId].comm.ateBerry == TRUE)\n    {\n        if (!sGame->playingPickSound)\n        {\n            m4aSongNumStop(SE_SUCCESS);\n            PlaySE(SE_SUCCESS);\n            sGame->playingPickSound = TRUE;\n        }\n    }\n    else if (sGame->players[sGame->multiplayerId].comm.missedBerry == TRUE)\n    {\n        if (!sGame->playingPickSound && !IsSEPlaying())\n        {\n            PlaySE(SE_BOO);\n            StartDodrioMissedAnim(1);\n            sGame->playingPickSound = TRUE;\n        }\n    }\n\n    if (sGame->endSoundState == 0 && sGame->numGraySquares >= NUM_STATUS_SQUARES)\n    {\n         \n        StopMapMusic();\n        sGame->endSoundState = 1;\n    }\n    else if (sGame->endSoundState == 1)\n    {\n         \n        PlayFanfareByFanfareNum(FANFARE_TOO_BAD);\n        sGame->endSoundState = 2;\n    }",
       "callsTo": [
         "IsSEPlaying",
@@ -457,6 +527,7 @@
       "returnType": "void",
       "signature": "static void HandleSound_Member(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 berryStart = sGame->berryColStart;\n    u8 berryEnd = sGame->berryColEnd;\n    u8 i;\n    if (sGame->players[sGame->multiplayerId].comm.pickState == PICK_NONE)\n    {\n        if (sGame->players[sGame->multiplayerId].comm.ateBerry != TRUE\n         && sGame->players[sGame->multiplayerId].comm.missedBerry != TRUE)\n            sGame->playingPickSound = 0;\n    }\n    else if (sGame->players[sGame->multiplayerId].comm.ateBerry == TRUE)\n    {\n        if (!sGame->playingPickSound)\n        {\n            m4aSongNumStop(SE_SUCCESS);\n            PlaySE(SE_SUCCESS);\n            sGame->playingPickSound = TRUE;\n        }\n    }\n    else if (sGame->players[sGame->multiplayerId].comm.missedBerry == TRUE)\n    {\n        if (!sGame->playingPickSound && !IsSEPlaying())\n        {\n            PlaySE(SE_BOO);\n            StartDodrioMissedAnim(1);\n            sGame->playingPickSound = TRUE;\n        }\n    }\n    for (i = berryStart; i < berryEnd; i++)\n    {\n        struct DodrioGame_Berries *berries = &sGame->players[sGame->multiplayerId].berries;\n        if (berries->fallDist[i] >= MAX_FALL_DIST)\n        {\n            if (!sGame->playingSquishSound[i])\n            {\n                PlaySE(SE_BALLOON_RED + berries->ids[i]);\n                sGame->playingSquishSound[i] = TRUE;\n            }\n        }\n        else\n        {\n            sGame->playingSquishSound[i] = FALSE;\n        }\n    }\n    if (sGame->endSoundState == 0 && sGame->numGraySquares >= NUM_STATUS_SQUARES)\n    {\n         \n        StopMapMusic();\n        sGame->endSoundState = 1;\n    }\n    else if (sGame->endSoundState == 1)\n    {\n         \n        PlayFanfareByFanfareNum(FANFARE_TOO_BAD);\n        sGame->endSoundState = 2;\n    }",
       "callsTo": [
         "IsSEPlaying",
@@ -471,6 +542,7 @@
       "returnType": "void",
       "signature": "static void CB2_DodrioGame(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "RunTasks();\n    AnimateSprites();\n    BuildOamBuffer();\n    UpdatePaletteFade();",
       "callsTo": [
         "AnimateSprites",
@@ -484,6 +556,7 @@
       "returnType": "void",
       "signature": "static void VBlankCB_DodrioGame(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "TransferPlttBuffer();\n    LoadOam();\n    ProcessSpriteCopyRequests();",
       "callsTo": [
         "LoadOam",
@@ -496,6 +569,16 @@
       "returnType": "void",
       "signature": "static void InitMonInfo(struct DodrioGame_MonInfo *monInfo, struct Pokemon *mon)",
       "paramsRaw": "struct DodrioGame_MonInfo *monInfo, struct Pokemon *mon",
+      "paramsList": [
+        {
+          "name": "monInfo",
+          "typeRaw": "struct DodrioGame_MonInfo *"
+        },
+        {
+          "name": "mon",
+          "typeRaw": "struct Pokemon *"
+        }
+      ],
       "body": "monInfo->isShiny = IsMonShiny(mon);",
       "callsTo": [
         "IsMonShiny"
@@ -506,6 +589,16 @@
       "returnType": "void",
       "signature": "static void CreateTask_(TaskFunc func, u8 priority)",
       "paramsRaw": "TaskFunc func, u8 priority",
+      "paramsList": [
+        {
+          "name": "func",
+          "typeRaw": "TaskFunc"
+        },
+        {
+          "name": "priority",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "CreateTask(func, priority);",
       "callsTo": [
         "CreateTask"
@@ -516,6 +609,12 @@
       "returnType": "void",
       "signature": "static void CreateDodrioGameTask(TaskFunc func)",
       "paramsRaw": "TaskFunc func",
+      "paramsList": [
+        {
+          "name": "func",
+          "typeRaw": "TaskFunc"
+        }
+      ],
       "body": "sGame->taskId = CreateTask(func, 1);\n    sGame->state = 0;\n    sGame->startState = 0;\n    sGame->timer = 0;",
       "callsTo": [
         "CreateTask"
@@ -526,6 +625,12 @@
       "returnType": "void",
       "signature": "static void SetGameFunc(u8 funcId)",
       "paramsRaw": "u8 funcId",
+      "paramsList": [
+        {
+          "name": "funcId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "sGame->prevFuncId = sGame->funcId;\n    sGame->funcId = funcId;\n    sGame->state = 0;\n    sGame->timer = 0;",
       "callsTo": [],
       "lineCount": 4
@@ -534,6 +639,7 @@
       "returnType": "bool32",
       "signature": "static bool32 SlideTreeBordersOut(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 x = sGame->timer / 4;\n    sGame->timer++;\n    if (x != 0 && sGame->timer % 4 == 0)\n    {\n        if (x < sTreeBorderXPos[sGame->numPlayers - 1])\n        {\n             \n            SetGpuReg(REG_OFFSET_BG1HOFS,  (x * 8));  \n            SetGpuReg(REG_OFFSET_BG2HOFS, -(x * 8));  \n            return FALSE;\n        }\n        else\n        {\n             \n            return TRUE;\n        }\n    }\n    else\n    {\n        return FALSE;\n    }",
       "callsTo": [
         "SetGpuReg"
@@ -544,6 +650,7 @@
       "returnType": "void",
       "signature": "static void InitFirstWaveOfBerries(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n    u8 berryStart = sGame->berryColStart;\n    u8 berryEnd = sGame->berryColEnd;\n\n    for (i = berryStart; i < berryEnd; i++)\n    {\n        struct DodrioGame_Berries *berries = &sGame->player.berries;\n        berries->fallDist[i] = (i % 2 == 0) ? 1 : 0;\n        berries->ids[i] = BERRY_BLUE;\n    }",
       "callsTo": [],
       "lineCount": 10
@@ -552,6 +659,7 @@
       "returnType": "void",
       "signature": "static void HandlePickBerries(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 berryStart = sGame->berryColStart;\n    u8 berryEnd = sGame->berryColEnd;\n    u8 numPlayers = sGame->numPlayers;\n    u8 i, j, k, column;\n\n     \n    if (sGame->numGraySquares >= NUM_STATUS_SQUARES)\n        return;\n\n    for (i = 0; i < numPlayers; i++)\n    {\n        u8 *pickState = &sGame->players[i].comm.pickState;\n        if (*pickState != PICK_NONE && sGame->inputState[i] == INPUTSTATE_TRY_PICK)\n        {\n             \n            for (j = berryStart; j < berryEnd; j++)\n            {\n                column = sActiveColumnMap[0][0][j];\n\n                 \n                if (sGame->playersAttemptingPick[column][0] == i\n                 || sGame->playersAttemptingPick[column][1] == i)\n                    break;\n\n                 \n                if (TryPickBerry(i, *pickState, column) == TRUE)\n                {\n                     \n                    for (k = 0; k < ARRAY_COUNT(sGame->playersAttemptingPick[0]); k++)\n                    {\n                        if (sGame->playersAttemptingPick[column][k] == PLAYER_NONE)\n                        {\n                            sGame->playersAttemptingPick[column][k] = i;\n                            sGame->inputState[i] = INPUTSTATE_PICKED;\n                            sGame->berryState[column] = BERRYSTATE_PICKED;\n                            break;\n                        }\n                    }\n                    break;\n                }\n                if (sGame->players[i].comm.missedBerry == TRUE)\n                    break;\n            }\n        }\n    }\n\n    for (j = berryStart; j < berryEnd; j++)\n    {\n        u8 playerIdMissed = PLAYER_NONE;\n        column = sActiveColumnMap[0][0][j];\n        if (sGame->berryState[column] == BERRYSTATE_PICKED)\n        {\n            s32 delayRemaining;\n            u8 playerIdPicked, delayStage = sGame->difficulty[GetPlayerIdAtColumn(column)] / NUM_DIFFICULTIES;\n            if (delayStage >= ARRAY_COUNT(sBerryFallDelays) - 1)\n                delayStage = ARRAY_COUNT(sBerryFallDelays) - 1;\n\n            delayRemaining = sBerryFallDelays[delayStage][sGame->players[0].berries.ids[column]] - sGame->fallTimer[column];\n            if (delayRemaining < 6)\n                sGame->eatTimer[column] += delayRemaining;\n\n            if (++sGame->eatTimer[column] >= 6)\n            {\n                sGame->eatTimer[column] = 0;\n\n                if (sGame->playersAttemptingPick[column][0] == PLAYER_NONE\n                 && sGame->playersAttemptingPick[column][1] == PLAYER_NONE)\n                {\n                     \n                    continue;\n                }\n                else if (sGame->playersAttemptingPick[column][0] != PLAYER_NONE\n                      && sGame->playersAttemptingPick[column][1] == PLAYER_NONE)\n                {\n                     \n                    playerIdPicked = sGame->playersAttemptingPick[column][0];\n                }\n                else\n                {\n                     \n                     \n                    u8 playerId1 = sGame->playersAttemptingPick[column][0];\n                    i = sGame->playersAttemptingPick[column][1];  \n                    if (!(Random() & 1))\n                    {\n                        playerIdPicked = playerId1;\n                        playerIdMissed = i;\n                    }\n                    else\n                    {\n                        playerIdPicked = i;\n                        playerIdMissed = playerId1;\n                    }\n                }\n\n                 \n                sGame->player.berries.fallDist[column] = EAT_FALL_DIST;\n                sGame->berryState[column] = BERRYSTATE_EATEN;\n                sGame->inputState[playerIdPicked] = INPUTSTATE_ATE_BERRY;\n                sGame->berryEatenBy[column] = playerIdPicked;\n                sGame->players[playerIdPicked].comm.ateBerry = TRUE;\n#ifdef UBFIX\n                if (playerIdMissed != PLAYER_NONE)\n#endif\n                    sGame->players[playerIdMissed].comm.missedBerry = TRUE;  \n\n                sGame->berriesEaten[playerIdPicked]++;\n                IncrementBerryResult(0, column, playerIdPicked);\n                UpdateBerriesPickedInRow(TRUE);\n                TryIncrementDifficulty(playerIdPicked);\n                sGame->prevBerryIds[column] = sGame->player.berries.ids[column];\n                sGame->player.berries.ids[column] = BERRY_MISSED;  \n                sGame->playersAttemptingPick[column][0] = PLAYER_NONE;\n                sGame->playersAttemptingPick[column][1] = PLAYER_NONE;\n            }\n        }\n    }",
       "callsTo": [
         "ARRAY_COUNT",
@@ -568,6 +676,20 @@
       "returnType": "bool32",
       "signature": "static bool32 TryPickBerry(u8 playerId, u8 pickState, u8 column)",
       "paramsRaw": "u8 playerId, u8 pickState, u8 column",
+      "paramsList": [
+        {
+          "name": "playerId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "pickState",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "column",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s32 pick = 0;\n    u8 numPlayersIdx = sGame->numPlayers - 1;\n    struct DodrioGame_Berries *berries = &sGame->player.berries;\n\n    switch (pickState)\n    {\n    case PICK_LEFT:\n    default:\n        pick = 0;\n        break;\n    case PICK_MIDDLE:\n        pick = 1;\n        break;\n    case PICK_RIGHT:\n        pick = 2;\n        break;\n    }\n\n     \n    if (berries->fallDist[column] == EAT_FALL_DIST - 1 || berries->fallDist[column] == EAT_FALL_DIST)\n    {\n         \n        if (column == sDodrioHeadToColumnMap[numPlayersIdx][playerId][pick])\n        {\n             \n            if (sGame->berryState[column] == BERRYSTATE_PICKED || sGame->berryState[column] == BERRYSTATE_EATEN)\n            {\n                 \n                sGame->players[playerId].comm.missedBerry = TRUE;\n                return FALSE;\n            }\n            else\n            {\n                 \n                return TRUE;\n            }\n        }\n    }\n    else\n    {\n         \n        if (column == sDodrioHeadToColumnMap[numPlayersIdx][playerId][pick])\n        {\n             \n            sGame->inputState[playerId] = INPUTSTATE_BAD_MISS;\n            sGame->players[playerId].comm.missedBerry = TRUE;\n        }\n    }\n    return FALSE;",
       "callsTo": [],
       "lineCount": 49
@@ -576,6 +698,7 @@
       "returnType": "void",
       "signature": "static void UpdateFallingBerries(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 berryStart = sGame->berryColStart;\n    u8 berryEnd = sGame->berryColEnd;\n    u8 delayStage = 0;\n    u8 otherBerryMissed = 0;\n    u8 i;\n\n    sGame->berriesFalling = FALSE;\n\n    for (i = berryStart; i < berryEnd - 1; i++)\n    {\n        struct DodrioGame *game = sGame;\n\n        if (sGame->berryState[i] == BERRYSTATE_NONE || sGame->berryState[i] == BERRYSTATE_PICKED)\n        {\n            sGame->berriesFalling = TRUE;\n\n            if (game->player.berries.fallDist[i] >= MAX_FALL_DIST)\n            {\n                 \n                game->player.berries.fallDist[i] = MAX_FALL_DIST;\n                sGame->berryState[i] = BERRYSTATE_SQUISHED;\n                if (!sGame->playingSquishSound[i])\n                {\n                    sGame->playingSquishSound[i] = TRUE;\n                    PlaySE(SE_BALLOON_RED + game->player.berries.ids[i]);\n                }\n                if (sGame->numGraySquares < NUM_STATUS_SQUARES || otherBerryMissed == TRUE)\n                {\n                    otherBerryMissed = TRUE;\n                    sGame->playingSquishSound[i] = FALSE;\n                    if (sGame->numGraySquares < NUM_STATUS_SQUARES)\n                        sGame->numGraySquares++;\n\n                    IncrementBerryResult(BERRY_MISSED, i, 0);\n                    UpdateBerriesPickedInRow(FALSE);\n                }\n            }\n            else\n            {\n                 \n                u8 delay;\n                delayStage = sGame->difficulty[GetPlayerIdAtColumn(i)] / NUM_DIFFICULTIES;\n                if (delayStage >= ARRAY_COUNT(sBerryFallDelays) - 1)\n                    delayStage = ARRAY_COUNT(sBerryFallDelays) - 1;\n\n                delay = sBerryFallDelays[delayStage][game->player.berries.ids[i]];\n                if (++sGame->fallTimer[i] >= delay)\n                {\n                    game->player.berries.fallDist[i]++;\n                    sGame->fallTimer[i] = 0;\n                }\n                HandlePickBerries();\n            }\n        }\n        else if (sGame->berryState[i] == BERRYSTATE_EATEN)\n        {\n             \n            sGame->berriesFalling = TRUE;\n            if (++sGame->newBerryTimer[i] >= 20)\n            {\n                sGame->players[sGame->berryEatenBy[i]].comm.ateBerry = FALSE;\n                sGame->newBerryTimer[i] = 0;\n                sGame->fallTimer[i] = 0;\n                sGame->berryState[i] = BERRYSTATE_NONE;\n                game->player.berries.fallDist[i] = 1;\n                game->player.berries.ids[i] = GetNewBerryId(GetPlayerIdAtColumn(i), i);\n            }\n        }\n        else if (sGame->berryState[i] == BERRYSTATE_SQUISHED)\n        {\n             \n            if (++sGame->newBerryTimer[i] >= 20)\n            {\n                if (sGame->numGraySquares < NUM_STATUS_SQUARES)\n                {\n                    sGame->newBerryTimer[i] = 0;\n                    sGame->fallTimer[i] = 0;\n                    sGame->berryState[i] = BERRYSTATE_NONE;\n                    game->player.berries.fallDist[i] = 1;\n                    sGame->prevBerryIds[i] = game->player.berries.ids[i];\n                    game->player.berries.ids[i] = GetNewBerryId(GetPlayerIdAtColumn(i), i);\n                }\n            }\n        }\n    }",
       "callsTo": [
         "ARRAY_COUNT",
@@ -592,6 +715,7 @@
       "returnType": "void",
       "signature": "static void UpdateBerrySprites(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n    u8 berryStart = sGame->berryColStart;\n    u8 berryEnd = sGame->berryColEnd;\n\n    for (i = berryStart; i < berryEnd; i++)\n    {\n        struct DodrioGame_Player *player = &sGame->players[sGame->multiplayerId];\n        u8 column = sActiveColumnMap[sGame->numPlayers - 1][sGame->multiplayerId][i];\n\n        if (player->berries.fallDist[column] != 0)\n            SetBerryInvisibility(i, FALSE);\n        else\n            SetBerryInvisibility(i, TRUE);\n\n        if (player->berries.fallDist[column] >= MAX_FALL_DIST)\n        {\n             \n            SetBerryAnim(i, player->berries.ids[column] + BERRY_MISSED);\n            SetBerryYPos(i, player->berries.fallDist[column] * 2 - 1);\n        }\n        else if (player->berries.ids[column] == 3)\n        {\n             \n            player->berries.fallDist[column] = EAT_FALL_DIST;\n            SetBerryAnim(i, ANIM_EATEN);\n            SetBerryYPos(i, player->berries.fallDist[column] * 2 - 1);\n        }\n        else\n        {\n             \n            SetBerryAnim(i, player->berries.ids[column]);\n            SetBerryYPos(i, player->berries.fallDist[column] * 2);\n        }\n    }",
       "callsTo": [
         "SetBerryAnim",
@@ -604,6 +728,7 @@
       "returnType": "void",
       "signature": "static void UpdateAllDodrioAnims(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i, numPlayers;\n\n    numPlayers = sGame->numPlayers;\n    for (i = 0; i < numPlayers; i++)\n    {\n        struct DodrioGame_Player *player = &sGame->players[i];\n        SetDodrioAnim(i, player->comm.pickState);\n    }",
       "callsTo": [
         "SetDodrioAnim"
@@ -614,6 +739,7 @@
       "returnType": "void",
       "signature": "static void SetAllDodrioDisabled(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i, numPlayers;\n\n    numPlayers = sGame->numPlayers;\n    for (i = 0; i < numPlayers; i++)\n        SetDodrioAnim(i, PICK_DISABLED);",
       "callsTo": [
         "SetDodrioAnim"
@@ -624,6 +750,7 @@
       "returnType": "void",
       "signature": "static void UpdateGame_Leader(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "UpdateBerrySprites();\n    if (sGame->numGraySquares >= NUM_STATUS_SQUARES)\n        SetAllDodrioDisabled();\n    else\n        UpdateAllDodrioAnims();\n\n    UpdateStatusBarAnim(sGame->numGraySquares);",
       "callsTo": [
         "SetAllDodrioDisabled",
@@ -637,6 +764,7 @@
       "returnType": "void",
       "signature": "static void UpdateGame_Member(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "UpdateBerrySprites();\n    if (sGame->numGraySquares >= NUM_STATUS_SQUARES)\n        SetAllDodrioDisabled();\n    else\n        UpdateAllDodrioAnims();\n\n    UpdateStatusBarAnim(sGame->numGraySquares);",
       "callsTo": [
         "SetAllDodrioDisabled",
@@ -650,6 +778,20 @@
       "returnType": "void",
       "signature": "static void GetActiveBerryColumns(u8 numPlayers, u8 *start, u8 *end)",
       "paramsRaw": "u8 numPlayers, u8 *start, u8 *end",
+      "paramsList": [
+        {
+          "name": "numPlayers",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "start",
+          "typeRaw": "u8 *"
+        },
+        {
+          "name": "end",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "switch (numPlayers)\n    {\n    case 1:\n        *start = 4, *end = 7;\n        break;\n    case 2:\n        *start = 3, *end = 8;\n        break;\n    case 3:\n        *start = 2, *end = 9;\n        break;\n    case 4:\n        *start = 1, *end = 10;\n        break;\n    case 5:\n        *start = 0, *end = 11;\n        break;\n    }",
       "callsTo": [],
       "lineCount": 18
@@ -658,6 +800,7 @@
       "returnType": "bool32",
       "signature": "static bool32 AllPlayersReadyToStart(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i, numPlayers;\n\n    numPlayers = sGame->numPlayers;\n    for (i = 1; i < numPlayers; i++)\n    {\n        if (sGame->readyToStart[i] == FALSE)\n            sGame->readyToStart[i] = RecvPacket_ReadyToStart(i);\n    }\n\n    numPlayers = numPlayers;  \n\n#ifdef BUGFIX\n    i = 1;  \n#endif\n    for (; i < numPlayers; i++)\n    {\n        if (sGame->readyToStart[i] == FALSE)\n            return FALSE;\n    }\n\n    return TRUE;",
       "callsTo": [
         "RecvPacket_ReadyToStart"
@@ -668,6 +811,7 @@
       "returnType": "void",
       "signature": "static void ResetReadyToStart(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n\n    for (i = 0; i < MAX_RFU_PLAYERS; i++)\n        sGame->readyToStart[i] = FALSE;",
       "callsTo": [],
       "lineCount": 4
@@ -676,6 +820,7 @@
       "returnType": "bool32",
       "signature": "static bool32 ReadyToEndGame_Leader(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (sGame->numGraySquares >= NUM_STATUS_SQUARES && !sGame->berriesFalling)\n    {\n        sGame->numGraySquares = NUM_STATUS_SQUARES;\n        if (sGame->allReadyToEnd)\n            return TRUE;\n    }\n\n    return FALSE;",
       "callsTo": [],
       "lineCount": 8
@@ -684,6 +829,7 @@
       "returnType": "bool32",
       "signature": "static bool32 ReadyToEndGame_Member(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i, berryStart, berryEnd;\n\n    if (sGame->numGraySquares >= NUM_STATUS_SQUARES)\n    {\n        berryStart = sGame->berryColStart;\n        berryEnd = sGame->berryColEnd;\n        sGame->numGraySquares = NUM_STATUS_SQUARES;\n        if (sGame->allReadyToEnd)\n        {\n            for (i = berryStart; i < berryEnd; i++)\n            {\n                struct DodrioGame_Player *player = &sGame->players[sGame->multiplayerId];\n                u8 column = sActiveColumnMap[sGame->numPlayers - 1][sGame->multiplayerId][i];\n\n                if (player->berries.fallDist[column] != MAX_FALL_DIST)\n                    return FALSE;\n            }\n            return TRUE;\n        }\n    }\n\n    return FALSE;",
       "callsTo": [],
       "lineCount": 22
@@ -692,6 +838,12 @@
       "returnType": "void",
       "signature": "static void TryIncrementDifficulty(u8 playerId)",
       "paramsRaw": "u8 playerId",
+      "paramsList": [
+        {
+          "name": "playerId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 threshold = sDifficultyThresholds[sGame->difficulty[playerId] % NUM_DIFFICULTIES] + (sGame->difficulty[playerId] / NUM_DIFFICULTIES) * 100;\n    if (sGame->berriesEaten[playerId] >= threshold)\n        sGame->difficulty[playerId]++;",
       "callsTo": [],
       "lineCount": 3
@@ -700,6 +852,12 @@
       "returnType": "u8",
       "signature": "static u8 GetPlayerIdAtColumn(u8 column)",
       "paramsRaw": "u8 column",
+      "paramsList": [
+        {
+          "name": "column",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "return sPlayerIdAtColumn[sGame->numPlayers - 1][column];",
       "callsTo": [],
       "lineCount": 1
@@ -708,6 +866,16 @@
       "returnType": "u8",
       "signature": "static u8 GetNewBerryId(u8 playerId, u8 column)",
       "paramsRaw": "u8 playerId, u8 column",
+      "paramsList": [
+        {
+          "name": "playerId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "column",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 i, highestDifficulty;\n    u8 numPlayersIdx = sGame->numPlayers - 1;\n    u8 leftPlayer = sDodrioNeighborMap[numPlayersIdx][playerId][0];\n    u8 middlePlayer = sDodrioNeighborMap[numPlayersIdx][playerId][1];\n    u8 rightPlayer = sDodrioNeighborMap[numPlayersIdx][playerId][2];\n\n    for (i = 0; sUnsharedColumns[numPlayersIdx][i] != 0; i++)\n    {\n         \n        if (column == sUnsharedColumns[numPlayersIdx][i])\n            return GetNewBerryIdByDifficulty(sGame->difficulty[middlePlayer], column);\n    }\n\n     \n    if (sGame->difficulty[leftPlayer] > sGame->difficulty[middlePlayer])\n        highestDifficulty = sGame->difficulty[leftPlayer];\n    else\n        highestDifficulty = sGame->difficulty[middlePlayer];\n\n    if (sGame->difficulty[rightPlayer] > highestDifficulty)\n        highestDifficulty = sGame->difficulty[rightPlayer];\n\n    return GetNewBerryIdByDifficulty(highestDifficulty, column);",
       "callsTo": [
         "GetNewBerryIdByDifficulty"
@@ -718,6 +886,16 @@
       "returnType": "u8",
       "signature": "static u8 GetNewBerryIdByDifficulty(u8 difficulty, u8 column)",
       "paramsRaw": "u8 difficulty, u8 column",
+      "paramsList": [
+        {
+          "name": "difficulty",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "column",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 prevBerryId = sGame->prevBerryIds[column];\n    switch (difficulty % NUM_DIFFICULTIES)\n    {\n    default: return BERRY_BLUE;\n    case 0:  return BERRY_BLUE;\n    case 1:  return BERRY_GREEN;\n    case 2:  return BERRY_GOLD;\n    case 3:\n        if (prevBerryId == BERRY_BLUE)\n            return BERRY_GREEN;\n        else\n            return BERRY_BLUE;\n    case 4:\n        if (prevBerryId == BERRY_BLUE)\n            return BERRY_GOLD;\n        else\n            return BERRY_BLUE;\n    case 5:\n        if (prevBerryId == BERRY_GOLD)\n            return BERRY_GREEN;\n        else\n            return BERRY_GOLD;\n    case 6:\n        if (prevBerryId == BERRY_BLUE)\n            return BERRY_GREEN;\n        else if (prevBerryId == BERRY_GREEN)\n            return BERRY_GOLD;\n        else\n            return BERRY_BLUE;\n    }",
       "callsTo": [],
       "lineCount": 30
@@ -726,6 +904,7 @@
       "returnType": "bool32",
       "signature": "static bool32 IsTotalBerriesMissedOver10(u16 berryResults[MAX_RFU_PLAYERS][NUM_BERRY_IDS])",
       "paramsRaw": "u16 berryResults[MAX_RFU_PLAYERS][NUM_BERRY_IDS]",
+      "paramsList": [],
       "body": "int missed = 0, i = 0;\n    for (; i < GetLinkPlayerCount(); missed += berryResults[i][BERRY_MISSED], i++)\n        ;\n\n    if (missed > 10)\n        return TRUE;\n    else\n        return FALSE;",
       "callsTo": [
         "GetLinkPlayerCount"
@@ -736,6 +915,20 @@
       "returnType": "void",
       "signature": "static void IncrementBerryResult(u8 berryIdArg, u8 column, u8 playerId)",
       "paramsRaw": "u8 berryIdArg, u8 column, u8 playerId",
+      "paramsList": [
+        {
+          "name": "berryIdArg",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "column",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "playerId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 berryId;\n    u8 numPlayers = sGame->numPlayers;\n    switch (berryIdArg)\n    {\n    case BERRY_BLUE:\n    case BERRY_GREEN:\n    case BERRY_GOLD:\n        berryId = sGame->players[0].berries.ids[column];\n        sGame->berryResults[playerId][berryId] = IncrementWithLimit(sGame->berryResults[playerId][berryId], 20000);\n        break;\n    case BERRY_MISSED:\n        if (IsTotalBerriesMissedOver10(sGame->berryResults))\n            break;\n        switch (numPlayers)\n        {\n        case 5:\n            switch (column)\n            {\n            case 0:\n                sGame->berryResults[2][BERRY_MISSED]++;\n                sGame->berryResults[3][BERRY_MISSED]++;\n                break;\n            case 1:\n                sGame->berryResults[3][BERRY_MISSED]++;\n                break;\n            case 2:\n                sGame->berryResults[3][BERRY_MISSED]++;\n                sGame->berryResults[4][BERRY_MISSED]++;\n                break;\n            case 3:\n                sGame->berryResults[4][BERRY_MISSED]++;\n                break;\n            case 4:\n                sGame->berryResults[4][BERRY_MISSED]++;\n                sGame->berryResults[0][BERRY_MISSED]++;\n                break;\n            case 5:\n                sGame->berryResults[0][BERRY_MISSED]++;\n                break;\n            case 6:\n                sGame->berryResults[0][BERRY_MISSED]++;\n                sGame->berryResults[1][BERRY_MISSED]++;\n                break;\n            case 7:\n                sGame->berryResults[1][BERRY_MISSED]++;\n                break;\n            case 8:\n                sGame->berryResults[1][BERRY_MISSED]++;\n                sGame->berryResults[2][BERRY_MISSED]++;\n                break;\n            case 9:\n                sGame->berryResults[2][BERRY_MISSED]++;\n                break;\n            }\n            break;\n        case 4:\n            switch (column)\n            {\n            case 1:\n                sGame->berryResults[2][BERRY_MISSED]++;\n                sGame->berryResults[3][BERRY_MISSED]++;\n                break;\n            case 2:\n                sGame->berryResults[3][BERRY_MISSED]++;\n                break;\n            case 3:\n                sGame->berryResults[3][BERRY_MISSED]++;\n                sGame->berryResults[0][BERRY_MISSED]++;\n                break;\n            case 4:\n                sGame->berryResults[0][BERRY_MISSED]++;\n                break;\n            case 5:\n                sGame->berryResults[0][BERRY_MISSED]++;\n                sGame->berryResults[1][BERRY_MISSED]++;\n                break;\n            case 6:\n                sGame->berryResults[1][BERRY_MISSED]++;\n                break;\n            case 7:\n                sGame->berryResults[1][BERRY_MISSED]++;\n                sGame->berryResults[2][BERRY_MISSED]++;\n                break;\n            case 8:\n                sGame->berryResults[2][BERRY_MISSED]++;\n                break;\n            }\n            break;\n        case 3:\n            switch (column)\n            {\n            case 2:\n                sGame->berryResults[1][BERRY_MISSED]++;\n                sGame->berryResults[2][BERRY_MISSED]++;\n                break;\n            case 3:\n                sGame->berryResults[2][BERRY_MISSED]++;\n                break;\n            case 4:\n                sGame->berryResults[2][BERRY_MISSED]++;\n                sGame->berryResults[0][BERRY_MISSED]++;\n                break;\n            case 5:\n                sGame->berryResults[0][BERRY_MISSED]++;\n                break;\n            case 6:\n                sGame->berryResults[0][BERRY_MISSED]++;\n                sGame->berryResults[1][BERRY_MISSED]++;\n                break;\n            case 7:\n                sGame->berryResults[1][BERRY_MISSED]++;\n                break;\n            }\n            break;\n        case 2:\n            switch (column)\n            {\n            case 3:\n                sGame->berryResults[0][BERRY_MISSED]++;\n                sGame->berryResults[1][BERRY_MISSED]++;\n                break;\n            case 4:\n                sGame->berryResults[0][BERRY_MISSED]++;\n                break;\n            case 5:\n                sGame->berryResults[0][BERRY_MISSED]++;\n                sGame->berryResults[1][BERRY_MISSED]++;\n                break;\n            case 6:\n                sGame->berryResults[1][BERRY_MISSED]++;\n                break;\n            }\n            break;\n        }\n        break;\n    }",
       "callsTo": [
         "IncrementWithLimit",
@@ -747,6 +940,12 @@
       "returnType": "void",
       "signature": "static void UpdateBerriesPickedInRow(bool32 picked)",
       "paramsRaw": "bool32 picked",
+      "paramsList": [
+        {
+          "name": "picked",
+          "typeRaw": "bool32"
+        }
+      ],
       "body": "if (sGame->numPlayers != MAX_RFU_PLAYERS)\n        return;\n\n    if (picked == TRUE)\n    {\n        if (++sGame->berriesPickedInRow > sGame->maxBerriesPickedInRow)\n            sGame->maxBerriesPickedInRow = sGame->berriesPickedInRow;\n        if (sGame->berriesPickedInRow > MAX_BERRIES)\n            sGame->berriesPickedInRow = MAX_BERRIES;\n    }\n    else  \n    {\n        if (sGame->berriesPickedInRow > sGame->maxBerriesPickedInRow)\n            sGame->maxBerriesPickedInRow = sGame->berriesPickedInRow;\n        sGame->berriesPickedInRow = 0;\n    }",
       "callsTo": [],
       "lineCount": 16
@@ -755,6 +954,7 @@
       "returnType": "void",
       "signature": "static void SetMaxBerriesPickedInRow(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n    for (i = 0; i < sGame->numPlayers; i++)\n        sGame->berryResults[i][BERRY_IN_ROW] = sGame->maxBerriesPickedInRow;",
       "callsTo": [],
       "lineCount": 3
@@ -763,6 +963,7 @@
       "returnType": "void",
       "signature": "static void ResetForPlayAgainPrompt(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i, j;\n\n    for (i = 0; i < MAX_RFU_PLAYERS; i++)\n    {\n        for (j = 0; j < NUM_BERRY_COLUMNS; j++)\n            sGame->players[i].berries.fallDist[j] = 0;\n        sGame->players[i].comm.pickState = PICK_NONE;\n        sGame->players[i].comm.ateBerry = FALSE;\n        sGame->difficulty[i] = 0;\n        sGame->berriesEaten[i] = 0;\n        sGame->scoreResults[i].ranking = 0;\n        sGame->scoreResults[i].score = 0;\n        sGame->berryResults[i][BERRY_BLUE] = 0;\n        sGame->berryResults[i][BERRY_GREEN] = 0;\n        sGame->berryResults[i][BERRY_GOLD] = 0;\n        sGame->berryResults[i][BERRY_MISSED] = 0;\n        sGame->berryResults[i][BERRY_PRIZE] = 0;\n        sGame->berryResults[i][BERRY_IN_ROW] = 0;\n    }\n    sGame->endSoundState = 0;\n    sGame->berriesPickedInRow = 0;\n    sGame->numGraySquares = 0;\n    UpdateAllDodrioAnims();\n    UpdateBerrySprites();",
       "callsTo": [
         "UpdateAllDodrioAnims",
@@ -774,6 +975,7 @@
       "returnType": "void",
       "signature": "static void SetRandomPrize(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i, prizeSet = 0, prizeIdx = 0;\n\n    switch (sGame->numPlayers)\n    {\n    case 4:  prizeSet = 1; break;\n    case 5:  prizeSet = 2; break;\n    }\n\n    prizeIdx = Random() % ARRAY_COUNT(sPrizeBerryIds[0]);\n    for (i = 0; i < MAX_RFU_PLAYERS; i++)\n        sGame->berryResults[i][BERRY_PRIZE] = sPrizeBerryIds[prizeSet][prizeIdx];",
       "callsTo": [
         "ARRAY_COUNT",
@@ -785,6 +987,12 @@
       "returnType": "u32",
       "signature": "static u32 GetBerriesPicked(u8 playerId)",
       "paramsRaw": "u8 playerId",
+      "paramsList": [
+        {
+          "name": "playerId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u32 sum = sGame->berryResults[playerId][BERRY_BLUE]\n            + sGame->berryResults[playerId][BERRY_GREEN]\n            + sGame->berryResults[playerId][BERRY_GOLD];\n    return min(sum, MAX_BERRIES);",
       "callsTo": [],
       "lineCount": 4
@@ -793,6 +1001,7 @@
       "returnType": "void",
       "signature": "static void TryUpdateRecords(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u32 berriesPicked = Min(GetBerriesPicked(sGame->multiplayerId), MAX_BERRIES);  \n    u32 score = Min(GetScore(sGame->multiplayerId), MAX_SCORE);\n\n    if (gSaveBlock2Ptr->berryPick.bestScore < score)\n        gSaveBlock2Ptr->berryPick.bestScore = score;\n    if (gSaveBlock2Ptr->berryPick.berriesPicked < berriesPicked)\n        gSaveBlock2Ptr->berryPick.berriesPicked = berriesPicked;\n    if (gSaveBlock2Ptr->berryPick.berriesPickedInRow < sGame->maxBerriesPickedInRow)\n        gSaveBlock2Ptr->berryPick.berriesPickedInRow = sGame->maxBerriesPickedInRow;",
       "callsTo": [
         "GetBerriesPicked",
@@ -805,6 +1014,12 @@
       "returnType": "u8",
       "signature": "static u8 UpdatePickStateQueue(u8 pickState)",
       "paramsRaw": "u8 pickState",
+      "paramsList": [
+        {
+          "name": "pickState",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 i, nextState;\n\n    nextState = sGame->pickStateQueue[ARRAY_COUNT(sGame->pickStateQueue) - 1];\n    for (i = ARRAY_COUNT(sGame->pickStateQueue) - 1; i != 0; i--)\n        sGame->pickStateQueue[i] = sGame->pickStateQueue[i - 1];\n    sGame->pickStateQueue[0] = pickState;\n    return nextState;",
       "callsTo": [
         "ARRAY_COUNT"
@@ -815,6 +1030,7 @@
       "returnType": "void",
       "signature": "static void HandleWaitPlayAgainInput(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (sGame->inputDelay[sGame->multiplayerId] == 0)\n    {\n        if (JOY_NEW(DPAD_UP))\n        {\n            sGame->players[sGame->multiplayerId].comm.pickState = PICK_MIDDLE;\n            sGame->inputDelay[sGame->multiplayerId] = 6;\n            PlaySE(SE_M_CHARM);\n        }\n        else if (JOY_NEW(DPAD_LEFT))\n        {\n            sGame->players[sGame->multiplayerId].comm.pickState = PICK_LEFT;\n            sGame->inputDelay[sGame->multiplayerId] = 6;\n            PlaySE(SE_M_CHARM);\n        }\n        else if (JOY_NEW(DPAD_RIGHT))\n        {\n            sGame->players[sGame->multiplayerId].comm.pickState = PICK_RIGHT;\n            sGame->inputDelay[sGame->multiplayerId] = 6;\n            PlaySE(SE_M_CHARM);\n        }\n        else\n        {\n            sGame->players[sGame->multiplayerId].comm.pickState = PICK_NONE;\n        }\n    }\n    else\n    {\n        sGame->inputDelay[sGame->multiplayerId]--;\n    }",
       "callsTo": [
         "JOY_NEW",
@@ -826,6 +1042,7 @@
       "returnType": "void",
       "signature": "static void ResetPickState(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sGame->players[sGame->multiplayerId].comm.pickState = PICK_NONE;",
       "callsTo": [],
       "lineCount": 1
@@ -834,6 +1051,7 @@
       "returnType": "u16",
       "signature": "static u16 GetPrizeItemId(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return sGame->berryResults[sGame->multiplayerId][BERRY_PRIZE] + FIRST_BERRY_INDEX;",
       "callsTo": [],
       "lineCount": 1
@@ -842,6 +1060,7 @@
       "returnType": "u8",
       "signature": "static u8 GetNumPlayers(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return sGame->numPlayers;",
       "callsTo": [],
       "lineCount": 1
@@ -850,6 +1069,16 @@
       "returnType": "u16",
       "signature": "static u16 GetBerryResult(u8 playerId, u8 berryId)",
       "paramsRaw": "u8 playerId, u8 berryId",
+      "paramsList": [
+        {
+          "name": "playerId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "berryId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "return sGame->berryResults[playerId][berryId];",
       "callsTo": [],
       "lineCount": 1
@@ -858,6 +1087,12 @@
       "returnType": "u32",
       "signature": "static u32 GetScore(u8 playerId)",
       "paramsRaw": "u8 playerId",
+      "paramsList": [
+        {
+          "name": "playerId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 i;\n    u32 scoreLost, score = 0;\n\n     \n    for (i = 0; i < BERRY_MISSED; i++)\n        score += sGame->berryResults[playerId][i] * sBerryScoreMultipliers[i];\n\n     \n    scoreLost = sGame->berryResults[playerId][BERRY_MISSED] * sBerryScoreMultipliers[BERRY_MISSED];\n\n    if (score <= scoreLost)\n        return 0;\n    else\n        return score - scoreLost;",
       "callsTo": [],
       "lineCount": 14
@@ -866,6 +1101,7 @@
       "returnType": "u32",
       "signature": "static u32 GetHighestScore(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i, numPlayers = sGame->numPlayers;\n    u32 maxScore = GetScore(0);\n\n    for (i = 1; i < numPlayers; i++)\n    {\n        u32 score = GetScore(i);\n        if (score > maxScore)\n            maxScore = score;\n    }\n    return Min(maxScore, MAX_SCORE);",
       "callsTo": [
         "GetScore",
@@ -877,6 +1113,12 @@
       "returnType": "u32",
       "signature": "static u32 GetHighestBerryResult(u8 berryId)",
       "paramsRaw": "u8 berryId",
+      "paramsList": [
+        {
+          "name": "berryId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 i, numPlayers = sGame->numPlayers;\n    u16 maxScore = sGame->berryResults[0][berryId];\n\n    for (i = 0; i < numPlayers; i++)\n    {\n        u16 score = sGame->berryResults[i][berryId];\n        if (score > maxScore)\n            maxScore = score;\n    }\n    return maxScore;",
       "callsTo": [],
       "lineCount": 10
@@ -885,6 +1127,12 @@
       "returnType": "u32",
       "signature": "static u32 GetScoreByRanking(u8 ranking)",
       "paramsRaw": "u8 ranking",
+      "paramsList": [
+        {
+          "name": "ranking",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u32 scores[MAX_RFU_PLAYERS], temp;\n    s16 unsorted = TRUE;\n    u8 i;\n    u8 numPlayers = sGame->numPlayers;\n\n    for (i = 0; i < numPlayers; i++)\n        scores[i] = temp = GetScore(i);\n\n     \n    while (unsorted)\n    {\n        unsorted = FALSE;\n        for (i = 0; i < numPlayers - 1; i++)\n        {\n            if (scores[i] < scores[i + 1])\n            {\n                SWAP(scores[i], scores[i + 1], temp);\n                unsorted = TRUE;\n            }\n        }\n    }\n\n    return scores[ranking];",
       "callsTo": [
         "GetScore",
@@ -896,6 +1144,7 @@
       "returnType": "u32",
       "signature": "static u32 SetScoreResults(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i, ranking = 0, nextRanking = 0, playersRanked = 0;\n    u8 numPlayers = sGame->numPlayers;\n\n    GetHighestScore();  \n\n    if (GetHighestScore() == 0)\n    {\n         \n         \n         \n        for (i = 0; i < numPlayers; i++)\n        {\n            sGame->scoreResults[i].ranking = MAX_RFU_PLAYERS - 1;\n            sGame->scoreResults[i].score = 0;\n        }\n    }\n\n     \n    for (i = 0; i < numPlayers; i++)\n        sGame->scoreResults[i].score = Min(GetScore(i), MAX_SCORE);\n\n     \n    do\n    {\n        u32 score = GetScoreByRanking(ranking);\n        u8 curRanking = nextRanking;\n\n         \n         \n         \n        for (i = 0; i < numPlayers; i++)\n        {\n            if (score == sGame->scoreResults[i].score)\n            {\n                sGame->scoreResults[i].ranking = curRanking;\n                nextRanking++;\n                playersRanked++;\n            }\n        }\n        ranking = nextRanking;\n    } while (playersRanked < numPlayers);\n\n    return 0;",
       "callsTo": [
         "GetHighestScore",
@@ -909,6 +1158,16 @@
       "returnType": "void",
       "signature": "static void GetScoreResults(struct DodrioGame_ScoreResults *dst, u8 playerId)",
       "paramsRaw": "struct DodrioGame_ScoreResults *dst, u8 playerId",
+      "paramsList": [
+        {
+          "name": "dst",
+          "typeRaw": "struct DodrioGame_ScoreResults *"
+        },
+        {
+          "name": "playerId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "*dst = sGame->scoreResults[playerId];",
       "callsTo": [],
       "lineCount": 1
@@ -917,6 +1176,7 @@
       "returnType": "u8",
       "signature": "static u8 TryGivePrize(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 multiplayerId = sGame->multiplayerId;\n    u16 itemId = GetPrizeItemId();\n\n    if (GetScore(multiplayerId) != GetHighestScore())\n        return NO_PRIZE;\n    if (!CheckBagHasSpace(itemId, 1))\n        return PRIZE_NO_ROOM;\n\n    AddBagItem(itemId, 1);\n    if (!CheckBagHasSpace(itemId, 1))\n        return PRIZE_FILLED_BAG;\n    return PRIZE_RECEIVED;",
       "callsTo": [
         "AddBagItem",
@@ -931,6 +1191,16 @@
       "returnType": "u32",
       "signature": "static u32 IncrementWithLimit(u32 num, u32 max)",
       "paramsRaw": "u32 num, u32 max",
+      "paramsList": [
+        {
+          "name": "num",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "max",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "if (num < max)\n        return num + 1;\n    else\n        return max;",
       "callsTo": [],
       "lineCount": 4
@@ -939,6 +1209,16 @@
       "returnType": "u32",
       "signature": "static u32 Min(u32 a, u32 b)",
       "paramsRaw": "u32 a, u32 b",
+      "paramsList": [
+        {
+          "name": "a",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "b",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "if (a < b)\n        return a;\n    else\n        return b;",
       "callsTo": [],
       "lineCount": 4
@@ -947,6 +1227,12 @@
       "returnType": "u8",
       "signature": "static u8 GetPlayerIdByPos(u8 id)",
       "paramsRaw": "u8 id",
+      "paramsList": [
+        {
+          "name": "id",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "return sGame->posToPlayerId[id];",
       "callsTo": [],
       "lineCount": 1
@@ -955,6 +1241,7 @@
       "returnType": "void",
       "signature": "void IsDodrioInParty(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int i;\n    for (i = 0; i < PARTY_SIZE; i++)\n    {\n        if (GetMonData(&gPlayerParty[i], MON_DATA_SANITY_HAS_SPECIES)\n            && GetMonData(&gPlayerParty[i], MON_DATA_SPECIES_OR_EGG) == SPECIES_DODRIO)\n        {\n            gSpecialVar_Result = TRUE;\n            return;\n        }\n    }\n\n    gSpecialVar_Result = FALSE;",
       "callsTo": [
         "GetMonData"
@@ -965,6 +1252,7 @@
       "returnType": "void",
       "signature": "void ShowDodrioBerryPickingRecords(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 taskId = CreateTask(Task_ShowDodrioBerryPickingRecords, 0);\n    Task_ShowDodrioBerryPickingRecords(taskId);",
       "callsTo": [
         "CreateTask",
@@ -976,6 +1264,12 @@
       "returnType": "void",
       "signature": "static void Task_ShowDodrioBerryPickingRecords(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "struct WindowTemplate window;\n    s32 i, width, widthCurr;\n    s16 *data = gTasks[taskId].data;\n\n    switch (tState)\n    {\n    case 0:\n        window = sWindowTemplates_Records;\n        width = GetStringWidth(FONT_NORMAL, gText_BerryPickingRecords, 0);\n        for (i = 0; i < ARRAY_COUNT(sRecordsTexts); i++)\n        {\n            widthCurr = GetStringWidth(FONT_NORMAL, sRecordsTexts[i], 0) + 50;\n            if (widthCurr > width)\n                width = widthCurr;\n        }\n        width = (width + 7) / 8;\n        if (width & 1)\n            width++;\n        window.tilemapLeft = (30 - width) / 2;\n        window.width = width;\n        tWindowId = AddWindow(&window);\n        PrintRecordsText(tWindowId, width);\n        CopyWindowToVram(tWindowId, COPYWIN_FULL);\n        tState++;\n        break;\n    case 1:\n        if (!IsDma3ManagerBusyWithBgCopy())\n            tState++;\n        break;\n    case 2:\n        if (JOY_NEW(A_BUTTON | B_BUTTON))\n        {\n            rbox_fill_rectangle(tWindowId);\n            CopyWindowToVram(tWindowId, COPYWIN_MAP);\n            tState++;\n        }\n        break;\n    case 3:\n        if (!IsDma3ManagerBusyWithBgCopy())\n        {\n            RemoveWindow(tWindowId);\n            DestroyTask(taskId);\n            ScriptContext_Enable();\n        }\n        break;\n    }",
       "callsTo": [
         "ARRAY_COUNT",
@@ -995,6 +1289,16 @@
       "returnType": "void",
       "signature": "static void PrintRecordsText(u8 windowId, s32 width)",
       "paramsRaw": "u8 windowId, s32 width",
+      "paramsList": [
+        {
+          "name": "windowId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "width",
+          "typeRaw": "s32"
+        }
+      ],
       "body": "s32 i, x, numWidth;\n    s32 recordNums[NUM_RECORD_TYPES];\n    recordNums[0] = gSaveBlock2Ptr->berryPick.berriesPicked;\n    recordNums[1] = gSaveBlock2Ptr->berryPick.bestScore;\n    recordNums[2] = gSaveBlock2Ptr->berryPick.berriesPickedInRow;\n\n    LoadUserWindowBorderGfx_(windowId, 0x21D, BG_PLTT_ID(13));\n    DrawTextBorderOuter(windowId, 0x21D, 13);\n    FillWindowPixelBuffer(windowId, PIXEL_FILL(1));\n    AddTextPrinterParameterized(windowId, FONT_NORMAL, gText_BerryPickingRecords, GetStringCenterAlignXOffset(FONT_NORMAL, gText_BerryPickingRecords, width * 8), 1, TEXT_SKIP_DRAW, NULL);\n    for (i = 0; i < NUM_RECORD_TYPES; i++)\n    {\n        ConvertIntToDecimalStringN(gStringVar1, recordNums[i], STR_CONV_MODE_LEFT_ALIGN, sRecordNumMaxDigits[i]);\n        numWidth = GetStringWidth(FONT_NORMAL, gStringVar1, -1);\n        AddTextPrinterParameterized(windowId, FONT_NORMAL, sRecordsTexts[i], 0, sRecordTextYCoords[i][0], TEXT_SKIP_DRAW, NULL);\n        x = (width * 8) - numWidth;\n        AddTextPrinterParameterized(windowId, FONT_NORMAL, gStringVar1, x, sRecordNumYCoords[i][0], TEXT_SKIP_DRAW, NULL);\n    }\n    PutWindowTilemap(windowId);",
       "callsTo": [
         "AddTextPrinterParameterized",
@@ -1014,6 +1318,12 @@
       "returnType": "void",
       "signature": "static void SendPacket_ReadyToStart(bool32 ready)",
       "paramsRaw": "bool32 ready",
+      "paramsList": [
+        {
+          "name": "ready",
+          "typeRaw": "bool32"
+        }
+      ],
       "body": "struct ReadyToStartPacket packet;\n    packet.id = PACKET_READY_START;\n    packet.ready = ready;\n    Rfu_SendPacket(&packet);",
       "callsTo": [
         "Rfu_SendPacket"
@@ -1024,6 +1334,12 @@
       "returnType": "u32",
       "signature": "static u32 RecvPacket_ReadyToStart(u32 playerId)",
       "paramsRaw": "u32 playerId",
+      "paramsList": [
+        {
+          "name": "playerId",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "struct ReadyToStartPacket *packet;\n\n    if ((gRecvCmds[0][0] & RFUCMD_MASK) != RFUCMD_SEND_PACKET)\n        return FALSE;\n\n    packet = (void *)&gRecvCmds[playerId][1];\n    if (packet->id == PACKET_READY_START)\n        return packet->ready;\n\n    return FALSE;",
       "callsTo": [],
       "lineCount": 10
@@ -1032,6 +1348,44 @@
       "returnType": "void",
       "signature": "static void SendPacket_GameState(struct DodrioGame_Player *player,\n                                 struct DodrioGame_PlayerCommData *player1,\n                                 struct DodrioGame_PlayerCommData *player2,\n                                 struct DodrioGame_PlayerCommData *player3,\n                                 struct DodrioGame_PlayerCommData *player4,\n                                 struct DodrioGame_PlayerCommData *player5,\n                                 u8 numGraySquares,\n                                 bool32 berriesFalling,\n                                 bool32 allReadyToEnd)",
       "paramsRaw": "struct DodrioGame_Player *player,\n                                 struct DodrioGame_PlayerCommData *player1,\n                                 struct DodrioGame_PlayerCommData *player2,\n                                 struct DodrioGame_PlayerCommData *player3,\n                                 struct DodrioGame_PlayerCommData *player4,\n                                 struct DodrioGame_PlayerCommData *player5,\n                                 u8 numGraySquares,\n                                 bool32 berriesFalling,\n                                 bool32 allReadyToEnd",
+      "paramsList": [
+        {
+          "name": "player",
+          "typeRaw": "struct DodrioGame_Player *"
+        },
+        {
+          "name": "player1",
+          "typeRaw": "struct DodrioGame_PlayerCommData *"
+        },
+        {
+          "name": "player2",
+          "typeRaw": "struct DodrioGame_PlayerCommData *"
+        },
+        {
+          "name": "player3",
+          "typeRaw": "struct DodrioGame_PlayerCommData *"
+        },
+        {
+          "name": "player4",
+          "typeRaw": "struct DodrioGame_PlayerCommData *"
+        },
+        {
+          "name": "player5",
+          "typeRaw": "struct DodrioGame_PlayerCommData *"
+        },
+        {
+          "name": "numGraySquares",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "berriesFalling",
+          "typeRaw": "bool32"
+        },
+        {
+          "name": "allReadyToEnd",
+          "typeRaw": "bool32"
+        }
+      ],
       "body": "struct GameStatePacket packet;\n    struct DodrioGame_Berries *berries = &player->berries;\n\n    packet.id = PACKET_GAME_STATE;\n    packet.fallDist_Col0 = berries->fallDist[0];\n    packet.fallDist_Col1 = berries->fallDist[1];\n    packet.fallDist_Col2 = berries->fallDist[2];\n    packet.fallDist_Col3 = berries->fallDist[3];\n    packet.fallDist_Col4 = berries->fallDist[4];\n    packet.fallDist_Col5 = berries->fallDist[5];\n    packet.fallDist_Col6 = berries->fallDist[6];\n    packet.fallDist_Col7 = berries->fallDist[7];\n    packet.fallDist_Col8 = berries->fallDist[8];\n    packet.fallDist_Col9 = berries->fallDist[9];\n\n    packet.berryId_Col0 = berries->ids[0];\n    packet.berryId_Col1 = berries->ids[1];\n    packet.berryId_Col2 = berries->ids[2];\n    packet.berryId_Col3 = berries->ids[3];\n    packet.berryId_Col4 = berries->ids[4];\n    packet.berryId_Col5 = berries->ids[5];\n    packet.berryId_Col6 = berries->ids[6];\n    packet.berryId_Col7 = berries->ids[7];\n    packet.berryId_Col8 = berries->ids[8];\n    packet.berryId_Col9 = berries->ids[9];\n\n    packet.pickState_Player1 = player1->pickState;\n    packet.pickState_Player2 = player2->pickState;\n    packet.pickState_Player3 = player3->pickState;\n    packet.pickState_Player4 = player4->pickState;\n    packet.pickState_Player5 = player5->pickState;\n\n    packet.ateBerry_Player1 = player1->ateBerry;\n    packet.ateBerry_Player2 = player2->ateBerry;\n    packet.ateBerry_Player3 = player3->ateBerry;\n    packet.ateBerry_Player4 = player4->ateBerry;\n    packet.ateBerry_Player5 = player5->ateBerry;\n\n    packet.missedBerry_Player1 = player1->missedBerry;\n    packet.missedBerry_Player2 = player2->missedBerry;\n    packet.missedBerry_Player3 = player3->missedBerry;\n    packet.missedBerry_Player4 = player4->missedBerry;\n    packet.missedBerry_Player5 = player5->missedBerry;\n\n    packet.numGraySquares = numGraySquares;\n    packet.berriesFalling = berriesFalling;\n    packet.allReadyToEnd = allReadyToEnd;\n    Rfu_SendPacket(&packet);",
       "callsTo": [
         "Rfu_SendPacket"
@@ -1042,6 +1396,48 @@
       "returnType": "bool32",
       "signature": "static bool32 RecvPacket_GameState(u32 playerId,\n                                   struct DodrioGame_Player *player,\n                                   struct DodrioGame_PlayerCommData *player1,\n                                   struct DodrioGame_PlayerCommData *player2,\n                                   struct DodrioGame_PlayerCommData *player3,\n                                   struct DodrioGame_PlayerCommData *player4,\n                                   struct DodrioGame_PlayerCommData *player5,\n                                   u8 *numGraySquares,\n                                   bool32 *berriesFalling,\n                                   bool32 *allReadyToEnd)",
       "paramsRaw": "u32 playerId,\n                                   struct DodrioGame_Player *player,\n                                   struct DodrioGame_PlayerCommData *player1,\n                                   struct DodrioGame_PlayerCommData *player2,\n                                   struct DodrioGame_PlayerCommData *player3,\n                                   struct DodrioGame_PlayerCommData *player4,\n                                   struct DodrioGame_PlayerCommData *player5,\n                                   u8 *numGraySquares,\n                                   bool32 *berriesFalling,\n                                   bool32 *allReadyToEnd",
+      "paramsList": [
+        {
+          "name": "playerId",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "player",
+          "typeRaw": "struct DodrioGame_Player *"
+        },
+        {
+          "name": "player1",
+          "typeRaw": "struct DodrioGame_PlayerCommData *"
+        },
+        {
+          "name": "player2",
+          "typeRaw": "struct DodrioGame_PlayerCommData *"
+        },
+        {
+          "name": "player3",
+          "typeRaw": "struct DodrioGame_PlayerCommData *"
+        },
+        {
+          "name": "player4",
+          "typeRaw": "struct DodrioGame_PlayerCommData *"
+        },
+        {
+          "name": "player5",
+          "typeRaw": "struct DodrioGame_PlayerCommData *"
+        },
+        {
+          "name": "numGraySquares",
+          "typeRaw": "u8 *"
+        },
+        {
+          "name": "berriesFalling",
+          "typeRaw": "bool32 *"
+        },
+        {
+          "name": "allReadyToEnd",
+          "typeRaw": "bool32 *"
+        }
+      ],
       "body": "struct GameStatePacket *packet;\n    struct DodrioGame_Berries *berries = &player->berries;\n\n    if ((gRecvCmds[0][0] & RFUCMD_MASK) != RFUCMD_SEND_PACKET)\n        return FALSE;\n\n    packet = (void *)&gRecvCmds[0][1];\n    if (packet->id == PACKET_GAME_STATE)\n    {\n        berries->fallDist[0] = packet->fallDist_Col0;\n        berries->fallDist[1] = packet->fallDist_Col1;\n        berries->fallDist[2] = packet->fallDist_Col2;\n        berries->fallDist[3] = packet->fallDist_Col3;\n        berries->fallDist[4] = packet->fallDist_Col4;\n        berries->fallDist[5] = packet->fallDist_Col5;\n        berries->fallDist[6] = packet->fallDist_Col6;\n        berries->fallDist[7] = packet->fallDist_Col7;\n        berries->fallDist[8] = packet->fallDist_Col8;\n        berries->fallDist[9] = packet->fallDist_Col9;\n        berries->fallDist[10] = packet->fallDist_Col0;\n\n        berries->ids[0] = packet->berryId_Col0;\n        berries->ids[1] = packet->berryId_Col1;\n        berries->ids[2] = packet->berryId_Col2;\n        berries->ids[3] = packet->berryId_Col3;\n        berries->ids[4] = packet->berryId_Col4;\n        berries->ids[5] = packet->berryId_Col5;\n        berries->ids[6] = packet->berryId_Col6;\n        berries->ids[7] = packet->berryId_Col7;\n        berries->ids[8] = packet->berryId_Col8;\n        berries->ids[9] = packet->berryId_Col9;\n        berries->ids[10] = packet->berryId_Col0;\n\n        player1->pickState = packet->pickState_Player1;\n        player1->ateBerry = packet->ateBerry_Player1;\n        player1->missedBerry = packet->missedBerry_Player1;\n\n        player2->pickState = packet->pickState_Player2;\n        player2->ateBerry = packet->ateBerry_Player2;\n        player2->missedBerry = packet->missedBerry_Player2;\n\n        player3->pickState = packet->pickState_Player3;\n        player3->ateBerry = packet->ateBerry_Player3;\n        player3->missedBerry = packet->missedBerry_Player3;\n\n        player4->pickState = packet->pickState_Player4;\n        player4->ateBerry = packet->ateBerry_Player4;\n        player4->missedBerry = packet->missedBerry_Player4;\n\n        player5->pickState = packet->pickState_Player5;\n        player5->ateBerry = packet->ateBerry_Player5;\n        player5->missedBerry = packet->missedBerry_Player5;\n\n        *numGraySquares = packet->numGraySquares;\n        *berriesFalling = packet->berriesFalling;\n        *allReadyToEnd = packet->allReadyToEnd;\n        return TRUE;\n    }\n\n    return FALSE;",
       "callsTo": [],
       "lineCount": 60
@@ -1050,6 +1446,12 @@
       "returnType": "void",
       "signature": "static void SendPacket_PickState(u8 pickState)",
       "paramsRaw": "u8 pickState",
+      "paramsList": [
+        {
+          "name": "pickState",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "struct PickStatePacket packet;\n    packet.id = PACKET_PICK_STATE;\n    packet.pickState = pickState;\n    Rfu_SendPacket(&packet);",
       "callsTo": [
         "Rfu_SendPacket"
@@ -1060,6 +1462,16 @@
       "returnType": "bool32",
       "signature": "static bool32 RecvPacket_PickState(u32 playerId, u8 *pickState)",
       "paramsRaw": "u32 playerId, u8 *pickState",
+      "paramsList": [
+        {
+          "name": "playerId",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "pickState",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "struct PickStatePacket *packet;\n\n    if ((gRecvCmds[0][0] & RFUCMD_MASK) != RFUCMD_SEND_PACKET)\n        return FALSE;\n\n    packet = (void *)&gRecvCmds[playerId][1];\n    if (packet->id == PACKET_PICK_STATE)\n    {\n        *pickState = packet->pickState;\n        return TRUE;\n    }\n\n    return FALSE;",
       "callsTo": [],
       "lineCount": 13
@@ -1068,6 +1480,12 @@
       "returnType": "void",
       "signature": "static void SendPacket_ReadyToEnd(bool32 ready)",
       "paramsRaw": "bool32 ready",
+      "paramsList": [
+        {
+          "name": "ready",
+          "typeRaw": "bool32"
+        }
+      ],
       "body": "struct ReadyToEndPacket packet;\n    packet.id = PACKET_READY_END;\n    packet.ready = ready;\n    Rfu_SendPacket(&packet);",
       "callsTo": [
         "Rfu_SendPacket"
@@ -1078,6 +1496,12 @@
       "returnType": "bool32",
       "signature": "static bool32 RecvPacket_ReadyToEnd(u32 playerId)",
       "paramsRaw": "u32 playerId",
+      "paramsList": [
+        {
+          "name": "playerId",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "struct ReadyToEndPacket *packet;\n\n    if ((gRecvCmds[0][0] & RFUCMD_MASK) != RFUCMD_SEND_PACKET)\n        return FALSE;\n\n    packet = (void *)&gRecvCmds[playerId][1];\n    if (packet->id == PACKET_READY_END)\n        return packet->ready;\n\n    return FALSE;",
       "callsTo": [],
       "lineCount": 10
@@ -1086,6 +1510,7 @@
       "returnType": "void",
       "signature": "static void LoadDodrioGfx(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "void *ptr = AllocZeroed(0x3000);\n    struct SpritePalette normal = {sDodrioNormal_Pal, PALTAG_DODRIO_NORMAL};\n    struct SpritePalette shiny = {sDodrioShiny_Pal, PALTAG_DODRIO_SHINY};\n\n    LZ77UnCompWram(sDodrio_Gfx, ptr);\n    if (ptr)\n    {\n        struct SpriteSheet sheet = {ptr, 0x3000, GFXTAG_DODRIO};\n        LoadSpriteSheet(&sheet);\n        Free(ptr);\n    }\n    LoadSpritePalette(&normal);\n    LoadSpritePalette(&shiny);",
       "callsTo": [
         "AllocZeroed",
@@ -1100,6 +1525,24 @@
       "returnType": "void",
       "signature": "static void CreateDodrioSprite(struct DodrioGame_MonInfo *monInfo, u8 playerId, u8 id, u8 numPlayers)",
       "paramsRaw": "struct DodrioGame_MonInfo *monInfo, u8 playerId, u8 id, u8 numPlayers",
+      "paramsList": [
+        {
+          "name": "monInfo",
+          "typeRaw": "struct DodrioGame_MonInfo *"
+        },
+        {
+          "name": "playerId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "id",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "numPlayers",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "struct SpriteTemplate template =\n    {\n        .tileTag = GFXTAG_DODRIO,\n        .paletteTag = monInfo->isShiny,  \n        .oam = &sOamData_Dodrio,\n        .anims = sAnims_Dodrio,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCB_Dodrio,\n    };\n\n    sDodrioSpriteIds[id] = AllocZeroed(4);\n    *sDodrioSpriteIds[id] = CreateSprite(&template, GetDodrioXPos(playerId, numPlayers), 136, 3);\n    SetDodrioInvisibility(TRUE, id);",
       "callsTo": [
         "AllocZeroed",
@@ -1113,6 +1556,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_Dodrio(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "switch (sprite->sState)\n    {\n    case 0:\n        break;\n    case 1:\n        DoDodrioMissedAnim(sprite);\n        break;\n    case 2:\n        DoDodrioIntroAnim(sprite);\n        break;\n    }",
       "callsTo": [
         "DoDodrioIntroAnim",
@@ -1124,6 +1573,12 @@
       "returnType": "void",
       "signature": "static void StartDodrioMissedAnim(u8 unused)",
       "paramsRaw": "u8 unused",
+      "paramsList": [
+        {
+          "name": "unused",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "struct Sprite *sprite = &gSprites[*sDodrioSpriteIds[GetMultiplayerId()]];\n    sprite->sState = 1;\n    sprite->sTimer = 0;\n    sprite->sUnused1 = 0;\n    sprite->sUnused2 = 0;\n    sprite->sUnused3 = 0;",
       "callsTo": [
         "GetMultiplayerId"
@@ -1134,6 +1589,12 @@
       "returnType": "void",
       "signature": "static void StartDodrioIntroAnim(u8 unused)",
       "paramsRaw": "u8 unused",
+      "paramsList": [
+        {
+          "name": "unused",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "struct Sprite *sprite = &gSprites[*sDodrioSpriteIds[GetMultiplayerId()]];\n    sprite->sState = 2;\n    sprite->sTimer = 0;\n    sprite->sUnused1 = 0;\n    sprite->sUnused2 = 0;\n    sprite->sUnused3 = 0;",
       "callsTo": [
         "GetMultiplayerId"
@@ -1144,6 +1605,12 @@
       "returnType": "u32",
       "signature": "static u32 DoDodrioMissedAnim(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "s8 x;\n    u8 state = (++sprite->sTimer / 2) % 4;\n\n    if (sprite->sTimer >= 3)\n    {\n        switch (state)\n        {\n        default:\n            x = 1;\n            break;\n        case 1:\n        case 2:\n            x = -1;\n            break;\n        }\n\n        sprite->x += x;\n        if (++sprite->sTimer >= 40)\n        {\n            sprite->sState = 0;\n            sprite->x = GetDodrioXPos(0, GetNumPlayers());\n        }\n    }\n\n    return 0;",
       "callsTo": [
         "GetDodrioXPos",
@@ -1155,6 +1622,12 @@
       "returnType": "u32",
       "signature": "static u32 DoDodrioIntroAnim(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "u8 pickState = (++sprite->sTimer / FRAMES_PER_STATE) % NUM_INTRO_PICK_STATES;\n\n     \n    if (sprite->sTimer % FRAMES_PER_STATE == 0 && pickState != PICK_NONE)\n        PlaySE(SE_M_CHARM);\n\n    if (sprite->sTimer >= FRAMES_PER_STATE * NUM_INTRO_PICK_STATES * 2)\n    {\n         \n        sprite->sState = 0;\n        pickState = PICK_NONE;\n    }\n    SetDodrioAnim(GetMultiplayerId(), pickState);\n    return 0;",
       "callsTo": [
         "GetMultiplayerId",
@@ -1167,6 +1640,12 @@
       "returnType": "void",
       "signature": "static void FreeDodrioSprites(u8 numPlayers)",
       "paramsRaw": "u8 numPlayers",
+      "paramsList": [
+        {
+          "name": "numPlayers",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 i;\n    for (i = 0; i < numPlayers; i++)\n    {\n        struct Sprite *sprite = &gSprites[*sDodrioSpriteIds[i]];\n        if (sprite)\n            DestroySpriteAndFreeResources(sprite);\n#ifdef BUGFIX\n        FREE_AND_SET_NULL(sDodrioSpriteIds[i]);  \n#endif\n    }",
       "callsTo": [
         "DestroySpriteAndFreeResources",
@@ -1178,6 +1657,16 @@
       "returnType": "void",
       "signature": "static void SetDodrioInvisibility(bool8 invisible, u8 id)",
       "paramsRaw": "bool8 invisible, u8 id",
+      "paramsList": [
+        {
+          "name": "invisible",
+          "typeRaw": "bool8"
+        },
+        {
+          "name": "id",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "gSprites[*sDodrioSpriteIds[id]].invisible = invisible;",
       "callsTo": [],
       "lineCount": 1
@@ -1186,6 +1675,16 @@
       "returnType": "void",
       "signature": "static void SetAllDodrioInvisibility(bool8 invisible, u8 count)",
       "paramsRaw": "bool8 invisible, u8 count",
+      "paramsList": [
+        {
+          "name": "invisible",
+          "typeRaw": "bool8"
+        },
+        {
+          "name": "count",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 i;\n    for (i = 0; i < count; i++)\n        SetDodrioInvisibility(invisible, i);",
       "callsTo": [
         "SetDodrioInvisibility"
@@ -1196,6 +1695,16 @@
       "returnType": "void",
       "signature": "static void SetDodrioAnim(u8 id, u8 pickState)",
       "paramsRaw": "u8 id, u8 pickState",
+      "paramsList": [
+        {
+          "name": "id",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "pickState",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "StartSpriteAnim(&gSprites[*sDodrioSpriteIds[id]], pickState);",
       "callsTo": [
         "StartSpriteAnim"
@@ -1206,6 +1715,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_Status(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "",
       "callsTo": [],
       "lineCount": 1
@@ -1214,6 +1729,7 @@
       "returnType": "void",
       "signature": "static void InitStatusBarPos(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n    for (i = 0; i < NUM_STATUS_SQUARES; i++)\n    {\n        struct Sprite *sprite = &gSprites[sStatusBar->spriteIds[i]];\n        sprite->x = (i * 16) + 48;\n        sprite->y = -8 - (i * 8);\n        sStatusBar->entered[i] = FALSE;\n    }",
       "callsTo": [],
       "lineCount": 8
@@ -1222,6 +1738,7 @@
       "returnType": "void",
       "signature": "static void CreateStatusBarSprites(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n    void *ptr = AllocZeroed(0x180);\n    struct SpritePalette pal = {sStatus_Pal, PALTAG_STATUS};\n\n    LZ77UnCompWram(sStatus_Gfx, ptr);\n     \n    if (ptr)\n    {\n        struct SpriteSheet sheet = {ptr, 0x180, GFXTAG_STATUS};\n        struct SpriteTemplate template =\n        {\n            .tileTag = GFXTAG_STATUS,\n            .paletteTag = PALTAG_STATUS,\n            .oam = &sOamData_16x16_Priority0,\n            .anims = sAnims_StatusBar,\n            .images = NULL,\n            .affineAnims = gDummySpriteAffineAnimTable,\n            .callback = SpriteCB_Status,\n        };\n\n        sStatusBar = AllocZeroed(sizeof(*sStatusBar));\n        LoadSpriteSheet(&sheet);\n        LoadSpritePalette(&pal);\n        for (i = 0; i < NUM_STATUS_SQUARES; i++)\n            sStatusBar->spriteIds[i] = CreateSprite(&template, (i * 16) + 48, -8 - (i * 8), 0);\n    }\n\n    Free(ptr);",
       "callsTo": [
         "AllocZeroed",
@@ -1237,6 +1754,7 @@
       "returnType": "void",
       "signature": "static void FreeStatusBar(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n    for (i = 0; i < NUM_STATUS_SQUARES; i++)\n    {\n        struct Sprite *sprite = &gSprites[sStatusBar->spriteIds[i]];\n        if (sprite)\n            DestroySpriteAndFreeResources(sprite);\n    }\n    FREE_AND_SET_NULL(sStatusBar);",
       "callsTo": [
         "DestroySpriteAndFreeResources",
@@ -1248,6 +1766,7 @@
       "returnType": "bool32",
       "signature": "static bool32 DoStatusBarIntro(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n    bool32 animActive = FALSE;\n    for (i = 0; i < NUM_STATUS_SQUARES; i++)\n    {\n        struct Sprite *sprite = &gSprites[sStatusBar->spriteIds[i]];\n        sStatusBar->yChange[i] = 2;\n        if (sStatusBar->entered[i] && sprite->y == 8)\n            continue;\n\n        animActive = TRUE;\n        if (sprite->y == 8)\n        {\n            if (sStatusBar->entered[i])\n                continue;\n\n             \n             \n            sStatusBar->entered[i] = TRUE;\n            sStatusBar->yChange[i] = -16;\n            PlaySE(SE_CLICK);\n        }\n        sprite->y += sStatusBar->yChange[i];\n    }\n\n    if (animActive)\n        return FALSE;\n    else\n        return TRUE;",
       "callsTo": [
         "PlaySE"
@@ -1258,6 +1777,12 @@
       "returnType": "void",
       "signature": "static void UpdateStatusBarAnim(u8 numEmpty)",
       "paramsRaw": "u8 numEmpty",
+      "paramsList": [
+        {
+          "name": "numEmpty",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 i;\n\n    if (numEmpty > NUM_STATUS_SQUARES)\n    {\n         \n        for (i = 0; i < NUM_STATUS_SQUARES; i++)\n            StartSpriteAnim(&gSprites[sStatusBar->spriteIds[i]], STATUS_GRAY);\n    }\n    else\n    {\n         \n        for (i = 0; i < NUM_STATUS_SQUARES - numEmpty; i++)\n        {\n            if (numEmpty > 6)\n            {\n                 \n                 \n                sStatusBar->flashTimer += numEmpty - 6;\n                if (sStatusBar->flashTimer > 30)\n                    sStatusBar->flashTimer = 0;\n                else if (sStatusBar->flashTimer > 10)\n                    StartSpriteAnim(&gSprites[sStatusBar->spriteIds[i]], STATUS_RED);\n                else\n                    StartSpriteAnim(&gSprites[sStatusBar->spriteIds[i]], STATUS_YELLOW);\n            }\n            else\n            {\n                 \n                StartSpriteAnim(&gSprites[sStatusBar->spriteIds[i]], STATUS_YELLOW);\n            }\n        }\n\n         \n        for (; i < NUM_STATUS_SQUARES; i++)\n            StartSpriteAnim(&gSprites[sStatusBar->spriteIds[i]], STATUS_GRAY);\n    }",
       "callsTo": [
         "StartSpriteAnim"
@@ -1268,6 +1793,12 @@
       "returnType": "void",
       "signature": "static void SetStatusBarInvisibility(bool8 invisible)",
       "paramsRaw": "bool8 invisible",
+      "paramsList": [
+        {
+          "name": "invisible",
+          "typeRaw": "bool8"
+        }
+      ],
       "body": "u8 i;\n    for (i = 0; i < NUM_STATUS_SQUARES; i++)\n        gSprites[sStatusBar->spriteIds[i]].invisible = invisible;",
       "callsTo": [],
       "lineCount": 3
@@ -1276,6 +1807,7 @@
       "returnType": "void",
       "signature": "static void LoadBerryGfx(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "void *ptr = AllocZeroed(0x480);\n    struct SpritePalette pal = {sBerries_Pal, PALTAG_BERRIES};\n\n    LZ77UnCompWram(sBerries_Gfx, ptr);\n    if (ptr)\n    {\n        struct SpriteSheet sheet = {ptr, 0x480, GFXTAG_BERRIES};\n        LoadSpriteSheet(&sheet);\n    }\n\n    LoadSpritePalette(&pal);\n    Free(ptr);",
       "callsTo": [
         "AllocZeroed",
@@ -1290,6 +1822,7 @@
       "returnType": "void",
       "signature": "static void CreateBerrySprites(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n    s16 x;\n\n    struct SpriteTemplate berry =\n    {\n        .tileTag = GFXTAG_BERRIES,\n        .paletteTag = PALTAG_BERRIES,\n        .oam = &sOamData_Berry,\n        .anims = sAnims_Berry,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCallbackDummy,\n    };\n    struct SpriteTemplate berryIcon =\n    {\n        .tileTag = GFXTAG_BERRIES,\n        .paletteTag = PALTAG_BERRIES,\n        .oam = &sOamData_16x16_Priority0,\n        .anims = sAnims_Berry,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCallbackDummy,\n    };\n\n     \n    for (i = 0; i < NUM_BERRY_COLUMNS; i++)\n    {\n        sBerrySpriteIds[i] = AllocZeroed(4);\n        x = i * 16;\n        *sBerrySpriteIds[i] = CreateSprite(&berry, x + (i * 8), 8, 1);\n        SetBerryInvisibility(i, TRUE);\n    }\n\n     \n    for (i = 0; i < NUM_BERRY_TYPES; i++)\n    {\n        sBerryIconSpriteIds[i] = AllocZeroed(4);\n        if (i == BERRY_MISSED)\n            *sBerryIconSpriteIds[i] = CreateSprite(&berryIcon, sBerryIconXCoords[i], 49, 0);\n        else\n            *sBerryIconSpriteIds[i] = CreateSprite(&berryIcon, sBerryIconXCoords[i], 52, 0);\n        StartSpriteAnim(&gSprites[*sBerryIconSpriteIds[i]], i);\n    }\n    SetBerryIconsInvisibility(TRUE);",
       "callsTo": [
         "AllocZeroed",
@@ -1304,6 +1837,7 @@
       "returnType": "void",
       "signature": "static void FreeBerrySprites(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "struct Sprite *sprite;\n    u8 i;\n\n    for (i = 0; i < NUM_BERRY_COLUMNS; i++)\n    {\n        sprite = &gSprites[*sBerrySpriteIds[i]];\n        if (sprite)\n            DestroySprite(sprite);\n        FREE_AND_SET_NULL(sBerrySpriteIds[i]);\n    }\n    for (i = 0; i < NUM_BERRY_TYPES; i++)\n    {\n        sprite = &gSprites[*sBerryIconSpriteIds[i]];\n        if (sprite)\n            DestroySprite(sprite);\n        FREE_AND_SET_NULL(sBerryIconSpriteIds[i]);\n    }",
       "callsTo": [
         "DestroySprite",
@@ -1315,6 +1849,16 @@
       "returnType": "void",
       "signature": "static void SetBerryInvisibility(u8 id, bool8 invisible)",
       "paramsRaw": "u8 id, bool8 invisible",
+      "paramsList": [
+        {
+          "name": "id",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "invisible",
+          "typeRaw": "bool8"
+        }
+      ],
       "body": "gSprites[*sBerrySpriteIds[id]].invisible = invisible;",
       "callsTo": [],
       "lineCount": 1
@@ -1323,6 +1867,12 @@
       "returnType": "void",
       "signature": "static void SetBerryIconsInvisibility(bool8 invisible)",
       "paramsRaw": "bool8 invisible",
+      "paramsList": [
+        {
+          "name": "invisible",
+          "typeRaw": "bool8"
+        }
+      ],
       "body": "u8 i;\n    for (i = 0; i < NUM_BERRY_TYPES; i++)\n        gSprites[*sBerryIconSpriteIds[i]].invisible = invisible;",
       "callsTo": [],
       "lineCount": 3
@@ -1331,6 +1881,16 @@
       "returnType": "void",
       "signature": "static void SetBerryYPos(u8 id, u8 y)",
       "paramsRaw": "u8 id, u8 y",
+      "paramsList": [
+        {
+          "name": "id",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "y",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "gSprites[*sBerrySpriteIds[id]].y = y * 8;",
       "callsTo": [],
       "lineCount": 1
@@ -1339,6 +1899,16 @@
       "returnType": "void",
       "signature": "static void SetBerryAnim(u16 id, u8 animNum)",
       "paramsRaw": "u16 id, u8 animNum",
+      "paramsList": [
+        {
+          "name": "id",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "animNum",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "StartSpriteAnim(&gSprites[*sBerrySpriteIds[id]], animNum);",
       "callsTo": [
         "StartSpriteAnim"
@@ -1349,6 +1919,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_Cloud(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "u8 i;\n    static const u8 moveDelays[] = {30, 20};\n\n    if (sprite->sFrozen != TRUE)\n    {\n        for (i = 0; i < NUM_CLOUDS; i++)\n        {\n            if (++sCloudSpriteIds[i][1] > moveDelays[i])\n            {\n                sprite->x--;\n                sCloudSpriteIds[i][1] = 0;\n            }\n        }\n    }",
       "callsTo": [],
       "lineCount": 14
@@ -1357,6 +1933,7 @@
       "returnType": "void",
       "signature": "static void CreateCloudSprites(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n    void *ptr = AllocZeroed(0x400);\n    struct SpritePalette pal = {sCloud_Pal, PALTAG_CLOUD};\n\n    LZ77UnCompWram(sCloud_Gfx, ptr);\n    if (ptr)\n    {\n        struct SpriteSheet sheet = {ptr, 0x400, GFXTAG_CLOUD};\n        struct SpriteTemplate template =\n        {\n            .tileTag = GFXTAG_CLOUD,\n            .paletteTag = PALTAG_CLOUD,\n            .oam = &sOamData_Cloud,\n            .anims = sAnims_Cloud,\n            .images = NULL,\n            .affineAnims = gDummySpriteAffineAnimTable,\n            .callback = SpriteCB_Cloud,\n        };\n\n        LoadSpriteSheet(&sheet);\n        LoadSpritePalette(&pal);\n        for (i = 0; i < NUM_CLOUDS; i++)\n        {\n            sCloudSpriteIds[i] = AllocZeroed(4);\n            *sCloudSpriteIds[i] = CreateSprite(&template, sCloudStartCoords[i][0], sCloudStartCoords[i][1], 4);\n        }\n    }\n\n    Free(ptr);",
       "callsTo": [
         "AllocZeroed",
@@ -1372,6 +1949,7 @@
       "returnType": "void",
       "signature": "static void ResetCloudPos(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n    for (i = 0; i < NUM_CLOUDS; i++)\n    {\n        struct Sprite *sprite = &gSprites[*sCloudSpriteIds[i]];\n        sprite->sFrozen = TRUE;\n        sprite->x = sCloudStartCoords[i][0];\n        sprite->y = sCloudStartCoords[i][1];\n    }",
       "callsTo": [],
       "lineCount": 8
@@ -1380,6 +1958,7 @@
       "returnType": "void",
       "signature": "static void StartCloudMovement(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n    for (i = 0; i < NUM_CLOUDS; i++)\n    {\n        struct Sprite *sprite = &gSprites[*sCloudSpriteIds[i]];\n        sprite->sFrozen = FALSE;\n    }",
       "callsTo": [],
       "lineCount": 6
@@ -1388,6 +1967,7 @@
       "returnType": "void",
       "signature": "static void FreeCloudSprites(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n    for (i = 0; i < NUM_CLOUDS; i++)\n    {\n        struct Sprite *sprite = &gSprites[*sCloudSpriteIds[i]];\n        if (sprite)\n            DestroySprite(sprite);\n        FREE_AND_SET_NULL(sCloudSpriteIds[i]);\n    }",
       "callsTo": [
         "DestroySprite",
@@ -1399,6 +1979,12 @@
       "returnType": "void",
       "signature": "static void SetCloudInvisibility(bool8 invisible)",
       "paramsRaw": "bool8 invisible",
+      "paramsList": [
+        {
+          "name": "invisible",
+          "typeRaw": "bool8"
+        }
+      ],
       "body": "u8 i;\n    for (i = 0; i < NUM_CLOUDS; i++)\n        gSprites[*sCloudSpriteIds[i]].invisible = invisible;",
       "callsTo": [],
       "lineCount": 3
@@ -1407,6 +1993,16 @@
       "returnType": "s16",
       "signature": "static s16 GetDodrioXPos(u8 playerId, u8 numPlayers)",
       "paramsRaw": "u8 playerId, u8 numPlayers",
+      "paramsList": [
+        {
+          "name": "playerId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "numPlayers",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 x = 0;\n    switch (numPlayers)\n    {\n    case 1:\n        x = 15;\n        break;\n    case 2:\n        switch (playerId)\n        {\n            case 0: x = 12; break;\n            case 1: x = 18; break;\n        }\n        break;\n    case 3:\n        switch (playerId)\n        {\n            case 0: x = 15; break;\n            case 1: x = 21; break;\n            case 2: x =  9; break;\n        }\n        break;\n    case 4:\n        switch (playerId)\n        {\n            case 0: x = 12; break;\n            case 1: x = 18; break;\n            case 2: x = 24; break;\n            case 3: x =  6; break;\n        }\n        break;\n    case 5:\n        switch (playerId)\n        {\n            case 0: x = 15; break;\n            case 1: x = 21; break;\n            case 2: x = 27; break;\n            case 3: x =  3; break;\n            case 4: x =  9; break;\n        }\n        break;\n    }\n\n    return x * 8;",
       "callsTo": [],
       "lineCount": 43
@@ -1415,6 +2011,7 @@
       "returnType": "void",
       "signature": "static void ResetBerryAndStatusBarSprites(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n    for (i = 0; i < NUM_BERRY_COLUMNS; i++)\n    {\n        SetBerryInvisibility(i, TRUE);\n        SetBerryYPos(i, 1);\n    }\n    SetStatusBarInvisibility(FALSE);",
       "callsTo": [
         "SetBerryInvisibility",
@@ -1427,6 +2024,12 @@
       "returnType": "void",
       "signature": "static void LoadWindowFrameGfx(u8 frameId)",
       "paramsRaw": "u8 frameId",
+      "paramsList": [
+        {
+          "name": "frameId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "LoadBgTiles(BG_INTERFACE, GetWindowFrameTilesPal(frameId)->tiles, 0x120, 1);\n    LoadPalette(GetWindowFrameTilesPal(frameId)->pal, BG_PLTT_ID(10), PLTT_SIZE_4BPP);",
       "callsTo": [
         "BG_PLTT_ID",
@@ -1440,6 +2043,7 @@
       "returnType": "void",
       "signature": "static void LoadUserWindowFrameGfx(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "LoadUserWindowBorderGfx_(0, 0xA, BG_PLTT_ID(11));",
       "callsTo": [
         "BG_PLTT_ID",
@@ -1451,6 +2055,7 @@
       "returnType": "void",
       "signature": "static void ResetGfxState(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sGfx->finished = FALSE;\n    sGfx->state = 0;\n    sGfx->loadState = 0;\n    sGfx->cursorSelection = 0;\n    sGfx->playAgainState = PLAY_AGAIN_NONE;",
       "callsTo": [],
       "lineCount": 5
@@ -1459,6 +2064,12 @@
       "returnType": "void",
       "signature": "static void DrawYesNoMessageWindow(const struct WindowTemplate *template)",
       "paramsRaw": "const struct WindowTemplate *template",
+      "paramsList": [
+        {
+          "name": "template",
+          "typeRaw": "const struct WindowTemplate *"
+        }
+      ],
       "body": "u8 pal = 10;\n\n    FillBgTilemapBufferRect(BG_INTERFACE, 1, template->tilemapLeft - 1,                template->tilemapTop - 1,                   1, 1, pal);\n    FillBgTilemapBufferRect(BG_INTERFACE, 2, template->tilemapLeft,                    template->tilemapTop - 1,                   template->width, 1, pal);\n    FillBgTilemapBufferRect(BG_INTERFACE, 3, template->tilemapLeft + template->width,  template->tilemapTop - 1,                   1, 1, pal);\n    FillBgTilemapBufferRect(BG_INTERFACE, 4, template->tilemapLeft - 1,                template->tilemapTop, 1,                    template->height, pal);\n    FillBgTilemapBufferRect(BG_INTERFACE, 6, template->tilemapLeft + template->width,  template->tilemapTop, 1,                    template->height, pal);\n    FillBgTilemapBufferRect(BG_INTERFACE, 7, template->tilemapLeft - 1,                template->tilemapTop + template->height,    1, 1, pal);\n    FillBgTilemapBufferRect(BG_INTERFACE, 8, template->tilemapLeft,                    template->tilemapTop + template->height,    template->width, 1, pal);\n    FillBgTilemapBufferRect(BG_INTERFACE, 9, template->tilemapLeft + template->width,  template->tilemapTop + template->height,    1, 1, pal);",
       "callsTo": [
         "FillBgTilemapBufferRect"
@@ -1469,6 +2080,12 @@
       "returnType": "void",
       "signature": "static void DrawMessageWindow(const struct WindowTemplate *template)",
       "paramsRaw": "const struct WindowTemplate *template",
+      "paramsList": [
+        {
+          "name": "template",
+          "typeRaw": "const struct WindowTemplate *"
+        }
+      ],
       "body": "u8 pal = 11;\n\n    FillBgTilemapBufferRect(BG_INTERFACE, 10, template->tilemapLeft - 1,                template->tilemapTop - 1,                   1, 1, pal);\n    FillBgTilemapBufferRect(BG_INTERFACE, 11, template->tilemapLeft,                    template->tilemapTop - 1,                   template->width, 1, pal);\n    FillBgTilemapBufferRect(BG_INTERFACE, 12, template->tilemapLeft + template->width,  template->tilemapTop - 1,                   1, 1, pal);\n    FillBgTilemapBufferRect(BG_INTERFACE, 13, template->tilemapLeft - 1,                template->tilemapTop, 1,                    template->height, pal);\n    FillBgTilemapBufferRect(BG_INTERFACE, 15, template->tilemapLeft + template->width,  template->tilemapTop, 1,                    template->height, pal);\n    FillBgTilemapBufferRect(BG_INTERFACE, 16, template->tilemapLeft - 1,                template->tilemapTop + template->height,    1, 1, pal);\n    FillBgTilemapBufferRect(BG_INTERFACE, 17, template->tilemapLeft,                    template->tilemapTop + template->height,    template->width, 1, pal);\n    FillBgTilemapBufferRect(BG_INTERFACE, 18, template->tilemapLeft + template->width,  template->tilemapTop + template->height,    1, 1, pal);",
       "callsTo": [
         "FillBgTilemapBufferRect"
@@ -1479,6 +2096,12 @@
       "returnType": "void",
       "signature": "static void InitGameGfx(struct DodrioGame_Gfx *ptr)",
       "paramsRaw": "struct DodrioGame_Gfx *ptr",
+      "paramsList": [
+        {
+          "name": "ptr",
+          "typeRaw": "struct DodrioGame_Gfx *"
+        }
+      ],
       "body": "sGfx = ptr;\n    sGfx->finished = FALSE;\n    sGfx->state = 0;\n    sGfx->loadState = 0;\n    sGfx->cursorSelection = 0;\n    sGfx->playAgainState = PLAY_AGAIN_NONE;\n    sGfx->taskId = CreateTask(Task_TryRunGfxFunc, 3);\n    SetGfxFunc(LoadGfx);",
       "callsTo": [
         "CreateTask",
@@ -1490,6 +2113,12 @@
       "returnType": "void",
       "signature": "static void SetGfxFuncById(u8 funcId)",
       "paramsRaw": "u8 funcId",
+      "paramsList": [
+        {
+          "name": "funcId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 i;\n    for (i = 0; i < ARRAY_COUNT(sGfxFuncs); i++)\n    {\n        if (sGfxFuncs[i].id == funcId)\n            SetGfxFunc(sGfxFuncs[i].func);\n    }",
       "callsTo": [
         "ARRAY_COUNT",
@@ -1501,6 +2130,12 @@
       "returnType": "void",
       "signature": "static void Task_TryRunGfxFunc(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (!sGfx->finished)\n        GetGfxFunc()();",
       "callsTo": [
         "GetGfxFunc"
@@ -1511,6 +2146,7 @@
       "returnType": "void",
       "signature": "static void LoadGfx(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sGfx->state)\n    {\n    case 0:\n        InitBgs();\n        sGfx->state++;\n        break;\n    case 1:\n        if (LoadBgGfx() == TRUE)\n            sGfx->state++;\n        break;\n    case 2:\n        CopyToBgTilemapBuffer(BG_SCENERY, sBg_Tilemap, 0, 0);\n        CopyToBgTilemapBuffer(BG_TREE_LEFT, sTreeBorderLeft_Tilemap, 0, 0);\n        CopyToBgTilemapBuffer(BG_TREE_RIGHT, sTreeBorderRight_Tilemap, 0, 0);\n        CopyBgTilemapBufferToVram(BG_SCENERY);\n        CopyBgTilemapBufferToVram(BG_TREE_LEFT);\n        CopyBgTilemapBufferToVram(BG_TREE_RIGHT);\n        sGfx->state++;\n        break;\n    case 3:\n        ShowBg(BG_INTERFACE);\n        ShowBg(BG_SCENERY);\n        ShowBg(BG_TREE_LEFT);\n        ShowBg(BG_TREE_RIGHT);\n        sGfx->state++;\n        break;\n    case 4:\n        LoadWindowFrameGfx(gSaveBlock2Ptr->optionsWindowFrameType);\n        LoadUserWindowFrameGfx();\n        sGfx->state++;\n        break;\n    default:\n        sGfx->finished = TRUE;\n        break;\n    }",
       "callsTo": [
         "CopyBgTilemapBufferToVram",
@@ -1527,6 +2163,7 @@
       "returnType": "void",
       "signature": "static void ShowNames(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i, numPlayers, playerId, colorsId, *name;\n    u32 left;\n    struct WindowTemplate window;\n    const struct WinCoords *coords;\n\n    switch (sGfx->state)\n    {\n    case 0:\n        numPlayers = GetNumPlayers();\n        coords = sNameWindowCoords[numPlayers - 1];\n        window.bg = BG_INTERFACE;\n        window.width = 7;\n        window.height = 2;\n        window.paletteNum = 13;\n        window.baseBlock = 0x13;\n        for (i = 0; i < numPlayers; coords++, i++)\n        {\n            colorsId = COLORID_GRAY;\n            playerId = GetPlayerIdByPos(i);\n            left = (56 - GetStringWidth(FONT_NORMAL, GetPlayerName(playerId), -1)) / 2u;\n            window.tilemapLeft = coords->left;\n            window.tilemapTop = coords->top;\n            sGfx->windowIds[i] = AddWindow(&window);\n            ClearWindowTilemap(sGfx->windowIds[i]);\n            FillWindowPixelBuffer(sGfx->windowIds[i], PIXEL_FILL(1));\n            if (playerId == GetMultiplayerId())\n                colorsId = COLORID_BLUE;\n            name = GetPlayerName(playerId);\n            AddTextPrinterParameterized3(sGfx->windowIds[i], FONT_NORMAL, left, 1, sTextColorTable[colorsId], TEXT_SKIP_DRAW, name);\n            CopyWindowToVram(sGfx->windowIds[i], COPYWIN_GFX);\n            window.baseBlock += 0xE;\n            DrawMessageWindow(&window);\n        }\n        sGfx->state++;\n        break;\n    case 1:\n        if (!IsDma3ManagerBusyWithBgCopy())\n        {\n            numPlayers = GetNumPlayers();\n            for (i = 0; i < numPlayers; i++)\n                PutWindowTilemap(sGfx->windowIds[i]);\n            CopyBgTilemapBufferToVram(BG_INTERFACE);\n            sGfx->state++;\n        }\n        break;\n    default:\n        if (++sGfx->state > 180)\n        {\n            numPlayers = GetNumPlayers();\n            for (i = 0; i < numPlayers; i++)\n            {\n                ClearWindowTilemap(sGfx->windowIds[i]);\n                RemoveWindow(sGfx->windowIds[i]);\n            }\n            FillBgTilemapBufferRect_Palette0(BG_INTERFACE, 0, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT);\n            CopyBgTilemapBufferToVram(BG_INTERFACE);\n            sGfx->finished = TRUE;\n        }\n        break;\n    }",
       "callsTo": [
         "AddTextPrinterParameterized3",
@@ -1553,6 +2190,12 @@
       "returnType": "void",
       "signature": "static void PrintRankedScores(u8 numPlayers_)",
       "paramsRaw": "u8 numPlayers_",
+      "paramsList": [
+        {
+          "name": "numPlayers_",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 i, ranking = 0, rankedPlayers = 0;\n    u8 numPlayers = numPlayers_;  \n    u8 *name;\n    u32 x, numWidth;\n    u8 numString[32];\n    u8 playersByRanking[MAX_RFU_PLAYERS] = {0, 1, 2, 3, 4};\n    struct DodrioGame_ScoreResults temp, scoreResults[MAX_RFU_PLAYERS];\n\n     \n    for (i = 0; i < numPlayers; i++)\n    {\n        playersByRanking[i] = i;\n        GetScoreResults(&temp, i);\n        scoreResults[i] = temp;\n    }\n\n     \n    if (GetHighestScore() != 0)\n    {\n        do\n        {\n            for (i = 0; i < numPlayers; i++)\n            {\n                if (scoreResults[i].ranking == ranking)\n                {\n                    playersByRanking[rankedPlayers] = i;\n                    rankedPlayers++;\n                }\n            }\n            ranking = rankedPlayers;\n        } while (rankedPlayers < numPlayers);\n    }\n\n     \n    for (i = 0; i < numPlayers; i++)\n    {\n        if (scoreResults[i].score == 0)\n            scoreResults[i].ranking = numPlayers - 1;\n    }\n\n     \n    x = 216 - GetStringWidth(FONT_NORMAL, gText_SpacePoints, 0);\n    for (i = 0; i < numPlayers; i++)\n    {\n        u8 colorsId = COLORID_GRAY;\n        u8 playerId = playersByRanking[i];\n        u32 points = scoreResults[playerId].score;\n\n        AddTextPrinterParameterized(sGfx->windowIds[1], FONT_NORMAL, sRankingTexts[scoreResults[playerId].ranking], 8, sRankingYCoords[i], TEXT_SKIP_DRAW, NULL);\n        if (playerId == GetMultiplayerId())\n            colorsId = COLORID_BLUE;\n        name = GetPlayerName(playerId);\n        AddTextPrinterParameterized3(sGfx->windowIds[1], FONT_NORMAL, 28, sRankingYCoords[i], sTextColorTable[colorsId], TEXT_SKIP_DRAW, name);\n        ConvertIntToDecimalStringN(numString, points, STR_CONV_MODE_LEFT_ALIGN, 7);\n        numWidth = GetStringWidth(FONT_NORMAL, numString, -1);\n        AddTextPrinterParameterized(sGfx->windowIds[1], FONT_NORMAL, numString, x - numWidth, sRankingYCoords[i], TEXT_SKIP_DRAW, NULL);\n        AddTextPrinterParameterized(sGfx->windowIds[1], FONT_NORMAL, gText_SpacePoints, x, sRankingYCoords[i], TEXT_SKIP_DRAW, NULL);\n    }",
       "callsTo": [
         "AddTextPrinterParameterized",
@@ -1570,6 +2213,7 @@
       "returnType": "void",
       "signature": "static void ShowResults(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i, j, prizeState, numPlayers = GetNumPlayers();\n    u8 *name;\n    u32 strWidth, x;\n\n    switch (sGfx->state)\n    {\n    case 0:\n        SetScoreResults();\n        sGfx->timer = 0;\n        sGfx->state++;\n        break;\n    case 1:\n        sGfx->windowIds[0] = AddWindow(&sWindowTemplates_Results[0]);\n        sGfx->windowIds[1] = AddWindow(&sWindowTemplates_Results[1]);\n        ClearWindowTilemap(sGfx->windowIds[0]);\n        ClearWindowTilemap(sGfx->windowIds[1]);\n        DrawMessageWindow(&sWindowTemplates_Results[0]);\n        DrawMessageWindow(&sWindowTemplates_Results[1]);\n        sGfx->state++;\n        break;\n    case 2:\n        FillWindowPixelBuffer(sGfx->windowIds[0], PIXEL_FILL(1));\n        FillWindowPixelBuffer(sGfx->windowIds[1], PIXEL_FILL(1));\n        strWidth = GetStringWidth(FONT_NORMAL, gText_BerryPickingResults, -1);\n        x = (224 - strWidth) / 2;\n        AddTextPrinterParameterized(sGfx->windowIds[0], FONT_NORMAL, gText_BerryPickingResults, x, 1, TEXT_SKIP_DRAW, NULL);\n        AddTextPrinterParameterized(sGfx->windowIds[1], FONT_NORMAL, gText_10P30P50P50P, 68, 17, TEXT_SKIP_DRAW, NULL);\n        for (i = 0; i < numPlayers; i++)\n        {\n            u8 colorsId = COLORID_GRAY;\n            if (i == GetMultiplayerId())\n                colorsId = COLORID_BLUE;\n\n            name = GetPlayerName(i);\n            AddTextPrinterParameterized3(sGfx->windowIds[1], FONT_NORMAL, 0, sResultsYCoords[i], sTextColorTable[colorsId], TEXT_SKIP_DRAW, name);\n            for (j = 0; j < 4; j++)\n            {\n                u32 width;\n                u16 berriesPicked = Min(GetBerryResult(i, j), MAX_BERRIES);\n                u16 maxBerriesPicked = Min(GetHighestBerryResult(j), MAX_BERRIES);\n\n                ConvertIntToDecimalStringN(gStringVar4, berriesPicked, STR_CONV_MODE_LEFT_ALIGN, 4);\n                width = GetStringWidth(FONT_NORMAL, gStringVar4, -1);\n\n                 \n                if (maxBerriesPicked == berriesPicked && maxBerriesPicked != 0)\n                    AddTextPrinterParameterized3(sGfx->windowIds[1], FONT_NORMAL, sResultsXCoords[j] - width, sResultsYCoords[i], sTextColorTable[COLORID_RED], TEXT_SKIP_DRAW, gStringVar4);\n                else\n                    AddTextPrinterParameterized(sGfx->windowIds[1], FONT_NORMAL, gStringVar4, sResultsXCoords[j] - width, sResultsYCoords[i], TEXT_SKIP_DRAW, NULL);\n            }\n        }\n        CopyWindowToVram(sGfx->windowIds[0], COPYWIN_GFX);\n        CopyWindowToVram(sGfx->windowIds[1], COPYWIN_GFX);\n        sGfx->state++;\n        break;\n    case 3:\n        if (!IsDma3ManagerBusyWithBgCopy())\n        {\n            PutWindowTilemap(sGfx->windowIds[0]);\n            PutWindowTilemap(sGfx->windowIds[1]);\n        }\n        CopyBgTilemapBufferToVram(BG_INTERFACE);\n        SetBerryIconsInvisibility(FALSE);\n        sGfx->state++;\n        break;\n    case 4:\n        if (++sGfx->timer >= 30 && JOY_NEW(A_BUTTON))\n        {\n            sGfx->timer = 0;\n            PlaySE(SE_SELECT);\n            SetBerryIconsInvisibility(TRUE);\n            sGfx->state++;\n        }\n        break;\n    case 5:\n        FillWindowPixelBuffer(sGfx->windowIds[0], PIXEL_FILL(1));\n        FillWindowPixelBuffer(sGfx->windowIds[1], PIXEL_FILL(1));\n        strWidth = GetStringWidth(FONT_NORMAL, gText_AnnouncingRankings, -1);\n        x = (224 - strWidth) / 2;\n        AddTextPrinterParameterized(sGfx->windowIds[0], FONT_NORMAL, gText_AnnouncingRankings, x, 1, TEXT_SKIP_DRAW, NULL);\n        sGfx->state++;\n        break;\n    case 6:\n        PrintRankedScores(numPlayers);\n        CopyWindowToVram(sGfx->windowIds[0], COPYWIN_GFX);\n        CopyWindowToVram(sGfx->windowIds[1], COPYWIN_GFX);\n        sGfx->state++;\n        break;\n    case 7:\n        if (!IsDma3ManagerBusyWithBgCopy())\n        {\n            PutWindowTilemap(sGfx->windowIds[0]);\n            PutWindowTilemap(sGfx->windowIds[1]);\n        }\n        CopyBgTilemapBufferToVram(BG_INTERFACE);\n        sGfx->state++;\n        break;\n    case 8:\n        if (++sGfx->timer >= 30 && JOY_NEW(A_BUTTON))\n        {\n            sGfx->timer = 0;\n            PlaySE(SE_SELECT);\n            if (GetHighestScore() < PRIZE_SCORE)\n            {\n                sGfx->state = 127;  \n            }\n            else\n            {\n                StopMapMusic();\n                sGfx->state++;\n            }\n\n            FillBgTilemapBufferRect_Palette0(BG_INTERFACE, 0, 0, 5, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT - 5);\n            RemoveWindow(sGfx->windowIds[1]);\n            sGfx->windowIds[1] = AddWindow(&sWindowTemplate_Prize);\n            ClearWindowTilemap(sGfx->windowIds[1]);\n            DrawMessageWindow(&sWindowTemplate_Prize);\n        }\n        break;\n    case 9:\n        PlayNewMapMusic(MUS_LEVEL_UP);\n        FillWindowPixelBuffer(sGfx->windowIds[0], PIXEL_FILL(1));\n        FillWindowPixelBuffer(sGfx->windowIds[1], PIXEL_FILL(1));\n        strWidth = GetStringWidth(FONT_NORMAL, gText_AnnouncingPrizes, -1);\n        x = (224 - strWidth) / 2;\n        AddTextPrinterParameterized(sGfx->windowIds[0], FONT_NORMAL, gText_AnnouncingPrizes, x, 1, TEXT_SKIP_DRAW, NULL);\n        DynamicPlaceholderTextUtil_Reset();\n        CopyItemName(GetPrizeItemId(), gStringVar1);\n        DynamicPlaceholderTextUtil_SetPlaceholderPtr(0, gStringVar1);\n        DynamicPlaceholderTextUtil_ExpandPlaceholders(gStringVar4, gText_FirstPlacePrize);\n        AddTextPrinterParameterized(sGfx->windowIds[1], FONT_NORMAL, gStringVar4, 0, 1, TEXT_SKIP_DRAW, NULL);\n        prizeState = TryGivePrize();\n        if (prizeState != PRIZE_RECEIVED && prizeState != NO_PRIZE)\n        {\n            DynamicPlaceholderTextUtil_Reset();\n            CopyItemName(GetPrizeItemId(), gStringVar1);\n            DynamicPlaceholderTextUtil_SetPlaceholderPtr(0, gStringVar1);\n            if (prizeState == PRIZE_NO_ROOM)\n                DynamicPlaceholderTextUtil_ExpandPlaceholders(gStringVar4, gText_CantHoldAnyMore);\n            else if (prizeState == PRIZE_FILLED_BAG)\n                DynamicPlaceholderTextUtil_ExpandPlaceholders(gStringVar4, gText_FilledStorageSpace);\n            AddTextPrinterParameterized(sGfx->windowIds[1], FONT_NORMAL, gStringVar4, 0, 41, TEXT_SKIP_DRAW, NULL);\n        }\n        CopyWindowToVram(sGfx->windowIds[0], COPYWIN_GFX);\n        CopyWindowToVram(sGfx->windowIds[1], COPYWIN_GFX);\n        sGfx->state++;\n        break;\n    case 10:\n        if (!IsDma3ManagerBusyWithBgCopy())\n        {\n            PutWindowTilemap(sGfx->windowIds[0]);\n            PutWindowTilemap(sGfx->windowIds[1]);\n        }\n        CopyBgTilemapBufferToVram(BG_INTERFACE);\n        FadeOutAndFadeInNewMapMusic(MUS_RG_VICTORY_WILD, 20, 10);\n        sGfx->state++;\n        break;\n    case 11:\n        if (++sGfx->timer >= 30 && JOY_NEW(A_BUTTON))\n        {\n            sGfx->timer = 0;\n            PlaySE(SE_SELECT);\n            sGfx->state++;\n        }\n        break;\n    default:\n        ClearWindowTilemap(sGfx->windowIds[0]);\n        ClearWindowTilemap(sGfx->windowIds[1]);\n        RemoveWindow(sGfx->windowIds[0]);\n        RemoveWindow(sGfx->windowIds[1]);\n        FillBgTilemapBufferRect_Palette0(BG_INTERFACE, 0, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT);\n        CopyBgTilemapBufferToVram(BG_INTERFACE);\n        sGfx->finished = TRUE;\n        break;\n    }",
       "callsTo": [
         "AddTextPrinterParameterized",
@@ -1615,6 +2259,7 @@
       "returnType": "void",
       "signature": "static void Msg_WantToPlayAgain(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 y;\n\n    switch (sGfx->state)\n    {\n    case 0:\n         \n        sGfx->windowIds[WIN_PLAY_AGAIN] = AddWindow(&sWindowTemplates_PlayAgain[WIN_PLAY_AGAIN]);\n        sGfx->windowIds[WIN_YES_NO] = AddWindow(&sWindowTemplates_PlayAgain[WIN_YES_NO]);\n        ClearWindowTilemap(sGfx->windowIds[WIN_PLAY_AGAIN]);\n        ClearWindowTilemap(sGfx->windowIds[WIN_YES_NO]);\n        DrawMessageWindow(&sWindowTemplates_PlayAgain[WIN_PLAY_AGAIN]);\n        DrawYesNoMessageWindow(&sWindowTemplates_PlayAgain[WIN_YES_NO]);\n        sGfx->state++;\n        sGfx->cursorSelection = PLAY_AGAIN_NONE;\n        sGfx->playAgainState = PLAY_AGAIN_NONE;\n        break;\n    case 1:\n         \n        FillWindowPixelBuffer(sGfx->windowIds[WIN_PLAY_AGAIN], PIXEL_FILL(1));\n        FillWindowPixelBuffer(sGfx->windowIds[WIN_YES_NO], PIXEL_FILL(1));\n        AddTextPrinterParameterized(sGfx->windowIds[WIN_PLAY_AGAIN], FONT_NORMAL, gText_WantToPlayAgain, 0, 5, TEXT_SKIP_DRAW, NULL);\n        AddTextPrinterParameterized(sGfx->windowIds[WIN_YES_NO], FONT_NORMAL, gText_Yes, 8, 1, TEXT_SKIP_DRAW, NULL);\n        AddTextPrinterParameterized(sGfx->windowIds[WIN_YES_NO], FONT_NORMAL, gText_No, 8, 17, TEXT_SKIP_DRAW, NULL);\n        AddTextPrinterParameterized(sGfx->windowIds[WIN_YES_NO], FONT_NORMAL, gText_SelectorArrow2, 0, 1, TEXT_SKIP_DRAW, NULL);\n        CopyWindowToVram(sGfx->windowIds[WIN_PLAY_AGAIN], COPYWIN_GFX);\n        CopyWindowToVram(sGfx->windowIds[WIN_YES_NO], COPYWIN_GFX);\n        sGfx->state++;\n        break;\n    case 2:\n         \n        if (!IsDma3ManagerBusyWithBgCopy())\n        {\n            PutWindowTilemap(sGfx->windowIds[WIN_PLAY_AGAIN]);\n            PutWindowTilemap(sGfx->windowIds[WIN_YES_NO]);\n        }\n        CopyBgTilemapBufferToVram(BG_INTERFACE);\n        sGfx->state++;\n        break;\n    case 3:\n         \n        y = sGfx->cursorSelection;\n        if (y == PLAY_AGAIN_NONE)\n            y = PLAY_AGAIN_YES;\n        FillWindowPixelBuffer(sGfx->windowIds[WIN_YES_NO], PIXEL_FILL(1));\n        AddTextPrinterParameterized(sGfx->windowIds[WIN_YES_NO], FONT_NORMAL, gText_Yes, 8, 1, TEXT_SKIP_DRAW, NULL);\n        AddTextPrinterParameterized(sGfx->windowIds[WIN_YES_NO], FONT_NORMAL, gText_No, 8, 17, TEXT_SKIP_DRAW, NULL);\n        AddTextPrinterParameterized(sGfx->windowIds[WIN_YES_NO], FONT_NORMAL, gText_SelectorArrow2, 0, ((y - 1) * 16) + 1, TEXT_SKIP_DRAW, NULL);\n        CopyWindowToVram(sGfx->windowIds[WIN_YES_NO], COPYWIN_FULL);\n\n         \n        if (JOY_NEW(A_BUTTON))\n        {\n            PlaySE(SE_SELECT);\n            if (sGfx->cursorSelection == PLAY_AGAIN_NONE)\n                sGfx->cursorSelection = PLAY_AGAIN_YES;\n            sGfx->state++;\n        }\n        else if (JOY_NEW(DPAD_UP | DPAD_DOWN))\n        {\n            PlaySE(SE_SELECT);\n            switch (sGfx->cursorSelection)\n            {\n            case PLAY_AGAIN_NONE:\n                sGfx->cursorSelection = PLAY_AGAIN_NO;\n                break;\n            case PLAY_AGAIN_YES:\n                sGfx->cursorSelection = PLAY_AGAIN_NO;\n                break;\n            case PLAY_AGAIN_NO:\n                sGfx->cursorSelection = PLAY_AGAIN_YES;\n                break;\n            }\n        }\n        else if (JOY_NEW(B_BUTTON))\n        {\n            PlaySE(SE_SELECT);\n            sGfx->cursorSelection = PLAY_AGAIN_NO;\n            sGfx->state++;\n        }\n        break;\n    default:\n        sGfx->playAgainState = sGfx->cursorSelection;\n        ClearWindowTilemap(sGfx->windowIds[WIN_PLAY_AGAIN]);\n        ClearWindowTilemap(sGfx->windowIds[WIN_YES_NO]);\n        RemoveWindow(sGfx->windowIds[WIN_PLAY_AGAIN]);\n        RemoveWindow(sGfx->windowIds[WIN_YES_NO]);\n        FillBgTilemapBufferRect_Palette0(BG_INTERFACE, 0, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT);\n        CopyBgTilemapBufferToVram(BG_INTERFACE);\n        sGfx->finished = TRUE;\n        break;\n    }",
       "callsTo": [
         "AddTextPrinterParameterized",
@@ -1639,6 +2284,7 @@
       "returnType": "void",
       "signature": "static void Msg_SavingDontTurnOff(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sGfx->state)\n    {\n    case 0:\n        DrawDialogueFrame(0, FALSE);\n        AddTextPrinterParameterized2(0, FONT_NORMAL, gText_SavingDontTurnOffPower, 0, NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);\n        sGfx->state++;\n        break;\n    case 1:\n        CopyWindowToVram(0, COPYWIN_FULL);\n        sGfx->state++;\n        break;\n    case 2:\n        if (!IsDma3ManagerBusyWithBgCopy())\n        {\n            CreateTask(Task_LinkFullSave, 0);\n            sGfx->state++;\n        }\n        break;\n    case 3:\n        if (!FuncIsActiveTask(Task_LinkFullSave))\n            sGfx->state++;\n        break;\n    default:\n        FillBgTilemapBufferRect_Palette0(BG_INTERFACE, 0, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT);\n        CopyBgTilemapBufferToVram(BG_INTERFACE);\n        sGfx->finished = TRUE;\n        break;\n    }",
       "callsTo": [
         "AddTextPrinterParameterized2",
@@ -1656,6 +2302,7 @@
       "returnType": "void",
       "signature": "static void Msg_CommunicationStandby(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sGfx->state)\n    {\n    case 0:\n        sGfx->windowIds[0] = AddWindow(&sWindowTemplate_CommStandby);\n        ClearWindowTilemap(sGfx->windowIds[0]);\n        DrawMessageWindow(&sWindowTemplate_CommStandby);\n        sGfx->state++;\n        break;\n    case 1:\n        FillWindowPixelBuffer(sGfx->windowIds[0], PIXEL_FILL(1));\n        AddTextPrinterParameterized(sGfx->windowIds[0], FONT_NORMAL, gText_CommunicationStandby3, 0, 5, TEXT_SKIP_DRAW, NULL);\n        CopyWindowToVram(sGfx->windowIds[0], COPYWIN_GFX);\n        sGfx->state++;\n        break;\n    case 2:\n        if (!IsDma3ManagerBusyWithBgCopy())\n            PutWindowTilemap(sGfx->windowIds[0]);\n        CopyBgTilemapBufferToVram(BG_INTERFACE);\n        sGfx->state++;\n        break;\n    default:\n        sGfx->finished = TRUE;\n        break;\n    }",
       "callsTo": [
         "AddTextPrinterParameterized",
@@ -1675,6 +2322,7 @@
       "returnType": "void",
       "signature": "static void EraseMessage(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ClearWindowTilemap(sGfx->windowIds[0]);\n    RemoveWindow(sGfx->windowIds[0]);\n    FillBgTilemapBufferRect_Palette0(BG_INTERFACE, 0, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT);\n    CopyBgTilemapBufferToVram(BG_INTERFACE);\n    sGfx->finished = TRUE;",
       "callsTo": [
         "ClearWindowTilemap",
@@ -1688,6 +2336,7 @@
       "returnType": "void",
       "signature": "static void Msg_SomeoneDroppedOut(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sGfx->state)\n    {\n    case 0:\n        sGfx->windowIds[0] = AddWindow(&sWindowTemplate_DroppedOut);\n        ClearWindowTilemap(sGfx->windowIds[0]);\n        DrawMessageWindow(&sWindowTemplate_DroppedOut);\n        sGfx->state++;\n        sGfx->timer = 0;\n        sGfx->cursorSelection = 0;\n        sGfx->playAgainState = PLAY_AGAIN_NONE;\n        break;\n    case 1:\n        FillWindowPixelBuffer(sGfx->windowIds[0], PIXEL_FILL(1));\n        AddTextPrinterParameterized(sGfx->windowIds[0], FONT_NORMAL, gText_SomeoneDroppedOut, 0, 5, TEXT_SKIP_DRAW, NULL);\n        CopyWindowToVram(sGfx->windowIds[0], COPYWIN_GFX);\n        sGfx->state++;\n        break;\n    case 2:\n        if (!IsDma3ManagerBusyWithBgCopy())\n            PutWindowTilemap(sGfx->windowIds[0]);\n        CopyBgTilemapBufferToVram(BG_INTERFACE);\n        sGfx->state++;\n        break;\n    case 3:\n        if (++sGfx->timer >= 120)\n            sGfx->state++;\n        break;\n    default:\n        sGfx->playAgainState = PLAY_AGAIN_DROPPED;\n        ClearWindowTilemap(sGfx->windowIds[0]);\n        RemoveWindow(sGfx->windowIds[0]);\n        FillBgTilemapBufferRect_Palette0(BG_INTERFACE, 0, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT);\n        CopyBgTilemapBufferToVram(BG_INTERFACE);\n        sGfx->finished = TRUE;\n        break;\n    }",
       "callsTo": [
         "AddTextPrinterParameterized",
@@ -1709,6 +2358,7 @@
       "returnType": "void",
       "signature": "static void StopGfxFuncs(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "DestroyTask(sGfx->taskId);\n    sGfx->finished = TRUE;",
       "callsTo": [
         "DestroyTask"
@@ -1719,6 +2369,7 @@
       "returnType": "void",
       "signature": "static void GfxIdle(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "",
       "callsTo": [],
       "lineCount": 1
@@ -1727,6 +2378,12 @@
       "returnType": "void",
       "signature": "static void SetGfxFunc(void (*func)(void))",
       "paramsRaw": "void (*func)(void)",
+      "paramsList": [
+        {
+          "name": "func",
+          "typeRaw": "fnptr"
+        }
+      ],
       "body": "sGfx->state = 0;\n    sGfx->finished = FALSE;\n    sGfx->func = func;",
       "callsTo": [],
       "lineCount": 3
@@ -1735,6 +2392,7 @@
       "returnType": "bool32",
       "signature": "static bool32 IsGfxFuncActive(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (sGfx->finished == TRUE)\n        return FALSE;\n    else\n        return TRUE;",
       "callsTo": [],
       "lineCount": 4
@@ -1743,6 +2401,7 @@
       "returnType": "u8",
       "signature": "static u8 GetPlayAgainState(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return sGfx->playAgainState;",
       "callsTo": [],
       "lineCount": 1
@@ -1751,6 +2410,7 @@
       "returnType": "void",
       "signature": "static void InitBgs(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "DmaClearLarge16(3, (void *)VRAM, VRAM_SIZE, 0x1000);\n    DmaClear32(3,(void *)OAM, OAM_SIZE);\n    DmaClear16(3, (void *)PLTT, PLTT_SIZE);\n    SetGpuReg(REG_OFFSET_DISPCNT, 0);\n    ResetBgsAndClearDma3BusyFlags(0);\n    InitBgsFromTemplates(0, sBgTemplates, ARRAY_COUNT(sBgTemplates));\n    ChangeBgX(0, 0, BG_COORD_SET);\n    ChangeBgY(0, 0, BG_COORD_SET);\n    ChangeBgX(1, 0, BG_COORD_SET);\n    ChangeBgY(1, 0, BG_COORD_SET);\n    ChangeBgX(2, 0, BG_COORD_SET);\n    ChangeBgY(2, 0, BG_COORD_SET);\n    ChangeBgX(3, 0, BG_COORD_SET);\n    ChangeBgY(3, 0, BG_COORD_SET);\n    InitStandardTextBoxWindows();\n    InitTextBoxGfxAndPrinters();\n    SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_OBJ_ON | DISPCNT_OBJ_1D_MAP);\n    SetBgTilemapBuffer(BG_SCENERY, sGfx->tilemapBuffers[0]);\n    SetBgTilemapBuffer(BG_TREE_LEFT, sGfx->tilemapBuffers[1]);\n    SetBgTilemapBuffer(BG_TREE_RIGHT, sGfx->tilemapBuffers[2]);",
       "callsTo": [
         "ARRAY_COUNT",
@@ -1772,6 +2432,7 @@
       "returnType": "bool32",
       "signature": "static bool32 LoadBgGfx(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sGfx->loadState)\n    {\n    case 0:\n        LoadPalette(sBg_Pal, BG_PLTT_ID(0), sizeof(sBg_Pal));\n        break;\n    case 1:\n        ResetTempTileDataBuffers();\n        break;\n    case 2:\n        DecompressAndCopyTileDataToVram(BG_SCENERY, sBg_Gfx, 0, 0, 0);\n        break;\n    case 3:\n        DecompressAndCopyTileDataToVram(BG_TREE_LEFT, sTreeBorder_Gfx, 0, 0, 0);\n        break;\n    case 4:\n        if (FreeTempTileDataBuffersIfPossible() == TRUE)\n            return FALSE;\n        break;\n    case 5:\n        LoadPalette(GetTextWindowPalette(3), BG_PLTT_ID(13), PLTT_SIZE_4BPP);\n        break;\n    default:\n        sGfx->loadState = 0;\n        return TRUE;\n    }\n\n    sGfx->loadState++;\n    return FALSE;",
       "callsTo": [
         "BG_PLTT_ID",

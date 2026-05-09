@@ -6,6 +6,7 @@
       "returnType": "void",
       "signature": "void DoWhiteOut(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "RunScriptImmediately(EventScript_WhiteOut);\n    SetMoney(&gSaveBlock1Ptr->money, GetMoney(&gSaveBlock1Ptr->money) / 2);\n    HealPlayerParty();\n    Overworld_ResetStateAfterWhiteOut();\n    SetWarpDestinationToLastHealLocation();\n    WarpIntoMap();",
       "callsTo": [
         "GetMoney",
@@ -22,6 +23,7 @@
       "returnType": "void",
       "signature": "void Overworld_ResetStateAfterFly(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ResetInitialPlayerAvatarState();\n    FlagClear(FLAG_SYS_CYCLING_ROAD);\n    FlagClear(FLAG_SYS_CRUISE_MODE);\n    FlagClear(FLAG_SYS_SAFARI_MODE);\n    FlagClear(FLAG_SYS_USE_STRENGTH);\n    FlagClear(FLAG_SYS_USE_FLASH);",
       "callsTo": [
         "FlagClear",
@@ -33,6 +35,7 @@
       "returnType": "void",
       "signature": "void Overworld_ResetStateAfterTeleport(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ResetInitialPlayerAvatarState();\n    FlagClear(FLAG_SYS_CYCLING_ROAD);\n    FlagClear(FLAG_SYS_CRUISE_MODE);\n    FlagClear(FLAG_SYS_SAFARI_MODE);\n    FlagClear(FLAG_SYS_USE_STRENGTH);\n    FlagClear(FLAG_SYS_USE_FLASH);\n    RunScriptImmediately(EventScript_ResetMrBriney);",
       "callsTo": [
         "FlagClear",
@@ -45,6 +48,7 @@
       "returnType": "void",
       "signature": "void Overworld_ResetStateAfterDigEscRope(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ResetInitialPlayerAvatarState();\n    FlagClear(FLAG_SYS_CYCLING_ROAD);\n    FlagClear(FLAG_SYS_CRUISE_MODE);\n    FlagClear(FLAG_SYS_SAFARI_MODE);\n    FlagClear(FLAG_SYS_USE_STRENGTH);\n    FlagClear(FLAG_SYS_USE_FLASH);",
       "callsTo": [
         "FlagClear",
@@ -56,6 +60,7 @@
       "returnType": "void",
       "signature": "static void Overworld_ResetStateAfterWhiteOut(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ResetInitialPlayerAvatarState();\n    FlagClear(FLAG_SYS_CYCLING_ROAD);\n    FlagClear(FLAG_SYS_CRUISE_MODE);\n    FlagClear(FLAG_SYS_SAFARI_MODE);\n    FlagClear(FLAG_SYS_USE_STRENGTH);\n    FlagClear(FLAG_SYS_USE_FLASH);\n     \n     \n    if (VarGet(VAR_SHOULD_END_ABNORMAL_WEATHER) == 1)\n    {\n        VarSet(VAR_SHOULD_END_ABNORMAL_WEATHER, 0);\n        VarSet(VAR_ABNORMAL_WEATHER_LOCATION, ABNORMAL_WEATHER_NONE);\n    }",
       "callsTo": [
         "FlagClear",
@@ -69,6 +74,7 @@
       "returnType": "void",
       "signature": "static void UpdateMiscOverworldStates(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "FlagClear(FLAG_SYS_SAFARI_MODE);\n    ChooseAmbientCrySpecies();\n    ResetCyclingRoadChallengeData();\n    UpdateLocationHistoryForRoamer();\n    RoamerMoveToOtherLocationSet();",
       "callsTo": [
         "ChooseAmbientCrySpecies",
@@ -83,6 +89,7 @@
       "returnType": "void",
       "signature": "void ResetGameStats(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s32 i;\n\n    for (i = 0; i < NUM_GAME_STATS; i++)\n        SetGameStat(i, 0);",
       "callsTo": [
         "SetGameStat"
@@ -93,6 +100,12 @@
       "returnType": "void",
       "signature": "void IncrementGameStat(u8 index)",
       "paramsRaw": "u8 index",
+      "paramsList": [
+        {
+          "name": "index",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (index < NUM_USED_GAME_STATS)\n    {\n        u32 statVal = GetGameStat(index);\n        if (statVal < 0xFFFFFF)\n            statVal++;\n        else\n            statVal = 0xFFFFFF;\n\n        SetGameStat(index, statVal);\n    }",
       "callsTo": [
         "GetGameStat",
@@ -104,6 +117,12 @@
       "returnType": "u32",
       "signature": "u32 GetGameStat(u8 index)",
       "paramsRaw": "u8 index",
+      "paramsList": [
+        {
+          "name": "index",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (index >= NUM_USED_GAME_STATS)\n        return 0;\n\n    return gSaveBlock1Ptr->gameStats[index] ^ gSaveBlock2Ptr->encryptionKey;",
       "callsTo": [],
       "lineCount": 4
@@ -112,6 +131,16 @@
       "returnType": "void",
       "signature": "void SetGameStat(u8 index, u32 value)",
       "paramsRaw": "u8 index, u32 value",
+      "paramsList": [
+        {
+          "name": "index",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "value",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "if (index < NUM_USED_GAME_STATS)\n        gSaveBlock1Ptr->gameStats[index] = value ^ gSaveBlock2Ptr->encryptionKey;",
       "callsTo": [],
       "lineCount": 2
@@ -120,6 +149,12 @@
       "returnType": "void",
       "signature": "void ApplyNewEncryptionKeyToGameStats(u32 newKey)",
       "paramsRaw": "u32 newKey",
+      "paramsList": [
+        {
+          "name": "newKey",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "u8 i;\n\n    for (i = 0; i < NUM_GAME_STATS; i++)\n        ApplyNewEncryptionKeyToWord(&gSaveBlock1Ptr->gameStats[i], newKey);",
       "callsTo": [
         "ApplyNewEncryptionKeyToWord"
@@ -130,6 +165,7 @@
       "returnType": "void",
       "signature": "void LoadObjEventTemplatesFromHeader(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "CpuFill32(0, gSaveBlock1Ptr->objectEventTemplates, sizeof(gSaveBlock1Ptr->objectEventTemplates));\n\n     \n    CpuCopy32(gMapHeader.events->objectEvents,\n              gSaveBlock1Ptr->objectEventTemplates,\n              gMapHeader.events->objectEventCount * sizeof(struct ObjectEventTemplate));",
       "callsTo": [
         "CpuCopy32",
@@ -141,6 +177,7 @@
       "returnType": "void",
       "signature": "void LoadSaveblockObjEventScripts(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "const struct ObjectEventTemplate *mapHeaderObjTemplates = gMapHeader.events->objectEvents;\n    struct ObjectEventTemplate *savObjTemplates = gSaveBlock1Ptr->objectEventTemplates;\n    s32 i;\n\n    for (i = 0; i < OBJECT_EVENT_TEMPLATES_COUNT; i++)\n        savObjTemplates[i].script = mapHeaderObjTemplates[i].script;",
       "callsTo": [],
       "lineCount": 6
@@ -149,6 +186,20 @@
       "returnType": "void",
       "signature": "void SetObjEventTemplateCoords(u8 localId, s16 x, s16 y)",
       "paramsRaw": "u8 localId, s16 x, s16 y",
+      "paramsList": [
+        {
+          "name": "localId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "x",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s16"
+        }
+      ],
       "body": "s32 i;\n    struct ObjectEventTemplate *savObjTemplates = gSaveBlock1Ptr->objectEventTemplates;\n\n    for (i = 0; i < OBJECT_EVENT_TEMPLATES_COUNT; i++)\n    {\n        struct ObjectEventTemplate *objectEventTemplate = &savObjTemplates[i];\n        if (objectEventTemplate->localId == localId)\n        {\n            objectEventTemplate->x = x;\n            objectEventTemplate->y = y;\n            return;\n        }\n    }",
       "callsTo": [],
       "lineCount": 13
@@ -157,6 +208,16 @@
       "returnType": "void",
       "signature": "void SetObjEventTemplateMovementType(u8 localId, u8 movementType)",
       "paramsRaw": "u8 localId, u8 movementType",
+      "paramsList": [
+        {
+          "name": "localId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "movementType",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s32 i;\n\n    struct ObjectEventTemplate *savObjTemplates = gSaveBlock1Ptr->objectEventTemplates;\n    for (i = 0; i < OBJECT_EVENT_TEMPLATES_COUNT; i++)\n    {\n        struct ObjectEventTemplate *objectEventTemplate = &savObjTemplates[i];\n        if (objectEventTemplate->localId == localId)\n        {\n            objectEventTemplate->movementType = movementType;\n            return;\n        }\n    }",
       "callsTo": [],
       "lineCount": 12
@@ -165,6 +226,7 @@
       "returnType": "void",
       "signature": "static void InitMapView(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ResetFieldCamera();\n    CopyMapTilesetsToVram(gMapHeader.mapLayout);\n    LoadMapTilesetPalettes(gMapHeader.mapLayout);\n    DrawWholeMapView();\n    InitTilesetAnimations();",
       "callsTo": [
         "CopyMapTilesetsToVram",
@@ -179,6 +241,7 @@
       "returnType": "void",
       "signature": "void ApplyCurrentWarp(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gLastUsedWarp = gSaveBlock1Ptr->location;\n    gSaveBlock1Ptr->location = sWarpDestination;\n    sFixedDiveWarp = sDummyWarpData;\n    sFixedHoleWarp = sDummyWarpData;",
       "callsTo": [],
       "lineCount": 4
@@ -187,6 +250,7 @@
       "returnType": "void",
       "signature": "static void ClearDiveAndHoleWarps(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sFixedDiveWarp = sDummyWarpData;\n    sFixedHoleWarp = sDummyWarpData;",
       "callsTo": [],
       "lineCount": 2
@@ -195,6 +259,32 @@
       "returnType": "void",
       "signature": "static void SetWarpData(struct WarpData *warp, s8 mapGroup, s8 mapNum, s8 warpId, s8 x, s8 y)",
       "paramsRaw": "struct WarpData *warp, s8 mapGroup, s8 mapNum, s8 warpId, s8 x, s8 y",
+      "paramsList": [
+        {
+          "name": "warp",
+          "typeRaw": "struct WarpData *"
+        },
+        {
+          "name": "mapGroup",
+          "typeRaw": "s8"
+        },
+        {
+          "name": "mapNum",
+          "typeRaw": "s8"
+        },
+        {
+          "name": "warpId",
+          "typeRaw": "s8"
+        },
+        {
+          "name": "x",
+          "typeRaw": "s8"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s8"
+        }
+      ],
       "body": "warp->mapGroup = mapGroup;\n    warp->mapNum = mapNum;\n    warp->warpId = warpId;\n    warp->x = x;\n    warp->y = y;",
       "callsTo": [],
       "lineCount": 5
@@ -203,6 +293,12 @@
       "returnType": "bool32",
       "signature": "static bool32 IsDummyWarp(struct WarpData *warp)",
       "paramsRaw": "struct WarpData *warp",
+      "paramsList": [
+        {
+          "name": "warp",
+          "typeRaw": "struct WarpData *"
+        }
+      ],
       "body": "if (warp->mapGroup != (s8)MAP_GROUP(MAP_UNDEFINED))\n        return FALSE;\n    else if (warp->mapNum != (s8)MAP_NUM(MAP_UNDEFINED))\n        return FALSE;\n    else if (warp->warpId != WARP_ID_NONE)\n        return FALSE;\n    else if (warp->x != -1)\n        return FALSE;\n    else if (warp->y != -1)\n        return FALSE;\n    else\n        return TRUE;",
       "callsTo": [
         "MAP_GROUP",
@@ -214,6 +310,7 @@
       "returnType": "void",
       "signature": "static void LoadCurrentMapData(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sLastMapSectionId = gMapHeader.regionMapSectionId;\n    gMapHeader = *Overworld_GetMapHeaderByGroupAndId(gSaveBlock1Ptr->location.mapGroup, gSaveBlock1Ptr->location.mapNum);\n    gSaveBlock1Ptr->mapLayoutId = gMapHeader.mapLayoutId;\n    gMapHeader.mapLayout = GetMapLayout();",
       "callsTo": [
         "GetMapLayout",
@@ -225,6 +322,7 @@
       "returnType": "void",
       "signature": "static void LoadSaveblockMapHeader(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gMapHeader = *Overworld_GetMapHeaderByGroupAndId(gSaveBlock1Ptr->location.mapGroup, gSaveBlock1Ptr->location.mapNum);\n    gMapHeader.mapLayout = GetMapLayout();",
       "callsTo": [
         "GetMapLayout",
@@ -236,6 +334,7 @@
       "returnType": "void",
       "signature": "static void SetPlayerCoordsFromWarp(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gSaveBlock1Ptr->location.warpId >= 0 && gSaveBlock1Ptr->location.warpId < gMapHeader.events->warpCount)\n    {\n         \n        gSaveBlock1Ptr->pos.x = gMapHeader.events->warps[gSaveBlock1Ptr->location.warpId].x;\n        gSaveBlock1Ptr->pos.y = gMapHeader.events->warps[gSaveBlock1Ptr->location.warpId].y;\n    }\n    else if (gSaveBlock1Ptr->location.x >= 0 && gSaveBlock1Ptr->location.y >= 0)\n    {\n         \n         \n        gSaveBlock1Ptr->pos.x = gSaveBlock1Ptr->location.x;\n        gSaveBlock1Ptr->pos.y = gSaveBlock1Ptr->location.y;\n    }\n    else\n    {\n         \n        gSaveBlock1Ptr->pos.x = gMapHeader.mapLayout->width / 2;\n        gSaveBlock1Ptr->pos.y = gMapHeader.mapLayout->height / 2;\n    }",
       "callsTo": [],
       "lineCount": 19
@@ -244,6 +343,7 @@
       "returnType": "void",
       "signature": "void WarpIntoMap(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ApplyCurrentWarp();\n    LoadCurrentMapData();\n    SetPlayerCoordsFromWarp();",
       "callsTo": [
         "ApplyCurrentWarp",
@@ -256,6 +356,28 @@
       "returnType": "void",
       "signature": "void SetWarpDestination(s8 mapGroup, s8 mapNum, s8 warpId, s8 x, s8 y)",
       "paramsRaw": "s8 mapGroup, s8 mapNum, s8 warpId, s8 x, s8 y",
+      "paramsList": [
+        {
+          "name": "mapGroup",
+          "typeRaw": "s8"
+        },
+        {
+          "name": "mapNum",
+          "typeRaw": "s8"
+        },
+        {
+          "name": "warpId",
+          "typeRaw": "s8"
+        },
+        {
+          "name": "x",
+          "typeRaw": "s8"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s8"
+        }
+      ],
       "body": "SetWarpData(&sWarpDestination, mapGroup, mapNum, warpId, x, y);",
       "callsTo": [
         "SetWarpData"
@@ -266,6 +388,20 @@
       "returnType": "void",
       "signature": "void SetWarpDestinationToMapWarp(s8 mapGroup, s8 mapNum, s8 warpId)",
       "paramsRaw": "s8 mapGroup, s8 mapNum, s8 warpId",
+      "paramsList": [
+        {
+          "name": "mapGroup",
+          "typeRaw": "s8"
+        },
+        {
+          "name": "mapNum",
+          "typeRaw": "s8"
+        },
+        {
+          "name": "warpId",
+          "typeRaw": "s8"
+        }
+      ],
       "body": "SetWarpDestination(mapGroup, mapNum, warpId, -1, -1);",
       "callsTo": [
         "SetWarpDestination"
@@ -276,6 +412,24 @@
       "returnType": "void",
       "signature": "void SetDynamicWarp(s32 unused, s8 mapGroup, s8 mapNum, s8 warpId)",
       "paramsRaw": "s32 unused, s8 mapGroup, s8 mapNum, s8 warpId",
+      "paramsList": [
+        {
+          "name": "unused",
+          "typeRaw": "s32"
+        },
+        {
+          "name": "mapGroup",
+          "typeRaw": "s8"
+        },
+        {
+          "name": "mapNum",
+          "typeRaw": "s8"
+        },
+        {
+          "name": "warpId",
+          "typeRaw": "s8"
+        }
+      ],
       "body": "SetWarpData(&gSaveBlock1Ptr->dynamicWarp, mapGroup, mapNum, warpId, gSaveBlock1Ptr->pos.x, gSaveBlock1Ptr->pos.y);",
       "callsTo": [
         "SetWarpData"
@@ -286,6 +440,32 @@
       "returnType": "void",
       "signature": "void SetDynamicWarpWithCoords(s32 unused, s8 mapGroup, s8 mapNum, s8 warpId, s8 x, s8 y)",
       "paramsRaw": "s32 unused, s8 mapGroup, s8 mapNum, s8 warpId, s8 x, s8 y",
+      "paramsList": [
+        {
+          "name": "unused",
+          "typeRaw": "s32"
+        },
+        {
+          "name": "mapGroup",
+          "typeRaw": "s8"
+        },
+        {
+          "name": "mapNum",
+          "typeRaw": "s8"
+        },
+        {
+          "name": "warpId",
+          "typeRaw": "s8"
+        },
+        {
+          "name": "x",
+          "typeRaw": "s8"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s8"
+        }
+      ],
       "body": "SetWarpData(&gSaveBlock1Ptr->dynamicWarp, mapGroup, mapNum, warpId, x, y);",
       "callsTo": [
         "SetWarpData"
@@ -296,6 +476,12 @@
       "returnType": "void",
       "signature": "void SetWarpDestinationToDynamicWarp(u8 unusedWarpId)",
       "paramsRaw": "u8 unusedWarpId",
+      "paramsList": [
+        {
+          "name": "unusedWarpId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "sWarpDestination = gSaveBlock1Ptr->dynamicWarp;",
       "callsTo": [],
       "lineCount": 1
@@ -304,6 +490,12 @@
       "returnType": "void",
       "signature": "void SetWarpDestinationToHealLocation(u8 healLocationId)",
       "paramsRaw": "u8 healLocationId",
+      "paramsList": [
+        {
+          "name": "healLocationId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "const struct HealLocation *healLocation = GetHealLocation(healLocationId);\n    if (healLocation)\n        SetWarpDestination(healLocation->mapGroup, healLocation->mapNum, WARP_ID_NONE, healLocation->x, healLocation->y);",
       "callsTo": [
         "GetHealLocation",
@@ -315,6 +507,7 @@
       "returnType": "void",
       "signature": "void SetWarpDestinationToLastHealLocation(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sWarpDestination = gSaveBlock1Ptr->lastHealLocation;",
       "callsTo": [],
       "lineCount": 1
@@ -323,6 +516,12 @@
       "returnType": "void",
       "signature": "void SetLastHealLocationWarp(u8 healLocationId)",
       "paramsRaw": "u8 healLocationId",
+      "paramsList": [
+        {
+          "name": "healLocationId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "const struct HealLocation *healLocation = GetHealLocation(healLocationId);\n    if (healLocation)\n        SetWarpData(&gSaveBlock1Ptr->lastHealLocation, healLocation->mapGroup, healLocation->mapNum, WARP_ID_NONE, healLocation->x, healLocation->y);",
       "callsTo": [
         "GetHealLocation",
@@ -334,6 +533,16 @@
       "returnType": "void",
       "signature": "void UpdateEscapeWarp(s16 x, s16 y)",
       "paramsRaw": "s16 x, s16 y",
+      "paramsList": [
+        {
+          "name": "x",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s16"
+        }
+      ],
       "body": "u8 currMapType = GetCurrentMapType();\n    u8 destMapType = GetMapTypeByGroupAndId(sWarpDestination.mapGroup, sWarpDestination.mapNum);\n    if (IsMapTypeOutdoors(currMapType) && IsMapTypeOutdoors(destMapType) != TRUE)\n        SetEscapeWarp(gSaveBlock1Ptr->location.mapGroup, gSaveBlock1Ptr->location.mapNum, WARP_ID_NONE, x - MAP_OFFSET, y - MAP_OFFSET + 1);",
       "callsTo": [
         "GetCurrentMapType",
@@ -347,6 +556,28 @@
       "returnType": "void",
       "signature": "void SetEscapeWarp(s8 mapGroup, s8 mapNum, s8 warpId, s8 x, s8 y)",
       "paramsRaw": "s8 mapGroup, s8 mapNum, s8 warpId, s8 x, s8 y",
+      "paramsList": [
+        {
+          "name": "mapGroup",
+          "typeRaw": "s8"
+        },
+        {
+          "name": "mapNum",
+          "typeRaw": "s8"
+        },
+        {
+          "name": "warpId",
+          "typeRaw": "s8"
+        },
+        {
+          "name": "x",
+          "typeRaw": "s8"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s8"
+        }
+      ],
       "body": "SetWarpData(&gSaveBlock1Ptr->escapeWarp, mapGroup, mapNum, warpId, x, y);",
       "callsTo": [
         "SetWarpData"
@@ -357,6 +588,7 @@
       "returnType": "void",
       "signature": "void SetWarpDestinationToEscapeWarp(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sWarpDestination = gSaveBlock1Ptr->escapeWarp;",
       "callsTo": [],
       "lineCount": 1
@@ -365,6 +597,28 @@
       "returnType": "void",
       "signature": "void SetFixedDiveWarp(s8 mapGroup, s8 mapNum, s8 warpId, s8 x, s8 y)",
       "paramsRaw": "s8 mapGroup, s8 mapNum, s8 warpId, s8 x, s8 y",
+      "paramsList": [
+        {
+          "name": "mapGroup",
+          "typeRaw": "s8"
+        },
+        {
+          "name": "mapNum",
+          "typeRaw": "s8"
+        },
+        {
+          "name": "warpId",
+          "typeRaw": "s8"
+        },
+        {
+          "name": "x",
+          "typeRaw": "s8"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s8"
+        }
+      ],
       "body": "SetWarpData(&sFixedDiveWarp, mapGroup, mapNum, warpId, x, y);",
       "callsTo": [
         "SetWarpData"
@@ -375,6 +629,7 @@
       "returnType": "void",
       "signature": "static void SetWarpDestinationToDiveWarp(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sWarpDestination = sFixedDiveWarp;",
       "callsTo": [],
       "lineCount": 1
@@ -383,6 +638,28 @@
       "returnType": "void",
       "signature": "void SetFixedHoleWarp(s8 mapGroup, s8 mapNum, s8 warpId, s8 x, s8 y)",
       "paramsRaw": "s8 mapGroup, s8 mapNum, s8 warpId, s8 x, s8 y",
+      "paramsList": [
+        {
+          "name": "mapGroup",
+          "typeRaw": "s8"
+        },
+        {
+          "name": "mapNum",
+          "typeRaw": "s8"
+        },
+        {
+          "name": "warpId",
+          "typeRaw": "s8"
+        },
+        {
+          "name": "x",
+          "typeRaw": "s8"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s8"
+        }
+      ],
       "body": "SetWarpData(&sFixedHoleWarp, mapGroup, mapNum, warpId, x, y);",
       "callsTo": [
         "SetWarpData"
@@ -393,6 +670,16 @@
       "returnType": "void",
       "signature": "void SetWarpDestinationToFixedHoleWarp(s16 x, s16 y)",
       "paramsRaw": "s16 x, s16 y",
+      "paramsList": [
+        {
+          "name": "x",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s16"
+        }
+      ],
       "body": "if (IsDummyWarp(&sFixedHoleWarp) == TRUE)\n        sWarpDestination = gLastUsedWarp;\n    else\n        SetWarpDestination(sFixedHoleWarp.mapGroup, sFixedHoleWarp.mapNum, WARP_ID_NONE, x, y);",
       "callsTo": [
         "IsDummyWarp",
@@ -404,6 +691,7 @@
       "returnType": "void",
       "signature": "static void SetWarpDestinationToContinueGameWarp(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sWarpDestination = gSaveBlock1Ptr->continueGameWarp;",
       "callsTo": [],
       "lineCount": 1
@@ -412,6 +700,28 @@
       "returnType": "void",
       "signature": "void SetContinueGameWarp(s8 mapGroup, s8 mapNum, s8 warpId, s8 x, s8 y)",
       "paramsRaw": "s8 mapGroup, s8 mapNum, s8 warpId, s8 x, s8 y",
+      "paramsList": [
+        {
+          "name": "mapGroup",
+          "typeRaw": "s8"
+        },
+        {
+          "name": "mapNum",
+          "typeRaw": "s8"
+        },
+        {
+          "name": "warpId",
+          "typeRaw": "s8"
+        },
+        {
+          "name": "x",
+          "typeRaw": "s8"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s8"
+        }
+      ],
       "body": "SetWarpData(&gSaveBlock1Ptr->continueGameWarp, mapGroup, mapNum, warpId, x, y);",
       "callsTo": [
         "SetWarpData"
@@ -422,6 +732,12 @@
       "returnType": "void",
       "signature": "void SetContinueGameWarpToHealLocation(u8 healLocationId)",
       "paramsRaw": "u8 healLocationId",
+      "paramsList": [
+        {
+          "name": "healLocationId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "const struct HealLocation *healLocation = GetHealLocation(healLocationId);\n    if (healLocation)\n        SetWarpData(&gSaveBlock1Ptr->continueGameWarp, healLocation->mapGroup, healLocation->mapNum, WARP_ID_NONE, healLocation->x, healLocation->y);",
       "callsTo": [
         "GetHealLocation",
@@ -433,6 +749,12 @@
       "returnType": "void",
       "signature": "void SetContinueGameWarpToDynamicWarp(int unused)",
       "paramsRaw": "int unused",
+      "paramsList": [
+        {
+          "name": "unused",
+          "typeRaw": "int"
+        }
+      ],
       "body": "gSaveBlock1Ptr->continueGameWarp = gSaveBlock1Ptr->dynamicWarp;",
       "callsTo": [],
       "lineCount": 1
@@ -441,6 +763,20 @@
       "returnType": "bool8",
       "signature": "static bool8 SetDiveWarp(u8 dir, u16 x, u16 y)",
       "paramsRaw": "u8 dir, u16 x, u16 y",
+      "paramsList": [
+        {
+          "name": "dir",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "x",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "y",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "const struct MapConnection *connection = GetMapConnection(dir);\n\n    if (connection != NULL)\n    {\n        SetWarpDestination(connection->mapGroup, connection->mapNum, WARP_ID_NONE, x, y);\n    }\n    else\n    {\n        RunOnDiveWarpMapScript();\n        if (IsDummyWarp(&sFixedDiveWarp))\n            return FALSE;\n        SetWarpDestinationToDiveWarp();\n    }\n    return TRUE;",
       "callsTo": [
         "GetMapConnection",
@@ -455,6 +791,16 @@
       "returnType": "bool8",
       "signature": "bool8 SetDiveWarpEmerge(u16 x, u16 y)",
       "paramsRaw": "u16 x, u16 y",
+      "paramsList": [
+        {
+          "name": "x",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "y",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "return SetDiveWarp(CONNECTION_EMERGE, x, y);",
       "callsTo": [
         "SetDiveWarp"
@@ -465,6 +811,16 @@
       "returnType": "bool8",
       "signature": "bool8 SetDiveWarpDive(u16 x, u16 y)",
       "paramsRaw": "u16 x, u16 y",
+      "paramsList": [
+        {
+          "name": "x",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "y",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "return SetDiveWarp(CONNECTION_DIVE, x, y);",
       "callsTo": [
         "SetDiveWarp"
@@ -475,6 +831,16 @@
       "returnType": "void",
       "signature": "void LoadMapFromCameraTransition(u8 mapGroup, u8 mapNum)",
       "paramsRaw": "u8 mapGroup, u8 mapNum",
+      "paramsList": [
+        {
+          "name": "mapGroup",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "mapNum",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s32 paletteIndex;\n\n    SetWarpDestination(mapGroup, mapNum, WARP_ID_NONE, -1, -1);\n\n     \n    if (gMapHeader.regionMapSectionId != MAPSEC_BATTLE_FRONTIER)\n        TransitionMapMusic();\n\n    ApplyCurrentWarp();\n    LoadCurrentMapData();\n    LoadObjEventTemplatesFromHeader();\n    TrySetMapSaveWarpStatus();\n    ClearTempFieldEventData();\n    ResetCyclingRoadChallengeData();\n    RestartWildEncounterImmunitySteps();\n    TryUpdateRandomTrainerRematches(mapGroup, mapNum);\n    DoTimeBasedEvents();\n    SetSavedWeatherFromCurrMapHeader();\n    ChooseAmbientCrySpecies();\n    SetDefaultFlashLevel();\n    Overworld_ClearSavedMusic();\n    RunOnTransitionMapScript();\n    InitMap();\n    CopySecondaryTilesetToVramUsingHeap(gMapHeader.mapLayout);\n    LoadSecondaryTilesetPalette(gMapHeader.mapLayout);\n\n    for (paletteIndex = NUM_PALS_IN_PRIMARY; paletteIndex < NUM_PALS_TOTAL; paletteIndex++)\n        ApplyWeatherColorMapToPal(paletteIndex);\n\n    InitSecondaryTilesetAnimation();\n    UpdateLocationHistoryForRoamer();\n    RoamerMove();\n    DoCurrentWeather();\n    ResetFieldTasksArgs();\n    RunOnResumeMapScript();\n\n    if (gMapHeader.regionMapSectionId != MAPSEC_BATTLE_FRONTIER\n     || gMapHeader.regionMapSectionId != sLastMapSectionId)\n        ShowMapNamePopup();",
       "callsTo": [
         "ApplyCurrentWarp",
@@ -511,6 +877,12 @@
       "returnType": "void",
       "signature": "static void LoadMapFromWarp(bool32 a1)",
       "paramsRaw": "bool32 a1",
+      "paramsList": [
+        {
+          "name": "a1",
+          "typeRaw": "bool32"
+        }
+      ],
       "body": "bool8 isOutdoors;\n    bool8 isIndoors;\n\n    LoadCurrentMapData();\n    if (!(sObjectEventLoadFlag & SKIP_OBJECT_EVENT_LOAD))\n    {\n        if (gMapHeader.mapLayoutId == LAYOUT_BATTLE_FRONTIER_BATTLE_PYRAMID_FLOOR)\n            LoadBattlePyramidObjectEventTemplates();\n        else if (InTrainerHill())\n            LoadTrainerHillObjectEventTemplates();\n        else\n            LoadObjEventTemplatesFromHeader();\n    }\n\n    isOutdoors = IsMapTypeOutdoors(gMapHeader.mapType);\n    isIndoors = IsMapTypeIndoors(gMapHeader.mapType);\n\n    CheckLeftFriendsSecretBase();\n    TrySetMapSaveWarpStatus();\n    ClearTempFieldEventData();\n    ResetCyclingRoadChallengeData();\n    RestartWildEncounterImmunitySteps();\n    TryUpdateRandomTrainerRematches(gSaveBlock1Ptr->location.mapGroup, gSaveBlock1Ptr->location.mapNum);\n    if (a1 != TRUE)\n        DoTimeBasedEvents();\n    SetSavedWeatherFromCurrMapHeader();\n    ChooseAmbientCrySpecies();\n    if (isOutdoors)\n        FlagClear(FLAG_SYS_USE_FLASH);\n    SetDefaultFlashLevel();\n    Overworld_ClearSavedMusic();\n    RunOnTransitionMapScript();\n    UpdateLocationHistoryForRoamer();\n    RoamerMoveToOtherLocationSet();\n    if (gMapHeader.mapLayoutId == LAYOUT_BATTLE_FRONTIER_BATTLE_PYRAMID_FLOOR)\n        InitBattlePyramidMap(FALSE);\n    else if (InTrainerHill())\n        InitTrainerHillMap();\n    else\n        InitMap();\n\n    if (a1 != TRUE && isIndoors)\n    {\n        UpdateTVScreensOnMap(gBackupMapLayout.width, gBackupMapLayout.height);\n        InitSecretBaseAppearance(TRUE);\n    }",
       "callsTo": [
         "CheckLeftFriendsSecretBase",
@@ -547,6 +919,7 @@
       "returnType": "void",
       "signature": "void ResetInitialPlayerAvatarState(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sInitialPlayerAvatarState.direction = DIR_SOUTH;\n    sInitialPlayerAvatarState.transitionFlags = PLAYER_AVATAR_FLAG_ON_FOOT;",
       "callsTo": [],
       "lineCount": 2
@@ -555,6 +928,7 @@
       "returnType": "void",
       "signature": "void StoreInitialPlayerAvatarState(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sInitialPlayerAvatarState.direction = GetPlayerFacingDirection();\n\n    if (TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_MACH_BIKE))\n        sInitialPlayerAvatarState.transitionFlags = PLAYER_AVATAR_FLAG_MACH_BIKE;\n    else if (TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_ACRO_BIKE))\n        sInitialPlayerAvatarState.transitionFlags = PLAYER_AVATAR_FLAG_ACRO_BIKE;\n    else if (TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_SURFING))\n        sInitialPlayerAvatarState.transitionFlags = PLAYER_AVATAR_FLAG_SURFING;\n    else if (TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_UNDERWATER))\n        sInitialPlayerAvatarState.transitionFlags = PLAYER_AVATAR_FLAG_UNDERWATER;\n    else\n        sInitialPlayerAvatarState.transitionFlags = PLAYER_AVATAR_FLAG_ON_FOOT;",
       "callsTo": [
         "GetPlayerFacingDirection",
@@ -566,6 +940,20 @@
       "returnType": "u8",
       "signature": "static u8 GetAdjustedInitialTransitionFlags(struct InitialPlayerAvatarState *playerStruct, u16 metatileBehavior, u8 mapType)",
       "paramsRaw": "struct InitialPlayerAvatarState *playerStruct, u16 metatileBehavior, u8 mapType",
+      "paramsList": [
+        {
+          "name": "playerStruct",
+          "typeRaw": "struct InitialPlayerAvatarState *"
+        },
+        {
+          "name": "metatileBehavior",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "mapType",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (mapType != MAP_TYPE_INDOOR && FlagGet(FLAG_SYS_CRUISE_MODE))\n        return PLAYER_AVATAR_FLAG_ON_FOOT;\n    else if (mapType == MAP_TYPE_UNDERWATER)\n        return PLAYER_AVATAR_FLAG_UNDERWATER;\n    else if (MetatileBehavior_IsSurfableWaterOrUnderwater(metatileBehavior) == TRUE)\n        return PLAYER_AVATAR_FLAG_SURFING;\n    else if (Overworld_IsBikingAllowed() != TRUE)\n        return PLAYER_AVATAR_FLAG_ON_FOOT;\n    else if (playerStruct->transitionFlags == PLAYER_AVATAR_FLAG_MACH_BIKE)\n        return PLAYER_AVATAR_FLAG_MACH_BIKE;\n    else if (playerStruct->transitionFlags != PLAYER_AVATAR_FLAG_ACRO_BIKE)\n        return PLAYER_AVATAR_FLAG_ON_FOOT;\n    else\n        return PLAYER_AVATAR_FLAG_ACRO_BIKE;",
       "callsTo": [
         "FlagGet",
@@ -578,6 +966,24 @@
       "returnType": "u8",
       "signature": "static u8 GetAdjustedInitialDirection(struct InitialPlayerAvatarState *playerStruct, u8 transitionFlags, u16 metatileBehavior, u8 mapType)",
       "paramsRaw": "struct InitialPlayerAvatarState *playerStruct, u8 transitionFlags, u16 metatileBehavior, u8 mapType",
+      "paramsList": [
+        {
+          "name": "playerStruct",
+          "typeRaw": "struct InitialPlayerAvatarState *"
+        },
+        {
+          "name": "transitionFlags",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "metatileBehavior",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "mapType",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (FlagGet(FLAG_SYS_CRUISE_MODE) && mapType == MAP_TYPE_OCEAN_ROUTE)\n        return DIR_EAST;\n    else if (MetatileBehavior_IsDeepSouthWarp(metatileBehavior) == TRUE)\n        return DIR_NORTH;\n    else if (MetatileBehavior_IsNonAnimDoor(metatileBehavior) == TRUE || MetatileBehavior_IsDoor(metatileBehavior) == TRUE)\n        return DIR_SOUTH;\n    else if (MetatileBehavior_IsSouthArrowWarp(metatileBehavior) == TRUE)\n        return DIR_NORTH;\n    else if (MetatileBehavior_IsNorthArrowWarp(metatileBehavior) == TRUE)\n        return DIR_SOUTH;\n    else if (MetatileBehavior_IsWestArrowWarp(metatileBehavior) == TRUE)\n        return DIR_EAST;\n    else if (MetatileBehavior_IsEastArrowWarp(metatileBehavior) == TRUE)\n        return DIR_WEST;\n    else if ((playerStruct->transitionFlags == PLAYER_AVATAR_FLAG_UNDERWATER  && transitionFlags == PLAYER_AVATAR_FLAG_SURFING)\n          || (playerStruct->transitionFlags == PLAYER_AVATAR_FLAG_SURFING && transitionFlags == PLAYER_AVATAR_FLAG_UNDERWATER))\n        return playerStruct->direction;\n    else if (MetatileBehavior_IsLadder(metatileBehavior) == TRUE)\n        return playerStruct->direction;\n    else\n        return DIR_SOUTH;",
       "callsTo": [
         "FlagGet",
@@ -596,6 +1002,7 @@
       "returnType": "u16",
       "signature": "static u16 GetCenterScreenMetatileBehavior(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return MapGridGetMetatileBehaviorAt(gSaveBlock1Ptr->pos.x + MAP_OFFSET, gSaveBlock1Ptr->pos.y + MAP_OFFSET);",
       "callsTo": [
         "MapGridGetMetatileBehaviorAt"
@@ -606,6 +1013,7 @@
       "returnType": "bool32",
       "signature": "bool32 Overworld_IsBikingAllowed(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!gMapHeader.allowCycling)\n        return FALSE;\n    else\n        return TRUE;",
       "callsTo": [],
       "lineCount": 4
@@ -614,6 +1022,7 @@
       "returnType": "void",
       "signature": "void SetDefaultFlashLevel(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!gMapHeader.cave)\n        gSaveBlock1Ptr->flashLevel = 0;\n    else if (FlagGet(FLAG_SYS_USE_FLASH))\n        gSaveBlock1Ptr->flashLevel = 1;\n    else\n        gSaveBlock1Ptr->flashLevel = gMaxFlashLevel - 1;",
       "callsTo": [
         "FlagGet"
@@ -624,6 +1033,12 @@
       "returnType": "void",
       "signature": "void SetFlashLevel(s32 flashLevel)",
       "paramsRaw": "s32 flashLevel",
+      "paramsList": [
+        {
+          "name": "flashLevel",
+          "typeRaw": "s32"
+        }
+      ],
       "body": "if (flashLevel < 0 || flashLevel > gMaxFlashLevel)\n        flashLevel = 0;\n    gSaveBlock1Ptr->flashLevel = flashLevel;",
       "callsTo": [],
       "lineCount": 3
@@ -632,6 +1047,7 @@
       "returnType": "u8",
       "signature": "u8 GetFlashLevel(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return gSaveBlock1Ptr->flashLevel;",
       "callsTo": [],
       "lineCount": 1
@@ -640,6 +1056,12 @@
       "returnType": "void",
       "signature": "void SetCurrentMapLayout(u16 mapLayoutId)",
       "paramsRaw": "u16 mapLayoutId",
+      "paramsList": [
+        {
+          "name": "mapLayoutId",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "gSaveBlock1Ptr->mapLayoutId = mapLayoutId;\n    gMapHeader.mapLayout = GetMapLayout();",
       "callsTo": [
         "GetMapLayout"
@@ -650,6 +1072,12 @@
       "returnType": "void",
       "signature": "void SetObjectEventLoadFlag(u8 flag)",
       "paramsRaw": "u8 flag",
+      "paramsList": [
+        {
+          "name": "flag",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "sObjectEventLoadFlag = flag;",
       "callsTo": [],
       "lineCount": 1
@@ -658,6 +1086,12 @@
       "returnType": "bool16",
       "signature": "static bool16 ShouldLegendaryMusicPlayAtLocation(struct WarpData *warp)",
       "paramsRaw": "struct WarpData *warp",
+      "paramsList": [
+        {
+          "name": "warp",
+          "typeRaw": "struct WarpData *"
+        }
+      ],
       "body": "if (!FlagGet(FLAG_SYS_WEATHER_CTRL))\n        return FALSE;\n    if (warp->mapGroup == 0)\n    {\n        switch (warp->mapNum)\n        {\n        case MAP_NUM(MAP_LILYCOVE_CITY):\n        case MAP_NUM(MAP_MOSSDEEP_CITY):\n        case MAP_NUM(MAP_SOOTOPOLIS_CITY):\n        case MAP_NUM(MAP_EVER_GRANDE_CITY):\n        case MAP_NUM(MAP_ROUTE124):\n        case MAP_NUM(MAP_ROUTE125):\n        case MAP_NUM(MAP_ROUTE126):\n        case MAP_NUM(MAP_ROUTE127):\n        case MAP_NUM(MAP_ROUTE128):\n            return TRUE;\n        default:\n            if (VarGet(VAR_SOOTOPOLIS_CITY_STATE) < 4)\n                return FALSE;\n            switch (warp->mapNum)\n            {\n            case MAP_NUM(MAP_ROUTE129):\n            case MAP_NUM(MAP_ROUTE130):\n            case MAP_NUM(MAP_ROUTE131):\n                return TRUE;\n            }\n        }\n    }\n    return FALSE;",
       "callsTo": [
         "FlagGet",
@@ -670,6 +1104,12 @@
       "returnType": "bool16",
       "signature": "static bool16 NoMusicInSootopolisWithLegendaries(struct WarpData *warp)",
       "paramsRaw": "struct WarpData *warp",
+      "paramsList": [
+        {
+          "name": "warp",
+          "typeRaw": "struct WarpData *"
+        }
+      ],
       "body": "if (VarGet(VAR_SKY_PILLAR_STATE) != 1)\n        return FALSE;\n    else if (warp->mapGroup != MAP_GROUP(MAP_SOOTOPOLIS_CITY))\n        return FALSE;\n    else if (warp->mapNum == MAP_NUM(MAP_SOOTOPOLIS_CITY))\n        return TRUE;\n    else\n        return FALSE;",
       "callsTo": [
         "MAP_GROUP",
@@ -682,6 +1122,12 @@
       "returnType": "bool16",
       "signature": "static bool16 IsInfiltratedWeatherInstitute(struct WarpData *warp)",
       "paramsRaw": "struct WarpData *warp",
+      "paramsList": [
+        {
+          "name": "warp",
+          "typeRaw": "struct WarpData *"
+        }
+      ],
       "body": "if (VarGet(VAR_WEATHER_INSTITUTE_STATE))\n        return FALSE;\n    else if (warp->mapGroup != MAP_GROUP(MAP_ROUTE119_WEATHER_INSTITUTE_1F))\n        return FALSE;\n    else if (warp->mapNum == MAP_NUM(MAP_ROUTE119_WEATHER_INSTITUTE_1F)\n     || warp->mapNum == MAP_NUM(MAP_ROUTE119_WEATHER_INSTITUTE_2F))\n        return TRUE;\n    else\n        return FALSE;",
       "callsTo": [
         "MAP_GROUP",
@@ -694,6 +1140,12 @@
       "returnType": "bool16",
       "signature": "static bool16 IsInfiltratedSpaceCenter(struct WarpData *warp)",
       "paramsRaw": "struct WarpData *warp",
+      "paramsList": [
+        {
+          "name": "warp",
+          "typeRaw": "struct WarpData *"
+        }
+      ],
       "body": "if (VarGet(VAR_MOSSDEEP_CITY_STATE) == 0)\n        return FALSE;\n    else if (VarGet(VAR_MOSSDEEP_CITY_STATE) > 2)\n        return FALSE;\n    else if (warp->mapGroup != MAP_GROUP(MAP_MOSSDEEP_CITY_SPACE_CENTER_1F))\n        return FALSE;\n    else if (warp->mapNum == MAP_NUM(MAP_MOSSDEEP_CITY_SPACE_CENTER_1F)\n     || warp->mapNum == MAP_NUM(MAP_MOSSDEEP_CITY_SPACE_CENTER_2F))\n        return TRUE;\n    return FALSE;",
       "callsTo": [
         "MAP_GROUP",
@@ -706,6 +1158,12 @@
       "returnType": "u16",
       "signature": "u16 GetLocationMusic(struct WarpData *warp)",
       "paramsRaw": "struct WarpData *warp",
+      "paramsList": [
+        {
+          "name": "warp",
+          "typeRaw": "struct WarpData *"
+        }
+      ],
       "body": "if (NoMusicInSootopolisWithLegendaries(warp) == TRUE)\n        return MUS_NONE;\n    else if (ShouldLegendaryMusicPlayAtLocation(warp) == TRUE)\n        return MUS_ABNORMAL_WEATHER;\n    else if (IsInfiltratedSpaceCenter(warp) == TRUE)\n        return MUS_ENCOUNTER_MAGMA;\n    else if (IsInfiltratedWeatherInstitute(warp) == TRUE)\n        return MUS_MT_CHIMNEY;\n    else\n        return Overworld_GetMapHeaderByGroupAndId(warp->mapGroup, warp->mapNum)->music;",
       "callsTo": [
         "IsInfiltratedSpaceCenter",
@@ -720,6 +1178,7 @@
       "returnType": "u16",
       "signature": "u16 GetCurrLocationDefaultMusic(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 music;\n\n     \n    if (gSaveBlock1Ptr->location.mapGroup == MAP_GROUP(MAP_ROUTE111)\n     && gSaveBlock1Ptr->location.mapNum == MAP_NUM(MAP_ROUTE111)\n     && GetSavedWeather() == WEATHER_SANDSTORM)\n        return MUS_DESERT;\n\n    music = GetLocationMusic(&gSaveBlock1Ptr->location);\n    if (music != MUS_ROUTE118)\n    {\n        return music;\n    }\n    else\n    {\n        if (gSaveBlock1Ptr->pos.x < 24)\n            return MUS_ROUTE110;\n        else\n            return MUS_ROUTE119;\n    }",
       "callsTo": [
         "GetLocationMusic",
@@ -733,6 +1192,7 @@
       "returnType": "u16",
       "signature": "u16 GetWarpDestinationMusic(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 music = GetLocationMusic(&sWarpDestination);\n    if (music != MUS_ROUTE118)\n    {\n        return music;\n    }\n    else\n    {\n        if (gSaveBlock1Ptr->location.mapGroup == MAP_GROUP(MAP_MAUVILLE_CITY)\n         && gSaveBlock1Ptr->location.mapNum == MAP_NUM(MAP_MAUVILLE_CITY))\n            return MUS_ROUTE110;\n        else\n            return MUS_ROUTE119;\n    }",
       "callsTo": [
         "GetLocationMusic",
@@ -745,6 +1205,7 @@
       "returnType": "void",
       "signature": "void Overworld_ResetMapMusic(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ResetMapMusic();",
       "callsTo": [
         "ResetMapMusic"
@@ -755,6 +1216,7 @@
       "returnType": "void",
       "signature": "void Overworld_PlaySpecialMapMusic(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 music = GetCurrLocationDefaultMusic();\n\n    if (music != MUS_ABNORMAL_WEATHER && music != MUS_NONE)\n    {\n        if (gSaveBlock1Ptr->savedMusic)\n            music = gSaveBlock1Ptr->savedMusic;\n        else if (GetCurrentMapType() == MAP_TYPE_UNDERWATER)\n            music = MUS_UNDERWATER;\n        else if (TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_SURFING))\n            music = MUS_SURF;\n    }\n\n    if (music != GetCurrentMapMusic())\n        PlayNewMapMusic(music);",
       "callsTo": [
         "GetCurrLocationDefaultMusic",
@@ -769,6 +1231,12 @@
       "returnType": "void",
       "signature": "void Overworld_SetSavedMusic(u16 songNum)",
       "paramsRaw": "u16 songNum",
+      "paramsList": [
+        {
+          "name": "songNum",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "gSaveBlock1Ptr->savedMusic = songNum;",
       "callsTo": [],
       "lineCount": 1
@@ -777,6 +1245,7 @@
       "returnType": "void",
       "signature": "void Overworld_ClearSavedMusic(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gSaveBlock1Ptr->savedMusic = MUS_DUMMY;",
       "callsTo": [],
       "lineCount": 1
@@ -785,6 +1254,7 @@
       "returnType": "void",
       "signature": "static void TransitionMapMusic(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (FlagGet(FLAG_DONT_TRANSITION_MUSIC) != TRUE)\n    {\n        u16 newMusic = GetWarpDestinationMusic();\n        u16 currentMusic = GetCurrentMapMusic();\n        if (newMusic != MUS_ABNORMAL_WEATHER && newMusic != MUS_NONE)\n        {\n            if (currentMusic == MUS_UNDERWATER || currentMusic == MUS_SURF)\n                return;\n            if (TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_SURFING))\n                newMusic = MUS_SURF;\n        }\n        if (newMusic != currentMusic)\n        {\n            if (TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_MACH_BIKE | PLAYER_AVATAR_FLAG_ACRO_BIKE))\n                FadeOutAndFadeInNewMapMusic(newMusic, 4, 4);\n            else\n                FadeOutAndPlayNewMapMusic(newMusic, 8);\n        }\n    }",
       "callsTo": [
         "FadeOutAndFadeInNewMapMusic",
@@ -800,6 +1270,7 @@
       "returnType": "void",
       "signature": "void Overworld_ChangeMusicToDefault(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 currentMusic = GetCurrentMapMusic();\n    if (currentMusic != GetCurrLocationDefaultMusic())\n        FadeOutAndPlayNewMapMusic(GetCurrLocationDefaultMusic(), 8);",
       "callsTo": [
         "FadeOutAndPlayNewMapMusic",
@@ -812,6 +1283,12 @@
       "returnType": "void",
       "signature": "void Overworld_ChangeMusicTo(u16 newMusic)",
       "paramsRaw": "u16 newMusic",
+      "paramsList": [
+        {
+          "name": "newMusic",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "u16 currentMusic = GetCurrentMapMusic();\n    if (currentMusic != newMusic && currentMusic != MUS_ABNORMAL_WEATHER)\n        FadeOutAndPlayNewMapMusic(newMusic, 8);",
       "callsTo": [
         "FadeOutAndPlayNewMapMusic",
@@ -823,6 +1300,7 @@
       "returnType": "u8",
       "signature": "u8 GetMapMusicFadeoutSpeed(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "const struct MapHeader *mapHeader = GetDestinationWarpMapHeader();\n    if (IsMapTypeIndoors(mapHeader->mapType) == TRUE)\n        return 2;\n    else\n        return 4;",
       "callsTo": [
         "GetDestinationWarpMapHeader",
@@ -834,6 +1312,7 @@
       "returnType": "void",
       "signature": "void TryFadeOutOldMapMusic(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 currentMusic = GetCurrentMapMusic();\n    u16 warpMusic = GetWarpDestinationMusic();\n    if (FlagGet(FLAG_DONT_TRANSITION_MUSIC) != TRUE && warpMusic != GetCurrentMapMusic())\n    {\n        if (currentMusic == MUS_SURF\n            && VarGet(VAR_SKY_PILLAR_STATE) == 2\n            && gSaveBlock1Ptr->location.mapGroup == MAP_GROUP(MAP_SOOTOPOLIS_CITY)\n            && gSaveBlock1Ptr->location.mapNum == MAP_NUM(MAP_SOOTOPOLIS_CITY)\n            && sWarpDestination.mapGroup == MAP_GROUP(MAP_SOOTOPOLIS_CITY)\n            && sWarpDestination.mapNum == MAP_NUM(MAP_SOOTOPOLIS_CITY)\n            && sWarpDestination.x == 29\n            && sWarpDestination.y == 53)\n            return;\n        FadeOutMapMusic(GetMapMusicFadeoutSpeed());\n    }",
       "callsTo": [
         "FadeOutMapMusic",
@@ -851,6 +1330,7 @@
       "returnType": "bool8",
       "signature": "bool8 BGMusicStopped(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return IsNotWaitingForBGMStop();",
       "callsTo": [
         "IsNotWaitingForBGMStop"
@@ -861,6 +1341,7 @@
       "returnType": "void",
       "signature": "void Overworld_FadeOutMapMusic(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "FadeOutMapMusic(4);",
       "callsTo": [
         "FadeOutMapMusic"
@@ -871,6 +1352,7 @@
       "returnType": "void",
       "signature": "static void PlayAmbientCry(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s16 x, y;\n    s8 pan;\n    s8 volume;\n\n    PlayerGetDestCoords(&x, &y);\n    if (sIsAmbientCryWaterMon == TRUE\n     && !MetatileBehavior_IsSurfableWaterOrUnderwater(MapGridGetMetatileBehaviorAt(x, y)))\n        return;\n    pan = (Random() % 88) + 212;\n    volume = (Random() % 30) + 50;\n    PlayCry_NormalNoDucking(sAmbientCrySpecies, pan, volume, CRY_PRIORITY_AMBIENT);",
       "callsTo": [
         "MapGridGetMetatileBehaviorAt",
@@ -885,6 +1367,16 @@
       "returnType": "void",
       "signature": "void UpdateAmbientCry(s16 *state, u16 *delayCounter)",
       "paramsRaw": "s16 *state, u16 *delayCounter",
+      "paramsList": [
+        {
+          "name": "state",
+          "typeRaw": "s16 *"
+        },
+        {
+          "name": "delayCounter",
+          "typeRaw": "u16 *"
+        }
+      ],
       "body": "u8 i, monsCount, divBy;\n\n    switch (*state)\n    {\n    case AMB_CRY_INIT:\n         \n        if (sAmbientCrySpecies == SPECIES_NONE)\n            *state = AMB_CRY_IDLE;\n        else\n            *state = AMB_CRY_FIRST;\n        break;\n    case AMB_CRY_FIRST:\n         \n        *delayCounter = (Random() % 2400) + 1200;\n        *state = AMB_CRY_WAIT;\n        break;\n    case AMB_CRY_RESET:\n        divBy = 1;\n        monsCount = CalculatePlayerPartyCount();\n        for (i = 0; i < monsCount; i++)\n        {\n            if (!GetMonData(&gPlayerParty[i], MON_DATA_SANITY_IS_EGG)\n                && GetMonAbility(&gPlayerParty[0]) == ABILITY_SWARM)\n            {\n                divBy = 2;\n                break;\n            }\n        }\n         \n         \n        *delayCounter = ((Random() % 1200) + 1200) / divBy;\n        *state = AMB_CRY_WAIT;\n        break;\n    case AMB_CRY_WAIT:\n        if (--(*delayCounter) == 0)\n        {\n            PlayAmbientCry();\n            *state = AMB_CRY_RESET;\n        }\n        break;\n    case AMB_CRY_IDLE:\n         \n        break;\n    }",
       "callsTo": [
         "CalculatePlayerPartyCount",
@@ -899,6 +1391,7 @@
       "returnType": "void",
       "signature": "static void ChooseAmbientCrySpecies(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if ((gSaveBlock1Ptr->location.mapGroup == MAP_GROUP(MAP_ROUTE130)\n     && gSaveBlock1Ptr->location.mapNum == MAP_NUM(MAP_ROUTE130))\n     && !IsMirageIslandPresent())\n    {\n         \n         \n        sIsAmbientCryWaterMon = TRUE;\n        sAmbientCrySpecies = GetLocalWaterMon();\n    }\n    else\n    {\n        sAmbientCrySpecies = GetLocalWildMon(&sIsAmbientCryWaterMon);\n    }",
       "callsTo": [
         "GetLocalWaterMon",
@@ -913,6 +1406,16 @@
       "returnType": "u8",
       "signature": "u8 GetMapTypeByGroupAndId(s8 mapGroup, s8 mapNum)",
       "paramsRaw": "s8 mapGroup, s8 mapNum",
+      "paramsList": [
+        {
+          "name": "mapGroup",
+          "typeRaw": "s8"
+        },
+        {
+          "name": "mapNum",
+          "typeRaw": "s8"
+        }
+      ],
       "body": "return Overworld_GetMapHeaderByGroupAndId(mapGroup, mapNum)->mapType;",
       "callsTo": [
         "Overworld_GetMapHeaderByGroupAndId"
@@ -923,6 +1426,12 @@
       "returnType": "u8",
       "signature": "u8 GetMapTypeByWarpData(struct WarpData *warp)",
       "paramsRaw": "struct WarpData *warp",
+      "paramsList": [
+        {
+          "name": "warp",
+          "typeRaw": "struct WarpData *"
+        }
+      ],
       "body": "return GetMapTypeByGroupAndId(warp->mapGroup, warp->mapNum);",
       "callsTo": [
         "GetMapTypeByGroupAndId"
@@ -933,6 +1442,7 @@
       "returnType": "u8",
       "signature": "u8 GetCurrentMapType(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return GetMapTypeByWarpData(&gSaveBlock1Ptr->location);",
       "callsTo": [
         "GetMapTypeByWarpData"
@@ -943,6 +1453,7 @@
       "returnType": "u8",
       "signature": "u8 GetLastUsedWarpMapType(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return GetMapTypeByWarpData(&gLastUsedWarp);",
       "callsTo": [
         "GetMapTypeByWarpData"
@@ -953,6 +1464,12 @@
       "returnType": "bool8",
       "signature": "bool8 IsMapTypeOutdoors(u8 mapType)",
       "paramsRaw": "u8 mapType",
+      "paramsList": [
+        {
+          "name": "mapType",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (mapType == MAP_TYPE_ROUTE\n     || mapType == MAP_TYPE_TOWN\n     || mapType == MAP_TYPE_UNDERWATER\n     || mapType == MAP_TYPE_CITY\n     || mapType == MAP_TYPE_OCEAN_ROUTE)\n        return TRUE;\n    else\n        return FALSE;",
       "callsTo": [],
       "lineCount": 8
@@ -961,6 +1478,12 @@
       "returnType": "bool8",
       "signature": "bool8 Overworld_MapTypeAllowsTeleportAndFly(u8 mapType)",
       "paramsRaw": "u8 mapType",
+      "paramsList": [
+        {
+          "name": "mapType",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (mapType == MAP_TYPE_ROUTE\n     || mapType == MAP_TYPE_TOWN\n     || mapType == MAP_TYPE_OCEAN_ROUTE\n     || mapType == MAP_TYPE_CITY)\n        return TRUE;\n    else\n        return FALSE;",
       "callsTo": [],
       "lineCount": 7
@@ -969,6 +1492,12 @@
       "returnType": "bool8",
       "signature": "bool8 IsMapTypeIndoors(u8 mapType)",
       "paramsRaw": "u8 mapType",
+      "paramsList": [
+        {
+          "name": "mapType",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (mapType == MAP_TYPE_INDOOR\n     || mapType == MAP_TYPE_SECRET_BASE)\n        return TRUE;\n    else\n        return FALSE;",
       "callsTo": [],
       "lineCount": 5
@@ -977,6 +1506,7 @@
       "returnType": "u8",
       "signature": "u8 GetCurrentMapBattleScene(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return Overworld_GetMapHeaderByGroupAndId(gSaveBlock1Ptr->location.mapGroup, gSaveBlock1Ptr->location.mapNum)->battleType;",
       "callsTo": [
         "Overworld_GetMapHeaderByGroupAndId"
@@ -987,6 +1517,7 @@
       "returnType": "void",
       "signature": "static void InitOverworldBgs(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "InitBgsFromTemplates(0, sOverworldBgTemplates, ARRAY_COUNT(sOverworldBgTemplates));\n    SetBgAttribute(1, BG_ATTR_MOSAIC, 1);\n    SetBgAttribute(2, BG_ATTR_MOSAIC, 1);\n    SetBgAttribute(3, BG_ATTR_MOSAIC, 1);\n    gOverworldTilemapBuffer_Bg1 = AllocZeroed(BG_SCREEN_SIZE);\n    gOverworldTilemapBuffer_Bg2 = AllocZeroed(BG_SCREEN_SIZE);\n    gOverworldTilemapBuffer_Bg3 = AllocZeroed(BG_SCREEN_SIZE);\n    SetBgTilemapBuffer(1, gOverworldTilemapBuffer_Bg1);\n    SetBgTilemapBuffer(2, gOverworldTilemapBuffer_Bg2);\n    SetBgTilemapBuffer(3, gOverworldTilemapBuffer_Bg3);\n    InitStandardTextBoxWindows();",
       "callsTo": [
         "ARRAY_COUNT",
@@ -1002,6 +1533,7 @@
       "returnType": "void",
       "signature": "void CleanupOverworldWindowsAndTilemaps(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ClearMirageTowerPulseBlendEffect();\n    FreeAllOverworldWindowBuffers();\n    TRY_FREE_AND_SET_NULL(gOverworldTilemapBuffer_Bg3);\n    TRY_FREE_AND_SET_NULL(gOverworldTilemapBuffer_Bg2);\n    TRY_FREE_AND_SET_NULL(gOverworldTilemapBuffer_Bg1);",
       "callsTo": [
         "ClearMirageTowerPulseBlendEffect",
@@ -1014,6 +1546,7 @@
       "returnType": "void",
       "signature": "static void ResetSafariZoneFlag_(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ResetSafariZoneFlag();",
       "callsTo": [
         "ResetSafariZoneFlag"
@@ -1024,6 +1557,7 @@
       "returnType": "bool32",
       "signature": "bool32 IsOverworldLinkActive(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gMain.callback1 == CB1_OverworldLink)\n        return TRUE;\n    else\n        return FALSE;",
       "callsTo": [],
       "lineCount": 4
@@ -1032,6 +1566,16 @@
       "returnType": "void",
       "signature": "static void DoCB1_Overworld(u16 newKeys, u16 heldKeys)",
       "paramsRaw": "u16 newKeys, u16 heldKeys",
+      "paramsList": [
+        {
+          "name": "newKeys",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "heldKeys",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "struct FieldInput inputStruct;\n\n    UpdatePlayerAvatarTransitionState();\n    FieldClearPlayerInput(&inputStruct);\n    FieldGetPlayerInput(&inputStruct, newKeys, heldKeys);\n    if (!ArePlayerFieldControlsLocked())\n    {\n        if (ProcessPlayerFieldInput(&inputStruct) == 1)\n        {\n            LockPlayerFieldControls();\n            HideMapNamePopUpWindow();\n        }\n        else\n        {\n            PlayerStep(inputStruct.dpadDirection, newKeys, heldKeys);\n        }\n    }",
       "callsTo": [
         "ArePlayerFieldControlsLocked",
@@ -1049,6 +1593,7 @@
       "returnType": "void",
       "signature": "void CB1_Overworld(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gMain.callback2 == CB2_Overworld)\n        DoCB1_Overworld(gMain.newKeys, gMain.heldKeys);",
       "callsTo": [
         "DoCB1_Overworld"
@@ -1059,6 +1604,7 @@
       "returnType": "void",
       "signature": "static void OverworldBasic(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ScriptContext_RunScript();\n    RunTasks();\n    AnimateSprites();\n    CameraUpdate();\n    UpdateCameraPanning();\n    BuildOamBuffer();\n    UpdatePaletteFade();\n    UpdateTilesetAnimations();\n    DoScheduledBgTilemapCopiesToVram();",
       "callsTo": [
         "AnimateSprites",
@@ -1077,6 +1623,7 @@
       "returnType": "void",
       "signature": "void CB2_OverworldBasic(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "OverworldBasic();",
       "callsTo": [
         "OverworldBasic"
@@ -1087,6 +1634,7 @@
       "returnType": "void",
       "signature": "void CB2_Overworld(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "bool32 fading = (gPaletteFade.active != 0);\n    if (fading)\n        SetVBlankCallback(NULL);\n    OverworldBasic();\n    if (fading)\n        SetFieldVBlankCallback();",
       "callsTo": [
         "OverworldBasic",
@@ -1099,6 +1647,12 @@
       "returnType": "void",
       "signature": "void SetMainCallback1(MainCallback cb)",
       "paramsRaw": "MainCallback cb",
+      "paramsList": [
+        {
+          "name": "cb",
+          "typeRaw": "MainCallback"
+        }
+      ],
       "body": "gMain.callback1 = cb;",
       "callsTo": [],
       "lineCount": 1
@@ -1107,6 +1661,12 @@
       "returnType": "void",
       "signature": "void SetUnusedCallback(void *func)",
       "paramsRaw": "void *func",
+      "paramsList": [
+        {
+          "name": "func",
+          "typeRaw": "void *"
+        }
+      ],
       "body": "sUnusedOverworldCallback = func;",
       "callsTo": [],
       "lineCount": 1
@@ -1115,6 +1675,7 @@
       "returnType": "bool8",
       "signature": "static bool8 RunFieldCallback(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gFieldCallback2)\n    {\n        if (!gFieldCallback2())\n        {\n            return FALSE;\n        }\n        else\n        {\n            gFieldCallback2 = NULL;\n            gFieldCallback = NULL;\n        }\n    }\n    else\n    {\n        if (gFieldCallback)\n            gFieldCallback();\n        else\n            FieldCB_DefaultWarpExit();\n\n        gFieldCallback = NULL;\n    }\n\n    return TRUE;",
       "callsTo": [
         "FieldCB_DefaultWarpExit"
@@ -1125,6 +1686,7 @@
       "returnType": "void",
       "signature": "void CB2_NewGame(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "FieldClearVBlankHBlankCallbacks();\n    StopMapMusic();\n    ResetSafariZoneFlag_();\n    NewGameInitData();\n    ResetInitialPlayerAvatarState();\n    PlayTimeCounter_Start();\n    ScriptContext_Init();\n    UnlockPlayerFieldControls();\n    gFieldCallback = ExecuteTruckSequence;\n    gFieldCallback2 = NULL;\n    DoMapLoadLoop(&gMain.state);\n    SetFieldVBlankCallback();\n    SetMainCallback1(CB1_Overworld);\n    SetMainCallback2(CB2_Overworld);",
       "callsTo": [
         "DoMapLoadLoop",
@@ -1146,6 +1708,7 @@
       "returnType": "void",
       "signature": "void CB2_WhiteOut(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 state;\n\n    if (++gMain.state >= 120)\n    {\n        FieldClearVBlankHBlankCallbacks();\n        StopMapMusic();\n        ResetSafariZoneFlag_();\n        DoWhiteOut();\n        ResetInitialPlayerAvatarState();\n        ScriptContext_Init();\n        UnlockPlayerFieldControls();\n        gFieldCallback = FieldCB_WarpExitFadeFromBlack;\n        state = 0;\n        DoMapLoadLoop(&state);\n        SetFieldVBlankCallback();\n        SetMainCallback1(CB1_Overworld);\n        SetMainCallback2(CB2_Overworld);\n    }",
       "callsTo": [
         "DoMapLoadLoop",
@@ -1166,6 +1729,7 @@
       "returnType": "void",
       "signature": "void CB2_LoadMap(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "FieldClearVBlankHBlankCallbacks();\n    ScriptContext_Init();\n    UnlockPlayerFieldControls();\n    SetMainCallback1(NULL);\n    SetMainCallback2(CB2_DoChangeMap);\n    gMain.savedCallback = CB2_LoadMap2;",
       "callsTo": [
         "FieldClearVBlankHBlankCallbacks",
@@ -1180,6 +1744,7 @@
       "returnType": "void",
       "signature": "static void CB2_LoadMap2(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "DoMapLoadLoop(&gMain.state);\n    SetFieldVBlankCallback();\n    SetMainCallback1(CB1_Overworld);\n    SetMainCallback2(CB2_Overworld);",
       "callsTo": [
         "DoMapLoadLoop",
@@ -1193,6 +1758,7 @@
       "returnType": "void",
       "signature": "void CB2_ReturnToFieldContestHall(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!gMain.state)\n    {\n        FieldClearVBlankHBlankCallbacks();\n        ScriptContext_Init();\n        UnlockPlayerFieldControls();\n        SetMainCallback1(NULL);\n    }\n    if (LoadMapInStepsLocal(&gMain.state, TRUE))\n    {\n        SetFieldVBlankCallback();\n        SetMainCallback1(CB1_Overworld);\n        SetMainCallback2(CB2_Overworld);\n    }",
       "callsTo": [
         "FieldClearVBlankHBlankCallbacks",
@@ -1209,6 +1775,7 @@
       "returnType": "void",
       "signature": "void CB2_ReturnToFieldCableClub(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "FieldClearVBlankHBlankCallbacks();\n    gFieldCallback = FieldCB_ReturnToFieldWirelessLink;\n    SetMainCallback2(CB2_LoadMapOnReturnToFieldCableClub);",
       "callsTo": [
         "FieldClearVBlankHBlankCallbacks",
@@ -1220,6 +1787,7 @@
       "returnType": "void",
       "signature": "static void CB2_LoadMapOnReturnToFieldCableClub(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (LoadMapInStepsLink(&gMain.state))\n    {\n        SetFieldVBlankCallback();\n        SetMainCallback1(CB1_OverworldLink);\n        ResetAllMultiplayerState();\n        SetMainCallback2(CB2_Overworld);\n    }",
       "callsTo": [
         "LoadMapInStepsLink",
@@ -1234,6 +1802,7 @@
       "returnType": "void",
       "signature": "void CB2_ReturnToField(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (IsOverworldLinkActive() == TRUE)\n    {\n        SetMainCallback2(CB2_ReturnToFieldLink);\n    }\n    else\n    {\n        FieldClearVBlankHBlankCallbacks();\n        SetMainCallback2(CB2_ReturnToFieldLocal);\n    }",
       "callsTo": [
         "FieldClearVBlankHBlankCallbacks",
@@ -1246,6 +1815,7 @@
       "returnType": "void",
       "signature": "static void CB2_ReturnToFieldLocal(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (ReturnToFieldLocal(&gMain.state))\n    {\n        SetFieldVBlankCallback();\n        SetMainCallback2(CB2_Overworld);\n    }",
       "callsTo": [
         "ReturnToFieldLocal",
@@ -1258,6 +1828,7 @@
       "returnType": "void",
       "signature": "static void CB2_ReturnToFieldLink(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!Overworld_IsRecvQueueAtMax() && ReturnToFieldLink(&gMain.state))\n        SetMainCallback2(CB2_Overworld);",
       "callsTo": [
         "Overworld_IsRecvQueueAtMax",
@@ -1270,6 +1841,7 @@
       "returnType": "void",
       "signature": "void CB2_ReturnToFieldFromMultiplayer(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "FieldClearVBlankHBlankCallbacks();\n    StopMapMusic();\n    SetMainCallback1(CB1_OverworldLink);\n    ResetAllMultiplayerState();\n\n    if (gWirelessCommType != 0)\n        gFieldCallback = FieldCB_ReturnToFieldWirelessLink;\n    else\n        gFieldCallback = FieldCB_ReturnToFieldCableLink;\n\n    ScriptContext_Init();\n    UnlockPlayerFieldControls();\n    CB2_ReturnToField();",
       "callsTo": [
         "CB2_ReturnToField",
@@ -1286,6 +1858,7 @@
       "returnType": "void",
       "signature": "void CB2_ReturnToFieldWithOpenMenu(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "FieldClearVBlankHBlankCallbacks();\n    gFieldCallback2 = FieldCB_ReturnToFieldOpenStartMenu;\n    CB2_ReturnToField();",
       "callsTo": [
         "CB2_ReturnToField",
@@ -1297,6 +1870,7 @@
       "returnType": "void",
       "signature": "void CB2_ReturnToFieldContinueScript(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "FieldClearVBlankHBlankCallbacks();\n    gFieldCallback = FieldCB_ContinueScript;\n    CB2_ReturnToField();",
       "callsTo": [
         "CB2_ReturnToField",
@@ -1308,6 +1882,7 @@
       "returnType": "void",
       "signature": "void CB2_ReturnToFieldContinueScriptPlayMapMusic(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "FieldClearVBlankHBlankCallbacks();\n    gFieldCallback = FieldCB_ContinueScriptHandleMusic;\n    CB2_ReturnToField();",
       "callsTo": [
         "CB2_ReturnToField",
@@ -1319,6 +1894,7 @@
       "returnType": "void",
       "signature": "void CB2_ReturnToFieldFadeFromBlack(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "FieldClearVBlankHBlankCallbacks();\n    gFieldCallback = FieldCB_WarpExitFadeFromBlack;\n    CB2_ReturnToField();",
       "callsTo": [
         "CB2_ReturnToField",
@@ -1330,6 +1906,7 @@
       "returnType": "void",
       "signature": "static void FieldCB_FadeTryShowMapPopup(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gMapHeader.showMapName == TRUE && SecretBaseMapPopupEnabled() == TRUE)\n        ShowMapNamePopup();\n    FieldCB_WarpExitFadeFromBlack();",
       "callsTo": [
         "FieldCB_WarpExitFadeFromBlack",
@@ -1342,6 +1919,7 @@
       "returnType": "void",
       "signature": "void CB2_ContinueSavedGame(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 trainerHillMapId;\n\n    FieldClearVBlankHBlankCallbacks();\n    StopMapMusic();\n    ResetSafariZoneFlag_();\n    if (gSaveFileStatus == SAVE_STATUS_ERROR)\n        ResetWinStreaks();\n\n    LoadSaveblockMapHeader();\n    ClearDiveAndHoleWarps();\n    trainerHillMapId = GetCurrentTrainerHillMapId();\n    if (gMapHeader.mapLayoutId == LAYOUT_BATTLE_FRONTIER_BATTLE_PYRAMID_FLOOR)\n        LoadBattlePyramidFloorObjectEventScripts();\n    else if (trainerHillMapId != 0 && trainerHillMapId != TRAINER_HILL_ENTRANCE)\n        LoadTrainerHillFloorObjectEventScripts();\n    else\n        LoadSaveblockObjEventScripts();\n\n    UnfreezeObjectEvents();\n    DoTimeBasedEvents();\n    UpdateMiscOverworldStates();\n    if (gMapHeader.mapLayoutId == LAYOUT_BATTLE_FRONTIER_BATTLE_PYRAMID_FLOOR)\n        InitBattlePyramidMap(TRUE);\n    else if (trainerHillMapId != 0)\n        InitTrainerHillMap();\n    else\n        InitMapFromSavedGame();\n\n    PlayTimeCounter_Start();\n    ScriptContext_Init();\n    UnlockPlayerFieldControls();\n    InitMatchCallCounters();\n    if (UseContinueGameWarp() == TRUE)\n    {\n        ClearContinueGameWarpStatus();\n        SetWarpDestinationToContinueGameWarp();\n        WarpIntoMap();\n        TryPutTodaysRivalTrainerOnAir();\n        SetMainCallback2(CB2_LoadMap);\n    }\n    else\n    {\n        TryPutTodaysRivalTrainerOnAir();\n        gFieldCallback = FieldCB_FadeTryShowMapPopup;\n        SetMainCallback1(CB1_Overworld);\n        CB2_ReturnToField();\n    }",
       "callsTo": [
         "CB2_ReturnToField",
@@ -1379,6 +1957,7 @@
       "returnType": "void",
       "signature": "static void FieldClearVBlankHBlankCallbacks(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (UsedPokemonCenterWarp() == TRUE)\n        CloseLink();\n\n    if (gWirelessCommType != 0)\n    {\n        EnableInterrupts(INTR_FLAG_VBLANK | INTR_FLAG_VCOUNT | INTR_FLAG_TIMER3 | INTR_FLAG_SERIAL);\n        DisableInterrupts(INTR_FLAG_HBLANK);\n    }\n    else\n    {\n        u16 savedIme = REG_IME;\n        REG_IME = 0;\n        REG_IE &= ~INTR_FLAG_HBLANK;\n        REG_IE |= INTR_FLAG_VBLANK;\n        REG_IME = savedIme;\n    }\n\n    SetVBlankCallback(NULL);\n    SetHBlankCallback(NULL);",
       "callsTo": [
         "CloseLink",
@@ -1394,6 +1973,7 @@
       "returnType": "void",
       "signature": "static void SetFieldVBlankCallback(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "SetVBlankCallback(VBlankCB_Field);",
       "callsTo": [
         "SetVBlankCallback"
@@ -1404,6 +1984,7 @@
       "returnType": "void",
       "signature": "static void VBlankCB_Field(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "LoadOam();\n    ProcessSpriteCopyRequests();\n    ScanlineEffect_InitHBlankDmaTransfer();\n    FieldUpdateBgTilemapScroll();\n    TransferPlttBuffer();\n    TransferTilesetAnimsBuffer();",
       "callsTo": [
         "FieldUpdateBgTilemapScroll",
@@ -1419,6 +2000,7 @@
       "returnType": "void",
       "signature": "static void InitCurrentFlashLevelScanlineEffect(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 flashLevel;\n\n    if (InBattlePyramid_())\n    {\n        WriteBattlePyramidViewScanlineEffectBuffer();\n        ScanlineEffect_SetParams(sFlashEffectParams);\n    }\n    else if ((flashLevel = GetFlashLevel()))\n    {\n        WriteFlashScanlineEffectBuffer(flashLevel);\n        ScanlineEffect_SetParams(sFlashEffectParams);\n    }",
       "callsTo": [
         "GetFlashLevel",
@@ -1433,6 +2015,12 @@
       "returnType": "bool32",
       "signature": "static bool32 LoadMapInStepsLink(u8 *state)",
       "paramsRaw": "u8 *state",
+      "paramsList": [
+        {
+          "name": "state",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "switch (*state)\n    {\n    case 0:\n        InitOverworldBgs();\n        ScriptContext_Init();\n        UnlockPlayerFieldControls();\n        ResetMirageTowerAndSaveBlockPtrs();\n        ResetScreenForMapLoad();\n        (*state)++;\n        break;\n    case 1:\n        LoadMapFromWarp(TRUE);\n        (*state)++;\n        break;\n    case 2:\n        ResumeMap(TRUE);\n        (*state)++;\n        break;\n    case 3:\n        OffsetCameraFocusByLinkPlayerId();\n        InitObjectEventsLink();\n        SpawnLinkPlayers();\n        SetCameraToTrackGuestPlayer();\n        (*state)++;\n        break;\n    case 4:\n        InitCurrentFlashLevelScanlineEffect();\n        InitOverworldGraphicsRegisters();\n        InitTextBoxGfxAndPrinters();\n        (*state)++;\n        break;\n    case 5:\n        ResetFieldCamera();\n        (*state)++;\n        break;\n    case 6:\n        CopyPrimaryTilesetToVram(gMapHeader.mapLayout);\n        (*state)++;\n        break;\n    case 7:\n        CopySecondaryTilesetToVram(gMapHeader.mapLayout);\n        (*state)++;\n        break;\n    case 8:\n        if (FreeTempTileDataBuffersIfPossible() != TRUE)\n        {\n            LoadMapTilesetPalettes(gMapHeader.mapLayout);\n            (*state)++;\n        }\n        break;\n    case 9:\n        DrawWholeMapView();\n        (*state)++;\n        break;\n    case 10:\n        InitTilesetAnimations();\n        (*state)++;\n        break;\n    case 11:\n        if (gWirelessCommType != 0)\n        {\n            LoadWirelessStatusIndicatorSpriteGfx();\n            CreateWirelessStatusIndicatorSprite(0, 0);\n        }\n        (*state)++;\n        break;\n    case 12:\n        if (RunFieldCallback())\n            (*state)++;\n        break;\n    case 13:\n        return TRUE;\n    }\n\n    return FALSE;",
       "callsTo": [
         "CopyPrimaryTilesetToVram",
@@ -1466,6 +2054,16 @@
       "returnType": "bool32",
       "signature": "static bool32 LoadMapInStepsLocal(u8 *state, bool32 a2)",
       "paramsRaw": "u8 *state, bool32 a2",
+      "paramsList": [
+        {
+          "name": "state",
+          "typeRaw": "u8 *"
+        },
+        {
+          "name": "a2",
+          "typeRaw": "bool32"
+        }
+      ],
       "body": "switch (*state)\n    {\n    case 0:\n        FieldClearVBlankHBlankCallbacks();\n        LoadMapFromWarp(a2);\n        (*state)++;\n        break;\n    case 1:\n        ResetMirageTowerAndSaveBlockPtrs();\n        ResetScreenForMapLoad();\n        (*state)++;\n        break;\n    case 2:\n        ResumeMap(a2);\n        (*state)++;\n        break;\n    case 3:\n        InitObjectEventsLocal();\n        SetCameraToTrackPlayer();\n        (*state)++;\n        break;\n    case 4:\n        InitCurrentFlashLevelScanlineEffect();\n        InitOverworldGraphicsRegisters();\n        InitTextBoxGfxAndPrinters();\n        (*state)++;\n        break;\n    case 5:\n        ResetFieldCamera();\n        (*state)++;\n        break;\n    case 6:\n        CopyPrimaryTilesetToVram(gMapHeader.mapLayout);\n        (*state)++;\n        break;\n    case 7:\n        CopySecondaryTilesetToVram(gMapHeader.mapLayout);\n        (*state)++;\n        break;\n    case 8:\n        if (FreeTempTileDataBuffersIfPossible() != TRUE)\n        {\n            LoadMapTilesetPalettes(gMapHeader.mapLayout);\n            (*state)++;\n        }\n        break;\n    case 9:\n        DrawWholeMapView();\n        (*state)++;\n        break;\n    case 10:\n        InitTilesetAnimations();\n        (*state)++;\n        break;\n    case 11:\n        if (gMapHeader.showMapName == TRUE && SecretBaseMapPopupEnabled() == TRUE)\n            ShowMapNamePopup();\n        (*state)++;\n        break;\n    case 12:\n        if (RunFieldCallback())\n            (*state)++;\n        break;\n    case 13:\n        return TRUE;\n    }\n\n    return FALSE;",
       "callsTo": [
         "CopyPrimaryTilesetToVram",
@@ -1495,6 +2093,12 @@
       "returnType": "bool32",
       "signature": "static bool32 ReturnToFieldLocal(u8 *state)",
       "paramsRaw": "u8 *state",
+      "paramsList": [
+        {
+          "name": "state",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "switch (*state)\n    {\n    case 0:\n        ResetMirageTowerAndSaveBlockPtrs();\n        ResetScreenForMapLoad();\n        ResumeMap(FALSE);\n        InitObjectEventsReturnToField();\n        SetCameraToTrackPlayer();\n        (*state)++;\n        break;\n    case 1:\n        InitViewGraphics();\n        TryLoadTrainerHillEReaderPalette();\n        (*state)++;\n        break;\n    case 2:\n        if (RunFieldCallback())\n            (*state)++;\n        break;\n    case 3:\n        return TRUE;\n    }\n\n    return FALSE;",
       "callsTo": [
         "InitObjectEventsReturnToField",
@@ -1512,6 +2116,12 @@
       "returnType": "bool32",
       "signature": "static bool32 ReturnToFieldLink(u8 *state)",
       "paramsRaw": "u8 *state",
+      "paramsList": [
+        {
+          "name": "state",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "switch (*state)\n    {\n    case 0:\n        FieldClearVBlankHBlankCallbacks();\n        ResetMirageTowerAndSaveBlockPtrs();\n        ResetScreenForMapLoad();\n        (*state)++;\n        break;\n    case 1:\n        ResumeMap(TRUE);\n        (*state)++;\n        break;\n    case 2:\n        CreateLinkPlayerSprites();\n        InitObjectEventsReturnToField();\n        SetCameraToTrackGuestPlayer_2();\n        (*state)++;\n        break;\n    case 3:\n        InitCurrentFlashLevelScanlineEffect();\n        InitOverworldGraphicsRegisters();\n        InitTextBoxGfxAndPrinters();\n        (*state)++;\n        break;\n    case 4:\n        ResetFieldCamera();\n        (*state)++;\n        break;\n    case 5:\n        CopyPrimaryTilesetToVram(gMapHeader.mapLayout);\n        (*state)++;\n        break;\n    case 6:\n        CopySecondaryTilesetToVram(gMapHeader.mapLayout);\n        (*state)++;\n        break;\n    case 7:\n        if (FreeTempTileDataBuffersIfPossible() != TRUE)\n        {\n            LoadMapTilesetPalettes(gMapHeader.mapLayout);\n            (*state)++;\n        }\n        break;\n    case 8:\n        DrawWholeMapView();\n        (*state)++;\n        break;\n    case 9:\n        InitTilesetAnimations();\n        (*state)++;\n        break;\n    case 11:\n        if (gWirelessCommType != 0)\n        {\n            LoadWirelessStatusIndicatorSpriteGfx();\n            CreateWirelessStatusIndicatorSprite(0, 0);\n        }\n        (*state)++;\n        break;\n    case 12:\n        if (RunFieldCallback())\n            (*state)++;\n        break;\n    case 10:\n        (*state)++;\n        break;\n    case 13:\n        SetFieldVBlankCallback();\n        (*state)++;\n        return TRUE;\n    }\n\n    return FALSE;",
       "callsTo": [
         "CopyPrimaryTilesetToVram",
@@ -1542,6 +2152,12 @@
       "returnType": "void",
       "signature": "static void DoMapLoadLoop(u8 *state)",
       "paramsRaw": "u8 *state",
+      "paramsList": [
+        {
+          "name": "state",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "while (!LoadMapInStepsLocal(state, FALSE));",
       "callsTo": [
         "LoadMapInStepsLocal"
@@ -1552,6 +2168,7 @@
       "returnType": "void",
       "signature": "static void ResetMirageTowerAndSaveBlockPtrs(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ClearMirageTowerPulseBlend();\n    MoveSaveBlocks_ResetHeap();",
       "callsTo": [
         "ClearMirageTowerPulseBlend",
@@ -1563,6 +2180,7 @@
       "returnType": "void",
       "signature": "static void ResetScreenForMapLoad(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "SetGpuReg(REG_OFFSET_DISPCNT, 0);\n    ScanlineEffect_Stop();\n\n    DmaClear16(3, PLTT + 2, PLTT_SIZE - 2);\n    DmaFillLarge16(3, 0, (void *)VRAM, VRAM_SIZE, 0x1000);\n    ResetOamRange(0, 128);\n    LoadOam();",
       "callsTo": [
         "DmaClear16",
@@ -1578,6 +2196,7 @@
       "returnType": "void",
       "signature": "static void InitViewGraphics(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "InitCurrentFlashLevelScanlineEffect();\n    InitOverworldGraphicsRegisters();\n    InitTextBoxGfxAndPrinters();\n    InitMapView();",
       "callsTo": [
         "InitCurrentFlashLevelScanlineEffect",
@@ -1591,6 +2210,7 @@
       "returnType": "void",
       "signature": "static void InitOverworldGraphicsRegisters(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ClearScheduledBgCopiesToVram();\n    ResetTempTileDataBuffers();\n    SetGpuReg(REG_OFFSET_MOSAIC, 0);\n    SetGpuReg(REG_OFFSET_WININ, WININ_WIN0_BG_ALL | WININ_WIN0_OBJ | WININ_WIN1_BG_ALL | WININ_WIN1_OBJ);\n    SetGpuReg(REG_OFFSET_WINOUT, WINOUT_WIN01_BG0 | WINOUT_WINOBJ_BG0);\n    SetGpuReg(REG_OFFSET_WIN0H, 0xFF);\n    SetGpuReg(REG_OFFSET_WIN0V, 0xFF);\n    SetGpuReg(REG_OFFSET_WIN1H, 0xFFFF);\n    SetGpuReg(REG_OFFSET_WIN1V, 0xFFFF);\n    SetGpuReg(REG_OFFSET_BLDCNT, gOverworldBackgroundLayerFlags[1] | gOverworldBackgroundLayerFlags[2] | gOverworldBackgroundLayerFlags[3]\n                               | BLDCNT_TGT2_OBJ | BLDCNT_EFFECT_BLEND);\n    SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(13, 7));\n    InitOverworldBgs();\n    ScheduleBgCopyTilemapToVram(1);\n    ScheduleBgCopyTilemapToVram(2);\n    ScheduleBgCopyTilemapToVram(3);\n    ChangeBgX(0, 0, BG_COORD_SET);\n    ChangeBgY(0, 0, BG_COORD_SET);\n    ChangeBgX(1, 0, BG_COORD_SET);\n    ChangeBgY(1, 0, BG_COORD_SET);\n    ChangeBgX(2, 0, BG_COORD_SET);\n    ChangeBgY(2, 0, BG_COORD_SET);\n    ChangeBgX(3, 0, BG_COORD_SET);\n    ChangeBgY(3, 0, BG_COORD_SET);\n    SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_OBJ_ON | DISPCNT_WIN0_ON | DISPCNT_WIN1_ON\n                                | DISPCNT_OBJ_1D_MAP | DISPCNT_HBLANK_INTERVAL);\n    ShowBg(0);\n    ShowBg(1);\n    ShowBg(2);\n    ShowBg(3);\n    InitFieldMessageBox();",
       "callsTo": [
         "BLDALPHA_BLEND",
@@ -1610,6 +2230,12 @@
       "returnType": "void",
       "signature": "static void ResumeMap(bool32 a1)",
       "paramsRaw": "bool32 a1",
+      "paramsList": [
+        {
+          "name": "a1",
+          "typeRaw": "bool32"
+        }
+      ],
       "body": "ResetTasks();\n    ResetSpriteData();\n    ResetPaletteFade();\n    ScanlineEffect_Clear();\n    ResetAllPicSprites();\n    ResetCameraUpdateInfo();\n    InstallCameraPanAheadCallback();\n    if (!a1)\n        InitObjectEventPalettes(0);\n    else\n        InitObjectEventPalettes(1);\n\n    FieldEffectActiveListClear();\n    StartWeather();\n    ResumePausedWeather();\n    if (!a1)\n        SetUpFieldTasks();\n    RunOnResumeMapScript();\n    TryStartMirageTowerPulseBlendEffect();",
       "callsTo": [
         "FieldEffectActiveListClear",
@@ -1633,6 +2259,7 @@
       "returnType": "void",
       "signature": "static void InitObjectEventsLink(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gTotalCameraPixelOffsetX = 0;\n    gTotalCameraPixelOffsetY = 0;\n    ResetObjectEvents();\n    TrySpawnObjectEvents(0, 0);\n    TryRunOnWarpIntoMapScript();",
       "callsTo": [
         "ResetObjectEvents",
@@ -1645,6 +2272,7 @@
       "returnType": "void",
       "signature": "static void InitObjectEventsLocal(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 x, y;\n    struct InitialPlayerAvatarState *player;\n\n    gTotalCameraPixelOffsetX = 0;\n    gTotalCameraPixelOffsetY = 0;\n    ResetObjectEvents();\n    GetCameraFocusCoords(&x, &y);\n    player = GetInitialPlayerAvatarState();\n    InitPlayerAvatar(x, y, player->direction, gSaveBlock2Ptr->playerGender);\n    SetPlayerAvatarTransitionFlags(player->transitionFlags);\n    ResetInitialPlayerAvatarState();\n    TrySpawnObjectEvents(0, 0);\n    TryRunOnWarpIntoMapScript();",
       "callsTo": [
         "GetCameraFocusCoords",
@@ -1662,6 +2290,7 @@
       "returnType": "void",
       "signature": "static void InitObjectEventsReturnToField(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "SpawnObjectEventsOnReturnToField(0, 0);\n    RotatingGate_InitPuzzleAndGraphics();\n    RunOnReturnToFieldMapScript();",
       "callsTo": [
         "RotatingGate_InitPuzzleAndGraphics",
@@ -1674,6 +2303,7 @@
       "returnType": "void",
       "signature": "static void SetCameraToTrackPlayer(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gObjectEvents[gPlayerAvatar.objectEventId].trackedByCamera = TRUE;\n    InitCameraUpdateCallback(gPlayerAvatar.spriteId);",
       "callsTo": [
         "InitCameraUpdateCallback"
@@ -1684,6 +2314,7 @@
       "returnType": "void",
       "signature": "static void SetCameraToTrackGuestPlayer(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "InitCameraUpdateCallback(GetSpriteForLinkedPlayer(gLocalLinkPlayerId));",
       "callsTo": [
         "GetSpriteForLinkedPlayer",
@@ -1695,6 +2326,7 @@
       "returnType": "void",
       "signature": "static void SetCameraToTrackGuestPlayer_2(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "InitCameraUpdateCallback(GetSpriteForLinkedPlayer(gLocalLinkPlayerId));",
       "callsTo": [
         "GetSpriteForLinkedPlayer",
@@ -1706,6 +2338,7 @@
       "returnType": "void",
       "signature": "static void OffsetCameraFocusByLinkPlayerId(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 x, y;\n    GetCameraFocusCoords(&x, &y);\n\n     \n     \n    SetCameraFocusCoords(x + gLocalLinkPlayerId, y);",
       "callsTo": [
         "GetCameraFocusCoords",
@@ -1717,6 +2350,7 @@
       "returnType": "void",
       "signature": "static void SpawnLinkPlayers(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 i;\n    u16 x, y;\n\n    GetCameraFocusCoords(&x, &y);\n    x -= gLocalLinkPlayerId;\n\n    for (i = 0; i < gFieldLinkPlayerCount; i++)\n    {\n        SpawnLinkPlayerObjectEvent(i, i + x, y, gLinkPlayers[i].gender);\n        CreateLinkPlayerSprite(i, gLinkPlayers[i].version);\n    }\n\n    ClearAllPlayerKeys();",
       "callsTo": [
         "ClearAllPlayerKeys",
@@ -1730,6 +2364,7 @@
       "returnType": "void",
       "signature": "static void CreateLinkPlayerSprites(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 i;\n    for (i = 0; i < gFieldLinkPlayerCount; i++)\n        CreateLinkPlayerSprite(i, gLinkPlayers[i].version);",
       "callsTo": [
         "CreateLinkPlayerSprite"
@@ -1740,6 +2375,7 @@
       "returnType": "void",
       "signature": "static void CB1_OverworldLink(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gWirelessCommType == 0 || !IsRfuRecvQueueEmpty() || !IsSendingKeysToLink())\n    {\n        u8 selfId = gLocalLinkPlayerId;\n        UpdateAllLinkPlayers(gLinkPartnersHeldKeys, selfId);\n\n         \n         \n         \n         \n         \n         \n         \n         \n         \n         \n         \n        UpdateHeldKeyCode(sPlayerKeyInterceptCallback(selfId));\n        ClearAllPlayerKeys();\n    }",
       "callsTo": [
         "ClearAllPlayerKeys",
@@ -1754,6 +2390,7 @@
       "returnType": "void",
       "signature": "void ResetAllMultiplayerState(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ResetAllPlayerLinkStates();\n    SetKeyInterceptCallback(KeyInterCB_SelfIdle);",
       "callsTo": [
         "ResetAllPlayerLinkStates",
@@ -1765,6 +2402,7 @@
       "returnType": "void",
       "signature": "static void ClearAllPlayerKeys(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ResetPlayerHeldKeys(gLinkPartnersHeldKeys);",
       "callsTo": [
         "ResetPlayerHeldKeys"
@@ -1775,6 +2413,12 @@
       "returnType": "void",
       "signature": "static void SetKeyInterceptCallback(u16 (*func)(u32))",
       "paramsRaw": "u16 (*func)(u32)",
+      "paramsList": [
+        {
+          "name": "func",
+          "typeRaw": "fnptr"
+        }
+      ],
       "body": "sRfuKeepAliveTimer = 0;\n    sPlayerKeyInterceptCallback = func;",
       "callsTo": [],
       "lineCount": 2
@@ -1783,6 +2427,7 @@
       "returnType": "void",
       "signature": "static void CheckRfuKeepAliveTimer(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gWirelessCommType != 0 && ++sRfuKeepAliveTimer > 60)\n        LinkRfu_FatalError();",
       "callsTo": [
         "LinkRfu_FatalError"
@@ -1793,6 +2438,7 @@
       "returnType": "void",
       "signature": "static void ResetAllPlayerLinkStates(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s32 i;\n    for (i = 0; i < MAX_LINK_PLAYERS; i++)\n        sPlayerLinkStates[i] = PLAYER_LINK_STATE_IDLE;",
       "callsTo": [],
       "lineCount": 3
@@ -1801,6 +2447,12 @@
       "returnType": "bool32",
       "signature": "static bool32 AreAllPlayersInLinkState(u16 state)",
       "paramsRaw": "u16 state",
+      "paramsList": [
+        {
+          "name": "state",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "s32 i;\n    s32 count = gFieldLinkPlayerCount;\n\n    for (i = 0; i < count; i++)\n        if (sPlayerLinkStates[i] != state)\n            return FALSE;\n    return TRUE;",
       "callsTo": [],
       "lineCount": 7
@@ -1809,6 +2461,12 @@
       "returnType": "bool32",
       "signature": "static bool32 IsAnyPlayerInLinkState(u16 state)",
       "paramsRaw": "u16 state",
+      "paramsList": [
+        {
+          "name": "state",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "s32 i;\n    s32 count = gFieldLinkPlayerCount;\n\n    for (i = 0; i < count; i++)\n        if (sPlayerLinkStates[i] == state)\n            return TRUE;\n    return FALSE;",
       "callsTo": [],
       "lineCount": 7
@@ -1817,6 +2475,24 @@
       "returnType": "void",
       "signature": "static void HandleLinkPlayerKeyInput(u32 playerId, u16 key, struct CableClubPlayer *trainer, u16 *forceFacing)",
       "paramsRaw": "u32 playerId, u16 key, struct CableClubPlayer *trainer, u16 *forceFacing",
+      "paramsList": [
+        {
+          "name": "playerId",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "key",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "trainer",
+          "typeRaw": "struct CableClubPlayer *"
+        },
+        {
+          "name": "forceFacing",
+          "typeRaw": "u16 *"
+        }
+      ],
       "body": "const u8 *script;\n\n    if (sPlayerLinkStates[playerId] == PLAYER_LINK_STATE_IDLE)\n    {\n        script = TryGetTileEventScript(trainer);\n        if (script)\n        {\n            *forceFacing = GetDirectionForEventScript(script);\n            sPlayerLinkStates[playerId] = PLAYER_LINK_STATE_BUSY;\n            if (trainer->isLocalPlayer)\n            {\n                SetKeyInterceptCallback(KeyInterCB_DeferToEventScript);\n                RunInteractLocalPlayerScript(script);\n            }\n            return;\n        }\n        if (IsAnyPlayerInLinkState(PLAYER_LINK_STATE_EXITING_ROOM) == TRUE)\n        {\n            sPlayerLinkStates[playerId] = PLAYER_LINK_STATE_BUSY;\n            if (trainer->isLocalPlayer)\n            {\n                SetKeyInterceptCallback(KeyInterCB_DeferToEventScript);\n                RunTerminateLinkScript();\n            }\n            return;\n        }\n\n        switch (key)\n        {\n        case LINK_KEY_CODE_START_BUTTON:\n            if (CanCableClubPlayerPressStart(trainer))\n            {\n                sPlayerLinkStates[playerId] = PLAYER_LINK_STATE_BUSY;\n                if (trainer->isLocalPlayer)\n                {\n                    SetKeyInterceptCallback(KeyInterCB_DeferToEventScript);\n                    InitLinkRoomStartMenuScript();\n                }\n            }\n            break;\n        case LINK_KEY_CODE_DPAD_DOWN:\n            if (PlayerIsAtSouthExit(trainer) == TRUE)\n            {\n                sPlayerLinkStates[playerId] = PLAYER_LINK_STATE_BUSY;\n                if (trainer->isLocalPlayer)\n                {\n                    SetKeyInterceptCallback(KeyInterCB_DeferToEventScript);\n                    RunConfirmLeaveCableClubScript();\n                }\n            }\n            break;\n        case LINK_KEY_CODE_A_BUTTON:\n            script = TryInteractWithPlayer(trainer);\n            if (script)\n            {\n                sPlayerLinkStates[playerId] = PLAYER_LINK_STATE_BUSY;\n                if (trainer->isLocalPlayer)\n                {\n                    SetKeyInterceptCallback(KeyInterCB_DeferToEventScript);\n                    InitMenuBasedScript(script);\n                }\n            }\n            break;\n        case LINK_KEY_CODE_HANDLE_RECV_QUEUE:\n            if (IsCableClubPlayerUnfrozen(trainer))\n            {\n                sPlayerLinkStates[playerId] = PLAYER_LINK_STATE_BUSY;\n                if (trainer->isLocalPlayer)\n                {\n                    SetKeyInterceptCallback(KeyInterCB_DeferToRecvQueue);\n                    InitLinkPlayerQueueScript();\n                }\n            }\n            break;\n        case LINK_KEY_CODE_HANDLE_SEND_QUEUE:\n            if (IsCableClubPlayerUnfrozen(trainer))\n            {\n                sPlayerLinkStates[playerId] = PLAYER_LINK_STATE_BUSY;\n                if (trainer->isLocalPlayer)\n                {\n                    SetKeyInterceptCallback(KeyInterCB_DeferToSendQueue);\n                    InitLinkPlayerQueueScript();\n                }\n            }\n            break;\n        }\n    }\n\n    switch (key)\n    {\n    case LINK_KEY_CODE_EXIT_ROOM:\n        sPlayerLinkStates[playerId] = PLAYER_LINK_STATE_EXITING_ROOM;\n        break;\n    case LINK_KEY_CODE_READY:\n        sPlayerLinkStates[playerId] = PLAYER_LINK_STATE_READY;\n        break;\n    case LINK_KEY_CODE_IDLE:\n        sPlayerLinkStates[playerId] = PLAYER_LINK_STATE_IDLE;\n        if (trainer->isLocalPlayer)\n            SetKeyInterceptCallback(KeyInterCB_SelfIdle);\n        break;\n    case LINK_KEY_CODE_EXIT_SEAT:\n        if (sPlayerLinkStates[playerId] == PLAYER_LINK_STATE_READY)\n            sPlayerLinkStates[playerId] = PLAYER_LINK_STATE_BUSY;\n        break;\n    }",
       "callsTo": [
         "CanCableClubPlayerPressStart",
@@ -1840,6 +2516,16 @@
       "returnType": "void",
       "signature": "static void UpdateAllLinkPlayers(u16 *keys, s32 selfId)",
       "paramsRaw": "u16 *keys, s32 selfId",
+      "paramsList": [
+        {
+          "name": "keys",
+          "typeRaw": "u16 *"
+        },
+        {
+          "name": "selfId",
+          "typeRaw": "s32"
+        }
+      ],
       "body": "struct CableClubPlayer trainer;\n    s32 i;\n\n    for (i = 0; i < MAX_LINK_PLAYERS; i++)\n    {\n        u8 key = keys[i];\n        u16 setFacing = FACING_NONE;\n        LoadCableClubPlayer(i, selfId, &trainer);\n        HandleLinkPlayerKeyInput(i, key, &trainer, &setFacing);\n        if (sPlayerLinkStates[i] == PLAYER_LINK_STATE_IDLE)\n            setFacing = GetDirectionForDpadKey(key);\n        SetPlayerFacingDirection(i, setFacing);\n    }",
       "callsTo": [
         "GetDirectionForDpadKey",
@@ -1853,6 +2539,12 @@
       "returnType": "void",
       "signature": "static void UpdateHeldKeyCode(u16 key)",
       "paramsRaw": "u16 key",
+      "paramsList": [
+        {
+          "name": "key",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "if (key >= LINK_KEY_CODE_EMPTY && key < LINK_KEY_CODE_UNK_8)\n        gHeldKeyCodeToSend = key;\n    else\n        gHeldKeyCodeToSend = LINK_KEY_CODE_EMPTY;\n\n    if (gWirelessCommType != 0\n        && GetLinkSendQueueLength() > 1\n        && IsOverworldLinkActive() == TRUE\n        && IsSendingKeysToLink() == TRUE)\n    {\n        switch (key)\n        {\n        case LINK_KEY_CODE_EMPTY:\n        case LINK_KEY_CODE_DPAD_DOWN:\n        case LINK_KEY_CODE_DPAD_UP:\n        case LINK_KEY_CODE_DPAD_LEFT:\n        case LINK_KEY_CODE_DPAD_RIGHT:\n        case LINK_KEY_CODE_START_BUTTON:\n        case LINK_KEY_CODE_A_BUTTON:\n            gHeldKeyCodeToSend = LINK_KEY_CODE_NULL;\n            break;\n        }\n    }",
       "callsTo": [
         "GetLinkSendQueueLength",
@@ -1865,6 +2557,12 @@
       "returnType": "u16",
       "signature": "static u16 KeyInterCB_ReadButtons(u32 key)",
       "paramsRaw": "u32 key",
+      "paramsList": [
+        {
+          "name": "key",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "if (JOY_HELD(DPAD_UP))\n        return LINK_KEY_CODE_DPAD_UP;\n    if (JOY_HELD(DPAD_DOWN))\n        return LINK_KEY_CODE_DPAD_DOWN;\n    if (JOY_HELD(DPAD_LEFT))\n        return LINK_KEY_CODE_DPAD_LEFT;\n    if (JOY_HELD(DPAD_RIGHT))\n        return LINK_KEY_CODE_DPAD_RIGHT;\n    if (JOY_NEW(START_BUTTON))\n        return LINK_KEY_CODE_START_BUTTON;\n    if (JOY_NEW(A_BUTTON))\n        return LINK_KEY_CODE_A_BUTTON;\n    return LINK_KEY_CODE_EMPTY;",
       "callsTo": [
         "JOY_HELD",
@@ -1876,6 +2574,12 @@
       "returnType": "u16",
       "signature": "static u16 GetDirectionForDpadKey(u16 key)",
       "paramsRaw": "u16 key",
+      "paramsList": [
+        {
+          "name": "key",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "switch (key)\n    {\n    case LINK_KEY_CODE_DPAD_RIGHT:\n        return FACING_RIGHT;\n    case LINK_KEY_CODE_DPAD_LEFT:\n        return FACING_LEFT;\n    case LINK_KEY_CODE_DPAD_UP:\n        return FACING_UP;\n    case LINK_KEY_CODE_DPAD_DOWN:\n        return FACING_DOWN;\n    default:\n        return FACING_NONE;\n    }",
       "callsTo": [],
       "lineCount": 13
@@ -1884,6 +2588,12 @@
       "returnType": "void",
       "signature": "static void ResetPlayerHeldKeys(u16 *keys)",
       "paramsRaw": "u16 *keys",
+      "paramsList": [
+        {
+          "name": "keys",
+          "typeRaw": "u16 *"
+        }
+      ],
       "body": "s32 i;\n    for (i = 0; i < 4; i++)\n        keys[i] = LINK_KEY_CODE_EMPTY;",
       "callsTo": [],
       "lineCount": 3
@@ -1892,6 +2602,12 @@
       "returnType": "u16",
       "signature": "static u16 KeyInterCB_SelfIdle(u32 key)",
       "paramsRaw": "u32 key",
+      "paramsList": [
+        {
+          "name": "key",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "if (ArePlayerFieldControlsLocked() == TRUE)\n        return LINK_KEY_CODE_EMPTY;\n    if (GetLinkRecvQueueLength() > 4)\n        return LINK_KEY_CODE_HANDLE_RECV_QUEUE;\n    if (GetLinkSendQueueLength() <= 4)\n        return KeyInterCB_ReadButtons(key);\n    return LINK_KEY_CODE_HANDLE_SEND_QUEUE;",
       "callsTo": [
         "ArePlayerFieldControlsLocked",
@@ -1905,6 +2621,12 @@
       "returnType": "u16",
       "signature": "static u16 KeyInterCB_Idle(u32 key)",
       "paramsRaw": "u32 key",
+      "paramsList": [
+        {
+          "name": "key",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "CheckRfuKeepAliveTimer();\n    return LINK_KEY_CODE_EMPTY;",
       "callsTo": [
         "CheckRfuKeepAliveTimer"
@@ -1915,6 +2637,12 @@
       "returnType": "u16",
       "signature": "static u16 KeyInterCB_DeferToEventScript(u32 key)",
       "paramsRaw": "u32 key",
+      "paramsList": [
+        {
+          "name": "key",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "u16 retVal;\n    if (ArePlayerFieldControlsLocked() == TRUE)\n    {\n        retVal = LINK_KEY_CODE_EMPTY;\n    }\n    else\n    {\n        retVal = LINK_KEY_CODE_IDLE;\n        SetKeyInterceptCallback(KeyInterCB_Idle);\n    }\n    return retVal;",
       "callsTo": [
         "ArePlayerFieldControlsLocked",
@@ -1926,6 +2654,12 @@
       "returnType": "u16",
       "signature": "static u16 KeyInterCB_DeferToRecvQueue(u32 key)",
       "paramsRaw": "u32 key",
+      "paramsList": [
+        {
+          "name": "key",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "u16 retVal;\n    if (GetLinkRecvQueueLength() >= OVERWORLD_RECV_QUEUE_MAX)\n    {\n        retVal = LINK_KEY_CODE_EMPTY;\n    }\n    else\n    {\n        retVal = LINK_KEY_CODE_IDLE;\n        UnlockPlayerFieldControls();\n        SetKeyInterceptCallback(KeyInterCB_Idle);\n    }\n    return retVal;",
       "callsTo": [
         "GetLinkRecvQueueLength",
@@ -1938,6 +2672,12 @@
       "returnType": "u16",
       "signature": "static u16 KeyInterCB_DeferToSendQueue(u32 key)",
       "paramsRaw": "u32 key",
+      "paramsList": [
+        {
+          "name": "key",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "u16 retVal;\n    if (GetLinkSendQueueLength() > 2)\n    {\n        retVal = LINK_KEY_CODE_EMPTY;\n    }\n    else\n    {\n        retVal = LINK_KEY_CODE_IDLE;\n        UnlockPlayerFieldControls();\n        SetKeyInterceptCallback(KeyInterCB_Idle);\n    }\n    return retVal;",
       "callsTo": [
         "GetLinkSendQueueLength",
@@ -1950,6 +2690,12 @@
       "returnType": "u16",
       "signature": "static u16 KeyInterCB_ExitingSeat(u32 key)",
       "paramsRaw": "u32 key",
+      "paramsList": [
+        {
+          "name": "key",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "CheckRfuKeepAliveTimer();\n    return LINK_KEY_CODE_EMPTY;",
       "callsTo": [
         "CheckRfuKeepAliveTimer"
@@ -1960,6 +2706,12 @@
       "returnType": "u16",
       "signature": "static u16 KeyInterCB_Ready(u32 keyOrPlayerId)",
       "paramsRaw": "u32 keyOrPlayerId",
+      "paramsList": [
+        {
+          "name": "keyOrPlayerId",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "if (sPlayerLinkStates[keyOrPlayerId] == PLAYER_LINK_STATE_READY)\n    {\n        if (JOY_NEW(B_BUTTON))\n        {\n            SetKeyInterceptCallback(KeyInterCB_ExitingSeat);\n            return LINK_KEY_CODE_EXIT_SEAT;\n        }\n        else\n        {\n            return LINK_KEY_CODE_EMPTY;\n        }\n    }\n    else\n    {\n        CheckRfuKeepAliveTimer();\n        return LINK_KEY_CODE_EMPTY;\n    }",
       "callsTo": [
         "CheckRfuKeepAliveTimer",
@@ -1972,6 +2724,12 @@
       "returnType": "u16",
       "signature": "static u16 KeyInterCB_SetReady(u32 key)",
       "paramsRaw": "u32 key",
+      "paramsList": [
+        {
+          "name": "key",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "SetKeyInterceptCallback(KeyInterCB_Ready);\n    return LINK_KEY_CODE_READY;",
       "callsTo": [
         "SetKeyInterceptCallback"
@@ -1982,6 +2740,12 @@
       "returnType": "u16",
       "signature": "static u16 KeyInterCB_SendNothing(u32 key)",
       "paramsRaw": "u32 key",
+      "paramsList": [
+        {
+          "name": "key",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "return LINK_KEY_CODE_EMPTY;",
       "callsTo": [],
       "lineCount": 1
@@ -1990,6 +2754,12 @@
       "returnType": "u16",
       "signature": "static u16 KeyInterCB_WaitForPlayersToExit(u32 keyOrPlayerId)",
       "paramsRaw": "u32 keyOrPlayerId",
+      "paramsList": [
+        {
+          "name": "keyOrPlayerId",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "if (sPlayerLinkStates[keyOrPlayerId] != PLAYER_LINK_STATE_EXITING_ROOM)\n        CheckRfuKeepAliveTimer();\n    if (AreAllPlayersInLinkState(PLAYER_LINK_STATE_EXITING_ROOM) == TRUE)\n    {\n        ScriptContext_SetupScript(EventScript_DoLinkRoomExit);\n        SetKeyInterceptCallback(KeyInterCB_SendNothing);\n    }\n    return LINK_KEY_CODE_EMPTY;",
       "callsTo": [
         "AreAllPlayersInLinkState",
@@ -2003,6 +2773,12 @@
       "returnType": "u16",
       "signature": "static u16 KeyInterCB_SendExitRoomKey(u32 key)",
       "paramsRaw": "u32 key",
+      "paramsList": [
+        {
+          "name": "key",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "SetKeyInterceptCallback(KeyInterCB_WaitForPlayersToExit);\n    return LINK_KEY_CODE_EXIT_ROOM;",
       "callsTo": [
         "SetKeyInterceptCallback"
@@ -2013,6 +2789,12 @@
       "returnType": "u16",
       "signature": "static u16 KeyInterCB_InLinkActivity(u32 key)",
       "paramsRaw": "u32 key",
+      "paramsList": [
+        {
+          "name": "key",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "return LINK_KEY_CODE_EMPTY;",
       "callsTo": [],
       "lineCount": 1
@@ -2021,6 +2803,7 @@
       "returnType": "u32",
       "signature": "u32 GetCableClubPartnersReady(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (IsAnyPlayerInLinkState(PLAYER_LINK_STATE_EXITING_ROOM) == TRUE)\n        return CABLE_SEAT_FAILED;\n    if (sPlayerKeyInterceptCallback == KeyInterCB_Ready && sPlayerLinkStates[gLocalLinkPlayerId] != PLAYER_LINK_STATE_READY)\n        return CABLE_SEAT_WAITING;\n    if (sPlayerKeyInterceptCallback == KeyInterCB_ExitingSeat && sPlayerLinkStates[gLocalLinkPlayerId] == PLAYER_LINK_STATE_BUSY)\n        return CABLE_SEAT_FAILED;\n    if (AreAllPlayersInLinkState(PLAYER_LINK_STATE_READY))\n        return CABLE_SEAT_SUCCESS;\n    return CABLE_SEAT_WAITING;",
       "callsTo": [
         "AreAllPlayersInLinkState",
@@ -2032,6 +2815,7 @@
       "returnType": "u16",
       "signature": "u16 SetInCableClubSeat(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "SetKeyInterceptCallback(KeyInterCB_SetReady);\n    return 0;",
       "callsTo": [
         "SetKeyInterceptCallback"
@@ -2042,6 +2826,7 @@
       "returnType": "u16",
       "signature": "u16 SetLinkWaitingForScript(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "SetKeyInterceptCallback(KeyInterCB_DeferToEventScript);\n    return 0;",
       "callsTo": [
         "SetKeyInterceptCallback"
@@ -2052,6 +2837,7 @@
       "returnType": "u16",
       "signature": "u16 QueueExitLinkRoomKey(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "SetKeyInterceptCallback(KeyInterCB_SendExitRoomKey);\n    return 0;",
       "callsTo": [
         "SetKeyInterceptCallback"
@@ -2062,6 +2848,7 @@
       "returnType": "u16",
       "signature": "u16 SetStartedCableClubActivity(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "SetKeyInterceptCallback(KeyInterCB_InLinkActivity);\n    return 0;",
       "callsTo": [
         "SetKeyInterceptCallback"
@@ -2072,6 +2859,20 @@
       "returnType": "void",
       "signature": "static void LoadCableClubPlayer(s32 linkPlayerId, s32 myPlayerId, struct CableClubPlayer *trainer)",
       "paramsRaw": "s32 linkPlayerId, s32 myPlayerId, struct CableClubPlayer *trainer",
+      "paramsList": [
+        {
+          "name": "linkPlayerId",
+          "typeRaw": "s32"
+        },
+        {
+          "name": "myPlayerId",
+          "typeRaw": "s32"
+        },
+        {
+          "name": "trainer",
+          "typeRaw": "struct CableClubPlayer *"
+        }
+      ],
       "body": "s16 x, y;\n\n    trainer->playerId = linkPlayerId;\n    trainer->isLocalPlayer = (linkPlayerId == myPlayerId) ? 1 : 0;\n    trainer->movementMode = gLinkPlayerObjectEvents[linkPlayerId].movementMode;\n    trainer->facing = GetLinkPlayerFacingDirection(linkPlayerId);\n    GetLinkPlayerCoords(linkPlayerId, &x, &y);\n    trainer->pos.x = x;\n    trainer->pos.y = y;\n    trainer->pos.elevation = GetLinkPlayerElevation(linkPlayerId);\n    trainer->metatileBehavior = MapGridGetMetatileBehaviorAt(x, y);",
       "callsTo": [
         "GetLinkPlayerCoords",
@@ -2085,6 +2886,12 @@
       "returnType": "bool32",
       "signature": "static bool32 IsCableClubPlayerUnfrozen(struct CableClubPlayer *player)",
       "paramsRaw": "struct CableClubPlayer *player",
+      "paramsList": [
+        {
+          "name": "player",
+          "typeRaw": "struct CableClubPlayer *"
+        }
+      ],
       "body": "u8 mode = player->movementMode;\n    if (mode == MOVEMENT_MODE_SCRIPTED || mode == MOVEMENT_MODE_FREE)\n        return TRUE;\n    else\n        return FALSE;",
       "callsTo": [],
       "lineCount": 5
@@ -2093,6 +2900,12 @@
       "returnType": "bool32",
       "signature": "static bool32 CanCableClubPlayerPressStart(struct CableClubPlayer *player)",
       "paramsRaw": "struct CableClubPlayer *player",
+      "paramsList": [
+        {
+          "name": "player",
+          "typeRaw": "struct CableClubPlayer *"
+        }
+      ],
       "body": "u8 mode = player->movementMode;\n    if (mode == MOVEMENT_MODE_SCRIPTED || mode == MOVEMENT_MODE_FREE)\n        return TRUE;\n    else\n        return FALSE;",
       "callsTo": [],
       "lineCount": 5
@@ -2101,6 +2914,12 @@
       "returnType": "bool32",
       "signature": "static bool32 PlayerIsAtSouthExit(struct CableClubPlayer *player)",
       "paramsRaw": "struct CableClubPlayer *player",
+      "paramsList": [
+        {
+          "name": "player",
+          "typeRaw": "struct CableClubPlayer *"
+        }
+      ],
       "body": "if (player->movementMode != MOVEMENT_MODE_SCRIPTED && player->movementMode != MOVEMENT_MODE_FREE)\n        return FALSE;\n    else if (!MetatileBehavior_IsSouthArrowWarp(player->metatileBehavior))\n        return FALSE;\n    else if (player->facing != DIR_SOUTH)\n        return FALSE;\n    else\n        return TRUE;",
       "callsTo": [
         "MetatileBehavior_IsSouthArrowWarp"
@@ -2111,6 +2930,12 @@
       "returnType": "u16",
       "signature": "static u16 GetDirectionForEventScript(const u8 *script)",
       "paramsRaw": "const u8 *script",
+      "paramsList": [
+        {
+          "name": "script",
+          "typeRaw": "const u8 *"
+        }
+      ],
       "body": "if (script == EventScript_BattleColosseum_4P_PlayerSpot0)\n        return FACING_FORCED_RIGHT;\n    else if (script == EventScript_BattleColosseum_4P_PlayerSpot1)\n        return FACING_FORCED_LEFT;\n    else if (script == EventScript_BattleColosseum_4P_PlayerSpot2)\n        return FACING_FORCED_RIGHT;\n    else if (script == EventScript_BattleColosseum_4P_PlayerSpot3)\n        return FACING_FORCED_LEFT;\n    else if (script == EventScript_RecordCenter_Spot0)\n        return FACING_FORCED_RIGHT;\n    else if (script == EventScript_RecordCenter_Spot1)\n        return FACING_FORCED_LEFT;\n    else if (script == EventScript_RecordCenter_Spot2)\n        return FACING_FORCED_RIGHT;\n    else if (script == EventScript_RecordCenter_Spot3)\n        return FACING_FORCED_LEFT;\n    else if (script == EventScript_BattleColosseum_2P_PlayerSpot0)\n        return FACING_FORCED_RIGHT;\n    else if (script == EventScript_BattleColosseum_2P_PlayerSpot1)\n        return FACING_FORCED_LEFT;\n    else if (script == EventScript_TradeCenter_Chair0)\n        return FACING_FORCED_RIGHT;\n    else if (script == EventScript_TradeCenter_Chair1)\n        return FACING_FORCED_LEFT;\n    else\n        return FACING_NONE;",
       "callsTo": [],
       "lineCount": 26
@@ -2119,6 +2944,7 @@
       "returnType": "void",
       "signature": "static void InitLinkPlayerQueueScript(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "LockPlayerFieldControls();",
       "callsTo": [
         "LockPlayerFieldControls"
@@ -2129,6 +2955,7 @@
       "returnType": "void",
       "signature": "static void InitLinkRoomStartMenuScript(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "PlaySE(SE_WIN_OPEN);\n    ShowStartMenu();\n    LockPlayerFieldControls();",
       "callsTo": [
         "LockPlayerFieldControls",
@@ -2141,6 +2968,12 @@
       "returnType": "void",
       "signature": "static void RunInteractLocalPlayerScript(const u8 *script)",
       "paramsRaw": "const u8 *script",
+      "paramsList": [
+        {
+          "name": "script",
+          "typeRaw": "const u8 *"
+        }
+      ],
       "body": "PlaySE(SE_SELECT);\n    ScriptContext_SetupScript(script);\n    LockPlayerFieldControls();",
       "callsTo": [
         "LockPlayerFieldControls",
@@ -2153,6 +2986,7 @@
       "returnType": "void",
       "signature": "static void RunConfirmLeaveCableClubScript(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "PlaySE(SE_WIN_OPEN);\n    ScriptContext_SetupScript(EventScript_ConfirmLeaveCableClubRoom);\n    LockPlayerFieldControls();",
       "callsTo": [
         "LockPlayerFieldControls",
@@ -2165,6 +2999,12 @@
       "returnType": "void",
       "signature": "static void InitMenuBasedScript(const u8 *script)",
       "paramsRaw": "const u8 *script",
+      "paramsList": [
+        {
+          "name": "script",
+          "typeRaw": "const u8 *"
+        }
+      ],
       "body": "PlaySE(SE_SELECT);\n    ScriptContext_SetupScript(script);\n    LockPlayerFieldControls();",
       "callsTo": [
         "LockPlayerFieldControls",
@@ -2177,6 +3017,7 @@
       "returnType": "void",
       "signature": "static void RunTerminateLinkScript(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ScriptContext_SetupScript(EventScript_TerminateLink);\n    LockPlayerFieldControls();",
       "callsTo": [
         "LockPlayerFieldControls",
@@ -2188,6 +3029,7 @@
       "returnType": "bool32",
       "signature": "bool32 Overworld_IsRecvQueueAtMax(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!IsOverworldLinkActive())\n        return FALSE;\n    if (GetLinkRecvQueueLength() >= OVERWORLD_RECV_QUEUE_MAX)\n        sReceivingFromLink = TRUE;\n    else\n        sReceivingFromLink = FALSE;\n    return sReceivingFromLink;",
       "callsTo": [
         "GetLinkRecvQueueLength",
@@ -2199,6 +3041,7 @@
       "returnType": "bool32",
       "signature": "bool32 Overworld_RecvKeysFromLinkIsRunning(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 temp;\n\n    if (GetLinkRecvQueueLength() < OVERWORLD_RECV_QUEUE_MAX - 1)\n        return FALSE;\n    else if (IsOverworldLinkActive() != TRUE)\n        return FALSE;\n    else if (IsSendingKeysToLink() != TRUE)\n        return FALSE;\n    else if (sPlayerKeyInterceptCallback == KeyInterCB_DeferToRecvQueue)\n        return TRUE;\n    else if (sPlayerKeyInterceptCallback != KeyInterCB_DeferToEventScript)\n        return FALSE;\n\n    temp = sReceivingFromLink;\n    sReceivingFromLink = FALSE;\n\n    if (temp == TRUE)\n        return TRUE;\n    else if (gPaletteFade.active && gPaletteFade.softwareFadeFinishing)\n        return TRUE;\n    else\n        return FALSE;",
       "callsTo": [
         "GetLinkRecvQueueLength",
@@ -2211,6 +3054,7 @@
       "returnType": "bool32",
       "signature": "bool32 Overworld_SendKeysToLinkIsRunning(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (GetLinkSendQueueLength() < 2)\n        return FALSE;\n    else if (IsOverworldLinkActive() != TRUE)\n        return FALSE;\n    else if (IsSendingKeysToLink() != TRUE)\n        return FALSE;\n    else if (sPlayerKeyInterceptCallback == KeyInterCB_DeferToSendQueue)\n        return TRUE;\n    else\n        return FALSE;",
       "callsTo": [
         "GetLinkSendQueueLength",
@@ -2223,6 +3067,7 @@
       "returnType": "bool32",
       "signature": "bool32 IsSendingKeysOverCable(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gWirelessCommType != 0)\n        return FALSE;\n    else if (!IsSendingKeysToLink())\n        return FALSE;\n    else\n        return TRUE;",
       "callsTo": [
         "IsSendingKeysToLink"
@@ -2233,6 +3078,7 @@
       "returnType": "u32",
       "signature": "static u32 GetLinkSendQueueLength(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gWirelessCommType != 0)\n        return gRfu.sendQueue.count;\n    else\n        return gLink.sendQueue.count;",
       "callsTo": [],
       "lineCount": 4
@@ -2241,6 +3087,12 @@
       "returnType": "void",
       "signature": "static void ZeroLinkPlayerObjectEvent(struct LinkPlayerObjectEvent *linkPlayerObjEvent)",
       "paramsRaw": "struct LinkPlayerObjectEvent *linkPlayerObjEvent",
+      "paramsList": [
+        {
+          "name": "linkPlayerObjEvent",
+          "typeRaw": "struct LinkPlayerObjectEvent *"
+        }
+      ],
       "body": "memset(linkPlayerObjEvent, 0, sizeof(struct LinkPlayerObjectEvent));",
       "callsTo": [],
       "lineCount": 1
@@ -2249,6 +3101,7 @@
       "returnType": "void",
       "signature": "void ClearLinkPlayerObjectEvents(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "memset(gLinkPlayerObjectEvents, 0, sizeof(gLinkPlayerObjectEvents));",
       "callsTo": [],
       "lineCount": 1
@@ -2257,6 +3110,12 @@
       "returnType": "void",
       "signature": "static void ZeroObjectEvent(struct ObjectEvent *objEvent)",
       "paramsRaw": "struct ObjectEvent *objEvent",
+      "paramsList": [
+        {
+          "name": "objEvent",
+          "typeRaw": "struct ObjectEvent *"
+        }
+      ],
       "body": "memset(objEvent, 0, sizeof(struct ObjectEvent));",
       "callsTo": [],
       "lineCount": 1
@@ -2265,6 +3124,24 @@
       "returnType": "void",
       "signature": "static void SpawnLinkPlayerObjectEvent(u8 linkPlayerId, s16 x, s16 y, u8 gender)",
       "paramsRaw": "u8 linkPlayerId, s16 x, s16 y, u8 gender",
+      "paramsList": [
+        {
+          "name": "linkPlayerId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "x",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "gender",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 objEventId = GetFirstInactiveObjectEventId();\n    struct LinkPlayerObjectEvent *linkPlayerObjEvent = &gLinkPlayerObjectEvents[linkPlayerId];\n    struct ObjectEvent *objEvent = &gObjectEvents[objEventId];\n\n    ZeroLinkPlayerObjectEvent(linkPlayerObjEvent);\n    ZeroObjectEvent(objEvent);\n\n    linkPlayerObjEvent->active = TRUE;\n    linkPlayerObjEvent->linkPlayerId = linkPlayerId;\n    linkPlayerObjEvent->objEventId = objEventId;\n    linkPlayerObjEvent->movementMode = MOVEMENT_MODE_FREE;\n\n    objEvent->active = TRUE;\n    linkGender(objEvent) = gender;\n    linkDirection(objEvent) = DIR_NORTH;\n    objEvent->spriteId = MAX_SPRITES;\n\n    InitLinkPlayerObjectEventPos(objEvent, x, y);",
       "callsTo": [
         "GetFirstInactiveObjectEventId",
@@ -2278,6 +3155,20 @@
       "returnType": "void",
       "signature": "static void InitLinkPlayerObjectEventPos(struct ObjectEvent *objEvent, s16 x, s16 y)",
       "paramsRaw": "struct ObjectEvent *objEvent, s16 x, s16 y",
+      "paramsList": [
+        {
+          "name": "objEvent",
+          "typeRaw": "struct ObjectEvent *"
+        },
+        {
+          "name": "x",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s16"
+        }
+      ],
       "body": "objEvent->currentCoords.x = x;\n    objEvent->currentCoords.y = y;\n    objEvent->previousCoords.x = x;\n    objEvent->previousCoords.y = y;\n    SetSpritePosToMapCoords(x, y, &objEvent->initialCoords.x, &objEvent->initialCoords.y);\n    objEvent->initialCoords.x += 8;\n    ObjectEventUpdateElevation(objEvent);",
       "callsTo": [
         "ObjectEventUpdateElevation",
@@ -2289,6 +3180,12 @@
       "returnType": "u8",
       "signature": "static u8 GetSpriteForLinkedPlayer(u8 linkPlayerId)",
       "paramsRaw": "u8 linkPlayerId",
+      "paramsList": [
+        {
+          "name": "linkPlayerId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 objEventId = gLinkPlayerObjectEvents[linkPlayerId].objEventId;\n    struct ObjectEvent *objEvent = &gObjectEvents[objEventId];\n    return objEvent->spriteId;",
       "callsTo": [],
       "lineCount": 3
@@ -2297,6 +3194,20 @@
       "returnType": "void",
       "signature": "static void GetLinkPlayerCoords(u8 linkPlayerId, u16 *x, u16 *y)",
       "paramsRaw": "u8 linkPlayerId, u16 *x, u16 *y",
+      "paramsList": [
+        {
+          "name": "linkPlayerId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "x",
+          "typeRaw": "u16 *"
+        },
+        {
+          "name": "y",
+          "typeRaw": "u16 *"
+        }
+      ],
       "body": "u8 objEventId = gLinkPlayerObjectEvents[linkPlayerId].objEventId;\n    struct ObjectEvent *objEvent = &gObjectEvents[objEventId];\n    *x = objEvent->currentCoords.x;\n    *y = objEvent->currentCoords.y;",
       "callsTo": [],
       "lineCount": 4
@@ -2305,6 +3216,12 @@
       "returnType": "u8",
       "signature": "static u8 GetLinkPlayerFacingDirection(u8 linkPlayerId)",
       "paramsRaw": "u8 linkPlayerId",
+      "paramsList": [
+        {
+          "name": "linkPlayerId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 objEventId = gLinkPlayerObjectEvents[linkPlayerId].objEventId;\n    struct ObjectEvent *objEvent = &gObjectEvents[objEventId];\n    return linkDirection(objEvent);",
       "callsTo": [],
       "lineCount": 3
@@ -2313,6 +3230,12 @@
       "returnType": "u8",
       "signature": "static u8 GetLinkPlayerElevation(u8 linkPlayerId)",
       "paramsRaw": "u8 linkPlayerId",
+      "paramsList": [
+        {
+          "name": "linkPlayerId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 objEventId = gLinkPlayerObjectEvents[linkPlayerId].objEventId;\n    struct ObjectEvent *objEvent = &gObjectEvents[objEventId];\n    return objEvent->currentElevation;",
       "callsTo": [],
       "lineCount": 3
@@ -2321,6 +3244,16 @@
       "returnType": "u8",
       "signature": "static u8 GetLinkPlayerIdAt(s16 x, s16 y)",
       "paramsRaw": "s16 x, s16 y",
+      "paramsList": [
+        {
+          "name": "x",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s16"
+        }
+      ],
       "body": "u8 i;\n    for (i = 0; i < MAX_LINK_PLAYERS; i++)\n    {\n        if (gLinkPlayerObjectEvents[i].active\n         && (gLinkPlayerObjectEvents[i].movementMode == 0 || gLinkPlayerObjectEvents[i].movementMode == 2))\n        {\n            struct ObjectEvent *objEvent = &gObjectEvents[gLinkPlayerObjectEvents[i].objEventId];\n            if (objEvent->currentCoords.x == x && objEvent->currentCoords.y == y)\n                return i;\n        }\n    }\n    return 4;",
       "callsTo": [],
       "lineCount": 12
@@ -2329,6 +3262,16 @@
       "returnType": "void",
       "signature": "static void SetPlayerFacingDirection(u8 linkPlayerId, u8 facing)",
       "paramsRaw": "u8 linkPlayerId, u8 facing",
+      "paramsList": [
+        {
+          "name": "linkPlayerId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "facing",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "struct LinkPlayerObjectEvent *linkPlayerObjEvent = &gLinkPlayerObjectEvents[linkPlayerId];\n    u8 objEventId = linkPlayerObjEvent->objEventId;\n    struct ObjectEvent *objEvent = &gObjectEvents[objEventId];\n\n    if (linkPlayerObjEvent->active)\n    {\n        if (facing > FACING_FORCED_RIGHT)\n        {\n            objEvent->triggerGroundEffectsOnMove = TRUE;\n        }\n        else\n        {\n             \n             \n            #define TEMP sLinkPlayerMovementModes[linkPlayerObjEvent->movementMode](linkPlayerObjEvent, objEvent, facing)\n\n            sMovementStatusHandler[TEMP](linkPlayerObjEvent, objEvent);\n\n             \n            #undef TEMP\n        }\n    }",
       "callsTo": [],
       "lineCount": 22
@@ -2337,6 +3280,20 @@
       "returnType": "u8",
       "signature": "static u8 MovementEventModeCB_Normal(struct LinkPlayerObjectEvent *linkPlayerObjEvent, struct ObjectEvent *objEvent, u8 dir)",
       "paramsRaw": "struct LinkPlayerObjectEvent *linkPlayerObjEvent, struct ObjectEvent *objEvent, u8 dir",
+      "paramsList": [
+        {
+          "name": "linkPlayerObjEvent",
+          "typeRaw": "struct LinkPlayerObjectEvent *"
+        },
+        {
+          "name": "objEvent",
+          "typeRaw": "struct ObjectEvent *"
+        },
+        {
+          "name": "dir",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "return sLinkPlayerFacingHandlers[dir](linkPlayerObjEvent, objEvent, dir);",
       "callsTo": [],
       "lineCount": 1
@@ -2345,6 +3302,20 @@
       "returnType": "u8",
       "signature": "static u8 MovementEventModeCB_Ignored(struct LinkPlayerObjectEvent *linkPlayerObjEvent, struct ObjectEvent *objEvent, u8 dir)",
       "paramsRaw": "struct LinkPlayerObjectEvent *linkPlayerObjEvent, struct ObjectEvent *objEvent, u8 dir",
+      "paramsList": [
+        {
+          "name": "linkPlayerObjEvent",
+          "typeRaw": "struct LinkPlayerObjectEvent *"
+        },
+        {
+          "name": "objEvent",
+          "typeRaw": "struct ObjectEvent *"
+        },
+        {
+          "name": "dir",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "return FACING_UP;",
       "callsTo": [],
       "lineCount": 1
@@ -2353,6 +3324,20 @@
       "returnType": "u8",
       "signature": "static u8 MovementEventModeCB_Scripted(struct LinkPlayerObjectEvent *linkPlayerObjEvent, struct ObjectEvent *objEvent, u8 dir)",
       "paramsRaw": "struct LinkPlayerObjectEvent *linkPlayerObjEvent, struct ObjectEvent *objEvent, u8 dir",
+      "paramsList": [
+        {
+          "name": "linkPlayerObjEvent",
+          "typeRaw": "struct LinkPlayerObjectEvent *"
+        },
+        {
+          "name": "objEvent",
+          "typeRaw": "struct ObjectEvent *"
+        },
+        {
+          "name": "dir",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "return sLinkPlayerFacingHandlers[dir](linkPlayerObjEvent, objEvent, dir);",
       "callsTo": [],
       "lineCount": 1
@@ -2361,6 +3346,20 @@
       "returnType": "bool8",
       "signature": "static bool8 FacingHandler_DoNothing(struct LinkPlayerObjectEvent *linkPlayerObjEvent, struct ObjectEvent *objEvent, u8 dir)",
       "paramsRaw": "struct LinkPlayerObjectEvent *linkPlayerObjEvent, struct ObjectEvent *objEvent, u8 dir",
+      "paramsList": [
+        {
+          "name": "linkPlayerObjEvent",
+          "typeRaw": "struct LinkPlayerObjectEvent *"
+        },
+        {
+          "name": "objEvent",
+          "typeRaw": "struct ObjectEvent *"
+        },
+        {
+          "name": "dir",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "return FALSE;",
       "callsTo": [],
       "lineCount": 1
@@ -2369,6 +3368,20 @@
       "returnType": "bool8",
       "signature": "static bool8 FacingHandler_DpadMovement(struct LinkPlayerObjectEvent *linkPlayerObjEvent, struct ObjectEvent *objEvent, u8 dir)",
       "paramsRaw": "struct LinkPlayerObjectEvent *linkPlayerObjEvent, struct ObjectEvent *objEvent, u8 dir",
+      "paramsList": [
+        {
+          "name": "linkPlayerObjEvent",
+          "typeRaw": "struct LinkPlayerObjectEvent *"
+        },
+        {
+          "name": "objEvent",
+          "typeRaw": "struct ObjectEvent *"
+        },
+        {
+          "name": "dir",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 x, y;\n\n    linkDirection(objEvent) = FlipVerticalAndClearForced(dir, linkDirection(objEvent));\n    ObjectEventMoveDestCoords(objEvent, linkDirection(objEvent), &x, &y);\n\n    if (LinkPlayerGetCollision(linkPlayerObjEvent->objEventId, linkDirection(objEvent), x, y))\n    {\n        return FALSE;\n    }\n    else\n    {\n        objEvent->directionSequenceIndex = 16;\n        ShiftObjectEventCoords(objEvent, x, y);\n        ObjectEventUpdateElevation(objEvent);\n        return TRUE;\n    }",
       "callsTo": [
         "FlipVerticalAndClearForced",
@@ -2383,6 +3396,20 @@
       "returnType": "bool8",
       "signature": "static bool8 FacingHandler_ForcedFacingChange(struct LinkPlayerObjectEvent *linkPlayerObjEvent, struct ObjectEvent *objEvent, u8 dir)",
       "paramsRaw": "struct LinkPlayerObjectEvent *linkPlayerObjEvent, struct ObjectEvent *objEvent, u8 dir",
+      "paramsList": [
+        {
+          "name": "linkPlayerObjEvent",
+          "typeRaw": "struct LinkPlayerObjectEvent *"
+        },
+        {
+          "name": "objEvent",
+          "typeRaw": "struct ObjectEvent *"
+        },
+        {
+          "name": "dir",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "linkDirection(objEvent) = FlipVerticalAndClearForced(dir, linkDirection(objEvent));\n    return FALSE;",
       "callsTo": [
         "FlipVerticalAndClearForced"
@@ -2393,6 +3420,16 @@
       "returnType": "void",
       "signature": "static void MovementStatusHandler_EnterFreeMode(struct LinkPlayerObjectEvent *linkPlayerObjEvent, struct ObjectEvent *objEvent)",
       "paramsRaw": "struct LinkPlayerObjectEvent *linkPlayerObjEvent, struct ObjectEvent *objEvent",
+      "paramsList": [
+        {
+          "name": "linkPlayerObjEvent",
+          "typeRaw": "struct LinkPlayerObjectEvent *"
+        },
+        {
+          "name": "objEvent",
+          "typeRaw": "struct ObjectEvent *"
+        }
+      ],
       "body": "linkPlayerObjEvent->movementMode = MOVEMENT_MODE_FREE;",
       "callsTo": [],
       "lineCount": 1
@@ -2401,6 +3438,16 @@
       "returnType": "void",
       "signature": "static void MovementStatusHandler_TryAdvanceScript(struct LinkPlayerObjectEvent *linkPlayerObjEvent, struct ObjectEvent *objEvent)",
       "paramsRaw": "struct LinkPlayerObjectEvent *linkPlayerObjEvent, struct ObjectEvent *objEvent",
+      "paramsList": [
+        {
+          "name": "linkPlayerObjEvent",
+          "typeRaw": "struct LinkPlayerObjectEvent *"
+        },
+        {
+          "name": "objEvent",
+          "typeRaw": "struct ObjectEvent *"
+        }
+      ],
       "body": "objEvent->directionSequenceIndex--;\n    linkPlayerObjEvent->movementMode = MOVEMENT_MODE_FROZEN;\n    MoveCoords(linkDirection(objEvent), &objEvent->initialCoords.x, &objEvent->initialCoords.y);\n    if (!objEvent->directionSequenceIndex)\n    {\n        ShiftStillObjectEventCoords(objEvent);\n        linkPlayerObjEvent->movementMode = MOVEMENT_MODE_SCRIPTED;\n    }",
       "callsTo": [
         "MoveCoords",
@@ -2412,6 +3459,16 @@
       "returnType": "u8",
       "signature": "static u8 FlipVerticalAndClearForced(u8 newFacing, u8 oldFacing)",
       "paramsRaw": "u8 newFacing, u8 oldFacing",
+      "paramsList": [
+        {
+          "name": "newFacing",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "oldFacing",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "switch (newFacing)\n    {\n    case FACING_UP:\n    case FACING_FORCED_UP:\n        return DIR_NORTH;\n    case FACING_DOWN:\n    case FACING_FORCED_DOWN:\n        return DIR_SOUTH;\n    case FACING_LEFT:\n    case FACING_FORCED_LEFT:\n        return DIR_WEST;\n    case FACING_RIGHT:\n    case FACING_FORCED_RIGHT:\n        return DIR_EAST;\n    }\n    return oldFacing;",
       "callsTo": [],
       "lineCount": 16
@@ -2420,6 +3477,24 @@
       "returnType": "u8",
       "signature": "static u8 LinkPlayerGetCollision(u8 selfObjEventId, u8 direction, s16 x, s16 y)",
       "paramsRaw": "u8 selfObjEventId, u8 direction, s16 x, s16 y",
+      "paramsList": [
+        {
+          "name": "selfObjEventId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "direction",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "x",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s16"
+        }
+      ],
       "body": "u8 i;\n    for (i = 0; i < OBJECT_EVENTS_COUNT; i++)\n    {\n        if (i != selfObjEventId)\n        {\n            if ((gObjectEvents[i].currentCoords.x == x && gObjectEvents[i].currentCoords.y == y)\n             || (gObjectEvents[i].previousCoords.x == x && gObjectEvents[i].previousCoords.y == y))\n            {\n                return 1;\n            }\n        }\n    }\n    return MapGridGetCollisionAt(x, y);",
       "callsTo": [
         "MapGridGetCollisionAt"
@@ -2430,6 +3505,16 @@
       "returnType": "void",
       "signature": "static void CreateLinkPlayerSprite(u8 linkPlayerId, u8 gameVersion)",
       "paramsRaw": "u8 linkPlayerId, u8 gameVersion",
+      "paramsList": [
+        {
+          "name": "linkPlayerId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "gameVersion",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "struct LinkPlayerObjectEvent *linkPlayerObjEvent = &gLinkPlayerObjectEvents[linkPlayerId];\n    u8 objEventId = linkPlayerObjEvent->objEventId;\n    struct ObjectEvent *objEvent = &gObjectEvents[objEventId];\n    struct Sprite *sprite;\n\n    if (linkPlayerObjEvent->active)\n    {\n        switch (gameVersion)\n        {\n        case VERSION_FIRE_RED:\n        case VERSION_LEAF_GREEN:\n            objEvent->spriteId = CreateObjectGraphicsSprite(GetFRLGAvatarGraphicsIdByGender(linkGender(objEvent)), SpriteCB_LinkPlayer, 0, 0, 0);\n            break;\n        case VERSION_RUBY:\n        case VERSION_SAPPHIRE:\n            objEvent->spriteId = CreateObjectGraphicsSprite(GetRSAvatarGraphicsIdByGender(linkGender(objEvent)), SpriteCB_LinkPlayer, 0, 0, 0);\n            break;\n        case VERSION_EMERALD:\n            objEvent->spriteId = CreateObjectGraphicsSprite(GetRivalAvatarGraphicsIdByStateIdAndGender(PLAYER_AVATAR_STATE_NORMAL, linkGender(objEvent)), SpriteCB_LinkPlayer, 0, 0, 0);\n            break;\n        }\n\n        sprite = &gSprites[objEvent->spriteId];\n        sprite->coordOffsetEnabled = TRUE;\n        sprite->data[0] = linkPlayerId;\n        objEvent->triggerGroundEffectsOnMove = FALSE;\n    }",
       "callsTo": [
         "CreateObjectGraphicsSprite",
@@ -2443,6 +3528,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_LinkPlayer(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "struct LinkPlayerObjectEvent *linkPlayerObjEvent = &gLinkPlayerObjectEvents[sprite->data[0]];\n    struct ObjectEvent *objEvent = &gObjectEvents[linkPlayerObjEvent->objEventId];\n    sprite->x = objEvent->initialCoords.x;\n    sprite->y = objEvent->initialCoords.y;\n    SetObjectSubpriorityByElevation(objEvent->previousElevation, sprite, 1);\n    sprite->oam.priority = ElevationToPriority(objEvent->previousElevation);\n\n    if (linkPlayerObjEvent->movementMode == MOVEMENT_MODE_FREE)\n        StartSpriteAnim(sprite, GetFaceDirectionAnimNum(linkDirection(objEvent)));\n    else\n        StartSpriteAnimIfDifferent(sprite, GetMoveDirectionAnimNum(linkDirection(objEvent)));\n\n    UpdateObjectEventSpriteInvisibility(sprite, FALSE);\n    if (objEvent->triggerGroundEffectsOnMove)\n    {\n        sprite->invisible = ((sprite->data[7] & 4) >> 2);\n        sprite->data[7]++;\n    }",
       "callsTo": [
         "ElevationToPriority",

@@ -6,6 +6,12 @@
       "returnType": "void",
       "signature": "static void AnimFallingRock(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (gBattleAnimArgs[3] != 0)\n        SetAverageBattlerPositions(gBattleAnimTarget, FALSE, &sprite->x, &sprite->y);\n\n    sprite->x += gBattleAnimArgs[0];\n    sprite->y += 14;\n\n    StartSpriteAnim(sprite, gBattleAnimArgs[1]);\n    AnimateSprite(sprite);\n\n    sprite->data[0] = 0;\n    sprite->data[1] = 0;\n    sprite->data[2] = 4;\n    sprite->data[3] = 16;\n    sprite->data[4] = -70;\n    sprite->data[5] = gBattleAnimArgs[2];\n\n    StoreSpriteCallbackInData6(sprite, AnimFallingRock_Step);\n    sprite->callback = TranslateSpriteInEllipse;\n    sprite->callback(sprite);",
       "callsTo": [
         "AnimateSprite",
@@ -19,6 +25,12 @@
       "returnType": "void",
       "signature": "static void AnimFallingRock_Step(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "sprite->x += sprite->data[5];\n\n    sprite->data[0] = 192;\n    sprite->data[1] = sprite->data[5];\n    sprite->data[2] = 4;\n    sprite->data[3] = 32;\n    sprite->data[4] = -24;\n\n    StoreSpriteCallbackInData6(sprite, DestroySpriteAndMatrix);\n    sprite->callback = TranslateSpriteInEllipse;\n    sprite->callback(sprite);",
       "callsTo": [
         "StoreSpriteCallbackInData6"
@@ -29,6 +41,12 @@
       "returnType": "void",
       "signature": "static void AnimRockFragment(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "StartSpriteAnim(sprite, gBattleAnimArgs[5]);\n    AnimateSprite(sprite);\n\n    if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)\n        sprite->x -= gBattleAnimArgs[0];\n    else\n        sprite->x += gBattleAnimArgs[0];\n\n    sprite->y += gBattleAnimArgs[1];\n\n    sprite->data[0] = gBattleAnimArgs[4];\n    sprite->data[1] = sprite->x;\n    sprite->data[2] = sprite->x + gBattleAnimArgs[2];\n    sprite->data[3] = sprite->y;\n    sprite->data[4] = sprite->y + gBattleAnimArgs[3];\n\n    InitSpriteDataForLinearTranslation(sprite);\n    sprite->data[3] = 0;\n    sprite->data[4] = 0;\n\n    sprite->callback = TranslateSpriteLinearFixedPoint;\n    StoreSpriteCallbackInData6(sprite, DestroySpriteAndMatrix);",
       "callsTo": [
         "AnimateSprite",
@@ -43,6 +61,12 @@
       "returnType": "void",
       "signature": "static void AnimParticleInVortex(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (gBattleAnimArgs[6] == ANIM_ATTACKER)\n        InitSpritePosToAnimAttacker(sprite, FALSE);\n    else\n        InitSpritePosToAnimTarget(sprite, FALSE);\n\n    sprite->data[0] = gBattleAnimArgs[3];\n    sprite->data[1] = gBattleAnimArgs[2];\n    sprite->data[2] = gBattleAnimArgs[4];\n    sprite->data[3] = gBattleAnimArgs[5];\n\n    sprite->callback = AnimParticleInVortex_Step;",
       "callsTo": [
         "InitSpritePosToAnimAttacker",
@@ -54,6 +78,12 @@
       "returnType": "void",
       "signature": "static void AnimParticleInVortex_Step(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "sprite->data[4] += sprite->data[1];\n    sprite->y2 = -(sprite->data[4] >> 8);\n    sprite->x2 = Sin(sprite->data[5], sprite->data[3]);\n    sprite->data[5] = (sprite->data[5] + sprite->data[2]) & 0xFF;\n\n    if (--sprite->data[0] == -1)\n    {\n        DestroyAnimSprite(sprite);\n    }",
       "callsTo": [
         "DestroyAnimSprite",
@@ -65,6 +95,12 @@
       "returnType": "void",
       "signature": "void AnimTask_LoadSandstormBackground(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "int var0;\n    struct BattleAnimBgData animBg;\n\n    var0 = 0;\n    SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_TGT1_BG1 | BLDCNT_TGT2_ALL | BLDCNT_EFFECT_BLEND);\n    SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(0, 16));\n    SetAnimBgAttribute(1, BG_ANIM_PRIORITY, 1);\n    SetAnimBgAttribute(1, BG_ANIM_SCREEN_SIZE, 0);\n\n    if (!IsContest())\n        SetAnimBgAttribute(1, BG_ANIM_CHAR_BASE_BLOCK, 1);\n\n    gBattle_BG1_X = 0;\n    gBattle_BG1_Y = 0;\n    SetGpuReg(REG_OFFSET_BG1HOFS, gBattle_BG1_X);\n    SetGpuReg(REG_OFFSET_BG1VOFS, gBattle_BG1_Y);\n\n    GetBattleAnimBg1Data(&animBg);\n    AnimLoadCompressedBgGfx(animBg.bgId, gBattleAnimBgImage_Sandstorm, animBg.tilesOffset);\n    AnimLoadCompressedBgTilemapHandleContest(&animBg, gBattleAnimBgTilemap_Sandstorm, FALSE);\n    LoadCompressedPalette(gBattleAnimSpritePal_FlyingDirt, BG_PLTT_ID(animBg.paletteId), PLTT_SIZE_4BPP);\n\n    if (gBattleAnimArgs[0] && GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)\n        var0 = 1;\n\n    gTasks[taskId].data[0] = var0;\n    gTasks[taskId].func = AnimTask_LoadSandstormBackground_Step;",
       "callsTo": [
         "AnimLoadCompressedBgGfx",
@@ -84,6 +120,12 @@
       "returnType": "void",
       "signature": "static void AnimTask_LoadSandstormBackground_Step(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "struct BattleAnimBgData animBg;\n\n    if (gTasks[taskId].data[0] == 0)\n        gBattle_BG1_X += -6;\n    else\n        gBattle_BG1_X += 6;\n\n    gBattle_BG1_Y += -1;\n\n    switch (gTasks[taskId].tState)\n    {\n    case 0:\n        if (++gTasks[taskId].tBlendTimer == 4)\n        {\n            gTasks[taskId].tBlendTimer = 0;\n            gTasks[taskId].tBlend++;\n            SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(gTasks[taskId].tBlend, 16 - gTasks[taskId].tBlend));\n            if (gTasks[taskId].tBlend == 7)\n            {\n                gTasks[taskId].tState++;\n                gTasks[taskId].tFullAlphaTimer = 0;\n            }\n        }\n        break;\n    case 1:\n        if (++gTasks[taskId].tFullAlphaTimer == 101)\n        {\n            gTasks[taskId].tBlend = 7;\n            gTasks[taskId].tState++;\n        }\n        break;\n    case 2:\n        if (++gTasks[taskId].tBlendTimer == 4)\n        {\n            gTasks[taskId].tBlendTimer = 0;\n            gTasks[taskId].tBlend--;\n            SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(gTasks[taskId].tBlend, 16 - gTasks[taskId].tBlend));\n            if (gTasks[taskId].tBlend == 0)\n            {\n                gTasks[taskId].tState++;\n                gTasks[taskId].tFullAlphaTimer = 0;\n            }\n        }\n        break;\n    case 3:\n        GetBattleAnimBg1Data(&animBg);\n        ClearBattleAnimBg(animBg.bgId);\n        gTasks[taskId].tState++;\n        break;\n    case 4:\n        if (!IsContest())\n            SetAnimBgAttribute(1, BG_ANIM_CHAR_BASE_BLOCK, 0);\n\n        gBattle_BG1_X = 0;\n        gBattle_BG1_Y = 0;\n        SetGpuReg(REG_OFFSET_BLDCNT, 0);\n        SetGpuReg(REG_OFFSET_BLDALPHA, 0);\n        SetAnimBgAttribute(1, BG_ANIM_PRIORITY, 1);\n        DestroyAnimVisualTask(taskId);\n        break;\n    }",
       "callsTo": [
         "BLDALPHA_BLEND",
@@ -100,6 +142,12 @@
       "returnType": "void",
       "signature": "static void AnimFlyingSandCrescent(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (sprite->sState == 0)\n    {\n        if (gBattleAnimArgs[3] != 0 && GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)\n        {\n            sprite->x = DISPLAY_WIDTH + 64;\n            gBattleAnimArgs[1] = -gBattleAnimArgs[1];\n            sprite->sMirroredX = 1;\n            sprite->oam.matrixNum = ST_OAM_HFLIP;\n        }\n        else\n        {\n            sprite->x = -64;\n        }\n\n        sprite->y = gBattleAnimArgs[0];\n        SetSubspriteTables(sprite, sFlyingSandSubspriteTable);\n        sprite->sVelocityX = gBattleAnimArgs[1];\n        sprite->sVelocityY = gBattleAnimArgs[2];\n        sprite->sState++;\n    }\n    else\n    {\n        sprite->sFractionalX += sprite->sVelocityX;\n        sprite->sFractionalY += sprite->sVelocityY;\n        sprite->x2 += (sprite->sFractionalX >> 8);\n        sprite->y2 += (sprite->sFractionalY >> 8);\n        sprite->sFractionalX &= 0xFF;\n        sprite->sFractionalY &= 0xFF;\n\n        if (sprite->data[5] == 0)\n        {\n            if (sprite->x + sprite->x2 > DISPLAY_WIDTH + 32)\n            {\n                sprite->callback = DestroyAnimSprite;\n            }\n        }\n        else if (sprite->x + sprite->x2 < -32)\n        {\n            sprite->callback = DestroyAnimSprite;\n        }\n    }",
       "callsTo": [
         "GetBattlerSide",
@@ -111,6 +159,12 @@
       "returnType": "void",
       "signature": "static void AnimRaiseSprite(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "StartSpriteAnim(sprite, gBattleAnimArgs[4]);\n    InitSpritePosToAnimAttacker(sprite, FALSE);\n\n    sprite->data[0] = gBattleAnimArgs[3];\n    sprite->data[2] = sprite->x;\n    sprite->data[4] = sprite->y + gBattleAnimArgs[2];\n\n    sprite->callback = StartAnimLinearTranslation;\n    StoreSpriteCallbackInData6(sprite, DestroyAnimSprite);",
       "callsTo": [
         "InitSpritePosToAnimAttacker",
@@ -123,6 +177,12 @@
       "returnType": "void",
       "signature": "void AnimTask_Rollout(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u16 var0, var1, var2, var3;\n    u8 rolloutCounter;\n    s16 pan1, pan2;\n    struct Task *task;\n\n    task = &gTasks[taskId];\n\n    var0 = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_X_2);\n    var1 = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_Y) + 24;\n    var2 = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_X_2);\n    var3 = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_Y) + 24;\n\n    if (BATTLE_PARTNER(gBattleAnimAttacker) == gBattleAnimTarget)\n        var3 = var1;\n\n    rolloutCounter = GetRolloutCounter();\n    if (rolloutCounter == 1)\n        task->data[8] = 32;\n    else\n        task->data[8] = 48 - (rolloutCounter * 8);\n\n    task->data[0] = 0;\n    task->data[11] = 0;\n    task->data[9] = 0;\n    task->data[12] = 1;\n    task->data[10] = (task->data[8] / 8) - 1;\n    task->data[2] = var0 * 8;\n    task->data[3] = var1 * 8;\n    task->data[4] = ((var2 - var0) * 8) / task->data[8];\n    task->data[5] = ((var3 - var1) * 8) / task->data[8];\n    task->data[6] = 0;\n    task->data[7] = 0;\n\n    pan1 = BattleAnimAdjustPanning(SOUND_PAN_ATTACKER);\n    pan2 = BattleAnimAdjustPanning(SOUND_PAN_TARGET);\n\n    task->data[13] = pan1;\n    task->data[14] = (pan2 - pan1) / task->data[8];\n    task->data[1] = rolloutCounter;\n    task->data[15] = GetAnimBattlerSpriteId(ANIM_ATTACKER);\n\n    task->func = AnimTask_Rollout_Step;",
       "callsTo": [
         "BATTLE_PARTNER",
@@ -137,6 +197,12 @@
       "returnType": "void",
       "signature": "static void AnimTask_Rollout_Step(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "struct Task *task;\n\n    task = &gTasks[taskId];\n\n    switch (task->data[0])\n    {\n    case 0:\n        task->data[6] -= task->data[4];\n        task->data[7] -= task->data[5];\n        gSprites[task->data[15]].x2 = task->data[6] >> 3;\n        gSprites[task->data[15]].y2 = task->data[7] >> 3;\n\n        if (++task->data[9] == 10)\n        {\n            task->data[11] = 20;\n            task->data[0]++;\n        }\n\n        PlaySE12WithPanning(SE_M_HEADBUTT, task->data[13]);\n        break;\n    case 1:\n        if (--task->data[11] == 0)\n            task->data[0]++;\n        break;\n    case 2:\n        if (--task->data[9] != 0)\n        {\n            task->data[6] += task->data[4];\n            task->data[7] += task->data[5];\n        }\n        else\n        {\n            task->data[6] = 0;\n            task->data[7] = 0;\n            task->data[0]++;\n        }\n\n        gSprites[task->data[15]].x2 = task->data[6] >> 3;\n        gSprites[task->data[15]].y2 = task->data[7] >> 3;\n        break;\n    case 3:\n        task->data[2] += task->data[4];\n        task->data[3] += task->data[5];\n        if (++task->data[9] >= task->data[10])\n        {\n            task->data[9] = 0;\n            CreateRolloutDirtSprite(task);\n            task->data[13] += task->data[14];\n            PlaySE12WithPanning(SE_M_DIG, task->data[13]);\n        }\n\n        if (--task->data[8] == 0)\n        {\n            task->data[0]++;\n        }\n        break;\n    case 4:\n        if (task->data[11] == 0)\n            DestroyAnimVisualTask(taskId);\n        break;\n    }",
       "callsTo": [
         "CreateRolloutDirtSprite",
@@ -149,6 +215,12 @@
       "returnType": "void",
       "signature": "static void CreateRolloutDirtSprite(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "const struct SpriteTemplate *spriteTemplate;\n    int tileOffset;\n    u16 x, y;\n    u8 spriteId;\n\n    switch (task->data[1])\n    {\n    case 1:\n        spriteTemplate = &gRolloutMudSpriteTemplate;\n        tileOffset = 0;\n        break;\n    case 2:\n    case 3:\n        spriteTemplate = &gRolloutRockSpriteTemplate;\n        tileOffset = 80;\n        break;\n    case 4:\n        spriteTemplate = &gRolloutRockSpriteTemplate;\n        tileOffset = 64;\n        break;\n    case 5:\n        spriteTemplate = &gRolloutRockSpriteTemplate;\n        tileOffset = 48;\n        break;\n    default:\n        return;\n    }\n\n    x = task->data[2] >> 3;\n    y = task->data[3] >> 3;\n    x += (task->data[12] * 4);\n\n    spriteId = CreateSprite(spriteTemplate, x, y, 35);\n    if (spriteId != MAX_SPRITES)\n    {\n        gSprites[spriteId].data[0] = 18;\n        gSprites[spriteId].data[2] = ((task->data[12] * 20) + x) + (task->data[1] * 3);\n        gSprites[spriteId].data[4] = y;\n        gSprites[spriteId].data[5] = -16 - (task->data[1] * 2);\n        gSprites[spriteId].oam.tileNum += tileOffset;\n\n        InitAnimArcTranslation(&gSprites[spriteId]);\n        task->data[11]++;\n    }\n\n    task->data[12] *= -1;",
       "callsTo": [
         "CreateSprite",
@@ -160,6 +232,12 @@
       "returnType": "void",
       "signature": "static void AnimRolloutParticle(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (TranslateAnimHorizontalArc(sprite))\n    {\n        u8 taskId = FindTaskIdByFunc(AnimTask_Rollout_Step);\n        if (taskId != TASK_NONE)\n            gTasks[taskId].data[11]--;\n\n        DestroySprite(sprite);\n    }",
       "callsTo": [
         "DestroySprite",
@@ -172,6 +250,7 @@
       "returnType": "u8",
       "signature": "static u8 GetRolloutCounter(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 retVal = gAnimDisableStructPtr->rolloutTimerStartValue - gAnimDisableStructPtr->rolloutTimer;\n    u8 var0 = retVal - 1;\n    if (var0 > 4)\n        retVal = 1;\n\n    return retVal;",
       "callsTo": [],
       "lineCount": 6
@@ -180,6 +259,12 @@
       "returnType": "void",
       "signature": "static void AnimRockTomb(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "StartSpriteAnim(sprite, gBattleAnimArgs[4]);\n\n    sprite->x2 = gBattleAnimArgs[0];\n    sprite->data[2] = gBattleAnimArgs[1];\n    sprite->data[3] -= gBattleAnimArgs[2];\n    sprite->data[0] = 3;\n    sprite->data[1] = gBattleAnimArgs[3];\n    sprite->callback = AnimRockTomb_Step;\n    sprite->invisible = TRUE;",
       "callsTo": [
         "StartSpriteAnim"
@@ -190,6 +275,12 @@
       "returnType": "void",
       "signature": "static void AnimRockTomb_Step(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "sprite->invisible = FALSE;\n    if (sprite->data[3] != 0)\n    {\n        sprite->y2 = sprite->data[2] + sprite->data[3];\n        sprite->data[3] += sprite->data[0];\n        sprite->data[0]++;\n        if (sprite->data[3] > 0)\n        {\n            sprite->data[3] = 0;\n        }\n    }\n    else\n    {\n        if (--sprite->data[1] == 0)\n            DestroyAnimSprite(sprite);\n    }",
       "callsTo": [
         "DestroyAnimSprite"
@@ -200,6 +291,12 @@
       "returnType": "void",
       "signature": "static void AnimRockBlastRock(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (GetBattlerSide(gBattleAnimAttacker) == B_SIDE_OPPONENT)\n        StartSpriteAffineAnim(sprite, 1);\n\n    TranslateAnimSpriteToTargetMonLocation(sprite);",
       "callsTo": [
         "GetBattlerSide",
@@ -212,6 +309,12 @@
       "returnType": "void",
       "signature": "static void AnimRockScatter(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "sprite->x = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_X);\n    sprite->y = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_Y);\n    sprite->x += gBattleAnimArgs[0];\n    sprite->y += gBattleAnimArgs[1];\n\n    sprite->data[1] = gBattleAnimArgs[0];\n    sprite->data[2] = gBattleAnimArgs[1];\n    sprite->data[5] = gBattleAnimArgs[2];\n\n    StartSpriteAnim(sprite, gBattleAnimArgs[3]);\n    sprite->callback = AnimRockScatter_Step;",
       "callsTo": [
         "GetBattlerSpriteCoord",
@@ -223,6 +326,12 @@
       "returnType": "void",
       "signature": "static void AnimRockScatter_Step(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "sprite->data[0] += 8;\n    sprite->data[3] += sprite->data[1];\n    sprite->data[4] += sprite->data[2];\n\n    sprite->x2 += sprite->data[3] / 40;\n    sprite->y2 -= Sin(sprite->data[0], sprite->data[5]);\n\n    if (sprite->data[0] > 140)\n        DestroyAnimSprite(sprite);",
       "callsTo": [
         "DestroyAnimSprite",
@@ -234,6 +343,12 @@
       "returnType": "void",
       "signature": "void AnimTask_GetSeismicTossDamageLevel(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (gAnimMoveDmg < 33)\n        gBattleAnimArgs[ARG_RET_ID] = 0;\n    if ((u32)gAnimMoveDmg - 33 < 33)\n        gBattleAnimArgs[ARG_RET_ID] = 1;\n    if (gAnimMoveDmg > 65)\n        gBattleAnimArgs[ARG_RET_ID] = 2;\n\n    DestroyAnimVisualTask(taskId);",
       "callsTo": [
         "DestroyAnimVisualTask"
@@ -244,6 +359,12 @@
       "returnType": "void",
       "signature": "void AnimTask_MoveSeismicTossBg(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (gTasks[taskId].data[0] == 0)\n    {\n        UpdateAnimBg3ScreenSize(FALSE);\n        gTasks[taskId].data[1] = 200;\n    }\n\n    gBattle_BG3_Y += gTasks[taskId].data[1] / 10;\n    gTasks[taskId].data[1] -= 3;\n\n    if (gTasks[taskId].data[0] == 120)\n    {\n        UpdateAnimBg3ScreenSize(TRUE);\n        DestroyAnimVisualTask(taskId);\n    }\n\n    gTasks[taskId].data[0]++;",
       "callsTo": [
         "DestroyAnimVisualTask",
@@ -255,6 +376,12 @@
       "returnType": "void",
       "signature": "void AnimTask_SeismicTossBgAccelerateDownAtEnd(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (gTasks[taskId].data[0] == 0)\n    {\n        UpdateAnimBg3ScreenSize(FALSE);\n        gTasks[taskId].data[0]++;\n        gTasks[taskId].data[2] = gBattle_BG3_Y;\n    }\n\n    gTasks[taskId].data[1] += 80;\n    gTasks[taskId].data[1] &= 0xFF;\n    gBattle_BG3_Y = gTasks[taskId].data[2] + Cos(4, gTasks[taskId].data[1]);\n\n    if (gBattleAnimArgs[7] == 0xFFF)\n    {\n        gBattle_BG3_Y = 0;\n        UpdateAnimBg3ScreenSize(TRUE);\n        DestroyAnimVisualTask(taskId);\n    }",
       "callsTo": [
         "Cos",

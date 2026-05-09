@@ -6,6 +6,7 @@
       "returnType": "void",
       "signature": "void CB2_InitClearSaveDataScreen(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (SetupClearSaveDataScreen())\n        CreateTask(Task_DoClearSaveDataScreenYesNo, 0);",
       "callsTo": [
         "CreateTask",
@@ -17,6 +18,12 @@
       "returnType": "void",
       "signature": "static void Task_DoClearSaveDataScreenYesNo(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "DrawStdFrameWithCustomTileAndPalette(0, FALSE, 2, 14);\n    AddTextPrinterParameterized(0, FONT_NORMAL, gText_ClearAllSaveData, 0, 1, 0, 0);\n    CreateYesNoMenu(sClearSaveYesNo, 2, 14, 1);\n    gTasks[taskId].func = Task_ClearSaveDataScreenYesNoChoice;",
       "callsTo": [
         "AddTextPrinterParameterized",
@@ -29,6 +36,12 @@
       "returnType": "void",
       "signature": "static void Task_ClearSaveDataScreenYesNoChoice(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "switch (Menu_ProcessInputNoWrapClearOnChoose())\n    {\n    case 0:\n        FillWindowPixelBuffer(0, PIXEL_FILL(1));\n        AddTextPrinterParameterized(0, FONT_NORMAL, gText_ClearingData, 0, 1, 0, 0);\n        gTasks[taskId].func = Task_ClearSaveData;\n        break;\n    case 1:\n    case MENU_B_PRESSED:\n        PlaySE(SE_SELECT);\n        DestroyTask(taskId);\n        SetMainCallback2(CB2_FadeAndDoReset);\n    }",
       "callsTo": [
         "AddTextPrinterParameterized",
@@ -45,6 +58,12 @@
       "returnType": "void",
       "signature": "static void Task_ClearSaveData(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "ClearSaveData();\n    DestroyTask(taskId);\n    SetMainCallback2(CB2_FadeAndDoReset);",
       "callsTo": [
         "ClearSaveData",
@@ -57,6 +76,7 @@
       "returnType": "void",
       "signature": "static void MainCB(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "RunTasks();\n    UpdatePaletteFade();",
       "callsTo": [
         "RunTasks",
@@ -68,6 +88,7 @@
       "returnType": "void",
       "signature": "static void VBlankCB(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "TransferPlttBuffer();",
       "callsTo": [
         "TransferPlttBuffer"
@@ -78,6 +99,7 @@
       "returnType": "bool8",
       "signature": "static bool8 SetupClearSaveDataScreen(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 i;\n\n    switch(gMain.state)\n    {\n    case 0:\n    default:\n        SetVBlankCallback(NULL);\n        SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_MODE_0);\n        SetGpuReg(REG_OFFSET_BG0HOFS, 0);\n        SetGpuReg(REG_OFFSET_BG0VOFS, 0);\n        SetGpuReg(REG_OFFSET_BG3HOFS, 0);\n        SetGpuReg(REG_OFFSET_BG3VOFS, 0);\n        SetGpuReg(REG_OFFSET_WIN0H, 0);\n        SetGpuReg(REG_OFFSET_WIN0V, 0);\n        SetGpuReg(REG_OFFSET_WININ, 0);\n        SetGpuReg(REG_OFFSET_WINOUT, 0);\n        SetGpuReg(REG_OFFSET_BLDCNT, 0);\n        SetGpuReg(REG_OFFSET_BLDALPHA, 0);\n        SetGpuReg(REG_OFFSET_BLDY, 0);\n        DmaFill16(3, 0, (void *)VRAM, VRAM_SIZE);\n        DmaFill32(3, 0, (void *)OAM, OAM_SIZE);\n        DmaFill16(3, 0, (void *)(PLTT + 2), PLTT_SIZE - 2);\n        ResetPaletteFade();\n        gPlttBufferUnfaded[0] = RGB_WHITE;\n        gPlttBufferFaded[0] = RGB_WHITE;\n        gPlttBufferUnfaded[1] = RGB(5, 10, 14);\n        gPlttBufferFaded[1] = RGB(5, 10, 14);\n        for (i = 0; i < 0x10; i++)\n            ((u16 *)(VRAM + 0x20))[i] = 0x1111;\n\n        for (i = 0; i < 0x400; i++)\n            ((u16 *)(BG_SCREEN_ADDR(30)))[i] = 0x0001;\n        ResetTasks();\n        ResetSpriteData();\n        ResetBgsAndClearDma3BusyFlags(0);\n        InitBgsFromTemplates(0, sClearSaveBgTemplates, ARRAY_COUNT(sClearSaveBgTemplates));\n        SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_OBJ_ON | DISPCNT_OBJ_1D_MAP);\n        ShowBg(0);\n        ShowBg(3);\n        SetGpuReg(REG_OFFSET_BLDCNT, 0);\n        InitClearSaveDataScreenWindows();\n        BeginNormalPaletteFade(PALETTES_BG, 0, 0x10, 0, RGB_WHITEALPHA);\n        EnableInterrupts(INTR_FLAG_VBLANK);\n        SetVBlankCallback(VBlankCB);\n        gMain.state = 1;\n        break;\n    case 1:\n        UpdatePaletteFade();\n        if(!gPaletteFade.active)\n        {\n            SetMainCallback2(MainCB);\n            return TRUE;\n        }\n    }\n    return FALSE;",
       "callsTo": [
         "ARRAY_COUNT",
@@ -104,6 +126,7 @@
       "returnType": "void",
       "signature": "static void CB2_FadeAndDoReset(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch(gMain.state)\n    {\n    case 0:\n    default:\n        BeginNormalPaletteFade(PALETTES_BG, 0, 0, 0x10, RGB_WHITEALPHA);\n        gMain.state = 1;\n        break;\n    case 1:\n        UpdatePaletteFade();\n        if(!gPaletteFade.active)\n        {\n            FreeAllWindowBuffers();\n            DoSoftReset();\n        }\n        break;\n    }",
       "callsTo": [
         "BeginNormalPaletteFade",
@@ -117,6 +140,7 @@
       "returnType": "void",
       "signature": "static void InitClearSaveDataScreenWindows(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "InitWindows(sClearSaveTextWindow);\n    DeactivateAllTextPrinters();\n    FillWindowPixelBuffer(0, PIXEL_FILL(0));\n    LoadWindowGfx(0, 0, 2, BG_PLTT_ID(14));\n    LoadPalette(gStandardMenuPalette, BG_PLTT_ID(15), PLTT_SIZE_4BPP);",
       "callsTo": [
         "BG_PLTT_ID",

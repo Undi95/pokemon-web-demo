@@ -6,6 +6,7 @@
       "returnType": "void",
       "signature": "void InitEventData(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "memset(gSaveBlock1Ptr->flags, 0, sizeof(gSaveBlock1Ptr->flags));\n    memset(gSaveBlock1Ptr->vars, 0, sizeof(gSaveBlock1Ptr->vars));\n    memset(sSpecialFlags, 0, sizeof(sSpecialFlags));",
       "callsTo": [],
       "lineCount": 3
@@ -14,6 +15,7 @@
       "returnType": "void",
       "signature": "void ClearTempFieldEventData(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "memset(&gSaveBlock1Ptr->flags[TEMP_FLAGS_START / 8], 0, TEMP_FLAGS_SIZE);\n    memset(&gSaveBlock1Ptr->vars[TEMP_VARS_START - VARS_START], 0, TEMP_VARS_SIZE);\n    FlagClear(FLAG_SYS_ENC_UP_ITEM);\n    FlagClear(FLAG_SYS_ENC_DOWN_ITEM);\n    FlagClear(FLAG_SYS_USE_STRENGTH);\n    FlagClear(FLAG_SYS_CTRL_OBJ_DELETE);\n    FlagClear(FLAG_NURSE_UNION_ROOM_REMINDER);",
       "callsTo": [
         "FlagClear"
@@ -24,6 +26,7 @@
       "returnType": "void",
       "signature": "void ClearDailyFlags(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "memset(&gSaveBlock1Ptr->flags[DAILY_FLAGS_START / 8], 0, DAILY_FLAGS_SIZE);",
       "callsTo": [],
       "lineCount": 1
@@ -32,6 +35,7 @@
       "returnType": "void",
       "signature": "void DisableNationalPokedex(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 *nationalDexVar = GetVarPointer(VAR_NATIONAL_DEX);\n    gSaveBlock2Ptr->pokedex.nationalMagic = 0;\n    *nationalDexVar = 0;\n    FlagClear(FLAG_SYS_NATIONAL_DEX);",
       "callsTo": [
         "FlagClear",
@@ -43,6 +47,7 @@
       "returnType": "void",
       "signature": "void EnableNationalPokedex(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 *nationalDexVar = GetVarPointer(VAR_NATIONAL_DEX);\n    gSaveBlock2Ptr->pokedex.nationalMagic = 0xDA;\n    *nationalDexVar = 0x302;\n    FlagSet(FLAG_SYS_NATIONAL_DEX);\n    gSaveBlock2Ptr->pokedex.mode = DEX_MODE_NATIONAL;\n    gSaveBlock2Ptr->pokedex.order = 0;\n    ResetPokedexScrollPositions();",
       "callsTo": [
         "FlagSet",
@@ -55,6 +60,7 @@
       "returnType": "bool32",
       "signature": "bool32 IsNationalPokedexEnabled(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gSaveBlock2Ptr->pokedex.nationalMagic == 0xDA && VarGet(VAR_NATIONAL_DEX) == 0x302 && FlagGet(FLAG_SYS_NATIONAL_DEX))\n        return TRUE;\n    else\n        return FALSE;",
       "callsTo": [
         "FlagGet",
@@ -66,6 +72,7 @@
       "returnType": "void",
       "signature": "void DisableMysteryEvent(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "FlagClear(FLAG_SYS_MYSTERY_EVENT_ENABLE);",
       "callsTo": [
         "FlagClear"
@@ -76,6 +83,7 @@
       "returnType": "void",
       "signature": "void EnableMysteryEvent(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "FlagSet(FLAG_SYS_MYSTERY_EVENT_ENABLE);",
       "callsTo": [
         "FlagSet"
@@ -86,6 +94,7 @@
       "returnType": "bool32",
       "signature": "bool32 IsMysteryEventEnabled(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return FlagGet(FLAG_SYS_MYSTERY_EVENT_ENABLE);",
       "callsTo": [
         "FlagGet"
@@ -96,6 +105,7 @@
       "returnType": "void",
       "signature": "void DisableMysteryGift(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "FlagClear(FLAG_SYS_MYSTERY_GIFT_ENABLE);",
       "callsTo": [
         "FlagClear"
@@ -106,6 +116,7 @@
       "returnType": "void",
       "signature": "void EnableMysteryGift(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "FlagSet(FLAG_SYS_MYSTERY_GIFT_ENABLE);",
       "callsTo": [
         "FlagSet"
@@ -116,6 +127,7 @@
       "returnType": "bool32",
       "signature": "bool32 IsMysteryGiftEnabled(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return FlagGet(FLAG_SYS_MYSTERY_GIFT_ENABLE);",
       "callsTo": [
         "FlagGet"
@@ -126,6 +138,7 @@
       "returnType": "void",
       "signature": "void ClearMysteryGiftFlags(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "FlagClear(FLAG_MYSTERY_GIFT_DONE);\n    FlagClear(FLAG_MYSTERY_GIFT_1);\n    FlagClear(FLAG_MYSTERY_GIFT_2);\n    FlagClear(FLAG_MYSTERY_GIFT_3);\n    FlagClear(FLAG_MYSTERY_GIFT_4);\n    FlagClear(FLAG_MYSTERY_GIFT_5);\n    FlagClear(FLAG_MYSTERY_GIFT_6);\n    FlagClear(FLAG_MYSTERY_GIFT_7);\n    FlagClear(FLAG_MYSTERY_GIFT_8);\n    FlagClear(FLAG_MYSTERY_GIFT_9);\n    FlagClear(FLAG_MYSTERY_GIFT_10);\n    FlagClear(FLAG_MYSTERY_GIFT_11);\n    FlagClear(FLAG_MYSTERY_GIFT_12);\n    FlagClear(FLAG_MYSTERY_GIFT_13);\n    FlagClear(FLAG_MYSTERY_GIFT_14);\n    FlagClear(FLAG_MYSTERY_GIFT_15);",
       "callsTo": [
         "FlagClear"
@@ -136,6 +149,7 @@
       "returnType": "void",
       "signature": "void ClearMysteryGiftVars(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "VarSet(VAR_GIFT_PICHU_SLOT, 0);\n    VarSet(VAR_GIFT_UNUSED_1, 0);\n    VarSet(VAR_GIFT_UNUSED_2, 0);\n    VarSet(VAR_GIFT_UNUSED_3, 0);\n    VarSet(VAR_GIFT_UNUSED_4, 0);\n    VarSet(VAR_GIFT_UNUSED_5, 0);\n    VarSet(VAR_GIFT_UNUSED_6, 0);\n    VarSet(VAR_GIFT_UNUSED_7, 0);",
       "callsTo": [
         "VarSet"
@@ -146,6 +160,7 @@
       "returnType": "void",
       "signature": "void DisableResetRTC(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "VarSet(VAR_RESET_RTC_ENABLE, 0);\n    FlagClear(FLAG_SYS_RESET_RTC_ENABLE);",
       "callsTo": [
         "FlagClear",
@@ -157,6 +172,7 @@
       "returnType": "void",
       "signature": "void EnableResetRTC(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "VarSet(VAR_RESET_RTC_ENABLE, 0x920);\n    FlagSet(FLAG_SYS_RESET_RTC_ENABLE);",
       "callsTo": [
         "FlagSet",
@@ -168,6 +184,7 @@
       "returnType": "bool32",
       "signature": "bool32 CanResetRTC(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (FlagGet(FLAG_SYS_RESET_RTC_ENABLE) && VarGet(VAR_RESET_RTC_ENABLE) == 0x920)\n        return TRUE;\n    else\n        return FALSE;",
       "callsTo": [
         "FlagGet",
@@ -179,6 +196,12 @@
       "returnType": "u16",
       "signature": "u16 VarGet(u16 id)",
       "paramsRaw": "u16 id",
+      "paramsList": [
+        {
+          "name": "id",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "u16 *ptr = GetVarPointer(id);\n    if (!ptr)\n        return id;\n    return *ptr;",
       "callsTo": [
         "GetVarPointer"
@@ -189,6 +212,16 @@
       "returnType": "bool8",
       "signature": "bool8 VarSet(u16 id, u16 value)",
       "paramsRaw": "u16 id, u16 value",
+      "paramsList": [
+        {
+          "name": "id",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "value",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "u16 *ptr = GetVarPointer(id);\n    if (!ptr)\n        return FALSE;\n    *ptr = value;\n    return TRUE;",
       "callsTo": [
         "GetVarPointer"
@@ -199,6 +232,12 @@
       "returnType": "u8",
       "signature": "u8 VarGetObjectEventGraphicsId(u8 id)",
       "paramsRaw": "u8 id",
+      "paramsList": [
+        {
+          "name": "id",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "return VarGet(VAR_OBJ_GFX_ID_0 + id);",
       "callsTo": [
         "VarGet"
@@ -209,6 +248,12 @@
       "returnType": "u8",
       "signature": "u8 FlagSet(u16 id)",
       "paramsRaw": "u16 id",
+      "paramsList": [
+        {
+          "name": "id",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "u8 *ptr = GetFlagPointer(id);\n    if (ptr)\n        *ptr |= 1 << (id & 7);\n    return 0;",
       "callsTo": [
         "GetFlagPointer"
@@ -219,6 +264,12 @@
       "returnType": "u8",
       "signature": "u8 FlagClear(u16 id)",
       "paramsRaw": "u16 id",
+      "paramsList": [
+        {
+          "name": "id",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "u8 *ptr = GetFlagPointer(id);\n    if (ptr)\n        *ptr &= ~(1 << (id & 7));\n    return 0;",
       "callsTo": [
         "GetFlagPointer"
@@ -229,6 +280,12 @@
       "returnType": "bool8",
       "signature": "bool8 FlagGet(u16 id)",
       "paramsRaw": "u16 id",
+      "paramsList": [
+        {
+          "name": "id",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "u8 *ptr = GetFlagPointer(id);\n\n    if (!ptr)\n        return FALSE;\n\n    if (!(((*ptr) >> (id & 7)) & 1))\n        return FALSE;\n\n    return TRUE;",
       "callsTo": [
         "GetFlagPointer"

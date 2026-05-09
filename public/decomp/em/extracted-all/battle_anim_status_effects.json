@@ -6,6 +6,12 @@
       "returnType": "void",
       "signature": "static void Task_UpdateFlashingCircleImpacts(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (gTasks[taskId].data[2] == 2)\n    {\n        gTasks[taskId].data[2] = 0;\n        BlendPalette(OBJ_PLTT_ID(gTasks[taskId].data[0]), 16, gTasks[taskId].data[4], gTasks[taskId].data[1]);\n        if (gTasks[taskId].data[5] == 0)\n        {\n            gTasks[taskId].data[4]++;\n            if (gTasks[taskId].data[4] > 8)\n                gTasks[taskId].data[5] ^= 1;\n        }\n        else\n        {\n            u16 var = gTasks[taskId].data[4];\n\n            gTasks[taskId].data[4]--;\n            if (gTasks[taskId].data[4] < 0)\n            {\n                gTasks[taskId].data[4] = var;\n                gTasks[taskId].data[5] ^= 1;\n                gTasks[taskId].data[3]++;\n                if (gTasks[taskId].data[3] == 2)\n                    DestroyTask(taskId);\n            }\n        }\n    }\n    else\n    {\n        gTasks[taskId].data[2]++;\n    }",
       "callsTo": [
         "BlendPalette",
@@ -18,6 +24,12 @@
       "returnType": "void",
       "signature": "static void AnimFlashingCircleImpact(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (sprite->data[6] == 0)\n    {\n        sprite->invisible = FALSE;\n        sprite->callback = AnimFlashingCircleImpact_Step;\n        AnimFlashingCircleImpact_Step(sprite);\n    }\n    else\n    {\n        sprite->data[6]--;\n    }",
       "callsTo": [
         "AnimFlashingCircleImpact_Step"
@@ -28,6 +40,12 @@
       "returnType": "void",
       "signature": "static void AnimFlashingCircleImpact_Step(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "sprite->x2 = Cos(sprite->data[0], 32);\n    sprite->y2 = Sin(sprite->data[0], 8);\n    if (sprite->data[0] < 128)\n        sprite->subpriority = 29;\n    else\n        sprite->subpriority = 31;\n    sprite->data[0] = (sprite->data[0] + 8) & 0xFF;\n    sprite->data[5] += sprite->data[1];\n    sprite->y2 += sprite->data[5] >> 8;\n    sprite->data[2]++;\n    if (sprite->data[2] == 52)\n    {\n        if (sprite->data[7])\n            DestroySpriteAndFreeResources(sprite);\n        else\n            DestroySprite(sprite);\n    }",
       "callsTo": [
         "Cos",
@@ -41,6 +59,12 @@
       "returnType": "void",
       "signature": "void AnimTask_FrozenIceCube(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 x = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_X_2) - 32;\n    s16 y = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_Y_PIC_OFFSET) - 36;\n    u8 spriteId;\n\n    if (IsContest())\n        x -= 6;\n    SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_EFFECT_BLEND | BLDCNT_TGT2_ALL);\n    SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(0, 16));\n    spriteId = CreateSprite(&sFrozenIceCubeSpriteTemplate, x, y, 4);\n    if (GetSpriteTileStartByTag(ANIM_TAG_ICE_CUBE) == 0xFFFF)\n        gSprites[spriteId].invisible = TRUE;\n    SetSubspriteTables(&gSprites[spriteId], sFrozenIceCubeSubspriteTable);\n    gTasks[taskId].data[15] = spriteId;\n    gTasks[taskId].func = AnimTask_FrozenIceCube_Step1;",
       "callsTo": [
         "BLDALPHA_BLEND",
@@ -57,6 +81,12 @@
       "returnType": "void",
       "signature": "static void AnimTask_FrozenIceCube_Step1(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "gTasks[taskId].data[1]++;\n    if (gTasks[taskId].data[1] == 10)\n    {\n        gTasks[taskId].func = AnimTask_FrozenIceCube_Step2;\n        gTasks[taskId].data[1] = 0;\n    }\n    else\n    {\n        u8 var = gTasks[taskId].data[1];\n\n        SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(var, 16 - var));\n    }",
       "callsTo": [
         "BLDALPHA_BLEND",
@@ -68,6 +98,12 @@
       "returnType": "void",
       "signature": "static void AnimTask_FrozenIceCube_Step2(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 palIndex = IndexOfSpritePaletteTag(ANIM_TAG_ICE_CUBE);\n\n    if (gTasks[taskId].data[1]++ > 13)\n    {\n        gTasks[taskId].data[2]++;\n        if (gTasks[taskId].data[2] == 3)\n        {\n            u16 temp;\n\n            temp = gPlttBufferFaded[OBJ_PLTT_ID(palIndex) + 13];\n            gPlttBufferFaded[OBJ_PLTT_ID(palIndex) + 13] = gPlttBufferFaded[OBJ_PLTT_ID(palIndex) + 14];\n            gPlttBufferFaded[OBJ_PLTT_ID(palIndex) + 14] = gPlttBufferFaded[OBJ_PLTT_ID(palIndex) + 15];\n            gPlttBufferFaded[OBJ_PLTT_ID(palIndex) + 15] = temp;\n\n            gTasks[taskId].data[2] = 0;\n            gTasks[taskId].data[3]++;\n            if (gTasks[taskId].data[3] == 3)\n            {\n                gTasks[taskId].data[3] = 0;\n                gTasks[taskId].data[1] = 0;\n                gTasks[taskId].data[4]++;\n                if (gTasks[taskId].data[4] == 2)\n                {\n                    gTasks[taskId].data[1] = 9;\n                    gTasks[taskId].func = AnimTask_FrozenIceCube_Step3;\n                }\n            }\n        }\n    }",
       "callsTo": [
         "IndexOfSpritePaletteTag",
@@ -79,6 +115,12 @@
       "returnType": "void",
       "signature": "static void AnimTask_FrozenIceCube_Step3(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "gTasks[taskId].data[1]--;\n    if (gTasks[taskId].data[1] == -1)\n    {\n        gTasks[taskId].func = AnimTask_FrozenIceCube_Step4;\n        gTasks[taskId].data[1] = 0;\n    }\n    else\n    {\n        u8 var = gTasks[taskId].data[1];\n\n        SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(var, 16 - var));\n    }",
       "callsTo": [
         "BLDALPHA_BLEND",
@@ -90,6 +132,12 @@
       "returnType": "void",
       "signature": "static void AnimTask_FrozenIceCube_Step4(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "gTasks[taskId].data[1]++;\n    if (gTasks[taskId].data[1] == 37)\n    {\n        u8 spriteId = gTasks[taskId].data[15];\n\n        FreeSpriteOamMatrix(&gSprites[spriteId]);\n        DestroySprite(&gSprites[spriteId]);\n    }\n    else if (gTasks[taskId].data[1] == 39)\n    {\n        SetGpuReg(REG_OFFSET_BLDCNT, 0);\n        SetGpuReg(REG_OFFSET_BLDALPHA, 0);\n        DestroyAnimVisualTask(taskId);\n    }",
       "callsTo": [
         "DestroyAnimVisualTask",
@@ -103,6 +151,12 @@
       "returnType": "void",
       "signature": "void AnimTask_StatsChange(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "bool16 goesDown = FALSE;\n    s16 animStatId = 0;\n    bool16 sharply = FALSE;\n\n    switch (gBattleSpritesDataPtr->animationData->animArg)\n    {\n    case STAT_ANIM_PLUS1 + STAT_ATK:     goesDown = FALSE;  animStatId = STAT_ANIM_PAL_ATK;      break;\n    case STAT_ANIM_PLUS1 + STAT_DEF:     goesDown = FALSE;  animStatId = STAT_ANIM_PAL_DEF;      break;\n    case STAT_ANIM_PLUS1 + STAT_SPEED:   goesDown = FALSE;  animStatId = STAT_ANIM_PAL_SPEED;    break;\n    case STAT_ANIM_PLUS1 + STAT_SPATK:   goesDown = FALSE;  animStatId = STAT_ANIM_PAL_SPATK;    break;\n    case STAT_ANIM_PLUS1 + STAT_SPDEF:   goesDown = FALSE;  animStatId = STAT_ANIM_PAL_SPDEF;    break;\n    case STAT_ANIM_PLUS1 + STAT_ACC:     goesDown = FALSE;  animStatId = STAT_ANIM_PAL_ACC;      break;\n    case STAT_ANIM_PLUS1 + STAT_EVASION: goesDown = FALSE;  animStatId = STAT_ANIM_PAL_EVASION;  break;\n\n    case STAT_ANIM_MINUS1 + STAT_ATK:     goesDown = TRUE;  animStatId = STAT_ANIM_PAL_ATK;      break;\n    case STAT_ANIM_MINUS1 + STAT_DEF:     goesDown = TRUE;  animStatId = STAT_ANIM_PAL_DEF;      break;\n    case STAT_ANIM_MINUS1 + STAT_SPEED:   goesDown = TRUE;  animStatId = STAT_ANIM_PAL_SPEED;    break;\n    case STAT_ANIM_MINUS1 + STAT_SPATK:   goesDown = TRUE;  animStatId = STAT_ANIM_PAL_SPATK;    break;\n    case STAT_ANIM_MINUS1 + STAT_SPDEF:   goesDown = TRUE;  animStatId = STAT_ANIM_PAL_SPDEF;    break;\n    case STAT_ANIM_MINUS1 + STAT_ACC:     goesDown = TRUE;  animStatId = STAT_ANIM_PAL_ACC;      break;\n    case STAT_ANIM_MINUS1 + STAT_EVASION: goesDown = TRUE;  animStatId = STAT_ANIM_PAL_EVASION;  break;\n\n    case STAT_ANIM_PLUS2 + STAT_ATK:     goesDown = FALSE;  animStatId = STAT_ANIM_PAL_ATK;      sharply = TRUE;  break;\n    case STAT_ANIM_PLUS2 + STAT_DEF:     goesDown = FALSE;  animStatId = STAT_ANIM_PAL_DEF;      sharply = TRUE;  break;\n    case STAT_ANIM_PLUS2 + STAT_SPEED:   goesDown = FALSE;  animStatId = STAT_ANIM_PAL_SPEED;    sharply = TRUE;  break;\n    case STAT_ANIM_PLUS2 + STAT_SPATK:   goesDown = FALSE;  animStatId = STAT_ANIM_PAL_SPATK;    sharply = TRUE;  break;\n    case STAT_ANIM_PLUS2 + STAT_SPDEF:   goesDown = FALSE;  animStatId = STAT_ANIM_PAL_SPDEF;    sharply = TRUE;  break;\n    case STAT_ANIM_PLUS2 + STAT_ACC:     goesDown = FALSE;  animStatId = STAT_ANIM_PAL_ACC;      sharply = TRUE;  break;\n    case STAT_ANIM_PLUS2 + STAT_EVASION: goesDown = FALSE;  animStatId = STAT_ANIM_PAL_EVASION;  sharply = TRUE;  break;\n\n    case STAT_ANIM_MINUS2 + STAT_ATK:     goesDown = TRUE;  animStatId = STAT_ANIM_PAL_ATK;      sharply = TRUE;  break;\n    case STAT_ANIM_MINUS2 + STAT_DEF:     goesDown = TRUE;  animStatId = STAT_ANIM_PAL_DEF;      sharply = TRUE;  break;\n    case STAT_ANIM_MINUS2 + STAT_SPEED:   goesDown = TRUE;  animStatId = STAT_ANIM_PAL_SPEED;    sharply = TRUE;  break;\n    case STAT_ANIM_MINUS2 + STAT_SPATK:   goesDown = TRUE;  animStatId = STAT_ANIM_PAL_SPATK;    sharply = TRUE;  break;\n    case STAT_ANIM_MINUS2 + STAT_SPDEF:   goesDown = TRUE;  animStatId = STAT_ANIM_PAL_SPDEF;    sharply = TRUE;  break;\n    case STAT_ANIM_MINUS2 + STAT_ACC:     goesDown = TRUE;  animStatId = STAT_ANIM_PAL_ACC;      sharply = TRUE;  break;\n    case STAT_ANIM_MINUS2 + STAT_EVASION: goesDown = TRUE;  animStatId = STAT_ANIM_PAL_EVASION;  sharply = TRUE;  break;\n\n    case STAT_ANIM_MULTIPLE_PLUS1:  goesDown = FALSE;  animStatId = STAT_ANIM_PAL_MULTIPLE;  sharply = FALSE;  break;\n    case STAT_ANIM_MULTIPLE_PLUS2:  goesDown = FALSE;  animStatId = STAT_ANIM_PAL_MULTIPLE;  sharply = TRUE;   break;\n    case STAT_ANIM_MULTIPLE_MINUS1: goesDown = TRUE;   animStatId = STAT_ANIM_PAL_MULTIPLE;  sharply = FALSE;  break;\n    case STAT_ANIM_MULTIPLE_MINUS2: goesDown = TRUE;   animStatId = STAT_ANIM_PAL_MULTIPLE;  sharply = TRUE;   break;\n\n    default:\n        DestroyAnimVisualTask(taskId);\n        return;\n    }\n\n    gBattleAnimArgs[0] = goesDown;\n    gBattleAnimArgs[1] = animStatId;\n    gBattleAnimArgs[2] = FALSE;  \n    gBattleAnimArgs[3] = FALSE;  \n    gBattleAnimArgs[4] = sharply;\n    gTasks[taskId].func = InitStatsChangeAnimation;\n    gTasks[taskId].func(taskId);",
       "callsTo": [
         "DestroyAnimVisualTask"
@@ -113,6 +167,16 @@
       "returnType": "void",
       "signature": "void LaunchStatusAnimation(u8 battler, u8 statusAnimId)",
       "paramsRaw": "u8 battler, u8 statusAnimId",
+      "paramsList": [
+        {
+          "name": "battler",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "statusAnimId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 taskId;\n\n    gBattleAnimAttacker = battler;\n    gBattleAnimTarget = battler;\n    LaunchBattleAnimation(gBattleAnims_StatusConditions, statusAnimId, FALSE);\n    taskId = CreateTask(Task_DoStatusAnimation, 10);\n    gTasks[taskId].data[0] = battler;",
       "callsTo": [
         "CreateTask",
@@ -124,6 +188,12 @@
       "returnType": "void",
       "signature": "static void Task_DoStatusAnimation(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "gAnimScriptCallback();\n    if (!gAnimScriptActive)\n    {\n        gBattleSpritesDataPtr->healthBoxesData[gTasks[taskId].data[0]].statusAnimActive = FALSE;\n        DestroyTask(taskId);\n    }",
       "callsTo": [
         "DestroyTask"

@@ -6,6 +6,12 @@
       "returnType": "void",
       "signature": "static void Task_RunPerStepCallback(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "int idx = gTasks[taskId].tCallbackId;\n    sPerStepCallbacks[idx](taskId);",
       "callsTo": [],
       "lineCount": 2
@@ -14,6 +20,12 @@
       "returnType": "void",
       "signature": "static void RunTimeBasedEvents(s16 *data)",
       "paramsRaw": "s16 *data",
+      "paramsList": [
+        {
+          "name": "data",
+          "typeRaw": "s16 *"
+        }
+      ],
       "body": "switch (tState)\n    {\n    case 0:\n        if (gMain.vblankCounter1 & TIME_UPDATE_INTERVAL)\n        {\n            DoTimeBasedEvents();\n            tState++;\n        }\n        break;\n    case 1:\n        if (!(gMain.vblankCounter1 & TIME_UPDATE_INTERVAL))\n            tState--;\n        break;\n    }",
       "callsTo": [
         "DoTimeBasedEvents"
@@ -24,6 +36,12 @@
       "returnType": "void",
       "signature": "static void Task_RunTimeBasedEvents(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data = gTasks[taskId].data;\n\n    if (!ArePlayerFieldControlsLocked())\n    {\n        RunTimeBasedEvents(data);\n        UpdateAmbientCry(&tAmbientCryState, (u16*) &tAmbientCryDelay);\n    }",
       "callsTo": [
         "ArePlayerFieldControlsLocked",
@@ -36,6 +54,7 @@
       "returnType": "void",
       "signature": "void SetUpFieldTasks(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!FuncIsActiveTask(Task_RunPerStepCallback))\n    {\n        u8 taskId = CreateTask(Task_RunPerStepCallback, 80);\n        gTasks[taskId].tCallbackId = STEP_CB_DUMMY;\n    }\n\n    if (!FuncIsActiveTask(Task_MuddySlope))\n        CreateTask(Task_MuddySlope, 80);\n\n    if (!FuncIsActiveTask(Task_RunTimeBasedEvents))\n        CreateTask(Task_RunTimeBasedEvents, 80);",
       "callsTo": [
         "CreateTask",
@@ -47,6 +66,12 @@
       "returnType": "void",
       "signature": "void ActivatePerStepCallback(u8 callbackId)",
       "paramsRaw": "u8 callbackId",
+      "paramsList": [
+        {
+          "name": "callbackId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 taskId = FindTaskIdByFunc(Task_RunPerStepCallback);\n    if (taskId != TASK_NONE)\n    {\n        s32 i;\n        s16 *data = gTasks[taskId].data;\n\n        for (i = 0; i < NUM_TASK_DATA; i++)\n            data[i] = 0;\n\n        if (callbackId >= ARRAY_COUNT(sPerStepCallbacks))\n            tCallbackId = STEP_CB_DUMMY;\n        else\n            tCallbackId = callbackId;\n    }",
       "callsTo": [
         "ARRAY_COUNT",
@@ -58,6 +83,7 @@
       "returnType": "void",
       "signature": "void ResetFieldTasksArgs(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 taskId;\n    s16 *data;\n\n    taskId = FindTaskIdByFunc(Task_RunPerStepCallback);\n    if (taskId != TASK_NONE)\n        data = gTasks[taskId].data;\n\n    taskId = FindTaskIdByFunc(Task_RunTimeBasedEvents);\n    if (taskId != TASK_NONE)\n    {\n        data = gTasks[taskId].data;\n        tAmbientCryState = 0;\n        tAmbientCryDelay = 0;\n    }",
       "callsTo": [
         "FindTaskIdByFunc"
@@ -68,6 +94,12 @@
       "returnType": "void",
       "signature": "static void DummyPerStepCallback(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "",
       "callsTo": [],
       "lineCount": 1
@@ -76,6 +108,24 @@
       "returnType": "void",
       "signature": "static void TrySetPacifidlogBridgeMetatiles(const struct PacifidlogMetatileOffsets *offsets, s16 x, s16 y, bool32 redrawMap)",
       "paramsRaw": "const struct PacifidlogMetatileOffsets *offsets, s16 x, s16 y, bool32 redrawMap",
+      "paramsList": [
+        {
+          "name": "offsets",
+          "typeRaw": "const struct PacifidlogMetatileOffsets *"
+        },
+        {
+          "name": "x",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "redrawMap",
+          "typeRaw": "bool32"
+        }
+      ],
       "body": "offsets = GetPacifidlogBridgeMetatileOffsets(offsets, MapGridGetMetatileBehaviorAt(x, y));\n\n     \n    if (offsets)\n    {\n         \n        MapGridSetMetatileIdAt(x + offsets[0].x, y + offsets[0].y, offsets[0].metatileId);\n        if (redrawMap)\n            CurrentMapDrawMetatileAt(x + offsets[0].x, y + offsets[0].y);\n\n        MapGridSetMetatileIdAt(x + offsets[1].x, y + offsets[1].y, offsets[1].metatileId);\n        if (redrawMap)\n            CurrentMapDrawMetatileAt(x + offsets[1].x, y + offsets[1].y);\n    }",
       "callsTo": [
         "CurrentMapDrawMetatileAt",
@@ -89,6 +139,20 @@
       "returnType": "void",
       "signature": "static void TrySetLogBridgeHalfSubmerged(s16 x, s16 y, bool32 redrawMap)",
       "paramsRaw": "s16 x, s16 y, bool32 redrawMap",
+      "paramsList": [
+        {
+          "name": "x",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "redrawMap",
+          "typeRaw": "bool32"
+        }
+      ],
       "body": "TrySetPacifidlogBridgeMetatiles(sHalfSubmergedBridgeMetatileOffsets, x, y, redrawMap);",
       "callsTo": [
         "TrySetPacifidlogBridgeMetatiles"
@@ -99,6 +163,20 @@
       "returnType": "void",
       "signature": "static void TrySetLogBridgeFullySubmerged(s16 x, s16 y, bool32 redrawMap)",
       "paramsRaw": "s16 x, s16 y, bool32 redrawMap",
+      "paramsList": [
+        {
+          "name": "x",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "redrawMap",
+          "typeRaw": "bool32"
+        }
+      ],
       "body": "TrySetPacifidlogBridgeMetatiles(sFullySubmergedBridgeMetatileOffsets, x, y, redrawMap);",
       "callsTo": [
         "TrySetPacifidlogBridgeMetatiles"
@@ -109,6 +187,20 @@
       "returnType": "void",
       "signature": "static void TrySetLogBridgeFloating(s16 x, s16 y, bool32 redrawMap)",
       "paramsRaw": "s16 x, s16 y, bool32 redrawMap",
+      "paramsList": [
+        {
+          "name": "x",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "redrawMap",
+          "typeRaw": "bool32"
+        }
+      ],
       "body": "TrySetPacifidlogBridgeMetatiles(sFloatingBridgeMetatileOffsets, x, y, redrawMap);",
       "callsTo": [
         "TrySetPacifidlogBridgeMetatiles"
@@ -119,6 +211,24 @@
       "returnType": "bool32",
       "signature": "static bool32 ShouldRaisePacifidlogLogs(s16 newX, s16 newY, s16 oldX, s16 oldY)",
       "paramsRaw": "s16 newX, s16 newY, s16 oldX, s16 oldY",
+      "paramsList": [
+        {
+          "name": "newX",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "newY",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "oldX",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "oldY",
+          "typeRaw": "s16"
+        }
+      ],
       "body": "u16 oldBehavior = MapGridGetMetatileBehaviorAt(oldX, oldY);\n\n    if (MetatileBehavior_IsPacifidlogVerticalLogTop(oldBehavior))\n    {\n         \n        if (newY > oldY)\n            return FALSE;\n    }\n    else if (MetatileBehavior_IsPacifidlogVerticalLogBottom(oldBehavior))\n    {\n         \n        if (newY < oldY)\n            return FALSE;\n    }\n    else if (MetatileBehavior_IsPacifidlogHorizontalLogLeft(oldBehavior))\n    {\n         \n        if (newX > oldX)\n            return FALSE;\n    }\n    else if (MetatileBehavior_IsPacifidlogHorizontalLogRight(oldBehavior))\n    {\n         \n        if (newX < oldX)\n            return FALSE;\n    }\n\n     \n    return TRUE;",
       "callsTo": [
         "MapGridGetMetatileBehaviorAt",
@@ -133,6 +243,24 @@
       "returnType": "bool32",
       "signature": "static bool32 ShouldSinkPacifidlogLogs(s16 newX, s16 newY, s16 oldX, s16 oldY)",
       "paramsRaw": "s16 newX, s16 newY, s16 oldX, s16 oldY",
+      "paramsList": [
+        {
+          "name": "newX",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "newY",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "oldX",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "oldY",
+          "typeRaw": "s16"
+        }
+      ],
       "body": "u16 newBehavior = MapGridGetMetatileBehaviorAt(newX, newY);\n\n    if (MetatileBehavior_IsPacifidlogVerticalLogTop(newBehavior))\n    {\n         \n        if (newY < oldY)\n            return FALSE;\n    }\n    else if (MetatileBehavior_IsPacifidlogVerticalLogBottom(newBehavior))\n    {\n         \n        if (newY > oldY)\n            return FALSE;\n    }\n    else if (MetatileBehavior_IsPacifidlogHorizontalLogLeft(newBehavior))\n    {\n         \n        if (newX < oldX)\n            return FALSE;\n    }\n    else if (MetatileBehavior_IsPacifidlogHorizontalLogRight(newBehavior))\n    {\n         \n        if (newX > oldX)\n            return FALSE;\n    }\n    return TRUE;",
       "callsTo": [
         "MapGridGetMetatileBehaviorAt",
@@ -147,6 +275,12 @@
       "returnType": "void",
       "signature": "static void PacifidlogBridgePerStepCallback(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data;\n    s16 x, y;\n    data = gTasks[taskId].data;\n    PlayerGetDestCoords(&x, &y);\n    switch (tState)\n    {\n    case 0:\n        tPrevX = x;\n        tPrevY = y;\n\n         \n         \n        TrySetLogBridgeFullySubmerged(x, y, TRUE);\n        tState = 1;\n        break;\n    case 1:\n         \n        if (x == tPrevX && y == tPrevY)\n            return;\n\n        if (ShouldRaisePacifidlogLogs(x, y, tPrevX, tPrevY))\n        {\n             \n             \n             \n             \n            TrySetLogBridgeHalfSubmerged(tPrevX, tPrevY, TRUE);\n            TrySetLogBridgeFloating(tPrevX, tPrevY, FALSE);\n            tToRaiseX = tPrevX;\n            tToRaiseY = tPrevY;\n            tState = 2;\n            tDelay = 8;\n        }\n        else\n        {\n             \n             \n            tToRaiseX = -1;\n            tToRaiseY = -1;\n        }\n\n        if (ShouldSinkPacifidlogLogs(x, y, tPrevX, tPrevY))\n        {\n             \n             \n            TrySetLogBridgeHalfSubmerged(x, y, TRUE);\n            tState = 2;\n            tDelay = 8;\n        }\n\n        tPrevX = x;\n        tPrevY = y;\n\n         \n        if (MetatileBehavior_IsPacifidlogLog(MapGridGetMetatileBehaviorAt(x, y)))\n            PlaySE(SE_PUDDLE);\n        break;\n    case 2:\n        if (--tDelay == 0)\n        {\n             \n            TrySetLogBridgeFullySubmerged(x, y, TRUE);\n\n             \n             \n            if (tToRaiseX != -1 && tToRaiseY != -1)\n                TrySetLogBridgeFloating(tToRaiseX, tToRaiseY, TRUE);\n\n            tState = 1;\n        }\n        break;\n    }",
       "callsTo": [
         "MapGridGetMetatileBehaviorAt",
@@ -165,6 +299,16 @@
       "returnType": "void",
       "signature": "static void TryLowerFortreeBridge(s16 x, s16 y)",
       "paramsRaw": "s16 x, s16 y",
+      "paramsList": [
+        {
+          "name": "x",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s16"
+        }
+      ],
       "body": "u8 elevation = PlayerGetElevation();\n    if (!(elevation & 1))\n    {\n        switch (MapGridGetMetatileIdAt(x, y))\n        {\n        case METATILE_Fortree_BridgeOverGrass_Raised:\n            MapGridSetMetatileIdAt(x, y, METATILE_Fortree_BridgeOverGrass_Lowered);\n            break;\n        case METATILE_Fortree_BridgeOverTrees_Raised:\n            MapGridSetMetatileIdAt(x, y, METATILE_Fortree_BridgeOverTrees_Lowered);\n            break;\n        }\n    }",
       "callsTo": [
         "MapGridGetMetatileIdAt",
@@ -177,6 +321,16 @@
       "returnType": "void",
       "signature": "static void TryRaiseFortreeBridge(s16 x, s16 y)",
       "paramsRaw": "s16 x, s16 y",
+      "paramsList": [
+        {
+          "name": "x",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s16"
+        }
+      ],
       "body": "u8 elevation = PlayerGetElevation();\n    if (!(elevation & 1))\n    {\n        switch (MapGridGetMetatileIdAt(x, y))\n        {\n        case METATILE_Fortree_BridgeOverGrass_Lowered:\n            MapGridSetMetatileIdAt(x, y, METATILE_Fortree_BridgeOverGrass_Raised);\n            break;\n        case METATILE_Fortree_BridgeOverTrees_Lowered:\n            MapGridSetMetatileIdAt(x, y, METATILE_Fortree_BridgeOverTrees_Raised);\n            break;\n        }\n    }",
       "callsTo": [
         "MapGridGetMetatileIdAt",
@@ -189,6 +343,12 @@
       "returnType": "void",
       "signature": "static void FortreeBridgePerStepCallback(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "bool8 isFortreeBridgeCur;\n    bool8 isFortreeBridgePrev;\n    u8 elevation, onBridgeElevation;\n    s16 x, y, prevX, prevY;\n    s16 *data = gTasks[taskId].data;\n    PlayerGetDestCoords(&x, &y);\n    switch (tState)\n    {\n    default:\n        break;\n    case 0:\n        tPrevX = x;\n        tPrevY = y;\n\n         \n        if (MetatileBehavior_IsFortreeBridge(MapGridGetMetatileBehaviorAt(x, y)))\n        {\n            TryLowerFortreeBridge(x, y);\n            CurrentMapDrawMetatileAt(x, y);\n        }\n        tState = 1;\n        break;\n    case 1:\n        prevX = tPrevX;\n        prevY = tPrevY;\n\n         \n        if (x == prevX && y == prevY)\n            break;\n\n        isFortreeBridgeCur = MetatileBehavior_IsFortreeBridge(MapGridGetMetatileBehaviorAt(x, y));\n        isFortreeBridgePrev = MetatileBehavior_IsFortreeBridge(MapGridGetMetatileBehaviorAt(prevX, prevY));\n\n         \n        elevation = PlayerGetElevation();\n        onBridgeElevation = FALSE;\n        if ((u8)(elevation & 1) == 0)\n            onBridgeElevation = TRUE;\n\n        if (onBridgeElevation && (isFortreeBridgeCur == TRUE || isFortreeBridgePrev == TRUE))\n            PlaySE(SE_BRIDGE_WALK);\n\n         \n         \n    #ifdef BUGFIX\n        if (isFortreeBridgePrev || isFortreeBridgeCur)\n    #else\n        if (isFortreeBridgePrev)\n    #endif\n        {\n             \n            TryRaiseFortreeBridge(prevX, prevY);\n            CurrentMapDrawMetatileAt(prevX, prevY);\n\n             \n            TryLowerFortreeBridge(x, y);\n            CurrentMapDrawMetatileAt(x, y);\n        }\n\n         \n         \n        tOldBridgeX = prevX;\n        tOldBridgeY = prevY;\n\n        tPrevX = x;\n        tPrevY = y;\n        if (!isFortreeBridgePrev)\n            break;\n\n        tBounceTime = 16;\n        tState = 2;\n         \n    case 2:\n        tBounceTime--;\n        prevX = tOldBridgeX;\n        prevY = tOldBridgeY;\n        switch (tBounceTime % 7)\n        {\n        case 0:\n            CurrentMapDrawMetatileAt(prevX, prevY);\n        case 1:\n        case 2:\n        case 3:\n            break;\n        case 4:\n             \n            TryLowerFortreeBridge(prevX, prevY);\n            CurrentMapDrawMetatileAt(prevX, prevY);\n            TryRaiseFortreeBridge(prevX, prevY);\n        case 5:\n        case 6:\n        case 7:  \n            break;\n        }\n        if (tBounceTime == 0)\n            tState = 1;\n        break;\n    }",
       "callsTo": [
         "CurrentMapDrawMetatileAt",
@@ -206,6 +366,16 @@
       "returnType": "bool32",
       "signature": "static bool32 CoordInIcePuzzleRegion(s16 x, s16 y)",
       "paramsRaw": "s16 x, s16 y",
+      "paramsList": [
+        {
+          "name": "x",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s16"
+        }
+      ],
       "body": "if ((u16)(x - ICE_PUZZLE_L) < ICE_PUZZLE_WIDTH\n     && (u16)(y - ICE_PUZZLE_T) < ICE_PUZZLE_HEIGHT\n     && sSootopolisGymIceRowVars[y])\n        return TRUE;\n    else\n        return FALSE;",
       "callsTo": [],
       "lineCount": 6
@@ -214,6 +384,16 @@
       "returnType": "void",
       "signature": "static void MarkIcePuzzleCoordVisited(s16 x, s16 y)",
       "paramsRaw": "s16 x, s16 y",
+      "paramsList": [
+        {
+          "name": "x",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s16"
+        }
+      ],
       "body": "if (CoordInIcePuzzleRegion(x, y))\n        *GetVarPointer(sSootopolisGymIceRowVars[y]) |= (1 << (x - ICE_PUZZLE_L));",
       "callsTo": [
         "CoordInIcePuzzleRegion",
@@ -225,6 +405,16 @@
       "returnType": "bool32",
       "signature": "static bool32 IsIcePuzzleCoordVisited(s16 x, s16 y)",
       "paramsRaw": "s16 x, s16 y",
+      "paramsList": [
+        {
+          "name": "x",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s16"
+        }
+      ],
       "body": "u16 var;\n    if (!CoordInIcePuzzleRegion(x, y))\n        return FALSE;\n\n    var = VarGet(sSootopolisGymIceRowVars[y]);\n    if (var &= (1 << (x - ICE_PUZZLE_L)))\n        return TRUE;\n    else\n        return FALSE;",
       "callsTo": [
         "CoordInIcePuzzleRegion",
@@ -236,6 +426,7 @@
       "returnType": "void",
       "signature": "void SetSootopolisGymCrackedIceMetatiles(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s32 x, y;\n    s32 width = gMapHeader.mapLayout->width;\n    s32 height = gMapHeader.mapLayout->height;\n    for (x = 0; x < width; x++)\n    {\n        for (y = 0; y < height; y++)\n        {\n            if (IsIcePuzzleCoordVisited(x, y) == TRUE)\n                MapGridSetMetatileIdAt(x + MAP_OFFSET, y + MAP_OFFSET, METATILE_SootopolisGym_Ice_Cracked);\n        }\n    }",
       "callsTo": [
         "IsIcePuzzleCoordVisited",
@@ -247,6 +438,12 @@
       "returnType": "void",
       "signature": "static void SootopolisGymIcePerStepCallback(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 x, y;\n    u16 tileBehavior;\n    u16 *iceStepCount;\n    s16 *data = gTasks[taskId].data;\n    switch (tState)\n    {\n    case 0:\n        PlayerGetDestCoords(&x, &y);\n        tPrevX = x;\n        tPrevY = y;\n        tState = 1;\n        break;\n    case 1:\n        PlayerGetDestCoords(&x, &y);\n         \n        if (x == tPrevX && y == tPrevY)\n            return;\n\n        tPrevX = x;\n        tPrevY = y;\n        tileBehavior = MapGridGetMetatileBehaviorAt(x, y);\n        iceStepCount = GetVarPointer(VAR_ICE_STEP_COUNT);\n        if (MetatileBehavior_IsThinIce(tileBehavior) == TRUE)\n        {\n             \n            (*iceStepCount)++;\n            tDelay = 4;\n            tState = 2;\n            tIceX = x;\n            tIceY = y;\n        }\n        else if (MetatileBehavior_IsCrackedIce(tileBehavior) == TRUE)\n        {\n             \n            *iceStepCount = 0;\n            tDelay = 4;\n            tState = 3;\n            tIceX = x;\n            tIceY = y;\n        }\n        break;\n    case 2:\n        if (tDelay != 0)\n        {\n            tDelay--;\n        }\n        else\n        {\n             \n            x = tIceX;\n            y = tIceY;\n            PlaySE(SE_ICE_CRACK);\n            MapGridSetMetatileIdAt(x, y, METATILE_SootopolisGym_Ice_Cracked);\n            CurrentMapDrawMetatileAt(x, y);\n            MarkIcePuzzleCoordVisited(x - MAP_OFFSET, y - MAP_OFFSET);\n            tState = 1;\n        }\n        break;\n    case 3:\n        if (tDelay != 0)\n        {\n            tDelay--;\n        }\n        else\n        {\n             \n            x = tIceX;\n            y = tIceY;\n            PlaySE(SE_ICE_BREAK);\n            MapGridSetMetatileIdAt(x, y, METATILE_SootopolisGym_Ice_Broken);\n            CurrentMapDrawMetatileAt(x, y);\n            tState = 1;\n        }\n        break;\n    }",
       "callsTo": [
         "CurrentMapDrawMetatileAt",
@@ -265,6 +462,12 @@
       "returnType": "void",
       "signature": "static void AshGrassPerStepCallback(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 x, y;\n    u16 *ashGatherCount;\n    s16 *data = gTasks[taskId].data;\n    PlayerGetDestCoords(&x, &y);\n\n     \n    if (x == tPrevX && y == tPrevY)\n        return;\n\n    tPrevX = x;\n    tPrevY = y;\n    if (MetatileBehavior_IsAshGrass(MapGridGetMetatileBehaviorAt(x, y)))\n    {\n         \n        if (MapGridGetMetatileIdAt(x, y) == METATILE_Fallarbor_AshGrass)\n            StartAshFieldEffect(x, y, METATILE_Fallarbor_NormalGrass, 4);\n        else\n            StartAshFieldEffect(x, y, METATILE_Lavaridge_NormalGrass, 4);\n\n         \n        if (CheckBagHasItem(ITEM_SOOT_SACK, 1))\n        {\n            ashGatherCount = GetVarPointer(VAR_ASH_GATHER_COUNT);\n            if (*ashGatherCount < 9999)\n                (*ashGatherCount)++;\n        }\n    }",
       "callsTo": [
         "CheckBagHasItem",
@@ -281,6 +484,16 @@
       "returnType": "void",
       "signature": "static void SetCrackedFloorHoleMetatile(s16 x, s16 y)",
       "paramsRaw": "s16 x, s16 y",
+      "paramsList": [
+        {
+          "name": "x",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s16"
+        }
+      ],
       "body": "u16 metatileId = MapGridGetMetatileIdAt(x, y) == METATILE_Cave_CrackedFloor ? METATILE_Cave_CrackedFloor_Hole : METATILE_Pacifidlog_SkyPillar_CrackedFloor_Hole;\n    MapGridSetMetatileIdAt(x, y, metatileId);\n    CurrentMapDrawMetatileAt(x, y);",
       "callsTo": [
         "CurrentMapDrawMetatileAt",
@@ -293,6 +506,12 @@
       "returnType": "void",
       "signature": "static void CrackedFloorPerStepCallback(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 x, y;\n    u16 behavior;\n    s16 *data = gTasks[taskId].data;\n    PlayerGetDestCoords(&x, &y);\n    behavior = MapGridGetMetatileBehaviorAt(x, y);\n\n     \n    if (tFloor1Delay != 0 && (--tFloor1Delay) == 0)\n        SetCrackedFloorHoleMetatile(tFloor1X, tFloor1Y);\n    if (tFloor2Delay != 0 && (--tFloor2Delay) == 0)\n        SetCrackedFloorHoleMetatile(tFloor2X, tFloor2Y);\n\n    if (MetatileBehavior_IsCrackedFloorHole(behavior))\n        VarSet(VAR_ICE_STEP_COUNT, 0);  \n\n     \n    if (x == tPrevX && y == tPrevY)\n        return;\n\n    tPrevX = x;\n    tPrevY = y;\n    if (MetatileBehavior_IsCrackedFloor(behavior))\n    {\n        if (GetPlayerSpeed() != PLAYER_SPEED_FASTEST)\n            VarSet(VAR_ICE_STEP_COUNT, 0);  \n\n        if (tFloor1Delay == 0)\n        {\n            tFloor1Delay = 3;\n            tFloor1X = x;\n            tFloor1Y = y;\n        }\n        else if (tFloor2Delay == 0)\n        {\n            tFloor2Delay = 3;\n            tFloor2X = x;\n            tFloor2Y = y;\n        }\n    }",
       "callsTo": [
         "GetPlayerSpeed",
@@ -309,6 +528,20 @@
       "returnType": "void",
       "signature": "static void SetMuddySlopeMetatile(s16 *data, s16 x, s16 y)",
       "paramsRaw": "s16 *data, s16 x, s16 y",
+      "paramsList": [
+        {
+          "name": "data",
+          "typeRaw": "s16 *"
+        },
+        {
+          "name": "x",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s16"
+        }
+      ],
       "body": "u16 metatileId;\n    if ((--data[SLOPE_TIME]) == 0)\n        metatileId = METATILE_General_MuddySlope_Frame0;\n    else\n        metatileId = sMuddySlopeMetatiles[data[SLOPE_TIME] / SLOPE_ANIM_STEP_TIME];\n\n    MapGridSetMetatileIdAt(x, y, metatileId);\n    CurrentMapDrawMetatileAt(x, y);\n    MapGridSetMetatileIdAt(x, y, METATILE_General_MuddySlope_Frame0);",
       "callsTo": [
         "CurrentMapDrawMetatileAt",
@@ -320,6 +553,12 @@
       "returnType": "void",
       "signature": "static void Task_MuddySlope(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 x, y, cameraOffsetX, cameraOffsetY;\n    int i;\n    u16 mapId;\n    s16 *data = gTasks[taskId].data;\n    PlayerGetDestCoords(&x, &y);\n    mapId = (gSaveBlock1Ptr->location.mapGroup << 8) | gSaveBlock1Ptr->location.mapNum;\n    switch (tState)\n    {\n    case 0:\n        tMapId = mapId;\n        tPrevX = x;\n        tPrevY = y;\n        tState = 1;\n        tSlopeAnimTime(0) = 0;\n        tSlopeAnimTime(1) = 0;\n        tSlopeAnimTime(2) = 0;\n        tSlopeAnimTime(3) = 0;\n        break;\n    case 1:\n         \n        if (tPrevX == x && tPrevY == y)\n            break;\n\n        tPrevX = x;\n        tPrevY = y;\n        if (MetatileBehavior_IsMuddySlope(MapGridGetMetatileBehaviorAt(x, y)))\n        {\n            for (i = SLOPE_DATA_START; i <= SLOPE_DATA_END; i += SLOPE_DATA_SIZE)\n            {\n                if (data[i] == 0)\n                {\n                    data[i + SLOPE_TIME] = SLOPE_ANIM_TIME;\n                    data[i + SLOPE_X] = x;\n                    data[i + SLOPE_Y] = y;\n                    break;\n                }\n            }\n        }\n        break;\n    }\n\n    if (gCamera.active && mapId != tMapId)\n    {\n        tMapId = mapId;\n        cameraOffsetX = gCamera.x;\n        cameraOffsetY = gCamera.y;\n    }\n    else\n    {\n        cameraOffsetX = 0;\n        cameraOffsetY = 0;\n    }\n\n    for (i = SLOPE_DATA_START; i <= SLOPE_DATA_END; i += SLOPE_DATA_SIZE)\n    {\n        if (data[i + SLOPE_TIME])\n        {\n            data[i + SLOPE_X] -= cameraOffsetX;\n            data[i + SLOPE_Y] -= cameraOffsetY;\n            SetMuddySlopeMetatile(&data[i + SLOPE_TIME], data[i + SLOPE_X], data[i + SLOPE_Y]);\n        }\n    }",
       "callsTo": [
         "MapGridGetMetatileBehaviorAt",

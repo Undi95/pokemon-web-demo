@@ -6,6 +6,16 @@
       "returnType": "bool32",
       "signature": "bool32 LinkContest_SendBlock(void *src, u16 size)",
       "paramsRaw": "void *src, u16 size",
+      "paramsList": [
+        {
+          "name": "src",
+          "typeRaw": "void *"
+        },
+        {
+          "name": "size",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "memcpy(gDecompressionBuffer, src, size);\n    if (SendBlock(BitmaskAllOtherLinkPlayers(), gDecompressionBuffer, size))\n        return TRUE;\n    else\n        return FALSE;",
       "callsTo": [
         "BitmaskAllOtherLinkPlayers",
@@ -17,6 +27,12 @@
       "returnType": "bool8",
       "signature": "bool8 LinkContest_GetBlockReceived(u8 flag)",
       "paramsRaw": "u8 flag",
+      "paramsList": [
+        {
+          "name": "flag",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 mask = (1 << flag);\n    if (!(GetBlockReceivedStatus() & mask))\n    {\n        return FALSE;\n    }\n    else\n    {\n        ResetBlockReceivedFlag(flag);\n        return TRUE;\n    }",
       "callsTo": [
         "GetBlockReceivedStatus",
@@ -28,6 +44,7 @@
       "returnType": "bool8",
       "signature": "bool8 LinkContest_GetBlockReceivedFromAllPlayers(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (GetBlockReceivedStatus() == GetLinkPlayerCountAsBitFlags())\n    {\n        ResetBlockReceivedFlags();\n        return TRUE;\n    }\n    else\n    {\n        return FALSE;\n    }",
       "callsTo": [
         "GetBlockReceivedStatus",
@@ -40,6 +57,12 @@
       "returnType": "void",
       "signature": "void Task_LinkContest_Init(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 i;\n\n    for (i = 0; i < CONTESTANT_COUNT; i++)\n        gBlockRecvBuffer[i][0] = 0xFF;\n\n    gTasks[taskId].tState = 0;\n    gTasks[taskId].func = Task_LinkContest_StartInitFlags;",
       "callsTo": [],
       "lineCount": 7
@@ -48,6 +71,12 @@
       "returnType": "void",
       "signature": "static void Task_LinkContest_StartInitFlags(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "gTasks[taskId].func = Task_LinkContest_InitFlags;",
       "callsTo": [],
       "lineCount": 1
@@ -56,6 +85,12 @@
       "returnType": "void",
       "signature": "static void Task_LinkContest_InitFlags(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "int i;\n\n    if (!gReceivedRemoteLinkPlayers)\n        return;\n\n    gContestPlayerMonIndex = GetMultiplayerId();\n    gNumLinkContestPlayers = GetLinkPlayerCount();\n    gLinkContestFlags = LINK_CONTEST_FLAG_IS_LINK;\n    if (gWirelessCommType == 1)\n        gLinkContestFlags = LINK_CONTEST_FLAG_IS_LINK | LINK_CONTEST_FLAG_IS_WIRELESS;\n\n     \n    for (i = 0; i < gNumLinkContestPlayers && (u32)(gLinkPlayers[i].version & 0xFF) - 1 > VERSION_RUBY - 1; i++)\n        ;\n\n    if (i < gNumLinkContestPlayers)\n        gLinkContestFlags |= LINK_CONTEST_FLAG_HAS_RS_PLAYER;\n\n    SwitchTaskToFollowupFunc(taskId);",
       "callsTo": [
         "GetLinkPlayerCount",
@@ -68,6 +103,12 @@
       "returnType": "bool32",
       "signature": "bool32 LinkContest_TryLinkStandby(s16 *state)",
       "paramsRaw": "s16 *state",
+      "paramsList": [
+        {
+          "name": "state",
+          "typeRaw": "s16 *"
+        }
+      ],
       "body": "if (gLinkContestFlags & LINK_CONTEST_FLAG_HAS_RS_PLAYER)\n        return TRUE;\n\n    switch (*state)\n    {\n    case 0:\n        if (IsLinkTaskFinished())\n        {\n            SetLinkStandbyCallback();\n            (*state)++;\n        }\n        return FALSE;\n    case 1:\n        (*state)++;\n        return FALSE;\n    default:\n        if (IsLinkTaskFinished() != TRUE)\n            return FALSE;\n        else\n            return TRUE;\n    }",
       "callsTo": [
         "IsLinkTaskFinished",
@@ -79,6 +120,12 @@
       "returnType": "void",
       "signature": "void Task_LinkContest_CommunicateMonsRS(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "int i;\n\n    if (!LinkContest_TryLinkStandby(&gTasks[taskId].tStandbyState))\n        return;\n\n    switch (gTasks[taskId].tState)\n    {\n    case 0:\n         \n        if (GetMultiplayerId() == 0)\n        {\n            if (IsLinkTaskFinished())\n            {\n                memcpy(gBlockSendBuffer, &gContestMons[gContestPlayerMonIndex], sizeof(struct ContestPokemon));\n                gTasks[taskId].tState = 10;\n            }\n        }\n        else\n        {\n            memcpy(gBlockSendBuffer, &gContestMons[gContestPlayerMonIndex], sizeof(struct ContestPokemon));\n            gTasks[taskId].tState = 1;\n        }\n        break;\n    case 1:\n         \n        if (LinkContest_GetBlockReceivedFromAllPlayers())\n        {\n            for (i = 0; i < gNumLinkContestPlayers; i++)\n            {\n                memcpy(&gContestMons[i], gBlockRecvBuffer[i], sizeof(struct ContestPokemon));\n                StripPlayerAndMonNamesForLinkContest(&gContestMons[i], gLinkPlayers[i].language);\n            }\n\n            gTasks[taskId].tState++;\n        }\n        break;\n    case 10:\n         \n        if (++gTasks[taskId].tTimer > 300)\n        {\n            SendBlockRequest(BLOCK_REQ_SIZE_100);\n            gTasks[taskId].tState = 1;\n        }\n        break;\n    default:\n        gTasks[taskId].tState = 0;\n        gTasks[taskId].tTimer = 0;\n        gTasks[taskId].tStandbyState = 0;\n        SwitchTaskToFollowupFunc(taskId);\n        break;\n    }",
       "callsTo": [
         "GetMultiplayerId",
@@ -95,6 +142,12 @@
       "returnType": "void",
       "signature": "void Task_LinkContest_CommunicateRngRS(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "switch (gTasks[taskId].tState)\n    {\n    case 0:\n        if (GetMultiplayerId() == 0)\n        {\n            if (IsLinkTaskFinished() && LinkContest_SendBlock(&gRngValue, sizeof(gRngValue)) == TRUE)\n                gTasks[taskId].tState++;\n        }\n        else\n        {\n            gTasks[taskId].tState++;\n        }\n        break;\n    case 1:\n        if (LinkContest_GetBlockReceived(0))\n        {\n            memcpy(&gRngValue, gBlockRecvBuffer[0], sizeof(gRngValue));\n            memcpy(&gContestRngValue, gBlockRecvBuffer[0], sizeof(gContestRngValue));\n            gTasks[taskId].tState++;\n        }\n        break;\n    default:\n        gTasks[taskId].tState = 0;\n        SwitchTaskToFollowupFunc(taskId);\n        break;\n    }",
       "callsTo": [
         "GetMultiplayerId",
@@ -109,6 +162,12 @@
       "returnType": "void",
       "signature": "void Task_LinkContest_CommunicateCategoryRS(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "int i;\n\n    if (!LinkContest_TryLinkStandby(&gTasks[taskId].tStandbyState))\n        return;\n\n    switch (gTasks[taskId].tState)\n    {\n    case 0:\n        gBlockSendBuffer[0] = gTasks[taskId].tCategory;\n        if (GetMultiplayerId() == 0)\n        {\n            if (IsLinkTaskFinished())\n                gTasks[taskId].tState = 10;\n        }\n        else\n        {\n            gTasks[taskId].tState++;\n        }\n        break;\n    case 1:\n        if (LinkContest_GetBlockReceivedFromAllPlayers())\n        {\n            for (i = 0; i < gNumLinkContestPlayers; i++)\n                gTasks[taskId].tCategories(i) = gBlockRecvBuffer[i][0];\n\n            gTasks[taskId].tState++;\n        }\n        break;\n    case 10:\n        if (++gTasks[taskId].tTimer > 10)\n        {\n            SendBlockRequest(BLOCK_REQ_SIZE_100);\n            gTasks[taskId].tState = 1;\n        }\n        break;\n    default:\n        gTasks[taskId].tState = 0;\n        gTasks[taskId].tTimer = 0;\n        gTasks[taskId].tStandbyState = 0;\n        SwitchTaskToFollowupFunc(taskId);\n        break;\n    }",
       "callsTo": [
         "GetMultiplayerId",
@@ -124,6 +183,12 @@
       "returnType": "void",
       "signature": "void Task_LinkContest_CommunicateMonIdxs(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "switch (gTasks[taskId].tState)\n    {\n    case 0:\n        if (IsLinkTaskFinished())\n        {\n            if (LinkContest_SendBlock(&gContestPlayerMonIndex, sizeof(gContestPlayerMonIndex)) == TRUE)\n                gTasks[taskId].tState++;\n        }\n        break;\n    case 1:\n        if (LinkContest_GetBlockReceivedFromAllPlayers())\n            gTasks[taskId].tState++;\n        break;\n    default:\n        gTasks[taskId].tState = 0;\n        SwitchTaskToFollowupFunc(taskId);\n        break;\n    }",
       "callsTo": [
         "IsLinkTaskFinished",
@@ -137,6 +202,12 @@
       "returnType": "void",
       "signature": "void Task_LinkContest_CommunicateMoveSelections(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "int i;\n\n    switch (gTasks[taskId].tState)\n    {\n    case 0:\n        if (IsLinkTaskFinished())\n        {\n             \n            if (LinkContest_SendBlock(&eContestantStatus[gContestPlayerMonIndex].currMove, sizeof(eContestantStatus[gContestPlayerMonIndex].currMove)) == TRUE)\n                gTasks[taskId].tState++;\n        }\n        break;\n    case 1:\n        if (LinkContest_GetBlockReceivedFromAllPlayers())\n        {\n             \n            for (i = 0; i < gNumLinkContestPlayers; i++)\n                eContestantStatus[i].currMove = gBlockRecvBuffer[i][0];\n\n            gTasks[taskId].tState++;\n        }\n        break;\n    default:\n        gTasks[taskId].tState = 0;\n        SwitchTaskToFollowupFunc(taskId);\n        break;\n    }",
       "callsTo": [
         "IsLinkTaskFinished",
@@ -150,6 +221,12 @@
       "returnType": "void",
       "signature": "void Task_LinkContest_CommunicateFinalStandings(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "switch (gTasks[taskId].tState)\n    {\n    case 0:\n        if (IsLinkTaskFinished())\n        {\n            if (LinkContest_SendBlock(gContestMonTotalPoints, sizeof(gContestMonTotalPoints)) == 1)\n                gTasks[taskId].tState++;\n        }\n        break;\n    case 1:\n        if (LinkContest_GetBlockReceivedFromAllPlayers())\n        {\n            memcpy(gContestMonTotalPoints, gBlockRecvBuffer[gContestLinkLeaderIndex], sizeof(gContestMonTotalPoints));\n            gTasks[taskId].tState++;\n        }\n        break;\n    case 2:\n    case 5:\n    case 8:\n    case 11:\n        if (gTasks[taskId].tDelayTimer++ > 10)\n        {\n            gTasks[taskId].tDelayTimer = 0;\n            gTasks[taskId].tState++;\n        }\n        break;\n    case 3:\n        if (IsLinkTaskFinished())\n        {\n            if (LinkContest_SendBlock(gContestMonAppealPointTotals, sizeof(gContestMonAppealPointTotals)) == 1)\n                gTasks[taskId].tState++;\n        }\n        break;\n    case 4:\n        if (LinkContest_GetBlockReceivedFromAllPlayers())\n        {\n            memcpy(gContestMonAppealPointTotals, gBlockRecvBuffer[gContestLinkLeaderIndex], sizeof(gContestMonAppealPointTotals));\n            gTasks[taskId].tState++;\n        }\n        break;\n    case 6:\n        if (IsLinkTaskFinished())\n        {\n            if (LinkContest_SendBlock(gContestMonRound2Points, sizeof(gContestMonRound2Points)) == 1)\n                gTasks[taskId].tState++;\n        }\n        break;\n    case 7:\n        if (LinkContest_GetBlockReceivedFromAllPlayers())\n        {\n            memcpy(gContestMonRound2Points, gBlockRecvBuffer[gContestLinkLeaderIndex], sizeof(gContestMonRound2Points));\n            gTasks[taskId].tState++;\n        }\n        break;\n    case 9:\n        if (IsLinkTaskFinished())\n        {\n            if (LinkContest_SendBlock(gContestFinalStandings, sizeof(gContestFinalStandings)) == 1)\n                gTasks[taskId].tState++;\n        }\n        break;\n    case 10:\n        if (LinkContest_GetBlockReceivedFromAllPlayers())\n        {\n            memcpy(gContestFinalStandings, gBlockRecvBuffer[gContestLinkLeaderIndex], sizeof(gContestFinalStandings));\n            gTasks[taskId].tState++;\n        }\n        break;\n    default:\n        gTasks[taskId].tState = 0;\n        SwitchTaskToFollowupFunc(taskId);\n        break;\n    }",
       "callsTo": [
         "IsLinkTaskFinished",
@@ -163,6 +240,12 @@
       "returnType": "void",
       "signature": "void Task_LinkContest_CommunicateAppealsState(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "switch (gTasks[taskId].tState)\n    {\n    case 0:\n        if (IsLinkTaskFinished())\n        {\n            if (LinkContest_SendBlock(eContestantStatus, CONTESTANT_COUNT * sizeof(struct ContestantStatus)) == 1)\n                gTasks[taskId].tState++;\n        }\n        break;\n    case 1:\n        if (LinkContest_GetBlockReceivedFromAllPlayers())\n        {\n            memcpy(eContestantStatus, gBlockRecvBuffer[gContestLinkLeaderIndex], CONTESTANT_COUNT * sizeof(struct ContestantStatus));\n            gTasks[taskId].tState++;\n        }\n        break;\n    case 2:\n    case 5:\n    case 8:\n    case 11:\n        if (gTasks[taskId].tDelayTimer++ > 10)\n        {\n            gTasks[taskId].tDelayTimer = 0;\n            gTasks[taskId].tState++;\n        }\n        break;\n    case 3:\n        if (IsLinkTaskFinished())\n        {\n            if (LinkContest_SendBlock(gContestResources->appealResults, sizeof(struct ContestAppealMoveResults)) == 1)\n                gTasks[taskId].tState++;\n        }\n        break;\n    case 4:\n        if (LinkContest_GetBlockReceivedFromAllPlayers())\n        {\n            memcpy(gContestResources->appealResults, gBlockRecvBuffer[gContestLinkLeaderIndex], sizeof(struct ContestAppealMoveResults));\n            gTasks[taskId].tState++;\n        }\n        break;\n    case 6:\n        if (IsLinkTaskFinished())\n        {\n            if (LinkContest_SendBlock(gContestResources->excitement, sizeof(struct ContestExcitement)) == 1)\n                gTasks[taskId].tState++;\n        }\n        break;\n    case 7:\n        if (LinkContest_GetBlockReceivedFromAllPlayers())\n        {\n            memcpy(gContestResources->excitement, gBlockRecvBuffer[gContestLinkLeaderIndex], sizeof(struct ContestExcitement));\n            gTasks[taskId].tState++;\n        }\n        break;\n    case 9:\n        if (IsLinkTaskFinished())\n        {\n            if (LinkContest_SendBlock(gContestantTurnOrder, sizeof(gContestantTurnOrder)) == 1)\n                gTasks[taskId].tState++;\n        }\n        break;\n    case 10:\n        if (LinkContest_GetBlockReceivedFromAllPlayers())\n        {\n            memcpy(gContestantTurnOrder, gBlockRecvBuffer[gContestLinkLeaderIndex], sizeof(gContestantTurnOrder));\n            gTasks[taskId].tState++;\n        }\n        break;\n    default:\n        gTasks[taskId].tState = 0;\n        SwitchTaskToFollowupFunc(taskId);\n        break;\n    }",
       "callsTo": [
         "IsLinkTaskFinished",
@@ -176,6 +259,12 @@
       "returnType": "void",
       "signature": "void Task_LinkContest_CommunicateLeaderIdsRS(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "int i;\n\n    if (!LinkContest_TryLinkStandby(&gTasks[taskId].tStandbyState))\n        return;\n\n    switch (gTasks[taskId].tState)\n    {\n    case 0:\n        gBlockSendBuffer[0] = 0x6E;\n        if (GetMultiplayerId() == 0)\n        {\n            if (IsLinkTaskFinished())\n                gTasks[taskId].tState = 10;\n        }\n        else\n        {\n            gTasks[taskId].tState++;\n        }\n        break;\n    case 1:\n        if (LinkContest_GetBlockReceivedFromAllPlayers())\n        {\n            for (i = 0; i < CONTESTANT_COUNT; i++)\n                gTasks[taskId].tLeaderIds(i) = gBlockRecvBuffer[i][0];\n\n            gTasks[taskId].tState++;\n        }\n        break;\n    case 10:\n        if (++gTasks[taskId].tTimer > 10)\n        {\n            SendBlockRequest(BLOCK_REQ_SIZE_100);\n            gTasks[taskId].tState = 1;\n        }\n        break;\n    default:\n        gTasks[taskId].tState = 0;\n        gTasks[taskId].tTimer = 0;\n        gTasks[taskId].tStandbyState = 0;\n        SwitchTaskToFollowupFunc(taskId);\n        break;\n    }",
       "callsTo": [
         "GetMultiplayerId",
@@ -191,6 +280,12 @@
       "returnType": "void",
       "signature": "void Task_LinkContest_CommunicateRound1Points(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (!LinkContest_TryLinkStandby(&gTasks[taskId].tStandbyState))\n        return;\n\n    switch (gTasks[taskId].tState)\n    {\n    case 0:\n        if (IsLinkTaskFinished())\n        {\n            if (LinkContest_SendBlock(gContestMonRound1Points, sizeof(gContestMonRound1Points)) == 1)\n                gTasks[taskId].tState++;\n        }\n        break;\n    case 1:\n        if (LinkContest_GetBlockReceivedFromAllPlayers())\n        {\n            memcpy(gContestMonRound1Points, gBlockRecvBuffer[gContestLinkLeaderIndex], sizeof(gContestMonRound1Points));\n            gTasks[taskId].tState++;\n        }\n        break;\n    default:\n        gTasks[taskId].tState = 0;\n        gTasks[taskId].tStandbyState = 0;\n        SwitchTaskToFollowupFunc(taskId);\n        break;\n    }",
       "callsTo": [
         "IsLinkTaskFinished",
@@ -205,6 +300,12 @@
       "returnType": "void",
       "signature": "void Task_LinkContest_CommunicateTurnOrder(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (!LinkContest_TryLinkStandby(&gTasks[taskId].tStandbyState))\n        return;\n\n    switch (gTasks[taskId].tState)\n    {\n    case 0:\n        if (IsLinkTaskFinished())\n        {\n            if (LinkContest_SendBlock(gContestantTurnOrder, sizeof(gContestantTurnOrder)) == 1)\n                gTasks[taskId].tState++;\n        }\n        break;\n    case 1:\n        if (LinkContest_GetBlockReceivedFromAllPlayers())\n        {\n            memcpy(gContestantTurnOrder, gBlockRecvBuffer[gContestLinkLeaderIndex], sizeof(gContestantTurnOrder));\n            gTasks[taskId].tState++;\n        }\n        break;\n    default:\n        gTasks[taskId].tState = 0;\n        gTasks[taskId].tStandbyState = 0;\n        SwitchTaskToFollowupFunc(taskId);\n        break;\n    }",
       "callsTo": [
         "IsLinkTaskFinished",

@@ -6,6 +6,7 @@
       "returnType": "void",
       "signature": "static void LoadLogoGfx(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 *tilemap, *tileset;\n\n    GetBg0TilesDst(&tilemap, &tileset);\n    LZ77UnCompVram(sLogoCenter_Gfx, tileset);\n    LZ77UnCompVram(sLogoCenter_Tilemap, tilemap);\n    LoadPalette(sLogo_Pal, BG_PLTT_ID(15), sizeof(sLogo_Pal));\n    LoadCompressedSpriteSheet(&sSpriteSheet_LogoCircles);\n    LoadSpritePalette(&sSpritePalette_LogoCircles);",
       "callsTo": [
         "BG_PLTT_ID",
@@ -21,6 +22,36 @@
       "returnType": "u8",
       "signature": "static u8 CreateSlidingLogoCircleSprite(s16 x, s16 y, u8 delayX, u8 delayY, s8 speedX, s8 speedY, u8 spriteAnimNum)",
       "paramsRaw": "s16 x, s16 y, u8 delayX, u8 delayY, s8 speedX, s8 speedY, u8 spriteAnimNum",
+      "paramsList": [
+        {
+          "name": "x",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "delayX",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "delayY",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "speedX",
+          "typeRaw": "s8"
+        },
+        {
+          "name": "speedY",
+          "typeRaw": "s8"
+        },
+        {
+          "name": "spriteAnimNum",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 spriteId = CreateSprite(&sSpriteTemplate_LogoCircles, x, y, 0);\n\n    switch (spriteAnimNum)\n    {\n    case 0:\n        gSprites[spriteId].sTargetX = 120;\n        gSprites[spriteId].sTargetY = 45;\n        break;\n    case 1:\n        gSprites[spriteId].sTargetX = 89;\n        gSprites[spriteId].sTargetY = 97;\n        break;\n    case 2:\n        gSprites[spriteId].sTargetX = 151;\n        gSprites[spriteId].sTargetY = 97;\n        break;\n    }\n\n    gSprites[spriteId].sSpeedX = speedX;\n    gSprites[spriteId].sSpeedY = speedY;\n    gSprites[spriteId].sDelayX = delayX;\n    gSprites[spriteId].sDelayY = delayY;\n    gSprites[spriteId].sTimerX = 0;\n    gSprites[spriteId].sTimerY = 0;\n\n    StartSpriteAnim(&gSprites[spriteId], spriteAnimNum);\n    gSprites[spriteId].callback = SpriteCB_LogoCircleSlide;\n\n    return spriteId;",
       "callsTo": [
         "CreateSprite",
@@ -32,6 +63,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_LogoCircleSlide(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "s16 *data = sprite->data;\n\n    if (sprite->x == sTargetX && sprite->y == sTargetY)\n    {\n        sprite->callback = SpriteCallbackDummy;\n    }\n    else\n    {\n        if (sTimerX == sDelayX)\n        {\n            sprite->x += sSpeedX;\n            sTimerX = 0;\n        }\n        else\n        {\n            sTimerX++;\n        }\n\n        if (sTimerY == sDelayY)\n        {\n            sprite->y += sSpeedY;\n            sTimerY = 0;\n        }\n        else\n        {\n            sTimerY++;\n        }\n    }",
       "callsTo": [],
       "lineCount": 28
@@ -40,6 +77,40 @@
       "returnType": "u8",
       "signature": "static u8 CreateSpiralingLogoCircleSprite(s16 x, s16 y, s16 angle, s16 rotateSpeed, s16 radiusStart, s16 radiusEnd, s16 radiusDelta, u8 spriteAnimNum)",
       "paramsRaw": "s16 x, s16 y, s16 angle, s16 rotateSpeed, s16 radiusStart, s16 radiusEnd, s16 radiusDelta, u8 spriteAnimNum",
+      "paramsList": [
+        {
+          "name": "x",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "angle",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "rotateSpeed",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "radiusStart",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "radiusEnd",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "radiusDelta",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "spriteAnimNum",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 spriteId = CreateSprite(&sSpriteTemplate_LogoCircles, x, y, 0);\n\n     \n    switch (spriteAnimNum)\n    {\n    case 0:\n        gSprites[spriteId].sTargetX = 120;\n        gSprites[spriteId].sTargetY = 45;\n        break;\n    case 1:\n        gSprites[spriteId].sTargetX = 89;\n        gSprites[spriteId].sTargetY = 97;\n        break;\n    case 2:\n        gSprites[spriteId].sTargetX = 151;\n        gSprites[spriteId].sTargetY = 97;\n        break;\n    }\n\n    gSprites[spriteId].sAngle = angle;\n    gSprites[spriteId].sRotateSpeed = rotateSpeed;\n    gSprites[spriteId].sRadius = radiusStart;\n    gSprites[spriteId].sTargetRadius = radiusEnd;\n    gSprites[spriteId].sRadiusDelta = radiusDelta;\n\n    StartSpriteAnim(&gSprites[spriteId], spriteAnimNum);\n    gSprites[spriteId].callback = SpriteCB_LogoCircleSpiral;\n\n    return spriteId;",
       "callsTo": [
         "CreateSprite",
@@ -51,6 +122,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_LogoCircleSpiral(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "sprite->x2 = (Sin2(sprite->sAngle) * sprite->sRadius) >> 12;  \n    sprite->y2 = (Cos2(sprite->sAngle) * sprite->sRadius) >> 12;  \n\n    sprite->sAngle = (sprite->sAngle + sprite->sRotateSpeed) % 360;\n\n    if (sprite->sRadius != sprite->sTargetRadius)\n        sprite->sRadius += sprite->sRadiusDelta;\n    else\n        sprite->callback = SpriteCallbackDummy;",
       "callsTo": [
         "Cos2",
@@ -62,6 +139,12 @@
       "returnType": "void",
       "signature": "static void DestroyLogoCirclesGfx(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "FreeSpriteTilesByTag(PALTAG_LOGO_CIRCLES);\n    FreeSpritePaletteByTag(PALTAG_LOGO_CIRCLES);\n\n    DestroySprite(&gSprites[task->tCircle1SpriteId]);\n    DestroySprite(&gSprites[task->tCircle2SpriteId]);\n    DestroySprite(&gSprites[task->tCircle3SpriteId]);",
       "callsTo": [
         "DestroySprite",
@@ -74,6 +157,12 @@
       "returnType": "bool8",
       "signature": "static bool8 IsLogoCirclesAnimFinished(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (gSprites[task->tCircle1SpriteId].callback == SpriteCallbackDummy\n     && gSprites[task->tCircle2SpriteId].callback == SpriteCallbackDummy\n     && gSprites[task->tCircle3SpriteId].callback == SpriteCallbackDummy)\n        return TRUE;\n    else\n        return FALSE;",
       "callsTo": [],
       "lineCount": 6
@@ -82,6 +171,12 @@
       "returnType": "bool8",
       "signature": "static bool8 Circles_Init(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (task->tTimer == 0)\n    {\n        ClearGpuRegBits(REG_OFFSET_DISPCNT, DISPCNT_WIN0_ON);\n        ClearGpuRegBits(REG_OFFSET_DISPCNT, DISPCNT_WIN1_ON);\n        ClearGpuRegBits(REG_OFFSET_DISPCNT, DISPCNT_BG0_ON);\n\n        task->tTimer++;\n        return FALSE;\n    }\n    else\n    {\n        LoadLogoGfx();\n        SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_TGT1_BG0 | BLDCNT_EFFECT_BLEND | BLDCNT_TGT2_ALL);\n        SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(0, 16));\n        ChangeBgX(0, 0, BG_COORD_SET);\n        ChangeBgY(0, 0, BG_COORD_SET);\n        ChangeBgY(0, 0x500, BG_COORD_SUB);\n\n        task->tTimer = 0;\n        task->tState++;\n        return TRUE;\n    }",
       "callsTo": [
         "BLDALPHA_BLEND",
@@ -97,6 +192,12 @@
       "returnType": "bool8",
       "signature": "static bool8 FadeInCenterLogoCircle(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (task->tBlend == 0)\n        SetGpuRegBits(REG_OFFSET_DISPCNT, DISPCNT_BG0_ON);\n\n    if (task->tBlend == 16)\n    {\n        if (task->tFadeTimer == 31)\n        {\n            BeginNormalPaletteFade(PALETTES_ALL, -1, 0, 0x10, RGB_BLACK);\n            task->tState++;\n        }\n        else\n        {\n            task->tFadeTimer++;\n        }\n    }\n    else\n    {\n        u16 blnd;\n\n        task->tBlend++;\n        blnd = task->tBlend;\n        SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(blnd, 16 - blnd));\n    }\n\n    return FALSE;",
       "callsTo": [
         "BLDALPHA_BLEND",
@@ -110,6 +211,12 @@
       "returnType": "bool8",
       "signature": "static bool8 WaitForLogoCirclesAnim(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (IsLogoCirclesAnimFinished(task) == TRUE)\n        task->tState++;\n\n    return FALSE;",
       "callsTo": [
         "IsLogoCirclesAnimFinished"
@@ -120,6 +227,12 @@
       "returnType": "void",
       "signature": "void Task_FrontierCirclesMeet(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "while (sFrontierCirclesMeet_Funcs[gTasks[taskId].tState](&gTasks[taskId]));",
       "callsTo": [],
       "lineCount": 1
@@ -128,6 +241,12 @@
       "returnType": "bool8",
       "signature": "static bool8 CirclesMeet_CreateSprites(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "task->tCircle1SpriteId = CreateSlidingLogoCircleSprite(120, -51, 0, 0, 0,   2, 0);\n    task->tCircle2SpriteId = CreateSlidingLogoCircleSprite(-7,  193, 0, 0, 2,  -2, 1);\n    task->tCircle3SpriteId = CreateSlidingLogoCircleSprite(247, 193, 0, 0, -2, -2, 2);\n\n    task->tState++;\n    return FALSE;",
       "callsTo": [
         "CreateSlidingLogoCircleSprite"
@@ -138,6 +257,12 @@
       "returnType": "bool8",
       "signature": "static bool8 CirclesMeet_End(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (!gPaletteFade.active)\n    {\n        DestroyLogoCirclesGfx(task);\n        DestroyTask(FindTaskIdByFunc(Task_FrontierCirclesMeet));\n    }\n\n    return FALSE;",
       "callsTo": [
         "DestroyLogoCirclesGfx",
@@ -150,6 +275,12 @@
       "returnType": "void",
       "signature": "void Task_FrontierCirclesCross(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "while (sFrontierCirclesCross_Funcs[gTasks[taskId].tState](&gTasks[taskId]));",
       "callsTo": [],
       "lineCount": 1
@@ -158,6 +289,12 @@
       "returnType": "bool8",
       "signature": "static bool8 CirclesCross_CreateSprites(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "task->tCircle1SpriteId = CreateSlidingLogoCircleSprite(120, 197, 0, 0, 0, -4, 0);\n    task->tCircle2SpriteId = CreateSlidingLogoCircleSprite(241, 59,  0, 1, -4, 2, 1);\n    task->tCircle3SpriteId = CreateSlidingLogoCircleSprite(-1,  59,  0, 1, 4,  2, 2);\n\n    task->tState++;\n    return FALSE;",
       "callsTo": [
         "CreateSlidingLogoCircleSprite"
@@ -168,6 +305,12 @@
       "returnType": "bool8",
       "signature": "static bool8 CirclesCross_End(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (!gPaletteFade.active)\n    {\n        DestroyLogoCirclesGfx(task);\n        DestroyTask(FindTaskIdByFunc(Task_FrontierCirclesCross));\n    }\n\n    return FALSE;",
       "callsTo": [
         "DestroyLogoCirclesGfx",
@@ -180,6 +323,12 @@
       "returnType": "void",
       "signature": "void Task_FrontierCirclesAsymmetricSpiral(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "while (sFrontierCirclesAsymmetricSpiral_Funcs[gTasks[taskId].tState](&gTasks[taskId]));",
       "callsTo": [],
       "lineCount": 1
@@ -188,6 +337,12 @@
       "returnType": "bool8",
       "signature": "static bool8 CirclesAsymmetricSpiral_CreateSprites(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "task->tCircle1SpriteId = CreateSpiralingLogoCircleSprite(120, 45, 12,  4, 128, 0, -4, 0);\n    task->tCircle2SpriteId = CreateSpiralingLogoCircleSprite(89,  97, 252, 4, 128, 0, -4, 1);\n    task->tCircle3SpriteId = CreateSpiralingLogoCircleSprite(151, 97, 132, 4, 128, 0, -4, 2);\n\n    task->tState++;\n    return FALSE;",
       "callsTo": [
         "CreateSpiralingLogoCircleSprite"
@@ -198,6 +353,12 @@
       "returnType": "bool8",
       "signature": "static bool8 CirclesAsymmetricSpiral_End(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (!gPaletteFade.active)\n    {\n        DestroyLogoCirclesGfx(task);\n        DestroyTask(FindTaskIdByFunc(Task_FrontierCirclesAsymmetricSpiral));\n    }\n\n    return FALSE;",
       "callsTo": [
         "DestroyLogoCirclesGfx",
@@ -210,6 +371,12 @@
       "returnType": "void",
       "signature": "void Task_FrontierCirclesSymmetricSpiral(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "while (sFrontierCirclesSymmetricSpiral_Funcs[gTasks[taskId].tState](&gTasks[taskId]));",
       "callsTo": [],
       "lineCount": 1
@@ -218,6 +385,12 @@
       "returnType": "bool8",
       "signature": "static bool8 CirclesSymmetricSpiral_CreateSprites(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "task->tCircle1SpriteId = CreateSpiralingLogoCircleSprite(120, 80, 284, 8, 131, 35, -3, 0);\n    task->tCircle2SpriteId = CreateSpiralingLogoCircleSprite(120, 80, 44,  8, 131, 35, -3, 1);\n    task->tCircle3SpriteId = CreateSpiralingLogoCircleSprite(121, 80, 164, 8, 131, 35, -3, 2);\n\n    task->tState++;\n    return FALSE;",
       "callsTo": [
         "CreateSpiralingLogoCircleSprite"
@@ -228,6 +401,12 @@
       "returnType": "bool8",
       "signature": "static bool8 CirclesSymmetricSpiral_End(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (!gPaletteFade.active)\n    {\n        DestroyLogoCirclesGfx(task);\n        DestroyTask(FindTaskIdByFunc(Task_FrontierCirclesSymmetricSpiral));\n    }\n\n    return FALSE;",
       "callsTo": [
         "DestroyLogoCirclesGfx",
@@ -240,6 +419,12 @@
       "returnType": "void",
       "signature": "void Task_FrontierCirclesMeetInSeq(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "while (sFrontierCirclesMeetInSeq_Funcs[gTasks[taskId].tState](&gTasks[taskId]));",
       "callsTo": [],
       "lineCount": 1
@@ -248,6 +433,12 @@
       "returnType": "bool8",
       "signature": "static bool8 CirclesMeetInSeq_CreateSprites(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (task->tTimer == 0)\n    {\n        task->tCircle1SpriteId = CreateSlidingLogoCircleSprite(120, -51, 0, 0, 0, 4,  0);\n    }\n    else if (task->tTimer == 16)\n    {\n        task->tCircle2SpriteId = CreateSlidingLogoCircleSprite(-7,  193, 0, 0, 4, -4, 1);\n    }\n    else if (task->tTimer == 32)\n    {\n        task->tCircle3SpriteId = CreateSlidingLogoCircleSprite(247, 193, 0, 0, -4, -4, 2);\n        task->tState++;\n    }\n\n    task->tTimer++;\n    return FALSE;",
       "callsTo": [
         "CreateSlidingLogoCircleSprite"
@@ -258,6 +449,12 @@
       "returnType": "bool8",
       "signature": "static bool8 CirclesMeetInSeq_End(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (!gPaletteFade.active)\n    {\n        DestroyLogoCirclesGfx(task);\n        DestroyTask(FindTaskIdByFunc(Task_FrontierCirclesMeetInSeq));\n    }\n\n    return FALSE;",
       "callsTo": [
         "DestroyLogoCirclesGfx",
@@ -270,6 +467,12 @@
       "returnType": "void",
       "signature": "void Task_FrontierCirclesCrossInSeq(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "while (sFrontierCirclesCrossInSeq_Funcs[gTasks[taskId].tState](&gTasks[taskId]));",
       "callsTo": [],
       "lineCount": 1
@@ -278,6 +481,12 @@
       "returnType": "bool8",
       "signature": "static bool8 CirclesCrossInSeq_CreateSprites(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (task->tTimer == 0)\n    {\n        task->tCircle1SpriteId = CreateSlidingLogoCircleSprite(120, 197, 0, 0, 0, -8,  0);\n    }\n    else if (task->tTimer == 16)\n    {\n        task->tCircle2SpriteId = CreateSlidingLogoCircleSprite(241, 78,  0, 0, -8, 1,  1);\n    }\n    else if (task->tTimer == 32)\n    {\n        task->tCircle3SpriteId = CreateSlidingLogoCircleSprite(-1,  78,  0, 0, 8,  1,  2);\n        task->tState++;\n    }\n\n    task->tTimer++;\n    return FALSE;",
       "callsTo": [
         "CreateSlidingLogoCircleSprite"
@@ -288,6 +497,12 @@
       "returnType": "bool8",
       "signature": "static bool8 CirclesCrossInSeq_End(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (!gPaletteFade.active)\n    {\n        DestroyLogoCirclesGfx(task);\n        DestroyTask(FindTaskIdByFunc(Task_FrontierCirclesCrossInSeq));\n    }\n\n    return FALSE;",
       "callsTo": [
         "DestroyLogoCirclesGfx",
@@ -300,6 +515,12 @@
       "returnType": "void",
       "signature": "void Task_FrontierCirclesAsymmetricSpiralInSeq(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "while (sFrontierCirclesAsymmetricSpiralInSeq_Funcs[gTasks[taskId].tState](&gTasks[taskId]));",
       "callsTo": [],
       "lineCount": 1
@@ -308,6 +529,12 @@
       "returnType": "bool8",
       "signature": "static bool8 CirclesAsymmetricSpiralInSeq_CreateSprites(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (task->tTimer == 0)\n    {\n        task->tCircle1SpriteId = CreateSpiralingLogoCircleSprite(120, 45, 12,  4, 128, 0, -4, 0);\n    }\n    else if (task->tTimer == 16)\n    {\n        task->tCircle2SpriteId = CreateSpiralingLogoCircleSprite(89,  97, 252, 4, 128, 0, -4, 1);\n    }\n    else if (task->tTimer == 32)\n    {\n        task->tCircle3SpriteId = CreateSpiralingLogoCircleSprite(151, 97, 132, 4, 128, 0, -4, 2);\n        task->tState++;\n    }\n\n    task->tTimer++;\n    return FALSE;",
       "callsTo": [
         "CreateSpiralingLogoCircleSprite"
@@ -318,6 +545,12 @@
       "returnType": "bool8",
       "signature": "static bool8 CirclesAsymmetricSpiralInSeq_End(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (!gPaletteFade.active)\n    {\n        DestroyLogoCirclesGfx(task);\n        DestroyTask(FindTaskIdByFunc(Task_FrontierCirclesAsymmetricSpiralInSeq));\n    }\n\n    return FALSE;",
       "callsTo": [
         "DestroyLogoCirclesGfx",
@@ -330,6 +563,12 @@
       "returnType": "void",
       "signature": "void Task_FrontierCirclesSymmetricSpiralInSeq(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "while (sFrontierCirclesSymmetricSpiralInSeq_Funcs[gTasks[taskId].tState](&gTasks[taskId]));",
       "callsTo": [],
       "lineCount": 1
@@ -338,6 +577,12 @@
       "returnType": "bool8",
       "signature": "static bool8 CirclesSymmetricSpiralInSeq_CreateSprites(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (task->tTimer == 0)\n    {\n        task->tCircle1SpriteId = CreateSpiralingLogoCircleSprite(120, 80, 284, 8, 131, 35, -3, 0);\n    }\n    else if (task->tTimer == 16)\n    {\n        task->tCircle2SpriteId = CreateSpiralingLogoCircleSprite(120, 80, 44,  8, 131, 35, -3, 1);\n    }\n    else if (task->tTimer == 32)\n    {\n        task->tCircle3SpriteId = CreateSpiralingLogoCircleSprite(121, 80, 164, 8, 131, 35, -3, 2);\n        task->tState++;\n    }\n\n    task->tTimer++;\n    return FALSE;",
       "callsTo": [
         "CreateSpiralingLogoCircleSprite"
@@ -348,6 +593,12 @@
       "returnType": "bool8",
       "signature": "static bool8 CirclesSymmetricSpiralInSeq_End(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (!gPaletteFade.active)\n    {\n        DestroyLogoCirclesGfx(task);\n        DestroyTask(FindTaskIdByFunc(Task_FrontierCirclesSymmetricSpiralInSeq));\n    }\n\n    return FALSE;",
       "callsTo": [
         "DestroyLogoCirclesGfx",

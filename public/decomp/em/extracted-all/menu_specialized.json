@@ -6,6 +6,12 @@
       "returnType": "bool8",
       "signature": "bool8 MailboxMenu_Alloc(u8 count)",
       "paramsRaw": "u8 count",
+      "paramsList": [
+        {
+          "name": "count",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 i;\n\n     \n    sMailboxList = Alloc((count + 1) * sizeof(*sMailboxList));\n    if (sMailboxList == NULL)\n        return FALSE;\n\n    for (i = 0; i < ARRAY_COUNT(sMailboxWindowIds); i++)\n        sMailboxWindowIds[i] = WINDOW_NONE;\n\n    return TRUE;",
       "callsTo": [
         "ARRAY_COUNT",
@@ -17,6 +23,12 @@
       "returnType": "u8",
       "signature": "u8 MailboxMenu_AddWindow(u8 windowIdx)",
       "paramsRaw": "u8 windowIdx",
+      "paramsList": [
+        {
+          "name": "windowIdx",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (sMailboxWindowIds[windowIdx] == WINDOW_NONE)\n    {\n        if (windowIdx == MAILBOXWIN_OPTIONS)\n        {\n            struct WindowTemplate template = sWindowTemplates_MailboxMenu[windowIdx];\n            template.width = GetMaxWidthInMenuTable(&gMailboxMailOptions[0], 4);\n            sMailboxWindowIds[windowIdx] = AddWindow(&template);\n        }\n        else if (windowIdx == MAILBOXWIN_TITLE)\n        {\n            struct WindowTemplate template = sWindowTemplates_MailboxMenu[windowIdx];\n            s32 width = GetStringWidth(FONT_NORMAL, gText_Mailbox, 0) + 9;\n            template.width = (width / 8) + 2;\n            sMailboxWindowIds[windowIdx] = AddWindow(&template);\n        }\n        else  \n        {\n            sMailboxWindowIds[windowIdx] = AddWindow(&sWindowTemplates_MailboxMenu[windowIdx]);\n        }\n        SetStandardWindowBorderStyle(sMailboxWindowIds[windowIdx], FALSE);\n    }\n    return sMailboxWindowIds[windowIdx];",
       "callsTo": [
         "AddWindow",
@@ -30,6 +42,12 @@
       "returnType": "void",
       "signature": "void MailboxMenu_RemoveWindow(u8 windowIdx)",
       "paramsRaw": "u8 windowIdx",
+      "paramsList": [
+        {
+          "name": "windowIdx",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "ClearStdWindowAndFrameToTransparent(sMailboxWindowIds[windowIdx], FALSE);\n    ClearWindowTilemap(sMailboxWindowIds[windowIdx]);\n    RemoveWindow(sMailboxWindowIds[windowIdx]);\n    sMailboxWindowIds[windowIdx] = WINDOW_NONE;",
       "callsTo": [
         "ClearStdWindowAndFrameToTransparent",
@@ -42,6 +60,20 @@
       "returnType": "void",
       "signature": "static void MailboxMenu_ItemPrintFunc(u8 windowId, u32 itemId, u8 y)",
       "paramsRaw": "u8 windowId, u32 itemId, u8 y",
+      "paramsList": [
+        {
+          "name": "windowId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "itemId",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "y",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 buffer[30];\n    u16 length;\n\n    if (itemId == LIST_CANCEL)\n        return;\n\n    StringCopy(buffer, gSaveBlock1Ptr->mail[PARTY_SIZE + itemId].playerName);\n    ConvertInternationalPlayerName(buffer);\n    length = StringLength(buffer);\n    if (length < PLAYER_NAME_LENGTH - 1)\n        ConvertInternationalString(buffer, LANGUAGE_JAPANESE);\n    AddTextPrinterParameterized4(windowId, FONT_NORMAL, 8, y, 0, 0, sPlayerNameTextColors, TEXT_SKIP_DRAW, buffer);",
       "callsTo": [
         "AddTextPrinterParameterized4",
@@ -56,6 +88,12 @@
       "returnType": "u8",
       "signature": "u8 MailboxMenu_CreateList(struct PlayerPCItemPageStruct *page)",
       "paramsRaw": "struct PlayerPCItemPageStruct *page",
+      "paramsList": [
+        {
+          "name": "page",
+          "typeRaw": "struct PlayerPCItemPageStruct *"
+        }
+      ],
       "body": "u16 i;\n    for (i = 0; i < page->count; i++)\n    {\n        sMailboxList[i].name = sEmptyItemName;\n        sMailboxList[i].id = i;\n    }\n\n    sMailboxList[i].name = gText_Cancel2;\n    sMailboxList[i].id = LIST_CANCEL;\n\n    gMultiuseListMenuTemplate.items = sMailboxList;\n    gMultiuseListMenuTemplate.totalItems = page->count + 1;\n    gMultiuseListMenuTemplate.windowId = sMailboxWindowIds[MAILBOXWIN_LIST];\n    gMultiuseListMenuTemplate.header_X = 0;\n    gMultiuseListMenuTemplate.item_X = 8;\n    gMultiuseListMenuTemplate.cursor_X = 0;\n    gMultiuseListMenuTemplate.maxShowed = 8;\n    gMultiuseListMenuTemplate.upText_Y = 9;\n    gMultiuseListMenuTemplate.cursorPal = 2;\n    gMultiuseListMenuTemplate.fillValue = 1;\n    gMultiuseListMenuTemplate.cursorShadowPal = 3;\n    gMultiuseListMenuTemplate.moveCursorFunc = MailboxMenu_MoveCursorFunc;\n    gMultiuseListMenuTemplate.itemPrintFunc = MailboxMenu_ItemPrintFunc;\n    gMultiuseListMenuTemplate.fontId = FONT_NORMAL;\n    gMultiuseListMenuTemplate.cursorKind = CURSOR_BLACK_ARROW;\n    gMultiuseListMenuTemplate.lettersSpacing = 0;\n    gMultiuseListMenuTemplate.itemVerticalPadding = 0;\n    gMultiuseListMenuTemplate.scrollMultiple = LIST_NO_MULTIPLE_SCROLL;\n    return ListMenuInit(&gMultiuseListMenuTemplate, page->itemsAbove, page->cursorPos);",
       "callsTo": [
         "ListMenuInit"
@@ -66,6 +104,20 @@
       "returnType": "void",
       "signature": "static void MailboxMenu_MoveCursorFunc(s32 itemIndex, bool8 onInit, struct ListMenu *list)",
       "paramsRaw": "s32 itemIndex, bool8 onInit, struct ListMenu *list",
+      "paramsList": [
+        {
+          "name": "itemIndex",
+          "typeRaw": "s32"
+        },
+        {
+          "name": "onInit",
+          "typeRaw": "bool8"
+        },
+        {
+          "name": "list",
+          "typeRaw": "struct ListMenu *"
+        }
+      ],
       "body": "if (onInit != TRUE)\n        PlaySE(SE_SELECT);",
       "callsTo": [
         "PlaySE"
@@ -76,6 +128,12 @@
       "returnType": "void",
       "signature": "void MailboxMenu_AddScrollArrows(struct PlayerPCItemPageStruct *page)",
       "paramsRaw": "struct PlayerPCItemPageStruct *page",
+      "paramsList": [
+        {
+          "name": "page",
+          "typeRaw": "struct PlayerPCItemPageStruct *"
+        }
+      ],
       "body": "page->scrollIndicatorTaskId = AddScrollIndicatorArrowPairParameterized(2, 0xC8, 12, 0x94, page->count - page->pageItems + 1, 0x6E, 0x6E, &page->itemsAbove);",
       "callsTo": [
         "AddScrollIndicatorArrowPairParameterized"
@@ -86,6 +144,7 @@
       "returnType": "void",
       "signature": "void MailboxMenu_Free(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "Free(sMailboxList);",
       "callsTo": [
         "Free"
@@ -96,6 +155,12 @@
       "returnType": "void",
       "signature": "void ConditionGraph_Init(struct ConditionGraph *graph)",
       "paramsRaw": "struct ConditionGraph *graph",
+      "paramsList": [
+        {
+          "name": "graph",
+          "typeRaw": "struct ConditionGraph *"
+        }
+      ],
       "body": "u8 i, j;\n\n    for (j = 0; j < CONDITION_COUNT; j++)\n    {\n        for (i = 0; i < CONDITION_GRAPH_UPDATE_STEPS; i++)\n        {\n            graph->newPositions[i][j].x = 0;\n            graph->newPositions[i][j].y = 0;\n        }\n\n        for (i = 0; i < CONDITION_GRAPH_LOAD_MAX; i++)\n        {\n            graph->conditions[i][j] = 0;\n            graph->savedPositions[i][j].x = CONDITION_GRAPH_CENTER_X;\n            graph->savedPositions[i][j].y = CONDITION_GRAPH_CENTER_Y;\n        }\n\n        graph->curPositions[j].x = 0;\n        graph->curPositions[j].y = 0;\n    }\n\n    graph->needsDraw = FALSE;\n    graph->updateCounter = 0;",
       "callsTo": [],
       "lineCount": 23
@@ -104,6 +169,20 @@
       "returnType": "void",
       "signature": "void ConditionGraph_SetNewPositions(struct ConditionGraph *graph, struct UCoords16 *old, struct UCoords16 *new)",
       "paramsRaw": "struct ConditionGraph *graph, struct UCoords16 *old, struct UCoords16 *new",
+      "paramsList": [
+        {
+          "name": "graph",
+          "typeRaw": "struct ConditionGraph *"
+        },
+        {
+          "name": "old",
+          "typeRaw": "struct UCoords16 *"
+        },
+        {
+          "name": "new",
+          "typeRaw": "struct UCoords16 *"
+        }
+      ],
       "body": "u16 i, j;\n    s32 coord, increment;\n\n    for (i = 0; i < CONDITION_COUNT; i++)\n    {\n        coord = old[i].x << 8;\n        increment = ((new[i].x - old[i].x) << 8) / CONDITION_GRAPH_UPDATE_STEPS;\n        for (j = 0; j < CONDITION_GRAPH_UPDATE_STEPS - 1; j++)\n        {\n            graph->newPositions[j][i].x = SHIFT_RIGHT_ADJUSTED(coord, 8);\n            coord += increment;\n        }\n        graph->newPositions[j][i].x = new[i].x;\n\n        coord = old[i].y << 8;\n        increment = ((new[i].y - old[i].y) << 8) / CONDITION_GRAPH_UPDATE_STEPS;\n        for (j = 0; j < CONDITION_GRAPH_UPDATE_STEPS - 1; j++)\n        {\n            graph->newPositions[j][i].y = SHIFT_RIGHT_ADJUSTED(coord, 8);\n            coord += increment;\n        }\n        graph->newPositions[j][i].y = new[i].y;\n    }\n\n    graph->updateCounter = 0;",
       "callsTo": [
         "SHIFT_RIGHT_ADJUSTED"
@@ -114,6 +193,12 @@
       "returnType": "bool8",
       "signature": "bool8 ConditionGraph_TryUpdate(struct ConditionGraph *graph)",
       "paramsRaw": "struct ConditionGraph *graph",
+      "paramsList": [
+        {
+          "name": "graph",
+          "typeRaw": "struct ConditionGraph *"
+        }
+      ],
       "body": "if (graph->updateCounter < CONDITION_GRAPH_UPDATE_STEPS)\n    {\n        ConditionGraph_Update(graph);\n        return (++graph->updateCounter != CONDITION_GRAPH_UPDATE_STEPS);\n    }\n    else\n    {\n        return FALSE;\n    }",
       "callsTo": [
         "ConditionGraph_Update"
@@ -124,6 +209,12 @@
       "returnType": "void",
       "signature": "void ConditionGraph_InitResetScanline(struct ConditionGraph *graph)",
       "paramsRaw": "struct ConditionGraph *graph",
+      "paramsList": [
+        {
+          "name": "graph",
+          "typeRaw": "struct ConditionGraph *"
+        }
+      ],
       "body": "graph->scanlineResetState = 0;",
       "callsTo": [],
       "lineCount": 1
@@ -132,6 +223,12 @@
       "returnType": "bool8",
       "signature": "bool8 ConditionGraph_ResetScanline(struct ConditionGraph *graph)",
       "paramsRaw": "struct ConditionGraph *graph",
+      "paramsList": [
+        {
+          "name": "graph",
+          "typeRaw": "struct ConditionGraph *"
+        }
+      ],
       "body": "struct ScanlineEffectParams params;\n\n    switch (graph->scanlineResetState)\n    {\n    case 0:\n        ScanlineEffect_Clear();\n        graph->scanlineResetState++;\n        return TRUE;\n    case 1:\n        params = sConditionGraphScanline;\n        ScanlineEffect_SetParams(params);\n        graph->scanlineResetState++;\n        return FALSE;\n    default:\n        return FALSE;\n    }",
       "callsTo": [
         "ScanlineEffect_Clear",
@@ -143,6 +240,12 @@
       "returnType": "void",
       "signature": "void ConditionGraph_Draw(struct ConditionGraph *graph)",
       "paramsRaw": "struct ConditionGraph *graph",
+      "paramsList": [
+        {
+          "name": "graph",
+          "typeRaw": "struct ConditionGraph *"
+        }
+      ],
       "body": "u16 i;\n\n    if (!graph->needsDraw)\n        return;\n\n    ConditionGraph_CalcRightHalf(graph);\n    ConditionGraph_CalcLeftHalf(graph);\n\n    for (i = 0; i < CONDITION_GRAPH_HEIGHT; i++)\n    {\n         \n        gScanlineEffectRegBuffers[1][(i + CONDITION_GRAPH_TOP_Y - 1) * 2 + 0] =  \n        gScanlineEffectRegBuffers[0][(i + CONDITION_GRAPH_TOP_Y - 1) * 2 + 0] = (graph->scanlineRight[i][0] << 8) | (graph->scanlineRight[i][1]);\n         \n        gScanlineEffectRegBuffers[1][(i + CONDITION_GRAPH_TOP_Y - 1) * 2 + 1] =  \n        gScanlineEffectRegBuffers[0][(i + CONDITION_GRAPH_TOP_Y - 1) * 2 + 1] = (graph->scanlineLeft[i][0] << 8) | (graph->scanlineLeft[i][1]);\n    }\n\n    graph->needsDraw = FALSE;",
       "callsTo": [
         "ConditionGraph_CalcLeftHalf",
@@ -154,6 +257,12 @@
       "returnType": "void",
       "signature": "void ConditionGraph_InitWindow(u8 bg)",
       "paramsRaw": "u8 bg",
+      "paramsList": [
+        {
+          "name": "bg",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u32 flags;\n\n    if (bg >= NUM_BACKGROUNDS)\n        bg = 0;\n\n     \n    flags = (WINOUT_WIN01_BG_ALL | WINOUT_WIN01_OBJ) & ~(1 << bg);\n\n     \n    SetGpuReg(REG_OFFSET_WIN0H, WIN_RANGE( 0, DISPLAY_WIDTH));  \n    SetGpuReg(REG_OFFSET_WIN1H, WIN_RANGE( 0, CONDITION_GRAPH_CENTER_X));  \n    SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(CONDITION_GRAPH_TOP_Y, CONDITION_GRAPH_BOTTOM_Y));  \n    SetGpuReg(REG_OFFSET_WIN1V, WIN_RANGE(CONDITION_GRAPH_TOP_Y, CONDITION_GRAPH_BOTTOM_Y));  \n    SetGpuReg(REG_OFFSET_WININ, WININ_WIN0_BG_ALL | WININ_WIN0_OBJ | WININ_WIN0_CLR | WININ_WIN1_BG_ALL | WININ_WIN1_OBJ | WININ_WIN1_CLR);\n    SetGpuReg(REG_OFFSET_WINOUT, flags);",
       "callsTo": [
         "SetGpuReg",
@@ -165,6 +274,12 @@
       "returnType": "void",
       "signature": "void ConditionGraph_Update(struct ConditionGraph *graph)",
       "paramsRaw": "struct ConditionGraph *graph",
+      "paramsList": [
+        {
+          "name": "graph",
+          "typeRaw": "struct ConditionGraph *"
+        }
+      ],
       "body": "u16 i;\n    for (i = 0; i < CONDITION_COUNT; i++)\n        graph->curPositions[i] = graph->newPositions[graph->updateCounter][i];\n\n    graph->needsDraw = TRUE;",
       "callsTo": [],
       "lineCount": 5
@@ -173,6 +288,32 @@
       "returnType": "void",
       "signature": "static void ConditionGraph_CalcLine(struct ConditionGraph *graph, u16 *scanline, struct UCoords16 *pos1, struct UCoords16 *pos2, bool8 dir, u16 *overflowScanline)",
       "paramsRaw": "struct ConditionGraph *graph, u16 *scanline, struct UCoords16 *pos1, struct UCoords16 *pos2, bool8 dir, u16 *overflowScanline",
+      "paramsList": [
+        {
+          "name": "graph",
+          "typeRaw": "struct ConditionGraph *"
+        },
+        {
+          "name": "scanline",
+          "typeRaw": "u16 *"
+        },
+        {
+          "name": "pos1",
+          "typeRaw": "struct UCoords16 *"
+        },
+        {
+          "name": "pos2",
+          "typeRaw": "struct UCoords16 *"
+        },
+        {
+          "name": "dir",
+          "typeRaw": "bool8"
+        },
+        {
+          "name": "overflowScanline",
+          "typeRaw": "u16 *"
+        }
+      ],
       "body": "u16 i, height, top, bottom, x2;\n    u16 *ptr;\n    s32 x, xIncrement = 0;\n\n    if (pos1->y < pos2->y)\n    {\n        top = pos1->y;\n        bottom = pos2->y;\n        x = pos1->x << 10;\n        x2 = pos2->x;\n        height = bottom - top;\n        if (height != 0)\n            xIncrement = ((x2 - pos1->x) << 10) / height;\n    }\n    else\n    {\n        bottom = pos1->y;\n        top = pos2->y;\n        x = pos2->x << 10;\n        x2 = pos1->x;\n        height = bottom - top;\n        if (height != 0)\n            xIncrement = ((x2 - pos2->x) << 10) / height;\n    }\n\n    height++;\n    if (overflowScanline == NULL)\n    {\n        scanline += (top - CONDITION_GRAPH_TOP_Y) * 2;\n        for (i = 0; i < height; i++)\n        {\n            scanline[dir] = SHIFT_RIGHT_ADJUSTED(x, 10) + dir;\n            x += xIncrement;\n            scanline += 2;\n        }\n\n        ptr = scanline - 2;\n    }\n    else if (xIncrement > 0)\n    {\n        overflowScanline += (top - CONDITION_GRAPH_TOP_Y) * 2;\n         \n        for (i = 0; i < height; overflowScanline[dir] = SHIFT_RIGHT_ADJUSTED(x, 10) + dir, x += xIncrement, overflowScanline += 2, i++)\n        {\n            if (x >= (CONDITION_GRAPH_CENTER_X << 10))\n                break;\n        }\n\n        graph->bottom = top + i;\n        scanline += (graph->bottom - CONDITION_GRAPH_TOP_Y) * 2;\n        for (; i < height; i++)\n        {\n            scanline[dir] = SHIFT_RIGHT_ADJUSTED(x, 10) + dir;\n            x += xIncrement;\n            scanline += 2;\n        }\n\n        ptr = scanline - 2;\n    }\n    else if (xIncrement < 0)\n    {\n        scanline += (top - CONDITION_GRAPH_TOP_Y) * 2;\n        for (i = 0; i < height; i++)\n        {\n            scanline[dir] = SHIFT_RIGHT_ADJUSTED(x, 10) + dir;\n            if (x < (CONDITION_GRAPH_CENTER_X << 10))\n            {\n                scanline[dir] = CONDITION_GRAPH_CENTER_X;\n                break;\n            }\n            x += xIncrement;\n            scanline += 2;\n        }\n\n        graph->bottom = top + i;\n        overflowScanline += (graph->bottom - CONDITION_GRAPH_TOP_Y) * 2;\n        for (; i < height; i++)\n        {\n            overflowScanline[dir] = SHIFT_RIGHT_ADJUSTED(x, 10) + dir;\n            x += xIncrement;\n            overflowScanline += 2;\n        }\n\n        ptr = overflowScanline - 2;\n    }\n    else\n    {\n        graph->bottom = top;\n        scanline += (top - CONDITION_GRAPH_TOP_Y) * 2;\n        overflowScanline += (top - CONDITION_GRAPH_TOP_Y) * 2;\n        scanline[1] = pos1->x + 1;\n        overflowScanline[0] = pos2->x;\n        overflowScanline[1] = CONDITION_GRAPH_CENTER_X;\n        return;\n    }\n\n    ptr[dir] = dir + x2;",
       "callsTo": [
         "SHIFT_RIGHT_ADJUSTED"
@@ -183,6 +324,12 @@
       "returnType": "void",
       "signature": "static void ConditionGraph_CalcRightHalf(struct ConditionGraph *graph)",
       "paramsRaw": "struct ConditionGraph *graph",
+      "paramsList": [
+        {
+          "name": "graph",
+          "typeRaw": "struct ConditionGraph *"
+        }
+      ],
       "body": "u16 i, y, bottom;\n\n     \n    if (graph->curPositions[GRAPH_COOL].y < graph->curPositions[GRAPH_BEAUTY].y)\n    {\n        y = graph->curPositions[GRAPH_COOL].y;\n        ConditionGraph_CalcLine(graph, graph->scanlineRight[0], &graph->curPositions[GRAPH_COOL], &graph->curPositions[GRAPH_BEAUTY], TRUE, NULL);\n    }\n    else\n    {\n        y = graph->curPositions[GRAPH_BEAUTY].y;\n        ConditionGraph_CalcLine(graph, graph->scanlineRight[0], &graph->curPositions[GRAPH_BEAUTY], &graph->curPositions[GRAPH_COOL], FALSE, NULL);\n    }\n\n     \n     \n    ConditionGraph_CalcLine(graph, graph->scanlineRight[0], &graph->curPositions[GRAPH_BEAUTY], &graph->curPositions[GRAPH_CUTE], TRUE, NULL);\n\n     \n    i = (graph->curPositions[GRAPH_CUTE].y <= graph->curPositions[GRAPH_SMART].y);\n    ConditionGraph_CalcLine(graph, graph->scanlineRight[0], &graph->curPositions[GRAPH_CUTE], &graph->curPositions[GRAPH_SMART], i, graph->scanlineLeft[0]);\n\n     \n    for (i = CONDITION_GRAPH_TOP_Y; i < y; i++)\n    {\n        graph->scanlineRight[i - CONDITION_GRAPH_TOP_Y][0] = 0;\n        graph->scanlineRight[i - CONDITION_GRAPH_TOP_Y][1] = 0;\n    }\n\n    for (i = graph->curPositions[GRAPH_COOL].y; i <= graph->bottom; i++)\n        graph->scanlineRight[i - CONDITION_GRAPH_TOP_Y][0] = CONDITION_GRAPH_CENTER_X;\n\n     \n    bottom = max(graph->bottom, graph->curPositions[GRAPH_CUTE].y);\n    for (i = bottom + 1; i <= CONDITION_GRAPH_BOTTOM_Y; i++)\n    {\n        graph->scanlineRight[i - CONDITION_GRAPH_TOP_Y][0] = 0;\n        graph->scanlineRight[i - CONDITION_GRAPH_TOP_Y][1] = 0;\n    }\n\n    for (i = CONDITION_GRAPH_TOP_Y; i <= CONDITION_GRAPH_BOTTOM_Y; i++)\n    {\n        if (graph->scanlineRight[i - CONDITION_GRAPH_TOP_Y][0] == 0\n         && graph->scanlineRight[i - CONDITION_GRAPH_TOP_Y][1] != 0)\n            graph->scanlineRight[i - CONDITION_GRAPH_TOP_Y][0] = CONDITION_GRAPH_CENTER_X;\n    }",
       "callsTo": [
         "ConditionGraph_CalcLine"
@@ -193,6 +340,12 @@
       "returnType": "void",
       "signature": "static void ConditionGraph_CalcLeftHalf(struct ConditionGraph *graph)",
       "paramsRaw": "struct ConditionGraph *graph",
+      "paramsList": [
+        {
+          "name": "graph",
+          "typeRaw": "struct ConditionGraph *"
+        }
+      ],
       "body": "s32 i, y, bottom;\n\n     \n    if (graph->curPositions[GRAPH_COOL].y < graph->curPositions[GRAPH_TOUGH].y)\n    {\n        y = graph->curPositions[GRAPH_COOL].y;\n        ConditionGraph_CalcLine(graph, graph->scanlineLeft[0], &graph->curPositions[GRAPH_COOL], &graph->curPositions[GRAPH_TOUGH], FALSE, NULL);\n    }\n    else\n    {\n        y = graph->curPositions[GRAPH_TOUGH].y;\n        ConditionGraph_CalcLine(graph, graph->scanlineLeft[0], &graph->curPositions[GRAPH_TOUGH], &graph->curPositions[GRAPH_COOL], TRUE, NULL);\n    }\n\n     \n     \n    ConditionGraph_CalcLine(graph, graph->scanlineLeft[0], &graph->curPositions[GRAPH_TOUGH], &graph->curPositions[GRAPH_SMART], FALSE, NULL);\n\n     \n    for (i = CONDITION_GRAPH_TOP_Y; i < y; i++)\n    {\n        graph->scanlineLeft[i - CONDITION_GRAPH_TOP_Y][0] = 0;\n        graph->scanlineLeft[i - CONDITION_GRAPH_TOP_Y][1] = 0;\n    }\n\n    for (i = graph->curPositions[GRAPH_COOL].y; i <= graph->bottom; i++)\n        graph->scanlineLeft[i - CONDITION_GRAPH_TOP_Y][1] = CONDITION_GRAPH_CENTER_X;\n\n     \n    bottom = max(graph->bottom, graph->curPositions[GRAPH_SMART].y + 1);\n    for (i = bottom; i <= CONDITION_GRAPH_BOTTOM_Y; i++)\n    {\n        graph->scanlineLeft[i - CONDITION_GRAPH_TOP_Y][0] = 0;\n        graph->scanlineLeft[i - CONDITION_GRAPH_TOP_Y][1] = 0;\n    }\n\n    for (i = 0; i < CONDITION_GRAPH_HEIGHT; i++)\n    {\n        if (graph->scanlineLeft[i][0] >= graph->scanlineLeft[i][1])\n        {\n            graph->scanlineLeft[i][1] = 0;\n            graph->scanlineLeft[i][0] = 0;\n        }\n    }",
       "callsTo": [
         "ConditionGraph_CalcLine"
@@ -203,6 +356,16 @@
       "returnType": "void",
       "signature": "void ConditionGraph_CalcPositions(u8 *conditions, struct UCoords16 *positions)",
       "paramsRaw": "u8 *conditions, struct UCoords16 *positions",
+      "paramsList": [
+        {
+          "name": "conditions",
+          "typeRaw": "u8 *"
+        },
+        {
+          "name": "positions",
+          "typeRaw": "struct UCoords16 *"
+        }
+      ],
       "body": "u8 lineLength, sinIdx;\n    s8 posIdx;\n    u16 i;\n\n     \n    lineLength = sConditionToLineLength[*(conditions++)];\n    positions[GRAPH_COOL].x = CONDITION_GRAPH_CENTER_X;\n    positions[GRAPH_COOL].y = CONDITION_GRAPH_CENTER_Y - lineLength;\n\n    sinIdx = 64;\n    posIdx = GRAPH_COOL;\n    for (i = 1; i < CONDITION_COUNT; i++)\n    {\n        sinIdx += 51;\n        if (--posIdx < 0)\n            posIdx = CONDITION_COUNT - 1;\n\n        if (posIdx == GRAPH_CUTE)\n            sinIdx++;\n\n        lineLength = sConditionToLineLength[*(conditions++)];\n        positions[posIdx].x = CONDITION_GRAPH_CENTER_X + ((lineLength * gSineTable[64 + sinIdx]) >> 8);\n        positions[posIdx].y = CONDITION_GRAPH_CENTER_Y - ((lineLength * gSineTable[sinIdx]) >> 8);\n\n        if (posIdx <= GRAPH_CUTE && (lineLength != 32 || posIdx != GRAPH_CUTE))\n            positions[posIdx].x++;\n    }",
       "callsTo": [],
       "lineCount": 27
@@ -211,6 +374,12 @@
       "returnType": "void",
       "signature": "void InitMoveRelearnerWindows(bool8 useContestWindow)",
       "paramsRaw": "bool8 useContestWindow",
+      "paramsList": [
+        {
+          "name": "useContestWindow",
+          "typeRaw": "bool8"
+        }
+      ],
       "body": "u8 i;\n\n    InitWindows(sMoveRelearnerWindowTemplates);\n    DeactivateAllTextPrinters();\n    LoadUserWindowBorderGfx(0, 1, BG_PLTT_ID(14));\n    LoadPalette(gStandardMenuPalette, BG_PLTT_ID(15), PLTT_SIZE_4BPP);\n\n    for (i = 0; i < ARRAY_COUNT(sMoveRelearnerWindowTemplates) - 1; i++)\n        FillWindowPixelBuffer(i, PIXEL_FILL(1));\n\n    if (!useContestWindow)\n    {\n        PutWindowTilemap(RELEARNERWIN_DESC_BATTLE);\n        DrawStdFrameWithCustomTileAndPalette(RELEARNERWIN_DESC_BATTLE, FALSE, 0x1, 0xE);\n    }\n    else\n    {\n        PutWindowTilemap(RELEARNERWIN_DESC_CONTEST);\n        DrawStdFrameWithCustomTileAndPalette(RELEARNERWIN_DESC_CONTEST, FALSE, 1, 0xE);\n    }\n    PutWindowTilemap(RELEARNERWIN_MOVE_LIST);\n    PutWindowTilemap(RELEARNERWIN_MSG);\n    DrawStdFrameWithCustomTileAndPalette(RELEARNERWIN_MOVE_LIST, FALSE, 1, 0xE);\n    DrawStdFrameWithCustomTileAndPalette(RELEARNERWIN_MSG, FALSE, 1, 0xE);\n    MoveRelearnerDummy();\n    ScheduleBgCopyTilemapToVram(1);",
       "callsTo": [
         "ARRAY_COUNT",
@@ -232,6 +401,7 @@
       "returnType": "void",
       "signature": "static void MoveRelearnerDummy(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "",
       "callsTo": [],
       "lineCount": 1
@@ -240,6 +410,16 @@
       "returnType": "u8",
       "signature": "u8 LoadMoveRelearnerMovesList(const struct ListMenuItem *items, u16 numChoices)",
       "paramsRaw": "const struct ListMenuItem *items, u16 numChoices",
+      "paramsList": [
+        {
+          "name": "items",
+          "typeRaw": "const struct ListMenuItem *"
+        },
+        {
+          "name": "numChoices",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "gMultiuseListMenuTemplate = sMoveRelearnerMovesListTemplate;\n    gMultiuseListMenuTemplate.totalItems = numChoices;\n    gMultiuseListMenuTemplate.items = items;\n\n    if (numChoices < 6)\n        gMultiuseListMenuTemplate.maxShowed = numChoices;\n    else\n        gMultiuseListMenuTemplate.maxShowed = 6;\n\n    return gMultiuseListMenuTemplate.maxShowed;",
       "callsTo": [],
       "lineCount": 10
@@ -248,6 +428,12 @@
       "returnType": "void",
       "signature": "static void MoveRelearnerLoadBattleMoveDescription(u32 chosenMove)",
       "paramsRaw": "u32 chosenMove",
+      "paramsList": [
+        {
+          "name": "chosenMove",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "s32 x;\n    const struct BattleMove *move;\n    u8 buffer[32];\n    const u8 *str;\n\n    FillWindowPixelBuffer(RELEARNERWIN_DESC_BATTLE, PIXEL_FILL(1));\n    str = gText_MoveRelearnerBattleMoves;\n    x = GetStringCenterAlignXOffset(FONT_NORMAL, str, 128);\n    AddTextPrinterParameterized(RELEARNERWIN_DESC_BATTLE, FONT_NORMAL, str, x, 1, TEXT_SKIP_DRAW, NULL);\n\n    str = gText_MoveRelearnerPP;\n    AddTextPrinterParameterized(RELEARNERWIN_DESC_BATTLE, FONT_NORMAL, str, 4, 41, TEXT_SKIP_DRAW, NULL);\n\n    str = gText_MoveRelearnerPower;\n    x = GetStringRightAlignXOffset(FONT_NORMAL, str, 106);\n    AddTextPrinterParameterized(RELEARNERWIN_DESC_BATTLE, FONT_NORMAL, str, x, 25, TEXT_SKIP_DRAW, NULL);\n\n    str = gText_MoveRelearnerAccuracy;\n    x = GetStringRightAlignXOffset(FONT_NORMAL, str, 106);\n    AddTextPrinterParameterized(RELEARNERWIN_DESC_BATTLE, FONT_NORMAL, str, x, 41, TEXT_SKIP_DRAW, NULL);\n    if (chosenMove == LIST_CANCEL)\n    {\n         \n        CopyWindowToVram(RELEARNERWIN_DESC_BATTLE, COPYWIN_GFX);\n        return;\n    }\n    move = &gBattleMoves[chosenMove];\n    str = gTypeNames[move->type];\n    AddTextPrinterParameterized(RELEARNERWIN_DESC_BATTLE, FONT_NORMAL, str, 4, 25, TEXT_SKIP_DRAW, NULL);\n\n    x = 4 + GetStringWidth(FONT_NORMAL, gText_MoveRelearnerPP, 0);\n    ConvertIntToDecimalStringN(buffer, move->pp, STR_CONV_MODE_LEFT_ALIGN, 2);\n    AddTextPrinterParameterized(RELEARNERWIN_DESC_BATTLE, FONT_NORMAL, buffer, x, 41, TEXT_SKIP_DRAW, NULL);\n\n    if (move->power < 2)\n    {\n        str = gText_ThreeDashes;\n    }\n    else\n    {\n        ConvertIntToDecimalStringN(buffer, move->power, STR_CONV_MODE_LEFT_ALIGN, 3);\n        str = buffer;\n    }\n    AddTextPrinterParameterized(RELEARNERWIN_DESC_BATTLE, FONT_NORMAL, str, 106, 25, TEXT_SKIP_DRAW, NULL);\n\n    if (move->accuracy == 0)\n    {\n        str = gText_ThreeDashes;\n    }\n    else\n    {\n        ConvertIntToDecimalStringN(buffer, move->accuracy, STR_CONV_MODE_LEFT_ALIGN, 3);\n        str = buffer;\n    }\n    AddTextPrinterParameterized(RELEARNERWIN_DESC_BATTLE, FONT_NORMAL, str, 106, 41, TEXT_SKIP_DRAW, NULL);\n\n    str = gMoveDescriptionPointers[chosenMove - 1];\n    AddTextPrinterParameterized(RELEARNERWIN_DESC_BATTLE, FONT_NARROW, str, 0, 65, 0, NULL);",
       "callsTo": [
         "AddTextPrinterParameterized",
@@ -265,6 +451,12 @@
       "returnType": "void",
       "signature": "static void MoveRelearnerMenuLoadContestMoveDescription(u32 chosenMove)",
       "paramsRaw": "u32 chosenMove",
+      "paramsList": [
+        {
+          "name": "chosenMove",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "s32 x;\n    const u8 *str;\n    const struct ContestMove *move;\n\n    MoveRelearnerShowHideHearts(chosenMove);\n    FillWindowPixelBuffer(RELEARNERWIN_DESC_CONTEST, PIXEL_FILL(1));\n    str = gText_MoveRelearnerContestMovesTitle;\n    x = GetStringCenterAlignXOffset(FONT_NORMAL, str, 128);\n    AddTextPrinterParameterized(RELEARNERWIN_DESC_CONTEST, FONT_NORMAL, str, x, 1, TEXT_SKIP_DRAW, NULL);\n\n    str = gText_MoveRelearnerAppeal;\n    x = GetStringRightAlignXOffset(FONT_NORMAL, str, 92);\n    AddTextPrinterParameterized(RELEARNERWIN_DESC_CONTEST, FONT_NORMAL, str, x, 25, TEXT_SKIP_DRAW, NULL);\n\n    str = gText_MoveRelearnerJam;\n    x = GetStringRightAlignXOffset(FONT_NORMAL, str, 92);\n    AddTextPrinterParameterized(RELEARNERWIN_DESC_CONTEST, FONT_NORMAL, str, x, 41, TEXT_SKIP_DRAW, NULL);\n\n    if (chosenMove == MENU_NOTHING_CHOSEN)\n    {\n        CopyWindowToVram(RELEARNERWIN_DESC_CONTEST, COPYWIN_GFX);\n        return;\n    }\n\n    move = &gContestMoves[chosenMove];\n    str = gContestMoveTypeTextPointers[move->contestCategory];\n    AddTextPrinterParameterized(RELEARNERWIN_DESC_CONTEST, FONT_NORMAL, str, 4, 25, TEXT_SKIP_DRAW, NULL);\n\n    str = gContestEffectDescriptionPointers[move->effect];\n    AddTextPrinterParameterized(RELEARNERWIN_DESC_CONTEST, FONT_NARROW, str, 0, 65, TEXT_SKIP_DRAW, NULL);\n\n    CopyWindowToVram(RELEARNERWIN_DESC_CONTEST, COPYWIN_GFX);",
       "callsTo": [
         "AddTextPrinterParameterized",
@@ -281,6 +473,20 @@
       "returnType": "void",
       "signature": "static void MoveRelearnerCursorCallback(s32 itemIndex, bool8 onInit, struct ListMenu *list)",
       "paramsRaw": "s32 itemIndex, bool8 onInit, struct ListMenu *list",
+      "paramsList": [
+        {
+          "name": "itemIndex",
+          "typeRaw": "s32"
+        },
+        {
+          "name": "onInit",
+          "typeRaw": "bool8"
+        },
+        {
+          "name": "list",
+          "typeRaw": "struct ListMenu *"
+        }
+      ],
       "body": "if (onInit != TRUE)\n        PlaySE(SE_SELECT);\n    MoveRelearnerLoadBattleMoveDescription(itemIndex);\n    MoveRelearnerMenuLoadContestMoveDescription(itemIndex);",
       "callsTo": [
         "MoveRelearnerLoadBattleMoveDescription",
@@ -293,6 +499,12 @@
       "returnType": "void",
       "signature": "void MoveRelearnerPrintMessage(u8 *str)",
       "paramsRaw": "u8 *str",
+      "paramsList": [
+        {
+          "name": "str",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "u8 speed;\n\n    FillWindowPixelBuffer(RELEARNERWIN_MSG, PIXEL_FILL(1));\n    gTextFlags.canABSpeedUpPrint = TRUE;\n    speed = GetPlayerTextSpeedDelay();\n    AddTextPrinterParameterized2(RELEARNERWIN_MSG, FONT_NORMAL, str, speed, NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, 3);",
       "callsTo": [
         "AddTextPrinterParameterized2",
@@ -306,6 +518,7 @@
       "returnType": "bool16",
       "signature": "bool16 MoveRelearnerRunTextPrinters(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "RunTextPrinters();\n    return IsTextPrinterActive(RELEARNERWIN_MSG);",
       "callsTo": [
         "IsTextPrinterActive",
@@ -317,6 +530,7 @@
       "returnType": "void",
       "signature": "void MoveRelearnerCreateYesNoMenu(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "CreateYesNoMenu(&sMoveRelearnerYesNoMenuTemplate, 1, 0xE, 0);",
       "callsTo": [
         "CreateYesNoMenu"
@@ -327,6 +541,24 @@
       "returnType": "s32",
       "signature": "s32 GetBoxOrPartyMonData(u16 boxId, u16 monId, s32 request, u8 *dst)",
       "paramsRaw": "u16 boxId, u16 monId, s32 request, u8 *dst",
+      "paramsList": [
+        {
+          "name": "boxId",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "monId",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "request",
+          "typeRaw": "s32"
+        },
+        {
+          "name": "dst",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "s32 ret;\n\n    if (boxId == TOTAL_BOXES_COUNT)  \n    {\n        if (request == MON_DATA_NICKNAME || request == MON_DATA_OT_NAME)\n            ret = GetMonData(&gPlayerParty[monId], request, dst);\n        else\n            ret = GetMonData(&gPlayerParty[monId], request);\n    }\n    else\n    {\n        if (request == MON_DATA_NICKNAME || request == MON_DATA_OT_NAME)\n            ret = GetAndCopyBoxMonDataAt(boxId, monId, request, dst);\n        else\n            ret = GetBoxMonDataAt(boxId, monId, request);\n    }\n\n    return ret;",
       "callsTo": [
         "GetAndCopyBoxMonDataAt",
@@ -339,6 +571,36 @@
       "returnType": "void",
       "signature": "void GetConditionMenuMonNameAndLocString(u8 *locationDst, u8 *nameDst, u16 boxId, u16 monId, u16 partyId, u16 numMons, bool8 excludesCancel)",
       "paramsRaw": "u8 *locationDst, u8 *nameDst, u16 boxId, u16 monId, u16 partyId, u16 numMons, bool8 excludesCancel",
+      "paramsList": [
+        {
+          "name": "locationDst",
+          "typeRaw": "u8 *"
+        },
+        {
+          "name": "nameDst",
+          "typeRaw": "u8 *"
+        },
+        {
+          "name": "boxId",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "monId",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "partyId",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "numMons",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "excludesCancel",
+          "typeRaw": "bool8"
+        }
+      ],
       "body": "u16 i;\n    u16 box = boxId;\n    u16 mon = monId;\n\n     \n     \n     \n    if (!excludesCancel)\n        numMons--;\n\n    if (partyId != numMons)\n    {\n        GetConditionMenuMonString(nameDst, box, mon);\n        locationDst[0] = EXT_CTRL_CODE_BEGIN;\n        locationDst[1] = EXT_CTRL_CODE_COLOR_HIGHLIGHT_SHADOW;\n        locationDst[2] = TEXT_COLOR_BLUE;\n        locationDst[3] = TEXT_COLOR_TRANSPARENT;\n        locationDst[4] = TEXT_COLOR_LIGHT_BLUE;\n        if (box == TOTAL_BOXES_COUNT)  \n            BufferConditionMenuSpacedStringN(&locationDst[5], gText_InParty, BOX_NAME_LENGTH);\n        else\n            BufferConditionMenuSpacedStringN(&locationDst[5], GetBoxNamePtr(box), BOX_NAME_LENGTH);\n    }\n    else\n    {\n        for (i = 0; i < POKEMON_NAME_LENGTH + 2; i++)\n            nameDst[i] = CHAR_SPACE;\n        nameDst[i] = EOS;\n        for (i = 0; i < BOX_NAME_LENGTH; i++)\n            locationDst[i] = CHAR_SPACE;\n        locationDst[i] = EOS;\n    }",
       "callsTo": [
         "BufferConditionMenuSpacedStringN",
@@ -351,6 +613,40 @@
       "returnType": "void",
       "signature": "void GetConditionMenuMonConditions(struct ConditionGraph *graph, u8 *numSparkles, u16 boxId, u16 monId, u16 partyId, u16 id, u16 numMons, bool8 excludesCancel)",
       "paramsRaw": "struct ConditionGraph *graph, u8 *numSparkles, u16 boxId, u16 monId, u16 partyId, u16 id, u16 numMons, bool8 excludesCancel",
+      "paramsList": [
+        {
+          "name": "graph",
+          "typeRaw": "struct ConditionGraph *"
+        },
+        {
+          "name": "numSparkles",
+          "typeRaw": "u8 *"
+        },
+        {
+          "name": "boxId",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "monId",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "partyId",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "id",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "numMons",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "excludesCancel",
+          "typeRaw": "bool8"
+        }
+      ],
       "body": "u16 i;\n\n    if (!excludesCancel)\n        numMons--;\n\n    if (partyId != numMons)\n    {\n        graph->conditions[id][CONDITION_COOL] = GetBoxOrPartyMonData(boxId, monId, MON_DATA_COOL, NULL);\n        graph->conditions[id][CONDITION_TOUGH] = GetBoxOrPartyMonData(boxId, monId, MON_DATA_TOUGH, NULL);\n        graph->conditions[id][CONDITION_SMART] = GetBoxOrPartyMonData(boxId, monId, MON_DATA_SMART, NULL);\n        graph->conditions[id][CONDITION_CUTE] = GetBoxOrPartyMonData(boxId, monId, MON_DATA_CUTE, NULL);\n        graph->conditions[id][CONDITION_BEAUTY] = GetBoxOrPartyMonData(boxId, monId, MON_DATA_BEAUTY, NULL);\n\n        numSparkles[id] = GET_NUM_CONDITION_SPARKLES(GetBoxOrPartyMonData(boxId, monId, MON_DATA_SHEEN, NULL));\n\n        ConditionGraph_CalcPositions(graph->conditions[id], graph->savedPositions[id]);\n    }\n    else\n    {\n        for (i = 0; i < CONDITION_COUNT; i++)\n        {\n            graph->conditions[id][i] = 0;\n            graph->savedPositions[id][i].x = CONDITION_GRAPH_CENTER_X;\n            graph->savedPositions[id][i].y = CONDITION_GRAPH_CENTER_Y;\n        }\n    }",
       "callsTo": [
         "ConditionGraph_CalcPositions",
@@ -363,6 +659,36 @@
       "returnType": "void",
       "signature": "void GetConditionMenuMonGfx(void *tilesDst, void *palDst, u16 boxId, u16 monId, u16 partyId, u16 numMons, bool8 excludesCancel)",
       "paramsRaw": "void *tilesDst, void *palDst, u16 boxId, u16 monId, u16 partyId, u16 numMons, bool8 excludesCancel",
+      "paramsList": [
+        {
+          "name": "tilesDst",
+          "typeRaw": "void *"
+        },
+        {
+          "name": "palDst",
+          "typeRaw": "void *"
+        },
+        {
+          "name": "boxId",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "monId",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "partyId",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "numMons",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "excludesCancel",
+          "typeRaw": "bool8"
+        }
+      ],
       "body": "if (!excludesCancel)\n        numMons--;\n\n    if (partyId != numMons)\n    {\n        u16 species = GetBoxOrPartyMonData(boxId, monId, MON_DATA_SPECIES_OR_EGG, NULL);\n        u32 trainerId = GetBoxOrPartyMonData(boxId, monId, MON_DATA_OT_ID, NULL);\n        u32 personality = GetBoxOrPartyMonData(boxId, monId, MON_DATA_PERSONALITY, NULL);\n\n        LoadSpecialPokePic(&gMonFrontPicTable[species], tilesDst, species, personality, TRUE);\n        LZ77UnCompWram(GetMonSpritePalFromSpeciesAndPersonality(species, trainerId, personality), palDst);\n    }",
       "callsTo": [
         "GetBoxOrPartyMonData",
@@ -376,6 +702,12 @@
       "returnType": "bool8",
       "signature": "bool8 MoveConditionMonOnscreen(s16 *x)",
       "paramsRaw": "s16 *x",
+      "paramsList": [
+        {
+          "name": "x",
+          "typeRaw": "s16 *"
+        }
+      ],
       "body": "*x += 24;\n    if (*x > 0)\n        *x = 0;\n\n    return (*x != 0);",
       "callsTo": [],
       "lineCount": 5
@@ -384,6 +716,12 @@
       "returnType": "bool8",
       "signature": "bool8 MoveConditionMonOffscreen(s16 *x)",
       "paramsRaw": "s16 *x",
+      "paramsList": [
+        {
+          "name": "x",
+          "typeRaw": "s16 *"
+        }
+      ],
       "body": "*x -= 24;\n    if (*x < -80)\n        *x = -80;\n\n    return (*x != -80);",
       "callsTo": [],
       "lineCount": 5
@@ -392,6 +730,16 @@
       "returnType": "bool8",
       "signature": "bool8 ConditionMenu_UpdateMonEnter(struct ConditionGraph *graph, s16 *x)",
       "paramsRaw": "struct ConditionGraph *graph, s16 *x",
+      "paramsList": [
+        {
+          "name": "graph",
+          "typeRaw": "struct ConditionGraph *"
+        },
+        {
+          "name": "x",
+          "typeRaw": "s16 *"
+        }
+      ],
       "body": "bool8 graphUpdating = ConditionGraph_TryUpdate(graph);\n    bool8 monUpdating = MoveConditionMonOnscreen(x);\n\n    return (graphUpdating || monUpdating);",
       "callsTo": [
         "ConditionGraph_TryUpdate",
@@ -403,6 +751,16 @@
       "returnType": "bool8",
       "signature": "bool8 ConditionMenu_UpdateMonExit(struct ConditionGraph *graph, s16 *x)",
       "paramsRaw": "struct ConditionGraph *graph, s16 *x",
+      "paramsList": [
+        {
+          "name": "graph",
+          "typeRaw": "struct ConditionGraph *"
+        },
+        {
+          "name": "x",
+          "typeRaw": "s16 *"
+        }
+      ],
       "body": "bool8 graphUpdating = ConditionGraph_TryUpdate(graph);\n    bool8 monUpdating = MoveConditionMonOffscreen(x);\n\n    return (graphUpdating || monUpdating);",
       "callsTo": [
         "ConditionGraph_TryUpdate",
@@ -414,6 +772,20 @@
       "returnType": "void",
       "signature": "void LoadConditionMonPicTemplate(struct SpriteSheet *sheet, struct SpriteTemplate *template, struct SpritePalette *pal)",
       "paramsRaw": "struct SpriteSheet *sheet, struct SpriteTemplate *template, struct SpritePalette *pal",
+      "paramsList": [
+        {
+          "name": "sheet",
+          "typeRaw": "struct SpriteSheet *"
+        },
+        {
+          "name": "template",
+          "typeRaw": "struct SpriteTemplate *"
+        },
+        {
+          "name": "pal",
+          "typeRaw": "struct SpritePalette *"
+        }
+      ],
       "body": "struct SpriteSheet dataSheet = {NULL, MON_PIC_SIZE, TAG_CONDITION_MON};\n\n    struct SpriteTemplate dataTemplate =\n    {\n        .tileTag = TAG_CONDITION_MON,\n        .paletteTag = TAG_CONDITION_MON,\n        .oam = &sOam_ConditionMonPic,\n        .anims = gDummySpriteAnimTable,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCallbackDummy,\n    };\n\n    struct SpritePalette dataPal = {NULL, TAG_CONDITION_MON};\n\n    *sheet = dataSheet;\n    *template = dataTemplate;\n    *pal = dataPal;",
       "callsTo": [],
       "lineCount": 18
@@ -422,6 +794,20 @@
       "returnType": "void",
       "signature": "void LoadConditionSelectionIcons(struct SpriteSheet *sheets, struct SpriteTemplate *template, struct SpritePalette *pals)",
       "paramsRaw": "struct SpriteSheet *sheets, struct SpriteTemplate *template, struct SpritePalette *pals",
+      "paramsList": [
+        {
+          "name": "sheets",
+          "typeRaw": "struct SpriteSheet *"
+        },
+        {
+          "name": "template",
+          "typeRaw": "struct SpriteTemplate *"
+        },
+        {
+          "name": "pals",
+          "typeRaw": "struct SpritePalette *"
+        }
+      ],
       "body": "u8 i;\n\n    struct SpriteSheet dataSheets[] =\n    {\n        {sConditionPokeball_Gfx, 0x100, TAG_CONDITION_BALL},\n        {sConditionPokeballPlaceholder_Gfx, 0x20, TAG_CONDITION_BALL_PLACEHOLDER},\n        {gPokenavConditionCancel_Gfx, 0x100, TAG_CONDITION_CANCEL},\n        {},\n    };\n\n    struct SpritePalette dataPals[] =\n    {\n        {gPokenavConditionCancel_Pal, TAG_CONDITION_BALL},\n        {gPokenavConditionCancel_Pal + 16, TAG_CONDITION_CANCEL},\n        {},\n    };\n\n     \n    struct SpriteTemplate dataTemplate =\n    {\n        .tileTag = TAG_CONDITION_BALL,\n        .paletteTag = TAG_CONDITION_BALL,\n        .oam = &sOam_ConditionSelectionIcon,\n        .anims = sAnims_ConditionSelectionIcon,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCallbackDummy,\n    };\n\n    for (i = 0; i < ARRAY_COUNT(dataSheets); i++)\n        *(sheets++) = dataSheets[i];\n\n    *template = dataTemplate;\n\n    for (i = 0; i < ARRAY_COUNT(dataPals); i++)\n        *(pals++) = dataPals[i];",
       "callsTo": [
         "ARRAY_COUNT"
@@ -432,6 +818,16 @@
       "returnType": "void",
       "signature": "void LoadConditionSparkle(struct SpriteSheet *sheet, struct SpritePalette *pal)",
       "paramsRaw": "struct SpriteSheet *sheet, struct SpritePalette *pal",
+      "paramsList": [
+        {
+          "name": "sheet",
+          "typeRaw": "struct SpriteSheet *"
+        },
+        {
+          "name": "pal",
+          "typeRaw": "struct SpritePalette *"
+        }
+      ],
       "body": "struct SpriteSheet dataSheet = {sConditionSparkle_Pal, 0x380, TAG_CONDITION_SPARKLE};\n    struct SpritePalette dataPal = {sConditionSparkle_Gfx, TAG_CONDITION_SPARKLE};\n\n    *sheet = dataSheet;\n    *pal = dataPal;",
       "callsTo": [],
       "lineCount": 5
@@ -440,6 +836,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_ConditionSparkle_DoNextAfterDelay(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (++sprite->sDelayTimer > 60)\n    {\n        sprite->sDelayTimer = 0;\n        SetNextConditionSparkle(sprite);\n    }",
       "callsTo": [
         "SetNextConditionSparkle"
@@ -450,6 +852,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_ConditionSparkle_WaitForAllAnim(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (sprite->animEnded)\n    {\n        sprite->sDelayTimer = 0;\n        sprite->callback = SpriteCB_ConditionSparkle_DoNextAfterDelay;\n    }",
       "callsTo": [],
       "lineCount": 5
@@ -458,6 +866,12 @@
       "returnType": "void",
       "signature": "static void SetConditionSparklePosition(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "struct Sprite *mon = &gSprites[sprite->sMonSpriteId];\n\n    if (mon != NULL)\n    {\n        sprite->x = mon->x + mon->x2 + sConditionSparkleCoords[sprite->sSparkleId][0];\n        sprite->y = mon->y + mon->y2 + sConditionSparkleCoords[sprite->sSparkleId][1];\n    }\n    else\n    {\n        sprite->x = sConditionSparkleCoords[sprite->sSparkleId][0] + 40;\n        sprite->y = sConditionSparkleCoords[sprite->sSparkleId][1] + 104;\n    }",
       "callsTo": [],
       "lineCount": 12
@@ -466,6 +880,20 @@
       "returnType": "void",
       "signature": "static void InitConditionSparkles(u8 count, bool8 allowFirstShowAll, struct Sprite **sprites)",
       "paramsRaw": "u8 count, bool8 allowFirstShowAll, struct Sprite **sprites",
+      "paramsList": [
+        {
+          "name": "count",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "allowFirstShowAll",
+          "typeRaw": "bool8"
+        },
+        {
+          "name": "sprites",
+          "typeRaw": "struct Sprite **"
+        }
+      ],
       "body": "u16 i;\n\n    for (i = 0; i < MAX_CONDITION_SPARKLES; i++)\n    {\n        if (sprites[i] != NULL)\n        {\n            sprites[i]->sSparkleId = i;\n            sprites[i]->sDelayTimer = (i * 16) + 1;\n            sprites[i]->sNumExtraSparkles = count;\n            sprites[i]->sCurSparkleId = i;\n            if (!allowFirstShowAll || count != MAX_CONDITION_SPARKLES - 1)\n            {\n                sprites[i]->callback = SpriteCB_ConditionSparkle;\n            }\n            else\n            {\n                SetConditionSparklePosition(sprites[i]);\n                ShowAllConditionSparkles(sprites[i]);\n                sprites[i]->callback = SpriteCB_ConditionSparkle_WaitForAllAnim;\n                sprites[i]->invisible = FALSE;\n            }\n        }\n    }",
       "callsTo": [
         "SetConditionSparklePosition",
@@ -477,6 +905,12 @@
       "returnType": "void",
       "signature": "static void SetNextConditionSparkle(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "u16 i;\n    u8 id = sprite->sNextSparkleSpriteId;\n    for (i = 0; i < sprite->sNumExtraSparkles + 1; i++)\n    {\n        gSprites[id].sDelayTimer = (gSprites[id].sSparkleId * 16) + 1;\n        gSprites[id].callback = SpriteCB_ConditionSparkle;\n        id = gSprites[id].sNextSparkleSpriteId;\n    }",
       "callsTo": [],
       "lineCount": 8
@@ -485,6 +919,12 @@
       "returnType": "void",
       "signature": "void ResetConditionSparkleSprites(struct Sprite **sprites)",
       "paramsRaw": "struct Sprite **sprites",
+      "paramsList": [
+        {
+          "name": "sprites",
+          "typeRaw": "struct Sprite **"
+        }
+      ],
       "body": "u8 i;\n\n    for (i = 0; i < MAX_CONDITION_SPARKLES; i++)\n        sprites[i] = NULL;",
       "callsTo": [],
       "lineCount": 4
@@ -493,6 +933,20 @@
       "returnType": "void",
       "signature": "void CreateConditionSparkleSprites(struct Sprite **sprites, u8 monSpriteId, u8 _count)",
       "paramsRaw": "struct Sprite **sprites, u8 monSpriteId, u8 _count",
+      "paramsList": [
+        {
+          "name": "sprites",
+          "typeRaw": "struct Sprite **"
+        },
+        {
+          "name": "monSpriteId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "_count",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u16 i, spriteId, firstSpriteId = 0;\n    u8 count = _count;\n\n    for (i = 0; i < count + 1; i++)\n    {\n        spriteId = CreateSprite(&sSpriteTemplate_ConditionSparkle, 0, 0, 0);\n        if (spriteId != MAX_SPRITES)\n        {\n            sprites[i] = &gSprites[spriteId];\n            sprites[i]->invisible = TRUE;\n            sprites[i]->sMonSpriteId = monSpriteId;\n            if (i != 0)\n                sprites[i - 1]->sNextSparkleSpriteId = spriteId;\n            else\n                firstSpriteId = spriteId;\n        }\n        else\n        {\n            break;\n        }\n    }\n\n    sprites[count]->sNextSparkleSpriteId = firstSpriteId;\n    InitConditionSparkles(count, TRUE, sprites);",
       "callsTo": [
         "CreateSprite",
@@ -504,6 +958,12 @@
       "returnType": "void",
       "signature": "void DestroyConditionSparkleSprites(struct Sprite **sprites)",
       "paramsRaw": "struct Sprite **sprites",
+      "paramsList": [
+        {
+          "name": "sprites",
+          "typeRaw": "struct Sprite **"
+        }
+      ],
       "body": "u16 i;\n\n    for (i = 0; i < MAX_CONDITION_SPARKLES; i++)\n    {\n        if (sprites[i] != NULL)\n        {\n            DestroySprite(sprites[i]);\n            sprites[i] = NULL;\n        }\n        else\n        {\n            break;\n        }\n    }",
       "callsTo": [
         "DestroySprite"
@@ -514,6 +974,12 @@
       "returnType": "void",
       "signature": "void FreeConditionSparkles(struct Sprite **sprites)",
       "paramsRaw": "struct Sprite **sprites",
+      "paramsList": [
+        {
+          "name": "sprites",
+          "typeRaw": "struct Sprite **"
+        }
+      ],
       "body": "DestroyConditionSparkleSprites(sprites);\n    FreeSpriteTilesByTag(TAG_CONDITION_SPARKLE);\n    FreeSpritePaletteByTag(TAG_CONDITION_SPARKLE);",
       "callsTo": [
         "DestroyConditionSparkleSprites",
@@ -526,6 +992,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_ConditionSparkle(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (sprite->sDelayTimer != 0)\n    {\n        if (--sprite->sDelayTimer != 0)\n            return;\n\n        SeekSpriteAnim(sprite, 0);\n        sprite->invisible = FALSE;\n    }\n\n    SetConditionSparklePosition(sprite);\n\n     \n    if (sprite->animEnded)\n    {\n        sprite->invisible = TRUE;\n        if (sprite->sCurSparkleId == sprite->sNumExtraSparkles)\n        {\n            if (sprite->sCurSparkleId == MAX_CONDITION_SPARKLES - 1)\n            {\n                ShowAllConditionSparkles(sprite);\n                sprite->callback = SpriteCB_ConditionSparkle_WaitForAllAnim;\n            }\n            else\n            {\n                sprite->callback = SpriteCB_ConditionSparkle_DoNextAfterDelay;\n            }\n        }\n        else\n        {\n            sprite->callback = SpriteCallbackDummy;\n        }\n    }",
       "callsTo": [
         "SeekSpriteAnim",
@@ -538,6 +1010,12 @@
       "returnType": "void",
       "signature": "static void ShowAllConditionSparkles(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "u8 i, id = sprite->sNextSparkleSpriteId;\n\n    for (i = 0; i < sprite->sNumExtraSparkles + 1; i++)\n    {\n        SeekSpriteAnim(&gSprites[id], 0);\n        gSprites[id].invisible = FALSE;\n        id = gSprites[id].sNextSparkleSpriteId;\n    }",
       "callsTo": [
         "SeekSpriteAnim"
@@ -548,6 +1026,32 @@
       "returnType": "void",
       "signature": "void DrawLevelUpWindowPg1(u16 windowId, u16 *statsBefore, u16 *statsAfter, u8 bgClr, u8 fgClr, u8 shadowClr)",
       "paramsRaw": "u16 windowId, u16 *statsBefore, u16 *statsAfter, u8 bgClr, u8 fgClr, u8 shadowClr",
+      "paramsList": [
+        {
+          "name": "windowId",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "statsBefore",
+          "typeRaw": "u16 *"
+        },
+        {
+          "name": "statsAfter",
+          "typeRaw": "u16 *"
+        },
+        {
+          "name": "bgClr",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "fgClr",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "shadowClr",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u16 i, x;\n    s16 statsDiff[NUM_STATS];\n    u8 text[12];\n    u8 color[3];\n\n    FillWindowPixelBuffer(windowId, PIXEL_FILL(bgClr));\n\n    statsDiff[0] = statsAfter[STAT_HP]    - statsBefore[STAT_HP];\n    statsDiff[1] = statsAfter[STAT_ATK]   - statsBefore[STAT_ATK];\n    statsDiff[2] = statsAfter[STAT_DEF]   - statsBefore[STAT_DEF];\n    statsDiff[3] = statsAfter[STAT_SPATK] - statsBefore[STAT_SPATK];\n    statsDiff[4] = statsAfter[STAT_SPDEF] - statsBefore[STAT_SPDEF];\n    statsDiff[5] = statsAfter[STAT_SPEED] - statsBefore[STAT_SPEED];\n\n    color[0] = bgClr;\n    color[1] = fgClr;\n    color[2] = shadowClr;\n\n    for (i = 0; i < NUM_STATS; i++)\n    {\n\n        AddTextPrinterParameterized3(windowId,\n                                     FONT_NORMAL,\n                                     0,\n                                     15 * i,\n                                     color,\n                                     TEXT_SKIP_DRAW,\n                                     sLvlUpStatStrings[i]);\n\n        StringCopy(text, (statsDiff[i] >= 0) ? gText_Plus : gText_Dash);\n        AddTextPrinterParameterized3(windowId,\n                                     FONT_NORMAL,\n                                     56,\n                                     15 * i,\n                                     color,\n                                     TEXT_SKIP_DRAW,\n                                     text);\n        if (abs(statsDiff[i]) <= 9)\n            x = 18;\n        else\n            x = 12;\n\n        ConvertIntToDecimalStringN(text, abs(statsDiff[i]), STR_CONV_MODE_LEFT_ALIGN, 2);\n        AddTextPrinterParameterized3(windowId,\n                                     FONT_NORMAL,\n                                     56 + x,\n                                     15 * i,\n                                     color,\n                                     TEXT_SKIP_DRAW,\n                                     text);\n    }",
       "callsTo": [
         "AddTextPrinterParameterized3",
@@ -562,6 +1066,28 @@
       "returnType": "void",
       "signature": "void DrawLevelUpWindowPg2(u16 windowId, u16 *currStats, u8 bgClr, u8 fgClr, u8 shadowClr)",
       "paramsRaw": "u16 windowId, u16 *currStats, u8 bgClr, u8 fgClr, u8 shadowClr",
+      "paramsList": [
+        {
+          "name": "windowId",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "currStats",
+          "typeRaw": "u16 *"
+        },
+        {
+          "name": "bgClr",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "fgClr",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "shadowClr",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u16 i, numDigits, x;\n    s16 stats[NUM_STATS];\n    u8 text[12];\n    u8 color[3];\n\n    FillWindowPixelBuffer(windowId, PIXEL_FILL(bgClr));\n\n    stats[0] = currStats[STAT_HP];\n    stats[1] = currStats[STAT_ATK];\n    stats[2] = currStats[STAT_DEF];\n    stats[3] = currStats[STAT_SPATK];\n    stats[4] = currStats[STAT_SPDEF];\n    stats[5] = currStats[STAT_SPEED];\n\n    color[0] = bgClr;\n    color[1] = fgClr;\n    color[2] = shadowClr;\n\n    for (i = 0; i < NUM_STATS; i++)\n    {\n        if (stats[i] > 99)\n            numDigits = 3;\n        else if (stats[i] > 9)\n            numDigits = 2;\n        else\n            numDigits = 1;\n\n        ConvertIntToDecimalStringN(text, stats[i], STR_CONV_MODE_LEFT_ALIGN, numDigits);\n        x = 6 * (4 - numDigits);\n\n        AddTextPrinterParameterized3(windowId,\n                                     FONT_NORMAL,\n                                     0,\n                                     15 * i,\n                                     color,\n                                     TEXT_SKIP_DRAW,\n                                     sLvlUpStatStrings[i]);\n\n        AddTextPrinterParameterized3(windowId,\n                                     FONT_NORMAL,\n                                     56 + x,\n                                     15 * i,\n                                     color,\n                                     TEXT_SKIP_DRAW,\n                                     text);\n    }",
       "callsTo": [
         "AddTextPrinterParameterized3",
@@ -575,6 +1101,16 @@
       "returnType": "void",
       "signature": "void GetMonLevelUpWindowStats(struct Pokemon *mon, u16 *currStats)",
       "paramsRaw": "struct Pokemon *mon, u16 *currStats",
+      "paramsList": [
+        {
+          "name": "mon",
+          "typeRaw": "struct Pokemon *"
+        },
+        {
+          "name": "currStats",
+          "typeRaw": "u16 *"
+        }
+      ],
       "body": "currStats[STAT_HP]    = GetMonData(mon, MON_DATA_MAX_HP);\n    currStats[STAT_ATK]   = GetMonData(mon, MON_DATA_ATK);\n    currStats[STAT_DEF]   = GetMonData(mon, MON_DATA_DEF);\n    currStats[STAT_SPEED] = GetMonData(mon, MON_DATA_SPEED);\n    currStats[STAT_SPATK] = GetMonData(mon, MON_DATA_SPATK);\n    currStats[STAT_SPDEF] = GetMonData(mon, MON_DATA_SPDEF);",
       "callsTo": [
         "GetMonData"

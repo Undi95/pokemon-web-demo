@@ -6,6 +6,7 @@
       "returnType": "void",
       "signature": "void SetDexPokemonPokenavFlags(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "FlagSet(FLAG_SYS_POKEDEX_GET);\n    FlagSet(FLAG_SYS_POKEMON_GET);\n    FlagSet(FLAG_SYS_POKENAV_GET);",
       "callsTo": [
         "FlagSet"
@@ -16,6 +17,7 @@
       "returnType": "void",
       "signature": "static void BuildStartMenuActions(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sNumStartMenuActions = 0;\n\n    if (IsOverworldLinkActive() == TRUE)\n    {\n        BuildLinkModeStartMenu();\n    }\n    else if (InUnionRoom() == TRUE)\n    {\n        BuildUnionRoomStartMenu();\n    }\n    else if (GetSafariZoneFlag() == TRUE)\n    {\n        BuildSafariZoneStartMenu();\n    }\n    else if (InBattlePike())\n    {\n        BuildBattlePikeStartMenu();\n    }\n    else if (CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE)\n    {\n        BuildBattlePyramidStartMenu();\n    }\n    else if (InMultiPartnerRoom())\n    {\n        BuildMultiPartnerRoomStartMenu();\n    }\n    else\n    {\n        BuildNormalStartMenu();\n    }",
       "callsTo": [
         "BuildBattlePikeStartMenu",
@@ -38,6 +40,12 @@
       "returnType": "void",
       "signature": "static void AddStartMenuAction(u8 action)",
       "paramsRaw": "u8 action",
+      "paramsList": [
+        {
+          "name": "action",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "AppendToList(sCurrentStartMenuActions, &sNumStartMenuActions, action);",
       "callsTo": [
         "AppendToList"
@@ -48,6 +56,7 @@
       "returnType": "void",
       "signature": "static void BuildNormalStartMenu(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (FlagGet(FLAG_SYS_POKEDEX_GET) == TRUE)\n    {\n        AddStartMenuAction(MENU_ACTION_POKEDEX);\n    }\n    if (FlagGet(FLAG_SYS_POKEMON_GET) == TRUE)\n    {\n        AddStartMenuAction(MENU_ACTION_POKEMON);\n    }\n\n    AddStartMenuAction(MENU_ACTION_BAG);\n\n    if (FlagGet(FLAG_SYS_POKENAV_GET) == TRUE)\n    {\n        AddStartMenuAction(MENU_ACTION_POKENAV);\n    }\n\n    AddStartMenuAction(MENU_ACTION_PLAYER);\n    AddStartMenuAction(MENU_ACTION_SAVE);\n    AddStartMenuAction(MENU_ACTION_OPTION);\n    AddStartMenuAction(MENU_ACTION_EXIT);",
       "callsTo": [
         "AddStartMenuAction",
@@ -59,6 +68,7 @@
       "returnType": "void",
       "signature": "static void BuildSafariZoneStartMenu(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "AddStartMenuAction(MENU_ACTION_RETIRE_SAFARI);\n    AddStartMenuAction(MENU_ACTION_POKEDEX);\n    AddStartMenuAction(MENU_ACTION_POKEMON);\n    AddStartMenuAction(MENU_ACTION_BAG);\n    AddStartMenuAction(MENU_ACTION_PLAYER);\n    AddStartMenuAction(MENU_ACTION_OPTION);\n    AddStartMenuAction(MENU_ACTION_EXIT);",
       "callsTo": [
         "AddStartMenuAction"
@@ -69,6 +79,7 @@
       "returnType": "void",
       "signature": "static void BuildLinkModeStartMenu(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "AddStartMenuAction(MENU_ACTION_POKEMON);\n    AddStartMenuAction(MENU_ACTION_BAG);\n\n    if (FlagGet(FLAG_SYS_POKENAV_GET) == TRUE)\n    {\n        AddStartMenuAction(MENU_ACTION_POKENAV);\n    }\n\n    AddStartMenuAction(MENU_ACTION_PLAYER_LINK);\n    AddStartMenuAction(MENU_ACTION_OPTION);\n    AddStartMenuAction(MENU_ACTION_EXIT);",
       "callsTo": [
         "AddStartMenuAction",
@@ -80,6 +91,7 @@
       "returnType": "void",
       "signature": "static void BuildUnionRoomStartMenu(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "AddStartMenuAction(MENU_ACTION_POKEMON);\n    AddStartMenuAction(MENU_ACTION_BAG);\n\n    if (FlagGet(FLAG_SYS_POKENAV_GET) == TRUE)\n    {\n        AddStartMenuAction(MENU_ACTION_POKENAV);\n    }\n\n    AddStartMenuAction(MENU_ACTION_PLAYER);\n    AddStartMenuAction(MENU_ACTION_OPTION);\n    AddStartMenuAction(MENU_ACTION_EXIT);",
       "callsTo": [
         "AddStartMenuAction",
@@ -91,6 +103,7 @@
       "returnType": "void",
       "signature": "static void BuildBattlePikeStartMenu(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "AddStartMenuAction(MENU_ACTION_POKEDEX);\n    AddStartMenuAction(MENU_ACTION_POKEMON);\n    AddStartMenuAction(MENU_ACTION_PLAYER);\n    AddStartMenuAction(MENU_ACTION_OPTION);\n    AddStartMenuAction(MENU_ACTION_EXIT);",
       "callsTo": [
         "AddStartMenuAction"
@@ -101,6 +114,7 @@
       "returnType": "void",
       "signature": "static void BuildBattlePyramidStartMenu(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "AddStartMenuAction(MENU_ACTION_POKEMON);\n    AddStartMenuAction(MENU_ACTION_PYRAMID_BAG);\n    AddStartMenuAction(MENU_ACTION_PLAYER);\n    AddStartMenuAction(MENU_ACTION_REST_FRONTIER);\n    AddStartMenuAction(MENU_ACTION_RETIRE_FRONTIER);\n    AddStartMenuAction(MENU_ACTION_OPTION);\n    AddStartMenuAction(MENU_ACTION_EXIT);",
       "callsTo": [
         "AddStartMenuAction"
@@ -111,6 +125,7 @@
       "returnType": "void",
       "signature": "static void BuildMultiPartnerRoomStartMenu(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "AddStartMenuAction(MENU_ACTION_POKEMON);\n    AddStartMenuAction(MENU_ACTION_PLAYER);\n    AddStartMenuAction(MENU_ACTION_OPTION);\n    AddStartMenuAction(MENU_ACTION_EXIT);",
       "callsTo": [
         "AddStartMenuAction"
@@ -121,6 +136,7 @@
       "returnType": "void",
       "signature": "static void ShowSafariBallsWindow(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sSafariBallsWindowId = AddWindow(&sWindowTemplate_SafariBalls);\n    PutWindowTilemap(sSafariBallsWindowId);\n    DrawStdWindowFrame(sSafariBallsWindowId, FALSE);\n    ConvertIntToDecimalStringN(gStringVar1, gNumSafariBalls, STR_CONV_MODE_RIGHT_ALIGN, 2);\n    StringExpandPlaceholders(gStringVar4, gText_SafariBallStock);\n    AddTextPrinterParameterized(sSafariBallsWindowId, FONT_NORMAL, gStringVar4, 0, 1, TEXT_SKIP_DRAW, NULL);\n    CopyWindowToVram(sSafariBallsWindowId, COPYWIN_GFX);",
       "callsTo": [
         "AddTextPrinterParameterized",
@@ -137,6 +153,7 @@
       "returnType": "void",
       "signature": "static void ShowPyramidFloorWindow(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gSaveBlock2Ptr->frontier.curChallengeBattleNum == FRONTIER_STAGES_PER_CHALLENGE)\n        sBattlePyramidFloorWindowId = AddWindow(&sWindowTemplate_PyramidPeak);\n    else\n        sBattlePyramidFloorWindowId = AddWindow(&sWindowTemplate_PyramidFloor);\n\n    PutWindowTilemap(sBattlePyramidFloorWindowId);\n    DrawStdWindowFrame(sBattlePyramidFloorWindowId, FALSE);\n    StringCopy(gStringVar1, sPyramidFloorNames[gSaveBlock2Ptr->frontier.curChallengeBattleNum]);\n    StringExpandPlaceholders(gStringVar4, gText_BattlePyramidFloor);\n    AddTextPrinterParameterized(sBattlePyramidFloorWindowId, FONT_NORMAL, gStringVar4, 0, 1, TEXT_SKIP_DRAW, NULL);\n    CopyWindowToVram(sBattlePyramidFloorWindowId, COPYWIN_GFX);",
       "callsTo": [
         "AddTextPrinterParameterized",
@@ -153,6 +170,7 @@
       "returnType": "void",
       "signature": "static void RemoveExtraStartMenuWindows(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (GetSafariZoneFlag())\n    {\n        ClearStdWindowAndFrameToTransparent(sSafariBallsWindowId, FALSE);\n        CopyWindowToVram(sSafariBallsWindowId, COPYWIN_GFX);\n        RemoveWindow(sSafariBallsWindowId);\n    }\n    if (CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE)\n    {\n        ClearStdWindowAndFrameToTransparent(sBattlePyramidFloorWindowId, FALSE);\n        RemoveWindow(sBattlePyramidFloorWindowId);\n    }",
       "callsTo": [
         "ClearStdWindowAndFrameToTransparent",
@@ -167,6 +185,16 @@
       "returnType": "bool32",
       "signature": "static bool32 PrintStartMenuActions(s8 *pIndex, u32 count)",
       "paramsRaw": "s8 *pIndex, u32 count",
+      "paramsList": [
+        {
+          "name": "pIndex",
+          "typeRaw": "s8 *"
+        },
+        {
+          "name": "count",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "s8 index = *pIndex;\n\n    do\n    {\n        if (sStartMenuItems[sCurrentStartMenuActions[index]].func.u8_void == StartMenuPlayerNameCallback)\n        {\n            PrintPlayerNameOnWindow(GetStartMenuWindowId(), sStartMenuItems[sCurrentStartMenuActions[index]].text, 8, (index << 4) + 9);\n        }\n        else\n        {\n            StringExpandPlaceholders(gStringVar4, sStartMenuItems[sCurrentStartMenuActions[index]].text);\n            AddTextPrinterParameterized(GetStartMenuWindowId(), FONT_NORMAL, gStringVar4, 8, (index << 4) + 9, TEXT_SKIP_DRAW, NULL);\n        }\n\n        index++;\n        if (index >= sNumStartMenuActions)\n        {\n            *pIndex = index;\n            return TRUE;\n        }\n\n        count--;\n    }\n    while (count != 0);\n\n    *pIndex = index;\n    return FALSE;",
       "callsTo": [
         "AddTextPrinterParameterized",
@@ -180,6 +208,7 @@
       "returnType": "bool32",
       "signature": "static bool32 InitStartMenuStep(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s8 state = sInitStartMenuData[0];\n\n    switch (state)\n    {\n    case 0:\n        sInitStartMenuData[0]++;\n        break;\n    case 1:\n        BuildStartMenuActions();\n        sInitStartMenuData[0]++;\n        break;\n    case 2:\n        LoadMessageBoxAndBorderGfx();\n        DrawStdWindowFrame(AddStartMenuWindow(sNumStartMenuActions), FALSE);\n        sInitStartMenuData[1] = 0;\n        sInitStartMenuData[0]++;\n        break;\n    case 3:\n        if (GetSafariZoneFlag())\n            ShowSafariBallsWindow();\n        if (CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE)\n            ShowPyramidFloorWindow();\n        sInitStartMenuData[0]++;\n        break;\n    case 4:\n        if (PrintStartMenuActions(&sInitStartMenuData[1], 2))\n            sInitStartMenuData[0]++;\n        break;\n    case 5:\n        sStartMenuCursorPos = InitMenuNormal(GetStartMenuWindowId(), FONT_NORMAL, 0, 9, 16, sNumStartMenuActions, sStartMenuCursorPos);\n        CopyWindowToVram(GetStartMenuWindowId(), COPYWIN_MAP);\n        return TRUE;\n    }\n\n    return FALSE;",
       "callsTo": [
         "AddStartMenuWindow",
@@ -201,6 +230,7 @@
       "returnType": "void",
       "signature": "static void InitStartMenu(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sInitStartMenuData[0] = 0;\n    sInitStartMenuData[1] = 0;\n    while (!InitStartMenuStep())\n        ;",
       "callsTo": [
         "InitStartMenuStep"
@@ -211,6 +241,12 @@
       "returnType": "void",
       "signature": "static void StartMenuTask(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (InitStartMenuStep() == TRUE)\n        SwitchTaskToFollowupFunc(taskId);",
       "callsTo": [
         "InitStartMenuStep",
@@ -222,6 +258,12 @@
       "returnType": "void",
       "signature": "static void CreateStartMenuTask(TaskFunc followupFunc)",
       "paramsRaw": "TaskFunc followupFunc",
+      "paramsList": [
+        {
+          "name": "followupFunc",
+          "typeRaw": "TaskFunc"
+        }
+      ],
       "body": "u8 taskId;\n\n    sInitStartMenuData[0] = 0;\n    sInitStartMenuData[1] = 0;\n    taskId = CreateTask(StartMenuTask, 0x50);\n    SetTaskFuncWithFollowupFunc(taskId, StartMenuTask, followupFunc);",
       "callsTo": [
         "CreateTask",
@@ -233,6 +275,7 @@
       "returnType": "bool8",
       "signature": "static bool8 FieldCB_ReturnToFieldStartMenu(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (InitStartMenuStep() == FALSE)\n    {\n        return FALSE;\n    }\n\n    ReturnToFieldOpenStartMenu();\n    return TRUE;",
       "callsTo": [
         "InitStartMenuStep",
@@ -244,6 +287,7 @@
       "returnType": "void",
       "signature": "void ShowReturnToFieldStartMenu(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sInitStartMenuData[0] = 0;\n    sInitStartMenuData[1] = 0;\n    gFieldCallback2 = FieldCB_ReturnToFieldStartMenu;",
       "callsTo": [],
       "lineCount": 3
@@ -252,6 +296,12 @@
       "returnType": "void",
       "signature": "void Task_ShowStartMenu(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "struct Task *task = &gTasks[taskId];\n\n    switch(task->data[0])\n    {\n    case 0:\n        if (InUnionRoom() == TRUE)\n            SetUsingUnionRoomStartMenu();\n\n        gMenuCallback = HandleStartMenuInput;\n        task->data[0]++;\n        break;\n    case 1:\n        if (gMenuCallback() == TRUE)\n            DestroyTask(taskId);\n        break;\n    }",
       "callsTo": [
         "DestroyTask",
@@ -264,6 +314,7 @@
       "returnType": "void",
       "signature": "void ShowStartMenu(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!IsOverworldLinkActive())\n    {\n        FreezeObjectEvents();\n        PlayerFreeze();\n        StopPlayerAvatar();\n    }\n    CreateStartMenuTask(Task_ShowStartMenu);\n    LockPlayerFieldControls();",
       "callsTo": [
         "CreateStartMenuTask",
@@ -279,6 +330,7 @@
       "returnType": "bool8",
       "signature": "static bool8 HandleStartMenuInput(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (JOY_NEW(DPAD_UP))\n    {\n        PlaySE(SE_SELECT);\n        sStartMenuCursorPos = Menu_MoveCursor(-1);\n    }\n\n    if (JOY_NEW(DPAD_DOWN))\n    {\n        PlaySE(SE_SELECT);\n        sStartMenuCursorPos = Menu_MoveCursor(1);\n    }\n\n    if (JOY_NEW(A_BUTTON))\n    {\n        PlaySE(SE_SELECT);\n        if (sStartMenuItems[sCurrentStartMenuActions[sStartMenuCursorPos]].func.u8_void == StartMenuPokedexCallback)\n        {\n            if (GetNationalPokedexCount(FLAG_GET_SEEN) == 0)\n                return FALSE;\n        }\n\n        gMenuCallback = sStartMenuItems[sCurrentStartMenuActions[sStartMenuCursorPos]].func.u8_void;\n\n        if (gMenuCallback != StartMenuSaveCallback\n            && gMenuCallback != StartMenuExitCallback\n            && gMenuCallback != StartMenuSafariZoneRetireCallback\n            && gMenuCallback != StartMenuBattlePyramidRetireCallback)\n        {\n           FadeScreen(FADE_TO_BLACK, 0);\n        }\n\n        return FALSE;\n    }\n\n    if (JOY_NEW(START_BUTTON | B_BUTTON))\n    {\n        RemoveExtraStartMenuWindows();\n        HideStartMenu();\n        return TRUE;\n    }\n\n    return FALSE;",
       "callsTo": [
         "FadeScreen",
@@ -295,6 +347,7 @@
       "returnType": "bool8",
       "signature": "static bool8 StartMenuPokedexCallback(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!gPaletteFade.active)\n    {\n        IncrementGameStat(GAME_STAT_CHECKED_POKEDEX);\n        PlayRainStoppingSoundEffect();\n        RemoveExtraStartMenuWindows();\n        CleanupOverworldWindowsAndTilemaps();\n        SetMainCallback2(CB2_OpenPokedex);\n\n        return TRUE;\n    }\n\n    return FALSE;",
       "callsTo": [
         "CleanupOverworldWindowsAndTilemaps",
@@ -309,6 +362,7 @@
       "returnType": "bool8",
       "signature": "static bool8 StartMenuPokemonCallback(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!gPaletteFade.active)\n    {\n        PlayRainStoppingSoundEffect();\n        RemoveExtraStartMenuWindows();\n        CleanupOverworldWindowsAndTilemaps();\n        SetMainCallback2(CB2_PartyMenuFromStartMenu);  \n\n        return TRUE;\n    }\n\n    return FALSE;",
       "callsTo": [
         "CleanupOverworldWindowsAndTilemaps",
@@ -322,6 +376,7 @@
       "returnType": "bool8",
       "signature": "static bool8 StartMenuBagCallback(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!gPaletteFade.active)\n    {\n        PlayRainStoppingSoundEffect();\n        RemoveExtraStartMenuWindows();\n        CleanupOverworldWindowsAndTilemaps();\n        SetMainCallback2(CB2_BagMenuFromStartMenu);  \n\n        return TRUE;\n    }\n\n    return FALSE;",
       "callsTo": [
         "CleanupOverworldWindowsAndTilemaps",
@@ -335,6 +390,7 @@
       "returnType": "bool8",
       "signature": "static bool8 StartMenuPokeNavCallback(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!gPaletteFade.active)\n    {\n        PlayRainStoppingSoundEffect();\n        RemoveExtraStartMenuWindows();\n        CleanupOverworldWindowsAndTilemaps();\n        SetMainCallback2(CB2_InitPokeNav);   \n\n        return TRUE;\n    }\n\n    return FALSE;",
       "callsTo": [
         "CleanupOverworldWindowsAndTilemaps",
@@ -348,6 +404,7 @@
       "returnType": "bool8",
       "signature": "static bool8 StartMenuPlayerNameCallback(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!gPaletteFade.active)\n    {\n        PlayRainStoppingSoundEffect();\n        RemoveExtraStartMenuWindows();\n        CleanupOverworldWindowsAndTilemaps();\n\n        if (IsOverworldLinkActive() || InUnionRoom())\n            ShowPlayerTrainerCard(CB2_ReturnToFieldWithOpenMenu);  \n        else if (FlagGet(FLAG_SYS_FRONTIER_PASS))\n            ShowFrontierPass(CB2_ReturnToFieldWithOpenMenu);  \n        else\n            ShowPlayerTrainerCard(CB2_ReturnToFieldWithOpenMenu);  \n\n        return TRUE;\n    }\n\n    return FALSE;",
       "callsTo": [
         "CleanupOverworldWindowsAndTilemaps",
@@ -365,6 +422,7 @@
       "returnType": "bool8",
       "signature": "static bool8 StartMenuSaveCallback(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE)\n        RemoveExtraStartMenuWindows();\n\n    gMenuCallback = SaveStartCallback;  \n\n    return FALSE;",
       "callsTo": [
         "CurrentBattlePyramidLocation",
@@ -376,6 +434,7 @@
       "returnType": "bool8",
       "signature": "static bool8 StartMenuOptionCallback(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!gPaletteFade.active)\n    {\n        PlayRainStoppingSoundEffect();\n        RemoveExtraStartMenuWindows();\n        CleanupOverworldWindowsAndTilemaps();\n        SetMainCallback2(CB2_InitOptionMenu);  \n        gMain.savedCallback = CB2_ReturnToFieldWithOpenMenu;\n\n        return TRUE;\n    }\n\n    return FALSE;",
       "callsTo": [
         "CleanupOverworldWindowsAndTilemaps",
@@ -389,6 +448,7 @@
       "returnType": "bool8",
       "signature": "static bool8 StartMenuExitCallback(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "RemoveExtraStartMenuWindows();\n    HideStartMenu();  \n\n    return TRUE;",
       "callsTo": [
         "HideStartMenu",
@@ -400,6 +460,7 @@
       "returnType": "bool8",
       "signature": "static bool8 StartMenuSafariZoneRetireCallback(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "RemoveExtraStartMenuWindows();\n    HideStartMenu();\n    SafariZoneRetirePrompt();\n\n    return TRUE;",
       "callsTo": [
         "HideStartMenu",
@@ -412,6 +473,7 @@
       "returnType": "bool8",
       "signature": "static bool8 StartMenuLinkModePlayerNameCallback(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!gPaletteFade.active)\n    {\n        PlayRainStoppingSoundEffect();\n        CleanupOverworldWindowsAndTilemaps();\n        ShowTrainerCardInLink(gLocalLinkPlayerId, CB2_ReturnToFieldWithOpenMenu);\n\n        return TRUE;\n    }\n\n    return FALSE;",
       "callsTo": [
         "CleanupOverworldWindowsAndTilemaps",
@@ -424,6 +486,7 @@
       "returnType": "bool8",
       "signature": "static bool8 StartMenuBattlePyramidRetireCallback(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gMenuCallback = BattlePyramidRetireStartCallback;  \n\n    return FALSE;",
       "callsTo": [],
       "lineCount": 3
@@ -432,6 +495,7 @@
       "returnType": "void",
       "signature": "void ShowBattlePyramidStartMenu(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ClearDialogWindowAndFrameToTransparent(0, FALSE);\n    ScriptUnfreezeObjectEvents();\n    CreateStartMenuTask(Task_ShowStartMenu);\n    LockPlayerFieldControls();",
       "callsTo": [
         "ClearDialogWindowAndFrameToTransparent",
@@ -445,6 +509,7 @@
       "returnType": "bool8",
       "signature": "static bool8 StartMenuBattlePyramidBagCallback(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!gPaletteFade.active)\n    {\n        PlayRainStoppingSoundEffect();\n        RemoveExtraStartMenuWindows();\n        CleanupOverworldWindowsAndTilemaps();\n        SetMainCallback2(CB2_PyramidBagMenuFromStartMenu);\n\n        return TRUE;\n    }\n\n    return FALSE;",
       "callsTo": [
         "CleanupOverworldWindowsAndTilemaps",
@@ -458,6 +523,7 @@
       "returnType": "bool8",
       "signature": "static bool8 SaveStartCallback(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "InitSave();\n    gMenuCallback = SaveCallback;\n\n    return FALSE;",
       "callsTo": [
         "InitSave"
@@ -468,6 +534,7 @@
       "returnType": "bool8",
       "signature": "static bool8 SaveCallback(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (RunSaveCallback())\n    {\n    case SAVE_IN_PROGRESS:\n        return FALSE;\n    case SAVE_CANCELED:  \n        ClearDialogWindowAndFrameToTransparent(0, FALSE);\n        InitStartMenu();\n        gMenuCallback = HandleStartMenuInput;\n        return FALSE;\n    case SAVE_SUCCESS:\n    case SAVE_ERROR:     \n        ClearDialogWindowAndFrameToTransparent(0, TRUE);\n        ScriptUnfreezeObjectEvents();\n        UnlockPlayerFieldControls();\n        SoftResetInBattlePyramid();\n        return TRUE;\n    }\n\n    return FALSE;",
       "callsTo": [
         "ClearDialogWindowAndFrameToTransparent",
@@ -483,6 +550,7 @@
       "returnType": "bool8",
       "signature": "static bool8 BattlePyramidRetireStartCallback(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "InitBattlePyramidRetire();\n    gMenuCallback = BattlePyramidRetireCallback;\n\n    return FALSE;",
       "callsTo": [
         "InitBattlePyramidRetire"
@@ -493,6 +561,7 @@
       "returnType": "bool8",
       "signature": "static bool8 BattlePyramidRetireReturnCallback(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "InitStartMenu();\n    gMenuCallback = HandleStartMenuInput;\n\n    return FALSE;",
       "callsTo": [
         "InitStartMenu"
@@ -503,6 +572,7 @@
       "returnType": "bool8",
       "signature": "static bool8 BattlePyramidRetireCallback(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (RunSaveCallback())\n    {\n    case SAVE_SUCCESS:  \n        RemoveExtraStartMenuWindows();\n        gMenuCallback = BattlePyramidRetireReturnCallback;\n        return FALSE;\n    case SAVE_IN_PROGRESS:\n        return FALSE;\n    case SAVE_CANCELED:  \n        ClearDialogWindowAndFrameToTransparent(0, TRUE);\n        ScriptUnfreezeObjectEvents();\n        UnlockPlayerFieldControls();\n        ScriptContext_SetupScript(BattlePyramid_Retire);\n        return TRUE;\n    }\n\n    return FALSE;",
       "callsTo": [
         "ClearDialogWindowAndFrameToTransparent",
@@ -518,6 +588,7 @@
       "returnType": "void",
       "signature": "static void InitSave(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "SaveMapView();\n    sSaveDialogCallback = SaveConfirmSaveCallback;\n    sSavingComplete = FALSE;",
       "callsTo": [
         "SaveMapView"
@@ -528,6 +599,7 @@
       "returnType": "u8",
       "signature": "static u8 RunSaveCallback(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (RunTextPrintersAndIsPrinter0Active() == TRUE)\n    {\n        return SAVE_IN_PROGRESS;\n    }\n\n    sSavingComplete = FALSE;\n    return sSaveDialogCallback();",
       "callsTo": [
         "RunTextPrintersAndIsPrinter0Active"
@@ -538,6 +610,7 @@
       "returnType": "void",
       "signature": "void SaveGame(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "InitSave();\n    CreateTask(SaveGameTask, 0x50);",
       "callsTo": [
         "CreateTask",
@@ -549,6 +622,16 @@
       "returnType": "void",
       "signature": "static void ShowSaveMessage(const u8 *message, u8 (*saveCallback)(void))",
       "paramsRaw": "const u8 *message, u8 (*saveCallback)(void)",
+      "paramsList": [
+        {
+          "name": "message",
+          "typeRaw": "const u8 *"
+        },
+        {
+          "name": "saveCallback",
+          "typeRaw": "fnptr"
+        }
+      ],
       "body": "StringExpandPlaceholders(gStringVar4, message);\n    LoadMessageBoxAndFrameGfx(0, TRUE);\n    AddTextPrinterForMessage_2(TRUE);\n    sSavingComplete = TRUE;\n    sSaveDialogCallback = saveCallback;",
       "callsTo": [
         "AddTextPrinterForMessage_2",
@@ -561,6 +644,12 @@
       "returnType": "void",
       "signature": "static void SaveGameTask(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 status = RunSaveCallback();\n\n    switch (status)\n    {\n    case SAVE_CANCELED:\n    case SAVE_ERROR:\n        gSpecialVar_Result = 0;\n        break;\n    case SAVE_SUCCESS:\n        gSpecialVar_Result = status;\n        break;\n    case SAVE_IN_PROGRESS:\n        return;\n    }\n\n    DestroyTask(taskId);\n    ScriptContext_Enable();",
       "callsTo": [
         "DestroyTask",
@@ -573,6 +662,7 @@
       "returnType": "void",
       "signature": "static void HideSaveMessageWindow(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ClearDialogWindowAndFrame(0, TRUE);",
       "callsTo": [
         "ClearDialogWindowAndFrame"
@@ -583,6 +673,7 @@
       "returnType": "void",
       "signature": "static void HideSaveInfoWindow(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "RemoveSaveInfoWindow();",
       "callsTo": [
         "RemoveSaveInfoWindow"
@@ -593,6 +684,7 @@
       "returnType": "void",
       "signature": "static void SaveStartTimer(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sSaveDialogTimer = 60;",
       "callsTo": [],
       "lineCount": 1
@@ -601,6 +693,7 @@
       "returnType": "bool8",
       "signature": "static bool8 SaveSuccesTimer(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sSaveDialogTimer--;\n\n    if (JOY_HELD(A_BUTTON))\n    {\n        PlaySE(SE_SELECT);\n        return TRUE;\n    }\n    if (sSaveDialogTimer == 0)\n    {\n        return TRUE;\n    }\n\n    return FALSE;",
       "callsTo": [
         "JOY_HELD",
@@ -612,6 +705,7 @@
       "returnType": "bool8",
       "signature": "static bool8 SaveErrorTimer(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (sSaveDialogTimer != 0)\n    {\n        sSaveDialogTimer--;\n    }\n    else if (JOY_HELD(A_BUTTON))\n    {\n        return TRUE;\n    }\n\n    return FALSE;",
       "callsTo": [
         "JOY_HELD"
@@ -622,6 +716,7 @@
       "returnType": "u8",
       "signature": "static u8 SaveConfirmSaveCallback(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ClearStdWindowAndFrame(GetStartMenuWindowId(), FALSE);\n    RemoveStartMenuWindow();\n    ShowSaveInfoWindow();\n\n    if (CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE)\n    {\n        ShowSaveMessage(gText_BattlePyramidConfirmRest, SaveYesNoCallback);\n    }\n    else\n    {\n        ShowSaveMessage(gText_ConfirmSave, SaveYesNoCallback);\n    }\n\n    return SAVE_IN_PROGRESS;",
       "callsTo": [
         "ClearStdWindowAndFrame",
@@ -637,6 +732,7 @@
       "returnType": "u8",
       "signature": "static u8 SaveYesNoCallback(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "DisplayYesNoMenuDefaultYes();  \n    sSaveDialogCallback = SaveConfirmInputCallback;\n    return SAVE_IN_PROGRESS;",
       "callsTo": [
         "DisplayYesNoMenuDefaultYes"
@@ -647,6 +743,7 @@
       "returnType": "u8",
       "signature": "static u8 SaveConfirmInputCallback(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (Menu_ProcessInputNoWrapClearOnChoose())\n    {\n    case 0:  \n        switch (gSaveFileStatus)\n        {\n        case SAVE_STATUS_EMPTY:\n        case SAVE_STATUS_CORRUPT:\n            if (gDifferentSaveFile == FALSE)\n            {\n                sSaveDialogCallback = SaveFileExistsCallback;\n                return SAVE_IN_PROGRESS;\n            }\n\n            sSaveDialogCallback = SaveSavingMessageCallback;\n            return SAVE_IN_PROGRESS;\n        default:\n            sSaveDialogCallback = SaveFileExistsCallback;\n            return SAVE_IN_PROGRESS;\n        }\n    case MENU_B_PRESSED:\n    case 1:  \n        HideSaveInfoWindow();\n        HideSaveMessageWindow();\n        return SAVE_CANCELED;\n    }\n\n    return SAVE_IN_PROGRESS;",
       "callsTo": [
         "HideSaveInfoWindow",
@@ -659,6 +756,7 @@
       "returnType": "u8",
       "signature": "static u8 SaveFileExistsCallback(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gDifferentSaveFile == TRUE)\n    {\n        ShowSaveMessage(gText_DifferentSaveFile, SaveConfirmOverwriteDefaultNoCallback);\n    }\n    else\n    {\n        ShowSaveMessage(gText_AlreadySavedFile, SaveConfirmOverwriteCallback);\n    }\n\n    return SAVE_IN_PROGRESS;",
       "callsTo": [
         "ShowSaveMessage"
@@ -669,6 +767,7 @@
       "returnType": "u8",
       "signature": "static u8 SaveConfirmOverwriteDefaultNoCallback(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "DisplayYesNoMenuWithDefault(1);  \n    sSaveDialogCallback = SaveOverwriteInputCallback;\n    return SAVE_IN_PROGRESS;",
       "callsTo": [
         "DisplayYesNoMenuWithDefault"
@@ -679,6 +778,7 @@
       "returnType": "u8",
       "signature": "static u8 SaveConfirmOverwriteCallback(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "DisplayYesNoMenuDefaultYes();  \n    sSaveDialogCallback = SaveOverwriteInputCallback;\n    return SAVE_IN_PROGRESS;",
       "callsTo": [
         "DisplayYesNoMenuDefaultYes"
@@ -689,6 +789,7 @@
       "returnType": "u8",
       "signature": "static u8 SaveOverwriteInputCallback(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (Menu_ProcessInputNoWrapClearOnChoose())\n    {\n    case 0:  \n        sSaveDialogCallback = SaveSavingMessageCallback;\n        return SAVE_IN_PROGRESS;\n    case MENU_B_PRESSED:\n    case 1:  \n        HideSaveInfoWindow();\n        HideSaveMessageWindow();\n        return SAVE_CANCELED;\n    }\n\n    return SAVE_IN_PROGRESS;",
       "callsTo": [
         "HideSaveInfoWindow",
@@ -701,6 +802,7 @@
       "returnType": "u8",
       "signature": "static u8 SaveSavingMessageCallback(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ShowSaveMessage(gText_SavingDontTurnOff, SaveDoSaveCallback);\n    return SAVE_IN_PROGRESS;",
       "callsTo": [
         "ShowSaveMessage"
@@ -711,6 +813,7 @@
       "returnType": "u8",
       "signature": "static u8 SaveDoSaveCallback(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 saveStatus;\n\n    IncrementGameStat(GAME_STAT_SAVED_GAME);\n    PausePyramidChallenge();\n\n    if (gDifferentSaveFile == TRUE)\n    {\n        saveStatus = TrySavingData(SAVE_OVERWRITE_DIFFERENT_FILE);\n        gDifferentSaveFile = FALSE;\n    }\n    else\n    {\n        saveStatus = TrySavingData(SAVE_NORMAL);\n    }\n\n    if (saveStatus == SAVE_STATUS_OK)\n        ShowSaveMessage(gText_PlayerSavedGame, SaveSuccessCallback);\n    else\n        ShowSaveMessage(gText_SaveError, SaveErrorCallback);\n\n    SaveStartTimer();\n    return SAVE_IN_PROGRESS;",
       "callsTo": [
         "IncrementGameStat",
@@ -725,6 +828,7 @@
       "returnType": "u8",
       "signature": "static u8 SaveSuccessCallback(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!IsTextPrinterActive(0))\n    {\n        PlaySE(SE_SAVE);\n        sSaveDialogCallback = SaveReturnSuccessCallback;\n    }\n\n    return SAVE_IN_PROGRESS;",
       "callsTo": [
         "IsTextPrinterActive",
@@ -736,6 +840,7 @@
       "returnType": "u8",
       "signature": "static u8 SaveReturnSuccessCallback(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!IsSEPlaying() && SaveSuccesTimer())\n    {\n        HideSaveInfoWindow();\n        return SAVE_SUCCESS;\n    }\n    else\n    {\n        return SAVE_IN_PROGRESS;\n    }",
       "callsTo": [
         "HideSaveInfoWindow",
@@ -748,6 +853,7 @@
       "returnType": "u8",
       "signature": "static u8 SaveErrorCallback(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!IsTextPrinterActive(0))\n    {\n        PlaySE(SE_BOO);\n        sSaveDialogCallback = SaveReturnErrorCallback;\n    }\n\n    return SAVE_IN_PROGRESS;",
       "callsTo": [
         "IsTextPrinterActive",
@@ -759,6 +865,7 @@
       "returnType": "u8",
       "signature": "static u8 SaveReturnErrorCallback(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!SaveErrorTimer())\n    {\n        return SAVE_IN_PROGRESS;\n    }\n    else\n    {\n        HideSaveInfoWindow();\n        return SAVE_ERROR;\n    }",
       "callsTo": [
         "HideSaveInfoWindow",
@@ -770,6 +877,7 @@
       "returnType": "void",
       "signature": "static void InitBattlePyramidRetire(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sSaveDialogCallback = BattlePyramidConfirmRetireCallback;\n    sSavingComplete = FALSE;",
       "callsTo": [],
       "lineCount": 2
@@ -778,6 +886,7 @@
       "returnType": "u8",
       "signature": "static u8 BattlePyramidConfirmRetireCallback(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ClearStdWindowAndFrame(GetStartMenuWindowId(), FALSE);\n    RemoveStartMenuWindow();\n    ShowSaveMessage(gText_BattlePyramidConfirmRetire, BattlePyramidRetireYesNoCallback);\n\n    return SAVE_IN_PROGRESS;",
       "callsTo": [
         "ClearStdWindowAndFrame",
@@ -791,6 +900,7 @@
       "returnType": "u8",
       "signature": "static u8 BattlePyramidRetireYesNoCallback(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "DisplayYesNoMenuWithDefault(1);  \n    sSaveDialogCallback = BattlePyramidRetireInputCallback;\n\n    return SAVE_IN_PROGRESS;",
       "callsTo": [
         "DisplayYesNoMenuWithDefault"
@@ -801,6 +911,7 @@
       "returnType": "u8",
       "signature": "static u8 BattlePyramidRetireInputCallback(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (Menu_ProcessInputNoWrapClearOnChoose())\n    {\n    case 0:  \n        return SAVE_CANCELED;\n    case MENU_B_PRESSED:\n    case 1:  \n        HideSaveMessageWindow();\n        return SAVE_SUCCESS;\n    }\n\n    return SAVE_IN_PROGRESS;",
       "callsTo": [
         "HideSaveMessageWindow",
@@ -812,6 +923,7 @@
       "returnType": "void",
       "signature": "static void VBlankCB_LinkBattleSave(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "TransferPlttBuffer();",
       "callsTo": [
         "TransferPlttBuffer"
@@ -822,6 +934,12 @@
       "returnType": "bool32",
       "signature": "static bool32 InitSaveWindowAfterLinkBattle(u8 *state)",
       "paramsRaw": "u8 *state",
+      "paramsList": [
+        {
+          "name": "state",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "switch (*state)\n    {\n    case 0:\n        SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_MODE_0);\n        SetVBlankCallback(NULL);\n        ScanlineEffect_Stop();\n        DmaClear16(3, PLTT, PLTT_SIZE);\n        DmaFillLarge16(3, 0, (void *)VRAM, VRAM_SIZE, 0x1000);\n        break;\n    case 1:\n        ResetSpriteData();\n        ResetTasks();\n        ResetPaletteFade();\n        ScanlineEffect_Clear();\n        break;\n    case 2:\n        ResetBgsAndClearDma3BusyFlags(0);\n        InitBgsFromTemplates(0, sBgTemplates_LinkBattleSave, ARRAY_COUNT(sBgTemplates_LinkBattleSave));\n        InitWindows(sWindowTemplates_LinkBattleSave);\n        LoadUserWindowBorderGfx_(0, 8, BG_PLTT_ID(14));\n        Menu_LoadStdPalAt(BG_PLTT_ID(15));\n        break;\n    case 3:\n        ShowBg(0);\n        BlendPalettes(PALETTES_ALL, 16, RGB_BLACK);\n        SetVBlankCallback(VBlankCB_LinkBattleSave);\n        EnableInterrupts(1);\n        break;\n    case 4:\n        return TRUE;\n    }\n\n    (*state)++;\n    return FALSE;",
       "callsTo": [
         "ARRAY_COUNT",
@@ -850,6 +968,7 @@
       "returnType": "void",
       "signature": "void CB2_SetUpSaveAfterLinkBattle(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (InitSaveWindowAfterLinkBattle(&gMain.state))\n    {\n        CreateTask(Task_SaveAfterLinkBattle, 0x50);\n        SetMainCallback2(CB2_SaveAfterLinkBattle);\n    }",
       "callsTo": [
         "CreateTask",
@@ -862,6 +981,7 @@
       "returnType": "void",
       "signature": "static void CB2_SaveAfterLinkBattle(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "RunTasks();\n    UpdatePaletteFade();",
       "callsTo": [
         "RunTasks",
@@ -873,6 +993,12 @@
       "returnType": "void",
       "signature": "static void Task_SaveAfterLinkBattle(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *state = gTasks[taskId].data;\n\n    if (!gPaletteFade.active)\n    {\n        switch (*state)\n        {\n        case 0:\n            FillWindowPixelBuffer(0, PIXEL_FILL(1));\n            AddTextPrinterParameterized2(0,\n                                        FONT_NORMAL,\n                                        gText_SavingDontTurnOffPower,\n                                        TEXT_SKIP_DRAW,\n                                        NULL,\n                                        TEXT_COLOR_DARK_GRAY,\n                                        TEXT_COLOR_WHITE,\n                                        TEXT_COLOR_LIGHT_GRAY);\n            DrawTextBorderOuter(0, 8, 14);\n            PutWindowTilemap(0);\n            CopyWindowToVram(0, COPYWIN_FULL);\n            BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);\n\n            if (gWirelessCommType != 0 && InUnionRoom())\n            {\n                if (Link_AnyPartnersPlayingFRLG_JP())\n                {\n                    *state = 1;\n                }\n                else\n                {\n                    *state = 5;\n                }\n            }\n            else\n            {\n                gSoftResetDisabled = TRUE;\n                *state = 1;\n            }\n            break;\n        case 1:\n            SetContinueGameWarpStatusToDynamicWarp();\n            WriteSaveBlock2();\n            *state = 2;\n            break;\n        case 2:\n            if (WriteSaveBlock1Sector())\n            {\n                ClearContinueGameWarpStatus2();\n                *state = 3;\n                gSoftResetDisabled = FALSE;\n            }\n            break;\n        case 3:\n            BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);\n            *state = 4;\n            break;\n        case 4:\n            FreeAllWindowBuffers();\n            SetMainCallback2(gMain.savedCallback);\n            DestroyTask(taskId);\n            break;\n        case 5:\n            CreateTask(Task_LinkFullSave, 5);\n            *state = 6;\n            break;\n        case 6:\n            if (!FuncIsActiveTask(Task_LinkFullSave))\n            {\n                *state = 3;\n            }\n            break;\n        }\n    }",
       "callsTo": [
         "AddTextPrinterParameterized2",
@@ -900,6 +1026,7 @@
       "returnType": "void",
       "signature": "static void ShowSaveInfoWindow(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "struct WindowTemplate saveInfoWindow = sSaveInfoWindowTemplate;\n    u8 gender;\n    u8 color;\n    u32 xOffset;\n    u32 yOffset;\n\n    if (!FlagGet(FLAG_SYS_POKEDEX_GET))\n    {\n        saveInfoWindow.height -= 2;\n    }\n\n    sSaveInfoWindowId = AddWindow(&saveInfoWindow);\n    DrawStdWindowFrame(sSaveInfoWindowId, FALSE);\n\n    gender = gSaveBlock2Ptr->playerGender;\n    color = TEXT_COLOR_RED;   \n\n    if (gender == MALE)\n    {\n        color = TEXT_COLOR_BLUE;\n    }\n\n     \n    yOffset = 1;\n    BufferSaveMenuText(SAVE_MENU_LOCATION, gStringVar4, TEXT_COLOR_GREEN);\n    AddTextPrinterParameterized(sSaveInfoWindowId, FONT_NORMAL, gStringVar4, 0, yOffset, TEXT_SKIP_DRAW, NULL);\n\n     \n    yOffset += 16;\n    AddTextPrinterParameterized(sSaveInfoWindowId, FONT_NORMAL, gText_SavingPlayer, 0, yOffset, TEXT_SKIP_DRAW, NULL);\n    BufferSaveMenuText(SAVE_MENU_NAME, gStringVar4, color);\n    xOffset = GetStringRightAlignXOffset(FONT_NORMAL, gStringVar4, 0x70);\n    PrintPlayerNameOnWindow(sSaveInfoWindowId, gStringVar4, xOffset, yOffset);\n\n     \n    yOffset += 16;\n    AddTextPrinterParameterized(sSaveInfoWindowId, FONT_NORMAL, gText_SavingBadges, 0, yOffset, TEXT_SKIP_DRAW, NULL);\n    BufferSaveMenuText(SAVE_MENU_BADGES, gStringVar4, color);\n    xOffset = GetStringRightAlignXOffset(FONT_NORMAL, gStringVar4, 0x70);\n    AddTextPrinterParameterized(sSaveInfoWindowId, FONT_NORMAL, gStringVar4, xOffset, yOffset, TEXT_SKIP_DRAW, NULL);\n\n    if (FlagGet(FLAG_SYS_POKEDEX_GET) == TRUE)\n    {\n         \n        yOffset += 16;\n        AddTextPrinterParameterized(sSaveInfoWindowId, FONT_NORMAL, gText_SavingPokedex, 0, yOffset, TEXT_SKIP_DRAW, NULL);\n        BufferSaveMenuText(SAVE_MENU_CAUGHT, gStringVar4, color);\n        xOffset = GetStringRightAlignXOffset(FONT_NORMAL, gStringVar4, 0x70);\n        AddTextPrinterParameterized(sSaveInfoWindowId, FONT_NORMAL, gStringVar4, xOffset, yOffset, TEXT_SKIP_DRAW, NULL);\n    }\n\n     \n    yOffset += 16;\n    AddTextPrinterParameterized(sSaveInfoWindowId, FONT_NORMAL, gText_SavingTime, 0, yOffset, TEXT_SKIP_DRAW, NULL);\n    BufferSaveMenuText(SAVE_MENU_PLAY_TIME, gStringVar4, color);\n    xOffset = GetStringRightAlignXOffset(FONT_NORMAL, gStringVar4, 0x70);\n    AddTextPrinterParameterized(sSaveInfoWindowId, FONT_NORMAL, gStringVar4, xOffset, yOffset, TEXT_SKIP_DRAW, NULL);\n\n    CopyWindowToVram(sSaveInfoWindowId, COPYWIN_GFX);",
       "callsTo": [
         "AddTextPrinterParameterized",
@@ -917,6 +1044,7 @@
       "returnType": "void",
       "signature": "static void RemoveSaveInfoWindow(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ClearStdWindowAndFrame(sSaveInfoWindowId, FALSE);\n    RemoveWindow(sSaveInfoWindowId);",
       "callsTo": [
         "ClearStdWindowAndFrame",
@@ -928,6 +1056,12 @@
       "returnType": "void",
       "signature": "static void Task_WaitForBattleTowerLinkSave(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (!FuncIsActiveTask(Task_LinkFullSave))\n    {\n        DestroyTask(taskId);\n        ScriptContext_Enable();\n    }",
       "callsTo": [
         "DestroyTask",
@@ -940,6 +1074,7 @@
       "returnType": "void",
       "signature": "void SaveForBattleTowerLink(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 taskId = CreateTask(Task_LinkFullSave, 5);\n    gTasks[taskId].tInBattleTower = TRUE;\n    gTasks[CreateTask(Task_WaitForBattleTowerLinkSave, 6)].data[1] = taskId;",
       "callsTo": [
         "CreateTask"
@@ -950,6 +1085,7 @@
       "returnType": "void",
       "signature": "static void HideStartMenuWindow(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ClearStdWindowAndFrame(GetStartMenuWindowId(), TRUE);\n    RemoveStartMenuWindow();\n    ScriptUnfreezeObjectEvents();\n    UnlockPlayerFieldControls();",
       "callsTo": [
         "ClearStdWindowAndFrame",
@@ -964,6 +1100,7 @@
       "returnType": "void",
       "signature": "void HideStartMenu(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "PlaySE(SE_SELECT);\n    HideStartMenuWindow();",
       "callsTo": [
         "HideStartMenuWindow",
@@ -975,6 +1112,20 @@
       "returnType": "void",
       "signature": "void AppendToList(u8 *list, u8 *pos, u8 newEntry)",
       "paramsRaw": "u8 *list, u8 *pos, u8 newEntry",
+      "paramsList": [
+        {
+          "name": "list",
+          "typeRaw": "u8 *"
+        },
+        {
+          "name": "pos",
+          "typeRaw": "u8 *"
+        },
+        {
+          "name": "newEntry",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "list[*pos] = newEntry;\n    (*pos)++;",
       "callsTo": [],
       "lineCount": 2

@@ -6,6 +6,16 @@
       "returnType": "bool32",
       "signature": "bool32 WonderCard_Init(struct WonderCard *card, struct WonderCardMetadata *metadata)",
       "paramsRaw": "struct WonderCard *card, struct WonderCardMetadata *metadata",
+      "paramsList": [
+        {
+          "name": "card",
+          "typeRaw": "struct WonderCard *"
+        },
+        {
+          "name": "metadata",
+          "typeRaw": "struct WonderCardMetadata *"
+        }
+      ],
       "body": "if (card == NULL || metadata == NULL)\n        return FALSE;\n    sWonderCardData = AllocZeroed(sizeof(*sWonderCardData));\n    if (sWonderCardData == NULL)\n        return FALSE;\n    sWonderCardData->card = *card;\n    sWonderCardData->cardMetadata = *metadata;\n    if (sWonderCardData->card.bgType >= NUM_WONDER_BGS)\n        sWonderCardData->card.bgType = 0;\n    if (sWonderCardData->card.type >= CARD_TYPE_COUNT)\n        sWonderCardData->card.type = 0;\n    if (sWonderCardData->card.maxStamps > MAX_STAMP_CARD_STAMPS)\n        sWonderCardData->card.maxStamps = 0;\n    sWonderCardData->gfx = &sCardGraphics[sWonderCardData->card.bgType];\n    return TRUE;",
       "callsTo": [
         "AllocZeroed"
@@ -16,6 +26,7 @@
       "returnType": "void",
       "signature": "void WonderCard_Destroy(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (sWonderCardData != NULL)\n    {\n        *sWonderCardData = (struct WonderCardData){};\n        FREE_AND_SET_NULL(sWonderCardData);\n    }",
       "callsTo": [
         "FREE_AND_SET_NULL"
@@ -26,6 +37,7 @@
       "returnType": "s32",
       "signature": "s32 WonderCard_Enter(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (sWonderCardData == NULL)\n        return -1;\n    switch(sWonderCardData->enterExitState)\n    {\n    case 0:\n        BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);\n        break;\n    case 1:\n        if (UpdatePaletteFade())\n            return 0;\n        break;\n    case 2:\n        FillBgTilemapBufferRect_Palette0(0, 0x000, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT);\n        FillBgTilemapBufferRect_Palette0(1, 0x000, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT);\n        FillBgTilemapBufferRect_Palette0(2, 0x000, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT);\n        CopyBgTilemapBufferToVram(0);\n        CopyBgTilemapBufferToVram(1);\n        CopyBgTilemapBufferToVram(2);\n        DecompressAndCopyTileDataToVram(2, sWonderCardData->gfx->tiles, 0, 0x008, 0);\n        sWonderCardData->windowIds[CARD_WIN_HEADER] = AddWindow(&sCard_WindowTemplates[CARD_WIN_HEADER]);\n        sWonderCardData->windowIds[CARD_WIN_BODY] = AddWindow(&sCard_WindowTemplates[CARD_WIN_BODY]);\n        sWonderCardData->windowIds[CARD_WIN_FOOTER] = AddWindow(&sCard_WindowTemplates[CARD_WIN_FOOTER]);\n        break;\n    case 3:\n        if (FreeTempTileDataBuffersIfPossible())\n            return 0;\n        LoadPalette(GetTextWindowPalette(1), BG_PLTT_ID(2), PLTT_SIZE_4BPP);\n        gPaletteFade.bufferTransferDisabled = TRUE;\n        LoadPalette(sWonderCardData->gfx->pal, BG_PLTT_ID(1), PLTT_SIZE_4BPP);\n        LZ77UnCompWram(sWonderCardData->gfx->map, sWonderCardData->bgTilemapBuffer);\n        CopyRectToBgTilemapBufferRect(2, sWonderCardData->bgTilemapBuffer, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT, 1, 0x008, 0);\n        CopyBgTilemapBufferToVram(2);\n        break;\n    case 4:\n        BufferCardText();\n        break;\n    case 5:\n        DrawCardWindow(CARD_WIN_HEADER);\n        DrawCardWindow(CARD_WIN_BODY);\n        DrawCardWindow(CARD_WIN_FOOTER);\n        CopyBgTilemapBufferToVram(1);\n        break;\n    case 6:\n        LoadMonIconPalettes();\n        break;\n    case 7:\n        ShowBg(1);\n        ShowBg(2);\n        gPaletteFade.bufferTransferDisabled = FALSE;\n        CreateCardSprites();\n        BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);\n        UpdatePaletteFade();\n        break;\n    default:\n        if (UpdatePaletteFade())\n            return 0;\n        sWonderCardData->enterExitState = 0;\n        return 1;\n    }\n    sWonderCardData->enterExitState++;\n    return 0;",
       "callsTo": [
         "AddWindow",
@@ -52,6 +64,12 @@
       "returnType": "s32",
       "signature": "s32 WonderCard_Exit(bool32 useCancel)",
       "paramsRaw": "bool32 useCancel",
+      "paramsList": [
+        {
+          "name": "useCancel",
+          "typeRaw": "bool32"
+        }
+      ],
       "body": "if (sWonderCardData == NULL)\n        return -1;\n    switch (sWonderCardData->enterExitState)\n    {\n    case 0:\n        BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);\n        break;\n    case 1:\n        if (UpdatePaletteFade())\n            return 0;\n        break;\n    case 2:\n        FillBgTilemapBufferRect_Palette0(0, 0x000, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT);\n        FillBgTilemapBufferRect_Palette0(1, 0x000, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT);\n        FillBgTilemapBufferRect_Palette0(2, 0x000, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT);\n        CopyBgTilemapBufferToVram(0);\n        CopyBgTilemapBufferToVram(1);\n        CopyBgTilemapBufferToVram(2);\n        break;\n    case 3:\n        HideBg(1);\n        HideBg(2);\n        RemoveWindow(sWonderCardData->windowIds[CARD_WIN_FOOTER]);\n        RemoveWindow(sWonderCardData->windowIds[CARD_WIN_BODY]);\n        RemoveWindow(sWonderCardData->windowIds[CARD_WIN_HEADER]);\n        break;\n    case 4:\n        DestroyCardSprites();\n        FreeMonIconPalettes();\n        break;\n    case 5:\n        PrintMysteryGiftOrEReaderHeader(gGiftIsFromEReader, useCancel);\n        CopyBgTilemapBufferToVram(0);\n        BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);\n        break;\n    default:\n        if (UpdatePaletteFade())\n            return 0;\n        sWonderCardData->enterExitState = 0;\n        return 1;\n    }\n    sWonderCardData->enterExitState++;\n    return 0;",
       "callsTo": [
         "BeginNormalPaletteFade",
@@ -70,6 +88,7 @@
       "returnType": "void",
       "signature": "static void BufferCardText(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 i = 0;\n    u16 charsUntilStat;\n    u16 stats[3] = {0, 0, 0};\n\n     \n    memcpy(sWonderCardData->titleText, sWonderCardData->card.titleText, WONDER_CARD_TEXT_LENGTH);\n    sWonderCardData->titleText[WONDER_CARD_TEXT_LENGTH] = EOS;\n    memcpy(sWonderCardData->subtitleText, sWonderCardData->card.subtitleText, WONDER_CARD_TEXT_LENGTH);\n    sWonderCardData->subtitleText[WONDER_CARD_TEXT_LENGTH] = EOS;\n\n     \n    if (sWonderCardData->card.idNumber > 999999)\n        sWonderCardData->card.idNumber = 999999;\n    ConvertIntToDecimalStringN(sWonderCardData->idNumberText, sWonderCardData->card.idNumber, STR_CONV_MODE_LEFT_ALIGN, 6);\n\n     \n    for (i = 0; i < WONDER_CARD_BODY_TEXT_LINES; i++)\n    {\n        memcpy(sWonderCardData->bodyText[i], sWonderCardData->card.bodyText[i], WONDER_CARD_TEXT_LENGTH);\n        sWonderCardData->bodyText[i][WONDER_CARD_TEXT_LENGTH] = EOS;\n    }\n\n     \n    memcpy(sWonderCardData->footerLine1Text, sWonderCardData->card.footerLine1Text, WONDER_CARD_TEXT_LENGTH);\n    sWonderCardData->footerLine1Text[WONDER_CARD_TEXT_LENGTH] = EOS;\n\n     \n    switch (sWonderCardData->card.type)\n    {\n    case CARD_TYPE_GIFT:\n        memcpy(sWonderCardData->giftText, sWonderCardData->card.footerLine2Text, WONDER_CARD_TEXT_LENGTH);\n        sWonderCardData->giftText[WONDER_CARD_TEXT_LENGTH] = EOS;\n        break;\n    case CARD_TYPE_STAMP:\n        sWonderCardData->giftText[0] = EOS;\n        break;\n    case CARD_TYPE_LINK_STAT:\n        sWonderCardData->giftText[0] = EOS;\n\n         \n        stats[0] = sWonderCardData->cardMetadata.battlesWon < MAX_WONDER_CARD_STAT ? sWonderCardData->cardMetadata.battlesWon : MAX_WONDER_CARD_STAT;\n        stats[1] = sWonderCardData->cardMetadata.battlesLost < MAX_WONDER_CARD_STAT ? sWonderCardData->cardMetadata.battlesLost : MAX_WONDER_CARD_STAT;\n        stats[2] = sWonderCardData->cardMetadata.numTrades < MAX_WONDER_CARD_STAT ? sWonderCardData->cardMetadata.numTrades : MAX_WONDER_CARD_STAT;\n\n         \n        for (i = 0; i < ARRAY_COUNT(sWonderCardData->statTextData); i++)\n        {\n            memset(sWonderCardData->statTextData[i].statNumberText, EOS, sizeof(sWonderCardData->statTextData[i].statNumberText));\n            memset(sWonderCardData->statTextData[i].statText,       EOS, sizeof(sWonderCardData->statTextData[i].statText));\n        }\n\n         \n        for (i = 0, charsUntilStat = 0; i < WONDER_CARD_TEXT_LENGTH; i++)\n        {\n            if (sWonderCardData->card.footerLine2Text[i] != CHAR_DYNAMIC)\n            {\n                 \n                sWonderCardData->statTextData[sWonderCardData->statFooterWidth].statText[charsUntilStat] = sWonderCardData->card.footerLine2Text[i];\n                charsUntilStat++;\n            }\n            else\n            {\n                 \n                 \n                u8 id = sWonderCardData->card.footerLine2Text[i + 1];\n                if (id >= ARRAY_COUNT(stats))\n                {\n                     \n                    i += 2;\n                }\n                else\n                {\n                     \n                    ConvertIntToDecimalStringN(sWonderCardData->statTextData[sWonderCardData->statFooterWidth].statNumberText, stats[id], STR_CONV_MODE_LEADING_ZEROS, 3);\n                    sWonderCardData->statTextData[sWonderCardData->statFooterWidth].width = sWonderCardData->card.footerLine2Text[i + 2];\n                    sWonderCardData->statFooterWidth++;\n                    if (sWonderCardData->statFooterWidth >= ARRAY_COUNT(sWonderCardData->statTextData))\n                        break;\n                    charsUntilStat = 0;\n                    i += 2;\n                }\n            }\n        }\n    }",
       "callsTo": [
         "ARRAY_COUNT",
@@ -81,6 +100,12 @@
       "returnType": "void",
       "signature": "static void DrawCardWindow(u8 whichWindow)",
       "paramsRaw": "u8 whichWindow",
+      "paramsList": [
+        {
+          "name": "whichWindow",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s8 i = 0;\n    s32 windowId = sWonderCardData->windowIds[whichWindow];\n    PutWindowTilemap(windowId);\n    FillWindowPixelBuffer(windowId, 0);\n    switch (whichWindow)\n    {\n    case CARD_WIN_HEADER:\n    {\n         \n        s32 x;\n        AddTextPrinterParameterized3(windowId, FONT_SHORT_COPY_1, 0, 1, sCard_TextColorTable[sWonderCardData->gfx->titleTextPal], 0, sWonderCardData->titleText);\n        x = 160 - GetStringWidth(FONT_SHORT_COPY_1, sWonderCardData->subtitleText, GetFontAttribute(FONT_SHORT_COPY_1, FONTATTR_LETTER_SPACING));\n        if (x < 0)\n            x = 0;\n        AddTextPrinterParameterized3(windowId, FONT_SHORT_COPY_1, x, 17, sCard_TextColorTable[sWonderCardData->gfx->titleTextPal], 0, sWonderCardData->subtitleText);\n\n         \n        if (sWonderCardData->card.idNumber != 0)\n            AddTextPrinterParameterized3(windowId, FONT_NORMAL, 166, 17, sCard_TextColorTable[sWonderCardData->gfx->titleTextPal], 0, sWonderCardData->idNumberText);\n        break;\n    }\n    case CARD_WIN_BODY:\n         \n        for (; i < WONDER_CARD_BODY_TEXT_LINES; i++)\n            AddTextPrinterParameterized3(windowId, FONT_SHORT_COPY_1, 0, 16 * i + 2, sCard_TextColorTable[sWonderCardData->gfx->bodyTextPal], 0, sWonderCardData->bodyText[i]);\n        break;\n    case CARD_WIN_FOOTER:\n         \n        AddTextPrinterParameterized3(windowId, FONT_SHORT_COPY_1, 0,\n                                     sCard_FooterTextOffsets[sWonderCardData->card.type],\n                                     sCard_TextColorTable[sWonderCardData->gfx->footerTextPal],\n                                     0, sWonderCardData->footerLine1Text);\n\n         \n        if (sWonderCardData->card.type != CARD_TYPE_LINK_STAT)\n        {\n             \n             \n            AddTextPrinterParameterized3(windowId, FONT_SHORT_COPY_1, 0,\n                                         16 + sCard_FooterTextOffsets[sWonderCardData->card.type],\n                                         sCard_TextColorTable[sWonderCardData->gfx->footerTextPal],\n                                         0, sWonderCardData->giftText);\n        }\n        else\n        {\n            s32 x = 0;\n            s32 y = sCard_FooterTextOffsets[sWonderCardData->card.type] + 16;\n            s32 spacing = GetFontAttribute(FONT_SHORT_COPY_1, FONTATTR_LETTER_SPACING);\n            for (; i < sWonderCardData->statFooterWidth; i++)\n            {\n                 \n                AddTextPrinterParameterized3(windowId, FONT_SHORT_COPY_1, x, y, sCard_TextColorTable[sWonderCardData->gfx->footerTextPal], 0, sWonderCardData->statTextData[i].statText);\n                if (sWonderCardData->statTextData[i].statNumberText[0] != EOS)\n                {\n                     \n                    x += GetStringWidth(FONT_SHORT_COPY_1, sWonderCardData->statTextData[i].statText, spacing);\n                    AddTextPrinterParameterized3(windowId, FONT_SHORT_COPY_1, x, y,\n                                                 sCard_TextColorTable[sWonderCardData->gfx->footerTextPal],\n                                                 0, sWonderCardData->statTextData[i].statNumberText);\n                    x += GetStringWidth(FONT_SHORT_COPY_1, sWonderCardData->statTextData[i].statNumberText, spacing) + sWonderCardData->statTextData[i].width;\n                }\n            }\n        }\n        break;\n    }\n    CopyWindowToVram(windowId, COPYWIN_FULL);",
       "callsTo": [
         "AddTextPrinterParameterized3",
@@ -96,6 +121,7 @@
       "returnType": "void",
       "signature": "static void CreateCardSprites(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i = 0;\n    sWonderCardData->monIconSpriteId = SPRITE_NONE;\n\n     \n    if (sWonderCardData->cardMetadata.iconSpecies != SPECIES_NONE)\n    {\n        sWonderCardData->monIconSpriteId = CreateMonIconNoPersonality(GetIconSpeciesNoPersonality(sWonderCardData->cardMetadata.iconSpecies), SpriteCallbackDummy, 220, 20, 0, FALSE);\n        gSprites[sWonderCardData->monIconSpriteId].oam.priority = 2;\n    }\n\n     \n    if (sWonderCardData->card.maxStamps != 0 && sWonderCardData->card.type == CARD_TYPE_STAMP)\n    {\n        LoadCompressedSpriteSheetUsingHeap(&sSpriteSheet_StampShadow);\n        LoadSpritePalette(&sSpritePalettes_StampShadow[sWonderCardData->gfx->stampShadowPal]);\n        for (; i < sWonderCardData->card.maxStamps; i++)\n        {\n            sWonderCardData->stampSpriteIds[i][0] = SPRITE_NONE;\n            sWonderCardData->stampSpriteIds[i][1] = SPRITE_NONE;\n            sWonderCardData->stampSpriteIds[i][0] = CreateSprite(&sSpriteTemplate_StampShadow, 216 - 32 * i, 144, 8);\n            if (sWonderCardData->cardMetadata.stampData[STAMP_SPECIES][i] != SPECIES_NONE)\n                sWonderCardData->stampSpriteIds[i][1] = CreateMonIconNoPersonality(GetIconSpeciesNoPersonality(sWonderCardData->cardMetadata.stampData[STAMP_SPECIES][i]),\n                                                                               SpriteCallbackDummy,\n                                                                               216 - 32 * i,\n                                                                               136, 0, 0);\n        }\n    }",
       "callsTo": [
         "CreateMonIconNoPersonality",
@@ -110,6 +136,7 @@
       "returnType": "void",
       "signature": "static void DestroyCardSprites(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i = 0;\n\n     \n    if (sWonderCardData->monIconSpriteId != SPRITE_NONE)\n        FreeAndDestroyMonIconSprite(&gSprites[sWonderCardData->monIconSpriteId]);\n\n     \n    if (sWonderCardData->card.maxStamps != 0 && sWonderCardData->card.type == CARD_TYPE_STAMP)\n    {\n        for (; i < sWonderCardData->card.maxStamps; i++)\n        {\n            if (sWonderCardData->stampSpriteIds[i][0] != SPRITE_NONE)\n                DestroySprite(&gSprites[sWonderCardData->stampSpriteIds[i][0]]);\n            if (sWonderCardData->stampSpriteIds[i][1] != SPRITE_NONE)\n                FreeAndDestroyMonIconSprite(&gSprites[sWonderCardData->stampSpriteIds[i][1]]);\n        }\n        FreeSpriteTilesByTag(TAG_STAMP_SHADOW);\n        FreeSpritePaletteByTag(TAG_STAMP_SHADOW);\n    }",
       "callsTo": [
         "DestroySprite",
@@ -123,6 +150,12 @@
       "returnType": "bool32",
       "signature": "bool32 WonderNews_Init(const struct WonderNews *news)",
       "paramsRaw": "const struct WonderNews *news",
+      "paramsList": [
+        {
+          "name": "news",
+          "typeRaw": "const struct WonderNews *"
+        }
+      ],
       "body": "if (news == NULL)\n        return FALSE;\n    sWonderNewsData = AllocZeroed(sizeof(*sWonderNewsData));\n    if (sWonderNewsData == NULL)\n        return FALSE;\n    sWonderNewsData->news = *news;\n    if (sWonderNewsData->news.bgType >= NUM_WONDER_BGS)\n        sWonderNewsData->news.bgType = 0;\n    sWonderNewsData->gfx = &sNewsGraphics[sWonderNewsData->news.bgType];\n    sWonderNewsData->arrowTaskId = TASK_NONE;\n    return TRUE;",
       "callsTo": [
         "AllocZeroed"
@@ -133,6 +166,7 @@
       "returnType": "void",
       "signature": "void WonderNews_Destroy(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (sWonderNewsData != NULL)\n    {\n        *sWonderNewsData = (struct WonderNewsData){};\n        FREE_AND_SET_NULL(sWonderNewsData);\n    }",
       "callsTo": [
         "FREE_AND_SET_NULL"
@@ -143,6 +177,7 @@
       "returnType": "s32",
       "signature": "s32 WonderNews_Enter(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (sWonderNewsData == NULL)\n        return -1;\n\n    switch (sWonderNewsData->enterExitState)\n    {\n    case 0:\n        BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);\n        break;\n    case 1:\n        if (UpdatePaletteFade())\n            return 0;\n        ChangeBgY(0, 0, BG_COORD_SET);\n        ChangeBgY(1, 0, BG_COORD_SET);\n        ChangeBgY(2, 0, BG_COORD_SET);\n        ChangeBgY(3, 0, BG_COORD_SET);\n        SetGpuReg(REG_OFFSET_WIN0H, WIN_RANGE(0, DISPLAY_WIDTH));\n        SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(26, 152));\n        SetGpuReg(REG_OFFSET_WININ, WININ_WIN0_BG_ALL | WININ_WIN0_OBJ);\n        SetGpuReg(REG_OFFSET_WINOUT, WINOUT_WIN01_BG0 | WINOUT_WIN01_BG1 | WINOUT_WIN01_BG3 | WINOUT_WIN01_OBJ);\n        SetGpuRegBits(REG_OFFSET_DISPCNT, DISPCNT_WIN0_ON);\n        break;\n    case 2:\n        FillBgTilemapBufferRect_Palette0(0, 0x000, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT);\n        FillBgTilemapBufferRect_Palette0(1, 0x000, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT);\n        FillBgTilemapBufferRect_Palette0(2, 0x000, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT);\n        FillBgTilemapBufferRect_Palette0(3, 0x000, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT);\n        CopyBgTilemapBufferToVram(0);\n        CopyBgTilemapBufferToVram(1);\n        CopyBgTilemapBufferToVram(2);\n        CopyBgTilemapBufferToVram(3);\n        DecompressAndCopyTileDataToVram(3, sWonderNewsData->gfx->tiles, 0, 8, 0);\n        sWonderNewsData->windowIds[NEWS_WIN_TITLE] = AddWindow(&sNews_WindowTemplates[NEWS_WIN_TITLE]);\n        sWonderNewsData->windowIds[NEWS_WIN_BODY] = AddWindow(&sNews_WindowTemplates[NEWS_WIN_BODY]);\n        break;\n    case 3:\n        if (FreeTempTileDataBuffersIfPossible())\n            return 0;\n        LoadPalette(GetTextWindowPalette(1), BG_PLTT_ID(2), PLTT_SIZE_4BPP);\n        gPaletteFade.bufferTransferDisabled = TRUE;\n        LoadPalette(sWonderNewsData->gfx->pal, BG_PLTT_ID(1), PLTT_SIZE_4BPP);\n        LZ77UnCompWram(sWonderNewsData->gfx->map, sWonderNewsData->bgTilemapBuffer);\n        CopyRectToBgTilemapBufferRect(1, sWonderNewsData->bgTilemapBuffer, 0, 0, DISPLAY_TILE_WIDTH, 3, 0, 0, DISPLAY_TILE_WIDTH, 3, 1, 8, 0);\n        CopyRectToBgTilemapBufferRect(3, sWonderNewsData->bgTilemapBuffer, 0, 3, DISPLAY_TILE_WIDTH, 3 + DISPLAY_TILE_HEIGHT, 0, 3, DISPLAY_TILE_WIDTH, 3 + DISPLAY_TILE_HEIGHT, 1, 8, 0);\n        CopyBgTilemapBufferToVram(1);\n        CopyBgTilemapBufferToVram(3);\n        break;\n    case 4:\n        BufferNewsText();\n        break;\n    case 5:\n        DrawNewsWindows();\n        CopyBgTilemapBufferToVram(0);\n        CopyBgTilemapBufferToVram(2);\n        break;\n    case 6:\n        ShowBg(1);\n        ShowBg(2);\n        ShowBg(3);\n        gPaletteFade.bufferTransferDisabled = FALSE;\n        sWonderNewsData->arrowTaskId = AddScrollIndicatorArrowPair(&sWonderNewsData->arrowsTemplate, &sWonderNewsData->scrollOffset);\n        BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);\n        UpdatePaletteFade();\n        break;\n    default:\n        if (UpdatePaletteFade())\n            return 0;\n        sWonderNewsData->enterExitState = 0;\n        return 1;\n    }\n\n    sWonderNewsData->enterExitState++;\n    return 0;",
       "callsTo": [
         "AddScrollIndicatorArrowPair",
@@ -172,6 +207,12 @@
       "returnType": "s32",
       "signature": "s32 WonderNews_Exit(bool32 useCancel)",
       "paramsRaw": "bool32 useCancel",
+      "paramsList": [
+        {
+          "name": "useCancel",
+          "typeRaw": "bool32"
+        }
+      ],
       "body": "if (sWonderNewsData == NULL)\n        return -1;\n    switch (sWonderNewsData->enterExitState)\n    {\n    case 0:\n        BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);\n        break;\n    case 1:\n        if (UpdatePaletteFade())\n            return 0;\n        ChangeBgY(2, 0, BG_COORD_SET);\n        SetGpuReg(REG_OFFSET_WIN0H, 0);\n        SetGpuReg(REG_OFFSET_WIN0V, 0);\n        SetGpuReg(REG_OFFSET_WININ, 0);\n        SetGpuReg(REG_OFFSET_WINOUT, 0);\n        ClearGpuRegBits(REG_OFFSET_DISPCNT, DISPCNT_WIN0_ON);\n        break;\n    case 2:\n        FillBgTilemapBufferRect_Palette0(0, 0x000, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT);\n        FillBgTilemapBufferRect_Palette0(1, 0x000, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT);\n        FillBgTilemapBufferRect_Palette0(2, 0x000, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT + 4);\n        FillBgTilemapBufferRect_Palette0(3, 0x000, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT + 4);\n        CopyBgTilemapBufferToVram(0);\n        CopyBgTilemapBufferToVram(1);\n        CopyBgTilemapBufferToVram(2);\n        CopyBgTilemapBufferToVram(3);\n        break;\n    case 3:\n        HideBg(1);\n        HideBg(2);\n        RemoveWindow(sWonderNewsData->windowIds[NEWS_WIN_BODY]);\n        RemoveWindow(sWonderNewsData->windowIds[NEWS_WIN_TITLE]);\n        break;\n    case 4:\n        ChangeBgY(2, 0, BG_COORD_SET);\n        ChangeBgY(3, 0, BG_COORD_SET);\n        if (sWonderNewsData->arrowTaskId != TASK_NONE)\n        {\n            RemoveScrollIndicatorArrowPair(sWonderNewsData->arrowTaskId);\n            sWonderNewsData->arrowTaskId = TASK_NONE;\n        }\n        break;\n    case 5:\n        PrintMysteryGiftOrEReaderHeader(gGiftIsFromEReader, useCancel);\n        MG_DrawCheckerboardPattern(3);\n        CopyBgTilemapBufferToVram(0);\n        CopyBgTilemapBufferToVram(3);\n        BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);\n        break;\n    default:\n        if (UpdatePaletteFade())\n            return 0;\n        sWonderNewsData->enterExitState = 0;\n        return 1;\n    }\n    sWonderNewsData->enterExitState++;\n    return 0;",
       "callsTo": [
         "BeginNormalPaletteFade",
@@ -193,6 +234,7 @@
       "returnType": "void",
       "signature": "void WonderNews_RemoveScrollIndicatorArrowPair(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!sWonderNewsData->arrowsRemoved && sWonderNewsData->arrowTaskId != TASK_NONE)\n    {\n        RemoveScrollIndicatorArrowPair(sWonderNewsData->arrowTaskId);\n        sWonderNewsData->arrowTaskId = TASK_NONE;\n        sWonderNewsData->arrowsRemoved = TRUE;\n    }",
       "callsTo": [
         "RemoveScrollIndicatorArrowPair"
@@ -203,6 +245,7 @@
       "returnType": "void",
       "signature": "void WonderNews_AddScrollIndicatorArrowPair(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (sWonderNewsData->arrowsRemoved)\n    {\n        sWonderNewsData->arrowTaskId = AddScrollIndicatorArrowPair(&sWonderNewsData->arrowsTemplate, &sWonderNewsData->scrollOffset);\n        sWonderNewsData->arrowsRemoved = FALSE;\n    }",
       "callsTo": [
         "AddScrollIndicatorArrowPair"
@@ -213,6 +256,12 @@
       "returnType": "u32",
       "signature": "u32 WonderNews_GetInput(u16 input)",
       "paramsRaw": "u16 input",
+      "paramsList": [
+        {
+          "name": "input",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "if (sWonderNewsData->scrolling)\n    {\n        UpdateNewsScroll();\n        return NEWS_INPUT_NONE;\n    }\n    switch (input)\n    {\n    case A_BUTTON:\n        return NEWS_INPUT_A;\n    case B_BUTTON:\n        return NEWS_INPUT_B;\n    case DPAD_UP:\n        if (sWonderNewsData->scrollOffset == 0)\n            return NEWS_INPUT_NONE;\n        if (sWonderNewsData->arrowsRemoved)\n            return NEWS_INPUT_NONE;\n        sWonderNewsData->scrollingDown = FALSE;\n        break;\n    case DPAD_DOWN:\n        if (sWonderNewsData->scrollOffset == sWonderNewsData->scrollEnd)\n            return NEWS_INPUT_NONE;\n        if (sWonderNewsData->arrowsRemoved)\n            return NEWS_INPUT_NONE;\n        sWonderNewsData->scrollingDown = TRUE;\n        break;\n    default:\n        return NEWS_INPUT_NONE;\n    }\n\n     \n    sWonderNewsData->scrolling = TRUE;\n    sWonderNewsData->scrollIncrement = 2;\n    sWonderNewsData->scrollTotal = 0;\n    if (!sWonderNewsData->scrollingDown)\n        return NEWS_INPUT_SCROLL_UP;\n    else\n        return NEWS_INPUT_SCROLL_DOWN;",
       "callsTo": [
         "UpdateNewsScroll"
@@ -223,6 +272,7 @@
       "returnType": "void",
       "signature": "static void BufferNewsText(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i = 0;\n\n     \n    memcpy(sWonderNewsData->titleText, sWonderNewsData->news.titleText, WONDER_NEWS_TEXT_LENGTH);\n    sWonderNewsData->titleText[WONDER_NEWS_TEXT_LENGTH] = EOS;\n\n     \n    for (; i < WONDER_NEWS_BODY_TEXT_LINES; i++)\n    {\n        memcpy(sWonderNewsData->bodyText[i], sWonderNewsData->news.bodyText[i], WONDER_NEWS_TEXT_LENGTH);\n        sWonderNewsData->bodyText[i][WONDER_NEWS_TEXT_LENGTH] = EOS;\n        if (i > 7 && sWonderNewsData->bodyText[i][0] != EOS)\n            sWonderNewsData->scrollEnd++;\n    }\n    sWonderNewsData->arrowsTemplate = sNews_ArrowsTemplate;\n    sWonderNewsData->arrowsTemplate.fullyDownThreshold = sWonderNewsData->scrollEnd;",
       "callsTo": [],
       "lineCount": 16
@@ -231,6 +281,7 @@
       "returnType": "void",
       "signature": "static void DrawNewsWindows(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i = 0;\n    s32 x;\n    PutWindowTilemap(sWonderNewsData->windowIds[NEWS_WIN_TITLE]);\n    PutWindowTilemap(sWonderNewsData->windowIds[NEWS_WIN_BODY]);\n    FillWindowPixelBuffer(sWonderNewsData->windowIds[NEWS_WIN_TITLE], 0);\n    FillWindowPixelBuffer(sWonderNewsData->windowIds[NEWS_WIN_BODY], 0);\n\n     \n    x = (224 - GetStringWidth(FONT_SHORT_COPY_1, sWonderNewsData->titleText, GetFontAttribute(FONT_SHORT_COPY_1, FONTATTR_LETTER_SPACING))) / 2;\n    if (x < 0)\n        x = 0;\n    AddTextPrinterParameterized3(sWonderNewsData->windowIds[NEWS_WIN_TITLE], FONT_SHORT_COPY_1, x, 6, sNews_TextColorTable[sWonderNewsData->gfx->titleTextPal], 0, sWonderNewsData->titleText);\n\n     \n    for (; i < WONDER_NEWS_BODY_TEXT_LINES; i++)\n        AddTextPrinterParameterized3(sWonderNewsData->windowIds[NEWS_WIN_BODY], FONT_SHORT_COPY_1, 0,\n                                     16 * i + 2,\n                                     sNews_TextColorTable[sWonderNewsData->gfx->bodyTextPal],\n                                     0, sWonderNewsData->bodyText[i]);\n\n    CopyWindowToVram(sWonderNewsData->windowIds[NEWS_WIN_TITLE], COPYWIN_FULL);\n    CopyWindowToVram(sWonderNewsData->windowIds[NEWS_WIN_BODY], COPYWIN_FULL);",
       "callsTo": [
         "AddTextPrinterParameterized3",
@@ -246,6 +297,7 @@
       "returnType": "void",
       "signature": "static void UpdateNewsScroll(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 bgMove = sWonderNewsData->scrollIncrement;\n    bgMove *= 256;\n    if (sWonderNewsData->scrollingDown)\n    {\n        ChangeBgY(2, bgMove, BG_COORD_ADD);\n        ChangeBgY(3, bgMove, BG_COORD_ADD);\n    }\n    else\n    {\n        ChangeBgY(2, bgMove, BG_COORD_SUB);\n        ChangeBgY(3, bgMove, BG_COORD_SUB);\n    }\n    sWonderNewsData->scrollTotal += sWonderNewsData->scrollIncrement;\n    if (sWonderNewsData->scrollTotal > 15)\n    {\n        if (sWonderNewsData->scrollingDown)\n            sWonderNewsData->scrollOffset++;\n        else\n            sWonderNewsData->scrollOffset--;\n        sWonderNewsData->scrolling = FALSE;\n        sWonderNewsData->scrollTotal = 0;\n    }",
       "callsTo": [
         "ChangeBgY"

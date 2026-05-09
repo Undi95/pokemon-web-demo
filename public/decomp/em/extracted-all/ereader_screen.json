@@ -6,6 +6,20 @@
       "returnType": "void",
       "signature": "static void EReader_Load(struct EReaderData *eReader, int size, u32 *data)",
       "paramsRaw": "struct EReaderData *eReader, int size, u32 *data",
+      "paramsList": [
+        {
+          "name": "eReader",
+          "typeRaw": "struct EReaderData *"
+        },
+        {
+          "name": "size",
+          "typeRaw": "int"
+        },
+        {
+          "name": "data",
+          "typeRaw": "u32 *"
+        }
+      ],
       "body": "volatile u16 backupIME = REG_IME;\n    REG_IME = 0;\n    gIntrTable[1] = EReaderHelper_SerialCallback;\n    gIntrTable[2] = EReaderHelper_Timer3Callback;\n    EReaderHelper_SaveRegsState();\n    EReaderHelper_ClearSendRecvMgr();\n    REG_IE |= INTR_FLAG_VCOUNT;\n    REG_IME = backupIME;\n    eReader->status = 0;\n    eReader->size = size;\n    eReader->data = data;",
       "callsTo": [
         "EReaderHelper_ClearSendRecvMgr",
@@ -17,6 +31,12 @@
       "returnType": "void",
       "signature": "static void EReader_Reset(struct EReaderData *eReader)",
       "paramsRaw": "struct EReaderData *eReader",
+      "paramsList": [
+        {
+          "name": "eReader",
+          "typeRaw": "struct EReaderData *"
+        }
+      ],
       "body": "volatile u16 backupIME = REG_IME;\n    REG_IME = 0;\n    EReaderHelper_ClearSendRecvMgr();\n    EReaderHelper_RestoreRegsState();\n    RestoreSerialTimer3IntrHandlers();\n    REG_IME = backupIME;",
       "callsTo": [
         "EReaderHelper_ClearSendRecvMgr",
@@ -29,6 +49,12 @@
       "returnType": "u8",
       "signature": "static u8 EReader_Transfer(struct EReaderData *eReader)",
       "paramsRaw": "struct EReaderData *eReader",
+      "paramsList": [
+        {
+          "name": "eReader",
+          "typeRaw": "struct EReaderData *"
+        }
+      ],
       "body": "u8 transferStatus = TRANSFER_ACTIVE;\n    eReader->status = EReaderHandleTransfer(TRUE, eReader->size, eReader->data, NULL);\n\n    if ((eReader->status & EREADER_XFER_MASK) == 0 && eReader->status & EREADER_CHECKSUM_OK_MASK)\n        transferStatus = TRANSFER_SUCCESS;\n\n    if (eReader->status & EREADER_CANCEL_KEY_MASK)\n        transferStatus = TRANSFER_CANCELED;\n\n    if (eReader->status & EREADER_CANCEL_TIMEOUT_MASK)\n        transferStatus = TRANSFER_TIMEOUT;\n\n    gShouldAdvanceLinkState = 0;\n    return transferStatus;",
       "callsTo": [
         "EReaderHandleTransfer"
@@ -39,6 +65,7 @@
       "returnType": "void",
       "signature": "static void OpenEReaderLink(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "memset(gDecompressionBuffer, 0, 0x2000);\n    gLinkType = LINKTYPE_EREADER_EM;\n    OpenLink();\n    SetSuppressLinkErrorMessage(TRUE);",
       "callsTo": [
         "OpenLink",
@@ -50,6 +77,7 @@
       "returnType": "bool32",
       "signature": "static bool32 ValidateEReaderConnection(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "volatile u16 backupIME;\n    u16 handshakes[MAX_LINK_PLAYERS];\n\n    backupIME = REG_IME;\n    REG_IME = 0;\n    *(u64 *)handshakes = *(u64 *)gLink.handshakeBuffer;\n    REG_IME = backupIME;\n\n     \n     \n    if (handshakes[0] == SLAVE_HANDSHAKE && handshakes[1] == EREADER_HANDSHAKE\n     && handshakes[2] == 0xFFFF && handshakes[3] == 0xFFFF)\n    {\n        return TRUE;\n    }\n\n    return FALSE;",
       "callsTo": [],
       "lineCount": 17
@@ -58,6 +86,7 @@
       "returnType": "bool32",
       "signature": "static bool32 IsChildConnected(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (IsLinkMaster() && GetLinkPlayerCount_2() == 2)\n        return TRUE;\n\n    return FALSE;",
       "callsTo": [
         "GetLinkPlayerCount_2",
@@ -69,6 +98,16 @@
       "returnType": "u32",
       "signature": "static u32 TryReceiveCard(u8 *state, u16 *timer)",
       "paramsRaw": "u8 *state, u16 *timer",
+      "paramsList": [
+        {
+          "name": "state",
+          "typeRaw": "u8 *"
+        },
+        {
+          "name": "timer",
+          "typeRaw": "u16 *"
+        }
+      ],
       "body": "if (*state >= RECV_STATE_EXCHANGE\n     && *state <= RECV_STATE_WAIT_DISCONNECT\n     && HasLinkErrorOccurred())\n    {\n         \n         \n        *state = 0;\n        return RECV_ERROR;\n    }\n\n    switch (*state)\n    {\n    case RECV_STATE_INIT:\n        if (IsLinkMaster() && GetLinkPlayerCount_2() > 1)\n        {\n            *state = RECV_STATE_WAIT_START;\n        }\n        else if (JOY_NEW(B_BUTTON))\n        {\n            *state = 0;\n            return RECV_CANCELED;\n        }\n        break;\n    case RECV_STATE_WAIT_START:\n        if (++(*timer) > 5)\n        {\n            *timer = 0;\n            *state = RECV_STATE_START;\n        }\n        break;\n    case RECV_STATE_START:\n        if (GetLinkPlayerCount_2() == 2)\n        {\n            PlaySE(SE_DING_DONG);\n            CheckShouldAdvanceLinkState();\n            *timer = 0;\n            *state = RECV_STATE_EXCHANGE;\n        }\n        else if (JOY_NEW(B_BUTTON))\n        {\n            *state = 0;\n            return RECV_CANCELED;\n        }\n        break;\n    case RECV_STATE_EXCHANGE:\n        if (++(*timer) > 30)\n        {\n            *state = 0;\n            return RECV_TIMEOUT;\n        }\n\n        if (IsLinkConnectionEstablished())\n        {\n            if (gReceivedRemoteLinkPlayers)\n            {\n                if (IsLinkPlayerDataExchangeComplete())\n                {\n                    *state = 0;\n                    return RECV_SUCCESS;\n                }\n                else\n                {\n                    *state = RECV_STATE_START_DISCONNECT;\n                }\n            }\n            else\n            {\n                *state = RECV_STATE_EXCHANGE;\n            }\n        }\n        break;\n    case RECV_STATE_START_DISCONNECT:\n        SetCloseLinkCallbackAndType(0);\n        *state = RECV_STATE_WAIT_DISCONNECT;\n        break;\n    case RECV_STATE_WAIT_DISCONNECT:\n        if (!gReceivedRemoteLinkPlayers)\n        {\n            *state = 0;\n            return RECV_DISCONNECTED;\n        }\n        break;\n    default:\n        return RECV_ACTIVE;\n    }\n\n    return RECV_ACTIVE;",
       "callsTo": [
         "CheckShouldAdvanceLinkState",
@@ -87,6 +126,7 @@
       "returnType": "void",
       "signature": "void CreateEReaderTask(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "struct EReaderTaskData *data;\n    u8 taskId = CreateTask(Task_EReader, 0);\n    data = (struct EReaderTaskData *)gTasks[taskId].data;\n    data->state = 0;\n    data->textState = 0;\n    data->unused4 = 0;\n    data->unused5 = 0;\n    data->unused6 = 0;\n    data->unused7 = 0;\n    data->timer = 0;\n    data->unused1 = 0;\n    data->unused2 = 0;\n    data->unused3 = 0;\n    data->status = 0;\n    data->unusedBuffer = AllocZeroed(CLIENT_MAX_MSG_SIZE);",
       "callsTo": [
         "AllocZeroed",
@@ -98,6 +138,12 @@
       "returnType": "void",
       "signature": "static void ResetTimer(u16 *timer)",
       "paramsRaw": "u16 *timer",
+      "paramsList": [
+        {
+          "name": "timer",
+          "typeRaw": "u16 *"
+        }
+      ],
       "body": "*timer = 0;",
       "callsTo": [],
       "lineCount": 1
@@ -106,6 +152,16 @@
       "returnType": "bool32",
       "signature": "static bool32 UpdateTimer(u16 *timer, u16 time)",
       "paramsRaw": "u16 *timer, u16 time",
+      "paramsList": [
+        {
+          "name": "timer",
+          "typeRaw": "u16 *"
+        },
+        {
+          "name": "time",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "if (++(*timer) > time)\n    {\n         \n        *timer = 0;\n        return TRUE;\n    }\n\n    return FALSE;",
       "callsTo": [],
       "lineCount": 8
@@ -114,6 +170,12 @@
       "returnType": "void",
       "signature": "static void Task_EReader(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "struct EReaderTaskData *data = (struct EReaderTaskData *)gTasks[taskId].data;\n    switch (data->state)\n    {\n    case ER_STATE_START:\n        if (PrintMysteryGiftMenuMessage(&data->textState, gJPText_ReceiveMysteryGiftWithEReader))\n            data->state = ER_STATE_INIT_LINK;\n        break;\n    case ER_STATE_INIT_LINK:\n        OpenEReaderLink();\n        ResetTimer(&data->timer);\n        data->state = ER_STATE_INIT_LINK_WAIT;\n        break;\n    case ER_STATE_INIT_LINK_WAIT:\n        if (UpdateTimer(&data->timer, 10))\n            data->state = ER_STATE_INIT_LINK_CHECK;\n        break;\n    case ER_STATE_INIT_LINK_CHECK:\n        if (!IsChildConnected())\n        {\n            CloseLink();\n            data->state = ER_STATE_MSG_SELECT_CONNECT;\n        }\n        else\n        {\n            data->state = ER_STATE_LOAD_CARD;\n        }\n        break;\n    case ER_STATE_MSG_SELECT_CONNECT:\n        if (PrintMysteryGiftMenuMessage(&data->textState, gJPText_SelectConnectFromEReaderMenu))\n        {\n            MG_AddMessageTextPrinter(gJPText_SelectConnectWithGBA);\n            ResetTimer(&data->timer);\n            data->state = ER_STATE_MSG_SELECT_CONNECT_WAIT;\n        }\n        break;\n    case ER_STATE_MSG_SELECT_CONNECT_WAIT:\n        if (UpdateTimer(&data->timer, 90))\n        {\n            OpenEReaderLink();\n            data->state = ER_STATE_TRY_LINK;\n        }\n        else if (JOY_NEW(B_BUTTON))\n        {\n            ResetTimer(&data->timer);\n            PlaySE(SE_SELECT);\n            data->state = ER_STATE_CANCELED_CARD_READ;\n        }\n        break;\n    case ER_STATE_TRY_LINK:\n        if (JOY_NEW(B_BUTTON))\n        {\n             \n            PlaySE(SE_SELECT);\n            CloseLink();\n            ResetTimer(&data->timer);\n            data->state = ER_STATE_CANCELED_CARD_READ;\n        }\n        else if (GetLinkPlayerCount_2() > 1)\n        {\n            ResetTimer(&data->timer);\n            CloseLink();\n            data->state = ER_STATE_INCORRECT_LINK;\n        }\n        else if (ValidateEReaderConnection())\n        {\n             \n            PlaySE(SE_SELECT);\n            CloseLink();\n            ResetTimer(&data->timer);\n            data->state = ER_STATE_CONNECTING;\n        }\n        else if (UpdateTimer(&data->timer, 10))\n        {\n             \n            CloseLink();\n            OpenEReaderLink();\n            ResetTimer(&data->timer);\n        }\n        break;\n    case ER_STATE_INCORRECT_LINK:\n        if (PrintMysteryGiftMenuMessage(&data->textState, gJPText_LinkIsIncorrect))\n            data->state = ER_STATE_MSG_SELECT_CONNECT;\n        break;\n    case ER_STATE_CONNECTING:\n        MG_AddMessageTextPrinter(gJPText_Connecting);\n         \n        EReader_Load(&gEReaderData, gMultiBootProgram_EReader_End - gMultiBootProgram_EReader_Start, (u32 *)gMultiBootProgram_EReader_Start);\n        data->state = ER_STATE_TRANSFER;\n        break;\n    case ER_STATE_TRANSFER:\n        data->status = EReader_Transfer(&gEReaderData);\n        if (data->status != TRANSFER_ACTIVE)\n            data->state = ER_STATE_TRANSFER_END;\n        break;\n    case ER_STATE_TRANSFER_END:\n        EReader_Reset(&gEReaderData);\n        if (data->status == TRANSFER_TIMEOUT)\n        {\n            data->state = ER_STATE_LINK_ERROR;\n        }\n        else if (data->status == TRANSFER_SUCCESS)\n        {\n            ResetTimer(&data->timer);\n            MG_AddMessageTextPrinter(gJPText_PleaseWaitAMoment);\n            data->state = ER_STATE_TRANSFER_SUCCESS;\n        }\n        else  \n        {\n            data->state = ER_STATE_START;\n        }\n        break;\n    case ER_STATE_TRANSFER_SUCCESS:\n        if (UpdateTimer(&data->timer, 840))\n            data->state = ER_STATE_LOAD_CARD_START;\n        break;\n    case ER_STATE_LOAD_CARD_START:\n        OpenEReaderLink();\n        MG_AddMessageTextPrinter(gJPText_AllowEReaderToLoadCard);\n        data->state = ER_STATE_LOAD_CARD;\n        break;\n    case ER_STATE_LOAD_CARD:\n        switch (TryReceiveCard(&data->textState, &data->timer))\n        {\n        case RECV_ACTIVE:\n            break;\n        case RECV_SUCCESS:\n            MG_AddMessageTextPrinter(gJPText_Connecting);\n            data->state = ER_STATE_WAIT_RECV_CARD;\n            break;\n        case RECV_CANCELED:\n            PlaySE(SE_SELECT);\n            CloseLink();\n            data->state = ER_STATE_CANCELED_CARD_READ;\n            break;\n        case RECV_TIMEOUT:\n            CloseLink();\n            data->state = ER_STATE_LINK_ERROR_TRY_AGAIN;\n            break;\n        case RECV_ERROR:\n        case RECV_DISCONNECTED:\n            CloseLink();\n            data->state = ER_STATE_LINK_ERROR;\n            break;\n        }\n        break;\n    case ER_STATE_WAIT_RECV_CARD:\n        if (HasLinkErrorOccurred())\n        {\n            CloseLink();\n            data->state = ER_STATE_LINK_ERROR;\n        }\n        else if (GetBlockReceivedStatus())\n        {\n            ResetBlockReceivedFlags();\n            data->state = ER_STATE_VALIDATE_CARD;\n        }\n        break;\n    case ER_STATE_VALIDATE_CARD:\n        data->status = ValidateTrainerHillData((struct EReaderTrainerHillSet *)gDecompressionBuffer);\n        SetCloseLinkCallbackAndType(data->status);\n        data->state = ER_STATE_WAIT_DISCONNECT;\n        break;\n    case ER_STATE_WAIT_DISCONNECT:\n        if (!gReceivedRemoteLinkPlayers)\n        {\n            if (data->status == TRUE)  \n                data->state = ER_STATE_SAVE;\n            else\n                data->state = ER_STATE_LINK_ERROR;\n        }\n        break;\n    case ER_STATE_SAVE:\n        if (TryWriteTrainerHill((struct EReaderTrainerHillSet *)&gDecompressionBuffer))\n        {\n            MG_AddMessageTextPrinter(gJPText_ConnectionComplete);\n            ResetTimer(&data->timer);\n            data->state = ER_STATE_SUCCESS_MSG;\n        }\n        else\n        {\n            data->state = ER_STATE_SAVE_FAILED;\n        }\n        break;\n    case ER_STATE_SUCCESS_MSG:\n        if (UpdateTimer(&data->timer, 120))\n        {\n            MG_AddMessageTextPrinter(gJPText_NewTrainerHasComeToHoenn);\n            PlayFanfare(MUS_OBTAIN_ITEM);\n            data->state = ER_STATE_SUCCESS_END;\n        }\n        break;\n    case ER_STATE_SUCCESS_END:\n        if (IsFanfareTaskInactive() && (JOY_NEW(A_BUTTON | B_BUTTON)))\n            data->state = ER_STATE_END;\n        break;\n    case ER_STATE_CANCELED_CARD_READ:\n        if (PrintMysteryGiftMenuMessage(&data->textState, gJPText_CardReadingHasBeenHalted))\n            data->state = ER_STATE_END;\n        break;\n    case ER_STATE_LINK_ERROR:\n        if (PrintMysteryGiftMenuMessage(&data->textState, gJPText_ConnectionErrorCheckLink))\n            data->state = ER_STATE_START;\n        break;\n    case ER_STATE_LINK_ERROR_TRY_AGAIN:\n        if (PrintMysteryGiftMenuMessage(&data->textState, gJPText_ConnectionErrorTryAgain))\n            data->state = ER_STATE_START;\n        break;\n    case ER_STATE_SAVE_FAILED:\n        if (PrintMysteryGiftMenuMessage(&data->textState, gJPText_WriteErrorUnableToSaveData))\n            data->state = ER_STATE_START;\n        break;\n    case ER_STATE_END:\n        Free(data->unusedBuffer);\n        DestroyTask(taskId);\n        SetMainCallback2(MainCB_FreeAllBuffersAndReturnToInitTitleScreen);\n        break;\n    }",
       "callsTo": [
         "CloseLink",

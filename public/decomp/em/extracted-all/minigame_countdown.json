@@ -6,6 +6,12 @@
       "returnType": "void",
       "signature": "static void Task_StaticCountdown(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data = gTasks[taskId].data;\n\n    switch (tState)\n    {\n     \n    case STATE_START:\n        sStaticCountdownFuncs[tFuncSetId][FUNC_START](taskId);\n        tState = STATE_RUN;\n        break;\n    case STATE_RUN:\n        sStaticCountdownFuncs[tFuncSetId][FUNC_RUN](taskId);\n        break;\n    case STATE_END:\n        sStaticCountdownFuncs[tFuncSetId][FUNC_FREE](taskId);\n        DestroyTask(taskId);\n        break;\n    }",
       "callsTo": [
         "DestroyTask"
@@ -16,6 +22,16 @@
       "returnType": "void",
       "signature": "static void StaticCountdown_CreateSprites(u8 taskId, s16 *data)",
       "paramsRaw": "u8 taskId, s16 *data",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "data",
+          "typeRaw": "s16 *"
+        }
+      ],
       "body": "u8 i;\n    struct Sprite *sprite;\n\n    LoadCompressedSpriteSheet(&sSpriteSheet_321Start_Static[tSpriteSheetId]);\n    LoadSpritePalette(&sSpritePalette_321Start_Static[tSpritePalId]);\n    for (i = 0; i < tNumSprites; i++)\n        tSpriteIds(i) = CreateSprite(&sSpriteTemplate_StaticCountdown[tSpriteTemplateId], tX, tY, tSubpriority);\n    for (i = 0; i < tNumSprites; i++)\n    {\n        sprite = &gSprites[tSpriteIds(i)];\n        sprite->oam.priority = tPriority;\n        sprite->invisible = TRUE;\n        sprite->sInterval = tInterval;\n        sprite->sTaskId = taskId;\n        sprite->sId = i;\n        sprite->sNumberSpriteId = tSpriteIds(0);\n    }",
       "callsTo": [
         "CreateSprite",
@@ -28,6 +44,12 @@
       "returnType": "void",
       "signature": "static void Task_StaticCountdown_Init(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data = gTasks[taskId].data;\n    tSpriteTemplateId = 0;\n    tSpriteSheetId = 0;\n    tSpritePalId = 0;\n    tInterval = 60;\n    tPriority = 0;\n    tSubpriority = 0;\n    tNumSprites = 3;\n    tX = 120;\n    tY = 88;\n    StaticCountdown_CreateSprites(taskId, data);\n\n    StartSpriteAnim(&gSprites[tSpriteIds(1)], ANIM_START_MID);\n    gSprites[tSpriteIds(1)].x2 = -32;\n\n    StartSpriteAnim(&gSprites[tSpriteIds(2)], ANIM_START_RIGHT);\n    gSprites[tSpriteIds(2)].x2 = 32;",
       "callsTo": [
         "StartSpriteAnim",
@@ -39,6 +61,12 @@
       "returnType": "void",
       "signature": "static void Task_StaticCountdown_Free(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 i = 0;\n    s16 *data = gTasks[taskId].data;\n\n    for (i = 0; i < tNumSprites; i++)\n        DestroySprite(&gSprites[tSpriteIds(i)]);\n    FreeSpriteTilesByTag(sSpriteSheet_321Start_Static[tSpriteSheetId].tag);\n    FreeSpritePaletteByTag(sSpritePalette_321Start_Static[tSpritePalId].tag);",
       "callsTo": [
         "DestroySprite",
@@ -51,6 +79,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_StaticCountdown(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "s16 *data = gTasks[sprite->sTaskId].data;\n\n    if (tTimer % tInterval != 0)\n        return;\n    if (tTimer == tPrevTime)\n        return;\n\n    tPrevTime = tTimer;\n    switch (sprite->sAnimNum)\n    {\n    case ANIM_THREE:\n        sprite->invisible = FALSE;\n    case ANIM_TWO:\n    case ANIM_ONE:\n         \n        PlaySE(SE_BALL_BOUNCE_1);\n        StartSpriteAnim(sprite, sprite->sAnimNum);\n        break;\n    case ANIM_START_LEFT:\n         \n        PlaySE(SE_PIN);\n        StartSpriteAnim(sprite, sprite->sAnimNum);\n        gSprites[tSpriteIds(1)].invisible = FALSE;\n        gSprites[tSpriteIds(2)].invisible = FALSE;\n        break;\n    case ANIM_START_LEFT + 1:  \n         \n        sprite->invisible = TRUE;\n        gSprites[tSpriteIds(1)].invisible = TRUE;\n        gSprites[tSpriteIds(2)].invisible = TRUE;\n        tState = STATE_END;\n        return;\n    }\n    sprite->sAnimNum++;",
       "callsTo": [
         "PlaySE",
@@ -62,6 +96,12 @@
       "returnType": "void",
       "signature": "static void Task_StaticCountdown_Start(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data = gTasks[taskId].data;\n    PlaySE(SE_BALL_BOUNCE_1);\n    gSprites[tSpriteIds(0)].callback = SpriteCB_StaticCountdown;\n    gSprites[tSpriteIds(0)].invisible = FALSE;\n    gTasks[taskId].tState = STATE_RUN;",
       "callsTo": [
         "PlaySE"
@@ -72,6 +112,12 @@
       "returnType": "void",
       "signature": "static void Task_StaticCountdown_Run(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u16 packet[RFU_PACKET_SIZE];\n    s16 *data = gTasks[taskId].data;\n\n    if (gReceivedRemoteLinkPlayers)\n    {\n         \n        if (gRecvCmds[0][1] == LINKCMD_COUNTDOWN)\n            tTimer = gRecvCmds[0][2];\n\n        if (GetMultiplayerId() == 0)\n        {\n             \n             \n            tLinkTimer++;\n            memset(packet, 0, sizeof(packet));\n            packet[0] = LINKCMD_COUNTDOWN;\n            packet[1] = tLinkTimer;\n            Rfu_SendPacket(packet);\n        }\n    }\n    else\n    {\n         \n        tTimer++;\n    }",
       "callsTo": [
         "GetMultiplayerId",
@@ -83,6 +129,28 @@
       "returnType": "void",
       "signature": "void StartMinigameCountdown(u16 tilesTag, u16 palTag, s16 x, s16 y, u8 subpriority)",
       "paramsRaw": "u16 tilesTag, u16 palTag, s16 x, s16 y, u8 subpriority",
+      "paramsList": [
+        {
+          "name": "tilesTag",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "palTag",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "x",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "subpriority",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 taskId = CreateTask(Task_MinigameCountdown, 80);\n    gTasks[taskId].tTilesTag = tilesTag;\n    gTasks[taskId].tPalTag = palTag;\n    gTasks[taskId].tX = x;\n    gTasks[taskId].tY = y;\n    gTasks[taskId].tSubpriority = subpriority;",
       "callsTo": [
         "CreateTask"
@@ -93,6 +161,7 @@
       "returnType": "bool32",
       "signature": "bool32 IsMinigameCountdownRunning(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return FuncIsActiveTask(Task_MinigameCountdown);",
       "callsTo": [
         "FuncIsActiveTask"
@@ -103,6 +172,12 @@
       "returnType": "void",
       "signature": "static void Task_MinigameCountdown(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data = gTasks[taskId].data;\n\n    switch (tState)\n    {\n    case 0:\n        Load321StartGfx(tTilesTag, tPalTag);\n        tSpriteId1 = CreateNumberSprite(tTilesTag, tPalTag, tX, tY, tSubpriority);\n        CreateStartSprite(tTilesTag, tPalTag, tX, tY, tSubpriority, &tSpriteId2, &tSpriteId3);\n        tState++;\n        break;\n    case 1:\n        if (!RunMinigameCountdownDigitsAnim(tSpriteId1))\n        {\n            InitStartGraphic(tSpriteId1, tSpriteId2, tSpriteId3);\n            FreeSpriteOamMatrix(&gSprites[tSpriteId1]);\n            DestroySprite(&gSprites[tSpriteId1]);\n            tState++;\n        }\n        break;\n    case 2:\n        if (!IsStartGraphicAnimRunning(tSpriteId2))\n        {\n            DestroySprite(&gSprites[tSpriteId2]);\n            DestroySprite(&gSprites[tSpriteId3]);\n            FreeSpriteTilesByTag(tTilesTag);\n            FreeSpritePaletteByTag(tPalTag);\n            DestroyTask(taskId);\n        }\n        break;\n    }",
       "callsTo": [
         "CreateNumberSprite",
@@ -123,6 +198,12 @@
       "returnType": "bool32",
       "signature": "static bool32 RunMinigameCountdownDigitsAnim(u8 spriteId)",
       "paramsRaw": "u8 spriteId",
+      "paramsList": [
+        {
+          "name": "spriteId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "struct Sprite *sprite = &gSprites[spriteId];\n\n    switch (sprite->sState)\n    {\n    case 0:\n        SetSpriteMatrixAnchor(sprite, NO_ANCHOR, 26);\n        sprite->sState++;\n         \n    case 1:\n        if (sprite->sTimer == 0)\n            PlaySE(SE_BALL_BOUNCE_2);\n\n        if (++sprite->sTimer >= 20)\n        {\n             \n            sprite->sTimer = 0;\n            StartSpriteAffineAnim(sprite, 1);\n            sprite->sState++;\n        }\n        break;\n    case 2:\n        if (sprite->affineAnimEnded)\n            sprite->sState++;\n        break;\n    case 3:\n        if (++sprite->sTimer >= 4)\n        {\n             \n            sprite->sTimer = 0;\n            sprite->sState++;\n            StartSpriteAffineAnim(sprite, 2);\n        }\n        break;\n    case 4:\n         \n        sprite->y -= 4;\n        if (++sprite->sTimer >= 8)\n        {\n            if (sprite->sAnimNum < 2)\n            {\n                 \n                StartSpriteAnim(sprite, sprite->sAnimNum + 1);\n                sprite->sTimer = 0;\n                sprite->sState++;\n            }\n            else\n            {\n                 \n                sprite->sState = 7;\n                return FALSE;\n            }\n        }\n        break;\n    case 5:\n         \n        sprite->y += 4;\n        if (++sprite->sTimer >= 8)\n        {\n             \n            sprite->sTimer = 0;\n            StartSpriteAffineAnim(sprite, 3);\n            sprite->sState++;\n        }\n        break;\n    case 6:\n        if (sprite->affineAnimEnded)\n        {\n             \n            sprite->sAnimNum++;\n            sprite->sState = 1;\n        }\n        break;\n    case 7:\n        return FALSE;\n    }\n\n    return TRUE;",
       "callsTo": [
         "PlaySE",
@@ -136,6 +217,20 @@
       "returnType": "void",
       "signature": "static void InitStartGraphic(u8 spriteId1, u8 spriteId2, u8 spriteId3)",
       "paramsRaw": "u8 spriteId1, u8 spriteId2, u8 spriteId3",
+      "paramsList": [
+        {
+          "name": "spriteId1",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "spriteId2",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "spriteId3",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "gSprites[spriteId2].y2 = -40;\n    gSprites[spriteId3].y2 = -40;\n    gSprites[spriteId2].invisible = FALSE;\n    gSprites[spriteId3].invisible = FALSE;\n    gSprites[spriteId2].callback = SpriteCB_Start;\n    gSprites[spriteId3].callback = SpriteCB_Start;",
       "callsTo": [],
       "lineCount": 6
@@ -144,6 +239,12 @@
       "returnType": "bool32",
       "signature": "static bool32 IsStartGraphicAnimRunning(u8 spriteId)",
       "paramsRaw": "u8 spriteId",
+      "paramsList": [
+        {
+          "name": "spriteId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "return gSprites[spriteId].callback == SpriteCB_Start;",
       "callsTo": [],
       "lineCount": 1
@@ -152,6 +253,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_Start(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "int y;\n    s16 *data = sprite->data;\n\n    switch (sState)\n    {\n    case 0:\n        sYSpeed = 64;\n        sY = sprite->y2 << 4;\n        sState++;\n    case 1:\n        sY += sYSpeed;\n        sYSpeed++;\n        sprite->y2 = sY >> 4;\n        if (sprite->y2 >= 0)\n        {\n            PlaySE(SE_BALL_BOUNCE_2);\n            sprite->y2 = 0;\n            sState++;\n        }\n        break;\n    case 2:\n        sTimer += 12;\n        if (sTimer >= 128)\n        {\n            PlaySE(SE_BALL_BOUNCE_2);\n            sTimer = 0;\n            sState++;\n        }\n        y = gSineTable[sTimer];\n        sprite->y2 = -(y >> 4);\n        break;\n    case 3:\n        sTimer += 16;\n        if (sTimer >= 128)\n        {\n            PlaySE(SE_BALL_BOUNCE_2);\n            sTimer = 0;\n            sState++;\n        }\n        sprite->y2 = -(gSineTable[sTimer] >> 5);\n        break;\n    case 4:\n        if (++sTimer > 40)\n            sprite->callback = SpriteCallbackDummy;\n        break;\n    }",
       "callsTo": [
         "PlaySE"
@@ -162,6 +269,16 @@
       "returnType": "void",
       "signature": "static void Load321StartGfx(u16 tileTag, u16 palTag)",
       "paramsRaw": "u16 tileTag, u16 palTag",
+      "paramsList": [
+        {
+          "name": "tileTag",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "palTag",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "struct CompressedSpriteSheet spriteSheet = {g321Start_Gfx, 0xE00, 0};\n    struct SpritePalette spritePalette = {g321Start_Pal, 0};\n\n    spriteSheet.tag = tileTag;\n    spritePalette.tag = palTag;\n\n    LoadCompressedSpriteSheet(&spriteSheet);\n    LoadSpritePalette(&spritePalette);",
       "callsTo": [
         "LoadCompressedSpriteSheet",
@@ -173,6 +290,28 @@
       "returnType": "u8",
       "signature": "static u8 CreateNumberSprite(u16 tileTag, u16 palTag, s16 x, s16 y, u8 subpriority)",
       "paramsRaw": "u16 tileTag, u16 palTag, s16 x, s16 y, u8 subpriority",
+      "paramsList": [
+        {
+          "name": "tileTag",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "palTag",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "x",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "subpriority",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "struct SpriteTemplate spriteTemplate =\n    {\n        .oam = &sOamData_Numbers,\n        .anims = sAnimTable_Numbers,\n        .affineAnims = sAffineAnimTable_Numbers,\n        .callback = SpriteCallbackDummy,\n    };\n\n    spriteTemplate.tileTag = tileTag;\n    spriteTemplate.paletteTag = palTag;\n    return CreateSprite(&spriteTemplate, x, y, subpriority);",
       "callsTo": [
         "CreateSprite"
@@ -183,6 +322,36 @@
       "returnType": "void",
       "signature": "static void CreateStartSprite(u16 tileTag, u16 palTag, s16 x, s16 y, u8 subpriority, s16 *spriteId1, s16 *spriteId2)",
       "paramsRaw": "u16 tileTag, u16 palTag, s16 x, s16 y, u8 subpriority, s16 *spriteId1, s16 *spriteId2",
+      "paramsList": [
+        {
+          "name": "tileTag",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "palTag",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "x",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "subpriority",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "spriteId1",
+          "typeRaw": "s16 *"
+        },
+        {
+          "name": "spriteId2",
+          "typeRaw": "s16 *"
+        }
+      ],
       "body": "struct SpriteTemplate spriteTemplate =\n    {\n        .oam = &sOamData_Start,\n        .anims = sAnimTable_Start,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCallbackDummy,\n    };\n\n    spriteTemplate.tileTag = tileTag;\n    spriteTemplate.paletteTag = palTag;\n    *spriteId1 = CreateSprite(&spriteTemplate, x - 32, y, subpriority);\n    *spriteId2 = CreateSprite(&spriteTemplate, x + 32, y, subpriority);\n\n    gSprites[*spriteId1].invisible = TRUE;\n    gSprites[*spriteId2].invisible = TRUE;\n    StartSpriteAnim(&gSprites[*spriteId2], 1);",
       "callsTo": [
         "CreateSprite",

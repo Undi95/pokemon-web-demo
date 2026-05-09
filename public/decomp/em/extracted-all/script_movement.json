@@ -6,6 +6,24 @@
       "returnType": "bool8",
       "signature": "bool8 ScriptMovement_StartObjectMovementScript(u8 localId, u8 mapNum, u8 mapGroup, const u8 *movementScript)",
       "paramsRaw": "u8 localId, u8 mapNum, u8 mapGroup, const u8 *movementScript",
+      "paramsList": [
+        {
+          "name": "localId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "mapNum",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "mapGroup",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "movementScript",
+          "typeRaw": "const u8 *"
+        }
+      ],
       "body": "u8 objEventId;\n\n    if (TryGetObjectEventIdByLocalIdAndMap(localId, mapNum, mapGroup, &objEventId))\n        return TRUE;\n    if (!FuncIsActiveTask(ScriptMovement_MoveObjects))\n        ScriptMovement_StartMoveObjects(50);\n    return ScriptMovement_TryAddNewMovement(GetMoveObjectsTaskId(), objEventId, movementScript);",
       "callsTo": [
         "FuncIsActiveTask",
@@ -20,6 +38,20 @@
       "returnType": "bool8",
       "signature": "bool8 ScriptMovement_IsObjectMovementFinished(u8 localId, u8 mapNum, u8 mapGroup)",
       "paramsRaw": "u8 localId, u8 mapNum, u8 mapGroup",
+      "paramsList": [
+        {
+          "name": "localId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "mapNum",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "mapGroup",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 objEventId;\n    u8 taskId;\n    u8 moveScrId;\n\n    if (TryGetObjectEventIdByLocalIdAndMap(localId, mapNum, mapGroup, &objEventId))\n        return TRUE;\n    taskId = GetMoveObjectsTaskId();\n    moveScrId = GetMovementScriptIdFromObjectEventId(taskId, objEventId);\n    if (moveScrId == OBJECT_EVENTS_COUNT)\n        return TRUE;\n    return IsMovementScriptFinished(taskId, moveScrId);",
       "callsTo": [
         "GetMoveObjectsTaskId",
@@ -33,6 +65,7 @@
       "returnType": "void",
       "signature": "void ScriptMovement_UnfreezeObjectEvents(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 taskId;\n\n    taskId = GetMoveObjectsTaskId();\n    if (taskId != TASK_NONE)\n    {\n        ScriptMovement_UnfreezeActiveObjects(taskId);\n        DestroyTask(taskId);\n    }",
       "callsTo": [
         "DestroyTask",
@@ -45,6 +78,12 @@
       "returnType": "void",
       "signature": "static void ScriptMovement_StartMoveObjects(u8 priority)",
       "paramsRaw": "u8 priority",
+      "paramsList": [
+        {
+          "name": "priority",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 taskId;\n    u8 i;\n\n    taskId = CreateTask(ScriptMovement_MoveObjects, priority);\n\n    for (i = 1; i < NUM_TASK_DATA; i++)\n        gTasks[taskId].data[i] = 0xFFFF;",
       "callsTo": [
         "CreateTask"
@@ -55,6 +94,7 @@
       "returnType": "u8",
       "signature": "static u8 GetMoveObjectsTaskId(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return FindTaskIdByFunc(ScriptMovement_MoveObjects);",
       "callsTo": [
         "FindTaskIdByFunc"
@@ -65,6 +105,20 @@
       "returnType": "bool8",
       "signature": "static bool8 ScriptMovement_TryAddNewMovement(u8 taskId, u8 objEventId, const u8 *movementScript)",
       "paramsRaw": "u8 taskId, u8 objEventId, const u8 *movementScript",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "objEventId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "movementScript",
+          "typeRaw": "const u8 *"
+        }
+      ],
       "body": "u8 moveScrId;\n\n    moveScrId = GetMovementScriptIdFromObjectEventId(taskId, objEventId);\n    if (moveScrId != OBJECT_EVENTS_COUNT)\n    {\n        if (IsMovementScriptFinished(taskId, moveScrId) == 0)\n        {\n            return TRUE;\n        }\n        else\n        {\n            ScriptMovement_AddNewMovement(taskId, moveScrId, objEventId, movementScript);\n            return FALSE;\n        }\n    }\n    moveScrId = GetMovementScriptIdFromObjectEventId(taskId, LOCALID_PLAYER);\n    if (moveScrId == OBJECT_EVENTS_COUNT)\n    {\n        return TRUE;\n    }\n    else\n    {\n        ScriptMovement_AddNewMovement(taskId, moveScrId, objEventId, movementScript);\n        return FALSE;\n    }",
       "callsTo": [
         "GetMovementScriptIdFromObjectEventId",
@@ -77,6 +131,16 @@
       "returnType": "u8",
       "signature": "static u8 GetMovementScriptIdFromObjectEventId(u8 taskId, u8 objEventId)",
       "paramsRaw": "u8 taskId, u8 objEventId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "objEventId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 *moveScriptId;\n    u8 i;\n\n    moveScriptId = (u8 *)&gTasks[taskId].data[1];\n    for (i = 0; i < OBJECT_EVENTS_COUNT; i++, moveScriptId++)\n    {\n        if (*moveScriptId == objEventId)\n            return i;\n    }\n    return OBJECT_EVENTS_COUNT;",
       "callsTo": [],
       "lineCount": 10
@@ -85,6 +149,20 @@
       "returnType": "void",
       "signature": "static void LoadObjectEventIdPtrFromMovementScript(u8 taskId, u8 moveScrId, u8 **pObjEventId)",
       "paramsRaw": "u8 taskId, u8 moveScrId, u8 **pObjEventId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "moveScrId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "pObjEventId",
+          "typeRaw": "u8 **"
+        }
+      ],
       "body": "u8 i;\n\n    *pObjEventId = (u8 *)&gTasks[taskId].data[1];\n    for (i = 0; i < moveScrId; i++, (*pObjEventId)++)\n        ;",
       "callsTo": [],
       "lineCount": 5
@@ -93,6 +171,20 @@
       "returnType": "void",
       "signature": "static void SetObjectEventIdAtMovementScript(u8 taskId, u8 moveScrId, u8 objEventId)",
       "paramsRaw": "u8 taskId, u8 moveScrId, u8 objEventId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "moveScrId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "objEventId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 *ptr;\n\n    LoadObjectEventIdPtrFromMovementScript(taskId, moveScrId, &ptr);\n    *ptr = objEventId;",
       "callsTo": [
         "LoadObjectEventIdPtrFromMovementScript"
@@ -103,6 +195,20 @@
       "returnType": "void",
       "signature": "static void LoadObjectEventIdFromMovementScript(u8 taskId, u8 moveScrId, u8 *objEventId)",
       "paramsRaw": "u8 taskId, u8 moveScrId, u8 *objEventId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "moveScrId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "objEventId",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "u8 *ptr;\n\n    LoadObjectEventIdPtrFromMovementScript(taskId, moveScrId, &ptr);\n    *objEventId = *ptr;",
       "callsTo": [
         "LoadObjectEventIdPtrFromMovementScript"
@@ -113,6 +219,16 @@
       "returnType": "void",
       "signature": "static void ClearMovementScriptFinished(u8 taskId, u8 moveScrId)",
       "paramsRaw": "u8 taskId, u8 moveScrId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "moveScrId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u16 mask = ~gBitTable[moveScrId];\n\n    gTasks[taskId].data[0] &= mask;",
       "callsTo": [],
       "lineCount": 3
@@ -121,6 +237,16 @@
       "returnType": "void",
       "signature": "static void SetMovementScriptFinished(u8 taskId, u8 moveScrId)",
       "paramsRaw": "u8 taskId, u8 moveScrId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "moveScrId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "gTasks[taskId].data[0] |= gBitTable[moveScrId];",
       "callsTo": [],
       "lineCount": 1
@@ -129,6 +255,16 @@
       "returnType": "bool8",
       "signature": "static bool8 IsMovementScriptFinished(u8 taskId, u8 moveScrId)",
       "paramsRaw": "u8 taskId, u8 moveScrId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "moveScrId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u16 moveScriptFinished = (u16)gTasks[taskId].data[0] & gBitTable[moveScrId];\n\n    if (moveScriptFinished != 0)\n        return TRUE;\n    else\n        return FALSE;",
       "callsTo": [],
       "lineCount": 6
@@ -137,6 +273,16 @@
       "returnType": "void",
       "signature": "static void SetMovementScript(u8 moveScrId, const u8 *movementScript)",
       "paramsRaw": "u8 moveScrId, const u8 *movementScript",
+      "paramsList": [
+        {
+          "name": "moveScrId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "movementScript",
+          "typeRaw": "const u8 *"
+        }
+      ],
       "body": "sMovementScripts[moveScrId] = movementScript;",
       "callsTo": [],
       "lineCount": 1
@@ -145,6 +291,24 @@
       "returnType": "void",
       "signature": "static void ScriptMovement_AddNewMovement(u8 taskId, u8 moveScrId, u8 objEventId, const u8 *movementScript)",
       "paramsRaw": "u8 taskId, u8 moveScrId, u8 objEventId, const u8 *movementScript",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "moveScrId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "objEventId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "movementScript",
+          "typeRaw": "const u8 *"
+        }
+      ],
       "body": "ClearMovementScriptFinished(taskId, moveScrId);\n    SetMovementScript(moveScrId, movementScript);\n    SetObjectEventIdAtMovementScript(taskId, moveScrId, objEventId);",
       "callsTo": [
         "ClearMovementScriptFinished",
@@ -157,6 +321,12 @@
       "returnType": "void",
       "signature": "static void ScriptMovement_UnfreezeActiveObjects(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 *pObjEventId;\n    u8 i;\n\n    pObjEventId = (u8 *)&gTasks[taskId].data[1];\n    for (i = 0; i < OBJECT_EVENTS_COUNT; i++, pObjEventId++)\n    {\n        if (*pObjEventId != 0xFF)\n            UnfreezeObjectEvent(&gObjectEvents[*pObjEventId]);\n    }",
       "callsTo": [
         "UnfreezeObjectEvent"
@@ -167,6 +337,12 @@
       "returnType": "void",
       "signature": "static void ScriptMovement_MoveObjects(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 i;\n    u8 objEventId;\n\n    for (i = 0; i < OBJECT_EVENTS_COUNT; i++)\n    {\n        LoadObjectEventIdFromMovementScript(taskId, i, &objEventId);\n        if (objEventId != 0xFF)\n            ScriptMovement_TakeStep(taskId, i, objEventId, GetMovementScript(i));\n    }",
       "callsTo": [
         "GetMovementScript",
@@ -179,6 +355,24 @@
       "returnType": "void",
       "signature": "static void ScriptMovement_TakeStep(u8 taskId, u8 moveScrId, u8 objEventId, const u8 *movementScript)",
       "paramsRaw": "u8 taskId, u8 moveScrId, u8 objEventId, const u8 *movementScript",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "moveScrId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "objEventId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "movementScript",
+          "typeRaw": "const u8 *"
+        }
+      ],
       "body": "u8 nextMoveActionId;\n\n    if (ObjectEventIsHeldMovementActive(&gObjectEvents[objEventId])\n     && !ObjectEventClearHeldMovementIfFinished(&gObjectEvents[objEventId]))\n        return;\n\n    nextMoveActionId = *movementScript;\n    if (nextMoveActionId == MOVEMENT_ACTION_STEP_END)\n    {\n        SetMovementScriptFinished(taskId, moveScrId);\n        FreezeObjectEvent(&gObjectEvents[objEventId]);\n    }\n    else\n    {\n        if (!ObjectEventSetHeldMovement(&gObjectEvents[objEventId], nextMoveActionId))\n        {\n            movementScript++;\n            SetMovementScript(moveScrId, movementScript);\n        }\n    }",
       "callsTo": [
         "FreezeObjectEvent",

@@ -6,6 +6,7 @@
       "returnType": "void",
       "signature": "void RecordMixingPlayerSpotTriggered(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "CreateTask_EnterCableClubSeat(Task_RecordMixing_Main);",
       "callsTo": [
         "CreateTask_EnterCableClubSeat"
@@ -16,6 +17,7 @@
       "returnType": "void",
       "signature": "static void SetSrcLookupPointers(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sSecretBasesSave = gSaveBlock1Ptr->secretBases;\n    sTvShowsSave = gSaveBlock1Ptr->tvShows;\n    sPokeNewsSave = gSaveBlock1Ptr->pokeNews;\n    sOldManSave = &gSaveBlock1Ptr->oldMan;\n    sDewfordTrendsSave = gSaveBlock1Ptr->dewfordTrends;\n    sRecordMixMailSave = &sRecordMixMail;\n    sBattleTowerSave = &gSaveBlock2Ptr->frontier.towerPlayer;\n    sLilycoveLadySave = &gSaveBlock1Ptr->lilycoveLady;\n    sApprenticesSave = gSaveBlock2Ptr->apprentices;\n    sBattleTowerSave_Duplicate = &gSaveBlock2Ptr->frontier.towerPlayer;",
       "callsTo": [],
       "lineCount": 10
@@ -24,6 +26,12 @@
       "returnType": "void",
       "signature": "static void PrepareUnknownExchangePacket(struct PlayerRecordRS *dest)",
       "paramsRaw": "struct PlayerRecordRS *dest",
+      "paramsList": [
+        {
+          "name": "dest",
+          "typeRaw": "struct PlayerRecordRS *"
+        }
+      ],
       "body": "memcpy(dest->secretBases, sSecretBasesSave, sizeof(dest->secretBases));\n    memcpy(dest->tvShows, sTvShowsSave, sizeof(dest->tvShows));\n    SanitizeTVShowLocationsForRuby(dest->tvShows);\n    memcpy(dest->pokeNews, sPokeNewsSave, sizeof(dest->pokeNews));\n    memcpy(&dest->oldMan, sOldManSave, sizeof(dest->oldMan));\n    memcpy(dest->dewfordTrends, sDewfordTrendsSave, sizeof(dest->dewfordTrends));\n    GetRecordMixingDaycareMail(&dest->daycareMail);\n    EmeraldBattleTowerRecordToRuby(sBattleTowerSave, &dest->battleTowerRecord);\n\n    if (GetMultiplayerId() == 0)\n        dest->giftItem = GetRecordMixingGift();",
       "callsTo": [
         "EmeraldBattleTowerRecordToRuby",
@@ -38,6 +46,12 @@
       "returnType": "void",
       "signature": "static void PrepareExchangePacketForRubySapphire(struct PlayerRecordRS *dest)",
       "paramsRaw": "struct PlayerRecordRS *dest",
+      "paramsList": [
+        {
+          "name": "dest",
+          "typeRaw": "struct PlayerRecordRS *"
+        }
+      ],
       "body": "memcpy(dest->secretBases, sSecretBasesSave, sizeof(dest->secretBases));\n    ClearJapaneseSecretBases(dest->secretBases);\n    memcpy(dest->tvShows, sTvShowsSave, sizeof(dest->tvShows));\n    SanitizeTVShowsForRuby(dest->tvShows);\n    memcpy(dest->pokeNews, sPokeNewsSave, sizeof(dest->pokeNews));\n    memcpy(&dest->oldMan, sOldManSave, sizeof(dest->oldMan));\n    SanitizeMauvilleOldManForRuby(&dest->oldMan);\n    memcpy(dest->dewfordTrends, sDewfordTrendsSave, sizeof(dest->dewfordTrends));\n    GetRecordMixingDaycareMail(&dest->daycareMail);\n    SanitizeDaycareMailForRuby(&dest->daycareMail);\n    EmeraldBattleTowerRecordToRuby(sBattleTowerSave, &dest->battleTowerRecord);\n    SanitizeRubyBattleTowerRecord(&dest->battleTowerRecord);\n\n    if (GetMultiplayerId() == 0)\n        dest->giftItem = GetRecordMixingGift();",
       "callsTo": [
         "ClearJapaneseSecretBases",
@@ -56,6 +70,7 @@
       "returnType": "void",
       "signature": "static void PrepareExchangePacket(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "SetPlayerSecretBaseParty();\n    DeactivateAllNormalTVShows();\n    SetSrcLookupPointers();\n\n    if (Link_AnyPartnersPlayingRubyOrSapphire())\n    {\n        if (LinkDummy_Return2() == 0)\n            PrepareUnknownExchangePacket(&sSentRecord->ruby);\n        else\n            PrepareExchangePacketForRubySapphire(&sSentRecord->ruby);\n    }\n    else\n    {\n        memcpy(sSentRecord->emerald.secretBases, sSecretBasesSave, sizeof(sSentRecord->emerald.secretBases));\n        memcpy(sSentRecord->emerald.tvShows, sTvShowsSave, sizeof(sSentRecord->emerald.tvShows));\n        memcpy(sSentRecord->emerald.pokeNews, sPokeNewsSave, sizeof(sSentRecord->emerald.pokeNews));\n        memcpy(&sSentRecord->emerald.oldMan, sOldManSave, sizeof(sSentRecord->emerald.oldMan));\n        memcpy(&sSentRecord->emerald.lilycoveLady, sLilycoveLadySave, sizeof(sSentRecord->emerald.lilycoveLady));\n        memcpy(sSentRecord->emerald.dewfordTrends, sDewfordTrendsSave, sizeof(sSentRecord->emerald.dewfordTrends));\n        GetRecordMixingDaycareMail(&sSentRecord->emerald.daycareMail);\n        memcpy(&sSentRecord->emerald.battleTowerRecord, sBattleTowerSave, sizeof(sSentRecord->emerald.battleTowerRecord));\n        SanitizeEmeraldBattleTowerRecord(&sSentRecord->emerald.battleTowerRecord);\n\n        if (GetMultiplayerId() == 0)\n            sSentRecord->emerald.giftItem = GetRecordMixingGift();\n\n        GetSavedApprentices(sSentRecord->emerald.apprentices, sApprenticesSave);\n        GetPlayerHallRecords(&sSentRecord->emerald.hallRecords);\n    }",
       "callsTo": [
         "DeactivateAllNormalTVShows",
@@ -78,6 +93,12 @@
       "returnType": "void",
       "signature": "static void ReceiveExchangePacket(u32 multiplayerId)",
       "paramsRaw": "u32 multiplayerId",
+      "paramsList": [
+        {
+          "name": "multiplayerId",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "if (Link_AnyPartnersPlayingRubyOrSapphire())\n    {\n         \n        CalculateDaycareMailRandSum((void *)sReceivedRecords->ruby.tvShows);\n        ReceiveSecretBasesData(sReceivedRecords->ruby.secretBases, sizeof(sReceivedRecords->ruby), multiplayerId);\n        ReceiveDaycareMailData(&sReceivedRecords->ruby.daycareMail, sizeof(sReceivedRecords->ruby), multiplayerId, sReceivedRecords->ruby.tvShows);\n        ReceiveBattleTowerData(&sReceivedRecords->ruby.battleTowerRecord, sizeof(sReceivedRecords->ruby), multiplayerId);\n        ReceiveTvShowsData(sReceivedRecords->ruby.tvShows, sizeof(sReceivedRecords->ruby), multiplayerId);\n        ReceivePokeNewsData(sReceivedRecords->ruby.pokeNews, sizeof(sReceivedRecords->ruby), multiplayerId);\n        ReceiveOldManData(&sReceivedRecords->ruby.oldMan, sizeof(sReceivedRecords->ruby), multiplayerId);\n        ReceiveDewfordTrendData(sReceivedRecords->ruby.dewfordTrends, sizeof(sReceivedRecords->ruby), multiplayerId);\n        ReceiveGiftItem(&sReceivedRecords->ruby.giftItem, multiplayerId);\n    }\n    else\n    {\n         \n        CalculateDaycareMailRandSum((void *)sReceivedRecords->emerald.tvShows);\n        ReceiveSecretBasesData(sReceivedRecords->emerald.secretBases, sizeof(sReceivedRecords->emerald), multiplayerId);\n        ReceiveTvShowsData(sReceivedRecords->emerald.tvShows, sizeof(sReceivedRecords->emerald), multiplayerId);\n        ReceivePokeNewsData(sReceivedRecords->emerald.pokeNews, sizeof(sReceivedRecords->emerald), multiplayerId);\n        ReceiveOldManData(&sReceivedRecords->emerald.oldMan, sizeof(sReceivedRecords->emerald), multiplayerId);\n        ReceiveDewfordTrendData(sReceivedRecords->emerald.dewfordTrends, sizeof(sReceivedRecords->emerald), multiplayerId);\n        ReceiveDaycareMailData(&sReceivedRecords->emerald.daycareMail, sizeof(sReceivedRecords->emerald), multiplayerId, sReceivedRecords->emerald.tvShows);\n        ReceiveBattleTowerData(&sReceivedRecords->emerald.battleTowerRecord, sizeof(sReceivedRecords->emerald), multiplayerId);\n        ReceiveGiftItem(&sReceivedRecords->emerald.giftItem, multiplayerId);\n        ReceiveLilycoveLadyData(&sReceivedRecords->emerald.lilycoveLady, sizeof(sReceivedRecords->emerald), multiplayerId);\n        ReceiveApprenticeData(sReceivedRecords->emerald.apprentices, sizeof(sReceivedRecords->emerald), (u8)multiplayerId);\n        ReceiveRankingHallRecords(&sReceivedRecords->emerald.hallRecords, sizeof(sReceivedRecords->emerald), (u8)multiplayerId);\n    }",
       "callsTo": [
         "CalculateDaycareMailRandSum",
@@ -100,6 +121,12 @@
       "returnType": "void",
       "signature": "static void PrintTextOnRecordMixing(const u8 *src)",
       "paramsRaw": "const u8 *src",
+      "paramsList": [
+        {
+          "name": "src",
+          "typeRaw": "const u8 *"
+        }
+      ],
       "body": "DrawDialogueFrame(0, FALSE);\n    AddTextPrinterParameterized(0, FONT_NORMAL, src, 0, 1, 0, NULL);\n    CopyWindowToVram(0, COPYWIN_FULL);",
       "callsTo": [
         "AddTextPrinterParameterized",
@@ -112,6 +139,12 @@
       "returnType": "void",
       "signature": "static void Task_RecordMixing_SoundEffect(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (++gTasks[taskId].tCounter == 50)\n    {\n        PlaySE(SE_M_ATTRACT);\n        gTasks[taskId].tCounter = 0;\n    }",
       "callsTo": [
         "PlaySE"
@@ -122,6 +155,12 @@
       "returnType": "void",
       "signature": "static void Task_RecordMixing_Main(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data = gTasks[taskId].data;\n\n    switch (tState)\n    {\n    case 0:  \n        sSentRecord = Alloc(sizeof(*sSentRecord));\n        sReceivedRecords = Alloc(sizeof(*sReceivedRecords) * MAX_LINK_PLAYERS);\n        SetLocalLinkPlayerId(gSpecialVar_0x8005);\n        VarSet(VAR_TEMP_MIXED_RECORDS, 1);\n        sReadyToReceive = FALSE;\n        PrepareExchangePacket();\n        CreateRecordMixingLights();\n        tState = 1;\n        tLinkTaskId = CreateTask(Task_MixingRecordsRecv, 80);\n        tSoundTaskId = CreateTask(Task_RecordMixing_SoundEffect, 81);\n        break;\n    case 1:  \n        if (!gTasks[tLinkTaskId].isActive)\n        {\n            tState = 2;\n            FlagSet(FLAG_SYS_MIX_RECORD);\n            DestroyRecordMixingLights();\n            DestroyTask(tSoundTaskId);\n        }\n        break;\n    case 2:\n        tLinkTaskId = CreateTask(Task_DoRecordMixing, 10);\n        tState = 3;\n        PlaySE(SE_M_BATON_PASS);\n        break;\n    case 3:  \n        if (!gTasks[tLinkTaskId].isActive)\n        {\n            tState = 4;\n            if (gWirelessCommType == 0)\n                tLinkTaskId = CreateTask_ReestablishCableClubLink();\n\n            PrintTextOnRecordMixing(gText_RecordMixingComplete);\n            tTimer = 0;\n        }\n        break;\n    case 4:  \n        if (++tTimer > 60)\n            tState = 5;\n        break;\n    case 5:  \n        if (!gTasks[tLinkTaskId].isActive)\n        {\n            Free(sReceivedRecords);\n            Free(sSentRecord);\n            SetLinkWaitingForScript();\n            if (gWirelessCommType != 0)\n                CreateTask(Task_ReturnToFieldRecordMixing, 10);\n            ClearDialogWindowAndFrame(0, TRUE);\n            DestroyTask(taskId);\n            ScriptContext_Enable();\n        }\n        break;\n    }",
       "callsTo": [
         "Alloc",
@@ -147,6 +186,12 @@
       "returnType": "void",
       "signature": "static void Task_MixingRecordsRecv(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "struct Task *task = &gTasks[taskId];\n\n    switch (task->tState)\n    {\n    case 0:\n        PrintTextOnRecordMixing(gText_MixingRecords);\n        task->data[8] = 0x708;\n        task->tState = 400;\n        ClearLinkCallback_2();\n        break;\n    case 100:  \n        if (++task->data[12] > 20)\n        {\n            task->data[12] = 0;\n            task->tState = 101;\n        }\n        break;\n    case 101:\n        {\n            u8 players = GetLinkPlayerCount_2();\n            if (IsLinkMaster() == TRUE)\n            {\n                if (players == GetSavedPlayerCount())\n                {\n                    PlaySE(SE_PIN);\n                    task->tState = 201;\n                    task->data[12] = 0;\n                }\n            }\n            else\n            {\n                PlaySE(SE_BOO);\n                task->tState = 301;\n            }\n        }\n        break;\n    case 201:\n         \n        if (GetSavedPlayerCount() == GetLinkPlayerCount_2() && ++task->data[12] > (GetLinkPlayerCount_2() * 30))\n        {\n            CheckShouldAdvanceLinkState();\n            task->tState = 1;\n        }\n        break;\n    case 301:\n        if (GetSavedPlayerCount() == GetLinkPlayerCount_2())\n            task->tState = 1;\n        break;\n    case 400:  \n        if (++task->data[12] > 20)\n        {\n            task->tState = 1;\n            task->data[12] = 0;\n        }\n        break;\n    case 1:  \n        if (gReceivedRemoteLinkPlayers)\n        {\n            ConvertIntToDecimalStringN(gStringVar1, GetMultiplayerId_(), STR_CONV_MODE_LEADING_ZEROS, 2);\n            task->tState = 5;\n        }\n        break;\n    case 2:\n        {\n            u8 subTaskId;\n\n            task->data[6] = GetLinkPlayerCount_2();\n            task->tState = 0;\n            task->tMultiplayerId = GetMultiplayerId_();\n            task->func = Task_SendPacket;\n            if (Link_AnyPartnersPlayingRubyOrSapphire())\n            {\n                StorePtrInTaskData(sSentRecord, &task->tSentRecord);\n                subTaskId = CreateTask(Task_CopyReceiveBuffer, 80);\n                task->tCopyTaskId = subTaskId;\n                gTasks[subTaskId].tParentTaskId = taskId;\n                StorePtrInTaskData(sReceivedRecords, &gTasks[subTaskId].tRecvRecords);\n                sRecordStructSize = sizeof(struct PlayerRecordRS);\n            }\n            else\n            {\n                StorePtrInTaskData(sSentRecord, &task->tSentRecord);\n                subTaskId = CreateTask(Task_CopyReceiveBuffer, 80);\n                task->tCopyTaskId = subTaskId;\n                gTasks[subTaskId].tParentTaskId = taskId;\n                StorePtrInTaskData(sReceivedRecords, &gTasks[subTaskId].tRecvRecords);\n                sRecordStructSize = sizeof(struct PlayerRecordEmerald);\n            }\n        }\n        break;\n    case 5:  \n        if (++task->data[10] > 60)\n        {\n            task->data[10] = 0;\n            task->tState = 2;\n        }\n        break;\n    }",
       "callsTo": [
         "CheckShouldAdvanceLinkState",
@@ -168,6 +213,12 @@
       "returnType": "void",
       "signature": "static void Task_SendPacket(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "struct Task *task = &gTasks[taskId];\n    switch (task->tState)\n    {\n    case 0:  \n        {\n            void *recordData = LoadPtrFromTaskData(&task->tSentRecord) + task->tNumChunksSent * BUFFER_CHUNK_SIZE;\n\n            memcpy(gBlockSendBuffer, recordData, BUFFER_CHUNK_SIZE);\n            task->tState++;\n        }\n        break;\n    case 1:\n        if (GetMultiplayerId() == 0)\n            SendBlockRequest(BLOCK_REQ_SIZE_200);\n        task->tState++;\n        break;\n    case 2:\n        break;\n    case 3:\n         \n         \n        task->tNumChunksSent++;\n        if (task->tNumChunksSent == sRecordStructSize / BUFFER_CHUNK_SIZE + 1)\n            task->tState++;\n        else\n            task->tState = 0;\n        break;\n    case 4:\n        if (!gTasks[task->tCopyTaskId].isActive)\n            task->func = Task_SendPacket_SwitchToReceive;\n        break;\n    }",
       "callsTo": [
         "GetMultiplayerId",
@@ -180,6 +231,12 @@
       "returnType": "void",
       "signature": "static void Task_CopyReceiveBuffer(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "struct Task *task = &gTasks[taskId];\n    u8 status = GetBlockReceivedStatus();\n    u8 handledPlayers = 0;\n\n    if (status == GetLinkPlayerCountAsBitFlags())\n    {\n        u8 i;\n        for (i = 0; i < GetLinkPlayerCount(); i++)\n        {\n            if ((status >> i) & 1)\n            {\n                void *dest = LoadPtrFromTaskData(&task->tRecvRecords) + task->tNumChunksRecv(i) * BUFFER_CHUNK_SIZE + sRecordStructSize * i;\n                void *src = GetPlayerRecvBuffer(i);\n                if ((task->tNumChunksRecv(i) + 1) * BUFFER_CHUNK_SIZE > sRecordStructSize)\n                    memcpy(dest, src, sRecordStructSize - task->tNumChunksRecv(i) * BUFFER_CHUNK_SIZE);\n                else\n                    memcpy(dest, src, BUFFER_CHUNK_SIZE);\n                ResetBlockReceivedFlag(i);\n                task->tNumChunksRecv(i)++;\n                if (task->tNumChunksRecv(i) == sRecordStructSize / BUFFER_CHUNK_SIZE + 1)\n                    handledPlayers++;\n            }\n        }\n        gTasks[task->tParentTaskId].tState++;\n    }\n\n    if (handledPlayers == GetLinkPlayerCount())\n        DestroyTask(taskId);",
       "callsTo": [
         "DestroyTask",
@@ -196,6 +253,12 @@
       "returnType": "void",
       "signature": "static void Task_WaitReceivePacket(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "struct Task *task = &gTasks[taskId];\n\n     \n    if (!gTasks[task->tCopyTaskId].isActive)\n        DestroyTask(taskId);",
       "callsTo": [
         "DestroyTask"
@@ -206,6 +269,12 @@
       "returnType": "void",
       "signature": "static void Task_ReceivePacket(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "struct Task *task = &gTasks[taskId];\n\n    task->func = Task_WaitReceivePacket;\n    if (sReadyToReceive == TRUE)\n        ReceiveExchangePacket(task->tMultiplayerId);",
       "callsTo": [
         "ReceiveExchangePacket"
@@ -216,6 +285,12 @@
       "returnType": "void",
       "signature": "static void Task_SendPacket_SwitchToReceive(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "gTasks[taskId].func = Task_ReceivePacket;\n    sReadyToReceive = TRUE;",
       "callsTo": [],
       "lineCount": 2
@@ -224,6 +299,16 @@
       "returnType": "void",
       "signature": "static void StorePtrInTaskData(void *records, u16 *asShort)",
       "paramsRaw": "void *records, u16 *asShort",
+      "paramsList": [
+        {
+          "name": "records",
+          "typeRaw": "void *"
+        },
+        {
+          "name": "asShort",
+          "typeRaw": "u16 *"
+        }
+      ],
       "body": "asShort[0] = (u32)records;\n    asShort[1] = ((u32)records >> 16);",
       "callsTo": [],
       "lineCount": 2
@@ -232,6 +317,7 @@
       "returnType": "u8",
       "signature": "static u8 GetMultiplayerId_(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return GetMultiplayerId();",
       "callsTo": [
         "GetMultiplayerId"
@@ -242,6 +328,12 @@
       "returnType": "void",
       "signature": "static void ShufflePlayerIndices(u32 *data)",
       "paramsRaw": "u32 *data",
+      "paramsList": [
+        {
+          "name": "data",
+          "typeRaw": "u32 *"
+        }
+      ],
       "body": "u32 i;\n    u32 linkTrainerId;\n    u32 players = GetLinkPlayerCount();\n\n    switch (players)\n    {\n    case 2:\n        for (i = 0; i < ARRAY_COUNT(sPlayerIdxOrders_2Player); i++)\n            data[i] = sPlayerIdxOrders_2Player[i];\n        break;\n    case 3:\n        linkTrainerId = GetLinkPlayerTrainerId(0) % ARRAY_COUNT(sPlayerIdxOrders_3Player);\n        for (i = 0; i < ARRAY_COUNT(sPlayerIdxOrders_3Player[0]); i++)\n            data[i] = sPlayerIdxOrders_3Player[linkTrainerId][i];\n        break;\n    case 4:\n        linkTrainerId = GetLinkPlayerTrainerId(0) % ARRAY_COUNT(sPlayerIdxOrders_4Player);\n        for (i = 0; i < ARRAY_COUNT(sPlayerIdxOrders_4Player[0]); i++)\n            data[i] = sPlayerIdxOrders_4Player[linkTrainerId][i];\n        break;\n    }",
       "callsTo": [
         "ARRAY_COUNT",
@@ -254,6 +346,20 @@
       "returnType": "void",
       "signature": "static void ReceiveOldManData(OldMan *records, size_t recordSize, u8 multiplayerId)",
       "paramsRaw": "OldMan *records, size_t recordSize, u8 multiplayerId",
+      "paramsList": [
+        {
+          "name": "records",
+          "typeRaw": "OldMan *"
+        },
+        {
+          "name": "recordSize",
+          "typeRaw": "size_t"
+        },
+        {
+          "name": "multiplayerId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 version;\n    u16 language;\n    OldMan *oldMan;\n    u32 mixIndices[MAX_LINK_PLAYERS];\n\n    ShufflePlayerIndices(mixIndices);\n    oldMan = (void *)records + recordSize * mixIndices[multiplayerId];\n    version = gLinkPlayers[mixIndices[multiplayerId]].version;\n    language = gLinkPlayers[mixIndices[multiplayerId]].language;\n\n    if (Link_AnyPartnersPlayingRubyOrSapphire())\n        SanitizeReceivedRubyOldMan(oldMan, version, language);\n    else\n        SanitizeReceivedEmeraldOldMan(oldMan, version, language);\n\n    memcpy(sOldManSave, (void *)records + recordSize * mixIndices[multiplayerId], sizeof(OldMan));\n    ResetMauvilleOldManFlag();",
       "callsTo": [
         "Link_AnyPartnersPlayingRubyOrSapphire",
@@ -268,6 +374,20 @@
       "returnType": "void",
       "signature": "static void ReceiveBattleTowerData(void *records, size_t recordSize, u8 multiplayerId)",
       "paramsRaw": "void *records, size_t recordSize, u8 multiplayerId",
+      "paramsList": [
+        {
+          "name": "records",
+          "typeRaw": "void *"
+        },
+        {
+          "name": "recordSize",
+          "typeRaw": "size_t"
+        },
+        {
+          "name": "multiplayerId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "struct EmeraldBattleTowerRecord *battleTowerRecord;\n    struct BattleTowerPokemon *btPokemon;\n    u32 mixIndices[MAX_LINK_PLAYERS];\n    s32 i;\n\n    ShufflePlayerIndices(mixIndices);\n    if (Link_AnyPartnersPlayingRubyOrSapphire())\n    {\n        if (RubyBattleTowerRecordToEmerald((void *)records + recordSize * mixIndices[multiplayerId], (void *)records + recordSize * multiplayerId) == TRUE)\n        {\n            battleTowerRecord = (void *)records + recordSize * multiplayerId;\n            battleTowerRecord->language = gLinkPlayers[mixIndices[multiplayerId]].language;\n            CalcEmeraldBattleTowerChecksum(battleTowerRecord);\n        }\n    }\n    else\n    {\n        memcpy((void *)records + recordSize * multiplayerId, (void *)records + recordSize * mixIndices[multiplayerId], sizeof(struct EmeraldBattleTowerRecord));\n        battleTowerRecord = (void *)records + recordSize * multiplayerId;\n        for (i = 0; i < MAX_FRONTIER_PARTY_SIZE; i++)\n        {\n            btPokemon = &battleTowerRecord->party[i];\n            if (btPokemon->species != SPECIES_NONE && IsStringJapanese(btPokemon->nickname))\n                ConvertInternationalString(btPokemon->nickname, LANGUAGE_JAPANESE);\n        }\n        CalcEmeraldBattleTowerChecksum(battleTowerRecord);\n    }\n    PutNewBattleTowerRecord((void *)records + recordSize * multiplayerId);",
       "callsTo": [
         "CalcEmeraldBattleTowerChecksum",
@@ -284,6 +404,20 @@
       "returnType": "void",
       "signature": "static void ReceiveLilycoveLadyData(LilycoveLady *records, size_t recordSize, u8 multiplayerId)",
       "paramsRaw": "LilycoveLady *records, size_t recordSize, u8 multiplayerId",
+      "paramsList": [
+        {
+          "name": "records",
+          "typeRaw": "LilycoveLady *"
+        },
+        {
+          "name": "recordSize",
+          "typeRaw": "size_t"
+        },
+        {
+          "name": "multiplayerId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "LilycoveLady *lilycoveLady;\n    u32 mixIndices[MAX_LINK_PLAYERS];\n\n    ShufflePlayerIndices(mixIndices);\n    memcpy((void *)records + recordSize * multiplayerId, sLilycoveLadySave, sizeof(LilycoveLady));\n\n    if (GetLilycoveLadyId() == 0)\n    {\n        lilycoveLady = Alloc(sizeof(*lilycoveLady));\n        if (lilycoveLady == NULL)\n            return;\n\n        memcpy(lilycoveLady, sLilycoveLadySave, sizeof(LilycoveLady));\n    }\n    else\n    {\n        lilycoveLady = NULL;\n    }\n\n    memcpy(sLilycoveLadySave, (void *)records + recordSize * mixIndices[multiplayerId], sizeof(LilycoveLady));\n    ResetLilycoveLadyForRecordMix();\n    if (lilycoveLady != NULL)\n    {\n        QuizLadyClearQuestionForRecordMix(lilycoveLady);\n        Free(lilycoveLady);\n    }",
       "callsTo": [
         "Alloc",
@@ -299,6 +433,12 @@
       "returnType": "u8",
       "signature": "static u8 GetDaycareMailItemId(struct DaycareMail *mail)",
       "paramsRaw": "struct DaycareMail *mail",
+      "paramsList": [
+        {
+          "name": "mail",
+          "typeRaw": "struct DaycareMail *"
+        }
+      ],
       "body": "return mail->message.itemId;",
       "callsTo": [],
       "lineCount": 1
@@ -307,6 +447,24 @@
       "returnType": "void",
       "signature": "static void SwapDaycareMail(struct RecordMixingDaycareMail *records, size_t recordSize, u8 (*idxs)[2], u8 playerSlot1, u8 playerSlot2)",
       "paramsRaw": "struct RecordMixingDaycareMail *records, size_t recordSize, u8 (*idxs)[2], u8 playerSlot1, u8 playerSlot2",
+      "paramsList": [
+        {
+          "name": "records",
+          "typeRaw": "struct RecordMixingDaycareMail *"
+        },
+        {
+          "name": "recordSize",
+          "typeRaw": "size_t"
+        },
+        {
+          "name": "playerSlot1",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "playerSlot2",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "struct DaycareMail temp;\n    struct RecordMixingDaycareMail *mixMail1, *mixMail2;\n\n     \n    mixMail1 = (void *)records + recordSize * idxs[playerSlot1][MULTIPLAYER_ID];\n    memcpy(&temp, &mixMail1->mail[idxs[playerSlot1][DAYCARE_SLOT]], sizeof(struct DaycareMail));\n\n     \n    mixMail2 = (void *)records + recordSize * idxs[playerSlot2][MULTIPLAYER_ID];\n    memcpy(&mixMail1->mail[idxs[playerSlot1][DAYCARE_SLOT]], &mixMail2->mail[idxs[playerSlot2][DAYCARE_SLOT]], sizeof(struct DaycareMail));\n\n     \n    memcpy(&mixMail2->mail[idxs[playerSlot2][DAYCARE_SLOT]], &temp, sizeof(struct DaycareMail));",
       "callsTo": [],
       "lineCount": 13
@@ -315,6 +473,12 @@
       "returnType": "void",
       "signature": "static void CalculateDaycareMailRandSum(const u8 *src)",
       "paramsRaw": "const u8 *src",
+      "paramsList": [
+        {
+          "name": "src",
+          "typeRaw": "const u8 *"
+        }
+      ],
       "body": "u8 sum;\n    s32 i;\n\n    sum = 0;\n    for (i = 0; i < 256; i++)\n        sum += src[i];\n\n    sDaycareMailRandSum = sum;",
       "callsTo": [],
       "lineCount": 8
@@ -323,6 +487,7 @@
       "returnType": "u8",
       "signature": "static u8 GetDaycareMailRandSum(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return sDaycareMailRandSum;",
       "callsTo": [],
       "lineCount": 1
@@ -331,6 +496,24 @@
       "returnType": "void",
       "signature": "static void ReceiveDaycareMailData(struct RecordMixingDaycareMail *records, size_t recordSize, u8 multiplayerId, TVShow *shows)",
       "paramsRaw": "struct RecordMixingDaycareMail *records, size_t recordSize, u8 multiplayerId, TVShow *shows",
+      "paramsList": [
+        {
+          "name": "records",
+          "typeRaw": "struct RecordMixingDaycareMail *"
+        },
+        {
+          "name": "recordSize",
+          "typeRaw": "size_t"
+        },
+        {
+          "name": "multiplayerId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "shows",
+          "typeRaw": "TVShow *"
+        }
+      ],
       "body": "u16 i, j;\n    u8 linkPlayerCount;\n    u8 tableId;\n    struct RecordMixingDaycareMail *mixMail;\n    u8 playerSlot1, playerSlot2;\n    void *ptr;\n    u8 unusedArr1[MAX_LINK_PLAYERS];\n    u8 unusedArr2[MAX_LINK_PLAYERS];\n    struct RecordMixingDaycareMail *unusedMixMail[MAX_LINK_PLAYERS];\n    bool8 canHoldItem[MAX_LINK_PLAYERS][DAYCARE_MON_COUNT];\n    u8 idxs[MAX_LINK_PLAYERS][2];\n    u8 numDaycareCanHold;\n    u16 oldSeed;\n    bool32 anyRS;\n\n     \n     \n     \n    oldSeed = Random2();\n    SeedRng2(gLinkPlayers[0].trainerId);\n    linkPlayerCount = GetLinkPlayerCount();\n    for (i = 0; i < MAX_LINK_PLAYERS; i++)\n    {\n        unusedArr1[i] = 0xFF;\n        unusedArr2[i] = 0;\n        canHoldItem[i][0] = FALSE;\n        canHoldItem[i][1] = FALSE;\n    }\n\n     \n    anyRS = Link_AnyPartnersPlayingRubyOrSapphire();\n    for (i = 0; i < GetLinkPlayerCount(); i++)\n    {\n        u32 language, version;\n\n        mixMail = (void *)records + i * recordSize;\n        language = gLinkPlayers[i].language;\n        version = gLinkPlayers[i].version & 0xFF;\n\n        for (j = 0; j < mixMail->numDaycareMons; j++)\n        {\n            u16 otNameLanguage, nicknameLanguage;\n            struct DaycareMail *daycareMail = &mixMail->mail[j];\n\n            if (daycareMail->message.itemId == ITEM_NONE)\n                continue;\n\n            if (anyRS)\n            {\n                 \n                if (StringLength(daycareMail->otName) <= 5)\n                {\n                    otNameLanguage = LANGUAGE_JAPANESE;\n                }\n                else\n                {\n                    StripExtCtrlCodes(daycareMail->otName);\n                    otNameLanguage = language;\n                }\n\n                 \n                if (daycareMail->monName[0] == EXT_CTRL_CODE_BEGIN && daycareMail->monName[1] == EXT_CTRL_CODE_JPN)\n                {\n                    StripExtCtrlCodes(daycareMail->monName);\n                    nicknameLanguage = LANGUAGE_JAPANESE;\n                }\n                else\n                {\n                    nicknameLanguage = language;\n                }\n\n                 \n                if (version == VERSION_RUBY || version == VERSION_SAPPHIRE)\n                {\n                    daycareMail->gameLanguage = otNameLanguage;\n                    daycareMail->monLanguage = nicknameLanguage;\n                }\n            }\n            else if (language == LANGUAGE_JAPANESE)\n            {\n                if (IsStringJapanese(daycareMail->otName))\n                    daycareMail->gameLanguage = LANGUAGE_JAPANESE;\n                else\n                    daycareMail->gameLanguage = GAME_LANGUAGE;\n\n                if (IsStringJapanese(daycareMail->monName))\n                    daycareMail->monLanguage = LANGUAGE_JAPANESE;\n                else\n                    daycareMail->monLanguage = GAME_LANGUAGE;\n            }\n        }\n    }\n\n     \n     \n     \n     \n     \n     \n     \n    numDaycareCanHold = 0;\n    for (i = 0; i < linkPlayerCount; i++)\n    {\n        mixMail = (void *)records + i * recordSize;\n        if (mixMail->numDaycareMons == 0)\n            continue;\n\n        for (j = 0; j < mixMail->numDaycareMons; j++)\n        {\n            if (!mixMail->cantHoldItem[j])\n                canHoldItem[i][j] = TRUE;\n        }\n    }\n\n     \n     \n    j = 0;\n    for (i = 0; i < linkPlayerCount; i++)\n    {\n        mixMail = (void *)records + i * recordSize;\n\n         \n         \n        if (canHoldItem[i][0] == TRUE || canHoldItem[i][1] == TRUE)\n            numDaycareCanHold++;\n\n        if (canHoldItem[i][0] == TRUE && canHoldItem[i][1] == FALSE)\n        {\n             \n            idxs[j][MULTIPLAYER_ID] = i;\n            idxs[j][DAYCARE_SLOT] = 0;\n            j++;\n        }\n        else if (canHoldItem[i][0] == FALSE && canHoldItem[i][1] == TRUE)\n        {\n             \n            idxs[j][MULTIPLAYER_ID] = i;\n            idxs[j][DAYCARE_SLOT] = 1;\n            j++;\n        }\n        else if (canHoldItem[i][0] == TRUE && canHoldItem[i][1] == TRUE)\n        {\n             \n             \n             \n            u32 itemId1, itemId2;\n            idxs[j][MULTIPLAYER_ID] = i;\n            itemId1 = GetDaycareMailItemId(&mixMail->mail[0]);\n            itemId2 = GetDaycareMailItemId(&mixMail->mail[1]);\n\n            if ((!itemId1 && !itemId2) || (itemId1 && itemId2))\n                idxs[j][DAYCARE_SLOT] = Random2() % 2;\n            else if (itemId1 && !itemId2)\n                idxs[j][DAYCARE_SLOT] = 0;\n            else if (!itemId1 && itemId2)\n                 idxs[j][DAYCARE_SLOT] = 1;\n\n            j++;\n        }\n    }\n\n     \n    for (i = 0; i < MAX_LINK_PLAYERS; i++)\n    {\n        mixMail = &records[multiplayerId * recordSize];\n        unusedMixMail[i] = mixMail;\n    }\n\n     \n     \n    tableId = GetDaycareMailRandSum() % NUM_SWAP_COMBOS;\n    switch (numDaycareCanHold)\n    {\n    case 2:\n         \n        SwapDaycareMail(records, recordSize, idxs, 0, 1);\n        break;\n    case 3:\n         \n        playerSlot1 = sDaycareMailSwapIds_3Player[tableId][0];\n        playerSlot2 = sDaycareMailSwapIds_3Player[tableId][1];\n        SwapDaycareMail(records, recordSize, idxs, playerSlot1, playerSlot2);\n        break;\n    case 4:\n         \n        ptr = idxs;\n\n         \n        playerSlot1 = sDaycareMailSwapIds_4Player[tableId][0];\n        playerSlot2 = sDaycareMailSwapIds_4Player[tableId][1];\n        SwapDaycareMail(records, recordSize, ptr, playerSlot1, playerSlot2);\n\n         \n        playerSlot1 = sDaycareMailSwapIds_4Player[tableId][2];\n        playerSlot2 = sDaycareMailSwapIds_4Player[tableId][3];\n        SwapDaycareMail(records, recordSize, ptr, playerSlot1, playerSlot2);\n        break;\n    }\n\n     \n    mixMail = (void *)records + multiplayerId * recordSize;\n    memcpy(&gSaveBlock1Ptr->daycare.mons[0].mail, &mixMail->mail[0], sizeof(struct DaycareMail));\n    memcpy(&gSaveBlock1Ptr->daycare.mons[1].mail, &mixMail->mail[1], sizeof(struct DaycareMail));\n    SeedRng(oldSeed);",
       "callsTo": [
         "GetDaycareMailItemId",
@@ -351,6 +534,16 @@
       "returnType": "void",
       "signature": "static void ReceiveGiftItem(u16 *item, u8 multiplayerId)",
       "paramsRaw": "u16 *item, u8 multiplayerId",
+      "paramsList": [
+        {
+          "name": "item",
+          "typeRaw": "u16 *"
+        },
+        {
+          "name": "multiplayerId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (multiplayerId != 0 && *item != ITEM_NONE && GetPocketByItemId(*item) == POCKET_KEY_ITEMS)\n    {\n        if (!CheckBagHasItem(*item, 1) && !CheckPCHasItem(*item, 1) && AddBagItem(*item, 1))\n        {\n            VarSet(VAR_TEMP_RECORD_MIX_GIFT_ITEM, *item);\n            StringCopy(gStringVar1, gLinkPlayers[0].name);\n            if (*item == ITEM_EON_TICKET)\n                FlagSet(FLAG_ENABLE_SHIP_SOUTHERN_ISLAND);\n        }\n        else\n        {\n            VarSet(VAR_TEMP_RECORD_MIX_GIFT_ITEM, ITEM_NONE);\n        }\n    }",
       "callsTo": [
         "AddBagItem",
@@ -367,6 +560,12 @@
       "returnType": "void",
       "signature": "static void Task_DoRecordMixing(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "struct Task *task = &gTasks[taskId];\n\n    switch (task->tState)\n    {\n    case 0:\n        task->tState++;\n        break;\n    case 1:\n        if (Link_AnyPartnersPlayingRubyOrSapphire())\n            task->tState++;\n        else\n            task->tState = 6;\n        break;\n    case 2:\n         \n        SetContinueGameWarpStatusToDynamicWarp();\n        WriteSaveBlock2();\n        task->tState++;\n        break;\n    case 3:\n        if (WriteSaveBlock1Sector())\n        {\n            ClearContinueGameWarpStatus2();\n            task->tState = 4;\n            task->data[1] = 0;\n        }\n        break;\n    case 4:  \n        if (++task->data[1] > 10)\n        {\n            SetCloseLinkCallback();\n            task->tState++;\n        }\n        break;\n    case 5:\n         \n        if (gReceivedRemoteLinkPlayers == FALSE)\n            DestroyTask(taskId);\n        break;\n\n     \n    case 6:\n        if (!Rfu_SetLinkRecovery(FALSE))\n        {\n            CreateTask(Task_LinkFullSave, 5);\n            task->tState++;\n        }\n        break;\n    case 7:  \n        if (!FuncIsActiveTask(Task_LinkFullSave))\n        {\n            if (gWirelessCommType)\n            {\n                Rfu_SetLinkRecovery(TRUE);\n                task->tState = 8;\n            }\n            else\n            {\n                task->tState = 4;\n            }\n        }\n        break;\n    case 8:\n        SetLinkStandbyCallback();\n        task->tState++;\n        break;\n    case 9:\n        if (IsLinkTaskFinished())\n            DestroyTask(taskId);\n        break;\n    }",
       "callsTo": [
         "ClearContinueGameWarpStatus2",
@@ -388,6 +587,16 @@
       "returnType": "void",
       "signature": "static void GetSavedApprentices(struct Apprentice *dst, struct Apprentice *src)",
       "paramsRaw": "struct Apprentice *dst, struct Apprentice *src",
+      "paramsList": [
+        {
+          "name": "dst",
+          "typeRaw": "struct Apprentice *"
+        },
+        {
+          "name": "src",
+          "typeRaw": "struct Apprentice *"
+        }
+      ],
       "body": "s32 i, id;\n    s32 apprenticeSaveId, oldPlayerApprenticeSaveId;\n    s32 numOldPlayerApprentices, numMixApprentices;\n\n    dst[0].playerName[0] = EOS;\n    dst[1].playerName[0] = EOS;\n\n    dst[0] = src[0];\n\n    oldPlayerApprenticeSaveId = 0;\n    numOldPlayerApprentices = 0;\n    apprenticeSaveId = 0;\n    numMixApprentices = 0;\n    for (i = 0; i < 2; i++)\n    {\n        id = (i + gSaveBlock2Ptr->playerApprentice.saveId) % (APPRENTICE_COUNT - 1) + 1;\n        if (src[id].playerName[0] != EOS)\n        {\n            if (GetTrainerId(src[id].playerId) != GetTrainerId(gSaveBlock2Ptr->playerTrainerId))\n            {\n                numMixApprentices++;\n                apprenticeSaveId = id;\n            }\n            if (GetTrainerId(src[id].playerId) == GetTrainerId(gSaveBlock2Ptr->playerTrainerId))\n            {\n                numOldPlayerApprentices++;\n                oldPlayerApprenticeSaveId = id;\n            }\n        }\n    }\n\n     \n    if (numMixApprentices == 0 && numOldPlayerApprentices != 0)\n    {\n        numMixApprentices = numOldPlayerApprentices;\n        apprenticeSaveId = oldPlayerApprenticeSaveId;\n    }\n\n    switch (numMixApprentices)\n    {\n    case 1:\n        dst[1] = src[apprenticeSaveId];\n        break;\n    case 2:\n        if (Random2() > 0x3333)\n            dst[1] = src[gSaveBlock2Ptr->playerApprentice.saveId + 1];\n        else\n            dst[1] = src[((gSaveBlock2Ptr->playerApprentice.saveId + 1) % (APPRENTICE_COUNT - 1) + 1)];\n        break;\n    }",
       "callsTo": [
         "GetTrainerId",
@@ -399,6 +608,12 @@
       "returnType": "void",
       "signature": "void GetPlayerHallRecords(struct PlayerHallRecords *dst)",
       "paramsRaw": "struct PlayerHallRecords *dst",
+      "paramsList": [
+        {
+          "name": "dst",
+          "typeRaw": "struct PlayerHallRecords *"
+        }
+      ],
       "body": "s32 i, j;\n\n    for (i = 0; i < HALL_FACILITIES_COUNT; i++)\n    {\n        for (j = 0; j < FRONTIER_LVL_MODE_COUNT; j++)\n        {\n            CopyTrainerId(dst->onePlayer[i][j].id, gSaveBlock2Ptr->playerTrainerId);\n            dst->onePlayer[i][j].language = GAME_LANGUAGE;\n            StringCopy(dst->onePlayer[i][j].name, gSaveBlock2Ptr->playerName);\n        }\n    }\n\n    for (j = 0; j < FRONTIER_LVL_MODE_COUNT; j++)\n    {\n        dst->twoPlayers[j].language = GAME_LANGUAGE;\n        CopyTrainerId(dst->twoPlayers[j].id1, gSaveBlock2Ptr->playerTrainerId);\n        CopyTrainerId(dst->twoPlayers[j].id2, gSaveBlock2Ptr->frontier.opponentTrainerIds[j]);\n        StringCopy(dst->twoPlayers[j].name1, gSaveBlock2Ptr->playerName);\n        StringCopy(dst->twoPlayers[j].name2, gSaveBlock2Ptr->frontier.opponentNames[j]);\n    }\n\n    for (i = 0; i < FRONTIER_LVL_MODE_COUNT; i++)\n    {\n        dst->onePlayer[RANKING_HALL_TOWER_SINGLES][i].winStreak = gSaveBlock2Ptr->frontier.towerRecordWinStreaks[FRONTIER_MODE_SINGLES][i];\n        dst->onePlayer[RANKING_HALL_TOWER_DOUBLES][i].winStreak = gSaveBlock2Ptr->frontier.towerRecordWinStreaks[FRONTIER_MODE_DOUBLES][i];\n        dst->onePlayer[RANKING_HALL_TOWER_MULTIS][i].winStreak = gSaveBlock2Ptr->frontier.towerRecordWinStreaks[FRONTIER_MODE_MULTIS][i];\n        dst->onePlayer[RANKING_HALL_DOME][i].winStreak = gSaveBlock2Ptr->frontier.domeRecordWinStreaks[FRONTIER_MODE_SINGLES][i];\n        dst->onePlayer[RANKING_HALL_PALACE][i].winStreak = gSaveBlock2Ptr->frontier.palaceRecordWinStreaks[FRONTIER_MODE_SINGLES][i];\n        dst->onePlayer[RANKING_HALL_ARENA][i].winStreak = gSaveBlock2Ptr->frontier.arenaRecordStreaks[i];\n        dst->onePlayer[RANKING_HALL_FACTORY][i].winStreak = gSaveBlock2Ptr->frontier.factoryRecordWinStreaks[FRONTIER_MODE_SINGLES][i];\n        dst->onePlayer[RANKING_HALL_PIKE][i].winStreak = gSaveBlock2Ptr->frontier.pikeRecordStreaks[i];\n        dst->onePlayer[RANKING_HALL_PYRAMID][i].winStreak = gSaveBlock2Ptr->frontier.pyramidRecordStreaks[i];\n\n        dst->twoPlayers[i].winStreak = gSaveBlock2Ptr->frontier.towerRecordWinStreaks[FRONTIER_MODE_LINK_MULTIS][i];\n    }",
       "callsTo": [
         "CopyTrainerId",
@@ -410,6 +625,16 @@
       "returnType": "bool32",
       "signature": "static bool32 IsApprenticeAlreadySaved(struct Apprentice *mixApprentice, struct Apprentice *apprentices)",
       "paramsRaw": "struct Apprentice *mixApprentice, struct Apprentice *apprentices",
+      "paramsList": [
+        {
+          "name": "mixApprentice",
+          "typeRaw": "struct Apprentice *"
+        },
+        {
+          "name": "apprentices",
+          "typeRaw": "struct Apprentice *"
+        }
+      ],
       "body": "s32 i;\n\n    for (i = 0; i < APPRENTICE_COUNT; i++)\n    {\n        if (GetTrainerId(mixApprentice->playerId) == GetTrainerId(apprentices[i].playerId)\n            && mixApprentice->number == apprentices[i].number)\n            return TRUE;\n    }\n\n    return FALSE;",
       "callsTo": [
         "GetTrainerId"
@@ -420,6 +645,20 @@
       "returnType": "void",
       "signature": "static void ReceiveApprenticeData(struct Apprentice *records, size_t recordSize, u32 multiplayerId)",
       "paramsRaw": "struct Apprentice *records, size_t recordSize, u32 multiplayerId",
+      "paramsList": [
+        {
+          "name": "records",
+          "typeRaw": "struct Apprentice *"
+        },
+        {
+          "name": "recordSize",
+          "typeRaw": "size_t"
+        },
+        {
+          "name": "multiplayerId",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "s32 i, numApprentices, apprenticeId;\n    struct Apprentice *mixApprentice;\n    u32 mixIndices[MAX_LINK_PLAYERS];\n    u32 apprenticeSaveId;\n\n    ShufflePlayerIndices(mixIndices);\n    mixApprentice = (void *)records + (recordSize * mixIndices[multiplayerId]);\n    numApprentices = 0;\n    apprenticeId = 0;\n    for (i = 0; i < 2; i++)\n    {\n        if (mixApprentice[i].playerName[0] != EOS && !IsApprenticeAlreadySaved(&mixApprentice[i], &gSaveBlock2Ptr->apprentices[0]))\n        {\n            numApprentices++;\n            apprenticeId = i;\n        }\n    }\n\n    switch (numApprentices)\n    {\n    case 1:\n        apprenticeSaveId = gSaveBlock2Ptr->playerApprentice.saveId + 1;\n        gSaveBlock2Ptr->apprentices[apprenticeSaveId] = mixApprentice[apprenticeId];\n        gSaveBlock2Ptr->playerApprentice.saveId = (gSaveBlock2Ptr->playerApprentice.saveId + 1) % (APPRENTICE_COUNT - 1);\n        break;\n    case 2:\n        for (i = 0; i < 2; i++)\n        {\n            apprenticeSaveId = ((i ^ 1) + gSaveBlock2Ptr->playerApprentice.saveId) % (APPRENTICE_COUNT - 1) + 1;\n            gSaveBlock2Ptr->apprentices[apprenticeSaveId] = mixApprentice[i];\n        }\n        gSaveBlock2Ptr->playerApprentice.saveId = (gSaveBlock2Ptr->playerApprentice.saveId + 2) % (APPRENTICE_COUNT - 1);\n        break;\n    }",
       "callsTo": [
         "IsApprenticeAlreadySaved",
@@ -431,6 +670,28 @@
       "returnType": "void",
       "signature": "static void GetNewHallRecords(struct RecordMixingHallRecords *dst, void *records, size_t recordSize, u32 multiplayerId, s32 linkPlayerCount)",
       "paramsRaw": "struct RecordMixingHallRecords *dst, void *records, size_t recordSize, u32 multiplayerId, s32 linkPlayerCount",
+      "paramsList": [
+        {
+          "name": "dst",
+          "typeRaw": "struct RecordMixingHallRecords *"
+        },
+        {
+          "name": "records",
+          "typeRaw": "void *"
+        },
+        {
+          "name": "recordSize",
+          "typeRaw": "size_t"
+        },
+        {
+          "name": "multiplayerId",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "linkPlayerCount",
+          "typeRaw": "s32"
+        }
+      ],
       "body": "s32 i, j, k, l;\n    s32 repeatTrainers;\n\n     \n    k = 0;\n    for (i = 0; i < linkPlayerCount; i++)\n    {\n        if (i != multiplayerId)\n            sPartnerHallRecords[k++] = records;\n        if (k == HALL_RECORDS_COUNT)\n            break;\n        records += recordSize;\n    }\n\n     \n    for (i = 0; i < HALL_FACILITIES_COUNT; i++)\n    {\n        for (j = 0; j < FRONTIER_LVL_MODE_COUNT; j++)\n        {\n             \n            for (k = 0; k < HALL_RECORDS_COUNT; k++)\n                dst->hallRecords1P[i][j][k] = gSaveBlock2Ptr->hallRecords1P[i][j][k];\n\n             \n            for (k = 0; k < linkPlayerCount - 1; k++)\n            {\n                repeatTrainers = 0;\n                for (l = 0; l < HALL_RECORDS_COUNT; l++)\n                {\n                     \n                     \n                    if (GetTrainerId(dst->hallRecords1P[i][j][l].id) == GetTrainerId(sPartnerHallRecords[k]->onePlayer[i][j].id))\n                    {\n                        repeatTrainers++;\n                        if (dst->hallRecords1P[i][j][l].winStreak < sPartnerHallRecords[k]->onePlayer[i][j].winStreak)\n                            dst->hallRecords1P[i][j][l] = sPartnerHallRecords[k]->onePlayer[i][j];\n                    }\n                }\n\n                 \n                if (repeatTrainers == 0)\n                    dst->hallRecords1P[i][j][k + HALL_RECORDS_COUNT] = sPartnerHallRecords[k]->onePlayer[i][j];\n            }\n        }\n    }\n\n     \n    for (j = 0; j < FRONTIER_LVL_MODE_COUNT; j++)\n    {\n         \n        for (k = 0; k < HALL_RECORDS_COUNT; k++)\n            dst->hallRecords2P[j][k] = gSaveBlock2Ptr->hallRecords2P[j][k];\n\n         \n        for (k = 0; k < linkPlayerCount - 1; k++)\n        {\n            repeatTrainers = 0;\n            for (l = 0; l < HALL_RECORDS_COUNT; l++)\n            {\n                 \n                 \n                if (GetTrainerId(dst->hallRecords2P[j][l].id1) == GetTrainerId(sPartnerHallRecords[k]->twoPlayers[j].id1)\n                 && GetTrainerId(dst->hallRecords2P[j][l].id2) == GetTrainerId(sPartnerHallRecords[k]->twoPlayers[j].id2))\n                {\n                    repeatTrainers++;\n                    if (dst->hallRecords2P[j][l].winStreak < sPartnerHallRecords[k]->twoPlayers[j].winStreak)\n                        dst->hallRecords2P[j][l] = sPartnerHallRecords[k]->twoPlayers[j];\n                }\n            }\n\n             \n            if (repeatTrainers == 0)\n                dst->hallRecords2P[j][k + HALL_RECORDS_COUNT] = sPartnerHallRecords[k]->twoPlayers[j];\n        }\n    }",
       "callsTo": [
         "GetTrainerId"
@@ -441,6 +702,16 @@
       "returnType": "void",
       "signature": "static void FillWinStreakRecords1P(struct RankingHall1P *playerRecords, struct RankingHall1P *mixRecords)",
       "paramsRaw": "struct RankingHall1P *playerRecords, struct RankingHall1P *mixRecords",
+      "paramsList": [
+        {
+          "name": "playerRecords",
+          "typeRaw": "struct RankingHall1P *"
+        },
+        {
+          "name": "mixRecords",
+          "typeRaw": "struct RankingHall1P *"
+        }
+      ],
       "body": "s32 i, j;\n\n     \n    for (i = 0; i < HALL_RECORDS_COUNT; i++)\n    {\n         \n        s32 highestWinStreak = 0;\n        s32 highestId = -1;\n        for (j = 0; j < HALL_RECORDS_COUNT * 2; j++)\n        {\n            if (mixRecords[j].winStreak > highestWinStreak)\n            {\n                highestId = j;\n                highestWinStreak = mixRecords[j].winStreak;\n            }\n        }\n\n         \n        if (highestId >= 0)\n        {\n            playerRecords[i] = mixRecords[highestId];\n            mixRecords[highestId].winStreak = 0;\n        }\n    }",
       "callsTo": [],
       "lineCount": 24
@@ -449,6 +720,16 @@
       "returnType": "void",
       "signature": "static void FillWinStreakRecords2P(struct RankingHall2P *playerRecords, struct RankingHall2P *mixRecords)",
       "paramsRaw": "struct RankingHall2P *playerRecords, struct RankingHall2P *mixRecords",
+      "paramsList": [
+        {
+          "name": "playerRecords",
+          "typeRaw": "struct RankingHall2P *"
+        },
+        {
+          "name": "mixRecords",
+          "typeRaw": "struct RankingHall2P *"
+        }
+      ],
       "body": "s32 i, j;\n\n     \n    for (i = 0; i < HALL_RECORDS_COUNT; i++)\n    {\n         \n        s32 highestWinStreak = 0;\n        s32 highestId = -1;\n        for (j = 0; j < HALL_RECORDS_COUNT * 2; j++)\n        {\n            if (mixRecords[j].winStreak > highestWinStreak)\n            {\n                highestId = j;\n                highestWinStreak = mixRecords[j].winStreak;\n            }\n        }\n\n         \n        if (highestId >= 0)\n        {\n            playerRecords[i] = mixRecords[highestId];\n            mixRecords[highestId].winStreak = 0;\n        }\n    }",
       "callsTo": [],
       "lineCount": 24
@@ -457,6 +738,12 @@
       "returnType": "void",
       "signature": "static void SaveHighestWinStreakRecords(struct RecordMixingHallRecords *mixHallRecords)",
       "paramsRaw": "struct RecordMixingHallRecords *mixHallRecords",
+      "paramsList": [
+        {
+          "name": "mixHallRecords",
+          "typeRaw": "struct RecordMixingHallRecords *"
+        }
+      ],
       "body": "s32 i, j;\n\n    for (i = 0; i < HALL_FACILITIES_COUNT; i++)\n    {\n        for (j = 0; j < FRONTIER_LVL_MODE_COUNT; j++)\n            FillWinStreakRecords1P(gSaveBlock2Ptr->hallRecords1P[i][j], mixHallRecords->hallRecords1P[i][j]);\n    }\n    for (j = 0; j < FRONTIER_LVL_MODE_COUNT; j++)\n        FillWinStreakRecords2P(gSaveBlock2Ptr->hallRecords2P[j], mixHallRecords->hallRecords2P[j]);",
       "callsTo": [
         "FillWinStreakRecords1P",
@@ -468,6 +755,20 @@
       "returnType": "void",
       "signature": "static void ReceiveRankingHallRecords(struct PlayerHallRecords *records, size_t recordSize, u32 multiplayerId)",
       "paramsRaw": "struct PlayerHallRecords *records, size_t recordSize, u32 multiplayerId",
+      "paramsList": [
+        {
+          "name": "records",
+          "typeRaw": "struct PlayerHallRecords *"
+        },
+        {
+          "name": "recordSize",
+          "typeRaw": "size_t"
+        },
+        {
+          "name": "multiplayerId",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "u8 linkPlayerCount = GetLinkPlayerCount();\n    struct RecordMixingHallRecords *mixHallRecords = AllocZeroed(sizeof(*mixHallRecords));\n\n    GetNewHallRecords(mixHallRecords, records, recordSize, multiplayerId, linkPlayerCount);\n    SaveHighestWinStreakRecords(mixHallRecords);\n\n    Free(mixHallRecords);",
       "callsTo": [
         "AllocZeroed",
@@ -482,6 +783,12 @@
       "returnType": "void",
       "signature": "static void GetRecordMixingDaycareMail(struct RecordMixingDaycareMail *dst)",
       "paramsRaw": "struct RecordMixingDaycareMail *dst",
+      "paramsList": [
+        {
+          "name": "dst",
+          "typeRaw": "struct RecordMixingDaycareMail *"
+        }
+      ],
       "body": "sRecordMixMail.mail[0] = gSaveBlock1Ptr->daycare.mons[0].mail;\n    sRecordMixMail.mail[1] = gSaveBlock1Ptr->daycare.mons[1].mail;\n    InitDaycareMailRecordMixing(&gSaveBlock1Ptr->daycare, &sRecordMixMail);\n    *dst = *sRecordMixMailSave;",
       "callsTo": [
         "InitDaycareMailRecordMixing"
@@ -492,6 +799,12 @@
       "returnType": "void",
       "signature": "static void SanitizeDaycareMailForRuby(struct RecordMixingDaycareMail *src)",
       "paramsRaw": "struct RecordMixingDaycareMail *src",
+      "paramsList": [
+        {
+          "name": "src",
+          "typeRaw": "struct RecordMixingDaycareMail *"
+        }
+      ],
       "body": "s32 i;\n\n    for (i = 0; i < src->numDaycareMons; i++)\n    {\n        struct DaycareMail *mail = &src->mail[i];\n        if (mail->message.itemId != ITEM_NONE)\n        {\n            if (mail->gameLanguage != LANGUAGE_JAPANESE)\n                PadNameString(mail->otName, EXT_CTRL_CODE_BEGIN);\n\n            ConvertInternationalString(mail->monName, mail->monLanguage);\n        }\n    }",
       "callsTo": [
         "ConvertInternationalString",
@@ -503,6 +816,12 @@
       "returnType": "void",
       "signature": "static void SanitizeRubyBattleTowerRecord(struct RSBattleTowerRecord *src)",
       "paramsRaw": "struct RSBattleTowerRecord *src",
+      "paramsList": [
+        {
+          "name": "src",
+          "typeRaw": "struct RSBattleTowerRecord *"
+        }
+      ],
       "body": "",
       "callsTo": [],
       "lineCount": 1
@@ -511,6 +830,12 @@
       "returnType": "void",
       "signature": "static void SanitizeEmeraldBattleTowerRecord(struct EmeraldBattleTowerRecord *dst)",
       "paramsRaw": "struct EmeraldBattleTowerRecord *dst",
+      "paramsList": [
+        {
+          "name": "dst",
+          "typeRaw": "struct EmeraldBattleTowerRecord *"
+        }
+      ],
       "body": "s32 i;\n\n    for (i = 0; i < MAX_FRONTIER_PARTY_SIZE; i++)\n    {\n        struct BattleTowerPokemon *towerMon = &dst->party[i];\n        if (towerMon->species != SPECIES_NONE)\n            StripExtCtrlCodes(towerMon->nickname);\n    }\n\n    CalcEmeraldBattleTowerChecksum(dst);",
       "callsTo": [
         "CalcEmeraldBattleTowerChecksum",

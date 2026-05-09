@@ -6,6 +6,7 @@
       "returnType": "u8",
       "signature": "static u8 GetPokenavMainMenuType(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 menuType = POKENAV_MENU_TYPE_DEFAULT;\n\n    if (FlagGet(FLAG_ADDED_MATCH_CALL_TO_POKENAV))\n    {\n        menuType = POKENAV_MENU_TYPE_UNLOCK_MC;\n\n        if (FlagGet(FLAG_SYS_RIBBON_GET))\n            menuType = POKENAV_MENU_TYPE_UNLOCK_MC_RIBBONS;\n    }\n\n    return menuType;",
       "callsTo": [
         "FlagGet"
@@ -16,6 +17,7 @@
       "returnType": "bool32",
       "signature": "bool32 PokenavCallback_Init_MainMenuCursorOnMap(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "struct Pokenav_Menu *menu = AllocSubstruct(POKENAV_SUBSTRUCT_MAIN_MENU_HANDLER, sizeof(struct Pokenav_Menu));\n    if (!menu)\n        return FALSE;\n\n    menu->menuType = GetPokenavMainMenuType();\n    menu->cursorPos = POKENAV_MENUITEM_MAP;\n    menu->currMenuItem = POKENAV_MENUITEM_MAP;\n    menu->helpBarIndex = HELPBAR_NONE;\n    SetMenuInputHandler(menu);\n    return TRUE;",
       "callsTo": [
         "AllocSubstruct",
@@ -28,6 +30,7 @@
       "returnType": "bool32",
       "signature": "bool32 PokenavCallback_Init_MainMenuCursorOnMatchCall(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "struct Pokenav_Menu *menu = AllocSubstruct(POKENAV_SUBSTRUCT_MAIN_MENU_HANDLER, sizeof(struct Pokenav_Menu));\n    if (!menu)\n        return FALSE;\n\n    menu->menuType = GetPokenavMainMenuType();\n    menu->cursorPos = POKENAV_MENUITEM_MATCH_CALL;\n    menu->currMenuItem = POKENAV_MENUITEM_MATCH_CALL;\n    menu->helpBarIndex = HELPBAR_NONE;\n    SetMenuInputHandler(menu);\n    return TRUE;",
       "callsTo": [
         "AllocSubstruct",
@@ -40,6 +43,7 @@
       "returnType": "bool32",
       "signature": "bool32 PokenavCallback_Init_MainMenuCursorOnRibbons(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "struct Pokenav_Menu *menu = AllocSubstruct(POKENAV_SUBSTRUCT_MAIN_MENU_HANDLER, sizeof(struct Pokenav_Menu));\n    if (!menu)\n        return FALSE;\n\n    menu->menuType = GetPokenavMainMenuType();\n    menu->cursorPos = POKENAV_MENUITEM_RIBBONS;\n    menu->currMenuItem = POKENAV_MENUITEM_RIBBONS;\n    SetMenuInputHandler(menu);\n    return TRUE;",
       "callsTo": [
         "AllocSubstruct",
@@ -52,6 +56,7 @@
       "returnType": "bool32",
       "signature": "bool32 PokenavCallback_Init_ConditionMenu(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "struct Pokenav_Menu *menu = AllocSubstruct(POKENAV_SUBSTRUCT_MAIN_MENU_HANDLER, sizeof(struct Pokenav_Menu));\n    if (!menu)\n        return FALSE;\n\n    menu->menuType = POKENAV_MENU_TYPE_CONDITION;\n    menu->cursorPos = 0;    \n    menu->currMenuItem = POKENAV_MENUITEM_CONDITION_PARTY;\n    menu->helpBarIndex = HELPBAR_NONE;\n    SetMenuInputHandler(menu);\n    return TRUE;",
       "callsTo": [
         "AllocSubstruct",
@@ -63,6 +68,7 @@
       "returnType": "bool32",
       "signature": "bool32 PokenavCallback_Init_ConditionSearchMenu(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "struct Pokenav_Menu *menu = AllocSubstruct(POKENAV_SUBSTRUCT_MAIN_MENU_HANDLER, sizeof(struct Pokenav_Menu));\n    if (!menu)\n        return FALSE;\n\n    menu->menuType = POKENAV_MENU_TYPE_CONDITION_SEARCH;\n    menu->cursorPos = GetSelectedConditionSearch();\n    menu->currMenuItem = menu->cursorPos + POKENAV_MENUITEM_CONDITION_SEARCH_COOL;\n    menu->helpBarIndex = HELPBAR_NONE;\n    SetMenuInputHandler(menu);\n    return TRUE;",
       "callsTo": [
         "AllocSubstruct",
@@ -75,6 +81,12 @@
       "returnType": "void",
       "signature": "static void SetMenuInputHandler(struct Pokenav_Menu *menu)",
       "paramsRaw": "struct Pokenav_Menu *menu",
+      "paramsList": [
+        {
+          "name": "menu",
+          "typeRaw": "struct Pokenav_Menu *"
+        }
+      ],
       "body": "switch (menu->menuType)\n    {\n    case POKENAV_MENU_TYPE_DEFAULT:\n        SetPokenavMode(POKENAV_MODE_NORMAL);\n         \n    case POKENAV_MENU_TYPE_UNLOCK_MC:\n    case POKENAV_MENU_TYPE_UNLOCK_MC_RIBBONS:\n        menu->callback = GetMainMenuInputHandler();\n        break;\n    case POKENAV_MENU_TYPE_CONDITION:\n        menu->callback = HandleConditionMenuInput;\n        break;\n    case POKENAV_MENU_TYPE_CONDITION_SEARCH:\n        menu->callback = HandleConditionSearchMenuInput;\n        break;\n    }",
       "callsTo": [
         "GetMainMenuInputHandler",
@@ -86,6 +98,7 @@
       "returnType": "u32",
       "signature": "u32 GetMenuHandlerCallback(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "struct Pokenav_Menu *menu = GetSubstructPtr(POKENAV_SUBSTRUCT_MAIN_MENU_HANDLER);\n    return menu->callback(menu);",
       "callsTo": [
         "GetSubstructPtr"
@@ -96,6 +109,7 @@
       "returnType": "void",
       "signature": "void FreeMenuHandlerSubstruct1(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "FreePokenavSubstruct(POKENAV_SUBSTRUCT_MAIN_MENU_HANDLER);",
       "callsTo": [
         "FreePokenavSubstruct"
@@ -106,6 +120,12 @@
       "returnType": "u32",
       "signature": "static u32 HandleMainMenuInput(struct Pokenav_Menu *menu)",
       "paramsRaw": "struct Pokenav_Menu *menu",
+      "paramsList": [
+        {
+          "name": "menu",
+          "typeRaw": "struct Pokenav_Menu *"
+        }
+      ],
       "body": "if (UpdateMenuCursorPos(menu))\n        return POKENAV_MENU_FUNC_MOVE_CURSOR;\n\n    if (JOY_NEW(A_BUTTON))\n    {\n        switch (sMenuItems[menu->menuType][menu->cursorPos])\n        {\n        case POKENAV_MENUITEM_MAP:\n            menu->helpBarIndex = gSaveBlock2Ptr->regionMapZoom ? HELPBAR_MAP_ZOOMED_IN : HELPBAR_MAP_ZOOMED_OUT;\n            SetMenuIdAndCB(menu, POKENAV_REGION_MAP);\n            return POKENAV_MENU_FUNC_OPEN_FEATURE;\n        case POKENAV_MENUITEM_CONDITION:\n            menu->menuType = POKENAV_MENU_TYPE_CONDITION;\n            menu->cursorPos = 0;\n            menu->currMenuItem = sMenuItems[POKENAV_MENU_TYPE_CONDITION][0];\n            menu->callback = HandleConditionMenuInput;\n            return POKENAV_MENU_FUNC_OPEN_CONDITION;\n        case POKENAV_MENUITEM_MATCH_CALL:\n            menu->helpBarIndex = HELPBAR_MC_TRAINER_LIST;\n            SetMenuIdAndCB(menu, POKENAV_MATCH_CALL);\n            return POKENAV_MENU_FUNC_OPEN_FEATURE;\n        case POKENAV_MENUITEM_RIBBONS:\n            if (CanViewRibbonsMenu())\n            {\n                menu->helpBarIndex = HELPBAR_RIBBONS_MON_LIST;\n                SetMenuIdAndCB(menu, POKENAV_RIBBONS_MON_LIST);\n                return POKENAV_MENU_FUNC_OPEN_FEATURE;\n            }\n            else\n            {\n                menu->callback = HandleCantOpenRibbonsInput;\n                return POKENAV_MENU_FUNC_NO_RIBBON_WINNERS;\n            }\n        case POKENAV_MENUITEM_SWITCH_OFF:\n            return POKENAV_MENU_FUNC_EXIT;\n        }\n    }\n\n    if (JOY_NEW(B_BUTTON))\n        return POKENAV_MENU_FUNC_EXIT;\n\n    return POKENAV_MENU_FUNC_NONE;",
       "callsTo": [
         "CanViewRibbonsMenu",
@@ -119,6 +139,12 @@
       "returnType": "u32",
       "signature": "static u32 HandleMainMenuInputTutorial(struct Pokenav_Menu *menu)",
       "paramsRaw": "struct Pokenav_Menu *menu",
+      "paramsList": [
+        {
+          "name": "menu",
+          "typeRaw": "struct Pokenav_Menu *"
+        }
+      ],
       "body": "if (UpdateMenuCursorPos(menu))\n        return POKENAV_MENU_FUNC_MOVE_CURSOR;\n\n    if (JOY_NEW(A_BUTTON))\n    {\n        if (sMenuItems[menu->menuType][menu->cursorPos] == POKENAV_MENUITEM_MATCH_CALL)\n        {\n            menu->helpBarIndex = HELPBAR_MC_TRAINER_LIST;\n            SetMenuIdAndCB(menu, POKENAV_MATCH_CALL);\n            return POKENAV_MENU_FUNC_OPEN_FEATURE;\n        }\n        else\n        {\n            PlaySE(SE_FAILURE);\n            return POKENAV_MENU_FUNC_NONE;\n        }\n    }\n\n    if (JOY_NEW(B_BUTTON))\n    {\n        PlaySE(SE_FAILURE);\n        return POKENAV_MENU_FUNC_NONE;\n    }\n\n    return POKENAV_MENU_FUNC_NONE;",
       "callsTo": [
         "JOY_NEW",
@@ -132,6 +158,12 @@
       "returnType": "u32",
       "signature": "static u32 HandleMainMenuInputEndTutorial(struct Pokenav_Menu *menu)",
       "paramsRaw": "struct Pokenav_Menu *menu",
+      "paramsList": [
+        {
+          "name": "menu",
+          "typeRaw": "struct Pokenav_Menu *"
+        }
+      ],
       "body": "if (UpdateMenuCursorPos(menu))\n        return POKENAV_MENU_FUNC_MOVE_CURSOR;\n\n    if (JOY_NEW(A_BUTTON))\n    {\n        u32 menuItem = sMenuItems[menu->menuType][menu->cursorPos];\n        if (menuItem != POKENAV_MENUITEM_MATCH_CALL && menuItem != POKENAV_MENUITEM_SWITCH_OFF)\n        {\n            PlaySE(SE_FAILURE);\n            return POKENAV_MENU_FUNC_NONE;\n        }\n        else if (menuItem == POKENAV_MENUITEM_MATCH_CALL)\n        {\n            menu->helpBarIndex = HELPBAR_MC_TRAINER_LIST;\n            SetMenuIdAndCB(menu, POKENAV_MATCH_CALL);\n            return POKENAV_MENU_FUNC_OPEN_FEATURE;\n        }\n        else\n        {\n            return -1;\n        }\n    }\n    else if (JOY_NEW(B_BUTTON))\n    {\n        return -1;\n    }\n    return POKENAV_MENU_FUNC_NONE;",
       "callsTo": [
         "JOY_NEW",
@@ -145,6 +177,12 @@
       "returnType": "u32",
       "signature": "static u32 HandleCantOpenRibbonsInput(struct Pokenav_Menu *menu)",
       "paramsRaw": "struct Pokenav_Menu *menu",
+      "paramsList": [
+        {
+          "name": "menu",
+          "typeRaw": "struct Pokenav_Menu *"
+        }
+      ],
       "body": "if (UpdateMenuCursorPos(menu))\n    {\n        menu->callback = GetMainMenuInputHandler();\n        return POKENAV_MENU_FUNC_MOVE_CURSOR;\n    }\n\n    if (JOY_NEW(A_BUTTON | B_BUTTON))\n    {\n        menu->callback = GetMainMenuInputHandler();\n        return POKENAV_MENU_FUNC_RESHOW_DESCRIPTION;\n    }\n\n    return POKENAV_MENU_FUNC_NONE;",
       "callsTo": [
         "GetMainMenuInputHandler",
@@ -157,6 +195,12 @@
       "returnType": "u32",
       "signature": "static u32 HandleConditionMenuInput(struct Pokenav_Menu *menu)",
       "paramsRaw": "struct Pokenav_Menu *menu",
+      "paramsList": [
+        {
+          "name": "menu",
+          "typeRaw": "struct Pokenav_Menu *"
+        }
+      ],
       "body": "if (UpdateMenuCursorPos(menu))\n        return POKENAV_MENU_FUNC_MOVE_CURSOR;\n\n    if (JOY_NEW(A_BUTTON))\n    {\n        switch (sMenuItems[menu->menuType][menu->cursorPos])\n        {\n        case POKENAV_MENUITEM_CONDITION_SEARCH:\n            menu->menuType = POKENAV_MENU_TYPE_CONDITION_SEARCH;\n            menu->cursorPos = 0;\n            menu->currMenuItem = sMenuItems[POKENAV_MENU_TYPE_CONDITION_SEARCH][0];\n            menu->callback = HandleConditionSearchMenuInput;\n            return POKENAV_MENU_FUNC_OPEN_CONDITION_SEARCH;\n        case POKENAV_MENUITEM_CONDITION_PARTY:\n            menu->helpBarIndex = 0;\n            SetMenuIdAndCB(menu, POKENAV_CONDITION_GRAPH_PARTY);\n            return POKENAV_MENU_FUNC_OPEN_FEATURE;\n        case POKENAV_MENUITEM_CONDITION_CANCEL:\n            PlaySE(SE_SELECT);\n            ReturnToMainMenu(menu);\n            return POKENAV_MENU_FUNC_RETURN_TO_MAIN;\n        }\n    }\n    if (JOY_NEW(B_BUTTON))\n    {\n        if (menu->cursorPos != sLastCursorPositions[menu->menuType])\n        {\n            menu->cursorPos = sLastCursorPositions[menu->menuType];\n            menu->callback = CB2_ReturnToMainMenu;\n            return POKENAV_MENU_FUNC_MOVE_CURSOR;\n        }\n        else\n        {\n            PlaySE(SE_SELECT);\n            ReturnToMainMenu(menu);\n            return POKENAV_MENU_FUNC_RETURN_TO_MAIN;\n        }\n    }\n\n    return POKENAV_MENU_FUNC_NONE;",
       "callsTo": [
         "JOY_NEW",
@@ -171,6 +215,12 @@
       "returnType": "u32",
       "signature": "static u32 HandleConditionSearchMenuInput(struct Pokenav_Menu *menu)",
       "paramsRaw": "struct Pokenav_Menu *menu",
+      "paramsList": [
+        {
+          "name": "menu",
+          "typeRaw": "struct Pokenav_Menu *"
+        }
+      ],
       "body": "if (UpdateMenuCursorPos(menu))\n        return POKENAV_MENU_FUNC_MOVE_CURSOR;\n\n    if (JOY_NEW(A_BUTTON))\n    {\n        u8 menuItem = sMenuItems[menu->menuType][menu->cursorPos];\n        if (menuItem != POKENAV_MENUITEM_CONDITION_SEARCH_CANCEL)\n        {\n            SetSelectedConditionSearch(menuItem - POKENAV_MENUITEM_CONDITION_SEARCH_COOL);\n            SetMenuIdAndCB(menu, POKENAV_CONDITION_SEARCH_RESULTS);\n            menu->helpBarIndex = HELPBAR_CONDITION_MON_LIST;\n            return POKENAV_MENU_FUNC_OPEN_FEATURE;\n        }\n        else\n        {\n            PlaySE(SE_SELECT);\n            ReturnToConditionMenu(menu);\n            return POKENAV_MENU_FUNC_RETURN_TO_CONDITION;\n        }\n    }\n    if (JOY_NEW(B_BUTTON))\n    {\n        if (menu->cursorPos != sLastCursorPositions[menu->menuType])\n        {\n            menu->cursorPos = sLastCursorPositions[menu->menuType];\n            menu->callback = CB2_ReturnToConditionMenu;\n            return POKENAV_MENU_FUNC_MOVE_CURSOR;\n        }\n        else\n        {\n            PlaySE(SE_SELECT);\n            ReturnToConditionMenu(menu);\n            return POKENAV_MENU_FUNC_RETURN_TO_CONDITION;\n        }\n    }\n    return POKENAV_MENU_FUNC_NONE;",
       "callsTo": [
         "JOY_NEW",
@@ -186,6 +236,12 @@
       "returnType": "u32",
       "signature": "static u32 CB2_ReturnToMainMenu(struct Pokenav_Menu *menu)",
       "paramsRaw": "struct Pokenav_Menu *menu",
+      "paramsList": [
+        {
+          "name": "menu",
+          "typeRaw": "struct Pokenav_Menu *"
+        }
+      ],
       "body": "ReturnToMainMenu(menu);\n    return POKENAV_MENU_FUNC_RETURN_TO_MAIN;",
       "callsTo": [
         "ReturnToMainMenu"
@@ -196,6 +252,12 @@
       "returnType": "u32",
       "signature": "static u32 CB2_ReturnToConditionMenu(struct Pokenav_Menu *menu)",
       "paramsRaw": "struct Pokenav_Menu *menu",
+      "paramsList": [
+        {
+          "name": "menu",
+          "typeRaw": "struct Pokenav_Menu *"
+        }
+      ],
       "body": "ReturnToConditionMenu(menu);\n    return POKENAV_MENU_FUNC_RETURN_TO_CONDITION;",
       "callsTo": [
         "ReturnToConditionMenu"
@@ -206,6 +268,16 @@
       "returnType": "void",
       "signature": "static void SetMenuIdAndCB(struct Pokenav_Menu *menu, u32 menuId)",
       "paramsRaw": "struct Pokenav_Menu *menu, u32 menuId",
+      "paramsList": [
+        {
+          "name": "menu",
+          "typeRaw": "struct Pokenav_Menu *"
+        },
+        {
+          "name": "menuId",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "menu->menuId = menuId;\n    menu->callback = GetMenuId;",
       "callsTo": [],
       "lineCount": 2
@@ -214,6 +286,12 @@
       "returnType": "u32",
       "signature": "static u32 GetMenuId(struct Pokenav_Menu *menu)",
       "paramsRaw": "struct Pokenav_Menu *menu",
+      "paramsList": [
+        {
+          "name": "menu",
+          "typeRaw": "struct Pokenav_Menu *"
+        }
+      ],
       "body": "return menu->menuId;",
       "callsTo": [],
       "lineCount": 1
@@ -222,6 +300,12 @@
       "returnType": "void",
       "signature": "static void ReturnToMainMenu(struct Pokenav_Menu *menu)",
       "paramsRaw": "struct Pokenav_Menu *menu",
+      "paramsList": [
+        {
+          "name": "menu",
+          "typeRaw": "struct Pokenav_Menu *"
+        }
+      ],
       "body": "menu->menuType = GetPokenavMainMenuType();\n    menu->cursorPos = 1;\n    menu->currMenuItem = sMenuItems[menu->menuType][menu->cursorPos];\n    menu->callback = HandleMainMenuInput;",
       "callsTo": [
         "GetPokenavMainMenuType"
@@ -232,6 +316,12 @@
       "returnType": "void",
       "signature": "static void ReturnToConditionMenu(struct Pokenav_Menu *menu)",
       "paramsRaw": "struct Pokenav_Menu *menu",
+      "paramsList": [
+        {
+          "name": "menu",
+          "typeRaw": "struct Pokenav_Menu *"
+        }
+      ],
       "body": "menu->menuType = POKENAV_MENU_TYPE_CONDITION;\n    menu->cursorPos = 1;\n    menu->currMenuItem = sMenuItems[POKENAV_MENU_TYPE_CONDITION][1];\n    menu->callback = HandleConditionMenuInput;",
       "callsTo": [],
       "lineCount": 4
@@ -240,6 +330,12 @@
       "returnType": "bool32",
       "signature": "static bool32 UpdateMenuCursorPos(struct Pokenav_Menu *menu)",
       "paramsRaw": "struct Pokenav_Menu *menu",
+      "paramsList": [
+        {
+          "name": "menu",
+          "typeRaw": "struct Pokenav_Menu *"
+        }
+      ],
       "body": "if (JOY_NEW(DPAD_UP))\n    {\n        if (--menu->cursorPos < 0)\n            menu->cursorPos = sLastCursorPositions[menu->menuType];\n\n        menu->currMenuItem = sMenuItems[menu->menuType][menu->cursorPos];\n        return TRUE;\n    }\n    else if (JOY_NEW(DPAD_DOWN))\n    {\n        menu->cursorPos++;\n        if (menu->cursorPos > sLastCursorPositions[menu->menuType])\n            menu->cursorPos = 0;\n\n        menu->currMenuItem = sMenuItems[menu->menuType][menu->cursorPos];\n        return TRUE;\n    }\n    else\n    {\n        return FALSE;\n    }",
       "callsTo": [
         "JOY_NEW"
@@ -250,6 +346,7 @@
       "returnType": "int",
       "signature": "int GetPokenavMenuType(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "struct Pokenav_Menu *menu = GetSubstructPtr(POKENAV_SUBSTRUCT_MAIN_MENU_HANDLER);\n    return menu->menuType;",
       "callsTo": [
         "GetSubstructPtr"
@@ -260,6 +357,7 @@
       "returnType": "int",
       "signature": "int GetPokenavCursorPos(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "struct Pokenav_Menu *menu = GetSubstructPtr(POKENAV_SUBSTRUCT_MAIN_MENU_HANDLER);\n    return menu->cursorPos;",
       "callsTo": [
         "GetSubstructPtr"
@@ -270,6 +368,7 @@
       "returnType": "int",
       "signature": "int GetCurrentMenuItemId(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "struct Pokenav_Menu *menu = GetSubstructPtr(POKENAV_SUBSTRUCT_MAIN_MENU_HANDLER);\n    return menu->currMenuItem;",
       "callsTo": [
         "GetSubstructPtr"
@@ -280,6 +379,7 @@
       "returnType": "u16",
       "signature": "u16 GetHelpBarTextId(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "struct Pokenav_Menu *menu = GetSubstructPtr(POKENAV_SUBSTRUCT_MAIN_MENU_HANDLER);\n    return menu->helpBarIndex;",
       "callsTo": [
         "GetSubstructPtr"

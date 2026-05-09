@@ -6,6 +6,12 @@
       "returnType": "void",
       "signature": "void FieldInitRegionMap(MainCallback callback)",
       "paramsRaw": "MainCallback callback",
+      "paramsList": [
+        {
+          "name": "callback",
+          "typeRaw": "MainCallback"
+        }
+      ],
       "body": "SetVBlankCallback(NULL);\n    sFieldRegionMapHandler = Alloc(sizeof(*sFieldRegionMapHandler));\n    sFieldRegionMapHandler->state = 0;\n    sFieldRegionMapHandler->callback = callback;\n    SetMainCallback2(MCB2_InitRegionMapRegisters);",
       "callsTo": [
         "Alloc",
@@ -18,6 +24,7 @@
       "returnType": "void",
       "signature": "static void MCB2_InitRegionMapRegisters(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "SetGpuReg(REG_OFFSET_DISPCNT, 0);\n    SetGpuReg(REG_OFFSET_BG0HOFS, 0);\n    SetGpuReg(REG_OFFSET_BG0VOFS, 0);\n    SetGpuReg(REG_OFFSET_BG1HOFS, 0);\n    SetGpuReg(REG_OFFSET_BG1VOFS, 0);\n    SetGpuReg(REG_OFFSET_BG2HOFS, 0);\n    SetGpuReg(REG_OFFSET_BG2VOFS, 0);\n    SetGpuReg(REG_OFFSET_BG3HOFS, 0);\n    SetGpuReg(REG_OFFSET_BG3VOFS, 0);\n    ResetSpriteData();\n    FreeAllSpritePalettes();\n    ResetBgsAndClearDma3BusyFlags(0);\n    InitBgsFromTemplates(1, sFieldRegionMapBgTemplates, ARRAY_COUNT(sFieldRegionMapBgTemplates));\n    InitWindows(sFieldRegionMapWindowTemplates);\n    DeactivateAllTextPrinters();\n    LoadUserWindowBorderGfx(0, 0x27, BG_PLTT_ID(13));\n    ClearScheduledBgCopiesToVram();\n    SetMainCallback2(MCB2_FieldUpdateRegionMap);\n    SetVBlankCallback(VBCB_FieldUpdateRegionMap);",
       "callsTo": [
         "ARRAY_COUNT",
@@ -40,6 +47,7 @@
       "returnType": "void",
       "signature": "static void VBCB_FieldUpdateRegionMap(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "LoadOam();\n    ProcessSpriteCopyRequests();\n    TransferPlttBuffer();",
       "callsTo": [
         "LoadOam",
@@ -52,6 +60,7 @@
       "returnType": "void",
       "signature": "static void MCB2_FieldUpdateRegionMap(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "FieldUpdateRegionMap();\n    AnimateSprites();\n    BuildOamBuffer();\n    UpdatePaletteFade();\n    DoScheduledBgTilemapCopiesToVram();",
       "callsTo": [
         "AnimateSprites",
@@ -66,6 +75,7 @@
       "returnType": "void",
       "signature": "static void FieldUpdateRegionMap(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 offset;\n\n    switch (sFieldRegionMapHandler->state)\n    {\n        case 0:\n            InitRegionMap(&sFieldRegionMapHandler->regionMap, FALSE);\n            CreateRegionMapPlayerIcon(TAG_PLAYER_ICON, TAG_PLAYER_ICON);\n            CreateRegionMapCursor(TAG_CURSOR, TAG_CURSOR);\n            sFieldRegionMapHandler->state++;\n            break;\n        case 1:\n            DrawStdFrameWithCustomTileAndPalette(WIN_TITLE, FALSE, 0x27, 0xd);\n            offset = GetStringCenterAlignXOffset(FONT_NORMAL, gText_Hoenn, 0x38);\n            AddTextPrinterParameterized(WIN_TITLE, FONT_NORMAL, gText_Hoenn, offset, 1, 0, NULL);\n            ScheduleBgCopyTilemapToVram(0);\n            DrawStdFrameWithCustomTileAndPalette(WIN_MAPSEC_NAME, FALSE, 0x27, 0xd);\n            PrintRegionMapSecName();\n            BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);\n            sFieldRegionMapHandler->state++;\n            break;\n        case 2:\n            SetGpuRegBits(REG_OFFSET_DISPCNT, DISPCNT_OBJ_1D_MAP | DISPCNT_OBJ_ON);\n            ShowBg(0);\n            ShowBg(2);\n            sFieldRegionMapHandler->state++;\n            break;\n        case 3:\n            if (!gPaletteFade.active)\n            {\n                sFieldRegionMapHandler->state++;\n            }\n            break;\n        case 4:\n            switch (DoRegionMapInputCallback())\n            {\n                case MAP_INPUT_MOVE_END:\n                    PrintRegionMapSecName();\n                    break;\n                case MAP_INPUT_A_BUTTON:\n                case MAP_INPUT_B_BUTTON:\n                    sFieldRegionMapHandler->state++;\n                    break;\n            }\n            break;\n        case 5:\n            BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);\n            sFieldRegionMapHandler->state++;\n            break;\n        case 6:\n            if (!gPaletteFade.active)\n            {\n                FreeRegionMapIconResources();\n                SetMainCallback2(sFieldRegionMapHandler->callback);\n                TRY_FREE_AND_SET_NULL(sFieldRegionMapHandler);\n                FreeAllWindowBuffers();\n            }\n            break;\n    }",
       "callsTo": [
         "AddTextPrinterParameterized",
@@ -91,6 +101,7 @@
       "returnType": "void",
       "signature": "static void PrintRegionMapSecName(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (sFieldRegionMapHandler->regionMap.mapSecType != MAPSECTYPE_NONE)\n    {\n        FillWindowPixelBuffer(WIN_MAPSEC_NAME, PIXEL_FILL(1));\n        AddTextPrinterParameterized(WIN_MAPSEC_NAME, FONT_NORMAL, sFieldRegionMapHandler->regionMap.mapSecName, 0, 1, 0, NULL);\n        ScheduleBgCopyTilemapToVram(WIN_MAPSEC_NAME);\n    }\n    else\n    {\n        FillWindowPixelBuffer(WIN_MAPSEC_NAME, PIXEL_FILL(1));\n        CopyWindowToVram(WIN_MAPSEC_NAME, COPYWIN_FULL);\n    }",
       "callsTo": [
         "AddTextPrinterParameterized",

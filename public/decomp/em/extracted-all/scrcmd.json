@@ -6,6 +6,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_nop(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "return FALSE;",
       "callsTo": [],
       "lineCount": 1
@@ -14,6 +20,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_nop1(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "return FALSE;",
       "callsTo": [],
       "lineCount": 1
@@ -22,6 +34,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_end(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "StopScript(ctx);\n    return FALSE;",
       "callsTo": [
         "StopScript"
@@ -32,6 +50,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_gotonative(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "bool8 (*addr)(void) = (bool8 (*)(void))ScriptReadWord(ctx);\n\n    SetupNativeScript(ctx, addr);\n    return TRUE;",
       "callsTo": [
         "ScriptReadWord",
@@ -43,6 +67,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_special(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u16 index = ScriptReadHalfword(ctx);\n\n    gSpecials[index]();\n    return FALSE;",
       "callsTo": [
         "ScriptReadHalfword"
@@ -53,6 +83,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_specialvar(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u16 *var = GetVarPointer(ScriptReadHalfword(ctx));\n\n    *var = gSpecials[ScriptReadHalfword(ctx)]();\n    return FALSE;",
       "callsTo": [
         "GetVarPointer",
@@ -64,6 +100,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_callnative(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "NativeFunc func = (NativeFunc)ScriptReadWord(ctx);\n\n    func();\n    return FALSE;",
       "callsTo": [
         "ScriptReadWord"
@@ -74,6 +116,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_waitstate(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "ScriptContext_Stop();\n    return TRUE;",
       "callsTo": [
         "ScriptContext_Stop"
@@ -84,6 +132,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_goto(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "const u8 *ptr = (const u8 *)ScriptReadWord(ctx);\n\n    ScriptJump(ctx, ptr);\n    return FALSE;",
       "callsTo": [
         "ScriptJump",
@@ -95,6 +149,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_return(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "ScriptReturn(ctx);\n    return FALSE;",
       "callsTo": [
         "ScriptReturn"
@@ -105,6 +165,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_call(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "const u8 *ptr = (const u8 *)ScriptReadWord(ctx);\n\n    ScriptCall(ctx, ptr);\n    return FALSE;",
       "callsTo": [
         "ScriptCall",
@@ -116,6 +182,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_goto_if(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 condition = ScriptReadByte(ctx);\n    const u8 *ptr = (const u8 *)ScriptReadWord(ctx);\n\n    if (sScriptConditionTable[condition][ctx->comparisonResult] == 1)\n        ScriptJump(ctx, ptr);\n    return FALSE;",
       "callsTo": [
         "ScriptJump",
@@ -128,6 +200,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_call_if(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 condition = ScriptReadByte(ctx);\n    const u8 *ptr = (const u8 *)ScriptReadWord(ctx);\n\n    if (sScriptConditionTable[condition][ctx->comparisonResult] == 1)\n        ScriptCall(ctx, ptr);\n    return FALSE;",
       "callsTo": [
         "ScriptCall",
@@ -140,6 +218,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_setvaddress(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u32 addr1 = (u32)ctx->scriptPtr - 1;\n    u32 addr2 = ScriptReadWord(ctx);\n\n    sAddressOffset = addr2 - addr1;\n    return FALSE;",
       "callsTo": [
         "ScriptReadWord"
@@ -150,6 +234,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_vgoto(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u32 addr = ScriptReadWord(ctx);\n\n    ScriptJump(ctx, (u8 *)(addr - sAddressOffset));\n    return FALSE;",
       "callsTo": [
         "ScriptJump",
@@ -161,6 +251,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_vcall(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u32 addr = ScriptReadWord(ctx);\n\n    ScriptCall(ctx, (u8 *)(addr - sAddressOffset));\n    return FALSE;",
       "callsTo": [
         "ScriptCall",
@@ -172,6 +268,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_vgoto_if(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 condition = ScriptReadByte(ctx);\n    const u8 *ptr = (const u8 *)(ScriptReadWord(ctx) - sAddressOffset);\n\n    if (sScriptConditionTable[condition][ctx->comparisonResult] == 1)\n        ScriptJump(ctx, ptr);\n    return FALSE;",
       "callsTo": [
         "ScriptJump",
@@ -184,6 +286,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_vcall_if(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 condition = ScriptReadByte(ctx);\n    const u8 *ptr = (const u8 *)(ScriptReadWord(ctx) - sAddressOffset);\n\n    if (sScriptConditionTable[condition][ctx->comparisonResult] == 1)\n        ScriptCall(ctx, ptr);\n    return FALSE;",
       "callsTo": [
         "ScriptCall",
@@ -196,6 +304,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_gotostd(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 index = ScriptReadByte(ctx);\n    const u8 **ptr = &gStdScripts[index];\n\n    if (ptr < gStdScripts_End)\n        ScriptJump(ctx, *ptr);\n    return FALSE;",
       "callsTo": [
         "ScriptJump",
@@ -207,6 +321,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_callstd(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 index = ScriptReadByte(ctx);\n    const u8 **ptr = &gStdScripts[index];\n\n    if (ptr < gStdScripts_End)\n        ScriptCall(ctx, *ptr);\n    return FALSE;",
       "callsTo": [
         "ScriptCall",
@@ -218,6 +338,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_gotostd_if(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 condition = ScriptReadByte(ctx);\n    u8 index = ScriptReadByte(ctx);\n\n    if (sScriptConditionTable[condition][ctx->comparisonResult] == 1)\n    {\n        const u8 **ptr = &gStdScripts[index];\n        if (ptr < gStdScripts_End)\n            ScriptJump(ctx, *ptr);\n    }\n    return FALSE;",
       "callsTo": [
         "ScriptJump",
@@ -229,6 +355,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_callstd_if(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 condition = ScriptReadByte(ctx);\n    u8 index = ScriptReadByte(ctx);\n\n    if (sScriptConditionTable[condition][ctx->comparisonResult] == 1)\n    {\n        const u8 **ptr = &gStdScripts[index];\n        if (ptr < gStdScripts_End)\n            ScriptCall(ctx, *ptr);\n    }\n    return FALSE;",
       "callsTo": [
         "ScriptCall",
@@ -240,6 +372,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_returnram(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "ScriptJump(ctx, gRamScriptRetAddr);\n    return FALSE;",
       "callsTo": [
         "ScriptJump"
@@ -250,6 +388,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_endram(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "ClearRamScript();\n    StopScript(ctx);\n    return TRUE;",
       "callsTo": [
         "ClearRamScript",
@@ -261,6 +405,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_setmysteryeventstatus(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 status = ScriptReadByte(ctx);\n\n    SetMysteryEventScriptStatus(status);\n    return FALSE;",
       "callsTo": [
         "ScriptReadByte",
@@ -272,6 +422,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_loadword(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 index = ScriptReadByte(ctx);\n\n    ctx->data[index] = ScriptReadWord(ctx);\n    return FALSE;",
       "callsTo": [
         "ScriptReadByte",
@@ -283,6 +439,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_loadbytefromptr(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 index = ScriptReadByte(ctx);\n\n    ctx->data[index] = *(const u8 *)ScriptReadWord(ctx);\n    return FALSE;",
       "callsTo": [
         "ScriptReadByte",
@@ -294,6 +456,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_setptr(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 value = ScriptReadByte(ctx);\n\n    *(u8 *)ScriptReadWord(ctx) = value;\n    return FALSE;",
       "callsTo": [
         "ScriptReadByte",
@@ -305,6 +473,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_loadbyte(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 index = ScriptReadByte(ctx);\n\n    ctx->data[index] = ScriptReadByte(ctx);\n    return FALSE;",
       "callsTo": [
         "ScriptReadByte"
@@ -315,6 +489,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_setptrbyte(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 index = ScriptReadByte(ctx);\n\n    *(u8 *)ScriptReadWord(ctx) = ctx->data[index];\n    return FALSE;",
       "callsTo": [
         "ScriptReadByte",
@@ -326,6 +506,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_copylocal(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 destIndex = ScriptReadByte(ctx);\n    u8 srcIndex = ScriptReadByte(ctx);\n\n    ctx->data[destIndex] = ctx->data[srcIndex];\n    return FALSE;",
       "callsTo": [
         "ScriptReadByte"
@@ -336,6 +522,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_copybyte(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 *ptr = (u8 *)ScriptReadWord(ctx);\n    *ptr = *(const u8 *)ScriptReadWord(ctx);\n    return FALSE;",
       "callsTo": [
         "ScriptReadWord"
@@ -346,6 +538,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_setvar(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u16 *ptr = GetVarPointer(ScriptReadHalfword(ctx));\n    *ptr = ScriptReadHalfword(ctx);\n    return FALSE;",
       "callsTo": [
         "GetVarPointer",
@@ -357,6 +555,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_copyvar(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u16 *ptr = GetVarPointer(ScriptReadHalfword(ctx));\n    *ptr = *GetVarPointer(ScriptReadHalfword(ctx));\n    return FALSE;",
       "callsTo": [
         "GetVarPointer",
@@ -368,6 +572,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_setorcopyvar(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u16 *ptr = GetVarPointer(ScriptReadHalfword(ctx));\n    *ptr = VarGet(ScriptReadHalfword(ctx));\n    return FALSE;",
       "callsTo": [
         "GetVarPointer",
@@ -380,6 +590,16 @@
       "returnType": "u8",
       "signature": "u8 Compare(u16 a, u16 b)",
       "paramsRaw": "u16 a, u16 b",
+      "paramsList": [
+        {
+          "name": "a",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "b",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "if (a < b)\n        return 0;\n    if (a == b)\n        return 1;\n    return 2;",
       "callsTo": [],
       "lineCount": 5
@@ -388,6 +608,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_compare_local_to_local(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "const u8 value1 = ctx->data[ScriptReadByte(ctx)];\n    const u8 value2 = ctx->data[ScriptReadByte(ctx)];\n\n    ctx->comparisonResult = Compare(value1, value2);\n    return FALSE;",
       "callsTo": [
         "Compare",
@@ -399,6 +625,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_compare_local_to_value(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "const u8 value1 = ctx->data[ScriptReadByte(ctx)];\n    const u8 value2 = ScriptReadByte(ctx);\n\n    ctx->comparisonResult = Compare(value1, value2);\n    return FALSE;",
       "callsTo": [
         "Compare",
@@ -410,6 +642,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_compare_local_to_ptr(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "const u8 value1 = ctx->data[ScriptReadByte(ctx)];\n    const u8 value2 = *(const u8 *)ScriptReadWord(ctx);\n\n    ctx->comparisonResult = Compare(value1, value2);\n    return FALSE;",
       "callsTo": [
         "Compare",
@@ -422,6 +660,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_compare_ptr_to_local(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "const u8 value1 = *(const u8 *)ScriptReadWord(ctx);\n    const u8 value2 = ctx->data[ScriptReadByte(ctx)];\n\n    ctx->comparisonResult = Compare(value1, value2);\n    return FALSE;",
       "callsTo": [
         "Compare",
@@ -434,6 +678,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_compare_ptr_to_value(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "const u8 value1 = *(const u8 *)ScriptReadWord(ctx);\n    const u8 value2 = ScriptReadByte(ctx);\n\n    ctx->comparisonResult = Compare(value1, value2);\n    return FALSE;",
       "callsTo": [
         "Compare",
@@ -446,6 +696,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_compare_ptr_to_ptr(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "const u8 value1 = *(const u8 *)ScriptReadWord(ctx);\n    const u8 value2 = *(const u8 *)ScriptReadWord(ctx);\n\n    ctx->comparisonResult = Compare(value1, value2);\n    return FALSE;",
       "callsTo": [
         "Compare",
@@ -457,6 +713,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_compare_var_to_value(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "const u16 value1 = *GetVarPointer(ScriptReadHalfword(ctx));\n    const u16 value2 = ScriptReadHalfword(ctx);\n\n    ctx->comparisonResult = Compare(value1, value2);\n    return FALSE;",
       "callsTo": [
         "Compare",
@@ -469,6 +731,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_compare_var_to_var(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "const u16 *ptr1 = GetVarPointer(ScriptReadHalfword(ctx));\n    const u16 *ptr2 = GetVarPointer(ScriptReadHalfword(ctx));\n\n    ctx->comparisonResult = Compare(*ptr1, *ptr2);\n    return FALSE;",
       "callsTo": [
         "Compare",
@@ -481,6 +749,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_addvar(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u16 *ptr = GetVarPointer(ScriptReadHalfword(ctx));\n    *ptr += ScriptReadHalfword(ctx);\n    return FALSE;",
       "callsTo": [
         "GetVarPointer",
@@ -492,6 +766,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_subvar(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u16 *ptr = GetVarPointer(ScriptReadHalfword(ctx));\n    *ptr -= VarGet(ScriptReadHalfword(ctx));\n    return FALSE;",
       "callsTo": [
         "GetVarPointer",
@@ -504,6 +784,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_random(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u16 max = VarGet(ScriptReadHalfword(ctx));\n\n    gSpecialVar_Result = Random() % max;\n    return FALSE;",
       "callsTo": [
         "Random",
@@ -516,6 +802,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_additem(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u16 itemId = VarGet(ScriptReadHalfword(ctx));\n    u32 quantity = VarGet(ScriptReadHalfword(ctx));\n\n    gSpecialVar_Result = AddBagItem(itemId, (u8)quantity);\n    return FALSE;",
       "callsTo": [
         "AddBagItem",
@@ -528,6 +820,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_removeitem(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u16 itemId = VarGet(ScriptReadHalfword(ctx));\n    u32 quantity = VarGet(ScriptReadHalfword(ctx));\n\n    gSpecialVar_Result = RemoveBagItem(itemId, (u8)quantity);\n    return FALSE;",
       "callsTo": [
         "RemoveBagItem",
@@ -540,6 +838,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_checkitemspace(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u16 itemId = VarGet(ScriptReadHalfword(ctx));\n    u32 quantity = VarGet(ScriptReadHalfword(ctx));\n\n    gSpecialVar_Result = CheckBagHasSpace(itemId, (u8)quantity);\n    return FALSE;",
       "callsTo": [
         "CheckBagHasSpace",
@@ -552,6 +856,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_checkitem(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u16 itemId = VarGet(ScriptReadHalfword(ctx));\n    u32 quantity = VarGet(ScriptReadHalfword(ctx));\n\n    gSpecialVar_Result = CheckBagHasItem(itemId, (u8)quantity);\n    return FALSE;",
       "callsTo": [
         "CheckBagHasItem",
@@ -564,6 +874,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_checkitemtype(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u16 itemId = VarGet(ScriptReadHalfword(ctx));\n\n    gSpecialVar_Result = GetPocketByItemId(itemId);\n    return FALSE;",
       "callsTo": [
         "GetPocketByItemId",
@@ -576,6 +892,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_addpcitem(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u16 itemId = VarGet(ScriptReadHalfword(ctx));\n    u16 quantity = VarGet(ScriptReadHalfword(ctx));\n\n    gSpecialVar_Result = AddPCItem(itemId, quantity);\n    return FALSE;",
       "callsTo": [
         "AddPCItem",
@@ -588,6 +910,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_checkpcitem(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u16 itemId = VarGet(ScriptReadHalfword(ctx));\n    u16 quantity = VarGet(ScriptReadHalfword(ctx));\n\n    gSpecialVar_Result = CheckPCHasItem(itemId, quantity);\n    return FALSE;",
       "callsTo": [
         "CheckPCHasItem",
@@ -600,6 +928,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_adddecoration(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u32 decorId = VarGet(ScriptReadHalfword(ctx));\n\n    gSpecialVar_Result = DecorationAdd(decorId);\n    return FALSE;",
       "callsTo": [
         "DecorationAdd",
@@ -612,6 +946,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_removedecoration(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u32 decorId = VarGet(ScriptReadHalfword(ctx));\n\n    gSpecialVar_Result = DecorationRemove(decorId);\n    return FALSE;",
       "callsTo": [
         "DecorationRemove",
@@ -624,6 +964,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_checkdecorspace(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u32 decorId = VarGet(ScriptReadHalfword(ctx));\n\n    gSpecialVar_Result = DecorationCheckSpace(decorId);\n    return FALSE;",
       "callsTo": [
         "DecorationCheckSpace",
@@ -636,6 +982,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_checkdecor(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u32 decorId = VarGet(ScriptReadHalfword(ctx));\n\n    gSpecialVar_Result = CheckHasDecoration(decorId);\n    return FALSE;",
       "callsTo": [
         "CheckHasDecoration",
@@ -648,6 +1000,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_setflag(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "FlagSet(ScriptReadHalfword(ctx));\n    return FALSE;",
       "callsTo": [
         "FlagSet",
@@ -659,6 +1017,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_clearflag(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "FlagClear(ScriptReadHalfword(ctx));\n    return FALSE;",
       "callsTo": [
         "FlagClear",
@@ -670,6 +1034,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_checkflag(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "ctx->comparisonResult = FlagGet(ScriptReadHalfword(ctx));\n    return FALSE;",
       "callsTo": [
         "FlagGet",
@@ -681,6 +1051,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_incrementgamestat(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "IncrementGameStat(ScriptReadByte(ctx));\n    return FALSE;",
       "callsTo": [
         "IncrementGameStat",
@@ -692,6 +1068,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_animateflash(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "AnimateFlash(ScriptReadByte(ctx));\n    ScriptContext_Stop();\n    return TRUE;",
       "callsTo": [
         "AnimateFlash",
@@ -704,6 +1086,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_setflashlevel(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "SetFlashLevel(VarGet(ScriptReadHalfword(ctx)));\n    return FALSE;",
       "callsTo": [
         "ScriptReadHalfword",
@@ -716,6 +1104,7 @@
       "returnType": "bool8",
       "signature": "static bool8 IsPaletteNotActive(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!gPaletteFade.active)\n        return TRUE;\n    else\n        return FALSE;",
       "callsTo": [],
       "lineCount": 4
@@ -724,6 +1113,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_fadescreen(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "FadeScreen(ScriptReadByte(ctx), 0);\n    SetupNativeScript(ctx, IsPaletteNotActive);\n    return TRUE;",
       "callsTo": [
         "FadeScreen",
@@ -736,6 +1131,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_fadescreenspeed(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 mode = ScriptReadByte(ctx);\n    u8 speed = ScriptReadByte(ctx);\n\n    FadeScreen(mode, speed);\n    SetupNativeScript(ctx, IsPaletteNotActive);\n    return TRUE;",
       "callsTo": [
         "FadeScreen",
@@ -748,6 +1149,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_fadescreenswapbuffers(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 mode = ScriptReadByte(ctx);\n\n    switch (mode)\n    {\n    case FADE_TO_BLACK:\n    case FADE_TO_WHITE:\n    default:\n        CpuCopy32(gPlttBufferUnfaded, gPaletteDecompressionBuffer, PLTT_SIZE);\n        FadeScreen(mode, 0);\n        break;\n    case FADE_FROM_BLACK:\n    case FADE_FROM_WHITE:\n        CpuCopy32(gPaletteDecompressionBuffer, gPlttBufferUnfaded, PLTT_SIZE);\n        FadeScreen(mode, 0);\n        break;\n    }\n\n    SetupNativeScript(ctx, IsPaletteNotActive);\n    return TRUE;",
       "callsTo": [
         "CpuCopy32",
@@ -761,6 +1168,7 @@
       "returnType": "bool8",
       "signature": "static bool8 RunPauseTimer(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (--sPauseCounter == 0)\n        return TRUE;\n    else\n        return FALSE;",
       "callsTo": [],
       "lineCount": 4
@@ -769,6 +1177,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_delay(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "sPauseCounter = ScriptReadHalfword(ctx);\n    SetupNativeScript(ctx, RunPauseTimer);\n    return TRUE;",
       "callsTo": [
         "ScriptReadHalfword",
@@ -780,6 +1194,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_initclock(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 hour = VarGet(ScriptReadHalfword(ctx));\n    u8 minute = VarGet(ScriptReadHalfword(ctx));\n\n    RtcInitLocalTimeOffset(hour, minute);\n    return FALSE;",
       "callsTo": [
         "RtcInitLocalTimeOffset",
@@ -792,6 +1212,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_dotimebasedevents(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "DoTimeBasedEvents();\n    return FALSE;",
       "callsTo": [
         "DoTimeBasedEvents"
@@ -802,6 +1228,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_gettime(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "RtcCalcLocalTime();\n    gSpecialVar_0x8000 = gLocalTime.hours;\n    gSpecialVar_0x8001 = gLocalTime.minutes;\n    gSpecialVar_0x8002 = gLocalTime.seconds;\n    return FALSE;",
       "callsTo": [
         "RtcCalcLocalTime"
@@ -812,6 +1244,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_setweather(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u16 weather = VarGet(ScriptReadHalfword(ctx));\n\n    SetSavedWeather(weather);\n    return FALSE;",
       "callsTo": [
         "ScriptReadHalfword",
@@ -824,6 +1262,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_resetweather(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "SetSavedWeatherFromCurrMapHeader();\n    return FALSE;",
       "callsTo": [
         "SetSavedWeatherFromCurrMapHeader"
@@ -834,6 +1278,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_doweather(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "DoCurrentWeather();\n    return FALSE;",
       "callsTo": [
         "DoCurrentWeather"
@@ -844,6 +1294,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_setstepcallback(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "ActivatePerStepCallback(ScriptReadByte(ctx));\n    return FALSE;",
       "callsTo": [
         "ActivatePerStepCallback",
@@ -855,6 +1311,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_setmaplayoutindex(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u16 value = VarGet(ScriptReadHalfword(ctx));\n\n    SetCurrentMapLayout(value);\n    return FALSE;",
       "callsTo": [
         "ScriptReadHalfword",
@@ -867,6 +1329,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_warp(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 mapGroup = ScriptReadByte(ctx);\n    u8 mapNum = ScriptReadByte(ctx);\n    u8 warpId = ScriptReadByte(ctx);\n    u16 x = VarGet(ScriptReadHalfword(ctx));\n    u16 y = VarGet(ScriptReadHalfword(ctx));\n\n    SetWarpDestination(mapGroup, mapNum, warpId, x, y);\n    DoWarp();\n    ResetInitialPlayerAvatarState();\n    return TRUE;",
       "callsTo": [
         "DoWarp",
@@ -882,6 +1350,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_warpsilent(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 mapGroup = ScriptReadByte(ctx);\n    u8 mapNum = ScriptReadByte(ctx);\n    u8 warpId = ScriptReadByte(ctx);\n    u16 x = VarGet(ScriptReadHalfword(ctx));\n    u16 y = VarGet(ScriptReadHalfword(ctx));\n\n    SetWarpDestination(mapGroup, mapNum, warpId, x, y);\n    DoDiveWarp();\n    ResetInitialPlayerAvatarState();\n    return TRUE;",
       "callsTo": [
         "DoDiveWarp",
@@ -897,6 +1371,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_warpdoor(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 mapGroup = ScriptReadByte(ctx);\n    u8 mapNum = ScriptReadByte(ctx);\n    u8 warpId = ScriptReadByte(ctx);\n    u16 x = VarGet(ScriptReadHalfword(ctx));\n    u16 y = VarGet(ScriptReadHalfword(ctx));\n\n    SetWarpDestination(mapGroup, mapNum, warpId, x, y);\n    DoDoorWarp();\n    ResetInitialPlayerAvatarState();\n    return TRUE;",
       "callsTo": [
         "DoDoorWarp",
@@ -912,6 +1392,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_warphole(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 mapGroup = ScriptReadByte(ctx);\n    u8 mapNum = ScriptReadByte(ctx);\n    u16 x;\n    u16 y;\n\n    PlayerGetDestCoords(&x, &y);\n    if (mapGroup == MAP_GROUP(MAP_UNDEFINED) && mapNum == MAP_NUM(MAP_UNDEFINED))\n        SetWarpDestinationToFixedHoleWarp(x - MAP_OFFSET, y - MAP_OFFSET);\n    else\n        SetWarpDestination(mapGroup, mapNum, WARP_ID_NONE, x - MAP_OFFSET, y - MAP_OFFSET);\n    DoFallWarp();\n    ResetInitialPlayerAvatarState();\n    return TRUE;",
       "callsTo": [
         "DoFallWarp",
@@ -929,6 +1415,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_warpteleport(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 mapGroup = ScriptReadByte(ctx);\n    u8 mapNum = ScriptReadByte(ctx);\n    u8 warpId = ScriptReadByte(ctx);\n    u16 x = VarGet(ScriptReadHalfword(ctx));\n    u16 y = VarGet(ScriptReadHalfword(ctx));\n\n    SetWarpDestination(mapGroup, mapNum, warpId, x, y);\n    DoTeleportTileWarp();\n    ResetInitialPlayerAvatarState();\n    return TRUE;",
       "callsTo": [
         "DoTeleportTileWarp",
@@ -944,6 +1436,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_warpmossdeepgym(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 mapGroup = ScriptReadByte(ctx);\n    u8 mapNum = ScriptReadByte(ctx);\n    u8 warpId = ScriptReadByte(ctx);\n    u16 x = VarGet(ScriptReadHalfword(ctx));\n    u16 y = VarGet(ScriptReadHalfword(ctx));\n\n    SetWarpDestination(mapGroup, mapNum, warpId, x, y);\n    DoMossdeepGymWarp();\n    ResetInitialPlayerAvatarState();\n    return TRUE;",
       "callsTo": [
         "DoMossdeepGymWarp",
@@ -959,6 +1457,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_setwarp(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 mapGroup = ScriptReadByte(ctx);\n    u8 mapNum = ScriptReadByte(ctx);\n    u8 warpId = ScriptReadByte(ctx);\n    u16 x = VarGet(ScriptReadHalfword(ctx));\n    u16 y = VarGet(ScriptReadHalfword(ctx));\n\n    SetWarpDestination(mapGroup, mapNum, warpId, x, y);\n    return FALSE;",
       "callsTo": [
         "ScriptReadByte",
@@ -972,6 +1476,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_setdynamicwarp(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 mapGroup = ScriptReadByte(ctx);\n    u8 mapNum = ScriptReadByte(ctx);\n    u8 warpId = ScriptReadByte(ctx);\n    u16 x = VarGet(ScriptReadHalfword(ctx));\n    u16 y = VarGet(ScriptReadHalfword(ctx));\n\n    SetDynamicWarpWithCoords(0, mapGroup, mapNum, warpId, x, y);\n    return FALSE;",
       "callsTo": [
         "ScriptReadByte",
@@ -985,6 +1495,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_setdivewarp(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 mapGroup = ScriptReadByte(ctx);\n    u8 mapNum = ScriptReadByte(ctx);\n    u8 warpId = ScriptReadByte(ctx);\n    u16 x = VarGet(ScriptReadHalfword(ctx));\n    u16 y = VarGet(ScriptReadHalfword(ctx));\n\n    SetFixedDiveWarp(mapGroup, mapNum, warpId, x, y);\n    return FALSE;",
       "callsTo": [
         "ScriptReadByte",
@@ -998,6 +1514,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_setholewarp(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 mapGroup = ScriptReadByte(ctx);\n    u8 mapNum = ScriptReadByte(ctx);\n    u8 warpId = ScriptReadByte(ctx);\n    u16 x = VarGet(ScriptReadHalfword(ctx));\n    u16 y = VarGet(ScriptReadHalfword(ctx));\n\n    SetFixedHoleWarp(mapGroup, mapNum, warpId, x, y);\n    return FALSE;",
       "callsTo": [
         "ScriptReadByte",
@@ -1011,6 +1533,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_setescapewarp(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 mapGroup = ScriptReadByte(ctx);\n    u8 mapNum = ScriptReadByte(ctx);\n    u8 warpId = ScriptReadByte(ctx);\n    u16 x = VarGet(ScriptReadHalfword(ctx));\n    u16 y = VarGet(ScriptReadHalfword(ctx));\n\n    SetEscapeWarp(mapGroup, mapNum, warpId, x, y);\n    return FALSE;",
       "callsTo": [
         "ScriptReadByte",
@@ -1024,6 +1552,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_getplayerxy(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u16 *pX = GetVarPointer(ScriptReadHalfword(ctx));\n    u16 *pY = GetVarPointer(ScriptReadHalfword(ctx));\n\n    *pX = gSaveBlock1Ptr->pos.x;\n    *pY = gSaveBlock1Ptr->pos.y;\n    return FALSE;",
       "callsTo": [
         "GetVarPointer",
@@ -1035,6 +1569,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_getpartysize(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "gSpecialVar_Result = CalculatePlayerPartyCount();\n    return FALSE;",
       "callsTo": [
         "CalculatePlayerPartyCount"
@@ -1045,6 +1585,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_playse(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "PlaySE(ScriptReadHalfword(ctx));\n    return FALSE;",
       "callsTo": [
         "PlaySE",
@@ -1056,6 +1602,7 @@
       "returnType": "bool8",
       "signature": "static bool8 WaitForSoundEffectFinish(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!IsSEPlaying())\n        return TRUE;\n    else\n        return FALSE;",
       "callsTo": [
         "IsSEPlaying"
@@ -1066,6 +1613,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_waitse(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "SetupNativeScript(ctx, WaitForSoundEffectFinish);\n    return TRUE;",
       "callsTo": [
         "SetupNativeScript"
@@ -1076,6 +1629,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_playfanfare(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "PlayFanfare(ScriptReadHalfword(ctx));\n    return FALSE;",
       "callsTo": [
         "PlayFanfare",
@@ -1087,6 +1646,7 @@
       "returnType": "bool8",
       "signature": "static bool8 WaitForFanfareFinish(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return IsFanfareTaskInactive();",
       "callsTo": [
         "IsFanfareTaskInactive"
@@ -1097,6 +1657,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_waitfanfare(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "SetupNativeScript(ctx, WaitForFanfareFinish);\n    return TRUE;",
       "callsTo": [
         "SetupNativeScript"
@@ -1107,6 +1673,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_playbgm(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u16 songId = ScriptReadHalfword(ctx);\n    bool8 save = ScriptReadByte(ctx);\n\n    if (save == TRUE)\n        Overworld_SetSavedMusic(songId);\n    PlayNewMapMusic(songId);\n    return FALSE;",
       "callsTo": [
         "Overworld_SetSavedMusic",
@@ -1120,6 +1692,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_savebgm(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "Overworld_SetSavedMusic(ScriptReadHalfword(ctx));\n    return FALSE;",
       "callsTo": [
         "Overworld_SetSavedMusic",
@@ -1131,6 +1709,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_fadedefaultbgm(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "Overworld_ChangeMusicToDefault();\n    return FALSE;",
       "callsTo": [
         "Overworld_ChangeMusicToDefault"
@@ -1141,6 +1725,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_fadenewbgm(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "Overworld_ChangeMusicTo(ScriptReadHalfword(ctx));\n    return FALSE;",
       "callsTo": [
         "Overworld_ChangeMusicTo",
@@ -1152,6 +1742,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_fadeoutbgm(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 speed = ScriptReadByte(ctx);\n\n    if (speed != 0)\n        FadeOutBGMTemporarily(4 * speed);\n    else\n        FadeOutBGMTemporarily(4);\n    SetupNativeScript(ctx, IsBGMPausedOrStopped);\n    return TRUE;",
       "callsTo": [
         "FadeOutBGMTemporarily",
@@ -1164,6 +1760,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_fadeinbgm(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 speed = ScriptReadByte(ctx);\n\n    if (speed != 0)\n        FadeInBGM(4 * speed);\n    else\n        FadeInBGM(4);\n    return FALSE;",
       "callsTo": [
         "FadeInBGM",
@@ -1175,6 +1777,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_applymovement(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u16 localId = VarGet(ScriptReadHalfword(ctx));\n    const void *movementScript = (const void *)ScriptReadWord(ctx);\n\n    ScriptMovement_StartObjectMovementScript(localId, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup, movementScript);\n    sMovingNpcId = localId;\n    return FALSE;",
       "callsTo": [
         "ScriptMovement_StartObjectMovementScript",
@@ -1188,6 +1796,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_applymovementat(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u16 localId = VarGet(ScriptReadHalfword(ctx));\n    const void *movementScript = (const void *)ScriptReadWord(ctx);\n    u8 mapGroup = ScriptReadByte(ctx);\n    u8 mapNum = ScriptReadByte(ctx);\n\n    ScriptMovement_StartObjectMovementScript(localId, mapNum, mapGroup, movementScript);\n    sMovingNpcId = localId;\n    return FALSE;",
       "callsTo": [
         "ScriptMovement_StartObjectMovementScript",
@@ -1202,6 +1816,7 @@
       "returnType": "bool8",
       "signature": "static bool8 WaitForMovementFinish(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return ScriptMovement_IsObjectMovementFinished(sMovingNpcId, sMovingNpcMapNum, sMovingNpcMapGroup);",
       "callsTo": [
         "ScriptMovement_IsObjectMovementFinished"
@@ -1212,6 +1827,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_waitmovement(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u16 localId = VarGet(ScriptReadHalfword(ctx));\n\n    if (localId != LOCALID_NONE)\n        sMovingNpcId = localId;\n    sMovingNpcMapGroup = gSaveBlock1Ptr->location.mapGroup;\n    sMovingNpcMapNum = gSaveBlock1Ptr->location.mapNum;\n    SetupNativeScript(ctx, WaitForMovementFinish);\n    return TRUE;",
       "callsTo": [
         "ScriptReadHalfword",
@@ -1224,6 +1845,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_waitmovementat(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u16 localId = VarGet(ScriptReadHalfword(ctx));\n    u8 mapGroup;\n    u8 mapNum;\n\n    if (localId != LOCALID_NONE)\n        sMovingNpcId = localId;\n    mapGroup = ScriptReadByte(ctx);\n    mapNum = ScriptReadByte(ctx);\n    sMovingNpcMapGroup = mapGroup;\n    sMovingNpcMapNum = mapNum;\n    SetupNativeScript(ctx, WaitForMovementFinish);\n    return TRUE;",
       "callsTo": [
         "ScriptReadByte",
@@ -1237,6 +1864,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_removeobject(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u16 localId = VarGet(ScriptReadHalfword(ctx));\n\n    RemoveObjectEventByLocalIdAndMap(localId, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup);\n    return FALSE;",
       "callsTo": [
         "RemoveObjectEventByLocalIdAndMap",
@@ -1249,6 +1882,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_removeobjectat(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u16 objectId = VarGet(ScriptReadHalfword(ctx));\n    u8 mapGroup = ScriptReadByte(ctx);\n    u8 mapNum = ScriptReadByte(ctx);\n\n    RemoveObjectEventByLocalIdAndMap(objectId, mapNum, mapGroup);\n    return FALSE;",
       "callsTo": [
         "RemoveObjectEventByLocalIdAndMap",
@@ -1262,6 +1901,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_addobject(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u16 objectId = VarGet(ScriptReadHalfword(ctx));\n\n    TrySpawnObjectEvent(objectId, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup);\n    return FALSE;",
       "callsTo": [
         "ScriptReadHalfword",
@@ -1274,6 +1919,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_addobjectat(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u16 objectId = VarGet(ScriptReadHalfword(ctx));\n    u8 mapGroup = ScriptReadByte(ctx);\n    u8 mapNum = ScriptReadByte(ctx);\n\n    TrySpawnObjectEvent(objectId, mapNum, mapGroup);\n    return FALSE;",
       "callsTo": [
         "ScriptReadByte",
@@ -1287,6 +1938,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_setobjectxy(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u16 localId = VarGet(ScriptReadHalfword(ctx));\n    u16 x = VarGet(ScriptReadHalfword(ctx));\n    u16 y = VarGet(ScriptReadHalfword(ctx));\n\n    TryMoveObjectEventToMapCoords(localId, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup, x, y);\n    return FALSE;",
       "callsTo": [
         "ScriptReadHalfword",
@@ -1299,6 +1956,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_setobjectxyperm(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u16 localId = VarGet(ScriptReadHalfword(ctx));\n    u16 x = VarGet(ScriptReadHalfword(ctx));\n    u16 y = VarGet(ScriptReadHalfword(ctx));\n\n    SetObjEventTemplateCoords(localId, x, y);\n    return FALSE;",
       "callsTo": [
         "ScriptReadHalfword",
@@ -1311,6 +1974,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_copyobjectxytoperm(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u16 localId = VarGet(ScriptReadHalfword(ctx));\n\n    TryOverrideObjectEventTemplateCoords(localId, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup);\n    return FALSE;",
       "callsTo": [
         "ScriptReadHalfword",
@@ -1323,6 +1992,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_showobjectat(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u16 localId = VarGet(ScriptReadHalfword(ctx));\n    u8 mapGroup = ScriptReadByte(ctx);\n    u8 mapNum = ScriptReadByte(ctx);\n\n    SetObjectInvisibility(localId, mapNum, mapGroup, FALSE);\n    return FALSE;",
       "callsTo": [
         "ScriptReadByte",
@@ -1336,6 +2011,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_hideobjectat(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u16 localId = VarGet(ScriptReadHalfword(ctx));\n    u8 mapGroup = ScriptReadByte(ctx);\n    u8 mapNum = ScriptReadByte(ctx);\n\n    SetObjectInvisibility(localId, mapNum, mapGroup, TRUE);\n    return FALSE;",
       "callsTo": [
         "ScriptReadByte",
@@ -1349,6 +2030,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_setobjectsubpriority(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u16 localId = VarGet(ScriptReadHalfword(ctx));\n    u8 mapGroup = ScriptReadByte(ctx);\n    u8 mapNum = ScriptReadByte(ctx);\n    u8 priority = ScriptReadByte(ctx);\n\n    SetObjectSubpriority(localId, mapNum, mapGroup, priority + 83);\n    return FALSE;",
       "callsTo": [
         "ScriptReadByte",
@@ -1362,6 +2049,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_resetobjectsubpriority(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u16 localId = VarGet(ScriptReadHalfword(ctx));\n    u8 mapGroup = ScriptReadByte(ctx);\n    u8 mapNum = ScriptReadByte(ctx);\n\n    ResetObjectSubpriority(localId, mapNum, mapGroup);\n    return FALSE;",
       "callsTo": [
         "ResetObjectSubpriority",
@@ -1375,6 +2068,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_faceplayer(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "if (gObjectEvents[gSelectedObjectEvent].active)\n        ObjectEventFaceOppositeDirection(&gObjectEvents[gSelectedObjectEvent], GetPlayerFacingDirection());\n    return FALSE;",
       "callsTo": [
         "GetPlayerFacingDirection",
@@ -1386,6 +2085,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_turnobject(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u16 localId = VarGet(ScriptReadHalfword(ctx));\n    u8 direction = ScriptReadByte(ctx);\n\n    ObjectEventTurnByLocalIdAndMap(localId, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup, direction);\n    return FALSE;",
       "callsTo": [
         "ObjectEventTurnByLocalIdAndMap",
@@ -1399,6 +2104,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_setobjectmovementtype(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u16 localId = VarGet(ScriptReadHalfword(ctx));\n    u8 movementType = ScriptReadByte(ctx);\n\n    SetObjEventTemplateMovementType(localId, movementType);\n    return FALSE;",
       "callsTo": [
         "ScriptReadByte",
@@ -1412,6 +2123,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_createvobject(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 graphicsId = ScriptReadByte(ctx);\n    u8 virtualObjId = ScriptReadByte(ctx);\n    u16 x = VarGet(ScriptReadHalfword(ctx));\n    u32 y = VarGet(ScriptReadHalfword(ctx));\n    u8 elevation = ScriptReadByte(ctx);\n    u8 direction = ScriptReadByte(ctx);\n\n    CreateVirtualObject(graphicsId, virtualObjId, x, y, elevation, direction);\n    return FALSE;",
       "callsTo": [
         "CreateVirtualObject",
@@ -1425,6 +2142,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_turnvobject(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 virtualObjId = ScriptReadByte(ctx);\n    u8 direction = ScriptReadByte(ctx);\n\n    TurnVirtualObject(virtualObjId, direction);\n    return FALSE;",
       "callsTo": [
         "ScriptReadByte",
@@ -1436,6 +2159,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_lockall(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "if (IsOverworldLinkActive())\n    {\n        return FALSE;\n    }\n    else\n    {\n        FreezeObjects_WaitForPlayer();\n        SetupNativeScript(ctx, IsFreezePlayerFinished);\n        return TRUE;\n    }",
       "callsTo": [
         "FreezeObjects_WaitForPlayer",
@@ -1448,6 +2177,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_lock(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "if (IsOverworldLinkActive())\n    {\n        return FALSE;\n    }\n    else\n    {\n        if (gObjectEvents[gSelectedObjectEvent].active)\n        {\n            FreezeObjects_WaitForPlayerAndSelected();\n            SetupNativeScript(ctx, IsFreezeSelectedObjectAndPlayerFinished);\n        }\n        else\n        {\n            FreezeObjects_WaitForPlayer();\n            SetupNativeScript(ctx, IsFreezePlayerFinished);\n        }\n        return TRUE;\n    }",
       "callsTo": [
         "FreezeObjects_WaitForPlayer",
@@ -1461,6 +2196,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_releaseall(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 playerObjectId;\n\n    HideFieldMessageBox();\n    playerObjectId = GetObjectEventIdByLocalIdAndMap(LOCALID_PLAYER, 0, 0);\n    ObjectEventClearHeldMovementIfFinished(&gObjectEvents[playerObjectId]);\n    ScriptMovement_UnfreezeObjectEvents();\n    UnfreezeObjectEvents();\n    return FALSE;",
       "callsTo": [
         "GetObjectEventIdByLocalIdAndMap",
@@ -1475,6 +2216,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_release(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 playerObjectId;\n\n    HideFieldMessageBox();\n    if (gObjectEvents[gSelectedObjectEvent].active)\n        ObjectEventClearHeldMovementIfFinished(&gObjectEvents[gSelectedObjectEvent]);\n    playerObjectId = GetObjectEventIdByLocalIdAndMap(LOCALID_PLAYER, 0, 0);\n    ObjectEventClearHeldMovementIfFinished(&gObjectEvents[playerObjectId]);\n    ScriptMovement_UnfreezeObjectEvents();\n    UnfreezeObjectEvents();\n    return FALSE;",
       "callsTo": [
         "GetObjectEventIdByLocalIdAndMap",
@@ -1489,6 +2236,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_message(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "const u8 *msg = (const u8 *)ScriptReadWord(ctx);\n\n    if (msg == NULL)\n        msg = (const u8 *)ctx->data[0];\n    ShowFieldMessage(msg);\n    return FALSE;",
       "callsTo": [
         "ScriptReadWord",
@@ -1500,6 +2253,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_pokenavcall(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "const u8 *msg = (const u8 *)ScriptReadWord(ctx);\n\n    if (msg == NULL)\n        msg = (const u8 *)ctx->data[0];\n    ShowPokenavFieldMessage(msg);\n    return FALSE;",
       "callsTo": [
         "ScriptReadWord",
@@ -1511,6 +2270,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_messageautoscroll(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "const u8 *msg = (const u8 *)ScriptReadWord(ctx);\n\n    if (msg == NULL)\n        msg = (const u8 *)ctx->data[0];\n    gTextFlags.autoScroll = TRUE;\n    gTextFlags.forceMidTextSpeed = TRUE;\n    ShowFieldAutoScrollMessage(msg);\n    return FALSE;",
       "callsTo": [
         "ScriptReadWord",
@@ -1522,6 +2287,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_messageinstant(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "const u8 *msg = (const u8 *)ScriptReadWord(ctx);\n\n    if (msg == NULL)\n        msg = (const u8 *)ctx->data[0];\n    LoadMessageBoxAndBorderGfx();\n    DrawDialogueFrame(0, TRUE);\n    AddTextPrinterParameterized(0, FONT_NORMAL, msg, 0, 1, 0, NULL);\n    return FALSE;",
       "callsTo": [
         "AddTextPrinterParameterized",
@@ -1535,6 +2306,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_waitmessage(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "SetupNativeScript(ctx, IsFieldMessageBoxHidden);\n    return TRUE;",
       "callsTo": [
         "SetupNativeScript"
@@ -1545,6 +2322,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_closemessage(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "HideFieldMessageBox();\n    return FALSE;",
       "callsTo": [
         "HideFieldMessageBox"
@@ -1555,6 +2338,7 @@
       "returnType": "bool8",
       "signature": "static bool8 WaitForAorBPress(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (JOY_NEW(A_BUTTON))\n        return TRUE;\n    if (JOY_NEW(B_BUTTON))\n        return TRUE;\n    return FALSE;",
       "callsTo": [
         "JOY_NEW"
@@ -1565,6 +2349,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_waitbuttonpress(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "SetupNativeScript(ctx, WaitForAorBPress);\n    return TRUE;",
       "callsTo": [
         "SetupNativeScript"
@@ -1575,6 +2365,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_yesnobox(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 left = ScriptReadByte(ctx);\n    u8 top = ScriptReadByte(ctx);\n\n    if (ScriptMenu_YesNo(left, top) == TRUE)\n    {\n        ScriptContext_Stop();\n        return TRUE;\n    }\n    else\n    {\n        return FALSE;\n    }",
       "callsTo": [
         "ScriptContext_Stop",
@@ -1587,6 +2383,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_multichoice(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 left = ScriptReadByte(ctx);\n    u8 top = ScriptReadByte(ctx);\n    u8 multichoiceId = ScriptReadByte(ctx);\n    bool8 ignoreBPress = ScriptReadByte(ctx);\n\n    if (ScriptMenu_Multichoice(left, top, multichoiceId, ignoreBPress) == TRUE)\n    {\n        ScriptContext_Stop();\n        return TRUE;\n    }\n    else\n    {\n        return FALSE;\n    }",
       "callsTo": [
         "ScriptContext_Stop",
@@ -1599,6 +2401,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_multichoicedefault(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 left = ScriptReadByte(ctx);\n    u8 top = ScriptReadByte(ctx);\n    u8 multichoiceId = ScriptReadByte(ctx);\n    u8 defaultChoice = ScriptReadByte(ctx);\n    bool8 ignoreBPress = ScriptReadByte(ctx);\n\n    if (ScriptMenu_MultichoiceWithDefault(left, top, multichoiceId, ignoreBPress, defaultChoice) == TRUE)\n    {\n        ScriptContext_Stop();\n        return TRUE;\n    }\n    else\n    {\n        return FALSE;\n    }",
       "callsTo": [
         "ScriptContext_Stop",
@@ -1611,6 +2419,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_drawbox(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "return FALSE;",
       "callsTo": [],
       "lineCount": 1
@@ -1619,6 +2433,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_multichoicegrid(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 left = ScriptReadByte(ctx);\n    u8 top = ScriptReadByte(ctx);\n    u8 multichoiceId = ScriptReadByte(ctx);\n    u8 numColumns = ScriptReadByte(ctx);\n    bool8 ignoreBPress = ScriptReadByte(ctx);\n\n    if (ScriptMenu_MultichoiceGrid(left, top, multichoiceId, ignoreBPress, numColumns) == TRUE)\n    {\n        ScriptContext_Stop();\n        return TRUE;\n    }\n    else\n    {\n        return FALSE;\n    }",
       "callsTo": [
         "ScriptContext_Stop",
@@ -1631,6 +2451,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_erasebox(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 left = ScriptReadByte(ctx);\n    u8 top = ScriptReadByte(ctx);\n    u8 right = ScriptReadByte(ctx);\n    u8 bottom = ScriptReadByte(ctx);\n\n     \n    return FALSE;",
       "callsTo": [
         "ScriptReadByte"
@@ -1641,6 +2467,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_drawboxtext(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 left = ScriptReadByte(ctx);\n    u8 top = ScriptReadByte(ctx);\n    u8 multichoiceId = ScriptReadByte(ctx);\n    bool8 ignoreBPress = ScriptReadByte(ctx);\n\n     \n    return FALSE;",
       "callsTo": [
         "ScriptReadByte"
@@ -1651,6 +2483,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_showmonpic(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u16 species = VarGet(ScriptReadHalfword(ctx));\n    u8 x = ScriptReadByte(ctx);\n    u8 y = ScriptReadByte(ctx);\n\n    ScriptMenu_ShowPokemonPic(species, x, y);\n    return FALSE;",
       "callsTo": [
         "ScriptMenu_ShowPokemonPic",
@@ -1664,6 +2502,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_hidemonpic(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "bool8 (*func)(void) = ScriptMenu_HidePokemonPic();\n\n    if (func == NULL)\n        return FALSE;\n    SetupNativeScript(ctx, func);\n    return TRUE;",
       "callsTo": [
         "ScriptMenu_HidePokemonPic",
@@ -1675,6 +2519,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_showcontestpainting(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 contestWinnerId = ScriptReadByte(ctx);\n\n     \n    if (contestWinnerId != CONTEST_WINNER_ARTIST)\n        SetContestWinnerForPainting(contestWinnerId);\n\n    ShowContestPainting();\n    ScriptContext_Stop();\n    return TRUE;",
       "callsTo": [
         "ScriptContext_Stop",
@@ -1688,6 +2538,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_braillemessage(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 *ptr = (u8 *)ScriptReadWord(ctx);\n    struct WindowTemplate winTemplate;\n    s32 i;\n    u8 width, height;\n    u8 xWindow, yWindow, xText, yText;\n    u8 temp;\n\n     \n     \n     \n    StringExpandPlaceholders(gStringVar4, ptr + 6);\n\n    width = GetStringWidth(FONT_BRAILLE, gStringVar4, -1) / 8u;\n\n    if (width > 28)\n        width = 28;\n\n    for (i = 0, height = 4; gStringVar4[i] != EOS;)\n    {\n        if (gStringVar4[i++] == CHAR_NEWLINE)\n            height += 3;\n    }\n\n    if (height > 18)\n        height = 18;\n\n    temp = width + 2;\n    xWindow = (30 - temp) / 2;\n\n    temp = height + 2;\n    yText = (20 - temp) / 2;\n\n    xText = xWindow;\n    xWindow += 1;\n\n    yWindow = yText;\n    yText += 2;\n\n    xText = (xWindow - xText - 1) * 8 + 3;\n    yText = (yText - yWindow - 1) * 8;\n\n    winTemplate = CreateWindowTemplate(0, xWindow, yWindow + 1, width, height, 0xF, 0x1);\n    sBrailleWindowId = AddWindow(&winTemplate);\n    LoadUserWindowBorderGfx(sBrailleWindowId, 0x214, BG_PLTT_ID(14));\n    DrawStdWindowFrame(sBrailleWindowId, FALSE);\n    PutWindowTilemap(sBrailleWindowId);\n    FillWindowPixelBuffer(sBrailleWindowId, PIXEL_FILL(1));\n    AddTextPrinterParameterized(sBrailleWindowId, FONT_BRAILLE, gStringVar4, xText, yText, TEXT_SKIP_DRAW, NULL);\n    CopyWindowToVram(sBrailleWindowId, COPYWIN_FULL);\n    return FALSE;",
       "callsTo": [
         "AddTextPrinterParameterized",
@@ -1710,6 +2566,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_closebraillemessage(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "CloseBrailleWindow();\n    return FALSE;",
       "callsTo": [
         "CloseBrailleWindow"
@@ -1720,6 +2582,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_vmessage(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u32 msg = ScriptReadWord(ctx);\n\n    ShowFieldMessage((u8 *)(msg - sAddressOffset));\n    return FALSE;",
       "callsTo": [
         "ScriptReadWord",
@@ -1731,6 +2599,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_bufferspeciesname(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 stringVarIndex = ScriptReadByte(ctx);\n    u16 species = VarGet(ScriptReadHalfword(ctx));\n\n    StringCopy(sScriptStringVars[stringVarIndex], gSpeciesNames[species]);\n    return FALSE;",
       "callsTo": [
         "ScriptReadByte",
@@ -1744,6 +2618,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_bufferleadmonspeciesname(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 stringVarIndex = ScriptReadByte(ctx);\n\n    u8 *dest = sScriptStringVars[stringVarIndex];\n    u8 partyIndex = GetLeadMonIndex();\n    u32 species = GetMonData(&gPlayerParty[partyIndex], MON_DATA_SPECIES, NULL);\n    StringCopy(dest, gSpeciesNames[species]);\n    return FALSE;",
       "callsTo": [
         "GetLeadMonIndex",
@@ -1757,6 +2637,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_bufferpartymonnick(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 stringVarIndex = ScriptReadByte(ctx);\n    u16 partyIndex = VarGet(ScriptReadHalfword(ctx));\n\n    GetMonData(&gPlayerParty[partyIndex], MON_DATA_NICKNAME, sScriptStringVars[stringVarIndex]);\n    StringGet_Nickname(sScriptStringVars[stringVarIndex]);\n    return FALSE;",
       "callsTo": [
         "GetMonData",
@@ -1771,6 +2657,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_bufferitemname(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 stringVarIndex = ScriptReadByte(ctx);\n    u16 itemId = VarGet(ScriptReadHalfword(ctx));\n\n    CopyItemName(itemId, sScriptStringVars[stringVarIndex]);\n    return FALSE;",
       "callsTo": [
         "CopyItemName",
@@ -1784,6 +2676,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_bufferitemnameplural(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 stringVarIndex = ScriptReadByte(ctx);\n    u16 itemId = VarGet(ScriptReadHalfword(ctx));\n    u16 quantity = VarGet(ScriptReadHalfword(ctx));\n\n    CopyItemNameHandlePlural(itemId, sScriptStringVars[stringVarIndex], quantity);\n    return FALSE;",
       "callsTo": [
         "CopyItemNameHandlePlural",
@@ -1797,6 +2695,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_bufferdecorationname(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 stringVarIndex = ScriptReadByte(ctx);\n    u16 decorId = VarGet(ScriptReadHalfword(ctx));\n\n    StringCopy(sScriptStringVars[stringVarIndex], gDecorations[decorId].name);\n    return FALSE;",
       "callsTo": [
         "ScriptReadByte",
@@ -1810,6 +2714,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_buffermovename(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 stringVarIndex = ScriptReadByte(ctx);\n    u16 move = VarGet(ScriptReadHalfword(ctx));\n\n    StringCopy(sScriptStringVars[stringVarIndex], gMoveNames[move]);\n    return FALSE;",
       "callsTo": [
         "ScriptReadByte",
@@ -1823,6 +2733,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_buffernumberstring(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 stringVarIndex = ScriptReadByte(ctx);\n    u16 num = VarGet(ScriptReadHalfword(ctx));\n    u8 numDigits = CountDigits(num);\n\n    ConvertIntToDecimalStringN(sScriptStringVars[stringVarIndex], num, STR_CONV_MODE_LEFT_ALIGN, numDigits);\n    return FALSE;",
       "callsTo": [
         "ConvertIntToDecimalStringN",
@@ -1837,6 +2753,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_bufferstdstring(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 stringVarIndex = ScriptReadByte(ctx);\n    u16 index = VarGet(ScriptReadHalfword(ctx));\n\n    StringCopy(sScriptStringVars[stringVarIndex], gStdStrings[index]);\n    return FALSE;",
       "callsTo": [
         "ScriptReadByte",
@@ -1850,6 +2772,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_buffercontestname(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 stringVarIndex = ScriptReadByte(ctx);\n    u16 category = VarGet(ScriptReadHalfword(ctx));\n\n    BufferContestName(sScriptStringVars[stringVarIndex], category);\n    return FALSE;",
       "callsTo": [
         "BufferContestName",
@@ -1863,6 +2791,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_bufferstring(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 stringVarIndex = ScriptReadByte(ctx);\n    const u8 *text = (u8 *)ScriptReadWord(ctx);\n\n    StringCopy(sScriptStringVars[stringVarIndex], text);\n    return FALSE;",
       "callsTo": [
         "ScriptReadByte",
@@ -1875,6 +2809,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_vbuffermessage(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "const u8 *ptr = (u8 *)(ScriptReadWord(ctx) - sAddressOffset);\n\n    StringExpandPlaceholders(gStringVar4, ptr);\n    return FALSE;",
       "callsTo": [
         "ScriptReadWord",
@@ -1886,6 +2826,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_vbufferstring(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 stringVarIndex = ScriptReadByte(ctx);\n    u32 addr = ScriptReadWord(ctx);\n\n    const u8 *src = (u8 *)(addr - sAddressOffset);\n    u8 *dest = sScriptStringVars[stringVarIndex];\n    StringCopy(dest, src);\n    return FALSE;",
       "callsTo": [
         "ScriptReadByte",
@@ -1898,6 +2844,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_bufferboxname(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 stringVarIndex = ScriptReadByte(ctx);\n    u16 boxId = VarGet(ScriptReadHalfword(ctx));\n\n    StringCopy(sScriptStringVars[stringVarIndex], GetBoxNamePtr(boxId));\n    return FALSE;",
       "callsTo": [
         "GetBoxNamePtr",
@@ -1912,6 +2864,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_givemon(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u16 species = VarGet(ScriptReadHalfword(ctx));\n    u8 level = ScriptReadByte(ctx);\n    u16 item = VarGet(ScriptReadHalfword(ctx));\n    u32 unkParam1 = ScriptReadWord(ctx);\n    u32 unkParam2 = ScriptReadWord(ctx);\n    u8 unkParam3 = ScriptReadByte(ctx);\n\n    gSpecialVar_Result = ScriptGiveMon(species, level, item, unkParam1, unkParam2, unkParam3);\n    return FALSE;",
       "callsTo": [
         "ScriptGiveMon",
@@ -1926,6 +2884,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_giveegg(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u16 species = VarGet(ScriptReadHalfword(ctx));\n\n    gSpecialVar_Result = ScriptGiveEgg(species);\n    return FALSE;",
       "callsTo": [
         "ScriptGiveEgg",
@@ -1938,6 +2902,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_setmonmove(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 partyIndex = ScriptReadByte(ctx);\n    u8 slot = ScriptReadByte(ctx);\n    u16 move = ScriptReadHalfword(ctx);\n\n    ScriptSetMonMoveSlot(partyIndex, move, slot);\n    return FALSE;",
       "callsTo": [
         "ScriptReadByte",
@@ -1950,6 +2920,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_checkpartymove(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 i;\n    u16 move = ScriptReadHalfword(ctx);\n\n    gSpecialVar_Result = PARTY_SIZE;\n    for (i = 0; i < PARTY_SIZE; i++)\n    {\n        u16 species = GetMonData(&gPlayerParty[i], MON_DATA_SPECIES, NULL);\n        if (!species)\n            break;\n        if (!GetMonData(&gPlayerParty[i], MON_DATA_IS_EGG) && MonKnowsMove(&gPlayerParty[i], move) == TRUE)\n        {\n            gSpecialVar_Result = i;\n            gSpecialVar_0x8004 = species;\n            break;\n        }\n    }\n    return FALSE;",
       "callsTo": [
         "GetMonData",
@@ -1962,6 +2938,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_addmoney(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u32 amount = ScriptReadWord(ctx);\n    u8 ignore = ScriptReadByte(ctx);\n\n    if (!ignore)\n        AddMoney(&gSaveBlock1Ptr->money, amount);\n    return FALSE;",
       "callsTo": [
         "AddMoney",
@@ -1974,6 +2956,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_removemoney(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u32 amount = ScriptReadWord(ctx);\n    u8 ignore = ScriptReadByte(ctx);\n\n    if (!ignore)\n        RemoveMoney(&gSaveBlock1Ptr->money, amount);\n    return FALSE;",
       "callsTo": [
         "RemoveMoney",
@@ -1986,6 +2974,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_checkmoney(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u32 amount = ScriptReadWord(ctx);\n    u8 ignore = ScriptReadByte(ctx);\n\n    if (!ignore)\n        gSpecialVar_Result = IsEnoughMoney(&gSaveBlock1Ptr->money, amount);\n    return FALSE;",
       "callsTo": [
         "IsEnoughMoney",
@@ -1998,6 +2992,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_showmoneybox(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 x = ScriptReadByte(ctx);\n    u8 y = ScriptReadByte(ctx);\n    u8 ignore = ScriptReadByte(ctx);\n\n    if (!ignore)\n        DrawMoneyBox(GetMoney(&gSaveBlock1Ptr->money), x, y);\n    return FALSE;",
       "callsTo": [
         "DrawMoneyBox",
@@ -2010,6 +3010,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_hidemoneybox(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "HideMoneyBox();\n    return FALSE;",
       "callsTo": [
         "HideMoneyBox"
@@ -2020,6 +3026,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_updatemoneybox(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 x = ScriptReadByte(ctx);\n    u8 y = ScriptReadByte(ctx);\n    u8 ignore = ScriptReadByte(ctx);\n\n    if (!ignore)\n        ChangeAmountInMoneyBox(GetMoney(&gSaveBlock1Ptr->money));\n    return FALSE;",
       "callsTo": [
         "ChangeAmountInMoneyBox",
@@ -2032,6 +3044,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_showcoinsbox(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 x = ScriptReadByte(ctx);\n    u8 y = ScriptReadByte(ctx);\n\n    ShowCoinsWindow(GetCoins(), x, y);\n    return FALSE;",
       "callsTo": [
         "GetCoins",
@@ -2044,6 +3062,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_hidecoinsbox(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 x = ScriptReadByte(ctx);\n    u8 y = ScriptReadByte(ctx);\n\n    HideCoinsWindow();\n    return FALSE;",
       "callsTo": [
         "HideCoinsWindow",
@@ -2055,6 +3079,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_updatecoinsbox(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 x = ScriptReadByte(ctx);\n    u8 y = ScriptReadByte(ctx);\n\n    PrintCoinsString(GetCoins());\n    return FALSE;",
       "callsTo": [
         "GetCoins",
@@ -2067,6 +3097,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_trainerbattle(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "ctx->scriptPtr = BattleSetup_ConfigureTrainerBattle(ctx->scriptPtr);\n    return FALSE;",
       "callsTo": [
         "BattleSetup_ConfigureTrainerBattle"
@@ -2077,6 +3113,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_dotrainerbattle(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "BattleSetup_StartTrainerBattle();\n    return TRUE;",
       "callsTo": [
         "BattleSetup_StartTrainerBattle"
@@ -2087,6 +3129,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_gotopostbattlescript(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "ctx->scriptPtr = BattleSetup_GetScriptAddrAfterBattle();\n    return FALSE;",
       "callsTo": [
         "BattleSetup_GetScriptAddrAfterBattle"
@@ -2097,6 +3145,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_gotobeatenscript(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "ctx->scriptPtr = BattleSetup_GetTrainerPostBattleScript();\n    return FALSE;",
       "callsTo": [
         "BattleSetup_GetTrainerPostBattleScript"
@@ -2107,6 +3161,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_checktrainerflag(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u16 index = VarGet(ScriptReadHalfword(ctx));\n\n    ctx->comparisonResult = HasTrainerBeenFought(index);\n    return FALSE;",
       "callsTo": [
         "HasTrainerBeenFought",
@@ -2119,6 +3179,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_settrainerflag(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u16 index = VarGet(ScriptReadHalfword(ctx));\n\n    SetTrainerFlag(index);\n    return FALSE;",
       "callsTo": [
         "ScriptReadHalfword",
@@ -2131,6 +3197,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_cleartrainerflag(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u16 index = VarGet(ScriptReadHalfword(ctx));\n\n    ClearTrainerFlag(index);\n    return FALSE;",
       "callsTo": [
         "ClearTrainerFlag",
@@ -2143,6 +3215,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_setwildbattle(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u16 species = ScriptReadHalfword(ctx);\n    u8 level = ScriptReadByte(ctx);\n    u16 item = ScriptReadHalfword(ctx);\n\n    CreateScriptedWildMon(species, level, item);\n    return FALSE;",
       "callsTo": [
         "CreateScriptedWildMon",
@@ -2155,6 +3233,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_dowildbattle(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "BattleSetup_StartScriptedWildBattle();\n    ScriptContext_Stop();\n    return TRUE;",
       "callsTo": [
         "BattleSetup_StartScriptedWildBattle",
@@ -2166,6 +3250,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_pokemart(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "const void *ptr = (void *)ScriptReadWord(ctx);\n\n    CreatePokemartMenu(ptr);\n    ScriptContext_Stop();\n    return TRUE;",
       "callsTo": [
         "CreatePokemartMenu",
@@ -2178,6 +3268,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_pokemartdecoration(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "const void *ptr = (void *)ScriptReadWord(ctx);\n\n    CreateDecorationShop1Menu(ptr);\n    ScriptContext_Stop();\n    return TRUE;",
       "callsTo": [
         "CreateDecorationShop1Menu",
@@ -2190,6 +3286,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_pokemartdecoration2(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "const void *ptr = (void *)ScriptReadWord(ctx);\n\n    CreateDecorationShop2Menu(ptr);\n    ScriptContext_Stop();\n    return TRUE;",
       "callsTo": [
         "CreateDecorationShop2Menu",
@@ -2202,6 +3304,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_playslotmachine(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 machineId = VarGet(ScriptReadHalfword(ctx));\n\n    PlaySlotMachine(machineId, CB2_ReturnToFieldContinueScriptPlayMapMusic);\n    ScriptContext_Stop();\n    return TRUE;",
       "callsTo": [
         "PlaySlotMachine",
@@ -2215,6 +3323,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_setberrytree(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 treeId = ScriptReadByte(ctx);\n    u8 berry = ScriptReadByte(ctx);\n    u8 growthStage = ScriptReadByte(ctx);\n\n    if (berry == 0)\n        PlantBerryTree(treeId, berry, growthStage, FALSE);\n    else\n        PlantBerryTree(treeId, berry, growthStage, FALSE);\n    return FALSE;",
       "callsTo": [
         "PlantBerryTree",
@@ -2226,6 +3340,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_getpokenewsactive(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u16 newsKind = VarGet(ScriptReadHalfword(ctx));\n\n    gSpecialVar_Result = IsPokeNewsActive(newsKind);\n    return FALSE;",
       "callsTo": [
         "IsPokeNewsActive",
@@ -2238,6 +3358,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_choosecontestmon(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "ChooseContestMon();\n    ScriptContext_Stop();\n    return TRUE;",
       "callsTo": [
         "ChooseContestMon",
@@ -2249,6 +3375,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_startcontest(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "StartContest();\n    ScriptContext_Stop();\n    return TRUE;",
       "callsTo": [
         "ScriptContext_Stop",
@@ -2260,6 +3392,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_showcontestresults(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "ShowContestResults();\n    ScriptContext_Stop();\n    return TRUE;",
       "callsTo": [
         "ScriptContext_Stop",
@@ -2271,6 +3409,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_contestlinktransfer(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "ContestLinkTransfer(gSpecialVar_ContestCategory);\n    ScriptContext_Stop();\n    return TRUE;",
       "callsTo": [
         "ContestLinkTransfer",
@@ -2282,6 +3426,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_dofieldeffect(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u16 effectId = VarGet(ScriptReadHalfword(ctx));\n\n    sFieldEffectScriptId = effectId;\n    FieldEffectStart(sFieldEffectScriptId);\n    return FALSE;",
       "callsTo": [
         "FieldEffectStart",
@@ -2294,6 +3444,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_setfieldeffectargument(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 argNum = ScriptReadByte(ctx);\n\n    gFieldEffectArguments[argNum] = (s16)VarGet(ScriptReadHalfword(ctx));\n    return FALSE;",
       "callsTo": [
         "ScriptReadByte",
@@ -2306,6 +3462,7 @@
       "returnType": "bool8",
       "signature": "static bool8 WaitForFieldEffectFinish(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!FieldEffectActiveListContains(sFieldEffectScriptId))\n        return TRUE;\n    else\n        return FALSE;",
       "callsTo": [
         "FieldEffectActiveListContains"
@@ -2316,6 +3473,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_waitfieldeffect(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "sFieldEffectScriptId = VarGet(ScriptReadHalfword(ctx));\n    SetupNativeScript(ctx, WaitForFieldEffectFinish);\n    return TRUE;",
       "callsTo": [
         "ScriptReadHalfword",
@@ -2328,6 +3491,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_setrespawn(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u16 healLocationId = VarGet(ScriptReadHalfword(ctx));\n\n    SetLastHealLocationWarp(healLocationId);\n    return FALSE;",
       "callsTo": [
         "ScriptReadHalfword",
@@ -2340,6 +3509,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_checkplayergender(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "gSpecialVar_Result = gSaveBlock2Ptr->playerGender;\n    return FALSE;",
       "callsTo": [],
       "lineCount": 2
@@ -2348,6 +3523,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_playmoncry(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u16 species = VarGet(ScriptReadHalfword(ctx));\n    u16 mode = VarGet(ScriptReadHalfword(ctx));\n\n    PlayCry_Script(species, mode);\n    return FALSE;",
       "callsTo": [
         "PlayCry_Script",
@@ -2360,6 +3541,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_waitmoncry(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "SetupNativeScript(ctx, IsCryFinished);\n    return TRUE;",
       "callsTo": [
         "SetupNativeScript"
@@ -2370,6 +3557,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_setmetatile(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u16 x = VarGet(ScriptReadHalfword(ctx));\n    u16 y = VarGet(ScriptReadHalfword(ctx));\n    u16 metatileId = VarGet(ScriptReadHalfword(ctx));\n    bool16 isImpassable = VarGet(ScriptReadHalfword(ctx));\n\n    x += MAP_OFFSET;\n    y += MAP_OFFSET;\n    if (!isImpassable)\n        MapGridSetMetatileIdAt(x, y, metatileId);\n    else\n        MapGridSetMetatileIdAt(x, y, metatileId | MAPGRID_IMPASSABLE);\n    return FALSE;",
       "callsTo": [
         "MapGridSetMetatileIdAt",
@@ -2382,6 +3575,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_opendoor(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u16 x = VarGet(ScriptReadHalfword(ctx));\n    u16 y = VarGet(ScriptReadHalfword(ctx));\n\n    x += MAP_OFFSET;\n    y += MAP_OFFSET;\n    PlaySE(GetDoorSoundEffect(x, y));\n    FieldAnimateDoorOpen(x, y);\n    return FALSE;",
       "callsTo": [
         "FieldAnimateDoorOpen",
@@ -2396,6 +3595,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_closedoor(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u16 x = VarGet(ScriptReadHalfword(ctx));\n    u16 y = VarGet(ScriptReadHalfword(ctx));\n\n    x += MAP_OFFSET;\n    y += MAP_OFFSET;\n    FieldAnimateDoorClose(x, y);\n    return FALSE;",
       "callsTo": [
         "FieldAnimateDoorClose",
@@ -2408,6 +3613,7 @@
       "returnType": "bool8",
       "signature": "static bool8 IsDoorAnimationStopped(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!FieldIsDoorAnimationRunning())\n        return TRUE;\n    else\n        return FALSE;",
       "callsTo": [
         "FieldIsDoorAnimationRunning"
@@ -2418,6 +3624,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_waitdooranim(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "SetupNativeScript(ctx, IsDoorAnimationStopped);\n    return TRUE;",
       "callsTo": [
         "SetupNativeScript"
@@ -2428,6 +3640,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_setdooropen(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u16 x = VarGet(ScriptReadHalfword(ctx));\n    u16 y = VarGet(ScriptReadHalfword(ctx));\n\n    x += MAP_OFFSET;\n    y += MAP_OFFSET;\n    FieldSetDoorOpened(x, y);\n    return FALSE;",
       "callsTo": [
         "FieldSetDoorOpened",
@@ -2440,6 +3658,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_setdoorclosed(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u16 x = VarGet(ScriptReadHalfword(ctx));\n    u16 y = VarGet(ScriptReadHalfword(ctx));\n\n    x += MAP_OFFSET;\n    y += MAP_OFFSET;\n    FieldSetDoorClosed(x, y);\n    return FALSE;",
       "callsTo": [
         "FieldSetDoorClosed",
@@ -2452,6 +3676,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_addelevmenuitem(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 v3 = ScriptReadByte(ctx);\n    u16 v5 = VarGet(ScriptReadHalfword(ctx));\n    u16 v7 = VarGet(ScriptReadHalfword(ctx));\n    u16 v9 = VarGet(ScriptReadHalfword(ctx));\n\n     \n    return FALSE;",
       "callsTo": [
         "ScriptReadByte",
@@ -2464,6 +3694,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_showelevmenu(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "return FALSE;",
       "callsTo": [],
       "lineCount": 1
@@ -2472,6 +3708,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_checkcoins(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u16 *ptr = GetVarPointer(ScriptReadHalfword(ctx));\n    *ptr = GetCoins();\n    return FALSE;",
       "callsTo": [
         "GetCoins",
@@ -2484,6 +3726,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_addcoins(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u16 coins = VarGet(ScriptReadHalfword(ctx));\n\n    if (AddCoins(coins) == TRUE)\n        gSpecialVar_Result = FALSE;\n    else\n        gSpecialVar_Result = TRUE;\n    return FALSE;",
       "callsTo": [
         "AddCoins",
@@ -2496,6 +3744,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_removecoins(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u16 coins = VarGet(ScriptReadHalfword(ctx));\n\n    if (RemoveCoins(coins) == TRUE)\n        gSpecialVar_Result = FALSE;\n    else\n        gSpecialVar_Result = TRUE;\n    return FALSE;",
       "callsTo": [
         "RemoveCoins",
@@ -2508,6 +3762,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_moverotatingtileobjects(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u16 puzzleNumber = VarGet(ScriptReadHalfword(ctx));\n\n    sMovingNpcId = MoveRotatingTileObjects(puzzleNumber);\n    return FALSE;",
       "callsTo": [
         "MoveRotatingTileObjects",
@@ -2520,6 +3780,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_turnrotatingtileobjects(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "TurnRotatingTileObjects();\n    return FALSE;",
       "callsTo": [
         "TurnRotatingTileObjects"
@@ -2530,6 +3796,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_initrotatingtilepuzzle(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u16 isTrickHouse = VarGet(ScriptReadHalfword(ctx));\n\n    InitRotatingTilePuzzle(isTrickHouse);\n    return FALSE;",
       "callsTo": [
         "InitRotatingTilePuzzle",
@@ -2542,6 +3814,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_freerotatingtilepuzzle(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "FreeRotatingTilePuzzle();\n    return FALSE;",
       "callsTo": [
         "FreeRotatingTilePuzzle"
@@ -2552,6 +3830,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_selectapproachingtrainer(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "gSelectedObjectEvent = GetCurrentApproachingTrainerObjectEventId();\n    return FALSE;",
       "callsTo": [
         "GetCurrentApproachingTrainerObjectEventId"
@@ -2562,6 +3846,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_lockfortrainer(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "if (IsOverworldLinkActive())\n    {\n        return FALSE;\n    }\n    else\n    {\n        if (gObjectEvents[gSelectedObjectEvent].active)\n        {\n            FreezeForApproachingTrainers();\n            SetupNativeScript(ctx, IsFreezeObjectAndPlayerFinished);\n        }\n        return TRUE;\n    }",
       "callsTo": [
         "FreezeForApproachingTrainers",
@@ -2574,6 +3864,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_setmodernfatefulencounter(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "bool8 isModernFatefulEncounter = TRUE;\n    u16 partyIndex = VarGet(ScriptReadHalfword(ctx));\n\n    SetMonData(&gPlayerParty[partyIndex], MON_DATA_MODERN_FATEFUL_ENCOUNTER, &isModernFatefulEncounter);\n    return FALSE;",
       "callsTo": [
         "ScriptReadHalfword",
@@ -2586,6 +3882,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_checkmodernfatefulencounter(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u16 partyIndex = VarGet(ScriptReadHalfword(ctx));\n\n    gSpecialVar_Result = GetMonData(&gPlayerParty[partyIndex], MON_DATA_MODERN_FATEFUL_ENCOUNTER, NULL);\n    return FALSE;",
       "callsTo": [
         "GetMonData",
@@ -2598,6 +3900,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_trywondercardscript(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "const u8 *script = GetSavedRamScriptIfValid();\n\n    if (script)\n    {\n        gRamScriptRetAddr = ctx->scriptPtr;\n        ScriptJump(ctx, script);\n    }\n    return FALSE;",
       "callsTo": [
         "GetSavedRamScriptIfValid",
@@ -2609,6 +3917,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_warpspinenter(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 mapGroup = ScriptReadByte(ctx);\n    u8 mapNum = ScriptReadByte(ctx);\n    u8 warpId = ScriptReadByte(ctx);\n    u16 x = VarGet(ScriptReadHalfword(ctx));\n    u16 y = VarGet(ScriptReadHalfword(ctx));\n\n    SetWarpDestination(mapGroup, mapNum, warpId, x, y);\n    SetSpinStartFacingDir(GetPlayerFacingDirection());\n    DoSpinEnterWarp();\n    ResetInitialPlayerAvatarState();\n    return TRUE;",
       "callsTo": [
         "DoSpinEnterWarp",
@@ -2626,6 +3940,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_setmonmetlocation(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u16 partyIndex = VarGet(ScriptReadHalfword(ctx));\n    u8 location = ScriptReadByte(ctx);\n\n    if (partyIndex < PARTY_SIZE)\n        SetMonData(&gPlayerParty[partyIndex], MON_DATA_MET_LOCATION, &location);\n    return FALSE;",
       "callsTo": [
         "ScriptReadByte",
@@ -2639,6 +3959,7 @@
       "returnType": "void",
       "signature": "static void CloseBrailleWindow(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ClearStdWindowAndFrame(sBrailleWindowId, TRUE);\n    RemoveWindow(sBrailleWindowId);",
       "callsTo": [
         "ClearStdWindowAndFrame",
@@ -2650,6 +3971,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_buffertrainerclassname(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 stringVarIndex = ScriptReadByte(ctx);\n    u16 trainerClassId = VarGet(ScriptReadHalfword(ctx));\n\n    StringCopy(sScriptStringVars[stringVarIndex], GetTrainerClassNameFromId(trainerClassId));\n    return FALSE;",
       "callsTo": [
         "GetTrainerClassNameFromId",
@@ -2664,6 +3991,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_buffertrainername(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 stringVarIndex = ScriptReadByte(ctx);\n    u16 trainerClassId = VarGet(ScriptReadHalfword(ctx));\n\n    StringCopy(sScriptStringVars[stringVarIndex], GetTrainerNameFromId(trainerClassId));\n    return FALSE;",
       "callsTo": [
         "GetTrainerNameFromId",
@@ -2678,6 +4011,12 @@
       "returnType": "void",
       "signature": "void SetMovingNpcId(u16 npcId)",
       "paramsRaw": "u16 npcId",
+      "paramsList": [
+        {
+          "name": "npcId",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "sMovingNpcId = npcId;",
       "callsTo": [],
       "lineCount": 1
@@ -2686,6 +4025,12 @@
       "returnType": "bool8",
       "signature": "bool8 ScrCmd_warpwhitefade(struct ScriptContext *ctx)",
       "paramsRaw": "struct ScriptContext *ctx",
+      "paramsList": [
+        {
+          "name": "ctx",
+          "typeRaw": "struct ScriptContext *"
+        }
+      ],
       "body": "u8 mapGroup = ScriptReadByte(ctx);\n    u8 mapNum = ScriptReadByte(ctx);\n    u8 warpId = ScriptReadByte(ctx);\n    u16 x = VarGet(ScriptReadHalfword(ctx));\n    u16 y = VarGet(ScriptReadHalfword(ctx));\n\n    SetWarpDestination(mapGroup, mapNum, warpId, x, y);\n    DoWhiteFadeWarp();\n    ResetInitialPlayerAvatarState();\n    return TRUE;",
       "callsTo": [
         "DoWhiteFadeWarp",

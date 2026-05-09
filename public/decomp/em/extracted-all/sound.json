@@ -6,6 +6,7 @@
       "returnType": "void",
       "signature": "void InitMapMusic(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gDisableMusic = FALSE;\n    ResetMapMusic();",
       "callsTo": [
         "ResetMapMusic"
@@ -16,6 +17,7 @@
       "returnType": "void",
       "signature": "void MapMusicMain(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sMapMusicState)\n    {\n    case 0:\n        break;\n    case 1:\n        sMapMusicState = 2;\n        PlayBGM(sCurrentMapMusic);\n        break;\n    case 2:\n    case 3:\n    case 4:\n        break;\n    case 5:\n        if (IsBGMStopped())\n        {\n            sNextMapMusic = 0;\n            sMapMusicState = 0;\n        }\n        break;\n    case 6:\n        if (IsBGMStopped() && IsFanfareTaskInactive())\n        {\n            sCurrentMapMusic = sNextMapMusic;\n            sNextMapMusic = 0;\n            sMapMusicState = 2;\n            PlayBGM(sCurrentMapMusic);\n        }\n        break;\n    case 7:\n        if (IsBGMStopped() && IsFanfareTaskInactive())\n        {\n            FadeInNewBGM(sNextMapMusic, sMapMusicFadeInSpeed);\n            sCurrentMapMusic = sNextMapMusic;\n            sNextMapMusic = 0;\n            sMapMusicState = 2;\n            sMapMusicFadeInSpeed = 0;\n        }\n        break;\n    }",
       "callsTo": [
         "FadeInNewBGM",
@@ -29,6 +31,7 @@
       "returnType": "void",
       "signature": "void ResetMapMusic(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sCurrentMapMusic = 0;\n    sNextMapMusic = 0;\n    sMapMusicState = 0;\n    sMapMusicFadeInSpeed = 0;",
       "callsTo": [],
       "lineCount": 4
@@ -37,6 +40,7 @@
       "returnType": "u16",
       "signature": "u16 GetCurrentMapMusic(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return sCurrentMapMusic;",
       "callsTo": [],
       "lineCount": 1
@@ -45,6 +49,12 @@
       "returnType": "void",
       "signature": "void PlayNewMapMusic(u16 songNum)",
       "paramsRaw": "u16 songNum",
+      "paramsList": [
+        {
+          "name": "songNum",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "sCurrentMapMusic = songNum;\n    sNextMapMusic = 0;\n    sMapMusicState = 1;",
       "callsTo": [],
       "lineCount": 3
@@ -53,6 +63,7 @@
       "returnType": "void",
       "signature": "void StopMapMusic(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sCurrentMapMusic = 0;\n    sNextMapMusic = 0;\n    sMapMusicState = 1;",
       "callsTo": [],
       "lineCount": 3
@@ -61,6 +72,12 @@
       "returnType": "void",
       "signature": "void FadeOutMapMusic(u8 speed)",
       "paramsRaw": "u8 speed",
+      "paramsList": [
+        {
+          "name": "speed",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (IsNotWaitingForBGMStop())\n        FadeOutBGM(speed);\n    sCurrentMapMusic = 0;\n    sNextMapMusic = 0;\n    sMapMusicState = 5;",
       "callsTo": [
         "FadeOutBGM",
@@ -72,6 +89,16 @@
       "returnType": "void",
       "signature": "void FadeOutAndPlayNewMapMusic(u16 songNum, u8 speed)",
       "paramsRaw": "u16 songNum, u8 speed",
+      "paramsList": [
+        {
+          "name": "songNum",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "speed",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "FadeOutMapMusic(speed);\n    sCurrentMapMusic = 0;\n    sNextMapMusic = songNum;\n    sMapMusicState = 6;",
       "callsTo": [
         "FadeOutMapMusic"
@@ -82,6 +109,20 @@
       "returnType": "void",
       "signature": "void FadeOutAndFadeInNewMapMusic(u16 songNum, u8 fadeOutSpeed, u8 fadeInSpeed)",
       "paramsRaw": "u16 songNum, u8 fadeOutSpeed, u8 fadeInSpeed",
+      "paramsList": [
+        {
+          "name": "songNum",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "fadeOutSpeed",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "fadeInSpeed",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "FadeOutMapMusic(fadeOutSpeed);\n    sCurrentMapMusic = 0;\n    sNextMapMusic = songNum;\n    sMapMusicState = 7;\n    sMapMusicFadeInSpeed = fadeInSpeed;",
       "callsTo": [
         "FadeOutMapMusic"
@@ -92,6 +133,7 @@
       "returnType": "bool8",
       "signature": "bool8 IsNotWaitingForBGMStop(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (sMapMusicState == 6)\n        return FALSE;\n    if (sMapMusicState == 5)\n        return FALSE;\n    if (sMapMusicState == 7)\n        return FALSE;\n    return TRUE;",
       "callsTo": [],
       "lineCount": 7
@@ -100,6 +142,12 @@
       "returnType": "void",
       "signature": "void PlayFanfareByFanfareNum(u8 fanfareNum)",
       "paramsRaw": "u8 fanfareNum",
+      "paramsList": [
+        {
+          "name": "fanfareNum",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u16 songNum;\n    m4aMPlayStop(&gMPlayInfo_BGM);\n    songNum = sFanfares[fanfareNum].songNum;\n    sFanfareCounter = sFanfares[fanfareNum].duration;\n    m4aSongNumStart(songNum);",
       "callsTo": [],
       "lineCount": 5
@@ -108,6 +156,12 @@
       "returnType": "bool8",
       "signature": "bool8 WaitFanfare(bool8 stop)",
       "paramsRaw": "bool8 stop",
+      "paramsList": [
+        {
+          "name": "stop",
+          "typeRaw": "bool8"
+        }
+      ],
       "body": "if (sFanfareCounter)\n    {\n        sFanfareCounter--;\n        return FALSE;\n    }\n    else\n    {\n        if (!stop)\n            m4aMPlayContinue(&gMPlayInfo_BGM);\n        else\n            m4aSongNumStart(MUS_DUMMY);\n\n        return TRUE;\n    }",
       "callsTo": [],
       "lineCount": 14
@@ -116,6 +170,12 @@
       "returnType": "void",
       "signature": "void StopFanfareByFanfareNum(u8 fanfareNum)",
       "paramsRaw": "u8 fanfareNum",
+      "paramsList": [
+        {
+          "name": "fanfareNum",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "m4aSongNumStop(sFanfares[fanfareNum].songNum);",
       "callsTo": [],
       "lineCount": 1
@@ -124,6 +184,12 @@
       "returnType": "void",
       "signature": "void PlayFanfare(u16 songNum)",
       "paramsRaw": "u16 songNum",
+      "paramsList": [
+        {
+          "name": "songNum",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "s32 i;\n    for (i = 0; (u32)i < ARRAY_COUNT(sFanfares); i++)\n    {\n        if (sFanfares[i].songNum == songNum)\n        {\n            PlayFanfareByFanfareNum(i);\n            CreateFanfareTask();\n            return;\n        }\n    }\n\n     \n     \n    PlayFanfareByFanfareNum(0);\n    CreateFanfareTask();",
       "callsTo": [
         "ARRAY_COUNT",
@@ -136,6 +202,7 @@
       "returnType": "bool8",
       "signature": "bool8 IsFanfareTaskInactive(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (FuncIsActiveTask(Task_Fanfare) == TRUE)\n        return FALSE;\n    return TRUE;",
       "callsTo": [
         "FuncIsActiveTask"
@@ -146,6 +213,12 @@
       "returnType": "void",
       "signature": "static void Task_Fanfare(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (sFanfareCounter)\n    {\n        sFanfareCounter--;\n    }\n    else\n    {\n        m4aMPlayContinue(&gMPlayInfo_BGM);\n        DestroyTask(taskId);\n    }",
       "callsTo": [
         "DestroyTask"
@@ -156,6 +229,7 @@
       "returnType": "void",
       "signature": "static void CreateFanfareTask(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (FuncIsActiveTask(Task_Fanfare) != TRUE)\n        CreateTask(Task_Fanfare, 80);",
       "callsTo": [
         "CreateTask",
@@ -167,6 +241,16 @@
       "returnType": "void",
       "signature": "void FadeInNewBGM(u16 songNum, u8 speed)",
       "paramsRaw": "u16 songNum, u8 speed",
+      "paramsList": [
+        {
+          "name": "songNum",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "speed",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (gDisableMusic)\n        songNum = 0;\n    if (songNum == MUS_NONE)\n        songNum = 0;\n    m4aSongNumStart(songNum);\n    m4aMPlayImmInit(&gMPlayInfo_BGM);\n    m4aMPlayVolumeControl(&gMPlayInfo_BGM, TRACKS_ALL, 0);\n    m4aSongNumStop(songNum);\n    m4aMPlayFadeIn(&gMPlayInfo_BGM, speed);",
       "callsTo": [],
       "lineCount": 9
@@ -175,6 +259,12 @@
       "returnType": "void",
       "signature": "void FadeOutBGMTemporarily(u8 speed)",
       "paramsRaw": "u8 speed",
+      "paramsList": [
+        {
+          "name": "speed",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "m4aMPlayFadeOutTemporarily(&gMPlayInfo_BGM, speed);",
       "callsTo": [],
       "lineCount": 1
@@ -183,6 +273,7 @@
       "returnType": "bool8",
       "signature": "bool8 IsBGMPausedOrStopped(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gMPlayInfo_BGM.status & MUSICPLAYER_STATUS_PAUSE)\n        return TRUE;\n    if (!(gMPlayInfo_BGM.status & MUSICPLAYER_STATUS_TRACK))\n        return TRUE;\n    return FALSE;",
       "callsTo": [],
       "lineCount": 5
@@ -191,6 +282,12 @@
       "returnType": "void",
       "signature": "void FadeInBGM(u8 speed)",
       "paramsRaw": "u8 speed",
+      "paramsList": [
+        {
+          "name": "speed",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "m4aMPlayFadeIn(&gMPlayInfo_BGM, speed);",
       "callsTo": [],
       "lineCount": 1
@@ -199,6 +296,12 @@
       "returnType": "void",
       "signature": "void FadeOutBGM(u8 speed)",
       "paramsRaw": "u8 speed",
+      "paramsList": [
+        {
+          "name": "speed",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "m4aMPlayFadeOut(&gMPlayInfo_BGM, speed);",
       "callsTo": [],
       "lineCount": 1
@@ -207,6 +310,7 @@
       "returnType": "bool8",
       "signature": "bool8 IsBGMStopped(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!(gMPlayInfo_BGM.status & MUSICPLAYER_STATUS_TRACK))\n        return TRUE;\n    return FALSE;",
       "callsTo": [],
       "lineCount": 3
@@ -215,6 +319,16 @@
       "returnType": "void",
       "signature": "void PlayCry_Normal(u16 species, s8 pan)",
       "paramsRaw": "u16 species, s8 pan",
+      "paramsList": [
+        {
+          "name": "species",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "pan",
+          "typeRaw": "s8"
+        }
+      ],
       "body": "m4aMPlayVolumeControl(&gMPlayInfo_BGM, TRACKS_ALL, 85);\n    PlayCryInternal(species, pan, CRY_VOLUME, CRY_PRIORITY_NORMAL, CRY_MODE_NORMAL);\n    gPokemonCryBGMDuckingCounter = 2;\n    RestoreBGMVolumeAfterPokemonCry();",
       "callsTo": [
         "PlayCryInternal",
@@ -226,6 +340,24 @@
       "returnType": "void",
       "signature": "void PlayCry_NormalNoDucking(u16 species, s8 pan, s8 volume, u8 priority)",
       "paramsRaw": "u16 species, s8 pan, s8 volume, u8 priority",
+      "paramsList": [
+        {
+          "name": "species",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "pan",
+          "typeRaw": "s8"
+        },
+        {
+          "name": "volume",
+          "typeRaw": "s8"
+        },
+        {
+          "name": "priority",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "PlayCryInternal(species, pan, volume, priority, CRY_MODE_NORMAL);",
       "callsTo": [
         "PlayCryInternal"
@@ -236,6 +368,20 @@
       "returnType": "void",
       "signature": "void PlayCry_ByMode(u16 species, s8 pan, u8 mode)",
       "paramsRaw": "u16 species, s8 pan, u8 mode",
+      "paramsList": [
+        {
+          "name": "species",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "pan",
+          "typeRaw": "s8"
+        },
+        {
+          "name": "mode",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (mode == CRY_MODE_DOUBLES)\n    {\n        PlayCryInternal(species, pan, CRY_VOLUME, CRY_PRIORITY_NORMAL, mode);\n    }\n    else\n    {\n        m4aMPlayVolumeControl(&gMPlayInfo_BGM, TRACKS_ALL, 85);\n        PlayCryInternal(species, pan, CRY_VOLUME, CRY_PRIORITY_NORMAL, mode);\n        gPokemonCryBGMDuckingCounter = 2;\n        RestoreBGMVolumeAfterPokemonCry();\n    }",
       "callsTo": [
         "PlayCryInternal",
@@ -247,6 +393,20 @@
       "returnType": "void",
       "signature": "void PlayCry_ReleaseDouble(u16 species, s8 pan, u8 mode)",
       "paramsRaw": "u16 species, s8 pan, u8 mode",
+      "paramsList": [
+        {
+          "name": "species",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "pan",
+          "typeRaw": "s8"
+        },
+        {
+          "name": "mode",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (mode == CRY_MODE_DOUBLES)\n    {\n        PlayCryInternal(species, pan, CRY_VOLUME, CRY_PRIORITY_NORMAL, mode);\n    }\n    else\n    {\n        if (!(gBattleTypeFlags & BATTLE_TYPE_MULTI))\n            m4aMPlayVolumeControl(&gMPlayInfo_BGM, TRACKS_ALL, 85);\n        PlayCryInternal(species, pan, CRY_VOLUME, CRY_PRIORITY_NORMAL, mode);\n    }",
       "callsTo": [
         "PlayCryInternal"
@@ -257,6 +417,20 @@
       "returnType": "void",
       "signature": "void PlayCry_DuckNoRestore(u16 species, s8 pan, u8 mode)",
       "paramsRaw": "u16 species, s8 pan, u8 mode",
+      "paramsList": [
+        {
+          "name": "species",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "pan",
+          "typeRaw": "s8"
+        },
+        {
+          "name": "mode",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (mode == CRY_MODE_DOUBLES)\n    {\n        PlayCryInternal(species, pan, CRY_VOLUME, CRY_PRIORITY_NORMAL, mode);\n    }\n    else\n    {\n        m4aMPlayVolumeControl(&gMPlayInfo_BGM, TRACKS_ALL, 85);\n        PlayCryInternal(species, pan, CRY_VOLUME, CRY_PRIORITY_NORMAL, mode);\n        gPokemonCryBGMDuckingCounter = 2;\n    }",
       "callsTo": [
         "PlayCryInternal"
@@ -267,6 +441,16 @@
       "returnType": "void",
       "signature": "void PlayCry_Script(u16 species, u8 mode)",
       "paramsRaw": "u16 species, u8 mode",
+      "paramsList": [
+        {
+          "name": "species",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "mode",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "m4aMPlayVolumeControl(&gMPlayInfo_BGM, TRACKS_ALL, 85);\n    PlayCryInternal(species, 0, CRY_VOLUME, CRY_PRIORITY_NORMAL, mode);\n    gPokemonCryBGMDuckingCounter = 2;\n    RestoreBGMVolumeAfterPokemonCry();",
       "callsTo": [
         "PlayCryInternal",
@@ -278,6 +462,28 @@
       "returnType": "void",
       "signature": "void PlayCryInternal(u16 species, s8 pan, s8 volume, u8 priority, u8 mode)",
       "paramsRaw": "u16 species, s8 pan, s8 volume, u8 priority, u8 mode",
+      "paramsList": [
+        {
+          "name": "species",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "pan",
+          "typeRaw": "s8"
+        },
+        {
+          "name": "volume",
+          "typeRaw": "s8"
+        },
+        {
+          "name": "priority",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "mode",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "bool32 reverse;\n    u32 release;\n    u32 length;\n    u32 pitch;\n    u32 chorus;\n    u32 index;\n    u8 table;\n\n    species--;\n\n     \n     \n    length = 140;\n    reverse = FALSE;\n    release = 0;\n    pitch = 15360;\n    chorus = 0;\n\n    switch (mode)\n    {\n    case CRY_MODE_NORMAL:\n        break;\n    case CRY_MODE_DOUBLES:\n        length = 20;\n        release = 225;\n        break;\n    case CRY_MODE_ENCOUNTER:\n        release = 225;\n        pitch = 15600;\n        chorus = 20;\n        volume = 90;\n        break;\n    case CRY_MODE_HIGH_PITCH:\n        length = 50;\n        release = 200;\n        pitch = 15800;\n        chorus = 20;\n        volume = 90;\n        break;\n    case CRY_MODE_ECHO_START:\n        length = 25;\n        reverse = TRUE;\n        release = 100;\n        pitch = 15600;\n        chorus = 192;\n        volume = 90;\n        break;\n    case CRY_MODE_FAINT:\n        release = 200;\n        pitch = 14440;\n        break;\n    case CRY_MODE_ECHO_END:\n        release = 220;\n        pitch = 15555;\n        chorus = 192;\n        volume = 70;\n        break;\n    case CRY_MODE_ROAR_1:\n        length = 10;\n        release = 100;\n        pitch = 14848;\n        break;\n    case CRY_MODE_ROAR_2:\n        length = 60;\n        release = 225;\n        pitch = 15616;\n        break;\n    case CRY_MODE_GROWL_1:\n        length = 15;\n        reverse = TRUE;\n        release = 125;\n        pitch = 15200;\n        break;\n    case CRY_MODE_GROWL_2:\n        length = 100;\n        release = 225;\n        pitch = 15200;\n        break;\n    case CRY_MODE_WEAK_DOUBLES:\n        length = 20;\n        release = 225;\n         \n    case CRY_MODE_WEAK:\n        pitch = 15000;\n        break;\n    }\n\n    SetPokemonCryVolume(volume);\n    SetPokemonCryPanpot(pan);\n    SetPokemonCryPitch(pitch);\n    SetPokemonCryLength(length);\n    SetPokemonCryProgress(0);\n    SetPokemonCryRelease(release);\n    SetPokemonCryChorus(chorus);\n    SetPokemonCryPriority(priority);\n\n     \n     \n     \n     \n    species = SpeciesToCryId(species);\n    index = species % 128;\n    table = species / 128;\n\n    #define GET_CRY(speciesIndex, tableId, reversed) \\\n        ((reversed) ? &gCryTable_Reverse[(128 * (tableId)) + (speciesIndex)] : &gCryTable[(128 * (tableId)) + (speciesIndex)])\n\n    switch (table)\n    {\n    case 0:\n        gMPlay_PokemonCry = SetPokemonCryTone(GET_CRY(index, 0, reverse));\n        break;\n    case 1:\n        gMPlay_PokemonCry = SetPokemonCryTone(GET_CRY(index, 1, reverse));\n        break;\n    case 2:\n        gMPlay_PokemonCry = SetPokemonCryTone(GET_CRY(index, 2, reverse));\n        break;\n    case 3:\n        gMPlay_PokemonCry = SetPokemonCryTone(GET_CRY(index, 3, reverse));\n        break;\n    }\n\n    #undef GET_CRY",
       "callsTo": [
         "GET_CRY",
@@ -298,6 +504,7 @@
       "returnType": "bool8",
       "signature": "bool8 IsCryFinished(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (FuncIsActiveTask(Task_DuckBGMForPokemonCry) == TRUE)\n    {\n        return FALSE;\n    }\n    else\n    {\n        ClearPokemonCrySongs();\n        return TRUE;\n    }",
       "callsTo": [
         "ClearPokemonCrySongs",
@@ -309,6 +516,7 @@
       "returnType": "void",
       "signature": "void StopCryAndClearCrySongs(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "m4aMPlayStop(gMPlay_PokemonCry);\n    ClearPokemonCrySongs();",
       "callsTo": [
         "ClearPokemonCrySongs"
@@ -319,6 +527,7 @@
       "returnType": "void",
       "signature": "void StopCry(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "m4aMPlayStop(gMPlay_PokemonCry);",
       "callsTo": [],
       "lineCount": 1
@@ -327,6 +536,7 @@
       "returnType": "bool8",
       "signature": "bool8 IsCryPlayingOrClearCrySongs(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (IsPokemonCryPlaying(gMPlay_PokemonCry))\n    {\n        return TRUE;\n    }\n    else\n    {\n        ClearPokemonCrySongs();\n        return FALSE;\n    }",
       "callsTo": [
         "ClearPokemonCrySongs",
@@ -338,6 +548,7 @@
       "returnType": "bool8",
       "signature": "bool8 IsCryPlaying(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (IsPokemonCryPlaying(gMPlay_PokemonCry))\n        return TRUE;\n    else\n        return FALSE;",
       "callsTo": [
         "IsPokemonCryPlaying"
@@ -348,6 +559,12 @@
       "returnType": "void",
       "signature": "static void Task_DuckBGMForPokemonCry(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (gPokemonCryBGMDuckingCounter)\n    {\n        gPokemonCryBGMDuckingCounter--;\n        return;\n    }\n\n    if (!IsPokemonCryPlaying(gMPlay_PokemonCry))\n    {\n        m4aMPlayVolumeControl(&gMPlayInfo_BGM, TRACKS_ALL, 256);\n        DestroyTask(taskId);\n    }",
       "callsTo": [
         "DestroyTask",
@@ -359,6 +576,7 @@
       "returnType": "void",
       "signature": "static void RestoreBGMVolumeAfterPokemonCry(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (FuncIsActiveTask(Task_DuckBGMForPokemonCry) != TRUE)\n        CreateTask(Task_DuckBGMForPokemonCry, 80);",
       "callsTo": [
         "CreateTask",
@@ -370,6 +588,12 @@
       "returnType": "void",
       "signature": "void PlayBGM(u16 songNum)",
       "paramsRaw": "u16 songNum",
+      "paramsList": [
+        {
+          "name": "songNum",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "if (gDisableMusic)\n        songNum = 0;\n    if (songNum == MUS_NONE)\n        songNum = 0;\n    m4aSongNumStart(songNum);",
       "callsTo": [],
       "lineCount": 5
@@ -378,6 +602,12 @@
       "returnType": "void",
       "signature": "void PlaySE(u16 songNum)",
       "paramsRaw": "u16 songNum",
+      "paramsList": [
+        {
+          "name": "songNum",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "m4aSongNumStart(songNum);",
       "callsTo": [],
       "lineCount": 1
@@ -386,6 +616,16 @@
       "returnType": "void",
       "signature": "void PlaySE12WithPanning(u16 songNum, s8 pan)",
       "paramsRaw": "u16 songNum, s8 pan",
+      "paramsList": [
+        {
+          "name": "songNum",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "pan",
+          "typeRaw": "s8"
+        }
+      ],
       "body": "m4aSongNumStart(songNum);\n    m4aMPlayImmInit(&gMPlayInfo_SE1);\n    m4aMPlayImmInit(&gMPlayInfo_SE2);\n    m4aMPlayPanpotControl(&gMPlayInfo_SE1, TRACKS_ALL, pan);\n    m4aMPlayPanpotControl(&gMPlayInfo_SE2, TRACKS_ALL, pan);",
       "callsTo": [],
       "lineCount": 5
@@ -394,6 +634,16 @@
       "returnType": "void",
       "signature": "void PlaySE1WithPanning(u16 songNum, s8 pan)",
       "paramsRaw": "u16 songNum, s8 pan",
+      "paramsList": [
+        {
+          "name": "songNum",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "pan",
+          "typeRaw": "s8"
+        }
+      ],
       "body": "m4aSongNumStart(songNum);\n    m4aMPlayImmInit(&gMPlayInfo_SE1);\n    m4aMPlayPanpotControl(&gMPlayInfo_SE1, TRACKS_ALL, pan);",
       "callsTo": [],
       "lineCount": 3
@@ -402,6 +652,16 @@
       "returnType": "void",
       "signature": "void PlaySE2WithPanning(u16 songNum, s8 pan)",
       "paramsRaw": "u16 songNum, s8 pan",
+      "paramsList": [
+        {
+          "name": "songNum",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "pan",
+          "typeRaw": "s8"
+        }
+      ],
       "body": "m4aSongNumStart(songNum);\n    m4aMPlayImmInit(&gMPlayInfo_SE2);\n    m4aMPlayPanpotControl(&gMPlayInfo_SE2, TRACKS_ALL, pan);",
       "callsTo": [],
       "lineCount": 3
@@ -410,6 +670,12 @@
       "returnType": "void",
       "signature": "void SE12PanpotControl(s8 pan)",
       "paramsRaw": "s8 pan",
+      "paramsList": [
+        {
+          "name": "pan",
+          "typeRaw": "s8"
+        }
+      ],
       "body": "m4aMPlayPanpotControl(&gMPlayInfo_SE1, TRACKS_ALL, pan);\n    m4aMPlayPanpotControl(&gMPlayInfo_SE2, TRACKS_ALL, pan);",
       "callsTo": [],
       "lineCount": 2
@@ -418,6 +684,7 @@
       "returnType": "bool8",
       "signature": "bool8 IsSEPlaying(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if ((gMPlayInfo_SE1.status & MUSICPLAYER_STATUS_PAUSE) && (gMPlayInfo_SE2.status & MUSICPLAYER_STATUS_PAUSE))\n        return FALSE;\n    if (!(gMPlayInfo_SE1.status & MUSICPLAYER_STATUS_TRACK) && !(gMPlayInfo_SE2.status & MUSICPLAYER_STATUS_TRACK))\n        return FALSE;\n    return TRUE;",
       "callsTo": [],
       "lineCount": 5
@@ -426,6 +693,7 @@
       "returnType": "bool8",
       "signature": "bool8 IsBGMPlaying(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gMPlayInfo_BGM.status & MUSICPLAYER_STATUS_PAUSE)\n        return FALSE;\n    if (!(gMPlayInfo_BGM.status & MUSICPLAYER_STATUS_TRACK))\n        return FALSE;\n    return TRUE;",
       "callsTo": [],
       "lineCount": 5
@@ -434,6 +702,7 @@
       "returnType": "bool8",
       "signature": "bool8 IsSpecialSEPlaying(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gMPlayInfo_SE3.status & MUSICPLAYER_STATUS_PAUSE)\n        return FALSE;\n    if (!(gMPlayInfo_SE3.status & MUSICPLAYER_STATUS_TRACK))\n        return FALSE;\n    return TRUE;",
       "callsTo": [],
       "lineCount": 5

@@ -6,6 +6,7 @@
       "returnType": "void",
       "signature": "static void CoordEventWeather_Clouds(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "SetWeather(WEATHER_SUNNY_CLOUDS);",
       "callsTo": [
         "SetWeather"
@@ -16,6 +17,7 @@
       "returnType": "void",
       "signature": "static void CoordEventWeather_Sunny(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "SetWeather(WEATHER_SUNNY);",
       "callsTo": [
         "SetWeather"
@@ -26,6 +28,7 @@
       "returnType": "void",
       "signature": "static void CoordEventWeather_Rain(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "SetWeather(WEATHER_RAIN);",
       "callsTo": [
         "SetWeather"
@@ -36,6 +39,7 @@
       "returnType": "void",
       "signature": "static void CoordEventWeather_Snow(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "SetWeather(WEATHER_SNOW);",
       "callsTo": [
         "SetWeather"
@@ -46,6 +50,7 @@
       "returnType": "void",
       "signature": "static void CoordEventWeather_Thunderstorm(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "SetWeather(WEATHER_RAIN_THUNDERSTORM);",
       "callsTo": [
         "SetWeather"
@@ -56,6 +61,7 @@
       "returnType": "void",
       "signature": "static void CoordEventWeather_HorizontalFog(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "SetWeather(WEATHER_FOG_HORIZONTAL);",
       "callsTo": [
         "SetWeather"
@@ -66,6 +72,7 @@
       "returnType": "void",
       "signature": "static void CoordEventWeather_DiagonalFog(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "SetWeather(WEATHER_FOG_DIAGONAL);",
       "callsTo": [
         "SetWeather"
@@ -76,6 +83,7 @@
       "returnType": "void",
       "signature": "static void CoordEventWeather_Ash(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "SetWeather(WEATHER_VOLCANIC_ASH);",
       "callsTo": [
         "SetWeather"
@@ -86,6 +94,7 @@
       "returnType": "void",
       "signature": "static void CoordEventWeather_Sandstorm(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "SetWeather(WEATHER_SANDSTORM);",
       "callsTo": [
         "SetWeather"
@@ -96,6 +105,7 @@
       "returnType": "void",
       "signature": "static void CoordEventWeather_Shade(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "SetWeather(WEATHER_SHADE);",
       "callsTo": [
         "SetWeather"
@@ -106,6 +116,7 @@
       "returnType": "void",
       "signature": "static void CoordEventWeather_Drought(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "SetWeather(WEATHER_DROUGHT);",
       "callsTo": [
         "SetWeather"
@@ -116,6 +127,7 @@
       "returnType": "void",
       "signature": "static void CoordEventWeather_Route119Cycle(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "SetWeather(WEATHER_ROUTE119_CYCLE);",
       "callsTo": [
         "SetWeather"
@@ -126,6 +138,7 @@
       "returnType": "void",
       "signature": "static void CoordEventWeather_Route123Cycle(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "SetWeather(WEATHER_ROUTE123_CYCLE);",
       "callsTo": [
         "SetWeather"
@@ -136,6 +149,12 @@
       "returnType": "void",
       "signature": "void DoCoordEventWeather(u8 coordEventWeather)",
       "paramsRaw": "u8 coordEventWeather",
+      "paramsList": [
+        {
+          "name": "coordEventWeather",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 i;\n    for (i = 0; i < ARRAY_COUNT(sCoordEventWeatherFuncs); i++)\n    {\n        if (sCoordEventWeatherFuncs[i].coordEventWeather == coordEventWeather)\n        {\n            sCoordEventWeatherFuncs[i].func();\n            return;\n        }\n    }",
       "callsTo": [
         "ARRAY_COUNT"

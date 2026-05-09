@@ -6,6 +6,12 @@
       "returnType": "void",
       "signature": "void InitMonMarkingsMenu(struct MonMarkingsMenu *ptr)",
       "paramsRaw": "struct MonMarkingsMenu *ptr",
+      "paramsList": [
+        {
+          "name": "ptr",
+          "typeRaw": "struct MonMarkingsMenu *"
+        }
+      ],
       "body": "sMenu = ptr;",
       "callsTo": [],
       "lineCount": 1
@@ -14,6 +20,7 @@
       "returnType": "void",
       "signature": "static void BufferMenuWindowTiles(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "const struct TilesPal *frame = GetWindowFrameTilesPal(gSaveBlock2Ptr->optionsWindowFrameType);\n    sMenu->frameTiles = frame->tiles;\n    sMenu->framePalette = frame->pal;\n    sMenu->tileLoadState = 0;\n    CpuFill16(0, sMenu->windowSpriteTiles, sizeof(sMenu->windowSpriteTiles));",
       "callsTo": [
         "CpuFill16",
@@ -25,6 +32,7 @@
       "returnType": "bool8",
       "signature": "static bool8 BufferMenuFrameTiles(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 i;\n    u8 *dest = sMenu->windowSpriteTiles + sMenu->tileLoadState * 0x100;\n\n    switch (sMenu->tileLoadState)\n    {\n    case 0:\n        CpuFastCopy(sMenu->frameTiles, dest, TILE_SIZE_4BPP);\n        for (i = 0; i < 6; i++)\n            CpuFastCopy(sMenu->frameTiles + TILE_SIZE_4BPP, dest + TILE_SIZE_4BPP * (i + 1), TILE_SIZE_4BPP);\n\n        CpuFastCopy(sMenu->frameTiles + TILE_SIZE_4BPP * 2, dest + TILE_SIZE_4BPP * 7, TILE_SIZE_4BPP);\n        sMenu->tileLoadState++;\n        break;\n    default:\n        CpuFastCopy(sMenu->frameTiles + TILE_SIZE_4BPP * 3, dest, TILE_SIZE_4BPP);\n        for (i = 0; i < 6; i++)\n            CpuFastCopy(sMenu->frameTiles + TILE_SIZE_4BPP * 4, dest + TILE_SIZE_4BPP * (i + 1), TILE_SIZE_4BPP);\n\n        CpuFastCopy(sMenu->frameTiles + TILE_SIZE_4BPP * 5, dest + TILE_SIZE_4BPP * 7, TILE_SIZE_4BPP);\n        sMenu->tileLoadState++;\n        break;\n    case 13:\n        CpuFastCopy(sMenu->frameTiles + TILE_SIZE_4BPP * 6, dest, TILE_SIZE_4BPP);\n        for (i = 0; i < 6; i++)\n            CpuFastCopy(sMenu->frameTiles + TILE_SIZE_4BPP * 7, dest + TILE_SIZE_4BPP * (i + 1), TILE_SIZE_4BPP);\n\n        CpuFastCopy(sMenu->frameTiles + TILE_SIZE_4BPP * 8, dest + TILE_SIZE_4BPP * 7, TILE_SIZE_4BPP);\n        sMenu->tileLoadState++;\n        return FALSE;\n    case 14:\n        return FALSE;\n    }\n\n    return TRUE;",
       "callsTo": [
         "CpuFastCopy"
@@ -35,6 +43,7 @@
       "returnType": "void",
       "signature": "void BufferMonMarkingsMenuTiles(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "BufferMenuWindowTiles();\n    while (BufferMenuFrameTiles());",
       "callsTo": [
         "BufferMenuFrameTiles",
@@ -46,6 +55,20 @@
       "returnType": "void",
       "signature": "void OpenMonMarkingsMenu(u8 markings, s16 x, s16 y)",
       "paramsRaw": "u8 markings, s16 x, s16 y",
+      "paramsList": [
+        {
+          "name": "markings",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "x",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s16"
+        }
+      ],
       "body": "u16 i;\n    sMenu->cursorPos = 0;\n    sMenu->markings = markings;\n    for (i = 0; i < NUM_MON_MARKINGS; i++)\n        sMenu->markingsArray[i] = (sMenu->markings >> i) & 1;\n    CreateMonMarkingsMenuSprites(x, y, sMenu->baseTileTag, sMenu->basePaletteTag);",
       "callsTo": [
         "CreateMonMarkingsMenuSprites"
@@ -56,6 +79,7 @@
       "returnType": "void",
       "signature": "void FreeMonMarkingsMenu(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 i;\n\n    for (i = 0; i < 2; i++)\n    {\n        FreeSpriteTilesByTag(sMenu->baseTileTag + i);\n        FreeSpritePaletteByTag(sMenu->basePaletteTag + i);\n    }\n    for (i = 0; i < ARRAY_COUNT(sMenu->windowSprites); i++)\n    {\n        if (!sMenu->windowSprites[i])\n            return;\n        DestroySprite(sMenu->windowSprites[i]);\n        sMenu->windowSprites[i] = NULL;\n    }\n    for (i = 0; i < NUM_MON_MARKINGS; i++)\n    {\n        if (!sMenu->markingSprites[i])\n            return;\n        DestroySprite(sMenu->markingSprites[i]);\n        sMenu->markingSprites[i] = NULL;\n    }\n    if (sMenu->cursorSprite)\n    {\n        DestroySprite(sMenu->cursorSprite);\n        sMenu->cursorSprite = NULL;\n    }\n    if (sMenu->textSprite)\n    {\n        DestroySprite(sMenu->textSprite);\n        sMenu->textSprite = NULL;\n    }",
       "callsTo": [
         "ARRAY_COUNT",
@@ -69,6 +93,7 @@
       "returnType": "bool8",
       "signature": "bool8 HandleMonMarkingsMenuInput(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 i;\n\n    if (JOY_NEW(DPAD_UP))\n    {\n        PlaySE(SE_SELECT);\n        if (--sMenu->cursorPos < 0)\n            sMenu->cursorPos = SELECTION_CANCEL;\n        return TRUE;\n    }\n\n    if (JOY_NEW(DPAD_DOWN))\n    {\n        PlaySE(SE_SELECT);\n        if (++sMenu->cursorPos > SELECTION_CANCEL)\n            sMenu->cursorPos = 0;\n        return TRUE;\n    }\n\n    if (JOY_NEW(A_BUTTON))\n    {\n        PlaySE(SE_SELECT);\n\n        switch (sMenu->cursorPos)\n        {\n        case SELECTION_OK:\n            sMenu->markings = 0;\n            for (i = 0; i < NUM_MON_MARKINGS; i++)\n                sMenu->markings |= sMenu->markingsArray[i] << i;\n            return FALSE;\n        case SELECTION_CANCEL:\n            return FALSE;\n        }\n\n        sMenu->markingsArray[sMenu->cursorPos] = !sMenu->markingsArray[sMenu->cursorPos];\n        return TRUE;\n    }\n\n    if (JOY_NEW(B_BUTTON))\n    {\n        PlaySE(SE_SELECT);\n        return FALSE;\n    }\n\n    return TRUE;",
       "callsTo": [
         "JOY_NEW",
@@ -80,6 +105,24 @@
       "returnType": "void",
       "signature": "static void CreateMonMarkingsMenuSprites(s16 x, s16 y, u16 baseTileTag, u16 basePaletteTag)",
       "paramsRaw": "s16 x, s16 y, u16 baseTileTag, u16 basePaletteTag",
+      "paramsList": [
+        {
+          "name": "x",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "baseTileTag",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "basePaletteTag",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "u16 i;\n    u8 spriteId;\n\n    struct SpriteSheet sheets[] =\n    {\n        { sMenu->windowSpriteTiles, 0x1000, baseTileTag },\n        { gMonMarkingsMenu_Gfx, 0x320, baseTileTag + 1 },\n        {}\n    };\n\n    struct SpritePalette palettes[] =\n    {\n        { sMenu->framePalette, basePaletteTag },\n        { gMonMarkingsMenu_Pal, basePaletteTag + 1},\n        {}\n    };\n\n    struct SpriteTemplate template =\n    {\n        .tileTag = baseTileTag,\n        .paletteTag = basePaletteTag,\n        .oam = &sOamData_MenuWindow,\n        .anims = sAnims_MenuWindow,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCB_Dummy,\n    };\n\n    LoadSpriteSheets(sheets);\n    LoadSpritePalettes(palettes);\n\n     \n    for (i = 0; i < ARRAY_COUNT(sMenu->windowSprites); i++)\n    {\n        spriteId = CreateSprite(&template, x + 32, y + 32, 1);\n        if (spriteId != MAX_SPRITES)\n        {\n            sMenu->windowSprites[i] = &gSprites[spriteId];\n            StartSpriteAnim(&gSprites[spriteId], i);\n        }\n        else\n        {\n            sMenu->windowSprites[i] = NULL;\n            return;\n        }\n    }\n    sMenu->windowSprites[1]->y = y + 96;\n\n     \n    template.tileTag++;\n    template.paletteTag++;\n    template.anims = sAnims_MenuSprite;\n    template.callback = SpriteCB_Marking;\n    template.oam = &sOamData_8x8;\n    for (i = 0; i < NUM_MON_MARKINGS; i++)\n    {\n        spriteId = CreateSprite(&template, x + 32, y + 16 + 16 * i, 0);\n        if (spriteId != MAX_SPRITES)\n        {\n            sMenu->markingSprites[i] = &gSprites[spriteId];\n            gSprites[spriteId].sMarkingId = i;\n        }\n        else\n        {\n            sMenu->markingSprites[i] = NULL;\n            return;\n        }\n    }\n\n     \n    template.callback = SpriteCallbackDummy;\n    spriteId = CreateSprite(&template, 0, 0, 0);\n    if (spriteId != MAX_SPRITES)\n    {\n        sMenu->textSprite = &gSprites[spriteId];\n        sMenu->textSprite->oam.shape = SPRITE_SHAPE(32x32);\n        sMenu->textSprite->oam.size = SPRITE_SIZE(32x32);\n        StartSpriteAnim(sMenu->textSprite, ANIM_TEXT);\n        sMenu->textSprite->x = x + 32;\n        sMenu->textSprite->y = y + 80;\n        CalcCenterToCornerVec(sMenu->textSprite, SPRITE_SHAPE(32x16), SPRITE_SIZE(32x16), ST_OAM_AFFINE_OFF);\n    }\n    else\n    {\n        sMenu->textSprite = NULL;\n    }\n\n     \n    template.callback = SpriteCB_Cursor;\n    spriteId = CreateSprite(&template, x + 12, 0, 0);\n    if (spriteId != MAX_SPRITES)\n    {\n        sMenu->cursorSprite = &gSprites[spriteId];\n        sMenu->cursorSprite->sCursorYOffset = y + 16;\n        StartSpriteAnim(sMenu->cursorSprite, ANIM_CURSOR);\n    }\n    else\n    {\n        sMenu->cursorSprite = NULL;\n    }",
       "callsTo": [
         "ARRAY_COUNT",
@@ -97,6 +140,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_Dummy(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "",
       "callsTo": [],
       "lineCount": 1
@@ -105,6 +154,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_Marking(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (sMenu->markingsArray[sprite->sMarkingId])\n        StartSpriteAnim(sprite, 2 * sprite->sMarkingId + 1);  \n    else\n        StartSpriteAnim(sprite, 2 * sprite->sMarkingId);",
       "callsTo": [
         "StartSpriteAnim"
@@ -115,6 +170,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_Cursor(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "sprite->y = (16 * sMenu->cursorPos) + sprite->sCursorYOffset;",
       "callsTo": [],
       "lineCount": 1
@@ -123,6 +184,16 @@
       "returnType": "void",
       "signature": "void UpdateMonMarkingTiles(u8 markings, void *dest)",
       "paramsRaw": "u8 markings, void *dest",
+      "paramsList": [
+        {
+          "name": "markings",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "dest",
+          "typeRaw": "void *"
+        }
+      ],
       "body": "RequestDma3Copy(&sMonMarkings_Gfx[markings * 0x80], dest, 0x80, 0x10);",
       "callsTo": [
         "RequestDma3Copy"

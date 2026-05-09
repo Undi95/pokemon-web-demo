@@ -6,6 +6,12 @@
       "returnType": "void",
       "signature": "static void AnimOutrageFlame(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "CMD_ARGS(x, y, duration, xVelocity, yVelocity, flickerDuration);\n\n    sprite->x = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_X_2);\n    sprite->y = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_Y_PIC_OFFSET);\n    if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)\n    {\n        sprite->x -= cmd->x;\n        cmd->xVelocity = -cmd->xVelocity;\n        cmd->yVelocity = -cmd->yVelocity;\n    }\n    else\n    {\n        sprite->x += cmd->x;\n    }\n\n    sprite->y += cmd->y;\n    sprite->data[0] = cmd->duration;\n    sprite->data[1] = cmd->xVelocity;\n    sprite->data[3] = cmd->yVelocity;\n    sprite->data[5] = cmd->flickerDuration;\n    sprite->invisible = TRUE;\n    StoreSpriteCallbackInData6(sprite, DestroySpriteAndMatrix);\n    sprite->callback = TranslateSpriteLinearAndFlicker;",
       "callsTo": [
         "CMD_ARGS",
@@ -19,6 +25,12 @@
       "returnType": "void",
       "signature": "static void StartDragonFireTranslation(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "CMD_ARGS(initialX, initialY, targetX, targetY, duration);\n\n    SetSpriteCoordsToAnimAttackerCoords(sprite);\n    sprite->data[2] = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_X_2);\n    sprite->data[4] = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_Y_PIC_OFFSET);\n    if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)\n    {\n        sprite->x -= cmd->initialY;\n        sprite->y += cmd->initialY;\n        sprite->data[2] -= cmd->targetX;\n        sprite->data[4] += cmd->targetY;\n    }\n    else\n    {\n        sprite->x += cmd->initialX;\n        sprite->y += cmd->initialY;\n        sprite->data[2] += cmd->targetX;\n        sprite->data[4] += cmd->targetY;\n        StartSpriteAnim(sprite, 1);\n    }\n\n    sprite->data[0] = cmd->duration;\n    sprite->callback = StartAnimLinearTranslation;\n    StoreSpriteCallbackInData6(sprite, DestroySpriteAndMatrix);",
       "callsTo": [
         "CMD_ARGS",
@@ -34,6 +46,12 @@
       "returnType": "void",
       "signature": "static void AnimDragonRageFirePlume(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "CMD_ARGS(relativeTo, x, y);\n\n    if (cmd->relativeTo == ANIM_ATTACKER)\n    {\n        sprite->x = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_X);\n        sprite->y = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_Y);\n    }\n    else\n    {\n        sprite->x = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_X);\n        sprite->y = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_Y);\n    }\n\n    SetAnimSpriteInitialXOffset(sprite, cmd->x);\n    sprite->y += cmd->y;\n    sprite->callback = RunStoredCallbackWhenAnimEnds;\n    StoreSpriteCallbackInData6(sprite, DestroySpriteAndMatrix);",
       "callsTo": [
         "CMD_ARGS",
@@ -47,6 +65,12 @@
       "returnType": "void",
       "signature": "static void AnimDragonFireToTarget(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)\n        StartSpriteAffineAnim(sprite, 1);\n\n    StartDragonFireTranslation(sprite);",
       "callsTo": [
         "GetBattlerSide",
@@ -59,6 +83,12 @@
       "returnType": "void",
       "signature": "static void AnimDragonDanceOrb(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "CMD_ARGS(angle);\n\n    u16 r5;\n    u16 r0;\n    sprite->x = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_X_2);\n    sprite->y = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_Y_PIC_OFFSET);\n    sprite->data[4] = 0;\n    sprite->data[5] = 1;\n    sprite->data[6] = cmd->angle;\n    r5 = GetBattlerSpriteCoordAttr(gBattlerAttacker, BATTLER_COORD_ATTR_HEIGHT);\n    r0 = GetBattlerSpriteCoordAttr(gBattlerAttacker, BATTLER_COORD_ATTR_WIDTH);\n    if (r5 > r0)\n        sprite->data[7] = r5 / 2;\n    else\n        sprite->data[7] = r0 / 2;\n    sprite->x2 = Cos(sprite->data[6], sprite->data[7]);\n    sprite->y2 = Sin(sprite->data[6], sprite->data[7]);\n    sprite->callback = AnimDragonDanceOrb_Step;",
       "callsTo": [
         "CMD_ARGS",
@@ -73,6 +103,12 @@
       "returnType": "void",
       "signature": "static void AnimDragonDanceOrb_Step(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "switch (sprite->data[0])\n    {\n    case 0:\n        sprite->data[6] = (sprite->data[6] - sprite->data[5]) & 0xFF;\n        sprite->x2 = Cos(sprite->data[6], sprite->data[7]);\n        sprite->y2 = Sin(sprite->data[6], sprite->data[7]);\n        if (++sprite->data[4] > 5)\n        {\n            sprite->data[4] = 0;\n            if (sprite->data[5] <= 15 && ++sprite->data[5] > 15)\n                sprite->data[5] = 16;\n        }\n        if (++sprite->data[3] > 0x3C)\n        {\n            sprite->data[3] = 0;\n            sprite->data[0]++;\n        }\n        break;\n    case 1:\n        sprite->data[6] = (sprite->data[6] - sprite->data[5]) & 0xFF;\n        if (sprite->data[7] <= 0x95 && (sprite->data[7] += 8) > 0x95)\n            sprite->data[7] = 0x96;\n        sprite->x2 = Cos(sprite->data[6], sprite->data[7]);\n        sprite->y2 = Sin(sprite->data[6], sprite->data[7]);\n        if (++sprite->data[4] > 5)\n        {\n            sprite->data[4] = 0;\n            if (sprite->data[5] <= 15 && ++sprite->data[5] > 15)\n                sprite->data[5] = 16;\n        }\n        if (++sprite->data[3] > 20)\n            DestroyAnimSprite(sprite);\n        break;\n    }",
       "callsTo": [
         "Cos",
@@ -85,6 +121,12 @@
       "returnType": "void",
       "signature": "void AnimTask_DragonDanceWaver(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "struct ScanlineEffectParams scanlineParams;\n    struct Task *task = &gTasks[taskId];\n    u16 i;\n    u8 y;\n    if (GetBattlerSpriteBGPriorityRank(gBattleAnimAttacker) == 1)\n    {\n        scanlineParams.dmaDest = &REG_BG1HOFS;\n        task->data[2] = gBattle_BG1_X;\n    }\n    else\n    {\n        scanlineParams.dmaDest = &REG_BG2HOFS;\n        task->data[2] = gBattle_BG2_X;\n    }\n\n    scanlineParams.dmaControl = SCANLINE_EFFECT_DMACNT_16BIT;\n    scanlineParams.initState = 1;\n    scanlineParams.unused9 = 0;\n    y = GetBattlerYCoordWithElevation(gBattleAnimAttacker);\n    task->data[3] = y - 32;\n    task->data[4] = y + 32;\n    if (task->data[3] < 0)\n        task->data[3] = 0;\n\n    for (i = task->data[3]; i <= task->data[4]; i++)\n    {\n        gScanlineEffectRegBuffers[0][i] = task->data[2];\n        gScanlineEffectRegBuffers[1][i] = task->data[2];\n    }\n\n    ScanlineEffect_SetParams(scanlineParams);\n    task->func = AnimTask_DragonDanceWaver_Step;",
       "callsTo": [
         "GetBattlerSpriteBGPriorityRank",
@@ -97,6 +139,12 @@
       "returnType": "void",
       "signature": "static void AnimTask_DragonDanceWaver_Step(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "struct Task *task = &gTasks[taskId];\n    switch (task->data[0])\n    {\n    case 0:\n        if (++task->data[7] > 1)\n        {\n            task->data[7] = 0;\n            if (++task->data[6] == 3)\n                task->data[0]++;\n        }\n        UpdateDragonDanceScanlineEffect(task);\n        break;\n    case 1:\n        if (++task->data[1] > 0x3C)\n            task->data[0]++;\n        UpdateDragonDanceScanlineEffect(task);\n        break;\n    case 2:\n        if (++task->data[7] > 1)\n        {\n            task->data[7] = 0;\n            if (--task->data[6] == 0)\n                task->data[0]++;\n        }\n        UpdateDragonDanceScanlineEffect(task);\n        break;\n    case 3:\n        gScanlineEffect.state = 3;\n        task->data[0]++;\n        break;\n    case 4:\n        DestroyAnimVisualTask(taskId);\n        break;\n    }",
       "callsTo": [
         "DestroyAnimVisualTask",
@@ -108,6 +156,12 @@
       "returnType": "void",
       "signature": "static void UpdateDragonDanceScanlineEffect(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u16 sineIndex = task->data[5];\n    u16 i;\n    for (i = task->data[3]; i <= task->data[4]; i++)\n    {\n        gScanlineEffectRegBuffers[gScanlineEffect.srcBuffer][i] = ((gSineTable[sineIndex] * task->data[6]) >> 7) + task->data[2];\n        sineIndex = (sineIndex + 8) & 0xFF;\n    }\n\n    task->data[5] = (task->data[5] + 9) & 0xFF;",
       "callsTo": [],
       "lineCount": 9
@@ -116,6 +170,12 @@
       "returnType": "void",
       "signature": "static void AnimOverheatFlame(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "CMD_ARGS(speed, unk1, unk2, duration, y);\n\n    int i;\n    int yAmplitude = (cmd->unk2 * 3) / 5;\n    sprite->x = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_X_2);\n    sprite->y = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_Y_PIC_OFFSET) + cmd->y;\n    sprite->data[1] = Cos(cmd->unk1, cmd->unk2);\n    sprite->data[2] = Sin(cmd->unk1, yAmplitude);\n    sprite->x += sprite->data[1] * cmd->speed;\n    sprite->y += sprite->data[2] * cmd->speed;\n    sprite->data[3] = cmd->duration;\n    sprite->callback = AnimOverheatFlame_Step;\n    for (i = 0; i < 7; i++)\n        sUnusedOverheatData[i] = sprite->data[i];",
       "callsTo": [
         "CMD_ARGS",
@@ -129,6 +189,12 @@
       "returnType": "void",
       "signature": "static void AnimOverheatFlame_Step(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "sprite->data[4] += sprite->data[1];\n    sprite->data[5] += sprite->data[2];\n    sprite->x2 = sprite->data[4] / 10;\n    sprite->y2 = sprite->data[5] / 10;\n    if (++sprite->data[0] > sprite->data[3])\n        DestroyAnimSprite(sprite);",
       "callsTo": [
         "DestroyAnimSprite"

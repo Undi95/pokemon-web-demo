@@ -6,6 +6,7 @@
       "returnType": "void",
       "signature": "void DynamicPlaceholderTextUtil_Reset(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int i;\n    for (i = 0; i < (int)ARRAY_COUNT(sStringPointers); i++)\n        sStringPointers[i] = NULL;",
       "callsTo": [
         "ARRAY_COUNT"
@@ -16,6 +17,16 @@
       "returnType": "void",
       "signature": "void DynamicPlaceholderTextUtil_SetPlaceholderPtr(u8 idx, const u8 *ptr)",
       "paramsRaw": "u8 idx, const u8 *ptr",
+      "paramsList": [
+        {
+          "name": "idx",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "ptr",
+          "typeRaw": "const u8 *"
+        }
+      ],
       "body": "if (idx < ARRAY_COUNT(sStringPointers))\n    {\n        sStringPointers[idx] = ptr;\n    }",
       "callsTo": [
         "ARRAY_COUNT"

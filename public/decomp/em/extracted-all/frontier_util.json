@@ -6,6 +6,7 @@
       "returnType": "void",
       "signature": "void CallFrontierUtilFunc(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sFrontierUtilFuncs[gSpecialVar_0x8004]();",
       "callsTo": [],
       "lineCount": 1
@@ -14,6 +15,7 @@
       "returnType": "void",
       "signature": "static void GetChallengeStatus(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "VarSet(VAR_TEMP_CHALLENGE_STATUS, 0xFF);\n    switch (gSaveBlock2Ptr->frontier.challengeStatus)\n    {\n    case 0:\n        break;\n    case CHALLENGE_STATUS_SAVING:\n        FrontierGamblerSetWonOrLost(FALSE);\n        VarSet(VAR_TEMP_CHALLENGE_STATUS, gSaveBlock2Ptr->frontier.challengeStatus);\n        break;\n    case CHALLENGE_STATUS_LOST:\n        FrontierGamblerSetWonOrLost(FALSE);\n        VarSet(VAR_TEMP_CHALLENGE_STATUS, gSaveBlock2Ptr->frontier.challengeStatus);\n        break;\n    case CHALLENGE_STATUS_WON:\n        FrontierGamblerSetWonOrLost(TRUE);\n        VarSet(VAR_TEMP_CHALLENGE_STATUS, gSaveBlock2Ptr->frontier.challengeStatus);\n        break;\n    case CHALLENGE_STATUS_PAUSED:\n        VarSet(VAR_TEMP_CHALLENGE_STATUS, gSaveBlock2Ptr->frontier.challengeStatus);\n        break;\n    }",
       "callsTo": [
         "FrontierGamblerSetWonOrLost",
@@ -25,6 +27,7 @@
       "returnType": "void",
       "signature": "static void GetFrontierData(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 facility = VarGet(VAR_FRONTIER_FACILITY);\n    u8 hasSymbol = GetPlayerSymbolCountForFacility(facility);\n    if (hasSymbol == 2)\n        hasSymbol = 1;\n\n    switch (gSpecialVar_0x8005)\n    {\n    case FRONTIER_DATA_CHALLENGE_STATUS:\n        gSpecialVar_Result = gSaveBlock2Ptr->frontier.challengeStatus;\n        break;\n    case FRONTIER_DATA_LVL_MODE:\n        gSpecialVar_Result = gSaveBlock2Ptr->frontier.lvlMode;\n        break;\n    case FRONTIER_DATA_BATTLE_NUM:\n        gSpecialVar_Result = gSaveBlock2Ptr->frontier.curChallengeBattleNum;\n        break;\n    case FRONTIER_DATA_PAUSED:\n        gSpecialVar_Result = gSaveBlock2Ptr->frontier.challengePaused;\n        break;\n    case FRONTIER_DATA_BATTLE_OUTCOME:\n        gSpecialVar_Result = gBattleOutcome;\n        gBattleOutcome = 0;\n        break;\n    case FRONTIER_DATA_RECORD_DISABLED:\n        gSpecialVar_Result = gSaveBlock2Ptr->frontier.disableRecordBattle;\n        break;\n    case FRONTIER_DATA_HEARD_BRAIN_SPEECH:\n        gSpecialVar_Result = gSaveBlock2Ptr->frontier.battledBrainFlags & sBattledBrainBitFlags[facility][hasSymbol];\n        break;\n    }",
       "callsTo": [
         "GetPlayerSymbolCountForFacility",
@@ -36,6 +39,7 @@
       "returnType": "void",
       "signature": "static void SetFrontierData(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s32 i;\n    u8 facility = VarGet(VAR_FRONTIER_FACILITY);\n    u8 hasSymbol = GetPlayerSymbolCountForFacility(facility);\n    if (hasSymbol == 2)\n        hasSymbol = 1;\n\n    switch (gSpecialVar_0x8005)\n    {\n    case FRONTIER_DATA_CHALLENGE_STATUS:\n        gSaveBlock2Ptr->frontier.challengeStatus = gSpecialVar_0x8006;\n        break;\n    case FRONTIER_DATA_LVL_MODE:\n        gSaveBlock2Ptr->frontier.lvlMode = gSpecialVar_0x8006;\n        break;\n    case FRONTIER_DATA_BATTLE_NUM:\n        gSaveBlock2Ptr->frontier.curChallengeBattleNum = gSpecialVar_0x8006;\n        break;\n    case FRONTIER_DATA_PAUSED:\n        gSaveBlock2Ptr->frontier.challengePaused = gSpecialVar_0x8006;\n        break;\n    case FRONTIER_DATA_SELECTED_MON_ORDER:\n        for (i = 0; i < MAX_FRONTIER_PARTY_SIZE; i++)\n            gSaveBlock2Ptr->frontier.selectedPartyMons[i] = gSelectedOrderFromParty[i];\n        break;\n    case FRONTIER_DATA_RECORD_DISABLED:\n        gSaveBlock2Ptr->frontier.disableRecordBattle = gSpecialVar_0x8006;\n        break;\n    case FRONTIER_DATA_HEARD_BRAIN_SPEECH:\n        gSaveBlock2Ptr->frontier.battledBrainFlags |= sBattledBrainBitFlags[facility][hasSymbol];\n        break;\n    }",
       "callsTo": [
         "GetPlayerSymbolCountForFacility",
@@ -47,6 +51,7 @@
       "returnType": "void",
       "signature": "static void SetSelectedPartyOrder(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s32 i;\n\n    ClearSelectedPartyOrder();\n    for (i = 0; i < gSpecialVar_0x8005; i++)\n        gSelectedOrderFromParty[i] = gSaveBlock2Ptr->frontier.selectedPartyMons[i];\n    ReducePlayerPartyToSelectedMons();",
       "callsTo": [
         "ClearSelectedPartyOrder",
@@ -58,6 +63,7 @@
       "returnType": "void",
       "signature": "static void DoSoftReset_(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "DoSoftReset();",
       "callsTo": [
         "DoSoftReset"
@@ -68,6 +74,7 @@
       "returnType": "void",
       "signature": "static void SetFrontierTrainers(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gFacilityTrainers = gBattleFrontierTrainers;",
       "callsTo": [],
       "lineCount": 1
@@ -76,6 +83,7 @@
       "returnType": "void",
       "signature": "static void SaveSelectedParty(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n\n    for (i = 0; i < MAX_FRONTIER_PARTY_SIZE; i++)\n    {\n        u16 monId = gSaveBlock2Ptr->frontier.selectedPartyMons[i] - 1;\n        if (monId < PARTY_SIZE)\n            gSaveBlock1Ptr->playerParty[gSaveBlock2Ptr->frontier.selectedPartyMons[i] - 1] = gPlayerParty[i];\n    }",
       "callsTo": [],
       "lineCount": 8
@@ -84,6 +92,7 @@
       "returnType": "void",
       "signature": "static void ShowFacilityResultsWindow(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gSpecialVar_0x8006 >= FRONTIER_MODE_COUNT)\n        gSpecialVar_0x8006 = 0;\n    switch (gSpecialVar_0x8005)\n    {\n    case FRONTIER_FACILITY_TOWER:\n        ShowTowerResultsWindow(gSpecialVar_0x8006);\n        break;\n    case FRONTIER_FACILITY_DOME:\n        ShowDomeResultsWindow(gSpecialVar_0x8006);\n        break;\n    case FRONTIER_FACILITY_PALACE:\n        ShowPalaceResultsWindow(gSpecialVar_0x8006);\n        break;\n    case FRONTIER_FACILITY_PIKE:\n        ShowPikeResultsWindow();\n        break;\n    case FRONTIER_FACILITY_FACTORY:\n        ShowFactoryResultsWindow(gSpecialVar_0x8006);\n        break;\n    case FRONTIER_FACILITY_ARENA:\n        ShowArenaResultsWindow();\n        break;\n    case FRONTIER_FACILITY_PYRAMID:\n        ShowPyramidResultsWindow();\n        break;\n    case FACILITY_LINK_CONTEST:\n        ShowLinkContestResultsWindow();\n        break;\n    }",
       "callsTo": [
         "ShowArenaResultsWindow",
@@ -101,6 +110,12 @@
       "returnType": "bool8",
       "signature": "static bool8 IsWinStreakActive(u32 challenge)",
       "paramsRaw": "u32 challenge",
+      "paramsList": [
+        {
+          "name": "challenge",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "if (gSaveBlock2Ptr->frontier.winStreakActiveFlags & challenge)\n        return TRUE;\n    else\n        return FALSE;",
       "callsTo": [],
       "lineCount": 4
@@ -109,6 +124,16 @@
       "returnType": "void",
       "signature": "static void PrintAligned(const u8 *str, s32 y)",
       "paramsRaw": "const u8 *str, s32 y",
+      "paramsList": [
+        {
+          "name": "str",
+          "typeRaw": "const u8 *"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s32"
+        }
+      ],
       "body": "s32 x = GetStringCenterAlignXOffset(FONT_NORMAL, str, DISPLAY_WIDTH - 16);\n    y = (y * 8) + 1;\n    AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, str, x, y, TEXT_SKIP_DRAW, NULL);",
       "callsTo": [
         "AddTextPrinterParameterized",
@@ -120,6 +145,12 @@
       "returnType": "void",
       "signature": "static void PrintHyphens(s32 y)",
       "paramsRaw": "s32 y",
+      "paramsList": [
+        {
+          "name": "y",
+          "typeRaw": "s32"
+        }
+      ],
       "body": "s32 i;\n    u8 text[37];\n\n    for (i = 0; i < (int)ARRAY_COUNT(text) - 1; i++)\n        text[i] = CHAR_HYPHEN;\n    text[i] = EOS;\n\n    y = (y * 8) + 1;\n    AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, text, 4, y, TEXT_SKIP_DRAW, NULL);",
       "callsTo": [
         "ARRAY_COUNT",
@@ -131,6 +162,28 @@
       "returnType": "void",
       "signature": "static void TowerPrintStreak(const u8 *str, u16 num, u8 x1, u8 x2, u8 y)",
       "paramsRaw": "const u8 *str, u16 num, u8 x1, u8 x2, u8 y",
+      "paramsList": [
+        {
+          "name": "str",
+          "typeRaw": "const u8 *"
+        },
+        {
+          "name": "num",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "x1",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "x2",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "y",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, str, x1, y, TEXT_SKIP_DRAW, NULL);\n    if (num > MAX_STREAK)\n        num = MAX_STREAK;\n    ConvertIntToDecimalStringN(gStringVar1, num, STR_CONV_MODE_RIGHT_ALIGN, 4);\n    StringExpandPlaceholders(gStringVar4, gText_WinStreak);\n    AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gStringVar4, x2, y, TEXT_SKIP_DRAW, NULL);",
       "callsTo": [
         "AddTextPrinterParameterized",
@@ -143,6 +196,28 @@
       "returnType": "void",
       "signature": "static void TowerPrintRecordStreak(u8 battleMode, u8 lvlMode, u8 x1, u8 x2, u8 y)",
       "paramsRaw": "u8 battleMode, u8 lvlMode, u8 x1, u8 x2, u8 y",
+      "paramsList": [
+        {
+          "name": "battleMode",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "lvlMode",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "x1",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "x2",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "y",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u16 num = gSaveBlock2Ptr->frontier.towerRecordWinStreaks[battleMode][lvlMode];\n    TowerPrintStreak(gText_Record, num, x1, x2, y);",
       "callsTo": [
         "TowerPrintStreak"
@@ -153,6 +228,16 @@
       "returnType": "u16",
       "signature": "static u16 TowerGetWinStreak(u8 battleMode, u8 lvlMode)",
       "paramsRaw": "u8 battleMode, u8 lvlMode",
+      "paramsList": [
+        {
+          "name": "battleMode",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "lvlMode",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u16 winStreak = gSaveBlock2Ptr->frontier.towerWinStreaks[battleMode][lvlMode];\n    if (winStreak > MAX_STREAK)\n        return MAX_STREAK;\n    else\n        return winStreak;",
       "callsTo": [],
       "lineCount": 5
@@ -161,6 +246,28 @@
       "returnType": "void",
       "signature": "static void TowerPrintPrevOrCurrentStreak(u8 battleMode, u8 lvlMode, u8 x1, u8 x2, u8 y)",
       "paramsRaw": "u8 battleMode, u8 lvlMode, u8 x1, u8 x2, u8 y",
+      "paramsList": [
+        {
+          "name": "battleMode",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "lvlMode",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "x1",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "x2",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "y",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "bool8 isCurrent;\n    u16 winStreak = TowerGetWinStreak(battleMode, lvlMode);\n    switch (battleMode)\n    {\n    default:\n    case FRONTIER_MODE_SINGLES:\n        if (lvlMode != FRONTIER_LVL_50)\n            isCurrent = IsWinStreakActive(STREAK_TOWER_SINGLES_OPEN);\n        else\n            isCurrent = IsWinStreakActive(STREAK_TOWER_SINGLES_50);\n        break;\n    case FRONTIER_MODE_DOUBLES:\n        if (lvlMode != FRONTIER_LVL_50)\n            isCurrent = IsWinStreakActive(STREAK_TOWER_DOUBLES_OPEN);\n        else\n            isCurrent = IsWinStreakActive(STREAK_TOWER_DOUBLES_50);\n        break;\n    case FRONTIER_MODE_MULTIS:\n        if (lvlMode != FRONTIER_LVL_50)\n            isCurrent = IsWinStreakActive(STREAK_TOWER_MULTIS_OPEN);\n        else\n            isCurrent = IsWinStreakActive(STREAK_TOWER_MULTIS_50);\n        break;\n    case FRONTIER_MODE_LINK_MULTIS:\n        if (lvlMode != FRONTIER_LVL_50)\n            isCurrent = IsWinStreakActive(STREAK_TOWER_LINK_MULTIS_OPEN);\n        else\n            isCurrent = IsWinStreakActive(STREAK_TOWER_LINK_MULTIS_50);\n        break;\n    }\n\n    if (isCurrent == TRUE)\n        TowerPrintStreak(gText_Current, winStreak, x1, x2, y);\n    else\n        TowerPrintStreak(gText_Prev, winStreak, x1, x2, y);",
       "callsTo": [
         "IsWinStreakActive",
@@ -173,6 +280,12 @@
       "returnType": "void",
       "signature": "static void ShowTowerResultsWindow(u8 battleMode)",
       "paramsRaw": "u8 battleMode",
+      "paramsList": [
+        {
+          "name": "battleMode",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "gRecordsWindowId = AddWindow(&sFrontierResultsWindowTemplate);\n    DrawStdWindowFrame(gRecordsWindowId, FALSE);\n    FillWindowPixelBuffer(gRecordsWindowId, PIXEL_FILL(1));\n    if (battleMode == FRONTIER_MODE_SINGLES)\n        StringExpandPlaceholders(gStringVar4, gText_SingleBattleRoomResults);\n    else if (battleMode == FRONTIER_MODE_DOUBLES)\n        StringExpandPlaceholders(gStringVar4, gText_DoubleBattleRoomResults);\n    else if (battleMode == FRONTIER_MODE_MULTIS)\n        StringExpandPlaceholders(gStringVar4, gText_MultiBattleRoomResults);\n    else\n        StringExpandPlaceholders(gStringVar4, gText_LinkMultiBattleRoomResults);\n\n    PrintAligned(gStringVar4, 2);\n    AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_Lv502, 16, 49, TEXT_SKIP_DRAW, NULL);\n    AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_OpenLv, 16, 97, TEXT_SKIP_DRAW, NULL);\n    PrintHyphens(10);\n    TowerPrintPrevOrCurrentStreak(battleMode, FRONTIER_LVL_50, 72, 132, 49);\n    TowerPrintRecordStreak(battleMode, FRONTIER_LVL_50, 72, 132, 65);\n    TowerPrintPrevOrCurrentStreak(battleMode, FRONTIER_LVL_OPEN, 72, 132, 97);\n    TowerPrintRecordStreak(battleMode, FRONTIER_LVL_OPEN, 72, 132, 113);\n    PutWindowTilemap(gRecordsWindowId);\n    CopyWindowToVram(gRecordsWindowId, COPYWIN_FULL);",
       "callsTo": [
         "AddTextPrinterParameterized",
@@ -194,6 +307,16 @@
       "returnType": "u16",
       "signature": "static u16 DomeGetWinStreak(u8 battleMode, u8 lvlMode)",
       "paramsRaw": "u8 battleMode, u8 lvlMode",
+      "paramsList": [
+        {
+          "name": "battleMode",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "lvlMode",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u16 winStreak = gSaveBlock2Ptr->frontier.domeWinStreaks[battleMode][lvlMode];\n    if (winStreak > MAX_STREAK)\n        return MAX_STREAK;\n    else\n        return winStreak;",
       "callsTo": [],
       "lineCount": 5
@@ -202,6 +325,32 @@
       "returnType": "void",
       "signature": "static void PrintTwoStrings(const u8 *str1, const u8 *str2, u16 num, u8 x1, u8 x2, u8 y)",
       "paramsRaw": "const u8 *str1, const u8 *str2, u16 num, u8 x1, u8 x2, u8 y",
+      "paramsList": [
+        {
+          "name": "str1",
+          "typeRaw": "const u8 *"
+        },
+        {
+          "name": "str2",
+          "typeRaw": "const u8 *"
+        },
+        {
+          "name": "num",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "x1",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "x2",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "y",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, str1, x1, y, TEXT_SKIP_DRAW, NULL);\n    ConvertIntToDecimalStringN(gStringVar1, num, STR_CONV_MODE_RIGHT_ALIGN, 4);\n    StringExpandPlaceholders(gStringVar4, str2);\n    AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gStringVar4, x2, y, TEXT_SKIP_DRAW, NULL);",
       "callsTo": [
         "AddTextPrinterParameterized",
@@ -214,6 +363,28 @@
       "returnType": "void",
       "signature": "static void DomePrintPrevOrCurrentStreak(u8 battleMode, u8 lvlMode, u8 x1, u8 x2, u8 y)",
       "paramsRaw": "u8 battleMode, u8 lvlMode, u8 x1, u8 x2, u8 y",
+      "paramsList": [
+        {
+          "name": "battleMode",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "lvlMode",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "x1",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "x2",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "y",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "bool8 isCurrent;\n    u16 winStreak = DomeGetWinStreak(battleMode, lvlMode);\n    switch (battleMode)\n    {\n    default:\n    case FRONTIER_MODE_SINGLES:\n        if (lvlMode != FRONTIER_LVL_50)\n            isCurrent = IsWinStreakActive(STREAK_DOME_SINGLES_OPEN);\n        else\n            isCurrent = IsWinStreakActive(STREAK_DOME_SINGLES_50);\n        break;\n    case FRONTIER_MODE_DOUBLES:\n        if (lvlMode != FRONTIER_LVL_50)\n            isCurrent = IsWinStreakActive(STREAK_DOME_DOUBLES_OPEN);\n        else\n            isCurrent = IsWinStreakActive(STREAK_DOME_DOUBLES_50);\n        break;\n    }\n\n    if (isCurrent == TRUE)\n        PrintTwoStrings(gText_Current, gText_ClearStreak, winStreak, x1, x2, y);\n    else\n        PrintTwoStrings(gText_Prev, gText_ClearStreak, winStreak, x1, x2, y);",
       "callsTo": [
         "DomeGetWinStreak",
@@ -226,6 +397,12 @@
       "returnType": "void",
       "signature": "static void ShowDomeResultsWindow(u8 battleMode)",
       "paramsRaw": "u8 battleMode",
+      "paramsList": [
+        {
+          "name": "battleMode",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "gRecordsWindowId = AddWindow(&sFrontierResultsWindowTemplate);\n    DrawStdWindowFrame(gRecordsWindowId, FALSE);\n    FillWindowPixelBuffer(gRecordsWindowId, PIXEL_FILL(1));\n    if (battleMode == FRONTIER_MODE_SINGLES)\n        StringExpandPlaceholders(gStringVar4, gText_SingleBattleTourneyResults);\n    else\n        StringExpandPlaceholders(gStringVar4, gText_DoubleBattleTourneyResults);\n\n    PrintAligned(gStringVar4, 0);\n    AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_Lv502, 8, 33, TEXT_SKIP_DRAW, NULL);\n    AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_OpenLv, 8, 97, TEXT_SKIP_DRAW, NULL);\n    PrintHyphens(10);\n     \n     \n    DomePrintPrevOrCurrentStreak(battleMode, FRONTIER_LVL_50, 64, 153, 33);\n    PrintTwoStrings(gText_Record, gText_ClearStreak, gSaveBlock2Ptr->frontier.domeRecordWinStreaks[battleMode][FRONTIER_LVL_50], 64, 153, 49);\n    PrintTwoStrings(gText_Total, gText_Championships, gSaveBlock2Ptr->frontier.domeTotalChampionships[battleMode][FRONTIER_LVL_50], 64, 116, 65);\n    DomePrintPrevOrCurrentStreak(battleMode, FRONTIER_LVL_OPEN, 64, 153, 97);\n    PrintTwoStrings(gText_Record, gText_ClearStreak, gSaveBlock2Ptr->frontier.domeRecordWinStreaks[battleMode][FRONTIER_LVL_OPEN], 64, 153, 113);\n    PrintTwoStrings(gText_Total, gText_Championships, gSaveBlock2Ptr->frontier.domeTotalChampionships[battleMode][FRONTIER_LVL_OPEN], 64, 116, 129);\n    PutWindowTilemap(gRecordsWindowId);\n    CopyWindowToVram(gRecordsWindowId, COPYWIN_FULL);",
       "callsTo": [
         "AddTextPrinterParameterized",
@@ -247,6 +424,28 @@
       "returnType": "void",
       "signature": "static void PalacePrintStreak(const u8 *str, u16 num, u8 x1, u8 x2, u8 y)",
       "paramsRaw": "const u8 *str, u16 num, u8 x1, u8 x2, u8 y",
+      "paramsList": [
+        {
+          "name": "str",
+          "typeRaw": "const u8 *"
+        },
+        {
+          "name": "num",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "x1",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "x2",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "y",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, str, x1, y, TEXT_SKIP_DRAW, NULL);\n    if (num > MAX_STREAK)\n        num = MAX_STREAK;\n    ConvertIntToDecimalStringN(gStringVar1, num, STR_CONV_MODE_RIGHT_ALIGN, 4);\n    StringExpandPlaceholders(gStringVar4, gText_WinStreak);\n    AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gStringVar4, x2, y, TEXT_SKIP_DRAW, NULL);",
       "callsTo": [
         "AddTextPrinterParameterized",
@@ -259,6 +458,28 @@
       "returnType": "void",
       "signature": "static void PalacePrintRecordStreak(u8 battleMode, u8 lvlMode, u8 x1, u8 x2, u8 y)",
       "paramsRaw": "u8 battleMode, u8 lvlMode, u8 x1, u8 x2, u8 y",
+      "paramsList": [
+        {
+          "name": "battleMode",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "lvlMode",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "x1",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "x2",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "y",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u16 num = gSaveBlock2Ptr->frontier.palaceRecordWinStreaks[battleMode][lvlMode];\n    PalacePrintStreak(gText_Record, num, x1, x2, y);",
       "callsTo": [
         "PalacePrintStreak"
@@ -269,6 +490,16 @@
       "returnType": "u16",
       "signature": "static u16 PalaceGetWinStreak(u8 battleMode, u8 lvlMode)",
       "paramsRaw": "u8 battleMode, u8 lvlMode",
+      "paramsList": [
+        {
+          "name": "battleMode",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "lvlMode",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u16 winStreak = gSaveBlock2Ptr->frontier.palaceWinStreaks[battleMode][lvlMode];\n    if (winStreak > MAX_STREAK)\n        return MAX_STREAK;\n    else\n        return winStreak;",
       "callsTo": [],
       "lineCount": 5
@@ -277,6 +508,28 @@
       "returnType": "void",
       "signature": "static void PalacePrintPrevOrCurrentStreak(u8 battleMode, u8 lvlMode, u8 x1, u8 x2, u8 y)",
       "paramsRaw": "u8 battleMode, u8 lvlMode, u8 x1, u8 x2, u8 y",
+      "paramsList": [
+        {
+          "name": "battleMode",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "lvlMode",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "x1",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "x2",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "y",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "bool8 isCurrent;\n    u16 winStreak = PalaceGetWinStreak(battleMode, lvlMode);\n    switch (battleMode)\n    {\n    default:\n    case FRONTIER_MODE_SINGLES:\n        if (lvlMode != FRONTIER_LVL_50)\n            isCurrent = IsWinStreakActive(STREAK_PALACE_SINGLES_OPEN);\n        else\n            isCurrent = IsWinStreakActive(STREAK_PALACE_SINGLES_50);\n        break;\n    case FRONTIER_MODE_DOUBLES:\n        if (lvlMode != FRONTIER_LVL_50)\n            isCurrent = IsWinStreakActive(STREAK_PALACE_DOUBLES_OPEN);\n        else\n            isCurrent = IsWinStreakActive(STREAK_PALACE_DOUBLES_50);\n    }\n\n    if (isCurrent == TRUE)\n        PalacePrintStreak(gText_Current, winStreak, x1, x2, y);\n    else\n        PalacePrintStreak(gText_Prev, winStreak, x1, x2, y);",
       "callsTo": [
         "IsWinStreakActive",
@@ -289,6 +542,12 @@
       "returnType": "void",
       "signature": "static void ShowPalaceResultsWindow(u8 battleMode)",
       "paramsRaw": "u8 battleMode",
+      "paramsList": [
+        {
+          "name": "battleMode",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "gRecordsWindowId = AddWindow(&sFrontierResultsWindowTemplate);\n    DrawStdWindowFrame(gRecordsWindowId, FALSE);\n    FillWindowPixelBuffer(gRecordsWindowId, PIXEL_FILL(1));\n    if (battleMode == FRONTIER_MODE_SINGLES)\n        StringExpandPlaceholders(gStringVar4, gText_SingleBattleHallResults);\n    else\n        StringExpandPlaceholders(gStringVar4, gText_DoubleBattleHallResults);\n\n    PrintAligned(gStringVar4, 2);\n    AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_Lv502, 16, 49, TEXT_SKIP_DRAW, NULL);\n    AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_OpenLv, 16, 97, TEXT_SKIP_DRAW, NULL);\n    PrintHyphens(10);\n    PalacePrintPrevOrCurrentStreak(battleMode, FRONTIER_LVL_50, 72, 131, 49);\n    PalacePrintRecordStreak(battleMode, FRONTIER_LVL_50, 72, 131, 65);\n    PalacePrintPrevOrCurrentStreak(battleMode, FRONTIER_LVL_OPEN, 72, 131, 97);\n    PalacePrintRecordStreak(battleMode, FRONTIER_LVL_OPEN, 72, 131, 113);\n    PutWindowTilemap(gRecordsWindowId);\n    CopyWindowToVram(gRecordsWindowId, COPYWIN_FULL);",
       "callsTo": [
         "AddTextPrinterParameterized",
@@ -310,6 +569,12 @@
       "returnType": "u16",
       "signature": "static u16 PikeGetWinStreak(u8 lvlMode)",
       "paramsRaw": "u8 lvlMode",
+      "paramsList": [
+        {
+          "name": "lvlMode",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u16 winStreak = gSaveBlock2Ptr->frontier.pikeWinStreaks[lvlMode];\n    if (winStreak > MAX_STREAK)\n        return MAX_STREAK;\n    else\n        return winStreak;",
       "callsTo": [],
       "lineCount": 5
@@ -318,6 +583,32 @@
       "returnType": "void",
       "signature": "static void PikePrintCleared(const u8 *str1, const u8 *str2, u16 num, u8 x1, u8 x2, u8 y)",
       "paramsRaw": "const u8 *str1, const u8 *str2, u16 num, u8 x1, u8 x2, u8 y",
+      "paramsList": [
+        {
+          "name": "str1",
+          "typeRaw": "const u8 *"
+        },
+        {
+          "name": "str2",
+          "typeRaw": "const u8 *"
+        },
+        {
+          "name": "num",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "x1",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "x2",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "y",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, str1, x1, y, TEXT_SKIP_DRAW, NULL);\n    ConvertIntToDecimalStringN(gStringVar1, num, STR_CONV_MODE_RIGHT_ALIGN, 4);\n    StringExpandPlaceholders(gStringVar4, str2);\n    AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gStringVar4, x2, y, TEXT_SKIP_DRAW, NULL);",
       "callsTo": [
         "AddTextPrinterParameterized",
@@ -330,6 +621,24 @@
       "returnType": "void",
       "signature": "static void PikePrintPrevOrCurrentStreak(u8 lvlMode, u8 x1, u8 x2, u8 y)",
       "paramsRaw": "u8 lvlMode, u8 x1, u8 x2, u8 y",
+      "paramsList": [
+        {
+          "name": "lvlMode",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "x1",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "x2",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "y",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "bool8 isCurrent;\n    u16 winStreak = PikeGetWinStreak(lvlMode);\n\n    if (lvlMode != FRONTIER_LVL_50)\n        isCurrent = IsWinStreakActive(STREAK_PIKE_OPEN);\n    else\n        isCurrent = IsWinStreakActive(STREAK_PIKE_50);\n\n    if (isCurrent == TRUE)\n        PrintTwoStrings(gText_Current, gText_RoomsCleared, winStreak, x1, x2, y);\n    else\n        PrintTwoStrings(gText_Prev, gText_RoomsCleared, winStreak, x1, x2, y);",
       "callsTo": [
         "IsWinStreakActive",
@@ -342,6 +651,7 @@
       "returnType": "void",
       "signature": "static void ShowPikeResultsWindow(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gRecordsWindowId = AddWindow(&sFrontierResultsWindowTemplate);\n    DrawStdWindowFrame(gRecordsWindowId, FALSE);\n    FillWindowPixelBuffer(gRecordsWindowId, PIXEL_FILL(1));\n    StringExpandPlaceholders(gStringVar4, gText_BattleChoiceResults);\n    PrintAligned(gStringVar4, 0);\n    AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_Lv502, 8, 33, TEXT_SKIP_DRAW, NULL);\n    AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_OpenLv, 8, 97, TEXT_SKIP_DRAW, NULL);\n    PrintHyphens(10);\n     \n     \n    PikePrintPrevOrCurrentStreak(FRONTIER_LVL_50, 64, 138, 33);\n    PikePrintCleared(gText_Record, gText_RoomsCleared, gSaveBlock2Ptr->frontier.pikeRecordStreaks[FRONTIER_LVL_50], 64, 138, 49);\n    PikePrintCleared(gText_Total, gText_TimesCleared, gSaveBlock2Ptr->frontier.pikeTotalStreaks[FRONTIER_LVL_50], 64, 118, 65);\n    PikePrintPrevOrCurrentStreak(FRONTIER_LVL_OPEN, 64, 138, 97);\n    PikePrintCleared(gText_Record, gText_RoomsCleared, gSaveBlock2Ptr->frontier.pikeRecordStreaks[FRONTIER_LVL_OPEN], 64, 138, 113);\n    PikePrintCleared(gText_Total, gText_TimesCleared, gSaveBlock2Ptr->frontier.pikeTotalStreaks[FRONTIER_LVL_OPEN], 64, 118, 129);\n    PutWindowTilemap(gRecordsWindowId);\n    CopyWindowToVram(gRecordsWindowId, COPYWIN_FULL);",
       "callsTo": [
         "AddTextPrinterParameterized",
@@ -363,6 +673,28 @@
       "returnType": "void",
       "signature": "static void ArenaPrintStreak(const u8 *str, u16 num, u8 x1, u8 x2, u8 y)",
       "paramsRaw": "const u8 *str, u16 num, u8 x1, u8 x2, u8 y",
+      "paramsList": [
+        {
+          "name": "str",
+          "typeRaw": "const u8 *"
+        },
+        {
+          "name": "num",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "x1",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "x2",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "y",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, str, x1, y, TEXT_SKIP_DRAW, NULL);\n    if (num > MAX_STREAK)\n        num = MAX_STREAK;\n    ConvertIntToDecimalStringN(gStringVar1, num, STR_CONV_MODE_RIGHT_ALIGN, 4);\n    StringExpandPlaceholders(gStringVar4, gText_KOsInARow);\n    AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gStringVar4, x2, y, TEXT_SKIP_DRAW, NULL);",
       "callsTo": [
         "AddTextPrinterParameterized",
@@ -375,6 +707,24 @@
       "returnType": "void",
       "signature": "static void ArenaPrintRecordStreak(u8 lvlMode, u8 x1, u8 x2, u8 y)",
       "paramsRaw": "u8 lvlMode, u8 x1, u8 x2, u8 y",
+      "paramsList": [
+        {
+          "name": "lvlMode",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "x1",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "x2",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "y",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u16 num = gSaveBlock2Ptr->frontier.arenaRecordStreaks[lvlMode];\n    ArenaPrintStreak(gText_Record, num, x1, x2, y);",
       "callsTo": [
         "ArenaPrintStreak"
@@ -385,6 +735,12 @@
       "returnType": "u16",
       "signature": "static u16 ArenaGetWinStreak(u8 lvlMode)",
       "paramsRaw": "u8 lvlMode",
+      "paramsList": [
+        {
+          "name": "lvlMode",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u16 winStreak = gSaveBlock2Ptr->frontier.arenaWinStreaks[lvlMode];\n    if (winStreak > MAX_STREAK)\n        return MAX_STREAK;\n    else\n        return winStreak;",
       "callsTo": [],
       "lineCount": 5
@@ -393,6 +749,24 @@
       "returnType": "void",
       "signature": "static void ArenaPrintPrevOrCurrentStreak(u8 lvlMode, u8 x1, u8 x2, u8 y)",
       "paramsRaw": "u8 lvlMode, u8 x1, u8 x2, u8 y",
+      "paramsList": [
+        {
+          "name": "lvlMode",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "x1",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "x2",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "y",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "bool8 isCurrent;\n    u16 winStreak = ArenaGetWinStreak(lvlMode);\n\n    if (lvlMode != FRONTIER_LVL_50)\n        isCurrent = IsWinStreakActive(STREAK_ARENA_OPEN);\n    else\n        isCurrent = IsWinStreakActive(STREAK_ARENA_50);\n\n    if (isCurrent == TRUE)\n        ArenaPrintStreak(gText_Current, winStreak, x1, x2, y);\n    else\n        ArenaPrintStreak(gText_Prev, winStreak, x1, x2, y);",
       "callsTo": [
         "ArenaGetWinStreak",
@@ -405,6 +779,7 @@
       "returnType": "void",
       "signature": "static void ShowArenaResultsWindow(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gRecordsWindowId = AddWindow(&sFrontierResultsWindowTemplate);\n    DrawStdWindowFrame(gRecordsWindowId, FALSE);\n    FillWindowPixelBuffer(gRecordsWindowId, PIXEL_FILL(1));\n    PrintHyphens(10);\n    StringExpandPlaceholders(gStringVar4, gText_SetKOTourneyResults);\n    PrintAligned(gStringVar4, 2);\n    AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_Lv502, 16, 49, TEXT_SKIP_DRAW, NULL);\n    AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_OpenLv, 16, 97, TEXT_SKIP_DRAW, NULL);\n    ArenaPrintPrevOrCurrentStreak(FRONTIER_LVL_50, 72, 126, 49);\n    ArenaPrintRecordStreak(FRONTIER_LVL_50, 72, 126, 65);\n    ArenaPrintPrevOrCurrentStreak(FRONTIER_LVL_OPEN, 72, 126, 97);\n    ArenaPrintRecordStreak(FRONTIER_LVL_OPEN, 72, 126, 113);\n    PutWindowTilemap(gRecordsWindowId);\n    CopyWindowToVram(gRecordsWindowId, COPYWIN_FULL);",
       "callsTo": [
         "AddTextPrinterParameterized",
@@ -426,6 +801,36 @@
       "returnType": "void",
       "signature": "static void FactoryPrintStreak(const u8 *str, u16 num1, u16 num2, u8 x1, u8 x2, u8 x3, u8 y)",
       "paramsRaw": "const u8 *str, u16 num1, u16 num2, u8 x1, u8 x2, u8 x3, u8 y",
+      "paramsList": [
+        {
+          "name": "str",
+          "typeRaw": "const u8 *"
+        },
+        {
+          "name": "num1",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "num2",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "x1",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "x2",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "x3",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "y",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, str, x1, y, TEXT_SKIP_DRAW, NULL);\n    if (num1 > MAX_STREAK)\n        num1 = MAX_STREAK;\n    ConvertIntToDecimalStringN(gStringVar1, num1, STR_CONV_MODE_RIGHT_ALIGN, 4);\n    StringExpandPlaceholders(gStringVar4, gText_WinStreak);\n    AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gStringVar4, x2, y, TEXT_SKIP_DRAW, NULL);\n\n    ConvertIntToDecimalStringN(gStringVar1, num2, STR_CONV_MODE_RIGHT_ALIGN, 4);\n    StringExpandPlaceholders(gStringVar4, gText_TimesVar1);\n    AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gStringVar4, x3, y, TEXT_SKIP_DRAW, NULL);",
       "callsTo": [
         "AddTextPrinterParameterized",
@@ -438,6 +843,32 @@
       "returnType": "void",
       "signature": "static void FactoryPrintRecordStreak(u8 battleMode, u8 lvlMode, u8 x1, u8 x2, u8 x3, u8 y)",
       "paramsRaw": "u8 battleMode, u8 lvlMode, u8 x1, u8 x2, u8 x3, u8 y",
+      "paramsList": [
+        {
+          "name": "battleMode",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "lvlMode",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "x1",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "x2",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "x3",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "y",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u16 num1 = gSaveBlock2Ptr->frontier.factoryRecordWinStreaks[battleMode][lvlMode];\n    u16 num2 = gSaveBlock2Ptr->frontier.factoryRecordRentsCount[battleMode][lvlMode];\n    FactoryPrintStreak(gText_Record, num1, num2, x1, x2, x3, y);",
       "callsTo": [
         "FactoryPrintStreak"
@@ -448,6 +879,16 @@
       "returnType": "u16",
       "signature": "static u16 FactoryGetWinStreak(u8 battleMode, u8 lvlMode)",
       "paramsRaw": "u8 battleMode, u8 lvlMode",
+      "paramsList": [
+        {
+          "name": "battleMode",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "lvlMode",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u16 winStreak = gSaveBlock2Ptr->frontier.factoryWinStreaks[battleMode][lvlMode];\n    if (winStreak > MAX_STREAK)\n        return MAX_STREAK;\n    else\n        return winStreak;",
       "callsTo": [],
       "lineCount": 5
@@ -456,6 +897,16 @@
       "returnType": "u16",
       "signature": "static u16 FactoryGetRentsCount(u8 battleMode, u8 lvlMode)",
       "paramsRaw": "u8 battleMode, u8 lvlMode",
+      "paramsList": [
+        {
+          "name": "battleMode",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "lvlMode",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u16 rents = gSaveBlock2Ptr->frontier.factoryRentsCount[battleMode][lvlMode];\n    if (rents > MAX_STREAK)\n        return MAX_STREAK;\n    else\n        return rents;",
       "callsTo": [],
       "lineCount": 5
@@ -464,6 +915,32 @@
       "returnType": "void",
       "signature": "static void FactoryPrintPrevOrCurrentStreak(u8 battleMode, u8 lvlMode, u8 x1, u8 x2, u8 x3, u8 y)",
       "paramsRaw": "u8 battleMode, u8 lvlMode, u8 x1, u8 x2, u8 x3, u8 y",
+      "paramsList": [
+        {
+          "name": "battleMode",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "lvlMode",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "x1",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "x2",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "x3",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "y",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "bool8 isCurrent;\n    u16 winStreak = FactoryGetWinStreak(battleMode, lvlMode);\n    u16 rents = FactoryGetRentsCount(battleMode, lvlMode);\n    switch (battleMode)\n    {\n    default:\n    case FRONTIER_MODE_SINGLES:\n        if (lvlMode != FRONTIER_LVL_50)\n            isCurrent = IsWinStreakActive(STREAK_FACTORY_SINGLES_OPEN);\n        else\n            isCurrent = IsWinStreakActive(STREAK_FACTORY_SINGLES_50);\n        break;\n    case FRONTIER_MODE_DOUBLES:\n        if (lvlMode != FRONTIER_LVL_50)\n            isCurrent = IsWinStreakActive(STREAK_FACTORY_DOUBLES_OPEN);\n        else\n            isCurrent = IsWinStreakActive(STREAK_FACTORY_DOUBLES_50);\n        break;\n    }\n\n    if (isCurrent == TRUE)\n        FactoryPrintStreak(gText_Current, winStreak, rents, x1, x2, x3, y);\n    else\n        FactoryPrintStreak(gText_Prev, winStreak, rents, x1, x2, x3, y);",
       "callsTo": [
         "FactoryGetRentsCount",
@@ -477,6 +954,12 @@
       "returnType": "void",
       "signature": "static void ShowFactoryResultsWindow(u8 battleMode)",
       "paramsRaw": "u8 battleMode",
+      "paramsList": [
+        {
+          "name": "battleMode",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "gRecordsWindowId = AddWindow(&sFrontierResultsWindowTemplate);\n    DrawStdWindowFrame(gRecordsWindowId, FALSE);\n    FillWindowPixelBuffer(gRecordsWindowId, PIXEL_FILL(1));\n    if (battleMode == FRONTIER_MODE_SINGLES)\n        StringExpandPlaceholders(gStringVar4, gText_BattleSwapSingleResults);\n    else\n        StringExpandPlaceholders(gStringVar4, gText_BattleSwapDoubleResults);\n\n    PrintAligned(gStringVar4, 0);\n    AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_Lv502, 8, 33, TEXT_SKIP_DRAW, NULL);\n     \n    AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_RentalSwap, 158, 33, TEXT_SKIP_DRAW, NULL);\n    AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_OpenLv, 8, 97, TEXT_SKIP_DRAW, NULL);\n    PrintHyphens(10);\n    FactoryPrintPrevOrCurrentStreak(battleMode, FRONTIER_LVL_50, 8, 64, 158, 49);\n    FactoryPrintRecordStreak(battleMode, FRONTIER_LVL_50, 8, 64, 158, 65);\n    FactoryPrintPrevOrCurrentStreak(battleMode, FRONTIER_LVL_OPEN, 8, 64, 158, 113);\n    FactoryPrintRecordStreak(battleMode, FRONTIER_LVL_OPEN, 8, 64, 158, 129);\n    PutWindowTilemap(gRecordsWindowId);\n    CopyWindowToVram(gRecordsWindowId, COPYWIN_FULL);",
       "callsTo": [
         "AddTextPrinterParameterized",
@@ -498,6 +981,28 @@
       "returnType": "void",
       "signature": "static void PyramidPrintStreak(const u8 *str, u16 num, u8 x1, u8 x2, u8 y)",
       "paramsRaw": "const u8 *str, u16 num, u8 x1, u8 x2, u8 y",
+      "paramsList": [
+        {
+          "name": "str",
+          "typeRaw": "const u8 *"
+        },
+        {
+          "name": "num",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "x1",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "x2",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "y",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, str, x1, y, TEXT_SKIP_DRAW, NULL);\n    if (num > MAX_STREAK)\n        num = MAX_STREAK;\n    ConvertIntToDecimalStringN(gStringVar1, num, STR_CONV_MODE_RIGHT_ALIGN, 4);\n    StringExpandPlaceholders(gStringVar4, gText_FloorsCleared);\n    AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gStringVar4, x2, y, TEXT_SKIP_DRAW, NULL);",
       "callsTo": [
         "AddTextPrinterParameterized",
@@ -510,6 +1015,24 @@
       "returnType": "void",
       "signature": "static void PyramidPrintRecordStreak(u8 lvlMode, u8 x1, u8 x2, u8 y)",
       "paramsRaw": "u8 lvlMode, u8 x1, u8 x2, u8 y",
+      "paramsList": [
+        {
+          "name": "lvlMode",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "x1",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "x2",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "y",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u16 num = gSaveBlock2Ptr->frontier.pyramidRecordStreaks[lvlMode];\n    PyramidPrintStreak(gText_Record, num, x1, x2, y);",
       "callsTo": [
         "PyramidPrintStreak"
@@ -520,6 +1043,12 @@
       "returnType": "u16",
       "signature": "static u16 PyramidGetWinStreak(u8 lvlMode)",
       "paramsRaw": "u8 lvlMode",
+      "paramsList": [
+        {
+          "name": "lvlMode",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u16 winStreak = gSaveBlock2Ptr->frontier.pyramidWinStreaks[lvlMode];\n    if (winStreak > MAX_STREAK)\n        return MAX_STREAK;\n    else\n        return winStreak;",
       "callsTo": [],
       "lineCount": 5
@@ -528,6 +1057,24 @@
       "returnType": "void",
       "signature": "static void PyramidPrintPrevOrCurrentStreak(u8 lvlMode, u8 x1, u8 x2, u8 y)",
       "paramsRaw": "u8 lvlMode, u8 x1, u8 x2, u8 y",
+      "paramsList": [
+        {
+          "name": "lvlMode",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "x1",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "x2",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "y",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "bool8 isCurrent;\n    u16 winStreak = PyramidGetWinStreak(lvlMode);\n\n    if (lvlMode != FRONTIER_LVL_50)\n        isCurrent = IsWinStreakActive(STREAK_PYRAMID_OPEN);\n    else\n        isCurrent = IsWinStreakActive(STREAK_PYRAMID_50);\n\n    if (isCurrent == TRUE)\n        PyramidPrintStreak(gText_Current, winStreak, x1, x2, y);\n    else\n        PyramidPrintStreak(gText_Prev, winStreak, x1, x2, y);",
       "callsTo": [
         "IsWinStreakActive",
@@ -540,6 +1087,7 @@
       "returnType": "void",
       "signature": "static void ShowPyramidResultsWindow(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gRecordsWindowId = AddWindow(&sFrontierResultsWindowTemplate);\n    DrawStdWindowFrame(gRecordsWindowId, FALSE);\n    FillWindowPixelBuffer(gRecordsWindowId, PIXEL_FILL(1));\n    StringExpandPlaceholders(gStringVar4, gText_BattleQuestResults);\n    PrintAligned(gStringVar4, 2);\n    AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_Lv502, 8, 49, TEXT_SKIP_DRAW, NULL);\n    AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_OpenLv, 8, 97, TEXT_SKIP_DRAW, NULL);\n    PrintHyphens(10);\n    PyramidPrintPrevOrCurrentStreak(FRONTIER_LVL_50, 64, 111, 49);\n    PyramidPrintRecordStreak(FRONTIER_LVL_50, 64, 111, 65);\n    PyramidPrintPrevOrCurrentStreak(FRONTIER_LVL_OPEN, 64, 111, 97);\n    PyramidPrintRecordStreak(FRONTIER_LVL_OPEN, 64, 111, 113);\n    PutWindowTilemap(gRecordsWindowId);\n    CopyWindowToVram(gRecordsWindowId, COPYWIN_FULL);",
       "callsTo": [
         "AddTextPrinterParameterized",
@@ -561,6 +1109,7 @@
       "returnType": "void",
       "signature": "static void ShowLinkContestResultsWindow(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "const u8 *str;\n    s32 i, j;\n    s32 x;\n\n    gRecordsWindowId = AddWindow(&sLinkContestResultsWindowTemplate);\n    DrawStdWindowFrame(gRecordsWindowId, FALSE);\n    FillWindowPixelBuffer(gRecordsWindowId, PIXEL_FILL(1));\n\n    StringExpandPlaceholders(gStringVar4, gText_LinkContestResults);\n    x = GetStringCenterAlignXOffset(FONT_NORMAL, gStringVar4, 208);\n    AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gStringVar4, x, 1, TEXT_SKIP_DRAW, NULL);\n\n    str = gText_1st;\n    x = GetStringRightAlignXOffset(FONT_NORMAL, str, 38) + 50;\n    AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, str, x, 25, TEXT_SKIP_DRAW, NULL);\n\n    str = gText_2nd;\n    x = GetStringRightAlignXOffset(FONT_NORMAL, str, 38) + 88;\n    AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, str, x, 25, TEXT_SKIP_DRAW, NULL);\n\n    str = gText_3rd;\n    x = GetStringRightAlignXOffset(FONT_NORMAL, str, 38) + 126;\n    AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, str, x, 25, TEXT_SKIP_DRAW, NULL);\n\n    str = gText_4th;\n    x = GetStringRightAlignXOffset(FONT_NORMAL, str, 38) + 164;\n    AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, str, x, 25, TEXT_SKIP_DRAW, NULL);\n\n    x = 6;\n    AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_Cool, x, 41, TEXT_SKIP_DRAW, NULL);\n    AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_Beauty, x, 57, TEXT_SKIP_DRAW, NULL);\n    AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_Cute, x, 73, TEXT_SKIP_DRAW, NULL);\n    AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_Smart, x, 89, TEXT_SKIP_DRAW, NULL);\n    AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_Tough, x, 105, TEXT_SKIP_DRAW, NULL);\n\n    for (i = 0; i < CONTEST_CATEGORIES_COUNT; i++)\n    {\n        for (j = 0; j < CONTESTANT_COUNT; j++)\n        {\n            ConvertIntToDecimalStringN(gStringVar4, gSaveBlock2Ptr->contestLinkResults[i][j], STR_CONV_MODE_RIGHT_ALIGN, 4);\n            AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gStringVar4, (j * 38) + 64, (i * 16) + 41, TEXT_SKIP_DRAW, NULL);\n        }\n    }\n\n    PutWindowTilemap(gRecordsWindowId);\n    CopyWindowToVram(gRecordsWindowId, COPYWIN_FULL);",
       "callsTo": [
         "AddTextPrinterParameterized",
@@ -581,6 +1130,7 @@
       "returnType": "void",
       "signature": "static void CheckPutFrontierTVShowOnAir(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 name[32];\n    s32 lvlMode = gSaveBlock2Ptr->frontier.lvlMode;\n    s32 facility = VarGet(VAR_FRONTIER_FACILITY);\n    s32 battleMode = VarGet(VAR_FRONTIER_BATTLE_MODE);\n\n    switch (facility)\n    {\n    case FRONTIER_FACILITY_TOWER:\n        if (gSaveBlock2Ptr->frontier.towerWinStreaks[battleMode][lvlMode] > gSaveBlock2Ptr->frontier.towerRecordWinStreaks[battleMode][lvlMode])\n        {\n            gSaveBlock2Ptr->frontier.towerRecordWinStreaks[battleMode][lvlMode] = gSaveBlock2Ptr->frontier.towerWinStreaks[battleMode][lvlMode];\n            if (battleMode == FRONTIER_MODE_LINK_MULTIS)\n            {\n                StringCopy(name, gLinkPlayers[gBattleScripting.multiplayerId ^ 1].name);\n                StripExtCtrlCodes(name);\n                StringCopy(gSaveBlock2Ptr->frontier.opponentNames[lvlMode], name);\n                SetTrainerId(gLinkPlayers[gBattleScripting.multiplayerId ^ 1].trainerId, gSaveBlock2Ptr->frontier.opponentTrainerIds[lvlMode]);\n            }\n            if (gSaveBlock2Ptr->frontier.towerWinStreaks[battleMode][lvlMode] > 1\n                && ShouldAirFrontierTVShow())\n            {\n                switch (battleMode)\n                {\n                case FRONTIER_MODE_SINGLES:\n                    TryPutFrontierTVShowOnAir(gSaveBlock2Ptr->frontier.towerWinStreaks[battleMode][lvlMode], FRONTIER_SHOW_TOWER_SINGLES);\n                    break;\n                case FRONTIER_MODE_DOUBLES:\n                    TryPutFrontierTVShowOnAir(gSaveBlock2Ptr->frontier.towerWinStreaks[battleMode][lvlMode], FRONTIER_SHOW_TOWER_DOUBLES);\n                    break;\n                case FRONTIER_MODE_MULTIS:\n                    TryPutFrontierTVShowOnAir(gSaveBlock2Ptr->frontier.towerWinStreaks[battleMode][lvlMode], FRONTIER_SHOW_TOWER_MULTIS);\n                    break;\n                case FRONTIER_MODE_LINK_MULTIS:\n                    TryPutFrontierTVShowOnAir(gSaveBlock2Ptr->frontier.towerWinStreaks[battleMode][lvlMode], FRONTIER_SHOW_TOWER_LINK_MULTIS);\n                    break;\n                }\n            }\n        }\n        break;\n    case FRONTIER_FACILITY_DOME:\n        if (gSaveBlock2Ptr->frontier.domeWinStreaks[battleMode][lvlMode] > gSaveBlock2Ptr->frontier.domeRecordWinStreaks[battleMode][lvlMode])\n        {\n            gSaveBlock2Ptr->frontier.domeRecordWinStreaks[battleMode][lvlMode] = gSaveBlock2Ptr->frontier.domeWinStreaks[battleMode][lvlMode];\n            if (gSaveBlock2Ptr->frontier.domeWinStreaks[battleMode][lvlMode] > 1\n                && ShouldAirFrontierTVShow())\n            {\n                if (battleMode == FRONTIER_MODE_SINGLES)\n                    TryPutFrontierTVShowOnAir(gSaveBlock2Ptr->frontier.domeWinStreaks[battleMode][lvlMode], FRONTIER_SHOW_DOME_SINGLES);\n                else\n                    TryPutFrontierTVShowOnAir(gSaveBlock2Ptr->frontier.domeWinStreaks[battleMode][lvlMode], FRONTIER_SHOW_DOME_DOUBLES);\n            }\n        }\n        break;\n    case FRONTIER_FACILITY_PALACE:\n        if (gSaveBlock2Ptr->frontier.palaceWinStreaks[battleMode][lvlMode] > gSaveBlock2Ptr->frontier.palaceRecordWinStreaks[battleMode][lvlMode])\n        {\n            gSaveBlock2Ptr->frontier.palaceRecordWinStreaks[battleMode][lvlMode] = gSaveBlock2Ptr->frontier.palaceWinStreaks[battleMode][lvlMode];\n            if (gSaveBlock2Ptr->frontier.palaceWinStreaks[battleMode][lvlMode] > 1\n                && ShouldAirFrontierTVShow())\n            {\n                if (battleMode == FRONTIER_MODE_SINGLES)\n                    TryPutFrontierTVShowOnAir(gSaveBlock2Ptr->frontier.palaceWinStreaks[battleMode][lvlMode], FRONTIER_SHOW_PALACE_SINGLES);\n                else\n                    TryPutFrontierTVShowOnAir(gSaveBlock2Ptr->frontier.palaceWinStreaks[battleMode][lvlMode], FRONTIER_SHOW_PALACE_DOUBLES);\n            }\n        }\n        break;\n    case FRONTIER_FACILITY_ARENA:\n        if (gSaveBlock2Ptr->frontier.arenaWinStreaks[lvlMode] > gSaveBlock2Ptr->frontier.arenaRecordStreaks[lvlMode])\n        {\n            gSaveBlock2Ptr->frontier.arenaRecordStreaks[lvlMode] = gSaveBlock2Ptr->frontier.arenaWinStreaks[lvlMode];\n            if (gSaveBlock2Ptr->frontier.arenaWinStreaks[lvlMode] > 1\n                && ShouldAirFrontierTVShow())\n            {\n                TryPutFrontierTVShowOnAir(gSaveBlock2Ptr->frontier.arenaWinStreaks[lvlMode], FRONTIER_SHOW_ARENA);\n            }\n        }\n        break;\n    case FRONTIER_FACILITY_FACTORY:\n        if (gSaveBlock2Ptr->frontier.factoryWinStreaks[battleMode][lvlMode] > gSaveBlock2Ptr->frontier.factoryRecordWinStreaks[battleMode][lvlMode])\n        {\n            gSaveBlock2Ptr->frontier.factoryRecordWinStreaks[battleMode][lvlMode] = gSaveBlock2Ptr->frontier.factoryWinStreaks[battleMode][lvlMode];\n            gSaveBlock2Ptr->frontier.factoryRecordRentsCount[battleMode][lvlMode] = gSaveBlock2Ptr->frontier.factoryRentsCount[battleMode][lvlMode];\n            if (gSaveBlock2Ptr->frontier.factoryWinStreaks[battleMode][lvlMode] > 1\n                && ShouldAirFrontierTVShow())\n            {\n                if (battleMode == FRONTIER_MODE_SINGLES)\n                    TryPutFrontierTVShowOnAir(gSaveBlock2Ptr->frontier.factoryWinStreaks[battleMode][lvlMode], FRONTIER_SHOW_FACTORY_SINGLES);\n                else\n                    TryPutFrontierTVShowOnAir(gSaveBlock2Ptr->frontier.factoryWinStreaks[battleMode][lvlMode], FRONTIER_SHOW_FACTORY_DOUBLES);\n            }\n        }\n        break;\n    case FRONTIER_FACILITY_PIKE:\n        if (gSaveBlock2Ptr->frontier.pikeWinStreaks[lvlMode] > gSaveBlock2Ptr->frontier.pikeRecordStreaks[lvlMode])\n        {\n            gSaveBlock2Ptr->frontier.pikeRecordStreaks[lvlMode] = gSaveBlock2Ptr->frontier.pikeWinStreaks[lvlMode];\n            if (gSaveBlock2Ptr->frontier.pikeWinStreaks[lvlMode] > 1\n                && ShouldAirFrontierTVShow())\n            {\n                TryPutFrontierTVShowOnAir(gSaveBlock2Ptr->frontier.pikeWinStreaks[lvlMode], FRONTIER_SHOW_PIKE);\n            }\n        }\n        break;\n    case FRONTIER_FACILITY_PYRAMID:\n        if (gSaveBlock2Ptr->frontier.pyramidWinStreaks[lvlMode] > gSaveBlock2Ptr->frontier.pyramidRecordStreaks[lvlMode])\n        {\n            gSaveBlock2Ptr->frontier.pyramidRecordStreaks[lvlMode] = gSaveBlock2Ptr->frontier.pyramidWinStreaks[lvlMode];\n            if (gSaveBlock2Ptr->frontier.pyramidWinStreaks[lvlMode] > 1\n                && ShouldAirFrontierTVShow())\n            {\n                TryPutFrontierTVShowOnAir(gSaveBlock2Ptr->frontier.pyramidWinStreaks[lvlMode], FRONTIER_SHOW_PYRAMID);\n            }\n        }\n        break;\n    }",
       "callsTo": [
         "SetTrainerId",
@@ -596,6 +1146,7 @@
       "returnType": "void",
       "signature": "static void Script_GetFrontierBrainStatus(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "VarGet(VAR_FRONTIER_FACILITY);  \n    gSpecialVar_Result = GetFrontierBrainStatus();",
       "callsTo": [
         "GetFrontierBrainStatus",
@@ -607,6 +1158,7 @@
       "returnType": "u8",
       "signature": "u8 GetFrontierBrainStatus(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s32 status = FRONTIER_BRAIN_NOT_READY;\n    s32 facility = VarGet(VAR_FRONTIER_FACILITY);\n    s32 battleMode = VarGet(VAR_FRONTIER_BATTLE_MODE);\n    u16 winStreakNoModifier = GetCurrentFacilityWinStreak();\n    s32 winStreak = winStreakNoModifier + sFrontierBrainStreakAppearances[facility][3];\n    s32 symbolsCount;\n\n    if (battleMode != FRONTIER_MODE_SINGLES)\n        return FRONTIER_BRAIN_NOT_READY;\n\n    symbolsCount = GetPlayerSymbolCountForFacility(facility);\n    switch (symbolsCount)\n    {\n     \n    case 0:\n    case 1:\n        if (winStreak == sFrontierBrainStreakAppearances[facility][symbolsCount])\n            status = symbolsCount + 1;  \n        break;\n     \n    case 2:\n    default:\n         \n        if (winStreak == sFrontierBrainStreakAppearances[facility][0])\n            status = FRONTIER_BRAIN_STREAK;\n         \n        else if (winStreak == sFrontierBrainStreakAppearances[facility][1])\n            status = FRONTIER_BRAIN_STREAK_LONG;\n         \n        else if (winStreak > sFrontierBrainStreakAppearances[facility][1] && (winStreak - sFrontierBrainStreakAppearances[facility][1]) % sFrontierBrainStreakAppearances[facility][2] == 0)\n            status = FRONTIER_BRAIN_STREAK_LONG;\n        break;\n    }\n\n    return status;",
       "callsTo": [
         "GetCurrentFacilityWinStreak",
@@ -619,6 +1171,16 @@
       "returnType": "void",
       "signature": "void CopyFrontierTrainerText(u8 whichText, u16 trainerId)",
       "paramsRaw": "u8 whichText, u16 trainerId",
+      "paramsList": [
+        {
+          "name": "whichText",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "trainerId",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "switch (whichText)\n    {\n    case FRONTIER_BEFORE_TEXT:\n        if (trainerId == TRAINER_EREADER)\n            FrontierSpeechToString(gSaveBlock2Ptr->frontier.ereaderTrainer.greeting);\n        else if (trainerId == TRAINER_FRONTIER_BRAIN)\n            CopyFrontierBrainText(FALSE);\n        else if (trainerId < FRONTIER_TRAINERS_COUNT)\n            FrontierSpeechToString(gFacilityTrainers[trainerId].speechBefore);\n        else if (trainerId < TRAINER_RECORD_MIXING_APPRENTICE)\n            FrontierSpeechToString(gSaveBlock2Ptr->frontier.towerRecords[trainerId - TRAINER_RECORD_MIXING_FRIEND].greeting);\n        else\n            BufferApprenticeChallengeText(trainerId - TRAINER_RECORD_MIXING_APPRENTICE);\n        break;\n    case FRONTIER_PLAYER_LOST_TEXT:\n        if (trainerId == TRAINER_EREADER)\n        {\n            FrontierSpeechToString(gSaveBlock2Ptr->frontier.ereaderTrainer.farewellPlayerLost);\n        }\n        else if (trainerId == TRAINER_FRONTIER_BRAIN)\n        {\n            CopyFrontierBrainText(FALSE);\n        }\n        else if (trainerId < FRONTIER_TRAINERS_COUNT)\n        {\n            FrontierSpeechToString(gFacilityTrainers[trainerId].speechWin);\n        }\n        else if (trainerId < TRAINER_RECORD_MIXING_APPRENTICE)\n        {\n            if (gBattleTypeFlags & BATTLE_TYPE_RECORDED)\n                FrontierSpeechToString(GetRecordedBattleEasyChatSpeech());\n            else\n                FrontierSpeechToString(gSaveBlock2Ptr->frontier.towerRecords[trainerId - TRAINER_RECORD_MIXING_FRIEND].speechWon);\n        }\n        else\n        {\n            if (gBattleTypeFlags & BATTLE_TYPE_RECORDED)\n                FrontierSpeechToString(GetRecordedBattleEasyChatSpeech());\n            else\n                FrontierSpeechToString(gSaveBlock2Ptr->apprentices[trainerId - TRAINER_RECORD_MIXING_APPRENTICE].speechWon);\n        }\n        break;\n    case FRONTIER_PLAYER_WON_TEXT:\n        if (trainerId == TRAINER_EREADER)\n        {\n            FrontierSpeechToString(gSaveBlock2Ptr->frontier.ereaderTrainer.farewellPlayerWon);\n        }\n        else if (trainerId == TRAINER_FRONTIER_BRAIN)\n        {\n            CopyFrontierBrainText(TRUE);\n        }\n        else if (trainerId < FRONTIER_TRAINERS_COUNT)\n        {\n            FrontierSpeechToString(gFacilityTrainers[trainerId].speechLose);\n        }\n        else if (trainerId < TRAINER_RECORD_MIXING_APPRENTICE)\n        {\n            if (gBattleTypeFlags & BATTLE_TYPE_RECORDED)\n                FrontierSpeechToString(GetRecordedBattleEasyChatSpeech());\n            else\n                FrontierSpeechToString(gSaveBlock2Ptr->frontier.towerRecords[trainerId - TRAINER_RECORD_MIXING_FRIEND].speechLost);\n        }\n        else\n        {\n            if (gBattleTypeFlags & BATTLE_TYPE_RECORDED)\n            {\n                trainerId = GetRecordedBattleApprenticeId();\n                FrontierSpeechToString(gApprentices[trainerId].speechLost);\n            }\n            else\n            {\n                trainerId = gSaveBlock2Ptr->apprentices[trainerId - TRAINER_RECORD_MIXING_APPRENTICE].id;\n                FrontierSpeechToString(gApprentices[trainerId].speechLost);\n            }\n        }\n        break;\n    }",
       "callsTo": [
         "BufferApprenticeChallengeText",
@@ -633,6 +1195,7 @@
       "returnType": "void",
       "signature": "void ResetWinStreaks(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s32 battleMode, lvlMode;\n\n    gSaveBlock2Ptr->frontier.winStreakActiveFlags = 0;\n    for (battleMode = 0; battleMode < FRONTIER_MODE_COUNT; battleMode++)\n    {\n        for (lvlMode = 0; lvlMode < FRONTIER_LVL_TENT; lvlMode++)\n        {\n            gSaveBlock2Ptr->frontier.towerWinStreaks[battleMode][lvlMode] = 0;\n            if (battleMode < FRONTIER_MODE_MULTIS)\n            {\n                gSaveBlock2Ptr->frontier.domeWinStreaks[battleMode][lvlMode] = 0;\n                gSaveBlock2Ptr->frontier.palaceWinStreaks[battleMode][lvlMode] = 0;\n                gSaveBlock2Ptr->frontier.factoryWinStreaks[battleMode][lvlMode] = 0;\n            }\n            if (battleMode == FRONTIER_MODE_SINGLES)\n            {\n                gSaveBlock2Ptr->frontier.arenaWinStreaks[lvlMode] = 0;\n                gSaveBlock2Ptr->frontier.pikeWinStreaks[lvlMode] = 0;\n                gSaveBlock2Ptr->frontier.pyramidWinStreaks[lvlMode] = 0;\n            }\n        }\n    }\n    if (gSaveBlock2Ptr->frontier.challengeStatus != 0)\n        gSaveBlock2Ptr->frontier.challengeStatus = CHALLENGE_STATUS_SAVING;",
       "callsTo": [],
       "lineCount": 24
@@ -641,6 +1204,7 @@
       "returnType": "u32",
       "signature": "u32 GetCurrentFacilityWinStreak(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s32 lvlMode = gSaveBlock2Ptr->frontier.lvlMode;\n    s32 battleMode = VarGet(VAR_FRONTIER_BATTLE_MODE);\n    s32 facility = VarGet(VAR_FRONTIER_FACILITY);\n\n    switch (facility)\n    {\n    case FRONTIER_FACILITY_TOWER:\n        return gSaveBlock2Ptr->frontier.towerWinStreaks[battleMode][lvlMode];\n    case FRONTIER_FACILITY_DOME:\n        return gSaveBlock2Ptr->frontier.domeWinStreaks[battleMode][lvlMode];\n    case FRONTIER_FACILITY_PALACE:\n        return gSaveBlock2Ptr->frontier.palaceWinStreaks[battleMode][lvlMode];\n    case FRONTIER_FACILITY_ARENA:\n        return gSaveBlock2Ptr->frontier.arenaWinStreaks[lvlMode];\n    case FRONTIER_FACILITY_FACTORY:\n        return gSaveBlock2Ptr->frontier.factoryWinStreaks[battleMode][lvlMode];\n    case FRONTIER_FACILITY_PIKE:\n        return gSaveBlock2Ptr->frontier.pikeWinStreaks[lvlMode];\n    case FRONTIER_FACILITY_PYRAMID:\n        return gSaveBlock2Ptr->frontier.pyramidWinStreaks[lvlMode];\n    default:\n        return 0;\n    }",
       "callsTo": [
         "VarGet"
@@ -651,6 +1215,7 @@
       "returnType": "void",
       "signature": "void ResetFrontierTrainerIds(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s32 i;\n\n    for (i = 0; i < (int)ARRAY_COUNT(gSaveBlock2Ptr->frontier.trainerIds); i++)\n        gSaveBlock2Ptr->frontier.trainerIds[i] = 0xFFFF;",
       "callsTo": [
         "ARRAY_COUNT"
@@ -661,6 +1226,7 @@
       "returnType": "void",
       "signature": "static void IsTrainerFrontierBrain(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gTrainerBattleOpponent_A == TRAINER_FRONTIER_BRAIN)\n        gSpecialVar_Result = TRUE;\n    else\n        gSpecialVar_Result = FALSE;",
       "callsTo": [],
       "lineCount": 4
@@ -669,6 +1235,12 @@
       "returnType": "u8",
       "signature": "u8 GetPlayerSymbolCountForFacility(u8 facility)",
       "paramsRaw": "u8 facility",
+      "paramsList": [
+        {
+          "name": "facility",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "return FlagGet(FLAG_SYS_TOWER_SILVER + facility * 2)\n         + FlagGet(FLAG_SYS_TOWER_GOLD + facility * 2);",
       "callsTo": [
         "FlagGet"
@@ -679,6 +1251,7 @@
       "returnType": "void",
       "signature": "static void GiveBattlePoints(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s32 challengeNum = 0;\n    s32 lvlMode = gSaveBlock2Ptr->frontier.lvlMode;\n    s32 facility = VarGet(VAR_FRONTIER_FACILITY);\n    s32 battleMode = VarGet(VAR_FRONTIER_BATTLE_MODE);\n    s32 points;\n\n    switch (facility)\n    {\n    case FRONTIER_FACILITY_TOWER:\n        challengeNum = gSaveBlock2Ptr->frontier.towerWinStreaks[battleMode][lvlMode] / FRONTIER_STAGES_PER_CHALLENGE;\n        break;\n    case FRONTIER_FACILITY_DOME:\n        challengeNum = gSaveBlock2Ptr->frontier.domeWinStreaks[battleMode][lvlMode];\n        break;\n    case FRONTIER_FACILITY_PALACE:\n        challengeNum = gSaveBlock2Ptr->frontier.palaceWinStreaks[battleMode][lvlMode] / FRONTIER_STAGES_PER_CHALLENGE;\n        break;\n    case FRONTIER_FACILITY_ARENA:\n        challengeNum = gSaveBlock2Ptr->frontier.arenaWinStreaks[lvlMode] / FRONTIER_STAGES_PER_CHALLENGE;\n        break;\n    case FRONTIER_FACILITY_FACTORY:\n        challengeNum = gSaveBlock2Ptr->frontier.factoryWinStreaks[battleMode][lvlMode] / FRONTIER_STAGES_PER_CHALLENGE;\n        break;\n    case FRONTIER_FACILITY_PIKE:\n        challengeNum = gSaveBlock2Ptr->frontier.pikeWinStreaks[lvlMode] / NUM_PIKE_ROOMS;\n        break;\n    case FRONTIER_FACILITY_PYRAMID:\n        challengeNum = gSaveBlock2Ptr->frontier.pyramidWinStreaks[lvlMode] / FRONTIER_STAGES_PER_CHALLENGE;\n        break;\n    }\n\n    if (challengeNum != 0)\n        challengeNum--;\n    if (challengeNum >= ARRAY_COUNT(sBattlePointAwards))\n        challengeNum = ARRAY_COUNT(sBattlePointAwards) - 1;\n\n    points = sBattlePointAwards[challengeNum][facility][battleMode];\n    if (gTrainerBattleOpponent_A == TRAINER_FRONTIER_BRAIN)\n        points += 10;\n    gSaveBlock2Ptr->frontier.battlePoints += points;\n    ConvertIntToDecimalStringN(gStringVar1, points, STR_CONV_MODE_LEFT_ALIGN, 2);\n    if (gSaveBlock2Ptr->frontier.battlePoints > MAX_BATTLE_FRONTIER_POINTS)\n        gSaveBlock2Ptr->frontier.battlePoints = MAX_BATTLE_FRONTIER_POINTS;\n\n    points = gSaveBlock2Ptr->frontier.cardBattlePoints;\n    points += sBattlePointAwards[challengeNum][facility][battleMode];\n    IncrementDailyBattlePoints(sBattlePointAwards[challengeNum][facility][battleMode]);\n    if (gTrainerBattleOpponent_A == TRAINER_FRONTIER_BRAIN)\n    {\n        points += 10;\n        IncrementDailyBattlePoints(10);\n    }\n    if (points > 0xFFFF)\n        points = 0xFFFF;\n    gSaveBlock2Ptr->frontier.cardBattlePoints = points;",
       "callsTo": [
         "ARRAY_COUNT",
@@ -692,6 +1265,7 @@
       "returnType": "void",
       "signature": "static void GetFacilitySymbolCount(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s32 facility = VarGet(VAR_FRONTIER_FACILITY);\n    gSpecialVar_Result = GetPlayerSymbolCountForFacility(facility);",
       "callsTo": [
         "GetPlayerSymbolCountForFacility",
@@ -703,6 +1277,7 @@
       "returnType": "void",
       "signature": "static void GiveFacilitySymbol(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s32 facility = VarGet(VAR_FRONTIER_FACILITY);\n    if (GetPlayerSymbolCountForFacility(facility) == 0)\n        FlagSet(FLAG_SYS_TOWER_SILVER + facility * 2);\n    else\n        FlagSet(FLAG_SYS_TOWER_GOLD + facility * 2);",
       "callsTo": [
         "FlagSet",
@@ -715,6 +1290,7 @@
       "returnType": "void",
       "signature": "static void CheckBattleTypeFlag(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gBattleTypeFlags & gSpecialVar_0x8005)\n        gSpecialVar_Result = TRUE;\n    else\n        gSpecialVar_Result = FALSE;",
       "callsTo": [],
       "lineCount": 4
@@ -723,6 +1299,20 @@
       "returnType": "u8",
       "signature": "static u8 AppendCaughtBannedMonSpeciesName(u16 species, u8 count, s32 numBannedMonsCaught)",
       "paramsRaw": "u16 species, u8 count, s32 numBannedMonsCaught",
+      "paramsList": [
+        {
+          "name": "species",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "count",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "numBannedMonsCaught",
+          "typeRaw": "s32"
+        }
+      ],
       "body": "if (GetSetPokedexFlag(SpeciesToNationalPokedexNum(species), FLAG_GET_CAUGHT))\n    {\n        count++;\n        switch (count)\n        {\n        case 1:\n        case 3:\n        case 5:\n        case 7:\n        case 9:\n        case 11:\n            if (numBannedMonsCaught == count)\n                StringAppend(gStringVar1, gText_SpaceAndSpace);\n            else if (numBannedMonsCaught > count)\n                StringAppend(gStringVar1, gText_CommaSpace);\n            break;\n        case 2:\n            if (count == numBannedMonsCaught)\n                StringAppend(gStringVar1, gText_SpaceAndSpace);\n            else\n                StringAppend(gStringVar1, gText_CommaSpace);\n            StringAppend(gStringVar1, gText_NewLine);\n            break;\n        default:\n            if (count == numBannedMonsCaught)\n                StringAppend(gStringVar1, gText_SpaceAndSpace);\n            else\n                StringAppend(gStringVar1, gText_CommaSpace);\n            StringAppend(gStringVar1, gText_LineBreak);\n            break;\n        }\n        StringAppend(gStringVar1, gSpeciesNames[species]);\n    }\n\n    return count;",
       "callsTo": [
         "GetSetPokedexFlag",
@@ -735,6 +1325,40 @@
       "returnType": "void",
       "signature": "static void AppendIfValid(u16 species, u16 heldItem, u16 hp, u8 lvlMode, u8 monLevel, u16 *speciesArray, u16 *itemsArray, u8 *count)",
       "paramsRaw": "u16 species, u16 heldItem, u16 hp, u8 lvlMode, u8 monLevel, u16 *speciesArray, u16 *itemsArray, u8 *count",
+      "paramsList": [
+        {
+          "name": "species",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "heldItem",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "hp",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "lvlMode",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "monLevel",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "speciesArray",
+          "typeRaw": "u16 *"
+        },
+        {
+          "name": "itemsArray",
+          "typeRaw": "u16 *"
+        },
+        {
+          "name": "count",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "s32 i = 0;\n\n    if (species == SPECIES_EGG || species == SPECIES_NONE)\n        return;\n\n    for (i = 0; gFrontierBannedSpecies[i] != 0xFFFF && gFrontierBannedSpecies[i] != species; i++)\n        ;\n\n    if (gFrontierBannedSpecies[i] != 0xFFFF)\n        return;\n    if (lvlMode == FRONTIER_LVL_50 && monLevel > FRONTIER_MAX_LEVEL_50)\n        return;\n\n    for (i = 0; i < *count && speciesArray[i] != species; i++)\n        ;\n    if (i != *count)\n        return;\n\n    if (heldItem != 0)\n    {\n        for (i = 0; i < *count && itemsArray[i] != heldItem; i++)\n            ;\n        if (i != *count)\n            return;\n    }\n\n    speciesArray[*count] = species;\n    itemsArray[*count] = heldItem;\n    (*count)++;",
       "callsTo": [],
       "lineCount": 29
@@ -743,6 +1367,7 @@
       "returnType": "void",
       "signature": "static void CheckPartyIneligibility(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 speciesArray[PARTY_SIZE];\n    u16 itemArray[PARTY_SIZE];\n    s32 monId = 0;\n    s32 toChoose = 0;\n    u8 count = 0;\n    s32 battleMode = VarGet(VAR_FRONTIER_BATTLE_MODE);\n    s32 monIdLooper;\n\n     \n    #define numEligibleMons count\n\n    switch (battleMode)\n    {\n    case FRONTIER_MODE_SINGLES:\n        toChoose = FRONTIER_PARTY_SIZE;\n        break;\n    case FRONTIER_MODE_MULTIS:\n    case FRONTIER_MODE_LINK_MULTIS:\n        toChoose = FRONTIER_MULTI_PARTY_SIZE;\n        break;\n    case FRONTIER_MODE_DOUBLES:\n        if (VarGet(VAR_FRONTIER_FACILITY) == FRONTIER_FACILITY_TOWER)\n            toChoose = FRONTIER_DOUBLES_PARTY_SIZE;\n        else\n            toChoose = FRONTIER_PARTY_SIZE;\n        break;\n    }\n\n    monIdLooper = 0;\n    do\n    {\n        monId = monIdLooper;\n        numEligibleMons = 0;\n        do\n        {\n            u16 species = GetMonData(&gPlayerParty[monId], MON_DATA_SPECIES_OR_EGG);\n            u16 heldItem = GetMonData(&gPlayerParty[monId], MON_DATA_HELD_ITEM);\n            u8 level = GetMonData(&gPlayerParty[monId], MON_DATA_LEVEL);\n            u16 hp = GetMonData(&gPlayerParty[monId], MON_DATA_HP);\n            if (VarGet(VAR_FRONTIER_FACILITY) == FRONTIER_FACILITY_PYRAMID)\n            {\n                if (heldItem == ITEM_NONE)\n                    AppendIfValid(species, heldItem, hp, gSpecialVar_Result, level, speciesArray, itemArray, &numEligibleMons);\n            }\n            else\n            {\n                AppendIfValid(species, heldItem, hp, gSpecialVar_Result, level, speciesArray, itemArray, &numEligibleMons);\n            }\n            monId++;\n            if (monId >= PARTY_SIZE)\n                monId = 0;\n        } while (monId != monIdLooper);\n\n        monIdLooper++;\n    } while (monIdLooper < PARTY_SIZE && numEligibleMons < toChoose);\n\n    if (numEligibleMons < toChoose)\n    {\n        s32 i;\n        s32 caughtBannedMons = 0;\n        s32 species = gFrontierBannedSpecies[0];\n        for (i = 0; species != 0xFFFF; i++, species = gFrontierBannedSpecies[i])\n        {\n            if (GetSetPokedexFlag(SpeciesToNationalPokedexNum(species), FLAG_GET_CAUGHT))\n                caughtBannedMons++;\n        }\n        gStringVar1[0] = EOS;\n        gSpecialVar_0x8004 = TRUE;\n        count = 0;\n        for (i = 0; gFrontierBannedSpecies[i] != 0xFFFF; i++)\n            count = AppendCaughtBannedMonSpeciesName(gFrontierBannedSpecies[i], count, caughtBannedMons);\n\n        if (count == 0)\n        {\n            StringAppend(gStringVar1, gText_Space2);\n            StringAppend(gStringVar1, gText_Are);\n        }\n        else\n        {\n            if (count & 1)\n                StringAppend(gStringVar1, gText_LineBreak);\n            else\n                StringAppend(gStringVar1, gText_Space2);\n            StringAppend(gStringVar1, gText_Are2);\n        }\n    }\n    else\n    {\n        gSpecialVar_0x8004 = FALSE;\n        gSaveBlock2Ptr->frontier.lvlMode = gSpecialVar_Result;\n    }\n    #undef numEligibleMons",
       "callsTo": [
         "AppendCaughtBannedMonSpeciesName",
@@ -759,6 +1384,7 @@
       "returnType": "void",
       "signature": "static void ValidateVisitingTrainer(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ValidateEReaderTrainer();",
       "callsTo": [
         "ValidateEReaderTrainer"
@@ -769,6 +1395,7 @@
       "returnType": "void",
       "signature": "static void IncrementWinStreak(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s32 lvlMode = gSaveBlock2Ptr->frontier.lvlMode;\n    s32 battleMode = VarGet(VAR_FRONTIER_BATTLE_MODE);\n    s32 facility = VarGet(VAR_FRONTIER_FACILITY);\n\n    switch (facility)\n    {\n    case FRONTIER_FACILITY_TOWER:\n        if (gSaveBlock2Ptr->frontier.towerWinStreaks[battleMode][lvlMode] < MAX_STREAK)\n        {\n            gSaveBlock2Ptr->frontier.towerWinStreaks[battleMode][lvlMode]++;\n            if (battleMode == FRONTIER_MODE_SINGLES)\n            {\n                SetGameStat(GAME_STAT_BATTLE_TOWER_SINGLES_STREAK, gSaveBlock2Ptr->frontier.towerWinStreaks[battleMode][lvlMode]);\n                gSaveBlock2Ptr->frontier.towerSinglesStreak = gSaveBlock2Ptr->frontier.towerWinStreaks[battleMode][lvlMode];\n            }\n        }\n        break;\n    case FRONTIER_FACILITY_DOME:\n        if (gSaveBlock2Ptr->frontier.domeWinStreaks[battleMode][lvlMode] < MAX_STREAK)\n            gSaveBlock2Ptr->frontier.domeWinStreaks[battleMode][lvlMode]++;\n        if (gSaveBlock2Ptr->frontier.domeTotalChampionships[battleMode][lvlMode] < MAX_STREAK)\n            gSaveBlock2Ptr->frontier.domeTotalChampionships[battleMode][lvlMode]++;\n        break;\n    case FRONTIER_FACILITY_PALACE:\n        if (gSaveBlock2Ptr->frontier.palaceWinStreaks[battleMode][lvlMode] < MAX_STREAK)\n            gSaveBlock2Ptr->frontier.palaceWinStreaks[battleMode][lvlMode]++;\n        break;\n    case FRONTIER_FACILITY_ARENA:\n        if (gSaveBlock2Ptr->frontier.arenaWinStreaks[lvlMode] < MAX_STREAK)\n            gSaveBlock2Ptr->frontier.arenaWinStreaks[lvlMode]++;\n        break;\n    case FRONTIER_FACILITY_FACTORY:\n        if (gSaveBlock2Ptr->frontier.factoryWinStreaks[battleMode][lvlMode] < MAX_STREAK)\n            gSaveBlock2Ptr->frontier.factoryWinStreaks[battleMode][lvlMode]++;\n        break;\n    case FRONTIER_FACILITY_PIKE:\n        if (gSaveBlock2Ptr->frontier.pikeWinStreaks[lvlMode] < MAX_STREAK)\n            gSaveBlock2Ptr->frontier.pikeWinStreaks[lvlMode]++;\n        break;\n    case FRONTIER_FACILITY_PYRAMID:\n        if (gSaveBlock2Ptr->frontier.pyramidWinStreaks[lvlMode] < MAX_STREAK)\n            gSaveBlock2Ptr->frontier.pyramidWinStreaks[lvlMode]++;\n        break;\n    }",
       "callsTo": [
         "SetGameStat",
@@ -780,6 +1407,7 @@
       "returnType": "void",
       "signature": "static void RestoreHeldItems(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n\n    for (i = 0; i < MAX_FRONTIER_PARTY_SIZE; i++)\n    {\n        if (gSaveBlock2Ptr->frontier.selectedPartyMons[i] != 0)\n        {\n            u16 item = GetMonData(&gSaveBlock1Ptr->playerParty[gSaveBlock2Ptr->frontier.selectedPartyMons[i] - 1], MON_DATA_HELD_ITEM, NULL);\n            SetMonData(&gPlayerParty[i], MON_DATA_HELD_ITEM, &item);\n        }\n    }",
       "callsTo": [
         "GetMonData",
@@ -791,6 +1419,7 @@
       "returnType": "void",
       "signature": "static void SaveRecordBattle(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gSpecialVar_Result = MoveRecordedBattleToSaveData();\n    gSaveBlock2Ptr->frontier.disableRecordBattle = TRUE;",
       "callsTo": [
         "MoveRecordedBattleToSaveData"
@@ -801,6 +1430,7 @@
       "returnType": "void",
       "signature": "static void BufferFrontierTrainerName(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (gSpecialVar_0x8005)\n    {\n    case 0:\n        GetFrontierTrainerName(gStringVar1, gTrainerBattleOpponent_A);\n        break;\n    case 1:\n        GetFrontierTrainerName(gStringVar2, gTrainerBattleOpponent_A);\n        break;\n    }",
       "callsTo": [
         "GetFrontierTrainerName"
@@ -811,6 +1441,7 @@
       "returnType": "void",
       "signature": "static void ResetSketchedMoves(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i, j, k;\n\n    for (i = 0; i < MAX_FRONTIER_PARTY_SIZE; i++)\n    {\n        u16 monId = gSaveBlock2Ptr->frontier.selectedPartyMons[i] - 1;\n        if (monId < PARTY_SIZE)\n        {\n            for (j = 0; j < MAX_MON_MOVES; j++)\n            {\n                for (k = 0; k < MAX_MON_MOVES; k++)\n                {\n                    if (GetMonData(&gSaveBlock1Ptr->playerParty[gSaveBlock2Ptr->frontier.selectedPartyMons[i] - 1], MON_DATA_MOVE1 + k, NULL)\n                        == GetMonData(&gPlayerParty[i], MON_DATA_MOVE1 + j, NULL))\n                        break;\n                }\n                if (k == MAX_MON_MOVES)\n                    SetMonMoveSlot(&gPlayerParty[i], MOVE_SKETCH, j);\n            }\n            gSaveBlock1Ptr->playerParty[gSaveBlock2Ptr->frontier.selectedPartyMons[i] - 1] = gPlayerParty[i];\n        }\n    }",
       "callsTo": [
         "GetMonData",
@@ -822,6 +1453,7 @@
       "returnType": "void",
       "signature": "static void SetFacilityBrainObjectEvent(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "SetFrontierBrainObjEventGfx(VarGet(VAR_FRONTIER_FACILITY));",
       "callsTo": [
         "SetFrontierBrainObjEventGfx",
@@ -833,6 +1465,28 @@
       "returnType": "void",
       "signature": "static void Print1PRecord(s32 position, s32 x, s32 y, struct RankingHall1P *hallRecord, s32 hallFacilityId)",
       "paramsRaw": "s32 position, s32 x, s32 y, struct RankingHall1P *hallRecord, s32 hallFacilityId",
+      "paramsList": [
+        {
+          "name": "position",
+          "typeRaw": "s32"
+        },
+        {
+          "name": "x",
+          "typeRaw": "s32"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s32"
+        },
+        {
+          "name": "hallRecord",
+          "typeRaw": "struct RankingHall1P *"
+        },
+        {
+          "name": "hallFacilityId",
+          "typeRaw": "s32"
+        }
+      ],
       "body": "u8 text[32];\n    u16 winStreak;\n\n    AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_123Dot[position], x * 8, (8 * (y + 5 * position)) + 1, TEXT_SKIP_DRAW, NULL);\n    hallRecord->name[PLAYER_NAME_LENGTH] = EOS;\n    if (hallRecord->winStreak)\n    {\n        TVShowConvertInternationalString(text, hallRecord->name, hallRecord->language);\n        AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, text, (x + 2) * 8, (8 * (y + 5 * position)) + 1, TEXT_SKIP_DRAW, NULL);\n        winStreak = hallRecord->winStreak;\n        if (winStreak > MAX_STREAK)\n            winStreak = MAX_STREAK;\n        ConvertIntToDecimalStringN(gStringVar2, winStreak, STR_CONV_MODE_RIGHT_ALIGN, 4);\n        StringExpandPlaceholders(gStringVar4, sHallFacilityToRecordsText[hallFacilityId]);\n        AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gStringVar4, GetStringRightAlignXOffset(FONT_NORMAL, sHallFacilityToRecordsText[hallFacilityId], 0xC8), (8 * (y + 5 * position)) + 1, TEXT_SKIP_DRAW, NULL);\n    }",
       "callsTo": [
         "AddTextPrinterParameterized",
@@ -847,6 +1501,24 @@
       "returnType": "void",
       "signature": "static void Print2PRecord(s32 position, s32 x, s32 y, struct RankingHall2P *hallRecord)",
       "paramsRaw": "s32 position, s32 x, s32 y, struct RankingHall2P *hallRecord",
+      "paramsList": [
+        {
+          "name": "position",
+          "typeRaw": "s32"
+        },
+        {
+          "name": "x",
+          "typeRaw": "s32"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s32"
+        },
+        {
+          "name": "hallRecord",
+          "typeRaw": "struct RankingHall2P *"
+        }
+      ],
       "body": "u8 text[32];\n    u16 winStreak;\n\n    AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_123Dot[position], x * 8, (8 * (y + 5 * position)) + 1, TEXT_SKIP_DRAW, NULL);\n    if (hallRecord->winStreak)\n    {\n        hallRecord->name1[PLAYER_NAME_LENGTH] = EOS;\n        hallRecord->name2[PLAYER_NAME_LENGTH] = EOS;\n        TVShowConvertInternationalString(text, hallRecord->name1, hallRecord->language);\n        AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, text, (x + 2) * 8, (8 * (y + 5 * position - 1)) + 1, TEXT_SKIP_DRAW, NULL);\n        if (IsStringJapanese(hallRecord->name2))\n            TVShowConvertInternationalString(text, hallRecord->name2, LANGUAGE_JAPANESE);\n        else\n            StringCopy(text, hallRecord->name2);\n        AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, text, (x + 4) * 8, (8 * (y + 5 * position + 1)) + 1, TEXT_SKIP_DRAW, NULL);\n\n        winStreak = hallRecord->winStreak;\n        if (winStreak > MAX_STREAK)\n            winStreak = MAX_STREAK;\n        ConvertIntToDecimalStringN(gStringVar2, winStreak, STR_CONV_MODE_RIGHT_ALIGN, 4);\n        StringExpandPlaceholders(gStringVar4, sHallFacilityToRecordsText[RANKING_HALL_TOWER_LINK]);\n        AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gStringVar4, GetStringRightAlignXOffset(FONT_NORMAL, sHallFacilityToRecordsText[RANKING_HALL_TOWER_LINK], 0xC8), (8 * (y + 5 * position)) + 1, TEXT_SKIP_DRAW, NULL);\n    }",
       "callsTo": [
         "AddTextPrinterParameterized",
@@ -863,6 +1535,20 @@
       "returnType": "void",
       "signature": "static void Fill1PRecords(struct RankingHall1P *dst, s32 hallFacilityId, s32 lvlMode)",
       "paramsRaw": "struct RankingHall1P *dst, s32 hallFacilityId, s32 lvlMode",
+      "paramsList": [
+        {
+          "name": "dst",
+          "typeRaw": "struct RankingHall1P *"
+        },
+        {
+          "name": "hallFacilityId",
+          "typeRaw": "s32"
+        },
+        {
+          "name": "lvlMode",
+          "typeRaw": "s32"
+        }
+      ],
       "body": "s32 i, j;\n    struct RankingHall1P record1P[HALL_RECORDS_COUNT + 1];\n    struct PlayerHallRecords *playerHallRecords = AllocZeroed(sizeof(struct PlayerHallRecords));\n    GetPlayerHallRecords(playerHallRecords);\n\n    for (i = 0; i < HALL_RECORDS_COUNT; i++)\n        record1P[i] = gSaveBlock2Ptr->hallRecords1P[hallFacilityId][lvlMode][i];\n\n    record1P[HALL_RECORDS_COUNT] = playerHallRecords->onePlayer[hallFacilityId][lvlMode];\n\n    for (i = 0; i < HALL_RECORDS_COUNT; i++)\n    {\n        s32 highestWinStreak = 0;\n        s32 highestId = 0;\n        for (j = 0; j < HALL_RECORDS_COUNT + 1; j++)\n        {\n            if (record1P[j].winStreak > highestWinStreak)\n            {\n                highestId = j;\n                highestWinStreak = record1P[j].winStreak;\n            }\n        }\n        if (record1P[HALL_RECORDS_COUNT].winStreak >= highestWinStreak)\n            highestId = HALL_RECORDS_COUNT;\n\n        dst[i] = record1P[highestId];\n        record1P[highestId].winStreak = 0;\n    }\n\n    Free(playerHallRecords);",
       "callsTo": [
         "AllocZeroed",
@@ -875,6 +1561,16 @@
       "returnType": "void",
       "signature": "static void Fill2PRecords(struct RankingHall2P *dst, s32 lvlMode)",
       "paramsRaw": "struct RankingHall2P *dst, s32 lvlMode",
+      "paramsList": [
+        {
+          "name": "dst",
+          "typeRaw": "struct RankingHall2P *"
+        },
+        {
+          "name": "lvlMode",
+          "typeRaw": "s32"
+        }
+      ],
       "body": "s32 i, j;\n    struct RankingHall2P record2P[HALL_RECORDS_COUNT + 1];\n    struct PlayerHallRecords *playerHallRecords = AllocZeroed(sizeof(struct PlayerHallRecords));\n    GetPlayerHallRecords(playerHallRecords);\n\n    for (i = 0; i < HALL_RECORDS_COUNT; i++)\n        record2P[i] = gSaveBlock2Ptr->hallRecords2P[lvlMode][i];\n\n    record2P[HALL_RECORDS_COUNT] = playerHallRecords->twoPlayers[lvlMode];\n\n    for (i = 0; i < HALL_RECORDS_COUNT; i++)\n    {\n        s32 highestWinStreak = 0;\n        s32 highestId = 0;\n        for (j = 0; j < HALL_RECORDS_COUNT; j++)\n        {\n            if (record2P[j].winStreak > highestWinStreak)\n            {\n                highestId = j;\n                highestWinStreak = record2P[j].winStreak;\n            }\n        }\n        if (record2P[HALL_RECORDS_COUNT].winStreak >= highestWinStreak)\n            highestId = HALL_RECORDS_COUNT;\n\n        dst[i] = record2P[highestId];\n        record2P[highestId].winStreak = 0;\n    }\n\n    Free(playerHallRecords);",
       "callsTo": [
         "AllocZeroed",
@@ -887,6 +1583,16 @@
       "returnType": "void",
       "signature": "static void PrintHallRecords(s32 hallFacilityId, s32 lvlMode)",
       "paramsRaw": "s32 hallFacilityId, s32 lvlMode",
+      "paramsList": [
+        {
+          "name": "hallFacilityId",
+          "typeRaw": "s32"
+        },
+        {
+          "name": "lvlMode",
+          "typeRaw": "s32"
+        }
+      ],
       "body": "s32 i;\n    s32 x;\n    struct RankingHall1P records1P[HALL_RECORDS_COUNT];\n    struct RankingHall2P records2P[HALL_RECORDS_COUNT];\n\n    StringCopy(gStringVar1, sRecordsWindowChallengeTexts[hallFacilityId][0]);\n    StringExpandPlaceholders(gStringVar4, sRecordsWindowChallengeTexts[hallFacilityId][1]);\n    AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gStringVar4, 0, 1, TEXT_SKIP_DRAW, NULL);\n    x = GetStringRightAlignXOffset(FONT_NORMAL, sLevelModeText[lvlMode], DISPLAY_WIDTH - 32);\n    AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, sLevelModeText[lvlMode], x, 1, TEXT_SKIP_DRAW, NULL);\n    if (hallFacilityId == RANKING_HALL_TOWER_LINK)\n    {\n        gSaveBlock2Ptr->frontier.opponentNames[0][PLAYER_NAME_LENGTH] = EOS;\n        gSaveBlock2Ptr->frontier.opponentNames[1][PLAYER_NAME_LENGTH] = EOS;\n        Fill2PRecords(records2P, lvlMode);\n        for (i = 0; i < HALL_RECORDS_COUNT; i++)\n            Print2PRecord(i, 1, 4, &records2P[i]);\n    }\n    else\n    {\n        Fill1PRecords(records1P, hallFacilityId, lvlMode);\n        for (i = 0; i < HALL_RECORDS_COUNT; i++)\n            Print1PRecord(i, 1, 4, &records1P[i], hallFacilityId);\n    }",
       "callsTo": [
         "AddTextPrinterParameterized",
@@ -904,6 +1610,7 @@
       "returnType": "void",
       "signature": "void ShowRankingHallRecordsWindow(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gRecordsWindowId = AddWindow(&sRankingHallRecordsWindowTemplate);\n    DrawStdWindowFrame(gRecordsWindowId, FALSE);\n    FillWindowPixelBuffer(gRecordsWindowId, PIXEL_FILL(1));\n    PrintHallRecords(gSpecialVar_0x8005, FRONTIER_LVL_50);\n    PutWindowTilemap(gRecordsWindowId);\n    CopyWindowToVram(gRecordsWindowId, COPYWIN_FULL);",
       "callsTo": [
         "AddWindow",
@@ -920,6 +1627,7 @@
       "returnType": "void",
       "signature": "void ScrollRankingHallRecordsWindow(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "FillWindowPixelBuffer(gRecordsWindowId, PIXEL_FILL(1));\n    PrintHallRecords(gSpecialVar_0x8005, FRONTIER_LVL_OPEN);\n    CopyWindowToVram(gRecordsWindowId, COPYWIN_GFX);",
       "callsTo": [
         "CopyWindowToVram",
@@ -933,6 +1641,7 @@
       "returnType": "void",
       "signature": "void ClearRankingHallRecords(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s32 i, j, k;\n\n     \n#ifdef UBFIX\n    u8 emptyId[TRAINER_ID_LENGTH] = {0};\n    #define ZERO emptyId\n#else\n    #define ZERO 0\n#endif\n\n    for (i = 0; i < HALL_FACILITIES_COUNT; i++)\n    {\n        for (j = 0; j < FRONTIER_LVL_MODE_COUNT; j++)\n        {\n            for (k = 0; k < HALL_RECORDS_COUNT; k++)\n            {\n                CopyTrainerId(gSaveBlock2Ptr->hallRecords1P[i][j][k].id, ZERO);\n                gSaveBlock2Ptr->hallRecords1P[i][j][k].name[0] = EOS;\n                gSaveBlock2Ptr->hallRecords1P[i][j][k].winStreak = 0;\n            }\n        }\n    }\n\n    for (j = 0; j < FRONTIER_LVL_MODE_COUNT; j++)\n    {\n        for (k = 0; k < HALL_RECORDS_COUNT; k++)\n        {\n            CopyTrainerId(gSaveBlock2Ptr->hallRecords2P[j][k].id1, ZERO);\n            CopyTrainerId(gSaveBlock2Ptr->hallRecords2P[j][k].id2, ZERO);\n            gSaveBlock2Ptr->hallRecords2P[j][k].name1[0] = EOS;\n            gSaveBlock2Ptr->hallRecords2P[j][k].name2[0] = EOS;\n            gSaveBlock2Ptr->hallRecords2P[j][k].winStreak = 0;\n        }\n    }",
       "callsTo": [
         "CopyTrainerId"
@@ -943,6 +1652,7 @@
       "returnType": "void",
       "signature": "void SaveGameFrontier(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s32 i;\n    struct Pokemon *monsParty = AllocZeroed(sizeof(struct Pokemon) * PARTY_SIZE);\n\n    for (i = 0; i < PARTY_SIZE; i++)\n        monsParty[i] = gPlayerParty[i];\n\n    i = gPlayerPartyCount;\n    LoadPlayerParty();\n    SetContinueGameWarpStatusToDynamicWarp();\n    TrySavingData(SAVE_LINK);\n    ClearContinueGameWarpStatus2();\n    gPlayerPartyCount = i;\n\n    for (i = 0; i < PARTY_SIZE; i++)\n        gPlayerParty[i] = monsParty[i];\n\n    Free(monsParty);",
       "callsTo": [
         "AllocZeroed",
@@ -958,6 +1668,7 @@
       "returnType": "u8",
       "signature": "u8 GetFrontierBrainTrainerPicIndex(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s32 facility;\n\n    if (gBattleTypeFlags & BATTLE_TYPE_RECORDED)\n        facility = GetRecordedBattleFrontierFacility();\n    else\n        facility = VarGet(VAR_FRONTIER_FACILITY);\n\n    return gTrainers[sFrontierBrainTrainerIds[facility]].trainerPic;",
       "callsTo": [
         "GetRecordedBattleFrontierFacility",
@@ -969,6 +1680,7 @@
       "returnType": "u8",
       "signature": "u8 GetFrontierBrainTrainerClass(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s32 facility;\n\n    if (gBattleTypeFlags & BATTLE_TYPE_RECORDED)\n        facility = GetRecordedBattleFrontierFacility();\n    else\n        facility = VarGet(VAR_FRONTIER_FACILITY);\n\n    return gTrainers[sFrontierBrainTrainerIds[facility]].trainerClass;",
       "callsTo": [
         "GetRecordedBattleFrontierFacility",
@@ -980,6 +1692,12 @@
       "returnType": "void",
       "signature": "void CopyFrontierBrainTrainerName(u8 *dst)",
       "paramsRaw": "u8 *dst",
+      "paramsList": [
+        {
+          "name": "dst",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "s32 i;\n    s32 facility;\n\n    if (gBattleTypeFlags & BATTLE_TYPE_RECORDED)\n        facility = GetRecordedBattleFrontierFacility();\n    else\n        facility = VarGet(VAR_FRONTIER_FACILITY);\n\n     \n    for (i = 0; i < TRAINER_NAME_LENGTH + 1; i++)\n        dst[i] = gTrainers[sFrontierBrainTrainerIds[facility]].trainerName[i];\n\n    dst[i] = EOS;",
       "callsTo": [
         "GetRecordedBattleFrontierFacility",
@@ -991,6 +1709,7 @@
       "returnType": "bool8",
       "signature": "bool8 IsFrontierBrainFemale(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s32 facility = VarGet(VAR_FRONTIER_FACILITY);\n    return sFrontierBrainObjEventGfx[facility][1];",
       "callsTo": [
         "VarGet"
@@ -1001,6 +1720,7 @@
       "returnType": "void",
       "signature": "void SetFrontierBrainObjEventGfx_2(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s32 facility = VarGet(VAR_FRONTIER_FACILITY);\n    VarSet(VAR_OBJ_GFX_ID_0, sFrontierBrainObjEventGfx[facility][0]);",
       "callsTo": [
         "VarGet",
@@ -1012,6 +1732,7 @@
       "returnType": "void",
       "signature": "void CreateFrontierBrainPokemon(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s32 i, j;\n    s32 selectedMonBits;\n    s32 monPartyId;\n    s32 monLevel = 0;\n    u8 friendship;\n    s32 facility = VarGet(VAR_FRONTIER_FACILITY);\n    s32 symbol = GetFronterBrainSymbol();\n\n    if (facility == FRONTIER_FACILITY_DOME)\n        selectedMonBits = GetDomeTrainerSelectedMons(TrainerIdToDomeTournamentId(TRAINER_FRONTIER_BRAIN));\n    else\n        selectedMonBits = (1 << FRONTIER_PARTY_SIZE) - 1;  \n\n    ZeroEnemyPartyMons();\n    monPartyId = 0;\n    monLevel = SetFacilityPtrsGetLevel();\n    for (i = 0; i < FRONTIER_PARTY_SIZE; selectedMonBits >>= 1, i++)\n    {\n        if (!(selectedMonBits & 1))\n            continue;\n\n        do\n        {\n            do\n            {\n                j = Random32();  \n            } while (IsShinyOtIdPersonality(FRONTIER_BRAIN_OTID, j));\n        } while (sFrontierBrainsMons[facility][symbol][i].nature != GetNatureFromPersonality(j));\n        CreateMon(&gEnemyParty[monPartyId],\n                  sFrontierBrainsMons[facility][symbol][i].species,\n                  monLevel,\n                  sFrontierBrainsMons[facility][symbol][i].fixedIV,\n                  TRUE, j,\n                  OT_ID_PRESET, FRONTIER_BRAIN_OTID);\n        SetMonData(&gEnemyParty[monPartyId], MON_DATA_HELD_ITEM, &sFrontierBrainsMons[facility][symbol][i].heldItem);\n        for (j = 0; j < NUM_STATS; j++)\n            SetMonData(&gEnemyParty[monPartyId], MON_DATA_HP_EV + j, &sFrontierBrainsMons[facility][symbol][i].evs[j]);\n        friendship = MAX_FRIENDSHIP;\n        for (j = 0; j < MAX_MON_MOVES; j++)\n        {\n            SetMonMoveSlot(&gEnemyParty[monPartyId], sFrontierBrainsMons[facility][symbol][i].moves[j], j);\n            if (sFrontierBrainsMons[facility][symbol][i].moves[j] == MOVE_FRUSTRATION)\n                friendship = 0;\n        }\n        SetMonData(&gEnemyParty[monPartyId], MON_DATA_FRIENDSHIP, &friendship);\n        CalculateMonStats(&gEnemyParty[monPartyId]);\n        monPartyId++;\n    }",
       "callsTo": [
         "CalculateMonStats",
@@ -1034,6 +1755,12 @@
       "returnType": "u16",
       "signature": "u16 GetFrontierBrainMonSpecies(u8 monId)",
       "paramsRaw": "u8 monId",
+      "paramsList": [
+        {
+          "name": "monId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s32 facility = VarGet(VAR_FRONTIER_FACILITY);\n    s32 symbol = GetFronterBrainSymbol();\n\n    return sFrontierBrainsMons[facility][symbol][monId].species;",
       "callsTo": [
         "GetFronterBrainSymbol",
@@ -1045,6 +1772,12 @@
       "returnType": "void",
       "signature": "void SetFrontierBrainObjEventGfx(u8 facility)",
       "paramsRaw": "u8 facility",
+      "paramsList": [
+        {
+          "name": "facility",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "gTrainerBattleOpponent_A = TRAINER_FRONTIER_BRAIN;\n    VarSet(VAR_OBJ_GFX_ID_0, sFrontierBrainObjEventGfx[facility][0]);",
       "callsTo": [
         "VarSet"
@@ -1055,6 +1788,16 @@
       "returnType": "u16",
       "signature": "u16 GetFrontierBrainMonMove(u8 monId, u8 moveSlotId)",
       "paramsRaw": "u8 monId, u8 moveSlotId",
+      "paramsList": [
+        {
+          "name": "monId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "moveSlotId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s32 facility = VarGet(VAR_FRONTIER_FACILITY);\n    s32 symbol = GetFronterBrainSymbol();\n\n    return sFrontierBrainsMons[facility][symbol][monId].moves[moveSlotId];",
       "callsTo": [
         "GetFronterBrainSymbol",
@@ -1066,6 +1809,12 @@
       "returnType": "u8",
       "signature": "u8 GetFrontierBrainMonNature(u8 monId)",
       "paramsRaw": "u8 monId",
+      "paramsList": [
+        {
+          "name": "monId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s32 facility = VarGet(VAR_FRONTIER_FACILITY);\n    s32 symbol = GetFronterBrainSymbol();\n\n    return sFrontierBrainsMons[facility][symbol][monId].nature;",
       "callsTo": [
         "GetFronterBrainSymbol",
@@ -1077,6 +1826,16 @@
       "returnType": "u8",
       "signature": "u8 GetFrontierBrainMonEvs(u8 monId, u8 evStatId)",
       "paramsRaw": "u8 monId, u8 evStatId",
+      "paramsList": [
+        {
+          "name": "monId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "evStatId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s32 facility = VarGet(VAR_FRONTIER_FACILITY);\n    s32 symbol = GetFronterBrainSymbol();\n\n    return sFrontierBrainsMons[facility][symbol][monId].evs[evStatId];",
       "callsTo": [
         "GetFronterBrainSymbol",
@@ -1088,6 +1847,7 @@
       "returnType": "s32",
       "signature": "s32 GetFronterBrainSymbol(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s32 facility = VarGet(VAR_FRONTIER_FACILITY);\n    s32 symbol = GetPlayerSymbolCountForFacility(facility);\n\n    if (symbol == 2)\n    {\n        u16 winStreak = GetCurrentFacilityWinStreak();\n        if (winStreak + sFrontierBrainStreakAppearances[facility][3] == sFrontierBrainStreakAppearances[facility][0])\n            symbol = 0;\n        else if (winStreak + sFrontierBrainStreakAppearances[facility][3] == sFrontierBrainStreakAppearances[facility][1])\n            symbol = 1;\n        else if (winStreak + sFrontierBrainStreakAppearances[facility][3] > sFrontierBrainStreakAppearances[facility][1]\n                 && (winStreak + sFrontierBrainStreakAppearances[facility][3] - sFrontierBrainStreakAppearances[facility][1]) % sFrontierBrainStreakAppearances[facility][2] == 0)\n            symbol = 1;\n    }\n    return symbol;",
       "callsTo": [
         "GetCurrentFacilityWinStreak",
@@ -1100,6 +1860,12 @@
       "returnType": "void",
       "signature": "static void CopyFrontierBrainText(bool8 playerWonText)",
       "paramsRaw": "bool8 playerWonText",
+      "paramsList": [
+        {
+          "name": "playerWonText",
+          "typeRaw": "bool8"
+        }
+      ],
       "body": "s32 facility;\n    s32 symbol;\n\n    if (gBattleTypeFlags & BATTLE_TYPE_RECORDED)\n    {\n        facility = GetRecordedBattleFrontierFacility();\n        symbol = GetRecordedBattleFronterBrainSymbol();\n    }\n    else\n    {\n        facility = VarGet(VAR_FRONTIER_FACILITY);\n        symbol = GetFronterBrainSymbol();\n    }\n\n    switch (playerWonText)\n    {\n    case FALSE:\n        StringCopy(gStringVar4, sFrontierBrainPlayerLostTexts[symbol][facility]);\n        break;\n    case TRUE:\n        StringCopy(gStringVar4, sFrontierBrainPlayerWonTexts[symbol][facility]);\n        break;\n    }",
       "callsTo": [
         "GetFronterBrainSymbol",

@@ -6,6 +6,16 @@
       "returnType": "void",
       "signature": "void SetTrainerId(u32 trainerId, u8 *dst)",
       "paramsRaw": "u32 trainerId, u8 *dst",
+      "paramsList": [
+        {
+          "name": "trainerId",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "dst",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "dst[0] = trainerId;\n    dst[1] = trainerId >> 8;\n    dst[2] = trainerId >> 16;\n    dst[3] = trainerId >> 24;",
       "callsTo": [],
       "lineCount": 4
@@ -14,6 +24,12 @@
       "returnType": "u32",
       "signature": "u32 GetTrainerId(u8 *trainerId)",
       "paramsRaw": "u8 *trainerId",
+      "paramsList": [
+        {
+          "name": "trainerId",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "return (trainerId[3] << 24) | (trainerId[2] << 16) | (trainerId[1] << 8) | (trainerId[0]);",
       "callsTo": [],
       "lineCount": 1
@@ -22,6 +38,16 @@
       "returnType": "void",
       "signature": "void CopyTrainerId(u8 *dst, u8 *src)",
       "paramsRaw": "u8 *dst, u8 *src",
+      "paramsList": [
+        {
+          "name": "dst",
+          "typeRaw": "u8 *"
+        },
+        {
+          "name": "src",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "s32 i;\n    for (i = 0; i < TRAINER_ID_LENGTH; i++)\n        dst[i] = src[i];",
       "callsTo": [],
       "lineCount": 3
@@ -30,6 +56,7 @@
       "returnType": "void",
       "signature": "static void InitPlayerTrainerId(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u32 trainerId = (Random() << 16) | GetGeneratedTrainerIdLower();\n    SetTrainerId(trainerId, gSaveBlock2Ptr->playerTrainerId);",
       "callsTo": [
         "GetGeneratedTrainerIdLower",
@@ -42,6 +69,7 @@
       "returnType": "void",
       "signature": "static void SetDefaultOptions(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gSaveBlock2Ptr->optionsTextSpeed = OPTIONS_TEXT_SPEED_MID;\n    gSaveBlock2Ptr->optionsWindowFrameType = 0;\n    gSaveBlock2Ptr->optionsSound = OPTIONS_SOUND_MONO;\n    gSaveBlock2Ptr->optionsBattleStyle = OPTIONS_BATTLE_STYLE_SHIFT;\n    gSaveBlock2Ptr->optionsBattleSceneOff = FALSE;\n    gSaveBlock2Ptr->regionMapZoom = FALSE;",
       "callsTo": [],
       "lineCount": 6
@@ -50,6 +78,7 @@
       "returnType": "void",
       "signature": "static void ClearPokedexFlags(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gUnusedPokedexU8 = 0;\n    memset(&gSaveBlock2Ptr->pokedex.owned, 0, sizeof(gSaveBlock2Ptr->pokedex.owned));\n    memset(&gSaveBlock2Ptr->pokedex.seen, 0, sizeof(gSaveBlock2Ptr->pokedex.seen));",
       "callsTo": [],
       "lineCount": 3
@@ -58,6 +87,7 @@
       "returnType": "void",
       "signature": "void ClearAllContestWinnerPics(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s32 i;\n\n    ClearContestWinnerPicsInContestHall();\n\n     \n    for (i = MUSEUM_CONTEST_WINNERS_START; i < NUM_CONTEST_WINNERS; i++)\n        gSaveBlock1Ptr->contestWinners[i] = sContestWinnerPicDummy;",
       "callsTo": [
         "ClearContestWinnerPicsInContestHall"
@@ -68,6 +98,7 @@
       "returnType": "void",
       "signature": "static void ClearFrontierRecord(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "CpuFill32(0, &gSaveBlock2Ptr->frontier, sizeof(gSaveBlock2Ptr->frontier));\n\n    gSaveBlock2Ptr->frontier.opponentNames[0][0] = EOS;\n    gSaveBlock2Ptr->frontier.opponentNames[1][0] = EOS;",
       "callsTo": [
         "CpuFill32"
@@ -78,6 +109,7 @@
       "returnType": "void",
       "signature": "static void WarpToTruck(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "SetWarpDestination(MAP_GROUP(MAP_INSIDE_OF_TRUCK), MAP_NUM(MAP_INSIDE_OF_TRUCK), WARP_ID_NONE, -1, -1);\n    WarpIntoMap();",
       "callsTo": [
         "MAP_GROUP",
@@ -91,6 +123,7 @@
       "returnType": "void",
       "signature": "void Sav2_ClearSetDefault(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ClearSav2();\n    SetDefaultOptions();",
       "callsTo": [
         "ClearSav2",
@@ -102,6 +135,7 @@
       "returnType": "void",
       "signature": "void ResetMenuAndMonGlobals(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gDifferentSaveFile = FALSE;\n    ResetPokedexScrollPositions();\n    ZeroPlayerPartyMons();\n    ZeroEnemyPartyMons();\n    ResetBagScrollPositions();\n    ResetPokeblockScrollPositions();",
       "callsTo": [
         "ResetBagScrollPositions",
@@ -116,6 +150,7 @@
       "returnType": "void",
       "signature": "void NewGameInitData(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gSaveFileStatus == SAVE_STATUS_EMPTY || gSaveFileStatus == SAVE_STATUS_CORRUPT)\n        RtcReset();\n\n    gDifferentSaveFile = TRUE;\n    gSaveBlock2Ptr->encryptionKey = 0;\n    ZeroPlayerPartyMons();\n    ZeroEnemyPartyMons();\n    ResetPokedex();\n    ClearFrontierRecord();\n    ClearSav1();\n    ClearAllMail();\n    gSaveBlock2Ptr->specialSaveWarpFlags = 0;\n    gSaveBlock2Ptr->gcnLinkFlags = 0;\n    InitPlayerTrainerId();\n    PlayTimeCounter_Reset();\n    ClearPokedexFlags();\n    InitEventData();\n    ClearTVShowData();\n    ResetGabbyAndTy();\n    ClearSecretBases();\n    ClearBerryTrees();\n    SetMoney(&gSaveBlock1Ptr->money, 3000);\n    SetCoins(0);\n    ResetLinkContestBoolean();\n    ResetGameStats();\n    ClearAllContestWinnerPics();\n    ClearPlayerLinkBattleRecords();\n    InitSeedotSizeRecord();\n    InitLotadSizeRecord();\n    gPlayerPartyCount = 0;\n    ZeroPlayerPartyMons();\n    ResetPokemonStorageSystem();\n    ClearRoamerData();\n    ClearRoamerLocationData();\n    gSaveBlock1Ptr->registeredItem = ITEM_NONE;\n    ClearBag();\n    NewGameInitPCItems();\n    ClearPokeblocks();\n    ClearDecorationInventories();\n    InitEasyChatPhrases();\n    SetMauvilleOldMan();\n    InitDewfordTrend();\n    ResetFanClub();\n    ResetLotteryCorner();\n    WarpToTruck();\n    RunScriptImmediately(EventScript_ResetAllMapFlags);\n    ResetMiniGamesRecords();\n    InitUnionRoomChatRegisteredTexts();\n    InitLilycoveLady();\n    ResetAllApprenticeData();\n    ClearRankingHallRecords();\n    InitMatchCallCounters();\n    ClearMysteryGift();\n    WipeTrainerNameRecords();\n    ResetTrainerHillResults();\n    ResetContestLinkResults();",
       "callsTo": [
         "ClearAllContestWinnerPics",
@@ -172,6 +207,7 @@
       "returnType": "void",
       "signature": "static void ResetMiniGamesRecords(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "CpuFill16(0, &gSaveBlock2Ptr->berryCrush, sizeof(struct BerryCrush));\n    SetBerryPowder(&gSaveBlock2Ptr->berryCrush.berryPowderAmount, 0);\n    ResetPokemonJumpRecords();\n    CpuFill16(0, &gSaveBlock2Ptr->berryPick, sizeof(struct BerryPickingResults));",
       "callsTo": [
         "CpuFill16",

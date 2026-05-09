@@ -6,6 +6,12 @@
       "returnType": "u32",
       "signature": "u32 GetMoney(u32 *moneyPtr)",
       "paramsRaw": "u32 *moneyPtr",
+      "paramsList": [
+        {
+          "name": "moneyPtr",
+          "typeRaw": "u32 *"
+        }
+      ],
       "body": "return *moneyPtr ^ gSaveBlock2Ptr->encryptionKey;",
       "callsTo": [],
       "lineCount": 1
@@ -14,6 +20,16 @@
       "returnType": "void",
       "signature": "void SetMoney(u32 *moneyPtr, u32 newValue)",
       "paramsRaw": "u32 *moneyPtr, u32 newValue",
+      "paramsList": [
+        {
+          "name": "moneyPtr",
+          "typeRaw": "u32 *"
+        },
+        {
+          "name": "newValue",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "*moneyPtr = gSaveBlock2Ptr->encryptionKey ^ newValue;",
       "callsTo": [],
       "lineCount": 1
@@ -22,6 +38,16 @@
       "returnType": "bool8",
       "signature": "bool8 IsEnoughMoney(u32 *moneyPtr, u32 cost)",
       "paramsRaw": "u32 *moneyPtr, u32 cost",
+      "paramsList": [
+        {
+          "name": "moneyPtr",
+          "typeRaw": "u32 *"
+        },
+        {
+          "name": "cost",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "if (GetMoney(moneyPtr) >= cost)\n        return TRUE;\n    else\n        return FALSE;",
       "callsTo": [
         "GetMoney"
@@ -32,6 +58,16 @@
       "returnType": "void",
       "signature": "void AddMoney(u32 *moneyPtr, u32 toAdd)",
       "paramsRaw": "u32 *moneyPtr, u32 toAdd",
+      "paramsList": [
+        {
+          "name": "moneyPtr",
+          "typeRaw": "u32 *"
+        },
+        {
+          "name": "toAdd",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "u32 toSet = GetMoney(moneyPtr);\n\n     \n    if (toSet + toAdd > MAX_MONEY)\n    {\n        toSet = MAX_MONEY;\n    }\n    else\n    {\n        toSet += toAdd;\n         \n        if (toSet < GetMoney(moneyPtr))\n            toSet = MAX_MONEY;\n    }\n\n    SetMoney(moneyPtr, toSet);",
       "callsTo": [
         "GetMoney",
@@ -43,6 +79,16 @@
       "returnType": "void",
       "signature": "void RemoveMoney(u32 *moneyPtr, u32 toSub)",
       "paramsRaw": "u32 *moneyPtr, u32 toSub",
+      "paramsList": [
+        {
+          "name": "moneyPtr",
+          "typeRaw": "u32 *"
+        },
+        {
+          "name": "toSub",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "u32 toSet = GetMoney(moneyPtr);\n\n     \n    if (toSet < toSub)\n        toSet = 0;\n    else\n        toSet -= toSub;\n\n    SetMoney(moneyPtr, toSet);",
       "callsTo": [
         "GetMoney",
@@ -54,6 +100,7 @@
       "returnType": "bool8",
       "signature": "bool8 IsEnoughForCostInVar0x8005(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return IsEnoughMoney(&gSaveBlock1Ptr->money, gSpecialVar_0x8005);",
       "callsTo": [
         "IsEnoughMoney"
@@ -64,6 +111,7 @@
       "returnType": "void",
       "signature": "void SubtractMoneyFromVar0x8005(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "RemoveMoney(&gSaveBlock1Ptr->money, gSpecialVar_0x8005);",
       "callsTo": [
         "RemoveMoney"
@@ -74,6 +122,20 @@
       "returnType": "void",
       "signature": "void PrintMoneyAmountInMoneyBox(u8 windowId, int amount, u8 speed)",
       "paramsRaw": "u8 windowId, int amount, u8 speed",
+      "paramsList": [
+        {
+          "name": "windowId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "amount",
+          "typeRaw": "int"
+        },
+        {
+          "name": "speed",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "PrintMoneyAmount(windowId, 38, 1, amount, speed);",
       "callsTo": [
         "PrintMoneyAmount"
@@ -84,6 +146,28 @@
       "returnType": "void",
       "signature": "void PrintMoneyAmount(u8 windowId, u8 x, u8 y, int amount, u8 speed)",
       "paramsRaw": "u8 windowId, u8 x, u8 y, int amount, u8 speed",
+      "paramsList": [
+        {
+          "name": "windowId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "x",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "y",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "amount",
+          "typeRaw": "int"
+        },
+        {
+          "name": "speed",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 *txtPtr;\n    s32 strLength;\n\n    ConvertIntToDecimalStringN(gStringVar1, amount, STR_CONV_MODE_LEFT_ALIGN, 6);\n\n    strLength = 6 - StringLength(gStringVar1);\n    txtPtr = gStringVar4;\n\n    while (strLength-- > 0)\n        *(txtPtr++) = CHAR_SPACER;\n\n    StringExpandPlaceholders(txtPtr, gText_PokedollarVar1);\n    AddTextPrinterParameterized(windowId, FONT_NORMAL, gStringVar4, x, y, speed, NULL);",
       "callsTo": [
         "AddTextPrinterParameterized",
@@ -97,6 +181,24 @@
       "returnType": "void",
       "signature": "void PrintMoneyAmountInMoneyBoxWithBorder(u8 windowId, u16 tileStart, u8 pallete, int amount)",
       "paramsRaw": "u8 windowId, u16 tileStart, u8 pallete, int amount",
+      "paramsList": [
+        {
+          "name": "windowId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "tileStart",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "pallete",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "amount",
+          "typeRaw": "int"
+        }
+      ],
       "body": "DrawStdFrameWithCustomTileAndPalette(windowId, FALSE, tileStart, pallete);\n    PrintMoneyAmountInMoneyBox(windowId, amount, 0);",
       "callsTo": [
         "DrawStdFrameWithCustomTileAndPalette",
@@ -108,6 +210,12 @@
       "returnType": "void",
       "signature": "void ChangeAmountInMoneyBox(int amount)",
       "paramsRaw": "int amount",
+      "paramsList": [
+        {
+          "name": "amount",
+          "typeRaw": "int"
+        }
+      ],
       "body": "PrintMoneyAmountInMoneyBox(sMoneyBoxWindowId, amount, 0);",
       "callsTo": [
         "PrintMoneyAmountInMoneyBox"
@@ -118,6 +226,20 @@
       "returnType": "void",
       "signature": "void DrawMoneyBox(int amount, u8 x, u8 y)",
       "paramsRaw": "int amount, u8 x, u8 y",
+      "paramsList": [
+        {
+          "name": "amount",
+          "typeRaw": "int"
+        },
+        {
+          "name": "x",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "y",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "struct WindowTemplate template;\n\n    SetWindowTemplateFields(&template, 0, x + 1, y + 1, 10, 2, 15, 8);\n    sMoneyBoxWindowId = AddWindow(&template);\n    FillWindowPixelBuffer(sMoneyBoxWindowId, PIXEL_FILL(0));\n    PutWindowTilemap(sMoneyBoxWindowId);\n    CopyWindowToVram(sMoneyBoxWindowId, COPYWIN_MAP);\n    PrintMoneyAmountInMoneyBoxWithBorder(sMoneyBoxWindowId, 0x214, 14, amount);\n    AddMoneyLabelObject((8 * x) + 24, (8 * y) + 11);",
       "callsTo": [
         "AddMoneyLabelObject",
@@ -135,6 +257,7 @@
       "returnType": "void",
       "signature": "void HideMoneyBox(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "RemoveMoneyLabelObject();\n    ClearStdWindowAndFrameToTransparent(sMoneyBoxWindowId, FALSE);\n    CopyWindowToVram(sMoneyBoxWindowId, COPYWIN_GFX);\n    RemoveWindow(sMoneyBoxWindowId);",
       "callsTo": [
         "ClearStdWindowAndFrameToTransparent",
@@ -148,6 +271,16 @@
       "returnType": "void",
       "signature": "void AddMoneyLabelObject(u16 x, u16 y)",
       "paramsRaw": "u16 x, u16 y",
+      "paramsList": [
+        {
+          "name": "x",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "y",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "LoadCompressedSpriteSheet(&sSpriteSheet_MoneyLabel);\n    LoadCompressedSpritePalette(&sSpritePalette_MoneyLabel);\n    sMoneyLabelSpriteId = CreateSprite(&sSpriteTemplate_MoneyLabel, x, y, 0);",
       "callsTo": [
         "CreateSprite",
@@ -160,6 +293,7 @@
       "returnType": "void",
       "signature": "void RemoveMoneyLabelObject(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "DestroySpriteAndFreeResources(&gSprites[sMoneyLabelSpriteId]);",
       "callsTo": [
         "DestroySpriteAndFreeResources"

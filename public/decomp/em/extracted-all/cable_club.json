@@ -6,6 +6,16 @@
       "returnType": "void",
       "signature": "static void CreateLinkupTask(u8 minPlayers, u8 maxPlayers)",
       "paramsRaw": "u8 minPlayers, u8 maxPlayers",
+      "paramsList": [
+        {
+          "name": "minPlayers",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "maxPlayers",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (FindTaskIdByFunc(Task_LinkupStart) == TASK_NONE)\n    {\n        u8 taskId1;\n\n        taskId1 = CreateTask(Task_LinkupStart, 80);\n        gTasks[taskId1].tMinPlayers = minPlayers;\n        gTasks[taskId1].tMaxPlayers = maxPlayers;\n    }",
       "callsTo": [
         "CreateTask",
@@ -17,6 +27,16 @@
       "returnType": "void",
       "signature": "static void PrintNumPlayersInLink(u16 windowId, u32 numPlayers)",
       "paramsRaw": "u16 windowId, u32 numPlayers",
+      "paramsList": [
+        {
+          "name": "windowId",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "numPlayers",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "u8 xPos;\n\n    ConvertIntToDecimalStringN(gStringVar1, numPlayers, STR_CONV_MODE_LEFT_ALIGN, 1);\n    SetStandardWindowBorderStyle(windowId, FALSE);\n    StringExpandPlaceholders(gStringVar4, gText_NumPlayerLink);\n    xPos = GetStringCenterAlignXOffset(FONT_NORMAL, gStringVar4, 88);\n    AddTextPrinterParameterized(windowId, FONT_NORMAL, gStringVar4, xPos, 1, TEXT_SKIP_DRAW, NULL);\n    CopyWindowToVram(windowId, COPYWIN_FULL);",
       "callsTo": [
         "AddTextPrinterParameterized",
@@ -32,6 +52,12 @@
       "returnType": "void",
       "signature": "static void ClearLinkPlayerCountWindow(u16 windowId)",
       "paramsRaw": "u16 windowId",
+      "paramsList": [
+        {
+          "name": "windowId",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "ClearStdWindowAndFrame(windowId, FALSE);\n    CopyWindowToVram(windowId, COPYWIN_FULL);",
       "callsTo": [
         "ClearStdWindowAndFrame",
@@ -43,6 +69,16 @@
       "returnType": "void",
       "signature": "static void UpdateLinkPlayerCountDisplay(u8 taskId, u8 numPlayers)",
       "paramsRaw": "u8 taskId, u8 numPlayers",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "numPlayers",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data = gTasks[taskId].data;\n\n    if (numPlayers != tNumPlayers)\n    {\n        if (numPlayers <= 1)\n            ClearLinkPlayerCountWindow(tWindowId);\n        else\n            PrintNumPlayersInLink(tWindowId, numPlayers);\n        tNumPlayers = numPlayers;\n    }",
       "callsTo": [
         "ClearLinkPlayerCountWindow",
@@ -54,6 +90,16 @@
       "returnType": "u32",
       "signature": "static u32 ExchangeDataAndGetLinkupStatus(u8 minPlayers, u8 maxPlayers)",
       "paramsRaw": "u8 minPlayers, u8 maxPlayers",
+      "paramsList": [
+        {
+          "name": "minPlayers",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "maxPlayers",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "switch (GetLinkPlayerDataExchangeStatusTimed(minPlayers, maxPlayers))\n    {\n    case EXCHANGE_COMPLETE:\n        return LINKUP_SUCCESS;\n    case EXCHANGE_DIFF_SELECTIONS:\n        return LINKUP_DIFF_SELECTIONS;\n    case EXCHANGE_PLAYER_NOT_READY:\n        return LINKUP_PLAYER_NOT_READY;\n    case EXCHANGE_PARTNER_NOT_READY:\n        return LINKUP_PARTNER_NOT_READY;\n    case EXCHANGE_WRONG_NUM_PLAYERS:\n        ConvertIntToDecimalStringN(gStringVar1, GetLinkPlayerCount_2(), STR_CONV_MODE_LEFT_ALIGN, 1);\n        return LINKUP_WRONG_NUM_PLAYERS;\n    case EXCHANGE_STAT_7:\n        return LINKUP_FAILED_CONTEST_GMODE;\n    case EXCHANGE_TIMED_OUT:\n    default:\n        return LINKUP_ONGOING;\n    }",
       "callsTo": [
         "ConvertIntToDecimalStringN",
@@ -66,6 +112,12 @@
       "returnType": "bool32",
       "signature": "static bool32 CheckLinkErrored(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (HasLinkErrorOccurred() == TRUE)\n    {\n        gTasks[taskId].func = Task_LinkupConnectionError;\n        return TRUE;\n    }\n    return FALSE;",
       "callsTo": [
         "HasLinkErrorOccurred"
@@ -76,6 +128,12 @@
       "returnType": "bool32",
       "signature": "static bool32 CheckLinkCanceledBeforeConnection(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if ((JOY_NEW(B_BUTTON))\n     && IsLinkConnectionEstablished() == FALSE)\n    {\n        gLinkType = 0;\n        gTasks[taskId].func = Task_LinkupFailed;\n        return TRUE;\n    }\n    return FALSE;",
       "callsTo": [
         "IsLinkConnectionEstablished",
@@ -87,6 +145,12 @@
       "returnType": "bool32",
       "signature": "static bool32 CheckLinkCanceled(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (IsLinkConnectionEstablished())\n        SetSuppressLinkErrorMessage(TRUE);\n\n    if (JOY_NEW(B_BUTTON))\n    {\n        gLinkType = 0;\n        gTasks[taskId].func = Task_LinkupFailed;\n        return TRUE;\n    }\n    return FALSE;",
       "callsTo": [
         "IsLinkConnectionEstablished",
@@ -99,6 +163,12 @@
       "returnType": "bool32",
       "signature": "static bool32 CheckSioErrored(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (GetSioMultiSI() == TRUE)\n    {\n        gTasks[taskId].func = Task_LinkupConnectionError;\n        return TRUE;\n    }\n    return FALSE;",
       "callsTo": [
         "GetSioMultiSI"
@@ -109,6 +179,12 @@
       "returnType": "void",
       "signature": "static void Task_LinkupStart(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data = gTasks[taskId].data;\n\n    if (data[0] == 0)\n    {\n        OpenLinkTimed();\n        ResetLinkPlayerCount();\n        ResetLinkPlayers();\n        tWindowId = AddWindow(&sWindowTemplate_LinkPlayerCount);\n    }\n    else if (data[0] > 9)\n    {\n        gTasks[taskId].func = Task_LinkupAwaitConnection;\n    }\n    data[0]++;",
       "callsTo": [
         "AddWindow",
@@ -122,6 +198,12 @@
       "returnType": "void",
       "signature": "static void Task_LinkupAwaitConnection(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u32 playerCount = GetLinkPlayerCount_2();\n\n    if (CheckLinkCanceledBeforeConnection(taskId) == TRUE\n     || CheckLinkCanceled(taskId) == TRUE\n     || playerCount < 2)\n        return;\n\n    SetSuppressLinkErrorMessage(TRUE);\n    gTasks[taskId].data[3] = 0;\n    if (IsLinkMaster() == TRUE)\n    {\n        PlaySE(SE_PIN);\n        ShowFieldAutoScrollMessage(gText_ConfirmLinkWhenPlayersReady);\n        gTasks[taskId].func = Task_LinkupConfirmWhenReady;\n    }\n    else\n    {\n        PlaySE(SE_BOO);\n        ShowFieldAutoScrollMessage(gText_AwaitingLinkup);\n        gTasks[taskId].func = Task_LinkupExchangeDataWithLeader;\n    }",
       "callsTo": [
         "CheckLinkCanceled",
@@ -138,6 +220,12 @@
       "returnType": "void",
       "signature": "static void Task_LinkupConfirmWhenReady(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (CheckLinkCanceledBeforeConnection(taskId) == TRUE\n     || CheckSioErrored(taskId) == TRUE\n     || CheckLinkErrored(taskId) == TRUE)\n        return;\n\n    if (GetFieldMessageBoxMode() == FIELD_MESSAGE_BOX_HIDDEN)\n    {\n        gTasks[taskId].tNumPlayers = 0;\n        gTasks[taskId].func = Task_LinkupAwaitConfirmation;\n    }",
       "callsTo": [
         "CheckLinkCanceledBeforeConnection",
@@ -151,6 +239,12 @@
       "returnType": "void",
       "signature": "static void Task_LinkupAwaitConfirmation(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data = gTasks[taskId].data;\n    s32 linkPlayerCount = GetLinkPlayerCount_2();\n\n    if (CheckLinkCanceledBeforeConnection(taskId) == TRUE\n     || CheckSioErrored(taskId) == TRUE\n     || CheckLinkErrored(taskId) == TRUE)\n        return;\n\n    UpdateLinkPlayerCountDisplay(taskId, linkPlayerCount);\n\n    if (!(JOY_NEW(A_BUTTON)))\n        return;\n\n    if (linkPlayerCount < tMinPlayers)\n        return;\n\n    SaveLinkPlayers(linkPlayerCount);\n    ClearLinkPlayerCountWindow(tWindowId);\n    ConvertIntToDecimalStringN(gStringVar1, linkPlayerCount, STR_CONV_MODE_LEFT_ALIGN, 1);\n    ShowFieldAutoScrollMessage(gText_ConfirmStartLinkWithXPlayers);\n    gTasks[taskId].func = Task_LinkupTryConfirmation;",
       "callsTo": [
         "CheckLinkCanceledBeforeConnection",
@@ -170,6 +264,12 @@
       "returnType": "void",
       "signature": "static void Task_LinkupTryConfirmation(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (CheckLinkCanceledBeforeConnection(taskId) == TRUE\n     || CheckSioErrored(taskId) == TRUE\n     || CheckLinkErrored(taskId) == TRUE)\n        return;\n\n    if (GetFieldMessageBoxMode() == FIELD_MESSAGE_BOX_HIDDEN)\n    {\n        if (GetSavedPlayerCount() != GetLinkPlayerCount_2())\n        {\n            ShowFieldAutoScrollMessage(gText_ConfirmLinkWhenPlayersReady);\n            gTasks[taskId].func = Task_LinkupConfirmWhenReady;\n        }\n        else if (JOY_HELD(B_BUTTON))\n        {\n            ShowFieldAutoScrollMessage(gText_ConfirmLinkWhenPlayersReady);\n            gTasks[taskId].func = Task_LinkupConfirmWhenReady;\n        }\n        else if (JOY_HELD(A_BUTTON))\n        {\n            PlaySE(SE_SELECT);\n            CheckShouldAdvanceLinkState();\n            gTasks[taskId].func = Task_LinkupConfirm;\n        }\n    }",
       "callsTo": [
         "CheckLinkCanceledBeforeConnection",
@@ -189,6 +289,12 @@
       "returnType": "void",
       "signature": "static void Task_LinkupConfirm(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 minPlayers = gTasks[taskId].tMinPlayers;\n    u8 maxPlayers = gTasks[taskId].tMaxPlayers;\n\n    if (CheckLinkErrored(taskId) == TRUE\n     || TryLinkTimeout(taskId) == TRUE)\n        return;\n\n    if (GetLinkPlayerCount_2() != GetSavedPlayerCount())\n    {\n        gTasks[taskId].func = Task_LinkupConnectionError;\n    }\n    else\n    {\n        gSpecialVar_Result = ExchangeDataAndGetLinkupStatus(minPlayers, maxPlayers);\n        if (gSpecialVar_Result != LINKUP_ONGOING)\n            gTasks[taskId].func = Task_LinkupCheckStatusAfterConfirm;\n    }",
       "callsTo": [
         "CheckLinkErrored",
@@ -203,6 +309,12 @@
       "returnType": "void",
       "signature": "static void Task_LinkupExchangeDataWithLeader(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 minPlayers, maxPlayers;\n    struct TrainerCard *card;\n\n    minPlayers = gTasks[taskId].tMinPlayers;\n    maxPlayers = gTasks[taskId].tMaxPlayers;\n\n    if (CheckLinkCanceledBeforeConnection(taskId) == TRUE\n     || CheckLinkErrored(taskId) == TRUE)\n        return;\n\n    gSpecialVar_Result = ExchangeDataAndGetLinkupStatus(minPlayers, maxPlayers);\n    if (gSpecialVar_Result == LINKUP_ONGOING)\n        return;\n    if (gSpecialVar_Result == LINKUP_DIFF_SELECTIONS\n     || gSpecialVar_Result == LINKUP_WRONG_NUM_PLAYERS)\n    {\n        SetCloseLinkCallback();\n        HideFieldMessageBox();\n        gTasks[taskId].func = Task_StopLinkup;\n    }\n    else if (gSpecialVar_Result == LINKUP_PLAYER_NOT_READY\n          || gSpecialVar_Result == LINKUP_PARTNER_NOT_READY)\n    {\n        CloseLink();\n        HideFieldMessageBox();\n        gTasks[taskId].func = Task_StopLinkup;\n    }\n    else\n    {\n        gFieldLinkPlayerCount = GetLinkPlayerCount_2();\n        gLocalLinkPlayerId = GetMultiplayerId();\n        SaveLinkPlayers(gFieldLinkPlayerCount);\n        card = (struct TrainerCard *)gBlockSendBuffer;\n        TrainerCard_GenerateCardForLinkPlayer(card);\n        card->monSpecies[0] = GetMonData(&gPlayerParty[gSelectedOrderFromParty[0] - 1], MON_DATA_SPECIES, NULL);\n        card->monSpecies[1] = GetMonData(&gPlayerParty[gSelectedOrderFromParty[1] - 1], MON_DATA_SPECIES, NULL);\n        gTasks[taskId].func = Task_LinkupAwaitTrainerCardData;\n    }",
       "callsTo": [
         "CheckLinkCanceledBeforeConnection",
@@ -223,6 +335,12 @@
       "returnType": "void",
       "signature": "static void Task_LinkupCheckStatusAfterConfirm(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "struct TrainerCard *card;\n\n    if (CheckLinkErrored(taskId) == TRUE)\n        return;\n\n    if (gSpecialVar_Result == LINKUP_WRONG_NUM_PLAYERS)\n    {\n        if (!Link_AnyPartnersPlayingRubyOrSapphire())\n        {\n            SetCloseLinkCallback();\n            HideFieldMessageBox();\n            gTasks[taskId].func = Task_StopLinkup;\n        }\n        else\n        {\n            CloseLink();\n            HideFieldMessageBox();\n            gTasks[taskId].func = Task_StopLinkup;\n        }\n    }\n    else if (gSpecialVar_Result == LINKUP_DIFF_SELECTIONS)\n    {\n        SetCloseLinkCallback();\n        HideFieldMessageBox();\n        gTasks[taskId].func = Task_StopLinkup;\n    }\n    else if (gSpecialVar_Result == LINKUP_PLAYER_NOT_READY\n          || gSpecialVar_Result == LINKUP_PARTNER_NOT_READY)\n    {\n        CloseLink();\n        HideFieldMessageBox();\n        gTasks[taskId].func = Task_StopLinkup;\n    }\n    else\n    {\n        gFieldLinkPlayerCount = GetLinkPlayerCount_2();\n        gLocalLinkPlayerId = GetMultiplayerId();\n        SaveLinkPlayers(gFieldLinkPlayerCount);\n        card = (struct TrainerCard *)gBlockSendBuffer;\n        TrainerCard_GenerateCardForLinkPlayer(card);\n        card->monSpecies[0] = GetMonData(&gPlayerParty[gSelectedOrderFromParty[0] - 1], MON_DATA_SPECIES, NULL);\n        card->monSpecies[1] = GetMonData(&gPlayerParty[gSelectedOrderFromParty[1] - 1], MON_DATA_SPECIES, NULL);\n        gTasks[taskId].func = Task_LinkupAwaitTrainerCardData;\n        SendBlockRequest(BLOCK_REQ_SIZE_100);\n    }",
       "callsTo": [
         "CheckLinkErrored",
@@ -243,6 +361,16 @@
       "returnType": "bool32",
       "signature": "bool32 AreBattleTowerLinkSpeciesSame(u16 *speciesList1, u16 *speciesList2)",
       "paramsRaw": "u16 *speciesList1, u16 *speciesList2",
+      "paramsList": [
+        {
+          "name": "speciesList1",
+          "typeRaw": "u16 *"
+        },
+        {
+          "name": "speciesList2",
+          "typeRaw": "u16 *"
+        }
+      ],
       "body": "int i;\n    int j;\n    bool32 haveSameSpecies = FALSE;\n    int numSameSpecies = 0;\n\n    gStringVar1[0] = EOS;\n    gStringVar2[0] = EOS;\n\n    for (i = 0; i < FRONTIER_MULTI_PARTY_SIZE; i++)\n    {\n        for (j = 0; j < FRONTIER_MULTI_PARTY_SIZE; j++)\n        {\n            if (speciesList1[i] == speciesList2[j])\n            {\n                if (numSameSpecies == 0)\n                {\n                    StringCopy(gStringVar1, gSpeciesNames[speciesList1[i]]);\n                    haveSameSpecies = TRUE;\n                }\n\n                if (numSameSpecies == 1)\n                {\n                    StringCopy(gStringVar2, gSpeciesNames[speciesList1[i]]);\n                    haveSameSpecies = TRUE;\n                }\n\n                numSameSpecies++;\n            }\n        }\n    }\n\n     \n    gSpecialVar_0x8005 = numSameSpecies;\n\n    return haveSameSpecies;",
       "callsTo": [
         "StringCopy"
@@ -253,6 +381,16 @@
       "returnType": "void",
       "signature": "static void FinishLinkup(u16 *linkupStatus, u32 taskId)",
       "paramsRaw": "u16 *linkupStatus, u32 taskId",
+      "paramsList": [
+        {
+          "name": "linkupStatus",
+          "typeRaw": "u16 *"
+        },
+        {
+          "name": "taskId",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "struct TrainerCard *trainerCards = gTrainerCards;\n\n    if (*linkupStatus == LINKUP_SUCCESS)\n    {\n        if (gLinkType == LINKTYPE_BATTLE_TOWER_50 || gLinkType == LINKTYPE_BATTLE_TOWER_OPEN)\n        {\n            if (AreBattleTowerLinkSpeciesSame(trainerCards[0].monSpecies, trainerCards[1].monSpecies))\n            {\n                 \n                *linkupStatus = LINKUP_FAILED_BATTLE_TOWER;\n                SetCloseLinkCallback();\n                gTasks[taskId].func = Task_StopLinkup;\n            }\n            else\n            {\n                 \n                ClearLinkPlayerCountWindow(gTasks[taskId].tWindowId);\n                ScriptContext_Enable();\n                DestroyTask(taskId);\n            }\n        }\n        else\n        {\n             \n            ClearLinkPlayerCountWindow(gTasks[taskId].tWindowId);\n            ScriptContext_Enable();\n            DestroyTask(taskId);\n        }\n    }\n    else\n    {\n         \n        SetCloseLinkCallback();\n        gTasks[taskId].func = Task_StopLinkup;\n    }",
       "callsTo": [
         "AreBattleTowerLinkSpeciesSame",
@@ -267,6 +405,12 @@
       "returnType": "void",
       "signature": "static void Task_LinkupAwaitTrainerCardData(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 index;\n\n    if (CheckLinkErrored(taskId) == TRUE)\n        return;\n\n    if (GetBlockReceivedStatus() != GetSavedLinkPlayerCountAsBitFlags())\n        return;\n\n    for (index = 0; index < GetLinkPlayerCount(); index++)\n    {\n        CopyTrainerCardData(&gTrainerCards[index], (struct TrainerCard *)gBlockRecvBuffer[index], gLinkPlayers[index].version);\n    }\n\n    SetSuppressLinkErrorMessage(FALSE);\n    ResetBlockReceivedFlags();\n    FinishLinkup(&gSpecialVar_Result, taskId);",
       "callsTo": [
         "CheckLinkErrored",
@@ -284,6 +428,12 @@
       "returnType": "void",
       "signature": "static void Task_StopLinkup(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (!gReceivedRemoteLinkPlayers)\n    {\n        ClearLinkPlayerCountWindow(gTasks[taskId].tWindowId);\n        ScriptContext_Enable();\n        RemoveWindow(gTasks[taskId].tWindowId);\n        DestroyTask(taskId);\n    }",
       "callsTo": [
         "ClearLinkPlayerCountWindow",
@@ -297,6 +447,12 @@
       "returnType": "void",
       "signature": "static void Task_LinkupFailed(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "gSpecialVar_Result = LINKUP_FAILED;\n    ClearLinkPlayerCountWindow(gTasks[taskId].tWindowId);\n    StopFieldMessage();\n    RemoveWindow(gTasks[taskId].tWindowId);\n    ScriptContext_Enable();\n    DestroyTask(taskId);",
       "callsTo": [
         "ClearLinkPlayerCountWindow",
@@ -311,6 +467,12 @@
       "returnType": "void",
       "signature": "static void Task_LinkupConnectionError(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "gSpecialVar_Result = LINKUP_CONNECTION_ERROR;\n    ClearLinkPlayerCountWindow(gTasks[taskId].tWindowId);\n    RemoveWindow(gTasks[taskId].tWindowId);\n    HideFieldMessageBox();\n    ScriptContext_Enable();\n    DestroyTask(taskId);",
       "callsTo": [
         "ClearLinkPlayerCountWindow",
@@ -325,6 +487,12 @@
       "returnType": "bool8",
       "signature": "static bool8 TryLinkTimeout(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "gTasks[taskId].tTimer++;\n    if (gTasks[taskId].tTimer > 600)\n    {\n        gTasks[taskId].func = Task_LinkupConnectionError;\n        return TRUE;\n    }\n\n    return FALSE;",
       "callsTo": [],
       "lineCount": 8
@@ -333,6 +501,7 @@
       "returnType": "void",
       "signature": "void TryBattleLinkup(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 minPlayers = 2;\n    u8 maxPlayers = 2;\n\n    switch (gSpecialVar_0x8004)\n    {\n    case USING_SINGLE_BATTLE:\n        minPlayers = 2;\n        gLinkType = LINKTYPE_SINGLE_BATTLE;\n        break;\n    case USING_DOUBLE_BATTLE:\n        minPlayers = 2;\n        gLinkType = LINKTYPE_DOUBLE_BATTLE;\n        break;\n    case USING_MULTI_BATTLE:\n        minPlayers = 4;\n        maxPlayers = 4;\n        gLinkType = LINKTYPE_MULTI_BATTLE;\n        break;\n    case USING_BATTLE_TOWER:\n        minPlayers = 2;\n        if (gSaveBlock2Ptr->frontier.lvlMode == FRONTIER_LVL_50)\n            gLinkType = LINKTYPE_BATTLE_TOWER_50;\n        else\n            gLinkType = LINKTYPE_BATTLE_TOWER_OPEN;\n\n        break;\n    }\n\n    CreateLinkupTask(minPlayers, maxPlayers);",
       "callsTo": [
         "CreateLinkupTask"
@@ -343,6 +512,7 @@
       "returnType": "void",
       "signature": "void TryTradeLinkup(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gLinkType = LINKTYPE_TRADE_SETUP;\n    gBattleTypeFlags = 0;\n    CreateLinkupTask(2, 2);",
       "callsTo": [
         "CreateLinkupTask"
@@ -353,6 +523,7 @@
       "returnType": "void",
       "signature": "void TryRecordMixLinkup(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gSpecialVar_Result = LINKUP_ONGOING;\n    gLinkType = LINKTYPE_RECORD_MIX_BEFORE;\n    gBattleTypeFlags = 0;\n    CreateLinkupTask(2, 4);",
       "callsTo": [
         "CreateLinkupTask"
@@ -363,6 +534,7 @@
       "returnType": "void",
       "signature": "void ValidateMixingGameLanguage(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u32 taskId = FindTaskIdByFunc(Task_ValidateMixingGameLanguage);\n\n    if (taskId == TASK_NONE)\n    {\n        taskId = CreateTask(Task_ValidateMixingGameLanguage, 80);\n        gTasks[taskId].tState = 0;\n    }",
       "callsTo": [
         "CreateTask",
@@ -374,6 +546,12 @@
       "returnType": "void",
       "signature": "static void Task_ValidateMixingGameLanguage(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "int playerCount;\n    int i;\n\n    switch (gTasks[taskId].tState)\n    {\n    case 0:\n        if (gSpecialVar_Result == LINKUP_SUCCESS)\n        {\n            bool32 mixingForeignGames = FALSE;\n            bool32 isEnglishRSLinked = FALSE;\n            bool32 isJapaneseEmeraldLinked = FALSE;\n\n            playerCount = GetLinkPlayerCount();\n            for (i = 0; i < playerCount; i++)\n            {\n                u32 version = (u8)gLinkPlayers[i].version;\n                u32 language = gLinkPlayers[i].language;\n\n                if (version == VERSION_RUBY || version == VERSION_SAPPHIRE)\n                {\n                    if (language == LANGUAGE_JAPANESE)\n                    {\n                        mixingForeignGames = TRUE;\n                        break;\n                    }\n                    else\n                    {\n                        isEnglishRSLinked = TRUE;\n                    }\n                }\n                else if (version == VERSION_EMERALD)\n                {\n                    if (language == LANGUAGE_JAPANESE)\n                    {\n                        isJapaneseEmeraldLinked = TRUE;\n                    }\n                }\n            }\n\n            if (isEnglishRSLinked && isJapaneseEmeraldLinked)\n            {\n                mixingForeignGames = TRUE;\n            }\n\n            if (mixingForeignGames)\n            {\n                gSpecialVar_Result = LINKUP_FOREIGN_GAME;\n                SetCloseLinkCallbackHandleJP();\n                gTasks[taskId].tState = 1;\n                return;\n            }\n        }\n        ScriptContext_Enable();\n        DestroyTask(taskId);\n        break;\n    case 1:\n        if (!gReceivedRemoteLinkPlayers)\n        {\n            ScriptContext_Enable();\n            DestroyTask(taskId);\n        }\n        break;\n    }",
       "callsTo": [
         "DestroyTask",
@@ -387,6 +565,7 @@
       "returnType": "void",
       "signature": "void TryBerryBlenderLinkup(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gLinkType = LINKTYPE_BERRY_BLENDER_SETUP;\n    gBattleTypeFlags = 0;\n    CreateLinkupTask(2, 4);",
       "callsTo": [
         "CreateLinkupTask"
@@ -397,6 +576,7 @@
       "returnType": "void",
       "signature": "void TryContestGModeLinkup(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gLinkType = LINKTYPE_CONTEST_GMODE;\n    gBattleTypeFlags = 0;\n    CreateLinkupTask(4, 4);",
       "callsTo": [
         "CreateLinkupTask"
@@ -407,6 +587,7 @@
       "returnType": "void",
       "signature": "void TryContestEModeLinkup(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gLinkType = LINKTYPE_CONTEST_EMODE;\n    gBattleTypeFlags = 0;\n    CreateLinkupTask(2, 4);",
       "callsTo": [
         "CreateLinkupTask"
@@ -417,6 +598,7 @@
       "returnType": "u8",
       "signature": "u8 CreateTask_ReestablishCableClubLink(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (FuncIsActiveTask(Task_ReestablishLink) != FALSE)\n        return TASK_NONE;\n\n    switch (gSpecialVar_0x8004)\n    {\n    case USING_SINGLE_BATTLE:\n        gLinkType = LINKTYPE_SINGLE_BATTLE;\n        break;\n    case USING_DOUBLE_BATTLE:\n        gLinkType = LINKTYPE_DOUBLE_BATTLE;\n        break;\n    case USING_MULTI_BATTLE:\n        gLinkType = LINKTYPE_MULTI_BATTLE;\n        break;\n    case USING_BATTLE_TOWER:\n        if (gSaveBlock2Ptr->frontier.lvlMode == FRONTIER_LVL_50)\n            gLinkType = LINKTYPE_BATTLE_TOWER_50;\n        else\n            gLinkType = LINKTYPE_BATTLE_TOWER_OPEN;\n        break;\n    case USING_TRADE_CENTER:\n        gLinkType = LINKTYPE_TRADE;\n        break;\n    case USING_RECORD_CORNER:\n        gLinkType = LINKTYPE_RECORD_MIX_AFTER;\n        break;\n    }\n\n    return CreateTask(Task_ReestablishLink, 80);",
       "callsTo": [
         "CreateTask",
@@ -428,6 +610,12 @@
       "returnType": "void",
       "signature": "static void Task_ReestablishLink(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data = gTasks[taskId].data;\n\n    if (data[0] == 0)\n    {\n        OpenLink();\n        ResetLinkPlayers();\n        CreateTask(Task_WaitForLinkPlayerConnection, 80);\n    }\n    else if (data[0] >= 10)\n    {\n        gTasks[taskId].func = Task_ReestablishLinkAwaitConnection;\n    }\n    data[0]++;",
       "callsTo": [
         "CreateTask",
@@ -440,6 +628,12 @@
       "returnType": "void",
       "signature": "static void Task_ReestablishLinkAwaitConnection(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (GetLinkPlayerCount_2() >= 2)\n    {\n        if (IsLinkMaster() == TRUE)\n            gTasks[taskId].func = Task_ReestablishLinkLeader;\n        else\n            gTasks[taskId].func = Task_ReestablishLinkAwaitConfirmation;\n    }",
       "callsTo": [
         "GetLinkPlayerCount_2",
@@ -451,6 +645,12 @@
       "returnType": "void",
       "signature": "static void Task_ReestablishLinkLeader(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (GetSavedPlayerCount() == GetLinkPlayerCount_2())\n    {\n        CheckShouldAdvanceLinkState();\n        gTasks[taskId].func = Task_ReestablishLinkAwaitConfirmation;\n    }",
       "callsTo": [
         "CheckShouldAdvanceLinkState",
@@ -463,6 +663,12 @@
       "returnType": "void",
       "signature": "static void Task_ReestablishLinkAwaitConfirmation(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (gReceivedRemoteLinkPlayers == TRUE\n     && IsLinkPlayerDataExchangeComplete() == TRUE)\n    {\n        CheckLinkPlayersMatchSaved();\n        StartSendingKeysToLink();\n        DestroyTask(taskId);\n    }",
       "callsTo": [
         "CheckLinkPlayersMatchSaved",
@@ -476,6 +682,7 @@
       "returnType": "void",
       "signature": "void CableClubSaveGame(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "SaveGame();",
       "callsTo": [
         "SaveGame"
@@ -486,6 +693,12 @@
       "returnType": "void",
       "signature": "static void SetLinkBattleTypeFlags(int linkService)",
       "paramsRaw": "int linkService",
+      "paramsList": [
+        {
+          "name": "linkService",
+          "typeRaw": "int"
+        }
+      ],
       "body": "switch (linkService)\n    {\n    case USING_SINGLE_BATTLE:\n        gBattleTypeFlags = BATTLE_TYPE_LINK | BATTLE_TYPE_TRAINER;\n        break;\n    case USING_DOUBLE_BATTLE:\n        gBattleTypeFlags = BATTLE_TYPE_DOUBLE | BATTLE_TYPE_LINK | BATTLE_TYPE_TRAINER;\n        break;\n    case USING_MULTI_BATTLE:\n        ReducePlayerPartyToSelectedMons();\n        gBattleTypeFlags = BATTLE_TYPE_DOUBLE | BATTLE_TYPE_LINK | BATTLE_TYPE_TRAINER | BATTLE_TYPE_MULTI;\n        break;\n    case USING_BATTLE_TOWER:\n        gBattleTypeFlags = BATTLE_TYPE_BATTLE_TOWER | BATTLE_TYPE_DOUBLE | BATTLE_TYPE_LINK | BATTLE_TYPE_TRAINER | BATTLE_TYPE_MULTI;\n        break;\n    }",
       "callsTo": [
         "ReducePlayerPartyToSelectedMons"
@@ -496,6 +709,12 @@
       "returnType": "void",
       "signature": "static void Task_StartWiredCableClubBattle(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "struct Task *task = &gTasks[taskId];\n\n    switch (task->tState)\n    {\n    case 0:\n        FadeScreen(FADE_TO_BLACK, 0);\n        gLinkType = LINKTYPE_BATTLE;\n        ClearLinkCallback_2();\n        task->tState++;\n        break;\n    case 1:\n        if (!gPaletteFade.active)\n            task->tState++;\n        break;\n    case 2:\n        task->tTimer++;\n        if (task->tTimer > 20)\n            task->tState++;\n        break;\n    case 3:\n        SetCloseLinkCallback();\n        task->tState++;\n        break;\n    case 4:\n        if (!gReceivedRemoteLinkPlayers)\n            task->tState++;\n        break;\n    case 5:\n        if (gLinkPlayers[0].trainerId & 1)\n            PlayMapChosenOrBattleBGM(MUS_VS_GYM_LEADER);\n        else\n            PlayMapChosenOrBattleBGM(MUS_VS_TRAINER);\n\n        SetLinkBattleTypeFlags(gSpecialVar_0x8004);\n        CleanupOverworldWindowsAndTilemaps();\n        gTrainerBattleOpponent_A = TRAINER_LINK_OPPONENT;\n        SetMainCallback2(CB2_InitBattle);\n        gMain.savedCallback = CB2_ReturnFromCableClubBattle;\n        DestroyTask(taskId);\n        break;\n    }",
       "callsTo": [
         "CleanupOverworldWindowsAndTilemaps",
@@ -513,6 +732,12 @@
       "returnType": "void",
       "signature": "static void Task_StartWirelessCableClubBattle(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "int i;\n    s16 *data = gTasks[taskId].data;\n\n    switch (tState)\n    {\n    case 0:\n        FadeScreen(FADE_TO_BLACK, 0);\n        gLinkType = LINKTYPE_BATTLE;\n        ClearLinkCallback_2();\n        tState = 1;\n        break;\n    case 1:\n        if (!gPaletteFade.active)\n            tState = 2;\n        break;\n    case 2:\n        SendBlock(0, &gLocalLinkPlayer, sizeof(gLocalLinkPlayer));\n        tState = 3;\n        break;\n    case 3:\n        if (GetBlockReceivedStatus() == GetLinkPlayerCountAsBitFlags())\n        {\n            for (i = 0; i < GetLinkPlayerCount(); i++)\n            {\n                struct LinkPlayer *player = (struct LinkPlayer *)gBlockRecvBuffer[i];\n                gLinkPlayers[i] = *player;\n                ConvertLinkPlayerName(&gLinkPlayers[i]);\n                ResetBlockReceivedFlag(i);\n            }\n            tState = 4;\n        }\n        break;\n    case 4:\n        tTimer++;\n        if (tTimer > 20)\n            tState = 5;\n        break;\n    case 5:\n        SetLinkStandbyCallback();\n        tState = 6;\n        break;\n    case 6:\n        if (IsLinkTaskFinished())\n        {\n            tState = 7;\n        }\n        break;\n    case 7:\n        if (gLinkPlayers[0].trainerId & 1)\n            PlayMapChosenOrBattleBGM(MUS_VS_GYM_LEADER);\n        else\n            PlayMapChosenOrBattleBGM(MUS_VS_TRAINER);\n\n        gLinkPlayers[0].linkType = LINKTYPE_BATTLE;\n        SetLinkBattleTypeFlags(gSpecialVar_0x8004);\n        CleanupOverworldWindowsAndTilemaps();\n        gTrainerBattleOpponent_A = TRAINER_LINK_OPPONENT;\n        SetMainCallback2(CB2_InitBattle);\n        gMain.savedCallback = CB2_ReturnFromCableClubBattle;\n        DestroyTask(taskId);\n        break;\n    }",
       "callsTo": [
         "CleanupOverworldWindowsAndTilemaps",
@@ -537,6 +762,7 @@
       "returnType": "void",
       "signature": "static void CB2_ReturnFromUnionRoomBattle(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 playerCount;\n    int i;\n    bool32 linkedWithFRLG;\n\n    switch (gMain.state)\n    {\n    case 0:\n        playerCount = GetLinkPlayerCount();\n        linkedWithFRLG = FALSE;\n        for (i = 0; i < playerCount; i++)\n        {\n            u32 version = (u8)gLinkPlayers[i].version;\n            if (version == VERSION_FIRE_RED || version == VERSION_LEAF_GREEN)\n            {\n                linkedWithFRLG = TRUE;\n                break;\n            }\n        }\n\n        if (linkedWithFRLG)\n        {\n            gMain.state = 2;\n        }\n        else\n        {\n            SetCloseLinkCallback();\n            gMain.state = 1;\n        }\n        break;\n    case 1:\n        if (!gReceivedRemoteLinkPlayers)\n        {\n            SetMainCallback2(CB2_ReturnToField);\n        }\n        break;\n    case 2:\n        SetMainCallback2(CB2_ReturnToField);\n        break;\n    }\n    RunTasks();",
       "callsTo": [
         "GetLinkPlayerCount",
@@ -550,6 +776,7 @@
       "returnType": "void",
       "signature": "void CB2_ReturnFromCableClubBattle(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gBattleTypeFlags &= ~BATTLE_TYPE_LINK_IN_BATTLE;\n    Overworld_ResetMapMusic();\n    LoadPlayerParty();\n    SavePlayerBag();\n    UpdateTrainerFansAfterLinkBattle();\n\n    if (gSpecialVar_0x8004 == USING_SINGLE_BATTLE || gSpecialVar_0x8004 == USING_DOUBLE_BATTLE)\n    {\n        UpdatePlayerLinkBattleRecords(gLocalLinkPlayerId ^ 1);\n        if (gWirelessCommType)\n        {\n            switch (gBattleOutcome)\n            {\n            case B_OUTCOME_WON:\n                MysteryGift_TryIncrementStat(CARD_STAT_BATTLES_WON, gLinkPlayers[GetMultiplayerId() ^ 1].trainerId);\n                break;\n            case B_OUTCOME_LOST:\n                MysteryGift_TryIncrementStat(CARD_STAT_BATTLES_LOST, gLinkPlayers[GetMultiplayerId() ^ 1].trainerId);\n                break;\n            }\n        }\n    }\n\n    if (InUnionRoom() == TRUE)\n        gMain.savedCallback = CB2_ReturnFromUnionRoomBattle;\n    else\n        gMain.savedCallback = CB2_ReturnToFieldFromMultiplayer;\n\n    SetMainCallback2(CB2_SetUpSaveAfterLinkBattle);",
       "callsTo": [
         "GetMultiplayerId",
@@ -568,6 +795,7 @@
       "returnType": "void",
       "signature": "void CleanupLinkRoomState(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gSpecialVar_0x8004 == USING_SINGLE_BATTLE\n     || gSpecialVar_0x8004 == USING_DOUBLE_BATTLE\n     || gSpecialVar_0x8004 == USING_MULTI_BATTLE\n     || gSpecialVar_0x8004 == USING_BATTLE_TOWER)\n    {\n        LoadPlayerParty();\n        SavePlayerBag();\n    }\n    SetWarpDestinationToDynamicWarp(WARP_ID_DYNAMIC);",
       "callsTo": [
         "LoadPlayerParty",
@@ -580,6 +808,7 @@
       "returnType": "void",
       "signature": "void ExitLinkRoom(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "QueueExitLinkRoomKey();",
       "callsTo": [
         "QueueExitLinkRoomKey"
@@ -590,6 +819,12 @@
       "returnType": "void",
       "signature": "static void Task_EnterCableClubSeat(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "struct Task *task = &gTasks[taskId];\n\n    switch (task->tState)\n    {\n    case 0:\n        ShowFieldMessage(gText_PleaseWaitForLink);\n        task->tState = 1;\n        break;\n    case 1:\n        if (IsFieldMessageBoxHidden())\n        {\n            SetInCableClubSeat();\n            SetLocalLinkPlayerId(gSpecialVar_0x8005);\n            task->tState = 2;\n        }\n        break;\n    case 2:\n        switch (GetCableClubPartnersReady())\n        {\n        case CABLE_SEAT_WAITING:\n            break;\n        case CABLE_SEAT_SUCCESS:\n             \n            HideFieldMessageBox();\n            task->tState = 0;\n            SetStartedCableClubActivity();\n            SwitchTaskToFollowupFunc(taskId);\n            break;\n        case CABLE_SEAT_FAILED:\n            task->tState = 3;\n            break;\n        }\n        break;\n    case 3:\n         \n        SetLinkWaitingForScript();\n        EraseFieldMessageBox(TRUE);\n        DestroyTask(taskId);\n        ScriptContext_Enable();\n        break;\n    }",
       "callsTo": [
         "DestroyTask",
@@ -611,6 +846,12 @@
       "returnType": "void",
       "signature": "void CreateTask_EnterCableClubSeat(TaskFunc followupFunc)",
       "paramsRaw": "TaskFunc followupFunc",
+      "paramsList": [
+        {
+          "name": "followupFunc",
+          "typeRaw": "TaskFunc"
+        }
+      ],
       "body": "u8 taskId = CreateTask(Task_EnterCableClubSeat, 80);\n    SetTaskFuncWithFollowupFunc(taskId, Task_EnterCableClubSeat, followupFunc);\n    ScriptContext_Stop();",
       "callsTo": [
         "CreateTask",
@@ -623,6 +864,12 @@
       "returnType": "void",
       "signature": "static void Task_StartWiredTrade(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "struct Task *task = &gTasks[taskId];\n\n    switch (task->tState)\n    {\n    case 0:\n        LockPlayerFieldControls();\n        FadeScreen(FADE_TO_BLACK, 0);\n        ClearLinkCallback_2();\n        task->tState++;\n        break;\n    case 1:\n        if (!gPaletteFade.active)\n            task->tState++;\n        break;\n    case 2:\n        gSelectedTradeMonPositions[TRADE_PLAYER] = 0;\n        gSelectedTradeMonPositions[TRADE_PARTNER] = 0;\n        m4aMPlayAllStop();\n        SetCloseLinkCallback();\n        task->tState++;\n        break;\n    case 3:\n        if (!gReceivedRemoteLinkPlayers)\n        {\n            SetMainCallback2(CB2_StartCreateTradeMenu);\n            DestroyTask(taskId);\n        }\n        break;\n    }",
       "callsTo": [
         "ClearLinkCallback_2",
@@ -638,6 +885,12 @@
       "returnType": "void",
       "signature": "static void Task_StartWirelessTrade(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data = gTasks[taskId].data;\n\n    switch (tState)\n    {\n    case 0:\n        LockPlayerFieldControls();\n        FadeScreen(FADE_TO_BLACK, 0);\n        ClearLinkRfuCallback();\n        tState++;\n        break;\n    case 1:\n        if (!gPaletteFade.active)\n            tState++;\n        break;\n    case 2:\n        gSelectedTradeMonPositions[TRADE_PLAYER] = 0;\n        gSelectedTradeMonPositions[TRADE_PARTNER] = 0;\n        m4aMPlayAllStop();\n        SetLinkStandbyCallback();\n        tState++;\n        break;\n    case 3:\n        if (IsLinkTaskFinished())\n        {\n            CreateTask_CreateTradeMenu();\n            DestroyTask(taskId);\n        }\n        break;\n    }",
       "callsTo": [
         "ClearLinkRfuCallback",
@@ -654,6 +907,7 @@
       "returnType": "void",
       "signature": "void PlayerEnteredTradeSeat(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gWirelessCommType != 0)\n        CreateTask_EnterCableClubSeat(Task_StartWirelessTrade);\n    else\n        CreateTask_EnterCableClubSeat(Task_StartWiredTrade);",
       "callsTo": [
         "CreateTask_EnterCableClubSeat"
@@ -664,6 +918,7 @@
       "returnType": "void",
       "signature": "void ColosseumPlayerSpotTriggered(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gLinkType = LINKTYPE_BATTLE;\n\n    if (gWirelessCommType)\n        CreateTask_EnterCableClubSeat(Task_StartWirelessCableClubBattle);\n    else\n        CreateTask_EnterCableClubSeat(Task_StartWiredCableClubBattle);",
       "callsTo": [
         "CreateTask_EnterCableClubSeat"
@@ -674,6 +929,7 @@
       "returnType": "UNUSED void",
       "signature": "static UNUSED void CreateTask_EnterCableClubSeatNoFollowup(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 UNUSED taskId = CreateTask(Task_EnterCableClubSeat, 80);\n    ScriptContext_Stop();",
       "callsTo": [
         "CreateTask",
@@ -685,6 +941,7 @@
       "returnType": "void",
       "signature": "void Script_ShowLinkTrainerCard(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ShowTrainerCardInLink(gSpecialVar_0x8006, CB2_ReturnToFieldContinueScriptPlayMapMusic);",
       "callsTo": [
         "ShowTrainerCardInLink"
@@ -695,6 +952,12 @@
       "returnType": "bool32",
       "signature": "bool32 GetLinkTrainerCardColor(u8 linkPlayerIndex)",
       "paramsRaw": "u8 linkPlayerIndex",
+      "paramsList": [
+        {
+          "name": "linkPlayerIndex",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u32 numStars;\n\n    gSpecialVar_0x8006 = linkPlayerIndex;\n    StringCopy(gStringVar1, gLinkPlayers[linkPlayerIndex].name);\n\n    numStars = GetTrainerCardStars(linkPlayerIndex);\n    if (numStars == 0)\n        return FALSE;\n\n    StringCopy(gStringVar2, sTrainerCardColorNames[numStars - 1]);\n    return TRUE;",
       "callsTo": [
         "GetTrainerCardStars",
@@ -706,6 +969,12 @@
       "returnType": "void",
       "signature": "void Task_WaitForLinkPlayerConnection(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "struct Task *task = &gTasks[taskId];\n\n    task->tTimer++;\n    if (task->tTimer > 480)  \n    {\n        CloseLink();\n        SetMainCallback2(CB2_LinkError);\n        DestroyTask(taskId);\n    }\n\n    if (gReceivedRemoteLinkPlayers)\n    {\n         \n        if (gWirelessCommType == 0)\n        {\n            if (!DoesLinkPlayerCountMatchSaved())\n            {\n                CloseLink();\n                SetMainCallback2(CB2_LinkError);\n            }\n            DestroyTask(taskId);\n        }\n        else\n        {\n            DestroyTask(taskId);\n        }\n    }",
       "callsTo": [
         "CloseLink",
@@ -719,6 +988,12 @@
       "returnType": "void",
       "signature": "static void Task_WaitExitToScript(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (!gReceivedRemoteLinkPlayers)\n    {\n        ScriptContext_Enable();\n        DestroyTask(taskId);\n    }",
       "callsTo": [
         "DestroyTask",
@@ -730,6 +1005,12 @@
       "returnType": "void",
       "signature": "void Task_ReconnectWithLinkPlayers(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data = gTasks[taskId].data;\n\n    switch (tState)\n    {\n    case 0:\n        if (gWirelessCommType != 0)\n        {\n            DestroyTask(taskId);\n        }\n        else\n        {\n            OpenLink();\n            CreateTask(Task_WaitForLinkPlayerConnection, 1);\n            tState++;\n        }\n        break;\n    case 1:\n        if (++tTimer > 11)\n        {\n            tTimer = 0;\n            tState++;\n        }\n        break;\n    case 2:\n        if (GetLinkPlayerCount_2() >= GetSavedPlayerCount())\n        {\n            if (IsLinkMaster())\n            {\n                if (++tTimer > 30)\n                {\n                    CheckShouldAdvanceLinkState();\n                    tState++;\n                }\n            }\n            else\n            {\n                tState++;\n            }\n        }\n        break;\n    case 3:\n        if (gReceivedRemoteLinkPlayers == TRUE && IsLinkPlayerDataExchangeComplete() == TRUE)\n        {\n            DestroyTask(taskId);\n        }\n        break;\n    }",
       "callsTo": [
         "CheckShouldAdvanceLinkState",
@@ -747,6 +1028,7 @@
       "returnType": "void",
       "signature": "void TrySetBattleTowerLinkType(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gWirelessCommType == 0)\n        gLinkType = LINKTYPE_BATTLE_TOWER;",
       "callsTo": [],
       "lineCount": 2

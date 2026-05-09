@@ -6,6 +6,7 @@
       "returnType": "void",
       "signature": "static void VBlankCB_HallOfFame(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "LoadOam();\n    ProcessSpriteCopyRequests();\n    TransferPlttBuffer();",
       "callsTo": [
         "LoadOam",
@@ -18,6 +19,7 @@
       "returnType": "void",
       "signature": "static void CB2_HallOfFame(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "RunTasks();\n    RunTextPrinters();\n    AnimateSprites();\n    BuildOamBuffer();\n    UpdatePaletteFade();",
       "callsTo": [
         "AnimateSprites",
@@ -32,6 +34,7 @@
       "returnType": "bool8",
       "signature": "static bool8 InitHallOfFameScreen(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (gMain.state)\n    {\n    case 0:\n        SetVBlankCallback(NULL);\n        ClearVramOamPltt_LoadHofPal();\n        sHofGfxPtr = AllocZeroed(sizeof(*sHofGfxPtr));\n        gMain.state = 1;\n        break;\n    case 1:\n        LoadHofGfx();\n        gMain.state++;\n        break;\n    case 2:\n        SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_TGT1_BG1 | BLDCNT_EFFECT_BLEND | BLDCNT_TGT2_ALL);\n        SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(16, 7));\n        SetGpuReg(REG_OFFSET_BLDY, 0);\n        InitHofBgs();\n        sHofGfxPtr->state = 0;\n        gMain.state++;\n        break;\n    case 3:\n        if (!LoadHofBgs())\n        {\n            SetVBlankCallback(VBlankCB_HallOfFame);\n            BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_BLACK);\n            gMain.state++;\n        }\n        break;\n    case 4:\n        UpdatePaletteFade();\n        if (!gPaletteFade.active)\n        {\n            SetMainCallback2(CB2_HallOfFame);\n            PlayBGM(MUS_HALL_OF_FAME);\n            return FALSE;\n        }\n        break;\n    }\n    return TRUE;",
       "callsTo": [
         "AllocZeroed",
@@ -53,6 +56,7 @@
       "returnType": "void",
       "signature": "void CB2_DoHallOfFameScreen(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!InitHallOfFameScreen())\n    {\n        u8 taskId = CreateTask(Task_Hof_InitMonData, 0);\n        gTasks[taskId].tDontSaveData = FALSE;\n        sHofMonPtr = AllocZeroed(sizeof(*sHofMonPtr));\n    }",
       "callsTo": [
         "AllocZeroed",
@@ -65,6 +69,7 @@
       "returnType": "void",
       "signature": "void CB2_DoHallOfFameScreenDontSaveData(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!InitHallOfFameScreen())\n    {\n        u8 taskId = CreateTask(Task_Hof_InitMonData, 0);\n        gTasks[taskId].tDontSaveData = TRUE;\n        sHofMonPtr = AllocZeroed(sizeof(*sHofMonPtr));\n    }",
       "callsTo": [
         "AllocZeroed",
@@ -77,6 +82,12 @@
       "returnType": "void",
       "signature": "static void Task_Hof_InitMonData(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u16 i, j;\n\n    gTasks[taskId].tMonNumber = 0;  \n\n    for (i = 0; i < PARTY_SIZE; i++)\n    {\n        u8 nickname[POKEMON_NAME_LENGTH + 1];\n        if (GetMonData(&gPlayerParty[i], MON_DATA_SPECIES))\n        {\n            sHofMonPtr->mon[i].species = GetMonData(&gPlayerParty[i], MON_DATA_SPECIES_OR_EGG);\n            sHofMonPtr->mon[i].tid = GetMonData(&gPlayerParty[i], MON_DATA_OT_ID);\n            sHofMonPtr->mon[i].personality = GetMonData(&gPlayerParty[i], MON_DATA_PERSONALITY);\n            sHofMonPtr->mon[i].lvl = GetMonData(&gPlayerParty[i], MON_DATA_LEVEL);\n            GetMonData(&gPlayerParty[i], MON_DATA_NICKNAME, nickname);\n            for (j = 0; j < POKEMON_NAME_LENGTH; j++)\n                sHofMonPtr->mon[i].nickname[j] = nickname[j];\n            gTasks[taskId].tMonNumber++;\n        }\n        else\n        {\n            sHofMonPtr->mon[i].species = SPECIES_NONE;\n            sHofMonPtr->mon[i].tid = 0;\n            sHofMonPtr->mon[i].personality = 0;\n            sHofMonPtr->mon[i].lvl = 0;\n            sHofMonPtr->mon[i].nickname[0] = EOS;\n        }\n    }\n\n    sHofFadePalettes = 0;\n    gTasks[taskId].tDisplayedMonId = 0;\n    gTasks[taskId].tPlayerSpriteID = SPRITE_NONE;\n\n    for (i = 0; i < PARTY_SIZE; i++)\n    {\n        gTasks[taskId].tMonSpriteId(i) = SPRITE_NONE;\n    }\n\n    if (gTasks[taskId].tDontSaveData)\n        gTasks[taskId].func = Task_Hof_SetMonDisplayTask;\n    else\n        gTasks[taskId].func = Task_Hof_InitTeamSaveData;",
       "callsTo": [
         "GetMonData"
@@ -87,6 +98,12 @@
       "returnType": "void",
       "signature": "static void Task_Hof_InitTeamSaveData(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u16 i;\n    struct HallofFameTeam *lastSavedTeam = (struct HallofFameTeam *)(gDecompressionBuffer);\n\n    if (!gHasHallOfFameRecords)\n    {\n        memset(gDecompressionBuffer, 0, SECTOR_SIZE * NUM_HOF_SECTORS);\n    }\n    else\n    {\n        if (LoadGameSave(SAVE_HALL_OF_FAME) != SAVE_STATUS_OK)\n            memset(gDecompressionBuffer, 0, SECTOR_SIZE * NUM_HOF_SECTORS);\n    }\n\n    for (i = 0; i < HALL_OF_FAME_MAX_TEAMS; i++, lastSavedTeam++)\n    {\n        if (lastSavedTeam->mon[0].species == SPECIES_NONE)\n            break;\n    }\n    if (i >= HALL_OF_FAME_MAX_TEAMS)\n    {\n        struct HallofFameTeam *afterTeam = (struct HallofFameTeam *)(gDecompressionBuffer);\n        struct HallofFameTeam *beforeTeam = (struct HallofFameTeam *)(gDecompressionBuffer);\n        afterTeam++;\n        for (i = 0; i < HALL_OF_FAME_MAX_TEAMS - 1; i++, beforeTeam++, afterTeam++)\n        {\n            *beforeTeam = *afterTeam;\n        }\n        lastSavedTeam--;\n    }\n    *lastSavedTeam = *sHofMonPtr;\n\n    DrawDialogueFrame(0, FALSE);\n    AddTextPrinterParameterized2(0, FONT_NORMAL, gText_SavingDontTurnOffPower, 0, NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);\n    CopyWindowToVram(0, COPYWIN_FULL);\n    gTasks[taskId].func = Task_Hof_TrySaveData;",
       "callsTo": [
         "AddTextPrinterParameterized2",
@@ -100,6 +117,12 @@
       "returnType": "void",
       "signature": "static void Task_Hof_TrySaveData(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "gGameContinueCallback = CB2_DoHallOfFameScreenDontSaveData;\n    if (TrySavingData(SAVE_HALL_OF_FAME) == SAVE_STATUS_ERROR && gDamagedSaveSectors != 0)\n    {\n        UnsetBgTilemapBuffer(1);\n        UnsetBgTilemapBuffer(3);\n        FreeAllWindowBuffers();\n\n        TRY_FREE_AND_SET_NULL(sHofGfxPtr);\n        TRY_FREE_AND_SET_NULL(sHofMonPtr);\n\n        DestroyTask(taskId);\n    }\n    else\n    {\n        PlaySE(SE_SAVE);\n        gTasks[taskId].func = Task_Hof_WaitToDisplayMon;\n        gTasks[taskId].tFrameCount = 32;\n    }",
       "callsTo": [
         "DestroyTask",
@@ -115,6 +138,12 @@
       "returnType": "void",
       "signature": "static void Task_Hof_WaitToDisplayMon(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (gTasks[taskId].tFrameCount)\n        gTasks[taskId].tFrameCount--;\n    else\n        gTasks[taskId].func = Task_Hof_SetMonDisplayTask;",
       "callsTo": [],
       "lineCount": 4
@@ -123,6 +152,12 @@
       "returnType": "void",
       "signature": "static void Task_Hof_SetMonDisplayTask(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "gTasks[taskId].func = Task_Hof_DisplayMon;",
       "callsTo": [],
       "lineCount": 1
@@ -131,6 +166,12 @@
       "returnType": "void",
       "signature": "static void Task_Hof_DisplayMon(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 spriteId;\n    s16 startX, startY, destX, destY;\n\n    u16 currMonId = gTasks[taskId].tDisplayedMonId;\n    struct HallofFameMon *currMon = &sHofMonPtr->mon[currMonId];\n\n    if (gTasks[taskId].tMonNumber > PARTY_SIZE / 2)\n    {\n        startX = sHallOfFame_MonFullTeamPositions[currMonId][0];\n        startY = sHallOfFame_MonFullTeamPositions[currMonId][1];\n        destX = sHallOfFame_MonFullTeamPositions[currMonId][2];\n        destY = sHallOfFame_MonFullTeamPositions[currMonId][3];\n    }\n    else\n    {\n        startX = sHallOfFame_MonHalfTeamPositions[currMonId][0];\n        startY = sHallOfFame_MonHalfTeamPositions[currMonId][1];\n        destX = sHallOfFame_MonHalfTeamPositions[currMonId][2];\n        destY = sHallOfFame_MonHalfTeamPositions[currMonId][3];\n    }\n\n    if (currMon->species == SPECIES_EGG)\n        destY += 10;\n\n    spriteId = CreateMonPicSprite_Affine(currMon->species, currMon->tid, currMon->personality, MON_PIC_AFFINE_FRONT, startX, startY, currMonId, TAG_NONE);\n    gSprites[spriteId].tDestinationX = destX;\n    gSprites[spriteId].tDestinationY = destY;\n    gSprites[spriteId].data[0] = 0;\n    gSprites[spriteId].tSpecies = currMon->species;\n    gSprites[spriteId].callback = SpriteCB_GetOnScreenAndAnimate;\n    gTasks[taskId].tMonSpriteId(currMonId) = spriteId;\n    ClearDialogWindowAndFrame(0, TRUE);\n    gTasks[taskId].func = Task_Hof_PrintMonInfoAfterAnimating;",
       "callsTo": [
         "ClearDialogWindowAndFrame",
@@ -142,6 +183,12 @@
       "returnType": "void",
       "signature": "static void Task_Hof_PrintMonInfoAfterAnimating(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u16 currMonId = gTasks[taskId].tDisplayedMonId;\n    struct HallofFameMon *currMon = &sHofMonPtr->mon[currMonId];\n    struct Sprite *monSprite = &gSprites[gTasks[taskId].tMonSpriteId(currMonId)];\n\n    if (monSprite->callback == SpriteCallbackDummy)\n    {\n        monSprite->oam.affineMode = ST_OAM_AFFINE_OFF;\n        HallOfFame_PrintMonInfo(currMon, 0, 14);\n        gTasks[taskId].tFrameCount = 120;\n        gTasks[taskId].func = Task_Hof_TryDisplayAnotherMon;\n    }",
       "callsTo": [
         "HallOfFame_PrintMonInfo"
@@ -152,6 +199,12 @@
       "returnType": "void",
       "signature": "static void Task_Hof_TryDisplayAnotherMon(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u16 currPokeID = gTasks[taskId].tDisplayedMonId;\n    struct HallofFameMon *currMon = &sHofMonPtr->mon[currPokeID];\n\n    if (gTasks[taskId].tFrameCount != 0)\n    {\n        gTasks[taskId].tFrameCount--;\n    }\n    else\n    {\n        sHofFadePalettes |= (0x10000 << gSprites[gTasks[taskId].tMonSpriteId(currPokeID)].oam.paletteNum);\n        if (gTasks[taskId].tDisplayedMonId < PARTY_SIZE - 1 && currMon[1].species != SPECIES_NONE)  \n        {\n            gTasks[taskId].tDisplayedMonId++;\n            BeginNormalPaletteFade(sHofFadePalettes, 0, 12, 12, RGB(16, 29, 24));\n            gSprites[gTasks[taskId].tMonSpriteId(currPokeID)].oam.priority = 1;\n            gTasks[taskId].func = Task_Hof_DisplayMon;\n        }\n        else\n        {\n            gTasks[taskId].func = Task_Hof_PaletteFadeAndPrintWelcomeText;\n        }\n    }",
       "callsTo": [
         "BeginNormalPaletteFade"
@@ -162,6 +215,12 @@
       "returnType": "void",
       "signature": "static void Task_Hof_PaletteFadeAndPrintWelcomeText(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u16 i;\n\n    BeginNormalPaletteFade(PALETTES_OBJECTS, 0, 0, 0, RGB_BLACK);\n    for (i = 0; i < PARTY_SIZE; i++)\n    {\n        if (gTasks[taskId].tMonSpriteId(i) != SPRITE_NONE)\n            gSprites[gTasks[taskId].tMonSpriteId(i)].oam.priority = 0;\n    }\n\n    HallOfFame_PrintWelcomeText(0, 15);\n    PlaySE(SE_APPLAUSE);\n    gTasks[taskId].tFrameCount = 400;\n    gTasks[taskId].func = Task_Hof_DoConfetti;",
       "callsTo": [
         "BeginNormalPaletteFade",
@@ -174,6 +233,12 @@
       "returnType": "void",
       "signature": "static void Task_Hof_DoConfetti(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (gTasks[taskId].tFrameCount != 0)\n    {\n        gTasks[taskId].tFrameCount--;\n\n         \n         \n        if ((gTasks[taskId].tFrameCount & 3) == 0 && gTasks[taskId].tFrameCount > 110)\n            CreateHofConfettiSprite();\n    }\n    else\n    {\n        u16 i;\n        for (i = 0; i < PARTY_SIZE; i++)\n        {\n            if (gTasks[taskId].tMonSpriteId(i) != SPRITE_NONE)\n                gSprites[gTasks[taskId].tMonSpriteId(i)].oam.priority = 1;\n        }\n        BeginNormalPaletteFade(sHofFadePalettes, 0, 12, 12, RGB(16, 29, 24));\n        FillWindowPixelBuffer(0, PIXEL_FILL(0));\n        CopyWindowToVram(0, COPYWIN_FULL);\n        gTasks[taskId].tFrameCount = 7;\n        gTasks[taskId].func = Task_Hof_WaitToDisplayPlayer;\n    }",
       "callsTo": [
         "BeginNormalPaletteFade",
@@ -188,6 +253,12 @@
       "returnType": "void",
       "signature": "static void Task_Hof_WaitToDisplayPlayer(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (gTasks[taskId].tFrameCount >= 16)\n    {\n        gTasks[taskId].func = Task_Hof_DisplayPlayer;\n    }\n    else\n    {\n        gTasks[taskId].tFrameCount++;\n        SetGpuReg(REG_OFFSET_BLDALPHA, gTasks[taskId].tFrameCount * 256);\n    }",
       "callsTo": [
         "SetGpuReg"
@@ -198,6 +269,12 @@
       "returnType": "void",
       "signature": "static void Task_Hof_DisplayPlayer(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_OBJ_ON | DISPCNT_OBJ_1D_MAP);\n    ShowBg(0);\n    ShowBg(1);\n    ShowBg(3);\n    gTasks[taskId].tPlayerSpriteID = CreateTrainerPicSprite(PlayerGenderToFrontTrainerPicId_Debug(gSaveBlock2Ptr->playerGender, TRUE), TRUE, 120, 72, 6, TAG_NONE);\n    AddWindow(&sHof_WindowTemplate);\n    LoadWindowGfx(1, gSaveBlock2Ptr->optionsWindowFrameType, 0x21D, BG_PLTT_ID(13));\n    LoadPalette(GetTextWindowPalette(1), BG_PLTT_ID(14), PLTT_SIZE_4BPP);\n    gTasks[taskId].tFrameCount = 120;\n    gTasks[taskId].func = Task_Hof_WaitAndPrintPlayerInfo;",
       "callsTo": [
         "AddWindow",
@@ -216,6 +293,12 @@
       "returnType": "void",
       "signature": "static void Task_Hof_WaitAndPrintPlayerInfo(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (gTasks[taskId].tFrameCount != 0)\n    {\n        gTasks[taskId].tFrameCount--;\n    }\n    else if (gSprites[gTasks[taskId].tPlayerSpriteID].x != 192)\n    {\n        gSprites[gTasks[taskId].tPlayerSpriteID].x++;\n    }\n    else\n    {\n        FillBgTilemapBufferRect_Palette0(0, 0, 0, 0, 0x20, 0x20);\n        HallOfFame_PrintPlayerInfo(1, 2);\n        DrawDialogueFrame(0, FALSE);\n        AddTextPrinterParameterized2(0, FONT_NORMAL, gText_LeagueChamp, 0, NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);\n        CopyWindowToVram(0, COPYWIN_FULL);\n        gTasks[taskId].func = Task_Hof_ExitOnKeyPressed;\n    }",
       "callsTo": [
         "AddTextPrinterParameterized2",
@@ -230,6 +313,12 @@
       "returnType": "void",
       "signature": "static void Task_Hof_ExitOnKeyPressed(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (JOY_NEW(A_BUTTON))\n    {\n        FadeOutBGM(4);\n        gTasks[taskId].func = Task_Hof_HandlePaletteOnExit;\n    }",
       "callsTo": [
         "FadeOutBGM",
@@ -241,6 +330,12 @@
       "returnType": "void",
       "signature": "static void Task_Hof_HandlePaletteOnExit(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "CpuCopy16(gPlttBufferFaded, gPlttBufferUnfaded, PLTT_SIZE);\n    BeginNormalPaletteFade(PALETTES_ALL, 8, 0, 0x10, RGB_BLACK);\n    gTasks[taskId].func = Task_Hof_HandleExit;",
       "callsTo": [
         "BeginNormalPaletteFade",
@@ -252,6 +347,12 @@
       "returnType": "void",
       "signature": "static void Task_Hof_HandleExit(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (!gPaletteFade.active)\n    {\n        s32 i;\n\n        for (i = 0; i < PARTY_SIZE; i++)\n        {\n            u8 spriteId = gTasks[taskId].tMonSpriteId(i);\n            if (spriteId != SPRITE_NONE)\n            {\n                FreeOamMatrix(gSprites[spriteId].oam.matrixNum);\n                FreeAndDestroyMonPicSprite(spriteId);\n            }\n        }\n\n        FreeAndDestroyTrainerPicSprite(gTasks[taskId].tPlayerSpriteID);\n        HideBg(0);\n        HideBg(1);\n        HideBg(3);\n        FreeAllWindowBuffers();\n        UnsetBgTilemapBuffer(1);\n        UnsetBgTilemapBuffer(3);\n        ResetBgsAndClearDma3BusyFlags(0);\n        DestroyTask(taskId);\n\n        TRY_FREE_AND_SET_NULL(sHofGfxPtr);\n        TRY_FREE_AND_SET_NULL(sHofMonPtr);\n\n        StartCredits();\n    }",
       "callsTo": [
         "DestroyTask",
@@ -271,6 +372,7 @@
       "returnType": "void",
       "signature": "static void StartCredits(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "SetMainCallback2(CB2_StartCreditsSequence);",
       "callsTo": [
         "SetMainCallback2"
@@ -281,6 +383,7 @@
       "returnType": "void",
       "signature": "void CB2_DoHallOfFamePC(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (gMain.state)\n    {\n    case 0:\n    default:\n        SetVBlankCallback(NULL);\n        ClearVramOamPltt_LoadHofPal();\n        sHofGfxPtr = AllocZeroed(sizeof(*sHofGfxPtr));\n        gMain.state = 1;\n        break;\n    case 1:\n        LoadHofGfx();\n        gMain.state++;\n        break;\n    case 2:\n        SetGpuReg(REG_OFFSET_BLDCNT, 0);\n        SetGpuReg(REG_OFFSET_BLDALPHA, 0);\n        SetGpuReg(REG_OFFSET_BLDY, 0);\n        InitHofBgs();\n        gMain.state++;\n        break;\n    case 3:\n        if (!LoadHofBgs())\n        {\n            struct HallofFameTeam *fameTeam = (struct HallofFameTeam *)(gDecompressionBuffer);\n            fameTeam->mon[0] = sDummyFameMon;\n            ComputerScreenOpenEffect(0, 0, 0);\n            SetVBlankCallback(VBlankCB_HallOfFame);\n            gMain.state++;\n        }\n        break;\n    case 4:\n        RunTasks();\n        AnimateSprites();\n        BuildOamBuffer();\n        UpdatePaletteFade();\n        if (!IsComputerScreenOpenEffectActive())\n            gMain.state++;\n        break;\n    case 5:\n        {\n            u8 taskId, i;\n\n            SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_TGT1_BG1 | BLDCNT_EFFECT_BLEND | BLDCNT_TGT2_ALL);\n            SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(16, 7));\n            SetGpuReg(REG_OFFSET_BLDY, 0);\n            taskId = CreateTask(Task_HofPC_CopySaveData, 0);\n\n            for (i = 0; i < PARTY_SIZE; i++)\n            {\n                gTasks[taskId].tMonSpriteId(i) = SPRITE_NONE;\n            }\n\n            sHofMonPtr = AllocZeroed(SECTOR_SIZE * NUM_HOF_SECTORS);\n            SetMainCallback2(CB2_HallOfFame);\n        }\n        break;\n    }",
       "callsTo": [
         "AllocZeroed",
@@ -306,6 +409,12 @@
       "returnType": "void",
       "signature": "static void Task_HofPC_CopySaveData(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "HofPCTopBar_AddWindow(0, 30, 0, 12, 0x226);\n    if (LoadGameSave(SAVE_HALL_OF_FAME) != SAVE_STATUS_OK)\n    {\n        gTasks[taskId].func = Task_HofPC_PrintDataIsCorrupted;\n    }\n    else\n    {\n        u16 i;\n        struct HallofFameTeam *savedTeams;\n\n        CpuCopy16(gDecompressionBuffer, sHofMonPtr, SECTOR_SIZE * NUM_HOF_SECTORS);\n        savedTeams = sHofMonPtr;\n        for (i = 0; i < HALL_OF_FAME_MAX_TEAMS; i++, savedTeams++)\n        {\n            if (savedTeams->mon[0].species == SPECIES_NONE)\n                break;\n        }\n\n        if (i < HALL_OF_FAME_MAX_TEAMS)\n            gTasks[taskId].tCurrTeamNo = i - 1;\n        else\n            gTasks[taskId].tCurrTeamNo = HALL_OF_FAME_MAX_TEAMS - 1;\n\n        gTasks[taskId].tCurrPageNo = GetGameStat(GAME_STAT_ENTERED_HOF);\n\n        gTasks[taskId].func = Task_HofPC_DrawSpritesPrintText;\n    }",
       "callsTo": [
         "CpuCopy16",
@@ -319,6 +428,12 @@
       "returnType": "void",
       "signature": "static void Task_HofPC_DrawSpritesPrintText(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "struct HallofFameTeam *savedTeams = sHofMonPtr;\n    struct HallofFameMon *currMon;\n    u16 i;\n\n    for (i = 0; i < gTasks[taskId].tCurrTeamNo; i++)\n        savedTeams++;\n\n    currMon = &savedTeams->mon[0];\n    sHofFadePalettes = 0;\n    gTasks[taskId].tCurrMonId = 0;\n    gTasks[taskId].tMonNo = 0;\n\n    for (i = 0; i < PARTY_SIZE; i++, currMon++)\n    {\n        if (currMon->species != 0)\n            gTasks[taskId].tMonNo++;\n    }\n\n    currMon = &savedTeams->mon[0];\n\n    for (i = 0; i < PARTY_SIZE; i++, currMon++)\n    {\n        if (currMon->species != 0)\n        {\n            u16 spriteId;\n            s16 posX, posY;\n\n            if (gTasks[taskId].tMonNo > PARTY_SIZE / 2)\n            {\n                posX = sHallOfFame_MonFullTeamPositions[i][2];\n                posY = sHallOfFame_MonFullTeamPositions[i][3];\n            }\n            else\n            {\n                posX = sHallOfFame_MonHalfTeamPositions[i][2];\n                posY = sHallOfFame_MonHalfTeamPositions[i][3];\n            }\n\n            if (currMon->species == SPECIES_EGG)\n                posY += 10;\n\n            spriteId = CreateMonPicSprite_HandleDeoxys(currMon->species, currMon->tid, currMon->personality, TRUE, posX, posY, i, TAG_NONE);\n            gSprites[spriteId].oam.priority = 1;\n            gTasks[taskId].tMonSpriteId(i) = spriteId;\n        }\n        else\n        {\n            gTasks[taskId].tMonSpriteId(i) = SPRITE_NONE;\n        }\n    }\n\n    BlendPalettes(PALETTES_OBJECTS, 0xC, RGB(16, 29, 24));\n\n    ConvertIntToDecimalStringN(gStringVar1, gTasks[taskId].tCurrPageNo, STR_CONV_MODE_RIGHT_ALIGN, 3);\n    StringExpandPlaceholders(gStringVar4, gText_HOFNumber);\n\n    if (gTasks[taskId].tCurrTeamNo <= 0)\n        HofPCTopBar_PrintPair(gStringVar4, gText_PickCancel, FALSE, 0, TRUE);\n    else\n        HofPCTopBar_PrintPair(gStringVar4, gText_PickNextCancel, FALSE, 0, TRUE);\n\n    gTasks[taskId].func = Task_HofPC_PrintMonInfo;",
       "callsTo": [
         "BlendPalettes",
@@ -333,6 +448,12 @@
       "returnType": "void",
       "signature": "static void Task_HofPC_PrintMonInfo(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "struct HallofFameTeam *savedTeams = sHofMonPtr;\n    struct HallofFameMon *currMon;\n    u16 i;\n    u16 currMonID;\n\n    for (i = 0; i < gTasks[taskId].tCurrTeamNo; i++)\n        savedTeams++;\n\n    for (i = 0; i < PARTY_SIZE; i++)\n    {\n        u16 spriteId = gTasks[taskId].tMonSpriteId(i);\n        if (spriteId != SPRITE_NONE)\n            gSprites[spriteId].oam.priority = 1;\n    }\n\n    currMonID = gTasks[taskId].tMonSpriteId(gTasks[taskId].tCurrMonId);\n    gSprites[currMonID].oam.priority = 0;\n    sHofFadePalettes = (0x10000 << gSprites[currMonID].oam.paletteNum) ^ PALETTES_OBJECTS;\n    BlendPalettesUnfaded(sHofFadePalettes, 0xC, RGB(16, 29, 24));\n\n    currMon = &savedTeams->mon[gTasks[taskId].tCurrMonId];\n    if (currMon->species != SPECIES_EGG)\n    {\n        StopCryAndClearCrySongs();\n        PlayCry_Normal(currMon->species, 0);\n    }\n    HallOfFame_PrintMonInfo(currMon, 0, 14);\n\n    gTasks[taskId].func = Task_HofPC_HandleInput;",
       "callsTo": [
         "BlendPalettesUnfaded",
@@ -346,6 +467,12 @@
       "returnType": "void",
       "signature": "static void Task_HofPC_HandleInput(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u16 i;\n\n    if (JOY_NEW(A_BUTTON))\n    {\n        if (gTasks[taskId].tCurrTeamNo != 0)  \n        {\n            gTasks[taskId].tCurrTeamNo--;\n            for (i = 0; i < PARTY_SIZE; i++)\n            {\n                u8 spriteId = gTasks[taskId].tMonSpriteId(i);\n                if (spriteId != SPRITE_NONE)\n                {\n                    FreeAndDestroyMonPicSprite(spriteId);\n                    gTasks[taskId].tMonSpriteId(i) = SPRITE_NONE;\n                }\n            }\n            if (gTasks[taskId].tCurrPageNo != 0)\n                gTasks[taskId].tCurrPageNo--;\n            gTasks[taskId].func = Task_HofPC_DrawSpritesPrintText;\n        }\n        else  \n        {\n            if (IsCryPlayingOrClearCrySongs())\n            {\n                StopCryAndClearCrySongs();\n                m4aMPlayVolumeControl(&gMPlayInfo_BGM, TRACKS_ALL, 0x100);\n            }\n            gTasks[taskId].func = Task_HofPC_HandlePaletteOnExit;\n        }\n    }\n    else if (JOY_NEW(B_BUTTON))  \n    {\n        if (IsCryPlayingOrClearCrySongs())\n        {\n            StopCryAndClearCrySongs();\n            m4aMPlayVolumeControl(&gMPlayInfo_BGM, TRACKS_ALL, 0x100);\n        }\n        gTasks[taskId].func = Task_HofPC_HandlePaletteOnExit;\n    }\n    else if (JOY_NEW(DPAD_UP) && gTasks[taskId].tCurrMonId != 0)  \n    {\n        gTasks[taskId].tCurrMonId--;\n        gTasks[taskId].func = Task_HofPC_PrintMonInfo;\n    }\n    else if (JOY_NEW(DPAD_DOWN) && gTasks[taskId].tCurrMonId < gTasks[taskId].tMonNo - 1)  \n    {\n        gTasks[taskId].tCurrMonId++;\n        gTasks[taskId].func = Task_HofPC_PrintMonInfo;\n    }",
       "callsTo": [
         "FreeAndDestroyMonPicSprite",
@@ -359,6 +486,12 @@
       "returnType": "void",
       "signature": "static void Task_HofPC_HandlePaletteOnExit(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "struct HallofFameTeam *fameTeam;\n\n    CpuCopy16(gPlttBufferFaded, gPlttBufferUnfaded, PLTT_SIZE);\n    fameTeam = (struct HallofFameTeam *)(gDecompressionBuffer);\n    fameTeam->mon[0] = sDummyFameMon;\n    ComputerScreenCloseEffect(0, 0, 0);\n    gTasks[taskId].func = Task_HofPC_HandleExit;",
       "callsTo": [
         "ComputerScreenCloseEffect",
@@ -370,6 +503,12 @@
       "returnType": "void",
       "signature": "static void Task_HofPC_HandleExit(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (!IsComputerScreenCloseEffectActive())\n    {\n        u8 i;\n\n        for (i = 0; i < PARTY_SIZE; i++)\n        {\n            u16 spriteId = gTasks[taskId].tMonSpriteId(i);\n            if (spriteId != SPRITE_NONE)\n            {\n                FreeAndDestroyMonPicSprite(spriteId);\n                gTasks[taskId].tMonSpriteId(i) = SPRITE_NONE;\n            }\n        }\n\n        HideBg(0);\n        HideBg(1);\n        HideBg(3);\n        HofPCTopBar_RemoveWindow();\n        FreeAllWindowBuffers();\n        UnsetBgTilemapBuffer(1);\n        UnsetBgTilemapBuffer(3);\n        ResetBgsAndClearDma3BusyFlags(0);\n        DestroyTask(taskId);\n\n        TRY_FREE_AND_SET_NULL(sHofGfxPtr);\n        TRY_FREE_AND_SET_NULL(sHofMonPtr);\n\n        ReturnFromHallOfFamePC();\n    }",
       "callsTo": [
         "DestroyTask",
@@ -389,6 +528,12 @@
       "returnType": "void",
       "signature": "static void Task_HofPC_PrintDataIsCorrupted(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "HofPCTopBar_Print(gText_AButtonExit, 8, TRUE);\n    DrawDialogueFrame(0, FALSE);\n    AddTextPrinterParameterized2(0, FONT_NORMAL, gText_HOFCorrupted, 0, NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);\n    CopyWindowToVram(0, COPYWIN_FULL);\n    gTasks[taskId].func = Task_HofPC_ExitOnButtonPress;",
       "callsTo": [
         "AddTextPrinterParameterized2",
@@ -402,6 +547,12 @@
       "returnType": "void",
       "signature": "static void Task_HofPC_ExitOnButtonPress(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (JOY_NEW(A_BUTTON))\n        gTasks[taskId].func = Task_HofPC_HandlePaletteOnExit;",
       "callsTo": [
         "JOY_NEW"
@@ -412,6 +563,16 @@
       "returnType": "void",
       "signature": "static void HallOfFame_PrintWelcomeText(u8 unusedPossiblyWindowId, u8 unused2)",
       "paramsRaw": "u8 unusedPossiblyWindowId, u8 unused2",
+      "paramsList": [
+        {
+          "name": "unusedPossiblyWindowId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "unused2",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "FillWindowPixelBuffer(0, PIXEL_FILL(0));\n    PutWindowTilemap(0);\n    AddTextPrinterParameterized3(0, FONT_NORMAL, GetStringCenterAlignXOffset(FONT_NORMAL, gText_WelcomeToHOF, 0xD0), 1, sMonInfoTextColors, 0, gText_WelcomeToHOF);\n    CopyWindowToVram(0, COPYWIN_FULL);",
       "callsTo": [
         "AddTextPrinterParameterized3",
@@ -427,6 +588,20 @@
       "returnType": "void",
       "signature": "static void HallOfFame_PrintMonInfo(struct HallofFameMon *currMon, u8 unused1, u8 unused2)",
       "paramsRaw": "struct HallofFameMon *currMon, u8 unused1, u8 unused2",
+      "paramsList": [
+        {
+          "name": "currMon",
+          "typeRaw": "struct HallofFameMon *"
+        },
+        {
+          "name": "unused1",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "unused2",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 text[30];\n    u8 *stringPtr;\n    s32 dexNumber;\n    s32 width;\n\n    FillWindowPixelBuffer(0, PIXEL_FILL(0));\n    PutWindowTilemap(0);\n\n     \n    if (currMon->species != SPECIES_EGG)\n    {\n        stringPtr = StringCopy(text, gText_Number);\n        dexNumber = SpeciesToPokedexNum(currMon->species);\n        if (dexNumber != 0xFFFF)\n        {\n            stringPtr[0] = (dexNumber / 100) + CHAR_0;\n            stringPtr++;\n            dexNumber %= 100;\n            stringPtr[0] = (dexNumber / 10) + CHAR_0;\n            stringPtr++;\n            stringPtr[0] = (dexNumber % 10) + CHAR_0;\n            stringPtr++;\n        }\n        else\n        {\n            *(stringPtr)++ = CHAR_QUESTION_MARK;\n            *(stringPtr)++ = CHAR_QUESTION_MARK;\n            *(stringPtr)++ = CHAR_QUESTION_MARK;\n        }\n        stringPtr[0] = EOS;\n        AddTextPrinterParameterized3(0, FONT_NORMAL, 0x10, 1, sMonInfoTextColors, TEXT_SKIP_DRAW, text);\n    }\n\n     \n    memcpy(text, currMon->nickname, POKEMON_NAME_LENGTH);\n    text[POKEMON_NAME_LENGTH] = EOS;\n    if (currMon->species == SPECIES_EGG)\n    {\n        width = GetStringCenterAlignXOffset(FONT_NORMAL, text, 0xD0);\n        AddTextPrinterParameterized3(0, FONT_NORMAL, width, 1, sMonInfoTextColors, TEXT_SKIP_DRAW, text);\n        CopyWindowToVram(0, COPYWIN_FULL);\n    }\n    else\n    {\n        width = GetStringRightAlignXOffset(FONT_NORMAL, text, 0x80);\n        AddTextPrinterParameterized3(0, FONT_NORMAL, width, 1, sMonInfoTextColors, TEXT_SKIP_DRAW, text);\n\n        text[0] = CHAR_SLASH;\n        stringPtr = StringCopy(text + 1, gSpeciesNames[currMon->species]);\n\n        if (currMon->species != SPECIES_NIDORAN_M && currMon->species != SPECIES_NIDORAN_F)\n        {\n            switch (GetGenderFromSpeciesAndPersonality(currMon->species, currMon->personality))\n            {\n            case MON_MALE:\n                stringPtr[0] = CHAR_MALE;\n                stringPtr++;\n                break;\n            case MON_FEMALE:\n                stringPtr[0] = CHAR_FEMALE;\n                stringPtr++;\n                break;\n            }\n        }\n\n        stringPtr[0] = EOS;\n        AddTextPrinterParameterized3(0, FONT_NORMAL, 0x80, 1, sMonInfoTextColors, TEXT_SKIP_DRAW, text);\n\n        stringPtr = StringCopy(text, gText_Level);\n        ConvertIntToDecimalStringN(stringPtr, currMon->lvl, STR_CONV_MODE_LEFT_ALIGN, 3);\n        AddTextPrinterParameterized3(0, FONT_NORMAL, 0x24, 0x11, sMonInfoTextColors, TEXT_SKIP_DRAW, text);\n\n        stringPtr = StringCopy(text, gText_IDNumber);\n        ConvertIntToDecimalStringN(stringPtr, (u16)(currMon->tid), STR_CONV_MODE_LEADING_ZEROS, 5);\n        AddTextPrinterParameterized3(0, FONT_NORMAL, 0x68, 0x11, sMonInfoTextColors, TEXT_SKIP_DRAW, text);\n\n        CopyWindowToVram(0, COPYWIN_FULL);\n    }",
       "callsTo": [
         "AddTextPrinterParameterized3",
@@ -447,6 +622,16 @@
       "returnType": "void",
       "signature": "static void HallOfFame_PrintPlayerInfo(u8 unused1, u8 unused2)",
       "paramsRaw": "u8 unused1, u8 unused2",
+      "paramsList": [
+        {
+          "name": "unused1",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "unused2",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 text[20];\n    u32 width;\n    u16 trainerId;\n\n    FillWindowPixelBuffer(1, PIXEL_FILL(1));\n    PutWindowTilemap(1);\n    DrawStdFrameWithCustomTileAndPalette(1, FALSE, 0x21D, 0xD);\n    AddTextPrinterParameterized3(1, FONT_NORMAL, 0, 1, sPlayerInfoTextColors, TEXT_SKIP_DRAW, gText_Name);\n\n    width = GetStringRightAlignXOffset(FONT_NORMAL, gSaveBlock2Ptr->playerName, 0x70);\n    AddTextPrinterParameterized3(1, FONT_NORMAL, width, 1, sPlayerInfoTextColors, TEXT_SKIP_DRAW, gSaveBlock2Ptr->playerName);\n\n    trainerId = (gSaveBlock2Ptr->playerTrainerId[0]) | (gSaveBlock2Ptr->playerTrainerId[1] << 8);\n    AddTextPrinterParameterized3(1, FONT_NORMAL, 0, 0x11, sPlayerInfoTextColors, 0, gText_IDNumber);\n    text[0] = (trainerId % 100000) / 10000 + CHAR_0;\n    text[1] = (trainerId % 10000) / 1000 + CHAR_0;\n    text[2] = (trainerId % 1000) / 100 + CHAR_0;\n    text[3] = (trainerId % 100) / 10 + CHAR_0;\n    text[4] = (trainerId % 10) / 1 + CHAR_0;\n    text[5] = EOS;\n    width = GetStringRightAlignXOffset(FONT_NORMAL, text, 0x70);\n    AddTextPrinterParameterized3(1, FONT_NORMAL, width, 0x11, sPlayerInfoTextColors, TEXT_SKIP_DRAW, text);\n\n    AddTextPrinterParameterized3(1, FONT_NORMAL, 0, 0x21, sPlayerInfoTextColors, TEXT_SKIP_DRAW, gText_Time);\n    text[0] = (gSaveBlock2Ptr->playTimeHours / 100) + CHAR_0;\n    text[1] = (gSaveBlock2Ptr->playTimeHours % 100) / 10 + CHAR_0;\n    text[2] = (gSaveBlock2Ptr->playTimeHours % 10) + CHAR_0;\n\n    if (text[0] == CHAR_0)\n        text[0] = CHAR_SPACE;\n    if (text[0] == CHAR_SPACE && text[1] == CHAR_0)\n        text[8] = CHAR_SPACE;\n\n    text[3] = CHAR_COLON;\n    text[4] = (gSaveBlock2Ptr->playTimeMinutes % 100) / 10 + CHAR_0;\n    text[5] = (gSaveBlock2Ptr->playTimeMinutes % 10) + CHAR_0;\n    text[6] = EOS;\n\n    width = GetStringRightAlignXOffset(FONT_NORMAL, text, 0x70);\n    AddTextPrinterParameterized3(1, FONT_NORMAL, width, 0x21, sPlayerInfoTextColors, TEXT_SKIP_DRAW, text);\n\n    CopyWindowToVram(1, COPYWIN_FULL);",
       "callsTo": [
         "AddTextPrinterParameterized3",
@@ -463,6 +648,7 @@
       "returnType": "void",
       "signature": "static void ClearVramOamPltt_LoadHofPal(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u32 vramOffset, oamOffset, plttOffset;\n    u32 vramSize, oamSize, plttSize;\n\n    vramOffset = (VRAM);\n    vramSize = VRAM_SIZE;\n    while (TRUE)\n    {\n        DmaFill16(3, 0, vramOffset, 0x1000);\n        vramOffset += 0x1000;\n        vramSize -= 0x1000;\n        if (vramSize <= 0x1000)\n        {\n            DmaFill16(3, 0, vramOffset, vramSize);\n            break;\n        }\n    }\n\n    oamOffset = OAM;\n    oamSize = OAM_SIZE;\n    DmaFill32(3, 0, oamOffset, oamSize);\n\n    plttOffset = PLTT;\n    plttSize = PLTT_SIZE;\n    DmaFill16(3, 0, plttOffset, plttSize);\n\n    ResetPaletteFade();\n    LoadPalette(sHallOfFame_Pal, BG_PLTT_ID(0), sizeof(sHallOfFame_Pal));",
       "callsTo": [
         "BG_PLTT_ID",
@@ -477,6 +663,7 @@
       "returnType": "void",
       "signature": "static void LoadHofGfx(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ScanlineEffect_Stop();\n    ResetTasks();\n    ResetSpriteData();\n    ResetTempTileDataBuffers();\n    ResetAllPicSprites();\n    FreeAllSpritePalettes();\n    gReservedSpritePaletteCount = 8;\n    LoadCompressedSpriteSheet(sSpriteSheet_Confetti);\n    LoadCompressedSpritePalette(sSpritePalette_Confetti);",
       "callsTo": [
         "FreeAllSpritePalettes",
@@ -494,6 +681,7 @@
       "returnType": "void",
       "signature": "static void InitHofBgs(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ResetBgsAndClearDma3BusyFlags(0);\n    InitBgsFromTemplates(0, sHof_BgTemplates, ARRAY_COUNT(sHof_BgTemplates));\n    SetBgTilemapBuffer(1, sHofGfxPtr->tilemap1);\n    SetBgTilemapBuffer(3, sHofGfxPtr->tilemap2);\n    ChangeBgX(0, 0, BG_COORD_SET);\n    ChangeBgY(0, 0, BG_COORD_SET);\n    ChangeBgX(1, 0, BG_COORD_SET);\n    ChangeBgY(1, 0, BG_COORD_SET);\n    ChangeBgX(3, 0, BG_COORD_SET);\n    ChangeBgY(3, 0, BG_COORD_SET);",
       "callsTo": [
         "ARRAY_COUNT",
@@ -509,6 +697,7 @@
       "returnType": "bool8",
       "signature": "static bool8 LoadHofBgs(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sHofGfxPtr->state)\n    {\n    case 0:\n        DecompressAndCopyTileDataToVram(1, sHallOfFame_Gfx, 0, 0, 0);\n        break;\n    case 1:\n        if (FreeTempTileDataBuffersIfPossible())\n            return TRUE;\n        break;\n    case 2:\n        FillBgTilemapBufferRect_Palette0(1, 1, 0, 0, 0x20, 2);\n        FillBgTilemapBufferRect_Palette0(1, 0, 0, 3, 0x20, 0xB);\n        FillBgTilemapBufferRect_Palette0(1, 1, 0, 0xE, 0x20, 6);\n        FillBgTilemapBufferRect_Palette0(3, 2, 0, 0, 0x20, 0x20);\n\n        CopyBgTilemapBufferToVram(1);\n        CopyBgTilemapBufferToVram(3);\n        break;\n    case 3:\n        InitStandardTextBoxWindows();\n        InitTextBoxGfxAndPrinters();\n        break;\n    case 4:\n        SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_OBJ_1D_MAP | DISPCNT_OBJ_ON);\n        ShowBg(0);\n        ShowBg(1);\n        ShowBg(3);\n        sHofGfxPtr->state = 0;\n        return FALSE;\n    }\n\n    sHofGfxPtr->state++;\n    return TRUE;",
       "callsTo": [
         "CopyBgTilemapBufferToVram",
@@ -526,6 +715,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_GetOnScreenAndAnimate(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (sprite->x != sprite->tDestinationX\n        || sprite->y != sprite->tDestinationY)\n    {\n        if (sprite->x < sprite->tDestinationX)\n            sprite->x += 15;\n        if (sprite->x > sprite->tDestinationX)\n            sprite->x -= 15;\n\n        if (sprite->y < sprite->tDestinationY)\n            sprite->y += 10;\n        if (sprite->y > sprite->tDestinationY)\n            sprite->y -= 10;\n    }\n    else\n    {\n        s16 species = sprite->tSpecies;\n\n        if (species == SPECIES_EGG)\n            DoMonFrontSpriteAnimation(sprite, species, TRUE, 3);\n        else\n            DoMonFrontSpriteAnimation(sprite, species, FALSE, 3);\n    }",
       "callsTo": [
         "DoMonFrontSpriteAnimation"
@@ -536,6 +731,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_HofConfetti(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (sprite->y2 > 120)\n    {\n        DestroySprite(sprite);\n    }\n    else\n    {\n        u16 rand;\n        u8 sineIdx;\n\n        sprite->y2++;\n        sprite->y2 += sprite->sExtraY;\n\n        sineIdx = sprite->sSineIdx;\n        rand = (Random() % 4) + 8;\n        sprite->x2 = rand * gSineTable[sineIdx] / 256;\n\n        sprite->sSineIdx += 4;\n    }",
       "callsTo": [
         "DestroySprite",
@@ -547,6 +748,7 @@
       "returnType": "bool8",
       "signature": "static bool8 CreateHofConfettiSprite(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 spriteID;\n    struct Sprite *sprite;\n\n    s16 posX = Random() % DISPLAY_WIDTH;\n    s16 posY = -(Random() % 8);\n\n    spriteID = CreateSprite(&sSpriteTemplate_HofConfetti, posX, posY, 0);\n    sprite = &gSprites[spriteID];\n\n    StartSpriteAnim(sprite, Random() % ARRAY_COUNT(sAnims_Confetti));\n\n     \n    if (Random() & 3)\n        sprite->sExtraY = 0;\n    else\n        sprite->sExtraY = 1;\n\n    return FALSE;",
       "callsTo": [
         "ARRAY_COUNT",
@@ -560,6 +762,7 @@
       "returnType": "void",
       "signature": "void DoDomeConfetti(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 taskId;\n\n    gSpecialVar_0x8004 = 180;\n    taskId = CreateTask(Task_DoDomeConfetti, 0);\n    if (taskId != TASK_NONE)\n    {\n        gTasks[taskId].tTimer = gSpecialVar_0x8004;\n        gSpecialVar_0x8005 = taskId;\n    }",
       "callsTo": [
         "CreateTask"
@@ -570,6 +773,7 @@
       "returnType": "void",
       "signature": "static void StopDomeConfetti(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 taskId;\n\n    if ((taskId = FindTaskIdByFunc(Task_DoDomeConfetti)) != TASK_NONE)\n        DestroyTask(taskId);\n\n    ConfettiUtil_Free();\n    FreeSpriteTilesByTag(TAG_CONFETTI);\n    FreeSpritePaletteByTag(TAG_CONFETTI);",
       "callsTo": [
         "ConfettiUtil_Free",
@@ -584,6 +788,12 @@
       "returnType": "void",
       "signature": "static void UpdateDomeConfetti(struct ConfettiUtil *util)",
       "paramsRaw": "struct ConfettiUtil *util",
+      "paramsList": [
+        {
+          "name": "util",
+          "typeRaw": "struct ConfettiUtil *"
+        }
+      ],
       "body": "if (util->yDelta > 110)\n    {\n         \n        gTasks[util->data[CONFETTI_TASK_ID]].tConfettiCount--;\n        ConfettiUtil_Remove(util->id);\n    }\n    else\n    {\n         \n        u8 sineIdx;\n        s32 rand;\n\n        util->yDelta++;\n        util->yDelta += util->data[CONFETTI_EXTRA_Y];\n\n        sineIdx = util->data[CONFETTI_SINE_IDX];\n        rand = Random();\n        rand &= 3;\n        rand += 8;\n        util->xDelta = (rand) * ((gSineTable[sineIdx])) / 256;\n\n        util->data[CONFETTI_SINE_IDX] += 4;\n    }",
       "callsTo": [
         "ConfettiUtil_Remove",
@@ -595,6 +805,12 @@
       "returnType": "void",
       "signature": "static void Task_DoDomeConfetti(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u32 id = 0;\n    u16 *data = gTasks[taskId].data;\n\n    switch (tState)\n    {\n    case 0:\n        if (!ConfettiUtil_Init(64))\n        {\n             \n            DestroyTask(taskId);\n            gSpecialVar_0x8004 = 0;\n            gSpecialVar_0x8005 = 0xFFFF;\n        }\n        LoadCompressedSpriteSheet(sSpriteSheet_Confetti);\n        LoadCompressedSpritePalette(sSpritePalette_Confetti);\n        tState++;\n        break;\n    case 1:\n        if (tTimer != 0 && tTimer % 3 == 0)\n        {\n             \n            id = ConfettiUtil_AddNew(&sOamData_Confetti,\n                              TAG_CONFETTI,\n                              TAG_CONFETTI,\n                              Random() % DISPLAY_WIDTH,\n                              -(Random() % 8),\n                              Random() % ARRAY_COUNT(sAnims_Confetti),\n                              id);\n            if (id != 0xFF)\n            {\n                ConfettiUtil_SetCallback(id, UpdateDomeConfetti);\n\n                 \n                if ((Random() % 4) == 0)\n                    ConfettiUtil_SetData(id, CONFETTI_EXTRA_Y, 1);\n\n                ConfettiUtil_SetData(id, CONFETTI_TASK_ID, taskId);\n                tConfettiCount++;\n            }\n        }\n\n        ConfettiUtil_Update();\n        if (tTimer != 0)\n            tTimer--;\n        else if (tConfettiCount == 0)\n            tState = 0xFF;\n        break;\n    case 0xFF:\n        StopDomeConfetti();\n        gSpecialVar_0x8004 = 0;\n        gSpecialVar_0x8005 = 0xFFFF;\n        break;\n    }",
       "callsTo": [
         "ARRAY_COUNT",

@@ -6,6 +6,7 @@
       "returnType": "bool8",
       "signature": "bool8 SetUpFieldMove_SoftBoiled(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 maxHp;\n    u16 hp;\n    u16 minHp;\n\n    maxHp = GetMonData(&gPlayerParty[GetCursorSelectionMonId()], MON_DATA_MAX_HP);\n    hp = GetMonData(&gPlayerParty[GetCursorSelectionMonId()], MON_DATA_HP);\n\n    minHp = (maxHp / 5);\n    if (hp > minHp)\n        return TRUE;\n    return FALSE;",
       "callsTo": [
         "GetCursorSelectionMonId",
@@ -17,6 +18,12 @@
       "returnType": "void",
       "signature": "void ChooseMonForSoftboiled(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "gPartyMenu.action = PARTY_ACTION_SOFTBOILED;\n    gPartyMenu.slotId2 =  gPartyMenu.slotId;\n    AnimatePartySlot(GetCursorSelectionMonId(), 1);\n    DisplayPartyMenuStdMessage(PARTY_MSG_USE_ON_WHICH_MON);\n    gTasks[taskId].func = Task_HandleChooseMonInput;",
       "callsTo": [
         "AnimatePartySlot",
@@ -29,6 +36,12 @@
       "returnType": "void",
       "signature": "void Task_TryUseSoftboiledOnPartyMon(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u16 hp;\n\n    u8 userPartyId = gPartyMenu.slotId;\n    u8 recipientPartyId = gPartyMenu.slotId2;\n    if(recipientPartyId > PARTY_SIZE)\n    {\n        gPartyMenu.action = 0;\n        DisplayPartyMenuStdMessage(PARTY_MSG_CHOOSE_MON);\n        gTasks[taskId].func = Task_HandleChooseMonInput;\n        return;\n    }\n\n    hp = GetMonData(&gPlayerParty[recipientPartyId], MON_DATA_HP);\n    if(hp == 0 || userPartyId == recipientPartyId || GetMonData(&gPlayerParty[recipientPartyId], MON_DATA_MAX_HP) == hp)\n    {\n        CantUseSoftboiledOnMon(taskId);\n        return;\n    }\n\n     \n    PlaySE(SE_USE_ITEM);\n    PartyMenuModifyHP(taskId, userPartyId, -1, GetMonData(&gPlayerParty[userPartyId], MON_DATA_MAX_HP)/5, Task_SoftboiledRestoreHealth);",
       "callsTo": [
         "CantUseSoftboiledOnMon",
@@ -43,6 +56,12 @@
       "returnType": "void",
       "signature": "static void Task_SoftboiledRestoreHealth(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "PlaySE(SE_USE_ITEM);\n    PartyMenuModifyHP(taskId, gPartyMenu.slotId2, 1, GetMonData(&gPlayerParty[gPartyMenu.slotId], MON_DATA_MAX_HP)/5, Task_DisplayHPRestoredMessage);",
       "callsTo": [
         "GetMonData",
@@ -55,6 +74,12 @@
       "returnType": "void",
       "signature": "static void Task_DisplayHPRestoredMessage(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "GetMonNickname(&gPlayerParty[gPartyMenu.slotId2], gStringVar1);\n    StringExpandPlaceholders(gStringVar4, gText_PkmnHPRestoredByVar2);\n    DisplayPartyMenuMessage(gStringVar4, FALSE);\n    ScheduleBgCopyTilemapToVram(2);\n    gTasks[taskId].func = Task_FinishSoftboiled;",
       "callsTo": [
         "DisplayPartyMenuMessage",
@@ -68,6 +93,12 @@
       "returnType": "void",
       "signature": "static void Task_FinishSoftboiled(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if(IsPartyMenuTextPrinterActive() == TRUE)\n        return;\n    gPartyMenu.action = 0;\n    AnimatePartySlot(gPartyMenu.slotId, 0);\n    gPartyMenu.slotId = gPartyMenu.slotId2;\n    AnimatePartySlot(gPartyMenu.slotId2, 1);\n    ClearStdWindowAndFrameToTransparent(6, FALSE);\n    ClearWindowTilemap(6);\n    DisplayPartyMenuStdMessage(PARTY_MSG_CHOOSE_MON);\n    gTasks[taskId].func = Task_HandleChooseMonInput;",
       "callsTo": [
         "AnimatePartySlot",
@@ -82,6 +113,12 @@
       "returnType": "void",
       "signature": "static void Task_ChooseNewMonForSoftboiled(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if(IsPartyMenuTextPrinterActive() == TRUE)\n        return;\n    DisplayPartyMenuStdMessage(PARTY_MSG_USE_ON_WHICH_MON);\n    gTasks[taskId].func = Task_HandleChooseMonInput;",
       "callsTo": [
         "DisplayPartyMenuStdMessage",
@@ -93,6 +130,12 @@
       "returnType": "void",
       "signature": "static void CantUseSoftboiledOnMon(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "PlaySE(SE_SELECT);\n    DisplayPartyMenuMessage(gText_CantBeUsedOnPkmn, FALSE);\n    ScheduleBgCopyTilemapToVram(2);\n    gTasks[taskId].func = Task_ChooseNewMonForSoftboiled;",
       "callsTo": [
         "DisplayPartyMenuMessage",

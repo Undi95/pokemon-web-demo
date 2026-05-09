@@ -6,6 +6,7 @@
       "returnType": "bool32",
       "signature": "bool32 PokenavCallback_Init_ConditionSearch(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "struct Pokenav_SearchResults *menu = AllocSubstruct(POKENAV_SUBSTRUCT_CONDITION_SEARCH_RESULTS, sizeof(struct Pokenav_SearchResults));\n    if (menu == NULL)\n        return FALSE;\n\n    menu->monList = AllocSubstruct(POKENAV_SUBSTRUCT_MON_LIST, sizeof(struct PokenavMonList));\n    if (menu->monList == NULL)\n        return FALSE;\n\n    menu->callback = HandleConditionSearchInput_WaitSetup;\n    menu->loopedTaskId = CreateLoopedTask(GetConditionSearchLoopedTask, 1);\n    menu->returnFromGraph = FALSE;\n    menu->conditionDataId = sSearchMonDataIds[GetSelectedConditionSearch()];\n    return TRUE;",
       "callsTo": [
         "AllocSubstruct",
@@ -18,6 +19,7 @@
       "returnType": "bool32",
       "signature": "bool32 PokenavCallback_Init_ReturnToMonSearchList(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "struct Pokenav_SearchResults *menu = AllocSubstruct(POKENAV_SUBSTRUCT_CONDITION_SEARCH_RESULTS, sizeof(struct Pokenav_SearchResults));\n    if (menu == NULL)\n        return FALSE;\n\n    menu->monList = GetSubstructPtr(POKENAV_SUBSTRUCT_MON_LIST);\n    menu->callback = HandleConditionSearchInput;\n    menu->returnFromGraph = TRUE;\n    menu->conditionDataId = sSearchMonDataIds[GetSelectedConditionSearch()];\n    return TRUE;",
       "callsTo": [
         "AllocSubstruct",
@@ -30,6 +32,7 @@
       "returnType": "u32",
       "signature": "u32 GetConditionSearchResultsCallback(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "struct Pokenav_SearchResults *menu = GetSubstructPtr(POKENAV_SUBSTRUCT_CONDITION_SEARCH_RESULTS);\n    return menu->callback(menu);",
       "callsTo": [
         "GetSubstructPtr"
@@ -40,6 +43,7 @@
       "returnType": "void",
       "signature": "void FreeSearchResultSubstruct1(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "struct Pokenav_SearchResults *menu = GetSubstructPtr(POKENAV_SUBSTRUCT_CONDITION_SEARCH_RESULTS);\n    if (!menu->saveResultsList)\n        FreePokenavSubstruct(POKENAV_SUBSTRUCT_MON_LIST);\n    FreePokenavSubstruct(POKENAV_SUBSTRUCT_CONDITION_SEARCH_RESULTS);",
       "callsTo": [
         "FreePokenavSubstruct",
@@ -51,6 +55,12 @@
       "returnType": "bool32",
       "signature": "static bool32 HandleConditionSearchInput_WaitSetup(struct Pokenav_SearchResults *menu)",
       "paramsRaw": "struct Pokenav_SearchResults *menu",
+      "paramsList": [
+        {
+          "name": "menu",
+          "typeRaw": "struct Pokenav_SearchResults *"
+        }
+      ],
       "body": "if (!IsLoopedTaskActive(menu->loopedTaskId))\n        menu->callback = HandleConditionSearchInput;\n    return FALSE;",
       "callsTo": [
         "IsLoopedTaskActive"
@@ -61,6 +71,12 @@
       "returnType": "u32",
       "signature": "static u32 HandleConditionSearchInput(struct Pokenav_SearchResults *menu)",
       "paramsRaw": "struct Pokenav_SearchResults *menu",
+      "paramsList": [
+        {
+          "name": "menu",
+          "typeRaw": "struct Pokenav_SearchResults *"
+        }
+      ],
       "body": "if (JOY_REPEAT(DPAD_UP))\n    {\n        return CONDITION_SEARCH_FUNC_MOVE_UP;\n    }\n    else if (JOY_REPEAT(DPAD_DOWN))\n    {\n        return CONDITION_SEARCH_FUNC_MOVE_DOWN;\n    }\n    else if (JOY_NEW(DPAD_LEFT))\n    {\n        return CONDITION_SEARCH_FUNC_PAGE_UP;\n    }\n    else if (JOY_NEW(DPAD_RIGHT))\n    {\n        return CONDITION_SEARCH_FUNC_PAGE_DOWN;\n    }\n    else if (JOY_NEW(B_BUTTON))\n    {\n         \n        menu->saveResultsList = FALSE;\n        menu->callback = ReturnToConditionSearchList;\n        return CONDITION_SEARCH_FUNC_EXIT;\n    }\n    else if (JOY_NEW(A_BUTTON))\n    {\n         \n        menu->monList->currIndex = PokenavList_GetSelectedIndex();\n        menu->saveResultsList = TRUE;\n        menu->callback = OpenConditionGraphFromSearchList;\n        return CONDITION_SEARCH_FUNC_SELECT_MON;\n    }\n    else\n    {\n        return CONDITION_SEARCH_FUNC_NONE;\n    }",
       "callsTo": [
         "JOY_NEW",
@@ -73,6 +89,12 @@
       "returnType": "u32",
       "signature": "static u32 ReturnToConditionSearchList(struct Pokenav_SearchResults *menu)",
       "paramsRaw": "struct Pokenav_SearchResults *menu",
+      "paramsList": [
+        {
+          "name": "menu",
+          "typeRaw": "struct Pokenav_SearchResults *"
+        }
+      ],
       "body": "return POKENAV_CONDITION_SEARCH_MENU;",
       "callsTo": [],
       "lineCount": 1
@@ -81,6 +103,12 @@
       "returnType": "u32",
       "signature": "static u32 OpenConditionGraphFromSearchList(struct Pokenav_SearchResults *menu)",
       "paramsRaw": "struct Pokenav_SearchResults *menu",
+      "paramsList": [
+        {
+          "name": "menu",
+          "typeRaw": "struct Pokenav_SearchResults *"
+        }
+      ],
       "body": "return POKENAV_CONDITION_GRAPH_SEARCH;",
       "callsTo": [],
       "lineCount": 1
@@ -89,6 +117,7 @@
       "returnType": "u32",
       "signature": "static u32 GetReturningFromGraph(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "struct Pokenav_SearchResults *menu = GetSubstructPtr(POKENAV_SUBSTRUCT_CONDITION_SEARCH_RESULTS);\n    return menu->returnFromGraph;",
       "callsTo": [
         "GetSubstructPtr"
@@ -99,6 +128,7 @@
       "returnType": "struct PokenavMonListItem *",
       "signature": "static struct PokenavMonListItem * GetSearchResultsMonDataList(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "struct Pokenav_SearchResults *menu = GetSubstructPtr(POKENAV_SUBSTRUCT_CONDITION_SEARCH_RESULTS);\n    return menu->monList->monData;",
       "callsTo": [
         "GetSubstructPtr"
@@ -109,6 +139,7 @@
       "returnType": "u16",
       "signature": "static u16 GetSearchResultsMonListCount(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "struct Pokenav_SearchResults *menu = GetSubstructPtr(POKENAV_SUBSTRUCT_CONDITION_SEARCH_RESULTS);\n    return menu->monList->listCount;",
       "callsTo": [
         "GetSubstructPtr"
@@ -119,6 +150,7 @@
       "returnType": "s32",
       "signature": "static s32 GetSearchResultsSelectedMonRank(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "struct Pokenav_SearchResults *menu = GetSubstructPtr(POKENAV_SUBSTRUCT_CONDITION_SEARCH_RESULTS);\n    s32 i = PokenavList_GetSelectedIndex();\n    return menu->monList->monData[i].data;",
       "callsTo": [
         "GetSubstructPtr",
@@ -130,6 +162,7 @@
       "returnType": "u16",
       "signature": "static u16 GetSearchResultsCurrentListIndex(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "struct Pokenav_SearchResults *menu = GetSubstructPtr(POKENAV_SUBSTRUCT_CONDITION_SEARCH_RESULTS);\n    return menu->monList->currIndex;",
       "callsTo": [
         "GetSubstructPtr"
@@ -140,6 +173,12 @@
       "returnType": "u32",
       "signature": "static u32 GetConditionSearchLoopedTask(s32 state)",
       "paramsRaw": "s32 state",
+      "paramsList": [
+        {
+          "name": "state",
+          "typeRaw": "s32"
+        }
+      ],
       "body": "return sConditionSearchLoopedTaskFuncs[state](state);",
       "callsTo": [],
       "lineCount": 1
@@ -148,6 +187,12 @@
       "returnType": "u32",
       "signature": "static u32 BuildPartyMonSearchResults(s32 state)",
       "paramsRaw": "s32 state",
+      "paramsList": [
+        {
+          "name": "state",
+          "typeRaw": "s32"
+        }
+      ],
       "body": "s32 i;\n    struct PokenavMonListItem item;\n    struct Pokenav_SearchResults *menu = GetSubstructPtr(POKENAV_SUBSTRUCT_CONDITION_SEARCH_RESULTS);\n\n    menu->monList->listCount = 0;\n    menu->monList->currIndex = 0;\n    item.boxId = TOTAL_BOXES_COUNT;\n    for (i = 0; i < PARTY_SIZE; i++)\n    {\n        struct Pokemon *pokemon = &gPlayerParty[i];\n        if (!GetMonData(pokemon, MON_DATA_SANITY_HAS_SPECIES))\n            return LT_INC_AND_CONTINUE;\n        if (!GetMonData(pokemon, MON_DATA_SANITY_IS_EGG))\n        {\n            item.monId = i;\n            item.data = GetMonData(pokemon, menu->conditionDataId);\n            InsertMonListItem(menu, &item);\n        }\n    }\n\n    return LT_INC_AND_CONTINUE;",
       "callsTo": [
         "GetMonData",
@@ -160,6 +205,12 @@
       "returnType": "u32",
       "signature": "static u32 InitBoxMonSearchResults(s32 state)",
       "paramsRaw": "s32 state",
+      "paramsList": [
+        {
+          "name": "state",
+          "typeRaw": "s32"
+        }
+      ],
       "body": "struct Pokenav_SearchResults *menu = GetSubstructPtr(POKENAV_SUBSTRUCT_CONDITION_SEARCH_RESULTS);\n    menu->monId = 0;\n    menu->boxId = 0;\n    return LT_INC_AND_CONTINUE;",
       "callsTo": [
         "GetSubstructPtr"
@@ -170,6 +221,12 @@
       "returnType": "u32",
       "signature": "static u32 BuildBoxMonSearchResults(s32 state)",
       "paramsRaw": "s32 state",
+      "paramsList": [
+        {
+          "name": "state",
+          "typeRaw": "s32"
+        }
+      ],
       "body": "struct Pokenav_SearchResults *menu = GetSubstructPtr(POKENAV_SUBSTRUCT_CONDITION_SEARCH_RESULTS);\n    s32 boxId = menu->boxId;\n    s32 monId = menu->monId;\n    s32 boxCount = 0;\n    struct PokenavMonListItem item;\n\n    while (boxId < TOTAL_BOXES_COUNT)\n    {\n        while (monId < IN_BOX_COUNT)\n        {\n            if (CheckBoxMonSanityAt(boxId, monId))\n            {\n                item.boxId = boxId;\n                item.monId = monId;\n                item.data = GetBoxMonDataAt(boxId, monId, menu->conditionDataId);\n                InsertMonListItem(menu, &item);\n            }\n            boxCount++;\n            monId++;\n            if (boxCount > TOTAL_BOXES_COUNT)\n            {\n                menu->boxId = boxId;\n                menu->monId = monId;\n                return LT_CONTINUE;\n            }\n        }\n        monId = 0;\n        boxId++;\n    }\n\n    return LT_INC_AND_CONTINUE;",
       "callsTo": [
         "CheckBoxMonSanityAt",
@@ -183,6 +240,12 @@
       "returnType": "u32",
       "signature": "static u32 ConvertConditionsToListRanks(s32 state)",
       "paramsRaw": "s32 state",
+      "paramsList": [
+        {
+          "name": "state",
+          "typeRaw": "s32"
+        }
+      ],
       "body": "struct Pokenav_SearchResults *menu = GetSubstructPtr(POKENAV_SUBSTRUCT_CONDITION_SEARCH_RESULTS);\n    s32 listCount = menu->monList->listCount;\n    s32 prevCondition = menu->monList->monData[0].data;\n    s32 i;\n    menu->monList->monData[0].data = 1;\n    for (i = 1; i < listCount; i++)\n    {\n        if (menu->monList->monData[i].data == prevCondition)\n        {\n             \n            menu->monList->monData[i].data = menu->monList->monData[i - 1].data;\n        }\n        else\n        {\n            prevCondition = menu->monList->monData[i].data;\n            menu->monList->monData[i].data = i + 1;\n        }\n    }\n    menu->returnFromGraph = TRUE;\n    return LT_FINISH;",
       "callsTo": [
         "GetSubstructPtr"
@@ -193,6 +256,16 @@
       "returnType": "void",
       "signature": "static void InsertMonListItem(struct Pokenav_SearchResults *menu, struct PokenavMonListItem *item)",
       "paramsRaw": "struct Pokenav_SearchResults *menu, struct PokenavMonListItem *item",
+      "paramsList": [
+        {
+          "name": "menu",
+          "typeRaw": "struct Pokenav_SearchResults *"
+        },
+        {
+          "name": "item",
+          "typeRaw": "struct PokenavMonListItem *"
+        }
+      ],
       "body": "u32 left = 0;\n    u32 right = menu->monList->listCount;\n    u32 insertionIdx = left + (right - left) / 2;\n\n    while (right != insertionIdx)\n    {\n        if (item->data > menu->monList->monData[insertionIdx].data)\n            right = insertionIdx;\n        else\n            left = insertionIdx + 1;\n        insertionIdx = left + (right - left) / 2;\n    }\n    for (right = menu->monList->listCount; right > insertionIdx; right--)\n        menu->monList->monData[right] = menu->monList->monData[right - 1];\n    menu->monList->monData[insertionIdx] = *item;\n    menu->monList->listCount++;",
       "callsTo": [],
       "lineCount": 16
@@ -201,6 +274,7 @@
       "returnType": "bool32",
       "signature": "bool32 OpenConditionSearchResults(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "struct Pokenav_SearchResultsGfx *gfx = AllocSubstruct(POKENAV_SUBSTRUCT_CONDITION_SEARCH_RESULTS_GFX, sizeof(struct Pokenav_SearchResultsGfx));\n    if (gfx == NULL)\n        return FALSE;\n    gfx->loopedTaskId = CreateLoopedTask(LoopedTask_OpenConditionSearchResults, 1);\n    gfx->callback = GetSearchResultCurrentLoopedTaskActive;\n    gfx->fromGraph = FALSE;\n    return TRUE;",
       "callsTo": [
         "AllocSubstruct",
@@ -212,6 +286,7 @@
       "returnType": "bool32",
       "signature": "bool32 OpenConditionSearchListFromGraph(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "struct Pokenav_SearchResultsGfx *gfx = AllocSubstruct(POKENAV_SUBSTRUCT_CONDITION_SEARCH_RESULTS_GFX, sizeof(struct Pokenav_SearchResultsGfx));\n    if (gfx == NULL)\n        return FALSE;\n    gfx->loopedTaskId = CreateLoopedTask(LoopedTask_OpenConditionSearchResults, 1);\n    gfx->callback = GetSearchResultCurrentLoopedTaskActive;\n    gfx->fromGraph = TRUE;\n    return TRUE;",
       "callsTo": [
         "AllocSubstruct",
@@ -223,6 +298,12 @@
       "returnType": "void",
       "signature": "void CreateSearchResultsLoopedTask(s32 idx)",
       "paramsRaw": "s32 idx",
+      "paramsList": [
+        {
+          "name": "idx",
+          "typeRaw": "s32"
+        }
+      ],
       "body": "struct Pokenav_SearchResultsGfx *gfx = GetSubstructPtr(POKENAV_SUBSTRUCT_CONDITION_SEARCH_RESULTS_GFX);\n    gfx->loopedTaskId = CreateLoopedTask(sSearchResultLoopTaskFuncs[idx], 1);\n    gfx->callback = GetSearchResultCurrentLoopedTaskActive;",
       "callsTo": [
         "CreateLoopedTask",
@@ -234,6 +315,7 @@
       "returnType": "bool32",
       "signature": "bool32 IsSearchResultLoopedTaskActive(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "struct Pokenav_SearchResultsGfx *gfx = GetSubstructPtr(POKENAV_SUBSTRUCT_CONDITION_SEARCH_RESULTS_GFX);\n    return gfx->callback();",
       "callsTo": [
         "GetSubstructPtr"
@@ -244,6 +326,7 @@
       "returnType": "bool32",
       "signature": "bool32 GetSearchResultCurrentLoopedTaskActive(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "struct Pokenav_SearchResultsGfx *gfx = GetSubstructPtr(POKENAV_SUBSTRUCT_CONDITION_SEARCH_RESULTS_GFX);\n    return IsLoopedTaskActive(gfx->loopedTaskId);",
       "callsTo": [
         "GetSubstructPtr",
@@ -255,6 +338,7 @@
       "returnType": "void",
       "signature": "void FreeSearchResultSubstruct2(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "struct Pokenav_SearchResultsGfx *gfx = GetSubstructPtr(POKENAV_SUBSTRUCT_CONDITION_SEARCH_RESULTS_GFX);\n    DestroyPokenavList();\n    RemoveWindow(gfx->winid);\n    FreePokenavSubstruct(POKENAV_SUBSTRUCT_CONDITION_SEARCH_RESULTS_GFX);",
       "callsTo": [
         "DestroyPokenavList",
@@ -268,6 +352,12 @@
       "returnType": "u32",
       "signature": "static u32 LoopedTask_OpenConditionSearchResults(s32 state)",
       "paramsRaw": "s32 state",
+      "paramsList": [
+        {
+          "name": "state",
+          "typeRaw": "s32"
+        }
+      ],
       "body": "struct Pokenav_SearchResultsGfx *gfx = GetSubstructPtr(POKENAV_SUBSTRUCT_CONDITION_SEARCH_RESULTS_GFX);\n    switch (state)\n    {\n    case 0:\n        InitBgTemplates(sConditionSearchResultBgTemplates, ARRAY_COUNT(sConditionSearchResultBgTemplates));\n         \n        DecompressAndCopyTileDataToVram(1, gConditionSearchResultTiles, 0, 0, 0);\n        SetBgTilemapBuffer(1, gfx->buff);\n        CopyToBgTilemapBuffer(1, gConditionSearchResultTilemap, 0, 0);\n        CopyBgTilemapBufferToVram(1);\n        CopyPaletteIntoBufferUnfaded(gConditionSearchResultFramePal, 16, PLTT_SIZE_4BPP);\n        CopyBgTilemapBufferToVram(1);\n        return LT_INC_AND_PAUSE;\n    case 1:\n        if (FreeTempTileDataBuffersIfPossible())\n            return LT_PAUSE;\n        if (!GetReturningFromGraph())\n            return LT_PAUSE;\n        return LT_INC_AND_PAUSE;\n    case 2:\n        if (FreeTempTileDataBuffersIfPossible())\n            return LT_PAUSE;\n        CopyPaletteIntoBufferUnfaded(sListBg_Pal, BG_PLTT_ID(2), sizeof(sListBg_Pal));\n        CreateSearchResultsList();\n        return LT_INC_AND_PAUSE;\n    case 3:\n        if (IsCreatePokenavListTaskActive())\n            return LT_PAUSE;\n        AddSearchResultListMenuWindow(gfx);\n        PrintHelpBarText(HELPBAR_CONDITION_MON_LIST);\n        return LT_INC_AND_PAUSE;\n    case 4:\n        if (FreeTempTileDataBuffersIfPossible())\n            return LT_PAUSE;\n        ChangeBgX(1, 0, BG_COORD_SET);\n        ChangeBgY(1, 0, BG_COORD_SET);\n        ShowBg(1);\n        ShowBg(2);\n        HideBg(3);\n        if (!gfx->fromGraph)\n        {\n            u8 searchGfxId = GetSelectedConditionSearch() + POKENAV_MENUITEM_CONDITION_SEARCH_COOL;\n            LoadLeftHeaderGfxForIndex(searchGfxId);\n            ShowLeftHeaderGfx(searchGfxId, TRUE, FALSE);\n            ShowLeftHeaderGfx(POKENAV_GFX_CONDITION_MENU, TRUE, FALSE);\n        }\n        PokenavFadeScreen(POKENAV_FADE_FROM_BLACK);\n        return LT_INC_AND_PAUSE;\n    case 5:\n        if (IsPaletteFadeActive())\n            return LT_PAUSE;\n        if (AreLeftHeaderSpritesMoving())\n            return LT_PAUSE;\n        break;\n    }\n    return LT_FINISH;",
       "callsTo": [
         "ARRAY_COUNT",
@@ -302,6 +392,12 @@
       "returnType": "u32",
       "signature": "static u32 LoopedTask_MoveSearchListCursorUp(s32 state)",
       "paramsRaw": "s32 state",
+      "paramsList": [
+        {
+          "name": "state",
+          "typeRaw": "s32"
+        }
+      ],
       "body": "struct Pokenav_SearchResultsGfx *gfx = GetSubstructPtr(POKENAV_SUBSTRUCT_CONDITION_SEARCH_RESULTS_GFX);\n    switch (state)\n    {\n    case 0:\n        switch (PokenavList_MoveCursorUp())\n        {\n        case 0:\n            return LT_FINISH;\n        case 1:\n            PlaySE(SE_SELECT);\n            return LT_SET_STATE(2);\n        case 2:\n            PlaySE(SE_SELECT);\n            break;\n        }\n        return LT_INC_AND_PAUSE;\n    case 1:\n        if (PokenavList_IsMoveWindowTaskActive())\n            return LT_PAUSE;\n         \n    case 2:\n        PrintSearchResultListMenuItems(gfx);\n        return LT_INC_AND_PAUSE;\n    case 3:\n        if (IsDma3ManagerBusyWithBgCopy())\n            return LT_PAUSE;\n        break;\n    }\n    return LT_FINISH;",
       "callsTo": [
         "GetSubstructPtr",
@@ -318,6 +414,12 @@
       "returnType": "u32",
       "signature": "static u32 LoopedTask_MoveSearchListCursorDown(s32 state)",
       "paramsRaw": "s32 state",
+      "paramsList": [
+        {
+          "name": "state",
+          "typeRaw": "s32"
+        }
+      ],
       "body": "struct Pokenav_SearchResultsGfx *gfx = GetSubstructPtr(POKENAV_SUBSTRUCT_CONDITION_SEARCH_RESULTS_GFX);\n    switch (state)\n    {\n    case 0:\n        switch (PokenavList_MoveCursorDown())\n        {\n        case 0:\n            return LT_FINISH;\n        case 1:\n            PlaySE(SE_SELECT);\n            return LT_SET_STATE(2);\n        case 2:\n            PlaySE(SE_SELECT);\n            break;\n        }\n        return LT_INC_AND_PAUSE;\n    case 1:\n        if (PokenavList_IsMoveWindowTaskActive())\n            return LT_PAUSE;\n         \n    case 2:\n        PrintSearchResultListMenuItems(gfx);\n        return LT_INC_AND_PAUSE;\n    case 3:\n        if (IsDma3ManagerBusyWithBgCopy())\n            return LT_PAUSE;\n        break;\n    }\n    return LT_FINISH;",
       "callsTo": [
         "GetSubstructPtr",
@@ -334,6 +436,12 @@
       "returnType": "u32",
       "signature": "static u32 LoopedTask_MoveSearchListPageUp(s32 state)",
       "paramsRaw": "s32 state",
+      "paramsList": [
+        {
+          "name": "state",
+          "typeRaw": "s32"
+        }
+      ],
       "body": "struct Pokenav_SearchResultsGfx *gfx = GetSubstructPtr(POKENAV_SUBSTRUCT_CONDITION_SEARCH_RESULTS_GFX);\n    switch (state)\n    {\n    case 0:\n        switch (PokenavList_PageUp())\n        {\n        case 0:\n            return LT_FINISH;\n        case 1:\n            PlaySE(SE_SELECT);\n            return LT_SET_STATE(2);\n        case 2:\n            PlaySE(SE_SELECT);\n            break;\n        }\n        return LT_INC_AND_PAUSE;\n    case 1:\n        if (PokenavList_IsMoveWindowTaskActive())\n            return LT_PAUSE;\n         \n    case 2:\n        PrintSearchResultListMenuItems(gfx);\n        return LT_INC_AND_PAUSE;\n    case 3:\n        if (IsDma3ManagerBusyWithBgCopy())\n            return LT_PAUSE;\n        break;\n    }\n    return LT_FINISH;",
       "callsTo": [
         "GetSubstructPtr",
@@ -350,6 +458,12 @@
       "returnType": "u32",
       "signature": "static u32 LoopedTask_MoveSearchListPageDown(s32 state)",
       "paramsRaw": "s32 state",
+      "paramsList": [
+        {
+          "name": "state",
+          "typeRaw": "s32"
+        }
+      ],
       "body": "struct Pokenav_SearchResultsGfx *gfx = GetSubstructPtr(POKENAV_SUBSTRUCT_CONDITION_SEARCH_RESULTS_GFX);\n    switch (state)\n    {\n    case 0:\n        switch (PokenavList_PageDown())\n        {\n        case 0:\n            return LT_FINISH;\n        case 1:\n            PlaySE(SE_SELECT);\n            return LT_SET_STATE(2);\n        case 2:\n            PlaySE(SE_SELECT);\n            break;\n        }\n        return LT_INC_AND_PAUSE;\n    case 1:\n        if (PokenavList_IsMoveWindowTaskActive())\n            return LT_PAUSE;\n         \n    case 2:\n        PrintSearchResultListMenuItems(gfx);\n        return LT_INC_AND_PAUSE;\n    case 3:\n        if (IsDma3ManagerBusyWithBgCopy())\n            return LT_PAUSE;\n        break;\n    }\n    return LT_FINISH;",
       "callsTo": [
         "GetSubstructPtr",
@@ -366,6 +480,12 @@
       "returnType": "u32",
       "signature": "static u32 LoopedTask_ExitConditionSearchMenu(s32 state)",
       "paramsRaw": "s32 state",
+      "paramsList": [
+        {
+          "name": "state",
+          "typeRaw": "s32"
+        }
+      ],
       "body": "switch (state)\n    {\n    case 0:\n        PlaySE(SE_SELECT);\n        PokenavFadeScreen(POKENAV_FADE_TO_BLACK);\n        SlideMenuHeaderDown();\n        return LT_INC_AND_PAUSE;\n    case 1:\n        if (IsPaletteFadeActive())\n            return LT_PAUSE;\n        if (MainMenuLoopedTaskIsBusy())\n            return LT_PAUSE;\n        SetLeftHeaderSpritesInvisibility();\n        break;\n    }\n    return LT_FINISH;",
       "callsTo": [
         "IsPaletteFadeActive",
@@ -381,6 +501,12 @@
       "returnType": "u32",
       "signature": "static u32 LoopedTask_SelectSearchResult(s32 state)",
       "paramsRaw": "s32 state",
+      "paramsList": [
+        {
+          "name": "state",
+          "typeRaw": "s32"
+        }
+      ],
       "body": "switch (state)\n    {\n    case 0:\n        PlaySE(SE_SELECT);\n        PokenavFadeScreen(POKENAV_FADE_TO_BLACK);\n        return LT_INC_AND_PAUSE;\n    case 1:\n        if (IsPaletteFadeActive())\n            return LT_PAUSE;\n        break;\n    }\n    return LT_FINISH;",
       "callsTo": [
         "IsPaletteFadeActive",
@@ -393,6 +519,12 @@
       "returnType": "void",
       "signature": "static void AddSearchResultListMenuWindow(struct Pokenav_SearchResultsGfx *gfx)",
       "paramsRaw": "struct Pokenav_SearchResultsGfx *gfx",
+      "paramsList": [
+        {
+          "name": "gfx",
+          "typeRaw": "struct Pokenav_SearchResultsGfx *"
+        }
+      ],
       "body": "gfx->winid = AddWindow(&sSearchResultListMenuWindowTemplate);\n    PutWindowTilemap(gfx->winid);\n    CopyWindowToVram(gfx->winid, COPYWIN_MAP);\n    PrintSearchResultListMenuItems(gfx);",
       "callsTo": [
         "AddWindow",
@@ -406,6 +538,12 @@
       "returnType": "void",
       "signature": "static void PrintSearchResultListMenuItems(struct Pokenav_SearchResultsGfx *gfx)",
       "paramsRaw": "struct Pokenav_SearchResultsGfx *gfx",
+      "paramsList": [
+        {
+          "name": "gfx",
+          "typeRaw": "struct Pokenav_SearchResultsGfx *"
+        }
+      ],
       "body": "s32 rank = GetSearchResultsSelectedMonRank();\n    DynamicPlaceholderTextUtil_Reset();\n    DynamicPlaceholderTextUtil_SetPlaceholderPtr(0, gStringVar1);\n    *gStringVar1 = EOS;\n    DynamicPlaceholderTextUtil_ExpandPlaceholders(gStringVar2, gText_NumberIndex);\n    AddTextPrinterParameterized(gfx->winid, FONT_NORMAL, gStringVar2, 4, 1, TEXT_SKIP_DRAW, NULL);\n    ConvertIntToDecimalStringN(gStringVar1, rank, STR_CONV_MODE_RIGHT_ALIGN, 3);\n    AddTextPrinterParameterized(gfx->winid, FONT_NORMAL, gStringVar1, 34, 1, TEXT_SKIP_DRAW, NULL);\n    CopyWindowToVram(gfx->winid, COPYWIN_GFX);",
       "callsTo": [
         "AddTextPrinterParameterized",
@@ -422,6 +560,7 @@
       "returnType": "void",
       "signature": "static void CreateSearchResultsList(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "struct PokenavListTemplate template;\n\n    template.list = (struct PokenavListItem *)GetSearchResultsMonDataList();\n    template.count = GetSearchResultsMonListCount();\n    template.itemSize = sizeof(struct PokenavListItem);\n    template.startIndex = GetSearchResultsCurrentListIndex();\n    template.item_X = 12;      \n    template.windowWidth = 18; \n    template.listTop = 1;\n    template.maxShowed = 8;\n    template.fillValue = 2;\n    template.fontId = FONT_NORMAL;\n    template.bufferItemFunc = (PokenavListBufferItemFunc)BufferSearchMonListItem;\n    template.iconDrawFunc = NULL;\n    CreatePokenavList(&sConditionSearchResultBgTemplates[1], &template, 0);",
       "callsTo": [
         "CreatePokenavList",
@@ -435,6 +574,16 @@
       "returnType": "void",
       "signature": "static void BufferSearchMonListItem(struct PokenavMonListItem *item, u8 *dest)",
       "paramsRaw": "struct PokenavMonListItem *item, u8 *dest",
+      "paramsList": [
+        {
+          "name": "item",
+          "typeRaw": "struct PokenavMonListItem *"
+        },
+        {
+          "name": "dest",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "u8 gender;\n    u8 level;\n    u8 *s;\n    const u8 *genderStr;\n\n     \n    if (item->boxId == TOTAL_BOXES_COUNT)\n    {\n        struct Pokemon *mon = &gPlayerParty[item->monId];\n        gender = GetMonGender(mon);\n        level = GetLevelFromMonExp(mon);\n        GetMonData(mon, MON_DATA_NICKNAME, gStringVar3);\n    }\n     \n    else\n    {\n        struct BoxPokemon *mon = GetBoxedMonPtr(item->boxId, item->monId);\n        gender = GetBoxMonGender(mon);\n        level = GetLevelFromBoxMonExp(mon);\n        GetBoxMonData(mon, MON_DATA_NICKNAME, gStringVar3);\n    }\n\n    StringGet_Nickname(gStringVar3);\n    dest = GetStringClearToWidth(dest, FONT_NORMAL, gStringVar3, 60);\n    switch (gender)\n    {\n    default:\n        genderStr = sText_NoGenderSymbol;\n        break;\n    case MON_MALE:\n        genderStr = sText_MaleSymbol;\n        break;\n    case MON_FEMALE:\n        genderStr = sText_FemaleSymbol;\n        break;\n    }\n    s = StringCopy(gStringVar1, genderStr);\n    *s++ = CHAR_SLASH;\n    *s++ = CHAR_EXTRA_SYMBOL;\n    *s++ = CHAR_LV_2;\n    ConvertIntToDecimalStringN(s, level, STR_CONV_MODE_LEFT_ALIGN, 3);\n    GetStringClearToWidth(dest, FONT_NORMAL, gStringVar1, 40);",
       "callsTo": [
         "ConvertIntToDecimalStringN",

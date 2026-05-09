@@ -6,6 +6,12 @@
       "returnType": "void",
       "signature": "static void AnimSludgeProjectile(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (!gBattleAnimArgs[3])\n        StartSpriteAnim(sprite, 2);\n\n    InitSpritePosToAnimAttacker(sprite, TRUE);\n\n    sprite->data[0] = gBattleAnimArgs[2];\n    sprite->data[2] = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_X_2);\n    sprite->data[4] = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_Y_PIC_OFFSET);\n    sprite->data[5] = -30;\n\n    InitAnimArcTranslation(sprite);\n\n    sprite->callback = AnimSludgeProjectile_Step;",
       "callsTo": [
         "GetBattlerSpriteCoord",
@@ -19,6 +25,12 @@
       "returnType": "void",
       "signature": "static void AnimSludgeProjectile_Step(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (TranslateAnimHorizontalArc(sprite))\n        DestroyAnimSprite(sprite);",
       "callsTo": [
         "DestroyAnimSprite",
@@ -30,6 +42,12 @@
       "returnType": "void",
       "signature": "static void AnimAcidPoisonBubble(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "s16 l1, l2;\n    if (!gBattleAnimArgs[3])\n        StartSpriteAnim(sprite, 2);\n\n    InitSpritePosToAnimAttacker(sprite, TRUE);\n    SetAverageBattlerPositions(gBattleAnimTarget, TRUE, &l1, &l2);\n\n    if (GetBattlerSide(gBattleAnimAttacker))\n        gBattleAnimArgs[4] = -gBattleAnimArgs[4];\n\n    sprite->data[0] = gBattleAnimArgs[2];\n    sprite->data[2] = l1 + gBattleAnimArgs[4];\n    sprite->data[4] = l2 + gBattleAnimArgs[5];\n    sprite->data[5] = -30;\n\n    InitAnimArcTranslation(sprite);\n\n    sprite->callback = AnimAcidPoisonBubble_Step;",
       "callsTo": [
         "GetBattlerSide",
@@ -44,6 +62,12 @@
       "returnType": "void",
       "signature": "static void AnimAcidPoisonBubble_Step(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (TranslateAnimHorizontalArc(sprite))\n        DestroyAnimSprite(sprite);",
       "callsTo": [
         "DestroyAnimSprite",
@@ -55,6 +79,12 @@
       "returnType": "void",
       "signature": "static void AnimSludgeBombHitParticle(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "sprite->data[0] = gBattleAnimArgs[2];\n    sprite->data[1] = sprite->x;\n    sprite->data[2] = sprite->x + gBattleAnimArgs[0];\n    sprite->data[3] = sprite->y;\n    sprite->data[4] = sprite->y + gBattleAnimArgs[1];\n\n    InitSpriteDataForLinearTranslation(sprite);\n\n    sprite->data[5] = sprite->data[1] / gBattleAnimArgs[2];\n    sprite->data[6] = sprite->data[2] / gBattleAnimArgs[2];\n\n    sprite->callback = AnimSludgeBombHitParticle_Step;",
       "callsTo": [
         "InitSpriteDataForLinearTranslation"
@@ -65,6 +95,12 @@
       "returnType": "void",
       "signature": "static void AnimSludgeBombHitParticle_Step(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "TranslateSpriteLinearFixedPoint(sprite);\n\n    sprite->data[1] -= sprite->data[5];\n    sprite->data[2] -= sprite->data[6];\n\n    if (!sprite->data[0])\n        DestroyAnimSprite(sprite);",
       "callsTo": [
         "DestroyAnimSprite",
@@ -76,6 +112,12 @@
       "returnType": "void",
       "signature": "static void AnimAcidPoisonDroplet(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "SetAverageBattlerPositions(gBattleAnimTarget, TRUE, &sprite->x, &sprite->y);\n\n    if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)\n        gBattleAnimArgs[0] = -gBattleAnimArgs[0];\n\n    sprite->x += gBattleAnimArgs[0];\n    sprite->y += gBattleAnimArgs[1];\n\n    sprite->data[0] = gBattleAnimArgs[4];\n    sprite->data[2] = sprite->x + gBattleAnimArgs[2];\n    sprite->data[4] = sprite->y + sprite->data[0];\n\n    sprite->callback = StartAnimLinearTranslation;\n    StoreSpriteCallbackInData6(sprite, DestroyAnimSprite);",
       "callsTo": [
         "GetBattlerSide",
@@ -88,6 +130,12 @@
       "returnType": "void",
       "signature": "static void AnimBubbleEffect(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (!gBattleAnimArgs[2])\n    {\n        InitSpritePosToAnimTarget(sprite, TRUE);\n    }\n    else\n    {\n        SetAverageBattlerPositions(gBattleAnimTarget, TRUE, &sprite->x, &sprite->y);\n\n        if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)\n            gBattleAnimArgs[0] = -gBattleAnimArgs[0];\n\n        sprite->x += gBattleAnimArgs[0];\n        sprite->y += gBattleAnimArgs[1];\n    }\n\n    sprite->callback = AnimBubbleEffect_Step;",
       "callsTo": [
         "GetBattlerSide",
@@ -100,6 +148,12 @@
       "returnType": "void",
       "signature": "static void AnimBubbleEffect_Step(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "sprite->data[0] = (sprite->data[0] + 0xB) & 0xFF;\n    sprite->x2 = Sin(sprite->data[0], 4);\n    sprite->data[1] += 0x30;\n    sprite->y2 = -(sprite->data[1] >> 8);\n\n    if (sprite->affineAnimEnded)\n        DestroyAnimSprite(sprite);",
       "callsTo": [
         "DestroyAnimSprite",

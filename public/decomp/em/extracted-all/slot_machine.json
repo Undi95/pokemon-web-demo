@@ -6,6 +6,12 @@
       "returnType": "void",
       "signature": "static void Task_FadeToSlotMachine(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "switch (gTasks[taskId].tState)\n    {\n    case 0:\n        BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);\n        gTasks[taskId].tState++;\n        break;\n    case 1:\n        if (!gPaletteFade.active)\n        {\n            SetMainCallback2(CB2_SlotMachineSetup);\n            DestroyTask(taskId);\n        }\n        break;\n    }",
       "callsTo": [
         "BeginNormalPaletteFade",
@@ -18,6 +24,16 @@
       "returnType": "void",
       "signature": "void PlaySlotMachine(u8 machineId, MainCallback exitCallback)",
       "paramsRaw": "u8 machineId, MainCallback exitCallback",
+      "paramsList": [
+        {
+          "name": "machineId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "exitCallback",
+          "typeRaw": "MainCallback"
+        }
+      ],
       "body": "u8 taskId;\n\n    sSlotMachine = AllocZeroed(sizeof(*sSlotMachine));\n    PlaySlotMachine_Internal(machineId, exitCallback);\n    taskId = CreateTask(Task_FadeToSlotMachine, 0);\n    gTasks[taskId].tState = 0;",
       "callsTo": [
         "AllocZeroed",
@@ -30,6 +46,7 @@
       "returnType": "void",
       "signature": "static void CB2_SlotMachineSetup(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (gMain.state)\n    {\n        case 0:\n            SlotMachineSetup_InitBgsWindows();\n            InitSlotMachine();\n            gMain.state++;\n            break;\n        case 1:\n            SlotMachineSetup_InitVRAM();\n            gMain.state++;\n            break;\n        case 2:\n            SlotMachineSetup_InitOAM();\n            SlotMachineSetup_InitGpuRegs();\n            gMain.state++;\n            break;\n        case 3:\n            SlotMachineSetup_InitPalsSpritesTasks();\n            gMain.state++;\n            break;\n        case 4:\n            SlotMachineSetup_InitTilemaps();\n            gMain.state++;\n            break;\n        case 5:\n            SlotMachineSetup_LoadGfxAndTilemaps();\n            gMain.state++;\n            break;\n        case 6:\n            SlotMachineSetup_InitVBlank();\n            gMain.state++;\n            break;\n        case 7:\n            BeginNormalPaletteFade(-1, 0, 0x10, 0, RGB_BLACK);\n            ShowBg(0);\n            ShowBg(1);\n            ShowBg(2);\n            ShowBg(3);\n            gMain.state++;\n            break;\n        case 8:\n            AllocDigitalDisplayGfx();\n            gMain.state++;\n            break;\n        case 9:\n            SetDigitalDisplayImagePtrs();\n            gMain.state++;\n            break;\n        case 10:\n            CreateSlotMachineSprites();\n            CreateGameplayTasks();\n            gMain.state++;\n            break;\n        case 11:\n            SetMainCallback2(CB2_SlotMachine);\n            break;\n    }",
       "callsTo": [
         "AllocDigitalDisplayGfx",
@@ -55,6 +72,7 @@
       "returnType": "void",
       "signature": "static void CB2_SlotMachine(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "RunTasks();\n    AnimateSprites();\n    BuildOamBuffer();\n    UpdatePaletteFade();",
       "callsTo": [
         "AnimateSprites",
@@ -68,6 +86,7 @@
       "returnType": "void",
       "signature": "static void SlotMachine_VBlankCB(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "LoadOam();\n    ProcessSpriteCopyRequests();\n    TransferPlttBuffer();\n    SetGpuReg(REG_OFFSET_WIN0H, sSlotMachine->win0h);\n    SetGpuReg(REG_OFFSET_WIN0V, sSlotMachine->win0v);\n    SetGpuReg(REG_OFFSET_WININ, sSlotMachine->winIn);\n    SetGpuReg(REG_OFFSET_WINOUT, sSlotMachine->winOut);",
       "callsTo": [
         "LoadOam",
@@ -81,6 +100,16 @@
       "returnType": "void",
       "signature": "static void PlaySlotMachine_Internal(u8 machineId, MainCallback exitCallback)",
       "paramsRaw": "u8 machineId, MainCallback exitCallback",
+      "paramsList": [
+        {
+          "name": "machineId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "exitCallback",
+          "typeRaw": "MainCallback"
+        }
+      ],
       "body": "struct Task *task = &gTasks[CreateTask(SlotMachineDummyTask, 0xFF)];\n    task->tMachineId = machineId;\n    StoreWordInTwoHalfwords(&task->tExitCallback, (intptr_t)exitCallback);",
       "callsTo": [
         "CreateTask",
@@ -92,6 +121,7 @@
       "returnType": "void",
       "signature": "static void SlotMachine_InitFromTask(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "struct Task *task = &gTasks[FindTaskIdByFunc(SlotMachineDummyTask)];\n    sSlotMachine->machineId = task->tMachineId;\n    LoadWordFromTwoHalfwords((u16 *)&task->tExitCallback, (u32 *)&sSlotMachine->prevMainCb);",
       "callsTo": [
         "FindTaskIdByFunc",
@@ -103,6 +133,12 @@
       "returnType": "void",
       "signature": "static void SlotMachineDummyTask(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "",
       "callsTo": [],
       "lineCount": 1
@@ -111,6 +147,7 @@
       "returnType": "void",
       "signature": "static void SlotMachineSetup_InitBgsWindows(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "SetVBlankCallback(NULL);\n    SetHBlankCallback(NULL);\n    CpuFill32(0, (void *)VRAM, VRAM_SIZE);\n    ResetBgsAndClearDma3BusyFlags(0);\n    InitBgsFromTemplates(0, sBgTemplates, ARRAY_COUNT(sBgTemplates));\n    InitWindows(sWindowTemplates);\n    DeactivateAllTextPrinters();",
       "callsTo": [
         "ARRAY_COUNT",
@@ -128,6 +165,7 @@
       "returnType": "void",
       "signature": "static void SlotMachineSetup_InitVBlank(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "SetVBlankCallback(SlotMachine_VBlankCB);\n    EnableInterrupts(INTR_FLAG_VBLANK);\n    SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_OBJ_1D_MAP | DISPCNT_OBJ_ON | DISPCNT_WIN0_ON);",
       "callsTo": [
         "EnableInterrupts",
@@ -140,6 +178,7 @@
       "returnType": "void",
       "signature": "static void SlotMachineSetup_InitVRAM(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "DmaClearLarge16(3, (u16 *)(BG_VRAM), BG_VRAM_SIZE, 0x1000);",
       "callsTo": [
         "DmaClearLarge16"
@@ -150,6 +189,7 @@
       "returnType": "void",
       "signature": "static void SlotMachineSetup_InitOAM(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "DmaClear16(3, (u16 *)OAM, OAM_SIZE);",
       "callsTo": [
         "DmaClear16"
@@ -160,6 +200,7 @@
       "returnType": "void",
       "signature": "static void SlotMachineSetup_InitGpuRegs(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "SetGpuReg(REG_OFFSET_BG0CNT, 0);\n    SetGpuReg(REG_OFFSET_BG1CNT, 0);\n    SetGpuReg(REG_OFFSET_BG2CNT, 0);\n    SetGpuReg(REG_OFFSET_BG3CNT, 0);\n    SetGpuReg(REG_OFFSET_BG0HOFS, 0);\n    SetGpuReg(REG_OFFSET_BG0VOFS, 0);\n    SetGpuReg(REG_OFFSET_BG1HOFS, 0);\n    SetGpuReg(REG_OFFSET_BG1VOFS, 0);\n    SetGpuReg(REG_OFFSET_BG2HOFS, 0);\n    SetGpuReg(REG_OFFSET_BG2VOFS, 0);\n    SetGpuReg(REG_OFFSET_BG3HOFS, 0);\n    SetGpuReg(REG_OFFSET_BG3VOFS, 0);\n    SetGpuReg(REG_OFFSET_WININ, WININ_WIN0_BG_ALL | WININ_WIN0_OBJ | WININ_WIN0_CLR);\n    SetGpuReg(REG_OFFSET_WINOUT, WINOUT_WIN01_BG_ALL | WINOUT_WIN01_OBJ | WINOUT_WIN01_CLR);\n    SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_TGT1_BG3 | BLDCNT_EFFECT_BLEND | BLDCNT_TGT2_OBJ);\n    SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(9, 8));",
       "callsTo": [
         "BLDALPHA_BLEND",
@@ -171,6 +212,7 @@
       "returnType": "void",
       "signature": "static void InitSlotMachine(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n\n    SlotMachine_InitFromTask();\n    sSlotMachine->state = SLOTTASK_UNFADE;\n    sSlotMachine->pikaPowerBolts = 0;\n    sSlotMachine->luckyGame = Random() & 1;\n    sSlotMachine->machineBias = 0;\n    sSlotMachine->matches = 0;\n    sSlotMachine->reelTimeSpinsLeft = 0;\n    sSlotMachine->reelTimeSpinsUsed = 0;\n    sSlotMachine->coins = GetCoins();\n    sSlotMachine->payout = 0;\n    sSlotMachine->netCoinLoss = 0;\n    sSlotMachine->bet = 0;\n    sSlotMachine->currentReel = LEFT_REEL;\n    sSlotMachine->reelSpeed = REEL_NORMAL_SPEED;\n    sSlotMachine->win0h = DISPLAY_WIDTH;\n    sSlotMachine->win0v = DISPLAY_HEIGHT;\n    sSlotMachine->winIn = WININ_WIN0_BG_ALL | WININ_WIN0_OBJ | WININ_WIN0_CLR;\n    sSlotMachine->winOut = WINOUT_WIN01_BG_ALL | WINOUT_WIN01_OBJ | WINOUT_WIN01_CLR;\n    sSlotMachine->backupMapMusic = GetCurrentMapMusic();\n\n    for (i = 0; i < NUM_REELS; i++)\n    {\n        sSlotMachine->reelShockOffsets[i] = 0;\n        sSlotMachine->reelPositions[i] = sInitialReelPositions[i][sSlotMachine->luckyGame] % SYMBOLS_PER_REEL;\n        sSlotMachine->reelPixelOffsets[i] = REEL_HEIGHT - sSlotMachine->reelPositions[i] * REEL_SYMBOL_HEIGHT;\n        sSlotMachine->reelPixelOffsets[i] %= REEL_HEIGHT;\n    }\n    AlertTVThatPlayerPlayedSlotMachine(GetCoins());",
       "callsTo": [
         "AlertTVThatPlayerPlayedSlotMachine",
@@ -185,6 +227,7 @@
       "returnType": "void",
       "signature": "static void SlotMachineSetup_InitPalsSpritesTasks(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ResetPaletteFade();\n    ResetSpriteData();\n    gOamLimit = 0x80;\n    FreeAllSpritePalettes();\n    ResetTasks();",
       "callsTo": [
         "FreeAllSpritePalettes",
@@ -198,6 +241,7 @@
       "returnType": "void",
       "signature": "static void SlotMachineSetup_InitTilemaps(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sSelectedPikaPowerTile = Alloc(8);\n    sReelOverlay_Tilemap = AllocZeroed(14);\n    sReelButtonPress_Tilemap = AllocZeroed(8);\n\n     \n    sReelOverlay_Tilemap[0] = 0x2051;\n    sReelOverlay_Tilemap[1] = 0x2851;\n    sReelOverlay_Tilemap[2] = 0x2061;\n    sReelOverlay_Tilemap[3] = 0x2861;\n    sReelOverlay_Tilemap[4] = 0x20BE;\n    sReelOverlay_Tilemap[5] = 0x28BE;\n    sReelOverlay_Tilemap[6] = 0x20BF;",
       "callsTo": [
         "Alloc",
@@ -209,6 +253,7 @@
       "returnType": "void",
       "signature": "static void SlotMachineSetup_LoadGfxAndTilemaps(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "LoadMenuGfx();\n    LoadMenuAndReelOverlayTilemaps();\n    LoadSlotMachineGfx();\n    LoadMessageBoxGfx(0, 0x200, BG_PLTT_ID(15));\n    LoadUserWindowBorderGfx(0, 0x214, BG_PLTT_ID(14));\n    PutWindowTilemap(WIN_MSG);",
       "callsTo": [
         "BG_PLTT_ID",
@@ -225,6 +270,7 @@
       "returnType": "void",
       "signature": "static void CreateSlotMachineSprites(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "CreateReelSymbolSprites();\n    CreateCreditPayoutNumberSprites();\n    CreateInvisibleFlashMatchLineSprites();\n    CreateReelBackgroundSprite();",
       "callsTo": [
         "CreateCreditPayoutNumberSprites",
@@ -238,6 +284,7 @@
       "returnType": "void",
       "signature": "static void CreateGameplayTasks(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "CreatePikaPowerBoltTask();\n    CreateReelTasks();\n    CreateDigitalDisplayTask();\n    CreateSlotMachineTasks();",
       "callsTo": [
         "CreateDigitalDisplayTask",
@@ -251,6 +298,7 @@
       "returnType": "void",
       "signature": "static void CreateSlotMachineTasks(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "Task_SlotMachine(CreateTask(Task_SlotMachine, 0));",
       "callsTo": [
         "CreateTask",
@@ -262,6 +310,12 @@
       "returnType": "void",
       "signature": "static void Task_SlotMachine(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "while (sSlotTasks[sSlotMachine->state](&gTasks[taskId]))\n        ;",
       "callsTo": [],
       "lineCount": 2
@@ -270,6 +324,12 @@
       "returnType": "bool8",
       "signature": "static bool8 SlotTask_UnfadeScreen(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);\n    LoadPikaPowerMeter(sSlotMachine->pikaPowerBolts);\n    sSlotMachine->state++;  \n    return FALSE;",
       "callsTo": [
         "BeginNormalPaletteFade",
@@ -281,6 +341,12 @@
       "returnType": "bool8",
       "signature": "static bool8 SlotTask_WaitUnfade(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (!gPaletteFade.active)\n        sSlotMachine->state++;\n    return FALSE;",
       "callsTo": [],
       "lineCount": 3
@@ -289,6 +355,12 @@
       "returnType": "bool8",
       "signature": "static bool8 SlotTask_ReadyNewSpin(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "sSlotMachine->payout = 0;\n    sSlotMachine->bet = 0;\n    sSlotMachine->currentReel = LEFT_REEL;\n    sSlotMachine->machineBias &= (BIAS_STRAIGHT_7 | BIAS_MIXED_7);\n    sSlotMachine->state = SLOTTASK_ASK_INSERT_BET;\n    if (sSlotMachine->coins <= 0)\n    {\n        sSlotMachine->state = SLOTTASK_MSG_NO_MORE_COINS;\n    }\n    else if (sSlotMachine->reelTimeSpinsLeft)\n    {\n        sSlotMachine->state = SLOTTASK_READY_NEW_RT_SPIN;\n        CreateDigitalDisplayScene(DIG_DISPLAY_REEL_TIME);\n    }\n    return TRUE;",
       "callsTo": [
         "CreateDigitalDisplayScene"
@@ -299,6 +371,12 @@
       "returnType": "bool8",
       "signature": "static bool8 SlotTask_ReadyNewReelTimeSpin(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (IsDigitalDisplayAnimFinished())\n        sSlotMachine->state = SLOTTASK_ASK_INSERT_BET;\n    return FALSE;",
       "callsTo": [
         "IsDigitalDisplayAnimFinished"
@@ -309,6 +387,12 @@
       "returnType": "bool8",
       "signature": "static bool8 SlotTask_AskInsertBet(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "CreateDigitalDisplayScene(DIG_DISPLAY_INSERT_BET);\n    sSlotMachine->state = SLOTTASK_BET_INPUT;\n    if (sSlotMachine->coins >= MAX_COINS)\n        sSlotMachine->state = SLOTTASK_MSG_MAX_COINS;\n    return TRUE;",
       "callsTo": [
         "CreateDigitalDisplayScene"
@@ -319,6 +403,12 @@
       "returnType": "bool8",
       "signature": "static bool8 SlotTask_HandleBetInput(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "s16 i;\n\n    if (JOY_NEW(SELECT_BUTTON))\n    {\n        OpenInfoBox(DIG_DISPLAY_INSERT_BET);\n        sSlotMachine->state = SLOTTASK_WAIT_INFO_BOX;\n    }\n     \n    else if (JOY_NEW(R_BUTTON))\n    {\n        if (sSlotMachine->coins - (MAX_BET - sSlotMachine->bet) >= 0)\n        {\n            for (i = sSlotMachine->bet; i < MAX_BET; i++)\n                LightenBetTiles(i);\n            sSlotMachine->coins -= (MAX_BET - sSlotMachine->bet);\n            sSlotMachine->bet = MAX_BET;\n            sSlotMachine->state = SLOTTASK_START_SPIN;\n            PlaySE(SE_SHOP);\n        }\n         \n        else\n        {\n            sSlotMachine->state = SLOTTASK_MSG_NEED_3_COINS;\n        }\n    }\n    else\n    {\n         \n        if (JOY_NEW(DPAD_DOWN) && sSlotMachine->coins != 0)\n        {\n            PlaySE(SE_SHOP);\n            LightenBetTiles(sSlotMachine->bet);\n            sSlotMachine->coins--;\n            sSlotMachine->bet++;\n        }\n\n         \n        if (sSlotMachine->bet >= MAX_BET || (sSlotMachine->bet != 0 && JOY_NEW(A_BUTTON)))\n            sSlotMachine->state = SLOTTASK_START_SPIN;\n\n         \n        if (JOY_NEW(B_BUTTON))\n            sSlotMachine->state = SLOTTASK_ASK_QUIT;\n    }\n    return FALSE;",
       "callsTo": [
         "JOY_NEW",
@@ -332,6 +422,12 @@
       "returnType": "bool8",
       "signature": "static bool8 SlotTask_PrintMsg_Need3Coins(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "DrawDialogueFrame(WIN_MSG, FALSE);\n    AddTextPrinterParameterized(WIN_MSG, FONT_NORMAL, gText_YouDontHaveThreeCoins, 0, 1, 0, 0);\n    CopyWindowToVram(WIN_MSG, COPYWIN_FULL);\n    sSlotMachine->state = SLOTTASK_WAIT_MSG_NEED_3_COINS;\n    return FALSE;",
       "callsTo": [
         "AddTextPrinterParameterized",
@@ -344,6 +440,12 @@
       "returnType": "bool8",
       "signature": "static bool8 SlotTask_WaitMsg_Need3Coins(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (JOY_NEW(A_BUTTON | B_BUTTON))\n    {\n        ClearDialogWindowAndFrame(WIN_MSG, TRUE);\n        sSlotMachine->state = SLOTTASK_BET_INPUT;\n    }\n    return FALSE;",
       "callsTo": [
         "ClearDialogWindowAndFrame",
@@ -355,6 +457,12 @@
       "returnType": "bool8",
       "signature": "static bool8 SlotTask_WaitInfoBox(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (IsInfoBoxClosed())\n        sSlotMachine->state = SLOTTASK_BET_INPUT;\n    return FALSE;",
       "callsTo": [
         "IsInfoBoxClosed"
@@ -365,6 +473,12 @@
       "returnType": "bool8",
       "signature": "static bool8 SlotTask_StartSpin(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "DrawMachineBias();\n    DestroyDigitalDisplayScene();\n\n    SpinSlotReel(LEFT_REEL);\n    SpinSlotReel(MIDDLE_REEL);\n    SpinSlotReel(RIGHT_REEL);\n\n    IncrementDailySlotsUses();\n\n    task->tTimer = 0;\n    if (sSlotMachine->machineBias & BIAS_REELTIME)\n    {\n        BeginReelTime();\n        sSlotMachine->state = SLOTTASK_START_RT_SPIN;\n    }\n    else\n    {\n        CreateDigitalDisplayScene(DIG_DISPLAY_STOP_REEL);\n        sSlotMachine->state = SLOTTASK_RESET_BIAS_FAILURE;\n    }\n    sSlotMachine->reelSpeed = REEL_NORMAL_SPEED;\n    if (sSlotMachine->reelTimeSpinsLeft)\n        sSlotMachine->reelSpeed = ReelTimeSpeed();\n    return FALSE;",
       "callsTo": [
         "BeginReelTime",
@@ -381,6 +495,12 @@
       "returnType": "bool8",
       "signature": "static bool8 SlotTask_StartReelTimeSpin(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (IsReelTimeTaskDone())\n    {\n        CreateDigitalDisplayScene(DIG_DISPLAY_STOP_REEL);\n        sSlotMachine->machineBias &= ~BIAS_REELTIME;\n        sSlotMachine->state = SLOTTASK_RESET_BIAS_FAILURE;\n    }\n    return FALSE;",
       "callsTo": [
         "CreateDigitalDisplayScene",
@@ -392,6 +512,12 @@
       "returnType": "bool8",
       "signature": "static bool8 SlotTask_ResetBiasFailure(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (++task->tTimer >= 30)\n    {\n        ResetBiasFailure();\n        sSlotMachine->state = SLOTTASK_WAIT_REEL_STOP;\n    }\n    return FALSE;",
       "callsTo": [
         "ResetBiasFailure"
@@ -402,6 +528,12 @@
       "returnType": "bool8",
       "signature": "static bool8 SlotTask_WaitReelStop(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (JOY_NEW(A_BUTTON))\n    {\n        PlaySE(SE_CONTEST_PLACE);\n        StopSlotReel(sSlotMachine->currentReel);\n        PressStopReelButton(sSlotMachine->currentReel);\n        sSlotMachine->state = SLOTTASK_WAIT_ALL_REELS_STOP;\n    }\n    return FALSE;",
       "callsTo": [
         "JOY_NEW",
@@ -415,6 +547,12 @@
       "returnType": "bool8",
       "signature": "static bool8 SlotTask_WaitAllReelsStop(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (!IsSlotReelMoving(sSlotMachine->currentReel))\n    {\n        sSlotMachine->currentReel++;\n        sSlotMachine->state = SLOTTASK_WAIT_REEL_STOP;\n        if (sSlotMachine->currentReel >= NUM_REELS)\n        {\n            sSlotMachine->state = SLOTTASK_CHECK_MATCHES;\n        }\n        return TRUE;\n    }\n    return FALSE;",
       "callsTo": [
         "IsSlotReelMoving"
@@ -425,6 +563,12 @@
       "returnType": "bool8",
       "signature": "static bool8 SlotTask_CheckMatches(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "sSlotMachine->machineBias &= (BIAS_STRAIGHT_7 | BIAS_MIXED_7);\n    CheckMatch();\n    if (sSlotMachine->reelTimeSpinsLeft)\n    {\n        sSlotMachine->reelTimeSpinsLeft--;\n        sSlotMachine->reelTimeSpinsUsed++;\n    }\n\n    if (sSlotMachine->matches)\n    {\n        sSlotMachine->state = SLOTTASK_WAIT_PAYOUT;\n        AwardPayout();\n        FlashSlotMachineLights();\n        if ((sSlotMachine->netCoinLoss -= sSlotMachine->payout) < 0)\n        {\n            sSlotMachine->netCoinLoss = 0;\n        }\n        if (sSlotMachine->matches & ((1 << MATCH_BLUE_7) | (1 << MATCH_RED_7)))\n        {\n            PlayFanfare(MUS_SLOTS_JACKPOT);\n            CreateDigitalDisplayScene(DIG_DISPLAY_BONUS_BIG);\n        }\n        else if (sSlotMachine->matches & (1 << MATCH_MIXED_7))\n        {\n            PlayFanfare(MUS_SLOTS_JACKPOT);\n            CreateDigitalDisplayScene(DIG_DISPLAY_BONUS_REG);\n        }\n        else\n        {\n            PlayFanfare(MUS_SLOTS_WIN);\n            CreateDigitalDisplayScene(DIG_DISPLAY_WIN);\n        }\n\n        if (sSlotMachine->matches & ((1 << MATCH_MIXED_7) | (1 << MATCH_BLUE_7) | (1 << MATCH_RED_7)))\n        {\n            sSlotMachine->machineBias &= ~(BIAS_STRAIGHT_7 | BIAS_MIXED_7);\n            if (sSlotMachine->matches & ((1 << MATCH_BLUE_7) | (1 << MATCH_RED_7)))\n            {\n                 \n                sSlotMachine->reelTimeSpinsLeft = 0;\n                sSlotMachine->reelTimeSpinsUsed = 0;\n                sSlotMachine->luckyGame = FALSE;\n                if (sSlotMachine->matches & (1 << MATCH_BLUE_7))\n                    sSlotMachine->luckyGame = TRUE;\n            }\n        }\n        if (sSlotMachine->matches & (1 << MATCH_POWER) && sSlotMachine->pikaPowerBolts < 16)\n        {\n            sSlotMachine->pikaPowerBolts++;\n            AddPikaPowerBolt(sSlotMachine->pikaPowerBolts);\n        }\n    }\n    else\n    {\n        CreateDigitalDisplayScene(DIG_DISPLAY_LOSE);\n        sSlotMachine->state = SLOTTASK_NO_MATCHES;\n        if ((sSlotMachine->netCoinLoss += sSlotMachine->bet) > MAX_COINS)\n            sSlotMachine->netCoinLoss = MAX_COINS;\n    }\n    return FALSE;",
       "callsTo": [
         "AddPikaPowerBolt",
@@ -440,6 +584,12 @@
       "returnType": "bool8",
       "signature": "static bool8 SlotTask_WaitPayout(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (IsFinalTask_Task_Payout())\n        sSlotMachine->state = SLOTTASK_END_PAYOUT;\n    return FALSE;",
       "callsTo": [
         "IsFinalTask_Task_Payout"
@@ -450,6 +600,12 @@
       "returnType": "bool8",
       "signature": "static bool8 SlotTask_EndPayout(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (TryStopSlotMachineLights())\n    {\n        sSlotMachine->state = SLOTTASK_RESET_BET_TILES;\n\n        if (sSlotMachine->matches & ((1 << MATCH_RED_7) | (1 << MATCH_BLUE_7)))\n            IncrementGameStat(GAME_STAT_SLOT_JACKPOTS);\n\n        if (sSlotMachine->matches & (1 << MATCH_REPLAY))\n        {\n            sSlotMachine->currentReel = LEFT_REEL;\n            sSlotMachine->state = SLOTTASK_START_SPIN;\n        }\n\n        if (sSlotMachine->matches & (1 << MATCH_POWER))\n            sSlotMachine->state = SLOTTASK_MATCHED_POWER;\n\n        if (sSlotMachine->reelTimeSpinsLeft && sSlotMachine->matches & (1 << MATCH_REPLAY))\n        {\n            CreateDigitalDisplayScene(DIG_DISPLAY_REEL_TIME);\n            sSlotMachine->state = SLOTTASK_WAIT_RT_ANIM;\n        }\n    }\n    return FALSE;",
       "callsTo": [
         "CreateDigitalDisplayScene",
@@ -462,6 +618,12 @@
       "returnType": "bool8",
       "signature": "static bool8 SlotTask_MatchedPower(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (!IsPikaPowerBoltAnimating())\n    {\n        sSlotMachine->state = SLOTTASK_RESET_BET_TILES;\n        if (sSlotMachine->matches & (1 << MATCH_REPLAY))\n        {\n            sSlotMachine->state = SLOTTASK_START_SPIN;\n            if (sSlotMachine->reelTimeSpinsLeft)\n            {\n                CreateDigitalDisplayScene(DIG_DISPLAY_REEL_TIME);\n                sSlotMachine->state = SLOTTASK_WAIT_RT_ANIM;\n            }\n        }\n    }\n    return FALSE;",
       "callsTo": [
         "CreateDigitalDisplayScene",
@@ -473,6 +635,12 @@
       "returnType": "bool8",
       "signature": "static bool8 SlotTask_WaitReelTimeAnim(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (IsDigitalDisplayAnimFinished())\n    {\n        sSlotMachine->state = SLOTTASK_RESET_BET_TILES;\n        if (sSlotMachine->matches & (1 << MATCH_REPLAY))\n        {\n            sSlotMachine->state = SLOTTASK_START_SPIN;\n        }\n    }\n    return FALSE;",
       "callsTo": [
         "IsDigitalDisplayAnimFinished"
@@ -483,6 +651,12 @@
       "returnType": "bool8",
       "signature": "static bool8 SlotTask_ResetBetTiles(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "DarkenBetTiles(0);\n    DarkenBetTiles(1);\n    DarkenBetTiles(2);\n    sSlotMachine->state = SLOTTASK_READY_NEW_SPIN;\n    return FALSE;",
       "callsTo": [
         "DarkenBetTiles"
@@ -493,6 +667,12 @@
       "returnType": "bool8",
       "signature": "static bool8 SlotTask_NoMatches(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (++task->tTimer2 > 64)\n    {\n        task->tTimer2 = 0;\n        sSlotMachine->state = SLOTTASK_RESET_BET_TILES;\n    }\n    return FALSE;",
       "callsTo": [],
       "lineCount": 6
@@ -501,6 +681,12 @@
       "returnType": "bool8",
       "signature": "static bool8 SlotTask_AskQuit(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "DrawDialogueFrame(WIN_MSG, FALSE);\n    AddTextPrinterParameterized(WIN_MSG, FONT_NORMAL, gText_QuitTheGame, 0, 1, 0, 0);\n    CopyWindowToVram(WIN_MSG, COPYWIN_FULL);\n    CreateYesNoMenuParameterized(0x15, 7, 0x214, 0x180, 0xE, 0xF);\n    sSlotMachine->state = SLOTTASK_HANDLE_QUIT_INPUT;\n    return FALSE;",
       "callsTo": [
         "AddTextPrinterParameterized",
@@ -514,6 +700,12 @@
       "returnType": "bool8",
       "signature": "static bool8 SlotTask_HandleQuitInput(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "s8 input = Menu_ProcessInputNoWrapClearOnChoose();\n    if (input == 0)  \n    {\n        ClearDialogWindowAndFrame(WIN_MSG, TRUE);\n        DarkenBetTiles(0);\n        DarkenBetTiles(1);\n        DarkenBetTiles(2);\n        sSlotMachine->coins += sSlotMachine->bet;\n        sSlotMachine->state = SLOTTASK_END;\n    }\n    else if (input == 1 || input == MENU_B_PRESSED)  \n    {\n        ClearDialogWindowAndFrame(WIN_MSG, TRUE);\n        sSlotMachine->state = SLOTTASK_BET_INPUT;\n    }\n    return FALSE;",
       "callsTo": [
         "ClearDialogWindowAndFrame",
@@ -526,6 +718,12 @@
       "returnType": "bool8",
       "signature": "static bool8 SlotTask_PrintMsg_MaxCoins(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "DrawDialogueFrame(WIN_MSG, FALSE);\n    AddTextPrinterParameterized(WIN_MSG, FONT_NORMAL, gText_YouveGot9999Coins, 0, 1, 0, 0);\n    CopyWindowToVram(WIN_MSG, COPYWIN_FULL);\n    sSlotMachine->state = SLOTTASK_WAIT_MSG_MAX_COINS;\n    return FALSE;",
       "callsTo": [
         "AddTextPrinterParameterized",
@@ -538,6 +736,12 @@
       "returnType": "bool8",
       "signature": "static bool8 SlotTask_WaitMsg_MaxCoins(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (JOY_NEW(A_BUTTON | B_BUTTON))\n    {\n        ClearDialogWindowAndFrame(WIN_MSG, TRUE);\n        sSlotMachine->state = SLOTTASK_BET_INPUT;\n    }\n    return FALSE;",
       "callsTo": [
         "ClearDialogWindowAndFrame",
@@ -549,6 +753,12 @@
       "returnType": "bool8",
       "signature": "static bool8 SlotTask_PrintMsg_NoMoreCoins(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "DrawDialogueFrame(WIN_MSG, FALSE);\n    AddTextPrinterParameterized(WIN_MSG, FONT_NORMAL, gText_YouveRunOutOfCoins, 0, 1, 0, 0);\n    CopyWindowToVram(WIN_MSG, COPYWIN_FULL);\n    sSlotMachine->state = SLOTTASK_WAIT_MSG_NO_MORE_COINS;\n    return FALSE;",
       "callsTo": [
         "AddTextPrinterParameterized",
@@ -561,6 +771,12 @@
       "returnType": "bool8",
       "signature": "static bool8 SlotTask_WaitMsg_NoMoreCoins(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (JOY_NEW(A_BUTTON | B_BUTTON))\n    {\n        ClearDialogWindowAndFrame(WIN_MSG, TRUE);\n        sSlotMachine->state = SLOTTASK_END;\n    }\n    return FALSE;",
       "callsTo": [
         "ClearDialogWindowAndFrame",
@@ -572,6 +788,12 @@
       "returnType": "bool8",
       "signature": "static bool8 SlotTask_EndGame(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "SetCoins(sSlotMachine->coins);\n    TryPutFindThatGamerOnAir(GetCoins());\n    BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);\n    sSlotMachine->state++;  \n    return FALSE;",
       "callsTo": [
         "BeginNormalPaletteFade",
@@ -585,6 +807,12 @@
       "returnType": "bool8",
       "signature": "static bool8 SlotTask_FreeDataStructures(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (!gPaletteFade.active)\n    {\n        SetMainCallback2(sSlotMachine->prevMainCb);\n        FREE_AND_SET_NULL(sImageTable_DigitalDisplay_Reel);\n        FREE_AND_SET_NULL(sImageTable_DigitalDisplay_Time);\n        FREE_AND_SET_NULL(sImageTable_DigitalDisplay_Insert);\n        FREE_AND_SET_NULL(sImageTable_DigitalDisplay_Stop);\n        FREE_AND_SET_NULL(sImageTable_DigitalDisplay_Win);\n        FREE_AND_SET_NULL(sImageTable_DigitalDisplay_Lose);\n        FREE_AND_SET_NULL(sImageTable_DigitalDisplay_Bonus);\n        FREE_AND_SET_NULL(sImageTable_DigitalDisplay_Big);\n        FREE_AND_SET_NULL(sImageTable_DigitalDisplay_Reg);\n        FREE_AND_SET_NULL(sImageTable_DigitalDisplay_AButton);\n        FREE_AND_SET_NULL(sImageTable_DigitalDisplay_Smoke);\n        FREE_AND_SET_NULL(sImageTable_DigitalDisplay_Number);\n        FREE_AND_SET_NULL(sImageTable_DigitalDisplay_Pokeball);\n        FREE_AND_SET_NULL(sImageTable_DigitalDisplay_DPad);\n        TRY_FREE_AND_SET_NULL(sImageTable_ReelTimePikachu);\n        TRY_FREE_AND_SET_NULL(sImageTable_ReelTimeMachineAntennae);\n        TRY_FREE_AND_SET_NULL(sImageTable_ReelTimeMachine);\n        TRY_FREE_AND_SET_NULL(sImageTable_BrokenReelTimeMachine);\n        FREE_AND_SET_NULL(sMenuGfx);\n        FREE_AND_SET_NULL(sSelectedPikaPowerTile);\n        FREE_AND_SET_NULL(sReelOverlay_Tilemap);\n        FREE_AND_SET_NULL(sDigitalDisplayGfxPtr);\n        FREE_AND_SET_NULL(sReelTimeGfxPtr);\n        FREE_AND_SET_NULL(sReelButtonPress_Tilemap);\n        FREE_AND_SET_NULL(sReelBackground_Gfx);\n        FREE_AND_SET_NULL(sReelBackgroundSpriteSheet);\n        FREE_AND_SET_NULL(sSlotMachineSpritesheetsPtr);\n        FREE_AND_SET_NULL(sSlotMachine);\n    }\n    return FALSE;",
       "callsTo": [
         "FREE_AND_SET_NULL",
@@ -597,6 +825,7 @@
       "returnType": "void",
       "signature": "static void DrawMachineBias(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 whichBias;\n\n    if (sSlotMachine->reelTimeSpinsLeft == 0)\n    {\n        if (!(sSlotMachine->machineBias & (BIAS_STRAIGHT_7 | BIAS_MIXED_7)))\n        {\n            if (ShouldTrySpecialBias())\n            {\n                whichBias = TrySelectBias_Special();\n                if (whichBias != ARRAY_COUNT(sBiasesSpecial))  \n                {\n                    sSlotMachine->machineBias |= sBiasesSpecial[whichBias];\n\n                     \n                    if (whichBias != 1) return;\n                }\n            }\n\n            whichBias = TrySelectBias_Regular();\n            if (whichBias != ARRAY_COUNT(sBiasesRegular))  \n                sSlotMachine->machineBias |= sBiasesRegular[whichBias];\n        }\n    }",
       "callsTo": [
         "ARRAY_COUNT",
@@ -610,6 +839,7 @@
       "returnType": "void",
       "signature": "static void ResetBiasFailure(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sSlotMachine->didNotFailBias = FALSE;\n    if (sSlotMachine->machineBias)\n        sSlotMachine->didNotFailBias = TRUE;",
       "callsTo": [],
       "lineCount": 3
@@ -618,6 +848,12 @@
       "returnType": "u8",
       "signature": "static u8 GetBiasSymbol(u8 machineBias)",
       "paramsRaw": "u8 machineBias",
+      "paramsList": [
+        {
+          "name": "machineBias",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 i;\n\n    for (i = 0; i < 8; i++)\n    {\n        if (machineBias & 1)\n            return sBiasSymbols[i];\n        machineBias >>= 1;\n    }\n    return 0;",
       "callsTo": [],
       "lineCount": 9
@@ -626,6 +862,7 @@
       "returnType": "bool8",
       "signature": "static bool8 ShouldTrySpecialBias(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 rval = Random();\n    if (sSpecialDrawOdds[sSlotMachine->machineId][sSlotMachine->bet - 1] > rval)\n        return TRUE;\n    return FALSE;",
       "callsTo": [
         "Random"
@@ -636,6 +873,7 @@
       "returnType": "u8",
       "signature": "static u8 TrySelectBias_Special(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s16 whichBias;\n\n    for (whichBias = 0; whichBias < (int)ARRAY_COUNT(sBiasesSpecial); whichBias++)\n    {\n        s16 rval = Random() & 0xff;\n        s16 value = sBiasProbabilities_Special[whichBias][sSlotMachine->machineId];\n        if (value > rval)\n            break;\n    }\n    return whichBias;",
       "callsTo": [
         "ARRAY_COUNT",
@@ -647,6 +885,7 @@
       "returnType": "u8",
       "signature": "static u8 TrySelectBias_Regular(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s16 whichBias;\n\n    for (whichBias = 0; whichBias < (int)ARRAY_COUNT(sBiasesRegular); whichBias++)\n    {\n        s16 rval = Random() & 0xff;\n        s16 value = sBiasProbabilities_Regular[whichBias][sSlotMachine->machineId];\n\n         \n        if (whichBias == 0 && sSlotMachine->luckyGame == TRUE)\n        {\n            value += 10;\n            if (value > 0x100)\n                value = 0x100;\n        }\n         \n        else if (whichBias == 4 && sSlotMachine->luckyGame == TRUE)\n        {\n            value -= 10;\n            if (value < 0)\n                value = 0;\n        }\n        if (value > rval)\n            break;\n    }\n    return whichBias;",
       "callsTo": [
         "ARRAY_COUNT",
@@ -658,6 +897,12 @@
       "returnType": "u8",
       "signature": "static u8 GetReelTimeSpinProbability(u8 spins)",
       "paramsRaw": "u8 spins",
+      "paramsList": [
+        {
+          "name": "spins",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (sSlotMachine->luckyGame == FALSE)\n        return sReelTimeProbabilities_NormalGame[spins][sSlotMachine->pikaPowerBolts];\n    else\n        return sReelTimeProbabilities_LuckyGame[spins][sSlotMachine->pikaPowerBolts];",
       "callsTo": [],
       "lineCount": 4
@@ -666,6 +911,7 @@
       "returnType": "void",
       "signature": "static void GetReelTimeDraw(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 rval;\n    s16 spins;\n\n    sSlotMachine->reelTimeDraw = 0;\n    rval = Random();\n    if (rval < GetReelTimeSpinProbability(0))\n        return;\n    for (spins = 5; spins > 0; spins--)\n    {\n        rval = Random();\n        if (rval < GetReelTimeSpinProbability(spins))\n            break;\n    }\n    sSlotMachine->reelTimeDraw = spins;",
       "callsTo": [
         "GetReelTimeSpinProbability",
@@ -677,6 +923,12 @@
       "returnType": "bool8",
       "signature": "static bool8 ShouldReelTimeMachineExplode(u16 check)",
       "paramsRaw": "u16 check",
+      "paramsList": [
+        {
+          "name": "check",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "u16 rval = Random() & 0xff;\n    if (rval < sReelTimeExplodeProbability[check])\n        return TRUE;\n    else\n        return FALSE;",
       "callsTo": [
         "Random"
@@ -687,6 +939,7 @@
       "returnType": "u16",
       "signature": "static u16 ReelTimeSpeed(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i = 0;\n    u8 rval;\n    u8 value;\n    if (sSlotMachine->netCoinLoss >= 300)\n        i = 4;\n    else if (sSlotMachine->netCoinLoss >= 250)\n        i = 3;\n    else if (sSlotMachine->netCoinLoss >= 200)\n        i = 2;\n    else if (sSlotMachine->netCoinLoss >= 150)\n        i = 1;\n\n    rval = Random() % 100;\n    value = sReelTimeSpeed_Probabilities[i][0];\n    if (rval < value)\n        return REEL_HALF_SPEED;\n\n    rval = Random() % 100;\n    value = sReelTimeSpeed_Probabilities[i][1] + sQuarterSpeed_ProbabilityBoost[sSlotMachine->reelTimeSpinsUsed];\n    if (rval < value)\n        return REEL_QUARTER_SPEED;\n\n    return REEL_NORMAL_SPEED;",
       "callsTo": [
         "Random"
@@ -697,6 +950,7 @@
       "returnType": "void",
       "signature": "static void CheckMatch(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sSlotMachine->matches = 0;\n    CheckMatch_CenterRow();\n    if (sSlotMachine->bet > 1)\n        CheckMatch_TopAndBottom();\n    if (sSlotMachine->bet > 2)\n        CheckMatch_Diagonals();",
       "callsTo": [
         "CheckMatch_CenterRow",
@@ -709,6 +963,7 @@
       "returnType": "void",
       "signature": "static void CheckMatch_CenterRow(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 sym1, sym2, sym3, match;\n\n    sym1 = GetSymbolAtRest(LEFT_REEL, 2);\n    sym2 = GetSymbolAtRest(MIDDLE_REEL, 2);\n    sym3 = GetSymbolAtRest(RIGHT_REEL, 2);\n    match = GetMatchFromSymbols(sym1, sym2, sym3);\n    if (match != MATCH_NONE)\n    {\n        sSlotMachine->payout += sSlotPayouts[match];\n        sSlotMachine->matches |= sSlotMatchFlags[match];\n        FlashMatchLine(MATCH_MIDDLE_ROW);\n    }",
       "callsTo": [
         "FlashMatchLine",
@@ -721,6 +976,7 @@
       "returnType": "void",
       "signature": "static void CheckMatch_TopAndBottom(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 sym1, sym2, sym3, match;\n\n    sym1 = GetSymbolAtRest(LEFT_REEL, 1);\n    sym2 = GetSymbolAtRest(MIDDLE_REEL, 1);\n    sym3 = GetSymbolAtRest(RIGHT_REEL, 1);\n    match = GetMatchFromSymbols(sym1, sym2, sym3);\n    if (match != MATCH_NONE)\n    {\n        if (match == MATCH_CHERRY)\n            match = MATCH_TOPBOT_CHERRY;\n        sSlotMachine->payout += sSlotPayouts[match];\n        sSlotMachine->matches |= sSlotMatchFlags[match];\n        FlashMatchLine(MATCH_TOP_ROW);\n    }\n    sym1 = GetSymbolAtRest(LEFT_REEL, 3);\n    sym2 = GetSymbolAtRest(MIDDLE_REEL, 3);\n    sym3 = GetSymbolAtRest(RIGHT_REEL, 3);\n    match = GetMatchFromSymbols(sym1, sym2, sym3);\n    if (match != MATCH_NONE)\n    {\n        if (match == MATCH_CHERRY)\n            match = MATCH_TOPBOT_CHERRY;\n        sSlotMachine->payout += sSlotPayouts[match];\n        sSlotMachine->matches |= sSlotMatchFlags[match];\n        FlashMatchLine(MATCH_BOTTOM_ROW);\n    }",
       "callsTo": [
         "FlashMatchLine",
@@ -733,6 +989,7 @@
       "returnType": "void",
       "signature": "static void CheckMatch_Diagonals(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 sym1, sym2, sym3, match;\n\n    sym1 = GetSymbolAtRest(LEFT_REEL, 1);\n    sym2 = GetSymbolAtRest(MIDDLE_REEL, 2);\n    sym3 = GetSymbolAtRest(RIGHT_REEL, 3);\n    match = GetMatchFromSymbols(sym1, sym2, sym3);\n    if (match != MATCH_NONE)\n    {\n         \n         \n        if (match != MATCH_CHERRY)\n        {\n            sSlotMachine->payout += sSlotPayouts[match];\n            sSlotMachine->matches |= sSlotMatchFlags[match];\n        }\n        FlashMatchLine(MATCH_NWSE_DIAG);\n    }\n    sym1 = GetSymbolAtRest(LEFT_REEL, 3);\n    sym2 = GetSymbolAtRest(MIDDLE_REEL, 2);\n    sym3 = GetSymbolAtRest(RIGHT_REEL, 1);\n    match = GetMatchFromSymbols(sym1, sym2, sym3);\n    if (match != MATCH_NONE)\n    {\n         \n         \n        if (match != MATCH_CHERRY)\n        {\n            sSlotMachine->payout += sSlotPayouts[match];\n            sSlotMachine->matches |= sSlotMatchFlags[match];\n        }\n        FlashMatchLine(MATCH_NESW_DIAG);\n    }",
       "callsTo": [
         "FlashMatchLine",
@@ -745,6 +1002,20 @@
       "returnType": "u8",
       "signature": "static u8 GetMatchFromSymbols(u8 sym1, u8 sym2, u8 sym3)",
       "paramsRaw": "u8 sym1, u8 sym2, u8 sym3",
+      "paramsList": [
+        {
+          "name": "sym1",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "sym2",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "sym3",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (sym1 == sym2 && sym1 == sym3)\n        return sSymbolToMatch[sym1];\n    if (sym1 == SYMBOL_7_RED && sym2 == SYMBOL_7_RED && sym3 == SYMBOL_7_BLUE)\n        return MATCH_MIXED_7;\n    if (sym1 == SYMBOL_7_BLUE && sym2 == SYMBOL_7_BLUE && sym3 == SYMBOL_7_RED)\n        return MATCH_MIXED_7;\n    if (sym1 == SYMBOL_CHERRY)\n        return MATCH_CHERRY;\n    return MATCH_NONE;",
       "callsTo": [],
       "lineCount": 9
@@ -753,6 +1024,7 @@
       "returnType": "void",
       "signature": "static void AwardPayout(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "Task_Payout(CreateTask(Task_Payout, 4));",
       "callsTo": [
         "CreateTask",
@@ -764,6 +1036,7 @@
       "returnType": "bool8",
       "signature": "static bool8 IsFinalTask_Task_Payout(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (FindTaskIdByFunc(Task_Payout) == TAIL_SENTINEL)\n        return TRUE;\n    else\n        return FALSE;",
       "callsTo": [
         "FindTaskIdByFunc"
@@ -774,6 +1047,12 @@
       "returnType": "void",
       "signature": "static void Task_Payout(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "while (sPayoutTasks[gTasks[taskId].data[0]](&gTasks[taskId]))\n        ;",
       "callsTo": [],
       "lineCount": 2
@@ -782,6 +1061,12 @@
       "returnType": "bool8",
       "signature": "static bool8 PayoutTask_Init(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (IsMatchLineDoneFlashingBeforePayout())\n    {\n        task->tState++;  \n        if (sSlotMachine->payout == 0)\n        {\n            task->tState = PAYOUT_TASK_FREE;\n            return TRUE;\n        }\n    }\n    return FALSE;",
       "callsTo": [
         "IsMatchLineDoneFlashingBeforePayout"
@@ -792,6 +1077,12 @@
       "returnType": "bool8",
       "signature": "static bool8 PayoutTask_GivePayout(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (!task->tTimer--)\n    {\n        if (IsFanfareTaskInactive())\n            PlaySE(SE_PIN);\n        sSlotMachine->payout--;\n        if (sSlotMachine->coins < MAX_COINS)\n            sSlotMachine->coins++;\n        task->tTimer = 8;\n        if (JOY_HELD(A_BUTTON))\n            task->tTimer = 4;\n    }\n    if (IsFanfareTaskInactive() && JOY_NEW(START_BUTTON))\n    {\n        PlaySE(SE_PIN);\n        sSlotMachine->coins += sSlotMachine->payout;\n        if (sSlotMachine->coins > MAX_COINS)\n            sSlotMachine->coins = MAX_COINS;\n        sSlotMachine->payout = 0;\n    }\n    if (sSlotMachine->payout == 0)\n        task->tState++;  \n    return FALSE;",
       "callsTo": [
         "IsFanfareTaskInactive",
@@ -805,6 +1096,12 @@
       "returnType": "bool8",
       "signature": "static bool8 PayoutTask_Free(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (TryStopMatchLinesFlashing())\n        DestroyTask(FindTaskIdByFunc(Task_Payout));\n    return FALSE;",
       "callsTo": [
         "DestroyTask",
@@ -817,6 +1114,16 @@
       "returnType": "u8",
       "signature": "static u8 GetSymbolAtRest(u8 reel, s16 offset)",
       "paramsRaw": "u8 reel, s16 offset",
+      "paramsList": [
+        {
+          "name": "reel",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "offset",
+          "typeRaw": "s16"
+        }
+      ],
       "body": "s16 pos = (sSlotMachine->reelPositions[reel] + offset) % SYMBOLS_PER_REEL;\n    if (pos < 0)\n        pos += SYMBOLS_PER_REEL;\n    return sReelSymbols[reel][pos];",
       "callsTo": [],
       "lineCount": 4
@@ -825,6 +1132,16 @@
       "returnType": "u8",
       "signature": "static u8 GetSymbol(u8 reel, s16 offset)",
       "paramsRaw": "u8 reel, s16 offset",
+      "paramsList": [
+        {
+          "name": "reel",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "offset",
+          "typeRaw": "s16"
+        }
+      ],
       "body": "s16 inc = 0;\n    s16 pixelOffset = sSlotMachine->reelPixelOffsets[reel] % REEL_SYMBOL_HEIGHT;\n    if (pixelOffset != 0)\n        inc = -1;\n    return GetSymbolAtRest(reel, offset + inc);",
       "callsTo": [
         "GetSymbolAtRest"
@@ -835,6 +1152,12 @@
       "returnType": "u8",
       "signature": "static u8 GetReelTimeSymbol(s16 offset)",
       "paramsRaw": "s16 offset",
+      "paramsList": [
+        {
+          "name": "offset",
+          "typeRaw": "s16"
+        }
+      ],
       "body": "s16 newPosition = (sSlotMachine->reeltimePosition + offset) % REELTIME_SYMBOLS;\n    if (newPosition < 0)\n        newPosition += REELTIME_SYMBOLS;\n    return sReelTimeSymbols[newPosition];",
       "callsTo": [],
       "lineCount": 4
@@ -843,6 +1166,16 @@
       "returnType": "void",
       "signature": "static void AdvanceSlotReel(u8 reelIndex, s16 value)",
       "paramsRaw": "u8 reelIndex, s16 value",
+      "paramsList": [
+        {
+          "name": "reelIndex",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "value",
+          "typeRaw": "s16"
+        }
+      ],
       "body": "sSlotMachine->reelPixelOffsets[reelIndex] += value;\n    sSlotMachine->reelPixelOffsets[reelIndex] %= REEL_HEIGHT;\n    sSlotMachine->reelPositions[reelIndex] = SYMBOLS_PER_REEL - sSlotMachine->reelPixelOffsets[reelIndex] / REEL_SYMBOL_HEIGHT;",
       "callsTo": [],
       "lineCount": 3
@@ -851,6 +1184,16 @@
       "returnType": "s16",
       "signature": "s16 AdvanceSlotReelToNextSymbol(u8 reelIndex, s16 value)",
       "paramsRaw": "u8 reelIndex, s16 value",
+      "paramsList": [
+        {
+          "name": "reelIndex",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "value",
+          "typeRaw": "s16"
+        }
+      ],
       "body": "s16 offset = sSlotMachine->reelPixelOffsets[reelIndex] % REEL_SYMBOL_HEIGHT;\n    if (offset != 0)\n    {\n        if (offset < value)\n            value = offset;\n        AdvanceSlotReel(reelIndex, value);\n        offset = sSlotMachine->reelPixelOffsets[reelIndex] % REEL_SYMBOL_HEIGHT;\n    }\n    return offset;",
       "callsTo": [
         "AdvanceSlotReel"
@@ -861,6 +1204,12 @@
       "returnType": "void",
       "signature": "static void AdvanceReeltimeReel(s16 value)",
       "paramsRaw": "s16 value",
+      "paramsList": [
+        {
+          "name": "value",
+          "typeRaw": "s16"
+        }
+      ],
       "body": "sSlotMachine->reeltimePixelOffset += value;\n    sSlotMachine->reeltimePixelOffset %= REELTIME_REEL_HEIGHT;\n    sSlotMachine->reeltimePosition = REELTIME_SYMBOLS - sSlotMachine->reeltimePixelOffset / REELTIME_SYMBOL_HEIGHT;",
       "callsTo": [],
       "lineCount": 3
@@ -869,6 +1218,12 @@
       "returnType": "s16",
       "signature": "s16 AdvanceReeltimeReelToNextSymbol(s16 value)",
       "paramsRaw": "s16 value",
+      "paramsList": [
+        {
+          "name": "value",
+          "typeRaw": "s16"
+        }
+      ],
       "body": "s16 offset = sSlotMachine->reeltimePixelOffset % REELTIME_SYMBOL_HEIGHT;\n    if (offset != 0)\n    {\n        if (offset < value)\n            value = offset;\n        AdvanceReeltimeReel(value);\n        offset = sSlotMachine->reeltimePixelOffset % REELTIME_SYMBOL_HEIGHT;\n    }\n    return offset;",
       "callsTo": [
         "AdvanceReeltimeReel"
@@ -879,6 +1234,7 @@
       "returnType": "void",
       "signature": "static void CreateReelTasks(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n    for (i = 0; i < NUM_REELS; i++)\n    {\n        u8 taskId = CreateTask(Task_Reel, 2);\n        gTasks[taskId].tReelId = i;\n        sSlotMachine->slotReelTasks[i] = taskId;\n        Task_Reel(taskId);\n    }",
       "callsTo": [
         "CreateTask",
@@ -890,6 +1246,12 @@
       "returnType": "void",
       "signature": "static void SpinSlotReel(u8 reelIndex)",
       "paramsRaw": "u8 reelIndex",
+      "paramsList": [
+        {
+          "name": "reelIndex",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "gTasks[sSlotMachine->slotReelTasks[reelIndex]].tState = REEL_TASK_SPIN;\n    gTasks[sSlotMachine->slotReelTasks[reelIndex]].tMoving = TRUE;",
       "callsTo": [],
       "lineCount": 2
@@ -898,6 +1260,12 @@
       "returnType": "void",
       "signature": "static void StopSlotReel(u8 reelIndex)",
       "paramsRaw": "u8 reelIndex",
+      "paramsList": [
+        {
+          "name": "reelIndex",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "gTasks[sSlotMachine->slotReelTasks[reelIndex]].tState = REEL_TASK_DECIDE_STOP;",
       "callsTo": [],
       "lineCount": 1
@@ -906,6 +1274,12 @@
       "returnType": "bool8",
       "signature": "static bool8 IsSlotReelMoving(u8 reelIndex)",
       "paramsRaw": "u8 reelIndex",
+      "paramsList": [
+        {
+          "name": "reelIndex",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "return gTasks[sSlotMachine->slotReelTasks[reelIndex]].tMoving;",
       "callsTo": [],
       "lineCount": 1
@@ -914,6 +1288,12 @@
       "returnType": "void",
       "signature": "static void Task_Reel(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "while (sReelTasks[gTasks[taskId].tState](&gTasks[taskId]))\n        ;",
       "callsTo": [],
       "lineCount": 2
@@ -922,6 +1302,12 @@
       "returnType": "bool8",
       "signature": "static bool8 ReelTask_StayStill(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "return FALSE;",
       "callsTo": [],
       "lineCount": 1
@@ -930,6 +1316,12 @@
       "returnType": "bool8",
       "signature": "static bool8 ReelTask_Spin(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "AdvanceSlotReel(task->tReelId, sSlotMachine->reelSpeed);\n    return FALSE;",
       "callsTo": [
         "AdvanceSlotReel"
@@ -940,6 +1332,12 @@
       "returnType": "bool8",
       "signature": "static bool8 ReelTask_DecideStop(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "task->tState++;  \n    sSlotMachine->winnerRows[task->tReelId] = 0;\n    sSlotMachine->reelExtraTurns[task->tReelId] = 0;\n\n    if (sSlotMachine->reelTimeSpinsLeft == 0)\n    {\n        if (sSlotMachine->machineBias == 0 || !sSlotMachine->didNotFailBias || !sDecideStop_Bias[task->tReelId]())\n        {\n            sSlotMachine->didNotFailBias = FALSE;\n            sDecideStop_NoBias[task->tReelId]();\n        }\n    }\n    task->tExtraTurns = sSlotMachine->reelExtraTurns[task->tReelId];\n    return TRUE;",
       "callsTo": [],
       "lineCount": 14
@@ -948,6 +1346,12 @@
       "returnType": "bool8",
       "signature": "static bool8 ReelTask_MoveToStop(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u16 reelStopShocks[ARRAY_COUNT(sReelStopShocks)];\n    s16 reelPixelPos;\n\n    memcpy(reelStopShocks, sReelStopShocks, sizeof(sReelStopShocks));\n    reelPixelPos = sSlotMachine->reelPixelOffsets[task->tReelId] % REEL_SYMBOL_HEIGHT;\n    if (reelPixelPos != 0)\n    {\n        reelPixelPos = AdvanceSlotReelToNextSymbol(task->tReelId, sSlotMachine->reelSpeed);\n    }\n    else if (sSlotMachine->reelExtraTurns[task->tReelId])\n    {\n        sSlotMachine->reelExtraTurns[task->tReelId]--;\n        AdvanceSlotReel(task->tReelId, sSlotMachine->reelSpeed);\n        reelPixelPos = sSlotMachine->reelPixelOffsets[task->tReelId] % REEL_SYMBOL_HEIGHT;\n    }\n\n    if (reelPixelPos == 0 && sSlotMachine->reelExtraTurns[task->tReelId] == 0)\n    {\n        task->tState++;  \n        task->tShockMagnitude = reelStopShocks[task->tExtraTurns];\n        task->tTimer = 0;\n    }\n    return FALSE;",
       "callsTo": [
         "ARRAY_COUNT",
@@ -960,6 +1364,12 @@
       "returnType": "bool8",
       "signature": "static bool8 ReelTask_ShakingStop(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "sSlotMachine->reelShockOffsets[task->tReelId] = task->tShockMagnitude;\n    task->tShockMagnitude = -task->tShockMagnitude;\n    task->tTimer++;\n    if ((task->tTimer & 0x3) == 0)\n        task->tShockMagnitude >>= 1;\n    if (task->tShockMagnitude == 0)\n    {\n        task->tState = 0;\n        task->tMoving = FALSE;\n        sSlotMachine->reelShockOffsets[task->tReelId] = 0;\n    }\n    return FALSE;",
       "callsTo": [],
       "lineCount": 12
@@ -968,6 +1378,7 @@
       "returnType": "bool8",
       "signature": "static bool8 DecideStop_Bias_Reel1(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 sym2 = GetBiasSymbol(sSlotMachine->machineBias);\n    u8 sym1 = sym2;\n    if (sSlotMachine->machineBias & (BIAS_STRAIGHT_7 | BIAS_MIXED_7))\n    {\n        sym1 = SYMBOL_7_RED;\n        sym2 = SYMBOL_7_BLUE;\n    }\n        return sDecideStop_Bias_Reel1_Bets[sSlotMachine->bet - 1](sym1, sym2);",
       "callsTo": [
         "GetBiasSymbol"
@@ -978,6 +1389,20 @@
       "returnType": "bool8",
       "signature": "static bool8 EitherSymbolAtPos_Reel1(s16 pos, u8 sym1, u8 sym2)",
       "paramsRaw": "s16 pos, u8 sym1, u8 sym2",
+      "paramsList": [
+        {
+          "name": "pos",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "sym1",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "sym2",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 sym = GetSymbol(LEFT_REEL, pos);\n    if (sym == sym1 || sym == sym2)\n    {\n        sSlotMachine->biasSymbol = sym;\n        return TRUE;\n    }\n    return FALSE;",
       "callsTo": [
         "GetSymbol"
@@ -988,6 +1413,12 @@
       "returnType": "bool8",
       "signature": "static bool8 AreCherriesOnScreen_Reel1(s16 turns)",
       "paramsRaw": "s16 turns",
+      "paramsList": [
+        {
+          "name": "turns",
+          "typeRaw": "s16"
+        }
+      ],
       "body": "if (GetSymbol(LEFT_REEL, 1 - turns) == SYMBOL_CHERRY\n        || GetSymbol(LEFT_REEL, 2 - turns) == SYMBOL_CHERRY\n        || GetSymbol(LEFT_REEL, 3 - turns) == SYMBOL_CHERRY)\n        return TRUE;\n    else\n        return FALSE;",
       "callsTo": [
         "GetSymbol"
@@ -998,6 +1429,7 @@
       "returnType": "bool8",
       "signature": "static bool8 BiasedTowardCherryOr7s(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (sSlotMachine->machineBias & (BIAS_STRAIGHT_7 | BIAS_MIXED_7 | BIAS_CHERRY))\n        return TRUE;\n    else\n        return FALSE;",
       "callsTo": [],
       "lineCount": 4
@@ -1006,6 +1438,16 @@
       "returnType": "bool8",
       "signature": "static bool8 DecideStop_Bias_Reel1_Bet1(u8 sym1, u8 sym2)",
       "paramsRaw": "u8 sym1, u8 sym2",
+      "paramsList": [
+        {
+          "name": "sym1",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "sym2",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 i;\n\n    for (i = 0; i <= MAX_EXTRA_TURNS; i++)\n    {\n        if (EitherSymbolAtPos_Reel1(2 - i, sym1, sym2))\n        {\n            sSlotMachine->winnerRows[LEFT_REEL] = 2;\n            sSlotMachine->reelExtraTurns[LEFT_REEL] = i;\n            return TRUE;\n        }\n    }\n    return FALSE;",
       "callsTo": [
         "EitherSymbolAtPos_Reel1"
@@ -1016,6 +1458,16 @@
       "returnType": "bool8",
       "signature": "static bool8 DecideStop_Bias_Reel1_Bet2or3(u8 sym1, u8 sym2)",
       "paramsRaw": "u8 sym1, u8 sym2",
+      "paramsList": [
+        {
+          "name": "sym1",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "sym2",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 i;\n    bool8 cherry7Bias = BiasedTowardCherryOr7s();\n    if (cherry7Bias || !AreCherriesOnScreen_Reel1(0))\n    {\n         \n        for (i = 1; i <= 3; i++)\n        {\n            if (EitherSymbolAtPos_Reel1(i, sym1, sym2))\n            {\n                sSlotMachine->winnerRows[0] = i;\n                sSlotMachine->reelExtraTurns[0] = 0;\n                return TRUE;\n            }\n        }\n    }\n\n     \n    for (i = 1; i <= MAX_EXTRA_TURNS; i++)\n    {\n        bool8 cherry7BiasCopy = cherry7Bias;  \n        if (cherry7BiasCopy || !AreCherriesOnScreen_Reel1(i))\n        {\n            if (EitherSymbolAtPos_Reel1(1 - i, sym1, sym2))\n            {\n                if (i == 1 && (cherry7BiasCopy || !AreCherriesOnScreen_Reel1(3)))\n                {\n                    sSlotMachine->winnerRows[0] = 3;\n                    sSlotMachine->reelExtraTurns[0] = 3;\n                    return TRUE;\n                }\n                if (i <= 3 && (cherry7BiasCopy || !AreCherriesOnScreen_Reel1(i + 1)))\n                {\n                    sSlotMachine->winnerRows[0] = 2;\n                    sSlotMachine->reelExtraTurns[0] = i + 1;\n                    return TRUE;\n                }\n                sSlotMachine->winnerRows[0] = 1;\n                sSlotMachine->reelExtraTurns[0] = i;\n                return TRUE;\n            }\n        }\n    }\n    return FALSE;",
       "callsTo": [
         "AreCherriesOnScreen_Reel1",
@@ -1028,6 +1480,7 @@
       "returnType": "bool8",
       "signature": "static bool8 DecideStop_Bias_Reel2(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return sDecideStop_Bias_Reel2_Bets[sSlotMachine->bet - 1]();",
       "callsTo": [],
       "lineCount": 1
@@ -1036,6 +1489,7 @@
       "returnType": "bool8",
       "signature": "static bool8 DecideStop_Bias_Reel2_Bet1or2(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s16 i;\n    s16 reel1BiasRow = sSlotMachine->winnerRows[0];\n\n    for (i = 0; i <= MAX_EXTRA_TURNS; i++)\n    {\n        if (GetSymbol(MIDDLE_REEL, reel1BiasRow - i) == sSlotMachine->biasSymbol)\n        {\n            sSlotMachine->winnerRows[1] = reel1BiasRow;\n            sSlotMachine->reelExtraTurns[1] = i;\n            return TRUE;\n        }\n    }\n    return FALSE;",
       "callsTo": [
         "GetSymbol"
@@ -1046,6 +1500,7 @@
       "returnType": "bool8",
       "signature": "static bool8 DecideStop_Bias_Reel2_Bet3(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s16 i;\n     \n     \n    if (DecideStop_Bias_Reel2_Bet1or2())\n    {\n         \n         \n        if (sSlotMachine->winnerRows[0] != 2 && sSlotMachine->reelExtraTurns[1] > 1 && sSlotMachine->reelExtraTurns[1] != 4)\n        {\n             \n             \n            for (i = 0; i <= MAX_EXTRA_TURNS; i++)\n            {\n                if (GetSymbol(MIDDLE_REEL, 2 - i) == sSlotMachine->biasSymbol)\n                {\n                    sSlotMachine->winnerRows[1] = 2;\n                    sSlotMachine->reelExtraTurns[1] = i;\n                    break;\n                }\n            }\n        }\n        return TRUE;\n    }\n\n     \n     \n    if (sSlotMachine->winnerRows[0] != 2)\n    {\n         \n         \n        for (i = 0; i <= MAX_EXTRA_TURNS; i++)\n        {\n            if (GetSymbol(MIDDLE_REEL, 2 - i) == sSlotMachine->biasSymbol)\n            {\n                sSlotMachine->winnerRows[1] = 2;\n                sSlotMachine->reelExtraTurns[1] = i;\n                return TRUE;\n            }\n        }\n    }\n    return FALSE;",
       "callsTo": [
         "DecideStop_Bias_Reel2_Bet1or2",
@@ -1057,6 +1512,7 @@
       "returnType": "bool8",
       "signature": "static bool8 DecideStop_Bias_Reel3(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 biasSymbol = sSlotMachine->biasSymbol;\n    if (sSlotMachine->machineBias & BIAS_MIXED_7)\n    {\n        biasSymbol = SYMBOL_7_RED;\n        if (sSlotMachine->biasSymbol == SYMBOL_7_RED)\n        {\n            biasSymbol = SYMBOL_7_BLUE;\n        }\n    }\n    return sDecideStop_Bias_Reel3_Bets[sSlotMachine->bet - 1](biasSymbol);",
       "callsTo": [],
       "lineCount": 10
@@ -1065,6 +1521,12 @@
       "returnType": "bool8",
       "signature": "static bool8 DecideStop_Bias_Reel3_Bet1or2(u8 biasSymbol)",
       "paramsRaw": "u8 biasSymbol",
+      "paramsList": [
+        {
+          "name": "biasSymbol",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 i;\n    s16 reel2BiasRow = sSlotMachine->winnerRows[1];\n\n    for (i = 0; i <= MAX_EXTRA_TURNS; i++)\n    {\n        if (GetSymbol(RIGHT_REEL, reel2BiasRow - i) == biasSymbol)\n        {\n            sSlotMachine->winnerRows[2] = reel2BiasRow;\n            sSlotMachine->reelExtraTurns[2] = i;\n            return TRUE;\n        }\n    }\n    return FALSE;",
       "callsTo": [
         "GetSymbol"
@@ -1075,6 +1537,12 @@
       "returnType": "bool8",
       "signature": "static bool8 DecideStop_Bias_Reel3_Bet3(u8 biasSymbol)",
       "paramsRaw": "u8 biasSymbol",
+      "paramsList": [
+        {
+          "name": "biasSymbol",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 i;\n    s16 biasRow;\n\n     \n     \n    if (sSlotMachine->winnerRows[0] == sSlotMachine->winnerRows[1])\n        return DecideStop_Bias_Reel3_Bet1or2(biasSymbol);\n\n     \n    if (sSlotMachine->winnerRows[0] == 1)\n        biasRow = 3;\n    else\n        biasRow = 1;\n    for (i = 0; i <= MAX_EXTRA_TURNS; i++)\n    {\n        if (GetSymbol(RIGHT_REEL, biasRow - i) == biasSymbol)\n        {\n            sSlotMachine->reelExtraTurns[2] = i;\n            sSlotMachine->winnerRows[2] = biasRow;\n            return TRUE;\n        }\n    }\n    return FALSE;",
       "callsTo": [
         "DecideStop_Bias_Reel3_Bet1or2",
@@ -1086,6 +1554,7 @@
       "returnType": "void",
       "signature": "static void DecideStop_NoBias_Reel1(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s16 i = 0;\n\n    while (AreCherriesOnScreen_Reel1(i) != 0)\n        i++;\n    sSlotMachine->reelExtraTurns[0] = i;",
       "callsTo": [
         "AreCherriesOnScreen_Reel1"
@@ -1096,6 +1565,12 @@
       "returnType": "bool8",
       "signature": "static bool8 IfSymbol7_SwitchColor(u8 *symbol)",
       "paramsRaw": "u8 *symbol",
+      "paramsList": [
+        {
+          "name": "symbol",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "if (*symbol == SYMBOL_7_RED)\n    {\n        *symbol = SYMBOL_7_BLUE;\n        return TRUE;\n    }\n    if (*symbol == SYMBOL_7_BLUE)\n    {\n        *symbol = SYMBOL_7_RED;\n        return TRUE;\n    }\n    return FALSE;",
       "callsTo": [],
       "lineCount": 11
@@ -1104,6 +1579,7 @@
       "returnType": "void",
       "signature": "static void DecideStop_NoBias_Reel2(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sDecideStop_NoBias_Reel2_Bets[sSlotMachine->bet - 1]();",
       "callsTo": [],
       "lineCount": 1
@@ -1112,6 +1588,7 @@
       "returnType": "void",
       "signature": "static void DecideStop_NoBias_Reel2_Bet1(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (sSlotMachine->winnerRows[0] != 0 && sSlotMachine->machineBias & BIAS_STRAIGHT_7)\n    {\n         \n         \n         \n        u8 reel1MiddleSym = GetSymbol(LEFT_REEL, 2 - sSlotMachine->reelExtraTurns[0]);\n        if (IfSymbol7_SwitchColor(&reel1MiddleSym))\n        {\n            s16 i;\n            for (i = 0; i <= MAX_EXTRA_TURNS; i++)\n            {\n                if (reel1MiddleSym == GetSymbol(MIDDLE_REEL, 2 - i))\n                {\n                    sSlotMachine->winnerRows[1] = 2;\n                    sSlotMachine->reelExtraTurns[1] = i;\n                    break;\n                }\n            }\n        }\n    }",
       "callsTo": [
         "GetSymbol",
@@ -1123,6 +1600,7 @@
       "returnType": "void",
       "signature": "static void DecideStop_NoBias_Reel2_Bet2(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (sSlotMachine->winnerRows[0] != 0 && sSlotMachine->machineBias & BIAS_STRAIGHT_7)\n    {\n        u8 reel1BiasSym = GetSymbol(LEFT_REEL, sSlotMachine->winnerRows[0] - sSlotMachine->reelExtraTurns[0]);\n        if (IfSymbol7_SwitchColor(&reel1BiasSym))\n        {\n            s16 i;\n            for (i = 0; i <= MAX_EXTRA_TURNS; i++)\n            {\n                if (reel1BiasSym == GetSymbol(MIDDLE_REEL, sSlotMachine->winnerRows[0] - i))\n                {\n                    sSlotMachine->winnerRows[1] = sSlotMachine->winnerRows[0];\n                    sSlotMachine->reelExtraTurns[1] = i;\n                    break;\n                }\n            }\n        }\n    }",
       "callsTo": [
         "GetSymbol",
@@ -1134,6 +1612,7 @@
       "returnType": "void",
       "signature": "static void DecideStop_NoBias_Reel2_Bet3(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s16 i;\n    s16 j;\n    u8 reel1BiasSym;\n\n    if (sSlotMachine->winnerRows[0] != 0 && sSlotMachine->machineBias & BIAS_STRAIGHT_7)\n    {\n         \n        if (sSlotMachine->winnerRows[0] == 2)\n        {\n            DecideStop_NoBias_Reel2_Bet2();\n            return;\n        }\n\n        reel1BiasSym = GetSymbol(LEFT_REEL, sSlotMachine->winnerRows[0] - sSlotMachine->reelExtraTurns[0]);\n        if (IfSymbol7_SwitchColor(&reel1BiasSym))\n        {\n             \n             \n            j = 2;\n            if (sSlotMachine->winnerRows[0] == 3)\n                j = 3;\n            for (i = 0; i < 2; i++, j--)\n            {\n                if (reel1BiasSym == GetSymbol(MIDDLE_REEL, j))\n                {\n                    sSlotMachine->winnerRows[1] = j;\n                    sSlotMachine->reelExtraTurns[1] = 0;\n                    return;\n                }\n            }\n\n             \n             \n            for (j = 1; j <= MAX_EXTRA_TURNS; j++)\n            {\n                if (reel1BiasSym == GetSymbol(MIDDLE_REEL, sSlotMachine->winnerRows[0] - j))\n                {\n                     \n                    if (sSlotMachine->winnerRows[0] == 1)\n                    {\n                        if (j <= 2)\n                        {\n                            sSlotMachine->winnerRows[1] = 2;\n                            sSlotMachine->reelExtraTurns[1] = j + 1;\n                        }\n                        else\n                        {\n                            sSlotMachine->winnerRows[1] = 1;\n                            sSlotMachine->reelExtraTurns[1] = j;\n                        }\n                    }\n                     \n                    else\n                    {\n                        if (j <= 2)\n                        {\n                            sSlotMachine->winnerRows[1] = 3;\n                            sSlotMachine->reelExtraTurns[1] = j;\n                        }\n                        else\n                        {\n                            sSlotMachine->winnerRows[1] = 2;\n                            sSlotMachine->reelExtraTurns[1] = j - 1;\n                        }\n                    }\n                    return;\n                }\n            }\n        }\n    }",
       "callsTo": [
         "DecideStop_NoBias_Reel2_Bet2",
@@ -1146,6 +1625,16 @@
       "returnType": "bool8",
       "signature": "static bool8 MismatchedSyms_77(u8 sym1, u8 sym2)",
       "paramsRaw": "u8 sym1, u8 sym2",
+      "paramsList": [
+        {
+          "name": "sym1",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "sym2",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if ((sym1 == SYMBOL_7_RED && sym2 == SYMBOL_7_BLUE) || (sym1 == SYMBOL_7_BLUE && sym2 == SYMBOL_7_RED))\n        return TRUE;\n    else\n        return FALSE;",
       "callsTo": [],
       "lineCount": 4
@@ -1154,6 +1643,20 @@
       "returnType": "bool8",
       "signature": "static bool8 MismatchedSyms_777(u8 sym1, u8 sym2, u8 sym3)",
       "paramsRaw": "u8 sym1, u8 sym2, u8 sym3",
+      "paramsList": [
+        {
+          "name": "sym1",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "sym2",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "sym3",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if ((sym1 == SYMBOL_7_RED && sym2 == SYMBOL_7_BLUE && sym3 == SYMBOL_7_RED) ||\n        (sym1 == SYMBOL_7_BLUE && sym2 == SYMBOL_7_RED && sym3 == SYMBOL_7_BLUE))\n        return TRUE;\n    else\n        return FALSE;",
       "callsTo": [],
       "lineCount": 5
@@ -1162,6 +1665,20 @@
       "returnType": "bool8",
       "signature": "static bool8 NeitherMatchNor7Mismatch(u8 sym1, u8 sym2, u8 sym3)",
       "paramsRaw": "u8 sym1, u8 sym2, u8 sym3",
+      "paramsList": [
+        {
+          "name": "sym1",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "sym2",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "sym3",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if ((sym1 == SYMBOL_7_RED && sym2 == SYMBOL_7_BLUE && sym3 == SYMBOL_7_RED)\n        || (sym1 == SYMBOL_7_BLUE && sym2 == SYMBOL_7_RED && sym3 == SYMBOL_7_BLUE)\n        || (sym1 == SYMBOL_7_RED && sym2 == SYMBOL_7_RED && sym3 == SYMBOL_7_BLUE)\n        || (sym1 == SYMBOL_7_BLUE && sym2 == SYMBOL_7_BLUE && sym3 == SYMBOL_7_RED)\n        || (sym1 == sym2 && sym1 == sym3))\n    {\n        return FALSE;\n    }\n    return TRUE;",
       "callsTo": [],
       "lineCount": 9
@@ -1170,6 +1687,7 @@
       "returnType": "void",
       "signature": "static void DecideStop_NoBias_Reel3(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sDecideStop_NoBias_Reel3_Bets[sSlotMachine->bet - 1]();",
       "callsTo": [],
       "lineCount": 1
@@ -1178,6 +1696,7 @@
       "returnType": "void",
       "signature": "static void DecideStop_NoBias_Reel3_Bet1(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s16 i = 0;\n    u8 sym1 = GetSymbol(LEFT_REEL, 2 - sSlotMachine->reelExtraTurns[0]);\n    u8 sym2 = GetSymbol(MIDDLE_REEL, 2 - sSlotMachine->reelExtraTurns[1]);\n\n     \n    if (sym1 == sym2)\n    {\n        while (TRUE)\n        {\n            u8 sym3;\n            if (!((sym1 == (sym3 = GetSymbol(RIGHT_REEL, 2 - i)))\n                  || (sym1 == SYMBOL_7_RED && sym3 == SYMBOL_7_BLUE)\n                  || (sym1 == SYMBOL_7_BLUE && sym3 == SYMBOL_7_RED)))\n                break;\n            i++;\n        }\n    }\n     \n    else if (MismatchedSyms_77(sym1, sym2))\n    {\n         \n         \n        if (sSlotMachine->machineBias & BIAS_STRAIGHT_7)\n        {\n            for (i = 0; i <= MAX_EXTRA_TURNS; i++)\n            {\n                if (sym1 == GetSymbol(RIGHT_REEL, 2 - i))\n                {\n                    sSlotMachine->reelExtraTurns[2] = i;\n                    return;\n                }\n            }\n        }\n\n         \n        i = 0;\n        while (TRUE)\n        {\n            if (sym1 != GetSymbol(RIGHT_REEL, 2 - i))\n                break;\n            i++;\n        }\n    }\n    sSlotMachine->reelExtraTurns[2] = i;",
       "callsTo": [
         "GetSymbol",
@@ -1189,6 +1708,7 @@
       "returnType": "void",
       "signature": "static void DecideStop_NoBias_Reel3_Bet2(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s16 extraTurns = 0;\n    s16 i;\n    u8 sym1;\n    u8 sym2;\n    u8 sym3;\n\n     \n    if (sSlotMachine->winnerRows[1] != 0 &&\n        sSlotMachine->winnerRows[0] == sSlotMachine->winnerRows[1] &&\n        sSlotMachine->machineBias & BIAS_STRAIGHT_7)\n    {\n        sym1 = GetSymbol(LEFT_REEL, sSlotMachine->winnerRows[0] - sSlotMachine->reelExtraTurns[0]);\n        sym2 = GetSymbol(MIDDLE_REEL, sSlotMachine->winnerRows[1] - sSlotMachine->reelExtraTurns[1]);\n\n         \n         \n         \n        if (MismatchedSyms_77(sym1, sym2))\n        {\n             \n            for (i = 0; i <= MAX_EXTRA_TURNS; i++)\n            {\n                sym3 = GetSymbol(RIGHT_REEL, sSlotMachine->winnerRows[1] - i);\n                if (sym1 == sym3)\n                {\n                    extraTurns = i;\n                    break;\n                }\n            }\n        }\n    }\n\n    while (TRUE)\n    {\n        s16 numMatches;\n         \n        for (i = 1, numMatches = 0; i <= 3; i++)\n        {\n            sym1 = GetSymbol(LEFT_REEL, i - sSlotMachine->reelExtraTurns[0]);\n            sym2 = GetSymbol(MIDDLE_REEL, i - sSlotMachine->reelExtraTurns[1]);\n            sym3 = GetSymbol(RIGHT_REEL, i - extraTurns);\n\n             \n             \n             \n             \n            if (!NeitherMatchNor7Mismatch(sym1, sym2, sym3) &&\n                !(MismatchedSyms_777(sym1, sym2, sym3) && (sSlotMachine->machineBias & BIAS_STRAIGHT_7)))\n            {\n                numMatches++;\n                break;\n            }\n        }\n\n         \n         \n        if (numMatches == 0)\n            break;\n        extraTurns++;\n    }\n    sSlotMachine->reelExtraTurns[2] = extraTurns;",
       "callsTo": [
         "GetSymbol",
@@ -1202,6 +1722,7 @@
       "returnType": "void",
       "signature": "static void DecideStop_NoBias_Reel3_Bet3(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 sym1;\n    u8 sym2;\n    u8 sym3;\n    s16 row;\n    s16 i;\n\n     \n     \n     \n    DecideStop_NoBias_Reel3_Bet2();\n\n     \n    if (sSlotMachine->winnerRows[1] != 0 &&\n        sSlotMachine->winnerRows[0] != sSlotMachine->winnerRows[1] &&\n        sSlotMachine->machineBias & BIAS_STRAIGHT_7)\n    {\n        sym1 = GetSymbol(LEFT_REEL, sSlotMachine->winnerRows[0] - sSlotMachine->reelExtraTurns[0]);\n        sym2 = GetSymbol(MIDDLE_REEL, sSlotMachine->winnerRows[1] - sSlotMachine->reelExtraTurns[1]);\n\n         \n         \n         \n        if (MismatchedSyms_77(sym1, sym2))\n        {\n            row = 1;\n            if (sSlotMachine->winnerRows[0] == 1)\n                row = 3;\n            for (i = 0; i <= MAX_EXTRA_TURNS; i++)\n            {\n                sym3 = GetSymbol(RIGHT_REEL, row - (sSlotMachine->reelExtraTurns[2] + i));\n                if (sym1 == sym3)\n                {\n                    sSlotMachine->reelExtraTurns[2] += i;\n                    break;\n                }\n            }\n        }\n    }\n\n    while (TRUE)\n    {\n         \n        sym1 = GetSymbol(LEFT_REEL, 1 - sSlotMachine->reelExtraTurns[0]);\n        sym2 = GetSymbol(MIDDLE_REEL, 2 - sSlotMachine->reelExtraTurns[1]);\n        sym3 = GetSymbol(RIGHT_REEL, 3 - sSlotMachine->reelExtraTurns[2]);\n        if (NeitherMatchNor7Mismatch(sym1, sym2, sym3)\n            || (MismatchedSyms_777(sym1, sym2, sym3) && sSlotMachine->machineBias & BIAS_STRAIGHT_7))\n            break;\n        sSlotMachine->reelExtraTurns[2]++;\n    }\n\n    while (TRUE)\n    {\n         \n        sym1 = GetSymbol(LEFT_REEL, 3 - sSlotMachine->reelExtraTurns[0]);\n        sym2 = GetSymbol(MIDDLE_REEL, 2 - sSlotMachine->reelExtraTurns[1]);\n        sym3 = GetSymbol(RIGHT_REEL, 1 - sSlotMachine->reelExtraTurns[2]);\n        if (NeitherMatchNor7Mismatch(sym1, sym2, sym3)\n            || (MismatchedSyms_777(sym1, sym2, sym3) && sSlotMachine->machineBias & BIAS_STRAIGHT_7))\n            break;\n        sSlotMachine->reelExtraTurns[2]++;\n    }",
       "callsTo": [
         "DecideStop_NoBias_Reel3_Bet2",
@@ -1216,6 +1737,12 @@
       "returnType": "void",
       "signature": "static void PressStopReelButton(u8 reelNum)",
       "paramsRaw": "u8 reelNum",
+      "paramsList": [
+        {
+          "name": "reelNum",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 taskId = CreateTask(Task_PressStopReelButton, 5);\n    gTasks[taskId].data[15] = reelNum;\n    Task_PressStopReelButton(taskId);",
       "callsTo": [
         "CreateTask",
@@ -1227,6 +1754,12 @@
       "returnType": "void",
       "signature": "static void Task_PressStopReelButton(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "sReelStopButtonTasks[gTasks[taskId].data[0]](&gTasks[taskId], taskId);",
       "callsTo": [],
       "lineCount": 1
@@ -1235,6 +1768,16 @@
       "returnType": "void",
       "signature": "static void StopReelButton_Press(struct Task *task, u8 taskId)",
       "paramsRaw": "struct Task *task, u8 taskId",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        },
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "SetReelButtonTilemap(sReelButtonOffsets[task->data[15]], 0x62, 0x63, 0x72, 0x73);\n    task->data[0]++;",
       "callsTo": [
         "SetReelButtonTilemap"
@@ -1245,6 +1788,16 @@
       "returnType": "void",
       "signature": "static void StopReelButton_Wait(struct Task *task, u8 taskId)",
       "paramsRaw": "struct Task *task, u8 taskId",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        },
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (++task->data[1] > 11)\n        task->data[0]++;",
       "callsTo": [],
       "lineCount": 2
@@ -1253,6 +1806,16 @@
       "returnType": "void",
       "signature": "static void StopReelButton_Unpress(struct Task *task, u8 taskId)",
       "paramsRaw": "struct Task *task, u8 taskId",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        },
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "SetReelButtonTilemap(sReelButtonOffsets[task->data[15]], 0x42, 0x43, 0x52, 0x53);\n    DestroyTask(taskId);",
       "callsTo": [
         "DestroyTask",
@@ -1264,6 +1827,12 @@
       "returnType": "void",
       "signature": "static void LightenMatchLine(u8 matchLineId)",
       "paramsRaw": "u8 matchLineId",
+      "paramsList": [
+        {
+          "name": "matchLineId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "LoadPalette(sLitMatchLinePalTable[matchLineId], sMatchLinePalOffsets[matchLineId], PLTT_SIZEOF(1));",
       "callsTo": [
         "LoadPalette",
@@ -1275,6 +1844,12 @@
       "returnType": "void",
       "signature": "static void DarkenMatchLine(u8 matchLineId)",
       "paramsRaw": "u8 matchLineId",
+      "paramsList": [
+        {
+          "name": "matchLineId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "LoadPalette(sDarkMatchLinePalTable[matchLineId], sMatchLinePalOffsets[matchLineId], PLTT_SIZEOF(1));",
       "callsTo": [
         "LoadPalette",
@@ -1286,6 +1861,12 @@
       "returnType": "void",
       "signature": "static void LightenBetTiles(u8 betVal)",
       "paramsRaw": "u8 betVal",
+      "paramsList": [
+        {
+          "name": "betVal",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 i;\n    for (i = 0; i < sMatchLinesPerBet[betVal]; i++)\n        LightenMatchLine(sBetToMatchLineIds[betVal][i]);",
       "callsTo": [
         "LightenMatchLine"
@@ -1296,6 +1877,12 @@
       "returnType": "void",
       "signature": "static void DarkenBetTiles(u8 betVal)",
       "paramsRaw": "u8 betVal",
+      "paramsList": [
+        {
+          "name": "betVal",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 i;\n    for (i = 0; i < sMatchLinesPerBet[betVal]; i++)\n        DarkenMatchLine(sBetToMatchLineIds[betVal][i]);",
       "callsTo": [
         "DarkenMatchLine"
@@ -1306,6 +1893,7 @@
       "returnType": "void",
       "signature": "static void CreateInvisibleFlashMatchLineSprites(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n    for (i = 0; i < ARRAY_COUNT(sSlotMachine->flashMatchLineSpriteIds); i++)\n    {\n        u8 spriteId = CreateInvisibleSprite(SpriteCB_FlashMatchingLines);\n        gSprites[spriteId].sMatchLineId = i;\n        sSlotMachine->flashMatchLineSpriteIds[i] = spriteId;\n    }",
       "callsTo": [
         "ARRAY_COUNT",
@@ -1317,6 +1905,12 @@
       "returnType": "void",
       "signature": "static void FlashMatchLine(u8 matchLineId)",
       "paramsRaw": "u8 matchLineId",
+      "paramsList": [
+        {
+          "name": "matchLineId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "struct Sprite *sprite = &gSprites[sSlotMachine->flashMatchLineSpriteIds[matchLineId]];\n    sprite->sFlashing = TRUE;\n    sprite->sNumFullFlashes = 4;\n    sprite->sDelayTimer = 0;\n    sprite->sColor = 0;\n    sprite->sColorIncr = 2;\n    sprite->sAtOriginalColor = FALSE;",
       "callsTo": [],
       "lineCount": 7
@@ -1325,6 +1919,7 @@
       "returnType": "bool8",
       "signature": "static bool8 IsMatchLineDoneFlashingBeforePayout(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n    for (i = 0; i < ARRAY_COUNT(sSlotMachine->flashMatchLineSpriteIds); i++)\n    {\n        struct Sprite *sprite = &gSprites[sSlotMachine->flashMatchLineSpriteIds[i]];\n        if (sprite->sFlashing && sprite->sNumFullFlashes)\n            return FALSE;\n    }\n    return TRUE;",
       "callsTo": [
         "ARRAY_COUNT"
@@ -1335,6 +1930,7 @@
       "returnType": "bool8",
       "signature": "static bool8 TryStopMatchLinesFlashing(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n    for (i = 0; i < ARRAY_COUNT(sSlotMachine->flashMatchLineSpriteIds); i++)\n    {\n        if (!TryStopMatchLineFlashing(sSlotMachine->flashMatchLineSpriteIds[i]))\n            return FALSE;\n    }\n    return TRUE;",
       "callsTo": [
         "ARRAY_COUNT",
@@ -1346,6 +1942,12 @@
       "returnType": "bool8",
       "signature": "static bool8 TryStopMatchLineFlashing(u8 spriteId)",
       "paramsRaw": "u8 spriteId",
+      "paramsList": [
+        {
+          "name": "spriteId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "struct Sprite *sprite = &gSprites[spriteId];\n    if (!sprite->sFlashing)\n        return TRUE;\n    if (sprite->sAtOriginalColor)\n        sprite->sFlashing = FALSE;\n\n    return sprite->sAtOriginalColor;",
       "callsTo": [],
       "lineCount": 7
@@ -1354,6 +1956,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_FlashMatchingLines(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "s16 maxColorChange;\n    if (sprite->sFlashing)\n    {\n        if (!sprite->sDelayTimer--)\n        {\n            sprite->sAtOriginalColor = FALSE;\n            sprite->sDelayTimer = 1;\n            sprite->sColor += sprite->sColorIncr;\n            maxColorChange = 4;\n            if (sprite->sNumFullFlashes)\n                maxColorChange = 8;\n            if (sprite->sColor <= 0)\n            {\n                 \n                sprite->sAtOriginalColor = TRUE;\n                sprite->sColorIncr = -sprite->sColorIncr;\n                if (sprite->sNumFullFlashes)\n                    sprite->sNumFullFlashes--;\n            }\n            else if (sprite->sColor >= maxColorChange)\n            {\n                 \n                sprite->sColorIncr = -sprite->sColorIncr;\n            }\n            if (sprite->sNumFullFlashes)\n                sprite->sDelayTimer <<= 1;\n        }\n        MultiplyPaletteRGBComponents(sMatchLinePalOffsets[sprite->sMatchLineId], sprite->sColor, sprite->sColor, sprite->sColor);\n    }",
       "callsTo": [
         "MultiplyPaletteRGBComponents"
@@ -1364,6 +1972,7 @@
       "returnType": "void",
       "signature": "static void FlashSlotMachineLights(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 taskId = CreateTask(Task_FlashSlotMachineLights, 6);\n    gTasks[taskId].sFlashDir = 1;\n    Task_FlashSlotMachineLights(taskId);",
       "callsTo": [
         "CreateTask",
@@ -1375,6 +1984,7 @@
       "returnType": "bool8",
       "signature": "static bool8 TryStopSlotMachineLights(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 taskId = FindTaskIdByFunc(Task_FlashSlotMachineLights);\n    if (gTasks[taskId].sFlashState == 0)\n    {\n        DestroyTask(taskId);\n        LoadPalette(sSlotMachineMenu_Pal, BG_PLTT_ID(1), PLTT_SIZE_4BPP);\n        return TRUE;\n    }\n    return FALSE;",
       "callsTo": [
         "BG_PLTT_ID",
@@ -1388,6 +1998,12 @@
       "returnType": "void",
       "signature": "static void Task_FlashSlotMachineLights(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "struct Task *task = &gTasks[taskId];\n    if (!task->sDelayTimer--)\n    {\n        task->sDelayTimer = 4;\n        task->sFlashState += task->sFlashDir;\n        if (task->sFlashState == 0 || task->sFlashState == 2)\n            task->sFlashDir = -task->sFlashDir;\n    }\n    LoadPalette(sFlashingLightsPalTable[task->sFlashState], BG_PLTT_ID(1), PLTT_SIZE_4BPP);",
       "callsTo": [
         "BG_PLTT_ID",
@@ -1399,6 +2015,7 @@
       "returnType": "void",
       "signature": "static void CreatePikaPowerBoltTask(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sSlotMachine->pikaPowerBoltTaskId = CreateTask(Task_CreatePikaPowerBolt, 8);",
       "callsTo": [
         "CreateTask"
@@ -1409,6 +2026,12 @@
       "returnType": "void",
       "signature": "static void AddPikaPowerBolt(u8 bolts)",
       "paramsRaw": "u8 bolts",
+      "paramsList": [
+        {
+          "name": "bolts",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "struct Task *task = &gTasks[sSlotMachine->pikaPowerBoltTaskId];\n    ResetPikaPowerBoltTask(task);\n    task->tState = PIKABOLT_TASK_ADD_BOLT;\n    task->tNumBolts++;\n    task->tAnimating = TRUE;",
       "callsTo": [
         "ResetPikaPowerBoltTask"
@@ -1419,6 +2042,7 @@
       "returnType": "void",
       "signature": "static void ResetPikaPowerBolts(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "struct Task *task = &gTasks[sSlotMachine->pikaPowerBoltTaskId];\n    ResetPikaPowerBoltTask(task);\n    task->tState = PIKABOLT_TASK_CLEAR_ALL;\n    task->tAnimating = TRUE;",
       "callsTo": [
         "ResetPikaPowerBoltTask"
@@ -1429,6 +2053,7 @@
       "returnType": "bool8",
       "signature": "static bool8 IsPikaPowerBoltAnimating(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return gTasks[sSlotMachine->pikaPowerBoltTaskId].tAnimating;",
       "callsTo": [],
       "lineCount": 1
@@ -1437,6 +2062,12 @@
       "returnType": "void",
       "signature": "static void Task_CreatePikaPowerBolt(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "sPikaPowerBoltTasks[gTasks[taskId].tState](&gTasks[taskId]);",
       "callsTo": [],
       "lineCount": 1
@@ -1445,6 +2076,12 @@
       "returnType": "void",
       "signature": "static void PikaPowerBolt_Idle(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "",
       "callsTo": [],
       "lineCount": 1
@@ -1453,6 +2090,12 @@
       "returnType": "void",
       "signature": "static void PikaPowerBolt_AddBolt(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "task->tSpriteId = CreatePikaPowerBoltSprite((task->tNumBolts << 3) + 20, 20);\n    task->tState++;",
       "callsTo": [
         "CreatePikaPowerBoltSprite"
@@ -1463,6 +2106,12 @@
       "returnType": "void",
       "signature": "static void PikaPowerBolt_WaitAnim(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (gSprites[task->tSpriteId].data[7])\n    {\n        s16 r5 = task->tNumBolts + 2;\n        s16 r3 = 0;\n        s16 r2 = 0;\n        if (task->tNumBolts == 1)\n            r3 = 1, r2 = 1;\n        else if (task->tNumBolts == 16)\n            r3 = 2, r2 = 2;\n        sSelectedPikaPowerTile[r2] = sPikaPowerTileTable[r3][0];\n        LoadBgTilemap(2, &sSelectedPikaPowerTile[r2], 2, r5 + 0x40);\n        DestroyPikaPowerBoltSprite(task->tSpriteId);\n        task->tState = PIKABOLT_TASK_IDLE;\n        task->tAnimating = 0;\n    }",
       "callsTo": [
         "DestroyPikaPowerBoltSprite",
@@ -1474,6 +2123,12 @@
       "returnType": "void",
       "signature": "static void PikaPowerBolt_ClearAll(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "s16 r5 = task->tNumBolts + 2;\n    s16 r3 = 0;\n    s16 r2 = 3;\n    if (task->tNumBolts == 1)\n        r3 = 1, r2 = 1;\n    else if (task->tNumBolts == 16)\n        r3 = 2, r2 = 2;\n    if (task->tTimer == 0)\n    {\n        sSelectedPikaPowerTile[r2] = sPikaPowerTileTable[r3][1];\n        LoadBgTilemap(2, &sSelectedPikaPowerTile[r2], 2, r5 + 0x40);\n        task->tNumBolts--;\n    }\n    if (++task->tTimer >= 20)\n        task->tTimer = 0;\n    if (task->tNumBolts == 0)\n    {\n        task->tState = PIKABOLT_TASK_IDLE;\n        task->tAnimating = 0;\n    }",
       "callsTo": [
         "LoadBgTilemap"
@@ -1484,6 +2139,12 @@
       "returnType": "void",
       "signature": "static void ResetPikaPowerBoltTask(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u8 i;\n\n    for (i = 2; i < NUM_TASK_DATA; i++)\n        task->data[i] = 0;",
       "callsTo": [],
       "lineCount": 4
@@ -1492,6 +2153,12 @@
       "returnType": "void",
       "signature": "static void LoadPikaPowerMeter(u8 bolts)",
       "paramsRaw": "u8 bolts",
+      "paramsList": [
+        {
+          "name": "bolts",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 i;\n    s16 r3 = 0, r1 = 0;\n    s16 r4 = 3;\n    for (i = 0; i < bolts; i++, r4++)\n    {\n        r3 = 0, r1 = 0;\n        if (i == 0)\n            r3 = 1, r1 = 1;\n        else if (i == 15)  \n            r3 = 2, r1 = 2;\n        sSelectedPikaPowerTile[r1] = sPikaPowerTileTable[r3][0];\n        LoadBgTilemap(2, &sSelectedPikaPowerTile[r1], 2, r4 + 0x40);\n    }\n    for (; i < 16; i++, r4++)\n    {\n        r3 = 0, r1 = 3;\n        if (i == 0)\n            r3 = 1, r1 = 1;\n        else if (i == 15)\n            r3 = 2, r1 = 2;\n        sSelectedPikaPowerTile[r1] = sPikaPowerTileTable[r3][1];\n        LoadBgTilemap(2, &sSelectedPikaPowerTile[r1], 2, r4 + 0x40);\n    }\n    gTasks[sSlotMachine->pikaPowerBoltTaskId].data[1] = bolts;",
       "callsTo": [
         "LoadBgTilemap"
@@ -1502,6 +2169,7 @@
       "returnType": "void",
       "signature": "static void BeginReelTime(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 taskId = CreateTask(Task_ReelTime, 7);\n    Task_ReelTime(taskId);",
       "callsTo": [
         "CreateTask",
@@ -1513,6 +2181,7 @@
       "returnType": "bool8",
       "signature": "static bool8 IsReelTimeTaskDone(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (FindTaskIdByFunc(Task_ReelTime) == TAIL_SENTINEL)\n        return TRUE;\n    return FALSE;",
       "callsTo": [
         "FindTaskIdByFunc"
@@ -1523,6 +2192,12 @@
       "returnType": "void",
       "signature": "static void Task_ReelTime(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "sReelTimeTasks[gTasks[taskId].tState](&gTasks[taskId]);",
       "callsTo": [],
       "lineCount": 1
@@ -1531,6 +2206,12 @@
       "returnType": "void",
       "signature": "static void ReelTime_Init(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "sSlotMachine->reelTimeSpinsLeft = 0;\n    sSlotMachine->reeltimePixelOffset = 0;\n    sSlotMachine->reeltimePosition = 0;\n    task->tState++;  \n    task->data[1] = 0;\n    task->data[2] = 30;\n    task->tRtReelSpeed = 1280;\n    gSpriteCoordOffsetX = 0;\n    gSpriteCoordOffsetY = 0;\n    SetGpuReg(REG_OFFSET_BG1HOFS, 0);\n    SetGpuReg(REG_OFFSET_BG1VOFS, 0);\n    LoadReelTimeWindowTilemap(REG_OFFSET_BG3VOFS, 0);\n    CreateReelTimeMachineSprites();\n    CreateReelTimePikachuSprite();\n    CreateReelTimeNumberSprites();\n    CreateReelTimeShadowSprites();\n    CreateReelTimeNumberGapSprite();\n    GetReelTimeDraw();\n    StopMapMusic();\n    PlayNewMapMusic(MUS_ROULETTE);",
       "callsTo": [
         "CreateReelTimeMachineSprites",
@@ -1550,6 +2231,12 @@
       "returnType": "void",
       "signature": "static void ReelTime_WindowEnter(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "s16 r3;\n    gSpriteCoordOffsetX -= 8;\n    task->data[1] += 8;\n    r3 = ((task->data[1] + 240) & 0xff) >> 3;\n    SetGpuReg(REG_OFFSET_BG1HOFS, task->data[1] & 0x1ff);\n    if (r3 != task->data[2] && task->data[3] <= 18)\n    {\n        task->data[2] = r3;\n        task->data[3] = task->data[1] >> 3;\n        LoadReelTimeWindowTilemap(r3, task->data[3]);\n    }\n    if (task->data[1] >= 200)\n    {\n        task->tState++;  \n        task->data[3] = 0;\n    }\n    AdvanceReeltimeReel(task->tRtReelSpeed >> 8);",
       "callsTo": [
         "AdvanceReeltimeReel",
@@ -1562,6 +2249,12 @@
       "returnType": "void",
       "signature": "static void ReelTime_WaitStartPikachu(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "AdvanceReeltimeReel(task->tRtReelSpeed >> 8);\n    if (++task->tTimer1 >= 60)\n    {\n        task->tState++;  \n        CreateReelTimeBoltSprites();\n        CreateReelTimePikachuAuraSprites();\n    }",
       "callsTo": [
         "AdvanceReeltimeReel",
@@ -1574,6 +2267,12 @@
       "returnType": "void",
       "signature": "static void ReelTime_PikachuSpeedUp1(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "int i;\n    u8 pikachuAnimIds[ARRAY_COUNT(sReelTimePikachuAnimIds)];\n    s16 reelTimeBoltDelays[ARRAY_COUNT(sReelTimeBoltDelays)];\n    s16 pikachuAuraFlashDelays[ARRAY_COUNT(sPikachuAuraFlashDelays)];\n\n    memcpy(pikachuAnimIds, sReelTimePikachuAnimIds, sizeof(sReelTimePikachuAnimIds));\n    memcpy(reelTimeBoltDelays, sReelTimeBoltDelays, sizeof(sReelTimeBoltDelays));\n    memcpy(pikachuAuraFlashDelays, sPikachuAuraFlashDelays, sizeof(sPikachuAuraFlashDelays));\n\n    AdvanceReeltimeReel(task->tRtReelSpeed >> 8);\n     \n    task->tRtReelSpeed -= 4;\n    i = 4 - (task->tRtReelSpeed >> 8);\n    SetReelTimeBoltDelay(reelTimeBoltDelays[i]);\n    SetReelTimePikachuAuraFlashDelay(pikachuAuraFlashDelays[i]);\n    StartSpriteAnimIfDifferent(&gSprites[sSlotMachine->reelTimePikachuSpriteId], pikachuAnimIds[i]);\n     \n    if (task->tRtReelSpeed <= 0x100)\n    {\n        task->tState++;  \n        task->tRtReelSpeed = 0x100;\n        task->tTimer1 = 0;\n    }",
       "callsTo": [
         "ARRAY_COUNT",
@@ -1588,6 +2287,12 @@
       "returnType": "void",
       "signature": "static void ReelTime_PikachuSpeedUp2(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "AdvanceReeltimeReel(task->tRtReelSpeed >> 8);\n    if (++task->tTimer1 >= 80)\n    {\n        task->tState++;  \n        task->tTimer1 = 0;\n        SetReelTimePikachuAuraFlashDelay(2);\n        StartSpriteAnimIfDifferent(&gSprites[sSlotMachine->reelTimePikachuSpriteId], 3);\n    }",
       "callsTo": [
         "AdvanceReeltimeReel",
@@ -1600,6 +2305,12 @@
       "returnType": "void",
       "signature": "static void ReelTime_WaitReel(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "AdvanceReeltimeReel(task->tRtReelSpeed >> 8);\n    task->tRtReelSpeed = (u8)task->tRtReelSpeed + 0x80;\n    if (++task->tTimer1 >= 80)\n    {\n        task->tState++;  \n        task->tTimer1 = 0;\n    }",
       "callsTo": [
         "AdvanceReeltimeReel"
@@ -1610,6 +2321,12 @@
       "returnType": "void",
       "signature": "static void ReelTime_CheckExplode(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "AdvanceReeltimeReel(task->tRtReelSpeed >> 8);\n    task->tRtReelSpeed = (u8)task->tRtReelSpeed + 0x40;\n    if (++task->tTimer1 >= 40)\n    {\n        task->tTimer1 = 0;\n        if (sSlotMachine->reelTimeDraw)\n        {\n            if (sSlotMachine->reelTimeSpinsLeft <= task->tExplodeChecks)\n                task->tState++;  \n        }\n        else if (task->tExplodeChecks > 3)\n        {\n            task->tState++;  \n        }\n        else if (ShouldReelTimeMachineExplode(task->tExplodeChecks))\n        {\n            task->tState = RT_TASK_EXPLODE;\n        }\n        task->tExplodeChecks++;\n    }",
       "callsTo": [
         "AdvanceReeltimeReel",
@@ -1621,6 +2338,12 @@
       "returnType": "void",
       "signature": "static void ReelTime_LandOnOutcome(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "s16 reeltimePixelOffset = sSlotMachine->reeltimePixelOffset % 20;\n    if (reeltimePixelOffset)\n    {\n        reeltimePixelOffset = AdvanceReeltimeReelToNextSymbol(task->tRtReelSpeed >> 8);\n        task->tRtReelSpeed = (u8)task->tRtReelSpeed + 0x40;\n    }\n    else if (GetReelTimeSymbol(1) != sSlotMachine->reelTimeDraw)\n    {\n        AdvanceReeltimeReel(task->tRtReelSpeed >> 8);\n        reeltimePixelOffset = sSlotMachine->reeltimePixelOffset % 20;\n        task->tRtReelSpeed = (u8)task->tRtReelSpeed + 0x40;\n    }\n    if (reeltimePixelOffset == 0 && GetReelTimeSymbol(1) == sSlotMachine->reelTimeDraw)\n    {\n        task->tRtReelSpeed = 0;  \n        task->tState++;  \n    }",
       "callsTo": [
         "AdvanceReeltimeReel",
@@ -1633,6 +2356,12 @@
       "returnType": "void",
       "signature": "static void ReelTime_PikachuReact(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (++task->tTimer2 >= 60)\n    {\n        StopMapMusic();\n        DestroyReelTimeBoltSprites();\n        DestroyReelTimePikachuAuraSprites();\n        task->tState++;  \n        if(sSlotMachine->reelTimeDraw == 0)\n        {\n            task->tTimer2 = 0xa0;\n            StartSpriteAnimIfDifferent(&gSprites[sSlotMachine->reelTimePikachuSpriteId], 5);\n            PlayFanfare(MUS_TOO_BAD);\n        }\n        else\n        {\n            task->tTimer2 = 0xc0;\n            StartSpriteAnimIfDifferent(&gSprites[sSlotMachine->reelTimePikachuSpriteId], 4);\n            gSprites[sSlotMachine->reelTimePikachuSpriteId].animCmdIndex = 0;\n            if (sSlotMachine->pikaPowerBolts)\n            {\n                ResetPikaPowerBolts();\n                sSlotMachine->pikaPowerBolts = 0;\n            }\n            PlayFanfare(MUS_SLOTS_WIN);\n        }\n    }",
       "callsTo": [
         "DestroyReelTimeBoltSprites",
@@ -1648,6 +2377,12 @@
       "returnType": "void",
       "signature": "static void ReelTime_WaitClearPikaPower(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if ((task->tTimer2 == 0 || --task->tTimer2 == 0) && !IsPikaPowerBoltAnimating())\n        task->tState++;",
       "callsTo": [
         "IsPikaPowerBoltAnimating"
@@ -1658,6 +2393,12 @@
       "returnType": "void",
       "signature": "static void ReelTime_CloseWindow(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "s16 r4;\n    gSpriteCoordOffsetX -= 8;\n    task->data[1] += 8;\n    task->data[3] += 8;\n    r4 = ((task->data[1] - 8) & 0xff) >> 3;\n    SetGpuReg(REG_OFFSET_BG1HOFS, task->data[1] & 0x1ff);\n    if (task->data[3] >> 3 <= 25)\n        ClearReelTimeWindowTilemap(r4);\n    else\n        task->tState++;",
       "callsTo": [
         "ClearReelTimeWindowTilemap",
@@ -1669,6 +2410,12 @@
       "returnType": "void",
       "signature": "static void ReelTime_DestroySprites(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "sSlotMachine->reelTimeSpinsUsed = 0;\n    sSlotMachine->reelTimeSpinsLeft = sSlotMachine->reelTimeDraw;\n    gSpriteCoordOffsetX = 0;\n    SetGpuReg(REG_OFFSET_BG1HOFS, 0);\n    sSlotMachine->reelSpeed = REEL_NORMAL_SPEED;\n    DestroyReelTimePikachuSprite();\n    DestroyReelTimeMachineSprites();\n    DestroyReelTimeShadowSprites();\n    PlayNewMapMusic(sSlotMachine->backupMapMusic);\n    if (sSlotMachine->reelTimeSpinsLeft == 0)\n    {\n        DestroyTask(FindTaskIdByFunc(Task_ReelTime));\n    }\n    else\n    {\n        CreateDigitalDisplayScene(DIG_DISPLAY_REEL_TIME);\n        task->tReelSpeed = ReelTimeSpeed();\n        task->tTimer3 = 0;\n        task->data[3] = 0;\n        task->tState++;  \n    }",
       "callsTo": [
         "CreateDigitalDisplayScene",
@@ -1687,6 +2434,12 @@
       "returnType": "void",
       "signature": "static void ReelTime_SetReelSpeed(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (sSlotMachine->reelSpeed == task->tReelSpeed)\n        task->tState++;  \n    else if (sSlotMachine->reelPixelOffsets[0] % REEL_SYMBOL_HEIGHT == 0 && (++task->tTimer3 & 0x07) == 0)\n        sSlotMachine->reelSpeed >>= 1;",
       "callsTo": [],
       "lineCount": 4
@@ -1695,6 +2448,12 @@
       "returnType": "void",
       "signature": "static void ReelTime_EndSuccess(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (IsDigitalDisplayAnimFinished())\n        DestroyTask(FindTaskIdByFunc(Task_ReelTime));",
       "callsTo": [
         "DestroyTask",
@@ -1707,6 +2466,12 @@
       "returnType": "void",
       "signature": "static void ReelTime_ExplodeMachine(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "DestroyReelTimeMachineSprites();\n    DestroyReelTimeBoltSprites();\n    DestroyReelTimePikachuAuraSprites();\n    CreateReelTimeExplosionSprite();\n    gSprites[sSlotMachine->reelTimeShadowSpriteIds[0]].invisible = TRUE;\n    StartSpriteAnimIfDifferent(&gSprites[sSlotMachine->reelTimePikachuSpriteId], 5);\n    task->tState++;  \n    task->data[4] = 4;\n    task->tTimer1 = 0;\n    StopMapMusic();\n    PlayFanfare(MUS_TOO_BAD);\n    PlaySE(SE_M_EXPLOSION);",
       "callsTo": [
         "CreateReelTimeExplosionSprite",
@@ -1724,6 +2489,12 @@
       "returnType": "void",
       "signature": "static void ReelTime_WaitExplode(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "gSpriteCoordOffsetY = task->data[4];\n    SetGpuReg(REG_OFFSET_BG1VOFS, task->data[4]);\n    if (task->tTimer1 & 0x01)\n        task->data[4] = -task->data[4];\n    if ((++task->tTimer1 & 0x1f) == 0)\n        task->data[4] >>= 1;\n    if (task->data[4] == 0)\n    {\n        DestroyReelTimeExplosionSprite();\n        CreateReelTimeDuckSprites();\n        CreateBrokenReelTimeMachineSprite();\n        CreateReelTimeSmokeSprite();\n        gSprites[sSlotMachine->reelTimeShadowSpriteIds[0]].invisible = FALSE;\n        task->tState++;  \n        task->tTimer1 = 0;\n    }",
       "callsTo": [
         "CreateBrokenReelTimeMachineSprite",
@@ -1738,6 +2509,12 @@
       "returnType": "void",
       "signature": "static void ReelTime_WaitSmoke(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "gSpriteCoordOffsetY = 0;\n    SetGpuReg(REG_OFFSET_BG1VOFS, 0);\n    if (IsReelTimeSmokeAnimFinished())\n    {\n        task->tState++;  \n        DestroyReelTimeSmokeSprite();\n    }",
       "callsTo": [
         "DestroyReelTimeSmokeSprite",
@@ -1750,6 +2527,12 @@
       "returnType": "void",
       "signature": "static void ReelTime_EndFailure(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "gSpriteCoordOffsetX = 0;\n    SetGpuReg(REG_OFFSET_BG1HOFS, 0);\n    PlayNewMapMusic(sSlotMachine->backupMapMusic);\n    DestroyReelTimePikachuSprite();\n    DestroyBrokenReelTimeMachineSprite();\n    DestroyReelTimeShadowSprites();\n    DestroyReelTimeDuckSprites();\n    DestroyTask(FindTaskIdByFunc(Task_ReelTime));",
       "callsTo": [
         "DestroyBrokenReelTimeMachineSprite",
@@ -1767,6 +2550,16 @@
       "returnType": "void",
       "signature": "static void LoadReelTimeWindowTilemap(s16 a0, s16 a1)",
       "paramsRaw": "s16 a0, s16 a1",
+      "paramsList": [
+        {
+          "name": "a0",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "a1",
+          "typeRaw": "s16"
+        }
+      ],
       "body": "s16 i;\n    for (i = 4; i < 15; i++)\n        LoadBgTilemap(1, &sReelTimeWindow_Tilemap[a1 + (i - 4) * 20], 2, 32 * i + a0);",
       "callsTo": [
         "LoadBgTilemap"
@@ -1777,6 +2570,12 @@
       "returnType": "void",
       "signature": "static void ClearReelTimeWindowTilemap(s16 a0)",
       "paramsRaw": "s16 a0",
+      "paramsList": [
+        {
+          "name": "a0",
+          "typeRaw": "s16"
+        }
+      ],
       "body": "u8 i;\n    for (i = 4; i < 15; i++)\n        LoadBgTilemap(1, sEmptyTilemap, 2, 32 * i + a0);",
       "callsTo": [
         "LoadBgTilemap"
@@ -1787,6 +2586,12 @@
       "returnType": "void",
       "signature": "static void OpenInfoBox(u8 digDisplayId)",
       "paramsRaw": "u8 digDisplayId",
+      "paramsList": [
+        {
+          "name": "digDisplayId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 taskId = CreateTask(Task_InfoBox, 1);\n    gTasks[taskId].data[1] = digDisplayId;\n    Task_InfoBox(taskId);",
       "callsTo": [
         "CreateTask",
@@ -1798,6 +2603,7 @@
       "returnType": "bool8",
       "signature": "static bool8 IsInfoBoxClosed(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (FindTaskIdByFunc(Task_InfoBox) == TASK_NONE)\n        return TRUE;\n    else\n        return FALSE;",
       "callsTo": [
         "FindTaskIdByFunc"
@@ -1808,6 +2614,12 @@
       "returnType": "void",
       "signature": "static void Task_InfoBox(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "sInfoBoxTasks[gTasks[taskId].tState](&gTasks[taskId]);",
       "callsTo": [],
       "lineCount": 1
@@ -1816,6 +2628,12 @@
       "returnType": "void",
       "signature": "static void InfoBox_FadeIn(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);\n    task->tState++;",
       "callsTo": [
         "BeginNormalPaletteFade"
@@ -1826,6 +2644,12 @@
       "returnType": "void",
       "signature": "static void InfoBox_WaitFade(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (!gPaletteFade.active)\n        task->tState++;",
       "callsTo": [],
       "lineCount": 2
@@ -1834,6 +2658,12 @@
       "returnType": "void",
       "signature": "static void InfoBox_DrawWindow(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "DestroyDigitalDisplayScene();\n    LoadInfoBoxTilemap();\n    AddWindow(&sWindowTemplate_InfoBox);\n    PutWindowTilemap(WIN_INFO);\n    FillWindowPixelBuffer(WIN_INFO, PIXEL_FILL(0));\n    task->tState++;",
       "callsTo": [
         "AddWindow",
@@ -1849,6 +2679,12 @@
       "returnType": "void",
       "signature": "static void InfoBox_AddText(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "AddTextPrinterParameterized3(WIN_INFO, FONT_NORMAL, 2, 5, sColors_ReeltimeHelp, 0, gText_ReelTimeHelp);\n    CopyWindowToVram(WIN_INFO, COPYWIN_FULL);\n    BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);\n    task->tState++;",
       "callsTo": [
         "AddTextPrinterParameterized3",
@@ -1861,6 +2697,12 @@
       "returnType": "void",
       "signature": "static void InfoBox_WaitInput(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (JOY_NEW(B_BUTTON | SELECT_BUTTON))\n    {\n        FillWindowPixelBuffer(WIN_INFO, PIXEL_FILL(0));\n        ClearWindowTilemap(WIN_INFO);\n        CopyWindowToVram(WIN_INFO, COPYWIN_MAP);\n        RemoveWindow(WIN_INFO);\n        BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);\n        task->tState++;\n    }",
       "callsTo": [
         "BeginNormalPaletteFade",
@@ -1877,6 +2719,12 @@
       "returnType": "void",
       "signature": "static void InfoBox_LoadSlotMachineTilemap(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "LoadSlotMachineMenuTilemap();\n    ShowBg(3);\n    task->tState++;",
       "callsTo": [
         "LoadSlotMachineMenuTilemap",
@@ -1888,6 +2736,12 @@
       "returnType": "void",
       "signature": "static void InfoBox_CreateDigitalDisplay(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "CreateDigitalDisplayScene(task->data[1]);\n    task->tState++;",
       "callsTo": [
         "CreateDigitalDisplayScene"
@@ -1898,6 +2752,12 @@
       "returnType": "void",
       "signature": "static void InfoBox_LoadPikaPowerMeter(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "LoadPikaPowerMeter(sSlotMachine->pikaPowerBolts);\n    BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);\n    task->tState++;",
       "callsTo": [
         "BeginNormalPaletteFade",
@@ -1909,6 +2769,12 @@
       "returnType": "void",
       "signature": "static void InfoBox_FreeTask(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "DestroyTask(FindTaskIdByFunc(Task_InfoBox));",
       "callsTo": [
         "DestroyTask",
@@ -1920,6 +2786,7 @@
       "returnType": "void",
       "signature": "static void CreateDigitalDisplayTask(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n    struct Task *task;\n    i = CreateTask(Task_DigitalDisplay, 3);\n    sSlotMachine->digDisplayTaskId = i;\n    task = &gTasks[i];\n    task->data[1] = -1;\n    for (i = 4; i < NUM_TASK_DATA; i++)\n        task->data[i] = MAX_SPRITES;",
       "callsTo": [
         "CreateTask"
@@ -1930,6 +2797,12 @@
       "returnType": "void",
       "signature": "static void CreateDigitalDisplayScene(u8 id)",
       "paramsRaw": "u8 id",
+      "paramsList": [
+        {
+          "name": "id",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 i;\n    struct Task *task;\n\n    DestroyDigitalDisplayScene();\n\n    task = &gTasks[sSlotMachine->digDisplayTaskId];\n    task->data[1] = id;\n\n    for (i = 0; sDigitalDisplayScenes[id][i].spriteTemplateId != 255; i++)\n    {\n        u8 spriteId;\n        spriteId = CreateStdDigitalDisplaySprite(\n                sDigitalDisplayScenes[id][i].spriteTemplateId,\n                sDigitalDisplayScenes[id][i].dispInfoId,\n                sDigitalDisplayScenes[id][i].spriteId\n        );\n        task->data[4 + i] = spriteId;\n    }",
       "callsTo": [
         "CreateStdDigitalDisplaySprite",
@@ -1941,6 +2814,28 @@
       "returnType": "void",
       "signature": "static void AddDigitalDisplaySprite(u8 templateIdx, SpriteCallback callback, s16 x, s16 y, s16 spriteId)",
       "paramsRaw": "u8 templateIdx, SpriteCallback callback, s16 x, s16 y, s16 spriteId",
+      "paramsList": [
+        {
+          "name": "templateIdx",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "callback",
+          "typeRaw": "SpriteCallback"
+        },
+        {
+          "name": "x",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "spriteId",
+          "typeRaw": "s16"
+        }
+      ],
       "body": "u8 i;\n    struct Task *task = &gTasks[sSlotMachine->digDisplayTaskId];\n    for (i = 4; i < NUM_TASK_DATA; i++)\n    {\n        if (task->data[i] == MAX_SPRITES)\n        {\n            task->data[i] = CreateDigitalDisplaySprite(templateIdx, callback, x, y, spriteId);\n            break;\n        }\n    }",
       "callsTo": [
         "CreateDigitalDisplaySprite"
@@ -1951,6 +2846,7 @@
       "returnType": "void",
       "signature": "static void DestroyDigitalDisplayScene(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n    struct Task *task = &gTasks[sSlotMachine->digDisplayTaskId];\n\n    if ((u16)task->data[1] != 0xFFFF)\n        sDigitalDisplaySceneExitCallbacks[task->data[1]]();\n\n    for (i = 4; i < NUM_TASK_DATA; i++)\n    {\n        if (task->data[i] != MAX_SPRITES)\n        {\n            DestroySprite(&gSprites[task->data[i]]);\n            task->data[i] = MAX_SPRITES;\n        }\n    }",
       "callsTo": [
         "DestroySprite"
@@ -1961,6 +2857,7 @@
       "returnType": "bool8",
       "signature": "static bool8 IsDigitalDisplayAnimFinished(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n    struct Task *task = &gTasks[sSlotMachine->digDisplayTaskId];\n    for (i = 4; i < NUM_TASK_DATA; i++)\n    {\n        if (task->data[i] != MAX_SPRITES)\n        {\n            if (gSprites[task->data[i]].sWaitForAnim)\n                return FALSE;\n        }\n    }\n    return TRUE;",
       "callsTo": [],
       "lineCount": 11
@@ -1969,6 +2866,12 @@
       "returnType": "void",
       "signature": "static void Task_DigitalDisplay(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "sDigitalDisplayTasks[gTasks[taskId].data[0]](&gTasks[taskId]);",
       "callsTo": [],
       "lineCount": 1
@@ -1977,6 +2880,12 @@
       "returnType": "void",
       "signature": "static void DigitalDisplay_Idle(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "",
       "callsTo": [],
       "lineCount": 1
@@ -1985,6 +2894,7 @@
       "returnType": "void",
       "signature": "static void CreateReelSymbolSprites(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s16 i;\n    s16 j;\n    s16 x;\n    for (i = 0, x = 0x30; i < 3; i++, x += 0x28)\n    {\n        for (j = 0; j < 120; j += 24)\n        {\n            struct Sprite *sprite = gSprites + CreateSprite(&sSpriteTemplate_ReelSymbol, x, 0, 14);\n            sprite->oam.priority = 3;\n            sprite->data[0] = i;\n            sprite->data[1] = j;\n            sprite->data[3] = -1;\n        }\n    }",
       "callsTo": [
         "CreateSprite"
@@ -1995,6 +2905,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_ReelSymbol(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "sprite->data[2] = sSlotMachine->reelPixelOffsets[sprite->data[0]] + sprite->data[1];\n    sprite->data[2] %= 120;\n    sprite->y = sSlotMachine->reelShockOffsets[sprite->data[0]] + 28 + sprite->data[2];\n    sprite->sheetTileStart = GetSpriteTileStartByTag(GetSymbolAtRest(sprite->data[0], sprite->data[2] / 24));\n    SetSpriteSheetFrameTileNum(sprite);",
       "callsTo": [
         "GetSpriteTileStartByTag",
@@ -2007,6 +2923,7 @@
       "returnType": "void",
       "signature": "static void CreateCreditPayoutNumberSprites(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s16 i;\n    s16 x;\n\n     \n    for (x = 203, i = 1; i <= MAX_COINS; i *= 10, x -= 7)\n        CreateCoinNumberSprite(x, 23, FALSE, i);\n\n     \n    for (x = 235, i = 1; i <= MAX_COINS; i *= 10, x -= 7)\n        CreateCoinNumberSprite(x, 23, TRUE, i);",
       "callsTo": [
         "CreateCoinNumberSprite"
@@ -2017,6 +2934,24 @@
       "returnType": "void",
       "signature": "static void CreateCoinNumberSprite(s16 x, s16 y, bool8 isPayout, s16 digitMult)",
       "paramsRaw": "s16 x, s16 y, bool8 isPayout, s16 digitMult",
+      "paramsList": [
+        {
+          "name": "x",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "isPayout",
+          "typeRaw": "bool8"
+        },
+        {
+          "name": "digitMult",
+          "typeRaw": "s16"
+        }
+      ],
       "body": "struct Sprite *sprite = &gSprites[CreateSprite(&sSpriteTemplate_CoinNumber, x, y, 13)];\n    sprite->oam.priority = 2;\n    sprite->sIsPayout = isPayout;\n    sprite->sDigitMin = digitMult;\n    sprite->sDigitMax = digitMult * 10;\n    sprite->sCurNum = -1;",
       "callsTo": [
         "CreateSprite"
@@ -2027,6 +2962,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_CoinNumber(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "u16 tag = sSlotMachine->coins;\n    if (sprite->sIsPayout)\n        tag = sSlotMachine->payout;\n    if (sprite->sCurNum != tag)\n    {\n         \n        sprite->sCurNum = tag;\n        tag %= (u16)sprite->sDigitMax;\n        tag /= (u16)sprite->sDigitMin;\n\n        tag += GFXTAG_NUM_0;\n        sprite->sheetTileStart = GetSpriteTileStartByTag(tag);\n        SetSpriteSheetFrameTileNum(sprite);\n    }",
       "callsTo": [
         "GetSpriteTileStartByTag",
@@ -2038,6 +2979,7 @@
       "returnType": "void",
       "signature": "static void CreateReelBackgroundSprite(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 spriteId = CreateSprite(&sSpriteTemplate_ReelBackground, 88, 72, 15);\n    gSprites[spriteId].oam.priority = 3;\n    SetSubspriteTables(&gSprites[spriteId], sSubspriteTable_ReelBackground);",
       "callsTo": [
         "CreateSprite",
@@ -2049,6 +2991,7 @@
       "returnType": "void",
       "signature": "static void CreateReelTimePikachuSprite(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "struct SpriteTemplate spriteTemplate;\n    u8 spriteId;\n    if (sImageTable_ReelTimePikachu == NULL)\n        sImageTable_ReelTimePikachu = AllocZeroed(sizeof(struct SpriteFrameImage) * 5);\n\n    sImageTable_ReelTimePikachu[0].data = sReelTimeGfxPtr + (0 * 0x800);\n    sImageTable_ReelTimePikachu[0].size = 0x800;\n    sImageTable_ReelTimePikachu[1].data = sReelTimeGfxPtr + (1 * 0x800);\n    sImageTable_ReelTimePikachu[1].size = 0x800;\n    sImageTable_ReelTimePikachu[2].data = sReelTimeGfxPtr + (2 * 0x800);\n    sImageTable_ReelTimePikachu[2].size = 0x800;\n    sImageTable_ReelTimePikachu[3].data = sReelTimeGfxPtr + (3 * 0x800);\n    sImageTable_ReelTimePikachu[3].size = 0x800;\n    sImageTable_ReelTimePikachu[4].data = sReelTimeGfxPtr + (4 * 0x800);\n    sImageTable_ReelTimePikachu[4].size = 0x800;\n\n    spriteTemplate = sSpriteTemplate_ReelTimePikachu;\n    spriteTemplate.images = sImageTable_ReelTimePikachu;\n    spriteId = CreateSprite(&spriteTemplate, 280, 80, 1);\n    gSprites[spriteId].oam.priority = 1;\n    gSprites[spriteId].coordOffsetEnabled = TRUE;\n    sSlotMachine->reelTimePikachuSpriteId = spriteId;",
       "callsTo": [
         "AllocZeroed",
@@ -2060,6 +3003,7 @@
       "returnType": "void",
       "signature": "static void DestroyReelTimePikachuSprite(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "DestroySprite(&gSprites[sSlotMachine->reelTimePikachuSpriteId]);\n    TRY_FREE_AND_SET_NULL(sImageTable_ReelTimePikachu);",
       "callsTo": [
         "DestroySprite",
@@ -2071,6 +3015,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_ReelTimePikachu(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "sprite->y2 = sprite->x2 = 0;\n    if (sprite->animNum == 4)\n    {\n        sprite->y2 = sprite->x2 = 8;\n        if ((sprite->animCmdIndex != 0 && sprite->animDelayCounter != 0) || (sprite->animCmdIndex == 0 && sprite->animDelayCounter == 0))\n            sprite->y2 = -8;\n    }",
       "callsTo": [],
       "lineCount": 7
@@ -2079,6 +3029,7 @@
       "returnType": "void",
       "signature": "static void CreateReelTimeMachineSprites(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "struct SpriteTemplate spriteTemplate;\n    u8 spriteId;\n    struct Sprite *sprite;\n\n    if (sImageTable_ReelTimeMachineAntennae == NULL)\n        sImageTable_ReelTimeMachineAntennae = AllocZeroed(sizeof(struct SpriteFrameImage) * 1);\n\n    sImageTable_ReelTimeMachineAntennae[0].data = sReelTimeGfxPtr + 0x2800;\n    sImageTable_ReelTimeMachineAntennae[0].size = 0x300;\n    spriteTemplate = sSpriteTemplate_ReelTimeMachineAntennae;\n    spriteTemplate.images = sImageTable_ReelTimeMachineAntennae;\n    spriteId = CreateSprite(&spriteTemplate, 368, 52, 7);\n    sprite = &gSprites[spriteId];\n    sprite->oam.priority = 1;\n    sprite->coordOffsetEnabled = TRUE;\n    SetSubspriteTables(sprite, sSubspriteTable_ReelTimeMachineAntennae);\n    sSlotMachine->reelTimeMachineSpriteIds[0] = spriteId;\n\n    if (sImageTable_ReelTimeMachine == NULL)\n        sImageTable_ReelTimeMachine = AllocZeroed(sizeof(struct SpriteFrameImage) * 1);\n\n    sImageTable_ReelTimeMachine[0].data = sReelTimeGfxPtr + 0x2800 + 0x300;\n    sImageTable_ReelTimeMachine[0].size = 0x500;\n    spriteTemplate = sSpriteTemplate_ReelTimeMachine;\n    spriteTemplate.images = sImageTable_ReelTimeMachine;\n    spriteId = CreateSprite(&spriteTemplate, 368, 84, 7);\n    sprite = &gSprites[spriteId];\n    sprite->oam.priority = 1;\n    sprite->coordOffsetEnabled = TRUE;\n    SetSubspriteTables(sprite, sSubspriteTable_ReelTimeMachine);\n    sSlotMachine->reelTimeMachineSpriteIds[1] = spriteId;",
       "callsTo": [
         "AllocZeroed",
@@ -2091,6 +3042,7 @@
       "returnType": "void",
       "signature": "static void CreateBrokenReelTimeMachineSprite(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "struct SpriteTemplate spriteTemplate;\n    u8 spriteId;\n    struct Sprite *sprite;\n\n    if (sImageTable_BrokenReelTimeMachine == NULL)\n        sImageTable_BrokenReelTimeMachine = AllocZeroed(sizeof(struct SpriteFrameImage) * 1);\n\n    sImageTable_BrokenReelTimeMachine[0].data = sReelTimeGfxPtr + 0x3000;\n    sImageTable_BrokenReelTimeMachine[0].size = 0x600;\n    spriteTemplate = sSpriteTemplate_BrokenReelTimeMachine;\n    spriteTemplate.images = sImageTable_BrokenReelTimeMachine;\n    spriteId = CreateSprite(&spriteTemplate, 168 - gSpriteCoordOffsetX, 80, 7);\n    sprite = &gSprites[spriteId];\n    sprite->oam.priority = 1;\n    sprite->coordOffsetEnabled = TRUE;\n    SetSubspriteTables(sprite, sSubspriteTable_BrokenReelTimeMachine);\n    sSlotMachine->reelTimeBrokenMachineSpriteId = spriteId;",
       "callsTo": [
         "AllocZeroed",
@@ -2103,6 +3055,7 @@
       "returnType": "void",
       "signature": "static void CreateReelTimeNumberSprites(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n    s16 r5;\n    for (i = 0, r5 = 0; i < ARRAY_COUNT(sSlotMachine->reelTimeNumberSpriteIds); i++, r5 += 20)\n    {\n        u8 spriteId = CreateSprite(&sSpriteTemplate_ReelTimeNumbers, 368, 0, 10);\n        struct Sprite *sprite = &gSprites[spriteId];\n        sprite->oam.priority = 1;\n        sprite->coordOffsetEnabled = TRUE;\n        sprite->data[7] = r5;\n        sSlotMachine->reelTimeNumberSpriteIds[i] = spriteId;\n    }",
       "callsTo": [
         "ARRAY_COUNT",
@@ -2114,6 +3067,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_ReelTimeNumbers(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "s16 r0 = (u16)(sSlotMachine->reeltimePixelOffset + sprite->data[7]);\n    r0 %= 40;\n    sprite->y = r0 + 59;\n    StartSpriteAnimIfDifferent(sprite, GetReelTimeSymbol(r0 / 20));",
       "callsTo": [
         "GetReelTimeSymbol",
@@ -2125,6 +3084,7 @@
       "returnType": "void",
       "signature": "static void CreateReelTimeShadowSprites(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 spriteId = CreateSprite(&sSpriteTemplate_ReelTimeShadow, 368, 100, 9);\n    struct Sprite *sprite = &gSprites[spriteId];\n    sprite->coordOffsetEnabled = TRUE;\n    sprite->oam.priority = 1;\n    SetSubspriteTables(sprite, sSubspriteTable_ReelTimeShadow);\n    sSlotMachine->reelTimeShadowSpriteIds[0] = spriteId;\n\n    spriteId = CreateSprite(&sSpriteTemplate_ReelTimeShadow, 288, 104, 4);\n    sprite = &gSprites[spriteId];\n    sprite->coordOffsetEnabled = TRUE;\n    sprite->oam.priority = 1;\n    SetSubspriteTables(sprite, sSubspriteTable_ReelTimeShadow);\n    sSlotMachine->reelTimeShadowSpriteIds[1] = spriteId;",
       "callsTo": [
         "CreateSprite",
@@ -2136,6 +3096,7 @@
       "returnType": "void",
       "signature": "static void CreateReelTimeNumberGapSprite(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 spriteId = CreateSprite(&sSpriteTemplate_ReelTimeNumberGap, 368, 76, 11);\n    struct Sprite *sprite = &gSprites[spriteId];\n    sprite->coordOffsetEnabled = TRUE;\n    sprite->oam.priority = 1;\n    SetSubspriteTables(sprite, sSubspriteTable_ReelTimeNumberGap);\n    sSlotMachine->reelTimeNumberGapSpriteId = spriteId;",
       "callsTo": [
         "CreateSprite",
@@ -2147,6 +3108,7 @@
       "returnType": "void",
       "signature": "static void DestroyReelTimeMachineSprites(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n\n    DestroySprite(&gSprites[sSlotMachine->reelTimeNumberGapSpriteId]);\n    for (i = 0; i < ARRAY_COUNT(sSlotMachine->reelTimeMachineSpriteIds); i++)\n        DestroySprite(&gSprites[sSlotMachine->reelTimeMachineSpriteIds[i]]);\n\n    TRY_FREE_AND_SET_NULL(sImageTable_ReelTimeMachineAntennae);\n    TRY_FREE_AND_SET_NULL(sImageTable_ReelTimeMachine);\n\n    for (i = 0; i < ARRAY_COUNT(sSlotMachine->reelTimeNumberSpriteIds); i++)\n        DestroySprite(&gSprites[sSlotMachine->reelTimeNumberSpriteIds[i]]);",
       "callsTo": [
         "ARRAY_COUNT",
@@ -2159,6 +3121,7 @@
       "returnType": "void",
       "signature": "static void DestroyReelTimeShadowSprites(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n\n    for (i = 0; i < ARRAY_COUNT(sSlotMachine->reelTimeShadowSpriteIds); i++)\n        DestroySprite(&gSprites[sSlotMachine->reelTimeShadowSpriteIds[i]]);",
       "callsTo": [
         "ARRAY_COUNT",
@@ -2170,6 +3133,7 @@
       "returnType": "void",
       "signature": "static void DestroyBrokenReelTimeMachineSprite(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "DestroySprite(&gSprites[sSlotMachine->reelTimeBrokenMachineSpriteId]);\n    TRY_FREE_AND_SET_NULL(sImageTable_BrokenReelTimeMachine);",
       "callsTo": [
         "DestroySprite",
@@ -2181,6 +3145,7 @@
       "returnType": "void",
       "signature": "static void CreateReelTimeBoltSprites(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 spriteId = CreateSprite(&sSpriteTemplate_ReelTimeBolt, 152, 32, 5);\n    struct Sprite *sprite = &gSprites[spriteId];\n    sprite->oam.priority = 1;\n    sprite->hFlip = TRUE;\n    sSlotMachine->reelTimeBoltSpriteIds[0] = spriteId;\n    sprite->sDelayTimer = 8;\n    sprite->sXDir = -1;\n    sprite->sYDir = -1;\n    sprite->sDelay = 32;\n\n    spriteId = CreateSprite(&sSpriteTemplate_ReelTimeBolt, 184, 32, 5);\n    sprite = &gSprites[spriteId];\n    sprite->oam.priority = 1;\n    sSlotMachine->reelTimeBoltSpriteIds[1] = spriteId;\n    sprite->sXDir = 1;\n    sprite->sYDir = -1;\n    sprite->sDelay = 32;",
       "callsTo": [
         "CreateSprite"
@@ -2191,6 +3156,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_ReelTimeBolt(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (sprite->sDelayTimer != 0)\n    {\n        sprite->sDelayTimer--;\n        sprite->x2 = 0;\n        sprite->y2 = 0;\n        sprite->invisible = TRUE;\n    }\n    else\n    {\n        sprite->invisible = FALSE;\n        sprite->x2 += sprite->sXDir;\n        sprite->y2 += sprite->sYDir;\n        if (++sprite->sCounter >= 8)\n        {\n            sprite->sDelayTimer = sprite->sDelay;\n            sprite->sCounter = 0;\n        }\n    }",
       "callsTo": [],
       "lineCount": 18
@@ -2199,6 +3170,12 @@
       "returnType": "void",
       "signature": "static void SetReelTimeBoltDelay(s16 delay)",
       "paramsRaw": "s16 delay",
+      "paramsList": [
+        {
+          "name": "delay",
+          "typeRaw": "s16"
+        }
+      ],
       "body": "gSprites[sSlotMachine->reelTimeBoltSpriteIds[0]].sDelay = delay;\n    gSprites[sSlotMachine->reelTimeBoltSpriteIds[1]].sDelay = delay;",
       "callsTo": [],
       "lineCount": 2
@@ -2207,6 +3184,7 @@
       "returnType": "void",
       "signature": "static void DestroyReelTimeBoltSprites(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n\n    for (i = 0; i < ARRAY_COUNT(sSlotMachine->reelTimeBoltSpriteIds); i++)\n        DestroySprite(&gSprites[sSlotMachine->reelTimeBoltSpriteIds[i]]);",
       "callsTo": [
         "ARRAY_COUNT",
@@ -2218,6 +3196,7 @@
       "returnType": "void",
       "signature": "static void CreateReelTimePikachuAuraSprites(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 spriteId = CreateSprite(&sSpriteTemplate_ReelTimePikachuAura, 72, 80, 3);\n    gSprites[spriteId].oam.priority = 1;\n    gSprites[spriteId].sFlashPal = TRUE;  \n    gSprites[spriteId].sColorIdx = 0;\n    gSprites[spriteId].sDelayTimer = 16;\n    gSprites[spriteId].sDelay = 8;\n    sSlotMachine->reelTimePikachuAuraSpriteIds[0] = spriteId;\n\n     \n    spriteId = CreateSprite(&sSpriteTemplate_ReelTimePikachuAura, 104, 80, 3);\n    gSprites[spriteId].oam.priority = 1;\n    gSprites[spriteId].hFlip = TRUE;\n    sSlotMachine->reelTimePikachuAuraSpriteIds[1] = spriteId;",
       "callsTo": [
         "CreateSprite"
@@ -2228,6 +3207,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_ReelTimePikachuAura(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "u8 colors[] = {16, 0};\n    if (sprite->sFlashPal && --sprite->sDelayTimer <= 0)\n    {\n        MultiplyInvertedPaletteRGBComponents(OBJ_PLTT_ID(IndexOfSpritePaletteTag(PALTAG_PIKA_AURA)) + 3, colors[sprite->sColorIdx], colors[sprite->sColorIdx], colors[sprite->sColorIdx]);\n        ++sprite->sColorIdx;\n        sprite->sColorIdx &= 1;\n        sprite->sDelayTimer = sprite->sDelay;\n    }",
       "callsTo": [
         "IndexOfSpritePaletteTag",
@@ -2240,6 +3225,12 @@
       "returnType": "void",
       "signature": "static void SetReelTimePikachuAuraFlashDelay(s16 delay)",
       "paramsRaw": "s16 delay",
+      "paramsList": [
+        {
+          "name": "delay",
+          "typeRaw": "s16"
+        }
+      ],
       "body": "gSprites[sSlotMachine->reelTimePikachuAuraSpriteIds[0]].sDelay = delay;",
       "callsTo": [],
       "lineCount": 1
@@ -2248,6 +3239,7 @@
       "returnType": "void",
       "signature": "static void DestroyReelTimePikachuAuraSprites(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n    MultiplyInvertedPaletteRGBComponents(OBJ_PLTT_ID(IndexOfSpritePaletteTag(PALTAG_PIKA_AURA)) + 3, 0, 0, 0);\n    for (i = 0; i < ARRAY_COUNT(sSlotMachine->reelTimePikachuAuraSpriteIds); i++)\n        DestroySprite(&gSprites[sSlotMachine->reelTimePikachuAuraSpriteIds[i]]);",
       "callsTo": [
         "ARRAY_COUNT",
@@ -2262,6 +3254,7 @@
       "returnType": "void",
       "signature": "static void CreateReelTimeExplosionSprite(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 spriteId = CreateSprite(&sSpriteTemplate_ReelTimeExplosion, 168, 80, 6);\n    gSprites[spriteId].oam.priority = 1;\n    sSlotMachine->reelTimeExplosionSpriteId = spriteId;",
       "callsTo": [
         "CreateSprite"
@@ -2272,6 +3265,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_ReelTimeExplosion(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "sprite->y2 = gSpriteCoordOffsetY;",
       "callsTo": [],
       "lineCount": 1
@@ -2280,6 +3279,7 @@
       "returnType": "void",
       "signature": "static void DestroyReelTimeExplosionSprite(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "DestroySprite(&gSprites[sSlotMachine->reelTimeExplosionSpriteId]);",
       "callsTo": [
         "DestroySprite"
@@ -2290,6 +3290,7 @@
       "returnType": "void",
       "signature": "static void CreateReelTimeDuckSprites(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n    u16 sp[] = {0x0, 0x40, 0x80, 0xC0};\n    for (i = 0; i < ARRAY_COUNT(sSlotMachine->reelTimeDuckSpriteIds); i++)\n    {\n        u8 spriteId = CreateSprite(&sSpriteTemplate_ReelTimeDuck, 80 - gSpriteCoordOffsetX, 68, 0);\n        struct Sprite *sprite = &gSprites[spriteId];\n        sprite->oam.priority = 1;\n        sprite->coordOffsetEnabled = TRUE;\n        sprite->data[0] = sp[i];\n        sSlotMachine->reelTimeDuckSpriteIds[i] = spriteId;\n    }",
       "callsTo": [
         "ARRAY_COUNT",
@@ -2301,6 +3302,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_ReelTimeDuck(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "sprite->data[0] -= 2;\n    sprite->data[0] &= 0xff;\n    sprite->x2 = Cos(sprite->data[0], 20);\n    sprite->y2 = Sin(sprite->data[0], 6);\n    sprite->subpriority = 0;\n    if (sprite->data[0] >= 0x80)\n    {\n        sprite->subpriority = 2;\n    }\n    if (++sprite->data[1] >= 16)\n    {\n        sprite->hFlip ^= 1;\n        sprite->data[1] = 0;\n    }",
       "callsTo": [
         "Cos",
@@ -2312,6 +3319,7 @@
       "returnType": "void",
       "signature": "static void DestroyReelTimeDuckSprites(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n    for (i = 0; i < ARRAY_COUNT(sSlotMachine->reelTimeDuckSpriteIds); i++)\n    {\n        DestroySprite(&gSprites[sSlotMachine->reelTimeDuckSpriteIds[i]]);\n    }",
       "callsTo": [
         "ARRAY_COUNT",
@@ -2323,6 +3331,7 @@
       "returnType": "void",
       "signature": "static void CreateReelTimeSmokeSprite(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 spriteId = CreateSprite(&sSpriteTemplate_ReelTimeSmoke, 168, 60, 8);\n    struct Sprite *sprite = &gSprites[spriteId];\n    sprite->oam.priority = 1;\n    sprite->oam.affineMode = ST_OAM_AFFINE_DOUBLE;\n    InitSpriteAffineAnim(sprite);\n    sSlotMachine->reelTimeSmokeSpriteId = spriteId;",
       "callsTo": [
         "CreateSprite",
@@ -2334,6 +3343,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_ReelTimeSmoke(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (sprite->sState == 0)\n    {\n        if (sprite->affineAnimEnded)\n            sprite->sState++;\n    }\n    else if (sprite->sState == 1)\n    {\n        sprite->invisible ^= 1;\n        if (++sprite->sTimer >= 24)\n        {\n            sprite->sState++;\n            sprite->sTimer = 0;\n        }\n    }\n    else\n    {\n        sprite->invisible = TRUE;\n        if (++sprite->sTimer >= 16)\n            sprite->sAnimFinished = TRUE;\n    }\n    sprite->sMoveY &= 0xff;\n    sprite->sMoveY += 16;\n    sprite->y2 -= (sprite->sMoveY >> 8);",
       "callsTo": [],
       "lineCount": 23
@@ -2342,6 +3357,7 @@
       "returnType": "u8",
       "signature": "static u8 IsReelTimeSmokeAnimFinished(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return gSprites[sSlotMachine->reelTimeSmokeSpriteId].sAnimFinished;",
       "callsTo": [],
       "lineCount": 1
@@ -2350,6 +3366,7 @@
       "returnType": "void",
       "signature": "static void DestroyReelTimeSmokeSprite(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "struct Sprite *sprite = &gSprites[sSlotMachine->reelTimeSmokeSpriteId];\n    FreeOamMatrix(sprite->oam.matrixNum);\n    DestroySprite(sprite);",
       "callsTo": [
         "DestroySprite",
@@ -2361,6 +3378,16 @@
       "returnType": "u8",
       "signature": "static u8 CreatePikaPowerBoltSprite(s16 x, s16 y)",
       "paramsRaw": "s16 x, s16 y",
+      "paramsList": [
+        {
+          "name": "x",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s16"
+        }
+      ],
       "body": "u8 spriteId = CreateSprite(&sSpriteTemplate_PikaPowerBolt, x, y, 12);\n    struct Sprite *sprite = &gSprites[spriteId];\n    sprite->oam.priority = 2;\n    sprite->oam.affineMode = ST_OAM_AFFINE_DOUBLE;\n    InitSpriteAffineAnim(sprite);\n    return spriteId;",
       "callsTo": [
         "CreateSprite",
@@ -2372,6 +3399,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_PikaPowerBolt(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (sprite->affineAnimEnded)\n        sprite->data[7] = TRUE;",
       "callsTo": [],
       "lineCount": 2
@@ -2380,6 +3413,12 @@
       "returnType": "void",
       "signature": "static void DestroyPikaPowerBoltSprite(u8 spriteId)",
       "paramsRaw": "u8 spriteId",
+      "paramsList": [
+        {
+          "name": "spriteId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "struct Sprite *sprite = &gSprites[spriteId];\n    FreeOamMatrix(sprite->oam.matrixNum);\n    DestroySprite(sprite);",
       "callsTo": [
         "DestroySprite",
@@ -2391,6 +3430,20 @@
       "returnType": "u8",
       "signature": "static u8 CreateStdDigitalDisplaySprite(u8 templateIdx, u8 dispInfoId, s16 spriteId)",
       "paramsRaw": "u8 templateIdx, u8 dispInfoId, s16 spriteId",
+      "paramsList": [
+        {
+          "name": "templateIdx",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "dispInfoId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "spriteId",
+          "typeRaw": "s16"
+        }
+      ],
       "body": "return CreateDigitalDisplaySprite(templateIdx, sDigitalDisplay_SpriteCallbacks[dispInfoId], sDigitalDisplay_SpriteCoords[dispInfoId][0], sDigitalDisplay_SpriteCoords[dispInfoId][1], spriteId);",
       "callsTo": [
         "CreateDigitalDisplaySprite"
@@ -2401,6 +3454,28 @@
       "returnType": "u8",
       "signature": "static u8 CreateDigitalDisplaySprite(u8 templateIdx, SpriteCallback callback, s16 x, s16 y, s16 internalSpriteId)",
       "paramsRaw": "u8 templateIdx, SpriteCallback callback, s16 x, s16 y, s16 internalSpriteId",
+      "paramsList": [
+        {
+          "name": "templateIdx",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "callback",
+          "typeRaw": "SpriteCallback"
+        },
+        {
+          "name": "x",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "internalSpriteId",
+          "typeRaw": "s16"
+        }
+      ],
       "body": "struct SpriteTemplate spriteTemplate;\n    u8 spriteId;\n    struct Sprite *sprite;\n\n    spriteTemplate = *sSpriteTemplates_DigitalDisplay[templateIdx];\n    spriteTemplate.images = sImageTables_DigitalDisplay[templateIdx];\n    spriteId = CreateSprite(&spriteTemplate, x, y, 16);\n    sprite = &gSprites[spriteId];\n    sprite->oam.priority = 3;\n    sprite->callback = callback;\n    sprite->sSpriteId = internalSpriteId;\n    sprite->sWaitForAnim = TRUE;\n    if (sSubspriteTables_DigitalDisplay[templateIdx])\n        SetSubspriteTables(sprite, sSubspriteTables_DigitalDisplay[templateIdx]);\n    return spriteId;",
       "callsTo": [
         "CreateSprite",
@@ -2412,6 +3487,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_DigitalDisplay_Static(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "sprite->sWaitForAnim = FALSE;",
       "callsTo": [],
       "lineCount": 1
@@ -2420,6 +3501,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_DigitalDisplay_Smoke(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "s16 targetX[] = {4, -4, 4, -4};\n    s16 targetY[] = {4, 4, -4, -4};\n\n    if (sprite->sCounter++ >= 16)\n    {\n        sprite->subspriteTableNum ^= 1;\n        sprite->sCounter = 0;\n    }\n    sprite->x2 = 0;\n    sprite->y2 = 0;\n    if (sprite->subspriteTableNum != 0)\n    {\n        sprite->x2 = targetX[sprite->sSpriteId];\n        sprite->y2 = targetY[sprite->sSpriteId];\n    }",
       "callsTo": [],
       "lineCount": 15
@@ -2428,6 +3515,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_DigitalDisplay_SmokeNE(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "sprite->hFlip = TRUE;\n    SpriteCB_DigitalDisplay_Smoke(sprite);",
       "callsTo": [
         "SpriteCB_DigitalDisplay_Smoke"
@@ -2438,6 +3531,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_DigitalDisplay_SmokeSW(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "sprite->vFlip = TRUE;\n    SpriteCB_DigitalDisplay_Smoke(sprite);",
       "callsTo": [
         "SpriteCB_DigitalDisplay_Smoke"
@@ -2448,6 +3547,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_DigitalDisplay_SmokeSE(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "sprite->hFlip = TRUE;\n    sprite->vFlip = TRUE;\n    SpriteCB_DigitalDisplay_Smoke(sprite);",
       "callsTo": [
         "SpriteCB_DigitalDisplay_Smoke"
@@ -2458,6 +3563,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_DigitalDisplay_Reel(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "switch (sprite->sState)\n    {\n    case 0:\n        sprite->x += 4;\n        if (sprite->x >= DISPLAY_WIDTH - 32)\n        {\n            sprite->x = DISPLAY_WIDTH - 32;\n            sprite->sState++;\n        }\n        break;\n    case 1:\n        if (++sprite->sCounter > 90)\n            sprite->sState++;\n        break;\n    case 2:\n        sprite->x += 4;\n        if (sprite->x >= DISPLAY_WIDTH + 32)\n            sprite->sState++;\n        break;\n    case 3:\n        sprite->sWaitForAnim = FALSE;\n        break;\n    }",
       "callsTo": [],
       "lineCount": 23
@@ -2466,6 +3577,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_DigitalDisplay_Time(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "switch (sprite->sState)\n    {\n    case 0:\n        sprite->x -= 4;\n        if (sprite->x <= DISPLAY_WIDTH - 32)\n        {\n            sprite->x = DISPLAY_WIDTH - 32;\n            sprite->sState++;\n        }\n        break;\n    case 1:\n        if (++sprite->sCounter > 90)\n            sprite->sState++;\n        break;\n    case 2:\n        sprite->x -= 4;\n        if (sprite->x <= 144)\n            sprite->sState++;\n        break;\n    case 3:\n        sprite->sWaitForAnim = FALSE;\n        break;\n    }",
       "callsTo": [],
       "lineCount": 23
@@ -2474,6 +3591,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_DigitalDisplay_ReelTimeNumber(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "switch (sprite->sState)\n    {\n    case 0:\n        StartSpriteAnim(sprite, sSlotMachine->reelTimeSpinsLeft - 1);\n        sprite->sState++;\n         \n    case 1:\n        if (++sprite->sCounter >= 4)\n        {\n            sprite->sState++;\n            sprite->sCounter = 0;\n        }\n        break;\n    case 2:\n        sprite->x += 4;\n        if (sprite->x >= DISPLAY_WIDTH - 32)\n        {\n            sprite->x = DISPLAY_WIDTH - 32;\n            sprite->sState++;\n        }\n        break;\n    case 3:\n        if (++sprite->sCounter > 90)\n            sprite->sState++;\n        break;\n    case 4:\n        sprite->x += 4;\n        if (sprite->x >= DISPLAY_WIDTH + 8)\n            sprite->sState++;\n        break;\n    case 5:\n        sprite->sWaitForAnim = FALSE;\n        break;\n    }",
       "callsTo": [
         "StartSpriteAnim"
@@ -2484,6 +3607,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_DigitalDisplay_PokeballRocking(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "switch (sprite->sState)\n    {\n    case 0:\n        sprite->animPaused = TRUE;\n        sprite->sState++;\n         \n    case 1:\n        sprite->y += 8;\n        if (sprite->y >= 0x70)\n        {\n            sprite->y = 0x70;\n            sprite->sCounter = 16;\n            sprite->sState++;\n        }\n        break;\n    case 2:\n        if (sprite->data[2] == 0)\n        {\n            sprite->y -= sprite->sCounter;\n            sprite->sCounter = -sprite->sCounter;\n            if (++sprite->data[3] >= 2)\n            {\n                sprite->sCounter >>= 2;\n                sprite->data[3] = 0;\n                if (sprite->sCounter == 0)\n                {\n                    sprite->sState++;\n                    sprite->sWaitForAnim = FALSE;\n                    sprite->animPaused = FALSE;\n                }\n            }\n        }\n        sprite->data[2]++;\n        sprite->data[2] &= 0x07;\n        break;\n    }",
       "callsTo": [],
       "lineCount": 36
@@ -2492,6 +3621,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_DigitalDisplay_Stop(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "switch (sprite->sState)\n    {\n    case 0:\n        if (++sprite->sCounter > 8)\n            sprite->sState++;\n        break;\n    case 1:\n        sprite->y += 2;\n        if (sprite->y >= 0x30)\n        {\n            sprite->y = 0x30;\n            sprite->sState++;\n            sprite->sWaitForAnim = FALSE;\n        }\n        break;\n    }",
       "callsTo": [],
       "lineCount": 16
@@ -2500,6 +3635,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_DigitalDisplay_AButtonStop(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "switch (sprite->sState)\n    {\n    case 0:\n        sprite->invisible = TRUE;\n        if (++sprite->sCounter > 0x20)\n        {\n            sprite->sState++;\n            sprite->sCounter = 5;\n            sprite->oam.mosaic = TRUE;\n            sprite->invisible = FALSE;\n            StartSpriteAnim(sprite, 1);\n            SetGpuReg(REG_OFFSET_MOSAIC, ((sprite->sCounter << 4) | sprite->sCounter) << 8);\n        }\n        break;\n    case 1:\n        sprite->sCounter -= (sprite->data[2] >> 8);\n        if (sprite->sCounter < 0)\n            sprite->sCounter = 0;\n        SetGpuReg(REG_OFFSET_MOSAIC, ((sprite->sCounter << 4) | sprite->sCounter) << 8);\n        sprite->data[2] &= 0xff;\n        sprite->data[2] += 0x80;\n        if (sprite->sCounter == 0)\n        {\n            sprite->sState++;\n            sprite->sWaitForAnim = FALSE;\n            sprite->oam.mosaic = FALSE;\n            StartSpriteAnim(sprite, 0);\n        }\n        break;\n    }",
       "callsTo": [
         "SetGpuReg",
@@ -2511,6 +3652,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_DigitalDisplay_PokeballShining(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (sprite->sCounter < 3)\n    {\n        LoadPalette(sPokeballShiningPalTable[sprite->sCounter], OBJ_PLTT_ID(IndexOfSpritePaletteTag(PALTAG_DIG_DISPLAY)), PLTT_SIZE_4BPP);\n        if (++sprite->data[2] >= 4)\n        {\n            sprite->data[1]++;\n            sprite->data[2] = 0;\n        }\n    }\n    else\n    {\n        LoadPalette(sPokeballShiningPalTable[sprite->sCounter], OBJ_PLTT_ID(IndexOfSpritePaletteTag(PALTAG_DIG_DISPLAY)), PLTT_SIZE_4BPP);\n        if (++sprite->data[2] >= 25)\n        {\n            sprite->sCounter = 0;\n            sprite->data[2] = 0;\n        }\n    }\n    StartSpriteAnimIfDifferent(sprite, 1);\n    sprite->sWaitForAnim = FALSE;",
       "callsTo": [
         "IndexOfSpritePaletteTag",
@@ -2524,6 +3671,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_DigitalDisplay_RegBonus(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "s16 letterXOffset[] = {  0, -40,   0,   0, 48,   0,  24,   0};\n    s16 letterYOffset[] = {-32,   0, -32, -48,  0, -48,   0, -48};\n    s16 letterDelay[]   = { 16,  12,  16,   0,  0,   4,   8,   8};\n\n    switch (sprite->sState)\n    {\n    case 0:\n        sprite->x2 = letterXOffset[sprite->sSpriteId];\n        sprite->y2 = letterYOffset[sprite->sSpriteId];\n        sprite->sCounter = letterDelay[sprite->sSpriteId];\n        sprite->sState++;\n         \n    case 1:\n        if (sprite->sCounter-- == 0)\n            sprite->sState++;\n        break;\n    case 2:\n        if (sprite->x2 > 0)\n            sprite->x2 -= 4;\n        else if (sprite->x2 < 0)\n            sprite->x2 += 4;\n\n        if (sprite->y2 > 0)\n            sprite->y2 -= 4;\n        else if (sprite->y2 < 0)\n            sprite->y2 += 4;\n\n        if (sprite->x2 == 0 && sprite->y2 == 0)\n            sprite->sState++;\n        break;\n    }",
       "callsTo": [],
       "lineCount": 31
@@ -2532,6 +3685,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_DigitalDisplay_BigBonus(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "s16 sp0[] = {160, 192, 224, 104, 80, 64, 48, 24};\n\n    if (sprite->sState == 0)\n    {\n        sprite->sState++;\n        sprite->sCounter = 12;\n    }\n    sprite->x2 = Cos(sp0[sprite->sSpriteId], sprite->sCounter);\n    sprite->y2 = Sin(sp0[sprite->sSpriteId], sprite->sCounter);\n    if (sprite->sCounter != 0)\n        sprite->sCounter--;",
       "callsTo": [
         "Cos",
@@ -2543,6 +3702,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_DigitalDisplay_AButtonStart(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "switch (sprite->sState)\n    {\n        case 0:\n            sSlotMachine->winIn = WININ_WIN0_BG_ALL | WININ_WIN0_CLR;\n            sSlotMachine->winOut = WINOUT_WIN01_BG_ALL | WINOUT_WIN01_OBJ | WINOUT_WIN01_CLR;\n            sSlotMachine->win0v = WIN_RANGE(32, 136);\n            sprite->invisible = TRUE;\n            sprite->sState++;\n             \n        case 1:\n            sprite->sCounter += 2;\n            sprite->data[2] = sprite->sCounter + 176;\n            sprite->data[3] = DISPLAY_WIDTH - sprite->sCounter;\n            if (sprite->data[2] > 208)\n                sprite->data[2] = 208;\n            if (sprite->data[3] < 208)\n                sprite->data[3] = 208;\n            sSlotMachine->win0h = (sprite->data[2] << 8) | sprite->data[3];\n            if (sprite->sCounter > 51)\n            {\n                sprite->sState++;\n                sSlotMachine->winIn = WININ_WIN0_BG_ALL | WININ_WIN0_OBJ | WININ_WIN0_CLR;\n            }\n            break;\n        case 2:\n            if (sSlotMachine->bet == 0)\n                break;\n            AddDigitalDisplaySprite(DIG_SPRITE_A_BUTTON, SpriteCallbackDummy, 208, 116, 0);\n            sSlotMachine->win0h = WIN_RANGE(192, 224);\n            sSlotMachine->win0v = WIN_RANGE(104, 128);\n            sSlotMachine->winIn = WININ_WIN0_BG_ALL | WININ_WIN0_CLR;\n            sprite->sState++;\n            sprite->sCounter = 0;\n             \n        case 3:\n            sprite->sCounter += 2;\n            sprite->data[2] = sprite->sCounter + 192;\n            sprite->data[3] = DISPLAY_WIDTH - 16 - sprite->sCounter;\n            if (sprite->data[2] > 208)\n                sprite->data[2] = 208;\n            if (sprite->data[3] < 208)\n                sprite->data[3] = 208;\n            sSlotMachine->win0h = (sprite->data[2] << 8) | sprite->data[3];\n            if (sprite->sCounter > 15)\n            {\n                sprite->sState++;\n                sSlotMachine->winIn = WININ_WIN0_BG_ALL | WININ_WIN0_OBJ | WININ_WIN0_CLR;\n            }\n            break;\n    }",
       "callsTo": [
         "AddDigitalDisplaySprite",
@@ -2554,6 +3719,7 @@
       "returnType": "void",
       "signature": "static void EndDigitalDisplayScene_Dummy(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "",
       "callsTo": [],
       "lineCount": 1
@@ -2562,6 +3728,7 @@
       "returnType": "void",
       "signature": "static void EndDigitalDisplayScene_StopReel(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "SetGpuReg(REG_OFFSET_MOSAIC, 0);",
       "callsTo": [
         "SetGpuReg"
@@ -2572,6 +3739,7 @@
       "returnType": "void",
       "signature": "static void EndDigitalDisplayScene_Win(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "LoadPalette(sDigitalDisplay_Pal, OBJ_PLTT_ID(IndexOfSpritePaletteTag(PALTAG_DIG_DISPLAY)), PLTT_SIZE_4BPP);",
       "callsTo": [
         "IndexOfSpritePaletteTag",
@@ -2584,6 +3752,7 @@
       "returnType": "void",
       "signature": "static void EndDigitalDisplayScene_InsertBet(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sSlotMachine->win0h = DISPLAY_WIDTH;\n    sSlotMachine->win0v = DISPLAY_HEIGHT;\n    sSlotMachine->winIn = WININ_WIN0_BG_ALL | WININ_WIN0_OBJ | WININ_WIN0_CLR;\n    sSlotMachine->winOut = WINOUT_WIN01_BG_ALL | WINOUT_WIN01_OBJ | WINOUT_WIN01_CLR;",
       "callsTo": [],
       "lineCount": 4
@@ -2592,6 +3761,7 @@
       "returnType": "void",
       "signature": "static void LoadSlotMachineGfx(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n\n    LoadReelBackground();\n    sDigitalDisplayGfxPtr = Alloc(0x3200);\n    LZDecompressWram(gSlotMachineDigitalDisplay_Gfx, sDigitalDisplayGfxPtr);\n    sReelTimeGfxPtr = Alloc(0x3600);\n    LZDecompressWram(sReelTimeGfx, sReelTimeGfxPtr);\n    sSlotMachineSpritesheetsPtr = AllocZeroed(sizeof(struct SpriteSheet) * ARRAY_COUNT(sSlotMachineSpriteSheets));\n    for (i = 0; i < ARRAY_COUNT(sSlotMachineSpriteSheets); i++)\n    {\n        sSlotMachineSpritesheetsPtr[i].data = sSlotMachineSpriteSheets[i].data;\n        sSlotMachineSpritesheetsPtr[i].size = sSlotMachineSpriteSheets[i].size;\n        sSlotMachineSpritesheetsPtr[i].tag = sSlotMachineSpriteSheets[i].tag;\n    }\n    sSlotMachineSpritesheetsPtr[GFXTAG_STOP - 1].data = sDigitalDisplayGfxPtr + 0xA00;\n    sSlotMachineSpritesheetsPtr[GFXTAG_BONUS - 1].data = sDigitalDisplayGfxPtr + 0x1400;\n    sSlotMachineSpritesheetsPtr[GFXTAG_BIG - 1].data = sDigitalDisplayGfxPtr + 0x1600;\n    sSlotMachineSpritesheetsPtr[GFXTAG_REG - 1].data = sDigitalDisplayGfxPtr + 0x1900;\n    LoadSpriteSheets(sSlotMachineSpritesheetsPtr);\n    LoadSpritePalettes(sSlotMachineSpritePalettes);",
       "callsTo": [
         "ARRAY_COUNT",
@@ -2608,6 +3778,7 @@
       "returnType": "void",
       "signature": "static void LoadReelBackground(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 *dest;\n    u8 i, j;\n\n    sReelBackgroundSpriteSheet = AllocZeroed(sizeof(struct SpriteSheet));\n    sReelBackground_Gfx = AllocZeroed(0x2000);  \n    dest = sReelBackground_Gfx;\n    for (i = 0; i < 0x40; i++)\n    {\n        for (j = 0; j < 0x20; j++, dest++)\n            *dest = sReelBackground_Tilemap[j];\n    }\n    sReelBackgroundSpriteSheet->data = sReelBackground_Gfx;\n    sReelBackgroundSpriteSheet->size = 0x800;\n    sReelBackgroundSpriteSheet->tag  = GFXTAG_REEL_BG;\n    LoadSpriteSheet(sReelBackgroundSpriteSheet);",
       "callsTo": [
         "AllocZeroed",
@@ -2619,6 +3790,7 @@
       "returnType": "void",
       "signature": "static void LoadMenuGfx(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sMenuGfx = Alloc(0x2200);\n    LZDecompressWram(gSlotMachineMenu_Gfx, sMenuGfx);\n    LoadBgTiles(2, sMenuGfx, 0x2200, 0);\n    LoadPalette(gSlotMachineMenu_Pal, BG_PLTT_ID(0), 5 * PLTT_SIZE_4BPP);\n    LoadPalette(sUnkPalette, BG_PLTT_ID(13), PLTT_SIZE_4BPP);",
       "callsTo": [
         "Alloc",
@@ -2633,6 +3805,7 @@
       "returnType": "void",
       "signature": "static void LoadMenuAndReelOverlayTilemaps(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "LoadSlotMachineMenuTilemap();\n    LoadSlotMachineReelOverlay();",
       "callsTo": [
         "LoadSlotMachineMenuTilemap",
@@ -2644,6 +3817,7 @@
       "returnType": "void",
       "signature": "static void LoadSlotMachineMenuTilemap(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "LoadBgTilemap(2, gSlotMachineMenu_Tilemap, 0x500, 0);",
       "callsTo": [
         "LoadBgTilemap"
@@ -2654,6 +3828,7 @@
       "returnType": "void",
       "signature": "static void LoadSlotMachineReelOverlay(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s16 x, y, dx;\n\n    for (x = 4; x < 18; x += 5)\n    {\n        for (dx = 0; dx < 4; dx++)\n        {\n            LoadBgTilemap(3, sReelOverlay_Tilemap,     2, x + dx + 5  * 32);\n            LoadBgTilemap(3, sReelOverlay_Tilemap + 1, 2, x + dx + 13 * 32);\n            LoadBgTilemap(3, sReelOverlay_Tilemap + 2, 2, x + dx + 6  * 32);\n            LoadBgTilemap(3, sReelOverlay_Tilemap + 3, 2, x + dx + 12 * 32);\n        }\n\n        LoadBgTilemap(3, sReelOverlay_Tilemap + 4, 2, x + 6 * 32);\n        LoadBgTilemap(3, sReelOverlay_Tilemap + 5, 2, x + 12 * 32);\n\n        for (y = 7; y <= 11; y++)\n            LoadBgTilemap(3, sReelOverlay_Tilemap + 6, 2, x + y * 32);\n    }",
       "callsTo": [
         "LoadBgTilemap"
@@ -2664,6 +3839,28 @@
       "returnType": "void",
       "signature": "static void SetReelButtonTilemap(s16 offset, u16 topLeft, u16 topRight, u16 bottomLeft, u16 bottomRight)",
       "paramsRaw": "s16 offset, u16 topLeft, u16 topRight, u16 bottomLeft, u16 bottomRight",
+      "paramsList": [
+        {
+          "name": "offset",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "topLeft",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "topRight",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "bottomLeft",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "bottomRight",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "sReelButtonPress_Tilemap[0] = topLeft;\n    sReelButtonPress_Tilemap[1] = topRight;\n    sReelButtonPress_Tilemap[2] = bottomLeft;\n    sReelButtonPress_Tilemap[3] = bottomRight;\n\n    LoadBgTilemap(2, sReelButtonPress_Tilemap,     2, 15 * 32 + offset);      \n    LoadBgTilemap(2, sReelButtonPress_Tilemap + 1, 2, 15 * 32 + 1 + offset);  \n    LoadBgTilemap(2, sReelButtonPress_Tilemap + 2, 2, 16 * 32 + offset);      \n    LoadBgTilemap(2, sReelButtonPress_Tilemap + 3, 2, 16 * 32 + 1 + offset);",
       "callsTo": [
         "LoadBgTilemap"
@@ -2674,6 +3871,7 @@
       "returnType": "void",
       "signature": "static void LoadInfoBoxTilemap(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "LoadBgTilemap(2, gSlotMachineInfoBox_Tilemap, 0x500, 0);\n    HideBg(3);",
       "callsTo": [
         "HideBg",
@@ -2685,6 +3883,7 @@
       "returnType": "void",
       "signature": "static void SetDigitalDisplayImagePtrs(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sImageTables_DigitalDisplay[DIG_SPRITE_REEL]      = sImageTable_DigitalDisplay_Reel;\n    sImageTables_DigitalDisplay[DIG_SPRITE_TIME]      = sImageTable_DigitalDisplay_Time;\n    sImageTables_DigitalDisplay[DIG_SPRITE_INSERT]    = sImageTable_DigitalDisplay_Insert;\n    sImageTables_DigitalDisplay[DIG_SPRITE_WIN]       = sImageTable_DigitalDisplay_Win;\n    sImageTables_DigitalDisplay[DIG_SPRITE_LOSE]      = sImageTable_DigitalDisplay_Lose;\n    sImageTables_DigitalDisplay[DIG_SPRITE_A_BUTTON]  = sImageTable_DigitalDisplay_AButton;\n    sImageTables_DigitalDisplay[DIG_SPRITE_SMOKE]     = sImageTable_DigitalDisplay_Smoke;\n    sImageTables_DigitalDisplay[DIG_SPRITE_NUMBER]    = sImageTable_DigitalDisplay_Number;\n    sImageTables_DigitalDisplay[DIG_SPRITE_POKE_BALL] = sImageTable_DigitalDisplay_Pokeball;\n    sImageTables_DigitalDisplay[DIG_SPRITE_D_PAD]     = sImageTable_DigitalDisplay_DPad;\n    sImageTables_DigitalDisplay[DIG_SPRITE_STOP_S]    = sImageTable_DigitalDisplay_Stop;\n    sImageTables_DigitalDisplay[DIG_SPRITE_STOP_T]    = sImageTable_DigitalDisplay_Stop;\n    sImageTables_DigitalDisplay[DIG_SPRITE_STOP_O]    = sImageTable_DigitalDisplay_Stop;\n    sImageTables_DigitalDisplay[DIG_SPRITE_STOP_P]    = sImageTable_DigitalDisplay_Stop;\n    sImageTables_DigitalDisplay[DIG_SPRITE_BONUS_B]   = sImageTable_DigitalDisplay_Bonus;\n    sImageTables_DigitalDisplay[DIG_SPRITE_BONUS_O]   = sImageTable_DigitalDisplay_Bonus;\n    sImageTables_DigitalDisplay[DIG_SPRITE_BONUS_N]   = sImageTable_DigitalDisplay_Bonus;\n    sImageTables_DigitalDisplay[DIG_SPRITE_BONUS_U]   = sImageTable_DigitalDisplay_Bonus;\n    sImageTables_DigitalDisplay[DIG_SPRITE_BONUS_S]   = sImageTable_DigitalDisplay_Bonus;\n    sImageTables_DigitalDisplay[DIG_SPRITE_BIG_B]     = sImageTable_DigitalDisplay_Big;\n    sImageTables_DigitalDisplay[DIG_SPRITE_BIG_I]     = sImageTable_DigitalDisplay_Big;\n    sImageTables_DigitalDisplay[DIG_SPRITE_BIG_G]     = sImageTable_DigitalDisplay_Big;\n    sImageTables_DigitalDisplay[DIG_SPRITE_REG_R]     = sImageTable_DigitalDisplay_Reg;\n    sImageTables_DigitalDisplay[DIG_SPRITE_REG_E]     = sImageTable_DigitalDisplay_Reg;\n    sImageTables_DigitalDisplay[DIG_SPRITE_REG_G]     = sImageTable_DigitalDisplay_Reg;\n    sImageTables_DigitalDisplay[DIG_SPRITE_EMPTY]     = NULL;",
       "callsTo": [],
       "lineCount": 26
@@ -2693,6 +3892,7 @@
       "returnType": "void",
       "signature": "static void AllocDigitalDisplayGfx(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sImageTable_DigitalDisplay_Reel = AllocZeroed(sizeof(struct SpriteFrameImage) * 1);\n    sImageTable_DigitalDisplay_Reel[0].data = sDigitalDisplayGfxPtr;\n    sImageTable_DigitalDisplay_Reel[0].size = 0x600;\n\n    sImageTable_DigitalDisplay_Time = AllocZeroed(sizeof(struct SpriteFrameImage) * 1);\n    sImageTable_DigitalDisplay_Time[0].data = sDigitalDisplayGfxPtr + 0x600;\n    sImageTable_DigitalDisplay_Time[0].size = 0x200;\n\n    sImageTable_DigitalDisplay_Insert = AllocZeroed(sizeof(struct SpriteFrameImage) * 1);\n    sImageTable_DigitalDisplay_Insert[0].data = sDigitalDisplayGfxPtr + 0x800;\n    sImageTable_DigitalDisplay_Insert[0].size = 0x200;\n\n    sImageTable_DigitalDisplay_Stop = AllocZeroed(sizeof(struct SpriteFrameImage) * 1);\n    sImageTable_DigitalDisplay_Stop[0].data = sDigitalDisplayGfxPtr + 0xA00;\n    sImageTable_DigitalDisplay_Stop[0].size = 0x200;\n\n    sImageTable_DigitalDisplay_Win = AllocZeroed(sizeof(struct SpriteFrameImage) * 1);\n    sImageTable_DigitalDisplay_Win[0].data = sDigitalDisplayGfxPtr + 0xC00;\n    sImageTable_DigitalDisplay_Win[0].size = 0x300;\n\n    sImageTable_DigitalDisplay_Lose = AllocZeroed(sizeof(struct SpriteFrameImage) * 1);\n    sImageTable_DigitalDisplay_Lose[0].data = sDigitalDisplayGfxPtr + 0x1000;\n    sImageTable_DigitalDisplay_Lose[0].size = 0x400;\n\n    sImageTable_DigitalDisplay_Bonus = AllocZeroed(sizeof(struct SpriteFrameImage) * 1);\n    sImageTable_DigitalDisplay_Bonus[0].data = sDigitalDisplayGfxPtr + 0x1400;\n    sImageTable_DigitalDisplay_Bonus[0].size = 0x200;\n\n    sImageTable_DigitalDisplay_Big = AllocZeroed(sizeof(struct SpriteFrameImage) * 1);\n    sImageTable_DigitalDisplay_Big[0].data = sDigitalDisplayGfxPtr + 0x1600;\n    sImageTable_DigitalDisplay_Big[0].size = 0x300;\n\n    sImageTable_DigitalDisplay_Reg = AllocZeroed(sizeof(struct SpriteFrameImage) * 1);\n    sImageTable_DigitalDisplay_Reg[0].data = sDigitalDisplayGfxPtr + 0x1900;\n    sImageTable_DigitalDisplay_Reg[0].size = 0x300;\n\n    sImageTable_DigitalDisplay_AButton = AllocZeroed(sizeof(struct SpriteFrameImage) * 2);\n    sImageTable_DigitalDisplay_AButton[0].data = sDigitalDisplayGfxPtr + 0x1C00;\n    sImageTable_DigitalDisplay_AButton[0].size = 0x200;\n    sImageTable_DigitalDisplay_AButton[1].data = sDigitalDisplayGfxPtr + 0x1E00;\n    sImageTable_DigitalDisplay_AButton[1].size = 0x200;\n\n    sImageTable_DigitalDisplay_Smoke = AllocZeroed(sizeof(struct SpriteFrameImage) * 1);\n    sImageTable_DigitalDisplay_Smoke[0].data = sDigitalDisplayGfxPtr + 0x2000;\n    sImageTable_DigitalDisplay_Smoke[0].size = 640;\n\n    sImageTable_DigitalDisplay_Number = AllocZeroed(sizeof(struct SpriteFrameImage) * 5);\n    sImageTable_DigitalDisplay_Number[0].data = sDigitalDisplayGfxPtr + 0x2280;\n    sImageTable_DigitalDisplay_Number[0].size = 0x80;\n    sImageTable_DigitalDisplay_Number[1].data = sDigitalDisplayGfxPtr + 0x2300;\n    sImageTable_DigitalDisplay_Number[1].size = 0x80;\n    sImageTable_DigitalDisplay_Number[2].data = sDigitalDisplayGfxPtr + 0x2380;\n    sImageTable_DigitalDisplay_Number[2].size = 0x80;\n    sImageTable_DigitalDisplay_Number[3].data = sDigitalDisplayGfxPtr + 0x2400;\n    sImageTable_DigitalDisplay_Number[3].size = 0x80;\n    sImageTable_DigitalDisplay_Number[4].data = sDigitalDisplayGfxPtr + 0x2480;\n    sImageTable_DigitalDisplay_Number[4].size = 0x80;\n\n    sImageTable_DigitalDisplay_Pokeball = AllocZeroed(sizeof(struct SpriteFrameImage) * 2);\n    sImageTable_DigitalDisplay_Pokeball[0].data = sDigitalDisplayGfxPtr + 0x2600;\n    sImageTable_DigitalDisplay_Pokeball[0].size = 0x480;\n    sImageTable_DigitalDisplay_Pokeball[1].data = sDigitalDisplayGfxPtr + 10880;\n    sImageTable_DigitalDisplay_Pokeball[1].size = 0x480;\n\n    sImageTable_DigitalDisplay_DPad = AllocZeroed(sizeof(struct SpriteFrameImage) * 2);\n    sImageTable_DigitalDisplay_DPad[0].data = sDigitalDisplayGfxPtr + 0x2F00;\n    sImageTable_DigitalDisplay_DPad[0].size = 0x180;\n    sImageTable_DigitalDisplay_DPad[1].data = sDigitalDisplayGfxPtr + 0x3080;\n    sImageTable_DigitalDisplay_DPad[1].size = 0x180;",
       "callsTo": [
         "AllocZeroed"

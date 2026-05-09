@@ -6,6 +6,12 @@
       "returnType": "u8",
       "signature": "static u8 CreateShopMenu(u8 martType)",
       "paramsRaw": "u8 martType",
+      "paramsList": [
+        {
+          "name": "martType",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "int numMenuItems;\n\n    LockPlayerFieldControls();\n    sMartInfo.martType = martType;\n\n    if (martType == MART_TYPE_NORMAL)\n    {\n        struct WindowTemplate winTemplate = sShopMenuWindowTemplates[WIN_BUY_SELL_QUIT];\n        winTemplate.width = GetMaxWidthInMenuTable(sShopMenuActions_BuySellQuit, ARRAY_COUNT(sShopMenuActions_BuySellQuit));\n        sMartInfo.windowId = AddWindow(&winTemplate);\n        sMartInfo.menuActions = sShopMenuActions_BuySellQuit;\n        numMenuItems = ARRAY_COUNT(sShopMenuActions_BuySellQuit);\n    }\n    else\n    {\n        struct WindowTemplate winTemplate = sShopMenuWindowTemplates[WIN_BUY_QUIT];\n        winTemplate.width = GetMaxWidthInMenuTable(sShopMenuActions_BuyQuit, ARRAY_COUNT(sShopMenuActions_BuyQuit));\n        sMartInfo.windowId = AddWindow(&winTemplate);\n        sMartInfo.menuActions = sShopMenuActions_BuyQuit;\n        numMenuItems = ARRAY_COUNT(sShopMenuActions_BuyQuit);\n    }\n\n    SetStandardWindowBorderStyle(sMartInfo.windowId, FALSE);\n    PrintMenuTable(sMartInfo.windowId, numMenuItems, sMartInfo.menuActions);\n    InitMenuInUpperLeftCornerNormal(sMartInfo.windowId, numMenuItems, 0);\n    PutWindowTilemap(sMartInfo.windowId);\n    CopyWindowToVram(sMartInfo.windowId, COPYWIN_MAP);\n\n    return CreateTask(Task_ShopMenu, 8);",
       "callsTo": [
         "ARRAY_COUNT",
@@ -25,6 +31,12 @@
       "returnType": "void",
       "signature": "static void SetShopMenuCallback(void (*callback)(void))",
       "paramsRaw": "void (*callback)(void)",
+      "paramsList": [
+        {
+          "name": "callback",
+          "typeRaw": "fnptr"
+        }
+      ],
       "body": "sMartInfo.callback = callback;",
       "callsTo": [],
       "lineCount": 1
@@ -33,6 +45,12 @@
       "returnType": "void",
       "signature": "static void SetShopItemsForSale(const u16 *items)",
       "paramsRaw": "const u16 *items",
+      "paramsList": [
+        {
+          "name": "items",
+          "typeRaw": "const u16 *"
+        }
+      ],
       "body": "u16 i = 0;\n\n    sMartInfo.itemList = items;\n    sMartInfo.itemCount = 0;\n\n     \n    while (sMartInfo.itemList[i])\n    {\n        sMartInfo.itemCount++;\n        i++;\n    }",
       "callsTo": [],
       "lineCount": 11
@@ -41,6 +59,12 @@
       "returnType": "void",
       "signature": "static void Task_ShopMenu(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s8 inputCode = Menu_ProcessInputNoWrap();\n    switch (inputCode)\n    {\n    case MENU_NOTHING_CHOSEN:\n        break;\n    case MENU_B_PRESSED:\n        PlaySE(SE_SELECT);\n        Task_HandleShopMenuQuit(taskId);\n        break;\n    default:\n        sMartInfo.menuActions[inputCode].func.void_u8(taskId);\n        break;\n    }",
       "callsTo": [
         "Menu_ProcessInputNoWrap",
@@ -53,6 +77,12 @@
       "returnType": "void",
       "signature": "static void Task_HandleShopMenuBuy(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data = gTasks[taskId].data;\n    tCallbackHi = (u32)CB2_InitBuyMenu >> 16;\n    tCallbackLo = (u32)CB2_InitBuyMenu;\n    gTasks[taskId].func = Task_GoToBuyOrSellMenu;\n    FadeScreen(FADE_TO_BLACK, 0);",
       "callsTo": [
         "FadeScreen"
@@ -63,6 +93,12 @@
       "returnType": "void",
       "signature": "static void Task_HandleShopMenuSell(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data = gTasks[taskId].data;\n    tCallbackHi = (u32)CB2_GoToSellMenu >> 16;\n    tCallbackLo = (u32)CB2_GoToSellMenu;\n    gTasks[taskId].func = Task_GoToBuyOrSellMenu;\n    FadeScreen(FADE_TO_BLACK, 0);",
       "callsTo": [
         "FadeScreen"
@@ -73,6 +109,7 @@
       "returnType": "void",
       "signature": "void CB2_ExitSellMenu(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gFieldCallback = MapPostLoadHook_ReturnToShopMenu;\n    SetMainCallback2(CB2_ReturnToField);",
       "callsTo": [
         "SetMainCallback2"
@@ -83,6 +120,12 @@
       "returnType": "void",
       "signature": "static void Task_HandleShopMenuQuit(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "ClearStdWindowAndFrameToTransparent(sMartInfo.windowId, 2);  \n    RemoveWindow(sMartInfo.windowId);\n    TryPutSmartShopperOnAir();\n    UnlockPlayerFieldControls();\n    DestroyTask(taskId);\n\n    if (sMartInfo.callback)\n        sMartInfo.callback();",
       "callsTo": [
         "ClearStdWindowAndFrameToTransparent",
@@ -97,6 +140,12 @@
       "returnType": "void",
       "signature": "static void Task_GoToBuyOrSellMenu(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data = gTasks[taskId].data;\n    if (!gPaletteFade.active)\n    {\n        DestroyTask(taskId);\n        SetMainCallback2((MainCallback)((u16)tCallbackHi << 16 | (u16)tCallbackLo));\n    }",
       "callsTo": [
         "DestroyTask",
@@ -108,6 +157,7 @@
       "returnType": "void",
       "signature": "static void MapPostLoadHook_ReturnToShopMenu(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "FadeInFromBlack();\n    CreateTask(Task_ReturnToShopMenu, 8);",
       "callsTo": [
         "CreateTask",
@@ -119,6 +169,12 @@
       "returnType": "void",
       "signature": "static void Task_ReturnToShopMenu(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (IsWeatherNotFadingIn() == TRUE)\n    {\n        if (sMartInfo.martType == MART_TYPE_DECOR2)\n            DisplayItemMessageOnField(taskId, gText_CanIHelpWithAnythingElse, ShowShopMenuAfterExitingBuyOrSellMenu);\n        else\n            DisplayItemMessageOnField(taskId, gText_AnythingElseICanHelp, ShowShopMenuAfterExitingBuyOrSellMenu);\n    }",
       "callsTo": [
         "DisplayItemMessageOnField",
@@ -130,6 +186,12 @@
       "returnType": "void",
       "signature": "static void ShowShopMenuAfterExitingBuyOrSellMenu(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "CreateShopMenu(sMartInfo.martType);\n    DestroyTask(taskId);",
       "callsTo": [
         "CreateShopMenu",
@@ -141,6 +203,7 @@
       "returnType": "void",
       "signature": "static void CB2_BuyMenu(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "RunTasks();\n    AnimateSprites();\n    BuildOamBuffer();\n    DoScheduledBgTilemapCopiesToVram();\n    UpdatePaletteFade();",
       "callsTo": [
         "AnimateSprites",
@@ -155,6 +218,7 @@
       "returnType": "void",
       "signature": "static void VBlankCB_BuyMenu(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "LoadOam();\n    ProcessSpriteCopyRequests();\n    TransferPlttBuffer();",
       "callsTo": [
         "LoadOam",
@@ -167,6 +231,7 @@
       "returnType": "void",
       "signature": "static void CB2_InitBuyMenu(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 taskId;\n\n    switch (gMain.state)\n    {\n    case 0:\n        SetVBlankHBlankCallbacksToNull();\n        CpuFastFill(0, (void *)OAM, OAM_SIZE);\n        ScanlineEffect_Stop();\n        ResetTempTileDataBuffers();\n        FreeAllSpritePalettes();\n        ResetPaletteFade();\n        ResetSpriteData();\n        ResetTasks();\n        ClearScheduledBgCopiesToVram();\n        sShopData = AllocZeroed(sizeof(struct ShopData));\n        sShopData->scrollIndicatorsTaskId = TASK_NONE;\n        sShopData->itemSpriteIds[0] = SPRITE_NONE;\n        sShopData->itemSpriteIds[1] = SPRITE_NONE;\n        BuyMenuBuildListMenuTemplate();\n        BuyMenuInitBgs();\n        FillBgTilemapBufferRect_Palette0(0, 0, 0, 0, 0x20, 0x20);\n        FillBgTilemapBufferRect_Palette0(1, 0, 0, 0, 0x20, 0x20);\n        FillBgTilemapBufferRect_Palette0(2, 0, 0, 0, 0x20, 0x20);\n        FillBgTilemapBufferRect_Palette0(3, 0, 0, 0, 0x20, 0x20);\n        BuyMenuInitWindows();\n        BuyMenuDecompressBgGraphics();\n        gMain.state++;\n        break;\n    case 1:\n        if (!FreeTempTileDataBuffersIfPossible())\n            gMain.state++;\n        break;\n    default:\n        BuyMenuDrawGraphics();\n        BuyMenuAddScrollIndicatorArrows();\n        taskId = CreateTask(Task_BuyMenu, 8);\n        gTasks[taskId].tListTaskId = ListMenuInit(&gMultiuseListMenuTemplate, 0, 0);\n        BlendPalettes(PALETTES_ALL, 16, RGB_BLACK);\n        BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);\n        SetVBlankCallback(VBlankCB_BuyMenu);\n        SetMainCallback2(CB2_BuyMenu);\n        break;\n    }",
       "callsTo": [
         "AllocZeroed",
@@ -200,6 +265,7 @@
       "returnType": "void",
       "signature": "static void BuyMenuFreeMemory(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "Free(sShopData);\n    Free(sListMenuItems);\n    Free(sItemNames);\n    FreeAllWindowBuffers();",
       "callsTo": [
         "Free",
@@ -211,6 +277,7 @@
       "returnType": "void",
       "signature": "static void BuyMenuBuildListMenuTemplate(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 i;\n\n    sListMenuItems = Alloc((sMartInfo.itemCount + 1) * sizeof(*sListMenuItems));\n    sItemNames = Alloc((sMartInfo.itemCount + 1) * sizeof(*sItemNames));\n    for (i = 0; i < sMartInfo.itemCount; i++)\n        BuyMenuSetListEntry(&sListMenuItems[i], sMartInfo.itemList[i], sItemNames[i]);\n\n    StringCopy(sItemNames[i], gText_Cancel2);\n    sListMenuItems[i].name = sItemNames[i];\n    sListMenuItems[i].id = LIST_CANCEL;\n\n    gMultiuseListMenuTemplate = sShopBuyMenuListTemplate;\n    gMultiuseListMenuTemplate.items = sListMenuItems;\n    gMultiuseListMenuTemplate.totalItems = sMartInfo.itemCount + 1;\n    if (gMultiuseListMenuTemplate.totalItems > MAX_ITEMS_SHOWN)\n        gMultiuseListMenuTemplate.maxShowed = MAX_ITEMS_SHOWN;\n    else\n        gMultiuseListMenuTemplate.maxShowed = gMultiuseListMenuTemplate.totalItems;\n\n    sShopData->itemsShowed = gMultiuseListMenuTemplate.maxShowed;",
       "callsTo": [
         "Alloc",
@@ -223,6 +290,20 @@
       "returnType": "void",
       "signature": "static void BuyMenuSetListEntry(struct ListMenuItem *menuItem, u16 item, u8 *name)",
       "paramsRaw": "struct ListMenuItem *menuItem, u16 item, u8 *name",
+      "paramsList": [
+        {
+          "name": "menuItem",
+          "typeRaw": "struct ListMenuItem *"
+        },
+        {
+          "name": "item",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "name",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "if (sMartInfo.martType == MART_TYPE_NORMAL)\n        CopyItemName(item, name);\n    else\n        StringCopy(name, gDecorations[item].name);\n\n    menuItem->name = name;\n    menuItem->id = item;",
       "callsTo": [
         "CopyItemName",
@@ -234,6 +315,20 @@
       "returnType": "void",
       "signature": "static void BuyMenuPrintItemDescriptionAndShowItemIcon(s32 item, bool8 onInit, struct ListMenu *list)",
       "paramsRaw": "s32 item, bool8 onInit, struct ListMenu *list",
+      "paramsList": [
+        {
+          "name": "item",
+          "typeRaw": "s32"
+        },
+        {
+          "name": "onInit",
+          "typeRaw": "bool8"
+        },
+        {
+          "name": "list",
+          "typeRaw": "struct ListMenu *"
+        }
+      ],
       "body": "const u8 *description;\n    if (onInit != TRUE)\n        PlaySE(SE_SELECT);\n\n    if (item != LIST_CANCEL)\n        BuyMenuAddItemIcon(item, sShopData->iconSlot);\n    else\n        BuyMenuAddItemIcon(ITEM_LIST_END, sShopData->iconSlot);\n\n    BuyMenuRemoveItemIcon(item, sShopData->iconSlot ^ 1);\n    sShopData->iconSlot ^= 1;\n    if (item != LIST_CANCEL)\n    {\n        if (sMartInfo.martType == MART_TYPE_NORMAL)\n            description = GetItemDescription(item);\n        else\n            description = gDecorations[item].description;\n    }\n    else\n    {\n        description = gText_QuitShopping;\n    }\n\n    FillWindowPixelBuffer(WIN_ITEM_DESCRIPTION, PIXEL_FILL(0));\n    BuyMenuPrint(WIN_ITEM_DESCRIPTION, description, 3, 1, 0, COLORID_NORMAL);",
       "callsTo": [
         "BuyMenuAddItemIcon",
@@ -250,6 +345,20 @@
       "returnType": "void",
       "signature": "static void BuyMenuPrintPriceInList(u8 windowId, u32 itemId, u8 y)",
       "paramsRaw": "u8 windowId, u32 itemId, u8 y",
+      "paramsList": [
+        {
+          "name": "windowId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "itemId",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "y",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 x;\n\n    if (itemId != LIST_CANCEL)\n    {\n        if (sMartInfo.martType == MART_TYPE_NORMAL)\n        {\n            ConvertIntToDecimalStringN(\n                gStringVar1,\n                GetItemPrice(itemId) >> IsPokeNewsActive(POKENEWS_SLATEPORT),\n                STR_CONV_MODE_LEFT_ALIGN,\n                5);\n        }\n        else\n        {\n            ConvertIntToDecimalStringN(\n                gStringVar1,\n                gDecorations[itemId].price,\n                STR_CONV_MODE_LEFT_ALIGN,\n                5);\n        }\n\n        StringExpandPlaceholders(gStringVar4, gText_PokedollarVar1);\n        x = GetStringRightAlignXOffset(FONT_NARROW, gStringVar4, 120);\n        AddTextPrinterParameterized4(windowId, FONT_NARROW, x, y, 0, 0, sShopBuyMenuTextColors[COLORID_ITEM_LIST], TEXT_SKIP_DRAW, gStringVar4);\n    }",
       "callsTo": [
         "AddTextPrinterParameterized4",
@@ -265,6 +374,7 @@
       "returnType": "void",
       "signature": "static void BuyMenuAddScrollIndicatorArrows(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (sShopData->scrollIndicatorsTaskId == TASK_NONE && sMartInfo.itemCount + 1 > MAX_ITEMS_SHOWN)\n    {\n        sShopData->scrollIndicatorsTaskId = AddScrollIndicatorArrowPairParameterized(\n            SCROLL_ARROW_UP,\n            172,\n            12,\n            148,\n            sMartInfo.itemCount - (MAX_ITEMS_SHOWN - 1),\n            TAG_SCROLL_ARROW,\n            TAG_SCROLL_ARROW,\n            &sShopData->scrollOffset);\n    }",
       "callsTo": [
         "AddScrollIndicatorArrowPairParameterized"
@@ -275,6 +385,7 @@
       "returnType": "void",
       "signature": "static void BuyMenuRemoveScrollIndicatorArrows(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (sShopData->scrollIndicatorsTaskId != TASK_NONE)\n    {\n        RemoveScrollIndicatorArrowPair(sShopData->scrollIndicatorsTaskId);\n        sShopData->scrollIndicatorsTaskId = TASK_NONE;\n    }",
       "callsTo": [
         "RemoveScrollIndicatorArrowPair"
@@ -285,6 +396,16 @@
       "returnType": "void",
       "signature": "static void BuyMenuPrintCursor(u8 scrollIndicatorsTaskId, u8 colorSet)",
       "paramsRaw": "u8 scrollIndicatorsTaskId, u8 colorSet",
+      "paramsList": [
+        {
+          "name": "scrollIndicatorsTaskId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "colorSet",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 y = ListMenuGetYCoordForPrintingArrowCursor(scrollIndicatorsTaskId);\n    BuyMenuPrint(WIN_ITEM_LIST, gText_SelectorArrow2, 0, y, 0, colorSet);",
       "callsTo": [
         "BuyMenuPrint",
@@ -296,6 +417,16 @@
       "returnType": "void",
       "signature": "static void BuyMenuAddItemIcon(u16 item, u8 iconSlot)",
       "paramsRaw": "u16 item, u8 iconSlot",
+      "paramsList": [
+        {
+          "name": "item",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "iconSlot",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 spriteId;\n    u8 *spriteIdPtr = &sShopData->itemSpriteIds[iconSlot];\n    if (*spriteIdPtr != SPRITE_NONE)\n        return;\n\n    if (sMartInfo.martType == MART_TYPE_NORMAL || item == ITEM_LIST_END)\n    {\n        spriteId = AddItemIconSprite(iconSlot + TAG_ITEM_ICON_BASE, iconSlot + TAG_ITEM_ICON_BASE, item);\n        if (spriteId != MAX_SPRITES)\n        {\n            *spriteIdPtr = spriteId;\n            gSprites[spriteId].x2 = 24;\n            gSprites[spriteId].y2 = 88;\n        }\n    }\n    else\n    {\n        spriteId = AddDecorationIconObject(item, 20, 84, 1, iconSlot + TAG_ITEM_ICON_BASE, iconSlot + TAG_ITEM_ICON_BASE);\n        if (spriteId != MAX_SPRITES)\n            *spriteIdPtr = spriteId;\n    }",
       "callsTo": [
         "AddDecorationIconObject",
@@ -307,6 +438,16 @@
       "returnType": "void",
       "signature": "static void BuyMenuRemoveItemIcon(u16 item, u8 iconSlot)",
       "paramsRaw": "u16 item, u8 iconSlot",
+      "paramsList": [
+        {
+          "name": "item",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "iconSlot",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 *spriteIdPtr = &sShopData->itemSpriteIds[iconSlot];\n    if (*spriteIdPtr == SPRITE_NONE)\n        return;\n\n    FreeSpriteTilesByTag(iconSlot + TAG_ITEM_ICON_BASE);\n    FreeSpritePaletteByTag(iconSlot + TAG_ITEM_ICON_BASE);\n    DestroySprite(&gSprites[*spriteIdPtr]);\n    *spriteIdPtr = SPRITE_NONE;",
       "callsTo": [
         "DestroySprite",
@@ -319,6 +460,7 @@
       "returnType": "void",
       "signature": "static void BuyMenuInitBgs(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ResetBgsAndClearDma3BusyFlags(0);\n    InitBgsFromTemplates(0, sShopBuyMenuBgTemplates, ARRAY_COUNT(sShopBuyMenuBgTemplates));\n    SetBgTilemapBuffer(1, sShopData->tilemapBuffers[1]);\n    SetBgTilemapBuffer(2, sShopData->tilemapBuffers[3]);\n    SetBgTilemapBuffer(3, sShopData->tilemapBuffers[2]);\n    SetGpuReg(REG_OFFSET_BG0HOFS, 0);\n    SetGpuReg(REG_OFFSET_BG0VOFS, 0);\n    SetGpuReg(REG_OFFSET_BG1HOFS, 0);\n    SetGpuReg(REG_OFFSET_BG1VOFS, 0);\n    SetGpuReg(REG_OFFSET_BG2HOFS, 0);\n    SetGpuReg(REG_OFFSET_BG2VOFS, 0);\n    SetGpuReg(REG_OFFSET_BG3HOFS, 0);\n    SetGpuReg(REG_OFFSET_BG3VOFS, 0);\n    SetGpuReg(REG_OFFSET_BLDCNT, 0);\n    SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_MODE_0 | DISPCNT_OBJ_ON | DISPCNT_OBJ_1D_MAP);\n    ShowBg(0);\n    ShowBg(1);\n    ShowBg(2);\n    ShowBg(3);",
       "callsTo": [
         "ARRAY_COUNT",
@@ -334,6 +476,7 @@
       "returnType": "void",
       "signature": "static void BuyMenuDecompressBgGraphics(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "DecompressAndCopyTileDataToVram(1, gShopMenu_Gfx, 0x3A0, 0x3E3, 0);\n    LZDecompressWram(gShopMenu_Tilemap, sShopData->tilemapBuffers[0]);\n    LoadCompressedPalette(gShopMenu_Pal, BG_PLTT_ID(SHOP_MENU_PALETTE_ID), PLTT_SIZE_4BPP);",
       "callsTo": [
         "BG_PLTT_ID",
@@ -347,6 +490,7 @@
       "returnType": "void",
       "signature": "static void BuyMenuInitWindows(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "InitWindows(sShopBuyMenuWindowTemplates);\n    DeactivateAllTextPrinters();\n    LoadUserWindowBorderGfx(WIN_MONEY, 1, BG_PLTT_ID(13));\n    LoadMessageBoxGfx(WIN_MONEY, 0xA, BG_PLTT_ID(14));\n    PutWindowTilemap(WIN_MONEY);\n    PutWindowTilemap(WIN_ITEM_LIST);\n    PutWindowTilemap(WIN_ITEM_DESCRIPTION);",
       "callsTo": [
         "BG_PLTT_ID",
@@ -362,6 +506,32 @@
       "returnType": "void",
       "signature": "static void BuyMenuPrint(u8 windowId, const u8 *text, u8 x, u8 y, s8 speed, u8 colorSet)",
       "paramsRaw": "u8 windowId, const u8 *text, u8 x, u8 y, s8 speed, u8 colorSet",
+      "paramsList": [
+        {
+          "name": "windowId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "text",
+          "typeRaw": "const u8 *"
+        },
+        {
+          "name": "x",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "y",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "speed",
+          "typeRaw": "s8"
+        },
+        {
+          "name": "colorSet",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "AddTextPrinterParameterized4(windowId, FONT_NORMAL, x, y, 0, 0, sShopBuyMenuTextColors[colorSet], speed, text);",
       "callsTo": [
         "AddTextPrinterParameterized4"
@@ -372,6 +542,20 @@
       "returnType": "void",
       "signature": "static void BuyMenuDisplayMessage(u8 taskId, const u8 *text, TaskFunc callback)",
       "paramsRaw": "u8 taskId, const u8 *text, TaskFunc callback",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "text",
+          "typeRaw": "const u8 *"
+        },
+        {
+          "name": "callback",
+          "typeRaw": "TaskFunc"
+        }
+      ],
       "body": "DisplayMessageAndContinueTask(taskId, WIN_MESSAGE, 10, 14, FONT_NORMAL, GetPlayerTextSpeedDelay(), text, callback);\n    ScheduleBgCopyTilemapToVram(0);",
       "callsTo": [
         "DisplayMessageAndContinueTask",
@@ -384,6 +568,7 @@
       "returnType": "void",
       "signature": "static void BuyMenuDrawGraphics(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "BuyMenuDrawMapGraphics();\n    BuyMenuCopyMenuBgToBg1TilemapBuffer();\n    AddMoneyLabelObject(24, 11);  \n    PrintMoneyAmountInMoneyBoxWithBorder(WIN_MONEY, 1, 13, GetMoney(&gSaveBlock1Ptr->money));\n    ScheduleBgCopyTilemapToVram(0);\n    ScheduleBgCopyTilemapToVram(1);\n    ScheduleBgCopyTilemapToVram(2);\n    ScheduleBgCopyTilemapToVram(3);",
       "callsTo": [
         "AddMoneyLabelObject",
@@ -399,6 +584,7 @@
       "returnType": "void",
       "signature": "static void BuyMenuDrawMapGraphics(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "BuyMenuCollectObjectEventData();\n    BuyMenuDrawObjectEvents();\n    BuyMenuDrawMapBg();",
       "callsTo": [
         "BuyMenuCollectObjectEventData",
@@ -411,6 +597,7 @@
       "returnType": "void",
       "signature": "static void BuyMenuDrawMapBg(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s16 i, j;\n    s16 x, y;\n    const struct MapLayout *mapLayout;\n    u16 metatile;\n    u8 metatileLayerType;\n\n    mapLayout = gMapHeader.mapLayout;\n    GetXYCoordsOneStepInFrontOfPlayer(&x, &y);\n    x -= 4;\n    y -= 4;\n\n    for (j = 0; j < 10; j++)\n    {\n        for (i = 0; i < 15; i++)\n        {\n            metatile = MapGridGetMetatileIdAt(x + i, y + j);\n            if (BuyMenuCheckForOverlapWithMenuBg(i, j) == TRUE)\n                metatileLayerType = MapGridGetMetatileLayerTypeAt(x + i, y + j);\n            else\n                metatileLayerType = METATILE_LAYER_TYPE_COVERED;\n\n            if (metatile < NUM_METATILES_IN_PRIMARY)\n                BuyMenuDrawMapMetatile(i, j, mapLayout->primaryTileset->metatiles + metatile * NUM_TILES_PER_METATILE, metatileLayerType);\n            else\n                BuyMenuDrawMapMetatile(i, j, mapLayout->secondaryTileset->metatiles + ((metatile - NUM_METATILES_IN_PRIMARY) * NUM_TILES_PER_METATILE), metatileLayerType);\n        }\n    }",
       "callsTo": [
         "BuyMenuCheckForOverlapWithMenuBg",
@@ -425,6 +612,24 @@
       "returnType": "void",
       "signature": "static void BuyMenuDrawMapMetatile(s16 x, s16 y, const u16 *src, u8 metatileLayerType)",
       "paramsRaw": "s16 x, s16 y, const u16 *src, u8 metatileLayerType",
+      "paramsList": [
+        {
+          "name": "x",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "src",
+          "typeRaw": "const u16 *"
+        },
+        {
+          "name": "metatileLayerType",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u16 offset1 = x * 2;\n    u16 offset2 = y * 64;\n\n    switch (metatileLayerType)\n    {\n    case METATILE_LAYER_TYPE_NORMAL:\n        BuyMenuDrawMapMetatileLayer(sShopData->tilemapBuffers[3], offset1, offset2, src);\n        BuyMenuDrawMapMetatileLayer(sShopData->tilemapBuffers[1], offset1, offset2, src + 4);\n        break;\n    case METATILE_LAYER_TYPE_COVERED:\n        BuyMenuDrawMapMetatileLayer(sShopData->tilemapBuffers[2], offset1, offset2, src);\n        BuyMenuDrawMapMetatileLayer(sShopData->tilemapBuffers[3], offset1, offset2, src + 4);\n        break;\n    case METATILE_LAYER_TYPE_SPLIT:\n        BuyMenuDrawMapMetatileLayer(sShopData->tilemapBuffers[2], offset1, offset2, src);\n        BuyMenuDrawMapMetatileLayer(sShopData->tilemapBuffers[1], offset1, offset2, src + 4);\n        break;\n    }",
       "callsTo": [
         "BuyMenuDrawMapMetatileLayer"
@@ -435,6 +640,24 @@
       "returnType": "void",
       "signature": "static void BuyMenuDrawMapMetatileLayer(u16 *dest, s16 offset1, s16 offset2, const u16 *src)",
       "paramsRaw": "u16 *dest, s16 offset1, s16 offset2, const u16 *src",
+      "paramsList": [
+        {
+          "name": "dest",
+          "typeRaw": "u16 *"
+        },
+        {
+          "name": "offset1",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "offset2",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "src",
+          "typeRaw": "const u16 *"
+        }
+      ],
       "body": "dest[offset1 + offset2] = src[0];  \n    dest[offset1 + offset2 + 1] = src[1];  \n    dest[offset1 + offset2 + 32] = src[2];  \n    dest[offset1 + offset2 + 33] = src[3];",
       "callsTo": [],
       "lineCount": 4
@@ -443,6 +666,7 @@
       "returnType": "void",
       "signature": "static void BuyMenuCollectObjectEventData(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s16 facingX;\n    s16 facingY;\n    u8 y;\n    u8 x;\n    u8 numObjects = 0;\n\n    GetXYCoordsOneStepInFrontOfPlayer(&facingX, &facingY);\n\n    for (y = 0; y < OBJECT_EVENTS_COUNT; y++)\n        sShopData->viewportObjects[y][OBJ_EVENT_ID] = OBJECT_EVENTS_COUNT;\n\n    for (y = 0; y < 5; y++)\n    {\n        for (x = 0; x < 7; x++)\n        {\n            u8 objEventId = GetObjectEventIdByXY(facingX - 4 + x, facingY - 2 + y);\n\n            if (objEventId != OBJECT_EVENTS_COUNT)\n            {\n                sShopData->viewportObjects[numObjects][OBJ_EVENT_ID] = objEventId;\n                sShopData->viewportObjects[numObjects][X_COORD] = x;\n                sShopData->viewportObjects[numObjects][Y_COORD] = y;\n                sShopData->viewportObjects[numObjects][LAYER_TYPE] = MapGridGetMetatileLayerTypeAt(facingX - 4 + x, facingY - 2 + y);\n\n                switch (gObjectEvents[objEventId].facingDirection)\n                {\n                case DIR_SOUTH:\n                    sShopData->viewportObjects[numObjects][ANIM_NUM] = ANIM_STD_FACE_SOUTH;\n                    break;\n                case DIR_NORTH:\n                    sShopData->viewportObjects[numObjects][ANIM_NUM] = ANIM_STD_FACE_NORTH;\n                    break;\n                case DIR_WEST:\n                    sShopData->viewportObjects[numObjects][ANIM_NUM] = ANIM_STD_FACE_WEST;\n                    break;\n                case DIR_EAST:\n                default:\n                    sShopData->viewportObjects[numObjects][ANIM_NUM] = ANIM_STD_FACE_EAST;\n                    break;\n                }\n                numObjects++;\n            }\n        }\n    }",
       "callsTo": [
         "GetObjectEventIdByXY",
@@ -455,6 +679,7 @@
       "returnType": "void",
       "signature": "static void BuyMenuDrawObjectEvents(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n    u8 spriteId;\n    const struct ObjectEventGraphicsInfo *graphicsInfo;\n\n    for (i = 0; i < OBJECT_EVENTS_COUNT; i++)\n    {\n        if (sShopData->viewportObjects[i][OBJ_EVENT_ID] == OBJECT_EVENTS_COUNT)\n            continue;\n\n        graphicsInfo = GetObjectEventGraphicsInfo(gObjectEvents[sShopData->viewportObjects[i][OBJ_EVENT_ID]].graphicsId);\n\n        spriteId = CreateObjectGraphicsSprite(\n            gObjectEvents[sShopData->viewportObjects[i][OBJ_EVENT_ID]].graphicsId,\n            SpriteCallbackDummy,\n            (u16)sShopData->viewportObjects[i][X_COORD] * 16 + 8,\n            (u16)sShopData->viewportObjects[i][Y_COORD] * 16 + 48 - graphicsInfo->height / 2,\n            2);\n\n        if (BuyMenuCheckIfObjectEventOverlapsMenuBg(sShopData->viewportObjects[i]) == TRUE)\n        {\n            gSprites[spriteId].subspriteTableNum = 4;\n            gSprites[spriteId].subspriteMode = SUBSPRITES_ON;\n        }\n\n        StartSpriteAnim(&gSprites[spriteId], sShopData->viewportObjects[i][ANIM_NUM]);\n    }",
       "callsTo": [
         "BuyMenuCheckIfObjectEventOverlapsMenuBg",
@@ -468,6 +693,12 @@
       "returnType": "bool8",
       "signature": "static bool8 BuyMenuCheckIfObjectEventOverlapsMenuBg(s16 *object)",
       "paramsRaw": "s16 *object",
+      "paramsList": [
+        {
+          "name": "object",
+          "typeRaw": "s16 *"
+        }
+      ],
       "body": "if (!BuyMenuCheckForOverlapWithMenuBg(object[X_COORD], object[Y_COORD] + 2) && object[LAYER_TYPE] != METATILE_LAYER_TYPE_COVERED)\n        return TRUE;\n    else\n        return FALSE;",
       "callsTo": [
         "BuyMenuCheckForOverlapWithMenuBg"
@@ -478,6 +709,7 @@
       "returnType": "void",
       "signature": "static void BuyMenuCopyMenuBgToBg1TilemapBuffer(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s16 i;\n    u16 *dest = sShopData->tilemapBuffers[1];\n    const u16 *src = sShopData->tilemapBuffers[0];\n\n    for (i = 0; i < 1024; i++)\n    {\n        if (src[i] != 0)\n            dest[i] = src[i] + ((SHOP_MENU_PALETTE_ID << 12) | 0x3E3);\n    }",
       "callsTo": [],
       "lineCount": 9
@@ -486,6 +718,16 @@
       "returnType": "bool8",
       "signature": "static bool8 BuyMenuCheckForOverlapWithMenuBg(int x, int y)",
       "paramsRaw": "int x, int y",
+      "paramsList": [
+        {
+          "name": "x",
+          "typeRaw": "int"
+        },
+        {
+          "name": "y",
+          "typeRaw": "int"
+        }
+      ],
       "body": "const u16 *metatile = sShopData->tilemapBuffers[0];\n    int offset1 = x * 2;\n    int offset2 = y * 64;\n\n    if (metatile[offset2 + offset1] == 0 &&\n        metatile[offset2 + offset1 + 32] == 0 &&\n        metatile[offset2 + offset1 + 1] == 0 &&\n        metatile[offset2 + offset1 + 33] == 0)\n        return TRUE;\n\n    return FALSE;",
       "callsTo": [],
       "lineCount": 11
@@ -494,6 +736,12 @@
       "returnType": "void",
       "signature": "static void Task_BuyMenu(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data = gTasks[taskId].data;\n\n    if (!gPaletteFade.active)\n    {\n        s32 itemId = ListMenu_ProcessInput(tListTaskId);\n        ListMenuGetScrollAndRow(tListTaskId, &sShopData->scrollOffset, &sShopData->selectedRow);\n\n        switch (itemId)\n        {\n        case LIST_NOTHING_CHOSEN:\n            break;\n        case LIST_CANCEL:\n            PlaySE(SE_SELECT);\n            ExitBuyMenu(taskId);\n            break;\n        default:\n            PlaySE(SE_SELECT);\n            tItemId = itemId;\n            ClearWindowTilemap(WIN_ITEM_DESCRIPTION);\n            BuyMenuRemoveScrollIndicatorArrows();\n            BuyMenuPrintCursor(tListTaskId, COLORID_GRAY_CURSOR);\n\n            if (sMartInfo.martType == MART_TYPE_NORMAL)\n                sShopData->totalCost = (GetItemPrice(itemId) >> IsPokeNewsActive(POKENEWS_SLATEPORT));\n            else\n                sShopData->totalCost = gDecorations[itemId].price;\n\n            if (!IsEnoughMoney(&gSaveBlock1Ptr->money, sShopData->totalCost))\n            {\n                BuyMenuDisplayMessage(taskId, gText_YouDontHaveMoney, BuyMenuReturnToItemList);\n            }\n            else\n            {\n                if (sMartInfo.martType == MART_TYPE_NORMAL)\n                {\n                    CopyItemName(itemId, gStringVar1);\n                    if (GetItemPocket(itemId) == POCKET_TM_HM)\n                    {\n                        StringCopy(gStringVar2, gMoveNames[ItemIdToBattleMoveId(itemId)]);\n                        BuyMenuDisplayMessage(taskId, gText_Var1CertainlyHowMany2, Task_BuyHowManyDialogueInit);\n                    }\n                    else\n                    {\n                        BuyMenuDisplayMessage(taskId, gText_Var1CertainlyHowMany, Task_BuyHowManyDialogueInit);\n                    }\n                }\n                else\n                {\n                    StringCopy(gStringVar1, gDecorations[itemId].name);\n                    ConvertIntToDecimalStringN(gStringVar2, sShopData->totalCost, STR_CONV_MODE_LEFT_ALIGN, 6);\n\n                    if (sMartInfo.martType == MART_TYPE_DECOR)\n                        StringExpandPlaceholders(gStringVar4, gText_Var1IsItThatllBeVar2);\n                    else  \n                        StringExpandPlaceholders(gStringVar4, gText_YouWantedVar1ThatllBeVar2);\n\n                    BuyMenuDisplayMessage(taskId, gStringVar4, BuyMenuConfirmPurchase);\n                }\n            }\n            break;\n        }\n    }",
       "callsTo": [
         "BuyMenuDisplayMessage",
@@ -520,6 +768,12 @@
       "returnType": "void",
       "signature": "static void Task_BuyHowManyDialogueInit(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data = gTasks[taskId].data;\n\n    u16 quantityInBag = CountTotalItemQuantityInBag(tItemId);\n    u16 maxQuantity;\n\n    DrawStdFrameWithCustomTileAndPalette(WIN_QUANTITY_IN_BAG, FALSE, 1, 13);\n    ConvertIntToDecimalStringN(gStringVar1, quantityInBag, STR_CONV_MODE_RIGHT_ALIGN, MAX_ITEM_DIGITS + 1);\n    StringExpandPlaceholders(gStringVar4, gText_InBagVar1);\n    BuyMenuPrint(WIN_QUANTITY_IN_BAG, gStringVar4, 0, 1, 0, COLORID_NORMAL);\n    tItemCount = 1;\n    DrawStdFrameWithCustomTileAndPalette(WIN_QUANTITY_PRICE, FALSE, 1, 13);\n    BuyMenuPrintItemQuantityAndPrice(taskId);\n    ScheduleBgCopyTilemapToVram(0);\n\n    maxQuantity = GetMoney(&gSaveBlock1Ptr->money) / sShopData->totalCost;\n\n    if (maxQuantity > MAX_BAG_ITEM_CAPACITY)\n        sShopData->maxQuantity = MAX_BAG_ITEM_CAPACITY;\n    else\n        sShopData->maxQuantity = maxQuantity;\n\n    gTasks[taskId].func = Task_BuyHowManyDialogueHandleInput;",
       "callsTo": [
         "BuyMenuPrint",
@@ -537,6 +791,12 @@
       "returnType": "void",
       "signature": "static void Task_BuyHowManyDialogueHandleInput(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data = gTasks[taskId].data;\n\n    if (AdjustQuantityAccordingToDPadInput(&tItemCount, sShopData->maxQuantity) == TRUE)\n    {\n        sShopData->totalCost = (GetItemPrice(tItemId) >> IsPokeNewsActive(POKENEWS_SLATEPORT)) * tItemCount;\n        BuyMenuPrintItemQuantityAndPrice(taskId);\n    }\n    else\n    {\n        if (JOY_NEW(A_BUTTON))\n        {\n            PlaySE(SE_SELECT);\n            ClearStdWindowAndFrameToTransparent(WIN_QUANTITY_PRICE, FALSE);\n            ClearStdWindowAndFrameToTransparent(WIN_QUANTITY_IN_BAG, FALSE);\n            ClearWindowTilemap(WIN_QUANTITY_PRICE);\n            ClearWindowTilemap(WIN_QUANTITY_IN_BAG);\n            PutWindowTilemap(WIN_ITEM_LIST);\n            CopyItemName(tItemId, gStringVar1);\n            ConvertIntToDecimalStringN(gStringVar2, tItemCount, STR_CONV_MODE_LEFT_ALIGN, BAG_ITEM_CAPACITY_DIGITS);\n            ConvertIntToDecimalStringN(gStringVar3, sShopData->totalCost, STR_CONV_MODE_LEFT_ALIGN, 6);\n            BuyMenuDisplayMessage(taskId, gText_Var1AndYouWantedVar2, BuyMenuConfirmPurchase);\n        }\n        else if (JOY_NEW(B_BUTTON))\n        {\n            PlaySE(SE_SELECT);\n            ClearStdWindowAndFrameToTransparent(WIN_QUANTITY_PRICE, FALSE);\n            ClearStdWindowAndFrameToTransparent(WIN_QUANTITY_IN_BAG, FALSE);\n            ClearWindowTilemap(WIN_QUANTITY_PRICE);\n            ClearWindowTilemap(WIN_QUANTITY_IN_BAG);\n            BuyMenuReturnToItemList(taskId);\n        }\n    }",
       "callsTo": [
         "AdjustQuantityAccordingToDPadInput",
@@ -559,6 +819,12 @@
       "returnType": "void",
       "signature": "static void BuyMenuConfirmPurchase(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "CreateYesNoMenuWithCallbacks(taskId, &sShopBuyMenuYesNoWindowTemplates, 1, 0, 0, 1, 13, &sShopPurchaseYesNoFuncs);",
       "callsTo": [
         "CreateYesNoMenuWithCallbacks"
@@ -569,6 +835,12 @@
       "returnType": "void",
       "signature": "static void BuyMenuTryMakePurchase(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data = gTasks[taskId].data;\n\n    PutWindowTilemap(WIN_ITEM_LIST);\n\n    if (sMartInfo.martType == MART_TYPE_NORMAL)\n    {\n        if (AddBagItem(tItemId, tItemCount) == TRUE)\n        {\n            BuyMenuDisplayMessage(taskId, gText_HereYouGoThankYou, BuyMenuSubtractMoney);\n            RecordItemPurchase(taskId);\n        }\n        else\n        {\n            BuyMenuDisplayMessage(taskId, gText_NoMoreRoomForThis, BuyMenuReturnToItemList);\n        }\n    }\n    else\n    {\n        if (DecorationAdd(tItemId))\n        {\n            if (sMartInfo.martType == MART_TYPE_DECOR)\n                BuyMenuDisplayMessage(taskId, gText_ThankYouIllSendItHome, BuyMenuSubtractMoney);\n            else  \n                BuyMenuDisplayMessage(taskId, gText_ThanksIllSendItHome, BuyMenuSubtractMoney);\n        }\n        else\n        {\n            BuyMenuDisplayMessage(taskId, gText_SpaceForVar1Full, BuyMenuReturnToItemList);\n        }\n    }",
       "callsTo": [
         "AddBagItem",
@@ -583,6 +855,12 @@
       "returnType": "void",
       "signature": "static void BuyMenuSubtractMoney(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "IncrementGameStat(GAME_STAT_SHOPPED);\n    RemoveMoney(&gSaveBlock1Ptr->money, sShopData->totalCost);\n    PlaySE(SE_SHOP);\n    PrintMoneyAmountInMoneyBox(WIN_MONEY, GetMoney(&gSaveBlock1Ptr->money), 0);\n\n    if (sMartInfo.martType == MART_TYPE_NORMAL)\n        gTasks[taskId].func = Task_ReturnToItemListAfterItemPurchase;\n    else\n        gTasks[taskId].func = Task_ReturnToItemListAfterDecorationPurchase;",
       "callsTo": [
         "GetMoney",
@@ -597,6 +875,12 @@
       "returnType": "void",
       "signature": "static void Task_ReturnToItemListAfterItemPurchase(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data = gTasks[taskId].data;\n\n    if (JOY_NEW(A_BUTTON | B_BUTTON))\n    {\n        PlaySE(SE_SELECT);\n\n         \n        if (tItemId == ITEM_POKE_BALL && tItemCount >= 10 && AddBagItem(ITEM_PREMIER_BALL, 1) == TRUE)\n            BuyMenuDisplayMessage(taskId, gText_ThrowInPremierBall, BuyMenuReturnToItemList);\n        else\n            BuyMenuReturnToItemList(taskId);\n    }",
       "callsTo": [
         "AddBagItem",
@@ -611,6 +895,12 @@
       "returnType": "void",
       "signature": "static void Task_ReturnToItemListAfterDecorationPurchase(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (JOY_NEW(A_BUTTON | B_BUTTON))\n    {\n        PlaySE(SE_SELECT);\n        BuyMenuReturnToItemList(taskId);\n    }",
       "callsTo": [
         "BuyMenuReturnToItemList",
@@ -623,6 +913,12 @@
       "returnType": "void",
       "signature": "static void BuyMenuReturnToItemList(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data = gTasks[taskId].data;\n\n    ClearDialogWindowAndFrameToTransparent(WIN_MESSAGE, FALSE);\n    BuyMenuPrintCursor(tListTaskId, COLORID_ITEM_LIST);\n    PutWindowTilemap(WIN_ITEM_LIST);\n    PutWindowTilemap(WIN_ITEM_DESCRIPTION);\n    ScheduleBgCopyTilemapToVram(0);\n    BuyMenuAddScrollIndicatorArrows();\n    gTasks[taskId].func = Task_BuyMenu;",
       "callsTo": [
         "BuyMenuAddScrollIndicatorArrows",
@@ -637,6 +933,12 @@
       "returnType": "void",
       "signature": "static void BuyMenuPrintItemQuantityAndPrice(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data = gTasks[taskId].data;\n\n    FillWindowPixelBuffer(WIN_QUANTITY_PRICE, PIXEL_FILL(1));\n    PrintMoneyAmount(WIN_QUANTITY_PRICE, 38, 1, sShopData->totalCost, TEXT_SKIP_DRAW);\n    ConvertIntToDecimalStringN(gStringVar1, tItemCount, STR_CONV_MODE_LEADING_ZEROS, BAG_ITEM_CAPACITY_DIGITS);\n    StringExpandPlaceholders(gStringVar4, gText_xVar1);\n    BuyMenuPrint(WIN_QUANTITY_PRICE, gStringVar4, 0, 1, 0, COLORID_NORMAL);",
       "callsTo": [
         "BuyMenuPrint",
@@ -652,6 +954,12 @@
       "returnType": "void",
       "signature": "static void ExitBuyMenu(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "gFieldCallback = MapPostLoadHook_ReturnToShopMenu;\n    BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);\n    gTasks[taskId].func = Task_ExitBuyMenu;",
       "callsTo": [
         "BeginNormalPaletteFade"
@@ -662,6 +970,12 @@
       "returnType": "void",
       "signature": "static void Task_ExitBuyMenu(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (!gPaletteFade.active)\n    {\n        RemoveMoneyLabelObject();\n        BuyMenuFreeMemory();\n        SetMainCallback2(CB2_ReturnToField);\n        DestroyTask(taskId);\n    }",
       "callsTo": [
         "BuyMenuFreeMemory",
@@ -675,6 +989,7 @@
       "returnType": "void",
       "signature": "static void ClearItemPurchases(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sPurchaseHistoryId = 0;\n    memset(gMartPurchaseHistory, 0, sizeof(gMartPurchaseHistory));",
       "callsTo": [],
       "lineCount": 2
@@ -683,6 +998,12 @@
       "returnType": "void",
       "signature": "static void RecordItemPurchase(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data = gTasks[taskId].data;\n\n    u16 i;\n\n    for (i = 0; i < ARRAY_COUNT(gMartPurchaseHistory); i++)\n    {\n        if (gMartPurchaseHistory[i].itemId == tItemId && gMartPurchaseHistory[i].quantity != 0)\n        {\n            if (gMartPurchaseHistory[i].quantity + tItemCount > 255)\n                gMartPurchaseHistory[i].quantity = 255;\n            else\n                gMartPurchaseHistory[i].quantity += tItemCount;\n            return;\n        }\n    }\n\n    if (sPurchaseHistoryId < ARRAY_COUNT(gMartPurchaseHistory))\n    {\n        gMartPurchaseHistory[sPurchaseHistoryId].itemId = tItemId;\n        gMartPurchaseHistory[sPurchaseHistoryId].quantity = tItemCount;\n        sPurchaseHistoryId++;\n    }",
       "callsTo": [
         "ARRAY_COUNT"
@@ -693,6 +1014,12 @@
       "returnType": "void",
       "signature": "void CreatePokemartMenu(const u16 *itemsForSale)",
       "paramsRaw": "const u16 *itemsForSale",
+      "paramsList": [
+        {
+          "name": "itemsForSale",
+          "typeRaw": "const u16 *"
+        }
+      ],
       "body": "CreateShopMenu(MART_TYPE_NORMAL);\n    SetShopItemsForSale(itemsForSale);\n    ClearItemPurchases();\n    SetShopMenuCallback(ScriptContext_Enable);",
       "callsTo": [
         "ClearItemPurchases",
@@ -706,6 +1033,12 @@
       "returnType": "void",
       "signature": "void CreateDecorationShop1Menu(const u16 *itemsForSale)",
       "paramsRaw": "const u16 *itemsForSale",
+      "paramsList": [
+        {
+          "name": "itemsForSale",
+          "typeRaw": "const u16 *"
+        }
+      ],
       "body": "CreateShopMenu(MART_TYPE_DECOR);\n    SetShopItemsForSale(itemsForSale);\n    SetShopMenuCallback(ScriptContext_Enable);",
       "callsTo": [
         "CreateShopMenu",
@@ -718,6 +1051,12 @@
       "returnType": "void",
       "signature": "void CreateDecorationShop2Menu(const u16 *itemsForSale)",
       "paramsRaw": "const u16 *itemsForSale",
+      "paramsList": [
+        {
+          "name": "itemsForSale",
+          "typeRaw": "const u16 *"
+        }
+      ],
       "body": "CreateShopMenu(MART_TYPE_DECOR2);\n    SetShopItemsForSale(itemsForSale);\n    SetShopMenuCallback(ScriptContext_Enable);",
       "callsTo": [
         "CreateShopMenu",

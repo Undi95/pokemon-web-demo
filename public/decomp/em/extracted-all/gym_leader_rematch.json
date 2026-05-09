@@ -6,6 +6,7 @@
       "returnType": "void",
       "signature": "void UpdateGymLeaderRematch(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (FlagGet(FLAG_SYS_GAME_CLEAR) && (Random() % 100) <= 30)\n    {\n        if (FlagGet(FLAG_WATTSON_REMATCH_AVAILABLE))\n            UpdateGymLeaderRematchFromArray(GymLeaderRematches_AfterNewMauville, ARRAY_COUNT(GymLeaderRematches_AfterNewMauville), 5);\n        else\n            UpdateGymLeaderRematchFromArray(GymLeaderRematches_BeforeNewMauville, ARRAY_COUNT(GymLeaderRematches_BeforeNewMauville), 1);\n    }",
       "callsTo": [
         "ARRAY_COUNT",
@@ -19,6 +20,20 @@
       "returnType": "void",
       "signature": "static void UpdateGymLeaderRematchFromArray(const u16 *data, size_t size, u32 maxRematch)",
       "paramsRaw": "const u16 *data, size_t size, u32 maxRematch",
+      "paramsList": [
+        {
+          "name": "data",
+          "typeRaw": "const u16 *"
+        },
+        {
+          "name": "size",
+          "typeRaw": "size_t"
+        },
+        {
+          "name": "maxRematch",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "s32 whichLeader = 0;\n    s32 lowestRematchIndex = 5;\n    u32 i;\n    s32 rematchIndex;\n    for (i = 0; i < size; i++)\n    {\n        if (!gSaveBlock1Ptr->trainerRematches[data[i]])\n        {\n            rematchIndex = GetRematchIndex(data[i]);\n            if (lowestRematchIndex > rematchIndex)\n                lowestRematchIndex = rematchIndex;\n            whichLeader++;\n        }\n    }\n    if (whichLeader != 0 && lowestRematchIndex <= maxRematch)\n    {\n        whichLeader = 0;\n        for (i = 0; i < size; i++)\n        {\n            if (!gSaveBlock1Ptr->trainerRematches[data[i]])\n            {\n                rematchIndex = GetRematchIndex(data[i]);\n                if (rematchIndex == lowestRematchIndex)\n                    whichLeader++;\n            }\n        }\n        if (whichLeader != 0)\n        {\n            whichLeader = Random() % whichLeader;\n            for (i = 0; i < size; i++)\n            {\n                if (!gSaveBlock1Ptr->trainerRematches[data[i]])\n                {\n                    rematchIndex = GetRematchIndex(data[i]);\n                    if (rematchIndex == lowestRematchIndex)\n                    {\n                        if (whichLeader == 0)\n                        {\n                            gSaveBlock1Ptr->trainerRematches[data[i]] = lowestRematchIndex;\n                            break;\n                        }\n                        whichLeader--;\n                    }\n                }\n            }\n        }\n    }",
       "callsTo": [
         "GetRematchIndex",
@@ -30,6 +45,12 @@
       "returnType": "s32",
       "signature": "static s32 GetRematchIndex(u32 trainerIdx)",
       "paramsRaw": "u32 trainerIdx",
+      "paramsList": [
+        {
+          "name": "trainerIdx",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "s32 i;\n    for (i = 0; i < 5; i++)\n    {\n        if (!HasTrainerBeenFought(gRematchTable[trainerIdx].trainerIds[i]))\n        {\n            return i;\n        }\n    }\n    return 5;",
       "callsTo": [
         "HasTrainerBeenFought"

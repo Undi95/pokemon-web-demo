@@ -6,6 +6,24 @@
       "returnType": "void",
       "signature": "void DoEasyChatScreen(u8 type, u16 *words, MainCallback exitCallback, u8 displayedPersonType)",
       "paramsRaw": "u8 type, u16 *words, MainCallback exitCallback, u8 displayedPersonType",
+      "paramsList": [
+        {
+          "name": "type",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "words",
+          "typeRaw": "u16 *"
+        },
+        {
+          "name": "exitCallback",
+          "typeRaw": "MainCallback"
+        },
+        {
+          "name": "displayedPersonType",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 taskId;\n\n    ResetTasks();\n    taskId = CreateTask(Task_InitEasyChatScreen, 0);\n    gTasks[taskId].tType = type;\n    gTasks[taskId].tPersonType = displayedPersonType;\n    SetWordTaskArg(taskId, TASKIDX_WORDS, (u32)words);\n    SetWordTaskArg(taskId, TASKIDX_EXIT_CALLBACK, (u32)exitCallback);\n    SetMainCallback2(CB2_EasyChatScreen);",
       "callsTo": [
         "CreateTask",
@@ -19,6 +37,7 @@
       "returnType": "void",
       "signature": "static void CB2_EasyChatScreen(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "RunTasks();\n    AnimateSprites();\n    BuildOamBuffer();\n    UpdatePaletteFade();",
       "callsTo": [
         "AnimateSprites",
@@ -32,6 +51,7 @@
       "returnType": "void",
       "signature": "static void VBlankCB_EasyChatScreen(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "TransferPlttBuffer();\n    LoadOam();\n    ProcessSpriteCopyRequests();",
       "callsTo": [
         "LoadOam",
@@ -44,6 +64,16 @@
       "returnType": "void",
       "signature": "static void StartEasyChatScreen(u8 taskId, TaskFunc taskFunc)",
       "paramsRaw": "u8 taskId, TaskFunc taskFunc",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "taskFunc",
+          "typeRaw": "TaskFunc"
+        }
+      ],
       "body": "gTasks[taskId].func = taskFunc;\n    gTasks[taskId].tState = MAINSTATE_FADE_IN;",
       "callsTo": [],
       "lineCount": 2
@@ -52,6 +82,12 @@
       "returnType": "void",
       "signature": "static void Task_InitEasyChatScreen(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (!IsOverworldLinkActive())\n    {\n        while (InitEasyChatScreen(taskId));\n    }\n    else\n    {\n        if (InitEasyChatScreen(taskId) == TRUE)\n            return;\n    }\n    StartEasyChatScreen(taskId, Task_EasyChatScreen);",
       "callsTo": [
         "InitEasyChatScreen",
@@ -64,6 +100,12 @@
       "returnType": "void",
       "signature": "static void Task_EasyChatScreen(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u16 funcId;\n    s16 *data;\n\n    data = gTasks[taskId].data;\n    switch (tState)\n    {\n    case MAINSTATE_FADE_IN:\n        SetVBlankCallback(VBlankCB_EasyChatScreen);\n        BlendPalettes(PALETTES_ALL, 16, 0);\n        BeginNormalPaletteFade(PALETTES_ALL, -1, 16, 0, RGB_BLACK);\n        tState = MAINSTATE_WAIT_FADE_IN;\n        break;\n    case MAINSTATE_HANDLE_INPUT:\n        funcId = HandleEasyChatInput();\n        if (IsFuncIdForQuizLadyScreen(funcId))\n        {\n             \n            BeginNormalPaletteFade(PALETTES_ALL, -2, 0, 16, RGB_BLACK);\n            tState = MAINSTATE_TO_QUIZ_LADY;\n            tFuncId = funcId;\n        }\n        else if (funcId == ECFUNC_EXIT)\n        {\n             \n            BeginNormalPaletteFade(PALETTES_ALL, -1, 0, 16, RGB_BLACK);\n            tState = MAINSTATE_EXIT;\n        }\n        else if (funcId != ECFUNC_NONE)\n        {\n            PlaySE(SE_SELECT);\n            StartEasyChatFunction(funcId);\n            tState++;  \n        }\n        break;\n    case MAINSTATE_RUN_FUNC:\n        if (!RunEasyChatFunction())\n            tState = MAINSTATE_HANDLE_INPUT;\n        break;\n    case MAINSTATE_TO_QUIZ_LADY:\n        if (!gPaletteFade.active)\n            EnterQuizLadyScreen(tFuncId);\n        break;\n    case MAINSTATE_EXIT:\n        if (!gPaletteFade.active)\n            ExitEasyChatScreen((MainCallback)GetWordTaskArg(taskId, TASKIDX_EXIT_CALLBACK));\n        break;\n    case MAINSTATE_WAIT_FADE_IN:\n        if (!gPaletteFade.active)\n            tState = MAINSTATE_HANDLE_INPUT;\n        break;\n    }",
       "callsTo": [
         "BeginNormalPaletteFade",
@@ -84,6 +126,12 @@
       "returnType": "bool8",
       "signature": "static bool8 InitEasyChatScreen(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data;\n\n    data = gTasks[taskId].data;\n    switch (tState)\n    {\n    case 0:\n        SetVBlankCallback(NULL);\n        ResetSpriteData();\n        FreeAllSpritePalettes();\n        ResetPaletteFade();\n        break;\n    case 1:\n        if (!InitEasyChatScreenWordData())\n        {\n             \n            ExitEasyChatScreen((MainCallback)GetWordTaskArg(taskId, TASKIDX_EXIT_CALLBACK));\n        }\n        break;\n    case 2:\n        if (!InitEasyChatScreenStruct(tType, (u16 *)GetWordTaskArg(taskId, TASKIDX_WORDS), tPersonType))\n        {\n             \n            ExitEasyChatScreen((MainCallback)GetWordTaskArg(taskId, TASKIDX_EXIT_CALLBACK));\n        }\n        break;\n    case 3:\n        if (!InitEasyChatScreenControl())\n        {\n             \n            ExitEasyChatScreen((MainCallback)GetWordTaskArg(taskId, TASKIDX_EXIT_CALLBACK));\n        }\n        break;\n    case 4:\n        if (LoadEasyChatScreen())\n        {\n            return TRUE;\n        }\n        break;\n    default:\n        return FALSE;\n    }\n    tState++;\n    return TRUE;",
       "callsTo": [
         "ExitEasyChatScreen",
@@ -103,6 +151,12 @@
       "returnType": "void",
       "signature": "static void ExitEasyChatScreen(MainCallback callback)",
       "paramsRaw": "MainCallback callback",
+      "paramsList": [
+        {
+          "name": "callback",
+          "typeRaw": "MainCallback"
+        }
+      ],
       "body": "FreeEasyChatScreenControl();\n    FreeEasyChatScreenStruct();\n    FreeEasyChatScreenWordData();\n    FreeAllWindowBuffers();\n    SetMainCallback2(callback);",
       "callsTo": [
         "FreeAllWindowBuffers",
@@ -117,6 +171,7 @@
       "returnType": "void",
       "signature": "void ShowEasyChatScreen(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int i;\n    u16 *words;\n    struct MauvilleManBard *bard;\n    u8 displayedPersonType = EASY_CHAT_PERSON_DISPLAY_NONE;\n    switch (gSpecialVar_0x8004)\n    {\n    case EASY_CHAT_TYPE_PROFILE:\n        words = gSaveBlock1Ptr->easyChatProfile;\n        break;\n    case EASY_CHAT_TYPE_BATTLE_START:\n        words = gSaveBlock1Ptr->easyChatBattleStart;\n        break;\n    case EASY_CHAT_TYPE_BATTLE_WON:\n        words = gSaveBlock1Ptr->easyChatBattleWon;\n        break;\n    case EASY_CHAT_TYPE_BATTLE_LOST:\n        words = gSaveBlock1Ptr->easyChatBattleLost;\n        break;\n    case EASY_CHAT_TYPE_MAIL:\n        words = gSaveBlock1Ptr->mail[gSpecialVar_0x8005].words;\n        break;\n    case EASY_CHAT_TYPE_BARD_SONG:\n        bard = &gSaveBlock1Ptr->oldMan.bard;\n        for (i = 0; i < NUM_BARD_SONG_WORDS; i ++)\n            bard->newSongLyrics[i] = bard->songLyrics[i];\n\n        words = bard->newSongLyrics;\n        break;\n    case EASY_CHAT_TYPE_INTERVIEW:\n        words = gSaveBlock1Ptr->tvShows[gSpecialVar_0x8005].bravoTrainer.words;\n        displayedPersonType = gSpecialVar_0x8006;\n        break;\n    case EASY_CHAT_TYPE_FAN_CLUB:\n        words = &gSaveBlock1Ptr->tvShows[gSpecialVar_0x8005].fanclubOpinions.words[gSpecialVar_0x8006];\n        displayedPersonType = EASY_CHAT_PERSON_REPORTER_FEMALE;\n        break;\n    case EASY_CHAT_TYPE_DUMMY_SHOW:\n        words = gSaveBlock1Ptr->tvShows[gSpecialVar_0x8005].dummy.words;\n        displayedPersonType = EASY_CHAT_PERSON_REPORTER_MALE;\n        break;\n    case EASY_CHAT_TYPE_TRENDY_PHRASE:\n        words = (u16 *)gStringVar3;\n        words[0] = gSaveBlock1Ptr->dewfordTrends[0].words[0];\n        words[1] = gSaveBlock1Ptr->dewfordTrends[0].words[1];\n        break;\n    case EASY_CHAT_TYPE_GABBY_AND_TY:\n        words = gSaveBlock1Ptr->gabbyAndTyData.quote;\n        *words = EC_EMPTY_WORD;\n        displayedPersonType = EASY_CHAT_PERSON_REPORTER_FEMALE;\n        break;\n    case EASY_CHAT_TYPE_CONTEST_INTERVIEW:\n        words = &gSaveBlock1Ptr->tvShows[gSpecialVar_0x8005].bravoTrainer.words[gSpecialVar_0x8006];\n        displayedPersonType = EASY_CHAT_PERSON_REPORTER_MALE;\n        break;\n    case EASY_CHAT_TYPE_BATTLE_TOWER_INTERVIEW:\n        words = gSaveBlock1Ptr->tvShows[gSpecialVar_0x8005].bravoTrainerTower.words;\n        displayedPersonType = EASY_CHAT_PERSON_REPORTER_FEMALE;\n        break;\n    case EASY_CHAT_TYPE_GOOD_SAYING:\n        words = (u16 *)gStringVar3;\n        InitializeEasyChatWordArray(words, 2);\n        break;\n    case EASY_CHAT_TYPE_FAN_QUESTION:\n        words = gSaveBlock1Ptr->tvShows[gSpecialVar_0x8005].fanClubSpecial.words;\n        words[0] = EC_EMPTY_WORD;\n        displayedPersonType = EASY_CHAT_PERSON_BOY;\n        break;\n    case EASY_CHAT_TYPE_QUIZ_ANSWER:\n        words = &gSaveBlock1Ptr->lilycoveLady.quiz.playerAnswer;\n        break;\n    case EASY_CHAT_TYPE_QUIZ_QUESTION:\n        return;\n    case EASY_CHAT_TYPE_QUIZ_SET_QUESTION:\n        words = gSaveBlock1Ptr->lilycoveLady.quiz.question;\n        break;\n    case EASY_CHAT_TYPE_QUIZ_SET_ANSWER:\n        words = &gSaveBlock1Ptr->lilycoveLady.quiz.correctAnswer;\n        break;\n    case EASY_CHAT_TYPE_APPRENTICE:\n        words = gSaveBlock2Ptr->apprentices[0].speechWon;\n        break;\n    case EASY_CHAT_TYPE_QUESTIONNAIRE:\n        words = GetQuestionnaireWordsPtr();\n        break;\n    default:\n        return;\n    }\n\n    CleanupOverworldWindowsAndTilemaps();\n    DoEasyChatScreen(gSpecialVar_0x8004, words, CB2_ReturnToFieldContinueScript, displayedPersonType);",
       "callsTo": [
         "CleanupOverworldWindowsAndTilemaps",
@@ -130,6 +185,7 @@
       "returnType": "void",
       "signature": "static void CB2_QuizLadyQuestion(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "LilycoveLady *lilycoveLady;\n\n    UpdatePaletteFade();\n    switch (gMain.state)\n    {\n    case 0:\n        FadeScreen(FADE_TO_BLACK, 0);\n        break;\n    case 1:\n        if (!gPaletteFade.active)\n        {\n            lilycoveLady = &gSaveBlock1Ptr->lilycoveLady;\n            lilycoveLady->quiz.playerAnswer = EC_EMPTY_WORD;\n            CleanupOverworldWindowsAndTilemaps();\n            DoQuizQuestionEasyChatScreen();\n        }\n        return;\n    }\n    gMain.state ++;",
       "callsTo": [
         "CleanupOverworldWindowsAndTilemaps",
@@ -143,6 +199,7 @@
       "returnType": "void",
       "signature": "void QuizLadyShowQuizQuestion(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "SetMainCallback2(CB2_QuizLadyQuestion);",
       "callsTo": [
         "SetMainCallback2"
@@ -153,6 +210,12 @@
       "returnType": "int",
       "signature": "static int GetQuizLadyScreenByFuncId(u16 funcId)",
       "paramsRaw": "u16 funcId",
+      "paramsList": [
+        {
+          "name": "funcId",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "int i;\n\n    for (i = 0; i < ARRAY_COUNT(sQuizLadyEasyChatScreens); i ++)\n    {\n        if (funcId == sQuizLadyEasyChatScreens[i].funcId)\n            return i;\n    }\n    return -1;",
       "callsTo": [
         "ARRAY_COUNT"
@@ -163,6 +226,12 @@
       "returnType": "bool32",
       "signature": "static bool32 IsFuncIdForQuizLadyScreen(u16 funcId)",
       "paramsRaw": "u16 funcId",
+      "paramsList": [
+        {
+          "name": "funcId",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "return GetQuizLadyScreenByFuncId(funcId) == -1 ? FALSE : TRUE;",
       "callsTo": [
         "GetQuizLadyScreenByFuncId"
@@ -173,6 +242,12 @@
       "returnType": "void",
       "signature": "static void EnterQuizLadyScreen(u16 funcId)",
       "paramsRaw": "u16 funcId",
+      "paramsList": [
+        {
+          "name": "funcId",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "int i;\n\n    i = GetQuizLadyScreenByFuncId(funcId);\n    ResetTasks();\n    ExitEasyChatScreen(sQuizLadyEasyChatScreens[i].callback);",
       "callsTo": [
         "ExitEasyChatScreen",
@@ -185,6 +260,7 @@
       "returnType": "void",
       "signature": "static void DoQuizAnswerEasyChatScreen(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "DoEasyChatScreen(\n        EASY_CHAT_TYPE_QUIZ_ANSWER,\n        &gSaveBlock1Ptr->lilycoveLady.quiz.playerAnswer,\n        CB2_ReturnToFieldContinueScript,\n        EASY_CHAT_PERSON_DISPLAY_NONE);",
       "callsTo": [
         "DoEasyChatScreen"
@@ -195,6 +271,7 @@
       "returnType": "void",
       "signature": "static void DoQuizQuestionEasyChatScreen(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "DoEasyChatScreen(EASY_CHAT_TYPE_QUIZ_QUESTION,\n        gSaveBlock1Ptr->lilycoveLady.quiz.question,\n        CB2_ReturnToFieldContinueScript,\n        EASY_CHAT_PERSON_DISPLAY_NONE);",
       "callsTo": [
         "DoEasyChatScreen"
@@ -205,6 +282,7 @@
       "returnType": "void",
       "signature": "static void DoQuizSetAnswerEasyChatScreen(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "DoEasyChatScreen(EASY_CHAT_TYPE_QUIZ_SET_ANSWER,\n        &gSaveBlock1Ptr->lilycoveLady.quiz.correctAnswer,\n        CB2_ReturnToFieldContinueScript,\n        EASY_CHAT_PERSON_DISPLAY_NONE);",
       "callsTo": [
         "DoEasyChatScreen"
@@ -215,6 +293,7 @@
       "returnType": "void",
       "signature": "static void DoQuizSetQuestionEasyChatScreen(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "DoEasyChatScreen(EASY_CHAT_TYPE_QUIZ_SET_QUESTION,\n        gSaveBlock1Ptr->lilycoveLady.quiz.question,\n        CB2_ReturnToFieldContinueScript,\n        EASY_CHAT_PERSON_DISPLAY_NONE);",
       "callsTo": [
         "DoEasyChatScreen"
@@ -225,6 +304,20 @@
       "returnType": "bool8",
       "signature": "static bool8 InitEasyChatScreenStruct(u8 type, u16 *words, u8 displayedPersonType)",
       "paramsRaw": "u8 type, u16 *words, u8 displayedPersonType",
+      "paramsList": [
+        {
+          "name": "type",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "words",
+          "typeRaw": "u16 *"
+        },
+        {
+          "name": "displayedPersonType",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 templateId;\n    int i;\n\n    sEasyChatScreen = Alloc(sizeof(*sEasyChatScreen));\n    if (sEasyChatScreen == NULL)\n        return FALSE;\n\n    sEasyChatScreen->type = type;\n    sEasyChatScreen->savedPhrase = words;\n    sEasyChatScreen->mainCursorColumn = 0;\n    sEasyChatScreen->mainCursorRow = 0;\n    sEasyChatScreen->inAlphabetMode = FALSE;\n    sEasyChatScreen->displayedPersonType = displayedPersonType;\n    sEasyChatScreen->unused = 0;\n    templateId = GetEachChatScreenTemplateId(type);\n    if (type == EASY_CHAT_TYPE_QUIZ_QUESTION)\n    {\n        GetQuizTitle(sEasyChatScreen->quizTitle);\n        sEasyChatScreen->titleText = sEasyChatScreen->quizTitle;\n        sEasyChatScreen->inputState = INPUTSTATE_QUIZ_QUESTION;\n    }\n    else\n    {\n        sEasyChatScreen->inputState = INPUTSTATE_PHRASE;\n        sEasyChatScreen->titleText = sEasyChatScreenTemplates[templateId].titleText;\n    }\n\n    sEasyChatScreen->numColumns = sEasyChatScreenTemplates[templateId].numColumns;\n    sEasyChatScreen->numRows = sEasyChatScreenTemplates[templateId].numRows;\n    sEasyChatScreen->maxWords = sEasyChatScreen->numColumns * sEasyChatScreen->numRows;\n    sEasyChatScreen->templateId = templateId;\n    if (sEasyChatScreen->maxWords > ARRAY_COUNT(sEasyChatScreen->currentPhrase))\n        sEasyChatScreen->maxWords = ARRAY_COUNT(sEasyChatScreen->currentPhrase);\n\n    if (words != NULL)\n    {\n         \n        CpuCopy16(words, sEasyChatScreen->currentPhrase, sEasyChatScreen->maxWords * sizeof(u16));\n    }\n    else\n    {\n         \n        for (i = 0; i < sEasyChatScreen->maxWords; i ++)\n            sEasyChatScreen->currentPhrase[i] = EC_EMPTY_WORD;\n\n        sEasyChatScreen->savedPhrase = sEasyChatScreen->currentPhrase;\n    }\n\n    sEasyChatScreen->keyboardLastRow = (GetNumUnlockedEasyChatGroups() - 1) / 2 + 1;\n    return TRUE;",
       "callsTo": [
         "ARRAY_COUNT",
@@ -240,6 +333,7 @@
       "returnType": "void",
       "signature": "static void FreeEasyChatScreenStruct(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "TRY_FREE_AND_SET_NULL(sEasyChatScreen);",
       "callsTo": [
         "TRY_FREE_AND_SET_NULL"
@@ -250,6 +344,7 @@
       "returnType": "u16",
       "signature": "static u16 HandleEasyChatInput(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sEasyChatScreen->inputState)\n    {\n    case INPUTSTATE_PHRASE:\n        return HandleEasyChatInput_Phrase();\n    case INPUTSTATE_MAIN_SCREEN_BUTTONS:\n        return HandleEasyChatInput_MainScreenButtons();\n    case INPUTSTATE_KEYBOARD:\n        return HandleEasyChatInput_Keyboard();\n    case INPUTSTATE_WORD_SELECT:\n        return HandleEasyChatInput_WordSelect();\n    case INPUTSTATE_EXIT_PROMPT:\n        return HandleEasyChatInput_ExitPrompt();\n    case INPUTSTATE_DELETE_ALL_YES_NO:\n        return HandleEasyChatInput_DeleteAllYesNo();\n    case INPUTSTATE_CONFIRM_WORDS_YES_NO:\n        return HandleEasyChatInput_ConfirmWordsYesNo();\n    case INPUTSTATE_QUIZ_QUESTION:\n        return HandleEasyChatInput_QuizQuestion();\n    case INPUTSTATE_WAIT_FOR_MSG:\n        return HandleEasyChatInput_WaitForMsg();\n    case INPUTSTATE_START_CONFIRM_LYRICS:\n        return HandleEasyChatInput_StartConfirmLyrics();\n    case INPUTSTATE_CONFIRM_LYRICS_YES_NO:\n        return HandleEasyChatInput_ConfirmLyricsYesNo();\n    }\n    return ECFUNC_NONE;",
       "callsTo": [
         "HandleEasyChatInput_ConfirmLyricsYesNo",
@@ -270,6 +365,7 @@
       "returnType": "bool32",
       "signature": "static bool32 IsCurrentFrame2x5(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (GetEasyChatScreenFrameId())\n    {\n    case FRAMEID_MAIL:\n    case FRAMEID_QUIZ_QUESTION:\n    case FRAMEID_QUIZ_SET_QUESTION:\n        return TRUE;\n    }\n    return FALSE;",
       "callsTo": [
         "GetEasyChatScreenFrameId"
@@ -280,6 +376,7 @@
       "returnType": "u16",
       "signature": "static u16 HandleEasyChatInput_Phrase(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "do\n    {\n        if (JOY_NEW(A_BUTTON))\n        {\n            ClearUnusedField();\n            sEasyChatScreen->inputState = INPUTSTATE_KEYBOARD;\n            sEasyChatScreen->keyboardColumn = 0;\n            sEasyChatScreen->keyboardRow = 0;\n            sEasyChatScreen->keyboardScrollOffset = 0;\n            return ECFUNC_OPEN_KEYBOARD;\n        }\n        else if (JOY_NEW(B_BUTTON))\n        {\n            return StartConfirmExitPrompt();\n        }\n        else if (JOY_NEW(START_BUTTON))\n        {\n            return TryConfirmWords();\n        }\n        else if (JOY_NEW(DPAD_UP))\n        {\n            sEasyChatScreen->mainCursorRow--;\n            break;\n        }\n        else if (JOY_NEW(DPAD_LEFT))\n        {\n            sEasyChatScreen->mainCursorColumn--;\n            break;\n        }\n        else if (JOY_NEW(DPAD_DOWN))\n        {\n            sEasyChatScreen->mainCursorRow++;\n            break;\n        }\n        else if (JOY_NEW(DPAD_RIGHT))\n        {\n            sEasyChatScreen->mainCursorColumn++;\n            break;\n        }\n\n        return ECFUNC_NONE;\n    } while (0);\n\n     \n\n     \n    if (sEasyChatScreen->mainCursorRow < 0)\n        sEasyChatScreen->mainCursorRow = sEasyChatScreenTemplates[sEasyChatScreen->templateId].numRows;\n    if (sEasyChatScreen->mainCursorRow > sEasyChatScreenTemplates[sEasyChatScreen->templateId].numRows)\n        sEasyChatScreen->mainCursorRow = 0;\n\n    if (sEasyChatScreen->mainCursorRow == sEasyChatScreenTemplates[sEasyChatScreen->templateId].numRows)\n    {\n         \n        if (sEasyChatScreen->mainCursorColumn > 2)\n            sEasyChatScreen->mainCursorColumn = 2;\n\n        sEasyChatScreen->inputState = INPUTSTATE_MAIN_SCREEN_BUTTONS;\n        return ECFUNC_UPDATE_MAIN_CURSOR_ON_BUTTONS;\n    }\n\n     \n    if (sEasyChatScreen->mainCursorColumn < 0)\n        sEasyChatScreen->mainCursorColumn = sEasyChatScreenTemplates[sEasyChatScreen->templateId].numColumns - 1;\n    if (sEasyChatScreen->mainCursorColumn >= sEasyChatScreenTemplates[sEasyChatScreen->templateId].numColumns)\n        sEasyChatScreen->mainCursorColumn = 0;\n\n     \n    if (IsCurrentFrame2x5() && sEasyChatScreen->mainCursorColumn == 1 && sEasyChatScreen->mainCursorRow == 4)\n        sEasyChatScreen->mainCursorColumn = 0;\n\n    return ECFUNC_UPDATE_MAIN_CURSOR;",
       "callsTo": [
         "ClearUnusedField",
@@ -294,6 +391,7 @@
       "returnType": "u16",
       "signature": "static u16 HandleEasyChatInput_MainScreenButtons(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "do\n    {\n        if (JOY_NEW(A_BUTTON))\n        {\n            switch (sEasyChatScreen->mainCursorColumn)\n            {\n            case 0:  \n                return DoDeleteAllButton();\n            case 1:  \n                return StartConfirmExitPrompt();\n            case 2:  \n                return TryConfirmWords();\n            case 3:  \n                return DoQuizButton();\n            }\n        }\n\n        if (JOY_NEW(B_BUTTON))\n        {\n            return StartConfirmExitPrompt();\n        }\n        else if (JOY_NEW(START_BUTTON))\n        {\n            return TryConfirmWords();\n        }\n        else if (JOY_NEW(DPAD_UP))\n        {\n            sEasyChatScreen->mainCursorRow--;\n            break;\n        }\n        else if (JOY_NEW(DPAD_LEFT))\n        {\n            sEasyChatScreen->mainCursorColumn--;\n            break;\n        }\n        else if (JOY_NEW(DPAD_DOWN))\n        {\n            sEasyChatScreen->mainCursorRow = 0;\n            break;\n        }\n        else if (JOY_NEW(DPAD_RIGHT))\n        {\n            sEasyChatScreen->mainCursorColumn++;\n            break;\n        }\n\n        return ECFUNC_NONE;\n    } while (0);\n\n    if (sEasyChatScreen->mainCursorRow == sEasyChatScreenTemplates[sEasyChatScreen->templateId].numRows)\n    {\n        int numFooterColumns = FooterHasFourOptions() ? 4 : 3;\n        if (sEasyChatScreen->mainCursorColumn < 0)\n            sEasyChatScreen->mainCursorColumn = numFooterColumns - 1;\n\n        if (sEasyChatScreen->mainCursorColumn >= numFooterColumns)\n            sEasyChatScreen->mainCursorColumn = 0;\n\n        return ECFUNC_UPDATE_MAIN_CURSOR_ON_BUTTONS;\n    }\n\n    if (sEasyChatScreen->mainCursorColumn >= sEasyChatScreenTemplates[sEasyChatScreen->templateId].numColumns)\n        sEasyChatScreen->mainCursorColumn = sEasyChatScreenTemplates[sEasyChatScreen->templateId].numColumns - 1;\n\n     \n    if (IsCurrentFrame2x5() && sEasyChatScreen->mainCursorColumn == 1 && sEasyChatScreen->mainCursorRow == 4)\n        sEasyChatScreen->mainCursorColumn = 0;\n\n    sEasyChatScreen->inputState = INPUTSTATE_PHRASE;\n    return ECFUNC_UPDATE_MAIN_CURSOR;",
       "callsTo": [
         "DoDeleteAllButton",
@@ -310,6 +408,7 @@
       "returnType": "u16",
       "signature": "static u16 HandleEasyChatInput_Keyboard(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (JOY_NEW(B_BUTTON))\n        return ExitKeyboardToMainScreen();\n\n    if (JOY_NEW(A_BUTTON))\n    {\n        if (sEasyChatScreen->keyboardColumn != -1)\n            return SelectKeyboardGroup();\n\n         \n        switch (sEasyChatScreen->keyboardRow)\n        {\n        case 0:  \n            return StartSwitchKeyboardMode();\n        case 1:  \n            return DeleteSelectedWord();\n        case 2:  \n            return ExitKeyboardToMainScreen();\n        }\n    }\n\n    if (JOY_NEW(SELECT_BUTTON))\n        return StartSwitchKeyboardMode();\n\n    if (JOY_REPEAT(DPAD_UP))\n        return MoveKeyboardCursor(INPUT_UP);\n\n    if (JOY_REPEAT(DPAD_DOWN))\n        return MoveKeyboardCursor(INPUT_DOWN);\n\n    if (JOY_REPEAT(DPAD_LEFT))\n        return MoveKeyboardCursor(INPUT_LEFT);\n\n    if (JOY_REPEAT(DPAD_RIGHT))\n        return MoveKeyboardCursor(INPUT_RIGHT);\n\n    return ECFUNC_NONE;",
       "callsTo": [
         "DeleteSelectedWord",
@@ -326,6 +425,7 @@
       "returnType": "u16",
       "signature": "static u16 HandleEasyChatInput_WordSelect(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (JOY_NEW(B_BUTTON))\n    {\n        sEasyChatScreen->inputState = INPUTSTATE_KEYBOARD;\n        return ECFUNC_RETURN_TO_KEYBOARD;\n    }\n\n    if (JOY_NEW(A_BUTTON))\n        return SelectNewWord();\n\n    if (JOY_NEW(START_BUTTON))\n        return MoveWordSelectCursor(INPUT_START);\n\n    if (JOY_NEW(SELECT_BUTTON))\n        return MoveWordSelectCursor(INPUT_SELECT);\n\n    if (JOY_REPEAT(DPAD_UP))\n        return MoveWordSelectCursor(INPUT_UP);\n\n    if (JOY_REPEAT(DPAD_DOWN))\n        return MoveWordSelectCursor(INPUT_DOWN);\n\n    if (JOY_REPEAT(DPAD_LEFT))\n        return MoveWordSelectCursor(INPUT_LEFT);\n\n    if (JOY_REPEAT(DPAD_RIGHT))\n        return MoveWordSelectCursor(INPUT_RIGHT);\n\n    return ECFUNC_NONE;",
       "callsTo": [
         "JOY_NEW",
@@ -339,6 +439,7 @@
       "returnType": "u16",
       "signature": "static u16 HandleEasyChatInput_ExitPrompt(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (Menu_ProcessInputNoWrapClearOnChoose())\n    {\n    case MENU_B_PRESSED:\n    case 1:  \n        sEasyChatScreen->inputState = GetEasyChatBackupState();\n        return ECFUNC_CLOSE_PROMPT;\n    case 0:  \n        gSpecialVar_Result = 0;\n        if (sEasyChatScreen->type == EASY_CHAT_TYPE_QUIZ_SET_QUESTION\n         || sEasyChatScreen->type == EASY_CHAT_TYPE_QUIZ_SET_ANSWER)\n            SaveCurrentPhrase();\n\n        return ECFUNC_EXIT;\n    default:\n        return ECFUNC_NONE;\n    }",
       "callsTo": [
         "GetEasyChatBackupState",
@@ -351,6 +452,7 @@
       "returnType": "u16",
       "signature": "static u16 HandleEasyChatInput_ConfirmWordsYesNo(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (Menu_ProcessInputNoWrapClearOnChoose())\n    {\n    case MENU_B_PRESSED:\n    case 1:  \n        sEasyChatScreen->inputState = GetEasyChatBackupState();\n        return ECFUNC_CLOSE_PROMPT;\n    case 0:  \n        SetSpecialEasyChatResult();\n        gSpecialVar_Result = GetEasyChatCompleted();\n        SaveCurrentPhrase();\n        return ECFUNC_EXIT;\n    default:\n        return ECFUNC_NONE;\n    }",
       "callsTo": [
         "GetEasyChatBackupState",
@@ -365,6 +467,7 @@
       "returnType": "u16",
       "signature": "static u16 HandleEasyChatInput_DeleteAllYesNo(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (Menu_ProcessInputNoWrapClearOnChoose())\n    {\n    case MENU_B_PRESSED:\n    case 1:  \n        sEasyChatScreen->inputState = INPUTSTATE_MAIN_SCREEN_BUTTONS;\n        return ECFUNC_CLOSE_PROMPT;\n    case 0:  \n        ResetCurrentPhrase();\n        sEasyChatScreen->inputState = INPUTSTATE_MAIN_SCREEN_BUTTONS;\n        return ECFUNC_CLOSE_PROMPT_AFTER_DELETE;\n    default:\n        return ECFUNC_NONE;\n    }",
       "callsTo": [
         "Menu_ProcessInputNoWrapClearOnChoose",
@@ -376,6 +479,7 @@
       "returnType": "u16",
       "signature": "static u16 HandleEasyChatInput_QuizQuestion(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (JOY_NEW(A_BUTTON))\n        return ECFUNC_QUIZ_ANSWER;\n\n    if (JOY_NEW(B_BUTTON))\n        return StartConfirmExitPrompt();\n\n    return ECFUNC_NONE;",
       "callsTo": [
         "JOY_NEW",
@@ -387,6 +491,7 @@
       "returnType": "u16",
       "signature": "static u16 HandleEasyChatInput_WaitForMsg(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (JOY_NEW(A_BUTTON | B_BUTTON))\n    {\n        sEasyChatScreen->inputState = GetEasyChatBackupState();\n        return ECFUNC_CLOSE_PROMPT;\n    }\n\n    return ECFUNC_NONE;",
       "callsTo": [
         "GetEasyChatBackupState",
@@ -398,6 +503,7 @@
       "returnType": "u16",
       "signature": "static u16 HandleEasyChatInput_StartConfirmLyrics(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sEasyChatScreen->inputState = INPUTSTATE_CONFIRM_LYRICS_YES_NO;\n    return ECFUNC_PROMPT_CONFIRM;",
       "callsTo": [],
       "lineCount": 2
@@ -406,6 +512,7 @@
       "returnType": "u16",
       "signature": "static u16 HandleEasyChatInput_ConfirmLyricsYesNo(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (Menu_ProcessInputNoWrapClearOnChoose())\n    {\n    case MENU_B_PRESSED:\n    case 1:  \n        ResetCurrentPhraseToSaved();\n        sEasyChatScreen->inputStateBackup = INPUTSTATE_PHRASE;\n        sEasyChatScreen->inputState = INPUTSTATE_WAIT_FOR_MSG;\n        return ECFUNC_MSG_SONG_TOO_SHORT;\n    case 0:  \n        gSpecialVar_Result = GetEasyChatCompleted();\n        SaveCurrentPhrase();\n        return ECFUNC_EXIT;\n    default:\n        return ECFUNC_NONE;\n    }",
       "callsTo": [
         "GetEasyChatCompleted",
@@ -419,6 +526,7 @@
       "returnType": "u16",
       "signature": "static u16 StartConfirmExitPrompt(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (sEasyChatScreen->type == EASY_CHAT_TYPE_APPRENTICE\n     || sEasyChatScreen->type == EASY_CHAT_TYPE_CONTEST_INTERVIEW)\n    {\n        sEasyChatScreen->inputStateBackup = sEasyChatScreen->inputState;\n        sEasyChatScreen->inputState = INPUTSTATE_WAIT_FOR_MSG;\n        return ECFUNC_MSG_CANT_EXIT;\n    }\n    else\n    {\n        sEasyChatScreen->inputStateBackup = sEasyChatScreen->inputState;\n        sEasyChatScreen->inputState = INPUTSTATE_EXIT_PROMPT;\n        return ECFUNC_PROMPT_EXIT;\n    }",
       "callsTo": [],
       "lineCount": 13
@@ -427,6 +535,7 @@
       "returnType": "int",
       "signature": "static int DoDeleteAllButton(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sEasyChatScreen->inputStateBackup = sEasyChatScreen->inputState;\n    if (sEasyChatScreen->type != EASY_CHAT_TYPE_BARD_SONG)\n    {\n         \n        sEasyChatScreen->inputState = INPUTSTATE_DELETE_ALL_YES_NO;\n        return ECFUNC_PROMPT_DELETE_ALL;\n    }\n    else\n    {\n         \n        sEasyChatScreen->inputStateBackup = sEasyChatScreen->inputState;\n        sEasyChatScreen->inputState = INPUTSTATE_WAIT_FOR_MSG;\n        return ECFUNC_MSG_CANT_DELETE_LYRICS;\n    }",
       "callsTo": [],
       "lineCount": 14
@@ -435,6 +544,7 @@
       "returnType": "u16",
       "signature": "static u16 TryConfirmWords(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sEasyChatScreen->inputStateBackup = sEasyChatScreen->inputState;\n    if (sEasyChatScreen->type == EASY_CHAT_TYPE_QUIZ_SET_QUESTION)\n    {\n        if (IsQuizQuestionEmpty())\n        {\n            sEasyChatScreen->inputState = INPUTSTATE_WAIT_FOR_MSG;\n            return ECFUNC_MSG_CREATE_QUIZ;\n        }\n\n        if (IsQuizAnswerEmpty())\n        {\n            sEasyChatScreen->inputState = INPUTSTATE_WAIT_FOR_MSG;\n            return ECFUNC_MSG_SELECT_ANSWER;\n        }\n\n        sEasyChatScreen->inputState = INPUTSTATE_CONFIRM_WORDS_YES_NO;\n        return ECFUNC_PROMPT_CONFIRM;\n    }\n    else if (sEasyChatScreen->type == EASY_CHAT_TYPE_QUIZ_SET_ANSWER)\n    {\n        if (IsQuizAnswerEmpty())\n        {\n            sEasyChatScreen->inputState = INPUTSTATE_WAIT_FOR_MSG;\n            return ECFUNC_MSG_SELECT_ANSWER;\n        }\n\n        if (IsQuizQuestionEmpty())\n        {\n            sEasyChatScreen->inputState = INPUTSTATE_WAIT_FOR_MSG;\n            return ECFUNC_MSG_CREATE_QUIZ;\n        }\n\n        sEasyChatScreen->inputState = INPUTSTATE_CONFIRM_WORDS_YES_NO;\n        return ECFUNC_PROMPT_CONFIRM;\n    }\n    else if (sEasyChatScreen->type == EASY_CHAT_TYPE_TRENDY_PHRASE\n          || sEasyChatScreen->type == EASY_CHAT_TYPE_GOOD_SAYING)\n    {\n        if (!IsCurrentPhraseFull())\n        {\n            sEasyChatScreen->inputState = INPUTSTATE_WAIT_FOR_MSG;\n            return ECFUNC_MSG_COMBINE_TWO_WORDS;\n        }\n\n        sEasyChatScreen->inputState = INPUTSTATE_CONFIRM_WORDS_YES_NO;\n        return ECFUNC_PROMPT_CONFIRM;\n    }\n    else if (sEasyChatScreen->type == EASY_CHAT_TYPE_APPRENTICE\n          || sEasyChatScreen->type == EASY_CHAT_TYPE_CONTEST_INTERVIEW)\n    {\n        if (IsCurrentPhraseEmpty())\n        {\n            sEasyChatScreen->inputState = INPUTSTATE_WAIT_FOR_MSG;\n            return ECFUNC_MSG_CANT_EXIT;\n        }\n\n        sEasyChatScreen->inputState = INPUTSTATE_CONFIRM_WORDS_YES_NO;\n        return ECFUNC_PROMPT_CONFIRM;\n    }\n    else if (sEasyChatScreen->type == EASY_CHAT_TYPE_QUESTIONNAIRE)\n    {\n        sEasyChatScreen->inputState = INPUTSTATE_CONFIRM_WORDS_YES_NO;\n        return ECFUNC_PROMPT_CONFIRM;\n    }\n    else\n    {\n        if (IsCurrentPhraseEmpty() == TRUE || !GetEasyChatCompleted())\n        {\n            sEasyChatScreen->inputState = INPUTSTATE_EXIT_PROMPT;\n            return ECFUNC_PROMPT_EXIT;\n        }\n\n        sEasyChatScreen->inputState = INPUTSTATE_CONFIRM_WORDS_YES_NO;\n        return ECFUNC_PROMPT_CONFIRM;\n    }",
       "callsTo": [
         "GetEasyChatCompleted",
@@ -449,6 +559,7 @@
       "returnType": "int",
       "signature": "static int DoQuizButton(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sEasyChatScreen->inputStateBackup = sEasyChatScreen->inputState;\n    switch (sEasyChatScreen->type)\n    {\n    case EASY_CHAT_TYPE_QUIZ_ANSWER:\n        return ECFUNC_QUIZ_QUESTION;\n    case EASY_CHAT_TYPE_QUIZ_SET_QUESTION:\n        SaveCurrentPhrase();\n        return ECFUNC_SET_QUIZ_ANSWER;\n    case EASY_CHAT_TYPE_QUIZ_SET_ANSWER:\n        SaveCurrentPhrase();\n        return ECFUNC_SET_QUIZ_QUESTION;\n    default:\n        return ECFUNC_NONE;\n    }",
       "callsTo": [
         "SaveCurrentPhrase"
@@ -459,6 +570,7 @@
       "returnType": "u8",
       "signature": "static u8 GetEasyChatBackupState(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return sEasyChatScreen->inputStateBackup;",
       "callsTo": [],
       "lineCount": 1
@@ -467,6 +579,7 @@
       "returnType": "int",
       "signature": "static int SelectKeyboardGroup(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 numWords;\n\n    if (!sEasyChatScreen->inAlphabetMode)\n    {\n        u8 groupId = GetUnlockedEasyChatGroupId(GetSelectedGroupIndex());\n        SetSelectedWordGroup(FALSE, groupId);\n    }\n    else\n    {\n        SetSelectedWordGroup(TRUE, GetSelectedAlphabetGroupId());\n    }\n\n    numWords = GetNumWordsInSelectedGroup();\n    if (numWords == 0)\n        return ECFUNC_NONE;\n\n    sEasyChatScreen->wordSelectLastRow = (numWords - 1) / 2;\n    sEasyChatScreen->wordSelectScrollOffset = 0;\n    sEasyChatScreen->wordSelectColumn = 0;\n    sEasyChatScreen->wordSelectRow = 0;\n    sEasyChatScreen->inputState = INPUTSTATE_WORD_SELECT;\n    return ECFUNC_OPEN_WORD_SELECT;",
       "callsTo": [
         "GetNumWordsInSelectedGroup",
@@ -481,6 +594,7 @@
       "returnType": "int",
       "signature": "static int ExitKeyboardToMainScreen(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sEasyChatScreen->inputState = INPUTSTATE_PHRASE;\n    return ECFUNC_CLOSE_KEYBOARD;",
       "callsTo": [],
       "lineCount": 2
@@ -489,6 +603,7 @@
       "returnType": "int",
       "signature": "static int StartSwitchKeyboardMode(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sEasyChatScreen->keyboardColumn = 0;\n    sEasyChatScreen->keyboardRow = 0;\n    sEasyChatScreen->keyboardScrollOffset = 0;\n    if (!sEasyChatScreen->inAlphabetMode)\n        sEasyChatScreen->inAlphabetMode = TRUE;\n    else\n        sEasyChatScreen->inAlphabetMode = FALSE;\n\n    return ECFUNC_SWITCH_KEYBOARD_MODE;",
       "callsTo": [],
       "lineCount": 9
@@ -497,6 +612,7 @@
       "returnType": "int",
       "signature": "static int DeleteSelectedWord(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (sEasyChatScreen->type == EASY_CHAT_TYPE_BARD_SONG)\n    {\n        PlaySE(SE_FAILURE);\n        return ECFUNC_NONE;\n    }\n    else\n    {\n        SetSelectedWord(EC_EMPTY_WORD);\n        return ECFUNC_REPRINT_PHRASE;\n    }",
       "callsTo": [
         "PlaySE",
@@ -508,6 +624,7 @@
       "returnType": "int",
       "signature": "static int SelectNewWord(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 easyChatWord = GetWordFromSelectedGroup(GetSelectedWordIndex());\n    if (DummyWordCheck(easyChatWord))\n    {\n         \n        PlaySE(SE_FAILURE);\n        return ECFUNC_NONE;\n    }\n    else\n    {\n        SetSelectedWord(easyChatWord);\n        if (sEasyChatScreen->type != EASY_CHAT_TYPE_BARD_SONG)\n        {\n            sEasyChatScreen->inputState = INPUTSTATE_PHRASE;\n            return ECFUNC_CLOSE_WORD_SELECT;\n        }\n        else\n        {\n            sEasyChatScreen->inputState = INPUTSTATE_START_CONFIRM_LYRICS;\n            return ECFUNC_PROMPT_CONFIRM_LYRICS;\n        }\n    }",
       "callsTo": [
         "DummyWordCheck",
@@ -522,6 +639,7 @@
       "returnType": "void",
       "signature": "static void SaveCurrentPhrase(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int i;\n    for (i = 0; i < sEasyChatScreen->maxWords; i++)\n        sEasyChatScreen->savedPhrase[i] = sEasyChatScreen->currentPhrase[i];",
       "callsTo": [],
       "lineCount": 3
@@ -530,6 +648,7 @@
       "returnType": "void",
       "signature": "static void ResetCurrentPhrase(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int i;\n    for (i = 0; i < sEasyChatScreen->maxWords; i++)\n        sEasyChatScreen->currentPhrase[i] = EC_EMPTY_WORD;",
       "callsTo": [],
       "lineCount": 3
@@ -538,6 +657,7 @@
       "returnType": "void",
       "signature": "static void ResetCurrentPhraseToSaved(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int i;\n    for (i = 0; i < sEasyChatScreen->maxWords; i++)\n        sEasyChatScreen->currentPhrase[i] = sEasyChatScreen->savedPhrase[i];",
       "callsTo": [],
       "lineCount": 3
@@ -546,6 +666,12 @@
       "returnType": "void",
       "signature": "static void SetSelectedWord(u16 easyChatWord)",
       "paramsRaw": "u16 easyChatWord",
+      "paramsList": [
+        {
+          "name": "easyChatWord",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "u16 index = GetWordIndexToReplace();\n    sEasyChatScreen->currentPhrase[index] = easyChatWord;",
       "callsTo": [
         "GetWordIndexToReplace"
@@ -556,6 +682,7 @@
       "returnType": "bool8",
       "signature": "static bool8 DidPhraseChange(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 i;\n    for (i = 0; i < sEasyChatScreen->maxWords; i++)\n    {\n        if (sEasyChatScreen->currentPhrase[i] != sEasyChatScreen->savedPhrase[i])\n            return TRUE;\n    }\n\n    return FALSE;",
       "callsTo": [],
       "lineCount": 8
@@ -564,6 +691,7 @@
       "returnType": "bool32",
       "signature": "static bool32 GetEasyChatCompleted(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (sEasyChatScreen->type == EASY_CHAT_TYPE_QUIZ_SET_QUESTION\n     || sEasyChatScreen->type == EASY_CHAT_TYPE_QUIZ_SET_ANSWER)\n    {\n        if (IsQuizQuestionEmpty())\n            return FALSE;\n\n        if (IsQuizAnswerEmpty())\n            return FALSE;\n\n        return TRUE;\n    }\n    else\n    {\n        return DidPhraseChange();\n    }",
       "callsTo": [
         "DidPhraseChange",
@@ -576,6 +704,12 @@
       "returnType": "u16",
       "signature": "static u16 MoveKeyboardCursor(int input)",
       "paramsRaw": "int input",
+      "paramsList": [
+        {
+          "name": "input",
+          "typeRaw": "int"
+        }
+      ],
       "body": "if (sEasyChatScreen->keyboardColumn != -1)\n    {\n        if (!sEasyChatScreen->inAlphabetMode)\n            return MoveKeyboardCursor_GroupNames(input);\n        else\n            return MoveKeyboardCursor_Alphabet(input);\n    }\n    else\n    {\n        return MoveKeyboardCursor_ButtonWindow(input);\n    }",
       "callsTo": [
         "MoveKeyboardCursor_Alphabet",
@@ -588,6 +722,12 @@
       "returnType": "int",
       "signature": "static int MoveKeyboardCursor_GroupNames(u32 input)",
       "paramsRaw": "u32 input",
+      "paramsList": [
+        {
+          "name": "input",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "switch (input)\n    {\n    case INPUT_UP:\n        if (sEasyChatScreen->keyboardRow != -sEasyChatScreen->keyboardScrollOffset)\n        {\n            if (sEasyChatScreen->keyboardRow)\n            {\n                sEasyChatScreen->keyboardRow--;\n                return ECFUNC_UPDATE_KEYBOARD_CURSOR;\n            }\n            else\n            {\n                sEasyChatScreen->keyboardScrollOffset--;\n                return ECFUNC_GROUP_NAMES_SCROLL_UP;\n            }\n        }\n        break;\n    case INPUT_DOWN:\n        if (sEasyChatScreen->keyboardRow + sEasyChatScreen->keyboardScrollOffset < sEasyChatScreen->keyboardLastRow - 1)\n        {\n            int funcId;\n            if (sEasyChatScreen->keyboardRow < NUM_GROUP_NAME_ROWS - 1)\n            {\n                sEasyChatScreen->keyboardRow++;\n                funcId = ECFUNC_UPDATE_KEYBOARD_CURSOR;\n            }\n            else\n            {\n                sEasyChatScreen->keyboardScrollOffset++;\n                funcId = ECFUNC_GROUP_NAMES_SCROLL_DOWN;\n            }\n\n            ReduceToValidKeyboardColumn();\n            return funcId;\n        }\n        break;\n    case INPUT_LEFT:\n        if (sEasyChatScreen->keyboardColumn)\n            sEasyChatScreen->keyboardColumn--;\n        else\n            SetKeyboardCursorInButtonWindow();\n\n        return ECFUNC_UPDATE_KEYBOARD_CURSOR;\n    case INPUT_RIGHT:\n        if (sEasyChatScreen->keyboardColumn < 1)\n        {\n            sEasyChatScreen->keyboardColumn++;\n            if (IsSelectedKeyboardIndexInvalid())\n                SetKeyboardCursorInButtonWindow();\n        }\n        else\n        {\n            SetKeyboardCursorInButtonWindow();\n        }\n        return ECFUNC_UPDATE_KEYBOARD_CURSOR;\n    }\n\n    return ECFUNC_NONE;",
       "callsTo": [
         "IsSelectedKeyboardIndexInvalid",
@@ -600,6 +740,12 @@
       "returnType": "int",
       "signature": "static int MoveKeyboardCursor_Alphabet(u32 input)",
       "paramsRaw": "u32 input",
+      "paramsList": [
+        {
+          "name": "input",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "switch (input)\n    {\n    case INPUT_UP:\n        if (sEasyChatScreen->keyboardRow > 0)\n            sEasyChatScreen->keyboardRow--;\n        else\n            sEasyChatScreen->keyboardRow = NUM_ALPHABET_ROWS - 1;\n\n        ReduceToValidKeyboardColumn();\n        return ECFUNC_UPDATE_KEYBOARD_CURSOR;\n    case INPUT_DOWN:\n        if (sEasyChatScreen->keyboardRow < NUM_ALPHABET_ROWS - 1)\n            sEasyChatScreen->keyboardRow++;\n        else\n            sEasyChatScreen->keyboardRow = 0;\n\n        ReduceToValidKeyboardColumn();\n        return ECFUNC_UPDATE_KEYBOARD_CURSOR;\n    case INPUT_RIGHT:\n        sEasyChatScreen->keyboardColumn++;\n        if (IsSelectedKeyboardIndexInvalid())\n            SetKeyboardCursorInButtonWindow();\n\n        return ECFUNC_UPDATE_KEYBOARD_CURSOR;\n    case INPUT_LEFT:\n        sEasyChatScreen->keyboardColumn--;\n        if (sEasyChatScreen->keyboardColumn < 0)\n            SetKeyboardCursorInButtonWindow();\n\n        return ECFUNC_UPDATE_KEYBOARD_CURSOR;\n    }\n\n    return ECFUNC_NONE;",
       "callsTo": [
         "IsSelectedKeyboardIndexInvalid",
@@ -612,6 +758,12 @@
       "returnType": "int",
       "signature": "static int MoveKeyboardCursor_ButtonWindow(u32 input)",
       "paramsRaw": "u32 input",
+      "paramsList": [
+        {
+          "name": "input",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "switch (input)\n    {\n    case INPUT_UP:\n        if (sEasyChatScreen->keyboardRow)\n            sEasyChatScreen->keyboardRow--;\n        else\n            sEasyChatScreen->keyboardRow = NUM_BUTTON_ROWS - 1;\n\n        return ECFUNC_UPDATE_KEYBOARD_CURSOR;\n    case INPUT_DOWN:\n        if (sEasyChatScreen->keyboardRow < NUM_BUTTON_ROWS - 1)\n            sEasyChatScreen->keyboardRow++;\n        else\n            sEasyChatScreen->keyboardRow = 0;\n\n        return ECFUNC_UPDATE_KEYBOARD_CURSOR;\n    case INPUT_LEFT:\n        sEasyChatScreen->keyboardRow++;\n        SetKeyboardCursorToLastColumn();\n        return ECFUNC_UPDATE_KEYBOARD_CURSOR;\n    case INPUT_RIGHT:\n        sEasyChatScreen->keyboardColumn = 0;\n        sEasyChatScreen->keyboardRow++;\n        return ECFUNC_UPDATE_KEYBOARD_CURSOR;\n    }\n\n    return ECFUNC_NONE;",
       "callsTo": [
         "SetKeyboardCursorToLastColumn"
@@ -622,6 +774,7 @@
       "returnType": "void",
       "signature": "static void SetKeyboardCursorInButtonWindow(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sEasyChatScreen->keyboardColumn = -1;\n    if (sEasyChatScreen->keyboardRow)\n        sEasyChatScreen->keyboardRow--;",
       "callsTo": [],
       "lineCount": 3
@@ -630,6 +783,7 @@
       "returnType": "void",
       "signature": "static void SetKeyboardCursorToLastColumn(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!sEasyChatScreen->inAlphabetMode)\n    {\n        sEasyChatScreen->keyboardColumn = 1;\n        ReduceToValidKeyboardColumn();\n    }\n    else\n    {\n        sEasyChatScreen->keyboardColumn = GetLastAlphabetColumn(sEasyChatScreen->keyboardRow);\n    }",
       "callsTo": [
         "GetLastAlphabetColumn",
@@ -641,6 +795,12 @@
       "returnType": "u16",
       "signature": "static u16 MoveWordSelectCursor(u32 input)",
       "paramsRaw": "u32 input",
+      "paramsList": [
+        {
+          "name": "input",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "u16 funcId;\n    switch (input)\n    {\n    case INPUT_UP:\n        if (sEasyChatScreen->wordSelectRow + sEasyChatScreen->wordSelectScrollOffset > 0)\n        {\n            if (sEasyChatScreen->wordSelectRow > 0)\n            {\n                sEasyChatScreen->wordSelectRow--;\n                funcId = ECFUNC_UPDATE_WORD_SELECT_CURSOR;\n            }\n            else\n            {\n                sEasyChatScreen->wordSelectScrollOffset--;\n                funcId = ECFUNC_WORD_SELECT_SCROLL_UP;\n            }\n\n            ReduceToValidWordSelectColumn();\n            return funcId;\n        }\n        break;\n    case INPUT_DOWN:\n        if (sEasyChatScreen->wordSelectRow + sEasyChatScreen->wordSelectScrollOffset < sEasyChatScreen->wordSelectLastRow)\n        {\n            if (sEasyChatScreen->wordSelectRow < NUM_WORD_SELECT_ROWS - 1)\n            {\n                sEasyChatScreen->wordSelectRow++;\n                funcId = ECFUNC_UPDATE_WORD_SELECT_CURSOR;\n            }\n            else\n            {\n                sEasyChatScreen->wordSelectScrollOffset++;\n                funcId = ECFUNC_WORD_SELECT_SCROLL_DOWN;\n            }\n\n            ReduceToValidWordSelectColumn();\n            return funcId;\n        }\n        break;\n    case INPUT_LEFT:\n        if (sEasyChatScreen->wordSelectColumn > 0)\n            sEasyChatScreen->wordSelectColumn--;\n        else\n            sEasyChatScreen->wordSelectColumn = 1;\n\n        ReduceToValidWordSelectColumn();\n        return ECFUNC_UPDATE_WORD_SELECT_CURSOR;\n    case INPUT_RIGHT:\n        if (sEasyChatScreen->wordSelectColumn < 1)\n        {\n            sEasyChatScreen->wordSelectColumn++;\n            if (IsSelectedWordIndexInvalid())\n                sEasyChatScreen->wordSelectColumn = 0;\n        }\n        else\n        {\n            sEasyChatScreen->wordSelectColumn = 0;\n        }\n        return ECFUNC_UPDATE_WORD_SELECT_CURSOR;\n    case INPUT_START:\n         \n        if (sEasyChatScreen->wordSelectScrollOffset)\n        {\n            if (sEasyChatScreen->wordSelectScrollOffset >= NUM_WORD_SELECT_ROWS)\n                sEasyChatScreen->wordSelectScrollOffset -= NUM_WORD_SELECT_ROWS;\n            else\n                sEasyChatScreen->wordSelectScrollOffset = 0;\n\n            return ECFUNC_WORD_SELECT_PAGE_UP;\n        }\n        break;\n    case INPUT_SELECT:\n         \n        if (sEasyChatScreen->wordSelectScrollOffset <= sEasyChatScreen->wordSelectLastRow - NUM_WORD_SELECT_ROWS)\n        {\n            sEasyChatScreen->wordSelectScrollOffset += NUM_WORD_SELECT_ROWS;\n            if (sEasyChatScreen->wordSelectScrollOffset > sEasyChatScreen->wordSelectLastRow - NUM_WORD_SELECT_ROWS + 1)\n                sEasyChatScreen->wordSelectScrollOffset = sEasyChatScreen->wordSelectLastRow - NUM_WORD_SELECT_ROWS + 1;\n\n            ReduceToValidWordSelectColumn();\n            return ECFUNC_WORD_SELECT_PAGE_DOWN;\n        }\n        break;\n    }\n\n    return ECFUNC_NONE;",
       "callsTo": [
         "IsSelectedWordIndexInvalid",
@@ -652,6 +812,7 @@
       "returnType": "u16",
       "signature": "static u16 GetWordIndexToReplace(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return (sEasyChatScreen->mainCursorRow * sEasyChatScreen->numColumns) + sEasyChatScreen->mainCursorColumn;",
       "callsTo": [],
       "lineCount": 1
@@ -660,6 +821,7 @@
       "returnType": "u16",
       "signature": "static u16 GetSelectedGroupIndex(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return NUM_GROUP_NAME_COLUMNS * (sEasyChatScreen->keyboardRow + sEasyChatScreen->keyboardScrollOffset) + sEasyChatScreen->keyboardColumn;",
       "callsTo": [],
       "lineCount": 1
@@ -668,6 +830,7 @@
       "returnType": "int",
       "signature": "static int GetSelectedAlphabetGroupId(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int column = (u8)sEasyChatScreen->keyboardColumn < NUM_ALPHABET_COLUMNS ? sEasyChatScreen->keyboardColumn : 0;\n    int row = (u8)sEasyChatScreen->keyboardRow < NUM_ALPHABET_ROWS ? sEasyChatScreen->keyboardRow : 0;\n    return sAlphabetGroupIdMap[row][column];",
       "callsTo": [],
       "lineCount": 3
@@ -676,6 +839,7 @@
       "returnType": "u16",
       "signature": "static u16 GetSelectedWordIndex(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return NUM_WORD_SELECT_COLUMNS * (sEasyChatScreen->wordSelectRow + sEasyChatScreen->wordSelectScrollOffset) + sEasyChatScreen->wordSelectColumn;",
       "callsTo": [],
       "lineCount": 1
@@ -684,6 +848,12 @@
       "returnType": "u8",
       "signature": "static u8 GetLastAlphabetColumn(u8 row)",
       "paramsRaw": "u8 row",
+      "paramsList": [
+        {
+          "name": "row",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "switch (row)\n    {\n    case 0:\n    default:\n        return NUM_ALPHABET_COLUMNS - 1;\n    case 1:\n        return NUM_ALPHABET_COLUMNS - 2;  \n                                          \n    }",
       "callsTo": [],
       "lineCount": 9
@@ -692,6 +862,7 @@
       "returnType": "void",
       "signature": "static void ReduceToValidKeyboardColumn(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "while (IsSelectedKeyboardIndexInvalid())\n    {\n        if (sEasyChatScreen->keyboardColumn)\n            sEasyChatScreen->keyboardColumn--;\n        else\n            break;\n    }",
       "callsTo": [
         "IsSelectedKeyboardIndexInvalid"
@@ -702,6 +873,7 @@
       "returnType": "void",
       "signature": "static void ReduceToValidWordSelectColumn(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "while (IsSelectedWordIndexInvalid())\n    {\n        if (sEasyChatScreen->wordSelectColumn)\n            sEasyChatScreen->wordSelectColumn--;\n        else\n            break;\n    }",
       "callsTo": [
         "IsSelectedWordIndexInvalid"
@@ -712,6 +884,7 @@
       "returnType": "bool8",
       "signature": "static bool8 IsSelectedKeyboardIndexInvalid(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!sEasyChatScreen->inAlphabetMode)\n        return GetSelectedGroupIndex() >= GetNumUnlockedEasyChatGroups() ? TRUE : FALSE;\n    else\n        return sEasyChatScreen->keyboardColumn > GetLastAlphabetColumn(sEasyChatScreen->keyboardRow) ? TRUE : FALSE;",
       "callsTo": [
         "GetLastAlphabetColumn",
@@ -724,6 +897,7 @@
       "returnType": "bool8",
       "signature": "static bool8 IsSelectedWordIndexInvalid(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return GetSelectedWordIndex() >= GetNumWordsInSelectedGroup() ? TRUE : FALSE;",
       "callsTo": [
         "GetNumWordsInSelectedGroup",
@@ -735,6 +909,7 @@
       "returnType": "int",
       "signature": "static int FooterHasFourOptions(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return sEasyChatScreenTemplates[sEasyChatScreen->templateId].fourFooterOptions;",
       "callsTo": [],
       "lineCount": 1
@@ -743,6 +918,7 @@
       "returnType": "u8",
       "signature": "static u8 GetEasyChatScreenType(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return sEasyChatScreen->type;",
       "callsTo": [],
       "lineCount": 1
@@ -751,6 +927,7 @@
       "returnType": "u8",
       "signature": "static u8 GetEasyChatScreenFrameId(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return sEasyChatScreenTemplates[sEasyChatScreen->templateId].frameId;",
       "callsTo": [],
       "lineCount": 1
@@ -759,6 +936,7 @@
       "returnType": "u8",
       "signature": "static u8 GetNumRows(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return sEasyChatScreen->numRows;",
       "callsTo": [],
       "lineCount": 1
@@ -767,6 +945,7 @@
       "returnType": "u8",
       "signature": "static u8 GetNumColumns(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return sEasyChatScreen->numColumns;",
       "callsTo": [],
       "lineCount": 1
@@ -775,6 +954,7 @@
       "returnType": "u8",
       "signature": "static u8 GetMainCursorColumn(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return sEasyChatScreen->mainCursorColumn;",
       "callsTo": [],
       "lineCount": 1
@@ -783,6 +963,7 @@
       "returnType": "u8",
       "signature": "static u8 GetMainCursorRow(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return sEasyChatScreen->mainCursorRow;",
       "callsTo": [],
       "lineCount": 1
@@ -791,6 +972,16 @@
       "returnType": "void",
       "signature": "static void GetEasyChatInstructionsText(const u8 **str1, const u8 **str2)",
       "paramsRaw": "const u8 **str1, const u8 **str2",
+      "paramsList": [
+        {
+          "name": "str1",
+          "typeRaw": "const u8 **"
+        },
+        {
+          "name": "str2",
+          "typeRaw": "const u8 **"
+        }
+      ],
       "body": "*str1 = sEasyChatScreenTemplates[sEasyChatScreen->templateId].instructionsText1;\n    *str2 = sEasyChatScreenTemplates[sEasyChatScreen->templateId].instructionsText2;",
       "callsTo": [],
       "lineCount": 2
@@ -799,6 +990,16 @@
       "returnType": "void",
       "signature": "static void GetEasyChatConfirmText(const u8 **str1, const u8 **str2)",
       "paramsRaw": "const u8 **str1, const u8 **str2",
+      "paramsList": [
+        {
+          "name": "str1",
+          "typeRaw": "const u8 **"
+        },
+        {
+          "name": "str2",
+          "typeRaw": "const u8 **"
+        }
+      ],
       "body": "*str1 = sEasyChatScreenTemplates[sEasyChatScreen->templateId].confirmText1;\n    *str2 = sEasyChatScreenTemplates[sEasyChatScreen->templateId].confirmText2;",
       "callsTo": [],
       "lineCount": 2
@@ -807,6 +1008,16 @@
       "returnType": "void",
       "signature": "static void GetEasyChatConfirmExitText(const u8 **str1, const u8 **str2)",
       "paramsRaw": "const u8 **str1, const u8 **str2",
+      "paramsList": [
+        {
+          "name": "str1",
+          "typeRaw": "const u8 **"
+        },
+        {
+          "name": "str2",
+          "typeRaw": "const u8 **"
+        }
+      ],
       "body": "switch (sEasyChatScreen->type)\n    {\n    case EASY_CHAT_TYPE_MAIL:\n        *str1 = gText_StopGivingPkmnMail;\n        *str2 = NULL;\n        break;\n    case EASY_CHAT_TYPE_QUIZ_ANSWER:\n    case EASY_CHAT_TYPE_QUIZ_QUESTION:\n        *str1 = gText_LikeToQuitQuiz;\n        *str2 = gText_ChallengeQuestionMark;\n        break;\n    default:\n        *str1 = gText_QuitEditing;\n        *str2 = NULL;\n        break;\n    }",
       "callsTo": [],
       "lineCount": 16
@@ -815,6 +1026,16 @@
       "returnType": "void",
       "signature": "static void GetEasyChatConfirmDeletionText(const u8 **str1, const u8 **str2)",
       "paramsRaw": "const u8 **str1, const u8 **str2",
+      "paramsList": [
+        {
+          "name": "str1",
+          "typeRaw": "const u8 **"
+        },
+        {
+          "name": "str2",
+          "typeRaw": "const u8 **"
+        }
+      ],
       "body": "*str1 = gText_AllTextBeingEditedWill;\n    *str2 = gText_BeDeletedThatOkay;",
       "callsTo": [],
       "lineCount": 2
@@ -823,6 +1044,16 @@
       "returnType": "void",
       "signature": "static void GetKeyboardCursorColAndRow(s8 *column, s8 *row)",
       "paramsRaw": "s8 *column, s8 *row",
+      "paramsList": [
+        {
+          "name": "column",
+          "typeRaw": "s8 *"
+        },
+        {
+          "name": "row",
+          "typeRaw": "s8 *"
+        }
+      ],
       "body": "*column = sEasyChatScreen->keyboardColumn;\n    *row = sEasyChatScreen->keyboardRow;",
       "callsTo": [],
       "lineCount": 2
@@ -831,6 +1062,7 @@
       "returnType": "bool8",
       "signature": "static bool8 GetInAlphabetMode(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return sEasyChatScreen->inAlphabetMode;",
       "callsTo": [],
       "lineCount": 1
@@ -839,6 +1071,7 @@
       "returnType": "u8",
       "signature": "static u8 GetKeyboardScrollOffset(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return sEasyChatScreen->keyboardScrollOffset;",
       "callsTo": [],
       "lineCount": 1
@@ -847,6 +1080,16 @@
       "returnType": "void",
       "signature": "static void GetWordSelectColAndRow(s8 *column, s8 *row)",
       "paramsRaw": "s8 *column, s8 *row",
+      "paramsList": [
+        {
+          "name": "column",
+          "typeRaw": "s8 *"
+        },
+        {
+          "name": "row",
+          "typeRaw": "s8 *"
+        }
+      ],
       "body": "*column = sEasyChatScreen->wordSelectColumn;\n    *row = sEasyChatScreen->wordSelectRow;",
       "callsTo": [],
       "lineCount": 2
@@ -855,6 +1098,7 @@
       "returnType": "u8",
       "signature": "static u8 GetWordSelectScrollOffset(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return sEasyChatScreen->wordSelectScrollOffset;",
       "callsTo": [],
       "lineCount": 1
@@ -863,6 +1107,7 @@
       "returnType": "u8",
       "signature": "static u8 GetWordSelectLastRow(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return sEasyChatScreen->wordSelectLastRow;",
       "callsTo": [],
       "lineCount": 1
@@ -871,6 +1116,7 @@
       "returnType": "bool32",
       "signature": "static bool32 CanScrollUp(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sEasyChatScreen->inputState)\n    {\n    case INPUTSTATE_KEYBOARD:\n        if (!sEasyChatScreen->inAlphabetMode && sEasyChatScreen->keyboardScrollOffset)\n            return TRUE;\n        break;\n    case INPUTSTATE_WORD_SELECT:\n        if (sEasyChatScreen->wordSelectScrollOffset)\n            return TRUE;\n        break;\n    }\n\n    return FALSE;",
       "callsTo": [],
       "lineCount": 13
@@ -879,6 +1125,7 @@
       "returnType": "bool32",
       "signature": "static bool32 CanScrollDown(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sEasyChatScreen->inputState)\n    {\n    case INPUTSTATE_KEYBOARD:\n        if (!sEasyChatScreen->inAlphabetMode && sEasyChatScreen->keyboardScrollOffset + NUM_GROUP_NAME_ROWS <= sEasyChatScreen->keyboardLastRow - 1)\n            return TRUE;\n        break;\n    case INPUTSTATE_WORD_SELECT:\n        if (sEasyChatScreen->wordSelectScrollOffset + NUM_WORD_SELECT_ROWS <= sEasyChatScreen->wordSelectLastRow)\n            return TRUE;\n        break;\n    }\n\n    return FALSE;",
       "callsTo": [],
       "lineCount": 13
@@ -887,6 +1134,7 @@
       "returnType": "int",
       "signature": "static int FooterHasFourOptions_(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return FooterHasFourOptions();",
       "callsTo": [
         "FooterHasFourOptions"
@@ -897,6 +1145,16 @@
       "returnType": "bool8",
       "signature": "static bool8 IsPhraseDifferentThanPlayerInput(const u16 *phrase, u8 phraseLength)",
       "paramsRaw": "const u16 *phrase, u8 phraseLength",
+      "paramsList": [
+        {
+          "name": "phrase",
+          "typeRaw": "const u16 *"
+        },
+        {
+          "name": "phraseLength",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 i;\n\n    for (i = 0; i < phraseLength; i++)\n    {\n        if (phrase[i] != sEasyChatScreen->currentPhrase[i])\n            return TRUE;\n    }\n\n    return FALSE;",
       "callsTo": [],
       "lineCount": 9
@@ -905,6 +1163,7 @@
       "returnType": "u8",
       "signature": "static u8 GetDisplayedPersonType(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return sEasyChatScreen->displayedPersonType;",
       "callsTo": [],
       "lineCount": 1
@@ -913,6 +1172,12 @@
       "returnType": "u8",
       "signature": "static u8 GetEachChatScreenTemplateId(u8 type)",
       "paramsRaw": "u8 type",
+      "paramsList": [
+        {
+          "name": "type",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u32 i;\n\n    for (i = 0; i < ARRAY_COUNT(sEasyChatScreenTemplates); i++)\n    {\n        if (sEasyChatScreenTemplates[i].type == type)\n            return i;\n    }\n\n    return 0;",
       "callsTo": [
         "ARRAY_COUNT"
@@ -923,6 +1188,7 @@
       "returnType": "bool32",
       "signature": "static bool32 IsCurrentPhraseEmpty(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int i;\n\n    for (i = 0; i < sEasyChatScreen->maxWords; i++)\n    {\n        if (sEasyChatScreen->currentPhrase[i] != EC_EMPTY_WORD)\n            return FALSE;\n    }\n\n    return TRUE;",
       "callsTo": [],
       "lineCount": 9
@@ -931,6 +1197,7 @@
       "returnType": "bool32",
       "signature": "static bool32 IsCurrentPhraseFull(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int i;\n\n    for (i = 0; i < sEasyChatScreen->maxWords; i++)\n    {\n        if (sEasyChatScreen->currentPhrase[i] == EC_EMPTY_WORD)\n            return FALSE;\n    }\n\n    return TRUE;",
       "callsTo": [],
       "lineCount": 9
@@ -939,6 +1206,7 @@
       "returnType": "int",
       "signature": "static int IsQuizQuestionEmpty(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int i;\n    struct SaveBlock1 *saveBlock1;\n\n    if (sEasyChatScreen->type == EASY_CHAT_TYPE_QUIZ_SET_QUESTION)\n        return IsCurrentPhraseEmpty();\n\n    saveBlock1 = gSaveBlock1Ptr;\n    for (i = 0; i < QUIZ_QUESTION_LEN; i++)\n    {\n        if (saveBlock1->lilycoveLady.quiz.question[i] != EC_EMPTY_WORD)\n            return FALSE;\n    }\n\n    return TRUE;",
       "callsTo": [
         "IsCurrentPhraseEmpty"
@@ -949,6 +1217,7 @@
       "returnType": "int",
       "signature": "static int IsQuizAnswerEmpty(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "struct LilycoveLadyQuiz *quiz;\n    if (sEasyChatScreen->type == EASY_CHAT_TYPE_QUIZ_SET_ANSWER)\n        return IsCurrentPhraseEmpty();\n\n    quiz = &gSaveBlock1Ptr->lilycoveLady.quiz;\n    return quiz->correctAnswer == EC_EMPTY_WORD ? TRUE : FALSE;",
       "callsTo": [
         "IsCurrentPhraseEmpty"
@@ -959,6 +1228,12 @@
       "returnType": "void",
       "signature": "static void GetQuizTitle(u8 *dst)",
       "paramsRaw": "u8 *dst",
+      "paramsList": [
+        {
+          "name": "dst",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "u8 name[32];\n    struct SaveBlock1 *saveBlock1 = gSaveBlock1Ptr;\n    DynamicPlaceholderTextUtil_Reset();\n\n     \n    if (StringLength(saveBlock1->lilycoveLady.quiz.playerName) != 0)\n    {\n        TVShowConvertInternationalString(name, saveBlock1->lilycoveLady.quiz.playerName, saveBlock1->lilycoveLady.quiz.language);\n        DynamicPlaceholderTextUtil_SetPlaceholderPtr(0, name);\n    }\n    else\n    {\n        DynamicPlaceholderTextUtil_SetPlaceholderPtr(0, gText_Lady);\n    }\n\n     \n    DynamicPlaceholderTextUtil_ExpandPlaceholders(dst, gText_F700sQuiz);",
       "callsTo": [
         "DynamicPlaceholderTextUtil_ExpandPlaceholders",
@@ -973,6 +1248,7 @@
       "returnType": "void",
       "signature": "static void BufferCurrentPhraseToStringVar2(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int i;\n    u16 *phrase;\n    u8 *str;\n\n    phrase = sEasyChatScreen->currentPhrase;\n    str = gStringVar2;\n    i = 0;\n    while (i < sEasyChatScreen->maxWords)\n    {\n        str = CopyEasyChatWordPadded(str, *phrase, 0);\n        *str = 0;\n        str++;\n        phrase++;\n        i++;\n    }\n\n    str--;\n    str[0] = EOS;",
       "callsTo": [
         "CopyEasyChatWordPadded"
@@ -983,6 +1259,7 @@
       "returnType": "void",
       "signature": "static void SetSpecialEasyChatResult(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sEasyChatScreen->type)\n    {\n    case EASY_CHAT_TYPE_PROFILE:\n        FlagSet(FLAG_SYS_CHAT_USED);\n        break;\n    case EASY_CHAT_TYPE_QUESTIONNAIRE:\n        if (DidPlayerInputMysteryGiftPhrase())\n            gSpecialVar_0x8004 = 2;\n        else\n            gSpecialVar_0x8004 = 0;\n        break;\n    case EASY_CHAT_TYPE_TRENDY_PHRASE:\n        BufferCurrentPhraseToStringVar2();\n        gSpecialVar_0x8004 = TrySetTrendyPhrase(sEasyChatScreen->currentPhrase);\n        break;\n    case EASY_CHAT_TYPE_GOOD_SAYING:\n        gSpecialVar_0x8004 = DidPlayerInputABerryMasterWifePhrase();\n        break;\n    }",
       "callsTo": [
         "BufferCurrentPhraseToStringVar2",
@@ -997,6 +1274,7 @@
       "returnType": "int",
       "signature": "static int DidPlayerInputMysteryGiftPhrase(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return !IsPhraseDifferentThanPlayerInput(sMysteryGiftPhrase, ARRAY_COUNT(sMysteryGiftPhrase));",
       "callsTo": [
         "ARRAY_COUNT",
@@ -1008,6 +1286,7 @@
       "returnType": "u16",
       "signature": "static u16 DidPlayerInputABerryMasterWifePhrase(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int i;\n    for (i = 0; i < (int)ARRAY_COUNT(sBerryMasterWifePhrases); i++)\n    {\n        if (!IsPhraseDifferentThanPlayerInput(sBerryMasterWifePhrases[i], ARRAY_COUNT(*sBerryMasterWifePhrases)))\n            return i + 1;\n    }\n\n    return 0;",
       "callsTo": [
         "ARRAY_COUNT",
@@ -1019,6 +1298,7 @@
       "returnType": "void",
       "signature": "static void ClearUnusedField(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sEasyChatScreen->unused = 0;",
       "callsTo": [],
       "lineCount": 1
@@ -1027,6 +1307,12 @@
       "returnType": "bool32",
       "signature": "static bool32 DummyWordCheck(int easyChatWord)",
       "paramsRaw": "int easyChatWord",
+      "paramsList": [
+        {
+          "name": "easyChatWord",
+          "typeRaw": "int"
+        }
+      ],
       "body": "return FALSE;",
       "callsTo": [],
       "lineCount": 1
@@ -1035,6 +1321,7 @@
       "returnType": "bool8",
       "signature": "static bool8 InitEasyChatScreenControl(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!InitEasyChatScreenControl_())\n        return FALSE;\n    else\n        return TRUE;",
       "callsTo": [
         "InitEasyChatScreenControl_"
@@ -1045,6 +1332,7 @@
       "returnType": "bool8",
       "signature": "static bool8 LoadEasyChatScreen(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sScreenControl->funcState)\n    {\n    case 0:\n        ResetBgsAndClearDma3BusyFlags(0);\n        InitBgsFromTemplates(0, sEasyChatBgTemplates, ARRAY_COUNT(sEasyChatBgTemplates));\n        SetBgTilemapBuffer(3, sScreenControl->bg3TilemapBuffer);\n        SetBgTilemapBuffer(1, sScreenControl->bg1TilemapBuffer);\n        InitWindows(sEasyChatWindowTemplates);\n        DeactivateAllTextPrinters();\n        LoadEasyChatPalettes();\n        InitEasyChatBgs();\n        CpuFastFill(0, (void *)OAM, OAM_SIZE);\n        break;\n    case 1:\n        DecompressAndLoadBgGfxUsingHeap(3, gEasyChatWindow_Gfx, 0, 0, 0);\n        CopyToBgTilemapBuffer(3, gEasyChatWindow_Tilemap, 0, 0);\n        AdjustBgTilemapForFooter();\n        BufferFrameTilemap(sScreenControl->bg1TilemapBuffer);\n        AddPhraseWindow();\n        AddMainScreenButtonWindow();\n        CopyBgTilemapBufferToVram(3);\n        break;\n    case 2:\n        DecompressAndLoadBgGfxUsingHeap(1, sTextInputFrame_Gfx, 0, 0, 0);\n        CopyBgTilemapBufferToVram(1);\n        break;\n    case 3:\n        PrintTitle();\n        PrintInitialInstructions();\n        PrintCurrentPhrase();\n        DrawLowerWindow();\n        break;\n    case 4:\n        LoadEasyChatGfx();\n        if (GetEasyChatScreenType() != EASY_CHAT_TYPE_QUIZ_QUESTION)\n            CreateMainCursorSprite();\n        break;\n    case 5:\n        if (IsDma3ManagerBusyWithBgCopy())\n        {\n            return TRUE;\n        }\n        else\n        {\n            SetWindowDimensions(0, 0, 0, 0);\n            SetGpuReg(REG_OFFSET_WININ, WININ_WIN0_BG_ALL | WININ_WIN0_OBJ | WININ_WIN0_CLR);\n            SetGpuReg(REG_OFFSET_WINOUT, WINOUT_WIN01_BG0\n                                       | WINOUT_WIN01_BG1\n                                       | WINOUT_WIN01_BG3\n                                       | WINOUT_WIN01_OBJ\n                                       | WINOUT_WIN01_CLR);\n            ShowBg(3);\n            ShowBg(1);\n            ShowBg(2);\n            ShowBg(0);\n            CreateScrollIndicatorSprites();\n            CreateStartSelectButtonSprites();\n            TryAddInterviewObjectEvents();\n        }\n        break;\n    default:\n        return FALSE;\n    }\n\n    sScreenControl->funcState++;\n    return TRUE;",
       "callsTo": [
         "ARRAY_COUNT",
@@ -1084,6 +1372,7 @@
       "returnType": "void",
       "signature": "static void FreeEasyChatScreenControl(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "TRY_FREE_AND_SET_NULL(sScreenControl);",
       "callsTo": [
         "TRY_FREE_AND_SET_NULL"
@@ -1094,6 +1383,12 @@
       "returnType": "void",
       "signature": "static void StartEasyChatFunction(u16 funcId)",
       "paramsRaw": "u16 funcId",
+      "paramsList": [
+        {
+          "name": "funcId",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "sScreenControl->currentFuncId = funcId;\n    sScreenControl->funcState = 0;\n    RunEasyChatFunction();",
       "callsTo": [
         "RunEasyChatFunction"
@@ -1104,6 +1399,7 @@
       "returnType": "bool8",
       "signature": "static bool8 RunEasyChatFunction(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sScreenControl->currentFuncId)\n    {\n    case ECFUNC_NONE: return FALSE;\n    case ECFUNC_REPRINT_PHRASE: return ReprintPhrase();\n    case ECFUNC_UPDATE_MAIN_CURSOR: return UpdateMainCursor();\n    case ECFUNC_UPDATE_MAIN_CURSOR_ON_BUTTONS: return UpdateMainCursorOnButtons();\n    case ECFUNC_PROMPT_DELETE_ALL: return ShowConfirmDeleteAllPrompt();\n    case ECFUNC_PROMPT_EXIT: return ShowConfirmExitPrompt();\n    case ECFUNC_PROMPT_CONFIRM: return ShowConfirmPrompt();\n    case ECFUNC_CLOSE_PROMPT: return ClosePrompt();\n    case ECFUNC_CLOSE_PROMPT_AFTER_DELETE: return ClosePromptAfterDeleteAll();\n    case ECFUNC_OPEN_KEYBOARD: return OpenKeyboard();\n    case ECFUNC_CLOSE_KEYBOARD: return CloseKeyboard();\n    case ECFUNC_OPEN_WORD_SELECT: return OpenWordSelect();\n    case ECFUNC_CLOSE_WORD_SELECT: return CloseWordSelect();\n    case ECFUNC_PROMPT_CONFIRM_LYRICS: return ShowConfirmLyricsPrompt();\n    case ECFUNC_RETURN_TO_KEYBOARD: return ReturnToKeyboard();\n    case ECFUNC_UPDATE_KEYBOARD_CURSOR: return UpdateKeyboardCursor();\n    case ECFUNC_GROUP_NAMES_SCROLL_DOWN: return GroupNamesScrollDown();\n    case ECFUNC_GROUP_NAMES_SCROLL_UP: return GroupNamesScrollUp();\n    case ECFUNC_UPDATE_WORD_SELECT_CURSOR: return UpdateWordSelectCursor();\n    case ECFUNC_WORD_SELECT_SCROLL_UP: return WordSelectScrollUp();\n    case ECFUNC_WORD_SELECT_SCROLL_DOWN: return WordSelectScrollDown();\n    case ECFUNC_WORD_SELECT_PAGE_UP: return WordSelectPageScrollUp();\n    case ECFUNC_WORD_SELECT_PAGE_DOWN: return WordSelectPageScrollDown();\n    case ECFUNC_SWITCH_KEYBOARD_MODE: return SwitchKeyboardMode();\n    case ECFUNC_EXIT: return FALSE;\n    case ECFUNC_QUIZ_QUESTION: return FALSE;      \n    case ECFUNC_QUIZ_ANSWER: return FALSE;        \n    case ECFUNC_SET_QUIZ_QUESTION: return FALSE;  \n    case ECFUNC_SET_QUIZ_ANSWER: return FALSE;    \n    case ECFUNC_MSG_CREATE_QUIZ: return ShowCreateQuizMsg();\n    case ECFUNC_MSG_SELECT_ANSWER: return ShowSelectAnswerMsg();\n    case ECFUNC_MSG_SONG_TOO_SHORT: return ShowSongTooShortMsg();\n    case ECFUNC_MSG_CANT_DELETE_LYRICS: return ShowCantDeleteLyricsMsg();\n    case ECFUNC_MSG_COMBINE_TWO_WORDS: return ShowCombineTwoWordsMsg();\n    case ECFUNC_MSG_CANT_EXIT: return ShowCantExitMsg();\n    default:        return FALSE;\n    }",
       "callsTo": [
         "CloseKeyboard",
@@ -1142,6 +1438,7 @@
       "returnType": "bool8",
       "signature": "static bool8 ReprintPhrase(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sScreenControl->funcState)\n    {\n    case 0:\n        PrintCurrentPhrase();\n        sScreenControl->funcState++;\n        break;\n    case 1:\n        return IsDma3ManagerBusyWithBgCopy();\n    }\n\n    return TRUE;",
       "callsTo": [
         "IsDma3ManagerBusyWithBgCopy",
@@ -1153,6 +1450,7 @@
       "returnType": "bool8",
       "signature": "static bool8 UpdateMainCursor(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n    u16 *currentPhrase;\n    u16 *ecWord;\n    u8 frameId;\n    u8 cursorColumn, cursorRow, numColumns;\n    s16 x;\n    int stringWidth;\n    int trueStringWidth;\n    u8 y;\n    u8 str[64];\n\n    currentPhrase = GetCurrentPhrase();\n    frameId = GetEasyChatScreenFrameId();\n    cursorColumn = GetMainCursorColumn();\n    cursorRow = GetMainCursorRow();\n    numColumns = GetNumColumns();\n    ecWord = &currentPhrase[cursorRow * numColumns];\n    x = 8 * sPhraseFrameDimensions[frameId].left + 13;\n    for (i = 0; i < cursorColumn; i++)\n    {\n        if (*ecWord == EC_EMPTY_WORD)\n        {\n            stringWidth = 72;\n        }\n        else\n        {\n            CopyEasyChatWord(str, *ecWord);\n            stringWidth = GetStringWidth(FONT_NORMAL, str, 0);\n        }\n\n        trueStringWidth = stringWidth + 17;\n        x += trueStringWidth;\n        ecWord++;\n    }\n\n    y = 8 * (sPhraseFrameDimensions[frameId].top + cursorRow * 2);\n    SetMainCursorPos(x, y + 8);\n    return FALSE;",
       "callsTo": [
         "CopyEasyChatWord",
@@ -1170,6 +1468,7 @@
       "returnType": "bool8",
       "signature": "static bool8 UpdateMainCursorOnButtons(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 xOffset = GetFooterOptionXOffset(GetMainCursorColumn());\n    SetMainCursorPos(xOffset, 96);\n    return FALSE;",
       "callsTo": [
         "GetFooterOptionXOffset",
@@ -1182,6 +1481,7 @@
       "returnType": "bool8",
       "signature": "static bool8 ShowConfirmExitPrompt(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sScreenControl->funcState)\n    {\n    case 0:\n        StopMainCursorAnim();\n        PrintEasyChatStdMessage(MSG_CONFIRM_EXIT);\n        CreateEasyChatYesNoMenu(1);\n        sScreenControl->funcState++;\n        break;\n    case 1:\n        return IsDma3ManagerBusyWithBgCopy();\n    }\n\n    return TRUE;",
       "callsTo": [
         "CreateEasyChatYesNoMenu",
@@ -1195,6 +1495,7 @@
       "returnType": "bool8",
       "signature": "static bool8 ShowConfirmPrompt(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sScreenControl->funcState)\n    {\n    case 0:\n        StopMainCursorAnim();\n        PrintEasyChatStdMessage(MSG_CONFIRM);\n        CreateEasyChatYesNoMenu(0);\n        sScreenControl->funcState++;\n        break;\n    case 1:\n        return IsDma3ManagerBusyWithBgCopy();\n    }\n\n    return TRUE;",
       "callsTo": [
         "CreateEasyChatYesNoMenu",
@@ -1208,6 +1509,7 @@
       "returnType": "bool8",
       "signature": "static bool8 ShowConfirmDeleteAllPrompt(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sScreenControl->funcState)\n    {\n    case 0:\n        StopMainCursorAnim();\n        PrintEasyChatStdMessage(MSG_CONFIRM_DELETE);\n        CreateEasyChatYesNoMenu(1);\n        sScreenControl->funcState++;\n        break;\n    case 1:\n        return IsDma3ManagerBusyWithBgCopy();\n    }\n\n    return TRUE;",
       "callsTo": [
         "CreateEasyChatYesNoMenu",
@@ -1221,6 +1523,7 @@
       "returnType": "bool8",
       "signature": "static bool8 ClosePrompt(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sScreenControl->funcState)\n    {\n    case 0:\n        StartMainCursorAnim();\n        PrintEasyChatStdMessage(MSG_INSTRUCTIONS);\n        PrintCurrentPhrase();\n        ShowBg(0);\n        sScreenControl->funcState++;\n        break;\n    case 1:\n        return IsDma3ManagerBusyWithBgCopy();\n    }\n\n    return TRUE;",
       "callsTo": [
         "IsDma3ManagerBusyWithBgCopy",
@@ -1235,6 +1538,7 @@
       "returnType": "bool8",
       "signature": "static bool8 ClosePromptAfterDeleteAll(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sScreenControl->funcState)\n    {\n    case 0:\n        StartMainCursorAnim();\n        PrintEasyChatStdMessage(MSG_INSTRUCTIONS);\n        PrintCurrentPhrase();\n        sScreenControl->funcState++;\n         \n    case 1:\n        return IsDma3ManagerBusyWithBgCopy();\n    }\n\n    return TRUE;",
       "callsTo": [
         "IsDma3ManagerBusyWithBgCopy",
@@ -1248,6 +1552,7 @@
       "returnType": "bool8",
       "signature": "static bool8 OpenKeyboard(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sScreenControl->funcState)\n    {\n    case 0:\n        StopMainCursorAnim();\n        HideBg(0);\n        SetWindowDimensions(0, 0, 0, 0);\n        PrintKeyboardText();\n        sScreenControl->funcState++;\n        break;\n    case 1:\n        if (!IsDma3ManagerBusyWithBgCopy())\n        {\n            InitLowerWindowAnim(WINANIM_OPEN_KEYBOARD);\n            sScreenControl->funcState++;\n        }\n        break;\n    case 2:\n        if (!IsDma3ManagerBusyWithBgCopy() && !UpdateLowerWindowAnim())\n            sScreenControl->funcState++;\n        break;\n    case 3:\n        if (!IsDma3ManagerBusyWithBgCopy())\n        {\n            CreateSideWindowSprites();\n            sScreenControl->funcState++;\n        }\n        break;\n    case 4:\n        if (!ShowSideWindow())\n        {\n            CreateRectangleCursorSprites();\n            SetScrollIndicatorXPos(FALSE);\n            UpdateScrollIndicatorsVisibility();\n            sScreenControl->funcState++;\n            return FALSE;\n        }\n        break;\n    default:\n        return FALSE;\n    }\n\n    return TRUE;",
       "callsTo": [
         "CreateRectangleCursorSprites",
@@ -1269,6 +1574,7 @@
       "returnType": "bool8",
       "signature": "static bool8 CloseKeyboard(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sScreenControl->funcState)\n    {\n    case 0:\n        DestroyRectangleCursorSprites();\n        HideModeWindow();\n        HideScrollIndicators();\n        sScreenControl->funcState++;\n        break;\n    case 1:\n        if (DestroySideWindowSprites() == TRUE)\n            break;\n\n        InitLowerWindowAnim(WINANIM_CLOSE_KEYBOARD);\n        sScreenControl->funcState++;\n         \n    case 2:\n        if (!UpdateLowerWindowAnim())\n            sScreenControl->funcState++;\n        break;\n    case 3:\n        if (!IsDma3ManagerBusyWithBgCopy())\n        {\n            StartMainCursorAnim();\n            ShowBg(0);\n            sScreenControl->funcState++;\n        }\n        break;\n    case 4:\n        return FALSE;\n    }\n\n    return TRUE;",
       "callsTo": [
         "DestroyRectangleCursorSprites",
@@ -1287,6 +1593,7 @@
       "returnType": "bool8",
       "signature": "static bool8 SwitchKeyboardMode(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sScreenControl->funcState)\n    {\n    case 0:\n        DestroyRectangleCursorSprites();\n        HideScrollIndicators();\n        SetModeWindowToTransition();\n        InitLowerWindowAnim(WINANIM_KEYBOARD_SWITCH_OUT);\n        sScreenControl->funcState++;\n        break;\n    case 1:\n        if (!UpdateLowerWindowAnim() && !IsModeWindowAnimActive())\n        {\n            PrintKeyboardText();\n            sScreenControl->funcState++;\n        }\n        break;\n    case 2:\n        if (!IsDma3ManagerBusyWithBgCopy())\n        {\n            InitLowerWindowAnim(WINANIM_KEYBOARD_SWITCH_IN);\n            UpdateModeWindowAnim();\n            sScreenControl->funcState++;\n        }\n        break;\n    case 3:\n        if (!UpdateLowerWindowAnim() && !IsModeWindowAnimActive())\n        {\n            UpdateScrollIndicatorsVisibility();\n            CreateRectangleCursorSprites();\n            sScreenControl->funcState++;\n            return FALSE;\n        }\n        break;\n    case 4:\n        return FALSE;\n    }\n\n    return TRUE;",
       "callsTo": [
         "CreateRectangleCursorSprites",
@@ -1307,6 +1614,7 @@
       "returnType": "bool8",
       "signature": "static bool8 UpdateKeyboardCursor(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "UpdateRectangleCursorPos();\n    return FALSE;",
       "callsTo": [
         "UpdateRectangleCursorPos"
@@ -1317,6 +1625,7 @@
       "returnType": "bool8",
       "signature": "static bool8 GroupNamesScrollDown(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sScreenControl->funcState)\n    {\n    case 0:\n        InitLowerWindowScroll(1, 4);\n        sScreenControl->funcState++;\n         \n    case 1:\n        if (!UpdateLowerWindowScroll())\n        {\n            UpdateRectangleCursorPos();\n            UpdateScrollIndicatorsVisibility();\n            return FALSE;\n        }\n        break;\n    }\n\n    return TRUE;",
       "callsTo": [
         "InitLowerWindowScroll",
@@ -1330,6 +1639,7 @@
       "returnType": "bool8",
       "signature": "static bool8 GroupNamesScrollUp(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sScreenControl->funcState)\n    {\n    case 0:\n        InitLowerWindowScroll(-1, 4);\n        sScreenControl->funcState++;\n         \n    case 1:\n        if (!UpdateLowerWindowScroll())\n        {\n            UpdateScrollIndicatorsVisibility();\n            sScreenControl->funcState++;\n            return FALSE;\n        }\n        break;\n    case 2:\n        return FALSE;\n    }\n\n    return TRUE;",
       "callsTo": [
         "InitLowerWindowScroll",
@@ -1342,6 +1652,7 @@
       "returnType": "bool8",
       "signature": "static bool8 OpenWordSelect(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sScreenControl->funcState)\n    {\n    case 0:\n        DestroyRectangleCursorSprites();\n        HideModeWindow();\n        HideScrollIndicators();\n        sScreenControl->funcState++;\n        break;\n    case 1:\n        if (!DestroySideWindowSprites())\n        {\n            ClearWordSelectWindow();\n            sScreenControl->funcState++;\n        }\n        break;\n    case 2:\n        if (!IsDma3ManagerBusyWithBgCopy())\n        {\n            InitLowerWindowAnim(WINANIM_OPEN_WORD_SELECT);\n            sScreenControl->funcState++;\n        }\n        break;\n    case 3:\n        if (!UpdateLowerWindowAnim())\n        {\n            InitLowerWindowText(TEXT_WORD_SELECT);\n            sScreenControl->funcState++;\n        }\n        break;\n    case 4:\n        if (!IsDma3ManagerBusyWithBgCopy())\n        {\n            CreateWordSelectCursorSprite();\n            SetScrollIndicatorXPos(TRUE);\n            UpdateScrollIndicatorsVisibility();\n            UpdateStartSelectButtonsVisibility();\n            sScreenControl->funcState++;\n            return FALSE;\n        }\n        break;\n    case 5:\n        return FALSE;\n    }\n\n    return TRUE;",
       "callsTo": [
         "ClearWordSelectWindow",
@@ -1364,6 +1675,7 @@
       "returnType": "bool8",
       "signature": "static bool8 CloseWordSelect(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sScreenControl->funcState)\n    {\n    case 0:\n        PrintCurrentPhrase();\n        sScreenControl->funcState++;\n        break;\n    case 1:\n        DestroyWordSelectCursorSprite();\n        HideScrollIndicators();\n        HideStartSelectButtons();\n        ClearWordSelectWindow();\n        sScreenControl->funcState++;\n        break;\n    case 2:\n        if (!IsDma3ManagerBusyWithBgCopy())\n        {\n            InitLowerWindowAnim(WINANIM_CLOSE_WORD_SELECT);\n            sScreenControl->funcState++;\n        }\n        break;\n    case 3:\n        if (!UpdateLowerWindowAnim())\n        {\n            ShowBg(0);\n            sScreenControl->funcState++;\n        }\n        break;\n    case 4:\n        if (!IsDma3ManagerBusyWithBgCopy())\n        {\n            StartMainCursorAnim();\n            sScreenControl->funcState++;\n            return FALSE;\n        }\n        break;\n    case 5:\n        return FALSE;\n    }\n\n    return TRUE;",
       "callsTo": [
         "ClearWordSelectWindow",
@@ -1383,6 +1695,7 @@
       "returnType": "bool8",
       "signature": "static bool8 ShowConfirmLyricsPrompt(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sScreenControl->funcState)\n    {\n    case 0:\n        PrintCurrentPhrase();\n        sScreenControl->funcState++;\n        break;\n    case 1:\n        DestroyWordSelectCursorSprite();\n        HideScrollIndicators();\n        HideStartSelectButtons();\n        ClearWordSelectWindow();\n        sScreenControl->funcState++;\n        break;\n    case 2:\n        if (!IsDma3ManagerBusyWithBgCopy())\n        {\n            InitLowerWindowAnim(WINANIM_CLOSE_WORD_SELECT);\n            sScreenControl->funcState++;\n        }\n        break;\n    case 3:\n        if (!UpdateLowerWindowAnim())\n        {\n            PrintEasyChatStdMessage(MSG_CONFIRM);\n            sScreenControl->funcState++;\n        }\n        break;\n    case 4:\n        if (!IsDma3ManagerBusyWithBgCopy())\n        {\n            ShowBg(0);\n            sScreenControl->funcState++;\n        }\n        break;\n    case 5:\n        if (!IsDma3ManagerBusyWithBgCopy())\n        {\n            StartMainCursorAnim();\n            sScreenControl->funcState++;\n            return FALSE;\n        }\n        break;\n    case 6:\n        return FALSE;\n    }\n\n    return TRUE;",
       "callsTo": [
         "ClearWordSelectWindow",
@@ -1403,6 +1716,7 @@
       "returnType": "bool8",
       "signature": "static bool8 ReturnToKeyboard(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sScreenControl->funcState)\n    {\n    case 0:\n        DestroyWordSelectCursorSprite();\n        HideScrollIndicators();\n        HideStartSelectButtons();\n        ClearWordSelectWindow();\n        sScreenControl->funcState++;\n        break;\n    case 1:\n        if (!IsDma3ManagerBusyWithBgCopy())\n        {\n            InitLowerWindowAnim(WINANIM_RETURN_TO_KEYBOARD);\n            sScreenControl->funcState++;\n        }\n        break;\n    case 2:\n        if (!UpdateLowerWindowAnim())\n        {\n            PrintKeyboardText();\n            sScreenControl->funcState++;\n        }\n        break;\n    case 3:\n        if (!IsDma3ManagerBusyWithBgCopy())\n        {\n            CreateSideWindowSprites();\n            sScreenControl->funcState++;\n        }\n        break;\n    case 4:\n        if (!ShowSideWindow())\n        {\n            CreateRectangleCursorSprites();\n            SetScrollIndicatorXPos(FALSE);\n            UpdateScrollIndicatorsVisibility();\n            sScreenControl->funcState++;\n            return FALSE;\n        }\n        break;\n    }\n\n    return TRUE;",
       "callsTo": [
         "ClearWordSelectWindow",
@@ -1425,6 +1739,7 @@
       "returnType": "bool8",
       "signature": "static bool8 UpdateWordSelectCursor(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "UpdateWordSelectCursorPos();\n    return FALSE;",
       "callsTo": [
         "UpdateWordSelectCursorPos"
@@ -1435,6 +1750,7 @@
       "returnType": "bool8",
       "signature": "static bool8 WordSelectScrollDown(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sScreenControl->funcState)\n    {\n    case 0:\n        PrintWordSelectNextRowDown();\n        sScreenControl->funcState++;\n        break;\n    case 1:\n        if (!IsDma3ManagerBusyWithBgCopy())\n        {\n            InitLowerWindowScroll(1, 4);\n            sScreenControl->funcState++;\n        }\n        break;\n    case 2:\n        if (!UpdateLowerWindowScroll())\n        {\n            UpdateWordSelectCursorPos();\n            UpdateScrollIndicatorsVisibility();\n            UpdateStartSelectButtonsVisibility();\n            sScreenControl->funcState++;\n            return FALSE;\n        }\n        break;\n    case 3:\n        return FALSE;\n    }\n\n    return TRUE;",
       "callsTo": [
         "InitLowerWindowScroll",
@@ -1451,6 +1767,7 @@
       "returnType": "bool8",
       "signature": "static bool8 WordSelectScrollUp(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sScreenControl->funcState)\n    {\n    case 0:\n        PrintWordSelectNextRowUp();\n        sScreenControl->funcState++;\n        break;\n    case 1:\n        if (!IsDma3ManagerBusyWithBgCopy())\n        {\n            InitLowerWindowScroll(-1, 4);\n            sScreenControl->funcState++;\n        }\n        break;\n    case 2:\n        if (!UpdateLowerWindowScroll())\n        {\n            UpdateScrollIndicatorsVisibility();\n            UpdateStartSelectButtonsVisibility();\n            sScreenControl->funcState++;\n            return FALSE;\n        }\n        break;\n    case 3:\n        return FALSE;\n    }\n\n    return TRUE;",
       "callsTo": [
         "InitLowerWindowScroll",
@@ -1466,6 +1783,7 @@
       "returnType": "bool8",
       "signature": "static bool8 WordSelectPageScrollDown(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sScreenControl->funcState)\n    {\n    case 0:\n        PrintWordSelectRowsPageDown();\n        sScreenControl->funcState++;\n        break;\n    case 1:\n        if (!IsDma3ManagerBusyWithBgCopy())\n        {\n            s16 scrollChange = GetWordSelectScrollOffset() - GetLowerWindowScrollOffset();\n            InitLowerWindowScroll(scrollChange, 8);\n            sScreenControl->funcState++;\n        }\n        break;\n    case 2:\n        if (!UpdateLowerWindowScroll())\n        {\n            UpdateWordSelectCursorPos();\n            UpdateScrollIndicatorsVisibility();\n            UpdateStartSelectButtonsVisibility();\n            sScreenControl->funcState++;\n            return FALSE;\n        }\n        break;\n    case 3:\n        return FALSE;\n    }\n\n    return TRUE;",
       "callsTo": [
         "GetLowerWindowScrollOffset",
@@ -1484,6 +1802,7 @@
       "returnType": "bool8",
       "signature": "static bool8 WordSelectPageScrollUp(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sScreenControl->funcState)\n    {\n    case 0:\n        PrintWordSelectRowsPageUp();\n        sScreenControl->funcState++;\n        break;\n    case 1:\n        if (!IsDma3ManagerBusyWithBgCopy())\n        {\n            s16 scrollChange = GetWordSelectScrollOffset() - GetLowerWindowScrollOffset();\n            InitLowerWindowScroll(scrollChange, 8);\n            sScreenControl->funcState++;\n        }\n        break;\n    case 2:\n        if (!UpdateLowerWindowScroll())\n        {\n            UpdateScrollIndicatorsVisibility();\n            UpdateStartSelectButtonsVisibility();\n            sScreenControl->funcState++;\n            return FALSE;\n        }\n        break;\n    case 3:\n        return FALSE;\n    }\n\n    return TRUE;",
       "callsTo": [
         "GetLowerWindowScrollOffset",
@@ -1501,6 +1820,7 @@
       "returnType": "bool8",
       "signature": "static bool8 ShowCreateQuizMsg(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sScreenControl->funcState)\n    {\n    case 0:\n        StopMainCursorAnim();\n        PrintEasyChatStdMessage(MSG_CREATE_QUIZ);\n        sScreenControl->funcState++;\n        break;\n    case 1:\n        return IsDma3ManagerBusyWithBgCopy();\n    }\n\n    return TRUE;",
       "callsTo": [
         "IsDma3ManagerBusyWithBgCopy",
@@ -1513,6 +1833,7 @@
       "returnType": "bool8",
       "signature": "static bool8 ShowSelectAnswerMsg(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sScreenControl->funcState)\n    {\n    case 0:\n        StopMainCursorAnim();\n        PrintEasyChatStdMessage(MSG_SELECT_ANSWER);\n        sScreenControl->funcState++;\n        break;\n    case 1:\n        return IsDma3ManagerBusyWithBgCopy();\n    }\n\n    return TRUE;",
       "callsTo": [
         "IsDma3ManagerBusyWithBgCopy",
@@ -1525,6 +1846,7 @@
       "returnType": "bool8",
       "signature": "static bool8 ShowSongTooShortMsg(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sScreenControl->funcState)\n    {\n    case 0:\n        StopMainCursorAnim();\n        PrintEasyChatStdMessage(MSG_SONG_TOO_SHORT);\n        sScreenControl->funcState++;\n        break;\n    case 1:\n        return IsDma3ManagerBusyWithBgCopy();\n    }\n\n    return TRUE;",
       "callsTo": [
         "IsDma3ManagerBusyWithBgCopy",
@@ -1537,6 +1859,7 @@
       "returnType": "bool8",
       "signature": "static bool8 ShowCantDeleteLyricsMsg(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sScreenControl->funcState)\n    {\n    case 0:\n        StopMainCursorAnim();\n        PrintEasyChatStdMessage(MSG_CANT_DELETE_LYRICS);\n        sScreenControl->funcState++;\n        break;\n    case 1:\n        return IsDma3ManagerBusyWithBgCopy();\n    }\n\n    return TRUE;",
       "callsTo": [
         "IsDma3ManagerBusyWithBgCopy",
@@ -1549,6 +1872,7 @@
       "returnType": "bool8",
       "signature": "static bool8 ShowCombineTwoWordsMsg(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sScreenControl->funcState)\n    {\n    case 0:\n        StopMainCursorAnim();\n        PrintEasyChatStdMessage(MSG_COMBINE_TWO_WORDS);\n        sScreenControl->funcState++;\n        break;\n    case 1:\n        return IsDma3ManagerBusyWithBgCopy();\n    }\n\n    return TRUE;",
       "callsTo": [
         "IsDma3ManagerBusyWithBgCopy",
@@ -1561,6 +1885,7 @@
       "returnType": "bool8",
       "signature": "static bool8 ShowCantExitMsg(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sScreenControl->funcState)\n    {\n    case 0:\n        StopMainCursorAnim();\n        PrintEasyChatStdMessage(MSG_CANT_QUIT);\n        sScreenControl->funcState++;\n        break;\n    case 1:\n        return IsDma3ManagerBusyWithBgCopy();\n    }\n\n    return TRUE;",
       "callsTo": [
         "IsDma3ManagerBusyWithBgCopy",
@@ -1573,6 +1898,7 @@
       "returnType": "bool8",
       "signature": "static bool8 InitEasyChatScreenControl_(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sScreenControl = Alloc(sizeof(*sScreenControl));\n    if (!sScreenControl)\n        return FALSE;\n\n    sScreenControl->funcState = 0;\n    sScreenControl->mainCursorSprite = NULL;\n    sScreenControl->rectangleCursorSpriteRight = NULL;\n    sScreenControl->rectangleCursorSpriteLeft = NULL;\n    sScreenControl->wordSelectCursorSprite = NULL;\n    sScreenControl->buttonWindowSprite = NULL;\n    sScreenControl->modeWindowSprite = NULL;\n    sScreenControl->scrollIndicatorUpSprite = NULL;\n    sScreenControl->scrollIndicatorDownSprite = NULL;\n    sScreenControl->startButtonSprite = NULL;\n    sScreenControl->selectButtonSprite = NULL;\n    sScreenControl->fourFooterOptions = FooterHasFourOptions_();\n    return TRUE;",
       "callsTo": [
         "Alloc",
@@ -1584,6 +1910,7 @@
       "returnType": "void",
       "signature": "static void InitEasyChatBgs(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ChangeBgX(3, 0, BG_COORD_SET);\n    ChangeBgY(3, 0, BG_COORD_SET);\n    ChangeBgX(1, 0, BG_COORD_SET);\n    ChangeBgY(1, 0, BG_COORD_SET);\n    ChangeBgX(2, 0, BG_COORD_SET);\n    ChangeBgY(2, 0, BG_COORD_SET);\n    ChangeBgX(0, 0, BG_COORD_SET);\n    ChangeBgY(0, 0, BG_COORD_SET);\n    SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_MODE_0 | DISPCNT_OBJ_1D_MAP | DISPCNT_OBJ_ON | DISPCNT_WIN0_ON);",
       "callsTo": [
         "ChangeBgX",
@@ -1596,6 +1923,7 @@
       "returnType": "void",
       "signature": "static void LoadEasyChatPalettes(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ResetPaletteFade();\n    LoadPalette(gEasyChatMode_Pal, BG_PLTT_ID(0), PLTT_SIZE_4BPP);\n    LoadPalette(sTextInputFrameOrange_Pal, BG_PLTT_ID(1), sizeof(sTextInputFrameOrange_Pal));\n    LoadPalette(sTextInputFrameGreen_Pal, BG_PLTT_ID(4), sizeof(sTextInputFrameGreen_Pal));\n    LoadPalette(sTitleText_Pal, BG_PLTT_ID(10), sizeof(sTitleText_Pal));\n    LoadPalette(sText_Pal, BG_PLTT_ID(11), sizeof(sText_Pal));\n    LoadPalette(sText_Pal, BG_PLTT_ID(15), sizeof(sText_Pal));\n    LoadPalette(sText_Pal, BG_PLTT_ID(3), sizeof(sText_Pal));",
       "callsTo": [
         "BG_PLTT_ID",
@@ -1608,6 +1936,7 @@
       "returnType": "void",
       "signature": "static void PrintTitle(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int xOffset;\n    const u8 *titleText = GetTitleText();\n    if (!titleText)\n        return;\n\n     \n    xOffset = GetStringCenterAlignXOffset(FONT_NORMAL, titleText, 240);\n    FillWindowPixelBuffer(WIN_TITLE, PIXEL_FILL(0));\n    PrintEasyChatTextWithColors(WIN_TITLE, FONT_NORMAL, titleText, xOffset, 1, TEXT_SKIP_DRAW, TEXT_COLOR_TRANSPARENT, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_LIGHT_GRAY);\n    PutWindowTilemap(WIN_TITLE);\n    CopyWindowToVram(WIN_TITLE, COPYWIN_FULL);",
       "callsTo": [
         "CopyWindowToVram",
@@ -1624,6 +1953,36 @@
       "returnType": "void",
       "signature": "static void PrintEasyChatText(u8 windowId, u8 fontId, const u8 *str, u8 x, u8 y, u8 speed, void (*callback)(struct TextPrinterTemplate *, u16))",
       "paramsRaw": "u8 windowId, u8 fontId, const u8 *str, u8 x, u8 y, u8 speed, void (*callback)(struct TextPrinterTemplate *, u16)",
+      "paramsList": [
+        {
+          "name": "windowId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "fontId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "str",
+          "typeRaw": "const u8 *"
+        },
+        {
+          "name": "x",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "y",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "speed",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "callback",
+          "typeRaw": "fnptr"
+        }
+      ],
       "body": "AddTextPrinterParameterized(windowId, fontId, str, x, y, speed, callback);",
       "callsTo": [
         "AddTextPrinterParameterized"
@@ -1634,6 +1993,44 @@
       "returnType": "void",
       "signature": "static void PrintEasyChatTextWithColors(u8 windowId, u8 fontId, const u8 *str, u8 left, u8 top, u8 speed, u8 bg, u8 fg, u8 shadow)",
       "paramsRaw": "u8 windowId, u8 fontId, const u8 *str, u8 left, u8 top, u8 speed, u8 bg, u8 fg, u8 shadow",
+      "paramsList": [
+        {
+          "name": "windowId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "fontId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "str",
+          "typeRaw": "const u8 *"
+        },
+        {
+          "name": "left",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "top",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "speed",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "bg",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "fg",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "shadow",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 color[3];\n    color[0] = bg;\n    color[1] = fg;\n    color[2] = shadow;\n    AddTextPrinterParameterized3(windowId, fontId, left, top, color, speed, str);",
       "callsTo": [
         "AddTextPrinterParameterized3"
@@ -1644,6 +2041,7 @@
       "returnType": "void",
       "signature": "static void PrintInitialInstructions(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "FillBgTilemapBufferRect(0, 0, 0, 0, 32, 20, 17);\n    LoadUserWindowBorderGfx(WIN_MSG, 1, BG_PLTT_ID(14));\n    DrawTextBorderOuter(WIN_MSG, 1, 14);\n    PrintEasyChatStdMessage(MSG_INSTRUCTIONS);\n    PutWindowTilemap(WIN_MSG);\n    CopyBgTilemapBufferToVram(0);",
       "callsTo": [
         "BG_PLTT_ID",
@@ -1660,6 +2058,12 @@
       "returnType": "void",
       "signature": "static void PrintEasyChatStdMessage(u8 msgId)",
       "paramsRaw": "u8 msgId",
+      "paramsList": [
+        {
+          "name": "msgId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "const u8 *text2 = NULL;\n    const u8 *text1 = NULL;\n    switch (msgId)\n    {\n    case MSG_INSTRUCTIONS:\n        GetEasyChatInstructionsText(&text1, &text2);\n        break;\n    case MSG_CONFIRM_EXIT:\n        GetEasyChatConfirmExitText(&text1, &text2);\n        break;\n    case MSG_CONFIRM:\n        GetEasyChatConfirmText(&text1, &text2);\n        break;\n    case MSG_CONFIRM_DELETE:\n        GetEasyChatConfirmDeletionText(&text1, &text2);\n        break;\n    case MSG_CREATE_QUIZ:\n        text1 = gText_CreateAQuiz;\n        break;\n    case MSG_SELECT_ANSWER:\n        text1 = gText_SelectTheAnswer;\n        break;\n    case MSG_SONG_TOO_SHORT:\n        text1 = gText_OnlyOnePhrase;\n        text2 = gText_OriginalSongWillBeUsed;\n        break;\n    case MSG_CANT_DELETE_LYRICS:\n        text1 = gText_LyricsCantBeDeleted;\n        break;\n    case MSG_COMBINE_TWO_WORDS:\n        text1 = gText_CombineTwoWordsOrPhrases3;\n        break;\n    case MSG_CANT_QUIT:\n        text1 = gText_YouCannotQuitHere;\n        text2 = gText_SectionMustBeCompleted;\n        break;\n    }\n\n    FillWindowPixelBuffer(WIN_MSG, PIXEL_FILL(1));\n    if (text1)\n        PrintEasyChatText(WIN_MSG, FONT_NORMAL, text1, 0, 1, TEXT_SKIP_DRAW, 0);\n\n    if (text2)\n        PrintEasyChatText(WIN_MSG, FONT_NORMAL, text2, 0, 17, TEXT_SKIP_DRAW, 0);\n\n    CopyWindowToVram(WIN_MSG, COPYWIN_FULL);",
       "callsTo": [
         "CopyWindowToVram",
@@ -1677,6 +2081,12 @@
       "returnType": "void",
       "signature": "static void CreateEasyChatYesNoMenu(u8 initialCursorPos)",
       "paramsRaw": "u8 initialCursorPos",
+      "paramsList": [
+        {
+          "name": "initialCursorPos",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "CreateYesNoMenu(&sEasyChatYesNoWindowTemplate, 1, 14, initialCursorPos);",
       "callsTo": [
         "CreateYesNoMenu"
@@ -1687,6 +2097,7 @@
       "returnType": "void",
       "signature": "static void AddPhraseWindow(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 frameId;\n    struct WindowTemplate template;\n\n    frameId = GetEasyChatScreenFrameId();\n    template.bg = 3;\n    template.tilemapLeft = sPhraseFrameDimensions[frameId].left;\n    template.tilemapTop = sPhraseFrameDimensions[frameId].top;\n    template.width = sPhraseFrameDimensions[frameId].width;\n    template.height = sPhraseFrameDimensions[frameId].height;\n    template.paletteNum = 11;\n    template.baseBlock = 0x84;  \n    sScreenControl->windowId = AddWindow(&template);\n    PutWindowTilemap(sScreenControl->windowId);",
       "callsTo": [
         "AddWindow",
@@ -1699,6 +2110,7 @@
       "returnType": "void",
       "signature": "static void PrintCurrentPhrase(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 strClear[4];\n    u16 *currentPhrase;\n    u8 numColumns, numRows;\n    u8 *str;\n    int frameId;\n    bool32 isQuizQuestion;\n    int i, j, k;\n\n    currentPhrase = GetCurrentPhrase();\n    numColumns = GetNumColumns();\n    numRows = GetNumRows();\n    frameId = GetEasyChatScreenFrameId();\n\n    isQuizQuestion = FALSE;\n    if (frameId == FRAMEID_QUIZ_QUESTION)\n        isQuizQuestion = TRUE;\n\n    FillWindowPixelBuffer(sScreenControl->windowId, PIXEL_FILL(1));\n    for (i = 0; i < numRows; i++)\n    {\n        memcpy(strClear, sText_Clear17, sizeof(sText_Clear17));\n        if (isQuizQuestion)\n            strClear[2] = 6;\n\n        str = sScreenControl->phrasePrintBuffer;\n        sScreenControl->phrasePrintBuffer[0] = EOS;\n        str = StringAppend(str, strClear);\n        for (j = 0; j < numColumns; j++)\n        {\n            if (*currentPhrase != EC_EMPTY_WORD)\n            {\n                str = CopyEasyChatWord(str, *currentPhrase);\n                currentPhrase++;\n            }\n            else\n            {\n                currentPhrase++;\n                if (!isQuizQuestion)\n                {\n                    str = WriteColorChangeControlCode(str, 0, 4);\n                    for (k = 0; k < 12; k++)\n                    {\n                        *str = CHAR_HYPHEN;\n                        str++;\n                    }\n\n                    str = WriteColorChangeControlCode(str, 0, 2);\n                }\n            }\n\n            if (isQuizQuestion)\n                strClear[2] = 3;\n\n            str = StringAppend(str, strClear);\n\n            if (frameId == FRAMEID_MAIL || frameId == FRAMEID_QUIZ_QUESTION || frameId == FRAMEID_QUIZ_SET_QUESTION)\n            {\n                 \n                if (j == 0 && i == 4)\n                    break;\n            }\n        }\n\n        *str = EOS;\n        PrintEasyChatText(sScreenControl->windowId, FONT_NORMAL, sScreenControl->phrasePrintBuffer, 0, i * 16 + 1, TEXT_SKIP_DRAW, 0);\n    }\n\n    CopyWindowToVram(sScreenControl->windowId, COPYWIN_FULL);",
       "callsTo": [
         "CopyEasyChatWord",
@@ -1719,6 +2131,12 @@
       "returnType": "void",
       "signature": "static void BufferFrameTilemap(u16 *tilemap)",
       "paramsRaw": "u16 *tilemap",
+      "paramsList": [
+        {
+          "name": "tilemap",
+          "typeRaw": "u16 *"
+        }
+      ],
       "body": "u8 frameId;\n    int right, bottom;\n    int x, y;\n\n    frameId = GetEasyChatScreenFrameId();\n    CpuFastFill(0, tilemap, BG_SCREEN_SIZE);\n    if (frameId == FRAMEID_MAIL || frameId == FRAMEID_QUIZ_SET_QUESTION)\n    {\n         \n        right = sPhraseFrameDimensions[frameId].left + sPhraseFrameDimensions[frameId].width;\n        bottom = sPhraseFrameDimensions[frameId].top + sPhraseFrameDimensions[frameId].height;\n\n         \n        for (y = sPhraseFrameDimensions[frameId].top; y < bottom; y++)\n        {\n            x = sPhraseFrameDimensions[frameId].left - 1;\n            tilemap[y * 32 + x] = FRAME_OFFSET_ORANGE + FRAME_TILE_L_EDGE;\n            x++;\n            for (; x < right; x++)\n                tilemap[y * 32 + x] = FRAME_OFFSET_ORANGE + FRAME_TILE_TRANSPARENT;\n\n            tilemap[y* 32 + x] = FRAME_OFFSET_ORANGE + FRAME_TILE_R_EDGE;\n        }\n    }\n    else\n    {\n        y = sPhraseFrameDimensions[frameId].top - 1;\n        x = sPhraseFrameDimensions[frameId].left - 1;\n        right = sPhraseFrameDimensions[frameId].left + sPhraseFrameDimensions[frameId].width;\n        bottom = sPhraseFrameDimensions[frameId].top + sPhraseFrameDimensions[frameId].height;\n\n         \n        tilemap[y * 32 + x] = FRAME_OFFSET_ORANGE + FRAME_TILE_TOP_L_CORNER;\n        x++;\n        for (; x < right; x++)\n            tilemap[y * 32 + x] = FRAME_OFFSET_ORANGE + FRAME_TILE_TOP_EDGE;\n\n        tilemap[y * 32 + x] = FRAME_OFFSET_ORANGE + FRAME_TILE_TOP_R_CORNER;\n        y++;\n\n         \n        for (; y < bottom; y++)\n        {\n            x = sPhraseFrameDimensions[frameId].left - 1;\n            tilemap[y * 32 + x] = FRAME_OFFSET_ORANGE + FRAME_TILE_L_EDGE;\n            x++;\n            for (; x < right; x++)\n                tilemap[y * 32 + x] = FRAME_OFFSET_ORANGE + FRAME_TILE_TRANSPARENT;\n\n            tilemap[y* 32 + x] = FRAME_OFFSET_ORANGE + FRAME_TILE_R_EDGE;\n        }\n\n         \n        x = sPhraseFrameDimensions[frameId].left - 1;\n        tilemap[y * 32 + x] = FRAME_OFFSET_ORANGE + FRAME_TILE_BOTTOM_L_CORNER;\n        x++;\n        for (; x < right; x++)\n            tilemap[y * 32 + x] = FRAME_OFFSET_ORANGE + FRAME_TILE_BOTTOM_EDGE;\n\n        tilemap[y * 32 + x] = FRAME_OFFSET_ORANGE + FRAME_TILE_BOTTOM_R_CORNER;\n    }",
       "callsTo": [
         "CpuFastFill",
@@ -1730,6 +2148,7 @@
       "returnType": "void",
       "signature": "static void AdjustBgTilemapForFooter(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 frameId;\n    u16 *tilemap;\n\n    tilemap = GetBgTilemapBuffer(3);\n    frameId = GetEasyChatScreenFrameId();\n    switch (sPhraseFrameDimensions[frameId].footerId)\n    {\n    case FOOTER_ANSWER:\n        tilemap += 0x2A0;\n        CopyToBgTilemapBufferRect(3, tilemap, 0, 11, 32, 2);\n        break;\n    case FOOTER_QUIZ:\n        tilemap += 0x300;\n        CopyToBgTilemapBufferRect(3, tilemap, 0, 11, 32, 2);\n        break;\n    case NUM_FOOTER_TYPES:\n        CopyToBgTilemapBufferRect(3, tilemap, 0, 10, 32, 4);\n        break;\n    }",
       "callsTo": [
         "CopyToBgTilemapBufferRect",
@@ -1742,6 +2161,7 @@
       "returnType": "void",
       "signature": "static void DrawLowerWindow(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "PutWindowTilemap(WIN_INPUT_SELECT);\n    CopyBgTilemapBufferToVram(WIN_INPUT_SELECT);",
       "callsTo": [
         "CopyBgTilemapBufferToVram",
@@ -1753,6 +2173,12 @@
       "returnType": "void",
       "signature": "static void InitLowerWindowText(u32 whichText)",
       "paramsRaw": "u32 whichText",
+      "paramsList": [
+        {
+          "name": "whichText",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "ResetLowerWindowScroll();\n    FillWindowPixelBuffer(WIN_INPUT_SELECT, PIXEL_FILL(1));\n    switch (whichText)\n    {\n    case TEXT_GROUPS:\n        PrintKeyboardGroupNames();\n        break;\n    case TEXT_ALPHABET:\n        PrintKeyboardAlphabet();\n        break;\n    case TEXT_WORD_SELECT:\n        PrintInitialWordSelectText();\n        break;\n    }\n\n    CopyWindowToVram(WIN_INPUT_SELECT, COPYWIN_GFX);",
       "callsTo": [
         "CopyWindowToVram",
@@ -1769,6 +2195,7 @@
       "returnType": "void",
       "signature": "static void PrintKeyboardText(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!GetInAlphabetMode())\n        InitLowerWindowText(TEXT_GROUPS);\n    else\n        InitLowerWindowText(TEXT_ALPHABET);",
       "callsTo": [
         "GetInAlphabetMode",
@@ -1780,6 +2207,7 @@
       "returnType": "void",
       "signature": "static void PrintKeyboardGroupNames(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int i;\n    int x, y;\n\n    i = 0;\n    y = 97;\n    while (1)\n    {\n        for (x = 0; x < 2; x++)\n        {\n            u8 groupId = GetUnlockedEasyChatGroupId(i++);\n            if (groupId == EC_NUM_GROUPS)\n            {\n                InitLowerWindowScroll(GetKeyboardScrollOffset(), 0);\n                return;\n            }\n\n            PrintEasyChatText(WIN_INPUT_SELECT, FONT_NORMAL, GetEasyChatWordGroupName(groupId), x * 84 + 10, y, TEXT_SKIP_DRAW, NULL);\n        }\n\n        y += 16;\n    }",
       "callsTo": [
         "GetEasyChatWordGroupName",
@@ -1794,6 +2222,7 @@
       "returnType": "void",
       "signature": "static void PrintKeyboardAlphabet(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u32 i;\n\n    for (i = 0; i < ARRAY_COUNT(sEasyChatKeyboardAlphabet); i++)\n        PrintEasyChatText(WIN_INPUT_SELECT, FONT_NORMAL, sEasyChatKeyboardAlphabet[i], 10, 97 + i * 16, TEXT_SKIP_DRAW, NULL);",
       "callsTo": [
         "ARRAY_COUNT",
@@ -1805,6 +2234,7 @@
       "returnType": "void",
       "signature": "static void PrintInitialWordSelectText(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "PrintWordSelectText(0, NUM_WORD_SELECT_ROWS);",
       "callsTo": [
         "PrintWordSelectText"
@@ -1815,6 +2245,7 @@
       "returnType": "void",
       "signature": "static void PrintWordSelectNextRowDown(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 wordScroll = GetWordSelectScrollOffset() + NUM_WORD_SELECT_ROWS - 1;\n    EraseWordSelectRows(wordScroll, 1);\n    PrintWordSelectText(wordScroll, 1);",
       "callsTo": [
         "EraseWordSelectRows",
@@ -1827,6 +2258,7 @@
       "returnType": "void",
       "signature": "static void PrintWordSelectNextRowUp(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 wordScroll = GetWordSelectScrollOffset();\n    EraseWordSelectRows(wordScroll, 1);\n    PrintWordSelectText(wordScroll, 1);",
       "callsTo": [
         "EraseWordSelectRows",
@@ -1839,6 +2271,7 @@
       "returnType": "void",
       "signature": "static void PrintWordSelectRowsPageDown(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 wordScroll = GetWordSelectScrollOffset();\n    u8 maxScroll = wordScroll + NUM_WORD_SELECT_ROWS;\n    u8 maxRows = GetWordSelectLastRow() + 1;\n    if (maxScroll > maxRows)\n        maxScroll = maxRows;\n\n    if (wordScroll < maxScroll)\n    {\n        u8 numRows = maxScroll - wordScroll;\n        EraseWordSelectRows(wordScroll, numRows);\n        PrintWordSelectText(wordScroll, numRows);\n    }",
       "callsTo": [
         "EraseWordSelectRows",
@@ -1852,6 +2285,7 @@
       "returnType": "void",
       "signature": "static void PrintWordSelectRowsPageUp(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 wordScroll = GetWordSelectScrollOffset();\n    u8 windowScroll = GetLowerWindowScrollOffset();\n    if (wordScroll < windowScroll)\n    {\n        u8 numRows = windowScroll - wordScroll;\n        EraseWordSelectRows(wordScroll, numRows);\n        PrintWordSelectText(wordScroll, numRows);\n    }",
       "callsTo": [
         "EraseWordSelectRows",
@@ -1865,6 +2299,16 @@
       "returnType": "void",
       "signature": "static void PrintWordSelectText(u8 scrollOffset, u8 numRows)",
       "paramsRaw": "u8 scrollOffset, u8 numRows",
+      "paramsList": [
+        {
+          "name": "scrollOffset",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "numRows",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "int i, j;\n    u16 easyChatWord;\n    int y;\n    int wordIndex;\n\n    wordIndex = scrollOffset * NUM_WORD_SELECT_COLUMNS;\n    y = (scrollOffset * 16 + 96) & 0xFF;\n    y++;\n    for (i = 0; i < numRows; i++)\n    {\n        for (j = 0; j < 2; j++)\n        {\n            easyChatWord = GetWordFromSelectedGroup(wordIndex++);\n            if (easyChatWord != EC_EMPTY_WORD)\n            {\n                CopyEasyChatWordPadded(sScreenControl->wordSelectPrintBuffer, easyChatWord, 0);\n                if (!DummyWordCheck(easyChatWord))\n                    PrintEasyChatText(WIN_INPUT_SELECT, FONT_NORMAL, sScreenControl->wordSelectPrintBuffer, (j * 13 + 3) * 8, y, TEXT_SKIP_DRAW, NULL);\n                else  \n                    PrintEasyChatTextWithColors(WIN_INPUT_SELECT, FONT_NORMAL, sScreenControl->wordSelectPrintBuffer, (j * 13 + 3) * 8, y, TEXT_SKIP_DRAW, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_RED, TEXT_COLOR_LIGHT_GRAY);\n            }\n        }\n\n        y += 16;\n    }\n\n    CopyWindowToVram(WIN_INPUT_SELECT, COPYWIN_GFX);",
       "callsTo": [
         "CopyEasyChatWordPadded",
@@ -1880,6 +2324,16 @@
       "returnType": "void",
       "signature": "static void EraseWordSelectRows(u8 scrollOffset, u8 numRows)",
       "paramsRaw": "u8 scrollOffset, u8 numRows",
+      "paramsList": [
+        {
+          "name": "scrollOffset",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "numRows",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "int y;\n    int var0;\n    int var1;\n    int var2;\n\n    y = (scrollOffset * 16 + 96) & 0xFF;\n    var2 = numRows * 16;\n    var0 = y + var2;\n\n    if (var0 > 255)\n    {\n        var1 = var0 - 256;\n        var2 = 256 - y;\n    }\n    else\n    {\n        var1 = 0;\n    }\n\n    FillWindowPixelRect(WIN_INPUT_SELECT, PIXEL_FILL(1), 0, y, 224, var2);\n    if (var1)\n        FillWindowPixelRect(WIN_INPUT_SELECT, PIXEL_FILL(1), 0, 0, 224, var1);",
       "callsTo": [
         "FillWindowPixelRect",
@@ -1891,6 +2345,7 @@
       "returnType": "void",
       "signature": "static void ClearWordSelectWindow(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "FillWindowPixelBuffer(WIN_INPUT_SELECT, PIXEL_FILL(1));\n    CopyWindowToVram(WIN_INPUT_SELECT, COPYWIN_GFX);",
       "callsTo": [
         "CopyWindowToVram",
@@ -1903,6 +2358,12 @@
       "returnType": "void",
       "signature": "static void InitLowerWindowAnim(int winAnimType)",
       "paramsRaw": "int winAnimType",
+      "paramsList": [
+        {
+          "name": "winAnimType",
+          "typeRaw": "int"
+        }
+      ],
       "body": "switch (winAnimType)\n    {\n    case WINANIM_OPEN_KEYBOARD:\n        sScreenControl->curWindowAnimState = 0;\n        sScreenControl->destWindowAnimState = 10;\n        break;\n    case WINANIM_CLOSE_KEYBOARD:\n        sScreenControl->curWindowAnimState = 9;\n        sScreenControl->destWindowAnimState = 0;\n        break;\n    case WINANIM_OPEN_WORD_SELECT:\n        sScreenControl->curWindowAnimState = 11;\n        sScreenControl->destWindowAnimState = 17;\n        break;\n    case WINANIM_CLOSE_WORD_SELECT:\n        sScreenControl->curWindowAnimState = 17;\n        sScreenControl->destWindowAnimState = 0;\n        break;\n    case WINANIM_RETURN_TO_KEYBOARD:\n        sScreenControl->curWindowAnimState = 17;\n        sScreenControl->destWindowAnimState = 10;\n        break;\n    case WINANIM_KEYBOARD_SWITCH_OUT:\n        sScreenControl->curWindowAnimState = 18;\n        sScreenControl->destWindowAnimState = 22;\n        break;\n    case WINANIM_KEYBOARD_SWITCH_IN:\n        sScreenControl->curWindowAnimState = 22;\n        sScreenControl->destWindowAnimState = 18;\n        break;\n    }\n\n    sScreenControl->windowAnimStateDir = sScreenControl->curWindowAnimState < sScreenControl->destWindowAnimState ? 1 : -1;",
       "callsTo": [],
       "lineCount": 33
@@ -1911,6 +2372,7 @@
       "returnType": "bool8",
       "signature": "static bool8 UpdateLowerWindowAnim(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 curState, destState;\n    if (sScreenControl->curWindowAnimState == sScreenControl->destWindowAnimState)\n        return FALSE;\n\n    sScreenControl->curWindowAnimState += sScreenControl->windowAnimStateDir;\n    DrawLowerWindowFrame(sScreenControl->curWindowAnimState);\n    curState = sScreenControl->curWindowAnimState;\n    destState = sScreenControl->destWindowAnimState;\n    return (curState ^ destState) > 0;",
       "callsTo": [
         "DrawLowerWindowFrame"
@@ -1921,6 +2383,12 @@
       "returnType": "void",
       "signature": "static void DrawLowerWindowFrame(u8 type)",
       "paramsRaw": "u8 type",
+      "paramsList": [
+        {
+          "name": "type",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "FillBgTilemapBufferRect_Palette0(1, 0, 0, 10, 30, 10);\n    switch (type)\n    {\n    case 0:  \n        break;\n    case 1:\n        BufferLowerWindowFrame(11, 14, 3, 2);\n        break;\n    case 2:\n        BufferLowerWindowFrame(9, 14, 7, 2);\n        break;\n    case 3:\n        BufferLowerWindowFrame(7, 14, 11, 2);\n        break;\n    case 4:\n        BufferLowerWindowFrame(5, 14, 15, 2);\n        break;\n    case 5:\n        BufferLowerWindowFrame(3, 14, 19, 2);\n        break;\n    case 6:\n        BufferLowerWindowFrame(1, 14, 23, 2);\n        break;\n    case 7:\n        BufferLowerWindowFrame(1, 13, 23, 4);\n        break;\n    case 8:\n        BufferLowerWindowFrame(1, 12, 23, 6);\n        break;\n    case 9:\n        BufferLowerWindowFrame(1, 11, 23, 8);\n        break;\n    case 10:\n        BufferLowerWindowFrame(1, 10, 23, 10);\n        break;\n    case 11:\n        BufferLowerWindowFrame(1, 10, 24, 10);\n        break;\n    case 12:\n        BufferLowerWindowFrame(1, 10, 25, 10);\n        break;\n    case 13:\n        BufferLowerWindowFrame(1, 10, 26, 10);\n        break;\n    case 14:\n        BufferLowerWindowFrame(1, 10, 27, 10);\n        break;\n    case 15:\n        BufferLowerWindowFrame(1, 10, 28, 10);\n        break;\n    case 16:\n        BufferLowerWindowFrame(1, 10, 29, 10);\n        break;\n    case 17:\n        BufferLowerWindowFrame(0, 10, 30, 10);\n        break;\n    case 18:\n        BufferLowerWindowFrame(1, 10, 23, 10);\n        break;\n    case 19:\n        BufferLowerWindowFrame(1, 11, 23, 8);\n        break;\n    case 20:\n        BufferLowerWindowFrame(1, 12, 23, 6);\n        break;\n    case 21:\n        BufferLowerWindowFrame(1, 13, 23, 4);\n        break;\n    case 22:\n        BufferLowerWindowFrame(1, 14, 23, 2);\n        break;\n    }\n\n    CopyBgTilemapBufferToVram(1);",
       "callsTo": [
         "BufferLowerWindowFrame",
@@ -1933,6 +2401,24 @@
       "returnType": "void",
       "signature": "static void BufferLowerWindowFrame(int left, int top, int width, int height)",
       "paramsRaw": "int left, int top, int width, int height",
+      "paramsList": [
+        {
+          "name": "left",
+          "typeRaw": "int"
+        },
+        {
+          "name": "top",
+          "typeRaw": "int"
+        },
+        {
+          "name": "width",
+          "typeRaw": "int"
+        },
+        {
+          "name": "height",
+          "typeRaw": "int"
+        }
+      ],
       "body": "u16 *tilemap;\n    int right;\n    int bottom;\n    int x, y;\n\n    tilemap = sScreenControl->bg1TilemapBuffer;\n    right = left + width - 1;\n    bottom = top + height - 1;\n    x = left;\n    y = top;\n\n     \n    tilemap[y * 32 + x] = FRAME_OFFSET_GREEN + FRAME_TILE_TOP_L_CORNER;\n    x++;\n    for (; x < right; x++)\n        tilemap[y * 32 + x] = FRAME_OFFSET_GREEN + FRAME_TILE_TOP_EDGE;\n\n    tilemap[y * 32 + x] = FRAME_OFFSET_GREEN + FRAME_TILE_TOP_R_CORNER;\n    y++;\n\n     \n    for (; y < bottom; y++)\n    {\n        tilemap[y * 32 + left] = FRAME_OFFSET_GREEN + FRAME_TILE_L_EDGE;\n        x = left + 1;\n        for (; x < right; x++)\n            tilemap[y * 32 + x] = FRAME_OFFSET_GREEN + FRAME_TILE_TRANSPARENT;\n\n        tilemap[y * 32 + x] = FRAME_OFFSET_GREEN + FRAME_TILE_R_EDGE;\n    }\n\n     \n    tilemap[y * 32 + left] = FRAME_OFFSET_GREEN + FRAME_TILE_BOTTOM_L_CORNER;\n    x = left + 1;\n    for (; x < right; x++)\n        tilemap[y * 32 + x] = FRAME_OFFSET_GREEN + FRAME_TILE_BOTTOM_EDGE;\n\n    tilemap[y * 32 + x] = FRAME_OFFSET_GREEN + FRAME_TILE_BOTTOM_R_CORNER;\n\n    SetWindowDimensions((left + 1) * 8, (top + 1) * 8, (width - 2) * 8, (height - 2) * 8);",
       "callsTo": [
         "SetWindowDimensions"
@@ -1943,6 +2429,7 @@
       "returnType": "void",
       "signature": "static void ResetLowerWindowScroll(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ChangeBgY(2, 0x800, BG_COORD_SET);\n    sScreenControl->scrollOffset = 0;",
       "callsTo": [
         "ChangeBgY"
@@ -1953,6 +2440,16 @@
       "returnType": "void",
       "signature": "static void InitLowerWindowScroll(s16 scrollChange, u8 speed)",
       "paramsRaw": "s16 scrollChange, u8 speed",
+      "paramsList": [
+        {
+          "name": "scrollChange",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "speed",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "int bgY;\n    s16 yChange;\n\n    bgY = GetBgY(2);\n    sScreenControl->scrollOffset += scrollChange;\n    yChange = scrollChange * 16;\n    bgY += yChange * 256;\n    if (speed)\n    {\n        sScreenControl->scrollDest = bgY;\n        sScreenControl->scrollSpeed = speed * 256;\n        if (yChange < 0)\n            sScreenControl->scrollSpeed = -sScreenControl->scrollSpeed;\n    }\n    else\n    {\n        ChangeBgY(2, bgY, BG_COORD_SET);\n    }",
       "callsTo": [
         "ChangeBgY",
@@ -1964,6 +2461,7 @@
       "returnType": "bool8",
       "signature": "static bool8 UpdateLowerWindowScroll(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int bgY;\n\n    bgY = GetBgY(2);\n    if (bgY == sScreenControl->scrollDest)\n    {\n        return FALSE;\n    }\n    else\n    {\n        ChangeBgY(2, sScreenControl->scrollSpeed, BG_COORD_ADD);\n        return TRUE;\n    }",
       "callsTo": [
         "ChangeBgY",
@@ -1975,6 +2473,7 @@
       "returnType": "int",
       "signature": "static int GetLowerWindowScrollOffset(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return sScreenControl->scrollOffset;",
       "callsTo": [],
       "lineCount": 1
@@ -1983,6 +2482,24 @@
       "returnType": "void",
       "signature": "static void SetWindowDimensions(u8 left, u8 top, u8 width, u8 height)",
       "paramsRaw": "u8 left, u8 top, u8 width, u8 height",
+      "paramsList": [
+        {
+          "name": "left",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "top",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "width",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "height",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u16 horizontalDimensions = WIN_RANGE(left, left + width);\n    u16 verticalDimensions = WIN_RANGE(top, top + height);\n    SetGpuReg(REG_OFFSET_WIN0H, horizontalDimensions);\n    SetGpuReg(REG_OFFSET_WIN0V, verticalDimensions);",
       "callsTo": [
         "SetGpuReg",
@@ -1994,6 +2511,7 @@
       "returnType": "void",
       "signature": "static void LoadEasyChatGfx(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u32 i;\n\n    LoadSpriteSheets(sSpriteSheets);\n    LoadSpritePalettes(sSpritePalettes);\n    for (i = 0; i < ARRAY_COUNT(sCompressedSpriteSheets); i++)\n        LoadCompressedSpriteSheet(&sCompressedSpriteSheets[i]);",
       "callsTo": [
         "ARRAY_COUNT",
@@ -2007,6 +2525,7 @@
       "returnType": "void",
       "signature": "static void CreateMainCursorSprite(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 frameId = GetEasyChatScreenFrameId();\n    int x = sPhraseFrameDimensions[frameId].left * 8 + 13;\n    int y = sPhraseFrameDimensions[frameId].top * 8 + 8;\n    u8 spriteId = CreateSprite(&sSpriteTemplate_TriangleCursor, x, y, 2);\n    sScreenControl->mainCursorSprite = &gSprites[spriteId];\n    gSprites[spriteId].sAnimateCursor = TRUE;",
       "callsTo": [
         "CreateSprite",
@@ -2018,6 +2537,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_Cursor(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (sprite->sAnimateCursor)\n    {\n        if (++sprite->sDelayTimer > 2)\n        {\n            sprite->sDelayTimer = 0;\n            if (++sprite->x2 > 0)\n                sprite->x2 = -6;\n        }\n    }",
       "callsTo": [],
       "lineCount": 9
@@ -2026,6 +2551,16 @@
       "returnType": "void",
       "signature": "static void SetMainCursorPos(u8 x, u8 y)",
       "paramsRaw": "u8 x, u8 y",
+      "paramsList": [
+        {
+          "name": "x",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "y",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "sScreenControl->mainCursorSprite->x = x;\n    sScreenControl->mainCursorSprite->y = y;\n    sScreenControl->mainCursorSprite->x2 = 0;\n    sScreenControl->mainCursorSprite->sDelayTimer = 0;",
       "callsTo": [],
       "lineCount": 4
@@ -2034,6 +2569,7 @@
       "returnType": "void",
       "signature": "static void StopMainCursorAnim(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sScreenControl->mainCursorSprite->sDelayTimer = 0;\n    sScreenControl->mainCursorSprite->sAnimateCursor = FALSE;\n    sScreenControl->mainCursorSprite->x2 = 0;",
       "callsTo": [],
       "lineCount": 3
@@ -2042,6 +2578,7 @@
       "returnType": "void",
       "signature": "static void StartMainCursorAnim(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sScreenControl->mainCursorSprite->sAnimateCursor = TRUE;",
       "callsTo": [],
       "lineCount": 1
@@ -2050,6 +2587,7 @@
       "returnType": "void",
       "signature": "static void CreateRectangleCursorSprites(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 spriteId = CreateSprite(&sSpriteTemplate_RectangleCursor, 0, 0, 3);\n    sScreenControl->rectangleCursorSpriteRight = &gSprites[spriteId];\n    sScreenControl->rectangleCursorSpriteRight->x2 = 32;\n\n    spriteId = CreateSprite(&sSpriteTemplate_RectangleCursor, 0, 0, 3);\n    sScreenControl->rectangleCursorSpriteLeft = &gSprites[spriteId];\n    sScreenControl->rectangleCursorSpriteLeft->x2 = -32;\n\n    sScreenControl->rectangleCursorSpriteRight->hFlip = TRUE;\n    UpdateRectangleCursorPos();",
       "callsTo": [
         "CreateSprite",
@@ -2061,6 +2599,7 @@
       "returnType": "void",
       "signature": "static void DestroyRectangleCursorSprites(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "DestroySprite(sScreenControl->rectangleCursorSpriteRight);\n    sScreenControl->rectangleCursorSpriteRight = NULL;\n    DestroySprite(sScreenControl->rectangleCursorSpriteLeft);\n    sScreenControl->rectangleCursorSpriteLeft = NULL;",
       "callsTo": [
         "DestroySprite"
@@ -2071,6 +2610,7 @@
       "returnType": "void",
       "signature": "static void UpdateRectangleCursorPos(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s8 column;\n    s8 row;\n\n    if (sScreenControl->rectangleCursorSpriteRight\n     && sScreenControl->rectangleCursorSpriteLeft)\n    {\n        GetKeyboardCursorColAndRow(&column, &row);\n        if (!GetInAlphabetMode())\n            SetRectangleCursorPos_GroupMode(column, row);\n        else\n            SetRectangleCursorPos_AlphabetMode(column, row);\n    }",
       "callsTo": [
         "GetInAlphabetMode",
@@ -2084,6 +2624,16 @@
       "returnType": "void",
       "signature": "static void SetRectangleCursorPos_GroupMode(s8 column, s8 row)",
       "paramsRaw": "s8 column, s8 row",
+      "paramsList": [
+        {
+          "name": "column",
+          "typeRaw": "s8"
+        },
+        {
+          "name": "row",
+          "typeRaw": "s8"
+        }
+      ],
       "body": "if (column != -1)\n    {\n         \n        StartSpriteAnim(sScreenControl->rectangleCursorSpriteRight, RECTCURSOR_ANIM_ON_GROUP);\n        sScreenControl->rectangleCursorSpriteRight->x = column * 84 + 58;\n        sScreenControl->rectangleCursorSpriteRight->y = row * 16 + 96;\n\n        StartSpriteAnim(sScreenControl->rectangleCursorSpriteLeft, RECTCURSOR_ANIM_ON_GROUP);\n        sScreenControl->rectangleCursorSpriteLeft->x = column * 84 + 58;\n        sScreenControl->rectangleCursorSpriteLeft->y = row * 16 + 96;\n    }\n    else\n    {\n         \n        StartSpriteAnim(sScreenControl->rectangleCursorSpriteRight, RECTCURSOR_ANIM_ON_BUTTON);\n        sScreenControl->rectangleCursorSpriteRight->x = 216;\n        sScreenControl->rectangleCursorSpriteRight->y = row * 16 + 112;\n\n        StartSpriteAnim(sScreenControl->rectangleCursorSpriteLeft, RECTCURSOR_ANIM_ON_BUTTON);\n        sScreenControl->rectangleCursorSpriteLeft->x = 216;\n        sScreenControl->rectangleCursorSpriteLeft->y = row * 16 + 112;\n    }",
       "callsTo": [
         "StartSpriteAnim"
@@ -2094,6 +2644,16 @@
       "returnType": "void",
       "signature": "static void SetRectangleCursorPos_AlphabetMode(s8 column, s8 row)",
       "paramsRaw": "s8 column, s8 row",
+      "paramsList": [
+        {
+          "name": "column",
+          "typeRaw": "s8"
+        },
+        {
+          "name": "row",
+          "typeRaw": "s8"
+        }
+      ],
       "body": "int anim;\n    int x, y;\n\n    if (column != -1)\n    {\n        y = row * 16 + 96;\n        x = 32;\n        if (column == NUM_ALPHABET_COLUMNS - 1 && row == 0)\n        {\n             \n            x = 158;\n            anim = RECTCURSOR_ANIM_ON_OTHERS;\n        }\n        else\n        {\n             \n            x += sAlphabetKeyboardColumnOffsets[(u8)column < NUM_ALPHABET_COLUMNS ? column : 0];\n            anim = RECTCURSOR_ANIM_ON_LETTER;\n        }\n\n        StartSpriteAnim(sScreenControl->rectangleCursorSpriteRight, anim);\n        sScreenControl->rectangleCursorSpriteRight->x = x;\n        sScreenControl->rectangleCursorSpriteRight->y = y;\n\n        StartSpriteAnim(sScreenControl->rectangleCursorSpriteLeft, anim);\n        sScreenControl->rectangleCursorSpriteLeft->x = x;\n        sScreenControl->rectangleCursorSpriteLeft->y = y;\n    }\n    else\n    {\n         \n        StartSpriteAnim(sScreenControl->rectangleCursorSpriteRight, RECTCURSOR_ANIM_ON_BUTTON);\n        sScreenControl->rectangleCursorSpriteRight->x = 216;\n        sScreenControl->rectangleCursorSpriteRight->y = row * 16 + 112;\n\n        StartSpriteAnim(sScreenControl->rectangleCursorSpriteLeft, RECTCURSOR_ANIM_ON_BUTTON);\n        sScreenControl->rectangleCursorSpriteLeft->x = 216;\n        sScreenControl->rectangleCursorSpriteLeft->y = row * 16 + 112;\n    }",
       "callsTo": [
         "StartSpriteAnim"
@@ -2104,6 +2664,7 @@
       "returnType": "void",
       "signature": "static void CreateWordSelectCursorSprite(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 spriteId = CreateSprite(&sSpriteTemplate_TriangleCursor, 0, 0, 4);\n    sScreenControl->wordSelectCursorSprite = &gSprites[spriteId];\n    sScreenControl->wordSelectCursorSprite->callback = SpriteCB_WordSelectCursor;\n    sScreenControl->wordSelectCursorSprite->oam.priority = 2;\n    UpdateWordSelectCursorPos();",
       "callsTo": [
         "CreateSprite",
@@ -2115,6 +2676,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_WordSelectCursor(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (++sprite->sDelayTimer > 2)\n    {\n        sprite->sDelayTimer = 0;\n        if (++sprite->x2 > 0)\n            sprite->x2 = -6;\n    }",
       "callsTo": [],
       "lineCount": 6
@@ -2123,6 +2690,7 @@
       "returnType": "void",
       "signature": "static void UpdateWordSelectCursorPos(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s8 column, row, x, y;\n\n    GetWordSelectColAndRow(&column, &row);\n    x = column * 13;\n    x = x * 8 + 28;\n    y = row * 16 + 96;\n    SetWordSelectCursorPos(x, y);",
       "callsTo": [
         "GetWordSelectColAndRow",
@@ -2134,6 +2702,16 @@
       "returnType": "void",
       "signature": "static void SetWordSelectCursorPos(u8 x, u8 y)",
       "paramsRaw": "u8 x, u8 y",
+      "paramsList": [
+        {
+          "name": "x",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "y",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (sScreenControl->wordSelectCursorSprite)\n    {\n        sScreenControl->wordSelectCursorSprite->x = x;\n        sScreenControl->wordSelectCursorSprite->y = y;\n        sScreenControl->wordSelectCursorSprite->x2 = 0;\n        sScreenControl->wordSelectCursorSprite->sDelayTimer = 0;\n    }",
       "callsTo": [],
       "lineCount": 7
@@ -2142,6 +2720,7 @@
       "returnType": "void",
       "signature": "static void DestroyWordSelectCursorSprite(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (sScreenControl->wordSelectCursorSprite)\n    {\n        DestroySprite(sScreenControl->wordSelectCursorSprite);\n        sScreenControl->wordSelectCursorSprite = NULL;\n    }",
       "callsTo": [
         "DestroySprite"
@@ -2152,6 +2731,7 @@
       "returnType": "void",
       "signature": "static void CreateSideWindowSprites(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 spriteId = CreateSprite(&sSpriteTemplate_ButtonWindow, 208, 128, 6);\n    sScreenControl->buttonWindowSprite = &gSprites[spriteId];\n    sScreenControl->buttonWindowSprite->x2 = -64;\n\n    spriteId = CreateSprite(&sSpriteTemplate_ModeWindow, 208, 80, 5);\n    sScreenControl->modeWindowSprite = &gSprites[spriteId];\n    sScreenControl->modeWindowState = 0;",
       "callsTo": [
         "CreateSprite"
@@ -2162,6 +2742,7 @@
       "returnType": "bool8",
       "signature": "static bool8 ShowSideWindow(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sScreenControl->modeWindowState)\n    {\n    default:\n        return FALSE;\n    case 0:\n         \n        sScreenControl->buttonWindowSprite->x2 += 8;\n        if (sScreenControl->buttonWindowSprite->x2 >= 0)\n        {\n            sScreenControl->buttonWindowSprite->x2 = 0;\n\n             \n            if (!GetInAlphabetMode())\n                StartSpriteAnim(sScreenControl->modeWindowSprite, MODEWINDOW_ANIM_TO_GROUP);\n            else\n                StartSpriteAnim(sScreenControl->modeWindowSprite, MODEWINDOW_ANIM_TO_ALPHABET);\n\n            sScreenControl->modeWindowState++;\n        }\n        break;\n    case 1:\n        if (sScreenControl->modeWindowSprite->animEnded)\n        {\n            sScreenControl->modeWindowState = 2;\n            return FALSE;\n        }\n    }\n\n    return TRUE;",
       "callsTo": [
         "GetInAlphabetMode",
@@ -2173,6 +2754,7 @@
       "returnType": "void",
       "signature": "static void HideModeWindow(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sScreenControl->modeWindowState = 0;\n    StartSpriteAnim(sScreenControl->modeWindowSprite, MODEWINDOW_ANIM_TO_HIDDEN);",
       "callsTo": [
         "StartSpriteAnim"
@@ -2183,6 +2765,7 @@
       "returnType": "bool8",
       "signature": "static bool8 DestroySideWindowSprites(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sScreenControl->modeWindowState)\n    {\n    default:\n        return FALSE;\n    case 0:\n        if (sScreenControl->modeWindowSprite->animEnded)\n            sScreenControl->modeWindowState = 1;\n        break;\n    case 1:\n        sScreenControl->buttonWindowSprite->x2 -= 8;\n        if (sScreenControl->buttonWindowSprite->x2 <= -64)\n        {\n            DestroySprite(sScreenControl->modeWindowSprite);\n            DestroySprite(sScreenControl->buttonWindowSprite);\n            sScreenControl->modeWindowSprite = NULL;\n            sScreenControl->buttonWindowSprite = NULL;\n            sScreenControl->modeWindowState++;\n            return FALSE;\n        }\n    }\n\n    return TRUE;",
       "callsTo": [
         "DestroySprite"
@@ -2193,6 +2776,7 @@
       "returnType": "void",
       "signature": "static void SetModeWindowToTransition(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "StartSpriteAnim(sScreenControl->modeWindowSprite, MODEWINDOW_ANIM_TRANSITION);",
       "callsTo": [
         "StartSpriteAnim"
@@ -2203,6 +2787,7 @@
       "returnType": "void",
       "signature": "static void UpdateModeWindowAnim(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!GetInAlphabetMode())\n        StartSpriteAnim(sScreenControl->modeWindowSprite, MODEWINDOW_ANIM_TO_GROUP);\n    else\n        StartSpriteAnim(sScreenControl->modeWindowSprite, MODEWINDOW_ANIM_TO_ALPHABET);",
       "callsTo": [
         "GetInAlphabetMode",
@@ -2214,6 +2799,7 @@
       "returnType": "bool8",
       "signature": "static bool8 IsModeWindowAnimActive(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return !sScreenControl->modeWindowSprite->animEnded;",
       "callsTo": [],
       "lineCount": 1
@@ -2222,6 +2808,7 @@
       "returnType": "void",
       "signature": "static void CreateScrollIndicatorSprites(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 spriteId = CreateSprite(&sSpriteTemplate_ScrollIndicator, 96, 80, 0);\n    if (spriteId != MAX_SPRITES)\n        sScreenControl->scrollIndicatorUpSprite = &gSprites[spriteId];\n\n    spriteId = CreateSprite(&sSpriteTemplate_ScrollIndicator, 96, 156, 0);\n    if (spriteId != MAX_SPRITES)\n    {\n        sScreenControl->scrollIndicatorDownSprite = &gSprites[spriteId];\n        sScreenControl->scrollIndicatorDownSprite->vFlip = TRUE;\n    }\n\n    HideScrollIndicators();",
       "callsTo": [
         "CreateSprite",
@@ -2233,6 +2820,7 @@
       "returnType": "void",
       "signature": "static void UpdateScrollIndicatorsVisibility(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sScreenControl->scrollIndicatorUpSprite->invisible = !CanScrollUp();\n    sScreenControl->scrollIndicatorDownSprite->invisible = !CanScrollDown();",
       "callsTo": [
         "CanScrollDown",
@@ -2244,6 +2832,7 @@
       "returnType": "void",
       "signature": "static void HideScrollIndicators(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sScreenControl->scrollIndicatorUpSprite->invisible = TRUE;\n    sScreenControl->scrollIndicatorDownSprite->invisible = TRUE;",
       "callsTo": [],
       "lineCount": 2
@@ -2252,6 +2841,12 @@
       "returnType": "void",
       "signature": "static void SetScrollIndicatorXPos(bool32 inWordSelect)",
       "paramsRaw": "bool32 inWordSelect",
+      "paramsList": [
+        {
+          "name": "inWordSelect",
+          "typeRaw": "bool32"
+        }
+      ],
       "body": "if (!inWordSelect)\n    {\n         \n        sScreenControl->scrollIndicatorUpSprite->x = 96;\n        sScreenControl->scrollIndicatorDownSprite->x = 96;\n    }\n    else\n    {\n         \n        sScreenControl->scrollIndicatorUpSprite->x = 120;\n        sScreenControl->scrollIndicatorDownSprite->x = 120;\n    }",
       "callsTo": [],
       "lineCount": 12
@@ -2260,6 +2855,7 @@
       "returnType": "void",
       "signature": "static void CreateStartSelectButtonSprites(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 spriteId = CreateSprite(&sSpriteTemplate_StartSelectButton, 220, 84, 1);\n    if (spriteId != MAX_SPRITES)\n        sScreenControl->startButtonSprite = &gSprites[spriteId];\n\n    spriteId = CreateSprite(&sSpriteTemplate_StartSelectButton, 220, 156, 1);\n    if (spriteId != MAX_SPRITES)\n    {\n        sScreenControl->selectButtonSprite = &gSprites[spriteId];\n        StartSpriteAnim(sScreenControl->selectButtonSprite, 1);\n    }\n\n    HideStartSelectButtons();",
       "callsTo": [
         "CreateSprite",
@@ -2272,6 +2868,7 @@
       "returnType": "void",
       "signature": "static void UpdateStartSelectButtonsVisibility(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sScreenControl->startButtonSprite->invisible = !CanScrollUp();\n    sScreenControl->selectButtonSprite->invisible = !CanScrollDown();",
       "callsTo": [
         "CanScrollDown",
@@ -2283,6 +2880,7 @@
       "returnType": "void",
       "signature": "static void HideStartSelectButtons(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sScreenControl->startButtonSprite->invisible = TRUE;\n    sScreenControl->selectButtonSprite->invisible = TRUE;",
       "callsTo": [],
       "lineCount": 2
@@ -2291,6 +2889,7 @@
       "returnType": "void",
       "signature": "static void TryAddInterviewObjectEvents(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int graphicsId;\n    u8 spriteId;\n\n    switch (GetDisplayedPersonType())\n    {\n    case EASY_CHAT_PERSON_REPORTER_MALE:\n        graphicsId = OBJ_EVENT_GFX_REPORTER_M;\n        break;\n    case EASY_CHAT_PERSON_REPORTER_FEMALE:\n        graphicsId = OBJ_EVENT_GFX_REPORTER_F;\n        break;\n    case EASY_CHAT_PERSON_BOY:\n        graphicsId = OBJ_EVENT_GFX_BOY_1;\n        break;\n    default:\n        return;\n    }\n\n    if (GetEasyChatScreenFrameId() != FRAMEID_INTERVIEW_SHOW_PERSON)\n        return;\n\n     \n    spriteId = CreateObjectGraphicsSprite(graphicsId, SpriteCallbackDummy, 76, 40, 0);\n    if (spriteId != MAX_SPRITES)\n    {\n        gSprites[spriteId].oam.priority = 0;\n        StartSpriteAnim(&gSprites[spriteId], 2);\n    }\n\n     \n    spriteId = CreateObjectGraphicsSprite(\n        gSaveBlock2Ptr->playerGender == MALE ? OBJ_EVENT_GFX_RIVAL_BRENDAN_NORMAL : OBJ_EVENT_GFX_RIVAL_MAY_NORMAL,\n        SpriteCallbackDummy,\n        52,\n        40,\n        0);\n\n    if (spriteId != MAX_SPRITES)\n    {\n        gSprites[spriteId].oam.priority = 0;\n        StartSpriteAnim(&gSprites[spriteId], 3);\n    }",
       "callsTo": [
         "CreateObjectGraphicsSprite",
@@ -2304,6 +2903,7 @@
       "returnType": "int",
       "signature": "int GetFooterIndex(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 frameId = GetEasyChatScreenFrameId();\n    switch (sPhraseFrameDimensions[frameId].footerId)\n    {\n    case FOOTER_QUIZ:\n        return FOOTER_QUIZ;\n    case FOOTER_ANSWER:\n        return FOOTER_ANSWER;\n    case FOOTER_NORMAL:\n        return FOOTER_NORMAL;\n    default:\n        return NUM_FOOTER_TYPES;\n    }",
       "callsTo": [
         "GetEasyChatScreenFrameId"
@@ -2314,6 +2914,12 @@
       "returnType": "int",
       "signature": "static int GetFooterOptionXOffset(int option)",
       "paramsRaw": "int option",
+      "paramsList": [
+        {
+          "name": "option",
+          "typeRaw": "int"
+        }
+      ],
       "body": "int footerIndex = GetFooterIndex();\n    if (footerIndex < NUM_FOOTER_TYPES)\n        return sFooterOptionXOffsets[footerIndex][option] + 4;\n    else\n        return 0;",
       "callsTo": [
         "GetFooterIndex"
@@ -2324,6 +2930,7 @@
       "returnType": "void",
       "signature": "static void AddMainScreenButtonWindow(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int i;\n    u16 windowId;\n    struct WindowTemplate template;\n    int footerIndex = GetFooterIndex();\n    if (footerIndex == NUM_FOOTER_TYPES)\n        return;\n\n    template.bg = 3;\n    template.tilemapLeft = 1;\n    template.tilemapTop = 11;\n    template.width = 28;\n    template.height = 2;\n    template.paletteNum = 11;\n    template.baseBlock = 0x4C;  \n    windowId = AddWindow(&template);\n    FillWindowPixelBuffer(windowId, PIXEL_FILL(1));\n    for (i = 0; i < (int)ARRAY_COUNT(sFooterTextOptions[0]); i++)\n    {\n        const u8 *str = sFooterTextOptions[footerIndex][i];\n        if (str)\n        {\n            int x = sFooterOptionXOffsets[footerIndex][i];\n            PrintEasyChatText(windowId, FONT_NORMAL, str, x, 1, 0, NULL);\n        }\n    }\n\n    PutWindowTilemap(windowId);",
       "callsTo": [
         "ARRAY_COUNT",
@@ -2340,6 +2947,12 @@
       "returnType": "bool8",
       "signature": "static bool8 IsEasyChatGroupUnlocked(u8 groupId)",
       "paramsRaw": "u8 groupId",
+      "paramsList": [
+        {
+          "name": "groupId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "switch (groupId)\n    {\n    case EC_GROUP_TRENDY_SAYING:\n        return FlagGet(FLAG_UNLOCKED_TRENDY_SAYINGS);\n    case EC_GROUP_EVENTS:\n    case EC_GROUP_MOVE_1:\n    case EC_GROUP_MOVE_2:\n        return FlagGet(FLAG_SYS_GAME_CLEAR);\n    case EC_GROUP_POKEMON_NATIONAL:\n        return EasyChatIsNationalPokedexEnabled();\n    default:\n        return TRUE;\n    }",
       "callsTo": [
         "EasyChatIsNationalPokedexEnabled",
@@ -2351,6 +2964,12 @@
       "returnType": "u16",
       "signature": "u16 EasyChat_GetNumWordsInGroup(u8 groupId)",
       "paramsRaw": "u8 groupId",
+      "paramsList": [
+        {
+          "name": "groupId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (groupId == EC_GROUP_POKEMON)\n        return GetNationalPokedexCount(FLAG_GET_SEEN);\n\n    if (IsEasyChatGroupUnlocked(groupId))\n        return gEasyChatGroups[groupId].numEnabledWords;\n\n    return 0;",
       "callsTo": [
         "GetNationalPokedexCount",
@@ -2362,6 +2981,12 @@
       "returnType": "bool8",
       "signature": "static bool8 IsEasyChatWordInvalid(u16 easyChatWord)",
       "paramsRaw": "u16 easyChatWord",
+      "paramsList": [
+        {
+          "name": "easyChatWord",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "u16 i;\n    u8 groupId;\n    u32 index;\n    u16 numWords;\n    const u16 *list;\n    if (easyChatWord == EC_EMPTY_WORD)\n        return FALSE;\n\n    groupId = EC_GROUP(easyChatWord);\n    index = EC_INDEX(easyChatWord);\n    if (groupId >= EC_NUM_GROUPS)\n        return TRUE;\n\n    numWords = gEasyChatGroups[groupId].numWords;\n    switch (groupId)\n    {\n    case EC_GROUP_POKEMON:\n    case EC_GROUP_POKEMON_NATIONAL:\n    case EC_GROUP_MOVE_1:\n    case EC_GROUP_MOVE_2:\n        list = gEasyChatGroups[groupId].wordData.valueList;\n        for (i = 0; i < numWords; i++)\n        {\n            if (index == list[i])\n                return FALSE;\n        }\n        return TRUE;\n    }\n\n    if (index >= numWords)\n        return TRUE;\n    else\n        return FALSE;",
       "callsTo": [
         "EC_GROUP",
@@ -2373,6 +2998,12 @@
       "returnType": "bool8",
       "signature": "bool8 IsBardWordInvalid(u16 easyChatWord)",
       "paramsRaw": "u16 easyChatWord",
+      "paramsList": [
+        {
+          "name": "easyChatWord",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "int numWordsInGroup;\n    u8 groupId = EC_GROUP(easyChatWord);\n    u32 index = EC_INDEX(easyChatWord);\n    if (groupId >= EC_NUM_GROUPS)\n        return TRUE;\n\n    switch (groupId)\n    {\n    case EC_GROUP_POKEMON:\n    case EC_GROUP_POKEMON_NATIONAL:\n        numWordsInGroup = gNumBardWords_Species;\n        break;\n    case EC_GROUP_MOVE_1:\n    case EC_GROUP_MOVE_2:\n        numWordsInGroup = gNumBardWords_Moves;\n        break;\n    default:\n        numWordsInGroup = gEasyChatGroups[groupId].numWords;\n        break;\n    }\n\n    if (numWordsInGroup <= index)\n        return TRUE;\n    else\n        return FALSE;",
       "callsTo": [
         "EC_GROUP",
@@ -2384,6 +3015,12 @@
       "returnType": "u16",
       "signature": "static u16 GetEasyChatWordStringLength(u16 easyChatWord)",
       "paramsRaw": "u16 easyChatWord",
+      "paramsList": [
+        {
+          "name": "easyChatWord",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "if (easyChatWord == EC_EMPTY_WORD)\n        return 0;\n\n    if (IsEasyChatWordInvalid(easyChatWord))\n    {\n        return StringLength(gText_ThreeQuestionMarks);\n    }\n    else\n    {\n        u16 index = EC_INDEX(easyChatWord);\n        u8 groupId = EC_GROUP(easyChatWord);\n        return StringLength(GetEasyChatWord(groupId, index));\n    }",
       "callsTo": [
         "EC_GROUP",
@@ -2398,6 +3035,24 @@
       "returnType": "bool8",
       "signature": "static bool8 CanPhraseFitInXRowsYCols(const u16 *easyChatWords, u8 numRows, u8 numColumns, u16 maxLength)",
       "paramsRaw": "const u16 *easyChatWords, u8 numRows, u8 numColumns, u16 maxLength",
+      "paramsList": [
+        {
+          "name": "easyChatWords",
+          "typeRaw": "const u16 *"
+        },
+        {
+          "name": "numRows",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "numColumns",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "maxLength",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "u8 i, j;\n\n    for (i = 0; i < numColumns; i++)\n    {\n        u16 totalLength = numRows - 1;\n        for (j = 0; j < numRows; j++)\n            totalLength += GetEasyChatWordStringLength(*(easyChatWords++));\n\n        if (totalLength > maxLength)\n            return TRUE;\n    }\n\n    return FALSE;",
       "callsTo": [
         "GetEasyChatWordStringLength"
@@ -2408,6 +3063,12 @@
       "returnType": "u16",
       "signature": "u16 GetRandomEasyChatWordFromGroup(u16 groupId)",
       "paramsRaw": "u16 groupId",
+      "paramsList": [
+        {
+          "name": "groupId",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "u16 index = Random() % gEasyChatGroups[groupId].numWords;\n    if (groupId == EC_GROUP_POKEMON\n     || groupId == EC_GROUP_POKEMON_NATIONAL\n     || groupId == EC_GROUP_MOVE_1\n     || groupId == EC_GROUP_MOVE_2)\n    {\n        index = gEasyChatGroups[groupId].wordData.valueList[index];\n    }\n\n    return EC_WORD(groupId, index);",
       "callsTo": [
         "EC_WORD",
@@ -2419,6 +3080,12 @@
       "returnType": "u16",
       "signature": "u16 GetRandomEasyChatWordFromUnlockedGroup(u16 groupId)",
       "paramsRaw": "u16 groupId",
+      "paramsList": [
+        {
+          "name": "groupId",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "if (!IsEasyChatGroupUnlocked(groupId))\n        return EC_EMPTY_WORD;\n\n    if (groupId == EC_GROUP_POKEMON)\n        return GetRandomUnlockedEasyChatPokemon();\n\n    return GetRandomEasyChatWordFromGroup(groupId);",
       "callsTo": [
         "GetRandomEasyChatWordFromGroup",
@@ -2431,6 +3098,7 @@
       "returnType": "void",
       "signature": "void ShowEasyChatProfile(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 *easyChatWords;\n    int columns, rows;\n    switch (gSpecialVar_0x8004)\n    {\n    case 0:\n        easyChatWords = gSaveBlock1Ptr->easyChatProfile;\n        columns = 2;\n        rows = 2;\n        break;\n    case 1:\n        easyChatWords = gSaveBlock1Ptr->easyChatBattleStart;\n        if (CanPhraseFitInXRowsYCols(gSaveBlock1Ptr->easyChatBattleStart, 3, 2, 18))\n        {\n            columns = 2;\n            rows = 3;\n        }\n        else\n        {\n            columns = 3;\n            rows = 2;\n        }\n        break;\n    case 2:\n        easyChatWords = gSaveBlock1Ptr->easyChatBattleWon;\n        columns = 3;\n        rows = 2;\n        break;\n    case 3:\n        easyChatWords = gSaveBlock1Ptr->easyChatBattleLost;\n        columns = 3;\n        rows = 2;\n        break;\n    default:\n        return;\n    }\n\n    ConvertEasyChatWordsToString(gStringVar4, easyChatWords, columns, rows);\n    ShowFieldAutoScrollMessage(gStringVar4);",
       "callsTo": [
         "CanPhraseFitInXRowsYCols",
@@ -2443,6 +3111,7 @@
       "returnType": "void",
       "signature": "void BufferDeepLinkPhrase(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int groupId = Random() & 1 ? EC_GROUP_HOBBIES : EC_GROUP_LIFESTYLE;\n    u16 easyChatWord = GetRandomEasyChatWordFromUnlockedGroup(groupId);\n    CopyEasyChatWord(gStringVar2, easyChatWord);",
       "callsTo": [
         "CopyEasyChatWord",
@@ -2455,6 +3124,12 @@
       "returnType": "bool8",
       "signature": "static bool8 IsTrendySayingUnlocked(u8 wordIndex)",
       "paramsRaw": "u8 wordIndex",
+      "paramsList": [
+        {
+          "name": "wordIndex",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "int byteOffset = wordIndex / 8;\n    int shift = wordIndex % 8;\n    return (gSaveBlock1Ptr->unlockedTrendySayings[byteOffset] >> shift) & 1;",
       "callsTo": [],
       "lineCount": 3
@@ -2463,6 +3138,12 @@
       "returnType": "void",
       "signature": "void UnlockTrendySaying(u8 wordIndex)",
       "paramsRaw": "u8 wordIndex",
+      "paramsList": [
+        {
+          "name": "wordIndex",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (wordIndex < NUM_TRENDY_SAYINGS)\n    {\n        int byteOffset = wordIndex / 8;\n        int shift = wordIndex % 8;\n        gSaveBlock1Ptr->unlockedTrendySayings[byteOffset] |= 1 << shift;\n    }",
       "callsTo": [],
       "lineCount": 6
@@ -2471,6 +3152,7 @@
       "returnType": "u8",
       "signature": "static u8 GetNumTrendySayingsUnlocked(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n    u8 numUnlocked;\n\n    for (i = 0, numUnlocked = 0; i < NUM_TRENDY_SAYINGS; i++)\n    {\n        if (IsTrendySayingUnlocked(i))\n            numUnlocked++;\n    }\n\n    return numUnlocked;",
       "callsTo": [
         "IsTrendySayingUnlocked"
@@ -2481,6 +3163,7 @@
       "returnType": "u16",
       "signature": "u16 UnlockRandomTrendySaying(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 i;\n    u16 numToSkip;\n    u8 numUnlocked = GetNumTrendySayingsUnlocked();\n    if (numUnlocked == NUM_TRENDY_SAYINGS)\n        return EC_EMPTY_WORD;\n\n    numToSkip = Random() % (NUM_TRENDY_SAYINGS - numUnlocked);\n    for (i = 0; i < NUM_TRENDY_SAYINGS; i++)\n    {\n        if (!IsTrendySayingUnlocked(i))\n        {\n            if (numToSkip)\n            {\n                 \n                numToSkip--;\n            }\n            else\n            {\n                UnlockTrendySaying(i);\n                return EC_WORD(EC_GROUP_TRENDY_SAYING, i);\n            }\n        }\n    }\n\n     \n    return EC_EMPTY_WORD;",
       "callsTo": [
         "EC_WORD",
@@ -2495,6 +3178,7 @@
       "returnType": "bool8",
       "signature": "static bool8 EasyChatIsNationalPokedexEnabled(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return IsNationalPokedexEnabled();",
       "callsTo": [
         "IsNationalPokedexEnabled"
@@ -2505,6 +3189,7 @@
       "returnType": "u16",
       "signature": "static u16 GetRandomUnlockedEasyChatPokemon(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 i;\n    u16 numWords;\n    const u16 *species;\n    u16 index = EasyChat_GetNumWordsInGroup(EC_GROUP_POKEMON);\n    if (index == 0)\n        return EC_EMPTY_WORD;\n\n    index = Random() % index;\n    species = gEasyChatGroups[EC_GROUP_POKEMON].wordData.valueList;\n    numWords = gEasyChatGroups[EC_GROUP_POKEMON].numWords;\n    for (i = 0; i < numWords; i++)\n    {\n        u16 dexNum = SpeciesToNationalPokedexNum(*species);\n        if (GetSetPokedexFlag(dexNum, FLAG_GET_SEEN))\n        {\n            if (index)\n                index--;\n            else\n                return EC_WORD(EC_GROUP_POKEMON, *species);\n        }\n\n        species++;\n    }\n\n    return EC_EMPTY_WORD;",
       "callsTo": [
         "EC_WORD",
@@ -2519,6 +3204,7 @@
       "returnType": "void",
       "signature": "void InitEasyChatPhrases(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 i, j;\n\n    for (i = 0; i < ARRAY_COUNT(sDefaultProfileWords); i++)\n        gSaveBlock1Ptr->easyChatProfile[i] = sDefaultProfileWords[i];\n\n    for (i = 0; i < EASY_CHAT_BATTLE_WORDS_COUNT; i++)\n        gSaveBlock1Ptr->easyChatBattleStart[i] = sDefaultBattleStartWords[i];\n\n    for (i = 0; i < EASY_CHAT_BATTLE_WORDS_COUNT; i++)\n        gSaveBlock1Ptr->easyChatBattleWon[i] = sDefaultBattleWonWords[i];\n\n    for (i = 0; i < EASY_CHAT_BATTLE_WORDS_COUNT; i++)\n        gSaveBlock1Ptr->easyChatBattleLost[i] = sDefaultBattleLostWords[i];\n\n    for (i = 0; i < MAIL_COUNT; i++)\n    {\n        for (j = 0; j < MAIL_WORDS_COUNT; j++)\n            gSaveBlock1Ptr->mail[i].words[j] = EC_EMPTY_WORD;\n    }\n\n#ifndef UBFIX\n     \n     \n     \n     \n    for (i = 0; i < 64; i++)\n        gSaveBlock1Ptr->unlockedTrendySayings[i] = 0;\n#else\n    for (i = 0; i < ARRAY_COUNT(gSaveBlock1Ptr->unlockedTrendySayings); i++)\n        gSaveBlock1Ptr->unlockedTrendySayings[i] = 0;\n#endif",
       "callsTo": [
         "ARRAY_COUNT"
@@ -2529,6 +3215,7 @@
       "returnType": "bool8",
       "signature": "static bool8 InitEasyChatScreenWordData(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sWordData = Alloc(sizeof(*sWordData));\n    if (!sWordData)\n        return FALSE;\n\n    SetUnlockedEasyChatGroups();\n    SetUnlockedWordsByAlphabet();\n    return TRUE;",
       "callsTo": [
         "Alloc",
@@ -2541,6 +3228,7 @@
       "returnType": "void",
       "signature": "static void FreeEasyChatScreenWordData(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "TRY_FREE_AND_SET_NULL(sWordData);",
       "callsTo": [
         "TRY_FREE_AND_SET_NULL"
@@ -2551,6 +3239,7 @@
       "returnType": "void",
       "signature": "static void SetUnlockedEasyChatGroups(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int i;\n\n    sWordData->numUnlockedGroups = 0;\n    if (GetNationalPokedexCount(FLAG_GET_SEEN))\n        sWordData->unlockedGroupIds[sWordData->numUnlockedGroups++] = EC_GROUP_POKEMON;\n\n     \n    for (i = EC_GROUP_TRAINER; i <= EC_GROUP_ADJECTIVES; i++)\n        sWordData->unlockedGroupIds[sWordData->numUnlockedGroups++] = i;\n\n    if (FlagGet(FLAG_SYS_GAME_CLEAR))\n    {\n        sWordData->unlockedGroupIds[sWordData->numUnlockedGroups++] = EC_GROUP_EVENTS;\n        sWordData->unlockedGroupIds[sWordData->numUnlockedGroups++] = EC_GROUP_MOVE_1;\n        sWordData->unlockedGroupIds[sWordData->numUnlockedGroups++] = EC_GROUP_MOVE_2;\n    }\n\n    if (FlagGet(FLAG_UNLOCKED_TRENDY_SAYINGS))\n        sWordData->unlockedGroupIds[sWordData->numUnlockedGroups++] = EC_GROUP_TRENDY_SAYING;\n\n    if (IsNationalPokedexEnabled())\n        sWordData->unlockedGroupIds[sWordData->numUnlockedGroups++] = EC_GROUP_POKEMON_NATIONAL;",
       "callsTo": [
         "FlagGet",
@@ -2563,6 +3252,7 @@
       "returnType": "u8",
       "signature": "static u8 GetNumUnlockedEasyChatGroups(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return sWordData->numUnlockedGroups;",
       "callsTo": [],
       "lineCount": 1
@@ -2571,6 +3261,12 @@
       "returnType": "u8",
       "signature": "static u8 GetUnlockedEasyChatGroupId(u8 index)",
       "paramsRaw": "u8 index",
+      "paramsList": [
+        {
+          "name": "index",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (index >= sWordData->numUnlockedGroups)\n        return EC_NUM_GROUPS;\n    else\n        return sWordData->unlockedGroupIds[index];",
       "callsTo": [],
       "lineCount": 4
@@ -2579,6 +3275,7 @@
       "returnType": "void",
       "signature": "static void SetUnlockedWordsByAlphabet(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int i, j, k;\n    int numWords;\n    const u16 *words;\n    u16 numToProcess;\n    int index;\n\n    for (i = 0; i < EC_NUM_ALPHABET_GROUPS; i++)\n    {\n        numWords = gEasyChatWordsByLetterPointers[i].numWords;\n        words = gEasyChatWordsByLetterPointers[i].words;\n        sWordData->numUnlockedAlphabetWords[i] = 0;\n        index = 0;\n        for (j = 0; j < numWords; j++)\n        {\n            if (*words == EC_EMPTY_WORD)\n            {\n                words++;\n                numToProcess = *words;\n                words++;\n                j += 1 + numToProcess;\n            }\n            else\n            {\n                numToProcess = 1;\n            }\n\n            for (k = 0; k < numToProcess; k++)\n            {\n                if (IsEasyChatWordUnlocked(words[k]))\n                {\n                    sWordData->unlockedAlphabetWords[i][index++] = words[k];\n                    sWordData->numUnlockedAlphabetWords[i]++;\n                    break;\n                }\n            }\n\n            words += numToProcess;\n        }\n    }",
       "callsTo": [
         "IsEasyChatWordUnlocked"
@@ -2589,6 +3286,16 @@
       "returnType": "void",
       "signature": "static void SetSelectedWordGroup(bool32 inAlphabetMode, u16 groupId)",
       "paramsRaw": "bool32 inAlphabetMode, u16 groupId",
+      "paramsList": [
+        {
+          "name": "inAlphabetMode",
+          "typeRaw": "bool32"
+        },
+        {
+          "name": "groupId",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "if (!inAlphabetMode)\n        sWordData->numSelectedGroupWords = SetSelectedWordGroup_GroupMode(groupId);\n    else\n        sWordData->numSelectedGroupWords = SetSelectedWordGroup_AlphabetMode(groupId);",
       "callsTo": [
         "SetSelectedWordGroup_AlphabetMode",
@@ -2600,6 +3307,12 @@
       "returnType": "u16",
       "signature": "static u16 GetWordFromSelectedGroup(u16 index)",
       "paramsRaw": "u16 index",
+      "paramsList": [
+        {
+          "name": "index",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "if (index >= sWordData->numSelectedGroupWords)\n        return EC_EMPTY_WORD;\n    else\n        return sWordData->selectedGroupWords[index];",
       "callsTo": [],
       "lineCount": 4
@@ -2608,6 +3321,7 @@
       "returnType": "u16",
       "signature": "static u16 GetNumWordsInSelectedGroup(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return sWordData->numSelectedGroupWords;",
       "callsTo": [],
       "lineCount": 1
@@ -2616,6 +3330,12 @@
       "returnType": "u16",
       "signature": "static u16 SetSelectedWordGroup_GroupMode(u16 groupId)",
       "paramsRaw": "u16 groupId",
+      "paramsList": [
+        {
+          "name": "groupId",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "u32 i;\n    int totalWords;\n    const u16 *list;\n    const struct EasyChatWordInfo *wordInfo;\n    u16 numWords = gEasyChatGroups[groupId].numWords;\n\n    if (groupId == EC_GROUP_POKEMON || groupId == EC_GROUP_POKEMON_NATIONAL\n     || groupId == EC_GROUP_MOVE_1  || groupId == EC_GROUP_MOVE_2)\n    {\n        list = gEasyChatGroups[groupId].wordData.valueList;\n        for (i = 0, totalWords = 0; i < numWords; i++)\n        {\n            if (IsEasyChatIndexAndGroupUnlocked(list[i], groupId))\n                sWordData->selectedGroupWords[totalWords++] = EC_WORD(groupId, list[i]);\n        }\n\n        return totalWords;\n    }\n    else\n    {\n        wordInfo = gEasyChatGroups[groupId].wordData.words;\n        for (i = 0, totalWords = 0; i < numWords; i++)\n        {\n            u16 alphabeticalOrder = wordInfo[i].alphabeticalOrder;\n            if (IsEasyChatIndexAndGroupUnlocked(alphabeticalOrder, groupId))\n                sWordData->selectedGroupWords[totalWords++] = EC_WORD(groupId, alphabeticalOrder);\n        }\n\n        return totalWords;\n    }",
       "callsTo": [
         "EC_WORD",
@@ -2627,6 +3347,12 @@
       "returnType": "u16",
       "signature": "static u16 SetSelectedWordGroup_AlphabetMode(u16 groupId)",
       "paramsRaw": "u16 groupId",
+      "paramsList": [
+        {
+          "name": "groupId",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "u16 i;\n    u16 totalWords;\n\n    for (i = 0, totalWords = 0; i < sWordData->numUnlockedAlphabetWords[groupId]; i++)\n        sWordData->selectedGroupWords[totalWords++] = sWordData->unlockedAlphabetWords[groupId][i];\n\n    return totalWords;",
       "callsTo": [],
       "lineCount": 7
@@ -2635,6 +3361,12 @@
       "returnType": "bool8",
       "signature": "static bool8 IsEasyChatGroupUnlocked2(u8 groupId)",
       "paramsRaw": "u8 groupId",
+      "paramsList": [
+        {
+          "name": "groupId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "int i;\n    for (i = 0; i < sWordData->numUnlockedGroups; i++)\n    {\n        if (sWordData->unlockedGroupIds[i] == groupId)\n            return TRUE;\n    }\n\n    return FALSE;",
       "callsTo": [],
       "lineCount": 8
@@ -2643,6 +3375,16 @@
       "returnType": "bool8",
       "signature": "static bool8 IsEasyChatIndexAndGroupUnlocked(u16 wordIndex, u8 groupId)",
       "paramsRaw": "u16 wordIndex, u8 groupId",
+      "paramsList": [
+        {
+          "name": "wordIndex",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "groupId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "switch (groupId)\n    {\n    case EC_GROUP_POKEMON:\n        return GetSetPokedexFlag(SpeciesToNationalPokedexNum(wordIndex), FLAG_GET_SEEN);\n    case EC_GROUP_POKEMON_NATIONAL:\n        if (IsRestrictedWordSpecies(wordIndex))\n            GetSetPokedexFlag(SpeciesToNationalPokedexNum(wordIndex), FLAG_GET_SEEN);\n        return TRUE;\n    case EC_GROUP_MOVE_1:\n    case EC_GROUP_MOVE_2:\n        return TRUE;\n    case EC_GROUP_TRENDY_SAYING:\n        return IsTrendySayingUnlocked(wordIndex);\n    default:\n        return gEasyChatGroups[groupId].wordData.words[wordIndex].enabled;\n    }",
       "callsTo": [
         "GetSetPokedexFlag",
@@ -2656,6 +3398,12 @@
       "returnType": "int",
       "signature": "static int IsRestrictedWordSpecies(u16 species)",
       "paramsRaw": "u16 species",
+      "paramsList": [
+        {
+          "name": "species",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "u32 i;\n    for (i = 0; i < ARRAY_COUNT(sRestrictedWordSpecies); i++)\n    {\n        if (sRestrictedWordSpecies[i] == species)\n            return TRUE;\n    }\n\n    return FALSE;",
       "callsTo": [
         "ARRAY_COUNT"
@@ -2666,6 +3414,12 @@
       "returnType": "u8",
       "signature": "static u8 IsEasyChatWordUnlocked(u16 easyChatWord)",
       "paramsRaw": "u16 easyChatWord",
+      "paramsList": [
+        {
+          "name": "easyChatWord",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "u8 groupId = EC_GROUP(easyChatWord);\n    u32 index = EC_INDEX(easyChatWord);\n    if (!IsEasyChatGroupUnlocked2(groupId))\n        return FALSE;\n    else\n        return IsEasyChatIndexAndGroupUnlocked(index, groupId);",
       "callsTo": [
         "EC_GROUP",
@@ -2679,6 +3433,16 @@
       "returnType": "void",
       "signature": "void InitializeEasyChatWordArray(u16 *words, u16 length)",
       "paramsRaw": "u16 *words, u16 length",
+      "paramsList": [
+        {
+          "name": "words",
+          "typeRaw": "u16 *"
+        },
+        {
+          "name": "length",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "u16 i;\n    for (i = length - 1; i != EC_EMPTY_WORD; i--)\n        *(words++) = EC_EMPTY_WORD;",
       "callsTo": [],
       "lineCount": 3
@@ -2687,6 +3451,7 @@
       "returnType": "void",
       "signature": "void InitQuestionnaireWords(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int i;\n    u16 *words = GetQuestionnaireWordsPtr();\n    for (i = 0; i < NUM_QUESTIONNAIRE_WORDS; i++)\n        words[i] = EC_EMPTY_WORD;",
       "callsTo": [
         "GetQuestionnaireWordsPtr"
@@ -2697,6 +3462,12 @@
       "returnType": "bool32",
       "signature": "bool32 IsEasyChatAnswerUnlocked(int easyChatWord)",
       "paramsRaw": "int easyChatWord",
+      "paramsList": [
+        {
+          "name": "easyChatWord",
+          "typeRaw": "int"
+        }
+      ],
       "body": "int groupId = EC_GROUP(easyChatWord);\n    int mask = EC_MASK_GROUP;\n    int index = EC_INDEX(easyChatWord);\n    if (!IsEasyChatGroupUnlocked(groupId & mask))\n        return FALSE;\n    else\n        return IsEasyChatIndexAndGroupUnlocked(index, groupId & mask);",
       "callsTo": [
         "EC_GROUP",

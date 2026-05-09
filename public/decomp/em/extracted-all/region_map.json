@@ -6,6 +6,16 @@
       "returnType": "void",
       "signature": "void InitRegionMap(struct RegionMap *regionMap, bool8 zoomed)",
       "paramsRaw": "struct RegionMap *regionMap, bool8 zoomed",
+      "paramsList": [
+        {
+          "name": "regionMap",
+          "typeRaw": "struct RegionMap *"
+        },
+        {
+          "name": "zoomed",
+          "typeRaw": "bool8"
+        }
+      ],
       "body": "InitRegionMapData(regionMap, NULL, zoomed);\n    while (LoadRegionMapGfx());",
       "callsTo": [
         "InitRegionMapData",
@@ -17,6 +27,20 @@
       "returnType": "void",
       "signature": "void InitRegionMapData(struct RegionMap *regionMap, const struct BgTemplate *template, bool8 zoomed)",
       "paramsRaw": "struct RegionMap *regionMap, const struct BgTemplate *template, bool8 zoomed",
+      "paramsList": [
+        {
+          "name": "regionMap",
+          "typeRaw": "struct RegionMap *"
+        },
+        {
+          "name": "template",
+          "typeRaw": "const struct BgTemplate *"
+        },
+        {
+          "name": "zoomed",
+          "typeRaw": "bool8"
+        }
+      ],
       "body": "sRegionMap = regionMap;\n    sRegionMap->initStep = 0;\n    sRegionMap->zoomed = zoomed;\n    sRegionMap->inputCallback = zoomed == TRUE ? ProcessRegionMapInput_Zoomed : ProcessRegionMapInput_Full;\n    if (template != NULL)\n    {\n        sRegionMap->bgNum = template->bg;\n        sRegionMap->charBaseIdx = template->charBaseIndex;\n        sRegionMap->mapBaseIdx = template->mapBaseIndex;\n        sRegionMap->bgManaged = TRUE;\n    }\n    else\n    {\n        sRegionMap->bgNum = 2;\n        sRegionMap->charBaseIdx = 2;\n        sRegionMap->mapBaseIdx = 28;\n        sRegionMap->bgManaged = FALSE;\n    }",
       "callsTo": [],
       "lineCount": 18
@@ -25,6 +49,12 @@
       "returnType": "void",
       "signature": "void ShowRegionMapForPokedexAreaScreen(struct RegionMap *regionMap)",
       "paramsRaw": "struct RegionMap *regionMap",
+      "paramsList": [
+        {
+          "name": "regionMap",
+          "typeRaw": "struct RegionMap *"
+        }
+      ],
       "body": "sRegionMap = regionMap;\n    InitMapBasedOnPlayerLocation();\n    sRegionMap->playerIconSpritePosX = sRegionMap->cursorPosX;\n    sRegionMap->playerIconSpritePosY = sRegionMap->cursorPosY;",
       "callsTo": [
         "InitMapBasedOnPlayerLocation"
@@ -35,6 +65,7 @@
       "returnType": "bool8",
       "signature": "bool8 LoadRegionMapGfx(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sRegionMap->initStep)\n    {\n    case 0:\n        if (sRegionMap->bgManaged)\n            DecompressAndCopyTileDataToVram(sRegionMap->bgNum, sRegionMapBg_GfxLZ, 0, 0, 0);\n        else\n            LZ77UnCompVram(sRegionMapBg_GfxLZ, (u16 *)BG_CHAR_ADDR(2));\n        break;\n    case 1:\n        if (sRegionMap->bgManaged)\n        {\n            if (!FreeTempTileDataBuffersIfPossible())\n                DecompressAndCopyTileDataToVram(sRegionMap->bgNum, sRegionMapBg_TilemapLZ, 0, 0, 1);\n        }\n        else\n        {\n            LZ77UnCompVram(sRegionMapBg_TilemapLZ, (u16 *)BG_SCREEN_ADDR(28));\n        }\n        break;\n    case 2:\n        if (!FreeTempTileDataBuffersIfPossible())\n            LoadPalette(sRegionMapBg_Pal, BG_PLTT_ID(7), 3 * PLTT_SIZE_4BPP);\n        break;\n    case 3:\n        LZ77UnCompWram(sRegionMapCursorSmallGfxLZ, sRegionMap->cursorSmallImage);\n        break;\n    case 4:\n        LZ77UnCompWram(sRegionMapCursorLargeGfxLZ, sRegionMap->cursorLargeImage);\n        break;\n    case 5:\n        InitMapBasedOnPlayerLocation();\n        sRegionMap->playerIconSpritePosX = sRegionMap->cursorPosX;\n        sRegionMap->playerIconSpritePosY = sRegionMap->cursorPosY;\n        sRegionMap->mapSecId = CorrectSpecialMapSecId_Internal(sRegionMap->mapSecId);\n        sRegionMap->mapSecType = GetMapsecType(sRegionMap->mapSecId);\n        GetMapName(sRegionMap->mapSecName, sRegionMap->mapSecId, MAP_NAME_LENGTH);\n        break;\n    case 6:\n        if (sRegionMap->zoomed == FALSE)\n        {\n            CalcZoomScrollParams(0, 0, 0, 0, 0x100, 0x100, 0);\n        }\n        else\n        {\n            sRegionMap->scrollX = sRegionMap->cursorPosX * 8 - 0x34;\n            sRegionMap->scrollY = sRegionMap->cursorPosY * 8 - 0x44;\n            sRegionMap->zoomedCursorPosX = sRegionMap->cursorPosX;\n            sRegionMap->zoomedCursorPosY = sRegionMap->cursorPosY;\n            CalcZoomScrollParams(sRegionMap->scrollX, sRegionMap->scrollY, 0x38, 0x48, 0x80, 0x80, 0);\n        }\n        break;\n    case 7:\n        GetPositionOfCursorWithinMapSec();\n        UpdateRegionMapVideoRegs();\n        sRegionMap->cursorSprite = NULL;\n        sRegionMap->playerIconSprite = NULL;\n        sRegionMap->cursorMovementFrameCounter = 0;\n        sRegionMap->blinkPlayerIcon = FALSE;\n        if (sRegionMap->bgManaged)\n        {\n            SetBgAttribute(sRegionMap->bgNum, BG_ATTR_SCREENSIZE, 2);\n            SetBgAttribute(sRegionMap->bgNum, BG_ATTR_CHARBASEINDEX, sRegionMap->charBaseIdx);\n            SetBgAttribute(sRegionMap->bgNum, BG_ATTR_MAPBASEINDEX, sRegionMap->mapBaseIdx);\n            SetBgAttribute(sRegionMap->bgNum, BG_ATTR_WRAPAROUND, 1);\n            SetBgAttribute(sRegionMap->bgNum, BG_ATTR_PALETTEMODE, 1);\n        }\n        sRegionMap->initStep++;\n        return FALSE;\n    default:\n        return FALSE;\n    }\n    sRegionMap->initStep++;\n    return TRUE;",
       "callsTo": [
         "BG_CHAR_ADDR",
@@ -60,6 +91,16 @@
       "returnType": "void",
       "signature": "void BlendRegionMap(u16 color, u32 coeff)",
       "paramsRaw": "u16 color, u32 coeff",
+      "paramsList": [
+        {
+          "name": "color",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "coeff",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "BlendPalettes(0x380, coeff, color);\n    CpuCopy16(&gPlttBufferFaded[BG_PLTT_ID(7)], &gPlttBufferUnfaded[BG_PLTT_ID(7)], 3 * PLTT_SIZE_4BPP);",
       "callsTo": [
         "BG_PLTT_ID",
@@ -72,6 +113,7 @@
       "returnType": "void",
       "signature": "void FreeRegionMapIconResources(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (sRegionMap->cursorSprite != NULL)\n    {\n        DestroySprite(sRegionMap->cursorSprite);\n        FreeSpriteTilesByTag(sRegionMap->cursorTileTag);\n        FreeSpritePaletteByTag(sRegionMap->cursorPaletteTag);\n    }\n    if (sRegionMap->playerIconSprite != NULL)\n    {\n        DestroySprite(sRegionMap->playerIconSprite);\n        FreeSpriteTilesByTag(sRegionMap->playerIconTileTag);\n        FreeSpritePaletteByTag(sRegionMap->playerIconPaletteTag);\n    }",
       "callsTo": [
         "DestroySprite",
@@ -84,6 +126,7 @@
       "returnType": "u8",
       "signature": "u8 DoRegionMapInputCallback(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return sRegionMap->inputCallback();",
       "callsTo": [],
       "lineCount": 1
@@ -92,6 +135,7 @@
       "returnType": "u8",
       "signature": "static u8 ProcessRegionMapInput_Full(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 input;\n\n    input = MAP_INPUT_NONE;\n    sRegionMap->cursorDeltaX = 0;\n    sRegionMap->cursorDeltaY = 0;\n    if (JOY_HELD(DPAD_UP) && sRegionMap->cursorPosY > MAPCURSOR_Y_MIN)\n    {\n        sRegionMap->cursorDeltaY = -1;\n        input = MAP_INPUT_MOVE_START;\n    }\n    if (JOY_HELD(DPAD_DOWN) && sRegionMap->cursorPosY < MAPCURSOR_Y_MAX)\n    {\n        sRegionMap->cursorDeltaY = +1;\n        input = MAP_INPUT_MOVE_START;\n    }\n    if (JOY_HELD(DPAD_LEFT) && sRegionMap->cursorPosX > MAPCURSOR_X_MIN)\n    {\n        sRegionMap->cursorDeltaX = -1;\n        input = MAP_INPUT_MOVE_START;\n    }\n    if (JOY_HELD(DPAD_RIGHT) && sRegionMap->cursorPosX < MAPCURSOR_X_MAX)\n    {\n        sRegionMap->cursorDeltaX = +1;\n        input = MAP_INPUT_MOVE_START;\n    }\n    if (JOY_NEW(A_BUTTON))\n    {\n        input = MAP_INPUT_A_BUTTON;\n    }\n    else if (JOY_NEW(B_BUTTON))\n    {\n        input = MAP_INPUT_B_BUTTON;\n    }\n    if (input == MAP_INPUT_MOVE_START)\n    {\n        sRegionMap->cursorMovementFrameCounter = 4;\n        sRegionMap->inputCallback = MoveRegionMapCursor_Full;\n    }\n    return input;",
       "callsTo": [
         "JOY_HELD",
@@ -103,6 +147,7 @@
       "returnType": "u8",
       "signature": "static u8 MoveRegionMapCursor_Full(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "mapsec_u16_t mapSecId;\n\n    if (sRegionMap->cursorMovementFrameCounter != 0)\n        return MAP_INPUT_MOVE_CONT;\n\n    if (sRegionMap->cursorDeltaX > 0)\n    {\n        sRegionMap->cursorPosX++;\n    }\n    if (sRegionMap->cursorDeltaX < 0)\n    {\n        sRegionMap->cursorPosX--;\n    }\n    if (sRegionMap->cursorDeltaY > 0)\n    {\n        sRegionMap->cursorPosY++;\n    }\n    if (sRegionMap->cursorDeltaY < 0)\n    {\n        sRegionMap->cursorPosY--;\n    }\n\n    mapSecId = GetMapSecIdAt(sRegionMap->cursorPosX, sRegionMap->cursorPosY);\n    sRegionMap->mapSecType = GetMapsecType(mapSecId);\n    if (mapSecId != sRegionMap->mapSecId)\n    {\n        sRegionMap->mapSecId = mapSecId;\n        GetMapName(sRegionMap->mapSecName, sRegionMap->mapSecId, MAP_NAME_LENGTH);\n    }\n    GetPositionOfCursorWithinMapSec();\n    sRegionMap->inputCallback = ProcessRegionMapInput_Full;\n    return MAP_INPUT_MOVE_END;",
       "callsTo": [
         "GetMapName",
@@ -116,6 +161,7 @@
       "returnType": "u8",
       "signature": "static u8 ProcessRegionMapInput_Zoomed(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 input;\n\n    input = MAP_INPUT_NONE;\n    sRegionMap->zoomedCursorDeltaX = 0;\n    sRegionMap->zoomedCursorDeltaY = 0;\n    if (JOY_HELD(DPAD_UP) && sRegionMap->scrollY > -0x34)\n    {\n        sRegionMap->zoomedCursorDeltaY = -1;\n        input = MAP_INPUT_MOVE_START;\n    }\n    if (JOY_HELD(DPAD_DOWN) && sRegionMap->scrollY < 0x3c)\n    {\n        sRegionMap->zoomedCursorDeltaY = +1;\n        input = MAP_INPUT_MOVE_START;\n    }\n    if (JOY_HELD(DPAD_LEFT) && sRegionMap->scrollX > -0x2c)\n    {\n        sRegionMap->zoomedCursorDeltaX = -1;\n        input = MAP_INPUT_MOVE_START;\n    }\n    if (JOY_HELD(DPAD_RIGHT) && sRegionMap->scrollX < 0xac)\n    {\n        sRegionMap->zoomedCursorDeltaX = +1;\n        input = MAP_INPUT_MOVE_START;\n    }\n    if (JOY_NEW(A_BUTTON))\n    {\n        input = MAP_INPUT_A_BUTTON;\n    }\n    if (JOY_NEW(B_BUTTON))\n    {\n        input = MAP_INPUT_B_BUTTON;\n    }\n    if (input == MAP_INPUT_MOVE_START)\n    {\n        sRegionMap->inputCallback = MoveRegionMapCursor_Zoomed;\n        sRegionMap->zoomedCursorMovementFrameCounter = 0;\n    }\n    return input;",
       "callsTo": [
         "JOY_HELD",
@@ -127,6 +173,7 @@
       "returnType": "u8",
       "signature": "static u8 MoveRegionMapCursor_Zoomed(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 x;\n    u16 y;\n    mapsec_u16_t mapSecId;\n\n    sRegionMap->scrollY += sRegionMap->zoomedCursorDeltaY;\n    sRegionMap->scrollX += sRegionMap->zoomedCursorDeltaX;\n    RegionMap_SetBG2XAndBG2Y(sRegionMap->scrollX, sRegionMap->scrollY);\n    sRegionMap->zoomedCursorMovementFrameCounter++;\n    if (sRegionMap->zoomedCursorMovementFrameCounter == 8)\n    {\n        x = (sRegionMap->scrollX + 0x2c) / 8 + 1;\n        y = (sRegionMap->scrollY + 0x34) / 8 + 2;\n        if (x != sRegionMap->zoomedCursorPosX || y != sRegionMap->zoomedCursorPosY)\n        {\n            sRegionMap->zoomedCursorPosX = x;\n            sRegionMap->zoomedCursorPosY = y;\n            mapSecId = GetMapSecIdAt(x, y);\n            sRegionMap->mapSecType = GetMapsecType(mapSecId);\n            if (mapSecId != sRegionMap->mapSecId)\n            {\n                sRegionMap->mapSecId = mapSecId;\n                GetMapName(sRegionMap->mapSecName, sRegionMap->mapSecId, MAP_NAME_LENGTH);\n            }\n            GetPositionOfCursorWithinMapSec();\n        }\n        sRegionMap->zoomedCursorMovementFrameCounter = 0;\n        sRegionMap->inputCallback = ProcessRegionMapInput_Zoomed;\n        return MAP_INPUT_MOVE_END;\n    }\n    return MAP_INPUT_MOVE_CONT;",
       "callsTo": [
         "GetMapName",
@@ -141,6 +188,7 @@
       "returnType": "void",
       "signature": "void SetRegionMapDataForZoom(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (sRegionMap->zoomed == FALSE)\n    {\n        sRegionMap->scrollY = 0;\n        sRegionMap->scrollX = 0;\n        sRegionMap->unk_040 = 0;\n        sRegionMap->unk_03c = 0;\n        sRegionMap->unk_060 = sRegionMap->cursorPosX * 8 - 0x34;\n        sRegionMap->unk_062 = sRegionMap->cursorPosY * 8 - 0x44;\n        sRegionMap->unk_044 = (sRegionMap->unk_060 << 8) / 16;\n        sRegionMap->unk_048 = (sRegionMap->unk_062 << 8) / 16;\n        sRegionMap->zoomedCursorPosX = sRegionMap->cursorPosX;\n        sRegionMap->zoomedCursorPosY = sRegionMap->cursorPosY;\n        sRegionMap->unk_04c = 0x10000;\n        sRegionMap->unk_050 = -0x800;\n    }\n    else\n    {\n        sRegionMap->unk_03c = sRegionMap->scrollX * 0x100;\n        sRegionMap->unk_040 = sRegionMap->scrollY * 0x100;\n        sRegionMap->unk_060 = 0;\n        sRegionMap->unk_062 = 0;\n        sRegionMap->unk_044 = -(sRegionMap->unk_03c / 16);\n        sRegionMap->unk_048 = -(sRegionMap->unk_040 / 16);\n        sRegionMap->cursorPosX = sRegionMap->zoomedCursorPosX;\n        sRegionMap->cursorPosY = sRegionMap->zoomedCursorPosY;\n        sRegionMap->unk_04c = 0x8000;\n        sRegionMap->unk_050 = 0x800;\n    }\n    sRegionMap->unk_06e = 0;\n    FreeRegionMapCursorSprite();\n    HideRegionMapPlayerIcon();",
       "callsTo": [
         "FreeRegionMapCursorSprite",
@@ -152,6 +200,7 @@
       "returnType": "bool8",
       "signature": "bool8 UpdateRegionMapZoom(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "bool8 retVal;\n\n    if (sRegionMap->unk_06e >= 16)\n    {\n        return FALSE;\n    }\n    sRegionMap->unk_06e++;\n    if (sRegionMap->unk_06e == 16)\n    {\n        sRegionMap->unk_044 = 0;\n        sRegionMap->unk_048 = 0;\n        sRegionMap->scrollX = sRegionMap->unk_060;\n        sRegionMap->scrollY = sRegionMap->unk_062;\n        sRegionMap->unk_04c = (sRegionMap->zoomed == FALSE) ? (128 << 8) : (256 << 8);\n        sRegionMap->zoomed = !sRegionMap->zoomed;\n        sRegionMap->inputCallback = (sRegionMap->zoomed == FALSE) ? ProcessRegionMapInput_Full : ProcessRegionMapInput_Zoomed;\n        CreateRegionMapCursor(sRegionMap->cursorTileTag, sRegionMap->cursorPaletteTag);\n        UnhideRegionMapPlayerIcon();\n        retVal = FALSE;\n    }\n    else\n    {\n        sRegionMap->unk_03c += sRegionMap->unk_044;\n        sRegionMap->unk_040 += sRegionMap->unk_048;\n        sRegionMap->scrollX = sRegionMap->unk_03c >> 8;\n        sRegionMap->scrollY = sRegionMap->unk_040 >> 8;\n        sRegionMap->unk_04c += sRegionMap->unk_050;\n        if ((sRegionMap->unk_044 < 0 && sRegionMap->scrollX < sRegionMap->unk_060) || (sRegionMap->unk_044 > 0 && sRegionMap->scrollX > sRegionMap->unk_060))\n        {\n            sRegionMap->scrollX = sRegionMap->unk_060;\n            sRegionMap->unk_044 = 0;\n        }\n        if ((sRegionMap->unk_048 < 0 && sRegionMap->scrollY < sRegionMap->unk_062) || (sRegionMap->unk_048 > 0 && sRegionMap->scrollY > sRegionMap->unk_062))\n        {\n            sRegionMap->scrollY = sRegionMap->unk_062;\n            sRegionMap->unk_048 = 0;\n        }\n        if (sRegionMap->zoomed == FALSE)\n        {\n            if (sRegionMap->unk_04c < (128 << 8))\n            {\n                sRegionMap->unk_04c = (128 << 8);\n                sRegionMap->unk_050 = 0;\n            }\n        }\n        else\n        {\n            if (sRegionMap->unk_04c > (256 << 8))\n            {\n                sRegionMap->unk_04c = (256 << 8);\n                sRegionMap->unk_050 = 0;\n            }\n        }\n        retVal = TRUE;\n    }\n    CalcZoomScrollParams(sRegionMap->scrollX, sRegionMap->scrollY, 0x38, 0x48, sRegionMap->unk_04c >> 8, sRegionMap->unk_04c >> 8, 0);\n    return retVal;",
       "callsTo": [
         "CalcZoomScrollParams",
@@ -164,6 +213,36 @@
       "returnType": "void",
       "signature": "static void CalcZoomScrollParams(s16 scrollX, s16 scrollY, s16 c, s16 d, u16 e, u16 f, u8 rotation)",
       "paramsRaw": "s16 scrollX, s16 scrollY, s16 c, s16 d, u16 e, u16 f, u8 rotation",
+      "paramsList": [
+        {
+          "name": "scrollX",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "scrollY",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "c",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "d",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "e",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "f",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "rotation",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s32 var1;\n    s32 var2;\n    s32 var3;\n    s32 var4;\n\n    sRegionMap->bg2pa = e * gSineTable[rotation + 64] >> 8;\n    sRegionMap->bg2pc = e * -gSineTable[rotation] >> 8;\n    sRegionMap->bg2pb = f * gSineTable[rotation] >> 8;\n    sRegionMap->bg2pd = f * gSineTable[rotation + 64] >> 8;\n\n    var1 = (scrollX << 8) + (c << 8);\n    var2 = d * sRegionMap->bg2pb + sRegionMap->bg2pa * c;\n    sRegionMap->bg2x = var1 - var2;\n\n    var3 = (scrollY << 8) + (d << 8);\n    var4 = sRegionMap->bg2pd * d + sRegionMap->bg2pc * c;\n    sRegionMap->bg2y = var3 - var4;\n\n    sRegionMap->needUpdateVideoRegs = TRUE;",
       "callsTo": [],
       "lineCount": 19
@@ -172,6 +251,16 @@
       "returnType": "void",
       "signature": "static void RegionMap_SetBG2XAndBG2Y(s16 x, s16 y)",
       "paramsRaw": "s16 x, s16 y",
+      "paramsList": [
+        {
+          "name": "x",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s16"
+        }
+      ],
       "body": "sRegionMap->bg2x = (x << 8) + 0x1c00;\n    sRegionMap->bg2y = (y << 8) + 0x2400;\n    sRegionMap->needUpdateVideoRegs = TRUE;",
       "callsTo": [],
       "lineCount": 3
@@ -180,6 +269,7 @@
       "returnType": "void",
       "signature": "void UpdateRegionMapVideoRegs(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (sRegionMap->needUpdateVideoRegs)\n    {\n        SetGpuReg(REG_OFFSET_BG2PA, sRegionMap->bg2pa);\n        SetGpuReg(REG_OFFSET_BG2PB, sRegionMap->bg2pb);\n        SetGpuReg(REG_OFFSET_BG2PC, sRegionMap->bg2pc);\n        SetGpuReg(REG_OFFSET_BG2PD, sRegionMap->bg2pd);\n        SetGpuReg(REG_OFFSET_BG2X_L, sRegionMap->bg2x);\n        SetGpuReg(REG_OFFSET_BG2X_H, sRegionMap->bg2x >> 16);\n        SetGpuReg(REG_OFFSET_BG2Y_L, sRegionMap->bg2y);\n        SetGpuReg(REG_OFFSET_BG2Y_H, sRegionMap->bg2y >> 16);\n        sRegionMap->needUpdateVideoRegs = FALSE;\n    }",
       "callsTo": [
         "SetGpuReg"
@@ -190,6 +280,16 @@
       "returnType": "void",
       "signature": "void PokedexAreaScreen_UpdateRegionMapVariablesAndVideoRegs(s16 x, s16 y)",
       "paramsRaw": "s16 x, s16 y",
+      "paramsList": [
+        {
+          "name": "x",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s16"
+        }
+      ],
       "body": "CalcZoomScrollParams(x, y, 0x38, 0x48, 0x100, 0x100, 0);\n    UpdateRegionMapVideoRegs();\n    if (sRegionMap->playerIconSprite != NULL)\n    {\n        sRegionMap->playerIconSprite->x2 = -x;\n        sRegionMap->playerIconSprite->y2 = -y;\n    }",
       "callsTo": [
         "CalcZoomScrollParams",
@@ -201,6 +301,7 @@
       "returnType": "void",
       "signature": "static void InitMapBasedOnPlayerLocation(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "const struct MapHeader *mapHeader;\n    u16 mapWidth;\n    u16 mapHeight;\n    u16 x;\n    u16 y;\n    u16 dimensionScale;\n    u16 xOnMap;\n    struct WarpData *warp;\n\n    if (gSaveBlock1Ptr->location.mapGroup == MAP_GROUP(MAP_SS_TIDAL_CORRIDOR)\n        && (gSaveBlock1Ptr->location.mapNum == MAP_NUM(MAP_SS_TIDAL_CORRIDOR)\n            || gSaveBlock1Ptr->location.mapNum == MAP_NUM(MAP_SS_TIDAL_LOWER_DECK)\n            || gSaveBlock1Ptr->location.mapNum == MAP_NUM(MAP_SS_TIDAL_ROOMS)))\n    {\n        RegionMap_InitializeStateBasedOnSSTidalLocation();\n        return;\n    }\n\n    switch (GetMapTypeByGroupAndId(gSaveBlock1Ptr->location.mapGroup, gSaveBlock1Ptr->location.mapNum))\n    {\n    default:\n    case MAP_TYPE_TOWN:\n    case MAP_TYPE_CITY:\n    case MAP_TYPE_ROUTE:\n    case MAP_TYPE_UNDERWATER:\n    case MAP_TYPE_OCEAN_ROUTE:\n        sRegionMap->mapSecId = gMapHeader.regionMapSectionId;\n        sRegionMap->playerIsInCave = FALSE;\n        mapWidth = gMapHeader.mapLayout->width;\n        mapHeight = gMapHeader.mapLayout->height;\n        x = gSaveBlock1Ptr->pos.x;\n        y = gSaveBlock1Ptr->pos.y;\n        if (sRegionMap->mapSecId == MAPSEC_UNDERWATER_SEAFLOOR_CAVERN || sRegionMap->mapSecId == MAPSEC_UNDERWATER_MARINE_CAVE)\n            sRegionMap->playerIsInCave = TRUE;\n        break;\n    case MAP_TYPE_UNDERGROUND:\n    case MAP_TYPE_UNKNOWN:\n        if (gMapHeader.allowEscaping)\n        {\n            mapHeader = Overworld_GetMapHeaderByGroupAndId(gSaveBlock1Ptr->escapeWarp.mapGroup, gSaveBlock1Ptr->escapeWarp.mapNum);\n            sRegionMap->mapSecId = mapHeader->regionMapSectionId;\n            sRegionMap->playerIsInCave = TRUE;\n            mapWidth = mapHeader->mapLayout->width;\n            mapHeight = mapHeader->mapLayout->height;\n            x = gSaveBlock1Ptr->escapeWarp.x;\n            y = gSaveBlock1Ptr->escapeWarp.y;\n        }\n        else\n        {\n            sRegionMap->mapSecId = gMapHeader.regionMapSectionId;\n            sRegionMap->playerIsInCave = TRUE;\n            mapWidth = 1;\n            mapHeight = 1;\n            x = 1;\n            y = 1;\n        }\n        break;\n    case MAP_TYPE_SECRET_BASE:\n        mapHeader = Overworld_GetMapHeaderByGroupAndId((u16)gSaveBlock1Ptr->dynamicWarp.mapGroup, (u16)gSaveBlock1Ptr->dynamicWarp.mapNum);\n        sRegionMap->mapSecId = mapHeader->regionMapSectionId;\n        sRegionMap->playerIsInCave = TRUE;\n        mapWidth = mapHeader->mapLayout->width;\n        mapHeight = mapHeader->mapLayout->height;\n        x = gSaveBlock1Ptr->dynamicWarp.x;\n        y = gSaveBlock1Ptr->dynamicWarp.y;\n        break;\n    case MAP_TYPE_INDOOR:\n        sRegionMap->mapSecId = gMapHeader.regionMapSectionId;\n        if (sRegionMap->mapSecId != MAPSEC_DYNAMIC)\n        {\n            warp = &gSaveBlock1Ptr->escapeWarp;\n            mapHeader = Overworld_GetMapHeaderByGroupAndId(warp->mapGroup, warp->mapNum);\n        }\n        else\n        {\n            warp = &gSaveBlock1Ptr->dynamicWarp;\n            mapHeader = Overworld_GetMapHeaderByGroupAndId(warp->mapGroup, warp->mapNum);\n            sRegionMap->mapSecId = mapHeader->regionMapSectionId;\n        }\n\n        if (IsPlayerInAquaHideout(sRegionMap->mapSecId))\n            sRegionMap->playerIsInCave = TRUE;\n        else\n            sRegionMap->playerIsInCave = FALSE;\n\n        mapWidth = mapHeader->mapLayout->width;\n        mapHeight = mapHeader->mapLayout->height;\n        x = warp->x;\n        y = warp->y;\n        break;\n    }\n\n    xOnMap = x;\n\n    dimensionScale = mapWidth / gRegionMapEntries[sRegionMap->mapSecId].width;\n    if (dimensionScale == 0)\n    {\n        dimensionScale = 1;\n    }\n    x /= dimensionScale;\n    if (x >= gRegionMapEntries[sRegionMap->mapSecId].width)\n    {\n        x = gRegionMapEntries[sRegionMap->mapSecId].width - 1;\n    }\n\n    dimensionScale = mapHeight / gRegionMapEntries[sRegionMap->mapSecId].height;\n    if (dimensionScale == 0)\n    {\n        dimensionScale = 1;\n    }\n    y /= dimensionScale;\n    if (y >= gRegionMapEntries[sRegionMap->mapSecId].height)\n    {\n        y = gRegionMapEntries[sRegionMap->mapSecId].height - 1;\n    }\n\n    switch (sRegionMap->mapSecId)\n    {\n    case MAPSEC_ROUTE_114:\n        if (y != 0)\n            x = 0;\n        break;\n    case MAPSEC_ROUTE_126:\n    case MAPSEC_UNDERWATER_126:\n        x = 0;\n        if (gSaveBlock1Ptr->pos.x > 32)\n            x++;\n        if (gSaveBlock1Ptr->pos.x > 51)\n            x++;\n\n        y = 0;\n        if (gSaveBlock1Ptr->pos.y > 37)\n            y++;\n        if (gSaveBlock1Ptr->pos.y > 56)\n            y++;\n        break;\n    case MAPSEC_ROUTE_121:\n        x = 0;\n        if (xOnMap > 14)\n            x++;\n        if (xOnMap > 28)\n            x++;\n        if (xOnMap > 54)\n            x++;\n        break;\n    case MAPSEC_UNDERWATER_MARINE_CAVE:\n        GetMarineCaveCoords(&sRegionMap->cursorPosX, &sRegionMap->cursorPosY);\n        return;\n    }\n    sRegionMap->cursorPosX = gRegionMapEntries[sRegionMap->mapSecId].x + x + MAPCURSOR_X_MIN;\n    sRegionMap->cursorPosY = gRegionMapEntries[sRegionMap->mapSecId].y + y + MAPCURSOR_Y_MIN;",
       "callsTo": [
         "GetMapTypeByGroupAndId",
@@ -217,6 +318,7 @@
       "returnType": "void",
       "signature": "static void RegionMap_InitializeStateBasedOnSSTidalLocation(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 y;\n    u16 x;\n    u8 mapGroup;\n    u8 mapNum;\n    u16 dimensionScale;\n    s16 xOnMap;\n    s16 yOnMap;\n    const struct MapHeader *mapHeader;\n\n    y = 0;\n    x = 0;\n    switch (GetSSTidalLocation(&mapGroup, &mapNum, &xOnMap, &yOnMap))\n    {\n    case SS_TIDAL_LOCATION_SLATEPORT:\n        sRegionMap->mapSecId = MAPSEC_SLATEPORT_CITY;\n        break;\n    case SS_TIDAL_LOCATION_LILYCOVE:\n        sRegionMap->mapSecId = MAPSEC_LILYCOVE_CITY;\n        break;\n    case SS_TIDAL_LOCATION_ROUTE124:\n        sRegionMap->mapSecId = MAPSEC_ROUTE_124;\n        break;\n    case SS_TIDAL_LOCATION_ROUTE131:\n        sRegionMap->mapSecId = MAPSEC_ROUTE_131;\n        break;\n    default:\n    case SS_TIDAL_LOCATION_CURRENTS:\n        mapHeader = Overworld_GetMapHeaderByGroupAndId(mapGroup, mapNum);\n\n        sRegionMap->mapSecId = mapHeader->regionMapSectionId;\n        dimensionScale = mapHeader->mapLayout->width / gRegionMapEntries[sRegionMap->mapSecId].width;\n        if (dimensionScale == 0)\n            dimensionScale = 1;\n        x = xOnMap / dimensionScale;\n        if (x >= gRegionMapEntries[sRegionMap->mapSecId].width)\n            x = gRegionMapEntries[sRegionMap->mapSecId].width - 1;\n\n        dimensionScale = mapHeader->mapLayout->height / gRegionMapEntries[sRegionMap->mapSecId].height;\n        if (dimensionScale == 0)\n            dimensionScale = 1;\n        y = yOnMap / dimensionScale;\n        if (y >= gRegionMapEntries[sRegionMap->mapSecId].height)\n            y = gRegionMapEntries[sRegionMap->mapSecId].height - 1;\n        break;\n    }\n    sRegionMap->playerIsInCave = FALSE;\n    sRegionMap->cursorPosX = gRegionMapEntries[sRegionMap->mapSecId].x + x + MAPCURSOR_X_MIN;\n    sRegionMap->cursorPosY = gRegionMapEntries[sRegionMap->mapSecId].y + y + MAPCURSOR_Y_MIN;",
       "callsTo": [
         "GetSSTidalLocation",
@@ -228,6 +330,12 @@
       "returnType": "u8",
       "signature": "static u8 GetMapsecType(mapsec_u16_t mapSecId)",
       "paramsRaw": "mapsec_u16_t mapSecId",
+      "paramsList": [
+        {
+          "name": "mapSecId",
+          "typeRaw": "mapsec_u16_t"
+        }
+      ],
       "body": "switch (mapSecId)\n    {\n    case MAPSEC_NONE:\n        return MAPSECTYPE_NONE;\n    case MAPSEC_LITTLEROOT_TOWN:\n        return FlagGet(FLAG_VISITED_LITTLEROOT_TOWN) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;\n    case MAPSEC_OLDALE_TOWN:\n        return FlagGet(FLAG_VISITED_OLDALE_TOWN) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;\n    case MAPSEC_DEWFORD_TOWN:\n        return FlagGet(FLAG_VISITED_DEWFORD_TOWN) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;\n    case MAPSEC_LAVARIDGE_TOWN:\n        return FlagGet(FLAG_VISITED_LAVARIDGE_TOWN) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;\n    case MAPSEC_FALLARBOR_TOWN:\n        return FlagGet(FLAG_VISITED_FALLARBOR_TOWN) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;\n    case MAPSEC_VERDANTURF_TOWN:\n        return FlagGet(FLAG_VISITED_VERDANTURF_TOWN) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;\n    case MAPSEC_PACIFIDLOG_TOWN:\n        return FlagGet(FLAG_VISITED_PACIFIDLOG_TOWN) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;\n    case MAPSEC_PETALBURG_CITY:\n        return FlagGet(FLAG_VISITED_PETALBURG_CITY) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;\n    case MAPSEC_SLATEPORT_CITY:\n        return FlagGet(FLAG_VISITED_SLATEPORT_CITY) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;\n    case MAPSEC_MAUVILLE_CITY:\n        return FlagGet(FLAG_VISITED_MAUVILLE_CITY) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;\n    case MAPSEC_RUSTBORO_CITY:\n        return FlagGet(FLAG_VISITED_RUSTBORO_CITY) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;\n    case MAPSEC_FORTREE_CITY:\n        return FlagGet(FLAG_VISITED_FORTREE_CITY) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;\n    case MAPSEC_LILYCOVE_CITY:\n        return FlagGet(FLAG_VISITED_LILYCOVE_CITY) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;\n    case MAPSEC_MOSSDEEP_CITY:\n        return FlagGet(FLAG_VISITED_MOSSDEEP_CITY) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;\n    case MAPSEC_SOOTOPOLIS_CITY:\n        return FlagGet(FLAG_VISITED_SOOTOPOLIS_CITY) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;\n    case MAPSEC_EVER_GRANDE_CITY:\n        return FlagGet(FLAG_VISITED_EVER_GRANDE_CITY) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;\n    case MAPSEC_BATTLE_FRONTIER:\n        return FlagGet(FLAG_LANDMARK_BATTLE_FRONTIER) ? MAPSECTYPE_BATTLE_FRONTIER : MAPSECTYPE_NONE;\n    case MAPSEC_SOUTHERN_ISLAND:\n        return FlagGet(FLAG_LANDMARK_SOUTHERN_ISLAND) ? MAPSECTYPE_ROUTE : MAPSECTYPE_NONE;\n    default:\n        return MAPSECTYPE_ROUTE;\n    }",
       "callsTo": [
         "FlagGet"
@@ -238,6 +346,16 @@
       "returnType": "void",
       "signature": "static void GetMarineCaveCoords(u16 *x, u16 *y)",
       "paramsRaw": "u16 *x, u16 *y",
+      "paramsList": [
+        {
+          "name": "x",
+          "typeRaw": "u16 *"
+        },
+        {
+          "name": "y",
+          "typeRaw": "u16 *"
+        }
+      ],
       "body": "u16 idx;\n\n    idx = VarGet(VAR_ABNORMAL_WEATHER_LOCATION);\n    if (idx < MARINE_CAVE_LOCATIONS_START || idx > ABNORMAL_WEATHER_LOCATIONS)\n    {\n        idx = MARINE_CAVE_LOCATIONS_START;\n    }\n    idx -= MARINE_CAVE_LOCATIONS_START;\n\n    *x = sMarineCaveLocationCoords[idx].x + MAPCURSOR_X_MIN;\n    *y = sMarineCaveLocationCoords[idx].y + MAPCURSOR_Y_MIN;",
       "callsTo": [
         "VarGet"
@@ -248,6 +366,12 @@
       "returnType": "bool32",
       "signature": "static bool32 IsPlayerInAquaHideout(mapsec_u8_t mapSecId)",
       "paramsRaw": "mapsec_u8_t mapSecId",
+      "paramsList": [
+        {
+          "name": "mapSecId",
+          "typeRaw": "mapsec_u8_t"
+        }
+      ],
       "body": "u32 i;\n\n    for (i = 0; i < ARRAY_COUNT(sMapSecAquaHideoutOld); i++)\n    {\n        if (sMapSecAquaHideoutOld[i] == mapSecId)\n            return TRUE;\n    }\n    return FALSE;",
       "callsTo": [
         "ARRAY_COUNT"
@@ -258,6 +382,7 @@
       "returnType": "void",
       "signature": "static void GetPositionOfCursorWithinMapSec(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 x;\n    u16 y;\n    u16 posWithinMapSec;\n\n    if (sRegionMap->mapSecId == MAPSEC_NONE)\n    {\n        sRegionMap->posWithinMapSec = 0;\n        return;\n    }\n    if (!sRegionMap->zoomed)\n    {\n        x = sRegionMap->cursorPosX;\n        y = sRegionMap->cursorPosY;\n    }\n    else\n    {\n        x = sRegionMap->zoomedCursorPosX;\n        y = sRegionMap->zoomedCursorPosY;\n    }\n    posWithinMapSec = 0;\n    while (1)\n    {\n        if (x <= MAPCURSOR_X_MIN)\n        {\n            if (RegionMap_IsMapSecIdInNextRow(y))\n            {\n                y--;\n                x = MAPCURSOR_X_MAX + 1;\n            }\n            else\n            {\n                break;\n            }\n        }\n        else\n        {\n            x--;\n            if (GetMapSecIdAt(x, y) == sRegionMap->mapSecId)\n            {\n                posWithinMapSec++;\n            }\n        }\n    }\n    sRegionMap->posWithinMapSec = posWithinMapSec;",
       "callsTo": [
         "GetMapSecIdAt",
@@ -269,6 +394,12 @@
       "returnType": "bool8",
       "signature": "static bool8 RegionMap_IsMapSecIdInNextRow(u16 y)",
       "paramsRaw": "u16 y",
+      "paramsList": [
+        {
+          "name": "y",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "u16 x;\n\n    if (y-- == 0)\n    {\n        return FALSE;\n    }\n    for (x = MAPCURSOR_X_MIN; x <= MAPCURSOR_X_MAX; x++)\n    {\n        if (GetMapSecIdAt(x, y) == sRegionMap->mapSecId)\n        {\n            return TRUE;\n        }\n    }\n    return FALSE;",
       "callsTo": [
         "GetMapSecIdAt"
@@ -279,6 +410,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_CursorMapFull(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (sRegionMap->cursorMovementFrameCounter != 0)\n    {\n        sprite->x += 2 * sRegionMap->cursorDeltaX;\n        sprite->y += 2 * sRegionMap->cursorDeltaY;\n        sRegionMap->cursorMovementFrameCounter--;\n    }",
       "callsTo": [],
       "lineCount": 6
@@ -287,6 +424,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_CursorMapZoomed(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "",
       "callsTo": [],
       "lineCount": 1
@@ -295,6 +438,16 @@
       "returnType": "void",
       "signature": "void CreateRegionMapCursor(u16 tileTag, u16 paletteTag)",
       "paramsRaw": "u16 tileTag, u16 paletteTag",
+      "paramsList": [
+        {
+          "name": "tileTag",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "paletteTag",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "u8 spriteId;\n    struct SpriteTemplate template;\n    struct SpritePalette palette;\n    struct SpriteSheet sheet;\n\n    palette = sRegionMapCursorSpritePalette;\n    template = sRegionMapCursorSpriteTemplate;\n    sheet.tag = tileTag;\n    template.tileTag = tileTag;\n    sRegionMap->cursorTileTag = tileTag;\n    palette.tag = paletteTag;\n    template.paletteTag = paletteTag;\n    sRegionMap->cursorPaletteTag = paletteTag;\n    if (!sRegionMap->zoomed)\n    {\n        sheet.data = sRegionMap->cursorSmallImage;\n        sheet.size = sizeof(sRegionMap->cursorSmallImage);\n        template.callback = SpriteCB_CursorMapFull;\n    }\n    else\n    {\n        sheet.data = sRegionMap->cursorLargeImage;\n        sheet.size = sizeof(sRegionMap->cursorLargeImage);\n        template.callback = SpriteCB_CursorMapZoomed;\n    }\n    LoadSpriteSheet(&sheet);\n    LoadSpritePalette(&palette);\n    spriteId = CreateSprite(&template, 56, 72, 0);\n    if (spriteId != MAX_SPRITES)\n    {\n        sRegionMap->cursorSprite = &gSprites[spriteId];\n        if (sRegionMap->zoomed == TRUE)\n        {\n            sRegionMap->cursorSprite->oam.size = SPRITE_SIZE(32x32);\n            sRegionMap->cursorSprite->x -= 8;\n            sRegionMap->cursorSprite->y -= 8;\n            StartSpriteAnim(sRegionMap->cursorSprite, 1);\n        }\n        else\n        {\n            sRegionMap->cursorSprite->oam.size = SPRITE_SIZE(16x16);\n            sRegionMap->cursorSprite->x = 8 * sRegionMap->cursorPosX + 4;\n            sRegionMap->cursorSprite->y = 8 * sRegionMap->cursorPosY + 4;\n        }\n        sRegionMap->cursorSprite->data[1] = 2;\n        sRegionMap->cursorSprite->data[2] = OBJ_PLTT_ID(IndexOfSpritePaletteTag(paletteTag)) + 1;\n        sRegionMap->cursorSprite->data[3] = TRUE;\n    }",
       "callsTo": [
         "CreateSprite",
@@ -311,6 +464,7 @@
       "returnType": "void",
       "signature": "static void FreeRegionMapCursorSprite(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (sRegionMap->cursorSprite != NULL)\n    {\n        DestroySprite(sRegionMap->cursorSprite);\n        FreeSpriteTilesByTag(sRegionMap->cursorTileTag);\n        FreeSpritePaletteByTag(sRegionMap->cursorPaletteTag);\n    }",
       "callsTo": [
         "DestroySprite",
@@ -323,6 +477,16 @@
       "returnType": "void",
       "signature": "void CreateRegionMapPlayerIcon(u16 tileTag, u16 paletteTag)",
       "paramsRaw": "u16 tileTag, u16 paletteTag",
+      "paramsList": [
+        {
+          "name": "tileTag",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "paletteTag",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "u8 spriteId;\n    struct SpriteSheet sheet = {sRegionMapPlayerIcon_BrendanGfx, 0x80, tileTag};\n    struct SpritePalette palette = {sRegionMapPlayerIcon_BrendanPal, paletteTag};\n    struct SpriteTemplate template = {tileTag, paletteTag, &sRegionMapPlayerIconOam, sRegionMapPlayerIconAnimTable, NULL, gDummySpriteAffineAnimTable, SpriteCallbackDummy};\n\n    if (IsEventIslandMapSecId(gMapHeader.regionMapSectionId))\n    {\n        sRegionMap->playerIconSprite = NULL;\n        return;\n    }\n    if (gSaveBlock2Ptr->playerGender == FEMALE)\n    {\n        sheet.data = sRegionMapPlayerIcon_MayGfx;\n        palette.data = sRegionMapPlayerIcon_MayPal;\n    }\n    LoadSpriteSheet(&sheet);\n    LoadSpritePalette(&palette);\n    spriteId = CreateSprite(&template, 0, 0, 1);\n    sRegionMap->playerIconSprite = &gSprites[spriteId];\n    if (!sRegionMap->zoomed)\n    {\n        sRegionMap->playerIconSprite->x = sRegionMap->playerIconSpritePosX * 8 + 4;\n        sRegionMap->playerIconSprite->y = sRegionMap->playerIconSpritePosY * 8 + 4;\n        sRegionMap->playerIconSprite->callback = SpriteCB_PlayerIconMapFull;\n    }\n    else\n    {\n        sRegionMap->playerIconSprite->x = sRegionMap->playerIconSpritePosX * 16 - 0x30;\n        sRegionMap->playerIconSprite->y = sRegionMap->playerIconSpritePosY * 16 - 0x42;\n        sRegionMap->playerIconSprite->callback = SpriteCB_PlayerIconMapZoomed;\n    }",
       "callsTo": [
         "CreateSprite",
@@ -336,6 +500,7 @@
       "returnType": "void",
       "signature": "static void HideRegionMapPlayerIcon(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (sRegionMap->playerIconSprite != NULL)\n    {\n        sRegionMap->playerIconSprite->invisible = TRUE;\n        sRegionMap->playerIconSprite->callback = SpriteCallbackDummy;\n    }",
       "callsTo": [],
       "lineCount": 5
@@ -344,6 +509,7 @@
       "returnType": "void",
       "signature": "static void UnhideRegionMapPlayerIcon(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (sRegionMap->playerIconSprite != NULL)\n    {\n        if (sRegionMap->zoomed == TRUE)\n        {\n            sRegionMap->playerIconSprite->x = sRegionMap->playerIconSpritePosX * 16 - 0x30;\n            sRegionMap->playerIconSprite->y = sRegionMap->playerIconSpritePosY * 16 - 0x42;\n            sRegionMap->playerIconSprite->callback = SpriteCB_PlayerIconMapZoomed;\n            sRegionMap->playerIconSprite->invisible = FALSE;\n        }\n        else\n        {\n            sRegionMap->playerIconSprite->x = sRegionMap->playerIconSpritePosX * 8 + 4;\n            sRegionMap->playerIconSprite->y = sRegionMap->playerIconSpritePosY * 8 + 4;\n            sRegionMap->playerIconSprite->x2 = 0;\n            sRegionMap->playerIconSprite->y2 = 0;\n            sRegionMap->playerIconSprite->callback = SpriteCB_PlayerIconMapFull;\n            sRegionMap->playerIconSprite->invisible = FALSE;\n        }\n    }",
       "callsTo": [],
       "lineCount": 19
@@ -352,6 +518,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_PlayerIconMapZoomed(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "sprite->x2 = -2 * sRegionMap->scrollX;\n    sprite->y2 = -2 * sRegionMap->scrollY;\n    sprite->sY = sprite->y + sprite->y2 + sprite->centerToCornerVecY;\n    sprite->sX = sprite->x + sprite->x2 + sprite->centerToCornerVecX;\n    if (sprite->sY < -8 || sprite->sY > DISPLAY_HEIGHT + 8 || sprite->sX < -8 || sprite->sX > DISPLAY_WIDTH + 8)\n        sprite->sVisible = FALSE;\n    else\n        sprite->sVisible = TRUE;\n\n    if (sprite->sVisible == TRUE)\n        SpriteCB_PlayerIcon(sprite);\n    else\n        sprite->invisible = TRUE;",
       "callsTo": [
         "SpriteCB_PlayerIcon"
@@ -362,6 +534,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_PlayerIconMapFull(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "SpriteCB_PlayerIcon(sprite);",
       "callsTo": [
         "SpriteCB_PlayerIcon"
@@ -372,6 +550,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_PlayerIcon(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (sRegionMap->blinkPlayerIcon)\n    {\n        if (++sprite->sTimer > 16)\n        {\n            sprite->sTimer = 0;\n            sprite->invisible = sprite->invisible ? FALSE : TRUE;\n        }\n    }\n    else\n    {\n        sprite->invisible = FALSE;\n    }",
       "callsTo": [],
       "lineCount": 12
@@ -380,6 +564,7 @@
       "returnType": "void",
       "signature": "void TrySetPlayerIconBlink(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (sRegionMap->playerIsInCave)\n        sRegionMap->blinkPlayerIcon = TRUE;",
       "callsTo": [],
       "lineCount": 2
@@ -388,6 +573,28 @@
       "returnType": "void",
       "signature": "static void GetMapSecDimensions(mapsec_u16_t mapSecId, u16 *x, u16 *y, u16 *width, u16 *height)",
       "paramsRaw": "mapsec_u16_t mapSecId, u16 *x, u16 *y, u16 *width, u16 *height",
+      "paramsList": [
+        {
+          "name": "mapSecId",
+          "typeRaw": "mapsec_u16_t"
+        },
+        {
+          "name": "x",
+          "typeRaw": "u16 *"
+        },
+        {
+          "name": "y",
+          "typeRaw": "u16 *"
+        },
+        {
+          "name": "width",
+          "typeRaw": "u16 *"
+        },
+        {
+          "name": "height",
+          "typeRaw": "u16 *"
+        }
+      ],
       "body": "*x = gRegionMapEntries[mapSecId].x;\n    *y = gRegionMapEntries[mapSecId].y;\n    *width = gRegionMapEntries[mapSecId].width;\n    *height = gRegionMapEntries[mapSecId].height;",
       "callsTo": [],
       "lineCount": 4
@@ -396,6 +603,7 @@
       "returnType": "bool8",
       "signature": "bool8 IsRegionMapZoomed(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return sRegionMap->zoomed;",
       "callsTo": [],
       "lineCount": 1
@@ -404,6 +612,12 @@
       "returnType": "bool32",
       "signature": "bool32 IsEventIslandMapSecId(mapsec_u8_t mapSecId)",
       "paramsRaw": "mapsec_u8_t mapSecId",
+      "paramsList": [
+        {
+          "name": "mapSecId",
+          "typeRaw": "mapsec_u8_t"
+        }
+      ],
       "body": "u32 i;\n\n    for (i = 0; i < ARRAY_COUNT(sMapSecIdsOffMap); i++)\n    {\n        if (mapSecId == sMapSecIdsOffMap[i])\n            return TRUE;\n    }\n    return FALSE;",
       "callsTo": [
         "ARRAY_COUNT"
@@ -414,6 +628,7 @@
       "returnType": "void",
       "signature": "void CB2_OpenFlyMap(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (gMain.state)\n    {\n    case 0:\n        SetVBlankCallback(NULL);\n        SetGpuReg(REG_OFFSET_DISPCNT, 0);\n        SetGpuReg(REG_OFFSET_BG0HOFS, 0);\n        SetGpuReg(REG_OFFSET_BG0VOFS, 0);\n        SetGpuReg(REG_OFFSET_BG1HOFS, 0);\n        SetGpuReg(REG_OFFSET_BG1VOFS, 0);\n        SetGpuReg(REG_OFFSET_BG2VOFS, 0);\n        SetGpuReg(REG_OFFSET_BG2HOFS, 0);\n        SetGpuReg(REG_OFFSET_BG3HOFS, 0);\n        SetGpuReg(REG_OFFSET_BG3VOFS, 0);\n        sFlyMap = Alloc(sizeof(*sFlyMap));\n        if (sFlyMap == NULL)\n        {\n            SetMainCallback2(CB2_ReturnToFieldWithOpenMenu);\n        }\n        else\n        {\n            ResetPaletteFade();\n            ResetSpriteData();\n            FreeSpriteTileRanges();\n            FreeAllSpritePalettes();\n            gMain.state++;\n        }\n        break;\n    case 1:\n        ResetBgsAndClearDma3BusyFlags(0);\n        InitBgsFromTemplates(1, sFlyMapBgTemplates, ARRAY_COUNT(sFlyMapBgTemplates));\n        gMain.state++;\n        break;\n    case 2:\n        InitWindows(sFlyMapWindowTemplates);\n        DeactivateAllTextPrinters();\n        gMain.state++;\n        break;\n    case 3:\n        LoadUserWindowBorderGfx(0, 0x65, BG_PLTT_ID(13));\n        ClearScheduledBgCopiesToVram();\n        gMain.state++;\n        break;\n    case 4:\n        InitRegionMap(&sFlyMap->regionMap, FALSE);\n        CreateRegionMapCursor(TAG_CURSOR, TAG_CURSOR);\n        CreateRegionMapPlayerIcon(TAG_PLAYER_ICON, TAG_PLAYER_ICON);\n        sFlyMap->mapSecId = sFlyMap->regionMap.mapSecId;\n        StringFill(sFlyMap->nameBuffer, CHAR_SPACE, MAP_NAME_LENGTH);\n        sDrawFlyDestTextWindow = TRUE;\n        DrawFlyDestTextWindow();\n        gMain.state++;\n        break;\n    case 5:\n        LZ77UnCompVram(sRegionMapFrameGfxLZ, (u16 *)BG_CHAR_ADDR(3));\n        gMain.state++;\n        break;\n    case 6:\n        LZ77UnCompVram(sRegionMapFrameTilemapLZ, (u16 *)BG_SCREEN_ADDR(30));\n        gMain.state++;\n        break;\n    case 7:\n        LoadPalette(sRegionMapFramePal, BG_PLTT_ID(1), sizeof(sRegionMapFramePal));\n        PutWindowTilemap(WIN_FLY_TO_WHERE);\n        FillWindowPixelBuffer(WIN_FLY_TO_WHERE, PIXEL_FILL(0));\n        AddTextPrinterParameterized(WIN_FLY_TO_WHERE, FONT_NORMAL, gText_FlyToWhere, 0, 1, 0, NULL);\n        ScheduleBgCopyTilemapToVram(0);\n        gMain.state++;\n        break;\n    case 8:\n        LoadFlyDestIcons();\n        gMain.state++;\n        break;\n    case 9:\n        BlendPalettes(PALETTES_ALL, 16, 0);\n        SetVBlankCallback(VBlankCB_FlyMap);\n        gMain.state++;\n        break;\n    case 10:\n        SetGpuReg(REG_OFFSET_BLDCNT, 0);\n        SetGpuRegBits(REG_OFFSET_DISPCNT, DISPCNT_OBJ_1D_MAP | DISPCNT_OBJ_ON);\n        ShowBg(0);\n        ShowBg(1);\n        ShowBg(2);\n        SetFlyMapCallback(CB_FadeInFlyMap);\n        SetMainCallback2(CB2_FlyMap);\n        gMain.state++;\n        break;\n    }",
       "callsTo": [
         "ARRAY_COUNT",
@@ -458,6 +673,7 @@
       "returnType": "void",
       "signature": "static void VBlankCB_FlyMap(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "LoadOam();\n    ProcessSpriteCopyRequests();\n    TransferPlttBuffer();",
       "callsTo": [
         "LoadOam",
@@ -470,6 +686,7 @@
       "returnType": "void",
       "signature": "static void CB2_FlyMap(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sFlyMap->callback();\n    AnimateSprites();\n    BuildOamBuffer();\n    DoScheduledBgTilemapCopiesToVram();",
       "callsTo": [
         "AnimateSprites",
@@ -482,6 +699,7 @@
       "returnType": "void",
       "signature": "static void SetFlyMapCallback(void callback(void))",
       "paramsRaw": "void callback(void)",
+      "paramsList": [],
       "body": "sFlyMap->callback = callback;\n    sFlyMap->state = 0;",
       "callsTo": [],
       "lineCount": 2
@@ -490,6 +708,7 @@
       "returnType": "void",
       "signature": "static void DrawFlyDestTextWindow(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 i;\n    bool32 namePrinted;\n    const u8 *name;\n\n    if (sFlyMap->regionMap.mapSecType > MAPSECTYPE_NONE && sFlyMap->regionMap.mapSecType < NUM_MAPSEC_TYPES)\n    {\n        namePrinted = FALSE;\n        for (i = 0; i < ARRAY_COUNT(sMultiNameFlyDestinations); i++)\n        {\n            if (sFlyMap->regionMap.mapSecId == sMultiNameFlyDestinations[i].mapSecId)\n            {\n                if (FlagGet(sMultiNameFlyDestinations[i].flag))\n                {\n                    StringLength(sMultiNameFlyDestinations[i].name[sFlyMap->regionMap.posWithinMapSec]);\n                    namePrinted = TRUE;\n                    ClearStdWindowAndFrameToTransparent(WIN_MAPSEC_NAME, FALSE);\n                    DrawStdFrameWithCustomTileAndPalette(WIN_MAPSEC_NAME_TALL, FALSE, 101, 13);\n                    AddTextPrinterParameterized(WIN_MAPSEC_NAME_TALL, FONT_NORMAL, sFlyMap->regionMap.mapSecName, 0, 1, 0, NULL);\n                    name = sMultiNameFlyDestinations[i].name[sFlyMap->regionMap.posWithinMapSec];\n                    AddTextPrinterParameterized(WIN_MAPSEC_NAME_TALL, FONT_NORMAL, name, GetStringRightAlignXOffset(FONT_NORMAL, name, 96), 17, 0, NULL);\n                    ScheduleBgCopyTilemapToVram(0);\n                    sDrawFlyDestTextWindow = TRUE;\n                }\n                break;\n            }\n        }\n        if (!namePrinted)\n        {\n            if (sDrawFlyDestTextWindow == TRUE)\n            {\n                ClearStdWindowAndFrameToTransparent(WIN_MAPSEC_NAME_TALL, FALSE);\n                DrawStdFrameWithCustomTileAndPalette(WIN_MAPSEC_NAME, FALSE, 101, 13);\n            }\n            else\n            {\n                 \n                FillWindowPixelBuffer(WIN_MAPSEC_NAME, PIXEL_FILL(1));\n            }\n            AddTextPrinterParameterized(WIN_MAPSEC_NAME, FONT_NORMAL, sFlyMap->regionMap.mapSecName, 0, 1, 0, NULL);\n            ScheduleBgCopyTilemapToVram(0);\n            sDrawFlyDestTextWindow = FALSE;\n        }\n    }\n    else\n    {\n         \n        if (sDrawFlyDestTextWindow == TRUE)\n        {\n            ClearStdWindowAndFrameToTransparent(WIN_MAPSEC_NAME_TALL, FALSE);\n            DrawStdFrameWithCustomTileAndPalette(WIN_MAPSEC_NAME, FALSE, 101, 13);\n        }\n        FillWindowPixelBuffer(WIN_MAPSEC_NAME, PIXEL_FILL(1));\n        CopyWindowToVram(WIN_MAPSEC_NAME, COPYWIN_GFX);\n        ScheduleBgCopyTilemapToVram(0);\n        sDrawFlyDestTextWindow = FALSE;\n    }",
       "callsTo": [
         "ARRAY_COUNT",
@@ -510,6 +729,7 @@
       "returnType": "void",
       "signature": "static void LoadFlyDestIcons(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "struct SpriteSheet sheet;\n\n    LZ77UnCompWram(sFlyTargetIcons_Gfx, sFlyMap->tileBuffer);\n    sheet.data = sFlyMap->tileBuffer;\n    sheet.size = sizeof(sFlyMap->tileBuffer);\n    sheet.tag = TAG_FLY_ICON;\n    LoadSpriteSheet(&sheet);\n    LoadSpritePalette(&sFlyTargetIconsSpritePalette);\n    CreateFlyDestIcons();\n    TryCreateRedOutlineFlyDestIcons();",
       "callsTo": [
         "CreateFlyDestIcons",
@@ -524,6 +744,7 @@
       "returnType": "void",
       "signature": "static void CreateFlyDestIcons(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 canFlyFlag;\n    mapsec_u16_t mapSecId;\n    u16 x;\n    u16 y;\n    u16 width;\n    u16 height;\n    u16 shape;\n    u8 spriteId;\n\n    canFlyFlag = FLAG_VISITED_LITTLEROOT_TOWN;\n    for (mapSecId = MAPSEC_LITTLEROOT_TOWN; mapSecId <= MAPSEC_EVER_GRANDE_CITY; mapSecId++)\n    {\n        GetMapSecDimensions(mapSecId, &x, &y, &width, &height);\n        x = (x + MAPCURSOR_X_MIN) * 8 + 4;\n        y = (y + MAPCURSOR_Y_MIN) * 8 + 4;\n\n        if (width == 2)\n            shape = SPRITE_SHAPE(16x8);\n        else if (height == 2)\n            shape = SPRITE_SHAPE(8x16);\n        else\n            shape = SPRITE_SHAPE(8x8);\n\n        spriteId = CreateSprite(&sFlyDestIconSpriteTemplate, x, y, 10);\n        if (spriteId != MAX_SPRITES)\n        {\n            gSprites[spriteId].oam.shape = shape;\n\n            if (FlagGet(canFlyFlag))\n                gSprites[spriteId].callback = SpriteCB_FlyDestIcon;\n            else\n                shape += 3;\n\n            StartSpriteAnim(&gSprites[spriteId], shape);\n            gSprites[spriteId].sIconMapSec = mapSecId;\n        }\n        canFlyFlag++;\n    }",
       "callsTo": [
         "CreateSprite",
@@ -538,6 +759,7 @@
       "returnType": "void",
       "signature": "static void TryCreateRedOutlineFlyDestIcons(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 i;\n    u16 x;\n    u16 y;\n    u16 width;\n    u16 height;\n    mapsec_u16_t mapSecId;\n    u8 spriteId;\n\n    for (i = 0; sRedOutlineFlyDestinations[i][1] != MAPSEC_NONE; i++)\n    {\n        if (FlagGet(sRedOutlineFlyDestinations[i][0]))\n        {\n            mapSecId = sRedOutlineFlyDestinations[i][1];\n            GetMapSecDimensions(mapSecId, &x, &y, &width, &height);\n            x = (x + MAPCURSOR_X_MIN) * 8;\n            y = (y + MAPCURSOR_Y_MIN) * 8;\n            spriteId = CreateSprite(&sFlyDestIconSpriteTemplate, x, y, 10);\n            if (spriteId != MAX_SPRITES)\n            {\n                gSprites[spriteId].oam.size = SPRITE_SIZE(16x16);\n                gSprites[spriteId].callback = SpriteCB_FlyDestIcon;\n                StartSpriteAnim(&gSprites[spriteId], FLYDESTICON_RED_OUTLINE);\n                gSprites[spriteId].sIconMapSec = mapSecId;\n            }\n        }\n    }",
       "callsTo": [
         "CreateSprite",
@@ -552,6 +774,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_FlyDestIcon(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (sFlyMap->regionMap.mapSecId == sprite->sIconMapSec)\n    {\n        if (++sprite->sFlickerTimer > 16)\n        {\n            sprite->sFlickerTimer = 0;\n            sprite->invisible = sprite->invisible ? FALSE : TRUE;\n        }\n    }\n    else\n    {\n        sprite->sFlickerTimer = 16;\n        sprite->invisible = FALSE;\n    }",
       "callsTo": [],
       "lineCount": 13
@@ -560,6 +788,7 @@
       "returnType": "void",
       "signature": "static void CB_FadeInFlyMap(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sFlyMap->state)\n    {\n    case 0:\n        BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);\n        sFlyMap->state++;\n        break;\n    case 1:\n        if (!UpdatePaletteFade())\n        {\n            SetFlyMapCallback(CB_HandleFlyMapInput);\n        }\n        break;\n    }",
       "callsTo": [
         "BeginNormalPaletteFade",
@@ -572,6 +801,7 @@
       "returnType": "void",
       "signature": "static void CB_HandleFlyMapInput(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (sFlyMap->state == 0)\n    {\n        switch (DoRegionMapInputCallback())\n        {\n        case MAP_INPUT_NONE:\n        case MAP_INPUT_MOVE_START:\n        case MAP_INPUT_MOVE_CONT:\n            break;\n        case MAP_INPUT_MOVE_END:\n            DrawFlyDestTextWindow();\n            break;\n        case MAP_INPUT_A_BUTTON:\n            if (sFlyMap->regionMap.mapSecType == MAPSECTYPE_CITY_CANFLY || sFlyMap->regionMap.mapSecType == MAPSECTYPE_BATTLE_FRONTIER)\n            {\n                m4aSongNumStart(SE_SELECT);\n                sFlyMap->choseFlyLocation = TRUE;\n                SetFlyMapCallback(CB_ExitFlyMap);\n            }\n            break;\n        case MAP_INPUT_B_BUTTON:\n            m4aSongNumStart(SE_SELECT);\n            sFlyMap->choseFlyLocation = FALSE;\n            SetFlyMapCallback(CB_ExitFlyMap);\n            break;\n        }\n    }",
       "callsTo": [
         "DoRegionMapInputCallback",
@@ -584,6 +814,7 @@
       "returnType": "void",
       "signature": "static void CB_ExitFlyMap(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sFlyMap->state)\n    {\n    case 0:\n        BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);\n        sFlyMap->state++;\n        break;\n    case 1:\n        if (!UpdatePaletteFade())\n        {\n            FreeRegionMapIconResources();\n            if (sFlyMap->choseFlyLocation)\n            {\n                switch (sFlyMap->regionMap.mapSecId)\n                {\n                case MAPSEC_SOUTHERN_ISLAND:\n                    SetWarpDestinationToHealLocation(HEAL_LOCATION_SOUTHERN_ISLAND_EXTERIOR);\n                    break;\n                case MAPSEC_BATTLE_FRONTIER:\n                    SetWarpDestinationToHealLocation(HEAL_LOCATION_BATTLE_FRONTIER_OUTSIDE_EAST);\n                    break;\n                case MAPSEC_LITTLEROOT_TOWN:\n                    SetWarpDestinationToHealLocation(gSaveBlock2Ptr->playerGender == MALE ? HEAL_LOCATION_LITTLEROOT_TOWN_BRENDANS_HOUSE : HEAL_LOCATION_LITTLEROOT_TOWN_MAYS_HOUSE);\n                    break;\n                case MAPSEC_EVER_GRANDE_CITY:\n                    SetWarpDestinationToHealLocation(FlagGet(FLAG_LANDMARK_POKEMON_LEAGUE) && sFlyMap->regionMap.posWithinMapSec == 0 ? HEAL_LOCATION_EVER_GRANDE_CITY_POKEMON_LEAGUE : HEAL_LOCATION_EVER_GRANDE_CITY);\n                    break;\n                default:\n                    if (sMapHealLocations[sFlyMap->regionMap.mapSecId][2] != HEAL_LOCATION_NONE)\n                        SetWarpDestinationToHealLocation(sMapHealLocations[sFlyMap->regionMap.mapSecId][2]);\n                    else\n                        SetWarpDestinationToMapWarp(sMapHealLocations[sFlyMap->regionMap.mapSecId][0], sMapHealLocations[sFlyMap->regionMap.mapSecId][1], WARP_ID_NONE);\n                    break;\n                }\n                ReturnToFieldFromFlyMapSelect();\n            }\n            else\n            {\n                SetMainCallback2(CB2_ReturnToPartyMenuFromFlyMap);\n            }\n            TRY_FREE_AND_SET_NULL(sFlyMap);\n            FreeAllWindowBuffers();\n        }\n        break;\n    }",
       "callsTo": [
         "BeginNormalPaletteFade",

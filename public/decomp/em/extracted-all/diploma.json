@@ -6,6 +6,7 @@
       "returnType": "void",
       "signature": "static void VBlankCB(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "LoadOam();\n    ProcessSpriteCopyRequests();\n    TransferPlttBuffer();",
       "callsTo": [
         "LoadOam",
@@ -18,6 +19,7 @@
       "returnType": "void",
       "signature": "void CB2_ShowDiploma(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "SetVBlankCallback(NULL);\n    SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_MODE_0);\n    SetGpuReg(REG_OFFSET_BG3CNT, 0);\n    SetGpuReg(REG_OFFSET_BG2CNT, 0);\n    SetGpuReg(REG_OFFSET_BG1CNT, 0);\n    SetGpuReg(REG_OFFSET_BG0CNT, 0);\n    SetGpuReg(REG_OFFSET_BG3HOFS, 0);\n    SetGpuReg(REG_OFFSET_BG3VOFS, 0);\n    SetGpuReg(REG_OFFSET_BG2HOFS, 0);\n    SetGpuReg(REG_OFFSET_BG2VOFS, 0);\n    SetGpuReg(REG_OFFSET_BG1HOFS, 0);\n    SetGpuReg(REG_OFFSET_BG1VOFS, 0);\n    SetGpuReg(REG_OFFSET_BG0HOFS, 0);\n    SetGpuReg(REG_OFFSET_BG0VOFS, 0);\n     \n    DmaFill16(3, 0, VRAM, VRAM_SIZE);\n    DmaFill32(3, 0, OAM, OAM_SIZE);\n    DmaFill16(3, 0, PLTT, PLTT_SIZE);\n    ScanlineEffect_Stop();\n    ResetTasks();\n    ResetSpriteData();\n    ResetPaletteFade();\n    FreeAllSpritePalettes();\n    LoadPalette(sDiplomaPalettes, BG_PLTT_ID(0), sizeof(sDiplomaPalettes));\n    sDiplomaTilemapPtr = Alloc(0x1000);\n    InitDiplomaBg();\n    InitDiplomaWindow();\n    ResetTempTileDataBuffers();\n    DecompressAndCopyTileDataToVram(1, &sDiplomaTiles, 0, 0, 0);\n    while (FreeTempTileDataBuffersIfPossible())\n        ;\n    LZDecompressWram(sDiplomaTilemap, sDiplomaTilemapPtr);\n    CopyBgTilemapBufferToVram(1);\n    DisplayDiplomaText();\n    BlendPalettes(PALETTES_ALL, 16, RGB_BLACK);\n    BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);\n    EnableInterrupts(1);\n    SetVBlankCallback(VBlankCB);\n    SetMainCallback2(MainCB2);\n    CreateTask(Task_DiplomaFadeIn, 0);",
       "callsTo": [
         "Alloc",
@@ -52,6 +54,7 @@
       "returnType": "void",
       "signature": "static void MainCB2(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "RunTasks();\n    AnimateSprites();\n    BuildOamBuffer();\n    UpdatePaletteFade();",
       "callsTo": [
         "AnimateSprites",
@@ -65,6 +68,12 @@
       "returnType": "void",
       "signature": "static void Task_DiplomaFadeIn(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (!gPaletteFade.active)\n        gTasks[taskId].func = Task_DiplomaWaitForKeyPress;",
       "callsTo": [],
       "lineCount": 2
@@ -73,6 +82,12 @@
       "returnType": "void",
       "signature": "static void Task_DiplomaWaitForKeyPress(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (JOY_NEW(A_BUTTON | B_BUTTON))\n    {\n        BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);\n        gTasks[taskId].func = Task_DiplomaFadeOut;\n    }",
       "callsTo": [
         "BeginNormalPaletteFade",
@@ -84,6 +99,12 @@
       "returnType": "void",
       "signature": "static void Task_DiplomaFadeOut(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (!gPaletteFade.active)\n    {\n        Free(sDiplomaTilemapPtr);\n        FreeAllWindowBuffers();\n        DestroyTask(taskId);\n        SetMainCallback2(CB2_ReturnToFieldFadeFromBlack);\n    }",
       "callsTo": [
         "DestroyTask",
@@ -97,6 +118,7 @@
       "returnType": "void",
       "signature": "static void DisplayDiplomaText(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (HasAllMons())\n    {\n        SetGpuReg(REG_OFFSET_BG1HOFS, DISPLAY_WIDTH + 16);\n        StringCopy(gStringVar1, gText_DexNational);\n    }\n    else\n    {\n        SetGpuReg(REG_OFFSET_BG1HOFS, 0);\n        StringCopy(gStringVar1, gText_DexHoenn);\n    }\n    StringExpandPlaceholders(gStringVar4, gText_PokedexDiploma);\n    PrintDiplomaText(gStringVar4, 0, 1);\n    PutWindowTilemap(0);\n    CopyWindowToVram(0, COPYWIN_FULL);",
       "callsTo": [
         "CopyWindowToVram",
@@ -113,6 +135,7 @@
       "returnType": "void",
       "signature": "static void InitDiplomaBg(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ResetBgsAndClearDma3BusyFlags(0);\n    InitBgsFromTemplates(0, sDiplomaBgTemplates, ARRAY_COUNT(sDiplomaBgTemplates));\n    SetBgTilemapBuffer(1, sDiplomaTilemapPtr);\n    SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_OBJ_ON | DISPCNT_OBJ_1D_MAP);\n    ShowBg(0);\n    ShowBg(1);\n    SetGpuReg(REG_OFFSET_BLDCNT, 0);\n    SetGpuReg(REG_OFFSET_BLDALPHA, 0);\n    SetGpuReg(REG_OFFSET_BLDY, 0);",
       "callsTo": [
         "ARRAY_COUNT",
@@ -128,6 +151,7 @@
       "returnType": "void",
       "signature": "static void InitDiplomaWindow(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "InitWindows(sDiplomaWinTemplates);\n    DeactivateAllTextPrinters();\n    LoadPalette(gStandardMenuPalette, BG_PLTT_ID(15), PLTT_SIZE_4BPP);\n    FillWindowPixelBuffer(0, PIXEL_FILL(0));\n    PutWindowTilemap(0);",
       "callsTo": [
         "BG_PLTT_ID",
@@ -144,6 +168,20 @@
       "returnType": "void",
       "signature": "static void PrintDiplomaText(u8 *text, u8 var1, u8 var2)",
       "paramsRaw": "u8 *text, u8 var1, u8 var2",
+      "paramsList": [
+        {
+          "name": "text",
+          "typeRaw": "u8 *"
+        },
+        {
+          "name": "var1",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "var2",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 color[3] = {0, 2, 3};\n\n    AddTextPrinterParameterized4(0, FONT_NORMAL, var1, var2, 0, 0, color, TEXT_SKIP_DRAW, text);",
       "callsTo": [
         "AddTextPrinterParameterized4"

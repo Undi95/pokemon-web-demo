@@ -6,6 +6,7 @@
       "returnType": "void",
       "signature": "void SetDecorationInventoriesPointers(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "SET_DECOR_INV(DECORCAT_DESK, gSaveBlock1Ptr->decorationDesks);\n    SET_DECOR_INV(DECORCAT_CHAIR, gSaveBlock1Ptr->decorationChairs);\n    SET_DECOR_INV(DECORCAT_PLANT, gSaveBlock1Ptr->decorationPlants);\n    SET_DECOR_INV(DECORCAT_ORNAMENT, gSaveBlock1Ptr->decorationOrnaments);\n    SET_DECOR_INV(DECORCAT_MAT, gSaveBlock1Ptr->decorationMats);\n    SET_DECOR_INV(DECORCAT_POSTER, gSaveBlock1Ptr->decorationPosters);\n    SET_DECOR_INV(DECORCAT_DOLL, gSaveBlock1Ptr->decorationDolls);\n    SET_DECOR_INV(DECORCAT_CUSHION, gSaveBlock1Ptr->decorationCushions);\n    InitDecorationContextItems();",
       "callsTo": [
         "InitDecorationContextItems",
@@ -17,6 +18,12 @@
       "returnType": "void",
       "signature": "static void ClearDecorationInventory(u8 category)",
       "paramsRaw": "u8 category",
+      "paramsList": [
+        {
+          "name": "category",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 i;\n    for (i = 0; i < gDecorationInventories[category].size; i ++)\n        gDecorationInventories[category].items[i] = DECOR_NONE;",
       "callsTo": [],
       "lineCount": 3
@@ -25,6 +32,7 @@
       "returnType": "void",
       "signature": "void ClearDecorationInventories(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 category;\n    for (category = 0; category < DECORCAT_COUNT; category++)\n        ClearDecorationInventory(category);",
       "callsTo": [
         "ClearDecorationInventory"
@@ -35,6 +43,12 @@
       "returnType": "s8",
       "signature": "s8 GetFirstEmptyDecorSlot(u8 category)",
       "paramsRaw": "u8 category",
+      "paramsList": [
+        {
+          "name": "category",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s8 i;\n    for (i = 0; i < (s8)gDecorationInventories[category].size; i++)\n    {\n        if (gDecorationInventories[category].items[i] == DECOR_NONE)\n            return i;\n    }\n\n    return -1;",
       "callsTo": [],
       "lineCount": 8
@@ -43,6 +57,12 @@
       "returnType": "bool8",
       "signature": "bool8 CheckHasDecoration(u8 decor)",
       "paramsRaw": "u8 decor",
+      "paramsList": [
+        {
+          "name": "decor",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 i;\n    u8 category;\n\n    category = gDecorations[decor].category;\n    for (i = 0; i < gDecorationInventories[category].size; i ++)\n    {\n        if (gDecorationInventories[category].items[i] == decor)\n            return TRUE;\n    }\n\n    return FALSE;",
       "callsTo": [],
       "lineCount": 11
@@ -51,6 +71,12 @@
       "returnType": "bool8",
       "signature": "bool8 DecorationAdd(u8 decor)",
       "paramsRaw": "u8 decor",
+      "paramsList": [
+        {
+          "name": "decor",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 category;\n    s8 idx;\n\n    if (decor == DECOR_NONE)\n        return FALSE;\n    category = gDecorations[decor].category;\n    idx = GetFirstEmptyDecorSlot(category);\n    if (idx == -1)\n        return FALSE;\n    gDecorationInventories[category].items[idx] = decor;\n    return TRUE;",
       "callsTo": [
         "GetFirstEmptyDecorSlot"
@@ -61,6 +87,12 @@
       "returnType": "bool8",
       "signature": "bool8 DecorationCheckSpace(u8 decor)",
       "paramsRaw": "u8 decor",
+      "paramsList": [
+        {
+          "name": "decor",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (decor == DECOR_NONE)\n        return FALSE;\n    if (GetFirstEmptyDecorSlot(gDecorations[decor].category) == -1)\n        return FALSE;\n    return TRUE;",
       "callsTo": [
         "GetFirstEmptyDecorSlot"
@@ -71,6 +103,12 @@
       "returnType": "s8",
       "signature": "s8 DecorationRemove(u8 decor)",
       "paramsRaw": "u8 decor",
+      "paramsList": [
+        {
+          "name": "decor",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 i;\n    u8 category;\n\n    i = 0;\n    if (decor == DECOR_NONE)\n        return 0;\n\n    for (i = 0; i < gDecorationInventories[gDecorations[decor].category].size; i ++)\n    {\n        category = gDecorations[decor].category;\n        if (gDecorationInventories[category].items[i] == decor)\n        {\n            gDecorationInventories[category].items[i] = DECOR_NONE;\n            CondenseDecorationsInCategory(category);\n            return 1;\n        }\n    }\n\n    return 0;",
       "callsTo": [
         "CondenseDecorationsInCategory"
@@ -81,6 +119,12 @@
       "returnType": "void",
       "signature": "void CondenseDecorationsInCategory(u8 category)",
       "paramsRaw": "u8 category",
+      "paramsList": [
+        {
+          "name": "category",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 i;\n    u8 j;\n    u8 tmp;\n\n    for (i = 0; i < gDecorationInventories[category].size; i ++)\n    {\n        for (j = i + 1; j < gDecorationInventories[category].size; j ++)\n        {\n            if (gDecorationInventories[category].items[j] != DECOR_NONE && (gDecorationInventories[category].items[i] == DECOR_NONE || gDecorationInventories[category].items[i] > gDecorationInventories[category].items[j]))\n            {\n                tmp = gDecorationInventories[category].items[i];\n                gDecorationInventories[category].items[i] = gDecorationInventories[category].items[j];\n                gDecorationInventories[category].items[j] = tmp;\n            }\n        }\n    }",
       "callsTo": [],
       "lineCount": 16
@@ -89,6 +133,12 @@
       "returnType": "u8",
       "signature": "u8 GetNumOwnedDecorationsInCategory(u8 category)",
       "paramsRaw": "u8 category",
+      "paramsList": [
+        {
+          "name": "category",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 i;\n    u8 ct;\n\n    ct = 0;\n    for (i = 0; i < gDecorationInventories[category].size; i++)\n    {\n        if (gDecorationInventories[category].items[i] != DECOR_NONE)\n            ct++;\n    }\n\n    return ct;",
       "callsTo": [],
       "lineCount": 11
@@ -97,6 +147,7 @@
       "returnType": "u8",
       "signature": "u8 GetNumOwnedDecorations(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 category;\n    u8 count;\n\n    count = 0;\n    for (category = 0; category < DECORCAT_COUNT; category++)\n        count += GetNumOwnedDecorationsInCategory(category);\n\n    return count;",
       "callsTo": [
         "GetNumOwnedDecorationsInCategory"

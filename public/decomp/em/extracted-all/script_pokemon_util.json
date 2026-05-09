@@ -6,6 +6,7 @@
       "returnType": "void",
       "signature": "void HealPlayerParty(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i, j;\n    u8 ppBonuses;\n    u8 arg[4];\n\n     \n    for(i = 0; i < gPlayerPartyCount; i++)\n    {\n        u16 maxHP = GetMonData(&gPlayerParty[i], MON_DATA_MAX_HP);\n        arg[0] = maxHP;\n        arg[1] = maxHP >> 8;\n        SetMonData(&gPlayerParty[i], MON_DATA_HP, arg);\n        ppBonuses = GetMonData(&gPlayerParty[i], MON_DATA_PP_BONUSES);\n\n         \n        for(j = 0; j < MAX_MON_MOVES; j++)\n        {\n            arg[0] = CalculatePPWithBonus(GetMonData(&gPlayerParty[i], MON_DATA_MOVE1 + j), ppBonuses, j);\n            SetMonData(&gPlayerParty[i], MON_DATA_PP1 + j, arg);\n        }\n\n         \n        arg[0] = 0;\n        arg[1] = 0;\n        arg[2] = 0;\n        arg[3] = 0;\n        SetMonData(&gPlayerParty[i], MON_DATA_STATUS, arg);\n    }",
       "callsTo": [
         "CalculatePPWithBonus",
@@ -18,6 +19,32 @@
       "returnType": "u8",
       "signature": "u8 ScriptGiveMon(u16 species, u8 level, u16 item, u32 unused1, u32 unused2, u8 unused3)",
       "paramsRaw": "u16 species, u8 level, u16 item, u32 unused1, u32 unused2, u8 unused3",
+      "paramsList": [
+        {
+          "name": "species",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "level",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "item",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "unused1",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "unused2",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "unused3",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u16 nationalDexNum;\n    int sentToPc;\n    u8 heldItem[2];\n    struct Pokemon mon;\n\n    CreateMon(&mon, species, level, USE_RANDOM_IVS, FALSE, 0, OT_ID_PLAYER_ID, 0);\n    heldItem[0] = item;\n    heldItem[1] = item >> 8;\n    SetMonData(&mon, MON_DATA_HELD_ITEM, heldItem);\n    sentToPc = GiveMonToPlayer(&mon);\n    nationalDexNum = SpeciesToNationalPokedexNum(species);\n\n     \n    switch(sentToPc)\n    {\n    case MON_GIVEN_TO_PARTY:\n    case MON_GIVEN_TO_PC:\n        GetSetPokedexFlag(nationalDexNum, FLAG_SET_SEEN);\n        GetSetPokedexFlag(nationalDexNum, FLAG_SET_CAUGHT);\n        break;\n    }\n    return sentToPc;",
       "callsTo": [
         "CreateMon",
@@ -32,6 +59,12 @@
       "returnType": "u8",
       "signature": "u8 ScriptGiveEgg(u16 species)",
       "paramsRaw": "u16 species",
+      "paramsList": [
+        {
+          "name": "species",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "struct Pokemon mon;\n    u8 isEgg;\n\n    CreateEgg(&mon, species, TRUE);\n    isEgg = TRUE;\n    SetMonData(&mon, MON_DATA_IS_EGG, &isEgg);\n\n    return GiveMonToPlayer(&mon);",
       "callsTo": [
         "CreateEgg",
@@ -44,6 +77,7 @@
       "returnType": "void",
       "signature": "void HasEnoughMonsForDoubleBattle(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (GetMonsStateToDoubles())\n    {\n    case PLAYER_HAS_TWO_USABLE_MONS:\n        gSpecialVar_Result = PLAYER_HAS_TWO_USABLE_MONS;\n        break;\n    case PLAYER_HAS_ONE_MON:\n        gSpecialVar_Result = PLAYER_HAS_ONE_MON;\n        break;\n    case PLAYER_HAS_ONE_USABLE_MON:\n        gSpecialVar_Result = PLAYER_HAS_ONE_USABLE_MON;\n        break;\n    }",
       "callsTo": [
         "GetMonsStateToDoubles"
@@ -54,6 +88,12 @@
       "returnType": "bool8",
       "signature": "static bool8 CheckPartyMonHasHeldItem(u16 item)",
       "paramsRaw": "u16 item",
+      "paramsList": [
+        {
+          "name": "item",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "int i;\n\n    for(i = 0; i < PARTY_SIZE; i++)\n    {\n        u16 species = GetMonData(&gPlayerParty[i], MON_DATA_SPECIES_OR_EGG);\n        if (species != SPECIES_NONE && species != SPECIES_EGG && GetMonData(&gPlayerParty[i], MON_DATA_HELD_ITEM) == item)\n            return TRUE;\n    }\n    return FALSE;",
       "callsTo": [
         "GetMonData"
@@ -64,6 +104,7 @@
       "returnType": "bool8",
       "signature": "bool8 DoesPartyHaveEnigmaBerry(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "bool8 hasItem = CheckPartyMonHasHeldItem(ITEM_ENIGMA_BERRY);\n    if (hasItem == TRUE)\n        GetBerryNameByBerryType(ItemIdToBerryType(ITEM_ENIGMA_BERRY), gStringVar1);\n\n    return hasItem;",
       "callsTo": [
         "CheckPartyMonHasHeldItem",
@@ -76,6 +117,20 @@
       "returnType": "void",
       "signature": "void CreateScriptedWildMon(u16 species, u8 level, u16 item)",
       "paramsRaw": "u16 species, u8 level, u16 item",
+      "paramsList": [
+        {
+          "name": "species",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "level",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "item",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "u8 heldItem[2];\n\n    ZeroEnemyPartyMons();\n    CreateMon(&gEnemyParty[0], species, level, USE_RANDOM_IVS, 0, 0, OT_ID_PLAYER_ID, 0);\n    if (item)\n    {\n        heldItem[0] = item;\n        heldItem[1] = item >> 8;\n        SetMonData(&gEnemyParty[0], MON_DATA_HELD_ITEM, heldItem);\n    }",
       "callsTo": [
         "CreateMon",
@@ -88,6 +143,20 @@
       "returnType": "void",
       "signature": "void ScriptSetMonMoveSlot(u8 monIndex, u16 move, u8 slot)",
       "paramsRaw": "u8 monIndex, u16 move, u8 slot",
+      "paramsList": [
+        {
+          "name": "monIndex",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "move",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "slot",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "#ifdef BUGFIX\n    if (monIndex >= PARTY_SIZE)\n#else\n    if (monIndex > PARTY_SIZE)\n#endif\n        monIndex = gPlayerPartyCount - 1;\n\n    SetMonMoveSlot(&gPlayerParty[monIndex], move, slot);",
       "callsTo": [
         "SetMonMoveSlot"
@@ -98,6 +167,7 @@
       "returnType": "void",
       "signature": "void ChooseHalfPartyForBattle(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gMain.savedCallback = CB2_ReturnFromChooseHalfParty;\n    VarSet(VAR_FRONTIER_FACILITY, FACILITY_MULTI_OR_EREADER);\n    InitChooseHalfPartyForBattle(0);",
       "callsTo": [
         "InitChooseHalfPartyForBattle",
@@ -109,6 +179,7 @@
       "returnType": "void",
       "signature": "static void CB2_ReturnFromChooseHalfParty(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (gSelectedOrderFromParty[0])\n    {\n    case 0:\n        gSpecialVar_Result = FALSE;\n        break;\n    default:\n        gSpecialVar_Result = TRUE;\n        break;\n    }\n\n    SetMainCallback2(CB2_ReturnToFieldContinueScriptPlayMapMusic);",
       "callsTo": [
         "SetMainCallback2"
@@ -119,6 +190,7 @@
       "returnType": "void",
       "signature": "void ChoosePartyForBattleFrontier(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gMain.savedCallback = CB2_ReturnFromChooseBattleFrontierParty;\n    InitChooseHalfPartyForBattle(gSpecialVar_0x8004 + 1);",
       "callsTo": [
         "InitChooseHalfPartyForBattle"
@@ -129,6 +201,7 @@
       "returnType": "void",
       "signature": "static void CB2_ReturnFromChooseBattleFrontierParty(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (gSelectedOrderFromParty[0])\n    {\n    case 0:\n        gSpecialVar_Result = FALSE;\n        break;\n    default:\n        gSpecialVar_Result = TRUE;\n        break;\n    }\n\n    SetMainCallback2(CB2_ReturnToFieldContinueScriptPlayMapMusic);",
       "callsTo": [
         "SetMainCallback2"
@@ -139,6 +212,7 @@
       "returnType": "void",
       "signature": "void ReducePlayerPartyToSelectedMons(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "struct Pokemon party[MAX_FRONTIER_PARTY_SIZE];\n    int i;\n\n    CpuFill32(0, party, sizeof party);\n\n     \n    for (i = 0; i < MAX_FRONTIER_PARTY_SIZE; i++)\n        if (gSelectedOrderFromParty[i])  \n            party[i] = gPlayerParty[gSelectedOrderFromParty[i] - 1];  \n\n    CpuFill32(0, gPlayerParty, sizeof gPlayerParty);\n\n     \n    for (i = 0; i < MAX_FRONTIER_PARTY_SIZE; i++)\n        gPlayerParty[i] = party[i];\n\n    CalculatePlayerPartyCount();",
       "callsTo": [
         "CalculatePlayerPartyCount",

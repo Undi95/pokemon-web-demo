@@ -6,6 +6,7 @@
       "returnType": "void",
       "signature": "static void InitTimeBasedEvents(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "FlagSet(FLAG_SYS_CLOCK_SET);\n    RtcCalcLocalTime();\n    gSaveBlock2Ptr->lastBerryTreeUpdate = gLocalTime;\n    VarSet(VAR_DAYS, gLocalTime.days);",
       "callsTo": [
         "FlagSet",
@@ -18,6 +19,7 @@
       "returnType": "void",
       "signature": "void DoTimeBasedEvents(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (FlagGet(FLAG_SYS_CLOCK_SET) && !InPokemonCenter())\n    {\n        RtcCalcLocalTime();\n        UpdatePerDay(&gLocalTime);\n        UpdatePerMinute(&gLocalTime);\n    }",
       "callsTo": [
         "FlagGet",
@@ -32,6 +34,12 @@
       "returnType": "void",
       "signature": "static void UpdatePerDay(struct Time *localTime)",
       "paramsRaw": "struct Time *localTime",
+      "paramsList": [
+        {
+          "name": "localTime",
+          "typeRaw": "struct Time *"
+        }
+      ],
       "body": "u16 *days = GetVarPointer(VAR_DAYS);\n    u16 daysSince;\n\n    if (*days != localTime->days && *days <= localTime->days)\n    {\n        daysSince = localTime->days - *days;\n        ClearDailyFlags();\n        UpdateDewfordTrendPerDay(daysSince);\n        UpdateTVShowsPerDay(daysSince);\n        UpdateWeatherPerDay(daysSince);\n        UpdatePartyPokerusTime(daysSince);\n        UpdateMirageRnd(daysSince);\n        UpdateBirchState(daysSince);\n        UpdateFrontierManiac(daysSince);\n        UpdateFrontierGambler(daysSince);\n        SetShoalItemFlag(daysSince);\n        SetRandomLotteryNumber(daysSince);\n        *days = localTime->days;\n    }",
       "callsTo": [
         "ClearDailyFlags",
@@ -53,6 +61,12 @@
       "returnType": "void",
       "signature": "static void UpdatePerMinute(struct Time *localTime)",
       "paramsRaw": "struct Time *localTime",
+      "paramsList": [
+        {
+          "name": "localTime",
+          "typeRaw": "struct Time *"
+        }
+      ],
       "body": "struct Time difference;\n    int minutes;\n\n    CalcTimeDifference(&difference, &gSaveBlock2Ptr->lastBerryTreeUpdate, localTime);\n    minutes = 24 * 60 * difference.days + 60 * difference.hours + difference.minutes;\n    if (minutes != 0)\n    {\n        if (minutes >= 0)\n        {\n            BerryTreeTimeUpdate(minutes);\n            gSaveBlock2Ptr->lastBerryTreeUpdate = *localTime;\n        }\n    }",
       "callsTo": [
         "BerryTreeTimeUpdate",
@@ -64,6 +78,7 @@
       "returnType": "void",
       "signature": "static void ReturnFromStartWallClock(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "InitTimeBasedEvents();\n    SetMainCallback2(CB2_ReturnToFieldContinueScriptPlayMapMusic);",
       "callsTo": [
         "InitTimeBasedEvents",
@@ -75,6 +90,7 @@
       "returnType": "void",
       "signature": "void StartWallClock(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "SetMainCallback2(CB2_StartWallClock);\n    gMain.savedCallback = ReturnFromStartWallClock;",
       "callsTo": [
         "SetMainCallback2"

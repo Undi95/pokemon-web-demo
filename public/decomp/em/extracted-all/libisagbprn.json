@@ -6,6 +6,7 @@
       "returnType": "void",
       "signature": "void AGBPrintInit(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "volatile struct AGBPrintStruct *pPrint = (struct AGBPrintStruct *)AGB_PRINT_STRUCT_ADDR;\n    vu16 *pWSCNT = &REG_WAITCNT;\n    u16 *pProtect = (u16 *)AGB_PRINT_PROTECT_ADDR;\n    u16 nOldWSCNT = *pWSCNT;\n    *pWSCNT = WSCNT_DATA;\n    *pProtect = 0x20;\n    pPrint->m_nRequest = pPrint->m_nGet = pPrint->m_nPut = 0;\n    pPrint->m_nBank = 0xFD;\n    *pProtect = 0;\n    *pWSCNT = nOldWSCNT;",
       "callsTo": [],
       "lineCount": 10
@@ -14,6 +15,12 @@
       "returnType": "void",
       "signature": "static void AGBPutcInternal(const char cChr)",
       "paramsRaw": "const char cChr",
+      "paramsList": [
+        {
+          "name": "cChr",
+          "typeRaw": "const char"
+        }
+      ],
       "body": "volatile struct AGBPrintStruct *pPrint = (struct AGBPrintStruct *)AGB_PRINT_STRUCT_ADDR;\n    u16 *pPrintBuf = (u16 *)(0x8000000 + (pPrint->m_nBank << 16));\n    u16 *pProtect = (u16 *)AGB_PRINT_PROTECT_ADDR;\n    u16 nData = pPrintBuf[pPrint->m_nPut / 2];\n    *pProtect = 0x20;\n    nData = (pPrint->m_nPut & 1) ? (nData & 0xFF) | (cChr << 8) : (nData & 0xFF00) | cChr;\n    pPrintBuf[pPrint->m_nPut / 2] = nData;\n    pPrint->m_nPut++;\n    *pProtect = 0;",
       "callsTo": [],
       "lineCount": 9
@@ -22,6 +29,12 @@
       "returnType": "void",
       "signature": "void AGBPutc(const char cChr)",
       "paramsRaw": "const char cChr",
+      "paramsList": [
+        {
+          "name": "cChr",
+          "typeRaw": "const char"
+        }
+      ],
       "body": "vu16 *pWSCNT = &REG_WAITCNT;\n    u16 nOldWSCNT = *pWSCNT;\n    volatile struct AGBPrintStruct *pPrint;\n    *pWSCNT = WSCNT_DATA;\n    AGBPutcInternal(cChr);\n    *pWSCNT = nOldWSCNT;\n    pPrint = (struct AGBPrintStruct *)AGB_PRINT_STRUCT_ADDR;\n    if (pPrint->m_nPut == ((pPrint->m_nGet - 1) & 0xFFFF))\n        AGBPrintFlush1Block();",
       "callsTo": [
         "AGBPrintFlush1Block",
@@ -33,6 +46,12 @@
       "returnType": "void",
       "signature": "void AGBPrint(const char *pBuf)",
       "paramsRaw": "const char *pBuf",
+      "paramsList": [
+        {
+          "name": "pBuf",
+          "typeRaw": "const char *"
+        }
+      ],
       "body": "volatile struct AGBPrintStruct *pPrint = (struct AGBPrintStruct *)AGB_PRINT_STRUCT_ADDR;\n    vu16 *pWSCNT = &REG_WAITCNT;\n    u16 nOldWSCNT = *pWSCNT;\n    *pWSCNT = WSCNT_DATA;\n    while (*pBuf)\n    {\n        AGBPutc(*pBuf);\n        pBuf++;\n    }\n    *pWSCNT = nOldWSCNT;",
       "callsTo": [
         "AGBPutc"
@@ -43,6 +62,12 @@
       "returnType": "void",
       "signature": "void AGBPrintf(const char *pBuf, ...)",
       "paramsRaw": "const char *pBuf, ...",
+      "paramsList": [
+        {
+          "name": "pBuf",
+          "typeRaw": "const char *"
+        }
+      ],
       "body": "char bufPrint[0x100];\n    va_list vArgv;\n    va_start(vArgv, pBuf);\n    #if (PRETTY_PRINT_HANDLER == PRETTY_PRINT_MINI_PRINTF)\n    mini_vsnprintf(bufPrint, 0x100, pBuf, vArgv);\n    #elif (PRETTY_PRINT_HANDLER == PRETTY_PRINT_LIBC)\n    vsnprintf(bufPrint, 0x100, pBuf, vArgv);\n    #else\n    #error \"unspecified pretty printing handler.\"\n    #endif\n    va_end(vArgv);\n    AGBPrint(bufPrint);",
       "callsTo": [
         "AGBPrint"
@@ -53,6 +78,12 @@
       "returnType": "void",
       "signature": "static void AGBPrintTransferDataInternal(u32 bAllData)",
       "paramsRaw": "u32 bAllData",
+      "paramsList": [
+        {
+          "name": "bAllData",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "LPFN_PRINT_FLUSH lpfnFuncFlush;\n    vu16 *pIME;\n    u16 nIME;\n    vu16 *pWSCNT;\n    u16 nOldWSCNT;\n    u16 *pProtect;\n    volatile struct AGBPrintStruct *pPrint;\n\n    pProtect = (u16 *)AGB_PRINT_PROTECT_ADDR;\n    pPrint = (struct AGBPrintStruct *)AGB_PRINT_STRUCT_ADDR;\n    lpfnFuncFlush = (LPFN_PRINT_FLUSH)AGB_PRINT_FLUSH_ADDR;\n    pIME = &REG_IME;\n    nIME = *pIME;\n    pWSCNT = &REG_WAITCNT;\n    nOldWSCNT = *pWSCNT;\n    *pIME = nIME & ~1;\n    *pWSCNT = WSCNT_DATA;\n\n    if (bAllData)\n    {\n        while (pPrint->m_nPut != pPrint->m_nGet)\n        {\n            *pProtect = 0x20;\n            lpfnFuncFlush();\n            *pProtect = 0;\n        }\n    }\n    else if (pPrint->m_nPut != pPrint->m_nGet)\n    {\n        *pProtect = 0x20;\n        lpfnFuncFlush();\n        *pProtect = 0;\n    }\n\n    *pWSCNT = nOldWSCNT;\n    *pIME = nIME;",
       "callsTo": [],
       "lineCount": 36
@@ -61,6 +92,7 @@
       "returnType": "void",
       "signature": "void AGBPrintFlush1Block(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "AGBPrintTransferDataInternal(FALSE);",
       "callsTo": [
         "AGBPrintTransferDataInternal"
@@ -71,6 +103,7 @@
       "returnType": "void",
       "signature": "void AGBPrintFlush(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "AGBPrintTransferDataInternal(TRUE);",
       "callsTo": [
         "AGBPrintTransferDataInternal"
@@ -81,6 +114,24 @@
       "returnType": "void",
       "signature": "void AGBAssert(const char *pFile, int nLine, const char *pExpression, int nStopProgram)",
       "paramsRaw": "const char *pFile, int nLine, const char *pExpression, int nStopProgram",
+      "paramsList": [
+        {
+          "name": "pFile",
+          "typeRaw": "const char *"
+        },
+        {
+          "name": "nLine",
+          "typeRaw": "int"
+        },
+        {
+          "name": "pExpression",
+          "typeRaw": "const char *"
+        },
+        {
+          "name": "nStopProgram",
+          "typeRaw": "int"
+        }
+      ],
       "body": "if (nStopProgram)\n    {\n        AGBPrintf(\"ASSERTION FAILED  FILE=[%s] LINE=[%d]  EXP=[%s] \\n\", pFile, nLine, pExpression);\n        AGBPrintFlush();\n        asm(\".hword 0xEFFF\");\n    }\n    else\n    {\n        AGBPrintf(\"WARING FILE=[%s] LINE=[%d]  EXP=[%s] \\n\", pFile, nLine, pExpression);\n    }",
       "callsTo": [
         "AGBPrintFlush",
@@ -92,6 +143,12 @@
       "returnType": "void",
       "signature": "void NoCashGBAPrint(const char *pBuf)",
       "paramsRaw": "const char *pBuf",
+      "paramsList": [
+        {
+          "name": "pBuf",
+          "typeRaw": "const char *"
+        }
+      ],
       "body": "*(volatile u32 *)NOCASHGBAPRINTADDR2 = (u32)pBuf;",
       "callsTo": [],
       "lineCount": 1
@@ -100,6 +157,12 @@
       "returnType": "void",
       "signature": "void NoCashGBAPrintf(const char *pBuf, ...)",
       "paramsRaw": "const char *pBuf, ...",
+      "paramsList": [
+        {
+          "name": "pBuf",
+          "typeRaw": "const char *"
+        }
+      ],
       "body": "char bufPrint[0x100];\n    va_list vArgv;\n    va_start(vArgv, pBuf);\n    #if (PRETTY_PRINT_HANDLER == PRETTY_PRINT_MINI_PRINTF)\n    mini_vsnprintf(bufPrint, 0x100, pBuf, vArgv);\n    #elif (PRETTY_PRINT_HANDLER == PRETTY_PRINT_LIBC)\n    vsnprintf(bufPrint, 0x100, pBuf, vArgv);\n    #else\n    #error \"unspecified pretty printing handler.\"\n    #endif\n    va_end(vArgv);\n    NoCashGBAPrint(bufPrint);",
       "callsTo": [
         "NoCashGBAPrint"
@@ -110,6 +173,24 @@
       "returnType": "void",
       "signature": "void NoCashGBAAssert(const char *pFile, s32 nLine, const char *pExpression, bool32 nStopProgram)",
       "paramsRaw": "const char *pFile, s32 nLine, const char *pExpression, bool32 nStopProgram",
+      "paramsList": [
+        {
+          "name": "pFile",
+          "typeRaw": "const char *"
+        },
+        {
+          "name": "nLine",
+          "typeRaw": "s32"
+        },
+        {
+          "name": "pExpression",
+          "typeRaw": "const char *"
+        },
+        {
+          "name": "nStopProgram",
+          "typeRaw": "bool32"
+        }
+      ],
       "body": "if (nStopProgram)\n    {\n        NoCashGBAPrintf(\"ASSERTION FAILED  FILE=[%s] LINE=[%d]  EXP=[%s]\", pFile, nLine, pExpression);\n        asm(\".hword 0xEFFF\");\n    }\n    else\n    {\n        NoCashGBAPrintf(\"WARING FILE=[%s] LINE=[%d]  EXP=[%s]\", pFile, nLine, pExpression);\n    }",
       "callsTo": [
         "NoCashGBAPrintf"
@@ -120,6 +201,7 @@
       "returnType": "bool32",
       "signature": "bool32 MgbaOpen(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "*REG_DEBUG_ENABLE = 0xC0DE;\n    return *REG_DEBUG_ENABLE == 0x1DEA;",
       "callsTo": [],
       "lineCount": 2
@@ -128,6 +210,7 @@
       "returnType": "void",
       "signature": "void MgbaClose(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "*REG_DEBUG_ENABLE = 0;",
       "callsTo": [],
       "lineCount": 1
@@ -136,6 +219,16 @@
       "returnType": "void",
       "signature": "void MgbaPrintf(s32 level, const char *ptr, ...)",
       "paramsRaw": "s32 level, const char *ptr, ...",
+      "paramsList": [
+        {
+          "name": "level",
+          "typeRaw": "s32"
+        },
+        {
+          "name": "ptr",
+          "typeRaw": "const char *"
+        }
+      ],
       "body": "va_list args;\n\n    level &= 0x7;\n    va_start(args, ptr);\n    #if (PRETTY_PRINT_HANDLER == PRETTY_PRINT_MINI_PRINTF)\n    mini_vsnprintf(REG_DEBUG_STRING, MGBA_REG_DEBUG_MAX, ptr, args);\n    #elif (PRETTY_PRINT_HANDLER == PRETTY_PRINT_LIBC)\n    vsnprintf(REG_DEBUG_STRING, MGBA_REG_DEBUG_MAX, ptr, args);\n    #else\n    #error \"unspecified pretty printing handler.\"\n    #endif\n    va_end(args);\n    *REG_DEBUG_FLAGS = level | 0x100;",
       "callsTo": [],
       "lineCount": 13
@@ -144,6 +237,24 @@
       "returnType": "void",
       "signature": "void MgbaAssert(const char *pFile, s32 nLine, const char *pExpression, bool32 nStopProgram)",
       "paramsRaw": "const char *pFile, s32 nLine, const char *pExpression, bool32 nStopProgram",
+      "paramsList": [
+        {
+          "name": "pFile",
+          "typeRaw": "const char *"
+        },
+        {
+          "name": "nLine",
+          "typeRaw": "s32"
+        },
+        {
+          "name": "pExpression",
+          "typeRaw": "const char *"
+        },
+        {
+          "name": "nStopProgram",
+          "typeRaw": "bool32"
+        }
+      ],
       "body": "if (nStopProgram)\n    {\n        MgbaPrintf(MGBA_LOG_ERROR, \"ASSERTION FAILED  FILE=[%s] LINE=[%d]  EXP=[%s]\", pFile, nLine, pExpression);\n        asm(\".hword 0xEFFF\");\n    }\n    else\n    {\n        MgbaPrintf(MGBA_LOG_WARN, \"WARING FILE=[%s] LINE=[%d]  EXP=[%s]\", pFile, nLine, pExpression);\n    }",
       "callsTo": [
         "MgbaPrintf"

@@ -6,6 +6,12 @@
       "returnType": "void",
       "signature": "static void AnimConfusionDuck(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "CMD_ARGS(x, y, waveOffset, wavePeriod, duration);\n\n    sprite->x += cmd->x;\n    sprite->y += cmd->y;\n    sprite->data[0] = cmd->waveOffset;\n    if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)\n    {\n        sprite->data[1] = -cmd->wavePeriod;\n        sprite->data[4] = 1;\n    }\n    else\n    {\n        sprite->data[1] = cmd->wavePeriod;\n        sprite->data[4] = 0;\n        StartSpriteAnim(sprite, 1);\n    }\n\n    sprite->data[3] = cmd->duration;\n    sprite->callback = AnimConfusionDuck_Step;\n    sprite->callback(sprite);",
       "callsTo": [
         "CMD_ARGS",
@@ -18,6 +24,12 @@
       "returnType": "void",
       "signature": "static void AnimConfusionDuck_Step(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "sprite->x2 = Cos(sprite->data[0], 30);\n    sprite->y2 = Sin(sprite->data[0], 10);\n\n    if ((u16)sprite->data[0] < 128)\n        sprite->oam.priority = 1;\n    else\n        sprite->oam.priority = 3;\n\n    sprite->data[0] = (sprite->data[0] + sprite->data[1]) & 0xFF;\n    if (++sprite->data[2] == sprite->data[3])\n        DestroyAnimSprite(sprite);",
       "callsTo": [
         "Cos",
@@ -30,6 +42,12 @@
       "returnType": "void",
       "signature": "static void AnimSimplePaletteBlend(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "CMD_ARGS(selector, delay, initialBlendY, targetBlendY, color);\n\n    u32 selectedPalettes = UnpackSelectedBattlePalettes(cmd->selector);\n    BeginNormalPaletteFade(selectedPalettes, cmd->delay, cmd->initialBlendY, cmd->targetBlendY, cmd->color);\n    sprite->invisible = TRUE;\n    sprite->callback = AnimSimplePaletteBlend_Step;",
       "callsTo": [
         "BeginNormalPaletteFade",
@@ -42,6 +60,12 @@
       "returnType": "u32",
       "signature": "u32 UnpackSelectedBattlePalettes(s16 selector)",
       "paramsRaw": "s16 selector",
+      "paramsList": [
+        {
+          "name": "selector",
+          "typeRaw": "s16"
+        }
+      ],
       "body": "bool8 battleBackground = selector & 1;\n    bool8 attacker = (selector >> 1) & 1;\n    bool8 target = (selector >> 2) & 1;\n    bool8 attackerPartner = (selector >> 3) & 1;\n    bool8 targetPartner = (selector >> 4) & 1;\n    bool8 anim1 = (selector >> 5) & 1;\n    bool8 anim2 = (selector >> 6) & 1;\n    return GetBattlePalettesMask(battleBackground, attacker, target, attackerPartner, targetPartner, anim1, anim2);",
       "callsTo": [
         "GetBattlePalettesMask"
@@ -52,6 +76,12 @@
       "returnType": "void",
       "signature": "static void AnimSimplePaletteBlend_Step(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (!gPaletteFade.active)\n        DestroyAnimSprite(sprite);",
       "callsTo": [
         "DestroyAnimSprite"
@@ -62,6 +92,12 @@
       "returnType": "void",
       "signature": "static void AnimComplexPaletteBlend(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "CMD_ARGS(selector, delay, numBlends, color1, blendY1, color2, blendY2);\n\n    u32 selectedPalettes;\n\n    sprite->sTimer = cmd->delay;\n    sprite->sDelay = cmd->delay;\n    sprite->sNumBlends = cmd->numBlends;\n    sprite->sColor1 = cmd->color1;\n    sprite->sBlendY1 = cmd->blendY1;\n    sprite->sColor2 = cmd->color2;\n    sprite->sBlendY2 = cmd->blendY2;\n    sprite->sPaletteSelector = cmd->selector;\n\n    selectedPalettes = UnpackSelectedBattlePalettes(sprite->sPaletteSelector);\n    BlendPalettes(selectedPalettes, cmd->blendY1, cmd->color1);\n    sprite->invisible = TRUE;\n    sprite->callback = AnimComplexPaletteBlend_Step1;",
       "callsTo": [
         "BlendPalettes",
@@ -74,6 +110,12 @@
       "returnType": "void",
       "signature": "static void AnimComplexPaletteBlend_Step1(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "u32 selectedPalettes;\n\n    if (sprite->sTimer > 0)\n    {\n        sprite->sTimer--;\n        return;\n    }\n\n    if (gPaletteFade.active)\n        return;\n\n    if (sprite->sNumBlends == 0)\n    {\n        sprite->callback = AnimComplexPaletteBlend_Step2;\n        return;\n    }\n\n    selectedPalettes = UnpackSelectedBattlePalettes(sprite->sPaletteSelector);\n    if (sprite->sDelay & 0x100)\n        BlendPalettes(selectedPalettes, sprite->sBlendY1, sprite->sColor1);\n    else\n        BlendPalettes(selectedPalettes, sprite->sBlendY2, sprite->sColor2);\n\n    sprite->sDelay ^= 0x100;\n    sprite->sTimer = sprite->sDelay & 0xFF;\n    sprite->sNumBlends--;",
       "callsTo": [
         "BlendPalettes",
@@ -85,6 +127,12 @@
       "returnType": "void",
       "signature": "static void AnimComplexPaletteBlend_Step2(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "u32 selectedPalettes;\n\n    if (!gPaletteFade.active)\n    {\n        selectedPalettes = UnpackSelectedBattlePalettes(sprite->sPaletteSelector);\n        BlendPalettes(selectedPalettes, 0, 0);\n        DestroyAnimSprite(sprite);\n    }",
       "callsTo": [
         "BlendPalettes",
@@ -97,6 +145,12 @@
       "returnType": "void",
       "signature": "static void AnimCirclingSparkle(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "CMD_ARGS(x, y);\n\n    sprite->x += cmd->x;\n    sprite->y += cmd->y;\n    sprite->data[0] = 0;\n    sprite->data[1] = 10;\n    sprite->data[2] = 8;\n    sprite->data[3] = 40;\n    sprite->data[4] = 112;\n    sprite->data[5] = 0;\n    StoreSpriteCallbackInData6(sprite, DestroySpriteAndMatrix);\n    sprite->callback = TranslateSpriteInGrowingCircle;\n    sprite->callback(sprite);",
       "callsTo": [
         "CMD_ARGS",
@@ -108,6 +162,12 @@
       "returnType": "void",
       "signature": "void AnimTask_BlendColorCycle(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "CMD_ARGS(selector, delay, numBlends, initialBlendY, targetBlendY, color);\n\n    gTasks[taskId].tPalSelector = cmd->selector;\n    gTasks[taskId].tDelay = cmd->delay;\n    gTasks[taskId].tNumBlends = cmd->numBlends;\n    gTasks[taskId].tInitialBlendY = cmd->initialBlendY;\n    gTasks[taskId].tTargetBlendY = cmd->targetBlendY;\n    gTasks[taskId].tBlendColor = cmd->color;\n    gTasks[taskId].tRestoreBlend = FALSE;\n    BlendColorCycle(taskId, 0, gTasks[taskId].tTargetBlendY);\n    gTasks[taskId].func = AnimTask_BlendColorCycleLoop;",
       "callsTo": [
         "BlendColorCycle",
@@ -119,6 +179,20 @@
       "returnType": "void",
       "signature": "static void BlendColorCycle(u8 taskId, u8 startBlendAmount, u8 targetBlendAmount)",
       "paramsRaw": "u8 taskId, u8 startBlendAmount, u8 targetBlendAmount",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "startBlendAmount",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "targetBlendAmount",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u32 selectedPalettes = UnpackSelectedBattlePalettes(gTasks[taskId].tPalSelector);\n    BeginNormalPaletteFade(\n        selectedPalettes,\n        gTasks[taskId].tDelay,\n        startBlendAmount,\n        targetBlendAmount,\n        gTasks[taskId].tBlendColor);\n\n    gTasks[taskId].tNumBlends--;\n    gTasks[taskId].tRestoreBlend ^= 1;",
       "callsTo": [
         "BeginNormalPaletteFade",
@@ -130,6 +204,12 @@
       "returnType": "void",
       "signature": "static void AnimTask_BlendColorCycleLoop(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 startBlendAmount, targetBlendAmount;\n    if (!gPaletteFade.active)\n    {\n        if (gTasks[taskId].tNumBlends > 0)\n        {\n            if (!gTasks[taskId].tRestoreBlend)\n            {\n                 \n                startBlendAmount = gTasks[taskId].tInitialBlendY;\n                targetBlendAmount = gTasks[taskId].tTargetBlendY;\n            }\n            else\n            {\n                 \n                startBlendAmount = gTasks[taskId].tTargetBlendY;\n                targetBlendAmount = gTasks[taskId].tInitialBlendY;\n            }\n\n            if (gTasks[taskId].tNumBlends == 1)\n                targetBlendAmount = 0;\n\n            BlendColorCycle(taskId, startBlendAmount, targetBlendAmount);\n        }\n        else\n        {\n            DestroyAnimVisualTask(taskId);\n        }\n    }",
       "callsTo": [
         "BlendColorCycle",
@@ -141,6 +221,12 @@
       "returnType": "void",
       "signature": "void AnimTask_BlendColorCycleExclude(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "CMD_ARGS(unk0, delay, numBlends, initialBlendY, targetBlendY, color);\n\n    int battler;\n    u32 selectedPalettes = 0;\n\n    gTasks[taskId].data[0] = cmd->unk0;\n    gTasks[taskId].tDelay = cmd->delay;\n    gTasks[taskId].tNumBlends = cmd->numBlends;\n    gTasks[taskId].tInitialBlendY = cmd->initialBlendY;\n    gTasks[taskId].tTargetBlendY = cmd->targetBlendY;\n    gTasks[taskId].tBlendColor = cmd->color;\n    gTasks[taskId].tRestoreBlend = 0;\n\n    for (battler = 0; battler < gBattlersCount; battler++)\n    {\n        if (battler != gBattleAnimAttacker && battler != gBattleAnimTarget)\n            selectedPalettes |= 1 << (battler + 16);\n    }\n\n    if (cmd->unk0 == 1)\n        selectedPalettes |= 0xE;\n\n    gTasks[taskId].tPalSelectorHi = selectedPalettes >> 16;\n    gTasks[taskId].tPalSelectorLo = selectedPalettes & 0xFF;\n    BlendColorCycleExclude(taskId, 0, gTasks[taskId].tTargetBlendY);\n    gTasks[taskId].func = AnimTask_BlendColorCycleExcludeLoop;",
       "callsTo": [
         "BlendColorCycleExclude",
@@ -152,6 +238,20 @@
       "returnType": "void",
       "signature": "static void BlendColorCycleExclude(u8 taskId, u8 startBlendAmount, u8 targetBlendAmount)",
       "paramsRaw": "u8 taskId, u8 startBlendAmount, u8 targetBlendAmount",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "startBlendAmount",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "targetBlendAmount",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u32 selectedPalettes = ((u16)gTasks[taskId].tPalSelectorHi << 16) | (u16)gTasks[taskId].tPalSelectorLo;\n    BeginNormalPaletteFade(\n        selectedPalettes,\n        gTasks[taskId].tDelay,\n        startBlendAmount,\n        targetBlendAmount,\n        gTasks[taskId].tBlendColor);\n\n    gTasks[taskId].tNumBlends--;\n    gTasks[taskId].tRestoreBlend ^= 1;",
       "callsTo": [
         "BeginNormalPaletteFade"
@@ -162,6 +262,12 @@
       "returnType": "void",
       "signature": "static void AnimTask_BlendColorCycleExcludeLoop(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 startBlendAmount, targetBlendAmount;\n    if (!gPaletteFade.active)\n    {\n        if (gTasks[taskId].tNumBlends > 0)\n        {\n            if (!gTasks[taskId].tRestoreBlend)\n            {\n                 \n                startBlendAmount = gTasks[taskId].tInitialBlendY;\n                targetBlendAmount = gTasks[taskId].tTargetBlendY;\n            }\n            else\n            {\n                 \n                startBlendAmount = gTasks[taskId].tTargetBlendY;\n                targetBlendAmount = gTasks[taskId].tInitialBlendY;\n            }\n\n            if (gTasks[taskId].tNumBlends == 1)\n                targetBlendAmount = 0;\n\n            BlendColorCycleExclude(taskId, startBlendAmount, targetBlendAmount);\n        }\n        else\n        {\n            DestroyAnimVisualTask(taskId);\n        }\n    }",
       "callsTo": [
         "BlendColorCycleExclude",
@@ -173,6 +279,12 @@
       "returnType": "void",
       "signature": "void AnimTask_BlendColorCycleByTag(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "CMD_ARGS(tag, delay, numBlends, initialBlendY, targetBlendY, color);\n\n    gTasks[taskId].tPalTag = cmd->tag;\n    gTasks[taskId].tDelay = cmd->delay;\n    gTasks[taskId].tNumBlends = cmd->numBlends;\n    gTasks[taskId].tInitialBlendY = cmd->initialBlendY;\n    gTasks[taskId].tTargetBlendY = cmd->targetBlendY;\n    gTasks[taskId].tBlendColor = cmd->color;\n    gTasks[taskId].tRestoreBlend = FALSE;\n\n    BlendColorCycleByTag(taskId, 0, gTasks[taskId].tTargetBlendY);\n    gTasks[taskId].func = AnimTask_BlendColorCycleByTagLoop;",
       "callsTo": [
         "BlendColorCycleByTag",
@@ -184,6 +296,20 @@
       "returnType": "void",
       "signature": "static void BlendColorCycleByTag(u8 taskId, u8 startBlendAmount, u8 targetBlendAmount)",
       "paramsRaw": "u8 taskId, u8 startBlendAmount, u8 targetBlendAmount",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "startBlendAmount",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "targetBlendAmount",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 paletteIndex = IndexOfSpritePaletteTag(gTasks[taskId].tPalTag);\n    BeginNormalPaletteFade(\n        1 << (paletteIndex + 16),\n        gTasks[taskId].tDelay,\n        startBlendAmount,\n        targetBlendAmount,\n        gTasks[taskId].tBlendColor);\n\n    gTasks[taskId].tNumBlends--;\n    gTasks[taskId].tRestoreBlend ^= 1;",
       "callsTo": [
         "BeginNormalPaletteFade",
@@ -195,6 +321,12 @@
       "returnType": "void",
       "signature": "static void AnimTask_BlendColorCycleByTagLoop(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 startBlendAmount, targetBlendAmount;\n    if (!gPaletteFade.active)\n    {\n        if (gTasks[taskId].tNumBlends > 0)\n        {\n            if (!gTasks[taskId].tRestoreBlend)\n            {\n                 \n                startBlendAmount = gTasks[taskId].tInitialBlendY;\n                targetBlendAmount = gTasks[taskId].tTargetBlendY;\n            }\n            else\n            {\n                 \n                startBlendAmount = gTasks[taskId].tTargetBlendY;\n                targetBlendAmount = gTasks[taskId].tInitialBlendY;\n            }\n\n            if (gTasks[taskId].tNumBlends == 1)\n                targetBlendAmount = 0;\n\n            BlendColorCycleByTag(taskId, startBlendAmount, targetBlendAmount);\n        }\n        else\n        {\n            DestroyAnimVisualTask(taskId);\n        }\n    }",
       "callsTo": [
         "BlendColorCycleByTag",
@@ -206,6 +338,12 @@
       "returnType": "void",
       "signature": "void AnimTask_FlashAnimTagWithColor(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "CMD_ARGS(tag, delay, numBlends, color1, blendY1, color2, blendY2);\n\n    u8 paletteIndex;\n\n    gTasks[taskId].tTimer = cmd->delay;\n    gTasks[taskId].tDelay = cmd->delay;\n    gTasks[taskId].tNumBlends = cmd->numBlends;\n    gTasks[taskId].tColor1 = cmd->color1;\n    gTasks[taskId].tBlendY1 = cmd->blendY1;\n    gTasks[taskId].tColor2 = cmd->color2;\n    gTasks[taskId].tBlendY2 = cmd->blendY2;\n    gTasks[taskId].tAnimTag = cmd->tag;\n\n    paletteIndex = IndexOfSpritePaletteTag(cmd->tag);\n    BeginNormalPaletteFade(\n        1 << (paletteIndex + 16),\n        0,\n        cmd->blendY1,\n        cmd->blendY1,\n        cmd->color1);\n\n    gTasks[taskId].func = AnimTask_FlashAnimTagWithColor_Step1;",
       "callsTo": [
         "BeginNormalPaletteFade",
@@ -218,6 +356,12 @@
       "returnType": "void",
       "signature": "static void AnimTask_FlashAnimTagWithColor_Step1(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u32 selectedPalettes;\n\n    if (gTasks[taskId].tTimer > 0)\n    {\n        gTasks[taskId].tTimer--;\n        return;\n    }\n\n    if (gPaletteFade.active)\n        return;\n\n    if (gTasks[taskId].tNumBlends == 0)\n    {\n        gTasks[taskId].func = AnimTask_FlashAnimTagWithColor_Step2;\n        return;\n    }\n\n    selectedPalettes = 1 << (IndexOfSpritePaletteTag(gTasks[taskId].tAnimTag) + 16);\n    if (gTasks[taskId].tDelay & 0x100)\n    {\n        BeginNormalPaletteFade(\n            selectedPalettes,\n            0,\n            gTasks[taskId].tBlendY1,\n            gTasks[taskId].tBlendY1,\n            gTasks[taskId].tColor1);\n    }\n    else\n    {\n        BeginNormalPaletteFade(\n            selectedPalettes,\n            0,\n            gTasks[taskId].tBlendY2,\n            gTasks[taskId].tBlendY2,\n            gTasks[taskId].tColor2);\n    }\n\n    gTasks[taskId].tDelay ^= 0x100;\n    gTasks[taskId].tTimer = gTasks[taskId].tDelay & 0xFF;\n    gTasks[taskId].tNumBlends--;",
       "callsTo": [
         "BeginNormalPaletteFade",
@@ -229,6 +373,12 @@
       "returnType": "void",
       "signature": "static void AnimTask_FlashAnimTagWithColor_Step2(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u32 selectedPalettes;\n\n    if (!gPaletteFade.active)\n    {\n        selectedPalettes = 1 << (IndexOfSpritePaletteTag(gTasks[taskId].tAnimTag) + 16);\n        BeginNormalPaletteFade(selectedPalettes, 0, 0, 0, RGB_BLACK);\n        DestroyAnimVisualTask(taskId);\n    }",
       "callsTo": [
         "BeginNormalPaletteFade",
@@ -241,6 +391,12 @@
       "returnType": "void",
       "signature": "void AnimTask_InvertScreenColor(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "CMD_ARGS(flagsScenery, flagsAttacker, flagsTarget);\n\n    u32 selectedPalettes = 0;\n    u8 attackerBattler = gBattleAnimAttacker;\n    u8 targetBattler = gBattleAnimTarget;\n\n    if (cmd->flagsScenery & (1 << 8))\n        selectedPalettes = GetBattlePalettesMask(TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE);\n\n    if (cmd->flagsAttacker & (1 << 8))\n        selectedPalettes |= (0x10000 << attackerBattler);\n\n    if (cmd->flagsTarget & (1 << 8))\n        selectedPalettes |= (0x10000 << targetBattler);\n\n    InvertPlttBuffer(selectedPalettes);\n    DestroyAnimVisualTask(taskId);",
       "callsTo": [
         "CMD_ARGS",
@@ -254,6 +410,12 @@
       "returnType": "void",
       "signature": "void AnimTask_TintPalettes(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "CMD_ARGS(flagsScenery, flagsAttacker, flagsTarget, duration, r, g, b);\n\n    u8 attackerBattler;\n    u8 targetBattler;\n    u8 paletteIndex;\n    u32 selectedPalettes = 0;\n\n    if (gTasks[taskId].tTimer == 0)\n    {\n        gTasks[taskId].tFlagsScenery = cmd->flagsScenery;\n        gTasks[taskId].tFlagsAttacker = cmd->flagsAttacker;\n        gTasks[taskId].tFlagsTarget = cmd->flagsTarget;\n        gTasks[taskId].tLength = cmd->duration;\n        gTasks[taskId].tColorR = cmd->r;\n        gTasks[taskId].tColorG = cmd->g;\n        gTasks[taskId].tColorB = cmd->b;\n    }\n\n    gTasks[taskId].tTimer++;\n    attackerBattler = gBattleAnimAttacker;\n    targetBattler = gBattleAnimTarget;\n\n    if (gTasks[taskId].tFlagsScenery & (1 << 8))\n        selectedPalettes = PALETTES_BG;\n\n    if (gTasks[taskId].tFlagsScenery & 1)\n    {\n        paletteIndex = IndexOfSpritePaletteTag(gSprites[gHealthboxSpriteIds[attackerBattler]].template->paletteTag);\n        selectedPalettes |= (1 << paletteIndex) << 16;\n    }\n\n    if (gTasks[taskId].tFlagsAttacker & (1 << 8))\n        selectedPalettes |= (1 << attackerBattler) << 16;\n\n    if (gTasks[taskId].tFlagsTarget & (1 << 8))\n        selectedPalettes |= (1 << targetBattler) << 16;\n\n    TintPlttBuffer(selectedPalettes, gTasks[taskId].tColorR, gTasks[taskId].tColorG, gTasks[taskId].tColorB);\n    if (gTasks[taskId].tTimer == gTasks[taskId].tLength)\n    {\n        UnfadePlttBuffer(selectedPalettes);\n        DestroyAnimVisualTask(taskId);\n    }",
       "callsTo": [
         "CMD_ARGS",
@@ -268,6 +430,12 @@
       "returnType": "void",
       "signature": "static void AnimShakeMonOrBattlePlatforms(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "CMD_ARGS(velocity, shakeTimer, shakeDuration, type, battlerSelector);\n\n    sprite->invisible = TRUE;\n    sprite->sShakeVelocity = -cmd->velocity;\n    sprite->sShakeTimer = cmd->shakeTimer;\n    sprite->sShakeDuration = cmd->shakeTimer;\n    sprite->sTimer = cmd->shakeDuration;\n\n    switch (cmd->type)\n    {\n    case SHAKE_BG_X:\n        StoreSpriteCallbackInData6(sprite, (void *)&gBattle_BG3_X);\n        break;\n    case SHAKE_BG_Y:\n        StoreSpriteCallbackInData6(sprite, (void *)&gBattle_BG3_Y);\n        break;\n    case SHAKE_MON_X:\n        StoreSpriteCallbackInData6(sprite, (void *)&gSpriteCoordOffsetX);\n        break;\n    default:\n        StoreSpriteCallbackInData6(sprite, (void *)&gSpriteCoordOffsetY);\n        break;\n    }\n\n    sprite->sOriginalValue = *(u16 *)(sprite->sShakePtrLo | (sprite->sShakePtrHi << 16));\n    sprite->sType = cmd->type;\n    if (sprite->sType == SHAKE_MON_X || sprite->sType == SHAKE_MON_Y)\n        AnimShakeMonOrBattlePlatforms_UpdateCoordOffsetEnabled();\n\n    sprite->callback = AnimShakeMonOrBattlePlatforms_Step;",
       "callsTo": [
         "AnimShakeMonOrBattlePlatforms_UpdateCoordOffsetEnabled",
@@ -280,6 +448,12 @@
       "returnType": "void",
       "signature": "static void AnimShakeMonOrBattlePlatforms_Step(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "u8 i;\n\n    if (sprite->sTimer > 0)\n    {\n        sprite->sTimer--;\n        if (sprite->sShakeTimer > 0)\n        {\n            sprite->sShakeTimer--;\n        }\n        else\n        {\n            sprite->sShakeTimer = sprite->sShakeDuration;\n            *(u16 *)(sprite->sShakePtrLo | (sprite->sShakePtrHi << 16)) += sprite->sShakeVelocity;\n            sprite->sShakeVelocity = -sprite->sShakeVelocity;\n        }\n    }\n    else\n    {\n        *(u16 *)(sprite->sShakePtrLo | (sprite->sShakePtrHi << 16)) = sprite->sOriginalValue;\n        if (sprite->sType == SHAKE_MON_X || sprite->sType == SHAKE_MON_Y)\n        {\n            for (i = 0; i < gBattlersCount; i++)\n                gSprites[gBattlerSpriteIds[i]].coordOffsetEnabled = FALSE;\n        }\n\n        DestroyAnimSprite(sprite);\n    }",
       "callsTo": [
         "DestroyAnimSprite"
@@ -290,6 +464,7 @@
       "returnType": "void",
       "signature": "static void AnimShakeMonOrBattlePlatforms_UpdateCoordOffsetEnabled(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "CMD_ARGS(velocity, shakeDuration, duration, type, battlerSelector);\n\n    gSprites[gBattlerSpriteIds[gBattleAnimAttacker]].coordOffsetEnabled = FALSE;\n    gSprites[gBattlerSpriteIds[gBattleAnimTarget]].coordOffsetEnabled = FALSE;\n\n    if (cmd->battlerSelector == 2)\n    {\n        gSprites[gBattlerSpriteIds[gBattleAnimAttacker]].coordOffsetEnabled = TRUE;\n        gSprites[gBattlerSpriteIds[gBattleAnimTarget]].coordOffsetEnabled = TRUE;\n    }\n    else\n    {\n        if (cmd->battlerSelector == 0)\n            gSprites[gBattlerSpriteIds[gBattleAnimAttacker]].coordOffsetEnabled = TRUE;\n        else\n            gSprites[gBattlerSpriteIds[gBattleAnimTarget]].coordOffsetEnabled = TRUE;\n    }",
       "callsTo": [
         "CMD_ARGS"
@@ -300,6 +475,12 @@
       "returnType": "void",
       "signature": "void AnimTask_ShakeBattlePlatforms(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "CMD_ARGS(xOffset, yOffset, shakes, delay);\n\n    gTasks[taskId].tXOffset = cmd->xOffset;\n    gTasks[taskId].tYOffset = cmd->yOffset;\n    gTasks[taskId].tNumShakes = cmd->shakes;\n    gTasks[taskId].tTimer = cmd->delay;\n    gTasks[taskId].tShakeDelay = cmd->delay;\n    gBattle_BG3_X = cmd->xOffset;\n    gBattle_BG3_Y = cmd->yOffset;\n    gTasks[taskId].func = AnimTask_ShakeBattlePlatforms_Step;\n    gTasks[taskId].func(taskId);",
       "callsTo": [
         "CMD_ARGS"
@@ -310,6 +491,12 @@
       "returnType": "void",
       "signature": "static void AnimTask_ShakeBattlePlatforms_Step(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (gTasks[taskId].tTimer == 0)\n    {\n        if (gBattle_BG3_X == gTasks[taskId].tXOffset)\n            gBattle_BG3_X = -gTasks[taskId].tXOffset;\n        else\n            gBattle_BG3_X = gTasks[taskId].tXOffset;\n\n        if (gBattle_BG3_Y == -gTasks[taskId].tYOffset)\n            gBattle_BG3_Y = 0;\n        else\n            gBattle_BG3_Y = -gTasks[taskId].tYOffset;\n\n        gTasks[taskId].tTimer = gTasks[taskId].tShakeDelay;\n        if (--gTasks[taskId].tNumShakes == 0)\n        {\n            gBattle_BG3_X = 0;\n            gBattle_BG3_Y = 0;\n            DestroyAnimVisualTask(taskId);\n        }\n    }\n    else\n    {\n        gTasks[taskId].tTimer--;\n    }",
       "callsTo": [
         "DestroyAnimVisualTask"
@@ -320,6 +507,12 @@
       "returnType": "void",
       "signature": "static void AnimHitSplatBasic(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "CMD_ARGS(x, y, relativeTo, animation);\n\n    StartSpriteAffineAnim(sprite, cmd->animation);\n    if (cmd->relativeTo == ANIM_ATTACKER)\n        InitSpritePosToAnimAttacker(sprite, TRUE);\n    else\n        InitSpritePosToAnimTarget(sprite, TRUE);\n\n    sprite->callback = RunStoredCallbackWhenAffineAnimEnds;\n    StoreSpriteCallbackInData6(sprite, DestroyAnimSprite);",
       "callsTo": [
         "CMD_ARGS",
@@ -334,6 +527,12 @@
       "returnType": "void",
       "signature": "static void AnimHitSplatPersistent(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "CMD_ARGS(x, y, relativeTo, animation, duration);\n\n    StartSpriteAffineAnim(sprite, cmd->animation);\n    if (cmd->relativeTo == ANIM_ATTACKER)\n        InitSpritePosToAnimAttacker(sprite, TRUE);\n    else\n        InitSpritePosToAnimTarget(sprite, TRUE);\n\n    sprite->data[0] = cmd->duration;\n    sprite->callback = RunStoredCallbackWhenAffineAnimEnds;\n    StoreSpriteCallbackInData6(sprite, DestroyAnimSpriteAfterTimer);",
       "callsTo": [
         "CMD_ARGS",
@@ -348,6 +547,12 @@
       "returnType": "void",
       "signature": "static void AnimHitSplatHandleInvert(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "CMD_ARGS(x, y, relativeTo, animation);\n\n    if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER && !IsContest())\n        cmd->y = -cmd->y;\n\n    AnimHitSplatBasic(sprite);",
       "callsTo": [
         "AnimHitSplatBasic",
@@ -361,6 +566,12 @@
       "returnType": "void",
       "signature": "static void AnimHitSplatRandom(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "CMD_ARGS(relativeTo, animation);\n\n    if (cmd->animation == -1)\n        cmd->animation = Random2() & 3;\n\n    StartSpriteAffineAnim(sprite, cmd->animation);\n    if (cmd->relativeTo == ANIM_ATTACKER)\n        InitSpritePosToAnimAttacker(sprite, FALSE);\n    else\n        InitSpritePosToAnimTarget(sprite, FALSE);\n\n    sprite->x2 += (Random2() % 48) - 24;\n    sprite->y2 += (Random2() % 24) - 12;\n\n    StoreSpriteCallbackInData6(sprite, DestroySpriteAndMatrix);\n    sprite->callback = RunStoredCallbackWhenAffineAnimEnds;",
       "callsTo": [
         "CMD_ARGS",
@@ -376,6 +587,12 @@
       "returnType": "void",
       "signature": "static void AnimHitSplatOnMonEdge(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "CMD_ARGS(relativeTo, x, y, animation);\n\n    sprite->data[0] = GetAnimBattlerSpriteId(cmd->relativeTo);\n    sprite->x = gSprites[sprite->data[0]].x + gSprites[sprite->data[0]].x2;\n    sprite->y = gSprites[sprite->data[0]].y + gSprites[sprite->data[0]].y2;\n    sprite->x2 = cmd->x;\n    sprite->y2 = cmd->y;\n    StartSpriteAffineAnim(sprite, cmd->animation);\n    StoreSpriteCallbackInData6(sprite, DestroySpriteAndMatrix);\n    sprite->callback = RunStoredCallbackWhenAffineAnimEnds;",
       "callsTo": [
         "CMD_ARGS",
@@ -389,6 +606,12 @@
       "returnType": "void",
       "signature": "static void AnimCrossImpact(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "CMD_ARGS(x, y, relativeTo, duration);\n\n    if (cmd->relativeTo == ANIM_ATTACKER)\n        InitSpritePosToAnimAttacker(sprite, TRUE);\n    else\n        InitSpritePosToAnimTarget(sprite, TRUE);\n\n    sprite->data[0] = cmd->duration;\n    StoreSpriteCallbackInData6(sprite, DestroyAnimSprite);\n    sprite->callback = WaitAnimForDuration;",
       "callsTo": [
         "CMD_ARGS",
@@ -402,6 +625,12 @@
       "returnType": "void",
       "signature": "static void AnimFlashingHitSplat(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "CMD_ARGS(x, y, relativeTo, animation);\n\n    StartSpriteAffineAnim(sprite, cmd->animation);\n    if (cmd->relativeTo == ANIM_ATTACKER)\n        InitSpritePosToAnimAttacker(sprite, TRUE);\n    else\n        InitSpritePosToAnimTarget(sprite, TRUE);\n\n    sprite->callback = AnimFlashingHitSplat_Step;",
       "callsTo": [
         "CMD_ARGS",
@@ -415,6 +644,12 @@
       "returnType": "void",
       "signature": "static void AnimFlashingHitSplat_Step(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "sprite->invisible ^= 1;\n    if (sprite->data[0]++ > 12)\n        DestroyAnimSprite(sprite);",
       "callsTo": [
         "DestroyAnimSprite"

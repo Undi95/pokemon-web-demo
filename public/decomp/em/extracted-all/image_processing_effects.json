@@ -6,6 +6,12 @@
       "returnType": "void",
       "signature": "void ApplyImageProcessingEffects(struct ImageProcessingContext *context)",
       "paramsRaw": "struct ImageProcessingContext *context",
+      "paramsList": [
+        {
+          "name": "context",
+          "typeRaw": "struct ImageProcessingContext *"
+        }
+      ],
       "body": "gCanvasPixels = context->canvasPixels;\n    gCanvasMonPersonality = context->personality;\n    gCanvasColumnStart = context->columnStart;\n    gCanvasRowStart = context->rowStart;\n    gCanvasColumnEnd = context->columnEnd;\n    gCanvasRowEnd = context->rowEnd;\n    gCanvasWidth = context->canvasWidth;\n    gCanvasHeight = context->canvasHeight;\n\n    switch (context->effect)\n    {\n    case IMAGE_EFFECT_POINTILLISM:\n        ApplyImageEffect_Pointillism();\n        break;\n    case IMAGE_EFFECT_BLUR:\n        ApplyImageEffect_Blur();\n        break;\n    case IMAGE_EFFECT_OUTLINE_COLORED:\n        ApplyImageEffect_BlackOutline();\n        ApplyImageEffect_PersonalityColor(gCanvasMonPersonality);\n        break;\n    case IMAGE_EFFECT_INVERT_BLACK_WHITE:\n        ApplyImageEffect_BlackOutline();\n        ApplyImageEffect_Invert();\n        ApplyImageEffect_BlackAndWhite();\n    case IMAGE_EFFECT_INVERT:\n        ApplyImageEffect_Invert();\n        break;\n    case IMAGE_EFFECT_THICK_BLACK_WHITE:\n        ApplyImageEffect_BlackOutline();\n        ApplyImageEffect_BlurRight();\n        ApplyImageEffect_BlurRight();\n        ApplyImageEffect_BlurDown();\n        ApplyImageEffect_BlackAndWhite();\n        break;\n    case IMAGE_EFFECT_SHIMMER:\n        ApplyImageEffect_Shimmer();\n        break;\n    case IMAGE_EFFECT_OUTLINE:\n        ApplyImageEffect_BlackOutline();\n        break;\n    case IMAGE_EFFECT_BLUR_RIGHT:\n        ApplyImageEffect_BlurRight();\n        break;\n    case IMAGE_EFFECT_BLUR_DOWN:\n        ApplyImageEffect_BlurDown();\n        break;\n    case IMAGE_EFFECT_GRAYSCALE_LIGHT:\n        ApplyImageEffect_Grayscale();\n        ApplyImageEffect_RedChannelGrayscale(3);\n        break;\n    case IMAGE_EFFECT_CHARCOAL:\n        ApplyImageEffect_BlackOutline();\n        ApplyImageEffect_BlurRight();\n        ApplyImageEffect_BlurDown();\n        ApplyImageEffect_BlackAndWhite();\n        ApplyImageEffect_Blur();\n        ApplyImageEffect_Blur();\n        ApplyImageEffect_RedChannelGrayscale(2);\n        ApplyImageEffect_RedChannelGrayscaleHighlight(4);\n        break;\n    }",
       "callsTo": [
         "ApplyImageEffect_BlackAndWhite",
@@ -27,6 +33,12 @@
       "returnType": "void",
       "signature": "static void ApplyImageEffect_RedChannelGrayscale(u8 delta)",
       "paramsRaw": "u8 delta",
+      "paramsList": [
+        {
+          "name": "delta",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 i, j;\n\n    for (j = 0; j < gCanvasRowEnd; j++)\n    {\n        u16 *pixelRow = &gCanvasPixels[(gCanvasRowStart + j) * gCanvasWidth];\n        u16 *pixel = &pixelRow[gCanvasColumnStart];\n        for (i = 0; i < gCanvasColumnEnd; i++, pixel++)\n        {\n            if (!IS_ALPHA(*pixel))\n            {\n                 \n                 \n                u8 grayValue = (*pixel & RGB_RED);\n                grayValue += delta;\n                if (grayValue > 31)\n                    grayValue = 31;\n\n                *pixel = RGB2(grayValue, grayValue, grayValue);\n            }\n        }\n    }",
       "callsTo": [
         "IS_ALPHA",
@@ -38,6 +50,12 @@
       "returnType": "void",
       "signature": "static void ApplyImageEffect_RedChannelGrayscaleHighlight(u8 highlight)",
       "paramsRaw": "u8 highlight",
+      "paramsList": [
+        {
+          "name": "highlight",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 i, j;\n\n    for (j = 0; j < gCanvasRowEnd; j++)\n    {\n        u16 *pixelRow = &gCanvasPixels[(gCanvasRowStart + j) * gCanvasWidth];\n        u16 *pixel = &pixelRow[gCanvasColumnStart];\n        for (i = 0; i < gCanvasColumnEnd; i++, pixel++)\n        {\n            if (!IS_ALPHA(*pixel))\n            {\n                u8 grayValue = (*pixel & RGB_RED);\n                if (grayValue > 31 - highlight)\n                    grayValue = 31 - (highlight >> 1);\n\n                *pixel = RGB2(grayValue, grayValue, grayValue);\n            }\n        }\n    }",
       "callsTo": [
         "IS_ALPHA",
@@ -49,6 +67,7 @@
       "returnType": "void",
       "signature": "static void ApplyImageEffect_Pointillism(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u32 i;\n    for (i = 0; i < ARRAY_COUNT(sPointillismPoints); i++)\n        AddPointillismPoints(i);",
       "callsTo": [
         "ARRAY_COUNT",
@@ -60,6 +79,7 @@
       "returnType": "void",
       "signature": "static void ApplyImageEffect_Grayscale(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i, j;\n\n    for (j = 0; j < gCanvasRowEnd; j++)\n    {\n        u16 *pixelRow = &gCanvasPixels[(gCanvasRowStart + j) * gCanvasWidth];\n        u16 *pixel = &pixelRow[gCanvasColumnStart];\n        for (i = 0; i < gCanvasColumnEnd; i++, pixel++)\n        {\n            if (!IS_ALPHA(*pixel))\n                *pixel = ConvertColorToGrayscale(pixel);\n        }\n    }",
       "callsTo": [
         "ConvertColorToGrayscale",
@@ -71,6 +91,7 @@
       "returnType": "void",
       "signature": "static void ApplyImageEffect_Blur(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i, j;\n\n    for (i = 0; i < gCanvasColumnEnd; i++)\n    {\n        u16 *pixelRow = &gCanvasPixels[gCanvasRowStart * gCanvasWidth];\n        u16 *pixel = &pixelRow[gCanvasColumnStart + i];\n        u16 prevPixel = *pixel;\n\n        j = 1;\n        pixel += gCanvasWidth;\n        while (j < gCanvasRowEnd - 1)\n        {\n            if (!IS_ALPHA(*pixel))\n            {\n                *pixel = QuantizePixel_Blur(&prevPixel, pixel, pixel + gCanvasWidth);\n                prevPixel = *pixel;\n            }\n\n            j++;\n            pixel += gCanvasWidth;\n        }\n    }",
       "callsTo": [
         "IS_ALPHA",
@@ -82,6 +103,12 @@
       "returnType": "void",
       "signature": "static void ApplyImageEffect_PersonalityColor(u8 personality)",
       "paramsRaw": "u8 personality",
+      "paramsList": [
+        {
+          "name": "personality",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 i, j;\n\n    for (j = 0; j < gCanvasRowEnd; j++)\n    {\n        u16 *pixelRow = &gCanvasPixels[(gCanvasRowStart + j) * gCanvasWidth];\n        u16 *pixel = &pixelRow[gCanvasColumnStart];\n        for (i = 0; i < gCanvasColumnEnd; i++, pixel++)\n        {\n            if (!IS_ALPHA(*pixel))\n                *pixel = QuantizePixel_PersonalityColor(pixel, personality);\n        }\n    }",
       "callsTo": [
         "IS_ALPHA",
@@ -93,6 +120,7 @@
       "returnType": "void",
       "signature": "static void ApplyImageEffect_BlackAndWhite(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i, j;\n\n    for (j = 0; j < gCanvasRowEnd; j++)\n    {\n        u16 *pixelRow = &gCanvasPixels[(gCanvasRowStart + j) * gCanvasWidth];\n        u16 *pixel = &pixelRow[gCanvasColumnStart];\n        for (i = 0; i < gCanvasColumnEnd; i++, pixel++)\n        {\n            if (!IS_ALPHA(*pixel))\n                *pixel = QuantizePixel_BlackAndWhite(pixel);\n        }\n    }",
       "callsTo": [
         "IS_ALPHA",
@@ -104,6 +132,7 @@
       "returnType": "void",
       "signature": "static void ApplyImageEffect_BlackOutline(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i, j;\n    u16 *pixel;\n\n     \n    for (j = 0; j < gCanvasRowEnd; j++)\n    {\n        u16 *pixelRow = &gCanvasPixels[(gCanvasRowStart + j) * gCanvasWidth];\n        pixel = &pixelRow[gCanvasColumnStart];\n        *pixel = QuantizePixel_BlackOutline(pixel, pixel + 1);\n        for (i = 1, pixel++; i < gCanvasColumnEnd - 1; i++, pixel++)\n        {\n            *pixel = QuantizePixel_BlackOutline(pixel, pixel + 1);\n            *pixel = QuantizePixel_BlackOutline(pixel, pixel - 1);\n        }\n\n        *pixel = QuantizePixel_BlackOutline(pixel, pixel - 1);\n    }\n\n     \n    for (i = 0; i < gCanvasColumnEnd; i++)\n    {\n        u16 *pixelRow = &gCanvasPixels[gCanvasRowStart * gCanvasWidth];\n        pixel = &pixelRow[gCanvasColumnStart + i];\n        *pixel = QuantizePixel_BlackOutline(pixel, pixel + gCanvasWidth);\n        for (j = 1, pixel += gCanvasWidth; j < gCanvasRowEnd - 1; j++, pixel += gCanvasWidth)\n        {\n            *pixel = QuantizePixel_BlackOutline(pixel, pixel + gCanvasWidth);\n            *pixel = QuantizePixel_BlackOutline(pixel, pixel - gCanvasWidth);\n        }\n\n        *pixel = QuantizePixel_BlackOutline(pixel, pixel - gCanvasWidth);\n    }",
       "callsTo": [
         "QuantizePixel_BlackOutline"
@@ -114,6 +143,7 @@
       "returnType": "void",
       "signature": "static void ApplyImageEffect_Invert(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i, j;\n\n    for (j = 0; j < gCanvasRowEnd; j++)\n    {\n        u16 *pixelRow = &gCanvasPixels[(gCanvasRowStart + j) * gCanvasWidth];\n        u16 *pixel = &pixelRow[gCanvasColumnStart];\n        for (i = 0; i < gCanvasColumnEnd; i++, pixel++)\n        {\n            if (!IS_ALPHA(*pixel))\n                *pixel = QuantizePixel_Invert(pixel);\n        }\n    }",
       "callsTo": [
         "IS_ALPHA",
@@ -125,6 +155,7 @@
       "returnType": "void",
       "signature": "static void ApplyImageEffect_Shimmer(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i, j;\n    u16 *pixel;\n    u16 prevPixel;\n\n     \n    pixel = gCanvasPixels;\n    for (i = 0; i < MAX_DIMENSION; i++)\n    {\n        for (j = 0; j < MAX_DIMENSION; j++, pixel++)\n        {\n            if (!IS_ALPHA(*pixel))\n                *pixel = QuantizePixel_Invert(pixel);\n        }\n    }\n\n     \n    for (j = 0; j < MAX_DIMENSION; j++)\n    {\n        pixel = &gCanvasPixels[j];\n        prevPixel = *pixel;\n        *pixel = RGB_ALPHA;\n        for (i = 1, pixel += MAX_DIMENSION; i < MAX_DIMENSION - 1; i++, pixel += MAX_DIMENSION)\n        {\n            if (!IS_ALPHA(*pixel))\n            {\n                *pixel = QuantizePixel_BlurHard(&prevPixel, pixel, pixel + MAX_DIMENSION);\n                prevPixel = *pixel;\n            }\n        }\n\n        *pixel = RGB_ALPHA;\n        pixel = &gCanvasPixels[j];\n        prevPixel = *pixel;\n        *pixel = RGB_ALPHA;\n        for (i = 1, pixel += MAX_DIMENSION; i < MAX_DIMENSION - 1; i++, pixel += MAX_DIMENSION)\n        {\n            if (!IS_ALPHA(*pixel))\n            {\n                *pixel = QuantizePixel_BlurHard(&prevPixel, pixel, pixel + MAX_DIMENSION);\n                prevPixel = *pixel;\n            }\n        }\n\n        *pixel = RGB_ALPHA;\n    }\n\n     \n     \n     \n    pixel = gCanvasPixels;\n    for (i = 0; i < MAX_DIMENSION; i++)\n    {\n        for (j = 0; j < MAX_DIMENSION; j++, pixel++)\n        {\n            if (!IS_ALPHA(*pixel))\n                *pixel = QuantizePixel_Invert(pixel);\n        }\n    }",
       "callsTo": [
         "IS_ALPHA",
@@ -137,6 +168,7 @@
       "returnType": "void",
       "signature": "static void ApplyImageEffect_BlurRight(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i, j;\n\n    for (j = 0; j < gCanvasRowEnd; j++)\n    {\n        u16 *pixelRow = &gCanvasPixels[(gCanvasRowStart + j) * gCanvasWidth];\n        u16 *pixel = &pixelRow[gCanvasColumnStart];\n        u16 prevPixel = *pixel;\n        for (i = 1, pixel++; i < gCanvasColumnEnd - 1; i++, pixel++)\n        {\n            if (!IS_ALPHA(*pixel))\n            {\n                *pixel = QuantizePixel_MotionBlur(&prevPixel, pixel);\n                prevPixel = *pixel;\n            }\n        }\n    }",
       "callsTo": [
         "IS_ALPHA",
@@ -148,6 +180,7 @@
       "returnType": "void",
       "signature": "static void ApplyImageEffect_BlurDown(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i, j;\n\n    for (i = 0; i < gCanvasColumnEnd; i++)\n    {\n        u16 *pixelRow = &gCanvasPixels[gCanvasRowStart * gCanvasWidth];\n        u16 *pixel = &pixelRow[gCanvasColumnStart + i];\n        u16 prevPixel = *pixel;\n        for (j = 1, pixel += gCanvasWidth; j < gCanvasRowEnd - 1; j++, pixel += gCanvasWidth)\n        {\n            if (!IS_ALPHA(*pixel))\n            {\n                *pixel = QuantizePixel_MotionBlur(&prevPixel, pixel);\n                prevPixel = *pixel;\n            }\n        }\n    }",
       "callsTo": [
         "IS_ALPHA",
@@ -159,6 +192,12 @@
       "returnType": "void",
       "signature": "static void AddPointillismPoints(u16 point)",
       "paramsRaw": "u16 point",
+      "paramsList": [
+        {
+          "name": "point",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "u8 i;\n    bool8 offsetDownLeft;\n    u8 colorType;\n    struct PointillismPoint points[6];\n\n    points[0].column = sPointillismPoints[point][0];\n    points[0].row = sPointillismPoints[point][1];\n    points[0].delta = GET_POINT_DELTA(sPointillismPoints[point][2]);\n\n    colorType = GET_POINT_COLOR_TYPE(sPointillismPoints[point][2]);\n    offsetDownLeft = GET_POINT_OFFSET_DL(sPointillismPoints[point][2]);\n    for (i = 1; i < points[0].delta; i++)\n    {\n        if (!offsetDownLeft)\n        {\n            points[i].column = points[0].column - i;\n            points[i].row = points[0].row + i;\n        }\n        else\n        {\n            points[i].column = points[0].column + 1;\n            points[i].row = points[0].row - 1;\n        }\n\n        if (points[i].column >= MAX_DIMENSION || points[i].row >= MAX_DIMENSION)\n        {\n            points[0].delta = i - 1;\n            break;\n        }\n\n        points[i].delta = points[0].delta - i;\n    }\n\n    for (i = 0; i < points[0].delta; i++)\n    {\n        u16 *pixel = &gCanvasPixels[points[i].row * MAX_DIMENSION] + points[i].column;\n\n        if (!IS_ALPHA(*pixel))\n        {\n            u16 red =   GET_R(*pixel);\n            u16 green = GET_G(*pixel);\n            u16 blue =  GET_B(*pixel);\n\n            switch (colorType)\n            {\n            case 0:\n            case 1:\n                switch (GET_POINT_DELTA(sPointillismPoints[point][2]) % 3)\n                {\n                case 0:\n                    if (red >= points[i].delta)\n                        red -= points[i].delta;\n                    else\n                        red = 0;\n                    break;\n                case 1:\n                    if (green >= points[i].delta)\n                        green -= points[i].delta;\n                    else\n                        green = 0;\n                    break;\n                case 2:\n                    if (blue >= points[i].delta)\n                        blue -= points[i].delta;\n                    else\n                        blue = 0;\n                    break;\n                }\n                break;\n            case 2:\n            case 3:\n                red += points[i].delta;\n                green += points[i].delta;\n                blue += points[i].delta;\n                if (red > 31)\n                    red = 31;\n                if (green > 31)\n                    green = 31;\n                if (blue > 31)\n                    blue = 31;\n                break;\n            }\n\n            *pixel = RGB2(red, green, blue);\n        }\n    }",
       "callsTo": [
         "GET_B",
@@ -176,6 +215,12 @@
       "returnType": "u16",
       "signature": "static u16 ConvertColorToGrayscale(u16 *color)",
       "paramsRaw": "u16 *color",
+      "paramsList": [
+        {
+          "name": "color",
+          "typeRaw": "u16 *"
+        }
+      ],
       "body": "s32 clr = *color;\n    s32 r = GET_R(clr);\n    s32 g = GET_G(clr);\n    s32 b = GET_B(clr);\n    s32 gray = (r * Q_8_8(0.3) + g * Q_8_8(0.59) + b * Q_8_8(0.1133)) >> 8;\n    return RGB2(gray, gray, gray);",
       "callsTo": [
         "GET_B",
@@ -190,6 +235,16 @@
       "returnType": "u16",
       "signature": "static u16 QuantizePixel_PersonalityColor(u16 *color, u8 personality)",
       "paramsRaw": "u16 *color, u8 personality",
+      "paramsList": [
+        {
+          "name": "color",
+          "typeRaw": "u16 *"
+        },
+        {
+          "name": "personality",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u16 red =   GET_R(*color);\n    u16 green = GET_G(*color);\n    u16 blue =  GET_B(*color);\n\n    if (red < 17 && green < 17 && blue < 17)\n        return GetColorFromPersonality(personality);\n    else\n        return RGB_WHITE;",
       "callsTo": [
         "GET_B",
@@ -203,6 +258,12 @@
       "returnType": "u16",
       "signature": "static u16 GetColorFromPersonality(u8 personality)",
       "paramsRaw": "u8 personality",
+      "paramsList": [
+        {
+          "name": "personality",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u16 red =   0;\n    u16 green = 0;\n    u16 blue =  0;\n    u8 strength = (personality / 6) % 3;\n    u8 colorType = personality % 6;\n\n    switch (colorType)\n    {\n    case 0:\n         \n        green = 21 - strength;\n        blue = green;\n        red = 0;\n        break;\n    case 1:\n         \n        blue = 0;\n        red = 21 - strength;\n        green = red;\n        break;\n    case 2:\n         \n        blue = 21 - strength;\n        green = 0;\n        red = blue;\n        break;\n    case 3:\n         \n        blue = 0;\n        green = 0;\n        red = 23 - strength;\n        break;\n    case 4:\n         \n        blue = 23 - strength;\n        green = 0;\n        red = 0;\n        break;\n    case 5:\n         \n        blue = 0;\n        green = 23 - strength;\n        red = 0;\n        break;\n    }\n\n    return RGB2(red, green, blue);",
       "callsTo": [
         "RGB2"
@@ -213,6 +274,12 @@
       "returnType": "u16",
       "signature": "static u16 QuantizePixel_BlackAndWhite(u16 *color)",
       "paramsRaw": "u16 *color",
+      "paramsList": [
+        {
+          "name": "color",
+          "typeRaw": "u16 *"
+        }
+      ],
       "body": "u16 red =   GET_R(*color);\n    u16 green = GET_G(*color);\n    u16 blue =  GET_B(*color);\n\n    if (red < 17 && green < 17 && blue < 17)\n        return RGB_BLACK;\n    else\n        return RGB_WHITE;",
       "callsTo": [
         "GET_B",
@@ -225,6 +292,16 @@
       "returnType": "u16",
       "signature": "static u16 QuantizePixel_BlackOutline(u16 *pixelA, u16 *pixelB)",
       "paramsRaw": "u16 *pixelA, u16 *pixelB",
+      "paramsList": [
+        {
+          "name": "pixelA",
+          "typeRaw": "u16 *"
+        },
+        {
+          "name": "pixelB",
+          "typeRaw": "u16 *"
+        }
+      ],
       "body": "if (*pixelA != RGB_BLACK)\n    {\n        if (IS_ALPHA(*pixelA))\n            return RGB_ALPHA;\n        if (IS_ALPHA(*pixelB))\n            return RGB_BLACK;\n\n        return *pixelA;\n    }\n\n    return RGB_BLACK;",
       "callsTo": [
         "IS_ALPHA"
@@ -235,6 +312,12 @@
       "returnType": "u16",
       "signature": "static u16 QuantizePixel_Invert(u16 *color)",
       "paramsRaw": "u16 *color",
+      "paramsList": [
+        {
+          "name": "color",
+          "typeRaw": "u16 *"
+        }
+      ],
       "body": "u16 red =   GET_R(*color);\n    u16 green = GET_G(*color);\n    u16 blue =  GET_B(*color);\n\n    red   = 31 - red;\n    green = 31 - green;\n    blue  = 31 - blue;\n\n    return RGB2(red, green, blue);",
       "callsTo": [
         "GET_B",
@@ -248,6 +331,16 @@
       "returnType": "u16",
       "signature": "static u16 QuantizePixel_MotionBlur(u16 *prevPixel, u16 *curPixel)",
       "paramsRaw": "u16 *prevPixel, u16 *curPixel",
+      "paramsList": [
+        {
+          "name": "prevPixel",
+          "typeRaw": "u16 *"
+        },
+        {
+          "name": "curPixel",
+          "typeRaw": "u16 *"
+        }
+      ],
       "body": "u16 pixelChannels[2][3];\n    u16 diffs[3];\n    u8 i;\n    u16 largestDiff;\n    u16 red, green, blue;\n\n    if (*prevPixel == *curPixel)\n        return *curPixel;\n\n    pixelChannels[0][0] = GET_R(*prevPixel);\n    pixelChannels[0][1] = GET_G(*prevPixel);\n    pixelChannels[0][2] = GET_B(*prevPixel);\n    pixelChannels[1][0] = GET_R(*curPixel);\n    pixelChannels[1][1] = GET_G(*curPixel);\n    pixelChannels[1][2] = GET_B(*curPixel);\n\n     \n    if (pixelChannels[0][0] > 25 && pixelChannels[0][1] > 25 && pixelChannels[0][2] > 25)\n        return *curPixel;\n    if (pixelChannels[1][0] > 25 && pixelChannels[1][1] > 25 && pixelChannels[1][2] > 25)\n        return *curPixel;\n\n    for (i = 0; i < 3; i++)\n    {\n        if (pixelChannels[0][i] > pixelChannels[1][i])\n            diffs[i] = pixelChannels[0][i] - pixelChannels[1][i];\n        else\n            diffs[i] = pixelChannels[1][i] - pixelChannels[0][i];\n    }\n\n     \n    if (diffs[0] >= diffs[1])\n    {\n        if (diffs[0] >= diffs[2])\n            largestDiff = diffs[0];\n        else if (diffs[1] >= diffs[2])\n            largestDiff = diffs[1];\n        else\n            largestDiff = diffs[2];\n    }\n    else\n    {\n        if (diffs[1] >= diffs[2])\n            largestDiff = diffs[1];\n        else if (diffs[2] >= diffs[0])\n            largestDiff = diffs[2];\n        else\n            largestDiff = diffs[0];\n    }\n\n    red   = (pixelChannels[1][0] * (31 - largestDiff / 2)) / 31;\n    green = (pixelChannels[1][1] * (31 - largestDiff / 2)) / 31;\n    blue  = (pixelChannels[1][2] * (31 - largestDiff / 2)) / 31;\n    return RGB2(red, green, blue);",
       "callsTo": [
         "GET_B",
@@ -261,6 +354,20 @@
       "returnType": "u16",
       "signature": "static u16 QuantizePixel_Blur(u16 *prevPixel, u16 *curPixel, u16 *nextPixel)",
       "paramsRaw": "u16 *prevPixel, u16 *curPixel, u16 *nextPixel",
+      "paramsList": [
+        {
+          "name": "prevPixel",
+          "typeRaw": "u16 *"
+        },
+        {
+          "name": "curPixel",
+          "typeRaw": "u16 *"
+        },
+        {
+          "name": "nextPixel",
+          "typeRaw": "u16 *"
+        }
+      ],
       "body": "u16 red, green, blue;\n    u16 prevAvg, curAvg, nextAvg;\n    u16 prevDiff, nextDiff;\n    u32 diff;\n    u16 factor;\n\n    if (*prevPixel == *curPixel && *nextPixel == *curPixel)\n        return *curPixel;\n\n    red   = GET_R(*curPixel);\n    green = GET_G(*curPixel);\n    blue  = GET_B(*curPixel);\n\n    prevAvg = (GET_R(*prevPixel) + GET_G(*prevPixel) + GET_B(*prevPixel)) / 3;\n    curAvg  = (GET_R(*curPixel)  + GET_G(*curPixel)  + GET_B(*curPixel))  / 3;\n    nextAvg = (GET_R(*nextPixel) + GET_G(*nextPixel) + GET_B(*nextPixel)) / 3;\n\n    if (prevAvg == curAvg && nextAvg == curAvg)\n        return *curPixel;\n\n    if (prevAvg > curAvg)\n        prevDiff = prevAvg - curAvg;\n    else\n        prevDiff = curAvg - prevAvg;\n\n    if (nextAvg > curAvg)\n        nextDiff = nextAvg - curAvg;\n    else\n        nextDiff = curAvg - nextAvg;\n\n    if (prevDiff >= nextDiff)\n        diff = prevDiff;\n    else\n        diff = nextDiff;\n\n    factor = 31 - diff / 2;\n    red   = (red   * factor) / 31;\n    green = (green * factor) / 31;\n    blue  = (blue  * factor) / 31;\n    return RGB2(red, green, blue);",
       "callsTo": [
         "GET_B",
@@ -274,6 +381,20 @@
       "returnType": "u16",
       "signature": "static u16 QuantizePixel_BlurHard(u16 *prevPixel, u16 *curPixel, u16 *nextPixel)",
       "paramsRaw": "u16 *prevPixel, u16 *curPixel, u16 *nextPixel",
+      "paramsList": [
+        {
+          "name": "prevPixel",
+          "typeRaw": "u16 *"
+        },
+        {
+          "name": "curPixel",
+          "typeRaw": "u16 *"
+        },
+        {
+          "name": "nextPixel",
+          "typeRaw": "u16 *"
+        }
+      ],
       "body": "u16 red, green, blue;\n    u16 prevAvg, curAvg, nextAvg;\n    u16 prevDiff, nextDiff;\n    u32 diff;\n    u16 factor;\n\n    if (*prevPixel == *curPixel && *nextPixel == *curPixel)\n        return *curPixel;\n\n    red   = GET_R(*curPixel);\n    green = GET_G(*curPixel);\n    blue  = GET_B(*curPixel);\n\n    prevAvg = (GET_R(*prevPixel) + GET_G(*prevPixel) + GET_B(*prevPixel)) / 3;\n    curAvg  = (GET_R(*curPixel)  + GET_G(*curPixel)  + GET_B(*curPixel))  / 3;\n    nextAvg = (GET_R(*nextPixel) + GET_G(*nextPixel) + GET_B(*nextPixel)) / 3;\n\n    if (prevAvg == curAvg && nextAvg == curAvg)\n        return *curPixel;\n\n    if (prevAvg > curAvg)\n        prevDiff = prevAvg - curAvg;\n    else\n        prevDiff = curAvg - prevAvg;\n\n    if (nextAvg > curAvg)\n        nextDiff = nextAvg - curAvg;\n    else\n        nextDiff = curAvg - nextAvg;\n\n    if (prevDiff >= nextDiff)\n        diff = prevDiff;\n    else\n        diff = nextDiff;\n\n    factor = 31 - diff;\n    red   = (red   * factor) / 31;\n    green = (green * factor) / 31;\n    blue  = (blue  * factor) / 31;\n    return RGB2(red, green, blue);",
       "callsTo": [
         "GET_B",
@@ -287,6 +408,12 @@
       "returnType": "void",
       "signature": "void ConvertImageProcessingToGBA(struct ImageProcessingContext *context)",
       "paramsRaw": "struct ImageProcessingContext *context",
+      "paramsList": [
+        {
+          "name": "context",
+          "typeRaw": "struct ImageProcessingContext *"
+        }
+      ],
       "body": "u16 i, j, k;\n    u16 *src, *dest, *src_, *dest_;\n    u16 width, height;\n\n    width = context->canvasWidth >> 3;\n    height = context->canvasHeight >> 3;\n    src_ = context->canvasPixels;\n    dest_ = context->dest;\n\n    if (context->var_16 == 2)\n    {\n        for (i = 0; i < height; i++)\n        {\n            for (j = 0; j < width; j++)\n            {\n                for (k = 0; k < 8; k++)\n                {\n                    dest = dest_ + ((i * width + j) << 5) + (k << 2);\n                    src = src_ + ((((i << 3) + k) << 3) * width) + (j << 3);\n\n                    dest[0] = src[0] | (src[1] << 8);\n                    dest[1] = src[2] | (src[3] << 8);\n                    dest[2] = src[4] | (src[5] << 8);\n                    dest[3] = src[6] | (src[7] << 8);\n                }\n            }\n        }\n    }\n    else\n    {\n        for (i = 0; i < height; i++)\n        {\n            for (j = 0; j < width; j++)\n            {\n                for (k = 0; k < 8; k++)\n                {\n                    dest = dest_ + ((i * width + j) << 4) + (k << 1);\n                    src = src_ + ((((i << 3) + k) << 3) * width) + (j << 3);\n\n                    dest[0] = src[0] | (src[1] << 4) | (src[2] << 8) | (src[3] << 12);\n                    dest[1] = src[4] | (src[5] << 4) | (src[6] << 8) | (src[7] << 12);\n                }\n            }\n        }\n    }",
       "callsTo": [],
       "lineCount": 45
@@ -295,6 +422,12 @@
       "returnType": "void",
       "signature": "void ApplyImageProcessingQuantization(struct ImageProcessingContext *context)",
       "paramsRaw": "struct ImageProcessingContext *context",
+      "paramsList": [
+        {
+          "name": "context",
+          "typeRaw": "struct ImageProcessingContext *"
+        }
+      ],
       "body": "gCanvasPaletteStart = context->paletteStart * 16;\n    gCanvasPalette = &context->canvasPalette[gCanvasPaletteStart];\n    gCanvasPixels = context->canvasPixels;\n    gCanvasColumnStart = context->columnStart;\n    gCanvasRowStart = context->rowStart;\n    gCanvasColumnEnd = context->columnEnd;\n    gCanvasRowEnd = context->rowEnd;\n    gCanvasWidth = context->canvasWidth;\n    gCanvasHeight = context->canvasHeight;\n\n    switch (context->quantizeEffect)\n    {\n    case QUANTIZE_EFFECT_STANDARD:\n        QuantizePalette_Standard(FALSE);\n        break;\n    case QUANTIZE_EFFECT_STANDARD_LIMITED_COLORS:\n        QuantizePalette_Standard(TRUE);\n        break;\n    case QUANTIZE_EFFECT_PRIMARY_COLORS:\n        SetPresetPalette_PrimaryColors();\n        QuantizePalette_PrimaryColors();\n        break;\n    case QUANTIZE_EFFECT_GRAYSCALE:\n        SetPresetPalette_Grayscale();\n        QuantizePalette_Grayscale();\n        break;\n    case QUANTIZE_EFFECT_GRAYSCALE_SMALL:\n        SetPresetPalette_GrayscaleSmall();\n        QuantizePalette_GrayscaleSmall();\n        break;\n    case QUANTIZE_EFFECT_BLACK_WHITE:\n        SetPresetPalette_BlackAndWhite();\n        QuantizePalette_BlackAndWhite();\n        break;\n    }",
       "callsTo": [
         "QuantizePalette_BlackAndWhite",
@@ -313,6 +446,7 @@
       "returnType": "void",
       "signature": "static void SetPresetPalette_PrimaryColors(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gCanvasPalette[0]  = RGB_BLACK;\n    gCanvasPalette[1]  = RGB(6, 6, 6);\n    gCanvasPalette[2]  = RGB(29, 29, 29);\n    gCanvasPalette[3]  = RGB(11, 11, 11);\n    gCanvasPalette[4]  = RGB(29, 6, 6);\n    gCanvasPalette[5]  = RGB(6, 29, 6);\n    gCanvasPalette[6]  = RGB(6, 6, 29);\n    gCanvasPalette[7]  = RGB(29, 29, 6);\n    gCanvasPalette[8]  = RGB(29, 6, 29);\n    gCanvasPalette[9]  = RGB(6, 29, 29);\n    gCanvasPalette[10] = RGB(29, 11, 6);\n    gCanvasPalette[11] = RGB(11, 29, 6);\n    gCanvasPalette[12] = RGB(6, 11, 29);\n    gCanvasPalette[13] = RGB(29, 6, 11);\n    gCanvasPalette[14] = RGB(6, 29, 11);\n    gCanvasPalette[15] = RGB(11, 6, 29);",
       "callsTo": [],
       "lineCount": 16
@@ -321,6 +455,7 @@
       "returnType": "void",
       "signature": "static void SetPresetPalette_BlackAndWhite(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gCanvasPalette[0] = RGB_BLACK;\n    gCanvasPalette[1] = RGB_BLACK;\n    gCanvasPalette[2] = RGB_WHITE;",
       "callsTo": [],
       "lineCount": 3
@@ -329,6 +464,7 @@
       "returnType": "void",
       "signature": "static void SetPresetPalette_GrayscaleSmall(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n\n    gCanvasPalette[0] = RGB_BLACK;\n    gCanvasPalette[1] = RGB_BLACK;\n    for (i = 0; i < 14; i++)\n        gCanvasPalette[i + 2] = RGB2(2 * (i + 2), 2 * (i + 2), 2 * (i + 2));",
       "callsTo": [
         "RGB2"
@@ -339,6 +475,7 @@
       "returnType": "void",
       "signature": "static void SetPresetPalette_Grayscale(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n\n    gCanvasPalette[0] = RGB_BLACK;\n    for (i = 0; i < 32; i++)\n        gCanvasPalette[i + 1] = RGB2(i, i, i);",
       "callsTo": [
         "RGB2"
@@ -349,6 +486,12 @@
       "returnType": "void",
       "signature": "static void QuantizePalette_Standard(bool8 useLimitedPalette)",
       "paramsRaw": "bool8 useLimitedPalette",
+      "paramsList": [
+        {
+          "name": "useLimitedPalette",
+          "typeRaw": "bool8"
+        }
+      ],
       "body": "u8 i, j;\n    u16 maxIndex;\n\n    maxIndex = 0xDF;\n    if (!useLimitedPalette)\n        maxIndex = 0xFF;\n\n    for (i = 0; i < maxIndex; i++)\n        gCanvasPalette[i] = RGB_BLACK;\n\n    gCanvasPalette[maxIndex] = RGB2(15, 15, 15);\n    for (j = 0; j < gCanvasRowEnd; j++)\n    {\n        u16 *pixelRow = &gCanvasPixels[(gCanvasRowStart + j) * gCanvasWidth];\n        u16 *pixel = &pixelRow[gCanvasColumnStart];\n        for (i = 0; i < gCanvasColumnEnd; i++, pixel++)\n        {\n            if (IS_ALPHA(*pixel))\n            {\n                *pixel = gCanvasPaletteStart;\n            }\n            else\n            {\n                u16 quantizedColor = QuantizePixel_Standard(pixel);\n                u8 curIndex = 1;\n                if (curIndex < maxIndex)\n                {\n                    if (gCanvasPalette[curIndex] == RGB_BLACK)\n                    {\n                         \n                         \n                         \n                         \n                        gCanvasPalette[curIndex] = quantizedColor;\n                        *pixel = gCanvasPaletteStart + curIndex;\n                    }\n                    else\n                    {\n                        while (curIndex < maxIndex)\n                        {\n                            if (gCanvasPalette[curIndex] == RGB_BLACK)\n                            {\n                                 \n                                 \n                                gCanvasPalette[curIndex] = quantizedColor;\n                                *pixel = gCanvasPaletteStart + curIndex;\n                                break;\n                            }\n\n                            if (gCanvasPalette[curIndex] == quantizedColor)\n                            {\n                                 \n                                 \n                                *pixel = gCanvasPaletteStart + curIndex;\n                                break;\n                            }\n\n                            curIndex++;\n                        }\n                    }\n                }\n\n                if (curIndex == maxIndex)\n                {\n                     \n                     \n                     \n                    curIndex = maxIndex;\n                    *pixel = curIndex;\n                }\n            }\n        }\n    }",
       "callsTo": [
         "IS_ALPHA",
@@ -361,6 +504,7 @@
       "returnType": "void",
       "signature": "static void QuantizePalette_BlackAndWhite(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i, j;\n\n    for (j = 0; j < gCanvasRowEnd; j++)\n    {\n        u16 *pixelRow = &gCanvasPixels[(gCanvasRowStart + j) * gCanvasWidth];\n        u16 *pixel = &pixelRow[gCanvasColumnStart];\n        for (i = 0; i < gCanvasColumnEnd; i++, pixel++)\n        {\n            if (IS_ALPHA(*pixel))\n            {\n                *pixel = gCanvasPaletteStart;\n            }\n            else\n            {\n                if (QuantizePixel_BlackAndWhite(pixel) == RGB_BLACK)\n                {\n                     \n                    *pixel = gCanvasPaletteStart + 1;\n                }\n                else\n                {\n                     \n                    *pixel = gCanvasPaletteStart + 2;\n                }\n            }\n        }\n    }",
       "callsTo": [
         "IS_ALPHA",
@@ -372,6 +516,7 @@
       "returnType": "void",
       "signature": "static void QuantizePalette_GrayscaleSmall(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i, j;\n\n    for (j = 0; j < gCanvasRowEnd; j++)\n    {\n        u16 *pixelRow = &gCanvasPixels[(gCanvasRowStart + j) * gCanvasWidth];\n        u16 *pixel = &pixelRow[gCanvasColumnStart];\n        for (i = 0; i < gCanvasColumnEnd; i++, pixel++)\n        {\n            if (IS_ALPHA(*pixel))\n                *pixel = gCanvasPaletteStart;\n            else\n                *pixel = QuantizePixel_GrayscaleSmall(pixel) + gCanvasPaletteStart;\n        }\n    }",
       "callsTo": [
         "IS_ALPHA",
@@ -383,6 +528,7 @@
       "returnType": "void",
       "signature": "static void QuantizePalette_Grayscale(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i, j;\n\n    for (j = 0; j < gCanvasRowEnd; j++)\n    {\n        u16 *pixelRow = &gCanvasPixels[(gCanvasRowStart + j) * gCanvasWidth];\n        u16 *pixel = &pixelRow[gCanvasColumnStart];\n        for (i = 0; i < gCanvasColumnEnd; i++, pixel++)\n        {\n            if (IS_ALPHA(*pixel))\n                *pixel = gCanvasPaletteStart;\n            else\n                *pixel = QuantizePixel_Grayscale(pixel) + gCanvasPaletteStart;\n        }\n    }",
       "callsTo": [
         "IS_ALPHA",
@@ -394,6 +540,7 @@
       "returnType": "void",
       "signature": "static void QuantizePalette_PrimaryColors(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i, j;\n\n    for (j = 0; j < gCanvasRowEnd; j++)\n    {\n        u16 *pixelRow = &gCanvasPixels[(gCanvasRowStart + j) * gCanvasWidth];\n        u16 *pixel = &pixelRow[gCanvasColumnStart];\n        for (i = 0; i < gCanvasColumnEnd; i++, pixel++)\n        {\n            if (IS_ALPHA(*pixel))\n                *pixel = gCanvasPaletteStart;\n            else\n                *pixel = QuantizePixel_PrimaryColors(pixel) + gCanvasPaletteStart;\n        }\n    }",
       "callsTo": [
         "IS_ALPHA",
@@ -405,6 +552,12 @@
       "returnType": "u16",
       "signature": "static u16 QuantizePixel_Standard(u16 *pixel)",
       "paramsRaw": "u16 *pixel",
+      "paramsList": [
+        {
+          "name": "pixel",
+          "typeRaw": "u16 *"
+        }
+      ],
       "body": "u16 red =   GET_R(*pixel);\n    u16 green = GET_G(*pixel);\n    u16 blue =  GET_B(*pixel);\n\n     \n    if (red & 3)\n        red = (red & 0x1C) + 4;\n    if (green & 3)\n        green = (green & 0x1C) + 4;\n    if (blue & 3)\n        blue = (blue & 0x1C) + 4;\n\n     \n    if (red < 6)\n        red = 6;\n    if (red > 30)\n        red = 30;\n    if (green < 6)\n        green = 6;\n    if (green > 30)\n        green = 30;\n    if (blue < 6)\n        blue = 6;\n    if (blue > 30)\n        blue = 30;\n\n    return RGB2(red, green, blue);",
       "callsTo": [
         "GET_B",
@@ -418,6 +571,12 @@
       "returnType": "u16",
       "signature": "static u16 QuantizePixel_PrimaryColors(u16 *color)",
       "paramsRaw": "u16 *color",
+      "paramsList": [
+        {
+          "name": "color",
+          "typeRaw": "u16 *"
+        }
+      ],
       "body": "u16 red =   GET_R(*color);\n    u16 green = GET_G(*color);\n    u16 blue =  GET_B(*color);\n\n    if (red < 12 && green < 11 && blue < 11)\n        return 1;\n\n    if (red > 19 && green > 19 && blue > 19)\n        return 2;\n\n    if (red > 19)\n    {\n        if (green > 19)\n        {\n            if (blue > 14)\n                return 2;\n            else\n                return 7;\n        }\n        else if (blue > 19)\n        {\n            if (green > 14)\n                return 2;\n            else\n                return 8;\n        }\n    }\n\n    if (green > 19 && blue > 19)\n    {\n        if (red > 14)\n            return 2;\n        else\n            return 9;\n    }\n\n    if (red > 19)\n    {\n        if (green > 11)\n        {\n            if (blue > 11)\n            {\n                if (green < blue)\n                    return 8;\n                else\n                    return 7;\n            }\n            else\n            {\n                return 10;\n            }\n        }\n        else if (blue > 11)\n        {\n            return 13;\n        }\n        else\n        {\n            return 4;\n        }\n    }\n\n    if (green > 19)\n    {\n        if (red > 11)\n        {\n            if (blue > 11)\n            {\n                if (red < blue)\n                    return 9;\n                else\n                    return 7;\n            }\n            else\n            {\n                return 11;\n            }\n        }\n        else\n        {\n            if (blue > 11)\n                return 14;\n            else\n                return 5;\n        }\n    }\n\n    if (blue > 19)\n    {\n        if (red > 11)\n        {\n            if (green > 11)\n            {\n                if (red < green)\n                    return 9;\n                else\n                    return 8;\n            }\n        }\n        else if (green > 11)\n        {\n            return 12;\n        }\n\n        if (blue > 11)\n            return 15;\n        else\n            return 6;\n    }\n\n    return 3;",
       "callsTo": [
         "GET_B",
@@ -430,6 +589,12 @@
       "returnType": "u16",
       "signature": "static u16 QuantizePixel_GrayscaleSmall(u16 *color)",
       "paramsRaw": "u16 *color",
+      "paramsList": [
+        {
+          "name": "color",
+          "typeRaw": "u16 *"
+        }
+      ],
       "body": "u16 red =   GET_R(*color);\n    u16 green = GET_G(*color);\n    u16 blue =  GET_B(*color);\n    u16 average = ((red + green + blue) / 3) & 0x1E;\n    if (average == 0)\n        return 1;\n    else\n        return average / 2;",
       "callsTo": [
         "GET_B",
@@ -442,6 +607,12 @@
       "returnType": "u16",
       "signature": "static u16 QuantizePixel_Grayscale(u16 *color)",
       "paramsRaw": "u16 *color",
+      "paramsList": [
+        {
+          "name": "color",
+          "typeRaw": "u16 *"
+        }
+      ],
       "body": "u16 red =   GET_R(*color);\n    u16 green = GET_G(*color);\n    u16 blue =  GET_B(*color);\n    u16 average = (red + green + blue) / 3;\n    return average + 1;",
       "callsTo": [
         "GET_B",

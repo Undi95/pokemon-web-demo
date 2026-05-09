@@ -6,6 +6,7 @@
       "returnType": "void",
       "signature": "void CallBattlePyramidFunction(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sBattlePyramidFunctions[gSpecialVar_0x8004]();",
       "callsTo": [],
       "lineCount": 1
@@ -14,6 +15,7 @@
       "returnType": "void",
       "signature": "static void InitPyramidChallenge(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "bool32 isCurrent;\n    u32 lvlMode = gSaveBlock2Ptr->frontier.lvlMode;\n\n    gSaveBlock2Ptr->frontier.challengeStatus = 0;\n    gSaveBlock2Ptr->frontier.curChallengeBattleNum = 0;\n    gSaveBlock2Ptr->frontier.challengePaused = FALSE;\n    if (lvlMode != FRONTIER_LVL_50)\n        isCurrent = gSaveBlock2Ptr->frontier.winStreakActiveFlags & STREAK_PYRAMID_OPEN;\n    else\n        isCurrent = gSaveBlock2Ptr->frontier.winStreakActiveFlags & STREAK_PYRAMID_50;\n\n    if (!isCurrent)\n    {\n        gSaveBlock2Ptr->frontier.pyramidWinStreaks[lvlMode] = 0;\n        InitPyramidBagItems(lvlMode);\n    }\n\n    InitBattlePyramidBagCursorPosition();\n    gTrainerBattleOpponent_A = 0;\n    gBattleOutcome = 0;",
       "callsTo": [
         "InitBattlePyramidBagCursorPosition",
@@ -25,6 +27,7 @@
       "returnType": "void",
       "signature": "static void GetBattlePyramidData(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u32 lvlMode = gSaveBlock2Ptr->frontier.lvlMode;\n\n    switch (gSpecialVar_0x8005)\n    {\n    case PYRAMID_DATA_PRIZE:\n        gSpecialVar_Result = gSaveBlock2Ptr->frontier.pyramidPrize;\n        break;\n    case PYRAMID_DATA_WIN_STREAK:\n        gSpecialVar_Result = gSaveBlock2Ptr->frontier.pyramidWinStreaks[lvlMode];\n        break;\n    case PYRAMID_DATA_WIN_STREAK_ACTIVE:\n        if (lvlMode != FRONTIER_LVL_50)\n            gSpecialVar_Result = gSaveBlock2Ptr->frontier.winStreakActiveFlags & STREAK_PYRAMID_OPEN;\n        else\n            gSpecialVar_Result = gSaveBlock2Ptr->frontier.winStreakActiveFlags & STREAK_PYRAMID_50;\n        break;\n    case PYRAMID_DATA_WIN_STREAK_50:\n        gSpecialVar_Result = gSaveBlock2Ptr->frontier.pyramidWinStreaks[FRONTIER_LVL_50];\n        break;\n    case PYRAMID_DATA_WIN_STREAK_OPEN:\n        gSpecialVar_Result = gSaveBlock2Ptr->frontier.pyramidWinStreaks[FRONTIER_LVL_OPEN];\n        break;\n    case PYRAMID_DATA_WIN_STREAK_ACTIVE_50:\n        gSpecialVar_Result = gSaveBlock2Ptr->frontier.winStreakActiveFlags & STREAK_PYRAMID_50;\n        break;\n    case PYRAMID_DATA_WIN_STREAK_ACTIVE_OPEN:\n        gSpecialVar_Result = gSaveBlock2Ptr->frontier.winStreakActiveFlags & STREAK_PYRAMID_OPEN;\n        break;\n    }",
       "callsTo": [],
       "lineCount": 29
@@ -33,6 +36,7 @@
       "returnType": "void",
       "signature": "static void SetBattlePyramidData(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u32 lvlMode = gSaveBlock2Ptr->frontier.lvlMode;\n\n    switch (gSpecialVar_0x8005)\n    {\n    case PYRAMID_DATA_PRIZE:\n        gSaveBlock2Ptr->frontier.pyramidPrize = gSpecialVar_0x8006;\n        break;\n    case PYRAMID_DATA_WIN_STREAK:\n        gSaveBlock2Ptr->frontier.pyramidWinStreaks[lvlMode] = gSpecialVar_0x8006;\n        break;\n    case PYRAMID_DATA_WIN_STREAK_ACTIVE:\n        if (lvlMode != FRONTIER_LVL_50)\n        {\n            if (gSpecialVar_0x8006)\n                gSaveBlock2Ptr->frontier.winStreakActiveFlags |= STREAK_PYRAMID_OPEN;\n            else\n                gSaveBlock2Ptr->frontier.winStreakActiveFlags &= ~(STREAK_PYRAMID_OPEN);\n        }\n        else\n        {\n            if (gSpecialVar_0x8006)\n                gSaveBlock2Ptr->frontier.winStreakActiveFlags |= STREAK_PYRAMID_50;\n            else\n                gSaveBlock2Ptr->frontier.winStreakActiveFlags &= ~(STREAK_PYRAMID_50);\n        }\n        break;\n    case PYRAMID_DATA_TRAINER_FLAGS:\n        gSaveBlock2Ptr->frontier.pyramidTrainerFlags = gSpecialVar_0x8006;\n        break;\n    }",
       "callsTo": [],
       "lineCount": 30
@@ -41,6 +45,7 @@
       "returnType": "void",
       "signature": "static void SavePyramidChallenge(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gSaveBlock2Ptr->frontier.challengeStatus = gSpecialVar_0x8005;\n    VarSet(VAR_TEMP_CHALLENGE_STATUS, 0);\n    gSaveBlock2Ptr->frontier.challengePaused = TRUE;\n    SaveMapView();\n    TrySavingData(SAVE_LINK);",
       "callsTo": [
         "SaveMapView",
@@ -53,6 +58,7 @@
       "returnType": "void",
       "signature": "static void SetBattlePyramidPrize(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u32 lvlMode = gSaveBlock2Ptr->frontier.lvlMode;\n\n    if (gSaveBlock2Ptr->frontier.pyramidWinStreaks[lvlMode] > 41)\n        gSaveBlock2Ptr->frontier.pyramidPrize = sLongStreakRewardItems[Random() % ARRAY_COUNT(sLongStreakRewardItems)];\n    else\n        gSaveBlock2Ptr->frontier.pyramidPrize = sShortStreakRewardItems[Random() % ARRAY_COUNT(sShortStreakRewardItems)];",
       "callsTo": [
         "ARRAY_COUNT",
@@ -64,6 +70,7 @@
       "returnType": "void",
       "signature": "static void GiveBattlePyramidPrize(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (AddBagItem(gSaveBlock2Ptr->frontier.pyramidPrize, 1) == TRUE)\n    {\n        CopyItemName(gSaveBlock2Ptr->frontier.pyramidPrize, gStringVar1);\n        gSaveBlock2Ptr->frontier.pyramidPrize = 0;\n        gSpecialVar_Result = TRUE;\n    }\n    else\n    {\n        gSpecialVar_Result = FALSE;\n    }",
       "callsTo": [
         "AddBagItem",
@@ -75,6 +82,7 @@
       "returnType": "void",
       "signature": "static void SeedPyramidFloor(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int i;\n\n    for (i = 0; i < (int)ARRAY_COUNT(gSaveBlock2Ptr->frontier.pyramidRandoms); i++)\n        gSaveBlock2Ptr->frontier.pyramidRandoms[i] = Random();\n\n    gSaveBlock2Ptr->frontier.pyramidTrainerFlags = 0;",
       "callsTo": [
         "ARRAY_COUNT",
@@ -86,6 +94,7 @@
       "returnType": "void",
       "signature": "static void SetPickupItem(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int i;\n    int itemIndex;\n    int rand;\n    u8 id;\n    u32 lvlMode = gSaveBlock2Ptr->frontier.lvlMode;\n    u32 floor = gSaveBlock2Ptr->frontier.curChallengeBattleNum;\n    u32 round = (gSaveBlock2Ptr->frontier.pyramidWinStreaks[lvlMode] / FRONTIER_STAGES_PER_CHALLENGE) % TOTAL_PYRAMID_ROUNDS;\n\n    if (round >= TOTAL_PYRAMID_ROUNDS)\n        round = TOTAL_PYRAMID_ROUNDS - 1;\n\n    id = GetPyramidFloorTemplateId();\n    itemIndex = (gSpecialVar_LastTalked - sPyramidFloorTemplates[id].numTrainers) - 1;\n    rand = gSaveBlock2Ptr->frontier.pyramidRandoms[itemIndex / 2];\n    SeedRng2(rand);\n\n    for (i = 0; i < itemIndex + 1; i++)\n        rand = Random2() % 100;\n\n    for (i = sPickupItemOffsets[floor]; i < ARRAY_COUNT(sPickupItemSlots); i++)\n    {\n        if (rand < sPickupItemSlots[i][0])\n            break;\n    }\n\n    if (lvlMode != FRONTIER_LVL_50)\n        gSpecialVar_0x8000 = sPickupItemsLvlOpen[round][sPickupItemSlots[i][1]];\n    else\n        gSpecialVar_0x8000 = sPickupItemsLvl50[round][sPickupItemSlots[i][1]];\n\n     \n    gSpecialVar_0x8001 = 1;",
       "callsTo": [
         "ARRAY_COUNT",
@@ -99,6 +108,7 @@
       "returnType": "void",
       "signature": "static void HidePyramidItem(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "struct ObjectEventTemplate *events = gSaveBlock1Ptr->objectEventTemplates;\n    int i = 0;\n\n    for (;;)\n    {\n        if (events[i].localId == gSpecialVar_LastTalked)\n        {\n             \n             \n            events[i].x = SHRT_MAX;\n            events[i].y = SHRT_MAX;\n            break;\n        }\n        i++;\n        if (events[i].localId == LOCALID_NONE)\n            break;\n    }",
       "callsTo": [],
       "lineCount": 17
@@ -107,6 +117,7 @@
       "returnType": "void",
       "signature": "static void SetPyramidFacilityTrainers(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gFacilityTrainers = gBattleFrontierTrainers;",
       "callsTo": [],
       "lineCount": 1
@@ -115,6 +126,7 @@
       "returnType": "void",
       "signature": "static void ShowPostBattleHintText(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int i;\n    int hintType;\n    u8 id;\n    int textGroup = 0;\n    int textIndex = 0;\n    struct ObjectEventTemplate *events = gSaveBlock1Ptr->objectEventTemplates;\n    u16 trainerId = LocalIdToPyramidTrainerId(gObjectEvents[gSelectedObjectEvent].localId);\n\n    for (i = 0; i < ARRAY_COUNT(sTrainerTextGroups); i++)\n    {\n        if (sTrainerTextGroups[i][0] == gFacilityTrainers[trainerId].facilityClass)\n        {\n            textGroup = sTrainerTextGroups[i][1];\n            break;\n        }\n    }\n\n    hintType = sHintTextTypes[gObjectEvents[gSelectedObjectEvent].localId - 1];\n    i = 0;\n    while (!i)\n    {\n        switch (hintType)\n        {\n        case HINT_EXIT_DIRECTION:\n            textIndex = GetPostBattleDirectionHintTextIndex(&hintType, 8, HINT_EXIT_DIRECTION);\n            i = 1;\n            break;\n        case HINT_REMAINING_ITEMS:\n            for (i = 0; i < GetNumBattlePyramidObjectEvents(); i++)\n            {\n                if (events[i].graphicsId == OBJ_EVENT_GFX_ITEM_BALL && events[i].x != SHRT_MAX && events[i].y != SHRT_MAX)\n                    textIndex++;\n            }\n            i = 1;\n            break;\n        case HINT_REMAINING_TRAINERS:\n            id = GetPyramidFloorTemplateId();\n            textIndex = sPyramidFloorTemplates[id].numTrainers;\n            for (i = 0; i < MAX_PYRAMID_TRAINERS; i++)\n            {\n                if (gBitTable[i] & gSaveBlock2Ptr->frontier.pyramidTrainerFlags)\n                    textIndex--;\n            }\n            i = 1;\n            break;\n        case HINT_EXIT_SHORT_REMAINING_TRAINERS:\n            GetPostBattleDirectionHintTextIndex(&hintType, 8, HINT_REMAINING_TRAINERS);\n            break;\n        case HINT_EXIT_SHORT_REMAINING_ITEMS:\n            GetPostBattleDirectionHintTextIndex(&hintType, 8, HINT_REMAINING_ITEMS);\n            break;\n        case HINT_EXIT_MEDIUM_REMAINING_TRAINERS:\n            GetPostBattleDirectionHintTextIndex(&hintType, 16, HINT_REMAINING_TRAINERS);\n            break;\n        case HINT_EXIT_MEDIUM_REMAINING_ITEMS:\n            GetPostBattleDirectionHintTextIndex(&hintType, 16, HINT_REMAINING_ITEMS);\n            break;\n        case HINT_EXIT_FAR_REMAINING_TRAINERS:\n            GetPostBattleDirectionHintTextIndex(&hintType, 24, HINT_REMAINING_TRAINERS);\n            break;\n        case HINT_EXIT_FAR_REMAINING_ITEMS:\n            GetPostBattleDirectionHintTextIndex(&hintType, 24, HINT_REMAINING_ITEMS);\n            break;\n        }\n    }\n    ShowFieldMessage(sPostBattleTexts[textGroup][hintType][textIndex]);",
       "callsTo": [
         "ARRAY_COUNT",
@@ -130,6 +142,7 @@
       "returnType": "void",
       "signature": "static void UpdatePyramidWinStreak(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u32 lvlMode = gSaveBlock2Ptr->frontier.lvlMode;\n\n    if (gSaveBlock2Ptr->frontier.pyramidWinStreaks[lvlMode] < 999)\n        gSaveBlock2Ptr->frontier.pyramidWinStreaks[lvlMode]++;\n    if (gSaveBlock2Ptr->frontier.pyramidWinStreaks[lvlMode] > gSaveBlock2Ptr->frontier.pyramidRecordStreaks[lvlMode])\n        gSaveBlock2Ptr->frontier.pyramidRecordStreaks[lvlMode] = gSaveBlock2Ptr->frontier.pyramidWinStreaks[lvlMode];",
       "callsTo": [],
       "lineCount": 6
@@ -138,6 +151,7 @@
       "returnType": "void",
       "signature": "static void GetCurrentBattlePyramidLocation(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gSpecialVar_Result = CurrentBattlePyramidLocation();",
       "callsTo": [
         "CurrentBattlePyramidLocation"
@@ -148,6 +162,7 @@
       "returnType": "void",
       "signature": "static void UpdatePyramidLightRadius(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (gSpecialVar_0x8006)\n    {\n    case PYRAMID_LIGHT_SET_RADIUS:\n        gSaveBlock2Ptr->frontier.pyramidLightRadius = gSpecialVar_0x8005;\n        break;\n    case PYRAMID_LIGHT_INCR_RADIUS:\n        switch (gSpecialVar_Result)\n        {\n        case 0:\n            if (!gPaletteFade.active)\n            {\n                if (gSaveBlock2Ptr->frontier.pyramidLightRadius >= 120)\n                    gSaveBlock2Ptr->frontier.pyramidLightRadius = 120;\n                else\n                    PlaySE(gSpecialVar_0x8007);\n                gSpecialVar_Result++;\n            }\n            break;\n        case 1:\n            if (gSpecialVar_0x8005 != 0)\n            {\n                gSpecialVar_0x8005--;\n                gSaveBlock2Ptr->frontier.pyramidLightRadius++;\n                if (gSaveBlock2Ptr->frontier.pyramidLightRadius > 120)\n                {\n                    gSaveBlock2Ptr->frontier.pyramidLightRadius = 120;\n                    gSpecialVar_Result++;\n                }\n                WriteBattlePyramidViewScanlineEffectBuffer();\n            }\n            else\n            {\n                gSpecialVar_Result = 2;\n            }\n            break;\n        case 2:\n        default:\n            break;\n        }\n        break;\n    }",
       "callsTo": [
         "PlaySE",
@@ -159,6 +174,7 @@
       "returnType": "void",
       "signature": "static void ClearPyramidPartyHeldItems(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int i, j;\n    u16 item = 0;\n\n    for (i = 0; i < PARTY_SIZE; i++)\n    {\n        for (j = 0; j < MAX_FRONTIER_PARTY_SIZE; j++)\n        {\n            if (gSaveBlock2Ptr->frontier.selectedPartyMons[j] != 0 && gSaveBlock2Ptr->frontier.selectedPartyMons[j] - 1 == i)\n                SetMonData(&gPlayerParty[i], MON_DATA_HELD_ITEM, &item);\n        }\n    }",
       "callsTo": [
         "SetMonData"
@@ -169,6 +185,7 @@
       "returnType": "void",
       "signature": "static void SetPyramidFloorPalette(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "CreateTask(Task_SetPyramidFloorPalette, 0);",
       "callsTo": [
         "CreateTask"
@@ -179,6 +196,12 @@
       "returnType": "void",
       "signature": "static void Task_SetPyramidFloorPalette(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (gPaletteFade.active)\n    {\n        CpuCopy16(gBattlePyramidFloor_Pal[gSaveBlock2Ptr->frontier.curChallengeBattleNum], &gPlttBufferUnfaded[BG_PLTT_ID(6)], PLTT_SIZE_4BPP);\n        DestroyTask(taskId);\n    }",
       "callsTo": [
         "BG_PLTT_ID",
@@ -191,6 +214,7 @@
       "returnType": "void",
       "signature": "static void BattlePyramidStartMenu(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ShowBattlePyramidStartMenu();",
       "callsTo": [
         "ShowBattlePyramidStartMenu"
@@ -201,6 +225,7 @@
       "returnType": "void",
       "signature": "static void RestorePyramidPlayerParty(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int i, j, k, l;\n\n    for (i = 0; i < FRONTIER_PARTY_SIZE; i++)\n    {\n        int partyIndex = gSaveBlock2Ptr->frontier.selectedPartyMons[i] - 1;\n        for (j = 0; j < FRONTIER_PARTY_SIZE; j++)\n        {\n            if (GetMonData(&gSaveBlock1Ptr->playerParty[partyIndex], MON_DATA_SPECIES, NULL) == GetMonData(&gPlayerParty[j], MON_DATA_SPECIES, NULL))\n            {\n                for (k = 0; k < MAX_MON_MOVES; k++)\n                {\n                    for (l = 0; l < MAX_MON_MOVES; l++)\n                    {\n                        if (GetMonData(&gSaveBlock1Ptr->playerParty[partyIndex], MON_DATA_MOVE1 + l, NULL) == GetMonData(&gPlayerParty[j], MON_DATA_MOVE1 + k, NULL))\n                            break;\n                    }\n                    if (l == MAX_MON_MOVES)\n                        SetMonMoveSlot(&gPlayerParty[j], MOVE_SKETCH, k);\n                }\n                gSaveBlock1Ptr->playerParty[partyIndex] = gPlayerParty[j];\n                gSelectedOrderFromParty[j] = partyIndex + 1;\n                break;\n            }\n        }\n    }\n\n    for (i = 0; i < FRONTIER_PARTY_SIZE; i++)\n        gSaveBlock2Ptr->frontier.selectedPartyMons[i] = gSelectedOrderFromParty[i];",
       "callsTo": [
         "GetMonData",
@@ -212,6 +237,20 @@
       "returnType": "u8",
       "signature": "static u8 GetPostBattleDirectionHintTextIndex(int *hintType, u8 minDistanceForExitHint, u8 defaultHintType)",
       "paramsRaw": "int *hintType, u8 minDistanceForExitHint, u8 defaultHintType",
+      "paramsList": [
+        {
+          "name": "hintType",
+          "typeRaw": "int *"
+        },
+        {
+          "name": "minDistanceForExitHint",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "defaultHintType",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "int x, y;\n    u8 textIndex = 0;\n    u16 *map = gBackupMapLayout.map;\n    map += gBackupMapLayout.width * 7 + MAP_OFFSET;\n\n    for (y = 0; y < 32; map += 47, y++)\n    {\n        for (x = 0; x < 32; x++)\n        {\n            if ((map[x] & MAPGRID_METATILE_ID_MASK) == METATILE_BattlePyramid_Exit)\n            {\n                x += MAP_OFFSET - gObjectEvents[gSelectedObjectEvent].initialCoords.x;\n                y += MAP_OFFSET - gObjectEvents[gSelectedObjectEvent].initialCoords.y;\n                if (x >= minDistanceForExitHint\n                 || x <= -minDistanceForExitHint\n                 || y >= minDistanceForExitHint\n                 || y <= -minDistanceForExitHint\n                 || defaultHintType == HINT_EXIT_DIRECTION)\n                {\n                    if (x > 0 && y > 0)\n                    {\n                        if (x >= y)\n                            textIndex = 2;\n                        else\n                            textIndex = 3;\n                    }\n                    else if (x < 0 && y < 0)\n                    {\n                        if (x > y)\n                            textIndex = 0;\n                        else\n                            textIndex = 1;\n                    }\n                    else if (x == 0)\n                    {\n                        if (y > 0)\n                            textIndex = 3;\n                        else\n                            textIndex = 0;\n                    }\n                    else if (y == 0)\n                    {\n                        if (x > 0)\n                            textIndex = 2;\n                        else\n                            textIndex = 1;\n                    }\n                    else if (x < 0)\n                    {\n                        if (x + y > 0)\n                            textIndex = 3;\n                        else\n                            textIndex = 1;\n                    }\n                    else\n                    {\n                        textIndex = (~(x + y) >= 0) ? 0 : 2;\n                    }\n                    *hintType = HINT_EXIT_DIRECTION;\n                }\n                else\n                {\n                    *hintType = defaultHintType;\n                }\n                return textIndex;\n            }\n        }\n    }\n\n    return textIndex;",
       "callsTo": [],
       "lineCount": 70
@@ -220,6 +259,12 @@
       "returnType": "u16",
       "signature": "u16 LocalIdToPyramidTrainerId(u8 localId)",
       "paramsRaw": "u8 localId",
+      "paramsList": [
+        {
+          "name": "localId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "return gSaveBlock2Ptr->frontier.trainerIds[localId - 1];",
       "callsTo": [],
       "lineCount": 1
@@ -228,6 +273,12 @@
       "returnType": "bool8",
       "signature": "bool8 GetBattlePyramidTrainerFlag(u8 eventId)",
       "paramsRaw": "u8 eventId",
+      "paramsList": [
+        {
+          "name": "eventId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "return gSaveBlock2Ptr->frontier.pyramidTrainerFlags & gBitTable[gObjectEvents[eventId].localId - 1];",
       "callsTo": [],
       "lineCount": 1
@@ -236,6 +287,7 @@
       "returnType": "void",
       "signature": "void MarkApproachingPyramidTrainersAsBattled(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "MarkPyramidTrainerAsBattled(gTrainerBattleOpponent_A);\n    if (gBattleTypeFlags & BATTLE_TYPE_TWO_OPPONENTS)\n    {\n        gSelectedObjectEvent = GetChosenApproachingTrainerObjectEventId(1);\n        MarkPyramidTrainerAsBattled(gTrainerBattleOpponent_B);\n    }",
       "callsTo": [
         "GetChosenApproachingTrainerObjectEventId",
@@ -247,6 +299,12 @@
       "returnType": "void",
       "signature": "static void MarkPyramidTrainerAsBattled(u16 trainerId)",
       "paramsRaw": "u16 trainerId",
+      "paramsList": [
+        {
+          "name": "trainerId",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "int i;\n\n    for (i = 0; i < MAX_PYRAMID_TRAINERS; i++)\n    {\n        if (gSaveBlock2Ptr->frontier.trainerIds[i] == trainerId)\n            gSaveBlock2Ptr->frontier.pyramidTrainerFlags |= gBitTable[i];\n    }\n\n    gObjectEvents[gSelectedObjectEvent].movementType = MOVEMENT_TYPE_WANDER_AROUND;\n    gSaveBlock1Ptr->objectEventTemplates[gSpecialVar_LastTalked - 1].movementType = MOVEMENT_TYPE_WANDER_AROUND;\n    gObjectEvents[gSelectedObjectEvent].initialCoords.x = gObjectEvents[gSelectedObjectEvent].currentCoords.x;\n    gObjectEvents[gSelectedObjectEvent].initialCoords.y = gObjectEvents[gSelectedObjectEvent].currentCoords.y;",
       "callsTo": [],
       "lineCount": 12
@@ -255,6 +313,7 @@
       "returnType": "void",
       "signature": "void GenerateBattlePyramidWildMon(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 name[POKEMON_NAME_LENGTH + 1];\n    int i;\n    const struct PyramidWildMon *wildMons;\n    u32 id;\n    u32 lvl = gSaveBlock2Ptr->frontier.lvlMode;\n    u16 round = (gSaveBlock2Ptr->frontier.pyramidWinStreaks[lvl] / FRONTIER_STAGES_PER_CHALLENGE) % TOTAL_PYRAMID_ROUNDS;\n\n    if (round >= TOTAL_PYRAMID_ROUNDS)\n        round = TOTAL_PYRAMID_ROUNDS - 1;\n\n    if (lvl != FRONTIER_LVL_50)\n        wildMons = sOpenLevelWildMonPointers[round];\n    else\n        wildMons = sLevel50WildMonPointers[round];\n\n    id = GetMonData(&gEnemyParty[0], MON_DATA_SPECIES, NULL) - 1;\n    SetMonData(&gEnemyParty[0], MON_DATA_SPECIES, &wildMons[id].species);\n    GetSpeciesName(name, wildMons[id].species);\n    SetMonData(&gEnemyParty[0], MON_DATA_NICKNAME, &name);\n    if (lvl != FRONTIER_LVL_50)\n    {\n        lvl = SetFacilityPtrsGetLevel();\n        lvl -= wildMons[id].lvl;\n        lvl = lvl - 5 + (Random() % 11);\n    }\n    else\n    {\n        lvl = wildMons[id].lvl - 5 + ((Random() % 11));\n    }\n    SetMonData(&gEnemyParty[0],\n               MON_DATA_EXP,\n               &gExperienceTables[gSpeciesInfo[wildMons[id].species].growthRate][lvl]);\n\n    switch (wildMons[id].abilityNum)\n    {\n    case 0:\n    case 1:\n        SetMonData(&gEnemyParty[0], MON_DATA_ABILITY_NUM, &wildMons[id].abilityNum);\n        break;\n    case ABILITY_RANDOM:\n    default:\n        if (gSpeciesInfo[wildMons[id].species].abilities[1])\n        {\n            i = GetMonData(&gEnemyParty[0], MON_DATA_PERSONALITY, NULL) % 2;\n            SetMonData(&gEnemyParty[0], MON_DATA_ABILITY_NUM, &i);\n        }\n        else\n        {\n            i = 0;\n            SetMonData(&gEnemyParty[0], MON_DATA_ABILITY_NUM, &i);\n        }\n        break;\n    }\n\n    for (i = 0; i < MAX_MON_MOVES; i++)\n        SetMonMoveSlot(&gEnemyParty[0], wildMons[id].moves[i], i);\n\n     \n    #ifndef UBFIX\n    if (gSaveBlock2Ptr->frontier.pyramidWinStreaks[lvl] >= 140)\n    #else\n    if (gSaveBlock2Ptr->frontier.pyramidWinStreaks[gSaveBlock2Ptr->frontier.lvlMode] >= 140)\n    #endif\n    {\n        id = (Random() % 17) + 15;\n        for (i = 0; i < NUM_STATS; i++)\n            SetMonData(&gEnemyParty[0], MON_DATA_HP_IV + i, &id);\n    }\n    CalculateMonStats(&gEnemyParty[0]);",
       "callsTo": [
         "CalculateMonStats",
@@ -271,6 +330,7 @@
       "returnType": "u8",
       "signature": "u8 GetPyramidRunMultiplier(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 id = GetPyramidFloorTemplateId();\n    return sPyramidFloorTemplates[id].runMultiplier;",
       "callsTo": [
         "GetPyramidFloorTemplateId"
@@ -281,6 +341,7 @@
       "returnType": "u8",
       "signature": "u8 CurrentBattlePyramidLocation(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gMapHeader.mapLayoutId == LAYOUT_BATTLE_FRONTIER_BATTLE_PYRAMID_FLOOR)\n        return PYRAMID_LOCATION_FLOOR;\n    else if (gMapHeader.mapLayoutId == LAYOUT_BATTLE_FRONTIER_BATTLE_PYRAMID_TOP)\n        return PYRAMID_LOCATION_TOP;\n    else\n        return PYRAMID_LOCATION_NONE;",
       "callsTo": [],
       "lineCount": 6
@@ -289,6 +350,7 @@
       "returnType": "bool8",
       "signature": "bool8 InBattlePyramid_(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return gMapHeader.mapLayoutId == LAYOUT_BATTLE_FRONTIER_BATTLE_PYRAMID_FLOOR\n        || gMapHeader.mapLayoutId == LAYOUT_BATTLE_FRONTIER_BATTLE_PYRAMID_TOP;",
       "callsTo": [],
       "lineCount": 2
@@ -297,6 +359,7 @@
       "returnType": "void",
       "signature": "void PausePyramidChallenge(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE)\n    {\n        RestorePyramidPlayerParty();\n        gSaveBlock2Ptr->frontier.challengeStatus = CHALLENGE_STATUS_PAUSED;\n        VarSet(VAR_TEMP_PLAYING_PYRAMID_MUSIC, 0);\n        LoadPlayerParty();\n    }",
       "callsTo": [
         "CurrentBattlePyramidLocation",
@@ -310,6 +373,7 @@
       "returnType": "void",
       "signature": "void SoftResetInBattlePyramid(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE)\n        DoSoftReset();",
       "callsTo": [
         "CurrentBattlePyramidLocation",
@@ -321,6 +385,12 @@
       "returnType": "void",
       "signature": "void CopyPyramidTrainerSpeechBefore(u16 trainerId)",
       "paramsRaw": "u16 trainerId",
+      "paramsList": [
+        {
+          "name": "trainerId",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "FrontierSpeechToString(gFacilityTrainers[trainerId].speechBefore);",
       "callsTo": [
         "FrontierSpeechToString"
@@ -331,6 +401,12 @@
       "returnType": "void",
       "signature": "void CopyPyramidTrainerWinSpeech(u16 trainerId)",
       "paramsRaw": "u16 trainerId",
+      "paramsList": [
+        {
+          "name": "trainerId",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "FrontierSpeechToString(gFacilityTrainers[trainerId].speechWin);",
       "callsTo": [
         "FrontierSpeechToString"
@@ -341,6 +417,12 @@
       "returnType": "void",
       "signature": "void CopyPyramidTrainerLoseSpeech(u16 trainerId)",
       "paramsRaw": "u16 trainerId",
+      "paramsList": [
+        {
+          "name": "trainerId",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "FrontierSpeechToString(gFacilityTrainers[trainerId].speechLose);",
       "callsTo": [
         "FrontierSpeechToString"
@@ -351,6 +433,12 @@
       "returnType": "u8",
       "signature": "u8 GetTrainerEncounterMusicIdInBattlePyramid(u16 trainerId)",
       "paramsRaw": "u16 trainerId",
+      "paramsList": [
+        {
+          "name": "trainerId",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "int i;\n\n    for (i = 0; i < ARRAY_COUNT(sTrainerClassEncounterMusic); i++)\n    {\n        if (sTrainerClassEncounterMusic[i].trainerClass == gFacilityClassToTrainerClass[gFacilityTrainers[trainerId].facilityClass])\n            return sTrainerClassEncounterMusic[i].trainerEncounterMusic;\n    }\n    return TRAINER_ENCOUNTER_MUSIC_MALE;",
       "callsTo": [
         "ARRAY_COUNT"
@@ -361,6 +449,12 @@
       "returnType": "u16",
       "signature": "static u16 GetUniqueTrainerId(u8 objectEventId)",
       "paramsRaw": "u8 objectEventId",
+      "paramsList": [
+        {
+          "name": "objectEventId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "int i;\n    u16 trainerId;\n    u32 lvlMode = gSaveBlock2Ptr->frontier.lvlMode;\n    u32 challengeNum = gSaveBlock2Ptr->frontier.pyramidWinStreaks[lvlMode] / FRONTIER_STAGES_PER_CHALLENGE;\n    u32 floor = gSaveBlock2Ptr->frontier.curChallengeBattleNum;\n    if (floor == FRONTIER_STAGES_PER_CHALLENGE)\n    {\n        do\n        {\n            trainerId = GetRandomScaledFrontierTrainerId(challengeNum + 1, floor);\n            for (i = 0; i < objectEventId; i++)\n            {\n                if (gSaveBlock2Ptr->frontier.trainerIds[i] == trainerId)\n                    break;\n            }\n        } while (i != objectEventId);\n    }\n    else\n    {\n        do\n        {\n            trainerId = GetRandomScaledFrontierTrainerId(challengeNum, floor);\n            for (i = 0; i < objectEventId; i++)\n            {\n                if (gSaveBlock2Ptr->frontier.trainerIds[i] == trainerId)\n                    break;\n            }\n        } while (i != objectEventId);\n    }\n\n    return trainerId;",
       "callsTo": [
         "GetRandomScaledFrontierTrainerId"
@@ -371,6 +465,16 @@
       "returnType": "void",
       "signature": "void GenerateBattlePyramidFloorLayout(u16 *backupMapData, bool8 setPlayerPosition)",
       "paramsRaw": "u16 *backupMapData, bool8 setPlayerPosition",
+      "paramsList": [
+        {
+          "name": "backupMapData",
+          "typeRaw": "u16 *"
+        },
+        {
+          "name": "setPlayerPosition",
+          "typeRaw": "bool8"
+        }
+      ],
       "body": "int y, x;\n    int i;\n    u8 entranceSquareId, exitSquareId;\n    u8 *floorLayoutOffsets = AllocZeroed(NUM_PYRAMID_FLOOR_SQUARES);\n\n    GetPyramidFloorLayoutOffsets(floorLayoutOffsets);\n    GetPyramidEntranceAndExitSquareIds(&entranceSquareId, &exitSquareId);\n    for (i = 0; i < NUM_PYRAMID_FLOOR_SQUARES; i++)\n    {\n        u16 *map;\n        int yOffset, xOffset;\n        const struct MapLayout *mapLayout = gMapLayouts[floorLayoutOffsets[i] + LAYOUT_BATTLE_FRONTIER_BATTLE_PYRAMID_FLOOR];\n        const u16 *layoutMap = mapLayout->map;\n\n        gBackupMapLayout.map = backupMapData;\n        gBackupMapLayout.width = mapLayout->width * PYRAMID_FLOOR_SQUARES_WIDE + MAP_OFFSET_W;\n        gBackupMapLayout.height = mapLayout->height * PYRAMID_FLOOR_SQUARES_HIGH + MAP_OFFSET_H;\n        map = backupMapData;\n        yOffset = ((i / PYRAMID_FLOOR_SQUARES_WIDE * mapLayout->height) + MAP_OFFSET) * gBackupMapLayout.width;\n        xOffset = (i % PYRAMID_FLOOR_SQUARES_WIDE * mapLayout->width) + MAP_OFFSET;\n        map += yOffset + xOffset;\n        for (y = 0; y < mapLayout->height; y++)\n        {\n            for (x = 0; x < mapLayout->width; x++)\n            {\n                if ((layoutMap[x] & MAPGRID_METATILE_ID_MASK) != METATILE_BattlePyramid_Exit)\n                {\n                    map[x] = layoutMap[x];\n                }\n                else if (i != exitSquareId)\n                {\n                    if (i == entranceSquareId && setPlayerPosition == FALSE)\n                    {\n                        gSaveBlock1Ptr->pos.x = (mapLayout->width * (i % PYRAMID_FLOOR_SQUARES_WIDE)) + x;\n                        gSaveBlock1Ptr->pos.y = (mapLayout->height * (i / PYRAMID_FLOOR_SQUARES_WIDE)) + y;\n                    }\n                     \n                    map[x] = (layoutMap[x] & (MAPGRID_ELEVATION_MASK | MAPGRID_COLLISION_MASK)) | METATILE_BattlePyramid_Floor;\n                }\n                else\n                {\n                    map[x] = layoutMap[x];\n                }\n            }\n            map += MAP_OFFSET_W + (mapLayout->width * PYRAMID_FLOOR_SQUARES_WIDE);\n            layoutMap += mapLayout->width;\n        }\n    }\n    RunOnLoadMapScript();\n    Free(floorLayoutOffsets);",
       "callsTo": [
         "AllocZeroed",
@@ -385,6 +489,7 @@
       "returnType": "void",
       "signature": "void LoadBattlePyramidObjectEventTemplates(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int i;\n    u8 id;\n    u8 entranceSquareId, exitSquareId;\n\n    for (i = 0; i < MAX_PYRAMID_TRAINERS; i++)\n        gSaveBlock2Ptr->frontier.trainerIds[i] = 0xFFFF;\n\n    id = GetPyramidFloorTemplateId();\n    GetPyramidEntranceAndExitSquareIds(&entranceSquareId, &exitSquareId);\n    CpuFill32(0, gSaveBlock1Ptr->objectEventTemplates, sizeof(gSaveBlock1Ptr->objectEventTemplates));\n    for (i = 0; i < 2; i++)\n    {\n        u8 objectPositionsType;\n\n        if (i == OBJ_TRAINERS)\n            objectPositionsType = sPyramidFloorTemplates[id].trainerPositions;\n        else   \n            objectPositionsType = sPyramidFloorTemplates[id].itemPositions;\n\n        switch (objectPositionsType)\n        {\n        case OBJ_POSITIONS_UNIFORM:\n            SetPyramidObjectPositionsUniformly(i);\n            break;\n        case OBJ_POSITIONS_IN_AND_NEAR_ENTRANCE:\n            if (SetPyramidObjectPositionsInAndNearSquare(i, entranceSquareId))\n                SetPyramidObjectPositionsUniformly(i);\n            break;\n        case OBJ_POSITIONS_IN_AND_NEAR_EXIT:\n            if (SetPyramidObjectPositionsInAndNearSquare(i, exitSquareId))\n                SetPyramidObjectPositionsUniformly(i);\n            break;\n        case OBJ_POSITIONS_NEAR_ENTRANCE:\n            if (SetPyramidObjectPositionsNearSquare(i, entranceSquareId))\n                SetPyramidObjectPositionsUniformly(i);\n            break;\n        case OBJ_POSITIONS_NEAR_EXIT:\n            if (SetPyramidObjectPositionsNearSquare(i, exitSquareId))\n                SetPyramidObjectPositionsUniformly(i);\n            break;\n        }\n    }",
       "callsTo": [
         "CpuFill32",
@@ -400,6 +505,7 @@
       "returnType": "void",
       "signature": "void LoadBattlePyramidFloorObjectEventScripts(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int i;\n    struct ObjectEventTemplate *events = gSaveBlock1Ptr->objectEventTemplates;\n\n    for (i = 0; i < OBJECT_EVENT_TEMPLATES_COUNT; i++)\n    {\n        if (events[i].graphicsId != OBJ_EVENT_GFX_ITEM_BALL)\n            events[i].script = BattlePyramid_TrainerBattle;\n        else\n            events[i].script = BattlePyramid_FindItemBall;\n    }",
       "callsTo": [],
       "lineCount": 10
@@ -408,6 +514,16 @@
       "returnType": "void",
       "signature": "static void GetPyramidEntranceAndExitSquareIds(u8 *entranceSquareId, u8 *exitSquareId)",
       "paramsRaw": "u8 *entranceSquareId, u8 *exitSquareId",
+      "paramsList": [
+        {
+          "name": "entranceSquareId",
+          "typeRaw": "u8 *"
+        },
+        {
+          "name": "exitSquareId",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "*entranceSquareId = gSaveBlock2Ptr->frontier.pyramidRandoms[3] % NUM_PYRAMID_FLOOR_SQUARES;\n    *exitSquareId = gSaveBlock2Ptr->frontier.pyramidRandoms[0] % NUM_PYRAMID_FLOOR_SQUARES;\n\n    if (*entranceSquareId == *exitSquareId)\n    {\n        *entranceSquareId = (gSaveBlock2Ptr->frontier.pyramidRandoms[3] + 1 ) % NUM_PYRAMID_FLOOR_SQUARES;\n        *exitSquareId = (gSaveBlock2Ptr->frontier.pyramidRandoms[0] + NUM_PYRAMID_FLOOR_SQUARES - 1) % NUM_PYRAMID_FLOOR_SQUARES;\n    }",
       "callsTo": [],
       "lineCount": 8
@@ -416,6 +532,12 @@
       "returnType": "void",
       "signature": "static void SetPyramidObjectPositionsUniformly(u8 objType)",
       "paramsRaw": "u8 objType",
+      "paramsList": [
+        {
+          "name": "objType",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "int i;\n    int numObjects;\n    int objectStartIndex;\n    int squareId;\n    u32 bits = 0;\n    u8 id = GetPyramidFloorTemplateId();\n    u8 *floorLayoutOffsets = AllocZeroed(NUM_PYRAMID_FLOOR_SQUARES);\n\n    GetPyramidFloorLayoutOffsets(floorLayoutOffsets);\n    squareId = gSaveBlock2Ptr->frontier.pyramidRandoms[2] % NUM_PYRAMID_FLOOR_SQUARES;\n    if (objType == OBJ_TRAINERS)\n    {\n        numObjects = sPyramidFloorTemplates[id].numTrainers;\n        objectStartIndex = 0;\n    }\n    else  \n    {\n        numObjects = sPyramidFloorTemplates[id].numItems;\n        objectStartIndex = sPyramidFloorTemplates[id].numTrainers;\n    }\n\n    for (i = 0; i < numObjects; i++)\n    {\n        do\n        {\n            do\n            {\n                if (bits & 1)\n                {\n                    if (!(gBitTable[squareId] & gSaveBlock2Ptr->frontier.pyramidRandoms[3]))\n                        bits |= 2;\n                }\n                else\n                {\n                    if (gBitTable[squareId] & gSaveBlock2Ptr->frontier.pyramidRandoms[3])\n                        bits |= 2;\n                }\n                if (++squareId >= NUM_PYRAMID_FLOOR_SQUARES)\n                    squareId = 0;\n\n                if (squareId == gSaveBlock2Ptr->frontier.pyramidRandoms[2] % NUM_PYRAMID_FLOOR_SQUARES)\n                {\n                    if (bits & 1)\n                        bits |= 6;\n                    else\n                        bits |= 1;\n                }\n            } while (!(bits & 2));\n\n        } while (!(bits & 4) && TrySetPyramidObjectEventPositionInSquare(objType, floorLayoutOffsets, squareId, objectStartIndex + i));\n        bits &= 1;\n    }\n    Free(floorLayoutOffsets);",
       "callsTo": [
         "AllocZeroed",
@@ -430,6 +552,16 @@
       "returnType": "bool8",
       "signature": "static bool8 SetPyramidObjectPositionsInAndNearSquare(u8 objType, u8 squareId)",
       "paramsRaw": "u8 objType, u8 squareId",
+      "paramsList": [
+        {
+          "name": "objType",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "squareId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "int i;\n    int objectStartIndex;\n    int borderedIndex = 0;\n    int r7 = 0;\n    int numPlacedObjects = 0;\n    int numObjects;\n    u8 id = GetPyramidFloorTemplateId();\n    u8 *floorLayoutOffsets = AllocZeroed(NUM_PYRAMID_FLOOR_SQUARES);\n\n    GetPyramidFloorLayoutOffsets(floorLayoutOffsets);\n    if (objType == OBJ_TRAINERS)\n    {\n        numObjects = sPyramidFloorTemplates[id].numTrainers;\n        objectStartIndex = 0;\n    }\n    else  \n    {\n        numObjects = sPyramidFloorTemplates[id].numItems;\n        objectStartIndex = sPyramidFloorTemplates[id].numTrainers;\n    }\n\n    for (i = 0; i < numObjects; i++)\n    {\n        if (r7 == 0)\n        {\n            if (TrySetPyramidObjectEventPositionInSquare(objType, floorLayoutOffsets, squareId, objectStartIndex + i))\n                r7 = 1;\n            else\n                numPlacedObjects++;\n        }\n        if (r7 & 1)\n        {\n            if (TrySetPyramidObjectEventPositionInSquare(objType, floorLayoutOffsets, sBorderedSquareIds[squareId][borderedIndex], objectStartIndex + i))\n            {\n                do\n                {\n                    borderedIndex++;\n                    if (sBorderedSquareIds[squareId][borderedIndex] == 0xFF || borderedIndex >= 4)\n                        borderedIndex = 0;\n                    r7 += 2;\n                } while (r7 >> 1 != 4 && TrySetPyramidObjectEventPositionInSquare(objType, floorLayoutOffsets, sBorderedSquareIds[squareId][borderedIndex], objectStartIndex + i));\n                numPlacedObjects++;\n            }\n            else\n            {\n                borderedIndex++;\n                if (sBorderedSquareIds[squareId][borderedIndex] == 0xFF || borderedIndex >= 4)\n                    borderedIndex = 0;\n                numPlacedObjects++;\n            }\n        }\n\n        if (r7 >> 1 == 4)\n            break;\n\n        r7 &= 1;\n    }\n    #ifdef BUGFIX\n    Free(floorLayoutOffsets);\n    #endif\n\n    return (numObjects / 2) > numPlacedObjects;",
       "callsTo": [
         "AllocZeroed",
@@ -444,6 +576,16 @@
       "returnType": "bool8",
       "signature": "static bool8 SetPyramidObjectPositionsNearSquare(u8 objType, u8 squareId)",
       "paramsRaw": "u8 objType, u8 squareId",
+      "paramsList": [
+        {
+          "name": "objType",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "squareId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "int i;\n    int objectStartIndex;\n    int borderOffset = 0;\n    int numPlacedObjects = 0;\n    int r8 = 0;\n    int numObjects;\n    u8 id = GetPyramidFloorTemplateId();\n    u8 *floorLayoutOffsets = AllocZeroed(NUM_PYRAMID_FLOOR_SQUARES);\n\n    GetPyramidFloorLayoutOffsets(floorLayoutOffsets);\n    if (objType == OBJ_TRAINERS)\n    {\n        numObjects = sPyramidFloorTemplates[id].numTrainers;\n        objectStartIndex = 0;\n    }\n    else  \n    {\n        numObjects = sPyramidFloorTemplates[id].numItems;\n        objectStartIndex = sPyramidFloorTemplates[id].numTrainers;\n    }\n\n    for (i = 0; i < numObjects; i++)\n    {\n        if (TrySetPyramidObjectEventPositionInSquare(objType, floorLayoutOffsets, sBorderedSquareIds[squareId][borderOffset], objectStartIndex + i))\n        {\n            do\n            {\n                borderOffset++;\n                if (sBorderedSquareIds[squareId][borderOffset] == 0xFF || borderOffset >= 4)\n                    borderOffset = 0;\n                r8++;\n            } while (r8 != 4 && TrySetPyramidObjectEventPositionInSquare(objType, floorLayoutOffsets, sBorderedSquareIds[squareId][borderOffset], objectStartIndex + i));\n            numPlacedObjects++;\n        }\n        else\n        {\n            borderOffset++;\n            if (sBorderedSquareIds[squareId][borderOffset] == 0xFF || borderOffset >= 4)\n                borderOffset = 0;\n            numPlacedObjects++;\n        }\n\n        if (r8 == 4)\n            break;\n    }\n    #ifdef BUGFIX\n    Free(floorLayoutOffsets);\n    #endif\n\n    return (numObjects / 2) > numPlacedObjects;",
       "callsTo": [
         "AllocZeroed",
@@ -458,6 +600,24 @@
       "returnType": "bool8",
       "signature": "static bool8 TrySetPyramidObjectEventPositionInSquare(u8 objType, u8 *floorLayoutOffsets, u8 squareId, u8 objectEventId)",
       "paramsRaw": "u8 objType, u8 *floorLayoutOffsets, u8 squareId, u8 objectEventId",
+      "paramsList": [
+        {
+          "name": "objType",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "floorLayoutOffsets",
+          "typeRaw": "u8 *"
+        },
+        {
+          "name": "squareId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "objectEventId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "int x, y;\n\n    if (gSaveBlock2Ptr->frontier.pyramidRandoms[0] & 1)\n    {\n        for (y = 7; y > -1; y--)\n        {\n            for (x = 7; x > -1; x--)\n            {\n                if (!TrySetPyramidObjectEventPositionAtCoords(objType, x, y, floorLayoutOffsets, squareId, objectEventId))\n                    return FALSE;\n            }\n        }\n    }\n    else\n    {\n        for (y = 0; y < 8; y++)\n        {\n            for (x = 0; x < 8; x++)\n            {\n                if (!TrySetPyramidObjectEventPositionAtCoords(objType, x, y, floorLayoutOffsets, squareId, objectEventId))\n                    return FALSE;\n            }\n        }\n    }\n\n    return TRUE;",
       "callsTo": [
         "TrySetPyramidObjectEventPositionAtCoords"
@@ -468,6 +628,32 @@
       "returnType": "bool8",
       "signature": "static bool8 TrySetPyramidObjectEventPositionAtCoords(u8 objType, u8 x, u8 y, u8 *floorLayoutOffsets, u8 squareId, u8 objectEventId)",
       "paramsRaw": "u8 objType, u8 x, u8 y, u8 *floorLayoutOffsets, u8 squareId, u8 objectEventId",
+      "paramsList": [
+        {
+          "name": "objType",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "x",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "y",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "floorLayoutOffsets",
+          "typeRaw": "u8 *"
+        },
+        {
+          "name": "squareId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "objectEventId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "int i, j;\n    const struct MapHeader *mapHeader;\n    struct ObjectEventTemplate *floorEvents = gSaveBlock1Ptr->objectEventTemplates;\n\n    mapHeader = Overworld_GetMapHeaderByGroupAndId(MAP_GROUP(MAP_BATTLE_PYRAMID_SQUARE01), floorLayoutOffsets[squareId] + MAP_NUM(MAP_BATTLE_PYRAMID_SQUARE01));\n    for (i = 0; i < mapHeader->events->objectEventCount; i++)\n    {\n        if (mapHeader->events->objectEvents[i].x != x || mapHeader->events->objectEvents[i].y != y)\n            continue;\n\n        if (objType != OBJ_TRAINERS || mapHeader->events->objectEvents[i].graphicsId == OBJ_EVENT_GFX_ITEM_BALL)\n        {\n            if (objType != OBJ_ITEMS || mapHeader->events->objectEvents[i].graphicsId != OBJ_EVENT_GFX_ITEM_BALL)\n                continue;\n        }\n\n         \n        for (j = 0; j < objectEventId; j++)\n        {\n            if (floorEvents[j].x == x + ((squareId % 4) * 8) && floorEvents[j].y == y + ((squareId / 4) * 8))\n                break;\n        }\n\n        if (j == objectEventId)\n        {\n            floorEvents[objectEventId] = mapHeader->events->objectEvents[i];\n            floorEvents[objectEventId].x += (squareId % 4) * 8;\n            floorEvents[objectEventId].y += (squareId / 4) * 8;\n            floorEvents[objectEventId].localId = objectEventId + 1;\n            if (floorEvents[objectEventId].graphicsId != OBJ_EVENT_GFX_ITEM_BALL)\n            {\n                i = GetUniqueTrainerId(objectEventId);\n                floorEvents[objectEventId].graphicsId = GetBattleFacilityTrainerGfxId(i);\n                gSaveBlock2Ptr->frontier.trainerIds[objectEventId] = i;\n            }\n            return FALSE;\n        }\n    }\n\n    return TRUE;",
       "callsTo": [
         "GetBattleFacilityTrainerGfxId",
@@ -482,6 +668,12 @@
       "returnType": "void",
       "signature": "static void GetPyramidFloorLayoutOffsets(u8 *layoutOffsets)",
       "paramsRaw": "u8 *layoutOffsets",
+      "paramsList": [
+        {
+          "name": "layoutOffsets",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "int i;\n    int rand = (gSaveBlock2Ptr->frontier.pyramidRandoms[0]) | (gSaveBlock2Ptr->frontier.pyramidRandoms[1] << 16);\n    u8 id = GetPyramidFloorTemplateId();\n\n    for (i = 0; i < NUM_PYRAMID_FLOOR_SQUARES; i++)\n    {\n        layoutOffsets[i] = sPyramidFloorTemplates[id].layoutOffsets[MOD(rand, NUM_LAYOUT_OFFSETS)];\n        rand >>= 3;\n        if (i == 7)\n        {\n            rand = (gSaveBlock2Ptr->frontier.pyramidRandoms[2]) | (gSaveBlock2Ptr->frontier.pyramidRandoms[3] << 16);\n            rand >>= 8;\n        }\n    }",
       "callsTo": [
         "GetPyramidFloorTemplateId",
@@ -493,6 +685,7 @@
       "returnType": "u8",
       "signature": "static u8 GetPyramidFloorTemplateId(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int i;\n    int rand = gSaveBlock2Ptr->frontier.pyramidRandoms[3] % 100;\n    int floor = gSaveBlock2Ptr->frontier.curChallengeBattleNum;\n\n    for (i = sFloorTemplateOffsets[floor]; i < ARRAY_COUNT(sPyramidFloorTemplateOptions); i++)\n    {\n        if (rand < sPyramidFloorTemplateOptions[i][0])\n            return sPyramidFloorTemplateOptions[i][1];\n    }\n    return 0;",
       "callsTo": [
         "ARRAY_COUNT"
@@ -503,6 +696,7 @@
       "returnType": "u8",
       "signature": "u8 GetNumBattlePyramidObjectEvents(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n    struct ObjectEventTemplate *events = gSaveBlock1Ptr->objectEventTemplates;\n\n    for (i = 0; i < OBJECT_EVENTS_COUNT; i++)\n    {\n        if (events[i].localId == LOCALID_NONE)\n            break;\n    }\n\n    return i;",
       "callsTo": [],
       "lineCount": 10
@@ -511,6 +705,12 @@
       "returnType": "void",
       "signature": "static void InitPyramidBagItems(u8 lvlMode)",
       "paramsRaw": "u8 lvlMode",
+      "paramsList": [
+        {
+          "name": "lvlMode",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "int i;\n\n    for (i = 0; i < PYRAMID_BAG_ITEMS_COUNT; i++)\n    {\n        gSaveBlock2Ptr->frontier.pyramidBag.itemId[lvlMode][i] = ITEM_NONE;\n        gSaveBlock2Ptr->frontier.pyramidBag.quantity[lvlMode][i] = ITEM_NONE;\n    }\n\n    AddPyramidBagItem(ITEM_HYPER_POTION, 1);\n    AddPyramidBagItem(ITEM_ETHER, 1);",
       "callsTo": [
         "AddPyramidBagItem"
@@ -521,6 +721,7 @@
       "returnType": "u16",
       "signature": "u16 GetBattlePyramidPickupItemId(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int rand;\n    u32 i;\n    u32 lvlMode = gSaveBlock2Ptr->frontier.lvlMode;\n    int round = (gSaveBlock2Ptr->frontier.pyramidWinStreaks[lvlMode] / FRONTIER_STAGES_PER_CHALLENGE);\n\n    if (round >= TOTAL_PYRAMID_ROUNDS)\n        round = TOTAL_PYRAMID_ROUNDS - 1;\n\n    rand = Random() % 100;\n\n    for (i = 0; i < ARRAY_COUNT(sPickupPercentages); i++)\n    {\n        if (sPickupPercentages[i] > rand)\n            break;\n    }\n\n    if (i >= PICKUP_ITEMS_PER_ROUND)\n        i = PICKUP_ITEMS_PER_ROUND - 1;\n\n    if (lvlMode != FRONTIER_LVL_50)\n        return sPickupItemsLvlOpen[round][i];\n    else\n        return sPickupItemsLvl50[round][i];",
       "callsTo": [
         "ARRAY_COUNT",

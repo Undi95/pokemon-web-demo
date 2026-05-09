@@ -6,6 +6,7 @@
       "returnType": "u8",
       "signature": "static u8 GetMewObjectEventId(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 objectEventId;\n    TryGetObjectEventIdByLocalIdAndMap(LOCALID_FARAWAY_ISLAND_MEW, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup, &objectEventId);\n    return objectEventId;",
       "callsTo": [
         "TryGetObjectEventIdByLocalIdAndMap"
@@ -16,6 +17,7 @@
       "returnType": "u32",
       "signature": "u32 GetMewMoveDirection(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n    int mewSafeFromTrap;\n    struct ObjectEvent *mew = &gObjectEvents[GetMewObjectEventId()];\n\n    sPlayerToMewDeltaX = gObjectEvents[gPlayerAvatar.objectEventId].previousCoords.x - mew->currentCoords.x;\n    sPlayerToMewDeltaY = gObjectEvents[gPlayerAvatar.objectEventId].previousCoords.y - mew->currentCoords.y;\n    for (i = 0; i < ARRAY_COUNT(sMewDirectionCandidates); i++)\n        sMewDirectionCandidates[i] = DIR_NONE;\n\n     \n    if (gObjectEvents[gPlayerAvatar.objectEventId].previousCoords.x == gObjectEvents[gPlayerAvatar.objectEventId].currentCoords.x\n     && gObjectEvents[gPlayerAvatar.objectEventId].previousCoords.y == gObjectEvents[gPlayerAvatar.objectEventId].currentCoords.y)\n    {\n        return DIR_NONE;\n    }\n\n     \n    if (VarGet(VAR_FARAWAY_ISLAND_STEP_COUNTER) % 8 == 0)\n        mew->invisible = FALSE;\n    else\n        mew->invisible = TRUE;\n\n     \n    if (VarGet(VAR_FARAWAY_ISLAND_STEP_COUNTER) % 9 == 0)\n        return DIR_NONE;\n\n     \n    for (i = 0; i < ARRAY_COUNT(sFarawayIslandRockCoords); i++)\n    {\n        if (gObjectEvents[gPlayerAvatar.objectEventId].previousCoords.x == sFarawayIslandRockCoords[i][0])\n        {\n            mewSafeFromTrap = FALSE;\n            if (gObjectEvents[gPlayerAvatar.objectEventId].previousCoords.y < sFarawayIslandRockCoords[i][1])\n            {\n                if (mew->currentCoords.y <= sFarawayIslandRockCoords[i][1])\n                    mewSafeFromTrap = TRUE;\n            }\n            else\n            {\n                if (mew->currentCoords.y >= sFarawayIslandRockCoords[i][1])\n                    mewSafeFromTrap = TRUE;\n            }\n\n            if (!mewSafeFromTrap)\n            {\n                if (sPlayerToMewDeltaX > 0)\n                {\n                    if (mew->currentCoords.x + 1 == gObjectEvents[gPlayerAvatar.objectEventId].previousCoords.x)\n                    {\n                        if (CanMewMoveToCoords(mew->currentCoords.x + 1, mew->currentCoords.y))\n                            return DIR_EAST;\n                    }\n                }\n                else if (sPlayerToMewDeltaX < 0)\n                {\n                    if (mew->currentCoords.x - 1 == gObjectEvents[gPlayerAvatar.objectEventId].previousCoords.x)\n                    {\n                        if (CanMewMoveToCoords(mew->currentCoords.x - 1, mew->currentCoords.y))\n                            return DIR_WEST;\n                    }\n                }\n\n                if (mew->currentCoords.x == gObjectEvents[gPlayerAvatar.objectEventId].previousCoords.x)\n                {\n                    if (sPlayerToMewDeltaY > 0)\n                    {\n                        if (CanMewMoveToCoords(mew->currentCoords.x, mew->currentCoords.y - 1))\n                            return DIR_NORTH;\n                    }\n                    else\n                    {\n                        if (CanMewMoveToCoords(mew->currentCoords.x, mew->currentCoords.y + 1))\n                            return DIR_SOUTH;\n                    }\n                }\n            }\n        }\n\n        if (gObjectEvents[gPlayerAvatar.objectEventId].previousCoords.y == sFarawayIslandRockCoords[i][1])\n        {\n            mewSafeFromTrap = FALSE;\n            if (gObjectEvents[gPlayerAvatar.objectEventId].previousCoords.x < sFarawayIslandRockCoords[i][0])\n            {\n                if (mew->currentCoords.x <= sFarawayIslandRockCoords[i][0])\n                    mewSafeFromTrap = TRUE;\n            }\n            else\n            {\n                if (mew->currentCoords.x >= sFarawayIslandRockCoords[i][0])\n                    mewSafeFromTrap = TRUE;\n            }\n\n            if (!mewSafeFromTrap)\n            {\n                if (sPlayerToMewDeltaY > 0)\n                {\n                    if (mew->currentCoords.y + 1 == gObjectEvents[gPlayerAvatar.objectEventId].previousCoords.y)\n                    {\n                        if (CanMewMoveToCoords(mew->currentCoords.x, mew->currentCoords.y + 1))\n                            return DIR_SOUTH;\n                    }\n                }\n                else if (sPlayerToMewDeltaY < 0)\n                {\n                    if (mew->currentCoords.y - 1 == gObjectEvents[gPlayerAvatar.objectEventId].previousCoords.y)\n                    {\n                        if (CanMewMoveToCoords(mew->currentCoords.x, mew->currentCoords.y - 1))\n                            return DIR_NORTH;\n                    }\n                }\n\n                if (mew->currentCoords.y == gObjectEvents[gPlayerAvatar.objectEventId].previousCoords.y)\n                {\n                    if (sPlayerToMewDeltaX > 0)\n                    {\n                        if (CanMewMoveToCoords(mew->currentCoords.x - 1, mew->currentCoords.y))\n                            return DIR_WEST;\n                    }\n                    else\n                    {\n                        if (CanMewMoveToCoords(mew->currentCoords.x + 1, mew->currentCoords.y))\n                            return DIR_EAST;\n                    }\n                }\n            }\n        }\n    }\n\n     \n     \n     \n    if (ShouldMewMoveNorth(mew, 0))\n    {\n        if (ShouldMewMoveEast(mew, 1))\n            return GetRandomMewDirectionCandidate(2);\n        else if (ShouldMewMoveWest(mew, 1))\n            return GetRandomMewDirectionCandidate(2);\n        else\n            return DIR_NORTH;\n    }\n\n    if (ShouldMewMoveSouth(mew, 0))\n    {\n        if (ShouldMewMoveEast(mew, 1))\n            return GetRandomMewDirectionCandidate(2);\n        else if (ShouldMewMoveWest(mew, 1))\n            return GetRandomMewDirectionCandidate(2);\n        else\n            return DIR_SOUTH;\n    }\n\n    if (ShouldMewMoveEast(mew, 0))\n    {\n        if (ShouldMewMoveNorth(mew, 1))\n            return GetRandomMewDirectionCandidate(2);\n        else if (ShouldMewMoveSouth(mew, 1))\n            return GetRandomMewDirectionCandidate(2);\n        else\n            return DIR_EAST;\n    }\n\n    if (ShouldMewMoveWest(mew, 0))\n    {\n        if (ShouldMewMoveNorth(mew, 1))\n            return GetRandomMewDirectionCandidate(2);\n        else if (ShouldMewMoveSouth(mew, 1))\n            return GetRandomMewDirectionCandidate(2);\n        else\n            return DIR_WEST;\n    }\n\n     \n\n     \n    if (sPlayerToMewDeltaY == 0)\n    {\n        if (gObjectEvents[gPlayerAvatar.objectEventId].currentCoords.y > mew->currentCoords.y)\n        {\n            if (CanMewMoveToCoords(mew->currentCoords.x, mew->currentCoords.y - 1))\n                return DIR_NORTH;\n        }\n\n        if (gObjectEvents[gPlayerAvatar.objectEventId].currentCoords.y < mew->currentCoords.y)\n        {\n            if (CanMewMoveToCoords(mew->currentCoords.x, mew->currentCoords.y + 1))\n                return DIR_SOUTH;\n        }\n\n        if (CanMewMoveToCoords(mew->currentCoords.x, mew->currentCoords.y - 1))\n            return DIR_NORTH;\n\n        if (CanMewMoveToCoords(mew->currentCoords.x, mew->currentCoords.y + 1))\n            return DIR_SOUTH;\n    }\n\n     \n    if (sPlayerToMewDeltaX == 0)\n    {\n        if (gObjectEvents[gPlayerAvatar.objectEventId].currentCoords.x > mew->currentCoords.x)\n        {\n            if (CanMewMoveToCoords(mew->currentCoords.x - 1, mew->currentCoords.y))\n                return DIR_WEST;\n        }\n\n        if (gObjectEvents[gPlayerAvatar.objectEventId].currentCoords.x < mew->currentCoords.x)\n        {\n            if (CanMewMoveToCoords(mew->currentCoords.x + 1, mew->currentCoords.y))\n                return DIR_EAST;\n        }\n\n        if (CanMewMoveToCoords(mew->currentCoords.x + 1, mew->currentCoords.y))\n            return DIR_EAST;\n\n        if (CanMewMoveToCoords(mew->currentCoords.x - 1, mew->currentCoords.y))\n            return DIR_WEST;\n    }\n\n     \n    return GetValidMewMoveDirection(DIR_NONE);",
       "callsTo": [
         "ARRAY_COUNT",
@@ -35,6 +37,16 @@
       "returnType": "bool8",
       "signature": "static bool8 CanMewMoveToCoords(s16 x, s16 y)",
       "paramsRaw": "s16 x, s16 y",
+      "paramsList": [
+        {
+          "name": "x",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s16"
+        }
+      ],
       "body": "if (gObjectEvents[gPlayerAvatar.objectEventId].currentCoords.x == x\n     && gObjectEvents[gPlayerAvatar.objectEventId].currentCoords.y == y)\n    {\n        return FALSE;\n    }\n\n    return MetatileBehavior_IsPokeGrass(MapGridGetMetatileBehaviorAt(x, y));",
       "callsTo": [
         "MapGridGetMetatileBehaviorAt",
@@ -46,6 +58,12 @@
       "returnType": "u8",
       "signature": "static u8 GetValidMewMoveDirection(u8 ignoredDir)",
       "paramsRaw": "u8 ignoredDir",
+      "paramsList": [
+        {
+          "name": "ignoredDir",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 i;\n    u8 count = 0;\n    struct ObjectEvent *mew = &gObjectEvents[GetMewObjectEventId()];\n\n    for (i = 0; i < ARRAY_COUNT(sMewDirectionCandidates); i++)\n        sMewDirectionCandidates[i] = DIR_NONE;\n\n    if (CanMewMoveToCoords(mew->currentCoords.x, mew->currentCoords.y - 1) == TRUE && ignoredDir != DIR_NORTH)\n    {\n        sMewDirectionCandidates[count] = DIR_NORTH;\n        count++;\n    }\n\n    if (CanMewMoveToCoords(mew->currentCoords.x + 1, mew->currentCoords.y) == TRUE && ignoredDir != DIR_EAST)\n    {\n        sMewDirectionCandidates[count] = DIR_EAST;\n        count++;\n    }\n\n    if (CanMewMoveToCoords(mew->currentCoords.x, mew->currentCoords.y + 1) == TRUE && ignoredDir != DIR_SOUTH)\n    {\n        sMewDirectionCandidates[count] = DIR_SOUTH;\n        count++;\n    }\n\n    if (CanMewMoveToCoords(mew->currentCoords.x - 1, mew->currentCoords.y) == TRUE && ignoredDir != DIR_WEST)\n    {\n        sMewDirectionCandidates[count] = DIR_WEST;\n        count++;\n    }\n\n    if (count > 1)\n        return sMewDirectionCandidates[VarGet(VAR_FARAWAY_ISLAND_STEP_COUNTER) % count];\n    else\n        return sMewDirectionCandidates[0];",
       "callsTo": [
         "ARRAY_COUNT",
@@ -59,6 +77,7 @@
       "returnType": "void",
       "signature": "void UpdateFarawayIslandStepCounter(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 steps = VarGet(VAR_FARAWAY_ISLAND_STEP_COUNTER);\n    if (gSaveBlock1Ptr->location.mapNum == MAP_NUM(MAP_FARAWAY_ISLAND_INTERIOR)\n     && gSaveBlock1Ptr->location.mapGroup == MAP_GROUP(MAP_FARAWAY_ISLAND_INTERIOR))\n    {\n        steps++;\n        if (steps >= 9999)\n            VarSet(VAR_FARAWAY_ISLAND_STEP_COUNTER, 0);\n        else\n            VarSet(VAR_FARAWAY_ISLAND_STEP_COUNTER, steps);\n    }",
       "callsTo": [
         "MAP_GROUP",
@@ -72,6 +91,12 @@
       "returnType": "bool8",
       "signature": "bool8 ObjectEventIsFarawayIslandMew(struct ObjectEvent *objectEvent)",
       "paramsRaw": "struct ObjectEvent *objectEvent",
+      "paramsList": [
+        {
+          "name": "objectEvent",
+          "typeRaw": "struct ObjectEvent *"
+        }
+      ],
       "body": "if (gSaveBlock1Ptr->location.mapNum == MAP_NUM(MAP_FARAWAY_ISLAND_INTERIOR)\n     && gSaveBlock1Ptr->location.mapGroup == MAP_GROUP(MAP_FARAWAY_ISLAND_INTERIOR))\n    {\n        if (objectEvent->graphicsId == OBJ_EVENT_GFX_MEW)\n            return TRUE;\n    }\n\n    return FALSE;",
       "callsTo": [
         "MAP_GROUP",
@@ -83,6 +108,7 @@
       "returnType": "bool8",
       "signature": "bool8 IsMewPlayingHideAndSeek(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gSaveBlock1Ptr->location.mapNum == MAP_NUM(MAP_FARAWAY_ISLAND_INTERIOR)\n     && gSaveBlock1Ptr->location.mapGroup == MAP_GROUP(MAP_FARAWAY_ISLAND_INTERIOR))\n    {\n        if (FlagGet(FLAG_CAUGHT_MEW) != TRUE && FlagGet(FLAG_HIDE_MEW) != TRUE)\n            return TRUE;\n    }\n\n    return FALSE;",
       "callsTo": [
         "FlagGet",
@@ -95,6 +121,12 @@
       "returnType": "bool8",
       "signature": "bool8 ShouldMewShakeGrass(struct ObjectEvent *objectEvent)",
       "paramsRaw": "struct ObjectEvent *objectEvent",
+      "paramsList": [
+        {
+          "name": "objectEvent",
+          "typeRaw": "struct ObjectEvent *"
+        }
+      ],
       "body": "if (VarGet(VAR_FARAWAY_ISLAND_STEP_COUNTER) != 0xFFFF\n     && VarGet(VAR_FARAWAY_ISLAND_STEP_COUNTER) % 4 == 0)\n        return TRUE;\n\n    return FALSE;",
       "callsTo": [
         "VarGet"
@@ -105,6 +137,7 @@
       "returnType": "void",
       "signature": "void SetMewAboveGrass(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s16 x;\n    s16 y;\n    struct ObjectEvent *mew = &gObjectEvents[GetMewObjectEventId()];\n\n    mew->invisible = FALSE;\n    if (gSpecialVar_0x8004 == 1)\n    {\n         \n        mew->fixedPriority = 1;\n        gSprites[mew->spriteId].subspriteMode = SUBSPRITES_IGNORE_PRIORITY;\n        gSprites[mew->spriteId].subpriority = 1;\n    }\n    else\n    {\n         \n         \n        VarSet(VAR_FARAWAY_ISLAND_STEP_COUNTER, 0xFFFF);\n        mew->fixedPriority = 1;\n        gSprites[mew->spriteId].subspriteMode = SUBSPRITES_IGNORE_PRIORITY;\n        if (gSpecialVar_Facing != DIR_NORTH)\n            gSprites[mew->spriteId].subpriority = 1;\n\n        LoadSpritePalette(&gSpritePalette_GeneralFieldEffect1);\n        UpdateSpritePaletteWithWeather(IndexOfSpritePaletteTag(gSpritePalette_GeneralFieldEffect1.tag));\n\n        x = mew->currentCoords.x;\n        y = mew->currentCoords.y;\n        SetSpritePosToOffsetMapCoords(&x, &y, 8, 8);\n        sGrassSpriteId = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[FLDEFFOBJ_LONG_GRASS], x, y, gSprites[mew->spriteId].subpriority - 1);\n        if (sGrassSpriteId != MAX_SPRITES)\n        {\n            struct Sprite *sprite = &gSprites[sGrassSpriteId];\n            sprite->coordOffsetEnabled = 1;\n            sprite->oam.priority = 2;\n            sprite->callback = SpriteCallbackDummy;\n        }\n    }",
       "callsTo": [
         "CreateSpriteAtEnd",
@@ -121,6 +154,7 @@
       "returnType": "void",
       "signature": "void DestroyMewEmergingGrassSprite(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (sGrassSpriteId != MAX_SPRITES)\n        DestroySprite(&gSprites[sGrassSpriteId]);",
       "callsTo": [
         "DestroySprite"
@@ -131,6 +165,16 @@
       "returnType": "bool8",
       "signature": "static bool8 ShouldMewMoveNorth(struct ObjectEvent *mew, u8 index)",
       "paramsRaw": "struct ObjectEvent *mew, u8 index",
+      "paramsList": [
+        {
+          "name": "mew",
+          "typeRaw": "struct ObjectEvent *"
+        },
+        {
+          "name": "index",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (sPlayerToMewDeltaY > 0 && CanMewMoveToCoords(mew->currentCoords.x, mew->currentCoords.y - 1))\n    {\n        sMewDirectionCandidates[index] = DIR_NORTH;\n        return TRUE;\n    }\n\n    return FALSE;",
       "callsTo": [
         "CanMewMoveToCoords"
@@ -141,6 +185,16 @@
       "returnType": "bool8",
       "signature": "static bool8 ShouldMewMoveEast(struct ObjectEvent *mew, u8 index)",
       "paramsRaw": "struct ObjectEvent *mew, u8 index",
+      "paramsList": [
+        {
+          "name": "mew",
+          "typeRaw": "struct ObjectEvent *"
+        },
+        {
+          "name": "index",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (sPlayerToMewDeltaX < 0 && CanMewMoveToCoords(mew->currentCoords.x + 1, mew->currentCoords.y))\n    {\n        sMewDirectionCandidates[index] = DIR_EAST;\n        return TRUE;\n    }\n\n    return FALSE;",
       "callsTo": [
         "CanMewMoveToCoords"
@@ -151,6 +205,16 @@
       "returnType": "bool8",
       "signature": "static bool8 ShouldMewMoveSouth(struct ObjectEvent *mew, u8 index)",
       "paramsRaw": "struct ObjectEvent *mew, u8 index",
+      "paramsList": [
+        {
+          "name": "mew",
+          "typeRaw": "struct ObjectEvent *"
+        },
+        {
+          "name": "index",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (sPlayerToMewDeltaY < 0 && CanMewMoveToCoords(mew->currentCoords.x, mew->currentCoords.y + 1))\n    {\n        sMewDirectionCandidates[index] = DIR_SOUTH;\n        return TRUE;\n    }\n\n    return FALSE;",
       "callsTo": [
         "CanMewMoveToCoords"
@@ -161,6 +225,16 @@
       "returnType": "bool8",
       "signature": "static bool8 ShouldMewMoveWest(struct ObjectEvent *mew, u8 index)",
       "paramsRaw": "struct ObjectEvent *mew, u8 index",
+      "paramsList": [
+        {
+          "name": "mew",
+          "typeRaw": "struct ObjectEvent *"
+        },
+        {
+          "name": "index",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (sPlayerToMewDeltaX > 0 && CanMewMoveToCoords(mew->currentCoords.x - 1, mew->currentCoords.y))\n    {\n        sMewDirectionCandidates[index] = DIR_WEST;\n        return TRUE;\n    }\n\n    return FALSE;",
       "callsTo": [
         "CanMewMoveToCoords"
@@ -171,6 +245,12 @@
       "returnType": "u8",
       "signature": "static u8 GetRandomMewDirectionCandidate(u8 numDirections)",
       "paramsRaw": "u8 numDirections",
+      "paramsList": [
+        {
+          "name": "numDirections",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "return sMewDirectionCandidates[VarGet(VAR_FARAWAY_ISLAND_STEP_COUNTER) % numDirections];",
       "callsTo": [
         "VarGet"

@@ -6,6 +6,7 @@
       "returnType": "bool32",
       "signature": "bool32 PokenavCallback_Init_MatchCall(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "struct Pokenav_MatchCallMenu *state = AllocSubstruct(POKENAV_SUBSTRUCT_MATCH_CALL_MAIN, sizeof(struct Pokenav_MatchCallMenu));\n    if (!state)\n        return FALSE;\n\n    state->callback = CB2_HandleMatchCallInput;\n    state->headerId = 0;\n    state->initFinished = FALSE;\n    state->loopedTaskId = CreateLoopedTask(LoopedTask_BuildMatchCallList, 1);\n    return TRUE;",
       "callsTo": [
         "AllocSubstruct",
@@ -17,6 +18,7 @@
       "returnType": "u32",
       "signature": "u32 GetMatchCallCallback(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "struct Pokenav_MatchCallMenu *state = GetSubstructPtr(POKENAV_SUBSTRUCT_MATCH_CALL_MAIN);\n    return state->callback(state);",
       "callsTo": [
         "GetSubstructPtr"
@@ -27,6 +29,7 @@
       "returnType": "void",
       "signature": "void FreeMatchCallSubstruct1(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "FreePokenavSubstruct(POKENAV_SUBSTRUCT_MATCH_CALL_MAIN);",
       "callsTo": [
         "FreePokenavSubstruct"
@@ -37,6 +40,12 @@
       "returnType": "u32",
       "signature": "static u32 CB2_HandleMatchCallInput(struct Pokenav_MatchCallMenu *state)",
       "paramsRaw": "struct Pokenav_MatchCallMenu *state",
+      "paramsList": [
+        {
+          "name": "state",
+          "typeRaw": "struct Pokenav_MatchCallMenu *"
+        }
+      ],
       "body": "int selection;\n\n    if (JOY_REPEAT(DPAD_UP))\n        return POKENAV_MC_FUNC_UP;\n    if (JOY_REPEAT(DPAD_DOWN))\n        return POKENAV_MC_FUNC_DOWN;\n    if (JOY_REPEAT(DPAD_LEFT))\n        return POKENAV_MC_FUNC_PG_UP;\n    if (JOY_REPEAT(DPAD_RIGHT))\n        return POKENAV_MC_FUNC_PG_DOWN;\n\n    if (JOY_NEW(A_BUTTON))\n    {\n        state->callback = CB2_HandleMatchCallOptionsInput;\n        state->optionCursorPos = 0;\n        selection = PokenavList_GetSelectedIndex();\n\n        if (!state->matchCallEntries[selection].isSpecialTrainer || MatchCall_HasCheckPage(state->matchCallEntries[selection].headerId))\n        {\n            state->matchCallOptions = sMatchCallOptionsHasCheckPage;\n            state->maxOptionId = ARRAY_COUNT(sMatchCallOptionsHasCheckPage) - 1;\n        }\n        else\n        {\n            state->matchCallOptions = sMatchCallOptionsNoCheckPage;\n            state->maxOptionId = ARRAY_COUNT(sMatchCallOptionsNoCheckPage) - 1;\n        }\n\n        return POKENAV_MC_FUNC_SELECT;\n    }\n\n    if (JOY_NEW(B_BUTTON))\n    {\n        if (GetPokenavMode() != POKENAV_MODE_FORCE_CALL_READY)\n        {\n            state->callback = GetExitMatchCallMenuId;\n            return POKENAV_MC_FUNC_EXIT;\n        }\n        else\n        {\n             \n            PlaySE(SE_FAILURE);\n        }\n    }\n\n    return POKENAV_MC_FUNC_NONE;",
       "callsTo": [
         "ARRAY_COUNT",
@@ -53,6 +62,12 @@
       "returnType": "u32",
       "signature": "static u32 GetExitMatchCallMenuId(struct Pokenav_MatchCallMenu *state)",
       "paramsRaw": "struct Pokenav_MatchCallMenu *state",
+      "paramsList": [
+        {
+          "name": "state",
+          "typeRaw": "struct Pokenav_MatchCallMenu *"
+        }
+      ],
       "body": "return POKENAV_MAIN_MENU_CURSOR_ON_MATCH_CALL;",
       "callsTo": [],
       "lineCount": 1
@@ -61,6 +76,12 @@
       "returnType": "u32",
       "signature": "static u32 CB2_HandleMatchCallOptionsInput(struct Pokenav_MatchCallMenu *state)",
       "paramsRaw": "struct Pokenav_MatchCallMenu *state",
+      "paramsList": [
+        {
+          "name": "state",
+          "typeRaw": "struct Pokenav_MatchCallMenu *"
+        }
+      ],
       "body": "if (JOY_NEW(DPAD_UP) && state->optionCursorPos)\n    {\n        state->optionCursorPos--;\n        return POKENAV_MC_FUNC_MOVE_OPTIONS_CURSOR;\n    }\n\n    if (JOY_NEW(DPAD_DOWN) && state->optionCursorPos < state->maxOptionId)\n    {\n        state->optionCursorPos++;\n        return POKENAV_MC_FUNC_MOVE_OPTIONS_CURSOR;\n    }\n\n    if (JOY_NEW(A_BUTTON))\n    {\n        switch (state->matchCallOptions[state->optionCursorPos])\n        {\n        case MATCH_CALL_OPTION_CANCEL:\n            state->callback = CB2_HandleMatchCallInput;\n            return POKENAV_MC_FUNC_CANCEL;\n        case MATCH_CALL_OPTION_CALL:\n            if (GetPokenavMode() == POKENAV_MODE_FORCE_CALL_READY)\n                SetPokenavMode(POKENAV_MODE_FORCE_CALL_EXIT);\n\n            state->callback = CB2_HandleCallExitInput;\n            if (ShouldDoNearbyMessage())\n                return POKENAV_MC_FUNC_NEARBY_MSG;\n\n            return POKENAV_MC_FUNC_CALL_MSG;\n        case MATCH_CALL_OPTION_CHECK:\n            state->callback = CB2_HandleCheckPageInput;\n            return POKENAV_MC_FUNC_SHOW_CHECK_PAGE;\n        }\n    }\n\n    if (JOY_NEW(B_BUTTON))\n    {\n        state->callback = CB2_HandleMatchCallInput;\n        return POKENAV_MC_FUNC_CANCEL;\n    }\n\n    return POKENAV_MC_FUNC_NONE;",
       "callsTo": [
         "GetPokenavMode",
@@ -74,6 +95,12 @@
       "returnType": "u32",
       "signature": "static u32 CB2_HandleCheckPageInput(struct Pokenav_MatchCallMenu *state)",
       "paramsRaw": "struct Pokenav_MatchCallMenu *state",
+      "paramsList": [
+        {
+          "name": "state",
+          "typeRaw": "struct Pokenav_MatchCallMenu *"
+        }
+      ],
       "body": "if (JOY_REPEAT(DPAD_UP))\n        return POKENAV_MC_FUNC_CHECK_PAGE_UP;\n    if (JOY_REPEAT(DPAD_DOWN))\n        return POKENAV_MC_FUNC_CHECK_PAGE_DOWN;\n\n    if (JOY_NEW(B_BUTTON))\n    {\n        state->callback = CB2_HandleMatchCallInput;\n        return POKENAV_MC_FUNC_EXIT_CHECK_PAGE;\n    }\n\n    return POKENAV_MC_FUNC_NONE;",
       "callsTo": [
         "JOY_NEW",
@@ -85,6 +112,12 @@
       "returnType": "u32",
       "signature": "static u32 CB2_HandleCallExitInput(struct Pokenav_MatchCallMenu *state)",
       "paramsRaw": "struct Pokenav_MatchCallMenu *state",
+      "paramsList": [
+        {
+          "name": "state",
+          "typeRaw": "struct Pokenav_MatchCallMenu *"
+        }
+      ],
       "body": "if (JOY_NEW(A_BUTTON | B_BUTTON))\n    {\n        state->callback = CB2_HandleMatchCallInput;\n        return POKENAV_MC_FUNC_EXIT_CALL;\n    }\n\n    return POKENAV_MC_FUNC_NONE;",
       "callsTo": [
         "JOY_NEW"
@@ -95,6 +128,12 @@
       "returnType": "u32",
       "signature": "static u32 LoopedTask_BuildMatchCallList(s32 taskState)",
       "paramsRaw": "s32 taskState",
+      "paramsList": [
+        {
+          "name": "taskState",
+          "typeRaw": "s32"
+        }
+      ],
       "body": "int i, j;\n    struct Pokenav_MatchCallMenu *state = GetSubstructPtr(POKENAV_SUBSTRUCT_MATCH_CALL_MAIN);\n    switch (taskState)\n    {\n    case 0:\n        state->headerId = 0;\n        state->numRegistered = 0;\n        return LT_INC_AND_CONTINUE;\n    case 1:\n         \n        for (i = 0, j = state->headerId; i < 30; i++, j++)\n        {\n            if (MatchCall_GetEnabled(j))\n            {\n                state->matchCallEntries[state->numRegistered].headerId = j;\n                state->matchCallEntries[state->numRegistered].isSpecialTrainer = TRUE;\n                state->matchCallEntries[state->numRegistered].mapSec = MatchCall_GetMapSec(j);\n                state->numRegistered++;\n            }\n\n            if (++state->headerId >= MC_HEADER_COUNT)\n            {\n                state->numSpecialTrainers = state->headerId;\n                state->headerId = 0;\n                return LT_INC_AND_CONTINUE;\n            }\n        }\n\n        return LT_CONTINUE;\n    case 2:\n         \n        for (i = 0, j = state->headerId; i < 30; i++, j++)\n        {\n            if (!MatchCall_HasRematchId(state->headerId) && IsRematchEntryRegistered(state->headerId))\n            {\n                state->matchCallEntries[state->numRegistered].headerId = state->headerId;\n                state->matchCallEntries[state->numRegistered].isSpecialTrainer = FALSE;\n                state->matchCallEntries[state->numRegistered].mapSec = GetMatchTableMapSectionId(j);\n                state->numRegistered++;\n            }\n\n            if (++state->headerId > REMATCH_TABLE_ENTRIES - 1)\n                return LT_INC_AND_CONTINUE;\n        }\n\n        return LT_CONTINUE;\n    case 3:\n        state->initFinished = TRUE;\n        break;\n    }\n\n    return LT_FINISH;",
       "callsTo": [
         "GetMatchTableMapSectionId",
@@ -110,6 +149,12 @@
       "returnType": "bool32",
       "signature": "bool32 IsRematchEntryRegistered(int rematchIndex)",
       "paramsRaw": "int rematchIndex",
+      "paramsList": [
+        {
+          "name": "rematchIndex",
+          "typeRaw": "int"
+        }
+      ],
       "body": "if (rematchIndex < REMATCH_TABLE_ENTRIES)\n        return FlagGet(TRAINER_REGISTERED_FLAGS_START + rematchIndex);\n\n    return FALSE;",
       "callsTo": [
         "FlagGet"
@@ -120,6 +165,7 @@
       "returnType": "int",
       "signature": "int IsMatchCallListInitFinished(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "struct Pokenav_MatchCallMenu *state = GetSubstructPtr(POKENAV_SUBSTRUCT_MATCH_CALL_MAIN);\n    return state->initFinished;",
       "callsTo": [
         "GetSubstructPtr"
@@ -130,6 +176,7 @@
       "returnType": "int",
       "signature": "int GetNumberRegistered(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "struct Pokenav_MatchCallMenu *state = GetSubstructPtr(POKENAV_SUBSTRUCT_MATCH_CALL_MAIN);\n    return state->numRegistered;",
       "callsTo": [
         "GetSubstructPtr"
@@ -140,6 +187,12 @@
       "returnType": "bool32",
       "signature": "bool32 ShouldDrawRematchPokeballIcon(int index)",
       "paramsRaw": "int index",
+      "paramsList": [
+        {
+          "name": "index",
+          "typeRaw": "int"
+        }
+      ],
       "body": "struct Pokenav_MatchCallMenu *state = GetSubstructPtr(POKENAV_SUBSTRUCT_MATCH_CALL_MAIN);\n    if (!state->matchCallEntries[index].isSpecialTrainer)\n        index = state->matchCallEntries[index].headerId;\n    else\n        index = MatchCall_GetRematchTableIdx(state->matchCallEntries[index].headerId);\n\n    if (index == REMATCH_TABLE_ENTRIES)\n        return FALSE;\n\n    return gSaveBlock1Ptr->trainerRematches[index] != 0;",
       "callsTo": [
         "GetSubstructPtr",
@@ -151,6 +204,12 @@
       "returnType": "int",
       "signature": "int GetMatchCallTrainerPic(int index)",
       "paramsRaw": "int index",
+      "paramsList": [
+        {
+          "name": "index",
+          "typeRaw": "int"
+        }
+      ],
       "body": "int headerId;\n    struct Pokenav_MatchCallMenu *state = GetSubstructPtr(POKENAV_SUBSTRUCT_MATCH_CALL_MAIN);\n    if (!state->matchCallEntries[index].isSpecialTrainer)\n    {\n        index = GetTrainerIdxByRematchIdx(state->matchCallEntries[index].headerId);\n        return gTrainers[index].trainerPic;\n    }\n\n    headerId = state->matchCallEntries[index].headerId;\n    index = MatchCall_GetRematchTableIdx(headerId);\n    if (index != REMATCH_TABLE_ENTRIES)\n    {\n        index = GetTrainerIdxByRematchIdx(index);\n        return gTrainers[index].trainerPic;\n    }\n\n    index = MatchCall_GetOverrideFacilityClass(headerId);\n    return gFacilityClassToPicIndex[index];",
       "callsTo": [
         "GetSubstructPtr",
@@ -164,6 +223,7 @@
       "returnType": "u16",
       "signature": "u16 GetMatchCallOptionCursorPos(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "struct Pokenav_MatchCallMenu *state = GetSubstructPtr(POKENAV_SUBSTRUCT_MATCH_CALL_MAIN);\n    return state->optionCursorPos;",
       "callsTo": [
         "GetSubstructPtr"
@@ -174,6 +234,12 @@
       "returnType": "u16",
       "signature": "u16 GetMatchCallOptionId(int optionId)",
       "paramsRaw": "int optionId",
+      "paramsList": [
+        {
+          "name": "optionId",
+          "typeRaw": "int"
+        }
+      ],
       "body": "struct Pokenav_MatchCallMenu *state = GetSubstructPtr(POKENAV_SUBSTRUCT_MATCH_CALL_MAIN);\n    if (state->maxOptionId < optionId)\n        return MATCH_CALL_OPTION_COUNT;\n\n    return state->matchCallOptions[optionId];",
       "callsTo": [
         "GetSubstructPtr"
@@ -184,6 +250,16 @@
       "returnType": "void",
       "signature": "void BufferMatchCallNameAndDesc(struct PokenavMatchCallEntry *matchCallEntry, u8 *str)",
       "paramsRaw": "struct PokenavMatchCallEntry *matchCallEntry, u8 *str",
+      "paramsList": [
+        {
+          "name": "matchCallEntry",
+          "typeRaw": "struct PokenavMatchCallEntry *"
+        },
+        {
+          "name": "str",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "const u8 *trainerName;\n    const u8 *className;\n    if (!matchCallEntry->isSpecialTrainer)\n    {\n        const struct Trainer *trainer = &gTrainers[GetTrainerIdxByRematchIdx(matchCallEntry->headerId)];\n        int class = trainer->trainerClass;\n        int gender = trainer->encounterMusic_gender;\n        className = GetTrainerClassNameGenderSpecific(class, gender, trainer->trainerName);\n        trainerName = trainer->trainerName;\n    }\n    else\n    {\n        MatchCall_GetNameAndDesc(matchCallEntry->headerId, &className, &trainerName);\n    }\n\n    if (className && trainerName)\n    {\n        u8 *str2 = GetStringClearToWidth(str, FONT_NARROW, className, 69);\n        GetStringClearToWidth(str2, FONT_NARROW, trainerName, 57);\n    }\n    else\n    {\n        GetStringClearToWidth(str, FONT_NARROW, NULL, 126);\n    }",
       "callsTo": [
         "GetStringClearToWidth",
@@ -197,6 +273,12 @@
       "returnType": "int",
       "signature": "int GetIndexDeltaOfNextCheckPageDown(int index)",
       "paramsRaw": "int index",
+      "paramsList": [
+        {
+          "name": "index",
+          "typeRaw": "int"
+        }
+      ],
       "body": "struct Pokenav_MatchCallMenu *state = GetSubstructPtr(POKENAV_SUBSTRUCT_MATCH_CALL_MAIN);\n    int count = 1;\n    while (++index < state->numRegistered)\n    {\n        if (!state->matchCallEntries[index].isSpecialTrainer)\n            return count;\n        if (MatchCall_HasCheckPage(state->matchCallEntries[index].headerId))\n            return count;\n\n        count++;\n    }\n\n    return 0;",
       "callsTo": [
         "GetSubstructPtr",
@@ -208,6 +290,12 @@
       "returnType": "int",
       "signature": "int GetIndexDeltaOfNextCheckPageUp(int index)",
       "paramsRaw": "int index",
+      "paramsList": [
+        {
+          "name": "index",
+          "typeRaw": "int"
+        }
+      ],
       "body": "struct Pokenav_MatchCallMenu *state = GetSubstructPtr(POKENAV_SUBSTRUCT_MATCH_CALL_MAIN);\n    int count = -1;\n    while (--index >= 0)\n    {\n        if (!state->matchCallEntries[index].isSpecialTrainer)\n            return count;\n        if (MatchCall_HasCheckPage(state->matchCallEntries[index].headerId))\n            return count;\n\n        count--;\n    }\n\n    return 0;",
       "callsTo": [
         "GetSubstructPtr",
@@ -219,6 +307,7 @@
       "returnType": "bool32",
       "signature": "static bool32 ShouldDoNearbyMessage(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "struct Pokenav_MatchCallMenu *state = GetSubstructPtr(POKENAV_SUBSTRUCT_MATCH_CALL_MAIN);\n    int selection = PokenavList_GetSelectedIndex();\n    if (!state->matchCallEntries[selection].isSpecialTrainer)\n    {\n        if (GetMatchCallMapSec(selection) == gMapHeader.regionMapSectionId)\n        {\n            if (!gSaveBlock1Ptr->trainerRematches[state->matchCallEntries[selection].headerId])\n                return TRUE;\n        }\n    }\n    else\n    {\n        if (state->matchCallEntries[selection].headerId == MC_HEADER_WATTSON)\n        {\n            if (GetMatchCallMapSec(selection) == gMapHeader.regionMapSectionId\n             && FlagGet(FLAG_BADGE05_GET) == TRUE)\n            {\n                if (!FlagGet(FLAG_WATTSON_REMATCH_AVAILABLE))\n                    return TRUE;\n            }\n        }\n    }\n\n    return FALSE;",
       "callsTo": [
         "FlagGet",

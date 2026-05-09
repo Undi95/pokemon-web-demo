@@ -6,6 +6,7 @@
       "returnType": "void",
       "signature": "void HandleLinkBattleSetup(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gBattleTypeFlags & BATTLE_TYPE_LINK)\n    {\n        if (gWirelessCommType)\n            SetWirelessCommType1();\n        if (!gReceivedRemoteLinkPlayers)\n            OpenLink();\n        CreateTask(Task_WaitForLinkPlayerConnection, 0);\n        CreateTasksForSendRecvLinkBuffers();\n    }",
       "callsTo": [
         "CreateTask",
@@ -19,6 +20,7 @@
       "returnType": "void",
       "signature": "void SetUpBattleVarsAndBirchZigzagoon(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s32 i;\n\n    gBattleMainFunc = BeginBattleIntroDummy;\n\n    for (i = 0; i < MAX_BATTLERS_COUNT; i++)\n    {\n        gBattlerControllerFuncs[i] = BattleControllerDummy;\n        gBattlerPositions[i] = 0xFF;\n        gActionSelectionCursor[i] = 0;\n        gMoveSelectionCursor[i] = 0;\n    }\n\n    HandleLinkBattleSetup();\n    gBattleControllerExecFlags = 0;\n    ClearBattleAnimationVars();\n    ClearBattleMonForms();\n \n \n#ifdef UBFIX\n    gActiveBattler = 0;\n#endif\n    BattleAI_HandleItemUseBeforeAISetup(0xF);\n\n    if (gBattleTypeFlags & BATTLE_TYPE_FIRST_BATTLE)\n    {\n        ZeroEnemyPartyMons();\n        CreateMon(&gEnemyParty[0], SPECIES_ZIGZAGOON, 2, USE_RANDOM_IVS, 0, 0, OT_ID_PLAYER_ID, 0);\n        i = 0;\n        SetMonData(&gEnemyParty[0], MON_DATA_HELD_ITEM, &i);\n    }\n\n     \n    gUnusedFirstBattleVar1 = 0;\n    gUnusedFirstBattleVar2 = 0;",
       "callsTo": [
         "BattleAI_HandleItemUseBeforeAISetup",
@@ -35,6 +37,7 @@
       "returnType": "void",
       "signature": "void InitBattleControllers(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s32 i;\n\n    if (!(gBattleTypeFlags & BATTLE_TYPE_RECORDED))\n        RecordedBattle_Init(B_RECORD_MODE_RECORDING);\n    else\n        RecordedBattle_Init(B_RECORD_MODE_PLAYBACK);\n\n    if (!(gBattleTypeFlags & BATTLE_TYPE_RECORDED))\n        RecordedBattle_SaveParties();\n\n    if (gBattleTypeFlags & BATTLE_TYPE_LINK)\n        InitLinkBtlControllers();\n    else\n        InitSinglePlayerBtlControllers();\n\n    SetBattlePartyIds();\n\n    if (!(gBattleTypeFlags & BATTLE_TYPE_MULTI))\n    {\n        for (i = 0; i < gBattlersCount; i++)\n            BufferBattlePartyCurrentOrderBySide(i, 0);\n    }\n\n    for (i = 0; i < sizeof(gBattleStruct->tvMovePoints); i++)\n        *((u8 *)(&gBattleStruct->tvMovePoints) + i) = 0;\n\n    for (i = 0; i < sizeof(gBattleStruct->tv); i++)\n        *((u8 *)(&gBattleStruct->tv) + i) = 0;",
       "callsTo": [
         "BufferBattlePartyCurrentOrderBySide",
@@ -50,6 +53,7 @@
       "returnType": "void",
       "signature": "static void InitSinglePlayerBtlControllers(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s32 i;\n\n    if (gBattleTypeFlags & BATTLE_TYPE_INGAME_PARTNER)\n    {\n        gBattleMainFunc = BeginBattleIntro;\n\n        if (gBattleTypeFlags & BATTLE_TYPE_RECORDED)\n        {\n            gBattlerControllerFuncs[B_BATTLER_0] = SetControllerToRecordedPlayer;\n            gBattlerPositions[B_BATTLER_0] = B_POSITION_PLAYER_LEFT;\n\n            gBattlerControllerFuncs[B_BATTLER_1] = SetControllerToOpponent;\n            gBattlerPositions[B_BATTLER_1] = B_POSITION_OPPONENT_LEFT;\n\n            gBattlerControllerFuncs[B_BATTLER_2] = SetControllerToPlayerPartner;\n            gBattlerPositions[B_BATTLER_2] = B_POSITION_PLAYER_RIGHT;\n\n            gBattlerControllerFuncs[B_BATTLER_3] = SetControllerToOpponent;\n            gBattlerPositions[B_BATTLER_3] = B_POSITION_OPPONENT_RIGHT;\n        }\n        else\n        {\n            gBattlerControllerFuncs[B_BATTLER_0] = SetControllerToPlayer;\n            gBattlerPositions[B_BATTLER_0] = B_POSITION_PLAYER_LEFT;\n\n            gBattlerControllerFuncs[B_BATTLER_1] = SetControllerToOpponent;\n            gBattlerPositions[B_BATTLER_1] = B_POSITION_OPPONENT_LEFT;\n\n            gBattlerControllerFuncs[B_BATTLER_2] = SetControllerToPlayerPartner;\n            gBattlerPositions[B_BATTLER_2] = B_POSITION_PLAYER_RIGHT;\n\n            gBattlerControllerFuncs[B_BATTLER_3] = SetControllerToOpponent;\n            gBattlerPositions[B_BATTLER_3] = B_POSITION_OPPONENT_RIGHT;\n        }\n\n        gBattlersCount = MAX_BATTLERS_COUNT;\n\n        BufferBattlePartyCurrentOrderBySide(0, 0);\n        BufferBattlePartyCurrentOrderBySide(1, 0);\n        BufferBattlePartyCurrentOrderBySide(2, 1);\n        BufferBattlePartyCurrentOrderBySide(3, 1);\n\n        gBattlerPartyIndexes[0] = 0;\n        gBattlerPartyIndexes[1] = 0;\n        gBattlerPartyIndexes[2] = 3;\n        gBattlerPartyIndexes[3] = 3;\n    }\n    else if (!(gBattleTypeFlags & BATTLE_TYPE_DOUBLE))\n    {\n        gBattleMainFunc = BeginBattleIntro;\n\n        if (gBattleTypeFlags & BATTLE_TYPE_SAFARI)\n            gBattlerControllerFuncs[B_BATTLER_0] = SetControllerToSafari;\n        else if (gBattleTypeFlags & BATTLE_TYPE_WALLY_TUTORIAL)\n            gBattlerControllerFuncs[B_BATTLER_0] = SetControllerToWally;\n        else\n            gBattlerControllerFuncs[B_BATTLER_0] = SetControllerToPlayer;\n\n        gBattlerPositions[B_BATTLER_0] = B_POSITION_PLAYER_LEFT;\n\n        gBattlerControllerFuncs[B_BATTLER_1] = SetControllerToOpponent;\n        gBattlerPositions[B_BATTLER_1] = B_POSITION_OPPONENT_LEFT;\n\n        gBattlersCount = 2;\n\n        if (gBattleTypeFlags & BATTLE_TYPE_RECORDED)\n        {\n            if (gBattleTypeFlags & BATTLE_TYPE_RECORDED_LINK)\n            {\n                if (gBattleTypeFlags & BATTLE_TYPE_RECORDED_IS_MASTER)\n                {\n                    gBattleMainFunc = BeginBattleIntro;\n\n                    gBattlerControllerFuncs[B_BATTLER_0] = SetControllerToRecordedPlayer;\n                    gBattlerPositions[B_BATTLER_0] = B_POSITION_PLAYER_LEFT;\n\n                    gBattlerControllerFuncs[B_BATTLER_1] = SetControllerToRecordedOpponent;\n                    gBattlerPositions[B_BATTLER_1] = B_POSITION_OPPONENT_LEFT;\n\n                    gBattlersCount = 2;\n                }\n                else  \n                {\n                    gBattlerControllerFuncs[B_BATTLER_1] = SetControllerToRecordedPlayer;\n                    gBattlerPositions[B_BATTLER_1] = B_POSITION_PLAYER_LEFT;\n\n                    gBattlerControllerFuncs[B_BATTLER_0] = SetControllerToRecordedOpponent;\n                    gBattlerPositions[B_BATTLER_0] = B_POSITION_OPPONENT_LEFT;\n\n                    gBattlersCount = 2;\n                }\n            }\n            else\n            {\n                gBattlerControllerFuncs[B_BATTLER_0] = SetControllerToRecordedPlayer;\n                gBattlerPositions[B_BATTLER_0] = B_POSITION_PLAYER_LEFT;\n\n                gBattlerControllerFuncs[B_BATTLER_1] = SetControllerToOpponent;\n                gBattlerPositions[B_BATTLER_1] = B_POSITION_OPPONENT_LEFT;\n            }\n        }\n    }\n    else\n    {\n        gBattleMainFunc = BeginBattleIntro;\n\n        gBattlerControllerFuncs[B_BATTLER_0] = SetControllerToPlayer;\n        gBattlerPositions[B_BATTLER_0] = B_POSITION_PLAYER_LEFT;\n\n        gBattlerControllerFuncs[B_BATTLER_1] = SetControllerToOpponent;\n        gBattlerPositions[B_BATTLER_1] = B_POSITION_OPPONENT_LEFT;\n\n        gBattlerControllerFuncs[B_BATTLER_2] = SetControllerToPlayer;\n        gBattlerPositions[B_BATTLER_2] = B_POSITION_PLAYER_RIGHT;\n\n        gBattlerControllerFuncs[B_BATTLER_3] = SetControllerToOpponent;\n        gBattlerPositions[B_BATTLER_3] = B_POSITION_OPPONENT_RIGHT;\n\n        gBattlersCount = MAX_BATTLERS_COUNT;\n\n        if (gBattleTypeFlags & BATTLE_TYPE_RECORDED)\n        {\n            if (gBattleTypeFlags & BATTLE_TYPE_MULTI && gBattleTypeFlags & BATTLE_TYPE_BATTLE_TOWER)\n            {\n                gBattleMainFunc = BeginBattleIntro;\n\n                gBattlerControllerFuncs[B_BATTLER_0] = SetControllerToRecordedPlayer;\n                gBattlerPositions[B_BATTLER_0] = B_POSITION_PLAYER_LEFT;\n\n                gBattlerControllerFuncs[B_BATTLER_1] = SetControllerToOpponent;\n                gBattlerPositions[B_BATTLER_1] = B_POSITION_OPPONENT_LEFT;\n\n                gBattlerControllerFuncs[B_BATTLER_2] = SetControllerToRecordedPlayer;\n                gBattlerPositions[B_BATTLER_2] = B_POSITION_PLAYER_RIGHT;\n\n                gBattlerControllerFuncs[B_BATTLER_3] = SetControllerToOpponent;\n                gBattlerPositions[B_BATTLER_3] = B_POSITION_OPPONENT_RIGHT;\n\n                gBattlersCount = MAX_BATTLERS_COUNT;\n\n                BufferBattlePartyCurrentOrderBySide(0, 0);\n                BufferBattlePartyCurrentOrderBySide(1, 0);\n                BufferBattlePartyCurrentOrderBySide(2, 1);\n                BufferBattlePartyCurrentOrderBySide(3, 1);\n\n                gBattlerPartyIndexes[0] = 0;\n                gBattlerPartyIndexes[1] = 0;\n                gBattlerPartyIndexes[2] = 3;\n                gBattlerPartyIndexes[3] = 3;\n            }\n            else if (gBattleTypeFlags & BATTLE_TYPE_MULTI)\n            {\n                u8 multiplayerId;\n\n                for (multiplayerId = gRecordedBattleMultiplayerId, i = 0; i < MAX_LINK_PLAYERS; i++)\n                {\n                    switch (gLinkPlayers[i].id)\n                    {\n                    case 0:\n                    case 3:\n                        BufferBattlePartyCurrentOrderBySide(gLinkPlayers[i].id, 0);\n                        break;\n                    case 1:\n                    case 2:\n                        BufferBattlePartyCurrentOrderBySide(gLinkPlayers[i].id, 1);\n                        break;\n                    }\n\n                    if (i == multiplayerId)\n                    {\n                        gBattlerControllerFuncs[gLinkPlayers[i].id] = SetControllerToRecordedPlayer;\n                        switch (gLinkPlayers[i].id)\n                        {\n                        case 0:\n                        case 3:\n                            gBattlerPositions[gLinkPlayers[i].id] = B_POSITION_PLAYER_LEFT;\n                            gBattlerPartyIndexes[gLinkPlayers[i].id] = 0;\n                            break;\n                        case 1:\n                        case 2:\n                            gBattlerPositions[gLinkPlayers[i].id] = B_POSITION_PLAYER_RIGHT;\n                            gBattlerPartyIndexes[gLinkPlayers[i].id] = 3;\n                            break;\n                        }\n                    }\n                    else if ((!(gLinkPlayers[i].id & 1) && !(gLinkPlayers[multiplayerId].id & 1))\n                            || ((gLinkPlayers[i].id & 1) && (gLinkPlayers[multiplayerId].id & 1)))\n                    {\n                        gBattlerControllerFuncs[gLinkPlayers[i].id] = SetControllerToRecordedPlayer;\n                        switch (gLinkPlayers[i].id)\n                        {\n                        case 0:\n                        case 3:\n                            gBattlerPositions[gLinkPlayers[i].id] = B_POSITION_PLAYER_LEFT;\n                            gBattlerPartyIndexes[gLinkPlayers[i].id] = 0;\n                            break;\n                        case 1:\n                        case 2:\n                            gBattlerPositions[gLinkPlayers[i].id] = B_POSITION_PLAYER_RIGHT;\n                            gBattlerPartyIndexes[gLinkPlayers[i].id] = 3;\n                            break;\n                        }\n                    }\n                    else\n                    {\n                        gBattlerControllerFuncs[gLinkPlayers[i].id] = SetControllerToRecordedOpponent;\n                        switch (gLinkPlayers[i].id)\n                        {\n                        case 0:\n                        case 3:\n                            gBattlerPositions[gLinkPlayers[i].id] = B_POSITION_OPPONENT_LEFT;\n                            gBattlerPartyIndexes[gLinkPlayers[i].id] = 0;\n                            break;\n                        case 1:\n                        case 2:\n                            gBattlerPositions[gLinkPlayers[i].id] = B_POSITION_OPPONENT_RIGHT;\n                            gBattlerPartyIndexes[gLinkPlayers[i].id] = 3;\n                            break;\n                        }\n                    }\n                }\n            }\n            else if (gBattleTypeFlags & BATTLE_TYPE_IS_MASTER)\n            {\n                gBattlerControllerFuncs[B_BATTLER_0] = SetControllerToRecordedPlayer;\n                gBattlerPositions[B_BATTLER_0] = B_POSITION_PLAYER_LEFT;\n\n                gBattlerControllerFuncs[B_BATTLER_2] = SetControllerToRecordedPlayer;\n                gBattlerPositions[B_BATTLER_2] = B_POSITION_PLAYER_RIGHT;\n\n                if (gBattleTypeFlags & BATTLE_TYPE_RECORDED_LINK)\n                {\n                  gBattlerControllerFuncs[B_BATTLER_1] = SetControllerToRecordedOpponent;\n                  gBattlerPositions[B_BATTLER_1] = B_POSITION_OPPONENT_LEFT;\n\n                  gBattlerControllerFuncs[B_BATTLER_3] = SetControllerToRecordedOpponent;\n                  gBattlerPositions[B_BATTLER_3] = B_POSITION_OPPONENT_RIGHT;\n                }\n                else\n                {\n                  gBattlerControllerFuncs[B_BATTLER_1] = SetControllerToOpponent;\n                  gBattlerPositions[B_BATTLER_1] = B_POSITION_OPPONENT_LEFT;\n\n                  gBattlerControllerFuncs[B_BATTLER_3] = SetControllerToOpponent;\n                  gBattlerPositions[B_BATTLER_3] = B_POSITION_OPPONENT_RIGHT;\n                }\n            }\n            else\n            {\n                gBattlerControllerFuncs[B_BATTLER_1] = SetControllerToRecordedPlayer;\n                gBattlerPositions[B_BATTLER_1] = B_POSITION_PLAYER_LEFT;\n\n                gBattlerControllerFuncs[B_BATTLER_3] = SetControllerToRecordedPlayer;\n                gBattlerPositions[B_BATTLER_3] = B_POSITION_PLAYER_RIGHT;\n\n                if (gBattleTypeFlags & BATTLE_TYPE_RECORDED_LINK)\n                {\n                    gBattlerControllerFuncs[B_BATTLER_0] = SetControllerToRecordedOpponent;\n                    gBattlerPositions[B_BATTLER_0] = B_POSITION_OPPONENT_LEFT;\n\n                    gBattlerControllerFuncs[B_BATTLER_2] = SetControllerToRecordedOpponent;\n                    gBattlerPositions[B_BATTLER_2] = B_POSITION_OPPONENT_RIGHT;\n                }\n                else\n                {\n                    gBattlerControllerFuncs[B_BATTLER_0] = SetControllerToOpponent;\n                    gBattlerPositions[B_BATTLER_0] = B_POSITION_OPPONENT_LEFT;\n\n                    gBattlerControllerFuncs[B_BATTLER_2] = SetControllerToOpponent;\n                    gBattlerPositions[B_BATTLER_2] = B_POSITION_OPPONENT_RIGHT;\n                }\n            }\n        }\n    }",
       "callsTo": [
         "BufferBattlePartyCurrentOrderBySide"
@@ -60,6 +64,7 @@
       "returnType": "void",
       "signature": "static void InitLinkBtlControllers(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s32 i;\n    u8 multiplayerId;\n\n    if (!(gBattleTypeFlags & BATTLE_TYPE_DOUBLE))\n    {\n        if (gBattleTypeFlags & BATTLE_TYPE_IS_MASTER)\n        {\n            gBattleMainFunc = BeginBattleIntro;\n\n            gBattlerControllerFuncs[B_BATTLER_0] = SetControllerToPlayer;\n            gBattlerPositions[B_BATTLER_0] = B_POSITION_PLAYER_LEFT;\n\n            gBattlerControllerFuncs[B_BATTLER_1] = SetControllerToLinkOpponent;\n            gBattlerPositions[B_BATTLER_1] = B_POSITION_OPPONENT_LEFT;\n\n            gBattlersCount = 2;\n        }\n        else\n        {\n            gBattlerControllerFuncs[B_BATTLER_1] = SetControllerToPlayer;\n            gBattlerPositions[B_BATTLER_1] = B_POSITION_PLAYER_LEFT;\n\n            gBattlerControllerFuncs[B_BATTLER_0] = SetControllerToLinkOpponent;\n            gBattlerPositions[B_BATTLER_0] = B_POSITION_OPPONENT_LEFT;\n\n            gBattlersCount = 2;\n        }\n    }\n    else if (!(gBattleTypeFlags & BATTLE_TYPE_MULTI) && gBattleTypeFlags & BATTLE_TYPE_DOUBLE)\n    {\n        if (gBattleTypeFlags & BATTLE_TYPE_IS_MASTER)\n        {\n            gBattleMainFunc = BeginBattleIntro;\n\n            gBattlerControllerFuncs[B_BATTLER_0] = SetControllerToPlayer;\n            gBattlerPositions[B_BATTLER_0] = B_POSITION_PLAYER_LEFT;\n\n            gBattlerControllerFuncs[B_BATTLER_1] = SetControllerToLinkOpponent;\n            gBattlerPositions[B_BATTLER_1] = B_POSITION_OPPONENT_LEFT;\n\n            gBattlerControllerFuncs[B_BATTLER_2] = SetControllerToPlayer;\n            gBattlerPositions[B_BATTLER_2] = B_POSITION_PLAYER_RIGHT;\n\n            gBattlerControllerFuncs[B_BATTLER_3] = SetControllerToLinkOpponent;\n            gBattlerPositions[B_BATTLER_3] = B_POSITION_OPPONENT_RIGHT;\n\n            gBattlersCount = MAX_BATTLERS_COUNT;\n        }\n        else\n        {\n            gBattlerControllerFuncs[B_BATTLER_1] = SetControllerToPlayer;\n            gBattlerPositions[B_BATTLER_1] = B_POSITION_PLAYER_LEFT;\n\n            gBattlerControllerFuncs[B_BATTLER_0] = SetControllerToLinkOpponent;\n            gBattlerPositions[B_BATTLER_0] = B_POSITION_OPPONENT_LEFT;\n\n            gBattlerControllerFuncs[B_BATTLER_3] = SetControllerToPlayer;\n            gBattlerPositions[B_BATTLER_3] = B_POSITION_PLAYER_RIGHT;\n\n            gBattlerControllerFuncs[B_BATTLER_2] = SetControllerToLinkOpponent;\n            gBattlerPositions[B_BATTLER_2] = B_POSITION_OPPONENT_RIGHT;\n\n            gBattlersCount = MAX_BATTLERS_COUNT;\n        }\n    }\n    else if (gBattleTypeFlags & BATTLE_TYPE_BATTLE_TOWER)\n    {\n        if (gBattleTypeFlags & BATTLE_TYPE_IS_MASTER)\n        {\n            gBattleMainFunc = BeginBattleIntro;\n\n            gBattlerControllerFuncs[B_BATTLER_0] = SetControllerToPlayer;\n            gBattlerPositions[B_BATTLER_0] = B_POSITION_PLAYER_LEFT;\n\n            gBattlerControllerFuncs[B_BATTLER_1] = SetControllerToOpponent;\n            gBattlerPositions[B_BATTLER_1] = B_POSITION_OPPONENT_LEFT;\n\n            gBattlerControllerFuncs[B_BATTLER_2] = SetControllerToLinkPartner;\n            gBattlerPositions[B_BATTLER_2] = B_POSITION_PLAYER_RIGHT;\n\n            gBattlerControllerFuncs[B_BATTLER_3] = SetControllerToOpponent;\n            gBattlerPositions[B_BATTLER_3] = B_POSITION_OPPONENT_RIGHT;\n\n            gBattlersCount = MAX_BATTLERS_COUNT;\n        }\n        else\n        {\n            gBattlerControllerFuncs[B_BATTLER_0] = SetControllerToLinkPartner;\n            gBattlerPositions[B_BATTLER_0] = B_POSITION_PLAYER_LEFT;\n\n            gBattlerControllerFuncs[B_BATTLER_1] = SetControllerToLinkOpponent;\n            gBattlerPositions[B_BATTLER_1] = B_POSITION_OPPONENT_LEFT;\n\n            gBattlerControllerFuncs[B_BATTLER_2] = SetControllerToPlayer;\n            gBattlerPositions[B_BATTLER_2] = B_POSITION_PLAYER_RIGHT;\n\n            gBattlerControllerFuncs[B_BATTLER_3] = SetControllerToLinkOpponent;\n            gBattlerPositions[B_BATTLER_3] = B_POSITION_OPPONENT_RIGHT;\n\n            gBattlersCount = MAX_BATTLERS_COUNT;\n        }\n\n        BufferBattlePartyCurrentOrderBySide(0, 0);\n        BufferBattlePartyCurrentOrderBySide(1, 0);\n        BufferBattlePartyCurrentOrderBySide(2, 1);\n        BufferBattlePartyCurrentOrderBySide(3, 1);\n        gBattlerPartyIndexes[0] = 0;\n        gBattlerPartyIndexes[1] = 0;\n        gBattlerPartyIndexes[2] = 3;\n        gBattlerPartyIndexes[3] = 3;\n    }\n    else\n    {\n        multiplayerId = GetMultiplayerId();\n\n        if (gBattleTypeFlags & BATTLE_TYPE_IS_MASTER)\n            gBattleMainFunc = BeginBattleIntro;\n\n        for (i = 0; i < MAX_LINK_PLAYERS; i++)\n        {\n            switch (gLinkPlayers[i].id)\n            {\n            case 0:\n            case 3:\n                BufferBattlePartyCurrentOrderBySide(gLinkPlayers[i].id, 0);\n                break;\n            case 1:\n            case 2:\n                BufferBattlePartyCurrentOrderBySide(gLinkPlayers[i].id, 1);\n                break;\n            }\n\n            if (i == multiplayerId)\n            {\n                gBattlerControllerFuncs[gLinkPlayers[i].id] = SetControllerToPlayer;\n                switch (gLinkPlayers[i].id)\n                {\n                case 0:\n                case 3:\n                    gBattlerPositions[gLinkPlayers[i].id] = B_POSITION_PLAYER_LEFT;\n                    gBattlerPartyIndexes[gLinkPlayers[i].id] = 0;\n                    break;\n                case 1:\n                case 2:\n                    gBattlerPositions[gLinkPlayers[i].id] = B_POSITION_PLAYER_RIGHT;\n                    gBattlerPartyIndexes[gLinkPlayers[i].id] = 3;\n                    break;\n                }\n            }\n            else\n            {\n                if ((!(gLinkPlayers[i].id & 1) && !(gLinkPlayers[multiplayerId].id & 1))\n                 || ((gLinkPlayers[i].id & 1) && (gLinkPlayers[multiplayerId].id & 1)))\n                {\n                    gBattlerControllerFuncs[gLinkPlayers[i].id] = SetControllerToLinkPartner;\n                    switch (gLinkPlayers[i].id)\n                    {\n                    case 0:\n                    case 3:\n                        gBattlerPositions[gLinkPlayers[i].id] = B_POSITION_PLAYER_LEFT;\n                        gBattlerPartyIndexes[gLinkPlayers[i].id] = 0;\n                        break;\n                    case 1:\n                    case 2:\n                        gBattlerPositions[gLinkPlayers[i].id] = B_POSITION_PLAYER_RIGHT;\n                        gBattlerPartyIndexes[gLinkPlayers[i].id] = 3;\n                        break;\n                    }\n                }\n                else\n                {\n                    gBattlerControllerFuncs[gLinkPlayers[i].id] = SetControllerToLinkOpponent;\n                    switch (gLinkPlayers[i].id)\n                    {\n                    case 0:\n                    case 3:\n                        gBattlerPositions[gLinkPlayers[i].id] = B_POSITION_OPPONENT_LEFT;\n                        gBattlerPartyIndexes[gLinkPlayers[i].id] = 0;\n                        break;\n                    case 1:\n                    case 2:\n                        gBattlerPositions[gLinkPlayers[i].id] = B_POSITION_OPPONENT_RIGHT;\n                        gBattlerPartyIndexes[gLinkPlayers[i].id] = 3;\n                        break;\n                    }\n                }\n            }\n        }\n\n        gBattlersCount = MAX_BATTLERS_COUNT;\n    }",
       "callsTo": [
         "BufferBattlePartyCurrentOrderBySide",
@@ -71,6 +76,7 @@
       "returnType": "void",
       "signature": "static void SetBattlePartyIds(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s32 i, j;\n\n    if (!(gBattleTypeFlags & BATTLE_TYPE_MULTI))\n    {\n        for (i = 0; i < gBattlersCount; i++)\n        {\n            for (j = 0; j < PARTY_SIZE; j++)\n            {\n                if (i < 2)\n                {\n                    if (GET_BATTLER_SIDE2(i) == B_SIDE_PLAYER)\n                    {\n                        if (GetMonData(&gPlayerParty[j], MON_DATA_HP) != 0\n                         && GetMonData(&gPlayerParty[j], MON_DATA_SPECIES_OR_EGG) != SPECIES_NONE\n                         && GetMonData(&gPlayerParty[j], MON_DATA_SPECIES_OR_EGG) != SPECIES_EGG\n                         && !GetMonData(&gPlayerParty[j], MON_DATA_IS_EGG))\n                        {\n                            gBattlerPartyIndexes[i] = j;\n                            break;\n                        }\n                    }\n                    else\n                    {\n                        if (GetMonData(&gEnemyParty[j], MON_DATA_HP) != 0\n                         && GetMonData(&gEnemyParty[j], MON_DATA_SPECIES_OR_EGG) != SPECIES_NONE\n                         && GetMonData(&gEnemyParty[j], MON_DATA_SPECIES_OR_EGG) != SPECIES_EGG\n                         && !GetMonData(&gEnemyParty[j], MON_DATA_IS_EGG))\n                        {\n                            gBattlerPartyIndexes[i] = j;\n                            break;\n                        }\n                    }\n                }\n                else\n                {\n                    if (GET_BATTLER_SIDE2(i) == B_SIDE_PLAYER)\n                    {\n                        if (GetMonData(&gPlayerParty[j], MON_DATA_HP) != 0\n                         && GetMonData(&gPlayerParty[j], MON_DATA_SPECIES) != SPECIES_NONE   \n                         && GetMonData(&gPlayerParty[j], MON_DATA_SPECIES_OR_EGG) != SPECIES_EGG\n                         && !GetMonData(&gPlayerParty[j], MON_DATA_IS_EGG)\n                         && gBattlerPartyIndexes[i - 2] != j)\n                        {\n                            gBattlerPartyIndexes[i] = j;\n                            break;\n                        }\n                    }\n                    else\n                    {\n                        if (GetMonData(&gEnemyParty[j], MON_DATA_HP) != 0\n                         && GetMonData(&gEnemyParty[j], MON_DATA_SPECIES_OR_EGG) != SPECIES_NONE\n                         && GetMonData(&gEnemyParty[j], MON_DATA_SPECIES_OR_EGG) != SPECIES_EGG\n                         && !GetMonData(&gEnemyParty[j], MON_DATA_IS_EGG)\n                         && gBattlerPartyIndexes[i - 2] != j)\n                        {\n                            gBattlerPartyIndexes[i] = j;\n                            break;\n                        }\n                    }\n                }\n            }\n        }\n\n        if (gBattleTypeFlags & BATTLE_TYPE_TWO_OPPONENTS)\n            gBattlerPartyIndexes[1] = 0, gBattlerPartyIndexes[3] = 3;\n    }",
       "callsTo": [
         "GET_BATTLER_SIDE2",
@@ -82,6 +88,20 @@
       "returnType": "void",
       "signature": "static void PrepareBufferDataTransfer(u8 bufferId, u8 *data, u16 size)",
       "paramsRaw": "u8 bufferId, u8 *data, u16 size",
+      "paramsList": [
+        {
+          "name": "bufferId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "data",
+          "typeRaw": "u8 *"
+        },
+        {
+          "name": "size",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "s32 i;\n\n    if (gBattleTypeFlags & BATTLE_TYPE_LINK)\n    {\n        PrepareBufferDataTransferLink(bufferId, size, data);\n    }\n    else\n    {\n        switch (bufferId)\n        {\n        case B_COMM_TO_CONTROLLER:\n            for (i = 0; i < size; data++, i++)\n                gBattleBufferA[gActiveBattler][i] = *data;\n            break;\n        case B_COMM_TO_ENGINE:\n            for (i = 0; i < size; data++, i++)\n                gBattleBufferB[gActiveBattler][i] = *data;\n            break;\n        }\n    }",
       "callsTo": [
         "PrepareBufferDataTransferLink"
@@ -92,6 +112,7 @@
       "returnType": "void",
       "signature": "static void CreateTasksForSendRecvLinkBuffers(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sLinkSendTaskId = CreateTask(Task_HandleSendLinkBuffersData, 0);\n    gTasks[sLinkSendTaskId].tState                 = 0;\n    gTasks[sLinkSendTaskId].tCurrentBlock_WrapFrom = 0;\n    gTasks[sLinkSendTaskId].tBlockSendDelayTimer   = 0;\n    gTasks[sLinkSendTaskId].tCurrentBlock_End      = 0;\n    gTasks[sLinkSendTaskId].tCurrentBlock_Start    = 0;\n\n    sLinkReceiveTaskId = CreateTask(Task_HandleCopyReceivedLinkBuffersData, 0);\n    gTasks[sLinkReceiveTaskId].tCurrentBlock_WrapFrom = 0;\n    gTasks[sLinkReceiveTaskId].tBlockSendDelayTimer   = 0;  \n    gTasks[sLinkReceiveTaskId].tCurrentBlock_End      = 0;\n    gTasks[sLinkReceiveTaskId].tCurrentBlock_Start    = 0;\n\n    sUnused = 0;",
       "callsTo": [
         "CreateTask"
@@ -102,6 +123,20 @@
       "returnType": "void",
       "signature": "void PrepareBufferDataTransferLink(u8 bufferId, u16 size, u8 *data)",
       "paramsRaw": "u8 bufferId, u16 size, u8 *data",
+      "paramsList": [
+        {
+          "name": "bufferId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "size",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "data",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "s32 alignedSize;\n    s32 i;\n\n    alignedSize = size - size % 4 + 4;\n    if (gTasks[sLinkSendTaskId].tCurrentBlock_End + alignedSize + LINK_BUFF_DATA + 1 > BATTLE_BUFFER_LINK_SIZE)\n    {\n        gTasks[sLinkSendTaskId].tCurrentBlock_WrapFrom = gTasks[sLinkSendTaskId].tCurrentBlock_End;\n        gTasks[sLinkSendTaskId].tCurrentBlock_End      = 0;\n    }\n\n    #define BYTE_TO_SEND(offset) \\\n        gLinkBattleSendBuffer[gTasks[sLinkSendTaskId].tCurrentBlock_End + offset]\n\n    BYTE_TO_SEND(LINK_BUFF_BUFFER_ID)            = bufferId;\n    BYTE_TO_SEND(LINK_BUFF_ACTIVE_BATTLER)       = gActiveBattler;\n    BYTE_TO_SEND(LINK_BUFF_ATTACKER)             = gBattlerAttacker;\n    BYTE_TO_SEND(LINK_BUFF_TARGET)               = gBattlerTarget;\n    BYTE_TO_SEND(LINK_BUFF_SIZE_LO)              = alignedSize;\n    BYTE_TO_SEND(LINK_BUFF_SIZE_HI)              = (alignedSize & 0x0000FF00) >> 8;\n    BYTE_TO_SEND(LINK_BUFF_ABSENT_BATTLER_FLAGS) = gAbsentBattlerFlags;\n    BYTE_TO_SEND(LINK_BUFF_EFFECT_BATTLER)       = gEffectBattler;\n\n    for (i = 0; i < size; i++)\n        BYTE_TO_SEND(LINK_BUFF_DATA + i) = data[i];\n\n    #undef BYTE_TO_SEND\n\n    gTasks[sLinkSendTaskId].tCurrentBlock_End = gTasks[sLinkSendTaskId].tCurrentBlock_End + alignedSize + LINK_BUFF_DATA;",
       "callsTo": [
         "BYTE_TO_SEND"
@@ -112,6 +147,12 @@
       "returnType": "void",
       "signature": "static void Task_HandleSendLinkBuffersData(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u16 numPlayers;\n    u16 blockSize;\n\n    #define BYTE_TO_SEND(offset) \\\n        gLinkBattleSendBuffer[gTasks[taskId].tCurrentBlock_Start + offset]\n\n    switch (gTasks[taskId].tState)\n    {\n    case SENDTASK_STATE_INITIALIZE:\n        gTasks[taskId].tInitialDelayTimer = 100;\n        gTasks[taskId].tState++;\n        break;\n    case SENDTASK_STATE_INITIAL_DELAY:\n        gTasks[taskId].tInitialDelayTimer--;\n        if (gTasks[taskId].tInitialDelayTimer == 0)\n            gTasks[taskId].tState++;\n        break;\n    case SENDTASK_STATE_COUNT_PLAYERS:\n        if (gWirelessCommType)\n        {\n            gTasks[taskId].tState++;\n        }\n        else\n        {\n            if (gBattleTypeFlags & BATTLE_TYPE_BATTLE_TOWER)\n                numPlayers = 2;\n            else\n                numPlayers = (gBattleTypeFlags & BATTLE_TYPE_MULTI) ? 4 : 2;\n\n            if (GetLinkPlayerCount_2() >= numPlayers)\n            {\n                if (IsLinkMaster())\n                {\n                    CheckShouldAdvanceLinkState();\n                    gTasks[taskId].tState++;\n                }\n                else\n                {\n                    gTasks[taskId].tState++;\n                }\n            }\n        }\n        break;\n    case SENDTASK_STATE_BEGIN_SEND_BLOCK:\n        if (gTasks[taskId].tCurrentBlock_Start != gTasks[taskId].tCurrentBlock_End)\n        {\n            if (gTasks[taskId].tBlockSendDelayTimer == 0)\n            {\n                if (gTasks[taskId].tCurrentBlock_Start >  gTasks[taskId].tCurrentBlock_End\n                 && gTasks[taskId].tCurrentBlock_Start == gTasks[taskId].tCurrentBlock_WrapFrom)\n                {\n                    gTasks[taskId].tCurrentBlock_WrapFrom = 0;\n                    gTasks[taskId].tCurrentBlock_Start    = 0;\n                }\n                blockSize = (BYTE_TO_SEND(LINK_BUFF_SIZE_LO) | (BYTE_TO_SEND(LINK_BUFF_SIZE_HI) << 8)) + LINK_BUFF_DATA;\n                SendBlock(BitmaskAllOtherLinkPlayers(), &BYTE_TO_SEND(0), blockSize);\n                gTasks[taskId].tState++;\n            }\n            else\n            {\n                gTasks[taskId].tBlockSendDelayTimer--;\n                break;\n            }\n        }\n        break;\n    case SENDTASK_STATE_FINISH_SEND_BLOCK:\n        if (IsLinkTaskFinished())\n        {\n            blockSize = BYTE_TO_SEND(LINK_BUFF_SIZE_LO) | (BYTE_TO_SEND(LINK_BUFF_SIZE_HI) << 8);\n            gTasks[taskId].tBlockSendDelayTimer = 1;\n            gTasks[taskId].tCurrentBlock_Start  = gTasks[taskId].tCurrentBlock_Start + blockSize + LINK_BUFF_DATA;\n            gTasks[taskId].tState = SENDTASK_STATE_BEGIN_SEND_BLOCK;\n        }\n        break;\n    case SENDTASK_STATE_UNUSED_STATE:\n        if (--gTasks[taskId].tBlockSendDelayTimer == 0)\n        {\n            gTasks[taskId].tBlockSendDelayTimer = 1;\n            gTasks[taskId].tState = SENDTASK_STATE_BEGIN_SEND_BLOCK;\n        }\n        break;\n    }\n\n    #undef BYTE_TO_SEND",
       "callsTo": [
         "BYTE_TO_SEND",
@@ -128,6 +169,7 @@
       "returnType": "void",
       "signature": "void TryReceiveLinkBattleData(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n    s32 j;\n    u8 *recvBuffer;\n\n    if (gReceivedRemoteLinkPlayers && (gBattleTypeFlags & BATTLE_TYPE_LINK_IN_BATTLE))\n    {\n        DestroyTask_RfuIdle();\n        for (i = 0; i < GetLinkPlayerCount(); i++)\n        {\n            if (GetBlockReceivedStatus() & gBitTable[i])\n            {\n                ResetBlockReceivedFlag(i);\n                recvBuffer = (u8 *)gBlockRecvBuffer[i];\n                {\n                    u8 *dest, *src;\n                    u16 dataSize = gBlockRecvBuffer[i][2];\n\n                    if (gTasks[sLinkReceiveTaskId].tCurrentBlock_End + 9 + dataSize > 0x1000)\n                    {\n                        gTasks[sLinkReceiveTaskId].tCurrentBlock_WrapFrom = gTasks[sLinkReceiveTaskId].tCurrentBlock_End;\n                        gTasks[sLinkReceiveTaskId].tCurrentBlock_End = 0;\n                    }\n\n                    dest = &gLinkBattleRecvBuffer[gTasks[sLinkReceiveTaskId].tCurrentBlock_End];\n                    src = recvBuffer;\n\n                    for (j = 0; j < dataSize + 8; j++)\n                        dest[j] = src[j];\n\n                    gTasks[sLinkReceiveTaskId].tCurrentBlock_End = gTasks[sLinkReceiveTaskId].tCurrentBlock_End + dataSize + 8;\n                }\n            }\n        }\n    }",
       "callsTo": [
         "DestroyTask_RfuIdle",
@@ -141,6 +183,12 @@
       "returnType": "void",
       "signature": "static void Task_HandleCopyReceivedLinkBuffersData(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u16 blockSize;\n    u8 battler;\n    u8 playerId;\n\n    #define BYTE_TO_RECEIVE(offset) \\\n        gLinkBattleRecvBuffer[gTasks[taskId].tCurrentBlock_Start + offset]\n\n    if (gTasks[taskId].tCurrentBlock_Start != gTasks[taskId].tCurrentBlock_End)\n    {\n        if (gTasks[taskId].tCurrentBlock_Start >  gTasks[taskId].tCurrentBlock_End\n         && gTasks[taskId].tCurrentBlock_Start == gTasks[taskId].tCurrentBlock_WrapFrom)\n        {\n            gTasks[taskId].tCurrentBlock_WrapFrom = 0;\n            gTasks[taskId].tCurrentBlock_Start    = 0;\n        }\n        battler = BYTE_TO_RECEIVE(LINK_BUFF_ACTIVE_BATTLER);\n        blockSize = BYTE_TO_RECEIVE(LINK_BUFF_SIZE_LO) | (BYTE_TO_RECEIVE(LINK_BUFF_SIZE_HI) << 8);\n\n        switch (BYTE_TO_RECEIVE(0))\n        {\n        case B_COMM_TO_CONTROLLER:\n            if (IS_BATTLE_CONTROLLER_ACTIVE_ON_LOCAL(battler))\n                return;\n\n            memcpy(gBattleBufferA[battler], &BYTE_TO_RECEIVE(LINK_BUFF_DATA), blockSize);\n            MarkBattlerReceivedLinkData(battler);\n\n            if (!(gBattleTypeFlags & BATTLE_TYPE_IS_MASTER))\n            {\n                gBattlerAttacker    = BYTE_TO_RECEIVE(LINK_BUFF_ATTACKER);\n                gBattlerTarget      = BYTE_TO_RECEIVE(LINK_BUFF_TARGET);\n                gAbsentBattlerFlags = BYTE_TO_RECEIVE(LINK_BUFF_ABSENT_BATTLER_FLAGS);\n                gEffectBattler      = BYTE_TO_RECEIVE(LINK_BUFF_EFFECT_BATTLER);\n            }\n            break;\n        case B_COMM_TO_ENGINE:\n            memcpy(gBattleBufferB[battler], &gLinkBattleRecvBuffer[gTasks[taskId].tCurrentBlock_Start + LINK_BUFF_DATA], blockSize);\n            break;\n        case B_COMM_CONTROLLER_IS_DONE:\n            playerId = BYTE_TO_RECEIVE(LINK_BUFF_DATA);\n            MARK_BATTLE_CONTROLLER_IDLE_FOR_PLAYER(battler, playerId);\n            break;\n        }\n\n        gTasks[taskId].tCurrentBlock_Start = gTasks[taskId].tCurrentBlock_Start + blockSize + LINK_BUFF_DATA;\n    }\n\n    #undef BYTE_TO_RECEIVE",
       "callsTo": [
         "BYTE_TO_RECEIVE",
@@ -154,6 +202,20 @@
       "returnType": "void",
       "signature": "void BtlController_EmitGetMonData(u8 bufferId, u8 requestId, u8 monToCheck)",
       "paramsRaw": "u8 bufferId, u8 requestId, u8 monToCheck",
+      "paramsList": [
+        {
+          "name": "bufferId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "requestId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "monToCheck",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "sBattleBuffersTransferData[0] = CONTROLLER_GETMONDATA;\n    sBattleBuffersTransferData[1] = requestId;\n    sBattleBuffersTransferData[2] = monToCheck;\n    sBattleBuffersTransferData[3] = 0;\n    PrepareBufferDataTransfer(bufferId, sBattleBuffersTransferData, 4);",
       "callsTo": [
         "PrepareBufferDataTransfer"
@@ -164,6 +226,28 @@
       "returnType": "void",
       "signature": "void BtlController_EmitSetMonData(u8 bufferId, u8 requestId, u8 monToCheck, u8 bytes, void *data)",
       "paramsRaw": "u8 bufferId, u8 requestId, u8 monToCheck, u8 bytes, void *data",
+      "paramsList": [
+        {
+          "name": "bufferId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "requestId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "monToCheck",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "bytes",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "data",
+          "typeRaw": "void *"
+        }
+      ],
       "body": "s32 i;\n\n    sBattleBuffersTransferData[0] = CONTROLLER_SETMONDATA;\n    sBattleBuffersTransferData[1] = requestId;\n    sBattleBuffersTransferData[2] = monToCheck;\n    for (i = 0; i < bytes; i++)\n        sBattleBuffersTransferData[3 + i] = *(u8 *)(data++);\n    PrepareBufferDataTransfer(bufferId, sBattleBuffersTransferData, 3 + bytes);",
       "callsTo": [
         "PrepareBufferDataTransfer"
@@ -174,6 +258,12 @@
       "returnType": "void",
       "signature": "void BtlController_EmitLoadMonSprite(u8 bufferId)",
       "paramsRaw": "u8 bufferId",
+      "paramsList": [
+        {
+          "name": "bufferId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "sBattleBuffersTransferData[0] = CONTROLLER_LOADMONSPRITE;\n    sBattleBuffersTransferData[1] = CONTROLLER_LOADMONSPRITE;\n    sBattleBuffersTransferData[2] = CONTROLLER_LOADMONSPRITE;\n    sBattleBuffersTransferData[3] = CONTROLLER_LOADMONSPRITE;\n    PrepareBufferDataTransfer(bufferId, sBattleBuffersTransferData, 4);",
       "callsTo": [
         "PrepareBufferDataTransfer"
@@ -184,6 +274,20 @@
       "returnType": "void",
       "signature": "void BtlController_EmitSwitchInAnim(u8 bufferId, u8 partyId, bool8 dontClearSubstituteBit)",
       "paramsRaw": "u8 bufferId, u8 partyId, bool8 dontClearSubstituteBit",
+      "paramsList": [
+        {
+          "name": "bufferId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "partyId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "dontClearSubstituteBit",
+          "typeRaw": "bool8"
+        }
+      ],
       "body": "sBattleBuffersTransferData[0] = CONTROLLER_SWITCHINANIM;\n    sBattleBuffersTransferData[1] = partyId;\n    sBattleBuffersTransferData[2] = dontClearSubstituteBit;\n    sBattleBuffersTransferData[3] = 5;\n    PrepareBufferDataTransfer(bufferId, sBattleBuffersTransferData, 4);",
       "callsTo": [
         "PrepareBufferDataTransfer"
@@ -194,6 +298,16 @@
       "returnType": "void",
       "signature": "void BtlController_EmitReturnMonToBall(u8 bufferId, bool8 skipAnim)",
       "paramsRaw": "u8 bufferId, bool8 skipAnim",
+      "paramsList": [
+        {
+          "name": "bufferId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "skipAnim",
+          "typeRaw": "bool8"
+        }
+      ],
       "body": "sBattleBuffersTransferData[0] = CONTROLLER_RETURNMONTOBALL;\n    sBattleBuffersTransferData[1] = skipAnim;\n    PrepareBufferDataTransfer(bufferId, sBattleBuffersTransferData, 2);",
       "callsTo": [
         "PrepareBufferDataTransfer"
@@ -204,6 +318,12 @@
       "returnType": "void",
       "signature": "void BtlController_EmitDrawTrainerPic(u8 bufferId)",
       "paramsRaw": "u8 bufferId",
+      "paramsList": [
+        {
+          "name": "bufferId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "sBattleBuffersTransferData[0] = CONTROLLER_DRAWTRAINERPIC;\n    sBattleBuffersTransferData[1] = CONTROLLER_DRAWTRAINERPIC;\n    sBattleBuffersTransferData[2] = CONTROLLER_DRAWTRAINERPIC;\n    sBattleBuffersTransferData[3] = CONTROLLER_DRAWTRAINERPIC;\n    PrepareBufferDataTransfer(bufferId, sBattleBuffersTransferData, 4);",
       "callsTo": [
         "PrepareBufferDataTransfer"
@@ -214,6 +334,12 @@
       "returnType": "void",
       "signature": "void BtlController_EmitTrainerSlide(u8 bufferId)",
       "paramsRaw": "u8 bufferId",
+      "paramsList": [
+        {
+          "name": "bufferId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "sBattleBuffersTransferData[0] = CONTROLLER_TRAINERSLIDE;\n    sBattleBuffersTransferData[1] = CONTROLLER_TRAINERSLIDE;\n    sBattleBuffersTransferData[2] = CONTROLLER_TRAINERSLIDE;\n    sBattleBuffersTransferData[3] = CONTROLLER_TRAINERSLIDE;\n    PrepareBufferDataTransfer(bufferId, sBattleBuffersTransferData, 4);",
       "callsTo": [
         "PrepareBufferDataTransfer"
@@ -224,6 +350,12 @@
       "returnType": "void",
       "signature": "void BtlController_EmitTrainerSlideBack(u8 bufferId)",
       "paramsRaw": "u8 bufferId",
+      "paramsList": [
+        {
+          "name": "bufferId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "sBattleBuffersTransferData[0] = CONTROLLER_TRAINERSLIDEBACK;\n    sBattleBuffersTransferData[1] = CONTROLLER_TRAINERSLIDEBACK;\n    sBattleBuffersTransferData[2] = CONTROLLER_TRAINERSLIDEBACK;\n    sBattleBuffersTransferData[3] = CONTROLLER_TRAINERSLIDEBACK;\n    PrepareBufferDataTransfer(bufferId, sBattleBuffersTransferData, 4);",
       "callsTo": [
         "PrepareBufferDataTransfer"
@@ -234,6 +366,12 @@
       "returnType": "void",
       "signature": "void BtlController_EmitFaintAnimation(u8 bufferId)",
       "paramsRaw": "u8 bufferId",
+      "paramsList": [
+        {
+          "name": "bufferId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "sBattleBuffersTransferData[0] = CONTROLLER_FAINTANIMATION;\n    sBattleBuffersTransferData[1] = CONTROLLER_FAINTANIMATION;\n    sBattleBuffersTransferData[2] = CONTROLLER_FAINTANIMATION;\n    sBattleBuffersTransferData[3] = CONTROLLER_FAINTANIMATION;\n    PrepareBufferDataTransfer(bufferId, sBattleBuffersTransferData, 4);",
       "callsTo": [
         "PrepareBufferDataTransfer"
@@ -244,6 +382,16 @@
       "returnType": "void",
       "signature": "void BtlController_EmitBallThrowAnim(u8 bufferId, u8 caseId)",
       "paramsRaw": "u8 bufferId, u8 caseId",
+      "paramsList": [
+        {
+          "name": "bufferId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "caseId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "sBattleBuffersTransferData[0] = CONTROLLER_BALLTHROWANIM;\n    sBattleBuffersTransferData[1] = caseId;\n    PrepareBufferDataTransfer(bufferId, sBattleBuffersTransferData, 2);",
       "callsTo": [
         "PrepareBufferDataTransfer"
@@ -254,6 +402,40 @@
       "returnType": "void",
       "signature": "void BtlController_EmitMoveAnimation(u8 bufferId, u16 move, u8 turnOfMove, u16 movePower, s32 dmg, u8 friendship, struct DisableStruct *disableStructPtr, u8 multihit)",
       "paramsRaw": "u8 bufferId, u16 move, u8 turnOfMove, u16 movePower, s32 dmg, u8 friendship, struct DisableStruct *disableStructPtr, u8 multihit",
+      "paramsList": [
+        {
+          "name": "bufferId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "move",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "turnOfMove",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "movePower",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "dmg",
+          "typeRaw": "s32"
+        },
+        {
+          "name": "friendship",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "disableStructPtr",
+          "typeRaw": "struct DisableStruct *"
+        },
+        {
+          "name": "multihit",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "sBattleBuffersTransferData[0] = CONTROLLER_MOVEANIMATION;\n    sBattleBuffersTransferData[1] = move;\n    sBattleBuffersTransferData[2] = (move & 0xFF00) >> 8;\n    sBattleBuffersTransferData[3] = turnOfMove;\n    sBattleBuffersTransferData[4] = movePower;\n    sBattleBuffersTransferData[5] = (movePower & 0xFF00) >> 8;\n    sBattleBuffersTransferData[6] = dmg;\n    sBattleBuffersTransferData[7] = (dmg & 0x0000FF00) >> 8;\n    sBattleBuffersTransferData[8] = (dmg & 0x00FF0000) >> 16;\n    sBattleBuffersTransferData[9] = (dmg & 0xFF000000) >> 24;\n    sBattleBuffersTransferData[10] = friendship;\n    sBattleBuffersTransferData[11] = multihit;\n    if (WEATHER_HAS_EFFECT2)\n    {\n        sBattleBuffersTransferData[12] = gBattleWeather;\n        sBattleBuffersTransferData[13] = (gBattleWeather & 0xFF00) >> 8;\n    }\n    else\n    {\n        sBattleBuffersTransferData[12] = 0;\n        sBattleBuffersTransferData[13] = 0;\n    }\n    sBattleBuffersTransferData[14] = 0;\n    sBattleBuffersTransferData[15] = 0;\n    memcpy(&sBattleBuffersTransferData[16], disableStructPtr, sizeof(struct DisableStruct));\n    PrepareBufferDataTransfer(bufferId, sBattleBuffersTransferData, 16 + sizeof(struct DisableStruct));",
       "callsTo": [
         "PrepareBufferDataTransfer"
@@ -264,6 +446,16 @@
       "returnType": "void",
       "signature": "void BtlController_EmitPrintString(u8 bufferId, u16 stringId)",
       "paramsRaw": "u8 bufferId, u16 stringId",
+      "paramsList": [
+        {
+          "name": "bufferId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "stringId",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "s32 i;\n    struct BattleMsgData *stringInfo;\n\n    sBattleBuffersTransferData[0] = CONTROLLER_PRINTSTRING;\n    sBattleBuffersTransferData[1] = gBattleOutcome;\n    sBattleBuffersTransferData[2] = stringId;\n    sBattleBuffersTransferData[3] = (stringId & 0xFF00) >> 8;\n\n    stringInfo = (struct BattleMsgData *)(&sBattleBuffersTransferData[4]);\n    stringInfo->currentMove = gCurrentMove;\n    stringInfo->originallyUsedMove = gChosenMove;\n    stringInfo->lastItem = gLastUsedItem;\n    stringInfo->lastAbility = gLastUsedAbility;\n    stringInfo->scrActive = gBattleScripting.battler;\n    stringInfo->bakScriptPartyIdx = gBattleStruct->scriptPartyIdx;\n    stringInfo->hpScale = gBattleStruct->hpScale;\n    stringInfo->itemEffectBattler = gPotentialItemEffectBattler;\n    stringInfo->moveType = gBattleMoves[gCurrentMove].type;\n\n    for (i = 0; i < MAX_BATTLERS_COUNT; i++)\n        stringInfo->abilities[i] = gBattleMons[i].ability;\n    for (i = 0; i < TEXT_BUFF_ARRAY_COUNT; i++)\n    {\n        stringInfo->textBuffs[0][i] = gBattleTextBuff1[i];\n        stringInfo->textBuffs[1][i] = gBattleTextBuff2[i];\n        stringInfo->textBuffs[2][i] = gBattleTextBuff3[i];\n    }\n    PrepareBufferDataTransfer(bufferId, sBattleBuffersTransferData, sizeof(struct BattleMsgData) + 4);",
       "callsTo": [
         "PrepareBufferDataTransfer"
@@ -274,6 +466,16 @@
       "returnType": "void",
       "signature": "void BtlController_EmitPrintSelectionString(u8 bufferId, u16 stringId)",
       "paramsRaw": "u8 bufferId, u16 stringId",
+      "paramsList": [
+        {
+          "name": "bufferId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "stringId",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "s32 i;\n    struct BattleMsgData *stringInfo;\n\n    sBattleBuffersTransferData[0] = CONTROLLER_PRINTSTRINGPLAYERONLY;\n    sBattleBuffersTransferData[1] = CONTROLLER_PRINTSTRINGPLAYERONLY;\n    sBattleBuffersTransferData[2] = stringId;\n    sBattleBuffersTransferData[3] = (stringId & 0xFF00) >> 8;\n\n    stringInfo = (struct BattleMsgData *)(&sBattleBuffersTransferData[4]);\n    stringInfo->currentMove = gCurrentMove;\n    stringInfo->originallyUsedMove = gChosenMove;\n    stringInfo->lastItem = gLastUsedItem;\n    stringInfo->lastAbility = gLastUsedAbility;\n    stringInfo->scrActive = gBattleScripting.battler;\n    stringInfo->bakScriptPartyIdx = gBattleStruct->scriptPartyIdx;\n\n    for (i = 0; i < MAX_BATTLERS_COUNT; i++)\n        stringInfo->abilities[i] = gBattleMons[i].ability;\n    for (i = 0; i < TEXT_BUFF_ARRAY_COUNT; i++)\n    {\n        stringInfo->textBuffs[0][i] = gBattleTextBuff1[i];\n        stringInfo->textBuffs[1][i] = gBattleTextBuff2[i];\n        stringInfo->textBuffs[2][i] = gBattleTextBuff3[i];\n    }\n    PrepareBufferDataTransfer(bufferId, sBattleBuffersTransferData, sizeof(struct BattleMsgData) + 4);",
       "callsTo": [
         "PrepareBufferDataTransfer"
@@ -284,6 +486,20 @@
       "returnType": "void",
       "signature": "void BtlController_EmitChooseAction(u8 bufferId, u8 action, u16 itemId)",
       "paramsRaw": "u8 bufferId, u8 action, u16 itemId",
+      "paramsList": [
+        {
+          "name": "bufferId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "action",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "itemId",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "sBattleBuffersTransferData[0] = CONTROLLER_CHOOSEACTION;\n    sBattleBuffersTransferData[1] = action;\n    sBattleBuffersTransferData[2] = itemId;\n    sBattleBuffersTransferData[3] = (itemId & 0xFF00) >> 8;\n    PrepareBufferDataTransfer(bufferId, sBattleBuffersTransferData, 4);",
       "callsTo": [
         "PrepareBufferDataTransfer"
@@ -294,6 +510,12 @@
       "returnType": "void",
       "signature": "void BtlController_EmitYesNoBox(u8 bufferId)",
       "paramsRaw": "u8 bufferId",
+      "paramsList": [
+        {
+          "name": "bufferId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "sBattleBuffersTransferData[0] = CONTROLLER_YESNOBOX;\n    sBattleBuffersTransferData[1] = CONTROLLER_YESNOBOX;\n    sBattleBuffersTransferData[2] = CONTROLLER_YESNOBOX;\n    sBattleBuffersTransferData[3] = CONTROLLER_YESNOBOX;\n    PrepareBufferDataTransfer(bufferId, sBattleBuffersTransferData, 4);",
       "callsTo": [
         "PrepareBufferDataTransfer"
@@ -304,6 +526,24 @@
       "returnType": "void",
       "signature": "void BtlController_EmitChooseMove(u8 bufferId, bool8 isDoubleBattle, bool8 NoPpNumber, struct ChooseMoveStruct *movePpData)",
       "paramsRaw": "u8 bufferId, bool8 isDoubleBattle, bool8 NoPpNumber, struct ChooseMoveStruct *movePpData",
+      "paramsList": [
+        {
+          "name": "bufferId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "isDoubleBattle",
+          "typeRaw": "bool8"
+        },
+        {
+          "name": "NoPpNumber",
+          "typeRaw": "bool8"
+        },
+        {
+          "name": "movePpData",
+          "typeRaw": "struct ChooseMoveStruct *"
+        }
+      ],
       "body": "s32 i;\n\n    sBattleBuffersTransferData[0] = CONTROLLER_CHOOSEMOVE;\n    sBattleBuffersTransferData[1] = isDoubleBattle;\n    sBattleBuffersTransferData[2] = NoPpNumber;\n    sBattleBuffersTransferData[3] = 0;\n    for (i = 0; i < sizeof(*movePpData); i++)\n        sBattleBuffersTransferData[4 + i] = *((u8 *)(movePpData) + i);\n    PrepareBufferDataTransfer(bufferId, sBattleBuffersTransferData, sizeof(*movePpData) + 4);",
       "callsTo": [
         "PrepareBufferDataTransfer"
@@ -314,6 +554,16 @@
       "returnType": "void",
       "signature": "void BtlController_EmitChooseItem(u8 bufferId, u8 *battlePartyOrder)",
       "paramsRaw": "u8 bufferId, u8 *battlePartyOrder",
+      "paramsList": [
+        {
+          "name": "bufferId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "battlePartyOrder",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "s32 i;\n\n    sBattleBuffersTransferData[0] = CONTROLLER_OPENBAG;\n    for (i = 0; i < PARTY_SIZE / 2; i++)\n        sBattleBuffersTransferData[1 + i] = battlePartyOrder[i];\n    PrepareBufferDataTransfer(bufferId, sBattleBuffersTransferData, 4);",
       "callsTo": [
         "PrepareBufferDataTransfer"
@@ -324,6 +574,28 @@
       "returnType": "void",
       "signature": "void BtlController_EmitChoosePokemon(u8 bufferId, u8 caseId, u8 slotId, u8 abilityId, u8 *data)",
       "paramsRaw": "u8 bufferId, u8 caseId, u8 slotId, u8 abilityId, u8 *data",
+      "paramsList": [
+        {
+          "name": "bufferId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "caseId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "slotId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "abilityId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "data",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "s32 i;\n\n    sBattleBuffersTransferData[0] = CONTROLLER_CHOOSEPOKEMON;\n    sBattleBuffersTransferData[1] = caseId;\n    sBattleBuffersTransferData[2] = slotId;\n    sBattleBuffersTransferData[3] = abilityId;\n    for (i = 0; i < 3; i++)\n        sBattleBuffersTransferData[4 + i] = data[i];\n    PrepareBufferDataTransfer(bufferId, sBattleBuffersTransferData, 8);",
       "callsTo": [
         "PrepareBufferDataTransfer"
@@ -334,6 +606,16 @@
       "returnType": "void",
       "signature": "void BtlController_EmitHealthBarUpdate(u8 bufferId, u16 hpValue)",
       "paramsRaw": "u8 bufferId, u16 hpValue",
+      "paramsList": [
+        {
+          "name": "bufferId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "hpValue",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "sBattleBuffersTransferData[0] = CONTROLLER_HEALTHBARUPDATE;\n    sBattleBuffersTransferData[1] = 0;\n    sBattleBuffersTransferData[2] = (s16)hpValue;\n    sBattleBuffersTransferData[3] = ((s16)hpValue & 0xFF00) >> 8;\n    PrepareBufferDataTransfer(bufferId, sBattleBuffersTransferData, 4);",
       "callsTo": [
         "PrepareBufferDataTransfer"
@@ -344,6 +626,20 @@
       "returnType": "void",
       "signature": "void BtlController_EmitExpUpdate(u8 bufferId, u8 partyId, u16 expPoints)",
       "paramsRaw": "u8 bufferId, u8 partyId, u16 expPoints",
+      "paramsList": [
+        {
+          "name": "bufferId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "partyId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "expPoints",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "sBattleBuffersTransferData[0] = CONTROLLER_EXPUPDATE;\n    sBattleBuffersTransferData[1] = partyId;\n    sBattleBuffersTransferData[2] = (s16)expPoints;\n    sBattleBuffersTransferData[3] = ((s16)expPoints & 0xFF00) >> 8;\n    PrepareBufferDataTransfer(bufferId, sBattleBuffersTransferData, 4);",
       "callsTo": [
         "PrepareBufferDataTransfer"
@@ -354,6 +650,20 @@
       "returnType": "void",
       "signature": "void BtlController_EmitStatusIconUpdate(u8 bufferId, u32 status1, u32 status2)",
       "paramsRaw": "u8 bufferId, u32 status1, u32 status2",
+      "paramsList": [
+        {
+          "name": "bufferId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "status1",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "status2",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "sBattleBuffersTransferData[0] = CONTROLLER_STATUSICONUPDATE;\n    sBattleBuffersTransferData[1] = status1;\n    sBattleBuffersTransferData[2] = (status1 & 0x0000FF00) >> 8;\n    sBattleBuffersTransferData[3] = (status1 & 0x00FF0000) >> 16;\n    sBattleBuffersTransferData[4] = (status1 & 0xFF000000) >> 24;\n    sBattleBuffersTransferData[5] = status2;\n    sBattleBuffersTransferData[6] = (status2 & 0x0000FF00) >> 8;\n    sBattleBuffersTransferData[7] = (status2 & 0x00FF0000) >> 16;\n    sBattleBuffersTransferData[8] = (status2 & 0xFF000000) >> 24;\n    PrepareBufferDataTransfer(bufferId, sBattleBuffersTransferData, 9);",
       "callsTo": [
         "PrepareBufferDataTransfer"
@@ -364,6 +674,20 @@
       "returnType": "void",
       "signature": "void BtlController_EmitStatusAnimation(u8 bufferId, bool8 status2, u32 status)",
       "paramsRaw": "u8 bufferId, bool8 status2, u32 status",
+      "paramsList": [
+        {
+          "name": "bufferId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "status2",
+          "typeRaw": "bool8"
+        },
+        {
+          "name": "status",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "sBattleBuffersTransferData[0] = CONTROLLER_STATUSANIMATION;\n    sBattleBuffersTransferData[1] = status2;\n    sBattleBuffersTransferData[2] = status;\n    sBattleBuffersTransferData[3] = (status & 0x0000FF00) >> 8;\n    sBattleBuffersTransferData[4] = (status & 0x00FF0000) >> 16;\n    sBattleBuffersTransferData[5] = (status & 0xFF000000) >> 24;\n    PrepareBufferDataTransfer(bufferId, sBattleBuffersTransferData, 6);",
       "callsTo": [
         "PrepareBufferDataTransfer"
@@ -374,6 +698,20 @@
       "returnType": "void",
       "signature": "void BtlController_EmitDataTransfer(u8 bufferId, u16 size, void *data)",
       "paramsRaw": "u8 bufferId, u16 size, void *data",
+      "paramsList": [
+        {
+          "name": "bufferId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "size",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "data",
+          "typeRaw": "void *"
+        }
+      ],
       "body": "s32 i;\n\n    sBattleBuffersTransferData[0] = CONTROLLER_DATATRANSFER;\n    sBattleBuffersTransferData[1] = CONTROLLER_DATATRANSFER;\n    sBattleBuffersTransferData[2] = size;\n    sBattleBuffersTransferData[3] = (size & 0xFF00) >> 8;\n    for (i = 0; i < size; i++)\n        sBattleBuffersTransferData[4 + i] = *(u8 *)(data++);\n    PrepareBufferDataTransfer(bufferId, sBattleBuffersTransferData, size + 4);",
       "callsTo": [
         "PrepareBufferDataTransfer"
@@ -384,6 +722,20 @@
       "returnType": "void",
       "signature": "void BtlController_EmitTwoReturnValues(u8 bufferId, u8 ret8, u16 ret16)",
       "paramsRaw": "u8 bufferId, u8 ret8, u16 ret16",
+      "paramsList": [
+        {
+          "name": "bufferId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "ret8",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "ret16",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "sBattleBuffersTransferData[0] = CONTROLLER_TWORETURNVALUES;\n    sBattleBuffersTransferData[1] = ret8;\n    sBattleBuffersTransferData[2] = ret16;\n    sBattleBuffersTransferData[3] = (ret16 & 0xFF00) >> 8;\n    PrepareBufferDataTransfer(bufferId, sBattleBuffersTransferData, 4);",
       "callsTo": [
         "PrepareBufferDataTransfer"
@@ -394,6 +746,20 @@
       "returnType": "void",
       "signature": "void BtlController_EmitChosenMonReturnValue(u8 bufferId, u8 partyId, u8 *battlePartyOrder)",
       "paramsRaw": "u8 bufferId, u8 partyId, u8 *battlePartyOrder",
+      "paramsList": [
+        {
+          "name": "bufferId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "partyId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "battlePartyOrder",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "s32 i;\n\n    sBattleBuffersTransferData[0] = CONTROLLER_CHOSENMONRETURNVALUE;\n    sBattleBuffersTransferData[1] = partyId;\n    for (i = 0; i < (int)ARRAY_COUNT(gBattlePartyCurrentOrder); i++)\n        sBattleBuffersTransferData[2 + i] = battlePartyOrder[i];\n    PrepareBufferDataTransfer(bufferId, sBattleBuffersTransferData, 5);",
       "callsTo": [
         "ARRAY_COUNT",
@@ -405,6 +771,16 @@
       "returnType": "void",
       "signature": "void BtlController_EmitOneReturnValue(u8 bufferId, u16 ret)",
       "paramsRaw": "u8 bufferId, u16 ret",
+      "paramsList": [
+        {
+          "name": "bufferId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "ret",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "sBattleBuffersTransferData[0] = CONTROLLER_ONERETURNVALUE;\n    sBattleBuffersTransferData[1] = ret;\n    sBattleBuffersTransferData[2] = (ret & 0xFF00) >> 8;\n    sBattleBuffersTransferData[3] = 0;\n    PrepareBufferDataTransfer(bufferId, sBattleBuffersTransferData, 4);",
       "callsTo": [
         "PrepareBufferDataTransfer"
@@ -415,6 +791,16 @@
       "returnType": "void",
       "signature": "void BtlController_EmitOneReturnValue_Duplicate(u8 bufferId, u16 ret)",
       "paramsRaw": "u8 bufferId, u16 ret",
+      "paramsList": [
+        {
+          "name": "bufferId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "ret",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "sBattleBuffersTransferData[0] = CONTROLLER_ONERETURNVALUE_DUPLICATE;\n    sBattleBuffersTransferData[1] = ret;\n    sBattleBuffersTransferData[2] = (ret & 0xFF00) >> 8;\n    sBattleBuffersTransferData[3] = 0;\n    PrepareBufferDataTransfer(bufferId, sBattleBuffersTransferData, 4);",
       "callsTo": [
         "PrepareBufferDataTransfer"
@@ -425,6 +811,12 @@
       "returnType": "void",
       "signature": "void BtlController_EmitHitAnimation(u8 bufferId)",
       "paramsRaw": "u8 bufferId",
+      "paramsList": [
+        {
+          "name": "bufferId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "sBattleBuffersTransferData[0] = CONTROLLER_HITANIMATION;\n    sBattleBuffersTransferData[1] = CONTROLLER_HITANIMATION;\n    sBattleBuffersTransferData[2] = CONTROLLER_HITANIMATION;\n    sBattleBuffersTransferData[3] = CONTROLLER_HITANIMATION;\n    PrepareBufferDataTransfer(bufferId, sBattleBuffersTransferData, 4);",
       "callsTo": [
         "PrepareBufferDataTransfer"
@@ -435,6 +827,12 @@
       "returnType": "void",
       "signature": "void BtlController_EmitCantSwitch(u8 bufferId)",
       "paramsRaw": "u8 bufferId",
+      "paramsList": [
+        {
+          "name": "bufferId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "sBattleBuffersTransferData[0] = CONTROLLER_CANTSWITCH;\n    sBattleBuffersTransferData[1] = CONTROLLER_CANTSWITCH;\n    sBattleBuffersTransferData[2] = CONTROLLER_CANTSWITCH;\n    sBattleBuffersTransferData[3] = CONTROLLER_CANTSWITCH;\n    PrepareBufferDataTransfer(bufferId, sBattleBuffersTransferData, 4);",
       "callsTo": [
         "PrepareBufferDataTransfer"
@@ -445,6 +843,16 @@
       "returnType": "void",
       "signature": "void BtlController_EmitPlaySE(u8 bufferId, u16 songId)",
       "paramsRaw": "u8 bufferId, u16 songId",
+      "paramsList": [
+        {
+          "name": "bufferId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "songId",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "sBattleBuffersTransferData[0] = CONTROLLER_PLAYSE;\n    sBattleBuffersTransferData[1] = songId;\n    sBattleBuffersTransferData[2] = (songId & 0xFF00) >> 8;\n    sBattleBuffersTransferData[3] = 0;\n    PrepareBufferDataTransfer(bufferId, sBattleBuffersTransferData, 4);",
       "callsTo": [
         "PrepareBufferDataTransfer"
@@ -455,6 +863,20 @@
       "returnType": "void",
       "signature": "void BtlController_EmitPlayFanfareOrBGM(u8 bufferId, u16 songId, bool8 playBGM)",
       "paramsRaw": "u8 bufferId, u16 songId, bool8 playBGM",
+      "paramsList": [
+        {
+          "name": "bufferId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "songId",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "playBGM",
+          "typeRaw": "bool8"
+        }
+      ],
       "body": "sBattleBuffersTransferData[0] = CONTROLLER_PLAYFANFAREORBGM;\n    sBattleBuffersTransferData[1] = songId;\n    sBattleBuffersTransferData[2] = (songId & 0xFF00) >> 8;\n    sBattleBuffersTransferData[3] = playBGM;\n    PrepareBufferDataTransfer(bufferId, sBattleBuffersTransferData, 4);",
       "callsTo": [
         "PrepareBufferDataTransfer"
@@ -465,6 +887,12 @@
       "returnType": "void",
       "signature": "void BtlController_EmitFaintingCry(u8 bufferId)",
       "paramsRaw": "u8 bufferId",
+      "paramsList": [
+        {
+          "name": "bufferId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "sBattleBuffersTransferData[0] = CONTROLLER_FAINTINGCRY;\n    sBattleBuffersTransferData[1] = CONTROLLER_FAINTINGCRY;\n    sBattleBuffersTransferData[2] = CONTROLLER_FAINTINGCRY;\n    sBattleBuffersTransferData[3] = CONTROLLER_FAINTINGCRY;\n    PrepareBufferDataTransfer(bufferId, sBattleBuffersTransferData, 4);",
       "callsTo": [
         "PrepareBufferDataTransfer"
@@ -475,6 +903,16 @@
       "returnType": "void",
       "signature": "void BtlController_EmitIntroSlide(u8 bufferId, u8 environmentId)",
       "paramsRaw": "u8 bufferId, u8 environmentId",
+      "paramsList": [
+        {
+          "name": "bufferId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "environmentId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "sBattleBuffersTransferData[0] = CONTROLLER_INTROSLIDE;\n    sBattleBuffersTransferData[1] = environmentId;\n    PrepareBufferDataTransfer(bufferId, sBattleBuffersTransferData, 2);",
       "callsTo": [
         "PrepareBufferDataTransfer"
@@ -485,6 +923,12 @@
       "returnType": "void",
       "signature": "void BtlController_EmitIntroTrainerBallThrow(u8 bufferId)",
       "paramsRaw": "u8 bufferId",
+      "paramsList": [
+        {
+          "name": "bufferId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "sBattleBuffersTransferData[0] = CONTROLLER_INTROTRAINERBALLTHROW;\n    sBattleBuffersTransferData[1] = CONTROLLER_INTROTRAINERBALLTHROW;\n    sBattleBuffersTransferData[2] = CONTROLLER_INTROTRAINERBALLTHROW;\n    sBattleBuffersTransferData[3] = CONTROLLER_INTROTRAINERBALLTHROW;\n    PrepareBufferDataTransfer(bufferId, sBattleBuffersTransferData, 4);",
       "callsTo": [
         "PrepareBufferDataTransfer"
@@ -495,6 +939,20 @@
       "returnType": "void",
       "signature": "void BtlController_EmitDrawPartyStatusSummary(u8 bufferId, struct HpAndStatus *hpAndStatus, u8 flags)",
       "paramsRaw": "u8 bufferId, struct HpAndStatus *hpAndStatus, u8 flags",
+      "paramsList": [
+        {
+          "name": "bufferId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "hpAndStatus",
+          "typeRaw": "struct HpAndStatus *"
+        },
+        {
+          "name": "flags",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s32 i;\n\n    sBattleBuffersTransferData[0] = CONTROLLER_DRAWPARTYSTATUSSUMMARY;\n    sBattleBuffersTransferData[1] = flags & ~PARTY_SUMM_SKIP_DRAW_DELAY;  \n    sBattleBuffersTransferData[2] = (flags & PARTY_SUMM_SKIP_DRAW_DELAY) >> 7;  \n    sBattleBuffersTransferData[3] = CONTROLLER_DRAWPARTYSTATUSSUMMARY;\n    for (i = 0; i < (s32)(sizeof(struct HpAndStatus) * PARTY_SIZE); i++)\n        sBattleBuffersTransferData[4 + i] = *(i + (u8 *)(hpAndStatus));\n    PrepareBufferDataTransfer(bufferId, sBattleBuffersTransferData, sizeof(struct HpAndStatus) * PARTY_SIZE + 4);",
       "callsTo": [
         "PrepareBufferDataTransfer"
@@ -505,6 +963,12 @@
       "returnType": "void",
       "signature": "void BtlController_EmitHidePartyStatusSummary(u8 bufferId)",
       "paramsRaw": "u8 bufferId",
+      "paramsList": [
+        {
+          "name": "bufferId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "sBattleBuffersTransferData[0] = CONTROLLER_HIDEPARTYSTATUSSUMMARY;\n    sBattleBuffersTransferData[1] = CONTROLLER_HIDEPARTYSTATUSSUMMARY;\n    sBattleBuffersTransferData[2] = CONTROLLER_HIDEPARTYSTATUSSUMMARY;\n    sBattleBuffersTransferData[3] = CONTROLLER_HIDEPARTYSTATUSSUMMARY;\n    PrepareBufferDataTransfer(bufferId, sBattleBuffersTransferData, 4);",
       "callsTo": [
         "PrepareBufferDataTransfer"
@@ -515,6 +979,12 @@
       "returnType": "void",
       "signature": "void BtlController_EmitEndBounceEffect(u8 bufferId)",
       "paramsRaw": "u8 bufferId",
+      "paramsList": [
+        {
+          "name": "bufferId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "sBattleBuffersTransferData[0] = CONTROLLER_ENDBOUNCE;\n    sBattleBuffersTransferData[1] = CONTROLLER_ENDBOUNCE;\n    sBattleBuffersTransferData[2] = CONTROLLER_ENDBOUNCE;\n    sBattleBuffersTransferData[3] = CONTROLLER_ENDBOUNCE;\n    PrepareBufferDataTransfer(bufferId, sBattleBuffersTransferData, 4);",
       "callsTo": [
         "PrepareBufferDataTransfer"
@@ -525,6 +995,16 @@
       "returnType": "void",
       "signature": "void BtlController_EmitSpriteInvisibility(u8 bufferId, bool8 isInvisible)",
       "paramsRaw": "u8 bufferId, bool8 isInvisible",
+      "paramsList": [
+        {
+          "name": "bufferId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "isInvisible",
+          "typeRaw": "bool8"
+        }
+      ],
       "body": "sBattleBuffersTransferData[0] = CONTROLLER_SPRITEINVISIBILITY;\n    sBattleBuffersTransferData[1] = isInvisible;\n    sBattleBuffersTransferData[2] = CONTROLLER_SPRITEINVISIBILITY;\n    sBattleBuffersTransferData[3] = CONTROLLER_SPRITEINVISIBILITY;\n    PrepareBufferDataTransfer(bufferId, sBattleBuffersTransferData, 4);",
       "callsTo": [
         "PrepareBufferDataTransfer"
@@ -535,6 +1015,20 @@
       "returnType": "void",
       "signature": "void BtlController_EmitBattleAnimation(u8 bufferId, u8 animationId, u16 argument)",
       "paramsRaw": "u8 bufferId, u8 animationId, u16 argument",
+      "paramsList": [
+        {
+          "name": "bufferId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "animationId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "argument",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "sBattleBuffersTransferData[0] = CONTROLLER_BATTLEANIMATION;\n    sBattleBuffersTransferData[1] = animationId;\n    sBattleBuffersTransferData[2] = argument;\n    sBattleBuffersTransferData[3] = (argument & 0xFF00) >> 8;\n    PrepareBufferDataTransfer(bufferId, sBattleBuffersTransferData, 4);",
       "callsTo": [
         "PrepareBufferDataTransfer"
@@ -545,6 +1039,20 @@
       "returnType": "void",
       "signature": "void BtlController_EmitLinkStandbyMsg(u8 bufferId, u8 mode, bool32 record)",
       "paramsRaw": "u8 bufferId, u8 mode, bool32 record",
+      "paramsList": [
+        {
+          "name": "bufferId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "mode",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "record",
+          "typeRaw": "bool32"
+        }
+      ],
       "body": "bool8 record_ = record;\n    sBattleBuffersTransferData[0] = CONTROLLER_LINKSTANDBYMSG;\n    sBattleBuffersTransferData[1] = mode;\n\n    if (record_)\n        sBattleBuffersTransferData[3] = sBattleBuffersTransferData[2] = RecordedBattle_BufferNewBattlerData(&sBattleBuffersTransferData[4]);\n    else\n        sBattleBuffersTransferData[3] = sBattleBuffersTransferData[2] = 0;\n\n    PrepareBufferDataTransfer(bufferId, sBattleBuffersTransferData, sBattleBuffersTransferData[2] + 4);",
       "callsTo": [
         "PrepareBufferDataTransfer",
@@ -556,6 +1064,16 @@
       "returnType": "void",
       "signature": "void BtlController_EmitResetActionMoveSelection(u8 bufferId, u8 caseId)",
       "paramsRaw": "u8 bufferId, u8 caseId",
+      "paramsList": [
+        {
+          "name": "bufferId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "caseId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "sBattleBuffersTransferData[0] = CONTROLLER_RESETACTIONMOVESELECTION;\n    sBattleBuffersTransferData[1] = caseId;\n    PrepareBufferDataTransfer(bufferId, sBattleBuffersTransferData, 2);",
       "callsTo": [
         "PrepareBufferDataTransfer"
@@ -566,6 +1084,16 @@
       "returnType": "void",
       "signature": "void BtlController_EmitEndLinkBattle(u8 bufferId, u8 battleOutcome)",
       "paramsRaw": "u8 bufferId, u8 battleOutcome",
+      "paramsList": [
+        {
+          "name": "bufferId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "battleOutcome",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "sBattleBuffersTransferData[0] = CONTROLLER_ENDLINKBATTLE;\n    sBattleBuffersTransferData[1] = battleOutcome;\n    sBattleBuffersTransferData[2] = gSaveBlock2Ptr->frontier.disableRecordBattle;\n    sBattleBuffersTransferData[3] = gSaveBlock2Ptr->frontier.disableRecordBattle;\n    sBattleBuffersTransferData[5] = sBattleBuffersTransferData[4] = RecordedBattle_BufferNewBattlerData(&sBattleBuffersTransferData[6]);\n    PrepareBufferDataTransfer(bufferId, sBattleBuffersTransferData, sBattleBuffersTransferData[4] + 6);",
       "callsTo": [
         "PrepareBufferDataTransfer",

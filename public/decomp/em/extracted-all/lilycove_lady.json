@@ -6,6 +6,7 @@
       "returnType": "u8",
       "signature": "u8 GetLilycoveLadyId(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return gSaveBlock1Ptr->lilycoveLady.id;",
       "callsTo": [],
       "lineCount": 1
@@ -14,6 +15,7 @@
       "returnType": "void",
       "signature": "void SetLilycoveLadyGfx(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "LilycoveLady *lilycoveLady;\n\n    VarSet(VAR_OBJ_GFX_ID_0, sLilycoveLadyGfxId[GetLilycoveLadyId()]);\n    if (GetLilycoveLadyId() == LILYCOVE_LADY_CONTEST)\n    {\n        lilycoveLady = &gSaveBlock1Ptr->lilycoveLady;\n        VarSet(VAR_OBJ_GFX_ID_1, sContestLadyMonGfxId[lilycoveLady->contest.category]);\n        gSpecialVar_Result = TRUE;\n    }\n    else\n    {\n        gSpecialVar_Result = FALSE;\n    }",
       "callsTo": [
         "GetLilycoveLadyId",
@@ -25,6 +27,7 @@
       "returnType": "void",
       "signature": "void InitLilycoveLady(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 id = ((gSaveBlock2Ptr->playerTrainerId[1] << 8) | gSaveBlock2Ptr->playerTrainerId[0]);\n    id %= 6;\n    id >>= 1;\n    switch (id)\n    {\n    case LILYCOVE_LADY_QUIZ:\n        InitLilycoveQuizLady();\n        break;\n    case LILYCOVE_LADY_FAVOR:\n        InitLilycoveFavorLady();\n        break;\n    case LILYCOVE_LADY_CONTEST:\n        InitLilycoveContestLady();\n        break;\n    }",
       "callsTo": [
         "InitLilycoveContestLady",
@@ -37,6 +40,7 @@
       "returnType": "void",
       "signature": "void ResetLilycoveLadyForRecordMix(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (GetLilycoveLadyId())\n    {\n    case LILYCOVE_LADY_QUIZ:\n        ResetQuizLadyForRecordMix();\n        break;\n    case LILYCOVE_LADY_FAVOR:\n        ResetFavorLadyForRecordMix();\n        break;\n    case LILYCOVE_LADY_CONTEST:\n        ResetContestLadyForRecordMix();\n        break;\n    }",
       "callsTo": [
         "GetLilycoveLadyId",
@@ -50,6 +54,7 @@
       "returnType": "void",
       "signature": "void InitLilycoveLadyRandomly(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 lady = Random() % LILYCOVE_LADY_COUNT;\n\n    switch (lady)\n    {\n    case LILYCOVE_LADY_QUIZ:\n        InitLilycoveQuizLady();\n        break;\n    case LILYCOVE_LADY_FAVOR:\n        InitLilycoveFavorLady();\n        break;\n    case LILYCOVE_LADY_CONTEST:\n        InitLilycoveContestLady();\n        break;\n    }",
       "callsTo": [
         "InitLilycoveContestLady",
@@ -63,6 +68,7 @@
       "returnType": "void",
       "signature": "void Script_GetLilycoveLadyId(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gSpecialVar_Result = GetLilycoveLadyId();",
       "callsTo": [
         "GetLilycoveLadyId"
@@ -73,6 +79,12 @@
       "returnType": "u8",
       "signature": "static u8 GetNumAcceptedItems(const u16 *itemsArray)",
       "paramsRaw": "const u16 *itemsArray",
+      "paramsList": [
+        {
+          "name": "itemsArray",
+          "typeRaw": "const u16 *"
+        }
+      ],
       "body": "u8 numItems;\n\n    for (numItems = 0; *itemsArray != ITEM_NONE; numItems++, itemsArray++);\n    return numItems;",
       "callsTo": [],
       "lineCount": 4
@@ -81,6 +93,7 @@
       "returnType": "void",
       "signature": "static void FavorLadyPickFavorAndBestItem(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 numItems;\n    u8 bestItem;\n\n    sFavorLadyPtr->favorId = Random() % ARRAY_COUNT(sFavorLadyRequests);\n    numItems = GetNumAcceptedItems(sFavorLadyAcceptedItemLists[sFavorLadyPtr->favorId]);\n    bestItem = Random() % numItems;\n    sFavorLadyPtr->bestItem = sFavorLadyAcceptedItemLists[sFavorLadyPtr->favorId][bestItem];",
       "callsTo": [
         "ARRAY_COUNT",
@@ -93,6 +106,7 @@
       "returnType": "void",
       "signature": "static void InitLilycoveFavorLady(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sFavorLadyPtr = &gSaveBlock1Ptr->lilycoveLady.favor;\n    sFavorLadyPtr->id = LILYCOVE_LADY_FAVOR;\n    sFavorLadyPtr->state = LILYCOVE_LADY_STATE_READY;\n    sFavorLadyPtr->playerName[0] = EOS;\n    sFavorLadyPtr->likedItem = FALSE;\n    sFavorLadyPtr->numItemsGiven = 0;\n    sFavorLadyPtr->itemId = ITEM_NONE;\n    sFavorLadyPtr->language = gGameLanguage;\n    FavorLadyPickFavorAndBestItem();",
       "callsTo": [
         "FavorLadyPickFavorAndBestItem"
@@ -103,6 +117,7 @@
       "returnType": "void",
       "signature": "static void ResetFavorLadyForRecordMix(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sFavorLadyPtr = &gSaveBlock1Ptr->lilycoveLady.favor;\n    sFavorLadyPtr->id = LILYCOVE_LADY_FAVOR;\n    sFavorLadyPtr->state = LILYCOVE_LADY_STATE_READY;",
       "callsTo": [],
       "lineCount": 3
@@ -111,6 +126,7 @@
       "returnType": "u8",
       "signature": "u8 GetFavorLadyState(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sFavorLadyPtr = &gSaveBlock1Ptr->lilycoveLady.favor;\n    if (sFavorLadyPtr->state == LILYCOVE_LADY_STATE_PRIZE)\n        return LILYCOVE_LADY_STATE_PRIZE;\n    else if (sFavorLadyPtr->state == LILYCOVE_LADY_STATE_COMPLETED)\n        return LILYCOVE_LADY_STATE_COMPLETED;\n    else\n        return LILYCOVE_LADY_STATE_READY;",
       "callsTo": [],
       "lineCount": 7
@@ -119,6 +135,7 @@
       "returnType": "void",
       "signature": "void BufferFavorLadyRequest(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sFavorLadyPtr = &gSaveBlock1Ptr->lilycoveLady.favor;\n    StringCopy(gStringVar1, GetFavorLadyRequest(sFavorLadyPtr->favorId));",
       "callsTo": [
         "GetFavorLadyRequest",
@@ -130,6 +147,7 @@
       "returnType": "bool8",
       "signature": "bool8 HasAnotherPlayerGivenFavorLadyItem(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sFavorLadyPtr = &gSaveBlock1Ptr->lilycoveLady.favor;\n    if (sFavorLadyPtr->playerName[0] != EOS)\n    {\n        StringCopy_PlayerName(gStringVar3, sFavorLadyPtr->playerName);\n        ConvertInternationalString(gStringVar3, sFavorLadyPtr->language);\n        return TRUE;\n    }\n    return FALSE;",
       "callsTo": [
         "ConvertInternationalString",
@@ -141,6 +159,16 @@
       "returnType": "void",
       "signature": "static void BufferItemName(u8 *dest, u16 itemId)",
       "paramsRaw": "u8 *dest, u16 itemId",
+      "paramsList": [
+        {
+          "name": "dest",
+          "typeRaw": "u8 *"
+        },
+        {
+          "name": "itemId",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "StringCopy(dest, GetItemName(itemId));",
       "callsTo": [
         "GetItemName",
@@ -152,6 +180,7 @@
       "returnType": "void",
       "signature": "void BufferFavorLadyItemName(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sFavorLadyPtr = &gSaveBlock1Ptr->lilycoveLady.favor;\n    BufferItemName(gStringVar2, sFavorLadyPtr->itemId);",
       "callsTo": [
         "BufferItemName"
@@ -162,6 +191,16 @@
       "returnType": "void",
       "signature": "static void SetFavorLadyPlayerName(const u8 *src, u8 *dest)",
       "paramsRaw": "const u8 *src, u8 *dest",
+      "paramsList": [
+        {
+          "name": "src",
+          "typeRaw": "const u8 *"
+        },
+        {
+          "name": "dest",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "memset(dest, EOS, PLAYER_NAME_LENGTH + 1);\n    StringCopy_PlayerName(dest, src);",
       "callsTo": [
         "StringCopy_PlayerName"
@@ -172,6 +211,7 @@
       "returnType": "void",
       "signature": "void BufferFavorLadyPlayerName(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sFavorLadyPtr = &gSaveBlock1Ptr->lilycoveLady.favor;\n    SetFavorLadyPlayerName(sFavorLadyPtr->playerName, gStringVar3);\n    ConvertInternationalString(gStringVar3, sFavorLadyPtr->language);",
       "callsTo": [
         "ConvertInternationalString",
@@ -183,6 +223,7 @@
       "returnType": "bool8",
       "signature": "bool8 DidFavorLadyLikeItem(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sFavorLadyPtr = &gSaveBlock1Ptr->lilycoveLady.favor;\n    return sFavorLadyPtr->likedItem ? TRUE : FALSE;",
       "callsTo": [],
       "lineCount": 2
@@ -191,6 +232,7 @@
       "returnType": "void",
       "signature": "void Script_FavorLadyOpenBagMenu(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "FavorLadyOpenBagMenu();",
       "callsTo": [
         "FavorLadyOpenBagMenu"
@@ -201,6 +243,12 @@
       "returnType": "bool8",
       "signature": "static bool8 DoesFavorLadyLikeItem(u16 itemId)",
       "paramsRaw": "u16 itemId",
+      "paramsList": [
+        {
+          "name": "itemId",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "u8 numItems;\n    u8 i;\n    bool8 likedItem;\n\n    sFavorLadyPtr = &gSaveBlock1Ptr->lilycoveLady.favor;\n    numItems = GetNumAcceptedItems(sFavorLadyAcceptedItemLists[sFavorLadyPtr->favorId]);\n    sFavorLadyPtr->state = LILYCOVE_LADY_STATE_COMPLETED;\n    BufferItemName(gStringVar2, itemId);\n    sFavorLadyPtr->itemId = itemId;\n    SetFavorLadyPlayerName(gSaveBlock2Ptr->playerName, sFavorLadyPtr->playerName);\n    sFavorLadyPtr->language = gGameLanguage;\n    likedItem = FALSE;\n    for (i = 0; i < numItems; i ++)\n    {\n        if (sFavorLadyAcceptedItemLists[sFavorLadyPtr->favorId][i] == itemId)\n        {\n            likedItem = TRUE;\n            sFavorLadyPtr->numItemsGiven++;\n            sFavorLadyPtr->likedItem = TRUE;\n            if (sFavorLadyPtr->bestItem == itemId)\n                sFavorLadyPtr->numItemsGiven = LILYCOVE_LADY_GIFT_THRESHOLD;\n            break;\n        }\n        sFavorLadyPtr->likedItem = FALSE;\n    }\n    return likedItem;",
       "callsTo": [
         "BufferItemName",
@@ -213,6 +261,7 @@
       "returnType": "bool8",
       "signature": "bool8 Script_DoesFavorLadyLikeItem(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return DoesFavorLadyLikeItem(gSpecialVar_ItemId);",
       "callsTo": [
         "DoesFavorLadyLikeItem"
@@ -223,6 +272,7 @@
       "returnType": "bool8",
       "signature": "bool8 IsFavorLadyThresholdMet(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 numItemsGiven;\n\n    sFavorLadyPtr = &gSaveBlock1Ptr->lilycoveLady.favor;\n    numItemsGiven = sFavorLadyPtr->numItemsGiven;\n    return numItemsGiven < LILYCOVE_LADY_GIFT_THRESHOLD ? FALSE : TRUE;",
       "callsTo": [],
       "lineCount": 5
@@ -231,6 +281,12 @@
       "returnType": "void",
       "signature": "static void FavorLadyBufferPrizeName(u16 prize)",
       "paramsRaw": "u16 prize",
+      "paramsList": [
+        {
+          "name": "prize",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "BufferItemName(gStringVar2, prize);",
       "callsTo": [
         "BufferItemName"
@@ -241,6 +297,7 @@
       "returnType": "u16",
       "signature": "u16 FavorLadyGetPrize(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 prize;\n\n    sFavorLadyPtr = &gSaveBlock1Ptr->lilycoveLady.favor;\n    prize = sFavorLadyPrizes[sFavorLadyPtr->favorId];\n    FavorLadyBufferPrizeName(prize);\n    sFavorLadyPtr->state = LILYCOVE_LADY_STATE_PRIZE;\n    return prize;",
       "callsTo": [
         "FavorLadyBufferPrizeName"
@@ -251,6 +308,7 @@
       "returnType": "void",
       "signature": "void SetFavorLadyState_Complete(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "InitLilycoveFavorLady();\n    sFavorLadyPtr->state = LILYCOVE_LADY_STATE_COMPLETED;",
       "callsTo": [
         "InitLilycoveFavorLady"
@@ -261,6 +319,7 @@
       "returnType": "void",
       "signature": "void FieldCallback_FavorLadyEnableScriptContexts(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ScriptContext_Enable();",
       "callsTo": [
         "ScriptContext_Enable"
@@ -271,6 +330,7 @@
       "returnType": "void",
       "signature": "static void QuizLadyPickQuestion(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 questionId;\n    u8 i;\n\n    questionId = Random() % ARRAY_COUNT(sQuizLadyQuizQuestions);\n    for (i = 0; i < QUIZ_QUESTION_LEN; i ++)\n        sQuizLadyPtr->question[i] = sQuizLadyQuizQuestions[questionId][i];\n    sQuizLadyPtr->correctAnswer = sQuizLadyQuizAnswers[questionId];\n    sQuizLadyPtr->prize = sQuizLadyPrizes[questionId];\n    sQuizLadyPtr->questionId = questionId;\n    sQuizLadyPtr->playerName[0] = EOS;",
       "callsTo": [
         "ARRAY_COUNT",
@@ -282,6 +342,7 @@
       "returnType": "void",
       "signature": "static void InitLilycoveQuizLady(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n\n    sQuizLadyPtr = &gSaveBlock1Ptr->lilycoveLady.quiz;\n    sQuizLadyPtr->id = LILYCOVE_LADY_QUIZ;\n    sQuizLadyPtr->state = LILYCOVE_LADY_STATE_READY;\n\n    for (i = 0; i < QUIZ_QUESTION_LEN; i ++)\n        sQuizLadyPtr->question[i] = EC_EMPTY_WORD;\n\n    sQuizLadyPtr->correctAnswer = EC_EMPTY_WORD;\n    sQuizLadyPtr->playerAnswer = EC_EMPTY_WORD;\n\n    for (i = 0; i < TRAINER_ID_LENGTH; i ++)\n        sQuizLadyPtr->playerTrainerId[i] = 0;\n\n    sQuizLadyPtr->prize = ITEM_NONE;\n    sQuizLadyPtr->waitingForChallenger = FALSE;\n    sQuizLadyPtr->prevQuestionId = ARRAY_COUNT(sQuizLadyQuizQuestions);\n    sQuizLadyPtr->language = gGameLanguage;\n    QuizLadyPickQuestion();",
       "callsTo": [
         "ARRAY_COUNT",
@@ -293,6 +354,7 @@
       "returnType": "void",
       "signature": "static void ResetQuizLadyForRecordMix(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sQuizLadyPtr = &gSaveBlock1Ptr->lilycoveLady.quiz;\n    sQuizLadyPtr->id = LILYCOVE_LADY_QUIZ;\n    sQuizLadyPtr->state = LILYCOVE_LADY_STATE_READY;\n    sQuizLadyPtr->waitingForChallenger = FALSE;\n    sQuizLadyPtr->playerAnswer = EC_EMPTY_WORD;",
       "callsTo": [],
       "lineCount": 5
@@ -301,6 +363,7 @@
       "returnType": "u8",
       "signature": "u8 GetQuizLadyState(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sQuizLadyPtr = &gSaveBlock1Ptr->lilycoveLady.quiz;\n    if (sQuizLadyPtr->state == LILYCOVE_LADY_STATE_PRIZE)\n        return LILYCOVE_LADY_STATE_PRIZE;\n    else if (sQuizLadyPtr->state == LILYCOVE_LADY_STATE_COMPLETED)\n        return LILYCOVE_LADY_STATE_COMPLETED;\n    else\n        return LILYCOVE_LADY_STATE_READY;",
       "callsTo": [],
       "lineCount": 7
@@ -309,6 +372,7 @@
       "returnType": "u8",
       "signature": "u8 GetQuizAuthor(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s32 i, j;\n    u8 authorNameId;\n    struct LilycoveLadyQuiz *quiz = &gSaveBlock1Ptr->lilycoveLady.quiz;\n\n    if (IsEasyChatAnswerUnlocked(quiz->correctAnswer) == FALSE)\n    {\n        i = quiz->questionId;\n        do\n        {\n            if (++i >= (int)ARRAY_COUNT(sQuizLadyQuizQuestions))\n                i = 0;\n        } while (IsEasyChatAnswerUnlocked(sQuizLadyQuizAnswers[i]) == FALSE);\n\n        for (j = 0; j < QUIZ_QUESTION_LEN; j++)\n            quiz->question[j] = sQuizLadyQuizQuestions[i][j];\n        quiz->correctAnswer = sQuizLadyQuizAnswers[i];\n        quiz->prize = sQuizLadyPrizes[i];\n        quiz->questionId = i;\n        quiz->playerName[0] = EOS;\n    }\n    authorNameId = BufferQuizAuthorName();\n    if (authorNameId == QUIZ_AUTHOR_NAME_LADY)\n        return QUIZ_AUTHOR_LADY;\n    else if (authorNameId == QUIZ_AUTHOR_NAME_OTHER_PLAYER || IsQuizTrainerIdNotPlayer())\n        return QUIZ_AUTHOR_OTHER_PLAYER;\n    else\n        return QUIZ_AUTHOR_PLAYER;",
       "callsTo": [
         "ARRAY_COUNT",
@@ -322,6 +386,7 @@
       "returnType": "u8",
       "signature": "static u8 BufferQuizAuthorName(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 authorNameId;\n    u8 nameLen;\n    u8 i;\n\n    authorNameId = QUIZ_AUTHOR_NAME_PLAYER;\n    sQuizLadyPtr = &gSaveBlock1Ptr->lilycoveLady.quiz;\n    if (sQuizLadyPtr->playerName[0] == EOS)\n    {\n        StringCopy(gStringVar1, gText_QuizLady_Lady);  \n        authorNameId = QUIZ_AUTHOR_NAME_LADY;\n    }\n    else\n    {\n        StringCopy_PlayerName(gStringVar1, sQuizLadyPtr->playerName);\n        ConvertInternationalString(gStringVar1, sQuizLadyPtr->language);\n        nameLen = GetPlayerNameLength(sQuizLadyPtr->playerName);\n        if (nameLen == GetPlayerNameLength(gSaveBlock2Ptr->playerName))\n        {\n            u8 *name = sQuizLadyPtr->playerName;\n            for (i = 0; i < nameLen; i++)\n            {\n                name = sQuizLadyPtr->playerName;\n                if (name[i] != gSaveBlock2Ptr->playerName[i])\n                {\n                    authorNameId = QUIZ_AUTHOR_NAME_OTHER_PLAYER;\n                    break;\n                }\n            }\n        }\n\n    }\n    return authorNameId;",
       "callsTo": [
         "ConvertInternationalString",
@@ -335,6 +400,7 @@
       "returnType": "bool8",
       "signature": "static bool8 IsQuizTrainerIdNotPlayer(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "bool8 notPlayer;\n    u8 i;\n\n    sQuizLadyPtr = &gSaveBlock1Ptr->lilycoveLady.quiz;\n    notPlayer = FALSE;\n    for (i = 0; i < TRAINER_ID_LENGTH; i++)\n    {\n        if (sQuizLadyPtr->playerTrainerId[i] != gSaveBlock2Ptr->playerTrainerId[i])\n        {\n            notPlayer = TRUE;\n            break;\n        }\n    }\n    return notPlayer;",
       "callsTo": [],
       "lineCount": 14
@@ -343,6 +409,12 @@
       "returnType": "u8",
       "signature": "static u8 GetPlayerNameLength(const u8 *playerName)",
       "paramsRaw": "const u8 *playerName",
+      "paramsList": [
+        {
+          "name": "playerName",
+          "typeRaw": "const u8 *"
+        }
+      ],
       "body": "u8 len;\n    const u8 *ptr;\n\n    for (len = 0, ptr = playerName; *ptr != EOS; len++, ptr++);\n    return len;",
       "callsTo": [],
       "lineCount": 5
@@ -351,6 +423,7 @@
       "returnType": "void",
       "signature": "void BufferQuizPrizeName(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "StringCopy(gStringVar1, GetItemName(sQuizLadyPtr->prize));",
       "callsTo": [
         "GetItemName",
@@ -362,6 +435,7 @@
       "returnType": "bool8",
       "signature": "bool8 BufferQuizAuthorNameAndCheckIfLady(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sQuizLadyPtr = &gSaveBlock1Ptr->lilycoveLady.quiz;\n    if (BufferQuizAuthorName() == QUIZ_AUTHOR_NAME_LADY)\n    {\n        sQuizLadyPtr->language = gGameLanguage;\n        return TRUE;\n    }\n    return FALSE;",
       "callsTo": [
         "BufferQuizAuthorName"
@@ -372,6 +446,7 @@
       "returnType": "bool8",
       "signature": "bool8 IsQuizLadyWaitingForChallenger(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sQuizLadyPtr = &gSaveBlock1Ptr->lilycoveLady.quiz;\n    return sQuizLadyPtr->waitingForChallenger;",
       "callsTo": [],
       "lineCount": 2
@@ -380,6 +455,7 @@
       "returnType": "void",
       "signature": "void QuizLadyGetPlayerAnswer(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ShowEasyChatScreen();",
       "callsTo": [
         "ShowEasyChatScreen"
@@ -390,6 +466,7 @@
       "returnType": "bool8",
       "signature": "bool8 IsQuizAnswerCorrect(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sQuizLadyPtr = &gSaveBlock1Ptr->lilycoveLady.quiz;\n    CopyEasyChatWord(gStringVar1, sQuizLadyPtr->correctAnswer);\n    CopyEasyChatWord(gStringVar2, sQuizLadyPtr->playerAnswer);\n    return StringCompare(gStringVar1, gStringVar2) ? FALSE : TRUE;",
       "callsTo": [
         "CopyEasyChatWord",
@@ -401,6 +478,7 @@
       "returnType": "void",
       "signature": "void BufferQuizPrizeItem(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sQuizLadyPtr = &gSaveBlock1Ptr->lilycoveLady.quiz;\n    gSpecialVar_0x8005 = sQuizLadyPtr->prize;",
       "callsTo": [],
       "lineCount": 2
@@ -409,6 +487,7 @@
       "returnType": "void",
       "signature": "void SetQuizLadyState_Complete(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sQuizLadyPtr = &gSaveBlock1Ptr->lilycoveLady.quiz;\n    sQuizLadyPtr->state = LILYCOVE_LADY_STATE_COMPLETED;",
       "callsTo": [],
       "lineCount": 2
@@ -417,6 +496,7 @@
       "returnType": "void",
       "signature": "void SetQuizLadyState_GivePrize(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sQuizLadyPtr = &gSaveBlock1Ptr->lilycoveLady.quiz;\n    sQuizLadyPtr->state = LILYCOVE_LADY_STATE_PRIZE;",
       "callsTo": [],
       "lineCount": 2
@@ -425,6 +505,7 @@
       "returnType": "void",
       "signature": "void ClearQuizLadyPlayerAnswer(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sQuizLadyPtr = &gSaveBlock1Ptr->lilycoveLady.quiz;\n    sQuizLadyPtr->playerAnswer = EC_EMPTY_WORD;",
       "callsTo": [],
       "lineCount": 2
@@ -433,6 +514,7 @@
       "returnType": "void",
       "signature": "void Script_QuizLadyOpenBagMenu(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "QuizLadyOpenBagMenu();",
       "callsTo": [
         "QuizLadyOpenBagMenu"
@@ -443,6 +525,7 @@
       "returnType": "void",
       "signature": "void QuizLadyPickNewQuestion(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sQuizLadyPtr = &gSaveBlock1Ptr->lilycoveLady.quiz;\n    if (BufferQuizAuthorNameAndCheckIfLady())\n        sQuizLadyPtr->prevQuestionId = sQuizLadyPtr->questionId;\n    else\n        sQuizLadyPtr->prevQuestionId = ARRAY_COUNT(sQuizLadyQuizQuestions);\n    QuizLadyPickQuestion();",
       "callsTo": [
         "ARRAY_COUNT",
@@ -455,6 +538,7 @@
       "returnType": "void",
       "signature": "void ClearQuizLadyQuestionAndAnswer(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n\n    sQuizLadyPtr = &gSaveBlock1Ptr->lilycoveLady.quiz;\n    for (i = 0; i < QUIZ_QUESTION_LEN; i++)\n        sQuizLadyPtr->question[i] = EC_EMPTY_WORD;\n    sQuizLadyPtr->correctAnswer = EC_EMPTY_WORD;",
       "callsTo": [],
       "lineCount": 6
@@ -463,6 +547,7 @@
       "returnType": "void",
       "signature": "void QuizLadySetCustomQuestion(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gSpecialVar_0x8004 = EASY_CHAT_TYPE_QUIZ_SET_QUESTION;\n    ShowEasyChatScreen();",
       "callsTo": [
         "ShowEasyChatScreen"
@@ -473,6 +558,7 @@
       "returnType": "void",
       "signature": "void QuizLadyTakePrizeForCustomQuiz(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "RemoveBagItem(gSpecialVar_ItemId, 1);",
       "callsTo": [
         "RemoveBagItem"
@@ -483,6 +569,7 @@
       "returnType": "void",
       "signature": "void QuizLadyRecordCustomQuizData(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n\n    sQuizLadyPtr = &gSaveBlock1Ptr->lilycoveLady.quiz;\n    sQuizLadyPtr->prize = gSpecialVar_ItemId;\n    for (i = 0; i < TRAINER_ID_LENGTH; i++)\n        sQuizLadyPtr->playerTrainerId[i] = gSaveBlock2Ptr->playerTrainerId[i];\n    StringCopy_PlayerName(sQuizLadyPtr->playerName, gSaveBlock2Ptr->playerName);\n    sQuizLadyPtr->language = gGameLanguage;",
       "callsTo": [
         "StringCopy_PlayerName"
@@ -493,6 +580,7 @@
       "returnType": "void",
       "signature": "void QuizLadySetWaitingForChallenger(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sQuizLadyPtr = &gSaveBlock1Ptr->lilycoveLady.quiz;\n    sQuizLadyPtr->waitingForChallenger = TRUE;",
       "callsTo": [],
       "lineCount": 2
@@ -501,6 +589,7 @@
       "returnType": "void",
       "signature": "void BufferQuizCorrectAnswer(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sQuizLadyPtr = &gSaveBlock1Ptr->lilycoveLady.quiz;\n    CopyEasyChatWord(gStringVar3, sQuizLadyPtr->correctAnswer);",
       "callsTo": [
         "CopyEasyChatWord"
@@ -511,6 +600,7 @@
       "returnType": "void",
       "signature": "void FieldCallback_QuizLadyEnableScriptContexts(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ScriptContext_Enable();",
       "callsTo": [
         "ScriptContext_Enable"
@@ -521,6 +611,12 @@
       "returnType": "void",
       "signature": "void QuizLadyClearQuestionForRecordMix(const LilycoveLady *lilycoveLady)",
       "paramsRaw": "const LilycoveLady *lilycoveLady",
+      "paramsList": [
+        {
+          "name": "lilycoveLady",
+          "typeRaw": "const LilycoveLady *"
+        }
+      ],
       "body": "u8 i;\n\n    sQuizLadyPtr = &gSaveBlock1Ptr->lilycoveLady.quiz;\n    if (lilycoveLady->quiz.prevQuestionId < ARRAY_COUNT(sQuizLadyQuizQuestions)\n        && sQuizLadyPtr->id == LILYCOVE_LADY_QUIZ)\n    {\n        for (i = 0; i < 4; i++)\n        {\n            if (lilycoveLady->quiz.prevQuestionId != sQuizLadyPtr->questionId)\n                break;\n            sQuizLadyPtr->questionId = Random() % ARRAY_COUNT(sQuizLadyQuizQuestions);\n        }\n        if (lilycoveLady->quiz.prevQuestionId == sQuizLadyPtr->questionId)\n            sQuizLadyPtr->questionId = (sQuizLadyPtr->questionId + 1) % (int)ARRAY_COUNT(sQuizLadyQuizQuestions);\n\n        sQuizLadyPtr->prevQuestionId = lilycoveLady->quiz.prevQuestionId;\n    }",
       "callsTo": [
         "ARRAY_COUNT",
@@ -532,6 +628,7 @@
       "returnType": "void",
       "signature": "static void ResetContestLadyContestData(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sContestLadyPtr->playerName[0] = EOS;\n    sContestLadyPtr->numGoodPokeblocksGiven = 0;\n    sContestLadyPtr->numOtherPokeblocksGiven = 0;\n    sContestLadyPtr->maxSheen = 0;\n    sContestLadyPtr->category = Random() % CONTEST_CATEGORIES_COUNT;",
       "callsTo": [
         "Random"
@@ -542,6 +639,7 @@
       "returnType": "void",
       "signature": "static void InitLilycoveContestLady(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sContestLadyPtr = &gSaveBlock1Ptr->lilycoveLady.contest;\n    sContestLadyPtr->id = LILYCOVE_LADY_CONTEST;\n    sContestLadyPtr->givenPokeblock = FALSE;\n    ResetContestLadyContestData();\n    sContestLadyPtr->language = gGameLanguage;",
       "callsTo": [
         "ResetContestLadyContestData"
@@ -552,6 +650,7 @@
       "returnType": "void",
       "signature": "static void ResetContestLadyForRecordMix(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sContestLadyPtr = &gSaveBlock1Ptr->lilycoveLady.contest;\n    sContestLadyPtr->id = LILYCOVE_LADY_CONTEST;\n    sContestLadyPtr->givenPokeblock = FALSE;\n\n    if (sContestLadyPtr->numGoodPokeblocksGiven == LILYCOVE_LADY_GIFT_THRESHOLD\n     || sContestLadyPtr->numOtherPokeblocksGiven == LILYCOVE_LADY_GIFT_THRESHOLD)\n        ResetContestLadyContestData();",
       "callsTo": [
         "ResetContestLadyContestData"
@@ -562,6 +661,12 @@
       "returnType": "void",
       "signature": "static void ContestLadySavePlayerNameIfHighSheen(u8 sheen)",
       "paramsRaw": "u8 sheen",
+      "paramsList": [
+        {
+          "name": "sheen",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "sContestLadyPtr = &gSaveBlock1Ptr->lilycoveLady.contest;\n    if (sContestLadyPtr->maxSheen <= sheen)\n    {\n        sContestLadyPtr->maxSheen = sheen;\n        memset(sContestLadyPtr->playerName, EOS, sizeof(sContestLadyPtr->playerName));\n        memcpy(sContestLadyPtr->playerName, gSaveBlock2Ptr->playerName, sizeof(sContestLadyPtr->playerName));\n        sContestLadyPtr->language = gGameLanguage;\n    }",
       "callsTo": [],
       "lineCount": 8
@@ -570,6 +675,12 @@
       "returnType": "bool8",
       "signature": "bool8 GivePokeblockToContestLady(struct Pokeblock *pokeblock)",
       "paramsRaw": "struct Pokeblock *pokeblock",
+      "paramsList": [
+        {
+          "name": "pokeblock",
+          "typeRaw": "struct Pokeblock *"
+        }
+      ],
       "body": "u8 sheen = 0;\n    bool8 correctFlavor = FALSE;\n\n    sContestLadyPtr = &gSaveBlock1Ptr->lilycoveLady.contest;\n    switch (sContestLadyPtr->category)\n    {\n    case CONTEST_CATEGORY_COOL:\n        if (pokeblock->spicy != 0)\n        {\n            sheen = pokeblock->spicy;\n            correctFlavor = TRUE;\n        }\n        break;\n    case CONTEST_CATEGORY_BEAUTY:\n        if (pokeblock->dry != 0)\n        {\n            sheen = pokeblock->dry;\n            correctFlavor = TRUE;\n        }\n        break;\n    case CONTEST_CATEGORY_CUTE:\n        if (pokeblock->sweet != 0)\n        {\n            sheen = pokeblock->sweet;\n            correctFlavor = TRUE;\n        }\n        break;\n    case CONTEST_CATEGORY_SMART:\n        if (pokeblock->bitter != 0)\n        {\n            sheen = pokeblock->bitter;\n            correctFlavor = TRUE;\n        }\n        break;\n    case CONTEST_CATEGORY_TOUGH:\n        if (pokeblock->sour != 0)\n        {\n            sheen = pokeblock->sour;\n            correctFlavor = TRUE;\n        }\n        break;\n    }\n    if (correctFlavor == TRUE)\n    {\n        ContestLadySavePlayerNameIfHighSheen(sheen);\n        sContestLadyPtr->numGoodPokeblocksGiven++;\n    }\n    else\n    {\n        sContestLadyPtr->numOtherPokeblocksGiven++;\n    }\n    return correctFlavor;",
       "callsTo": [
         "ContestLadySavePlayerNameIfHighSheen"
@@ -580,6 +691,16 @@
       "returnType": "void",
       "signature": "static void BufferContestLadyCategoryAndMonName(u8 *category, u8 *nickname)",
       "paramsRaw": "u8 *category, u8 *nickname",
+      "paramsList": [
+        {
+          "name": "category",
+          "typeRaw": "u8 *"
+        },
+        {
+          "name": "nickname",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "sContestLadyPtr = &gSaveBlock1Ptr->lilycoveLady.contest;\n    StringCopy(category, sContestLadyCategoryNames[sContestLadyPtr->category]);\n    StringCopy_Nickname(nickname, sContestLadyMonNames[sContestLadyPtr->category]);",
       "callsTo": [
         "StringCopy",
@@ -591,6 +712,16 @@
       "returnType": "void",
       "signature": "void BufferContestLadyMonName(u8 *category, u8 *nickname)",
       "paramsRaw": "u8 *category, u8 *nickname",
+      "paramsList": [
+        {
+          "name": "category",
+          "typeRaw": "u8 *"
+        },
+        {
+          "name": "nickname",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "sContestLadyPtr = &gSaveBlock1Ptr->lilycoveLady.contest;\n    *category = sContestLadyPtr->category;\n    StringCopy(nickname, sContestLadyMonNames[sContestLadyPtr->category]);",
       "callsTo": [
         "StringCopy"
@@ -601,6 +732,12 @@
       "returnType": "void",
       "signature": "void BufferContestLadyPlayerName(u8 *dest)",
       "paramsRaw": "u8 *dest",
+      "paramsList": [
+        {
+          "name": "dest",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "sContestLadyPtr = &gSaveBlock1Ptr->lilycoveLady.contest;\n    StringCopy(dest, sContestLadyPtr->playerName);",
       "callsTo": [
         "StringCopy"
@@ -611,6 +748,12 @@
       "returnType": "void",
       "signature": "void BufferContestLadyLanguage(u8 *dest)",
       "paramsRaw": "u8 *dest",
+      "paramsList": [
+        {
+          "name": "dest",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "sContestLadyPtr = &gSaveBlock1Ptr->lilycoveLady.contest;\n    *dest = sContestLadyPtr->language;",
       "callsTo": [],
       "lineCount": 2
@@ -619,6 +762,16 @@
       "returnType": "void",
       "signature": "void BufferContestName(u8 *dest, u8 category)",
       "paramsRaw": "u8 *dest, u8 category",
+      "paramsList": [
+        {
+          "name": "dest",
+          "typeRaw": "u8 *"
+        },
+        {
+          "name": "category",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "StringCopy(dest, sContestNames[category]);",
       "callsTo": [
         "StringCopy"
@@ -629,6 +782,7 @@
       "returnType": "u8",
       "signature": "u8 GetContestLadyPokeblockState(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sContestLadyPtr = &gSaveBlock1Ptr->lilycoveLady.contest;\n    if (sContestLadyPtr->numGoodPokeblocksGiven >= LILYCOVE_LADY_GIFT_THRESHOLD)\n        return CONTEST_LADY_GOOD;\n    else if (sContestLadyPtr->numGoodPokeblocksGiven == 0)\n        return CONTEST_LADY_BAD;\n    else\n        return CONTEST_LADY_NORMAL;",
       "callsTo": [],
       "lineCount": 7
@@ -637,6 +791,7 @@
       "returnType": "bool8",
       "signature": "bool8 HasPlayerGivenContestLadyPokeblock(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sContestLadyPtr = &gSaveBlock1Ptr->lilycoveLady.contest;\n    if (sContestLadyPtr->givenPokeblock == TRUE)\n        return TRUE;\n    return FALSE;",
       "callsTo": [],
       "lineCount": 4
@@ -645,6 +800,7 @@
       "returnType": "bool8",
       "signature": "bool8 ShouldContestLadyShowGoOnAir(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "bool8 putOnAir = FALSE;\n\n    sContestLadyPtr = &gSaveBlock1Ptr->lilycoveLady.contest;\n    if (sContestLadyPtr->numGoodPokeblocksGiven >= LILYCOVE_LADY_GIFT_THRESHOLD\n     || sContestLadyPtr->numOtherPokeblocksGiven >= LILYCOVE_LADY_GIFT_THRESHOLD)\n        putOnAir = TRUE;\n\n    return putOnAir;",
       "callsTo": [],
       "lineCount": 8
@@ -653,6 +809,7 @@
       "returnType": "void",
       "signature": "void Script_BufferContestLadyCategoryAndMonName(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "BufferContestLadyCategoryAndMonName(gStringVar2, gStringVar1);",
       "callsTo": [
         "BufferContestLadyCategoryAndMonName"
@@ -663,6 +820,7 @@
       "returnType": "void",
       "signature": "void OpenPokeblockCaseForContestLady(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "OpenPokeblockCase(PBLOCK_CASE_GIVE, CB2_ReturnToField);",
       "callsTo": [
         "OpenPokeblockCase"
@@ -673,6 +831,7 @@
       "returnType": "void",
       "signature": "void SetContestLadyGivenPokeblock(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sContestLadyPtr = &gSaveBlock1Ptr->lilycoveLady.contest;\n    sContestLadyPtr->givenPokeblock = TRUE;",
       "callsTo": [],
       "lineCount": 2
@@ -681,6 +840,7 @@
       "returnType": "void",
       "signature": "void GetContestLadyMonSpecies(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sContestLadyPtr = &gSaveBlock1Ptr->lilycoveLady.contest;\n    gSpecialVar_0x8005 = sContestLadyMonSpecies[sContestLadyPtr->category];",
       "callsTo": [],
       "lineCount": 2
@@ -689,6 +849,7 @@
       "returnType": "u8",
       "signature": "u8 GetContestLadyCategory(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sContestLadyPtr = &gSaveBlock1Ptr->lilycoveLady.contest;\n    return sContestLadyPtr->category;",
       "callsTo": [],
       "lineCount": 2

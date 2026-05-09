@@ -6,6 +6,16 @@
       "returnType": "void",
       "signature": "void StartPokemonJump(u16 partyId, MainCallback exitCallback)",
       "paramsRaw": "u16 partyId, MainCallback exitCallback",
+      "paramsList": [
+        {
+          "name": "partyId",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "exitCallback",
+          "typeRaw": "MainCallback"
+        }
+      ],
       "body": "u8 taskId;\n\n    if (gReceivedRemoteLinkPlayers)\n    {\n        sPokemonJump = Alloc(sizeof(*sPokemonJump));\n        if (sPokemonJump)\n        {\n            ResetTasks();\n            taskId = CreateTask(Task_StartPokemonJump, 1);\n            sPokemonJump->mainState = 0;\n            sPokemonJump->exitCallback = exitCallback;\n            sPokemonJump->taskId = taskId;\n            sPokemonJump->multiplayerId = GetMultiplayerId();\n            InitJumpMonInfo(&sPokemonJump->monInfo[sPokemonJump->multiplayerId], &gPlayerParty[partyId]);\n            InitGame(sPokemonJump);\n            SetWordTaskArg(taskId, 2, (u32)sPokemonJump);\n            SetMainCallback2(CB2_PokemonJump);\n            return;\n        }\n    }\n\n     \n    SetMainCallback2(exitCallback);",
       "callsTo": [
         "Alloc",
@@ -23,6 +33,7 @@
       "returnType": "void",
       "signature": "static void FreePokemonJump(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "FreeWindowsAndDigitObj();\n    Free(sPokemonJump);",
       "callsTo": [
         "Free",
@@ -34,6 +45,12 @@
       "returnType": "void",
       "signature": "static void InitGame(struct PokemonJump *jump)",
       "paramsRaw": "struct PokemonJump *jump",
+      "paramsList": [
+        {
+          "name": "jump",
+          "typeRaw": "struct PokemonJump *"
+        }
+      ],
       "body": "jump->numPlayers = GetLinkPlayerCount();\n    jump->comm.funcId = FUNC_RESET_GAME;\n    jump->comm.data = 0;\n    InitPlayerAndJumpTypes();\n    ResetForNewGame(jump);\n    if (jump->numPlayers == MAX_RFU_PLAYERS)\n        IncrementGamesWithMaxPlayers();",
       "callsTo": [
         "GetLinkPlayerCount",
@@ -47,6 +64,12 @@
       "returnType": "void",
       "signature": "static void ResetForNewGame(struct PokemonJump *jump)",
       "paramsRaw": "struct PokemonJump *jump",
+      "paramsList": [
+        {
+          "name": "jump",
+          "typeRaw": "struct PokemonJump *"
+        }
+      ],
       "body": "int i;\n\n    jump->vineState = VINE_UPSWING_LOWER;\n    jump->prevVineState = VINE_UPSWING_LOWER;\n    jump->vineTimer = 0;\n    jump->vineSpeed = 0;\n    jump->updateScore = FALSE;\n    jump->isLeader = GetMultiplayerId() == 0;\n    jump->mainState = 0;\n    jump->helperState = 0;\n    jump->excellentsInRow = 0;\n    jump->excellentsInRowRecord = 0;\n    jump->initScoreUpdate = FALSE;\n    jump->unused2 = 0;\n    jump->unused3 = 0;\n    jump->numPlayersAtPeak = 0;\n    jump->allowVineUpdates = FALSE;\n    jump->allPlayersReady = FALSE;\n    jump->funcActive = TRUE;\n    jump->comm.jumpScore = 0;\n    jump->comm.receivedBonusFlags = 0;\n    jump->comm.jumpsInRow = 0;\n    jump->unused4 = TRUE;\n    jump->showBonus = FALSE;\n    jump->skipJumpUpdate = FALSE;\n    jump->giveBonus = FALSE;\n    jump->linkTimer = 0;\n    jump->linkTimerLimit = 0;\n    ResetPlayersForNewGame();\n    ResetPlayersJumpStates();\n\n    for (i = 0; i < MAX_RFU_PLAYERS; i++)\n    {\n        jump->atJumpPeak[i] = FALSE;\n        jump->jumpTimeStarts[i] = 0;\n    }",
       "callsTo": [
         "GetMultiplayerId",
@@ -59,6 +82,7 @@
       "returnType": "void",
       "signature": "static void InitPlayerAndJumpTypes(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int i, index;\n\n    for (i = 0; i < MAX_RFU_PLAYERS; i++)\n    {\n        index = GetPokemonJumpSpeciesIdx(sPokemonJump->monInfo[i].species);\n        sPokemonJump->players[i].monJumpType = sPokeJumpMons[index].jumpType;\n    }\n\n    sPokemonJump->player = &sPokemonJump->players[sPokemonJump->multiplayerId];",
       "callsTo": [
         "GetPokemonJumpSpeciesIdx"
@@ -69,6 +93,7 @@
       "returnType": "void",
       "signature": "static void ResetPlayersForNewGame(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int i;\n\n    for (i = 0; i < MAX_RFU_PLAYERS; i++)\n    {\n        sPokemonJump->players[i].jumpTimeStart = 0;\n        sPokemonJump->players[i].monState = MONSTATE_NORMAL;\n        sPokemonJump->players[i].prevMonState = MONSTATE_NORMAL;\n        sPokemonJump->players[i].jumpOffset = 0;\n        sPokemonJump->players[i].jumpOffsetIdx = INT_MAX;\n        sPokemonJump->players[i].jumpState = JUMPSTATE_NONE;\n        sPokemonJump->memberFuncIds[i] = FUNC_NONE;\n    }",
       "callsTo": [],
       "lineCount": 12
@@ -77,6 +102,12 @@
       "returnType": "s16",
       "signature": "static s16 GetPokemonJumpSpeciesIdx(u16 species)",
       "paramsRaw": "u16 species",
+      "paramsList": [
+        {
+          "name": "species",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "u32 i;\n    for (i = 0; i < ARRAY_COUNT(sPokeJumpMons); i++)\n    {\n        if (sPokeJumpMons[i].species == species)\n            return i;\n    }\n\n    return -1;",
       "callsTo": [
         "ARRAY_COUNT"
@@ -87,6 +118,16 @@
       "returnType": "void",
       "signature": "static void InitJumpMonInfo(struct PokemonJump_MonInfo *monInfo, struct Pokemon *mon)",
       "paramsRaw": "struct PokemonJump_MonInfo *monInfo, struct Pokemon *mon",
+      "paramsList": [
+        {
+          "name": "monInfo",
+          "typeRaw": "struct PokemonJump_MonInfo *"
+        },
+        {
+          "name": "mon",
+          "typeRaw": "struct Pokemon *"
+        }
+      ],
       "body": "monInfo->species = GetMonData(mon, MON_DATA_SPECIES);\n    monInfo->otId = GetMonData(mon, MON_DATA_OT_ID);\n    monInfo->personality = GetMonData(mon, MON_DATA_PERSONALITY);",
       "callsTo": [
         "GetMonData"
@@ -97,6 +138,7 @@
       "returnType": "void",
       "signature": "static void VBlankCB_PokemonJump(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "TransferPlttBuffer();\n    LoadOam();\n    ProcessSpriteCopyRequests();",
       "callsTo": [
         "LoadOam",
@@ -109,6 +151,7 @@
       "returnType": "void",
       "signature": "static void CB2_PokemonJump(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "RunTasks();\n    AnimateSprites();\n    BuildOamBuffer();\n    UpdatePaletteFade();",
       "callsTo": [
         "AnimateSprites",
@@ -122,6 +165,12 @@
       "returnType": "void",
       "signature": "static void SetPokeJumpTask(TaskFunc func)",
       "paramsRaw": "TaskFunc func",
+      "paramsList": [
+        {
+          "name": "func",
+          "typeRaw": "TaskFunc"
+        }
+      ],
       "body": "sPokemonJump->taskId = CreateTask(func, 1);\n    sPokemonJump->mainState = 0;",
       "callsTo": [
         "CreateTask"
@@ -132,6 +181,12 @@
       "returnType": "void",
       "signature": "static void Task_StartPokemonJump(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "switch (sPokemonJump->mainState)\n    {\n    case 0:\n        SetVBlankCallback(NULL);\n        ResetSpriteData();\n        FreeAllSpritePalettes();\n        SetTaskWithPokeJumpStruct(Task_CommunicateMonInfo, 5);\n        FadeOutMapMusic(4);\n        sPokemonJump->mainState++;\n        break;\n    case 1:\n        if (!FuncIsActiveTask(Task_CommunicateMonInfo))\n        {\n            StartPokeJumpGfx(&sPokemonJump->jumpGfx);\n            LoadWirelessStatusIndicatorSpriteGfx();\n            CreateWirelessStatusIndicatorSprite(0, 0);\n            sPokemonJump->mainState++;\n        }\n        break;\n    case 2:\n        if (!IsPokeJumpGfxFuncFinished() && IsNotWaitingForBGMStop() == TRUE)\n        {\n            FadeOutAndPlayNewMapMusic(MUS_RG_POKE_JUMP, 8);\n            sPokemonJump->mainState++;\n        }\n        break;\n    case 3:\n        if (IsLinkTaskFinished())\n        {\n            BlendPalettes(PALETTES_ALL, 16, RGB_BLACK);\n            BeginNormalPaletteFade(PALETTES_ALL, -1, 16, 0, RGB_BLACK);\n            SetVBlankCallback(VBlankCB_PokemonJump);\n            sPokemonJump->mainState++;\n        }\n        break;\n    case 4:\n        UpdatePaletteFade();\n        if (!gPaletteFade.active)\n        {\n            sPokemonJump->startDelayTimer = 0;\n            sPokemonJump->mainState++;\n        }\n        break;\n    case 5:\n        sPokemonJump->startDelayTimer++;\n        if (sPokemonJump->startDelayTimer >= 20)\n        {\n            if (sPokemonJump->isLeader)\n                SetPokeJumpTask(Task_PokemonJump_Leader);\n            else\n                SetPokeJumpTask(Task_PokemonJump_Member);\n\n            InitVineState();\n            DestroyTask(taskId);\n        }\n        break;\n    }",
       "callsTo": [
         "BeginNormalPaletteFade",
@@ -160,6 +215,12 @@
       "returnType": "void",
       "signature": "static void SetLinkTimeInterval(int intervalId)",
       "paramsRaw": "int intervalId",
+      "paramsList": [
+        {
+          "name": "intervalId",
+          "typeRaw": "int"
+        }
+      ],
       "body": "if (intervalId == LINK_INTERVAL_NONE)\n    {\n         \n         \n         \n        sPokemonJump->linkTimerLimit = LINK_TIMER_STOPPED;\n        sPokemonJump->linkTimer = 1;\n    }\n    else\n    {\n        sPokemonJump->linkTimerLimit = (1 << (intervalId - 1)) - 1;\n        sPokemonJump->linkTimer = 0;\n    }",
       "callsTo": [],
       "lineCount": 13
@@ -168,6 +229,12 @@
       "returnType": "void",
       "signature": "static void SetFunc_Leader(u8 funcId)",
       "paramsRaw": "u8 funcId",
+      "paramsList": [
+        {
+          "name": "funcId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "int i;\n\n    sPokemonJump->comm.funcId = funcId;\n    sPokemonJump->mainState = 0;\n    sPokemonJump->helperState = 0;\n    sPokemonJump->funcActive = TRUE;\n    sPokemonJump->allPlayersReady = FALSE;\n    for (i = 1; i < sPokemonJump->numPlayers; i++)\n        sPokemonJump->players[i].funcFinished = FALSE;",
       "callsTo": [],
       "lineCount": 9
@@ -176,6 +243,7 @@
       "returnType": "void",
       "signature": "static void RecvLinkData_Leader(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int i;\n    int numReady;\n    u16 monState;\n    u8 funcId;\n    u16 playAgainState;\n\n    for (i = 1, numReady = 0; i < sPokemonJump->numPlayers; i++)\n    {\n        monState = sPokemonJump->players[i].monState;\n        if (RecvPacket_MemberStateToLeader(&sPokemonJump->players[i], i, &funcId, &playAgainState))\n        {\n            sPokemonJump->playAgainStates[i] = playAgainState;\n            sPokemonJump->memberFuncIds[i] = funcId;\n            sPokemonJump->players[i].prevMonState = monState;\n        }\n\n         \n        if (sPokemonJump->players[i].funcFinished && sPokemonJump->memberFuncIds[i] == sPokemonJump->comm.funcId)\n            numReady++;\n    }\n\n    if (numReady == sPokemonJump->numPlayers - 1)\n        sPokemonJump->allPlayersReady = TRUE;",
       "callsTo": [
         "RecvPacket_MemberStateToLeader"
@@ -186,6 +254,12 @@
       "returnType": "void",
       "signature": "static void Task_PokemonJump_Leader(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "RecvLinkData_Leader();\n    TryUpdateScore();\n    if (!sPokemonJump->funcActive && sPokemonJump->allPlayersReady)\n    {\n        SetFunc_Leader(sPokemonJump->nextFuncId);\n        SetLinkTimeInterval(LINK_INTERVAL_SHORT);\n    }\n\n    if (sPokemonJump->funcActive == TRUE)\n    {\n        if (!sPokeJumpLeaderFuncs[sPokemonJump->comm.funcId]())\n        {\n            sPokemonJump->funcActive = FALSE;\n            sPokemonJump->players[sPokemonJump->multiplayerId].funcFinished = TRUE;\n        }\n    }\n\n    UpdateGame();\n    SendLinkData_Leader();",
       "callsTo": [
         "RecvLinkData_Leader",
@@ -201,6 +275,7 @@
       "returnType": "void",
       "signature": "static void SendLinkData_Leader(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!sPokemonJump->linkTimer)\n        SendPacket_LeaderState(sPokemonJump->players, &sPokemonJump->comm);\n\n    if (sPokemonJump->linkTimerLimit != LINK_TIMER_STOPPED)\n    {\n        sPokemonJump->linkTimer++;\n        sPokemonJump->linkTimer &= sPokemonJump->linkTimerLimit;\n    }",
       "callsTo": [
         "SendPacket_LeaderState"
@@ -211,6 +286,12 @@
       "returnType": "void",
       "signature": "static void SetFunc_Member(u8 funcId)",
       "paramsRaw": "u8 funcId",
+      "paramsList": [
+        {
+          "name": "funcId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "sPokemonJump->comm.funcId = funcId;\n    sPokemonJump->mainState = 0;\n    sPokemonJump->helperState = 0;\n    sPokemonJump->funcActive = TRUE;\n    sPokemonJump->players[sPokemonJump->multiplayerId].funcFinished = FALSE;",
       "callsTo": [],
       "lineCount": 5
@@ -219,6 +300,7 @@
       "returnType": "void",
       "signature": "static void RecvLinkData_Member(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int i;\n    u16 monState;\n    struct PokemonJump_CommData leaderData;\n\n    monState = sPokemonJump->players[0].monState;\n    if (RecvPacket_LeaderState(sPokemonJump->players, &leaderData))\n    {\n        if (sPokemonJump->players[sPokemonJump->multiplayerId].funcFinished == TRUE\n         && leaderData.funcId != sPokemonJump->comm.funcId)\n        {\n            SetFunc_Member(leaderData.funcId);\n        }\n\n        if (sPokemonJump->comm.jumpScore != leaderData.jumpScore)\n        {\n            sPokemonJump->comm.jumpScore = leaderData.jumpScore;\n            sPokemonJump->updateScore = TRUE;\n            sPokemonJump->comm.receivedBonusFlags = leaderData.receivedBonusFlags;\n            if (sPokemonJump->comm.receivedBonusFlags)\n                sPokemonJump->showBonus = TRUE;\n            else\n                sPokemonJump->showBonus = FALSE;\n        }\n\n        sPokemonJump->comm.data = leaderData.data;\n        sPokemonJump->comm.jumpsInRow = leaderData.jumpsInRow;\n        sPokemonJump->players[0].prevMonState = monState;\n    }\n\n    for (i = 1; i < sPokemonJump->numPlayers; i++)\n    {\n        if (i != sPokemonJump->multiplayerId)\n        {\n            monState = sPokemonJump->players[i].monState;\n            if (RecvPacket_MemberStateToMember(&sPokemonJump->players[i], i))\n                sPokemonJump->players[i].prevMonState = monState;\n        }\n    }",
       "callsTo": [
         "RecvPacket_LeaderState",
@@ -231,6 +313,12 @@
       "returnType": "void",
       "signature": "static void Task_PokemonJump_Member(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "RecvLinkData_Member();\n    if (sPokemonJump->funcActive)\n    {\n        if (!sPokeJumpMemberFuncs[sPokemonJump->comm.funcId]())\n        {\n            sPokemonJump->funcActive = FALSE;\n            sPokemonJump->players[sPokemonJump->multiplayerId].funcFinished = TRUE;\n            SetLinkTimeInterval(LINK_INTERVAL_SHORT);\n        }\n    }\n\n    UpdateGame();\n    SendLinkData_Member();",
       "callsTo": [
         "RecvLinkData_Member",
@@ -244,6 +332,7 @@
       "returnType": "void",
       "signature": "static void SendLinkData_Member(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!sPokemonJump->linkTimer)\n        SendPacket_MemberState(&sPokemonJump->players[sPokemonJump->multiplayerId], sPokemonJump->comm.funcId, sPokemonJump->playAgainComm);\n\n    if (sPokemonJump->linkTimerLimit != LINK_TIMER_STOPPED)\n    {\n        sPokemonJump->linkTimer++;\n        sPokemonJump->linkTimer &= sPokemonJump->linkTimerLimit;\n    }",
       "callsTo": [
         "SendPacket_MemberState"
@@ -254,6 +343,7 @@
       "returnType": "bool32",
       "signature": "static bool32 GameIntro_Leader(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sPokemonJump->mainState)\n    {\n    case 0:\n        SetLinkTimeInterval(LINK_INTERVAL_SHORT);\n        sPokemonJump->mainState++;\n         \n    case 1:\n        if (!DoGameIntro())\n        {\n            sPokemonJump->comm.data = sPokemonJump->vineTimer;\n            sPokemonJump->nextFuncId = FUNC_WAIT_ROUND;\n            return FALSE;\n        }\n        break;\n    }\n\n    return TRUE;",
       "callsTo": [
         "DoGameIntro",
@@ -265,6 +355,7 @@
       "returnType": "bool32",
       "signature": "static bool32 GameIntro_Member(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sPokemonJump->mainState)\n    {\n    case 0:\n        SetLinkTimeInterval(LINK_INTERVAL_NONE);\n        sPokemonJump->rngSeed = sPokemonJump->comm.data;\n        sPokemonJump->mainState++;\n         \n    case 1:\n        return DoGameIntro();\n    }\n\n    return TRUE;",
       "callsTo": [
         "DoGameIntro",
@@ -276,6 +367,7 @@
       "returnType": "bool32",
       "signature": "static bool32 WaitRound_Leader(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sPokemonJump->mainState)\n    {\n    case 0:\n        ResetPlayersJumpStates();\n        SetLinkTimeInterval(LINK_INTERVAL_LONG);\n        sPokemonJump->mainState++;\n        break;\n    case 1:\n        if (sPokemonJump->allPlayersReady)\n        {\n            sPokemonJump->nextFuncId = FUNC_GAME_ROUND;\n            return FALSE;\n        }\n        break;\n    }\n\n    return TRUE;",
       "callsTo": [
         "ResetPlayersJumpStates",
@@ -287,6 +379,7 @@
       "returnType": "bool32",
       "signature": "static bool32 WaitRound_Member(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sPokemonJump->mainState)\n    {\n    case 0:\n        ResetPlayersJumpStates();\n        SetLinkTimeInterval(LINK_INTERVAL_NONE);\n        sPokemonJump->vineTimer = sPokemonJump->comm.data;\n        sPokemonJump->mainState++;\n         \n    case 1:\n        if (AreLinkQueuesEmpty())\n            return FALSE;\n        break;\n    }\n\n    return TRUE;",
       "callsTo": [
         "AreLinkQueuesEmpty",
@@ -299,6 +392,7 @@
       "returnType": "bool32",
       "signature": "static bool32 GameRound_Leader(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!HandleSwingRound())\n    {\n        sPokemonJump->comm.data = sPokemonJump->vineTimer;\n        sPokemonJump->nextFuncId = FUNC_WAIT_ROUND;\n    }\n    else if (UpdateVineHitStates())\n    {\n        return TRUE;\n    }\n    else\n    {\n         \n        ResetVineAfterHit();\n        sPokemonJump->nextFuncId = FUNC_GAME_OVER;\n    }\n\n    return FALSE;",
       "callsTo": [
         "HandleSwingRound",
@@ -311,6 +405,7 @@
       "returnType": "bool32",
       "signature": "static bool32 GameRound_Member(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!HandleSwingRound())\n        ;\n    else if (UpdateVineHitStates())\n        return TRUE;\n    else  \n        ResetVineAfterHit();\n\n    return FALSE;",
       "callsTo": [
         "HandleSwingRound",
@@ -323,6 +418,7 @@
       "returnType": "bool32",
       "signature": "static bool32 GameOver_Leader(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sPokemonJump->mainState)\n    {\n    case 0:\n        UpdateVineHitStates();\n        if (AllPlayersJumpedOrHit())\n            sPokemonJump->mainState++;\n        break;\n    case 1:\n        if (!DoVineHitEffect())\n        {\n            if (HasEnoughScoreForPrize())\n            {\n                sPokemonJump->comm.data = GetPrizeData();\n                sPokemonJump->nextFuncId = FUNC_GIVE_PRIZE;\n            }\n            else if (sPokemonJump->comm.jumpsInRow >= 200)\n            {\n                sPokemonJump->comm.data = sPokemonJump->excellentsInRowRecord;\n                sPokemonJump->nextFuncId = FUNC_SAVE;\n            }\n            else\n            {\n                sPokemonJump->comm.data = sPokemonJump->excellentsInRowRecord;\n                sPokemonJump->nextFuncId = FUNC_ASK_PLAY_AGAIN;\n            }\n\n            sPokemonJump->mainState++;\n            return FALSE;\n        }\n        break;\n    case 2:\n        return FALSE;\n    }\n\n    return TRUE;",
       "callsTo": [
         "AllPlayersJumpedOrHit",
@@ -337,6 +433,7 @@
       "returnType": "bool32",
       "signature": "static bool32 GameOver_Member(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sPokemonJump->mainState)\n    {\n    case 0:\n        if (!UpdateVineHitStates())\n            ResetVineAfterHit();\n        if (AllPlayersJumpedOrHit())\n            sPokemonJump->mainState++;\n        break;\n    case 1:\n        if (!DoVineHitEffect())\n        {\n            sPokemonJump->mainState++;\n            return FALSE;\n        }\n        break;\n    case 2:\n        return FALSE;\n    }\n\n    return TRUE;",
       "callsTo": [
         "AllPlayersJumpedOrHit",
@@ -350,6 +447,7 @@
       "returnType": "bool32",
       "signature": "static bool32 AskPlayAgain_Leader(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sPokemonJump->mainState)\n    {\n    case 0:\n        SetLinkTimeInterval(LINK_INTERVAL_MEDIUM);\n        sPokemonJump->mainState++;\n         \n    case 1:\n        if (!DoPlayAgainPrompt())\n        {\n            TryUpdateRecords(sPokemonJump->comm.jumpScore, sPokemonJump->comm.jumpsInRow, sPokemonJump->comm.data);\n            sPokemonJump->mainState++;\n        }\n        break;\n    case 2:\n        if (sPokemonJump->allPlayersReady)\n        {\n            if (ShouldPlayAgain())\n                sPokemonJump->nextFuncId = FUNC_RESET_GAME;\n            else\n                sPokemonJump->nextFuncId = FUNC_EXIT;\n\n            sPokemonJump->mainState++;\n            return FALSE;\n        }\n        break;\n    case 3:\n        return FALSE;\n    }\n\n    return TRUE;",
       "callsTo": [
         "DoPlayAgainPrompt",
@@ -363,6 +461,7 @@
       "returnType": "bool32",
       "signature": "static bool32 AskPlayAgain_Member(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sPokemonJump->mainState)\n    {\n    case 0:\n        SetLinkTimeInterval(LINK_INTERVAL_NONE);\n        sPokemonJump->mainState++;\n         \n    case 1:\n        if (!DoPlayAgainPrompt())\n        {\n            TryUpdateRecords(sPokemonJump->comm.jumpScore, sPokemonJump->comm.jumpsInRow, sPokemonJump->comm.data);\n            sPokemonJump->playAgainComm = sPokemonJump->playAgainState;\n            return FALSE;\n        }\n        break;\n    }\n\n    return TRUE;",
       "callsTo": [
         "DoPlayAgainPrompt",
@@ -375,6 +474,7 @@
       "returnType": "bool32",
       "signature": "static bool32 ResetGame_Leader(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sPokemonJump->mainState)\n    {\n    case 0:\n        if (!CloseMessageAndResetScore())\n            sPokemonJump->mainState++;\n        break;\n    case 1:\n        if (sPokemonJump->allPlayersReady)\n        {\n            ResetForNewGame(sPokemonJump);\n            sPokemonJump->rngSeed = Random();\n            sPokemonJump->comm.data = sPokemonJump->rngSeed;\n            sPokemonJump->nextFuncId = FUNC_GAME_INTRO;\n            return FALSE;\n        }\n        break;\n    }\n\n    return TRUE;",
       "callsTo": [
         "CloseMessageAndResetScore",
@@ -387,6 +487,7 @@
       "returnType": "bool32",
       "signature": "static bool32 ResetGame_Member(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sPokemonJump->mainState)\n    {\n    case 0:\n        if (!CloseMessageAndResetScore())\n        {\n            ResetForNewGame(sPokemonJump);\n            sPokemonJump->mainState++;\n            return FALSE;\n        }\n        break;\n    case 1:\n        return FALSE;\n    }\n\n    return TRUE;",
       "callsTo": [
         "CloseMessageAndResetScore",
@@ -398,6 +499,7 @@
       "returnType": "bool32",
       "signature": "static bool32 ExitGame(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sPokemonJump->mainState)\n    {\n    case 0:\n        sPokemonJump->mainState = 1;\n        break;\n    case 1:\n        SetLinkTimeInterval(LINK_INTERVAL_NONE);\n        sPokemonJump->mainState++;\n        break;\n    case 2:\n        if (!ClosePokeJumpLink())\n        {\n            SetMainCallback2(sPokemonJump->exitCallback);\n            FreePokemonJump();\n        }\n        break;\n    }\n\n    return TRUE;",
       "callsTo": [
         "ClosePokeJumpLink",
@@ -411,6 +513,7 @@
       "returnType": "bool32",
       "signature": "static bool32 GivePrize_Leader(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sPokemonJump->mainState)\n    {\n    case 0:\n        SetLinkTimeInterval(LINK_INTERVAL_MEDIUM);\n        sPokemonJump->mainState++;\n        break;\n    case 1:\n        if (!TryGivePrize())\n        {\n            sPokemonJump->comm.data = sPokemonJump->excellentsInRowRecord;\n            sPokemonJump->nextFuncId = FUNC_SAVE;\n            return FALSE;\n        }\n        break;\n    }\n\n    return TRUE;",
       "callsTo": [
         "SetLinkTimeInterval",
@@ -422,6 +525,7 @@
       "returnType": "bool32",
       "signature": "static bool32 GivePrize_Member(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "SetLinkTimeInterval(LINK_INTERVAL_NONE);\n    if (!TryGivePrize())\n        return FALSE;\n    else\n        return TRUE;",
       "callsTo": [
         "SetLinkTimeInterval",
@@ -433,6 +537,7 @@
       "returnType": "bool32",
       "signature": "static bool32 SavePokeJump(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sPokemonJump->mainState)\n    {\n    case 0:\n        TryUpdateRecords(sPokemonJump->comm.jumpScore, sPokemonJump->comm.jumpsInRow, sPokemonJump->comm.data);\n        SetUpPokeJumpGfxFuncById(GFXFUNC_MSG_SAVING);\n        sPokemonJump->mainState++;\n        break;\n    case 1:\n        if (!IsPokeJumpGfxFuncFinished())\n        {\n            SetLinkTimeInterval(LINK_INTERVAL_NONE);\n            sPokemonJump->mainState++;\n        }\n        break;\n    case 2:\n        if (AreLinkQueuesEmpty())\n        {\n            CreateTask(Task_LinkFullSave, 6);\n            sPokemonJump->mainState++;\n        }\n        break;\n    case 3:\n        if (!FuncIsActiveTask(Task_LinkFullSave))\n        {\n            ClearMessageWindow();\n            sPokemonJump->mainState++;\n        }\n        break;\n    case 4:\n        if (!RemoveMessageWindow())\n        {\n            sPokemonJump->nextFuncId = FUNC_ASK_PLAY_AGAIN;\n            return FALSE;\n        }\n        break;\n    }\n\n    return TRUE;",
       "callsTo": [
         "AreLinkQueuesEmpty",
@@ -451,6 +556,7 @@
       "returnType": "bool32",
       "signature": "static bool32 DoGameIntro(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sPokemonJump->helperState)\n    {\n    case 0:\n        SetUpPokeJumpGfxFuncById(GFXFUNC_SHOW_NAMES_HIGHLIGHT);\n        ResetMonSpriteSubpriorities();\n        sPokemonJump->helperState++;\n        break;\n    case 1:\n        if (!IsPokeJumpGfxFuncFinished())\n        {\n            StartMonIntroBounce(sPokemonJump->multiplayerId);\n            sPokemonJump->timer = 0;\n            sPokemonJump->helperState++;\n        }\n        break;\n    case 2:\n        if (++sPokemonJump->timer > 120)\n        {\n            SetUpPokeJumpGfxFuncById(GFXFUNC_ERASE_NAMES);\n            sPokemonJump->helperState++;\n        }\n        break;\n    case 3:\n        if (IsPokeJumpGfxFuncFinished() != TRUE && IsMonIntroBounceActive() != TRUE)\n            sPokemonJump->helperState++;\n        break;\n    case 4:\n        SetUpPokeJumpGfxFuncById(GFXFUNC_COUNTDOWN);\n        sPokemonJump->helperState++;\n        break;\n    case 5:\n        if (!IsPokeJumpGfxFuncFinished())\n        {\n            DisallowVineUpdates();\n            SetUpResetVineGfx();\n            sPokemonJump->helperState++;\n        }\n        break;\n    case 6:\n        if (!ResetVineGfx())\n        {\n            AllowVineUpdates();\n            ResetVineState();\n            sPokemonJump->helperState++;\n            return FALSE;\n        }\n        break;\n    case 7:\n        return FALSE;\n    }\n\n    return TRUE;",
       "callsTo": [
         "AllowVineUpdates",
@@ -470,6 +576,7 @@
       "returnType": "bool32",
       "signature": "static bool32 HandleSwingRound(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "UpdateVineState();\n    if (sPokemonJump->ignoreJumpInput)\n    {\n        sPokemonJump->ignoreJumpInput = FALSE;\n        return FALSE;\n    }\n\n    switch (sPokemonJump->helperState)\n    {\n    case 0:\n        if (IsPlayersMonState(MONSTATE_NORMAL))\n            sPokemonJump->helperState++;\n        else\n            break;\n         \n    case 1:\n        if (JOY_NEW(A_BUTTON))\n        {\n            SetMonStateJump();\n            SetLinkTimeInterval(LINK_INTERVAL_SHORT);\n            sPokemonJump->helperState++;\n        }\n        break;\n    case 2:\n        if (IsPlayersMonState(MONSTATE_JUMP) == TRUE)\n            sPokemonJump->helperState++;\n        break;\n    case 3:\n        if (IsPlayersMonState(MONSTATE_NORMAL) == TRUE)\n            sPokemonJump->helperState = 0;\n        break;\n    }\n\n    return TRUE;",
       "callsTo": [
         "IsPlayersMonState",
@@ -484,6 +591,7 @@
       "returnType": "bool32",
       "signature": "static bool32 DoVineHitEffect(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int i;\n\n    switch (sPokemonJump->helperState)\n    {\n    case 0:\n        for (i = 0; i < sPokemonJump->numPlayers; i++)\n        {\n            if (IsMonHitShakeActive(i) == TRUE)\n                return TRUE;\n        }\n\n        sPokemonJump->helperState++;\n        break;\n    case 1:\n        for (i = 0; i < sPokemonJump->numPlayers; i++)\n        {\n            if (sPokemonJump->players[i].monState == MONSTATE_HIT)\n                StartMonHitFlash(i);\n        }\n\n        SetUpPokeJumpGfxFuncById(GFXFUNC_SHOW_NAMES);\n        sPokemonJump->timer = 0;\n        sPokemonJump->helperState++;\n        break;\n    case 2:\n        if (++sPokemonJump->timer > 100)\n        {\n            SetUpPokeJumpGfxFuncById(GFXFUNC_ERASE_NAMES);\n            sPokemonJump->timer = 0;\n            sPokemonJump->helperState++;\n        }\n        break;\n    case 3:\n        if (!IsPokeJumpGfxFuncFinished())\n        {\n            StopMonHitFlash();\n            sPokemonJump->comm.receivedBonusFlags = 0;\n            ResetPlayersMonState();\n            sPokemonJump->helperState++;\n            return FALSE;\n        }\n        break;\n    case 4:\n        return FALSE;\n    }\n\n    return TRUE;",
       "callsTo": [
         "IsMonHitShakeActive",
@@ -499,6 +607,7 @@
       "returnType": "bool32",
       "signature": "static bool32 TryGivePrize(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sPokemonJump->helperState)\n    {\n    case 0:\n        UnpackPrizeData(sPokemonJump->comm.data, &sPokemonJump->prizeItemId, &sPokemonJump->prizeItemQuantity);\n        PrintPrizeMessage(sPokemonJump->prizeItemId, sPokemonJump->prizeItemQuantity);\n        sPokemonJump->helperState++;\n        break;\n    case 1:\n    case 4:\n        if (!DoPrizeMessageAndFanfare())\n        {\n            sPokemonJump->timer = 0;\n            sPokemonJump->helperState++;\n        }\n        break;\n    case 2:\n    case 5:\n         \n        sPokemonJump->timer++;\n        if (JOY_NEW(A_BUTTON | B_BUTTON) || sPokemonJump->timer > 180)\n        {\n            ClearMessageWindow();\n            sPokemonJump->helperState++;\n        }\n        break;\n    case 3:\n        if (!RemoveMessageWindow())\n        {\n            sPokemonJump->prizeItemQuantity = GetQuantityLimitedByBag(sPokemonJump->prizeItemId, sPokemonJump->prizeItemQuantity);\n            if (sPokemonJump->prizeItemQuantity && AddBagItem(sPokemonJump->prizeItemId, sPokemonJump->prizeItemQuantity))\n            {\n                if (!CheckBagHasSpace(sPokemonJump->prizeItemId, 1))\n                {\n                     \n                     \n                    PrintPrizeFilledBagMessage(sPokemonJump->prizeItemId);\n                    sPokemonJump->helperState = 4;  \n                }\n                else\n                {\n                    sPokemonJump->helperState = 6;  \n                    break;\n                }\n            }\n            else\n            {\n                PrintNoRoomForPrizeMessage(sPokemonJump->prizeItemId);\n                sPokemonJump->helperState = 4;  \n            }\n        }\n        break;\n    case 6:\n        if (!RemoveMessageWindow())\n            return FALSE;\n        break;\n    }\n\n    return TRUE;",
       "callsTo": [
         "AddBagItem",
@@ -519,6 +628,7 @@
       "returnType": "bool32",
       "signature": "static bool32 DoPlayAgainPrompt(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s8 input;\n\n    switch (sPokemonJump->helperState)\n    {\n    case 0:\n        SetUpPokeJumpGfxFuncById(GFXFUNC_MSG_PLAY_AGAIN);\n        sPokemonJump->helperState++;\n        break;\n    case 1:\n        if (!IsPokeJumpGfxFuncFinished())\n            sPokemonJump->helperState++;\n        break;\n    case 2:\n        input = HandlePlayAgainInput();\n        switch (input)\n        {\n        case MENU_B_PRESSED:\n        case 1:  \n            sPokemonJump->playAgainState = PLAY_AGAIN_NO;\n            SetUpPokeJumpGfxFuncById(GFXFUNC_ERASE_MSG);\n            sPokemonJump->helperState++;\n            break;\n        case 0:  \n            sPokemonJump->playAgainState = PLAY_AGAIN_YES;\n            SetUpPokeJumpGfxFuncById(GFXFUNC_ERASE_MSG);\n            sPokemonJump->helperState++;\n            break;\n        }\n        break;\n    case 3:\n        if (!IsPokeJumpGfxFuncFinished())\n            sPokemonJump->helperState++;\n        break;\n    case 4:\n        SetUpPokeJumpGfxFuncById(GFXFUNC_MSG_COMM_STANDBY);\n        sPokemonJump->helperState++;\n        break;\n    case 5:\n        if (!IsPokeJumpGfxFuncFinished())\n        {\n            sPokemonJump->helperState++;\n            return FALSE;\n        }\n        break;\n    case 6:\n        return FALSE;\n    }\n\n    return TRUE;",
       "callsTo": [
         "HandlePlayAgainInput",
@@ -531,6 +641,7 @@
       "returnType": "bool32",
       "signature": "static bool32 ClosePokeJumpLink(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sPokemonJump->helperState)\n    {\n    case 0:\n        ClearMessageWindow();\n        sPokemonJump->helperState++;\n        break;\n    case 1:\n        if (!RemoveMessageWindow())\n        {\n            SetUpPokeJumpGfxFuncById(GFXFUNC_MSG_PLAYER_DROPPED);\n            sPokemonJump->helperState++;\n        }\n        break;\n    case 2:\n        if (!IsPokeJumpGfxFuncFinished())\n        {\n            sPokemonJump->timer = 0;\n            sPokemonJump->helperState++;\n        }\n        break;\n    case 3:\n        if (++sPokemonJump->timer > 120)\n        {\n            BeginNormalPaletteFade(PALETTES_ALL, -1, 0, 16, RGB_BLACK);\n            sPokemonJump->helperState++;\n        }\n        break;\n    case 4:\n        if (!gPaletteFade.active)\n        {\n            SetCloseLinkCallback();\n            sPokemonJump->helperState++;\n        }\n        break;\n    case 5:\n        if (!gReceivedRemoteLinkPlayers)\n            return FALSE;\n        break;\n    }\n\n    return TRUE;",
       "callsTo": [
         "BeginNormalPaletteFade",
@@ -546,6 +657,7 @@
       "returnType": "bool32",
       "signature": "static bool32 CloseMessageAndResetScore(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sPokemonJump->helperState)\n    {\n    case 0:\n        ClearMessageWindow();\n        PrintScore(0);\n        sPokemonJump->helperState++;\n        break;\n    case 1:\n        if (!RemoveMessageWindow())\n        {\n            sPokemonJump->helperState++;\n            return FALSE;\n        }\n        break;\n    case 2:\n        return FALSE;\n    }\n\n    return TRUE;",
       "callsTo": [
         "ClearMessageWindow",
@@ -558,6 +670,12 @@
       "returnType": "void",
       "signature": "static void Task_CommunicateMonInfo(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "int i;\n    s16 *data = gTasks[taskId].data;\n    struct PokemonJump *jump = (struct PokemonJump *)GetWordTaskArg(taskId, DATAIDX_GAME_STRUCT);\n\n    switch (tState)\n    {\n    case 0:\n        for (i = 0; i < MAX_RFU_PLAYERS; i++)\n            tReceivedPacket(i) = FALSE;\n\n        tState++;\n         \n    case 1:\n        SendPacket_MonInfo(&jump->monInfo[jump->multiplayerId]);\n        for (i = 0; i < MAX_RFU_PLAYERS; i++)\n        {\n            if (!tReceivedPacket(i) && RecvPacket_MonInfo(i, &jump->monInfo[i]))\n            {\n                StringCopy(jump->players[i].name, gLinkPlayers[i].name);\n                tReceivedPacket(i) = TRUE;\n                tNumReceived++;\n                if (tNumReceived == jump->numPlayers)\n                {\n                    InitPlayerAndJumpTypes();\n                    DestroyTask(taskId);\n                    break;\n                }\n            }\n        }\n        break;\n    }",
       "callsTo": [
         "DestroyTask",
@@ -573,6 +691,16 @@
       "returnType": "void",
       "signature": "static void SetTaskWithPokeJumpStruct(TaskFunc func, u8 taskPriority)",
       "paramsRaw": "TaskFunc func, u8 taskPriority",
+      "paramsList": [
+        {
+          "name": "func",
+          "typeRaw": "TaskFunc"
+        },
+        {
+          "name": "taskPriority",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 taskId = CreateTask(func, taskPriority);\n    SetWordTaskArg(taskId, DATAIDX_GAME_STRUCT, (u32)sPokemonJump);",
       "callsTo": [
         "CreateTask",
@@ -584,6 +712,7 @@
       "returnType": "void",
       "signature": "static void InitVineState(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sPokemonJump->vineTimer = 0;\n    sPokemonJump->vineState = VINE_UPSWING_LOWER;\n    sPokemonJump->vineStateTimer = 0;\n    sPokemonJump->vineSpeed = 0;\n    sPokemonJump->ignoreJumpInput = FALSE;\n    sPokemonJump->gameOver = FALSE;",
       "callsTo": [],
       "lineCount": 6
@@ -592,6 +721,7 @@
       "returnType": "void",
       "signature": "static void ResetVineState(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sPokemonJump->vineTimer = 0;\n    sPokemonJump->vineStateTimer = VINE_STATE_TIMER(VINE_UPSWING_LOWER);\n    sPokemonJump->vineState = VINE_UPSWING_LOW;\n    sPokemonJump->ignoreJumpInput = FALSE;\n    sPokemonJump->gameOver = FALSE;\n    sPokemonJump->vineSpeedStage = 0;\n    sPokemonJump->vineBaseSpeedIdx = 0;\n    sPokemonJump->vineSpeedAccel = 0;\n    sPokemonJump->vineSpeedDelay = 0;\n    sPokemonJump->atMaxSpeedStage = FALSE;\n    UpdateVineSpeed();",
       "callsTo": [
         "UpdateVineSpeed",
@@ -603,6 +733,7 @@
       "returnType": "void",
       "signature": "static void UpdateVineState(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (sPokemonJump->allowVineUpdates)\n    {\n        sPokemonJump->vineTimer++;\n        sPokemonJump->vineStateTimer += GetVineSpeed();\n        if (sPokemonJump->vineStateTimer >= VINE_STATE_TIMER(NUM_VINESTATES - 1))\n            sPokemonJump->vineStateTimer -= VINE_STATE_TIMER(NUM_VINESTATES - 1);\n\n        sPokemonJump->prevVineState = sPokemonJump->vineState;\n        sPokemonJump->vineState = sPokemonJump->vineStateTimer >> 8;\n\n         \n        if (sPokemonJump->vineState > VINE_UPSWING_LOWER && sPokemonJump->prevVineState < VINE_UPSWING_LOW)\n        {\n            sPokemonJump->ignoreJumpInput++;\n            UpdateVineSpeed();\n        }\n    }",
       "callsTo": [
         "GetVineSpeed",
@@ -615,6 +746,7 @@
       "returnType": "int",
       "signature": "static int GetVineSpeed(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int speed;\n\n    if (sPokemonJump->gameOver)\n        return 0;\n\n    speed = sPokemonJump->vineSpeed;\n    if (sPokemonJump->vineStateTimer <= VINE_STATE_TIMER(VINE_LOWEST))\n    {\n         \n         \n        sPokemonJump->vineSpeedAccel += 80;\n        speed += sPokemonJump->vineSpeedAccel / 256;\n    }\n\n    return speed;",
       "callsTo": [
         "VINE_STATE_TIMER"
@@ -625,6 +757,7 @@
       "returnType": "void",
       "signature": "static void UpdateVineSpeed(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int baseSpeed;\n\n    sPokemonJump->vineSpeedAccel = 0;\n    if (sPokemonJump->vineSpeedDelay)\n    {\n        sPokemonJump->vineSpeedDelay--;\n        if (sPokemonJump->atMaxSpeedStage)\n        {\n            if (PokeJumpRandom() % 4)\n            {\n                sPokemonJump->vineSpeed = sPokemonJump->nextVineSpeed;\n            }\n            else\n            {\n                if (sPokemonJump->nextVineSpeed > 54)\n                    sPokemonJump->vineSpeed = 30;\n                else\n                    sPokemonJump->vineSpeed = 82;\n            }\n        }\n    }\n    else\n    {\n        if (!(sPokemonJump->vineBaseSpeedIdx & ARRAY_COUNT(sVineBaseSpeeds)))\n        {\n            sPokemonJump->nextVineSpeed = sVineBaseSpeeds[sPokemonJump->vineBaseSpeedIdx] + (sPokemonJump->vineSpeedStage * 7);\n            sPokemonJump->vineSpeedDelay = sVineSpeedDelays[PokeJumpRandom() % ARRAY_COUNT(sVineSpeedDelays)] + 2;\n            sPokemonJump->vineBaseSpeedIdx++;\n        }\n        else\n        {\n            if (sPokemonJump->vineBaseSpeedIdx == ARRAY_COUNT(sVineBaseSpeeds))\n            {\n                if (sPokemonJump->vineSpeedStage < 3)\n                    sPokemonJump->vineSpeedStage++;\n                else\n                    sPokemonJump->atMaxSpeedStage = TRUE;\n            }\n\n            baseSpeed = sVineBaseSpeeds[15 - sPokemonJump->vineBaseSpeedIdx];\n            sPokemonJump->nextVineSpeed = baseSpeed + (sPokemonJump->vineSpeedStage * 7);\n            if (++sPokemonJump->vineBaseSpeedIdx > 15)\n            {\n                if (PokeJumpRandom() % 4 == 0)\n                    sPokemonJump->nextVineSpeed -= 5;\n\n                sPokemonJump->vineBaseSpeedIdx = 0;\n            }\n        }\n\n        sPokemonJump->vineSpeed = sPokemonJump->nextVineSpeed;\n    }",
       "callsTo": [
         "ARRAY_COUNT",
@@ -636,6 +769,7 @@
       "returnType": "int",
       "signature": "static int PokeJumpRandom(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sPokemonJump->rngSeed = ISO_RANDOMIZE1(sPokemonJump->rngSeed);\n    return sPokemonJump->rngSeed >> 16;",
       "callsTo": [
         "ISO_RANDOMIZE1"
@@ -646,6 +780,7 @@
       "returnType": "void",
       "signature": "static void ResetVineAfterHit(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sPokemonJump->gameOver = TRUE;\n    sPokemonJump->vineState = VINE_UPSWING_LOWER;\n    sPokemonJump->vineStateTimer = VINE_STATE_TIMER(VINE_LOWEST);\n    AllowVineUpdates();",
       "callsTo": [
         "AllowVineUpdates",
@@ -657,6 +792,7 @@
       "returnType": "int",
       "signature": "static int IsGameOver(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return sPokemonJump->gameOver;",
       "callsTo": [],
       "lineCount": 1
@@ -665,6 +801,7 @@
       "returnType": "void",
       "signature": "static void ResetPlayersJumpStates(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int i;\n    for (i = 0; i < MAX_RFU_PLAYERS; i++)\n        sPokemonJump->players[i].jumpState = JUMPSTATE_NONE;",
       "callsTo": [],
       "lineCount": 3
@@ -673,6 +810,7 @@
       "returnType": "void",
       "signature": "static void ResetPlayersMonState(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sPokemonJump->player->monState = MONSTATE_NORMAL;\n    sPokemonJump->player->prevMonState = MONSTATE_NORMAL;",
       "callsTo": [],
       "lineCount": 2
@@ -681,6 +819,12 @@
       "returnType": "bool32",
       "signature": "static bool32 IsPlayersMonState(u16 monState)",
       "paramsRaw": "u16 monState",
+      "paramsList": [
+        {
+          "name": "monState",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "if (sPokemonJump->players[sPokemonJump->multiplayerId].monState == monState)\n        return TRUE;\n    else\n        return FALSE;",
       "callsTo": [],
       "lineCount": 4
@@ -689,6 +833,7 @@
       "returnType": "void",
       "signature": "static void SetMonStateJump(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sPokemonJump->player->jumpTimeStart = sPokemonJump->vineTimer;\n    sPokemonJump->player->prevMonState = sPokemonJump->player->monState;\n    sPokemonJump->player->monState = MONSTATE_JUMP;",
       "callsTo": [],
       "lineCount": 3
@@ -697,6 +842,7 @@
       "returnType": "void",
       "signature": "static void SetMonStateHit(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sPokemonJump->player->prevMonState = sPokemonJump->player->monState;\n    sPokemonJump->player->monState = MONSTATE_HIT;\n    sPokemonJump->player->jumpTimeStart = sPokemonJump->vineTimer;\n    sPokemonJump->player->jumpState = JUMPSTATE_FAILURE;",
       "callsTo": [],
       "lineCount": 4
@@ -705,6 +851,7 @@
       "returnType": "void",
       "signature": "static void SetMonStateNormal(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sPokemonJump->player->prevMonState = sPokemonJump->player->monState;\n    sPokemonJump->player->monState = MONSTATE_NORMAL;",
       "callsTo": [],
       "lineCount": 2
@@ -713,6 +860,7 @@
       "returnType": "void",
       "signature": "static void UpdateGame(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (sPokemonJump->updateScore)\n    {\n        PrintScore(sPokemonJump->comm.jumpScore);\n        sPokemonJump->updateScore = FALSE;\n        if (sPokemonJump->showBonus)\n        {\n            int numPlayers = DoSameJumpTimeBonus(sPokemonJump->comm.receivedBonusFlags);\n            PlaySE(sSoundEffects[numPlayers - 2]);\n            sPokemonJump->showBonus = FALSE;\n        }\n    }\n\n    PrintJumpsInRow(sPokemonJump->comm.jumpsInRow);\n    HandleMonState();\n    TryUpdateVineSwing();",
       "callsTo": [
         "DoSameJumpTimeBonus",
@@ -728,6 +876,7 @@
       "returnType": "void",
       "signature": "static void TryUpdateVineSwing(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (sPokemonJump->allowVineUpdates)\n        UpdateVineSwing(sPokemonJump->vineState);",
       "callsTo": [
         "UpdateVineSwing"
@@ -738,6 +887,7 @@
       "returnType": "void",
       "signature": "static void DisallowVineUpdates(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sPokemonJump->allowVineUpdates = FALSE;",
       "callsTo": [],
       "lineCount": 1
@@ -746,6 +896,7 @@
       "returnType": "void",
       "signature": "static void AllowVineUpdates(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sPokemonJump->allowVineUpdates = TRUE;",
       "callsTo": [],
       "lineCount": 1
@@ -754,6 +905,7 @@
       "returnType": "void",
       "signature": "static void HandleMonState(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int i;\n    int soundFlags = 0;\n    int numPlayers = sPokemonJump->numPlayers;\n\n    for (i = 0; i < numPlayers; i++)\n    {\n        switch (sPokemonJump->players[i].monState)\n        {\n        case MONSTATE_NORMAL:\n            SetMonSpriteY(i, 0);\n            break;\n        case MONSTATE_JUMP:\n            if (sPokemonJump->players[i].prevMonState != MONSTATE_JUMP || sPokemonJump->players[i].jumpTimeStart != sPokemonJump->jumpTimeStarts[i])\n            {\n                 \n                if (i == sPokemonJump->multiplayerId)\n                    sPokemonJump->players[i].prevMonState = MONSTATE_JUMP;\n\n                soundFlags |= F_SE_JUMP;\n                sPokemonJump->players[i].jumpOffsetIdx = INT_MAX;\n                sPokemonJump->jumpTimeStarts[i] = sPokemonJump->players[i].jumpTimeStart;\n            }\n\n            UpdateJump(i);\n            break;\n        case MONSTATE_HIT:\n            if (sPokemonJump->players[i].prevMonState != MONSTATE_HIT)\n            {\n                if (i == sPokemonJump->multiplayerId)\n                    sPokemonJump->players[i].prevMonState = MONSTATE_HIT;\n\n                soundFlags |= F_SE_FAIL;\n                StartMonHitShake(i);\n            }\n            break;\n        }\n    }\n\n    if (soundFlags & F_SE_FAIL)\n        PlaySE(SE_RG_POKE_JUMP_FAILURE);\n    else if (soundFlags & F_SE_JUMP)\n        PlaySE(SE_LEDGE);",
       "callsTo": [
         "PlaySE",
@@ -767,6 +919,12 @@
       "returnType": "void",
       "signature": "static void UpdateJump(int multiplayerId)",
       "paramsRaw": "int multiplayerId",
+      "paramsList": [
+        {
+          "name": "multiplayerId",
+          "typeRaw": "int"
+        }
+      ],
       "body": "int jumpOffsetIdx;\n    int jumpOffset;\n    struct PokemonJump_Player *player;\n\n    if (sPokemonJump->skipJumpUpdate)  \n        return;\n\n    player = &sPokemonJump->players[multiplayerId];\n    if (player->jumpOffsetIdx != INT_MAX)\n    {\n        player->jumpOffsetIdx++;\n        jumpOffsetIdx = player->jumpOffsetIdx;\n    }\n    else\n    {\n        jumpOffsetIdx = sPokemonJump->vineTimer - player->jumpTimeStart;\n        if (jumpOffsetIdx >= 65000)\n        {\n            jumpOffsetIdx -= 65000;\n            jumpOffsetIdx += sPokemonJump->vineTimer;\n        }\n\n        player->jumpOffsetIdx = jumpOffsetIdx;\n    }\n\n    if (jumpOffsetIdx < 4)\n        return;\n\n    jumpOffsetIdx -= 4;\n    if (jumpOffsetIdx < (int)ARRAY_COUNT(sJumpOffsets[0]))\n        jumpOffset = sJumpOffsets[player->monJumpType][jumpOffsetIdx];\n    else\n        jumpOffset = 0;\n\n    SetMonSpriteY(multiplayerId, jumpOffset);\n    if (jumpOffset == 0 && multiplayerId == sPokemonJump->multiplayerId)\n        SetMonStateNormal();\n\n    player->jumpOffset = jumpOffset;",
       "callsTo": [
         "ARRAY_COUNT",
@@ -779,6 +937,7 @@
       "returnType": "void",
       "signature": "static void TryUpdateScore(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (sPokemonJump->vineState == VINE_UPSWING_HIGH && sPokemonJump->prevVineState == VINE_UPSWING_LOW)\n    {\n         \n         \n\n        if (!sPokemonJump->initScoreUpdate)\n        {\n            ClearUnreadField();\n            sPokemonJump->numPlayersAtPeak = 0;\n            sPokemonJump->initScoreUpdate = TRUE;\n            sPokemonJump->comm.receivedBonusFlags = 0;\n        }\n        else\n        {\n            if (sPokemonJump->numPlayersAtPeak == MAX_RFU_PLAYERS)\n            {\n                 \n                sPokemonJump->excellentsInRow++;\n                TryUpdateExcellentsRecord(sPokemonJump->excellentsInRow);\n            }\n            else\n            {\n                sPokemonJump->excellentsInRow = 0;\n            }\n\n            if (sPokemonJump->numPlayersAtPeak > 1)\n            {\n                sPokemonJump->giveBonus = TRUE;\n                 \n                memcpy(sPokemonJump->atJumpPeak3, sPokemonJump->atJumpPeak2, sizeof(u8) * MAX_RFU_PLAYERS);\n            }\n\n            ClearUnreadField();\n            sPokemonJump->numPlayersAtPeak = 0;\n            sPokemonJump->initScoreUpdate = TRUE;\n            sPokemonJump->comm.receivedBonusFlags = 0;\n            if (sPokemonJump->comm.jumpsInRow < MAX_JUMPS)\n                sPokemonJump->comm.jumpsInRow++;\n\n            AddJumpScore(10);\n            SetLinkTimeInterval(LINK_INTERVAL_SHORT);\n        }\n    }\n\n    if (sPokemonJump->giveBonus && (DidAllPlayersClearVine() == TRUE || sPokemonJump->vineState == VINE_HIGHEST))\n    {\n        int numPlayers = GetNumPlayersForBonus(sPokemonJump->atJumpPeak3);\n        AddJumpScore(GetScoreBonus(numPlayers));\n        SetLinkTimeInterval(LINK_INTERVAL_SHORT);\n        sPokemonJump->giveBonus = FALSE;\n    }\n\n    if (sPokemonJump->initScoreUpdate)\n    {\n        int numAtPeak = GetPlayersAtJumpPeak();\n        if (numAtPeak > sPokemonJump->numPlayersAtPeak)\n        {\n            sPokemonJump->numPlayersAtPeak = numAtPeak;\n            memcpy(sPokemonJump->atJumpPeak2, sPokemonJump->atJumpPeak, sizeof(u8) * MAX_RFU_PLAYERS);\n        }\n    }",
       "callsTo": [
         "AddJumpScore",
@@ -796,6 +955,7 @@
       "returnType": "bool32",
       "signature": "static bool32 UpdateVineHitStates(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int i;\n\n    if (sPokemonJump->vineState == VINE_UPSWING_LOWER && sPokemonJump->player->jumpOffset == 0)\n    {\n         \n         \n         \n        if (sPokemonJump->player->prevMonState == MONSTATE_JUMP && IsGameOver() == TRUE)\n        {\n            sPokemonJump->player->jumpState = JUMPSTATE_SUCCESS;\n        }\n        else\n        {\n             \n            SetMonStateHit();\n            SetLinkTimeInterval(LINK_INTERVAL_SHORT);\n        }\n    }\n\n    if (sPokemonJump->vineState == VINE_UPSWING_LOW\n     && sPokemonJump->prevVineState == VINE_UPSWING_LOWER\n     && sPokemonJump->player->monState != MONSTATE_HIT)\n    {\n        sPokemonJump->player->jumpState = JUMPSTATE_SUCCESS;\n        SetLinkTimeInterval(LINK_INTERVAL_SHORT);\n    }\n\n    for (i = 0; i < sPokemonJump->numPlayers; i++)\n    {\n        if (sPokemonJump->players[i].monState == MONSTATE_HIT)\n            return FALSE;\n    }\n\n    return TRUE;",
       "callsTo": [
         "IsGameOver",
@@ -808,6 +968,7 @@
       "returnType": "bool32",
       "signature": "static bool32 AllPlayersJumpedOrHit(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int i;\n    int numPlayers = sPokemonJump->numPlayers;\n    int numJumpedOrHit = 0;\n    for (i = 0; i < numPlayers; i++)\n    {\n        if (sPokemonJump->players[i].jumpState != JUMPSTATE_NONE)\n            numJumpedOrHit++;\n    }\n\n    return numJumpedOrHit == numPlayers;",
       "callsTo": [],
       "lineCount": 10
@@ -816,6 +977,7 @@
       "returnType": "bool32",
       "signature": "static bool32 DidAllPlayersClearVine(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int i;\n    for (i = 0; i < sPokemonJump->numPlayers; i++)\n    {\n        if (sPokemonJump->players[i].jumpState != JUMPSTATE_SUCCESS)\n            return FALSE;\n    }\n\n    return TRUE;",
       "callsTo": [],
       "lineCount": 8
@@ -824,6 +986,7 @@
       "returnType": "bool32",
       "signature": "static bool32 ShouldPlayAgain(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int i;\n\n    if (sPokemonJump->playAgainState == PLAY_AGAIN_NO)\n        return FALSE;\n\n    for (i = 1; i < sPokemonJump->numPlayers; i++)\n    {\n        if (sPokemonJump->playAgainStates[i] == PLAY_AGAIN_NO)\n            return FALSE;\n    }\n\n    return TRUE;",
       "callsTo": [],
       "lineCount": 12
@@ -832,6 +995,12 @@
       "returnType": "void",
       "signature": "static void AddJumpScore(int score)",
       "paramsRaw": "int score",
+      "paramsList": [
+        {
+          "name": "score",
+          "typeRaw": "int"
+        }
+      ],
       "body": "sPokemonJump->comm.jumpScore += score;\n    sPokemonJump->updateScore = TRUE;\n    if (sPokemonJump->comm.jumpScore >= MAX_JUMP_SCORE)\n        sPokemonJump->comm.jumpScore = MAX_JUMP_SCORE;",
       "callsTo": [],
       "lineCount": 4
@@ -840,6 +1009,7 @@
       "returnType": "int",
       "signature": "static int GetPlayersAtJumpPeak(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int i;\n    int numAtPeak = 0;\n    int numPlayers = sPokemonJump->numPlayers;\n\n    for (i = 0; i < numPlayers; i++)\n    {\n        if (sPokemonJump->players[i].jumpOffset == JUMP_PEAK)\n        {\n            sPokemonJump->atJumpPeak[i] = TRUE;\n            numAtPeak++;\n        }\n        else\n        {\n            sPokemonJump->atJumpPeak[i] = FALSE;\n        }\n    }\n\n    return numAtPeak;",
       "callsTo": [],
       "lineCount": 18
@@ -848,6 +1018,7 @@
       "returnType": "bool32",
       "signature": "static bool32 AreLinkQueuesEmpty(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return !gRfu.recvQueue.count && !gRfu.sendQueue.count;",
       "callsTo": [],
       "lineCount": 1
@@ -856,6 +1027,12 @@
       "returnType": "int",
       "signature": "static int GetNumPlayersForBonus(u8 *atJumpPeak)",
       "paramsRaw": "u8 *atJumpPeak",
+      "paramsList": [
+        {
+          "name": "atJumpPeak",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "int i = 0;\n    int flags = 0;\n    int count = 0;\n\n    for (; i < MAX_RFU_PLAYERS; i++)\n    {\n        if (atJumpPeak[i])\n        {\n            flags |= 1 << i;\n            count++;\n        }\n    }\n\n    sPokemonJump->comm.receivedBonusFlags = flags;\n    if (flags)\n        sPokemonJump->showBonus = TRUE;\n\n    return count;",
       "callsTo": [],
       "lineCount": 18
@@ -864,6 +1041,7 @@
       "returnType": "void",
       "signature": "static void ClearUnreadField(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sPokemonJump->unused3 = 0;",
       "callsTo": [],
       "lineCount": 1
@@ -872,6 +1050,12 @@
       "returnType": "int",
       "signature": "static int GetScoreBonus(int numPlayers)",
       "paramsRaw": "int numPlayers",
+      "paramsList": [
+        {
+          "name": "numPlayers",
+          "typeRaw": "int"
+        }
+      ],
       "body": "return sScoreBonuses[numPlayers];",
       "callsTo": [],
       "lineCount": 1
@@ -880,6 +1064,12 @@
       "returnType": "void",
       "signature": "static void TryUpdateExcellentsRecord(u16 excellentsInRow)",
       "paramsRaw": "u16 excellentsInRow",
+      "paramsList": [
+        {
+          "name": "excellentsInRow",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "if (excellentsInRow > sPokemonJump->excellentsInRowRecord)\n        sPokemonJump->excellentsInRowRecord = excellentsInRow;",
       "callsTo": [],
       "lineCount": 2
@@ -888,6 +1078,7 @@
       "returnType": "bool32",
       "signature": "static bool32 HasEnoughScoreForPrize(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (sPokemonJump->comm.jumpScore >= sPrizeQuantityData[0].score)\n        return TRUE;\n    else\n        return FALSE;",
       "callsTo": [],
       "lineCount": 4
@@ -896,6 +1087,7 @@
       "returnType": "u16",
       "signature": "static u16 GetPrizeData(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 itemId = GetPrizeItemId();\n    u16 quantity = GetPrizeQuantity();\n    return (quantity << 12) | (itemId & 0xFFF);",
       "callsTo": [
         "GetPrizeItemId",
@@ -907,6 +1099,20 @@
       "returnType": "void",
       "signature": "static void UnpackPrizeData(u16 data, u16 *itemId, u16 *quantity)",
       "paramsRaw": "u16 data, u16 *itemId, u16 *quantity",
+      "paramsList": [
+        {
+          "name": "data",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "itemId",
+          "typeRaw": "u16 *"
+        },
+        {
+          "name": "quantity",
+          "typeRaw": "u16 *"
+        }
+      ],
       "body": "*quantity = data >> 12;\n    *itemId = data & 0xFFF;",
       "callsTo": [],
       "lineCount": 2
@@ -915,6 +1121,7 @@
       "returnType": "u16",
       "signature": "static u16 GetPrizeItemId(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 index = Random() % ARRAY_COUNT(sPrizeItems);\n    return sPrizeItems[index];",
       "callsTo": [
         "ARRAY_COUNT",
@@ -926,6 +1133,7 @@
       "returnType": "u16",
       "signature": "static u16 GetPrizeQuantity(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u32 quantity, i;\n\n    quantity = 0;\n    for (i = 0; i < ARRAY_COUNT(sPrizeQuantityData); i++)\n    {\n        if (sPokemonJump->comm.jumpScore >= sPrizeQuantityData[i].score)\n            quantity = sPrizeQuantityData[i].quantity;\n        else\n            break;\n    }\n\n    return quantity;",
       "callsTo": [
         "ARRAY_COUNT"
@@ -936,6 +1144,16 @@
       "returnType": "u16",
       "signature": "static u16 GetQuantityLimitedByBag(u16 item, u16 quantity)",
       "paramsRaw": "u16 item, u16 quantity",
+      "paramsList": [
+        {
+          "name": "item",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "quantity",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "while (quantity && !CheckBagHasSpace(item, quantity))\n        quantity--;\n\n    return quantity;",
       "callsTo": [
         "CheckBagHasSpace"
@@ -946,6 +1164,7 @@
       "returnType": "u16",
       "signature": "static u16 GetNumPokeJumpPlayers(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return GetLinkPlayerCount();",
       "callsTo": [
         "GetLinkPlayerCount"
@@ -956,6 +1175,7 @@
       "returnType": "u16",
       "signature": "static u16 GetPokeJumpMultiplayerId(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return sPokemonJump->multiplayerId;",
       "callsTo": [],
       "lineCount": 1
@@ -964,6 +1184,12 @@
       "returnType": "bool32",
       "signature": "bool32 IsSpeciesAllowedInPokemonJump(u16 species)",
       "paramsRaw": "u16 species",
+      "paramsList": [
+        {
+          "name": "species",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "return GetPokemonJumpSpeciesIdx(species) > -1;",
       "callsTo": [
         "GetPokemonJumpSpeciesIdx"
@@ -974,6 +1200,7 @@
       "returnType": "void",
       "signature": "void IsPokemonJumpSpeciesInParty(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int i;\n\n    for (i = 0; i < PARTY_SIZE; i++)\n    {\n        if (GetMonData(&gPlayerParty[i], MON_DATA_SANITY_HAS_SPECIES))\n        {\n            u16 species = GetMonData(&gPlayerParty[i], MON_DATA_SPECIES_OR_EGG);\n            if (IsSpeciesAllowedInPokemonJump(species))\n            {\n                gSpecialVar_Result = TRUE;\n                return;\n            }\n        }\n    }\n\n    gSpecialVar_Result = FALSE;",
       "callsTo": [
         "GetMonData",
@@ -985,6 +1212,12 @@
       "returnType": "void",
       "signature": "static void LoadSpriteSheetsAndPalettes(struct PokemonJumpGfx *jumpGfx)",
       "paramsRaw": "struct PokemonJumpGfx *jumpGfx",
+      "paramsList": [
+        {
+          "name": "jumpGfx",
+          "typeRaw": "struct PokemonJumpGfx *"
+        }
+      ],
       "body": "int i;\n\n    for (i = 0; i < ARRAY_COUNT(sCompressedSpriteSheets); i++)\n        LoadCompressedSpriteSheet(&sCompressedSpriteSheets[i]);\n\n    for (i = 0; i < ARRAY_COUNT(sSpritePalettes); i++)\n        LoadSpritePalette(&sSpritePalettes[i]);\n\n    jumpGfx->vinePalNumDownswing = IndexOfSpritePaletteTag(PALTAG_1);\n    jumpGfx->vinePalNumUpswing = IndexOfSpritePaletteTag(PALTAG_2);",
       "callsTo": [
         "ARRAY_COUNT",
@@ -998,6 +1231,12 @@
       "returnType": "void",
       "signature": "static void ResetPokeJumpSpriteData(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "int i;\n    for (i = 0; i < (int)ARRAY_COUNT(sprite->data); i++)\n        sprite->data[i] = 0;",
       "callsTo": [
         "ARRAY_COUNT"
@@ -1008,6 +1247,28 @@
       "returnType": "void",
       "signature": "static void CreateJumpMonSprite(struct PokemonJumpGfx *jumpGfx, struct PokemonJump_MonInfo *monInfo, s16 x, s16 y, u8 multiplayerId)",
       "paramsRaw": "struct PokemonJumpGfx *jumpGfx, struct PokemonJump_MonInfo *monInfo, s16 x, s16 y, u8 multiplayerId",
+      "paramsList": [
+        {
+          "name": "jumpGfx",
+          "typeRaw": "struct PokemonJumpGfx *"
+        },
+        {
+          "name": "monInfo",
+          "typeRaw": "struct PokemonJump_MonInfo *"
+        },
+        {
+          "name": "x",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "multiplayerId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "struct SpriteTemplate spriteTemplate;\n    struct SpriteSheet spriteSheet;\n    struct CompressedSpritePalette spritePalette;\n    u8 *buffer;\n    u8 *unusedBuffer;\n    u8 subpriority;\n    u8 spriteId;\n\n    spriteTemplate = sSpriteTemplate_JumpMon;\n    buffer = Alloc(MON_PIC_SIZE * MAX_MON_PIC_FRAMES);\n    unusedBuffer = Alloc(MON_PIC_SIZE);\n    if (multiplayerId == GetPokeJumpMultiplayerId())\n        subpriority = 3;\n    else\n        subpriority = multiplayerId + 4;\n\n    if (buffer && unusedBuffer)\n    {\n        HandleLoadSpecialPokePic(\n            &gMonStillFrontPicTable[monInfo->species],\n            buffer,\n            monInfo->species,\n            monInfo->personality);\n\n        spriteSheet.data = buffer;\n        spriteSheet.tag = multiplayerId;\n        spriteSheet.size = MON_PIC_SIZE;\n        LoadSpriteSheet(&spriteSheet);\n\n        spritePalette.data = GetMonSpritePalFromSpeciesAndPersonality(monInfo->species, monInfo->otId, monInfo->personality);\n        spritePalette.tag = multiplayerId;\n        LoadCompressedSpritePalette(&spritePalette);\n\n        Free(buffer);\n        Free(unusedBuffer);\n\n        spriteTemplate.tileTag += multiplayerId;\n        spriteTemplate.paletteTag += multiplayerId;\n        spriteId = CreateSprite(&spriteTemplate, x, y, subpriority);\n        if (spriteId != MAX_SPRITES)\n        {\n            jumpGfx->monSprites[multiplayerId] = &gSprites[spriteId];\n            jumpGfx->monSpriteSubpriorities[multiplayerId] = subpriority;\n            return;\n        }\n    }\n\n    jumpGfx->monSprites[multiplayerId] = NULL;",
       "callsTo": [
         "Alloc",
@@ -1025,6 +1286,16 @@
       "returnType": "void",
       "signature": "static void DoStarAnim(struct PokemonJumpGfx *jumpGfx, int multiplayerId)",
       "paramsRaw": "struct PokemonJumpGfx *jumpGfx, int multiplayerId",
+      "paramsList": [
+        {
+          "name": "jumpGfx",
+          "typeRaw": "struct PokemonJumpGfx *"
+        },
+        {
+          "name": "multiplayerId",
+          "typeRaw": "int"
+        }
+      ],
       "body": "ResetPokeJumpSpriteData(jumpGfx->starSprites[multiplayerId]);\n    jumpGfx->starSprites[multiplayerId]->sOffset = jumpGfx->monSprites[multiplayerId] - gSprites;\n    jumpGfx->starSprites[multiplayerId]->invisible = FALSE;\n    jumpGfx->starSprites[multiplayerId]->y = 96;\n    jumpGfx->starSprites[multiplayerId]->callback = SpriteCB_Star;\n    StartSpriteAnim(jumpGfx->starSprites[multiplayerId], 1);",
       "callsTo": [
         "ResetPokeJumpSpriteData",
@@ -1036,6 +1307,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_Star(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "switch (sprite->sState)\n    {\n    case 0:\n        if (sprite->animEnded)\n        {\n            sprite->invisible = TRUE;\n            sprite->callback = SpriteCallbackDummy;\n        }\n        break;\n    case 1:\n        sprite->y--;\n        sprite->sTimer++;\n        if (sprite->y <= 72)\n        {\n            sprite->y = 72;\n            sprite->sState++;\n        }\n        break;\n    case 2:\n        if (++sprite->sTimer >= 48)\n        {\n            sprite->invisible = TRUE;\n            sprite->callback = SpriteCallbackDummy;\n        }\n        break;\n    }",
       "callsTo": [],
       "lineCount": 26
@@ -1044,6 +1321,16 @@
       "returnType": "void",
       "signature": "static void Gfx_StartMonHitShake(struct PokemonJumpGfx *jumpGfx, int multiplayerId)",
       "paramsRaw": "struct PokemonJumpGfx *jumpGfx, int multiplayerId",
+      "paramsList": [
+        {
+          "name": "jumpGfx",
+          "typeRaw": "struct PokemonJumpGfx *"
+        },
+        {
+          "name": "multiplayerId",
+          "typeRaw": "int"
+        }
+      ],
       "body": "jumpGfx->monSprites[multiplayerId]->callback = SpriteCB_MonHitShake;\n    jumpGfx->monSprites[multiplayerId]->y2 = 0;\n    ResetPokeJumpSpriteData(jumpGfx->monSprites[multiplayerId]);",
       "callsTo": [
         "ResetPokeJumpSpriteData"
@@ -1054,6 +1341,16 @@
       "returnType": "bool32",
       "signature": "static bool32 Gfx_IsMonHitShakeActive(struct PokemonJumpGfx *jumpGfx, int multiplayerId)",
       "paramsRaw": "struct PokemonJumpGfx *jumpGfx, int multiplayerId",
+      "paramsList": [
+        {
+          "name": "jumpGfx",
+          "typeRaw": "struct PokemonJumpGfx *"
+        },
+        {
+          "name": "multiplayerId",
+          "typeRaw": "int"
+        }
+      ],
       "body": "return jumpGfx->monSprites[multiplayerId]->callback == SpriteCB_MonHitShake;",
       "callsTo": [],
       "lineCount": 1
@@ -1062,6 +1359,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_MonHitShake(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (++sprite->sTimer > 1)\n    {\n        if (++sprite->sNumShakes & 1)\n            sprite->y2 = 2;\n        else\n            sprite->y2 = -2;\n\n        sprite->sTimer = 0;\n    }\n\n    if (sprite->sNumShakes > 12)\n    {\n        sprite->y2 = 0;\n        sprite->callback = SpriteCallbackDummy;\n    }",
       "callsTo": [],
       "lineCount": 15
@@ -1070,6 +1373,16 @@
       "returnType": "void",
       "signature": "static void Gfx_StartMonHitFlash(struct PokemonJumpGfx *jumpGfx, int multiplayerId)",
       "paramsRaw": "struct PokemonJumpGfx *jumpGfx, int multiplayerId",
+      "paramsList": [
+        {
+          "name": "jumpGfx",
+          "typeRaw": "struct PokemonJumpGfx *"
+        },
+        {
+          "name": "multiplayerId",
+          "typeRaw": "int"
+        }
+      ],
       "body": "ResetPokeJumpSpriteData(jumpGfx->monSprites[multiplayerId]);\n    jumpGfx->monSprites[multiplayerId]->callback = SpriteCB_MonHitFlash;",
       "callsTo": [
         "ResetPokeJumpSpriteData"
@@ -1080,6 +1393,12 @@
       "returnType": "void",
       "signature": "static void Gfx_StopMonHitFlash(struct PokemonJumpGfx *jumpGfx)",
       "paramsRaw": "struct PokemonJumpGfx *jumpGfx",
+      "paramsList": [
+        {
+          "name": "jumpGfx",
+          "typeRaw": "struct PokemonJumpGfx *"
+        }
+      ],
       "body": "int i;\n    u16 numPlayers = GetNumPokeJumpPlayers();\n    for (i = 0; i < numPlayers; i++)\n    {\n        if (jumpGfx->monSprites[i]->callback == SpriteCB_MonHitFlash)\n        {\n            jumpGfx->monSprites[i]->invisible = FALSE;\n            jumpGfx->monSprites[i]->callback = SpriteCallbackDummy;\n            jumpGfx->monSprites[i]->subpriority = 10;\n        }\n    }",
       "callsTo": [
         "GetNumPokeJumpPlayers"
@@ -1090,6 +1409,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_MonHitFlash(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (++sprite->sTimer > 3)\n    {\n        sprite->sTimer = 0;\n        sprite->invisible ^= 1;\n    }",
       "callsTo": [],
       "lineCount": 5
@@ -1098,6 +1423,12 @@
       "returnType": "void",
       "signature": "static void Gfx_ResetMonSpriteSubpriorities(struct PokemonJumpGfx *jumpGfx)",
       "paramsRaw": "struct PokemonJumpGfx *jumpGfx",
+      "paramsList": [
+        {
+          "name": "jumpGfx",
+          "typeRaw": "struct PokemonJumpGfx *"
+        }
+      ],
       "body": "int i;\n    u16 numPlayers = GetNumPokeJumpPlayers();\n    for (i = 0; i < numPlayers; i++)\n        jumpGfx->monSprites[i]->subpriority = jumpGfx->monSpriteSubpriorities[i];",
       "callsTo": [
         "GetNumPokeJumpPlayers"
@@ -1108,6 +1439,16 @@
       "returnType": "void",
       "signature": "static void Gfx_StartMonIntroBounce(struct PokemonJumpGfx *jumpGfx, int multiplayerId)",
       "paramsRaw": "struct PokemonJumpGfx *jumpGfx, int multiplayerId",
+      "paramsList": [
+        {
+          "name": "jumpGfx",
+          "typeRaw": "struct PokemonJumpGfx *"
+        },
+        {
+          "name": "multiplayerId",
+          "typeRaw": "int"
+        }
+      ],
       "body": "ResetPokeJumpSpriteData(jumpGfx->monSprites[multiplayerId]);\n    jumpGfx->monSprites[multiplayerId]->callback = SpriteCB_MonIntroBounce;",
       "callsTo": [
         "ResetPokeJumpSpriteData"
@@ -1118,6 +1459,12 @@
       "returnType": "bool32",
       "signature": "static bool32 Gfx_IsMonIntroBounceActive(struct PokemonJumpGfx *jumpGfx)",
       "paramsRaw": "struct PokemonJumpGfx *jumpGfx",
+      "paramsList": [
+        {
+          "name": "jumpGfx",
+          "typeRaw": "struct PokemonJumpGfx *"
+        }
+      ],
       "body": "int i;\n    u16 numPlayers = GetNumPokeJumpPlayers();\n    for (i = 0; i < numPlayers; i++)\n    {\n        if (jumpGfx->monSprites[i]->callback == SpriteCB_MonIntroBounce)\n            return TRUE;\n    }\n\n    return FALSE;",
       "callsTo": [
         "GetNumPokeJumpPlayers"
@@ -1128,6 +1475,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_MonIntroBounce(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "switch (sprite->sState)\n    {\n    case 0:\n        PlaySE(SE_BIKE_HOP);\n        sprite->sHopPos = 0;\n        sprite->sState++;\n         \n    case 1:\n        sprite->sHopPos += 4;\n        if (sprite->sHopPos > 127)\n            sprite->sHopPos = 0;\n\n        sprite->y2 = -(gSineTable[sprite->sHopPos] >> 3);\n        if (sprite->sHopPos == 0)\n        {\n            if (++sprite->sNumHops < 2)\n                sprite->sState = 0;\n            else\n                sprite->callback = SpriteCallbackDummy;\n        }\n        break;\n    }",
       "callsTo": [
         "PlaySE"
@@ -1138,6 +1491,24 @@
       "returnType": "void",
       "signature": "static void CreateStarSprite(struct PokemonJumpGfx *jumpGfx, s16 x, s16 y, u8 multiplayerId)",
       "paramsRaw": "struct PokemonJumpGfx *jumpGfx, s16 x, s16 y, u8 multiplayerId",
+      "paramsList": [
+        {
+          "name": "jumpGfx",
+          "typeRaw": "struct PokemonJumpGfx *"
+        },
+        {
+          "name": "x",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "multiplayerId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 spriteId = CreateSprite(&sSpriteTemplate_Star, x, y, 1);\n    if (spriteId != MAX_SPRITES)\n    {\n        gSprites[spriteId].invisible = TRUE;\n        jumpGfx->starSprites[multiplayerId] = &gSprites[spriteId];\n    }",
       "callsTo": [
         "CreateSprite"
@@ -1148,6 +1519,12 @@
       "returnType": "void",
       "signature": "static void CreateVineSprites(struct PokemonJumpGfx *jumpGfx)",
       "paramsRaw": "struct PokemonJumpGfx *jumpGfx",
+      "paramsList": [
+        {
+          "name": "jumpGfx",
+          "typeRaw": "struct PokemonJumpGfx *"
+        }
+      ],
       "body": "int i;\n    int count;\n    u8 spriteId;\n\n    count = 0;\n    for (i = 0; i < VINE_SPRITES_PER_SIDE; i++)\n    {\n        spriteId = CreateSprite(sSpriteTemplates_Vine[i], sVineXCoords[count], sVineYCoords[i][0], 2);\n        jumpGfx->vineSprites[count] = &gSprites[spriteId];\n        count++;\n    }\n\n    for (i = VINE_SPRITES_PER_SIDE - 1; i >= 0; i--)\n    {\n        spriteId = CreateSprite(sSpriteTemplates_Vine[i], sVineXCoords[count], sVineYCoords[i][0], 2);\n        jumpGfx->vineSprites[count] = &gSprites[spriteId];\n        jumpGfx->vineSprites[count]->hFlip = TRUE;\n        count++;\n    }",
       "callsTo": [
         "CreateSprite"
@@ -1158,6 +1535,16 @@
       "returnType": "void",
       "signature": "static void UpdateVineAnim(struct PokemonJumpGfx *jumpGfx, int vineState)",
       "paramsRaw": "struct PokemonJumpGfx *jumpGfx, int vineState",
+      "paramsList": [
+        {
+          "name": "jumpGfx",
+          "typeRaw": "struct PokemonJumpGfx *"
+        },
+        {
+          "name": "vineState",
+          "typeRaw": "int"
+        }
+      ],
       "body": "int i, count, palNum;\n    int priority;\n\n    if (vineState > VINE_LOWEST)\n    {\n         \n         \n        vineState = NUM_VINESTATES - vineState;\n        priority = 3;  \n        palNum = jumpGfx->vinePalNumUpswing;\n    }\n    else\n    {\n        priority = 2;  \n        palNum = jumpGfx->vinePalNumDownswing;\n    }\n\n    count = 0;\n    for (i = 0; i < VINE_SPRITES_PER_SIDE; i++)\n    {\n        jumpGfx->vineSprites[count]->y = sVineYCoords[i][vineState];\n        jumpGfx->vineSprites[count]->oam.priority = priority;\n        jumpGfx->vineSprites[count]->oam.paletteNum = palNum;\n        StartSpriteAnim(jumpGfx->vineSprites[count], vineState);\n        count++;\n    }\n\n    for (i = VINE_SPRITES_PER_SIDE - 1; i >= 0; i--)\n    {\n        jumpGfx->vineSprites[count]->y = sVineYCoords[i][vineState];\n        jumpGfx->vineSprites[count]->oam.priority = priority;\n        jumpGfx->vineSprites[count]->oam.paletteNum = palNum;\n        StartSpriteAnim(jumpGfx->vineSprites[count], vineState);\n        count++;\n    }",
       "callsTo": [
         "StartSpriteAnim"
@@ -1168,6 +1555,12 @@
       "returnType": "void",
       "signature": "static void StartPokeJumpCountdown(struct PokemonJumpGfx *jumpGfx)",
       "paramsRaw": "struct PokemonJumpGfx *jumpGfx",
+      "paramsList": [
+        {
+          "name": "jumpGfx",
+          "typeRaw": "struct PokemonJumpGfx *"
+        }
+      ],
       "body": "StartMinigameCountdown(GFXTAG_COUNTDOWN, PALTAG_COUNTDOWN, 120, 80, 0);\n    Gfx_ResetMonSpriteSubpriorities(jumpGfx);",
       "callsTo": [
         "Gfx_ResetMonSpriteSubpriorities",
@@ -1179,6 +1572,7 @@
       "returnType": "bool32",
       "signature": "static bool32 IsPokeJumpCountdownRunning(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return IsMinigameCountdownRunning();",
       "callsTo": [
         "IsMinigameCountdownRunning"
@@ -1189,6 +1583,12 @@
       "returnType": "void",
       "signature": "static void StartPokeJumpGfx(struct PokemonJumpGfx *jumpGfx)",
       "paramsRaw": "struct PokemonJumpGfx *jumpGfx",
+      "paramsList": [
+        {
+          "name": "jumpGfx",
+          "typeRaw": "struct PokemonJumpGfx *"
+        }
+      ],
       "body": "u8 taskId;\n\n    sPokemonJumpGfx = jumpGfx;\n    InitPokeJumpGfx(sPokemonJumpGfx);\n    taskId = CreateTask(Task_RunPokeJumpGfxFunc, 3);\n    sPokemonJumpGfx->taskId = taskId;\n    SetWordTaskArg(sPokemonJumpGfx->taskId, 2, (u32) sPokemonJumpGfx);\n    SetUpPokeJumpGfxFunc(LoadPokeJumpGfx);",
       "callsTo": [
         "CreateTask",
@@ -1202,6 +1602,7 @@
       "returnType": "void",
       "signature": "static void FreeWindowsAndDigitObj(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "FreeAllWindowBuffers();\n    DigitObjUtil_Free();",
       "callsTo": [
         "DigitObjUtil_Free",
@@ -1213,6 +1614,12 @@
       "returnType": "void",
       "signature": "static void InitPokeJumpGfx(struct PokemonJumpGfx *jumpGfx)",
       "paramsRaw": "struct PokemonJumpGfx *jumpGfx",
+      "paramsList": [
+        {
+          "name": "jumpGfx",
+          "typeRaw": "struct PokemonJumpGfx *"
+        }
+      ],
       "body": "jumpGfx->mainState = 0;\n    jumpGfx->funcFinished = FALSE;\n    jumpGfx->msgWindowId = WINDOW_NONE;",
       "callsTo": [],
       "lineCount": 3
@@ -1221,6 +1628,12 @@
       "returnType": "void",
       "signature": "static void SetUpPokeJumpGfxFuncById(int id)",
       "paramsRaw": "int id",
+      "paramsList": [
+        {
+          "name": "id",
+          "typeRaw": "int"
+        }
+      ],
       "body": "int i;\n\n    for (i = 0; i < ARRAY_COUNT(sPokeJumpGfxFuncs); i++)\n    {\n        if (sPokeJumpGfxFuncs[i].id == id)\n            SetUpPokeJumpGfxFunc(sPokeJumpGfxFuncs[i].func);\n    }",
       "callsTo": [
         "ARRAY_COUNT",
@@ -1232,6 +1645,7 @@
       "returnType": "bool32",
       "signature": "static bool32 IsPokeJumpGfxFuncFinished(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return (sPokemonJumpGfx->funcFinished != TRUE);",
       "callsTo": [],
       "lineCount": 1
@@ -1240,6 +1654,12 @@
       "returnType": "void",
       "signature": "static void SetUpPokeJumpGfxFunc(void (*func)(void))",
       "paramsRaw": "void (*func)(void)",
+      "paramsList": [
+        {
+          "name": "func",
+          "typeRaw": "fnptr"
+        }
+      ],
       "body": "SetWordTaskArg(sPokemonJumpGfx->taskId, 0, (u32) func);\n    sPokemonJumpGfx->mainState = 0;\n    sPokemonJumpGfx->funcFinished = FALSE;",
       "callsTo": [
         "SetWordTaskArg"
@@ -1250,6 +1670,12 @@
       "returnType": "void",
       "signature": "static void Task_RunPokeJumpGfxFunc(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (!sPokemonJumpGfx->funcFinished)\n    {\n         \n        void (*func)(void) = (void *)(GetWordTaskArg(taskId, 0));\n\n        func();\n    }",
       "callsTo": [
         "GetWordTaskArg"
@@ -1260,6 +1686,7 @@
       "returnType": "void",
       "signature": "static void LoadPokeJumpGfx(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sPokemonJumpGfx->mainState)\n    {\n    case 0:\n        ResetBgsAndClearDma3BusyFlags(0);\n        InitBgsFromTemplates(0, sBgTemplates, ARRAY_COUNT(sBgTemplates));\n        InitWindows(sWindowTemplates);\n        ResetTempTileDataBuffers();\n        LoadSpriteSheetsAndPalettes(sPokemonJumpGfx);\n        InitDigitPrinters();\n        LoadPalette(sBg_Pal, BG_PLTT_ID(0), PLTT_SIZE_4BPP);\n        DecompressAndCopyTileDataToVram(BG_SCENERY, sBg_Gfx, 0, 0, 0);\n        DecompressAndCopyTileDataToVram(BG_SCENERY, sBg_Tilemap, 0, 0, 1);\n        LoadPalette(sVenusaur_Pal, BG_PLTT_ID(3), PLTT_SIZE_4BPP);\n        DecompressAndCopyTileDataToVram(BG_VENUSAUR, sVenusaur_Gfx, 0, 0, 0);\n        DecompressAndCopyTileDataToVram(BG_VENUSAUR, sVenusaur_Tilemap, 0, 0, 1);\n         \n        LoadPalette(gPokeJumpBonuses_Pal, BG_PLTT_ID(1), PLTT_SIZE_4BPP);\n        DecompressAndCopyTileDataToVram(BG_BONUSES, gPokeJumpBonuses_Gfx, 0, 0, 0);\n        DecompressAndCopyTileDataToVram(BG_BONUSES, gPokeJumpBonuses_Tilemap, 0, 0, 1);\n        LoadPalette(sInterface_Pal, BG_PLTT_ID(2), PLTT_SIZE_4BPP);\n        SetBgTilemapBuffer(BG_INTERFACE, sPokemonJumpGfx->tilemapBuffer);\n        FillBgTilemapBufferRect_Palette0(BG_INTERFACE, 0, 0, 0, 0x20, 0x20);\n        PrintScoreSuffixes();\n        PrintScore(0);\n        LoadUserWindowBorderGfxOnBg(0, 1, BG_PLTT_ID(14));\n        CopyBgTilemapBufferToVram(BG_INTERFACE);\n        CopyBgTilemapBufferToVram(BG_VENUSAUR);\n        CopyBgTilemapBufferToVram(BG_BONUSES);\n        ResetBgPositions();\n        sPokemonJumpGfx->mainState++;\n        break;\n    case 1:\n        if (!FreeTempTileDataBuffersIfPossible())\n        {\n            CreateJumpMonSprites();\n            CreateVineSprites(sPokemonJumpGfx);\n            UpdateVineAnim(sPokemonJumpGfx, VINE_UPSWING_LOWER);\n            ShowBg(BG_SCENERY);\n            ShowBg(BG_INTERFACE);\n            ShowBg(BG_VENUSAUR);\n            HideBg(BG_BONUSES);\n            sPokemonJumpGfx->mainState++;\n        }\n        break;\n    case 2:\n        sPokemonJumpGfx->funcFinished = TRUE;\n        break;\n    }",
       "callsTo": [
         "ARRAY_COUNT",
@@ -1292,6 +1719,7 @@
       "returnType": "void",
       "signature": "static void PrintPlayerNamesNoHighlight(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sPokemonJumpGfx->mainState)\n    {\n    case 0:\n        AddPlayerNameWindows();\n        sPokemonJumpGfx->mainState++;\n        break;\n    case 1:\n        if (!IsDma3ManagerBusyWithBgCopy())\n        {\n            PrintPokeJumpPlayerNames(FALSE);\n            sPokemonJumpGfx->mainState++;\n        }\n        break;\n    case 2:\n        if (!IsDma3ManagerBusyWithBgCopy())\n        {\n            DrawPlayerNameWindows();\n            sPokemonJumpGfx->mainState++;\n        }\n        break;\n    case 3:\n        if (!IsDma3ManagerBusyWithBgCopy())\n            sPokemonJumpGfx->funcFinished = TRUE;\n        break;\n    }",
       "callsTo": [
         "AddPlayerNameWindows",
@@ -1305,6 +1733,7 @@
       "returnType": "void",
       "signature": "static void PrintPlayerNamesWithHighlight(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sPokemonJumpGfx->mainState)\n    {\n    case 0:\n        AddPlayerNameWindows();\n        sPokemonJumpGfx->mainState++;\n        break;\n    case 1:\n        if (!IsDma3ManagerBusyWithBgCopy())\n        {\n            PrintPokeJumpPlayerNames(TRUE);\n            sPokemonJumpGfx->mainState++;\n        }\n        break;\n    case 2:\n        if (!IsDma3ManagerBusyWithBgCopy())\n        {\n            DrawPlayerNameWindows();\n            sPokemonJumpGfx->mainState++;\n        }\n        break;\n    case 3:\n        if (!IsDma3ManagerBusyWithBgCopy())\n            sPokemonJumpGfx->funcFinished = TRUE;\n        break;\n    }",
       "callsTo": [
         "AddPlayerNameWindows",
@@ -1318,6 +1747,7 @@
       "returnType": "void",
       "signature": "static void ErasePlayerNames(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int i, numPlayers;\n\n    numPlayers = GetNumPokeJumpPlayers();\n    switch (sPokemonJumpGfx->mainState)\n    {\n    case 0:\n        for (i = 0; i < numPlayers; i++)\n            ClearWindowTilemap(sPokemonJumpGfx->nameWindowIds[i]);\n\n        CopyBgTilemapBufferToVram(BG_INTERFACE);\n        sPokemonJumpGfx->mainState++;\n        break;\n    case 1:\n        if (!IsDma3ManagerBusyWithBgCopy())\n        {\n            for (i = 0; i < numPlayers; i++)\n                RemoveWindow(sPokemonJumpGfx->nameWindowIds[i]);\n\n            sPokemonJumpGfx->funcFinished = TRUE;\n        }\n        break;\n    }",
       "callsTo": [
         "ClearWindowTilemap",
@@ -1332,6 +1762,7 @@
       "returnType": "void",
       "signature": "static void Msg_WantToPlayAgain(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sPokemonJumpGfx->mainState)\n    {\n    case 0:\n        sPokemonJumpGfx->msgWindowId = AddMessageWindow(1, 8, 20, 2);\n        AddTextPrinterParameterized(sPokemonJumpGfx->msgWindowId, FONT_NORMAL, gText_WantToPlayAgain2, 0, 1, TEXT_SKIP_DRAW, NULL);\n        CopyWindowToVram(sPokemonJumpGfx->msgWindowId, COPYWIN_GFX);\n        sPokemonJumpGfx->mainState++;\n        break;\n    case 1:\n        if (!IsDma3ManagerBusyWithBgCopy())\n        {\n            PutWindowTilemap(sPokemonJumpGfx->msgWindowId);\n            DrawTextBorderOuter(sPokemonJumpGfx->msgWindowId, 1, 14);\n            CreatePokeJumpYesNoMenu(23, 7, 0);\n            CopyBgTilemapBufferToVram(BG_INTERFACE);\n            sPokemonJumpGfx->mainState++;\n        }\n        break;\n    case 2:\n        if (!IsDma3ManagerBusyWithBgCopy())\n            sPokemonJumpGfx->funcFinished = TRUE;\n        break;\n    }",
       "callsTo": [
         "AddMessageWindow",
@@ -1349,6 +1780,7 @@
       "returnType": "void",
       "signature": "static void Msg_SavingDontTurnOff(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sPokemonJumpGfx->mainState)\n    {\n    case 0:\n        sPokemonJumpGfx->msgWindowId = AddMessageWindow(2, 7, 26, 4);\n        AddTextPrinterParameterized(sPokemonJumpGfx->msgWindowId, FONT_NORMAL, gText_SavingDontTurnOffPower, 0, 1, TEXT_SKIP_DRAW, NULL);\n        CopyWindowToVram(sPokemonJumpGfx->msgWindowId, COPYWIN_GFX);\n        sPokemonJumpGfx->mainState++;\n        break;\n    case 1:\n        if (!IsDma3ManagerBusyWithBgCopy())\n        {\n            PutWindowTilemap(sPokemonJumpGfx->msgWindowId);\n            DrawTextBorderOuter(sPokemonJumpGfx->msgWindowId, 1, 14);\n            CopyBgTilemapBufferToVram(BG_INTERFACE);\n            sPokemonJumpGfx->mainState++;\n        }\n        break;\n    case 2:\n        if (!IsDma3ManagerBusyWithBgCopy())\n            sPokemonJumpGfx->funcFinished = TRUE;\n        break;\n    }",
       "callsTo": [
         "AddMessageWindow",
@@ -1365,6 +1797,7 @@
       "returnType": "void",
       "signature": "static void EraseMessage(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sPokemonJumpGfx->mainState)\n    {\n    case 0:\n        ClearMessageWindow();\n        EraseYesNoWindow();\n        CopyBgTilemapBufferToVram(BG_INTERFACE);\n        sPokemonJumpGfx->mainState++;\n        break;\n    case 1:\n        if (!RemoveMessageWindow() && !IsDma3ManagerBusyWithBgCopy())\n            sPokemonJumpGfx->funcFinished = TRUE;\n        break;\n    }",
       "callsTo": [
         "ClearMessageWindow",
@@ -1379,6 +1812,7 @@
       "returnType": "void",
       "signature": "static void Msg_SomeoneDroppedOut(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sPokemonJumpGfx->mainState)\n    {\n    case 0:\n        sPokemonJumpGfx->msgWindowId = AddMessageWindow(2, 8, 22, 4);\n        AddTextPrinterParameterized(sPokemonJumpGfx->msgWindowId, FONT_NORMAL, gText_SomeoneDroppedOut2, 0, 1, TEXT_SKIP_DRAW, NULL);\n        CopyWindowToVram(sPokemonJumpGfx->msgWindowId, COPYWIN_GFX);\n        sPokemonJumpGfx->mainState++;\n        break;\n    case 1:\n        if (!IsDma3ManagerBusyWithBgCopy())\n        {\n            PutWindowTilemap(sPokemonJumpGfx->msgWindowId);\n            DrawTextBorderOuter(sPokemonJumpGfx->msgWindowId, 1, 14);\n            CopyBgTilemapBufferToVram(BG_INTERFACE);\n            sPokemonJumpGfx->mainState++;\n        }\n        break;\n    case 2:\n        if (!IsDma3ManagerBusyWithBgCopy())\n            sPokemonJumpGfx->funcFinished = TRUE;\n        break;\n    }",
       "callsTo": [
         "AddMessageWindow",
@@ -1395,6 +1829,7 @@
       "returnType": "void",
       "signature": "static void Msg_CommunicationStandby(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sPokemonJumpGfx->mainState)\n    {\n    case 0:\n        sPokemonJumpGfx->msgWindowId = AddMessageWindow(7, 10, 16, 2);\n        AddTextPrinterParameterized(sPokemonJumpGfx->msgWindowId, FONT_NORMAL, gText_CommunicationStandby4, 0, 1, TEXT_SKIP_DRAW, NULL);\n        CopyWindowToVram(sPokemonJumpGfx->msgWindowId, COPYWIN_GFX);\n        sPokemonJumpGfx->mainState++;\n        break;\n    case 1:\n        if (!IsDma3ManagerBusyWithBgCopy())\n        {\n            PutWindowTilemap(sPokemonJumpGfx->msgWindowId);\n            DrawTextBorderOuter(sPokemonJumpGfx->msgWindowId, 1, 14);\n            CopyBgTilemapBufferToVram(BG_INTERFACE);\n            sPokemonJumpGfx->mainState++;\n        }\n        break;\n    case 2:\n        if (!IsDma3ManagerBusyWithBgCopy())\n            sPokemonJumpGfx->funcFinished = TRUE;\n        break;\n    }",
       "callsTo": [
         "AddMessageWindow",
@@ -1411,6 +1846,7 @@
       "returnType": "void",
       "signature": "static void DoPokeJumpCountdown(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sPokemonJumpGfx->mainState)\n    {\n    case 0:\n        StartPokeJumpCountdown(sPokemonJumpGfx);\n        sPokemonJumpGfx->mainState++;\n        break;\n    case 1:\n        if (!IsPokeJumpCountdownRunning())\n            sPokemonJumpGfx->funcFinished = TRUE;\n        break;\n    }",
       "callsTo": [
         "IsPokeJumpCountdownRunning",
@@ -1422,6 +1858,7 @@
       "returnType": "void",
       "signature": "static void SetUpResetVineGfx(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sPokemonJumpGfx->resetVineState = 0;\n    sPokemonJumpGfx->resetVineTimer = 0;\n    sPokemonJumpGfx->vineState = VINE_UPSWING_LOWER;\n    UpdateVineSwing(sPokemonJumpGfx->vineState);",
       "callsTo": [
         "UpdateVineSwing"
@@ -1432,6 +1869,7 @@
       "returnType": "bool32",
       "signature": "static bool32 ResetVineGfx(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sPokemonJumpGfx->resetVineState)\n    {\n    case 0:\n        sPokemonJumpGfx->resetVineTimer++;\n        if (sPokemonJumpGfx->resetVineTimer > 10)\n        {\n            sPokemonJumpGfx->resetVineTimer = 0;\n            sPokemonJumpGfx->vineState++;\n            if (sPokemonJumpGfx->vineState >= NUM_VINESTATES)\n            {\n                sPokemonJumpGfx->vineState = VINE_HIGHEST;\n                sPokemonJumpGfx->resetVineState++;\n            }\n        }\n        UpdateVineSwing(sPokemonJumpGfx->vineState);\n        if (sPokemonJumpGfx->vineState != VINE_UPSWING_LOW)\n            break;\n    case 1:\n        return FALSE;\n    }\n\n    return TRUE;",
       "callsTo": [
         "UpdateVineSwing"
@@ -1442,6 +1880,16 @@
       "returnType": "void",
       "signature": "static void PrintPrizeMessage(u16 itemId, u16 quantity)",
       "paramsRaw": "u16 itemId, u16 quantity",
+      "paramsList": [
+        {
+          "name": "itemId",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "quantity",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "CopyItemNameHandlePlural(itemId, sPokemonJumpGfx->itemName, quantity);\n    ConvertIntToDecimalStringN(sPokemonJumpGfx->itemQuantityStr, quantity, STR_CONV_MODE_LEFT_ALIGN, 1);\n    DynamicPlaceholderTextUtil_Reset();\n    DynamicPlaceholderTextUtil_SetPlaceholderPtr(0, sPokemonJumpGfx->itemName);\n    DynamicPlaceholderTextUtil_SetPlaceholderPtr(1, sPokemonJumpGfx->itemQuantityStr);\n    DynamicPlaceholderTextUtil_ExpandPlaceholders(sPokemonJumpGfx->prizeMsg, gText_AwesomeWonF701F700);\n    sPokemonJumpGfx->msgWindowId = AddMessageWindow(4, 8, 22, 4);\n    AddTextPrinterParameterized(sPokemonJumpGfx->msgWindowId, FONT_NORMAL, sPokemonJumpGfx->prizeMsg, 0, 1, TEXT_SKIP_DRAW, NULL);\n    CopyWindowToVram(sPokemonJumpGfx->msgWindowId, COPYWIN_GFX);\n    sPokemonJumpGfx->fanfare = MUS_LEVEL_UP;\n    sPokemonJumpGfx->msgWindowState = 0;",
       "callsTo": [
         "AddMessageWindow",
@@ -1459,6 +1907,12 @@
       "returnType": "void",
       "signature": "static void PrintPrizeFilledBagMessage(u16 itemId)",
       "paramsRaw": "u16 itemId",
+      "paramsList": [
+        {
+          "name": "itemId",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "CopyItemName(itemId, sPokemonJumpGfx->itemName);\n    DynamicPlaceholderTextUtil_Reset();\n    DynamicPlaceholderTextUtil_SetPlaceholderPtr(0, sPokemonJumpGfx->itemName);\n    DynamicPlaceholderTextUtil_ExpandPlaceholders(sPokemonJumpGfx->prizeMsg, gText_FilledStorageSpace2);\n    sPokemonJumpGfx->msgWindowId = AddMessageWindow(4, 8, 22, 4);\n    AddTextPrinterParameterized(sPokemonJumpGfx->msgWindowId, FONT_NORMAL, sPokemonJumpGfx->prizeMsg, 0, 1, TEXT_SKIP_DRAW, NULL);\n    CopyWindowToVram(sPokemonJumpGfx->msgWindowId, COPYWIN_GFX);\n    sPokemonJumpGfx->fanfare = MUS_DUMMY;\n    sPokemonJumpGfx->msgWindowState = 0;",
       "callsTo": [
         "AddMessageWindow",
@@ -1475,6 +1929,12 @@
       "returnType": "void",
       "signature": "static void PrintNoRoomForPrizeMessage(u16 itemId)",
       "paramsRaw": "u16 itemId",
+      "paramsList": [
+        {
+          "name": "itemId",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "CopyItemName(itemId, sPokemonJumpGfx->itemName);\n    DynamicPlaceholderTextUtil_Reset();\n    DynamicPlaceholderTextUtil_SetPlaceholderPtr(0, sPokemonJumpGfx->itemName);\n    DynamicPlaceholderTextUtil_ExpandPlaceholders(sPokemonJumpGfx->prizeMsg, gText_CantHoldMore);\n    sPokemonJumpGfx->msgWindowId = AddMessageWindow(4, 9, 22, 2);\n    AddTextPrinterParameterized(sPokemonJumpGfx->msgWindowId, FONT_NORMAL, sPokemonJumpGfx->prizeMsg, 0, 1, TEXT_SKIP_DRAW, NULL);\n    CopyWindowToVram(sPokemonJumpGfx->msgWindowId, COPYWIN_GFX);\n    sPokemonJumpGfx->fanfare = MUS_DUMMY;\n    sPokemonJumpGfx->msgWindowState = 0;",
       "callsTo": [
         "AddMessageWindow",
@@ -1491,6 +1951,7 @@
       "returnType": "bool32",
       "signature": "static bool32 DoPrizeMessageAndFanfare(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sPokemonJumpGfx->msgWindowState)\n    {\n    case 0:\n        if (!IsDma3ManagerBusyWithBgCopy())\n        {\n            PutWindowTilemap(sPokemonJumpGfx->msgWindowId);\n            DrawTextBorderOuter(sPokemonJumpGfx->msgWindowId, 1, 14);\n            CopyBgTilemapBufferToVram(BG_INTERFACE);\n            sPokemonJumpGfx->msgWindowState++;\n        }\n        break;\n    case 1:\n        if (IsDma3ManagerBusyWithBgCopy())\n            break;\n        if (sPokemonJumpGfx->fanfare == MUS_DUMMY)\n        {\n            sPokemonJumpGfx->msgWindowState += 2;\n            return FALSE;\n        }\n        PlayFanfare(sPokemonJumpGfx->fanfare);\n        sPokemonJumpGfx->msgWindowState++;\n    case 2:\n        if (!IsFanfareTaskInactive())\n            break;\n        sPokemonJumpGfx->msgWindowState++;\n    case 3:\n        return FALSE;\n    }\n\n    return TRUE;",
       "callsTo": [
         "CopyBgTilemapBufferToVram",
@@ -1506,6 +1967,7 @@
       "returnType": "void",
       "signature": "static void ClearMessageWindow(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (sPokemonJumpGfx->msgWindowId != WINDOW_NONE)\n    {\n        rbox_fill_rectangle(sPokemonJumpGfx->msgWindowId);\n        CopyWindowToVram(sPokemonJumpGfx->msgWindowId, COPYWIN_MAP);\n        sPokemonJumpGfx->msgWindowState = 0;\n    }",
       "callsTo": [
         "CopyWindowToVram"
@@ -1516,6 +1978,7 @@
       "returnType": "bool32",
       "signature": "static bool32 RemoveMessageWindow(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (sPokemonJumpGfx->msgWindowId == WINDOW_NONE)\n        return FALSE;\n\n    switch (sPokemonJumpGfx->msgWindowState)\n    {\n    case 0:\n        if (!IsDma3ManagerBusyWithBgCopy())\n        {\n            RemoveWindow(sPokemonJumpGfx->msgWindowId);\n            sPokemonJumpGfx->msgWindowId = WINDOW_NONE;\n            sPokemonJumpGfx->msgWindowState++;\n        }\n        else\n            break;\n    case 1:\n        return FALSE;\n    }\n\n    return TRUE;",
       "callsTo": [
         "IsDma3ManagerBusyWithBgCopy",
@@ -1527,6 +1990,7 @@
       "returnType": "s8",
       "signature": "static s8 HandlePlayAgainInput(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return Menu_ProcessInputNoWrapClearOnChoose();",
       "callsTo": [
         "Menu_ProcessInputNoWrapClearOnChoose"
@@ -1537,6 +2001,24 @@
       "returnType": "u32",
       "signature": "static u32 AddMessageWindow(u32 left, u32 top, u32 width, u32 height)",
       "paramsRaw": "u32 left, u32 top, u32 width, u32 height",
+      "paramsList": [
+        {
+          "name": "left",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "top",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "width",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "height",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "u32 windowId;\n    struct WindowTemplate window;\n\n    window.bg = BG_INTERFACE;\n    window.tilemapLeft = left;\n    window.tilemapTop = top;\n    window.width = width;\n    window.height = height;\n    window.paletteNum = 15;\n    window.baseBlock = 0x43;\n\n    windowId = AddWindow(&window);\n    FillWindowPixelBuffer(windowId, 0x11);\n    return windowId;",
       "callsTo": [
         "AddWindow",
@@ -1548,6 +2030,20 @@
       "returnType": "void",
       "signature": "static void CreatePokeJumpYesNoMenu(u16 left, u16 top, u8 cursorPos)",
       "paramsRaw": "u16 left, u16 top, u8 cursorPos",
+      "paramsList": [
+        {
+          "name": "left",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "top",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "cursorPos",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "struct WindowTemplate window;\n\n    window.bg = BG_INTERFACE;\n    window.tilemapLeft = left;\n    window.tilemapTop = top;\n    window.width = 6;\n    window.height = 4;\n    window.paletteNum = 2;\n    window.baseBlock = 0x2B;\n\n    CreateYesNoMenu(&window, 1, 0xD, cursorPos);",
       "callsTo": [
         "CreateYesNoMenu"
@@ -1558,6 +2054,7 @@
       "returnType": "void",
       "signature": "static void PrintScoreSuffixes(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 color[] = {TEXT_COLOR_TRANSPARENT, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_LIGHT_GRAY};\n\n    PutWindowTilemap(WIN_POINTS);\n    PutWindowTilemap(WIN_TIMES);\n    FillWindowPixelBuffer(WIN_POINTS, 0);\n    FillWindowPixelBuffer(WIN_TIMES, 0);\n    AddTextPrinterParameterized3(WIN_POINTS, FONT_SMALL, 0, 1, color, 0, gText_SpacePoints2);\n    AddTextPrinterParameterized3(WIN_TIMES, FONT_SMALL, 0, 1, color, 0, gText_SpaceTimes3);",
       "callsTo": [
         "AddTextPrinterParameterized3",
@@ -1570,6 +2067,7 @@
       "returnType": "void",
       "signature": "static void CreateJumpMonSprites(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int i, y, playersCount = GetNumPokeJumpPlayers();\n    const s16 *xCoords = sMonXCoords[playersCount - 2];\n\n    for (i = 0; i < playersCount; i++)\n    {\n        struct PokemonJump_MonInfo *monInfo = GetMonInfoByMultiplayerId(i);\n\n        y = gMonFrontPicCoords[monInfo->species].y_offset;\n        CreateJumpMonSprite(sPokemonJumpGfx, monInfo, *xCoords, y + 112, i);\n        CreateStarSprite(sPokemonJumpGfx, *xCoords, 112, i);\n        xCoords++;\n    }",
       "callsTo": [
         "CreateJumpMonSprite",
@@ -1583,6 +2081,16 @@
       "returnType": "void",
       "signature": "static void SetMonSpriteY(u32 id, s16 y)",
       "paramsRaw": "u32 id, s16 y",
+      "paramsList": [
+        {
+          "name": "id",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s16"
+        }
+      ],
       "body": "sPokemonJumpGfx->monSprites[id]->y2 = y;",
       "callsTo": [],
       "lineCount": 1
@@ -1591,6 +2099,12 @@
       "returnType": "void",
       "signature": "static void UpdateVineSwing(int vineState)",
       "paramsRaw": "int vineState",
+      "paramsList": [
+        {
+          "name": "vineState",
+          "typeRaw": "int"
+        }
+      ],
       "body": "UpdateVineAnim(sPokemonJumpGfx, vineState);\n    ChangeBgY(BG_VENUSAUR, (sVenusaurStates[vineState] * 5) << 13, BG_COORD_SET);",
       "callsTo": [
         "ChangeBgY",
@@ -1602,6 +2116,12 @@
       "returnType": "int",
       "signature": "static int DoSameJumpTimeBonus(u8 flags)",
       "paramsRaw": "u8 flags",
+      "paramsList": [
+        {
+          "name": "flags",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "int i, numPlayers;\n\n    for (i = 0, numPlayers = 0; i < MAX_RFU_PLAYERS; i++)\n    {\n        if (flags & 1)\n        {\n             \n             \n            DoStarAnim(sPokemonJumpGfx, i);\n            numPlayers++;\n        }\n        flags >>= 1;\n    }\n\n    ShowBonus(numPlayers - 2);\n    return numPlayers;",
       "callsTo": [
         "DoStarAnim",
@@ -1613,6 +2133,7 @@
       "returnType": "void",
       "signature": "static void InitDigitPrinters(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "struct DigitObjUtilTemplate template = {\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .strConvMode = 0,\n        .priority = 1,\n        .oamCount = 5,\n        .xDelta = 8,\n        .x = 108,\n        .y = 6,\n        .spriteSheet = (void *) &sSpriteSheet_Digits,\n        .spritePal = &sSpritePalette_Digits,\n    };\n\n    DigitObjUtil_Init(NUM_WINDOWS);\n    DigitObjUtil_CreatePrinter(WIN_POINTS, 0, &template);\n\n    template.oamCount = 4;\n    template.x = 30;\n    template.y = 6;\n    DigitObjUtil_CreatePrinter(WIN_TIMES, 0, &template);",
       "callsTo": [
         "DigitObjUtil_CreatePrinter",
@@ -1626,6 +2147,12 @@
       "returnType": "void",
       "signature": "static void PrintScore(int num)",
       "paramsRaw": "int num",
+      "paramsList": [
+        {
+          "name": "num",
+          "typeRaw": "int"
+        }
+      ],
       "body": "DigitObjUtil_PrintNumOn(WIN_POINTS, num);",
       "callsTo": [
         "DigitObjUtil_PrintNumOn"
@@ -1636,6 +2163,12 @@
       "returnType": "void",
       "signature": "static void PrintJumpsInRow(u16 num)",
       "paramsRaw": "u16 num",
+      "paramsList": [
+        {
+          "name": "num",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "DigitObjUtil_PrintNumOn(WIN_TIMES, num);",
       "callsTo": [
         "DigitObjUtil_PrintNumOn"
@@ -1646,6 +2179,12 @@
       "returnType": "void",
       "signature": "static void StartMonHitShake(u8 multiplayerId)",
       "paramsRaw": "u8 multiplayerId",
+      "paramsList": [
+        {
+          "name": "multiplayerId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "Gfx_StartMonHitShake(sPokemonJumpGfx, multiplayerId);",
       "callsTo": [
         "Gfx_StartMonHitShake"
@@ -1656,6 +2195,12 @@
       "returnType": "void",
       "signature": "static void StartMonHitFlash(u8 multiplayerId)",
       "paramsRaw": "u8 multiplayerId",
+      "paramsList": [
+        {
+          "name": "multiplayerId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "Gfx_StartMonHitFlash(sPokemonJumpGfx, multiplayerId);",
       "callsTo": [
         "Gfx_StartMonHitFlash"
@@ -1666,6 +2211,12 @@
       "returnType": "int",
       "signature": "static int IsMonHitShakeActive(int multiplayerId)",
       "paramsRaw": "int multiplayerId",
+      "paramsList": [
+        {
+          "name": "multiplayerId",
+          "typeRaw": "int"
+        }
+      ],
       "body": "return Gfx_IsMonHitShakeActive(sPokemonJumpGfx, multiplayerId);",
       "callsTo": [
         "Gfx_IsMonHitShakeActive"
@@ -1676,6 +2227,7 @@
       "returnType": "void",
       "signature": "static void StopMonHitFlash(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "Gfx_StopMonHitFlash(sPokemonJumpGfx);",
       "callsTo": [
         "Gfx_StopMonHitFlash"
@@ -1686,6 +2238,7 @@
       "returnType": "void",
       "signature": "static void ResetMonSpriteSubpriorities(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "Gfx_ResetMonSpriteSubpriorities(sPokemonJumpGfx);",
       "callsTo": [
         "Gfx_ResetMonSpriteSubpriorities"
@@ -1696,6 +2249,12 @@
       "returnType": "void",
       "signature": "static void StartMonIntroBounce(int multiplayerId)",
       "paramsRaw": "int multiplayerId",
+      "paramsList": [
+        {
+          "name": "multiplayerId",
+          "typeRaw": "int"
+        }
+      ],
       "body": "Gfx_StartMonIntroBounce(sPokemonJumpGfx, multiplayerId);",
       "callsTo": [
         "Gfx_StartMonIntroBounce"
@@ -1706,6 +2265,7 @@
       "returnType": "int",
       "signature": "static int IsMonIntroBounceActive(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return Gfx_IsMonIntroBounceActive(sPokemonJumpGfx);",
       "callsTo": [
         "Gfx_IsMonIntroBounceActive"
@@ -1716,6 +2276,7 @@
       "returnType": "void",
       "signature": "static void AddPlayerNameWindows(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "struct WindowTemplate window;\n    int i, playersCount = GetNumPokeJumpPlayers();\n    const u16 *winCoords = sPlayerNameWindowCoords[playersCount - 2];\n\n    window.bg = BG_INTERFACE;\n    window.width = 8;\n    window.height = 2;\n    window.paletteNum = 2;\n    window.baseBlock = 0x2B;\n\n    for (i = 0; i < playersCount; i++)\n    {\n        window.tilemapLeft = winCoords[0];\n        window.tilemapTop = winCoords[1];\n        sPokemonJumpGfx->nameWindowIds[i] = AddWindow(&window);\n        ClearWindowTilemap(sPokemonJumpGfx->nameWindowIds[i]);\n        window.baseBlock += 0x10;\n        winCoords += 2;\n    }\n\n    CopyBgTilemapBufferToVram(BG_INTERFACE);",
       "callsTo": [
         "AddWindow",
@@ -1729,6 +2290,24 @@
       "returnType": "void",
       "signature": "static void PrintPokeJumpPlayerName(int multiplayerId, u8 bgColor, u8 fgColor, u8 shadow)",
       "paramsRaw": "int multiplayerId, u8 bgColor, u8 fgColor, u8 shadow",
+      "paramsList": [
+        {
+          "name": "multiplayerId",
+          "typeRaw": "int"
+        },
+        {
+          "name": "bgColor",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "fgColor",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "shadow",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u32 x;\n    u8 colors[3] = {bgColor, fgColor, shadow};\n\n    FillWindowPixelBuffer(sPokemonJumpGfx->nameWindowIds[multiplayerId], 0);\n    x = 64 - GetStringWidth(FONT_NORMAL, GetPokeJumpPlayerName(multiplayerId), -1);\n    x /= 2;\n    AddTextPrinterParameterized3(sPokemonJumpGfx->nameWindowIds[multiplayerId], FONT_NORMAL, x, 1, colors, TEXT_SKIP_DRAW, GetPokeJumpPlayerName(multiplayerId));\n    CopyWindowToVram(sPokemonJumpGfx->nameWindowIds[multiplayerId], COPYWIN_GFX);",
       "callsTo": [
         "AddTextPrinterParameterized3",
@@ -1743,6 +2322,12 @@
       "returnType": "void",
       "signature": "static void PrintPokeJumpPlayerNames(bool32 highlightSelf)",
       "paramsRaw": "bool32 highlightSelf",
+      "paramsList": [
+        {
+          "name": "highlightSelf",
+          "typeRaw": "bool32"
+        }
+      ],
       "body": "int i, multiplayerId, playersCount = GetNumPokeJumpPlayers();\n\n    if (!highlightSelf)\n    {\n        for (i = 0; i < playersCount; i++)\n            PrintPokeJumpPlayerName(i, TEXT_COLOR_TRANSPARENT, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_LIGHT_GRAY);\n    }\n    else\n    {\n         \n        multiplayerId = GetPokeJumpMultiplayerId();\n        for (i = 0; i < playersCount; i++)\n        {\n            if (multiplayerId != i)\n                PrintPokeJumpPlayerName(i, TEXT_COLOR_TRANSPARENT, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_LIGHT_GRAY);\n            else\n                PrintPokeJumpPlayerName(i, TEXT_COLOR_TRANSPARENT, TEXT_COLOR_RED, TEXT_COLOR_LIGHT_RED);\n        }\n    }",
       "callsTo": [
         "GetNumPokeJumpPlayers",
@@ -1755,6 +2340,7 @@
       "returnType": "void",
       "signature": "static void DrawPlayerNameWindows(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int i, playersCount = GetNumPokeJumpPlayers();\n\n    for (i = 0; i < playersCount; i++)\n        PutWindowTilemap(sPokemonJumpGfx->nameWindowIds[i]);\n    CopyBgTilemapBufferToVram(BG_INTERFACE);",
       "callsTo": [
         "CopyBgTilemapBufferToVram",
@@ -1767,6 +2353,12 @@
       "returnType": "void",
       "signature": "static void ShowBonus(u8 bonusId)",
       "paramsRaw": "u8 bonusId",
+      "paramsList": [
+        {
+          "name": "bonusId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "sPokemonJumpGfx->bonusTimer = 0;\n    ChangeBgX(BG_BONUSES, (bonusId / 2) * 256 * 256, BG_COORD_SET);\n    ChangeBgY(BG_BONUSES, (((bonusId % 2) * 256) - 40) * 256, BG_COORD_SET);\n    ShowBg(BG_BONUSES);\n    CreateTask(Task_UpdateBonus, 4);",
       "callsTo": [
         "ChangeBgX",
@@ -1780,6 +2372,7 @@
       "returnType": "bool32",
       "signature": "static bool32 UpdateBonus(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (sPokemonJumpGfx->bonusTimer >= 32)\n    {\n        return FALSE;\n    }\n    else\n    {\n        ChangeBgY(BG_BONUSES, 128, BG_COORD_ADD);\n        if (++sPokemonJumpGfx->bonusTimer >= 32)\n            HideBg(BG_BONUSES);\n        return TRUE;\n    }",
       "callsTo": [
         "ChangeBgY",
@@ -1791,6 +2384,12 @@
       "returnType": "void",
       "signature": "static void Task_UpdateBonus(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (!UpdateBonus())\n        DestroyTask(taskId);",
       "callsTo": [
         "DestroyTask",
@@ -1802,6 +2401,12 @@
       "returnType": "void",
       "signature": "static void SendPacket_MonInfo(struct PokemonJump_MonInfo *monInfo)",
       "paramsRaw": "struct PokemonJump_MonInfo *monInfo",
+      "paramsList": [
+        {
+          "name": "monInfo",
+          "typeRaw": "struct PokemonJump_MonInfo *"
+        }
+      ],
       "body": "struct MonInfoPacket packet;\n    packet.id = PACKET_MON_INFO,\n    packet.species = monInfo->species,\n    packet.otId = monInfo->otId,\n    packet.personality = monInfo->personality,\n    Rfu_SendPacket(&packet);",
       "callsTo": [
         "Rfu_SendPacket"
@@ -1812,6 +2417,16 @@
       "returnType": "bool32",
       "signature": "static bool32 RecvPacket_MonInfo(int multiplayerId, struct PokemonJump_MonInfo *monInfo)",
       "paramsRaw": "int multiplayerId, struct PokemonJump_MonInfo *monInfo",
+      "paramsList": [
+        {
+          "name": "multiplayerId",
+          "typeRaw": "int"
+        },
+        {
+          "name": "monInfo",
+          "typeRaw": "struct PokemonJump_MonInfo *"
+        }
+      ],
       "body": "struct MonInfoPacket packet;\n\n    if ((gRecvCmds[multiplayerId][0] & RFUCMD_MASK) != RFUCMD_SEND_PACKET)\n        return FALSE;\n\n    memcpy(&packet, &gRecvCmds[multiplayerId][1], sizeof(packet));\n    if (packet.id == PACKET_MON_INFO)\n    {\n        monInfo->species = packet.species;\n        monInfo->otId = packet.otId;\n        monInfo->personality = packet.personality;\n        return TRUE;\n    }\n\n    return FALSE;",
       "callsTo": [],
       "lineCount": 15
@@ -1820,6 +2435,16 @@
       "returnType": "void",
       "signature": "static void SendPacket_LeaderState(struct PokemonJump_Player *player, struct PokemonJump_CommData *comm)",
       "paramsRaw": "struct PokemonJump_Player *player, struct PokemonJump_CommData *comm",
+      "paramsList": [
+        {
+          "name": "player",
+          "typeRaw": "struct PokemonJump_Player *"
+        },
+        {
+          "name": "comm",
+          "typeRaw": "struct PokemonJump_CommData *"
+        }
+      ],
       "body": "struct LeaderStatePacket packet;\n    packet.id = PACKET_LEADER_STATE;\n    packet.jumpScore = comm->jumpScore;\n    packet.receivedBonusFlags = comm->receivedBonusFlags;\n    packet.funcId = comm->funcId;\n    packet.vineTimer = comm->data;\n    packet.jumpsInRow = comm->jumpsInRow;\n    packet.monState = player->monState;\n    packet.jumpState = player->jumpState;\n    packet.jumpTimeStart = player->jumpTimeStart;\n    Rfu_SendPacket(&packet);",
       "callsTo": [
         "Rfu_SendPacket"
@@ -1830,6 +2455,16 @@
       "returnType": "bool32",
       "signature": "static bool32 RecvPacket_LeaderState(struct PokemonJump_Player *player, struct PokemonJump_CommData *comm)",
       "paramsRaw": "struct PokemonJump_Player *player, struct PokemonJump_CommData *comm",
+      "paramsList": [
+        {
+          "name": "player",
+          "typeRaw": "struct PokemonJump_Player *"
+        },
+        {
+          "name": "comm",
+          "typeRaw": "struct PokemonJump_CommData *"
+        }
+      ],
       "body": "struct LeaderStatePacket packet;\n\n    if ((gRecvCmds[0][0] & RFUCMD_MASK) != RFUCMD_SEND_PACKET)\n        return FALSE;\n\n    memcpy(&packet, &gRecvCmds[0][1], sizeof(packet));\n    if (packet.id != PACKET_LEADER_STATE)\n        return FALSE;\n\n    comm->jumpScore = packet.jumpScore;\n    comm->receivedBonusFlags = packet.receivedBonusFlags;\n    comm->funcId = packet.funcId;\n    comm->data = packet.vineTimer;\n    comm->jumpsInRow = packet.jumpsInRow;\n    player->monState = packet.monState;\n    player->jumpState = packet.jumpState;\n    player->jumpTimeStart = packet.jumpTimeStart;\n    return TRUE;",
       "callsTo": [],
       "lineCount": 18
@@ -1838,6 +2473,20 @@
       "returnType": "void",
       "signature": "static void SendPacket_MemberState(struct PokemonJump_Player *player, u8 funcId, u16 playAgainState)",
       "paramsRaw": "struct PokemonJump_Player *player, u8 funcId, u16 playAgainState",
+      "paramsList": [
+        {
+          "name": "player",
+          "typeRaw": "struct PokemonJump_Player *"
+        },
+        {
+          "name": "funcId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "playAgainState",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "struct MemberStatePacket packet;\n    packet.id = PACKET_MEMBER_STATE;\n    packet.monState = player->monState;\n    packet.jumpState = player->jumpState;\n    packet.funcFinished = player->funcFinished;\n    packet.jumpTimeStart = player->jumpTimeStart;\n    packet.funcId = funcId;\n    packet.playAgainState = playAgainState;\n    Rfu_SendPacket(&packet);",
       "callsTo": [
         "Rfu_SendPacket"
@@ -1848,6 +2497,24 @@
       "returnType": "bool32",
       "signature": "static bool32 RecvPacket_MemberStateToLeader(struct PokemonJump_Player *player, int multiplayerId, u8 *funcId, u16 *playAgainState)",
       "paramsRaw": "struct PokemonJump_Player *player, int multiplayerId, u8 *funcId, u16 *playAgainState",
+      "paramsList": [
+        {
+          "name": "player",
+          "typeRaw": "struct PokemonJump_Player *"
+        },
+        {
+          "name": "multiplayerId",
+          "typeRaw": "int"
+        },
+        {
+          "name": "funcId",
+          "typeRaw": "u8 *"
+        },
+        {
+          "name": "playAgainState",
+          "typeRaw": "u16 *"
+        }
+      ],
       "body": "struct MemberStatePacket packet;\n\n    if ((gRecvCmds[multiplayerId][0] & RFUCMD_MASK) != RFUCMD_SEND_PACKET)\n        return FALSE;\n\n    memcpy(&packet, &gRecvCmds[multiplayerId][1], sizeof(packet));\n    if (packet.id != PACKET_MEMBER_STATE)\n        return FALSE;\n\n    player->monState = packet.monState;\n    player->jumpState = packet.jumpState;\n    player->funcFinished = packet.funcFinished;\n    player->jumpTimeStart = packet.jumpTimeStart;\n    *funcId = packet.funcId;\n    *playAgainState = packet.playAgainState;\n    return TRUE;",
       "callsTo": [],
       "lineCount": 16
@@ -1856,6 +2523,16 @@
       "returnType": "bool32",
       "signature": "static bool32 RecvPacket_MemberStateToMember(struct PokemonJump_Player *player, int multiplayerId)",
       "paramsRaw": "struct PokemonJump_Player *player, int multiplayerId",
+      "paramsList": [
+        {
+          "name": "player",
+          "typeRaw": "struct PokemonJump_Player *"
+        },
+        {
+          "name": "multiplayerId",
+          "typeRaw": "int"
+        }
+      ],
       "body": "struct MemberStatePacket packet;\n\n    if ((gRecvCmds[multiplayerId][0] & RFUCMD_MASK) != RFUCMD_SEND_PACKET)\n        return FALSE;\n\n    memcpy(&packet, &gRecvCmds[multiplayerId][1], sizeof(packet));\n    if (packet.id != PACKET_MEMBER_STATE)\n        return FALSE;\n\n    player->monState = packet.monState;\n    player->jumpState = packet.jumpState;\n    player->funcFinished = packet.funcFinished;\n    player->jumpTimeStart = packet.jumpTimeStart;\n    return TRUE;",
       "callsTo": [],
       "lineCount": 14
@@ -1864,6 +2541,7 @@
       "returnType": "void",
       "signature": "void ResetPokemonJumpRecords(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "struct PokemonJumpRecords *records = GetPokeJumpRecords();\n    records->jumpsInRow = 0;\n    records->bestJumpScore = 0;\n    records->excellentsInRow = 0;\n    records->gamesWithMaxPlayers = 0;\n    records->unused2 = 0;\n    records->unused1 = 0;",
       "callsTo": [
         "GetPokeJumpRecords"
@@ -1874,6 +2552,20 @@
       "returnType": "bool32",
       "signature": "static bool32 TryUpdateRecords(u32 jumpScore, u16 jumpsInRow, u16 excellentsInRow)",
       "paramsRaw": "u32 jumpScore, u16 jumpsInRow, u16 excellentsInRow",
+      "paramsList": [
+        {
+          "name": "jumpScore",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "jumpsInRow",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "excellentsInRow",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "struct PokemonJumpRecords *records = GetPokeJumpRecords();\n    bool32 newRecord = FALSE;\n\n    if (records->bestJumpScore < jumpScore && jumpScore <= MAX_JUMP_SCORE)\n        records->bestJumpScore = jumpScore, newRecord = TRUE;\n    if (records->jumpsInRow < jumpsInRow && jumpsInRow <= MAX_JUMPS)\n        records->jumpsInRow = jumpsInRow, newRecord = TRUE;\n    if (records->excellentsInRow < excellentsInRow && excellentsInRow <= MAX_JUMPS)\n        records->excellentsInRow = excellentsInRow, newRecord = TRUE;\n\n    return newRecord;",
       "callsTo": [
         "GetPokeJumpRecords"
@@ -1884,6 +2576,7 @@
       "returnType": "void",
       "signature": "static void IncrementGamesWithMaxPlayers(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "struct PokemonJumpRecords *records = GetPokeJumpRecords();\n    if (records->gamesWithMaxPlayers < 9999)\n        records->gamesWithMaxPlayers++;",
       "callsTo": [
         "GetPokeJumpRecords"
@@ -1894,6 +2587,7 @@
       "returnType": "void",
       "signature": "void ShowPokemonJumpRecords(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 taskId = CreateTask(Task_ShowPokemonJumpRecords, 0);\n    Task_ShowPokemonJumpRecords(taskId);",
       "callsTo": [
         "CreateTask",
@@ -1905,6 +2599,12 @@
       "returnType": "void",
       "signature": "static void Task_ShowPokemonJumpRecords(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "struct WindowTemplate window;\n    int i, width, widthCurr;\n    s16 *data = gTasks[taskId].data;\n\n    switch (tState)\n    {\n    case 0:\n        window = sWindowTemplate_Records;\n        width = GetStringWidth(FONT_NORMAL, gText_PkmnJumpRecords, 0);\n        for (i = 0; i < ARRAY_COUNT(sRecordsTexts); i++)\n        {\n            widthCurr = GetStringWidth(FONT_NORMAL, sRecordsTexts[i], 0) + 38;\n            if (widthCurr > width)\n                width = widthCurr;\n        }\n        width = (width + 7) / 8;\n        if (width & 1)\n            width++;\n        window.tilemapLeft = (30 - width) / 2;\n        window.width = width;\n        tWindowId = AddWindow(&window);\n        PrintRecordsText(tWindowId, width);\n        CopyWindowToVram(tWindowId, COPYWIN_FULL);\n        tState++;\n        break;\n    case 1:\n        if (!IsDma3ManagerBusyWithBgCopy())\n            tState++;\n        break;\n    case 2:\n        if (JOY_NEW(A_BUTTON | B_BUTTON))\n        {\n            rbox_fill_rectangle(tWindowId);\n            CopyWindowToVram(tWindowId, COPYWIN_MAP);\n            tState++;\n        }\n        break;\n    case 3:\n        if (!IsDma3ManagerBusyWithBgCopy())\n        {\n            RemoveWindow(tWindowId);\n            DestroyTask(taskId);\n            ScriptContext_Enable();\n        }\n        break;\n    }",
       "callsTo": [
         "ARRAY_COUNT",
@@ -1924,6 +2624,16 @@
       "returnType": "void",
       "signature": "static void PrintRecordsText(u16 windowId, int width)",
       "paramsRaw": "u16 windowId, int width",
+      "paramsList": [
+        {
+          "name": "windowId",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "width",
+          "typeRaw": "int"
+        }
+      ],
       "body": "int i, x;\n    int recordNums[3];\n    struct PokemonJumpRecords *records = GetPokeJumpRecords();\n    recordNums[0] = records->jumpsInRow;\n    recordNums[1] = records->bestJumpScore;\n    recordNums[2] = records->excellentsInRow;\n\n    LoadUserWindowBorderGfx_(windowId, 0x21D, BG_PLTT_ID(13));\n    DrawTextBorderOuter(windowId, 0x21D, 13);\n    FillWindowPixelBuffer(windowId, PIXEL_FILL(1));\n    AddTextPrinterParameterized(windowId, FONT_NORMAL, gText_PkmnJumpRecords, GetStringCenterAlignXOffset(FONT_NORMAL, gText_PkmnJumpRecords, width * 8), 1, TEXT_SKIP_DRAW, NULL);\n    for (i = 0; i < ARRAY_COUNT(sRecordsTexts); i++)\n    {\n        AddTextPrinterParameterized(windowId, FONT_NORMAL, sRecordsTexts[i], 0, 25 + (i * 16), TEXT_SKIP_DRAW, NULL);\n        ConvertIntToDecimalStringN(gStringVar1, recordNums[i], STR_CONV_MODE_LEFT_ALIGN, 5);\n        TruncateToFirstWordOnly(gStringVar1);\n        x = (width * 8) - GetStringWidth(FONT_NORMAL, gStringVar1, 0);\n        AddTextPrinterParameterized(windowId, FONT_NORMAL, gStringVar1, x, 25 + (i * 16), TEXT_SKIP_DRAW, NULL);\n    }\n    PutWindowTilemap(windowId);",
       "callsTo": [
         "ARRAY_COUNT",
@@ -1946,6 +2656,12 @@
       "returnType": "void",
       "signature": "static void TruncateToFirstWordOnly(u8 *str)",
       "paramsRaw": "u8 *str",
+      "paramsList": [
+        {
+          "name": "str",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "for (;*str != EOS; str++)\n    {\n        if (*str == CHAR_SPACE)\n        {\n            *str = EOS;\n            break;\n        }\n    }",
       "callsTo": [],
       "lineCount": 8

@@ -6,6 +6,12 @@
       "returnType": "void",
       "signature": "void BufferApprenticeChallengeText(u8 saveApprenticeId)",
       "paramsRaw": "u8 saveApprenticeId",
+      "paramsList": [
+        {
+          "name": "saveApprenticeId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 i, num;\n    const u8 *challengeText;\n\n    num = gSaveBlock2Ptr->apprentices[saveApprenticeId].number;\n    for (i = 0; num != 0 && i < APPRENTICE_COUNT; num /= 10, i++)\n        ;\n\n    StringCopy_PlayerName(gStringVar1, gSaveBlock2Ptr->apprentices[saveApprenticeId].playerName);\n    ConvertInternationalString(gStringVar1, gSaveBlock2Ptr->apprentices[saveApprenticeId].language);\n    ConvertIntToDecimalStringN(gStringVar2, gSaveBlock2Ptr->apprentices[saveApprenticeId].number, STR_CONV_MODE_RIGHT_ALIGN, i);\n    challengeText = sApprenticeChallengeTexts[gSaveBlock2Ptr->apprentices[saveApprenticeId].id];\n    StringExpandPlaceholders(gStringVar4, challengeText);",
       "callsTo": [
         "ConvertIntToDecimalStringN",
@@ -19,6 +25,7 @@
       "returnType": "void",
       "signature": "void Apprentice_ScriptContext_Enable(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ScriptContext_Enable();",
       "callsTo": [
         "ScriptContext_Enable"
@@ -29,6 +36,12 @@
       "returnType": "void",
       "signature": "void ResetApprenticeStruct(struct Apprentice *apprentice)",
       "paramsRaw": "struct Apprentice *apprentice",
+      "paramsList": [
+        {
+          "name": "apprentice",
+          "typeRaw": "struct Apprentice *"
+        }
+      ],
       "body": "u8 i;\n\n    for (i = 0; i < ARRAY_COUNT(apprentice->speechWon); i++)\n        apprentice->speechWon[i] = EC_EMPTY_WORD;\n\n    apprentice->playerName[0] = EOS;\n    apprentice->id = NUM_APPRENTICES;",
       "callsTo": [
         "ARRAY_COUNT"
@@ -39,6 +52,7 @@
       "returnType": "void",
       "signature": "void ResetAllApprenticeData(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i, j;\n\n    PLAYER_APPRENTICE.saveId = 0;\n    for (i = 0; i < APPRENTICE_COUNT; i++)\n    {\n        for (j = 0; j < ARRAY_COUNT(gSaveBlock2Ptr->apprentices[i].speechWon); j++)\n            gSaveBlock2Ptr->apprentices[i].speechWon[j] = EC_EMPTY_WORD;\n        gSaveBlock2Ptr->apprentices[i].id = NUM_APPRENTICES;\n        gSaveBlock2Ptr->apprentices[i].playerName[0] = EOS;\n        gSaveBlock2Ptr->apprentices[i].lvlMode = 0;\n        gSaveBlock2Ptr->apprentices[i].number = 0;\n        gSaveBlock2Ptr->apprentices[i].numQuestions = 0;\n        for (j = 0; j < TRAINER_ID_LENGTH; j++)\n            gSaveBlock2Ptr->apprentices[i].playerId[j] = 0;\n        gSaveBlock2Ptr->apprentices[i].language = gGameLanguage;\n        gSaveBlock2Ptr->apprentices[i].checksum = 0;\n    }\n\n    Script_ResetPlayerApprentice();",
       "callsTo": [
         "ARRAY_COUNT",
@@ -50,6 +64,7 @@
       "returnType": "bool8",
       "signature": "static bool8 GivenApprenticeLvlMode(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return (PLAYER_APPRENTICE.lvlMode != 0);",
       "callsTo": [],
       "lineCount": 1
@@ -58,6 +73,7 @@
       "returnType": "void",
       "signature": "static void SetApprenticeId(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gSaveBlock2Ptr->apprentices[0].number == 0)\n    {\n        do\n        {\n            PLAYER_APPRENTICE.id = sInitialApprenticeIds[Random() % ARRAY_COUNT(sInitialApprenticeIds)];\n        } while (PLAYER_APPRENTICE.id == gSaveBlock2Ptr->apprentices[0].id);\n    }\n    else\n    {\n        do\n        {\n            PLAYER_APPRENTICE.id = Random() % (NUM_APPRENTICES);\n        } while (PLAYER_APPRENTICE.id == gSaveBlock2Ptr->apprentices[0].id);\n    }",
       "callsTo": [
         "ARRAY_COUNT",
@@ -69,6 +85,12 @@
       "returnType": "void",
       "signature": "static void SetPlayersApprenticeLvlMode(u8 mode)",
       "paramsRaw": "u8 mode",
+      "paramsList": [
+        {
+          "name": "mode",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "PLAYER_APPRENTICE.lvlMode = mode;",
       "callsTo": [],
       "lineCount": 1
@@ -77,6 +99,7 @@
       "returnType": "void",
       "signature": "static void ShuffleApprenticeSpecies(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 species[APPRENTICE_SPECIES_COUNT];\n    u8 i;\n\n    for (i = 0; i < ARRAY_COUNT(species); i++)\n        species[i] = i;\n\n     \n    for (i = 0; i < 50; i++)\n    {\n        u8 temp;\n        u8 rand1 = Random() % ARRAY_COUNT(species);\n        u8 rand2 = Random() % ARRAY_COUNT(species);\n        SWAP(species[rand1], species[rand2], temp);\n    }\n\n    for (i = 0; i < MULTI_PARTY_SIZE; i++)\n        PLAYER_APPRENTICE.speciesIds[i] = ((species[i * 2] & 0xF) << 4) | ((species[i * 2 + 1]) & 0xF);",
       "callsTo": [
         "ARRAY_COUNT",
@@ -89,6 +112,20 @@
       "returnType": "u8",
       "signature": "static u8 GetMonIdForQuestion(u8 questionId, u8 *party, u8 *partySlot)",
       "paramsRaw": "u8 questionId, u8 *party, u8 *partySlot",
+      "paramsList": [
+        {
+          "name": "questionId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "party",
+          "typeRaw": "u8 *"
+        },
+        {
+          "name": "partySlot",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "u8 i, count;\n    u8 monId = 0;\n\n    if (questionId == QUESTION_ID_WHICH_MOVE)\n    {\n        do\n        {\n            monId = Random() % (MULTI_PARTY_SIZE);\n            for (count = 0, i = 0; i < NUM_WHICH_MOVE_QUESTIONS; i++)\n            {\n                if (gApprenticePartyMovesData->moves[monId][i] != MOVE_NONE)\n                    count++;\n            }\n        } while (count > MULTI_PARTY_SIZE);\n    }\n    else if (questionId == QUESTION_ID_WHAT_ITEM)\n    {\n        monId = party[*partySlot];\n        (*partySlot)++;\n    }\n\n    return monId;",
       "callsTo": [
         "Random"
@@ -99,6 +136,7 @@
       "returnType": "void",
       "signature": "static void SetRandomQuestionData(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 questionOrder[APPRENTICE_MAX_QUESTIONS + 1];\n    u8 partyOrder[MULTI_PARTY_SIZE];\n    u8 partySlot;\n    u8 i, j;\n    u8 rand1, rand2;\n    u8 id;\n\n    for (i = 0; i < ARRAY_COUNT(partyOrder); i++)\n        partyOrder[i] = i;\n\n     \n    for (i = 0; i < 10; i++)\n    {\n        u8 temp;\n        rand1 = Random() % ARRAY_COUNT(partyOrder);\n        rand2 = Random() % ARRAY_COUNT(partyOrder);\n        SWAP(partyOrder[rand1], partyOrder[rand2], temp);\n    }\n\n    for (i = 0; i < ARRAY_COUNT(questionOrder); i++)\n        questionOrder[i] = sQuestionPossibilities[i];\n\n     \n    for (i = 0; i < 50; i++)\n    {\n        u8 temp;\n        rand1 = Random() % ARRAY_COUNT(questionOrder);\n        rand2 = Random() % ARRAY_COUNT(questionOrder);\n        SWAP(questionOrder[rand1], questionOrder[rand2], temp);\n    }\n\n    gApprenticePartyMovesData = AllocZeroed(sizeof(*gApprenticePartyMovesData));\n    gApprenticePartyMovesData->moveCounter = 0;\n    for (i = 0; i < NUM_WHICH_MOVE_QUESTIONS; i++)\n    {\n        for (j = 0; j < MULTI_PARTY_SIZE; j++)\n            gApprenticePartyMovesData->moveSlots[j][i] = MAX_MON_MOVES;\n    }\n\n    partySlot = 0;\n    for (i = 0; i < APPRENTICE_MAX_QUESTIONS; i++)\n    {\n        PLAYER_APPRENTICE.questions[i].questionId = questionOrder[i];\n        if (questionOrder[i] != QUESTION_ID_WHICH_FIRST)\n        {\n            PLAYER_APPRENTICE.questions[i].monId = GetMonIdForQuestion(questionOrder[i], partyOrder, &partySlot);\n            id = PLAYER_APPRENTICE.questions[i].monId;\n            if (questionOrder[i] == QUESTION_ID_WHICH_MOVE)\n            {\n                do\n                {\n                    rand1 = Random() % MAX_MON_MOVES;\n                    for (j = 0; j < gApprenticePartyMovesData->moveCounter + 1; j++)\n                    {\n                        if (gApprenticePartyMovesData->moveSlots[id][j] == rand1)\n                            break;\n                    }\n                } while (j != gApprenticePartyMovesData->moveCounter + 1);\n\n                gApprenticePartyMovesData->moveSlots[id][gApprenticePartyMovesData->moveCounter] = rand1;\n                PLAYER_APPRENTICE.questions[i].moveSlot = rand1;\n                PLAYER_APPRENTICE.questions[i].data = GetRandomAlternateMove(PLAYER_APPRENTICE.questions[i].monId);\n            }\n        }\n    }\n\n    FREE_AND_SET_NULL(gApprenticePartyMovesData);",
       "callsTo": [
         "ARRAY_COUNT",
@@ -115,6 +153,12 @@
       "returnType": "u16",
       "signature": "static u16 GetRandomAlternateMove(u8 monId)",
       "paramsRaw": "u8 monId",
+      "paramsList": [
+        {
+          "name": "monId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 i, j;\n    u8 id;\n    u8 numLearnsetMoves;\n    u16 species;\n    const u16 *learnset;\n    bool32 needTMs = FALSE;\n    u16 move = MOVE_NONE;\n    bool32 shouldUseMove;\n    u8 level;\n\n    id = APPRENTICE_SPECIES_ID(monId);\n    species = gApprentices[PLAYER_APPRENTICE.id].species[id];\n    learnset = gLevelUpLearnsets[species];\n    j = 0;\n\n    if (PLAYER_APPRENTICE.lvlMode == APPRENTICE_LVL_MODE_50)\n        level = FRONTIER_MAX_LEVEL_50;\n    else  \n        level = 60;  \n\n    for (j = 0; learnset[j] != LEVEL_UP_END; j++)\n    {\n        if ((learnset[j] & LEVEL_UP_MOVE_LV) > (level << 9))\n            break;\n    }\n\n    numLearnsetMoves = j;\n    i = 0;\n\n     \n     \n    while (i < 5)\n    {\n        if (Random() % 2 == 0 || needTMs == TRUE)\n        {\n             \n             \n             \n            do\n            {\n                 \n                do\n                {\n                    id = Random() % (NUM_TECHNICAL_MACHINES + NUM_HIDDEN_MACHINES);\n                    shouldUseMove = CanSpeciesLearnTMHM(species, id);\n                }\n                while (!shouldUseMove);\n\n                move = ItemIdToBattleMoveId(ITEM_TM01 + id);\n                shouldUseMove = TRUE;\n\n                if (numLearnsetMoves <= MAX_MON_MOVES)\n                    j = 0;\n                else\n                    j = numLearnsetMoves - MAX_MON_MOVES;\n\n                for (; j < numLearnsetMoves; j++)\n                {\n                     \n                    if ((learnset[j] & LEVEL_UP_MOVE_ID) == move)\n                    {\n                        shouldUseMove = FALSE;\n                        break;\n                    }\n                }\n            } while (shouldUseMove != TRUE);\n        }\n        else\n        {\n            if (numLearnsetMoves <= MAX_MON_MOVES)\n            {\n                needTMs = TRUE;\n                continue;\n            }\n            else\n            {\n                 \n                 \n                 \n                do\n                {\n                     \n                    u8 learnsetId = Random() % (numLearnsetMoves - MAX_MON_MOVES);\n                    move = learnset[learnsetId] & LEVEL_UP_MOVE_ID;\n                    shouldUseMove = TRUE;\n\n                    for (j = numLearnsetMoves - MAX_MON_MOVES; j < numLearnsetMoves; j++)\n                    {\n                         \n                        if ((learnset[j] & LEVEL_UP_MOVE_ID) == move)\n                        {\n                            shouldUseMove = FALSE;\n                            break;\n                        }\n                    }\n                } while (shouldUseMove != TRUE);\n            }\n        }\n\n        if (TrySetMove(monId, move))\n        {\n            if (sValidApprenticeMoves[move])\n                break;\n            i++;\n        }\n    }\n\n    gApprenticePartyMovesData->moveCounter++;\n    return move;",
       "callsTo": [
         "APPRENTICE_SPECIES_ID",
@@ -129,6 +173,16 @@
       "returnType": "bool8",
       "signature": "static bool8 TrySetMove(u8 monId, u16 move)",
       "paramsRaw": "u8 monId, u16 move",
+      "paramsList": [
+        {
+          "name": "monId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "move",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "u8 i;\n\n    for (i = 0; i < NUM_WHICH_MOVE_QUESTIONS; i++)\n    {\n        if (gApprenticePartyMovesData->moves[monId][i] == move)\n            return FALSE;\n    }\n\n    gApprenticePartyMovesData->moves[monId][gApprenticePartyMovesData->moveCounter] = move;\n    return TRUE;",
       "callsTo": [],
       "lineCount": 10
@@ -137,6 +191,16 @@
       "returnType": "void",
       "signature": "static void GetLatestLearnedMoves(u16 species, u16 *moves)",
       "paramsRaw": "u16 species, u16 *moves",
+      "paramsList": [
+        {
+          "name": "species",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "moves",
+          "typeRaw": "u16 *"
+        }
+      ],
       "body": "u8 i, j;\n    u8 level, numLearnsetMoves;\n    const u16 *learnset;\n\n    if (PLAYER_APPRENTICE.lvlMode == APPRENTICE_LVL_MODE_50)\n        level = FRONTIER_MAX_LEVEL_50;\n    else  \n        level = 60;\n\n    learnset = gLevelUpLearnsets[species];\n    for (i = 0; learnset[i] != LEVEL_UP_END; i++)\n    {\n        if ((learnset[i] & LEVEL_UP_MOVE_LV) > (level << 9))\n            break;\n    }\n\n    numLearnsetMoves = i;\n    if (numLearnsetMoves > MAX_MON_MOVES)\n        numLearnsetMoves = MAX_MON_MOVES;\n\n    for (j = 0; j < numLearnsetMoves; j++)\n        moves[j] = learnset[(i - 1) - j] & LEVEL_UP_MOVE_ID;",
       "callsTo": [],
       "lineCount": 22
@@ -145,6 +209,20 @@
       "returnType": "u16",
       "signature": "static u16 GetDefaultMove(u8 monId, u8 speciesArrayId, u8 moveSlot)",
       "paramsRaw": "u8 monId, u8 speciesArrayId, u8 moveSlot",
+      "paramsList": [
+        {
+          "name": "monId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "speciesArrayId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "moveSlot",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u16 moves[MAX_MON_MOVES];\n    u8 i, numQuestions;\n\n    if (PLAYER_APPRENTICE.questionsAnswered < NUM_WHICH_MON_QUESTIONS)\n        return MOVE_NONE;\n\n    numQuestions = 0;\n    for (i = 0; i < APPRENTICE_MAX_QUESTIONS && PLAYER_APPRENTICE.questions[i].questionId != QUESTION_ID_WIN_SPEECH; i++)\n        numQuestions++;\n\n    GetLatestLearnedMoves(gApprentices[PLAYER_APPRENTICE.id].species[speciesArrayId], moves);\n    for (i = 0; i < numQuestions && i < CURRENT_QUESTION_NUM; i++)\n    {\n        if (PLAYER_APPRENTICE.questions[i].questionId == QUESTION_ID_WHICH_MOVE\n            && PLAYER_APPRENTICE.questions[i].monId == monId\n            && PLAYER_APPRENTICE.questions[i].suggestedChange)\n        {\n            moves[PLAYER_APPRENTICE.questions[i].moveSlot] = PLAYER_APPRENTICE.questions[i].data;\n        }\n    }\n\n    return moves[moveSlot];",
       "callsTo": [
         "GetLatestLearnedMoves"
@@ -155,6 +233,12 @@
       "returnType": "void",
       "signature": "static void SaveApprenticeParty(u8 numQuestions)",
       "paramsRaw": "u8 numQuestions",
+      "paramsList": [
+        {
+          "name": "numQuestions",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "struct ApprenticeMon *apprenticeMons[MULTI_PARTY_SIZE];\n    u8 i, j;\n    u32 speciesTableId;\n\n    for (i = 0; i < MULTI_PARTY_SIZE; i++)\n    {\n        gSaveBlock2Ptr->apprentices[0].party[i].species = SPECIES_NONE;\n        gSaveBlock2Ptr->apprentices[0].party[i].item = ITEM_NONE;\n        for (j = 0; j < MAX_MON_MOVES; j++)\n            gSaveBlock2Ptr->apprentices[0].party[i].moves[j] = MOVE_NONE;\n    }\n\n     \n    j = PLAYER_APPRENTICE.leadMonId;\n    for (i = 0; i < MULTI_PARTY_SIZE; i++)\n    {\n        apprenticeMons[j] = &gSaveBlock2Ptr->apprentices[0].party[i];\n        j = (j + 1) % (MULTI_PARTY_SIZE);\n    }\n\n     \n    for (i = 0; i < MULTI_PARTY_SIZE; i++)\n    {\n        speciesTableId = APPRENTICE_SPECIES_ID(i);\n        apprenticeMons[i]->species = gApprentices[PLAYER_APPRENTICE.id].species[speciesTableId];\n        GetLatestLearnedMoves(apprenticeMons[i]->species, apprenticeMons[i]->moves);\n    }\n\n     \n    for (i = 0; i < numQuestions; i++)\n    {\n        u8 questionId = PLAYER_APPRENTICE.questions[i].questionId;\n        u8 monId = PLAYER_APPRENTICE.questions[i].monId;\n        if (questionId == QUESTION_ID_WHAT_ITEM)\n        {\n            if (PLAYER_APPRENTICE.questions[i].suggestedChange)\n                apprenticeMons[monId]->item = PLAYER_APPRENTICE.questions[i].data;\n        }\n        else if (questionId == QUESTION_ID_WHICH_MOVE)\n        {\n            if (PLAYER_APPRENTICE.questions[i].suggestedChange)\n            {\n                u32 moveSlot = PLAYER_APPRENTICE.questions[i].moveSlot;\n                apprenticeMons[monId]->moves[moveSlot] = PLAYER_APPRENTICE.questions[i].data;\n            }\n        }\n    }",
       "callsTo": [
         "APPRENTICE_SPECIES_ID",
@@ -166,6 +250,12 @@
       "returnType": "void",
       "signature": "static void CreateApprenticeMenu(u8 menu)",
       "paramsRaw": "u8 menu",
+      "paramsList": [
+        {
+          "name": "menu",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 i;\n    u8 windowId;\n    const u8 *strings[3];\n    u8 count = 2;\n    u8 width;\n    u8 left;\n    u8 top;\n    s32 pixelWidth;\n\n    switch (menu)\n    {\n    case APPRENTICE_ASK_WHICH_LEVEL:\n        left = 18;\n        top = 8;\n        strings[0] = gText_Lv50;\n        strings[1] = gText_OpenLevel;\n        break;\n    case APPRENTICE_ASK_3SPECIES:\n        count = MULTI_PARTY_SIZE;\n        left = 18;\n        top = 6;\n        for (i = 0; i < MULTI_PARTY_SIZE; i++)\n        {\n            u16 species;\n            u32 speciesTableId;\n\n            speciesTableId = APPRENTICE_SPECIES_ID(i);\n            species =  gApprentices[PLAYER_APPRENTICE.id].species[speciesTableId];\n            strings[i] = gSpeciesNames[species];\n        }\n        break;\n    case APPRENTICE_ASK_2SPECIES:\n        left = 18;\n        top = 8;\n        if (PLAYER_APPRENTICE.questionsAnswered >= NUM_WHICH_MON_QUESTIONS)\n            return;\n        strings[1] = gSpeciesNames[gApprenticeQuestionData->altSpeciesId];\n        strings[0] = gSpeciesNames[gApprenticeQuestionData->speciesId];\n        break;\n    case APPRENTICE_ASK_MOVES:\n        left = 17;\n        top = 8;\n        strings[0] = gMoveNames[gApprenticeQuestionData->move1];\n        strings[1] = gMoveNames[gApprenticeQuestionData->move2];\n        break;\n    case APPRENTICE_ASK_GIVE:\n        left = 18;\n        top = 8;\n        strings[0] = gText_Give;\n        strings[1] = gText_NoNeed;\n        break;\n    case APPRENTICE_ASK_YES_NO:\n        left = 20;\n        top = 8;\n        strings[0] = gText_Yes;\n        strings[1] = gText_No;\n        break;\n    default:\n        left = 0;\n        top = 0;\n#ifdef UBFIX\n        return;\n#endif\n        break;\n    }\n\n    pixelWidth = 0;\n    for (i = 0; i < count; i++)\n    {\n        s32 width = GetStringWidth(FONT_NORMAL, strings[i], 0);\n        if (width > pixelWidth)\n            pixelWidth = width;\n    }\n\n    width = ConvertPixelWidthToTileWidth(pixelWidth);\n    left = ScriptMenu_AdjustLeftCoordFromWidth(left, width);\n    windowId = CreateAndShowWindow(left, top, width, count * 2);\n    SetStandardWindowBorderStyle(windowId, FALSE);\n\n    for (i = 0; i < count; i++)\n        AddTextPrinterParameterized(windowId, FONT_NORMAL, strings[i], 8, (i * 16) + 1, TEXT_SKIP_DRAW, NULL);\n\n    InitMenuInUpperLeftCornerNormal(windowId, count, 0);\n    CreateChooseAnswerTask(TRUE, count, windowId);",
       "callsTo": [
         "APPRENTICE_SPECIES_ID",
@@ -184,6 +274,12 @@
       "returnType": "void",
       "signature": "static void Task_ChooseAnswer(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s8 input;\n    s16 *data = gTasks[taskId].data;\n\n    if (!tWrapAround)\n        input = Menu_ProcessInputNoWrap();\n    else\n        input = Menu_ProcessInput();\n\n    switch (input)\n    {\n    case MENU_NOTHING_CHOSEN:\n        return;\n    case MENU_B_PRESSED:\n         \n        if (tNoBButton)\n            return;\n\n        PlaySE(SE_SELECT);\n        gSpecialVar_Result = MULTI_B_PRESSED;\n        break;\n    default:\n        gSpecialVar_Result = input;\n        break;\n    }\n\n    RemoveAndHideWindow(tWindowId);\n    DestroyTask(taskId);\n    ScriptContext_Enable();",
       "callsTo": [
         "DestroyTask",
@@ -199,6 +295,24 @@
       "returnType": "u8",
       "signature": "static u8 CreateAndShowWindow(u8 left, u8 top, u8 width, u8 height)",
       "paramsRaw": "u8 left, u8 top, u8 width, u8 height",
+      "paramsList": [
+        {
+          "name": "left",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "top",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "width",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "height",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 windowId;\n    struct WindowTemplate winTemplate = CreateWindowTemplate(0, left + 1, top + 1, width, height, 15, 100);\n\n    windowId = AddWindow(&winTemplate);\n    PutWindowTilemap(windowId);\n    CopyWindowToVram(windowId, COPYWIN_FULL);\n    return windowId;",
       "callsTo": [
         "AddWindow",
@@ -212,6 +326,12 @@
       "returnType": "void",
       "signature": "static void RemoveAndHideWindow(u8 windowId)",
       "paramsRaw": "u8 windowId",
+      "paramsList": [
+        {
+          "name": "windowId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "ClearStdWindowAndFrameToTransparent(windowId, TRUE);\n    RemoveWindow(windowId);",
       "callsTo": [
         "ClearStdWindowAndFrameToTransparent",
@@ -223,6 +343,20 @@
       "returnType": "void",
       "signature": "static void CreateChooseAnswerTask(bool8 noBButton, u8 answers, u8 windowId)",
       "paramsRaw": "bool8 noBButton, u8 answers, u8 windowId",
+      "paramsList": [
+        {
+          "name": "noBButton",
+          "typeRaw": "bool8"
+        },
+        {
+          "name": "answers",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "windowId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 taskId = CreateTask(Task_ChooseAnswer, 80);\n    gTasks[taskId].tNoBButton = noBButton;\n\n    if (answers > 3)\n        gTasks[taskId].tWrapAround = TRUE;\n    else\n        gTasks[taskId].tWrapAround = FALSE;\n\n    gTasks[taskId].tWindowId = windowId;",
       "callsTo": [
         "CreateTask"
@@ -233,6 +367,7 @@
       "returnType": "void",
       "signature": "void CallApprenticeFunction(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sApprenticeFunctions[gSpecialVar_0x8004]();",
       "callsTo": [],
       "lineCount": 1
@@ -241,6 +376,7 @@
       "returnType": "void",
       "signature": "static void Script_ResetPlayerApprentice(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n\n    SetApprenticeId();\n    PLAYER_APPRENTICE.lvlMode = 0;\n    PLAYER_APPRENTICE.questionsAnswered = 0;\n    PLAYER_APPRENTICE.leadMonId = 0;\n    PLAYER_APPRENTICE.party = 0;\n\n    for (i = 0; i < MULTI_PARTY_SIZE; i++)\n        PLAYER_APPRENTICE.speciesIds[i] = 0;\n\n    for (i = 0; i < APPRENTICE_MAX_QUESTIONS; i++)\n    {\n        PLAYER_APPRENTICE.questions[i].questionId = 0;\n        PLAYER_APPRENTICE.questions[i].monId = 0;\n        PLAYER_APPRENTICE.questions[i].moveSlot = 0;\n        PLAYER_APPRENTICE.questions[i].suggestedChange = 0;\n        PLAYER_APPRENTICE.questions[i].data = 0;\n    }",
       "callsTo": [
         "SetApprenticeId"
@@ -251,6 +387,7 @@
       "returnType": "void",
       "signature": "static void Script_GivenApprenticeLvlMode(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!GivenApprenticeLvlMode())\n        gSpecialVar_Result = FALSE;\n    else\n        gSpecialVar_Result = TRUE;",
       "callsTo": [
         "GivenApprenticeLvlMode"
@@ -261,6 +398,7 @@
       "returnType": "void",
       "signature": "static void Script_SetApprenticeLvlMode(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "SetPlayersApprenticeLvlMode(gSpecialVar_0x8005);",
       "callsTo": [
         "SetPlayersApprenticeLvlMode"
@@ -271,6 +409,7 @@
       "returnType": "void",
       "signature": "static void Script_SetApprenticeId(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "SetApprenticeId();",
       "callsTo": [
         "SetApprenticeId"
@@ -281,6 +420,7 @@
       "returnType": "void",
       "signature": "static void Script_SetRandomQuestionData(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "SetRandomQuestionData();",
       "callsTo": [
         "SetRandomQuestionData"
@@ -291,6 +431,7 @@
       "returnType": "void",
       "signature": "static void IncrementQuestionsAnswered(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "PLAYER_APPRENTICE.questionsAnswered++;",
       "callsTo": [],
       "lineCount": 1
@@ -299,6 +440,7 @@
       "returnType": "void",
       "signature": "static void GetNumApprenticePartyMonsAssigned(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gSpecialVar_Result = PLAYER_APPRENTICE.questionsAnswered;",
       "callsTo": [],
       "lineCount": 1
@@ -307,6 +449,7 @@
       "returnType": "void",
       "signature": "static void IsFinalQuestion(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s32 questionNum = CURRENT_QUESTION_NUM;\n\n    if (questionNum < 0)\n    {\n         \n        gSpecialVar_Result = FALSE;\n    }\n    else\n    {\n        if (questionNum > APPRENTICE_MAX_QUESTIONS - 1)\n            gSpecialVar_Result = TRUE;\n\n        if (PLAYER_APPRENTICE.questions[questionNum].questionId == QUESTION_ID_WIN_SPEECH)\n            gSpecialVar_Result = TRUE;\n        else\n            gSpecialVar_Result = FALSE;\n    }",
       "callsTo": [],
       "lineCount": 17
@@ -315,6 +458,7 @@
       "returnType": "void",
       "signature": "static void Script_CreateApprenticeMenu(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "CreateApprenticeMenu(gSpecialVar_0x8005);",
       "callsTo": [
         "CreateApprenticeMenu"
@@ -325,6 +469,12 @@
       "returnType": "void",
       "signature": "static void Task_WaitForPrintingMessage(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (!RunTextPrintersAndIsPrinter0Active())\n    {\n        DestroyTask(taskId);\n        if (gSpecialVar_0x8005)\n            ExecuteFuncAfterButtonPress(ScriptContext_Enable);\n        else\n            ScriptContext_Enable();\n    }",
       "callsTo": [
         "DestroyTask",
@@ -338,6 +488,7 @@
       "returnType": "void",
       "signature": "static void PrintApprenticeMessage(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "const u8 *string;\n\n    if (gSpecialVar_0x8006 == APPRENTICE_MSG_WHICH_MON)\n    {\n        string = sApprenticeWhichMonTexts[PLAYER_APPRENTICE.id][0];\n    }\n    else if (gSpecialVar_0x8006 == APPRENTICE_MSG_THANKS_MON)\n    {\n        string = sApprenticeWhichMonTexts[PLAYER_APPRENTICE.id][1];\n    }\n    else if (gSpecialVar_0x8006 == APPRENTICE_MSG_WHICH_MOVE)\n    {\n        string = sApprenticeWhichMoveTexts[PLAYER_APPRENTICE.id][0];\n    }\n    else if (gSpecialVar_0x8006 == APPRENTICE_MSG_THANKS_MOVE)\n    {\n        string = sApprenticeWhichMoveTexts[PLAYER_APPRENTICE.id][1];\n    }\n    else if (gSpecialVar_0x8006 == APPRENTICE_MSG_WHICH_MON_FIRST)\n    {\n        string = sApprenticeWhichMonFirstTexts[PLAYER_APPRENTICE.id][0];\n    }\n    else if (gSpecialVar_0x8006 == APPRENTICE_MSG_THANKS_MON_FIRST)\n    {\n        string = sApprenticeWhichMonFirstTexts[PLAYER_APPRENTICE.id][1];\n    }\n    else if (gSpecialVar_0x8006 == APPRENTICE_MSG_WHAT_HELD_ITEM)\n    {\n        string = sApprenticeHeldItemTexts[PLAYER_APPRENTICE.id][0];\n    }\n    else if (gSpecialVar_0x8006 == APPRENTICE_MSG_PICK_WIN_SPEECH)\n    {\n        string = sApprenticePickWinSpeechTexts[PLAYER_APPRENTICE.id][0];\n    }\n    else if (gSpecialVar_0x8006 == APPRENTICE_MSG_THANKS_HELD_ITEM)\n    {\n        string = sApprenticeHeldItemTexts[PLAYER_APPRENTICE.id][3];\n    }\n    else if (gSpecialVar_0x8006 == APPRENTICE_MSG_HOLD_NOTHING)\n    {\n        string = sApprenticeHeldItemTexts[PLAYER_APPRENTICE.id][1];\n    }\n    else if (gSpecialVar_0x8006 == APPRENTICE_MSG_ITEM_ALREADY_SUGGESTED)\n    {\n        string = sApprenticeHeldItemTexts[PLAYER_APPRENTICE.id][4];\n    }\n    else if (gSpecialVar_0x8006 == APPRENTICE_MSG_THANKS_NO_HELD_ITEM)\n    {\n        string = sApprenticeHeldItemTexts[PLAYER_APPRENTICE.id][2];\n    }\n    else if (gSpecialVar_0x8006 == APPRENTICE_MSG_THANKS_WIN_SPEECH)\n    {\n        string = sApprenticePickWinSpeechTexts[PLAYER_APPRENTICE.id][1];\n    }\n    else if (gSpecialVar_0x8006 == APPRENTICE_MSG_PLEASE_TEACH)\n    {\n        string = sApprenticeFirstMeetingTexts[PLAYER_APPRENTICE.id][0];\n    }\n    else if (gSpecialVar_0x8006 == APPRENTICE_MSG_REJECT)\n    {\n        string = sApprenticeFirstMeetingTexts[PLAYER_APPRENTICE.id][1];\n    }\n    else if (gSpecialVar_0x8006 == APPRENTICE_MSG_WHICH_LVL_MODE)\n    {\n        string = sApprenticeFirstMeetingTexts[PLAYER_APPRENTICE.id][2];\n    }\n    else if (gSpecialVar_0x8006 == APPRENTICE_MSG_THANKS_LVL_MODE)\n    {\n        string = sApprenticeFirstMeetingTexts[PLAYER_APPRENTICE.id][3];\n    }\n    else\n    {\n        ScriptContext_Enable();\n        return;\n    }\n\n    StringExpandPlaceholders(gStringVar4, string);\n    AddTextPrinterForMessage(TRUE);\n    CreateTask(Task_WaitForPrintingMessage, 1);",
       "callsTo": [
         "AddTextPrinterForMessage",
@@ -351,6 +502,7 @@
       "returnType": "void",
       "signature": "static void Script_PrintApprenticeMessage(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "LockPlayerFieldControls();\n    FreezeObjectEvents();\n    PlayerFreeze();\n    StopPlayerAvatar();\n    DrawDialogueFrame(0, TRUE);\n    PrintApprenticeMessage();",
       "callsTo": [
         "DrawDialogueFrame",
@@ -366,6 +518,7 @@
       "returnType": "void",
       "signature": "static void ApprenticeGetQuestion(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (PLAYER_APPRENTICE.questionsAnswered < NUM_WHICH_MON_QUESTIONS)\n    {\n        gSpecialVar_Result = APPRENTICE_QUESTION_WHICH_MON;\n    }\n    else if (PLAYER_APPRENTICE.questionsAnswered > (APPRENTICE_MAX_QUESTIONS + NUM_WHICH_MON_QUESTIONS - 1))\n    {\n        gSpecialVar_Result = APPRENTICE_QUESTION_WIN_SPEECH;\n    }\n    else\n    {\n        s32 id = CURRENT_QUESTION_NUM;\n        switch (PLAYER_APPRENTICE.questions[id].questionId)\n        {\n        case QUESTION_ID_WHAT_ITEM:\n            gSpecialVar_Result = APPRENTICE_QUESTION_WHAT_ITEM;\n            break;\n        case QUESTION_ID_WHICH_MOVE:\n            gSpecialVar_Result = APPRENTICE_QUESTION_WHICH_MOVE;\n            break;\n        case QUESTION_ID_WHICH_FIRST:\n            gSpecialVar_Result = APPRENTICE_QUESTION_WHICH_FIRST;\n            break;\n        default:\n       \n            gSpecialVar_Result = APPRENTICE_QUESTION_WIN_SPEECH;\n            break;\n        }\n    }",
       "callsTo": [],
       "lineCount": 28
@@ -374,6 +527,7 @@
       "returnType": "void",
       "signature": "static void SetApprenticePartyMon(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gSpecialVar_0x8005)\n    {\n        u8 partySlot = gSpecialVar_0x8006;\n        PLAYER_APPRENTICE.party |= 1 << partySlot;\n    }",
       "callsTo": [],
       "lineCount": 5
@@ -382,6 +536,7 @@
       "returnType": "void",
       "signature": "static void SetApprenticeMonMove(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (PLAYER_APPRENTICE.questionsAnswered >= NUM_WHICH_MON_QUESTIONS)\n    {\n        u8 id = CURRENT_QUESTION_NUM;\n        if (gSpecialVar_0x8005)\n            PLAYER_APPRENTICE.questions[id].suggestedChange = TRUE;\n        else\n            PLAYER_APPRENTICE.questions[id].suggestedChange = FALSE;\n    }",
       "callsTo": [],
       "lineCount": 8
@@ -390,6 +545,7 @@
       "returnType": "void",
       "signature": "static void InitQuestionData(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n    u8 count = 0;\n    u8 id1, id2;\n\n    for (i = 0; i < APPRENTICE_MAX_QUESTIONS && (PLAYER_APPRENTICE.questions[i].questionId != QUESTION_ID_WIN_SPEECH); count++, i++)\n        ;\n\n    gApprenticeQuestionData = AllocZeroed(sizeof(*gApprenticeQuestionData));\n    if (gSpecialVar_0x8005 == APPRENTICE_QUESTION_WHICH_MON)\n    {\n        if (PLAYER_APPRENTICE.questionsAnswered < NUM_WHICH_MON_QUESTIONS)\n        {\n             \n            id1 = PLAYER_APPRENTICE.speciesIds[PLAYER_APPRENTICE.questionsAnswered] >> 4;\n            gApprenticeQuestionData->altSpeciesId = gApprentices[PLAYER_APPRENTICE.id].species[id1];\n\n            id2 = PLAYER_APPRENTICE.speciesIds[PLAYER_APPRENTICE.questionsAnswered] & 0xF;\n            gApprenticeQuestionData->speciesId = gApprentices[PLAYER_APPRENTICE.id].species[id2];\n        }\n    }\n    else if (gSpecialVar_0x8005 == APPRENTICE_QUESTION_WHICH_MOVE)\n    {\n        if (PLAYER_APPRENTICE.questionsAnswered >= NUM_WHICH_MON_QUESTIONS\n            && PLAYER_APPRENTICE.questionsAnswered < count + NUM_WHICH_MON_QUESTIONS\n            && PLAYER_APPRENTICE.questions[CURRENT_QUESTION_NUM].questionId == QUESTION_ID_WHICH_MOVE)\n        {\n             \n            count = PLAYER_APPRENTICE.questions[CURRENT_QUESTION_NUM].monId;\n            APPRENTICE_SPECIES_ID_NO_COND(id1, count);\n            gApprenticeQuestionData->speciesId = gApprentices[PLAYER_APPRENTICE.id].species[id1];\n            gApprenticeQuestionData->move1 = GetDefaultMove(count, id1, PLAYER_APPRENTICE.questions[CURRENT_QUESTION_NUM].moveSlot);\n            gApprenticeQuestionData->move2 = PLAYER_APPRENTICE.questions[CURRENT_QUESTION_NUM].data;\n        }\n    }\n    else if (gSpecialVar_0x8005 == APPRENTICE_QUESTION_WHAT_ITEM)\n    {\n        if (PLAYER_APPRENTICE.questionsAnswered >= NUM_WHICH_MON_QUESTIONS\n            && PLAYER_APPRENTICE.questionsAnswered < count + NUM_WHICH_MON_QUESTIONS\n            && PLAYER_APPRENTICE.questions[CURRENT_QUESTION_NUM].questionId == QUESTION_ID_WHAT_ITEM)\n        {\n             \n            count = PLAYER_APPRENTICE.questions[CURRENT_QUESTION_NUM].monId;\n            APPRENTICE_SPECIES_ID_NO_COND(id2, count);\n            gApprenticeQuestionData->speciesId = gApprentices[PLAYER_APPRENTICE.id].species[id2];\n        }\n    }",
       "callsTo": [
         "APPRENTICE_SPECIES_ID_NO_COND",
@@ -402,6 +558,7 @@
       "returnType": "void",
       "signature": "static void FreeQuestionData(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "FREE_AND_SET_NULL(gApprenticeQuestionData);",
       "callsTo": [
         "FREE_AND_SET_NULL"
@@ -412,6 +569,7 @@
       "returnType": "void",
       "signature": "static void ApprenticeBufferString(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 *stringDst;\n    u8 text[16];\n    u32 speciesArrayId;\n\n    switch (gSpecialVar_0x8005)\n    {\n    case 0:\n        stringDst = gStringVar1;\n        break;\n    case 1:\n        stringDst = gStringVar2;\n        break;\n    case 2:\n        stringDst = gStringVar3;\n        break;\n    default:\n        return;\n    }\n\n    switch (gSpecialVar_0x8006)\n    {\n    case APPRENTICE_BUFF_SPECIES1:\n        StringCopy(stringDst, gSpeciesNames[gApprenticeQuestionData->speciesId]);\n        break;\n    case APPRENTICE_BUFF_SPECIES2:\n        StringCopy(stringDst, gSpeciesNames[gApprenticeQuestionData->altSpeciesId]);\n        break;\n    case APPRENTICE_BUFF_SPECIES3:\n        StringCopy(stringDst, gSpeciesNames[gApprenticeQuestionData->speciesId]);\n        break;\n    case APPRENTICE_BUFF_MOVE1:\n        StringCopy(stringDst, gMoveNames[gApprenticeQuestionData->move1]);\n        break;\n    case APPRENTICE_BUFF_MOVE2:\n        StringCopy(stringDst, gMoveNames[gApprenticeQuestionData->move2]);\n        break;\n    case APPRENTICE_BUFF_ITEM:\n        StringCopy(stringDst, GetItemName(PLAYER_APPRENTICE.questions[CURRENT_QUESTION_NUM].data));\n        break;\n    case APPRENTICE_BUFF_NAME:\n        TVShowConvertInternationalString(text, GetApprenticeNameInLanguage(PLAYER_APPRENTICE.id, GAME_LANGUAGE), GAME_LANGUAGE);\n        StringCopy(stringDst, text);\n        break;\n    case APPRENTICE_BUFF_LEVEL:\n        if (PLAYER_APPRENTICE.lvlMode == APPRENTICE_LVL_MODE_50)\n            StringCopy(stringDst, gText_Lv50);\n        else  \n            StringCopy(stringDst, gText_OpenLevel);\n        break;\n    case APPRENTICE_BUFF_WIN_SPEECH:\n        FrontierSpeechToString(gSaveBlock2Ptr->apprentices[0].speechWon);\n        StringCopy(stringDst, gStringVar4);\n        break;\n    case APPRENTICE_BUFF_LEAD_MON_SPECIES:\n        speciesArrayId = APPRENTICE_SPECIES_ID(PLAYER_APPRENTICE.leadMonId);\n        StringCopy(stringDst, gSpeciesNames[gApprentices[PLAYER_APPRENTICE.id].species[speciesArrayId]]);\n        break;\n    }",
       "callsTo": [
         "APPRENTICE_SPECIES_ID",
@@ -427,6 +585,7 @@
       "returnType": "void",
       "signature": "static void SetLeadApprenticeMon(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "PLAYER_APPRENTICE.leadMonId = gSpecialVar_0x8005;",
       "callsTo": [],
       "lineCount": 1
@@ -435,6 +594,7 @@
       "returnType": "void",
       "signature": "static void Script_ApprenticeOpenBagMenu(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ApprenticeOpenBagMenu();",
       "callsTo": [
         "ApprenticeOpenBagMenu"
@@ -445,6 +605,7 @@
       "returnType": "void",
       "signature": "static void TrySetApprenticeHeldItem(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i, j;\n    u8 count;\n\n    if (PLAYER_APPRENTICE.questionsAnswered < NUM_WHICH_MON_QUESTIONS)\n        return;\n\n    count = 0;\n    for (j = 0; j < APPRENTICE_MAX_QUESTIONS; j++)\n    {\n        if (PLAYER_APPRENTICE.questions[j].questionId == QUESTION_ID_WIN_SPEECH)\n            break;\n        count++;\n    }\n\n     \n    for (i = 0; i < count; i++)\n    {\n        if (i >= CURRENT_QUESTION_NUM)\n            break;\n        if (PLAYER_APPRENTICE.questions[i].questionId != QUESTION_ID_WHAT_ITEM ||\n            PLAYER_APPRENTICE.questions[i].suggestedChange == 0)\n            continue;\n        if (PLAYER_APPRENTICE.questions[i].data == gSpecialVar_0x8005)\n        {\n            PLAYER_APPRENTICE.questions[CURRENT_QUESTION_NUM].suggestedChange = FALSE;\n            PLAYER_APPRENTICE.questions[CURRENT_QUESTION_NUM].data = gSpecialVar_0x8005;\n            gSpecialVar_Result = FALSE;\n            return;\n        }\n    }\n\n    PLAYER_APPRENTICE.questions[CURRENT_QUESTION_NUM].suggestedChange = TRUE;\n    PLAYER_APPRENTICE.questions[CURRENT_QUESTION_NUM].data = gSpecialVar_0x8005;\n    gSpecialVar_Result = TRUE;",
       "callsTo": [],
       "lineCount": 34
@@ -453,6 +614,7 @@
       "returnType": "void",
       "signature": "static void ShiftSavedApprentices(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s32 i;\n    s32 apprenticeNum;\n    s32 apprenticeIdx;\n\n    if (gSaveBlock2Ptr->apprentices[0].playerName[0] == EOS)\n        return;\n\n    for (i = 0; i < APPRENTICE_COUNT - 1; i++)\n    {\n        if (gSaveBlock2Ptr->apprentices[i + 1].playerName[0] == EOS)\n        {\n            gSaveBlock2Ptr->apprentices[i + 1] = gSaveBlock2Ptr->apprentices[0];\n            return;\n        }\n    }\n\n    apprenticeNum = 0xFFFF;\n    apprenticeIdx = -1;\n    for (i = 1; i < APPRENTICE_COUNT; i++)\n    {\n        if (GetTrainerId(gSaveBlock2Ptr->apprentices[i].playerId) == GetTrainerId(gSaveBlock2Ptr->playerTrainerId)\n            && gSaveBlock2Ptr->apprentices[i].number < apprenticeNum)\n        {\n            apprenticeNum = gSaveBlock2Ptr->apprentices[i].number;\n            apprenticeIdx = i;\n        }\n    }\n\n    if (apprenticeIdx > 0)\n        gSaveBlock2Ptr->apprentices[apprenticeIdx] = gSaveBlock2Ptr->apprentices[0];",
       "callsTo": [
         "GetTrainerId"
@@ -463,6 +625,7 @@
       "returnType": "void",
       "signature": "static void SaveApprentice(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n\n    gSaveBlock2Ptr->apprentices[0].id = PLAYER_APPRENTICE.id;\n    gSaveBlock2Ptr->apprentices[0].lvlMode = PLAYER_APPRENTICE.lvlMode;\n\n     \n    for (i = 0; i < APPRENTICE_MAX_QUESTIONS && (PLAYER_APPRENTICE.questions[i].questionId != QUESTION_ID_WIN_SPEECH); i++)\n        ;\n\n    gSaveBlock2Ptr->apprentices[0].numQuestions = i;\n    if (gSaveBlock2Ptr->apprentices[0].number < 255)\n        gSaveBlock2Ptr->apprentices[0].number++;\n\n    SaveApprenticeParty(gSaveBlock2Ptr->apprentices[0].numQuestions);\n    for (i = 0; i < TRAINER_ID_LENGTH; i++)\n        gSaveBlock2Ptr->apprentices[0].playerId[i] = gSaveBlock2Ptr->playerTrainerId[i];\n\n    StringCopy(gSaveBlock2Ptr->apprentices[0].playerName, gSaveBlock2Ptr->playerName);\n    gSaveBlock2Ptr->apprentices[0].language = gGameLanguage;\n    CalcApprenticeChecksum(&gSaveBlock2Ptr->apprentices[0]);",
       "callsTo": [
         "CalcApprenticeChecksum",
@@ -475,6 +638,7 @@
       "returnType": "void",
       "signature": "static void SetSavedApprenticeTrainerGfxId(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n    u8 objectEventGfxId;\n    u8 class = gApprentices[gSaveBlock2Ptr->apprentices[0].id].facilityClass;\n\n    for (i = 0; i < ARRAY_COUNT(gTowerMaleFacilityClasses) && gTowerMaleFacilityClasses[i] != class; i++)\n        ;\n    if (i != ARRAY_COUNT(gTowerMaleFacilityClasses))\n    {\n        objectEventGfxId = gTowerMaleTrainerGfxIds[i];\n        VarSet(VAR_OBJ_GFX_ID_0, objectEventGfxId);\n        return;\n    }\n\n    for (i = 0; i < ARRAY_COUNT(gTowerFemaleFacilityClasses) && gTowerFemaleFacilityClasses[i] != class; i++)\n        ;\n    if (i != ARRAY_COUNT(gTowerFemaleFacilityClasses))\n    {\n        objectEventGfxId = gTowerFemaleTrainerGfxIds[i];\n        VarSet(VAR_OBJ_GFX_ID_0, objectEventGfxId);\n    }",
       "callsTo": [
         "ARRAY_COUNT",
@@ -486,6 +650,7 @@
       "returnType": "void",
       "signature": "static void SetPlayerApprenticeTrainerGfxId(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n    u8 objectEventGfxId;\n    u8 class = gApprentices[PLAYER_APPRENTICE.id].facilityClass;\n\n    for (i = 0; i < ARRAY_COUNT(gTowerMaleFacilityClasses) && gTowerMaleFacilityClasses[i] != class; i++)\n        ;\n    if (i != ARRAY_COUNT(gTowerMaleFacilityClasses))\n    {\n        objectEventGfxId = gTowerMaleTrainerGfxIds[i];\n        VarSet(VAR_OBJ_GFX_ID_0, objectEventGfxId);\n        return;\n    }\n\n    for (i = 0; i < ARRAY_COUNT(gTowerFemaleFacilityClasses) && gTowerFemaleFacilityClasses[i] != class; i++)\n        ;\n    if (i != ARRAY_COUNT(gTowerFemaleFacilityClasses))\n    {\n        objectEventGfxId = gTowerFemaleTrainerGfxIds[i];\n        VarSet(VAR_OBJ_GFX_ID_0, objectEventGfxId);\n    }",
       "callsTo": [
         "ARRAY_COUNT",
@@ -497,6 +662,7 @@
       "returnType": "void",
       "signature": "static void GetShouldCheckApprenticeGone(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gSpecialVar_0x8004 = TRUE;",
       "callsTo": [],
       "lineCount": 1
@@ -505,6 +671,7 @@
       "returnType": "void",
       "signature": "static void GetShouldApprenticeLeave(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gSpecialVar_0x8004 = TRUE;",
       "callsTo": [],
       "lineCount": 1
@@ -513,6 +680,12 @@
       "returnType": "void",
       "signature": "static void Task_ExecuteFuncAfterButtonPress(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (JOY_NEW(A_BUTTON) || JOY_NEW(B_BUTTON))\n    {\n        gApprenticeFunc = (void *)(u32)(((u16)gTasks[taskId].data[0] | (gTasks[taskId].data[1] << 16)));\n        gApprenticeFunc();\n        DestroyTask(taskId);\n    }",
       "callsTo": [
         "DestroyTask",
@@ -524,6 +697,12 @@
       "returnType": "void",
       "signature": "static void ExecuteFuncAfterButtonPress(void (*func)(void))",
       "paramsRaw": "void (*func)(void)",
+      "paramsList": [
+        {
+          "name": "func",
+          "typeRaw": "fnptr"
+        }
+      ],
       "body": "u8 taskId = CreateTask(Task_ExecuteFuncAfterButtonPress, 1);\n    gTasks[taskId].data[0] = (u32)(func);\n    gTasks[taskId].data[1] = (u32)(func) >> 16;",
       "callsTo": [
         "CreateTask"

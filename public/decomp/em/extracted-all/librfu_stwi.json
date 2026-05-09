@@ -6,6 +6,20 @@
       "returnType": "void",
       "signature": "void STWI_init_all(struct RfuIntrStruct *interruptStruct, IntrFunc *interrupt, bool8 copyInterruptToRam)",
       "paramsRaw": "struct RfuIntrStruct *interruptStruct, IntrFunc *interrupt, bool8 copyInterruptToRam",
+      "paramsList": [
+        {
+          "name": "interruptStruct",
+          "typeRaw": "struct RfuIntrStruct *"
+        },
+        {
+          "name": "interrupt",
+          "typeRaw": "IntrFunc *"
+        },
+        {
+          "name": "copyInterruptToRam",
+          "typeRaw": "bool8"
+        }
+      ],
       "body": "if (copyInterruptToRam == TRUE)\n    {\n        *interrupt = (IntrFunc)interruptStruct->block1;\n        DmaCopy16(3, &IntrSIO32, interruptStruct->block1, sizeof(interruptStruct->block1));\n        gSTWIStatus = &interruptStruct->block2;\n    }\n    else\n    {\n        *interrupt = IntrSIO32;\n        gSTWIStatus = (struct STWIStatus *)interruptStruct->block1;\n    }\n    gSTWIStatus->rxPacket = &interruptStruct->rxPacketAlloc;\n    gSTWIStatus->txPacket = &interruptStruct->txPacketAlloc;\n    gSTWIStatus->msMode = AGB_CLK_MASTER;\n    gSTWIStatus->state = 0;  \n    gSTWIStatus->reqLength = 0;\n    gSTWIStatus->reqNext = 0;\n    gSTWIStatus->ackLength = 0;\n    gSTWIStatus->ackNext = 0;\n    gSTWIStatus->ackActiveCommand = 0;\n    gSTWIStatus->timerState = 0;\n    gSTWIStatus->timerActive = 0;\n    gSTWIStatus->error = 0;\n    gSTWIStatus->recoveryCount = 0;\n    gSTWIStatus->sending = 0;\n    REG_RCNT = 0x100;  \n    REG_SIOCNT = SIO_INTR_ENABLE | SIO_32BIT_MODE | SIO_115200_BPS;\n    STWI_init_Callback_M();\n    STWI_init_Callback_S();\n    IntrEnable(INTR_FLAG_SERIAL);",
       "callsTo": [
         "DmaCopy16",
@@ -19,6 +33,16 @@
       "returnType": "void",
       "signature": "void STWI_init_timer(IntrFunc *interrupt, s32 timerSelect)",
       "paramsRaw": "IntrFunc *interrupt, s32 timerSelect",
+      "paramsList": [
+        {
+          "name": "interrupt",
+          "typeRaw": "IntrFunc *"
+        },
+        {
+          "name": "timerSelect",
+          "typeRaw": "s32"
+        }
+      ],
       "body": "*interrupt = STWI_intr_timer;\n    gSTWIStatus->timerSelect = timerSelect;\n    IntrEnable(INTR_FLAG_TIMER0 << gSTWIStatus->timerSelect);",
       "callsTo": [
         "IntrEnable"
@@ -29,6 +53,7 @@
       "returnType": "void",
       "signature": "void AgbRFU_SoftReset(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "vu16 *timerL;\n    vu16 *timerH;\n\n    REG_RCNT = 0x8000;\n    REG_RCNT = 0x80A0;  \n    timerL = &REG_TMCNT_L(gSTWIStatus->timerSelect);\n    timerH = &REG_TMCNT_H(gSTWIStatus->timerSelect);\n    *timerH = 0;\n    *timerL = 0;\n    *timerH = TIMER_ENABLE | TIMER_1024CLK;\n    while (*timerL <= 0x11)\n        REG_RCNT = 0x80A2;\n    *timerH = 3;\n    REG_RCNT = 0x80A0;\n    REG_SIOCNT = SIO_INTR_ENABLE | SIO_32BIT_MODE | SIO_115200_BPS;\n    gSTWIStatus->state = 0;  \n    gSTWIStatus->reqLength = 0;\n    gSTWIStatus->reqNext = 0;\n    gSTWIStatus->reqActiveCommand = 0;\n    gSTWIStatus->ackLength = 0;\n    gSTWIStatus->ackNext = 0;\n    gSTWIStatus->ackActiveCommand = 0;\n    gSTWIStatus->timerState = 0;\n    gSTWIStatus->timerActive = 0;\n    gSTWIStatus->error = 0;\n    gSTWIStatus->msMode = AGB_CLK_MASTER;\n    gSTWIStatus->recoveryCount = 0;\n    gSTWIStatus->sending = 0;",
       "callsTo": [
         "REG_TMCNT_H",
@@ -40,6 +65,12 @@
       "returnType": "void",
       "signature": "void STWI_set_MS_mode(u8 mode)",
       "paramsRaw": "u8 mode",
+      "paramsList": [
+        {
+          "name": "mode",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "gSTWIStatus->msMode = mode;",
       "callsTo": [],
       "lineCount": 1
@@ -48,6 +79,12 @@
       "returnType": "u16",
       "signature": "u16 STWI_read_status(u8 index)",
       "paramsRaw": "u8 index",
+      "paramsList": [
+        {
+          "name": "index",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "switch (index)\n    {\n    case 0:\n        return gSTWIStatus->error;\n    case 1:\n        return gSTWIStatus->msMode;\n    case 2:\n        return gSTWIStatus->state;\n    case 3:\n        return gSTWIStatus->reqActiveCommand;\n    default:\n        return 0xFFFF;\n    }",
       "callsTo": [],
       "lineCount": 13
@@ -56,6 +93,7 @@
       "returnType": "void",
       "signature": "void STWI_init_Callback_M(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "STWI_set_Callback_M(NULL);",
       "callsTo": [
         "STWI_set_Callback_M"
@@ -66,6 +104,7 @@
       "returnType": "void",
       "signature": "void STWI_init_Callback_S(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "STWI_set_Callback_S(NULL);",
       "callsTo": [
         "STWI_set_Callback_S"
@@ -76,6 +115,12 @@
       "returnType": "void",
       "signature": "void STWI_set_Callback_M(void *callbackM)",
       "paramsRaw": "void *callbackM",
+      "paramsList": [
+        {
+          "name": "callbackM",
+          "typeRaw": "void *"
+        }
+      ],
       "body": "gSTWIStatus->callbackM = callbackM;",
       "callsTo": [],
       "lineCount": 1
@@ -84,6 +129,12 @@
       "returnType": "void",
       "signature": "void STWI_set_Callback_S(void (*callbackS)(u16))",
       "paramsRaw": "void (*callbackS)(u16)",
+      "paramsList": [
+        {
+          "name": "callbackS",
+          "typeRaw": "fnptr"
+        }
+      ],
       "body": "gSTWIStatus->callbackS = callbackS;",
       "callsTo": [],
       "lineCount": 1
@@ -92,6 +143,12 @@
       "returnType": "void",
       "signature": "void STWI_set_Callback_ID(void (*func)(void))",
       "paramsRaw": "void (*func)(void)",
+      "paramsList": [
+        {
+          "name": "func",
+          "typeRaw": "fnptr"
+        }
+      ],
       "body": "gSTWIStatus->callbackID = func;",
       "callsTo": [],
       "lineCount": 1
@@ -100,6 +157,7 @@
       "returnType": "u16",
       "signature": "u16 STWI_poll_CommandEnd(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "while (gSTWIStatus->sending == 1)\n        ;\n    return gSTWIStatus->error;",
       "callsTo": [],
       "lineCount": 3
@@ -108,6 +166,7 @@
       "returnType": "void",
       "signature": "void STWI_send_ResetREQ(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!STWI_init(ID_RESET_REQ))\n    {\n        gSTWIStatus->reqLength = 0;\n        STWI_start_Command();\n    }",
       "callsTo": [
         "STWI_init",
@@ -119,6 +178,7 @@
       "returnType": "void",
       "signature": "void STWI_send_LinkStatusREQ(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!STWI_init(ID_LINK_STATUS_REQ))\n    {\n        gSTWIStatus->reqLength = 0;\n        STWI_start_Command();\n    }",
       "callsTo": [
         "STWI_init",
@@ -130,6 +190,7 @@
       "returnType": "void",
       "signature": "void STWI_send_VersionStatusREQ(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!STWI_init(ID_VERSION_STATUS_REQ))\n    {\n        gSTWIStatus->reqLength = 0;\n        STWI_start_Command();\n    }",
       "callsTo": [
         "STWI_init",
@@ -141,6 +202,7 @@
       "returnType": "void",
       "signature": "void STWI_send_SystemStatusREQ(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!STWI_init(ID_SYSTEM_STATUS_REQ))\n    {\n        gSTWIStatus->reqLength = 0;\n        STWI_start_Command();\n    }",
       "callsTo": [
         "STWI_init",
@@ -152,6 +214,7 @@
       "returnType": "void",
       "signature": "void STWI_send_SlotStatusREQ(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!STWI_init(ID_SLOT_STATUS_REQ))\n    {\n        gSTWIStatus->reqLength = 0;\n        STWI_start_Command();\n    }",
       "callsTo": [
         "STWI_init",
@@ -163,6 +226,7 @@
       "returnType": "void",
       "signature": "void STWI_send_ConfigStatusREQ(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!STWI_init(ID_CONFIG_STATUS_REQ))\n    {\n        gSTWIStatus->reqLength = 0;\n        STWI_start_Command();\n    }",
       "callsTo": [
         "STWI_init",
@@ -174,6 +238,16 @@
       "returnType": "void",
       "signature": "void STWI_send_GameConfigREQ(const u8 *serial_gname, const u8 *uname)",
       "paramsRaw": "const u8 *serial_gname, const u8 *uname",
+      "paramsList": [
+        {
+          "name": "serial_gname",
+          "typeRaw": "const u8 *"
+        },
+        {
+          "name": "uname",
+          "typeRaw": "const u8 *"
+        }
+      ],
       "body": "u8 *packetBytes;\n    s32 i;\n\n    if (!STWI_init(ID_GAME_CONFIG_REQ))\n    {\n        gSTWIStatus->reqLength = 6;\n        packetBytes = gSTWIStatus->txPacket->rfuPacket8.data;\n        packetBytes += sizeof(u32);\n        *(u16 *)packetBytes = *(u16 *)serial_gname;\n        packetBytes += sizeof(u16);\n        serial_gname += sizeof(u16);\n        for (i = 0; i < 14; ++i)\n        {\n            *packetBytes = *serial_gname;\n            ++packetBytes;\n            ++serial_gname;\n        }\n        for (i = 0; i < 8; ++i)\n        {\n            *packetBytes = *uname;\n            ++packetBytes;\n            ++uname;\n        }\n        STWI_start_Command();\n    }",
       "callsTo": [
         "STWI_init",
@@ -185,6 +259,20 @@
       "returnType": "void",
       "signature": "void STWI_send_SystemConfigREQ(u16 availSlotFlag, u8 maxMFrame, u8 mcTimer)",
       "paramsRaw": "u16 availSlotFlag, u8 maxMFrame, u8 mcTimer",
+      "paramsList": [
+        {
+          "name": "availSlotFlag",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "maxMFrame",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "mcTimer",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (!STWI_init(ID_SYSTEM_CONFIG_REQ))\n    {\n        u8 *packetBytes;\n\n        gSTWIStatus->reqLength = 1;\n        packetBytes = gSTWIStatus->txPacket->rfuPacket8.data;\n        packetBytes += sizeof(u32);\n        *packetBytes++ = mcTimer;\n        *packetBytes++ = maxMFrame;\n        *(u16 *)packetBytes = availSlotFlag;\n        STWI_start_Command();\n    }",
       "callsTo": [
         "STWI_init",
@@ -196,6 +284,7 @@
       "returnType": "void",
       "signature": "void STWI_send_SC_StartREQ(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!STWI_init(ID_SC_START_REQ))\n    {\n        gSTWIStatus->reqLength = 0;\n        STWI_start_Command();\n    }",
       "callsTo": [
         "STWI_init",
@@ -207,6 +296,7 @@
       "returnType": "void",
       "signature": "void STWI_send_SC_PollingREQ(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!STWI_init(ID_SC_POLL_REQ))\n    {\n        gSTWIStatus->reqLength = 0;\n        STWI_start_Command();\n    }",
       "callsTo": [
         "STWI_init",
@@ -218,6 +308,7 @@
       "returnType": "void",
       "signature": "void STWI_send_SC_EndREQ(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!STWI_init(ID_SC_END_REQ))\n    {\n        gSTWIStatus->reqLength = 0;\n        STWI_start_Command();\n    }",
       "callsTo": [
         "STWI_init",
@@ -229,6 +320,7 @@
       "returnType": "void",
       "signature": "void STWI_send_SP_StartREQ(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!STWI_init(ID_SP_START_REQ))\n    {\n        gSTWIStatus->reqLength = 0;\n        STWI_start_Command();\n    }",
       "callsTo": [
         "STWI_init",
@@ -240,6 +332,7 @@
       "returnType": "void",
       "signature": "void STWI_send_SP_PollingREQ(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!STWI_init(ID_SP_POLL_REQ))\n    {\n        gSTWIStatus->reqLength = 0;\n        STWI_start_Command();\n    }",
       "callsTo": [
         "STWI_init",
@@ -251,6 +344,7 @@
       "returnType": "void",
       "signature": "void STWI_send_SP_EndREQ(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!STWI_init(ID_SP_END_REQ))\n    {\n        gSTWIStatus->reqLength = 0;\n        STWI_start_Command();\n    }",
       "callsTo": [
         "STWI_init",
@@ -262,6 +356,12 @@
       "returnType": "void",
       "signature": "void STWI_send_CP_StartREQ(u16 unk1)",
       "paramsRaw": "u16 unk1",
+      "paramsList": [
+        {
+          "name": "unk1",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "if (!STWI_init(ID_CP_START_REQ))\n    {\n        gSTWIStatus->reqLength = 1;\n        gSTWIStatus->txPacket->rfuPacket32.data[0] = unk1;\n        STWI_start_Command();\n    }",
       "callsTo": [
         "STWI_init",
@@ -273,6 +373,7 @@
       "returnType": "void",
       "signature": "void STWI_send_CP_PollingREQ(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!STWI_init(ID_CP_POLL_REQ))\n    {\n        gSTWIStatus->reqLength = 0;\n        STWI_start_Command();\n    }",
       "callsTo": [
         "STWI_init",
@@ -284,6 +385,7 @@
       "returnType": "void",
       "signature": "void STWI_send_CP_EndREQ(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!STWI_init(ID_CP_END_REQ))\n    {\n        gSTWIStatus->reqLength = 0;\n        STWI_start_Command();\n    }",
       "callsTo": [
         "STWI_init",
@@ -295,6 +397,16 @@
       "returnType": "void",
       "signature": "void STWI_send_DataTxREQ(const void *in, u8 size)",
       "paramsRaw": "const void *in, u8 size",
+      "paramsList": [
+        {
+          "name": "in",
+          "typeRaw": "const void *"
+        },
+        {
+          "name": "size",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (!STWI_init(ID_DATA_TX_REQ))\n    {\n        u8 reqLength = (size / sizeof(u32));\n        if (size & (sizeof(u32) - 1))\n            reqLength += 1;\n        gSTWIStatus->reqLength = reqLength;\n        CpuCopy32(in, gSTWIStatus->txPacket->rfuPacket32.data, gSTWIStatus->reqLength * sizeof(u32));\n        STWI_start_Command();\n    }",
       "callsTo": [
         "CpuCopy32",
@@ -307,6 +419,16 @@
       "returnType": "void",
       "signature": "void STWI_send_DataTxAndChangeREQ(const void *in, u8 size)",
       "paramsRaw": "const void *in, u8 size",
+      "paramsList": [
+        {
+          "name": "in",
+          "typeRaw": "const void *"
+        },
+        {
+          "name": "size",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (!STWI_init(ID_DATA_TX_AND_CHANGE_REQ))\n    {\n        u8 reqLength = (size / sizeof(u32));\n        if (size & (sizeof(u32) - 1))\n            reqLength += 1;\n        gSTWIStatus->reqLength = reqLength;\n        CpuCopy32(in, gSTWIStatus->txPacket->rfuPacket32.data, gSTWIStatus->reqLength * sizeof(u32));\n        STWI_start_Command();\n    }",
       "callsTo": [
         "CpuCopy32",
@@ -319,6 +441,7 @@
       "returnType": "void",
       "signature": "void STWI_send_DataRxREQ(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!STWI_init(ID_DATA_RX_REQ))\n    {\n        gSTWIStatus->reqLength = 0;\n        STWI_start_Command();\n    }",
       "callsTo": [
         "STWI_init",
@@ -330,6 +453,7 @@
       "returnType": "void",
       "signature": "void STWI_send_MS_ChangeREQ(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!STWI_init(ID_MS_CHANGE_REQ))\n    {\n        gSTWIStatus->reqLength = 0;\n        STWI_start_Command();\n    }",
       "callsTo": [
         "STWI_init",
@@ -341,6 +465,12 @@
       "returnType": "void",
       "signature": "void STWI_send_DataReadyAndChangeREQ(u8 unk)",
       "paramsRaw": "u8 unk",
+      "paramsList": [
+        {
+          "name": "unk",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (!STWI_init(ID_DATA_READY_AND_CHANGE_REQ))\n    {\n        if (!unk)\n        {\n            gSTWIStatus->reqLength = 0;\n        }\n        else\n        {\n            u8 *packetBytes;\n\n            gSTWIStatus->reqLength = 1;\n            packetBytes = gSTWIStatus->txPacket->rfuPacket8.data;\n            packetBytes += sizeof(u32);\n            *packetBytes++ = unk;\n            *packetBytes++ = 0;\n            *packetBytes++ = 0;\n            *packetBytes = 0;\n        }\n        STWI_start_Command();\n    }",
       "callsTo": [
         "STWI_init",
@@ -352,6 +482,16 @@
       "returnType": "void",
       "signature": "void STWI_send_DisconnectedAndChangeREQ(u8 unk0, u8 unk1)",
       "paramsRaw": "u8 unk0, u8 unk1",
+      "paramsList": [
+        {
+          "name": "unk0",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "unk1",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (!STWI_init(ID_DISCONNECTED_AND_CHANGE_REQ))\n    {\n        u8 *packetBytes;\n\n        gSTWIStatus->reqLength = 1;\n        packetBytes = gSTWIStatus->txPacket->rfuPacket8.data;\n        packetBytes += sizeof(u32);\n        *packetBytes++ = unk0;\n        *packetBytes++ = unk1;\n        *packetBytes++ = 0;\n        *packetBytes = 0;\n        STWI_start_Command();\n    }",
       "callsTo": [
         "STWI_init",
@@ -363,6 +503,7 @@
       "returnType": "void",
       "signature": "void STWI_send_ResumeRetransmitAndChangeREQ(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!STWI_init(ID_RESUME_RETRANSMIT_AND_CHANGE_REQ))\n    {\n        gSTWIStatus->reqLength = 0;\n        STWI_start_Command();\n    }",
       "callsTo": [
         "STWI_init",
@@ -374,6 +515,12 @@
       "returnType": "void",
       "signature": "void STWI_send_DisconnectREQ(u8 unk)",
       "paramsRaw": "u8 unk",
+      "paramsList": [
+        {
+          "name": "unk",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (!STWI_init(ID_DISCONNECT_REQ))\n    {\n        gSTWIStatus->reqLength = 1;\n        gSTWIStatus->txPacket->rfuPacket32.data[0] = unk;\n        STWI_start_Command();\n    }",
       "callsTo": [
         "STWI_init",
@@ -385,6 +532,16 @@
       "returnType": "void",
       "signature": "void STWI_send_TestModeREQ(u8 unk0, u8 unk1)",
       "paramsRaw": "u8 unk0, u8 unk1",
+      "paramsList": [
+        {
+          "name": "unk0",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "unk1",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (!STWI_init(ID_TEST_MODE_REQ))\n    {\n        gSTWIStatus->reqLength = 1;\n        gSTWIStatus->txPacket->rfuPacket32.data[0] = unk0 | (unk1 << 8);\n        STWI_start_Command();\n    }",
       "callsTo": [
         "STWI_init",
@@ -396,6 +553,20 @@
       "returnType": "void",
       "signature": "void STWI_send_CPR_StartREQ(u16 unk0, u16 unk1, u8 unk2)",
       "paramsRaw": "u16 unk0, u16 unk1, u8 unk2",
+      "paramsList": [
+        {
+          "name": "unk0",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "unk1",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "unk2",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u32 *packetData;\n    u32 arg1;\n\n    if (!STWI_init(ID_CPR_START_REQ))\n    {\n        gSTWIStatus->reqLength = 2;\n        arg1 = unk1 | (unk0 << 16);\n        packetData = gSTWIStatus->txPacket->rfuPacket32.data;\n        packetData[0] = arg1;\n        packetData[1] = unk2;\n        STWI_start_Command();\n    }",
       "callsTo": [
         "STWI_init",
@@ -407,6 +578,7 @@
       "returnType": "void",
       "signature": "void STWI_send_CPR_PollingREQ(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!STWI_init(ID_CPR_POLL_REQ))\n    {\n        gSTWIStatus->reqLength = 0;\n        STWI_start_Command();\n    }",
       "callsTo": [
         "STWI_init",
@@ -418,6 +590,7 @@
       "returnType": "void",
       "signature": "void STWI_send_CPR_EndREQ(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!STWI_init(ID_CPR_END_REQ))\n    {\n        gSTWIStatus->reqLength = 0;\n        STWI_start_Command();\n    }",
       "callsTo": [
         "STWI_init",
@@ -429,6 +602,7 @@
       "returnType": "void",
       "signature": "void STWI_send_StopModeREQ(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!STWI_init(ID_STOP_MODE_REQ))\n    {\n        gSTWIStatus->reqLength = 0;\n        STWI_start_Command();\n    }",
       "callsTo": [
         "STWI_init",
@@ -440,6 +614,7 @@
       "returnType": "void",
       "signature": "static void STWI_intr_timer(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (gSTWIStatus->timerState)\n    {\n     \n    case 2:\n        gSTWIStatus->timerActive = 1;\n        STWI_set_timer(50);\n        break;\n    case 1:\n    case 4:\n        STWI_stop_timer();\n        STWI_restart_Command();\n        break;\n    case 3:\n        gSTWIStatus->timerActive = 1;\n        STWI_stop_timer();\n        STWI_reset_ClockCounter();\n        if (gSTWIStatus->callbackM != NULL)\n            gSTWIStatus->callbackM(ID_CLOCK_SLAVE_MS_CHANGE_ERROR_BY_DMA_REQ, 0);\n        break;\n    }",
       "callsTo": [
         "STWI_reset_ClockCounter",
@@ -453,6 +628,12 @@
       "returnType": "void",
       "signature": "static void STWI_set_timer(u8 count)",
       "paramsRaw": "u8 count",
+      "paramsList": [
+        {
+          "name": "count",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "vu16 *timerL = &REG_TMCNT_L(gSTWIStatus->timerSelect);\n    vu16 *timerH = &REG_TMCNT_H(gSTWIStatus->timerSelect);\n    REG_IME = 0;\n    switch (count)\n    {\n    case 50:\n        *timerL = 0xFCCB;\n        gSTWIStatus->timerState = 1;\n        break;\n    case 80:\n        *timerL = 0xFAE0;\n        gSTWIStatus->timerState = 2;\n        break;\n    case 100:\n        *timerL = 0xF996;\n        gSTWIStatus->timerState = 3;\n        break;\n    case 130:\n        *timerL = 0xF7AD;\n        gSTWIStatus->timerState = 4;\n        break;\n    }\n    *timerH = TIMER_ENABLE | TIMER_INTR_ENABLE | TIMER_1024CLK;\n    REG_IF = INTR_FLAG_TIMER0 << gSTWIStatus->timerSelect;\n    REG_IME = 1;",
       "callsTo": [
         "REG_TMCNT_H",
@@ -464,6 +645,7 @@
       "returnType": "void",
       "signature": "static void STWI_stop_timer(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gSTWIStatus->timerState = 0;\n    REG_TMCNT_L(gSTWIStatus->timerSelect) = 0;\n    REG_TMCNT_H(gSTWIStatus->timerSelect) = 0;",
       "callsTo": [
         "REG_TMCNT_H",
@@ -475,6 +657,12 @@
       "returnType": "u16",
       "signature": "static u16 STWI_init(u8 request)",
       "paramsRaw": "u8 request",
+      "paramsList": [
+        {
+          "name": "request",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (!REG_IME)\n    {\n         \n        gSTWIStatus->error = ERR_REQ_CMD_IME_DISABLE;\n        if (gSTWIStatus->callbackM != NULL)\n            gSTWIStatus->callbackM(request, gSTWIStatus->error);\n        return TRUE;\n    }\n    else if (gSTWIStatus->sending == 1)\n    {\n         \n        gSTWIStatus->error = ERR_REQ_CMD_SENDING;\n        gSTWIStatus->sending = 0;\n        if (gSTWIStatus->callbackM != NULL)\n            gSTWIStatus->callbackM(request, gSTWIStatus->error);\n        return TRUE;\n    }\n    else if (gSTWIStatus->msMode == AGB_CLK_SLAVE)\n    {\n         \n        gSTWIStatus->error = ERR_REQ_CMD_CLOCK_SLAVE;\n        if (gSTWIStatus->callbackM != NULL)\n            gSTWIStatus->callbackM(request, gSTWIStatus->error, gSTWIStatus);\n        return TRUE;\n    }\n    else\n    {\n         \n        gSTWIStatus->sending = 1;\n        gSTWIStatus->reqActiveCommand = request;\n        gSTWIStatus->state = 0;  \n        gSTWIStatus->reqLength = 0;\n        gSTWIStatus->reqNext = 0;\n        gSTWIStatus->ackLength = 0;\n        gSTWIStatus->ackNext = 0;\n        gSTWIStatus->ackActiveCommand = 0;\n        gSTWIStatus->timerState = 0;\n        gSTWIStatus->timerActive = 0;\n        gSTWIStatus->error = 0;\n        gSTWIStatus->recoveryCount = 0;\n        REG_RCNT = 0x100;\n        REG_SIOCNT = SIO_INTR_ENABLE | SIO_32BIT_MODE | SIO_115200_BPS;\n        return FALSE;\n    }",
       "callsTo": [],
       "lineCount": 44
@@ -483,6 +671,7 @@
       "returnType": "s32",
       "signature": "static s32 STWI_start_Command(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 imeTemp;\n\n     \n     \n    *(u32 *)gSTWIStatus->txPacket->rfuPacket8.data = 0x99660000 | (gSTWIStatus->reqLength << 8) | gSTWIStatus->reqActiveCommand;\n    REG_SIODATA32 = gSTWIStatus->txPacket->rfuPacket32.command;\n    gSTWIStatus->state = 0;  \n    gSTWIStatus->reqNext = 1;\n    imeTemp = REG_IME;\n    REG_IME = 0;\n    REG_IE |= (INTR_FLAG_TIMER0 << gSTWIStatus->timerSelect);\n    REG_IE |= INTR_FLAG_SERIAL;\n    REG_IME = imeTemp;\n    REG_SIOCNT = SIO_INTR_ENABLE | SIO_32BIT_MODE | SIO_MULTI_BUSY | SIO_115200_BPS;\n    return 0;",
       "callsTo": [],
       "lineCount": 15
@@ -491,6 +680,7 @@
       "returnType": "s32",
       "signature": "static s32 STWI_restart_Command(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gSTWIStatus->recoveryCount < 2)\n    {\n        ++gSTWIStatus->recoveryCount;\n        STWI_start_Command();\n    }\n    else\n    {\n        if (gSTWIStatus->reqActiveCommand == ID_MS_CHANGE_REQ || gSTWIStatus->reqActiveCommand == ID_DATA_TX_AND_CHANGE_REQ || gSTWIStatus->reqActiveCommand == ID_UNK35_REQ || gSTWIStatus->reqActiveCommand == ID_RESUME_RETRANSMIT_AND_CHANGE_REQ)\n        {\n            gSTWIStatus->error = ERR_REQ_CMD_CLOCK_DRIFT;\n            gSTWIStatus->sending = 0;\n            if (gSTWIStatus->callbackM != NULL)\n                gSTWIStatus->callbackM(gSTWIStatus->reqActiveCommand, gSTWIStatus->error);\n        }\n        else\n        {\n            gSTWIStatus->error = ERR_REQ_CMD_CLOCK_DRIFT;\n            gSTWIStatus->sending = 0;\n            if (gSTWIStatus->callbackM != NULL)\n                gSTWIStatus->callbackM(gSTWIStatus->reqActiveCommand, gSTWIStatus->error);\n            gSTWIStatus->state = 4;  \n        }\n    }\n    return 0;",
       "callsTo": [
         "STWI_start_Command"
@@ -501,6 +691,7 @@
       "returnType": "s32",
       "signature": "static s32 STWI_reset_ClockCounter(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gSTWIStatus->state = 5;  \n    gSTWIStatus->reqLength = 0;\n    gSTWIStatus->reqNext = 0;\n    REG_SIODATA32 = (1 << 31);\n    REG_SIOCNT = 0;\n    REG_SIOCNT = SIO_INTR_ENABLE | SIO_32BIT_MODE | SIO_115200_BPS;\n    REG_SIOCNT = (SIO_INTR_ENABLE | SIO_32BIT_MODE | SIO_115200_BPS) + 0x7F;\n    return 0;",
       "callsTo": [],
       "lineCount": 8

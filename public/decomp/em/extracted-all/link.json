@@ -6,6 +6,7 @@
       "returnType": "bool8",
       "signature": "bool8 IsWirelessAdapterConnected(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "SetWirelessCommType1();\n    InitRFUAPI();\n    if (rfu_LMAN_REQBN_softReset_and_checkID() == RFU_ID)\n    {\n        rfu_REQ_stopMode();\n        rfu_waitREQComplete();\n        return TRUE;\n    }\n    SetWirelessCommType0_Internal();\n    CloseLink();\n    RestoreSerialTimer3IntrHandlers();\n    return FALSE;",
       "callsTo": [
         "CloseLink",
@@ -20,6 +21,12 @@
       "returnType": "void",
       "signature": "void Task_DestroySelf(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "DestroyTask(taskId);",
       "callsTo": [
         "DestroyTask"
@@ -30,6 +37,28 @@
       "returnType": "void",
       "signature": "static void InitLinkTestBG(u8 paletteNum, u8 bgNum, u8 screenBaseBlock, u8 charBaseBlock, u16 baseChar)",
       "paramsRaw": "u8 paletteNum, u8 bgNum, u8 screenBaseBlock, u8 charBaseBlock, u16 baseChar",
+      "paramsList": [
+        {
+          "name": "paletteNum",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "bgNum",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "screenBaseBlock",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "charBaseBlock",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "baseChar",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "LoadPalette(sLinkTestDigitsPal, BG_PLTT_ID(paletteNum), PLTT_SIZE_4BPP);\n    DmaCopy16(3, sLinkTestDigitsGfx, (u16 *)BG_CHAR_ADDR(charBaseBlock) + (16 * baseChar), sizeof sLinkTestDigitsGfx);\n    gLinkTestBGInfo.screenBaseBlock = screenBaseBlock;\n    gLinkTestBGInfo.paletteNum = paletteNum;\n    gLinkTestBGInfo.baseChar = baseChar;\n    switch (bgNum)\n    {\n        case 1:\n            SetGpuReg(REG_OFFSET_BG1CNT, BGCNT_SCREENBASE(screenBaseBlock) | BGCNT_PRIORITY(1) | BGCNT_CHARBASE(charBaseBlock));\n            break;\n        case 2:\n            SetGpuReg(REG_OFFSET_BG2CNT, BGCNT_SCREENBASE(screenBaseBlock) | BGCNT_PRIORITY(1) | BGCNT_CHARBASE(charBaseBlock));\n            break;\n        case 3:\n            SetGpuReg(REG_OFFSET_BG3CNT, BGCNT_SCREENBASE(screenBaseBlock) | BGCNT_PRIORITY(1) | BGCNT_CHARBASE(charBaseBlock));\n            break;\n    }\n    SetGpuReg(REG_OFFSET_BG0HOFS + bgNum * 4, 0);\n    SetGpuReg(REG_OFFSET_BG0VOFS + bgNum * 4, 0);",
       "callsTo": [
         "BGCNT_CHARBASE",
@@ -47,6 +76,12 @@
       "returnType": "void",
       "signature": "void SetLocalLinkPlayerId(u8 playerId)",
       "paramsRaw": "u8 playerId",
+      "paramsList": [
+        {
+          "name": "playerId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "gLocalLinkPlayer.id = playerId;",
       "callsTo": [],
       "lineCount": 1
@@ -55,6 +90,7 @@
       "returnType": "void",
       "signature": "static void InitLocalLinkPlayer(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gLocalLinkPlayer.trainerId = gSaveBlock2Ptr->playerTrainerId[0] | (gSaveBlock2Ptr->playerTrainerId[1] << 8) | (gSaveBlock2Ptr->playerTrainerId[2] << 16) | (gSaveBlock2Ptr->playerTrainerId[3] << 24);\n    StringCopy(gLocalLinkPlayer.name, gSaveBlock2Ptr->playerName);\n    gLocalLinkPlayer.gender = gSaveBlock2Ptr->playerGender;\n    gLocalLinkPlayer.linkType = gLinkType;\n    gLocalLinkPlayer.language = gGameLanguage;\n    gLocalLinkPlayer.version = gGameVersion + 0x4000;\n    gLocalLinkPlayer.lp_field_2 = 0x8000;\n    gLocalLinkPlayer.progressFlags = IsNationalPokedexEnabled();\n    if (FlagGet(FLAG_IS_CHAMPION))\n    {\n        gLocalLinkPlayer.progressFlags |= 0x10;\n    }",
       "callsTo": [
         "FlagGet",
@@ -67,6 +103,7 @@
       "returnType": "void",
       "signature": "static void VBlankCB_LinkError(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "LoadOam();\n    ProcessSpriteCopyRequests();\n    TransferPlttBuffer();",
       "callsTo": [
         "LoadOam",
@@ -79,6 +116,7 @@
       "returnType": "void",
       "signature": "static void InitLink(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int i;\n\n    for (i = 0; i < CMD_LENGTH; i++)\n        gSendCmd[i] = LINKCMD_NONE;\n\n    sLinkOpen = TRUE;\n    EnableSerial();",
       "callsTo": [
         "EnableSerial"
@@ -89,6 +127,12 @@
       "returnType": "void",
       "signature": "static void Task_TriggerHandshake(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (++gTasks[taskId].data[0] == 5)\n    {\n        gShouldAdvanceLinkState = 1;\n        DestroyTask(taskId);\n    }",
       "callsTo": [
         "DestroyTask"
@@ -99,6 +143,7 @@
       "returnType": "void",
       "signature": "void OpenLink(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int i;\n\n    if (!gWirelessCommType)\n    {\n        ResetSerial();\n        InitLink();\n        gLinkCallback = LinkCB_RequestPlayerDataExchange;\n        gLinkVSyncDisabled = FALSE;\n        gLinkErrorOccurred = FALSE;\n        gSuppressLinkErrorMessage = FALSE;\n        ResetBlockReceivedFlags();\n        ResetBlockSend();\n        sDummy1 = FALSE;\n        gLinkDummy2 = FALSE;\n        gLinkDummy1 = FALSE;\n        gReadyCloseLinkType = 0;\n        CreateTask(Task_TriggerHandshake, 2);\n    }\n    else\n    {\n        InitRFUAPI();\n    }\n    gReceivedRemoteLinkPlayers = 0;\n    for (i = 0; i < MAX_LINK_PLAYERS; i++)\n    {\n        gRemoteLinkPlayersNotReceived[i] = TRUE;\n        gReadyToCloseLink[i] = FALSE;\n        gReadyToExitStandby[i] = FALSE;\n    }",
       "callsTo": [
         "CreateTask",
@@ -114,6 +159,7 @@
       "returnType": "void",
       "signature": "void CloseLink(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gReceivedRemoteLinkPlayers = FALSE;\n    if (gWirelessCommType)\n        LinkRfu_Shutdown();\n    sLinkOpen = FALSE;\n    DisableSerial();",
       "callsTo": [
         "DisableSerial",
@@ -125,6 +171,20 @@
       "returnType": "void",
       "signature": "static void TestBlockTransfer(u8 nothing, u8 is, u8 used)",
       "paramsRaw": "u8 nothing, u8 is, u8 used",
+      "paramsList": [
+        {
+          "name": "nothing",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "is",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "used",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 i;\n    u8 status;\n\n    if (sLinkTestLastBlockSendPos != sBlockSend.pos)\n    {\n        LinkTest_PrintHex(sBlockSend.pos, 2, 3, 2);\n        sLinkTestLastBlockSendPos = sBlockSend.pos;\n    }\n    for (i = 0; i < MAX_LINK_PLAYERS; i++)\n    {\n        if (sLinkTestLastBlockRecvPos[i] != sBlockRecv[i].pos)\n        {\n            LinkTest_PrintHex(sBlockRecv[i].pos, 2, i + 4, 2);\n            sLinkTestLastBlockRecvPos[i] = sBlockRecv[i].pos;\n        }\n    }\n    status = GetBlockReceivedStatus();\n    if (status == 0xF)  \n    {\n        for (i = 0; i < MAX_LINK_PLAYERS; i++)\n        {\n            if ((status >> i) & 1)\n            {\n                gLinkTestBlockChecksums[i] = LinkTestCalcBlockChecksum(gBlockRecvBuffer[i], sBlockRecv[i].size);\n                ResetBlockReceivedFlag(i);\n                if (gLinkTestBlockChecksums[i] != 0x0342)\n                {\n                    sLinkTestDebugValuesEnabled = FALSE;\n                    sDummyFlag = FALSE;\n                }\n            }\n        }\n    }",
       "callsTo": [
         "GetBlockReceivedStatus",
@@ -138,6 +198,7 @@
       "returnType": "void",
       "signature": "static void LinkTestProcessKeyInput(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (JOY_NEW(A_BUTTON))\n    {\n        gShouldAdvanceLinkState = 1;\n    }\n    if (JOY_HELD(B_BUTTON))\n    {\n        InitBlockSend(gHeap + 0x4000, 0x00002004);\n    }\n    if (JOY_NEW(L_BUTTON))\n    {\n        BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB(2, 0, 0));\n    }\n    if (JOY_NEW(START_BUTTON))\n    {\n        SetSuppressLinkErrorMessage(TRUE);\n    }\n    if (JOY_NEW(R_BUTTON))\n    {\n        TrySavingData(SAVE_LINK);\n    }\n    if (JOY_NEW(SELECT_BUTTON))\n    {\n        SetCloseLinkCallback();\n    }\n    if (sLinkTestDebugValuesEnabled)\n    {\n        SetLinkDebugValues(gMain.vblankCounter2, gLinkCallback ? gLinkVSyncDisabled : gLinkVSyncDisabled | 0x10);\n    }",
       "callsTo": [
         "BeginNormalPaletteFade",
@@ -155,6 +216,7 @@
       "returnType": "void",
       "signature": "static void CB2_LinkTest(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "LinkTestProcessKeyInput();\n    TestBlockTransfer(1, 1, 0);\n    RunTasks();\n    AnimateSprites();\n    BuildOamBuffer();\n    UpdatePaletteFade();",
       "callsTo": [
         "AnimateSprites",
@@ -170,6 +232,12 @@
       "returnType": "u16",
       "signature": "u16 LinkMain2(const u16 *heldKeys)",
       "paramsRaw": "const u16 *heldKeys",
+      "paramsList": [
+        {
+          "name": "heldKeys",
+          "typeRaw": "const u16 *"
+        }
+      ],
       "body": "u8 i;\n\n    if (!sLinkOpen)\n        return 0;\n\n    for (i = 0; i < CMD_LENGTH; i++)\n        gSendCmd[i] = 0;\n\n    gLinkHeldKeys = *heldKeys;\n    if (gLinkStatus & LINK_STAT_CONN_ESTABLISHED)\n    {\n        ProcessRecvCmds(SIO_MULTI_CNT->id);\n        if (gLinkCallback != NULL)\n            gLinkCallback();\n        TrySetLinkErrorBuffer();\n    }\n    return gLinkStatus;",
       "callsTo": [
         "ProcessRecvCmds",
@@ -181,6 +249,12 @@
       "returnType": "void",
       "signature": "static void HandleReceiveRemoteLinkPlayer(u8 who)",
       "paramsRaw": "u8 who",
+      "paramsList": [
+        {
+          "name": "who",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "int i;\n    int count;\n\n    count = 0;\n    gRemoteLinkPlayersNotReceived[who] = FALSE;\n    for (i = 0; i < GetLinkPlayerCount_2(); i++)\n    {\n        count += gRemoteLinkPlayersNotReceived[i];\n    }\n    if (count == 0 && gReceivedRemoteLinkPlayers == 0)\n    {\n        gReceivedRemoteLinkPlayers = 1;\n    }",
       "callsTo": [
         "GetLinkPlayerCount_2"
@@ -191,6 +265,12 @@
       "returnType": "void",
       "signature": "static void ProcessRecvCmds(u8 unused)",
       "paramsRaw": "u8 unused",
+      "paramsList": [
+        {
+          "name": "unused",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u16 i;\n\n    for (i = 0; i < MAX_LINK_PLAYERS; i++)\n    {\n        gLinkPartnersHeldKeys[i] = 0;\n        if (gRecvCmds[i][0] == 0)\n        {\n            continue;\n        }\n        switch (gRecvCmds[i][0])\n        {\n            case LINKCMD_SEND_LINK_TYPE:\n            {\n                struct LinkPlayerBlock *block;\n\n                InitLocalLinkPlayer();\n                block = &gLocalLinkPlayerBlock;\n                block->linkPlayer = gLocalLinkPlayer;\n                memcpy(block->magic1, sASCIIGameFreakInc, sizeof(block->magic1) - 1);\n                memcpy(block->magic2, sASCIIGameFreakInc, sizeof(block->magic2) - 1);\n                InitBlockSend(block, sizeof(*block));\n                break;\n            }\n            case LINKCMD_BLENDER_SEND_KEYS:\n                gLinkPartnersHeldKeys[i] = gRecvCmds[i][1];\n                break;\n            case LINKCMD_DUMMY_1:\n                gLinkDummy2 = TRUE;\n                break;\n            case LINKCMD_DUMMY_2:\n                gLinkDummy2 = TRUE;\n                break;\n            case LINKCMD_INIT_BLOCK:\n            {\n                struct BlockTransfer *blockRecv;\n\n                blockRecv = &sBlockRecv[i];\n                blockRecv->pos = 0;\n                blockRecv->size = gRecvCmds[i][1];\n                blockRecv->multiplayerId = gRecvCmds[i][2];\n                break;\n            }\n            case LINKCMD_CONT_BLOCK:\n            {\n                if (sBlockRecv[i].size > BLOCK_BUFFER_SIZE)\n                {\n                    u16 *buffer;\n                    u16 j;\n\n                    buffer = (u16 *)gDecompressionBuffer;\n                    for (j = 0; j < CMD_LENGTH - 1; j++)\n                    {\n                        buffer[(sBlockRecv[i].pos / 2) + j] = gRecvCmds[i][j + 1];\n                    }\n                }\n                else\n                {\n                    u16 j;\n\n                    for (j = 0; j < CMD_LENGTH - 1; j++)\n                    {\n                        gBlockRecvBuffer[i][(sBlockRecv[i].pos / 2) + j] = gRecvCmds[i][j + 1];\n                    }\n                }\n\n                sBlockRecv[i].pos += (CMD_LENGTH - 1) * 2;\n\n                if (sBlockRecv[i].pos >= sBlockRecv[i].size)\n                {\n                    if (gRemoteLinkPlayersNotReceived[i] == TRUE)\n                    {\n                        struct LinkPlayerBlock *block;\n                        struct LinkPlayer *linkPlayer;\n\n                        block = (struct LinkPlayerBlock *)&gBlockRecvBuffer[i];\n                        linkPlayer = &gLinkPlayers[i];\n                        *linkPlayer = block->linkPlayer;\n                        if ((linkPlayer->version & 0xFF) == VERSION_RUBY || (linkPlayer->version & 0xFF) == VERSION_SAPPHIRE)\n                        {\n                            linkPlayer->progressFlagsCopy = 0;\n                            linkPlayer->neverRead = 0;\n                            linkPlayer->progressFlags = 0;\n                        }\n                        ConvertLinkPlayerName(linkPlayer);\n                        if (strcmp(block->magic1, sASCIIGameFreakInc) != 0\n                            || strcmp(block->magic2, sASCIIGameFreakInc) != 0)\n                        {\n                            SetMainCallback2(CB2_LinkError);\n                        }\n                        else\n                        {\n                            HandleReceiveRemoteLinkPlayer(i);\n                        }\n                    }\n                    else\n                    {\n                        SetBlockReceivedFlag(i);\n                    }\n                }\n            }\n                break;\n            case LINKCMD_READY_CLOSE_LINK:\n                gReadyToCloseLink[i] = TRUE;\n                break;\n            case LINKCMD_READY_EXIT_STANDBY:\n                gReadyToExitStandby[i] = TRUE;\n                break;\n            case LINKCMD_BLENDER_NO_PBLOCK_SPACE:\n                SetBerryBlenderLinkCallback();\n                break;\n            case LINKCMD_SEND_BLOCK_REQ:\n                SendBlock(0, sBlockRequests[gRecvCmds[i][1]].address, sBlockRequests[gRecvCmds[i][1]].size);\n                break;\n            case LINKCMD_SEND_HELD_KEYS:\n                gLinkPartnersHeldKeys[i] = gRecvCmds[i][1];\n                break;\n        }\n    }",
       "callsTo": [
         "ConvertLinkPlayerName",
@@ -208,6 +288,12 @@
       "returnType": "void",
       "signature": "static void BuildSendCmd(u16 command)",
       "paramsRaw": "u16 command",
+      "paramsList": [
+        {
+          "name": "command",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "switch (command)\n    {\n        case LINKCMD_SEND_LINK_TYPE:\n            gSendCmd[0] = LINKCMD_SEND_LINK_TYPE;\n            gSendCmd[1] = gLinkType;\n            break;\n        case LINKCMD_READY_EXIT_STANDBY:\n            gSendCmd[0] = LINKCMD_READY_EXIT_STANDBY;\n            break;\n        case LINKCMD_BLENDER_SEND_KEYS:\n            gSendCmd[0] = LINKCMD_BLENDER_SEND_KEYS;\n            gSendCmd[1] = gMain.heldKeys;\n            break;\n        case LINKCMD_DUMMY_1:\n            gSendCmd[0] = LINKCMD_DUMMY_1;\n            break;\n        case LINKCMD_SEND_EMPTY:\n            gSendCmd[0] = LINKCMD_SEND_EMPTY;\n            gSendCmd[1] = 0;\n            break;\n        case LINKCMD_SEND_0xEE:\n        {\n            u8 i;\n            gSendCmd[0] = LINKCMD_SEND_0xEE;\n            for (i = 0; i < 5; i++)\n                gSendCmd[i + 1] = 0xEE;\n            break;\n        }\n        case LINKCMD_INIT_BLOCK:\n            gSendCmd[0] = LINKCMD_INIT_BLOCK;\n            gSendCmd[1] = sBlockSend.size;\n            gSendCmd[2] = sBlockSend.multiplayerId + 0x80;\n            break;\n        case LINKCMD_BLENDER_NO_PBLOCK_SPACE:\n            gSendCmd[0] = LINKCMD_BLENDER_NO_PBLOCK_SPACE;\n            break;\n        case LINKCMD_SEND_ITEM:\n            gSendCmd[0] = LINKCMD_SEND_ITEM;\n            gSendCmd[1] = gSpecialVar_ItemId;\n            break;\n        case LINKCMD_SEND_BLOCK_REQ:\n            gSendCmd[0] = LINKCMD_SEND_BLOCK_REQ;\n            gSendCmd[1] = gBlockRequestType;\n            break;\n        case LINKCMD_READY_CLOSE_LINK:\n            gSendCmd[0] = LINKCMD_READY_CLOSE_LINK;\n            gSendCmd[1] = gReadyCloseLinkType;\n            break;\n        case LINKCMD_DUMMY_2:\n            gSendCmd[0] = LINKCMD_DUMMY_2;\n            break;\n        case LINKCMD_SEND_HELD_KEYS:\n            if (gHeldKeyCodeToSend == 0 || gLinkTransferringData)\n                break;\n\n            gSendCmd[0] = LINKCMD_SEND_HELD_KEYS;\n            gSendCmd[1] = gHeldKeyCodeToSend;\n            break;\n    }",
       "callsTo": [],
       "lineCount": 59
@@ -216,6 +302,7 @@
       "returnType": "void",
       "signature": "void StartSendingKeysToLink(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gWirelessCommType)\n        StartSendingKeysToRfu();\n\n    gLinkCallback = LinkCB_SendHeldKeys;",
       "callsTo": [
         "StartSendingKeysToRfu"
@@ -226,6 +313,7 @@
       "returnType": "bool32",
       "signature": "bool32 IsSendingKeysToLink(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gWirelessCommType)\n        return IsSendingKeysToRfu();\n\n    if (gLinkCallback == LinkCB_SendHeldKeys)\n        return TRUE;\n\n    return FALSE;",
       "callsTo": [
         "IsSendingKeysToRfu"
@@ -236,6 +324,7 @@
       "returnType": "void",
       "signature": "static void LinkCB_SendHeldKeys(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gReceivedRemoteLinkPlayers == TRUE)\n        BuildSendCmd(LINKCMD_SEND_HELD_KEYS);",
       "callsTo": [
         "BuildSendCmd"
@@ -246,6 +335,7 @@
       "returnType": "void",
       "signature": "void ClearLinkCallback(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gWirelessCommType)\n        ClearLinkRfuCallback();\n    else\n        gLinkCallback = NULL;",
       "callsTo": [
         "ClearLinkRfuCallback"
@@ -256,6 +346,7 @@
       "returnType": "void",
       "signature": "void ClearLinkCallback_2(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gWirelessCommType)\n        ClearLinkRfuCallback();\n    else\n        gLinkCallback = NULL;",
       "callsTo": [
         "ClearLinkRfuCallback"
@@ -266,6 +357,7 @@
       "returnType": "u8",
       "signature": "u8 GetLinkPlayerCount(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gWirelessCommType)\n        return Rfu_GetLinkPlayerCount();\n\n    return EXTRACT_PLAYER_COUNT(gLinkStatus);",
       "callsTo": [
         "EXTRACT_PLAYER_COUNT",
@@ -277,6 +369,16 @@
       "returnType": "int",
       "signature": "static int AreAnyLinkPlayersUsingVersions(u32 version1, u32 version2)",
       "paramsRaw": "u32 version1, u32 version2",
+      "paramsList": [
+        {
+          "name": "version1",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "version2",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "int i;\n    u8 nPlayers;\n\n    nPlayers = GetLinkPlayerCount();\n    for (i = 0; i < nPlayers; i++)\n    {\n        if ((gLinkPlayers[i].version & 0xFF) == version1\n         || (gLinkPlayers[i].version & 0xFF) == version2)\n            return 1;\n    }\n    return -1;",
       "callsTo": [
         "GetLinkPlayerCount"
@@ -287,6 +389,7 @@
       "returnType": "u32",
       "signature": "u32 LinkDummy_Return2(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return 2;",
       "callsTo": [],
       "lineCount": 1
@@ -295,6 +398,7 @@
       "returnType": "bool32",
       "signature": "bool32 Link_AnyPartnersPlayingRubyOrSapphire(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (AreAnyLinkPlayersUsingVersions(VERSION_RUBY, VERSION_SAPPHIRE) >= 0)\n    {\n        return TRUE;\n    }\n    return FALSE;",
       "callsTo": [
         "AreAnyLinkPlayersUsingVersions"
@@ -305,6 +409,7 @@
       "returnType": "bool32",
       "signature": "bool32 Link_AnyPartnersPlayingFRLG_JP(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int i;\n\n    i = AreAnyLinkPlayersUsingVersions(VERSION_FIRE_RED, VERSION_LEAF_GREEN);\n    if (i >= 0 && gLinkPlayers[i].language == LANGUAGE_JAPANESE)\n    {\n        return TRUE;\n    }\n    return FALSE;",
       "callsTo": [
         "AreAnyLinkPlayersUsingVersions"
@@ -315,6 +420,7 @@
       "returnType": "void",
       "signature": "void OpenLinkTimed(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sPlayerDataExchangeStatus = EXCHANGE_NOT_STARTED;\n    sTimeOutCounter = 0;\n    OpenLink();",
       "callsTo": [
         "OpenLink"
@@ -325,6 +431,16 @@
       "returnType": "u8",
       "signature": "u8 GetLinkPlayerDataExchangeStatusTimed(int minPlayers, int maxPlayers)",
       "paramsRaw": "int minPlayers, int maxPlayers",
+      "paramsList": [
+        {
+          "name": "minPlayers",
+          "typeRaw": "int"
+        },
+        {
+          "name": "maxPlayers",
+          "typeRaw": "int"
+        }
+      ],
       "body": "int i;\n    int count;\n    u32 index;\n    u8 numPlayers;\n    u32 linkType1;\n    u32 linkType2;\n\n    count = 0;\n    if (gReceivedRemoteLinkPlayers == TRUE)\n    {\n        numPlayers = GetLinkPlayerCount_2();\n        if (minPlayers > numPlayers || numPlayers > maxPlayers)\n        {\n            sPlayerDataExchangeStatus = EXCHANGE_WRONG_NUM_PLAYERS;\n            return sPlayerDataExchangeStatus;\n        }\n        else\n        {\n            if (GetLinkPlayerCount() == 0)\n            {\n                gLinkErrorOccurred = TRUE;\n                CloseLink();\n            }\n            for (i = 0, index = 0; i < GetLinkPlayerCount(); index++, i++)\n            {\n                if (gLinkPlayers[index].linkType == gLinkPlayers[0].linkType)\n                {\n                    count++;\n                }\n            }\n            if (count == GetLinkPlayerCount())\n            {\n                if (gLinkPlayers[0].linkType == LINKTYPE_TRADE_SETUP)\n                {\n                    switch (GetGameProgressForLinkTrade())\n                    {\n                    case TRADE_PLAYER_NOT_READY:\n                        sPlayerDataExchangeStatus = EXCHANGE_PLAYER_NOT_READY;\n                        break;\n                    case TRADE_PARTNER_NOT_READY:\n                        sPlayerDataExchangeStatus = EXCHANGE_PARTNER_NOT_READY;\n                        break;\n                    case TRADE_BOTH_PLAYERS_READY:\n                        sPlayerDataExchangeStatus = EXCHANGE_COMPLETE;\n                        break;\n                    }\n                }\n                else\n                {\n                    sPlayerDataExchangeStatus = EXCHANGE_COMPLETE;\n                }\n            }\n            else\n            {\n                sPlayerDataExchangeStatus = EXCHANGE_DIFF_SELECTIONS;\n                linkType1 = gLinkPlayers[GetMultiplayerId()].linkType;\n                linkType2 = gLinkPlayers[GetMultiplayerId() ^ 1].linkType;\n                if ((linkType1 == LINKTYPE_BATTLE_TOWER_50 && linkType2 == LINKTYPE_BATTLE_TOWER_OPEN)\n                 || (linkType1 == LINKTYPE_BATTLE_TOWER_OPEN && linkType2 == LINKTYPE_BATTLE_TOWER_50))\n                {\n                     \n                     \n                    gSpecialVar_0x8005 = 3;\n                }\n            }\n        }\n    }\n    else if (++sTimeOutCounter > 600)\n    {\n        sPlayerDataExchangeStatus = EXCHANGE_TIMED_OUT;\n    }\n    return sPlayerDataExchangeStatus;",
       "callsTo": [
         "CloseLink",
@@ -339,6 +455,7 @@
       "returnType": "bool8",
       "signature": "bool8 IsLinkPlayerDataExchangeComplete(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n    u8 count;\n    bool8 retval;\n\n    count = 0;\n    for (i = 0; i < GetLinkPlayerCount(); i++)\n    {\n        if (gLinkPlayers[i].linkType == gLinkPlayers[0].linkType)\n            count++;\n    }\n    if (count == GetLinkPlayerCount())\n    {\n        retval = TRUE;\n        sPlayerDataExchangeStatus = EXCHANGE_COMPLETE;\n    }\n    else\n    {\n        retval = FALSE;\n        sPlayerDataExchangeStatus = EXCHANGE_DIFF_SELECTIONS;\n    }\n    return retval;",
       "callsTo": [
         "GetLinkPlayerCount"
@@ -349,6 +466,12 @@
       "returnType": "u32",
       "signature": "u32 GetLinkPlayerTrainerId(u8 who)",
       "paramsRaw": "u8 who",
+      "paramsList": [
+        {
+          "name": "who",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "return gLinkPlayers[who].trainerId;",
       "callsTo": [],
       "lineCount": 1
@@ -357,6 +480,7 @@
       "returnType": "void",
       "signature": "void ResetLinkPlayers(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int i;\n\n    for (i = 0; i <= MAX_LINK_PLAYERS; i++)\n        gLinkPlayers[i] = (struct LinkPlayer){};",
       "callsTo": [],
       "lineCount": 4
@@ -365,6 +489,7 @@
       "returnType": "void",
       "signature": "static void ResetBlockSend(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sBlockSend.active = FALSE;\n    sBlockSend.pos = 0;\n    sBlockSend.size = 0;\n    sBlockSend.src = NULL;",
       "callsTo": [],
       "lineCount": 4
@@ -373,6 +498,16 @@
       "returnType": "bool32",
       "signature": "static bool32 InitBlockSend(const void *src, size_t size)",
       "paramsRaw": "const void *src, size_t size",
+      "paramsList": [
+        {
+          "name": "src",
+          "typeRaw": "const void *"
+        },
+        {
+          "name": "size",
+          "typeRaw": "size_t"
+        }
+      ],
       "body": "if (sBlockSend.active)\n    {\n        return FALSE;\n    }\n    sBlockSend.multiplayerId = GetMultiplayerId();\n    sBlockSend.active = TRUE;\n    sBlockSend.size = size;\n    sBlockSend.pos = 0;\n    if (size > BLOCK_BUFFER_SIZE)\n    {\n        sBlockSend.src = src;\n    }\n    else\n    {\n        if (src != gBlockSendBuffer)\n            memcpy(gBlockSendBuffer, src, size);\n\n        sBlockSend.src = gBlockSendBuffer;\n    }\n    BuildSendCmd(LINKCMD_INIT_BLOCK);\n    gLinkCallback = LinkCB_BlockSendBegin;\n    sBlockSendDelayCounter = 0;\n    return TRUE;",
       "callsTo": [
         "BuildSendCmd",
@@ -384,6 +519,7 @@
       "returnType": "void",
       "signature": "static void LinkCB_BlockSendBegin(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (++sBlockSendDelayCounter > 2)\n        gLinkCallback = LinkCB_BlockSend;",
       "callsTo": [],
       "lineCount": 2
@@ -392,6 +528,7 @@
       "returnType": "void",
       "signature": "static void LinkCB_BlockSend(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int i;\n    const u8 *src;\n\n    src = sBlockSend.src;\n    gSendCmd[0] = LINKCMD_CONT_BLOCK;\n    for (i = 0; i < CMD_LENGTH - 1; i++)\n    {\n        gSendCmd[i + 1] = (src[sBlockSend.pos + i * 2 + 1] << 8) | src[sBlockSend.pos + i * 2];\n    }\n    sBlockSend.pos += 14;\n    if (sBlockSend.size <= sBlockSend.pos)\n    {\n        sBlockSend.active = FALSE;\n        gLinkCallback = LinkCB_BlockSendEnd;\n    }",
       "callsTo": [],
       "lineCount": 15
@@ -400,6 +537,7 @@
       "returnType": "void",
       "signature": "static void LinkCB_BlockSendEnd(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gLinkCallback = NULL;",
       "callsTo": [],
       "lineCount": 1
@@ -408,6 +546,7 @@
       "returnType": "void",
       "signature": "static void LinkCB_BerryBlenderSendHeldKeys(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "GetMultiplayerId();\n    BuildSendCmd(LINKCMD_BLENDER_SEND_KEYS);\n    gBerryBlenderKeySendAttempts++;",
       "callsTo": [
         "BuildSendCmd",
@@ -419,6 +558,7 @@
       "returnType": "void",
       "signature": "void SetBerryBlenderLinkCallback(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gBerryBlenderKeySendAttempts = 0;\n    if (gWirelessCommType)\n        Rfu_SetBerryBlenderLinkCallback();\n    else\n        gLinkCallback = LinkCB_BerryBlenderSendHeldKeys;",
       "callsTo": [
         "Rfu_SetBerryBlenderLinkCallback"
@@ -429,6 +569,7 @@
       "returnType": "u8",
       "signature": "u8 GetMultiplayerId(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gWirelessCommType == TRUE)\n        return Rfu_GetMultiplayerId();\n\n    return SIO_MULTI_CNT->id;",
       "callsTo": [
         "Rfu_GetMultiplayerId"
@@ -439,6 +580,7 @@
       "returnType": "u8",
       "signature": "u8 BitmaskAllOtherLinkPlayers(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 mpId;\n\n    mpId = GetMultiplayerId();\n    return ((1 << MAX_LINK_PLAYERS) - 1) ^ (1 << mpId);",
       "callsTo": [
         "GetMultiplayerId"
@@ -449,6 +591,20 @@
       "returnType": "bool8",
       "signature": "bool8 SendBlock(u8 unused, const void *src, u16 size)",
       "paramsRaw": "u8 unused, const void *src, u16 size",
+      "paramsList": [
+        {
+          "name": "unused",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "src",
+          "typeRaw": "const void *"
+        },
+        {
+          "name": "size",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "if (gWirelessCommType == TRUE)\n        return Rfu_InitBlockSend(src, size);\n\n    return InitBlockSend(src, size);",
       "callsTo": [
         "InitBlockSend",
@@ -460,6 +616,12 @@
       "returnType": "bool8",
       "signature": "bool8 SendBlockRequest(u8 blockReqType)",
       "paramsRaw": "u8 blockReqType",
+      "paramsList": [
+        {
+          "name": "blockReqType",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (gWirelessCommType == TRUE)\n        return Rfu_SendBlockRequest(blockReqType);\n\n    if (gLinkCallback == NULL)\n    {\n        gBlockRequestType = blockReqType;\n        BuildSendCmd(LINKCMD_SEND_BLOCK_REQ);\n        return TRUE;\n    }\n    return FALSE;",
       "callsTo": [
         "BuildSendCmd",
@@ -471,6 +633,7 @@
       "returnType": "bool8",
       "signature": "bool8 IsLinkTaskFinished(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gWirelessCommType == TRUE)\n        return IsLinkRfuTaskFinished();\n\n    return gLinkCallback == NULL;",
       "callsTo": [
         "IsLinkRfuTaskFinished"
@@ -481,6 +644,7 @@
       "returnType": "u8",
       "signature": "u8 GetBlockReceivedStatus(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gWirelessCommType == TRUE)\n        return Rfu_GetBlockReceivedStatus();\n\n    return (gBlockReceivedStatus[3] << 3) | (gBlockReceivedStatus[2] << 2) | (gBlockReceivedStatus[1] << 1) | (gBlockReceivedStatus[0] << 0);",
       "callsTo": [
         "Rfu_GetBlockReceivedStatus"
@@ -491,6 +655,12 @@
       "returnType": "void",
       "signature": "static void SetBlockReceivedFlag(u8 who)",
       "paramsRaw": "u8 who",
+      "paramsList": [
+        {
+          "name": "who",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (gWirelessCommType == TRUE)\n        Rfu_SetBlockReceivedFlag(who);\n    else\n        gBlockReceivedStatus[who] = TRUE;",
       "callsTo": [
         "Rfu_SetBlockReceivedFlag"
@@ -501,6 +671,7 @@
       "returnType": "void",
       "signature": "void ResetBlockReceivedFlags(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int i;\n\n    if (gWirelessCommType == TRUE)\n    {\n        for (i = 0; i < MAX_RFU_PLAYERS; i++)\n            Rfu_ResetBlockReceivedFlag(i);\n    }\n    else\n    {\n        for (i = 0; i < MAX_LINK_PLAYERS; i++)\n            gBlockReceivedStatus[i] = FALSE;\n    }",
       "callsTo": [
         "Rfu_ResetBlockReceivedFlag"
@@ -511,6 +682,12 @@
       "returnType": "void",
       "signature": "void ResetBlockReceivedFlag(u8 who)",
       "paramsRaw": "u8 who",
+      "paramsList": [
+        {
+          "name": "who",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (gWirelessCommType == TRUE)\n    {\n        Rfu_ResetBlockReceivedFlag(who);\n    }\n    else if (gBlockReceivedStatus[who])\n    {\n        gBlockReceivedStatus[who] = FALSE;\n    }",
       "callsTo": [
         "Rfu_ResetBlockReceivedFlag"
@@ -521,6 +698,7 @@
       "returnType": "void",
       "signature": "void CheckShouldAdvanceLinkState(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if ((gLinkStatus & LINK_STAT_MASTER) && EXTRACT_PLAYER_COUNT(gLinkStatus) > 1)\n        gShouldAdvanceLinkState = 1;",
       "callsTo": [
         "EXTRACT_PLAYER_COUNT"
@@ -531,6 +709,16 @@
       "returnType": "u16",
       "signature": "static u16 LinkTestCalcBlockChecksum(const u16 *src, u16 size)",
       "paramsRaw": "const u16 *src, u16 size",
+      "paramsList": [
+        {
+          "name": "src",
+          "typeRaw": "const u16 *"
+        },
+        {
+          "name": "size",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "u16 chksum;\n    u16 i;\n\n    chksum = 0;\n    for (i = 0; i < size / 2; i++)\n        chksum += src[i];\n\n    return chksum;",
       "callsTo": [],
       "lineCount": 8
@@ -539,6 +727,20 @@
       "returnType": "void",
       "signature": "static void LinkTest_PrintNumChar(char val, u8 x, u8 y)",
       "paramsRaw": "char val, u8 x, u8 y",
+      "paramsList": [
+        {
+          "name": "val",
+          "typeRaw": "char"
+        },
+        {
+          "name": "x",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "y",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u16 *vAddr;\n\n    vAddr = (u16 *)BG_SCREEN_ADDR(gLinkTestBGInfo.screenBaseBlock);\n    vAddr[y * 32 + x] = (gLinkTestBGInfo.paletteNum << 12) | (val + 1 + gLinkTestBGInfo.baseChar);",
       "callsTo": [
         "BG_SCREEN_ADDR"
@@ -549,6 +751,20 @@
       "returnType": "void",
       "signature": "static void LinkTest_PrintChar(char val, u8 x, u8 y)",
       "paramsRaw": "char val, u8 x, u8 y",
+      "paramsList": [
+        {
+          "name": "val",
+          "typeRaw": "char"
+        },
+        {
+          "name": "x",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "y",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u16 *vAddr;\n\n    vAddr = (u16 *)BG_SCREEN_ADDR(gLinkTestBGInfo.screenBaseBlock);\n    vAddr[y * 32 + x] = (gLinkTestBGInfo.paletteNum << 12) | (val + gLinkTestBGInfo.baseChar);",
       "callsTo": [
         "BG_SCREEN_ADDR"
@@ -559,6 +775,24 @@
       "returnType": "void",
       "signature": "static void LinkTest_PrintHex(u32 num, u8 x, u8 y, u8 length)",
       "paramsRaw": "u32 num, u8 x, u8 y, u8 length",
+      "paramsList": [
+        {
+          "name": "num",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "x",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "y",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "length",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "char buff[16];\n    int i;\n\n    for (i = 0; i < length; i++)\n    {\n        buff[i] = num & 0xF;\n        num >>= 4;\n    }\n    for (i = length - 1; i >= 0; i--)\n    {\n        LinkTest_PrintNumChar(buff[i], x, y);\n        x++;\n    }",
       "callsTo": [
         "LinkTest_PrintNumChar"
@@ -569,6 +803,20 @@
       "returnType": "void",
       "signature": "static void LinkTest_PrintString(const char *str, u8 x, u8 y)",
       "paramsRaw": "const char *str, u8 x, u8 y",
+      "paramsList": [
+        {
+          "name": "str",
+          "typeRaw": "const char *"
+        },
+        {
+          "name": "x",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "y",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "int xOffset;\n    int i;\n    int yOffset;\n\n    yOffset = 0;\n    xOffset = 0;\n    for (i = 0; str[i] != 0; str++)\n    {\n        if (str[i] == *\"\\n\")\n        {\n            yOffset++;\n            xOffset = 0;\n        }\n        else\n        {\n            LinkTest_PrintChar(str[i], x + xOffset, y + yOffset);\n            xOffset++;\n        }\n    }",
       "callsTo": [
         "LinkTest_PrintChar"
@@ -579,6 +827,7 @@
       "returnType": "void",
       "signature": "static void LinkCB_RequestPlayerDataExchange(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gLinkStatus & LINK_STAT_MASTER)\n    {\n        BuildSendCmd(LINKCMD_SEND_LINK_TYPE);\n    }\n    gLinkCallback = NULL;",
       "callsTo": [
         "BuildSendCmd"
@@ -589,6 +838,12 @@
       "returnType": "void",
       "signature": "static void Task_PrintTestData(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "char testTitle[32];\n    int i;\n\n    strcpy(testTitle, sASCIITestPrint);\n    LinkTest_PrintString(testTitle, 5, 2);\n    LinkTest_PrintHex(gShouldAdvanceLinkState, 2, 1, 2);\n    LinkTest_PrintHex(gLinkStatus, 15, 1, 8);\n    LinkTest_PrintHex(gLink.state, 2, 10, 2);\n    LinkTest_PrintHex(EXTRACT_PLAYER_COUNT(gLinkStatus), 15, 10, 2);\n    LinkTest_PrintHex(GetMultiplayerId(), 15, 12, 2);\n    LinkTest_PrintHex(gLastSendQueueCount, 25, 1, 2);\n    LinkTest_PrintHex(gLastRecvQueueCount, 25, 2, 2);\n    LinkTest_PrintHex(GetBlockReceivedStatus(), 15, 5, 2);\n    LinkTest_PrintHex(gLinkDebugSeed, 2, 12, 8);\n    LinkTest_PrintHex(gLinkDebugFlags, 2, 13, 8);\n    LinkTest_PrintHex(GetSioMultiSI(), 25, 5, 1);\n    LinkTest_PrintHex(IsSioMultiMaster(), 25, 6, 1);\n    LinkTest_PrintHex(IsLinkConnectionEstablished(), 25, 7, 1);\n    LinkTest_PrintHex(HasLinkErrorOccurred(), 25, 8, 1);\n\n    for (i = 0; i < MAX_LINK_PLAYERS; i++)\n        LinkTest_PrintHex(gLinkTestBlockChecksums[i], 10, 4 + i, 4);",
       "callsTo": [
         "EXTRACT_PLAYER_COUNT",
@@ -607,6 +862,16 @@
       "returnType": "void",
       "signature": "void SetLinkDebugValues(u32 seed, u32 flags)",
       "paramsRaw": "u32 seed, u32 flags",
+      "paramsList": [
+        {
+          "name": "seed",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "flags",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "gLinkDebugSeed = seed;\n    gLinkDebugFlags = flags;",
       "callsTo": [],
       "lineCount": 2
@@ -615,6 +880,7 @@
       "returnType": "u8",
       "signature": "u8 GetSavedLinkPlayerCountAsBitFlags(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int i;\n    u8 flags;\n\n    flags = 0;\n    for (i = 0; i < gSavedLinkPlayerCount; i++)\n        flags |= (1 << i);\n\n    return flags;",
       "callsTo": [],
       "lineCount": 8
@@ -623,6 +889,7 @@
       "returnType": "u8",
       "signature": "u8 GetLinkPlayerCountAsBitFlags(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int i;\n    u8 flags;\n\n    flags = 0;\n    for (i = 0; i < GetLinkPlayerCount(); i++)\n        flags |= (1 << i);\n\n    return flags;",
       "callsTo": [
         "GetLinkPlayerCount"
@@ -633,6 +900,12 @@
       "returnType": "void",
       "signature": "void SaveLinkPlayers(u8 playerCount)",
       "paramsRaw": "u8 playerCount",
+      "paramsList": [
+        {
+          "name": "playerCount",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "int i;\n\n    gSavedLinkPlayerCount = playerCount;\n    gSavedMultiplayerId = GetMultiplayerId();\n    for (i = 0; i < MAX_RFU_PLAYERS; i++)\n        sSavedLinkPlayers[i] = gLinkPlayers[i];",
       "callsTo": [
         "GetMultiplayerId"
@@ -643,6 +916,7 @@
       "returnType": "u8",
       "signature": "u8 GetSavedPlayerCount(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return gSavedLinkPlayerCount;",
       "callsTo": [],
       "lineCount": 1
@@ -651,6 +925,7 @@
       "returnType": "bool8",
       "signature": "bool8 DoesLinkPlayerCountMatchSaved(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int i;\n    u32 count = 0;\n\n    for (i = 0; i < gSavedLinkPlayerCount; i++)\n    {\n        if (gLinkPlayers[i].trainerId == sSavedLinkPlayers[i].trainerId)\n        {\n            if (gLinkType == LINKTYPE_BATTLE_TOWER)\n            {\n                if (gLinkType == gLinkPlayers[i].linkType)\n                    count++;\n            }\n            else\n            {\n                count++;\n            }\n        }\n    }\n    if (count == gSavedLinkPlayerCount)\n    {\n        if (GetLinkPlayerCount_2() == gSavedLinkPlayerCount)\n        {\n            return TRUE;\n        }\n    }\n    return FALSE;",
       "callsTo": [
         "GetLinkPlayerCount_2"
@@ -661,6 +936,7 @@
       "returnType": "void",
       "signature": "void ClearSavedLinkPlayers(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "#ifdef UBFIX\n    memset(sSavedLinkPlayers, 0, sizeof(sSavedLinkPlayers));\n#else\n    int i;\n    for (i = 0; i < MAX_LINK_PLAYERS; i++)\n        CpuSet(&sSavedLinkPlayers[i], NULL, sizeof(struct LinkPlayer));\n#endif",
       "callsTo": [
         "CpuSet"
@@ -671,6 +947,7 @@
       "returnType": "void",
       "signature": "void CheckLinkPlayersMatchSaved(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n\n    for (i = 0; i < gSavedLinkPlayerCount; i++)\n    {\n        if (sSavedLinkPlayers[i].trainerId != gLinkPlayers[i].trainerId\n         || StringCompare(sSavedLinkPlayers[i].name, gLinkPlayers[i].name) != 0)\n        {\n            gLinkErrorOccurred = TRUE;\n            CloseLink();\n            SetMainCallback2(CB2_LinkError);\n        }\n    }",
       "callsTo": [
         "CloseLink",
@@ -683,6 +960,7 @@
       "returnType": "void",
       "signature": "void ResetLinkPlayerCount(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gSavedLinkPlayerCount = 0;\n    gSavedMultiplayerId = 0;",
       "callsTo": [],
       "lineCount": 2
@@ -691,6 +969,7 @@
       "returnType": "u8",
       "signature": "u8 GetLinkPlayerCount_2(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return EXTRACT_PLAYER_COUNT(gLinkStatus);",
       "callsTo": [
         "EXTRACT_PLAYER_COUNT"
@@ -701,6 +980,7 @@
       "returnType": "bool8",
       "signature": "bool8 IsLinkMaster(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gWirelessCommType)\n        return Rfu_IsMaster();\n\n    return EXTRACT_MASTER(gLinkStatus);",
       "callsTo": [
         "EXTRACT_MASTER",
@@ -712,6 +992,12 @@
       "returnType": "void",
       "signature": "void SetCloseLinkCallbackAndType(u16 type)",
       "paramsRaw": "u16 type",
+      "paramsList": [
+        {
+          "name": "type",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "if (gWirelessCommType == TRUE)\n    {\n        Rfu_SetCloseLinkCallback();\n    }\n    else\n    {\n        if (gLinkCallback == NULL)\n        {\n            gLinkCallback = LinkCB_ReadyCloseLink;\n            gLinkDummy1 = FALSE;\n            gReadyCloseLinkType = type;\n        }\n    }",
       "callsTo": [
         "Rfu_SetCloseLinkCallback"
@@ -722,6 +1008,7 @@
       "returnType": "void",
       "signature": "void SetCloseLinkCallback(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gWirelessCommType == TRUE)\n    {\n        Rfu_SetCloseLinkCallback();\n    }\n    else\n    {\n        if (gLinkCallback != NULL)\n        {\n            sReadyCloseLinkAttempts++;\n        }\n        else\n        {\n            gLinkCallback = LinkCB_ReadyCloseLink;\n            gLinkDummy1 = FALSE;\n            gReadyCloseLinkType = 0;\n        }\n    }",
       "callsTo": [
         "Rfu_SetCloseLinkCallback"
@@ -732,6 +1019,7 @@
       "returnType": "void",
       "signature": "static void LinkCB_ReadyCloseLink(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gLastRecvQueueCount == 0)\n    {\n        BuildSendCmd(LINKCMD_READY_CLOSE_LINK);\n        gLinkCallback = LinkCB_WaitCloseLink;\n    }",
       "callsTo": [
         "BuildSendCmd"
@@ -742,6 +1030,7 @@
       "returnType": "void",
       "signature": "static void LinkCB_WaitCloseLink(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int i;\n    unsigned count;\n\n     \n    u8 linkPlayerCount = GetLinkPlayerCount();\n    count = 0;\n    for (i = 0; i < linkPlayerCount; i++)\n    {\n        if (gReadyToCloseLink[i])\n            count++;\n    }\n\n    if (count == linkPlayerCount)\n    {\n         \n        gBattleTypeFlags &= ~BATTLE_TYPE_LINK_IN_BATTLE;\n        gLinkVSyncDisabled = TRUE;\n        CloseLink();\n        gLinkCallback = NULL;\n        gLinkDummy1 = TRUE;\n    }",
       "callsTo": [
         "CloseLink",
@@ -753,6 +1042,7 @@
       "returnType": "void",
       "signature": "void SetCloseLinkCallbackHandleJP(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gWirelessCommType == TRUE)\n    {\n        Rfu_SetCloseLinkCallback();\n    }\n    else\n    {\n        if (gLinkCallback != NULL)\n        {\n            sReadyCloseLinkAttempts++;\n        }\n        else\n        {\n            gLinkCallback = LinkCB_ReadyCloseLinkWithJP;\n            gLinkDummy1 = FALSE;\n            gReadyCloseLinkType = 0;\n        }\n    }",
       "callsTo": [
         "Rfu_SetCloseLinkCallback"
@@ -763,6 +1053,7 @@
       "returnType": "void",
       "signature": "static void LinkCB_ReadyCloseLinkWithJP(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gLastRecvQueueCount == 0)\n    {\n        BuildSendCmd(LINKCMD_READY_CLOSE_LINK);\n        gLinkCallback = LinkCB_WaitCloseLinkWithJP;\n    }",
       "callsTo": [
         "BuildSendCmd"
@@ -773,6 +1064,7 @@
       "returnType": "void",
       "signature": "static void LinkCB_WaitCloseLinkWithJP(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int i;\n    unsigned count;\n    u8 linkPlayerCount;\n\n    linkPlayerCount = GetLinkPlayerCount();\n    count = 0;\n\n     \n    for (i = 0; i < linkPlayerCount; i++)\n    {\n         \n         \n        if (gLinkPlayers[i].language == LANGUAGE_JAPANESE)\n            count++;\n        else if (gReadyToCloseLink[i])\n            count++;\n    }\n\n    if (count == linkPlayerCount)\n    {\n         \n        gBattleTypeFlags &= ~BATTLE_TYPE_LINK_IN_BATTLE;\n        gLinkVSyncDisabled = TRUE;\n        CloseLink();\n        gLinkCallback = NULL;\n        gLinkDummy1 = TRUE;\n    }",
       "callsTo": [
         "CloseLink",
@@ -784,6 +1076,7 @@
       "returnType": "void",
       "signature": "void SetLinkStandbyCallback(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gWirelessCommType == TRUE)\n    {\n        Rfu_SetLinkStandbyCallback();\n    }\n    else\n    {\n        if (gLinkCallback == NULL)\n            gLinkCallback = LinkCB_Standby;\n\n        gLinkDummy1 = FALSE;\n    }",
       "callsTo": [
         "Rfu_SetLinkStandbyCallback"
@@ -794,6 +1087,7 @@
       "returnType": "void",
       "signature": "static void LinkCB_Standby(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gLastRecvQueueCount == 0)\n    {\n        BuildSendCmd(LINKCMD_READY_EXIT_STANDBY);\n        gLinkCallback = LinkCB_StandbyForAll;\n    }",
       "callsTo": [
         "BuildSendCmd"
@@ -804,6 +1098,7 @@
       "returnType": "void",
       "signature": "static void LinkCB_StandbyForAll(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n    u8 linkPlayerCount = GetLinkPlayerCount();\n    for (i = 0; i < linkPlayerCount; i++)\n    {\n        if (!gReadyToExitStandby[i])\n            break;\n    }\n\n     \n    if (i == linkPlayerCount)\n    {\n        for (i = 0; i < MAX_LINK_PLAYERS; i++)\n            gReadyToExitStandby[i] = FALSE;\n\n        gLinkCallback = NULL;\n    }",
       "callsTo": [
         "GetLinkPlayerCount"
@@ -814,6 +1109,7 @@
       "returnType": "void",
       "signature": "static void TrySetLinkErrorBuffer(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (sLinkOpen && EXTRACT_LINK_ERRORS(gLinkStatus))\n    {\n         \n         \n        if (!gSuppressLinkErrorMessage)\n        {\n            sLinkErrorBuffer.status = gLinkStatus;\n            sLinkErrorBuffer.lastRecvQueueCount = gLastRecvQueueCount;\n            sLinkErrorBuffer.lastSendQueueCount = gLastSendQueueCount;\n            SetMainCallback2(CB2_LinkError);\n        }\n        gLinkErrorOccurred = TRUE;\n        CloseLink();\n    }",
       "callsTo": [
         "CloseLink",
@@ -826,6 +1122,24 @@
       "returnType": "void",
       "signature": "void SetLinkErrorBuffer(u32 status, u8 lastSendQueueCount, u8 lastRecvQueueCount, bool8 disconnected)",
       "paramsRaw": "u32 status, u8 lastSendQueueCount, u8 lastRecvQueueCount, bool8 disconnected",
+      "paramsList": [
+        {
+          "name": "status",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "lastSendQueueCount",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "lastRecvQueueCount",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "disconnected",
+          "typeRaw": "bool8"
+        }
+      ],
       "body": "sLinkErrorBuffer.status = status;\n    sLinkErrorBuffer.lastSendQueueCount = lastSendQueueCount;\n    sLinkErrorBuffer.lastRecvQueueCount = lastRecvQueueCount;\n    sLinkErrorBuffer.disconnected = disconnected;",
       "callsTo": [],
       "lineCount": 4
@@ -834,6 +1148,7 @@
       "returnType": "void",
       "signature": "void CB2_LinkError(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 *tilemapBuffer;\n\n    SetGpuReg(REG_OFFSET_DISPCNT, 0);\n    m4aMPlayStop(&gMPlayInfo_SE1);\n    m4aMPlayStop(&gMPlayInfo_SE2);\n    m4aMPlayStop(&gMPlayInfo_SE3);\n    InitHeap(gHeap, HEAP_SIZE);\n    ResetSpriteData();\n    FreeAllSpritePalettes();\n    ResetPaletteFadeControl();\n    SetBackdropFromColor(RGB_BLACK);\n    ResetTasks();\n    ScanlineEffect_Stop();\n    if (gWirelessCommType)\n    {\n        if (!sLinkErrorBuffer.disconnected)\n            gWirelessCommType = 3;\n\n        ResetLinkRfuGFLayer();\n    }\n    SetVBlankCallback(VBlankCB_LinkError);\n    ResetBgsAndClearDma3BusyFlags(0);\n    InitBgsFromTemplates(0, sLinkErrorBgTemplates, ARRAY_COUNT(sLinkErrorBgTemplates));\n    sLinkErrorBgTilemapBuffer = tilemapBuffer = Alloc(BG_SCREEN_SIZE);\n    SetBgTilemapBuffer(1, tilemapBuffer);\n    if (InitWindows(sLinkErrorWindowTemplates))\n    {\n        DeactivateAllTextPrinters();\n        ResetTempTileDataBuffers();\n        SetGpuReg(REG_OFFSET_BLDCNT, 0);\n        SetGpuReg(REG_OFFSET_BLDALPHA, 0);\n        SetGpuReg(REG_OFFSET_BG0HOFS, 0);\n        SetGpuReg(REG_OFFSET_BG0VOFS, 0);\n        SetGpuReg(REG_OFFSET_BG1HOFS, 0);\n        SetGpuReg(REG_OFFSET_BG1VOFS, 0);\n        ClearGpuRegBits(REG_OFFSET_DISPCNT, DISPCNT_WIN0_ON | DISPCNT_WIN1_ON | DISPCNT_OBJWIN_ON);\n        LoadPalette(gStandardMenuPalette, BG_PLTT_ID(15), PLTT_SIZE_4BPP);\n        gSoftResetDisabled = FALSE;\n        CreateTask(Task_DestroySelf, 0);\n        StopMapMusic();\n        gMain.callback1 = NULL;\n        RunTasks();\n        AnimateSprites();\n        BuildOamBuffer();\n        UpdatePaletteFade();\n        SetMainCallback2(CB2_PrintErrorMessage);\n    }",
       "callsTo": [
         "ARRAY_COUNT",
@@ -871,6 +1186,7 @@
       "returnType": "void",
       "signature": "static void ErrorMsg_MoveCloserToPartner(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "LoadBgTiles(0, sCommErrorBg_Gfx, 0x20, 0);\n    DecompressAndLoadBgGfxUsingHeap(1, sWirelessLinkDisplayGfx, FALSE, 0, 0);\n    CopyToBgTilemapBuffer(1, sWirelessLinkDisplayTilemap, 0, 0);\n    CopyBgTilemapBufferToVram(1);\n    LoadPalette(sWirelessLinkDisplayPal, BG_PLTT_ID(0), sizeof(sWirelessLinkDisplayPal));\n    FillWindowPixelBuffer(WIN_LINK_ERROR_TOP, PIXEL_FILL(0));\n    FillWindowPixelBuffer(WIN_LINK_ERROR_BOTTOM, PIXEL_FILL(0));\n    AddTextPrinterParameterized3(WIN_LINK_ERROR_TOP, FONT_SHORT_COPY_1, 2, 6, sTextColors, 0, gText_CommErrorEllipsis);\n    AddTextPrinterParameterized3(WIN_LINK_ERROR_BOTTOM, FONT_SHORT_COPY_1, 2, 1, sTextColors, 0, gText_MoveCloserToLinkPartner);\n    PutWindowTilemap(WIN_LINK_ERROR_TOP);\n    PutWindowTilemap(WIN_LINK_ERROR_BOTTOM);\n    CopyWindowToVram(WIN_LINK_ERROR_TOP, COPYWIN_NONE);  \n    CopyWindowToVram(WIN_LINK_ERROR_BOTTOM, COPYWIN_FULL);",
       "callsTo": [
         "AddTextPrinterParameterized3",
@@ -891,6 +1207,7 @@
       "returnType": "void",
       "signature": "static void ErrorMsg_CheckConnections(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "LoadBgTiles(0, sCommErrorBg_Gfx, 0x20, 0);\n    FillWindowPixelBuffer(WIN_LINK_ERROR_MID, PIXEL_FILL(0));\n    FillWindowPixelBuffer(WIN_LINK_ERROR_BOTTOM, PIXEL_FILL(0));\n    AddTextPrinterParameterized3(WIN_LINK_ERROR_MID, FONT_SHORT_COPY_1, 2, 0, sTextColors, 0, gText_CommErrorCheckConnections);\n    PutWindowTilemap(WIN_LINK_ERROR_MID);\n    PutWindowTilemap(WIN_LINK_ERROR_BOTTOM);\n    CopyWindowToVram(WIN_LINK_ERROR_MID, COPYWIN_NONE);  \n    CopyWindowToVram(WIN_LINK_ERROR_BOTTOM, COPYWIN_FULL);",
       "callsTo": [
         "AddTextPrinterParameterized3",
@@ -906,6 +1223,7 @@
       "returnType": "void",
       "signature": "static void CB2_PrintErrorMessage(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (gMain.state)\n    {\n        case  00:\n             \n             \n            if (sLinkErrorBuffer.disconnected)\n                ErrorMsg_MoveCloserToPartner();\n            else\n                ErrorMsg_CheckConnections();\n            break;\n        case  02:\n            ShowBg(0);\n            if (sLinkErrorBuffer.disconnected)\n                ShowBg(1);\n            break;\n        case  30:\n            PlaySE(SE_BOO);\n            break;\n        case  60:\n            PlaySE(SE_BOO);\n            break;\n        case  90:\n            PlaySE(SE_BOO);\n            break;\n        case 130:\n            if (gWirelessCommType == 2)\n                AddTextPrinterParameterized3(WIN_LINK_ERROR_TOP, FONT_SHORT_COPY_1, 2, 20, sTextColors, 0, gText_ABtnTitleScreen);\n            else if (gWirelessCommType == 1)\n                AddTextPrinterParameterized3(WIN_LINK_ERROR_TOP, FONT_SHORT_COPY_1, 2, 20, sTextColors, 0, gText_ABtnRegistrationCounter);\n            break;\n    }\n    if (gMain.state == 160)\n    {\n        if (gWirelessCommType == 1)\n        {\n            if (JOY_NEW(A_BUTTON))\n            {\n                PlaySE(SE_PIN);\n                gWirelessCommType = 0;\n                sLinkErrorBuffer.disconnected = FALSE;\n                ReloadSave();\n            }\n        }\n        else if (gWirelessCommType == 2)\n        {\n            if (JOY_NEW(A_BUTTON))\n            {\n                rfu_REQ_stopMode();\n                rfu_waitREQComplete();\n                DoSoftReset();\n            }\n        }\n    }\n\n    if (gMain.state != 160)\n        gMain.state++;",
       "callsTo": [
         "AddTextPrinterParameterized3",
@@ -923,6 +1241,7 @@
       "returnType": "bool8",
       "signature": "bool8 GetSioMultiSI(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return (REG_SIOCNT & SIO_MULTI_SI) != 0;",
       "callsTo": [],
       "lineCount": 1
@@ -931,6 +1250,7 @@
       "returnType": "bool8",
       "signature": "static bool8 IsSioMultiMaster(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return (REG_SIOCNT & SIO_MULTI_SD) && (REG_SIOCNT & SIO_MULTI_SI) == 0;",
       "callsTo": [],
       "lineCount": 1
@@ -939,6 +1259,7 @@
       "returnType": "bool8",
       "signature": "bool8 IsLinkConnectionEstablished(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return EXTRACT_CONN_ESTABLISHED(gLinkStatus);",
       "callsTo": [
         "EXTRACT_CONN_ESTABLISHED"
@@ -949,6 +1270,12 @@
       "returnType": "void",
       "signature": "void SetSuppressLinkErrorMessage(bool8 flag)",
       "paramsRaw": "bool8 flag",
+      "paramsList": [
+        {
+          "name": "flag",
+          "typeRaw": "bool8"
+        }
+      ],
       "body": "gSuppressLinkErrorMessage = flag;",
       "callsTo": [],
       "lineCount": 1
@@ -957,6 +1284,7 @@
       "returnType": "bool8",
       "signature": "bool8 HasLinkErrorOccurred(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return gLinkErrorOccurred;",
       "callsTo": [],
       "lineCount": 1
@@ -965,6 +1293,7 @@
       "returnType": "void",
       "signature": "void LocalLinkPlayerToBlock(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "struct LinkPlayerBlock *block;\n\n    InitLocalLinkPlayer();\n    block = &gLocalLinkPlayerBlock;\n    block->linkPlayer = gLocalLinkPlayer;\n    memcpy(block->magic1, sASCIIGameFreakInc, sizeof(block->magic1) - 1);\n    memcpy(block->magic2, sASCIIGameFreakInc, sizeof(block->magic2) - 1);\n    memcpy(gBlockSendBuffer, block, sizeof(*block));",
       "callsTo": [
         "InitLocalLinkPlayer"
@@ -975,6 +1304,12 @@
       "returnType": "void",
       "signature": "void LinkPlayerFromBlock(u32 who)",
       "paramsRaw": "u32 who",
+      "paramsList": [
+        {
+          "name": "who",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "u8 who_ = who;\n    struct LinkPlayerBlock *block;\n    struct LinkPlayer *player;\n\n    block = (struct LinkPlayerBlock *)gBlockRecvBuffer[who_];\n    player = &gLinkPlayers[who_];\n    *player = block->linkPlayer;\n    ConvertLinkPlayerName(player);\n\n    if (strcmp(block->magic1, sASCIIGameFreakInc) != 0\n     || strcmp(block->magic2, sASCIIGameFreakInc) != 0)\n        SetMainCallback2(CB2_LinkError);",
       "callsTo": [
         "ConvertLinkPlayerName",
@@ -986,6 +1321,7 @@
       "returnType": "bool8",
       "signature": "bool8 HandleLinkConnection(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "bool32 main1Failed, main2Failed;\n\n    if (gWirelessCommType == 0)\n    {\n        gLinkStatus = LinkMain1(&gShouldAdvanceLinkState, gSendCmd, gRecvCmds);\n        LinkMain2(&gMain.heldKeys);\n        if ((gLinkStatus & LINK_STAT_RECEIVED_NOTHING) && IsSendingKeysOverCable() == TRUE)\n            return TRUE;\n    }\n    else\n    {\n        main1Failed = RfuMain1();  \n        main2Failed = RfuMain2();\n        if (IsSendingKeysOverCable() == TRUE)\n        {\n             \n             \n            if (main1Failed == TRUE || IsRfuRecvQueueEmpty() || main2Failed)\n                return TRUE;\n        }\n    }\n    return FALSE;",
       "callsTo": [
         "IsRfuRecvQueueEmpty",
@@ -1001,6 +1337,7 @@
       "returnType": "void",
       "signature": "void SetWirelessCommType1(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gReceivedRemoteLinkPlayers == 0)\n        gWirelessCommType = 1;",
       "callsTo": [],
       "lineCount": 2
@@ -1009,6 +1346,7 @@
       "returnType": "void",
       "signature": "static void SetWirelessCommType0_Internal(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gReceivedRemoteLinkPlayers == 0)\n        gWirelessCommType = 0;",
       "callsTo": [],
       "lineCount": 2
@@ -1017,6 +1355,7 @@
       "returnType": "void",
       "signature": "void SetWirelessCommType0(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gReceivedRemoteLinkPlayers == 0)\n        gWirelessCommType = 0;",
       "callsTo": [],
       "lineCount": 2
@@ -1025,6 +1364,7 @@
       "returnType": "u32",
       "signature": "u32 GetLinkRecvQueueLength(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gWirelessCommType != 0)\n        return GetRfuRecvQueueLength();\n\n    return gLink.recvQueue.count;",
       "callsTo": [
         "GetRfuRecvQueueLength"
@@ -1035,6 +1375,7 @@
       "returnType": "bool32",
       "signature": "bool32 IsLinkRecvQueueAtOverworldMax(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (GetLinkRecvQueueLength() >= OVERWORLD_RECV_QUEUE_MAX)\n        return TRUE;\n\n    return FALSE;",
       "callsTo": [
         "GetLinkRecvQueueLength"
@@ -1045,6 +1386,7 @@
       "returnType": "u8",
       "signature": "u8 GetWirelessCommType(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return gWirelessCommType;",
       "callsTo": [],
       "lineCount": 1
@@ -1053,6 +1395,12 @@
       "returnType": "void",
       "signature": "void ConvertLinkPlayerName(struct LinkPlayer *player)",
       "paramsRaw": "struct LinkPlayer *player",
+      "paramsList": [
+        {
+          "name": "player",
+          "typeRaw": "struct LinkPlayer *"
+        }
+      ],
       "body": "player->progressFlagsCopy = player->progressFlags;  \n    ConvertInternationalString(player->name, player->language);",
       "callsTo": [
         "ConvertInternationalString"
@@ -1063,6 +1411,7 @@
       "returnType": "void",
       "signature": "static void DisableSerial(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "DisableInterrupts(INTR_FLAG_TIMER3 | INTR_FLAG_SERIAL);\n    REG_SIOCNT = SIO_MULTI_MODE;\n    REG_TMCNT_H(3) = 0;\n    REG_IF = INTR_FLAG_TIMER3 | INTR_FLAG_SERIAL;\n    REG_SIOMLT_SEND = 0;\n    REG_SIOMLT_RECV = 0;\n    CpuFill32(0, &gLink, sizeof(gLink));",
       "callsTo": [
         "CpuFill32",
@@ -1075,6 +1424,7 @@
       "returnType": "void",
       "signature": "static void EnableSerial(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "DisableInterrupts(INTR_FLAG_TIMER3 | INTR_FLAG_SERIAL);\n    REG_RCNT = 0;\n    REG_SIOCNT = SIO_MULTI_MODE;\n    REG_SIOCNT |= SIO_115200_BPS | SIO_INTR_ENABLE;\n    EnableInterrupts(INTR_FLAG_SERIAL);\n    REG_SIOMLT_SEND = 0;\n    CpuFill32(0, &gLink, sizeof(gLink));\n    sNumVBlanksWithoutSerialIntr = 0;\n    sSendNonzeroCheck = 0;\n    sRecvNonzeroCheck = 0;\n    sChecksumAvailable = 0;\n    sHandshakePlayerCount = 0;\n    gLastSendQueueCount = 0;\n    gLastRecvQueueCount = 0;",
       "callsTo": [
         "CpuFill32",
@@ -1087,6 +1437,7 @@
       "returnType": "void",
       "signature": "void ResetSerial(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "EnableSerial();\n    DisableSerial();",
       "callsTo": [
         "DisableSerial",
@@ -1098,6 +1449,16 @@
       "returnType": "u32",
       "signature": "u32 LinkMain1(u8 *shouldAdvanceLinkState, u16 *sendCmd, u16 (*recvCmds)[CMD_LENGTH])",
       "paramsRaw": "u8 *shouldAdvanceLinkState, u16 *sendCmd, u16 (*recvCmds)[CMD_LENGTH]",
+      "paramsList": [
+        {
+          "name": "shouldAdvanceLinkState",
+          "typeRaw": "u8 *"
+        },
+        {
+          "name": "sendCmd",
+          "typeRaw": "u16 *"
+        }
+      ],
       "body": "u32 retVal;\n    u32 retVal2;\n\n    switch (gLink.state)\n    {\n        case LINK_STATE_START0:\n            DisableSerial();\n            gLink.state = 1;\n            break;\n        case LINK_STATE_START1:\n            if (*shouldAdvanceLinkState == 1)\n            {\n                EnableSerial();\n                gLink.state = 2;\n            }\n            break;\n        case LINK_STATE_HANDSHAKE:\n            switch (*shouldAdvanceLinkState)\n            {\n                default:\n                    CheckMasterOrSlave();\n                    break;\n                case 1:\n                    if (gLink.isMaster == LINK_MASTER && gLink.playerCount > 1)\n                        gLink.handshakeAsMaster = TRUE;\n                    break;\n                case 2:\n                    gLink.state = LINK_STATE_START0;\n                    REG_SIOMLT_SEND = 0;\n                    break;\n            }\n            break;\n        case LINK_STATE_INIT_TIMER:\n            InitTimer();\n            gLink.state = LINK_STATE_CONN_ESTABLISHED;\n             \n        case LINK_STATE_CONN_ESTABLISHED:\n            EnqueueSendCmd(sendCmd);\n            DequeueRecvCmds(recvCmds);\n            break;\n    }\n    *shouldAdvanceLinkState = 0;\n    retVal = gLink.localId;\n    retVal |= (gLink.playerCount << LINK_STAT_PLAYER_COUNT_SHIFT);\n    if (gLink.isMaster == LINK_MASTER)\n    {\n        retVal |= LINK_STAT_MASTER;\n    }\n    {\n        u32 receivedNothing = gLink.receivedNothing << LINK_STAT_RECEIVED_NOTHING_SHIFT;\n        u32 link_field_F = gLink.link_field_F << LINK_STAT_UNK_FLAG_9_SHIFT;\n        u32 hardwareError = gLink.hardwareError << LINK_STAT_ERROR_HARDWARE_SHIFT;\n        u32 badChecksum = gLink.badChecksum << LINK_STAT_ERROR_CHECKSUM_SHIFT;\n        u32 queueFull = gLink.queueFull << LINK_STAT_ERROR_QUEUE_FULL_SHIFT;\n        u32 val;\n\n        if (gLink.state == LINK_STATE_CONN_ESTABLISHED)\n        {\n            val = LINK_STAT_CONN_ESTABLISHED;\n            val |= receivedNothing;\n            val |= retVal;\n            val |= link_field_F;\n            val |= hardwareError;\n            val |= badChecksum;\n            val |= queueFull;\n        }\n        else\n        {\n            val = retVal;\n            val |= receivedNothing;\n            val |= link_field_F;\n            val |= hardwareError;\n            val |= badChecksum;\n            val |= queueFull;\n        }\n\n        retVal = val;\n    }\n\n    if (gLink.lag == LAG_MASTER)\n        retVal |= LINK_STAT_ERROR_LAG_MASTER;\n\n    if (gLink.localId >= MAX_LINK_PLAYERS)\n        retVal |= LINK_STAT_ERROR_INVALID_ID;\n\n    retVal2 = retVal;\n    if (gLink.lag == LAG_SLAVE)\n        retVal2 |= LINK_STAT_ERROR_LAG_SLAVE;\n\n    return retVal2;",
       "callsTo": [
         "CheckMasterOrSlave",
@@ -1113,6 +1474,7 @@
       "returnType": "void",
       "signature": "static void CheckMasterOrSlave(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u32 terminals;\n\n    terminals = *(vu32 *)REG_ADDR_SIOCNT & (SIO_MULTI_SD | SIO_MULTI_SI);\n    if (terminals == SIO_MULTI_SD && gLink.localId == 0)\n    {\n        gLink.isMaster = LINK_MASTER;\n    }\n    else\n    {\n        gLink.isMaster = LINK_SLAVE;\n    }",
       "callsTo": [],
       "lineCount": 11
@@ -1121,6 +1483,7 @@
       "returnType": "void",
       "signature": "static void InitTimer(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gLink.isMaster)\n    {\n        REG_TM3CNT_L = -197;\n        REG_TM3CNT_H = TIMER_64CLK | TIMER_INTR_ENABLE;\n        EnableInterrupts(INTR_FLAG_TIMER3);\n    }",
       "callsTo": [
         "EnableInterrupts"
@@ -1131,6 +1494,12 @@
       "returnType": "void",
       "signature": "static void EnqueueSendCmd(u16 *sendCmd)",
       "paramsRaw": "u16 *sendCmd",
+      "paramsList": [
+        {
+          "name": "sendCmd",
+          "typeRaw": "u16 *"
+        }
+      ],
       "body": "u8 i;\n    u8 offset;\n\n    gLinkSavedIme = REG_IME;\n    REG_IME = 0;\n    if (gLink.sendQueue.count < QUEUE_CAPACITY)\n    {\n        offset = gLink.sendQueue.pos + gLink.sendQueue.count;\n        if (offset >= QUEUE_CAPACITY)\n        {\n            offset -= QUEUE_CAPACITY;\n        }\n        for (i = 0; i < CMD_LENGTH; i++)\n        {\n            sSendNonzeroCheck |= *sendCmd;\n            gLink.sendQueue.data[i][offset] = *sendCmd;\n            *sendCmd = 0;\n            sendCmd++;\n        }\n    }\n    else\n    {\n        gLink.queueFull = QUEUE_FULL_SEND;\n    }\n    if (sSendNonzeroCheck)\n    {\n        gLink.sendQueue.count++;\n        sSendNonzeroCheck = 0;\n    }\n    REG_IME = gLinkSavedIme;\n    gLastSendQueueCount = gLink.sendQueue.count;",
       "callsTo": [],
       "lineCount": 31
@@ -1139,6 +1508,7 @@
       "returnType": "void",
       "signature": "static void DequeueRecvCmds(u16 (*recvCmds)[CMD_LENGTH])",
       "paramsRaw": "u16 (*recvCmds)[CMD_LENGTH]",
+      "paramsList": [],
       "body": "u8 i;\n    u8 j;\n\n    gLinkSavedIme = REG_IME;\n    REG_IME = 0;\n    if (gLink.recvQueue.count == 0)\n    {\n        for (i = 0; i < gLink.playerCount; i++)\n        {\n            for (j = 0; j < CMD_LENGTH; j++)\n            {\n                recvCmds[i][j] = 0;\n            }\n        }\n\n        gLink.receivedNothing = TRUE;\n    }\n    else\n    {\n        for (i = 0; i < gLink.playerCount; i++)\n        {\n            for (j = 0; j < CMD_LENGTH; j++)\n            {\n                recvCmds[i][j] = gLink.recvQueue.data[i][j][gLink.recvQueue.pos];\n            }\n        }\n        gLink.recvQueue.count--;\n        gLink.recvQueue.pos++;\n        if (gLink.recvQueue.pos >= QUEUE_CAPACITY)\n        {\n            gLink.recvQueue.pos = 0;\n        }\n        gLink.receivedNothing = FALSE;\n    }\n    REG_IME = gLinkSavedIme;",
       "callsTo": [],
       "lineCount": 35
@@ -1147,6 +1517,7 @@
       "returnType": "void",
       "signature": "void LinkVSync(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gLink.isMaster)\n    {\n        switch (gLink.state)\n        {\n            case LINK_STATE_CONN_ESTABLISHED:\n                if (gLink.serialIntrCounter < 9)\n                {\n                    if (gLink.hardwareError != TRUE)\n                    {\n                        gLink.lag = LAG_MASTER;\n                    }\n                    else\n                    {\n                        StartTransfer();\n                    }\n                }\n                else if (gLink.lag != LAG_MASTER)\n                {\n                    gLink.serialIntrCounter = 0;\n                    StartTransfer();\n                }\n                break;\n            case LINK_STATE_HANDSHAKE:\n                StartTransfer();\n                break;\n        }\n    }\n    else if (gLink.state == LINK_STATE_CONN_ESTABLISHED || gLink.state == LINK_STATE_HANDSHAKE)\n    {\n        if (++sNumVBlanksWithoutSerialIntr > 10)\n        {\n            if (gLink.state == LINK_STATE_CONN_ESTABLISHED)\n            {\n                gLink.lag = LAG_SLAVE;\n            }\n            if (gLink.state == LINK_STATE_HANDSHAKE)\n            {\n                gLink.playerCount = 0;\n                gLink.link_field_F = FALSE;\n            }\n        }\n    }",
       "callsTo": [
         "StartTransfer"
@@ -1157,6 +1528,7 @@
       "returnType": "void",
       "signature": "void Timer3Intr(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "StopTimer();\n    StartTransfer();",
       "callsTo": [
         "StartTransfer",
@@ -1168,6 +1540,7 @@
       "returnType": "void",
       "signature": "void SerialCB(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gLink.localId = SIO_MULTI_CNT->id;\n    switch (gLink.state)\n    {\n        case LINK_STATE_CONN_ESTABLISHED:\n            gLink.hardwareError = SIO_MULTI_CNT->error;\n            DoRecv();\n            DoSend();\n            SendRecvDone();\n            break;\n        case LINK_STATE_HANDSHAKE:\n            if (DoHandshake())\n            {\n                if (gLink.isMaster)\n                {\n                    gLink.state = LINK_STATE_INIT_TIMER;\n                    gLink.serialIntrCounter = 8;\n                }\n                else\n                {\n                    gLink.state = LINK_STATE_CONN_ESTABLISHED;\n                }\n            }\n            break;\n    }\n    gLink.serialIntrCounter++;\n    sNumVBlanksWithoutSerialIntr = 0;\n    if (gLink.serialIntrCounter == 8)\n    {\n        gLastRecvQueueCount = gLink.recvQueue.count;\n    }",
       "callsTo": [
         "DoHandshake",
@@ -1181,6 +1554,7 @@
       "returnType": "void",
       "signature": "static void StartTransfer(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "REG_SIOCNT |= SIO_START;",
       "callsTo": [],
       "lineCount": 1
@@ -1189,6 +1563,7 @@
       "returnType": "bool8",
       "signature": "static bool8 DoHandshake(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n    u8 playerCount;\n    u16 minRecv;\n\n    playerCount = 0;\n    minRecv = 0xFFFF;\n    if (gLink.handshakeAsMaster == TRUE)\n    {\n        REG_SIOMLT_SEND = MASTER_HANDSHAKE;\n    }\n    else\n    {\n        REG_SIOMLT_SEND = SLAVE_HANDSHAKE;\n    }\n    *(u64 *)gLink.handshakeBuffer = REG_SIOMLT_RECV;\n    REG_SIOMLT_RECV = 0;\n    gLink.handshakeAsMaster = FALSE;\n    for (i = 0; i < MAX_LINK_PLAYERS; i++)\n    {\n        if ((gLink.handshakeBuffer[i] & ~0x3) == SLAVE_HANDSHAKE || gLink.handshakeBuffer[i] == MASTER_HANDSHAKE)\n        {\n            playerCount++;\n            if (minRecv > gLink.handshakeBuffer[i] && gLink.handshakeBuffer[i] != 0)\n                minRecv = gLink.handshakeBuffer[i];\n        }\n        else\n        {\n            if (gLink.handshakeBuffer[i] != 0xFFFF)\n                playerCount = 0;\n            break;\n        }\n    }\n    gLink.playerCount = playerCount;\n    if (gLink.playerCount > 1 && gLink.playerCount == sHandshakePlayerCount && gLink.handshakeBuffer[0] == MASTER_HANDSHAKE)\n    {\n        return TRUE;\n    }\n    if (gLink.playerCount > 1)\n    {\n        gLink.link_field_F = (minRecv & 3) + 1;\n    }\n    else\n    {\n        gLink.link_field_F = 0;\n    }\n    sHandshakePlayerCount = gLink.playerCount;\n    return FALSE;",
       "callsTo": [],
       "lineCount": 47
@@ -1197,6 +1572,7 @@
       "returnType": "void",
       "signature": "static void DoRecv(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 recv[4];\n    u8 i;\n    u8 index;\n\n    *(u64 *)recv = REG_SIOMLT_RECV;\n    if (gLink.sendCmdIndex == 0)\n    {\n        for (i = 0; i < gLink.playerCount; i++)\n        {\n            if (gLink.checksum != recv[i] && sChecksumAvailable)\n            {\n                gLink.badChecksum = TRUE;\n            }\n        }\n        gLink.checksum = 0;\n        sChecksumAvailable = TRUE;\n    }\n    else\n    {\n        index = gLink.recvQueue.pos + gLink.recvQueue.count;\n        if (index >= QUEUE_CAPACITY)\n        {\n            index -= QUEUE_CAPACITY;\n        }\n        if (gLink.recvQueue.count < QUEUE_CAPACITY)\n        {\n            for (i = 0; i < gLink.playerCount; i++)\n            {\n                gLink.checksum += recv[i];\n                sRecvNonzeroCheck |= recv[i];\n                gLink.recvQueue.data[i][gLink.recvCmdIndex][index] = recv[i];\n            }\n        }\n        else\n        {\n            gLink.queueFull = QUEUE_FULL_RECV;\n        }\n        gLink.recvCmdIndex++;\n        if (gLink.recvCmdIndex == CMD_LENGTH && sRecvNonzeroCheck)\n        {\n            gLink.recvQueue.count++;\n            sRecvNonzeroCheck = 0;\n        }\n    }",
       "callsTo": [],
       "lineCount": 44
@@ -1205,6 +1581,7 @@
       "returnType": "void",
       "signature": "static void DoSend(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gLink.sendCmdIndex == CMD_LENGTH)\n    {\n        REG_SIOMLT_SEND = gLink.checksum;\n        if (!sSendBufferEmpty)\n        {\n            gLink.sendQueue.count--;\n            gLink.sendQueue.pos++;\n            if (gLink.sendQueue.pos >= QUEUE_CAPACITY)\n            {\n                gLink.sendQueue.pos = 0;\n            }\n        }\n        else\n        {\n            sSendBufferEmpty = FALSE;\n        }\n    }\n    else\n    {\n        if (!sSendBufferEmpty && gLink.sendQueue.count == 0)\n        {\n            sSendBufferEmpty = TRUE;\n        }\n        if (sSendBufferEmpty)\n        {\n            REG_SIOMLT_SEND = 0;\n        }\n        else\n        {\n            REG_SIOMLT_SEND = gLink.sendQueue.data[gLink.sendCmdIndex][gLink.sendQueue.pos];\n        }\n        gLink.sendCmdIndex++;\n    }",
       "callsTo": [],
       "lineCount": 33
@@ -1213,6 +1590,7 @@
       "returnType": "void",
       "signature": "static void StopTimer(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gLink.isMaster)\n    {\n        REG_TM3CNT_H &= ~TIMER_ENABLE;\n        REG_TM3CNT_L = -197;\n    }",
       "callsTo": [],
       "lineCount": 5
@@ -1221,6 +1599,7 @@
       "returnType": "void",
       "signature": "static void SendRecvDone(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gLink.recvCmdIndex == CMD_LENGTH)\n    {\n        gLink.sendCmdIndex = 0;\n        gLink.recvCmdIndex = 0;\n    }\n    else if (gLink.isMaster)\n    {\n        REG_TM3CNT_H |= TIMER_ENABLE;\n    }",
       "callsTo": [],
       "lineCount": 9
@@ -1229,6 +1608,7 @@
       "returnType": "void",
       "signature": "void ResetSendBuffer(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n    u8 j;\n\n    gLink.sendQueue.count = 0;\n    gLink.sendQueue.pos = 0;\n    for (i = 0; i < CMD_LENGTH; i++)\n    {\n        for (j = 0; j < QUEUE_CAPACITY; j++)\n            gLink.sendQueue.data[i][j] = LINKCMD_NONE;\n    }",
       "callsTo": [],
       "lineCount": 10
@@ -1237,6 +1617,7 @@
       "returnType": "void",
       "signature": "void ResetRecvBuffer(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n    u8 j;\n    u8 k;\n\n    gLink.recvQueue.count = 0;\n    gLink.recvQueue.pos = 0;\n    for (i = 0; i < MAX_LINK_PLAYERS; i++)\n    {\n        for (j = 0; j < CMD_LENGTH; j++)\n        {\n            for (k = 0; k < QUEUE_CAPACITY; k++)\n                gLink.recvQueue.data[i][j][k] = LINKCMD_NONE;\n        }\n    }",
       "callsTo": [],
       "lineCount": 14

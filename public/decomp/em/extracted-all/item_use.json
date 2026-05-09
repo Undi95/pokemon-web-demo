@@ -6,6 +6,12 @@
       "returnType": "void",
       "signature": "static void SetUpItemUseCallback(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 type;\n    if (gSpecialVar_ItemId == ITEM_ENIGMA_BERRY)\n        type = gTasks[taskId].tEnigmaBerryType - 1;\n    else\n        type = GetItemType(gSpecialVar_ItemId) - 1;\n    if (CurrentBattlePyramidLocation() == PYRAMID_LOCATION_NONE)\n    {\n        gBagMenu->newScreenCallback = sItemUseCallbacks[type];\n        Task_FadeAndCloseBagMenu(taskId);\n    }\n    else\n    {\n        gPyramidBagMenu->newScreenCallback = sItemUseCallbacks[type];\n        CloseBattlePyramidBag(taskId);\n    }",
       "callsTo": [
         "CloseBattlePyramidBag",
@@ -19,6 +25,12 @@
       "returnType": "void",
       "signature": "static void SetUpItemUseOnFieldCallback(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (gTasks[taskId].tUsingRegisteredKeyItem != TRUE)\n    {\n        gFieldCallback = FieldCB_UseItemOnField;\n        SetUpItemUseCallback(taskId);\n    }\n    else\n    {\n        sItemUseOnFieldCB(taskId);\n    }",
       "callsTo": [
         "SetUpItemUseCallback"
@@ -29,6 +41,7 @@
       "returnType": "void",
       "signature": "static void FieldCB_UseItemOnField(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "FadeInFromBlack();\n    CreateTask(Task_CallItemUseOnFieldCallback, 8);",
       "callsTo": [
         "CreateTask",
@@ -40,6 +53,12 @@
       "returnType": "void",
       "signature": "static void Task_CallItemUseOnFieldCallback(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (IsWeatherNotFadingIn() == 1)\n        sItemUseOnFieldCB(taskId);",
       "callsTo": [
         "IsWeatherNotFadingIn"
@@ -50,6 +69,20 @@
       "returnType": "void",
       "signature": "static void DisplayCannotUseItemMessage(u8 taskId, bool8 isUsingRegisteredKeyItemOnField, const u8 *str)",
       "paramsRaw": "u8 taskId, bool8 isUsingRegisteredKeyItemOnField, const u8 *str",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "isUsingRegisteredKeyItemOnField",
+          "typeRaw": "bool8"
+        },
+        {
+          "name": "str",
+          "typeRaw": "const u8 *"
+        }
+      ],
       "body": "StringExpandPlaceholders(gStringVar4, str);\n    if (!isUsingRegisteredKeyItemOnField)\n    {\n        if (CurrentBattlePyramidLocation() == PYRAMID_LOCATION_NONE)\n            DisplayItemMessage(taskId, FONT_NORMAL, gStringVar4, CloseItemMessage);\n        else\n            DisplayItemMessageInBattlePyramid(taskId, gText_DadsAdvice, Task_CloseBattlePyramidBagMessage);\n    }\n    else\n    {\n        DisplayItemMessageOnField(taskId, gStringVar4, Task_CloseCantUseKeyItemMessage);\n    }",
       "callsTo": [
         "CurrentBattlePyramidLocation",
@@ -64,6 +97,16 @@
       "returnType": "void",
       "signature": "static void DisplayDadsAdviceCannotUseItemMessage(u8 taskId, bool8 isUsingRegisteredKeyItemOnField)",
       "paramsRaw": "u8 taskId, bool8 isUsingRegisteredKeyItemOnField",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "isUsingRegisteredKeyItemOnField",
+          "typeRaw": "bool8"
+        }
+      ],
       "body": "DisplayCannotUseItemMessage(taskId, isUsingRegisteredKeyItemOnField, gText_DadsAdvice);",
       "callsTo": [
         "DisplayCannotUseItemMessage"
@@ -74,6 +117,16 @@
       "returnType": "void",
       "signature": "static void DisplayCannotDismountBikeMessage(u8 taskId, bool8 isUsingRegisteredKeyItemOnField)",
       "paramsRaw": "u8 taskId, bool8 isUsingRegisteredKeyItemOnField",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "isUsingRegisteredKeyItemOnField",
+          "typeRaw": "bool8"
+        }
+      ],
       "body": "DisplayCannotUseItemMessage(taskId, isUsingRegisteredKeyItemOnField, gText_CantDismountBike);",
       "callsTo": [
         "DisplayCannotUseItemMessage"
@@ -84,6 +137,12 @@
       "returnType": "void",
       "signature": "static void Task_CloseCantUseKeyItemMessage(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "ClearDialogWindowAndFrame(0, TRUE);\n    DestroyTask(taskId);\n    ScriptUnfreezeObjectEvents();\n    UnlockPlayerFieldControls();",
       "callsTo": [
         "ClearDialogWindowAndFrame",
@@ -97,6 +156,12 @@
       "returnType": "u8",
       "signature": "u8 CheckIfItemIsTMHMOrEvolutionStone(u16 itemId)",
       "paramsRaw": "u16 itemId",
+      "paramsList": [
+        {
+          "name": "itemId",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "if (GetItemFieldFunc(itemId) == ItemUseOutOfBattle_TMHM)\n        return ITEM_IS_TM_HM;\n    else if (GetItemFieldFunc(itemId) == ItemUseOutOfBattle_EvolutionStone)\n        return ITEM_IS_EVOLUTION_STONE;\n    else\n        return ITEM_IS_OTHER;",
       "callsTo": [
         "GetItemFieldFunc"
@@ -107,6 +172,7 @@
       "returnType": "void",
       "signature": "static void CB2_CheckMail(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "struct Mail mail;\n    mail.itemId = gSpecialVar_ItemId;\n    ReadMail(&mail, CB2_ReturnToBagMenuPocket, FALSE);",
       "callsTo": [
         "ReadMail"
@@ -117,6 +183,12 @@
       "returnType": "void",
       "signature": "void ItemUseOutOfBattle_Mail(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "gBagMenu->newScreenCallback = CB2_CheckMail;\n    Task_FadeAndCloseBagMenu(taskId);",
       "callsTo": [
         "Task_FadeAndCloseBagMenu"
@@ -127,6 +199,12 @@
       "returnType": "void",
       "signature": "void ItemUseOutOfBattle_Bike(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data = gTasks[taskId].data;\n    s16 coordsY;\n    s16 coordsX;\n    u8 behavior;\n    PlayerGetDestCoords(&coordsX, &coordsY);\n    behavior = MapGridGetMetatileBehaviorAt(coordsX, coordsY);\n    if (FlagGet(FLAG_SYS_CYCLING_ROAD) == TRUE || MetatileBehavior_IsVerticalRail(behavior) == TRUE || MetatileBehavior_IsHorizontalRail(behavior) == TRUE || MetatileBehavior_IsIsolatedVerticalRail(behavior) == TRUE || MetatileBehavior_IsIsolatedHorizontalRail(behavior) == TRUE)\n    {\n        DisplayCannotDismountBikeMessage(taskId, tUsingRegisteredKeyItem);\n    }\n    else\n    {\n        if (Overworld_IsBikingAllowed() == TRUE && IsBikingDisallowedByPlayer() == 0)\n        {\n            sItemUseOnFieldCB = ItemUseOnFieldCB_Bike;\n            SetUpItemUseOnFieldCallback(taskId);\n        }\n        else\n        {\n            DisplayDadsAdviceCannotUseItemMessage(taskId, tUsingRegisteredKeyItem);\n        }\n    }",
       "callsTo": [
         "DisplayCannotDismountBikeMessage",
@@ -148,6 +226,12 @@
       "returnType": "void",
       "signature": "static void ItemUseOnFieldCB_Bike(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (GetItemSecondaryId(gSpecialVar_ItemId) == MACH_BIKE)\n        GetOnOffBike(PLAYER_AVATAR_FLAG_MACH_BIKE);\n    else  \n        GetOnOffBike(PLAYER_AVATAR_FLAG_ACRO_BIKE);\n    ScriptUnfreezeObjectEvents();\n    UnlockPlayerFieldControls();\n    DestroyTask(taskId);",
       "callsTo": [
         "DestroyTask",
@@ -162,6 +246,7 @@
       "returnType": "bool32",
       "signature": "static bool32 CanFish(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s16 x, y;\n    u16 tileBehavior;\n\n    GetXYCoordsOneStepInFrontOfPlayer(&x, &y);\n    tileBehavior = MapGridGetMetatileBehaviorAt(x, y);\n\n    if (MetatileBehavior_IsWaterfall(tileBehavior))\n        return FALSE;\n\n    if (TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_UNDERWATER))\n        return FALSE;\n\n    if (!TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_SURFING))\n    {\n        if (IsPlayerFacingSurfableFishableWater())\n            return TRUE;\n    }\n    else\n    {\n        if (MetatileBehavior_IsSurfableWaterOrUnderwater(tileBehavior) && MapGridGetCollisionAt(x, y) == 0)\n            return TRUE;\n        if (MetatileBehavior_IsBridgeOverWaterNoEdge(tileBehavior) == TRUE)\n            return TRUE;\n    }\n\n    return FALSE;",
       "callsTo": [
         "GetXYCoordsOneStepInFrontOfPlayer",
@@ -179,6 +264,12 @@
       "returnType": "void",
       "signature": "void ItemUseOutOfBattle_Rod(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (CanFish() == TRUE)\n    {\n        sItemUseOnFieldCB = ItemUseOnFieldCB_Rod;\n        SetUpItemUseOnFieldCallback(taskId);\n    }\n    else\n    {\n        DisplayDadsAdviceCannotUseItemMessage(taskId, gTasks[taskId].tUsingRegisteredKeyItem);\n    }",
       "callsTo": [
         "CanFish",
@@ -191,6 +282,12 @@
       "returnType": "void",
       "signature": "static void ItemUseOnFieldCB_Rod(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "StartFishing(GetItemSecondaryId(gSpecialVar_ItemId));\n    DestroyTask(taskId);",
       "callsTo": [
         "DestroyTask",
@@ -203,6 +300,12 @@
       "returnType": "void",
       "signature": "void ItemUseOutOfBattle_Itemfinder(u8 var)",
       "paramsRaw": "u8 var",
+      "paramsList": [
+        {
+          "name": "var",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "IncrementGameStat(GAME_STAT_USED_ITEMFINDER);\n    sItemUseOnFieldCB = ItemUseOnFieldCB_Itemfinder;\n    SetUpItemUseOnFieldCallback(var);",
       "callsTo": [
         "IncrementGameStat",
@@ -214,6 +317,12 @@
       "returnType": "void",
       "signature": "static void ItemUseOnFieldCB_Itemfinder(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (ItemfinderCheckForHiddenItems(gMapHeader.events, taskId) == TRUE)\n        gTasks[taskId].func = Task_UseItemfinder;\n    else\n        DisplayItemMessageOnField(taskId, gText_ItemFinderNothing, Task_CloseItemfinderMessage);",
       "callsTo": [
         "DisplayItemMessageOnField",
@@ -225,6 +334,12 @@
       "returnType": "void",
       "signature": "static void Task_UseItemfinder(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 playerDir;\n    u8 playerDirToItem;\n    u8 i;\n    s16 *data = gTasks[taskId].data;\n    if (tCounter == 0)\n    {\n        if (tItemfinderBeeps == 4)\n        {\n            playerDirToItem = GetDirectionToHiddenItem(tItemDistanceX, tItemDistanceY);\n            if (playerDirToItem != DIR_NONE)\n            {\n                PlayerFaceHiddenItem(sClockwiseDirections[playerDirToItem - 1]);\n                gTasks[taskId].func = Task_HiddenItemNearby;\n            }\n            else\n            {\n                 \n                playerDir = GetPlayerFacingDirection();\n                for (i = 0; i < ARRAY_COUNT(sClockwiseDirections); i++)\n                {\n                    if (playerDir == sClockwiseDirections[i])\n                        tFacingDir = (i + 1) & 3;\n                }\n                gTasks[taskId].func = Task_StandingOnHiddenItem;\n                tCounter = 0;\n                tItemFound = 0;\n            }\n            return;\n        }\n        PlaySE(SE_ITEMFINDER);\n        tItemfinderBeeps++;\n    }\n    tCounter = (tCounter + 1) & 0x1F;",
       "callsTo": [
         "ARRAY_COUNT",
@@ -239,6 +354,12 @@
       "returnType": "void",
       "signature": "static void Task_CloseItemfinderMessage(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "ClearDialogWindowAndFrame(0, TRUE);\n    ScriptUnfreezeObjectEvents();\n    UnlockPlayerFieldControls();\n    DestroyTask(taskId);",
       "callsTo": [
         "ClearDialogWindowAndFrame",
@@ -252,6 +373,16 @@
       "returnType": "bool8",
       "signature": "static bool8 ItemfinderCheckForHiddenItems(const struct MapEvents *events, u8 taskId)",
       "paramsRaw": "const struct MapEvents *events, u8 taskId",
+      "paramsList": [
+        {
+          "name": "events",
+          "typeRaw": "const struct MapEvents *"
+        },
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "int itemX, itemY;\n    s16 playerX, playerY, i, distanceX, distanceY;\n    PlayerGetDestCoords(&playerX, &playerY);\n    gTasks[taskId].tItemFound = FALSE;\n\n    for (i = 0; i < events->bgEventCount; i++)\n    {\n         \n        if (events->bgEvents[i].kind == BG_EVENT_HIDDEN_ITEM && !FlagGet(events->bgEvents[i].bgUnion.hiddenItem.hiddenItemId + FLAG_HIDDEN_ITEMS_START))\n        {\n            itemX = (u16)events->bgEvents[i].x + MAP_OFFSET;\n            distanceX = itemX - playerX;\n            itemY = (u16)events->bgEvents[i].y + MAP_OFFSET;\n            distanceY = itemY - playerY;\n\n             \n             \n            if (distanceX >= -7 && distanceX <= 7 && distanceY >= -5 && distanceY <= 5)\n                SetDistanceOfClosestHiddenItem(taskId, distanceX, distanceY);\n        }\n    }\n\n    CheckForHiddenItemsInMapConnection(taskId);\n    if (gTasks[taskId].tItemFound == TRUE)\n        return TRUE;\n    else\n        return FALSE;",
       "callsTo": [
         "CheckForHiddenItemsInMapConnection",
@@ -265,6 +396,20 @@
       "returnType": "bool8",
       "signature": "static bool8 IsHiddenItemPresentAtCoords(const struct MapEvents *events, s16 x, s16 y)",
       "paramsRaw": "const struct MapEvents *events, s16 x, s16 y",
+      "paramsList": [
+        {
+          "name": "events",
+          "typeRaw": "const struct MapEvents *"
+        },
+        {
+          "name": "x",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s16"
+        }
+      ],
       "body": "u8 bgEventCount = events->bgEventCount;\n    const struct BgEvent *bgEvent = events->bgEvents;\n    int i;\n\n    for (i = 0; i < bgEventCount; i++)\n    {\n        if (bgEvent[i].kind == BG_EVENT_HIDDEN_ITEM && x == (u16)bgEvent[i].x && y == (u16)bgEvent[i].y)  \n        {\n            if (!FlagGet(bgEvent[i].bgUnion.hiddenItem.hiddenItemId + FLAG_HIDDEN_ITEMS_START))\n                return TRUE;\n            else\n                return FALSE;\n        }\n    }\n    return FALSE;",
       "callsTo": [
         "FlagGet"
@@ -275,6 +420,20 @@
       "returnType": "bool8",
       "signature": "static bool8 IsHiddenItemPresentInConnection(const struct MapConnection *connection, int x, int y)",
       "paramsRaw": "const struct MapConnection *connection, int x, int y",
+      "paramsList": [
+        {
+          "name": "connection",
+          "typeRaw": "const struct MapConnection *"
+        },
+        {
+          "name": "x",
+          "typeRaw": "int"
+        },
+        {
+          "name": "y",
+          "typeRaw": "int"
+        }
+      ],
       "body": "s16 connectionX, connectionY;\n    struct MapHeader const *const connectionHeader = GetMapHeaderFromConnection(connection);\n\n \n \n \n \n \n#define localX (x - MAP_OFFSET)\n#define localY (y - MAP_OFFSET)\n    switch (connection->direction)\n    {\n    case CONNECTION_NORTH:\n        connectionX = localX - connection->offset;\n        connectionY = connectionHeader->mapLayout->height + localY;\n        break;\n    case CONNECTION_SOUTH:\n        connectionX = localX - connection->offset;\n        connectionY = localY - gMapHeader.mapLayout->height;\n        break;\n    case CONNECTION_WEST:\n        connectionX = connectionHeader->mapLayout->width + localX;\n        connectionY = localY - connection->offset;\n        break;\n    case CONNECTION_EAST:\n        connectionX = localX - gMapHeader.mapLayout->width;\n        connectionY = localY - connection->offset;\n        break;\n    default:\n        return FALSE;\n    }\n    return IsHiddenItemPresentAtCoords(connectionHeader->events, connectionX, connectionY);",
       "callsTo": [
         "GetMapHeaderFromConnection",
@@ -286,6 +445,12 @@
       "returnType": "void",
       "signature": "static void CheckForHiddenItemsInMapConnection(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 playerX, playerY;\n    s16 x, y;\n    s16 width = gMapHeader.mapLayout->width + MAP_OFFSET;\n    s16 height = gMapHeader.mapLayout->height + MAP_OFFSET;\n\n    s16 var1 = MAP_OFFSET;\n    s16 var2 = MAP_OFFSET;\n\n    PlayerGetDestCoords(&playerX, &playerY);\n\n     \n     \n    for (x = playerX - 7; x <= playerX + 7; x++)\n    {\n        for (y = playerY - 5; y <= playerY + 5; y++)\n        {\n            if (var1 > x\n             || x >= width\n             || var2 > y\n             || y >= height)\n            {\n                const struct MapConnection *conn = GetMapConnectionAtPos(x, y);\n                if (conn && IsHiddenItemPresentInConnection(conn, x, y) == TRUE)\n                    SetDistanceOfClosestHiddenItem(taskId, x - playerX, y - playerY);\n            }\n        }\n    }",
       "callsTo": [
         "GetMapConnectionAtPos",
@@ -299,6 +464,20 @@
       "returnType": "void",
       "signature": "static void SetDistanceOfClosestHiddenItem(u8 taskId, s16 itemDistanceX, s16 itemDistanceY)",
       "paramsRaw": "u8 taskId, s16 itemDistanceX, s16 itemDistanceY",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "itemDistanceX",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "itemDistanceY",
+          "typeRaw": "s16"
+        }
+      ],
       "body": "s16 *data = gTasks[taskId].data;\n    s16 oldItemAbsX, oldItemAbsY, newItemAbsX, newItemAbsY;\n\n    if (tItemFound == FALSE)\n    {\n         \n        tItemDistanceX = itemDistanceX;\n        tItemDistanceY = itemDistanceY;\n        tItemFound = TRUE;\n    }\n    else\n    {\n         \n\n         \n        if (tItemDistanceX < 0)\n            oldItemAbsX = tItemDistanceX * -1;  \n        else\n            oldItemAbsX = tItemDistanceX;       \n\n         \n        if (tItemDistanceY < 0)\n            oldItemAbsY = tItemDistanceY * -1;  \n        else\n            oldItemAbsY = tItemDistanceY;       \n\n         \n        if (itemDistanceX < 0)\n            newItemAbsX = itemDistanceX * -1;\n        else\n            newItemAbsX = itemDistanceX;\n\n         \n        if (itemDistanceY < 0)\n            newItemAbsY = itemDistanceY * -1;\n        else\n            newItemAbsY = itemDistanceY;\n\n\n        if (oldItemAbsX + oldItemAbsY > newItemAbsX + newItemAbsY)\n        {\n             \n            tItemDistanceX = itemDistanceX;\n            tItemDistanceY = itemDistanceY;\n        }\n        else\n        {\n            if (oldItemAbsX + oldItemAbsY == newItemAbsX + newItemAbsY\n            && (oldItemAbsY > newItemAbsY || (oldItemAbsY == newItemAbsY && tItemDistanceY < itemDistanceY)))\n            {\n                 \n                tItemDistanceX = itemDistanceX;\n                tItemDistanceY = itemDistanceY;\n            }\n        }\n    }",
       "callsTo": [],
       "lineCount": 56
@@ -307,6 +486,16 @@
       "returnType": "u8",
       "signature": "static u8 GetDirectionToHiddenItem(s16 itemDistanceX, s16 itemDistanceY)",
       "paramsRaw": "s16 itemDistanceX, s16 itemDistanceY",
+      "paramsList": [
+        {
+          "name": "itemDistanceX",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "itemDistanceY",
+          "typeRaw": "s16"
+        }
+      ],
       "body": "s16 absX, absY;\n\n    if (itemDistanceX == 0 && itemDistanceY == 0)\n        return DIR_NONE;  \n\n     \n    if (itemDistanceX < 0)\n        absX = itemDistanceX * -1;\n    else\n        absX = itemDistanceX;\n\n     \n    if (itemDistanceY < 0)\n        absY = itemDistanceY * -1;\n    else\n        absY = itemDistanceY;\n\n    if (absX > absY)\n    {\n        if (itemDistanceX < 0)\n            return DIR_EAST;\n        else\n            return DIR_NORTH;\n    }\n    else\n    {\n        if (absX < absY)\n        {\n            if (itemDistanceY < 0)\n                return DIR_SOUTH;\n            else\n                return DIR_WEST;\n        }\n        if (absX == absY)\n        {\n            if (itemDistanceY < 0)\n                return DIR_SOUTH;\n            else\n                return DIR_WEST;\n        }\n        return DIR_NONE;  \n    }",
       "callsTo": [],
       "lineCount": 42
@@ -315,6 +504,12 @@
       "returnType": "void",
       "signature": "static void PlayerFaceHiddenItem(u8 direction)",
       "paramsRaw": "u8 direction",
+      "paramsList": [
+        {
+          "name": "direction",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "ObjectEventClearHeldMovementIfFinished(&gObjectEvents[GetObjectEventIdByLocalIdAndMap(LOCALID_PLAYER, 0, 0)]);\n    ObjectEventClearHeldMovement(&gObjectEvents[GetObjectEventIdByLocalIdAndMap(LOCALID_PLAYER, 0, 0)]);\n    UnfreezeObjectEvent(&gObjectEvents[GetObjectEventIdByLocalIdAndMap(LOCALID_PLAYER, 0, 0)]);\n    PlayerTurnInPlace(direction);",
       "callsTo": [
         "GetObjectEventIdByLocalIdAndMap",
@@ -329,6 +524,12 @@
       "returnType": "void",
       "signature": "static void Task_HiddenItemNearby(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (ObjectEventCheckHeldMovementStatus(&gObjectEvents[GetObjectEventIdByLocalIdAndMap(LOCALID_PLAYER, 0, 0)]) == TRUE)\n        DisplayItemMessageOnField(taskId, gText_ItemFinderNearby, Task_CloseItemfinderMessage);",
       "callsTo": [
         "DisplayItemMessageOnField",
@@ -341,6 +542,12 @@
       "returnType": "void",
       "signature": "static void Task_StandingOnHiddenItem(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data = gTasks[taskId].data;\n\n    if (ObjectEventCheckHeldMovementStatus(&gObjectEvents[GetObjectEventIdByLocalIdAndMap(LOCALID_PLAYER, 0, 0)]) == TRUE\n    || tItemFound == FALSE)\n    {\n         \n        PlayerFaceHiddenItem(sClockwiseDirections[tFacingDir]);\n        tItemFound = TRUE;\n        tFacingDir = (tFacingDir + 1) & 3;\n        tCounter++;\n\n        if (tCounter == 4)\n            DisplayItemMessageOnField(taskId, gText_ItemFinderOnTop, Task_CloseItemfinderMessage);\n    }",
       "callsTo": [
         "DisplayItemMessageOnField",
@@ -354,6 +561,12 @@
       "returnType": "void",
       "signature": "void ItemUseOutOfBattle_PokeblockCase(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (MenuHelpers_IsLinkActive() == TRUE)\n    {\n        DisplayDadsAdviceCannotUseItemMessage(taskId, gTasks[taskId].tUsingRegisteredKeyItem);\n    }\n    else if (gTasks[taskId].tUsingRegisteredKeyItem != TRUE)\n    {\n        gBagMenu->newScreenCallback = CB2_OpenPokeblockFromBag;\n        Task_FadeAndCloseBagMenu(taskId);\n    }\n    else\n    {\n        gFieldCallback = FieldCB_ReturnToFieldNoScript;\n        FadeScreen(FADE_TO_BLACK, 0);\n        gTasks[taskId].func = Task_OpenRegisteredPokeblockCase;\n    }",
       "callsTo": [
         "DisplayDadsAdviceCannotUseItemMessage",
@@ -367,6 +580,7 @@
       "returnType": "void",
       "signature": "static void CB2_OpenPokeblockFromBag(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "OpenPokeblockCase(PBLOCK_CASE_FIELD, CB2_ReturnToBagMenuPocket);",
       "callsTo": [
         "OpenPokeblockCase"
@@ -377,6 +591,12 @@
       "returnType": "void",
       "signature": "static void Task_OpenRegisteredPokeblockCase(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (!gPaletteFade.active)\n    {\n        CleanupOverworldWindowsAndTilemaps();\n        OpenPokeblockCase(PBLOCK_CASE_FIELD, CB2_ReturnToField);\n        DestroyTask(taskId);\n    }",
       "callsTo": [
         "CleanupOverworldWindowsAndTilemaps",
@@ -389,6 +609,12 @@
       "returnType": "void",
       "signature": "void ItemUseOutOfBattle_CoinCase(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "ConvertIntToDecimalStringN(gStringVar1, GetCoins(), STR_CONV_MODE_LEFT_ALIGN, 4);\n    StringExpandPlaceholders(gStringVar4, gText_CoinCase);\n\n    if (!gTasks[taskId].tUsingRegisteredKeyItem)\n    {\n        DisplayItemMessage(taskId, FONT_NORMAL, gStringVar4, CloseItemMessage);\n    }\n    else\n    {\n        DisplayItemMessageOnField(taskId, gStringVar4, Task_CloseCantUseKeyItemMessage);\n    }",
       "callsTo": [
         "ConvertIntToDecimalStringN",
@@ -403,6 +629,12 @@
       "returnType": "void",
       "signature": "void ItemUseOutOfBattle_PowderJar(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "ConvertIntToDecimalStringN(gStringVar1, GetBerryPowder(), STR_CONV_MODE_LEFT_ALIGN, 5);\n    StringExpandPlaceholders(gStringVar4, gText_PowderQty);\n\n    if (!gTasks[taskId].tUsingRegisteredKeyItem)\n    {\n        DisplayItemMessage(taskId, FONT_NORMAL, gStringVar4, CloseItemMessage);\n    }\n    else\n    {\n        DisplayItemMessageOnField(taskId, gStringVar4, Task_CloseCantUseKeyItemMessage);\n    }",
       "callsTo": [
         "ConvertIntToDecimalStringN",
@@ -417,6 +649,12 @@
       "returnType": "void",
       "signature": "void ItemUseOutOfBattle_Berry(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (IsPlayerFacingEmptyBerryTreePatch() == TRUE)\n    {\n        sItemUseOnFieldCB = ItemUseOnFieldCB_Berry;\n        gFieldCallback = FieldCB_UseItemOnField;\n        gBagMenu->newScreenCallback = CB2_ReturnToField;\n        Task_FadeAndCloseBagMenu(taskId);\n    }\n    else\n    {\n        GetItemFieldFunc(gSpecialVar_ItemId)(taskId);\n    }",
       "callsTo": [
         "GetItemFieldFunc",
@@ -429,6 +667,12 @@
       "returnType": "void",
       "signature": "static void ItemUseOnFieldCB_Berry(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "RemoveBagItem(gSpecialVar_ItemId, 1);\n    LockPlayerFieldControls();\n    ScriptContext_SetupScript(BerryTree_EventScript_ItemUsePlantBerry);\n    DestroyTask(taskId);",
       "callsTo": [
         "DestroyTask",
@@ -442,6 +686,12 @@
       "returnType": "void",
       "signature": "void ItemUseOutOfBattle_WailmerPail(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (TryToWaterSudowoodo() == TRUE)\n    {\n        sItemUseOnFieldCB = ItemUseOnFieldCB_WailmerPailSudowoodo;\n        SetUpItemUseOnFieldCallback(taskId);\n    }\n    else if (TryToWaterBerryTree() == TRUE)\n    {\n        sItemUseOnFieldCB = ItemUseOnFieldCB_WailmerPailBerry;\n        SetUpItemUseOnFieldCallback(taskId);\n    }\n    else\n    {\n        DisplayDadsAdviceCannotUseItemMessage(taskId, gTasks[taskId].tUsingRegisteredKeyItem);\n    }",
       "callsTo": [
         "DisplayDadsAdviceCannotUseItemMessage",
@@ -455,6 +705,12 @@
       "returnType": "void",
       "signature": "static void ItemUseOnFieldCB_WailmerPailBerry(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "LockPlayerFieldControls();\n    ScriptContext_SetupScript(BerryTree_EventScript_ItemUseWailmerPail);\n    DestroyTask(taskId);",
       "callsTo": [
         "DestroyTask",
@@ -467,6 +723,7 @@
       "returnType": "bool8",
       "signature": "static bool8 TryToWaterSudowoodo(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s16 x, y;\n    u8 elevation;\n    u8 objId;\n    GetXYCoordsOneStepInFrontOfPlayer(&x, &y);\n    elevation = PlayerGetElevation();\n    objId = GetObjectEventIdByPosition(x, y, elevation);\n    if (objId == OBJECT_EVENTS_COUNT || gObjectEvents[objId].graphicsId != OBJ_EVENT_GFX_SUDOWOODO)\n        return FALSE;\n    else\n        return TRUE;",
       "callsTo": [
         "GetObjectEventIdByPosition",
@@ -479,6 +736,12 @@
       "returnType": "void",
       "signature": "static void ItemUseOnFieldCB_WailmerPailSudowoodo(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "LockPlayerFieldControls();\n    ScriptContext_SetupScript(BattleFrontier_OutsideEast_EventScript_WaterSudowoodo);\n    DestroyTask(taskId);",
       "callsTo": [
         "DestroyTask",
@@ -491,6 +754,12 @@
       "returnType": "void",
       "signature": "void ItemUseOutOfBattle_Medicine(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "gItemUseCB = ItemUseCB_Medicine;\n    SetUpItemUseCallback(taskId);",
       "callsTo": [
         "SetUpItemUseCallback"
@@ -501,6 +770,12 @@
       "returnType": "void",
       "signature": "void ItemUseOutOfBattle_ReduceEV(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "gItemUseCB = ItemUseCB_ReduceEV;\n    SetUpItemUseCallback(taskId);",
       "callsTo": [
         "SetUpItemUseCallback"
@@ -511,6 +786,12 @@
       "returnType": "void",
       "signature": "void ItemUseOutOfBattle_SacredAsh(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "gItemUseCB = ItemUseCB_SacredAsh;\n    SetUpItemUseCallback(taskId);",
       "callsTo": [
         "SetUpItemUseCallback"
@@ -521,6 +802,12 @@
       "returnType": "void",
       "signature": "void ItemUseOutOfBattle_PPRecovery(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "gItemUseCB = ItemUseCB_PPRecovery;\n    SetUpItemUseCallback(taskId);",
       "callsTo": [
         "SetUpItemUseCallback"
@@ -531,6 +818,12 @@
       "returnType": "void",
       "signature": "void ItemUseOutOfBattle_PPUp(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "gItemUseCB = ItemUseCB_PPUp;\n    SetUpItemUseCallback(taskId);",
       "callsTo": [
         "SetUpItemUseCallback"
@@ -541,6 +834,12 @@
       "returnType": "void",
       "signature": "void ItemUseOutOfBattle_RareCandy(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "gItemUseCB = ItemUseCB_RareCandy;\n    SetUpItemUseCallback(taskId);",
       "callsTo": [
         "SetUpItemUseCallback"
@@ -551,6 +850,12 @@
       "returnType": "void",
       "signature": "void ItemUseOutOfBattle_TMHM(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (gSpecialVar_ItemId >= ITEM_HM01)\n        DisplayItemMessage(taskId, FONT_NORMAL, gText_BootedUpHM, BootUpSoundTMHM);  \n    else\n        DisplayItemMessage(taskId, FONT_NORMAL, gText_BootedUpTM, BootUpSoundTMHM);",
       "callsTo": [
         "DisplayItemMessage"
@@ -561,6 +866,12 @@
       "returnType": "void",
       "signature": "static void BootUpSoundTMHM(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "PlaySE(SE_PC_LOGIN);\n    gTasks[taskId].func = Task_ShowTMHMContainedMessage;",
       "callsTo": [
         "PlaySE"
@@ -571,6 +882,12 @@
       "returnType": "void",
       "signature": "static void Task_ShowTMHMContainedMessage(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (JOY_NEW(A_BUTTON | B_BUTTON))\n    {\n        StringCopy(gStringVar1, gMoveNames[ItemIdToBattleMoveId(gSpecialVar_ItemId)]);\n        StringExpandPlaceholders(gStringVar4, gText_TMHMContainedVar1);\n        DisplayItemMessage(taskId, FONT_NORMAL, gStringVar4, UseTMHMYesNo);\n    }",
       "callsTo": [
         "DisplayItemMessage",
@@ -585,6 +902,12 @@
       "returnType": "void",
       "signature": "static void UseTMHMYesNo(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "BagMenu_YesNo(taskId, ITEMWIN_YESNO_HIGH, &sUseTMHMYesNoFuncTable);",
       "callsTo": [
         "BagMenu_YesNo"
@@ -595,6 +918,12 @@
       "returnType": "void",
       "signature": "static void UseTMHM(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "gItemUseCB = ItemUseCB_TMHM;\n    SetUpItemUseCallback(taskId);",
       "callsTo": [
         "SetUpItemUseCallback"
@@ -605,6 +934,7 @@
       "returnType": "void",
       "signature": "static void RemoveUsedItem(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "RemoveBagItem(gSpecialVar_ItemId, 1);\n    CopyItemName(gSpecialVar_ItemId, gStringVar2);\n    StringExpandPlaceholders(gStringVar4, gText_PlayerUsedVar2);\n    if (CurrentBattlePyramidLocation() == PYRAMID_LOCATION_NONE)\n    {\n        UpdatePocketItemList(GetItemPocket(gSpecialVar_ItemId));\n        UpdatePocketListPosition(GetItemPocket(gSpecialVar_ItemId));\n    }\n    else\n    {\n        UpdatePyramidBagList();\n        UpdatePyramidBagCursorPos();\n    }",
       "callsTo": [
         "CopyItemName",
@@ -623,6 +953,12 @@
       "returnType": "void",
       "signature": "void ItemUseOutOfBattle_Repel(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (VarGet(VAR_REPEL_STEP_COUNT) == 0)\n        gTasks[taskId].func = Task_StartUseRepel;\n    else if (CurrentBattlePyramidLocation() == PYRAMID_LOCATION_NONE)\n        DisplayItemMessage(taskId, FONT_NORMAL, gText_RepelEffectsLingered, CloseItemMessage);\n    else\n        DisplayItemMessageInBattlePyramid(taskId, gText_RepelEffectsLingered, Task_CloseBattlePyramidBagMessage);",
       "callsTo": [
         "CurrentBattlePyramidLocation",
@@ -636,6 +972,12 @@
       "returnType": "void",
       "signature": "static void Task_StartUseRepel(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data = gTasks[taskId].data;\n\n    if (++data[8] > 7)\n    {\n        data[8] = 0;\n        PlaySE(SE_REPEL);\n        gTasks[taskId].func = Task_UseRepel;\n    }",
       "callsTo": [
         "PlaySE"
@@ -646,6 +988,12 @@
       "returnType": "void",
       "signature": "static void Task_UseRepel(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (!IsSEPlaying())\n    {\n        VarSet(VAR_REPEL_STEP_COUNT, GetItemHoldEffectParam(gSpecialVar_ItemId));\n        RemoveUsedItem();\n        if (CurrentBattlePyramidLocation() == PYRAMID_LOCATION_NONE)\n            DisplayItemMessage(taskId, FONT_NORMAL, gStringVar4, CloseItemMessage);\n        else\n            DisplayItemMessageInBattlePyramid(taskId, gStringVar4, Task_CloseBattlePyramidBagMessage);\n    }",
       "callsTo": [
         "CurrentBattlePyramidLocation",
@@ -662,6 +1010,12 @@
       "returnType": "void",
       "signature": "static void Task_UsedBlackWhiteFlute(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if(++gTasks[taskId].data[8] > 7)\n    {\n        PlaySE(SE_GLASS_FLUTE);\n        if (CurrentBattlePyramidLocation() == PYRAMID_LOCATION_NONE)\n            DisplayItemMessage(taskId, FONT_NORMAL, gStringVar4, CloseItemMessage);\n        else\n            DisplayItemMessageInBattlePyramid(taskId, gStringVar4, Task_CloseBattlePyramidBagMessage);\n    }",
       "callsTo": [
         "CurrentBattlePyramidLocation",
@@ -675,6 +1029,12 @@
       "returnType": "void",
       "signature": "void ItemUseOutOfBattle_BlackWhiteFlute(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "CopyItemName(gSpecialVar_ItemId, gStringVar2);\n    if (gSpecialVar_ItemId == ITEM_WHITE_FLUTE)\n    {\n        FlagSet(FLAG_SYS_ENC_UP_ITEM);\n        FlagClear(FLAG_SYS_ENC_DOWN_ITEM);\n        StringExpandPlaceholders(gStringVar4, gText_UsedVar2WildLured);\n    }\n    else\n    {\n        FlagSet(FLAG_SYS_ENC_DOWN_ITEM);\n        FlagClear(FLAG_SYS_ENC_UP_ITEM);\n        StringExpandPlaceholders(gStringVar4, gText_UsedVar2WildRepelled);\n    }\n    gTasks[taskId].data[8] = 0;\n    gTasks[taskId].func = Task_UsedBlackWhiteFlute;",
       "callsTo": [
         "CopyItemName",
@@ -688,6 +1048,12 @@
       "returnType": "void",
       "signature": "void Task_UseDigEscapeRopeOnField(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "ResetInitialPlayerAvatarState();\n    StartEscapeRopeFieldEffect();\n    DestroyTask(taskId);",
       "callsTo": [
         "DestroyTask",
@@ -700,6 +1066,12 @@
       "returnType": "void",
       "signature": "static void ItemUseOnFieldCB_EscapeRope(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "Overworld_ResetStateAfterDigEscRope();\n    RemoveUsedItem();\n    gTasks[taskId].data[0] = 0;\n    DisplayItemMessageOnField(taskId, gStringVar4, Task_UseDigEscapeRopeOnField);",
       "callsTo": [
         "DisplayItemMessageOnField",
@@ -712,6 +1084,7 @@
       "returnType": "bool8",
       "signature": "bool8 CanUseDigOrEscapeRopeOnCurMap(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gMapHeader.allowEscaping)\n        return TRUE;\n    else\n        return FALSE;",
       "callsTo": [],
       "lineCount": 4
@@ -720,6 +1093,12 @@
       "returnType": "void",
       "signature": "void ItemUseOutOfBattle_EscapeRope(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (CanUseDigOrEscapeRopeOnCurMap() == TRUE)\n    {\n        sItemUseOnFieldCB = ItemUseOnFieldCB_EscapeRope;\n        SetUpItemUseOnFieldCallback(taskId);\n    }\n    else\n    {\n        DisplayDadsAdviceCannotUseItemMessage(taskId, gTasks[taskId].tUsingRegisteredKeyItem);\n    }",
       "callsTo": [
         "CanUseDigOrEscapeRopeOnCurMap",
@@ -732,6 +1111,12 @@
       "returnType": "void",
       "signature": "void ItemUseOutOfBattle_EvolutionStone(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "gItemUseCB = ItemUseCB_EvolutionStone;\n    SetUpItemUseCallback(taskId);",
       "callsTo": [
         "SetUpItemUseCallback"
@@ -742,6 +1127,12 @@
       "returnType": "void",
       "signature": "void ItemUseInBattle_PokeBall(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (IsPlayerPartyAndPokemonStorageFull() == FALSE)  \n    {\n        RemoveBagItem(gSpecialVar_ItemId, 1);\n        if (CurrentBattlePyramidLocation() == PYRAMID_LOCATION_NONE)\n            Task_FadeAndCloseBagMenu(taskId);\n        else\n            CloseBattlePyramidBag(taskId);\n    }\n    else if (CurrentBattlePyramidLocation() == PYRAMID_LOCATION_NONE)\n    {\n        DisplayItemMessage(taskId, FONT_NORMAL, gText_BoxFull, CloseItemMessage);\n    }\n    else\n    {\n        DisplayItemMessageInBattlePyramid(taskId, gText_BoxFull, Task_CloseBattlePyramidBagMessage);\n    }",
       "callsTo": [
         "CloseBattlePyramidBag",
@@ -758,6 +1149,12 @@
       "returnType": "void",
       "signature": "static void Task_CloseStatIncreaseMessage(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (JOY_NEW(A_BUTTON | B_BUTTON))\n    {\n        if (CurrentBattlePyramidLocation() == PYRAMID_LOCATION_NONE)\n            Task_FadeAndCloseBagMenu(taskId);\n        else\n            CloseBattlePyramidBag(taskId);\n    }",
       "callsTo": [
         "CloseBattlePyramidBag",
@@ -771,6 +1168,12 @@
       "returnType": "void",
       "signature": "static void Task_UseStatIncreaseItem(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if(++gTasks[taskId].data[8] > 7)\n    {\n        PlaySE(SE_USE_ITEM);\n        RemoveBagItem(gSpecialVar_ItemId, 1);\n        if (CurrentBattlePyramidLocation() == PYRAMID_LOCATION_NONE)\n            DisplayItemMessage(taskId, FONT_NORMAL, UseStatIncreaseItem(gSpecialVar_ItemId), Task_CloseStatIncreaseMessage);\n        else\n            DisplayItemMessageInBattlePyramid(taskId, UseStatIncreaseItem(gSpecialVar_ItemId), Task_CloseStatIncreaseMessage);\n    }",
       "callsTo": [
         "CurrentBattlePyramidLocation",
@@ -786,6 +1189,12 @@
       "returnType": "void",
       "signature": "void ItemUseInBattle_StatIncrease(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u16 partyId = gBattlerPartyIndexes[gBattlerInMenuId];\n\n    if (ExecuteTableBasedItemEffect(&gPlayerParty[partyId], gSpecialVar_ItemId, partyId, 0) != FALSE)\n    {\n        if (CurrentBattlePyramidLocation() == PYRAMID_LOCATION_NONE)\n            DisplayItemMessage(taskId, FONT_NORMAL, gText_WontHaveEffect, CloseItemMessage);\n        else\n            DisplayItemMessageInBattlePyramid(taskId, gText_WontHaveEffect, Task_CloseBattlePyramidBagMessage);\n    }\n    else\n    {\n        gTasks[taskId].func = Task_UseStatIncreaseItem;\n        gTasks[taskId].data[8] = 0;\n    }",
       "callsTo": [
         "CurrentBattlePyramidLocation",
@@ -799,6 +1208,12 @@
       "returnType": "void",
       "signature": "static void ItemUseInBattle_ShowPartyMenu(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (CurrentBattlePyramidLocation() == PYRAMID_LOCATION_NONE)\n    {\n        gBagMenu->newScreenCallback = ChooseMonForInBattleItem;\n        Task_FadeAndCloseBagMenu(taskId);\n    }\n    else\n    {\n        gPyramidBagMenu->newScreenCallback = ChooseMonForInBattleItem;\n        CloseBattlePyramidBag(taskId);\n    }",
       "callsTo": [
         "CloseBattlePyramidBag",
@@ -811,6 +1226,12 @@
       "returnType": "void",
       "signature": "void ItemUseInBattle_Medicine(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "gItemUseCB = ItemUseCB_Medicine;\n    ItemUseInBattle_ShowPartyMenu(taskId);",
       "callsTo": [
         "ItemUseInBattle_ShowPartyMenu"
@@ -821,6 +1242,12 @@
       "returnType": "void",
       "signature": "void ItemUseInBattle_SacredAsh(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "gItemUseCB = ItemUseCB_SacredAsh;\n    ItemUseInBattle_ShowPartyMenu(taskId);",
       "callsTo": [
         "ItemUseInBattle_ShowPartyMenu"
@@ -831,6 +1258,12 @@
       "returnType": "void",
       "signature": "void ItemUseInBattle_PPRecovery(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "gItemUseCB = ItemUseCB_PPRecovery;\n    ItemUseInBattle_ShowPartyMenu(taskId);",
       "callsTo": [
         "ItemUseInBattle_ShowPartyMenu"
@@ -841,6 +1274,12 @@
       "returnType": "void",
       "signature": "void ItemUseInBattle_Escape(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if((gBattleTypeFlags & BATTLE_TYPE_TRAINER) == FALSE)\n    {\n        RemoveUsedItem();\n        if (CurrentBattlePyramidLocation() == PYRAMID_LOCATION_NONE)\n            DisplayItemMessage(taskId, FONT_NORMAL, gStringVar4, Task_FadeAndCloseBagMenu);\n        else\n            DisplayItemMessageInBattlePyramid(taskId, gStringVar4, CloseBattlePyramidBag);\n    }\n    else\n    {\n        DisplayDadsAdviceCannotUseItemMessage(taskId, gTasks[taskId].tUsingRegisteredKeyItem);\n    }",
       "callsTo": [
         "CurrentBattlePyramidLocation",
@@ -855,6 +1294,12 @@
       "returnType": "void",
       "signature": "void ItemUseOutOfBattle_EnigmaBerry(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "switch (GetItemEffectType(gSpecialVar_ItemId))\n    {\n    case ITEM_EFFECT_HEAL_HP:\n    case ITEM_EFFECT_CURE_POISON:\n    case ITEM_EFFECT_CURE_SLEEP:\n    case ITEM_EFFECT_CURE_BURN:\n    case ITEM_EFFECT_CURE_FREEZE:\n    case ITEM_EFFECT_CURE_PARALYSIS:\n    case ITEM_EFFECT_CURE_ALL_STATUS:\n    case ITEM_EFFECT_ATK_EV:\n    case ITEM_EFFECT_HP_EV:\n    case ITEM_EFFECT_SPATK_EV:\n    case ITEM_EFFECT_SPDEF_EV:\n    case ITEM_EFFECT_SPEED_EV:\n    case ITEM_EFFECT_DEF_EV:\n        gTasks[taskId].tEnigmaBerryType = ITEM_USE_PARTY_MENU;\n        ItemUseOutOfBattle_Medicine(taskId);\n        break;\n    case ITEM_EFFECT_SACRED_ASH:\n        gTasks[taskId].tEnigmaBerryType = ITEM_USE_PARTY_MENU;\n        ItemUseOutOfBattle_SacredAsh(taskId);\n        break;\n    case ITEM_EFFECT_RAISE_LEVEL:\n        gTasks[taskId].tEnigmaBerryType = ITEM_USE_PARTY_MENU;\n        ItemUseOutOfBattle_RareCandy(taskId);\n        break;\n    case ITEM_EFFECT_PP_UP:\n    case ITEM_EFFECT_PP_MAX:\n        gTasks[taskId].tEnigmaBerryType = ITEM_USE_PARTY_MENU;\n        ItemUseOutOfBattle_PPUp(taskId);\n        break;\n    case ITEM_EFFECT_HEAL_PP:\n        gTasks[taskId].tEnigmaBerryType = ITEM_USE_PARTY_MENU;\n        ItemUseOutOfBattle_PPRecovery(taskId);\n        break;\n    default:\n        gTasks[taskId].tEnigmaBerryType = ITEM_USE_BAG_MENU;\n        ItemUseOutOfBattle_CannotUse(taskId);\n        break;\n    }",
       "callsTo": [
         "GetItemEffectType",
@@ -871,6 +1316,12 @@
       "returnType": "void",
       "signature": "void ItemUseInBattle_EnigmaBerry(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "switch (GetItemEffectType(gSpecialVar_ItemId))\n    {\n    case ITEM_EFFECT_X_ITEM:\n        ItemUseInBattle_StatIncrease(taskId);\n        break;\n    case ITEM_EFFECT_HEAL_HP:\n    case ITEM_EFFECT_CURE_POISON:\n    case ITEM_EFFECT_CURE_SLEEP:\n    case ITEM_EFFECT_CURE_BURN:\n    case ITEM_EFFECT_CURE_FREEZE:\n    case ITEM_EFFECT_CURE_PARALYSIS:\n    case ITEM_EFFECT_CURE_ALL_STATUS:\n    case ITEM_EFFECT_CURE_CONFUSION:\n    case ITEM_EFFECT_CURE_INFATUATION:\n        ItemUseInBattle_Medicine(taskId);\n        break;\n    case ITEM_EFFECT_HEAL_PP:\n        ItemUseInBattle_PPRecovery(taskId);\n        break;\n    default:\n        ItemUseOutOfBattle_CannotUse(taskId);\n        break;\n    }",
       "callsTo": [
         "GetItemEffectType",
@@ -885,6 +1336,12 @@
       "returnType": "void",
       "signature": "void ItemUseOutOfBattle_CannotUse(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "DisplayDadsAdviceCannotUseItemMessage(taskId, gTasks[taskId].tUsingRegisteredKeyItem);",
       "callsTo": [
         "DisplayDadsAdviceCannotUseItemMessage"

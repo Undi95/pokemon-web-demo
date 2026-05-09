@@ -6,6 +6,20 @@
       "returnType": "void",
       "signature": "void DoRayquazaScene(u8 animId, bool8 endEarly, MainCallback exitCallback)",
       "paramsRaw": "u8 animId, bool8 endEarly, MainCallback exitCallback",
+      "paramsList": [
+        {
+          "name": "animId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "endEarly",
+          "typeRaw": "bool8"
+        },
+        {
+          "name": "exitCallback",
+          "typeRaw": "MainCallback"
+        }
+      ],
       "body": "sRayScene = AllocZeroed(sizeof(*sRayScene));\n    sRayScene->animId = animId;\n    sRayScene->exitCallback = exitCallback;\n    sRayScene->endEarly = endEarly;\n    SetMainCallback2(CB2_InitRayquazaScene);",
       "callsTo": [
         "AllocZeroed",
@@ -17,6 +31,7 @@
       "returnType": "void",
       "signature": "static void CB2_InitRayquazaScene(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "SetVBlankHBlankCallbacksToNull();\n    ClearScheduledBgCopiesToVram();\n    ScanlineEffect_Stop();\n    FreeAllSpritePalettes();\n    ResetPaletteFade();\n    ResetSpriteData();\n    ResetTasks();\n    FillPalette(RGB_BLACK, BG_PLTT_ID(15), PLTT_SIZE_4BPP);\n    CreateTask(sTasksForAnimations[sRayScene->animId], 0);\n    SetMainCallback2(CB2_RayquazaScene);",
       "callsTo": [
         "BG_PLTT_ID",
@@ -37,6 +52,7 @@
       "returnType": "void",
       "signature": "static void CB2_RayquazaScene(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "RunTasks();\n    AnimateSprites();\n    BuildOamBuffer();\n    DoScheduledBgTilemapCopiesToVram();\n    UpdatePaletteFade();",
       "callsTo": [
         "AnimateSprites",
@@ -51,6 +67,7 @@
       "returnType": "void",
       "signature": "static void VBlankCB_RayquazaScene(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "LoadOam();\n    ProcessSpriteCopyRequests();\n    TransferPlttBuffer();",
       "callsTo": [
         "LoadOam",
@@ -63,6 +80,12 @@
       "returnType": "void",
       "signature": "static void Task_EndAfterFadeScreen(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (!gPaletteFade.active)\n    {\n        ResetSpriteData();\n        FreeAllSpritePalettes();\n        SetMainCallback2(sRayScene->exitCallback);\n        Free(sRayScene);\n        DestroyTask(taskId);\n    }",
       "callsTo": [
         "DestroyTask",
@@ -77,6 +100,12 @@
       "returnType": "void",
       "signature": "static void Task_SetNextAnim(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (!gPaletteFade.active)\n    {\n        if (sRayScene->endEarly == TRUE)\n        {\n            gTasks[taskId].func = Task_EndAfterFadeScreen;\n        }\n        else\n        {\n            sRayScene->animId++;\n            sRayScene->unk = 0;\n            gTasks[taskId].func = sTasksForAnimations[sRayScene->animId];\n        }\n    }",
       "callsTo": [],
       "lineCount": 13
@@ -85,6 +114,7 @@
       "returnType": "void",
       "signature": "static void SetWindowsHideVertBorders(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "SetGpuReg(REG_OFFSET_WININ, WININ_WIN0_ALL);\n    SetGpuReg(REG_OFFSET_WINOUT, 0);\n    SetGpuReg(REG_OFFSET_WIN0H, WIN_RANGE(0, DISPLAY_WIDTH));\n    SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(24, DISPLAY_HEIGHT - 24));\n    gPlttBufferUnfaded[0] = 0;\n    gPlttBufferFaded[0] = 0;",
       "callsTo": [
         "SetGpuReg",
@@ -96,6 +126,7 @@
       "returnType": "void",
       "signature": "static void ResetWindowDimensions(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "SetGpuReg(REG_OFFSET_WININ, WININ_WIN0_ALL);\n    SetGpuReg(REG_OFFSET_WINOUT, WINOUT_WIN01_ALL);",
       "callsTo": [
         "SetGpuReg"
@@ -106,6 +137,12 @@
       "returnType": "void",
       "signature": "static void Task_HandleDuoFightPre(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data = gTasks[taskId].data;\n    DuoFight_AnimateRain();\n    if (!gPaletteFade.active)\n    {\n        s16 frame = tTimer;\n        if (frame == 64)\n        {\n            DuoFight_Lightning1();\n        }\n        else if (frame == 144)\n        {\n            DuoFight_Lightning2();\n        }\n        else\n        {\n            switch (frame)\n            {\n            case 328:\n                DuoFightEnd(taskId, 0);\n                return;\n            case 148:\n                DuoFight_LightningLong();\n                break;\n            }\n        }\n\n        tTimer++;\n    }",
       "callsTo": [
         "DuoFightEnd",
@@ -120,6 +157,7 @@
       "returnType": "u8",
       "signature": "static u8 DuoFightPre_CreateGroudonSprites(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 spriteId;\n    s16 *data;\n\n    spriteId = CreateSprite(&sSpriteTemplate_DuoFightPre_Groudon, 88, 72, 3);\n    gSprites[spriteId].callback = SpriteCB_DuoFightPre_Groudon;\n    data = gSprites[spriteId].data;\n    sGroudonBodySpriteId = CreateSprite(&sSpriteTemplate_DuoFightPre_Groudon, 56, 104, 3);\n    sGroudonShoulderSpriteId = CreateSprite(&sSpriteTemplate_DuoFightPre_GroudonShoulder, 75, 101, 0);\n    sGroudonClawSpriteId = CreateSprite(&sSpriteTemplate_DuoFightPre_GroudonClaw, 109, 114, 1);\n    StartSpriteAnim(&gSprites[sGroudonBodySpriteId], 1);\n    return spriteId;",
       "callsTo": [
         "CreateSprite",
@@ -131,6 +169,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_DuoFightPre_Groudon(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "s16 *data = sprite->data;\n    data[5]++;\n    data[5] &= 0x1F;\n    if (data[5] == 0 && sprite->x != 72)\n    {\n        sprite->x--;\n        gSprites[sprite->sGroudonBodySpriteId].x--;\n        gSprites[sGroudonShoulderSpriteId].x--;\n        gSprites[sGroudonClawSpriteId].x--;\n    }\n\n    switch (sprite->animCmdIndex)\n    {\n    case 0:\n        gSprites[sGroudonShoulderSpriteId].x2 = 0;\n        gSprites[sGroudonShoulderSpriteId].y2 = 0;\n        gSprites[sGroudonClawSpriteId].x2 = 0;\n        gSprites[sGroudonClawSpriteId].y2 = 0;\n        break;\n    case 1:\n    case 3:\n        gSprites[sGroudonShoulderSpriteId].x2 = -1;\n        gSprites[sGroudonShoulderSpriteId].y2 = 0;\n        gSprites[sGroudonClawSpriteId].x2 = -1;\n        gSprites[sGroudonClawSpriteId].y2 = 0;\n        break;\n    case 2:\n        gSprites[sGroudonShoulderSpriteId].x2 = -1;\n        gSprites[sGroudonShoulderSpriteId].y2 = 1;\n        gSprites[sGroudonClawSpriteId].x2 = -2;\n        gSprites[sGroudonClawSpriteId].y2 = 1;\n        break;\n    }",
       "callsTo": [],
       "lineCount": 33
@@ -139,6 +183,7 @@
       "returnType": "u8",
       "signature": "static u8 DuoFightPre_CreateKyogreSprites(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 spriteId;\n    s16 *data;\n\n    spriteId = CreateSprite(&sSpriteTemplate_DuoFightPre_Kyogre, 136, 96, 1);\n    gSprites[spriteId].callback = SpriteCB_DuoFightPre_Kyogre;\n    data = gSprites[spriteId].data;\n\n    data[0]  = CreateSprite(&sSpriteTemplate_DuoFightPre_Kyogre, 168,  96, 1) << 8;\n    data[0] |= CreateSprite(&sSpriteTemplate_DuoFightPre_Kyogre, 136, 112, 1);\n    data[1]  = CreateSprite(&sSpriteTemplate_DuoFightPre_Kyogre, 168, 112, 1) << 8;\n    data[1] |= CreateSprite(&sSpriteTemplate_DuoFightPre_Kyogre, 136, 128, 1);\n    data[2]  = CreateSprite(&sSpriteTemplate_DuoFightPre_Kyogre, 168, 128, 1) << 8;\n    data[2] |= CreateSprite(&sSpriteTemplate_DuoFightPre_Kyogre, 104, 128, 2);\n    data[3]  = CreateSprite(&sSpriteTemplate_DuoFightPre_Kyogre, 136, 128, 2) << 8;\n    data[3] |= CreateSprite(&sSpriteTemplate_DuoFightPre_Kyogre, 184, 128, 0);\n    data[4]  = CreateSprite(&sSpriteTemplate_DuoFightPre_KyogrePectoralFin, 208, 132, 0) << 8;\n    data[4] |= CreateSprite(&sSpriteTemplate_DuoFightPre_KyogreDorsalFin, 200, 120, 1);\n\n    StartSpriteAnim(&gSprites[data[0] >> 8], 1);\n    StartSpriteAnim(&gSprites[data[0] & 0xFF], 2);\n    StartSpriteAnim(&gSprites[data[1] >> 8], 3);\n    StartSpriteAnim(&gSprites[data[1] & 0xFF], 4);\n    StartSpriteAnim(&gSprites[data[2] >> 8], 5);\n    StartSpriteAnim(&gSprites[data[2] & 0xFF], 6);\n    StartSpriteAnim(&gSprites[data[3] >> 8], 7);\n    StartSpriteAnim(&gSprites[data[3] & 0xFF], 8);\n\n    return spriteId;",
       "callsTo": [
         "CreateSprite",
@@ -150,6 +195,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_DuoFightPre_Kyogre(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "s16 *data = sprite->data;\n    data[5]++;\n    data[5] &= 0x1F;\n    if (data[5] == 0 && sprite->x != 152)\n    {\n        sprite->x++;\n        gSprites[sprite->data[0] >> 8].x++;\n        gSprites[sprite->data[0] & 0xFF].x++;\n        gSprites[data[1] >> 8].x++;\n        gSprites[data[1] & 0xFF].x++;\n        gSprites[data[2] >> 8].x++;\n        gSprites[data[2] & 0xFF].x++;\n        gSprites[data[3] >> 8].x++;\n        gSprites[data[3] & 0xFF].x++;\n        gSprites[data[4] >> 8].x++;\n        gSprites[data[4] & 0xFF].x++;\n    }\n\n    switch (gSprites[data[2] & 0xFF].animCmdIndex)\n    {\n    case 0:\n        sprite->y2 = 0;\n        gSprites[data[0] >> 8].y2 = 0;\n        gSprites[data[0] & 0xFF].y2 = 0;\n        gSprites[data[1] >> 8].y2 = 0;\n        gSprites[data[1] & 0xFF].y2 = 0;\n        gSprites[data[2] >> 8].y2 = 0;\n        gSprites[data[2] & 0xFF].y2 = 0;\n        gSprites[data[3] >> 8].y2 = 0;\n        gSprites[data[3] & 0xFF].y2 = 0;\n        gSprites[data[4] >> 8].y2 = 0;\n        gSprites[data[4] & 0xFF].y2 = 0;\n        break;\n    case 1:\n    case 3:\n        sprite->y2 = 1;\n        gSprites[data[0] >> 8].y2 = 1;\n        gSprites[data[0] & 0xFF].y2 = 1;\n        gSprites[data[1] >> 8].y2 = 1;\n        gSprites[data[1] & 0xFF].y2 = 1;\n        gSprites[data[2] >> 8].y2 = 1;\n        gSprites[data[2] & 0xFF].y2 = 1;\n        gSprites[data[3] >> 8].y2 = 1;\n        gSprites[data[3] & 0xFF].y2 = 1;\n        gSprites[data[4] >> 8].y2 = 1;\n        gSprites[data[4] & 0xFF].y2 = 1;\n        break;\n    case 2:\n        sprite->y2 = 2;\n        gSprites[data[0] >> 8].y2 = 2;\n        gSprites[data[0] & 0xFF].y2 = 2;\n        gSprites[data[1] >> 8].y2 = 2;\n        gSprites[data[1] & 0xFF].y2 = 2;\n        gSprites[data[2] >> 8].y2 = 2;\n        gSprites[data[4] & 0xFF].y2 = 2;\n        break;\n    }",
       "callsTo": [],
       "lineCount": 57
@@ -158,6 +209,7 @@
       "returnType": "void",
       "signature": "static void VBlankCB_DuoFight(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "VBlankCB_RayquazaScene();\n    ScanlineEffect_InitHBlankDmaTransfer();",
       "callsTo": [
         "ScanlineEffect_InitHBlankDmaTransfer",
@@ -169,6 +221,7 @@
       "returnType": "void",
       "signature": "static void InitDuoFightSceneBgs(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ResetVramOamAndBgCntRegs();\n    ResetBgsAndClearDma3BusyFlags(0);\n    InitBgsFromTemplates(0, sBgTemplates_DuoFight, ARRAY_COUNT(sBgTemplates_DuoFight));\n    SetBgTilemapBuffer(0, sRayScene->tilemapBuffers[0]);\n    SetBgTilemapBuffer(1, sRayScene->tilemapBuffers[1]);\n    SetBgTilemapBuffer(2, sRayScene->tilemapBuffers[2]);\n    ResetAllBgsCoordinates();\n    ScheduleBgCopyTilemapToVram(0);\n    ScheduleBgCopyTilemapToVram(1);\n    ScheduleBgCopyTilemapToVram(2);\n    SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_OBJ_ON | DISPCNT_OBJ_1D_MAP);\n    ShowBg(0);\n    ShowBg(1);\n    ShowBg(2);\n    SetGpuReg(REG_OFFSET_BLDCNT, 0);",
       "callsTo": [
         "ARRAY_COUNT",
@@ -187,6 +240,7 @@
       "returnType": "void",
       "signature": "static void LoadDuoFightSceneGfx(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ResetTempTileDataBuffers();\n    DecompressAndCopyTileDataToVram(0, gRaySceneDuoFight_Clouds_Gfx, 0, 0, 0);\n    while (FreeTempTileDataBuffersIfPossible())\n        ;\n    LZDecompressWram(gRaySceneDuoFight_Clouds2_Tilemap, sRayScene->tilemapBuffers[0]);\n    LZDecompressWram(gRaySceneDuoFight_Clouds1_Tilemap, sRayScene->tilemapBuffers[1]);\n    LZDecompressWram(gRaySceneDuoFight_Clouds3_Tilemap, sRayScene->tilemapBuffers[2]);\n    LoadCompressedPalette(gRaySceneDuoFight_Clouds_Pal, BG_PLTT_ID(0), 2 * PLTT_SIZE_4BPP);\n    LoadCompressedSpriteSheet(&sSpriteSheet_DuoFight_Groudon);\n    LoadCompressedSpriteSheet(&sSpriteSheet_DuoFight_GroudonShoulder);\n    LoadCompressedSpriteSheet(&sSpriteSheet_DuoFight_GroudonClaw);\n    LoadCompressedSpriteSheet(&sSpriteSheet_DuoFight_Kyogre);\n    LoadCompressedSpriteSheet(&sSpriteSheet_DuoFight_KyogrePectoralFin);\n    LoadCompressedSpriteSheet(&sSpriteSheet_DuoFight_KyogreDorsalFin);\n    LoadCompressedSpritePalette(&sSpritePal_DuoFight_Groudon);\n    LoadCompressedSpritePalette(&sSpritePal_DuoFight_Kyogre);",
       "callsTo": [
         "BG_PLTT_ID",
@@ -204,6 +258,12 @@
       "returnType": "void",
       "signature": "static void Task_DuoFightAnim(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data = gTasks[taskId].data;\n    ScanlineEffect_Clear();\n    InitDuoFightSceneBgs();\n    LoadDuoFightSceneGfx();\n    CpuFastFill16(0, gScanlineEffectRegBuffers, sizeof(gScanlineEffectRegBuffers));\n    ScanlineEffect_SetParams(sScanlineParams_DuoFight_Clouds);\n    tTimer = 0;\n    tHelperTaskId = CreateTask(Task_DuoFight_AnimateClouds, 0);\n    if (sRayScene->animId == RAY_ANIM_DUO_FIGHT_PRE)\n    {\n        tGroudonSpriteId = DuoFightPre_CreateGroudonSprites();\n        tKyogreSpriteId = DuoFightPre_CreateKyogreSprites();\n        gTasks[taskId].func = Task_HandleDuoFightPre;\n    }\n    else\n    {\n        tGroudonSpriteId = DuoFight_CreateGroudonSprites();\n        tKyogreSpriteId = DuoFight_CreateKyogreSprites();\n        gTasks[taskId].func = Task_HandleDuoFight;\n        StopMapMusic();\n    }\n\n    BlendPalettes(PALETTES_ALL, 0x10, RGB_BLACK);\n    BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_BLACK);\n    SetVBlankCallback(VBlankCB_DuoFight);\n    PlaySE(SE_DOWNPOUR);",
       "callsTo": [
         "BeginNormalPaletteFade",
@@ -228,6 +288,12 @@
       "returnType": "void",
       "signature": "static void Task_DuoFight_AnimateClouds(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 i;\n    u16 *data = (u16*)gTasks[taskId].data;\n\n    for (i = 24; i < 92; i++)\n    {\n        if (i <= 47)\n        {\n            gScanlineEffectRegBuffers[0][i] = data[0] >> 8;\n            gScanlineEffectRegBuffers[1][i] = data[0] >> 8;\n        }\n        else if (i <= 63)\n        {\n            gScanlineEffectRegBuffers[0][i] = data[1] >> 8;\n            gScanlineEffectRegBuffers[1][i] = data[1] >> 8;\n        }\n        else if (i <= 75)\n        {\n            gScanlineEffectRegBuffers[0][i] = data[2] >> 8;\n            gScanlineEffectRegBuffers[1][i] = data[2] >> 8;\n        }\n        else if (i <= 83)\n        {\n            gScanlineEffectRegBuffers[0][i] = data[3] >> 8;\n            gScanlineEffectRegBuffers[1][i] = data[3] >> 8;\n        }\n        else if (i <= 87)\n        {\n            gScanlineEffectRegBuffers[0][i] = data[4] >> 8;\n            gScanlineEffectRegBuffers[1][i] = data[4] >> 8;\n        }\n        else\n        {\n            gScanlineEffectRegBuffers[0][i] = data[5] >> 8;\n            gScanlineEffectRegBuffers[1][i] = data[5] >> 8;\n        }\n    }\n\n    if (sRayScene->animId == RAY_ANIM_DUO_FIGHT_PRE)\n    {\n        data[0] += 448;\n        data[1] += 384;\n        data[2] += 320;\n        data[3] += 256;\n        data[4] += 192;\n        data[5] += 128;\n    }\n    else\n    {\n        data[0] += 768;\n        data[1] += 640;\n        data[2] += 512;\n        data[3] += 384;\n        data[4] += 256;\n        data[5] += 128;\n    }",
       "callsTo": [],
       "lineCount": 55
@@ -236,6 +302,12 @@
       "returnType": "void",
       "signature": "static void Task_HandleDuoFight(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data = gTasks[taskId].data;\n    DuoFight_AnimateRain();\n    if (!gPaletteFade.active)\n    {\n        s16 frame = tTimer;\n        if (frame == 32 || frame == 112)\n        {\n            DuoFight_Lightning1();\n        }\n        else if (frame == 216)\n        {\n            DuoFight_Lightning2();\n        }\n        else if (frame == 220)\n        {\n            DuoFight_LightningLong();\n        }\n        else\n        {\n            switch (frame)\n            {\n            case 412:\n                DuoFightEnd(taskId, 2);\n                return;\n            case 380:\n                SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_TGT1_BG2 | BLDCNT_TGT2_BG1 | BLDCNT_EFFECT_BLEND);\n                gTasks[tHelperTaskId].func = DuoFight_PanOffScene;\n                gTasks[tHelperTaskId].data[0] = 0;\n                gTasks[tHelperTaskId].data[2] = data[2];\n                gTasks[tHelperTaskId].data[3] = data[3];\n                ScanlineEffect_Stop();\n                break;\n            }\n        }\n\n        tTimer++;\n    }",
       "callsTo": [
         "DuoFightEnd",
@@ -252,6 +324,7 @@
       "returnType": "void",
       "signature": "static void DuoFight_Lightning1(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "PlaySE(SE_THUNDER);\n    BlendPalettesGradually(PALETTES_BG & ~(0x8000), 0, 16, 0, RGB_WHITEALPHA, 0, 0);\n    BlendPalettesGradually(PALETTES_OBJECTS, 0, 16, 0, RGB_BLACK,      0, 1);",
       "callsTo": [
         "BlendPalettesGradually",
@@ -263,6 +336,7 @@
       "returnType": "void",
       "signature": "static void DuoFight_Lightning2(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "PlaySE(SE_THUNDER);\n    BlendPalettesGradually(PALETTES_BG & ~(0x8000), 0, 16, 16, RGB_WHITEALPHA, 0, 0);\n    BlendPalettesGradually(PALETTES_OBJECTS, 0, 16, 16, RGB_BLACK,      0, 1);",
       "callsTo": [
         "BlendPalettesGradually",
@@ -274,6 +348,7 @@
       "returnType": "void",
       "signature": "static void DuoFight_LightningLong(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "BlendPalettesGradually(PALETTES_BG & ~(0x8000), 4, 16, 0, RGB_WHITEALPHA, 0, 0);\n    BlendPalettesGradually(PALETTES_OBJECTS, 4, 16, 0, RGB_BLACK,      0, 1);",
       "callsTo": [
         "BlendPalettesGradually"
@@ -284,6 +359,7 @@
       "returnType": "void",
       "signature": "static void DuoFight_AnimateRain(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ChangeBgX(2, 0x400, BG_COORD_ADD);\n    ChangeBgY(2, 0x800, BG_COORD_SUB);",
       "callsTo": [
         "ChangeBgX",
@@ -295,6 +371,12 @@
       "returnType": "void",
       "signature": "static void DuoFight_PanOffScene(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u16 bgY;\n    s16 *data = gTasks[taskId].data;\n    DuoFight_SlideGroudonDown(&gSprites[tGroudonSpriteId]);\n    DuoFight_SlideKyogreDown(&gSprites[tKyogreSpriteId]);\n\n    bgY = GetBgY(1);\n    if (GetBgY(1) == 0 || bgY > 0x8000)\n        ChangeBgY(1, 0x400, BG_COORD_SUB);\n\n    if (tTimer != 16)\n    {\n        tTimer++;\n        SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(16 - tTimer, tTimer));\n    }",
       "callsTo": [
         "BLDALPHA_BLEND",
@@ -310,6 +392,16 @@
       "returnType": "void",
       "signature": "static void DuoFightEnd(u8 taskId, s8 palDelay)",
       "paramsRaw": "u8 taskId, s8 palDelay",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "palDelay",
+          "typeRaw": "s8"
+        }
+      ],
       "body": "PlaySE(SE_DOWNPOUR_STOP);\n    BeginNormalPaletteFade(PALETTES_ALL, palDelay, 0, 0x10, RGB_BLACK);\n    gTasks[taskId].func = Task_DuoFightEnd;",
       "callsTo": [
         "BeginNormalPaletteFade",
@@ -321,6 +413,12 @@
       "returnType": "void",
       "signature": "static void Task_DuoFightEnd(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data = gTasks[taskId].data;\n    DuoFight_AnimateRain();\n    if (!gPaletteFade.active)\n    {\n        DestroyTask(tHelperTaskId);\n        ChangeBgY(1, 0, BG_COORD_SET);\n        SetVBlankCallback(NULL);\n        ScanlineEffect_Stop();\n        ResetSpriteData();\n        FreeAllSpritePalettes();\n        tTimer = 0;\n        gTasks[taskId].func = Task_SetNextAnim;\n    }",
       "callsTo": [
         "ChangeBgY",
@@ -337,6 +435,7 @@
       "returnType": "u8",
       "signature": "static u8 DuoFight_CreateGroudonSprites(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 spriteId;\n    s16 *data;\n\n    spriteId = CreateSprite(&sSpriteTemplate_DuoFight_Groudon, 98, 72, 3);\n    gSprites[spriteId].callback = SpriteCB_DuoFight_Groudon;\n    data = gSprites[spriteId].data;\n    sGroudonBodySpriteId = CreateSprite(&sSpriteTemplate_DuoFight_Groudon, 66, 104, 3);\n    sGroudonShoulderSpriteId = CreateSprite(&sSpriteTemplate_DuoFight_GroudonShoulder, 85, 101, 0);\n    sGroudonClawSpriteId = CreateSprite(&sSpriteTemplate_DuoFight_GroudonClaw, 119, 114, 1);\n    StartSpriteAnim(&gSprites[sGroudonBodySpriteId], 1);\n    return spriteId;",
       "callsTo": [
         "CreateSprite",
@@ -348,6 +447,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_DuoFight_Groudon(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "s16 *data = sprite->data;\n    data[5]++;\n    data[5] &= 0xF;\n    if (!(data[5] & 7) && sprite->x != 72)\n    {\n        sprite->x--;\n        gSprites[sprite->sGroudonBodySpriteId].x--;\n        gSprites[sGroudonShoulderSpriteId].x--;\n        gSprites[sGroudonClawSpriteId].x--;\n    }\n\n    switch (sprite->animCmdIndex)\n    {\n    case 0:\n        gSprites[sGroudonShoulderSpriteId].x2 = 0;\n        gSprites[sGroudonShoulderSpriteId].y2 = 0;\n        gSprites[sGroudonClawSpriteId].x2 = 0;\n        gSprites[sGroudonClawSpriteId].y2 = 0;\n        break;\n    case 1:\n    case 3:\n        gSprites[sGroudonShoulderSpriteId].x2 = -1;\n        gSprites[sGroudonShoulderSpriteId].y2 = 0;\n        gSprites[sGroudonClawSpriteId].x2 = -1;\n        gSprites[sGroudonClawSpriteId].y2 = 0;\n        break;\n    case 2:\n        gSprites[sGroudonShoulderSpriteId].x2 = -1;\n        gSprites[sGroudonShoulderSpriteId].y2 = 1;\n        gSprites[sGroudonClawSpriteId].x2 = -2;\n        gSprites[sGroudonClawSpriteId].y2 = 1;\n        break;\n    }",
       "callsTo": [],
       "lineCount": 33
@@ -356,6 +461,12 @@
       "returnType": "void",
       "signature": "static void DuoFight_SlideGroudonDown(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "s16 *data = sprite->data;\n    if (sprite->y <= DISPLAY_HEIGHT)\n    {\n        sprite->y += 8;\n        gSprites[sprite->sGroudonBodySpriteId].y += 8;\n        gSprites[sGroudonShoulderSpriteId].y += 8;\n        gSprites[sGroudonClawSpriteId].y += 8;\n    }",
       "callsTo": [],
       "lineCount": 8
@@ -364,6 +475,7 @@
       "returnType": "u8",
       "signature": "static u8 DuoFight_CreateKyogreSprites(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 spriteId;\n    s16 *data;\n\n    spriteId = CreateSprite(&sSpriteTemplate_DuoFight_Kyogre, 126, 96, 1);\n    gSprites[spriteId].callback = SpriteCB_DuoFight_Kyogre;\n    data = gSprites[spriteId].data;\n\n    data[0] = CreateSprite(&sSpriteTemplate_DuoFight_Kyogre, 158, 96, 1) << 8;\n    data[0] |= CreateSprite(&sSpriteTemplate_DuoFight_Kyogre, 126, 112, 1);\n    data[1] = CreateSprite(&sSpriteTemplate_DuoFight_Kyogre, 158, 112, 1) << 8;\n    data[1] |= CreateSprite(&sSpriteTemplate_DuoFight_Kyogre, 126, 128, 1);\n    data[2] = CreateSprite(&sSpriteTemplate_DuoFight_Kyogre, 158, 128, 1) << 8;\n    data[2] |= CreateSprite(&sSpriteTemplate_DuoFight_Kyogre, 94, 128, 2);\n    data[3] = CreateSprite(&sSpriteTemplate_DuoFight_Kyogre, 126, 128, 2) << 8;\n    data[3] |= CreateSprite(&sSpriteTemplate_DuoFight_Kyogre, 174, 128, 0);\n    data[4] = CreateSprite(&sSpriteTemplate_DuoFight_KyogrePectoralFin, 198, 132, 0) << 8;\n    data[4] |= CreateSprite(&sSpriteTemplate_DuoFight_KyogreDorsalFin, 190, 120, 1);\n\n    StartSpriteAnim(&gSprites[data[0] >> 8], 1);\n    StartSpriteAnim(&gSprites[data[0] & 0xFF], 2);\n    StartSpriteAnim(&gSprites[data[1] >> 8], 3);\n    StartSpriteAnim(&gSprites[data[1] & 0xFF], 4);\n    StartSpriteAnim(&gSprites[data[2] >> 8], 5);\n    StartSpriteAnim(&gSprites[data[2] & 0xFF], 6);\n    StartSpriteAnim(&gSprites[data[3] >> 8], 7);\n    StartSpriteAnim(&gSprites[data[3] & 0xFF], 8);\n\n    return spriteId;",
       "callsTo": [
         "CreateSprite",
@@ -375,6 +487,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_DuoFight_Kyogre(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "s16 *data = sprite->data;\n    data[5]++;\n    data[5] &= 0xF;\n    if (!(data[5] & 7) && sprite->x != 152)\n    {\n        sprite->x++;\n        gSprites[sprite->data[0] >> 8].x++;\n        gSprites[sprite->data[0] & 0xFF].x++;\n        gSprites[data[1] >> 8].x++;\n        gSprites[data[1] & 0xFF].x++;\n        gSprites[data[2] >> 8].x++;\n        gSprites[data[2] & 0xFF].x++;\n        gSprites[data[3] >> 8].x++;\n        gSprites[data[3] & 0xFF].x++;\n        gSprites[data[4] >> 8].x++;\n        gSprites[data[4] & 0xFF].x++;\n    }\n\n    switch (gSprites[data[2] & 0xFF].animCmdIndex)\n    {\n    case 0:\n        sprite->y2 = 0;\n        gSprites[data[0] >> 8].y2 = 0;\n        gSprites[data[0] & 0xFF].y2 = 0;\n        gSprites[data[1] >> 8].y2 = 0;\n        gSprites[data[1] & 0xFF].y2 = 0;\n        gSprites[data[2] >> 8].y2 = 0;\n        gSprites[data[2] & 0xFF].y2 = 0;\n        gSprites[data[3] >> 8].y2 = 0;\n        gSprites[data[3] & 0xFF].y2 = 0;\n        gSprites[data[4] >> 8].y2 = 0;\n        gSprites[data[4] & 0xFF].y2 = 0;\n        break;\n    case 1:\n    case 3:\n        sprite->y2 = 1;\n        gSprites[data[0] >> 8].y2 = 1;\n        gSprites[data[0] & 0xFF].y2 = 1;\n        gSprites[data[1] >> 8].y2 = 1;\n        gSprites[data[1] & 0xFF].y2 = 1;\n        gSprites[data[2] >> 8].y2 = 1;\n        gSprites[data[2] & 0xFF].y2 = 1;\n        gSprites[data[3] >> 8].y2 = 1;\n        gSprites[data[3] & 0xFF].y2 = 1;\n        gSprites[data[4] >> 8].y2 = 1;\n        gSprites[data[4] & 0xFF].y2 = 1;\n        break;\n    case 2:\n        sprite->y2 = 2;\n        gSprites[data[0] >> 8].y2 = 2;\n        gSprites[data[0] & 0xFF].y2 = 2;\n        gSprites[data[1] >> 8].y2 = 2;\n        gSprites[data[1] & 0xFF].y2 = 2;\n        gSprites[data[2] >> 8].y2 = 2;\n        gSprites[data[4] & 0xFF].y2 = 2;\n        break;\n    }",
       "callsTo": [],
       "lineCount": 57
@@ -383,6 +501,12 @@
       "returnType": "void",
       "signature": "static void DuoFight_SlideKyogreDown(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "s16 *data = sprite->data;\n    if (sprite->y <= DISPLAY_HEIGHT)\n    {\n        sprite->y += 8;\n        gSprites[sprite->data[0] >> 8].y += 8;\n        gSprites[sprite->data[0] & 0xFF].y += 8;\n        gSprites[data[1] >> 8].y += 8;\n        gSprites[data[1] & 0xFF].y += 8;\n        gSprites[data[2] >> 8].y += 8;\n        gSprites[data[2] & 0xFF].y += 8;\n        gSprites[data[3] >> 8].y += 8;\n        gSprites[data[3] & 0xFF].y += 8;\n        gSprites[data[4] >> 8].y += 8;\n        gSprites[data[4] & 0xFF].y += 8;\n    }",
       "callsTo": [],
       "lineCount": 15
@@ -391,6 +515,7 @@
       "returnType": "void",
       "signature": "static void InitTakesFlightSceneBgs(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ResetVramOamAndBgCntRegs();\n    ResetBgsAndClearDma3BusyFlags(0);\n    InitBgsFromTemplates(1, sBgTemplates_TakesFlight, ARRAY_COUNT(sBgTemplates_TakesFlight));\n    SetBgTilemapBuffer(0, sRayScene->tilemapBuffers[0]);\n    SetBgTilemapBuffer(1, sRayScene->tilemapBuffers[1]);\n    SetBgTilemapBuffer(2, sRayScene->tilemapBuffers[2]);\n    ResetAllBgsCoordinates();\n    ScheduleBgCopyTilemapToVram(0);\n    ScheduleBgCopyTilemapToVram(1);\n    ScheduleBgCopyTilemapToVram(2);\n    SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_OBJ_ON | DISPCNT_OBJ_1D_MAP);\n    ShowBg(0);\n    ShowBg(1);\n    ShowBg(2);\n    SetGpuReg(REG_OFFSET_BLDCNT, 0);",
       "callsTo": [
         "ARRAY_COUNT",
@@ -409,6 +534,7 @@
       "returnType": "void",
       "signature": "static void LoadTakesFlightSceneGfx(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ResetTempTileDataBuffers();\n    DecompressAndCopyTileDataToVram(0, gRaySceneDuoFight_Clouds_Gfx, 0, 0, 0);  \n    DecompressAndCopyTileDataToVram(1, gRaySceneTakesFlight_Bg_Gfx, 0, 0, 0);\n    DecompressAndCopyTileDataToVram(2, gRaySceneTakesFlight_Rayquaza_Gfx, 0, 0, 0);\n    while (FreeTempTileDataBuffersIfPossible())\n        ;\n    LZDecompressWram(gRaySceneDuoFight_Clouds2_Tilemap, sRayScene->tilemapBuffers[0]);\n    LZDecompressWram(gRaySceneTakesFlight_Bg_Tilemap, sRayScene->tilemapBuffers[1]);\n    LZDecompressWram(gRaySceneTakesFlight_Rayquaza_Tilemap, sRayScene->tilemapBuffers[2]);\n    LoadCompressedPalette(gRaySceneTakesFlight_Rayquaza_Pal, BG_PLTT_ID(0), 2 * PLTT_SIZE_4BPP);\n    LoadCompressedSpriteSheet(&sSpriteSheet_TakesFlight_Smoke);\n    LoadCompressedSpritePalette(&sSpritePal_TakesFlight_Smoke);",
       "callsTo": [
         "BG_PLTT_ID",
@@ -426,6 +552,12 @@
       "returnType": "void",
       "signature": "static void Task_RayTakesFlightAnim(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data = gTasks[taskId].data;\n    PlayNewMapMusic(MUS_RAYQUAZA_APPEARS);\n    InitTakesFlightSceneBgs();\n    LoadTakesFlightSceneGfx();\n    SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_TGT1_OBJ | BLDCNT_TGT2_BG1 | BLDCNT_EFFECT_BLEND);\n    SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(8, 8));\n    BlendPalettes(PALETTES_ALL, 16, 0);\n    SetVBlankCallback(VBlankCB_RayquazaScene);\n    CreateTask(Task_TakesFlight_CreateSmoke, 0);\n    tState = 0;\n    tTimer = 0;\n    gTasks[taskId].func = Task_HandleRayTakesFlight;",
       "callsTo": [
         "BLDALPHA_BLEND",
@@ -443,6 +575,12 @@
       "returnType": "void",
       "signature": "static void Task_HandleRayTakesFlight(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data = gTasks[taskId].data;\n    switch (tState)\n    {\n    case 0:\n         \n        if (tTimer == 8)\n        {\n            BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_BLACK);\n            tScale = 0;\n            tScaleSpeed = 30;\n            tYCoord = 0;\n            tYSpeed = 7;\n            tTimer = 0;\n            tState++;\n        }\n        else\n        {\n            tTimer++;\n        }\n        break;\n    case 1:\n         \n        tScale += tScaleSpeed;\n        tYCoord += tYSpeed;\n\n        if (tScaleSpeed > 3)\n            tScaleSpeed -= 3;\n\n        if (tYSpeed != 0)\n            tYSpeed--;\n\n        if (tScale > 255)\n        {\n            tScale = 256;\n            tScaleSpeed = 0;\n            tYOffset = 12;\n            tYOffsetDir = -1;\n            tTimer = 0;\n            tState++;\n        }\n        SetBgAffine(2, 0x7800, 0x1800, 120, tYCoord + 32, tScale, tScale, 0);\n        break;\n    case 2:\n         \n        tTimer++;\n        SetBgAffine(2, 0x7800, 0x1800, 120, tYCoord + 32 + (tYOffset >> 2), tScale, tScale, 0);\n        tYOffset += tYOffsetDir;\n        if (tYOffset == 12 || tYOffset == -12)\n        {\n            tYOffsetDir *= -1;\n            if (tTimer > 295)\n            {\n                tState++;\n                BeginNormalPaletteFade(PALETTES_ALL, 6, 0, 0x10, RGB_BLACK);\n            }\n        }\n        break;\n    case 3:\n         \n        tScale += 16;\n        SetBgAffine(2, 0x7800, 0x1800, 120, tYCoord + 32, tScale, tScale, 0);\n        Task_RayTakesFlightEnd(taskId);\n        break;\n    }",
       "callsTo": [
         "BeginNormalPaletteFade",
@@ -455,6 +593,12 @@
       "returnType": "void",
       "signature": "static void Task_RayTakesFlightEnd(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (!gPaletteFade.active)\n    {\n        SetVBlankCallback(NULL);\n        ResetSpriteData();\n        FreeAllSpritePalettes();\n        gTasks[taskId].func = Task_SetNextAnim;\n    }",
       "callsTo": [
         "FreeAllSpritePalettes",
@@ -467,6 +611,12 @@
       "returnType": "void",
       "signature": "static void Task_TakesFlight_CreateSmoke(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data = gTasks[taskId].data;\n    if ((tTimer & 3) == 0)\n    {\n        u8 spriteId = CreateSprite(&sSpriteTemplate_TakesFlight_Smoke,\n                                   (sTakesFlight_SmokeCoords[tSmokeId][0] * 4) + 120,\n                                   (sTakesFlight_SmokeCoords[tSmokeId][1] * 4) + 80,\n                                   0);\n        gSprites[spriteId].sSmokeId = (s8)(tSmokeId);\n        gSprites[spriteId].oam.objMode = ST_OAM_OBJ_BLEND;\n        gSprites[spriteId].oam.affineMode = ST_OAM_AFFINE_DOUBLE;\n        gSprites[spriteId].oam.priority = 2;\n        InitSpriteAffineAnim(&gSprites[spriteId]);\n        if (tSmokeId == MAX_SMOKE - 1)\n        {\n            DestroyTask(taskId);\n            return;\n        }\n        else\n        {\n            tSmokeId++;\n        }\n    }\n\n    tTimer++;",
       "callsTo": [
         "CreateSprite",
@@ -479,6 +629,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_TakesFlight_Smoke(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (sprite->sTimer == 0)\n    {\n        sprite->x2 = 0;\n        sprite->y2 = 0;\n    }\n    else\n    {\n        sprite->x2 += sTakesFlight_SmokeCoords[sprite->sSmokeId][0];\n        sprite->y2 += sTakesFlight_SmokeCoords[sprite->sSmokeId][1];\n    }\n\n    sprite->sTimer++;\n    sprite->sTimer &= 0xF;",
       "callsTo": [],
       "lineCount": 13
@@ -487,6 +643,7 @@
       "returnType": "void",
       "signature": "static void InitDescendsSceneBgs(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ResetVramOamAndBgCntRegs();\n    ResetBgsAndClearDma3BusyFlags(0);\n    InitBgsFromTemplates(0, sBgTemplates_Descends, ARRAY_COUNT(sBgTemplates_Descends));\n    SetBgTilemapBuffer(0, sRayScene->tilemapBuffers[0]);\n    SetBgTilemapBuffer(1, sRayScene->tilemapBuffers[1]);\n    SetBgTilemapBuffer(2, sRayScene->tilemapBuffers[2]);\n    SetBgTilemapBuffer(3, sRayScene->tilemapBuffers[3]);\n    ResetAllBgsCoordinates();\n    ScheduleBgCopyTilemapToVram(0);\n    ScheduleBgCopyTilemapToVram(1);\n    ScheduleBgCopyTilemapToVram(2);\n    ScheduleBgCopyTilemapToVram(3);\n    SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_OBJ_ON | DISPCNT_OBJ_1D_MAP);\n    ShowBg(0);\n    ShowBg(1);\n    ShowBg(2);\n    ShowBg(3);\n    SetGpuReg(REG_OFFSET_BLDCNT, 0);",
       "callsTo": [
         "ARRAY_COUNT",
@@ -505,6 +662,7 @@
       "returnType": "void",
       "signature": "static void LoadDescendsSceneGfx(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ResetTempTileDataBuffers();\n    DecompressAndCopyTileDataToVram(0, gRaySceneDescends_Light_Gfx, 0, 0, 0);\n    DecompressAndCopyTileDataToVram(1, gRaySceneDescends_Bg_Gfx, 0, 0, 0);\n    while (FreeTempTileDataBuffersIfPossible())\n        ;\n    LZDecompressWram(gRaySceneDescends_Light_Tilemap, sRayScene->tilemapBuffers[0]);\n    LZDecompressWram(gRaySceneDescends_Bg_Tilemap, sRayScene->tilemapBuffers[3]);\n    CpuFastFill16(0, sRayScene->tilemapBuffers[2], BG_SCREEN_SIZE);\n    CpuFastCopy(sRayScene->tilemapBuffers[3], sRayScene->tilemapBuffers[1], BG_SCREEN_SIZE);\n    CpuFastFill16(0, &sRayScene->tilemapBuffers[1][0x100], 0x340);\n\n    LoadCompressedPalette(gRaySceneDescends_Bg_Pal, BG_PLTT_ID(0), 2 * PLTT_SIZE_4BPP);\n    gPlttBufferUnfaded[0] = RGB_WHITE;\n    gPlttBufferFaded[0] = RGB_WHITE;\n    LoadCompressedSpriteSheet(&sSpriteSheet_Descends_Rayquaza);\n    LoadCompressedSpriteSheet(&sSpriteSheet_Descends_RayquazaTail);\n    LoadCompressedSpritePalette(&sSpritePal_Descends_Rayquaza);",
       "callsTo": [
         "BG_PLTT_ID",
@@ -524,6 +682,7 @@
       "returnType": "void",
       "signature": "static void HBlankCB_RayDescends(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 vcount = GetGpuReg(REG_OFFSET_VCOUNT);\n    if (vcount >= 24 && vcount <= 135 && vcount - 24 <= sRayScene->revealedLightLine)\n        REG_BLDALPHA = 0xD08;  \n    else\n        REG_BLDALPHA = 0x1000;  \n\n    if (vcount == 0)\n    {\n        if (sRayScene->revealedLightLine <= 0x1FFF)\n        {\n             \n             \n            if (sRayScene->revealedLightLine <= 39)\n                sRayScene->revealedLightLine += 4;\n            else if (sRayScene->revealedLightLine <= 79)\n                sRayScene->revealedLightLine += 2;\n            else\n                sRayScene->revealedLightLine += 1;\n        }\n\n         \n        sRayScene->revealedLightTimer++;\n    }",
       "callsTo": [
         "GetGpuReg"
@@ -534,6 +693,12 @@
       "returnType": "void",
       "signature": "static void Task_RayDescendsAnim(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data = gTasks[taskId].data;\n    InitDescendsSceneBgs();\n    LoadDescendsSceneGfx();\n    SetGpuRegBits(REG_OFFSET_BLDCNT, BLDCNT_TGT1_BG0 | BLDCNT_TGT2_BG1 | BLDCNT_TGT2_BG2 | BLDCNT_TGT2_BG3 | BLDCNT_TGT2_OBJ | BLDCNT_EFFECT_BLEND);\n    SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(0, 16));\n    BlendPalettes(PALETTES_ALL, 0x10, RGB_BLACK);\n    SetVBlankCallback(VBlankCB_RayquazaScene);\n    sRayScene->revealedLightLine = 0;\n    sRayScene->revealedLightTimer = 0;\n    tState = 0;\n    tTimer = 0;\n    data[2] = 0;  \n    data[3] = 0;\n    data[4] = 0x1000;\n    gTasks[taskId].func = Task_HandleRayDescends;",
       "callsTo": [
         "BLDALPHA_BLEND",
@@ -550,6 +715,12 @@
       "returnType": "void",
       "signature": "static void Task_HandleRayDescends(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data = gTasks[taskId].data;\n    switch (tState)\n    {\n    case 0:\n         \n        if (tTimer == 8)\n        {\n            BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_BLACK);\n            tTimer = 0;\n            tState++;\n        }\n        else\n        {\n            tTimer++;\n        }\n        break;\n    case 1:\n        if (!gPaletteFade.active)\n        {\n             \n            if (tTimer == 10)\n            {\n                tTimer = 0;\n                tState++;\n                SetHBlankCallback(HBlankCB_RayDescends);\n                EnableInterrupts(INTR_FLAG_HBLANK | INTR_FLAG_VBLANK);\n            }\n            else\n            {\n                tTimer++;\n            }\n        }\n        break;\n    case 2:\n         \n        if (tTimer == 80)\n        {\n            tTimer = 0;\n            tState++;\n            CreateDescendsRayquazaSprite();\n        }\n        else\n        {\n            tTimer++;\n        }\n        break;\n    case 3:\n         \n        if (++tTimer == 368)\n        {\n            tTimer = 0;\n            tState++;\n        }\n        break;\n    case 4:\n         \n        BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);\n        gTasks[taskId].func = Task_RayDescendsEnd;\n        break;\n    }",
       "callsTo": [
         "BeginNormalPaletteFade",
@@ -563,6 +734,12 @@
       "returnType": "void",
       "signature": "static void Task_RayDescendsEnd(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (!gPaletteFade.active)\n    {\n        SetVBlankCallback(NULL);\n        SetHBlankCallback(NULL);\n        ResetSpriteData();\n        FreeAllSpritePalettes();\n        gTasks[taskId].func = Task_SetNextAnim;\n    }",
       "callsTo": [
         "FreeAllSpritePalettes",
@@ -576,6 +753,7 @@
       "returnType": "u8",
       "signature": "static u8 CreateDescendsRayquazaSprite(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 spriteId = CreateSprite(&sSpriteTemplate_Descends_Rayquaza, 160, 0, 0);\n    s16 *data = gSprites[spriteId].data;\n    sTailSpriteId = CreateSprite(&sSpriteTemplate_Descends_RayquazaTail, 184, -48, 0);\n    gSprites[spriteId].callback = SpriteCB_Descends_Rayquaza;\n    gSprites[spriteId].oam.priority = 3;\n    gSprites[sTailSpriteId].oam.priority = 3;\n    return spriteId;",
       "callsTo": [
         "CreateSprite"
@@ -586,6 +764,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_Descends_Rayquaza(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "s16 *data = sprite->data;\n    s16 frame = sTimer;\n\n     \n     \n    if (frame == 0)\n    {\n        sXMovePeriod = 12;\n        sYMovePeriod = 8;\n    }\n    else if (frame == 256)\n    {\n        sXMovePeriod = 9;\n        sYMovePeriod = 7;\n    }\n    else if (frame == 268)\n    {\n        sXMovePeriod = 8;\n        sYMovePeriod = 6;\n    }\n    else if (frame == 280)\n    {\n        sXMovePeriod = 7;\n        sYMovePeriod = 5;\n    }\n    else if (frame == 292)\n    {\n        sXMovePeriod = 6;\n        sYMovePeriod = 4;\n    }\n    else if (frame == 304)\n    {\n        sXMovePeriod = 5;\n        sYMovePeriod = 3;\n    }\n    else if (frame == 320)\n    {\n        sXMovePeriod = 4;\n        sYMovePeriod = 2;\n    }\n\n    if (sTimer % sXMovePeriod == 0)\n    {\n        sprite->x2--;\n        gSprites[sTailSpriteId].x2--;\n    }\n    if (sTimer % sYMovePeriod == 0)\n    {\n        sprite->y2++;\n        gSprites[sTailSpriteId].y2++;\n    }\n\n    sTimer++;",
       "callsTo": [],
       "lineCount": 53
@@ -594,6 +778,7 @@
       "returnType": "void",
       "signature": "static void InitChargesSceneBgs(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ResetVramOamAndBgCntRegs();\n    ResetBgsAndClearDma3BusyFlags(0);\n    InitBgsFromTemplates(0, sBgTemplates_Charges, ARRAY_COUNT(sBgTemplates_Charges));\n    SetBgTilemapBuffer(0, sRayScene->tilemapBuffers[0]);\n    SetBgTilemapBuffer(1, sRayScene->tilemapBuffers[1]);\n    SetBgTilemapBuffer(2, sRayScene->tilemapBuffers[2]);\n    SetBgTilemapBuffer(3, sRayScene->tilemapBuffers[3]);\n    ResetAllBgsCoordinates();\n    ScheduleBgCopyTilemapToVram(0);\n    ScheduleBgCopyTilemapToVram(1);\n    ScheduleBgCopyTilemapToVram(2);\n    ScheduleBgCopyTilemapToVram(3);\n    SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_OBJ_ON | DISPCNT_OBJ_1D_MAP | DISPCNT_WIN0_ON);\n    ShowBg(0);\n    ShowBg(1);\n    ShowBg(2);\n    ShowBg(3);\n    SetGpuReg(REG_OFFSET_BLDCNT, 0);",
       "callsTo": [
         "ARRAY_COUNT",
@@ -612,6 +797,7 @@
       "returnType": "void",
       "signature": "static void LoadChargesSceneGfx(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ResetTempTileDataBuffers();\n    DecompressAndCopyTileDataToVram(1, gRaySceneCharges_Rayquaza_Gfx, 0, 0, 0);\n    DecompressAndCopyTileDataToVram(2, gRaySceneCharges_Streaks_Gfx, 0, 0, 0);\n    DecompressAndCopyTileDataToVram(3, gRaySceneCharges_Bg_Gfx, 0, 0, 0);\n    while (FreeTempTileDataBuffersIfPossible())\n        ;\n    LZDecompressWram(gRaySceneCharges_Orbs_Tilemap, sRayScene->tilemapBuffers[0]);\n    LZDecompressWram(gRaySceneCharges_Rayquaza_Tilemap, sRayScene->tilemapBuffers[1]);\n    LZDecompressWram(gRaySceneCharges_Streaks_Tilemap, sRayScene->tilemapBuffers[2]);\n    LZDecompressWram(gRaySceneCharges_Bg_Tilemap, sRayScene->tilemapBuffers[3]);\n    LoadCompressedPalette(gRaySceneCharges_Bg_Pal, BG_PLTT_ID(0), 4 * PLTT_SIZE_4BPP);",
       "callsTo": [
         "BG_PLTT_ID",
@@ -627,6 +813,12 @@
       "returnType": "void",
       "signature": "static void Task_RayChargesAnim(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data = gTasks[taskId].data;\n    InitChargesSceneBgs();\n    LoadChargesSceneGfx();\n    SetWindowsHideVertBorders();\n    BlendPalettes(PALETTES_ALL, 0x10, RGB_BLACK);\n    SetVBlankCallback(VBlankCB_RayquazaScene);\n    tState = 0;\n    tTimer = 0;\n    tRayquazaTaskId = CreateTask(Task_RayCharges_ShakeRayquaza, 0);\n    gTasks[taskId].func = Task_HandleRayCharges;",
       "callsTo": [
         "BlendPalettes",
@@ -642,6 +834,12 @@
       "returnType": "void",
       "signature": "static void Task_HandleRayCharges(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data = gTasks[taskId].data;\n    RayCharges_AnimateBg();\n    if ((tSoundTimer & 7) == 0 && tState <= 1 && tTimer <= 89)\n        PlaySE(SE_INTRO_BLAST);\n\n    tSoundTimer++;\n    switch (tState)\n    {\n    case 0:\n         \n        if (tTimer == 8)\n        {\n            BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_BLACK);\n            tTimer = 0;\n            tState++;\n        }\n        else\n        {\n            tTimer++;\n        }\n        break;\n    case 1:\n         \n        if (tTimer == 127)\n        {\n            tTimer = 0;\n            tState++;\n            gTasks[tRayquazaTaskId].func = Task_RayCharges_FlyOffscreen;\n        }\n        else\n        {\n            tTimer++;\n        }\n        break;\n    case 2:\n         \n        if (tTimer == 12)\n        {\n            tTimer = 0;\n            tState++;\n        }\n        else\n        {\n            tTimer++;\n        }\n        break;\n    case 3:\n         \n        BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);\n        gTasks[taskId].func = Task_RayChargesEnd;\n        break;\n    }",
       "callsTo": [
         "BeginNormalPaletteFade",
@@ -654,6 +852,12 @@
       "returnType": "void",
       "signature": "static void Task_RayCharges_ShakeRayquaza(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data = gTasks[taskId].data;\n    if ((tTimer & 3) == 0)\n    {\n        ChangeBgX(1, (Random() % 8 - 4) << 8, BG_COORD_SET);\n        ChangeBgY(1, (Random() % 8 - 4) << 8, BG_COORD_SET);\n    }\n\n    tTimer++;",
       "callsTo": [
         "ChangeBgX",
@@ -666,6 +870,12 @@
       "returnType": "void",
       "signature": "static void Task_RayCharges_FlyOffscreen(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data = gTasks[taskId].data;\n    if (tState == 0)\n    {\n        ChangeBgX(1, 0, BG_COORD_SET);\n        ChangeBgY(1, 0, BG_COORD_SET);\n        tState++;\n        tOffset = 10;\n        tShakeDir = -1;\n    }\n    else if (tState == 1)\n    {\n        ChangeBgX(1, tOffset << 8, BG_COORD_SUB);\n        ChangeBgY(1, tOffset << 8, BG_COORD_ADD);\n        tOffset += tShakeDir;\n        if (tOffset == -10)\n            tShakeDir *= -1;\n    }",
       "callsTo": [
         "ChangeBgX",
@@ -677,6 +887,7 @@
       "returnType": "void",
       "signature": "static void RayCharges_AnimateBg(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ChangeBgX(2, 0x400, BG_COORD_SUB);\n    ChangeBgY(2, 0x400, BG_COORD_ADD);\n\n     \n    ChangeBgX(0, 0x800, BG_COORD_SUB);\n    ChangeBgY(0, 0x800, BG_COORD_ADD);",
       "callsTo": [
         "ChangeBgX",
@@ -688,6 +899,12 @@
       "returnType": "void",
       "signature": "static void Task_RayChargesEnd(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data = gTasks[taskId].data;\n    RayCharges_AnimateBg();\n    if (!gPaletteFade.active)\n    {\n        SetVBlankCallback(NULL);\n        ResetWindowDimensions();\n        DestroyTask(tRayquazaTaskId);\n        gTasks[taskId].func = Task_SetNextAnim;\n    }",
       "callsTo": [
         "DestroyTask",
@@ -701,6 +918,7 @@
       "returnType": "void",
       "signature": "static void InitChasesAwaySceneBgs(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ResetVramOamAndBgCntRegs();\n    ResetBgsAndClearDma3BusyFlags(0);\n    InitBgsFromTemplates(1, sBgTemplates_ChasesAway, ARRAY_COUNT(sBgTemplates_ChasesAway));\n    SetBgTilemapBuffer(0, sRayScene->tilemapBuffers[0]);\n    SetBgTilemapBuffer(1, sRayScene->tilemapBuffers[1]);\n    SetBgTilemapBuffer(2, sRayScene->tilemapBuffers[2]);\n    ResetAllBgsCoordinates();\n    ScheduleBgCopyTilemapToVram(0);\n    ScheduleBgCopyTilemapToVram(1);\n    ScheduleBgCopyTilemapToVram(2);\n    SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_OBJ_ON | DISPCNT_OBJ_1D_MAP | DISPCNT_WIN0_ON);\n    ShowBg(0);\n    ShowBg(1);\n    ShowBg(2);\n    SetGpuReg(REG_OFFSET_BLDCNT, 0);",
       "callsTo": [
         "ARRAY_COUNT",
@@ -719,6 +937,7 @@
       "returnType": "void",
       "signature": "static void LoadChasesAwaySceneGfx(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ResetTempTileDataBuffers();\n    DecompressAndCopyTileDataToVram(2, gRaySceneChasesAway_Ring_Gfx, 0, 0, 0);\n    DecompressAndCopyTileDataToVram(0, gRaySceneChasesAway_Light_Gfx, 0, 0, 0);\n    while (FreeTempTileDataBuffersIfPossible())\n        ;\n    LZDecompressWram(gRaySceneChasesAway_Bg_Tilemap, sRayScene->tilemapBuffers[1]);\n    LZDecompressWram(gRaySceneChasesAway_Light_Tilemap, sRayScene->tilemapBuffers[0]);\n    LZDecompressWram(gRaySceneChasesAway_Ring_Tilemap, sRayScene->tilemapBuffers[2]);\n    LoadCompressedPalette(gRaySceneChasesAway_Bg_Pal, BG_PLTT_ID(0), 3 * PLTT_SIZE_4BPP);\n    LoadCompressedSpriteSheet(&sSpriteSheet_ChasesAway_Groudon);\n    LoadCompressedSpriteSheet(&sSpriteSheet_ChasesAway_GroudonTail);\n    LoadCompressedSpriteSheet(&sSpriteSheet_ChasesAway_Kyogre);\n    LoadCompressedSpriteSheet(&sSpriteSheet_ChasesAway_Rayquaza);\n    LoadCompressedSpriteSheet(&sSpriteSheet_ChasesAway_RayquazaTail);\n    LoadCompressedSpriteSheet(&sSpriteSheet_ChasesAway_KyogreSplash);\n    LoadCompressedSpritePalette(&sSpritePal_ChasesAway_Groudon);\n    LoadCompressedSpritePalette(&sSpritePal_ChasesAway_Kyogre);\n    LoadCompressedSpritePalette(&sSpritePal_ChasesAway_Rayquaza);\n    LoadCompressedSpritePalette(&sSpritePal_ChasesAway_KyogreSplash);",
       "callsTo": [
         "BG_PLTT_ID",
@@ -736,6 +955,12 @@
       "returnType": "void",
       "signature": "static void Task_RayChasesAwayAnim(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data = gTasks[taskId].data;\n    InitChasesAwaySceneBgs();\n    LoadChasesAwaySceneGfx();\n    SetWindowsHideVertBorders();\n    ClearGpuRegBits(REG_OFFSET_DISPCNT, DISPCNT_BG2_ON);\n    SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_TGT1_BG0 | BLDCNT_TGT2_BG1 | BLDCNT_EFFECT_BLEND);\n    SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(9, 14));\n    BlendPalettes(PALETTES_ALL, 0x10, RGB_BLACK);\n    SetVBlankCallback(VBlankCB_RayquazaScene);\n    tState = 0;\n    tTimer = 0;\n    gTasks[taskId].func = Task_HandleRayChasesAway;\n    tBgTaskId = CreateTask(Task_ChasesAway_AnimateBg, 0);\n    gTasks[tBgTaskId].data[0] = 0;\n    gTasks[tBgTaskId].data[1] = 0;\n    gTasks[tBgTaskId].data[2] = 0;\n    gTasks[tBgTaskId].data[3] = 1;\n    gTasks[tBgTaskId].data[4] = 1;",
       "callsTo": [
         "BLDALPHA_BLEND",
@@ -754,6 +979,12 @@
       "returnType": "void",
       "signature": "static void Task_HandleRayChasesAway(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data = gTasks[taskId].data;\n    switch (tState)\n    {\n    case 0:\n         \n        if (tTimer == 8)\n        {\n            ChasesAway_CreateTrioSprites(taskId);\n            BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_BLACK);\n            tTimer = 0;\n            tState++;\n        }\n        else\n        {\n            tTimer++;\n        }\n        break;\n    case 1:\n         \n        if (gSprites[data[5]].callback == SpriteCB_ChasesAway_RayquazaFloat)\n        {\n             \n            if (tTimer == 64)\n            {\n                ChasesAway_KyogreStartLeave(taskId);\n                ChasesAway_GroudonStartLeave(taskId);\n                tTimer = 0;\n                tState++;\n            }\n            else\n            {\n                tTimer++;\n            }\n        }\n        break;\n    case 2:\n         \n        if (tTimer == 448)\n        {\n            tTimer = 0;\n            tState++;\n        }\n        else\n        {\n             \n            tTimer++;\n            if (tTimer % 144 == 0)\n            {\n                BlendPalettesGradually(PALETTES_BG & ~1, 0, 16, 0, RGB_WHITEALPHA, 0, 0);\n                BlendPalettesGradually(PALETTES_OBJECTS, 0, 16, 0, RGB_BLACK,      0, 1);\n            }\n        }\n        break;\n    case 3:\n         \n        BeginNormalPaletteFade(PALETTES_ALL, 4, 0, 0x10, RGB_BLACK);\n        gTasks[taskId].func = Task_RayChasesAwayEnd;\n        break;\n    }",
       "callsTo": [
         "BeginNormalPaletteFade",
@@ -768,6 +999,12 @@
       "returnType": "void",
       "signature": "static void Task_ChasesAway_AnimateBg(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data = gTasks[taskId].data;\n    if ((tTimer & 0xF) == 0)\n    {\n        SetGpuReg(REG_OFFSET_BLDALPHA, ((tBlendHi + 14) << 8 & 0x1F00) | ((tBlendLo + 9) & 0xF));\n        tBlendHi -= tBlendHiDir;\n        tBlendLo += tBlendLoDir;\n        if (tBlendHi == -3 || tBlendHi == 0)\n            tBlendHiDir *= -1;\n        if (tBlendLo == 3 || tBlendLo == 0)\n            tBlendLoDir *= -1;\n    }\n\n    tTimer++;",
       "callsTo": [
         "SetGpuReg"
@@ -778,6 +1015,12 @@
       "returnType": "void",
       "signature": "static void Task_RayChasesAwayEnd(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data = gTasks[taskId].data;\n    if (!gPaletteFade.active)\n    {\n        StopMapMusic();\n        if (tTimer == 0)\n        {\n            SetVBlankCallback(NULL);\n            ResetWindowDimensions();\n            ResetSpriteData();\n            FreeAllSpritePalettes();\n            DestroyTask(tBgTaskId);\n        }\n\n        if (tTimer == 32)\n        {\n            tTimer = 0;\n            gTasks[taskId].func = Task_SetNextAnim;\n        }\n        else\n        {\n            tTimer++;\n        }\n    }",
       "callsTo": [
         "DestroyTask",
@@ -793,6 +1036,12 @@
       "returnType": "void",
       "signature": "static void ChasesAway_CreateTrioSprites(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *taskData, *spriteData;\n\n    taskData = gTasks[taskId].data;\n\n    tGroudonSpriteId = CreateSprite(&sSpriteTemplate_ChasesAway_Groudon, 64, 120, 0);\n    spriteData = gSprites[tGroudonSpriteId].data;\n    spriteData[0] = CreateSprite(&sSpriteTemplate_ChasesAway_GroudonTail, 16, 130, 0);\n    gSprites[tGroudonSpriteId].oam.priority = 1;\n    gSprites[spriteData[0]].oam.priority = 1;\n\n    tKyogreSpriteId = CreateSprite(&sSpriteTemplate_ChasesAway_Kyogre, 160, 128, 1);\n    spriteData = gSprites[tKyogreSpriteId].data;\n    spriteData[0] = CreateSprite(&sSpriteTemplate_ChasesAway_Kyogre, 192, 128, 1);\n    spriteData[1] = CreateSprite(&sSpriteTemplate_ChasesAway_Kyogre, 224, 128, 1);\n    gSprites[tKyogreSpriteId].oam.priority = 1;\n    gSprites[spriteData[0]].oam.priority = 1;\n    gSprites[spriteData[1]].oam.priority = 1;\n    StartSpriteAnim(&gSprites[spriteData[0]], 1);\n    StartSpriteAnim(&gSprites[spriteData[1]], 2);\n\n    tRayquazaSpriteId = CreateSprite(&sSpriteTemplate_ChasesAway_Rayquaza, 120, -65, 0);\n    spriteData = gSprites[tRayquazaSpriteId].data;\n    spriteData[0] = CreateSprite(&sSpriteTemplate_ChasesAway_RayquazaTail, 120, -113, 0);\n    gSprites[tRayquazaSpriteId].oam.priority = 1;\n    gSprites[spriteData[0]].oam.priority = 1;",
       "callsTo": [
         "CreateSprite",
@@ -804,6 +1053,12 @@
       "returnType": "void",
       "signature": "static void ChasesAway_PushDuoBack(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *taskData = gTasks[taskId].data;\n\n    gSprites[tGroudonSpriteId].callback = SpriteCB_ChasesAway_DuoRingPush;\n    gSprites[tGroudonSpriteId].sTimer = 0;\n    gSprites[tGroudonSpriteId].sDecel = 0;\n    gSprites[tGroudonSpriteId].sSpeed = 4;\n    gSprites[tGroudonSpriteId].sIsKyogre = FALSE;\n\n    gSprites[tKyogreSpriteId].callback = SpriteCB_ChasesAway_DuoRingPush;\n    gSprites[tKyogreSpriteId].sTimer = 0;\n    gSprites[tKyogreSpriteId].sDecel = 0;\n    gSprites[tKyogreSpriteId].sSpeed = 4;\n    gSprites[tKyogreSpriteId].sIsKyogre = TRUE;",
       "callsTo": [],
       "lineCount": 13
@@ -812,6 +1067,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_ChasesAway_DuoRingPush(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if ((sprite->sTimer & 7) == 0)\n    {\n        if (!sprite->sIsKyogre)\n        {\n            sprite->x -= sprite->sSpeed;\n            gSprites[sprite->sBodyPartSpriteId1].x -= sprite->sSpeed;\n        }\n        else\n        {\n            sprite->x += sprite->sSpeed;\n            gSprites[sprite->sBodyPartSpriteId1].x += sprite->sSpeed;\n            gSprites[sprite->sBodyPartSpriteId2].x += sprite->sSpeed;\n        }\n\n        sprite->sDecel++;\n        sprite->sSpeed -= sprite->sDecel;\n        if (sprite->sDecel == 3)\n        {\n            sprite->sTimer = 0;\n            sprite->sDecel = 0;\n            sprite->sSpeed = 0;\n            sprite->callback = SpriteCallbackDummy;\n            return;\n        }\n    }\n\n    sprite->sTimer++;",
       "callsTo": [],
       "lineCount": 27
@@ -820,6 +1081,12 @@
       "returnType": "void",
       "signature": "static void ChasesAway_GroudonStartLeave(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *taskData = gTasks[taskId].data;\n    gSprites[tGroudonSpriteId].callback = SpriteCB_ChasesAway_GroudonLeave;\n    StartSpriteAnim(&gSprites[tGroudonSpriteId], 1);",
       "callsTo": [
         "StartSpriteAnim"
@@ -830,6 +1097,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_ChasesAway_GroudonLeave(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "switch (sprite->animCmdIndex)\n    {\n    case 0:\n    case 2:\n        if (sprite->animDelayCounter % 12 == 0)\n        {\n            sprite->x -= 2;\n            gSprites[sprite->data[0]].x -=2;\n        }\n        gSprites[sprite->data[0]].y2 = 0;\n        break;\n    case 1:\n    case 3:\n        gSprites[sprite->data[0]].y2 = -2;\n        if ((sprite->animDelayCounter & 15) == 0)\n        {\n            sprite->y++;\n            gSprites[sprite->data[0]].y++;\n        }\n        break;\n    }",
       "callsTo": [],
       "lineCount": 21
@@ -838,6 +1111,12 @@
       "returnType": "void",
       "signature": "static void ChasesAway_KyogreStartLeave(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *taskData, *spriteData;\n\n    taskData = gTasks[taskId].data;\n    spriteData = gSprites[tKyogreSpriteId].data;\n\n    gSprites[tKyogreSpriteId].callback = SpriteCB_ChasesAway_KyogreLeave;\n    gSprites[spriteData[0]].callback = SpriteCB_ChasesAway_KyogreLeave;\n    gSprites[spriteData[1]].callback = SpriteCB_ChasesAway_KyogreLeave;",
       "callsTo": [],
       "lineCount": 8
@@ -846,6 +1125,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_ChasesAway_KyogreLeave(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if ((sprite->data[4] & 3) == 0)\n    {\n        if (sprite->x2 == 1)\n            sprite->x2 = -1;\n        else\n            sprite->x2 = 1;\n    }\n    if (sprite->data[5] == 128)\n    {\n        sprite->data[7] = CreateSprite(&sSpriteTemplate_ChasesAway_KyogreSplash, 152, 132, 0);\n        gSprites[sprite->data[7]].oam.priority = 1;\n        sprite->data[7] = CreateSprite(&sSpriteTemplate_ChasesAway_KyogreSplash, 224, 132, 0);\n        gSprites[sprite->data[7]].oam.priority = 1;\n        gSprites[sprite->data[7]].hFlip = 1;\n        sprite->data[5]++;\n    }\n    if (sprite->data[5] > 127)\n    {\n        if (sprite->y2 != 32)\n        {\n            sprite->data[6]++;\n            sprite->y2 = sprite->data[6] >> 4;\n        }\n    }\n    else\n    {\n        sprite->data[5]++;\n    }\n\n    if (sprite->data[4] % 64 == 0)\n        PlaySE(SE_M_WHIRLPOOL);\n\n    sprite->data[4]++;",
       "callsTo": [
         "CreateSprite",
@@ -857,6 +1142,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_ChasesAway_Rayquaza(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "s16 frame = sprite->sTimer;\n    if (frame <= 64)\n    {\n        sprite->y2 += 2;\n        gSprites[sprite->sTailSpriteId].y2 += 2;\n        if (sprite->sTimer == 64)\n        {\n            ChasesAway_SetRayquazaAnim(sprite, 1, 0, -48);\n            sprite->sYOffset = 5;\n            sprite->sYOffsetDir = -1;\n            gSprites[sprite->sTailSpriteId].sTailFloatDelay = 3;\n            gSprites[sprite->sTailSpriteId].sTailFloatPeak = 5;\n        }\n    }\n    else if (frame <= 111)\n    {\n        SpriteCB_ChasesAway_RayquazaFloat(sprite);\n        if (sprite->sYOffset == 0)\n            PlaySE(SE_MUGSHOT);\n        if (sprite->sYOffset == -3)\n            ChasesAway_SetRayquazaAnim(sprite, 2, 48, 16);\n    }\n    else if (frame == 112)\n    {\n        gSprites[sprite->sTailSpriteId].sTailFloatDelay = 7;\n        gSprites[sprite->sTailSpriteId].sTailFloatPeak = 3;\n        SpriteCB_ChasesAway_RayquazaFloat(sprite);\n    }\n    else if (frame <= 327)\n    {\n        SpriteCB_ChasesAway_RayquazaFloat(sprite);\n    }\n    else if (frame == 328)\n    {\n        SpriteCB_ChasesAway_RayquazaFloat(sprite);\n        ChasesAway_SetRayquazaAnim(sprite, 3, 48, 16);\n        sprite->x2 = 1;\n        gSprites[sprite->sTailSpriteId].x2 = 1;\n        PlayCry_Normal(SPECIES_RAYQUAZA, 0);\n        CreateTask(Task_ChasesAway_AnimateRing, 0);\n    }\n    else\n    {\n        switch (frame)\n        {\n        case 376:\n            sprite->x2 = 0;\n            gSprites[sprite->sTailSpriteId].x2 = 0;\n            SpriteCB_ChasesAway_RayquazaFloat(sprite);\n            ChasesAway_SetRayquazaAnim(sprite, 2, 48, 16);\n            sprite->callback = SpriteCB_ChasesAway_RayquazaFloat;\n            return;\n        case 352:\n            ChasesAway_PushDuoBack(FindTaskIdByFunc(Task_HandleRayChasesAway));\n            break;\n        }\n    }\n\n    if (sprite->sTimer > 328 && (sprite->sTimer & 1) == 0)\n    {\n        sprite->x2 *= -1;\n        gSprites[sprite->sTailSpriteId].x2 = sprite->x2;\n    }\n\n    sprite->sTimer++;",
       "callsTo": [
         "ChasesAway_PushDuoBack",
@@ -873,6 +1164,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_ChasesAway_RayquazaFloat(struct Sprite *body)",
       "paramsRaw": "struct Sprite *body",
+      "paramsList": [
+        {
+          "name": "body",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "struct Sprite *tail = &gSprites[body->sTailSpriteId];\n    if (!(body->sFloatTimer & tail->sTailFloatDelay))\n    {\n        body->y2 += body->sYOffset;\n        gSprites[body->sTailSpriteId].y2 += body->sYOffset;  \n        body->sYOffset += body->sYOffsetDir;\n        if (body->sYOffset >= tail->sTailFloatPeak || body->sYOffset <= -tail->sTailFloatPeak)\n        {\n            if (body->sYOffset > tail->sTailFloatPeak)\n                body->sYOffset = tail->sTailFloatPeak;\n            else if (body->sYOffset < -tail->sTailFloatPeak)\n                body->sYOffset = -tail->sTailFloatPeak;\n\n            body->sYOffsetDir *= -1;\n        }\n    }\n\n    body->sFloatTimer++;",
       "callsTo": [],
       "lineCount": 18
@@ -881,6 +1178,24 @@
       "returnType": "void",
       "signature": "static void ChasesAway_SetRayquazaAnim(struct Sprite *body, u8 animNum, s16 x, s16 y)",
       "paramsRaw": "struct Sprite *body, u8 animNum, s16 x, s16 y",
+      "paramsList": [
+        {
+          "name": "body",
+          "typeRaw": "struct Sprite *"
+        },
+        {
+          "name": "animNum",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "x",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s16"
+        }
+      ],
       "body": "struct Sprite *tail = &gSprites[body->sTailSpriteId];\n\n    tail->x = body->x + x;\n    tail->y = body->y + y;\n\n    tail->x2 = body->x2;\n    tail->y2 = body->y2;\n\n    StartSpriteAnim(body, animNum);\n    StartSpriteAnim(tail, animNum);",
       "callsTo": [
         "StartSpriteAnim"
@@ -891,6 +1206,12 @@
       "returnType": "void",
       "signature": "static void Task_ChasesAway_AnimateRing(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 *data = gTasks[taskId].data;\n    switch (tState)\n    {\n    case 0:\n        SetBgAffine(2, 0x4000, 0x4000, 120, 64, 256, 256, 0);\n        SetGpuRegBits(REG_OFFSET_DISPCNT, DISPCNT_BG2_ON);\n        tScaleSpeed = 16;\n        tState++;\n        break;\n    case 1:\n        if (tSoundTimer == 8)\n            PlaySE(SE_SLIDING_DOOR);\n        if (tNumRings == 2)\n        {\n            tState++;\n        }\n        else\n        {\n            tScale += tScaleSpeed;\n            tSoundTimer++;\n            if (tScaleTimer % 3 == 0 && tScaleSpeed != 4)\n                tScaleSpeed -= 2;\n\n            tScaleTimer++;\n            SetBgAffine(2, 0x4000, 0x4000, 120, 64, 256 - tScale, 256 - tScale, 0);\n            if (tScale > 255)\n            {\n                tScale = 0;\n                tScaleTimer = 0;\n                tSoundTimer = 0;\n                tScaleSpeed = 16;\n                tNumRings++;\n            }\n        }\n        break;\n    case 2:\n        ClearGpuRegBits(REG_OFFSET_DISPCNT, DISPCNT_BG2_ON);\n        DestroyTask(taskId);\n        break;\n    }",
       "callsTo": [
         "ClearGpuRegBits",

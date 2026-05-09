@@ -6,6 +6,12 @@
       "returnType": "u32",
       "signature": "static u32 MatchCallGetFunctionIndex(match_call_t matchCall)",
       "paramsRaw": "match_call_t matchCall",
+      "paramsList": [
+        {
+          "name": "matchCall",
+          "typeRaw": "match_call_t"
+        }
+      ],
       "body": "switch (matchCall.common->type)\n    {\n        default:\n        case MC_TYPE_NPC:\n            return 0;\n        case MC_TYPE_TRAINER:\n        case MC_TYPE_LEADER:\n            return 1;\n        case MC_TYPE_WALLY:\n            return 2;\n        case MC_TYPE_RIVAL:\n            return 3;\n        case MC_TYPE_BIRCH:\n            return 4;\n    }",
       "callsTo": [],
       "lineCount": 15
@@ -14,6 +20,12 @@
       "returnType": "u32",
       "signature": "u32 GetTrainerIdxByRematchIdx(u32 rematchIdx)",
       "paramsRaw": "u32 rematchIdx",
+      "paramsList": [
+        {
+          "name": "rematchIdx",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "return gRematchTable[rematchIdx].trainerIds[0];",
       "callsTo": [],
       "lineCount": 1
@@ -22,6 +34,12 @@
       "returnType": "s32",
       "signature": "s32 GetRematchIdxByTrainerIdx(s32 trainerIdx)",
       "paramsRaw": "s32 trainerIdx",
+      "paramsList": [
+        {
+          "name": "trainerIdx",
+          "typeRaw": "s32"
+        }
+      ],
       "body": "s32 rematchIdx;\n\n    for (rematchIdx = 0; rematchIdx < REMATCH_TABLE_ENTRIES; rematchIdx++)\n    {\n        if (gRematchTable[rematchIdx].trainerIds[0] == trainerIdx)\n            return rematchIdx;\n    }\n    return -1;",
       "callsTo": [],
       "lineCount": 8
@@ -30,6 +48,12 @@
       "returnType": "bool32",
       "signature": "bool32 MatchCall_GetEnabled(u32 idx)",
       "paramsRaw": "u32 idx",
+      "paramsList": [
+        {
+          "name": "idx",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "match_call_t matchCall;\n    u32 i;\n\n    if (idx >= ARRAY_COUNT(sMatchCallHeaders))\n        return FALSE;\n    matchCall = sMatchCallHeaders[idx];\n    i = MatchCallGetFunctionIndex(matchCall);\n    return sMatchCallGetEnabledFuncs[i](matchCall);",
       "callsTo": [
         "ARRAY_COUNT",
@@ -41,6 +65,12 @@
       "returnType": "bool32",
       "signature": "static bool32 MatchCall_GetEnabled_NPC(match_call_t matchCall)",
       "paramsRaw": "match_call_t matchCall",
+      "paramsList": [
+        {
+          "name": "matchCall",
+          "typeRaw": "match_call_t"
+        }
+      ],
       "body": "if (matchCall.npc->flag == 0xFFFF)\n        return TRUE;\n    return FlagGet(matchCall.npc->flag);",
       "callsTo": [
         "FlagGet"
@@ -51,6 +81,12 @@
       "returnType": "bool32",
       "signature": "static bool32 MatchCall_GetEnabled_Trainer(match_call_t matchCall)",
       "paramsRaw": "match_call_t matchCall",
+      "paramsList": [
+        {
+          "name": "matchCall",
+          "typeRaw": "match_call_t"
+        }
+      ],
       "body": "if (matchCall.trainer->flag == 0xFFFF)\n        return TRUE;\n    return FlagGet(matchCall.trainer->flag);",
       "callsTo": [
         "FlagGet"
@@ -61,6 +97,12 @@
       "returnType": "bool32",
       "signature": "static bool32 MatchCall_GetEnabled_Wally(match_call_t matchCall)",
       "paramsRaw": "match_call_t matchCall",
+      "paramsList": [
+        {
+          "name": "matchCall",
+          "typeRaw": "match_call_t"
+        }
+      ],
       "body": "if (matchCall.wally->flag == 0xFFFF)\n        return TRUE;\n    return FlagGet(matchCall.wally->flag);",
       "callsTo": [
         "FlagGet"
@@ -71,6 +113,12 @@
       "returnType": "bool32",
       "signature": "static bool32 MatchCall_GetEnabled_Rival(match_call_t matchCall)",
       "paramsRaw": "match_call_t matchCall",
+      "paramsList": [
+        {
+          "name": "matchCall",
+          "typeRaw": "match_call_t"
+        }
+      ],
       "body": "if (matchCall.rival->playerGender != gSaveBlock2Ptr->playerGender)\n        return FALSE;\n    if (matchCall.rival->flag == 0xFFFF)\n        return TRUE;\n    return FlagGet(matchCall.rival->flag);",
       "callsTo": [
         "FlagGet"
@@ -81,6 +129,12 @@
       "returnType": "bool32",
       "signature": "static bool32 MatchCall_GetEnabled_Birch(match_call_t matchCall)",
       "paramsRaw": "match_call_t matchCall",
+      "paramsList": [
+        {
+          "name": "matchCall",
+          "typeRaw": "match_call_t"
+        }
+      ],
       "body": "return FlagGet(matchCall.birch->flag);",
       "callsTo": [
         "FlagGet"
@@ -91,6 +145,12 @@
       "returnType": "bool32",
       "signature": "bool32 MatchCall_IsRematchable(u32 idx)",
       "paramsRaw": "u32 idx",
+      "paramsList": [
+        {
+          "name": "idx",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "match_call_t matchCall;\n    u32 i;\n\n    if (idx >= ARRAY_COUNT(sMatchCallHeaders))\n        return 0;\n    matchCall = sMatchCallHeaders[idx];\n    i = MatchCallGetFunctionIndex(matchCall);\n    return sMatchCall_IsRematchableFunctions[i](matchCall);",
       "callsTo": [
         "ARRAY_COUNT",
@@ -102,6 +162,12 @@
       "returnType": "bool32",
       "signature": "static bool32 MatchCall_IsRematchable_NPC(match_call_t matchCall)",
       "paramsRaw": "match_call_t matchCall",
+      "paramsList": [
+        {
+          "name": "matchCall",
+          "typeRaw": "match_call_t"
+        }
+      ],
       "body": "return FALSE;",
       "callsTo": [],
       "lineCount": 1
@@ -110,6 +176,12 @@
       "returnType": "bool32",
       "signature": "static bool32 MatchCall_IsRematchable_Trainer(match_call_t matchCall)",
       "paramsRaw": "match_call_t matchCall",
+      "paramsList": [
+        {
+          "name": "matchCall",
+          "typeRaw": "match_call_t"
+        }
+      ],
       "body": "if (matchCall.trainer->rematchTableIdx >= REMATCH_ELITE_FOUR_ENTRIES)\n        return FALSE;\n    return gSaveBlock1Ptr->trainerRematches[matchCall.trainer->rematchTableIdx] ? TRUE : FALSE;",
       "callsTo": [],
       "lineCount": 3
@@ -118,6 +190,12 @@
       "returnType": "bool32",
       "signature": "static bool32 MatchCall_IsRematchable_Wally(match_call_t matchCall)",
       "paramsRaw": "match_call_t matchCall",
+      "paramsList": [
+        {
+          "name": "matchCall",
+          "typeRaw": "match_call_t"
+        }
+      ],
       "body": "return gSaveBlock1Ptr->trainerRematches[matchCall.wally->rematchTableIdx] ? TRUE : FALSE;",
       "callsTo": [],
       "lineCount": 1
@@ -126,6 +204,12 @@
       "returnType": "bool32",
       "signature": "static bool32 MatchCall_IsRematchable_Rival(match_call_t matchCall)",
       "paramsRaw": "match_call_t matchCall",
+      "paramsList": [
+        {
+          "name": "matchCall",
+          "typeRaw": "match_call_t"
+        }
+      ],
       "body": "return FALSE;",
       "callsTo": [],
       "lineCount": 1
@@ -134,6 +218,12 @@
       "returnType": "bool32",
       "signature": "static bool32 MatchCall_IsRematchable_Birch(match_call_t matchCall)",
       "paramsRaw": "match_call_t matchCall",
+      "paramsList": [
+        {
+          "name": "matchCall",
+          "typeRaw": "match_call_t"
+        }
+      ],
       "body": "return FALSE;",
       "callsTo": [],
       "lineCount": 1
@@ -142,6 +232,12 @@
       "returnType": "bool32",
       "signature": "bool32 MatchCall_HasCheckPage(u32 idx)",
       "paramsRaw": "u32 idx",
+      "paramsList": [
+        {
+          "name": "idx",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "match_call_t matchCall;\n    u32 i;\n\n    if (idx >= ARRAY_COUNT(sMatchCallHeaders))\n        return FALSE;\n    matchCall = sMatchCallHeaders[idx];\n    i = MatchCallGetFunctionIndex(matchCall);\n    if (sMatchCall_HasCheckPageFunctions[i](matchCall))\n        return TRUE;\n    for (i = 0; i < ARRAY_COUNT(sCheckPageOverrides); i++)\n    {\n        if (sCheckPageOverrides[i].idx == idx)\n            return TRUE;\n    }\n    return FALSE;",
       "callsTo": [
         "ARRAY_COUNT",
@@ -153,6 +249,12 @@
       "returnType": "bool32",
       "signature": "static bool32 MatchCall_HasCheckPage_NPC(match_call_t matchCall)",
       "paramsRaw": "match_call_t matchCall",
+      "paramsList": [
+        {
+          "name": "matchCall",
+          "typeRaw": "match_call_t"
+        }
+      ],
       "body": "return FALSE;",
       "callsTo": [],
       "lineCount": 1
@@ -161,6 +263,12 @@
       "returnType": "bool32",
       "signature": "static bool32 MatchCall_HasCheckPage_Trainer(match_call_t matchCall)",
       "paramsRaw": "match_call_t matchCall",
+      "paramsList": [
+        {
+          "name": "matchCall",
+          "typeRaw": "match_call_t"
+        }
+      ],
       "body": "return TRUE;",
       "callsTo": [],
       "lineCount": 1
@@ -169,6 +277,12 @@
       "returnType": "bool32",
       "signature": "static bool32 MatchCall_HasCheckPage_Wally(match_call_t matchCall)",
       "paramsRaw": "match_call_t matchCall",
+      "paramsList": [
+        {
+          "name": "matchCall",
+          "typeRaw": "match_call_t"
+        }
+      ],
       "body": "return TRUE;",
       "callsTo": [],
       "lineCount": 1
@@ -177,6 +291,12 @@
       "returnType": "bool32",
       "signature": "static bool32 MatchCall_HasCheckPage_Rival(match_call_t matchCall)",
       "paramsRaw": "match_call_t matchCall",
+      "paramsList": [
+        {
+          "name": "matchCall",
+          "typeRaw": "match_call_t"
+        }
+      ],
       "body": "return FALSE;",
       "callsTo": [],
       "lineCount": 1
@@ -185,6 +305,12 @@
       "returnType": "bool32",
       "signature": "static bool32 MatchCall_HasCheckPage_Birch(match_call_t matchCall)",
       "paramsRaw": "match_call_t matchCall",
+      "paramsList": [
+        {
+          "name": "matchCall",
+          "typeRaw": "match_call_t"
+        }
+      ],
       "body": "return FALSE;",
       "callsTo": [],
       "lineCount": 1
@@ -193,6 +319,12 @@
       "returnType": "u32",
       "signature": "u32 MatchCall_GetRematchTableIdx(u32 idx)",
       "paramsRaw": "u32 idx",
+      "paramsList": [
+        {
+          "name": "idx",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "match_call_t matchCall;\n    u32 i;\n\n    if (idx >= ARRAY_COUNT(sMatchCallHeaders))\n        return REMATCH_TABLE_ENTRIES;\n    matchCall = sMatchCallHeaders[idx];\n    i = MatchCallGetFunctionIndex(matchCall);\n    return sMatchCall_GetRematchTableIdxFunctions[i](matchCall);",
       "callsTo": [
         "ARRAY_COUNT",
@@ -204,6 +336,12 @@
       "returnType": "u32",
       "signature": "static u32 MatchCall_GetRematchTableIdx_NPC(match_call_t matchCall)",
       "paramsRaw": "match_call_t matchCall",
+      "paramsList": [
+        {
+          "name": "matchCall",
+          "typeRaw": "match_call_t"
+        }
+      ],
       "body": "return REMATCH_TABLE_ENTRIES;",
       "callsTo": [],
       "lineCount": 1
@@ -212,6 +350,12 @@
       "returnType": "u32",
       "signature": "static u32 MatchCall_GetRematchTableIdx_Trainer(match_call_t matchCall)",
       "paramsRaw": "match_call_t matchCall",
+      "paramsList": [
+        {
+          "name": "matchCall",
+          "typeRaw": "match_call_t"
+        }
+      ],
       "body": "return matchCall.trainer->rematchTableIdx;",
       "callsTo": [],
       "lineCount": 1
@@ -220,6 +364,12 @@
       "returnType": "u32",
       "signature": "static u32 MatchCall_GetRematchTableIdx_Wally(match_call_t matchCall)",
       "paramsRaw": "match_call_t matchCall",
+      "paramsList": [
+        {
+          "name": "matchCall",
+          "typeRaw": "match_call_t"
+        }
+      ],
       "body": "return matchCall.wally->rematchTableIdx;",
       "callsTo": [],
       "lineCount": 1
@@ -228,6 +378,12 @@
       "returnType": "u32",
       "signature": "static u32 MatchCall_GetRematchTableIdx_Rival(match_call_t matchCall)",
       "paramsRaw": "match_call_t matchCall",
+      "paramsList": [
+        {
+          "name": "matchCall",
+          "typeRaw": "match_call_t"
+        }
+      ],
       "body": "return REMATCH_TABLE_ENTRIES;",
       "callsTo": [],
       "lineCount": 1
@@ -236,6 +392,12 @@
       "returnType": "u32",
       "signature": "static u32 MatchCall_GetRematchTableIdx_Birch(match_call_t matchCall)",
       "paramsRaw": "match_call_t matchCall",
+      "paramsList": [
+        {
+          "name": "matchCall",
+          "typeRaw": "match_call_t"
+        }
+      ],
       "body": "return REMATCH_TABLE_ENTRIES;",
       "callsTo": [],
       "lineCount": 1
@@ -244,6 +406,16 @@
       "returnType": "void",
       "signature": "void MatchCall_GetMessage(u32 idx, u8 *dest)",
       "paramsRaw": "u32 idx, u8 *dest",
+      "paramsList": [
+        {
+          "name": "idx",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "dest",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "match_call_t matchCall;\n    u32 i;\n\n    if (idx >= ARRAY_COUNT(sMatchCallHeaders))\n        return;\n    matchCall = sMatchCallHeaders[idx];\n    i = MatchCallGetFunctionIndex(matchCall);\n    sMatchCall_GetMessageFunctions[i](matchCall, dest);",
       "callsTo": [
         "ARRAY_COUNT",
@@ -255,6 +427,16 @@
       "returnType": "void",
       "signature": "static void MatchCall_GetMessage_NPC(match_call_t matchCall, u8 *dest)",
       "paramsRaw": "match_call_t matchCall, u8 *dest",
+      "paramsList": [
+        {
+          "name": "matchCall",
+          "typeRaw": "match_call_t"
+        },
+        {
+          "name": "dest",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "MatchCall_BufferCallMessageText(matchCall.npc->textData, dest);",
       "callsTo": [
         "MatchCall_BufferCallMessageText"
@@ -265,6 +447,16 @@
       "returnType": "void",
       "signature": "static void MatchCall_GetMessage_Trainer(match_call_t matchCall, u8 *dest)",
       "paramsRaw": "match_call_t matchCall, u8 *dest",
+      "paramsList": [
+        {
+          "name": "matchCall",
+          "typeRaw": "match_call_t"
+        },
+        {
+          "name": "dest",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "if (matchCall.common->type != MC_TYPE_LEADER)\n        MatchCall_BufferCallMessageText(matchCall.trainer->textData, dest);\n    else\n        MatchCall_BufferCallMessageTextByRematchTeam(matchCall.leader->textData, matchCall.leader->rematchTableIdx, dest);",
       "callsTo": [
         "MatchCall_BufferCallMessageText",
@@ -276,6 +468,16 @@
       "returnType": "void",
       "signature": "static void MatchCall_GetMessage_Wally(match_call_t matchCall, u8 *dest)",
       "paramsRaw": "match_call_t matchCall, u8 *dest",
+      "paramsList": [
+        {
+          "name": "matchCall",
+          "typeRaw": "match_call_t"
+        },
+        {
+          "name": "dest",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "MatchCall_BufferCallMessageText(matchCall.wally->textData, dest);",
       "callsTo": [
         "MatchCall_BufferCallMessageText"
@@ -286,6 +488,16 @@
       "returnType": "void",
       "signature": "static void MatchCall_GetMessage_Rival(match_call_t matchCall, u8 *dest)",
       "paramsRaw": "match_call_t matchCall, u8 *dest",
+      "paramsList": [
+        {
+          "name": "matchCall",
+          "typeRaw": "match_call_t"
+        },
+        {
+          "name": "dest",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "MatchCall_BufferCallMessageText(matchCall.rival->textData, dest);",
       "callsTo": [
         "MatchCall_BufferCallMessageText"
@@ -296,6 +508,16 @@
       "returnType": "void",
       "signature": "static void MatchCall_GetMessage_Birch(match_call_t matchCall, u8 *dest)",
       "paramsRaw": "match_call_t matchCall, u8 *dest",
+      "paramsList": [
+        {
+          "name": "matchCall",
+          "typeRaw": "match_call_t"
+        },
+        {
+          "name": "dest",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "BufferPokedexRatingForMatchCall(dest);",
       "callsTo": [
         "BufferPokedexRatingForMatchCall"
@@ -306,6 +528,16 @@
       "returnType": "void",
       "signature": "static void MatchCall_BufferCallMessageText(const match_call_text_data_t *textData, u8 *dest)",
       "paramsRaw": "const match_call_text_data_t *textData, u8 *dest",
+      "paramsList": [
+        {
+          "name": "textData",
+          "typeRaw": "const match_call_text_data_t *"
+        },
+        {
+          "name": "dest",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "u32 i;\n    for (i = 0; textData[i].text != NULL; i++)\n        ;\n    if (i)\n        i--;\n    while (i)\n    {\n        if (textData[i].availabilityFlag != ALWAYS_AVAILABLE && FlagGet(textData[i].availabilityFlag) == TRUE)\n            break;\n        i--;\n    }\n    if (textData[i].flagToSetOnCompletion != NO_FLAG_TO_SET)\n        FlagSet(textData[i].flagToSetOnCompletion);\n    StringExpandPlaceholders(dest, textData[i].text);",
       "callsTo": [
         "FlagGet",
@@ -318,6 +550,20 @@
       "returnType": "void",
       "signature": "static void MatchCall_BufferCallMessageTextByRematchTeam(const match_call_text_data_t *textData, u16 idx, u8 *dest)",
       "paramsRaw": "const match_call_text_data_t *textData, u16 idx, u8 *dest",
+      "paramsList": [
+        {
+          "name": "textData",
+          "typeRaw": "const match_call_text_data_t *"
+        },
+        {
+          "name": "idx",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "dest",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "u32 i;\n    for (i = 0; textData[i].text != NULL; i++)\n    {\n        if (textData[i].availabilityFlag == REMATCH_CALL_START)\n            break;\n        if (textData[i].availabilityFlag != ALWAYS_AVAILABLE && !FlagGet(textData[i].availabilityFlag))\n            break;\n    }\n    if (textData[i].availabilityFlag != REMATCH_CALL_START)\n    {\n        if (i)\n            i--;\n        if (textData[i].flagToSetOnCompletion != NO_FLAG_TO_SET)\n            FlagSet(textData[i].flagToSetOnCompletion);\n        StringExpandPlaceholders(dest, textData[i].text);\n    }\n    else\n    {\n        if (FlagGet(FLAG_SYS_GAME_CLEAR))\n        {\n            do\n            {\n                 \n                if (gSaveBlock1Ptr->trainerRematches[idx]) i += 2;\n                 \n                 \n                 \n                else if (CountBattledRematchTeams(idx) >= 2) i += 3; \n                 \n                else i++;\n            } while (0);\n        }\n         \n        StringExpandPlaceholders(dest, textData[i].text);\n    }",
       "callsTo": [
         "CountBattledRematchTeams",
@@ -331,6 +577,20 @@
       "returnType": "void",
       "signature": "void MatchCall_GetNameAndDesc(u32 idx, const u8 **desc, const u8 **name)",
       "paramsRaw": "u32 idx, const u8 **desc, const u8 **name",
+      "paramsList": [
+        {
+          "name": "idx",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "desc",
+          "typeRaw": "const u8 **"
+        },
+        {
+          "name": "name",
+          "typeRaw": "const u8 **"
+        }
+      ],
       "body": "match_call_t matchCall;\n    u32 i;\n\n    if (idx >= ARRAY_COUNT(sMatchCallHeaders))\n        return;\n    matchCall = sMatchCallHeaders[idx];\n    i = MatchCallGetFunctionIndex(matchCall);\n    sMatchCall_GetNameAndDescFunctions[i](matchCall, desc, name);",
       "callsTo": [
         "ARRAY_COUNT",
@@ -342,6 +602,20 @@
       "returnType": "void",
       "signature": "static void MatchCall_GetNameAndDesc_NPC(match_call_t matchCall, const u8 **desc, const u8 **name)",
       "paramsRaw": "match_call_t matchCall, const u8 **desc, const u8 **name",
+      "paramsList": [
+        {
+          "name": "matchCall",
+          "typeRaw": "match_call_t"
+        },
+        {
+          "name": "desc",
+          "typeRaw": "const u8 **"
+        },
+        {
+          "name": "name",
+          "typeRaw": "const u8 **"
+        }
+      ],
       "body": "*desc = matchCall.npc->desc;\n    *name = matchCall.npc->name;",
       "callsTo": [],
       "lineCount": 2
@@ -350,6 +624,20 @@
       "returnType": "void",
       "signature": "static void MatchCall_GetNameAndDesc_Trainer(match_call_t matchCall, const u8 **desc, const u8 **name)",
       "paramsRaw": "match_call_t matchCall, const u8 **desc, const u8 **name",
+      "paramsList": [
+        {
+          "name": "matchCall",
+          "typeRaw": "match_call_t"
+        },
+        {
+          "name": "desc",
+          "typeRaw": "const u8 **"
+        },
+        {
+          "name": "name",
+          "typeRaw": "const u8 **"
+        }
+      ],
       "body": "match_call_t _matchCall = matchCall;\n    if (_matchCall.trainer->name == NULL)\n        MatchCall_GetNameAndDescByRematchIdx(_matchCall.trainer->rematchTableIdx, desc, name);\n    else\n        *name = _matchCall.trainer->name;\n    *desc = _matchCall.trainer->desc;",
       "callsTo": [
         "MatchCall_GetNameAndDescByRematchIdx"
@@ -360,6 +648,20 @@
       "returnType": "void",
       "signature": "static void MatchCall_GetNameAndDesc_Wally(match_call_t matchCall, const u8 **desc, const u8 **name)",
       "paramsRaw": "match_call_t matchCall, const u8 **desc, const u8 **name",
+      "paramsList": [
+        {
+          "name": "matchCall",
+          "typeRaw": "match_call_t"
+        },
+        {
+          "name": "desc",
+          "typeRaw": "const u8 **"
+        },
+        {
+          "name": "name",
+          "typeRaw": "const u8 **"
+        }
+      ],
       "body": "MatchCall_GetNameAndDescByRematchIdx(matchCall.wally->rematchTableIdx, desc, name);\n    *desc = matchCall.wally->desc;",
       "callsTo": [
         "MatchCall_GetNameAndDescByRematchIdx"
@@ -370,6 +672,20 @@
       "returnType": "void",
       "signature": "static void MatchCall_GetNameAndDesc_Rival(match_call_t matchCall, const u8 **desc, const u8 **name)",
       "paramsRaw": "match_call_t matchCall, const u8 **desc, const u8 **name",
+      "paramsList": [
+        {
+          "name": "matchCall",
+          "typeRaw": "match_call_t"
+        },
+        {
+          "name": "desc",
+          "typeRaw": "const u8 **"
+        },
+        {
+          "name": "name",
+          "typeRaw": "const u8 **"
+        }
+      ],
       "body": "*desc = matchCall.rival->desc;\n    *name = matchCall.rival->name;",
       "callsTo": [],
       "lineCount": 2
@@ -378,6 +694,20 @@
       "returnType": "void",
       "signature": "static void MatchCall_GetNameAndDesc_Birch(match_call_t matchCall, const u8 **desc, const u8 **name)",
       "paramsRaw": "match_call_t matchCall, const u8 **desc, const u8 **name",
+      "paramsList": [
+        {
+          "name": "matchCall",
+          "typeRaw": "match_call_t"
+        },
+        {
+          "name": "desc",
+          "typeRaw": "const u8 **"
+        },
+        {
+          "name": "name",
+          "typeRaw": "const u8 **"
+        }
+      ],
       "body": "*desc = matchCall.birch->desc;\n    *name = matchCall.birch->name;",
       "callsTo": [],
       "lineCount": 2
@@ -386,6 +716,20 @@
       "returnType": "void",
       "signature": "static void MatchCall_GetNameAndDescByRematchIdx(u32 idx, const u8 **desc, const u8 **name)",
       "paramsRaw": "u32 idx, const u8 **desc, const u8 **name",
+      "paramsList": [
+        {
+          "name": "idx",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "desc",
+          "typeRaw": "const u8 **"
+        },
+        {
+          "name": "name",
+          "typeRaw": "const u8 **"
+        }
+      ],
       "body": "const struct Trainer *trainer = gTrainers + GetTrainerIdxByRematchIdx(idx);\n    *desc = GetTrainerClassNameGenderSpecific(trainer->trainerClass, trainer->encounterMusic_gender, trainer->trainerName);\n    *name = trainer->trainerName;",
       "callsTo": [
         "GetTrainerClassNameGenderSpecific",
@@ -397,6 +741,12 @@
       "returnType": "int",
       "signature": "int MatchCall_GetOverrideFacilityClass(u32 idx)",
       "paramsRaw": "u32 idx",
+      "paramsList": [
+        {
+          "name": "idx",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "u32 i;\n\n    for (i = 0; i < ARRAY_COUNT(sCheckPageOverrides); i++)\n    {\n        if (sCheckPageOverrides[i].idx == idx)\n            return sCheckPageOverrides[i].facilityClass;\n    }\n    return -1;",
       "callsTo": [
         "ARRAY_COUNT"
@@ -407,6 +757,12 @@
       "returnType": "bool32",
       "signature": "bool32 MatchCall_HasRematchId(u32 idx)",
       "paramsRaw": "u32 idx",
+      "paramsList": [
+        {
+          "name": "idx",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "int i;\n\n    for (i = 0; i < (int)ARRAY_COUNT(sMatchCallHeaders); i++)\n    {\n        u32 id = MatchCall_GetRematchTableIdx(i);\n        if (id != REMATCH_TABLE_ENTRIES && id == idx)\n            return TRUE;\n    }\n    return FALSE;",
       "callsTo": [
         "ARRAY_COUNT",
@@ -418,6 +774,7 @@
       "returnType": "void",
       "signature": "void SetMatchCallRegisteredFlag(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int index = GetRematchIdxByTrainerIdx(gSpecialVar_0x8004);\n    if (index >= 0)\n        FlagSet(TRAINER_REGISTERED_FLAGS_START + index);",
       "callsTo": [
         "FlagSet",

@@ -6,6 +6,12 @@
       "returnType": "void",
       "signature": "void PrintCoinsString(u32 coinAmount)",
       "paramsRaw": "u32 coinAmount",
+      "paramsList": [
+        {
+          "name": "coinAmount",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "u32 xAlign;\n\n    ConvertIntToDecimalStringN(gStringVar1, coinAmount, STR_CONV_MODE_RIGHT_ALIGN, MAX_COIN_DIGITS);\n    StringExpandPlaceholders(gStringVar4, gText_Coins);\n\n    xAlign = GetStringRightAlignXOffset(FONT_NARROW, gStringVar4, 56);\n    AddTextPrinterParameterized(sCoinsWindowId, FONT_NARROW, gStringVar4, xAlign, 1, 0, NULL);",
       "callsTo": [
         "AddTextPrinterParameterized",
@@ -19,6 +25,20 @@
       "returnType": "void",
       "signature": "void ShowCoinsWindow(u32 coinAmount, u8 x, u8 y)",
       "paramsRaw": "u32 coinAmount, u8 x, u8 y",
+      "paramsList": [
+        {
+          "name": "coinAmount",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "x",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "y",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "struct WindowTemplate template;\n    SetWindowTemplateFields(&template, 0, x, y, 7, 2, 0xF, 0x141);  \n    sCoinsWindowId = AddWindow(&template);\n    FillWindowPixelBuffer(sCoinsWindowId, PIXEL_FILL(0));\n    PutWindowTilemap(sCoinsWindowId);\n    DrawStdFrameWithCustomTileAndPalette(sCoinsWindowId, FALSE, 0x214, 0xE);\n    PrintCoinsString(coinAmount);",
       "callsTo": [
         "AddWindow",
@@ -35,6 +55,7 @@
       "returnType": "void",
       "signature": "void HideCoinsWindow(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ClearStdWindowAndFrame(sCoinsWindowId, TRUE);\n    RemoveWindow(sCoinsWindowId);",
       "callsTo": [
         "ClearStdWindowAndFrame",
@@ -46,6 +67,7 @@
       "returnType": "u16",
       "signature": "u16 GetCoins(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return gSaveBlock1Ptr->coins ^ gSaveBlock2Ptr->encryptionKey;",
       "callsTo": [],
       "lineCount": 1
@@ -54,6 +76,12 @@
       "returnType": "void",
       "signature": "void SetCoins(u16 coinAmount)",
       "paramsRaw": "u16 coinAmount",
+      "paramsList": [
+        {
+          "name": "coinAmount",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "gSaveBlock1Ptr->coins = coinAmount ^ gSaveBlock2Ptr->encryptionKey;",
       "callsTo": [],
       "lineCount": 1
@@ -62,6 +90,12 @@
       "returnType": "bool8",
       "signature": "bool8 AddCoins(u16 toAdd)",
       "paramsRaw": "u16 toAdd",
+      "paramsList": [
+        {
+          "name": "toAdd",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "u16 newAmount;\n    u16 ownedCoins = GetCoins();\n    if (ownedCoins >= MAX_COINS)\n        return FALSE;\n     \n    if (ownedCoins > ownedCoins + toAdd)\n    {\n        newAmount = MAX_COINS;\n    }\n    else\n    {\n        ownedCoins += toAdd;\n        if (ownedCoins > MAX_COINS)\n            ownedCoins = MAX_COINS;\n        newAmount = ownedCoins;\n    }\n    SetCoins(newAmount);\n    return TRUE;",
       "callsTo": [
         "GetCoins",
@@ -73,6 +107,12 @@
       "returnType": "bool8",
       "signature": "bool8 RemoveCoins(u16 toSub)",
       "paramsRaw": "u16 toSub",
+      "paramsList": [
+        {
+          "name": "toSub",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "u16 ownedCoins = GetCoins();\n    if (ownedCoins >= toSub)\n    {\n        SetCoins(ownedCoins - toSub);\n        return TRUE;\n    }\n    return FALSE;",
       "callsTo": [
         "GetCoins",

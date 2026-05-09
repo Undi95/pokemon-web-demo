@@ -6,6 +6,12 @@
       "returnType": "void",
       "signature": "void SoundTask_FireBlast(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s8 pan1, pan2, panIncrement;\n\n    gTasks[taskId].data[0] = gBattleAnimArgs[0];\n    gTasks[taskId].data[1] = gBattleAnimArgs[1];\n\n    pan1 = BattleAnimAdjustPanning(SOUND_PAN_ATTACKER);\n    pan2 = BattleAnimAdjustPanning(SOUND_PAN_TARGET);\n    panIncrement = CalculatePanIncrement(pan1, pan2, 2);\n\n    gTasks[taskId].data[2] = pan1;\n    gTasks[taskId].data[3] = pan2;\n    gTasks[taskId].data[4] = panIncrement;\n    gTasks[taskId].data[10] = 10;\n\n    gTasks[taskId].func = SoundTask_FireBlast_Step1;",
       "callsTo": [
         "BattleAnimAdjustPanning",
@@ -17,6 +23,12 @@
       "returnType": "void",
       "signature": "static void SoundTask_FireBlast_Step1(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s16 pan = gTasks[taskId].data[2];\n    s8 panIncrement = gTasks[taskId].data[4];\n    if (++gTasks[taskId].data[11] == 111)\n    {\n        gTasks[taskId].data[10] = 5;\n        gTasks[taskId].data[11] = 0;\n        gTasks[taskId].func = SoundTask_FireBlast_Step2;\n    }\n    else\n    {\n        if (++gTasks[taskId].data[10] == 11)\n        {\n            gTasks[taskId].data[10] = 0;\n            PlaySE12WithPanning(gTasks[taskId].data[0], pan);\n        }\n        pan += panIncrement;\n        gTasks[taskId].data[2] = KeepPanInRange(pan, panIncrement);\n    }",
       "callsTo": [
         "KeepPanInRange",
@@ -28,6 +40,12 @@
       "returnType": "void",
       "signature": "static void SoundTask_FireBlast_Step2(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (++gTasks[taskId].data[10] == 6)\n    {\n        s8 pan;\n\n        gTasks[taskId].data[10] = 0;\n        pan = BattleAnimAdjustPanning(SOUND_PAN_TARGET);\n        PlaySE12WithPanning(gTasks[taskId].data[1], pan);\n        if (++gTasks[taskId].data[11] == 2)\n            DestroyAnimSoundTask(taskId);\n    }",
       "callsTo": [
         "BattleAnimAdjustPanning",
@@ -40,6 +58,12 @@
       "returnType": "void",
       "signature": "void SoundTask_LoopSEAdjustPanning(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u16 songId = gBattleAnimArgs[0];\n    s8 targetPan = gBattleAnimArgs[2];\n    s8 panIncrement = gBattleAnimArgs[3];\n    u8 r10 = gBattleAnimArgs[4];\n    u8 r7 = gBattleAnimArgs[5];\n    u8 r9 = gBattleAnimArgs[6];\n    s8 sourcePan = BattleAnimAdjustPanning(gBattleAnimArgs[1]);\n\n    targetPan = BattleAnimAdjustPanning(targetPan);\n    panIncrement = CalculatePanIncrement(sourcePan, targetPan, panIncrement);\n\n    gTasks[taskId].data[0] = songId;\n    gTasks[taskId].data[1] = sourcePan;\n    gTasks[taskId].data[2] = targetPan;\n    gTasks[taskId].data[3] = panIncrement;\n    gTasks[taskId].data[4] = r10;\n    gTasks[taskId].data[5] = r7;\n    gTasks[taskId].data[6] = r9;\n    gTasks[taskId].data[10] = 0;\n    gTasks[taskId].data[11] = sourcePan;\n    gTasks[taskId].data[12] = r9;\n\n    gTasks[taskId].func = SoundTask_LoopSEAdjustPanning_Step;\n    gTasks[taskId].func(taskId);",
       "callsTo": [
         "BattleAnimAdjustPanning",
@@ -51,6 +75,12 @@
       "returnType": "void",
       "signature": "static void SoundTask_LoopSEAdjustPanning_Step(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (gTasks[taskId].data[12]++ == gTasks[taskId].data[6])\n    {\n        gTasks[taskId].data[12] = 0;\n        PlaySE12WithPanning(gTasks[taskId].data[0], gTasks[taskId].data[11]);\n        if (--gTasks[taskId].data[4] == 0)\n        {\n            DestroyAnimSoundTask(taskId);\n            return;\n        }\n    }\n\n    if (gTasks[taskId].data[10]++ == gTasks[taskId].data[5])\n    {\n        u16 dPan, oldPan;\n        gTasks[taskId].data[10] = 0;\n        dPan = gTasks[taskId].data[3];\n        oldPan = gTasks[taskId].data[11];\n        gTasks[taskId].data[11] = dPan + oldPan;\n        gTasks[taskId].data[11] = KeepPanInRange(gTasks[taskId].data[11], oldPan);\n    }",
       "callsTo": [
         "DestroyAnimSoundTask",
@@ -63,6 +93,12 @@
       "returnType": "void",
       "signature": "void SoundTask_PlayCryHighPitch(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u16 species = 0;\n    s8 pan = BattleAnimAdjustPanning(SOUND_PAN_ATTACKER);\n    if (IsContest())\n    {\n        if (gBattleAnimArgs[0] == ANIM_ATTACKER)\n            species = gContestResources->moveAnim->species;\n     \n     \n    #ifndef BUGFIX\n        else\n            DestroyAnimVisualTask(taskId);\n    #endif\n    }\n    else\n    {\n        u8 battler;\n\n         \n        if (gBattleAnimArgs[0] == ANIM_ATTACKER)\n            battler = gBattleAnimAttacker;\n        else if (gBattleAnimArgs[0] == ANIM_TARGET)\n            battler = gBattleAnimTarget;\n        else if (gBattleAnimArgs[0] == ANIM_ATK_PARTNER)\n            battler = BATTLE_PARTNER(gBattleAnimAttacker);\n        else\n            battler = BATTLE_PARTNER(gBattleAnimTarget);\n\n         \n        if ((gBattleAnimArgs[0] == ANIM_TARGET || gBattleAnimArgs[0] == ANIM_DEF_PARTNER) && !IsBattlerSpriteVisible(battler))\n        {\n            DestroyAnimVisualTask(taskId);\n            return;\n        }\n\n        if (GetBattlerSide(battler) != B_SIDE_PLAYER)\n            species = GetMonData(&gEnemyParty[gBattlerPartyIndexes[battler]], MON_DATA_SPECIES);\n        else\n            species = GetMonData(&gPlayerParty[gBattlerPartyIndexes[battler]], MON_DATA_SPECIES);\n    }\n\n    if (species != SPECIES_NONE)\n        PlayCry_ByMode(species, pan, CRY_MODE_HIGH_PITCH);\n\n    DestroyAnimVisualTask(taskId);",
       "callsTo": [
         "BATTLE_PARTNER",
@@ -80,6 +116,12 @@
       "returnType": "void",
       "signature": "void SoundTask_PlayDoubleCry(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u16 species = 0;\n    s8 pan = BattleAnimAdjustPanning(SOUND_PAN_ATTACKER);\n    if (IsContest())\n    {\n        if (gBattleAnimArgs[0] == ANIM_ATTACKER)\n            species = gContestResources->moveAnim->species;\n     \n     \n    #ifndef BUGFIX\n        else\n            DestroyAnimVisualTask(taskId);\n    #endif\n    }\n    else\n    {\n        u8 battler;\n\n         \n        if (gBattleAnimArgs[0] == ANIM_ATTACKER)\n            battler = gBattleAnimAttacker;\n        else if (gBattleAnimArgs[0] == ANIM_TARGET)\n            battler = gBattleAnimTarget;\n        else if (gBattleAnimArgs[0] == ANIM_ATK_PARTNER)\n            battler = BATTLE_PARTNER(gBattleAnimAttacker);\n        else\n            battler = BATTLE_PARTNER(gBattleAnimTarget);\n\n         \n        if ((gBattleAnimArgs[0] == ANIM_TARGET || gBattleAnimArgs[0] == ANIM_DEF_PARTNER) && !IsBattlerSpriteVisible(battler))\n        {\n            DestroyAnimVisualTask(taskId);\n            return;\n        }\n\n        if (GetBattlerSide(battler) != B_SIDE_PLAYER)\n            species = GetMonData(&gEnemyParty[gBattlerPartyIndexes[battler]], MON_DATA_SPECIES);\n        else\n            species = GetMonData(&gPlayerParty[gBattlerPartyIndexes[battler]], MON_DATA_SPECIES);\n    }\n\n    gTasks[taskId].data[0] = gBattleAnimArgs[1];\n    gTasks[taskId].data[1] = species;\n    gTasks[taskId].data[2] = pan;\n\n    if (species != SPECIES_NONE)\n    {\n        if (gBattleAnimArgs[1] == DOUBLE_CRY_GROWL)\n            PlayCry_ByMode(species, pan, CRY_MODE_GROWL_1);\n        else  \n            PlayCry_ByMode(species, pan, CRY_MODE_ROAR_1);\n\n        gTasks[taskId].func = SoundTask_PlayDoubleCry_Step;\n    }\n    else\n    {\n        DestroyAnimVisualTask(taskId);\n    }",
       "callsTo": [
         "BATTLE_PARTNER",
@@ -97,6 +139,12 @@
       "returnType": "void",
       "signature": "static void SoundTask_PlayDoubleCry_Step(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u16 species = gTasks[taskId].data[1];\n    s8 pan = gTasks[taskId].data[2];\n\n    if (gTasks[taskId].data[9] < 2)\n    {\n        gTasks[taskId].data[9]++;\n    }\n    else\n    {\n        if (gTasks[taskId].data[0] == DOUBLE_CRY_GROWL)\n        {\n            if (!IsCryPlaying())\n            {\n                PlayCry_ByMode(species, pan, CRY_MODE_GROWL_2);\n                DestroyAnimVisualTask(taskId);\n            }\n        }\n        else  \n        {\n            if (!IsCryPlaying())\n            {\n                PlayCry_ByMode(species, pan, CRY_MODE_ROAR_2);\n                DestroyAnimVisualTask(taskId);\n            }\n        }\n    }",
       "callsTo": [
         "DestroyAnimVisualTask",
@@ -109,6 +157,12 @@
       "returnType": "void",
       "signature": "void SoundTask_WaitForCry(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (gTasks[taskId].data[9] < 2)\n    {\n        gTasks[taskId].data[9]++;\n    }\n    else\n    {\n        if (!IsCryPlaying())\n            DestroyAnimVisualTask(taskId);\n    }",
       "callsTo": [
         "DestroyAnimVisualTask",
@@ -120,6 +174,12 @@
       "returnType": "void",
       "signature": "void SoundTask_PlayCryWithEcho(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u16 species;\n    s8 pan;\n\n    gTasks[taskId].tLastCry = gBattleAnimArgs[0];\n    pan = BattleAnimAdjustPanning(SOUND_PAN_ATTACKER);\n\n    if (IsContest())\n        species = gContestResources->moveAnim->species;\n    else\n        species = gAnimBattlerSpecies[gBattleAnimAttacker];\n\n    gTasks[taskId].tSpecies = species;\n    gTasks[taskId].tPan = pan;\n\n    if (species != SPECIES_NONE)\n        gTasks[taskId].func = SoundTask_PlayCryWithEcho_Step;\n    else\n        DestroyAnimVisualTask(taskId);",
       "callsTo": [
         "BattleAnimAdjustPanning",
@@ -132,6 +192,12 @@
       "returnType": "void",
       "signature": "static void SoundTask_PlayCryWithEcho_Step(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u16 species = gTasks[taskId].tSpecies;\n    s8 pan = gTasks[taskId].tPan;\n\n     \n    switch (gTasks[taskId].tState)\n    {\n    case 2:\n        PlayCry_DuckNoRestore(species, pan, CRY_MODE_ECHO_START);\n        gTasks[taskId].tState++;\n        break;\n    case 1:\n    case 3:\n    case 4:\n        gTasks[taskId].tState++;\n        break;\n    case 5:\n        if (IsCryPlaying())\n            break;\n    case 0:\n        StopCryAndClearCrySongs();\n        gTasks[taskId].tState++;\n        break;\n    default:\n        if (!gTasks[taskId].tLastCry)\n            PlayCry_DuckNoRestore(species, pan, CRY_MODE_ECHO_END);\n        else\n            PlayCry_ByMode(species, pan, CRY_MODE_ECHO_END);\n\n        DestroyAnimVisualTask(taskId);\n        break;\n    }",
       "callsTo": [
         "DestroyAnimVisualTask",
@@ -146,6 +212,12 @@
       "returnType": "void",
       "signature": "void SoundTask_PlaySE1WithPanning(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u16 songId = gBattleAnimArgs[0];\n    s8 pan = BattleAnimAdjustPanning(gBattleAnimArgs[1]);\n\n    PlaySE1WithPanning(songId, pan);\n    DestroyAnimVisualTask(taskId);",
       "callsTo": [
         "BattleAnimAdjustPanning",
@@ -158,6 +230,12 @@
       "returnType": "void",
       "signature": "void SoundTask_PlaySE2WithPanning(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u16 songId = gBattleAnimArgs[0];\n    s8 pan = BattleAnimAdjustPanning(gBattleAnimArgs[1]);\n\n    PlaySE2WithPanning(songId, pan);\n    DestroyAnimVisualTask(taskId);",
       "callsTo": [
         "BattleAnimAdjustPanning",
@@ -170,6 +248,12 @@
       "returnType": "void",
       "signature": "void SoundTask_AdjustPanningVar(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s8 targetPan = gBattleAnimArgs[1];\n    s8 panIncrement = gBattleAnimArgs[2];\n    u16 r9 = gBattleAnimArgs[3];\n    s8 sourcePan = BattleAnimAdjustPanning(gBattleAnimArgs[0]);\n\n    targetPan = BattleAnimAdjustPanning(targetPan);\n    panIncrement = CalculatePanIncrement(sourcePan, targetPan, panIncrement);\n\n    gTasks[taskId].data[1] = sourcePan;\n    gTasks[taskId].data[2] = targetPan;\n    gTasks[taskId].data[3] = panIncrement;\n    gTasks[taskId].data[5] = r9;\n    gTasks[taskId].data[10] = 0;\n    gTasks[taskId].data[11] = sourcePan;\n\n    gTasks[taskId].func = SoundTask_AdjustPanningVar_Step;\n    gTasks[taskId].func(taskId);",
       "callsTo": [
         "BattleAnimAdjustPanning",
@@ -181,6 +265,12 @@
       "returnType": "void",
       "signature": "static void SoundTask_AdjustPanningVar_Step(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u16 panIncrement = gTasks[taskId].data[3];\n\n    if (gTasks[taskId].data[10]++ == gTasks[taskId].data[5])\n    {\n        u16 oldPan;\n        gTasks[taskId].data[10] = 0;\n        oldPan = gTasks[taskId].data[11];\n        gTasks[taskId].data[11] = panIncrement + oldPan;\n        gTasks[taskId].data[11] = KeepPanInRange(gTasks[taskId].data[11], oldPan);\n    }\n\n    gAnimCustomPanning = gTasks[taskId].data[11];\n    if (gTasks[taskId].data[11] == gTasks[taskId].data[2])\n        DestroyAnimVisualTask(taskId);",
       "callsTo": [
         "DestroyAnimVisualTask",

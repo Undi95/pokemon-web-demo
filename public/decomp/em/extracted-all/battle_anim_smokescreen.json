@@ -6,6 +6,20 @@
       "returnType": "u8",
       "signature": "u8 SmokescreenImpact(s16 x, s16 y, bool8 persist)",
       "paramsRaw": "s16 x, s16 y, bool8 persist",
+      "paramsList": [
+        {
+          "name": "x",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "persist",
+          "typeRaw": "bool8"
+        }
+      ],
       "body": "u8 mainSpriteId;\n    u8 spriteId1, spriteId2, spriteId3, spriteId4;\n    struct Sprite *mainSprite;\n\n    if (GetSpriteTileStartByTag(sSmokescreenImpactSpriteSheet.tag) == 0xFFFF)\n    {\n        LoadCompressedSpriteSheetUsingHeap(&sSmokescreenImpactSpriteSheet);\n        LoadCompressedSpritePaletteUsingHeap(&sSmokescreenImpactSpritePalette);\n    }\n\n    mainSpriteId = CreateInvisibleSpriteWithCallback(SpriteCB_SmokescreenImpactMain);\n    mainSprite = &gSprites[mainSpriteId];\n    mainSprite->sPersist = persist;\n\n     \n    spriteId1 = CreateSprite(&sSmokescreenImpactSpriteTemplate, x - 16, y - 16, 2);\n    gSprites[spriteId1].sMainSpriteId = mainSpriteId;\n    mainSprite->sActiveSprites++;\n    AnimateSprite(&gSprites[spriteId1]);\n\n     \n    spriteId2 = CreateSprite(&sSmokescreenImpactSpriteTemplate, x, y - 16, 2);\n    gSprites[spriteId2].sMainSpriteId = mainSpriteId;\n    mainSprite->sActiveSprites++;\n    StartSpriteAnim(&gSprites[spriteId2], 1);\n    AnimateSprite(&gSprites[spriteId2]);\n\n     \n    spriteId3 = CreateSprite(&sSmokescreenImpactSpriteTemplate, x - 16, y, 2);\n    gSprites[spriteId3].sMainSpriteId = mainSpriteId;\n    mainSprite->sActiveSprites++;\n    StartSpriteAnim(&gSprites[spriteId3], 2);\n    AnimateSprite(&gSprites[spriteId3]);\n\n     \n    spriteId4 = CreateSprite(&sSmokescreenImpactSpriteTemplate, x, y, 2);\n    gSprites[spriteId4].sMainSpriteId = mainSpriteId;\n    mainSprite->sActiveSprites++;\n    StartSpriteAnim(&gSprites[spriteId4], 3);\n    AnimateSprite(&gSprites[spriteId4]);\n\n    return mainSpriteId;",
       "callsTo": [
         "AnimateSprite",
@@ -22,6 +36,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_SmokescreenImpactMain(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (sprite->sActiveSprites == 0)\n    {\n        FreeSpriteTilesByTag(sSmokescreenImpactSpriteSheet.tag);\n        FreeSpritePaletteByTag(sSmokescreenImpactSpritePalette.tag);\n        if (!sprite->sPersist)\n            DestroySprite(sprite);\n        else\n            sprite->callback = SpriteCallbackDummy;\n    }",
       "callsTo": [
         "DestroySprite",
@@ -34,6 +54,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_SmokescreenImpact(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (sprite->animEnded)\n    {\n        gSprites[sprite->sMainSpriteId].sActiveSprites--;\n        DestroySprite(sprite);\n    }",
       "callsTo": [
         "DestroySprite"

@@ -6,6 +6,12 @@
       "returnType": "void",
       "signature": "void MultiBootInit(struct MultiBootParam *mp)",
       "paramsRaw": "struct MultiBootParam *mp",
+      "paramsList": [
+        {
+          "name": "mp",
+          "typeRaw": "struct MultiBootParam *"
+        }
+      ],
       "body": "mp->client_bit = 0;\n    mp->probe_count = 0;\n    mp->response_bit = 0;\n\n    mp->check_wait = MULTIBOOT_CONNECTION_CHECK_WAIT;\n    mp->sendflag = 0;\n\n    mp->handshake_timeout = 0;\n\n    REG_RCNT = 0;\n    REG_SIOCNT = SIO_MULTI_MODE | SIO_115200_BPS;\n    REG_SIODATA8 = 0;",
       "callsTo": [],
       "lineCount": 12
@@ -14,6 +20,12 @@
       "returnType": "int",
       "signature": "int MultiBootMain(struct MultiBootParam *mp)",
       "paramsRaw": "struct MultiBootParam *mp",
+      "paramsList": [
+        {
+          "name": "mp",
+          "typeRaw": "struct MultiBootParam *"
+        }
+      ],
       "body": "int i;\n    int j;\n    int k;\n\n    if (MultiBootCheckComplete(mp))\n    {\n        return 0;\n    }\n\n    if (mp->check_wait > MULTIBOOT_CONNECTION_CHECK_WAIT)\n    {\n        mp->check_wait--;\n        return 0;\n    }\n\noutput_burst:\n    if (mp->sendflag)\n    {\n        mp->sendflag = 0;\n\n        i = REG_SIOCNT & (SIO_MULTI_BUSY | SIO_ERROR | SIO_ID | SIO_MULTI_SD | SIO_MULTI_SI);\n        if (i != SIO_MULTI_SD)\n        {\n            MultiBootInit(mp);\n            return i ^ SIO_MULTI_SD;\n        }\n    }\n\n    if (mp->probe_count >= 0xe0)\n    {\n        i = MultiBootHandShake(mp);\n        if (i)\n        {\n            return i;\n        }\n\n        if (mp->server_type == MULTIBOOT_SERVER_TYPE_QUICK\n         && mp->probe_count > 0xe1\n         && MultiBootCheckComplete(mp) == 0)\n        {\n            MultiBootWaitSendDone();\n            goto output_burst;\n        }\n\n        if (MultiBootCheckComplete(mp) == 0)\n        {\n            if (mp->handshake_timeout == 0)\n            {\n                MultiBootInit(mp);\n                return MULTIBOOT_ERROR_HANDSHAKE_FAILURE;\n            }\n            mp->handshake_timeout--;\n        }\n\n        return 0;\n    }\n\n    switch (mp->probe_count)\n    {\n    case 0:\n        k = 0x0e;\n        for (i = MULTIBOOT_NCHILD; i != 0; i--)\n        {\n            if (REG_SIOMULTI(i) != 0xffff)\n            {\n                break;\n            }\n            k >>= 1;\n        }\n\n        k &= 0x0e;\n        mp->response_bit = k;\n\n        for (i = MULTIBOOT_NCHILD; i != 0; i--)\n        {\n            j = REG_SIOMULTI(i);\n            if (mp->client_bit & (1 << i))\n            {\n                if (j != ((MULTIBOOT_CLIENT_INFO << 8) | (1 << i)))\n                {\n                    k = 0;\n                    break;\n                }\n            }\n        }\n\n        mp->client_bit &= k;\n\n        if (k == 0)\n        {\n            mp->check_wait = MULTIBOOT_CONNECTION_CHECK_WAIT;\n        }\n\n        if (mp->check_wait)\n        {\n            mp->check_wait--;\n        }\n        else\n        {\n            if (mp->response_bit != mp->client_bit)\n            {\n                MultiBootStartProbe(mp);\n                goto case_1;\n            }\n        }\n\n    output_master_info:\n        return MultiBootSend(mp, (MULTIBOOT_MASTER_INFO << 8) | mp->client_bit);\n\n    case_1:\n    case 1:\n        mp->probe_target_bit = 0;\n        for (i = MULTIBOOT_NCHILD; i != 0; i--)\n        {\n            j = REG_SIOMULTI(i);\n            if ((j >> 8) == MULTIBOOT_CLIENT_INFO)\n            {\n                MultiBoot_required_data[i - 1] = j;\n                j &= 0xff;\n                if (j == (1 << i))\n                {\n                    mp->probe_target_bit |= j;\n                }\n            }\n        }\n\n        if (mp->response_bit != mp->probe_target_bit)\n        {\n            goto output_master_info;\n        }\n\n        mp->probe_count = 2;\n        return MultiBootSend(mp, (MULTIBOOT_MASTER_START_PROBE << 8) | mp->probe_target_bit);\n\n    case 2:\n        for (i = MULTIBOOT_NCHILD; i != 0; i--)\n        {\n            if (mp->probe_target_bit & (1 << i))\n            {\n                j = REG_SIOMULTI(i);\n                if (j != MultiBoot_required_data[i - 1])\n                {\n                    mp->probe_target_bit ^= 1 << i;\n                }\n            }\n        }\n        goto output_header;\n\n    case 0xd0:\n        k = 1;\n        for (i = MULTIBOOT_NCHILD; i != 0; i--)\n        {\n            j = REG_SIOMULTI(i);\n            mp->client_data[i - 1] = j;\n            if (mp->probe_target_bit & (1 << i))\n            {\n                if ((j >> 8) != MULTIBOOT_CLIENT_INFO\n                 && (j >> 8) != MULTIBOOT_CLIENT_DLREADY)\n                {\n                    MultiBootInit(mp);\n                    return MULTIBOOT_ERROR_NO_DLREADY;\n                }\n                if (j == MultiBoot_required_data[i - 1])\n                {\n                    k = 0;\n                }\n            }\n        }\n\n        if (k == 0)\n        {\n            return MultiBootSend(mp, (MULTIBOOT_MASTER_REQUEST_DLREADY << 8) | mp->palette_data);\n        }\n\n        mp->probe_count = 0xd1;\n\n        k = 0x11;\n        for (i = MULTIBOOT_NCHILD; i != 0; i--)\n        {\n            k += mp->client_data[i - 1];\n        }\n        mp->handshake_data = k;\n        return MultiBootSend(mp, (MULTIBOOT_MASTER_START_DL << 8) | (k & 0xff));\n\n    case 0xd1:\n        for (i = MULTIBOOT_NCHILD; i != 0; i--)\n        {\n            j = REG_SIOMULTI(i);\n            if (mp->probe_target_bit & (1 << i))\n            {\n                if ((j >> 8) != MULTIBOOT_CLIENT_DLREADY)\n                {\n                    MultiBootInit(mp);\n                    return MULTIBOOT_ERROR_NO_DLREADY;\n                }\n            }\n        }\n\n        i = MultiBoot(mp);\n\n        if (i == 0)\n        {\n            mp->probe_count = 0xe0;\n            mp->handshake_timeout = MULTIBOOT_HANDSHAKE_TIMEOUT;\n            return 0;\n        }\n        MultiBootInit(mp);\n        mp->check_wait = MULTIBOOT_CONNECTION_CHECK_WAIT * 2;\n        return MULTIBOOT_ERROR_BOOT_FAILURE;\n\n    default:\n        for (i = MULTIBOOT_NCHILD; i != 0; i--)\n        {\n            if (mp->probe_target_bit & (1 << i))\n            {\n                j = REG_SIOMULTI(i);\n                if ((j >> 8) != (MULTIBOOT_MASTER_START_PROBE + 1 - (mp->probe_count >> 1))\n                 || ((j & 0xff) != (1 << i)))\n                {\n                    mp->probe_target_bit ^= 1 << i;\n                }\n            }\n        }\n\n        if (mp->probe_count == 0xc4)\n        {\n            mp->client_bit = mp->probe_target_bit & 0x0e;\n            mp->probe_count = 0;\n            goto output_master_info;\n        }\n\n    output_header:\n        if (mp->probe_target_bit == 0)\n        {\n            MultiBootInit(mp);\n            return MULTIBOOT_ERROR_NO_PROBE_TARGET;\n        }\n\n        mp->probe_count += 2;\n        if (mp->probe_count == 0xc4)\n        {\n            goto output_master_info;\n        }\n        i = MultiBootSend(mp,\n            (mp->masterp[mp->probe_count - 4 + 1] << 8)\n            | mp->masterp[mp->probe_count - 4]);\n\n        if (i)\n        {\n            return i;\n        }\n        if (mp->server_type == MULTIBOOT_SERVER_TYPE_QUICK)\n        {\n            MultiBootWaitSendDone();\n            goto output_burst;\n        }\n        return 0;\n    }",
       "callsTo": [
         "MultiBoot",
@@ -31,6 +43,16 @@
       "returnType": "int",
       "signature": "static int MultiBootSend(struct MultiBootParam *mp, u16 data)",
       "paramsRaw": "struct MultiBootParam *mp, u16 data",
+      "paramsList": [
+        {
+          "name": "mp",
+          "typeRaw": "struct MultiBootParam *"
+        },
+        {
+          "name": "data",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "int i;\n\n    i = REG_SIOCNT & (SIO_MULTI_BUSY | SIO_MULTI_SD | SIO_MULTI_SI);\n    if (i != SIO_MULTI_SD)\n    {\n        MultiBootInit(mp);\n        return i ^ SIO_MULTI_SD;\n    }\n\n    REG_SIODATA8 = data;\n    REG_SIOCNT = SIO_MULTI_MODE | SIO_START | SIO_115200_BPS;\n\n    mp->sendflag = 1;\n    return 0;",
       "callsTo": [
         "MultiBootInit"
@@ -41,6 +63,12 @@
       "returnType": "void",
       "signature": "void MultiBootStartProbe(struct MultiBootParam *mp)",
       "paramsRaw": "struct MultiBootParam *mp",
+      "paramsList": [
+        {
+          "name": "mp",
+          "typeRaw": "struct MultiBootParam *"
+        }
+      ],
       "body": "if (mp->probe_count != 0)\n    {\n        MultiBootInit(mp);\n        return;\n    }\n    mp->check_wait = 0;\n    mp->client_bit = 0;\n    mp->probe_count = 1;",
       "callsTo": [
         "MultiBootInit"
@@ -51,6 +79,28 @@
       "returnType": "void",
       "signature": "void MultiBootStartMaster(struct MultiBootParam *mp, const u8 *srcp, int length, u8 palette_color, s8 palette_speed)",
       "paramsRaw": "struct MultiBootParam *mp, const u8 *srcp, int length, u8 palette_color, s8 palette_speed",
+      "paramsList": [
+        {
+          "name": "mp",
+          "typeRaw": "struct MultiBootParam *"
+        },
+        {
+          "name": "srcp",
+          "typeRaw": "const u8 *"
+        },
+        {
+          "name": "length",
+          "typeRaw": "int"
+        },
+        {
+          "name": "palette_color",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "palette_speed",
+          "typeRaw": "s8"
+        }
+      ],
       "body": "int i = 0;\n\n    if (mp->probe_count != 0\n     || mp->client_bit == 0\n     || mp->check_wait != 0)\n    {\n        MultiBootInit(mp);\n        return;\n    }\n\n    mp->boot_srcp = srcp;\n    length = (length + 15) & ~15;\n    if (length < MULTIBOOT_SEND_SIZE_MIN || length > MULTIBOOT_SEND_SIZE_MAX)\n    {\n        MultiBootInit(mp);\n        return;\n    }\n\n    mp->boot_endp = srcp + length;\n\n    switch (palette_speed)\n    {\n    case -4:\n    case -3:\n    case -2:\n    case -1:\n        i = (palette_color << 3) | (3 - palette_speed);\n        break;\n    case 0:\n        i = 0x38 | palette_color;\n        break;\n    case 1:\n    case 2:\n    case 3:\n    case 4:\n        i = (palette_color << 3) | (palette_speed - 1);\n        break;\n    }\n\n    mp->palette_data = ((i & 0x3f) << 1) | 0x81;\n    mp->probe_count = 0xd0;",
       "callsTo": [
         "MultiBootInit"
@@ -61,6 +111,12 @@
       "returnType": "int",
       "signature": "int MultiBootCheckComplete(struct MultiBootParam *mp)",
       "paramsRaw": "struct MultiBootParam *mp",
+      "paramsList": [
+        {
+          "name": "mp",
+          "typeRaw": "struct MultiBootParam *"
+        }
+      ],
       "body": "if (mp->probe_count == 0xe9)\n    {\n        return 1;\n    }\n\n    return 0;",
       "callsTo": [],
       "lineCount": 6
@@ -69,6 +125,12 @@
       "returnType": "int",
       "signature": "static int MultiBootHandShake(struct MultiBootParam *mp)",
       "paramsRaw": "struct MultiBootParam *mp",
+      "paramsList": [
+        {
+          "name": "mp",
+          "typeRaw": "struct MultiBootParam *"
+        }
+      ],
       "body": "int i, j;\n\n#define send_data (mp->system_work[0])\n#define must_data (mp->system_work[1])\n\n    switch (mp->probe_count)\n    {\n    case_0xe0:\n    case 0xe0:\n        mp->probe_count = 0xe1;\n        must_data = 0x0000;\n        send_data = 0x100000;\n        return MultiBootSend(mp, 0x0000);\n\n    default:\n        for (i = MULTIBOOT_NCHILD; i != 0; i--)\n        {\n            j = REG_SIOMULTI(i);\n            if ((mp->client_bit & (1 << i))\n                && j != must_data)\n            {\n                goto case_0xe0;\n            }\n        }\n        mp->probe_count++;\n        must_data = send_data & 0xffff;\n        if (send_data == 0x0000)\n        {\n            must_data = mp->masterp[0xac] | (mp->masterp[0xad] << 8);\n            send_data = must_data << 5;\n        }\n        send_data >>= 5;\n    output_common:\n        return MultiBootSend(mp, send_data);\n\n    case 0xe7:\n    case 0xe8:\n        for (i = MULTIBOOT_NCHILD; i != 0; i--)\n        {\n            j = REG_SIOMULTI(i);\n            if ((mp->client_bit & (1 << i)) && j != must_data)\n            {\n                MultiBootInit(mp);\n                return MULTIBOOT_ERROR_HANDSHAKE_FAILURE;\n            }\n        }\n\n        mp->probe_count++;\n        if (mp->probe_count == 0xe9)\n        {\n            return 0;\n        }\n\n        send_data = mp->masterp[0xae] | (mp->masterp[0xaf] << 8);\n        must_data = send_data;\n        goto output_common;\n    }\n\n#undef send_data\n#undef must_data",
       "callsTo": [
         "MultiBootInit",
@@ -81,6 +143,12 @@
       "returnType": "void",
       "signature": "static void MultiBootWaitCycles(u32 cycles)",
       "paramsRaw": "u32 cycles",
+      "paramsList": [
+        {
+          "name": "cycles",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "asm_unified(\"\\\n    mov  r2, pc\\n\\\n    lsrs r2, 24\\n\\\n    movs r1, 12\\n\\\n    cmp  r2, 2\\n\\\n    beq  MultiBootWaitCyclesLoop\\n\\\n    movs r1, 13\\n\\\n    cmp  r2, 8\\n\\\n    beq  MultiBootWaitCyclesLoop\\n\\\n    movs r1, 4\\n\\\nMultiBootWaitCyclesLoop:\\n\\\n    subs r0, r1\\n\\\n    bgt  MultiBootWaitCyclesLoop\\n\\\n    bx   lr\\n\");",
       "callsTo": [],
       "lineCount": 14
@@ -89,6 +157,7 @@
       "returnType": "void",
       "signature": "static void MultiBootWaitSendDone(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "int i;\n\n    for (i = 0; i < 31069; i++)\n    {\n        if ((REG_SIOCNT & SIO_START) == 0)\n        {\n            break;\n        }\n    }\n\n    MultiBootWaitCycles(600);",
       "callsTo": [
         "MultiBootWaitCycles"

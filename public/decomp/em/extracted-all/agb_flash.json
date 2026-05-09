@@ -6,6 +6,12 @@
       "returnType": "void",
       "signature": "void SwitchFlashBank(u8 bankNum)",
       "paramsRaw": "u8 bankNum",
+      "paramsList": [
+        {
+          "name": "bankNum",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "FLASH_WRITE(0x5555, 0xAA);\n    FLASH_WRITE(0x2AAA, 0x55);\n    FLASH_WRITE(0x5555, 0xB0);\n    FLASH_WRITE(0x0000, bankNum);",
       "callsTo": [
         "FLASH_WRITE"
@@ -16,6 +22,7 @@
       "returnType": "u16",
       "signature": "u16 ReadFlashId(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 flashId;\n    u16 readFlash1Buffer[0x20];\n    u8 (*readFlash1)(u8 *);\n\n    SetReadFlash1(readFlash1Buffer);\n    readFlash1 = (u8 (*)(u8 *))((s32)readFlash1Buffer + 1);\n\n     \n    FLASH_WRITE(0x5555, 0xAA);\n    FLASH_WRITE(0x2AAA, 0x55);\n    FLASH_WRITE(0x5555, 0x90);\n    DELAY();\n\n    flashId = readFlash1(FLASH_BASE + 1) << 8;\n    flashId |= readFlash1(FLASH_BASE);\n\n     \n    FLASH_WRITE(0x5555, 0xAA);\n    FLASH_WRITE(0x2AAA, 0x55);\n    FLASH_WRITE(0x5555, 0xF0);\n    FLASH_WRITE(0x5555, 0xF0);\n    DELAY();\n\n    return flashId;",
       "callsTo": [
         "DELAY",
@@ -28,6 +35,7 @@
       "returnType": "void",
       "signature": "void FlashTimerIntr(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (sTimerCount != 0 && --sTimerCount == 0)\n        gFlashTimeoutFlag = 1;",
       "callsTo": [],
       "lineCount": 2
@@ -36,6 +44,12 @@
       "returnType": "u16",
       "signature": "u16 SetFlashTimerIntr(u8 timerNum, void (**intrFunc)(void))",
       "paramsRaw": "u8 timerNum, void (**intrFunc)(void)",
+      "paramsList": [
+        {
+          "name": "timerNum",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (timerNum >= 4)\n        return 1;\n\n    sTimerNum = timerNum;\n    sTimerReg = &REG_TMCNT_L(sTimerNum);\n    *intrFunc = FlashTimerIntr;\n    return 0;",
       "callsTo": [
         "REG_TMCNT_L"
@@ -46,6 +60,12 @@
       "returnType": "void",
       "signature": "void StartFlashTimer(u8 phase)",
       "paramsRaw": "u8 phase",
+      "paramsList": [
+        {
+          "name": "phase",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "const u16 *maxTime = &gFlashMaxTime[phase * 3];\n    sSavedIme = REG_IME;\n    REG_IME = 0;\n    sTimerReg[1] = 0;\n    REG_IE |= (INTR_FLAG_TIMER0 << sTimerNum);\n    gFlashTimeoutFlag = 0;\n    sTimerCount = *maxTime++;\n    *sTimerReg++ = *maxTime++;\n    *sTimerReg-- = *maxTime++;\n    REG_IF = (INTR_FLAG_TIMER0 << sTimerNum);\n    REG_IME = 1;",
       "callsTo": [],
       "lineCount": 11
@@ -54,6 +74,7 @@
       "returnType": "void",
       "signature": "void StopFlashTimer(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "REG_IME = 0;\n    *sTimerReg++ = 0;\n    *sTimerReg-- = 0;\n    REG_IE &= ~(INTR_FLAG_TIMER0 << sTimerNum);\n    REG_IME = sSavedIme;",
       "callsTo": [],
       "lineCount": 5
@@ -62,6 +83,12 @@
       "returnType": "u8",
       "signature": "u8 ReadFlash1(u8 *addr)",
       "paramsRaw": "u8 *addr",
+      "paramsList": [
+        {
+          "name": "addr",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "return *addr;",
       "callsTo": [],
       "lineCount": 1
@@ -70,6 +97,12 @@
       "returnType": "void",
       "signature": "void SetReadFlash1(u16 *dest)",
       "paramsRaw": "u16 *dest",
+      "paramsList": [
+        {
+          "name": "dest",
+          "typeRaw": "u16 *"
+        }
+      ],
       "body": "u16 *src;\n    u16 i;\n\n    PollFlashStatus = (u8 (*)(u8 *))((s32)dest + 1);\n\n    src = (u16 *)ReadFlash1;\n    src = (u16 *)((s32)src ^ 1);\n\n    i = ((s32)SetReadFlash1 - (s32)ReadFlash1) >> 1;\n\n    while (i != 0)\n    {\n        *dest++ = *src++;\n        i--;\n    }",
       "callsTo": [],
       "lineCount": 15
@@ -78,6 +111,20 @@
       "returnType": "void",
       "signature": "void ReadFlash_Core(vu8 *src, u8 *dest, u32 size)",
       "paramsRaw": "vu8 *src, u8 *dest, u32 size",
+      "paramsList": [
+        {
+          "name": "src",
+          "typeRaw": "vu8 *"
+        },
+        {
+          "name": "dest",
+          "typeRaw": "u8 *"
+        },
+        {
+          "name": "size",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "while (size-- != 0)\n    {\n        *dest++ = *src++;\n    }",
       "callsTo": [],
       "lineCount": 4
@@ -86,6 +133,24 @@
       "returnType": "void",
       "signature": "void ReadFlash(u16 sectorNum, u32 offset, u8 *dest, u32 size)",
       "paramsRaw": "u16 sectorNum, u32 offset, u8 *dest, u32 size",
+      "paramsList": [
+        {
+          "name": "sectorNum",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "offset",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "dest",
+          "typeRaw": "u8 *"
+        },
+        {
+          "name": "size",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "u8 *src;\n    u16 i;\n    vu16 readFlash_Core_Buffer[0x40];\n    vu16 *funcSrc;\n    vu16 *funcDest;\n    void (*readFlash_Core)(vu8 *, u8 *, u32);\n\n    REG_WAITCNT = (REG_WAITCNT & ~WAITCNT_SRAM_MASK) | WAITCNT_SRAM_8;\n\n    if (gFlash->romSize == FLASH_ROM_SIZE_1M)\n    {\n        SwitchFlashBank(sectorNum / SECTORS_PER_BANK);\n        sectorNum %= SECTORS_PER_BANK;\n    }\n\n    funcSrc = (vu16 *)ReadFlash_Core;\n    funcSrc = (vu16 *)((s32)funcSrc ^ 1);\n    funcDest = readFlash_Core_Buffer;\n\n    i = ((s32)ReadFlash - (s32)ReadFlash_Core) >> 1;\n\n    while (i != 0)\n    {\n        *funcDest++ = *funcSrc++;\n        i--;\n    }\n\n    readFlash_Core = (void (*)(vu8 *, u8 *, u32))((s32)readFlash_Core_Buffer + 1);\n\n    src = FLASH_BASE + (sectorNum << gFlash->sector.shift) + offset;\n\n    readFlash_Core(src, dest, size);",
       "callsTo": [
         "SwitchFlashBank"
@@ -96,6 +161,20 @@
       "returnType": "u32",
       "signature": "u32 VerifyFlashSector_Core(u8 *src, u8 *tgt, u32 size)",
       "paramsRaw": "u8 *src, u8 *tgt, u32 size",
+      "paramsList": [
+        {
+          "name": "src",
+          "typeRaw": "u8 *"
+        },
+        {
+          "name": "tgt",
+          "typeRaw": "u8 *"
+        },
+        {
+          "name": "size",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "while (size-- != 0)\n    {\n        if (*tgt++ != *src++)\n            return (u32)(tgt - 1);\n    }\n\n    return 0;",
       "callsTo": [],
       "lineCount": 7
@@ -104,6 +183,16 @@
       "returnType": "u32",
       "signature": "u32 VerifyFlashSector(u16 sectorNum, u8 *src)",
       "paramsRaw": "u16 sectorNum, u8 *src",
+      "paramsList": [
+        {
+          "name": "sectorNum",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "src",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "u16 i;\n    vu16 verifyFlashSector_Core_Buffer[0x80];\n    vu16 *funcSrc;\n    vu16 *funcDest;\n    u8 *tgt;\n    u16 size;\n    u32 (*verifyFlashSector_Core)(u8 *, u8 *, u32);\n\n    REG_WAITCNT = (REG_WAITCNT & ~WAITCNT_SRAM_MASK) | WAITCNT_SRAM_8;\n\n    if (gFlash->romSize == FLASH_ROM_SIZE_1M)\n    {\n        SwitchFlashBank(sectorNum / SECTORS_PER_BANK);\n        sectorNum %= SECTORS_PER_BANK;\n    }\n\n    funcSrc = (vu16 *)VerifyFlashSector_Core;\n    funcSrc = (vu16 *)((s32)funcSrc ^ 1);\n    funcDest = verifyFlashSector_Core_Buffer;\n\n    i = ((s32)VerifyFlashSector - (s32)VerifyFlashSector_Core) >> 1;\n\n    while (i != 0)\n    {\n        *funcDest++ = *funcSrc++;\n        i--;\n    }\n\n    verifyFlashSector_Core = (u32 (*)(u8 *, u8 *, u32))((s32)verifyFlashSector_Core_Buffer + 1);\n\n    tgt = FLASH_BASE + (sectorNum << gFlash->sector.shift);\n    size = gFlash->sector.size;\n\n    return verifyFlashSector_Core(src, tgt, size);",
       "callsTo": [
         "SwitchFlashBank"
@@ -114,6 +203,20 @@
       "returnType": "u32",
       "signature": "u32 VerifyFlashSectorNBytes(u16 sectorNum, u8 *src, u32 n)",
       "paramsRaw": "u16 sectorNum, u8 *src, u32 n",
+      "paramsList": [
+        {
+          "name": "sectorNum",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "src",
+          "typeRaw": "u8 *"
+        },
+        {
+          "name": "n",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "u16 i;\n    vu16 verifyFlashSector_Core_Buffer[0x80];\n    vu16 *funcSrc;\n    vu16 *funcDest;\n    u8 *tgt;\n    u32 (*verifyFlashSector_Core)(u8 *, u8 *, u32);\n\n    if (gFlash->romSize == FLASH_ROM_SIZE_1M)\n    {\n        SwitchFlashBank(sectorNum / SECTORS_PER_BANK);\n        sectorNum %= SECTORS_PER_BANK;\n    }\n\n    REG_WAITCNT = (REG_WAITCNT & ~WAITCNT_SRAM_MASK) | WAITCNT_SRAM_8;\n\n    funcSrc = (vu16 *)VerifyFlashSector_Core;\n    funcSrc = (vu16 *)((s32)funcSrc ^ 1);\n    funcDest = verifyFlashSector_Core_Buffer;\n\n    i = ((s32)VerifyFlashSector - (s32)VerifyFlashSector_Core) >> 1;\n\n    while (i != 0)\n    {\n        *funcDest++ = *funcSrc++;\n        i--;\n    }\n\n    verifyFlashSector_Core = (u32 (*)(u8 *, u8 *, u32))((s32)verifyFlashSector_Core_Buffer + 1);\n\n    tgt = FLASH_BASE + (sectorNum << gFlash->sector.shift);\n\n    return verifyFlashSector_Core(src, tgt, n);",
       "callsTo": [
         "SwitchFlashBank"
@@ -124,6 +227,16 @@
       "returnType": "u32",
       "signature": "u32 ProgramFlashSectorAndVerify(u16 sectorNum, u8 *src)",
       "paramsRaw": "u16 sectorNum, u8 *src",
+      "paramsList": [
+        {
+          "name": "sectorNum",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "src",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "u8 i;\n    u32 result;\n\n    for (i = 0; i < 3; i++)\n    {\n        result = ProgramFlashSector(sectorNum, src);\n        if (result != 0)\n            continue;\n\n        result = VerifyFlashSector(sectorNum, src);\n        if (result == 0)\n            break;\n    }\n\n    return result;",
       "callsTo": [
         "ProgramFlashSector",
@@ -135,6 +248,20 @@
       "returnType": "u32",
       "signature": "u32 ProgramFlashSectorAndVerifyNBytes(u16 sectorNum, u8 *src, u32 n)",
       "paramsRaw": "u16 sectorNum, u8 *src, u32 n",
+      "paramsList": [
+        {
+          "name": "sectorNum",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "src",
+          "typeRaw": "u8 *"
+        },
+        {
+          "name": "n",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "u8 i;\n    u32 result;\n\n    for (i = 0; i < 3; i++)\n    {\n        result = ProgramFlashSector(sectorNum, src);\n        if (result != 0)\n            continue;\n\n        result = VerifyFlashSectorNBytes(sectorNum, src, n);\n        if (result == 0)\n            break;\n    }\n\n    return result;",
       "callsTo": [
         "ProgramFlashSector",

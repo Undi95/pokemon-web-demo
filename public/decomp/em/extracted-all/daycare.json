@@ -6,6 +6,12 @@
       "returnType": "u8",
       "signature": "u8 CountPokemonInDaycare(struct DayCare *daycare)",
       "paramsRaw": "struct DayCare *daycare",
+      "paramsList": [
+        {
+          "name": "daycare",
+          "typeRaw": "struct DayCare *"
+        }
+      ],
       "body": "u8 i, count;\n    count = 0;\n\n    for (i = 0; i < DAYCARE_MON_COUNT; i++)\n    {\n        if (GetBoxMonData(&daycare->mons[i].mon, MON_DATA_SPECIES) != 0)\n            count++;\n    }\n\n    return count;",
       "callsTo": [
         "GetBoxMonData"
@@ -16,6 +22,16 @@
       "returnType": "void",
       "signature": "void InitDaycareMailRecordMixing(struct DayCare *daycare, struct RecordMixingDaycareMail *mixMail)",
       "paramsRaw": "struct DayCare *daycare, struct RecordMixingDaycareMail *mixMail",
+      "paramsList": [
+        {
+          "name": "daycare",
+          "typeRaw": "struct DayCare *"
+        },
+        {
+          "name": "mixMail",
+          "typeRaw": "struct RecordMixingDaycareMail *"
+        }
+      ],
       "body": "u8 i;\n    u8 numDaycareMons = 0;\n\n    for (i = 0; i < DAYCARE_MON_COUNT; i++)\n    {\n        if (GetBoxMonData(&daycare->mons[i].mon, MON_DATA_SPECIES) != SPECIES_NONE)\n        {\n            numDaycareMons++;\n            if (GetBoxMonData(&daycare->mons[i].mon, MON_DATA_HELD_ITEM) == ITEM_NONE)\n                mixMail->cantHoldItem[i] = FALSE;\n            else\n                mixMail->cantHoldItem[i] = TRUE;\n        }\n        else\n        {\n             \n            mixMail->cantHoldItem[i] = TRUE;\n        }\n    }\n\n    mixMail->numDaycareMons = numDaycareMons;",
       "callsTo": [
         "GetBoxMonData"
@@ -26,6 +42,12 @@
       "returnType": "s8",
       "signature": "static s8 Daycare_FindEmptySpot(struct DayCare *daycare)",
       "paramsRaw": "struct DayCare *daycare",
+      "paramsList": [
+        {
+          "name": "daycare",
+          "typeRaw": "struct DayCare *"
+        }
+      ],
       "body": "u8 i;\n\n    for (i = 0; i < DAYCARE_MON_COUNT; i++)\n    {\n        if (GetBoxMonData(&daycare->mons[i].mon, MON_DATA_SPECIES) == SPECIES_NONE)\n            return i;\n    }\n\n    return -1;",
       "callsTo": [
         "GetBoxMonData"
@@ -36,6 +58,16 @@
       "returnType": "void",
       "signature": "static void StorePokemonInDaycare(struct Pokemon *mon, struct DaycareMon *daycareMon)",
       "paramsRaw": "struct Pokemon *mon, struct DaycareMon *daycareMon",
+      "paramsList": [
+        {
+          "name": "mon",
+          "typeRaw": "struct Pokemon *"
+        },
+        {
+          "name": "daycareMon",
+          "typeRaw": "struct DaycareMon *"
+        }
+      ],
       "body": "if (MonHasMail(mon))\n    {\n        u8 mailId;\n\n        StringCopy(daycareMon->mail.otName, gSaveBlock2Ptr->playerName);\n        GetMonNickname2(mon, daycareMon->mail.monName);\n        StripExtCtrlCodes(daycareMon->mail.monName);\n        daycareMon->mail.gameLanguage = GAME_LANGUAGE;\n        daycareMon->mail.monLanguage = GetMonData(mon, MON_DATA_LANGUAGE);\n        mailId = GetMonData(mon, MON_DATA_MAIL);\n        daycareMon->mail.message = gSaveBlock1Ptr->mail[mailId];\n        TakeMailFromMon(mon);\n    }\n\n    daycareMon->mon = mon->box;\n    BoxMonRestorePP(&daycareMon->mon);\n    daycareMon->steps = 0;\n    ZeroMonData(mon);\n    CompactPartySlots();\n    CalculatePlayerPartyCount();",
       "callsTo": [
         "BoxMonRestorePP",
@@ -55,6 +87,16 @@
       "returnType": "void",
       "signature": "static void StorePokemonInEmptyDaycareSlot(struct Pokemon *mon, struct DayCare *daycare)",
       "paramsRaw": "struct Pokemon *mon, struct DayCare *daycare",
+      "paramsList": [
+        {
+          "name": "mon",
+          "typeRaw": "struct Pokemon *"
+        },
+        {
+          "name": "daycare",
+          "typeRaw": "struct DayCare *"
+        }
+      ],
       "body": "s8 slotId = Daycare_FindEmptySpot(daycare);\n    StorePokemonInDaycare(mon, &daycare->mons[slotId]);",
       "callsTo": [
         "Daycare_FindEmptySpot",
@@ -66,6 +108,7 @@
       "returnType": "void",
       "signature": "void StoreSelectedPokemonInDaycare(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 monId = GetCursorSelectionMonId();\n    StorePokemonInEmptyDaycareSlot(&gPlayerParty[monId], &gSaveBlock1Ptr->daycare);",
       "callsTo": [
         "GetCursorSelectionMonId",
@@ -77,6 +120,12 @@
       "returnType": "void",
       "signature": "static void ShiftDaycareSlots(struct DayCare *daycare)",
       "paramsRaw": "struct DayCare *daycare",
+      "paramsList": [
+        {
+          "name": "daycare",
+          "typeRaw": "struct DayCare *"
+        }
+      ],
       "body": "if (GetBoxMonData(&daycare->mons[1].mon, MON_DATA_SPECIES) != SPECIES_NONE\n        && GetBoxMonData(&daycare->mons[0].mon, MON_DATA_SPECIES) == SPECIES_NONE)\n    {\n        daycare->mons[0].mon = daycare->mons[1].mon;\n        ZeroBoxMonData(&daycare->mons[1].mon);\n\n        daycare->mons[0].mail = daycare->mons[1].mail;\n        daycare->mons[0].steps = daycare->mons[1].steps;\n        daycare->mons[1].steps = 0;\n        ClearDaycareMonMail(&daycare->mons[1].mail);\n    }",
       "callsTo": [
         "ClearDaycareMonMail",
@@ -89,6 +138,12 @@
       "returnType": "void",
       "signature": "static void ApplyDaycareExperience(struct Pokemon *mon)",
       "paramsRaw": "struct Pokemon *mon",
+      "paramsList": [
+        {
+          "name": "mon",
+          "typeRaw": "struct Pokemon *"
+        }
+      ],
       "body": "s32 i;\n    bool8 firstMove;\n    u16 learnedMove;\n\n    for (i = 0; i < MAX_LEVEL; i++)\n    {\n         \n        if (TryIncrementMonLevel(mon))\n        {\n             \n            firstMove = TRUE;\n            while ((learnedMove = MonTryLearningNewMove(mon, firstMove)) != 0)\n            {\n                firstMove = FALSE;\n                if (learnedMove == MON_HAS_MAX_MOVES)\n                    DeleteFirstMoveAndGiveMoveToMon(mon, gMoveToLearn);\n            }\n        }\n        else\n        {\n            break;\n        }\n    }\n\n     \n    CalculateMonStats(mon);",
       "callsTo": [
         "CalculateMonStats",
@@ -102,6 +157,12 @@
       "returnType": "u16",
       "signature": "static u16 TakeSelectedPokemonFromDaycare(struct DaycareMon *daycareMon)",
       "paramsRaw": "struct DaycareMon *daycareMon",
+      "paramsList": [
+        {
+          "name": "daycareMon",
+          "typeRaw": "struct DaycareMon *"
+        }
+      ],
       "body": "u16 species;\n    u32 experience;\n    struct Pokemon pokemon;\n\n    GetBoxMonNickname(&daycareMon->mon, gStringVar1);\n    species = GetBoxMonData(&daycareMon->mon, MON_DATA_SPECIES);\n    BoxMonToMon(&daycareMon->mon, &pokemon);\n\n    if (GetMonData(&pokemon, MON_DATA_LEVEL) != MAX_LEVEL)\n    {\n        experience = GetMonData(&pokemon, MON_DATA_EXP) + daycareMon->steps;\n        SetMonData(&pokemon, MON_DATA_EXP, &experience);\n        ApplyDaycareExperience(&pokemon);\n    }\n\n    gPlayerParty[PARTY_SIZE - 1] = pokemon;\n    if (daycareMon->mail.message.itemId)\n    {\n        GiveMailToMon(&gPlayerParty[PARTY_SIZE - 1], &daycareMon->mail.message);\n        ClearDaycareMonMail(&daycareMon->mail);\n    }\n\n    ZeroBoxMonData(&daycareMon->mon);\n    daycareMon->steps = 0;\n    CompactPartySlots();\n    CalculatePlayerPartyCount();\n    return species;",
       "callsTo": [
         "ApplyDaycareExperience",
@@ -122,6 +183,16 @@
       "returnType": "u16",
       "signature": "static u16 TakeSelectedPokemonMonFromDaycareShiftSlots(struct DayCare *daycare, u8 slotId)",
       "paramsRaw": "struct DayCare *daycare, u8 slotId",
+      "paramsList": [
+        {
+          "name": "daycare",
+          "typeRaw": "struct DayCare *"
+        },
+        {
+          "name": "slotId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u16 species = TakeSelectedPokemonFromDaycare(&daycare->mons[slotId]);\n    ShiftDaycareSlots(daycare);\n    return species;",
       "callsTo": [
         "ShiftDaycareSlots",
@@ -133,6 +204,7 @@
       "returnType": "u16",
       "signature": "u16 TakePokemonFromDaycare(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return TakeSelectedPokemonMonFromDaycareShiftSlots(&gSaveBlock1Ptr->daycare, gSpecialVar_0x8004);",
       "callsTo": [
         "TakeSelectedPokemonMonFromDaycareShiftSlots"
@@ -143,6 +215,16 @@
       "returnType": "u8",
       "signature": "static u8 GetLevelAfterDaycareSteps(struct BoxPokemon *mon, u32 steps)",
       "paramsRaw": "struct BoxPokemon *mon, u32 steps",
+      "paramsList": [
+        {
+          "name": "mon",
+          "typeRaw": "struct BoxPokemon *"
+        },
+        {
+          "name": "steps",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "struct BoxPokemon tempMon = *mon;\n\n    u32 experience = GetBoxMonData(mon, MON_DATA_EXP) + steps;\n    SetBoxMonData(&tempMon, MON_DATA_EXP,  &experience);\n    return GetLevelFromBoxMonExp(&tempMon);",
       "callsTo": [
         "GetBoxMonData",
@@ -155,6 +237,12 @@
       "returnType": "u8",
       "signature": "static u8 GetNumLevelsGainedFromSteps(struct DaycareMon *daycareMon)",
       "paramsRaw": "struct DaycareMon *daycareMon",
+      "paramsList": [
+        {
+          "name": "daycareMon",
+          "typeRaw": "struct DaycareMon *"
+        }
+      ],
       "body": "u8 levelBefore;\n    u8 levelAfter;\n\n    levelBefore = GetLevelFromBoxMonExp(&daycareMon->mon);\n    levelAfter = GetLevelAfterDaycareSteps(&daycareMon->mon, daycareMon->steps);\n    return levelAfter - levelBefore;",
       "callsTo": [
         "GetLevelAfterDaycareSteps",
@@ -166,6 +254,12 @@
       "returnType": "u8",
       "signature": "static u8 GetNumLevelsGainedForDaycareMon(struct DaycareMon *daycareMon)",
       "paramsRaw": "struct DaycareMon *daycareMon",
+      "paramsList": [
+        {
+          "name": "daycareMon",
+          "typeRaw": "struct DaycareMon *"
+        }
+      ],
       "body": "u8 numLevelsGained = GetNumLevelsGainedFromSteps(daycareMon);\n    ConvertIntToDecimalStringN(gStringVar2, numLevelsGained, STR_CONV_MODE_LEFT_ALIGN, 2);\n    GetBoxMonNickname(&daycareMon->mon, gStringVar1);\n    return numLevelsGained;",
       "callsTo": [
         "ConvertIntToDecimalStringN",
@@ -178,6 +272,12 @@
       "returnType": "u32",
       "signature": "static u32 GetDaycareCostForSelectedMon(struct DaycareMon *daycareMon)",
       "paramsRaw": "struct DaycareMon *daycareMon",
+      "paramsList": [
+        {
+          "name": "daycareMon",
+          "typeRaw": "struct DaycareMon *"
+        }
+      ],
       "body": "u32 cost;\n\n    u8 numLevelsGained = GetNumLevelsGainedFromSteps(daycareMon);\n    GetBoxMonNickname(&daycareMon->mon, gStringVar1);\n    cost = 100 + 100 * numLevelsGained;\n    ConvertIntToDecimalStringN(gStringVar2, cost, STR_CONV_MODE_LEFT_ALIGN, 5);\n    return cost;",
       "callsTo": [
         "ConvertIntToDecimalStringN",
@@ -190,6 +290,16 @@
       "returnType": "u16",
       "signature": "static u16 GetDaycareCostForMon(struct DayCare *daycare, u8 slotId)",
       "paramsRaw": "struct DayCare *daycare, u8 slotId",
+      "paramsList": [
+        {
+          "name": "daycare",
+          "typeRaw": "struct DayCare *"
+        },
+        {
+          "name": "slotId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "return GetDaycareCostForSelectedMon(&daycare->mons[slotId]);",
       "callsTo": [
         "GetDaycareCostForSelectedMon"
@@ -200,6 +310,7 @@
       "returnType": "void",
       "signature": "void GetDaycareCost(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gSpecialVar_0x8005 = GetDaycareCostForMon(&gSaveBlock1Ptr->daycare, gSpecialVar_0x8004);",
       "callsTo": [
         "GetDaycareCostForMon"
@@ -210,6 +321,7 @@
       "returnType": "u8",
       "signature": "u8 GetNumLevelsGainedFromDaycare(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (GetBoxMonData(&gSaveBlock1Ptr->daycare.mons[gSpecialVar_0x8004].mon, MON_DATA_SPECIES) != 0)\n        return GetNumLevelsGainedForDaycareMon(&gSaveBlock1Ptr->daycare.mons[gSpecialVar_0x8004]);\n\n    return 0;",
       "callsTo": [
         "GetBoxMonData",
@@ -221,6 +333,12 @@
       "returnType": "void",
       "signature": "static void ClearDaycareMonMail(struct DaycareMail *mail)",
       "paramsRaw": "struct DaycareMail *mail",
+      "paramsList": [
+        {
+          "name": "mail",
+          "typeRaw": "struct DaycareMail *"
+        }
+      ],
       "body": "s32 i;\n\n    for (i = 0; i < PLAYER_NAME_LENGTH + 1; i++)\n        mail->otName[i] = 0;\n    for (i = 0; i < POKEMON_NAME_LENGTH + 1; i++)\n        mail->monName[i] = 0;\n\n    ClearMail(&mail->message);",
       "callsTo": [
         "ClearMail"
@@ -231,6 +349,12 @@
       "returnType": "void",
       "signature": "static void ClearDaycareMon(struct DaycareMon *daycareMon)",
       "paramsRaw": "struct DaycareMon *daycareMon",
+      "paramsList": [
+        {
+          "name": "daycareMon",
+          "typeRaw": "struct DaycareMon *"
+        }
+      ],
       "body": "ZeroBoxMonData(&daycareMon->mon);\n    daycareMon->steps = 0;\n    ClearDaycareMonMail(&daycareMon->mail);",
       "callsTo": [
         "ClearDaycareMonMail",
@@ -242,6 +366,12 @@
       "returnType": "u16",
       "signature": "static u16 GetEggSpecies(u16 species)",
       "paramsRaw": "u16 species",
+      "paramsList": [
+        {
+          "name": "species",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "int i, j, k;\n    bool8 found;\n\n     \n     \n    for (i = 0; i < EVOS_PER_MON; i++)\n    {\n        found = FALSE;\n        for (j = 1; j < NUM_SPECIES; j++)\n        {\n            for (k = 0; k < EVOS_PER_MON; k++)\n            {\n                if (gEvolutionTable[j][k].targetSpecies == species)\n                {\n                    species = j;\n                    found = TRUE;\n                    break;\n                }\n            }\n\n            if (found)\n                break;\n        }\n\n        if (j == NUM_SPECIES)\n            break;\n    }\n\n    return species;",
       "callsTo": [],
       "lineCount": 29
@@ -250,6 +380,12 @@
       "returnType": "s32",
       "signature": "static s32 GetParentToInheritNature(struct DayCare *daycare)",
       "paramsRaw": "struct DayCare *daycare",
+      "paramsList": [
+        {
+          "name": "daycare",
+          "typeRaw": "struct DayCare *"
+        }
+      ],
       "body": "u32 species[DAYCARE_MON_COUNT];\n    s32 i;\n    s32 dittoCount;\n    s32 parent = -1;\n\n     \n    for (i = 0; i < DAYCARE_MON_COUNT; i++)\n    {\n        if (GetBoxMonGender(&daycare->mons[i].mon) == MON_FEMALE)\n            parent = i;\n    }\n\n     \n    for (dittoCount = 0, i = 0; i < DAYCARE_MON_COUNT; i++)\n    {\n        species[i] = GetBoxMonData(&daycare->mons[i].mon, MON_DATA_SPECIES);\n        if (species[i] == SPECIES_DITTO)\n            dittoCount++, parent = i;\n    }\n\n     \n    if (dittoCount == DAYCARE_MON_COUNT)\n    {\n        if (Random() >= USHRT_MAX / 2)\n            parent = 0;\n        else\n            parent = 1;\n    }\n\n     \n    if (GetBoxMonData(&daycare->mons[parent].mon, MON_DATA_HELD_ITEM) != ITEM_EVERSTONE\n        || Random() >= USHRT_MAX / 2)\n    {\n        return -1;\n    }\n\n    return parent;",
       "callsTo": [
         "GetBoxMonData",
@@ -262,6 +398,12 @@
       "returnType": "void",
       "signature": "static void _TriggerPendingDaycareEgg(struct DayCare *daycare)",
       "paramsRaw": "struct DayCare *daycare",
+      "paramsList": [
+        {
+          "name": "daycare",
+          "typeRaw": "struct DayCare *"
+        }
+      ],
       "body": "s32 parent;\n    s32 natureTries = 0;\n\n    SeedRng2(gMain.vblankCounter2);\n    parent = GetParentToInheritNature(daycare);\n\n     \n    if (parent < 0)\n    {\n        daycare->offspringPersonality = (Random2() << 16) | ((Random() % 0xfffe) + 1);\n    }\n     \n    else\n    {\n        u8 wantedNature = GetNatureFromPersonality(GetBoxMonData(&daycare->mons[parent].mon, MON_DATA_PERSONALITY, NULL));\n        u32 personality;\n\n        do\n        {\n            personality = (Random2() << 16) | (Random());\n            if (wantedNature == GetNatureFromPersonality(personality) && personality != 0)\n                break;  \n\n            natureTries++;\n        } while (natureTries <= 2400);\n\n        daycare->offspringPersonality = personality;\n    }\n\n    FlagSet(FLAG_PENDING_DAYCARE_EGG);",
       "callsTo": [
         "FlagSet",
@@ -278,6 +420,12 @@
       "returnType": "void",
       "signature": "static void _TriggerPendingDaycareMaleEgg(struct DayCare *daycare)",
       "paramsRaw": "struct DayCare *daycare",
+      "paramsList": [
+        {
+          "name": "daycare",
+          "typeRaw": "struct DayCare *"
+        }
+      ],
       "body": "daycare->offspringPersonality = (Random()) | (EGG_GENDER_MALE);\n    FlagSet(FLAG_PENDING_DAYCARE_EGG);",
       "callsTo": [
         "FlagSet",
@@ -289,6 +437,7 @@
       "returnType": "void",
       "signature": "void TriggerPendingDaycareEgg(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "_TriggerPendingDaycareEgg(&gSaveBlock1Ptr->daycare);",
       "callsTo": [
         "_TriggerPendingDaycareEgg"
@@ -299,6 +448,16 @@
       "returnType": "void",
       "signature": "static void RemoveIVIndexFromList(u8 *ivs, u8 selectedIv)",
       "paramsRaw": "u8 *ivs, u8 selectedIv",
+      "paramsList": [
+        {
+          "name": "ivs",
+          "typeRaw": "u8 *"
+        },
+        {
+          "name": "selectedIv",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "s32 i, j;\n    u8 temp[NUM_STATS];\n\n    ivs[selectedIv] = 0xFF;\n    for (i = 0; i < NUM_STATS; i++)\n    {\n        temp[i] = ivs[i];\n    }\n\n    j = 0;\n    for (i = 0; i < NUM_STATS; i++)\n    {\n        if (temp[i] != 0xFF)\n            ivs[j++] = temp[i];\n    }",
       "callsTo": [],
       "lineCount": 15
@@ -307,6 +466,16 @@
       "returnType": "void",
       "signature": "static void InheritIVs(struct Pokemon *egg, struct DayCare *daycare)",
       "paramsRaw": "struct Pokemon *egg, struct DayCare *daycare",
+      "paramsList": [
+        {
+          "name": "egg",
+          "typeRaw": "struct Pokemon *"
+        },
+        {
+          "name": "daycare",
+          "typeRaw": "struct DayCare *"
+        }
+      ],
       "body": "u8 i;\n    u8 selectedIvs[INHERITED_IV_COUNT];\n    u8 availableIVs[NUM_STATS];\n    u8 whichParents[INHERITED_IV_COUNT];\n    u8 iv;\n\n     \n    for (i = 0; i < NUM_STATS; i++)\n    {\n        availableIVs[i] = i;\n    }\n\n     \n    for (i = 0; i < INHERITED_IV_COUNT; i++)\n    {\n         \n         \n         \n         \n         \n         \n        #ifndef BUGFIX\n        selectedIvs[i] = availableIVs[Random() % (NUM_STATS - i)];\n        RemoveIVIndexFromList(availableIVs, i);\n        #else\n        u8 index = Random() % (NUM_STATS - i);\n        selectedIvs[i] = availableIVs[index];\n        RemoveIVIndexFromList(availableIVs, index);\n        #endif\n    }\n\n     \n    for (i = 0; i < INHERITED_IV_COUNT; i++)\n    {\n        whichParents[i] = Random() % DAYCARE_MON_COUNT;\n    }\n\n     \n    for (i = 0; i < INHERITED_IV_COUNT; i++)\n    {\n        switch (selectedIvs[i])\n        {\n            case 0:\n                iv = GetBoxMonData(&daycare->mons[whichParents[i]].mon, MON_DATA_HP_IV);\n                SetMonData(egg, MON_DATA_HP_IV, &iv);\n                break;\n            case 1:\n                iv = GetBoxMonData(&daycare->mons[whichParents[i]].mon, MON_DATA_ATK_IV);\n                SetMonData(egg, MON_DATA_ATK_IV, &iv);\n                break;\n            case 2:\n                iv = GetBoxMonData(&daycare->mons[whichParents[i]].mon, MON_DATA_DEF_IV);\n                SetMonData(egg, MON_DATA_DEF_IV, &iv);\n                break;\n            case 3:\n                iv = GetBoxMonData(&daycare->mons[whichParents[i]].mon, MON_DATA_SPEED_IV);\n                SetMonData(egg, MON_DATA_SPEED_IV, &iv);\n                break;\n            case 4:\n                iv = GetBoxMonData(&daycare->mons[whichParents[i]].mon, MON_DATA_SPATK_IV);\n                SetMonData(egg, MON_DATA_SPATK_IV, &iv);\n                break;\n            case 5:\n                iv = GetBoxMonData(&daycare->mons[whichParents[i]].mon, MON_DATA_SPDEF_IV);\n                SetMonData(egg, MON_DATA_SPDEF_IV, &iv);\n                break;\n        }\n    }",
       "callsTo": [
         "GetBoxMonData",
@@ -320,6 +489,16 @@
       "returnType": "u8",
       "signature": "static u8 GetEggMoves(struct Pokemon *pokemon, u16 *eggMoves)",
       "paramsRaw": "struct Pokemon *pokemon, u16 *eggMoves",
+      "paramsList": [
+        {
+          "name": "pokemon",
+          "typeRaw": "struct Pokemon *"
+        },
+        {
+          "name": "eggMoves",
+          "typeRaw": "u16 *"
+        }
+      ],
       "body": "u16 eggMoveIdx;\n    u16 numEggMoves;\n    u16 species;\n    u16 i;\n\n    numEggMoves = 0;\n    eggMoveIdx = 0;\n    species = GetMonData(pokemon, MON_DATA_SPECIES);\n    for (i = 0; i < ARRAY_COUNT(gEggMoves) - 1; i++)\n    {\n        if (gEggMoves[i] == species + EGG_MOVES_SPECIES_OFFSET)\n        {\n            eggMoveIdx = i + 1;\n            break;\n        }\n    }\n\n    for (i = 0; i < EGG_MOVES_ARRAY_COUNT; i++)\n    {\n        if (gEggMoves[eggMoveIdx + i] > EGG_MOVES_SPECIES_OFFSET)\n            break;\n\n        eggMoves[i] = gEggMoves[eggMoveIdx + i];\n        numEggMoves++;\n    }\n\n    return numEggMoves;",
       "callsTo": [
         "ARRAY_COUNT",
@@ -331,6 +510,20 @@
       "returnType": "void",
       "signature": "static void BuildEggMoveset(struct Pokemon *egg, struct BoxPokemon *father, struct BoxPokemon *mother)",
       "paramsRaw": "struct Pokemon *egg, struct BoxPokemon *father, struct BoxPokemon *mother",
+      "paramsList": [
+        {
+          "name": "egg",
+          "typeRaw": "struct Pokemon *"
+        },
+        {
+          "name": "father",
+          "typeRaw": "struct BoxPokemon *"
+        },
+        {
+          "name": "mother",
+          "typeRaw": "struct BoxPokemon *"
+        }
+      ],
       "body": "u16 numSharedParentMoves;\n    u32 numLevelUpMoves;\n    u16 numEggMoves;\n    u16 i, j;\n\n    numSharedParentMoves = 0;\n    for (i = 0; i < MAX_MON_MOVES; i++)\n    {\n        sHatchedEggMotherMoves[i] = MOVE_NONE;\n        sHatchedEggFatherMoves[i] = MOVE_NONE;\n        sHatchedEggFinalMoves[i] = MOVE_NONE;\n    }\n    for (i = 0; i < EGG_MOVES_ARRAY_COUNT; i++)\n        sHatchedEggEggMoves[i] = MOVE_NONE;\n    for (i = 0; i < EGG_LVL_UP_MOVES_ARRAY_COUNT; i++)\n        sHatchedEggLevelUpMoves[i] = MOVE_NONE;\n\n    numLevelUpMoves = GetLevelUpMovesBySpecies(GetMonData(egg, MON_DATA_SPECIES), sHatchedEggLevelUpMoves);\n    for (i = 0; i < MAX_MON_MOVES; i++)\n    {\n        sHatchedEggFatherMoves[i] = GetBoxMonData(father, MON_DATA_MOVE1 + i);\n        sHatchedEggMotherMoves[i] = GetBoxMonData(mother, MON_DATA_MOVE1 + i);\n    }\n\n    numEggMoves = GetEggMoves(egg, sHatchedEggEggMoves);\n\n    for (i = 0; i < MAX_MON_MOVES; i++)\n    {\n        if (sHatchedEggFatherMoves[i] != MOVE_NONE)\n        {\n            for (j = 0; j < numEggMoves; j++)\n            {\n                if (sHatchedEggFatherMoves[i] == sHatchedEggEggMoves[j])\n                {\n                    if (GiveMoveToMon(egg, sHatchedEggFatherMoves[i]) == MON_HAS_MAX_MOVES)\n                        DeleteFirstMoveAndGiveMoveToMon(egg, sHatchedEggFatherMoves[i]);\n                    break;\n                }\n            }\n        }\n        else\n        {\n            break;\n        }\n    }\n    for (i = 0; i < MAX_MON_MOVES; i++)\n    {\n        if (sHatchedEggFatherMoves[i] != MOVE_NONE)\n        {\n            for (j = 0; j < NUM_TECHNICAL_MACHINES + NUM_HIDDEN_MACHINES; j++)\n            {\n                if (sHatchedEggFatherMoves[i] == ItemIdToBattleMoveId(ITEM_TM01 + j) && CanMonLearnTMHM(egg, j))\n                {\n                    if (GiveMoveToMon(egg, sHatchedEggFatherMoves[i]) == MON_HAS_MAX_MOVES)\n                        DeleteFirstMoveAndGiveMoveToMon(egg, sHatchedEggFatherMoves[i]);\n                }\n            }\n        }\n    }\n    for (i = 0; i < MAX_MON_MOVES; i++)\n    {\n        if (sHatchedEggFatherMoves[i] == MOVE_NONE)\n            break;\n        for (j = 0; j < MAX_MON_MOVES; j++)\n        {\n            if (sHatchedEggFatherMoves[i] == sHatchedEggMotherMoves[j] && sHatchedEggFatherMoves[i] != MOVE_NONE)\n                sHatchedEggFinalMoves[numSharedParentMoves++] = sHatchedEggFatherMoves[i];\n        }\n    }\n\n    for (i = 0; i < MAX_MON_MOVES; i++)\n    {\n        if (sHatchedEggFinalMoves[i] == MOVE_NONE)\n            break;\n        for (j = 0; j < numLevelUpMoves; j++)\n        {\n            if (sHatchedEggLevelUpMoves[j] != MOVE_NONE && sHatchedEggFinalMoves[i] == sHatchedEggLevelUpMoves[j])\n            {\n                if (GiveMoveToMon(egg, sHatchedEggFinalMoves[i]) == MON_HAS_MAX_MOVES)\n                    DeleteFirstMoveAndGiveMoveToMon(egg, sHatchedEggFinalMoves[i]);\n                break;\n            }\n        }\n    }",
       "callsTo": [
         "CanMonLearnTMHM",
@@ -348,6 +541,12 @@
       "returnType": "void",
       "signature": "static void RemoveEggFromDayCare(struct DayCare *daycare)",
       "paramsRaw": "struct DayCare *daycare",
+      "paramsList": [
+        {
+          "name": "daycare",
+          "typeRaw": "struct DayCare *"
+        }
+      ],
       "body": "daycare->offspringPersonality = 0;\n    daycare->stepCounter = 0;",
       "callsTo": [],
       "lineCount": 2
@@ -356,6 +555,7 @@
       "returnType": "void",
       "signature": "void RejectEggFromDayCare(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "RemoveEggFromDayCare(&gSaveBlock1Ptr->daycare);",
       "callsTo": [
         "RemoveEggFromDayCare"
@@ -366,6 +566,16 @@
       "returnType": "void",
       "signature": "static void AlterEggSpeciesWithIncenseItem(u16 *species, struct DayCare *daycare)",
       "paramsRaw": "u16 *species, struct DayCare *daycare",
+      "paramsList": [
+        {
+          "name": "species",
+          "typeRaw": "u16 *"
+        },
+        {
+          "name": "daycare",
+          "typeRaw": "struct DayCare *"
+        }
+      ],
       "body": "u16 motherItem, fatherItem;\n    if (*species == SPECIES_WYNAUT || *species == SPECIES_AZURILL)\n    {\n        motherItem = GetBoxMonData(&daycare->mons[0].mon, MON_DATA_HELD_ITEM);\n        fatherItem = GetBoxMonData(&daycare->mons[1].mon, MON_DATA_HELD_ITEM);\n        if (*species == SPECIES_WYNAUT && motherItem != ITEM_LAX_INCENSE && fatherItem != ITEM_LAX_INCENSE)\n        {\n            *species = SPECIES_WOBBUFFET;\n        }\n\n        if (*species == SPECIES_AZURILL && motherItem != ITEM_SEA_INCENSE && fatherItem != ITEM_SEA_INCENSE)\n        {\n            *species = SPECIES_MARILL;\n        }\n    }",
       "callsTo": [
         "GetBoxMonData"
@@ -376,6 +586,16 @@
       "returnType": "void",
       "signature": "static void GiveVoltTackleIfLightBall(struct Pokemon *mon, struct DayCare *daycare)",
       "paramsRaw": "struct Pokemon *mon, struct DayCare *daycare",
+      "paramsList": [
+        {
+          "name": "mon",
+          "typeRaw": "struct Pokemon *"
+        },
+        {
+          "name": "daycare",
+          "typeRaw": "struct DayCare *"
+        }
+      ],
       "body": "u32 motherItem = GetBoxMonData(&daycare->mons[0].mon, MON_DATA_HELD_ITEM);\n    u32 fatherItem = GetBoxMonData(&daycare->mons[1].mon, MON_DATA_HELD_ITEM);\n\n    if (motherItem == ITEM_LIGHT_BALL || fatherItem == ITEM_LIGHT_BALL)\n    {\n        if (GiveMoveToMon(mon, MOVE_VOLT_TACKLE) == MON_HAS_MAX_MOVES)\n            DeleteFirstMoveAndGiveMoveToMon(mon, MOVE_VOLT_TACKLE);\n    }",
       "callsTo": [
         "DeleteFirstMoveAndGiveMoveToMon",
@@ -388,6 +608,16 @@
       "returnType": "u16",
       "signature": "static u16 DetermineEggSpeciesAndParentSlots(struct DayCare *daycare, u8 *parentSlots)",
       "paramsRaw": "struct DayCare *daycare, u8 *parentSlots",
+      "paramsList": [
+        {
+          "name": "daycare",
+          "typeRaw": "struct DayCare *"
+        },
+        {
+          "name": "parentSlots",
+          "typeRaw": "u8 *"
+        }
+      ],
       "body": "u16 i;\n    u16 species[DAYCARE_MON_COUNT];\n    u16 eggSpecies;\n\n    for (i = 0; i < DAYCARE_MON_COUNT; i++)\n    {\n        species[i] = GetBoxMonData(&daycare->mons[i].mon, MON_DATA_SPECIES);\n        if (species[i] == SPECIES_DITTO)\n        {\n            parentSlots[0] = i ^ 1;\n            parentSlots[1] = i;\n        }\n        else if (GetBoxMonGender(&daycare->mons[i].mon) == MON_FEMALE)\n        {\n            parentSlots[0] = i;\n            parentSlots[1] = i ^ 1;\n        }\n    }\n\n    eggSpecies = GetEggSpecies(species[parentSlots[0]]);\n    if (eggSpecies == SPECIES_NIDORAN_F && daycare->offspringPersonality & EGG_GENDER_MALE)\n    {\n        eggSpecies = SPECIES_NIDORAN_M;\n    }\n    if (eggSpecies == SPECIES_ILLUMISE && daycare->offspringPersonality & EGG_GENDER_MALE)\n    {\n        eggSpecies = SPECIES_VOLBEAT;\n    }\n\n     \n    if (species[parentSlots[1]] == SPECIES_DITTO && GetBoxMonGender(&daycare->mons[parentSlots[0]].mon) != MON_FEMALE)\n    {\n        u8 ditto = parentSlots[1];\n        parentSlots[1] = parentSlots[0];\n        parentSlots[0] = ditto;\n    }\n\n    return eggSpecies;",
       "callsTo": [
         "GetBoxMonData",
@@ -400,6 +630,12 @@
       "returnType": "void",
       "signature": "static void _GiveEggFromDaycare(struct DayCare *daycare)",
       "paramsRaw": "struct DayCare *daycare",
+      "paramsList": [
+        {
+          "name": "daycare",
+          "typeRaw": "struct DayCare *"
+        }
+      ],
       "body": "struct Pokemon egg;\n    u16 species;\n    u8 parentSlots[DAYCARE_MON_COUNT];\n    bool8 isEgg;\n\n    species = DetermineEggSpeciesAndParentSlots(daycare, parentSlots);\n    AlterEggSpeciesWithIncenseItem(&species, daycare);\n    SetInitialEggData(&egg, species, daycare);\n    InheritIVs(&egg, daycare);\n    BuildEggMoveset(&egg, &daycare->mons[parentSlots[1]].mon, &daycare->mons[parentSlots[0]].mon);\n\n    if (species == SPECIES_PICHU)\n        GiveVoltTackleIfLightBall(&egg, daycare);\n\n    isEgg = TRUE;\n    SetMonData(&egg, MON_DATA_IS_EGG, &isEgg);\n    gPlayerParty[PARTY_SIZE - 1] = egg;\n    CompactPartySlots();\n    CalculatePlayerPartyCount();\n    RemoveEggFromDayCare(daycare);",
       "callsTo": [
         "AlterEggSpeciesWithIncenseItem",
@@ -419,6 +655,20 @@
       "returnType": "void",
       "signature": "void CreateEgg(struct Pokemon *mon, u16 species, bool8 setHotSpringsLocation)",
       "paramsRaw": "struct Pokemon *mon, u16 species, bool8 setHotSpringsLocation",
+      "paramsList": [
+        {
+          "name": "mon",
+          "typeRaw": "struct Pokemon *"
+        },
+        {
+          "name": "species",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "setHotSpringsLocation",
+          "typeRaw": "bool8"
+        }
+      ],
       "body": "u8 metLevel;\n    u16 ball;\n    u8 language;\n    metloc_u8_t metLocation;\n    u8 isEgg;\n\n    CreateMon(mon, species, EGG_HATCH_LEVEL, USE_RANDOM_IVS, FALSE, 0, OT_ID_PLAYER_ID, 0);\n    metLevel = 0;\n    ball = ITEM_POKE_BALL;\n    language = LANGUAGE_JAPANESE;\n    SetMonData(mon, MON_DATA_POKEBALL, &ball);\n    SetMonData(mon, MON_DATA_NICKNAME, sJapaneseEggNickname);\n    SetMonData(mon, MON_DATA_FRIENDSHIP, &gSpeciesInfo[species].eggCycles);\n    SetMonData(mon, MON_DATA_MET_LEVEL, &metLevel);\n    SetMonData(mon, MON_DATA_LANGUAGE, &language);\n    if (setHotSpringsLocation)\n    {\n        metLocation = METLOC_SPECIAL_EGG;\n        SetMonData(mon, MON_DATA_MET_LOCATION, &metLocation);\n    }\n\n    isEgg = TRUE;\n    SetMonData(mon, MON_DATA_IS_EGG, &isEgg);",
       "callsTo": [
         "CreateMon",
@@ -430,6 +680,20 @@
       "returnType": "void",
       "signature": "static void SetInitialEggData(struct Pokemon *mon, u16 species, struct DayCare *daycare)",
       "paramsRaw": "struct Pokemon *mon, u16 species, struct DayCare *daycare",
+      "paramsList": [
+        {
+          "name": "mon",
+          "typeRaw": "struct Pokemon *"
+        },
+        {
+          "name": "species",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "daycare",
+          "typeRaw": "struct DayCare *"
+        }
+      ],
       "body": "u32 personality;\n    u16 ball;\n    u8 metLevel;\n    u8 language;\n\n    personality = daycare->offspringPersonality;\n    CreateMon(mon, species, EGG_HATCH_LEVEL, USE_RANDOM_IVS, TRUE, personality, OT_ID_PLAYER_ID, 0);\n    metLevel = 0;\n    ball = ITEM_POKE_BALL;\n    language = LANGUAGE_JAPANESE;\n    SetMonData(mon, MON_DATA_POKEBALL, &ball);\n    SetMonData(mon, MON_DATA_NICKNAME, sJapaneseEggNickname);\n    SetMonData(mon, MON_DATA_FRIENDSHIP, &gSpeciesInfo[species].eggCycles);\n    SetMonData(mon, MON_DATA_MET_LEVEL, &metLevel);\n    SetMonData(mon, MON_DATA_LANGUAGE, &language);",
       "callsTo": [
         "CreateMon",
@@ -441,6 +705,7 @@
       "returnType": "void",
       "signature": "void GiveEggFromDaycare(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "_GiveEggFromDaycare(&gSaveBlock1Ptr->daycare);",
       "callsTo": [
         "_GiveEggFromDaycare"
@@ -451,6 +716,12 @@
       "returnType": "bool8",
       "signature": "static bool8 TryProduceOrHatchEgg(struct DayCare *daycare)",
       "paramsRaw": "struct DayCare *daycare",
+      "paramsList": [
+        {
+          "name": "daycare",
+          "typeRaw": "struct DayCare *"
+        }
+      ],
       "body": "u32 i, validEggs = 0;\n\n    for (i = 0; i < DAYCARE_MON_COUNT; i++)\n    {\n        if (GetBoxMonData(&daycare->mons[i].mon, MON_DATA_SANITY_HAS_SPECIES))\n            daycare->mons[i].steps++, validEggs++;\n    }\n\n     \n    if (daycare->offspringPersonality == 0 && validEggs == DAYCARE_MON_COUNT && (daycare->mons[1].steps & 0xFF) == 0xFF)\n    {\n        u8 compatibility = GetDaycareCompatibilityScore(daycare);\n        if (compatibility > (Random() * 100u) / USHRT_MAX)\n            TriggerPendingDaycareEgg();\n    }\n\n     \n    if (++daycare->stepCounter == 255)\n    {\n        u32 eggCycles;\n        u8 toSub = GetEggCyclesToSubtract();\n\n        for (i = 0; i < gPlayerPartyCount; i++)\n        {\n            if (!GetMonData(&gPlayerParty[i], MON_DATA_IS_EGG))\n                continue;\n            if (GetMonData(&gPlayerParty[i], MON_DATA_SANITY_IS_BAD_EGG))\n                continue;\n\n            eggCycles = GetMonData(&gPlayerParty[i], MON_DATA_FRIENDSHIP);\n            if (eggCycles != 0)\n            {\n                if (eggCycles >= toSub)\n                    eggCycles -= toSub;\n                else\n                    eggCycles -= 1;\n\n                SetMonData(&gPlayerParty[i], MON_DATA_FRIENDSHIP, &eggCycles);\n            }\n            else\n            {\n                gSpecialVar_0x8004 = i;\n                return TRUE;\n            }\n        }\n    }\n\n    return FALSE;",
       "callsTo": [
         "GetBoxMonData",
@@ -467,6 +738,7 @@
       "returnType": "bool8",
       "signature": "bool8 ShouldEggHatch(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return TryProduceOrHatchEgg(&gSaveBlock1Ptr->daycare);",
       "callsTo": [
         "TryProduceOrHatchEgg"
@@ -477,6 +749,12 @@
       "returnType": "bool8",
       "signature": "static bool8 IsEggPending(struct DayCare *daycare)",
       "paramsRaw": "struct DayCare *daycare",
+      "paramsList": [
+        {
+          "name": "daycare",
+          "typeRaw": "struct DayCare *"
+        }
+      ],
       "body": "return (daycare->offspringPersonality != 0);",
       "callsTo": [],
       "lineCount": 1
@@ -485,6 +763,12 @@
       "returnType": "void",
       "signature": "static void _GetDaycareMonNicknames(struct DayCare *daycare)",
       "paramsRaw": "struct DayCare *daycare",
+      "paramsList": [
+        {
+          "name": "daycare",
+          "typeRaw": "struct DayCare *"
+        }
+      ],
       "body": "u8 otName[max(12, PLAYER_NAME_LENGTH + 1)];\n    if (GetBoxMonData(&daycare->mons[0].mon, MON_DATA_SPECIES) != 0)\n    {\n        GetBoxMonNickname(&daycare->mons[0].mon, gStringVar1);\n        GetBoxMonData(&daycare->mons[0].mon, MON_DATA_OT_NAME, otName);\n        StringCopy(gStringVar3, otName);\n    }\n\n    if (GetBoxMonData(&daycare->mons[1].mon, MON_DATA_SPECIES) != 0)\n    {\n        GetBoxMonNickname(&daycare->mons[1].mon, gStringVar2);\n    }",
       "callsTo": [
         "GetBoxMonData",
@@ -497,6 +781,7 @@
       "returnType": "u16",
       "signature": "u16 GetSelectedMonNicknameAndSpecies(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "GetBoxMonNickname(&gPlayerParty[GetCursorSelectionMonId()].box, gStringVar1);\n    return GetBoxMonData(&gPlayerParty[GetCursorSelectionMonId()].box, MON_DATA_SPECIES);",
       "callsTo": [
         "GetBoxMonData",
@@ -509,6 +794,7 @@
       "returnType": "void",
       "signature": "void GetDaycareMonNicknames(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "_GetDaycareMonNicknames(&gSaveBlock1Ptr->daycare);",
       "callsTo": [
         "_GetDaycareMonNicknames"
@@ -519,6 +805,7 @@
       "returnType": "u8",
       "signature": "u8 GetDaycareState(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 numMons;\n    if (IsEggPending(&gSaveBlock1Ptr->daycare))\n    {\n        return DAYCARE_EGG_WAITING;\n    }\n\n    numMons = CountPokemonInDaycare(&gSaveBlock1Ptr->daycare);\n    if (numMons != 0)\n    {\n        return numMons + 1;  \n    }\n\n    return DAYCARE_NO_MONS;",
       "callsTo": [
         "CountPokemonInDaycare",
@@ -530,6 +817,16 @@
       "returnType": "bool8",
       "signature": "static bool8 EggGroupsOverlap(u16 *eggGroups1, u16 *eggGroups2)",
       "paramsRaw": "u16 *eggGroups1, u16 *eggGroups2",
+      "paramsList": [
+        {
+          "name": "eggGroups1",
+          "typeRaw": "u16 *"
+        },
+        {
+          "name": "eggGroups2",
+          "typeRaw": "u16 *"
+        }
+      ],
       "body": "s32 i, j;\n\n    for (i = 0; i < EGG_GROUPS_PER_MON; i++)\n    {\n        for (j = 0; j < EGG_GROUPS_PER_MON; j++)\n        {\n            if (eggGroups1[i] == eggGroups2[j])\n                return TRUE;\n        }\n    }\n\n    return FALSE;",
       "callsTo": [],
       "lineCount": 12
@@ -538,6 +835,12 @@
       "returnType": "u8",
       "signature": "static u8 GetDaycareCompatibilityScore(struct DayCare *daycare)",
       "paramsRaw": "struct DayCare *daycare",
+      "paramsList": [
+        {
+          "name": "daycare",
+          "typeRaw": "struct DayCare *"
+        }
+      ],
       "body": "u32 i;\n    u16 eggGroups[DAYCARE_MON_COUNT][EGG_GROUPS_PER_MON];\n    u16 species[DAYCARE_MON_COUNT];\n    u32 trainerIds[DAYCARE_MON_COUNT];\n    u32 genders[DAYCARE_MON_COUNT];\n\n    for (i = 0; i < DAYCARE_MON_COUNT; i++)\n    {\n        u32 personality;\n\n        species[i] = GetBoxMonData(&daycare->mons[i].mon, MON_DATA_SPECIES);\n        trainerIds[i] = GetBoxMonData(&daycare->mons[i].mon, MON_DATA_OT_ID);\n        personality = GetBoxMonData(&daycare->mons[i].mon, MON_DATA_PERSONALITY);\n        genders[i] = GetGenderFromSpeciesAndPersonality(species[i], personality);\n        eggGroups[i][0] = gSpeciesInfo[species[i]].eggGroups[0];\n        eggGroups[i][1] = gSpeciesInfo[species[i]].eggGroups[1];\n    }\n\n     \n    if (eggGroups[0][0] == EGG_GROUP_NO_EGGS_DISCOVERED || eggGroups[1][0] == EGG_GROUP_NO_EGGS_DISCOVERED)\n        return PARENTS_INCOMPATIBLE;\n     \n    if (eggGroups[0][0] == EGG_GROUP_DITTO && eggGroups[1][0] == EGG_GROUP_DITTO)\n        return PARENTS_INCOMPATIBLE;\n\n     \n    if (eggGroups[0][0] == EGG_GROUP_DITTO || eggGroups[1][0] == EGG_GROUP_DITTO)\n    {\n        if (trainerIds[0] == trainerIds[1])\n            return PARENTS_LOW_COMPATIBILITY;\n\n        return PARENTS_MED_COMPATIBILITY;\n    }\n     \n    else\n    {\n        if (genders[0] == genders[1])\n            return PARENTS_INCOMPATIBLE;\n        if (genders[0] == MON_GENDERLESS || genders[1] == MON_GENDERLESS)\n            return PARENTS_INCOMPATIBLE;\n        if (!EggGroupsOverlap(eggGroups[0], eggGroups[1]))\n            return PARENTS_INCOMPATIBLE;\n\n        if (species[0] == species[1])\n        {\n            if (trainerIds[0] == trainerIds[1])\n                return PARENTS_MED_COMPATIBILITY;  \n\n            return PARENTS_MAX_COMPATIBILITY;  \n        }\n        else\n        {\n            if (trainerIds[0] != trainerIds[1])\n                return PARENTS_MED_COMPATIBILITY;  \n\n            return PARENTS_LOW_COMPATIBILITY;  \n        }\n    }",
       "callsTo": [
         "EggGroupsOverlap",
@@ -550,6 +853,7 @@
       "returnType": "u8",
       "signature": "static u8 GetDaycareCompatibilityScoreFromSave(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return GetDaycareCompatibilityScore(&gSaveBlock1Ptr->daycare);",
       "callsTo": [
         "GetDaycareCompatibilityScore"
@@ -560,6 +864,7 @@
       "returnType": "void",
       "signature": "void SetDaycareCompatibilityString(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 whichString;\n    u8 relationshipScore;\n\n    relationshipScore = GetDaycareCompatibilityScoreFromSave();\n    whichString = 0;\n    if (relationshipScore == PARENTS_INCOMPATIBLE)\n        whichString = 3;\n    if (relationshipScore == PARENTS_LOW_COMPATIBILITY)\n        whichString = 2;\n    if (relationshipScore == PARENTS_MED_COMPATIBILITY)\n        whichString = 1;\n    if (relationshipScore == PARENTS_MAX_COMPATIBILITY)\n        whichString = 0;\n\n    StringCopy(gStringVar4, sCompatibilityMessages[whichString]);",
       "callsTo": [
         "GetDaycareCompatibilityScoreFromSave",
@@ -571,6 +876,16 @@
       "returnType": "bool8",
       "signature": "bool8 NameHasGenderSymbol(const u8 *name, u8 genderRatio)",
       "paramsRaw": "const u8 *name, u8 genderRatio",
+      "paramsList": [
+        {
+          "name": "name",
+          "typeRaw": "const u8 *"
+        },
+        {
+          "name": "genderRatio",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 i;\n    u8 symbolsCount[GENDER_COUNT];\n    symbolsCount[MALE] = symbolsCount[FEMALE] = 0;\n\n    for (i = 0; name[i] != EOS; i++)\n    {\n        if (name[i] == CHAR_MALE)\n            symbolsCount[MALE]++;\n        if (name[i] == CHAR_FEMALE)\n            symbolsCount[FEMALE]++;\n    }\n\n    if (genderRatio == MON_MALE   && symbolsCount[MALE] != 0 && symbolsCount[FEMALE] == 0)\n        return TRUE;\n    if (genderRatio == MON_FEMALE && symbolsCount[FEMALE] != 0 && symbolsCount[MALE] == 0)\n        return TRUE;\n\n    return FALSE;",
       "callsTo": [],
       "lineCount": 18
@@ -579,6 +894,24 @@
       "returnType": "void",
       "signature": "static void DaycareAddTextPrinter(u8 windowId, const u8 *text, u32 x, u32 y)",
       "paramsRaw": "u8 windowId, const u8 *text, u32 x, u32 y",
+      "paramsList": [
+        {
+          "name": "windowId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "text",
+          "typeRaw": "const u8 *"
+        },
+        {
+          "name": "x",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "y",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "struct TextPrinterTemplate printer;\n\n    printer.currentChar = text;\n    printer.windowId = windowId;\n    printer.fontId = FONT_NORMAL;\n    printer.x = x;\n    printer.y = y;\n    printer.currentX = x;\n    printer.currentY = y;\n    printer.unk = 0;\n    gTextFlags.useAlternateDownArrow = 0;\n    printer.letterSpacing = 0;\n    printer.lineSpacing = 1;\n    printer.fgColor = 2;\n    printer.bgColor = 1;\n    printer.shadowColor = 3;\n\n    AddTextPrinter(&printer, TEXT_SKIP_DRAW, NULL);",
       "callsTo": [
         "AddTextPrinter"
@@ -589,6 +922,24 @@
       "returnType": "void",
       "signature": "static void DaycarePrintMonNickname(struct DayCare *daycare, u8 windowId, u32 daycareSlotId, u32 y)",
       "paramsRaw": "struct DayCare *daycare, u8 windowId, u32 daycareSlotId, u32 y",
+      "paramsList": [
+        {
+          "name": "daycare",
+          "typeRaw": "struct DayCare *"
+        },
+        {
+          "name": "windowId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "daycareSlotId",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "y",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "u8 nickname[POKEMON_NAME_BUFFER_SIZE];\n    GetBoxMonNickname(&daycare->mons[daycareSlotId].mon, nickname);\n    AppendMonGenderSymbol(nickname, &daycare->mons[daycareSlotId].mon);\n    DaycareAddTextPrinter(windowId, nickname, 8, y);",
       "callsTo": [
         "AppendMonGenderSymbol",
@@ -601,6 +952,24 @@
       "returnType": "void",
       "signature": "static void DaycarePrintMonLvl(struct DayCare *daycare, u8 windowId, u32 daycareSlotId, u32 y)",
       "paramsRaw": "struct DayCare *daycare, u8 windowId, u32 daycareSlotId, u32 y",
+      "paramsList": [
+        {
+          "name": "daycare",
+          "typeRaw": "struct DayCare *"
+        },
+        {
+          "name": "windowId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "daycareSlotId",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "y",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "u8 level;\n    u32 x;\n    u8 lvlText[12];\n    u8 intText[8];\n\n    StringCopy(lvlText, gText_Lv);\n    level = GetLevelAfterDaycareSteps(&daycare->mons[daycareSlotId].mon, daycare->mons[daycareSlotId].steps);\n    ConvertIntToDecimalStringN(intText, level, STR_CONV_MODE_LEFT_ALIGN, 3);\n    StringAppend(lvlText, intText);\n    x = GetStringRightAlignXOffset(FONT_NORMAL, lvlText, 112);\n    DaycareAddTextPrinter(windowId, lvlText, x, y);",
       "callsTo": [
         "ConvertIntToDecimalStringN",
@@ -616,6 +985,20 @@
       "returnType": "void",
       "signature": "static void DaycarePrintMonInfo(u8 windowId, u32 daycareSlotId, u8 y)",
       "paramsRaw": "u8 windowId, u32 daycareSlotId, u8 y",
+      "paramsList": [
+        {
+          "name": "windowId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "daycareSlotId",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "y",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (daycareSlotId < (unsigned) DAYCARE_MON_COUNT)\n    {\n        DaycarePrintMonNickname(&gSaveBlock1Ptr->daycare, windowId, daycareSlotId, y);\n        DaycarePrintMonLvl(&gSaveBlock1Ptr->daycare, windowId, daycareSlotId, y);\n    }",
       "callsTo": [
         "DaycarePrintMonLvl",
@@ -627,6 +1010,12 @@
       "returnType": "void",
       "signature": "static void Task_HandleDaycareLevelMenuInput(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u32 input = ListMenu_ProcessInput(gTasks[taskId].tMenuListTaskId);\n\n    if (JOY_NEW(A_BUTTON))\n    {\n        switch (input)\n        {\n        case 0:\n        case 1:\n            gSpecialVar_Result = input;\n            break;\n        case DAYCARE_LEVEL_MENU_EXIT:\n            gSpecialVar_Result = DAYCARE_EXITED_LEVEL_MENU;\n            break;\n        }\n        DestroyListMenuTask(gTasks[taskId].tMenuListTaskId, NULL, NULL);\n        ClearStdWindowAndFrame(gTasks[taskId].tWindowId, TRUE);\n        RemoveWindow(gTasks[taskId].tWindowId);\n        DestroyTask(taskId);\n        ScriptContext_Enable();\n    }\n    else if (JOY_NEW(B_BUTTON))\n    {\n        gSpecialVar_Result = DAYCARE_EXITED_LEVEL_MENU;\n        DestroyListMenuTask(gTasks[taskId].tMenuListTaskId, NULL, NULL);\n        ClearStdWindowAndFrame(gTasks[taskId].tWindowId, TRUE);\n        RemoveWindow(gTasks[taskId].tWindowId);\n        DestroyTask(taskId);\n        ScriptContext_Enable();\n    }",
       "callsTo": [
         "ClearStdWindowAndFrame",
@@ -643,6 +1032,7 @@
       "returnType": "void",
       "signature": "void ShowDaycareLevelMenu(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "struct ListMenuTemplate menuTemplate;\n    u8 windowId;\n    u8 listMenuTaskId;\n    u8 daycareMenuTaskId;\n\n    windowId = AddWindow(&sDaycareLevelMenuWindowTemplate);\n    DrawStdWindowFrame(windowId, FALSE);\n\n    menuTemplate = sDaycareListMenuLevelTemplate;\n    menuTemplate.windowId = windowId;\n    listMenuTaskId = ListMenuInit(&menuTemplate, 0, 0);\n\n    CopyWindowToVram(windowId, COPYWIN_FULL);\n\n    daycareMenuTaskId = CreateTask(Task_HandleDaycareLevelMenuInput, 3);\n    gTasks[daycareMenuTaskId].tMenuListTaskId = listMenuTaskId;\n    gTasks[daycareMenuTaskId].tWindowId = windowId;",
       "callsTo": [
         "AddWindow",
@@ -657,6 +1047,7 @@
       "returnType": "void",
       "signature": "void ChooseSendDaycareMon(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ChooseMonForDaycare();\n    gMain.savedCallback = CB2_ReturnToField;",
       "callsTo": [
         "ChooseMonForDaycare"

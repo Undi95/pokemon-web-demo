@@ -6,6 +6,7 @@
       "returnType": "void",
       "signature": "void AccessHallOfFamePC(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "SetMainCallback2(CB2_DoHallOfFamePC);\n    LockPlayerFieldControls();",
       "callsTo": [
         "LockPlayerFieldControls",
@@ -17,6 +18,7 @@
       "returnType": "void",
       "signature": "void ReturnFromHallOfFamePC(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "SetMainCallback2(CB2_ReturnToField);\n    gFieldCallback = ReshowPCMenuAfterHallOfFamePC;",
       "callsTo": [
         "SetMainCallback2"
@@ -27,6 +29,7 @@
       "returnType": "void",
       "signature": "static void ReshowPCMenuAfterHallOfFamePC(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "LockPlayerFieldControls();\n    Overworld_PlaySpecialMapMusic();\n    ScriptMenu_CreatePCMultichoice();\n    ScriptMenu_DisplayPCStartupPrompt();\n    BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_BLACK);\n    CreateTask(Task_WaitForPaletteFade, 10);",
       "callsTo": [
         "BeginNormalPaletteFade",
@@ -42,6 +45,12 @@
       "returnType": "void",
       "signature": "static void Task_WaitForPaletteFade(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (!gPaletteFade.active)\n        DestroyTask(taskId);",
       "callsTo": [
         "DestroyTask"

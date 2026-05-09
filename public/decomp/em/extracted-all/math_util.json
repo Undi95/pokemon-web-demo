@@ -6,6 +6,16 @@
       "returnType": "s16",
       "signature": "s16 MathUtil_Mul16(s16 x, s16 y)",
       "paramsRaw": "s16 x, s16 y",
+      "paramsList": [
+        {
+          "name": "x",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s16"
+        }
+      ],
       "body": "s32 result;\n\n    result = x;\n    result *= y;\n    result /= 256;\n    return result;",
       "callsTo": [],
       "lineCount": 6
@@ -14,6 +24,20 @@
       "returnType": "s16",
       "signature": "s16 MathUtil_Mul16Shift(u8 s, s16 x, s16 y)",
       "paramsRaw": "u8 s, s16 x, s16 y",
+      "paramsList": [
+        {
+          "name": "s",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "x",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s16"
+        }
+      ],
       "body": "s32 result;\n\n    result = x;\n    result *= y;\n    result /= (1 << s);\n    return result;",
       "callsTo": [],
       "lineCount": 6
@@ -22,6 +46,16 @@
       "returnType": "s32",
       "signature": "s32 MathUtil_Mul32(s32 x, s32 y)",
       "paramsRaw": "s32 x, s32 y",
+      "paramsList": [
+        {
+          "name": "x",
+          "typeRaw": "s32"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s32"
+        }
+      ],
       "body": "s64 result;\n\n    result = x;\n    result *= y;\n    result /= 256;\n    return result;",
       "callsTo": [],
       "lineCount": 6
@@ -30,6 +64,16 @@
       "returnType": "s16",
       "signature": "s16 MathUtil_Div16(s16 x, s16 y)",
       "paramsRaw": "s16 x, s16 y",
+      "paramsList": [
+        {
+          "name": "x",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s16"
+        }
+      ],
       "body": "if (y == 0)\n    {\n        return 0;\n    }\n    return (x << 8) / y;",
       "callsTo": [],
       "lineCount": 5
@@ -38,6 +82,20 @@
       "returnType": "s16",
       "signature": "s16 MathUtil_Div16Shift(u8 s, s16 x, s16 y)",
       "paramsRaw": "u8 s, s16 x, s16 y",
+      "paramsList": [
+        {
+          "name": "s",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "x",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s16"
+        }
+      ],
       "body": "if (y == 0)\n    {\n        return 0;\n    }\n    return (x << s) / y;",
       "callsTo": [],
       "lineCount": 5
@@ -46,6 +104,16 @@
       "returnType": "s32",
       "signature": "s32 MathUtil_Div32(s32 x, s32 y)",
       "paramsRaw": "s32 x, s32 y",
+      "paramsList": [
+        {
+          "name": "x",
+          "typeRaw": "s32"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s32"
+        }
+      ],
       "body": "s64 _x;\n\n    if (y == 0)\n    {\n        return 0;\n    }\n    _x = x;\n    _x *= 256;\n    return _x / y;",
       "callsTo": [],
       "lineCount": 9
@@ -54,6 +122,12 @@
       "returnType": "s16",
       "signature": "s16 MathUtil_Inv16(s16 y)",
       "paramsRaw": "s16 y",
+      "paramsList": [
+        {
+          "name": "y",
+          "typeRaw": "s16"
+        }
+      ],
       "body": "s32 x;\n\n    x = 0x10000;\n    return x / y;",
       "callsTo": [],
       "lineCount": 4
@@ -62,6 +136,16 @@
       "returnType": "s16",
       "signature": "s16 MathUtil_Inv16Shift(u8 s, s16 y)",
       "paramsRaw": "u8 s, s16 y",
+      "paramsList": [
+        {
+          "name": "s",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "y",
+          "typeRaw": "s16"
+        }
+      ],
       "body": "s32 x;\n\n    x = 0x100 << s;\n    return x / y;",
       "callsTo": [],
       "lineCount": 4
@@ -70,6 +154,12 @@
       "returnType": "s32",
       "signature": "s32 MathUtil_Inv32(s32 y)",
       "paramsRaw": "s32 y",
+      "paramsList": [
+        {
+          "name": "y",
+          "typeRaw": "s32"
+        }
+      ],
       "body": "s64 x;\n\n    x = 0x10000;\n    return x / y;",
       "callsTo": [],
       "lineCount": 4

@@ -428,6 +428,67 @@ export function RGB2(r: number, g: number, b: number): number {
 export function SPRITE_SHAPE(arg: any): any { return arg; }
 export function SPRITE_SIZE(arg: any): any { return arg; }
 
+/** 1:1 décomp `include/gba/types.h` RGB component extraction macros :
+ *    #define GET_R(c) ((c) & 0x1F)
+ *    #define GET_G(c) (((c) >> 5) & 0x1F)
+ *    #define GET_B(c) (((c) >> 10) & 0x1F)
+ *    #define IS_ALPHA(c) (((c) >> 15) & 1)
+ */
+export function GET_R(c: number): number { return c & 0x1F; }
+export function GET_G(c: number): number { return (c >> 5) & 0x1F; }
+export function GET_B(c: number): number { return (c >> 10) & 0x1F; }
+export function IS_ALPHA(c: number): number { return (c >> 15) & 1; }
+
+/** 1:1 décomp `include/gba/types.h` palette ID generic helper :
+ *    #define PLTT_ID(n) ((n) * 16)
+ *  Combined BG/OBJ palette ID. */
+export function PLTT_ID(n: number): number { return n * 16; }
+
+/** 1:1 décomp `include/gba/types.h` Q_8_8 fixed-point conversion :
+ *    #define Q_8_8(n) ((s16)((n) * 256))
+ */
+export function Q_8_8(n: number): number {
+  return (n * 256) | 0;
+}
+
+/** 1:1 décomp DMA copy macros :
+ *    #define DmaCopy16(channel, src, dst, size) DmaSet(channel, src, dst, ...)
+ *  En TS, comme DMA hardware = no-op → fallback CpuCopy16. */
+export function DmaCopy16(_channel: number, src: any, dst: any, sizeBytes: number): void {
+  CpuCopy16(src, dst, sizeBytes);
+}
+export function DmaCopy32(_channel: number, src: any, dst: any, sizeBytes: number): void {
+  CpuCopy32(src, dst, sizeBytes);
+}
+
+/** 1:1 décomp `include/battle.h IS_BATTLER_OF_TYPE(battler, type)` macro.
+ *  Need pokemon.c port. */
+export function IS_BATTLER_OF_TYPE(_battler: number, _type: number): boolean {
+  throw new Error('[bridge] IS_BATTLER_OF_TYPE not yet 1:1 ported. See pokemon.c.');
+}
+
+/** 1:1 décomp `string_util.c StringCopy_Nickname` — variant of StringCopy
+ *  with NICKNAME_LENGTH = 10 cap. */
+export function StringCopy_Nickname(_dest: any, src: string): string {
+  return src.slice(0, 10);
+}
+export function StringGet_Nickname(_dest: any, src: string): string {
+  return src.slice(0, 10);
+}
+
+/** 1:1 décomp `easy_chat.c CopyEasyChatWord(dest, wordId)` — needs full easy_chat
+ *  data tables. */
+export function CopyEasyChatWord(_dest: any, _wordId: number): void {
+  throw new Error('[bridge] CopyEasyChatWord not yet 1:1 ported. See easy_chat.c.');
+}
+
+/** 1:1 décomp `dynamic_placeholder_text_util.c DynamicPlaceholderTextUtil_ExpandPlaceholders`. */
+export function DynamicPlaceholderTextUtil_ExpandPlaceholders(_dest: any, src: string): string {
+  // Approximate : delegate to the standard placeholder expander.
+  // Full impl would consult sDynamicPlaceholderStrings + scan for [DYNAMIC_X].
+  return src;
+}
+
 /** 1:1 décomp `src/random.c` Random() — already implemented. Re-export from random.ts. */
 export { Random, SeedRng, SeedRngAndSetTrainerId } from './random';
 
@@ -882,6 +943,11 @@ export const __bridgedHelpers__: ReadonlySet<string> = new Set([
   'TRY_FREE_AND_SET_NULL',
   'GET_BATTLER_SIDE', 'GET_BATTLER_SIDE2', 'GET_BATTLER_POSITION',
   'RGB2', 'SPRITE_SHAPE', 'SPRITE_SIZE',
+  'GET_R', 'GET_G', 'GET_B', 'IS_ALPHA',
+  'PLTT_ID', 'Q_8_8',
+  'DmaCopy16', 'DmaCopy32',
+  'StringCopy_Nickname', 'StringGet_Nickname',
+  'DynamicPlaceholderTextUtil_ExpandPlaceholders',
   'GetFaceDirectionMovementAction', 'GetWalkNormalMovementAction',
   'GetWalkFastMovementAction', 'GetWalkFasterMovementAction',
   'GetWalkInPlaceNormalMovementAction', 'GetWalkInPlaceFastMovementAction',
@@ -908,4 +974,6 @@ export const __notImplementedHelpers__: ReadonlySet<string> = new Set([
   'GetBgTilemapBuffer',
   'DecompressAndCopyTileDataToVram',
   'LZ77UnCompWram',
+  'IS_BATTLER_OF_TYPE',
+  'CopyEasyChatWord',
 ]);

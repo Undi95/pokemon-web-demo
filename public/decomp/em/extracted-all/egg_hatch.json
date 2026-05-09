@@ -6,6 +6,16 @@
       "returnType": "void",
       "signature": "static void CreateHatchedMon(struct Pokemon *egg, struct Pokemon *temp)",
       "paramsRaw": "struct Pokemon *egg, struct Pokemon *temp",
+      "paramsList": [
+        {
+          "name": "egg",
+          "typeRaw": "struct Pokemon *"
+        },
+        {
+          "name": "temp",
+          "typeRaw": "struct Pokemon *"
+        }
+      ],
       "body": "u16 species;\n    u32 personality, pokerus;\n    u8 i, friendship, language, gameMet, markings, isModernFatefulEncounter;\n    u16 moves[MAX_MON_MOVES];\n    u32 ivs[NUM_STATS];\n\n    species = GetMonData(egg, MON_DATA_SPECIES);\n\n    for (i = 0; i < MAX_MON_MOVES; i++)\n        moves[i] = GetMonData(egg, MON_DATA_MOVE1 + i);\n\n    personality = GetMonData(egg, MON_DATA_PERSONALITY);\n\n    for (i = 0; i < NUM_STATS; i++)\n        ivs[i] = GetMonData(egg, MON_DATA_HP_IV + i);\n\n     \n    language = GetMonData(egg, MON_DATA_LANGUAGE);\n    gameMet = GetMonData(egg, MON_DATA_MET_GAME);\n    markings = GetMonData(egg, MON_DATA_MARKINGS);\n    pokerus = GetMonData(egg, MON_DATA_POKERUS);\n    isModernFatefulEncounter = GetMonData(egg, MON_DATA_MODERN_FATEFUL_ENCOUNTER);\n\n    CreateMon(temp, species, EGG_HATCH_LEVEL, USE_RANDOM_IVS, TRUE, personality, OT_ID_PLAYER_ID, 0);\n\n    for (i = 0; i < MAX_MON_MOVES; i++)\n        SetMonData(temp, MON_DATA_MOVE1 + i,  &moves[i]);\n\n    for (i = 0; i < NUM_STATS; i++)\n        SetMonData(temp, MON_DATA_HP_IV + i,  &ivs[i]);\n\n    language = GAME_LANGUAGE;\n    SetMonData(temp, MON_DATA_LANGUAGE, &language);\n    SetMonData(temp, MON_DATA_MET_GAME, &gameMet);\n    SetMonData(temp, MON_DATA_MARKINGS, &markings);\n\n    friendship = 120;\n    SetMonData(temp, MON_DATA_FRIENDSHIP, &friendship);\n    SetMonData(temp, MON_DATA_POKERUS, &pokerus);\n    SetMonData(temp, MON_DATA_MODERN_FATEFUL_ENCOUNTER, &isModernFatefulEncounter);\n\n    *egg = *temp;",
       "callsTo": [
         "CreateMon",
@@ -18,6 +28,12 @@
       "returnType": "void",
       "signature": "static void AddHatchedMonToParty(u8 id)",
       "paramsRaw": "u8 id",
+      "paramsList": [
+        {
+          "name": "id",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 isEgg = 0x46;  \n    u16 species;\n    u8 name[POKEMON_NAME_LENGTH + 1];\n    u16 ball;\n    u16 metLevel;\n    metloc_u8_t metLocation;\n    struct Pokemon *mon = &gPlayerParty[id];\n\n    CreateHatchedMon(mon, &gEnemyParty[0]);\n    SetMonData(mon, MON_DATA_IS_EGG, &isEgg);\n\n    species = GetMonData(mon, MON_DATA_SPECIES);\n    GetSpeciesName(name, species);\n    SetMonData(mon, MON_DATA_NICKNAME, name);\n\n    species = SpeciesToNationalPokedexNum(species);\n    GetSetPokedexFlag(species, FLAG_SET_SEEN);\n    GetSetPokedexFlag(species, FLAG_SET_CAUGHT);\n\n    GetMonNickname2(mon, gStringVar1);\n\n    ball = ITEM_POKE_BALL;\n    SetMonData(mon, MON_DATA_POKEBALL, &ball);\n\n     \n    metLevel = 0;\n    SetMonData(mon, MON_DATA_MET_LEVEL, &metLevel);\n\n    metLocation = GetCurrentRegionMapSectionId();\n    SetMonData(mon, MON_DATA_MET_LOCATION, &metLocation);\n\n    MonRestorePP(mon);\n    CalculateMonStats(mon);",
       "callsTo": [
         "CalculateMonStats",
@@ -37,6 +53,7 @@
       "returnType": "void",
       "signature": "void ScriptHatchMon(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "AddHatchedMonToParty(gSpecialVar_0x8004);",
       "callsTo": [
         "AddHatchedMonToParty"
@@ -47,6 +64,16 @@
       "returnType": "bool8",
       "signature": "static bool8 _CheckDaycareMonReceivedMail(struct DayCare *daycare, u8 daycareId)",
       "paramsRaw": "struct DayCare *daycare, u8 daycareId",
+      "paramsList": [
+        {
+          "name": "daycare",
+          "typeRaw": "struct DayCare *"
+        },
+        {
+          "name": "daycareId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 nickname[max(32, POKEMON_NAME_BUFFER_SIZE)];\n    struct DaycareMon *daycareMon = &daycare->mons[daycareId];\n\n    GetBoxMonNickname(&daycareMon->mon, nickname);\n    if (daycareMon->mail.message.itemId != ITEM_NONE\n        && (StringCompareWithoutExtCtrlCodes(nickname, daycareMon->mail.monName) != 0\n         || StringCompareWithoutExtCtrlCodes(gSaveBlock2Ptr->playerName, daycareMon->mail.otName) != 0))\n    {\n        StringCopy(gStringVar1, nickname);\n        TVShowConvertInternationalString(gStringVar2, daycareMon->mail.otName, daycareMon->mail.gameLanguage);\n        TVShowConvertInternationalString(gStringVar3, daycareMon->mail.monName, daycareMon->mail.monLanguage);\n        return TRUE;\n    }\n    return FALSE;",
       "callsTo": [
         "GetBoxMonNickname",
@@ -60,6 +87,7 @@
       "returnType": "bool8",
       "signature": "bool8 CheckDaycareMonReceivedMail(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return _CheckDaycareMonReceivedMail(&gSaveBlock1Ptr->daycare, gSpecialVar_0x8004);",
       "callsTo": [
         "_CheckDaycareMonReceivedMail"
@@ -70,6 +98,24 @@
       "returnType": "u8",
       "signature": "static u8 EggHatchCreateMonSprite(u8 useAlt, u8 state, u8 partyId, u16 *speciesLoc)",
       "paramsRaw": "u8 useAlt, u8 state, u8 partyId, u16 *speciesLoc",
+      "paramsList": [
+        {
+          "name": "useAlt",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "state",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "partyId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "speciesLoc",
+          "typeRaw": "u16 *"
+        }
+      ],
       "body": "u8 position = 0;\n    u8 spriteId = 0;\n    struct Pokemon *mon = NULL;\n\n    if (useAlt == FALSE)\n    {\n        mon = &gPlayerParty[partyId];\n        position = B_POSITION_OPPONENT_LEFT;\n    }\n    if (useAlt == TRUE)\n    {\n         \n        mon = &gPlayerParty[partyId];\n        position = B_POSITION_OPPONENT_RIGHT;\n    }\n    switch (state)\n    {\n    case 0:\n         \n        {\n            u16 species = GetMonData(mon, MON_DATA_SPECIES);\n            u32 pid = GetMonData(mon, MON_DATA_PERSONALITY);\n            HandleLoadSpecialPokePic_DontHandleDeoxys(&gMonFrontPicTable[species],\n                                                      gMonSpritesGfxPtr->sprites.ptr[(useAlt * 2) + B_POSITION_OPPONENT_LEFT],\n                                                      species, pid);\n            LoadCompressedSpritePalette(GetMonSpritePalStruct(mon));\n            *speciesLoc = species;\n        }\n        break;\n    case 1:\n         \n        SetMultiuseSpriteTemplateToPokemon(GetMonSpritePalStruct(mon)->tag, position);\n        spriteId = CreateSprite(&gMultiuseSpriteTemplate, EGG_X, EGG_Y, 6);\n        gSprites[spriteId].invisible = TRUE;\n        gSprites[spriteId].callback = SpriteCallbackDummy;\n        break;\n    }\n    return spriteId;",
       "callsTo": [
         "CreateSprite",
@@ -85,6 +131,7 @@
       "returnType": "void",
       "signature": "static void VBlankCB_EggHatch(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "LoadOam();\n    ProcessSpriteCopyRequests();\n    TransferPlttBuffer();",
       "callsTo": [
         "LoadOam",
@@ -97,6 +144,7 @@
       "returnType": "void",
       "signature": "void EggHatch(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "LockPlayerFieldControls();\n    CreateTask(Task_EggHatch, 10);\n    FadeScreen(FADE_TO_BLACK, 0);",
       "callsTo": [
         "CreateTask",
@@ -109,6 +157,12 @@
       "returnType": "void",
       "signature": "static void Task_EggHatch(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (!gPaletteFade.active)\n    {\n        CleanupOverworldWindowsAndTilemaps();\n        SetMainCallback2(CB2_LoadEggHatch);\n        gFieldCallback = FieldCB_ContinueScriptHandleMusic;\n        DestroyTask(taskId);\n    }",
       "callsTo": [
         "CleanupOverworldWindowsAndTilemaps",
@@ -121,6 +175,7 @@
       "returnType": "void",
       "signature": "static void CB2_LoadEggHatch(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (gMain.state)\n    {\n    case 0:\n        SetGpuReg(REG_OFFSET_DISPCNT, 0);\n\n        sEggHatchData = Alloc(sizeof(*sEggHatchData));\n        AllocateMonSpritesGfx();\n        sEggHatchData->eggPartyId = gSpecialVar_0x8004;\n        sEggHatchData->eggShardVelocityId = 0;\n\n        SetVBlankCallback(VBlankCB_EggHatch);\n        gSpecialVar_0x8005 = GetCurrentMapMusic();\n\n        ResetTempTileDataBuffers();\n        ResetBgsAndClearDma3BusyFlags(0);\n        InitBgsFromTemplates(0, sBgTemplates_EggHatch, ARRAY_COUNT(sBgTemplates_EggHatch));\n\n        ChangeBgX(1, 0, BG_COORD_SET);\n        ChangeBgY(1, 0, BG_COORD_SET);\n        ChangeBgX(0, 0, BG_COORD_SET);\n        ChangeBgY(0, 0, BG_COORD_SET);\n\n        SetBgAttribute(1, BG_ATTR_PRIORITY, 2);\n        SetBgTilemapBuffer(1, Alloc(0x1000));\n        SetBgTilemapBuffer(0, Alloc(0x2000));\n\n        DeactivateAllTextPrinters();\n        ResetPaletteFade();\n        FreeAllSpritePalettes();\n        ResetSpriteData();\n        ResetTasks();\n        ScanlineEffect_Stop();\n        m4aSoundVSyncOn();\n        gMain.state++;\n        break;\n    case 1:\n        InitWindows(sWinTemplates_EggHatch);\n        sEggHatchData->windowId = 0;\n        gMain.state++;\n        break;\n    case 2:\n        DecompressAndLoadBgGfxUsingHeap(0, gBattleTextboxTiles, 0, 0, 0);\n        CopyToBgTilemapBuffer(0, gBattleTextboxTilemap, 0, 0);\n        LoadCompressedPalette(gBattleTextboxPalette, BG_PLTT_ID(0), PLTT_SIZE_4BPP);\n        gMain.state++;\n        break;\n    case 3:\n        LoadSpriteSheet(&sEggHatch_Sheet);\n        LoadSpriteSheet(&sEggShards_Sheet);\n        LoadSpritePalette(&sEgg_SpritePalette);\n        gMain.state++;\n        break;\n    case 4:\n        CopyBgTilemapBufferToVram(0);\n        AddHatchedMonToParty(sEggHatchData->eggPartyId);\n        gMain.state++;\n        break;\n    case 5:\n        EggHatchCreateMonSprite(FALSE, 0, sEggHatchData->eggPartyId, &sEggHatchData->species);\n        gMain.state++;\n        break;\n    case 6:\n        sEggHatchData->monSpriteId = EggHatchCreateMonSprite(FALSE, 1, sEggHatchData->eggPartyId, &sEggHatchData->species);\n        gMain.state++;\n        break;\n    case 7:\n        SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_OBJ_ON | DISPCNT_OBJ_1D_MAP);\n        LoadPalette(gTradeGba2_Pal, BG_PLTT_ID(1), 5 * PLTT_SIZE_4BPP);\n        LoadBgTiles(1, gTradeGba_Gfx, 0x1420, 0);\n        CopyToBgTilemapBuffer(1, gTradePlatform_Tilemap, 0x1000, 0);\n        CopyBgTilemapBufferToVram(1);\n        gMain.state++;\n        break;\n    case 8:\n        SetMainCallback2(CB2_EggHatch);\n        sEggHatchData->state = 0;\n        break;\n    }\n    RunTasks();\n    RunTextPrinters();\n    AnimateSprites();\n    BuildOamBuffer();\n    UpdatePaletteFade();",
       "callsTo": [
         "ARRAY_COUNT",
@@ -167,6 +222,7 @@
       "returnType": "void",
       "signature": "static void EggHatchSetMonNickname(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "SetMonData(&gPlayerParty[gSpecialVar_0x8004], MON_DATA_NICKNAME, gStringVar3);\n    FreeMonSpritesGfx();\n    Free(sEggHatchData);\n    SetMainCallback2(CB2_ReturnToField);",
       "callsTo": [
         "Free",
@@ -180,6 +236,12 @@
       "returnType": "void",
       "signature": "static void Task_EggHatchPlayBGM(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (gTasks[taskId].tTimer == 0)\n    {\n        StopMapMusic();\n        PlayRainStoppingSoundEffect();\n    }\n\n    if (gTasks[taskId].tTimer == 1)\n        PlayBGM(MUS_EVOLUTION_INTRO);\n\n    if (gTasks[taskId].tTimer > 60)\n    {\n        PlayBGM(MUS_EVOLUTION);\n        DestroyTask(taskId);\n    }\n    gTasks[taskId].tTimer++;",
       "callsTo": [
         "DestroyTask",
@@ -193,6 +255,7 @@
       "returnType": "void",
       "signature": "static void CB2_EggHatch(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 species;\n    u8 gender;\n    u32 personality;\n\n    switch (sEggHatchData->state)\n    {\n    case 0:\n        BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);\n        sEggHatchData->eggSpriteId = CreateSprite(&sSpriteTemplate_Egg, EGG_X, EGG_Y, 5);\n        ShowBg(0);\n        ShowBg(1);\n        sEggHatchData->state++;\n        CreateTask(Task_EggHatchPlayBGM, 5);\n        break;\n    case 1:\n        if (!gPaletteFade.active)\n        {\n            FillWindowPixelBuffer(sEggHatchData->windowId, PIXEL_FILL(0));\n            sEggHatchData->delayTimer = 0;\n            sEggHatchData->state++;\n        }\n        break;\n    case 2:\n        if (++sEggHatchData->delayTimer > 30)\n        {\n             \n            sEggHatchData->state++;\n            gSprites[sEggHatchData->eggSpriteId].callback = SpriteCB_Egg_Shake1;\n        }\n        break;\n    case 3:\n         \n        if (gSprites[sEggHatchData->eggSpriteId].callback == SpriteCallbackDummy)\n        {\n            species = GetMonData(&gPlayerParty[sEggHatchData->eggPartyId], MON_DATA_SPECIES);\n            DoMonFrontSpriteAnimation(&gSprites[sEggHatchData->monSpriteId], species, FALSE, 1);\n            sEggHatchData->state++;\n        }\n        break;\n    case 4:\n         \n        if (gSprites[sEggHatchData->monSpriteId].callback == SpriteCallbackDummy)\n            sEggHatchData->state++;\n        break;\n    case 5:\n         \n        GetMonNickname2(&gPlayerParty[sEggHatchData->eggPartyId], gStringVar1);\n        StringExpandPlaceholders(gStringVar4, gText_HatchedFromEgg);\n        EggHatchPrintMessage(sEggHatchData->windowId, gStringVar4, 0, 3, TEXT_SKIP_DRAW);\n        PlayFanfare(MUS_EVOLVED);\n        sEggHatchData->state++;\n        PutWindowTilemap(sEggHatchData->windowId);\n        CopyWindowToVram(sEggHatchData->windowId, COPYWIN_FULL);\n        break;\n    case 6:\n        if (IsFanfareTaskInactive())\n            sEggHatchData->state++;\n        break;\n    case 7:  \n        if (IsFanfareTaskInactive())\n            sEggHatchData->state++;\n        break;\n    case 8:\n         \n        GetMonNickname2(&gPlayerParty[sEggHatchData->eggPartyId], gStringVar1);\n        StringExpandPlaceholders(gStringVar4, gText_NicknameHatchPrompt);\n        EggHatchPrintMessage(sEggHatchData->windowId, gStringVar4, 0, 2, 1);\n        sEggHatchData->state++;\n        break;\n    case 9:\n         \n        if (!IsTextPrinterActive(sEggHatchData->windowId))\n        {\n            LoadUserWindowBorderGfx(sEggHatchData->windowId, 0x140, BG_PLTT_ID(14));\n            CreateYesNoMenu(&sYesNoWinTemplate, 0x140, 0xE, 0);\n            sEggHatchData->state++;\n        }\n        break;\n    case 10:\n         \n        switch (Menu_ProcessInputNoWrapClearOnChoose())\n        {\n        case 0:  \n            GetMonNickname2(&gPlayerParty[sEggHatchData->eggPartyId], gStringVar3);\n            species = GetMonData(&gPlayerParty[sEggHatchData->eggPartyId], MON_DATA_SPECIES);\n            gender = GetMonGender(&gPlayerParty[sEggHatchData->eggPartyId]);\n            personality = GetMonData(&gPlayerParty[sEggHatchData->eggPartyId], MON_DATA_PERSONALITY, 0);\n            DoNamingScreen(NAMING_SCREEN_NICKNAME, gStringVar3, species, gender, personality, EggHatchSetMonNickname);\n            break;\n        case 1:  \n        case MENU_B_PRESSED:\n            sEggHatchData->state++;\n            break;\n        }\n        break;\n    case 11:\n        BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);\n        sEggHatchData->state++;\n        break;\n    case 12:\n        if (!gPaletteFade.active)\n        {\n            FreeMonSpritesGfx();\n            RemoveWindow(sEggHatchData->windowId);\n            UnsetBgTilemapBuffer(0);\n            UnsetBgTilemapBuffer(1);\n            Free(sEggHatchData);\n            SetMainCallback2(CB2_ReturnToField);\n        }\n        break;\n    }\n\n    RunTasks();\n    RunTextPrinters();\n    AnimateSprites();\n    BuildOamBuffer();\n    UpdatePaletteFade();",
       "callsTo": [
         "AnimateSprites",
@@ -234,6 +297,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_Egg_Shake1(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (++sprite->sTimer > 20)\n    {\n        sprite->callback = SpriteCB_Egg_Shake2;\n        sprite->sTimer = 0;\n    }\n    else\n    {\n         \n        sprite->sSinIdx = (sprite->sSinIdx + 20) & 0xFF;\n        sprite->x2 = Sin(sprite->sSinIdx, 1);\n        if (sprite->sTimer == 15)\n        {\n             \n            PlaySE(SE_BALL);\n            StartSpriteAnim(sprite, EGG_ANIM_CRACKED_1);\n            CreateRandomEggShardSprite();\n        }\n    }",
       "callsTo": [
         "CreateRandomEggShardSprite",
@@ -247,6 +316,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_Egg_Shake2(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (++sprite->sDelayTimer > 30)\n    {\n        if (++sprite->sTimer > 20)\n        {\n            sprite->callback = SpriteCB_Egg_Shake3;\n            sprite->sTimer = 0;\n            sprite->sDelayTimer = 0;\n        }\n        else\n        {\n             \n            sprite->sSinIdx = (sprite->sSinIdx + 20) & 0xFF;\n            sprite->x2 = Sin(sprite->sSinIdx, 2);\n            if (sprite->sTimer == 15)\n            {\n                 \n                PlaySE(SE_BALL);\n                StartSpriteAnim(sprite, EGG_ANIM_CRACKED_2);\n            }\n        }\n    }",
       "callsTo": [
         "PlaySE",
@@ -259,6 +334,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_Egg_Shake3(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (++sprite->sDelayTimer > 30)\n    {\n        if (++sprite->sTimer > 38)\n        {\n            u16 UNUSED species;\n            sprite->callback = SpriteCB_Egg_WaitHatch;\n            sprite->sTimer = 0;\n            species = GetMonData(&gPlayerParty[sEggHatchData->eggPartyId], MON_DATA_SPECIES);\n            gSprites[sEggHatchData->monSpriteId].x2 = 0;\n            gSprites[sEggHatchData->monSpriteId].y2 = 0;\n        }\n        else\n        {\n             \n            sprite->sSinIdx = (sprite->sSinIdx + 20) & 0xFF;\n            sprite->x2 = Sin(sprite->sSinIdx, 2);\n            if (sprite->sTimer == 15)\n            {\n                 \n                 \n                 \n                PlaySE(SE_BALL);\n            #ifdef BUGFIX\n                StartSpriteAnim(sprite, EGG_ANIM_CRACKED_3);\n            #else\n                StartSpriteAnim(sprite, EGG_ANIM_CRACKED_2);\n            #endif\n                CreateRandomEggShardSprite();\n                CreateRandomEggShardSprite();\n            }\n            if (sprite->sTimer == 30)\n                PlaySE(SE_BALL);\n        }\n    }",
       "callsTo": [
         "CreateRandomEggShardSprite",
@@ -273,6 +354,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_Egg_WaitHatch(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (++sprite->sTimer > 50)\n    {\n        sprite->callback = SpriteCB_Egg_Hatch;\n        sprite->sTimer = 0;\n    }",
       "callsTo": [],
       "lineCount": 5
@@ -281,6 +368,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_Egg_Hatch(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "s16 i;\n\n     \n    if (sprite->sTimer == 0)\n        BeginNormalPaletteFade(PALETTES_ALL, -1, 0, 16, RGB_WHITEALPHA);\n\n     \n    if ((u32)sprite->sTimer < 4)\n    {\n        for (i = 0; i < 4; i++)\n            CreateRandomEggShardSprite();\n    }\n\n    sprite->sTimer++;\n\n    if (!gPaletteFade.active)\n    {\n         \n        PlaySE(SE_EGG_HATCH);\n        sprite->invisible = TRUE;\n        sprite->callback = SpriteCB_Egg_Reveal;\n        sprite->sTimer = 0;\n    }",
       "callsTo": [
         "BeginNormalPaletteFade",
@@ -293,6 +386,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_Egg_Reveal(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (sprite->sTimer == 0)\n    {\n         \n        gSprites[sEggHatchData->monSpriteId].invisible = FALSE;\n        StartSpriteAffineAnim(&gSprites[sEggHatchData->monSpriteId], BATTLER_AFFINE_EMERGE);\n    }\n\n     \n    if (sprite->sTimer == 8)\n        BeginNormalPaletteFade(PALETTES_ALL, -1, 16, 0, RGB_WHITEALPHA);\n\n    if (sprite->sTimer <= 9)\n        gSprites[sEggHatchData->monSpriteId].y--;\n\n    if (sprite->sTimer > 40)\n        sprite->callback = SpriteCallbackDummy;  \n\n    sprite->sTimer++;",
       "callsTo": [
         "BeginNormalPaletteFade",
@@ -304,6 +403,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_EggShard(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "sprite->sDeltaX += sprite->sVelocX;\n    sprite->sDeltaY += sprite->sVelocY;\n\n    sprite->x2 = sprite->sDeltaX / 256;\n    sprite->y2 = sprite->sDeltaY / 256;\n\n    sprite->sVelocY += sprite->sAccelY;\n\n    if (sprite->y + sprite->y2 > sprite->y + 20 && sprite->sVelocY > 0)\n        DestroySprite(sprite);",
       "callsTo": [
         "DestroySprite"
@@ -314,6 +419,7 @@
       "returnType": "void",
       "signature": "static void CreateRandomEggShardSprite(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 spriteAnimIndex;\n\n    s16 velocityX = sEggShardVelocities[sEggHatchData->eggShardVelocityId][0];\n    s16 velocityY = sEggShardVelocities[sEggHatchData->eggShardVelocityId][1];\n    sEggHatchData->eggShardVelocityId++;\n\n     \n    spriteAnimIndex = Random() % ARRAY_COUNT(sSpriteAnimTable_EggShard);\n\n    CreateEggShardSprite(EGG_X, EGG_Y - 15, velocityX, velocityY, 100, spriteAnimIndex);",
       "callsTo": [
         "ARRAY_COUNT",
@@ -326,6 +432,32 @@
       "returnType": "void",
       "signature": "static void CreateEggShardSprite(u8 x, u8 y, s16 velocityX, s16 velocityY, s16 acceleration, u8 spriteAnimIndex)",
       "paramsRaw": "u8 x, u8 y, s16 velocityX, s16 velocityY, s16 acceleration, u8 spriteAnimIndex",
+      "paramsList": [
+        {
+          "name": "x",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "y",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "velocityX",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "velocityY",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "acceleration",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "spriteAnimIndex",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 spriteId = CreateSprite(&sSpriteTemplate_EggShard, x, y, 4);\n    gSprites[spriteId].sVelocX = velocityX;\n    gSprites[spriteId].sVelocY = velocityY;\n    gSprites[spriteId].sAccelY = acceleration;\n    StartSpriteAnim(&gSprites[spriteId], spriteAnimIndex);",
       "callsTo": [
         "CreateSprite",
@@ -337,6 +469,28 @@
       "returnType": "void",
       "signature": "static void EggHatchPrintMessage(u8 windowId, u8 *string, u8 x, u8 y, u8 speed)",
       "paramsRaw": "u8 windowId, u8 *string, u8 x, u8 y, u8 speed",
+      "paramsList": [
+        {
+          "name": "windowId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "string",
+          "typeRaw": "u8 *"
+        },
+        {
+          "name": "x",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "y",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "speed",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "FillWindowPixelBuffer(windowId, PIXEL_FILL(15));\n    sEggHatchData->textColor[0] = 0;\n    sEggHatchData->textColor[1] = 5;\n    sEggHatchData->textColor[2] = 6;\n    AddTextPrinterParameterized4(windowId, FONT_NORMAL, x, y, 0, 0, sEggHatchData->textColor, speed, string);",
       "callsTo": [
         "AddTextPrinterParameterized4",
@@ -349,6 +503,7 @@
       "returnType": "u8",
       "signature": "u8 GetEggCyclesToSubtract(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 count, i;\n    for (count = CalculatePlayerPartyCount(), i = 0; i < count; i++)\n    {\n        if (!GetMonData(&gPlayerParty[i], MON_DATA_SANITY_IS_EGG))\n        {\n            u8 ability = GetMonAbility(&gPlayerParty[i]);\n            if (ability == ABILITY_MAGMA_ARMOR || ability == ABILITY_FLAME_BODY)\n                return 2;\n        }\n    }\n    return 1;",
       "callsTo": [
         "CalculatePlayerPartyCount",
@@ -361,6 +516,7 @@
       "returnType": "u16",
       "signature": "u16 CountPartyAliveNonEggMons(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 aliveNonEggMonsCount = CountStorageNonEggMons();\n    aliveNonEggMonsCount += CountPartyAliveNonEggMonsExcept(PARTY_SIZE);\n    return aliveNonEggMonsCount;",
       "callsTo": [
         "CountPartyAliveNonEggMonsExcept",

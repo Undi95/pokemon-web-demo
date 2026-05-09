@@ -6,6 +6,7 @@
       "returnType": "void",
       "signature": "void CallTrainerHillFunction(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "SetUpDataStruct();\n    sHillFunctions[gSpecialVar_0x8004]();\n    FreeDataStruct();",
       "callsTo": [
         "FreeDataStruct",
@@ -17,6 +18,7 @@
       "returnType": "void",
       "signature": "void ResetTrainerHillResults(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s32 i;\n\n    gSaveBlock2Ptr->frontier.savedGame = 0;\n    gSaveBlock2Ptr->frontier.unk_EF9 = 0;\n    gSaveBlock1Ptr->trainerHill.bestTime = 0;\n    for (i = 0; i < NUM_TRAINER_HILL_MODES; i++)\n        SetTimerValue(&gSaveBlock1Ptr->trainerHillTimes[i], HILL_MAX_TIME);",
       "callsTo": [
         "SetTimerValue"
@@ -27,6 +29,7 @@
       "returnType": "u8",
       "signature": "static u8 GetFloorId(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return gMapHeader.mapLayoutId - LAYOUT_TRAINER_HILL_1F;",
       "callsTo": [],
       "lineCount": 1
@@ -35,6 +38,12 @@
       "returnType": "u8",
       "signature": "u8 GetTrainerHillOpponentClass(u16 trainerId)",
       "paramsRaw": "u16 trainerId",
+      "paramsList": [
+        {
+          "name": "trainerId",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "u8 id = trainerId - 1;\n\n    return gFacilityClassToTrainerClass[sFloorTrainers->facilityClass[id]];",
       "callsTo": [],
       "lineCount": 3
@@ -43,6 +52,16 @@
       "returnType": "void",
       "signature": "void GetTrainerHillTrainerName(u8 *dst, u16 trainerId)",
       "paramsRaw": "u8 *dst, u16 trainerId",
+      "paramsList": [
+        {
+          "name": "dst",
+          "typeRaw": "u8 *"
+        },
+        {
+          "name": "trainerId",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "s32 i;\n    u8 id = trainerId - 1;\n\n    for (i = 0; i < TRAINER_NAME_LENGTH + 1; i++)\n        dst[i] = sFloorTrainers->name[id][i];",
       "callsTo": [],
       "lineCount": 5
@@ -51,6 +70,12 @@
       "returnType": "u8",
       "signature": "u8 GetTrainerHillTrainerFrontSpriteId(u16 trainerId)",
       "paramsRaw": "u16 trainerId",
+      "paramsList": [
+        {
+          "name": "trainerId",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "u8 id, facilityClass;\n\n    SetUpDataStruct();\n    id = trainerId - 1;\n    facilityClass = sHillData->floors[sHillData->floorId].trainers[id].facilityClass;\n    FreeDataStruct();\n\n    return gFacilityClassToPicIndex[facilityClass];",
       "callsTo": [
         "FreeDataStruct",
@@ -62,6 +87,7 @@
       "returnType": "void",
       "signature": "void InitTrainerHillBattleStruct(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s32 i, j;\n\n    SetUpDataStruct();\n    sFloorTrainers = AllocZeroed(sizeof(*sFloorTrainers));\n\n    for (i = 0; i < HILL_TRAINERS_PER_FLOOR; i++)\n    {\n        for (j = 0; j < TRAINER_NAME_LENGTH + 1; j++)\n            sFloorTrainers->name[i][j] = sHillData->floors[sHillData->floorId].trainers[i].name[j];\n\n        sFloorTrainers->facilityClass[i] = sHillData->floors[sHillData->floorId].trainers[i].facilityClass;\n    }\n    SetTrainerHillVBlankCounter(&gSaveBlock1Ptr->trainerHill.timer);\n    FreeDataStruct();",
       "callsTo": [
         "AllocZeroed",
@@ -75,6 +101,7 @@
       "returnType": "void",
       "signature": "void FreeTrainerHillBattleStruct(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "TRY_FREE_AND_SET_NULL(sFloorTrainers);",
       "callsTo": [
         "TRY_FREE_AND_SET_NULL"
@@ -85,6 +112,7 @@
       "returnType": "void",
       "signature": "static void SetUpDataStruct(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (sHillData == NULL)\n    {\n        sHillData = AllocZeroed(sizeof(*sHillData));\n        sHillData->floorId = gMapHeader.mapLayoutId - LAYOUT_TRAINER_HILL_1F;\n\n         \n         \n         \n         \n         \n        CpuCopy32(sChallengeData[gSaveBlock1Ptr->trainerHill.mode], &sHillData->challenge, sizeof(sHillData->challenge) + sizeof(sHillData->floors));\n        TrainerHillDummy();\n    }",
       "callsTo": [
         "AllocZeroed",
@@ -97,6 +125,7 @@
       "returnType": "void",
       "signature": "static void FreeDataStruct(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "TRY_FREE_AND_SET_NULL(sHillData);",
       "callsTo": [
         "TRY_FREE_AND_SET_NULL"
@@ -107,6 +136,16 @@
       "returnType": "void",
       "signature": "void CopyTrainerHillTrainerText(u8 which, u16 localId)",
       "paramsRaw": "u8 which, u16 localId",
+      "paramsList": [
+        {
+          "name": "which",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "localId",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "u8 id, floorId;\n\n    SetUpDataStruct();\n    floorId = GetFloorId();\n    id = localId - 1;\n\n    switch (which)\n    {\n    case TRAINER_HILL_TEXT_INTRO:\n        FrontierSpeechToString(sHillData->floors[floorId].trainers[id].speechBefore);\n        break;\n    case TRAINER_HILL_TEXT_PLAYER_LOST:\n        FrontierSpeechToString(sHillData->floors[floorId].trainers[id].speechWin);\n        break;\n    case TRAINER_HILL_TEXT_PLAYER_WON:\n        FrontierSpeechToString(sHillData->floors[floorId].trainers[id].speechLose);\n        break;\n    case TRAINER_HILL_TEXT_AFTER:\n        FrontierSpeechToString(sHillData->floors[floorId].trainers[id].speechAfter);\n        break;\n    }\n\n    FreeDataStruct();",
       "callsTo": [
         "FreeDataStruct",
@@ -120,6 +159,7 @@
       "returnType": "void",
       "signature": "static void TrainerHillStartChallenge(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "TrainerHillDummy();\n    if (!ReadTrainerHillAndValidate())\n        gSaveBlock1Ptr->trainerHill.field_3D6E_0f = 1;\n    else\n        gSaveBlock1Ptr->trainerHill.field_3D6E_0f = 0;\n\n    gSaveBlock1Ptr->trainerHill.unk_3D6C = 0;\n    SetTrainerHillVBlankCounter(&gSaveBlock1Ptr->trainerHill.timer);\n    gSaveBlock1Ptr->trainerHill.timer = 0;\n    gSaveBlock1Ptr->trainerHill.spokeToOwner = 0;\n    gSaveBlock1Ptr->trainerHill.checkedFinalTime = 0;\n    gSaveBlock1Ptr->trainerHill.maybeECardScanDuringChallenge = 0;\n    gSaveBlock2Ptr->frontier.trainerFlags = 0;\n    gBattleOutcome = 0;\n    gSaveBlock1Ptr->trainerHill.receivedPrize = 0;",
       "callsTo": [
         "ReadTrainerHillAndValidate",
@@ -132,6 +172,7 @@
       "returnType": "void",
       "signature": "static void GetOwnerState(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ClearTrainerHillVBlankCounter();\n    gSpecialVar_Result = 0;\n    if (gSaveBlock1Ptr->trainerHill.spokeToOwner)\n        gSpecialVar_Result++;\n    if (gSaveBlock1Ptr->trainerHill.receivedPrize && gSaveBlock1Ptr->trainerHill.checkedFinalTime)\n        gSpecialVar_Result++;\n\n    gSaveBlock1Ptr->trainerHill.spokeToOwner = TRUE;",
       "callsTo": [
         "ClearTrainerHillVBlankCounter"
@@ -142,6 +183,7 @@
       "returnType": "void",
       "signature": "static void GiveChallengePrize(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 itemId = GetPrizeItemId();\n\n    if (sHillData->challenge.numFloors != NUM_TRAINER_HILL_FLOORS || gSaveBlock1Ptr->trainerHill.receivedPrize)\n    {\n        gSpecialVar_Result = 2;\n    }\n    else if (AddBagItem(itemId, 1) == TRUE)\n    {\n        CopyItemName(itemId, gStringVar2);\n        gSaveBlock1Ptr->trainerHill.receivedPrize = TRUE;\n        gSaveBlock2Ptr->frontier.unk_EF9 = 0;\n        gSpecialVar_Result = 0;\n    }\n    else\n    {\n        gSpecialVar_Result = 1;\n    }",
       "callsTo": [
         "AddBagItem",
@@ -154,6 +196,7 @@
       "returnType": "void",
       "signature": "static void CheckFinalTime(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gSaveBlock1Ptr->trainerHill.checkedFinalTime)\n    {\n        gSpecialVar_Result = 2;\n    }\n    else if (GetTimerValue(&gSaveBlock1Ptr->trainerHill.bestTime) > gSaveBlock1Ptr->trainerHill.timer)\n    {\n        SetTimerValue(&gSaveBlock1Ptr->trainerHill.bestTime, gSaveBlock1Ptr->trainerHill.timer);\n        gSaveBlock1Ptr->trainerHillTimes[gSaveBlock1Ptr->trainerHill.mode] = gSaveBlock1Ptr->trainerHill.bestTime;\n        gSpecialVar_Result = 0;\n    }\n    else\n    {\n        gSpecialVar_Result = 1;\n    }\n\n    gSaveBlock1Ptr->trainerHill.checkedFinalTime = TRUE;",
       "callsTo": [
         "GetTimerValue",
@@ -165,6 +208,7 @@
       "returnType": "void",
       "signature": "static void TrainerHillResumeTimer(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!gSaveBlock1Ptr->trainerHill.spokeToOwner)\n    {\n        if (gSaveBlock1Ptr->trainerHill.timer >= HILL_MAX_TIME)\n            gSaveBlock1Ptr->trainerHill.timer = HILL_MAX_TIME;\n        else\n            SetTrainerHillVBlankCounter(&gSaveBlock1Ptr->trainerHill.timer);\n    }",
       "callsTo": [
         "SetTrainerHillVBlankCounter"
@@ -175,6 +219,7 @@
       "returnType": "void",
       "signature": "static void TrainerHillSetPlayerLost(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gSaveBlock1Ptr->trainerHill.hasLost = TRUE;",
       "callsTo": [],
       "lineCount": 1
@@ -183,6 +228,7 @@
       "returnType": "void",
       "signature": "static void TrainerHillGetChallengeStatus(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gSaveBlock1Ptr->trainerHill.hasLost)\n    {\n         \n        gSaveBlock1Ptr->trainerHill.hasLost = FALSE;\n        gSpecialVar_Result = TRAINER_HILL_PLAYER_STATUS_LOST;\n    }\n    else if (gSaveBlock1Ptr->trainerHill.maybeECardScanDuringChallenge)\n    {\n         \n        gSaveBlock1Ptr->trainerHill.maybeECardScanDuringChallenge = 0;\n        gSpecialVar_Result = TRAINER_HILL_PLAYER_STATUS_ECARD_SCANNED;\n    }\n    else\n    {\n         \n        gSpecialVar_Result = TRAINER_HILL_PLAYER_STATUS_NORMAL;\n    }",
       "callsTo": [],
       "lineCount": 17
@@ -191,6 +237,7 @@
       "returnType": "void",
       "signature": "static void BufferChallengeTime(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s32 total, minutes, secondsWhole, secondsFraction;\n\n    total = gSaveBlock1Ptr->trainerHill.timer;\n    if (total >= HILL_MAX_TIME)\n        total = HILL_MAX_TIME;\n\n    minutes = total / (60 * 60);\n    total %= (60 * 60);\n    secondsWhole = total / 60;\n    total %= 60;\n    secondsFraction = (total * 168) / 100;\n\n    ConvertIntToDecimalStringN(gStringVar1, minutes, STR_CONV_MODE_RIGHT_ALIGN, 2);\n    ConvertIntToDecimalStringN(gStringVar2, secondsWhole, STR_CONV_MODE_RIGHT_ALIGN, 2);\n    ConvertIntToDecimalStringN(gStringVar3, secondsFraction, STR_CONV_MODE_LEADING_ZEROS, 2);",
       "callsTo": [
         "ConvertIntToDecimalStringN"
@@ -201,6 +248,7 @@
       "returnType": "void",
       "signature": "static void GetAllFloorsUsed(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "SetUpDataStruct();\n    if (sHillData->challenge.numFloors != NUM_TRAINER_HILL_FLOORS)\n    {\n        ConvertIntToDecimalStringN(gStringVar1, sHillData->challenge.numFloors, STR_CONV_MODE_LEFT_ALIGN, 1);\n        gSpecialVar_Result = FALSE;\n    }\n    else\n    {\n        gSpecialVar_Result = TRUE;\n    }\n\n    FreeDataStruct();",
       "callsTo": [
         "ConvertIntToDecimalStringN",
@@ -213,6 +261,7 @@
       "returnType": "void",
       "signature": "static void GetInEReaderMode(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "SetUpDataStruct();\n    gSpecialVar_Result = FALSE;\n    FreeDataStruct();",
       "callsTo": [
         "FreeDataStruct",
@@ -224,6 +273,7 @@
       "returnType": "bool8",
       "signature": "bool8 InTrainerHillChallenge(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (VarGet(VAR_TRAINER_HILL_IS_ACTIVE) == 0)\n        return FALSE;\n    else if (gSaveBlock1Ptr->trainerHill.spokeToOwner)\n        return FALSE;\n    else if (GetCurrentTrainerHillMapId() != 0)\n        return TRUE;\n    else\n        return FALSE;",
       "callsTo": [
         "GetCurrentTrainerHillMapId",
@@ -235,6 +285,7 @@
       "returnType": "void",
       "signature": "static void IsTrainerHillChallengeActive(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!InTrainerHillChallenge())\n        gSpecialVar_Result = FALSE;\n    else\n        gSpecialVar_Result = TRUE;",
       "callsTo": [
         "InTrainerHillChallenge"
@@ -245,6 +296,7 @@
       "returnType": "void",
       "signature": "static void TrainerHillDummy(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "",
       "callsTo": [],
       "lineCount": 1
@@ -253,6 +305,7 @@
       "returnType": "void",
       "signature": "void PrintOnTrainerHillRecordsWindow(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "s32 i, x, y;\n    u32 total, minutes, secondsWhole, secondsFraction;\n\n    SetUpDataStruct();\n    FillWindowPixelBuffer(0, PIXEL_FILL(0));\n    x = GetStringCenterAlignXOffset(FONT_NORMAL, gText_TimeBoard, 0xD0);\n    AddTextPrinterParameterized3(0, FONT_NORMAL, x, 2, sRecordWinColors, TEXT_SKIP_DRAW, gText_TimeBoard);\n\n    y = 18;\n    for (i = 0; i < NUM_TRAINER_HILL_MODES; i++)\n    {\n        AddTextPrinterParameterized3(0, FONT_NORMAL, 0, y, sRecordWinColors, TEXT_SKIP_DRAW, sModeStrings[i]);\n        y += 15;\n        total = GetTimerValue(&gSaveBlock1Ptr->trainerHillTimes[i]);\n        minutes = total / (60 * 60);\n        total %= (60 * 60);\n        ConvertIntToDecimalStringN(gStringVar1, minutes, STR_CONV_MODE_RIGHT_ALIGN, 2);\n        secondsWhole = total / 60;\n        total %= 60;\n        ConvertIntToDecimalStringN(gStringVar2, secondsWhole, STR_CONV_MODE_RIGHT_ALIGN, 2);\n        secondsFraction = (total * 168) / 100;\n        ConvertIntToDecimalStringN(gStringVar3, secondsFraction, STR_CONV_MODE_LEADING_ZEROS, 2);\n        StringExpandPlaceholders(StringCopy(gStringVar4, gText_TimeCleared), gText_XMinYDotZSec);\n        x = GetStringRightAlignXOffset(FONT_NORMAL, gStringVar4, 0xD0);\n        AddTextPrinterParameterized3(0, FONT_NORMAL, x, y, sRecordWinColors, TEXT_SKIP_DRAW, gStringVar4);\n        y += 17;\n    }\n\n    PutWindowTilemap(0);\n    CopyWindowToVram(0, COPYWIN_FULL);\n    FreeDataStruct();",
       "callsTo": [
         "AddTextPrinterParameterized3",
@@ -275,6 +328,12 @@
       "returnType": "u32",
       "signature": "static u32 GetTimerValue(u32 *src)",
       "paramsRaw": "u32 *src",
+      "paramsList": [
+        {
+          "name": "src",
+          "typeRaw": "u32 *"
+        }
+      ],
       "body": "return *src;",
       "callsTo": [],
       "lineCount": 1
@@ -283,6 +342,16 @@
       "returnType": "void",
       "signature": "static void SetTimerValue(u32 *dst, u32 val)",
       "paramsRaw": "u32 *dst, u32 val",
+      "paramsList": [
+        {
+          "name": "dst",
+          "typeRaw": "u32 *"
+        },
+        {
+          "name": "val",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "*dst = val;",
       "callsTo": [],
       "lineCount": 1
@@ -291,6 +360,7 @@
       "returnType": "void",
       "signature": "void LoadTrainerHillObjectEventTemplates(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i, floorId;\n    struct ObjectEventTemplate *eventTemplates = gSaveBlock1Ptr->objectEventTemplates;\n\n    if (!LoadTrainerHillFloorObjectEventScripts())\n        return;\n\n    SetUpDataStruct();\n    for (i = 0; i < HILL_TRAINERS_PER_FLOOR; i++)\n        gSaveBlock2Ptr->frontier.trainerIds[i] = 0xFFFF;\n    CpuFill32(0, gSaveBlock1Ptr->objectEventTemplates, sizeof(gSaveBlock1Ptr->objectEventTemplates));\n\n    floorId = GetFloorId();\n    for (i = 0; i < HILL_TRAINERS_PER_FLOOR; i++)\n    {\n        u8 bits;\n\n        eventTemplates[i] = sTrainerObjectEventTemplate;\n        eventTemplates[i].localId = i + 1;\n        eventTemplates[i].graphicsId = FacilityClassToGraphicsId(sHillData->floors[floorId].trainers[i].facilityClass);\n        eventTemplates[i].x = sHillData->floors[floorId].map.trainerCoords[i] & 0xF;\n        eventTemplates[i].y = ((sHillData->floors[floorId].map.trainerCoords[i] >> 4) & 0xF) + HILL_FLOOR_HEIGHT_MARGIN;\n        bits = i << 2;\n        eventTemplates[i].movementType = ((sHillData->floors[floorId].map.trainerDirections >> bits) & 0xF) + MOVEMENT_TYPE_FACE_UP;\n        eventTemplates[i].trainerRange_berryTreeId = (sHillData->floors[floorId].map.trainerRanges >> bits) & 0xF;\n        eventTemplates[i].script = TrainerHill_EventScript_TrainerBattle;\n        gSaveBlock2Ptr->frontier.trainerIds[i] = i + 1;\n    }\n\n    FreeDataStruct();",
       "callsTo": [
         "CpuFill32",
@@ -306,6 +376,7 @@
       "returnType": "bool32",
       "signature": "bool32 LoadTrainerHillFloorObjectEventScripts(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "SetUpDataStruct();\n     \n    FreeDataStruct();\n    return TRUE;",
       "callsTo": [
         "FreeDataStruct",
@@ -317,6 +388,24 @@
       "returnType": "u16",
       "signature": "static u16 GetMapDataForFloor(u8 floorId, u32 x, u32 y, u32 floorWidth)",
       "paramsRaw": "u8 floorId, u32 x, u32 y, u32 floorWidth",
+      "paramsList": [
+        {
+          "name": "floorId",
+          "typeRaw": "u8"
+        },
+        {
+          "name": "x",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "y",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "floorWidth",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "bool8 impassable;\n    u16 metatileId;\n    u16 elevation;\n\n    impassable = (sHillData->floors[floorId].map.collisionData[y] >> (15 - x) & 1);\n    metatileId = sHillData->floors[floorId].map.metatileData[floorWidth * y + x] + NUM_METATILES_IN_PRIMARY;\n    elevation = PACK_ELEVATION(ELEVATION_DEFAULT);\n\n    return PACK_COLLISION(impassable) | elevation | PACK_METATILE(metatileId);",
       "callsTo": [
         "PACK_COLLISION",
@@ -329,6 +418,12 @@
       "returnType": "void",
       "signature": "void GenerateTrainerHillFloorLayout(u16 *mapArg)",
       "paramsRaw": "u16 *mapArg",
+      "paramsList": [
+        {
+          "name": "mapArg",
+          "typeRaw": "u16 *"
+        }
+      ],
       "body": "s32 y, x;\n    const u16 *src;\n    u16 *dst;\n    u8 mapId = GetCurrentTrainerHillMapId();\n\n    if (mapId == TRAINER_HILL_ENTRANCE)\n    {\n        InitMapFromSavedGame();\n        return;\n    }\n\n    SetUpDataStruct();\n    if (mapId == TRAINER_HILL_ROOF)\n    {\n        InitMapFromSavedGame();\n        FreeDataStruct();\n        return;\n    }\n\n    mapId = GetFloorId();\n    src = gMapHeader.mapLayout->map;\n    gBackupMapLayout.map = mapArg;\n     \n    gBackupMapLayout.width = HILL_FLOOR_WIDTH + 15;\n    gBackupMapLayout.height = HILL_FLOOR_HEIGHT + 14;\n    dst = mapArg + 224;\n\n     \n    for (y = 0; y < HILL_FLOOR_HEIGHT_MARGIN; y++)\n    {\n        for (x = 0; x < HILL_FLOOR_WIDTH; x++)\n            dst[x] = src[x];\n        dst += 31;\n        src += 16;\n    }\n\n     \n    for (y = 0; y < HILL_FLOOR_HEIGHT_MAIN; y++)\n    {\n        for (x = 0; x < HILL_FLOOR_WIDTH; x++)\n            dst[x] = GetMapDataForFloor(mapId, x, y, HILL_FLOOR_WIDTH);\n        dst += 31;\n    }\n\n    RunOnLoadMapScript();\n    FreeDataStruct();",
       "callsTo": [
         "FreeDataStruct",
@@ -345,6 +440,7 @@
       "returnType": "bool32",
       "signature": "bool32 InTrainerHill(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "bool32 ret;\n\n    if (gMapHeader.mapLayoutId == LAYOUT_TRAINER_HILL_1F\n        || gMapHeader.mapLayoutId == LAYOUT_TRAINER_HILL_2F\n        || gMapHeader.mapLayoutId == LAYOUT_TRAINER_HILL_3F\n        || gMapHeader.mapLayoutId == LAYOUT_TRAINER_HILL_4F)\n        ret = TRUE;\n    else\n        ret = FALSE;\n\n    return ret;",
       "callsTo": [],
       "lineCount": 11
@@ -353,6 +449,7 @@
       "returnType": "u8",
       "signature": "u8 GetCurrentTrainerHillMapId(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 mapId;\n\n    if (gMapHeader.mapLayoutId == LAYOUT_TRAINER_HILL_1F)\n        mapId = TRAINER_HILL_1F;\n    else if (gMapHeader.mapLayoutId == LAYOUT_TRAINER_HILL_2F)\n        mapId = TRAINER_HILL_2F;\n    else if (gMapHeader.mapLayoutId == LAYOUT_TRAINER_HILL_3F)\n        mapId = TRAINER_HILL_3F;\n    else if (gMapHeader.mapLayoutId == LAYOUT_TRAINER_HILL_4F)\n        mapId = TRAINER_HILL_4F;\n    else if (gMapHeader.mapLayoutId == LAYOUT_TRAINER_HILL_ROOF)\n        mapId = TRAINER_HILL_ROOF;\n    else if (gMapHeader.mapLayoutId == LAYOUT_TRAINER_HILL_ENTRANCE)\n        mapId = TRAINER_HILL_ENTRANCE;\n    else\n        mapId = 0;\n\n    return mapId;",
       "callsTo": [],
       "lineCount": 18
@@ -361,6 +458,7 @@
       "returnType": "const struct WarpEvent*",
       "signature": "const struct WarpEvent* SetWarpDestinationTrainerHill4F(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "const struct MapHeader *header = Overworld_GetMapHeaderByGroupAndId(MAP_GROUP(MAP_TRAINER_HILL_4F), MAP_NUM(MAP_TRAINER_HILL_4F));\n\n    return &header->events->warps[1];",
       "callsTo": [
         "MAP_GROUP",
@@ -373,6 +471,12 @@
       "returnType": "const struct WarpEvent*",
       "signature": "const struct WarpEvent* SetWarpDestinationTrainerHillFinalFloor(u8 warpEventId)",
       "paramsRaw": "u8 warpEventId",
+      "paramsList": [
+        {
+          "name": "warpEventId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 numFloors;\n    const struct MapHeader *header;\n\n    if (warpEventId == 1)\n        return &gMapHeader.events->warps[1];\n\n    numFloors = GetNumFloorsInTrainerHillChallenge();\n    if (numFloors == 0 || numFloors > NUM_TRAINER_HILL_FLOORS)\n        numFloors = NUM_TRAINER_HILL_FLOORS;\n\n    header = Overworld_GetMapHeaderByGroupAndId(MAP_GROUP(MAP_TRAINER_HILL_4F), sNextFloorMapNum[numFloors - 1]);\n    return &header->events->warps[0];",
       "callsTo": [
         "GetNumFloorsInTrainerHillChallenge",
@@ -385,6 +489,12 @@
       "returnType": "u16",
       "signature": "u16 LocalIdToHillTrainerId(u8 localId)",
       "paramsRaw": "u8 localId",
+      "paramsList": [
+        {
+          "name": "localId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "return gSaveBlock2Ptr->frontier.trainerIds[localId - 1];",
       "callsTo": [],
       "lineCount": 1
@@ -393,6 +503,12 @@
       "returnType": "bool8",
       "signature": "bool8 GetHillTrainerFlag(u8 objectEventId)",
       "paramsRaw": "u8 objectEventId",
+      "paramsList": [
+        {
+          "name": "objectEventId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u32 trainerIndexStart = GetFloorId() * HILL_TRAINERS_PER_FLOOR;\n    u8 bitId = gObjectEvents[objectEventId].localId - 1 + trainerIndexStart;\n\n    return gSaveBlock2Ptr->frontier.trainerFlags & gBitTable[bitId];",
       "callsTo": [
         "GetFloorId"
@@ -403,6 +519,7 @@
       "returnType": "void",
       "signature": "void SetHillTrainerFlag(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n    u8 trainerIndexStart = GetFloorId() * HILL_TRAINERS_PER_FLOOR;\n\n    for (i = 0; i < HILL_TRAINERS_PER_FLOOR; i++)\n    {\n        if (gSaveBlock2Ptr->frontier.trainerIds[i] == gTrainerBattleOpponent_A)\n        {\n            gSaveBlock2Ptr->frontier.trainerFlags |= gBitTable[trainerIndexStart + i];\n            break;\n        }\n    }\n\n    if (gBattleTypeFlags & BATTLE_TYPE_TWO_OPPONENTS)\n    {\n        for (i = 0; i < HILL_TRAINERS_PER_FLOOR; i++)\n        {\n            if (gSaveBlock2Ptr->frontier.trainerIds[i] == gTrainerBattleOpponent_B)\n            {\n                gSaveBlock2Ptr->frontier.trainerFlags |= gBitTable[trainerIndexStart + i];\n                break;\n            }\n        }\n    }",
       "callsTo": [
         "GetFloorId"
@@ -413,6 +530,7 @@
       "returnType": "void",
       "signature": "static void ShowTrainerHillPostBattleText(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "CopyTrainerHillTrainerText(TRAINER_HILL_TEXT_AFTER, gSpecialVar_LastTalked);\n    ShowFieldMessageFromBuffer();",
       "callsTo": [
         "CopyTrainerHillTrainerText",
@@ -424,6 +542,16 @@
       "returnType": "void",
       "signature": "static void CreateNPCTrainerHillParty(u16 trainerId, u8 firstMonId)",
       "paramsRaw": "u16 trainerId, u8 firstMonId",
+      "paramsList": [
+        {
+          "name": "trainerId",
+          "typeRaw": "u16"
+        },
+        {
+          "name": "firstMonId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 trId, level;\n    s32 i, floorId, partySlot;\n\n    if (trainerId == 0 || trainerId > HILL_TRAINERS_PER_FLOOR)\n        return;\n\n    trId = trainerId - 1;\n    SetUpDataStruct();\n    level = GetHighestLevelInPlayerParty();\n    floorId = GetFloorId();\n    for (i = firstMonId, partySlot = 0; i < firstMonId + PARTY_SIZE / 2; i++, partySlot++)\n    {\n        u8 id = sTrainerPartySlots[trId][partySlot];\n        struct Pokemon *mon = &gEnemyParty[i];\n\n        CreateBattleTowerMon(mon, &sHillData->floors[floorId].trainers[trId].mons[id]);\n        SetTrainerHillMonLevel(mon, level);\n    }\n\n    FreeDataStruct();",
       "callsTo": [
         "CreateBattleTowerMon",
@@ -439,6 +567,7 @@
       "returnType": "void",
       "signature": "void FillHillTrainerParty(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ZeroEnemyPartyMons();\n    CreateNPCTrainerHillParty(gTrainerBattleOpponent_A, 0);",
       "callsTo": [
         "CreateNPCTrainerHillParty",
@@ -450,6 +579,7 @@
       "returnType": "void",
       "signature": "void FillHillTrainersParties(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "ZeroEnemyPartyMons();\n    CreateNPCTrainerHillParty(gTrainerBattleOpponent_A, 0);\n    CreateNPCTrainerHillParty(gTrainerBattleOpponent_B, PARTY_SIZE / 2);",
       "callsTo": [
         "CreateNPCTrainerHillParty",
@@ -461,6 +591,7 @@
       "returnType": "u32",
       "signature": "u32 GetTrainerHillAIFlags(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return (AI_SCRIPT_CHECK_BAD_MOVE | AI_SCRIPT_TRY_TO_FAINT | AI_SCRIPT_CHECK_VIABILITY);",
       "callsTo": [],
       "lineCount": 1
@@ -469,6 +600,12 @@
       "returnType": "u8",
       "signature": "u8 GetTrainerEncounterMusicIdInTrainerHill(u16 trainerId)",
       "paramsRaw": "u16 trainerId",
+      "paramsList": [
+        {
+          "name": "trainerId",
+          "typeRaw": "u16"
+        }
+      ],
       "body": "s32 i;\n    u8 trId, facilityClass;\n\n    SetUpDataStruct();\n    trId = trainerId - 1;\n    facilityClass = sHillData->floors[sHillData->floorId].trainers[trId].facilityClass;\n    FreeDataStruct();\n\n    for (i = 0; i < ARRAY_COUNT(sTrainerClassesAndMusic); i++)\n    {\n        if (sTrainerClassesAndMusic[i].trainerClass == gFacilityClassToTrainerClass[facilityClass])\n            return sTrainerClassesAndMusic[i].musicId;\n    }\n\n    return 0;",
       "callsTo": [
         "ARRAY_COUNT",
@@ -481,6 +618,16 @@
       "returnType": "void",
       "signature": "static void SetTrainerHillMonLevel(struct Pokemon *mon, u8 level)",
       "paramsRaw": "struct Pokemon *mon, u8 level",
+      "paramsList": [
+        {
+          "name": "mon",
+          "typeRaw": "struct Pokemon *"
+        },
+        {
+          "name": "level",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u16 species = GetMonData(mon, MON_DATA_SPECIES, NULL);\n    u32 exp = gExperienceTables[gSpeciesInfo[species].growthRate][level];\n\n    SetMonData(mon, MON_DATA_EXP, &exp);\n    SetMonData(mon, MON_DATA_LEVEL, &level);\n    CalculateMonStats(mon);",
       "callsTo": [
         "CalculateMonStats",
@@ -493,6 +640,7 @@
       "returnType": "u8",
       "signature": "u8 GetNumFloorsInTrainerHillChallenge(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 floors;\n\n    SetUpDataStruct();\n    floors = sHillData->challenge.numFloors;\n    FreeDataStruct();\n\n    return floors;",
       "callsTo": [
         "FreeDataStruct",
@@ -504,6 +652,7 @@
       "returnType": "void",
       "signature": "static void SetAllTrainerFlags(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gSaveBlock2Ptr->frontier.trainerFlags = 0xFF;",
       "callsTo": [],
       "lineCount": 1
@@ -512,6 +661,7 @@
       "returnType": "void",
       "signature": "void TryLoadTrainerHillEReaderPalette(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (OnTrainerHillEReaderChallengeFloor() == TRUE)\n        LoadPalette(sEReader_Pal, BG_PLTT_ID(7), PLTT_SIZE_4BPP);",
       "callsTo": [
         "BG_PLTT_ID",
@@ -524,6 +674,7 @@
       "returnType": "void",
       "signature": "static void GetGameSaved(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gSpecialVar_Result = gSaveBlock2Ptr->frontier.savedGame;",
       "callsTo": [],
       "lineCount": 1
@@ -532,6 +683,7 @@
       "returnType": "void",
       "signature": "static void SetGameSaved(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gSaveBlock2Ptr->frontier.savedGame = TRUE;",
       "callsTo": [],
       "lineCount": 1
@@ -540,6 +692,7 @@
       "returnType": "void",
       "signature": "static void ClearGameSaved(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gSaveBlock2Ptr->frontier.savedGame = FALSE;",
       "callsTo": [],
       "lineCount": 1
@@ -548,6 +701,7 @@
       "returnType": "bool32",
       "signature": "bool32 OnTrainerHillEReaderChallengeFloor(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (!InTrainerHillChallenge() || GetCurrentTrainerHillMapId() == TRAINER_HILL_ENTRANCE)\n        return FALSE;\n\n    GetInEReaderMode();\n    if (gSpecialVar_Result == FALSE)\n        return FALSE;\n    else\n        return TRUE;",
       "callsTo": [
         "GetCurrentTrainerHillMapId",
@@ -560,6 +714,7 @@
       "returnType": "void",
       "signature": "static void GetChallengeWon(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (gSaveBlock1Ptr->trainerHill.hasLost)\n        gSpecialVar_Result = FALSE;\n    else\n        gSpecialVar_Result = TRUE;",
       "callsTo": [],
       "lineCount": 4
@@ -568,6 +723,7 @@
       "returnType": "void",
       "signature": "static void TrainerHillSetMode(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "gSaveBlock1Ptr->trainerHill.mode = gSpecialVar_0x8005;\n    gSaveBlock1Ptr->trainerHill.bestTime = gSaveBlock1Ptr->trainerHillTimes[gSpecialVar_0x8005];",
       "callsTo": [],
       "lineCount": 2
@@ -576,6 +732,12 @@
       "returnType": "u8",
       "signature": "static u8 GetPrizeListId(bool8 allowTMs)",
       "paramsRaw": "bool8 allowTMs",
+      "paramsList": [
+        {
+          "name": "allowTMs",
+          "typeRaw": "bool8"
+        }
+      ],
       "body": "u8 prizeListId, i, modBy;\n\n     \n     \n     \n    prizeListId = 0;\n    for (i = 0; i < NUM_TRAINER_HILL_FLOORS; i++)\n    {\n        prizeListId ^= sHillData->floors[i].trainerNum1 & 0x1F;\n        prizeListId ^= sHillData->floors[i].trainerNum2 & 0x1F;\n    }\n\n     \n     \n     \n    if (allowTMs)\n        modBy = NUM_TRAINER_HILL_PRIZE_LISTS;\n    else\n        modBy = NUM_TRAINER_HILL_PRIZE_LISTS / 2;\n\n    prizeListId %= modBy;\n    return prizeListId;",
       "callsTo": [],
       "lineCount": 22
@@ -584,6 +746,7 @@
       "returnType": "u16",
       "signature": "static u16 GetPrizeItemId(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 i;\n    const u16 *prizeList;\n    s32 trainerNumSum = 0, prizeListSetId, minutes, id;\n\n     \n     \n     \n     \n     \n    for (i = 0; i < NUM_TRAINER_HILL_FLOORS; i++)\n    {\n        trainerNumSum += sHillData->floors[i].trainerNum1;\n        trainerNumSum += sHillData->floors[i].trainerNum2;\n    }\n    prizeListSetId = trainerNumSum / 256;\n    prizeListSetId %= (int)ARRAY_COUNT(sPrizeListSets);\n\n     \n     \n     \n     \n    if (FlagGet(FLAG_SYS_GAME_CLEAR) && sHillData->challenge.numTrainers == NUM_TRAINER_HILL_TRAINERS)\n        i = GetPrizeListId(TRUE);\n    else\n        i = GetPrizeListId(FALSE);\n\n     \n    if (gSaveBlock1Ptr->trainerHill.mode == HILL_MODE_EXPERT)\n        i = (i + 1) % NUM_TRAINER_HILL_PRIZE_LISTS;\n\n     \n     \n     \n     \n     \n    prizeList = sPrizeListSets[prizeListSetId][i];\n\n     \n     \n     \n     \n     \n     \n     \n     \n     \n     \n    minutes = (signed)(gSaveBlock1Ptr->trainerHill.timer) / (60 * 60);\n    if (minutes < 12)\n        id = 0;  \n    else if (minutes < 13)\n        id = 1;  \n    else if (minutes < 14)\n        id = 2;  \n    else if (minutes < 16)\n        id = 3;  \n    else if (minutes < 18)\n        id = 4;  \n    else\n        id = 5;  \n\n    return prizeList[id];",
       "callsTo": [
         "ARRAY_COUNT",

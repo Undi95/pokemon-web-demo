@@ -6,6 +6,7 @@
       "returnType": "void",
       "signature": "static void CB2_TestBattleTransition(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "switch (sTestingTransitionState)\n    {\n    case 0:\n        LaunchBattleTransitionTask(sTestingTransitionId);\n        sTestingTransitionState++;\n        break;\n    case 1:\n        if (IsBattleTransitionDone())\n        {\n            sTestingTransitionState = 0;\n            SetMainCallback2(CB2_ReturnToField);\n        }\n        break;\n    }\n\n    RunTasks();\n    AnimateSprites();\n    BuildOamBuffer();\n    UpdatePaletteFade();",
       "callsTo": [
         "AnimateSprites",
@@ -22,6 +23,12 @@
       "returnType": "void",
       "signature": "void BattleTransition_StartOnField(u8 transitionId)",
       "paramsRaw": "u8 transitionId",
+      "paramsList": [
+        {
+          "name": "transitionId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "gMain.callback2 = CB2_OverworldBasic;\n    LaunchBattleTransitionTask(transitionId);",
       "callsTo": [
         "LaunchBattleTransitionTask"
@@ -32,6 +39,12 @@
       "returnType": "void",
       "signature": "void BattleTransition_Start(u8 transitionId)",
       "paramsRaw": "u8 transitionId",
+      "paramsList": [
+        {
+          "name": "transitionId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "LaunchBattleTransitionTask(transitionId);",
       "callsTo": [
         "LaunchBattleTransitionTask"
@@ -42,6 +55,7 @@
       "returnType": "bool8",
       "signature": "bool8 IsBattleTransitionDone(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 taskId = FindTaskIdByFunc(Task_BattleTransition);\n    if (gTasks[taskId].tTransitionDone)\n    {\n        DestroyTask(taskId);\n        FREE_AND_SET_NULL(sTransitionData);\n        return TRUE;\n    }\n    else\n    {\n        return FALSE;\n    }",
       "callsTo": [
         "DestroyTask",
@@ -54,6 +68,12 @@
       "returnType": "void",
       "signature": "static void LaunchBattleTransitionTask(u8 transitionId)",
       "paramsRaw": "u8 transitionId",
+      "paramsList": [
+        {
+          "name": "transitionId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "u8 taskId = CreateTask(Task_BattleTransition, 2);\n    gTasks[taskId].tTransitionId = transitionId;\n    sTransitionData = AllocZeroed(sizeof(*sTransitionData));",
       "callsTo": [
         "AllocZeroed",
@@ -65,6 +85,12 @@
       "returnType": "void",
       "signature": "static void Task_BattleTransition(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "while (sTaskHandlers[gTasks[taskId].tState](&gTasks[taskId]));",
       "callsTo": [],
       "lineCount": 1
@@ -73,6 +99,12 @@
       "returnType": "bool8",
       "signature": "static bool8 Transition_StartIntro(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "SetWeatherScreenFadeOut();\n    CpuCopy32(gPlttBufferFaded, gPlttBufferUnfaded, PLTT_SIZE);\n    if (sTasks_Intro[task->tTransitionId] != NULL)\n    {\n        CreateTask(sTasks_Intro[task->tTransitionId], 4);\n        task->tState++;\n        return FALSE;\n    }\n    else\n    {\n        task->tState = 2;\n        return TRUE;\n    }",
       "callsTo": [
         "CpuCopy32",
@@ -85,6 +117,12 @@
       "returnType": "bool8",
       "signature": "static bool8 Transition_WaitForIntro(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (FindTaskIdByFunc(sTasks_Intro[task->tTransitionId]) == TASK_NONE)\n    {\n        task->tState++;\n        return TRUE;\n    }\n    else\n    {\n        return FALSE;\n    }",
       "callsTo": [
         "FindTaskIdByFunc"
@@ -95,6 +133,12 @@
       "returnType": "bool8",
       "signature": "static bool8 Transition_StartMain(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "CreateTask(sTasks_Main[task->tTransitionId], 0);\n    task->tState++;\n    return FALSE;",
       "callsTo": [
         "CreateTask"
@@ -105,6 +149,12 @@
       "returnType": "bool8",
       "signature": "static bool8 Transition_WaitForMain(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "task->tTransitionDone = FALSE;\n    if (FindTaskIdByFunc(sTasks_Main[task->tTransitionId]) == TASK_NONE)\n        task->tTransitionDone = TRUE;\n    return FALSE;",
       "callsTo": [
         "FindTaskIdByFunc"
@@ -115,6 +165,12 @@
       "returnType": "void",
       "signature": "static void Task_Intro(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (gTasks[taskId].tState == 0)\n    {\n        gTasks[taskId].tState++;\n        CreateIntroTask(0, 0, 3, 2, 2);\n    }\n    else if (IsIntroTaskDone())\n    {\n        DestroyTask(taskId);\n    }",
       "callsTo": [
         "CreateIntroTask",
@@ -127,6 +183,12 @@
       "returnType": "void",
       "signature": "static void Task_Blur(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "while (sBlur_Funcs[gTasks[taskId].tState](&gTasks[taskId]));",
       "callsTo": [],
       "lineCount": 1
@@ -135,6 +197,12 @@
       "returnType": "bool8",
       "signature": "static bool8 Blur_Init(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "SetGpuReg(REG_OFFSET_MOSAIC, 0);\n    SetGpuRegBits(REG_OFFSET_BG1CNT, BGCNT_MOSAIC);\n    SetGpuRegBits(REG_OFFSET_BG2CNT, BGCNT_MOSAIC);\n    SetGpuRegBits(REG_OFFSET_BG3CNT, BGCNT_MOSAIC);\n    task->tState++;\n    return TRUE;",
       "callsTo": [
         "SetGpuReg",
@@ -146,6 +214,12 @@
       "returnType": "bool8",
       "signature": "static bool8 Blur_Main(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (task->tDelay != 0)\n    {\n        task->tDelay--;\n    }\n    else\n    {\n        task->tDelay = 4;\n        if (++task->tCounter == 10)\n            BeginNormalPaletteFade(PALETTES_ALL, -1, 0, 16, RGB_BLACK);\n        SetGpuReg(REG_OFFSET_MOSAIC, (task->tCounter & 15) * 17);\n        if (task->tCounter > 14)\n            task->tState++;\n    }\n    return FALSE;",
       "callsTo": [
         "BeginNormalPaletteFade",
@@ -157,6 +231,12 @@
       "returnType": "bool8",
       "signature": "static bool8 Blur_End(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (!gPaletteFade.active)\n    {\n        u8 taskId = FindTaskIdByFunc(Task_Blur);\n        DestroyTask(taskId);\n    }\n    return FALSE;",
       "callsTo": [
         "DestroyTask",
@@ -168,6 +248,12 @@
       "returnType": "void",
       "signature": "static void Task_Swirl(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "while (sSwirl_Funcs[gTasks[taskId].tState](&gTasks[taskId]));",
       "callsTo": [],
       "lineCount": 1
@@ -176,6 +262,12 @@
       "returnType": "bool8",
       "signature": "static bool8 Swirl_Init(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "InitTransitionData();\n    ScanlineEffect_Clear();\n    BeginNormalPaletteFade(PALETTES_ALL, 4, 0, 16, RGB_BLACK);\n    SetSinWave(gScanlineEffectRegBuffers[1], sTransitionData->cameraX, 0, 2, 0, DISPLAY_HEIGHT);\n\n    SetVBlankCallback(VBlankCB_Swirl);\n    SetHBlankCallback(HBlankCB_Swirl);\n\n    EnableInterrupts(INTR_FLAG_VBLANK | INTR_FLAG_HBLANK);\n\n    task->tState++;\n    return FALSE;",
       "callsTo": [
         "BeginNormalPaletteFade",
@@ -192,6 +284,12 @@
       "returnType": "bool8",
       "signature": "static bool8 Swirl_End(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "sTransitionData->VBlank_DMA = FALSE;\n    task->tSinIndex += 4;\n    task->tAmplitude += 8;\n\n    SetSinWave(gScanlineEffectRegBuffers[0], sTransitionData->cameraX, task->tSinIndex, 2, task->tAmplitude, DISPLAY_HEIGHT);\n\n    if (!gPaletteFade.active)\n    {\n        u8 taskId = FindTaskIdByFunc(Task_Swirl);\n        DestroyTask(taskId);\n    }\n\n    sTransitionData->VBlank_DMA++;\n    return FALSE;",
       "callsTo": [
         "DestroyTask",
@@ -204,6 +302,7 @@
       "returnType": "void",
       "signature": "static void VBlankCB_Swirl(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "VBlankCB_BattleTransition();\n    if (sTransitionData->VBlank_DMA)\n        DmaCopy16(3, gScanlineEffectRegBuffers[0], gScanlineEffectRegBuffers[1], DISPLAY_HEIGHT * 2);",
       "callsTo": [
         "DmaCopy16",
@@ -215,6 +314,7 @@
       "returnType": "void",
       "signature": "static void HBlankCB_Swirl(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 var = gScanlineEffectRegBuffers[1][REG_VCOUNT];\n    REG_BG1HOFS = var;\n    REG_BG2HOFS = var;\n    REG_BG3HOFS = var;",
       "callsTo": [],
       "lineCount": 4
@@ -223,6 +323,12 @@
       "returnType": "void",
       "signature": "static void Task_Shuffle(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "while (sShuffle_Funcs[gTasks[taskId].tState](&gTasks[taskId]));",
       "callsTo": [],
       "lineCount": 1
@@ -231,6 +337,12 @@
       "returnType": "bool8",
       "signature": "static bool8 Shuffle_Init(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "InitTransitionData();\n    ScanlineEffect_Clear();\n\n    BeginNormalPaletteFade(PALETTES_ALL, 4, 0, 16, RGB_BLACK);\n    memset(gScanlineEffectRegBuffers[1], sTransitionData->cameraY, DISPLAY_HEIGHT * 2);\n\n    SetVBlankCallback(VBlankCB_Shuffle);\n    SetHBlankCallback(HBlankCB_Shuffle);\n\n    EnableInterrupts(INTR_FLAG_VBLANK | INTR_FLAG_HBLANK);\n\n    task->tState++;\n    return FALSE;",
       "callsTo": [
         "BeginNormalPaletteFade",
@@ -246,6 +358,12 @@
       "returnType": "bool8",
       "signature": "static bool8 Shuffle_End(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u8 i;\n    u16 amplitude, sinVal;\n\n    sTransitionData->VBlank_DMA = FALSE;\n    sinVal = task->tSinVal;\n    amplitude = task->tAmplitude >> 8;\n    task->tSinVal += 4224;\n    task->tAmplitude += 384;\n\n    for (i = 0; i < DISPLAY_HEIGHT; i++, sinVal += 4224)\n    {\n        u16 sinIndex = sinVal / 256;\n        gScanlineEffectRegBuffers[0][i] = sTransitionData->cameraY + Sin(sinIndex, amplitude);\n    }\n\n    if (!gPaletteFade.active)\n        DestroyTask(FindTaskIdByFunc(Task_Shuffle));\n\n    sTransitionData->VBlank_DMA++;\n    return FALSE;",
       "callsTo": [
         "DestroyTask",
@@ -258,6 +376,7 @@
       "returnType": "void",
       "signature": "static void VBlankCB_Shuffle(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "VBlankCB_BattleTransition();\n    if (sTransitionData->VBlank_DMA)\n        DmaCopy16(3, gScanlineEffectRegBuffers[0], gScanlineEffectRegBuffers[1], DISPLAY_HEIGHT * 2);",
       "callsTo": [
         "DmaCopy16",
@@ -269,6 +388,7 @@
       "returnType": "void",
       "signature": "static void HBlankCB_Shuffle(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 var = gScanlineEffectRegBuffers[1][REG_VCOUNT];\n    REG_BG1VOFS = var;\n    REG_BG2VOFS = var;\n    REG_BG3VOFS = var;",
       "callsTo": [],
       "lineCount": 4
@@ -277,6 +397,12 @@
       "returnType": "void",
       "signature": "static void Task_BigPokeball(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "while (sBigPokeball_Funcs[gTasks[taskId].tState](&gTasks[taskId]));",
       "callsTo": [],
       "lineCount": 1
@@ -285,6 +411,12 @@
       "returnType": "void",
       "signature": "static void Task_Aqua(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "while (sAqua_Funcs[gTasks[taskId].tState](&gTasks[taskId]));",
       "callsTo": [],
       "lineCount": 1
@@ -293,6 +425,12 @@
       "returnType": "void",
       "signature": "static void Task_Magma(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "while (sMagma_Funcs[gTasks[taskId].tState](&gTasks[taskId]));",
       "callsTo": [],
       "lineCount": 1
@@ -301,6 +439,12 @@
       "returnType": "void",
       "signature": "static void Task_Regice(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "while (sRegice_Funcs[gTasks[taskId].tState](&gTasks[taskId]));",
       "callsTo": [],
       "lineCount": 1
@@ -309,6 +453,12 @@
       "returnType": "void",
       "signature": "static void Task_Registeel(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "while (sRegisteel_Funcs[gTasks[taskId].tState](&gTasks[taskId]));",
       "callsTo": [],
       "lineCount": 1
@@ -317,6 +467,12 @@
       "returnType": "void",
       "signature": "static void Task_Regirock(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "while (sRegirock_Funcs[gTasks[taskId].tState](&gTasks[taskId]));",
       "callsTo": [],
       "lineCount": 1
@@ -325,6 +481,12 @@
       "returnType": "void",
       "signature": "static void Task_Kyogre(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "while (sKyogre_Funcs[gTasks[taskId].tState](&gTasks[taskId]));",
       "callsTo": [],
       "lineCount": 1
@@ -333,6 +495,12 @@
       "returnType": "void",
       "signature": "static void InitPatternWeaveTransition(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "s32 i;\n\n    InitTransitionData();\n    ScanlineEffect_Clear();\n\n    task->tBlendTarget1 = 16;\n    task->tBlendTarget2 = 0;\n    task->tSinIndex = 0;\n    task->tAmplitude = 0x4000;\n    sTransitionData->WININ = WININ_WIN0_ALL;\n    sTransitionData->WINOUT = 0;\n    sTransitionData->WIN0H = DISPLAY_WIDTH;\n    sTransitionData->WIN0V = DISPLAY_HEIGHT;\n    sTransitionData->BLDCNT = BLDCNT_TGT1_BG0 | BLDCNT_EFFECT_BLEND | BLDCNT_TGT2_ALL;\n    sTransitionData->BLDALPHA = BLDALPHA_BLEND(task->tBlendTarget2, task->tBlendTarget1);\n\n    for (i = 0; i < DISPLAY_HEIGHT; i++)\n        gScanlineEffectRegBuffers[1][i] = DISPLAY_WIDTH;\n\n    SetVBlankCallback(VBlankCB_PatternWeave);",
       "callsTo": [
         "BLDALPHA_BLEND",
@@ -346,6 +514,12 @@
       "returnType": "bool8",
       "signature": "static bool8 Aqua_Init(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u16 *tilemap, *tileset;\n\n    task->tEndDelay = 60;\n    InitPatternWeaveTransition(task);\n    GetBg0TilesDst(&tilemap, &tileset);\n    CpuFill16(0, tilemap, BG_SCREEN_SIZE);\n    LZ77UnCompVram(sTeamAqua_Tileset, tileset);\n    LoadPalette(sEvilTeam_Palette, BG_PLTT_ID(15), sizeof(sEvilTeam_Palette));\n\n    task->tState++;\n    return FALSE;",
       "callsTo": [
         "BG_PLTT_ID",
@@ -361,6 +535,12 @@
       "returnType": "bool8",
       "signature": "static bool8 Magma_Init(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u16 *tilemap, *tileset;\n\n    task->tEndDelay = 60;\n    InitPatternWeaveTransition(task);\n    GetBg0TilesDst(&tilemap, &tileset);\n    CpuFill16(0, tilemap, BG_SCREEN_SIZE);\n    LZ77UnCompVram(sTeamMagma_Tileset, tileset);\n    LoadPalette(sEvilTeam_Palette, BG_PLTT_ID(15), sizeof(sEvilTeam_Palette));\n\n    task->tState++;\n    return FALSE;",
       "callsTo": [
         "BG_PLTT_ID",
@@ -376,6 +556,12 @@
       "returnType": "bool8",
       "signature": "static bool8 Regi_Init(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u16 *tilemap, *tileset;\n\n    task->tEndDelay = 60;\n    InitPatternWeaveTransition(task);\n    GetBg0TilesDst(&tilemap, &tileset);\n    CpuFill16(0, tilemap, BG_SCREEN_SIZE);\n    CpuCopy16(sRegis_Tileset, tileset, 0x2000);\n\n    task->tState++;\n    return FALSE;",
       "callsTo": [
         "CpuCopy16",
@@ -389,6 +575,12 @@
       "returnType": "bool8",
       "signature": "static bool8 BigPokeball_Init(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u16 *tilemap, *tileset;\n\n    InitPatternWeaveTransition(task);\n    GetBg0TilesDst(&tilemap, &tileset);\n    CpuFill16(0, tilemap, BG_SCREEN_SIZE);\n    CpuCopy16(sBigPokeball_Tileset, tileset, sizeof(sBigPokeball_Tileset));\n    LoadPalette(sFieldEffectPal_Pokeball, BG_PLTT_ID(15), sizeof(sFieldEffectPal_Pokeball));\n\n    task->tState++;\n    return FALSE;",
       "callsTo": [
         "BG_PLTT_ID",
@@ -404,6 +596,12 @@
       "returnType": "bool8",
       "signature": "static bool8 BigPokeball_SetGfx(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "s16 i, j;\n    u16 *tilemap, *tileset;\n    const u16 *bigPokeballMap;\n\n    GetBg0TilesDst(&tilemap, &tileset);\n    bigPokeballMap = sBigPokeball_Tilemap;\n    for (i = 0; i < 20; i++)\n    {\n        for (j = 0; j < 30; j++, bigPokeballMap++)\n            SET_TILE(tilemap, i, j, *bigPokeballMap);\n    }\n\n    SetSinWave(gScanlineEffectRegBuffers[0], 0, task->tSinIndex, 132, task->tAmplitude, DISPLAY_HEIGHT);\n\n    task->tState++;\n    return TRUE;",
       "callsTo": [
         "GetBg0TilesDst",
@@ -416,6 +614,12 @@
       "returnType": "bool8",
       "signature": "static bool8 Aqua_SetGfx(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u16 *tilemap, *tileset;\n\n    GetBg0TilesDst(&tilemap, &tileset);\n    LZ77UnCompVram(sTeamAqua_Tilemap, tilemap);\n    SetSinWave(gScanlineEffectRegBuffers[0], 0, task->tSinIndex, 132, task->tAmplitude, DISPLAY_HEIGHT);\n\n    task->tState++;\n    return FALSE;",
       "callsTo": [
         "GetBg0TilesDst",
@@ -428,6 +632,12 @@
       "returnType": "bool8",
       "signature": "static bool8 Magma_SetGfx(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u16 *tilemap, *tileset;\n\n    GetBg0TilesDst(&tilemap, &tileset);\n    LZ77UnCompVram(sTeamMagma_Tilemap, tilemap);\n    SetSinWave(gScanlineEffectRegBuffers[0], 0, task->tSinIndex, 132, task->tAmplitude, DISPLAY_HEIGHT);\n\n    task->tState++;\n    return FALSE;",
       "callsTo": [
         "GetBg0TilesDst",
@@ -440,6 +650,12 @@
       "returnType": "bool8",
       "signature": "static bool8 Regice_SetGfx(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u16 *tilemap, *tileset;\n\n    GetBg0TilesDst(&tilemap, &tileset);\n    LoadPalette(sRegice_Palette, BG_PLTT_ID(15), sizeof(sRegice_Palette));\n    CpuCopy16(sRegice_Tilemap, tilemap, 0x500);\n    SetSinWave(gScanlineEffectRegBuffers[0], 0, task->tSinIndex, 132, task->tAmplitude, DISPLAY_HEIGHT);\n\n    task->tState++;\n    return FALSE;",
       "callsTo": [
         "BG_PLTT_ID",
@@ -454,6 +670,12 @@
       "returnType": "bool8",
       "signature": "static bool8 Registeel_SetGfx(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u16 *tilemap, *tileset;\n\n    GetBg0TilesDst(&tilemap, &tileset);\n    LoadPalette(sRegisteel_Palette, BG_PLTT_ID(15), sizeof(sRegisteel_Palette));\n    CpuCopy16(sRegisteel_Tilemap, tilemap, 0x500);\n    SetSinWave(gScanlineEffectRegBuffers[0], 0, task->tSinIndex, 132, task->tAmplitude, DISPLAY_HEIGHT);\n\n    task->tState++;\n    return FALSE;",
       "callsTo": [
         "BG_PLTT_ID",
@@ -468,6 +690,12 @@
       "returnType": "bool8",
       "signature": "static bool8 Regirock_SetGfx(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u16 *tilemap, *tileset;\n\n    GetBg0TilesDst(&tilemap, &tileset);\n    LoadPalette(sRegirock_Palette, BG_PLTT_ID(15), sizeof(sRegirock_Palette));\n    CpuCopy16(sRegirock_Tilemap, tilemap, 0x500);\n    SetSinWave(gScanlineEffectRegBuffers[0], 0, task->tSinIndex, 132, task->tAmplitude, DISPLAY_HEIGHT);\n\n    task->tState++;\n    return FALSE;",
       "callsTo": [
         "BG_PLTT_ID",
@@ -482,6 +710,12 @@
       "returnType": "bool8",
       "signature": "static bool8 Kyogre_Init(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u16 *tilemap, *tileset;\n\n    GetBg0TilesDst(&tilemap, &tileset);\n    CpuFill16(0, tilemap, BG_SCREEN_SIZE);\n    LZ77UnCompVram(sKyogre_Tileset, tileset);\n    LZ77UnCompVram(sKyogre_Tilemap, tilemap);\n\n    task->tState++;\n    return FALSE;",
       "callsTo": [
         "CpuFill16",
@@ -494,6 +728,12 @@
       "returnType": "bool8",
       "signature": "static bool8 Kyogre_PaletteFlash(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (task->tTimer % 3 == 0)\n    {\n        u16 offset = task->tTimer % 30;\n        offset /= 3;\n        LoadPalette(&sKyogre1_Palette[offset * 16], BG_PLTT_ID(15), PLTT_SIZE_4BPP);\n    }\n    if (++task->tTimer > 58)\n    {\n        task->tState++;\n        task->tTimer = 0;\n    }\n\n    return FALSE;",
       "callsTo": [
         "BG_PLTT_ID",
@@ -505,6 +745,12 @@
       "returnType": "bool8",
       "signature": "static bool8 Kyogre_PaletteBrighten(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (task->tTimer % 5 == 0)\n    {\n        s16 offset = task->tTimer / 5;\n        LoadPalette(&sKyogre2_Palette[offset * 16], BG_PLTT_ID(15), PLTT_SIZE_4BPP);\n    }\n    if (++task->tTimer > 68)\n    {\n        task->tState++;\n        task->tTimer = 0;\n        task->tEndDelay = 30;\n    }\n\n    return FALSE;",
       "callsTo": [
         "BG_PLTT_ID",
@@ -516,6 +762,12 @@
       "returnType": "bool8",
       "signature": "static bool8 WeatherDuo_FadeOut(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "BeginNormalPaletteFade(PALETTES_OBJECTS | (1 << 15), 1, 0, 16, RGB_BLACK);\n    task->tState++;\n    return FALSE;",
       "callsTo": [
         "BeginNormalPaletteFade"
@@ -526,6 +778,12 @@
       "returnType": "bool8",
       "signature": "static bool8 WeatherDuo_End(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (!gPaletteFade.active)\n    {\n        DmaStop(0);\n        FadeScreenBlack();\n        DestroyTask(FindTaskIdByFunc(task->func));\n    }\n    return FALSE;",
       "callsTo": [
         "DestroyTask",
@@ -539,6 +797,12 @@
       "returnType": "bool8",
       "signature": "static bool8 PatternWeave_Blend1(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "sTransitionData->VBlank_DMA = FALSE;\n    if (task->tBlendDelay == 0 || --task->tBlendDelay == 0)\n    {\n        task->tBlendTarget2++;\n        task->tBlendDelay = 2;\n    }\n    sTransitionData->BLDALPHA = BLDALPHA_BLEND(task->tBlendTarget2, task->tBlendTarget1);\n    if (task->tBlendTarget2 > 15)\n        task->tState++;\n    task->tSinIndex += 8;\n    task->tAmplitude -= 256;\n\n    SetSinWave(gScanlineEffectRegBuffers[0], 0, task->tSinIndex, 132, task->tAmplitude >> 8, DISPLAY_HEIGHT);\n\n    sTransitionData->VBlank_DMA++;\n    return FALSE;",
       "callsTo": [
         "BLDALPHA_BLEND",
@@ -550,6 +814,12 @@
       "returnType": "bool8",
       "signature": "static bool8 PatternWeave_Blend2(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "sTransitionData->VBlank_DMA = FALSE;\n    if (task->tBlendDelay == 0 || --task->tBlendDelay == 0)\n    {\n        task->tBlendTarget1--;\n        task->tBlendDelay = 2;\n    }\n    sTransitionData->BLDALPHA = BLDALPHA_BLEND(task->tBlendTarget2, task->tBlendTarget1);\n    if (task->tBlendTarget1 == 0)\n        task->tState++;\n    task->tSinIndex += 8;\n    task->tAmplitude -= 256;\n\n    SetSinWave(gScanlineEffectRegBuffers[0], 0, task->tSinIndex, 132, task->tAmplitude >> 8, DISPLAY_HEIGHT);\n\n    sTransitionData->VBlank_DMA++;\n    return FALSE;",
       "callsTo": [
         "BLDALPHA_BLEND",
@@ -561,6 +831,12 @@
       "returnType": "bool8",
       "signature": "static bool8 PatternWeave_FinishAppear(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "sTransitionData->VBlank_DMA = FALSE;\n    task->tSinIndex += 8;\n    task->tAmplitude -= 256;\n\n    SetSinWave(gScanlineEffectRegBuffers[0], 0, task->tSinIndex, 132, task->tAmplitude >> 8, DISPLAY_HEIGHT);\n\n    if (task->tAmplitude <= 0)\n    {\n        task->tState++;\n        task->tRadius = DISPLAY_HEIGHT;\n        task->tRadiusDelta = 1 << 8;\n        task->tVBlankSet = FALSE;\n    }\n\n    sTransitionData->VBlank_DMA++;\n    return FALSE;",
       "callsTo": [
         "SetSinWave"
@@ -571,6 +847,12 @@
       "returnType": "bool8",
       "signature": "static bool8 FramesCountdown(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (--task->tEndDelay == 0)\n        task->tState++;\n    return FALSE;",
       "callsTo": [],
       "lineCount": 3
@@ -579,6 +861,12 @@
       "returnType": "bool8",
       "signature": "static bool8 WeatherTrio_BgFadeBlack(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "BeginNormalPaletteFade(PALETTES_BG, 1, 0, 16, RGB_BLACK);\n    task->tState++;\n    return FALSE;",
       "callsTo": [
         "BeginNormalPaletteFade"
@@ -589,6 +877,12 @@
       "returnType": "bool8",
       "signature": "static bool8 WeatherTrio_WaitFade(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (!gPaletteFade.active)\n        task->tState++;\n    return FALSE;",
       "callsTo": [],
       "lineCount": 3
@@ -597,6 +891,12 @@
       "returnType": "bool8",
       "signature": "static bool8 PatternWeave_CircularMask(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "sTransitionData->VBlank_DMA = FALSE;\n    if (task->tRadiusDelta < (4 << 8))\n        task->tRadiusDelta += 128;  \n    if (task->tRadius != 0)\n    {\n        task->tRadius -= task->tRadiusDelta >> 8;\n        if (task->tRadius < 0)\n            task->tRadius = 0;\n    }\n    SetCircularMask(gScanlineEffectRegBuffers[0], DISPLAY_WIDTH / 2, DISPLAY_HEIGHT / 2, task->tRadius);\n    if (task->tRadius == 0)\n    {\n        SetVBlankCallback(NULL);\n        DmaStop(0);\n        FadeScreenBlack();\n        DestroyTask(FindTaskIdByFunc(task->func));\n    }\n    else\n    {\n        if (!task->tVBlankSet)\n        {\n            task->tVBlankSet++;\n            SetVBlankCallback(VBlankCB_CircularMask);\n        }\n        sTransitionData->VBlank_DMA++;\n    }\n    return FALSE;",
       "callsTo": [
         "DestroyTask",
@@ -612,6 +912,7 @@
       "returnType": "void",
       "signature": "static void VBlankCB_SetWinAndBlend(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "DmaStop(0);\n    VBlankCB_BattleTransition();\n    if (sTransitionData->VBlank_DMA)\n        DmaCopy16(3, gScanlineEffectRegBuffers[0], gScanlineEffectRegBuffers[1], DISPLAY_HEIGHT * 2);\n    REG_WININ = sTransitionData->WININ;\n    REG_WINOUT = sTransitionData->WINOUT;\n    REG_WIN0V = sTransitionData->WIN0V;\n    REG_BLDCNT = sTransitionData->BLDCNT;\n    REG_BLDALPHA = sTransitionData->BLDALPHA;",
       "callsTo": [
         "DmaCopy16",
@@ -624,6 +925,7 @@
       "returnType": "void",
       "signature": "static void VBlankCB_PatternWeave(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "VBlankCB_SetWinAndBlend();\n    DmaSet(0, gScanlineEffectRegBuffers[1], &REG_BG0HOFS, B_TRANS_DMA_FLAGS);",
       "callsTo": [
         "DmaSet",
@@ -635,6 +937,7 @@
       "returnType": "void",
       "signature": "static void VBlankCB_CircularMask(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "VBlankCB_SetWinAndBlend();\n    DmaSet(0, gScanlineEffectRegBuffers[1], &REG_WIN0H, B_TRANS_DMA_FLAGS);",
       "callsTo": [
         "DmaSet",
@@ -646,6 +949,12 @@
       "returnType": "void",
       "signature": "static void Task_PokeballsTrail(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "while (sPokeballsTrail_Funcs[gTasks[taskId].tState](&gTasks[taskId]));",
       "callsTo": [],
       "lineCount": 1
@@ -654,6 +963,12 @@
       "returnType": "bool8",
       "signature": "static bool8 PokeballsTrail_Init(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u16 *tilemap, *tileset;\n\n    GetBg0TilesDst(&tilemap, &tileset);\n    CpuSet(sPokeballTrail_Tileset, tileset, 0x20);\n    CpuFill32(0, tilemap, BG_SCREEN_SIZE);\n    LoadPalette(sFieldEffectPal_Pokeball, BG_PLTT_ID(15), sizeof(sFieldEffectPal_Pokeball));\n\n    task->tState++;\n    return FALSE;",
       "callsTo": [
         "BG_PLTT_ID",
@@ -668,6 +983,12 @@
       "returnType": "bool8",
       "signature": "static bool8 PokeballsTrail_Main(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "s16 i;\n    s16 side;\n    s16 startX[ARRAY_COUNT(sPokeballsTrail_StartXCoords)];\n    s16 delays[ARRAY_COUNT(sPokeballsTrail_Delays)];\n    memcpy(startX, sPokeballsTrail_StartXCoords, sizeof(sPokeballsTrail_StartXCoords));\n    memcpy(delays, sPokeballsTrail_Delays, sizeof(sPokeballsTrail_Delays));\n\n     \n     \n    side = Random() & 1;\n    for (i = 0; i < NUM_POKEBALL_TRAILS; i++, side ^= 1)\n    {\n        gFieldEffectArguments[0] = startX[side];    \n        gFieldEffectArguments[1] = (i * 32) + 16;   \n        gFieldEffectArguments[2] = side;\n        gFieldEffectArguments[3] = delays[i];\n        FieldEffectStart(FLDEFF_POKEBALL_TRAIL);\n    }\n\n    task->tState++;\n    return FALSE;",
       "callsTo": [
         "ARRAY_COUNT",
@@ -680,6 +1001,12 @@
       "returnType": "bool8",
       "signature": "static bool8 PokeballsTrail_End(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (!FieldEffectActiveListContains(FLDEFF_POKEBALL_TRAIL))\n    {\n        FadeScreenBlack();\n        DestroyTask(FindTaskIdByFunc(Task_PokeballsTrail));\n    }\n    return FALSE;",
       "callsTo": [
         "DestroyTask",
@@ -693,6 +1020,7 @@
       "returnType": "bool8",
       "signature": "bool8 FldEff_PokeballTrail(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u8 spriteId = CreateSpriteAtEnd(&sSpriteTemplate_Pokeball, gFieldEffectArguments[0], gFieldEffectArguments[1], 0);\n    gSprites[spriteId].oam.priority = 0;\n    gSprites[spriteId].oam.affineMode = ST_OAM_AFFINE_NORMAL;\n    gSprites[spriteId].sSide = gFieldEffectArguments[2];\n    gSprites[spriteId].sDelay = gFieldEffectArguments[3];\n    gSprites[spriteId].sPrevX = -1;\n    InitSpriteAffineAnim(&gSprites[spriteId]);\n    StartSpriteAffineAnim(&gSprites[spriteId], gFieldEffectArguments[2]);\n    return FALSE;",
       "callsTo": [
         "CreateSpriteAtEnd",
@@ -705,6 +1033,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_FldEffPokeballTrail(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "s16 speeds[ARRAY_COUNT(sPokeballsTrail_Speeds)];\n    memcpy(speeds, sPokeballsTrail_Speeds, sizeof(sPokeballsTrail_Speeds));\n\n    if (sprite->sDelay != 0)\n    {\n        sprite->sDelay--;\n    }\n    else\n    {\n        if (sprite->x >= 0 && sprite->x <= DISPLAY_WIDTH)\n        {\n             \n            s16 posX = sprite->x >> 3;\n            s16 posY = sprite->y >> 3;\n\n             \n            if (posX != sprite->sPrevX)\n            {\n                u32 var;\n                u16 *ptr;\n\n                sprite->sPrevX = posX;\n                var = ((REG_BG0CNT >> 8) & 0x1F) << 11;\n                ptr = (u16 *)(BG_VRAM + var);\n\n                SET_TILE(ptr, posY - 2, posX, 1);\n                SET_TILE(ptr, posY - 1, posX, 1);\n                SET_TILE(ptr, posY - 0, posX, 1);\n                SET_TILE(ptr, posY + 1, posX, 1);\n            }\n        }\n        sprite->x += speeds[sprite->sSide];\n        if (sprite->x < -15 || sprite->x > DISPLAY_WIDTH + 15)\n            FieldEffectStop(sprite, FLDEFF_POKEBALL_TRAIL);\n    }",
       "callsTo": [
         "ARRAY_COUNT",
@@ -717,6 +1051,12 @@
       "returnType": "void",
       "signature": "static void Task_ClockwiseWipe(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "while (sClockwiseWipe_Funcs[gTasks[taskId].tState](&gTasks[taskId]));",
       "callsTo": [],
       "lineCount": 1
@@ -725,6 +1065,12 @@
       "returnType": "bool8",
       "signature": "static bool8 ClockwiseWipe_Init(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u16 i;\n\n    InitTransitionData();\n    ScanlineEffect_Clear();\n\n    sTransitionData->WININ = 0;\n    sTransitionData->WINOUT = WINOUT_WIN01_ALL;\n    sTransitionData->WIN0H = WIN_RANGE(DISPLAY_WIDTH, DISPLAY_WIDTH + 1);\n    sTransitionData->WIN0V = DISPLAY_HEIGHT;\n\n    for (i = 0; i < DISPLAY_HEIGHT; i++)\n        gScanlineEffectRegBuffers[1][i] = ((DISPLAY_WIDTH + 3) << 8) | (DISPLAY_WIDTH + 4);\n\n    SetVBlankCallback(VBlankCB_ClockwiseWipe);\n    sTransitionData->tWipeEndX = DISPLAY_WIDTH / 2;\n\n    task->tState++;\n    return TRUE;",
       "callsTo": [
         "InitTransitionData",
@@ -738,6 +1084,12 @@
       "returnType": "bool8",
       "signature": "static bool8 ClockwiseWipe_TopRight(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "sTransitionData->VBlank_DMA = FALSE;\n\n#ifdef UBFIX\n    InitBlackWipe(sTransitionData->data, DISPLAY_WIDTH / 2, DISPLAY_HEIGHT / 2, sTransitionData->tWipeEndX, 0, 1, 1);\n#else\n    InitBlackWipe(sTransitionData->data, DISPLAY_WIDTH / 2, DISPLAY_HEIGHT / 2, sTransitionData->tWipeEndX, -1, 1, 1);\n#endif\n    do\n    {\n        gScanlineEffectRegBuffers[0][sTransitionData->tWipeCurrY] = (sTransitionData->tWipeCurrX + 1) | ((DISPLAY_WIDTH / 2) << 8);\n    } while (!UpdateBlackWipe(sTransitionData->data, TRUE, TRUE));\n\n    sTransitionData->tWipeEndX += 16;\n    if (sTransitionData->tWipeEndX >= DISPLAY_WIDTH)\n    {\n        sTransitionData->tWipeEndY = 0;\n        task->tState++;\n    }\n\n    sTransitionData->VBlank_DMA++;\n    return FALSE;",
       "callsTo": [
         "InitBlackWipe",
@@ -749,6 +1101,12 @@
       "returnType": "bool8",
       "signature": "static bool8 ClockwiseWipe_Right(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "s16 start, end;\n    vu8 finished = FALSE;\n\n    sTransitionData->VBlank_DMA = FALSE;\n\n    InitBlackWipe(sTransitionData->data, DISPLAY_WIDTH / 2, DISPLAY_HEIGHT / 2, DISPLAY_WIDTH, sTransitionData->tWipeEndY, 1, 1);\n\n    while (1)\n    {\n        start = DISPLAY_WIDTH / 2, end = sTransitionData->tWipeCurrX + 1;\n        if (sTransitionData->tWipeEndY >= DISPLAY_HEIGHT / 2)\n            start = sTransitionData->tWipeCurrX, end = DISPLAY_WIDTH;\n        gScanlineEffectRegBuffers[0][sTransitionData->tWipeCurrY] = end | (start << 8);\n        if (finished)\n            break;\n        finished = UpdateBlackWipe(sTransitionData->data, TRUE, TRUE);\n    }\n\n    sTransitionData->tWipeEndY += 8;\n    if (sTransitionData->tWipeEndY >= DISPLAY_HEIGHT)\n    {\n        sTransitionData->tWipeEndX = DISPLAY_WIDTH;\n        task->tState++;\n    }\n    else\n    {\n        while (sTransitionData->tWipeCurrY < sTransitionData->tWipeEndY)\n            gScanlineEffectRegBuffers[0][++sTransitionData->tWipeCurrY] = end | (start << 8);\n    }\n\n    sTransitionData->VBlank_DMA++;\n    return FALSE;",
       "callsTo": [
         "InitBlackWipe",
@@ -760,6 +1118,12 @@
       "returnType": "bool8",
       "signature": "static bool8 ClockwiseWipe_Bottom(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "sTransitionData->VBlank_DMA = FALSE;\n\n    InitBlackWipe(sTransitionData->data, DISPLAY_WIDTH / 2, DISPLAY_HEIGHT / 2, sTransitionData->tWipeEndX, DISPLAY_HEIGHT, 1, 1);\n    do\n    {\n        gScanlineEffectRegBuffers[0][sTransitionData->tWipeCurrY] = (sTransitionData->tWipeCurrX << 8) | DISPLAY_WIDTH;\n    } while (!UpdateBlackWipe(sTransitionData->data, TRUE, TRUE));\n\n    sTransitionData->tWipeEndX -= 16;\n    if (sTransitionData->tWipeEndX <= 0)\n    {\n        sTransitionData->tWipeEndY = DISPLAY_HEIGHT;\n        task->tState++;\n    }\n\n    sTransitionData->VBlank_DMA++;\n    return FALSE;",
       "callsTo": [
         "InitBlackWipe",
@@ -771,6 +1135,12 @@
       "returnType": "bool8",
       "signature": "static bool8 ClockwiseWipe_Left(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "s16 end, start, temp;\n    vu8 finished = FALSE;\n\n    sTransitionData->VBlank_DMA = FALSE;\n\n    InitBlackWipe(sTransitionData->data, DISPLAY_WIDTH / 2, DISPLAY_HEIGHT / 2, 0, sTransitionData->tWipeEndY, 1, 1);\n\n    while (1)\n    {\n        end = (gScanlineEffectRegBuffers[0][sTransitionData->tWipeCurrY]) & 0xFF;\n        start = sTransitionData->tWipeCurrX;\n        if (sTransitionData->tWipeEndY <= DISPLAY_HEIGHT / 2)\n            start = DISPLAY_WIDTH / 2, end = sTransitionData->tWipeCurrX;\n        temp = end | (start << 8);\n        gScanlineEffectRegBuffers[0][sTransitionData->tWipeCurrY] = temp;\n        if (finished)\n            break;\n        finished = UpdateBlackWipe(sTransitionData->data, TRUE, TRUE);\n    }\n\n    sTransitionData->tWipeEndY -= 8;\n    if (sTransitionData->tWipeEndY <= 0)\n    {\n        sTransitionData->tWipeEndX = 0;\n        task->tState++;\n    }\n    else\n    {\n        while (sTransitionData->tWipeCurrY > sTransitionData->tWipeEndY)\n            gScanlineEffectRegBuffers[0][--sTransitionData->tWipeCurrY] = end | (start << 8);\n    }\n\n    sTransitionData->VBlank_DMA++;\n    return FALSE;",
       "callsTo": [
         "InitBlackWipe",
@@ -782,6 +1152,12 @@
       "returnType": "bool8",
       "signature": "static bool8 ClockwiseWipe_TopLeft(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "sTransitionData->VBlank_DMA = FALSE;\n\n    InitBlackWipe(sTransitionData->data, DISPLAY_WIDTH / 2, DISPLAY_HEIGHT / 2, sTransitionData->tWipeEndX, 0, 1, 1);\n    do\n    {\n        s16 start, end;\n        start = DISPLAY_WIDTH / 2, end = sTransitionData->tWipeCurrX;\n        if (sTransitionData->tWipeCurrX >= DISPLAY_WIDTH / 2)\n            start = 0, end = DISPLAY_WIDTH;\n        gScanlineEffectRegBuffers[0][sTransitionData->tWipeCurrY] = end | (start << 8);\n    } while (!UpdateBlackWipe(sTransitionData->data, TRUE, TRUE));\n\n    sTransitionData->tWipeEndX += 16;\n    if (sTransitionData->tWipeCurrX > DISPLAY_WIDTH / 2)\n        task->tState++;\n\n    sTransitionData->VBlank_DMA++;\n    return FALSE;",
       "callsTo": [
         "InitBlackWipe",
@@ -793,6 +1169,12 @@
       "returnType": "bool8",
       "signature": "static bool8 ClockwiseWipe_End(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "DmaStop(0);\n    FadeScreenBlack();\n    DestroyTask(FindTaskIdByFunc(Task_ClockwiseWipe));\n    return FALSE;",
       "callsTo": [
         "DestroyTask",
@@ -806,6 +1188,7 @@
       "returnType": "void",
       "signature": "static void VBlankCB_ClockwiseWipe(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "DmaStop(0);\n    VBlankCB_BattleTransition();\n    if (sTransitionData->VBlank_DMA != 0)\n        DmaCopy16(3, gScanlineEffectRegBuffers[0], gScanlineEffectRegBuffers[1], DISPLAY_HEIGHT * 2);\n    REG_WININ = sTransitionData->WININ;\n    REG_WINOUT = sTransitionData->WINOUT;\n    REG_WIN0V = sTransitionData->WIN0V;\n    REG_WIN0H = gScanlineEffectRegBuffers[1][0];\n    DmaSet(0, gScanlineEffectRegBuffers[1], &REG_WIN0H, B_TRANS_DMA_FLAGS);",
       "callsTo": [
         "DmaCopy16",
@@ -819,6 +1202,12 @@
       "returnType": "void",
       "signature": "static void Task_Ripple(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "while (sRipple_Funcs[gTasks[taskId].tState](&gTasks[taskId]));",
       "callsTo": [],
       "lineCount": 1
@@ -827,6 +1216,12 @@
       "returnType": "bool8",
       "signature": "static bool8 Ripple_Init(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u8 i;\n\n    InitTransitionData();\n    ScanlineEffect_Clear();\n\n    for (i = 0; i < DISPLAY_HEIGHT; i++)\n        gScanlineEffectRegBuffers[1][i] = sTransitionData->cameraY;\n\n    SetVBlankCallback(VBlankCB_Ripple);\n    SetHBlankCallback(HBlankCB_Ripple);\n\n    EnableInterrupts(INTR_FLAG_HBLANK);\n\n    task->tState++;\n    return TRUE;",
       "callsTo": [
         "EnableInterrupts",
@@ -841,6 +1236,12 @@
       "returnType": "bool8",
       "signature": "static bool8 Ripple_Main(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u8 i;\n    s16 amplitude;\n    u16 sinVal, speed;\n\n    sTransitionData->VBlank_DMA = FALSE;\n\n    amplitude = task->tAmplitudeVal >> 8;\n    sinVal = task->tSinVal;\n    speed = 0x180;\n    task->tSinVal += 0x400;\n    if (task->tAmplitudeVal <= 0x1FFF)\n        task->tAmplitudeVal += 0x180;\n\n    for (i = 0; i < DISPLAY_HEIGHT; i++, sinVal += speed)\n    {\n        s16 sinIndex = sinVal >> 8;\n        gScanlineEffectRegBuffers[0][i] = sTransitionData->cameraY + Sin(sinIndex & 0xffff, amplitude);\n    }\n\n    if (++task->tTimer == 81)\n    {\n        task->tFadeStarted++;\n        BeginNormalPaletteFade(PALETTES_ALL, -2, 0, 16, RGB_BLACK);\n    }\n\n    if (task->tFadeStarted && !gPaletteFade.active)\n        DestroyTask(FindTaskIdByFunc(Task_Ripple));\n\n    sTransitionData->VBlank_DMA++;\n    return FALSE;",
       "callsTo": [
         "BeginNormalPaletteFade",
@@ -854,6 +1255,7 @@
       "returnType": "void",
       "signature": "static void VBlankCB_Ripple(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "VBlankCB_BattleTransition();\n    if (sTransitionData->VBlank_DMA)\n        DmaCopy16(3, gScanlineEffectRegBuffers[0], gScanlineEffectRegBuffers[1], DISPLAY_HEIGHT * 2);",
       "callsTo": [
         "DmaCopy16",
@@ -865,6 +1267,7 @@
       "returnType": "void",
       "signature": "static void HBlankCB_Ripple(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 var = gScanlineEffectRegBuffers[1][REG_VCOUNT];\n    REG_BG1VOFS = var;\n    REG_BG2VOFS = var;\n    REG_BG3VOFS = var;",
       "callsTo": [],
       "lineCount": 4
@@ -873,6 +1276,12 @@
       "returnType": "void",
       "signature": "static void Task_Wave(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "while (sWave_Funcs[gTasks[taskId].tState](&gTasks[taskId]));",
       "callsTo": [],
       "lineCount": 1
@@ -881,6 +1290,12 @@
       "returnType": "bool8",
       "signature": "static bool8 Wave_Init(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u8 i;\n\n    InitTransitionData();\n    ScanlineEffect_Clear();\n\n    sTransitionData->WININ = WININ_WIN0_ALL;\n    sTransitionData->WINOUT = 0;\n    sTransitionData->WIN0H = DISPLAY_WIDTH;\n    sTransitionData->WIN0V = DISPLAY_HEIGHT;\n\n    for (i = 0; i < DISPLAY_HEIGHT; i++)\n        gScanlineEffectRegBuffers[1][i] = DISPLAY_WIDTH + 2;\n\n    SetVBlankCallback(VBlankCB_Wave);\n\n    task->tState++;\n    return TRUE;",
       "callsTo": [
         "InitTransitionData",
@@ -893,6 +1308,12 @@
       "returnType": "bool8",
       "signature": "static bool8 Wave_Main(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u8 i, sinIndex;\n    u16 *toStore;\n    bool8 finished;\n\n    sTransitionData->VBlank_DMA = FALSE;\n    toStore = gScanlineEffectRegBuffers[0];\n    sinIndex = task->tSinIndex;\n    task->tSinIndex += 16;\n    task->tX += 8;\n\n    for (i = 0, finished = TRUE; i < DISPLAY_HEIGHT; i++, sinIndex += 4, toStore++)\n    {\n        s16 x = task->tX + Sin(sinIndex, 40);\n        if (x < 0)\n            x = 0;\n        if (x > DISPLAY_WIDTH)\n            x = DISPLAY_WIDTH;\n        *toStore = (x << 8) | (DISPLAY_WIDTH + 1);\n        if (x < DISPLAY_WIDTH)\n            finished = FALSE;\n    }\n    if (finished)\n        task->tState++;\n\n    sTransitionData->VBlank_DMA++;\n    return FALSE;",
       "callsTo": [
         "Sin"
@@ -903,6 +1324,12 @@
       "returnType": "bool8",
       "signature": "static bool8 Wave_End(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "DmaStop(0);\n    FadeScreenBlack();\n    DestroyTask(FindTaskIdByFunc(Task_Wave));\n    return FALSE;",
       "callsTo": [
         "DestroyTask",
@@ -916,6 +1343,7 @@
       "returnType": "void",
       "signature": "static void VBlankCB_Wave(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "DmaStop(0);\n    VBlankCB_BattleTransition();\n    if (sTransitionData->VBlank_DMA != 0)\n        DmaCopy16(3, gScanlineEffectRegBuffers[0], gScanlineEffectRegBuffers[1], DISPLAY_HEIGHT * 2);\n    REG_WININ = sTransitionData->WININ;\n    REG_WINOUT = sTransitionData->WINOUT;\n    REG_WIN0V = sTransitionData->WIN0V;\n    DmaSet(0, gScanlineEffectRegBuffers[1], &REG_WIN0H, B_TRANS_DMA_FLAGS);",
       "callsTo": [
         "DmaCopy16",
@@ -929,6 +1357,12 @@
       "returnType": "void",
       "signature": "static void Task_Sidney(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "gTasks[taskId].tMugshotId = MUGSHOT_SIDNEY;\n    DoMugshotTransition(taskId);",
       "callsTo": [
         "DoMugshotTransition"
@@ -939,6 +1373,12 @@
       "returnType": "void",
       "signature": "static void Task_Phoebe(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "gTasks[taskId].tMugshotId = MUGSHOT_PHOEBE;\n    DoMugshotTransition(taskId);",
       "callsTo": [
         "DoMugshotTransition"
@@ -949,6 +1389,12 @@
       "returnType": "void",
       "signature": "static void Task_Glacia(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "gTasks[taskId].tMugshotId = MUGSHOT_GLACIA;\n    DoMugshotTransition(taskId);",
       "callsTo": [
         "DoMugshotTransition"
@@ -959,6 +1405,12 @@
       "returnType": "void",
       "signature": "static void Task_Drake(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "gTasks[taskId].tMugshotId = MUGSHOT_DRAKE;\n    DoMugshotTransition(taskId);",
       "callsTo": [
         "DoMugshotTransition"
@@ -969,6 +1421,12 @@
       "returnType": "void",
       "signature": "static void Task_Champion(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "gTasks[taskId].tMugshotId = MUGSHOT_CHAMPION;\n    DoMugshotTransition(taskId);",
       "callsTo": [
         "DoMugshotTransition"
@@ -979,6 +1437,12 @@
       "returnType": "void",
       "signature": "static void DoMugshotTransition(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "while (sMugshot_Funcs[gTasks[taskId].tState](&gTasks[taskId]));",
       "callsTo": [],
       "lineCount": 1
@@ -987,6 +1451,12 @@
       "returnType": "bool8",
       "signature": "static bool8 Mugshot_Init(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u8 i;\n\n    InitTransitionData();\n    ScanlineEffect_Clear();\n    Mugshots_CreateTrainerPics(task);\n\n    task->tSinIndex = 0;\n    task->tTopBannerX = 1;\n    task->tBottomBannerX = DISPLAY_WIDTH - 1;\n    sTransitionData->WININ = WININ_WIN0_ALL;\n    sTransitionData->WINOUT = WINOUT_WIN01_BG1 | WINOUT_WIN01_BG2 | WINOUT_WIN01_BG3 | WINOUT_WIN01_OBJ | WINOUT_WIN01_CLR;\n    sTransitionData->WIN0V = DISPLAY_HEIGHT;\n\n    for (i = 0; i < DISPLAY_HEIGHT; i++)\n        gScanlineEffectRegBuffers[1][i] = (DISPLAY_WIDTH << 8) | (DISPLAY_WIDTH + 1);\n\n    SetVBlankCallback(VBlankCB_Mugshots);\n\n    task->tState++;\n    return FALSE;",
       "callsTo": [
         "InitTransitionData",
@@ -1000,6 +1470,12 @@
       "returnType": "bool8",
       "signature": "static bool8 Mugshot_SetGfx(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "s16 i, j;\n    u16 *tilemap, *tileset;\n    const u16 *mugshotsMap;\n\n    mugshotsMap = sMugshotsTilemap;\n    GetBg0TilesDst(&tilemap, &tileset);\n    CpuSet(sEliteFour_Tileset, tileset, 0xF0);\n    LoadPalette(sOpponentMugshotsPals[task->tMugshotId], BG_PLTT_ID(15), PLTT_SIZE_4BPP);\n    LoadPalette(sPlayerMugshotsPals[gSaveBlock2Ptr->playerGender], BG_PLTT_ID(15) + 10, PLTT_SIZEOF(6));\n\n    for (i = 0; i < 20; i++)\n    {\n        for (j = 0; j < 32; j++, mugshotsMap++)\n            SET_TILE(tilemap, i, j, *mugshotsMap);\n    }\n\n    EnableInterrupts(INTR_FLAG_HBLANK);\n\n    SetHBlankCallback(HBlankCB_Mugshots);\n    task->tState++;\n    return FALSE;",
       "callsTo": [
         "BG_PLTT_ID",
@@ -1017,6 +1493,12 @@
       "returnType": "bool8",
       "signature": "static bool8 Mugshot_ShowBanner(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u8 i, sinIndex;\n    u16 *toStore;\n    s16 x;\n    s32 mergedValue;\n\n    sTransitionData->VBlank_DMA = FALSE;\n\n    toStore = gScanlineEffectRegBuffers[0];\n    sinIndex = task->tSinIndex;\n    task->tSinIndex += 16;\n\n     \n    for (i = 0; i < DISPLAY_HEIGHT / 2; i++, toStore++, sinIndex += 16)\n    {\n        x = task->tTopBannerX + Sin(sinIndex, 16);\n        if (x < 0)\n            x = 1;\n        if (x > DISPLAY_WIDTH)\n            x = DISPLAY_WIDTH;\n        *toStore = x;\n    }\n\n     \n    for (; i < DISPLAY_HEIGHT; i++, toStore++, sinIndex += 16)\n    {\n        x = task->tBottomBannerX - Sin(sinIndex, 16);\n        if (x < 0)\n            x = 0;\n        if (x > DISPLAY_WIDTH - 1)\n            x = DISPLAY_WIDTH - 1;\n        *toStore = (x << 8) | DISPLAY_WIDTH;\n    }\n\n     \n    task->tTopBannerX += 8;\n    task->tBottomBannerX -= 8;\n\n    if (task->tTopBannerX > DISPLAY_WIDTH)\n        task->tTopBannerX = DISPLAY_WIDTH;\n    if (task->tBottomBannerX < 0)\n        task->tBottomBannerX = 0;\n\n    mergedValue = *(s32 *)(&task->tTopBannerX);\n    if (mergedValue == DISPLAY_WIDTH)\n        task->tState++;\n\n    sTransitionData->BG0HOFS_Lower -= 8;\n    sTransitionData->BG0HOFS_Upper += 8;\n    sTransitionData->VBlank_DMA++;\n    return FALSE;",
       "callsTo": [
         "Sin"
@@ -1027,6 +1509,12 @@
       "returnType": "bool8",
       "signature": "static bool8 Mugshot_StartOpponentSlide(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u8 i;\n    u16 *toStore;\n\n    sTransitionData->VBlank_DMA = FALSE;\n\n    for (i = 0, toStore = gScanlineEffectRegBuffers[0]; i < DISPLAY_HEIGHT; i++, toStore++)\n        *toStore = DISPLAY_WIDTH;\n\n    task->tState++;\n\n     \n    task->tSinIndex = 0;\n    task->tTopBannerX = 0;\n    task->tBottomBannerX = 0;\n\n    sTransitionData->BG0HOFS_Lower -= 8;\n    sTransitionData->BG0HOFS_Upper += 8;\n\n    SetTrainerPicSlideDirection(task->tOpponentSpriteId, 0);\n    SetTrainerPicSlideDirection(task->tPlayerSpriteId, 1);\n\n     \n    IncrementTrainerPicState(task->tOpponentSpriteId);\n\n    PlaySE(SE_MUGSHOT);\n\n    sTransitionData->VBlank_DMA++;\n    return FALSE;",
       "callsTo": [
         "IncrementTrainerPicState",
@@ -1039,6 +1527,12 @@
       "returnType": "bool8",
       "signature": "static bool8 Mugshot_WaitStartPlayerSlide(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "sTransitionData->BG0HOFS_Lower -= 8;\n    sTransitionData->BG0HOFS_Upper += 8;\n\n     \n    if (IsTrainerPicSlideDone(task->tOpponentSpriteId))\n    {\n        task->tState++;\n        IncrementTrainerPicState(task->tPlayerSpriteId);\n    }\n    return FALSE;",
       "callsTo": [
         "IncrementTrainerPicState",
@@ -1050,6 +1544,12 @@
       "returnType": "bool8",
       "signature": "static bool8 Mugshot_WaitPlayerSlide(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "sTransitionData->BG0HOFS_Lower -= 8;\n    sTransitionData->BG0HOFS_Upper += 8;\n\n    if (IsTrainerPicSlideDone(task->tPlayerSpriteId))\n    {\n        sTransitionData->VBlank_DMA = FALSE;\n        SetVBlankCallback(NULL);\n        DmaStop(0);\n        memset(gScanlineEffectRegBuffers[0], 0, DISPLAY_HEIGHT * 2);\n        memset(gScanlineEffectRegBuffers[1], 0, DISPLAY_HEIGHT * 2);\n        SetGpuReg(REG_OFFSET_WIN0H, DISPLAY_WIDTH);\n        SetGpuReg(REG_OFFSET_BLDY, 0);\n        task->tState++;\n        task->tTimer = 0;\n        task->tFadeSpread = 0;\n        sTransitionData->BLDCNT = BLDCNT_TGT1_ALL | BLDCNT_EFFECT_LIGHTEN;\n        SetVBlankCallback(VBlankCB_MugshotsFadeOut);\n    }\n    return FALSE;",
       "callsTo": [
         "DmaStop",
@@ -1063,6 +1563,12 @@
       "returnType": "bool8",
       "signature": "static bool8 Mugshot_GradualWhiteFade(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "bool32 active;\n\n    sTransitionData->VBlank_DMA = FALSE;\n    active = TRUE;\n    sTransitionData->BG0HOFS_Lower -= 8;\n    sTransitionData->BG0HOFS_Upper += 8;\n\n    if (task->tFadeSpread < DISPLAY_HEIGHT / 2)\n        task->tFadeSpread += 2;\n    if (task->tFadeSpread > DISPLAY_HEIGHT / 2)\n        task->tFadeSpread = DISPLAY_HEIGHT / 2;\n\n    if (++task->tTimer & 1)\n    {\n        s16 i;\n        for (i = 0, active = FALSE; i <= task->tFadeSpread; i++)\n        {\n             \n             \n            s16 index1 = DISPLAY_HEIGHT / 2 - i;\n            s16 index2 = DISPLAY_HEIGHT / 2 + i;\n            if (gScanlineEffectRegBuffers[0][index1] <= 15)\n            {\n                active = TRUE;\n                gScanlineEffectRegBuffers[0][index1]++;\n            }\n            if (gScanlineEffectRegBuffers[0][index2] <= 15)\n            {\n                active = TRUE;\n                gScanlineEffectRegBuffers[0][index2]++;\n            }\n        }\n    }\n\n    if (task->tFadeSpread == DISPLAY_HEIGHT / 2 && !active)\n        task->tState++;\n\n    sTransitionData->VBlank_DMA++;\n    return FALSE;",
       "callsTo": [],
       "lineCount": 39
@@ -1071,6 +1577,12 @@
       "returnType": "bool8",
       "signature": "static bool8 Mugshot_InitFadeWhiteToBlack(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "sTransitionData->VBlank_DMA = FALSE;\n    BlendPalettes(PALETTES_ALL, 16, RGB_WHITE);\n    sTransitionData->BLDCNT = 0xFF;\n    task->tTimer = 0;\n\n    task->tState++;\n    return TRUE;",
       "callsTo": [
         "BlendPalettes"
@@ -1081,6 +1593,12 @@
       "returnType": "bool8",
       "signature": "static bool8 Mugshot_FadeToBlack(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "sTransitionData->VBlank_DMA = FALSE;\n\n    task->tTimer++;\n    memset(gScanlineEffectRegBuffers[0], task->tTimer, DISPLAY_HEIGHT * 2);\n    if (task->tTimer > 15)\n        task->tState++;\n\n    sTransitionData->VBlank_DMA++;\n    return FALSE;",
       "callsTo": [],
       "lineCount": 9
@@ -1089,6 +1607,12 @@
       "returnType": "bool8",
       "signature": "static bool8 Mugshot_End(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "DmaStop(0);\n    FadeScreenBlack();\n    DestroyTask(FindTaskIdByFunc(task->func));\n    return FALSE;",
       "callsTo": [
         "DestroyTask",
@@ -1102,6 +1626,7 @@
       "returnType": "void",
       "signature": "static void VBlankCB_Mugshots(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "DmaStop(0);\n    VBlankCB_BattleTransition();\n    if (sTransitionData->VBlank_DMA != 0)\n        DmaCopy16(3, gScanlineEffectRegBuffers[0], gScanlineEffectRegBuffers[1], DISPLAY_HEIGHT * 2);\n    REG_BG0VOFS = sTransitionData->BG0VOFS;\n    REG_WININ = sTransitionData->WININ;\n    REG_WINOUT = sTransitionData->WINOUT;\n    REG_WIN0V = sTransitionData->WIN0V;\n    DmaSet(0, gScanlineEffectRegBuffers[1], &REG_WIN0H, B_TRANS_DMA_FLAGS);",
       "callsTo": [
         "DmaCopy16",
@@ -1115,6 +1640,7 @@
       "returnType": "void",
       "signature": "static void VBlankCB_MugshotsFadeOut(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "DmaStop(0);\n    VBlankCB_BattleTransition();\n    if (sTransitionData->VBlank_DMA != 0)\n        DmaCopy16(3, gScanlineEffectRegBuffers[0], gScanlineEffectRegBuffers[1], DISPLAY_HEIGHT * 2);\n    REG_BLDCNT = sTransitionData->BLDCNT;\n    DmaSet(0, gScanlineEffectRegBuffers[1], &REG_BLDY, B_TRANS_DMA_FLAGS);",
       "callsTo": [
         "DmaCopy16",
@@ -1128,6 +1654,7 @@
       "returnType": "void",
       "signature": "static void HBlankCB_Mugshots(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (REG_VCOUNT < DISPLAY_HEIGHT / 2)\n        REG_BG0HOFS = sTransitionData->BG0HOFS_Lower;\n    else\n        REG_BG0HOFS = sTransitionData->BG0HOFS_Upper;",
       "callsTo": [],
       "lineCount": 4
@@ -1136,6 +1663,12 @@
       "returnType": "void",
       "signature": "static void Mugshots_CreateTrainerPics(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "struct Sprite *opponentSprite, *playerSprite;\n\n    s16 mugshotId = task->tMugshotId;\n    task->tOpponentSpriteId = CreateTrainerSprite(sMugshotsTrainerPicIDsTable[mugshotId],\n                                                  sMugshotsOpponentCoords[mugshotId][0] - 32,\n                                                  sMugshotsOpponentCoords[mugshotId][1] + 42,\n                                                  0, gDecompressionBuffer);\n    task->tPlayerSpriteId = CreateTrainerSprite(PlayerGenderToFrontTrainerPicId(gSaveBlock2Ptr->playerGender),\n                                                DISPLAY_WIDTH + 32,\n                                                106,\n                                                0, gDecompressionBuffer);\n\n    opponentSprite = &gSprites[task->tOpponentSpriteId];\n    playerSprite = &gSprites[task->tPlayerSpriteId];\n\n    opponentSprite->callback = SpriteCB_MugshotTrainerPic;\n    playerSprite->callback = SpriteCB_MugshotTrainerPic;\n\n    opponentSprite->oam.affineMode = ST_OAM_AFFINE_DOUBLE;\n    playerSprite->oam.affineMode = ST_OAM_AFFINE_DOUBLE;\n\n    opponentSprite->oam.matrixNum = AllocOamMatrix();\n    playerSprite->oam.matrixNum = AllocOamMatrix();\n\n    opponentSprite->oam.shape = SPRITE_SHAPE(64x32);\n    playerSprite->oam.shape = SPRITE_SHAPE(64x32);\n\n    opponentSprite->oam.size = SPRITE_SIZE(64x32);\n    playerSprite->oam.size = SPRITE_SIZE(64x32);\n\n    CalcCenterToCornerVec(opponentSprite, SPRITE_SHAPE(64x32), SPRITE_SIZE(64x32), ST_OAM_AFFINE_DOUBLE);\n    CalcCenterToCornerVec(playerSprite, SPRITE_SHAPE(64x32), SPRITE_SIZE(64x32), ST_OAM_AFFINE_DOUBLE);\n\n    SetOamMatrixRotationScaling(opponentSprite->oam.matrixNum, sMugshotsOpponentRotationScales[mugshotId][0], sMugshotsOpponentRotationScales[mugshotId][1], 0);\n    SetOamMatrixRotationScaling(playerSprite->oam.matrixNum, -512, 512, 0);",
       "callsTo": [
         "AllocOamMatrix",
@@ -1152,6 +1685,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_MugshotTrainerPic(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "while (sMugshotTrainerPicFuncs[sprite->sState](sprite));",
       "callsTo": [],
       "lineCount": 1
@@ -1160,6 +1699,12 @@
       "returnType": "bool8",
       "signature": "static bool8 MugshotTrainerPic_Pause(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "return FALSE;",
       "callsTo": [],
       "lineCount": 1
@@ -1168,6 +1713,12 @@
       "returnType": "bool8",
       "signature": "static bool8 MugshotTrainerPic_Init(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "s16 speeds[ARRAY_COUNT(sTrainerPicSlideSpeeds)];\n    s16 accels[ARRAY_COUNT(sTrainerPicSlideAccels)];\n\n    memcpy(speeds, sTrainerPicSlideSpeeds, sizeof(sTrainerPicSlideSpeeds));\n    memcpy(accels, sTrainerPicSlideAccels, sizeof(sTrainerPicSlideAccels));\n\n    sprite->sState++;\n    sprite->sSlideSpeed = speeds[sprite->sSlideDir];\n    sprite->sSlideAccel = accels[sprite->sSlideDir];\n    return TRUE;",
       "callsTo": [
         "ARRAY_COUNT"
@@ -1178,6 +1729,12 @@
       "returnType": "bool8",
       "signature": "static bool8 MugshotTrainerPic_Slide(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "sprite->x += sprite->sSlideSpeed;\n\n     \n    if (sprite->sSlideDir && sprite->x < DISPLAY_WIDTH - 107)\n        sprite->sState++;\n    else if (!sprite->sSlideDir && sprite->x > 103)\n        sprite->sState++;\n    return FALSE;",
       "callsTo": [],
       "lineCount": 8
@@ -1186,6 +1743,12 @@
       "returnType": "bool8",
       "signature": "static bool8 MugshotTrainerPic_SlideSlow(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "sprite->sSlideSpeed += sprite->sSlideAccel;\n    sprite->x += sprite->sSlideSpeed;\n\n     \n    if (sprite->sSlideSpeed == 0)\n    {\n        sprite->sState++;\n        sprite->sSlideAccel = -sprite->sSlideAccel;\n        sprite->sDone = TRUE;\n    }\n    return FALSE;",
       "callsTo": [],
       "lineCount": 11
@@ -1194,6 +1757,12 @@
       "returnType": "bool8",
       "signature": "static bool8 MugshotTrainerPic_SlideOffscreen(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "sprite->sSlideSpeed += sprite->sSlideAccel;\n    sprite->x += sprite->sSlideSpeed;\n    if (sprite->x < -31 || sprite->x > DISPLAY_WIDTH + 31)\n        sprite->sState++;\n    return FALSE;",
       "callsTo": [],
       "lineCount": 5
@@ -1202,6 +1771,16 @@
       "returnType": "void",
       "signature": "static void SetTrainerPicSlideDirection(s16 spriteId, s16 dirId)",
       "paramsRaw": "s16 spriteId, s16 dirId",
+      "paramsList": [
+        {
+          "name": "spriteId",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "dirId",
+          "typeRaw": "s16"
+        }
+      ],
       "body": "gSprites[spriteId].sSlideDir = dirId;",
       "callsTo": [],
       "lineCount": 1
@@ -1210,6 +1789,12 @@
       "returnType": "void",
       "signature": "static void IncrementTrainerPicState(s16 spriteId)",
       "paramsRaw": "s16 spriteId",
+      "paramsList": [
+        {
+          "name": "spriteId",
+          "typeRaw": "s16"
+        }
+      ],
       "body": "gSprites[spriteId].sState++;",
       "callsTo": [],
       "lineCount": 1
@@ -1218,6 +1803,12 @@
       "returnType": "s16",
       "signature": "static s16 IsTrainerPicSlideDone(s16 spriteId)",
       "paramsRaw": "s16 spriteId",
+      "paramsList": [
+        {
+          "name": "spriteId",
+          "typeRaw": "s16"
+        }
+      ],
       "body": "return gSprites[spriteId].sDone;",
       "callsTo": [],
       "lineCount": 1
@@ -1226,6 +1817,12 @@
       "returnType": "void",
       "signature": "static void Task_Slice(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "while (sSlice_Funcs[gTasks[taskId].tState](&gTasks[taskId]));",
       "callsTo": [],
       "lineCount": 1
@@ -1234,6 +1831,12 @@
       "returnType": "bool8",
       "signature": "static bool8 Slice_Init(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u16 i;\n\n    InitTransitionData();\n    ScanlineEffect_Clear();\n\n    task->tSpeed = 1 << 8;\n    task->tAccel = 1;\n    sTransitionData->WININ = WININ_WIN0_ALL;\n    sTransitionData->WINOUT = 0;\n    sTransitionData->WIN0V = DISPLAY_HEIGHT;\n    sTransitionData->VBlank_DMA = FALSE;\n\n    for (i = 0; i < DISPLAY_HEIGHT; i++)\n    {\n        gScanlineEffectRegBuffers[1][i] = sTransitionData->cameraX;\n        gScanlineEffectRegBuffers[1][DISPLAY_HEIGHT + i] = DISPLAY_WIDTH;\n    }\n\n    EnableInterrupts(INTR_FLAG_HBLANK);\n    SetGpuRegBits(REG_OFFSET_DISPSTAT, DISPSTAT_HBLANK_INTR);\n\n    SetVBlankCallback(VBlankCB_Slice);\n    SetHBlankCallback(HBlankCB_Slice);\n\n    task->tState++;\n    return TRUE;",
       "callsTo": [
         "EnableInterrupts",
@@ -1249,6 +1852,12 @@
       "returnType": "bool8",
       "signature": "static bool8 Slice_Main(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u16 i;\n\n    sTransitionData->VBlank_DMA = FALSE;\n\n    task->tEffectX += (task->tSpeed >> 8);\n    if (task->tEffectX > DISPLAY_WIDTH)\n        task->tEffectX = DISPLAY_WIDTH;\n    if (task->tSpeed <= 0xFFF)\n        task->tSpeed += task->tAccel;\n    if (task->tAccel < 128)\n        task->tAccel <<= 1;  \n\n    for (i = 0; i < DISPLAY_HEIGHT; i++)\n    {\n        u16 *storeLoc1 = &gScanlineEffectRegBuffers[0][i];\n        u16 *storeLoc2 = &gScanlineEffectRegBuffers[0][i + DISPLAY_HEIGHT];\n\n         \n        if (i % 2)\n        {\n            *storeLoc1 = sTransitionData->cameraX + task->tEffectX;\n            *storeLoc2 = DISPLAY_WIDTH - task->tEffectX;\n        }\n        else\n        {\n            *storeLoc1 = sTransitionData->cameraX - task->tEffectX;\n            *storeLoc2 = (task->tEffectX << 8) | (DISPLAY_WIDTH + 1);\n        }\n    }\n\n    if (task->tEffectX >= DISPLAY_WIDTH)\n        task->tState++;\n\n    sTransitionData->VBlank_DMA++;\n    return FALSE;",
       "callsTo": [],
       "lineCount": 35
@@ -1257,6 +1866,12 @@
       "returnType": "bool8",
       "signature": "static bool8 Slice_End(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "DmaStop(0);\n    FadeScreenBlack();\n    DestroyTask(FindTaskIdByFunc(Task_Slice));\n    return FALSE;",
       "callsTo": [
         "DestroyTask",
@@ -1270,6 +1885,7 @@
       "returnType": "void",
       "signature": "static void VBlankCB_Slice(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "DmaStop(0);\n    VBlankCB_BattleTransition();\n    REG_WININ = sTransitionData->WININ;\n    REG_WINOUT = sTransitionData->WINOUT;\n    REG_WIN0V = sTransitionData->WIN0V;\n    if (sTransitionData->VBlank_DMA)\n        DmaCopy16(3, gScanlineEffectRegBuffers[0], gScanlineEffectRegBuffers[1], DISPLAY_HEIGHT * 4);\n    DmaSet(0, &gScanlineEffectRegBuffers[1][DISPLAY_HEIGHT], &REG_WIN0H, B_TRANS_DMA_FLAGS);",
       "callsTo": [
         "DmaCopy16",
@@ -1283,6 +1899,7 @@
       "returnType": "void",
       "signature": "static void HBlankCB_Slice(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (REG_VCOUNT < DISPLAY_HEIGHT)\n    {\n        u16 var = gScanlineEffectRegBuffers[1][REG_VCOUNT];\n        REG_BG1HOFS = var;\n        REG_BG2HOFS = var;\n        REG_BG3HOFS = var;\n    }",
       "callsTo": [],
       "lineCount": 7
@@ -1291,6 +1908,12 @@
       "returnType": "void",
       "signature": "static void Task_ShredSplit(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "while (sShredSplit_Funcs[gTasks[taskId].tState](&gTasks[taskId]));",
       "callsTo": [],
       "lineCount": 1
@@ -1299,6 +1922,12 @@
       "returnType": "bool8",
       "signature": "static bool8 ShredSplit_Init(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u16 i;\n\n    InitTransitionData();\n    ScanlineEffect_Clear();\n\n    sTransitionData->WININ = WININ_WIN0_ALL;\n    sTransitionData->WINOUT = 0;\n    sTransitionData->WIN0V = DISPLAY_HEIGHT;\n\n    for (i = 0; i < DISPLAY_HEIGHT; i++)\n    {\n        gScanlineEffectRegBuffers[1][i] = sTransitionData->cameraX;\n        gScanlineEffectRegBuffers[1][DISPLAY_HEIGHT + i] = DISPLAY_WIDTH;\n        gScanlineEffectRegBuffers[0][i] = sTransitionData->cameraX;\n        gScanlineEffectRegBuffers[0][DISPLAY_HEIGHT + i] = DISPLAY_WIDTH;\n        gScanlineEffectRegBuffers[0][DISPLAY_HEIGHT * 2 + i] = 0;\n        gScanlineEffectRegBuffers[0][DISPLAY_HEIGHT * 3 + i] = 256;\n        gScanlineEffectRegBuffers[0][DISPLAY_HEIGHT * 4 + i] = 1;\n    }\n\n    task->tDelayTimer = 0;\n    task->tExtent = 0;\n    task->tDelay = 7;\n\n    EnableInterrupts(INTR_FLAG_HBLANK);\n\n    SetVBlankCallback(VBlankCB_Slice);\n    SetHBlankCallback(HBlankCB_Slice);\n\n    task->tState++;\n    return TRUE;",
       "callsTo": [
         "EnableInterrupts",
@@ -1313,6 +1942,12 @@
       "returnType": "bool8",
       "signature": "static bool8 ShredSplit_Main(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u16 i, j, k;\n    u8 baseY[ARRAY_COUNT(sShredSplit_SectionYCoords)];\n    s16 moveDirs[ARRAY_COUNT(sShredSplit_SectionMoveDirs)];\n    u8 linesFinished;\n    u16 *ptr4, *ptr3, *ptr1, *ptr2;\n    s16 y;\n\n    memcpy(baseY, sShredSplit_SectionYCoords, sizeof(baseY));\n    memcpy(moveDirs, sShredSplit_SectionMoveDirs, sizeof(moveDirs));\n\n    sTransitionData->VBlank_DMA = FALSE;\n    linesFinished = 0;\n\n    for (i = 0; i <= task->tExtent; i++)\n    {\n         \n        for (j = 0; j < 2; j++)\n        {\n            for (k = 0; k < 2; k++)\n            {\n                y = baseY[j] + (moveDirs[k] * -i * 2);\n                if (y >= 0 && (y != DISPLAY_HEIGHT / 2 - 1 || j != 1))\n                {\n                    ptr4 = &gScanlineEffectRegBuffers[0][y + DISPLAY_HEIGHT * 2];\n                    ptr3 = &gScanlineEffectRegBuffers[0][y + DISPLAY_HEIGHT * 3];\n                    ptr1 = &gScanlineEffectRegBuffers[0][y + DISPLAY_HEIGHT * 4];\n                    if (*ptr4 >= DISPLAY_WIDTH)\n                    {\n                        *ptr4 = DISPLAY_WIDTH;\n                        linesFinished++;\n                    }\n                    else\n                    {\n                        *ptr4 += (*ptr3 >> 8);\n                        if (*ptr1 <= 0x7F)\n                            *ptr1 *= 2;\n                        if (*ptr3 <= 0xFFF)\n                            *ptr3 += *ptr1;\n                    }\n                    ptr2 = &gScanlineEffectRegBuffers[0][y];\n                    ptr3 = &gScanlineEffectRegBuffers[0][y + DISPLAY_HEIGHT];\n                    *ptr2 = sTransitionData->cameraX + *ptr4;\n                    *ptr3 = DISPLAY_WIDTH - *ptr4;\n\n                    if (i == 0)\n                        break;\n                }\n            }\n        }\n\n         \n        for (j = 0; j < 2; j++)\n        {\n            for (k = 0; k < 2; k++)\n            {\n                y = baseY[j] + 1 + (moveDirs[k] * -i * 2);\n                if (y <= DISPLAY_HEIGHT && (y != DISPLAY_HEIGHT / 2 || j != 1))\n                {\n                    ptr4 = &gScanlineEffectRegBuffers[0][y + DISPLAY_HEIGHT * 2];\n                    ptr3 = &gScanlineEffectRegBuffers[0][y + DISPLAY_HEIGHT * 3];\n                    ptr1 = &gScanlineEffectRegBuffers[0][y + DISPLAY_HEIGHT * 4];\n                    if (*ptr4 >= DISPLAY_WIDTH)\n                    {\n                        *ptr4 = DISPLAY_WIDTH;\n                        linesFinished++;\n                    }\n                    else\n                    {\n                        *ptr4 += (*ptr3 >> 8);\n                        if (*ptr1 <= 0x7F)\n                            *ptr1 *= 2;\n                        if (*ptr3 <= 0xFFF)\n                            *ptr3 += *ptr1;\n                    }\n                    ptr2 = &gScanlineEffectRegBuffers[0][y];\n                    ptr3 = &gScanlineEffectRegBuffers[0][y + DISPLAY_HEIGHT];\n                    *ptr2 = sTransitionData->cameraX - *ptr4;\n                    *ptr3 = (*ptr4 << 8) | (DISPLAY_WIDTH + 1);\n\n                    if (i == 0)\n                        break;\n                }\n            }\n        }\n    }\n\n     \n    if (--task->tDelayTimer < 0)\n        task->tDelayTimer = 0;\n\n     \n    if (task->tDelayTimer <= 0 && task->tExtent + 1 <= DISPLAY_HEIGHT / 8)\n    {\n        task->tDelayTimer = task->tDelay;\n        task->tExtent++;\n    }\n\n     \n    if (linesFinished >= DISPLAY_HEIGHT)\n        task->tState++;\n\n    sTransitionData->VBlank_DMA++;\n    return FALSE;",
       "callsTo": [
         "ARRAY_COUNT"
@@ -1323,6 +1958,12 @@
       "returnType": "bool8",
       "signature": "static bool8 ShredSplit_BrokenCheck(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u16 i;\n    bool32 done = TRUE;\n    u16 checkVar2 = 0xFF10;\n\n    for (i = 0; i < DISPLAY_HEIGHT; i++)\n    {\n        if (gScanlineEffectRegBuffers[1][i] != DISPLAY_WIDTH && gScanlineEffectRegBuffers[1][i] != checkVar2)\n            done = FALSE;\n    }\n\n    if (done == TRUE)\n        task->tState++;\n\n    return FALSE;",
       "callsTo": [],
       "lineCount": 14
@@ -1331,6 +1972,12 @@
       "returnType": "bool8",
       "signature": "static bool8 ShredSplit_End(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "DmaStop(0);\n    FadeScreenBlack();\n    DestroyTask(FindTaskIdByFunc(Task_ShredSplit));\n    return FALSE;",
       "callsTo": [
         "DestroyTask",
@@ -1344,6 +1991,12 @@
       "returnType": "void",
       "signature": "static void Task_Blackhole(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "while (sBlackhole_Funcs[gTasks[taskId].tState](&gTasks[taskId]));",
       "callsTo": [],
       "lineCount": 1
@@ -1352,6 +2005,12 @@
       "returnType": "void",
       "signature": "static void Task_BlackholePulsate(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "while (sBlackholePulsate_Funcs[gTasks[taskId].tState](&gTasks[taskId]));",
       "callsTo": [],
       "lineCount": 1
@@ -1360,6 +2019,12 @@
       "returnType": "bool8",
       "signature": "static bool8 Blackhole_Init(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "s32 i;\n\n    InitTransitionData();\n    ScanlineEffect_Clear();\n\n    sTransitionData->WININ = 0;\n    sTransitionData->WINOUT = WINOUT_WIN01_ALL;\n    sTransitionData->WIN0H = DISPLAY_WIDTH;\n    sTransitionData->WIN0V = DISPLAY_HEIGHT;\n\n    for (i = 0; i < DISPLAY_HEIGHT; i++)\n        gScanlineEffectRegBuffers[1][i] = 0;\n\n    SetVBlankCallback(VBlankCB_CircularMask);\n\n    task->tState++;\n    task->tRadius = 1;\n    task->tGrowSpeed = 1 << 8;\n    task->tFlag = FALSE;\n\n    return FALSE;",
       "callsTo": [
         "InitTransitionData",
@@ -1372,6 +2037,12 @@
       "returnType": "bool8",
       "signature": "static bool8 Blackhole_GrowEnd(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (task->tFlag == TRUE)\n    {\n        DmaStop(0);\n        SetVBlankCallback(NULL);\n        DestroyTask(FindTaskIdByFunc(task->func));\n    }\n    else\n    {\n        sTransitionData->VBlank_DMA = FALSE;\n        if (task->tGrowSpeed < 1024)\n            task->tGrowSpeed += 128;\n        if (task->tRadius < DISPLAY_HEIGHT)\n            task->tRadius += task->tGrowSpeed >> 8;\n        if (task->tRadius > DISPLAY_HEIGHT)\n            task->tRadius = DISPLAY_HEIGHT;\n        SetCircularMask(gScanlineEffectRegBuffers[0], DISPLAY_WIDTH / 2, DISPLAY_HEIGHT / 2, task->tRadius);\n        if (task->tRadius == DISPLAY_HEIGHT)\n        {\n            task->tFlag = TRUE;\n            FadeScreenBlack();\n        }\n        else\n        {\n            sTransitionData->VBlank_DMA++;\n        }\n    }\n\n    return FALSE;",
       "callsTo": [
         "DestroyTask",
@@ -1387,6 +2058,12 @@
       "returnType": "bool8",
       "signature": "static bool8 Blackhole_Vibrate(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "sTransitionData->VBlank_DMA = FALSE;\n    if (task->tFlag == FALSE)\n    {\n        task->tFlag++;\n        task->tRadius = 48;\n        task->tVibrateId = 0;\n    }\n    task->tRadius += sBlackhole_Vibrations[task->tVibrateId];\n    task->tVibrateId = (task->tVibrateId + 1) % (int)ARRAY_COUNT(sBlackhole_Vibrations);\n    SetCircularMask(gScanlineEffectRegBuffers[0], DISPLAY_WIDTH / 2, DISPLAY_HEIGHT / 2, task->tRadius);\n    if (task->tRadius < 9)\n    {\n        task->tState++;\n        task->tFlag = FALSE;\n    }\n\n    sTransitionData->VBlank_DMA++;\n    return FALSE;",
       "callsTo": [
         "ARRAY_COUNT",
@@ -1398,6 +2075,12 @@
       "returnType": "bool8",
       "signature": "static bool8 BlackholePulsate_Main(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u16 index;  \n    s16 amplitude;\n\n    sTransitionData->VBlank_DMA = FALSE;\n    if (task->tFlag == FALSE)\n    {\n        task->tFlag++;\n        task->tSinIndex = 2;\n        task->tAmplitude = 2;\n    }\n\n    if (task->tRadius > DISPLAY_HEIGHT)\n        task->tRadius = DISPLAY_HEIGHT;\n\n    SetCircularMask(gScanlineEffectRegBuffers[0], DISPLAY_WIDTH / 2, DISPLAY_HEIGHT / 2, task->tRadius);\n    if (task->tRadius == DISPLAY_HEIGHT)\n    {\n        DmaStop(0);\n        FadeScreenBlack();\n        DestroyTask(FindTaskIdByFunc(task->func));\n    }\n\n    index = task->tSinIndex;\n    if ((task->tSinIndex & 0xFF) <= 128)\n    {\n        amplitude = task->tAmplitude;\n        task->tSinIndex += 8;\n    }\n    else\n    {\n        amplitude = task->tAmplitude - 1;\n        task->tSinIndex += 16;\n    }\n    task->tRadius += Sin(index & 0xFF, amplitude);\n\n    if (task->tRadius <= 0)\n        task->tRadius = 1;\n\n    if (task->tSinIndex >= 0xFF)\n    {\n        task->tSinIndex >>= 8;\n        task->tAmplitude++;\n    }\n\n    sTransitionData->VBlank_DMA++;\n    return FALSE;",
       "callsTo": [
         "DestroyTask",
@@ -1413,6 +2096,12 @@
       "returnType": "void",
       "signature": "static void Task_RectangularSpiral(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "while (sRectangularSpiral_Funcs[gTasks[taskId].tState](&gTasks[taskId]));",
       "callsTo": [],
       "lineCount": 1
@@ -1421,6 +2110,12 @@
       "returnType": "bool8",
       "signature": "static bool8 RectangularSpiral_Init(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u16 *tilemap, *tileset;\n\n    GetBg0TilesDst(&tilemap, &tileset);\n    CpuCopy16(sShrinkingBoxTileset, tileset, 0x20);\n    CpuCopy16(&sShrinkingBoxTileset[0x70], &tileset[0x20], 0x20);\n    CpuFill16(0xF0 << 8, tilemap, BG_SCREEN_SIZE);\n    LoadPalette(sFieldEffectPal_Pokeball, BG_PLTT_ID(15), sizeof(sFieldEffectPal_Pokeball));\n\n    task->data[3] = 1;\n    task->tState++;\n\n     \n    sRectangularSpiralLines[0].state = SPIRAL_INWARD_START;\n    sRectangularSpiralLines[0].position = -1;\n    sRectangularSpiralLines[0].moveIndex = 1;\n    sRectangularSpiralLines[0].reboundPosition = 308;\n    sRectangularSpiralLines[0].outward = FALSE;\n\n     \n    sRectangularSpiralLines[1].state = SPIRAL_INWARD_START;\n    sRectangularSpiralLines[1].position = -1;\n    sRectangularSpiralLines[1].moveIndex = 1;\n    sRectangularSpiralLines[1].reboundPosition = 308;\n    sRectangularSpiralLines[1].outward = FALSE;\n\n     \n    sRectangularSpiralLines[2].state = SPIRAL_INWARD_START;\n    sRectangularSpiralLines[2].position = -3;\n    sRectangularSpiralLines[2].moveIndex = 1;\n    sRectangularSpiralLines[2].reboundPosition = 307;\n    sRectangularSpiralLines[2].outward = FALSE;\n\n     \n    sRectangularSpiralLines[3].state = SPIRAL_INWARD_START;\n    sRectangularSpiralLines[3].position = -3;\n    sRectangularSpiralLines[3].moveIndex = 1;\n    sRectangularSpiralLines[3].reboundPosition = 307;\n    sRectangularSpiralLines[3].outward = FALSE;\n\n    return FALSE;",
       "callsTo": [
         "BG_PLTT_ID",
@@ -1435,6 +2130,12 @@
       "returnType": "bool8",
       "signature": "static bool8 RectangularSpiral_Main(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u16 *tilemap, *tileset;\n    u8 i;\n    u16 j;\n    bool32 done = TRUE;\n\n    GetBg0TilesDst(&tilemap, &tileset);\n\n     \n    for (i = 0; i < 2; i++)\n    {\n        for (j = 0; j < ARRAY_COUNT(sRectangularSpiralLines); j++)\n        {\n            s16 position = 0;\n            s16 x = 0, y = 0;\n\n            if (UpdateRectangularSpiralLine(sRectangularSpiral_MoveDataTables[j / 2], &sRectangularSpiralLines[j]))\n            {\n                 \n                done = FALSE;\n                position = sRectangularSpiralLines[j].position;\n\n                 \n                if ((j % 2) == 1)\n                    position = 637 - position;\n\n                x = position % 32;\n                y = position / 32;\n\n                SET_TILE(tilemap, y, x, 2);\n            }\n        }\n    }\n\n    if (done == TRUE)\n        task->tState++;\n    return FALSE;",
       "callsTo": [
         "ARRAY_COUNT",
@@ -1448,6 +2149,12 @@
       "returnType": "bool8",
       "signature": "static bool8 RectangularSpiral_End(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "DmaStop(0);\n    FadeScreenBlack();\n    DestroyTask(FindTaskIdByFunc(task->func));\n    return FALSE;",
       "callsTo": [
         "DestroyTask",
@@ -1461,6 +2168,16 @@
       "returnType": "bool16",
       "signature": "static bool16 UpdateRectangularSpiralLine(const s16 *const *moveDataTable, struct RectangularSpiralLine *line)",
       "paramsRaw": "const s16 *const *moveDataTable, struct RectangularSpiralLine *line",
+      "paramsList": [
+        {
+          "name": "moveDataTable",
+          "typeRaw": "const s16 *const *"
+        },
+        {
+          "name": "line",
+          "typeRaw": "struct RectangularSpiralLine *"
+        }
+      ],
       "body": "const s16 *moveData = moveDataTable[line->state];\n\n     \n     \n     \n    if (moveData[line->moveIndex] == SPIRAL_END)\n        return FALSE;\n\n     \n    sDebug_RectangularSpiralData = moveData[0];\n    sDebug_RectangularSpiralData = moveData[1];\n    sDebug_RectangularSpiralData = moveData[2];\n    sDebug_RectangularSpiralData = moveData[3];\n\n     \n     \n     \n     \n    switch (moveData[0])\n    {\n    case MOVE_RIGHT:\n        line->position += 1;\n        break;\n    case MOVE_LEFT:\n        line->position -= 1;\n        break;\n    case MOVE_UP:\n        line->position -= 32;\n        break;\n    case MOVE_DOWN:\n        line->position += 32;\n        break;\n    }\n\n     \n     \n    if (line->position >= 640 || moveData[line->moveIndex] == SPIRAL_END)\n        return FALSE;\n\n    if (!line->outward && moveData[line->moveIndex] == SPIRAL_REBOUND)\n    {\n         \n         \n        line->outward = TRUE;\n        line->moveIndex = 1;\n        line->position = line->reboundPosition;\n        line->state = SPIRAL_OUTWARD_START;\n    }\n\n     \n    if (line->position == moveData[line->moveIndex])\n    {\n        line->state++;\n        if (line->outward == TRUE)\n        {\n            if (line->state > SPIRAL_OUTWARD_END)\n            {\n                 \n                 \n                 \n                line->moveIndex++;\n                line->state = SPIRAL_OUTWARD_START;\n            }\n        }\n        else\n        {\n            if (line->state > SPIRAL_INWARD_END)\n            {\n                 \n                 \n                 \n                line->moveIndex++;\n                line->state = SPIRAL_INWARD_START;\n            }\n        }\n    }\n    return TRUE;",
       "callsTo": [],
       "lineCount": 77
@@ -1469,6 +2186,12 @@
       "returnType": "void",
       "signature": "static void Task_Groudon(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "while (sGroudon_Funcs[gTasks[taskId].tState](&gTasks[taskId]));",
       "callsTo": [],
       "lineCount": 1
@@ -1477,6 +2200,12 @@
       "returnType": "bool8",
       "signature": "static bool8 Groudon_Init(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u16 *tilemap, *tileset;\n\n    GetBg0TilesDst(&tilemap, &tileset);\n    CpuFill16(0, tilemap, BG_SCREEN_SIZE);\n    LZ77UnCompVram(sGroudon_Tileset, tileset);\n    LZ77UnCompVram(sGroudon_Tilemap, tilemap);\n\n    task->tState++;\n    task->tTimer = 0;\n    return FALSE;",
       "callsTo": [
         "CpuFill16",
@@ -1489,6 +2218,12 @@
       "returnType": "bool8",
       "signature": "static bool8 Groudon_PaletteFlash(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (task->tTimer % 3 == 0)\n    {\n        u16 offset = (task->tTimer % 30) / 3;\n        LoadPalette(&sGroudon1_Palette[offset * 16], BG_PLTT_ID(15), PLTT_SIZE_4BPP);\n    }\n    if (++task->tTimer > 58)\n    {\n        task->tState++;\n        task->tTimer = 0;\n    }\n\n    return FALSE;",
       "callsTo": [
         "BG_PLTT_ID",
@@ -1500,6 +2235,12 @@
       "returnType": "bool8",
       "signature": "static bool8 Groudon_PaletteBrighten(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (task->tTimer % 5 == 0)\n    {\n        s16 offset = task->tTimer / 5;\n        LoadPalette(&sGroudon2_Palette[offset * 16], BG_PLTT_ID(15), PLTT_SIZE_4BPP);\n    }\n    if (++task->tTimer > 68)\n    {\n        task->tState++;\n        task->tTimer = 0;\n        task->tEndDelay = 30;\n    }\n\n    return FALSE;",
       "callsTo": [
         "BG_PLTT_ID",
@@ -1511,6 +2252,12 @@
       "returnType": "void",
       "signature": "static void Task_Rayquaza(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "while (sRayquaza_Funcs[gTasks[taskId].tState](&gTasks[taskId]));",
       "callsTo": [],
       "lineCount": 1
@@ -1519,6 +2266,12 @@
       "returnType": "bool8",
       "signature": "static bool8 Rayquaza_Init(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u16 *tilemap, *tileset;\n    u16 i;\n\n    InitTransitionData();\n    ScanlineEffect_Clear();\n\n    SetGpuReg(REG_OFFSET_BG0CNT, BGCNT_CHARBASE(2) | BGCNT_SCREENBASE(26) | BGCNT_TXT256x512);\n    GetBg0TilesDst(&tilemap, &tileset);\n    CpuFill16(0, tilemap, BG_SCREEN_SIZE);\n    CpuCopy16(sRayquaza_Tileset, tileset, 0x2000);\n\n    sTransitionData->counter = 0;\n    task->tState++;\n    LoadPalette(&sRayquaza_Palette[80], BG_PLTT_ID(15), PLTT_SIZE_4BPP);\n\n    for (i = 0; i < DISPLAY_HEIGHT; i++)\n    {\n        gScanlineEffectRegBuffers[0][i] = 0;\n        gScanlineEffectRegBuffers[1][i] = 0x100;\n    }\n\n    SetVBlankCallback(VBlankCB_Rayquaza);\n    return FALSE;",
       "callsTo": [
         "BGCNT_CHARBASE",
@@ -1539,6 +2292,12 @@
       "returnType": "bool8",
       "signature": "static bool8 Rayquaza_SetGfx(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u16 *tilemap, *tileset;\n\n    GetBg0TilesDst(&tilemap, &tileset);\n    CpuCopy16(sRayquaza_Tilemap, tilemap, sizeof(sRayquaza_Tilemap));\n    task->tState++;\n    return FALSE;",
       "callsTo": [
         "CpuCopy16",
@@ -1550,6 +2309,12 @@
       "returnType": "bool8",
       "signature": "static bool8 Rayquaza_PaletteFlash(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if ((task->tTimer % 4) == 0)\n    {\n        u16 value = task->tTimer / 4;\n        const u16 *palPtr = &sRayquaza_Palette[(value + 5) * 16];\n        LoadPalette(palPtr, BG_PLTT_ID(15), PLTT_SIZE_4BPP);\n    }\n    if (++task->tTimer > 40)\n    {\n        task->tState++;\n        task->tTimer = 0;\n    }\n\n    return FALSE;",
       "callsTo": [
         "BG_PLTT_ID",
@@ -1561,6 +2326,12 @@
       "returnType": "bool8",
       "signature": "static bool8 Rayquaza_FadeToBlack(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (++task->tTimer > 20)\n    {\n        task->tState++;\n        task->tTimer = 0;\n        BeginNormalPaletteFade(PALETTES_OBJECTS | (1 << 15), 2, 0, 16, RGB_BLACK);\n    }\n\n    return FALSE;",
       "callsTo": [
         "BeginNormalPaletteFade"
@@ -1571,6 +2342,12 @@
       "returnType": "bool8",
       "signature": "static bool8 Rayquaza_WaitFade(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (!gPaletteFade.active)\n    {\n        sTransitionData->counter = 1;\n        task->tState++;\n    }\n    return FALSE;",
       "callsTo": [],
       "lineCount": 6
@@ -1579,6 +2356,12 @@
       "returnType": "bool8",
       "signature": "static bool8 Rayquaza_SetBlack(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "BlendPalettes(PALETTES_BG & ~(1 << 15), 8, RGB_BLACK);\n    BlendPalettes(PALETTES_OBJECTS | (1 << 15), 0, RGB_BLACK);\n\n    task->tState++;\n    return FALSE;",
       "callsTo": [
         "BlendPalettes"
@@ -1589,6 +2372,12 @@
       "returnType": "bool8",
       "signature": "static bool8 Rayquaza_TriRing(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if ((task->tTimer % 3) == 0)\n    {\n        u16 value = task->tTimer / 3;\n        const u16 *palPtr = &sRayquaza_Palette[(value + 0) * 16];\n        LoadPalette(palPtr, BG_PLTT_ID(15), PLTT_SIZE_4BPP);\n    }\n    if (++task->tTimer >= 40)\n    {\n        u16 i;\n\n        sTransitionData->WININ = 0;\n        sTransitionData->WINOUT = WINOUT_WIN01_ALL;\n        sTransitionData->WIN0H = DISPLAY_WIDTH;\n        sTransitionData->WIN0V = DISPLAY_HEIGHT;\n\n        for (i = 0; i < DISPLAY_HEIGHT; i++)\n            gScanlineEffectRegBuffers[1][i] = 0;\n\n        SetVBlankCallback(VBlankCB_CircularMask);\n        task->tState++;\n        task->tGrowSpeed = 1 << 8;\n        task->tFlag = FALSE;\n        ClearGpuRegBits(REG_OFFSET_DISPCNT, DISPCNT_BG0_ON);\n    }\n\n    return FALSE;",
       "callsTo": [
         "BG_PLTT_ID",
@@ -1602,6 +2391,7 @@
       "returnType": "void",
       "signature": "static void VBlankCB_Rayquaza(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "void *dmaSrc;\n\n    DmaStop(0);\n    VBlankCB_BattleTransition();\n\n    if (sTransitionData->counter == 0)\n        dmaSrc = gScanlineEffectRegBuffers[0];\n    else if (sTransitionData->counter == 1)\n        dmaSrc = gScanlineEffectRegBuffers[1];\n    else\n        dmaSrc = gScanlineEffectRegBuffers[0];\n\n    DmaSet(0, dmaSrc, &REG_BG0VOFS, B_TRANS_DMA_FLAGS);",
       "callsTo": [
         "DmaSet",
@@ -1614,6 +2404,12 @@
       "returnType": "void",
       "signature": "static void Task_WhiteBarsFade(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "while (sWhiteBarsFade_Funcs[gTasks[taskId].tState](&gTasks[taskId]));",
       "callsTo": [],
       "lineCount": 1
@@ -1622,6 +2418,12 @@
       "returnType": "bool8",
       "signature": "static bool8 WhiteBarsFade_Init(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u16 i;\n\n    InitTransitionData();\n    ScanlineEffect_Clear();\n\n    sTransitionData->BLDCNT = BLDCNT_TGT1_ALL | BLDCNT_EFFECT_LIGHTEN;\n    sTransitionData->BLDY = 0;\n    sTransitionData->WININ = WININ_WIN0_BG1 | WININ_WIN0_BG2 | WININ_WIN0_BG3 | WININ_WIN0_OBJ;\n    sTransitionData->WINOUT = WINOUT_WIN01_ALL;\n    sTransitionData->WIN0V = DISPLAY_HEIGHT;\n\n    for (i = 0; i < DISPLAY_HEIGHT; i++)\n    {\n        gScanlineEffectRegBuffers[1][i] = 0;\n        gScanlineEffectRegBuffers[1][i + DISPLAY_HEIGHT] = DISPLAY_WIDTH;\n    }\n\n    EnableInterrupts(INTR_FLAG_HBLANK);\n    SetHBlankCallback(HBlankCB_WhiteBarsFade);\n    SetVBlankCallback(VBlankCB_WhiteBarsFade);\n\n    task->tState++;\n    return FALSE;",
       "callsTo": [
         "EnableInterrupts",
@@ -1636,6 +2438,12 @@
       "returnType": "bool8",
       "signature": "static bool8 WhiteBarsFade_StartBars(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "s16 i, posY;\n    s16 delays[ARRAY_COUNT(sWhiteBarsFade_StartDelays)];\n    struct Sprite *sprite;\n    memcpy(delays, sWhiteBarsFade_StartDelays, sizeof(sWhiteBarsFade_StartDelays));\n\n    for (i = 0, posY = 0; i < NUM_WHITE_BARS; i++, posY += DISPLAY_HEIGHT / NUM_WHITE_BARS)\n    {\n        sprite = &gSprites[CreateInvisibleSprite(SpriteCB_WhiteBarFade)];\n        sprite->x = DISPLAY_WIDTH;\n        sprite->y = posY;\n        sprite->sDelay = delays[i];\n    }\n\n     \n     \n    sprite->sIsMainSprite++;\n\n    task->tState++;\n    return FALSE;",
       "callsTo": [
         "ARRAY_COUNT",
@@ -1647,6 +2455,12 @@
       "returnType": "bool8",
       "signature": "static bool8 WhiteBarsFade_WaitBars(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "sTransitionData->VBlank_DMA = 0;\n    if (sTransitionData->counter >= NUM_WHITE_BARS)\n    {\n        BlendPalettes(PALETTES_ALL, 16, RGB_WHITE);\n        task->tState++;\n    }\n    return FALSE;",
       "callsTo": [
         "BlendPalettes"
@@ -1657,6 +2471,12 @@
       "returnType": "bool8",
       "signature": "static bool8 WhiteBarsFade_BlendToBlack(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "sTransitionData->VBlank_DMA = 0;\n\n    DmaStop(0);\n    SetVBlankCallback(0);\n    SetHBlankCallback(0);\n\n    sTransitionData->WIN0H = DISPLAY_WIDTH;\n    sTransitionData->BLDY = 0;\n    sTransitionData->BLDCNT = 0xFF;\n    sTransitionData->WININ = WININ_WIN0_ALL;\n\n    SetVBlankCallback(VBlankCB_WhiteBarsFade_Blend);\n\n    task->tState++;\n    return FALSE;",
       "callsTo": [
         "DmaStop",
@@ -1669,6 +2489,12 @@
       "returnType": "bool8",
       "signature": "static bool8 WhiteBarsFade_End(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (++sTransitionData->BLDY > 16)\n   {\n       FadeScreenBlack();\n       DestroyTask(FindTaskIdByFunc(Task_WhiteBarsFade));\n   }\n   return FALSE;",
       "callsTo": [
         "DestroyTask",
@@ -1681,6 +2507,7 @@
       "returnType": "void",
       "signature": "static void VBlankCB_WhiteBarsFade(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "DmaStop(0);\n    VBlankCB_BattleTransition();\n    REG_BLDCNT = sTransitionData->BLDCNT;\n    REG_WININ = sTransitionData->WININ;\n    REG_WINOUT = sTransitionData->WINOUT;\n    REG_WIN0V = sTransitionData->WIN0V;\n    if (sTransitionData->VBlank_DMA)\n        DmaCopy16(3, gScanlineEffectRegBuffers[0], gScanlineEffectRegBuffers[1], DISPLAY_HEIGHT * 4);\n    DmaSet(0, &gScanlineEffectRegBuffers[1][DISPLAY_HEIGHT], &REG_WIN0H, B_TRANS_DMA_FLAGS);",
       "callsTo": [
         "DmaCopy16",
@@ -1694,6 +2521,7 @@
       "returnType": "void",
       "signature": "static void VBlankCB_WhiteBarsFade_Blend(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "VBlankCB_BattleTransition();\n    REG_BLDY = sTransitionData->BLDY;\n    REG_BLDCNT = sTransitionData->BLDCNT;\n    REG_WININ = sTransitionData->WININ;\n    REG_WINOUT = sTransitionData->WINOUT;\n    REG_WIN0H = sTransitionData->WIN0H;\n    REG_WIN0V = sTransitionData->WIN0V;",
       "callsTo": [
         "VBlankCB_BattleTransition"
@@ -1704,6 +2532,7 @@
       "returnType": "void",
       "signature": "static void HBlankCB_WhiteBarsFade(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "REG_BLDY = gScanlineEffectRegBuffers[1][REG_VCOUNT];",
       "callsTo": [],
       "lineCount": 1
@@ -1712,6 +2541,12 @@
       "returnType": "void",
       "signature": "static void SpriteCB_WhiteBarFade(struct Sprite *sprite)",
       "paramsRaw": "struct Sprite *sprite",
+      "paramsList": [
+        {
+          "name": "sprite",
+          "typeRaw": "struct Sprite *"
+        }
+      ],
       "body": "if (sprite->sDelay)\n    {\n        sprite->sDelay--;\n        if (sprite->sIsMainSprite)\n            sTransitionData->VBlank_DMA = 1;\n    }\n    else\n    {\n        u16 i;\n        u16 *ptr1 = &gScanlineEffectRegBuffers[0][sprite->y];\n        u16 *ptr2 = &gScanlineEffectRegBuffers[0][sprite->y + DISPLAY_HEIGHT];\n        for (i = 0; i < DISPLAY_HEIGHT / NUM_WHITE_BARS; i++)\n        {\n            ptr1[i] = sprite->sFade >> 8;\n            ptr2[i] = (u8)sprite->x;\n        }\n        if (sprite->x == 0 && sprite->sFade == FADE_TARGET)\n            sprite->sFinished = TRUE;\n\n        sprite->x -= 16;\n        sprite->sFade += FADE_TARGET / 32;\n\n        if (sprite->x < 0)\n            sprite->x = 0;\n        if (sprite->sFade > FADE_TARGET)\n            sprite->sFade = FADE_TARGET;\n\n        if (sprite->sIsMainSprite)\n            sTransitionData->VBlank_DMA = 1;\n\n        if (sprite->sFinished)\n        {\n             \n             \n            if (!sprite->sIsMainSprite || (sTransitionData->counter >= NUM_WHITE_BARS - 1 && sprite->sDestroyAttempts++ > 7))\n            {\n                sTransitionData->counter++;\n                DestroySprite(sprite);\n            }\n        }\n    }",
       "callsTo": [
         "DestroySprite"
@@ -1722,6 +2557,12 @@
       "returnType": "void",
       "signature": "static void Task_GridSquares(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "while (sGridSquares_Funcs[gTasks[taskId].tState](&gTasks[taskId]));",
       "callsTo": [],
       "lineCount": 1
@@ -1730,6 +2571,12 @@
       "returnType": "bool8",
       "signature": "static bool8 GridSquares_Init(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u16 *tilemap, *tileset;\n\n    GetBg0TilesDst(&tilemap, &tileset);\n    CpuSet(sShrinkingBoxTileset, tileset, 16);\n    CpuFill16(0xF0 << 8, tilemap, BG_SCREEN_SIZE);\n    LoadPalette(sFieldEffectPal_Pokeball, BG_PLTT_ID(15), sizeof(sFieldEffectPal_Pokeball));\n\n    task->tState++;\n    return FALSE;",
       "callsTo": [
         "BG_PLTT_ID",
@@ -1744,6 +2591,12 @@
       "returnType": "bool8",
       "signature": "static bool8 GridSquares_Main(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u16 *tileset;\n\n    if (task->tDelay == 0)\n    {\n        GetBg0TilemapDst(&tileset);\n        task->tDelay = 3;\n        task->tShrinkStage++;\n        CpuSet(&sShrinkingBoxTileset[task->tShrinkStage * 8], tileset, 16);\n        if (task->tShrinkStage > 13)\n        {\n            task->tState++;\n            task->tDelay = 16;\n        }\n    }\n\n    task->tDelay--;\n    return FALSE;",
       "callsTo": [
         "CpuSet",
@@ -1755,6 +2608,12 @@
       "returnType": "bool8",
       "signature": "static bool8 GridSquares_End(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (--task->tDelay == 0)\n    {\n        FadeScreenBlack();\n        DestroyTask(FindTaskIdByFunc(Task_GridSquares));\n    }\n    return FALSE;",
       "callsTo": [
         "DestroyTask",
@@ -1767,6 +2626,12 @@
       "returnType": "void",
       "signature": "static void Task_AngledWipes(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "while (sAngledWipes_Funcs[gTasks[taskId].tState](&gTasks[taskId]));",
       "callsTo": [],
       "lineCount": 1
@@ -1775,6 +2640,12 @@
       "returnType": "bool8",
       "signature": "static bool8 AngledWipes_Init(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u16 i;\n\n    InitTransitionData();\n    ScanlineEffect_Clear();\n\n    sTransitionData->WININ = WININ_WIN0_ALL;\n    sTransitionData->WINOUT = 0;\n    sTransitionData->WIN0V = DISPLAY_HEIGHT;\n\n    for (i = 0; i < DISPLAY_HEIGHT; i++)\n        gScanlineEffectRegBuffers[0][i] = DISPLAY_WIDTH;\n\n    CpuSet(gScanlineEffectRegBuffers[0], gScanlineEffectRegBuffers[1], DISPLAY_HEIGHT);\n    SetVBlankCallback(VBlankCB_AngledWipes);\n\n    task->tState++;\n    return TRUE;",
       "callsTo": [
         "CpuSet",
@@ -1788,6 +2659,12 @@
       "returnType": "bool8",
       "signature": "static bool8 AngledWipes_SetWipeData(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "InitBlackWipe(sTransitionData->data,\n                  sAngledWipes_MoveData[task->tWipeId][0],\n                  sAngledWipes_MoveData[task->tWipeId][1],\n                  sAngledWipes_MoveData[task->tWipeId][2],\n                  sAngledWipes_MoveData[task->tWipeId][3],\n                  1, 1);\n    task->tDir = sAngledWipes_MoveData[task->tWipeId][4];\n    task->tState++;\n    return TRUE;",
       "callsTo": [
         "InitBlackWipe"
@@ -1798,6 +2675,12 @@
       "returnType": "bool8",
       "signature": "static bool8 AngledWipes_DoWipe(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "s16 i;\n    bool8 finished;\n\n    sTransitionData->VBlank_DMA = 0;\n\n    for (i = 0, finished = FALSE; i < 16; i++)\n    {\n        s16 r3 = gScanlineEffectRegBuffers[0][sTransitionData->tWipeCurrY] >> 8;\n        s16 r4 = gScanlineEffectRegBuffers[0][sTransitionData->tWipeCurrY] & 0xFF;\n        if (task->tDir == 0)\n        {\n             \n            if (r3 < sTransitionData->tWipeCurrX)\n                r3 = sTransitionData->tWipeCurrX;\n            if (r3 > r4)\n                r3 = r4;\n        }\n        else\n        {\n             \n            if (r4 > sTransitionData->tWipeCurrX)\n                r4 = sTransitionData->tWipeCurrX;\n            if (r4 <= r3)\n                r4 = r3;\n        }\n        gScanlineEffectRegBuffers[0][sTransitionData->tWipeCurrY] = (r4) | (r3 << 8);\n        if (finished)\n        {\n            task->tState++;\n            break;\n        }\n        finished = UpdateBlackWipe(sTransitionData->data, TRUE, TRUE);\n    }\n\n    sTransitionData->VBlank_DMA++;\n    return FALSE;",
       "callsTo": [
         "UpdateBlackWipe"
@@ -1808,6 +2691,12 @@
       "returnType": "bool8",
       "signature": "static bool8 AngledWipes_TryEnd(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (++task->tWipeId < NUM_ANGLED_WIPES)\n    {\n         \n        task->tState++;\n        task->tDelay = sAngledWipes_EndDelays[task->tWipeId - 1];\n        return TRUE;\n    }\n    else\n    {\n         \n        DmaStop(0);\n        FadeScreenBlack();\n        DestroyTask(FindTaskIdByFunc(Task_AngledWipes));\n        return FALSE;\n    }",
       "callsTo": [
         "DestroyTask",
@@ -1821,6 +2710,12 @@
       "returnType": "bool8",
       "signature": "static bool8 AngledWipes_StartNext(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (--task->tDelay == 0)\n    {\n         \n        task->tState = 1;\n        return TRUE;\n    }\n\n    return FALSE;",
       "callsTo": [],
       "lineCount": 8
@@ -1829,6 +2724,7 @@
       "returnType": "void",
       "signature": "static void VBlankCB_AngledWipes(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "DmaStop(0);\n    VBlankCB_BattleTransition();\n    if (sTransitionData->VBlank_DMA)\n        DmaCopy16(3, gScanlineEffectRegBuffers[0], gScanlineEffectRegBuffers[1], DISPLAY_HEIGHT * 2);\n    REG_WININ = sTransitionData->WININ;\n    REG_WINOUT = sTransitionData->WINOUT;\n    REG_WIN0V = sTransitionData->WIN0V;\n    REG_WIN0H = gScanlineEffectRegBuffers[1][0];\n    DmaSet(0, gScanlineEffectRegBuffers[1], &REG_WIN0H, B_TRANS_DMA_FLAGS);",
       "callsTo": [
         "DmaCopy16",
@@ -1842,6 +2738,28 @@
       "returnType": "void",
       "signature": "static void CreateIntroTask(s16 fadeToGrayDelay, s16 fadeFromGrayDelay, s16 numFades, s16 fadeToGrayIncrement, s16 fadeFromGrayIncrement)",
       "paramsRaw": "s16 fadeToGrayDelay, s16 fadeFromGrayDelay, s16 numFades, s16 fadeToGrayIncrement, s16 fadeFromGrayIncrement",
+      "paramsList": [
+        {
+          "name": "fadeToGrayDelay",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "fadeFromGrayDelay",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "numFades",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "fadeToGrayIncrement",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "fadeFromGrayIncrement",
+          "typeRaw": "s16"
+        }
+      ],
       "body": "u8 taskId = CreateTask(Task_BattleTransition_Intro, 3);\n    gTasks[taskId].tFadeToGrayDelay = fadeToGrayDelay;\n    gTasks[taskId].tFadeFromGrayDelay = fadeFromGrayDelay;\n    gTasks[taskId].tNumFades = numFades;\n    gTasks[taskId].tFadeToGrayIncrement = fadeToGrayIncrement;\n    gTasks[taskId].tFadeFromGrayIncrement = fadeFromGrayIncrement;\n    gTasks[taskId].tDelayTimer = fadeToGrayDelay;",
       "callsTo": [
         "CreateTask"
@@ -1852,6 +2770,7 @@
       "returnType": "bool8",
       "signature": "static bool8 IsIntroTaskDone(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "if (FindTaskIdByFunc(Task_BattleTransition_Intro) == TASK_NONE)\n        return TRUE;\n    else\n        return FALSE;",
       "callsTo": [
         "FindTaskIdByFunc"
@@ -1862,6 +2781,12 @@
       "returnType": "void",
       "signature": "void Task_BattleTransition_Intro(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "while (sTransitionIntroFuncs[gTasks[taskId].tState](&gTasks[taskId]));",
       "callsTo": [],
       "lineCount": 1
@@ -1870,6 +2795,12 @@
       "returnType": "bool8",
       "signature": "static bool8 TransitionIntro_FadeToGray(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (task->tDelayTimer == 0 || --task->tDelayTimer == 0)\n    {\n        task->tDelayTimer = task->tFadeToGrayDelay;\n        task->tBlend += task->tFadeToGrayIncrement;\n        if (task->tBlend > 16)\n            task->tBlend = 16;\n        BlendPalettes(PALETTES_ALL, task->tBlend, RGB(11, 11, 11));\n    }\n    if (task->tBlend >= 16)\n    {\n         \n        task->tState++;\n        task->tDelayTimer = task->tFadeFromGrayDelay;\n    }\n    return FALSE;",
       "callsTo": [
         "BlendPalettes"
@@ -1880,6 +2811,12 @@
       "returnType": "bool8",
       "signature": "static bool8 TransitionIntro_FadeFromGray(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (task->tDelayTimer == 0 || --task->tDelayTimer == 0)\n    {\n        task->tDelayTimer = task->tFadeFromGrayDelay;\n        task->tBlend -= task->tFadeFromGrayIncrement;\n        if (task->tBlend < 0)\n            task->tBlend = 0;\n        BlendPalettes(PALETTES_ALL, task->tBlend, RGB(11, 11, 11));\n    }\n    if (task->tBlend == 0)\n    {\n        if (--task->tNumFades == 0)\n        {\n             \n            DestroyTask(FindTaskIdByFunc(Task_BattleTransition_Intro));\n        }\n        else\n        {\n             \n            task->tDelayTimer = task->tFadeToGrayDelay;\n            task->tState = 0;\n        }\n    }\n    return FALSE;",
       "callsTo": [
         "BlendPalettes",
@@ -1892,6 +2829,7 @@
       "returnType": "void",
       "signature": "static void InitTransitionData(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "memset(sTransitionData, 0, sizeof(*sTransitionData));\n    GetCameraOffsetWithPan(&sTransitionData->cameraX, &sTransitionData->cameraY);",
       "callsTo": [
         "GetCameraOffsetWithPan"
@@ -1902,6 +2840,7 @@
       "returnType": "void",
       "signature": "static void VBlankCB_BattleTransition(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "LoadOam();\n    ProcessSpriteCopyRequests();\n    TransferPlttBuffer();",
       "callsTo": [
         "LoadOam",
@@ -1914,6 +2853,12 @@
       "returnType": "void",
       "signature": "static void GetBg0TilemapDst(u16 **tileset)",
       "paramsRaw": "u16 **tileset",
+      "paramsList": [
+        {
+          "name": "tileset",
+          "typeRaw": "u16 **"
+        }
+      ],
       "body": "u16 charBase = REG_BG0CNT >> 2;\n    charBase <<= 14;\n    *tileset = (u16 *)(BG_VRAM + charBase);",
       "callsTo": [],
       "lineCount": 3
@@ -1922,6 +2867,16 @@
       "returnType": "void",
       "signature": "void GetBg0TilesDst(u16 **tilemap, u16 **tileset)",
       "paramsRaw": "u16 **tilemap, u16 **tileset",
+      "paramsList": [
+        {
+          "name": "tilemap",
+          "typeRaw": "u16 **"
+        },
+        {
+          "name": "tileset",
+          "typeRaw": "u16 **"
+        }
+      ],
       "body": "u16 screenBase = REG_BG0CNT >> 8;\n    u16 charBase = REG_BG0CNT >> 2;\n\n    screenBase <<= 11;\n    charBase <<= 14;\n\n    *tilemap = (u16 *)(BG_VRAM + screenBase);\n    *tileset = (u16 *)(BG_VRAM + charBase);",
       "callsTo": [],
       "lineCount": 8
@@ -1930,6 +2885,7 @@
       "returnType": "void",
       "signature": "static void FadeScreenBlack(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "BlendPalettes(PALETTES_ALL, 16, RGB_BLACK);",
       "callsTo": [
         "BlendPalettes"
@@ -1940,6 +2896,32 @@
       "returnType": "void",
       "signature": "static void SetSinWave(s16 *array, s16 sinAdd, s16 index, s16 indexIncrementer, s16 amplitude, s16 arrSize)",
       "paramsRaw": "s16 *array, s16 sinAdd, s16 index, s16 indexIncrementer, s16 amplitude, s16 arrSize",
+      "paramsList": [
+        {
+          "name": "array",
+          "typeRaw": "s16 *"
+        },
+        {
+          "name": "sinAdd",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "index",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "indexIncrementer",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "amplitude",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "arrSize",
+          "typeRaw": "s16"
+        }
+      ],
       "body": "u8 i;\n    for (i = 0; arrSize > 0; arrSize--, i++, index += indexIncrementer)\n        array[i] = sinAdd + Sin(index & 0xFF, amplitude);",
       "callsTo": [
         "Sin"
@@ -1950,6 +2932,24 @@
       "returnType": "void",
       "signature": "static void SetCircularMask(u16 *buffer, s16 centerX, s16 centerY, s16 radius)",
       "paramsRaw": "u16 *buffer, s16 centerX, s16 centerY, s16 radius",
+      "paramsList": [
+        {
+          "name": "buffer",
+          "typeRaw": "u16 *"
+        },
+        {
+          "name": "centerX",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "centerY",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "radius",
+          "typeRaw": "s16"
+        }
+      ],
       "body": "s16 i;\n\n    memset(buffer, 10, DISPLAY_HEIGHT * sizeof(u16));\n    for (i = 0; i < 64; i++)\n    {\n        s16 sinResult, cosResult;\n        s16 drawXLeft, drawYBottNext, drawYTopNext, drawX, drawYTop, drawYBott;\n\n        sinResult = Sin(i, radius);\n        cosResult = Cos(i, radius);\n\n        drawXLeft = centerX - sinResult;\n        drawX = centerX + sinResult;\n        drawYTop = centerY - cosResult;\n        drawYBott = centerY + cosResult;\n\n        if (drawXLeft < 0)\n            drawXLeft = 0;\n        if (drawX > DISPLAY_WIDTH)\n            drawX = DISPLAY_WIDTH;\n        if (drawYTop < 0)\n            drawYTop = 0;\n        if (drawYBott > DISPLAY_HEIGHT - 1)\n            drawYBott = DISPLAY_HEIGHT - 1;\n\n        drawX |= (drawXLeft << 8);\n        buffer[drawYTop] = drawX;\n        buffer[drawYBott] = drawX;\n\n        cosResult = Cos(i + 1, radius);\n        drawYTopNext = centerY - cosResult;\n        drawYBottNext = centerY + cosResult;\n\n        if (drawYTopNext < 0)\n            drawYTopNext = 0;\n        if (drawYBottNext > DISPLAY_HEIGHT - 1)\n            drawYBottNext = DISPLAY_HEIGHT - 1;\n\n        while (drawYTop > drawYTopNext)\n            buffer[--drawYTop] = drawX;\n        while (drawYTop < drawYTopNext)\n            buffer[++drawYTop] = drawX;\n\n        while (drawYBott > drawYBottNext)\n            buffer[--drawYBott] = drawX;\n        while (drawYBott < drawYBottNext)\n            buffer[++drawYBott] = drawX;\n    }",
       "callsTo": [
         "Cos",
@@ -1961,6 +2961,36 @@
       "returnType": "void",
       "signature": "static void InitBlackWipe(s16 *data, s16 startX, s16 startY, s16 endX, s16 endY, s16 xMove, s16 yMove)",
       "paramsRaw": "s16 *data, s16 startX, s16 startY, s16 endX, s16 endY, s16 xMove, s16 yMove",
+      "paramsList": [
+        {
+          "name": "data",
+          "typeRaw": "s16 *"
+        },
+        {
+          "name": "startX",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "startY",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "endX",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "endY",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "xMove",
+          "typeRaw": "s16"
+        },
+        {
+          "name": "yMove",
+          "typeRaw": "s16"
+        }
+      ],
       "body": "tWipeStartX = startX;\n    tWipeStartY = startY;\n    tWipeCurrX = startX;\n    tWipeCurrY = startY;\n    tWipeEndX = endX;\n    tWipeEndY = endY;\n    tWipeXMove = xMove;\n    tWipeYMove = yMove;\n    tWipeXDist = endX - startX;\n    if (tWipeXDist < 0)\n    {\n         \n        tWipeXDist = -tWipeXDist;\n        tWipeXMove = -xMove;\n    }\n    tWipeYDist = endY - startY;\n    if (tWipeYDist < 0)\n    {\n         \n        tWipeYDist = -tWipeYDist;\n        tWipeYMove = -yMove;\n    }\n    tWipeTemp = 0;",
       "callsTo": [],
       "lineCount": 23
@@ -1969,6 +2999,20 @@
       "returnType": "bool8",
       "signature": "static bool8 UpdateBlackWipe(s16 *data, bool8 xExact, bool8 yExact)",
       "paramsRaw": "s16 *data, bool8 xExact, bool8 yExact",
+      "paramsList": [
+        {
+          "name": "data",
+          "typeRaw": "s16 *"
+        },
+        {
+          "name": "xExact",
+          "typeRaw": "bool8"
+        },
+        {
+          "name": "yExact",
+          "typeRaw": "bool8"
+        }
+      ],
       "body": "u8 numFinished;\n\n    if (tWipeXDist > tWipeYDist)\n    {\n         \n        tWipeCurrX += tWipeXMove;\n\n         \n         \n        tWipeTemp += tWipeYDist;\n        if (tWipeTemp > tWipeXDist)\n        {\n            tWipeCurrY += tWipeYMove;\n            tWipeTemp -= tWipeXDist;\n        }\n    }\n    else\n    {\n         \n        tWipeCurrY += tWipeYMove;\n\n         \n         \n        tWipeTemp += tWipeXDist;\n        if (tWipeTemp > tWipeYDist)\n        {\n            tWipeCurrX += tWipeXMove;\n            tWipeTemp -= tWipeYDist;\n        }\n    }\n\n    numFinished = 0;\n\n     \n    if ((tWipeXMove > 0 && tWipeCurrX >= tWipeEndX)\n     || (tWipeXMove < 0 && tWipeCurrX <= tWipeEndX))\n    {\n        numFinished++;\n        if (xExact)\n            tWipeCurrX = tWipeEndX;\n    }\n\n     \n    if ((tWipeYMove > 0 && tWipeCurrY >= tWipeEndY)\n     || (tWipeYMove < 0 && tWipeCurrY <= tWipeEndY))\n    {\n        numFinished++;\n        if (yExact)\n            tWipeCurrY = tWipeEndY;\n    }\n\n     \n    if (numFinished == 2)\n        return TRUE;\n    else\n        return FALSE;",
       "callsTo": [],
       "lineCount": 56
@@ -1977,6 +3021,12 @@
       "returnType": "bool8",
       "signature": "static bool8 FrontierLogoWiggle_Init(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u16 *tilemap, *tileset;\n\n    InitPatternWeaveTransition(task);\n    GetBg0TilesDst(&tilemap, &tileset);\n    CpuFill16(0, tilemap, BG_SCREEN_SIZE);\n    LZ77UnCompVram(sFrontierLogo_Tileset, tileset);\n    LoadPalette(sFrontierLogo_Palette, BG_PLTT_ID(15), sizeof(sFrontierLogo_Palette));\n\n    task->tState++;\n    return FALSE;",
       "callsTo": [
         "BG_PLTT_ID",
@@ -1992,6 +3042,12 @@
       "returnType": "bool8",
       "signature": "static bool8 FrontierLogoWiggle_SetGfx(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u16 *tilemap, *tileset;\n\n    GetBg0TilesDst(&tilemap, &tileset);\n    LZ77UnCompVram(sFrontierLogo_Tilemap, tilemap);\n    SetSinWave(gScanlineEffectRegBuffers[0], 0, task->tSinIndex, 132, task->tAmplitude, DISPLAY_HEIGHT);\n\n    task->tState++;\n    return TRUE;",
       "callsTo": [
         "GetBg0TilesDst",
@@ -2004,6 +3060,12 @@
       "returnType": "void",
       "signature": "static void Task_FrontierLogoWiggle(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "while (sFrontierLogoWiggle_Funcs[gTasks[taskId].tState](&gTasks[taskId]));",
       "callsTo": [],
       "lineCount": 1
@@ -2012,6 +3074,12 @@
       "returnType": "void",
       "signature": "static void Task_FrontierLogoWave(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "while (sFrontierLogoWave_Funcs[gTasks[taskId].tState](&gTasks[taskId]));",
       "callsTo": [],
       "lineCount": 1
@@ -2020,6 +3088,12 @@
       "returnType": "bool8",
       "signature": "static bool8 FrontierLogoWave_Init(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u16 *tilemap, *tileset;\n\n    InitTransitionData();\n    ScanlineEffect_Clear();\n    ClearGpuRegBits(REG_OFFSET_DISPCNT, DISPCNT_WIN0_ON | DISPCNT_WIN1_ON);\n    task->tAmplitudeVal = 32 << 8;\n    task->tSinVal = 0x7FFF;\n    task->tBlendTarget2 = 0;\n    task->tBlendTarget1 = 16;\n    task->tSinDecrement = 2560;\n    sTransitionData->BLDCNT = BLDCNT_TGT1_BG0 | BLDCNT_EFFECT_BLEND | BLDCNT_TGT2_ALL;\n    sTransitionData->BLDALPHA = BLDALPHA_BLEND(task->tBlendTarget2, task->tBlendTarget1);\n    REG_BLDCNT = sTransitionData->BLDCNT;\n    REG_BLDALPHA = sTransitionData->BLDALPHA;\n    GetBg0TilesDst(&tilemap, &tileset);\n    CpuFill16(0, tilemap, BG_SCREEN_SIZE);\n    LZ77UnCompVram(sFrontierLogo_Tileset, tileset);\n    LoadPalette(sFrontierLogo_Palette, BG_PLTT_ID(15), sizeof(sFrontierLogo_Palette));\n    sTransitionData->cameraY = 0;\n\n    task->tState++;\n    return FALSE;",
       "callsTo": [
         "BG_PLTT_ID",
@@ -2038,6 +3112,12 @@
       "returnType": "bool8",
       "signature": "static bool8 FrontierLogoWave_SetGfx(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u16 *tilemap, *tileset;\n\n    GetBg0TilesDst(&tilemap, &tileset);\n    LZ77UnCompVram(sFrontierLogo_Tilemap, tilemap);\n\n    task->tState++;\n    return TRUE;",
       "callsTo": [
         "GetBg0TilesDst",
@@ -2049,6 +3129,12 @@
       "returnType": "bool8",
       "signature": "static bool8 FrontierLogoWave_InitScanline(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u8 i;\n\n    for (i = 0; i < DISPLAY_HEIGHT; i++)\n        gScanlineEffectRegBuffers[1][i] = sTransitionData->cameraY;\n\n    SetVBlankCallback(VBlankCB_FrontierLogoWave);\n    SetHBlankCallback(HBlankCB_FrontierLogoWave);\n    EnableInterrupts(INTR_FLAG_HBLANK);\n\n    task->tState++;\n    return TRUE;",
       "callsTo": [
         "EnableInterrupts",
@@ -2061,6 +3147,12 @@
       "returnType": "bool8",
       "signature": "static bool8 FrontierLogoWave_Main(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u8 i;\n    u16 sinVal, amplitude, sinSpread;\n\n    sTransitionData->VBlank_DMA = FALSE;\n\n    amplitude = task->tAmplitudeVal >> 8;\n    sinVal = task->tSinVal;\n    sinSpread = 384;\n\n    task->tSinVal -= task->tSinDecrement;\n\n    if (task->tTimer >= 70)\n    {\n         \n         \n        if (task->tAmplitudeVal - 384 >= 0)\n            task->tAmplitudeVal -= 384;\n        else\n            task->tAmplitudeVal = 0;\n    }\n\n    if (task->tTimer >= 0 && task->tTimer % 3 == 0)\n    {\n         \n        if (task->tBlendTarget2 < 16)\n            task->tBlendTarget2++;\n        else if (task->tBlendTarget1 > 0)\n            task->tBlendTarget1--;\n\n        sTransitionData->BLDALPHA = BLDALPHA_BLEND(task->tBlendTarget2, task->tBlendTarget1);\n    }\n\n     \n    for (i = 0; i < DISPLAY_HEIGHT; i++, sinVal += sinSpread)\n    {\n        s16 index = sinVal / 256;\n        gScanlineEffectRegBuffers[0][i] = sTransitionData->cameraY + Sin(index & 0xff, amplitude);\n    }\n\n    if (++task->tTimer == 101)\n    {\n        task->tStartedFade++;\n        BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);\n    }\n\n    if (task->tStartedFade && !gPaletteFade.active)\n        DestroyTask(FindTaskIdByFunc(Task_FrontierLogoWave));\n\n    task->tSinDecrement -= 17;\n    sTransitionData->VBlank_DMA++;\n    return FALSE;",
       "callsTo": [
         "BLDALPHA_BLEND",
@@ -2075,6 +3167,7 @@
       "returnType": "void",
       "signature": "static void VBlankCB_FrontierLogoWave(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "VBlankCB_BattleTransition();\n    REG_BLDCNT = sTransitionData->BLDCNT;\n    REG_BLDALPHA = sTransitionData->BLDALPHA;\n\n    if (sTransitionData->VBlank_DMA)\n        DmaCopy16(3, gScanlineEffectRegBuffers[0], gScanlineEffectRegBuffers[1], DISPLAY_HEIGHT * 2);",
       "callsTo": [
         "DmaCopy16",
@@ -2086,6 +3179,7 @@
       "returnType": "void",
       "signature": "static void HBlankCB_FrontierLogoWave(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "u16 var = gScanlineEffectRegBuffers[1][REG_VCOUNT];\n    REG_BG0VOFS = var;",
       "callsTo": [],
       "lineCount": 2
@@ -2094,6 +3188,12 @@
       "returnType": "void",
       "signature": "static void Task_FrontierSquares(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "while (sFrontierSquares_Funcs[gTasks[taskId].tState](&gTasks[taskId]));",
       "callsTo": [],
       "lineCount": 1
@@ -2102,6 +3202,12 @@
       "returnType": "void",
       "signature": "static void Task_FrontierSquaresSpiral(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "while (sFrontierSquaresSpiral_Funcs[gTasks[taskId].tState](&gTasks[taskId]));",
       "callsTo": [],
       "lineCount": 1
@@ -2110,6 +3216,12 @@
       "returnType": "void",
       "signature": "static void Task_FrontierSquaresScroll(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "while (sFrontierSquaresScroll_Funcs[gTasks[taskId].tState](&gTasks[taskId]));",
       "callsTo": [],
       "lineCount": 1
@@ -2118,6 +3230,12 @@
       "returnType": "bool8",
       "signature": "static bool8 FrontierSquares_Init(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u16 *tilemap, *tileset;\n\n    GetBg0TilesDst(&tilemap, &tileset);\n    LZ77UnCompVram(sFrontierSquares_FilledBg_Tileset, tileset);\n\n    FillBgTilemapBufferRect_Palette0(0, 0, 0, 0, 32, 32);\n    FillBgTilemapBufferRect(0, 1, 0, 0, MARGIN_SIZE, 32, 15);\n    FillBgTilemapBufferRect(0, 1, 30 - MARGIN_SIZE, 0, MARGIN_SIZE, 32, 15);\n    CopyBgTilemapBufferToVram(0);\n    LoadPalette(sFrontierSquares_Palette, BG_PLTT_ID(15), sizeof(sFrontierSquares_Palette));\n\n    task->tPosX = MARGIN_SIZE;\n    task->tPosY = 0;\n    task->tRowPos = 0;\n    task->tShrinkDelay = 10;\n\n    task->tState++;\n    return FALSE;",
       "callsTo": [
         "BG_PLTT_ID",
@@ -2134,6 +3252,12 @@
       "returnType": "bool8",
       "signature": "static bool8 FrontierSquares_Draw(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "CopyRectToBgTilemapBufferRect(0, sFrontierSquares_Tilemap, 0, 0,\n                                  SQUARE_SIZE, SQUARE_SIZE,\n                                  task->tPosX, task->tPosY,\n                                  SQUARE_SIZE, SQUARE_SIZE,\n                                  15, 0, 0);\n    CopyBgTilemapBufferToVram(0);\n\n    task->tPosX += SQUARE_SIZE;\n    if (++task->tRowPos == NUM_SQUARES_PER_ROW)\n    {\n        task->tPosX = MARGIN_SIZE;\n        task->tPosY += SQUARE_SIZE;\n        task->tRowPos = 0;\n        if (task->tPosY >= NUM_SQUARES_PER_COL * SQUARE_SIZE)\n            task->tState++;\n    }\n\n    return FALSE;",
       "callsTo": [
         "CopyBgTilemapBufferToVram",
@@ -2145,6 +3269,12 @@
       "returnType": "bool8",
       "signature": "static bool8 FrontierSquares_Shrink(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u8 i;\n    u16 *tilemap, *tileset;\n\n    GetBg0TilesDst(&tilemap, &tileset);\n    if (task->tShrinkDelayTimer++ >= task->tShrinkDelay)\n    {\n        switch (task->tShrinkState)\n        {\n        case 0:\n            for (i = BG_PLTT_ID(15) + 10; i < BG_PLTT_ID(15) + 15; i++)\n            {\n                gPlttBufferUnfaded[i] = RGB_BLACK;\n                gPlttBufferFaded[i] = RGB_BLACK;\n            }\n            break;\n        case 1:\n            BlendPalettes(PALETTES_ALL & ~(1 << 15), 16, RGB_BLACK);\n            LZ77UnCompVram(sFrontierSquares_EmptyBg_Tileset, tileset);\n            break;\n        case 2:\n            LZ77UnCompVram(sFrontierSquares_Shrink1_Tileset, tileset);\n            break;\n        case 3:\n            LZ77UnCompVram(sFrontierSquares_Shrink2_Tileset, tileset);\n            break;\n        default:\n            FillBgTilemapBufferRect_Palette0(0, 1, 0, 0, 32, 32);\n            CopyBgTilemapBufferToVram(0);\n            task->tState++;\n            return FALSE;\n        }\n\n        task->tShrinkDelayTimer = 0;\n        task->tShrinkState++;\n    }\n\n    return FALSE;",
       "callsTo": [
         "BG_PLTT_ID",
@@ -2160,6 +3290,12 @@
       "returnType": "bool8",
       "signature": "static bool8 FrontierSquaresSpiral_Init(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u16 *tilemap, *tileset;\n\n    GetBg0TilesDst(&tilemap, &tileset);\n    LZ77UnCompVram(sFrontierSquares_FilledBg_Tileset, tileset);\n\n    FillBgTilemapBufferRect_Palette0(0, 0, 0, 0, 32, 32);\n    FillBgTilemapBufferRect(0, 1, 0, 0, MARGIN_SIZE, 32, 15);\n    FillBgTilemapBufferRect(0, 1, 30 - MARGIN_SIZE, 0, MARGIN_SIZE, 32, 15);\n    CopyBgTilemapBufferToVram(0);\n    LoadPalette(sFrontierSquares_Palette, BG_PLTT_ID(14), sizeof(sFrontierSquares_Palette));\n    LoadPalette(sFrontierSquares_Palette, BG_PLTT_ID(15), sizeof(sFrontierSquares_Palette));\n    BlendPalette(BG_PLTT_ID(14), 16, 8, RGB_BLACK);\n\n    task->tSquareNum = NUM_SQUARES - 1;\n    task->tFadeFlag = 0;\n\n    task->tState++;\n    return FALSE;",
       "callsTo": [
         "BG_PLTT_ID",
@@ -2177,6 +3313,12 @@
       "returnType": "bool8",
       "signature": "static bool8 FrontierSquaresSpiral_Outward(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u8 pos = sFrontierSquaresSpiral_Positions[task->tSquareNum];\n    u8 x = pos % NUM_SQUARES_PER_ROW;\n    u8 y = pos / NUM_SQUARES_PER_ROW;\n    CopyRectToBgTilemapBufferRect(0, sFrontierSquares_Tilemap, 0, 0,\n                                  SQUARE_SIZE, SQUARE_SIZE,\n                                  SQUARE_SIZE * x + MARGIN_SIZE, SQUARE_SIZE * y,\n                                  SQUARE_SIZE, SQUARE_SIZE,\n                                  15, 0, 0);\n    CopyBgTilemapBufferToVram(0);\n\n    if (--task->tSquareNum < 0)\n        task->tState++;\n    return FALSE;",
       "callsTo": [
         "CopyBgTilemapBufferToVram",
@@ -2188,6 +3330,12 @@
       "returnType": "bool8",
       "signature": "static bool8 FrontierSquaresSpiral_SetBlack(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "BlendPalette(BG_PLTT_ID(14), 16, 3, RGB_BLACK);\n    BlendPalettes(PALETTES_ALL & ~(1 << 15 | 1 << 14), 16, RGB_BLACK);\n\n    task->tSquareNum = 0;\n    task->tFadeFlag = 0;\n\n    task->tState++;\n    return FALSE;",
       "callsTo": [
         "BG_PLTT_ID",
@@ -2200,6 +3348,12 @@
       "returnType": "bool8",
       "signature": "static bool8 FrontierSquaresSpiral_Inward(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "if (task->tFadeFlag ^= 1)\n    {\n         \n        CopyRectToBgTilemapBufferRect(0, sFrontierSquares_Tilemap, 0, 0,\n                                      SQUARE_SIZE, SQUARE_SIZE,\n                                      SQUARE_SIZE * (sFrontierSquaresSpiral_Positions[task->tSquareNum] % NUM_SQUARES_PER_ROW) + MARGIN_SIZE,\n                                      SQUARE_SIZE * (sFrontierSquaresSpiral_Positions[task->tSquareNum] / NUM_SQUARES_PER_ROW),\n                                      SQUARE_SIZE, SQUARE_SIZE,\n                                      14, 0, 0);\n    }\n    else\n    {\n        if (task->tSquareNum > 0)\n        {\n             \n            FillBgTilemapBufferRect(0, 1,\n                                    SQUARE_SIZE * (sFrontierSquaresSpiral_Positions[task->tSquareNum - 1] % NUM_SQUARES_PER_ROW) + MARGIN_SIZE,\n                                    SQUARE_SIZE * (sFrontierSquaresSpiral_Positions[task->tSquareNum - 1] / NUM_SQUARES_PER_ROW),\n                                    SQUARE_SIZE, SQUARE_SIZE,\n                                    15);\n        }\n        task->tSquareNum++;\n    }\n\n    if (task->tSquareNum >= NUM_SQUARES)\n        task->tState++;\n\n    CopyBgTilemapBufferToVram(0);\n    return FALSE;",
       "callsTo": [
         "CopyBgTilemapBufferToVram",
@@ -2212,6 +3366,12 @@
       "returnType": "bool8",
       "signature": "static bool8 FrontierSquares_End(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "FillBgTilemapBufferRect_Palette0(0, 1, 0, 0, 32, 32);\n    CopyBgTilemapBufferToVram(0);\n    BlendPalettes(PALETTES_ALL, 16, RGB_BLACK);\n    DestroyTask(FindTaskIdByFunc(task->func));\n    return FALSE;",
       "callsTo": [
         "BlendPalettes",
@@ -2226,6 +3386,12 @@
       "returnType": "void",
       "signature": "static void Task_ScrollBg(u8 taskId)",
       "paramsRaw": "u8 taskId",
+      "paramsList": [
+        {
+          "name": "taskId",
+          "typeRaw": "u8"
+        }
+      ],
       "body": "if (!(gTasks[taskId].tScrollUpdateFlag ^= 1))\n    {\n        SetGpuReg(REG_OFFSET_BG0VOFS, gBattle_BG0_X);\n        SetGpuReg(REG_OFFSET_BG0HOFS, gBattle_BG0_Y);\n        gBattle_BG0_X += gTasks[taskId].tScrollXDir;\n        gBattle_BG0_Y += gTasks[taskId].tScrollYDir;\n    }",
       "callsTo": [
         "SetGpuReg"
@@ -2236,6 +3402,12 @@
       "returnType": "bool8",
       "signature": "static bool8 FrontierSquaresScroll_Init(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u8 taskId = 0;\n    u16 *tilemap, *tileset;\n\n    GetBg0TilesDst(&tilemap, &tileset);\n    LZ77UnCompVram(sFrontierSquares_FilledBg_Tileset, tileset);\n    FillBgTilemapBufferRect_Palette0(0, 0, 0, 0, 32, 32);\n    CopyBgTilemapBufferToVram(0);\n    LoadPalette(sFrontierSquares_Palette, BG_PLTT_ID(15), sizeof(sFrontierSquares_Palette));\n\n    gBattle_BG0_X = 0;\n    gBattle_BG0_Y = 0;\n    SetGpuReg(REG_OFFSET_BG0VOFS, gBattle_BG0_X);\n    SetGpuReg(REG_OFFSET_BG0HOFS, gBattle_BG0_Y);\n\n    task->tSquareNum = 0;\n\n     \n    taskId = CreateTask(Task_ScrollBg, 1);\n    switch (Random() % 4)\n    {\n    case 0:  \n        gTasks[taskId].tScrollXDir = 1;\n        gTasks[taskId].tScrollYDir = 1;\n        break;\n    case 1:  \n        gTasks[taskId].tScrollXDir = -1;\n        gTasks[taskId].tScrollYDir = -1;\n        break;\n    case 2:  \n        gTasks[taskId].tScrollXDir = 1;\n        gTasks[taskId].tScrollYDir = -1;\n        break;\n    default:  \n        gTasks[taskId].tScrollXDir = -1;\n        gTasks[taskId].tScrollYDir = 1;\n        break;\n    }\n\n    task->tState++;\n    return FALSE;",
       "callsTo": [
         "BG_PLTT_ID",
@@ -2254,6 +3426,12 @@
       "returnType": "bool8",
       "signature": "static bool8 FrontierSquaresScroll_Draw(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u8 pos = sFrontierSquaresScroll_Positions[task->tSquareNum];\n    u8 x = pos / (NUM_SQUARES_PER_ROW + 1);  \n    u8 y = pos % (NUM_SQUARES_PER_ROW + 1);\n\n    CopyRectToBgTilemapBufferRect(0, &sFrontierSquares_Tilemap, 0, 0,\n                                  SQUARE_SIZE, SQUARE_SIZE,\n                                  SQUARE_SIZE * x + MARGIN_SIZE, SQUARE_SIZE * y,\n                                  SQUARE_SIZE, SQUARE_SIZE,\n                                  15, 0, 0);\n    CopyBgTilemapBufferToVram(0);\n\n    if (++task->tSquareNum >= (int)ARRAY_COUNT(sFrontierSquaresScroll_Positions))\n        task->tState++;\n    return 0;",
       "callsTo": [
         "ARRAY_COUNT",
@@ -2266,6 +3444,12 @@
       "returnType": "bool8",
       "signature": "static bool8 FrontierSquaresScroll_SetBlack(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "BlendPalettes(PALETTES_ALL & ~(1 << 15), 16, RGB_BLACK);\n\n    task->tSquareNum = 0;\n\n    task->tState++;\n    return FALSE;",
       "callsTo": [
         "BlendPalettes"
@@ -2276,6 +3460,12 @@
       "returnType": "bool8",
       "signature": "static bool8 FrontierSquaresScroll_Erase(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "u8 pos = sFrontierSquaresScroll_Positions[task->tSquareNum];\n    u8 x = pos / (NUM_SQUARES_PER_ROW + 1);\n    u8 y = pos % (NUM_SQUARES_PER_ROW + 1);\n\n    FillBgTilemapBufferRect(0, 1,\n                            SQUARE_SIZE * x + MARGIN_SIZE, SQUARE_SIZE * y,\n                            SQUARE_SIZE, SQUARE_SIZE,\n                            15);\n    CopyBgTilemapBufferToVram(0);\n\n    if (++task->tSquareNum >= (int)ARRAY_COUNT(sFrontierSquaresScroll_Positions))\n    {\n        DestroyTask(FindTaskIdByFunc(Task_ScrollBg));\n        task->tState++;\n    }\n\n    return FALSE;",
       "callsTo": [
         "ARRAY_COUNT",
@@ -2290,6 +3480,12 @@
       "returnType": "bool8",
       "signature": "static bool8 FrontierSquaresScroll_End(struct Task *task)",
       "paramsRaw": "struct Task *task",
+      "paramsList": [
+        {
+          "name": "task",
+          "typeRaw": "struct Task *"
+        }
+      ],
       "body": "gBattle_BG0_X = 0;\n    gBattle_BG0_Y = 0;\n    SetGpuReg(REG_OFFSET_BG0VOFS, 0);\n    SetGpuReg(REG_OFFSET_BG0HOFS, gBattle_BG0_Y);\n\n    FillBgTilemapBufferRect_Palette0(0, 1, 0, 0, 32, 32);\n    CopyBgTilemapBufferToVram(0);\n    BlendPalettes(PALETTES_ALL, 16, RGB_BLACK);\n\n    DestroyTask(FindTaskIdByFunc(task->func));\n    task->tState++;  \n\n    return FALSE;",
       "callsTo": [
         "BlendPalettes",

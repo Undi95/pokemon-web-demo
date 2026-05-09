@@ -6,6 +6,12 @@
       "returnType": "void",
       "signature": "void MysteryGiftClient_Create(bool32 isWonderNews)",
       "paramsRaw": "bool32 isWonderNews",
+      "paramsList": [
+        {
+          "name": "isWonderNews",
+          "typeRaw": "bool32"
+        }
+      ],
       "body": "sClient = AllocZeroed(sizeof(*sClient));\n    MysteryGiftClient_Init(sClient, 1, 0);\n    sClient->isWonderNews = isWonderNews;",
       "callsTo": [
         "AllocZeroed",
@@ -17,6 +23,12 @@
       "returnType": "u32",
       "signature": "u32 MysteryGiftClient_Run(u16 *endVal)",
       "paramsRaw": "u16 *endVal",
+      "paramsList": [
+        {
+          "name": "endVal",
+          "typeRaw": "u16 *"
+        }
+      ],
       "body": "u32 result;\n    if (sClient == NULL)\n        return CLI_RET_END;\n    result = MysteryGiftClient_CallFunc(sClient);\n    if (result == CLI_RET_END)\n    {\n        *endVal = sClient->param;\n        MysteryGiftClient_Free(sClient);\n        FREE_AND_SET_NULL(sClient);\n    }\n    return result;",
       "callsTo": [
         "FREE_AND_SET_NULL",
@@ -29,6 +41,7 @@
       "returnType": "void",
       "signature": "void MysteryGiftClient_AdvanceState(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "sClient->funcState++;",
       "callsTo": [],
       "lineCount": 1
@@ -37,6 +50,7 @@
       "returnType": "void *",
       "signature": "void * MysteryGiftClient_GetMsg(void)",
       "paramsRaw": "void",
+      "paramsList": [],
       "body": "return sClient->msg;",
       "callsTo": [],
       "lineCount": 1
@@ -45,6 +59,12 @@
       "returnType": "void",
       "signature": "void MysteryGiftClient_SetParam(u32 val)",
       "paramsRaw": "u32 val",
+      "paramsList": [
+        {
+          "name": "val",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "sClient->param = val;",
       "callsTo": [],
       "lineCount": 1
@@ -53,6 +73,20 @@
       "returnType": "void",
       "signature": "static void MysteryGiftClient_Init(struct MysteryGiftClient *client, u32 sendPlayerId, u32 recvPlayerId)",
       "paramsRaw": "struct MysteryGiftClient *client, u32 sendPlayerId, u32 recvPlayerId",
+      "paramsList": [
+        {
+          "name": "client",
+          "typeRaw": "struct MysteryGiftClient *"
+        },
+        {
+          "name": "sendPlayerId",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "recvPlayerId",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "client->unused = 0;\n    client->funcId = FUNC_INIT;\n    client->funcState = 0;\n    client->sendBuffer = AllocZeroed(MG_LINK_BUFFER_SIZE);\n    client->recvBuffer = AllocZeroed(MG_LINK_BUFFER_SIZE);\n    client->script = AllocZeroed(MG_LINK_BUFFER_SIZE);\n    client->msg = AllocZeroed(CLIENT_MAX_MSG_SIZE);\n    MysteryGiftLink_Init(&client->link, sendPlayerId, recvPlayerId);",
       "callsTo": [
         "AllocZeroed",
@@ -64,6 +98,12 @@
       "returnType": "void",
       "signature": "static void MysteryGiftClient_Free(struct MysteryGiftClient *client)",
       "paramsRaw": "struct MysteryGiftClient *client",
+      "paramsList": [
+        {
+          "name": "client",
+          "typeRaw": "struct MysteryGiftClient *"
+        }
+      ],
       "body": "Free(client->sendBuffer);\n    Free(client->recvBuffer);\n    Free(client->script);\n    Free(client->msg);",
       "callsTo": [
         "Free"
@@ -74,6 +114,12 @@
       "returnType": "void",
       "signature": "static void MysteryGiftClient_CopyRecvScript(struct MysteryGiftClient *client)",
       "paramsRaw": "struct MysteryGiftClient *client",
+      "paramsList": [
+        {
+          "name": "client",
+          "typeRaw": "struct MysteryGiftClient *"
+        }
+      ],
       "body": "memcpy(client->script, client->recvBuffer, MG_LINK_BUFFER_SIZE);\n    client->cmdidx = 0;",
       "callsTo": [],
       "lineCount": 2
@@ -82,6 +128,20 @@
       "returnType": "void",
       "signature": "static void MysteryGiftClient_InitSendWord(struct MysteryGiftClient *client, u32 ident, u32 word)",
       "paramsRaw": "struct MysteryGiftClient *client, u32 ident, u32 word",
+      "paramsList": [
+        {
+          "name": "client",
+          "typeRaw": "struct MysteryGiftClient *"
+        },
+        {
+          "name": "ident",
+          "typeRaw": "u32"
+        },
+        {
+          "name": "word",
+          "typeRaw": "u32"
+        }
+      ],
       "body": "CpuFill32(0, client->sendBuffer, MG_LINK_BUFFER_SIZE);\n    *(u32 *)client->sendBuffer = word;\n    MysteryGiftLink_InitSend(&client->link, ident, client->sendBuffer, sizeof(word));",
       "callsTo": [
         "CpuFill32",
@@ -93,6 +153,12 @@
       "returnType": "u32",
       "signature": "static u32 Client_Init(struct MysteryGiftClient *client)",
       "paramsRaw": "struct MysteryGiftClient *client",
+      "paramsList": [
+        {
+          "name": "client",
+          "typeRaw": "struct MysteryGiftClient *"
+        }
+      ],
       "body": "memcpy(client->script, gMysteryGiftClientScript_Init, MG_LINK_BUFFER_SIZE);\n    client->cmdidx = 0;\n    client->funcId = FUNC_RUN;\n    client->funcState = 0;\n    return CLI_RET_INIT;",
       "callsTo": [],
       "lineCount": 5
@@ -101,6 +167,12 @@
       "returnType": "u32",
       "signature": "static u32 Client_Done(struct MysteryGiftClient *client)",
       "paramsRaw": "struct MysteryGiftClient *client",
+      "paramsList": [
+        {
+          "name": "client",
+          "typeRaw": "struct MysteryGiftClient *"
+        }
+      ],
       "body": "return CLI_RET_END;",
       "callsTo": [],
       "lineCount": 1
@@ -109,6 +181,12 @@
       "returnType": "u32",
       "signature": "static u32 Client_Recv(struct MysteryGiftClient *client)",
       "paramsRaw": "struct MysteryGiftClient *client",
+      "paramsList": [
+        {
+          "name": "client",
+          "typeRaw": "struct MysteryGiftClient *"
+        }
+      ],
       "body": "if (MysteryGiftLink_Recv(&client->link))\n    {\n        client->funcId = FUNC_RUN;\n        client->funcState = 0;\n    }\n    return CLI_RET_ACTIVE;",
       "callsTo": [
         "MysteryGiftLink_Recv"
@@ -119,6 +197,12 @@
       "returnType": "u32",
       "signature": "static u32 Client_Send(struct MysteryGiftClient *client)",
       "paramsRaw": "struct MysteryGiftClient *client",
+      "paramsList": [
+        {
+          "name": "client",
+          "typeRaw": "struct MysteryGiftClient *"
+        }
+      ],
       "body": "if (MysteryGiftLink_Send(&client->link))\n    {\n        client->funcId = FUNC_RUN;\n        client->funcState = 0;\n    }\n    return CLI_RET_ACTIVE;",
       "callsTo": [
         "MysteryGiftLink_Send"
@@ -129,6 +213,12 @@
       "returnType": "u32",
       "signature": "static u32 Client_Run(struct MysteryGiftClient *client)",
       "paramsRaw": "struct MysteryGiftClient *client",
+      "paramsList": [
+        {
+          "name": "client",
+          "typeRaw": "struct MysteryGiftClient *"
+        }
+      ],
       "body": "struct MysteryGiftClientCmd *cmd = &client->script[client->cmdidx];\n    client->cmdidx++;\n    switch (cmd->instr)\n    {\n    case CLI_NONE:\n        break;\n    case CLI_RETURN:\n        client->param = cmd->parameter;  \n        client->funcId = FUNC_DONE;\n        client->funcState = 0;\n        break;\n    case CLI_RECV:\n        MysteryGiftLink_InitRecv(&client->link, cmd->parameter, client->recvBuffer);\n        client->funcId = FUNC_RECV;\n        client->funcState = 0;\n        break;\n    case CLI_SEND_LOADED:\n         \n         \n        client->funcId = FUNC_SEND;\n        client->funcState = 0;\n        break;\n    case CLI_SEND_READY_END:\n        MysteryGiftLink_InitSend(&client->link, MG_LINKID_READY_END, client->sendBuffer, 0);\n        client->funcId = FUNC_SEND;\n        client->funcState = 0;\n        break;\n    case CLI_SEND_STAT:\n        MysteryGiftClient_InitSendWord(client, MG_LINKID_GAME_STAT, GetGameStat(cmd->parameter));\n        client->funcId = FUNC_SEND;\n        client->funcState = 0;\n        break;\n    case CLI_COPY_RECV_IF_N:\n        if (client->param == FALSE)\n            MysteryGiftClient_CopyRecvScript(client);\n        break;\n    case CLI_COPY_RECV_IF:\n        if (client->param == TRUE)\n            MysteryGiftClient_CopyRecvScript(client);\n        break;\n    case CLI_COPY_RECV:\n        MysteryGiftClient_CopyRecvScript(client);\n        break;\n    case CLI_YES_NO:\n        memcpy(client->msg, client->recvBuffer, CLIENT_MAX_MSG_SIZE);\n        client->funcId = FUNC_WAIT;\n        client->funcState = 0;\n        return CLI_RET_YES_NO;\n    case CLI_PRINT_MSG:\n        memcpy(client->msg, client->recvBuffer, CLIENT_MAX_MSG_SIZE);\n        client->funcId = FUNC_WAIT;\n        client->funcState = 0;\n        return CLI_RET_PRINT_MSG;\n    case CLI_COPY_MSG:\n        memcpy(client->msg, client->recvBuffer, CLIENT_MAX_MSG_SIZE);\n        client->funcId = FUNC_WAIT;\n        client->funcState = 0;\n        return CLI_RET_COPY_MSG;\n    case CLI_ASK_TOSS:\n        client->funcId = FUNC_WAIT;\n        client->funcState = 0;\n        return CLI_RET_ASK_TOSS;\n    case CLI_LOAD_GAME_DATA:\n        MysteryGift_LoadLinkGameData(client->sendBuffer, client->isWonderNews);\n        MysteryGiftLink_InitSend(&client->link, MG_LINKID_GAME_DATA, client->sendBuffer, sizeof(struct MysteryGiftLinkGameData));\n        break;\n    case CLI_LOAD_TOSS_RESPONSE:\n         \n        MysteryGiftClient_InitSendWord(client, MG_LINKID_RESPONSE, client->param);\n        break;\n    case CLI_SAVE_CARD:\n        SaveWonderCard(client->recvBuffer);\n        break;\n    case CLI_SAVE_NEWS:\n        if (!IsWonderNewsSameAsSaved(client->recvBuffer))\n        {\n            SaveWonderNews(client->recvBuffer);\n            MysteryGiftClient_InitSendWord(client, MG_LINKID_RESPONSE, FALSE);\n        }\n        else\n        {\n             \n             \n            MysteryGiftClient_InitSendWord(client, MG_LINKID_RESPONSE, TRUE);\n        }\n        break;\n    case CLI_RUN_MEVENT_SCRIPT:\n        client->funcId = FUNC_RUN_MEVENT;\n        client->funcState = 0;\n        break;\n    case CLI_SAVE_STAMP:\n        MysteryGift_TrySaveStamp(client->recvBuffer);\n        break;\n    case CLI_SAVE_RAM_SCRIPT:\n        InitRamScript_NoObjectEvent(client->recvBuffer, sizeof(struct RamScriptData));\n        break;\n    case CLI_RECV_EREADER_TRAINER:\n        memcpy(&gSaveBlock2Ptr->frontier.ereaderTrainer, client->recvBuffer, sizeof(gSaveBlock2Ptr->frontier.ereaderTrainer));\n        ValidateEReaderTrainer();\n        break;\n    case CLI_RUN_BUFFER_SCRIPT:\n        memcpy(gDecompressionBuffer, client->recvBuffer, MG_LINK_BUFFER_SIZE);\n        client->funcId = FUNC_RUN_BUFFER;\n        client->funcState = 0;\n        break;\n    }\n\n    return CLI_RET_ACTIVE;",
       "callsTo": [
         "GetGameStat",
@@ -150,6 +240,12 @@
       "returnType": "u32",
       "signature": "static u32 Client_Wait(struct MysteryGiftClient *client)",
       "paramsRaw": "struct MysteryGiftClient *client",
+      "paramsList": [
+        {
+          "name": "client",
+          "typeRaw": "struct MysteryGiftClient *"
+        }
+      ],
       "body": "if (client->funcState)\n    {\n        client->funcId = FUNC_RUN;\n        client->funcState = 0;\n    }\n    return CLI_RET_ACTIVE;",
       "callsTo": [],
       "lineCount": 6
@@ -158,6 +254,12 @@
       "returnType": "u32",
       "signature": "static u32 Client_RunMysteryEventScript(struct MysteryGiftClient *client)",
       "paramsRaw": "struct MysteryGiftClient *client",
+      "paramsList": [
+        {
+          "name": "client",
+          "typeRaw": "struct MysteryGiftClient *"
+        }
+      ],
       "body": "switch (client->funcState)\n    {\n    case 0:\n        InitMysteryEventScriptContext(client->recvBuffer);\n        client->funcState++;\n        break;\n    case 1:\n        if (!RunMysteryEventScriptContextCommand(&client->param))\n        {\n            client->funcId = FUNC_RUN;\n            client->funcState = 0;\n        }\n        break;\n    }\n    return CLI_RET_ACTIVE;",
       "callsTo": [
         "InitMysteryEventScriptContext",
@@ -169,6 +271,12 @@
       "returnType": "u32",
       "signature": "static u32 Client_RunBufferScript(struct MysteryGiftClient *client)",
       "paramsRaw": "struct MysteryGiftClient *client",
+      "paramsList": [
+        {
+          "name": "client",
+          "typeRaw": "struct MysteryGiftClient *"
+        }
+      ],
       "body": "u32 (*func)(u32 *, struct SaveBlock2 *, struct SaveBlock1 *) = (void *)gDecompressionBuffer;\n    if (func(&client->param, gSaveBlock2Ptr, gSaveBlock1Ptr) == 1)\n    {\n        client->funcId = FUNC_RUN;\n        client->funcState = 0;\n    }\n    return CLI_RET_ACTIVE;",
       "callsTo": [],
       "lineCount": 7
@@ -177,6 +285,12 @@
       "returnType": "u32",
       "signature": "static u32 MysteryGiftClient_CallFunc(struct MysteryGiftClient *client)",
       "paramsRaw": "struct MysteryGiftClient *client",
+      "paramsList": [
+        {
+          "name": "client",
+          "typeRaw": "struct MysteryGiftClient *"
+        }
+      ],
       "body": "u32 (*funcs[])(struct MysteryGiftClient *) = {\n        [FUNC_INIT] = Client_Init,\n        [FUNC_DONE] = Client_Done,\n        [FUNC_RECV] = Client_Recv,\n        [FUNC_SEND] = Client_Send,\n        [FUNC_RUN]  = Client_Run,\n        [FUNC_WAIT] = Client_Wait,\n        [FUNC_RUN_MEVENT] = Client_RunMysteryEventScript,\n        [FUNC_RUN_BUFFER] = Client_RunBufferScript\n    };\n    return funcs[client->funcId](client);",
       "callsTo": [],
       "lineCount": 11
