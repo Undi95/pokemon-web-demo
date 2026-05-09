@@ -1892,6 +1892,19 @@ registerOpcode('call_if_defeated', (ctx, args) => {
   return false;
 });
 
+// 1:1 décomp `ScrCmd_goto_if_defeated`. Inverse de goto_if_not_defeated. 16x.
+registerOpcode('goto_if_defeated', (ctx, args) => {
+  const trainer = args[0] ?? '';
+  const target = args[1] ?? '';
+  const g = globalThis as Record<string, unknown>;
+  const defeated = (g.__defeatedTrainers as Set<string>)?.has(trainer) ?? false;
+  if (defeated) {
+    const sub = getScript(target);
+    if (sub) ScriptJump(ctx, sub);
+  }
+  return false;
+});
+
 // 1:1 décomp `ScrCmd_showmonpic` / `hidemonpic` — show/hide a Pokemon front
 //   sprite in a window. 10x usage in Birch lab + cinematic moments.
 //   MVP : log + skip (= would integrate with starter-choose-flow style sprite).
@@ -1985,6 +1998,30 @@ registerOpcode('getplayerxy', (_ctx, args) => {
   const yVar = args[1] ?? '';
   if (xVar) VarSet(xVar, gameState.player?.x ?? 0);
   if (yVar) VarSet(yVar, gameState.player?.y ?? 0);
+  return false;
+});
+
+// 1:1 décomp `ScrCmd_getpartysize` (scrcmd.c) — read partySize into VAR_RESULT.
+registerOpcode('getpartysize', (_ctx) => {
+  VarSet('VAR_RESULT', gameState.partySize);
+  return false;
+});
+
+// 1:1 décomp `ScrCmd_setescapewarp` (scrcmd.c) — set the escape warp (= where
+// player teleports back to when using ESCAPE rope or losing battle).
+registerOpcode('setescapewarp', (_ctx, args) => {
+  const map = args[0] ?? '';
+  const x = parseValue(args[2]);
+  const y = parseValue(args[3]);
+  const g = globalThis as Record<string, unknown>;
+  g.__escapeWarp = { mapName: map.replace(/^MAP_/, ''), x, y };
+  return false;
+});
+
+// 1:1 décomp `ScrCmd_giveegg` (scrcmd.c) — give a Pokemon egg to player party.
+//   MVP : log + skip.
+registerOpcode('giveegg', (_ctx, args) => {
+  console.log(`[opcode giveegg] species=${args[0]} — TODO egg gift`);
   return false;
 });
 

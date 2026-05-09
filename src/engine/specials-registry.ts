@@ -408,6 +408,48 @@ registerSpecial('TryBufferWaldaPhrase', () => 0);
 registerSpecial('DoWaldaNamingScreen', () => 0);
 registerSpecial('TryGetWallpaperWithWaldaPhrase', () => 0);
 
+// ─── Iter9 — main-story (70 maps) gap fillers ──────────────────────────────
+
+/** 1:1 décomp `ResetSSTidalFlag` / `SetSSTidalFlag` (event_data.c) — ferry
+ *  state for SS Tidal cruise. */
+registerSpecial('ResetSSTidalFlag', () => { /* no-op */ });
+registerSpecial('SetSSTidalFlag', () => { /* no-op */ });
+
+/** 1:1 décomp link-contest specials. Stubs (= no contests yet). */
+registerSpecial('LoadLinkContestPlayerPalettes', () => 0);
+registerSpecial('GetContestMultiplayerId', () => 0);
+registerSpecial('GenerateContestRand', () => 0);
+registerSpecial('IsWirelessContest', () => 0);
+registerSpecial('ClearLinkContestFlags', () => { /* no-op */ });
+
+/** 1:1 décomp `GetPlayerFacingDirection` (event_object_movement.c). */
+registerSpecial('GetPlayerFacingDirection', () => {
+  // 1:1 décomp : retourne gObjectEvents[0].facingDirection.
+  const dir = gameState.player?.direction;
+  if (dir === 'NORTH') return 1;
+  if (dir === 'SOUTH') return 2;
+  if (dir === 'WEST') return 3;
+  if (dir === 'EAST') return 4;
+  return 0;
+});
+
+/** 1:1 décomp `ShouldTryGetTrainerScript` (battle_setup.c). Returns 0 = no
+ *  trainer engaged. */
+registerSpecial('ShouldTryGetTrainerScript', () => 0);
+
+/** 1:1 décomp in-game trade specials. Stubs (= no trade UI yet). */
+registerSpecial('GetInGameTradeSpeciesInfo', () => 0);
+registerSpecial('GetTradeSpecies', () => 0);
+registerSpecial('CreateInGameTradePokemon', () => 0);
+registerSpecial('DoInGameTradeScene', () => 0);
+registerSpecial('ChoosePartyMon', () => 0);
+
+/** 1:1 décomp `LookThroughPorthole` (cinematic). Stub. */
+registerSpecial('LookThroughPorthole', () => { /* no-op */ });
+
+/** 1:1 décomp `RunUnionRoom` (link). Stub. */
+registerSpecial('RunUnionRoom', () => { /* no-op */ });
+
 /** Boot marker — confirme que le registry a été importé au boot.
  *  Utilisé par debug pour vérifier que le module est loaded. */
-console.log('[specials-registry] loaded — 67 stubs registered (Phase 5.7+ iter8)');
+console.log('[specials-registry] loaded — 84 stubs registered (Phase 5.7+ iter9)');
