@@ -952,6 +952,60 @@ registerOpcode('waitfanfare', (_ctx) => {
   return false;
 });
 
+/** 1:1 décomp `ScrCmd_playbgm` (scrcmd.c) : PlayBGM avec un song id + loop flag.
+ *  Format args : args[0] = song name (= 'MUS_ENCOUNTER_MAY' etc.), args[1] = TRUE/FALSE for loop. */
+registerOpcode('playbgm', (_ctx, args) => {
+  const songName = args[0] ?? '';
+  const songId = (Songs as unknown as Record<string, number>)[songName];
+  if (typeof songId === 'number') {
+    void import('./decomp-globals').then(({ m4aSongNumStart }) => {
+      m4aSongNumStart(songId, true);
+    });
+  } else {
+    console.warn(`[opcode playbgm] unknown BGM '${songName}'`);
+  }
+  return false;
+});
+
+/** 1:1 décomp `ScrCmd_savebgm` (scrcmd.c) : save current BGM for later restore. */
+registerOpcode('savebgm', (_ctx, _args) => {
+  // No-op for MVP — would track current song id for restore.
+  return false;
+});
+
+/** 1:1 décomp `ScrCmd_fadedefaultbgm` (scrcmd.c) : fade back to default BGM. */
+registerOpcode('fadedefaultbgm', (_ctx, _args) => {
+  // No-op for MVP — would fade to map default BGM.
+  return false;
+});
+
+/** 1:1 décomp `ScrCmd_fadenewbgm` (scrcmd.c) : fade to new BGM. */
+registerOpcode('fadenewbgm', (_ctx, args) => {
+  const songName = args[0] ?? '';
+  const songId = (Songs as unknown as Record<string, number>)[songName];
+  if (typeof songId === 'number') {
+    void import('./decomp-globals').then(({ m4aSongNumStart, FadeOutBGM }) => {
+      FadeOutBGM(4);
+      setTimeout(() => m4aSongNumStart(songId, true), 200);
+    });
+  }
+  return false;
+});
+
+/** 1:1 décomp `ScrCmd_fadeoutbgm` (scrcmd.c) : fade out current BGM. */
+registerOpcode('fadeoutbgm', (_ctx, args) => {
+  const speed = parseInt(args[0] ?? '4', 10) || 4;
+  void import('./decomp-globals').then(({ FadeOutBGM }) => FadeOutBGM(speed));
+  return false;
+});
+
+/** 1:1 décomp `ScrCmd_fadeinbgm` (scrcmd.c) : fade in current BGM. */
+registerOpcode('fadeinbgm', (_ctx, args) => {
+  const speed = parseInt(args[0] ?? '4', 10) || 4;
+  void import('./decomp-globals').then(({ FadeInBGM }) => FadeInBGM(speed));
+  return false;
+});
+
 // Standard NPC scripts utilitaires fréquemment appelés via `call` :
 // Common_EventScript_SetupRivalGfxId, Common_EventScript_SaveGame, etc.
 // On warn la 1ère fois seulement (= via dispatchOpcode default behavior).
