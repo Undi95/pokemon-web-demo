@@ -23,13 +23,14 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AddTextPrinterParameterized4, AddWindow, Alloc,
-  AllocZeroed, AnimateSprites, BG_PLTT_ID, BuildOamBuffer,
-  ChangeBgX, ChangeBgY, ClearGpuRegBits, ClearSavedWonderCardAndRelated,
-  ClearSavedWonderNewsAndRelated, ClearWindowTilemap, CloseLink, CopyBgTilemapBufferToVram,
-  CopyWindowToVram, CreateEReaderTask, CreateTask, CreateTask_LinkMysteryGiftOverWireless,
-  CreateTask_LinkMysteryGiftWithFriend, CreateTask_SendMysteryGift, CreateYesNoMenu, DeactivateAllTextPrinters,
-  DecompressAndLoadBgGfxUsingHeap, DestroyTask, DestroyWirelessStatusIndicatorSprite, DoMysteryGiftListMenu,
-  DrawDownArrow, DrawTextBorderOuter, EnableInterrupts, FillBgTilemapBufferRect,
+  AllocZeroed, AnimateSprites, BG_PLTT_ID, BG_SCREEN_SIZE,
+  BuildOamBuffer, ChangeBgX, ChangeBgY, ClearGpuRegBits,
+  ClearSavedWonderCardAndRelated, ClearSavedWonderNewsAndRelated, ClearWindowTilemap, CloseLink,
+  CopyBgTilemapBufferToVram, CopyWindowToVram, CreateEReaderTask, CreateTask,
+  CreateTask_LinkMysteryGiftOverWireless, CreateTask_LinkMysteryGiftWithFriend, CreateTask_SendMysteryGift, CreateYesNoMenu,
+  DISPCNT_WIN0_ON, DISPCNT_WIN1_ON, DeactivateAllTextPrinters, DecompressAndLoadBgGfxUsingHeap,
+  DestroyTask, DestroyWirelessStatusIndicatorSprite, DoMysteryGiftListMenu, DrawDownArrow,
+  DrawTextBorderOuter, EnableInterrupts, FALSE, FillBgTilemapBufferRect,
   FillWindowPixelBuffer, Free, FreeAllSpritePalettes, FreeAllWindowBuffers,
   GetBgTilemapBuffer, GetSavedWonderCard, GetSavedWonderCardMetadata, GetSavedWonderNews,
   GetStringRightAlignXOffset, GetTextWindowPalette, InitBgsFromTemplates, InitWindows,
@@ -38,15 +39,17 @@ const {
   LoadUserWindowBorderGfx, LoadUserWindowBorderGfx_, Menu_LoadStdPalAt, Menu_ProcessInputNoWrapClearOnChoose,
   MysterGiftServer_CreateForCard, MysterGiftServer_CreateForNews, MysterGiftServer_Run, MysteryGiftClient_AdvanceState,
   MysteryGiftClient_Create, MysteryGiftClient_GetMsg, MysteryGiftClient_Run, MysteryGiftClient_SetParam,
-  PlayBGM, PlayFanfare, ProcessSpriteCopyRequests, PutWindowTilemap,
-  RemoveWindow, ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData,
-  ResetTasks, Rfu_SetCloseLinkCallback, RunTasks, RunTextPrinters,
-  ScanlineEffect_Stop, SetBgTilemapBuffer, SetGpuReg, SetMainCallback2,
-  SetVBlankCallback, ShowBg, StringCopy, StringExpandPlaceholders,
-  TransferPlttBuffer, TrySavingData, ValidateSavedWonderCard, ValidateSavedWonderNews,
-  WonderCard_Destroy, WonderCard_Enter, WonderCard_Exit, WonderCard_Init,
-  WonderNews_AddScrollIndicatorArrowPair, WonderNews_Destroy, WonderNews_Enter, WonderNews_Exit,
-  WonderNews_GetInput, WonderNews_Init, WonderNews_RemoveScrollIndicatorArrowPair, WonderNews_SetReward,  // 4-per-line for readability
+  NULL, PLTT_SIZE_4BPP, PlayBGM, PlayFanfare,
+  ProcessSpriteCopyRequests, PutWindowTilemap, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT,
+  REG_OFFSET_BLDY, RemoveWindow, ResetBgsAndClearDma3BusyFlags, ResetPaletteFade,
+  ResetSpriteData, ResetTasks, Rfu_SetCloseLinkCallback, RunTasks,
+  RunTextPrinters, ScanlineEffect_Stop, SetBgTilemapBuffer, SetGpuReg,
+  SetMainCallback2, SetVBlankCallback, ShowBg, StringCopy,
+  StringExpandPlaceholders, TRUE, TransferPlttBuffer, TrySavingData,
+  ValidateSavedWonderCard, ValidateSavedWonderNews, WonderCard_Destroy, WonderCard_Enter,
+  WonderCard_Exit, WonderCard_Init, WonderNews_AddScrollIndicatorArrowPair, WonderNews_Destroy,
+  WonderNews_Enter, WonderNews_Exit, WonderNews_GetInput, WonderNews_Init,
+  WonderNews_RemoveScrollIndicatorArrowPair, WonderNews_SetReward,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void VBlankCB_MysteryGiftEReader(void) */

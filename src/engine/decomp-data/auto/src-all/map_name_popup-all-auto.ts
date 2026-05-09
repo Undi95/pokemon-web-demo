@@ -24,10 +24,11 @@ import * as _bridge from '../../../decomp-bridge';
 const {
   AddMapNamePopUpWindow, AddTextPrinterParameterized, BG_PLTT_ID, BlitBitmapToWindow,
   CallWindowFunction, ClearStdWindowAndFrame, CopyWindowToVram, CreateTask,
-  CurrentBattlePyramidLocation, DestroyTask, FillBgTilemapBufferRect, FlagGet,
-  FuncIsActiveTask, GetMapName, GetMapNamePopUpWindowId, GetStringCenterAlignXOffset,
-  GetWindowAttribute, LoadBgTiles, LoadPalette, PutWindowTilemap,
-  RemoveMapNamePopUpWindow, SetGpuReg, SetGpuReg_ForcedBlank, StringCopy,  // 4-per-line for readability
+  CurrentBattlePyramidLocation, DestroyTask, FALSE, FillBgTilemapBufferRect,
+  FlagGet, FuncIsActiveTask, GetMapName, GetMapNamePopUpWindowId,
+  GetStringCenterAlignXOffset, GetWindowAttribute, LoadBgTiles, LoadPalette,
+  NULL, PutWindowTilemap, REG_OFFSET_BG0VOFS, RemoveMapNamePopUpWindow,
+  SetGpuReg, SetGpuReg_ForcedBlank, StringCopy, TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void ShowMapNamePopup(void) */

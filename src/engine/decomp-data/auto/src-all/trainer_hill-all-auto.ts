@@ -25,14 +25,16 @@ const {
   ARRAY_COUNT, AddBagItem, AddTextPrinterParameterized3, AllocZeroed,
   BG_PLTT_ID, CalculateMonStats, ClearTrainerHillVBlankCounter, ConvertIntToDecimalStringN,
   CopyItemName, CopyWindowToVram, CpuCopy32, CpuFill32,
-  CreateBattleTowerMon, FacilityClassToGraphicsId, FillWindowPixelBuffer, FlagGet,
-  FrontierSpeechToString, GetHighestLevelInPlayerParty, GetMonData, GetStringCenterAlignXOffset,
-  GetStringRightAlignXOffset, InitMapFromSavedGame, LoadPalette, MAP_GROUP,
-  MAP_NUM, Overworld_GetMapHeaderByGroupAndId, PACK_COLLISION, PACK_ELEVATION,
-  PACK_METATILE, PIXEL_FILL, PutWindowTilemap, ReadTrainerHillAndValidate,
-  RunOnLoadMapScript, SetMonData, SetTrainerHillVBlankCounter, ShowFieldMessageFromBuffer,
-  StringCopy, StringExpandPlaceholders, TRY_FREE_AND_SET_NULL, TrainerHillDummy,
-  VarGet, ZeroEnemyPartyMons,  // 4-per-line for readability
+  CreateBattleTowerMon, FALSE, FacilityClassToGraphicsId, FillWindowPixelBuffer,
+  FlagGet, FrontierSpeechToString, GetHighestLevelInPlayerParty, GetMonData,
+  GetStringCenterAlignXOffset, GetStringRightAlignXOffset, InitMapFromSavedGame, LoadPalette,
+  MAP_GROUP, MAP_NUM, NULL, Overworld_GetMapHeaderByGroupAndId,
+  PACK_COLLISION, PACK_ELEVATION, PACK_METATILE, PIXEL_FILL,
+  PLTT_SIZE_4BPP, PutWindowTilemap, ReadTrainerHillAndValidate, RunOnLoadMapScript,
+  STR_CONV_MODE_LEADING_ZEROS, STR_CONV_MODE_LEFT_ALIGN, STR_CONV_MODE_RIGHT_ALIGN, SetMonData,
+  SetTrainerHillVBlankCounter, ShowFieldMessageFromBuffer, StringCopy, StringExpandPlaceholders,
+  TRUE, TRY_FREE_AND_SET_NULL, TrainerHillDummy, VarGet,
+  ZeroEnemyPartyMons,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void CallTrainerHillFunction(void) */

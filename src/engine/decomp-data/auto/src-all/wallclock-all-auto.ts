@@ -26,17 +26,21 @@ const {
   BG_SCREEN_ADDR, BeginNormalPaletteFade, BuildOamBuffer, ChangeBgX,
   ChangeBgY, ClearScheduledBgCopiesToVram, ClearStdWindowAndFrameToTransparent, ClearWindowTilemap,
   Cos2, CreateSprite, CreateTask, CreateYesNoMenu,
-  DeactivateAllTextPrinters, DmaClear16, DmaClear32, DmaFillLarge16,
-  DoScheduledBgTilemapCopiesToVram, DrawStdFrameWithCustomTileAndPalette, EnableInterrupts, FreeAllSpritePalettes,
-  FreeAllWindowBuffers, GetOverworldTextboxPalettePtr, InitBgsFromTemplates, InitWindows,
-  JOY_HELD, JOY_NEW, LZ77UnCompVram, LoadCompressedSpriteSheet,
-  LoadOam, LoadPalette, LoadSpritePalettes, LoadUserWindowBorderGfx,
-  Menu_ProcessInputNoWrapClearOnChoose, PLTT_SIZEOF, PlaySE, ProcessSpriteCopyRequests,
-  PutWindowTilemap, ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData,
-  ResetTasks, RtcCalcLocalTime, RtcInitLocalTimeOffset, RunTasks,
-  ScanlineEffect_Stop, ScheduleBgCopyTilemapToVram, SetGpuReg, SetMainCallback2,
-  SetOamMatrix, SetVBlankCallback, ShowBg, Sin2,
-  TransferPlttBuffer, UpdatePaletteFade,  // 4-per-line for readability
+  DISPCNT_OBJ_1D_MAP, DISPCNT_OBJ_ON, DeactivateAllTextPrinters, DmaClear16,
+  DmaClear32, DmaFillLarge16, DoScheduledBgTilemapCopiesToVram, DrawStdFrameWithCustomTileAndPalette,
+  EnableInterrupts, FALSE, FreeAllSpritePalettes, FreeAllWindowBuffers,
+  GetOverworldTextboxPalettePtr, InitBgsFromTemplates, InitWindows, JOY_HELD,
+  JOY_NEW, LZ77UnCompVram, LoadCompressedSpriteSheet, LoadOam,
+  LoadPalette, LoadSpritePalettes, LoadUserWindowBorderGfx, Menu_ProcessInputNoWrapClearOnChoose,
+  NULL, PALETTES_ALL, PLTT_SIZE, PLTT_SIZEOF,
+  PLTT_SIZE_4BPP, PlaySE, ProcessSpriteCopyRequests, PutWindowTilemap,
+  REG_OFFSET_BG0CNT, REG_OFFSET_BG1CNT, REG_OFFSET_BG2CNT, REG_OFFSET_BG3CNT,
+  REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, REG_OFFSET_BLDY, ResetBgsAndClearDma3BusyFlags,
+  ResetPaletteFade, ResetSpriteData, ResetTasks, RtcCalcLocalTime,
+  RtcInitLocalTimeOffset, RunTasks, ST_OAM_AFFINE_NORMAL, ScanlineEffect_Stop,
+  ScheduleBgCopyTilemapToVram, SetGpuReg, SetMainCallback2, SetOamMatrix,
+  SetVBlankCallback, ShowBg, Sin2, TransferPlttBuffer,
+  UpdatePaletteFade, VRAM_SIZE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void VBlankCB_WallClock(void) */

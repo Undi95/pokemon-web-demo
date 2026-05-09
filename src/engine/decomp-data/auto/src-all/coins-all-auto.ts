@@ -23,8 +23,9 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   AddTextPrinterParameterized, AddWindow, ClearStdWindowAndFrame, ConvertIntToDecimalStringN,
-  DrawStdFrameWithCustomTileAndPalette, FillWindowPixelBuffer, GetStringRightAlignXOffset, PIXEL_FILL,
-  PutWindowTilemap, RemoveWindow, SetWindowTemplateFields, StringExpandPlaceholders,  // 4-per-line for readability
+  DrawStdFrameWithCustomTileAndPalette, FALSE, FillWindowPixelBuffer, GetStringRightAlignXOffset,
+  NULL, PIXEL_FILL, PutWindowTilemap, RemoveWindow,
+  STR_CONV_MODE_RIGHT_ALIGN, SetWindowTemplateFields, StringExpandPlaceholders, TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void PrintCoinsString(u32 coinAmount) */

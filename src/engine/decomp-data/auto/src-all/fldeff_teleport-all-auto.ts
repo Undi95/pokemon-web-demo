@@ -22,8 +22,9 @@
 // to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  CreateFieldMoveTask, FieldEffectActiveListRemove, FieldEffectStart, FldEff_TeleportWarpOut,
-  GetCursorSelectionMonId, Overworld_MapTypeAllowsTeleportAndFly, Overworld_ResetStateAfterTeleport, SetPlayerAvatarTransitionFlags,  // 4-per-line for readability
+  CreateFieldMoveTask, FALSE, FieldEffectActiveListRemove, FieldEffectStart,
+  FldEff_TeleportWarpOut, GetCursorSelectionMonId, Overworld_MapTypeAllowsTeleportAndFly, Overworld_ResetStateAfterTeleport,
+  SetPlayerAvatarTransitionFlags, TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** bool8 SetUpFieldMove_Teleport(void) */

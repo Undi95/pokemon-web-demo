@@ -23,10 +23,10 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, ClearPokemonCrySongs, CreateTask, DestroyTask,
-  FuncIsActiveTask, GET_CRY, IsPokemonCryPlaying, SetPokemonCryChorus,
-  SetPokemonCryLength, SetPokemonCryPanpot, SetPokemonCryPitch, SetPokemonCryPriority,
-  SetPokemonCryProgress, SetPokemonCryRelease, SetPokemonCryTone, SetPokemonCryVolume,
-  SpeciesToCryId,  // 4-per-line for readability
+  FALSE, FuncIsActiveTask, GET_CRY, IsPokemonCryPlaying,
+  SetPokemonCryChorus, SetPokemonCryLength, SetPokemonCryPanpot, SetPokemonCryPitch,
+  SetPokemonCryPriority, SetPokemonCryProgress, SetPokemonCryRelease, SetPokemonCryTone,
+  SetPokemonCryVolume, SpeciesToCryId, TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void InitMapMusic(void) */

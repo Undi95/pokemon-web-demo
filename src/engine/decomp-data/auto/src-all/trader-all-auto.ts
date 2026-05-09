@@ -25,9 +25,10 @@ const {
   AddTextPrinterParameterized, AddWindow, ClearStdWindowAndFrameToTransparent, ClearWindowTilemap,
   ConvertInternationalString, ConvertPixelWidthToTileWidth, CopyDecorationCategoryName, CreateTask,
   DecorationAdd, DecorationRemove, DestroyTask, DrawStdFrameWithCustomTileAndPalette,
-  GetFirstEmptyDecorSlot, GetNumOwnedDecorationsInCategory, GetStringWidth, InitMenuInUpperLeftCornerNormal,
-  IsSelectedDecorInThePC, Menu_ProcessInput, PlaySE, RemoveWindow,
-  ScheduleBgCopyTilemapToVram, ScriptContext_Enable, StringCopy,  // 4-per-line for readability
+  FALSE, GetFirstEmptyDecorSlot, GetNumOwnedDecorationsInCategory, GetStringWidth,
+  InitMenuInUpperLeftCornerNormal, IsSelectedDecorInThePC, Menu_ProcessInput, NULL,
+  PlaySE, RemoveWindow, ScheduleBgCopyTilemapToVram, ScriptContext_Enable,
+  StringCopy, TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void TraderSetup(void) */

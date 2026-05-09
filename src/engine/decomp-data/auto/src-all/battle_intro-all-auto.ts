@@ -22,10 +22,16 @@
 // to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  BGCNT_CHARBASE, BGCNT_PRIORITY, BGCNT_SCREENBASE, BG_SCREEN_ADDR,
-  BLDALPHA_BLEND, Cos2, CpuCopy16, CpuFill32,
-  CreateTask, DestroyTask, GetBattlerAtPosition, GetGpuReg,
-  LoadBgTilemap, LoadBgTiles, SetBgAttribute, SetGpuReg,  // 4-per-line for readability
+  BGCNT_16COLOR, BGCNT_CHARBASE, BGCNT_PRIORITY, BGCNT_SCREENBASE,
+  BGCNT_TXT256x512, BGCNT_TXT512x256, BG_SCREEN_ADDR, BG_SCREEN_SIZE,
+  BLDALPHA_BLEND, BLDCNT_EFFECT_BLEND, BLDCNT_TGT1_BG1, BLDCNT_TGT2_BG3,
+  BLDCNT_TGT2_OBJ, Cos2, CpuCopy16, CpuFill32,
+  CreateTask, DISPCNT_OBJ_1D_MAP, DISPCNT_OBJ_ON, DISPCNT_WIN0_ON,
+  DISPCNT_WIN1_ON, DISPLAY_HEIGHT, DestroyTask, GetBattlerAtPosition,
+  GetGpuReg, LoadBgTilemap, LoadBgTiles, REG_OFFSET_BG1CNT,
+  REG_OFFSET_BG2CNT, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, REG_OFFSET_BLDY,
+  REG_OFFSET_WININ, REG_OFFSET_WINOUT, ST_OAM_OBJ_WINDOW, SetBgAttribute,
+  SetGpuReg,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void SetAnimBgAttribute(u8 bgId, u8 attributeId, u8 value) */

@@ -23,18 +23,20 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AddTextPrinterParameterized4, Alloc, AllocZeroed,
-  AnimateSprites, BG_PLTT_ID, BeginNormalPaletteFade, BuildOamBuffer,
-  ChangeBgX, ChangeBgY, ConvertIntToDecimalStringN, CopyBgTilemapBufferToVram,
-  CopyToBgTilemapBuffer, CopyWindowToVram, CreateTask, CreateTask_ListenToWireless,
-  DeactivateAllTextPrinters, DecompressAndLoadBgGfxUsingHeap, DestroyTask, DynamicPlaceholderTextUtil_Reset,
-  FillBgTilemapBufferRect, FillWindowPixelBuffer, Free, FreeAllWindowBuffers,
-  GetBgTilemapBuffer, GetStringCenterAlignXOffset, InitBgsFromTemplates, InitWindows,
-  IsDma3ManagerBusyWithBgCopy, JOY_NEW, LoadOam, LoadPalette,
-  Menu_LoadStdPalAt, PIXEL_FILL, PLTT_SIZEOF, PlaySE,
-  ProcessSpriteCopyRequests, PutWindowTilemap, ResetBgsAndClearDma3BusyFlags, ResetPaletteFade,
-  ResetSpriteData, ResetTasks, RunTasks, RunTextPrinters,
-  ScanlineEffect_Stop, SetBgTilemapBuffer, SetGpuReg, SetMainCallback2,
-  SetVBlankCallback, ShowBg, TransferPlttBuffer, UpdatePaletteFade,  // 4-per-line for readability
+  AnimateSprites, BG_PLTT_ID, BG_SCREEN_SIZE, BeginNormalPaletteFade,
+  BuildOamBuffer, ChangeBgX, ChangeBgY, ConvertIntToDecimalStringN,
+  CopyBgTilemapBufferToVram, CopyToBgTilemapBuffer, CopyWindowToVram, CreateTask,
+  CreateTask_ListenToWireless, DeactivateAllTextPrinters, DecompressAndLoadBgGfxUsingHeap, DestroyTask,
+  DynamicPlaceholderTextUtil_Reset, FALSE, FillBgTilemapBufferRect, FillWindowPixelBuffer,
+  Free, FreeAllWindowBuffers, GetBgTilemapBuffer, GetStringCenterAlignXOffset,
+  InitBgsFromTemplates, InitWindows, IsDma3ManagerBusyWithBgCopy, JOY_NEW,
+  LoadOam, LoadPalette, Menu_LoadStdPalAt, NULL,
+  PALETTES_ALL, PIXEL_FILL, PLTT_SIZEOF, PLTT_SIZE_4BPP,
+  PlaySE, ProcessSpriteCopyRequests, PutWindowTilemap, ResetBgsAndClearDma3BusyFlags,
+  ResetPaletteFade, ResetSpriteData, ResetTasks, RunTasks,
+  RunTextPrinters, STR_CONV_MODE_RIGHT_ALIGN, ScanlineEffect_Stop, SetBgTilemapBuffer,
+  SetGpuReg, SetMainCallback2, SetVBlankCallback, ShowBg,
+  TRUE, TransferPlttBuffer, UpdatePaletteFade,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void CB2_RunWirelessCommunicationScreen(void) */

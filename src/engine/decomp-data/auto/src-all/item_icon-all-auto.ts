@@ -23,8 +23,8 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   Alloc, AllocZeroed, CpuCopy16, CreateSprite,
-  Free, GetItemIconPicOrPalette, LZDecompressWram, LoadCompressedSpritePalette,
-  LoadSpriteSheet,  // 4-per-line for readability
+  FALSE, Free, GetItemIconPicOrPalette, LZDecompressWram,
+  LoadCompressedSpritePalette, LoadSpriteSheet, NULL, TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** bool8 AllocItemIconTemporaryBuffers(void) */

@@ -22,10 +22,10 @@
 // to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  AddBagItem, CpuFill16, GetBerryCountString, GetBerryInfo,
-  GetBerryTreeInfo, GetCameraCoords, GetObjectEventBerryTreeId, GetObjectEventScriptPointerPlayerFacing,
-  ITEM_TO_BERRY, IsBagPocketNonEmpty, IsBerryTreeSparkling, Random,
-  SetBerryTreeJustPicked, SetMainCallback2,  // 4-per-line for readability
+  AddBagItem, CpuFill16, FALSE, GetBerryCountString,
+  GetBerryInfo, GetBerryTreeInfo, GetCameraCoords, GetObjectEventBerryTreeId,
+  GetObjectEventScriptPointerPlayerFacing, ITEM_TO_BERRY, IsBagPocketNonEmpty, IsBerryTreeSparkling,
+  Random, SetBerryTreeJustPicked, SetMainCallback2, TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void ClearEnigmaBerries(void) */

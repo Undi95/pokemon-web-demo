@@ -23,23 +23,25 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AllocSpritePalette, AnimFastTranslateLinear, AnimTranslateLinear,
-  ArcTan2Neg, BATTLE_PARTNER, BLDALPHA_BLEND, BattleAnimAdjustPanning,
-  BeginNormalPaletteFade, BlendPalette, BlendPalettes, CMD_ARGS,
-  ChangeSpriteAffineAnim, ClearGpuRegBits, CloneBattlerSpriteWithBlend, Cos,
-  CreateSprite, CreateSpriteAndAnimate, DestroyAnimSprite, DestroyAnimVisualTask,
-  DestroySprite, DestroySpriteAndMatrix, DestroySpriteWithActiveSheet, FreeSpritePaletteByTag,
-  GetAnimBattlerSpriteId, GetBattleMonSpritePalettesMask, GetBattlePalettesMask, GetBattlerSide,
-  GetBattlerSpriteBGPriority, GetBattlerSpriteBGPriorityRank, GetBattlerSpriteCoord, GetBattlerSpriteCoord2,
-  GetBattlerSpriteCoordAttr, GetBattlerSpriteSubpriority, IndexOfSpritePaletteTag, InitAnimArcTranslation,
-  InitAnimFastLinearTranslationWithSpeed, InitAnimLinearTranslation, InitSpritePosToAnimAttacker, InitSpritePosToAnimTarget,
-  IsBattlerSpriteVisible, IsContest, IsDoubleBattle, LoadPalette,
-  LoadPointerFromVars, OBJ_PLTT_ID, OBJ_PLTT_ID2, PLTT_SIZEOF,
-  PlaySE12WithPanning, PrepareBattlerSpriteForRotScale, Random2, ResetSpriteRotScale,
-  SPRITE_SHAPE, SPRITE_SIZE, SetAnimBgAttribute, SetAnimSpriteInitialXOffset,
-  SetAverageBattlerPositions, SetBattlerSpriteYOffsetFromRotation, SetBattlerSpriteYOffsetFromYScale, SetGpuReg,
-  SetGpuRegBits, SetSpriteCoordsToAnimAttackerCoords, SetSpriteRotScale, Sin,
-  StartSpriteAffineAnim, StartSpriteAnim, StorePointerInVars, StoreSpriteCallbackInData6,
-  TranslateAnimHorizontalArc, TrySetSpriteRotScale,  // 4-per-line for readability
+  ArcTan2Neg, BATTLE_PARTNER, BLDALPHA_BLEND, BLDCNT_EFFECT_BLEND,
+  BattleAnimAdjustPanning, BeginNormalPaletteFade, BlendPalette, BlendPalettes,
+  CMD_ARGS, ChangeSpriteAffineAnim, ClearGpuRegBits, CloneBattlerSpriteWithBlend,
+  Cos, CreateSprite, CreateSpriteAndAnimate, DISPCNT_BG1_ON,
+  DISPCNT_BG2_ON, DISPLAY_HEIGHT, DestroyAnimSprite, DestroyAnimVisualTask,
+  DestroySprite, DestroySpriteAndMatrix, DestroySpriteWithActiveSheet, FALSE,
+  FreeSpritePaletteByTag, GetAnimBattlerSpriteId, GetBattleMonSpritePalettesMask, GetBattlePalettesMask,
+  GetBattlerSide, GetBattlerSpriteBGPriority, GetBattlerSpriteBGPriorityRank, GetBattlerSpriteCoord,
+  GetBattlerSpriteCoord2, GetBattlerSpriteCoordAttr, GetBattlerSpriteSubpriority, IndexOfSpritePaletteTag,
+  InitAnimArcTranslation, InitAnimFastLinearTranslationWithSpeed, InitAnimLinearTranslation, InitSpritePosToAnimAttacker,
+  InitSpritePosToAnimTarget, IsBattlerSpriteVisible, IsContest, IsDoubleBattle,
+  LoadPalette, LoadPointerFromVars, OBJ_PLTT_ID, OBJ_PLTT_ID2,
+  PLTT_SIZEOF, PlaySE12WithPanning, PrepareBattlerSpriteForRotScale, REG_OFFSET_BLDALPHA,
+  REG_OFFSET_BLDCNT, Random2, ResetSpriteRotScale, SPRITE_SHAPE,
+  SPRITE_SIZE, ST_OAM_OBJ_BLEND, ST_OAM_OBJ_NORMAL, SetAnimBgAttribute,
+  SetAnimSpriteInitialXOffset, SetAverageBattlerPositions, SetBattlerSpriteYOffsetFromRotation, SetBattlerSpriteYOffsetFromYScale,
+  SetGpuReg, SetGpuRegBits, SetSpriteCoordsToAnimAttackerCoords, SetSpriteRotScale,
+  Sin, StartSpriteAffineAnim, StartSpriteAnim, StorePointerInVars,
+  StoreSpriteCallbackInData6, TRUE, TranslateAnimHorizontalArc, TrySetSpriteRotScale,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void AnimMovePowderParticle(struct Sprite *sprite) */

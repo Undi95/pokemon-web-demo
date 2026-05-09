@@ -22,7 +22,8 @@
 // to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  DATETIME_BUF, INFO_BUF, TIME_BUF,  // 4-per-line for readability
+  DATETIME_BUF, FALSE, INFO_BUF, TIME_BUF,
+  TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void SiiRtcUnprotect(void) */

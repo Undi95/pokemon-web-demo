@@ -23,16 +23,19 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AnimFastTranslateLinear, AnimLoadCompressedBgTilemapHandleContest, AnimTranslateLinear,
-  BG_PLTT_ID, BLDALPHA_BLEND, ClearBattleAnimBg, ConvertPosDataToTranslateLinearData,
-  Cos, CreateSprite, DestroyAnimSprite, DestroyAnimVisualTask,
-  DestroySprite, DestroySpriteAndMatrix, FreeOamMatrix, GET_BATTLER_SIDE2,
+  BG_PLTT_ID, BLDALPHA_BLEND, BLDCNT_EFFECT_BLEND, BLDCNT_TGT1_BG1,
+  ClearBattleAnimBg, ConvertPosDataToTranslateLinearData, Cos, CreateSprite,
+  DISPLAY_HEIGHT, DestroyAnimSprite, DestroyAnimVisualTask, DestroySprite,
+  DestroySpriteAndMatrix, FALSE, FreeOamMatrix, GET_BATTLER_SIDE2,
   GetAnimBattlerSpriteId, GetBattleAnimBg1Data, GetBattlerAtPosition, GetBattlerSide,
   GetBattlerSpriteBGPriority, GetBattlerSpriteCoord, GetBattlerSpriteCoordAttr, InitAnimArcTranslation,
   InitAnimFastLinearTranslationWithSpeed, InitAnimLinearTranslation, InitAnimLinearTranslationWithSpeed, InitSpritePosToAnimAttacker,
   InitSpritePosToAnimTarget, IsBattlerSpriteVisible, IsContest, IsDoubleBattle,
-  LoadBgTiles, LoadPalette, Random2, SetAnimBgAttribute,
-  SetAverageBattlerPositions, SetGpuReg, Sin, StartSpriteAffineAnim,
-  StartSpriteAnim, StoreSpriteCallbackInData6, TranslateAnimHorizontalArc,  // 4-per-line for readability
+  LoadBgTiles, LoadPalette, PLTT_SIZE_4BPP, REG_OFFSET_BG1HOFS,
+  REG_OFFSET_BG1VOFS, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, Random2,
+  ST_OAM_AFFINE_OFF, SetAnimBgAttribute, SetAverageBattlerPositions, SetGpuReg,
+  Sin, StartSpriteAffineAnim, StartSpriteAnim, StoreSpriteCallbackInData6,
+  TRUE, TranslateAnimHorizontalArc,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void AnimUnusedIceCrystalThrow(struct Sprite *sprite) */

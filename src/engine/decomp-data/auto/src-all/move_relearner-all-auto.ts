@@ -24,20 +24,22 @@ import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AddScrollIndicatorArrowPair, AddTextPrinterParameterized, AllocZeroed,
   AnimateSprites, BeginNormalPaletteFade, BuildOamBuffer, ClearScheduledBgCopiesToVram,
-  CopyWindowToVram, CreateSprite, CreateTask, DestroyListMenuTask,
-  DestroyTask, DoScheduledBgTilemapCopiesToVram, FREE_AND_SET_NULL, FillWindowPixelBuffer,
-  FreeAllSpritePalettes, FreeAllWindowBuffers, GetLRKeysPressed, GetMonData,
-  GetMoveRelearnerMoves, GiveMoveToMon, InitBgsFromTemplates, InitMoveRelearnerWindows,
-  IsFanfareTaskInactive, JOY_NEW, ListMenuGetScrollAndRow, ListMenuInit,
-  ListMenu_ProcessInput, LoadMoveRelearnerMovesList, LoadOam, LoadSpritePalette,
-  LoadSpriteSheet, LockPlayerFieldControls, Menu_ProcessInputNoWrapClearOnChoose, MoveRelearnerCreateYesNoMenu,
-  MoveRelearnerPrintMessage, MoveRelearnerRunTextPrinters, PlayFanfare, PlaySE,
-  ProcessSpriteCopyRequests, PutWindowTilemap, RemoveMonPPBonus, RemoveScrollIndicatorArrowPair,
-  ResetAllBgsCoordinates, ResetBgsAndClearDma3BusyFlags, ResetSpriteData, ResetTasks,
-  ResetVramOamAndBgCntRegs, RunTasks, ScheduleBgCopyTilemapToVram, SetBackdropFromColor,
-  SetGpuReg, SetMainCallback2, SetMonMoveSlot, SetVBlankCallback,
-  ShowBg, ShowSelectMovePokemonSummaryScreen, StartSpriteAnim, StringCopy,
-  StringCopy_Nickname, StringExpandPlaceholders, TransferPlttBuffer, UpdatePaletteFade,  // 4-per-line for readability
+  CopyWindowToVram, CreateSprite, CreateTask, DISPCNT_OBJ_1D_MAP,
+  DISPCNT_OBJ_ON, DestroyListMenuTask, DestroyTask, DoScheduledBgTilemapCopiesToVram,
+  FALSE, FREE_AND_SET_NULL, FillWindowPixelBuffer, FreeAllSpritePalettes,
+  FreeAllWindowBuffers, GetLRKeysPressed, GetMonData, GetMoveRelearnerMoves,
+  GiveMoveToMon, InitBgsFromTemplates, InitMoveRelearnerWindows, IsFanfareTaskInactive,
+  JOY_NEW, ListMenuGetScrollAndRow, ListMenuInit, ListMenu_ProcessInput,
+  LoadMoveRelearnerMovesList, LoadOam, LoadSpritePalette, LoadSpriteSheet,
+  LockPlayerFieldControls, Menu_ProcessInputNoWrapClearOnChoose, MoveRelearnerCreateYesNoMenu, MoveRelearnerPrintMessage,
+  MoveRelearnerRunTextPrinters, NULL, PALETTES_ALL, PlayFanfare,
+  PlaySE, ProcessSpriteCopyRequests, PutWindowTilemap, REG_OFFSET_BLDCNT,
+  RemoveMonPPBonus, RemoveScrollIndicatorArrowPair, ResetAllBgsCoordinates, ResetBgsAndClearDma3BusyFlags,
+  ResetSpriteData, ResetTasks, ResetVramOamAndBgCntRegs, RunTasks,
+  ScheduleBgCopyTilemapToVram, SetBackdropFromColor, SetGpuReg, SetMainCallback2,
+  SetMonMoveSlot, SetVBlankCallback, ShowBg, ShowSelectMovePokemonSummaryScreen,
+  StartSpriteAnim, StringCopy, StringCopy_Nickname, StringExpandPlaceholders,
+  TASK_NONE, TRUE, TransferPlttBuffer, UpdatePaletteFade,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void VBlankCB_MoveRelearner(void) */

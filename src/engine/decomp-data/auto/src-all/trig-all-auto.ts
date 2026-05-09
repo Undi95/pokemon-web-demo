@@ -15,14 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  Sin2,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** s16 Sin(s16 index, s16 amplitude) */
 export function Sin(index: any, amplitude: any): any {
   return (amplitude * gSineTable[index]) >> 8;

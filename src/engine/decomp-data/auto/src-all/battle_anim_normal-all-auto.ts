@@ -23,11 +23,11 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   BeginNormalPaletteFade, BlendPalettes, CMD_ARGS, Cos,
-  DestroyAnimSprite, DestroyAnimVisualTask, GetAnimBattlerSpriteId, GetBattlePalettesMask,
-  GetBattlerSide, IndexOfSpritePaletteTag, InitSpritePosToAnimAttacker, InitSpritePosToAnimTarget,
-  InvertPlttBuffer, IsContest, Random2, Sin,
-  StartSpriteAffineAnim, StartSpriteAnim, StoreSpriteCallbackInData6, TintPlttBuffer,
-  UnfadePlttBuffer,  // 4-per-line for readability
+  DestroyAnimSprite, DestroyAnimVisualTask, FALSE, GetAnimBattlerSpriteId,
+  GetBattlePalettesMask, GetBattlerSide, IndexOfSpritePaletteTag, InitSpritePosToAnimAttacker,
+  InitSpritePosToAnimTarget, InvertPlttBuffer, IsContest, PALETTES_BG,
+  Random2, Sin, StartSpriteAffineAnim, StartSpriteAnim,
+  StoreSpriteCallbackInData6, TRUE, TintPlttBuffer, UnfadePlttBuffer,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void AnimConfusionDuck(struct Sprite *sprite) */

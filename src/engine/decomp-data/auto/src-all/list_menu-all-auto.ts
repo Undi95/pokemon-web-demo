@@ -24,13 +24,15 @@ import * as _bridge from '../../../decomp-bridge';
 const {
   AddTextPrinterParameterized4, AddWindow, Alloc, ClearStdWindowAndFrame,
   ClearWindowTilemap, CopyWindowToVram, CreateSprite, CreateTask,
-  DestroySprite, DestroyTask, DrawTextBorderOuter, FillWindowPixelBuffer,
-  FillWindowPixelRect, Free, FreeSpritePaletteByTag, FreeSpriteTilesByTag,
-  GetFontAttribute, GetMenuCursorDimensionByFont, GetWindowAttribute, JOY_NEW,
-  JOY_REPEAT, LoadCompressedSpriteSheet, LoadPalette, LoadSpritePalette,
-  LoadUserWindowBorderGfx, OBJ_PLTT_ID, PIXEL_FILL, PlaySE,
+  DISPLAY_HEIGHT, DestroySprite, DestroyTask, DrawTextBorderOuter,
+  FALSE, FillWindowPixelBuffer, FillWindowPixelRect, Free,
+  FreeSpritePaletteByTag, FreeSpriteTilesByTag, GetFontAttribute, GetMenuCursorDimensionByFont,
+  GetWindowAttribute, JOY_NEW, JOY_REPEAT, LoadCompressedSpriteSheet,
+  LoadPalette, LoadSpritePalette, LoadUserWindowBorderGfx, NULL,
+  OBJ_PLTT_ID, PIXEL_FILL, PLTT_SIZE_4BPP, PlaySE,
   PutWindowRectTilemapOverridePalette, PutWindowTilemap, RemoveWindow, ScrollWindow,
-  SetSubspriteTables, SetWindowAttribute, StartSpriteAnim,  // 4-per-line for readability
+  SetSubspriteTables, SetWindowAttribute, StartSpriteAnim, TASK_NONE,
+  TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** s32 DoMysteryGiftListMenu(const struct WindowTemplate *windowTemplate, const struct ListMenuTemplate *listMenuTemplate, u8 drawMode, u16 tileNum, u16 palOffset) */

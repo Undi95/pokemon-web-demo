@@ -22,8 +22,8 @@
 // to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  CreateTask, DestroyTask, DrawWholeMapView, MapGridGetMetatileIdAt,
-  MapGridSetMetatileIdAt, PlayerGetDestCoords,  // 4-per-line for readability
+  CreateTask, DestroyTask, DrawWholeMapView, FALSE,
+  MapGridGetMetatileIdAt, MapGridSetMetatileIdAt, PlayerGetDestCoords, TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void SetEscalatorMetatile(u8 taskId, const s16 *metatileIds, u16 metatileMasks) */

@@ -23,9 +23,9 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AddBagItem, CopyItemName, DoBattleFactorySelectScreen,
-  DoBattleFactorySwapScreen, FrontierSpeechToString, GetFrontierTrainerName, Random,
-  SaveGameFrontier, SetBattleFacilityTrainerGfxId, SetDynamicWarp, VarSet,
-  ZeroPlayerPartyMons,  // 4-per-line for readability
+  DoBattleFactorySwapScreen, FALSE, FrontierSpeechToString, GetFrontierTrainerName,
+  Random, SaveGameFrontier, SetBattleFacilityTrainerGfxId, SetDynamicWarp,
+  TRUE, VarSet, ZeroPlayerPartyMons,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void CallVerdanturfTentFunction(void) */

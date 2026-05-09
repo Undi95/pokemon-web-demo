@@ -26,14 +26,15 @@ const {
   AddTextPrinterParameterized, AddWindow, AllocZeroed, ApprenticeOpenBagMenu,
   CalcApprenticeChecksum, CanSpeciesLearnTMHM, ClearStdWindowAndFrameToTransparent, ConvertIntToDecimalStringN,
   ConvertInternationalString, ConvertPixelWidthToTileWidth, CopyWindowToVram, CreateTask,
-  CreateWindowTemplate, DestroyTask, DrawDialogueFrame, FREE_AND_SET_NULL,
-  FreezeObjectEvents, FrontierSpeechToString, GetApprenticeNameInLanguage, GetItemName,
-  GetStringWidth, GetTrainerId, InitMenuInUpperLeftCornerNormal, ItemIdToBattleMoveId,
-  JOY_NEW, LockPlayerFieldControls, Menu_ProcessInput, Menu_ProcessInputNoWrap,
-  PlaySE, PlayerFreeze, PutWindowTilemap, Random,
-  RemoveWindow, RunTextPrintersAndIsPrinter0Active, SWAP, ScriptContext_Enable,
-  ScriptMenu_AdjustLeftCoordFromWidth, SetStandardWindowBorderStyle, StopPlayerAvatar, StringCopy,
-  StringCopy_PlayerName, StringExpandPlaceholders, TVShowConvertInternationalString, VarSet,  // 4-per-line for readability
+  CreateWindowTemplate, DestroyTask, DrawDialogueFrame, FALSE,
+  FREE_AND_SET_NULL, FreezeObjectEvents, FrontierSpeechToString, GetApprenticeNameInLanguage,
+  GetItemName, GetStringWidth, GetTrainerId, InitMenuInUpperLeftCornerNormal,
+  ItemIdToBattleMoveId, JOY_NEW, LockPlayerFieldControls, Menu_ProcessInput,
+  Menu_ProcessInputNoWrap, NULL, PlaySE, PlayerFreeze,
+  PutWindowTilemap, Random, RemoveWindow, RunTextPrintersAndIsPrinter0Active,
+  STR_CONV_MODE_RIGHT_ALIGN, SWAP, ScriptContext_Enable, ScriptMenu_AdjustLeftCoordFromWidth,
+  SetStandardWindowBorderStyle, StopPlayerAvatar, StringCopy, StringCopy_PlayerName,
+  StringExpandPlaceholders, TRUE, TVShowConvertInternationalString, VarSet,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void BufferApprenticeChallengeText(u8 saveApprenticeId) */

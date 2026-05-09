@@ -22,10 +22,11 @@
 // to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  ALIGNED, ARRAY_COUNT, DoNamingScreen, GetTrainerId,
-  GetWaldaPhrasePtr, IsWaldaPhraseEmpty, SetMainCallback2, SetWaldaPhrase,
-  SetWaldaWallpaperColors, SetWaldaWallpaperIconId, SetWaldaWallpaperLockedOrUnlocked, SetWaldaWallpaperPatternId,
-  StringCompare, StringCopy, StringLength, TO_BIT_OFFSET,  // 4-per-line for readability
+  ALIGNED, ARRAY_COUNT, DoNamingScreen, FALSE,
+  GetTrainerId, GetWaldaPhrasePtr, IsWaldaPhraseEmpty, SetMainCallback2,
+  SetWaldaPhrase, SetWaldaWallpaperColors, SetWaldaWallpaperIconId, SetWaldaWallpaperLockedOrUnlocked,
+  SetWaldaWallpaperPatternId, StringCompare, StringCopy, StringLength,
+  TO_BIT_OFFSET, TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** u16 TryBufferWaldaPhrase(void) */

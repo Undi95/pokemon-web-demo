@@ -15,14 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  PlayTimeCounter_SetToMax,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void PlayTimeCounter_Reset(void) */
 export function PlayTimeCounter_Reset(): any {
   sPlayTimeCounterState = STOPPED;

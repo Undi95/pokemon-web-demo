@@ -22,8 +22,8 @@
 // to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  CpuCopy32, DmaCopy16, IntrEnable, REG_TMCNT_H,
-  REG_TMCNT_L,  // 4-per-line for readability
+  CpuCopy32, DmaCopy16, FALSE, IntrEnable,
+  NULL, REG_TMCNT_H, REG_TMCNT_L, TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void STWI_init_all(struct RfuIntrStruct *interruptStruct, IntrFunc *interrupt, bool8 copyInterruptToRam) */

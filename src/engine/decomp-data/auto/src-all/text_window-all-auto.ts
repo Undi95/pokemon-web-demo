@@ -23,7 +23,7 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   FillBgTilemapBufferRect, GetOverworldTextboxPalettePtr, GetWindowAttribute, GetWindowFrameTilesPal,
-  LoadBgTiles, LoadPalette,  // 4-per-line for readability
+  LoadBgTiles, LoadPalette, PLTT_SIZE_4BPP,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void LoadMessageBoxGfx(u8 windowId, u16 destOffset, u8 palOffset) */

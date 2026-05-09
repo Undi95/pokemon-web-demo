@@ -24,10 +24,11 @@ import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AllocZeroed, BG_PLTT_ID, ChangeBgX,
   CopyToWindowPixelBuffer, CopyWindowToVram, CreateSprite, DestroySprite,
-  FREE_AND_SET_NULL, FreeSpritePaletteByTag, GetSpritePaletteTagByPaletteNum, GetWindowAttribute,
-  IsCryPlaying, LoadPalette, LoadSpritePalettes, LoadSpriteSheets,
-  ObjAffineSet, PLAYHEAD_POS, PLAY_START_POS, PlayCry_NormalNoDucking,
-  SetOamMatrix, StopCry, VERT_SLICE,  // 4-per-line for readability
+  FALSE, FREE_AND_SET_NULL, FreeSpritePaletteByTag, GetSpritePaletteTagByPaletteNum,
+  GetWindowAttribute, IsCryPlaying, LoadPalette, LoadSpritePalettes,
+  LoadSpriteSheets, ObjAffineSet, PLAYHEAD_POS, PLAY_START_POS,
+  PLTT_SIZE_4BPP, PlayCry_NormalNoDucking, ST_OAM_AFFINE_NORMAL, SetOamMatrix,
+  StopCry, TILE_SIZE_4BPP, TRUE, VERT_SLICE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** bool8 LoadCryWaveformWindow(struct CryScreenWindow *window, u8 windowId) */

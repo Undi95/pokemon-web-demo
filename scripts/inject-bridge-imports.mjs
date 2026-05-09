@@ -66,6 +66,57 @@ function extractDefinedFunctions(src) {
   return names;
 }
 
+/** Parse `decomp-bridge.ts` for all exported names (= functions, consts, classes).
+ *  Cached after first call. */
+let _bridgeExportsCache = null;
+function getBridgeExports() {
+  if (_bridgeExportsCache) return _bridgeExportsCache;
+  const bridgePath = resolve(projectRoot, 'src', 'engine', 'decomp-bridge.ts');
+  const src = readFileSync(bridgePath, 'utf8');
+  const names = new Set();
+  // Match `export function X`, `export const X`, `export class X`, `export type X`, `export enum X`, `export interface X`.
+  const reSingle = /^export\s+(?:async\s+)?(?:function|const|class|enum|interface|type|let|var)\s+([A-Za-z_$][\w$]*)/gm;
+  let m;
+  while ((m = reSingle.exec(src)) !== null) names.add(m[1]);
+  // Match `export { A, B as C, D } from '...';` and `export { A, B };`
+  const reList = /^export\s*\{([^}]+)\}/gm;
+  while ((m = reList.exec(src)) !== null) {
+    for (const part of m[1].split(',')) {
+      const trimmed = part.trim();
+      if (!trimmed) continue;
+      const aliasMatch = trimmed.match(/^\S+\s+as\s+([A-Za-z_$][\w$]*)$/);
+      names.add(aliasMatch ? aliasMatch[1] : trimmed.split(/\s+/)[0]);
+    }
+  }
+  _bridgeExportsCache = names;
+  return names;
+}
+
+/** Scan the file for additional bridge-resolvable identifiers beyond callsTo.
+ *  Captures UPPERCASE_SNAKE_CASE constants (= MB_TALL_GRASS, DIR_SOUTH, etc.)
+ *  + function-call-like patterns. Filters against the bridge exports. */
+function findAdditionalBridgeRefs(src, bridgeExports, definedFunctions) {
+  const additions = new Set();
+  // Match identifiers that look like UPPERCASE_SNAKE_CASE (= constants).
+  const re = /\b[A-Z][A-Z0-9_]*\b/g;
+  let m;
+  while ((m = re.exec(src)) !== null) {
+    const name = m[0];
+    if (bridgeExports.has(name) && !definedFunctions.has(name)) {
+      additions.add(name);
+    }
+  }
+  // Also CamelCase identifiers used as bare references (= function refs).
+  const re2 = /\b([A-Z][a-zA-Z0-9_]+)\b/g;
+  while ((m = re2.exec(src)) !== null) {
+    const name = m[1];
+    if (bridgeExports.has(name) && !definedFunctions.has(name)) {
+      additions.add(name);
+    }
+  }
+  return additions;
+}
+
 /** Generate the bridge import block. */
 function generateImportBlock(callsTo, definedFunctions) {
   if (!callsTo || callsTo.length === 0) return '';
@@ -127,16 +178,23 @@ function processFile(fpath) {
   // Extract auto-defined function names so we exclude them from destructure
   // (= avoid "already declared" esbuild errors).
   const definedFunctions = extractDefinedFunctions(stripped);
-  const block = generateImportBlock(callsTo, definedFunctions);
-  if (!block) {
-    return { fpath, status: 'empty-callsTo', changed: false };
-  }
-  const newSrc = stripped.slice(0, insertAt) + block + stripped.slice(insertAt);
+  // Find additional bridge-resolvable identifiers (= constants like MB_TALL_GRASS,
+  // CamelCase function refs not in callsTo) used in the body.
+  const bridgeExports = getBridgeExports();
+  const additional = findAdditionalBridgeRefs(stripped, bridgeExports, definedFunctions);
+  // Merge callsTo + additional refs.
+  const allRefs = [...new Set([...callsTo, ...additional])];
+  const block = generateImportBlock(allRefs, definedFunctions);
+  // If block is empty (= all callees are auto-defined locally), still write the
+  // stripped version to REMOVE any existing buggy destructure block.
+  const newSrc = block
+    ? stripped.slice(0, insertAt) + block + stripped.slice(insertAt)
+    : stripped;
   if (newSrc === src) {
     return { fpath, status: 'unchanged', changed: false };
   }
   writeFileSync(fpath, newSrc, 'utf8');
-  return { fpath, status: 'updated', changed: true,
+  return { fpath, status: block ? 'updated' : 'cleared', changed: true,
            calleesCount: callsTo.length, definedCount: definedFunctions.size };
 }
 

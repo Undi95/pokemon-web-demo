@@ -22,18 +22,30 @@
 // to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  ARRAY_COUNT, AnimateSprites, BGCNT_CHARBASE, BGCNT_PRIORITY,
-  BGCNT_SCREENBASE, BG_CHAR_ADDR, BG_PLTT_ID, BG_SCREEN_ADDR,
-  BLDALPHA_BLEND, BeginNormalPaletteFade, BuildOamBuffer, CanResetRTC,
-  Cos, CreateSprite, CreateTask, DestroySprite,
-  DmaFill16, DmaFill32, EnableInterrupts, FadeOutBGM,
+  ARRAY_COUNT, AnimateSprites, BGCNT_16COLOR, BGCNT_256COLOR,
+  BGCNT_AFF256x256, BGCNT_CHARBASE, BGCNT_PRIORITY, BGCNT_SCREENBASE,
+  BGCNT_TXT256x256, BG_CHAR_ADDR, BG_PLTT_ID, BG_SCREEN_ADDR,
+  BLDALPHA_BLEND, BLDCNT_EFFECT_BLEND, BLDCNT_EFFECT_LIGHTEN, BLDCNT_TGT1_BG1,
+  BLDCNT_TGT1_BG2, BLDCNT_TGT1_OBJ, BLDCNT_TGT2_BD, BLDCNT_TGT2_BG0,
+  BeginNormalPaletteFade, BuildOamBuffer, CanResetRTC, Cos,
+  CreateSprite, CreateTask, DISPCNT_BG0_ON, DISPCNT_BG1_ON,
+  DISPCNT_BG2_ON, DISPCNT_MODE_1, DISPCNT_OBJ_1D_MAP, DISPCNT_OBJ_ON,
+  DISPCNT_WIN0_ON, DISPLAY_HEIGHT, DestroySprite, DmaFill16,
+  DmaFill32, EnableInterrupts, FALSE, FadeOutBGM,
   FreeAllSpritePalettes, JOY_HELD, JOY_NEW, LZ77UnCompVram,
   LoadCompressedSpriteSheet, LoadOam, LoadPalette, LoadSpritePalette,
-  OBJ_PLTT_ID, PanFadeAndZoomScreen, ProcessSpriteCopyRequests, Q_8_8,
-  Q_8_8_TO_INT, ResetPaletteFade, ResetSpriteData, ResetTasks,
-  RunTasks, ScanlineEffect_InitHBlankDmaTransfer, ScanlineEffect_InitWave, ScanlineEffect_Stop,
+  NULL, OBJ_PLTT_ID, PALETTES_ALL, PLTT_SIZE,
+  PLTT_SIZE_4BPP, PanFadeAndZoomScreen, ProcessSpriteCopyRequests, Q_8_8,
+  Q_8_8_TO_INT, REG_OFFSET_BG0CNT, REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS,
+  REG_OFFSET_BG1CNT, REG_OFFSET_BG1HOFS, REG_OFFSET_BG1VOFS, REG_OFFSET_BG2CNT,
+  REG_OFFSET_BG2HOFS, REG_OFFSET_BG2VOFS, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT,
+  REG_OFFSET_BLDY, REG_OFFSET_WIN0H, REG_OFFSET_WIN0V, REG_OFFSET_WIN1H,
+  REG_OFFSET_WIN1V, REG_OFFSET_WININ, REG_OFFSET_WINOUT, ResetPaletteFade,
+  ResetSpriteData, ResetTasks, RunTasks, ST_OAM_OBJ_NORMAL,
+  ST_OAM_OBJ_WINDOW, ScanlineEffect_InitHBlankDmaTransfer, ScanlineEffect_InitWave, ScanlineEffect_Stop,
   SetGpuReg, SetMainCallback2, SetVBlankCallback, StartSpriteAnim,
-  TransferPlttBuffer, UpdatePaletteFade, _RGB,  // 4-per-line for readability
+  TRUE, TransferPlttBuffer, UpdatePaletteFade, VRAM_SIZE,
+  _RGB,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void SpriteCB_VersionBannerLeft(struct Sprite *sprite) */

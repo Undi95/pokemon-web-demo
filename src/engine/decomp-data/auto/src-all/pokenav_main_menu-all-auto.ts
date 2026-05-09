@@ -25,17 +25,19 @@ const {
   ARRAY_COUNT, AddTextPrinterParameterized3, AllocSpritePalette, AllocSubstruct,
   BG_PLTT_ID, BeginNormalPaletteFade, BlendPalettes, ChangeBgY,
   CopyBgTilemapBufferToVram, CopyToBgTilemapBuffer, CopyWindowToVram, CpuCopy16,
-  CpuFill16, CreateLoopedTask, CreateSprite, DecompressAndCopyTileDataToVram,
-  DestroySprite, FillWindowPixelBuffer, FillWindowPixelRect, FreeAllSpritePalettes,
-  FreeAllWindowBuffers, FreeMenuHandlerSubstruct2, FreeSpritePaletteByTag, FreeSpriteTilesByTag,
-  FreeTempTileDataBuffersIfPossible, GET_B, GET_G, GET_R,
-  GetBgY, GetDecompressedDataSize, GetSpriteTileStartByTag, GetSubstructPtr,
-  IndexOfSpritePaletteTag, InitBgFromTemplate, InitBgsFromTemplates, InitWindows,
-  IsDma3ManagerBusyWithBgCopy, IsLoopedTaskActive, LZ77UnCompWram, LoadCompressedSpriteSheet,
-  LoadPalette, OBJ_PLTT_ID, PIXEL_FILL, PlaySE,
-  PutWindowTilemap, RGB2, RequestDma3Copy, ResetBgPositions,
-  ResetBgsAndClearDma3BusyFlags, ResetBldCnt_, ResetSpriteData, ResetTempTileDataBuffers,
-  SetBgTilemapBuffer, SetGpuReg, ShowBg,  // 4-per-line for readability
+  CpuFill16, CreateLoopedTask, CreateSprite, DISPCNT_OBJ_1D_MAP,
+  DISPCNT_OBJ_ON, DecompressAndCopyTileDataToVram, DestroySprite, FALSE,
+  FillWindowPixelBuffer, FillWindowPixelRect, FreeAllSpritePalettes, FreeAllWindowBuffers,
+  FreeMenuHandlerSubstruct2, FreeSpritePaletteByTag, FreeSpriteTilesByTag, FreeTempTileDataBuffersIfPossible,
+  GET_B, GET_G, GET_R, GetBgY,
+  GetDecompressedDataSize, GetSpriteTileStartByTag, GetSubstructPtr, IndexOfSpritePaletteTag,
+  InitBgFromTemplate, InitBgsFromTemplates, InitWindows, IsDma3ManagerBusyWithBgCopy,
+  IsLoopedTaskActive, LZ77UnCompWram, LoadCompressedSpriteSheet, LoadPalette,
+  NULL, OBJ_PLTT_ID, PALETTES_ALL, PIXEL_FILL,
+  PLTT_SIZE_4BPP, PlaySE, PutWindowTilemap, RGB2,
+  RequestDma3Copy, ResetBgPositions, ResetBgsAndClearDma3BusyFlags, ResetBldCnt_,
+  ResetSpriteData, ResetTempTileDataBuffers, SetBgTilemapBuffer, SetGpuReg,
+  ShowBg, TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** bool32 InitPokenavMainMenu(void) */

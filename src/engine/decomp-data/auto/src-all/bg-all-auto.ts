@@ -22,9 +22,13 @@
 // to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  BgAffineSet, CheckForSpaceForDma3Request, CpuCopy16, GetGpuReg,
-  LZ77UnCompWram, PLTT_OFFSET_4BPP, RequestDma3Copy, SetGpuReg,
-  SetGpuReg_ForcedBlank,  // 4-per-line for readability
+  BG_SCREEN_SIZE, BgAffineSet, CheckForSpaceForDma3Request, CpuCopy16,
+  DISPCNT_MODE_1, DISPCNT_MODE_2, FALSE, GetGpuReg,
+  LZ77UnCompWram, NULL, PLTT_OFFSET_4BPP, REG_OFFSET_BG0CNT,
+  REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS, REG_OFFSET_BG1HOFS, REG_OFFSET_BG1VOFS,
+  REG_OFFSET_BG2HOFS, REG_OFFSET_BG2VOFS, REG_OFFSET_BG3HOFS, REG_OFFSET_BG3VOFS,
+  REG_OFFSET_MOSAIC, RequestDma3Copy, SetGpuReg, SetGpuReg_ForcedBlank,
+  TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void ResetBgs(void) */

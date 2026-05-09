@@ -22,7 +22,8 @@
 // to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  ARRAY_COUNT, BlendPalette,  // 4-per-line for readability
+  ARRAY_COUNT, BlendPalette, FALSE, NULL,
+  TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void RouletteFlash_Reset(struct RouletteFlashUtil *flash) */

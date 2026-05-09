@@ -97,6 +97,79 @@ export function MetatileBehavior_IsJumpSouth(behavior: number): boolean {
   return behavior === MB_JUMP_SOUTH;
 }
 
+// ─── Terrain predicates (= 1:1 décomp metatile_behavior.c) ────────────────────
+//
+// Ports inline from `decomp-data/auto/src-all/metatile_behavior-all-auto.ts`
+// pour éviter circular imports (= bridge re-exports ces, mais le auto-file
+// importe le bridge → cycle).
+
+/** 1:1 décomp `MetatileBehavior_IsTallGrass`. */
+export function MetatileBehavior_IsTallGrass(behavior: number): boolean {
+  return behavior === ENUM_MB_0.MB_TALL_GRASS;
+}
+/** 1:1 décomp `MetatileBehavior_IsLongGrass`. */
+export function MetatileBehavior_IsLongGrass(behavior: number): boolean {
+  return behavior === ENUM_MB_0.MB_LONG_GRASS;
+}
+/** 1:1 décomp `MetatileBehavior_IsShortGrass`. */
+export function MetatileBehavior_IsShortGrass(behavior: number): boolean {
+  return behavior === ENUM_MB_0.MB_SHORT_GRASS;
+}
+/** 1:1 décomp `MetatileBehavior_IsHotSprings`. */
+export function MetatileBehavior_IsHotSprings(behavior: number): boolean {
+  return behavior === ENUM_MB_0.MB_HOT_SPRINGS;
+}
+/** 1:1 décomp `MetatileBehavior_IsIce`. */
+export function MetatileBehavior_IsIce(behavior: number): boolean {
+  return behavior === ENUM_MB_0.MB_ICE;
+}
+/** 1:1 décomp `MetatileBehavior_IsPuddle`. */
+export function MetatileBehavior_IsPuddle(behavior: number): boolean {
+  return behavior === ENUM_MB_0.MB_PUDDLE;
+}
+/** 1:1 décomp `MetatileBehavior_IsShallowFlowingWater`. */
+export function MetatileBehavior_IsShallowFlowingWater(behavior: number): boolean {
+  return behavior === ENUM_MB_0.MB_SHALLOW_WATER;
+}
+/** 1:1 décomp `MetatileBehavior_IsSandOrDeepSand`. */
+export function MetatileBehavior_IsSandOrDeepSand(behavior: number): boolean {
+  return behavior === ENUM_MB_0.MB_SAND || behavior === ENUM_MB_0.MB_DEEP_SAND;
+}
+/** 1:1 décomp `MetatileBehavior_IsDeepSand`. */
+export function MetatileBehavior_IsDeepSand(behavior: number): boolean {
+  return behavior === ENUM_MB_0.MB_DEEP_SAND;
+}
+/** 1:1 décomp `MetatileBehavior_IsSeaweed`. */
+export function MetatileBehavior_IsSeaweed(behavior: number): boolean {
+  return behavior === ENUM_MB_0.MB_SEAWEED;
+}
+/** 1:1 décomp `MetatileBehavior_IsReflective`. */
+export function MetatileBehavior_IsReflective(behavior: number): boolean {
+  return (
+    behavior === ENUM_MB_0.MB_POND_WATER ||
+    behavior === ENUM_MB_0.MB_PUDDLE ||
+    behavior === ENUM_MB_0.MB_INTERIOR_DEEP_WATER ||
+    behavior === ENUM_MB_0.MB_DEEP_WATER ||
+    behavior === ENUM_MB_0.MB_SOOTOPOLIS_DEEP_WATER ||
+    behavior === ENUM_MB_0.MB_OCEAN_WATER ||
+    behavior === ENUM_MB_0.MB_SHALLOW_WATER
+  );
+}
+/** 1:1 décomp `MetatileBehavior_IsFootprints`. */
+export function MetatileBehavior_IsFootprints(behavior: number): boolean {
+  return behavior === ENUM_MB_0.MB_FOOTPRINTS;
+}
+/** 1:1 décomp `MetatileBehavior_HasRipples`. */
+export function MetatileBehavior_HasRipples(behavior: number): boolean {
+  return (
+    behavior === ENUM_MB_0.MB_POND_WATER ||
+    behavior === ENUM_MB_0.MB_PUDDLE ||
+    behavior === ENUM_MB_0.MB_SOOTOPOLIS_DEEP_WATER
+  );
+}
+// MetatileBehavior_IsRunningDisallowed + MetatileBehavior_IsPacifidlogLog déjà
+// définis plus bas dans le fichier (= cherche `MB_NO_RUNNING || MB_HOT_SPRINGS`).
+
 // ─── Lookup tables — 1:1 décomp event_object_movement.c:893-905 ────────────
 
 /** 1:1 décomp `gOppositeDirectionBlockedMetatileFuncs` (event_object_movement.c:893).

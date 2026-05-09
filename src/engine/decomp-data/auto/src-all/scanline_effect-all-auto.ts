@@ -23,7 +23,8 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   CpuFill16, CreateTask, DestroyTask, DmaSet,
-  DmaStop,  // 4-per-line for readability
+  DmaStop, FALSE, NULL, TASK_NONE,
+  TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void ScanlineEffect_Stop(void) */

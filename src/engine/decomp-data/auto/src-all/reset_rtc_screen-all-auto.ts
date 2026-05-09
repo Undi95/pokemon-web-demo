@@ -25,17 +25,20 @@ const {
   ARRAY_COUNT, AddTextPrinterParameterized, AddWindow, AnimateSprites,
   BeginNormalPaletteFade, BuildOamBuffer, ClearScheduledBgCopiesToVram, ClearStdWindowAndFrameToTransparent,
   ConvertIntToDecimalStringN, CopyWindowToVram, CreateSpriteAtEnd, CreateTask,
-  DeactivateAllTextPrinters, DestroySprite, DestroyTask, DisableResetRTC,
-  DmaClear16, DmaFillLarge16, DoScheduledBgTilemapCopiesToVram, DoSoftReset,
-  DrawDialogFrameWithCustomTileAndPalette, DrawStdFrameWithCustomTileAndPalette, FreeAllWindowBuffers, FreeSpritePaletteByTag,
-  InitBgsFromTemplates, InitWindows, JOY_NEW, JOY_REPEAT,
-  LoadMessageBoxAndBorderGfx, LoadOam, LoadSpritePalette, PlaySE,
-  ProcessSpriteCopyRequests, RemoveWindow, ResetBgsAndClearDma3BusyFlags, ResetOamRange,
-  ResetPaletteFade, ResetSpriteData, ResetTasks, RtcCalcLocalTime,
-  RtcCalcLocalTimeOffset, RtcReset, RunTasks, ScanlineEffect_Clear,
+  DISPCNT_OBJ_1D_MAP, DISPCNT_OBJ_ON, DeactivateAllTextPrinters, DestroySprite,
+  DestroyTask, DisableResetRTC, DmaClear16, DmaFillLarge16,
+  DoScheduledBgTilemapCopiesToVram, DoSoftReset, DrawDialogFrameWithCustomTileAndPalette, DrawStdFrameWithCustomTileAndPalette,
+  FALSE, FreeAllWindowBuffers, FreeSpritePaletteByTag, InitBgsFromTemplates,
+  InitWindows, JOY_NEW, JOY_REPEAT, LoadMessageBoxAndBorderGfx,
+  LoadOam, LoadSpritePalette, NULL, PALETTES_ALL,
+  PLTT_SIZE, PlaySE, ProcessSpriteCopyRequests, RemoveWindow,
+  ResetBgsAndClearDma3BusyFlags, ResetOamRange, ResetPaletteFade, ResetSpriteData,
+  ResetTasks, RtcCalcLocalTime, RtcCalcLocalTimeOffset, RtcReset,
+  RunTasks, STR_CONV_MODE_LEADING_ZEROS, STR_CONV_MODE_RIGHT_ALIGN, ScanlineEffect_Clear,
   ScanlineEffect_Stop, ScheduleBgCopyTilemapToVram, SetGpuReg, SetMainCallback2,
-  SetVBlankCallback, ShowBg, StringCopy, TransferPlttBuffer,
-  TrySavingData, UpdatePaletteFade, VarSet,  // 4-per-line for readability
+  SetVBlankCallback, ShowBg, StringCopy, TRUE,
+  TransferPlttBuffer, TrySavingData, UpdatePaletteFade, VRAM_SIZE,
+  VarSet,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void SpriteCB_Cursor_UpOrRight(struct Sprite *sprite) */

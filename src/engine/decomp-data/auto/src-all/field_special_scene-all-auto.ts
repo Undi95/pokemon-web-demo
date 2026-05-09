@@ -23,13 +23,15 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, CountSSTidalStep, CpuFastFill, CreateObjectGraphicsSprite,
-  CreateTask, DestroyTask, DoDiveWarp, DoPortholeWarp,
-  DrawWholeMapView, FadeInFromBlack, FlagClear, FlagSet,
-  FuncIsActiveTask, GetFaceDirectionAnimNum, GetSSTidalLocation, GetVarPointer,
-  InstallCameraPanAheadCallback, JOY_NEW, LockPlayerFieldControls, MapGridSetMetatileIdAt,
-  PlaySE, ScriptMovement_IsObjectMovementFinished, ScriptMovement_StartObjectMovementScript, SetCameraPanning,
-  SetCameraPanningCallback, SetDynamicWarp, SetObjectEventSpritePosByLocalIdAndMap, SetWarpDestination,
-  SetWarpDestinationToDynamicWarp, StartSpriteAnim, UnlockPlayerFieldControls, VarGet,  // 4-per-line for readability
+  CreateTask, DIR_EAST, DIR_WEST, DestroyTask,
+  DoDiveWarp, DoPortholeWarp, DrawWholeMapView, FALSE,
+  FadeInFromBlack, FlagClear, FlagSet, FuncIsActiveTask,
+  GetFaceDirectionAnimNum, GetSSTidalLocation, GetVarPointer, InstallCameraPanAheadCallback,
+  JOY_NEW, LockPlayerFieldControls, MapGridSetMetatileIdAt, NULL,
+  PLTT_SIZE, PlaySE, ScriptMovement_IsObjectMovementFinished, ScriptMovement_StartObjectMovementScript,
+  SetCameraPanning, SetCameraPanningCallback, SetDynamicWarp, SetObjectEventSpritePosByLocalIdAndMap,
+  SetWarpDestination, SetWarpDestinationToDynamicWarp, StartSpriteAnim, TRUE,
+  UnlockPlayerFieldControls, VarGet,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static s16 GetTruckCameraBobbingY(int time) */

@@ -22,8 +22,9 @@
 // to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  CpuCopy32, CpuFill32, MEMACC_COND_JUMP, MPlayJumpTableCopy,
-  READ_XCMD_BYTE, SoundMain, TrackStop,  // 4-per-line for readability
+  CpuCopy32, CpuFill32, FALSE, MEMACC_COND_JUMP,
+  MPlayJumpTableCopy, NULL, READ_XCMD_BYTE, SoundMain,
+  TRUE, TrackStop,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** u32 MidiKeyToFreq(struct WaveData *wav, u8 key, u8 fineAdjust) */

@@ -22,12 +22,13 @@
 // to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  ARRAY_COUNT, AllocSubstruct, CreateLoopedTask, FlagGet,
-  FreePokenavSubstruct, GetMatchCallMapSec, GetMatchTableMapSectionId, GetPokenavMode,
-  GetStringClearToWidth, GetSubstructPtr, GetTrainerClassNameGenderSpecific, GetTrainerIdxByRematchIdx,
-  JOY_NEW, JOY_REPEAT, MatchCall_GetEnabled, MatchCall_GetMapSec,
-  MatchCall_GetNameAndDesc, MatchCall_GetOverrideFacilityClass, MatchCall_GetRematchTableIdx, MatchCall_HasCheckPage,
-  MatchCall_HasRematchId, PlaySE, PokenavList_GetSelectedIndex, SetPokenavMode,  // 4-per-line for readability
+  ARRAY_COUNT, AllocSubstruct, CreateLoopedTask, FALSE,
+  FlagGet, FreePokenavSubstruct, GetMatchCallMapSec, GetMatchTableMapSectionId,
+  GetPokenavMode, GetStringClearToWidth, GetSubstructPtr, GetTrainerClassNameGenderSpecific,
+  GetTrainerIdxByRematchIdx, JOY_NEW, JOY_REPEAT, MatchCall_GetEnabled,
+  MatchCall_GetMapSec, MatchCall_GetNameAndDesc, MatchCall_GetOverrideFacilityClass, MatchCall_GetRematchTableIdx,
+  MatchCall_HasCheckPage, MatchCall_HasRematchId, NULL, PlaySE,
+  PokenavList_GetSelectedIndex, SetPokenavMode, TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** bool32 PokenavCallback_Init_MatchCall(void) */

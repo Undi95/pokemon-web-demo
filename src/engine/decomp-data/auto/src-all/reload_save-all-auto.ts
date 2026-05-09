@@ -22,9 +22,10 @@
 // to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  ClearGpuRegBits, GetSaveBlocksPointersBaseOffset, InitHeap, LoadGameSave,
-  RegisterRamReset, ResetMenuAndMonGlobals, Sav2_ClearSetDefault, Save_ResetSaveCounters,
-  SetMainCallback2, SetPokemonCryStereo, SetSaveBlocksPointers,  // 4-per-line for readability
+  ClearGpuRegBits, DISPCNT_FORCED_BLANK, FALSE, GetSaveBlocksPointersBaseOffset,
+  InitHeap, LoadGameSave, RegisterRamReset, ResetMenuAndMonGlobals,
+  Sav2_ClearSetDefault, Save_ResetSaveCounters, SetMainCallback2, SetPokemonCryStereo,
+  SetSaveBlocksPointers,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void ReloadSave(void) */

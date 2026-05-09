@@ -22,8 +22,8 @@
 // to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  SiiRtcGetDateTime, SiiRtcGetStatus, SiiRtcProbe, SiiRtcReset,
-  SiiRtcUnprotect,  // 4-per-line for readability
+  FALSE, SiiRtcGetDateTime, SiiRtcGetStatus, SiiRtcProbe,
+  SiiRtcReset, SiiRtcUnprotect, TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void RtcDisableInterrupts(void) */

@@ -23,10 +23,11 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AllocZeroed, CpuCopy16, CpuFill16,
-  CreateSprite, DestroySprite, FlagGet, Free,
-  GetLinkPlayerCount, GetMultiplayerId, GetSpriteTileStartByTag, IsNationalPokedexEnabled,
-  IsRfuRecoveringFromLinkLoss, IsRfuSerialNumberValid, LoadCompressedSpriteSheet, LoadSpritePalette,
-  RfuGetStatus, StringCompare, StringCopy,  // 4-per-line for readability
+  CreateSprite, DestroySprite, FALSE, FlagGet,
+  Free, GetLinkPlayerCount, GetMultiplayerId, GetSpriteTileStartByTag,
+  IsNationalPokedexEnabled, IsRfuRecoveringFromLinkLoss, IsRfuSerialNumberValid, LoadCompressedSpriteSheet,
+  LoadSpritePalette, NULL, RfuGetStatus, StringCompare,
+  StringCopy, TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void RfuRecvQueue_Reset(struct RfuRecvQueue *queue) */

@@ -22,8 +22,9 @@
 // to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  AreMovesContestCombo, Contest_GetMoveExcitement, Contest_IsMonsTurnDisabled, IsContestantAllowedToCombo,
-  MOD, Random, T1_READ_16, T1_READ_PTR,  // 4-per-line for readability
+  AreMovesContestCombo, Contest_GetMoveExcitement, Contest_IsMonsTurnDisabled, FALSE,
+  IsContestantAllowedToCombo, MOD, Random, T1_READ_16,
+  T1_READ_PTR, TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void ContestAI_ResetAI(u8 contestantAI) */

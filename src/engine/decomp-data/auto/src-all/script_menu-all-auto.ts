@@ -25,14 +25,15 @@ const {
   ARRAY_COUNT, AddTextPrinterParameterized, AddTextPrinterParameterized2, AddWindow,
   CheckBagHasItem, ClearStdWindowAndFrameToTransparent, CopyWindowToVram, CreateMonSprite_PicBox,
   CreateTask, CreateWindowTemplate, DestroyTask, DisplayYesNoMenuDefaultYes,
-  FillWindowPixelBuffer, FindTaskIdByFunc, FlagGet, FlagSet,
-  FreeResourcesAndDestroySprite, FuncIsActiveTask, GetFontAttribute, GetStringWidth,
-  InitMenuActionGrid, InitMenuInUpperLeftCornerNormal, InitMenuNormal, JOY_NEW,
-  LoadMessageBoxAndFrameGfx, Menu_GetCursorPos, Menu_ProcessGridInput, Menu_ProcessInput,
-  Menu_ProcessInputNoWrap, Menu_ProcessInputNoWrapClearOnChoose, PIXEL_FILL, PlaySE,
-  PrintMenuGridTable, PrintMenuTable, PrintPlayerNameOnWindow, PutWindowTilemap,
-  RemoveWindow, ScheduleBgCopyTilemapToVram, ScriptContext_Enable, SetStandardWindowBorderStyle,
-  ShowScrollableMultichoice, StringExpandPlaceholders,  // 4-per-line for readability
+  FALSE, FillWindowPixelBuffer, FindTaskIdByFunc, FlagGet,
+  FlagSet, FreeResourcesAndDestroySprite, FuncIsActiveTask, GetFontAttribute,
+  GetStringWidth, InitMenuActionGrid, InitMenuInUpperLeftCornerNormal, InitMenuNormal,
+  JOY_NEW, LoadMessageBoxAndFrameGfx, Menu_GetCursorPos, Menu_ProcessGridInput,
+  Menu_ProcessInput, Menu_ProcessInputNoWrap, Menu_ProcessInputNoWrapClearOnChoose, NULL,
+  PIXEL_FILL, PlaySE, PrintMenuGridTable, PrintMenuTable,
+  PrintPlayerNameOnWindow, PutWindowTilemap, RemoveWindow, ScheduleBgCopyTilemapToVram,
+  ScriptContext_Enable, SetStandardWindowBorderStyle, ShowScrollableMultichoice, StringExpandPlaceholders,
+  TASK_NONE, TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** bool8 ScriptMenu_Multichoice(u8 left, u8 top, u8 multichoiceId, bool8 ignoreBPress) */

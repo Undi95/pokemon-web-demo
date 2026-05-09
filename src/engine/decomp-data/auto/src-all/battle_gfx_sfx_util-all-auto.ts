@@ -26,17 +26,18 @@ const {
   BattleAI_ChooseMoveOrAction, BattleAI_SetupAIData, BlendPalette, BufferBattlePartyCurrentOrder,
   CheckMoveLimitations, CpuCopy32, CreateBattlerHealthboxSprites, CreateSafariPlayerHealthboxSprites,
   CreateSprite, CreateTask, DecompressPicFromTable_2, DestroyTask,
-  Dma3CopyLarge32_, DmaCopy32, DummyBattleInterfaceFunc, FREE_AND_SET_NULL,
-  FreeSpritePaletteByTag, GET_BATTLER_SIDE, GetBattlerAtPosition, GetBattlerPosition,
-  GetBattlerSide, GetBattlerSpriteCoord, GetBattlerSpriteDefault_Y, GetHPBarLevel,
-  GetMonData, GetMonFrontSpritePal, GetMonSpritePalFromSpeciesAndPersonality, GetNatureFromPersonality,
-  GetPartyIdFromBattlePartyId, GetSubstituteSpriteDefault_Y, HandleLoadSpecialPokePic, HandleLoadSpecialPokePic_DontHandleDeoxys,
-  InitBattlerHealthboxCoords, IsBattlerSpritePresent, IsContest, IsDoubleBattle,
-  IsSEPlaying, LZDecompressVram, LZDecompressWram, LaunchBattleAnimation,
-  LaunchStatusAnimation, LoadCompressedPalette, LoadCompressedSpritePalette, LoadCompressedSpriteSheet,
-  LoadPalette, LoadSpritePalette, OBJ_PLTT_ID, PLTT_SIZEOF,
-  PlaySE, Random, SetHealthboxSpriteInvisible, ShouldIgnoreDeoxysForm,
-  StartSpriteAnim, TRY_FREE_AND_SET_NULL, UpdateHealthboxAttribute,  // 4-per-line for readability
+  Dma3CopyLarge32_, DmaCopy32, DummyBattleInterfaceFunc, FALSE,
+  FREE_AND_SET_NULL, FreeSpritePaletteByTag, GET_BATTLER_SIDE, GetBattlerAtPosition,
+  GetBattlerPosition, GetBattlerSide, GetBattlerSpriteCoord, GetBattlerSpriteDefault_Y,
+  GetHPBarLevel, GetMonData, GetMonFrontSpritePal, GetMonSpritePalFromSpeciesAndPersonality,
+  GetNatureFromPersonality, GetPartyIdFromBattlePartyId, GetSubstituteSpriteDefault_Y, HandleLoadSpecialPokePic,
+  HandleLoadSpecialPokePic_DontHandleDeoxys, InitBattlerHealthboxCoords, IsBattlerSpritePresent, IsContest,
+  IsDoubleBattle, IsSEPlaying, LZDecompressVram, LZDecompressWram,
+  LaunchBattleAnimation, LaunchStatusAnimation, LoadCompressedPalette, LoadCompressedSpritePalette,
+  LoadCompressedSpriteSheet, LoadPalette, LoadSpritePalette, NULL,
+  OBJ_PLTT_ID, PLTT_SIZEOF, PLTT_SIZE_4BPP, PlaySE,
+  Random, ST_OAM_AFFINE_OFF, SetHealthboxSpriteInvisible, ShouldIgnoreDeoxysForm,
+  StartSpriteAnim, TRUE, TRY_FREE_AND_SET_NULL, UpdateHealthboxAttribute,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void AllocateBattleSpritesData(void) */

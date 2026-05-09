@@ -24,12 +24,13 @@ import * as _bridge from '../../../decomp-bridge';
 const {
   AnimTranslateLinear, BATTLE_PARTNER, BG_PLTT_ID, BlendPalette,
   Cos, CreateSprite, DestroyAnimSprite, DestroyAnimVisualTask,
-  DestroySprite, DestroySpriteAndMatrix, GetAnimBattlerSpriteId, GetBattleAnimBg1Data,
-  GetBattlerAtPosition, GetBattlerSide, GetBattlerSpriteBGPriority, GetBattlerSpriteCoord,
-  InitAnimLinearTranslation, InitAnimLinearTranslationWithSpeed, InitSpritePosToAnimAttacker, IsBattlerSpriteVisible,
-  IsContest, PlaySE12WithPanning, PrepareBattlerSpriteForRotScale, PrepareEruptAnimTaskData,
-  ResetSpriteRotScale, SetAnimSpriteInitialXOffset, SetBattlerSpriteYOffsetFromYScale, SetSpriteCoordsToAnimAttackerCoords,
-  Sin, StartSpriteAnim, StoreSpriteCallbackInData6, UpdateEruptAnimTask,  // 4-per-line for readability
+  DestroySprite, DestroySpriteAndMatrix, FALSE, GetAnimBattlerSpriteId,
+  GetBattleAnimBg1Data, GetBattlerAtPosition, GetBattlerSide, GetBattlerSpriteBGPriority,
+  GetBattlerSpriteCoord, InitAnimLinearTranslation, InitAnimLinearTranslationWithSpeed, InitSpritePosToAnimAttacker,
+  IsBattlerSpriteVisible, IsContest, PlaySE12WithPanning, PrepareBattlerSpriteForRotScale,
+  PrepareEruptAnimTaskData, ResetSpriteRotScale, ST_OAM_OBJ_NORMAL, SetAnimSpriteInitialXOffset,
+  SetBattlerSpriteYOffsetFromYScale, SetSpriteCoordsToAnimAttackerCoords, Sin, StartSpriteAnim,
+  StoreSpriteCallbackInData6, TRUE, UpdateEruptAnimTask,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void AnimFireSpiralInward(struct Sprite *sprite) */

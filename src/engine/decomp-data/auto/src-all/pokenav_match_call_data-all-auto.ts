@@ -22,8 +22,9 @@
 // to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  ARRAY_COUNT, BufferPokedexRatingForMatchCall, CountBattledRematchTeams, FlagGet,
-  FlagSet, GetTrainerClassNameGenderSpecific, StringExpandPlaceholders,  // 4-per-line for readability
+  ARRAY_COUNT, BufferPokedexRatingForMatchCall, CountBattledRematchTeams, FALSE,
+  FlagGet, FlagSet, GetTrainerClassNameGenderSpecific, NULL,
+  StringExpandPlaceholders, TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static u32 MatchCallGetFunctionIndex(match_call_t matchCall) */

@@ -22,7 +22,7 @@
 // to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  ARRAY_COUNT, SkipExtCtrlCode,  // 4-per-line for readability
+  ARRAY_COUNT, FALSE, SkipExtCtrlCode, TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** u16 StringLength(const u8 *str) */

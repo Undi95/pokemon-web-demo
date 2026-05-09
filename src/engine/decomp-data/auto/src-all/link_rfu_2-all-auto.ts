@@ -24,15 +24,16 @@ import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AnimateSprites, BuildOamBuffer, ClearSavedLinkPlayers,
   CloseLink, ConvertLinkPlayerName, CpuFill16, CpuFill32,
-  CreateTask, Debug_PrintString, DestroyTask, FindTaskIdByFunc,
-  FuncIsActiveTask, GetBlenderArrowPosition, GetBlockReceivedStatus, GetHostRfuGameData,
-  GetLinkPlayerCount, GetMultiplayerId, InitHostRfuGameData, IsLinkTaskFinished,
-  LinkPlayerFromBlock, LoadOam, LocalLinkPlayerToBlock, ProcessSpriteCopyRequests,
-  Random2, ResetBlockReceivedFlag, ResetBlockReceivedFlags, RfuBackupQueue_Dequeue,
-  RfuBackupQueue_Enqueue, RfuRecvQueue_Dequeue, RfuRecvQueue_Enqueue, RfuRecvQueue_Reset,
-  RfuSendQueue_Dequeue, RfuSendQueue_Enqueue, RfuSendQueue_Reset, RunTasks,
-  SendBlock, SetLinkErrorBuffer, SetMainCallback2, StringCompare,
-  StringCopy, TransferPlttBuffer, UpdatePaletteFade,  // 4-per-line for readability
+  CreateTask, Debug_PrintString, DestroyTask, FALSE,
+  FindTaskIdByFunc, FuncIsActiveTask, GetBlenderArrowPosition, GetBlockReceivedStatus,
+  GetHostRfuGameData, GetLinkPlayerCount, GetMultiplayerId, InitHostRfuGameData,
+  IsLinkTaskFinished, LinkPlayerFromBlock, LoadOam, LocalLinkPlayerToBlock,
+  NULL, ProcessSpriteCopyRequests, Random2, ResetBlockReceivedFlag,
+  ResetBlockReceivedFlags, RfuBackupQueue_Dequeue, RfuBackupQueue_Enqueue, RfuRecvQueue_Dequeue,
+  RfuRecvQueue_Enqueue, RfuRecvQueue_Reset, RfuSendQueue_Dequeue, RfuSendQueue_Enqueue,
+  RfuSendQueue_Reset, RunTasks, SendBlock, SetLinkErrorBuffer,
+  SetMainCallback2, StringCompare, StringCopy, TASK_NONE,
+  TRUE, TransferPlttBuffer, UpdatePaletteFade,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void ResetLinkRfuGFLayer(void) */

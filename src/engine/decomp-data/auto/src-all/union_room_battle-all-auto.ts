@@ -25,15 +25,16 @@ const {
   ARRAY_COUNT, AddTextPrinterParameterized4, AllocZeroed, AnimateSprites,
   BG_PLTT_ID, BeginNormalPaletteFade, BuildOamBuffer, CalculatePlayerPartyCount,
   ClearWindowTilemap, CopyWindowToVram, DeactivateAllTextPrinters, DrawTextBorderOuter,
-  FillBgTilemapBufferRect, FillWindowPixelBuffer, FreeAllSpritePalettes, GetBlockReceivedStatus,
-  GetMultiplayerId, IncrementGameStat, InitBgsFromTemplates, InitWindows,
-  IsLinkTaskFinished, IsTextPrinterActive, LoadOam, LoadUserWindowBorderGfx,
-  LoadUserWindowBorderGfx_, Menu_LoadStdPal, PIXEL_FILL, ProcessSpriteCopyRequests,
-  PutWindowTilemap, ResetBgsAndClearDma3BusyFlags, ResetBlockReceivedFlags, ResetSpriteData,
-  ResetTasks, ResetTempTileDataBuffers, RunTasks, RunTextPrinters,
-  SendBlock, SetCloseLinkCallback, SetGpuReg, SetLinkStandbyCallback,
-  SetMainCallback2, SetVBlankCallback, ShowBg, StartUnionRoomBattle,
-  TransferPlttBuffer, UpdatePaletteFade, ZeroMonData,  // 4-per-line for readability
+  FALSE, FillBgTilemapBufferRect, FillWindowPixelBuffer, FreeAllSpritePalettes,
+  GetBlockReceivedStatus, GetMultiplayerId, IncrementGameStat, InitBgsFromTemplates,
+  InitWindows, IsLinkTaskFinished, IsTextPrinterActive, LoadOam,
+  LoadUserWindowBorderGfx, LoadUserWindowBorderGfx_, Menu_LoadStdPal, PALETTES_ALL,
+  PIXEL_FILL, ProcessSpriteCopyRequests, PutWindowTilemap, ResetBgsAndClearDma3BusyFlags,
+  ResetBlockReceivedFlags, ResetSpriteData, ResetTasks, ResetTempTileDataBuffers,
+  RunTasks, RunTextPrinters, SendBlock, SetCloseLinkCallback,
+  SetGpuReg, SetLinkStandbyCallback, SetMainCallback2, SetVBlankCallback,
+  ShowBg, StartUnionRoomBattle, TRUE, TransferPlttBuffer,
+  UpdatePaletteFade, ZeroMonData,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void CB2_SetUpPartiesAndStartBattle(void) */

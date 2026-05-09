@@ -22,10 +22,11 @@
 // to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  ARRAY_COUNT, CreateSprite, DestroySprite, FreeSpriteOamMatrix,
-  GetMapCoordsFromSpritePos, GetPlayerSpeed, GetVarPointer, LoadSpriteSheets,
-  MAP_GROUP, MAP_NUM, MapGridGetCollisionAt, PlaySE,
-  StartSpriteAffineAnim,  // 4-per-line for readability
+  ARRAY_COUNT, CreateSprite, DIR_EAST, DIR_NORTH,
+  DIR_SOUTH, DIR_WEST, DISPLAY_HEIGHT, DestroySprite,
+  FALSE, FreeSpriteOamMatrix, GetMapCoordsFromSpritePos, GetPlayerSpeed,
+  GetVarPointer, LoadSpriteSheets, MAP_GROUP, MAP_NUM,
+  MapGridGetCollisionAt, PlaySE, StartSpriteAffineAnim, TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static s32 GetCurrentMapRotatingGatePuzzleType(void) */

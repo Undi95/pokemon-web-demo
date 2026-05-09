@@ -23,9 +23,10 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   AdjustFriendship, CreateTask, CurrentBattlePyramidLocation, DestroyTask,
-  FldEffPoison_Start, GetAilmentFromStatus, GetMonData, InBattlePike,
-  InTrainerHillChallenge, IsFieldMessageBoxHidden, ScriptContext_Enable, ScriptContext_Stop,
-  SetMonData, ShowFieldMessage, StringGet_Nickname,  // 4-per-line for readability
+  FALSE, FldEffPoison_Start, GetAilmentFromStatus, GetMonData,
+  InBattlePike, InTrainerHillChallenge, IsFieldMessageBoxHidden, ScriptContext_Enable,
+  ScriptContext_Stop, SetMonData, ShowFieldMessage, StringGet_Nickname,
+  TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static bool32 IsMonValidSpecies(struct Pokemon *pokemon) */

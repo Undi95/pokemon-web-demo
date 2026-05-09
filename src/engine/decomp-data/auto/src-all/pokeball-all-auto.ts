@@ -25,14 +25,14 @@ const {
   AnimTranslateLinear, AnimateBallOpenParticles, AnimateSprite, ChangeSpriteAffineAnim,
   Cos, CreateInvisibleSpriteWithCallback, CreateSprite, CreateTask,
   DestroySprite, DestroySpriteAndFreeResources, DestroyTask, DoMonFrontSpriteAnimation,
-  FreeOamMatrix, FreeSpriteOamMatrix, FreeSpritePaletteByTag, FreeSpriteTilesByTag,
-  GetBattlerAtPosition, GetBattlerPosition, GetBattlerSide, GetBattlerSpriteCoord,
-  GetMonData, GetSpriteTileStartByTag, HIBYTE, InitAnimArcTranslation,
-  IsBGMPlaying, IsCryPlayingOrClearCrySongs, IsDoubleBattle, ItemIdToBallId,
-  LZDecompressVram, LaunchBallFadeMonTask, LoadCompressedSpritePaletteUsingHeap, LoadCompressedSpriteSheetUsingHeap,
-  PlayCry_ByMode, PlayCry_ReleaseDouble, PlaySE, ShouldPlayNormalMonCry,
-  Sin, StartSpriteAffineAnim, StartSpriteAnim, StopCryAndClearCrySongs,
-  TranslateAnimHorizontalArc,  // 4-per-line for readability
+  FALSE, FreeOamMatrix, FreeSpriteOamMatrix, FreeSpritePaletteByTag,
+  FreeSpriteTilesByTag, GetBattlerAtPosition, GetBattlerPosition, GetBattlerSide,
+  GetBattlerSpriteCoord, GetMonData, GetSpriteTileStartByTag, HIBYTE,
+  InitAnimArcTranslation, IsBGMPlaying, IsCryPlayingOrClearCrySongs, IsDoubleBattle,
+  ItemIdToBallId, LZDecompressVram, LaunchBallFadeMonTask, LoadCompressedSpritePaletteUsingHeap,
+  LoadCompressedSpriteSheetUsingHeap, PlayCry_ByMode, PlayCry_ReleaseDouble, PlaySE,
+  ShouldPlayNormalMonCry, Sin, StartSpriteAffineAnim, StartSpriteAnim,
+  StopCryAndClearCrySongs, TRUE, TranslateAnimHorizontalArc,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** u8 DoPokeballSendOutAnimation(s16 pan, u8 kindOfThrow) */

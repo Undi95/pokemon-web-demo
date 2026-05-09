@@ -22,12 +22,14 @@
 // to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  CreateTask, DestroyTask, FieldEffectActiveListContains, FieldEffectActiveListRemove,
-  FieldEffectStart, GetCursorSelectionMonId, GetObjectEventIdByPosition, GetPlayerAvatarGraphicsIdByCurrentState,
-  GetPlayerFacingDirection, GetXYCoordsOneStepInFrontOfPlayer, IncrementGameStat, LockPlayerFieldControls,
-  ObjectEventCheckHeldMovementStatus, ObjectEventClearHeldMovementIfFinished, ObjectEventIsMovementOverridden, ObjectEventSetGraphicsId,
-  ObjectEventSetHeldMovement, PlaySE, PlayerGetElevation, ScriptContext_Enable,
-  ScriptContext_SetupScript, SetPlayerAvatarFieldMove, ShouldDoBrailleRegirockEffect, StartSpriteAnim,  // 4-per-line for readability
+  CreateTask, DIR_EAST, DIR_NORTH, DIR_SOUTH,
+  DIR_WEST, DestroyTask, FALSE, FieldEffectActiveListContains,
+  FieldEffectActiveListRemove, FieldEffectStart, GetCursorSelectionMonId, GetObjectEventIdByPosition,
+  GetPlayerAvatarGraphicsIdByCurrentState, GetPlayerFacingDirection, GetXYCoordsOneStepInFrontOfPlayer, IncrementGameStat,
+  LockPlayerFieldControls, ObjectEventCheckHeldMovementStatus, ObjectEventClearHeldMovementIfFinished, ObjectEventIsMovementOverridden,
+  ObjectEventSetGraphicsId, ObjectEventSetHeldMovement, PlaySE, PlayerGetElevation,
+  ScriptContext_Enable, ScriptContext_SetupScript, SetPlayerAvatarFieldMove, ShouldDoBrailleRegirockEffect,
+  StartSpriteAnim, TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** bool8 CheckObjectGraphicsInFrontOfPlayer(u8 graphicsId) */

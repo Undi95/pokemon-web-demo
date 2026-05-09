@@ -22,10 +22,12 @@
 // to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  ARRAY_COUNT, CreateSpriteAtEnd, DestroySprite, FlagGet,
-  IndexOfSpritePaletteTag, LoadSpritePalette, MAP_GROUP, MAP_NUM,
-  MapGridGetMetatileBehaviorAt, MetatileBehavior_IsPokeGrass, SetSpritePosToOffsetMapCoords, TryGetObjectEventIdByLocalIdAndMap,
-  UpdateSpritePaletteWithWeather, VarGet, VarSet,  // 4-per-line for readability
+  ARRAY_COUNT, CreateSpriteAtEnd, DIR_EAST, DIR_NONE,
+  DIR_NORTH, DIR_SOUTH, DIR_WEST, DestroySprite,
+  FALSE, FlagGet, IndexOfSpritePaletteTag, LoadSpritePalette,
+  MAP_GROUP, MAP_NUM, MapGridGetMetatileBehaviorAt, MetatileBehavior_IsPokeGrass,
+  SetSpritePosToOffsetMapCoords, TRUE, TryGetObjectEventIdByLocalIdAndMap, UpdateSpritePaletteWithWeather,
+  VarGet, VarSet,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static u8 GetMewObjectEventId(void) */

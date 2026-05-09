@@ -24,13 +24,13 @@ import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, ApplyGlobalTintToPaletteEntries, AreCoordsWithinMapGridBounds, BG_PLTT_ID,
   ClearMirageTowerPulseBlendEffect, CpuCopy16, CpuFastFill16, CpuFill16,
-  DecompressAndCopyTileDataToVram, DecompressAndLoadBgGfxUsingHeap, FixLongGrassMetatilesWindowBottom, FixLongGrassMetatilesWindowTop,
-  GenerateBattlePyramidFloorLayout, GenerateTrainerHillFloorLayout, GetBorderBlockAt, GetIncomingConnection,
-  GetMapGridBlockAt, GetMapHeaderFromConnection, InitSecretBaseAppearance, IsLargeBreakableDecoration,
-  LoadBgTiles, LoadCompressedPalette, LoadMapFromCameraTransition, LoadPalette,
-  PLTT_SIZEOF, RunOnLoadMapScript, SetOccupiedSecretBaseEntranceMetatiles, UNPACK_BEHAVIOR,
-  UNPACK_COLLISION, UNPACK_ELEVATION, UNPACK_LAYER_TYPE, UNPACK_METATILE,
-  UpdateTVScreensOnMap,  // 4-per-line for readability
+  DecompressAndCopyTileDataToVram, DecompressAndLoadBgGfxUsingHeap, FALSE, FixLongGrassMetatilesWindowBottom,
+  FixLongGrassMetatilesWindowTop, GenerateBattlePyramidFloorLayout, GenerateTrainerHillFloorLayout, GetBorderBlockAt,
+  GetIncomingConnection, GetMapGridBlockAt, GetMapHeaderFromConnection, InitSecretBaseAppearance,
+  IsLargeBreakableDecoration, LoadBgTiles, LoadCompressedPalette, LoadMapFromCameraTransition,
+  LoadPalette, PLTT_SIZEOF, PLTT_SIZE_4BPP, RunOnLoadMapScript,
+  SetOccupiedSecretBaseEntranceMetatiles, TRUE, UNPACK_BEHAVIOR, UNPACK_COLLISION,
+  UNPACK_ELEVATION, UNPACK_LAYER_TYPE, UNPACK_METATILE, UpdateTVScreensOnMap,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void InitMap(void) */

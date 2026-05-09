@@ -23,12 +23,13 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AllocZeroed, BlendPalettes, CalculateMonStats,
-  CalculatePPWithBonus, CreateTask, DestroyTask, FindTaskIdByFunc,
-  Free, FrontierSpeechToString, GetAilmentFromStatus, GetHighestLevelInPlayerParty,
-  GetMonAbility, GetMonData, GetPlayerSymbolCountForFacility, GetRandomScaledFrontierTrainerId,
-  Random, SWAP, SaveMapView, ScriptContext_Enable,
-  SetBattleFacilityTrainerGfxId, SetFrontierBrainObjEventGfx, SetMonData, SetMonMoveSlot,
-  TrySavingData, VarSet,  // 4-per-line for readability
+  CalculatePPWithBonus, CreateTask, DestroyTask, FALSE,
+  FindTaskIdByFunc, Free, FrontierSpeechToString, GetAilmentFromStatus,
+  GetHighestLevelInPlayerParty, GetMonAbility, GetMonData, GetPlayerSymbolCountForFacility,
+  GetRandomScaledFrontierTrainerId, NULL, PALETTES_ALL, Random,
+  SWAP, SaveMapView, ScriptContext_Enable, SetBattleFacilityTrainerGfxId,
+  SetFrontierBrainObjEventGfx, SetMonData, SetMonMoveSlot, TASK_NONE,
+  TRUE, TrySavingData, VarSet,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void CallBattlePikeFunction(void) */

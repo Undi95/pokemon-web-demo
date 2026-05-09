@@ -24,9 +24,10 @@ import * as _bridge from '../../../decomp-bridge';
 const {
   AGB_ASSERT, ARRAY_COUNT, CALC_CRC, ClearEReaderTrainer,
   ClearMysteryGiftFlags, ClearMysteryGiftVars, ClearRamScript, CopyTrainerId,
-  CpuFill32, FlagGet, GetSavedWonderCard, GetSavedWonderCardMetadata,
-  GetSavedWonderNews, GetSavedWonderNewsMetadata, InitQuestionnaireWords, StringCopy,
-  ValidateSavedRamScript, WonderNews_Reset,  // 4-per-line for readability
+  CpuFill32, FALSE, FlagGet, GetSavedWonderCard,
+  GetSavedWonderCardMetadata, GetSavedWonderNews, GetSavedWonderNewsMetadata, InitQuestionnaireWords,
+  NULL, StringCopy, TRUE, ValidateSavedRamScript,
+  WonderNews_Reset,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void ClearMysteryGift(void) */

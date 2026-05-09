@@ -22,10 +22,10 @@
 // to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  BitmaskAllOtherLinkPlayers, GetBlockReceivedStatus, GetLinkPlayerCount, GetLinkPlayerCountAsBitFlags,
-  GetMultiplayerId, IsLinkTaskFinished, ResetBlockReceivedFlag, ResetBlockReceivedFlags,
-  SendBlock, SendBlockRequest, SetLinkStandbyCallback, StripPlayerAndMonNamesForLinkContest,
-  SwitchTaskToFollowupFunc,  // 4-per-line for readability
+  BitmaskAllOtherLinkPlayers, FALSE, GetBlockReceivedStatus, GetLinkPlayerCount,
+  GetLinkPlayerCountAsBitFlags, GetMultiplayerId, IsLinkTaskFinished, ResetBlockReceivedFlag,
+  ResetBlockReceivedFlags, SendBlock, SendBlockRequest, SetLinkStandbyCallback,
+  StripPlayerAndMonNamesForLinkContest, SwitchTaskToFollowupFunc, TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** bool32 LinkContest_SendBlock(void *src, u16 size) */

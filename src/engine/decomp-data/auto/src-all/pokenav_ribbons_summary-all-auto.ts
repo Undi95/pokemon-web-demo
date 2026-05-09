@@ -27,18 +27,20 @@ const {
   ChangeBgY, ConvertIntToDecimalStringN, CopyBgTilemapBufferToVram, CopyPaletteIntoBufferUnfaded,
   CopyToBgTilemapBuffer, CopyToBgTilemapBufferRect, CopyWindowToVram, CreateLoopedTask,
   CreateMonPicSprite_HandleDeoxys, CreateSprite, DecompressAndCopyTileDataToVram, DestroySprite,
-  DynamicPlaceholderTextUtil_ExpandPlaceholders, DynamicPlaceholderTextUtil_Reset, DynamicPlaceholderTextUtil_SetPlaceholderPtr, FillBgTilemapBufferRect_Palette0,
-  FillWindowPixelBuffer, FreeAndDestroyMonPicSprite, FreePokenavSubstruct, FreeSpriteOamMatrix,
-  FreeSpritePaletteByTag, FreeSpriteTilesByTag, FreeTempTileDataBuffersIfPossible, GetBoxMonData,
-  GetBoxMonDataAt, GetBoxMonGender, GetBoxedMonPtr, GetGiftRibbonIds,
-  GetLevelFromBoxMonExp, GetLevelFromMonExp, GetMonData, GetMonGender,
-  GetNormalRibbonIds, GetSpriteTileStartByTag, GetStringCenterAlignXOffset, GetSubstructPtr,
-  HideBg, IndexOfSpritePaletteTag, InitBgTemplates, IsDma3ManagerBusyWithBgCopy,
-  IsLoopedTaskActive, IsPaletteFadeActive, JOY_NEW, JOY_REPEAT,
-  LoadCompressedSpriteSheet, PIXEL_FILL, PlaySE, PokenavFadeScreen,
-  PokenavFillPalette, Pokenav_AllocAndLoadPalettes, PrintHelpBarText, PutWindowTilemap,
-  RemoveWindow, ResetAllPicSprites, SetBgTilemapBuffer, ShowBg,
-  StartSpriteAffineAnim, StringCopy, StringGet_Nickname,  // 4-per-line for readability
+  DynamicPlaceholderTextUtil_ExpandPlaceholders, DynamicPlaceholderTextUtil_Reset, DynamicPlaceholderTextUtil_SetPlaceholderPtr, FALSE,
+  FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer, FreeAndDestroyMonPicSprite, FreePokenavSubstruct,
+  FreeSpriteOamMatrix, FreeSpritePaletteByTag, FreeSpriteTilesByTag, FreeTempTileDataBuffersIfPossible,
+  GetBoxMonData, GetBoxMonDataAt, GetBoxMonGender, GetBoxedMonPtr,
+  GetGiftRibbonIds, GetLevelFromBoxMonExp, GetLevelFromMonExp, GetMonData,
+  GetMonGender, GetNormalRibbonIds, GetSpriteTileStartByTag, GetStringCenterAlignXOffset,
+  GetSubstructPtr, HideBg, IndexOfSpritePaletteTag, InitBgTemplates,
+  IsDma3ManagerBusyWithBgCopy, IsLoopedTaskActive, IsPaletteFadeActive, JOY_NEW,
+  JOY_REPEAT, LoadCompressedSpriteSheet, NULL, PIXEL_FILL,
+  PLTT_SIZE_4BPP, PlaySE, PokenavFadeScreen, PokenavFillPalette,
+  Pokenav_AllocAndLoadPalettes, PrintHelpBarText, PutWindowTilemap, RemoveWindow,
+  ResetAllPicSprites, STR_CONV_MODE_LEFT_ALIGN, STR_CONV_MODE_RIGHT_ALIGN, SetBgTilemapBuffer,
+  ShowBg, StartSpriteAffineAnim, StringCopy, StringGet_Nickname,
+  TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** bool32 PokenavCallback_Init_RibbonsSummaryMenu(void) */

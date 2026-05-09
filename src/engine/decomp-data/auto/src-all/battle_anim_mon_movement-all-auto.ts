@@ -23,9 +23,10 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   BATTLE_PARTNER, Cos, DestroyAnimSprite, DestroyAnimVisualTask,
-  GetAnimBattlerSpriteId, GetBattlerAtPosition, GetBattlerSide, InitSpriteDataForLinearTranslation,
-  IsBattlerSpriteVisible, IsContest, PrepareBattlerSpriteForRotScale, ResetSpriteRotScale,
-  SetBattlerSpriteYOffsetFromRotation, SetSpriteRotScale, Sin, StoreSpriteCallbackInData6,  // 4-per-line for readability
+  FALSE, GetAnimBattlerSpriteId, GetBattlerAtPosition, GetBattlerSide,
+  InitSpriteDataForLinearTranslation, IsBattlerSpriteVisible, IsContest, PrepareBattlerSpriteForRotScale,
+  ResetSpriteRotScale, ST_OAM_OBJ_NORMAL, SetBattlerSpriteYOffsetFromRotation, SetSpriteRotScale,
+  Sin, StoreSpriteCallbackInData6, TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void AnimTask_ShakeMon(u8 taskId) */

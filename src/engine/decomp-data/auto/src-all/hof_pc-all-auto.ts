@@ -23,7 +23,8 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   BeginNormalPaletteFade, CreateTask, DestroyTask, LockPlayerFieldControls,
-  Overworld_PlaySpecialMapMusic, ScriptMenu_CreatePCMultichoice, ScriptMenu_DisplayPCStartupPrompt, SetMainCallback2,  // 4-per-line for readability
+  Overworld_PlaySpecialMapMusic, PALETTES_ALL, ScriptMenu_CreatePCMultichoice, ScriptMenu_DisplayPCStartupPrompt,
+  SetMainCallback2,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void AccessHallOfFamePC(void) */

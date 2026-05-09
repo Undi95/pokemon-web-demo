@@ -24,13 +24,13 @@ import * as _bridge from '../../../decomp-bridge';
 const {
   AllocZeroed, AllowObjectAtPosTriggerGroundEffects, CheckObjectGraphicsInFrontOfPlayer, Cos,
   CreateFieldMoveTask, CreateSprite, DestroySprite, DrawWholeMapView,
-  FREE_AND_SET_NULL, FieldEffectActiveListRemove, FieldEffectStart, FieldEffectStop,
-  GetCursorSelectionMonId, GetMonAbility, IncrementGameStat, IsMewPlayingHideAndSeek,
-  MapGridGetCollisionAt, MapGridGetElevationAt, MapGridGetMetatileBehaviorAt, MapGridGetMetatileIdAt,
-  MapGridSetMetatileIdAt, MetatileBehavior_IsAshGrass, MetatileBehavior_IsCuttableGrass, MetatileBehavior_IsLongGrassSouthEdge,
-  MetatileBehavior_IsLongGrass_Duplicate, MetatileBehavior_IsPokeGrass, PlaySE, PlayerGetDestCoords,
-  ScriptContext_Enable, ScriptContext_SetupScript, ScriptUnfreezeObjectEvents, Sin,
-  UnlockPlayerFieldControls,  // 4-per-line for readability
+  FALSE, FREE_AND_SET_NULL, FieldEffectActiveListRemove, FieldEffectStart,
+  FieldEffectStop, GetCursorSelectionMonId, GetMonAbility, IncrementGameStat,
+  IsMewPlayingHideAndSeek, MapGridGetCollisionAt, MapGridGetElevationAt, MapGridGetMetatileBehaviorAt,
+  MapGridGetMetatileIdAt, MapGridSetMetatileIdAt, MetatileBehavior_IsAshGrass, MetatileBehavior_IsCuttableGrass,
+  MetatileBehavior_IsLongGrassSouthEdge, MetatileBehavior_IsLongGrass_Duplicate, MetatileBehavior_IsPokeGrass, PlaySE,
+  PlayerGetDestCoords, ScriptContext_Enable, ScriptContext_SetupScript, ScriptUnfreezeObjectEvents,
+  Sin, TRUE, UnlockPlayerFieldControls,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** bool8 SetUpFieldMove_Cut(void) */

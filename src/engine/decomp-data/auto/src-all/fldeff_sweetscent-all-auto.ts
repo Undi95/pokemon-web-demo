@@ -23,10 +23,10 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   BeginNormalPaletteFade, BlendPalettes, ClearMirageTowerPulseBlendEffect, CpuFastCopy,
-  CreateFieldMoveTask, CreateTask, DestroyTask, FieldEffectActiveListRemove,
-  FieldEffectStart, GetCursorSelectionMonId, GetPlayerAvatarSpriteId, PlaySE,
-  ScriptContext_SetupScript, SetWeatherPalStateIdle, SetWeatherScreenFadeOut, SweetScentWildEncounter,
-  TryStartMirageTowerPulseBlendEffect,  // 4-per-line for readability
+  CreateFieldMoveTask, CreateTask, DestroyTask, FALSE,
+  FieldEffectActiveListRemove, FieldEffectStart, GetCursorSelectionMonId, GetPlayerAvatarSpriteId,
+  PLTT_SIZE, PlaySE, ScriptContext_SetupScript, SetWeatherPalStateIdle,
+  SetWeatherScreenFadeOut, SweetScentWildEncounter, TRUE, TryStartMirageTowerPulseBlendEffect,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** bool8 SetUpFieldMove_SweetScent(void) */

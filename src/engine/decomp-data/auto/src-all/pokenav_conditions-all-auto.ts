@@ -23,11 +23,12 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   AllocSubstruct, CalculatePlayerPartyCount, ConditionGraph_CalcPositions, ConditionGraph_Init,
-  ConditionGraph_SetNewPositions, CopyConditionMonNameGender, CopyStringLeftAlignedToConditionData, FreePokenavSubstruct,
-  GET_NUM_CONDITION_SPARKLES, GetBoxNamePtr, GetBoxOrPartyMonData, GetMonData,
-  GetMonMarkingsData, GetMonSpritePalFromSpeciesAndPersonality, GetSubstructPtr, HandleMonMarkingsMenuInput,
-  JOY_HELD, JOY_NEW, LZ77UnCompWram, LoadSpecialPokePic,
-  PlaySE, SetBoxMonDataAt, SetMonData,  // 4-per-line for readability
+  ConditionGraph_SetNewPositions, CopyConditionMonNameGender, CopyStringLeftAlignedToConditionData, FALSE,
+  FreePokenavSubstruct, GET_NUM_CONDITION_SPARKLES, GetBoxNamePtr, GetBoxOrPartyMonData,
+  GetMonData, GetMonMarkingsData, GetMonSpritePalFromSpeciesAndPersonality, GetSubstructPtr,
+  HandleMonMarkingsMenuInput, JOY_HELD, JOY_NEW, LZ77UnCompWram,
+  LoadSpecialPokePic, NULL, PlaySE, SetBoxMonDataAt,
+  SetMonData, TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** bool32 PokenavCallback_Init_ConditionGraph_Party(void) */

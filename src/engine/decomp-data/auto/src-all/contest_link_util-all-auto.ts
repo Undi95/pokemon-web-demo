@@ -22,10 +22,11 @@
 // to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  CalculateRound1Points, FlagGet, GetMonData, GetMultiplayerId,
-  IsLinkTaskFinished, LinkContest_GetBlockReceived, LinkContest_GetBlockReceivedFromAllPlayers, LinkContest_GetLeaderIndex,
-  LinkContest_SendBlock, LinkContest_TryLinkStandby, SetLinkAIContestants, SetTaskFuncWithFollowupFunc,
-  SortContestants, StripPlayerAndMonNamesForLinkContest, SwitchTaskToFollowupFunc,  // 4-per-line for readability
+  CalculateRound1Points, FALSE, FlagGet, GetMonData,
+  GetMultiplayerId, IsLinkTaskFinished, LinkContest_GetBlockReceived, LinkContest_GetBlockReceivedFromAllPlayers,
+  LinkContest_GetLeaderIndex, LinkContest_SendBlock, LinkContest_TryLinkStandby, SetLinkAIContestants,
+  SetTaskFuncWithFollowupFunc, SortContestants, StripPlayerAndMonNamesForLinkContest, SwitchTaskToFollowupFunc,
+  TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void Task_LinkContest_StartCommunicationEm(u8 taskId) */

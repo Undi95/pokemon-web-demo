@@ -26,17 +26,18 @@ const {
   BG_PLTT_ID, BG_TILE_V_FLIP, BlitBitmapRectToWindow, CallWindowFunction,
   ChangeBgX, ChangeBgY, CheckForSpaceForDma3Request, ClearWindowTilemap,
   ConvertIntToDecimalStringN, CopyBgTilemapBufferToVram, CopyWindowToVram, CreateTask,
-  DeactivateAllTextPrinters, DestroyTask, DisplayMessageAndContinueTask, FREE_AND_SET_NULL,
-  FillBgTilemapBufferRect, FillWindowPixelBuffer, FillWindowPixelRect, FlagGet,
-  Free, FreeAllWindowBuffers, GetBgAttribute, GetBgTilemapBuffer,
-  GetFontAttribute, GetHoennPokedexCount, GetLRKeysPressed, GetMapNameGeneric,
-  GetMenuCursorDimensionByFont, GetNationalPokedexCount, GetStringWidth, GetWindowAttribute,
-  GetWordTaskArg, InitWindows, IsDma3ManagerBusyWithBgCopy, IsNationalPokedexEnabled,
-  IsTextPrinterActive, JOY_NEW, JOY_REPEAT, LoadBgTilemap,
-  LoadBgTiles, LoadMessageBoxGfx, LoadPalette, LoadUserWindowBorderGfx,
-  PIXEL_FILL, PlaySE, PutWindowTilemap, RemoveWindow,
-  RequestDma3Fill, RunTextPrinters, SetWordTaskArg, StringCopy,
-  StringExpandPlaceholders,  // 4-per-line for readability
+  DeactivateAllTextPrinters, DestroyTask, DisplayMessageAndContinueTask, FALSE,
+  FREE_AND_SET_NULL, FillBgTilemapBufferRect, FillWindowPixelBuffer, FillWindowPixelRect,
+  FlagGet, Free, FreeAllWindowBuffers, GetBgAttribute,
+  GetBgTilemapBuffer, GetFontAttribute, GetHoennPokedexCount, GetLRKeysPressed,
+  GetMapNameGeneric, GetMenuCursorDimensionByFont, GetNationalPokedexCount, GetStringWidth,
+  GetWindowAttribute, GetWordTaskArg, InitWindows, IsDma3ManagerBusyWithBgCopy,
+  IsNationalPokedexEnabled, IsTextPrinterActive, JOY_NEW, JOY_REPEAT,
+  LoadBgTilemap, LoadBgTiles, LoadMessageBoxGfx, LoadPalette,
+  LoadUserWindowBorderGfx, NULL, PIXEL_FILL, PLTT_SIZE_4BPP,
+  PlaySE, PutWindowTilemap, RemoveWindow, RequestDma3Fill,
+  RunTextPrinters, STR_CONV_MODE_LEADING_ZEROS, STR_CONV_MODE_LEFT_ALIGN, SetWordTaskArg,
+  StringCopy, StringExpandPlaceholders, TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void InitStandardTextBoxWindows(void) */

@@ -22,8 +22,9 @@
 // to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  ARRAY_COUNT, CalcCRC16WithTable, CpuFill32, MAP_GROUP,
-  MAP_NUM, MapHeaderCheckScriptTable, MapHeaderGetScriptTable, ScriptPop,  // 4-per-line for readability
+  ARRAY_COUNT, CalcCRC16WithTable, CpuFill32, FALSE,
+  MAP_GROUP, MAP_NUM, MapHeaderCheckScriptTable, MapHeaderGetScriptTable,
+  NULL, ScriptPop, TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void InitScriptContext(struct ScriptContext *ctx, void *cmdTable, void *cmdTableEnd) */

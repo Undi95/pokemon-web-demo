@@ -23,8 +23,9 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   AddValToTilemapBuffer, Alloc, BG_PLTT_ID, ChangeBgX,
-  ChangeBgY, CpuCopy32, DecompressAndCopyTileDataToVram, FreeTempTileDataBuffersIfPossible,
-  SetBgAttribute, ShowBg, TRY_FREE_AND_SET_NULL,  // 4-per-line for readability
+  ChangeBgY, CpuCopy32, DecompressAndCopyTileDataToVram, FALSE,
+  FreeTempTileDataBuffersIfPossible, SetBgAttribute, ShowBg, TRUE,
+  TRY_FREE_AND_SET_NULL,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void LoadPokedexAreaMapGfx(const struct PokedexAreaMapTemplate *template) */

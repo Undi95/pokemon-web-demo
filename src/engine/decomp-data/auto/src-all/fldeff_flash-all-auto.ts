@@ -22,15 +22,22 @@
 // to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  AnimateSprites, BGCNT_CHARBASE, BGCNT_PRIORITY, BGCNT_SCREENBASE,
-  BG_PLTT_ID, BLDALPHA_BLEND, BuildOamBuffer, CreateFieldMoveTask,
-  CreateTask, DmaFill16, DmaFill32, FlagGet,
+  AnimateSprites, BGCNT_16COLOR, BGCNT_CHARBASE, BGCNT_PRIORITY,
+  BGCNT_SCREENBASE, BGCNT_TXT256x256, BG_PLTT_ID, BLDALPHA_BLEND,
+  BLDCNT_EFFECT_BLEND, BLDCNT_TGT2_BD, BLDCNT_TGT2_BG1, BLDCNT_TGT2_BG2,
+  BLDCNT_TGT2_BG3, BLDCNT_TGT2_OBJ, BuildOamBuffer, CreateFieldMoveTask,
+  CreateTask, DISPCNT_BG0_ON, DISPCNT_OBJ_1D_MAP, DISPCNT_OBJ_ON,
+  DmaFill16, DmaFill32, FALSE, FlagGet,
   FlagSet, GetCurrentMapType, GetCursorSelectionMonId, GetLastUsedWarpMapType,
-  LZ77UnCompVram, LoadOam, LoadPalette, PLTT_SIZEOF,
-  PlaySE, ProcessSpriteCopyRequests, ResetPaletteFade, ResetSpriteData,
-  ResetTasks, RunTasks, ScriptContext_SetupScript, SetGpuReg,
-  SetMainCallback2, SetVBlankCallback, ShouldDoBrailleRegisteelEffect, TransferPlttBuffer,
-  UpdatePaletteFade,  // 4-per-line for readability
+  LZ77UnCompVram, LoadOam, LoadPalette, NULL,
+  PLTT_SIZE, PLTT_SIZEOF, PLTT_SIZE_4BPP, PlaySE,
+  ProcessSpriteCopyRequests, REG_OFFSET_BG0CNT, REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS,
+  REG_OFFSET_BG1CNT, REG_OFFSET_BG1HOFS, REG_OFFSET_BG1VOFS, REG_OFFSET_BG2CNT,
+  REG_OFFSET_BG2HOFS, REG_OFFSET_BG2VOFS, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT,
+  REG_OFFSET_BLDY, ResetPaletteFade, ResetSpriteData, ResetTasks,
+  RunTasks, ScriptContext_SetupScript, SetGpuReg, SetMainCallback2,
+  SetVBlankCallback, ShouldDoBrailleRegisteelEffect, TRUE, TransferPlttBuffer,
+  UpdatePaletteFade, VRAM_SIZE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** bool8 SetUpFieldMove_Flash(void) */

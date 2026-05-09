@@ -22,9 +22,10 @@
 // to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  CalculateBaseDamage, GET_BATTLER_SIDE, GetBattlerPosition, GetBattlerSide,
-  GetLinkTrainerFlankId, GetMonData, GetOpposingLinkMultiBattlerId, IS_TYPE_PHYSICAL,
-  PutBattleUpdateOnTheAir, TryPutBattleSeminarOnAir, TypeCalc,  // 4-per-line for readability
+  CalculateBaseDamage, FALSE, GET_BATTLER_SIDE, GetBattlerPosition,
+  GetBattlerSide, GetLinkTrainerFlankId, GetMonData, GetOpposingLinkMultiBattlerId,
+  IS_TYPE_PHYSICAL, NULL, PutBattleUpdateOnTheAir, TRUE,
+  TryPutBattleSeminarOnAir, TypeCalc,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void BattleTv_SetDataBasedOnString(u16 stringId) */

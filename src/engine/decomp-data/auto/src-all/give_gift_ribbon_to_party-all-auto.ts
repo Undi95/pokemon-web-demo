@@ -22,7 +22,8 @@
 // to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  ARRAY_COUNT, FlagSet, GetMonData, SetMonData,  // 4-per-line for readability
+  ARRAY_COUNT, FALSE, FlagSet, GetMonData,
+  SetMonData, TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void GiveGiftRibbonToParty(u8 index, u8 ribbonId) */

@@ -24,8 +24,8 @@ import * as _bridge from '../../../decomp-bridge';
 const {
   CopyGlyphToWindow, CopyWindowToVram, DecompressGlyphTile, FillWindowPixelBuffer,
   GenerateFontHalfRowLookupTable, IsSEPlaying, JOY_HELD, JOY_NEW,
-  PIXEL_FILL, ScrollWindow, TextPrinterClearDownArrow, TextPrinterInitDownArrowCounters,
-  TextPrinterWait, TextPrinterWaitWithDownArrow,  // 4-per-line for readability
+  PIXEL_FILL, ScrollWindow, TRUE, TextPrinterClearDownArrow,
+  TextPrinterInitDownArrowCounters, TextPrinterWait, TextPrinterWaitWithDownArrow,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** u16 FontFunc_Braille(struct TextPrinter *textPrinter) */

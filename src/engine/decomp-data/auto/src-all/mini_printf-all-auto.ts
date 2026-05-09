@@ -22,7 +22,7 @@
 // to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  StringLength,  // 4-per-line for readability
+  FALSE, NULL, StringLength, TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static inline char mini_pchar_decode(char encoded) */

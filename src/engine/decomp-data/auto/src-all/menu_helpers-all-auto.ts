@@ -24,12 +24,14 @@ import * as _bridge from '../../../decomp-bridge';
 const {
   AddTextPrinterParameterized2, ChangeBgX, ChangeBgY, CpuFill16,
   CpuFill32, CreateSprite, CreateYesNoMenu, DestroySprite,
-  DestroySpriteAndFreeResources, DrawDialogFrameWithCustomTileAndPalette, InUnionRoom, IsLinkRecvQueueAtOverworldMax,
-  IsOverworldLinkActive, IsTextPrinterActive, ItemIsMail, JOY_NEW,
-  JOY_REPEAT, LoadCompressedSpritePalette, LoadCompressedSpriteSheet, MAP_GROUP,
-  MAP_NUM, Menu_ProcessInputNoWrapClearOnChoose, Overworld_IsRecvQueueAtMax, PlaySE,
-  RunTextPrinters, SetGpuReg, SetHBlankCallback, SetVBlankCallback,
-  StartSpriteAnim, StringExpandPlaceholders,  // 4-per-line for readability
+  DestroySpriteAndFreeResources, DrawDialogFrameWithCustomTileAndPalette, FALSE, InUnionRoom,
+  IsLinkRecvQueueAtOverworldMax, IsOverworldLinkActive, IsTextPrinterActive, ItemIsMail,
+  JOY_NEW, JOY_REPEAT, LoadCompressedSpritePalette, LoadCompressedSpriteSheet,
+  MAP_GROUP, MAP_NUM, Menu_ProcessInputNoWrapClearOnChoose, NULL,
+  Overworld_IsRecvQueueAtMax, PLTT_SIZE, PlaySE, REG_OFFSET_BG0CNT,
+  REG_OFFSET_BG1CNT, REG_OFFSET_BG2CNT, REG_OFFSET_BG3CNT, RunTextPrinters,
+  SetGpuReg, SetHBlankCallback, SetVBlankCallback, StartSpriteAnim,
+  StringExpandPlaceholders, TRUE, VRAM_SIZE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void ResetVramOamAndBgCntRegs(void) */

@@ -26,21 +26,25 @@ const {
   BG_CHAR_ADDR, BG_PLTT_ID, BG_SCREEN_ADDR, BeginNormalPaletteFade,
   BlendPalettes, BuildOamBuffer, ClearScheduledBgCopiesToVram, ClearStdWindowAndFrameToTransparent,
   CopyWindowToVram, CorrectSpecialMapSecId_Internal, CpuCopy16, CreateSprite,
-  DeactivateAllTextPrinters, DecompressAndCopyTileDataToVram, DestroySprite, DoScheduledBgTilemapCopiesToVram,
-  DrawStdFrameWithCustomTileAndPalette, FillWindowPixelBuffer, FlagGet, FreeAllSpritePalettes,
+  DISPCNT_OBJ_1D_MAP, DISPCNT_OBJ_ON, DISPLAY_HEIGHT, DeactivateAllTextPrinters,
+  DecompressAndCopyTileDataToVram, DestroySprite, DoScheduledBgTilemapCopiesToVram, DrawStdFrameWithCustomTileAndPalette,
+  FALSE, FillWindowPixelBuffer, FlagGet, FreeAllSpritePalettes,
   FreeAllWindowBuffers, FreeSpritePaletteByTag, FreeSpriteTileRanges, FreeSpriteTilesByTag,
   FreeTempTileDataBuffersIfPossible, GetMapName, GetMapSecIdAt, GetMapTypeByGroupAndId,
   GetSSTidalLocation, GetStringRightAlignXOffset, IndexOfSpritePaletteTag, InitBgsFromTemplates,
   InitWindows, JOY_HELD, JOY_NEW, LZ77UnCompVram,
   LZ77UnCompWram, LoadOam, LoadPalette, LoadSpritePalette,
   LoadSpriteSheet, LoadUserWindowBorderGfx, MAP_GROUP, MAP_NUM,
-  OBJ_PLTT_ID, Overworld_GetMapHeaderByGroupAndId, PIXEL_FILL, ProcessSpriteCopyRequests,
-  PutWindowTilemap, ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData,
+  NULL, OBJ_PLTT_ID, Overworld_GetMapHeaderByGroupAndId, PALETTES_ALL,
+  PIXEL_FILL, PLTT_SIZE_4BPP, ProcessSpriteCopyRequests, PutWindowTilemap,
+  REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS, REG_OFFSET_BG1HOFS, REG_OFFSET_BG1VOFS,
+  REG_OFFSET_BG2HOFS, REG_OFFSET_BG2VOFS, REG_OFFSET_BG3HOFS, REG_OFFSET_BG3VOFS,
+  REG_OFFSET_BLDCNT, ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData,
   ReturnToFieldFromFlyMapSelect, SPRITE_SHAPE, SPRITE_SIZE, ScheduleBgCopyTilemapToVram,
   SetBgAttribute, SetGpuReg, SetGpuRegBits, SetMainCallback2,
   SetVBlankCallback, SetWarpDestinationToHealLocation, SetWarpDestinationToMapWarp, ShowBg,
-  StartSpriteAnim, StringFill, StringLength, TRY_FREE_AND_SET_NULL,
-  TransferPlttBuffer, UpdatePaletteFade, VarGet,  // 4-per-line for readability
+  StartSpriteAnim, StringFill, StringLength, TRUE,
+  TRY_FREE_AND_SET_NULL, TransferPlttBuffer, UpdatePaletteFade, VarGet,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void InitRegionMap(struct RegionMap *regionMap, bool8 zoomed) */

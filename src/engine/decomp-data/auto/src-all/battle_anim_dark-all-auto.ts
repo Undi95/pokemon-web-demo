@@ -23,16 +23,19 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   AnimLoadCompressedBgGfx, AnimLoadCompressedBgTilemap, BATTLE_PARTNER, BG_PLTT_ID,
-  BLDALPHA_BLEND, BlendPalette, CMD_ARGS, ClearBattleAnimBg,
-  CreateInvisibleSpriteCopy, DestroyAnimSprite, DestroyAnimVisualTask, DestroySprite,
-  DestroySpriteAndMatrix, FillPalette, GetAnimBattlerSpriteId, GetBattleAnimBg1Data,
-  GetBattlerAtPosition, GetBattlerPosition, GetBattlerSide, GetBattlerSpriteBGPriorityRank,
-  GetBattlerSpriteCoord, GetBattlerSpriteCoordAttr, GetGpuReg, GetMonData,
-  InitAnimArcTranslation, InitSpriteDataForLinearTranslation, IsBattlerSpriteVisible, IsContest,
-  IsDoubleBattle, LoadCompressedPalette, MoveBattlerSpriteToBG, ResetBattleAnimBg,
-  ScanlineEffect_SetParams, SetAnimBgAttribute, SetGpuReg, SetGpuRegBits,
-  SetGrayscaleOrOriginalPalette, Sin, StartSpriteAffineAnim, StartSpriteAnim,
-  StoreSpriteCallbackInData6, TranslateAnimHorizontalArc,  // 4-per-line for readability
+  BLDALPHA_BLEND, BLDCNT_EFFECT_BLEND, BLDCNT_TGT1_BG1, BLDCNT_TGT1_BG2,
+  BlendPalette, CMD_ARGS, ClearBattleAnimBg, CreateInvisibleSpriteCopy,
+  DISPLAY_HEIGHT, DestroyAnimSprite, DestroyAnimVisualTask, DestroySprite,
+  DestroySpriteAndMatrix, FALSE, FillPalette, GetAnimBattlerSpriteId,
+  GetBattleAnimBg1Data, GetBattlerAtPosition, GetBattlerPosition, GetBattlerSide,
+  GetBattlerSpriteBGPriorityRank, GetBattlerSpriteCoord, GetBattlerSpriteCoordAttr, GetGpuReg,
+  GetMonData, InitAnimArcTranslation, InitSpriteDataForLinearTranslation, IsBattlerSpriteVisible,
+  IsContest, IsDoubleBattle, LoadCompressedPalette, MoveBattlerSpriteToBG,
+  PLTT_SIZE_4BPP, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, REG_OFFSET_WININ,
+  REG_OFFSET_WINOUT, ResetBattleAnimBg, ScanlineEffect_SetParams, SetAnimBgAttribute,
+  SetGpuReg, SetGpuRegBits, SetGrayscaleOrOriginalPalette, Sin,
+  StartSpriteAffineAnim, StartSpriteAnim, StoreSpriteCallbackInData6, TRUE,
+  TranslateAnimHorizontalArc,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void AnimTask_AttackerFadeToInvisible(u8 taskId) */

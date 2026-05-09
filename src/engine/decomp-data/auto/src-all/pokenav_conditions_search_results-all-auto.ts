@@ -27,17 +27,19 @@ const {
   CheckBoxMonSanityAt, ConvertIntToDecimalStringN, CopyBgTilemapBufferToVram, CopyPaletteIntoBufferUnfaded,
   CopyToBgTilemapBuffer, CopyWindowToVram, CreateLoopedTask, CreatePokenavList,
   DecompressAndCopyTileDataToVram, DestroyPokenavList, DynamicPlaceholderTextUtil_ExpandPlaceholders, DynamicPlaceholderTextUtil_Reset,
-  DynamicPlaceholderTextUtil_SetPlaceholderPtr, FreePokenavSubstruct, FreeTempTileDataBuffersIfPossible, GetBoxMonData,
-  GetBoxMonDataAt, GetBoxMonGender, GetBoxedMonPtr, GetLevelFromBoxMonExp,
-  GetLevelFromMonExp, GetMonData, GetMonGender, GetSelectedConditionSearch,
-  GetStringClearToWidth, GetSubstructPtr, HideBg, InitBgTemplates,
-  IsCreatePokenavListTaskActive, IsDma3ManagerBusyWithBgCopy, IsLoopedTaskActive, IsPaletteFadeActive,
-  JOY_NEW, JOY_REPEAT, LT_SET_STATE, LoadLeftHeaderGfxForIndex,
-  MainMenuLoopedTaskIsBusy, PlaySE, PokenavFadeScreen, PokenavList_GetSelectedIndex,
-  PokenavList_IsMoveWindowTaskActive, PokenavList_MoveCursorDown, PokenavList_MoveCursorUp, PokenavList_PageDown,
-  PokenavList_PageUp, PrintHelpBarText, PutWindowTilemap, RemoveWindow,
-  SetBgTilemapBuffer, SetLeftHeaderSpritesInvisibility, ShowBg, ShowLeftHeaderGfx,
-  SlideMenuHeaderDown, StringCopy, StringGet_Nickname,  // 4-per-line for readability
+  DynamicPlaceholderTextUtil_SetPlaceholderPtr, FALSE, FreePokenavSubstruct, FreeTempTileDataBuffersIfPossible,
+  GetBoxMonData, GetBoxMonDataAt, GetBoxMonGender, GetBoxedMonPtr,
+  GetLevelFromBoxMonExp, GetLevelFromMonExp, GetMonData, GetMonGender,
+  GetSelectedConditionSearch, GetStringClearToWidth, GetSubstructPtr, HideBg,
+  InitBgTemplates, IsCreatePokenavListTaskActive, IsDma3ManagerBusyWithBgCopy, IsLoopedTaskActive,
+  IsPaletteFadeActive, JOY_NEW, JOY_REPEAT, LT_SET_STATE,
+  LoadLeftHeaderGfxForIndex, MainMenuLoopedTaskIsBusy, NULL, PLTT_SIZE_4BPP,
+  PlaySE, PokenavFadeScreen, PokenavList_GetSelectedIndex, PokenavList_IsMoveWindowTaskActive,
+  PokenavList_MoveCursorDown, PokenavList_MoveCursorUp, PokenavList_PageDown, PokenavList_PageUp,
+  PrintHelpBarText, PutWindowTilemap, RemoveWindow, STR_CONV_MODE_LEFT_ALIGN,
+  STR_CONV_MODE_RIGHT_ALIGN, SetBgTilemapBuffer, SetLeftHeaderSpritesInvisibility, ShowBg,
+  ShowLeftHeaderGfx, SlideMenuHeaderDown, StringCopy, StringGet_Nickname,
+  TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** bool32 PokenavCallback_Init_ConditionSearch(void) */

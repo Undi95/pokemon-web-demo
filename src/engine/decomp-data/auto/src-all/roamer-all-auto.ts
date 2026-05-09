@@ -22,8 +22,9 @@
 // to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  ARRAY_COUNT, CreateMon, CreateMonWithIVsPersonality, GetMonData,
-  MAP_NUM, Random, SetMonData, ZeroEnemyPartyMons,  // 4-per-line for readability
+  ARRAY_COUNT, CreateMon, CreateMonWithIVsPersonality, FALSE,
+  GetMonData, MAP_NUM, Random, SetMonData,
+  TRUE, ZeroEnemyPartyMons,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void ClearRoamerData(void) */

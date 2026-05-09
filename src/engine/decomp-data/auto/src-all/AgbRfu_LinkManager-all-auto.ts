@@ -22,7 +22,8 @@
 // to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  CpuFill16, LMAN_callback, MSC_callback,  // 4-per-line for readability
+  CpuFill16, FALSE, LMAN_callback, MSC_callback,
+  NULL, TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** u32 rfu_LMAN_REQBN_softReset_and_checkID(void) */

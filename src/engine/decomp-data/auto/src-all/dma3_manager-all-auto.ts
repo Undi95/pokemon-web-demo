@@ -22,7 +22,8 @@
 // to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  Dma3CopyLarge16_, Dma3CopyLarge32_, Dma3FillLarge16_, Dma3FillLarge32_,  // 4-per-line for readability
+  Dma3CopyLarge16_, Dma3CopyLarge32_, Dma3FillLarge16_, Dma3FillLarge32_,
+  FALSE, NULL, TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void ClearDma3Requests(void) */

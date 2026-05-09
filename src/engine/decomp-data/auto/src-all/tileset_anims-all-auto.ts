@@ -23,7 +23,8 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, BG_PLTT_ID, BlendPalette, CpuCopy16,
-  CpuFill32, DmaCopy16, FindTaskIdByFunc, TILE_OFFSET_4BPP,  // 4-per-line for readability
+  CpuFill32, DmaCopy16, FindTaskIdByFunc, NULL,
+  PLTT_SIZE_4BPP, TASK_NONE, TILE_OFFSET_4BPP, TILE_SIZE_4BPP,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void ResetTilesetAnimBuffer(void) */

@@ -23,15 +23,16 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   BattleSetup_StartBattlePikeWildBattle, BattleSetup_StartRoamerBattle, BattleSetup_StartWildBattle, CreateMonWithGenderNatureLetter,
-  CreateMonWithNature, CurrentBattlePyramidLocation, FlagGet, GenerateBattlePyramidWildMon,
-  GetBattlePikeWildMonHeaderId, GetGenderFromSpeciesAndPersonality, GetMonAbility, GetMonData,
-  GetSafariZoneFlag, GetXYCoordsOneStepInFrontOfPlayer, ISO_RANDOMIZE2, InBattlePike,
-  InUnionRoom, IncrementGameStat, MAP_GROUP, MAP_NUM,
-  MapGridGetMetatileBehaviorAt, MetatileBehavior_IsBridgeOverWater, MetatileBehavior_IsLandWildEncounter, MetatileBehavior_IsSurfableAndNotWaterfall,
-  MetatileBehavior_IsWaterWildEncounter, PlayerGetDestCoords, PokeblockGetGain, Random,
-  SWAP, SafariZoneGetActivePokeblock, ScriptContext_SetupScript, SetMonMoveSlot,
-  SetPokemonAnglerSpecies, TRY_GET_ABILITY_INFLUENCED_WILD_MON_INDEX, TestPlayerAvatarFlags, TryGenerateBattlePikeWildMon,
-  TryStartRoamerEncounter, VarGet, VarSet, ZeroEnemyPartyMons,  // 4-per-line for readability
+  CreateMonWithNature, CurrentBattlePyramidLocation, FALSE, FlagGet,
+  GenerateBattlePyramidWildMon, GetBattlePikeWildMonHeaderId, GetGenderFromSpeciesAndPersonality, GetMonAbility,
+  GetMonData, GetSafariZoneFlag, GetXYCoordsOneStepInFrontOfPlayer, ISO_RANDOMIZE2,
+  InBattlePike, InUnionRoom, IncrementGameStat, MAP_GROUP,
+  MAP_NUM, MapGridGetMetatileBehaviorAt, MetatileBehavior_IsBridgeOverWater, MetatileBehavior_IsLandWildEncounter,
+  MetatileBehavior_IsSurfableAndNotWaterfall, MetatileBehavior_IsWaterWildEncounter, NULL, PlayerGetDestCoords,
+  PokeblockGetGain, Random, SWAP, SafariZoneGetActivePokeblock,
+  ScriptContext_SetupScript, SetMonMoveSlot, SetPokemonAnglerSpecies, TRUE,
+  TRY_GET_ABILITY_INFLUENCED_WILD_MON_INDEX, TestPlayerAvatarFlags, TryGenerateBattlePikeWildMon, TryStartRoamerEncounter,
+  VarGet, VarSet, ZeroEnemyPartyMons,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void DisableWildEncounters(bool8 disabled) */

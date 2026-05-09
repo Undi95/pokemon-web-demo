@@ -24,9 +24,11 @@ import * as _bridge from '../../../decomp-bridge';
 const {
   BlendPalette, CpuCopy16, CpuCopy32, CpuFill16,
   CpuFill32, CreateTask, DestroyTask, DmaCopy16,
-  DmaCopy32, GET_B, GET_G, GET_R,
-  GetWordTaskArg, LZDecompressWram, Q_8_8, RGB2,
-  SetGpuReg, SetWordTaskArg,  // 4-per-line for readability
+  DmaCopy32, FALSE, FAST_FADE, GET_B,
+  GET_G, GET_R, GetWordTaskArg, HARDWARE_FADE,
+  LZDecompressWram, PLTT_SIZE, Q_8_8, REG_OFFSET_BLDCNT,
+  REG_OFFSET_BLDY, RGB2, SetGpuReg, SetWordTaskArg,
+  TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void LoadCompressedPalette(const u32 *src, u16 offset, u16 size) */

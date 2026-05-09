@@ -25,17 +25,20 @@ const {
   AllocSpritePalette, AllocZeroed, AnimSetCenterToCornerVecX, ArcTan2,
   BATTLE_PARTNER, BLDALPHA_BLEND, BlendPalette, CalcCenterToCornerVec,
   CopyBgTilemapBufferToVram, CopyToBgTilemapBuffer, Cos, CpuCopy32,
-  CpuFill32, CreateInvisibleSpriteWithCallback, CreateSprite, DestroyAnimSprite,
-  DestroyAnimVisualTask, DestroySprite, DestroySpriteAndFreeResources, FREE_AND_SET_NULL,
-  FillBgTilemapBufferRect, FreeSpriteOamMatrix, FreeSpritePaletteByTag, GET_BATTLER_SIDE2,
-  GET_MON_COORDS_HEIGHT, GET_MON_COORDS_WIDTH, GET_UNOWN_LETTER, GetAnimBgAttribute,
-  GetMonData, GetMonSpritePalFromSpeciesAndPersonality, IS_DOUBLE_BATTLE, IndexOfSpritePaletteTag,
-  IsBattlerSpriteVisible, IsContest, LZDecompressWram, LoadBgTiles,
-  LoadCompressedPalette, LoadPointerFromVars, LoadSpecialPokePic_2, LoadSpecialPokePic_DontHandleDeoxys,
-  LoadSpriteSheet, OBJ_PLTT_ID, OBJ_PLTT_ID2, ObjAffineSet,
-  PLTT_ID, RelocateBattleBgPal, RequestDma3Copy, SAFE_DIV,
-  SetAnimBgAttribute, SetGpuReg, ShouldIgnoreDeoxysForm, Sin,
-  StartSpriteAffineAnim, StartSpriteAnim, UpdateMonIconFrame,  // 4-per-line for readability
+  CpuFill32, CreateInvisibleSpriteWithCallback, CreateSprite, DISPLAY_HEIGHT,
+  DestroyAnimSprite, DestroyAnimVisualTask, DestroySprite, DestroySpriteAndFreeResources,
+  FALSE, FREE_AND_SET_NULL, FillBgTilemapBufferRect, FreeSpriteOamMatrix,
+  FreeSpritePaletteByTag, GET_BATTLER_SIDE2, GET_MON_COORDS_HEIGHT, GET_MON_COORDS_WIDTH,
+  GET_UNOWN_LETTER, GetAnimBgAttribute, GetMonData, GetMonSpritePalFromSpeciesAndPersonality,
+  IS_DOUBLE_BATTLE, IndexOfSpritePaletteTag, IsBattlerSpriteVisible, IsContest,
+  LZDecompressWram, LoadBgTiles, LoadCompressedPalette, LoadPointerFromVars,
+  LoadSpecialPokePic_2, LoadSpecialPokePic_DontHandleDeoxys, LoadSpriteSheet, NULL,
+  OBJ_PLTT_ID, OBJ_PLTT_ID2, ObjAffineSet, PLTT_ID,
+  PLTT_SIZE_4BPP, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, RelocateBattleBgPal,
+  RequestDma3Copy, SAFE_DIV, ST_OAM_AFFINE_DOUBLE, ST_OAM_AFFINE_NORMAL,
+  ST_OAM_OBJ_BLEND, ST_OAM_OBJ_NORMAL, ST_OAM_OBJ_WINDOW, SetAnimBgAttribute,
+  SetGpuReg, ShouldIgnoreDeoxysForm, Sin, StartSpriteAffineAnim,
+  StartSpriteAnim, TRUE, UpdateMonIconFrame,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** u8 GetBattlerSpriteCoord(u8 battler, u8 coordType) */

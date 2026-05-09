@@ -22,18 +22,20 @@
 // to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  ARRAY_COUNT, AllocZeroed, BG_PLTT_ID, BLDALPHA_BLEND,
+  ARRAY_COUNT, AllocZeroed, BG_PLTT_ID, BG_SCREEN_SIZE,
+  BLDALPHA_BLEND, BLDCNT_EFFECT_BLEND, BLDCNT_TGT1_BG2, BLDCNT_TGT2_BG0,
   BeginNormalPaletteFade, ChangeBgY, CorrectSpecialMapSecId, CpuCopy32,
-  CreateRegionMapPlayerIcon, CreateSprite, CreateTask, DecompressAndCopyTileDataToVram,
-  DestroySprite, DestroyTask, FREE_AND_SET_NULL, FlagGet,
-  FreeAllSpritePalettes, FreePokedexAreaMapBgNum, FreeSpritePaletteByTag, FreeSpriteTilesByTag,
-  FreeTempTileDataBuffersIfPossible, GetRegionMapSecIdAt, GetRegionMapSectionId, GetRoamerLocation,
-  HideBg, JOY_NEW, LZ77UnCompWram, LoadBgTilemap,
-  LoadPokedexAreaMapGfx, LoadSpritePalette, LoadSpriteSheet, MAP_GROUP,
-  Overworld_GetMapHeaderByGroupAndId, PlaySE, PokedexAreaMapChangeBgY, PokedexAreaScreen_UpdateRegionMapVariablesAndVideoRegs,
-  ResetSpriteData, SetBgAttribute, SetGpuReg, SetGpuRegBits,
-  ShowBg, ShowRegionMapForPokedexAreaScreen, StringFill, TryShowPokedexAreaMap,
-  VarGet,  // 4-per-line for readability
+  CreateRegionMapPlayerIcon, CreateSprite, CreateTask, DISPCNT_OBJ_ON,
+  DecompressAndCopyTileDataToVram, DestroySprite, DestroyTask, FALSE,
+  FREE_AND_SET_NULL, FlagGet, FreeAllSpritePalettes, FreePokedexAreaMapBgNum,
+  FreeSpritePaletteByTag, FreeSpriteTilesByTag, FreeTempTileDataBuffersIfPossible, GetRegionMapSecIdAt,
+  GetRegionMapSectionId, GetRoamerLocation, HideBg, JOY_NEW,
+  LZ77UnCompWram, LoadBgTilemap, LoadPokedexAreaMapGfx, LoadSpritePalette,
+  LoadSpriteSheet, MAP_GROUP, NULL, Overworld_GetMapHeaderByGroupAndId,
+  PALETTES_ALL, PlaySE, PokedexAreaMapChangeBgY, PokedexAreaScreen_UpdateRegionMapVariablesAndVideoRegs,
+  REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, ResetSpriteData, SetBgAttribute,
+  SetGpuReg, SetGpuRegBits, ShowBg, ShowRegionMapForPokedexAreaScreen,
+  StringFill, TRUE, TryShowPokedexAreaMap, VarGet,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void ResetDrawAreaGlowState(void) */

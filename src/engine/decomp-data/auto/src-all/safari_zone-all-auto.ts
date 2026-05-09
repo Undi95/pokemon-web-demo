@@ -22,10 +22,11 @@
 // to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  ConvertIntToDecimalStringN, FlagClear, FlagGet, FlagSet,
-  GetXYCoordsOneStepInFrontOfPlayer, IncrementGameStat, PlayerGetDestCoords, RunScriptImmediately,
-  ScriptContext_SetupScript, ScriptContext_Stop, SetMainCallback2, StringCopy,
-  TryPutSafariFanClubOnAir, WarpIntoMap,  // 4-per-line for readability
+  ConvertIntToDecimalStringN, FALSE, FlagClear, FlagGet,
+  FlagSet, GetXYCoordsOneStepInFrontOfPlayer, IncrementGameStat, PlayerGetDestCoords,
+  RunScriptImmediately, STR_CONV_MODE_LEADING_ZEROS, ScriptContext_SetupScript, ScriptContext_Stop,
+  SetMainCallback2, StringCopy, TRUE, TryPutSafariFanClubOnAir,
+  WarpIntoMap,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** bool32 GetSafariZoneFlag(void) */

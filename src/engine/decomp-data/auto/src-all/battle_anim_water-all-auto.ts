@@ -23,17 +23,20 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   AnimLoadCompressedBgGfx, AnimLoadCompressedBgTilemap, AnimLoadCompressedBgTilemapHandleContest, AnimTranslateLinear,
-  BG_PLTT_ID, BLDALPHA_BLEND, CMD_ARGS, ClearBattleAnimBg,
-  Cos, CreateInvisibleSpriteWithCallback, CreateSprite, CreateTask,
-  DestroyAnimSprite, DestroyAnimVisualTask, DestroySprite, DestroyTask,
+  BG_PLTT_ID, BLDALPHA_BLEND, BLDCNT_EFFECT_BLEND, BLDCNT_TGT1_BG1,
+  CMD_ARGS, ClearBattleAnimBg, Cos, CreateInvisibleSpriteWithCallback,
+  CreateSprite, CreateTask, DISPLAY_HEIGHT, DestroyAnimSprite,
+  DestroyAnimVisualTask, DestroySprite, DestroyTask, FALSE,
   FreeOamMatrix, FreeSpriteOamMatrix, GetAnimBattlerSpriteId, GetBattleAnimBg1Data,
   GetBattlerPosition, GetBattlerSide, GetBattlerSpriteCoord, GetBattlerSpriteSubpriority,
   GetMonData, ISO_RANDOMIZE2, IndexOfSpritePaletteTag, InitAnimArcTranslation,
   InitAnimLinearTranslation, InitSpritePosToAnimAttacker, InitSpritePosToAnimTarget, IsContest,
-  LoadCompressedPalette, OBJ_PLTT_ID, PrepareBattlerSpriteForRotScale, PrepareEruptAnimTaskData,
-  Random2, ResetSpriteRotScale, ScanlineEffect_SetParams, ScanlineEffect_Stop,
-  SetAnimBgAttribute, SetBattlerSpriteYOffsetFromYScale, SetGpuReg, Sin,
-  StartSpriteAffineAnim, StartSpriteAnim, StoreSpriteCallbackInData6, TranslateAnimHorizontalArc,
+  LoadCompressedPalette, OBJ_PLTT_ID, PLTT_SIZE_4BPP, PrepareBattlerSpriteForRotScale,
+  PrepareEruptAnimTaskData, REG_OFFSET_BG1HOFS, REG_OFFSET_BG1VOFS, REG_OFFSET_BLDALPHA,
+  REG_OFFSET_BLDCNT, Random2, ResetSpriteRotScale, ST_OAM_OBJ_NORMAL,
+  ScanlineEffect_SetParams, ScanlineEffect_Stop, SetAnimBgAttribute, SetBattlerSpriteYOffsetFromYScale,
+  SetGpuReg, Sin, StartSpriteAffineAnim, StartSpriteAnim,
+  StoreSpriteCallbackInData6, TASK_NONE, TRUE, TranslateAnimHorizontalArc,
   UpdateEruptAnimTask,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───

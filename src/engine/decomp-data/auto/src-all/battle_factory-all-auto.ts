@@ -23,10 +23,11 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, CalculateMonStats, CreateMon, CreateMonWithEVSpreadNatureOTID,
-  DoBattleFactorySelectScreen, DoBattleFactorySwapScreen, GetBoxMonData, GetMonData,
-  GetRandomScaledFrontierTrainerId, Random, SaveGameFrontier, SetBattleFacilityTrainerGfxId,
-  SetDynamicWarp, SetFacilityPtrsGetLevel, SetMonData, SetMonMoveSlot,
-  T1_READ_32, VarGet, VarSet, ZeroPlayerPartyMons,  // 4-per-line for readability
+  DoBattleFactorySelectScreen, DoBattleFactorySwapScreen, FALSE, GetBoxMonData,
+  GetMonData, GetRandomScaledFrontierTrainerId, NULL, Random,
+  SaveGameFrontier, SetBattleFacilityTrainerGfxId, SetDynamicWarp, SetFacilityPtrsGetLevel,
+  SetMonData, SetMonMoveSlot, T1_READ_32, TRUE,
+  VarGet, VarSet, ZeroPlayerPartyMons,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void CallBattleFactoryFunction(void) */

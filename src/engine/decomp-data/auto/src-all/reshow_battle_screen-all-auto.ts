@@ -25,15 +25,16 @@ const {
   ActionSelectionCreateCursorAt, BattleInitBgsAndWindows, BattleLoadAllHealthBoxesGfx, BattleLoadOpponentMonSpriteGfx,
   BattleLoadPlayerMonSpriteGfx, BattleLoadSubstituteOrMonSpriteGfx, BeginHardwarePaletteFade, ClearSpritesHealthboxAnimData,
   CpuFastFill, CreateBattlerHealthboxSprites, CreateSafariPlayerHealthboxSprites, CreateSprite,
-  CreateWirelessStatusIndicatorSprite, DecompressTrainerBackPic, DummyBattleInterfaceFunc, FillAroundBattleWindows,
-  FreeAllSpritePalettes, GetBattlerAtPosition, GetBattlerPosition, GetBattlerSide,
-  GetBattlerSpriteCoord, GetBattlerSpriteDefault_Y, GetBattlerSpriteSubpriority, GetMonData,
-  GetSubstituteSpriteDefault_Y, InitBattlerHealthboxCoords, IsDoubleBattle, LoadAndCreateEnemyShadowSprites,
-  LoadBattleTextboxAndBackground, LoadWirelessStatusIndicatorSpriteGfx, ResetPaletteFade, ResetSpriteData,
-  ScanlineEffect_Clear, SetBattlerShadowSpriteCallback, SetBgAttribute, SetGpuReg,
-  SetHBlankCallback, SetHealthboxSpriteInvisible, SetHealthboxSpriteVisible, SetMainCallback2,
-  SetMultiuseSpriteTemplateToPokemon, SetMultiuseSpriteTemplateToTrainerBack, SetVBlankCallback, ShowBg,
-  StartSpriteAnim, UpdateHealthboxAttribute,  // 4-per-line for readability
+  CreateWirelessStatusIndicatorSprite, DecompressTrainerBackPic, DummyBattleInterfaceFunc, FALSE,
+  FillAroundBattleWindows, FreeAllSpritePalettes, GetBattlerAtPosition, GetBattlerPosition,
+  GetBattlerSide, GetBattlerSpriteCoord, GetBattlerSpriteDefault_Y, GetBattlerSpriteSubpriority,
+  GetMonData, GetSubstituteSpriteDefault_Y, InitBattlerHealthboxCoords, IsDoubleBattle,
+  LoadAndCreateEnemyShadowSprites, LoadBattleTextboxAndBackground, LoadWirelessStatusIndicatorSpriteGfx, NULL,
+  REG_OFFSET_MOSAIC, ResetPaletteFade, ResetSpriteData, ScanlineEffect_Clear,
+  SetBattlerShadowSpriteCallback, SetBgAttribute, SetGpuReg, SetHBlankCallback,
+  SetHealthboxSpriteInvisible, SetHealthboxSpriteVisible, SetMainCallback2, SetMultiuseSpriteTemplateToPokemon,
+  SetMultiuseSpriteTemplateToTrainerBack, SetVBlankCallback, ShowBg, StartSpriteAnim,
+  TRUE, UpdateHealthboxAttribute, VRAM_SIZE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void ReshowBattleScreenAfterMenu(void) */

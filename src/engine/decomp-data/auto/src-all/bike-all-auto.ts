@@ -22,18 +22,19 @@
 // to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  ARRAY_COUNT, CheckForObjectEventCollision, GetJumpMovementAction, GetOppositeDirection,
-  GetPlayerFacingDirection, GetPlayerMovementDirection, IsPlayerCollidingWithFarawayIslandMew, MapGridGetMetatileBehaviorAt,
-  MetatileBehavior_IsBumpySlope, MetatileBehavior_IsFortreeBridge, MetatileBehavior_IsHorizontalRail, MetatileBehavior_IsIsolatedHorizontalRail,
-  MetatileBehavior_IsIsolatedVerticalRail, MetatileBehavior_IsRunningDisallowed, MetatileBehavior_IsVerticalRail, MoveCoords,
-  Overworld_ChangeMusicTo, Overworld_ClearSavedMusic, Overworld_PlaySpecialMapMusic, Overworld_SetSavedMusic,
-  PlaySE, PlayerAcroTurnJump, PlayerEndWheelie, PlayerEndWheelieWhileMoving,
-  PlayerFaceDirection, PlayerGetDestCoords, PlayerGetElevation, PlayerIdleWheelie,
-  PlayerJumpLedge, PlayerLedgeHoppingWheelie, PlayerMovingHoppingWheelie, PlayerOnBikeCollide,
-  PlayerOnBikeCollideWithFarawayIslandMew, PlayerPopWheelieWhileMoving, PlayerRideWaterCurrent, PlayerSetAnimId,
-  PlayerStandingHoppingWheelie, PlayerStartWheelie, PlayerTurnInPlace, PlayerUseAcroBikeOnBumpySlope,
-  PlayerWheelieInPlace, PlayerWheelieMove, SetObjectEventDirection, SetPlayerAvatarTransitionFlags,
-  TestPlayerAvatarFlags,  // 4-per-line for readability
+  ARRAY_COUNT, CheckForObjectEventCollision, DIR_EAST, DIR_NONE,
+  DIR_NORTH, DIR_SOUTH, DIR_WEST, FALSE,
+  GetJumpMovementAction, GetOppositeDirection, GetPlayerFacingDirection, GetPlayerMovementDirection,
+  IsPlayerCollidingWithFarawayIslandMew, MapGridGetMetatileBehaviorAt, MetatileBehavior_IsBumpySlope, MetatileBehavior_IsFortreeBridge,
+  MetatileBehavior_IsHorizontalRail, MetatileBehavior_IsIsolatedHorizontalRail, MetatileBehavior_IsIsolatedVerticalRail, MetatileBehavior_IsRunningDisallowed,
+  MetatileBehavior_IsVerticalRail, MoveCoords, Overworld_ChangeMusicTo, Overworld_ClearSavedMusic,
+  Overworld_PlaySpecialMapMusic, Overworld_SetSavedMusic, PlaySE, PlayerAcroTurnJump,
+  PlayerEndWheelie, PlayerEndWheelieWhileMoving, PlayerFaceDirection, PlayerGetDestCoords,
+  PlayerGetElevation, PlayerIdleWheelie, PlayerJumpLedge, PlayerLedgeHoppingWheelie,
+  PlayerMovingHoppingWheelie, PlayerOnBikeCollide, PlayerOnBikeCollideWithFarawayIslandMew, PlayerPopWheelieWhileMoving,
+  PlayerRideWaterCurrent, PlayerSetAnimId, PlayerStandingHoppingWheelie, PlayerStartWheelie,
+  PlayerTurnInPlace, PlayerUseAcroBikeOnBumpySlope, PlayerWheelieInPlace, PlayerWheelieMove,
+  SetObjectEventDirection, SetPlayerAvatarTransitionFlags, TRUE, TestPlayerAvatarFlags,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void MovePlayerOnBike(u8 direction, u16 newKeys, u16 heldKeys) */

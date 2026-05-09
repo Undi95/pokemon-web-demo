@@ -23,9 +23,9 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   AnimatePartySlot, ClearStdWindowAndFrameToTransparent, ClearWindowTilemap, DisplayPartyMenuMessage,
-  DisplayPartyMenuStdMessage, GetCursorSelectionMonId, GetMonData, GetMonNickname,
-  IsPartyMenuTextPrinterActive, PartyMenuModifyHP, PlaySE, ScheduleBgCopyTilemapToVram,
-  StringExpandPlaceholders,  // 4-per-line for readability
+  DisplayPartyMenuStdMessage, FALSE, GetCursorSelectionMonId, GetMonData,
+  GetMonNickname, IsPartyMenuTextPrinterActive, PartyMenuModifyHP, PlaySE,
+  ScheduleBgCopyTilemapToVram, StringExpandPlaceholders, TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** bool8 SetUpFieldMove_SoftBoiled(void) */

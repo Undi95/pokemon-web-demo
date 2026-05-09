@@ -23,9 +23,10 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   CreateSprite, CreateTask, DestroySprite, DestroyTask,
-  FreeSpriteOamMatrix, FreeSpritePaletteByTag, FreeSpriteTilesByTag, FuncIsActiveTask,
-  GetMultiplayerId, LoadCompressedSpriteSheet, LoadSpritePalette, PlaySE,
-  Rfu_SendPacket, SetSpriteMatrixAnchor, StartSpriteAffineAnim, StartSpriteAnim,  // 4-per-line for readability
+  FALSE, FreeSpriteOamMatrix, FreeSpritePaletteByTag, FreeSpriteTilesByTag,
+  FuncIsActiveTask, GetMultiplayerId, LoadCompressedSpriteSheet, LoadSpritePalette,
+  PlaySE, Rfu_SendPacket, SetSpriteMatrixAnchor, StartSpriteAffineAnim,
+  StartSpriteAnim, TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void Task_StaticCountdown(u8 taskId) */

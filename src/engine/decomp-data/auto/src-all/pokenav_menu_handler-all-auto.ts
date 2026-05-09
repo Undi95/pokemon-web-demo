@@ -22,9 +22,10 @@
 // to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  AllocSubstruct, CanViewRibbonsMenu, FlagGet, FreePokenavSubstruct,
-  GetMainMenuInputHandler, GetSelectedConditionSearch, GetSubstructPtr, JOY_NEW,
-  PlaySE, SetPokenavMode, SetSelectedConditionSearch,  // 4-per-line for readability
+  AllocSubstruct, CanViewRibbonsMenu, FALSE, FlagGet,
+  FreePokenavSubstruct, GetMainMenuInputHandler, GetSelectedConditionSearch, GetSubstructPtr,
+  JOY_NEW, PlaySE, SetPokenavMode, SetSelectedConditionSearch,
+  TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static u8 GetPokenavMainMenuType(void) */

@@ -23,12 +23,13 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   AnimTranslateLinear, AnimTravelDiagonally, BATTLE_PARTNER, CreateSprite,
-  DestroyAnimSprite, DestroyAnimVisualTask, DestroySprite, FreeOamMatrix,
-  GET_BATTLER_SIDE2, GetBattlerPosition, GetBattlerSide, GetBattlerSpriteBGPriority,
-  GetBattlerSpriteCoord, GetBattlerSpriteCoordAttr, InitAnimLinearTranslation, InitSpritePosToAnimAttacker,
-  InitSpritePosToAnimTarget, IsContest, LoadPointerFromVars, Random2,
-  SetAnimSpriteInitialXOffset, SetGpuReg, Sin, StartSpriteAffineAnim,
-  StartSpriteAnim, StorePointerInVars, StoreSpriteCallbackInData6, UpdateAnimBg3ScreenSize,  // 4-per-line for readability
+  DestroyAnimSprite, DestroyAnimVisualTask, DestroySprite, FALSE,
+  FreeOamMatrix, GET_BATTLER_SIDE2, GetBattlerPosition, GetBattlerSide,
+  GetBattlerSpriteBGPriority, GetBattlerSpriteCoord, GetBattlerSpriteCoordAttr, InitAnimLinearTranslation,
+  InitSpritePosToAnimAttacker, InitSpritePosToAnimTarget, IsContest, LoadPointerFromVars,
+  REG_OFFSET_BLDCNT, Random2, SetAnimSpriteInitialXOffset, SetGpuReg,
+  Sin, StartSpriteAffineAnim, StartSpriteAnim, StorePointerInVars,
+  StoreSpriteCallbackInData6, TRUE, UpdateAnimBg3ScreenSize,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void AnimUnusedHumanoidFoot(struct Sprite *sprite) */

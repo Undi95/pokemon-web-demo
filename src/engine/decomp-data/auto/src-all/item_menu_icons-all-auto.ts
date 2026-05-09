@@ -23,10 +23,11 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   AddItemIconSprite, CreateSprite, CreateSwapLineSprites, DestroySprite,
-  DestroySpriteAndFreeResources, FreeSpriteOamMatrix, FreeSpritePaletteByTag, FreeSpriteTilesByTag,
-  ITEM_TO_BERRY, InitSpriteAffineAnim, IsEnigmaBerryValid, LZDecompressWram,
-  LoadCompressedSpritePalette, LoadSpritePalette, LoadSpriteSheet, SetSwapLineSpritesInvisibility,
-  StartSpriteAffineAnim, StartSpriteAnim, UpdateSwapLineSpritesPos,  // 4-per-line for readability
+  DestroySpriteAndFreeResources, FALSE, FreeSpriteOamMatrix, FreeSpritePaletteByTag,
+  FreeSpriteTilesByTag, ITEM_TO_BERRY, InitSpriteAffineAnim, IsEnigmaBerryValid,
+  LZDecompressWram, LoadCompressedSpritePalette, LoadSpritePalette, LoadSpriteSheet,
+  ST_OAM_AFFINE_NORMAL, SetSwapLineSpritesInvisibility, StartSpriteAffineAnim, StartSpriteAnim,
+  TRUE, UpdateSwapLineSpritesPos,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void RemoveBagSprite(u8 id) */

@@ -23,14 +23,14 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, ArePlayerFieldControlsLocked, CheckBagHasItem, CreateTask,
-  CurrentMapDrawMetatileAt, DoTimeBasedEvents, FindTaskIdByFunc, FuncIsActiveTask,
-  GetPacifidlogBridgeMetatileOffsets, GetPlayerSpeed, GetVarPointer, MapGridGetMetatileBehaviorAt,
-  MapGridGetMetatileIdAt, MapGridSetMetatileIdAt, MetatileBehavior_IsAshGrass, MetatileBehavior_IsCrackedFloor,
-  MetatileBehavior_IsCrackedFloorHole, MetatileBehavior_IsCrackedIce, MetatileBehavior_IsFortreeBridge, MetatileBehavior_IsMuddySlope,
-  MetatileBehavior_IsPacifidlogHorizontalLogLeft, MetatileBehavior_IsPacifidlogHorizontalLogRight, MetatileBehavior_IsPacifidlogLog, MetatileBehavior_IsPacifidlogVerticalLogBottom,
-  MetatileBehavior_IsPacifidlogVerticalLogTop, MetatileBehavior_IsThinIce, PlaySE, PlayerGetDestCoords,
-  PlayerGetElevation, StartAshFieldEffect, UpdateAmbientCry, VarGet,
-  VarSet,  // 4-per-line for readability
+  CurrentMapDrawMetatileAt, DoTimeBasedEvents, FALSE, FindTaskIdByFunc,
+  FuncIsActiveTask, GetPacifidlogBridgeMetatileOffsets, GetPlayerSpeed, GetVarPointer,
+  MapGridGetMetatileBehaviorAt, MapGridGetMetatileIdAt, MapGridSetMetatileIdAt, MetatileBehavior_IsAshGrass,
+  MetatileBehavior_IsCrackedFloor, MetatileBehavior_IsCrackedFloorHole, MetatileBehavior_IsCrackedIce, MetatileBehavior_IsFortreeBridge,
+  MetatileBehavior_IsMuddySlope, MetatileBehavior_IsPacifidlogHorizontalLogLeft, MetatileBehavior_IsPacifidlogHorizontalLogRight, MetatileBehavior_IsPacifidlogLog,
+  MetatileBehavior_IsPacifidlogVerticalLogBottom, MetatileBehavior_IsPacifidlogVerticalLogTop, MetatileBehavior_IsThinIce, PlaySE,
+  PlayerGetDestCoords, PlayerGetElevation, StartAshFieldEffect, TASK_NONE,
+  TRUE, UpdateAmbientCry, VarGet, VarSet,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void Task_RunPerStepCallback(u8 taskId) */

@@ -23,10 +23,11 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   AI_CalcDmg, BATTLE_OPPOSITE, BATTLE_PARTNER, CheckMoveLimitations,
-  GET_BATTLER_SIDE, GetAiScriptsInBattleFactory, GetAiScriptsInRecordedBattle, GetBattlerAtPosition,
-  GetBattlerPosition, GetBattlerSide, GetGenderFromSpeciesAndPersonality, GetItemHoldEffect,
-  GetMonData, GetWhoStrikesFirst, IS_BATTLER_OF_TYPE, Random,
-  T1_READ_16, T1_READ_32, T1_READ_PTR, TypeCalc,  // 4-per-line for readability
+  FALSE, GET_BATTLER_SIDE, GetAiScriptsInBattleFactory, GetAiScriptsInRecordedBattle,
+  GetBattlerAtPosition, GetBattlerPosition, GetBattlerSide, GetGenderFromSpeciesAndPersonality,
+  GetItemHoldEffect, GetMonData, GetWhoStrikesFirst, IS_BATTLER_OF_TYPE,
+  Random, T1_READ_16, T1_READ_32, T1_READ_PTR,
+  TRUE, TypeCalc,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void BattleAI_HandleItemUseBeforeAISetup(u8 defaultScoreMoves) */

@@ -22,17 +22,20 @@
 // to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  AddTextPrinterAndCreateWindowOnHealthbox, BLDALPHA_BLEND, ConvertIntToDecimalStringN, CpuCopy16,
-  CpuCopy32, CpuFill32, CreateSprite, CreateSpriteAtEnd,
-  CreateTask, DestroySprite, DestroySpriteAndFreeResources, DestroyTask,
-  FillPalette, FreeSpriteOamMatrix, GetBattlerPosition, GetBattlerSide,
-  GetHealthboxElementGfxPtr, GetMonData, GetMonGender, GetNature,
-  GetSetPokedexFlag, GetStringRightAlignXOffset, IsDoubleBattle, LoadBattleBarGfx,
-  LoadCompressedSpriteSheetUsingHeap, LoadSpritePalette, LoadSpriteSheet, PLTT_ID,
-  PLTT_SIZEOF, PlaySE12WithPanning, PlaySE1WithPanning, PlaySE2WithPanning,
-  Q_24_8, Q_24_8_TO_INT, RemoveWindow, RenderTextHandleBold,
+  AddTextPrinterAndCreateWindowOnHealthbox, BLDALPHA_BLEND, BLDCNT_EFFECT_BLEND, ConvertIntToDecimalStringN,
+  CpuCopy16, CpuCopy32, CpuFill32, CreateSprite,
+  CreateSpriteAtEnd, CreateTask, DISPLAY_HEIGHT, DestroySprite,
+  DestroySpriteAndFreeResources, DestroyTask, FALSE, FillPalette,
+  FreeSpriteOamMatrix, GetBattlerPosition, GetBattlerSide, GetHealthboxElementGfxPtr,
+  GetMonData, GetMonGender, GetNature, GetSetPokedexFlag,
+  GetStringRightAlignXOffset, IsDoubleBattle, LoadBattleBarGfx, LoadCompressedSpriteSheetUsingHeap,
+  LoadSpritePalette, LoadSpriteSheet, PLTT_ID, PLTT_SIZEOF,
+  PlaySE12WithPanning, PlaySE1WithPanning, PlaySE2WithPanning, Q_24_8,
+  Q_24_8_TO_INT, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, RemoveWindow,
+  RenderTextHandleBold, STR_CONV_MODE_LEFT_ALIGN, STR_CONV_MODE_RIGHT_ALIGN, ST_OAM_OBJ_BLEND,
   SetGpuReg, SetSubspriteTables, SpeciesToNationalPokedexNum, StringAppend,
-  StringCompare, StringCopy, StringGet_Nickname,  // 4-per-line for readability
+  StringCompare, StringCopy, StringGet_Nickname, TILE_SIZE_4BPP,
+  TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static s32 DummiedOutFunction(s16 unused1, s16 unused2, s32 unused3) */

@@ -22,8 +22,9 @@
 // to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  ARRAY_COUNT, AllocZeroed, FREE_AND_SET_NULL, GetSpriteTileStartByTag,
-  GetTilesPerImage, IndexOfSpritePaletteTag,  // 4-per-line for readability
+  ARRAY_COUNT, AllocZeroed, DISPLAY_HEIGHT, FALSE,
+  FREE_AND_SET_NULL, GetSpriteTileStartByTag, GetTilesPerImage, IndexOfSpritePaletteTag,
+  NULL, TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** bool32 ConfettiUtil_Init(u8 count) */

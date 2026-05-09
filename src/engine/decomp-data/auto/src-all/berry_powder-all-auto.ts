@@ -24,8 +24,9 @@ import * as _bridge from '../../../decomp-bridge';
 const {
   AddTextPrinterParameterized, AddWindow, ApplyNewEncryptionKeyToWord, BG_PLTT_ID,
   ClearStdWindowAndFrameToTransparent, ClearWindowTilemap, ConvertIntToDecimalStringN, DrawStdFrameWithCustomTileAndPalette,
-  FillWindowPixelBuffer, LoadUserWindowBorderGfx_, PIXEL_FILL, PutWindowTilemap,
-  RemoveWindow, SetWindowTemplateFields,  // 4-per-line for readability
+  FALSE, FillWindowPixelBuffer, LoadUserWindowBorderGfx_, NULL,
+  PIXEL_FILL, PutWindowTilemap, RemoveWindow, STR_CONV_MODE_RIGHT_ALIGN,
+  SetWindowTemplateFields, TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static u32 DecryptBerryPowder(u32 *powder) */

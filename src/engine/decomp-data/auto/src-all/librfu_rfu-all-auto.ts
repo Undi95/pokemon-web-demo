@@ -23,15 +23,15 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   AgbRFU_SoftReset, AgbRFU_checkID, COPY, CpuCopy16,
-  CpuFill16, Div, REG_TMCNT, STWI_init_all,
-  STWI_init_timer, STWI_poll_CommandEnd, STWI_read_status, STWI_send_CPR_EndREQ,
-  STWI_send_CPR_PollingREQ, STWI_send_CPR_StartREQ, STWI_send_CP_EndREQ, STWI_send_CP_PollingREQ,
-  STWI_send_CP_StartREQ, STWI_send_DataRxREQ, STWI_send_DataTxAndChangeREQ, STWI_send_DataTxREQ,
-  STWI_send_DisconnectREQ, STWI_send_GameConfigREQ, STWI_send_LinkStatusREQ, STWI_send_MS_ChangeREQ,
-  STWI_send_ResetREQ, STWI_send_ResumeRetransmitAndChangeREQ, STWI_send_SC_EndREQ, STWI_send_SC_PollingREQ,
-  STWI_send_SC_StartREQ, STWI_send_SP_EndREQ, STWI_send_SP_PollingREQ, STWI_send_SP_StartREQ,
-  STWI_send_SlotStatusREQ, STWI_send_StopModeREQ, STWI_send_SystemConfigREQ, STWI_send_SystemStatusREQ,
-  STWI_send_TestModeREQ, STWI_set_Callback_M, STWI_set_Callback_S,  // 4-per-line for readability
+  CpuFill16, Div, NULL, REG_TMCNT,
+  STWI_init_all, STWI_init_timer, STWI_poll_CommandEnd, STWI_read_status,
+  STWI_send_CPR_EndREQ, STWI_send_CPR_PollingREQ, STWI_send_CPR_StartREQ, STWI_send_CP_EndREQ,
+  STWI_send_CP_PollingREQ, STWI_send_CP_StartREQ, STWI_send_DataRxREQ, STWI_send_DataTxAndChangeREQ,
+  STWI_send_DataTxREQ, STWI_send_DisconnectREQ, STWI_send_GameConfigREQ, STWI_send_LinkStatusREQ,
+  STWI_send_MS_ChangeREQ, STWI_send_ResetREQ, STWI_send_ResumeRetransmitAndChangeREQ, STWI_send_SC_EndREQ,
+  STWI_send_SC_PollingREQ, STWI_send_SC_StartREQ, STWI_send_SP_EndREQ, STWI_send_SP_PollingREQ,
+  STWI_send_SP_StartREQ, STWI_send_SlotStatusREQ, STWI_send_StopModeREQ, STWI_send_SystemConfigREQ,
+  STWI_send_SystemStatusREQ, STWI_send_TestModeREQ, STWI_set_Callback_M, STWI_set_Callback_S,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** u16 rfu_initializeAPI(u32 *APIBuffer, u16 buffByteSize, IntrFunc *sioIntrTable_p, bool8 copyInterruptToRam) */

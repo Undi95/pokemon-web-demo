@@ -22,10 +22,11 @@
 // to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  CreateTask, DestroyTask, FlagClear, FlagSet,
-  GetLastUsedWarpMapType, GetMonData, GetVarPointer, ISO_RANDOMIZE2,
-  IsMapTypeOutdoors, IsWeatherChangeComplete, Random, RtcCalcLocalTime,
-  ScriptContext_Enable, VarGet, VarSet,  // 4-per-line for readability
+  CreateTask, DestroyTask, FALSE, FlagClear,
+  FlagSet, GetLastUsedWarpMapType, GetMonData, GetVarPointer,
+  ISO_RANDOMIZE2, IsMapTypeOutdoors, IsWeatherChangeComplete, Random,
+  RtcCalcLocalTime, ScriptContext_Enable, TRUE, VarGet,
+  VarSet,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static u32 GetMirageRnd(void) */

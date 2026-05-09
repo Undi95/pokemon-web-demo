@@ -23,7 +23,7 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   ConvertInternationalString, ConvertPixelWidthToTileWidth, CpuFastFill8, GetStringWidth,
-  StringCopy, StringLength, StripExtCtrlCodes,  // 4-per-line for readability
+  StringCopy, StringLength, StripExtCtrlCodes, TILE_SIZE_4BPP,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** int GetStringCenterAlignXOffset(int fontId, const u8 *str, int totalWidth) */

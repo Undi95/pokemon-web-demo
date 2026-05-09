@@ -23,22 +23,29 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AllocZeroed, AnimateSprites, BG_PLTT_ID,
-  BLDALPHA_BLEND, BeginNormalPaletteFade, BlendPalettes, BlendPalettesGradually,
+  BG_SCREEN_SIZE, BLDALPHA_BLEND, BLDCNT_EFFECT_BLEND, BLDCNT_TGT1_BG2,
+  BLDCNT_TGT1_OBJ, BLDCNT_TGT2_BG1, BLDCNT_TGT2_BG2, BLDCNT_TGT2_BG3,
+  BLDCNT_TGT2_OBJ, BeginNormalPaletteFade, BlendPalettes, BlendPalettesGradually,
   BuildOamBuffer, ChangeBgX, ChangeBgY, ClearGpuRegBits,
   ClearScheduledBgCopiesToVram, CpuFastCopy, CpuFastFill16, CreateSprite,
-  CreateTask, DecompressAndCopyTileDataToVram, DestroyTask, DoScheduledBgTilemapCopiesToVram,
-  EnableInterrupts, FillPalette, FindTaskIdByFunc, Free,
-  FreeAllSpritePalettes, FreeTempTileDataBuffersIfPossible, GetBgY, GetGpuReg,
-  InitBgsFromTemplates, InitSpriteAffineAnim, LZDecompressWram, LoadCompressedPalette,
-  LoadCompressedSpritePalette, LoadCompressedSpriteSheet, LoadOam, PlayCry_Normal,
-  PlayNewMapMusic, PlaySE, ProcessSpriteCopyRequests, Random,
+  CreateTask, DISPCNT_BG2_ON, DISPCNT_OBJ_1D_MAP, DISPCNT_OBJ_ON,
+  DISPCNT_WIN0_ON, DISPLAY_HEIGHT, DecompressAndCopyTileDataToVram, DestroyTask,
+  DoScheduledBgTilemapCopiesToVram, EnableInterrupts, FALSE, FillPalette,
+  FindTaskIdByFunc, Free, FreeAllSpritePalettes, FreeTempTileDataBuffersIfPossible,
+  GetBgY, GetGpuReg, InitBgsFromTemplates, InitSpriteAffineAnim,
+  LZDecompressWram, LoadCompressedPalette, LoadCompressedSpritePalette, LoadCompressedSpriteSheet,
+  LoadOam, NULL, PALETTES_ALL, PALETTES_BG,
+  PLTT_SIZE_4BPP, PlayCry_Normal, PlayNewMapMusic, PlaySE,
+  ProcessSpriteCopyRequests, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, REG_OFFSET_WIN0H,
+  REG_OFFSET_WIN0V, REG_OFFSET_WININ, REG_OFFSET_WINOUT, Random,
   ResetAllBgsCoordinates, ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData,
   ResetTasks, ResetTempTileDataBuffers, ResetVramOamAndBgCntRegs, RunTasks,
-  ScanlineEffect_Clear, ScanlineEffect_InitHBlankDmaTransfer, ScanlineEffect_SetParams, ScanlineEffect_Stop,
-  ScheduleBgCopyTilemapToVram, SetBgAffine, SetBgTilemapBuffer, SetGpuReg,
-  SetGpuRegBits, SetHBlankCallback, SetMainCallback2, SetVBlankCallback,
-  SetVBlankHBlankCallbacksToNull, ShowBg, StartSpriteAnim, StopMapMusic,
-  TransferPlttBuffer, UpdatePaletteFade, WIN_RANGE,  // 4-per-line for readability
+  ST_OAM_AFFINE_DOUBLE, ST_OAM_OBJ_BLEND, ScanlineEffect_Clear, ScanlineEffect_InitHBlankDmaTransfer,
+  ScanlineEffect_SetParams, ScanlineEffect_Stop, ScheduleBgCopyTilemapToVram, SetBgAffine,
+  SetBgTilemapBuffer, SetGpuReg, SetGpuRegBits, SetHBlankCallback,
+  SetMainCallback2, SetVBlankCallback, SetVBlankHBlankCallbacksToNull, ShowBg,
+  StartSpriteAnim, StopMapMusic, TRUE, TransferPlttBuffer,
+  UpdatePaletteFade, WIN_RANGE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void DoRayquazaScene(u8 animId, bool8 endEarly, MainCallback exitCallback) */

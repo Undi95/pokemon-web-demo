@@ -23,21 +23,26 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AddTextPrinterParameterized, AddWindow, AllocZeroed,
-  AllocateMonSpritesGfx, ApplyImageProcessingEffects, ApplyImageProcessingQuantization, BGCNT_CHARBASE,
-  BGCNT_PRIORITY, BGCNT_SCREENBASE, BG_PLTT_ID, BG_SCREEN_ADDR,
-  BeginFastPaletteFade, BeginNormalPaletteFade, BufferContestName, ChangeBgX,
-  ChangeBgY, ConvertImageProcessingToGBA, ConvertInternationalContestantName, CopyBgTilemapBufferToVram,
-  CopyWindowToVram, DeactivateAllTextPrinters, DmaClear32, DmaFillLarge32,
+  AllocateMonSpritesGfx, ApplyImageProcessingEffects, ApplyImageProcessingQuantization, BGCNT_16COLOR,
+  BGCNT_CHARBASE, BGCNT_PRIORITY, BGCNT_SCREENBASE, BGCNT_TXT256x256,
+  BG_PLTT_ID, BG_SCREEN_ADDR, BG_SCREEN_SIZE, BeginFastPaletteFade,
+  BeginNormalPaletteFade, BufferContestName, ChangeBgX, ChangeBgY,
+  ConvertImageProcessingToGBA, ConvertInternationalContestantName, CopyBgTilemapBufferToVram, CopyWindowToVram,
+  DISPCNT_BG0_ON, DISPCNT_BG1_ON, DISPCNT_OBJ_1D_MAP, DISPCNT_OBJ_ON,
+  DeactivateAllTextPrinters, DmaClear32, DmaFillLarge32, FALSE,
   FREE_AND_SET_NULL, FillWindowPixelBuffer, Free, FreeMonSpritesGfx,
   GetBgTilemapBuffer, GetMonSpritePalFromSpeciesAndPersonality, GetStringCenterAlignXOffset, HandleLoadSpecialPokePic_DontHandleDeoxys,
   InitBgsFromTemplates, InitKeys, JOY_NEW, LZDecompressVram,
-  LoadOam, LoadPalette, OBJ_PLTT_ID, PIXEL_FILL,
-  ProcessSpriteCopyRequests, PutWindowTilemap, RLUnCompVram, RLUnCompWram,
-  RemoveWindow, ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData,
-  RunTextPrinters, ScanlineEffect_Stop, SeedRng, SetBackdropFromPalette,
-  SetBgTilemapBuffer, SetGpuReg, SetMainCallback2, SetVBlankCallback,
-  ShowBg, StringAppend, StringCopy, StringExpandPlaceholders,
-  TransferPlttBuffer, UpdatePaletteFade, VRAM_PICTURE_DATA,  // 4-per-line for readability
+  LoadOam, LoadPalette, NULL, OBJ_PLTT_ID,
+  PALETTES_ALL, PIXEL_FILL, PLTT_SIZE, PLTT_SIZE_4BPP,
+  ProcessSpriteCopyRequests, PutWindowTilemap, REG_OFFSET_BG0CNT, REG_OFFSET_BG1CNT,
+  REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, REG_OFFSET_BLDY, REG_OFFSET_MOSAIC,
+  RLUnCompVram, RLUnCompWram, RemoveWindow, ResetBgsAndClearDma3BusyFlags,
+  ResetPaletteFade, ResetSpriteData, RunTextPrinters, ScanlineEffect_Stop,
+  SeedRng, SetBackdropFromPalette, SetBgTilemapBuffer, SetGpuReg,
+  SetMainCallback2, SetVBlankCallback, ShowBg, StringAppend,
+  StringCopy, StringExpandPlaceholders, TRUE, TransferPlttBuffer,
+  UpdatePaletteFade, VRAM_PICTURE_DATA, VRAM_SIZE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void SetContestWinnerForPainting(int contestWinnerId) */

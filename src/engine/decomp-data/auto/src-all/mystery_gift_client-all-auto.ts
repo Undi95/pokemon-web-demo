@@ -22,11 +22,12 @@
 // to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  AllocZeroed, CpuFill32, FREE_AND_SET_NULL, Free,
-  GetGameStat, InitMysteryEventScriptContext, InitRamScript_NoObjectEvent, IsWonderNewsSameAsSaved,
-  MysteryGiftLink_Init, MysteryGiftLink_InitRecv, MysteryGiftLink_InitSend, MysteryGiftLink_Recv,
-  MysteryGiftLink_Send, MysteryGift_LoadLinkGameData, MysteryGift_TrySaveStamp, RunMysteryEventScriptContextCommand,
-  SaveWonderCard, SaveWonderNews, ValidateEReaderTrainer,  // 4-per-line for readability
+  AllocZeroed, CpuFill32, FALSE, FREE_AND_SET_NULL,
+  Free, GetGameStat, InitMysteryEventScriptContext, InitRamScript_NoObjectEvent,
+  IsWonderNewsSameAsSaved, MysteryGiftLink_Init, MysteryGiftLink_InitRecv, MysteryGiftLink_InitSend,
+  MysteryGiftLink_Recv, MysteryGiftLink_Send, MysteryGift_LoadLinkGameData, MysteryGift_TrySaveStamp,
+  NULL, RunMysteryEventScriptContextCommand, SaveWonderCard, SaveWonderNews,
+  TRUE, ValidateEReaderTrainer,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void MysteryGiftClient_Create(bool32 isWonderNews) */

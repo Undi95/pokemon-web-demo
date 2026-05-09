@@ -15,14 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  GetWordPitch,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static s16 GetWordPitch(int tableIndex, int pitchIndex) */
 export function GetWordPitch(tableIndex: any, pitchIndex: any): any {
   return sPitchTables[tableIndex][pitchIndex];

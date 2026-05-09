@@ -25,16 +25,17 @@ const {
   ARRAY_COUNT, AddTextPrinter, Alloc, BATTLE_OPPOSITE,
   BATTLE_PARTNER, BG_PLTT_ID, ConvertIntToDecimalStringN, ConvertInternationalString,
   CopyFrontierBrainTrainerName, CopyFrontierTrainerText, CopyItemName, CopyTrainerHillTrainerText,
-  CopyWindowToVram, CpuCopy16, FillWindowPixelBuffer, FlagGet,
-  Free, GET_BATTLER_SIDE, GetBattleWindowTemplatePixelWidth, GetBattlerAtPosition,
-  GetBattlerMultiplayerId, GetBattlerSide, GetEreaderTrainerClassId, GetEreaderTrainerName,
-  GetFrontierBrainTrainerClass, GetFrontierOpponentClass, GetFrontierTrainerName, GetMonData,
-  GetMultiplayerId, GetPlayerTextSpeedDelay, GetSecretBaseTrainerClass, GetSpeciesName,
-  GetStringCenterAlignXOffsetWithLetterSpacing, GetTextSpeedInRecordedBattle, GetTrainerALoseText, GetTrainerBLoseText,
-  GetTrainerClassNameGenderSpecific, GetTrainerHillOpponentClass, GetTrainerHillTrainerName, GetUnionRoomTrainerClass,
-  HANDLE_NICKNAME_STRING_CASE, IsFrontierTrainerFemale, PLTT_SIZEOF, PutWindowTilemap,
-  StringAppend, StringCopy, StringGet_Nickname, StringLength,
-  T1_READ_16, T1_READ_32, TryGetStatusString,  // 4-per-line for readability
+  CopyWindowToVram, CpuCopy16, FALSE, FillWindowPixelBuffer,
+  FlagGet, Free, GET_BATTLER_SIDE, GetBattleWindowTemplatePixelWidth,
+  GetBattlerAtPosition, GetBattlerMultiplayerId, GetBattlerSide, GetEreaderTrainerClassId,
+  GetEreaderTrainerName, GetFrontierBrainTrainerClass, GetFrontierOpponentClass, GetFrontierTrainerName,
+  GetMonData, GetMultiplayerId, GetPlayerTextSpeedDelay, GetSecretBaseTrainerClass,
+  GetSpeciesName, GetStringCenterAlignXOffsetWithLetterSpacing, GetTextSpeedInRecordedBattle, GetTrainerALoseText,
+  GetTrainerBLoseText, GetTrainerClassNameGenderSpecific, GetTrainerHillOpponentClass, GetTrainerHillTrainerName,
+  GetUnionRoomTrainerClass, HANDLE_NICKNAME_STRING_CASE, IsFrontierTrainerFemale, NULL,
+  PLTT_SIZEOF, PutWindowTilemap, STR_CONV_MODE_LEFT_ALIGN, StringAppend,
+  StringCopy, StringGet_Nickname, StringLength, T1_READ_16,
+  T1_READ_32, TRUE, TryGetStatusString,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void BufferStringBattle(u16 stringID) */

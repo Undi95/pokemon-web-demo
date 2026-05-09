@@ -22,9 +22,9 @@
 // to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  Alloc, ConvertEasyChatWordsToString, FlagGet, FlagSet,
-  Free, GetLinkPlayerCount, GetRandomEasyChatWordFromGroup, Random,
-  SWAP, TryPutTrendWatcherOnAir,  // 4-per-line for readability
+  Alloc, ConvertEasyChatWordsToString, FALSE, FlagGet,
+  FlagSet, Free, GetLinkPlayerCount, GetRandomEasyChatWordFromGroup,
+  Random, SWAP, TRUE, TryPutTrendWatcherOnAir,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void InitDewfordTrend(void) */

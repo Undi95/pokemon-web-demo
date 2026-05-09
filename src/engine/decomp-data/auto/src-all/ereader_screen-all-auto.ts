@@ -24,12 +24,13 @@ import * as _bridge from '../../../decomp-bridge';
 const {
   AllocZeroed, CheckShouldAdvanceLinkState, CloseLink, CreateTask,
   DestroyTask, EReaderHandleTransfer, EReaderHelper_ClearSendRecvMgr, EReaderHelper_RestoreRegsState,
-  EReaderHelper_SaveRegsState, Free, GetBlockReceivedStatus, GetLinkPlayerCount_2,
-  HasLinkErrorOccurred, IsFanfareTaskInactive, IsLinkConnectionEstablished, IsLinkMaster,
-  IsLinkPlayerDataExchangeComplete, JOY_NEW, MG_AddMessageTextPrinter, OpenLink,
-  PlayFanfare, PlaySE, PrintMysteryGiftMenuMessage, ResetBlockReceivedFlags,
-  RestoreSerialTimer3IntrHandlers, SetCloseLinkCallbackAndType, SetMainCallback2, SetSuppressLinkErrorMessage,
-  TryWriteTrainerHill, ValidateTrainerHillData,  // 4-per-line for readability
+  EReaderHelper_SaveRegsState, FALSE, Free, GetBlockReceivedStatus,
+  GetLinkPlayerCount_2, HasLinkErrorOccurred, IsFanfareTaskInactive, IsLinkConnectionEstablished,
+  IsLinkMaster, IsLinkPlayerDataExchangeComplete, JOY_NEW, MG_AddMessageTextPrinter,
+  NULL, OpenLink, PlayFanfare, PlaySE,
+  PrintMysteryGiftMenuMessage, ResetBlockReceivedFlags, RestoreSerialTimer3IntrHandlers, SetCloseLinkCallbackAndType,
+  SetMainCallback2, SetSuppressLinkErrorMessage, TRUE, TryWriteTrainerHill,
+  ValidateTrainerHillData,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void EReader_Load(struct EReaderData *eReader, int size, u32 *data) */

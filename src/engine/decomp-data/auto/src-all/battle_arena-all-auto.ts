@@ -24,10 +24,11 @@ import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AddBagItem, BATTLE_OPPOSITE, BattlePutTextOnWindow,
   BattleStringExpandPlaceholdersToDisplayedString, BeginNormalPaletteFade, CopyBgTilemapBufferToVram, CopyItemName,
-  CreateSprite, DestroySprite, FillBgTilemapBufferRect, FreeSpriteTilesByTag,
-  GetFrontierTrainerName, HandleBattleWindow, IsDma3ManagerBusyWithBgCopy, LoadCompressedPalette,
-  LoadCompressedSpriteSheet, OBJ_PLTT_ID, PlaySE, Random,
-  SaveGameFrontier, SetDynamicWarp, SetGpuReg, StartSpriteAnim,
+  CreateSprite, DestroySprite, FALSE, FillBgTilemapBufferRect,
+  FreeSpriteTilesByTag, GetFrontierTrainerName, HandleBattleWindow, IsDma3ManagerBusyWithBgCopy,
+  LoadCompressedPalette, LoadCompressedSpriteSheet, OBJ_PLTT_ID, PLTT_SIZE_4BPP,
+  PlaySE, REG_OFFSET_WININ, Random, SaveGameFrontier,
+  SetDynamicWarp, SetGpuReg, StartSpriteAnim, TRUE,
   VarSet,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───

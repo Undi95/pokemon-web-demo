@@ -23,11 +23,12 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, CalculatePlayerPartyCount, CreateFieldMoveTask, CreateTask,
-  DestroyTask, DrawWholeMapView, FieldEffectActiveListRemove, FieldEffectStart,
-  FlagClear, FlagGet, FlagSet, GetCursorSelectionMonId,
-  GetMonData, InstallCameraPanAheadCallback, MAP_GROUP, MAP_NUM,
-  MapGridSetMetatileIdAt, PlaySE, ScriptContext_Enable, SetCameraPanning,
-  SetCameraPanningCallback, UnlockPlayerFieldControls, VarGet, VarSet,  // 4-per-line for readability
+  DestroyTask, DrawWholeMapView, FALSE, FieldEffectActiveListRemove,
+  FieldEffectStart, FlagClear, FlagGet, FlagSet,
+  GetCursorSelectionMonId, GetMonData, InstallCameraPanAheadCallback, MAP_GROUP,
+  MAP_NUM, MapGridSetMetatileIdAt, PlaySE, ScriptContext_Enable,
+  SetCameraPanning, SetCameraPanningCallback, TRUE, UnlockPlayerFieldControls,
+  VarGet, VarSet,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** bool8 ShouldDoBrailleDigEffect(void) */

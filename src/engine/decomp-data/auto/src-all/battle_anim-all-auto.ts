@@ -23,19 +23,22 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   BATTLE_PARTNER, BG_CHAR_ADDR, BG_PLTT_ID, BG_SCREEN_ADDR,
-  BeginHardwarePaletteFade, ClearBattleAnimBg, CpuCopy32, CpuFill16,
-  CreateSpriteAndAnimate, CreateTask, DestroySprite, DestroyTask,
-  DmaCopy32, DrawBattlerOnBg, DrawMainBattleBackground, FreeSpriteOamMatrix,
-  FreeSpritePaletteByTag, FreeSpriteTilesByTag, GET_TRUE_SPRITE_INDEX, GetAnimBattlerSpriteId,
-  GetBattleAnimBg1Data, GetBattleAnimBgData, GetBattleBgPaletteNum, GetBattlerPosition,
-  GetBattlerSide, GetBattlerSpriteBGPriorityRank, GetBattlerSpriteCoord, GetBattlerSpriteSubpriority,
-  GetMonData, InitPrioritiesForVisibleBattlers, IsBattlerSpritePresent, IsDoubleBattle,
-  IsSEPlaying, IsSpeciesNotUnown, LZDecompressVram, LZDecompressWram,
-  LoadCompressedPalette, LoadCompressedSpritePaletteUsingHeap, LoadCompressedSpriteSheetUsingHeap, LoadContestBgAfterMoveAnim,
-  LoadPalette, OBJ_PLTT_ID, PLTT_OFFSET_4BPP, PlaySE,
-  PlaySE12WithPanning, RequestDma3Fill, SE12PanpotControl, SWAP,
-  SetAnimBgAttribute, SetGpuReg, T1_READ_16, T2_READ_32,
-  T2_READ_PTR, UpdateOamPriorityInAllHealthboxes,  // 4-per-line for readability
+  BLDCNT_EFFECT_BLEND, BeginHardwarePaletteFade, ClearBattleAnimBg, CpuCopy32,
+  CpuFill16, CreateSpriteAndAnimate, CreateTask, DestroySprite,
+  DestroyTask, DmaCopy32, DrawBattlerOnBg, DrawMainBattleBackground,
+  FALSE, FreeSpriteOamMatrix, FreeSpritePaletteByTag, FreeSpriteTilesByTag,
+  GET_TRUE_SPRITE_INDEX, GetAnimBattlerSpriteId, GetBattleAnimBg1Data, GetBattleAnimBgData,
+  GetBattleBgPaletteNum, GetBattlerPosition, GetBattlerSide, GetBattlerSpriteBGPriorityRank,
+  GetBattlerSpriteCoord, GetBattlerSpriteSubpriority, GetMonData, InitPrioritiesForVisibleBattlers,
+  IsBattlerSpritePresent, IsDoubleBattle, IsSEPlaying, IsSpeciesNotUnown,
+  LZDecompressVram, LZDecompressWram, LoadCompressedPalette, LoadCompressedSpritePaletteUsingHeap,
+  LoadCompressedSpriteSheetUsingHeap, LoadContestBgAfterMoveAnim, LoadPalette, NULL,
+  OBJ_PLTT_ID, PLTT_OFFSET_4BPP, PLTT_SIZE_4BPP, PlaySE,
+  PlaySE12WithPanning, REG_OFFSET_BG1HOFS, REG_OFFSET_BG1VOFS, REG_OFFSET_BG2HOFS,
+  REG_OFFSET_BG2VOFS, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, RequestDma3Fill,
+  SE12PanpotControl, SWAP, SetAnimBgAttribute, SetGpuReg,
+  T1_READ_16, T2_READ_32, T2_READ_PTR, TASK_NONE,
+  TRUE, UpdateOamPriorityInAllHealthboxes,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void ClearBattleAnimationVars(void) */

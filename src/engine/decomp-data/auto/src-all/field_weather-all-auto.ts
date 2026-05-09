@@ -24,9 +24,10 @@ import * as _bridge from '../../../decomp-bridge';
 const {
   AllocSpritePalette, BG_PLTT_ID, BLDALPHA_BLEND, BeginNormalPaletteFade,
   BlendPalette, CpuCopy16, CpuCopy32, CpuFastCopy,
-  CreateTask, DROUGHT_COLOR_INDEX, FuncIsActiveTask, IsSpecialSEPlaying,
-  LoadPalette, OBJ_PLTT_ID, PLTT_ID, PlaySE,
-  RGB2, SetGpuReg,  // 4-per-line for readability
+  CreateTask, DROUGHT_COLOR_INDEX, FALSE, FuncIsActiveTask,
+  IsSpecialSEPlaying, LoadPalette, OBJ_PLTT_ID, PALETTES_ALL,
+  PLTT_ID, PLTT_SIZE, PLTT_SIZE_4BPP, PlaySE,
+  REG_OFFSET_BLDALPHA, RGB2, SetGpuReg, TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void StartWeather(void) */

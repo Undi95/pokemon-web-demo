@@ -24,18 +24,22 @@ import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AddTextPrinterParameterized3, Alloc, AnimateSprites,
   BGCNT_CHARBASE, BGCNT_PRIORITY, BGCNT_SCREENBASE, BG_CHAR_ADDR,
-  BG_PLTT_ID, BG_SCREEN_ADDR, BeginNormalPaletteFade, BuildOamBuffer,
-  ClearGpuRegBits, ClearLinkRfuCallback, ConvertInternationalString, CopyBgTilemapBufferToVram,
-  CopyToBgTilemapBuffer, CopyWindowToVram, CpuFill32, CpuSet,
-  CreateTask, DeactivateAllTextPrinters, DecompressAndLoadBgGfxUsingHeap, DestroyTask,
-  DisableInterrupts, DmaCopy16, DoSoftReset, EXTRACT_CONN_ESTABLISHED,
-  EXTRACT_LINK_ERRORS, EXTRACT_MASTER, EXTRACT_PLAYER_COUNT, EnableInterrupts,
+  BG_PLTT_ID, BG_SCREEN_ADDR, BG_SCREEN_SIZE, BeginNormalPaletteFade,
+  BuildOamBuffer, ClearGpuRegBits, ClearLinkRfuCallback, ConvertInternationalString,
+  CopyBgTilemapBufferToVram, CopyToBgTilemapBuffer, CopyWindowToVram, CpuFill32,
+  CpuSet, CreateTask, DISPCNT_WIN0_ON, DISPCNT_WIN1_ON,
+  DeactivateAllTextPrinters, DecompressAndLoadBgGfxUsingHeap, DestroyTask, DisableInterrupts,
+  DmaCopy16, DoSoftReset, EXTRACT_CONN_ESTABLISHED, EXTRACT_LINK_ERRORS,
+  EXTRACT_MASTER, EXTRACT_PLAYER_COUNT, EnableInterrupts, FALSE,
   FillWindowPixelBuffer, FlagGet, FreeAllSpritePalettes, GetGameProgressForLinkTrade,
   GetRfuRecvQueueLength, InitBgsFromTemplates, InitHeap, InitRFUAPI,
   InitWindows, IsLinkRfuTaskFinished, IsNationalPokedexEnabled, IsRfuRecvQueueEmpty,
   IsSendingKeysOverCable, IsSendingKeysToRfu, JOY_HELD, JOY_NEW,
   LinkRfu_Shutdown, LoadBgTiles, LoadOam, LoadPalette,
-  PIXEL_FILL, PlaySE, ProcessSpriteCopyRequests, PutWindowTilemap,
+  NULL, PALETTES_ALL, PIXEL_FILL, PLTT_SIZE_4BPP,
+  PlaySE, ProcessSpriteCopyRequests, PutWindowTilemap, REG_OFFSET_BG0HOFS,
+  REG_OFFSET_BG0VOFS, REG_OFFSET_BG1CNT, REG_OFFSET_BG1HOFS, REG_OFFSET_BG1VOFS,
+  REG_OFFSET_BG2CNT, REG_OFFSET_BG3CNT, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT,
   REG_TMCNT_H, ReloadSave, ResetBgsAndClearDma3BusyFlags, ResetLinkRfuGFLayer,
   ResetPaletteFadeControl, ResetSpriteData, ResetTasks, ResetTempTileDataBuffers,
   RestoreSerialTimer3IntrHandlers, RfuMain1, RfuMain2, Rfu_GetBlockReceivedStatus,
@@ -44,8 +48,8 @@ const {
   Rfu_SetCloseLinkCallback, Rfu_SetLinkStandbyCallback, RunTasks, ScanlineEffect_Stop,
   SetBackdropFromColor, SetBgTilemapBuffer, SetGpuReg, SetMainCallback2,
   SetVBlankCallback, ShowBg, StartSendingKeysToRfu, StopMapMusic,
-  StringCompare, StringCopy, TransferPlttBuffer, TrySavingData,
-  UpdatePaletteFade,  // 4-per-line for readability
+  StringCompare, StringCopy, TRUE, TransferPlttBuffer,
+  TrySavingData, UpdatePaletteFade,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** bool8 IsWirelessAdapterConnected(void) */

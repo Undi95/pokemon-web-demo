@@ -23,10 +23,11 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   ABILITY_ON_FIELD2, ABILITY_ON_OPPOSING_FIELD, AI_CalcDmg, AI_TypeCalc,
-  BATTLE_OPPOSITE, BATTLE_PARTNER, BtlController_EmitTwoReturnValues, GetBattlerAtPosition,
-  GetBattlerPosition, GetBattlerSide, GetItemEffectParamOffset, GetMonData,
-  IS_BATTLER_OF_TYPE, Random, TYPE_EFFECT_ATK_TYPE, TYPE_EFFECT_DEF_TYPE,
-  TYPE_EFFECT_MULTIPLIER, TypeCalc,  // 4-per-line for readability
+  BATTLE_OPPOSITE, BATTLE_PARTNER, BtlController_EmitTwoReturnValues, FALSE,
+  GetBattlerAtPosition, GetBattlerPosition, GetBattlerSide, GetItemEffectParamOffset,
+  GetMonData, IS_BATTLER_OF_TYPE, NULL, Random,
+  TRUE, TYPE_EFFECT_ATK_TYPE, TYPE_EFFECT_DEF_TYPE, TYPE_EFFECT_MULTIPLIER,
+  TypeCalc,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static bool8 ShouldSwitchIfPerishSong(void) */

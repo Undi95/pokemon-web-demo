@@ -23,7 +23,8 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   ConvertIntToDecimalStringN, GetMonData, GetPokedexHeightWeight, GetVarPointer,
-  SpeciesToNationalPokedexNum, StringAppend, StringCopy, VarSet,  // 4-per-line for readability
+  STR_CONV_MODE_LEFT_ALIGN, SpeciesToNationalPokedexNum, StringAppend, StringCopy,
+  TRUE, VarSet,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static u32 GetMonSizeHash(struct Pokemon *pkmn) */

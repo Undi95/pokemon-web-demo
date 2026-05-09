@@ -23,18 +23,20 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, Alloc, AllocZeroed, BGCNT_PRIORITY,
-  ChangeBgX, ChangeBgY, CopyBgTilemapBufferToVram, CopyToBgTilemapBufferRect_ChangePalette,
-  CpuSet, CreateSprite, CreateTask, DestroySprite,
-  DestroyTask, DrawWholeMapView, FREE_AND_SET_NULL, FindTaskIdByFunc,
-  FlagClear, FlagGet, FlagSet, FreeAllWindowBuffers,
-  FreeSpriteTilesByTag, FuncIsActiveTask, InitPulseBlend, InitPulseBlendPaletteSettings,
-  InitStandardTextBoxWindows, InstallCameraPanAheadCallback, LoadBgTiles, LoadSpriteSheets,
-  MAP_GROUP, MAP_NUM, MapGridSetMetatileIdAt, MarkUsedPulseBlendPalettes,
-  PlaySE, Random, SWAP, ScriptContext_Enable,
-  SetBgAttribute, SetBgTilemapBuffer, SetCameraPanning, SetCameraPanningCallback,
-  SetGpuReg, SetGpuRegBits, ShowBg, StartSpriteAnim,
-  TryGetObjectEventIdByLocalIdAndMap, UnloadUsedPulseBlendPalettes, UnmarkUsedPulseBlendPalettes, UnsetBgTilemapBuffer,
-  UpdatePulseBlend, VarGet,  // 4-per-line for readability
+  BG_SCREEN_SIZE, ChangeBgX, ChangeBgY, CopyBgTilemapBufferToVram,
+  CopyToBgTilemapBufferRect_ChangePalette, CpuSet, CreateSprite, CreateTask,
+  DestroySprite, DestroyTask, DrawWholeMapView, FALSE,
+  FREE_AND_SET_NULL, FindTaskIdByFunc, FlagClear, FlagGet,
+  FlagSet, FreeAllWindowBuffers, FreeSpriteTilesByTag, FuncIsActiveTask,
+  InitPulseBlend, InitPulseBlendPaletteSettings, InitStandardTextBoxWindows, InstallCameraPanAheadCallback,
+  LoadBgTiles, LoadSpriteSheets, MAP_GROUP, MAP_NUM,
+  MapGridSetMetatileIdAt, MarkUsedPulseBlendPalettes, NULL, PlaySE,
+  REG_OFFSET_BG0CNT, REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS, REG_OFFSET_BG2CNT,
+  Random, SWAP, ScriptContext_Enable, SetBgAttribute,
+  SetBgTilemapBuffer, SetCameraPanning, SetCameraPanningCallback, SetGpuReg,
+  SetGpuRegBits, ShowBg, StartSpriteAnim, TASK_NONE,
+  TRUE, TryGetObjectEventIdByLocalIdAndMap, UnloadUsedPulseBlendPalettes, UnmarkUsedPulseBlendPalettes,
+  UnsetBgTilemapBuffer, UpdatePulseBlend, VarGet,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** bool8 IsMirageTowerVisible(void) */

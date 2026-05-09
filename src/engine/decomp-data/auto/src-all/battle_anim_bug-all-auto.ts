@@ -22,11 +22,13 @@
 // to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  AnimTranslateLinear, ArcTan2Neg, BLDALPHA_BLEND, CMD_ARGS,
-  DestroyAnimSprite, GetBattlerPosition, GetBattlerSide, GetBattlerSpriteCoord,
-  GetBattlerSpriteCoord2, InitAnimArcTranslation, InitAnimLinearTranslationWithSpeed, InitSpritePosToAnimAttacker,
-  IsContest, SetAverageBattlerPositions, SetGpuReg, Sin,
-  StartSpriteAffineAnim, StoreSpriteCallbackInData6, TranslateAnimHorizontalArc, TrySetSpriteRotScale,  // 4-per-line for readability
+  AnimTranslateLinear, ArcTan2Neg, BLDALPHA_BLEND, BLDCNT_EFFECT_BLEND,
+  CMD_ARGS, DestroyAnimSprite, FALSE, GetBattlerPosition,
+  GetBattlerSide, GetBattlerSpriteCoord, GetBattlerSpriteCoord2, InitAnimArcTranslation,
+  InitAnimLinearTranslationWithSpeed, InitSpritePosToAnimAttacker, IsContest, REG_OFFSET_BLDALPHA,
+  REG_OFFSET_BLDCNT, SetAverageBattlerPositions, SetGpuReg, Sin,
+  StartSpriteAffineAnim, StoreSpriteCallbackInData6, TRUE, TranslateAnimHorizontalArc,
+  TrySetSpriteRotScale,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void AnimMegahornHorn(struct Sprite *sprite) */

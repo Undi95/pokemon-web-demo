@@ -23,8 +23,8 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   CanUseDigOrEscapeRopeOnCurMap, CreateFieldMoveTask, CreateTask, DoBrailleDigEffect,
-  FieldEffectActiveListRemove, FieldEffectStart, GetCursorSelectionMonId, Overworld_ResetStateAfterDigEscRope,
-  SetPlayerAvatarTransitionFlags, ShouldDoBrailleDigEffect,  // 4-per-line for readability
+  FALSE, FieldEffectActiveListRemove, FieldEffectStart, GetCursorSelectionMonId,
+  Overworld_ResetStateAfterDigEscRope, SetPlayerAvatarTransitionFlags, ShouldDoBrailleDigEffect, TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** bool8 SetUpFieldMove_Dig(void) */

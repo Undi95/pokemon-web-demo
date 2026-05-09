@@ -27,14 +27,15 @@ const {
   CanMonLearnTMHM, ChooseMonForDaycare, ClearMail, ClearStdWindowAndFrame,
   CompactPartySlots, ConvertIntToDecimalStringN, CopyWindowToVram, CreateMon,
   CreateTask, DeleteFirstMoveAndGiveMoveToMon, DestroyListMenuTask, DestroyTask,
-  DrawStdWindowFrame, FlagSet, GetBoxMonData, GetBoxMonGender,
-  GetBoxMonNickname, GetCursorSelectionMonId, GetEggCyclesToSubtract, GetGenderFromSpeciesAndPersonality,
-  GetLevelFromBoxMonExp, GetLevelUpMovesBySpecies, GetMonData, GetMonNickname2,
-  GetNatureFromPersonality, GetStringRightAlignXOffset, GiveMailToMon, GiveMoveToMon,
-  ItemIdToBattleMoveId, JOY_NEW, ListMenuInit, ListMenu_ProcessInput,
-  MonHasMail, MonTryLearningNewMove, Random, Random2,
-  RemoveWindow, ScriptContext_Enable, SeedRng2, SetBoxMonData,
-  SetMonData, StringAppend, StringCopy, StripExtCtrlCodes,
+  DrawStdWindowFrame, FALSE, FlagSet, GetBoxMonData,
+  GetBoxMonGender, GetBoxMonNickname, GetCursorSelectionMonId, GetEggCyclesToSubtract,
+  GetGenderFromSpeciesAndPersonality, GetLevelFromBoxMonExp, GetLevelUpMovesBySpecies, GetMonData,
+  GetMonNickname2, GetNatureFromPersonality, GetStringRightAlignXOffset, GiveMailToMon,
+  GiveMoveToMon, ItemIdToBattleMoveId, JOY_NEW, ListMenuInit,
+  ListMenu_ProcessInput, MonHasMail, MonTryLearningNewMove, NULL,
+  Random, Random2, RemoveWindow, STR_CONV_MODE_LEFT_ALIGN,
+  ScriptContext_Enable, SeedRng2, SetBoxMonData, SetMonData,
+  StringAppend, StringCopy, StripExtCtrlCodes, TRUE,
   TakeMailFromMon, TryIncrementMonLevel, ZeroBoxMonData, ZeroMonData,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───

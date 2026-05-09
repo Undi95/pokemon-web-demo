@@ -23,13 +23,13 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   CalcByteArraySum, CalcCRC16, CalculatePlayerPartyCount, CompactPartySlots,
-  CpuFill16, EnableNationalPokedex, EnableResetRTC, GetMonData,
-  GetSetPokedexFlag, GiveGiftRibbonToParty, GiveMailToMon, InitRamScript,
-  InitScriptContext, IsEnigmaBerryValid, ItemIsMail, RunScriptCommand,
-  RunScriptImmediately, ScriptReadByte, ScriptReadHalfword, ScriptReadWord,
-  SetEnigmaBerry, SetupBytecodeScript, SpeciesToNationalPokedexNum, StopScript,
-  StringCompare, StringCopyN, StringExpandPlaceholders, UnlockTrendySaying,
-  ValidateEReaderTrainer, VarSet,  // 4-per-line for readability
+  CpuFill16, EnableNationalPokedex, EnableResetRTC, FALSE,
+  GetMonData, GetSetPokedexFlag, GiveGiftRibbonToParty, GiveMailToMon,
+  InitRamScript, InitScriptContext, IsEnigmaBerryValid, ItemIsMail,
+  RunScriptCommand, RunScriptImmediately, ScriptReadByte, ScriptReadHalfword,
+  ScriptReadWord, SetEnigmaBerry, SetupBytecodeScript, SpeciesToNationalPokedexNum,
+  StopScript, StringCompare, StringCopyN, StringExpandPlaceholders,
+  TRUE, UnlockTrendySaying, ValidateEReaderTrainer, VarSet,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static bool32 CheckCompatibility(u16 unk0, u32 unk1, u16 unk2, u32 version) */

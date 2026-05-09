@@ -22,10 +22,10 @@
 // to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  FlagGet, FlagSet, GetGameStat, GetMonData,
-  GetRibbonCount, HealPlayerParty, IncrementGameStat, SetContinueGameWarpStatus,
-  SetContinueGameWarpToHealLocation, SetGameStat, SetMainCallback2, SetMonData,
-  TryPutSpotTheCutiesOnAir,  // 4-per-line for readability
+  FALSE, FlagGet, FlagSet, GetGameStat,
+  GetMonData, GetRibbonCount, HealPlayerParty, IncrementGameStat,
+  SetContinueGameWarpStatus, SetContinueGameWarpToHealLocation, SetGameStat, SetMainCallback2,
+  SetMonData, TRUE, TryPutSpotTheCutiesOnAir,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** int GameClear(void) */

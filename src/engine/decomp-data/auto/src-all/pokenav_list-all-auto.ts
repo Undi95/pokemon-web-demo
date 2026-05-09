@@ -26,12 +26,13 @@ const {
   AllocSubstruct, BgDmaFill, ChangeBgX, ChangeBgY,
   ClearRematchPokeballIcon, CopyBgTilemapBufferToVram, CopyWindowRectToVram, CopyWindowToVram,
   CpuFastFill8, CreateLoopedTask, CreateSprite, DestroySprite,
-  FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer, FillWindowPixelRect, FillWindowTilesByRow,
-  FreePokenavSubstruct, FreeSpritePaletteByTag, FreeSpriteTilesByTag, FuncIsActiveLoopedTask,
-  GetBgTilemapBuffer, GetBgY, GetMatchCallFlavorText, GetPokenavListWindowState,
-  GetSubstructPtr, GetWindowAttribute, IsDma3ManagerBusyWithBgCopy, IsLoopedTaskActive,
-  LT_SET_STATE, LoadCompressedSpriteSheet, PIXEL_FILL, Pokenav_AllocAndLoadPalettes,
-  PutWindowTilemap, RemoveWindow, SetBgTilemapBuffer,  // 4-per-line for readability
+  FALSE, FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer, FillWindowPixelRect,
+  FillWindowTilesByRow, FreePokenavSubstruct, FreeSpritePaletteByTag, FreeSpriteTilesByTag,
+  FuncIsActiveLoopedTask, GetBgTilemapBuffer, GetBgY, GetMatchCallFlavorText,
+  GetPokenavListWindowState, GetSubstructPtr, GetWindowAttribute, IsDma3ManagerBusyWithBgCopy,
+  IsLoopedTaskActive, LT_SET_STATE, LoadCompressedSpriteSheet, NULL,
+  PIXEL_FILL, Pokenav_AllocAndLoadPalettes, PutWindowTilemap, RemoveWindow,
+  SetBgTilemapBuffer, TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** bool32 CreatePokenavList(const struct BgTemplate *bgTemplate, struct PokenavListTemplate *listTemplate, s32 tileOffset) */

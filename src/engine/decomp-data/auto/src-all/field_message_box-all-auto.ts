@@ -23,8 +23,9 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   AddTextPrinterForMessage, ClearDialogWindowAndFrame, CreateTask, DestroyTask,
-  DrawDialogueFrame, FindTaskIdByFunc, IsMatchCallTaskActive, LoadMessageBoxAndBorderGfx,
-  RunTextPrintersAndIsPrinter0Active, StartMatchCallFromScript, StringExpandPlaceholders,  // 4-per-line for readability
+  DrawDialogueFrame, FALSE, FindTaskIdByFunc, IsMatchCallTaskActive,
+  LoadMessageBoxAndBorderGfx, RunTextPrintersAndIsPrinter0Active, StartMatchCallFromScript, StringExpandPlaceholders,
+  TASK_NONE, TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void InitFieldMessageBox(void) */

@@ -24,16 +24,22 @@ import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AddTextPrinterParameterized4, Alloc, AnimateSprites,
   BG_PLTT_ID, BeginNormalPaletteFade, BlendPalettes, BuildOamBuffer,
-  CopyBgTilemapBufferToVram, CopyWindowToVram, CreateTask, DeactivateAllTextPrinters,
-  DecompressAndCopyTileDataToVram, DestroyTask, DmaFill16, DmaFill32,
-  EnableInterrupts, FillWindowPixelBuffer, Free, FreeAllSpritePalettes,
-  FreeAllWindowBuffers, FreeTempTileDataBuffersIfPossible, HasAllMons, InitBgsFromTemplates,
-  InitWindows, JOY_NEW, LZDecompressWram, LoadOam,
-  LoadPalette, PIXEL_FILL, ProcessSpriteCopyRequests, PutWindowTilemap,
-  ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData, ResetTasks,
-  ResetTempTileDataBuffers, RunTasks, ScanlineEffect_Stop, SetBgTilemapBuffer,
-  SetGpuReg, SetMainCallback2, SetVBlankCallback, ShowBg,
-  StringCopy, StringExpandPlaceholders, TransferPlttBuffer, UpdatePaletteFade,  // 4-per-line for readability
+  CopyBgTilemapBufferToVram, CopyWindowToVram, CreateTask, DISPCNT_OBJ_1D_MAP,
+  DISPCNT_OBJ_ON, DeactivateAllTextPrinters, DecompressAndCopyTileDataToVram, DestroyTask,
+  DmaFill16, DmaFill32, EnableInterrupts, FillWindowPixelBuffer,
+  Free, FreeAllSpritePalettes, FreeAllWindowBuffers, FreeTempTileDataBuffersIfPossible,
+  HasAllMons, InitBgsFromTemplates, InitWindows, JOY_NEW,
+  LZDecompressWram, LoadOam, LoadPalette, NULL,
+  PALETTES_ALL, PIXEL_FILL, PLTT_SIZE, PLTT_SIZE_4BPP,
+  ProcessSpriteCopyRequests, PutWindowTilemap, REG_OFFSET_BG0CNT, REG_OFFSET_BG0HOFS,
+  REG_OFFSET_BG0VOFS, REG_OFFSET_BG1CNT, REG_OFFSET_BG1HOFS, REG_OFFSET_BG1VOFS,
+  REG_OFFSET_BG2CNT, REG_OFFSET_BG2HOFS, REG_OFFSET_BG2VOFS, REG_OFFSET_BG3CNT,
+  REG_OFFSET_BG3HOFS, REG_OFFSET_BG3VOFS, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT,
+  REG_OFFSET_BLDY, ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData,
+  ResetTasks, ResetTempTileDataBuffers, RunTasks, ScanlineEffect_Stop,
+  SetBgTilemapBuffer, SetGpuReg, SetMainCallback2, SetVBlankCallback,
+  ShowBg, StringCopy, StringExpandPlaceholders, TransferPlttBuffer,
+  UpdatePaletteFade, VRAM_SIZE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void VBlankCB(void) */

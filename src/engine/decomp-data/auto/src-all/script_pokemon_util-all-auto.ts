@@ -23,10 +23,10 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   CalculatePPWithBonus, CalculatePlayerPartyCount, CpuFill32, CreateEgg,
-  CreateMon, GetBerryNameByBerryType, GetMonData, GetMonsStateToDoubles,
-  GetSetPokedexFlag, GiveMonToPlayer, InitChooseHalfPartyForBattle, ItemIdToBerryType,
-  SetMainCallback2, SetMonData, SetMonMoveSlot, SpeciesToNationalPokedexNum,
-  VarSet, ZeroEnemyPartyMons,  // 4-per-line for readability
+  CreateMon, FALSE, GetBerryNameByBerryType, GetMonData,
+  GetMonsStateToDoubles, GetSetPokedexFlag, GiveMonToPlayer, InitChooseHalfPartyForBattle,
+  ItemIdToBerryType, SetMainCallback2, SetMonData, SetMonMoveSlot,
+  SpeciesToNationalPokedexNum, TRUE, VarSet, ZeroEnemyPartyMons,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void HealPlayerParty(void) */

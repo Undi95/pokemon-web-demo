@@ -22,9 +22,11 @@
 // to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  AddCameraObject, CameraMove, DestroySprite, GetPlayerMovementDirection,
-  MapGridGetMetatileIdAt, MapGridGetMetatileLayerTypeAt, RotatingGatePuzzleCameraUpdate, ScheduleBgCopyTilemapToVram,
-  SetBerryTreesSeen, SetGpuReg, UpdateObjectEventsForCameraUpdate,  // 4-per-line for readability
+  AddCameraObject, CameraMove, DestroySprite, FALSE,
+  GetPlayerMovementDirection, MapGridGetMetatileIdAt, MapGridGetMetatileLayerTypeAt, NULL,
+  REG_OFFSET_BG1HOFS, REG_OFFSET_BG1VOFS, REG_OFFSET_BG2HOFS, REG_OFFSET_BG2VOFS,
+  REG_OFFSET_BG3HOFS, REG_OFFSET_BG3VOFS, RotatingGatePuzzleCameraUpdate, ScheduleBgCopyTilemapToVram,
+  SetBerryTreesSeen, SetGpuReg, TRUE, UpdateObjectEventsForCameraUpdate,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void ResetCameraOffset(struct FieldCameraOffset *cameraOffset) */

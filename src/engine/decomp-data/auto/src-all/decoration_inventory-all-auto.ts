@@ -22,7 +22,7 @@
 // to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  InitDecorationContextItems, SET_DECOR_INV,  // 4-per-line for readability
+  FALSE, InitDecorationContextItems, SET_DECOR_INV, TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void SetDecorationInventoriesPointers(void) */

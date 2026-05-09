@@ -23,10 +23,11 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   Alloc, BlitBitmapRectToWindow, CpuCopy32, CreateSprite,
-  DecompressPicFromTable, DestroySprite, Free, FreeSpritePaletteByTag,
-  GetMonSpritePalFromSpeciesAndPersonality, GetMonSpritePalStructFromOtIdPersonality, GetSpritePaletteTagByPaletteNum, GetWindowAttribute,
-  LoadCompressedPalette, LoadCompressedSpritePalette, LoadSpecialPokePic, LoadSpecialPokePic_DontHandleDeoxys,
-  OBJ_PLTT_ID, PLTT_ID,  // 4-per-line for readability
+  DecompressPicFromTable, DestroySprite, FALSE, Free,
+  FreeSpritePaletteByTag, GetMonSpritePalFromSpeciesAndPersonality, GetMonSpritePalStructFromOtIdPersonality, GetSpritePaletteTagByPaletteNum,
+  GetWindowAttribute, LoadCompressedPalette, LoadCompressedSpritePalette, LoadSpecialPokePic,
+  LoadSpecialPokePic_DontHandleDeoxys, OBJ_PLTT_ID, PLTT_ID, PLTT_SIZE_4BPP,
+  TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** bool16 ResetAllPicSprites(void) */

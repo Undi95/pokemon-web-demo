@@ -22,9 +22,10 @@
 // to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  CreateTask, DestroyTask, FindTaskIdByFunc, FreezeObjectEvent,
-  FuncIsActiveTask, GetMovementScript, ObjectEventClearHeldMovementIfFinished, ObjectEventIsHeldMovementActive,
-  ObjectEventSetHeldMovement, TryGetObjectEventIdByLocalIdAndMap, UnfreezeObjectEvent,  // 4-per-line for readability
+  CreateTask, DestroyTask, FALSE, FindTaskIdByFunc,
+  FreezeObjectEvent, FuncIsActiveTask, GetMovementScript, ObjectEventClearHeldMovementIfFinished,
+  ObjectEventIsHeldMovementActive, ObjectEventSetHeldMovement, TASK_NONE, TRUE,
+  TryGetObjectEventIdByLocalIdAndMap, UnfreezeObjectEvent,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** bool8 ScriptMovement_StartObjectMovementScript(u8 localId, u8 mapNum, u8 mapGroup, const u8 *movementScript) */

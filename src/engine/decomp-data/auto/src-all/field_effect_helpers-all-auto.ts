@@ -23,15 +23,16 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   BG_SCREEN_ADDR, CreateCopySpriteAt, CreateSpriteAtEnd, CurrentMapDrawMetatileAt,
-  ElevationToPriority, FieldEffectActiveListRemove, FieldEffectStart, FieldEffectStop,
-  GetFigure8XOffset, GetFigure8YOffset, GetObjectEventGraphicsInfo, GetObjectEventIdByLocalIdAndMap,
-  GetObjectPaletteTag, LoadPlayerObjectReflectionPalette, LoadSpecialObjectReflectionPalette, MapGridGetElevationAt,
-  MapGridGetMetatileBehaviorAt, MapGridSetMetatileIdAt, MetatileBehavior_GetBridgeType, MetatileBehavior_IsLongGrass,
-  MetatileBehavior_IsPokeGrass, MetatileBehavior_IsReflective, MetatileBehavior_IsSurfableWaterOrUnderwater, MetatileBehavior_IsTallGrass,
-  MoveCoords, PatchObjectPalette, PlaySE, SeekSpriteAnim,
-  SetGpuReg, SetObjectSubpriorityByElevation, SetSpritePosToMapCoords, SetSpritePosToOffsetMapCoords,
-  StartSpriteAnim, StartSpriteAnimIfDifferent, TryGetObjectEventIdByLocalIdAndMap, UpdateObjectEventSpriteInvisibility,
-  UpdateSpritePaletteWithWeather,  // 4-per-line for readability
+  DIR_EAST, DIR_SOUTH, ElevationToPriority, FALSE,
+  FieldEffectActiveListRemove, FieldEffectStart, FieldEffectStop, GetFigure8XOffset,
+  GetFigure8YOffset, GetObjectEventGraphicsInfo, GetObjectEventIdByLocalIdAndMap, GetObjectPaletteTag,
+  LoadPlayerObjectReflectionPalette, LoadSpecialObjectReflectionPalette, MapGridGetElevationAt, MapGridGetMetatileBehaviorAt,
+  MapGridSetMetatileIdAt, MetatileBehavior_GetBridgeType, MetatileBehavior_IsLongGrass, MetatileBehavior_IsPokeGrass,
+  MetatileBehavior_IsReflective, MetatileBehavior_IsSurfableWaterOrUnderwater, MetatileBehavior_IsTallGrass, MoveCoords,
+  PatchObjectPalette, PlaySE, REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS,
+  ST_OAM_AFFINE_NORMAL, SeekSpriteAnim, SetGpuReg, SetObjectSubpriorityByElevation,
+  SetSpritePosToMapCoords, SetSpritePosToOffsetMapCoords, StartSpriteAnim, StartSpriteAnimIfDifferent,
+  TRUE, TryGetObjectEventIdByLocalIdAndMap, UpdateObjectEventSpriteInvisibility, UpdateSpritePaletteWithWeather,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void SetUpReflection(struct ObjectEvent *objectEvent, struct Sprite *sprite, bool8 stillReflection) */

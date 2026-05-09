@@ -22,10 +22,15 @@
 // to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  BGCNT_CHARBASE, BGCNT_PRIORITY, BGCNT_SCREENBASE, BG_CHAR_ADDR,
-  BG_PLTT_ID, BG_SCREEN_ADDR, CalcCenterToCornerVec, CreateSprite,
-  CreateTask, DestroySprite, LZ77UnCompVram, LoadCompressedSpriteSheet,
-  LoadPalette, OBJ_PLTT_ID, SetGpuReg, StartSpriteAnim,  // 4-per-line for readability
+  BGCNT_16COLOR, BGCNT_CHARBASE, BGCNT_PRIORITY, BGCNT_SCREENBASE,
+  BGCNT_TXT256x256, BG_CHAR_ADDR, BG_PLTT_ID, BG_SCREEN_ADDR,
+  CalcCenterToCornerVec, CreateSprite, CreateTask, DISPCNT_BG1_ON,
+  DISPCNT_BG2_ON, DISPCNT_BG3_ON, DISPCNT_BG_ALL_ON, DISPCNT_OBJ_1D_MAP,
+  DISPCNT_OBJ_ON, DestroySprite, FALSE, LZ77UnCompVram,
+  LoadCompressedSpriteSheet, LoadPalette, OBJ_PLTT_ID, REG_OFFSET_BG1CNT,
+  REG_OFFSET_BG1HOFS, REG_OFFSET_BG1VOFS, REG_OFFSET_BG2CNT, REG_OFFSET_BG2HOFS,
+  REG_OFFSET_BG2VOFS, REG_OFFSET_BG3CNT, REG_OFFSET_BG3HOFS, REG_OFFSET_BG3VOFS,
+  ST_OAM_AFFINE_OFF, SetGpuReg, StartSpriteAnim, TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void LoadIntroPart2Graphics(u8 scenery) */

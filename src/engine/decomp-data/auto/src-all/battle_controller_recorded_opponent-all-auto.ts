@@ -28,20 +28,21 @@ const {
   CopyAllBattleSpritesInvisibilities, CopyBattleSpriteInvisibility, CreateInvisibleSpriteWithCallback, CreatePartyStatusSummarySprites,
   CreateSprite, CreateTask, DecompressTrainerFrontPic, DestroySprite,
   DestroyTask, DoHitAnimHealthboxEffect, DoMoveAnim, DoPokeballSendOutAnimation,
-  FadeOutMapMusic, FreeSpriteOamMatrix, FreeSpritePaletteByTag, FreeSpriteTilesByTag,
-  FreeTrainerFrontPicPalette, GetActiveBattlerLinkPlayerGender, GetBattlerPosition, GetBattlerSide,
-  GetBattlerSpriteCoord, GetBattlerSpriteDefault_Y, GetBattlerSpriteSubpriority, GetFrontierTrainerFrontSpriteId,
-  GetMonData, GetMultiplayerId, GetUnionRoomTrainerPic, HandleIntroSlide,
-  HideBattlerShadowSprite, IndexOfSpritePaletteTag, InitAndLaunchChosenStatusAnimation, InitAndLaunchSpecialAnimation,
-  IsBattleSEPlaying, IsBattlerSpritePresent, IsCryPlayingOrClearCrySongs, IsDoubleBattle,
-  IsMoveWithoutAnimation, IsTextPrinterActive, LoadBattleBarGfx, MoveBattleBar,
-  PlayBGM, PlayCry_ByMode, PlayFanfare, PlaySE12WithPanning,
-  PlayerGenderToFrontTrainerPicId, PrepareBufferDataTransferLink, RecordedBattle_GetBattlerAction, SetBattleBarStruct,
+  FALSE, FadeOutMapMusic, FreeSpriteOamMatrix, FreeSpritePaletteByTag,
+  FreeSpriteTilesByTag, FreeTrainerFrontPicPalette, GetActiveBattlerLinkPlayerGender, GetBattlerPosition,
+  GetBattlerSide, GetBattlerSpriteCoord, GetBattlerSpriteDefault_Y, GetBattlerSpriteSubpriority,
+  GetFrontierTrainerFrontSpriteId, GetMonData, GetMultiplayerId, GetUnionRoomTrainerPic,
+  HandleIntroSlide, HideBattlerShadowSprite, IndexOfSpritePaletteTag, InitAndLaunchChosenStatusAnimation,
+  InitAndLaunchSpecialAnimation, IsBattleSEPlaying, IsBattlerSpritePresent, IsCryPlayingOrClearCrySongs,
+  IsDoubleBattle, IsMoveWithoutAnimation, IsTextPrinterActive, LoadBattleBarGfx,
+  MoveBattleBar, NULL, PlayBGM, PlayCry_ByMode,
+  PlayFanfare, PlaySE12WithPanning, PlayerGenderToFrontTrainerPicId, PrepareBufferDataTransferLink,
+  RecordedBattle_GetBattlerAction, ST_OAM_AFFINE_NORMAL, ST_OAM_AFFINE_OFF, SetBattleBarStruct,
   SetBattlerShadowSpriteCallback, SetBattlerSpriteAffineMode, SetHealthboxSpriteInvisible, SetHealthboxSpriteVisible,
   SetMonData, SetMultiuseSpriteTemplateToPokemon, SetMultiuseSpriteTemplateToTrainerBack, SetSpritePrimaryCoordsFromSecondaryCoords,
   StartHealthboxSlideIn, StartSpriteAnim, StoreSpriteCallbackInData6, StringCopy_Nickname,
-  TryHandleLaunchBattleTableAnimation, TrySetBehindSubstituteSpriteBit, TryShinyAnimation, UpdateHealthboxAttribute,
-  UpdateHpTextInHealthbox,  // 4-per-line for readability
+  TRUE, TryHandleLaunchBattleTableAnimation, TrySetBehindSubstituteSpriteBit, TryShinyAnimation,
+  UpdateHealthboxAttribute, UpdateHpTextInHealthbox,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void SetControllerToRecordedOpponent(void) */

@@ -23,9 +23,10 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   ClearContinueGameWarpStatus2, CopyPartyAndObjectsFromSave, CopyPartyAndObjectsToSave, DestroyTask,
-  DoSaveFailedScreen, EraseFlashSector, GetGameStat, IncrementGameStat,
-  IsLinkTaskFinished, ProgramFlashByte, ProgramFlashSectorAndVerify, ReadFlash,
-  SaveMapView, SetContinueGameWarpStatusToDynamicWarp, SetLinkStandbyCallback,  // 4-per-line for readability
+  DoSaveFailedScreen, EraseFlashSector, FALSE, GetGameStat,
+  IncrementGameStat, IsLinkTaskFinished, NULL, ProgramFlashByte,
+  ProgramFlashSectorAndVerify, ReadFlash, SaveMapView, SetContinueGameWarpStatusToDynamicWarp,
+  SetLinkStandbyCallback, TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void ClearSaveData(void) */

@@ -22,9 +22,9 @@
 // to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  AllocZeroed, CpuCopy32, DrawSpindaSpots, Free,
-  GET_UNOWN_LETTER, LZ77UnCompVram, LZ77UnCompWram, LoadSpritePalette,
-  LoadSpriteSheet,  // 4-per-line for readability
+  AllocZeroed, CpuCopy32, DrawSpindaSpots, FALSE,
+  Free, GET_UNOWN_LETTER, LZ77UnCompVram, LZ77UnCompWram,
+  LoadSpritePalette, LoadSpriteSheet, TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void LZDecompressWram(const u32 *src, void *dest) */

@@ -24,9 +24,10 @@ import * as _bridge from '../../../decomp-bridge';
 const {
   Alloc, AllocZeroed, BgTileAllocOp, BlitBitmapRect4Bit,
   BlitBitmapRect4BitTo8Bit, CopyBgTilemapBufferToVram, CpuCopy16, CpuFastFill8,
-  FillBgTilemapBufferRect, FillBitmapRect4Bit, FillBitmapRect8Bit, Free,
-  GetBgAttribute, GetBgTilemapBuffer, LZ77UnCompWram, LoadBgTiles,
-  MOVE_TILES_DOWN, MOVE_TILES_UP, SetBgTilemapBuffer, WriteSequenceToBgTilemapBuffer,  // 4-per-line for readability
+  FALSE, FillBgTilemapBufferRect, FillBitmapRect4Bit, FillBitmapRect8Bit,
+  Free, GetBgAttribute, GetBgTilemapBuffer, LZ77UnCompWram,
+  LoadBgTiles, MOVE_TILES_DOWN, MOVE_TILES_UP, NULL,
+  SetBgTilemapBuffer, TRUE, WriteSequenceToBgTilemapBuffer,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** bool16 InitWindows(const struct WindowTemplate *templates) */

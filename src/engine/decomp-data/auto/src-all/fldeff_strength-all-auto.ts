@@ -22,8 +22,9 @@
 // to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  CheckObjectGraphicsInFrontOfPlayer, CreateFieldMoveTask, FieldEffectActiveListRemove, GetCursorSelectionMonId,
-  GetMonNickname, ScriptContext_Enable, ScriptContext_SetupScript,  // 4-per-line for readability
+  CheckObjectGraphicsInFrontOfPlayer, CreateFieldMoveTask, FALSE, FieldEffectActiveListRemove,
+  GetCursorSelectionMonId, GetMonNickname, ScriptContext_Enable, ScriptContext_SetupScript,
+  TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** bool8 SetUpFieldMove_Strength(void) */

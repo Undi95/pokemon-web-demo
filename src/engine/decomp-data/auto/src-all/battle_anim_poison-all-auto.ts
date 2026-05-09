@@ -24,8 +24,8 @@ import * as _bridge from '../../../decomp-bridge';
 const {
   DestroyAnimSprite, GetBattlerSide, GetBattlerSpriteCoord, InitAnimArcTranslation,
   InitSpriteDataForLinearTranslation, InitSpritePosToAnimAttacker, InitSpritePosToAnimTarget, SetAverageBattlerPositions,
-  Sin, StartSpriteAnim, StoreSpriteCallbackInData6, TranslateAnimHorizontalArc,
-  TranslateSpriteLinearFixedPoint,  // 4-per-line for readability
+  Sin, StartSpriteAnim, StoreSpriteCallbackInData6, TRUE,
+  TranslateAnimHorizontalArc, TranslateSpriteLinearFixedPoint,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void AnimSludgeProjectile(struct Sprite *sprite) */

@@ -22,7 +22,8 @@
 // to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  GPU_REG, GPU_REG_BUF,  // 4-per-line for readability
+  DISPCNT_FORCED_BLANK, FALSE, GPU_REG, GPU_REG_BUF,
+  TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void InitGpuRegManager(void) */

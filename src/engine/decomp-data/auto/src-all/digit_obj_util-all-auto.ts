@@ -22,9 +22,11 @@
 // to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  Alloc, CpuFill16, FREE_AND_SET_NULL, Free,
-  FreeSpritePaletteByTag, FreeSpriteTilesByTag, GetDecompressedDataSize, GetSpriteTileStartByTag,
-  IndexOfSpritePaletteTag, LoadCompressedSpriteSheet, LoadSpritePalette, LoadSpriteSheet,  // 4-per-line for readability
+  Alloc, CpuFill16, FALSE, FREE_AND_SET_NULL,
+  Free, FreeSpritePaletteByTag, FreeSpriteTilesByTag, GetDecompressedDataSize,
+  GetSpriteTileStartByTag, IndexOfSpritePaletteTag, LoadCompressedSpriteSheet, LoadSpritePalette,
+  LoadSpriteSheet, NULL, ST_OAM_AFFINE_ERASE, ST_OAM_AFFINE_OFF,
+  TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** bool32 DigitObjUtil_Init(u32 count) */

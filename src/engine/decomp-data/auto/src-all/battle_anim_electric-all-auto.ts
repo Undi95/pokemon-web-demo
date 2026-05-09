@@ -24,11 +24,12 @@ import * as _bridge from '../../../decomp-bridge';
 const {
   AnimTranslateLinear, BATTLE_PARTNER, BattleAnimAdjustPanning, Cos,
   CreateSprite, DestroyAnimSprite, DestroyAnimVisualTask, DestroySprite,
-  DestroySpriteAndMatrix, FreeOamMatrix, GetAnimBattlerSpriteId, GetBattlerSide,
-  GetBattlerSpriteBGPriority, GetBattlerSpriteCoord, GetBattlerSpriteSubpriority, InitAnimLinearTranslation,
-  InitSpritePosToAnimAttacker, InitSpritePosToAnimTarget, IsBattlerSpriteVisible, IsContest,
-  PlaySE12WithPanning, SPRITE_SHAPE, SPRITE_SIZE, Sin,
-  StartSpriteAffineAnim, StartSpriteAnim, StoreSpriteCallbackInData6,  // 4-per-line for readability
+  DestroySpriteAndMatrix, FALSE, FreeOamMatrix, GetAnimBattlerSpriteId,
+  GetBattlerSide, GetBattlerSpriteBGPriority, GetBattlerSpriteCoord, GetBattlerSpriteSubpriority,
+  InitAnimLinearTranslation, InitSpritePosToAnimAttacker, InitSpritePosToAnimTarget, IsBattlerSpriteVisible,
+  IsContest, PlaySE12WithPanning, SPRITE_SHAPE, SPRITE_SIZE,
+  Sin, StartSpriteAffineAnim, StartSpriteAnim, StoreSpriteCallbackInData6,
+  TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void AnimLightning(struct Sprite *sprite) */

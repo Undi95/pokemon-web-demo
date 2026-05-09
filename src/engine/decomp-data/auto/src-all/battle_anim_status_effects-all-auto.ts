@@ -22,11 +22,12 @@
 // to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  BLDALPHA_BLEND, BlendPalette, Cos, CreateSprite,
-  CreateTask, DestroyAnimVisualTask, DestroySprite, DestroySpriteAndFreeResources,
-  DestroyTask, FreeSpriteOamMatrix, GetBattlerSpriteCoord, GetSpriteTileStartByTag,
-  IndexOfSpritePaletteTag, IsContest, LaunchBattleAnimation, OBJ_PLTT_ID,
-  SetGpuReg, SetSubspriteTables, Sin,  // 4-per-line for readability
+  BLDALPHA_BLEND, BLDCNT_EFFECT_BLEND, BlendPalette, Cos,
+  CreateSprite, CreateTask, DestroyAnimVisualTask, DestroySprite,
+  DestroySpriteAndFreeResources, DestroyTask, FALSE, FreeSpriteOamMatrix,
+  GetBattlerSpriteCoord, GetSpriteTileStartByTag, IndexOfSpritePaletteTag, IsContest,
+  LaunchBattleAnimation, OBJ_PLTT_ID, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT,
+  SetGpuReg, SetSubspriteTables, Sin, TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void Task_UpdateFlashingCircleImpacts(u8 taskId) */

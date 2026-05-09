@@ -25,19 +25,20 @@ const {
   ARRAY_COUNT, AddTextPrinterParameterized, AddWindow, AllocZeroed,
   BufferApprenticeChallengeText, CalculateMonStats, ClearContinueGameWarpStatus2, ClearSelectedPartyOrder,
   ConvertIntToDecimalStringN, CopyTrainerId, CopyWindowToVram, CreateMon,
-  DoSoftReset, DrawStdWindowFrame, FillWindowPixelBuffer, FlagGet,
-  FlagSet, Free, FrontierGamblerSetWonOrLost, FrontierSpeechToString,
-  GetDomeTrainerSelectedMons, GetFrontierTrainerName, GetMonData, GetNatureFromPersonality,
-  GetPlayerHallRecords, GetRecordedBattleApprenticeId, GetRecordedBattleEasyChatSpeech, GetRecordedBattleFronterBrainSymbol,
-  GetRecordedBattleFrontierFacility, GetSetPokedexFlag, GetStringCenterAlignXOffset, GetStringRightAlignXOffset,
-  IncrementDailyBattlePoints, IsShinyOtIdPersonality, IsStringJapanese, LoadPlayerParty,
-  MoveRecordedBattleToSaveData, PIXEL_FILL, PutWindowTilemap, Random32,
-  ReducePlayerPartyToSelectedMons, SetContinueGameWarpStatusToDynamicWarp, SetFacilityPtrsGetLevel, SetGameStat,
+  DoSoftReset, DrawStdWindowFrame, FALSE, FillWindowPixelBuffer,
+  FlagGet, FlagSet, Free, FrontierGamblerSetWonOrLost,
+  FrontierSpeechToString, GetDomeTrainerSelectedMons, GetFrontierTrainerName, GetMonData,
+  GetNatureFromPersonality, GetPlayerHallRecords, GetRecordedBattleApprenticeId, GetRecordedBattleEasyChatSpeech,
+  GetRecordedBattleFronterBrainSymbol, GetRecordedBattleFrontierFacility, GetSetPokedexFlag, GetStringCenterAlignXOffset,
+  GetStringRightAlignXOffset, IncrementDailyBattlePoints, IsShinyOtIdPersonality, IsStringJapanese,
+  LoadPlayerParty, MoveRecordedBattleToSaveData, NULL, PIXEL_FILL,
+  PutWindowTilemap, Random32, ReducePlayerPartyToSelectedMons, STR_CONV_MODE_LEFT_ALIGN,
+  STR_CONV_MODE_RIGHT_ALIGN, SetContinueGameWarpStatusToDynamicWarp, SetFacilityPtrsGetLevel, SetGameStat,
   SetMonData, SetMonMoveSlot, SetTrainerId, ShouldAirFrontierTVShow,
   SpeciesToNationalPokedexNum, StringAppend, StringCopy, StringExpandPlaceholders,
-  StripExtCtrlCodes, TVShowConvertInternationalString, TrainerIdToDomeTournamentId, TryPutFrontierTVShowOnAir,
-  TrySavingData, ValidateEReaderTrainer, VarGet, VarSet,
-  ZeroEnemyPartyMons,  // 4-per-line for readability
+  StripExtCtrlCodes, TRUE, TVShowConvertInternationalString, TrainerIdToDomeTournamentId,
+  TryPutFrontierTVShowOnAir, TrySavingData, ValidateEReaderTrainer, VarGet,
+  VarSet, ZeroEnemyPartyMons,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void CallFrontierUtilFunc(void) */

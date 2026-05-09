@@ -23,10 +23,11 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, CalcCenterToCornerVec, CpuFastCopy, CpuFill16,
-  CreateSprite, DestroySprite, FreeSpritePaletteByTag, FreeSpriteTilesByTag,
-  GetWindowFrameTilesPal, JOY_NEW, LoadSpritePalettes, LoadSpriteSheets,
-  PlaySE, RequestDma3Copy, SPRITE_SHAPE, SPRITE_SIZE,
-  StartSpriteAnim,  // 4-per-line for readability
+  CreateSprite, DestroySprite, FALSE, FreeSpritePaletteByTag,
+  FreeSpriteTilesByTag, GetWindowFrameTilesPal, JOY_NEW, LoadSpritePalettes,
+  LoadSpriteSheets, NULL, PlaySE, RequestDma3Copy,
+  SPRITE_SHAPE, SPRITE_SIZE, ST_OAM_AFFINE_OFF, StartSpriteAnim,
+  TILE_SIZE_4BPP, TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void InitMonMarkingsMenu(struct MonMarkingsMenu *ptr) */

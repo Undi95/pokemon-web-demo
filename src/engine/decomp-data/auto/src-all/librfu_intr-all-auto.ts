@@ -22,7 +22,7 @@
 // to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  Callback_Dummy_M, REG_TMCNT_H, REG_TMCNT_L,  // 4-per-line for readability
+  Callback_Dummy_M, NULL, REG_TMCNT_H, REG_TMCNT_L,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void IntrSIO32(void) */

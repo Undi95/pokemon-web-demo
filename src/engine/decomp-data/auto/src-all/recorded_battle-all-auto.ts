@@ -24,10 +24,11 @@ import * as _bridge from '../../../decomp-bridge';
 const {
   AllocZeroed, AnimateSprites, BeginNormalPaletteFade, BuildOamBuffer,
   CalcByteArraySum, ConvertInternationalString, CreateTask, DestroyTask,
-  Free, GetBattlerSide, GetFronterBrainSymbol, GetLinkPlayerCount,
-  GetMonData, GetMultiplayerId, PlayMapChosenOrBattleBGM, ResetPaletteFadeControl,
-  RunTasks, SetMainCallback2, SetMonData, StringCopy,
-  StripExtCtrlCodes, TryReadSpecialSaveSector, TryWriteSpecialSaveSector, VarGet,
+  FALSE, Free, GetBattlerSide, GetFronterBrainSymbol,
+  GetLinkPlayerCount, GetMonData, GetMultiplayerId, NULL,
+  PALETTES_ALL, PlayMapChosenOrBattleBGM, ResetPaletteFadeControl, RunTasks,
+  SetMainCallback2, SetMonData, StringCopy, StripExtCtrlCodes,
+  TRUE, TryReadSpecialSaveSector, TryWriteSpecialSaveSector, VarGet,
   ZeroEnemyPartyMons, ZeroPlayerPartyMons,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───

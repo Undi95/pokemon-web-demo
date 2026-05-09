@@ -26,16 +26,17 @@ const {
   ClearDecorationInventories, ClearMysteryGift, ClearPlayerLinkBattleRecords, ClearPokeblocks,
   ClearRankingHallRecords, ClearRoamerData, ClearRoamerLocationData, ClearSav1,
   ClearSav2, ClearSecretBases, ClearTVShowData, CpuFill16,
-  CpuFill32, GetGeneratedTrainerIdLower, InitDewfordTrend, InitEasyChatPhrases,
-  InitEventData, InitLilycoveLady, InitLotadSizeRecord, InitMatchCallCounters,
-  InitSeedotSizeRecord, InitUnionRoomChatRegisteredTexts, MAP_GROUP, MAP_NUM,
-  NewGameInitPCItems, PlayTimeCounter_Reset, Random, ResetAllApprenticeData,
-  ResetBagScrollPositions, ResetContestLinkResults, ResetFanClub, ResetGabbyAndTy,
-  ResetGameStats, ResetLinkContestBoolean, ResetLotteryCorner, ResetPokeblockScrollPositions,
-  ResetPokedex, ResetPokedexScrollPositions, ResetPokemonJumpRecords, ResetPokemonStorageSystem,
-  ResetTrainerHillResults, RtcReset, RunScriptImmediately, SetBerryPowder,
-  SetCoins, SetMauvilleOldMan, SetMoney, SetWarpDestination,
-  WarpIntoMap, WipeTrainerNameRecords, ZeroEnemyPartyMons, ZeroPlayerPartyMons,  // 4-per-line for readability
+  CpuFill32, FALSE, GetGeneratedTrainerIdLower, InitDewfordTrend,
+  InitEasyChatPhrases, InitEventData, InitLilycoveLady, InitLotadSizeRecord,
+  InitMatchCallCounters, InitSeedotSizeRecord, InitUnionRoomChatRegisteredTexts, MAP_GROUP,
+  MAP_NUM, NewGameInitPCItems, PlayTimeCounter_Reset, Random,
+  ResetAllApprenticeData, ResetBagScrollPositions, ResetContestLinkResults, ResetFanClub,
+  ResetGabbyAndTy, ResetGameStats, ResetLinkContestBoolean, ResetLotteryCorner,
+  ResetPokeblockScrollPositions, ResetPokedex, ResetPokedexScrollPositions, ResetPokemonJumpRecords,
+  ResetPokemonStorageSystem, ResetTrainerHillResults, RtcReset, RunScriptImmediately,
+  SetBerryPowder, SetCoins, SetMauvilleOldMan, SetMoney,
+  SetWarpDestination, TRUE, WarpIntoMap, WipeTrainerNameRecords,
+  ZeroEnemyPartyMons, ZeroPlayerPartyMons,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void SetTrainerId(u32 trainerId, u8 *dst) */

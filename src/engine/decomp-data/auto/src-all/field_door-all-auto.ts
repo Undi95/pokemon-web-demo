@@ -23,9 +23,10 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   CpuFastCopy, CreateTask, CurrentMapDrawMetatileAt, DestroyTask,
-  DrawDoorMetatileAt, FlagGet, FuncIsActiveTask, GetDoorGraphics,
-  GetLastDoorFrame, MAP_GROUP, MAP_NUM, MapGridGetMetatileBehaviorAt,
-  MapGridGetMetatileIdAt, MetatileBehavior_IsDoor, TILE_OFFSET_4BPP,  // 4-per-line for readability
+  DrawDoorMetatileAt, FALSE, FlagGet, FuncIsActiveTask,
+  GetDoorGraphics, GetLastDoorFrame, MAP_GROUP, MAP_NUM,
+  MapGridGetMetatileBehaviorAt, MapGridGetMetatileIdAt, MetatileBehavior_IsDoor, NULL,
+  TILE_OFFSET_4BPP, TILE_SIZE_4BPP, TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void CopyDoorTilesToVram(const struct DoorGraphics *gfx, const struct DoorAnimFrame *frame) */

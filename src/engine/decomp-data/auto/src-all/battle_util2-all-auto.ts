@@ -25,8 +25,8 @@ const {
   ARRAY_COUNT, AdjustFriendship, AllocZeroed, BattleScriptPushCursor,
   BtlController_EmitSetMonData, CreateSecretBaseEnemyParty, FREE_AND_SET_NULL, FreeTrainerHillBattleStruct,
   GetBattlerAtPosition, GetBattlerSide, GetPartyIdFromBattlePartyId, InitTrainerHillBattleStruct,
-  MarkBattlerForControllerExec, Random, SwitchPartyMonSlots, UproarWakeUpCheck,
-  VarGet,  // 4-per-line for readability
+  MarkBattlerForControllerExec, NULL, Random, SwitchPartyMonSlots,
+  UproarWakeUpCheck, VarGet,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void AllocateBattleResources(void) */

@@ -23,22 +23,29 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AllocOamMatrix, AllocZeroed, AnimateSprites,
-  BGCNT_CHARBASE, BGCNT_SCREENBASE, BG_PLTT_ID, BLDALPHA_BLEND,
+  BGCNT_CHARBASE, BGCNT_SCREENBASE, BGCNT_TXT256x512, BG_PLTT_ID,
+  BG_SCREEN_SIZE, BLDALPHA_BLEND, BLDCNT_EFFECT_BLEND, BLDCNT_EFFECT_LIGHTEN,
   BeginNormalPaletteFade, BlendPalette, BlendPalettes, BuildOamBuffer,
   CalcCenterToCornerVec, ClearGpuRegBits, CopyBgTilemapBufferToVram, CopyRectToBgTilemapBufferRect,
   Cos, CpuCopy16, CpuCopy32, CpuFill16,
   CpuFill32, CpuSet, CreateInvisibleSprite, CreateSpriteAtEnd,
-  CreateTask, CreateTrainerSprite, DestroySprite, DestroyTask,
+  CreateTask, CreateTrainerSprite, DISPCNT_BG0_ON, DISPCNT_WIN0_ON,
+  DISPCNT_WIN1_ON, DISPLAY_HEIGHT, DestroySprite, DestroyTask,
   DmaCopy16, DmaSet, DmaStop, EnableInterrupts,
-  FREE_AND_SET_NULL, FieldEffectActiveListContains, FieldEffectStart, FieldEffectStop,
-  FillBgTilemapBufferRect, FillBgTilemapBufferRect_Palette0, FindTaskIdByFunc, GetCameraOffsetWithPan,
-  InitSpriteAffineAnim, LZ77UnCompVram, LoadOam, LoadPalette,
-  PLTT_SIZEOF, PlaySE, PlayerGenderToFrontTrainerPicId, ProcessSpriteCopyRequests,
-  Random, RunTasks, SET_TILE, SPRITE_SHAPE,
-  SPRITE_SIZE, ScanlineEffect_Clear, SetGpuReg, SetGpuRegBits,
-  SetHBlankCallback, SetMainCallback2, SetOamMatrixRotationScaling, SetVBlankCallback,
-  SetWeatherScreenFadeOut, Sin, StartSpriteAffineAnim, TransferPlttBuffer,
-  UpdatePaletteFade, WIN_RANGE,  // 4-per-line for readability
+  FALSE, FREE_AND_SET_NULL, FieldEffectActiveListContains, FieldEffectStart,
+  FieldEffectStop, FillBgTilemapBufferRect, FillBgTilemapBufferRect_Palette0, FindTaskIdByFunc,
+  GetCameraOffsetWithPan, InitSpriteAffineAnim, LZ77UnCompVram, LoadOam,
+  LoadPalette, NULL, PALETTES_ALL, PALETTES_BG,
+  PLTT_SIZE, PLTT_SIZEOF, PLTT_SIZE_4BPP, PlaySE,
+  PlayerGenderToFrontTrainerPicId, ProcessSpriteCopyRequests, REG_OFFSET_BG0CNT, REG_OFFSET_BG0HOFS,
+  REG_OFFSET_BG0VOFS, REG_OFFSET_BG1CNT, REG_OFFSET_BG2CNT, REG_OFFSET_BG3CNT,
+  REG_OFFSET_BLDY, REG_OFFSET_MOSAIC, REG_OFFSET_WIN0H, Random,
+  RunTasks, SET_TILE, SPRITE_SHAPE, SPRITE_SIZE,
+  ST_OAM_AFFINE_DOUBLE, ST_OAM_AFFINE_NORMAL, ScanlineEffect_Clear, SetGpuReg,
+  SetGpuRegBits, SetHBlankCallback, SetMainCallback2, SetOamMatrixRotationScaling,
+  SetVBlankCallback, SetWeatherScreenFadeOut, Sin, StartSpriteAffineAnim,
+  TASK_NONE, TRUE, TransferPlttBuffer, UpdatePaletteFade,
+  WIN_RANGE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void CB2_TestBattleTransition(void) */

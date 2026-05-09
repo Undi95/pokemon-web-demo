@@ -25,12 +25,13 @@ const {
   ARRAY_COUNT, AddBagItem, AddPyramidBagItem, AllocZeroed,
   BG_PLTT_ID, CalculateMonStats, CopyItemName, CpuCopy16,
   CpuFill32, CreateTask, DestroyTask, DoSoftReset,
-  Free, FrontierSpeechToString, GetBattleFacilityTrainerGfxId, GetChosenApproachingTrainerObjectEventId,
-  GetMonData, GetRandomScaledFrontierTrainerId, GetSpeciesName, InitBattlePyramidBagCursorPosition,
-  LoadPlayerParty, MAP_GROUP, MAP_NUM, MOD,
-  Overworld_GetMapHeaderByGroupAndId, PlaySE, Random, Random2,
-  RunOnLoadMapScript, SaveMapView, SeedRng2, SetFacilityPtrsGetLevel,
-  SetMonData, SetMonMoveSlot, ShowBattlePyramidStartMenu, ShowFieldMessage,
+  FALSE, Free, FrontierSpeechToString, GetBattleFacilityTrainerGfxId,
+  GetChosenApproachingTrainerObjectEventId, GetMonData, GetRandomScaledFrontierTrainerId, GetSpeciesName,
+  InitBattlePyramidBagCursorPosition, LoadPlayerParty, MAP_GROUP, MAP_NUM,
+  MOD, NULL, Overworld_GetMapHeaderByGroupAndId, PLTT_SIZE_4BPP,
+  PlaySE, Random, Random2, RunOnLoadMapScript,
+  SaveMapView, SeedRng2, SetFacilityPtrsGetLevel, SetMonData,
+  SetMonMoveSlot, ShowBattlePyramidStartMenu, ShowFieldMessage, TRUE,
   TrySavingData, VarSet, WriteBattlePyramidViewScanlineEffectBuffer,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───

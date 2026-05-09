@@ -22,8 +22,9 @@
 // to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  CalcCRC16WithTable, GetBlockReceivedStatus, IsLinkTaskFinished, LinkRfu_FatalError,
-  ResetBlockReceivedFlag, SendBlock,  // 4-per-line for readability
+  CalcCRC16WithTable, FALSE, GetBlockReceivedStatus, IsLinkTaskFinished,
+  LinkRfu_FatalError, NULL, ResetBlockReceivedFlag, SendBlock,
+  TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** u32 MysteryGiftLink_Recv(struct MysteryGiftLink *link) */

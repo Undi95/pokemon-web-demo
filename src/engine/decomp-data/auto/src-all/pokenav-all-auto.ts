@@ -23,15 +23,16 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   Alloc, AnimateSprites, BuildOamBuffer, CheckBoxMonSanityAt,
-  CreateTask, DestroyTask, FREE_AND_SET_NULL, FadeScreen,
-  FreeAllSpritePalettes, FreeMenuHandlerSubstruct1, GetBoxMonDataAt, GetMonData,
-  GetWordTaskArg, InitKeys, InitPokenavMainMenu, IsActiveMenuLoopTaskActive,
-  IsOverworldLinkActive, LOOPED_TASK_DECODE_STATE, LOOPED_TASK_ID, LOOPED_TASK_PRIMARY_ID,
-  LOOPED_TASK_SECONDARY_ID, LoadOam, Overworld_IsRecvQueueAtMax, PokenavMainMenuLoopedTaskIsActive,
-  ProcessSpriteCopyRequests, ResetSpriteData, ResetTasks, RunMainMenuLoopedTask,
-  RunTasks, SetActiveMenuLoopTasks, SetMainCallback2, SetVBlankCallback,
-  SetWordTaskArg, ShutdownPokenav, TRY_FREE_AND_SET_NULL, TransferPlttBuffer,
-  UpdatePaletteFade, WaitForPokenavShutdownFade,  // 4-per-line for readability
+  CreateTask, DestroyTask, FALSE, FREE_AND_SET_NULL,
+  FadeScreen, FreeAllSpritePalettes, FreeMenuHandlerSubstruct1, GetBoxMonDataAt,
+  GetMonData, GetWordTaskArg, InitKeys, InitPokenavMainMenu,
+  IsActiveMenuLoopTaskActive, IsOverworldLinkActive, LOOPED_TASK_DECODE_STATE, LOOPED_TASK_ID,
+  LOOPED_TASK_PRIMARY_ID, LOOPED_TASK_SECONDARY_ID, LoadOam, NULL,
+  Overworld_IsRecvQueueAtMax, PokenavMainMenuLoopedTaskIsActive, ProcessSpriteCopyRequests, ResetSpriteData,
+  ResetTasks, RunMainMenuLoopedTask, RunTasks, SetActiveMenuLoopTasks,
+  SetMainCallback2, SetVBlankCallback, SetWordTaskArg, ShutdownPokenav,
+  TRUE, TRY_FREE_AND_SET_NULL, TransferPlttBuffer, UpdatePaletteFade,
+  WaitForPokenavShutdownFade,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** u32 CreateLoopedTask(LoopedTask loopedTask, u32 priority) */

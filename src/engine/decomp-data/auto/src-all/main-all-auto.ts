@@ -24,14 +24,15 @@ import * as _bridge from '../../../decomp-bridge';
 const {
   CheckForFlashMemory, ClearDma3Requests, ClearSpriteCopyRequests, CopyBufferedValuesToGpuRegs,
   CpuFill16, DmaCopy32, DmaStop, EnableInterrupts,
-  GetGpuReg, HandleLinkConnection, InitGpuRegManager, InitHeap,
-  InitMapMusic, InitRFU, JOY_HELD, JOY_HELD_RAW,
-  JOY_NEW, LinkVSync, MapMusicMain, Overworld_RecvKeysFromLinkIsRunning,
-  Overworld_SendKeysToLinkIsRunning, PlayTimeCounter_Update, ProcessDma3Requests, Random,
-  RegisterRamReset, ResetBgs, RfuVSync, RtcGetMinuteCount,
-  RtcInit, ScanlineEffect_Stop, SeedRng, SetDefaultFontsPointer,
-  SetFlashTimerIntr, SetGpuReg, SiiRtcProtect, SoftReset,
-  TryReceiveLinkBattleData, UpdateWirelessStatusIndicatorSprite,  // 4-per-line for readability
+  FALSE, GetGpuReg, HandleLinkConnection, InitGpuRegManager,
+  InitHeap, InitMapMusic, InitRFU, JOY_HELD,
+  JOY_HELD_RAW, JOY_NEW, LinkVSync, MapMusicMain,
+  NULL, Overworld_RecvKeysFromLinkIsRunning, Overworld_SendKeysToLinkIsRunning, PlayTimeCounter_Update,
+  ProcessDma3Requests, Random, RegisterRamReset, ResetBgs,
+  RfuVSync, RtcGetMinuteCount, RtcInit, ScanlineEffect_Stop,
+  SeedRng, SetDefaultFontsPointer, SetFlashTimerIntr, SetGpuReg,
+  SiiRtcProtect, SoftReset, TRUE, TryReceiveLinkBattleData,
+  UpdateWirelessStatusIndicatorSprite,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void AgbMain(void) */

@@ -24,15 +24,17 @@ import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AddTextPrinterParameterized3, AllocZeroed, BG_CHAR_ADDR,
   BG_SCREEN_ADDR, ChangeBgX, ChangeBgY, CopyBgTilemapBufferToVram,
-  CopyWindowToVram, CpuCopy32, DeactivateAllTextPrinters, DisableInterrupts,
-  DmaCopy32, DmaFill32, DoSoftReset, EnableInterrupts,
-  FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer, GetStringWidth, HideBg,
-  InitBgsFromTemplates, InitWindows, JOY_NEW, LZ77UnCompVram,
-  MultiBootCheckComplete, MultiBootInit, MultiBootMain, MultiBootStartMaster,
-  PIXEL_FILL, PLTT_OFFSET_4BPP, PLTT_SIZEOF, PutWindowTilemap,
-  ResetBgsAndClearDma3BusyFlags, ResetSpriteData, ResetTasks, ScanlineEffect_Stop,
-  SetGpuReg, SetMainCallback2, SetVBlankCallback, ShowBg,
-  TryScene,  // 4-per-line for readability
+  CopyWindowToVram, CpuCopy32, DISPCNT_OBJ_1D_MAP, DeactivateAllTextPrinters,
+  DisableInterrupts, DmaCopy32, DmaFill32, DoSoftReset,
+  EnableInterrupts, FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer, GetStringWidth,
+  HideBg, InitBgsFromTemplates, InitWindows, JOY_NEW,
+  LZ77UnCompVram, MultiBootCheckComplete, MultiBootInit, MultiBootMain,
+  MultiBootStartMaster, NULL, PIXEL_FILL, PLTT_OFFSET_4BPP,
+  PLTT_SIZE, PLTT_SIZEOF, PutWindowTilemap, REG_OFFSET_BG0CNT,
+  REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS, REG_OFFSET_BG1CNT, REG_OFFSET_BG1HOFS,
+  REG_OFFSET_BG1VOFS, REG_OFFSET_BLDCNT, ResetBgsAndClearDma3BusyFlags, ResetSpriteData,
+  ResetTasks, ScanlineEffect_Stop, SetGpuReg, SetMainCallback2,
+  SetVBlankCallback, ShowBg, TryScene, VRAM_SIZE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void CB2_InitBerryFixProgram(void) */

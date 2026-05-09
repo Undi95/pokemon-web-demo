@@ -23,9 +23,10 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, BG_PLTT_ID, CreateSprite, DestroySprite,
-  FreeSpritePaletteByTag, GET_UNOWN_LETTER, GetMonIconPtr, GetMonIconTiles,
-  IndexOfSpritePaletteTag, LoadPalette, LoadSpritePalette, MailSpeciesToSpecies,
-  RequestSpriteCopy,  // 4-per-line for readability
+  FALSE, FreeSpritePaletteByTag, GET_UNOWN_LETTER, GetMonIconPtr,
+  GetMonIconTiles, IndexOfSpritePaletteTag, LoadPalette, LoadSpritePalette,
+  MailSpeciesToSpecies, NULL, RequestSpriteCopy, TILE_SIZE_4BPP,
+  TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** u8 CreateMonIcon(u16 species, void (*callback)(struct Sprite *), s16 x, s16 y, u8 subpriority, u32 personality, bool32 handleDeoxys) */

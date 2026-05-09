@@ -23,10 +23,10 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, BlitBitmapRectToWindow, CopyWindowToVram, CpuCopy32,
-  DynamicPlaceholderTextUtil_GetPlaceholderPtr, FillBitmapRect4Bit, FillWindowPixelBuffer, FillWindowPixelRect,
-  GetFontWidthFunc, GetPlayerTextSpeed, IsSEPlaying, JOY_HELD,
-  JOY_NEW, PIXEL_FILL, PlayBGM, PlaySE,
-  ScrollWindow,  // 4-per-line for readability
+  DynamicPlaceholderTextUtil_GetPlaceholderPtr, FALSE, FillBitmapRect4Bit, FillWindowPixelBuffer,
+  FillWindowPixelRect, GetFontWidthFunc, GetPlayerTextSpeed, IsSEPlaying,
+  JOY_HELD, JOY_NEW, NULL, PIXEL_FILL,
+  PlayBGM, PlaySE, ScrollWindow, TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void SetFontsPointer(const struct FontInfo *fonts) */

@@ -22,8 +22,8 @@
 // to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  GetBoxMonData, GetMonData, GetUnownLetterByPersonality, PadNameString,
-  SetMonData,  // 4-per-line for readability
+  FALSE, GetBoxMonData, GetMonData, GetUnownLetterByPersonality,
+  PadNameString, SetMonData, TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void ClearAllMail(void) */

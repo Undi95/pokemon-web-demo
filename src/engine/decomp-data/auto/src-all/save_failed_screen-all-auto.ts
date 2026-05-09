@@ -24,15 +24,20 @@ import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AddTextPrinterParameterized4, AddWindowWithoutTileMap, BG_PLTT_ID,
   BG_SCREEN_ADDR, BeginNormalPaletteFade, CopyWindowToVram, CpuFastCopy,
-  CpuFill32, DeactivateAllTextPrinters, DmaFill16, DmaFill32,
-  DoSoftReset, DrawStdFrameWithCustomTileAndPalette, EnableInterrupts, FillWindowPixelBuffer,
-  HandleSavingData, InitBgsFromTemplates, InitWindows, JOY_NEW,
-  LZ77UnCompVram, LoadBgTiles, LoadOam, LoadPalette,
-  OBJ_PLTT_ID, PIXEL_FILL, ProcessSpriteCopyRequests, ProgramFlashByte,
-  ReadFlash, ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData,
-  ResetTasks, SetBgTilemapBuffer, SetGpuReg, SetMainCallback2,
-  SetVBlankCallback, SetWindowAttribute, ShowBg, TransferPlttBuffer,
-  UpdatePaletteFade,  // 4-per-line for readability
+  CpuFill32, DISPCNT_OBJ_1D_MAP, DISPCNT_OBJ_ON, DeactivateAllTextPrinters,
+  DmaFill16, DmaFill32, DoSoftReset, DrawStdFrameWithCustomTileAndPalette,
+  EnableInterrupts, FALSE, FillWindowPixelBuffer, HandleSavingData,
+  InitBgsFromTemplates, InitWindows, JOY_NEW, LZ77UnCompVram,
+  LoadBgTiles, LoadOam, LoadPalette, NULL,
+  OBJ_PLTT_ID, PALETTES_ALL, PIXEL_FILL, PLTT_SIZE,
+  PLTT_SIZE_4BPP, ProcessSpriteCopyRequests, ProgramFlashByte, REG_OFFSET_BG0CNT,
+  REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS, REG_OFFSET_BG1CNT, REG_OFFSET_BG1HOFS,
+  REG_OFFSET_BG1VOFS, REG_OFFSET_BG2CNT, REG_OFFSET_BG2HOFS, REG_OFFSET_BG2VOFS,
+  REG_OFFSET_BG3CNT, REG_OFFSET_BG3HOFS, REG_OFFSET_BG3VOFS, ReadFlash,
+  ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData, ResetTasks,
+  SetBgTilemapBuffer, SetGpuReg, SetMainCallback2, SetVBlankCallback,
+  SetWindowAttribute, ShowBg, TRUE, TransferPlttBuffer,
+  UpdatePaletteFade, VRAM_SIZE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void SaveFailedScreenTextPrint(const u8 *text, u8 x, u8 y) */

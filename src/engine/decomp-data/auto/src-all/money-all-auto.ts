@@ -24,9 +24,10 @@ import * as _bridge from '../../../decomp-bridge';
 const {
   AddTextPrinterParameterized, AddWindow, ClearStdWindowAndFrameToTransparent, ConvertIntToDecimalStringN,
   CopyWindowToVram, CreateSprite, DestroySpriteAndFreeResources, DrawStdFrameWithCustomTileAndPalette,
-  FillWindowPixelBuffer, LoadCompressedSpritePalette, LoadCompressedSpriteSheet, PIXEL_FILL,
-  PutWindowTilemap, RemoveWindow, SetWindowTemplateFields, StringExpandPlaceholders,
-  StringLength,  // 4-per-line for readability
+  FALSE, FillWindowPixelBuffer, LoadCompressedSpritePalette, LoadCompressedSpriteSheet,
+  NULL, PIXEL_FILL, PutWindowTilemap, RemoveWindow,
+  STR_CONV_MODE_LEFT_ALIGN, SetWindowTemplateFields, StringExpandPlaceholders, StringLength,
+  TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** u32 GetMoney(u32 *moneyPtr) */

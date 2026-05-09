@@ -25,19 +25,20 @@ const {
   ARRAY_COUNT, Alloc, BufferContestLadyLanguage, BufferContestLadyMonName,
   BufferContestLadyPlayerName, BufferContestName, CB2_ReturnToFieldContinueScriptPlayMapMusic, ConvertEasyChatWordsToString,
   ConvertIntToDecimalStringN, ConvertInternationalString, CopyCurSecretBaseOwnerName_StrVar1, CopyEasyChatWord,
-  DoNamingScreen, DoTVShowDummiedOut, DrawWholeMapView, FlagClear,
-  FlagGet, FlagSet, Free, GetBoxMonData,
-  GetBoxMonGender, GetBoxedMonPtr, GetContestLadyPokeblockState, GetCurrentBattleTowerWinStreak,
-  GetGameStat, GetHoennPokedexCount, GetItemName, GetItemPrice,
-  GetLeadMonIndex, GetLinkPlayerCount, GetLinkPlayerTrainerId, GetMapName,
-  GetMonData, GetMonGender, GetNationalPokedexCount, GetNicknameLanguage,
-  GetSetPokedexFlag, IncrementGameStat, InitializeEasyChatWordArray, IsNationalPokedexEnabled,
-  IsStringJapanese, MAP_GROUP, MAP_NUM, MapGridGetMetatileBehaviorAt,
-  MapGridSetMetatileIdAt, PokeNews, Random, RemoveObjectEventByLocalIdAndMap,
+  DoNamingScreen, DoTVShowDummiedOut, DrawWholeMapView, FALSE,
+  FlagClear, FlagGet, FlagSet, Free,
+  GetBoxMonData, GetBoxMonGender, GetBoxedMonPtr, GetContestLadyPokeblockState,
+  GetCurrentBattleTowerWinStreak, GetGameStat, GetHoennPokedexCount, GetItemName,
+  GetItemPrice, GetLeadMonIndex, GetLinkPlayerCount, GetLinkPlayerTrainerId,
+  GetMapName, GetMonData, GetMonGender, GetNationalPokedexCount,
+  GetNicknameLanguage, GetSetPokedexFlag, IncrementGameStat, InitializeEasyChatWordArray,
+  IsNationalPokedexEnabled, IsStringJapanese, MAP_GROUP, MAP_NUM,
+  MB_TELEVISION, MapGridGetMetatileBehaviorAt, MapGridSetMetatileIdAt, NULL,
+  PokeNews, Random, RemoveObjectEventByLocalIdAndMap, STR_CONV_MODE_LEFT_ALIGN,
   SWAP, SetBoxMonNickAt, SetMonData, ShowFieldMessage,
   SpeciesToNationalPokedexNum, StringCompare, StringCopy, StringGet_Nickname,
-  StringLength, StripExtCtrlCodes, TVShow, TVShowConvertInternationalString,
-  VarGet, VarSet,  // 4-per-line for readability
+  StringLength, StripExtCtrlCodes, TRUE, TVShow,
+  TVShowConvertInternationalString, VarGet, VarSet,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void ClearTVShowData(void) */
