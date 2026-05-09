@@ -53,7 +53,7 @@ export function GetRematchIdxByTrainerIdx(trainerIdx: any): any {
 
 /** bool32 MatchCall_GetEnabled(u32 idx) */
 export function MatchCall_GetEnabled(idx: any): any {
-  match_call_t matchCall;
+  let matchCall;
       let i: any = null;
 
       if (idx >= ARRAY_COUNT(sMatchCallHeaders))
@@ -100,7 +100,7 @@ export function MatchCall_GetEnabled_Birch(matchCall: any): any {
 
 /** bool32 MatchCall_IsRematchable(u32 idx) */
 export function MatchCall_IsRematchable(idx: any): any {
-  match_call_t matchCall;
+  let matchCall;
       let i: any = null;
 
       if (idx >= ARRAY_COUNT(sMatchCallHeaders))
@@ -139,7 +139,7 @@ export function MatchCall_IsRematchable_Birch(matchCall: any): any {
 
 /** bool32 MatchCall_HasCheckPage(u32 idx) */
 export function MatchCall_HasCheckPage(idx: any): any {
-  match_call_t matchCall;
+  let matchCall;
       let i: any = null;
 
       if (idx >= ARRAY_COUNT(sMatchCallHeaders))
@@ -183,7 +183,7 @@ export function MatchCall_HasCheckPage_Birch(matchCall: any): any {
 
 /** u32 MatchCall_GetRematchTableIdx(u32 idx) */
 export function MatchCall_GetRematchTableIdx(idx: any): any {
-  match_call_t matchCall;
+  let matchCall;
       let i: any = null;
 
       if (idx >= ARRAY_COUNT(sMatchCallHeaders))
@@ -220,7 +220,7 @@ export function MatchCall_GetRematchTableIdx_Birch(matchCall: any): any {
 
 /** void MatchCall_GetMessage(u32 idx, u8 *dest) */
 export function MatchCall_GetMessage(idx: any, dest: any): any {
-  match_call_t matchCall;
+  let matchCall;
       let i: any = null;
 
       if (idx >= ARRAY_COUNT(sMatchCallHeaders))
@@ -317,7 +317,7 @@ export function MatchCall_BufferCallMessageTextByRematchTeam(textData: any, idx:
 
 /** void MatchCall_GetNameAndDesc(u32 idx, const u8 **desc, const u8 **name) */
 export function MatchCall_GetNameAndDesc(idx: any, desc: any, name: any): any {
-  match_call_t matchCall;
+  let matchCall;
       let i: any = null;
 
       if (idx >= ARRAY_COUNT(sMatchCallHeaders))
@@ -335,7 +335,7 @@ export function MatchCall_GetNameAndDesc_NPC(matchCall: any, desc: any, name: an
 
 /** static void MatchCall_GetNameAndDesc_Trainer(match_call_t matchCall, const u8 **desc, const u8 **name) */
 export function MatchCall_GetNameAndDesc_Trainer(matchCall: any, desc: any, name: any): any {
-  match_call_t _matchCall = matchCall;
+  let _matchCall= matchCall;
       if (_matchCall.trainer.name == NULL)
           MatchCall_GetNameAndDescByRematchIdx(_matchCall.trainer.rematchTableIdx, desc, name);
       else

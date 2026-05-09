@@ -346,7 +346,7 @@ export function DestroySprite(sprite: any): any {
               let i: any = null;
               let tileEnd: any = (sprite.images.size / TILE_SIZE_4BPP) + sprite.oam.tileNum;
               for (i = sprite.oam.tileNum; i < tileEnd; i++)
-                  \;
+                  ;
           }
           ResetSprite(sprite);
       }
@@ -431,8 +431,7 @@ export function AllocSpriteTiles(tileCount: any): any {
       {
            
           for (i = gReservedSpriteTileCount; i < TOTAL_OBJ_TILE_COUNT; i++)
-              \;
-
+              ;
           return 0;
       }
 
@@ -469,8 +468,7 @@ export function AllocSpriteTiles(tileCount: any): any {
       }
 
       for (i = start; i < tileCount + start; i++)
-          \;
-
+          ;
       return start;
 }
 
@@ -1232,8 +1230,7 @@ export function FreeSpriteTilesByTag(tag: any): any {
           count = rangeCounts[index * 2];
 
           for (i = start; i < start + count; i++)
-              \;
-
+              ;
           sSpriteTileRangeTags[index] = TAG_NONE;
       }
 }

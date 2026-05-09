@@ -647,10 +647,10 @@ export function HighlightSelectedMainMenuItem(menuType: any, selectedMenuItem: a
               {
                   case 0:
                   default:
-                      SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN##(0) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN##(0) + MENU_HEIGHT_WIN##(0) + 1) * 8 - MENU_SHADOW_PADDING));
+                      SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN(0) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN(0) + MENU_HEIGHT_WIN(0) + 1) * 8 - MENU_SHADOW_PADDING));
                       break;
                   case 1:
-                      SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN##(1) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN##(1) + MENU_HEIGHT_WIN##(1) + 1) * 8 - MENU_SHADOW_PADDING));
+                      SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN(1) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN(1) + MENU_HEIGHT_WIN(1) + 1) * 8 - MENU_SHADOW_PADDING));
                       break;
               }
               break;
@@ -659,13 +659,13 @@ export function HighlightSelectedMainMenuItem(menuType: any, selectedMenuItem: a
               {
                   case 0:
                   default:
-                      SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN##(2) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN##(2) + MENU_HEIGHT_WIN##(2) + 1) * 8 - MENU_SHADOW_PADDING));
+                      SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN(2) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN(2) + MENU_HEIGHT_WIN(2) + 1) * 8 - MENU_SHADOW_PADDING));
                       break;
                   case 1:
-                      SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN##(3) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN##(3) + MENU_HEIGHT_WIN##(3) + 1) * 8 - MENU_SHADOW_PADDING));
+                      SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN(3) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN(3) + MENU_HEIGHT_WIN(3) + 1) * 8 - MENU_SHADOW_PADDING));
                       break;
                   case 2:
-                      SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN##(4) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN##(4) + MENU_HEIGHT_WIN##(4) + 1) * 8 - MENU_SHADOW_PADDING));
+                      SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN(4) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN(4) + MENU_HEIGHT_WIN(4) + 1) * 8 - MENU_SHADOW_PADDING));
                       break;
               }
               break;
@@ -674,16 +674,16 @@ export function HighlightSelectedMainMenuItem(menuType: any, selectedMenuItem: a
               {
                   case 0:
                   default:
-                      SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN##(2) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN##(2) + MENU_HEIGHT_WIN##(2) + 1) * 8 - MENU_SHADOW_PADDING));
+                      SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN(2) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN(2) + MENU_HEIGHT_WIN(2) + 1) * 8 - MENU_SHADOW_PADDING));
                       break;
                   case 1:
-                      SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN##(3) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN##(3) + MENU_HEIGHT_WIN##(3) + 1) * 8 - MENU_SHADOW_PADDING));
+                      SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN(3) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN(3) + MENU_HEIGHT_WIN(3) + 1) * 8 - MENU_SHADOW_PADDING));
                       break;
                   case 2:
-                      SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN##(4) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN##(4) + MENU_HEIGHT_WIN##(4) + 1) * 8 - MENU_SHADOW_PADDING));
+                      SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN(4) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN(4) + MENU_HEIGHT_WIN(4) + 1) * 8 - MENU_SHADOW_PADDING));
                       break;
                   case 3:
-                      SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN##(5) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN##(5) + MENU_HEIGHT_WIN##(5) + 1) * 8 - MENU_SHADOW_PADDING));
+                      SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN(5) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN(5) + MENU_HEIGHT_WIN(5) + 1) * 8 - MENU_SHADOW_PADDING));
                       break;
               }
               break;
@@ -692,28 +692,28 @@ export function HighlightSelectedMainMenuItem(menuType: any, selectedMenuItem: a
               {
                   case 0:
                   default:
-                      SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN##(2) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN##(2) + MENU_HEIGHT_WIN##(2) + 1) * 8 - MENU_SHADOW_PADDING));
+                      SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN(2) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN(2) + MENU_HEIGHT_WIN(2) + 1) * 8 - MENU_SHADOW_PADDING));
                       break;
                   case 1:
                       if (isScrolled)
-                          SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN##(3) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN##(3) + MENU_HEIGHT_WIN##(3) + 1) * 8 - MENU_SHADOW_PADDING) - MENU_SCROLL_SHIFT);
+                          SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN(3) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN(3) + MENU_HEIGHT_WIN(3) + 1) * 8 - MENU_SHADOW_PADDING) - MENU_SCROLL_SHIFT);
                       else
-                          SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN##(3) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN##(3) + MENU_HEIGHT_WIN##(3) + 1) * 8 - MENU_SHADOW_PADDING));
+                          SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN(3) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN(3) + MENU_HEIGHT_WIN(3) + 1) * 8 - MENU_SHADOW_PADDING));
                       break;
                   case 2:
                       if (isScrolled)
-                          SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN##(4) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN##(4) + MENU_HEIGHT_WIN##(4) + 1) * 8 - MENU_SHADOW_PADDING) - MENU_SCROLL_SHIFT);
+                          SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN(4) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN(4) + MENU_HEIGHT_WIN(4) + 1) * 8 - MENU_SHADOW_PADDING) - MENU_SCROLL_SHIFT);
                       else
-                          SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN##(4) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN##(4) + MENU_HEIGHT_WIN##(4) + 1) * 8 - MENU_SHADOW_PADDING));
+                          SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN(4) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN(4) + MENU_HEIGHT_WIN(4) + 1) * 8 - MENU_SHADOW_PADDING));
                       break;
                   case 3:
                       if (isScrolled)
-                          SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN##(5) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN##(5) + MENU_HEIGHT_WIN##(5) + 1) * 8 - MENU_SHADOW_PADDING) - MENU_SCROLL_SHIFT);
+                          SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN(5) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN(5) + MENU_HEIGHT_WIN(5) + 1) * 8 - MENU_SHADOW_PADDING) - MENU_SCROLL_SHIFT);
                       else
-                          SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN##(5) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN##(5) + MENU_HEIGHT_WIN##(5) + 1) * 8 - MENU_SHADOW_PADDING));
+                          SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN(5) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN(5) + MENU_HEIGHT_WIN(5) + 1) * 8 - MENU_SHADOW_PADDING));
                       break;
                   case 4:
-                      SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN##(6) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN##(6) + MENU_HEIGHT_WIN##(6) + 1) * 8 - MENU_SHADOW_PADDING) - MENU_SCROLL_SHIFT);
+                      SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN(6) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN(6) + MENU_HEIGHT_WIN(6) + 1) * 8 - MENU_SHADOW_PADDING) - MENU_SCROLL_SHIFT);
                       break;
               }
               break;

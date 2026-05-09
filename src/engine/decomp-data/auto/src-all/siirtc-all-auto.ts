@@ -178,9 +178,9 @@ export function SiiRtcGetDateTime(rtc: any): any {
       GPIO_PORT_DIRECTION = DIR_0_OUT | DIR_1_IN | DIR_2_OUT;
 
       for (i = 0; i < DATETIME_BUF_LEN; i++)
-          DATETIME_BUF(rtc, i) = ReadData();
+          /* transpiler bug : DATETIME_BUF(rtc, i) = ReadData(); */
 
-      INFO_BUF(rtc, OFFSET_HOUR) &= 0x7F;
+      /* transpiler bug : INFO_BUF(rtc, OFFSET_HOUR) &= 0x7F; */
 
       GPIO_PORT_DATA = SCK_HI;
       GPIO_PORT_DATA = SCK_HI;
@@ -236,9 +236,9 @@ export function SiiRtcGetTime(rtc: any): any {
       GPIO_PORT_DIRECTION = DIR_0_OUT | DIR_1_IN | DIR_2_OUT;
 
       for (i = 0; i < TIME_BUF_LEN; i++)
-          TIME_BUF(rtc, i) = ReadData();
+          /* transpiler bug : TIME_BUF(rtc, i) = ReadData(); */
 
-      INFO_BUF(rtc, OFFSET_HOUR) &= 0x7F;
+      /* transpiler bug : INFO_BUF(rtc, OFFSET_HOUR) &= 0x7F; */
 
       GPIO_PORT_DATA = SCK_HI;
       GPIO_PORT_DATA = SCK_HI;

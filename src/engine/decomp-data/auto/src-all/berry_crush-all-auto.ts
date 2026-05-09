@@ -49,7 +49,7 @@ export function StartBerryCrush(exitCallback: any): any {
       if (!gReceivedRemoteLinkPlayers || gWirelessCommType == 0)
       {
            
-          \;
+          ;
           return;
       }
 
@@ -58,7 +58,7 @@ export function StartBerryCrush(exitCallback: any): any {
       if (playerCount < 2 || multiplayerId >= playerCount)
       {
            
-          \;
+          ;
           return;
       }
 
@@ -66,7 +66,7 @@ export function StartBerryCrush(exitCallback: any): any {
       if (!sGame)
       {
            
-          \;
+          ;
           return;
       }
 

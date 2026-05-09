@@ -2558,8 +2558,8 @@ export function SwitchInClearSetData(): any {
           MEM_WRITE((i * 8 + gActiveBattler * 2 + (gBattleStruct.lastTakenMoveFrom) + 1), 0);
       }
 
-      ((gBattleStruct.choicedMove[gActiveBattler]) + 0) = MOVE_NONE;
-      ((gBattleStruct.choicedMove[gActiveBattler]) + 1) = MOVE_NONE;
+      /* transpiler bug LHS : ((gBattleStruct.choicedMove[gActiveBattler]) + 0) = MOVE_NONE; */
+      /* transpiler bug LHS : ((gBattleStruct.choicedMove[gActiveBattler]) + 1) = MOVE_NONE; */
 
       gBattleResources.flags.flags[gActiveBattler] = 0;
       gCurrentMove = MOVE_NONE;
@@ -2626,8 +2626,8 @@ export function FaintClearSetData(): any {
       gLastPrintedMoves[gActiveBattler] = MOVE_NONE;
       gLastHitBy[gActiveBattler] = 0xFF;
 
-      ((gBattleStruct.choicedMove[gActiveBattler]) + 0) = MOVE_NONE;
-      ((gBattleStruct.choicedMove[gActiveBattler]) + 1) = MOVE_NONE;
+      /* transpiler bug LHS : ((gBattleStruct.choicedMove[gActiveBattler]) + 0) = MOVE_NONE; */
+      /* transpiler bug LHS : ((gBattleStruct.choicedMove[gActiveBattler]) + 1) = MOVE_NONE; */
 
       MEM_WRITE((gBattleStruct.lastTakenMove + gActiveBattler * 2 + 0), MOVE_NONE);
       MEM_WRITE((gBattleStruct.lastTakenMove + gActiveBattler * 2 + 1), MOVE_NONE);

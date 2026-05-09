@@ -521,7 +521,7 @@ export function CopyCurSecretBaseOwnerName_StrVar1(): any {
 
       secretBaseIdx = VarGet(VAR_CURRENT_SECRET_BASE);
       name = gSaveBlock1Ptr.secretBases[secretBaseIdx].trainerName;
-      StringCopyN(gStringVar1, name, GetNameLength(name)) = EOS;
+      /* transpiler bug : StringCopyN(gStringVar1, name, GetNameLength(name)) = EOS; */
       ConvertInternationalString(gStringVar1, gSaveBlock1Ptr.secretBases[secretBaseIdx].language);
 }
 

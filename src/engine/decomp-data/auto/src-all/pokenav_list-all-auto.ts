@@ -642,7 +642,7 @@ export function PrintMatchCallListTrainerName(state: any, list: any): any {
 
 /** static void PrintMatchCallFieldNames(struct PokenavListSub *list, u32 fieldId) */
 export function PrintMatchCallFieldNames(list: any, fieldId: any): any {
-  const u8 fieldNames[] = [
+  const fieldNames: any[] = [
           gText_PokenavMatchCall_Strategy,
           gText_PokenavMatchCall_TrainerPokemon,
           gText_PokenavMatchCall_SelfIntroduction

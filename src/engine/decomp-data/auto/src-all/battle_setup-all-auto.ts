@@ -580,7 +580,7 @@ export function ChooseStarter(): any {
 export function CB2_GiveStarter(): any {
   let starterMon: any = null;
 
-      GetVarPointer(VAR_STARTER_MON) = gSpecialVar_Result;
+      VarSet(VAR_STARTER_MON, gSpecialVar_Result);
       starterMon = GetStarterPokemon(gSpecialVar_Result);
       ScriptGiveMon(starterMon, 5, ITEM_NONE, 0, 0, 0);
       ResetTasks();
@@ -714,7 +714,7 @@ export function SetU32(ptr: any, value: any): any {
 
 /** static inline void SetPtr(const void *ptr, const void *value) */
 export function SetPtr(ptr: any, value: any): any {
-  (ptr) = value;
+  /* transpiler bug LHS : (ptr) = value; */
 }
 
 /** static void TrainerBattleLoadArgs(const struct TrainerBattleParameter *specs, const u8 *data) */

@@ -158,7 +158,7 @@ export function CB2_ReshowBattleScreenAfterMenu(): any {
 
 /** static void ClearBattleBgCntBaseBlocks(void) */
 export function ClearBattleBgCntBaseBlocks(): any {
-  vBgCnt regBgcnt1, regBgcnt2;
+  let regBgcnt1, regBgcnt2;
 
       regBgcnt1 = (REG_BG1CNT);
       regBgcnt1.charBaseBlock = 0;

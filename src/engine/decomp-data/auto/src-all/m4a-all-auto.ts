@@ -1402,40 +1402,40 @@ export function ply_memacc(mplayInfo: any, track: any): any {
           addr -= mplayInfo.memAccArea[data];
           return;
       case 6:
-          \
+          
           return;
       case 7:
-          \
+          
           return;
       case 8:
-          \
+          
           return;
       case 9:
-          \
+          
           return;
       case 10:
-          \
+          
           return;
       case 11:
-          \
+          
           return;
       case 12:
-          \
+          
           return;
       case 13:
-          \
+          
           return;
       case 14:
-          \
+          
           return;
       case 15:
-          \
+          
           return;
       case 16:
-          \
+          
           return;
       case 17:
-          \
+          
           return;
       default:
           return;
@@ -1444,7 +1444,7 @@ export function ply_memacc(mplayInfo: any, track: any): any {
   // LABEL: cond_true:
       {
            
-          (*&gMPlayJumpTable[1])(mplayInfo, track);
+          (gMPlayJumpTable[1])(mplayInfo, track);
           return;
       }
 

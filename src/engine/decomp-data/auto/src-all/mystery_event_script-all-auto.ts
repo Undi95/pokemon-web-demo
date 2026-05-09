@@ -87,7 +87,7 @@ export function SetMysteryEventScriptStatus(status: any): any {
 
 /** static int CalcRecordMixingGiftChecksum(void) */
 export function CalcRecordMixingGiftChecksum(): any {
-  unsigned int i;
+  let i;
       let sum: any = 0;
       let data: any = (gSaveBlock1Ptr.recordMixingGift.data);
 

@@ -149,7 +149,7 @@ export function SetSpecialMapHasMon(mapGroup: any, mapNum: any): any {
 
       if (sPokedexAreaScreen.numSpecialAreas < MAX_AREA_MARKERS)
       {
-          mapsec_u16_t regionMapSectionId = GetRegionMapSectionId(mapGroup, mapNum);
+          let regionMapSectionId= GetRegionMapSectionId(mapGroup, mapNum);
           if (regionMapSectionId < MAPSEC_NONE)
           {
                
@@ -508,7 +508,7 @@ export function CreateAreaMarkerSprites(): any {
       let x: any = null;
       let y: any = null;
       let i: any = null;
-      static mapsec_s16_t mapSecId;
+      let mapSecId;
       let numSprites: any = null;
 
       LoadSpriteSheet(sAreaMarkerSpriteSheet);

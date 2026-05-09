@@ -329,7 +329,7 @@ export function FreePartyPointers(): any {
 export function InitPartyMenuBoxes(layout: any): any {
   let i: any = null;
 
-      sPartyMenuBoxes = Alloc(sizeof(struct PartyMenuBox[PARTY_SIZE]));
+      sPartyMenuBoxes = Alloc(0);
 
       for (i = 0; i < PARTY_SIZE; i++)
       {
@@ -2474,7 +2474,7 @@ export function SwitchMenuBoxSprites(spriteIdPtr1: any, spriteIdPtr2: any): any 
 
 /** static void SwitchPartyMon(void) */
 export function SwitchPartyMon(): any {
-  struct PartyMenuBox menuBoxes[2];
+  let menuBoxes: any[] = [];
       let mon1, mon2;
       let monBuffer: any = null;
 

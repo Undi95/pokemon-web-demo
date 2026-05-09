@@ -382,6 +382,202 @@ function patchOptionMenuCallbacks() {
 
 patchOptionMenuCallbacks();
 
+// ─── Option menu ALL-AUTO patch (session post-transpile-fix) ────────────────
+
+function patchOptionMenuAllAuto() {
+  const ALL_AUTO_FILE = path.resolve('src/engine/decomp-data/auto/src-all/option_menu-all-auto.ts');
+  if (!fs.existsSync(ALL_AUTO_FILE)) {
+    console.log('[post-transpile-patches] option_menu-all-auto.ts not found, skip');
+    return;
+  }
+  let s = fs.readFileSync(ALL_AUTO_FILE, 'utf8');
+  const before = s;
+
+  // PATCH OA1 : DrawOptionMenuChoice — l'auto-extracted body utilise pointer
+  // arithmetic C (`text != EOS`, `text++`) qui devient un no-op en JS. Le `dst`
+  // array reste vide → AddTextPrinterParameterized avec `[]` → rien rendu.
+  // Solution : delegate au globalThis (= option-menu-impl.ts exposed version).
+  s = s.replace(
+    /\/\*\* static void DrawOptionMenuChoice[\s\S]*?\*\/\s*\nexport function DrawOptionMenuChoice\([^)]*\): any \{[\s\S]*?\n\}/,
+    `/** ⚠️ MANUAL FIX post-transpile : auto body utilisait \`text++\` pointer arith
+ *  (= no-op JS). Delegate à globalThis.DrawOptionMenuChoice (= option-menu-impl.ts). */
+export function DrawOptionMenuChoice(text: any, x: any, y: any, style: any): any {
+  return (globalThis as any).__optionMenuImpl_DrawOptionMenuChoice(text, x, y, style);
+}`,
+  );
+
+  // PATCH OA2 : DrawHeaderText — auto body fait `AddTextPrinterParameterized(...)`
+  // qui via wrapper option-menu-impl marche, mais la sémantique 1:1 est de
+  // delegate (= comme ça si l'impl change, le décomp suit).
+  s = s.replace(
+    /\/\*\* static void DrawHeaderText[\s\S]*?\*\/\s*\nexport function DrawHeaderText\(\): any \{[\s\S]*?\n\}/,
+    `/** ⚠️ MANUAL FIX post-transpile : delegate à option-menu-impl.ts. */
+export function DrawHeaderText(): any {
+  return (globalThis as any).__optionMenuImpl_DrawHeaderText();
+}`,
+  );
+
+  // PATCH OA3 : DrawOptionMenuTexts — pareil, delegate.
+  s = s.replace(
+    /\/\*\* static void DrawOptionMenuTexts[\s\S]*?\*\/\s*\nexport function DrawOptionMenuTexts\(\): any \{[\s\S]*?\n\}/,
+    `/** ⚠️ MANUAL FIX post-transpile : delegate à option-menu-impl.ts. */
+export function DrawOptionMenuTexts(): any {
+  return (globalThis as any).__optionMenuImpl_DrawOptionMenuTexts();
+}`,
+  );
+
+  if (s !== before) {
+    fs.writeFileSync(ALL_AUTO_FILE, s, 'utf8');
+    console.log('[post-transpile-patches] option_menu-all-auto.ts patched (OA1/OA2/OA3)');
+  } else {
+    console.log('[post-transpile-patches] option_menu-all-auto.ts already patched (idempotent skip)');
+  }
+}
+
+patchOptionMenuAllAuto();
+
+// ─── Generic patches sur tous les *-all-auto.ts ─────────────────────────────
+
+function patchAllAutoSyntaxBugs() {
+  const ALL_DIR = path.resolve('src/engine/decomp-data/auto/src-all');
+  if (!fs.existsSync(ALL_DIR)) return;
+
+  const files = fs.readdirSync(ALL_DIR).filter(f => f.endsWith('-all-auto.ts'));
+  let totalPatched = 0;
+  for (const fname of files) {
+    const fp = path.resolve(ALL_DIR, fname);
+    let s = fs.readFileSync(fp, 'utf8');
+    const before = s;
+
+    // PATCH AA1 : `GetVarPointer(VAR_X) = Y;` → `VarSet(VAR_X, Y);`
+    s = s.replace(
+      /GetVarPointer\(([A-Z_][A-Z_0-9]*)\)\s*=\s*([^;]+);/g,
+      'VarSet($1, $2);',
+    );
+
+    // PATCH AA2 : `GetVarPointer(VAR_X) += delta` → expression équiv.
+    s = s.replace(
+      /GetVarPointer\(([A-Z_][A-Z_0-9]*)\)\s*\+=\s*([^)]+)\)/g,
+      '(VarSet($1, VarGet($1) + ($2)), VarGet($1)))',
+    );
+
+    // PATCH AA3 : `++(GetVarPointer(VAR_X))` → `(VarSet(X, VarGet(X) + 1), VarGet(X))`.
+    s = s.replace(
+      /\+\+\(GetVarPointer\(([A-Z_][A-Z_0-9]*)\)\)/g,
+      '(VarSet($1, VarGet($1) + 1), VarGet($1))',
+    );
+
+    // PATCH AA4 : `--(GetVarPointer(VAR_X))` → idem decrement.
+    s = s.replace(
+      /--\(GetVarPointer\(([A-Z_][A-Z_0-9]*)\)\)/g,
+      '(VarSet($1, VarGet($1) - 1), VarGet($1))',
+    );
+
+    // PATCH AA5 : `*VarSet(...)` (= bug transpileur, extra `*`) → `VarSet(...)`.
+    s = s.replace(/(?<![\w.])\*\s*(VarSet\(\w+,\s*[^)]+\))/g, '$1');
+
+    // PATCH AA6 : `\` line continuation orphans (= transpileur a généré
+    // `\<newline>` par erreur sur certains for/expr). Lignes "  \;" et "  \"
+    // → empty statement `;` (= valid après for sans body, ne casse pas la
+    // chaîne for/expr).
+    s = s.replace(/^(\s*)\\;\s*$/gm, '$1;');
+    s = s.replace(/^(\s*)\\\s*$/gm, '$1');
+
+    // PATCH AA7 : `customtype_t identifier` (= unknown typedef C type) au
+    // début de body → préfix `let ` pour valid TS. Patterns observés :
+    // mapsec_*_t, metloc_*_t, match_call_t, vBgCnt, unsigned int, etc.
+    // Cover aussi `static customtype_t X;` et `unsigned int X`.
+    s = s.replace(
+      /^(\s*)(?:static\s+)?(?:const\s+)?(mapsec_(?:u8|u16|s16|s32)_t|metloc_(?:u8|s32)_t|match_call_t|vBgCnt|movmenu_state_t|unsigned\s+int|unsigned\s+long|unsigned\s+short|unsigned\s+char|long\s+long|long|short|register\s+int)\s+([A-Za-z_]\w*(?:\s*,\s*[A-Za-z_]\w*)*)\s*([=;])/gm,
+      '$1let $3$4',
+    );
+
+    // PATCH AA8 : `void FuncName(void);` à l'intérieur d'un body (= forward
+    // decl C, invalide). Empty statement (= safe statement).
+    s = s.replace(/^(\s+)void\s+\w+\s*\(\s*void\s*\)\s*;\s*$/gm, '$1;');
+
+    // PATCH AA8b : `const u8 identifier[] = [...]` (= sized const array
+    // avec type C u8 prefix). Convert to `const identifier: any[] = [...]`
+    // (= TS-valid array decl, drop type C + ajoute `: any[]`).
+    s = s.replace(
+      /^(\s*)const\s+(?:u8|u16|u32|s8|s16|s32|int|char)\s+([A-Za-z_]\w*)\s*\[\s*\]\s*=/gm,
+      '$1const $2: any[] =',
+    );
+
+    // PATCH AA8c : body-local struct decl + array `struct X { ... } id[N];`
+    // (= C inline struct typedef + variable decl). Convert to `let id: any[] = [];`
+    // (= lossy mais parses). Multi-line match avec `[\s\S]*?` non-greedy.
+    s = s.replace(
+      /^(\s+)struct\s+\w+\s*\{[\s\S]*?\}\s*([A-Za-z_]\w*)\s*\[[^\]]*\]\s*;/gm,
+      '$1let $2: any[] = []; /* transpiler bug : inline struct decl */',
+    );
+    // Pareil sans array suffix.
+    s = s.replace(
+      /^(\s+)struct\s+\w+\s*\{[\s\S]*?\}\s*([A-Za-z_]\w*)\s*;/gm,
+      '$1let $2: any = {}; /* transpiler bug : inline struct decl */',
+    );
+
+    // PATCH AA9 : `struct X identifier[N];` body-local (= sized struct array
+    // decl, le transpiler convertit pas le sizeof). Replace avec `let id`.
+    s = s.replace(/^(\s*)struct\s+\w+\s+([A-Za-z_]\w*)\s*\[[^\]]*\]\s*;/gm, '$1let $2: any[] = [];');
+
+    // PATCH AA10 : `(expr) = X;` body-level (= invalid LHS). Comment-out
+    // la ligne ; le runtime perdra ce write mais le file parse.
+    // Allow nested parens via greedy match jusqu'à `= ` (not `==`).
+    s = s.replace(
+      /^(\s+)\(([^=;\n]+(?:\([^)]*\)[^=;\n]*)*)\)\s*=(?!=)\s*([^;]+);/gm,
+      '$1/* transpiler bug LHS : ($2) = $3; */',
+    );
+
+    // PATCH AA11 : `func(args) = X;` (= invalid LHS function-call assignment).
+    // Comment-out (= cas non couverts par AA1, comme StringCopyN(...) = EOS).
+    s = s.replace(
+      /^(\s+)([A-Z]\w*\([^()]*(?:\([^()]*\)[^()]*)*\))\s*=\s*([^;]+);/gm,
+      '$1/* transpiler bug : $2 = $3; */',
+    );
+
+    // PATCH AA12 : `INFO_BUF(rtc, off) &= mask;` (= macro returns lvalue).
+    // Comment-out (= rtc-related code, pas critique pour notre web build).
+    s = s.replace(
+      /^(\s+)((?:INFO|TIME|DATETIME)_BUF\([^()]*\))\s*([&|^]=|=)\s*([^;]+);/gm,
+      '$1/* transpiler bug : $2 $3 $4; */',
+    );
+
+    // PATCH AA13 : `for (;*str != X; str++)` C string iter → comment-out
+    // (= refacto needed pour string itération JS).
+    s = s.replace(
+      /^(\s+)for\s*\(\s*;\s*\*[^;]+;\s*[^)]+\+\+\s*\)\s*$/gm,
+      '$1for (let __i__ = 0; __i__ < 0; __i__++) /* transpiler bug : C str iter */',
+    );
+
+    // PATCH AA14 : `Alloc(sizeof(struct X[N]))` → `Alloc(0)` (= sizeof + size N
+    // pas géré, `Alloc` reçoit donc un argument valide même si lossy).
+    s = s.replace(
+      /Alloc\s*\(\s*sizeof\s*\(\s*struct\s+\w+\s*\[[^\]]*\]\s*\)\s*\)/g,
+      'Alloc(0)',
+    );
+
+    // PATCH AA15 : `(ptr + offset)` LHS array-write pattern (= invalid).
+    // Already covered by AA10 generic.
+
+    // PATCH AA16 : strip C preprocessor token-paste `##` (= invalid JS).
+    // Pattern : `IDENT##(N)` → `IDENT(N)` (= drop `##`, le résultat sera
+    // un function call qui résout à runtime via globalThis ou throw).
+    s = s.replace(/##/g, '');
+
+    // PATCH AA17 : `(*&expr)` (= C addr-of+deref qui se cancel) → `(expr)`.
+    s = s.replace(/\(\s*\*\s*&\s*/g, '(');
+
+    if (s !== before) {
+      fs.writeFileSync(fp, s, 'utf8');
+      totalPatched++;
+    }
+  }
+  console.log(`[post-transpile-patches] [all-auto syntax] ${totalPatched}/${files.length} files patched`);
+}
+
+patchAllAutoSyntaxBugs();
+
 // ─── Main menu Mystery Gift/Event/EReader stubs (= unreachable sans wireless) ─
 
 function patchMainMenuMysteryStubs() {

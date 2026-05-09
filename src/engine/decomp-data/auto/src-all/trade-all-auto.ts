@@ -4147,7 +4147,7 @@ export function CreateInGameTradePokemonInternal(whichPlayerMon: any, whichInGam
       let level: any = GetMonData(gPlayerParty[whichPlayerMon], MON_DATA_LEVEL);
 
       let mail: any = null;
-      metloc_u8_t metLocation = METLOC_IN_GAME_TRADE;
+      let metLocation= METLOC_IN_GAME_TRADE;
       let mailNum: any = null;
       let pokemon: any =gEnemyParty[0];
 

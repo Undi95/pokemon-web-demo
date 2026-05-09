@@ -575,7 +575,7 @@ export function ReceiveDaycareMailData(records: any, recordSize: any, multiplaye
       let ptr: any = null;
       const unusedArr1: any[] = [];
       const unusedArr2: any[] = [];
-      struct RecordMixingDaycareMail unusedMixMail[MAX_LINK_PLAYERS];
+      let unusedMixMail: any[] = [];
       const canHoldItem: any[] = [];
       const idxs: any[] = [];
       let numDaycareCanHold: any = null;

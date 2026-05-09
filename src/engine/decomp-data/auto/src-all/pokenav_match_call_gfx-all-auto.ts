@@ -746,7 +746,7 @@ export function PrintMatchCallLocation(gfx: any, delta: any): any {
   const mapName: any[] = [];
       let x: any = null;
       let index: any = PokenavList_GetSelectedIndex() + delta;
-      mapsec_s32_t mapSec = GetMatchCallMapSec(index);
+      let mapSec= GetMatchCallMapSec(index);
       if (mapSec != MAPSEC_NONE)
           GetMapName(mapName, mapSec, 0);
       else

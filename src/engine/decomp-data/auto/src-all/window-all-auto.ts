@@ -444,14 +444,14 @@ export function ScrollWindow(windowId: any, direction: any, distance: any, fillV
           for (i = 0; i < size; i += 32)
           {
               distanceLoop = distance;
-              \
-              \
-              \
-              \
-              \
-              \
-              \
-              \
+              
+              
+              
+              
+              
+              
+              
+              
           }
           break;
       case 1:
@@ -459,14 +459,14 @@ export function ScrollWindow(windowId: any, direction: any, distance: any, fillV
           for (i = 0; i < size; i += 32)
           {
               distanceLoop = distance;
-              \
-              \
-              \
-              \
-              \
-              \
-              \
-              \
+              
+              
+              
+              
+              
+              
+              
+              
           }
           break;
       case 2:

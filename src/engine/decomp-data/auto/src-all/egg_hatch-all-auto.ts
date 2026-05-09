@@ -68,7 +68,7 @@ export function AddHatchedMonToParty(id: any): any {
       const name: any[] = [];
       let ball: any = null;
       let metLevel: any = null;
-      metloc_u8_t metLocation;
+      let metLocation;
       let mon: any =gPlayerParty[id];
 
       CreateHatchedMon(mon,gEnemyParty[0]);

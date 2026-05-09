@@ -153,7 +153,7 @@ export function UpdateCyclingRoadState(): any {
 /** void SetSSTidalFlag(void) */
 export function SetSSTidalFlag(): any {
   FlagSet(FLAG_SYS_CRUISE_MODE);
-      GetVarPointer(VAR_CRUISE_STEP_COUNT) = 0;
+      VarSet(VAR_CRUISE_STEP_COUNT, 0);
 }
 
 /** void ResetSSTidalFlag(void) */
@@ -163,7 +163,7 @@ export function ResetSSTidalFlag(): any {
 
 /** bool32 CountSSTidalStep(u16 delta) */
 export function CountSSTidalStep(delta: any): any {
-  if (!FlagGet(FLAG_SYS_CRUISE_MODE) || (GetVarPointer(VAR_CRUISE_STEP_COUNT) += delta) < SS_TIDAL_MAX_STEPS)
+  if (!FlagGet(FLAG_SYS_CRUISE_MODE) || ((VarSet(VAR_CRUISE_STEP_COUNT, VarGet(VAR_CRUISE_STEP_COUNT) + (delta)), VarGet(VAR_CRUISE_STEP_COUNT))) < SS_TIDAL_MAX_STEPS)
           return FALSE;
 
       return TRUE;
@@ -236,7 +236,7 @@ export function ShouldDoWallyCall(): any {
           case MAP_TYPE_CITY:
           case MAP_TYPE_ROUTE:
           case MAP_TYPE_OCEAN_ROUTE:
-              if (++(GetVarPointer(VAR_WALLY_CALL_STEP_COUNTER)) < 250)
+              if ((VarSet(VAR_WALLY_CALL_STEP_COUNTER, VarGet(VAR_WALLY_CALL_STEP_COUNTER) + 1), VarGet(VAR_WALLY_CALL_STEP_COUNTER)) < 250)
                   return FALSE;
               break;
           default:
@@ -261,7 +261,7 @@ export function ShouldDoScottFortreeCall(): any {
           case MAP_TYPE_CITY:
           case MAP_TYPE_ROUTE:
           case MAP_TYPE_OCEAN_ROUTE:
-              if (++(GetVarPointer(VAR_SCOTT_FORTREE_CALL_STEP_COUNTER)) < 10)
+              if ((VarSet(VAR_SCOTT_FORTREE_CALL_STEP_COUNTER, VarGet(VAR_SCOTT_FORTREE_CALL_STEP_COUNTER) + 1), VarGet(VAR_SCOTT_FORTREE_CALL_STEP_COUNTER)) < 10)
                   return FALSE;
               break;
           default:
@@ -286,7 +286,7 @@ export function ShouldDoScottBattleFrontierCall(): any {
           case MAP_TYPE_CITY:
           case MAP_TYPE_ROUTE:
           case MAP_TYPE_OCEAN_ROUTE:
-              if (++(GetVarPointer(VAR_SCOTT_BF_CALL_STEP_COUNTER)) < 10)
+              if ((VarSet(VAR_SCOTT_BF_CALL_STEP_COUNTER, VarGet(VAR_SCOTT_BF_CALL_STEP_COUNTER) + 1), VarGet(VAR_SCOTT_BF_CALL_STEP_COUNTER)) < 10)
                   return FALSE;
               break;
           default:
@@ -311,7 +311,7 @@ export function ShouldDoRoxanneCall(): any {
           case MAP_TYPE_CITY:
           case MAP_TYPE_ROUTE:
           case MAP_TYPE_OCEAN_ROUTE:
-              if (++(GetVarPointer(VAR_ROXANNE_CALL_STEP_COUNTER)) < 250)
+              if ((VarSet(VAR_ROXANNE_CALL_STEP_COUNTER, VarGet(VAR_ROXANNE_CALL_STEP_COUNTER) + 1), VarGet(VAR_ROXANNE_CALL_STEP_COUNTER)) < 250)
                   return FALSE;
               break;
           default:
@@ -336,7 +336,7 @@ export function ShouldDoRivalRayquazaCall(): any {
           case MAP_TYPE_CITY:
           case MAP_TYPE_ROUTE:
           case MAP_TYPE_OCEAN_ROUTE:
-              if (++(GetVarPointer(VAR_RIVAL_RAYQUAZA_CALL_STEP_COUNTER)) < 250)
+              if ((VarSet(VAR_RIVAL_RAYQUAZA_CALL_STEP_COUNTER, VarGet(VAR_RIVAL_RAYQUAZA_CALL_STEP_COUNTER) + 1), VarGet(VAR_RIVAL_RAYQUAZA_CALL_STEP_COUNTER)) < 250)
                   return FALSE;
               break;
           default:
@@ -1485,8 +1485,8 @@ export function IsBadEggInParty(): any {
 export function InMultiPartnerRoom(): any {
   if (gSaveBlock1Ptr.location.mapGroup == MAP_GROUP(MAP_BATTLE_FRONTIER_BATTLE_TOWER_MULTI_PARTNER_ROOM)
           && gSaveBlock1Ptr.location.mapNum == MAP_NUM(MAP_BATTLE_FRONTIER_BATTLE_TOWER_MULTI_PARTNER_ROOM) &&
-          VarGet(VAR_FRONTIER_BATTLE_MODE) == FRONTIER_MODE_MULTIS)
-          return TRUE;
+          /* transpiler bug : VarGet(VAR_FRONTIER_BATTLE_MODE) = = FRONTIER_MODE_MULTIS)
+          return TRUE; */
       return FALSE;
 }
 

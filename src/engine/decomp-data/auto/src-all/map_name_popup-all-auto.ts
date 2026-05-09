@@ -178,7 +178,7 @@ export function DrawMapNamePopUpFrame(bg: any, x: any, y: any, deltaX: any, delt
 export function LoadMapNamePopUpWindowBg(): any {
   let popUpThemeId: any = null;
       let popupWindowId: any = GetMapNamePopUpWindowId();
-      mapsec_u16_t regionMapSectionId = gMapHeader.regionMapSectionId;
+      let regionMapSectionId= gMapHeader.regionMapSectionId;
 
       if (regionMapSectionId >= KANTO_MAPSEC_START)
       {

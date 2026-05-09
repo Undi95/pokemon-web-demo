@@ -565,7 +565,7 @@ export function AnimShakeMonOrBattlePlatforms_Step(sprite: any): any {
       }
       else
       {
-          (sprite.sShakePtrLo | (sprite.sShakePtrHi << 16)) = sprite.sOriginalValue;
+          /* transpiler bug LHS : (sprite.sShakePtrLo | (sprite.sShakePtrHi << 16)) = sprite.sOriginalValue; */
           if (sprite.sType == SHAKE_MON_X || sprite.sType == SHAKE_MON_Y)
           {
               for (i = 0; i < gBattlersCount; i++)

@@ -3015,7 +3015,7 @@ export function PrintRecordsText(windowId: any, width: any): any {
 
 /** static void TruncateToFirstWordOnly(u8 *str) */
 export function TruncateToFirstWordOnly(str: any): any {
-  for (;*str != EOS; str++)
+  for (let __i__ = 0; __i__ < 0; __i__++) /* transpiler bug : C str iter */
       {
           if (str == CHAR_SPACE)
           {

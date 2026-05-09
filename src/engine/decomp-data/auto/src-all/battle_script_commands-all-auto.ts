@@ -564,9 +564,9 @@ export function CheckWonderGuardAndLevitate(): any {
               }
               if (TYPE_EFFECT_DEF_TYPE(i) == gBattleMons[gBattlerTarget].types[1] &&
                   gBattleMons[gBattlerTarget].types[0] != gBattleMons[gBattlerTarget].types[1] &&
-                  TYPE_EFFECT_MULTIPLIER(i) == TYPE_MUL_NO_EFFECT)
+                  /* transpiler bug : TYPE_EFFECT_MULTIPLIER(i) = = TYPE_MUL_NO_EFFECT)
               {
-                  gMoveResultFlags |= MOVE_RESULT_DOESNT_AFFECT_FOE;
+                  gMoveResultFlags |= MOVE_RESULT_DOESNT_AFFECT_FOE; */
                   gProtectStructs[gBattlerAttacker].targetNotAffected = 1;
               }
 
@@ -1877,8 +1877,8 @@ export function SetMoveEffect(primary: any, certain: any): any {
                           BattleScriptPush(gBattlescriptCurrInstr + 1);
                           gBattlescriptCurrInstr = BattleScript_ItemSteal;
 
-                          ((gBattleStruct.choicedMove[gBattlerTarget]) + 0) = 0;
-                          ((gBattleStruct.choicedMove[gBattlerTarget]) + 1) = 0;
+                          /* transpiler bug LHS : ((gBattleStruct.choicedMove[gBattlerTarget]) + 0) = 0; */
+                          /* transpiler bug LHS : ((gBattleStruct.choicedMove[gBattlerTarget]) + 1) = 0; */
                       }
                   }
                   break;
@@ -1966,8 +1966,8 @@ export function SetMoveEffect(primary: any, certain: any): any {
                       BattleScriptPush(gBattlescriptCurrInstr + 1);
                       gBattlescriptCurrInstr = BattleScript_KnockedOff;
 
-                      ((gBattleStruct.choicedMove[gEffectBattler]) + 0) = 0;
-                      ((gBattleStruct.choicedMove[gEffectBattler]) + 1) = 0;
+                      /* transpiler bug LHS : ((gBattleStruct.choicedMove[gEffectBattler]) + 0) = 0; */
+                      /* transpiler bug LHS : ((gBattleStruct.choicedMove[gEffectBattler]) + 1) = 0; */
                   }
                   else
                   {
@@ -8236,11 +8236,11 @@ export function Cmd_tryswapitems(): any {
               BtlController_EmitSetMonData(B_COMM_TO_CONTROLLER, REQUEST_HELDITEM_BATTLE, 0, sizeof(gBattleMons[gBattlerTarget].item),gBattleMons[gBattlerTarget].item);
               MarkBattlerForControllerExec(gBattlerTarget);
 
-              ((gBattleStruct.choicedMove[gBattlerTarget]) + 0) = 0;
-              ((gBattleStruct.choicedMove[gBattlerTarget]) + 1) = 0;
+              /* transpiler bug LHS : ((gBattleStruct.choicedMove[gBattlerTarget]) + 0) = 0; */
+              /* transpiler bug LHS : ((gBattleStruct.choicedMove[gBattlerTarget]) + 1) = 0; */
 
-              ((gBattleStruct.choicedMove[gBattlerAttacker]) + 0) = 0;
-              ((gBattleStruct.choicedMove[gBattlerAttacker]) + 1) = 0;
+              /* transpiler bug LHS : ((gBattleStruct.choicedMove[gBattlerAttacker]) + 0) = 0; */
+              /* transpiler bug LHS : ((gBattleStruct.choicedMove[gBattlerAttacker]) + 1) = 0; */
 
               gBattlescriptCurrInstr += 5;
 

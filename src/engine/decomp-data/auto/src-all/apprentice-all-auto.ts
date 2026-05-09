@@ -397,7 +397,7 @@ export function GetDefaultMove(monId: any, speciesArrayId: any, moveSlot: any): 
 
 /** static void SaveApprenticeParty(u8 numQuestions) */
 export function SaveApprenticeParty(numQuestions: any): any {
-  struct ApprenticeMon apprenticeMons[MULTI_PARTY_SIZE];
+  let apprenticeMons: any[] = [];
       let i, j;
       let speciesTableId: any = null;
 

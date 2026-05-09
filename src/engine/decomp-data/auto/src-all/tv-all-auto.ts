@@ -2526,8 +2526,7 @@ export function TryPutNameRaterShowOnTheAir(): any {
 
 /** void ChangePokemonNickname(void) */
 export function ChangePokemonNickname(): any {
-  void ChangePokemonNickname_CB(void);
-
+  ;
       GetMonData(gPlayerParty[gSpecialVar_0x8004], MON_DATA_NICKNAME, gStringVar3);
       GetMonData(gPlayerParty[gSpecialVar_0x8004], MON_DATA_NICKNAME, gStringVar2);
       DoNamingScreen(NAMING_SCREEN_NICKNAME, gStringVar2, GetMonData(gPlayerParty[gSpecialVar_0x8004], MON_DATA_SPECIES, NULL), GetMonGender(gPlayerParty[gSpecialVar_0x8004]), GetMonData(gPlayerParty[gSpecialVar_0x8004], MON_DATA_PERSONALITY, NULL), ChangePokemonNickname_CB);

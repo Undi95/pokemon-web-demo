@@ -301,19 +301,19 @@ export function LoadContestPaintingFrame(contestWinnerId: any, isForArtist: any)
           for (y = 0; y < 20; y++)
           {
               for (x = 0; x < 32; x++)
-                  VRAM_PICTURE_DATA(x, y) = 0x1015;
+                  /* transpiler bug : VRAM_PICTURE_DATA(x, y) = 0x1015; */
           }
 
            
           for (y = 0; y < 10; y++)
           {
               for (x = 0; x < 18; x++)
-                  VRAM_PICTURE_DATA(x + 6, y + 2) = gContestMonPixels[y + 2][x + 6];
+                  /* transpiler bug : VRAM_PICTURE_DATA(x + 6, y + 2) = gContestMonPixels[y + 2][x + 6]; */
           }
 
            
           for (x = 0; x < 16; x++)
-              VRAM_PICTURE_DATA(x + 7, 2) = gContestMonPixels[2][7];
+              /* transpiler bug : VRAM_PICTURE_DATA(x + 7, 2) = gContestMonPixels[2][7]; */
       }
       else if (contestWinnerId < MUSEUM_CONTEST_WINNERS_START)
       {

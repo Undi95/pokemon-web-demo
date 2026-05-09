@@ -696,7 +696,7 @@ export function CreateEgg(mon: any, species: any, setHotSpringsLocation: any): a
   let metLevel: any = null;
       let ball: any = null;
       let language: any = null;
-      metloc_u8_t metLocation;
+      let metLocation;
       let isEgg: any = null;
 
       CreateMon(mon, species, EGG_HATCH_LEVEL, USE_RANDOM_IVS, FALSE, 0, OT_ID_PLAYER_ID, 0);

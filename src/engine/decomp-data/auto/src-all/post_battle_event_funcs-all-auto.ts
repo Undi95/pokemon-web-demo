@@ -19,10 +19,7 @@
 export function GameClear(): any {
   let i: any = null;
       let ribbonGet: any = null;
-      struct RibbonCounter {
-          let partyIndex: any = null;
-          let count: any = null;
-      } ribbonCounts[6];
+      let ribbonCounts: any[] = []; /* transpiler bug : inline struct decl */
 
       HealPlayerParty();
 

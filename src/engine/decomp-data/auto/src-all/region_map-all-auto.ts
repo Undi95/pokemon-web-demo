@@ -200,7 +200,7 @@ export function ProcessRegionMapInput_Full(): any {
 
 /** static u8 MoveRegionMapCursor_Full(void) */
 export function MoveRegionMapCursor_Full(): any {
-  mapsec_u16_t mapSecId;
+  let mapSecId;
 
       if (sRegionMap.cursorMovementFrameCounter != 0)
           return MAP_INPUT_MOVE_CONT;
@@ -281,7 +281,7 @@ export function ProcessRegionMapInput_Zoomed(): any {
 export function MoveRegionMapCursor_Zoomed(): any {
   let x: any = null;
       let y: any = null;
-      mapsec_u16_t mapSecId;
+      let mapSecId;
 
       sRegionMap.scrollY += sRegionMap.zoomedCursorDeltaY;
       sRegionMap.scrollX += sRegionMap.zoomedCursorDeltaX;
@@ -1209,7 +1209,7 @@ export function LoadFlyDestIcons(): any {
 /** static void CreateFlyDestIcons(void) */
 export function CreateFlyDestIcons(): any {
   let canFlyFlag: any = null;
-      mapsec_u16_t mapSecId;
+      let mapSecId;
       let x: any = null;
       let y: any = null;
       let width: any = null;
@@ -1255,7 +1255,7 @@ export function TryCreateRedOutlineFlyDestIcons(): any {
       let y: any = null;
       let width: any = null;
       let height: any = null;
-      mapsec_u16_t mapSecId;
+      let mapSecId;
       let spriteId: any = null;
 
       for (i = 0; sRedOutlineFlyDestinations[i][1] != MAPSEC_NONE; i++)

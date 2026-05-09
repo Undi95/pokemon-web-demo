@@ -1529,7 +1529,7 @@ export function ConvertLinkPlayerName(player: any): any {
 export function DisableSerial(): any {
   DisableInterrupts(INTR_FLAG_TIMER3 | INTR_FLAG_SERIAL);
       REG_SIOCNT = SIO_MULTI_MODE;
-      REG_TMCNT_H(3) = 0;
+      /* transpiler bug : REG_TMCNT_H(3) = 0; */
       REG_IF = INTR_FLAG_TIMER3 | INTR_FLAG_SERIAL;
       REG_SIOMLT_SEND = 0;
       REG_SIOMLT_RECV = 0;

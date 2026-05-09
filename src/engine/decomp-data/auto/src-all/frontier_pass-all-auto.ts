@@ -57,7 +57,7 @@ export function LeaveFrontierPass(): any {
 
 /** static u32 AllocateFrontierPassData(MainCallback callback) */
 export function AllocateFrontierPassData(callback: any): any {
-  mapsec_u8_t i;
+  let i;
 
       if (sPassData != NULL)
           return ERR_ALREADY_DONE;

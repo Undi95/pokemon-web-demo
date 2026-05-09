@@ -3197,19 +3197,19 @@ export function ItemBattleEffects(caseID: any, battlerId: any, moveTurn: any): a
                   }
                   break;
               case HOLD_EFFECT_CONFUSE_SPICY:
-                  \;
+                  ;
                   break;
               case HOLD_EFFECT_CONFUSE_DRY:
-                  \;
+                  ;
                   break;
               case HOLD_EFFECT_CONFUSE_SWEET:
-                  \;
+                  ;
                   break;
               case HOLD_EFFECT_CONFUSE_BITTER:
-                  \;
+                  ;
                   break;
               case HOLD_EFFECT_CONFUSE_SOUR:
-                  \;
+                  ;
                   break;
               case HOLD_EFFECT_ATTACK_UP:
                   if (gBattleMons[battlerId].hp <= gBattleMons[battlerId].maxHP / battlerHoldEffectParam
@@ -3226,16 +3226,16 @@ export function ItemBattleEffects(caseID: any, battlerId: any, moveTurn: any): a
                   }
                   break;
               case HOLD_EFFECT_DEFENSE_UP:
-                  \;
+                  ;
                   break;
               case HOLD_EFFECT_SPEED_UP:
-                  \;
+                  ;
                   break;
               case HOLD_EFFECT_SP_ATTACK_UP:
-                  \;
+                  ;
                   break;
               case HOLD_EFFECT_SP_DEFENSE_UP:
-                  \;
+                  ;
                   break;
               case HOLD_EFFECT_CRITICAL_UP:
                   if (gBattleMons[battlerId].hp <= gBattleMons[battlerId].maxHP / battlerHoldEffectParam && !moveTurn

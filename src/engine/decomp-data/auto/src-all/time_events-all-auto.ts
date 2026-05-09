@@ -112,7 +112,7 @@ export function WaitWeather(): any {
 
 /** void InitBirchState(void) */
 export function InitBirchState(): any {
-  *GetVarPointer(VAR_BIRCH_STATE) = 0;
+  VarSet(VAR_BIRCH_STATE, 0);
 }
 
 /** void UpdateBirchState(u16 days) */

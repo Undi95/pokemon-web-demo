@@ -258,22 +258,10 @@ export function HighlightOptionMenuItem(index: any): any {
       SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(index * 16 + 40, index * 16 + 56));
 }
 
-/** static void DrawOptionMenuChoice(const u8 *text, u8 x, u8 y, u8 style) */
+/** ⚠️ MANUAL FIX post-transpile : auto body utilisait `text++` pointer arith
+ *  (= no-op JS). Delegate à globalThis.DrawOptionMenuChoice (= option-menu-impl.ts). */
 export function DrawOptionMenuChoice(text: any, x: any, y: any, style: any): any {
-  const dst: any[] = [];
-      let i: any = null;
-
-      for (i = 0; text != EOS && i < ARRAY_COUNT(dst) - 1; i++)
-          dst[i] = (text++);
-
-      if (style != 0)
-      {
-          dst[2] = TEXT_COLOR_RED;
-          dst[5] = TEXT_COLOR_LIGHT_RED;
-      }
-
-      dst[i] = EOS;
-      AddTextPrinterParameterized(WIN_OPTIONS, FONT_NORMAL, dst, x, y + 1, TEXT_SKIP_DRAW, NULL);
+  return (globalThis as any).__optionMenuImpl_DrawOptionMenuChoice(text, x, y, style);
 }
 
 /** static u8 TextSpeed_ProcessInput(u8 selection) */
@@ -499,21 +487,14 @@ export function ButtonMode_DrawChoices(selection: any): any {
       DrawOptionMenuChoice(gText_ButtonTypeLEqualsA, GetStringRightAlignXOffset(FONT_NORMAL, gText_ButtonTypeLEqualsA, 198), YPOS_BUTTONMODE, styles[2]);
 }
 
-/** static void DrawHeaderText(void) */
+/** ⚠️ MANUAL FIX post-transpile : delegate à option-menu-impl.ts. */
 export function DrawHeaderText(): any {
-  FillWindowPixelBuffer(WIN_HEADER, PIXEL_FILL(1));
-      AddTextPrinterParameterized(WIN_HEADER, FONT_NORMAL, gText_Option, 8, 1, TEXT_SKIP_DRAW, NULL);
-      CopyWindowToVram(WIN_HEADER, COPYWIN_FULL);
+  return (globalThis as any).__optionMenuImpl_DrawHeaderText();
 }
 
-/** static void DrawOptionMenuTexts(void) */
+/** ⚠️ MANUAL FIX post-transpile : delegate à option-menu-impl.ts. */
 export function DrawOptionMenuTexts(): any {
-  let i: any = null;
-
-      FillWindowPixelBuffer(WIN_OPTIONS, PIXEL_FILL(1));
-      for (i = 0; i < MENUITEM_COUNT; i++)
-          AddTextPrinterParameterized(WIN_OPTIONS, FONT_NORMAL, sOptionMenuItemsNames[i], 8, (i * 16) + 1, TEXT_SKIP_DRAW, NULL);
-      CopyWindowToVram(WIN_OPTIONS, COPYWIN_FULL);
+  return (globalThis as any).__optionMenuImpl_DrawOptionMenuTexts();
 }
 
 /** static void DrawBgWindowFrames(void) */

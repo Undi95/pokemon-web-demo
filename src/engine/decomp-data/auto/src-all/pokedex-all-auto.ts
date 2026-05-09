@@ -3583,12 +3583,12 @@ export function SetSearchRectHighlight(flags: any, x: any, y: any, width: any): 
           temp = (ptr + (y + 0) * 64 + (x + i) * 2);
           temp &= 0x0fff;
           temp |= (flags << 12);
-          (ptr + (y + 0) * 64 + (x + i) * 2) = temp;
+          /* transpiler bug LHS : (ptr + (y + 0) * 64 + (x + i) * 2) = temp; */
 
           temp = (ptr + (y + 1) * 64 + (x + i) * 2);
           temp &= 0x0fff;
           temp |= (flags << 12);
-          (ptr + (y + 1) * 64 + (x + i) * 2) = temp;
+          /* transpiler bug LHS : (ptr + (y + 1) * 64 + (x + i) * 2) = temp; */
       }
 }
 
