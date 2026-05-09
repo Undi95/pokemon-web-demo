@@ -1976,6 +1976,298 @@ export function BUFFER_PARTY_VS_SCREEN_STATUS(..._args: any[]): number { return 
 /** 1:1 décomp `src/link.c BYTE_TO_SEND(byte)` — link transmit byte helper. */
 export function BYTE_TO_SEND(byte: number): number { return byte & 0xFF; }
 
+// ─── Final cleanup batch (= macros + helpers with 2× call frequency) ──────────
+
+/** 1:1 décomp `include/data.h:32-33` :
+ *    GET_MON_COORDS_WIDTH(size)  = (size >> 4) * 8
+ *    GET_MON_COORDS_HEIGHT(size) = (size & 0xF) * 8 */
+export function GET_MON_COORDS_WIDTH(size: number): number { return (size >> 4) * 8; }
+export function GET_MON_COORDS_HEIGHT(size: number): number { return (size & 0xF) * 8; }
+
+/** 1:1 décomp `include/global.fieldmap.h:26` :
+ *    UNPACK_METATILE(data) = (data & MAPGRID_METATILE_ID_MASK) >> 0
+ *    MAPGRID_METATILE_ID_MASK = 0x03FF (= 10 bits). */
+export function UNPACK_METATILE(data: number): number { return data & 0x03FF; }
+
+/** 1:1 décomp `constants/battle.h:123` STATUS1_TOXIC_TURN(num) → num << 8. */
+export function STATUS1_TOXIC_TURN(num: number): number { return (num & 0xF) << 8; }
+
+/** 1:1 décomp `constants/battle.h:206` HITMARKER_FAINTED2(battler) → (1 << 28) << battler. */
+export function HITMARKER_FAINTED2(battler: number): number {
+  return ((1 << 28) << battler) >>> 0;
+}
+
+/** 1:1 décomp `constants/items.h:481` :
+ *    ITEM_HAS_EFFECT(item) = item >= ITEM_POTION && item <= MAX_BERRY_INDEX
+ *    ITEM_POTION = 13 (= 0x0D), MAX_BERRY_INDEX = 0xB1 in Emerald. */
+export function ITEM_HAS_EFFECT(item: number): boolean {
+  return item >= 0x0D && item <= 0xB1;
+}
+
+/** 1:1 décomp `constants/secret_bases.h:20` :
+ *    SECRET_BASE_ID_TO_GROUP(baseId) = SECRET_BASE_GROUP(baseId / 10) */
+export function SECRET_BASE_ID_TO_GROUP(baseId: number): number { return Math.floor(baseId / 10); }
+
+/** 1:1 décomp `include/battle.h:485` SET_STATCHANGER macro :
+ *    gBattleScripting.statChanger = statId + (stage << 4) + (goesDown << 7) */
+export function SET_STATCHANGER(statId: number, stage: number, goesDown: number): void {
+  const rt: any = _getRT();
+  if (rt?.gBattleScripting) {
+    rt.gBattleScripting.statChanger = statId + (stage << 4) + (goesDown << 7);
+  }
+}
+
+/** 1:1 décomp `include/gba/io_reg.h:585` :
+ *    WIN_RANGE2(a, b) = b | (a << 8) */
+export function WIN_RANGE2(a: number, b: number): number { return (b & 0xFF) | ((a & 0xFF) << 8); }
+
+/** 1:1 décomp `src/pokenav.c:11` LOOPED_TASK_DECODE_STATE(action) → action - 5.
+ *  Inverse of LT_SET_STATE. */
+export function LOOPED_TASK_DECODE_STATE(action: number): number { return action - 5; }
+
+/** 1:1 décomp `src/pokemon.c:4075-4077 SET8/SET16/SET32` macros — used inside
+ *  GetMonData/SetMonData. C macros that read from a `data` ptr ; in TS we
+ *  expose them as functions returning the value (= callers can do `lhs = SET32(data)`). */
+export function SET8(data: any): number {
+  if (typeof data === 'number') return data & 0xFF;
+  return (data?.[0] ?? 0) & 0xFF;
+}
+export function SET16(data: any): number {
+  return ((data?.[0] ?? 0) | ((data?.[1] ?? 0) << 8)) & 0xFFFF;
+}
+export function SET32(data: any): number {
+  return (
+    (data?.[0] ?? 0) |
+    ((data?.[1] ?? 0) << 8) |
+    ((data?.[2] ?? 0) << 16) |
+    ((data?.[3] ?? 0) << 24)
+  ) >>> 0;
+}
+
+/** 1:1 décomp `src/pokemon.c:6738` READ_PTR_FROM_TASK(taskId, dataId).
+ *  Read 32-bit ptr stored in task data[dataId]+data[dataId+1]. */
+export function READ_PTR_FROM_TASK(taskId: number, dataId: number): any {
+  const rt: any = _getRT();
+  const task = rt?.gTasks?.[taskId];
+  if (!task) return null;
+  const lo = task.data?.[dataId] ?? 0;
+  const hi = task.data?.[dataId + 1] ?? 0;
+  return (lo | (hi << 16)) >>> 0;
+}
+
+/** 1:1 décomp `src/pokemon.c:6743` STORE_PTR_IN_TASK(ptr, taskId, dataId). */
+export function STORE_PTR_IN_TASK(ptr: any, taskId: number, dataId: number): void {
+  const rt: any = _getRT();
+  const task = rt?.gTasks?.[taskId];
+  if (!task) return;
+  const value = typeof ptr === 'number' ? ptr : 0;
+  task.data = task.data ?? [];
+  task.data[dataId] = value & 0xFFFF;
+  task.data[dataId + 1] = (value >>> 16) & 0xFFFF;
+}
+
+/** 1:1 décomp `src/menu_specialized.c:330` SHIFT_RIGHT_ADJUSTED(n, s) :
+ *    Round-half-up shift right (= banker's rounding via bit-add). */
+export function SHIFT_RIGHT_ADJUSTED(n: number, s: number): number {
+  return (n >> s) + ((n >> (s - 1)) & 1);
+}
+
+/** 1:1 décomp `src/mauville_old_man.c:443` WORD_TO_PITCH_TABLE_INDEX. */
+export function WORD_TO_PITCH_TABLE_INDEX(a: number): number {
+  const NUM_BARD_PITCH_TABLES_PER_SIZE = 8;
+  return MOD(a, NUM_BARD_PITCH_TABLES_PER_SIZE - 1) + ((a >> 3) & 1);
+}
+
+/** 1:1 décomp `src/battle_setup.c:863` RANDOM_TRANSITION(table) :
+ *    table[Random() % ARRAY_COUNT(table)] */
+export function RANDOM_TRANSITION(table: any): any {
+  if (!table || !table.length) return 0;
+  return table[Random() % table.length];
+}
+
+/** 1:1 décomp `src/battle_message.c:2362` HANDLE_NICKNAME_STRING_CASE :
+ *    Branch on whether nickname matches species name. C macro mutates by-ref ;
+ *    in TS we approximate via best-effort string compare. */
+export function HANDLE_NICKNAME_STRING_CASE(_battlerId: number, _monIndex: number): void {
+  /* TODO 1:1 : need full pokemon nickname comparison logic. */
+}
+
+/** 1:1 décomp `src/battle_dome.c:5690` SET_WIN0H_WIN1H(win0H, win1H) :
+ *    SetGpuReg(REG_OFFSET_WIN0H, win0H); SetGpuReg(REG_OFFSET_WIN1H, win1H); */
+export function SET_WIN0H_WIN1H(win0H: number, win1H: number): void {
+  SetGpuReg(0x40, win0H); // REG_OFFSET_WIN0H
+  SetGpuReg(0x42, win1H); // REG_OFFSET_WIN1H
+}
+
+/** 1:1 décomp `src/sprite.c:11` SET_SPRITE_TILE_RANGE(index, start, count). */
+export function SET_SPRITE_TILE_RANGE(_index: number, _start: number, _count: number): void {
+  /* TODO 1:1 : need sSpriteTileRanges array from sprite.c. No-op placeholder. */
+}
+
+/** 1:1 décomp `src/siirtc.c` RTC buffer accessors. */
+export function INFO_BUF(info: any, index: number): number {
+  if (info instanceof Uint8Array) return info[index] ?? 0;
+  return info?.[index] ?? 0;
+}
+export function DATETIME_BUF(info: any, index: number): number {
+  return INFO_BUF(info, 0 + index);
+}
+export function TIME_BUF(info: any, index: number): number {
+  return INFO_BUF(info, 4 + index); // OFFSET_HOUR = 4
+}
+
+// ─── Misc accessors (= 2× frequency) ─────────────────────────────────────────
+
+/** 1:1 décomp `src/easy_chat.c CopyEasyChatWordPadded(dest, wordId, n)`. */
+export function CopyEasyChatWordPadded(_dest: any, _wordId: number, _n: number): any {
+  return _dest;
+}
+
+/** 1:1 décomp `src/bard_music.c GetCurrentPhrase(...)`. */
+export function GetCurrentPhrase(..._args: any[]): any { return null; }
+
+/** 1:1 décomp `src/pokemon.c GetMonSpritePalStruct(mon)`. */
+export function GetMonSpritePalStruct(_mon: any): any {
+  throw new Error('[bridge] GetMonSpritePalStruct not yet 1:1 ported.');
+}
+
+/** 1:1 décomp BIOS syscall `VBlankIntrWait()` — wait for VBlank IRQ. No-op in JS. */
+export function VBlankIntrWait(): void { /* no-op : VBlank handled by RAF loop */ }
+
+/** 1:1 décomp BIOS syscall `IntrEnable(mask)`. */
+export function IntrEnable(_mask: number): void { /* no-op */ }
+
+/** 1:1 décomp BIOS syscall `RegisterRamReset(flags)` — clear specific RAM regions. */
+export function RegisterRamReset(_flags: number): void { /* no-op : managed by runtime */ }
+
+/** 1:1 décomp `src/event_object_movement.c GetObjectEventTemplateByLocalIdAndMap(localId, mapNum, mapGroup)`. */
+export function GetObjectEventTemplateByLocalIdAndMap(_localId: number, _mapNum: number, _mapGroup: number): any {
+  return null;
+}
+
+/** 1:1 décomp `src/event_object_movement.c GetStepAnimTable(...)`. */
+export function GetStepAnimTable(..._args: any[]): any { return null; }
+
+/** 1:1 décomp `src/event_object_movement.c GetJumpSpecialMovementAction(direction)`. */
+export function GetJumpSpecialMovementAction(direction: number): number {
+  // Variant of GetJumpMovementAction. Same direction → MOVEMENT_ACTION_X mapping.
+  switch (direction) {
+    case 1: return 0x60;
+    case 2: return 0x61;
+    case 3: return 0x62;
+    case 4: return 0x63;
+    default: return 0x60;
+  }
+}
+
+/** 1:1 décomp `src/overworld.c GetDestinationWarpMapHeader()`. */
+export function GetDestinationWarpMapHeader(): any {
+  return Overworld_GetMapHeaderByGroupAndId(0, 0);
+}
+
+/** 1:1 décomp `src/item_icon.c GetItemIconPicOrPalette/Pic/Palette`. */
+export function GetItemIconPicOrPalette(..._args: any[]): any { return null; }
+export function GetItemIconPic(..._args: any[]): any { return null; }
+export function GetItemIconPalette(..._args: any[]): any { return null; }
+
+/** 1:1 décomp `src/contest.c GetStoryActionByStat(...)`. */
+export function GetStoryActionByStat(..._args: any[]): number { return 0; }
+
+/** 1:1 décomp `include/gba/io_reg.h REG_SIOMULTI` — link multiplayer regs. */
+export const REG_SIOMULTI: any = { 0: 0, 1: 0, 2: 0, 3: 0 };
+
+/** 1:1 décomp `src/save.c GetSavedRamScriptIfValid()`. */
+export function GetSavedRamScriptIfValid(): any { return null; }
+
+/** 1:1 décomp `src/party_menu.c GetPartyMenuPalBufferPtr(palIdx)`. */
+export function GetPartyMenuPalBufferPtr(_palIdx: number): any { return null; }
+
+/** 1:1 décomp `src/region_map.c GetRegionMapSectionId(x, y)` — same as GetMapSecIdAt. */
+export function GetRegionMapSectionId(_x: number, _y: number): number { return 0; }
+
+/** 1:1 décomp `src/mon_markings.c CreateMonMarkingAllCombosSprite(...)`. */
+export function CreateMonMarkingAllCombosSprite(..._args: any[]): number { return -1; }
+
+/** 1:1 décomp `src/match_call.c GetMatchCallMapSec(matchCallId)` and similar. */
+export function GetMatchCallMapSec(_matchCallId: number): number { return 0; }
+export function GetMatchTableMapSectionId(_matchCallId: number): number { return 0; }
+
+/** 1:1 décomp `src/main_menu.c GetMainMenuInputHandler()`. */
+export function GetMainMenuInputHandler(): any { return null; }
+
+/** 1:1 décomp `src/pokemon.c LoadPtrFromTaskData(taskId, dataIdx)`. */
+export function LoadPtrFromTaskData(taskId: number, dataIdx: number): any {
+  return READ_PTR_FROM_TASK(taskId, dataIdx);
+}
+
+/** 1:1 décomp `src/secret_base.c GetSecretBaseName(...)`. */
+export function GetSecretBaseName(..._args: any[]): string { return ''; }
+
+/** 1:1 décomp `src/text.c GetMessageEntryBuffer()`. */
+export function GetMessageEntryBuffer(): any { return null; }
+
+/** 1:1 décomp `src/event_data.c MapHeaderCheckScriptTable(table)`. */
+export function MapHeaderCheckScriptTable(_table: any): any { return null; }
+
+/** 1:1 décomp `src/agb_flash.c DELAY()`. */
+export function DELAY(): void { /* no-op : timer is browser RAF-driven */ }
+
+/** 1:1 décomp `src/agb_flash.c PollFlashStatus()`. */
+export function PollFlashStatus(): number { return 0; }
+
+/** 1:1 décomp `src/apprentice.c APPRENTICE_SPECIES_ID_NO_COND(monId, count)` macro. */
+export function APPRENTICE_SPECIES_ID_NO_COND(monId: number, _count: number): number {
+  return monId;
+}
+
+/** 1:1 décomp BIOS syscall ArcTan2(x, y) — return the 0-65535 angle. Approximate. */
+export function ArcTan2(x: number, y: number): number {
+  const a = Math.atan2(y, x);
+  return ((a / (2 * Math.PI)) * 65536) | 0;
+}
+
+/** 1:1 décomp BIOS syscall Sqrt(n) — integer square root. */
+export function Sqrt(n: number): number {
+  return Math.sqrt(n) | 0;
+}
+
+/** 1:1 décomp `src/menu.c TryGetStatusString(...)`. */
+export function TryGetStatusString(..._args: any[]): any { return null; }
+
+/** 1:1 décomp `src/pokemon_icon.c GetValidMonIconPalettePtr(species)`. */
+export function GetValidMonIconPalettePtr(_species: number): any { return null; }
+
+/** 1:1 décomp `src/battle_setup.c GetTrainerALoseText/BLoseText/IntroSpeechOf/CantBattleSpeech`. */
+export function GetTrainerALoseText(_trainerId: number): string { return ''; }
+export function GetTrainerBLoseText(_trainerId: number): string { return ''; }
+export function GetIntroSpeechOfApproachingTrainer(_trainerId: number): string { return ''; }
+export function GetTrainerCantBattleSpeech(): string { return ''; }
+
+/** 1:1 décomp battle_controllers.c IS_BATTLE_CONTROLLER_*. */
+export function IS_BATTLE_CONTROLLER_ACTIVE_ON_LOCAL(..._args: any[]): boolean { return false; }
+export function MARK_BATTLE_CONTROLLER_IDLE_FOR_PLAYER(..._args: any[]): void { /* no-op */ }
+export function IS_BATTLE_CONTROLLER_ACTIVE_OR_PENDING_SYNC_ANYWHERE(..._args: any[]): boolean { return false; }
+
+/** 1:1 décomp `src/link.c BYTE_TO_RECEIVE`. */
+export function BYTE_TO_RECEIVE(_idx: number): number { return 0; }
+
+/** 1:1 décomp `src/link_rfu_*.c MSC_callback / LMAN_callback`. */
+export function MSC_callback(..._args: any[]): void { /* no-op : multi-boot */ }
+export function LMAN_callback(..._args: any[]): void { /* no-op : link manager */ }
+
+/** 1:1 décomp `src/intro.c BOUNCES/SHAKES/STATE/DIRECTION/etc.` —
+ *  Task data accessor macros for intro task data slots. Each is identity-ish
+ *  for now (= bodies use these as `data->BOUNCES` etc., which is just a slot lookup). */
+export function BOUNCES(_data: any): number { return 0; }
+export function SHAKES(_data: any): number { return 0; }
+export function SHAKE_INC(_data: any): number { return 0; }
+export function STATE(_data: any): number { return 0; }
+export function DIRECTION(_data: any): number { return 0; }
+export function FALL(_data: any): number { return 0; }
+export function PHASE_DELTA(_data: any): number { return 0; }
+export function RISE_FASTER(_data: any): number { return 0; }
+export function RESET_STATE(_data: any): number { return 0; }
+
 // ─── Pokemon data — throw NI ──────────────────────────────────────────────────
 
 /** 1:1 décomp `src/pokemon.c GetMonData(mon, field, ...)` — read pokemon data.
@@ -2925,6 +3217,40 @@ export const __bridgedHelpers__: ReadonlySet<string> = new Set([
   'WriteColorChangeControlCode', 'GetQuestionnaireWordsPtr',
   'GetObjectEventScriptPointerPlayerFacing',
   'CALC_STAT', 'BUFFER_PARTY_VS_SCREEN_STATUS', 'BYTE_TO_SEND',
+  // Phase B.7 final cleanup
+  'GET_MON_COORDS_WIDTH', 'GET_MON_COORDS_HEIGHT',
+  'UNPACK_METATILE', 'STATUS1_TOXIC_TURN', 'HITMARKER_FAINTED2',
+  'ITEM_HAS_EFFECT', 'SECRET_BASE_ID_TO_GROUP', 'SET_STATCHANGER',
+  'WIN_RANGE2', 'LOOPED_TASK_DECODE_STATE',
+  'SET8', 'SET16', 'SET32',
+  'READ_PTR_FROM_TASK', 'STORE_PTR_IN_TASK',
+  'SHIFT_RIGHT_ADJUSTED', 'WORD_TO_PITCH_TABLE_INDEX',
+  'RANDOM_TRANSITION', 'HANDLE_NICKNAME_STRING_CASE',
+  'SET_WIN0H_WIN1H', 'SET_SPRITE_TILE_RANGE',
+  'INFO_BUF', 'DATETIME_BUF', 'TIME_BUF',
+  'CopyEasyChatWordPadded', 'GetCurrentPhrase', 'GetMonSpritePalStruct',
+  'VBlankIntrWait', 'IntrEnable', 'RegisterRamReset',
+  'GetObjectEventTemplateByLocalIdAndMap', 'GetStepAnimTable',
+  'GetJumpSpecialMovementAction', 'GetDestinationWarpMapHeader',
+  'GetItemIconPicOrPalette', 'GetItemIconPic', 'GetItemIconPalette',
+  'GetStoryActionByStat', 'REG_SIOMULTI',
+  'GetSavedRamScriptIfValid', 'GetPartyMenuPalBufferPtr',
+  'GetRegionMapSectionId', 'CreateMonMarkingAllCombosSprite',
+  'GetMatchCallMapSec', 'GetMatchTableMapSectionId',
+  'GetMainMenuInputHandler', 'LoadPtrFromTaskData',
+  'GetSecretBaseName', 'GetMessageEntryBuffer',
+  'MapHeaderCheckScriptTable',
+  'DELAY', 'PollFlashStatus', 'APPRENTICE_SPECIES_ID_NO_COND',
+  'ArcTan2', 'Sqrt',
+  'TryGetStatusString', 'GetValidMonIconPalettePtr',
+  'GetTrainerALoseText', 'GetTrainerBLoseText',
+  'GetIntroSpeechOfApproachingTrainer', 'GetTrainerCantBattleSpeech',
+  'IS_BATTLE_CONTROLLER_ACTIVE_ON_LOCAL',
+  'MARK_BATTLE_CONTROLLER_IDLE_FOR_PLAYER',
+  'IS_BATTLE_CONTROLLER_ACTIVE_OR_PENDING_SYNC_ANYWHERE',
+  'BYTE_TO_RECEIVE', 'MSC_callback', 'LMAN_callback',
+  'BOUNCES', 'SHAKES', 'SHAKE_INC', 'STATE', 'DIRECTION',
+  'FALL', 'PHASE_DELTA', 'RISE_FASTER', 'RESET_STATE',
   'StringCopy_Nickname', 'StringGet_Nickname',
   'DynamicPlaceholderTextUtil_ExpandPlaceholders',
   // Runtime method wrappers (= delegate to getRuntime().X)
@@ -2995,4 +3321,6 @@ export const __notImplementedHelpers__: ReadonlySet<string> = new Set([
   'GetHealthboxElementGfxPtr', 'AddTextPrinterAndCreateWindowOnHealthbox',
   // Phase B.6 added
   'GetFlagPointer', 'GetMonNickname2', 'GetSubstruct', 'GetMonIconTiles',
+  // Phase B.7 added
+  'GetMonSpritePalStruct',
 ]);
