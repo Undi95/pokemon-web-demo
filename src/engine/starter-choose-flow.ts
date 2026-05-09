@@ -29,9 +29,11 @@
  */
 import { ShowFieldMessage, IsFieldMessageBoxHidden, HideFieldMessageBox } from './field-message-box';
 import { CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose, GetYesNoWindowId } from './gba-menu-system';
-import { ClearStdWindowAndFrame, RemoveWindow, ShowBg, HideBg, InitBgFromTemplate, type WindowTemplate } from './gba-window-system';
+import { AddWindow, ClearStdWindowAndFrame, ClearWindowTilemap, FillWindowPixelBuffer, PutWindowTilemap, RemoveWindow, ShowBg, HideBg, InitBgFromTemplate, type WindowTemplate } from './gba-window-system';
+import { AddTextPrinterParameterized3 } from './gba-text-system';
 import { getRuntime, LoadPalette } from './decomp-globals';
-import { OBJ_PLTT_ID } from './decomp-runtime';
+import { BG_PLTT_ID, OBJ_PLTT_ID } from './decomp-runtime';
+import { GetOverworldTextboxPalettePtr } from './decomp-bridge';
 import { gameState } from './game-state';
 import { createPokemonInstance } from './pokemon';
 import { VarSet } from './script-vars';
@@ -41,7 +43,7 @@ import { CopyMapTilesetsToVram, flushOverworldTilemaps, gMapHeader } from './map
 import { pauseTilesetAnimations, resumeTilesetAnimations } from './tileset-anims';
 import { setFieldCameraSuspended } from './field-camera';
 import { getString, initStringsFromDecomp } from './gba-strings';
-import { getSpeciesNameFr } from './data-tables';
+import { getSpeciesNameFr, loadTextTables, type TextTables } from './data-tables';
 
 // 1:1 décomp `sStarterMon[]` (= public/decomp/em/static-tables/starter_choose.json).
 const STARTER_SPECIES: ReadonlyArray<string> = [
@@ -58,16 +60,56 @@ const CURSOR_COORDS: ReadonlyArray<readonly [number, number]> = [
 
 // 1:1 décomp `CopyMonCategoryText(SpeciesToNationalPokedexNum(species))` :
 // lookup pokedex-entries.json (= extracted from data/pokemon/pokedex_text.h)
-// keyed par NATIONAL_DEX_* (= SPECIES_TORCHIC → NATIONAL_DEX_TORCHIC).
+// keyed par SPECIES_* directement.
 let _pokedexEntries: Record<string, { category: string }> | null = null;
 async function getDexCategoryFr(speciesEnum: string): Promise<string> {
   if (!_pokedexEntries) {
     const resp = await fetch('/decomp/em/pokedex-entries.json');
     if (resp.ok) _pokedexEntries = await resp.json() as Record<string, { category: string }>;
   }
-  const dexKey = 'NATIONAL_DEX_' + speciesEnum.replace(/^SPECIES_/, '');
-  return _pokedexEntries?.[dexKey]?.category ?? '';
+  return _pokedexEntries?.[speciesEnum]?.category ?? '';
 }
+
+// 1:1 décomp `gSpeciesNames[]` lookup. text-tables.json normalement loaded par
+// OverworldScene boot, mais en `?nointro` mode TestOverworldScene skip ça.
+// Idempotent helper pour ensure les tables FR sont disponibles.
+let _textTablesLoaded = false;
+async function ensureTextTablesLoaded(): Promise<void> {
+  if (_textTablesLoaded) return;
+  try {
+    const resp = await fetch('/decomp/em/text-tables.json');
+    if (resp.ok) {
+      const json = await resp.json() as TextTables;
+      loadTextTables(json);
+      _textTablesLoaded = true;
+    }
+  } catch (e) {
+    console.warn('[StarterChoose] text-tables fetch failed', e);
+  }
+}
+
+// 1:1 décomp `sStarterLabelCoords[STARTER_MON_COUNT][2]` (starter_choose.c:106-111).
+// Position de la label window selon le starter sélectionné (= positionnée pour
+// ne pas overlap les pokeballs ni Birch).
+const STARTER_LABEL_COORDS: ReadonlyArray<readonly [number, number]> = [
+  [0, 9],   // LEFT (= TREECKO/ARCKO) → bottom-left
+  [16, 10], // MIDDLE (= TORCHIC/POUSSIFEU) → bottom-right
+  [8, 4],   // RIGHT (= MUDKIP/GOBOU) → middle-top
+];
+
+// 1:1 décomp `sTextColors = {TEXT_COLOR_TRANSPARENT, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY}`.
+// AddTextPrinterParameterized3 attend [bgColor, fgColor, shadowColor].
+const STARTER_LABEL_COLORS: ReadonlyArray<number> = [0 /* transparent */, 1 /* white */, 2 /* light gray */];
+
+// 1:1 décomp `sWindowTemplate_StarterLabel` (starter_choose.c:88-97).
+// `tilemapLeft/Top` patched à runtime selon selection (= sStarterLabelCoords[i]).
+const STARTER_LABEL_TEMPLATE_BASE: Omit<WindowTemplate, 'tilemapLeft' | 'tilemapTop'> = {
+  bg: 0,
+  width: 13,
+  height: 4,
+  paletteNum: 14,
+  baseBlock: 0x0274,
+};
 
 // GBA key masks (= 1:1 décomp gba/key.h).
 const A_BUTTON   = 0x01;
@@ -145,6 +187,57 @@ export function startChooseStarterFlow(): ChooseStarterFlow {
   // visibility flag pendant Birch BG, restore au cleanup.
   const savedVisibleOam = new Set<number>();
 
+  // 1:1 décomp `sStarterLabelWindowId` (starter_choose.c:52). WINDOW_NONE (= -1)
+  // tant que la label window n'est pas spawned. Le décomp utilise 255 (= WINDOW_NONE
+  // u8 max) ; on utilise -1 pour cohérence TS.
+  let starterLabelWindowId = -1;
+  let starterLabelLoggedOnce = false;
+
+  // 1:1 décomp `CreateStarterPokemonLabel(selection)` (starter_choose.c:570).
+  // Spawn une window avec species name + category centrés.
+  const createStarterPokemonLabel = (sel: number): void => {
+    const speciesEnum = STARTER_SPECIES[sel];
+    const speciesName = getSpeciesNameFr(speciesEnum);
+    const categoryText = starterCategories[sel];
+    const [tilemapLeft, tilemapTop] = STARTER_LABEL_COORDS[sel];
+    const tmpl: WindowTemplate = {
+      ...STARTER_LABEL_TEMPLATE_BASE,
+      tilemapLeft,
+      tilemapTop,
+    };
+    starterLabelWindowId = AddWindow(tmpl);
+    if (!starterLabelLoggedOnce) {
+      console.log(`[StarterChoose] CreateStarterPokemonLabel : species="${speciesName}" cat="${categoryText}"`);
+      starterLabelLoggedOnce = true;
+    }
+    FillWindowPixelBuffer(starterLabelWindowId, 0);
+    // 1:1 décomp `AddTextPrinterParameterized3(windowId, FONT_NORMAL, width, 1,
+    //   sTextColors, 0, speciesName)` — species name au top.
+    // Note: décomp utilise speed=0 (MID), qui s'appuie sur le 0x400 sync render
+    // loop dans AddTextPrinter pour drawer les chars avant le slot replace par
+    // le 2ème AddTextPrinter (= category). Notre runtime queue les printers et
+    // ne sync-render pas pour speed=0, donc le 1er printer serait silently
+    // remplacé par le 2ème → POUSSIFEU disparaîtrait. On utilise speed=255
+    // (TEXT_SKIP_DRAW) qui force le sync render dans notre engine, matchant
+    // le résultat visuel du décomp.
+    const speciesX = Math.max(0, ((13 * 8) - speciesName.length * 6) >> 1);
+    AddTextPrinterParameterized3(starterLabelWindowId, 1 /* FONT_NORMAL */, speciesX, 1, STARTER_LABEL_COLORS, 255, speciesName);
+    // 1:1 décomp `AddTextPrinterParameterized3(... FONT_NARROW ... 17 ...
+    //   categoryText)` — category au bottom.
+    const categoryX = Math.max(0, ((13 * 8) - categoryText.length * 5) >> 1);
+    AddTextPrinterParameterized3(starterLabelWindowId, 2 /* FONT_NARROW */, categoryX, 17, STARTER_LABEL_COLORS, 255, categoryText);
+    PutWindowTilemap(starterLabelWindowId);
+  };
+
+  // 1:1 décomp `ClearStarterLabel(void)` (starter_choose.c:608).
+  const clearStarterLabel = (): void => {
+    if (starterLabelWindowId < 0) return;
+    FillWindowPixelBuffer(starterLabelWindowId, 0);
+    ClearWindowTilemap(starterLabelWindowId);
+    RemoveWindow(starterLabelWindowId);
+    starterLabelWindowId = -1;
+  };
+
   // Hand bob timer.
   let handBobTimer = 0;
   let lastSelection = -1;
@@ -168,6 +261,8 @@ export function startChooseStarterFlow(): ChooseStarterFlow {
               // ne boot pas GameScene / BirchRuntimeScene qui init normalement.
               // Idempotent : skip fetch si déjà loaded.
               await initStringsFromDecomp();
+              // Idem text-tables (= getSpeciesNameFr fallback EN sinon).
+              await ensureTextTablesLoaded();
               // Load tile sheet for pokeball + hand + starter circle.
               await rt.LoadCompressedSpriteSheetsFromTable(
                 'sSpriteSheet_PokeballSelect',
@@ -300,9 +395,15 @@ export function startChooseStarterFlow(): ChooseStarterFlow {
         // + `LZ77UnCompVram(gBirchGrassTilemap, BG_SCREEN_ADDR(7))` (= BG2).
         rt.gba.vram.set(new Uint8Array(birchBagTilemap), 6 * 0x800);
         rt.gba.vram.set(new Uint8Array(birchGrassTilemap), 7 * 0x800);
+        // 1:1 décomp `LoadPalette(GetOverworldTextboxPalettePtr(), BG_PLTT_ID(14),
+        // PLTT_SIZE_4BPP)` — palette pour la label window (sStarterLabelWindowId
+        // utilise paletteNum=14) ET le main dialog window. Sans ça le texte du
+        // label apparaît avec mauvais colors (= colors résidus du fade ou autre).
+        const textboxPal = GetOverworldTextboxPalettePtr();
+        if (textboxPal) LoadPalette(textboxPal, BG_PLTT_ID(14), textboxPal.length * 2);
         // 1:1 décomp `LoadPalette(gBirchBagGrass_Pal, BG_PLTT_ID(0), sizeof(...))`
         // = 32 entries flow vers sub-pal 0+1.
-        LoadPalette(birchPalette, 0, birchPalette.length * 2);
+        LoadPalette(birchPalette, BG_PLTT_ID(0), birchPalette.length * 2);
         // 1:1 décomp `InitBgsFromTemplates(0, sBgTemplates, 3)` :
         // BG2 : charBase 0, mapBase 7, priority 3 (grass behind)
         // BG3 : charBase 0, mapBase 6, priority 1 (bag in front)
@@ -336,8 +437,14 @@ export function startChooseStarterFlow(): ChooseStarterFlow {
       }
 
       case 'PROMPT_INIT': {
-        // 1:1 décomp `AddTextPrinterParameterized(0, FONT_NORMAL, gText_BirchInTrouble, ...)`.
+        // 1:1 décomp `Task_StarterChoose` (starter_choose.c:476-481) :
+        //   CreateStarterPokemonLabel(tStarterSelection);
+        //   DrawStdFrameWithCustomTileAndPalette(0, FALSE, 0x2A8, 0xD);
+        //   AddTextPrinterParameterized(0, FONT_NORMAL, gText_BirchInTrouble, ...);
+        createStarterPokemonLabel(selection);
         ShowFieldMessage(getString('gText_BirchInTrouble'));
+        // Sync lastSelection pour éviter flicker label au 1er WAIT_INPUT tick.
+        lastSelection = selection;
         state = 'PROMPT_WAIT';
         return false;
       }
@@ -363,13 +470,17 @@ export function startChooseStarterFlow(): ChooseStarterFlow {
         }
 
         // 1:1 décomp SpriteCB_Pokeball : selected pokeball = anim 1 (= moving),
-        // others = anim 0 (= still).
+        // others = anim 0 (= still). Aussi 1:1 décomp Task_MoveStarterChooseCursor
+        // → Task_CreateStarterLabel : ClearStarterLabel + CreateStarterPokemonLabel
+        // sur cursor change.
         if (selection !== lastSelection) {
           for (let i = 0; i < 3; i++) {
             if (pokeballSpriteIds[i] >= 0) {
               rt.StartSpriteAnim(pokeballSpriteIds[i], i === selection ? 1 : 0);
             }
           }
+          clearStarterLabel();
+          createStarterPokemonLabel(selection);
           lastSelection = selection;
         }
 
@@ -379,6 +490,9 @@ export function startChooseStarterFlow(): ChooseStarterFlow {
         } else if ((newKeys & DPAD_RIGHT) && selection < STARTER_SPECIES.length - 1) {
           selection++;
         } else if (newKeys & A_BUTTON) {
+          // 1:1 décomp `Task_HandleStarterChooseInput` JOY_NEW(A_BUTTON) branch :
+          //   ClearStarterLabel() puis spawn StarterCircle/MonSprite.
+          clearStarterLabel();
           state = 'ASK_CONFIRM_INIT';
           HideFieldMessageBox();
         }
@@ -409,16 +523,15 @@ export function startChooseStarterFlow(): ChooseStarterFlow {
           });
           monSpriteId = spawn.spriteId;
         }
-        // 1:1 décomp `CreateStarterPokemonLabel(selection)` + Task_AskConfirmStarter :
-        // species name (= gSpeciesNames[species]) + category (= CopyMonCategoryText)
-        // dans une label window séparée, puis gText_ConfirmStarterChoice dans le
-        // main dialog. Notre approche inline concatène en un seul message en
-        // attendant l'implémentation full sStarterLabelWindowId.
-        const speciesEnum = STARTER_SPECIES[selection];
-        const speciesName = getSpeciesNameFr(speciesEnum);
-        const category = starterCategories[selection];
-        const confirmText = getString('gText_ConfirmStarterChoice');
-        ShowFieldMessage(`${speciesName}, ${category}!\n${confirmText}`);
+        // 1:1 décomp `Task_AskConfirmStarter` (starter_choose.c:521-528) :
+        //   PlayCry_Normal(GetStarterPokemon(...), 0);
+        //   FillWindowPixelBuffer(0, PIXEL_FILL(1));
+        //   AddTextPrinterParameterized(0, FONT_NORMAL, gText_ConfirmStarterChoice, ...);
+        //   ScheduleBgCopyTilemapToVram(0);
+        //   CreateYesNoMenu(sWindowTemplate_ConfirmStarter, 0x2A8, 0xD, 0);
+        // Le species name + category sont déjà visibles via la label window
+        // séparée (= sStarterLabelWindowId) — pas dans le dialog confirm.
+        ShowFieldMessage(getString('gText_ConfirmStarterChoice'));
         state = 'ASK_CONFIRM_WAIT';
         return false;
       }
