@@ -147,8 +147,10 @@ const MOVE_MENU_WINDOW: WindowTemplate = {
 
 // ─── Battle state ────────────────────────────────────────────────────────────
 type State =
-  | 'INIT'
+  | 'INIT' | 'INIT_FADE_WAIT'
   | 'LOAD_ASSETS' | 'WAIT_LOAD'
+  | 'POST_SPAWN_FADE_IN' | 'POST_SPAWN_FADE_WAIT'
+  | 'CLEANUP_FADE_OUT' | 'CLEANUP_FADE_WAIT'
   | 'SPAWN_SPRITES' | 'INIT_HP_WINDOWS'
   | 'INTRO_TEXT' | 'INTRO_WAIT'
   | 'PLAYER_TURN_PROMPT' | 'PLAYER_TURN_PROMPT_WAIT'
@@ -471,7 +473,19 @@ export function startWildBattle(params: BattleParams): BattleFlow {
           return false;
         }
         console.log(`[battle-flow] start : ${playerMon.nickname} Lv${playerMon.level} (${playerMon.currentHp}/${playerMon.maxHp}) vs ${opponentMon.nickname} Lv${opponentMon.level} (${opponentMon.currentHp}/${opponentMon.maxHp})`);
-        state = 'LOAD_ASSETS';
+        // Bug 5e session 124 : fade-out screen → black avant load battle assets.
+        // 1:1 décomp `CB2_StartFirstBattle` chain via BattleStartTransition.
+        // Notre version simplifiée : BeginNormalPaletteFade to black.
+        rt.BeginNormalPaletteFade('PALETTES_ALL', 0, 0, 16, 'RGB_BLACK');
+        state = 'INIT_FADE_WAIT';
+        return false;
+      }
+
+      case 'INIT_FADE_WAIT': {
+        // Wait fade-out complete avant load assets.
+        if (!rt.gPaletteFade.active) {
+          state = 'LOAD_ASSETS';
+        }
         return false;
       }
 
@@ -579,7 +593,22 @@ export function startWildBattle(params: BattleParams): BattleFlow {
           priority: 0,
         });
         playerSpriteId = player.spriteId;
-        state = 'INIT_HP_WINDOWS';
+        // Bug 5e session 124 : fade-IN to reveal battle après spawn sprites.
+        state = 'POST_SPAWN_FADE_IN';
+        return false;
+      }
+
+      case 'POST_SPAWN_FADE_IN': {
+        // Trigger fade-in (= from black to color).
+        rt.BeginNormalPaletteFade('PALETTES_ALL', 0, 16, 0, 'RGB_BLACK');
+        state = 'POST_SPAWN_FADE_WAIT';
+        return false;
+      }
+
+      case 'POST_SPAWN_FADE_WAIT': {
+        if (!rt.gPaletteFade.active) {
+          state = 'INIT_HP_WINDOWS';
+        }
         return false;
       }
 
@@ -769,7 +798,8 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       case 'EXP_AWARD_WAIT': {
         if (IsFieldMessageBoxHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
           HideFieldMessageBox();
-          state = chosenMoveIndex === 1 ? 'LEVEL_UP_TEXT' : 'CLEANUP';
+          // Bug 5e session 124 : fade-out avant cleanup si pas de level up.
+          state = chosenMoveIndex === 1 ? 'LEVEL_UP_TEXT' : 'CLEANUP_FADE_OUT';
         }
         return false;
       }
@@ -786,7 +816,8 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       case 'LEVEL_UP_WAIT': {
         if (IsFieldMessageBoxHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
           HideFieldMessageBox();
-          state = 'CLEANUP';
+          // Bug 5e session 124 : fade-out avant cleanup propre (= no visual snap).
+          state = 'CLEANUP_FADE_OUT';
         }
         return false;
       }
@@ -874,6 +905,22 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       case 'PLAYER_FAINTED_WAIT': {
         if (IsFieldMessageBoxHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
           HideFieldMessageBox();
+          // Bug 5e session 124 : fade-out avant cleanup propre.
+          state = 'CLEANUP_FADE_OUT';
+        }
+        return false;
+      }
+
+      case 'CLEANUP_FADE_OUT': {
+        // Bug 5e session 124 : fade-out battle screen avant cleanup proper.
+        // Évite le "snap" visuel violent quand on retourne overworld.
+        rt.BeginNormalPaletteFade('PALETTES_ALL', 0, 0, 16, 'RGB_BLACK');
+        state = 'CLEANUP_FADE_WAIT';
+        return false;
+      }
+
+      case 'CLEANUP_FADE_WAIT': {
+        if (!rt.gPaletteFade.active) {
           state = 'CLEANUP';
         }
         return false;
