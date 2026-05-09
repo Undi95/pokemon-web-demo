@@ -873,18 +873,29 @@ export class TestOverworldScene extends Phaser.Scene {
         // case 2-3 : FieldAnimateDoorClose à la door position originale.
         await FieldAnimateDoorClose(doorX, doorY);
       } else if (exitKind === 'non_anim') {
-        // 1:1 décomp `Task_ExitNonAnimDoor` (field_screen_effect.c:366-402) :
-        //   case 1 : ObjectEventSetHeldMovement(GetWalkNormalMovementAction(
-        //                                          GetPlayerFacingDirection()));
-        // = walk dans la direction du PLAYER.FACING préservé (pas DIR_SOUTH
-        // hardcoded). Couvre les stairs : monter (= face NORTH → walk UP)
-        // et descendre (= face SOUTH → walk DOWN), ainsi que les autres
-        // tiles MB_NON_ANIMATED_DOOR / MB_WATER_DOOR / MB_DEEP_SOUTH_WARP.
-        // Bug fix session 124 : avant on forçait DIR_SOUTH → walk UP des
-        // escaliers ne s'animait pas (= player figé en haut des escaliers
-        // au lieu de marcher d'1 step dans la direction qu'il regardait).
+        // 1:1 décomp `Task_ExitNonAnimDoor` (field_screen_effect.c:366-402)
+        // + behavior MB_NON_ANIMATED_DOOR (= "stairwell hole") :
+        // les escaliers de maison Pokemon sont rendus visuellement comme un
+        // TROU/échelle dans le sol. Le player apparait EN HAUT du trou et
+        // est auto-poussé vers le BAS (= south) pour atterrir sur le floor
+        // adjacent. Sans ça, le player reste bloqué dans le trou.
+        // → on force toujours DIR_SOUTH + walk SOUTH au exit.
+        //
+        // Couvre :
+        //   - MB_NON_ANIMATED_DOOR (= stairs going up/down)
+        //   - MB_WATER_DOOR (= dive entry)
+        //   - MB_DEEP_SOUTH_WARP
+        //
+        // Bug fix 2026-05-09 (user report) : avant on utilisait
+        // `gPlayerAvatar.facing` (= 1:1 Task_ExitNonAnimDoor décomp
+        // littéral). Mais pour les stairs montants, facing était NORTH →
+        // player walked NORTH off-map. La décomp doit avoir un mécanisme
+        // qui flip facing avant le task (= peut-être InitObjectEventsLocal
+        // ou WarpFadeInScreen post-load), pas reproduit dans notre port.
+        // Fix simple : force DIR_SOUTH au exit des "trous d'escalier".
         SetPlayerVisibility(this.rt, true);
-        gPlayerAvatar.forceMovement = gPlayerAvatar.facing;
+        gPlayerAvatar.facing = DIR_SOUTH;
+        gPlayerAvatar.forceMovement = DIR_SOUTH;
         await this.waitForForcedWalkComplete();
       }
       // exitKind === 'none' (= MB_LADDER, MB_*_ARROW_WARP, etc.) :
