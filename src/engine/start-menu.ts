@@ -139,7 +139,11 @@ function buildStartMenuTemplate(numItems: number): WindowTemplate {
 }
 
 const CURSOR_CHAR = '▶';
+/** 1:1 décomp `InitMenuNormal(... left=0, top=9, cursorHeight=16, ...)`
+ *  (start_menu.c:511 + menu.c:927). Cursor + text X=0/8 left, Y commence à
+ *  9 (= top padding window) + index * 16 (= optionHeight). */
 const CURSOR_X = 0;
+const CURSOR_Y_TOP = 9;        // 1:1 décomp menu.c:927 InitMenuNormal `top` arg
 const CURSOR_Y_PER_ROW = 16;
 
 function _seSelect(): number {
@@ -153,7 +157,7 @@ function drawCursor(): void {
   if (sWindowId < 0) return;
   AddTextPrinterParameterized3(
     sWindowId, 1 /* FONT_NORMAL */,
-    CURSOR_X, 1 + sCursorPos * CURSOR_Y_PER_ROW,
+    CURSOR_X, CURSOR_Y_TOP + sCursorPos * CURSOR_Y_PER_ROW,
     [1, 2, 3], 255 /* TEXT_SKIP_DRAW */, CURSOR_CHAR,
   );
 }
@@ -453,7 +457,7 @@ export function OpenStartMenu(): void {
   for (let i = 0; i < sItems.length; i++) {
     AddTextPrinterParameterized3(
       sWindowId, 1 /* FONT_NORMAL */,
-      8, 1 + i * CURSOR_Y_PER_ROW,
+      8, CURSOR_Y_TOP + i * CURSOR_Y_PER_ROW,
       [1, 2, 3], 255 /* TEXT_SKIP_DRAW */, sItems[i].label,
     );
   }
@@ -497,7 +501,7 @@ function _redrawMenu(): void {
   for (let i = 0; i < sItems.length; i++) {
     AddTextPrinterParameterized3(
       sWindowId, 1 /* FONT_NORMAL */,
-      8, 1 + i * CURSOR_Y_PER_ROW,
+      8, CURSOR_Y_TOP + i * CURSOR_Y_PER_ROW,
       [1, 2, 3], 255 /* TEXT_SKIP_DRAW */, sItems[i].label,
     );
   }
