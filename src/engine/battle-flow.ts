@@ -51,6 +51,7 @@ import {
   DrawStdFrameWithCustomTileAndPalette,
   ClearStdWindowAndFrame,
   FillWindowPixelBuffer,
+  FillWindowPixelRect,
   CopyWindowToVram,
   ShowBg,
   HideBg,
@@ -304,7 +305,30 @@ export function startWildBattle(params: BattleParams): BattleFlow {
 
   /** Refresh both HP windows with current HP text.
    *  IMPORTANT : doit appeler CopyWindowToVram après le draw pour pousser
-   *  le contenu vers le BG (sinon HP text reste blanche / stale → bug iter11). */
+   *  le contenu vers le BG (sinon HP text reste blanche / stale → bug iter11).
+   *
+   *  Bug 5d session 124 : add HP bar visuel sous le text (= simple rect
+   *  green/yellow/red selon HP%). Plus pixel-perfect que tilemap mais
+   *  donne le feedback visuel principal du décomp.
+   */
+  const drawHpBar = (windowId: number, x: number, y: number, hp: number, maxHp: number): void => {
+    const barWidth = 48;
+    const barHeight = 3;
+    // Background : gris clair (= empty bar).
+    FillWindowPixelRect(windowId, 0x11, x, y, barWidth, barHeight);
+    // Foreground fill selon hp%.
+    if (hp <= 0 || maxHp <= 0) return;
+    const pct = Math.min(1, hp / maxHp);
+    const fillW = Math.max(1, Math.floor(barWidth * pct));
+    // 1:1 décomp battle_interface.c color thresholds :
+    //   HP > 50%   → vert (color 3)
+    //   HP > 20%   → jaune (color 2)
+    //   HP <= 20%  → rouge (color 4 si dispo, sinon 2)
+    const colorIdx = pct > 0.5 ? 3 : pct > 0.2 ? 2 : 4;
+    const fill = (colorIdx | (colorIdx << 4)) & 0xFF;
+    FillWindowPixelRect(windowId, fill, x, y, fillW, barHeight);
+  };
+
   const renderHpWindows = (): void => {
     if (oppHpWindowId >= 0 && opponentMon) {
       FillWindowPixelBuffer(oppHpWindowId, 0x11);  // both nibbles = bgColor 1
@@ -312,6 +336,8 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         oppHpWindowId, 1, 1, 1, [1, 2, 3], 255 /* TEXT_SKIP_DRAW = sync */,
         `${opponentMon.nickname}\nLv${opponentMon.level} PV:${opponentMon.currentHp}/${opponentMon.maxHp}`,
       );
+      // HP bar visuel en bas du text (= y=24 = sous 2 lignes ~10px chacune).
+      drawHpBar(oppHpWindowId, 4, 28, opponentMon.currentHp, opponentMon.maxHp);
       CopyWindowToVram(oppHpWindowId, 2);
     }
     if (playerHpWindowId >= 0 && playerMon) {
@@ -320,6 +346,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         playerHpWindowId, 1, 1, 1, [1, 2, 3], 255,
         `${playerMon.nickname}\nLv${playerMon.level} PV:${playerMon.currentHp}/${playerMon.maxHp}`,
       );
+      drawHpBar(playerHpWindowId, 4, 28, playerMon.currentHp, playerMon.maxHp);
       CopyWindowToVram(playerHpWindowId, 2);
     }
   };
