@@ -198,13 +198,6 @@ export class TestOverworldScene extends Phaser.Scene {
     setGlobalRuntime(this.rt);
     resetObjAllocations();
     exposeGbaGlobals();
-    // Session 124 fix : install `globalThis._syncSubspriteOam` hook qui run
-    // APRÈS `syncSpritesToOam` dans tickFixed → re-hide les primary OAMs des
-    // sprites avec subsprite tables (= truck 48x48 + 16x16 box split).
-    // Sans ce hook, syncSpritesToOam re-active le primary visible chaque frame
-    // → user voit le sprite COMPLET au-dessus des child OAMs (= split visuel
-    // invisible). User A/B test ROM session 124 identifia.
-    (globalThis as Record<string, unknown>)._syncSubspriteOam = syncSubspriteOam;
     InitKeys(this.rt);
 
     const frameImg = this.add.image(0, 0, 'test-overworld-frame').setOrigin(0, 0);
