@@ -379,6 +379,35 @@ registerSpecial('ResetHealLocationFromDewford', () => { /* no-op */ });
 registerSpecial('PetalburgGymSlideOpenRoomDoors', () => { /* no-op */ });
 registerSpecial('PetalburgGymUnlockRoomDoors', () => { /* no-op */ });
 
+// ─── Iter8 — extended-game (Rustboro, Devon Corp) gap fillers ──────────────
+
+/** 1:1 décomp `FoundBlackGlasses` (item.c) — flag check pour Black Glasses
+ *  trouvées (= early-game item find on Route 116 cave). */
+registerSpecial('FoundBlackGlasses', () => {
+  // Stub : returns 0 (= not found yet) for early-game flow.
+  return 0;
+});
+
+/** 1:1 décomp `ScriptMenu_CreateStartMenuForPokenavTutorial` (start_menu.c) —
+ *  open special start menu only with PokeNav for tutorial. */
+registerSpecial('ScriptMenu_CreateStartMenuForPokenavTutorial', () => {
+  console.log('[special PokenavTutorialMenu] stub — TODO PokeNav UI');
+  return 0;
+});
+
+/** 1:1 décomp `OpenPokenavForTutorial` (pokenav.c). */
+registerSpecial('OpenPokenavForTutorial', () => {
+  console.log('[special OpenPokenavForTutorial] stub — TODO PokeNav UI');
+  return 0;
+});
+
+/** 1:1 décomp `TryBufferWaldaPhrase` / `DoWaldaNamingScreen` /
+ *  `TryGetWallpaperWithWaldaPhrase` — Walda's Phrases (= secret base
+ *  wallpaper customization). Late-game feature, stub for now. */
+registerSpecial('TryBufferWaldaPhrase', () => 0);
+registerSpecial('DoWaldaNamingScreen', () => 0);
+registerSpecial('TryGetWallpaperWithWaldaPhrase', () => 0);
+
 /** Boot marker — confirme que le registry a été importé au boot.
  *  Utilisé par debug pour vérifier que le module est loaded. */
-console.log('[specials-registry] loaded — 60 stubs registered (Phase 5.7+ iter7)');
+console.log('[specials-registry] loaded — 67 stubs registered (Phase 5.7+ iter8)');

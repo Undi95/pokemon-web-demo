@@ -1977,6 +1977,17 @@ registerOpcode('showobjectat', (_ctx, args) => {
   return false;
 });
 
+// 1:1 décomp `ScrCmd_getplayerxy` (scrcmd.c:319) — read player current XY into
+//   provided var pointers. Used in scripts that need player position (= e.g.
+//   Rusturf Tunnel cave-in cinematic).
+registerOpcode('getplayerxy', (_ctx, args) => {
+  const xVar = args[0] ?? '';
+  const yVar = args[1] ?? '';
+  if (xVar) VarSet(xVar, gameState.player?.x ?? 0);
+  if (yVar) VarSet(yVar, gameState.player?.y ?? 0);
+  return false;
+});
+
 // ─── Mark module loaded (= for sanity check) ────────────────────────────────
 
 console.log('[script-opcodes] registered Phase 4.5 MVP opcodes + iter6/7 stubs');
