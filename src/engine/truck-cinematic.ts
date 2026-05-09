@@ -182,6 +182,7 @@ export function ExecuteTruckSequence(rt: DecompRuntime): void {
 // data[1] = tTimer (frame counter du state)
 // data[2] = bobTimer (timer continu pour GetTruckCameraBobbingY) — used state 1+2+3
 // data[3] = horizMoveStep (index dans sTruckCamera_HorizontalTable) — used state 3
+// data[4] = truck3Swapped (= 1:1 décomp permanent func swap au xpan==2) — used state 3
 
 /** 1:1 décomp `Task_HandleTruckSequence` (field_special_scene.c:189-258).
  *  Inline Task_Truck1/2/3 logic dans la même state machine pour simplicité. */
@@ -247,6 +248,7 @@ const Task_HandleTruckSequence = function (task: DecompTask, rt: DecompRuntime):
         data[2] = 0;  // ← FIX : reset bobTimer (= mimic fresh Task_Truck2)
         data[0] = 3;
         data[3] = 0;  // reset horizontal step
+        data[4] = 0;  // ← reset Task_Truck3 swap flag (= 1:1 décomp fresh task)
         // 1:1 décomp `Task_HandleTruckSequence` state 2→3 (field_special_scene.c:217-224) :
         //   if (!gPaletteFade.active && tTimer > 300) {
         //       tTimer = 0;
@@ -282,14 +284,32 @@ const Task_HandleTruckSequence = function (task: DecompTask, rt: DecompRuntime):
         data[0] = 4;
       } else {
         const xpan = sTruckCamera_HorizontalTable[data[3]];
-        // 1:1 décomp : si table[step] === 2 → Task_Truck3 (= Y bob stops).
-        // Sinon Task_Truck2 (= Y bob continue + box bouncing).
-        if (xpan === 2) {
-          // Task_Truck3 : X seulement, no Y bob.
-          // AUDIT session 124 fix : décomp Task_Truck3 update aussi les box
-          // positions avec cameraYpan=0. Sans ça, les boxes "freezent" au
-          // moment du swap Task_Truck2→Task_Truck3 → user "preuve des
-          // cartons encore un peu bugué".
+        // ====== AUDIT session 124 FIX 1:1 DÉCOMP CRITIQUE ======
+        // User A/B test ROM (session 124) : "scene finale prouve qu'on rate
+        // des choses avec la position des cartons".
+        //
+        // Décomp `Task_Truck2` (field_special_scene.c:137-138) :
+        //   if (sTruckCamera_HorizontalTable[tMoveStep] == 2)
+        //       gTasks[taskId].func = Task_Truck3;
+        //
+        // Le swap vers Task_Truck3 est **PERMANENT** (= modifie la function
+        // pointer du task). Une fois swap fait à xpan=2, TOUTES les
+        // iterations suivantes (= -1, -1, -1, 0 dans le table) utilisent
+        // Task_Truck3 logic : NO Y BOB, NO BOX BOUNCING.
+        //
+        // Notre code re-évaluait `xpan === 2` chaque frame → quand xpan
+        // revient à -1 ou 0 (= indices 15-18), on retournait incorrectement
+        // au box-bouncing (= Y bob ON). Bug visuel : boxes bouncent à des
+        // moments où elles ne devraient pas → positions finales légèrement
+        // off versus ROM.
+        //
+        // Fix : flag `_truck3Swapped` persistent dans data (= utilise data[4]
+        // jusqu'ici unused). Une fois set à 1, on n'évalue plus xpan===2.
+        if (data[4] === 1 || xpan === 2) {
+          if (xpan === 2 && data[4] !== 1) {
+            data[4] = 1;  // permanent swap to Task_Truck3 logic
+          }
+          // Task_Truck3 : X seulement, no Y bob, no box bouncing.
           SetCameraPanning(xpan, 0);
           _applyBoxNoYBob(xpan);
         } else {
