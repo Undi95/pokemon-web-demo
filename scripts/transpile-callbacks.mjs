@@ -1095,6 +1095,22 @@ function generateModule(sceneName, entries, aliases, constResolver) {
   lines.push(`// @ts-nocheck`);
   lines.push(``);
   lines.push(`import type { DecompRuntime, DecompSprite, DecompTask } from '../../../decomp-runtime';`);
+  // Hardcoded import set from decomp-helpers.ts.
+  // ⚠ BUG FIX 2026-05-09 : ces symbols sont aussi candidats pour l'auto-scan
+  // de decomp-globals.ts (= certains sont définis en doublon par accident).
+  // On track ici l'ensemble pour exclure de l'auto-scan en aval (= éviter le
+  // bug "duplicate imports BLDALPHA_BLEND").
+  const HARDCODED_HELPERS_IMPORTS = new Set([
+    'Sin', 'Cos', 'Q_8_8_TO_INT', 'SetOamMatrix', 'CalcCenterToCornerVec',
+    'ST_OAM_AFFINE_OFF', 'ST_OAM_AFFINE_NORMAL', 'ST_OAM_AFFINE_DOUBLE', 'ST_OAM_AFFINE_ERASE',
+    'ST_OAM_OBJ_NORMAL', 'ST_OAM_OBJ_BLEND', 'ST_OAM_OBJ_WINDOW',
+    'ST_OAM_4BPP', 'ST_OAM_8BPP',
+    'RGB', 'RGB_BLACK', 'RGB_WHITE', 'RGB_WHITEALPHA',
+    'PLTT_SIZEOF', 'PLTT_SIZE_4BPP', 'PLTT_SIZE_8BPP',
+    'OBJ_PLTT_ID_FADED', 'BG_PLTT_ID_FADED',
+    'BLDALPHA_BLEND', 'WIN_RANGE', 'GET_TRUE_SPRITE_INDEX', 'ANIM_SPRITES_START',
+    'gSineTable', 'PaletteBuffer',
+  ]);
   lines.push(`import {`);
   lines.push(`  Sin, Cos, Q_8_8_TO_INT, SetOamMatrix, CalcCenterToCornerVec,`);
   lines.push(`  ST_OAM_AFFINE_OFF, ST_OAM_AFFINE_NORMAL, ST_OAM_AFFINE_DOUBLE, ST_OAM_AFFINE_ERASE,`);
@@ -1147,6 +1163,10 @@ function generateModule(sceneName, entries, aliases, constResolver) {
     if (!r.tsCode) continue;
     const ids = r.tsCode.match(/\b[A-Za-z_$][\w$]*\b/g) ?? [];
     for (const id of ids) {
+      // Skip symbols already imported from decomp-helpers (= BUG FIX 2026-05-09 :
+      // certains symbols comme BLDALPHA_BLEND existent dans LES DEUX fichiers,
+      // l'auto-import les ajoutait → "Duplicate identifier" TS error).
+      if (HARDCODED_HELPERS_IMPORTS.has(id)) continue;
       if (decompGlobalsExports.has(id)) usedDecompGlobals.add(id);
     }
   }
