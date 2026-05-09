@@ -31,7 +31,6 @@ import { DebugOverlayScene } from './scenes/DebugOverlayScene';
 import { BirchRuntimeScene } from './scenes/BirchRuntimeScene';
 import { OverworldScene } from './scenes/OverworldScene';
 import { TestOverworldScene } from './scenes/TestOverworldScene';
-import { StarterChooseScene } from './scenes/StarterChooseScene';
 import { createAudioDevtool } from './util/audio-devtool';
 import './util/remap-modal'; // exposes window.openRemapModal for the topbar button
 import { setMasterVolume } from './engine/m4a/audio-context';
@@ -142,8 +141,8 @@ const config: Phaser.Types.Core.GameConfig = {
     } catch { /* localStorage may be disabled — fallback to title */ }
     const skipTitle = noIntro || truckTest || hasResumableSave;
     return skipTitle
-      ? [TestOverworldScene, TestGbaScene, GameScene, BirchRuntimeScene, OverworldScene, StarterChooseScene]
-      : [TestGbaScene, GameScene, BirchRuntimeScene, TestOverworldScene, OverworldScene, StarterChooseScene];
+      ? [TestOverworldScene, TestGbaScene, GameScene, BirchRuntimeScene, OverworldScene]
+      : [TestGbaScene, GameScene, BirchRuntimeScene, TestOverworldScene, OverworldScene];
   })(),
   // Restrict input listeners to the canvas only (= clicks/keys outside the
   // game window don't start/affect the game). Default Phaser behavior is to
@@ -171,9 +170,6 @@ const config: Phaser.Types.Core.GameConfig = {
 };
 
 const game = new Phaser.Game(config);
-// Expose game globally for cross-scene access (= e.g. specials-registry
-// launching StarterChooseScene via game.scene.start).
-(window as any).__phaserGame = game;
 
 // Lance l'overlay debug en parallèle sur toutes les scènes
 void game.scene.add('DebugOverlayScene', DebugOverlayScene, true);

@@ -849,15 +849,8 @@ function _invokeSpecial(name: string): number {
  *      return FALSE;
  *  }
  *  ``` */
-registerOpcode('special', (ctx, args) => {
-  const name = args[0] as string;
-  _invokeSpecial(name);
-  // Phase 5.5 : ChooseStarter launches StarterChooseScene (= async UI).
-  // Block script via SetupNativeScript jusqu'à ce que VAR_STARTER_CHOOSE_DONE = 1.
-  if (name === 'ChooseStarter') {
-    SetupNativeScript(ctx, () => VarGet('VAR_STARTER_CHOOSE_DONE') === 1);
-    return true;
-  }
+registerOpcode('special', (_ctx, args) => {
+  _invokeSpecial(args[0] as string);
   return false;
 });
 
