@@ -414,7 +414,13 @@ function updateSpriteFrame(rt: DecompRuntime): void {
   if (!cfg) return;
 
   let frameIdx: number;
-  if (gPlayerAvatar.runningState === MOVING && gPlayerAvatar.stepFramesLeft > 0) {
+  // Session 124 fix : gate étendu pour scripted movement (= applymovement
+  // LOCALID_PLAYER walk_*). Le scripted movement set `stepFramesLeft` mais
+  // PAS `runningState = MOVING` (= éviter double-tick PlayerStep). Donc on
+  // accept aussi `stepFramesLeft > 0` standalone pour render walk anim.
+  // User feedback : "Mon perso glide toujours" → cause = condition trop
+  // stricte qui rejetait le scripted movement.
+  if (gPlayerAvatar.stepFramesLeft > 0) {
     // Walk anim 1:1 décomp `sAnim_GoSouth` (object_event_anims.h) :
     //   ANIMCMD_FRAME(walk_a, 8)
     //   ANIMCMD_FRAME(face, 8)
