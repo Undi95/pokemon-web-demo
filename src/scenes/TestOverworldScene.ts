@@ -747,25 +747,43 @@ export class TestOverworldScene extends Phaser.Scene {
         destY = dw.y;
         destDir = gPlayerAvatar.facing;  // preserve facing
         console.log(`[executeWarp] MAP_DYNAMIC → ${destMapId} (${destX}, ${destY})`);
-      } else if (warp.x >= 0 && warp.y >= 0) {
-        // Phase 4.10 : warp avec coordonnées explicites (= warpsilent depuis
-        // script form 2-args coord-pair, e.g. `warpsilent MAP, 8, 8`).
-        // 1:1 décomp `SetPlayerCoordsFromWarp` (overworld.c:603) :
-        //   if (warpId >= 0 && warpId < warpCount) → use warps[warpId]
-        //   else if (x >= 0 && y >= 0) → use those coords
-        // Notre warpsilent opcode peut set x=-1, y=-1 pour "no explicit coords"
-        // (= use warpId lookup ci-dessous via getPlayerCoordsFromWarp).
-        await loadMapByName(destMapId);  // ensure prefetch
-        destX = warp.x;
-        destY = warp.y;
-        destDir = gPlayerAvatar.facing;
-        console.log(`[executeWarp] explicit coords → ${destMapId} (${destX}, ${destY})`);
       } else {
+        // 1:1 décomp `SetPlayerCoordsFromWarp` (overworld.c:603) :
+        //   if (warpId >= 0 && warpId < destWarpCount) → use destWarps[warpId]
+        //   else if (x >= 0 && y >= 0) → use those coords
+        //   else → fallback (= map center / preserve facing)
+        //
+        // Bug fix 2026-05-09 : avant on checkait `warp.x >= 0` AVANT `warpId`.
+        // Le warp.x/y est la position SOURCE (= où le tile warp existe sur la
+        // current map) — pour le map.json warp_events, x/y est ~toujours >= 0.
+        // → on prenait toujours warp.x/y comme dest coords → tous les warps de
+        // Bourg-en-Vol arrivaient à la mauvaise position dans la dest map.
+        // Reported by user "tous les warps de bourg n vol sont décalés".
+        // Décomp check warpId FIRST. Notre WarpEvent.warpId vient de
+        // map.json:dest_warp_id (= valid 0..destWarpCount-1 pour les warps
+        // tile-driven). Pour `warpsilent MAP, NONE, X, Y` (= script explicit
+        // coords), on set warpId = -1 ailleurs.
         const destPreheader = await loadMapByName(destMapId);
-        const coords = getPlayerCoordsFromWarp(destPreheader, warp.warpId);
-        destX = coords.x;
-        destY = coords.y;
-        destDir = coords.facing;  // 1:1 décomp : facing carries over
+        if (warp.warpId >= 0 && warp.warpId < destPreheader.events.warps.length) {
+          const coords = getPlayerCoordsFromWarp(destPreheader, warp.warpId);
+          destX = coords.x;
+          destY = coords.y;
+          destDir = coords.facing;
+          console.log(`[executeWarp] warpId-driven → ${destMapId}#${warp.warpId} = (${destX}, ${destY})`);
+        } else if (warp.x >= 0 && warp.y >= 0) {
+          // warpsilent script form `warpsilent MAP, NONE, X, Y` — uses explicit
+          // dest coords, warpId is sentinel -1 / 0xFF.
+          destX = warp.x;
+          destY = warp.y;
+          destDir = gPlayerAvatar.facing;
+          console.log(`[executeWarp] explicit coords → ${destMapId} (${destX}, ${destY})`);
+        } else {
+          // Both invalid → fallback to map center (= 1:1 décomp behavior).
+          destX = Math.floor(destPreheader.mapLayout.width / 2);
+          destY = Math.floor(destPreheader.mapLayout.height / 2);
+          destDir = gPlayerAvatar.facing;
+          console.warn(`[executeWarp] no valid warpId or coords → map center (${destX}, ${destY})`);
+        }
       }
       // ⚠️ 1:1 décomp gate : `gPaletteFade.bufferTransferDisabled = TRUE` pendant
       // le load. Sans ça, l'auto-flushTo VBlank pousse les NEW colors écrites par

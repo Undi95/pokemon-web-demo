@@ -1460,19 +1460,19 @@ function parseWarpArgs(args: string[]): { destMap: string; warpId: number; x: nu
 registerOpcode('warpsilent', (_ctx, args) => {
   // 1:1 décomp `ScrCmd_warpsilent` : warp instantané sans fade.
   const { destMap, warpId, x, y } = parseWarpArgs(args);
-  // Setup pending warp via warp-system. Scene's MainCB2 picks it up.
-  // Note : on passe warpId = (warpId >= 0 ? warpId : 0) car notre warp-system
-  // n'a pas encore le concept WARP_ID_NONE. La logique executeWarp prend les
-  // coords explicites (x, y) en priorité quand x !== 0 || y !== 0, sinon use
-  // le warpId pour lookup dans gMapHeader.events.warps[].
-  setPendingWarp({ destMap, x, y, elevation: 0, warpId: warpId >= 0 ? warpId : 0 }, 'step');
+  // Bug fix 2026-05-09 : préserve warpId = -1 (= WARP_ID_NONE) quand le script
+  // utilise explicit coords (= form `warpsilent MAP, NONE, X, Y`). Avant on
+  // forçait warpId = 0, ce qui faisait que executeWarp utilisait warps[0] de
+  // la dest map au lieu des x/y explicites → tous les warps script-driven
+  // arrivaient à la mauvaise position.
+  setPendingWarp({ destMap, x, y, elevation: 0, warpId }, 'step');
   console.log(`[opcode warpsilent] ${destMap} warpId=${warpId} coords=(${x},${y})`);
   return false;
 });
 
 registerOpcode('warp', (_ctx, args) => {
   const { destMap, warpId, x, y } = parseWarpArgs(args);
-  setPendingWarp({ destMap, x, y, elevation: 0, warpId: warpId >= 0 ? warpId : 0 }, 'step');
+  setPendingWarp({ destMap, x, y, elevation: 0, warpId }, 'step');
   console.log(`[opcode warp] ${destMap} warpId=${warpId} coords=(${x},${y})`);
   return false;
 });
