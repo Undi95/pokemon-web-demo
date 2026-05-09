@@ -208,6 +208,100 @@ registerSpecial('BufferLeadMonSpeciesName', () => {
   }
 });
 
+// ─── PC effects (= used by post-rival-battle when player visits Birch's lab) ─
+
+/** 1:1 décomp `DoPCTurnOnEffect` (player_pc.c) : flicker animation when
+ *  PC monitor turns on. Stub : no visual effect. */
+registerSpecial('DoPCTurnOnEffect', () => { /* no-op */ });
+
+/** 1:1 décomp `DoPCTurnOffEffect` (player_pc.c). Stub. */
+registerSpecial('DoPCTurnOffEffect', () => { /* no-op */ });
+
+/** 1:1 décomp `TurnOnTVScreen` (field_specials.c) : TV interaction effect. */
+registerSpecial('TurnOnTVScreen', () => { /* no-op */ });
+
+/** 1:1 décomp `TurnOffTVScreen` (field_specials.c). Stub. */
+registerSpecial('TurnOffTVScreen', () => { /* no-op */ });
+
+/** 1:1 décomp `EnableNationalPokedex` (pokedex_data.c) : unlock National Pokedex.
+ *  Used post-Hall of Fame. MVP : just set a flag. */
+registerSpecial('EnableNationalPokedex', () => {
+  gameState.setFlag('FLAG_RECEIVED_POKEDEX_FROM_BIRCH');
+});
+
+/** 1:1 décomp `SetUnlockedPokedexFlags` (pokedex_data.c) : when player gets PokeDex,
+ *  flag the dex types as unlocked. Stub no-op. */
+registerSpecial('SetUnlockedPokedexFlags', () => { /* no-op */ });
+
+/** 1:1 décomp `InitRoamer` (roamer.c) : initialize legendary roamer state
+ *  (= Latios/Latias). Used post-EV. Stub no-op. */
+registerSpecial('InitRoamer', () => { /* no-op */ });
+
+/** 1:1 décomp `PlayerFaceTrainerAfterBattle` (event_object_movement.c) :
+ *  After winning trainer battle, player turns to face the trainer. Stub. */
+registerSpecial('PlayerFaceTrainerAfterBattle', () => { /* no-op */ });
+
+// ─── Additional commonly-used early-game specials ───────────────────────────
+
+/** 1:1 décomp `ScrSpecial_HealPlayerParty` (= alias of HealPlayerParty). */
+registerSpecial('ScrSpecial_HealPlayerParty', () => {
+  for (const mon of gameState.party) {
+    if (!mon) continue;
+    mon.currentHp = mon.maxHp;
+    mon.status = null;
+    for (const mv of mon.moves) mv.pp = mv.ppMax;
+  }
+});
+
+/** 1:1 décomp `Special_AreLeadMonEVsMaxedOut` (pokemon_util.c). Returns 0 (= no). */
+registerSpecial('Special_AreLeadMonEVsMaxedOut', () => 0);
+
+/** 1:1 décomp `IsBigMonAndPlayerCantPushDoor` (= door push check). Returns 0. */
+registerSpecial('IsBigMonAndPlayerCantPushDoor', () => 0);
+
+/** 1:1 décomp `LoadBattlePyramidObjectEventTemplates` (battle_pyramid.c). Stub. */
+registerSpecial('LoadBattlePyramidObjectEventTemplates', () => { /* no-op */ });
+
+/** 1:1 décomp `Special_StartLegendaryBattle` (battle_setup.c). Stub return WIN. */
+registerSpecial('Special_StartLegendaryBattle', () => {
+  gameState.setVar('VAR_RESULT', 1);
+  return 1;
+});
+
+/** 1:1 décomp `IsLastMonThatKnowsSurf` etc. — HM forget guards. Returns 0. */
+registerSpecial('IsLastMonThatKnowsSurf', () => 0);
+registerSpecial('IsLastMonThatKnowsCut', () => 0);
+registerSpecial('IsLastMonThatKnowsDive', () => 0);
+registerSpecial('IsLastMonThatKnowsRockSmash', () => 0);
+registerSpecial('IsLastMonThatKnowsFly', () => 0);
+registerSpecial('IsLastMonThatKnowsWaterfall', () => 0);
+registerSpecial('IsLastMonThatKnowsStrength', () => 0);
+registerSpecial('IsLastMonThatKnowsFlash', () => 0);
+
+/** 1:1 décomp `Special_ViewLottery` etc. — lottery / casino. Stubs. */
+registerSpecial('Special_ViewLottery', () => { /* no-op */ });
+registerSpecial('Special_BeginRouletteGame', () => { /* no-op */ });
+
+/** 1:1 décomp `BufferEReaderTrainerName`. Stub. */
+registerSpecial('BufferEReaderTrainerName', () => { /* no-op */ });
+
+/** 1:1 décomp `GetGameStat` (pokemon_util.c). Returns 0 for any stat. */
+registerSpecial('GetGameStat', () => 0);
+
+/** 1:1 décomp `PutZigzagoonInPlayerParty` (battle_setup.c) : adds Zigzagoon
+ *  for Birch tutorial battle if party is empty. */
+registerSpecial('PutZigzagoonInPlayerParty', () => {
+  // For our flow, we already have a Pokemon from ChooseStarter. If party is
+  // empty (= dev test), add a Zigzagoon.
+  if (gameState.partySize === 0) {
+    void (async () => {
+      const { createPokemonInstance } = await import('./pokemon');
+      const zig = createPokemonInstance('SPECIES_ZIGZAGOON', 5);
+      gameState.addToParty(zig);
+    })();
+  }
+});
+
 /** Boot marker — confirme que le registry a été importé au boot.
  *  Utilisé par debug pour vérifier que le module est loaded. */
 console.log('[specials-registry] loaded — 11 stubs registered (Phase 4.9 minimal)');
