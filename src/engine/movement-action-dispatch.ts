@@ -161,7 +161,7 @@ export function listUnbridgedActions(): string[] {
   return result.sort();
 }
 
-// Expose to dev tools.
+// Expose to dev tools + globalThis (= for movement-system fallback access).
 if (typeof window !== 'undefined') {
   (window as any).dev = (window as any).dev ?? {};
   (window as any).dev.movementDispatch = {
@@ -170,6 +170,7 @@ if (typeof window !== 'undefined') {
     getDispatchTable: () => Object.fromEntries(getDispatchTable()),
     listBridgedActions,
     listUnbridgedActions,
+    initMovementActionDispatch,
     help() {
       return [
         'dev.movementDispatch.* — auto-port dispatch des MovementAction_*_StepN',
@@ -181,4 +182,14 @@ if (typeof window !== 'undefined') {
       ].join('\n');
     },
   };
+  // Global registration so movement-system._tryAutoDispatch peut l'accéder
+  // sans circular import.
+  (globalThis as any).__movementDispatchMod = {
+    tryDispatch,
+    isAutoBridged,
+  };
+  // Auto-init au boot pour pré-load les JSON tables.
+  initMovementActionDispatch().catch(e =>
+    console.warn('[movement-action-dispatch] init failed:', e.message),
+  );
 }
