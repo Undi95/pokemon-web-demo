@@ -116,7 +116,12 @@ function applyNoIntroPreset(): void {
   // LittlerootTown_EventScript_SetReceivedRunningShoes scripts.inc:889).
   gameState.setFlag('FLAG_SYS_B_DASH');
   // Vars post-intro.
-  gameState.setVar('VAR_LITTLEROOT_INTRO_STATE', 6);
+  // ⚠️ HOTFIX 2026-05-09 : était à 6, ce qui fait que walking dans
+  // une maison fire le coord trigger `PetalburgGymReport` (= map_script_2
+  // VAR_LITTLEROOT_INTRO_STATE, 6, ...). State=7 = post-PetalburgGymReport,
+  // disable retrigger. Cf. data/scripts/players_house.inc:141.
+  // User report : "Chez May : Active quand même l'event de la TV".
+  gameState.setVar('VAR_LITTLEROOT_INTRO_STATE', 7);
   gameState.setVar('VAR_LITTLEROOT_TOWN_STATE', 4);
   gameState.setFlag('FLAG_SET_WALL_CLOCK');
   // 1:1 décomp `InsideOfTruck_EventScript_SetIntroFlagsMale` (scripts.inc:28-29) :
@@ -140,14 +145,18 @@ function applyNoIntroPreset(): void {
     gameState.setFlag('FLAG_HIDE_LITTLEROOT_TOWN_MAYS_HOUSE_RIVAL_MOM');       // hide rival_mom dans sa maison
     gameState.setFlag('FLAG_HIDE_LITTLEROOT_TOWN_MAYS_HOUSE_RIVAL_SIBLING');   // hide rival's sibling chez elle
     gameState.setFlag('FLAG_HIDE_LITTLEROOT_TOWN_MAYS_HOUSE_2F_POKE_BALL');    // post-intro pokeball gone
-    gameState.setVar('VAR_LITTLEROOT_HOUSES_STATE_MAY', 1);
+    // HOTFIX P1 : =2 au lieu de =1 → "déjà rencontré le rival's mom" → disable
+    // OnFrame trigger `YoureNewNeighbor` qui sinon fire dans BrendansHouse
+    // au moment où player y entre (= cross-house event leak signalé par user).
+    gameState.setVar('VAR_LITTLEROOT_HOUSES_STATE_MAY', 2);
   } else {
     // Player Brendan → sa maison = BrendansHouse, rival = May dans MaysHouse.
     gameState.setFlag('FLAG_HIDE_LITTLEROOT_TOWN_MAYS_HOUSE_MOM');             // hide player_mom dans rival's house
     gameState.setFlag('FLAG_HIDE_LITTLEROOT_TOWN_BRENDANS_HOUSE_RIVAL_MOM');   // hide rival_mom dans sa maison
     gameState.setFlag('FLAG_HIDE_LITTLEROOT_TOWN_BRENDANS_HOUSE_RIVAL_SIBLING'); // hide rival's sibling
     gameState.setFlag('FLAG_HIDE_LITTLEROOT_TOWN_BRENDANS_HOUSE_2F_POKE_BALL');
-    gameState.setVar('VAR_LITTLEROOT_HOUSES_STATE_BRENDAN', 1);
+    // HOTFIX P1 : same as FEMALE branch — passe à 2 (= déjà rencontré).
+    gameState.setVar('VAR_LITTLEROOT_HOUSES_STATE_BRENDAN', 2);
   }
   // Vigoroth déménageurs : visibles pendant l'intro 1F seulement (= player coming
   // home). Une fois sortis (= ?nointro = post-intro), ils sont gone.
@@ -172,10 +181,19 @@ function applyNoIntroPreset(): void {
 export function decideBootMode(): BootSpawn {
   if (hasNoIntroParam()) {
     applyNoIntroPreset();
-    // Spawn juste devant la porte sud de la maison Brendan (= warp x=5,y=8 à
-    // Bourg-en-Vol fait sortir le joueur à (5, 8) facing SOUTH ; on spawn à
-    // (5, 9) pour être déjà sous le porche, libre de marcher).
-    return { mapId: 'MAP_LITTLEROOT_TOWN', x: 5, y: 9, facing: DIR_SOUTH, mode: 'nointro' };
+    // 1:1 décomp `setdynamicwarp MAP_LITTLEROOT_TOWN, 3, 10` (MALE) /
+    // `setdynamicwarp MAP_LITTLEROOT_TOWN, 12, 10` (FEMALE)
+    // (data/maps/InsideOfTruck/scripts.inc:33,46). Le decomp décale x=3 (vs
+    // notre warp position 5,8) car setdynamicwarp set le RESPAWN tile, pas
+    // la position spawn. Pour le simple ?nointro on spawn directement devant
+    // la porte de la maison du player :
+    //   MALE   → devant Brendan's House à (5, 9) facing SOUTH
+    //   FEMALE → devant May's House à (14, 9) facing SOUTH
+    // Sans la branch gender, FEMALE entrait dans BRENDAN's house qui n'a
+    // pas son layout actif → bug visible (= mauvaise maison).
+    const isFemale = gameState.gender === 'FEMALE';
+    const spawnX = isFemale ? 14 : 5;
+    return { mapId: 'MAP_LITTLEROOT_TOWN', x: spawnX, y: 9, facing: DIR_SOUTH, mode: 'nointro' };
   }
 
   if (hasTruckParam()) {

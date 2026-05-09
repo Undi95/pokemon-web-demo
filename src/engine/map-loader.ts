@@ -497,7 +497,9 @@ export async function loadMapHeader(mapId: string): Promise<MapHeader> {
     }>;
     warp_events?: Array<{
       x: number; y: number; elevation: number;
-      dest_map: string; dest_warp_id: number;
+      // Note : dest_warp_id est sérialisé `string` (= "1") dans les JSON décomp.
+      // À runtime on parseInt() pour matcher le type WarpEvent.warpId: number.
+      dest_map: string; dest_warp_id: string | number;
     }>;
     coord_events?: Array<{
       type: string; x: number; y: number; elevation: number;
@@ -536,7 +538,10 @@ export async function loadMapHeader(mapId: string): Promise<MapHeader> {
 
   const warps: WarpEvent[] = (json.warp_events ?? []).map(w => ({
     x: w.x, y: w.y, elevation: w.elevation,
-    warpId: w.dest_warp_id, destMap: w.dest_map,
+    // HOTFIX P2 : dest_warp_id arrive en string ("1"), parseInt pour matcher
+    // le type number et éviter les bugs futurs sur arithmétique (= "1"+1="11").
+    warpId: typeof w.dest_warp_id === 'string' ? parseInt(w.dest_warp_id, 10) : w.dest_warp_id,
+    destMap: w.dest_map,
   }));
 
   const coordEvents: CoordEvent[] = (json.coord_events ?? [])
