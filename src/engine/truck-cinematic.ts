@@ -29,10 +29,7 @@
  */
 import type { DecompRuntime, DecompTask } from './decomp-runtime';
 import { PlaySE } from './decomp-globals';
-import {
-  stopPrerenderedSE, playPrerenderedSE, playPrerenderedSEWithLoop,
-  preloadPrerenderedSEs,
-} from './m4a/se-noise-prerendered';
+import { stopPrerenderedSE, preloadPrerenderedSEs } from './m4a/se-noise-prerendered';
 import {
   SE_TRUCK_MOVE,
   SE_TRUCK_STOP,
@@ -197,20 +194,14 @@ const Task_HandleTruckSequence = function (task: DecompTask, rt: DecompRuntime):
       if (data[1] === 90) {
         data[1] = 0;
         data[0] = 1;
-        // Session 124 fix Bug 2 : SE_MOVE en LOOP pendant toute la cinématique
-        // (= 1:1 ROM behavior : le son du camion qui roule joue continu jusqu'à
-        // ce que le camion s'arrête).
-        //
-        // ROM décomp ne loop pas explicitement le SE car le sample SE_MOVE ROM
-        // est probablement plus long (~10s+) ET le sound engine GBA reboucle
-        // les samples avec sustain. Notre WAV pre-rendered = 8s one-shot →
-        // sans loop, gap entre fin du WAV et SE_STOP.
-        //
-        // Solution : `playPrerenderedSEWithLoop` (cf. se-noise-prerendered.ts)
-        // joue le buffer en loop. Le state 2→3 transition appelle
-        // stopPrerenderedSE qui kill le loop avant SE_STOP.
-        playPrerenderedSEWithLoop('se_truck_move', 'se1');
-        console.log('[truck-cinematic] state 0→1 : SE_TRUCK_MOVE looped (will stop at state 2→3)');
+        // 1:1 décomp `Task_HandleTruckSequence` state 0→1 (field_special_scene.c:203) :
+        //   PlaySE(SE_TRUCK_MOVE);
+        // User a A/B testé contre ROM (session 124) : le timing 1:1 est juste.
+        // Le silence perçu vient d'un son intermédiaire / queue de sample
+        // MANQUANT côté SF2 (= rendu MIDI imparfait vs ROM m4a). On ne peut
+        // pas fix sans re-rip les samples ROM. Accepté tel quel pour MVP.
+        PlaySE(SE_TRUCK_MOVE);
+        console.log('[truck-cinematic] state 0→1 : SE_TRUCK_MOVE (1:1 décomp PlaySE)');
       }
       break;
     case 1:
@@ -256,16 +247,16 @@ const Task_HandleTruckSequence = function (task: DecompTask, rt: DecompRuntime):
         data[2] = 0;  // ← FIX : reset bobTimer (= mimic fresh Task_Truck2)
         data[0] = 3;
         data[3] = 0;  // reset horizontal step
-        // Session 124 fix attempt 3 truck silence : play SE_TRUCK_STOP sur le
-        // MÊME slot que SE_MOVE (= se1) pour que le mono-cut interne de
-        // playPrerenderedSE kill SE_MOVE + start SE_STOP en une seule op
-        // atomique. Avant : `stopPrerenderedSE + PlaySE` async séparés
-        // créaient un gap audible (= user "toujours silence"). Bypass `PlaySE`
-        // (= alterne slots) en appelant playPrerenderedSE direct.
-        void playPrerenderedSE('se_truck_stop', 'se1');
-        // Stop slot se2 par sécurité au cas où.
-        stopPrerenderedSE('se2');
-        console.log('[truck-cinematic] state 2→3 : SE_TRUCK_STOP via mono-cut on slot se1 (= no gap)');
+        // 1:1 décomp `Task_HandleTruckSequence` state 2→3 (field_special_scene.c:217-224) :
+        //   if (!gPaletteFade.active && tTimer > 300) {
+        //       tTimer = 0;
+        //       DestroyTask(tTaskId1);                // (= Task_Truck1)
+        //       tTaskId2 = CreateTask(Task_Truck2, 0xA);
+        //       tState = 3;
+        //       PlaySE(SE_TRUCK_STOP);
+        //   }
+        PlaySE(SE_TRUCK_STOP);
+        console.log('[truck-cinematic] state 2→3 : SE_TRUCK_STOP (1:1 décomp PlaySE)');
       }
       break;
     case 3:
