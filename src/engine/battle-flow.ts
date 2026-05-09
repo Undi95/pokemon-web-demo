@@ -276,6 +276,9 @@ export function startWildBattle(params: BattleParams): BattleFlow {
   // Turn counter for some text variation.
   let turnCount = 0;
 
+  // Iter18 : track if player cry was played this battle (= once-only on first turn).
+  let _playerCryPlayed = false;
+
   /** Refresh both HP windows with current HP text.
    *  IMPORTANT : doit appeler CopyWindowToVram après le draw pour pousser
    *  le contenu vers le BG (sinon HP text reste blanche / stale → bug iter11). */
@@ -532,6 +535,10 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       case 'INTRO_TEXT': {
         if (!opponentMon) { state = 'CLEANUP'; return false; }
         ShowFieldMessage(`Un ${opponentMon.nickname} sauvage\napparaît!`);
+        // Iter18 : play opponent cry on appear (= 1:1 décomp behavior).
+        void import('./music').then(({ playCry }) => {
+          playCry(opponentMon!.nickname);
+        });
         state = 'INTRO_WAIT';
         return false;
       }
@@ -546,6 +553,14 @@ export function startWildBattle(params: BattleParams): BattleFlow {
 
       case 'PLAYER_TURN_PROMPT': {
         if (!playerMon) { state = 'CLEANUP'; return false; }
+        // Iter18 : play player cry on first turn prompt (= when player mon
+        // visually "comes out" of its ball). Only once per battle.
+        if (!_playerCryPlayed) {
+          _playerCryPlayed = true;
+          void import('./music').then(({ playCry }) => {
+            playCry(playerMon!.nickname);
+          });
+        }
         ShowFieldMessage(`Que doit faire\n${playerMon.nickname}?`);
         state = 'PLAYER_TURN_PROMPT_WAIT';
         return false;
