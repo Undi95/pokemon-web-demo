@@ -141,6 +141,73 @@ registerSpecial('IsEnoughForCostInVar0x8005', () => {
 registerSpecial('SetCableClubWarp', () => { /* no-op stub */ });
 registerSpecial('DoCableClubWarp', () => { /* no-op stub */ });
 
+/** 1:1 décomp `StartWallClock` (wallclock.c) :
+ *    Set the player's wall clock UI. Used in PlayersHouse_2F when checking
+ *    the clock for the first time. Phase 5+ : implement full UI.
+ *    Stub no-op (= scripts continue without setting the clock).
+ *    NB : the script uses `waitstate=1` but our SetupNativeScript sync
+ *    return makes it skip the wait → safe noop. */
+registerSpecial('StartWallClock', () => {
+  console.log('[special StartWallClock] stub — clock UI not yet implemented (Phase 6+)');
+  // Default to 12:00 noon (= 1:1 décomp gLocalTime).
+  gameState.setVar('VAR_HOURS', 12);
+  gameState.setVar('VAR_MINUTES', 0);
+});
+
+/** 1:1 décomp `Special_ViewWallClock` (wallclock.c).
+ *  Read clock state. Stub no-op. */
+registerSpecial('Special_ViewWallClock', () => {
+  console.log('[special Special_ViewWallClock] stub — clock UI not yet implemented');
+});
+
+/** 1:1 décomp `ResetCyclingRoadChallengeData` (field_specials.c). Stub. */
+registerSpecial('ResetCyclingRoadChallengeData', () => {
+  // No cycling road in early game.
+});
+
+/** 1:1 décomp `Special_BeginCyclingRoadChallenge` (field_specials.c). Stub. */
+registerSpecial('Special_BeginCyclingRoadChallenge', () => {
+  // No cycling road in early game.
+});
+
+/** 1:1 décomp `Special_ShowDiploma` (field_specials.c). Stub. */
+registerSpecial('Special_ShowDiploma', () => {
+  console.log('[special Special_ShowDiploma] stub — diploma UI not yet implemented');
+});
+
+/** 1:1 décomp `BufferStreaksAndRecords` (battle_factory.c). Stub. */
+registerSpecial('BufferStreaksAndRecords', () => {
+  // No battle frontier.
+});
+
+/** 1:1 décomp `IsBadEggInParty` (pokemon_util.c). Returns 0 = no bad eggs. */
+registerSpecial('IsBadEggInParty', () => 0);
+
+/** 1:1 décomp `RemoveAllWeatherPokemonItemEffect` (battle_util.c). Stub. */
+registerSpecial('RemoveAllWeatherPokemonItemEffect', () => {
+  // No weather effects in early game.
+});
+
+/** 1:1 décomp `IsLeadMonNicknamed` (pokemon_util.c).
+ *  Returns 1 if first party mon has a nickname (= different from species name).
+ *  For starter, name == species (= "ARCKO"), so returns 0 (= not nicknamed). */
+registerSpecial('IsLeadMonNicknamed', () => {
+  const lead = gameState.party[0];
+  if (!lead) return 0;
+  // Nickname is set via createPokemonInstance default = species name FR.
+  // Real check : compare nickname to species name. Stub : assume not nicknamed.
+  return 0;
+});
+
+/** 1:1 décomp `BufferLeadMonSpeciesName` (pokemon_util.c).
+ *  Sets gStringVar1 to lead party mon species name. Used by scripts post-battle. */
+registerSpecial('BufferLeadMonSpeciesName', () => {
+  const lead = gameState.party[0];
+  if (lead && lead.speciesNameFr) {
+    setStringVar(1, lead.speciesNameFr);
+  }
+});
+
 /** Boot marker — confirme que le registry a été importé au boot.
  *  Utilisé par debug pour vérifier que le module est loaded. */
 console.log('[specials-registry] loaded — 11 stubs registered (Phase 4.9 minimal)');
