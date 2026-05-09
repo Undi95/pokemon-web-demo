@@ -1481,6 +1481,114 @@ registerOpcode('warp', (_ctx, args) => {
 
 registerOpcode('setrespawn', (_ctx, _args) => false);
 
+// ─── Misc stubs (= unblock script flow without full implementation) ─────────
+
+/** 1:1 décomp `ScrCmd_incrementgamestat` (scrcmd.c) : track game statistics
+ *  (= GAME_STAT_CHECKED_CLOCK, GAME_STAT_BATTLES, etc.). MVP : log + no-op. */
+registerOpcode('incrementgamestat', (_ctx, args) => {
+  const stat = args[0] ?? '';
+  // No tracking for MVP. Could store in gameState if needed later.
+  void stat;
+  return false;
+});
+
+/** 1:1 décomp `ScrCmd_playmoncry` (scrcmd.c) : play Pokemon cry.
+ *  Args : species (= "VAR_TEMP_1" ou "SPECIES_X"), mode (= 0 normal). */
+registerOpcode('playmoncry', (_ctx, args) => {
+  const speciesArg = args[0] ?? '';
+  // Resolve species : VAR_X → lookup, else assume direct enum.
+  const speciesName = speciesArg.startsWith('VAR_') || speciesArg.startsWith('0x80')
+    ? `SPECIES_${gameState.getVar(speciesArg)}`  // crude mapping
+    : speciesArg;
+  void import('./decomp-globals').then(({ PlayCryInternal }) => {
+    PlayCryInternal(speciesName, 0, 64, 0, 0);
+  }).catch(() => {});
+  return false;
+});
+
+/** 1:1 décomp `ScrCmd_waitmoncry` (scrcmd.c) : wait for cry to finish. No-op MVP. */
+registerOpcode('waitmoncry', (_ctx, _args) => false);
+
+/** 1:1 décomp `giveitem` macro = additem + msgbox + fanfare. Stub : just additem. */
+registerOpcode('giveitem', (_ctx, args) => {
+  const itemKey = args[0] ?? '';
+  const count = resolveCount(args[1] ?? '1');
+  const ok = AddBagItem(itemKey, count);
+  gameState.setVar('VAR_RESULT', ok ? 1 : 0);
+  console.log(`[opcode giveitem] ${itemKey} x${count} → ${ok ? 'ok' : 'failed'}`);
+  return false;
+});
+
+/** 1:1 décomp `givecoins` macro. Stub. */
+registerOpcode('givecoins', (_ctx, _args) => false);
+
+/** 1:1 décomp `givemoney` macro. Stub. */
+registerOpcode('givemoney', (_ctx, _args) => false);
+
+/** 1:1 décomp `takemoney` macro. Stub. */
+registerOpcode('takemoney', (_ctx, _args) => false);
+
+/** 1:1 décomp `addtronyc_extras` Pokemon-related. Stub. */
+registerOpcode('givepokemon', (_ctx, _args) => false);
+registerOpcode('checkmoney', (_ctx, _args) => {
+  gameState.setVar('VAR_RESULT', 0);
+  return false;
+});
+
+/** 1:1 décomp `startminigame_*` etc. Stubs no-op. */
+registerOpcode('cmd5e', (_ctx, _args) => false);
+registerOpcode('setweather', (_ctx, _args) => false);
+registerOpcode('doweather', (_ctx, _args) => false);
+registerOpcode('setstepcallback', (_ctx, _args) => false);
+registerOpcode('setmaplayoutindex', (_ctx, _args) => false);
+registerOpcode('setobjectsubpriority', (_ctx, _args) => false);
+registerOpcode('resetobjectsubpriority', (_ctx, _args) => false);
+registerOpcode('createvobject', (_ctx, _args) => false);
+registerOpcode('turnvobject', (_ctx, _args) => false);
+registerOpcode('opendoor', (_ctx, _args) => false);
+registerOpcode('closedoor', (_ctx, _args) => false);
+registerOpcode('waitdooranim', (_ctx, _args) => false);
+registerOpcode('setdoor_opened', (_ctx, _args) => false);
+registerOpcode('setdoor_closed', (_ctx, _args) => false);
+registerOpcode('addelevmenuitem', (_ctx, _args) => false);
+registerOpcode('showelevmenu', (_ctx, _args) => false);
+registerOpcode('checkcoins', (_ctx, _args) => {
+  gameState.setVar('VAR_RESULT', 0);
+  return false;
+});
+registerOpcode('takecoins', (_ctx, _args) => false);
+registerOpcode('vbuffer', (_ctx, _args) => false);
+registerOpcode('buffermoneyamount', (_ctx, _args) => false);
+registerOpcode('bufferspeciesname', (_ctx, _args) => false);
+registerOpcode('bufferleadmonspeciesname', (_ctx, _args) => false);
+registerOpcode('buffertrainerclassname', (_ctx, _args) => false);
+registerOpcode('buffertrainername', (_ctx, _args) => false);
+registerOpcode('bufferpartymonnick', (_ctx, _args) => false);
+registerOpcode('bufferitemname', (_ctx, _args) => false);
+registerOpcode('bufferdecorationname', (_ctx, _args) => false);
+registerOpcode('buffermovename', (_ctx, _args) => false);
+registerOpcode('buffernumberstring', (_ctx, _args) => false);
+registerOpcode('bufferstdstring', (_ctx, _args) => false);
+registerOpcode('bufferstring', (_ctx, _args) => false);
+registerOpcode('bufferboxname', (_ctx, _args) => false);
+registerOpcode('bufferattackname', (_ctx, _args) => false);
+registerOpcode('preparemsg', (_ctx, _args) => false);
+registerOpcode('selectapproachingtrainer', (_ctx, _args) => false);
+registerOpcode('lockfortrainer', (_ctx, _args) => false);
+registerOpcode('faceplayer', (_ctx, _args) => false);
+registerOpcode('turnobject', (_ctx, _args) => false);
+registerOpcode('vmessage', (_ctx, _args) => false);
+registerOpcode('vmsgbox', (_ctx, _args) => false);
+registerOpcode('vbufferstring', (_ctx, _args) => false);
+registerOpcode('checkpartymove', (_ctx, _args) => {
+  gameState.setVar('VAR_RESULT', 0);
+  return false;
+});
+registerOpcode('countpokemon', (_ctx) => {
+  gameState.setVar('VAR_RESULT', gameState.partySize);
+  return false;
+});
+
 // ─── Setdynamicwarp + sync gameState ───────────────────────────────────────
 
 registerOpcode('setdynamicwarp', (_ctx, args) => {
