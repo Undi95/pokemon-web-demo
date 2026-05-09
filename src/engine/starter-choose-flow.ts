@@ -39,6 +39,7 @@ import { Sin } from './decomp-helpers';
 import { loadTileBin, loadGbaPal } from './gba/png-loader';
 import { CopyMapTilesetsToVram, flushOverworldTilemaps, gMapHeader } from './map-loader';
 import { pauseTilesetAnimations, resumeTilesetAnimations } from './tileset-anims';
+import { setFieldCameraSuspended } from './field-camera';
 import { getString, initStringsFromDecomp } from './gba-strings';
 import { getSpeciesNameFr } from './data-tables';
 
@@ -80,12 +81,18 @@ const DPAD_LEFT  = 0x20;
 const POKEBALL_SHEET_URL = '/decomp/em/starter_choose/pokeball_selection.png';
 const STARTER_CIRCLE_SHEET_URL = '/decomp/em/starter_choose/starter_circle.png';
 
-type State = 'LOAD_ASSETS' | 'WAIT_LOAD' | 'SPAWN_SPRITES'
+type State = 'LOAD_ASSETS' | 'WAIT_LOAD'
+           | 'FADE_OUT_OVERWORLD' | 'WAIT_FADE_OUT_OVERWORLD'
+           | 'SCENE_INIT'
+           | 'WAIT_FADE_IN_BIRCH'
+           | 'SPAWN_SPRITES'
            | 'PROMPT_INIT' | 'PROMPT_WAIT' | 'WAIT_INPUT'
            | 'ASK_CONFIRM_INIT' | 'ASK_CONFIRM_WAIT' | 'WAIT_CONFIRM'
            | 'COMMIT_INIT'
            | 'DECLINE_INIT'
+           | 'FADE_OUT_BIRCH' | 'WAIT_FADE_OUT_BIRCH'
            | 'CLEANUP'
+           | 'WAIT_FADE_IN_OVERWORLD'
            | 'DONE';
 
 interface ChooseStarterFlow {
@@ -123,6 +130,14 @@ export function startChooseStarterFlow(): ChooseStarterFlow {
 
   // 1:1 décomp `CopyMonCategoryText` resolved at load (= sync access in tick).
   const starterCategories: string[] = ['', '', ''];
+
+  // Birch BG asset bytes — fetched in LOAD_ASSETS, applied dans SCENE_INIT
+  // (= behind black fade pour matcher le décomp pattern : fade-out → wipe →
+  // fade-in plutôt que swap visible).
+  let birchTilesData: Uint8Array | null = null;
+  let birchPalette: Uint16Array | null = null;
+  let birchBagTilemap: ArrayBuffer | null = null;
+  let birchGrassTilemap: ArrayBuffer | null = null;
 
   // 1:1 décomp `ResetSpriteData()` setup : save visible OAM slots avant hide,
   // pour restore au cleanup. Notre approche inline ne destroy pas les overworld
@@ -191,12 +206,10 @@ export function startChooseStarterFlow(): ChooseStarterFlow {
                 starterCategories[i] = await getDexCategoryFr(STARTER_SPECIES[i]);
               }
 
-              // Phase 5.1 — Birch BG scene switch (= 1:1 décomp `CB2_ChooseStarter`
-              // setup BG2 + BG3 avec birch_bag tilemap + birch_grass tilemap).
-              // Replace l'overworld background avec la scène ROM authentique
-              // pendant le starter choice. Assets : tiles.4bpp.bin (= 256 tiles
-              // 4bpp packed) + tiles.gbapal (= 32 colors split en 2 sub-palettes,
-              // tilemap encodes via bits 12-15 quel sub-palette par tile).
+              // Phase 5.1 — Birch BG asset bytes (= 1:1 décomp gBirchBagGrass_Gfx
+              // + gBirchBagTilemap + gBirchGrassTilemap + gBirchBagGrass_Pal).
+              // Fetched ici, applied dans SCENE_INIT (= behind black fade) pour
+              // matcher le décomp pattern fade-out → wipe → fade-in.
               try {
                 const [tilesData, palette, birchBagBin, birchGrassBin] = await Promise.all([
                   loadTileBin('/decomp/em/starter_choose/tiles.png', 4),
@@ -204,43 +217,13 @@ export function startChooseStarterFlow(): ChooseStarterFlow {
                   fetch('/decomp/em/starter_choose/birch_bag.bin').then(r => r.arrayBuffer()),
                   fetch('/decomp/em/starter_choose/birch_grass.bin').then(r => r.arrayBuffer()),
                 ]);
-                // 1:1 décomp `ResetSpriteData()` : hide all OAM sprites avant
-                // de spawn nos pokeballs/hand. Notre approche inline est non-
-                // destructive : save les visible slots overworld pour restore
-                // au cleanup (= NPCs, player avatar, follow Mom restent spawned
-                // côté engine, juste OAM visibility off le temps de Birch BG).
-                for (let i = 0; i < 128; i++) {
-                  if (rt.gba.oam[i].visible) savedVisibleOam.add(i);
-                  rt.gba.oam[i].visible = false;
-                }
-                // Hide overworld BG1/BG2/BG3 (= keep BG0 pour windows dialog).
-                HideBg(1); HideBg(2); HideBg(3);
-                // Pause overworld tileset animations : sinon TilesetAnim_General
-                // réécrit les water/flower tiles à VRAM 0x3000-0x3800 chaque frame
-                // et clobbe nos tilemaps Birch (BG3 mapBase 6 = 0x3000, BG2 mapBase 7
-                // = 0x3800). Cf. tileset-anims.ts:312 UpdateTilesetAnimations.
-                pauseTilesetAnimations();
-                // Reset BG scroll (= overworld camera vofs/hofs leftover).
-                rt.gba.bg(2).config.vofs = 0;
-                rt.gba.bg(2).config.hofs = 0;
-                rt.gba.bg(3).config.vofs = 0;
-                rt.gba.bg(3).config.hofs = 0;
-                // Write tile graphics → VRAM offset 0 (= charBase 0 shared).
-                rt.gba.vram.set(tilesData, 0);
-                // Write tilemaps → mapBase 6 (BG3 birch_bag) + 7 (BG2 birch_grass).
-                rt.gba.vram.set(new Uint8Array(birchBagBin), 6 * 0x800);
-                rt.gba.vram.set(new Uint8Array(birchGrassBin), 7 * 0x800);
-                // Load 32-entry palette → BG_PLTT_ID(0) (= flow into sub-pal 0+1).
-                LoadPalette(palette, 0, palette.length * 2);
-                // Init BG2 (charBase 0, mapBase 7, priority 3 = grass behind)
-                // et BG3 (charBase 0, mapBase 6, priority 1 = bag in front).
-                // 1:1 décomp `sBgTemplates[1..2]` (starter_choose.c:131-149).
-                InitBgFromTemplate({ bg: 2, charBaseIndex: 0, mapBaseIndex: 7, screenSize: 0, paletteMode: 0, priority: 3, baseTile: 0 });
-                InitBgFromTemplate({ bg: 3, charBaseIndex: 0, mapBaseIndex: 6, screenSize: 0, paletteMode: 0, priority: 1, baseTile: 0 });
-                ShowBg(2); ShowBg(3);
-                console.log('[StarterChoose] Birch BG scene loaded (32-color palette, sub-palettes 0+1)');
+                birchTilesData = tilesData;
+                birchPalette = palette;
+                birchBagTilemap = birchBagBin;
+                birchGrassTilemap = birchGrassBin;
               } catch (bgErr) {
-                console.warn('[StarterChoose] Birch BG load failed (non-fatal)', bgErr);
+                console.warn('[StarterChoose] Birch BG asset fetch failed', bgErr);
+                throw bgErr;
               }
               loadDone = true;
             } catch (e) {
@@ -260,7 +243,82 @@ export function startChooseStarterFlow(): ChooseStarterFlow {
           state = 'COMMIT_INIT';
           return false;
         }
-        if (loadDone) state = 'SPAWN_SPRITES';
+        if (loadDone) state = 'FADE_OUT_OVERWORLD';
+        return false;
+      }
+
+      case 'FADE_OUT_OVERWORLD': {
+        // 1:1 décomp : avant CB2_ChooseStarter, le caller fade out vers RGB_BLACK
+        // (= overworld disappears to black). Notre approche inline reproduit ça.
+        // BeginNormalPaletteFade(palettes, delay, startY, endY, color) :
+        //   startY=0 (= visible) → endY=16 (= fully black blend) → fade out.
+        rt.BeginNormalPaletteFade(0xFFFFFFFF, 0, 0, 16, 0);
+        state = 'WAIT_FADE_OUT_OVERWORLD';
+        return false;
+      }
+
+      case 'WAIT_FADE_OUT_OVERWORLD': {
+        if (!rt.gPaletteFade.active) state = 'SCENE_INIT';
+        return false;
+      }
+
+      case 'SCENE_INIT': {
+        // Behind black fade : do the wipe + Birch BG setup (= 1:1 décomp
+        // CB2_ChooseStarter wipe pattern : DmaFill VRAM/OAM/PLTT + load
+        // tiles + tilemaps + palette + InitBgsFromTemplates + ShowBg + fade in).
+        if (!birchTilesData || !birchPalette || !birchBagTilemap || !birchGrassTilemap) {
+          console.error('[StarterChoose] SCENE_INIT : asset bytes not loaded');
+          state = 'COMMIT_INIT';
+          return false;
+        }
+        // 1:1 décomp `ResetSpriteData()` : hide all OAM. Save visible slots
+        // pour restore au cleanup (= NPCs, player avatar, etc. restent spawned).
+        for (let i = 0; i < 128; i++) {
+          if (rt.gba.oam[i].visible) savedVisibleOam.add(i);
+          rt.gba.oam[i].visible = false;
+        }
+        // Hide overworld BG1/2/3 (= keep BG0 pour windows dialog).
+        HideBg(1); HideBg(2); HideBg(3);
+        // Pause overworld tileset animations + suspend FieldUpdateBgTilemapScroll
+        // (= sinon TilesetAnim_General clobbe nos tilemaps + scroll camera
+        // override BG2/3 vofs leftover de l'overworld).
+        pauseTilesetAnimations();
+        setFieldCameraSuspended(true);
+        // Reset BG2/3 scroll registers (= 1:1 décomp ChangeBgX/Y BG_COORD_SET 0).
+        rt.SetGpuReg(0x14 /* REG_BG2HOFS */, 0);
+        rt.SetGpuReg(0x16 /* REG_BG2VOFS */, 0);
+        rt.SetGpuReg(0x18 /* REG_BG3HOFS */, 0);
+        rt.SetGpuReg(0x1A /* REG_BG3VOFS */, 0);
+        rt.gba.bg(2).config.vofs = 0;
+        rt.gba.bg(2).config.hofs = 0;
+        rt.gba.bg(3).config.vofs = 0;
+        rt.gba.bg(3).config.hofs = 0;
+        // 1:1 décomp `LZ77UnCompVram(gBirchBagGrass_Gfx, VRAM)` (= tiles à
+        // VRAM offset 0, charBase 0).
+        rt.gba.vram.set(birchTilesData, 0);
+        // 1:1 décomp `LZ77UnCompVram(gBirchBagTilemap, BG_SCREEN_ADDR(6))` (= BG3)
+        // + `LZ77UnCompVram(gBirchGrassTilemap, BG_SCREEN_ADDR(7))` (= BG2).
+        rt.gba.vram.set(new Uint8Array(birchBagTilemap), 6 * 0x800);
+        rt.gba.vram.set(new Uint8Array(birchGrassTilemap), 7 * 0x800);
+        // 1:1 décomp `LoadPalette(gBirchBagGrass_Pal, BG_PLTT_ID(0), sizeof(...))`
+        // = 32 entries flow vers sub-pal 0+1.
+        LoadPalette(birchPalette, 0, birchPalette.length * 2);
+        // 1:1 décomp `InitBgsFromTemplates(0, sBgTemplates, 3)` :
+        // BG2 : charBase 0, mapBase 7, priority 3 (grass behind)
+        // BG3 : charBase 0, mapBase 6, priority 1 (bag in front)
+        InitBgFromTemplate({ bg: 2, charBaseIndex: 0, mapBaseIndex: 7, screenSize: 0, paletteMode: 0, priority: 3, baseTile: 0 });
+        InitBgFromTemplate({ bg: 3, charBaseIndex: 0, mapBaseIndex: 6, screenSize: 0, paletteMode: 0, priority: 1, baseTile: 0 });
+        ShowBg(2); ShowBg(3);
+        console.log('[StarterChoose] Birch BG scene loaded (32-color palette, sub-palettes 0+1)');
+        // 1:1 décomp `BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_BLACK)` :
+        // startY=16 (fully black) → endY=0 (visible) → fade in.
+        rt.BeginNormalPaletteFade(0xFFFFFFFF, 0, 16, 0, 0);
+        state = 'WAIT_FADE_IN_BIRCH';
+        return false;
+      }
+
+      case 'WAIT_FADE_IN_BIRCH': {
+        if (!rt.gPaletteFade.active) state = 'SPAWN_SPRITES';
         return false;
       }
 
@@ -428,7 +486,21 @@ export function startChooseStarterFlow(): ChooseStarterFlow {
         } catch (e) {
           console.error('[StarterChoose] commit failed', e);
         }
-        state = 'CLEANUP';
+        state = 'FADE_OUT_BIRCH';
+        return false;
+      }
+
+      case 'FADE_OUT_BIRCH': {
+        // 1:1 décomp post-confirm : SetMainCallback2(savedCallback) qui include
+        // un fade out vers black avant return overworld. Notre approche inline :
+        // explicit fade out then CLEANUP behind black.
+        rt.BeginNormalPaletteFade(0xFFFFFFFF, 0, 0, 16, 0);
+        state = 'WAIT_FADE_OUT_BIRCH';
+        return false;
+      }
+
+      case 'WAIT_FADE_OUT_BIRCH': {
+        if (!rt.gPaletteFade.active) state = 'CLEANUP';
         return false;
       }
 
@@ -475,9 +547,11 @@ export function startChooseStarterFlow(): ChooseStarterFlow {
           flushOverworldTilemaps(rt);
           // Resume overworld tileset animations (= water/flower tile cycling).
           resumeTilesetAnimations();
+          // Resume FieldUpdateBgTilemapScroll (= overworld camera scroll back on).
+          setFieldCameraSuspended(false);
           ShowBg(1); ShowBg(2); ShowBg(3);
           // Restore visible OAM slots (= overworld NPCs, player avatar, etc.)
-          // saved au LOAD_ASSETS avant notre hide-all.
+          // saved au SCENE_INIT avant notre hide-all.
           for (const i of savedVisibleOam) {
             rt.gba.oam[i].visible = true;
           }
@@ -486,7 +560,15 @@ export function startChooseStarterFlow(): ChooseStarterFlow {
         } catch (bgErr) {
           console.warn('[StarterChoose] overworld restore failed', bgErr);
         }
-        state = 'DONE';
+        // 1:1 décomp post-CB2_ChooseStarter return : overworld CB2 fade in
+        // (= reveal restored overworld from black).
+        rt.BeginNormalPaletteFade(0xFFFFFFFF, 0, 16, 0, 0);
+        state = 'WAIT_FADE_IN_OVERWORLD';
+        return false;
+      }
+
+      case 'WAIT_FADE_IN_OVERWORLD': {
+        if (!rt.gPaletteFade.active) state = 'DONE';
         return false;
       }
 

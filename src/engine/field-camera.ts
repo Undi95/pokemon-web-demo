@@ -203,7 +203,20 @@ export function ResetCameraUpdateInfo(): void {
  *  Audit Opus 2.5 : avant ce fix, le `+ 8` était omis "Phase 4.3 sans dialogue".
  *  Mais Phase 4.5 a wired la dialog box → décollage sprite/BG visible. Réintro
  *  pour matcher 1:1 décomp + sprite y au boot ajusté avec offset +8. */
+/** Suspend flag : when true, FieldUpdateBgTilemapScroll early-returns sans
+ *  toucher aux BG scrolls. Utilisé par les UI scenes qui réutilisent BG1/2/3
+ *  pour leur propre layout (= ChooseStarter, BattleStartTransition, etc.) —
+ *  équivalent du décomp `SetMainCallback2(CB2_OtherScene)` qui swap le main
+ *  callback2 et donc bypass FieldUpdateBgTilemapScroll. À set false dans la
+ *  cleanup phase pour réactiver le scroll overworld. */
+let _fieldCameraSuspended = false;
+
+export function setFieldCameraSuspended(suspended: boolean): void {
+  _fieldCameraSuspended = suspended;
+}
+
 export function FieldUpdateBgTilemapScroll(rt: DecompRuntime): void {
+  if (_fieldCameraSuspended) return;
   const r5 = sFieldCameraOffset.xPixelOffset + sHorizontalCameraPan;
   const r4 = sVerticalCameraPan + sFieldCameraOffset.yPixelOffset + 8;
 
