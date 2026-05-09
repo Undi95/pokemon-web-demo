@@ -26,6 +26,7 @@ import { gameState } from './game-state';
 import { ShowFieldMessage, IsFieldMessageBoxHidden, HideFieldMessageBox } from './field-message-box';
 import { getRuntime } from './decomp-globals';
 import { VarSet } from './script-vars';
+import { ShowBg, HideBg } from './gba-window-system';
 
 interface TrainerPartyMember {
   species: string;
@@ -95,6 +96,19 @@ export function startTrainerBattle(trainerId: string): TrainerBattleFlow {
     const rt = getRuntime();
     if (!rt) return false;
 
+    // Iter17 : re-hide stashed overworld sprites each tick during all states
+    // BETWEEN INTRO_TEXT and DONE (= UpdateObjectEvents un-hides them per
+    // frame). startWildBattle's tick also does this when delegated.
+    if (state !== 'WAIT_DATA' && state !== 'DONE') {
+      const stashTick = (globalThis as { __battleSpriteStash?: Set<number> }).__battleSpriteStash;
+      if (stashTick) {
+        for (const id of stashTick) {
+          const sprite = rt.gSprites.get(id);
+          if (sprite) sprite.invisible = true;
+        }
+      }
+    }
+
     switch (state) {
       case 'WAIT_DATA': {
         if (!_trainerDataLoadDone) return false;
@@ -112,6 +126,23 @@ export function startTrainerBattle(trainerId: string): TrainerBattleFlow {
       }
 
       case 'INTRO_TEXT': {
+        // Iter17 : hide overworld BGs + sprites already AT INTRO_TEXT (= avant
+        // le startWildBattle qui les cache aussi). Sinon le user voit le
+        // overworld pendant l'intro "BRICE veut combattre!".
+        HideBg(1);
+        HideBg(2);
+        HideBg(3);
+        const stash: Set<number> = new Set();
+        const rt2 = getRuntime();
+        if (rt2) {
+          for (const [id, sprite] of rt2.gSprites) {
+            if (sprite && !sprite.invisible) {
+              stash.add(id);
+              sprite.invisible = true;
+            }
+          }
+        }
+        (globalThis as { __battleSpriteStash?: Set<number> }).__battleSpriteStash = stash;
         const name = trainerData!.trainerName ?? 'Adversaire';
         ShowFieldMessage(`${name} veut combattre!`);
         state = 'INTRO_WAIT';
@@ -211,6 +242,24 @@ export function startTrainerBattle(trainerId: string): TrainerBattleFlow {
       }
 
       case 'DONE': {
+        // Iter17 : restore BGs + sprites (= might have been hidden by trainer
+        // INTRO_TEXT but not yet restored if startWildBattle was never called
+        // due to early WIN_TEXT/LOSE_TEXT). Idempotent — startWildBattle's
+        // CLEANUP also does this.
+        ShowBg(1);
+        ShowBg(2);
+        ShowBg(3);
+        const stash = (globalThis as { __battleSpriteStash?: Set<number> }).__battleSpriteStash;
+        if (stash) {
+          const rt3 = getRuntime();
+          if (rt3) {
+            for (const id of stash) {
+              const sprite = rt3.gSprites.get(id);
+              if (sprite) sprite.invisible = false;
+            }
+          }
+          (globalThis as { __battleSpriteStash?: Set<number> }).__battleSpriteStash = undefined;
+        }
         return true;
       }
     }
