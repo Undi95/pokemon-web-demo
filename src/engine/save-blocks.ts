@@ -101,8 +101,16 @@ export interface SaveBlock2 {
     nationalDex: boolean;
   };
 
-  /** RTC offset (= 1:1 décomp localTimeOffset). Used pour day/night cycle. */
+  /** RTC offset (= 1:1 décomp localTimeOffset). Used pour day/night cycle.
+   *  Conservé pour 1:1 compat avec auto-extracted clock-data.ts mais notre
+   *  source de vérité runtime est `localTimeOffsetMs` (cf. session 124 fix Bug 4). */
   localTimeOffset: Time;
+  /** **Session 124** : offset utilisateur en ms (= persisté). Source de vérité
+   *  pour `RtcCalcLocalTime`. Default 0 = in-game clock = PC clock exactement.
+   *  Permet au user de régler son in-game clock indépendamment du PC via le
+   *  WallClock UI. JS Number = 53-bit safe → no overflow long-terme.
+   *  Voir rtc.ts pour rationale. */
+  localTimeOffsetMs: number;
   /** Last RTC update for berry trees. */
   lastBerryTreeUpdate: Time;
   /** Used pour Pokémon Colosseum/XD GameCube link. MVP : 0. */
@@ -226,6 +234,7 @@ export function emptySaveBlock2(): SaveBlock2 {
     regionMapZoom: 0,
     pokedex: { caught: {}, seen: {}, nationalDex: false },
     localTimeOffset: { days: 0, hours: 0, minutes: 0, seconds: 0 },
+    localTimeOffsetMs: 0,
     lastBerryTreeUpdate: { days: 0, hours: 0, minutes: 0, seconds: 0 },
     gcnLinkFlags: 0,
     encryptionKey: 0,

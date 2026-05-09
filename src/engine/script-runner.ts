@@ -120,17 +120,21 @@ const SPECIALS: Record<string, SpecialFn> = {
   LoadPlayerParty: () => { /* gameState.load() déjà fait au boot */ },
   // Refresh visuel de la map après setmetatile. Nos setmetatile sont sync.
   DrawWholeMapView: () => { /* no-op */ },
-  // Skip le UI du wallclock (CB2_StartWallClock du décomp). Notre `gettime`
-  // utilise `new Date()` directement, pas besoin d'offset RTC. Le script
-  // continue après et fera setflag FLAG_SET_WALL_CLOCK.
-  StartWallClock: () => { /* no-op : skip UI, on n'a pas de vrai RTC */ },
-  // Affiche l'heure courante dans un msgbox (CB2_ViewWallClock du décomp).
-  // L'original ouvre une UI avec horloge graphique ; on simplifie en msgbox.
+  // WallClock UI (= 1:1 décomp `Special_ViewWallClock` + `StartWallClock`).
+  // **Note** : ce legacy script runner est bypass par le NEW opcode dispatcher
+  // dans script-opcodes.ts qui intercepte ces specials directement et lance
+  // `wallclock-flow.ts`. Si on arrive ici (= legacy path), on fait un fallback
+  // léger : juste un msgbox texte de l'heure courante. Compatible avec PC time
+  // via `rtc.ts:RtcCalcLocalTime` (= source de vérité unifiée, fix overflow
+  // 366-day du décomp).
+  StartWallClock: () => { /* legacy fallback : skip UI, offset reste 0 */ },
   Special_ViewWallClock: async (ctx) => {
-    const d = new Date();
-    const h = d.getHours();
-    const m = d.getMinutes().toString().padStart(2, '0');
-    await ctx.showText(`Il est ${h}h${m}.$`);
+    const { RtcCalcLocalTime, gLocalTime } = await import('./rtc');
+    RtcCalcLocalTime();
+    const h12 = gLocalTime.hours < 12 ? (gLocalTime.hours === 0 ? 12 : gLocalTime.hours) : (gLocalTime.hours === 12 ? 12 : gLocalTime.hours - 12);
+    const period = gLocalTime.hours < 12 ? 'AM' : 'PM';
+    const m = String(gLocalTime.minutes).padStart(2, '0');
+    await ctx.showText(`Il est ${h12}h${m} ${period}.$`);
   },
   // Choix du starter (Route 101 sac de Birch). Décomp `ChooseStarter()` →
   // `CB2_ChooseStarter` (UI 3 pokeballs) → `CB2_GiveStarter` (donne mon lvl 5

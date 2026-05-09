@@ -44,6 +44,7 @@ import {
 } from './player-avatar';
 import { getRuntime } from './decomp-globals';
 import { resolveDecompConstant } from './decomp-constants';
+import { RtcCalcLocalTime, gLocalTime } from './rtc';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -783,6 +784,25 @@ registerOpcode('delay', (ctx, args) => {
   return true;
 });
 
+/** 1:1 décomp `ScrCmd_gettime` (scrcmd.c) :
+ *  ```c
+ *  bool8 ScrCmd_gettime(struct ScriptContext *ctx) {
+ *      RtcCalcLocalTime();
+ *      gSpecialVar_0x8000 = gLocalTime.hours;
+ *      gSpecialVar_0x8001 = gLocalTime.minutes;
+ *      gSpecialVar_0x8002 = gLocalTime.seconds;
+ *      return FALSE;
+ *  }
+ *  ```
+ *  Notre `RtcCalcLocalTime` source-of-truth = `Date.now() + offsetMs` (cf. rtc.ts). */
+registerOpcode('gettime', () => {
+  RtcCalcLocalTime();
+  VarSet('VAR_0x8000', gLocalTime.hours);
+  VarSet('VAR_0x8001', gLocalTime.minutes);
+  VarSet('VAR_0x8002', gLocalTime.seconds);
+  return false;
+});
+
 registerOpcode('waitstate', (ctx) => {
   // 1:1 décomp ScrCmd_waitstate (scrcmd.c:ScrCmd_waitstate) : ScriptContext_Stop
   // jusqu'à ce qu'une autre routine (= warp completion, multichoice result)
@@ -900,6 +920,27 @@ registerOpcode('special', (ctx, args) => {
     let flow: { tick: () => boolean } | null = null;
     void import('./battle-flow').then((mod) => {
       flow = mod.startBirchTutorialBattle();
+      flowReady = true;
+    });
+    SetupNativeScript(ctx, () => {
+      if (!flowReady) return false;
+      return flow!.tick();
+    });
+    return true;
+  }
+  // Phase 6 (session 124) : WallClock UI inline. PC time as source + 366-day
+  // overflow fix. Le décomp `Special_ViewWallClock` / `StartWallClock` ouvrent
+  // un CB2_WallClock UI complet avec aiguilles affines + tilemap. Notre version
+  // utilise un overlay HTML/Canvas (= pas pixel-perfect mais fonctionnel +
+  // joli). Le mode SET est techniquement reachable via dev console seulement.
+  // Cf. wallclock-flow.ts pour détails + memory/next-session-bugs-2026-05-09.md
+  // Bug 4 pour rationale.
+  if (name === 'Special_ViewWallClock' || name === 'StartWallClock') {
+    const mode: 'VIEW' | 'SET' = name === 'StartWallClock' ? 'SET' : 'VIEW';
+    let flowReady = false;
+    let flow: { tick: () => boolean } | null = null;
+    void import('./wallclock-flow').then((mod) => {
+      flow = mod.startWallClockFlow(mode);
       flowReady = true;
     });
     SetupNativeScript(ctx, () => {

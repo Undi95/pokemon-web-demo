@@ -141,24 +141,10 @@ registerSpecial('IsEnoughForCostInVar0x8005', () => {
 registerSpecial('SetCableClubWarp', () => { /* no-op stub */ });
 registerSpecial('DoCableClubWarp', () => { /* no-op stub */ });
 
-/** 1:1 décomp `StartWallClock` (wallclock.c) :
- *    Set the player's wall clock UI. Used in PlayersHouse_2F when checking
- *    the clock for the first time. Phase 5+ : implement full UI.
- *    Stub no-op (= scripts continue without setting the clock).
- *    NB : the script uses `waitstate=1` but our SetupNativeScript sync
- *    return makes it skip the wait → safe noop. */
-registerSpecial('StartWallClock', () => {
-  console.log('[special StartWallClock] stub — clock UI not yet implemented (Phase 6+)');
-  // Default to 12:00 noon (= 1:1 décomp gLocalTime).
-  gameState.setVar('VAR_HOURS', 12);
-  gameState.setVar('VAR_MINUTES', 0);
-});
-
-/** 1:1 décomp `Special_ViewWallClock` (wallclock.c).
- *  Read clock state. Stub no-op. */
-registerSpecial('Special_ViewWallClock', () => {
-  console.log('[special Special_ViewWallClock] stub — clock UI not yet implemented');
-});
+// `StartWallClock` + `Special_ViewWallClock` : interceptés directement par
+// l'opcode `special` dispatcher dans script-opcodes.ts (= lance wallclock-flow.ts
+// inline overlay). Pas de stub à enregistrer ici, car le dispatch ne tombe
+// jamais dans `_invokeSpecial`. Cf. session 124 fix Bug 4.
 
 /** 1:1 décomp `ResetCyclingRoadChallengeData` (field_specials.c). Stub. */
 registerSpecial('ResetCyclingRoadChallengeData', () => {

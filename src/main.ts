@@ -68,6 +68,10 @@ import './engine/movement-action-dispatch';
 // flow registered au boot pour debug). Sans ça, le devtool n'est registered
 // qu'après le premier dynamic import depuis _runTrainerBattle opcode.
 import './engine/trainer-battle-flow';
+// Side-effect import : init RTC core (= PC time as source) + register
+// `globalThis.__rtcModule` pour save sync. Cf. session 124 fix Bug 4.
+import { exposeRtcDevApi } from './engine/rtc';
+exposeRtcDevApi();
 const _saveLoadStatus = LoadGameSave();
 SetSaveFileStatus(_saveLoadStatus);
 console.log(`[main] LoadGameSave at boot → status=${_saveLoadStatus}`);
