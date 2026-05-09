@@ -444,6 +444,27 @@ const TILES_PER_FRAME_16x32 = 8;
 import type { NamingSubsprite } from './decomp-globals';
 import { SetSubspriteTables, syncSubspriteOam, clearAllSubspriteTables } from './decomp-globals';
 
+/**
+ * 1:1 décomp `sOamTable_16x16_2` (object_event_subsprites.h:38-58). Used pour
+ * les NPCs/caisses avec elevation tels que `sElevationToSubspriteTableNum`
+ * retourne 2 (= elevation 4, 6, 8, 10, 12 → split subsprite layout).
+ *
+ * Split horizontal du sprite 16x16 en 2 demi-OAMs 16x8 :
+ *   - Top half (y=-8..0) : priority 2 (= rendered ABOVE bottom)
+ *   - Bottom half (y=0..8) : priority 3 (= rendered BEHIND top + behind autres
+ *     sprites priority 2)
+ *
+ * Use case : permet à la moitié BOTTOM de passer derrière player/autres
+ * sprites priority 2 → effet "le bas de la caisse est camouflé par
+ * tile/sprite plus bas dans la scène".
+ *
+ * Session 124 fix Bug 3 (= 1-pixel artifact lors du trajet camion).
+ */
+export const sOamTable_16x16_2: ReadonlyArray<NamingSubsprite> = [
+  { x: -8, y: -8, shape: 1, size: 0, tileOffset: 0, priority: 2 }, // top half 16x8
+  { x: -8, y:  0, shape: 1, size: 0, tileOffset: 2, priority: 3 }, // bottom half 16x8
+];
+
 export const sOamTable_48x48: ReadonlyArray<NamingSubsprite> = [
   { x: -24, y: -24, shape: 1, size: 1, tileOffset:  0, priority: 2 }, // 32×8 row 0 left
   { x:   8, y: -24, shape: 1, size: 0, tileOffset:  4, priority: 2 }, // 16×8 row 0 right
@@ -1214,17 +1235,19 @@ function _spawnSingleNpcFromTemplate(
     // puisque cfg.face * 8 ne matche pas notre tile layout 16×16).
     npc.useSubsprites = true; // hack : skip updateNpcSpriteFrame (= pas de
                                // frame layout 16×32) en réutilisant le flag.
-    // Session 124 fix Bug 3 partiel : priority 1:1 décomp via
-    // `sElevationToPriority[elevation]`. Pour les caisses elevation=8
-    // → priority 1 au lieu de 2 hardcodé. Permet aux caisses haut de
-    // l'écran de masquer correctement les bas (= overlap visual).
-    // Note : pour le full fix 1:1, il faudrait aussi split en 2 OAMs
-    // 16x8 selon sOamTable_16x16_2 (= subsprite top half priority 2 +
-    // bottom half priority 3). Pour l'instant single OAM avec elevation
-    // priority qui couvre le commun.
-    const elevPriority = (template.elevation >= 0 && template.elevation < 16)
-      ? [2,2,2,2,1,2,1,2,1,2,1,2,1,0,0,2][template.elevation]
-      : 2;
+    // Session 124 fix Bug 3 : 1:1 décomp `UpdateObjectEventElevationAndPriority`
+    // assigne priority + subspriteTableNum selon elevation :
+    //   sprite->subspriteTableNum = sElevationToSubspriteTableNum[elevation];
+    //   sprite->oam.priority = sElevationToPriority[elevation];
+    // Pour caisses elevation=8 → priority 1 + subsprite table 2 (= split en
+    // 2 OAMs 16x8 avec priorities 2/3 → top half rendered above, bottom half
+    // behind). Sans le split, on rend single OAM 16x16 priority 1 → 1-pixel
+    // artifact visible lors du trajet camion (= user feedback).
+    const ELEV_PRIORITY      = [2,2,2,2,1,2,1,2,1,2,1,2,1,0,0,2];
+    const ELEV_SUBSPRITE_NUM = [1,1,1,1,2,1,2,1,2,1,2,1,2,0,0,1];
+    const inRange = template.elevation >= 0 && template.elevation < 16;
+    const elevPriority = inRange ? ELEV_PRIORITY[template.elevation] : 2;
+    const subspriteNum = inRange ? ELEV_SUBSPRITE_NUM[template.elevation] : 1;
     const result = rt.CreateSpriteAtOam({
       tileId: objTileBase,
       paletteBank,
@@ -1238,6 +1261,10 @@ function _spawnSingleNpcFromTemplate(
     const sprite = rt.gSprites.get(npc.spriteId);
     if (sprite) sprite.tileBase = objTileBase;
     rt.gba.oam[result.oamIndex].flipH = false;
+    // Apply subsprite split si elevation→table 2 (= elevation 4,6,8,10,12).
+    if (subspriteNum === 2) {
+      SetSubspriteTables(npc.spriteId, sOamTable_16x16_2);
+    }
   } else if (is32x32) {
     // 32×32 large Pokemon (= Vigoroth déménageurs). Single OAM shape=0 size=2
     // (= 32×32). Skip updateNpcSpriteFrame via useSubsprites hack (= pas de
