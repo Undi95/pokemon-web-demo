@@ -1,14 +1,24 @@
-# Branch upd2 — Final snapshot (overnight session, iter12 final)
+# Branch upd2 — Final snapshot (overnight session, iter14 final)
 
-Date : 2026-05-09 ~07h10
+Date : 2026-05-09 ~07h35
 
 ## TL;DR
 
-**44 commits sur upd2 cette nuit.** Build clean, game runs.
+**48 commits sur upd2 cette nuit.** Build clean, game runs.
 
 **🎯 Live test verified** : Birch tutorial battle + Trainer battle visible
 in browser, dialog shows correctly, sprites render (Treecko vs Zigzagoon /
 Brendan trainer). Zero `console.warn` during full battle flow.
+
+**🎯 Bridge coverage NOW VISIBLE** (= iter14 fix) :
+```
+{ bridged: 440, coveragePercent: 98%, totalUniqueCallees: 8213,
+  internalDefined: 7580, notImplemented: 12, totalAutoFiles: 295,
+  unbridgedExternal: 181 }
+```
+Le tooling reportait 0% avant à cause d'un mauvais URL prefix
+(`/__decomp/` au lieu de `/decomp/`). Maintenant on voit la vraie
+coverage : **98%** !
 
 **🎯🎯🎯 Milestone iter9 : 100% MAIN-STORY coverage** (= 70 maps de tout
 le scénario principal Hoenn jusqu'à Sootopolis exclus). Zero opcodes
@@ -229,9 +239,11 @@ await dev.battle.startTrainer('TRAINER_BRENDAN_ROUTE_103_TORCHIC')
 window.dev.bridge.report().then(console.log)
 ```
 
-## Commit log (= 44 commits)
+## Commit log (= 48 commits)
 
 ```
+5d932d7e Iter14 — fix dev.bridge URL prefix (/__decomp/ -> /decomp/) → 98% coverage visible
+7bde65cf Memory — iter11+12 update : live test verified battle flows
 5ebda3f8 Iter11 — battle-flow renderHpWindows missing CopyWindowToVram
 381fd869 Iter11 — dev.battle.* auto-adds Treecko if party empty
 a7ba4ce3 Memory — troubleshooting MD updated with iter10 audit workflow
