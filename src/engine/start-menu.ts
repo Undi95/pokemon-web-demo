@@ -344,19 +344,33 @@ function saveAction(): boolean {
   return false;
 }
 
-/** OPTIONS action : inline cycling menu pour text speed (= option la plus
- *  demandée pour la démo). Cycle SLOW → MID → FAST → SLOW à chaque pression A.
- *  Les autres options (sound/buttonMode/etc.) restent accessibles via le
- *  MainMenu OPTIONS (= depuis le title screen au boot).
- *  Les options sont SHARED avec le MainMenu (= bug fix session 122 :
- *  gSaveBlock2Ptr delegate vers GetSaveBlock2() du save-system). */
+/** OPTIONS action : inline cycling menu pour text speed (= MVP).
+ *
+ *  TODO follow-up : 1:1 décomp `StartMenuOptionCallback` (start_menu.c:484) :
+ *    SetMainCallback2(CB2_InitOptionMenu);
+ *    gMain.savedCallback = CB2_ReturnToFieldWithOpenMenu;
+ *  Necessite scene transition + cleanup overworld windows + bring up le real
+ *  options menu UI (= option-menu-impl.ts wire). Trop gros pour itération
+ *  courante. En attendant, on cycle text speed inline + on persist en save.
+ *
+ *  1:1 décomp persist : le décomp option_menu.c écrit dans gSaveBlock2Ptr
+ *  directement. Au prochain TrySavingData (= via menu Save), c'est persisté.
+ *  Notre web port : on persist immédiatement via gameState.save() (= write
+ *  block2 dans localStorage). Match comportement effectif décomp.
+ *
+ *  Note : les options changes survivent aussi au reload via le load chain
+ *  (= save-system load block2 au boot, options dans block2). Sans le
+ *  gameState.save() ici, options seraient en RAM seulement → perdues au
+ *  refresh tant que user n'a pas save manuellement. */
 function optionsAction(): boolean {
   const cur = gameState.options.textSpeed ?? 1;
   const next = (cur + 1) % 3;  // SLOW=0, MID=1, FAST=2
   gameState.setOptions({ textSpeed: next });
+  // Persist immédiat (= 1:1 décomp comportement effectif via gSaveBlock2Ptr).
+  gameState.save();
   const labels = ['LENT', 'MOY', 'RAPIDE'];
   return showMessageThenReturn(
-    `VITESSE TEXTE : ${labels[next]}\n(Autres options dans le\nmenu principal au boot)`,
+    `VITESSE TEXTE : ${labels[next]}\n(Sauvegardé)`,
   );
 }
 
