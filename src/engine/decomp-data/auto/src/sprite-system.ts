@@ -447,7 +447,7 @@ export const SPRITE_ANIMS = {
   "sAnim_WaterDrop_UpperHalf": {"frames":[{"tileNum":16,"duration":8}],"terminator":"END"},
   "sPokemonLogoShineAnimSequence": {"frames":[{"tileNum":0,"duration":4}],"terminator":"END"},
   "sVersionBannerLeftAnimSequence": {"frames":[{"tileNum":0,"duration":30}],"terminator":"END"},
-  "sVersionBannerRightAnimSequence": {"frames":[{"tileNum":"VERSION_BANNER_RIGHT_TILEOFFSET","duration":30}],"terminator":"END"},
+  "sVersionBannerRightAnimSequence": {"frames":[{"tileNum":64,"duration":30}],"terminator":"END"},
 } as const;
 
 export const SPRITE_ANIM_TABLES = {

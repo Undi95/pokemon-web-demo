@@ -115,7 +115,7 @@ function parseFields(body) {
 
 const RE_ANIM = /static\s+const\s+union\s+AnimCmd\s+(\w+)\s*\[\s*\]\s*=\s*/g;
 
-function parseAnimCmd(name, body) {
+function parseAnimCmd(name, body, macros = {}) {
   const frames = [];
   let terminator = null;
   let jumpTo = null;
@@ -129,15 +129,22 @@ function parseAnimCmd(name, body) {
     const args = (m[2] || '').split(',').map(s => s.trim()).filter(s => s.length);
     if (op === 'ANIMCMD_FRAME') {
       // FRAME(tileNum, duration[, hflip, vflip])
-      // Parse numeric — fall back to raw string for #define references.
+      // Session 124 fix Bug 6b : parse numeric, then try macros lookup, then
+      // fall back to raw string. Évite le runtime fallback `_resolveTileNum`
+      // pour la majorité des cas.
       const parseNum = (s) => {
         const n = s.startsWith('0x') || s.startsWith('-0x') ? parseInt(s, 16) : parseInt(s);
-        return Number.isNaN(n) ? s : n;
+        if (!Number.isNaN(n)) return n;
+        // Try macro lookup (= e.g. VERSION_BANNER_RIGHT_TILEOFFSET → 64).
+        if (Object.prototype.hasOwnProperty.call(macros, s)) {
+          return macros[s];
+        }
+        return s;  // raw string fallback (= runtime _resolveTileNum will try)
       };
       const tileNum = parseNum(args[0]);
       const duration = parseNum(args[1]);
       if (typeof tileNum !== 'number' || typeof duration !== 'number') {
-        console.warn(`[anim ${name}] non-numeric ANIMCMD_FRAME args: ${args.join(',')} (kept as raw)`);
+        console.warn(`[anim ${name}] non-numeric ANIMCMD_FRAME args: ${args.join(',')} (kept as raw, runtime fallback)`);
       }
       const f = { tileNum, duration };
       if (args[2] !== undefined) f.hflip = args[2];
@@ -642,7 +649,7 @@ function processFile(absPath, relPath) {
 
   // 1. AnimCmd
   for (const d of iterDecls(src, RE_ANIM)) {
-    const parsed = parseAnimCmd(d.name, d.body);
+    const parsed = parseAnimCmd(d.name, d.body, macroCtx.macros);
     if (parsed) result.anims[d.name] = parsed;
     else console.warn(`[${relPath}] skip anim ${d.name} (bad parse)`);
   }
