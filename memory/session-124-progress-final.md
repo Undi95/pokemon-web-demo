@@ -5,12 +5,13 @@ Branche : `upd2` (= **84 commits** ahead of `main`, NE PAS PUSH)
 
 ## TL;DR
 
-Session 124 = **22 commits** : 4 bugs visuels signalés + 4 battle polish (EXP
+Session 124 = **23 commits** : 4 bugs visuels signalés + 4 battle polish (EXP
 gain, level up, cry, shake, HP bar visuel, fade transition) + 2 transpiler
 updates + truck audit ligne par ligne (= HMR-safe + Task_Truck3 box update +
-audio hacks reverted) + shiny support 1:1 + truck silence diagnostic
-(= SF2 sample manquant, accepted MVP) + truck spawn coords fix (= user A/B
-test ROM identifia mismatch (1,2)DIR_EAST → (2,2)DIR_SOUTH center map).
+audio hacks reverted + Task_Truck3 swap PERMANENT bugfix critique) + shiny
+support 1:1 + truck silence diagnostic (= SF2 sample manquant, accepted MVP)
++ truck spawn coords fix (= user A/B test ROM identifia (2,2)DIR_SOUTH
+center map). User session-124 A/B testing → MVP de qualité ROM authentique.
 
 ## ✅ Décisions architecture (= confirmation user session 124)
 
@@ -213,6 +214,51 @@ swap de Task_Truck2 → Task_Truck3 :
 
 Notre code n'updatait PAS les box positions dans ce cas → boxes "freezent".
 Fix : nouveau helper `_applyBoxNoYBob(cameraXpan)` dans state 3 case xpan===2.
+
+### Truck Task_Truck3 swap PERMANENT (`d8379496`)
+
+User A/B test ROM (= post-loop session 124) : "Bien que tu aies amélioré
+la scene des cartons, la scene finale prouve qu'on rate des choses avec
+la position des cartons. Cherche les."
+
+Audit ligne par ligne décomp `field_special_scene.c:Task_Truck2:137-138` :
+```c
+if (sTruckCamera_HorizontalTable[tMoveStep] == 2)
+    gTasks[taskId].func = Task_Truck3;
+```
+
+**Le swap vers Task_Truck3 est PERMANENT** — modifie le function pointer
+du task. Une fois le swap fait au premier xpan=2 (= index 9 dans la table
+`{0,0,0,0,0,0,0,0,1,2,2,2,2,2,2,-1,-1,-1,0}`), TOUTES les iterations
+suivantes (= -1, -1, -1, 0) utilisent **Task_Truck3 logic** : NO Y bob,
+NO box bouncing.
+
+Notre code re-évaluait `xpan === 2` chaque frame — quand xpan revenait
+à -1 ou 0 (= indices 15-18), on retournait incorrectement au box-bouncing.
+Bug visuel : boxes bouncent à des moments où elles ne devraient pas →
+positions finales légèrement off vs ROM.
+
+Fix : `data[4]` sert de flag `_truck3Swapped` persistant. Set à 1 quand
+xpan===2 hit pour la 1ère fois. Reste à 1 pour toutes les iterations
+suivantes → no Y bob ever again.
+
+### TODO Phase 5 — boxes elevation/animations subtiles
+
+User feedback final (= screenshots A/B end-of-cinematic) : "Je pense que
+les elevation et les animation des box sont juste mélangée en fait, elles
+sont bonnes mais pas aux bonnes boites".
+
+Vérifications faites session 124 :
+- map.json events order (TOP, BOTTOM_L, BOTTOM_R) = 1:1 décomp ✓
+- LOCALID strings match ✓
+- BOX*_X/Y_OFFSET values 1:1 ✓
+- yBox1/2/3 amplitudes (×4, ×2, ×4) + phase shift +30 = 1:1 ✓
+- elevation=8 → priority=1, subspriteTableNum=2 split = 1:1 ✓
+
+Tous les signs visibles via code review sont 1:1 décomp. Le bug visuel
+subtil que user voit reste à isoler — probablement nécessite un debug
+frame-perfect avec PAUSE pendant cinematic + inspection visualOffsets
+exacts vs ROM via émulateur. Phase 5 future.
 
 ### Truck spawn coords 1:1 décomp (`53016ac6`)
 
