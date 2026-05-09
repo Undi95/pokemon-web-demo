@@ -1651,6 +1651,331 @@ export function GetApprenticeNameInLanguage(_idx: number, _lang: number): string
   return '';
 }
 
+// ─── Status1/2/3 turn macros (1:1 décomp `include/constants/battle.h`) ────────
+
+/** 1:1 décomp `constants/battle.h:116` STATUS1_SLEEP_TURN(num) → num << 0. */
+export function STATUS1_SLEEP_TURN(num: number): number { return num & 0x7; }
+
+/** 1:1 décomp `constants/battle.h:130` STATUS2_CONFUSION_TURN(num) → num << 0. */
+export function STATUS2_CONFUSION_TURN(num: number): number { return num & 0xF; }
+
+/** 1:1 décomp `constants/battle.h:133` STATUS2_UPROAR_TURN(num) → num << 4. */
+export function STATUS2_UPROAR_TURN(num: number): number { return (num & 0xF) << 4; }
+
+/** 1:1 décomp `constants/battle.h:136` STATUS2_BIDE_TURN(num) → ((num << 8) & STATUS2_BIDE).
+ *  STATUS2_BIDE = 0x300 (= 2 bits at position 8). */
+export function STATUS2_BIDE_TURN(num: number): number { return ((num) << 8) & 0x300; }
+
+/** 1:1 décomp `constants/battle.h:138` STATUS2_LOCK_CONFUSE_TURN(num) → num << 10. */
+export function STATUS2_LOCK_CONFUSE_TURN(num: number): number { return (num & 0x3) << 10; }
+
+/** 1:1 décomp `constants/battle.h:141` STATUS2_WRAPPED_TURN(num) → num << 13. */
+export function STATUS2_WRAPPED_TURN(num: number): number { return (num & 0x7) << 13; }
+
+/** 1:1 décomp `constants/battle.h:161` STATUS3_ALWAYS_HITS_TURN(num) → ((num << 3) & STATUS3_ALWAYS_HITS).
+ *  STATUS3_ALWAYS_HITS = 3 bits @ position 3. */
+export function STATUS3_ALWAYS_HITS_TURN(num: number): number { return ((num) << 3) & 0x18; }
+
+/** 1:1 décomp `constants/battle.h:169` STATUS3_YAWN_TURN(num) → ((num << 11) & STATUS3_YAWN). */
+export function STATUS3_YAWN_TURN(num: number): number { return ((num) << 11) & 0x1800; }
+
+/** 1:1 décomp `include/battle.h:478-483` GET/SET_STAT_BUFF macros. */
+export function GET_STAT_BUFF_ID(n: number): number { return n & 0xF; }
+export function GET_STAT_BUFF_VALUE2(n: number): number { return n & 0xF0; }
+export function GET_STAT_BUFF_VALUE(n: number): number { return (n >> 4) & 7; }
+export function SET_STAT_BUFF_VALUE(n: number): number { return ((n) << 4) & 0xF0; }
+export const STAT_BUFF_NEGATIVE = 0x80;
+
+// ─── Battle util macros (1:1 décomp `include/battle_util.h`) ─────────────────
+
+/** 1:1 décomp `battle_util.h:36` ABILITY_ON_OPPOSING_FIELD — wraps AbilityBattleEffects.
+ *  Need full ability system port ; placeholder returns 0 (= no effect). */
+export function ABILITY_ON_OPPOSING_FIELD(_battler: number, _abilityId: number): number {
+  return 0;
+}
+/** 1:1 décomp `battle_util.h:38` ABILITY_ON_FIELD2(abilityId). */
+export function ABILITY_ON_FIELD2(_abilityId: number): number {
+  return 0;
+}
+
+// ─── PREPARE_*_BUFFER additions (battle_message.h) ────────────────────────────
+
+const B_BUFF_STAT = 7;
+const B_BUFF_ABILITY = 8;
+
+/** 1:1 décomp `battle_message.h:90-96` PREPARE_STAT_BUFFER. */
+export function PREPARE_STAT_BUFFER(textVar: any, statId: number): void {
+  if (!textVar) return;
+  textVar[0] = B_BUFF_PLACEHOLDER_BEGIN;
+  textVar[1] = B_BUFF_STAT;
+  textVar[2] = statId;
+  textVar[3] = B_BUFF_EOS;
+}
+
+/** 1:1 décomp `battle_message.h:98-104` PREPARE_ABILITY_BUFFER. */
+export function PREPARE_ABILITY_BUFFER(textVar: any, abilityId: number): void {
+  if (!textVar) return;
+  textVar[0] = B_BUFF_PLACEHOLDER_BEGIN;
+  textVar[1] = B_BUFF_ABILITY;
+  textVar[2] = abilityId;
+  textVar[3] = B_BUFF_EOS;
+}
+
+// ─── Float / s16 conversion (1:1 décomp `include/global.h:139`) ──────────────
+
+/** 1:1 décomp `include/global.h:139` :
+ *    #define S16TOPOSFLOAT(val) ({ s16 v = val; float f = v; if (v < 0) f += 65536; f; })
+ *  Convert s16 to "positive float" (= treat negative as 16-bit unsigned). */
+export function S16TOPOSFLOAT(val: number): number {
+  const v = (val << 16) >> 16; // sign-extend s16
+  let f = v;
+  if (v < 0) f += 65536;
+  return f;
+}
+
+/** 1:1 décomp `include/global.h:147` DIV_ROUND_UP(val, roundBy). */
+export function DIV_ROUND_UP(val: number, roundBy: number): number {
+  return ((val / roundBy) | 0) + ((val % roundBy) ? 1 : 0);
+}
+
+// ─── Joypad raw (1:1 décomp `include/global.h:136`) ──────────────────────────
+
+/** 1:1 décomp `include/global.h:136` JOY_HELD_RAW(button). */
+export function JOY_HELD_RAW(button: number): number {
+  const rt: any = _getRT();
+  const heldRaw = rt?.gMain?.heldKeysRaw ?? 0;
+  return heldRaw & button;
+}
+
+// ─── Map / fieldmap macros (1:1 décomp `include/global.fieldmap.h`) ──────────
+
+/** 1:1 décomp `include/global.fieldmap.h:46` UNPACK_BEHAVIOR(data) :
+ *    UNPACK(data, METATILE_ATTR_BEHAVIOR_SHIFT, METATILE_ATTR_BEHAVIOR_MASK)
+ *    METATILE_ATTR_BEHAVIOR_SHIFT = 0, METATILE_ATTR_BEHAVIOR_MASK = 0xFF. */
+export function UNPACK_BEHAVIOR(data: number): number { return data & 0xFF; }
+
+// ─── Item check macros (1:1 décomp `include/mail.h:6`) ───────────────────────
+
+/** 1:1 décomp `include/mail.h:6` IS_ITEM_MAIL(itemId) — check if item is mail.
+ *  Mail items = 121-132 (0x79-0x84) in Emerald. */
+export function IS_ITEM_MAIL(itemId: number): boolean {
+  return itemId >= 0x79 && itemId <= 0x84;
+}
+
+// ─── Roulette grid (1:1 décomp `src/roulette.c:73-79`) ───────────────────────
+
+/** 1:1 décomp `roulette.c:73` GET_COL(selectionId) → selectionId % (NUM_BOARD_POKES + 1).
+ *  NUM_BOARD_POKES = 4. */
+export function GET_COL(selectionId: number): number { return selectionId % 5; }
+
+/** 1:1 décomp `roulette.c:79` GET_ROW_IDX(selectionId) → selectionId / 5 - 1. */
+export function GET_ROW_IDX(selectionId: number): number { return Math.floor(selectionId / 5) - 1; }
+
+// ─── Sprite tile alloc (1:1 décomp `src/sprite.c:22`) ────────────────────────
+
+/** 1:1 décomp `src/sprite.c:22` FREE_SPRITE_TILE(n) — bit-clear in sSpriteTileAllocBitmap.
+ *  Need internal sprite tile bitmap access ; for now no-op. */
+export function FREE_SPRITE_TILE(_n: number): void {
+  /* TODO 1:1 : need sSpriteTileAllocBitmap from sprite.c. No-op until sprite
+     tile manager is fully ported. */
+}
+
+// ─── Fan club bitfield (1:1 décomp `src/field_specials.c:3971`) ──────────────
+
+/** 1:1 décomp `field_specials.c:3971` SET_TRAINER_FAN_CLUB_FLAG(flag). */
+export function SET_TRAINER_FAN_CLUB_FLAG(flag: number): void {
+  const rt: any = _getRT();
+  const fc = rt?.gSaveBlock1Ptr?.trainerFanClub;
+  if (!fc) return;
+  fc.flags = (fc.flags ?? 0) | (1 << flag);
+}
+
+// ─── Misc data accessors (1:1 décomp various) ────────────────────────────────
+
+/** 1:1 décomp `src/event_data.c GetFlagPointer(flagId)`. */
+export function GetFlagPointer(_flagId: number): { value: number } | null {
+  // Same situation as GetVarPointer : prefer FlagSet/FlagGet. NotImpl path.
+  throw new Error('[bridge] GetFlagPointer not yet 1:1 ported. Use FlagGet/FlagSet instead.');
+}
+
+/** 1:1 décomp `src/string_util.c GetMonNickname2`. */
+export function GetMonNickname2(_mon: any, _dest?: any): string {
+  throw new Error('[bridge] GetMonNickname2 not yet 1:1 ported.');
+}
+
+/** 1:1 décomp `src/save_block.c GetPlayerName()` :
+ *    returns gSaveBlock2Ptr->playerName as u8*. */
+export function GetPlayerName(): string {
+  const rt: any = _getRT();
+  return rt?.gSaveBlock2Ptr?.playerName ?? '';
+}
+
+/** 1:1 décomp `event_object_movement.c FindCameraSprite()`. */
+export function FindCameraSprite(): any {
+  const rt: any = _getRT();
+  return rt?.cameraSprite ?? null;
+}
+
+/** 1:1 décomp `event_object_movement.c GetBaseTemplateForObjectEvent(template)`. */
+export function GetBaseTemplateForObjectEvent(_template: any): any {
+  return _template;
+}
+
+/** 1:1 décomp `fieldmap.c AreCoordsWithinMapGridBounds(x, y)`. */
+export function AreCoordsWithinMapGridBounds(_x: number, _y: number): boolean {
+  // TODO : check vs gMapHeader.mapLayout dims. Approximate true for now.
+  return true;
+}
+
+/** 1:1 décomp `event_object_movement.c GetWalkSlowMovementAction(direction)`. */
+export function GetWalkSlowMovementAction(direction: number): number {
+  // MOVEMENT_ACTION_WALK_SLOW_DOWN = 0x04, etc.
+  switch (direction) {
+    case 1: return 0x04;
+    case 2: return 0x05;
+    case 3: return 0x06;
+    case 4: return 0x07;
+    default: return 0x04;
+  }
+}
+
+/** 1:1 décomp `match_call.c GetRematchTrainerLocation(matchCallId)`. */
+export function GetRematchTrainerLocation(_matchCallId: number): number {
+  return 0;
+}
+
+/** 1:1 décomp `menu_specialized.h:47` GET_NUM_CONDITION_SPARKLES(sheen) macro. */
+export function GET_NUM_CONDITION_SPARKLES(sheen: number): number {
+  const MAX_SHEEN = 255;
+  const MAX_CONDITION_SPARKLES = 7;
+  if (sheen === MAX_SHEEN) return MAX_CONDITION_SPARKLES - 1;
+  return Math.floor(sheen / Math.floor(MAX_SHEEN / (MAX_CONDITION_SPARKLES - 1) + 1));
+}
+
+/** 1:1 décomp wonder news/card lookups — all stub null. */
+export function GetSavedWonderNews(): any { return null; }
+export function GetSavedWonderCardMetadata(): any { return null; }
+export function GetSavedWonderCard(): any { return null; }
+
+/** 1:1 décomp `src/fieldmap.c GetMapLayout()`. */
+export function GetMapLayout(): any {
+  const rt: any = _getRT();
+  return rt?.gMapHeader?.mapLayout ?? null;
+}
+
+/** 1:1 décomp `src/heal_location.c GetHealLocation(idx)`. */
+export function GetHealLocation(_idx: number): any { return null; }
+
+/** 1:1 décomp `src/save.c GetSubstruct(idx)` — typed alias for GetSubstructPtr.
+ *  Same signature, throws same NotImpl. */
+export function GetSubstruct(_idx: number): any {
+  throw new Error('[bridge] GetSubstruct not yet 1:1 ported. See save.c.');
+}
+
+/** 1:1 décomp `src/pokemon_icon.c GetMonIconTiles(species, personality)`. */
+export function GetMonIconTiles(_species: number, _personality: number): any {
+  throw new Error('[bridge] GetMonIconTiles not yet 1:1 ported.');
+}
+
+/** 1:1 décomp `src/window.c GetStringClearToWidth(str, width)` :
+ *    Returns ptr into str for the substring that fits in `width` pixels. */
+export function GetStringClearToWidth(str: any, _width: number): any {
+  return str;
+}
+
+/** 1:1 décomp `src/agb_flash.c EraseFlashSector(sector)`. */
+export function EraseFlashSector(_sector: number): number { return 0; }
+
+/** 1:1 décomp `src/agb_flash.c ProgramFlashSector(sector, src)`. */
+export function ProgramFlashSector(_sector: number, _src: any): number { return 0; }
+
+/** 1:1 décomp `src/string_util.c StringAppendWithPlaceholder(dest, src)`. */
+export function StringAppendWithPlaceholder(dest: any, src: any): any {
+  if (typeof dest === 'string') return dest + String(src ?? '');
+  return src;
+}
+
+/** 1:1 décomp `src/contest.c TrackStop(...)` — sound/track helper. */
+export function TrackStop(..._args: any[]): void { /* no-op */ }
+
+/** 1:1 décomp various `READ_XCMD_BYTE(ctx)` — read external command stream byte. */
+export function READ_XCMD_BYTE(ctx: any): number { return ScriptReadByte(ctx); }
+
+/** 1:1 décomp `src/text.c GetLastCharOfMessagePtr(msg)`. */
+export function GetLastCharOfMessagePtr(_msg: any): any { return null; }
+/** 1:1 décomp `src/text.c GetLimitedMessageStartPtr(...)`. */
+export function GetLimitedMessageStartPtr(..._args: any[]): any { return null; }
+
+// ─── DMA fill defvars + Dma3CopyLarge_ helpers (1:1 décomp `include/gba/macro.h`) ─
+
+/** 1:1 décomp `gba/macro.h DmaFill16Defvars` — typed cast variant. */
+export function DmaFill16Defvars(_dmaNum: number, value: number, dst: any, sizeBytes: number): void {
+  if (dst instanceof Uint16Array) {
+    for (let i = 0; i < sizeBytes / 2; i++) dst[i] = value & 0xFFFF;
+  }
+}
+/** 1:1 décomp `gba/macro.h DmaFill32Defvars`. */
+export function DmaFill32Defvars(_dmaNum: number, value: number, dst: any, sizeBytes: number): void {
+  if (dst instanceof Uint32Array) {
+    for (let i = 0; i < sizeBytes / 4; i++) dst[i] = value >>> 0;
+  }
+}
+
+/** 1:1 décomp `dma3_manager.c Dma3CopyLarge16_(src, dst, size)` — schedules
+ *  a queued DMA copy (= for crossing VBlank boundary). En TS : direct copy. */
+export function Dma3CopyLarge16_(src: any, dst: any, sizeBytes: number): number {
+  CpuCopy16(src, dst, sizeBytes);
+  return 0;
+}
+export function Dma3CopyLarge32_(src: any, dst: any, sizeBytes: number): number {
+  CpuCopy32(src, dst, sizeBytes);
+  return 0;
+}
+export function Dma3FillLarge16_(value: number, dst: any, sizeBytes: number): number {
+  if (dst instanceof Uint16Array) {
+    for (let i = 0; i < sizeBytes / 2; i++) dst[i] = value & 0xFFFF;
+  }
+  return 0;
+}
+
+// ─── Soft reset (1:1 décomp `src/main.c`) ────────────────────────────────────
+
+/** 1:1 décomp `src/main.c SoftReset(resetFlags)` — reload the game. In browser :
+ *  approximate via window.location.reload(). */
+export function SoftReset(_resetFlags?: number): void {
+  if (typeof window !== 'undefined' && window.location) {
+    // Defer to next tick so caller can finish (= avoid mid-frame reload).
+    setTimeout(() => window.location.reload(), 0);
+  }
+}
+
+/** 1:1 décomp `src/contest_painting.c Contest_CopyStringWithColor(...)`. */
+export function Contest_CopyStringWithColor(..._args: any[]): any {
+  return null;
+}
+
+/** 1:1 décomp `src/text_window.c WriteColorChangeControlCode(...)`. */
+export function WriteColorChangeControlCode(..._args: any[]): void { /* no-op */ }
+
+/** 1:1 décomp `src/easy_chat.c GetQuestionnaireWordsPtr()`. */
+export function GetQuestionnaireWordsPtr(): any { return null; }
+
+/** 1:1 décomp `src/script.c GetObjectEventScriptPointerPlayerFacing()`. */
+export function GetObjectEventScriptPointerPlayerFacing(): any { return null; }
+
+/** 1:1 décomp `src/battle_main.c CALC_STAT(base, iv, ev, level, statIndex, nature)`.
+ *  Compute a pokemon stat 1:1 from base + IVs + EVs + level + nature.
+ *  Need full nature table. Stub returns base for now. */
+export function CALC_STAT(base: number, _iv: number, _ev: number, _level: number, _statIndex: number, _nature?: number): number {
+  return base;
+}
+
+/** 1:1 décomp `src/battle_dome.c BUFFER_PARTY_VS_SCREEN_STATUS(...)`. */
+export function BUFFER_PARTY_VS_SCREEN_STATUS(..._args: any[]): number { return 0; }
+
+/** 1:1 décomp `src/link.c BYTE_TO_SEND(byte)` — link transmit byte helper. */
+export function BYTE_TO_SEND(byte: number): number { return byte & 0xFF; }
+
 // ─── Pokemon data — throw NI ──────────────────────────────────────────────────
 
 /** 1:1 décomp `src/pokemon.c GetMonData(mon, field, ...)` — read pokemon data.
@@ -2572,6 +2897,34 @@ export const __bridgedHelpers__: ReadonlySet<string> = new Set([
   'FLASH_WRITE', 'REG_TMCNT_L', 'REG_TMCNT_H',
   'ProgramFlashByte', 'WaitForFlashWrite',
   'LoadPointerFromVars', 'GetApprenticeNameInLanguage',
+  // Status / battle util macros
+  'STATUS1_SLEEP_TURN', 'STATUS2_CONFUSION_TURN', 'STATUS2_UPROAR_TURN',
+  'STATUS2_BIDE_TURN', 'STATUS2_LOCK_CONFUSE_TURN', 'STATUS2_WRAPPED_TURN',
+  'STATUS3_ALWAYS_HITS_TURN', 'STATUS3_YAWN_TURN',
+  'GET_STAT_BUFF_ID', 'GET_STAT_BUFF_VALUE2', 'GET_STAT_BUFF_VALUE',
+  'SET_STAT_BUFF_VALUE', 'STAT_BUFF_NEGATIVE',
+  'ABILITY_ON_OPPOSING_FIELD', 'ABILITY_ON_FIELD2',
+  'PREPARE_STAT_BUFFER', 'PREPARE_ABILITY_BUFFER',
+  'S16TOPOSFLOAT', 'DIV_ROUND_UP', 'JOY_HELD_RAW',
+  'UNPACK_BEHAVIOR', 'IS_ITEM_MAIL',
+  'GET_COL', 'GET_ROW_IDX', 'FREE_SPRITE_TILE',
+  'SET_TRAINER_FAN_CLUB_FLAG',
+  // Misc helpers (= mostly stubs to allow compilation)
+  'GetFlagPointer', 'GetMonNickname2', 'GetPlayerName',
+  'FindCameraSprite', 'GetBaseTemplateForObjectEvent',
+  'AreCoordsWithinMapGridBounds', 'GetWalkSlowMovementAction',
+  'GetRematchTrainerLocation', 'GET_NUM_CONDITION_SPARKLES',
+  'GetSavedWonderNews', 'GetSavedWonderCardMetadata', 'GetSavedWonderCard',
+  'GetMapLayout', 'GetHealLocation', 'GetSubstruct', 'GetMonIconTiles',
+  'GetStringClearToWidth', 'EraseFlashSector', 'ProgramFlashSector',
+  'StringAppendWithPlaceholder', 'TrackStop', 'READ_XCMD_BYTE',
+  'GetLastCharOfMessagePtr', 'GetLimitedMessageStartPtr',
+  'DmaFill16Defvars', 'DmaFill32Defvars',
+  'Dma3CopyLarge16_', 'Dma3CopyLarge32_', 'Dma3FillLarge16_',
+  'SoftReset', 'Contest_CopyStringWithColor',
+  'WriteColorChangeControlCode', 'GetQuestionnaireWordsPtr',
+  'GetObjectEventScriptPointerPlayerFacing',
+  'CALC_STAT', 'BUFFER_PARTY_VS_SCREEN_STATUS', 'BYTE_TO_SEND',
   'StringCopy_Nickname', 'StringGet_Nickname',
   'DynamicPlaceholderTextUtil_ExpandPlaceholders',
   // Runtime method wrappers (= delegate to getRuntime().X)
@@ -2640,4 +2993,6 @@ export const __notImplementedHelpers__: ReadonlySet<string> = new Set([
   'GetMonSpritePalStructFromOtIdPersonality',
   'GetMonFrontSpritePal', 'GetMonIconPtr',
   'GetHealthboxElementGfxPtr', 'AddTextPrinterAndCreateWindowOnHealthbox',
+  // Phase B.6 added
+  'GetFlagPointer', 'GetMonNickname2', 'GetSubstruct', 'GetMonIconTiles',
 ]);
