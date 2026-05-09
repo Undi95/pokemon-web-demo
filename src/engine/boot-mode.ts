@@ -243,6 +243,23 @@ export function decideBootMode(): BootSpawn {
   }
 
   // Default : new game cinematic (= 1:1 décomp WarpToTruck).
+  // - Bug fix 2026-05-09 : RESET save d'abord. Sans ça, si user avait une save
+  //   `?nointro` avec VAR_LITTLEROOT_INTRO_STATE=7 + FLAG_HIDE_*_VIGOROTH_*
+  //   set, ces vars/flags persistent → truck cinematic / Mom dialog ne fire
+  //   pas (= leurs gates checkent INTRO_STATE=0..2). User report : "En nouvelle
+  //   partie normale, en sortant du camion (y a plus de camion, plus de saut),
+  //   plus de script de maman".
+  //   1:1 décomp `Sav2_ClearSetDefault` (load_save.c) wipe Save Block 1/2
+  //   complètement avant `NewGameInitData`.
+  //   Note : on PRÉSERVE playerName/gender qui viennent de Birch speech (= déjà
+  //   sync dans gameState par BirchRuntimeScene.transitionToOverworld()).
+  const preservedName = gameState.playerName;
+  const preservedGender = gameState.gender;
+  gameState.reset();
+  if (preservedName && preservedName !== 'PLAYER') {
+    gameState.playerName = preservedName;
+    gameState.gender = preservedGender;
+  }
   // - NewGameInit pour les flags d'init.
   // - setDynamicWarp Bourg (= sera utilisé par MAP_DYNAMIC quand le coord
   //   trigger SetIntroFlagsMale fait son setdynamicwarp + warp).
