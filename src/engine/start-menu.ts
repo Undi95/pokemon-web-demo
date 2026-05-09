@@ -362,16 +362,46 @@ function optionsAction(): boolean {
 
 // ─── Build items list ────────────────────────────────────────────────────────
 
+/** 1:1 décomp `BuildNormalStartMenu()` (start_menu.c:315) :
+ *
+ *    if (FlagGet(FLAG_SYS_POKEDEX_GET)) AddStartMenuAction(MENU_ACTION_POKEDEX);
+ *    if (FlagGet(FLAG_SYS_POKEMON_GET)) AddStartMenuAction(MENU_ACTION_POKEMON);
+ *    AddStartMenuAction(MENU_ACTION_BAG);
+ *    if (FlagGet(FLAG_SYS_POKENAV_GET)) AddStartMenuAction(MENU_ACTION_POKENAV);
+ *    AddStartMenuAction(MENU_ACTION_PLAYER);
+ *    AddStartMenuAction(MENU_ACTION_SAVE);
+ *    AddStartMenuAction(MENU_ACTION_OPTION);
+ *    AddStartMenuAction(MENU_ACTION_EXIT);
+ *
+ *  Donc en early game (= dans le truck, FLAG_SYS_POKEMON_GET et
+ *  FLAG_SYS_POKEDEX_GET pas set), le menu montre seulement :
+ *    SAC, PLAYER, SAUVER, OPTIONS, RETOUR
+ *
+ *  Pokémon entry débloquée par 1ère capture starter (FLAG_SYS_POKEMON_GET).
+ *  Pokédex entry débloquée par le Prof Birch (FLAG_SYS_POKEDEX_GET).
+ *  PokéNav entry débloquée plus tard (= post-Devon Goods, FLAG_SYS_POKENAV_GET). */
 function buildItems(): MenuItem[] {
-  return [
-    { label: 'POKéDEX',  onSelect: pokedexAction },
-    { label: 'POKéMON',  onSelect: pokemonAction },
-    { label: 'SAC',      onSelect: sacAction },
-    { label: gameState.playerName, onSelect: playerCardAction },
-    { label: 'SAUVER',   onSelect: saveAction },
-    { label: 'OPTIONS',  onSelect: optionsAction },
-    { label: 'RETOUR',   onSelect: () => true },
-  ];
+  const items: MenuItem[] = [];
+  if (FlagGet('FLAG_SYS_POKEDEX_GET')) {
+    items.push({ label: 'POKéDEX', onSelect: pokedexAction });
+  }
+  if (FlagGet('FLAG_SYS_POKEMON_GET')) {
+    items.push({ label: 'POKéMON', onSelect: pokemonAction });
+  }
+  items.push({ label: 'SAC', onSelect: sacAction });
+  if (FlagGet('FLAG_SYS_POKENAV_GET')) {
+    items.push({ label: 'POKéNAV', onSelect: pokenavAction });
+  }
+  items.push({ label: gameState.playerName, onSelect: playerCardAction });
+  items.push({ label: 'SAUVER', onSelect: saveAction });
+  items.push({ label: 'OPTIONS', onSelect: optionsAction });
+  items.push({ label: 'RETOUR', onSelect: () => true });
+  return items;
+}
+
+/** POKéNAV action : stub — le PokéNav n'est pas implémenté MVP. */
+function pokenavAction(): boolean {
+  return showMessageThenReturn('Le POKéNAV n\'est pas\nencore disponible.');
 }
 
 // ─── Public API ──────────────────────────────────────────────────────────────
