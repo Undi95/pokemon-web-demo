@@ -1,10 +1,10 @@
-# Branch upd2 — Final snapshot (overnight session, iter16 final)
+# Branch upd2 — Final snapshot (overnight session, iter17 final)
 
-Date : 2026-05-09 ~08h00
+Date : 2026-05-09 ~08h25
 
 ## TL;DR
 
-**50 commits sur upd2 cette nuit.** Build clean, game runs.
+**52 commits sur upd2 cette nuit.** Build clean, game runs.
 
 **🎯🎯🎯 Iter16 : MAJOR VISUAL UPGRADE** — battle scene now shows clean
 black background instead of overworld leaking through. Player overworld
@@ -57,6 +57,21 @@ sans crasher (= Battle Frontier scripts, Trainer Fan Club, etc.).
 | Main-story coverage | ✅ **100%** sur 70 maps (opcodes + specials) |
 | Global coverage | ✅ **70%** opcodes / 22% specials sur 470 maps |
 | Memory docs | ✅ 5 files briefing user |
+
+### Iteration 17 highlights (commit `70c712e1`)
+
+**Trainer battle BG hide** : extends iter16 fix to trainer battles.
+Previously `dev.battle.startTrainer()` showed "BRICE veut combattre!"
+overlay but the overworld was still visible behind it. The wrap-around
+trainer-battle-flow only delegated to startWildBattle (= which does the
+BG hide) AFTER the intro dialog.
+
+Fix : trainer-battle-flow's `INTRO_TEXT` state now does the BG hide +
+sprite stash itself. Per-tick re-hide added between INTRO_TEXT and DONE.
+CLEANUP/DONE state restores BGs/sprites idempotently.
+
+Live verified : trainer battle screenshot shows pure black BG with just
+the "Adversaire veut combattre!" dialog visible.
 
 ### Iteration 16 highlights (commit `5c8cb538`)
 
@@ -280,9 +295,11 @@ await dev.battle.startTrainer('TRAINER_BRENDAN_ROUTE_103_TORCHIC')
 window.dev.bridge.report().then(console.log)
 ```
 
-## Commit log (= 50 commits)
+## Commit log (= 52 commits)
 
 ```
+70c712e1 Iter17 — trainer-battle-flow also hides BGs/sprites during INTRO
+01010c83 Memory — iter16 update : battle BG hide visual upgrade
 5c8cb538 Iter16 — battle hides overworld BGs + sprites (clean black BG)
 e5a9928b Memory — iter14 update : bridge coverage 98% visible
 5d932d7e Iter14 — fix dev.bridge URL prefix (/__decomp/ -> /decomp/) → 98% coverage visible
