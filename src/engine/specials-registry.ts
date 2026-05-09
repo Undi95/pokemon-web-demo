@@ -97,33 +97,10 @@ registerSpecial('HealPlayerParty', () => {
  *  l'overworld (= pas le script). Notre special étant sync, la flow continue
  *  immédiatement → applymovement Birch + dialog. C'est OK pour MVP, plus
  *  rapide en démo (= skip UI). User feedback Phase 5+ pourrait vouloir l'UI. */
-registerSpecial('ChooseStarter', () => {
-  // 1:1 décomp `CB2_GiveStarter` (battle_setup.c:917) :
-  //   *GetVarPointer(VAR_STARTER_MON) = gSpecialVar_Result;
-  //   starterMon = GetStarterPokemon(gSpecialVar_Result);
-  //   ScriptGiveMon(starterMon, 5, ITEM_NONE, 0, 0, 0);
-  //   PlayBattleBGM();
-  //   SetMainCallback2(CB2_StartFirstBattle);
-  //   BattleTransition_Start(B_TRANSITION_BLUR);
-  //
-  // Pour MVP : auto-pick idx 0 (= TREECKO). Donne level 5 à la party.
-  // Skip transition battle = Phase 5.
-  void (async () => {
-    try {
-      const idx = 0;  // TREECKO (idx 1 = TORCHIC, 2 = MUDKIP)
-      const speciesEnum = ['SPECIES_TREECKO', 'SPECIES_TORCHIC', 'SPECIES_MUDKIP'][idx];
-      const { createPokemonInstance } = await import('./pokemon');
-      const { gameState } = await import('./game-state');
-      const starter = createPokemonInstance(speciesEnum, 5);
-      gameState.addToParty(starter);
-      gameState.setVar('VAR_RESULT', idx);
-      gameState.setVar('VAR_STARTER_MON', idx);
-      console.log(`[special ChooseStarter] auto-pick ${speciesEnum} (idx=${idx}) → party size=${gameState.partySize}`);
-    } catch (e) {
-      console.warn('[special ChooseStarter] failed', e);
-    }
-  })();
-});
+// Phase 5.5 : ChooseStarter handled directly in `special` opcode handler
+// (= script-opcodes.ts) via state machine in starter-choose-flow.ts. NOT a
+// registerSpecial here because we need access to `ctx` to call SetupNativeScript
+// (= block script while UI runs). registerSpecial handlers don't have ctx access.
 
 /** 1:1 décomp `BedroomPC` (mail.c).
  *  Open le PC interface. Stub no-op (= no PC UI yet). */

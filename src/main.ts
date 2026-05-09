@@ -170,6 +170,8 @@ const config: Phaser.Types.Core.GameConfig = {
 };
 
 const game = new Phaser.Game(config);
+// Expose game globally for cross-module access (= dev tools, scene-launching specials).
+(window as any).__phaserGame = game;
 
 // Lance l'overlay debug en parallèle sur toutes les scènes
 void game.scene.add('DebugOverlayScene', DebugOverlayScene, true);

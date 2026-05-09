@@ -43,6 +43,7 @@ import {
   gPlayerAvatar, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST,
 } from './player-avatar';
 import { getRuntime } from './decomp-globals';
+import { startChooseStarterFlow } from './starter-choose-flow';
 import { resolveDecompConstant } from './decomp-constants';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -849,8 +850,17 @@ function _invokeSpecial(name: string): number {
  *      return FALSE;
  *  }
  *  ``` */
-registerOpcode('special', (_ctx, args) => {
-  _invokeSpecial(args[0] as string);
+registerOpcode('special', (ctx, args) => {
+  const name = args[0] as string;
+  // Phase 5.5 : ChooseStarter UI INLINE dans l'overworld via state machine
+  // utilisant nos systèmes engine (= ShowFieldMessage + CreateYesNoMenu, no scene switch).
+  // 1:1 décomp Task_StarterChoose flow + Task_AskConfirmStarter.
+  if (name === 'ChooseStarter') {
+    const flow = startChooseStarterFlow();
+    SetupNativeScript(ctx, flow.tick);
+    return true;
+  }
+  _invokeSpecial(name);
   return false;
 });
 
