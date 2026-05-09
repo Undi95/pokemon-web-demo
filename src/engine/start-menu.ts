@@ -46,6 +46,7 @@ import { LoadUserWindowBorderGfx } from './gba-text-window';
 import { AddTextPrinterParameterized3 } from './gba-text-system';
 import {
   LockPlayerFieldControls, UnlockPlayerFieldControls, ScriptContext_IsEnabled,
+  getText,
 } from './script-runtime';
 import {
   ShowFieldMessage, IsFieldMessageBoxHidden, HideFieldMessageBox, GetFieldMessageBoxMode,
@@ -359,8 +360,10 @@ function saveAction(): boolean {
     sWindowId = -1;
   }
   _showSaveInfoWindow();
-  // 1:1 décomp gText_BattleTowerLinkSavePrompt = "Voulez-vous sauvegarder la partie?"
-  ShowFieldMessage('Voulez-vous sauvegarder la partie?$');
+  // 1:1 décomp gText_ConfirmSave (= save.inc:2). Fallback hardcoded if texts
+  // not loaded (= edge case before _common.json fetched).
+  const text = getText('gText_ConfirmSave') ?? 'Voulez-vous sauvegarder la partie?';
+  ShowFieldMessage(text + '$');
   sSubState = 'save_confirm';
   return false;
 }
@@ -643,7 +646,10 @@ function _tickSaveYesNo(): void {
     // qui affiche "Une partie est déjà sauvegardée. Voulez-vous la remplacer?")
     if (gameState.hasPersistedSave()) {
       HideFieldMessageBox();
-      ShowFieldMessage('Une partie est déjà\nsauvegardée. Voulez-vous\nla remplacer?$');
+      // 1:1 décomp gText_AlreadySavedFile (= save.inc:5-7).
+      const text = getText('gText_AlreadySavedFile')
+        ?? 'Il y a déjà une partie sauvegardée.\nVoulez-vous la remplacer?';
+      ShowFieldMessage(text + '$');
       sSubState = 'save_overwrite_msg';
     } else {
       // Pas de save existante → save direct.
@@ -689,7 +695,11 @@ function _tickSaveOverwriteYesNo(): void {
 function _doSave(): void {
   gameState.save();
   HideFieldMessageBox();
-  ShowFieldMessage(`${gameState.playerName} a sauvegardé\nla partie!$`);
+  // 1:1 décomp gText_PlayerSavedGame (= save.inc:13). Le placeholder {PLAYER}
+  // est résolu par StringExpandPlaceholders dans ShowFieldMessage.
+  const text = getText('gText_PlayerSavedGame')
+    ?? '{PLAYER} a sauvegardé la partie.';
+  ShowFieldMessage(text + '$');
   sSubState = 'save_done';
 }
 
