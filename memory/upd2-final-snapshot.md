@@ -1,17 +1,22 @@
-# Branch upd2 — Final snapshot (overnight session, iter7 update)
+# Branch upd2 — Final snapshot (overnight session, iter9 update)
 
-Date : 2026-05-09 ~06h05
+Date : 2026-05-09 ~06h25
 
 ## TL;DR
 
-**37 commits sur upd2 cette nuit.** Build clean, game runs.
+**40 commits sur upd2 cette nuit.** Build clean, game runs.
 
-**🎯 Milestone iter7 : 100% early-game coverage** (= 20 maps Bourg-en-Vol →
-Rosyères → Pacifibourg + Bois). Zero `[script-runtime] opcode '...' not
-implemented` warnings + zero `[opcode special] '...' not registered yet`
-warnings sur les routes early-game.
+**🎯🎯🎯 Milestone iter9 : 100% MAIN-STORY coverage** (= 70 maps de tout
+le scénario principal Hoenn jusqu'à Sootopolis exclus). Zero opcodes
+manquants, zero specials manquants. C'est full-coverage main-story.
 
-### Big wins (cumulé jusqu'à iter7)
+| Iter | Scope | Opcodes | Specials |
+|---|---|---|---|
+| iter7 | Early game (20 maps) | 100% | 100% |
+| iter8 | Extended (38 maps) | 100% | 100% |
+| iter9 | Main story (70 maps) | 100% | 100% |
+
+### Big wins (cumulé jusqu'à iter9)
 
 | Item | Status |
 |---|---|
@@ -20,11 +25,43 @@ warnings sur les routes early-game.
 | ChooseStarter UI | ✅ visible 1:1 sprites + dialog + Pokemon front |
 | Wild battle | ✅ Birch tutorial fonctionnel |
 | Trainer battle | ✅ Rival via trainerbattle opcodes |
-| Specials registered | ✅ **62** (= +50 cette nuit) |
-| Opcodes registered | ✅ **189** (= +47 cette nuit, audit-driven) |
-| Audit tools | ✅ 4 scripts dans `scripts/audit-*.mjs` |
-| Early-game coverage | ✅ **100%** sur 20 maps (opcodes + specials) |
+| Specials registered | ✅ **84** (= +72 cette nuit) |
+| Opcodes registered | ✅ **194** (= +52 cette nuit, audit-driven) |
+| Audit tools | ✅ 7 scripts dans `scripts/audit-*.mjs` |
+| Main-story coverage | ✅ **100%** sur 70 maps (opcodes + specials) |
 | Memory docs | ✅ 5 files briefing user |
+
+### Iteration 9 highlights (commit `ab1c8678`)
+
+**100% main-story coverage** sur 70 maps (= toute la quête principale,
+post-game exclu).
+
+```
+=== Missing opcodes in MAIN-STORY (70 maps) ===
+Registered : 194 | Used : 134 | Missing : 0    ✅
+
+=== Missing specials in MAIN-STORY (70 maps) ===
+Registered : 84 | Used : 44 | Missing : 0    ✅
+```
+
+Field opcodes ajoutés (iter9) : `goto_if_defeated` (16x), `getpartysize`,
+`setescapewarp`, `giveegg`.
+
+Specials ajoutés (iter9) : `ResetSSTidalFlag`, `SetSSTidalFlag`,
+`LoadLinkContestPlayerPalettes`, `GetContestMultiplayerId`,
+`GenerateContestRand`, `IsWirelessContest`, `ClearLinkContestFlags`,
+`GetPlayerFacingDirection`, `ShouldTryGetTrainerScript`, in-game trade
+specials (`GetInGameTradeSpeciesInfo`, `GetTradeSpecies`,
+`CreateInGameTradePokemon`, `DoInGameTradeScene`, `ChoosePartyMon`),
+`LookThroughPorthole`, `RunUnionRoom`.
+
+### Iteration 8 highlights (commit `f2223bd7`)
+
+**100% extended-game coverage** sur 38 maps (= early game + Rustboro/Devon).
+
+Ajouts : `getplayerxy` (opcode) + `FoundBlackGlasses`,
+`ScriptMenu_CreateStartMenuForPokenavTutorial`, `OpenPokenavForTutorial`,
+Walda specials.
 
 ### Iteration 7 highlights (commits `fca98845` + post)
 
@@ -100,9 +137,12 @@ await dev.battle.startTrainer('TRAINER_BRENDAN_ROUTE_103_TORCHIC')
 window.dev.bridge.report().then(console.log)
 ```
 
-## Commit log (= 37 commits)
+## Commit log (= 40 commits)
 
 ```
+ab1c8678 Phase 5.7+ iter9 — 100% main-story coverage (+5 opcodes +16 specials)
+f2223bd7 Phase 5.7+ iter8 — 100% extended-game coverage (+1 opcode +6 specials)
+5e4d3b63 Memory — iter7 update : 100% early-game coverage milestone
 fca98845 Phase 5.7+ iter7 — 100% early-game coverage (+13 opcodes +15 specials)
 0efe3097 Memory — iter6 update : audit-driven opcode coverage
 493b3cee Phase 5.7+ iter6 — audit-driven field opcode stubs (+25 opcodes)
@@ -337,16 +377,27 @@ Le but : zero warnings `[script-runtime] opcode '...' not implemented` ou
 `[opcode special] '...' not registered yet` dans la console quand le user
 joue une zone normale.
 
-## Audit summary (iter7)
+## Audit summary (iter9 — final tonight)
 
 ```
-=== Missing opcodes in EARLY-GAME (20 maps) ===
-Registered : 189 | Used : 124 | Missing : 0    ✅
+=== Missing opcodes in MAIN-STORY (70 maps, post-game excluded) ===
+Registered : 194 | Used : 134 | Missing : 0    ✅
 
-=== Missing specials in EARLY-GAME ===
-Registered : 62 | Used : 25 | Missing : 0    ✅
+=== Missing specials in MAIN-STORY (70 maps) ===
+Registered : 84 | Used : 44 | Missing : 0    ✅
+
+=== Audit scripts disponibles ===
+scripts/audit-missing-opcodes.mjs       (= all 470 maps)
+scripts/audit-missing-specials.mjs      (= all 470 maps)
+scripts/audit-early-game-opcodes.mjs    (= 20 prioritaires)
+scripts/audit-early-game-specials.mjs   (= 20 prioritaires)
+scripts/audit-extended-game-opcodes.mjs (= 38 maps)
+scripts/audit-extended-game-specials.mjs (= 38 maps)
+scripts/audit-fullgame-opcodes.mjs      (= 70 main-story)
+scripts/audit-fullgame-specials.mjs     (= 70 main-story)
 ```
 
-Les 458 specials globaux + 790 opcodes globaux non-implémentés sont
-majoritairement des battle scripts (= dispatcher séparé Phase 6) ou des
-zones late-game (= gym leaders, élite four, battle frontier).
+Les opcodes/specials encore manquants sont exclusivement des battle
+scripts (= `attackstring`, `ppreduce`, `attackcanceler`, etc. - dispatcher
+séparé) ou du contenu post-game (Battle Frontier, Hall of Fame, Mt Pyre,
+Sky Pillar, Magma/Aqua Hideout, etc.).
