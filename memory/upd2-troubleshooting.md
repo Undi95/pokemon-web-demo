@@ -114,16 +114,51 @@ src/engine/
 - LookAround sActionFuncId proper machinery
 - Frame glitch on truck exit fix
 
-## Métriques actuelles
+## Métriques actuelles (2026-05-09 ~06h45 — iter10 final)
 
 ```
-Total commits depuis main : 17+
+Total commits depuis main : 42
 Bridge coverage : ~95% (= bridged + internal défini)
 Auto-files parsing : 295/295 (100%)
 Build time : 12-14s
 Live game : ✓ boots
-ChooseStarter UI : ✓ visible avec sprites
-Battle : ⏳ WIP par agent
+ChooseStarter UI : ✓ visible avec sprites + Pokemon front
+Wild battle : ✓ Birch tutorial fonctionnel
+Trainer battle : ✓ Rival via trainerbattle opcodes
+Audit-driven coverage :
+  Early game (20 maps)    : 100% opcodes + 100% specials
+  Extended game (38 maps) : 100% opcodes + 100% specials
+  Main story (70 maps)    : 100% opcodes + 100% specials
+  Global (470 maps)       : 287 opcodes registered (= 70% coverage)
+                            130 specials registered (= 22% coverage)
+Audit scripts             : 8 dans scripts/audit-*.mjs
+```
+
+## Audit workflow (= reproducible pour future)
+
+```bash
+# Quick check : main story (= scope user joue normalement)
+node scripts/audit-fullgame-opcodes.mjs
+node scripts/audit-fullgame-specials.mjs
+
+# Sanity : pas de duplicate registrations dans specials-registry
+node scripts/audit-special-dupes.mjs
+
+# Granularité plus fine (= zones spécifiques)
+node scripts/audit-early-game-opcodes.mjs
+node scripts/audit-extended-game-opcodes.mjs
+```
+
+## Pattern pour ajouter un opcode/special manquant
+
+```typescript
+// 1. Trouve le def 1:1 décomp dans pokeemeraude (= scrcmd.c, specials.inc, etc.)
+// 2. Ajoute le stub avec ref en commentaire :
+registerOpcode('<name>', (_ctx, _args) => false);  // 1:1 décomp `ScrCmd_<name>`
+// ou
+registerSpecial('<name>', () => 0);  // 1:1 décomp `<module>.c:<name>`
+// 3. Re-run audit pour confirmer
+// 4. Commit séparément avec message Phase 5.7+ iterN
 ```
 
 ## Notes de session
