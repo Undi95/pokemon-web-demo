@@ -30,7 +30,7 @@ const {
   NULL, OpenLink, PlayFanfare, PlaySE,
   PrintMysteryGiftMenuMessage, ResetBlockReceivedFlags, RestoreSerialTimer3IntrHandlers, SetCloseLinkCallbackAndType,
   SetMainCallback2, SetSuppressLinkErrorMessage, TRUE, TryWriteTrainerHill,
-  ValidateTrainerHillData,  // 4-per-line for readability
+  ValidateTrainerHillData, memset,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void EReader_Load(struct EReaderData *eReader, int size, u32 *data) */

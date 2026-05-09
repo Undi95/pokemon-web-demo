@@ -34,7 +34,7 @@ const {
   RunTasks, RunTextPrinters, SendBlock, SetCloseLinkCallback,
   SetGpuReg, SetLinkStandbyCallback, SetMainCallback2, SetVBlankCallback,
   ShowBg, StartUnionRoomBattle, TRUE, TransferPlttBuffer,
-  UpdatePaletteFade, ZeroMonData,  // 4-per-line for readability
+  UpdatePaletteFade, ZeroMonData, memset,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void CB2_SetUpPartiesAndStartBattle(void) */

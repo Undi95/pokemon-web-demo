@@ -51,7 +51,7 @@ const {
   SendBlock, SetBgTilemapBuffer, SetCloseLinkCallback, SetGpuReg,
   SetMainCallback2, SetVBlankCallback, ShowBg, StartMinigameCountdown,
   StartSpriteAnim, StopMapMusic, TRUE, TransferPlttBuffer,
-  UpdatePaletteFade, VRAM_SIZE, WaitFanfare,  // 4-per-line for readability
+  UpdatePaletteFade, VRAM_SIZE, WaitFanfare, memcpy,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void StartDodrioBerryPicking(u16 partyId, MainCallback exitCallback) */

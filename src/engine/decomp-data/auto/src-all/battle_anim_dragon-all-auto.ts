@@ -26,7 +26,7 @@ const {
   GetBattlerSide, GetBattlerSpriteBGPriorityRank, GetBattlerSpriteCoord, GetBattlerSpriteCoordAttr,
   GetBattlerYCoordWithElevation, ScanlineEffect_SetParams, SetAnimSpriteInitialXOffset, SetSpriteCoordsToAnimAttackerCoords,
   Sin, StartSpriteAffineAnim, StartSpriteAnim, StoreSpriteCallbackInData6,
-  TRUE,  // 4-per-line for readability
+  TRUE, gSineTable,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void AnimOutrageFlame(struct Sprite *sprite) */

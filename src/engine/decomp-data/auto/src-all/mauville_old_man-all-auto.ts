@@ -33,7 +33,7 @@ const {
   SWAP, ScriptContext_Enable, ScriptContext_Stop, SetStandardWindowBorderStyle,
   ShowFieldMessage, StringCopy, StripExtCtrlCodes, TRUE,
   TraderSetup, Trader_ResetFlag, UnlockRandomTrendySaying, VarSet,
-  WORD_TO_PITCH_TABLE_INDEX,  // 4-per-line for readability
+  WORD_TO_PITCH_TABLE_INDEX, m4aSongNumStart, memcpy, memset,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void SetupBard(void) */

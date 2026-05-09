@@ -47,7 +47,8 @@ const {
   SetBgAffine, SetBgAttribute, SetBgTilemapBuffer, SetGpuReg,
   SetMainCallback2, SetVBlankCallback, SetVBlankHBlankCallbacksToNull, ShowBg,
   ShowPlayerTrainerCard, StartSpriteAnim, TRUE, TRY_FREE_AND_SET_NULL,
-  TransferPlttBuffer, UnsetBgTilemapBuffer, UpdatePaletteFade, VRAM_SIZE,  // 4-per-line for readability
+  TransferPlttBuffer, UnsetBgTilemapBuffer, UpdatePaletteFade, VRAM_SIZE,
+  memset,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void ResetGpuRegsAndBgs(void) */

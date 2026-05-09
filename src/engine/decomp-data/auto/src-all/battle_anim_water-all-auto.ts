@@ -37,7 +37,7 @@ const {
   ScanlineEffect_SetParams, ScanlineEffect_Stop, SetAnimBgAttribute, SetBattlerSpriteYOffsetFromYScale,
   SetGpuReg, Sin, StartSpriteAffineAnim, StartSpriteAnim,
   StoreSpriteCallbackInData6, TASK_NONE, TRUE, TranslateAnimHorizontalArc,
-  UpdateEruptAnimTask,  // 4-per-line for readability
+  UpdateEruptAnimTask, gSineTable,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void AnimTask_CreateRaindrops(u8 taskId) */

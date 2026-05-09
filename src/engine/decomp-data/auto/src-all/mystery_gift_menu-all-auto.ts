@@ -49,7 +49,7 @@ const {
   ValidateSavedWonderCard, ValidateSavedWonderNews, WonderCard_Destroy, WonderCard_Enter,
   WonderCard_Exit, WonderCard_Init, WonderNews_AddScrollIndicatorArrowPair, WonderNews_Destroy,
   WonderNews_Enter, WonderNews_Exit, WonderNews_GetInput, WonderNews_Init,
-  WonderNews_RemoveScrollIndicatorArrowPair, WonderNews_SetReward,  // 4-per-line for readability
+  WonderNews_RemoveScrollIndicatorArrowPair, WonderNews_SetReward, memcpy,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void VBlankCB_MysteryGiftEReader(void) */

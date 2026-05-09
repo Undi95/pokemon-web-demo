@@ -41,7 +41,8 @@ const {
   SetAnimSpriteInitialXOffset, SetAverageBattlerPositions, SetBattlerSpriteYOffsetFromRotation, SetBattlerSpriteYOffsetFromYScale,
   SetGpuReg, SetGpuRegBits, SetSpriteCoordsToAnimAttackerCoords, SetSpriteRotScale,
   Sin, StartSpriteAffineAnim, StartSpriteAnim, StorePointerInVars,
-  StoreSpriteCallbackInData6, TRUE, TranslateAnimHorizontalArc, TrySetSpriteRotScale,  // 4-per-line for readability
+  StoreSpriteCallbackInData6, TRUE, TranslateAnimHorizontalArc, TrySetSpriteRotScale,
+  gSineTable,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void AnimMovePowderParticle(struct Sprite *sprite) */

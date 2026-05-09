@@ -23,8 +23,8 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, CreateMon, CreateMonWithIVsPersonality, FALSE,
-  GetMonData, MAP_NUM, Random, SetMonData,
-  TRUE, ZeroEnemyPartyMons,  // 4-per-line for readability
+  GetMonData, MAP_NUM, MAP_UNDEFINED, Random,
+  SetMonData, TRUE, ZeroEnemyPartyMons, memset,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void ClearRoamerData(void) */

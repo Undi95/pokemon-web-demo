@@ -24,7 +24,7 @@ import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AllocZeroed, DISPLAY_HEIGHT, FALSE,
   FREE_AND_SET_NULL, GetSpriteTileStartByTag, GetTilesPerImage, IndexOfSpritePaletteTag,
-  NULL, TRUE,  // 4-per-line for readability
+  NULL, TRUE, memcpy, memset,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** bool32 ConfettiUtil_Init(u8 count) */

@@ -36,7 +36,7 @@ const {
   REG_OFFSET_WIN0V, REG_OFFSET_WININ, REG_OFFSET_WINOUT, RemoveScrollIndicatorArrowPair,
   RemoveWindow, STR_CONV_MODE_LEADING_ZEROS, STR_CONV_MODE_LEFT_ALIGN, SetGpuReg,
   SetGpuRegBits, ShowBg, TASK_NONE, TRUE,
-  UpdatePaletteFade, WIN_RANGE,  // 4-per-line for readability
+  UpdatePaletteFade, WIN_RANGE, memcpy, memset,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** bool32 WonderCard_Init(struct WonderCard *card, struct WonderCardMetadata *metadata) */

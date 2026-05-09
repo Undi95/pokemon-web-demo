@@ -26,7 +26,7 @@ const {
   FALSE, FuncIsActiveTask, GET_CRY, IsPokemonCryPlaying,
   SetPokemonCryChorus, SetPokemonCryLength, SetPokemonCryPanpot, SetPokemonCryPitch,
   SetPokemonCryPriority, SetPokemonCryProgress, SetPokemonCryRelease, SetPokemonCryTone,
-  SetPokemonCryVolume, SpeciesToCryId, TRUE,  // 4-per-line for readability
+  SetPokemonCryVolume, SpeciesToCryId, TRUE, m4aSongNumStart,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void InitMapMusic(void) */

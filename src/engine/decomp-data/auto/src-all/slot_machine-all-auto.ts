@@ -53,7 +53,7 @@ const {
   SetVBlankCallback, ShowBg, Sin, StartSpriteAnim,
   StartSpriteAnimIfDifferent, StopMapMusic, StoreWordInTwoHalfwords, TASK_NONE,
   TRUE, TRY_FREE_AND_SET_NULL, TransferPlttBuffer, TryPutFindThatGamerOnAir,
-  UpdatePaletteFade, VRAM_SIZE, WIN_RANGE,  // 4-per-line for readability
+  UpdatePaletteFade, VRAM_SIZE, WIN_RANGE, memcpy,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void Task_FadeToSlotMachine(u8 taskId) */

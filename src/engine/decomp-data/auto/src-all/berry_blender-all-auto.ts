@@ -55,7 +55,8 @@ const {
   SetLinkStandbyCallback, SetMainCallback2, SetVBlankCallback, SetWirelessCommType0,
   ShowBg, StartSpriteAnim, StringAppend, StringAppendWithPlaceholder,
   StringCompare, StringCopy, TRUE, TransferPlttBuffer,
-  UnsetBgTilemapBuffer, UpdatePaletteFade, WriteSaveBlock1Sector, WriteSaveBlock2,  // 4-per-line for readability
+  UnsetBgTilemapBuffer, UpdatePaletteFade, WriteSaveBlock1Sector, WriteSaveBlock2,
+  gSineTable, memcpy,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void UpdateHitPitch(void) */

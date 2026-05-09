@@ -40,7 +40,8 @@ const {
   ResetSpriteData, ResetTasks, ResetTempTileDataBuffers, RunTextPrinters,
   ScanlineEffect_Stop, SetBgTilemapBuffer, SetGpuReg, SetMainCallback2,
   SetVBlankCallback, ShowBg, StringCopy, StringLength,
-  TRUE, TransferPlttBuffer, UnsetBgTilemapBuffer, UpdatePaletteFade,  // 4-per-line for readability
+  TRUE, TransferPlttBuffer, UnsetBgTilemapBuffer, UpdatePaletteFade,
+  memset,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void ReadMail(struct Mail *mail, MainCallback exitCallback, bool8 hasText) */

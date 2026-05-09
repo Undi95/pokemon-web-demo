@@ -81,7 +81,7 @@ const {
   StringLength, TILE_SIZE_4BPP, TRUE, TRY_FREE_AND_SET_NULL,
   TransferPlttBuffer, TryLoadAllMonIconPalettesAtOffset, UnlockPlayerFieldControls, UpdateMonMarkingTiles,
   UpdatePaletteFade, VarSet, WriteSequenceToBgTilemapBuffer, ZeroBoxMonData,
-  ZeroMonData,  // 4-per-line for readability
+  ZeroMonData, gSineTable, memset,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void DrawTextWindowAndBufferTiles(const u8 *string, void *dst, u8 zero1, u8 zero2, s32 bytesToBuffer) */

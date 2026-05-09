@@ -39,7 +39,8 @@ const {
   REG_OFFSET_WININ, REG_OFFSET_WINOUT, RemoveWindow, RunTextPrinters,
   SHIFT_RIGHT_ADJUSTED, STR_CONV_MODE_LEFT_ALIGN, ScanlineEffect_Clear, ScanlineEffect_SetParams,
   ScheduleBgCopyTilemapToVram, SeekSpriteAnim, SetGpuReg, SetStandardWindowBorderStyle,
-  StringCopy, StringLength, TRUE, WIN_RANGE,  // 4-per-line for readability
+  StringCopy, StringLength, TRUE, WIN_RANGE,
+  gSineTable,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** bool8 MailboxMenu_Alloc(u8 count) */

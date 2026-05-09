@@ -24,7 +24,7 @@ import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, Contest_IsMonsTurnDisabled, FALSE, IsContestantAllowedToCombo,
   MakeContestantNervous, Random, SetContestantEffectStringID, SetContestantEffectStringID2,
-  SetStartledString, TRUE,  // 4-per-line for readability
+  SetStartledString, TRUE, memset,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** bool8 AreMovesContestCombo(u16 lastMove, u16 nextMove) */

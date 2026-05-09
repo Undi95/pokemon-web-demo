@@ -25,7 +25,7 @@ const {
   Alloc, AllocZeroed, ApplyNewEncryptionKeyToHword, CurMapIsSecretBase,
   CurrentBattlePyramidLocation, FALSE, FlagGet, Free,
   GetItemListPosition, GetItemName, SWAP, StringCopy,
-  TRUE, VarGet, VarSet,  // 4-per-line for readability
+  TRUE, VarGet, VarSet, memcpy,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static u16 GetBagItemQuantity(u16 *quantity) */

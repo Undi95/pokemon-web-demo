@@ -63,7 +63,7 @@ const {
   StringGet_Nickname, TASK_NONE, TRUE, TransferPlttBuffer,
   TryGainNewFanFromCounter, TryPutSpotTheCutiesOnAir, TrySavingData, UnlockPlayerFieldControls,
   UpdatePaletteFade, VarGet, VarSet, WIN_RANGE,
-  WriteSequenceToBgTilemapBuffer,  // 4-per-line for readability
+  WriteSequenceToBgTilemapBuffer, memset,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void InitContestResultsDisplay(void) */

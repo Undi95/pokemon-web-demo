@@ -65,7 +65,8 @@ const {
   StringExpandPlaceholders, TRUE, TrainerCard_GenerateCardForLinkPlayer, TryConnectToUnionRoomParent,
   TryInteractWithUnionRoomMember, UnionRoom_UnlockPlayerAndChatPartner, UnlockPlayerFieldControls, UpdateGameData_GroupLockedIn,
   UpdateGameData_SetActivity, UpdatePaletteFade, UpdateUnionRoomMemberFacing, VarSet,
-  WaitRfuState, WaitSendRfuStatusToPartner, WarpIntoMap,  // 4-per-line for readability
+  WaitRfuState, WaitSendRfuStatusToPartner, WarpIntoMap, memcpy,
+  memset,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void PrintNumPlayersWaitingForMsg(u8 windowId, u8 capacityCode, u8 stringId) */

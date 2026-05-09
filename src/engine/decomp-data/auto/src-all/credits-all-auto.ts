@@ -48,7 +48,8 @@ const {
   SetBgTilemapBuffer, SetCreditsSceneBgCnt, SetGpuReg, SetMainCallback2,
   SetOamMatrix, SetVBlankCallback, ShowBg, Sin,
   SoftReset, SpeciesToNationalPokedexNum, StartSpriteAnimIfDifferent, TRUE,
-  TransferPlttBuffer, UpdatePaletteFade, VRAM_SIZE, VarGet,  // 4-per-line for readability
+  TransferPlttBuffer, UpdatePaletteFade, VRAM_SIZE, VarGet,
+  m4aSongNumStart,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void VBlankCB_Credits(void) */

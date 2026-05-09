@@ -49,7 +49,7 @@ const {
   ShowBg, Sin, StartSpriteAnim, StartTimer1,
   StringCopy, StringCopyN, StringExpandPlaceholders, TASK_NONE,
   TRUE, TransferPlttBuffer, UpdatePaletteFade, VRAM_SIZE,
-  VarGet,  // 4-per-line for readability
+  VarGet, memset,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void DoNamingScreen(u8 templateNum, u8 *destBuffer, u16 monSpecies, u16 monGender, u32 monPersonality, MainCallback returnCallback) */

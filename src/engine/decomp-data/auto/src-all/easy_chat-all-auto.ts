@@ -50,7 +50,7 @@ const {
   ShowFieldAutoScrollMessage, SpeciesToNationalPokedexNum, StartSpriteAnim, StringAppend,
   StringLength, TRUE, TRY_FREE_AND_SET_NULL, TVShowConvertInternationalString,
   TransferPlttBuffer, TrySetTrendyPhrase, UpdatePaletteFade, WIN_RANGE,
-  WriteColorChangeControlCode,  // 4-per-line for readability
+  WriteColorChangeControlCode, memcpy,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void DoEasyChatScreen(u8 type, u16 *words, MainCallback exitCallback, u8 displayedPersonType) */

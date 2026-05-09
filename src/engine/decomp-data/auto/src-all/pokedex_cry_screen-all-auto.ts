@@ -28,7 +28,8 @@ const {
   GetWindowAttribute, IsCryPlaying, LoadPalette, LoadSpritePalettes,
   LoadSpriteSheets, ObjAffineSet, PLAYHEAD_POS, PLAY_START_POS,
   PLTT_SIZE_4BPP, PlayCry_NormalNoDucking, ST_OAM_AFFINE_NORMAL, SetOamMatrix,
-  StopCry, TILE_SIZE_4BPP, TRUE, VERT_SLICE,  // 4-per-line for readability
+  StopCry, TILE_SIZE_4BPP, TRUE, VERT_SLICE,
+  gSineTable,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** bool8 LoadCryWaveformWindow(struct CryScreenWindow *window, u8 windowId) */

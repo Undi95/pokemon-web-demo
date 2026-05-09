@@ -37,7 +37,7 @@ const {
   LoadUserWindowBorderGfx, NULL, PIXEL_FILL, PLTT_SIZE_4BPP,
   PlaySE, PutWindowTilemap, RemoveWindow, RequestDma3Fill,
   RunTextPrinters, STR_CONV_MODE_LEADING_ZEROS, STR_CONV_MODE_LEFT_ALIGN, SetWordTaskArg,
-  StringCopy, StringExpandPlaceholders, TRUE,  // 4-per-line for readability
+  StringCopy, StringExpandPlaceholders, TRUE, memset,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void InitStandardTextBoxWindows(void) */

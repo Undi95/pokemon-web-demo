@@ -43,19 +43,20 @@ const {
   JOY_NEW, LZDecompressWram, ListMenuGetScrollAndRow, ListMenuGetYCoordForPrintingArrowCursor,
   ListMenuInit, ListMenu_ProcessInput, LoadCompressedPalette, LoadMessageBoxGfx,
   LoadOam, LoadUserWindowBorderGfx, LockPlayerFieldControls, MapGridGetMetatileIdAt,
-  MapGridGetMetatileLayerTypeAt, Menu_ProcessInputNoWrap, PALETTES_ALL, PIXEL_FILL,
-  PLTT_SIZE_4BPP, PlaySE, PrintMenuTable, PrintMoneyAmount,
-  PrintMoneyAmountInMoneyBox, PrintMoneyAmountInMoneyBoxWithBorder, ProcessSpriteCopyRequests, PutWindowTilemap,
-  REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS, REG_OFFSET_BG1HOFS, REG_OFFSET_BG1VOFS,
-  REG_OFFSET_BG2HOFS, REG_OFFSET_BG2VOFS, REG_OFFSET_BG3HOFS, REG_OFFSET_BG3VOFS,
-  REG_OFFSET_BLDCNT, RemoveMoney, RemoveMoneyLabelObject, RemoveScrollIndicatorArrowPair,
-  RemoveWindow, ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData,
-  ResetTasks, ResetTempTileDataBuffers, RunTasks, STR_CONV_MODE_LEADING_ZEROS,
-  STR_CONV_MODE_LEFT_ALIGN, STR_CONV_MODE_RIGHT_ALIGN, ScanlineEffect_Stop, ScheduleBgCopyTilemapToVram,
-  SetBgTilemapBuffer, SetGpuReg, SetMainCallback2, SetStandardWindowBorderStyle,
-  SetVBlankCallback, SetVBlankHBlankCallbacksToNull, ShowBg, StartSpriteAnim,
-  StringCopy, StringExpandPlaceholders, TASK_NONE, TRUE,
-  TransferPlttBuffer, TryPutSmartShopperOnAir, UnlockPlayerFieldControls, UpdatePaletteFade,  // 4-per-line for readability
+  MapGridGetMetatileLayerTypeAt, Menu_ProcessInputNoWrap, OBJECT_EVENTS_COUNT, PALETTES_ALL,
+  PIXEL_FILL, PLTT_SIZE_4BPP, PlaySE, PrintMenuTable,
+  PrintMoneyAmount, PrintMoneyAmountInMoneyBox, PrintMoneyAmountInMoneyBoxWithBorder, ProcessSpriteCopyRequests,
+  PutWindowTilemap, REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS, REG_OFFSET_BG1HOFS,
+  REG_OFFSET_BG1VOFS, REG_OFFSET_BG2HOFS, REG_OFFSET_BG2VOFS, REG_OFFSET_BG3HOFS,
+  REG_OFFSET_BG3VOFS, REG_OFFSET_BLDCNT, RemoveMoney, RemoveMoneyLabelObject,
+  RemoveScrollIndicatorArrowPair, RemoveWindow, ResetBgsAndClearDma3BusyFlags, ResetPaletteFade,
+  ResetSpriteData, ResetTasks, ResetTempTileDataBuffers, RunTasks,
+  STR_CONV_MODE_LEADING_ZEROS, STR_CONV_MODE_LEFT_ALIGN, STR_CONV_MODE_RIGHT_ALIGN, ScanlineEffect_Stop,
+  ScheduleBgCopyTilemapToVram, SetBgTilemapBuffer, SetGpuReg, SetMainCallback2,
+  SetStandardWindowBorderStyle, SetVBlankCallback, SetVBlankHBlankCallbacksToNull, ShowBg,
+  StartSpriteAnim, StringCopy, StringExpandPlaceholders, TASK_NONE,
+  TRUE, TransferPlttBuffer, TryPutSmartShopperOnAir, UnlockPlayerFieldControls,
+  UpdatePaletteFade, memset,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static u8 CreateShopMenu(u8 martType) */

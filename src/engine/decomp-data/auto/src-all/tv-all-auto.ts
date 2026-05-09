@@ -38,7 +38,8 @@ const {
   SWAP, SetBoxMonNickAt, SetMonData, ShowFieldMessage,
   SpeciesToNationalPokedexNum, StringCompare, StringCopy, StringGet_Nickname,
   StringLength, StripExtCtrlCodes, TRUE, TVShow,
-  TVShowConvertInternationalString, VarGet, VarSet,  // 4-per-line for readability
+  TVShowConvertInternationalString, VarGet, VarSet, memcpy,
+  memset, strlen,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void ClearTVShowData(void) */

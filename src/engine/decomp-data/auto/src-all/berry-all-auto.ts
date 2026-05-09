@@ -25,7 +25,8 @@ const {
   AddBagItem, CpuFill16, FALSE, GetBerryCountString,
   GetBerryInfo, GetBerryTreeInfo, GetCameraCoords, GetObjectEventBerryTreeId,
   GetObjectEventScriptPointerPlayerFacing, ITEM_TO_BERRY, IsBagPocketNonEmpty, IsBerryTreeSparkling,
-  Random, SetBerryTreeJustPicked, SetMainCallback2, TRUE,  // 4-per-line for readability
+  OBJECT_EVENTS_COUNT, Random, SetBerryTreeJustPicked, SetMainCallback2,
+  TRUE, memcpy,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void ClearEnigmaBerries(void) */

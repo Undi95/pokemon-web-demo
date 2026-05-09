@@ -41,7 +41,8 @@ const {
   SetMainCallback2, SetMonData, SetMonMoveAvoidReturn, SetMonMoveSlot,
   ShowFieldMessage, StringCopy, StringCopy_PlayerName, StripExtCtrlCodes,
   T1_READ_32, TRUE, TVShowConvertInternationalString, TryPutSpotTheCutiesOnAir,
-  UpdateGymLeaderRematch, VarGet, VarSet, ZeroEnemyPartyMons,  // 4-per-line for readability
+  UpdateGymLeaderRematch, VarGet, VarSet, ZeroEnemyPartyMons,
+  memcpy, memset,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void CallBattleTowerFunc(void) */

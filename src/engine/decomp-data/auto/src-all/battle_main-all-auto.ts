@@ -73,7 +73,7 @@ const {
   StripExtCtrlCodes, SwitchPartyMonSlots, SwitchPartyOrderInGameMulti, TRUE,
   TransferPlttBuffer, TryClearRageStatuses, TryPutBreakingNewsOnAir, TryPutPokemonTodayOnAir,
   TrySetCantSelectMoveBattleScript, TrySetLinkBattleTowerEnemyPartyLevel, UpdatePaletteFade, UpdateRoamerHPStatus,
-  VRAM_SIZE, WIN_RANGE, ZeroEnemyPartyMons,  // 4-per-line for readability
+  VRAM_SIZE, WIN_RANGE, ZeroEnemyPartyMons, memcpy,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void CB2_InitBattle(void) */

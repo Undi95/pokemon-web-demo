@@ -35,7 +35,7 @@ const {
   GetUnionRoomTrainerClass, HANDLE_NICKNAME_STRING_CASE, IsFrontierTrainerFemale, NULL,
   PLTT_SIZEOF, PutWindowTilemap, STR_CONV_MODE_LEFT_ALIGN, StringAppend,
   StringCopy, StringGet_Nickname, StringLength, T1_READ_16,
-  T1_READ_32, TRUE, TryGetStatusString,  // 4-per-line for readability
+  T1_READ_32, TRUE, TryGetStatusString, memcpy,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void BufferStringBattle(u16 stringID) */

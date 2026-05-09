@@ -46,7 +46,7 @@ const {
   ShowFieldAutoScrollMessage, ShowFieldMessage, ShowTrainerCardInLink, StartSendingKeysToLink,
   StopFieldMessage, StringCopy, StringExpandPlaceholders, SwitchTaskToFollowupFunc,
   TASK_NONE, TRUE, TrainerCard_GenerateCardForLinkPlayer, UpdatePlayerLinkBattleRecords,
-  UpdateTrainerFansAfterLinkBattle,  // 4-per-line for readability
+  UpdateTrainerFansAfterLinkBattle, m4aMPlayAllStop,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void CreateLinkupTask(u8 minPlayers, u8 maxPlayers) */

@@ -24,8 +24,8 @@ import * as _bridge from '../../../decomp-bridge';
 const {
   ApplyNewEncryptionKeyToBagItems, ApplyNewEncryptionKeyToBagItems_, ApplyNewEncryptionKeyToBerryPowder, ApplyNewEncryptionKeyToGameStats,
   CpuFill16, FALSE, IdentifyFlash, InitFlashTimer,
-  InitHeap, NULL, Random, SetBagItemsPointers,
-  SetContinueGameWarpToDynamicWarp, SetDecorationInventoriesPointers, TRUE,  // 4-per-line for readability
+  InitHeap, NULL, OBJECT_EVENTS_COUNT, Random,
+  SetBagItemsPointers, SetContinueGameWarpToDynamicWarp, SetDecorationInventoriesPointers, TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void CheckForFlashMemory(void) */

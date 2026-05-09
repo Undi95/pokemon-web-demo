@@ -34,7 +34,8 @@ const {
   PlayerMovingHoppingWheelie, PlayerOnBikeCollide, PlayerOnBikeCollideWithFarawayIslandMew, PlayerPopWheelieWhileMoving,
   PlayerRideWaterCurrent, PlayerSetAnimId, PlayerStandingHoppingWheelie, PlayerStartWheelie,
   PlayerTurnInPlace, PlayerUseAcroBikeOnBumpySlope, PlayerWheelieInPlace, PlayerWheelieMove,
-  SetObjectEventDirection, SetPlayerAvatarTransitionFlags, TRUE, TestPlayerAvatarFlags,  // 4-per-line for readability
+  SetObjectEventDirection, SetPlayerAvatarTransitionFlags, TRUE, TestPlayerAvatarFlags,
+  memcpy,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void MovePlayerOnBike(u8 direction, u16 newKeys, u16 heldKeys) */

@@ -43,7 +43,8 @@ const {
   StartSpriteAnim, StorageGetCurrentBox, StringCompare, StringCopy,
   StringCopy_Nickname, StringLength, StripExtCtrlCodes, SummaryScreen_SetAnimDelayTaskId,
   TASK_NONE, TRAINER_ENCOUNTER_MUSIC, TRUE, TRY_FREE_AND_SET_NULL,
-  UPDATE_FRIENDSHIP_FROM_ITEM, UpdateSentPokesToOpponentValue, VarGet, VarSet,  // 4-per-line for readability
+  UPDATE_FRIENDSHIP_FROM_ITEM, UpdateSentPokesToOpponentValue, VarGet, VarSet,
+  m4aMPlayAllStop, memcpy, memset,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void ZeroBoxMonData(struct BoxPokemon *boxMon) */

@@ -32,19 +32,20 @@ const {
   GetLastUsedWarpMapType, GetMapPairFadeFromType, GetMapPairFadeToType, GetObjectEventIdByLocalIdAndMap,
   GetPlayerFacingDirection, GetWalkNormalMovementAction, InstallCameraPanAheadCallback, IsLinkTaskFinished,
   IsPlayerSpinEntranceActive, IsPlayerSpinExitActive, IsPlayerStandingStill, IsWeatherNotFadingIn,
-  LoadPalette, LockPlayerFieldControls, MapGridGetMetatileBehaviorAt, MetatileBehavior_IsDoor,
-  MetatileBehavior_IsNonAnimDoor, NULL, ObjectEventClearHeldMovementIfActive, ObjectEventClearHeldMovementIfFinished,
-  ObjectEventSetHeldMovement, OnTrainerHillEReaderChallengeFloor, Overworld_FadeOutMapMusic, Overworld_PlaySpecialMapMusic,
-  PIXEL_FILL, PLTT_SIZE, PLTT_SIZEOF, PlayRainStoppingSoundEffect,
-  PlaySE, PlayerGetDestCoords, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT,
-  REG_OFFSET_WIN0H, REG_OFFSET_WININ, REG_OFFSET_WINOUT, ResetAllMultiplayerState,
-  RfuSetErrorParams, SaveObjectEvents, ScanlineEffect_Clear, ScanlineEffect_SetParams,
-  ScanlineEffect_Stop, ScheduleBgCopyTilemapToVram, ScriptContext_Enable, ScriptUnfreezeObjectEvents,
-  SetBgTilemapPalette, SetCameraPanning, SetCameraPanningCallback, SetCloseLinkCallback,
-  SetGpuReg, SetGpuRegBits, SetLinkStandbyCallback, SetMainCallback2,
-  SetObjectEventLoadFlag, SetPlayerInvisibility, ShowReturnToFieldStartMenu, StartEscalatorWarp,
-  StartLavaridgeGym1FWarp, StartLavaridgeGymB1FWarp, StartSendingKeysToLink, TRUE,
-  TryFadeOutOldMapMusic, UnfreezeObjectEvents, UnlockPlayerFieldControls, WarpIntoMap,  // 4-per-line for readability
+  LOCALID_PLAYER, LoadPalette, LockPlayerFieldControls, MapGridGetMetatileBehaviorAt,
+  MetatileBehavior_IsDoor, MetatileBehavior_IsNonAnimDoor, NULL, ObjectEventClearHeldMovementIfActive,
+  ObjectEventClearHeldMovementIfFinished, ObjectEventSetHeldMovement, OnTrainerHillEReaderChallengeFloor, Overworld_FadeOutMapMusic,
+  Overworld_PlaySpecialMapMusic, PIXEL_FILL, PLTT_SIZE, PLTT_SIZEOF,
+  PlayRainStoppingSoundEffect, PlaySE, PlayerGetDestCoords, REG_OFFSET_BLDALPHA,
+  REG_OFFSET_BLDCNT, REG_OFFSET_WIN0H, REG_OFFSET_WININ, REG_OFFSET_WINOUT,
+  ResetAllMultiplayerState, RfuSetErrorParams, SaveObjectEvents, ScanlineEffect_Clear,
+  ScanlineEffect_SetParams, ScanlineEffect_Stop, ScheduleBgCopyTilemapToVram, ScriptContext_Enable,
+  ScriptUnfreezeObjectEvents, SetBgTilemapPalette, SetCameraPanning, SetCameraPanningCallback,
+  SetCloseLinkCallback, SetGpuReg, SetGpuRegBits, SetLinkStandbyCallback,
+  SetMainCallback2, SetObjectEventLoadFlag, SetPlayerInvisibility, ShowReturnToFieldStartMenu,
+  StartEscalatorWarp, StartLavaridgeGym1FWarp, StartLavaridgeGymB1FWarp, StartSendingKeysToLink,
+  TRUE, TryFadeOutOldMapMusic, UnfreezeObjectEvents, UnlockPlayerFieldControls,
+  WarpIntoMap,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void FillPalBufferWhite(void) */

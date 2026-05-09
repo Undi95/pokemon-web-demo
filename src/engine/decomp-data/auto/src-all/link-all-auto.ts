@@ -49,7 +49,8 @@ const {
   SetBackdropFromColor, SetBgTilemapBuffer, SetGpuReg, SetMainCallback2,
   SetVBlankCallback, ShowBg, StartSendingKeysToRfu, StopMapMusic,
   StringCompare, StringCopy, TRUE, TransferPlttBuffer,
-  TrySavingData, UpdatePaletteFade,  // 4-per-line for readability
+  TrySavingData, UpdatePaletteFade, memcpy, memset,
+  strcmp,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** bool8 IsWirelessAdapterConnected(void) */

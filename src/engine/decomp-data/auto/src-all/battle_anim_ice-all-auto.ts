@@ -35,7 +35,7 @@ const {
   REG_OFFSET_BG1VOFS, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, Random2,
   ST_OAM_AFFINE_OFF, SetAnimBgAttribute, SetAverageBattlerPositions, SetGpuReg,
   Sin, StartSpriteAffineAnim, StartSpriteAnim, StoreSpriteCallbackInData6,
-  TRUE, TranslateAnimHorizontalArc,  // 4-per-line for readability
+  TRUE, TranslateAnimHorizontalArc, gSineTable,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void AnimUnusedIceCrystalThrow(struct Sprite *sprite) */

@@ -35,7 +35,7 @@ const {
   RenderTextHandleBold, STR_CONV_MODE_LEFT_ALIGN, STR_CONV_MODE_RIGHT_ALIGN, ST_OAM_OBJ_BLEND,
   SetGpuReg, SetSubspriteTables, SpeciesToNationalPokedexNum, StringAppend,
   StringCompare, StringCopy, StringGet_Nickname, TILE_SIZE_4BPP,
-  TRUE,  // 4-per-line for readability
+  TRUE, memcpy,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static s32 DummiedOutFunction(s16 unused1, s16 unused2, s32 unused3) */

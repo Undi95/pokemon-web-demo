@@ -23,7 +23,7 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   FALSE, GetBoxMonData, GetMonData, GetUnownLetterByPersonality,
-  PadNameString, SetMonData, TRUE,  // 4-per-line for readability
+  PadNameString, SetMonData, TRUE, memcpy,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void ClearAllMail(void) */

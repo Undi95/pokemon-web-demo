@@ -22,7 +22,7 @@
 // to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  FALSE, TASK_NONE, TRUE,  // 4-per-line for readability
+  FALSE, TASK_NONE, TRUE, memset,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void ResetTasks(void) */

@@ -23,8 +23,9 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   AllocZeroed, DIR_EAST, DIR_NORTH, DIR_SOUTH,
-  DIR_WEST, GetObjectEventIdByLocalIdAndMap, MapGridGetMetatileIdAt, NULL,
-  ObjectEventClearHeldMovementIfFinished, ScriptMovement_StartObjectMovementScript, ScriptMovement_UnfreezeObjectEvents, TRY_FREE_AND_SET_NULL,  // 4-per-line for readability
+  DIR_WEST, GetObjectEventIdByLocalIdAndMap, LOCALID_NONE, LOCALID_PLAYER,
+  MapGridGetMetatileIdAt, NULL, OBJECT_EVENTS_COUNT, ObjectEventClearHeldMovementIfFinished,
+  ScriptMovement_StartObjectMovementScript, ScriptMovement_UnfreezeObjectEvents, TRY_FREE_AND_SET_NULL,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void InitRotatingTilePuzzle(bool8 isTrickHouse) */

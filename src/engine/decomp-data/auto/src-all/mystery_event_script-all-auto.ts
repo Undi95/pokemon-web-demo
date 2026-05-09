@@ -29,7 +29,8 @@ const {
   RunScriptCommand, RunScriptImmediately, ScriptReadByte, ScriptReadHalfword,
   ScriptReadWord, SetEnigmaBerry, SetupBytecodeScript, SpeciesToNationalPokedexNum,
   StopScript, StringCompare, StringCopyN, StringExpandPlaceholders,
-  TRUE, UnlockTrendySaying, ValidateEReaderTrainer, VarSet,  // 4-per-line for readability
+  TRUE, UnlockTrendySaying, ValidateEReaderTrainer, VarSet,
+  memcpy,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static bool32 CheckCompatibility(u16 unk0, u32 unk1, u16 unk2, u32 version) */

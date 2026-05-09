@@ -44,7 +44,8 @@ const {
   SetBgAttribute, SetGpuReg, SetGpuRegBits, SetMainCallback2,
   SetVBlankCallback, SetWarpDestinationToHealLocation, SetWarpDestinationToMapWarp, ShowBg,
   StartSpriteAnim, StringFill, StringLength, TRUE,
-  TRY_FREE_AND_SET_NULL, TransferPlttBuffer, UpdatePaletteFade, VarGet,  // 4-per-line for readability
+  TRY_FREE_AND_SET_NULL, TransferPlttBuffer, UpdatePaletteFade, VarGet,
+  gSineTable, m4aSongNumStart,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void InitRegionMap(struct RegionMap *regionMap, bool8 zoomed) */

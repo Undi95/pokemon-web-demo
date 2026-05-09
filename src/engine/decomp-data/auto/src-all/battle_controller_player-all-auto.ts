@@ -55,7 +55,7 @@ const {
   StartSpriteAnim, StoreSpriteCallbackInData6, StringCopy, StringCopy_Nickname,
   SwapHpBarsWithHpText, T1_READ_16, TRUE, TryHandleLaunchBattleTableAnimation,
   TryPutLinkBattleTvShowOnAir, TrySetBehindSubstituteSpriteBit, TryShinyAnimation, UpdateHealthboxAttribute,
-  UpdateHpTextInHealthbox,  // 4-per-line for readability
+  UpdateHpTextInHealthbox, memcpy,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void SetControllerToPlayer(void) */

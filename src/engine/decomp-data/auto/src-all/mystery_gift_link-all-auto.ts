@@ -24,7 +24,7 @@ import * as _bridge from '../../../decomp-bridge';
 const {
   CalcCRC16WithTable, FALSE, GetBlockReceivedStatus, IsLinkTaskFinished,
   LinkRfu_FatalError, NULL, ResetBlockReceivedFlag, SendBlock,
-  TRUE,  // 4-per-line for readability
+  TRUE, memcpy,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** u32 MysteryGiftLink_Recv(struct MysteryGiftLink *link) */

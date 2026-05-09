@@ -49,7 +49,7 @@ const {
   PutWindowTilemap, RemoveWindow, RequestDma3Copy, RunTextPrinters,
   STR_CONV_MODE_LEFT_ALIGN, SetBgTilemapBuffer, SetLeftHeaderSpritesInvisibility, ShouldDrawRematchPokeballIcon,
   ShowBg, ShowLeftHeaderGfx, SlideMenuHeaderDown, StringCopy,
-  TASK_NONE, TRUE, WaitForHelpBar,  // 4-per-line for readability
+  TASK_NONE, TRUE, WaitForHelpBar, gSineTable,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** bool32 OpenMatchCall(void) */

@@ -33,18 +33,19 @@ const {
   GetSafariZoneFlag, GetSavedWeather, GetStarterPokemon, GetTrainerCantBattleSpeech,
   GetTrainerEncounterMusicId, GetTrainerFacingDirectionMovementType, GetVarPointer, InBattlePike,
   InTrainerHill, InTrainerHillChallenge, IncrementDailyWildBattles, IncrementGameStat,
-  IsBattleTransitionDone, LocalIdToHillTrainerId, LocalIdToPyramidTrainerId, LockPlayerFieldControls,
-  MAP_GROUP, MAP_NUM, MapGridGetMetatileBehaviorAt, MarkApproachingPyramidTrainersAsBattled,
-  MetatileBehavior_GetBridgeType, MetatileBehavior_IsBridgeOverWater, MetatileBehavior_IsDeepOrOceanWater, MetatileBehavior_IsIndoorEncounter,
-  MetatileBehavior_IsLongGrass, MetatileBehavior_IsMountain, MetatileBehavior_IsSandOrDeepSand, MetatileBehavior_IsSurfableWaterOrUnderwater,
-  MetatileBehavior_IsTallGrass, NULL, Overworld_ClearSavedMusic, PlayBattleBGM,
-  PlayMapChosenOrBattleBGM, PlayNewMapMusic, PlayerGetDestCoords, RANDOM_TRANSITION,
-  Random, ResetOamRange, ResetTasks, RestartWildEncounterImmunitySteps,
-  RunTasks, ScriptContext_SetupScript, ScriptContext_Stop, ScriptGiveMon,
-  SetHillTrainerFlag, SetMainCallback2, SetTrainerMovementType, ShowFieldMessage,
-  ShowFieldMessageFromBuffer, StopPlayerAvatar, T1_READ_16, T1_READ_32,
-  T1_READ_8, TRUE, TestPlayerAvatarFlags, UpdateGymLeaderRematch,
-  UpdatePaletteFade, VarGet, VarSet, ZeroMonData,  // 4-per-line for readability
+  IsBattleTransitionDone, LOCALID_NONE, LocalIdToHillTrainerId, LocalIdToPyramidTrainerId,
+  LockPlayerFieldControls, MAP_GROUP, MAP_NUM, MapGridGetMetatileBehaviorAt,
+  MarkApproachingPyramidTrainersAsBattled, MetatileBehavior_GetBridgeType, MetatileBehavior_IsBridgeOverWater, MetatileBehavior_IsDeepOrOceanWater,
+  MetatileBehavior_IsIndoorEncounter, MetatileBehavior_IsLongGrass, MetatileBehavior_IsMountain, MetatileBehavior_IsSandOrDeepSand,
+  MetatileBehavior_IsSurfableWaterOrUnderwater, MetatileBehavior_IsTallGrass, NULL, Overworld_ClearSavedMusic,
+  PlayBattleBGM, PlayMapChosenOrBattleBGM, PlayNewMapMusic, PlayerGetDestCoords,
+  RANDOM_TRANSITION, Random, ResetOamRange, ResetTasks,
+  RestartWildEncounterImmunitySteps, RunTasks, ScriptContext_SetupScript, ScriptContext_Stop,
+  ScriptGiveMon, SetHillTrainerFlag, SetMainCallback2, SetTrainerMovementType,
+  ShowFieldMessage, ShowFieldMessageFromBuffer, StopPlayerAvatar, T1_READ_16,
+  T1_READ_32, T1_READ_8, TRUE, TestPlayerAvatarFlags,
+  UpdateGymLeaderRematch, UpdatePaletteFade, VarGet, VarSet,
+  ZeroMonData,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void Task_BattleStart(u8 taskId) */

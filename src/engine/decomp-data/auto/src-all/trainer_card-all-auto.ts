@@ -50,7 +50,7 @@ const {
   SetHBlankCallback, SetMainCallback2, SetVBlankCallback, ShowBg,
   StringCopy, StringExpandPlaceholders, TASK_NONE, TRUE,
   TintPalette_CustomTone, TintPalette_SepiaTone, TransferPlttBuffer, UpdatePaletteFade,
-  WIN_RANGE, WriteSequenceToBgTilemapBuffer,  // 4-per-line for readability
+  WIN_RANGE, WriteSequenceToBgTilemapBuffer, memcpy, memset,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void VblankCb_TrainerCard(void) */

@@ -45,7 +45,7 @@ const {
   SetGpuRegBits, SetHBlankCallback, SetMainCallback2, SetOamMatrixRotationScaling,
   SetVBlankCallback, SetWeatherScreenFadeOut, Sin, StartSpriteAffineAnim,
   TASK_NONE, TRUE, TransferPlttBuffer, UpdatePaletteFade,
-  WIN_RANGE,  // 4-per-line for readability
+  WIN_RANGE, memcpy, memset,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void CB2_TestBattleTransition(void) */

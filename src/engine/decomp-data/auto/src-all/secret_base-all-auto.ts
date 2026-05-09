@@ -46,7 +46,7 @@ const {
   ShatterSecretBaseBreakableDoor, ShowDecorationOnMap, StringCopyN, StringExpandPlaceholders,
   TRUE, TryGainNewFanFromCounter, TryMoveObjectEventToMapCoords, TryOverrideObjectEventTemplateCoords,
   TryPutSecretBaseSecretsOnAir, TrySpawnObjectEvent, UnlockPlayerFieldControls, VarGet,
-  VarSet, WarpIntoMap,  // 4-per-line for readability
+  VarSet, WarpIntoMap, memset,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void ClearSecretBase(struct SecretBase *secretBase) */

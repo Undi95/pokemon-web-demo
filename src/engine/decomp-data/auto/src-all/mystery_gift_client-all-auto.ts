@@ -27,7 +27,7 @@ const {
   IsWonderNewsSameAsSaved, MysteryGiftLink_Init, MysteryGiftLink_InitRecv, MysteryGiftLink_InitSend,
   MysteryGiftLink_Recv, MysteryGiftLink_Send, MysteryGift_LoadLinkGameData, MysteryGift_TrySaveStamp,
   NULL, RunMysteryEventScriptContextCommand, SaveWonderCard, SaveWonderNews,
-  TRUE, ValidateEReaderTrainer,  // 4-per-line for readability
+  TRUE, ValidateEReaderTrainer, memcpy,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void MysteryGiftClient_Create(bool32 isWonderNews) */

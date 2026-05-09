@@ -54,7 +54,8 @@ const {
   SetGpuReg, SetMainCallback2, SetMonData, SetSwapLineSpritesInvisibility,
   SetVBlankCallback, SetVBlankHBlankCallbacksToNull, ShowBg, StartSpriteAffineAnim,
   StringCopy, StringExpandPlaceholders, TASK_NONE, TRUE,
-  TransferPlttBuffer, UpdatePaletteFade, UpdateSwapLineSpritesPos,  // 4-per-line for readability
+  TransferPlttBuffer, UpdatePaletteFade, UpdateSwapLineSpritesPos, memcpy,
+  memset,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void InitBattlePyramidBagCursorPosition(void) */

@@ -27,7 +27,7 @@ const {
   GetBattlerSide, GetBattlerSpriteBGPriorityRank, GetBattlerSpriteCoord, GetBattlerSpriteCoord2,
   GetBattlerYCoordWithElevation, InitAnimArcTranslation, InitSpritePosToAnimAttacker, InitSpritePosToAnimTarget,
   IsBattlerSpriteVisible, Random2, ScanlineEffect_SetParams, StoreSpriteCallbackInData6,
-  TRUE, TranslateAnimHorizontalArc,  // 4-per-line for readability
+  TRUE, TranslateAnimHorizontalArc, gSineTable,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void AnimBonemerangProjectile(struct Sprite *sprite) */

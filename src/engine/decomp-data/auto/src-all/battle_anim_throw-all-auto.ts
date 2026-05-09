@@ -44,7 +44,7 @@ const {
   ST_OAM_OBJ_NORMAL, ST_OAM_OBJ_WINDOW, SetAnimBgAttribute, SetBattlerSpriteYOffsetFromYScale,
   SetGpuReg, SetGpuRegBits, SetSpriteRotScale, Sin,
   StartSpriteAffineAnim, StartSpriteAnim, TILE_SIZE_4BPP, TRUE,
-  TranslateAnimHorizontalArc, UpdateOamPriorityInAllHealthboxes,  // 4-per-line for readability
+  TranslateAnimHorizontalArc, UpdateOamPriorityInAllHealthboxes, m4aMPlayAllStop, sDirection,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void AnimTask_UnusedLevelUpHealthBox(u8 taskId) */

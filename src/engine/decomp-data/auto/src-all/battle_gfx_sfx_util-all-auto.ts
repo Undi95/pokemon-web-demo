@@ -37,7 +37,8 @@ const {
   LoadCompressedSpriteSheet, LoadPalette, LoadSpritePalette, NULL,
   OBJ_PLTT_ID, PLTT_SIZEOF, PLTT_SIZE_4BPP, PlaySE,
   Random, ST_OAM_AFFINE_OFF, SetHealthboxSpriteInvisible, ShouldIgnoreDeoxysForm,
-  StartSpriteAnim, TRUE, TRY_FREE_AND_SET_NULL, UpdateHealthboxAttribute,  // 4-per-line for readability
+  StartSpriteAnim, TRUE, TRY_FREE_AND_SET_NULL, UpdateHealthboxAttribute,
+  memset,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void AllocateBattleSpritesData(void) */

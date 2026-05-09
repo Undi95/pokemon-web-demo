@@ -29,7 +29,7 @@ const {
   PALETTES_ALL, PlayMapChosenOrBattleBGM, ResetPaletteFadeControl, RunTasks,
   SetMainCallback2, SetMonData, StringCopy, StripExtCtrlCodes,
   TRUE, TryReadSpecialSaveSector, TryWriteSpecialSaveSector, VarGet,
-  ZeroEnemyPartyMons, ZeroPlayerPartyMons,  // 4-per-line for readability
+  ZeroEnemyPartyMons, ZeroPlayerPartyMons, memcpy, memset,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void RecordedBattle_Init(u8 mode) */

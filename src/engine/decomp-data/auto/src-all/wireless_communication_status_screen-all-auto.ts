@@ -36,7 +36,7 @@ const {
   ResetPaletteFade, ResetSpriteData, ResetTasks, RunTasks,
   RunTextPrinters, STR_CONV_MODE_RIGHT_ALIGN, ScanlineEffect_Stop, SetBgTilemapBuffer,
   SetGpuReg, SetMainCallback2, SetVBlankCallback, ShowBg,
-  TRUE, TransferPlttBuffer, UpdatePaletteFade,  // 4-per-line for readability
+  TRUE, TransferPlttBuffer, UpdatePaletteFade, memcpy,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void CB2_RunWirelessCommunicationScreen(void) */

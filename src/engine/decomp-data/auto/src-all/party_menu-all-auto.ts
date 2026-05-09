@@ -75,7 +75,7 @@ const {
   StringGet_Nickname, SwitchTaskToFollowupFunc, TRUE, TakeMailFromMon,
   TakeMailFromMonAndSave, Task_TryUseSoftboiledOnPartyMon, TestPlayerAvatarFlags, TransferPlttBuffer,
   TrySetDiveWarp, UnlockPlayerFieldControls, UpdateMonIconFrame, UpdatePaletteFade,
-  VarGet, WaitFanfare,  // 4-per-line for readability
+  VarGet, WaitFanfare, memcpy, memset,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void InitPartyMenu(u8 menuType, u8 layout, u8 partyAction, bool8 keepCursorPos, u8 messageId, TaskFunc task, MainCallback callback) */

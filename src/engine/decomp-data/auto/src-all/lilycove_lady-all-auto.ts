@@ -26,7 +26,8 @@ const {
   FavorLadyOpenBagMenu, GetFavorLadyRequest, GetItemName, IsEasyChatAnswerUnlocked,
   OpenPokeblockCase, QuizLadyOpenBagMenu, Random, RemoveBagItem,
   ScriptContext_Enable, ShowEasyChatScreen, StringCompare, StringCopy,
-  StringCopy_Nickname, StringCopy_PlayerName, TRUE, VarSet,  // 4-per-line for readability
+  StringCopy_Nickname, StringCopy_PlayerName, TRUE, VarSet,
+  memcpy, memset,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** u8 GetLilycoveLadyId(void) */

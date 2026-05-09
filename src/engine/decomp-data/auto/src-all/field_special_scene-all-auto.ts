@@ -27,11 +27,11 @@ const {
   DoDiveWarp, DoPortholeWarp, DrawWholeMapView, FALSE,
   FadeInFromBlack, FlagClear, FlagSet, FuncIsActiveTask,
   GetFaceDirectionAnimNum, GetSSTidalLocation, GetVarPointer, InstallCameraPanAheadCallback,
-  JOY_NEW, LockPlayerFieldControls, MapGridSetMetatileIdAt, NULL,
-  PLTT_SIZE, PlaySE, ScriptMovement_IsObjectMovementFinished, ScriptMovement_StartObjectMovementScript,
-  SetCameraPanning, SetCameraPanningCallback, SetDynamicWarp, SetObjectEventSpritePosByLocalIdAndMap,
-  SetWarpDestination, SetWarpDestinationToDynamicWarp, StartSpriteAnim, TRUE,
-  UnlockPlayerFieldControls, VarGet,  // 4-per-line for readability
+  JOY_NEW, LOCALID_PLAYER, LockPlayerFieldControls, MapGridSetMetatileIdAt,
+  NULL, PLTT_SIZE, PlaySE, ScriptMovement_IsObjectMovementFinished,
+  ScriptMovement_StartObjectMovementScript, SetCameraPanning, SetCameraPanningCallback, SetDynamicWarp,
+  SetObjectEventSpritePosByLocalIdAndMap, SetWarpDestination, SetWarpDestinationToDynamicWarp, StartSpriteAnim,
+  TRUE, UnlockPlayerFieldControls, VarGet,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static s16 GetTruckCameraBobbingY(int time) */

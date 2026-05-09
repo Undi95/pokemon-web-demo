@@ -93,22 +93,15 @@ function getBridgeExports() {
 }
 
 /** Scan the file for additional bridge-resolvable identifiers beyond callsTo.
- *  Captures UPPERCASE_SNAKE_CASE constants (= MB_TALL_GRASS, DIR_SOUTH, etc.)
- *  + function-call-like patterns. Filters against the bridge exports. */
+ *  Captures UPPERCASE_SNAKE_CASE constants (= MB_TALL_GRASS, DIR_SOUTH, etc.),
+ *  CamelCase function refs, ET lowercase libc helpers (memcpy, strcmp, etc.).
+ *  Filters against the bridge exports. */
 function findAdditionalBridgeRefs(src, bridgeExports, definedFunctions) {
   const additions = new Set();
-  // Match identifiers that look like UPPERCASE_SNAKE_CASE (= constants).
-  const re = /\b[A-Z][A-Z0-9_]*\b/g;
+  // Catch-all : any identifier (= upper, lower, mixed case).
+  const re = /\b([A-Za-z_][A-Za-z0-9_]*)\b/g;
   let m;
   while ((m = re.exec(src)) !== null) {
-    const name = m[0];
-    if (bridgeExports.has(name) && !definedFunctions.has(name)) {
-      additions.add(name);
-    }
-  }
-  // Also CamelCase identifiers used as bare references (= function refs).
-  const re2 = /\b([A-Z][a-zA-Z0-9_]+)\b/g;
-  while ((m = re2.exec(src)) !== null) {
     const name = m[1];
     if (bridgeExports.has(name) && !definedFunctions.has(name)) {
       additions.add(name);

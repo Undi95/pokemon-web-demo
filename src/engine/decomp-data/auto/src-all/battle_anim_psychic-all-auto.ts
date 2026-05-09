@@ -34,7 +34,8 @@ const {
   REG_OFFSET_BLDCNT, ResetBattleAnimBg, ResetSpriteRotScale, RunAffineAnimFromTaskData,
   ST_OAM_AFFINE_DOUBLE, ST_OAM_AFFINE_NORMAL, ST_OAM_AFFINE_OFF, ScanlineEffect_SetParams,
   SetBattlerSpriteYOffsetFromOtherYScale, SetGpuReg, SetSpriteRotScale, StartSpriteAffineAnim,
-  StartSpriteAnim, StoreSpriteCallbackInData6, TRUE, TranslateAnimHorizontalArc,  // 4-per-line for readability
+  StartSpriteAnim, StoreSpriteCallbackInData6, TRUE, TranslateAnimHorizontalArc,
+  gSineTable,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void AnimDefensiveWall(struct Sprite *sprite) */

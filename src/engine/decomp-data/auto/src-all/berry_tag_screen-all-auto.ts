@@ -41,7 +41,7 @@ const {
   STR_CONV_MODE_LEFT_ALIGN, ScanlineEffect_Stop, ScheduleBgCopyTilemapToVram, SetBgTilemapBuffer,
   SetGpuReg, SetMainCallback2, SetVBlankCallback, SetVBlankHBlankCallbacksToNull,
   ShowBg, StringCopy, StringExpandPlaceholders, TRUE,
-  TransferPlttBuffer, UpdatePaletteFade,  // 4-per-line for readability
+  TransferPlttBuffer, UpdatePaletteFade, memcpy,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void DoBerryTagScreen(void) */

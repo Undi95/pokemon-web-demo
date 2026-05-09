@@ -23,7 +23,7 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, FALSE, FlagSet, GetMonData,
-  SetMonData, TRUE,  // 4-per-line for readability
+  SetMonData, TRUE, memcpy,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void GiveGiftRibbonToParty(u8 index, u8 ribbonId) */

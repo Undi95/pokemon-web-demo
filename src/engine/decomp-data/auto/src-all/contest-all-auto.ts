@@ -64,7 +64,7 @@ const {
   ShowBg, StartSpriteAffineAnim, StringAppend, StringCopy,
   StringExpandPlaceholders, StringGet_Nickname, StringLength, StripExtCtrlCodes,
   TRUE, TransferPlttBuffer, UnlockPlayerFieldControls, UpdatePaletteFade,
-  WriteSequenceToBgTilemapBuffer,  // 4-per-line for readability
+  WriteSequenceToBgTilemapBuffer, memcpy, memset,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void ResetLinkContestBoolean(void) */

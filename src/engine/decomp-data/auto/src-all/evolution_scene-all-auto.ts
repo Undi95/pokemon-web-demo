@@ -58,7 +58,8 @@ const {
   SetMultiuseSpriteTemplateToPokemon, SetVBlankCallback, ShowBg, ShowSelectMovePokemonSummaryScreen,
   Sin, SpeciesToNationalPokedexNum, StopMapMusic, StringCopy,
   StringCopy_Nickname, StringExpandPlaceholders, TASK_NONE, TRUE,
-  TransferPlttBuffer, UpdatePaletteFade, VRAM_SIZE,  // 4-per-line for readability
+  TransferPlttBuffer, UpdatePaletteFade, VRAM_SIZE, m4aMPlayAllStop,
+  memcpy,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void CB2_BeginEvolutionScene(void) */

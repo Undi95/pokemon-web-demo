@@ -45,7 +45,7 @@ const {
   ST_OAM_OBJ_WINDOW, ScanlineEffect_InitHBlankDmaTransfer, ScanlineEffect_InitWave, ScanlineEffect_Stop,
   SetGpuReg, SetMainCallback2, SetVBlankCallback, StartSpriteAnim,
   TRUE, TransferPlttBuffer, UpdatePaletteFade, VRAM_SIZE,
-  _RGB,  // 4-per-line for readability
+  _RGB, m4aMPlayAllStop, m4aSongNumStart,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void SpriteCB_VersionBannerLeft(struct Sprite *sprite) */

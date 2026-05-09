@@ -49,7 +49,8 @@ const {
   STR_CONV_MODE_LEFT_ALIGN, ScriptContext_Enable, SetBgTilemapBuffer, SetCloseLinkCallback,
   SetMainCallback2, SetVBlankCallback, SetWordTaskArg, ShowBg,
   StartMinigameCountdown, StartSpriteAnim, StringCopy, TRUE,
-  TransferPlttBuffer, UpdatePaletteFade, VINE_STATE_TIMER,  // 4-per-line for readability
+  TransferPlttBuffer, UpdatePaletteFade, VINE_STATE_TIMER, gSineTable,
+  memcpy,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void StartPokemonJump(u16 partyId, MainCallback exitCallback) */

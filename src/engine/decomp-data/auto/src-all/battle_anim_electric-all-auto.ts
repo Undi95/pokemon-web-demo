@@ -29,7 +29,7 @@ const {
   InitAnimLinearTranslation, InitSpritePosToAnimAttacker, InitSpritePosToAnimTarget, IsBattlerSpriteVisible,
   IsContest, PlaySE12WithPanning, SPRITE_SHAPE, SPRITE_SIZE,
   Sin, StartSpriteAffineAnim, StartSpriteAnim, StoreSpriteCallbackInData6,
-  TRUE,  // 4-per-line for readability
+  TRUE, gSineTable,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void AnimLightning(struct Sprite *sprite) */

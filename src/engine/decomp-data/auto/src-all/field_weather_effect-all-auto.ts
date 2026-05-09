@@ -34,7 +34,7 @@ const {
   SPRITE_SHAPE, SPRITE_SIZE, ST_OAM_AFFINE_OFF, ScriptContext_Enable,
   SetCurrentAndNextWeather, SetGpuReg, SetNextWeather, SetRainStrengthFromSoundEffect,
   SetSpritePosToMapCoords, StartSpriteAnim, TRUE, Weather_SetBlendCoeffs,
-  Weather_SetTargetBlendCoeffs, Weather_UpdateBlend,  // 4-per-line for readability
+  Weather_SetTargetBlendCoeffs, Weather_UpdateBlend, gSineTable,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void Clouds_InitVars(void) */

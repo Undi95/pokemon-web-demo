@@ -63,7 +63,8 @@ const {
   SetTaskFuncWithFollowupFunc, SetVBlankCallback, SetVBlankHBlankCallbacksToNull, ShakeBagSprite,
   ShowBg, SortBerriesOrTMHMs, StopPlayerAvatar, StringCopy,
   StringExpandPlaceholders, SwitchTaskToFollowupFunc, TASK_NONE, TRUE,
-  TestPlayerAvatarFlags, TransferPlttBuffer, UpdateItemMenuSwapLinePos, UpdatePaletteFade,  // 4-per-line for readability
+  TestPlayerAvatarFlags, TransferPlttBuffer, UpdateItemMenuSwapLinePos, UpdatePaletteFade,
+  memcpy, memset,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void ResetBagScrollPositions(void) */

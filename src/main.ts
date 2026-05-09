@@ -61,6 +61,9 @@ import './engine/dev-breakpoint-tools';
 // Side-effect import : pose window.dev.bridge.* helpers (= coverage du
 // decomp-bridge.ts + tracking helpers manquants par module auto-généré).
 import './engine/dev-bridge-audit-tools';
+// Side-effect import : pose window.dev.movementDispatch.* — bridge string
+// action names → MovementAction_*_StepN auto-fonctions.
+import './engine/movement-action-dispatch';
 const _saveLoadStatus = LoadGameSave();
 SetSaveFileStatus(_saveLoadStatus);
 console.log(`[main] LoadGameSave at boot → status=${_saveLoadStatus}`);

@@ -24,7 +24,8 @@ import * as _bridge from '../../../decomp-bridge';
 const {
   AGB_ASSERT_EX, AllocZeroed, CalcByteArraySum, CpuFill32,
   FALSE, Free, NULL, TRUE,
-  TryReadSpecialSaveSector, TryWriteSpecialSaveSector, VBlankIntrWait,  // 4-per-line for readability
+  TryReadSpecialSaveSector, TryWriteSpecialSaveSector, VBlankIntrWait, memcpy,
+  memset,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static u8 GetTrainerHillUnkVal(void) */

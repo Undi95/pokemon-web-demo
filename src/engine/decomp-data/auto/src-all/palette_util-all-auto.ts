@@ -23,7 +23,7 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, BlendPalette, FALSE, NULL,
-  TRUE,  // 4-per-line for readability
+  TRUE, memcpy, memset,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void RouletteFlash_Reset(struct RouletteFlashUtil *flash) */

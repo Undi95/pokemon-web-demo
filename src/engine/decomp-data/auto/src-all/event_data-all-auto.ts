@@ -23,7 +23,7 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   FALSE, GetFlagPointer, GetVarPointer, ResetPokedexScrollPositions,
-  TRUE,  // 4-per-line for readability
+  TRUE, memset,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void InitEventData(void) */

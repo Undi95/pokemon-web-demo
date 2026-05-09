@@ -29,7 +29,8 @@ const {
   GetMonData, GetMultiplayerId, IS_BATTLE_CONTROLLER_ACTIVE_ON_LOCAL, IsLinkMaster,
   IsLinkTaskFinished, MARK_BATTLE_CONTROLLER_IDLE_FOR_PLAYER, MarkBattlerReceivedLinkData, OpenLink,
   RecordedBattle_BufferNewBattlerData, RecordedBattle_Init, RecordedBattle_SaveParties, ResetBlockReceivedFlag,
-  SendBlock, SetMonData, SetWirelessCommType1, ZeroEnemyPartyMons,  // 4-per-line for readability
+  SendBlock, SetMonData, SetWirelessCommType1, ZeroEnemyPartyMons,
+  memcpy,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void HandleLinkBattleSetup(void) */

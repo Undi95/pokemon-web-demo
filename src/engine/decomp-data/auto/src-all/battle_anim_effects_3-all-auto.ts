@@ -47,7 +47,7 @@ const {
   SetGpuReg, SetGpuRegBits, SetSpriteCoordsToAnimAttackerCoords, SetSpriteRotScale,
   Sin, SmokescreenImpact, StartMonScrollingBgMask, StartSpriteAffineAnim,
   StartSpriteAnim, StoreSpriteCallbackInData6, TRUE, TranslateAnimHorizontalArc,
-  TrySetSpriteRotScale, WIN_RANGE,  // 4-per-line for readability
+  TrySetSpriteRotScale, WIN_RANGE, gSineTable,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void AnimBlackSmoke(struct Sprite *sprite) */

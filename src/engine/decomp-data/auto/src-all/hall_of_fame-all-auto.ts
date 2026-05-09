@@ -54,7 +54,7 @@ const {
   SpeciesToPokedexNum, StartSpriteAnim, StopCryAndClearCrySongs, StringCopy,
   StringExpandPlaceholders, TASK_NONE, TRUE, TRY_FREE_AND_SET_NULL,
   TransferPlttBuffer, TrySavingData, UnsetBgTilemapBuffer, UpdatePaletteFade,
-  VRAM_SIZE,  // 4-per-line for readability
+  VRAM_SIZE, gSineTable, memcpy, memset,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void VBlankCB_HallOfFame(void) */

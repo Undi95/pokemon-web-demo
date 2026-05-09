@@ -43,15 +43,15 @@ const {
   MapGridSetMetatileEntryAt, MapGridSetMetatileIdAt, Menu_GetCursorPos, Menu_ProcessInput,
   MetatileBehavior_HoldsLargeDecoration, MetatileBehavior_HoldsSmallDecoration, MetatileBehavior_IsNormal, MetatileBehavior_IsPlayerRoomPCOn,
   MetatileBehavior_IsSecretBaseHole, MetatileBehavior_IsSecretBaseImpassable, MetatileBehavior_IsSecretBaseNorthWall, MetatileBehavior_IsSecretBasePC,
-  MetatileBehavior_IsSecretBaseTrainerSpot, NULL, PIXEL_FILL, PLTT_SIZE_4BPP,
-  PlaySE, PlayerGetDestCoords, PrintMenuTable, RemoveScrollIndicatorArrowPair,
-  RemoveWindow, ReshowPlayerPC, STR_CONV_MODE_RIGHT_ALIGN, ST_OAM_4BPP,
-  ST_OAM_AFFINE_OFF, ST_OAM_OBJ_NORMAL, ScheduleBgCopyTilemapToVram, ScriptContext_SetupScript,
-  SetCursorScrollWithinListBounds, SetCursorWithinListBounds, SetMainCallback2, SetWarpDestination,
-  StringAppend, StringCopy, StringExpandPlaceholders, StringLength,
-  TASK_NONE, TILE_SIZE_4BPP, TRUE, TryMoveObjectEventToMapCoords,
-  TryOverrideObjectEventTemplateCoords, TryPutSecretBaseVisitOnAir, TrySpawnObjectEvent, UNPACK_BEHAVIOR,
-  VarSet, WarpIntoMap,  // 4-per-line for readability
+  MetatileBehavior_IsSecretBaseTrainerSpot, NULL, OBJECT_EVENTS_COUNT, PIXEL_FILL,
+  PLTT_SIZE_4BPP, PlaySE, PlayerGetDestCoords, PrintMenuTable,
+  RemoveScrollIndicatorArrowPair, RemoveWindow, ReshowPlayerPC, STR_CONV_MODE_RIGHT_ALIGN,
+  ST_OAM_4BPP, ST_OAM_AFFINE_OFF, ST_OAM_OBJ_NORMAL, ScheduleBgCopyTilemapToVram,
+  ScriptContext_SetupScript, SetCursorScrollWithinListBounds, SetCursorWithinListBounds, SetMainCallback2,
+  SetWarpDestination, StringAppend, StringCopy, StringExpandPlaceholders,
+  StringLength, TASK_NONE, TILE_SIZE_4BPP, TRUE,
+  TryMoveObjectEventToMapCoords, TryOverrideObjectEventTemplateCoords, TryPutSecretBaseVisitOnAir, TrySpawnObjectEvent,
+  UNPACK_BEHAVIOR, VarSet, WarpIntoMap, memset,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void InitDecorationContextItems(void) */

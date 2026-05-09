@@ -34,18 +34,18 @@ const {
   GetObjectEventIdByPosition, GetOnOffBike, GetPlayerFacingDirection, GetXYCoordsOneStepInFrontOfPlayer,
   IncrementGameStat, IsBikingDisallowedByPlayer, IsPlayerFacingEmptyBerryTreePatch, IsPlayerFacingSurfableFishableWater,
   IsPlayerPartyAndPokemonStorageFull, IsSEPlaying, IsWeatherNotFadingIn, ItemIdToBattleMoveId,
-  JOY_NEW, LockPlayerFieldControls, MapGridGetCollisionAt, MapGridGetMetatileBehaviorAt,
-  MenuHelpers_IsLinkActive, MetatileBehavior_IsBridgeOverWaterNoEdge, MetatileBehavior_IsHorizontalRail, MetatileBehavior_IsIsolatedHorizontalRail,
-  MetatileBehavior_IsIsolatedVerticalRail, MetatileBehavior_IsSurfableWaterOrUnderwater, MetatileBehavior_IsVerticalRail, MetatileBehavior_IsWaterfall,
-  ObjectEventCheckHeldMovementStatus, ObjectEventClearHeldMovement, ObjectEventClearHeldMovementIfFinished, OpenPokeblockCase,
-  Overworld_IsBikingAllowed, Overworld_ResetStateAfterDigEscRope, PlaySE, PlayerGetDestCoords,
-  PlayerGetElevation, PlayerTurnInPlace, ReadMail, RemoveBagItem,
-  ResetInitialPlayerAvatarState, STR_CONV_MODE_LEFT_ALIGN, ScriptContext_SetupScript, ScriptUnfreezeObjectEvents,
-  StartEscapeRopeFieldEffect, StartFishing, StringCopy, StringExpandPlaceholders,
-  TRUE, Task_FadeAndCloseBagMenu, TestPlayerAvatarFlags, TryToWaterBerryTree,
-  UnfreezeObjectEvent, UnlockPlayerFieldControls, UpdatePocketItemList, UpdatePocketListPosition,
-  UpdatePyramidBagCursorPos, UpdatePyramidBagList, UseStatIncreaseItem, VarGet,
-  VarSet,  // 4-per-line for readability
+  JOY_NEW, LOCALID_PLAYER, LockPlayerFieldControls, MapGridGetCollisionAt,
+  MapGridGetMetatileBehaviorAt, MenuHelpers_IsLinkActive, MetatileBehavior_IsBridgeOverWaterNoEdge, MetatileBehavior_IsHorizontalRail,
+  MetatileBehavior_IsIsolatedHorizontalRail, MetatileBehavior_IsIsolatedVerticalRail, MetatileBehavior_IsSurfableWaterOrUnderwater, MetatileBehavior_IsVerticalRail,
+  MetatileBehavior_IsWaterfall, OBJECT_EVENTS_COUNT, ObjectEventCheckHeldMovementStatus, ObjectEventClearHeldMovement,
+  ObjectEventClearHeldMovementIfFinished, OpenPokeblockCase, Overworld_IsBikingAllowed, Overworld_ResetStateAfterDigEscRope,
+  PlaySE, PlayerGetDestCoords, PlayerGetElevation, PlayerTurnInPlace,
+  ReadMail, RemoveBagItem, ResetInitialPlayerAvatarState, STR_CONV_MODE_LEFT_ALIGN,
+  ScriptContext_SetupScript, ScriptUnfreezeObjectEvents, StartEscapeRopeFieldEffect, StartFishing,
+  StringCopy, StringExpandPlaceholders, TRUE, Task_FadeAndCloseBagMenu,
+  TestPlayerAvatarFlags, TryToWaterBerryTree, UnfreezeObjectEvent, UnlockPlayerFieldControls,
+  UpdatePocketItemList, UpdatePocketListPosition, UpdatePyramidBagCursorPos, UpdatePyramidBagList,
+  UseStatIncreaseItem, VarGet, VarSet,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void SetUpItemUseCallback(u8 taskId) */

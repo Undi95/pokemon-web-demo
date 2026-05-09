@@ -26,7 +26,7 @@ const {
   FALSE, FreeSpriteOamMatrix, FreeSpritePaletteByTag, FreeSpriteTilesByTag,
   FuncIsActiveTask, GetMultiplayerId, LoadCompressedSpriteSheet, LoadSpritePalette,
   PlaySE, Rfu_SendPacket, SetSpriteMatrixAnchor, StartSpriteAffineAnim,
-  StartSpriteAnim, TRUE,  // 4-per-line for readability
+  StartSpriteAnim, TRUE, gSineTable, memset,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void Task_StaticCountdown(u8 taskId) */

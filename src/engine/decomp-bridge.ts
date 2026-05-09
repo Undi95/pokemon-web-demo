@@ -534,6 +534,51 @@ export function GetSubstructPtr<T = any>(_idx: number): T {
   throw new Error('[bridge] GetSubstructPtr not yet 1:1 ported. See save.c:GetSubstructPtr.');
 }
 
+// ─── libc-like memory primitives ──────────────────────────────────────────────
+
+/** 1:1 stdlib `memcpy(dest, src, size)`. En TS : si typed arrays, copy direct. */
+export function memcpy(dest: any, src: any, size: number): any {
+  // Typed arrays : copy entry by entry.
+  if (dest instanceof Uint8Array && src instanceof Uint8Array) {
+    for (let i = 0; i < size; i++) dest[i] = src[i];
+  } else if (dest instanceof Uint16Array && src instanceof Uint16Array) {
+    for (let i = 0; i < size / 2; i++) dest[i] = src[i];
+  } else if (dest instanceof Uint32Array && src instanceof Uint32Array) {
+    for (let i = 0; i < size / 4; i++) dest[i] = src[i];
+  } else if (Array.isArray(dest) && Array.isArray(src)) {
+    // Plain array copy.
+    for (let i = 0; i < src.length; i++) dest[i] = src[i];
+  } else if (dest && typeof dest === 'object' && src && typeof src === 'object') {
+    // Object copy (= struct).
+    Object.assign(dest, src);
+  }
+  return dest;
+}
+
+/** 1:1 stdlib `memset(dest, value, size)`. */
+export function memset(dest: any, value: number, size: number): any {
+  if (dest instanceof Uint8Array || dest instanceof Uint16Array || dest instanceof Uint32Array) {
+    for (let i = 0; i < size; i++) dest[i] = value;
+  } else if (Array.isArray(dest)) {
+    for (let i = 0; i < size; i++) dest[i] = value;
+  }
+  return dest;
+}
+
+/** 1:1 stdlib `strcmp`. */
+export function strcmp(a: string | any, b: string | any): number {
+  const sa = String(a ?? '');
+  const sb = String(b ?? '');
+  if (sa < sb) return -1;
+  if (sa > sb) return 1;
+  return 0;
+}
+
+/** 1:1 stdlib `strlen`. */
+export function strlen(s: any): number {
+  return String(s ?? '').length;
+}
+
 // ─── Memory copy helpers (= macro.h CpuCopy*) ─────────────────────────────────
 //
 // 1:1 décomp `include/gba/macro.h` :
@@ -838,6 +883,42 @@ export const DIR_SOUTH = 1;
 export const DIR_NORTH = 2;
 export const DIR_WEST = 3;
 export const DIR_EAST = 4;
+
+// ─── Movement enums (= 1:1 décomp event_object_movement.c:46-58) ──────────────
+
+/** Move speeds (= sprite step duration multiplier). 1:1 décomp `event_object_movement.c:46`. */
+export const MOVE_SPEED_NORMAL  = 0;  // walking
+export const MOVE_SPEED_FAST_1  = 1;  // running / surfing / sliding (ice)
+export const MOVE_SPEED_FAST_2  = 2;  // water current / acro bike
+export const MOVE_SPEED_FASTER  = 3;  // mach bike's max speed
+export const MOVE_SPEED_FASTEST = 4;
+
+/** Jump distances. 1:1 décomp `event_object_movement.c:54`. */
+export const JUMP_DISTANCE_IN_PLACE = 0;
+export const JUMP_DISTANCE_NORMAL   = 1;
+export const JUMP_DISTANCE_FAR      = 2;
+
+/** Jump types. 1:1 décomp `event_object_movement.c:5421`. */
+export const JUMP_TYPE_HIGH   = 0;
+export const JUMP_TYPE_LOW    = 1;
+export const JUMP_TYPE_NORMAL = 2;
+
+/** Sprite data aliases. 1:1 décomp `event_object_movement.c:60-64`.
+ *  Ces constants représentent les indices dans `sprite.data[]`. */
+export const sObjEventId   = 0;
+export const sTypeFuncId   = 1;
+export const sActionFuncId = 2;
+export const sDirection    = 3;
+
+/** OBJECT_EVENTS_COUNT — 1:1 décomp `include/constants/event_object_movement.h:11`.  */
+export const OBJECT_EVENTS_COUNT = 16;
+/** LOCALID_PLAYER — 1:1 décomp `include/constants/event_object_movement.h:6`. */
+export const LOCALID_PLAYER = 0xFF;
+export const LOCALID_NONE   = 0;
+export const OBJ_EVENT_ID_PLAYER = 0;
+
+/** MAP_UNDEFINED + helpers. 1:1 décomp `include/constants/maps.h`. */
+export const MAP_UNDEFINED = 0xFFFF;
 
 // ─── Metatile behavior constants (= include/constants/metatile_behaviors.h) ───
 // 1:1 décomp enum values. Loaded from public/decomp/em/metatile-behaviors.json
@@ -1225,6 +1306,7 @@ export const __bridgedHelpers__: ReadonlySet<string> = new Set([
   'JOY_NEW', 'JOY_HELD', 'JOY_REPEAT',
   'CpuCopy16', 'CpuCopy32',
   'ScriptReadByte',
+  'memcpy', 'memset', 'strcmp', 'strlen',
   'TRY_FREE_AND_SET_NULL',
   'GET_BATTLER_SIDE', 'GET_BATTLER_SIDE2', 'GET_BATTLER_POSITION',
   'RGB2', 'SPRITE_SHAPE', 'SPRITE_SIZE',
@@ -1270,6 +1352,14 @@ export const __bridgedHelpers__: ReadonlySet<string> = new Set([
   'STR_CONV_MODE_LEFT_ALIGN', 'STR_CONV_MODE_RIGHT_ALIGN', 'STR_CONV_MODE_LEADING_ZEROS',
   'PLTT_SIZE_4BPP', 'PLTT_SIZE_8BPP',
   'TILE_SIZE_4BPP', 'TILE_SIZE_8BPP',
+  // Movement enums
+  'MOVE_SPEED_NORMAL', 'MOVE_SPEED_FAST_1', 'MOVE_SPEED_FAST_2',
+  'MOVE_SPEED_FASTER', 'MOVE_SPEED_FASTEST',
+  'JUMP_DISTANCE_IN_PLACE', 'JUMP_DISTANCE_NORMAL', 'JUMP_DISTANCE_FAR',
+  'JUMP_TYPE_HIGH', 'JUMP_TYPE_LOW', 'JUMP_TYPE_NORMAL',
+  'sObjEventId', 'sTypeFuncId', 'sActionFuncId', 'sDirection',
+  'OBJECT_EVENTS_COUNT', 'LOCALID_PLAYER', 'LOCALID_NONE', 'OBJ_EVENT_ID_PLAYER',
+  'MAP_UNDEFINED',
 ]);
 
 /** Liste des helpers qui throw NotImplemented (= TODO list, à porter en priorité).

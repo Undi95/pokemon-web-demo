@@ -32,7 +32,7 @@ const {
   OBJ_PLTT_ID, PIXEL_FILL, PLTT_SIZE_4BPP, PlaySE,
   PutWindowRectTilemapOverridePalette, PutWindowTilemap, RemoveWindow, ScrollWindow,
   SetSubspriteTables, SetWindowAttribute, StartSpriteAnim, TASK_NONE,
-  TRUE,  // 4-per-line for readability
+  TRUE, gSineTable,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** s32 DoMysteryGiftListMenu(const struct WindowTemplate *windowTemplate, const struct ListMenuTemplate *listMenuTemplate, u8 drawMode, u16 tileNum, u16 palOffset) */

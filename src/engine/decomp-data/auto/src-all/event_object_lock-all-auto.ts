@@ -24,9 +24,9 @@ import * as _bridge from '../../../decomp-bridge';
 const {
   CreateTask, DestroyTask, FALSE, FreezeObjectEvent,
   FreezeObjectEvents, FreezeObjectEventsExceptOne, FreezeObjectEventsExceptTwo, FuncIsActiveTask,
-  GetChosenApproachingTrainerObjectEventId, GetObjectEventIdByLocalIdAndMap, ObjectEventClearHeldMovementIfActive, ObjectEventClearHeldMovementIfFinished,
-  ObjectEventFaceOppositeDirection, PlayerFreeze, ScriptMovement_UnfreezeObjectEvents, StopPlayerAvatar,
-  TRUE, UnfreezeObjectEvents,  // 4-per-line for readability
+  GetChosenApproachingTrainerObjectEventId, GetObjectEventIdByLocalIdAndMap, LOCALID_PLAYER, ObjectEventClearHeldMovementIfActive,
+  ObjectEventClearHeldMovementIfFinished, ObjectEventFaceOppositeDirection, PlayerFreeze, ScriptMovement_UnfreezeObjectEvents,
+  StopPlayerAvatar, TRUE, UnfreezeObjectEvents,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** bool8 IsPlayerStandingStill(void) */

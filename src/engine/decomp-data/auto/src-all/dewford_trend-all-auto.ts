@@ -24,7 +24,8 @@ import * as _bridge from '../../../decomp-bridge';
 const {
   Alloc, ConvertEasyChatWordsToString, FALSE, FlagGet,
   FlagSet, Free, GetLinkPlayerCount, GetRandomEasyChatWordFromGroup,
-  Random, SWAP, TRUE, TryPutTrendWatcherOnAir,  // 4-per-line for readability
+  Random, SWAP, TRUE, TryPutTrendWatcherOnAir,
+  memcpy,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void InitDewfordTrend(void) */

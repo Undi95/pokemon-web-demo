@@ -26,7 +26,7 @@ const {
   GetMultiplayerId, IsLinkTaskFinished, LinkContest_GetBlockReceived, LinkContest_GetBlockReceivedFromAllPlayers,
   LinkContest_GetLeaderIndex, LinkContest_SendBlock, LinkContest_TryLinkStandby, SetLinkAIContestants,
   SetTaskFuncWithFollowupFunc, SortContestants, StripPlayerAndMonNamesForLinkContest, SwitchTaskToFollowupFunc,
-  TRUE,  // 4-per-line for readability
+  TRUE, memcpy, memset,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void Task_LinkContest_StartCommunicationEm(u8 taskId) */

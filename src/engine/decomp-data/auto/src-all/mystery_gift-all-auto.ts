@@ -27,7 +27,7 @@ const {
   CpuFill32, FALSE, FlagGet, GetSavedWonderCard,
   GetSavedWonderCardMetadata, GetSavedWonderNews, GetSavedWonderNewsMetadata, InitQuestionnaireWords,
   NULL, StringCopy, TRUE, ValidateSavedRamScript,
-  WonderNews_Reset,  // 4-per-line for readability
+  WonderNews_Reset, memcpy,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void ClearMysteryGift(void) */

@@ -27,7 +27,7 @@ const {
   GetSavedWonderCard, GetSavedWonderNews, MysteryGiftLink_Init, MysteryGiftLink_InitRecv,
   MysteryGiftLink_InitSend, MysteryGiftLink_Recv, MysteryGiftLink_Send, MysteryGift_CheckStamps,
   MysteryGift_CompareCardFlags, MysteryGift_DoesQuestionnaireMatch, MysteryGift_GetCardStatFromLinkData, MysteryGift_ValidateLinkGameData,
-  NULL, TRUE,  // 4-per-line for readability
+  NULL, TRUE, memcpy,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void MysterGiftServer_CreateForNews(void) */

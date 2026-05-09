@@ -33,7 +33,8 @@ const {
   RfuRecvQueue_Enqueue, RfuRecvQueue_Reset, RfuSendQueue_Dequeue, RfuSendQueue_Enqueue,
   RfuSendQueue_Reset, RunTasks, SendBlock, SetLinkErrorBuffer,
   SetMainCallback2, StringCompare, StringCopy, TASK_NONE,
-  TRUE, TransferPlttBuffer, UpdatePaletteFade,  // 4-per-line for readability
+  TRUE, TransferPlttBuffer, UpdatePaletteFade, memcpy,
+  memset, strcmp,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void ResetLinkRfuGFLayer(void) */

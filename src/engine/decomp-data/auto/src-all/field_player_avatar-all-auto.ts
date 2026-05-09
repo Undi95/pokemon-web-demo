@@ -40,18 +40,19 @@ const {
   GetRideWaterCurrentMovementAction, GetWalkFastMovementAction, GetWalkFasterMovementAction, GetWalkInPlaceFastMovementAction,
   GetWalkInPlaceNormalMovementAction, GetWalkInPlaceSlowMovementAction, GetWalkNormalMovementAction, GetWalkSlowMovementAction,
   IncrementGameStat, IsPlayerNotUsingAcroBikeOnBumpySlope, IsRunningDisallowed, IsTextPrinterActive,
-  JOY_NEW, LoadMessageBoxAndFrameGfx, LockPlayerFieldControls, MAP_GROUP,
-  MAP_NUM, MapGridGetElevationAt, MapGridGetMetatileBehaviorAt, MetatileBehavior_IsNonAnimDoor,
-  MetatileBehavior_IsSurfableFishableWater, MetatileBehavior_IsWarpDoor, MonKnowsMove, MoveCoords,
-  MoveObjectEventToMapCoords, MovePlayerOnBike, NULL, ObjectEventCheckHeldMovementStatus,
-  ObjectEventClearHeldMovement, ObjectEventClearHeldMovementIfActive, ObjectEventClearHeldMovementIfFinished, ObjectEventForceSetHeldMovement,
-  ObjectEventGetHeldMovementActionId, ObjectEventIsHeldMovementActive, ObjectEventIsMovementOverridden, ObjectEventSetGraphicsId,
-  ObjectEventSetHeldMovement, ObjectEventTurn, Overworld_ChangeMusicToDefault, Overworld_ClearSavedMusic,
-  PIXEL_FILL, PlaySE, Random, RecordFishingAttemptForTV,
-  RunTextPrinters, SeekSpriteAnim, SetObjectEventDirection, SetSpriteInvisible,
-  SetSurfBlob_BobState, SetSurfBlob_PlayerOffset, ShowWarpArrowSprite, SpawnSpecialObjectEvent,
-  StartSpriteAnim, StartUnderwaterSurfBlobBobbing, TRUE, UnfreezeObjectEvents,
-  UnlockPlayerFieldControls, UpdateObjectEventCurrentMovement,  // 4-per-line for readability
+  JOY_NEW, LOCALID_PLAYER, LoadMessageBoxAndFrameGfx, LockPlayerFieldControls,
+  MAP_GROUP, MAP_NUM, MapGridGetElevationAt, MapGridGetMetatileBehaviorAt,
+  MetatileBehavior_IsNonAnimDoor, MetatileBehavior_IsSurfableFishableWater, MetatileBehavior_IsWarpDoor, MonKnowsMove,
+  MoveCoords, MoveObjectEventToMapCoords, MovePlayerOnBike, NULL,
+  OBJECT_EVENTS_COUNT, ObjectEventCheckHeldMovementStatus, ObjectEventClearHeldMovement, ObjectEventClearHeldMovementIfActive,
+  ObjectEventClearHeldMovementIfFinished, ObjectEventForceSetHeldMovement, ObjectEventGetHeldMovementActionId, ObjectEventIsHeldMovementActive,
+  ObjectEventIsMovementOverridden, ObjectEventSetGraphicsId, ObjectEventSetHeldMovement, ObjectEventTurn,
+  Overworld_ChangeMusicToDefault, Overworld_ClearSavedMusic, PIXEL_FILL, PlaySE,
+  Random, RecordFishingAttemptForTV, RunTextPrinters, SeekSpriteAnim,
+  SetObjectEventDirection, SetSpriteInvisible, SetSurfBlob_BobState, SetSurfBlob_PlayerOffset,
+  ShowWarpArrowSprite, SpawnSpecialObjectEvent, StartSpriteAnim, StartUnderwaterSurfBlobBobbing,
+  TRUE, UnfreezeObjectEvents, UnlockPlayerFieldControls, UpdateObjectEventCurrentMovement,
+  memset,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void MovementType_Player(struct Sprite *sprite) */

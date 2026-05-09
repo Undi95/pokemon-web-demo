@@ -47,7 +47,7 @@ const {
   STR_CONV_MODE_RIGHT_ALIGN, SWAP, ScheduleBgCopyTilemapToVram, ScriptContext_Enable,
   ScriptContext_SetupScript, SetCursorWithinListBounds, SetItemListPerPageCount, SetMainCallback2,
   SetStandardWindowBorderStyle, SetSwapLineSpritesInvisibility, StringCopy, StringExpandPlaceholders,
-  TASK_NONE, TRUE, UpdateSwapLineSpritesPos,  // 4-per-line for readability
+  TASK_NONE, TRUE, UpdateSwapLineSpritesPos, memset,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void NewGameInitPCItems(void) */

@@ -33,14 +33,14 @@ const {
   GetPlayerTextSpeedDelay, GetRematchTrainerLocation, GetSameRouteMatchCallText, GetSetPokedexFlag,
   GetTrainerId, GetWindowAttribute, HasTrainerBeenFought, IsDma3ManagerBusyWithBgCopy,
   IsNationalPokedexEnabled, IsSEPlaying, IsTextPrinterActive, JOY_HELD,
-  JOY_NEW, LoadBgTiles, LoadMessageBoxAndBorderGfx, LoadPalette,
-  LockPlayerFieldControls, MAP_GROUP, NULL, ObjectEventClearHeldMovementIfFinished,
-  Overworld_MapTypeAllowsTeleportAndFly, PIXEL_FILL, PlaySE, PlayerFreeze,
-  PutWindowTilemap, Random, RemoveWindow, RtcCalcLocalTime,
-  RtcGetLocalDayCount, RunTextPrinters, STR_CONV_MODE_LEFT_ALIGN, ScriptMovement_UnfreezeObjectEvents,
-  SpeciesToNationalPokedexNum, StopPlayerAvatar, StringCopy, StringExpandPlaceholders,
-  TRUE, UnfreezeObjectEvents, UnlockPlayerFieldControls, UpdateRematchIfDefeated,
-  WriteSequenceToBgTilemapBuffer,  // 4-per-line for readability
+  JOY_NEW, LOCALID_PLAYER, LoadBgTiles, LoadMessageBoxAndBorderGfx,
+  LoadPalette, LockPlayerFieldControls, MAP_GROUP, MAP_UNDEFINED,
+  NULL, ObjectEventClearHeldMovementIfFinished, Overworld_MapTypeAllowsTeleportAndFly, PIXEL_FILL,
+  PlaySE, PlayerFreeze, PutWindowTilemap, Random,
+  RemoveWindow, RtcCalcLocalTime, RtcGetLocalDayCount, RunTextPrinters,
+  STR_CONV_MODE_LEFT_ALIGN, ScriptMovement_UnfreezeObjectEvents, SpeciesToNationalPokedexNum, StopPlayerAvatar,
+  StringCopy, StringExpandPlaceholders, TRUE, UnfreezeObjectEvents,
+  UnlockPlayerFieldControls, UpdateRematchIfDefeated, WriteSequenceToBgTilemapBuffer,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void InitMatchCallCounters(void) */

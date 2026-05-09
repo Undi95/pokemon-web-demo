@@ -59,7 +59,7 @@ const {
   ShowBg, Sin, StartMinigameCountdown, StartSpriteAffineAnim,
   StartSpriteAnim, StringAppend, StringCopy, StringExpandPlaceholders,
   TRUE, TransferPlttBuffer, UnlockPlayerFieldControls, UnsetBgTilemapBuffer,
-  UpdatePaletteFade,  // 4-per-line for readability
+  UpdatePaletteFade, memcpy, memset,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static struct BerryCrushGame * GetBerryCrushGame(void) */

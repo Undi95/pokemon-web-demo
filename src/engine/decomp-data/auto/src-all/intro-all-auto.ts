@@ -58,7 +58,7 @@ const {
   SetPokemonCryStereo, SetSaveBlocksPointers, SetSerialCallback, SetVBlankCallback,
   Sin, StartSpriteAffineAnim, StartSpriteAnim, StartSpriteAnimIfDifferent,
   TRUE, TransferPlttBuffer, UpdatePaletteFade, VRAM_SIZE,
-  WIN_RANGE,  // 4-per-line for readability
+  WIN_RANGE, gSineTable, m4aSongNumStart,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void VBlankCB_Intro(void) */

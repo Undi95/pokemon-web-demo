@@ -25,7 +25,7 @@ const {
   BitmaskAllOtherLinkPlayers, FALSE, GetBlockReceivedStatus, GetLinkPlayerCount,
   GetLinkPlayerCountAsBitFlags, GetMultiplayerId, IsLinkTaskFinished, ResetBlockReceivedFlag,
   ResetBlockReceivedFlags, SendBlock, SendBlockRequest, SetLinkStandbyCallback,
-  StripPlayerAndMonNamesForLinkContest, SwitchTaskToFollowupFunc, TRUE,  // 4-per-line for readability
+  StripPlayerAndMonNamesForLinkContest, SwitchTaskToFollowupFunc, TRUE, memcpy,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** bool32 LinkContest_SendBlock(void *src, u16 size) */

@@ -26,7 +26,7 @@ const {
   FlagSet, GetXYCoordsOneStepInFrontOfPlayer, IncrementGameStat, PlayerGetDestCoords,
   RunScriptImmediately, STR_CONV_MODE_LEADING_ZEROS, ScriptContext_SetupScript, ScriptContext_Stop,
   SetMainCallback2, StringCopy, TRUE, TryPutSafariFanClubOnAir,
-  WarpIntoMap,  // 4-per-line for readability
+  WarpIntoMap, memset,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** bool32 GetSafariZoneFlag(void) */

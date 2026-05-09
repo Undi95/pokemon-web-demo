@@ -59,7 +59,7 @@ const {
   StoreWordInTwoHalfwords, TRUE, TryDoDiveWarp, TryFadeOutOldMapMusic,
   TryGetObjectEventIdByLocalIdAndMap, UnfreezeObjectEvents, UnlockPlayerFieldControls, UpdateCameraPanning,
   UpdateSpritePaletteWithWeather, WIN_RANGE, WarpFadeInScreen, WarpFadeOutScreen,
-  WarpIntoMap,  // 4-per-line for readability
+  WarpIntoMap, memset,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** u32 FieldEffectStart(u8 id) */

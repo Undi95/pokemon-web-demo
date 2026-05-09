@@ -51,7 +51,8 @@ const {
   SetMainCallback2, SetTilemapRect, SetVBlankCallback, SetVBlankHBlankCallbacksToNull,
   ShowBg, ShowCoinsWindow, Sin2, StartSpriteAnim,
   StringExpandPlaceholders, TRUE, TransferPlttBuffer, TryPutFindThatGamerOnAir,
-  UnlockPlayerFieldControls, UnsetBgTilemapBuffer, UpdatePaletteFade,  // 4-per-line for readability
+  UnlockPlayerFieldControls, UnsetBgTilemapBuffer, UpdatePaletteFade, m4aSongNumStart,
+  memcpy, memset,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void CB2_Roulette(void) */

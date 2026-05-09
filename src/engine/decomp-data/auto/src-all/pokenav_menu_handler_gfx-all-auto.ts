@@ -45,7 +45,8 @@ const {
   ScanlineEffect_InitHBlankDmaTransfer, ScanlineEffect_SetParams, ScanlineEffect_Stop, SetBgTilemapBuffer,
   SetGpuReg, SetGpuRegBits, SetPokenavVBlankCallback, SetVBlankCallback_,
   SetWordTaskArg, ShowBg, ShowLeftHeaderGfx, SlideMenuHeaderUp,
-  StartSpriteAffineAnim, TRUE, TransferPlttBuffer, WaitForHelpBar,  // 4-per-line for readability
+  StartSpriteAffineAnim, TRUE, TransferPlttBuffer, WaitForHelpBar,
+  gSineTable,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static bool32 AreAnyTrainerRematchesNearby(void) */

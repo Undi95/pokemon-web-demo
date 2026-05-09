@@ -36,7 +36,8 @@ const {
   REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, REG_OFFSET_BLDY, REG_OFFSET_WININ,
   REG_OFFSET_WINOUT, ResetSpriteRotScale, ST_OAM_OBJ_BLEND, ST_OAM_OBJ_NORMAL,
   ScanlineEffect_InitWave, SetGpuReg, SetGpuRegBits, SetSpriteRotScale,
-  Sin, StoreSpriteCallbackInData6, TRUE, WIN_RANGE,  // 4-per-line for readability
+  Sin, StoreSpriteCallbackInData6, TRUE, WIN_RANGE,
+  gSineTable,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void AnimConfuseRayBallBounce(struct Sprite *sprite) */

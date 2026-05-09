@@ -31,11 +31,12 @@ const {
   FreeSpritePaletteByTag, FreeSpriteTilesByTag, FreeTempTileDataBuffersIfPossible, GetRegionMapSecIdAt,
   GetRegionMapSectionId, GetRoamerLocation, HideBg, JOY_NEW,
   LZ77UnCompWram, LoadBgTilemap, LoadPokedexAreaMapGfx, LoadSpritePalette,
-  LoadSpriteSheet, MAP_GROUP, NULL, Overworld_GetMapHeaderByGroupAndId,
-  PALETTES_ALL, PlaySE, PokedexAreaMapChangeBgY, PokedexAreaScreen_UpdateRegionMapVariablesAndVideoRegs,
-  REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, ResetSpriteData, SetBgAttribute,
-  SetGpuReg, SetGpuRegBits, ShowBg, ShowRegionMapForPokedexAreaScreen,
-  StringFill, TRUE, TryShowPokedexAreaMap, VarGet,  // 4-per-line for readability
+  LoadSpriteSheet, MAP_GROUP, MAP_UNDEFINED, NULL,
+  Overworld_GetMapHeaderByGroupAndId, PALETTES_ALL, PlaySE, PokedexAreaMapChangeBgY,
+  PokedexAreaScreen_UpdateRegionMapVariablesAndVideoRegs, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, ResetSpriteData,
+  SetBgAttribute, SetGpuReg, SetGpuRegBits, ShowBg,
+  ShowRegionMapForPokedexAreaScreen, StringFill, TRUE, TryShowPokedexAreaMap,
+  VarGet, gSineTable,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void ResetDrawAreaGlowState(void) */

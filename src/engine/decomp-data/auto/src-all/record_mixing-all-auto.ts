@@ -43,7 +43,8 @@ const {
   SeedRng, SeedRng2, SendBlockRequest, SetCloseLinkCallback,
   SetContinueGameWarpStatusToDynamicWarp, SetLinkStandbyCallback, SetLinkWaitingForScript, SetLocalLinkPlayerId,
   SetPlayerSecretBaseParty, StringCopy, StringLength, StripExtCtrlCodes,
-  TRUE, VarSet, WriteSaveBlock1Sector, WriteSaveBlock2,  // 4-per-line for readability
+  TRUE, VarSet, WriteSaveBlock1Sector, WriteSaveBlock2,
+  memcpy,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void RecordMixingPlayerSpotTriggered(void) */

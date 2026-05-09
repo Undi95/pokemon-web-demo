@@ -36,7 +36,7 @@ const {
   ResetPokemonStorageSystem, ResetTrainerHillResults, RtcReset, RunScriptImmediately,
   SetBerryPowder, SetCoins, SetMauvilleOldMan, SetMoney,
   SetWarpDestination, TRUE, WarpIntoMap, WipeTrainerNameRecords,
-  ZeroEnemyPartyMons, ZeroPlayerPartyMons,  // 4-per-line for readability
+  ZeroEnemyPartyMons, ZeroPlayerPartyMons, memset,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void SetTrainerId(u32 trainerId, u8 *dst) */

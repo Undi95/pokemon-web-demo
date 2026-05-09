@@ -57,7 +57,7 @@ const {
   SetVBlankCallback, ShowBg, ShowPokedexAreaScreen, StartSpriteAnim,
   StopCryAndClearCrySongs, StringAppend, StringCopy, StringLength,
   TRUE, TransferPlttBuffer, UpdateCryWaveformWindow, UpdatePaletteFade,
-  VRAM_SIZE,  // 4-per-line for readability
+  VRAM_SIZE, gSineTable, memcpy,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void ResetPokedex(void) */
