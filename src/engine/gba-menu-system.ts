@@ -60,21 +60,36 @@ export const DPAD_DOWN = 0x80;
 // avait QUE la variante Clear → B press effaçait le gender menu → freeze.
 
 /** Internal core : process newKeys, update cursor, return selection.
- *  Param `eraseOnSelect` : si true, call EraseYesNoWindow on A/B (= Clear variant). */
+ *  Param `eraseOnSelect` : si true, call EraseYesNoWindow on A/B (= Clear variant).
+ *
+ *  ⚠️ Décomp `Menu_ProcessInputNoWrap` ne TOUCHE PAS l'état du menu sur A/B
+ *  (= juste return). Notre `menuActive=false` était une divergence qui
+ *  CASSAIT le re-process : Task_NewGameBirchSpeech_ChooseGender re-call
+ *  ProcessInputNoWrap chaque frame ; après B press, menuActive=false →
+ *  return -1 sans process input → user ne peut plus rien faire (= softlock
+ *  visible, menu reste affiché mais inerte).
+ *
+ *  Fix : ne set menuActive=false QUE pour la variante Clear (= window
+ *  destroyed by EraseYesNoWindow → next call must abort). Pour la variante
+ *  no-Clear (= gender menu), on laisse menuActive=true. */
 function _processMenuInput(eraseOnSelect: boolean): number {
   if (!menuActive) return -1;
   const newKeys = getRuntime()?.gMain.newKeys ?? 0;
 
   if (newKeys & A_BUTTON) {
-    menuActive = false;
-    clearMenuCursor();
-    if (eraseOnSelect) EraseYesNoWindow();
+    if (eraseOnSelect) {
+      menuActive = false;
+      clearMenuCursor();
+      EraseYesNoWindow();
+    }
     return menuCursorPos;
   }
   if (newKeys & B_BUTTON) {
-    menuActive = false;
-    clearMenuCursor();
-    if (eraseOnSelect) EraseYesNoWindow();
+    if (eraseOnSelect) {
+      menuActive = false;
+      clearMenuCursor();
+      EraseYesNoWindow();
+    }
     return -1; // MENU_B_PRESSED
   }
   if (newKeys & DPAD_UP) {
