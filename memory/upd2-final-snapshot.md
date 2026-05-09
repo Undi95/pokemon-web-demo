@@ -1,22 +1,28 @@
-# Branch upd2 — Final snapshot (overnight session, iter9 update)
+# Branch upd2 — Final snapshot (overnight session, iter10 final)
 
-Date : 2026-05-09 ~06h25
+Date : 2026-05-09 ~06h45
 
 ## TL;DR
 
-**40 commits sur upd2 cette nuit.** Build clean, game runs.
+**41 commits sur upd2 cette nuit.** Build clean, game runs.
 
 **🎯🎯🎯 Milestone iter9 : 100% MAIN-STORY coverage** (= 70 maps de tout
 le scénario principal Hoenn jusqu'à Sootopolis exclus). Zero opcodes
-manquants, zero specials manquants. C'est full-coverage main-story.
+manquants, zero specials manquants.
+
+**🎯 Iter10 bonus : Bulk post-game stubs**. Reduces global missing
+opcodes from 215→131 (-39%) et missing specials de 420→374 (-11%).
+Le jeu peut maintenant traverser même certains éléments post-game
+sans crasher (= Battle Frontier scripts, Trainer Fan Club, etc.).
 
 | Iter | Scope | Opcodes | Specials |
 |---|---|---|---|
 | iter7 | Early game (20 maps) | 100% | 100% |
 | iter8 | Extended (38 maps) | 100% | 100% |
 | iter9 | Main story (70 maps) | 100% | 100% |
+| iter10 | Global (470 maps) | **287 reg** (= +93) | **130 reg** (= +46) |
 
-### Big wins (cumulé jusqu'à iter9)
+### Big wins (cumulé jusqu'à iter10)
 
 | Item | Status |
 |---|---|
@@ -25,11 +31,59 @@ manquants, zero specials manquants. C'est full-coverage main-story.
 | ChooseStarter UI | ✅ visible 1:1 sprites + dialog + Pokemon front |
 | Wild battle | ✅ Birch tutorial fonctionnel |
 | Trainer battle | ✅ Rival via trainerbattle opcodes |
-| Specials registered | ✅ **84** (= +72 cette nuit) |
-| Opcodes registered | ✅ **194** (= +52 cette nuit, audit-driven) |
-| Audit tools | ✅ 7 scripts dans `scripts/audit-*.mjs` |
+| Specials registered | ✅ **130** (= +118 cette nuit) |
+| Opcodes registered | ✅ **287** (= +145 cette nuit, audit-driven) |
+| Audit tools | ✅ 8 scripts dans `scripts/audit-*.mjs` |
 | Main-story coverage | ✅ **100%** sur 70 maps (opcodes + specials) |
+| Global coverage | ✅ **70%** opcodes / 22% specials sur 470 maps |
 | Memory docs | ✅ 5 files briefing user |
+
+### Iteration 10 highlights (commit `6f7260a3`)
+
+**Bulk post-game stubs** : ajout de 93 opcodes + 46 specials pour les
+features post-game (Battle Frontier, Casino, Secret Bases, Mt. Pyre, etc.).
+
+Field opcodes ajoutés (iter10) :
+- Battle Frontier dispatch : `frontier_set/get/setpartyorder/...` (15+ ops)
+- Battle Tower/Dome/Factory/Pike/Palace/Arena/Pyramid set/get (20+ ops)
+- Money/Coin UI : `showmoneybox`, `hidemoneybox`, `updatemoneybox`,
+  `showcoinsbox`, `hidecoinsbox`, `updatecoinsbox`, `removemoney`,
+  `removecoins`, `addcoins`
+- Flash HM : `setflashlevel`, `animateflash`
+- Mt. Pyre puzzles : `initrotatingtilepuzzle`, `moverotatingtileobjects`,
+  `turnrotatingtileobjects`, `freerotatingtilepuzzle`
+- Secret Base : `givedecoration`, `takedecoration`, `checkdecor`,
+  `checkdecorspace`, `movedecoration`, `adddecoration`
+- Other : `setdivewarp`, `setholewarp`, `dofieldeffectsparkle`,
+  `setwildbattle`, `dowildbattle`, `dotimebasedevents`,
+  `showcontestpainting`, `playslotmachine`, `setvaddress`, `vgoto/vcall*`
+- Affine animations : `init_affine_anim`, `walk_down_affine`,
+  `walk_up_affine`, `slide_face_*`
+
+Specials ajoutés (iter10) :
+- GBA-link : `CloseLink`, `IsWirelessAdapterConnected`
+- Cinematic camera : `ShakeCamera`, `SpawnCameraObject`,
+  `RemoveCameraObject`
+- Trainer Fan Club : `IsFanClubMemberFanOfPlayer`,
+  `BufferFanClubTrainerName`, `GetNumFansOfPlayerInTrainerFanClub`,
+  `Script_TryGainNewFanFromCounter`
+- Special battles : `SetBattledOwnerFromResult`, `DoSpecialTrainerBattle`,
+  `BattleSetup_StartLegendaryBattle`, `PlayTrainerEncounterMusic`
+- Records / Battle Points : `RemoveRecordsWindow`,
+  `CloseBattlePointsWindow`, `ShowBattlePointsWindow`,
+  `TakeFrontierBattlePoints`
+- ShowScrollableMultichoice (= shop with many items)
+- Battle Frontier : `ChoosePartyForBattleFrontier`,
+  `ChooseHalfPartyForBattle`, `HasEnoughMonsForDoubleBattle`
+- Casino : `GetSlotMachineId`, `PlayerEnteredTradeSeat`
+- Secret Base : `DeclinedSecretBaseBattle`,
+  `DoSecretBasePCTurnOffEffect`
+- Berries / Pokeblock : `PlayerHasBerries`,
+  `GetFirstFreePokeblockSlot`, `ObjectEventInteractionGetBerryName`
+- Contests : `DoContestHallWarp`, `GetContestWinnerId`,
+  `BufferContestWinnerMonName`
+- Misc : `Script_DoRayquazaScene`, `MauvilleGymPressSwitch`,
+  `GetDaycareState`, `WaitWeather`, etc.
 
 ### Iteration 9 highlights (commit `ab1c8678`)
 
@@ -137,9 +191,11 @@ await dev.battle.startTrainer('TRAINER_BRENDAN_ROUTE_103_TORCHIC')
 window.dev.bridge.report().then(console.log)
 ```
 
-## Commit log (= 40 commits)
+## Commit log (= 41 commits)
 
 ```
+6f7260a3 Phase 5.7+ iter10 — bulk post-game stubs (+93 opcodes +46 specials)
+50bcb759 Memory — iter9 final : 100% main-story coverage milestone
 ab1c8678 Phase 5.7+ iter9 — 100% main-story coverage (+5 opcodes +16 specials)
 f2223bd7 Phase 5.7+ iter8 — 100% extended-game coverage (+1 opcode +6 specials)
 5e4d3b63 Memory — iter7 update : 100% early-game coverage milestone
