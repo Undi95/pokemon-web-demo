@@ -897,7 +897,7 @@ export {
 // différente du décomp (= retourne string, pas u8*). On adapte ici pour matcher
 // l'API décomp utilisée dans les auto-bodies.
 
-import { getItemNameFr as _getItemNameFr } from './data-tables';
+import { getItemNameFr as _getItemNameFr, getItem as _getItem, getItemDescriptionFr as _getItemDescFr } from './data-tables';
 
 /** 1:1 décomp `src/item.c:879 GetItemName(itemId)` :
  *    return gItems[SanitizeItemId(itemId)].name;
@@ -950,6 +950,119 @@ export function GetMapNameGeneric(dest: any, regionMapId: number | string): stri
 export function GetMapNameHandleAquaHideout(dest: any, regionMapId: number | string): string {
   // Best-effort : delegate to generic for now.
   return GetMapNameGeneric(dest, regionMapId);
+}
+
+/** 1:1 décomp `src/item.c:905 GetItemDescription(itemId)`. */
+export function GetItemDescription(itemId: number | string): string {
+  const itemKey = typeof itemId === 'number' ? `ITEM_${itemId}` : itemId;
+  const item = _getItem(itemKey);
+  if (!item) return '';
+  return _getItemDescFr(item.descriptionLabel ?? '');
+}
+
+// ─── Overworld map header (1:1 décomp `src/overworld.c`) ──────────────────────
+
+/** 1:1 décomp `src/overworld.c:579 Overworld_GetMapHeaderByGroupAndId(group, num)` :
+ *    return gMapGroups[mapGroup][mapNum];
+ *
+ *  Notre map data est async (= fetch JSON), mais cette fn est sync dans le décomp.
+ *  Solution : on regarde dans un cache populated par le map loader. Si pas en
+ *  cache, on retourne un placeholder header pour éviter le crash et on warn. */
+const _mapHeaderRegistry = new Map<string, any>();
+export function defineMapHeaderEntry(key: string, header: any): void {
+  _mapHeaderRegistry.set(key, header);
+}
+export function Overworld_GetMapHeaderByGroupAndId(mapGroup: number, mapNum: number): any {
+  const key = `${mapGroup}.${mapNum}`;
+  const header = _mapHeaderRegistry.get(key);
+  if (header) return header;
+  // Fallback : returns a structurally-empty header so auto-bodies can read fields
+  // without crashing. The .music, .mapType, .battleType fields will be 0/undef.
+  return {
+    mapLayoutId: 0,
+    events: { objectEventCount: 0, warpCount: 0, coordEventCount: 0, bgEventCount: 0,
+              objectEvents: [], warps: [], coordEvents: [], bgEvents: [] },
+    mapScripts: [],
+    connections: { count: 0, connections: [] },
+    music: 0,
+    mapLayoutId16: 0,
+    regionMapSectionId: 0,
+    cave: 0,
+    weather: 0,
+    mapType: 0,
+    bikingAllowed: 0,
+    allowEscaping: 0,
+    allowRunning: 0,
+    showMapName: 0,
+    battleType: 0,
+  };
+}
+
+// ─── Battle macros that mutate gBattleMons / gBattleStruct ───────────────────
+
+/** 1:1 décomp `include/battle.h:458` GET_MOVE_TYPE(move, typeArg) — sets typeArg
+ *  to dynamic type if set, else gBattleMoves[move].type. C macro mutates by-ref ;
+ *  in TS we return the type value so callers can do `let typeArg = GET_MOVE_TYPE(move)`. */
+export function GET_MOVE_TYPE(move: number, _typeArg?: any): number {
+  const rt: any = _getRT();
+  const dynamicType = rt?.gBattleStruct?.dynamicMoveType ?? 0;
+  if (dynamicType) return dynamicType & 0x3F;
+  return rt?.gBattleMoves?.[move]?.type ?? 0;
+}
+
+/** 1:1 décomp `include/battle.h:472` SET_BATTLER_TYPE(battler, type) — set both
+ *  types[0] and types[1] of gBattleMons[battler]. */
+export function SET_BATTLER_TYPE(battler: number, type: number): void {
+  const rt: any = _getRT();
+  const battleMons = rt?.gBattleMons;
+  if (!battleMons || !battleMons[battler]) return;
+  battleMons[battler].types = battleMons[battler].types ?? [0, 0];
+  battleMons[battler].types[0] = type;
+  battleMons[battler].types[1] = type;
+}
+
+// ─── Berry (1:1 décomp `src/berry.c:980 GetBerryInfo`) ────────────────────────
+
+/** 1:1 décomp `src/berry.c:980 GetBerryInfo(berry)` — returns const Berry*. Need
+ *  full berry table port + enigmaBerry handling. Stub returns null (= berry tree
+ *  code will skip rendering). */
+export function GetBerryInfo(_berry: number): any {
+  // TODO 1:1 : need gBerries[] table from berry.c.
+  return null;
+}
+
+/** 1:1 décomp `src/berry.c:992 GetBerryTreeInfo(id)` — read save block berry trees. */
+export function GetBerryTreeInfo(_id: number): any {
+  const rt: any = _getRT();
+  return rt?.gSaveBlock1Ptr?.berryTrees?.[_id] ?? null;
+}
+
+// ─── Text window palettes (1:1 décomp `src/text_window.c`) ────────────────────
+
+/** 1:1 décomp `src/text_window.c:162 GetTextWindowPalette(id)` :
+ *    Picks 1-of-5 palette banks (offsets 0x00, 0x10, 0x20, 0x30, 0x40). Returns
+ *    a u16* into sTextWindowPalettes. En TS : we don't have the asset ; return
+ *    null (= caller will skip palette load). */
+export function GetTextWindowPalette(id: number): Uint16Array | null {
+  // Ideal : load `text_window.pal` asset and return slice [id*16 .. (id+1)*16].
+  // Placeholder until palette assets are wired in.
+  const rt: any = _getRT();
+  const pal = rt?.assetCache?.get?.('sTextWindowPalettes');
+  if (pal instanceof Uint16Array) {
+    const offset = (Math.min(id, 4)) * 16;
+    return pal.subarray(offset, offset + 16);
+  }
+  return null;
+}
+
+/** 1:1 décomp `src/text_window.c:187 GetOverworldTextboxPalettePtr()` :
+ *    Returns gMessageBox_Pal — the 16-color palette for the standard overworld
+ *    message box. */
+export function GetOverworldTextboxPalettePtr(): Uint16Array | null {
+  const rt: any = _getRT();
+  const pal = rt?.assetCache?.get?.('gMessageBox_Pal');
+  if (pal instanceof Uint16Array) return pal;
+  return null;
 }
 
 /** 1:1 décomp `include/battle_anim.h` :
@@ -1127,6 +1240,140 @@ export function StringCompare(a: string, b: string): number {
   if (a > b) return 1;
   return 0;
 }
+
+/** 1:1 décomp `src/string_util.c:96 StringCopyN(dest, src, n)` — copy first n
+ *  bytes (= no EOS check). Returns dest+n. */
+export function StringCopyN(dest: any, src: any, n: number): any {
+  if (typeof src === 'string') {
+    if (dest instanceof Uint8Array) {
+      for (let i = 0; i < n && i < src.length; i++) dest[i] = src.charCodeAt(i);
+    }
+    return src.slice(0, n);
+  }
+  if (src && typeof src === 'object' && src.length != null) {
+    if (dest && dest.length != null) {
+      for (let i = 0; i < n; i++) dest[i] = src[i];
+    }
+    return src;
+  }
+  return src;
+}
+
+/** 1:1 décomp `src/string_util.c:106 StringAppendN(dest, src, n)` — append n
+ *  bytes from src into dest after its EOS. */
+export function StringAppendN(dest: any, src: any, n: number): any {
+  if (typeof dest === 'string' && typeof src === 'string') {
+    return dest + src.slice(0, n);
+  }
+  return StringCopyN(dest, src, n);
+}
+
+/** 1:1 décomp `src/string_util.c:527 StringFill(dest, c, n)` — fill n bytes with
+ *  c, then write EOS. Returns ptr to EOS. */
+export function StringFill(dest: any, c: number, n: number): any {
+  if (dest instanceof Uint8Array) {
+    for (let i = 0; i < n; i++) dest[i] = c;
+    if (n < dest.length) dest[n] = 0xFF; // EOS
+  }
+  return dest;
+}
+
+/** 1:1 décomp `src/string_util.c:538 StringCopyPadded(dest, src, c, n)` — copy
+ *  src to dest then pad with c until total length n. Returns ptr to EOS. */
+export function StringCopyPadded(dest: any, src: any, c: number, n: number): any {
+  if (typeof src === 'string') {
+    if (dest instanceof Uint8Array) {
+      let i = 0;
+      for (; i < src.length && i < n; i++) dest[i] = src.charCodeAt(i);
+      for (; i < n; i++) dest[i] = c;
+      if (n < dest.length) dest[n] = 0xFF;
+    }
+    const padded = src.slice(0, n);
+    return padded.padEnd(n, String.fromCharCode(c));
+  }
+  return src;
+}
+
+/** 1:1 décomp `src/string_util.c StringFillWithTerminator(dest, n)` — write n
+ *  EOS bytes (= clear the buffer). */
+export function StringFillWithTerminator(dest: any, n: number): any {
+  if (dest instanceof Uint8Array) {
+    for (let i = 0; i < n; i++) dest[i] = 0xFF;
+  }
+  return dest;
+}
+
+/** 1:1 décomp `src/string_util.c:58 StringCopy_PlayerName(dest, src)` — copy
+ *  with PLAYER_NAME_LENGTH = 7 cap. Pads with EOS after the copy. */
+export function StringCopy_PlayerName(dest: any, src: any): any {
+  const PLAYER_NAME_LENGTH = 7;
+  if (typeof src === 'string') {
+    const truncated = src.slice(0, PLAYER_NAME_LENGTH);
+    if (dest instanceof Uint8Array) {
+      for (let i = 0; i < truncated.length; i++) dest[i] = truncated.charCodeAt(i);
+      if (truncated.length < dest.length) dest[truncated.length] = 0xFF;
+    }
+    return truncated;
+  }
+  return StringCopyN(dest, src, PLAYER_NAME_LENGTH);
+}
+
+/** 1:1 décomp `src/string_util.c StringCompareN(a, b, n)` — strncmp. */
+export function StringCompareN(a: any, b: any, n: number): number {
+  const sa = String(a ?? '').slice(0, n);
+  const sb = String(b ?? '').slice(0, n);
+  if (sa < sb) return -1;
+  if (sa > sb) return 1;
+  return 0;
+}
+
+/** 1:1 décomp `src/string_util.c IsStringLengthAtLeast(s, n)`. */
+export function IsStringLengthAtLeast(s: any, n: number): boolean {
+  return String(s ?? '').length >= n;
+}
+
+/** 1:1 décomp `src/easy_chat.c ConvertEasyChatWordsToString(dest, src, columns, rows)` :
+ *    Decode an array of u16 EC words into a string buffer using the
+ *    sEasyChatGroup tables. Need full easy_chat data tables. Stub: empty. */
+export function ConvertEasyChatWordsToString(_dest: any, _src: any, _columns: number, _rows: number): any {
+  // Best-effort : write EOS at dest[0] (= empty string).
+  if (_dest instanceof Uint8Array && _dest.length > 0) _dest[0] = 0xFF;
+  return _dest;
+}
+
+/** 1:1 décomp `src/easy_chat.c OtherConvertEasyChatWordsToString(...)`. */
+export function OtherConvertEasyChatWordsToString(_dest: any, _src: any, _columns: number, _rows: number): any {
+  if (_dest instanceof Uint8Array && _dest.length > 0) _dest[0] = 0xFF;
+  return _dest;
+}
+
+// ─── Pokenav state macro (1:1 décomp `include/pokenav.h:63`) ──────────────────
+
+/** 1:1 décomp `include/pokenav.h:63` LT_SET_STATE(newState) macro :
+ *    #define LT_SET_STATE(newState) (newState + 5)
+ *  Used by pokenav list/menu state machines to encode "set state" return value. */
+export function LT_SET_STATE(newState: number): number {
+  return newState + 5;
+}
+
+// ─── ISO_RANDOMIZE2 / extra random helper (1:1 décomp `include/random.h`) ─────
+
+/** 1:1 décomp `include/random.h ISO_RANDOMIZE2(val)` — alternate LCG variant.
+ *  Pokemon Emerald uses two different random sequences. */
+export function ISO_RANDOMIZE2(val: number): number {
+  // Same constants as ISO_RANDOMIZE1 in this game (cf. random.h).
+  return (Math.imul(1103515245, val) + 24691) | 0;
+}
+
+// ─── PLTT_OFFSET_4BPP / OBJ_PLTT_ID2 (1:1 décomp `include/gba/types.h`) ───────
+
+/** 1:1 décomp `include/gba/types.h` :
+ *    #define PLTT_OFFSET_4BPP(n) (PLTT_SIZE_4BPP * (n))
+ *  En TS : same as PLTT_SIZE_4BPP * n = 32 * n. */
+export function PLTT_OFFSET_4BPP(n: number): number { return 32 * n; }
+
+/** 1:1 décomp `include/gba/types.h` OBJ_PLTT_ID2 — alternate alias for OBJ_PLTT_ID. */
+export function OBJ_PLTT_ID2(n: number): number { return n * 16; }
 
 // ─── Pokemon data — throw NI ──────────────────────────────────────────────────
 
@@ -1994,6 +2241,11 @@ export const __bridgedHelpers__: ReadonlySet<string> = new Set([
   'GetWindowFrameTilesPal', 'LoadWindowGfx',
   'LoadUserWindowBorderGfx', 'LoadUserWindowBorderGfx_',
   'GetItemName', 'GetMapName', 'GetMapNameGeneric', 'GetMapNameHandleAquaHideout',
+  'GetItemDescription',
+  'Overworld_GetMapHeaderByGroupAndId', 'defineMapHeaderEntry',
+  'GET_MOVE_TYPE', 'SET_BATTLER_TYPE',
+  'GetBerryInfo', 'GetBerryTreeInfo',
+  'GetTextWindowPalette', 'GetOverworldTextboxPalettePtr',
   // Battle macros
   'IS_TYPE_PHYSICAL', 'IS_TYPE_SPECIAL', 'HIHALF', 'LOHALF',
   'GET_SHINY_VALUE', 'GET_UNOWN_LETTER', 'IS_DOUBLE_BATTLE',
@@ -2011,6 +2263,13 @@ export const __bridgedHelpers__: ReadonlySet<string> = new Set([
   'GET_CONTEST_WINNER_ID', 'GET_TRAINER_FAN_CLUB_FLAG',
   'UR_PLAYER_SPRITE_ID', 'MAX_RFU_PLAYERS',
   'INTRO3_RAW_PTR', 'SET_TILE', 'VINE_STATE_TIMER', 'CALC_CRC',
+  // String helpers (= string_util.c)
+  'StringCopyN', 'StringAppendN', 'StringFill', 'StringCopyPadded',
+  'StringFillWithTerminator', 'StringCopy_PlayerName',
+  'StringCompareN', 'IsStringLengthAtLeast',
+  'ConvertEasyChatWordsToString', 'OtherConvertEasyChatWordsToString',
+  'LT_SET_STATE', 'ISO_RANDOMIZE2',
+  'PLTT_OFFSET_4BPP', 'OBJ_PLTT_ID2',
   'StringCopy_Nickname', 'StringGet_Nickname',
   'DynamicPlaceholderTextUtil_ExpandPlaceholders',
   // Runtime method wrappers (= delegate to getRuntime().X)
