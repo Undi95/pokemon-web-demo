@@ -473,6 +473,11 @@ const symbolsToExpose: Record<string, unknown> = {
   // version auto/src-all cassée — first-seen wins). Sinon `FlagClear` du
   // barrel call `GetFlagPointer` non-défini → ReferenceError au resume.
   FlagSet, FlagClear, FlagGet, VarSet, VarGet,
+  // RGB(r, g, b) macro 1:1 décomp `include/constants/rgb.h:8` :
+  //   #define RGB(r, g, b)  ((r) | ((g) << 5) | ((b) << 10))
+  // Le transpiler ne gère QUE les macros 1-arg, donc RGB(r, g, b) reste un
+  // bare call. Expose comme function runtime.
+  RGB: (r: number, g: number, b: number): number => (r | (g << 5) | (b << 10)) & 0xFFFF,
   // Memory access stubs émis par le transpiler pour les patterns C de
   // pointer arithmetic (ex: `*(ptr + idx) op= rhs;`) qui ne peuvent pas se
   // traduire 1:1 en JS. Ces helpers no-op runtime → si un de ces appels est
