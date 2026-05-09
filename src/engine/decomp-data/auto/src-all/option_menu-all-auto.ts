@@ -66,7 +66,7 @@ export function CB2_InitOptionMenu(): any {
           gMain.state++;
           break;
       case 1:
-          DmaClearLarge16(3, (VRAM), VRAM_SIZE, _0x1000);
+          DmaClearLarge16(3, (VRAM), VRAM_SIZE, 0x1000);
           DmaClear32(3, OAM, OAM_SIZE);
           DmaClear16(3, PLTT, PLTT_SIZE);
           SetGpuReg(REG_OFFSET_DISPCNT, 0);
@@ -102,7 +102,7 @@ export function CB2_InitOptionMenu(): any {
           gMain.state++;
           break;
       case 3:
-          LoadBgTiles(1, GetWindowFrameTilesPal(gSaveBlock2Ptr.optionsWindowFrameType).tiles, _0x120, 0x1A2);
+          LoadBgTiles(1, GetWindowFrameTilesPal(gSaveBlock2Ptr.optionsWindowFrameType).tiles, 0x120, 0x1A2);
           gMain.state++;
           break;
       case 4:
@@ -427,7 +427,7 @@ export function FrameType_ProcessInput(selection: any): any {
           else
               selection = 0;
 
-          LoadBgTiles(1, GetWindowFrameTilesPal(selection).tiles, _0x120, 0x1A2);
+          LoadBgTiles(1, GetWindowFrameTilesPal(selection).tiles, 0x120, 0x1A2);
           LoadPalette(GetWindowFrameTilesPal(selection).pal, BG_PLTT_ID(7), PLTT_SIZE_4BPP);
           sArrowPressed = TRUE;
       }
@@ -438,7 +438,7 @@ export function FrameType_ProcessInput(selection: any): any {
           else
               selection = WINDOW_FRAMES_COUNT - 1;
 
-          LoadBgTiles(1, GetWindowFrameTilesPal(selection).tiles, _0x120, 0x1A2);
+          LoadBgTiles(1, GetWindowFrameTilesPal(selection).tiles, 0x120, 0x1A2);
           LoadPalette(GetWindowFrameTilesPal(selection).pal, BG_PLTT_ID(7), PLTT_SIZE_4BPP);
           sArrowPressed = TRUE;
       }

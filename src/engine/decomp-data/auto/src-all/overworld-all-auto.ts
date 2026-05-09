@@ -2533,8 +2533,12 @@ export function SpawnLinkPlayerObjectEvent(linkPlayerId: any, x: any, y: any, ge
       linkPlayerObjEvent.movementMode = MOVEMENT_MODE_FREE;
 
       objEvent.active = TRUE;
-      linkGender(objEvent) = gender;
-      linkDirection(objEvent) = DIR_NORTH;
+      // MANUAL PATCH — `linkGender(obj) = ...` était transpilé tel quel mais
+      // c'est un macro C `#define linkGender(obj) obj->range.rangeX`. Fix
+      // transpiler pour expand le macro. TODO: scripts/extract-decomp-all.mjs
+      // doit substituer les macros 1-arg `name(arg)` style.
+      objEvent.range.rangeX = gender;        // = linkGender(objEvent)
+      objEvent.range.rangeY = DIR_NORTH;     // = linkDirection(objEvent)
       objEvent.spriteId = MAX_SPRITES;
 
       InitLinkPlayerObjectEventPos(objEvent, x, y);
@@ -2640,8 +2644,9 @@ export function FacingHandler_DoNothing(linkPlayerObjEvent: any, objEvent: any, 
 export function FacingHandler_DpadMovement(linkPlayerObjEvent: any, objEvent: any, dir: any): any {
   let x, y;
 
-      linkDirection(objEvent) = FlipVerticalAndClearForced(dir, linkDirection(objEvent));
-      ObjectEventMoveDestCoords(objEvent, linkDirection(objEvent),x,y);
+      // MANUAL PATCH — linkDirection(obj) macro = obj->range.rangeY.
+      objEvent.range.rangeY = FlipVerticalAndClearForced(dir, objEvent.range.rangeY);
+      ObjectEventMoveDestCoords(objEvent, objEvent.range.rangeY, x, y);
 
       if (LinkPlayerGetCollision(linkPlayerObjEvent.objEventId, linkDirection(objEvent), x, y))
       {
@@ -2658,7 +2663,8 @@ export function FacingHandler_DpadMovement(linkPlayerObjEvent: any, objEvent: an
 
 /** static bool8 FacingHandler_ForcedFacingChange(struct LinkPlayerObjectEvent *linkPlayerObjEvent, struct ObjectEvent *objEvent, u8 dir) */
 export function FacingHandler_ForcedFacingChange(linkPlayerObjEvent: any, objEvent: any, dir: any): any {
-  linkDirection(objEvent) = FlipVerticalAndClearForced(dir, linkDirection(objEvent));
+  // MANUAL PATCH — linkDirection(obj) macro = obj->range.rangeY.
+  objEvent.range.rangeY = FlipVerticalAndClearForced(dir, objEvent.range.rangeY);
       return FALSE;
 }
 
