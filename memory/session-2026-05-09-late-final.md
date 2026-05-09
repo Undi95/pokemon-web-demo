@@ -53,6 +53,28 @@ prouve que le transpiler fix marche end-to-end. La scene-linking
 issue est architecturale et touche TOUTES les transitions CB2
 (starter choose, naming, battle, etc.) — refacto à part.
 
+## Update fin session
+
+Suite au commit `ffcdd2f7` :
+- `GetStringRightAlignXOffset` wrapper signature 1:1 décomp (3-args)
+  ajouté → débloque les `*_DrawChoices` (right-align Slow/Mid/Fast).
+- `WIN_RANGE` re-export depuis decomp-helpers via decomp-globals →
+  débloque `HighlightOptionMenuItem`.
+
+**State machine complète sans crash** : 0 → 1 → ... → 11 → MainCB2.
+gMain.state passe à 0 (= MainCB2 mode), tasks=1 (= Task_OptionMenuFadeIn),
+sprites=8 (= curseur).
+
+**Bug résiduel identifié** : Post-fade (BeginNormalPaletteFade
+PALETTES_ALL 16→0 = fade-in from black), le BG0 window pixel buffer
+text content disparaît. Frame borders BG1 OK ✓, mais "OPTIONS" header
++ 7 entries (qui étaient visibles AVANT la fade pendant states 0-10)
+sont effacés. `f.brightness=0` post-fade donc palette devrait être
+restaurée, mais BG0 reste noir. **Hypothèse** : soit la window
+pixel buffer perd son content au CopyWindowToVram suivant, soit le BG0
+tilemap pointer pointe vers du data zero'd. Touche notre runtime
+PaletteFade/CopyWindowToVram impl, **PAS le wire**.
+
 ## Roadmap next
 
 ### Priority 1 — scene-linking refacto (= la concern user)
@@ -63,10 +85,10 @@ issue est architecturale et touche TOUTES les transitions CB2
 3. Implémenter le pattern choisi.
 
 ### Priority 2 — Wire OPTIONS finition
-- Right column choices (LENT/MOY/RAPIDE etc.) — wrappers
-  GetStringRightAlignXOffset à finir.
-- Task leak (= 13587 tasks/sec) à investiguer.
-- Overlay scene Phaser à fixer.
+- Right column choices wrappers : DONE (commit ffcdd2f7).
+- Task leak FIXED : la state machine progresse et task 1 unique créé.
+- Bug résiduel : BG0 text content effacé post-fade. À investiguer
+  côté runtime (pas le wire).
 
 ### Priority 3 — démo intro→Zigzaton continuation (= roadmap user)
 - Bugs reportés au fur et à mesure.
