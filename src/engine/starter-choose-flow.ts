@@ -93,6 +93,7 @@ export function startChooseStarterFlow(): ChooseStarterFlow {
   // Sprite IDs (= -1 if not spawned yet).
   const pokeballSpriteIds: number[] = [-1, -1, -1];
   let handSpriteId = -1;
+  let circleSpriteId = -1;
 
   // Async preload state.
   let loadStarted = false;
@@ -192,6 +193,17 @@ export function startChooseStarterFlow(): ChooseStarterFlow {
           }
         }
 
+        // 1:1 décomp SpriteCB_Pokeball : selected pokeball = anim 1 (= moving),
+        // others = anim 0 (= still).
+        if (selection !== lastSelection) {
+          for (let i = 0; i < 3; i++) {
+            if (pokeballSpriteIds[i] >= 0) {
+              rt.StartSpriteAnim(pokeballSpriteIds[i], i === selection ? 1 : 0);
+            }
+          }
+          lastSelection = selection;
+        }
+
         const newKeys = rt.gMain.newKeys;
         if ((newKeys & DPAD_LEFT) && selection > 0) {
           selection--;
@@ -205,6 +217,14 @@ export function startChooseStarterFlow(): ChooseStarterFlow {
       }
 
       case 'ASK_CONFIRM_INIT': {
+        // Hide hand cursor when asking confirm (= 1:1 décomp ClearStarterLabel).
+        if (handSpriteId >= 0) {
+          const handSprite = rt.gSprites.get(handSpriteId);
+          if (handSprite) handSprite.invisible = true;
+        }
+        // Spawn StarterCircle halo behind chosen pokeball (= 1:1 décomp Task_HandleStarterChooseInput).
+        const [cx, cy] = POKEBALL_COORDS[selection];
+        circleSpriteId = rt.CreateSpriteFromTemplate('sSpriteTemplate_StarterCircle', cx, cy);
         // Show confirm dialog with starter name + category.
         ShowFieldMessage(`${STARTER_NAMES[selection]}, ${STARTER_CATEGORIES[selection]}!\n${TEXT_CONFIRM_STARTER}`);
         state = 'ASK_CONFIRM_WAIT';
@@ -277,6 +297,16 @@ export function startChooseStarterFlow(): ChooseStarterFlow {
       }
 
       case 'DECLINE_INIT': {
+        // Cleanup circle + restore hand visibility.
+        if (circleSpriteId >= 0) {
+          rt.DestroySprite(circleSpriteId);
+          circleSpriteId = -1;
+        }
+        if (handSpriteId >= 0) {
+          const handSprite = rt.gSprites.get(handSpriteId);
+          if (handSprite) handSprite.invisible = false;
+        }
+        lastSelection = -1;  // Force pokeball anim refresh.
         state = 'PROMPT_INIT';
         return false;
       }
@@ -287,6 +317,7 @@ export function startChooseStarterFlow(): ChooseStarterFlow {
           if (id >= 0) rt.DestroySprite(id);
         }
         if (handSpriteId >= 0) rt.DestroySprite(handSpriteId);
+        if (circleSpriteId >= 0) rt.DestroySprite(circleSpriteId);
         state = 'DONE';
         return false;
       }
