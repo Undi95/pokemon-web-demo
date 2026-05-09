@@ -26,11 +26,11 @@ const {
   DIR_SOUTH, DestroySprite, DestroyTask, FALSE,
   FindTaskIdByFunc, FlagClear, FlagGet, FlagSet,
   FreezeObjectEvent, FuncIsActiveTask, GetPlayerFacingDirection, GetXYCoordsOneStepInFrontOfPlayer,
-  IsVirtualObjectAnimating, IsVirtualObjectInvisible, MapGridSetMetatileImpassabilityAt, NULL,
-  ObjectEventClearHeldMovementIfFinished, ObjectEventIsMovementOverridden, ObjectEventSetHeldMovement, PlayerGetDestCoords,
-  RemoveObjectEventByLocalIdAndMap, SetVirtualObjectGraphics, SetVirtualObjectInvisibility, SetVirtualObjectSpriteAnim,
-  TRUE, TryGetObjectEventIdByLocalIdAndMap, TrySpawnObjectEvent, TurnVirtualObject,
-  UR_PLAYER_SPRITE_ID, UnfreezeObjectEvent, VarSet,  // 4-per-line for readability
+  IsVirtualObjectAnimating, IsVirtualObjectInvisible, MAX_RFU_PLAYERS, MapGridSetMetatileImpassabilityAt,
+  NULL, ObjectEventClearHeldMovementIfFinished, ObjectEventIsMovementOverridden, ObjectEventSetHeldMovement,
+  PlayerGetDestCoords, RemoveObjectEventByLocalIdAndMap, SetVirtualObjectGraphics, SetVirtualObjectInvisibility,
+  SetVirtualObjectSpriteAnim, TRUE, TryGetObjectEventIdByLocalIdAndMap, TrySpawnObjectEvent,
+  TurnVirtualObject, UR_PLAYER_SPRITE_ID, UnfreezeObjectEvent, VarSet,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static bool32 IsPlayerStandingStill(void) */

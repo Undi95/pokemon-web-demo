@@ -23,9 +23,10 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   Alloc, AllocZeroed, ApplyNewEncryptionKeyToHword, CurMapIsSecretBase,
-  CurrentBattlePyramidLocation, FALSE, FlagGet, Free,
-  GetItemListPosition, GetItemName, SWAP, StringCopy,
-  TRUE, VarGet, VarSet, memcpy,  // 4-per-line for readability
+  CurrentBattlePyramidLocation, FALSE, FIRST_BERRY_INDEX, FlagGet,
+  Free, GetItemListPosition, GetItemName, SWAP,
+  StringCopy, TRUE, VarGet, VarSet,
+  memcpy,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static u16 GetBagItemQuantity(u16 *quantity) */

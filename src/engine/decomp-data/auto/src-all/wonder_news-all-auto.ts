@@ -22,8 +22,9 @@
 // to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  AGB_ASSERT, GetSavedWonderNewsMetadata, GetVarPointer, ITEM_TO_BERRY,
-  IsMysteryEventEnabled, Random, ValidateSavedWonderNews, VarSet,  // 4-per-line for readability
+  AGB_ASSERT, FIRST_BERRY_INDEX, GetSavedWonderNewsMetadata, GetVarPointer,
+  ITEM_TO_BERRY, IsMysteryEventEnabled, Random, ValidateSavedWonderNews,
+  VarSet,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void WonderNews_SetReward(u32 newsType) */

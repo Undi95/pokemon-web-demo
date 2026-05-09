@@ -22,7 +22,8 @@
 // to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  DELAY, FLASH_WRITE, ProgramFlashSector, REG_TMCNT_L,  // 4-per-line for readability
+  DELAY, FLASH_WRITE, PollFlashStatus, ProgramFlashSector,
+  REG_TMCNT_L,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void SwitchFlashBank(u8 bankNum) */

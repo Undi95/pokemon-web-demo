@@ -22,8 +22,9 @@
 // to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  FLASH_WRITE, PollFlashStatus, ReadFlashId, StartFlashTimer,
-  StopFlashTimer,  // 4-per-line for readability
+  EraseFlashSector, FLASH_WRITE, PollFlashStatus, ProgramFlashByte,
+  ProgramFlashSector, ReadFlashId, StartFlashTimer, StopFlashTimer,
+  WaitForFlashWrite,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** u16 IdentifyFlash(void) */

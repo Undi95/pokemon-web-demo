@@ -67,15 +67,15 @@ const {
   RemoveBattleMonPPBonus, RemoveMonPPBonus, ResetSentPokesToOpponentValue, SAFE_DIV,
   SET_BATTLER_TYPE, SET_STAT_BUFF_VALUE, STATUS1_SLEEP_TURN, STATUS2_BIDE_TURN,
   STATUS2_CONFUSION_TURN, STATUS2_INFATUATED_WITH, STATUS2_LOCK_CONFUSE_TURN, STATUS2_UPROAR_TURN,
-  STATUS2_WRAPPED_TURN, STATUS3_ALWAYS_HITS_TURN, STATUS3_YAWN_TURN, STR_CONV_MODE_LEFT_ALIGN,
-  SetBattleMonMoveSlot, SetBgAttribute, SetMonData, SetMonMoveSlot,
-  SetVBlankCallback, ShouldShowBoxWasFullMessage, ShowBg, ShowSelectMovePokemonSummaryScreen,
-  SpeciesToNationalPokedexNum, Sqrt, StringCopy, StringFill,
-  SwitchInClearSetData, SwitchPartyOrder, SwitchPartyOrderInGameMulti, SwitchPartyOrderLinkMulti,
-  T1_READ_16, T1_READ_32, T1_READ_PTR, T2_READ_16,
-  T2_READ_32, T2_READ_PTR, TRUE, TYPE_EFFECT_ATK_TYPE,
-  TYPE_EFFECT_DEF_TYPE, TYPE_EFFECT_MULTIPLIER, TryRunFromBattle, UpdateSentPokesToOpponentValue,
-  VarGet, WasUnableToUseMove, WriteColorChangeControlCode,  // 4-per-line for readability
+  STATUS2_WRAPPED_TURN, STATUS3_ALWAYS_HITS_TURN, STATUS3_YAWN_TURN, STAT_BUFF_NEGATIVE,
+  STR_CONV_MODE_LEFT_ALIGN, SetBattleMonMoveSlot, SetBgAttribute, SetMonData,
+  SetMonMoveSlot, SetVBlankCallback, ShouldShowBoxWasFullMessage, ShowBg,
+  ShowSelectMovePokemonSummaryScreen, SpeciesToNationalPokedexNum, Sqrt, StringCopy,
+  StringFill, SwitchInClearSetData, SwitchPartyOrder, SwitchPartyOrderInGameMulti,
+  SwitchPartyOrderLinkMulti, T1_READ_16, T1_READ_32, T1_READ_PTR,
+  T2_READ_16, T2_READ_32, T2_READ_PTR, TRUE,
+  TYPE_EFFECT_ATK_TYPE, TYPE_EFFECT_DEF_TYPE, TYPE_EFFECT_MULTIPLIER, TryRunFromBattle,
+  UpdateSentPokesToOpponentValue, VarGet, WasUnableToUseMove, WriteColorChangeControlCode,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void Cmd_attackcanceler(void) */

@@ -26,8 +26,9 @@ const {
   CreateSprite, DestroySprite, FALSE, FlagGet,
   Free, GetLinkPlayerCount, GetMultiplayerId, GetSpriteTileStartByTag,
   IsNationalPokedexEnabled, IsRfuRecoveringFromLinkLoss, IsRfuSerialNumberValid, LoadCompressedSpriteSheet,
-  LoadSpritePalette, NULL, RfuGetStatus, StringCompare,
-  StringCopy, TRUE, memcpy, memset,  // 4-per-line for readability
+  LoadSpritePalette, MAX_RFU_PLAYERS, NULL, RfuGetStatus,
+  StringCompare, StringCopy, TRUE, memcpy,
+  memset,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void RfuRecvQueue_Reset(struct RfuRecvQueue *queue) */

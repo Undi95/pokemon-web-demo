@@ -28,13 +28,13 @@ const {
   FindTaskIdByFunc, FuncIsActiveTask, GetBlenderArrowPosition, GetBlockReceivedStatus,
   GetHostRfuGameData, GetLinkPlayerCount, GetMultiplayerId, InitHostRfuGameData,
   IsLinkTaskFinished, LinkPlayerFromBlock, LoadOam, LocalLinkPlayerToBlock,
-  NULL, ProcessSpriteCopyRequests, Random2, ResetBlockReceivedFlag,
-  ResetBlockReceivedFlags, RfuBackupQueue_Dequeue, RfuBackupQueue_Enqueue, RfuRecvQueue_Dequeue,
-  RfuRecvQueue_Enqueue, RfuRecvQueue_Reset, RfuSendQueue_Dequeue, RfuSendQueue_Enqueue,
-  RfuSendQueue_Reset, RunTasks, SendBlock, SetLinkErrorBuffer,
-  SetMainCallback2, StringCompare, StringCopy, TASK_NONE,
-  TRUE, TransferPlttBuffer, UpdatePaletteFade, memcpy,
-  memset, strcmp,  // 4-per-line for readability
+  MAX_RFU_PLAYERS, NULL, ProcessSpriteCopyRequests, Random2,
+  ResetBlockReceivedFlag, ResetBlockReceivedFlags, RfuBackupQueue_Dequeue, RfuBackupQueue_Enqueue,
+  RfuRecvQueue_Dequeue, RfuRecvQueue_Enqueue, RfuRecvQueue_Reset, RfuSendQueue_Dequeue,
+  RfuSendQueue_Enqueue, RfuSendQueue_Reset, RunTasks, SendBlock,
+  SetLinkErrorBuffer, SetMainCallback2, StringCompare, StringCopy,
+  TASK_NONE, TRUE, TransferPlttBuffer, UpdatePaletteFade,
+  memcpy, memset, strcmp,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void ResetLinkRfuGFLayer(void) */
